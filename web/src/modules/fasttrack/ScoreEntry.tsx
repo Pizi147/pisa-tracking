@@ -56,6 +56,8 @@ export type Cell = {
    */
   daChot?: {
     doiSang: string | null; hanGo: string | null; goDuoc: boolean;
+    /** OV-11a: mã tuần có "-" (tuần gốc) — hộp tuần thi bù ghi "vắng lần 1 · dời từ W2 SEP". */
+    tuTuan?: string;
     /** OV-4b: lần vắng · lúc ghi "-" · người ghi (hộp ô Vắng). */
     lan: number; ghiLuc: string | null; ghiBoi: string | null;
   } | null;
@@ -146,7 +148,7 @@ export function useSaveScore(attemptId: number, onSaved?: () => void, tenHv?: st
       invalidate('/students');
       invalidate('/my-work');   // PR-S6F-a: badge quá hạn của GV tải lại sau khi nhập điểm
       /* K4: gõ "-" và nút "Vắng" (điện thoại) cùng đi qua đây — một thông báo ngắn, không Hoàn tác. */
-      if (patch.noShow === true) thongBaoVang(toast, `${attemptId}:${skill}`, ENTRY_SKILL_SHORT[skill as EntrySkill], tenHv);
+      if (patch.noShow === true) thongBaoVang(toast, `${attemptId}:${skill}`, ENTRY_SKILL_SHORT[skill as EntrySkill], tenHv, r?.vang);
       tt.thanhCong(skill);
       onSaved?.();
       return true;
@@ -484,6 +486,8 @@ export function ODiemThuong({
   cell: {
     diem: number | null; tong: number | null; tuanDoiTu: string | null; tuanHienTai: string | null;
     dau?: boolean; chuaToiTuan?: boolean; tiLe?: number | null; ketQua?: 'pass' | 'fail' | 'missing';
+    /** OV-11a (Q1): ô "-" ở tuần thi đã qua ≥ 2 tuần — Không dự thi (không dời). */
+    khongDuThi?: boolean;
     /** R11: đợt đã hoàn tất — khoá với người không có `PLAN_WEEK`/`SCORE_OVERRIDE`. */
     khoa?: boolean;
     /** PR-BV: người xem gỡ được dấu "-" lúc này · `oTuanCu` = đang xem đúng tuần có dấu (tuần mới có thể đã có điểm). */
@@ -710,8 +714,9 @@ export function ODiemThuong({
         </span>
       );
     }
-    const chu = dau ? '-' : cell.chuaToiTuan && cell.tuanHienTai ? cell.tuanHienTai : '—';
-    const title = dau && cell.tuanHienTai ? `${khongDay} Đã dời sang ${cell.tuanHienTai}.`
+    const chu = cell.khongDuThi ? 'Không dự thi' : dau ? '-' : cell.chuaToiTuan && cell.tuanHienTai ? cell.tuanHienTai : '—';
+    const title = cell.khongDuThi ? `${khongDay} Không dự thi · ${cell.tuanHienTai ?? ''}`.trim()
+      : dau && cell.tuanHienTai ? `${khongDay} Đã dời sang ${cell.tuanHienTai}.`
       : cell.chuaToiTuan && cell.tuanHienTai ? `${khongDay} Thi ${cell.tuanHienTai}.` : khongDay;
     const chuDoc = <span className="text-xs text-slate-500 tabular-nums" title={title}>{chu}</span>;
     /* Điện thoại: giữ chỗ nút "−" để chữ thẳng cột với ô nhập của các dòng khác. */
@@ -756,7 +761,7 @@ export function ODiemThuong({
           {sua && (
             <SuaDiemCoLyDo
               tieuDe={`Sửa ${tenMon}${tenHv ? ` · ${tenHv}` : ''}`}
-              moTaCu={`Đang lưu: ${cell.diem}/${cell.tong ?? '?'}${pt ? ` (${pt})` : ''}`}
+              moTaCu={`Đã lưu: ${cell.diem}/${cell.tong ?? '?'}${pt ? ` (${pt})` : ''}`}
               loiGiaTri={loiGiaTri}
               onDong={() => setSua(null)}
               onLuu={async (lyDo) => {
@@ -786,6 +791,7 @@ export function ODiemThuong({
   /* ---- Ô chưa có điểm: hai ô nhập. Ô trái nhận số câu đúng hoặc "-". */
   const dangDau = diem.trim() === '-';
   const titleDiem = canhBao?.o === 'diem' ? canhBao.cau
+    : cell.khongDuThi ? `Không dự thi · ${cell.tuanHienTai ?? ''}. Xoá "-" để bỏ; gõ số khi em đã làm bài.`
     : dau && !cell.chuaToiTuan
       ? `Đã dời sang ${cell.tuanHienTai ?? 'tuần này'} (từ ${cell.tuanDoiTu ?? 'tuần cũ'}). Gõ số khi em đã làm bài; em lại không làm bài thì gõ lại "-" để dời tiếp.`
     : dau ? `Đã dời sang ${cell.tuanHienTai ?? 'tuần sau'}. Xoá dấu "-" để trả lịch về ${cell.tuanDoiTu ?? 'tuần cũ'}; gõ số khi em đã làm bài.`
@@ -816,8 +822,9 @@ export function ODiemThuong({
         aria-invalid={canhBao?.o === 'tong' ? true : undefined} aria-describedby={canhBao?.o === 'tong' ? idLoi : undefined}
         aria-label={`${tenMon} — tổng số câu`}
         onChange={(e) => { setTong(e.target.value); setDirty(true); }} onKeyDown={phim} />
-      {lon && <NutDau title={nutDauTitle} an={!nhanDau} tat={busy} onBam={bamVang} />}
+      {lon && <NutDau title={nutDauTitle} an={!nhanDau || !!cell.khongDuThi} tat={busy} onBam={bamVang} />}
     </span>
+    {cell.khongDuThi && dangDau && <span className="text-xs leading-tight text-slate-400">Không dự thi</span>}
     <DongLoiNhap id={idLoi} cau={canhBao?.cau ?? null} />
     </span>
   );

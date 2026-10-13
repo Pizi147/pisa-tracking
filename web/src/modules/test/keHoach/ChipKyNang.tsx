@@ -94,7 +94,8 @@ function Chip({ c, khaiGiang, tongTuan, them, title, onMo, ct = null }: {
   them: { n: number; ds: string } | null; title: string; onMo: (skill: KyNangKH | null, el: HTMLElement) => void;
 }) {
   const chua = c.trangThai === 'chua-xep' || c.tuan === null;
-  const tt = MAU_TT[c.trangThai];
+  /* OV-11a: Không dự thi — chữ riêng, không ✓ (không phải "đã thi"). */
+  const tt = c.khongDuThi ? { mau: 'border-muted-line bg-muted-bg text-muted', duoi: 'không dự thi', nghia: 'Không dự thi — không dời, không nợ' } : MAU_TT[c.trangThai];
   const mau = chua ? 'border-dashed border-muted-line bg-transparent text-muted' : tt?.mau ?? 'bg-doing-bg text-doing border-doing-line';
   const chu = c.kyNang.map((k) => tenMonNgan(ct, k)).join(' ');
   return (
@@ -104,7 +105,7 @@ function Chip({ c, khaiGiang, tongTuan, them, title, onMo, ct = null }: {
       </span>
       <span className="whitespace-nowrap tabular-nums">
         {chua ? 'chưa xếp' : tuanLich(c.tuan!)}
-        {c.trangThai === 'xong' && <span aria-hidden title="Đã thi"> ✓</span>}
+        {c.trangThai === 'xong' && !c.khongDuThi && <span aria-hidden title="Đã thi"> ✓</span>}
         {!chua && <NhanKhoa tuan={c.tuan} khaiGiang={khaiGiang} tongTuan={tongTuan} />}
         {them && <span className="ml-1 text-[11px]" title={them.ds}>+{them.n}</span>}
       </span>
@@ -132,7 +133,7 @@ export function ChipDotFT({ so, kn, cu, homNay, ct = null, chon, onMo }: {
           <span className="font-bold">
             {g.ten}{g.viec && <span className="font-medium"> · {g.viec}</span>}
           </span>
-          <span className="ml-auto whitespace-nowrap tabular-nums">{g.tuan ?? 'chưa xếp'}</span>
+          <span className="ml-auto whitespace-nowrap tabular-nums">{g.tuan ?? 'chưa xếp'}{g.kieu === 'xong' && <span aria-hidden> ✓</span>}</span>
         </button>
       ))}
     </div>

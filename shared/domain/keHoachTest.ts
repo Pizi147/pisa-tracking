@@ -122,7 +122,7 @@ export type OKyNang = {
   diem?: string;
 };
 
-export type ChipKH = { kyNang: KyNangKH[]; tuan: string | null; trangThai: TrangThaiO; doiTu: string | null };
+export type ChipKH = { kyNang: KyNangKH[]; tuan: string | null; trangThai: TrangThaiO; doiTu: string | null; khongDuThi?: boolean };
 
 /** Trạng thái MỘT kỹ năng = trạng thái nhóm chỉ có nó (không có luật thứ hai). */
 export function trangThaiKyNang(k: Parameters<typeof trangThaiNhom>[0][number]): TrangThaiO {
@@ -141,16 +141,17 @@ export function gomChip(kn: Partial<Record<KyNangKH, OKyNang>>): {
     .map((k) => ({ k, o: kn[k] }))
     .filter((x): x is { k: KyNangKH; o: OKyNang } => !!x.o && x.o.trangThai !== 'khong-yeu-cau');
   if (co.length === 0) return { xong: false, tuanXong: null, chip: [], them: 0 };
-  if (co.every((x) => x.o.trangThai === 'xong')) {
+  /* OV-11a: môn Không dự thi tính là xong nhưng vẫn hiện riêng ("P · không dự thi"), không gộp vào "Xong ✓" (như ô MT FT). */
+  if (co.every((x) => x.o.trangThai === 'xong' && !x.o.khongDuThi)) {
     const tuan = co.map((x) => x.o.tuan).filter((t): t is string => !!t).sort();
     return { xong: true, tuanXong: tuan.length ? tuan[tuan.length - 1] : null, chip: [], them: 0 };
   }
   const nhom = new Map<string, ChipKH>();
   for (const { k, o } of co) {
-    const key = `${o.tuan ?? ''}|${o.trangThai}|${o.doiTu ?? ''}`;
+    const key = `${o.tuan ?? ''}|${o.trangThai}|${o.doiTu ?? ''}|${o.khongDuThi ? 'kdt' : ''}`;
     const c = nhom.get(key);
     if (c) c.kyNang.push(k);
-    else nhom.set(key, { kyNang: [k], tuan: o.tuan, trangThai: o.trangThai, doiTu: o.doiTu });
+    else nhom.set(key, { kyNang: [k], tuan: o.tuan, trangThai: o.trangThai, doiTu: o.doiTu, ...(o.khongDuThi ? { khongDuThi: true } : {}) });
   }
   const chip = [...nhom.values()];
   return { xong: false, tuanXong: null, chip, them: Math.max(0, chip.length - 2) };

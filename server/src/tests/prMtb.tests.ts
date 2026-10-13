@@ -442,7 +442,7 @@ export async function runPrMtbTests(t: YThucTestKit) {
         }
       }
     }
-    assert(JSON.stringify(Object.values(d.CHU_MUC_HOP)) === '["Đổi tuần","Dời hạn chấm","Báo vắng","Huỷ điểm","Nhật ký"]', JSON.stringify(d.CHU_MUC_HOP));
+    assert(JSON.stringify(Object.values(d.CHU_MUC_HOP)) === '["Đổi tuần","Dời hạn chấm","Vắng","Huỷ điểm","Nhật ký"]', JSON.stringify(d.CHU_MUC_HOP));
   });
 
   check('MTb (T5) · menuHopKyNang: (a) chưa tới tuần thi — Đổi tuần + Nhật ký sáng, "Dời hạn chấm" MỜ theo luật máy chủ (lệch mockup)', () => {
@@ -757,7 +757,8 @@ export async function runPrMtbTests(t: YThucTestKit) {
     assert((d as any).oKyNangTuLich(lich, true).khongDuThi === true && !(d as any).oKyNangTuLich(lich).khongDuThi, 'oKyNangTuLich');
     const cell = (assessedSkill: string, state: string | null, band: number | null = null) => ({ assessedSkill, band, rawScore: null, noShow: state ? { state } : null });
     assert((d as any).khongDuThiTuO([cell('speaking', 'khong-du-thi')], 'speaking', true) === true, 'S "-"');
-    assert((d as any).khongDuThiTuO([cell('speaking', 'khong-du-thi')], 'speaking', false) === false, 'không phải MT cũ');
+    /* OV-11a (CA3-5): mọi lượt — "-" nhập bù sau tuần thi cũng là Không dự thi; vắng đã chốt (`daChot`) thì không. */
+    assert((d as any).khongDuThiTuO([{ ...cell('speaking', 'khong-du-thi'), daChot: { lan: 1 } }], 'speaking', false) === false, 'vắng đã chốt');
     assert((d as any).khongDuThiTuO([cell('writing', 'khong-du-thi'), cell('writing', null, 6)], 'writing', true) === false, 'W1 "-" W2 có điểm');
     assert((d as any).khongDuThiTuO([cell('writing', 'khong-du-thi'), cell('writing', 'khong-du-thi')], 'writing', true) === true, 'W1 W2 "-"');
     assert((d as any).khongDuThiTuO([], 'speaking', true) === false, 'không có ô');
@@ -807,7 +808,9 @@ export async function runPrMtbTests(t: YThucTestKit) {
 
   check('MTb sau rà đợt 2 (3) · ô MT "đang chọn" (PR-OMT: không còn chữ ✓ trong chữ trạng thái): luôn đúng MỘT dấu ✓, vẫn đảo màu + aria-label "đang chọn"', () => {
     const o = nguon('web/src/ui/OMt.tsx');
-    assert(/\{chon && <span aria-hidden/.test(o) && !/startsWith\('✓'\)/.test(o), 'dấu ✓ đang chọn: đúng một dấu');
+    /* OV-11a (CA3-2): ô "xong" cũng có ✓ — vẫn MỘT phần tử ✓ duy nhất (đang chọn hoặc xong), không bao giờ hai. */
+    assert(/\{\(chon \|\| \(!huy && r\.kieu === 'xong'\)\) && <span aria-hidden>✓<\/span>\}/.test(o)
+      && (o.match(/<span aria-hidden>✓<\/span>/g) ?? []).length === 1 && !/startsWith\('✓'\)/.test(o), 'dấu ✓ đang chọn: đúng một dấu');
     assert(/chon \? MAU_CHON/.test(o) && /chon \? 'đang chọn'|!!chon\)/.test(o), 'mất dấu đang chọn');
   });
 

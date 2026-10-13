@@ -11,7 +11,7 @@ export type ThaoTac = 'nhap-diem' | 'sua-diem' | 'dat-lich' | 'doi-lich' | 'doi-
 
 export const CHU_THAO_TAC: Record<ThaoTac, string> = {
   'nhap-diem': 'Nhập điểm', 'sua-diem': 'Sửa điểm', 'dat-lich': 'Xếp lịch', 'doi-lich': 'Dời lịch thi', 'doi-han': 'Dời hạn chấm',
-  'bo-ky-nang': 'Huỷ kỹ năng', 'dua-lai': 'Đưa lại vào đợt', 'bao-vang': 'Báo vắng', 'huy-diem': 'Huỷ điểm',
+  'bo-ky-nang': 'Huỷ kỹ năng', 'dua-lai': 'Đưa lại vào đợt', 'bao-vang': 'Vắng', 'huy-diem': 'Huỷ điểm',
   'xep-lai': 'Xếp lại bài vắng', 'tra-loi-de-nghi': 'Trả lời đề nghị dời', 'khoi-phuc': 'Khôi phục và đặt tuần',
   'khong-mock-lai': 'Không mock lại',
 };
@@ -74,7 +74,7 @@ export function thaoTacKyNang(tt: TrangThaiTT, q: QuyenTT): { chinh: ThaoTac | n
  * Khôi phục và đặt tuần). "Không mock lại", "Khôi phục kết quả" không nằm ở đây (hồ sơ Mock / ⋯ hàng Lộ trình).
  */
 export type MucHop = 'doi-tuan' | 'doi-han' | 'bao-vang' | 'huy-diem' | 'nhat-ky';
-export const CHU_MUC_HOP: Record<MucHop, string> = { 'doi-tuan': 'Đổi tuần', 'doi-han': 'Dời hạn chấm', 'bao-vang': 'Báo vắng', 'huy-diem': 'Huỷ điểm', 'nhat-ky': 'Nhật ký' };
+export const CHU_MUC_HOP: Record<MucHop, string> = { 'doi-tuan': 'Đổi tuần', 'doi-han': 'Dời hạn chấm', 'bao-vang': 'Vắng', 'huy-diem': 'Huỷ điểm', 'nhat-ky': 'Nhật ký' };
 
 /** Vì sao mục mờ (≤ 6 từ). `moi` = đợt chưa tạo. */
 function viSaoMo(muc: MucHop, tt: TrangThaiTT, moi: boolean): string {

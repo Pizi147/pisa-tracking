@@ -330,8 +330,9 @@ export async function runPrHk2Tests(t: YThucTestKit) {
   /* OV-4b (mockup overhaul-1 §3): ô có điểm ghi band ("5.0"; L/R "14 · 4.5"), bỏ chữ "sửa". */
   check('C23 · J9: ô FT chưa có điểm ghi "Nhập" (không "— sửa"); ô có điểm ghi band; đầu cột S ghi "GV chấm: tên thật" + title có tên', () => {
     const s = doc('web/src/modules/fasttrack/HopNhapDiem.tsx');
-    assert(/chu \?\? 'Nhập'\}/.test(s), 'ô trống chưa ghi "Nhập"');
-    assert(/if \(c\.band !== null\) return fmtBand\(c\.band\);/.test(s), 'ô có điểm phải ghi band');
+    /* OV-11a: chữ ô dựng ở `hienO` (chữ + câu đọc màn hình + kiểu ô). */
+    assert(/return \{ chu: 'Nhập', doc: 'Nhập', kieu: 'trong' \};/.test(s), 'ô trống chưa ghi "Nhập"');
+    assert(/if \(c\.band !== null\) return \{ chu: fmtBand\(c\.band\),/.test(s), 'ô có điểm phải ghi band');
     assert(/<NutGvCham nhan="GV chấm S" value=/.test(doc('web/src/modules/cham/LuoiFT.tsx')) && /<NutGvCham hang nhan="GV chấm S" value=/.test(doc('web/src/modules/cham/MotKyNang.tsx')), 'đầu cột S dùng NutGvCham (luôn ghi "GV chấm: tên thật")');
     assert(/title=\{`GV chấm Speaking: \$\{ten/.test(doc('web/src/modules/cham/GvCham.tsx')), 'GvCham: title phải ghi tên (phòng khi tên dài)');
   });
@@ -442,7 +443,9 @@ export async function runPrHk2Tests(t: YThucTestKit) {
   check('C27 · "Vắng": nút điện thoại, gõ "-" lưới lớp thường, gõ "-" lưới FT cùng MỘT hàm thongBaoVang; không Hoàn tác, không chuỗi "Đã dời ${" riêng', () => {
     const f = doc('web/src/modules/cham/thongBaoVang.ts');
     assert(/export function thongBaoVang\(/.test(f), 'chưa có cham/thongBaoVang.ts export thongBaoVang');
-    assert(/Đã ghi vắng \$\{/.test(f) && /· dời \$\{/.test(f), 'chữ phải là "Đã ghi vắng R · Tên" (+ " · dời W3 OCT")');
+    /* OV-11a (CA3-1): câu dựng ở hàm thuần `cauDaGhiVang` (shared/domain/vang.ts, phép kiểm hành vi OV11a-5). */
+    const vg = doc('shared/domain/vang.ts');
+    assert(/cauDaGhiVang\(/.test(f) && /Đã ghi vắng \$\{/.test(vg) && /· dời \$\{/.test(vg), 'chữ phải là "Đã ghi vắng R · Tên" (+ " · dời W3 OCT")');
     assert(/key: `vang:/.test(f), 'toast phải có khoá theo ô (vang:<id>)');
     assert(!/hoanTac|hanhDong|Hoàn tác/.test(f), 'thông báo vắng không có nút');
     const se = doc('web/src/modules/fasttrack/ScoreEntry.tsx');
@@ -465,7 +468,8 @@ export async function runPrHk2Tests(t: YThucTestKit) {
     const se2 = doc('web/src/modules/fasttrack/HopNhapDiem.tsx'), i = se2.indexOf('function DongDau(');
     assert(i >= 0, 'không thấy DongDau');
     const dd = se2.slice(i, i + 700);   // thân hàm ngắn; không dò dấu } vì tệp có thể CRLF
-    assert(/truncate[^"]*max-sm:max-w-none[^"]*max-sm:whitespace-normal/.test(dd), 'DongDau: thiếu max-sm:max-w-none + max-sm:whitespace-normal');
+    /* OV-11a (CA3-2): DongDau không cắt ở MỌI cỡ màn (bỏ `max-w-[6rem] truncate` máy tính), câu đầy đủ vẫn ở title. */
+    assert(!/truncate|max-w-\[6rem\]/.test(dd) && /title=\{cell\.noShow\.text\}/.test(dd), 'DongDau: không được cắt chữ, phải có title');
   });
 
   console.log('\nPR-HK2 · Task 8 · DH "+n" hồ sơ lớp dẫn đúng chỗ');
@@ -495,8 +499,9 @@ export async function runPrHk2Tests(t: YThucTestKit) {
   /* OV-4b: hộp nhập điểm thay CriteriaModal — cùng luật không mất chữ đang gõ. */
   check('C30 · Hộp nhập điểm (thay CriteriaModal): đã gõ thì Esc hỏi trước khi bỏ; bấm ra ngoài giữ hộp', () => {
     const s = doc('web/src/modules/fasttrack/HopNhapDiem.tsx');
-    const dong = s.slice(s.indexOf('  const dong = () => {'), s.indexOf('  const dong = () => {') + 200);
-    assert(/if \(daGo && !window\.confirm\('Bỏ các giá trị đã gõ\?'\)\) return;/.test(dong), `dong chưa hỏi khi đã gõ: ${dong}`);
+    /* OV-11a (CA3-8): hỏi ngay chân hộp (`KhungHop`: câu `cauBo` + Bỏ · Gõ tiếp), không còn hộp trình duyệt. */
+    assert(!/window\.confirm/.test(s) && /else if \(moi\.current\.daGo\) setHoi\(true\);/.test(s) && /cauBo=\{`Bỏ điểm \$\{skillLabel\(cell\.skill\)\} · \$\{ctx\.tenHv\}\?`\}/.test(s),
+      'Esc khi đã gõ phải hỏi ở chân hộp');
     assert(/if \(!moi\.current\.daGo\) moi\.current\.onDong\(\);/.test(s), 'bấm ra ngoài khi đã gõ phải giữ hộp');
   });
 

@@ -116,7 +116,9 @@ export async function runPrDlTests(t: YThucTestKit) {
    * Chụp lại 13/10 (OV-1d, gộp sau OV-9): hàng em đã Kết thúc học / Lưu trữ (MB FT 101 có em Kết thúc học) thêm `ngungHoc`, ô `viec`/`overdue`
    * false (Lưu trữ thêm chỉ đọc + `lyDoKhoa`); hàng em khác không đổi byte nào (`ngungHoc` chỉ gửi khi có).
    */
-  const ANH_CHUP = { tuan: '30cde2272cac96c7', moi: 'b15b0168532ed7ac' };
+  /* OV-11a: ảnh mới — `moi` đổi ĐÚNG một hàng (Lý Minh Châu MT2: bài thi bù S chưa điểm → hết khoá "hoàn tất", TE-1: hoanTat / khoa / canEdit /
+   * viec); `tuan` chỉ lệch id (phép kiểm lớp thường chạy trước thêm một em). Đã so JSON từng trường bản cũ ↔ mới. */
+  const ANH_CHUP = { tuan: '42bdce7893ef63f1', moi: '184be8d29c1e33ca' };
   /* Mã cố ý độc lập với hàm: điều kiện lọc tuần của bản trước refactor, viết lại bằng SQL. */
   const idsTuan = (periodId: number) => (conn.prepare(
     `SELECT a.id FROM assessment_attempts a JOIN students s ON s.id = a.student_id
