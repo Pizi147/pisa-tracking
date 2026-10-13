@@ -111,8 +111,10 @@ export async function runPrDlTests(t: YThucTestKit) {
    * Chụp lại 12/10 (PR-OV1c): bộ demo SOS MB FT 101 nay nhập đủ / chốt lượt (Khôi, Lan, Vy đủ 4 kỹ năng; Bảo, Ngọc "Không dự thi"; Châu, Đặng Thu Hà
    * vắng dời) và luật Overall ≥ kỳ vọng = không SOS đổi `sosLevel` / `provisional`; cờ `chot` mới bỏ khỏi băm.
    * Chụp lại 13/10 (OV-6b2 gộp sau OV-1c): bộ demo thêm lớp MB PET 01 (5 lượt Checkpoint) → id lượt Ánh/Bình dời; MB FT 101 không đổi lượt nào (`idsTuan` vẫn đối chiếu).
+   * Chụp lại 13/10 (OV-1d): hàng em không còn đang học (MB FT 101 có em Kết thúc học) thêm `ngungHoc`, ô chỉ đọc (`canEdit`/`viec`/`overdue`
+   * false, `lyDoKhoa`); hàng em đang học không đổi byte nào (`ngungHoc` chỉ gửi khi có).
    */
-  const ANH_CHUP = { tuan: '84cc0e2e64d9dd36', moi: '3d41809fb7e148a6' };
+  const ANH_CHUP = { tuan: 'c5a1889557d172c9', moi: '9387880f46d02bfc' };
   /* Mã cố ý độc lập với hàm: điều kiện lọc tuần của bản trước refactor, viết lại bằng SQL. */
   const idsTuan = (periodId: number) => (conn.prepare(
     `SELECT a.id FROM assessment_attempts a JOIN students s ON s.id = a.student_id
