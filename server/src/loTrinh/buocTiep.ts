@@ -7,7 +7,7 @@
  * Việc QL "Chọn bước tiếp sau thi" (nhóm Vận hành): em đã Kết thúc học, chưa Lưu trữ, lộ trình mới nhất là lộ trình này, chưa chọn; hạn = ngày có kết quả + 7, đỏ không chặn.
  */
 import { db, tx } from '../db.ts';
-import { BUOC_TIEP, BUOC_TIEP_NHAN, PERMISSIONS, duongHoSoHocVien, goiYBuocTiep, huongTiep, tuanLich, type BuocTiep } from '../../../shared/domain/index.ts';
+import { LUA_CHON_SAU_THI, NHAN_SAU_THI, PERMISSIONS, duongHoSoHocVien, goiYSauThi, huongTiep, tuanLich, type LuaChonSauThi } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { HttpError, addDays, badRequest, conflict, notFound, nowIso } from '../util.ts';
 import { can, require_, type Principal } from '../permissions.ts';
@@ -31,15 +31,15 @@ function docLoTrinh(cycleId: number) {
 /** Lộ trình có mục Bước tiếp: FT, đã đóng, không đóng vì chuyển lớp (em không đi thi), có kết quả — hoặc đã chọn (kết quả bị xoá sau vẫn hiện lựa chọn). */
 const coMuc = (c: any) => !!c && !!c.route && c.status !== 'active' && c.bc_ly_do !== 'chuyen_lop' && (!!c.co_kq || !!c.buoc_tiep);
 
-export type TrangThaiBuocTiep = { chon: BuocTiep | null; luc: string | null; boi: string | null; goiY: BuocTiep | null; coTheChon: boolean };
+export type TrangThaiBuocTiep = { chon: LuaChonSauThi | null; luc: string | null; boi: string | null; goiY: LuaChonSauThi | null; coTheChon: boolean };
 
 /** Mục "Bước tiếp" của ngăn Tổng kết — null khi lộ trình không có mục. `coTheChon` = quyền Quản lý (`cycle.edit` của em), máy chủ kiểm lại khi chọn. */
 export function trangThaiBuocTiep(p: Principal, cycleId: number): TrangThaiBuocTiep | null {
   const c = docLoTrinh(cycleId);
   if (!coMuc(c)) return null;
   return {
-    chon: (c.buoc_tiep ?? null) as BuocTiep | null, luc: c.buoc_tiep_luc ?? null, boi: c.boi_ten ?? null,
-    goiY: goiYBuocTiep({ khongThi: !!c.thi_that_khong_thi, ketLuan: c.bc_ket_luan ?? c.outcome ?? null }),
+    chon: (c.buoc_tiep ?? null) as LuaChonSauThi | null, luc: c.buoc_tiep_luc ?? null, boi: c.boi_ten ?? null,
+    goiY: goiYSauThi({ khongThi: !!c.thi_that_khong_thi, ketLuan: c.bc_ket_luan ?? c.outcome ?? null }),
     coTheChon: can(p, PERMISSIONS.CYCLE_EDIT, { studentId: c.student_id }),
   };
 }
@@ -64,7 +64,7 @@ function hoanTac(p: Principal, c: any) {
     }
   } catch (e) {
     if (e instanceof HttpError && e.status === 409) {
-      throw conflict(`Không đổi được "${BUOC_TIEP_NHAN[c.buoc_tiep as BuocTiep]}": ${e.message} Giữ lựa chọn cũ, hoặc đổi ở hồ sơ học viên (Chuyển lớp / Kết thúc học).`);
+      throw conflict(`Không đổi được "${NHAN_SAU_THI[c.buoc_tiep as LuaChonSauThi]}": ${e.message} Giữ lựa chọn cũ, hoặc đổi ở hồ sơ học viên (Chuyển lớp / Kết thúc học).`);
     }
     throw e;
   }
@@ -77,8 +77,8 @@ export function chonBuocTiep(p: Principal, cycleId: number, input: ChonBuocTiepV
   const c0 = docLoTrinh(cycleId);
   if (!c0) throw notFound('Không tìm thấy lộ trình');
   require_(p, PERMISSIONS.CYCLE_EDIT, { studentId: c0.student_id }, CHI_QL);
-  const chon = input.chon as BuocTiep;
-  if (!(BUOC_TIEP as readonly unknown[]).includes(chon)) throw badRequest('Bước tiếp không hợp lệ.');
+  const chon = input.chon as LuaChonSauThi;
+  if (!(LUA_CHON_SAU_THI as readonly unknown[]).includes(chon)) throw badRequest('Bước tiếp không hợp lệ.');
   if (!coMuc(c0) || !c0.co_kq) throw badRequest('Lộ trình chưa có kết quả thi thật — nhập kết quả (hoặc Không thi) trước khi chọn bước tiếp.');
   const lopMoiId = input.lopMoiId ? Number(input.lopMoiId) : null;
   if (chon === 'hoc_tiep' && !lopMoiId) throw badRequest('Học tiếp lộ trình mới: chọn lớp.');
@@ -112,8 +112,8 @@ export function chonBuocTiep(p: Principal, cycleId: number, input: ChonBuocTiepV
     conn.prepare('UPDATE learning_cycles SET buoc_tiep = ?, buoc_tiep_luc = ?, buoc_tiep_boi = ?, buoc_tiep_json = ? WHERE id = ?')
       .run(chon, homNay, p.userId, JSON.stringify(ghi), cycleId);
     addJourney({
-      studentId: c.student_id, cycleId, eventType: 'buoc_tiep', eventDate: homNay, title: `Sau thi: ${BUOC_TIEP_NHAN[chon]}`,
-      detail: [lop ? `lớp ${lop}` : null, cu.buoc_tiep ? `đổi từ ${BUOC_TIEP_NHAN[cu.buoc_tiep as BuocTiep]}` : null].filter(Boolean).join(' · ') || null,
+      studentId: c.student_id, cycleId, eventType: 'buoc_tiep', eventDate: homNay, title: `Sau thi: ${NHAN_SAU_THI[chon]}`,
+      detail: [lop ? `lớp ${lop}` : null, cu.buoc_tiep ? `đổi từ ${NHAN_SAU_THI[cu.buoc_tiep as LuaChonSauThi]}` : null].filter(Boolean).join(' · ') || null,
       refTable: 'learning_cycles', refId: cycleId, createdBy: p.userId, dedupKey: `buoc_tiep:${cycleId}:${nowIso()}`,
     });
     writeAudit({ actorUserId: p.userId, action: 'cycle.buoc_tiep', entityType: 'learning_cycle', entityId: cycleId,
@@ -131,7 +131,7 @@ export function boChonBuocTiep(p: Principal, cycleId: number) {
   return tx(() => {
     hoanTac(p, c);
     addJourney({
-      studentId: c.student_id, cycleId, eventType: 'buoc_tiep', eventDate: demoToday(), title: `Sau thi: hoàn tác ${BUOC_TIEP_NHAN[c.buoc_tiep as BuocTiep]}`,
+      studentId: c.student_id, cycleId, eventType: 'buoc_tiep', eventDate: demoToday(), title: `Sau thi: hoàn tác ${NHAN_SAU_THI[c.buoc_tiep as LuaChonSauThi]}`,
       refTable: 'learning_cycles', refId: cycleId, createdBy: p.userId, dedupKey: `buoc_tiep:${cycleId}:${nowIso()}`,
     });
     writeAudit({ actorUserId: p.userId, action: 'cycle.buoc_tiep', entityType: 'learning_cycle', entityId: cycleId, before: { chon: c.buoc_tiep }, after: { chon: null } });
@@ -157,14 +157,14 @@ export function viecBuocTiep(p: Principal, f: { today: string; branchId: number 
     if (f.branchId && c.branch_id && c.branch_id !== f.branchId) continue;
     if (!can(p, PERMISSIONS.CYCLE_EDIT, { studentId: c.student_id })) continue;
     const han = addDays(String(c.ngay_kq).slice(0, 10) || f.today, 7);
-    const goiY = goiYBuocTiep({ khongThi: !!c.thi_that_khong_thi, ketLuan: c.ket_luan ?? c.outcome ?? null });
+    const goiY = goiYSauThi({ khongThi: !!c.thi_that_khong_thi, ketLuan: c.ket_luan ?? c.outcome ?? null });
     const kq = c.thi_that_khong_thi ? 'Không thi' : c.ket_luan === 'reached' ? 'Đạt Target' : c.ket_luan === 'not_reached' ? 'Chưa đạt Target' : 'Có kết quả thi';
     out.push({
       key: `buoc_tiep:${c.id}`, group: 'buoc_tiep', urgency: f.today > han ? 'overdue' : 'normal',
       studentId: c.student_id, studentName: c.ten, classId: c.class_id ?? null, classCode: c.class_code ?? null,
       attemptId: null, attemptNo: null, caseId: null, level: null, contextLabel: kq, count: null,
-      reason: [c.class_code ?? null, kq, goiY ? `gợi ý ${BUOC_TIEP_NHAN[goiY]}` : null].filter(Boolean).join(' · '),
-      tieuDe: `Chọn bước tiếp sau thi · ${c.ten}`, phu: goiY ? `Gợi ý: ${BUOC_TIEP_NHAN[goiY]}` : null, actionLabel: 'Chọn',
+      reason: [c.class_code ?? null, kq, goiY ? `gợi ý ${NHAN_SAU_THI[goiY]}` : null].filter(Boolean).join(' · '),
+      tieuDe: `Chọn bước tiếp sau thi · ${c.ten}`, phu: goiY ? `Gợi ý: ${NHAN_SAU_THI[goiY]}` : null, actionLabel: 'Chọn',
       href: duongHoSoHocVien(c.student_id, { tongKet: c.id }), ownerId: null, owner: null, mine: true,
       due: han, statusLabel: `hạn ${tuanLich(han, f.today)}`,
     });

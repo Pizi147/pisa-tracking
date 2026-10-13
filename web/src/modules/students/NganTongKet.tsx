@@ -6,7 +6,7 @@ import { useToast } from '../../ui/Toast.tsx';
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { Nhan, type ToneNhan } from '../../ui/Nhan.tsx';
 import { ErrorState, Skeleton } from '../../ui/ui.tsx';
-import { BUOC_TIEP, BUOC_TIEP_NHAN, duongHoSoHocVien, ngay, type BuocTiep } from '@shared/domain/index.ts';
+import { LUA_CHON_SAU_THI, NHAN_SAU_THI, duongHoSoHocVien, ngay, type LuaChonSauThi } from '@shared/domain/index.ts';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { toneHuong } from './CacLoTrinh.tsx';
 import { KetQuaThiThatPanel } from './KetQuaThiThatPanel.tsx';
@@ -27,7 +27,7 @@ type TongKet = {
         kqdr: { dat: boolean; nguyenNhan: string | null; mon: string[] } | null };
   huongTiep: { khoa: string; nhan: string | null };
   /** OV-8a: Bước tiếp sau thi (FT có kết quả thi thật); null = không có mục. */
-  buocTiep: { chon: BuocTiep | null; luc: string | null; boi: string | null; goiY: BuocTiep | null; coTheChon: boolean } | null;
+  buocTiep: { chon: LuaChonSauThi | null; luc: string | null; boi: string | null; goiY: LuaChonSauThi | null; coTheChon: boolean } | null;
   luot: Luot[];
 };
 
@@ -180,16 +180,16 @@ function MucBuocTiep({ bt, cycleId, hocVien, lop, ketQua, onDoi }: {
       xong();
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
   };
-  const bam = (k: BuocTiep) => (k === 'ket_thuc' ? void ketThuc() : setMo(k));
+  const bam = (k: LuaChonSauThi) => (k === 'ket_thuc' ? void ketThuc() : setMo(k));
   return (
     <section aria-labelledby={`buoc-tiep-${cycleId}`} className="rounded-[10px] border px-3 py-2.5" style={{ background: 'var(--surface-2)', borderColor: 'var(--line)' }}>
       <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
         <h3 id={`buoc-tiep-${cycleId}`} className="m-0 text-xs font-normal text-slate-500">Bước tiếp</h3>
-        {bt.goiY && (!bt.chon || sua) && <span className="text-xs text-slate-400">Gợi ý: <b className="font-semibold text-slate-200">{BUOC_TIEP_NHAN[bt.goiY]}</b> · {ketQua}</span>}
+        {bt.goiY && (!bt.chon || sua) && <span className="text-xs text-slate-400">Gợi ý: <b className="font-semibold text-slate-200">{NHAN_SAU_THI[bt.goiY]}</b> · {ketQua}</span>}
       </div>
       {bt.chon && !sua ? (
         <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
-          <span className="text-sm text-slate-200">Đã chọn: <b className="font-semibold text-slate-100">{BUOC_TIEP_NHAN[bt.chon]}</b>
+          <span className="text-sm text-slate-200">Đã chọn: <b className="font-semibold text-slate-100">{NHAN_SAU_THI[bt.chon]}</b>
             <span className="text-slate-400">{bt.luc ? ` · ${ngay(bt.luc, homNay)}` : ''}{bt.boi ? ` · ${bt.boi}` : ''}</span></span>
           {bt.coTheChon && <button type="button" className="btn btn-ghost btn-sm min-h-[44px] sm:min-h-0" onClick={() => setSua(true)}>Sửa</button>}
         </div>
@@ -197,13 +197,13 @@ function MucBuocTiep({ bt, cycleId, hocVien, lop, ketQua, onDoi }: {
         <>
           {sua && <p className="m-0 mt-1 text-[12.5px] text-slate-400">Đổi lựa chọn: lựa chọn cũ được hoàn tác trước (lớp / lộ trình mới chưa có điểm thì gỡ).</p>}
           <div role="group" aria-label="Chọn bước tiếp" className="mt-2 flex flex-wrap gap-1.5">
-            {BUOC_TIEP.map((k) => (
+            {LUA_CHON_SAU_THI.map((k) => (
               <button key={k} type="button" disabled={busy || k === bt.chon} onClick={() => bam(k)}
-                className={`btn btn-sm min-h-[44px] max-sm:flex-1 sm:min-h-0 ${k === bt.goiY && k !== bt.chon ? 'btn-primary' : ''}`}>
-                {BUOC_TIEP_NHAN[k]}{k === bt.chon ? ' · đang chọn' : ''}
+                className="btn btn-sm min-h-[44px] max-sm:flex-1 sm:min-h-0">
+                {NHAN_SAU_THI[k]}{k === bt.chon ? ' · đang chọn' : ''}
               </button>
             ))}
-            {sua && <button type="button" className="btn btn-ghost btn-sm min-h-[44px] sm:min-h-0" onClick={() => setSua(false)}>Huỷ</button>}
+            {sua && <button type="button" className="btn btn-ghost btn-sm min-h-[44px] sm:min-h-0" onClick={() => setSua(false)}>Giữ nguyên</button>}
           </div>
         </>
       ) : (

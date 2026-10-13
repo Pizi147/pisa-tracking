@@ -55,11 +55,11 @@ export async function runPrOv8aTests(t: YThucTestKit) {
   const chon = (pr: any, cy: number, o: any) => buocTiepSvc.chonBuocTiep(pr, cy, o);
 
   check('OV8a · gợi ý: Đạt Target → Kết thúc; chưa đạt / Không thi → Học lại; không có Target → không gợi ý', () => {
-    assert(d.goiYBuocTiep({ khongThi: false, ketLuan: 'reached' }) === 'ket_thuc', 'đạt');
-    assert(d.goiYBuocTiep({ khongThi: false, ketLuan: 'not_reached' }) === 'hoc_lai', 'chưa đạt');
-    assert(d.goiYBuocTiep({ khongThi: true, ketLuan: 'unknown' }) === 'hoc_lai', 'không thi');
-    assert(d.goiYBuocTiep({ khongThi: false, ketLuan: 'unknown' }) === null, 'không Target');
-    assert(d.BUOC_TIEP.every((k: string) => typeof d.BUOC_TIEP_NHAN[k] === 'string'), 'đủ nhãn');
+    assert(d.goiYSauThi({ khongThi: false, ketLuan: 'reached' }) === 'ket_thuc', 'đạt');
+    assert(d.goiYSauThi({ khongThi: false, ketLuan: 'not_reached' }) === 'hoc_lai', 'chưa đạt');
+    assert(d.goiYSauThi({ khongThi: true, ketLuan: 'unknown' }) === 'hoc_lai', 'không thi');
+    assert(d.goiYSauThi({ khongThi: false, ketLuan: 'unknown' }) === null, 'không Target');
+    assert(d.LUA_CHON_SAU_THI.every((k: string) => typeof d.NHAN_SAU_THI[k] === 'string'), 'đủ nhãn');
   });
 
   await checkAsync('OV8a-1 · nhập kết quả → em KHÔNG tự Lưu trữ, việc QL "Chọn bước tiếp sau thi" (hạn +7, Vận hành); GVCN không có việc; Tổng kết có mục Bước tiếp + gợi ý', () => thu(() => {

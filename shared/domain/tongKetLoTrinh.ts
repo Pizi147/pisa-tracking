@@ -30,11 +30,11 @@ export function huongTiep(lyDo: LyDoDong, routeMoi: string | null): HuongTiepTk 
 }
 
 /** OV-8a: BƯỚC TIẾP SAU THI — Quản lý chọn sau khi lộ trình FT có kết quả thi thật. */
-export const BUOC_TIEP = ['ket_thuc', 'hoc_tiep', 'hoc_lai'] as const;
-export type BuocTiep = (typeof BUOC_TIEP)[number];
-export const BUOC_TIEP_NHAN: Record<BuocTiep, string> = { ket_thuc: 'Kết thúc', hoc_tiep: 'Học tiếp lộ trình mới', hoc_lai: 'Học lại' };
+export const LUA_CHON_SAU_THI = ['ket_thuc', 'hoc_tiep', 'hoc_lai'] as const;
+export type LuaChonSauThi = (typeof LUA_CHON_SAU_THI)[number];
+export const NHAN_SAU_THI: Record<LuaChonSauThi, string> = { ket_thuc: 'Kết thúc', hoc_tiep: 'Học tiếp lộ trình mới', hoc_lai: 'Học lại' };
 /** Gợi ý (chỉ chữ, QL vẫn chọn): Đạt Target → Kết thúc; chưa đạt / Không thi → Học lại; không có Target → không gợi ý. */
-export function goiYBuocTiep(o: { khongThi: boolean; ketLuan: string | null }): BuocTiep | null {
+export function goiYSauThi(o: { khongThi: boolean; ketLuan: string | null }): LuaChonSauThi | null {
   if (o.khongThi || o.ketLuan === 'not_reached') return 'hoc_lai';
   return o.ketLuan === 'reached' ? 'ket_thuc' : null;
 }

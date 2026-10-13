@@ -8,7 +8,7 @@ import { useLoiForm } from '../../ui/loiForm.tsx';
 import { ChonNgayGan } from '../../ui/ChonNgay.tsx';
 import {
   NHAN_VIEC_QUAN_LY, mucQuanLyHocVien, cacTabTrangThai, type LopHocQuyen, type ViecQuanLy, type TabTrangThai, dsLoi, docEmail,
-  cauMtSeDoi, tuanLich, GIAI_THICH_KCK, KCK, roundToHalf, type NguoiChon, duongLoTrinhLop, BUOC_TIEP_NHAN,
+  cauMtSeDoi, tuanLich, GIAI_THICH_KCK, KCK, roundToHalf, type NguoiChon, duongLoTrinhLop, NHAN_SAU_THI,
 } from '@shared/domain/index.ts';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
@@ -260,7 +260,7 @@ export function HocLaiPanel({ studentId, studentName, lop, onClose, onDone, buoc
   const lf = useLoiForm();
   const { data, error, reload } = useApi<DuLieuHocLai>(`/students/${studentId}/hoc-lai/lop-dich`, [studentId]);
   const chiLopMoi = buocTiep?.chon === 'hoc_tiep';
-  const tieuDe = buocTiep ? BUOC_TIEP_NHAN[buocTiep.chon] : NHAN_VIEC['hoc-lai'];
+  const tieuDe = buocTiep ? NHAN_SAU_THI[buocTiep.chon] : NHAN_VIEC['hoc-lai'];
   const [dich, setDich] = useState<'cu' | 'moi'>(chiLopMoi ? 'moi' : 'cu');
   const [lopMoiId, setLopMoiId] = useState<number | ''>('');
   const [targetGo, setTargetGo] = useState<string | null>(null);   // null = chưa gõ → dùng Target cũ khi FT → FT
