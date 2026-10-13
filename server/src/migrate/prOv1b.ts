@@ -8,6 +8,7 @@
  *        đã chốt theo luật cũ (vắng + máy dời / chờ QL / huỷ) → "Không dự thi"; lần vắng do chính dấu đó sinh ra −1; chưa ai quyết định gì
  *        sau lần chốt thì bài về tuần có "-", `scheduled`; đã có quyết định của người (ca Thảo: dời cả lượt về tuần cũ) thì giữ lịch.
  *        Đề nghị dời đang chờ của buổi rút. Lịch không dời thêm.
+ *        OV-1e: bài đang chờ THI LẠI ở tuần hiện tại / sau (`giuLichThiLai`) → bỏ qua, không đổi gì (giữ "-", lần vắng, lịch thi lại).
  *   C. "-" TRONG TUẦN chưa chốt (luật cũ chờ hết Chủ nhật), đủ mọi ô của buổi, đúng tuần đang xếp → chốt MỘT lần theo luật mới
  *      (`settleGroup`: lần 1 dời tuần sau, lần 2 huỷ phần thi). Buổi Writing mới một task "-" giữ nguyên (đã là "xong" ở ô, không quá hạn).
  *
@@ -15,7 +16,7 @@
  * chủ SP chạy trên bản chính trước deploy) — cột "sau" của buổi C ở bản chỉ đọc ghi luật, bản ghi thật ghi tuần cụ thể.
  */
 import { nowIso } from '../util.ts';
-import { tuanLich } from '../../../shared/domain/index.ts';
+import { mondayOfDate, tuanLich } from '../../../shared/domain/index.ts';
 import { rutDeNghiDoi, sauLanChot, settleGroup } from '../fasttrack/absence.ts';
 import { ensureSkillRows, recomputeCompletionWeek, logSchedule } from '../fasttrack/skillSchedule.ts';
 import { assessedSkillOf, entrySkillsOf } from '../fasttrack/scoring.ts';
@@ -25,14 +26,22 @@ import type { AssessedSkill } from '../../../shared/domain/index.ts';
 export type DongDoiOv1b = { attemptId: number; o: string; hocVien: string; ma: string; lop: string; luot: string; truoc: string; sau: string };
 
 type Buoi = {
-  loai: 'A' | 'B-chua' | 'B-da' | 'C';
+  loai: 'A' | 'B-chua' | 'B-da' | 'B-giu' | 'C';
   attemptId: number; assessed: string; kId: number; plannedPeriodId: number | null; weekEnd: string | null; tuanLich: string;
   sit: string; lan: number; dau: any[]; ten: { hocVien: string; ma: string; lop: string; luot: string };
   daCong?: boolean; giuLich?: boolean;
 };
 
+/**
+ * OV-1e: "-" nhập bù đã chốt mà bài đang xếp ở tuần ≥ tuần hiện tại, chưa thi xong / chưa huỷ / chưa chờ QL = em đang chờ THI LẠI
+ * → migrate không đụng. Một điều kiện cho migrate và `kiemTruocOv1b`.
+ */
+export function giuLichThiLai(ky: { ws: string | null; sit_status: string }, today: string): boolean {
+  return !!ky.ws && ky.ws >= mondayOfDate(today) && (ky.sit_status === 'scheduled' || ky.sit_status === 'sat');
+}
+
 /** Đọc mọi buổi cần dọn — CHỈ `SELECT`. */
-function lapKeHoach(conn: any): Buoi[] {
+function lapKeHoach(conn: any, today: string): Buoi[] {
   const rows = conn.prepare(
     `SELECT s.id, s.attempt_id, s.skill, s.no_show_period_id, s.no_show_late, s.no_show_settled_at, rp.code AS tuan_tru, rp.week_start AS tru_start,
             a.attempt_no, a.lich_su, st.full_name, st.student_code, c.code AS lop
@@ -67,7 +76,8 @@ function lapKeHoach(conn: any): Buoi[] {
     if (d0.lich_su) { ra.push({ ...chung, loai: 'A' }); continue; }
     if (dau.some((d) => d.no_show_late)) {
       const daChot = dau.some((d) => d.no_show_settled_at);
-      ra.push(daChot ? { ...chung, loai: 'B-da', ...sauLanChot(conn, attemptId, assessed) } : { ...chung, loai: 'B-chua' });
+      ra.push(!daChot ? { ...chung, loai: 'B-chua' } : giuLichThiLai(ky, today) ? { ...chung, loai: 'B-giu' }
+        : { ...chung, loai: 'B-da', ...sauLanChot(conn, attemptId, assessed) });
       continue;
     }
     /* C: "-" trong tuần chưa chốt — chỉ khi đủ mọi ô của buổi, đúng tuần đang xếp, buổi còn ngồi thi. */
@@ -84,6 +94,7 @@ const truocCua = (b: Buoi, d: any) =>
 
 function sauDuKien(b: Buoi): string {
   if (b.loai === 'A' || b.loai === 'B-chua') return 'Không dự thi';
+  if (b.loai === 'B-giu') return `giữ lịch thi lại ${b.tuanLich}`;
   const lan = Math.max(0, b.lan - (b.daCong ? 1 : 0));
   if (b.loai === 'B-da') return `Không dự thi · ${b.giuLich ? `giữ lịch ${b.tuanLich}` : `về ${b.dau[0].tru_start ? tuanLich(b.dau[0].tru_start) : '?'}`} · vắng ${lan}`;
   return b.lan + 1 >= 2 ? `Vắng lần ${b.lan + 1} · huỷ phần thi` : 'Vắng lần 1 · dời tuần sau';
@@ -93,8 +104,8 @@ const dongCua = (b: Buoi, sau: (d: any) => string): DongDoiOv1b[] =>
   b.dau.map((d) => ({ attemptId: b.attemptId, o: d.skill as string, ...b.ten, truoc: truocCua(b, d), sau: sau(d) }));
 
 /** LỆNH CHỈ ĐỌC `kiem-truoc-ov1b`: danh sách ô migrate sẽ đổi — không ghi câu nào. */
-export function kiemTruocOv1b(conn: any, _today?: string): DongDoiOv1b[] {
-  return lapKeHoach(conn).flatMap((b) => dongCua(b, () => sauDuKien(b)));
+export function kiemTruocOv1b(conn: any, today: string = demoToday()): DongDoiOv1b[] {
+  return lapKeHoach(conn, today).flatMap((b) => dongCua(b, () => sauDuKien(b)));
 }
 
 /** Ghi "Không dự thi" cho các ô "-" của buổi. */
@@ -107,7 +118,12 @@ function ghiKhongDuThi(conn: any, dau: any[]) {
 
 export function migratePrOv1b(conn: any, applied: string[], today: string = demoToday()): DongDoiOv1b[] {
   const ra: DongDoiOv1b[] = [];
-  for (const b of lapKeHoach(conn)) {
+  const giu: DongDoiOv1b[] = [];
+  for (const b of lapKeHoach(conn, today)) {
+    if (b.loai === 'B-giu') {
+      giu.push(...dongCua(b, () => sauDuKien(b)));
+      continue;
+    }
     if (b.loai === 'A' || b.loai === 'B-chua') {
       ghiKhongDuThi(conn, b.dau);
       ra.push(...dongCua(b, () => 'Không dự thi'));
@@ -142,9 +158,14 @@ export function migratePrOv1b(conn: any, applied: string[], today: string = demo
       : `Vắng lần ${sau.absence_move_count} · dời ${sau.week_start ? tuanLich(sau.week_start) : '?'}`;
     ra.push(...dongCua(b, () => chu));
   }
+  const inDong = (d: DongDoiOv1b) => applied.push(`  ${d.hocVien} · ${d.ma} · ${d.lop} · ${d.luot} · ${d.o}: ${d.truoc} → ${d.sau}`);
   if (ra.length) {
     applied.push(`PR-OV1b: ${ra.length} ô "-" dọn theo luật mới (Không dự thi / vắng chốt ngay):`);
-    for (const d of ra) applied.push(`  ${d.hocVien} · ${d.ma} · ${d.lop} · ${d.luot} · ${d.o}: ${d.truoc} → ${d.sau}`);
+    ra.forEach(inDong);
   }
-  return ra;
+  if (giu.length) {
+    applied.push(`PR-OV1b: ${giu.length} ô "-" em đang chờ thi lại — không đổi:`);
+    giu.forEach(inDong);
+  }
+  return [...ra, ...giu];
 }
