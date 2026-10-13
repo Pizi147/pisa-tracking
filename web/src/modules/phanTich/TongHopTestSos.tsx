@@ -1,6 +1,7 @@
 import { Fragment, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
+import { useTapUrl } from '../../lib/quayLai.ts';
 import { useSession } from '../../lib/session.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { Card, Empty, ErrorState, SCORE_CHIP, Skeleton, Th } from '../../ui/ui.tsx';
@@ -63,12 +64,18 @@ export function TongHopTestSos({ branchId, ct, tg, classId }: {
     if (v === 'tuan') next.delete('theo'); else next.set('theo', v);
     setParams(next, { replace: false });
   };
-  const [open, setOpen] = useState<Set<string>>(new Set());
+  /* PR-OV5b: hàng đang mở nằm trên URL (`?mo-hang=`) — Quay lại từ hồ sơ về đúng tuần đang mở. */
+  const [open, setOpen] = useTapUrl('mo-hang');
   const [cotHien, setCotHien] = useState<Set<NhomCot>>(() => docCotHien());
   const [moXuat, setMoXuat] = useState(false);
   /* Mặc định thu gọn; hàng lớn đầu tiên (theo tuần: tuần trước) mở sẵn, một lần cho mỗi cách xếp dòng. */
-  const daMoSan = useRef<string | null>(null);
-  useEffect(() => { setOpen(new Set()); daMoSan.current = null; }, [theo]);
+  const daMoSan = useRef<string | null>(open.size ? theo : null);   // URL đã có hàng mở (vừa quay lại) → không mở sẵn đè lên
+  const theoTruoc = useRef(theo);
+  useEffect(() => {
+    if (theoTruoc.current === theo) return;
+    theoTruoc.current = theo;
+    setOpen(new Set()); daMoSan.current = null;
+  }, [theo]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const branches = useApi<any[]>('/ref/branches');
   const classes = useApi<any[]>(`/ref/classes${branchId ? `?branchId=${branchId}` : ''}`);

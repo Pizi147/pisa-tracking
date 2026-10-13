@@ -1,10 +1,11 @@
-import { useRef, type MouseEvent } from 'react';
+import { useRef, useState, type MouseEvent } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useApi, useGopTaiLai } from '../../lib/useApi.ts';
 import { Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { CongTacKhung, khungDaNho } from '../../ui/CongTacKhung.tsx';
 import { BranchFilter, useChiNhanhMacDinh } from '../../ui/Filters.tsx';
 import { DiemTheoLop, type CongRoi } from '../cham/DiemTheoLop.tsx';
+import { useTenTrang } from '../../lib/quayLai.ts';
 
 /** `GET /diem-theo-lop/lop` (`lopCuaToi`, server/src/cham/diemTheoLuot.ts). */
 type LopCuaToi = { classId: number; classCode: string; mode: 'ielts_band' | 'ratio'; branchId: number; oTrong: number };
@@ -23,6 +24,9 @@ export function TabDiemLop() {
   const [sp, setSp] = useSearchParams();
   const { data, loading, error, reload } = useApi<LopCuaToi[]>('/diem-theo-lop/lop');
   const cong = useRef<CongRoi | null>(null);
+  /* PR-OV5b: lượt đang xem lên URL + tên nút Quay lại ("‹ Điểm theo lớp · MT2") khi đi từ đây sang hồ sơ. */
+  const [nhanLuot, setNhanLuot] = useState<string | null>(null);
+  useTenTrang(null, nhanLuot);
   /* Số ô trống của danh sách lớp: tải lại GỘP 1,5 s sau lần lưu cuối (như Lịch Test, Q14) — không tải mọi lớp sau mỗi ô. */
   const daLuu = useGopTaiLai(reload);
   const macDinh = useChiNhanhMacDinh();
@@ -93,7 +97,11 @@ export function TabDiemLop() {
       </div>
       {/* `key`: đổi lớp thì lượt và trạng thái lưu bắt đầu lại từ lượt mở sẵn của lớp mới. `?luot=` (PR-OV1a, vd `thuong:mt0`): lượt mở
           đầu khi vào từ link ngoài — sai / không có thì lượt mặc định. */}
-      <DiemTheoLop key={chon.classId} classId={chon.classId} luotBanDau={sp.get('luot') ?? undefined} congRoi={cong} onDaLuu={daLuu} />
+      <DiemTheoLop key={chon.classId} classId={chon.classId} luotBanDau={sp.get('luot') ?? undefined} congRoi={cong} onDaLuu={daLuu}
+        onLuot={(ma, nhan) => {
+          setNhanLuot(nhan);
+          if (sp.get('luot') !== ma) { const q = new URLSearchParams(sp); q.set('luot', ma); setSp(q, { replace: true }); }
+        }} />
     </div>
   );
 }

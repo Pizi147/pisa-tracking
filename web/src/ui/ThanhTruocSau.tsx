@@ -1,6 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { docNguCanhDs, keBen, type NguCanhDs } from '@shared/domain/index.ts';
+import { docNguCanhDs, keBen, type NguCanhDs, type TenTrang } from '@shared/domain/index.ts';
+import { useChongVe, useTenTrang, useVe } from '../lib/quayLai.ts';
+import { Menu } from './Menu.tsx';
 
 const khoaLuu = (loai: NguCanhDs['loai']) => `pisa.ds.${loai}`;
 const luu = (ds: NguCanhDs) => { try { sessionStorage.setItem(khoaLuu(ds.loai), JSON.stringify(ds)); } catch { /* chế độ riêng tư: tải lại thì mất danh sách, dùng danh sách dự phòng */ } };
@@ -8,14 +10,43 @@ const doc = (loai: NguCanhDs['loai'], id: number): NguCanhDs | null => {
   try { return docNguCanhDs(JSON.parse(sessionStorage.getItem(khoaLuu(loai)) ?? 'null'), loai, id); } catch { return null; }
 };
 
+type Cha = TenTrang & { url: string };
+
 /**
- * "← Quay lại · ‹ Trước · 3/11 Học viên & Lớp · Sau ›" cho hồ sơ học viên và hồ sơ lớp (chủ sản phẩm 03/10, Q-0310-4).
+ * NÚT "‹ {tên nguồn}" ĐẦU MỌI HỒ SƠ (PR-OV5b, mockup M1 §6): về đúng URL + vị trí cuộn của nơi bắt đầu (`web/src/lib/quayLai.ts`);
+ * đã đi qua nhiều hồ sơ thì menu "Các bước" về từng bước. Chưa có nguồn (mở link thẳng / tải lại) → `cha`.
+ * `ten` / `chiTiet`: tên của CHÍNH hồ sơ này — hiện ở nút / menu của hồ sơ kế tiếp nếu đi tiếp từ đây.
+ */
+export function DuongVe({ cha, ten, chiTiet, children }: { cha: Cha; ten?: string | null; chiTiet?: string | null; children?: ReactNode }) {
+  useTenTrang(ten, chiTiet);
+  const chong = useChongVe();
+  const ve = useVe();
+  const dich = chong[0] ?? cha;
+  return (
+    <div className="mb-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px]">
+      <button type="button" className="btn btn-sm min-h-[44px] max-w-full sm:min-h-[32px]" onClick={() => ve(dich.url, !chong.length)}
+        title={`Về ${dich.ten}${dich.chiTiet ? ` · ${dich.chiTiet}` : ''}`}>
+        <span aria-hidden>‹</span><span className="min-w-0 truncate">{dich.ten}</span>
+      </button>
+      {dich.chiTiet && <span className="min-w-0 truncate text-slate-500">{dich.chiTiet}</span>}
+      {chong.length > 1 && (
+        <Menu label={`Các bước (${chong.length})`} align="left" className="btn btn-sm btn-ghost min-h-[44px] sm:min-h-[32px]"
+          items={chong.map((b) => ({ label: `‹ ${b.ten}`, hint: b.chiTiet, onClick: () => ve(b.url) }))} />
+      )}
+      {children}
+    </div>
+  );
+}
+
+/**
+ * "‹ {tên nguồn} · ‹ Trước · 3/11 Học viên & Lớp · Sau ›" cho hồ sơ học viên và hồ sơ lớp (chủ sản phẩm 03/10, Q-0310-4).
  * Danh sách: (1) `location.state.ds` — danh sách vừa mở, đúng bộ lọc + thứ tự đang dùng; (2) `sessionStorage` (tải lại trang);
  * (3) `dsDuPhong` (mở thẳng bằng link: lớp của em, A→Z). Chuyển hồ sơ dùng `replace` để "Quay lại" vẫn về danh sách, không qua từng hồ sơ.
  */
-export function ThanhTruocSau({ loai, id, duong, dsDuPhong }: {
+export function ThanhTruocSau({ loai, id, duong, dsDuPhong, cha, ten, chiTiet }: {
   loai: NguCanhDs['loai']; id: number; duong: (id: number) => string;
   dsDuPhong?: () => Promise<{ ids: number[]; nhan: string }>;
+  cha: Cha; ten?: string | null; chiTiet?: string | null;
 }) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -45,11 +76,9 @@ export function ThanhTruocSau({ loai, id, duong, dsDuPhong }: {
     return () => document.removeEventListener('keydown', phim);
   }); // eslint-disable-line react-hooks/exhaustive-deps
 
-  /* `location.key === 'default'`: mở link vào thẳng, chưa có lịch sử trình duyệt → Quay lại về danh sách. */
   const nut = 'btn btn-sm btn-ghost min-h-[44px] sm:min-h-0 disabled:opacity-40';
   return (
-    <div className="mb-1.5 flex flex-wrap items-center gap-x-1 gap-y-0.5">
-      <button type="button" className={nut} onClick={() => (location.key === 'default' ? navigate('/hoc-vien') : navigate(-1))}>← Quay lại</button>
+    <DuongVe cha={cha} ten={ten} chiTiet={chiTiet}>
       {ben && ds && (
         <span className="ml-auto flex items-center gap-1 text-xs text-slate-400" role="group" aria-label={`Chuyển trong danh sách ${ds.nhan}`}>
           <button type="button" className={nut} disabled={ben.truoc === null} onClick={() => sang(ben.truoc)} aria-label="Trước" title="Trước ( [ )">
@@ -61,6 +90,6 @@ export function ThanhTruocSau({ loai, id, duong, dsDuPhong }: {
           </button>
         </span>
       )}
-    </div>
+    </DuongVe>
   );
 }

@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Link, useParams, useSearchParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { useCurrentPeriod, WeekPicker } from '../../ui/Filters.tsx';
@@ -7,7 +7,8 @@ import { Han } from '../../ui/Han.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { skillLabel, skillShort } from '../../lib/format.ts';
-import { chuOChuaLuu } from '@shared/domain/index.ts';
+import { chuOChuaLuu, trangCha } from '@shared/domain/index.ts';
+import { DuongVe } from '../../ui/ThanhTruocSau.tsx';
 import { hanSomNhatFt, tenDotFt } from './LuoiFT.tsx';
 import { hanSomNhatThuong, kindMacDinh, kindsThuong, tuanThiTheoMon, type ThuongSheet } from './LuoiThuong.tsx';
 import { LuoiChamLop, duongCham, thuongTheoBai, type Cham } from './LuoiChamLop.tsx';
@@ -79,7 +80,7 @@ export default function ChamDiemPage() {
     <div className="page space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="min-w-0">
-          <Link className="btn btn-sm btn-ghost mb-1 no-underline" to="/test" title="Về khu vực Test">← Test</Link>
+          <DuongVe cha={trangCha('nhap-diem')} ten={`Nhập điểm ${data.classCode}`} chiTiet={tenDot} />
           <h1 className="text-lg font-semibold text-slate-100 flex items-center gap-2 m-0">
             <span className="truncate" title={`${data.classCode}${tenDot ? ` · ${tenDot}` : ''}`}>{data.classCode}{tenDot ? ` · ${tenDot}` : ''}</span>
             <NutLuat label="Luật chấm điểm">
