@@ -413,7 +413,7 @@ const MILESTONE_TITLE: Record<string, string> = {
   overall_dat: 'Overall đã đạt',
 };
 
-/** OV-7b: sửa "Xem lại sau hỗ trợ" lần mới nhất TẠI CHỖ — kết quả quan sát + ghi chú; Huỷ trả về chữ đã lưu, lỗi thì giữ chữ đang gõ. */
+/** OV-7b: sửa "Xem lại sau hỗ trợ" lần mới nhất TẠI CHỖ — kết quả quan sát + ghi chú; Đóng trả về chữ đã lưu, lỗi thì giữ chữ đang gõ. */
 function SuaXemLai({ f }: { f: any }) {
   const toast = useToast();
   const [mo, setMo] = useState(false);
@@ -442,7 +442,7 @@ function SuaXemLai({ f }: { f: any }) {
       <textarea className="field w-full" rows={2} aria-label="Ghi chú lần xem lại" maxLength={2000} value={note} onChange={(e) => setNote(e.target.value)} />
       <div className="flex gap-2">
         <button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => void luu()}>{busy ? 'Đang lưu…' : 'Lưu'}</button>
-        <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={busy} onClick={huy}>Huỷ</button>
+        <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={busy} onClick={huy}>Đóng</button>
       </div>
     </div>
   );

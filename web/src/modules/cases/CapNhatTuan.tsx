@@ -251,7 +251,7 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, quayLai, onClose, onSave
   };
 
   return (
-    <KhungPanel tieuDe={`${sua ? 'Sửa k' : 'K'}ết quả${lanCuoi ? ' cuối' : ''}`} hocVien={hocVien} lop={lop} quayLai={quayLai} onDong={onClose}
+    <KhungPanel tieuDe={sua ? (lanCuoi ? 'Sửa kết quả cuối' : 'Sửa kết quả') : lanCuoi ? 'Kết quả cuối' : 'Kết quả'} hocVien={hocVien} lop={lop} quayLai={quayLai} onDong={onClose}
       ngCanh={(
         <span className="flex items-center gap-1.5 max-sm:flex-col max-sm:items-start max-sm:gap-0.5">
           <span className="truncate max-sm:whitespace-normal max-sm:break-words" title={tenPa}>{tenPa}{pa.cycleNo && pa.cycleNo > 1 ? ` · Đợt ${pa.cycleNo}` : ''}</span>
