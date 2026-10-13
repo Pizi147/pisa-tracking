@@ -261,23 +261,21 @@ export async function runChamDiemTests(t: YThucTestKit) {
     assert(demDoi === 0, `absence_move_count giữ 0 sau hai lần "-": ${demDoi}`);
   });
 
-  check('PR-Rc1 · Q4 Ghi "-" bù (tuần mới đã qua): ghi lại cùng ngày thì dời tiếp — em vắng cả tuần đó', () => {
+  /* OV-11a (Q1, chủ SP 14/10) thay luật cũ "ghi bù thì dời sang tuần kế của tuần thi" (dời vào tuần đã qua = nợ ảo, TE-6). */
+  check('PR-Rc1 · Q4 Ghi "-" bù — OV-11a Q1: tuần thi ≥ 2 tuần trước = Không dự thi (không dời); tuần trước → tuần sau của tuần hiện tại, ghi lại vô hại', () => {
     assert(monCuaGv.length > 0, 'Seed: GVBM của MB FOU 12 phải được phân công ít nhất một môn');
     const k = monCuaGv[0];
     const { attemptId } = taoBaiThuong('2026-09-14');
-    const tuanMon = () => tuanCuaMon(skillSched.loadSkillRows([attemptId]).get(attemptId), k);
-    /* Hôm nay 05/10: cả 14/09 lẫn 21/09 đều đã qua — giáo viên ghi bù hai tuần vắng liền nhau. */
-    assert(regular.reportRegularNoShow(P.normalSubjectTeacher, attemptId, k, true, '2026-10-05').moved, 'Lần ghi bù đầu vẫn dời');
-    assert(tuanMon() === '2026-09-21', `Dời sang tuần kế của tuần thi: ${tuanMon()}`);
-    assert(regular.reportRegularNoShow(P.normalSubjectTeacher, attemptId, k, true, '2026-10-05').moved,
-      'Tuần 21/09 đã tới → ghi lại là một lần vắng mới');
-    assert(tuanMon() === '2026-09-28', `Ghi bù lần hai sang 28/09: ${tuanMon()}`);
-    const nk = (conn.prepare(
-      `SELECT COUNT(*) AS n FROM audit_logs WHERE action = 'regular.no_show' AND entity_type = 'assessment_attempt' AND entity_id = ?`,
-    ).get(attemptId) as any).n;
-    assert(nk === 2, `Hai lần dời, hai dòng nhật ký: ${nk}`);
+    const tuanMon = (id: number) => tuanCuaMon(skillSched.loadSkillRows([id]).get(id), k);
+    /* Hôm nay 05/10: 14/09 đã qua 3 tuần → Không dự thi, môn đứng yên. */
+    const r = regular.reportRegularNoShow(P.normalSubjectTeacher, attemptId, k, true, '2026-10-05');
+    assert(!r.moved && r.khongDuThi === true && tuanMon(attemptId) === '2026-09-14', `Không dự thi, không dời: ${tuanMon(attemptId)}`);
+    /* Hôm nay 05/10, tuần thi 28/09 (tuần trước) → dời 12/10; ghi lại cùng ngày: tuần mới chưa tới → vô hại. */
+    const b = taoBaiThuong('2026-09-28').attemptId;
+    assert(regular.reportRegularNoShow(P.normalSubjectTeacher, b, k, true, '2026-10-05').moved && tuanMon(b) === '2026-10-12', `tuần trước → 12/10: ${tuanMon(b)}`);
+    assert(!regular.reportRegularNoShow(P.normalSubjectTeacher, b, k, true, '2026-10-05').moved && tuanMon(b) === '2026-10-12', 'ghi lại cùng ngày vô hại');
     const demDoi = (conn.prepare('SELECT absence_move_count AS n FROM attempt_skills WHERE attempt_id = ? AND skill = ?')
-      .get(attemptId, k) as any)?.n;
+      .get(b, k) as any)?.n;
     assert(demDoi === 0, `absence_move_count giữ 0: ${demDoi}`);
   });
 
@@ -591,7 +589,8 @@ export async function runChamDiemTests(t: YThucTestKit) {
     const truoc = dongNo(P.admin, kTruoc);
     assert(truoc && truoc.luiLich === null, 'Chưa dời gì thì không có dòng "lùi lịch"');
     assert(truoc.attemptIds.join() === String(aid), 'Dòng chỉ có lượt của em này');
-    regular.reportRegularNoShow(P.admin, aid, 'listening', true, TODAY);
+    /* OV-11a (Q1): "-" ghi TRONG tuần thi (thứ Tư) → dời tuần sau; ghi bù hôm nay (3 tuần sau) thì là Không dự thi, không dời. */
+    regular.reportRegularNoShow(P.admin, aid, 'listening', true, t.addDays(BA_TRUOC, 2));
     const d1 = dongNo(P.admin, kNay);
     assert(d1 && d1.luiLich, 'Môn đã dời sang tuần này phải có "lùi lịch"');
     assert(d1.luiLich.kyNang === 'listening', `Đúng môn: ${d1.luiLich.kyNang}`);
@@ -618,7 +617,7 @@ export async function runChamDiemTests(t: YThucTestKit) {
     const a1 = dongNo(P.admin, kNay);
     assert(a1 && a1.kyNang.includes('speaking'), 'Speaking ở tuần này vẫn là việc phải chấm');
     assert(a1.luiLich === null, `Tách tuần theo kế hoạch KHÔNG phải lùi lịch: ${JSON.stringify(a1.luiLich)}`);
-    regular.reportRegularNoShow(P.admin, aid, 'listening', true, TODAY);
+    regular.reportRegularNoShow(P.admin, aid, 'listening', true, t.addDays(BA_TRUOC, 2));   // OV-11a (Q1): ghi trong tuần thi
     const a2 = dongNo(P.admin, kNay);
     assert(a2.luiLich && a2.luiLich.kyNang === 'listening', `Dấu "-" thì là lùi lịch: ${JSON.stringify(a2.luiLich)}`);
     assert(a2.luiLich.tuTuanStart === BA_TRUOC && a2.luiLich.sangTuanStart === HAI_TRUOC, 'Tuần cũ = tuần ghi dấu "-"');

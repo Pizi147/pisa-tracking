@@ -22,13 +22,15 @@ export type OMtVao = {
   khongDung?: boolean;
 };
 
-type Loai = 'xong' | 'khong-yeu-cau' | 'da-huy' | 'vang' | 'het-tuan' | 'tuan-nay' | 'co-lich' | 'chua-lich';
+type Loai = 'xong' | 'khong-yeu-cau' | 'khong-du-thi' | 'da-huy' | 'vang' | 'het-tuan' | 'tuan-nay' | 'co-lich' | 'chua-lich';
 
 const ngayCua = (s: string) => s.slice(0, 10);
 
 /** Một kỹ năng đang ở đâu. Tuần đã hết = Chủ nhật tuần thi < hôm nay, chưa có điểm, không vắng / huỷ. */
 function loaiKn(o: OKyNang, homNay: string): Loai {
-  if (!o.batBuoc || o.khongDuThi) return 'khong-yeu-cau';   // khongDuThi: MT cũ "-" (PR-MTb sau rà I2)
+  if (!o.batBuoc) return 'khong-yeu-cau';
+  /* Không dự thi ("-" sau tuần thi / MT cũ): ô MT tính như xong (PR-MTb I2); chip kỹ năng vẫn ghi "không dự thi" (OV-11a CA3-5). */
+  if (o.khongDuThi) return 'khong-du-thi';
   if (o.trangThai === 'xong') return 'xong';
   if (o.huyVang || o.trangThai === 'da-huy') return 'da-huy';
   if (o.choDuyet || o.trangThai === 'vang' || o.trangThai === 'cho-duyet') return 'vang';
@@ -42,7 +44,7 @@ const troCham = (o: OKyNang, homNay: string) => !!o.hanCham && homNay > ngayCua(
 /** Tooltip một kỹ năng: `Listening: W3 SEP · xong`. */
 function dongKn(ct: string | null | undefined, k: KyNangKH, o: OKyNang, loai: Loai, homNay: string, cu: boolean): string {
   const tt: Record<Loai, string | null> = {
-    xong: 'xong', 'khong-yeu-cau': o.khongDuThi ? 'không dự thi' : 'không yêu cầu', 'tuan-nay': 'tuần này', 'co-lich': null, 'chua-lich': null,
+    xong: 'xong', 'khong-yeu-cau': 'không yêu cầu', 'khong-du-thi': 'không dự thi', 'tuan-nay': 'tuần này', 'co-lich': null, 'chua-lich': null,
     'da-huy': `${o.huyVang ? 'huỷ (vắng 2 lần)' : 'đã huỷ'}${o.choDuyet ? ' · chờ Quản lý duyệt' : ''}`,   // đề nghị dời đang chờ (I1)
     vang: o.choDuyet ? 'chờ Quản lý duyệt' : 'vắng',
     // Hạn chấm là hạn cụ thể → được hiện ngày (luật thời gian trên màn); null (MT cũ, không hạn) thì không ghi.
@@ -88,7 +90,7 @@ export function oMt(v: OMtVao, homNay: string, ct?: string | null): OMtRa {
     .filter(Boolean).join('\n');
   const cua = (...l: Loai[]) => ds.filter((x) => l.includes(x.loai));
   const ten = (xs: typeof ds) => xs.map((x) => tenMonNgan(ct, x.k)).join(' ');
-  const batBuoc = ds.filter((x) => x.loai !== 'khong-yeu-cau');
+  const batBuoc = ds.filter((x) => x.loai !== 'khong-yeu-cau' && x.loai !== 'khong-du-thi');
   /** Tuần SỚM nhất của nhóm kỹ năng (null nếu không kỹ năng nào có tuần). */
   const tuanSom = (xs: typeof ds) => {
     const t = xs.map((x) => (x.o.tuan ? ngayCua(x.o.tuan) : null)).filter((x): x is string => !!x).sort()[0];
@@ -145,7 +147,8 @@ export function nhomKyNang(kn: OMtVao['kn'], homNay: string, ct?: string | null,
     const [kieu, viec]: [KieuOMt, string | null] = x.loai === 'xong' ? ['xong', null]
       : tre ? ['tre-cham', 'trễ'] : x.loai === 'het-tuan' ? [cu ? 'cho-cham-cu' : 'cho-cham', 'chờ']
       : x.loai === 'vang' ? ['con-viec', 'vắng'] : x.loai === 'da-huy' ? ['con-viec', 'huỷ']
-      : x.loai === 'tuan-nay' ? ['dang-thi', null] : x.loai === 'co-lich' ? ['co-lich', null] : ['chua-lich', null];
+      : x.loai === 'tuan-nay' ? ['dang-thi', null] : x.loai === 'co-lich' ? ['co-lich', null]
+      : x.loai === 'khong-du-thi' ? ['chua-lich', 'không dự thi'] : ['chua-lich', null];
     const tuan = x.o.tuan ? tuanLich(x.o.tuan, homNay) : null;
     const tt = viec?.replace(/^(chờ|trễ)$/, '$1 chấm') ?? ({ xong: 'xong', 'dang-thi': 'đang thi', 'co-lich': 'có lịch' } as Partial<Record<KieuOMt, string>>)[kieu] ?? null;
     return { kyNang: xs.map((y) => y.k), ten: ten(xs), kieu, tuan, viec, title: dong(xs), doc: [ten(xs), tt, tuan ?? 'chưa xếp'].filter(Boolean).join(', ') };
@@ -157,7 +160,8 @@ export function nhomKyNang(kn: OMtVao['kn'], homNay: string, ct?: string | null,
  * (một nguồn: nhãn ô MT và chip dòng không lệch). Đang thi / có lịch / xong / không yêu cầu → null (dòng chỉ có chip tuần hoặc điểm).
  */
 export function chipDongKyNang(o: OKyNang, homNay: string, ct?: string | null, cu = false): { chu: string; tone: 'bad' | 'wait' | 'soon' | 'muted' } | null {
-  if (!o.batBuoc || o.khongDuThi) return null;
+  if (!o.batBuoc) return null;
+  if (o.khongDuThi) return { chu: 'Không dự thi', tone: 'muted' };   // OV-11a (CA3-5): dòng kỹ năng hộp một đợt "W2 SEP · Không dự thi"
   // Ô MT cần một khe kỹ năng; dùng `listening` làm khe tạm cho đúng MỘT kỹ năng này.
   const r = oMt({ so: 0, attemptId: 0, kn: { listening: o }, cu }, homNay, ct);
   switch (r.kieu) {
@@ -193,13 +197,14 @@ export function oKyNangTuLich(r: {
 }
 
 /**
- * MT cũ: kỹ năng có dấu "-" ở MỌI ô nhập của nó (Writing: cả W1 và W2) và chưa có điểm = không dự thi (PR-MTb sau rà I2; máy chủ
- * `khongDuThiCua` cùng luật). `cells` = ô của hồ sơ Mock (`attemptDetail.cells`). Lượt thường: false (vắng có luồng riêng).
+ * Kỹ năng có "Không dự thi" ở MỌI ô nhập của nó (Writing: cả W1 và W2) và chưa có điểm (PR-MTb sau rà I2; máy chủ `khongDuThiCua` cùng
+ * luật). `cells` = ô của hồ sơ Mock (`attemptDetail.cells`). OV-11a (CA3-5): mọi lượt, không chỉ MT cũ — "-" nhập bù sau tuần thi cũng là
+ * Không dự thi; vắng đã chốt (`daChot`, chờ Quản lý / huỷ) không phải.
  */
 export function khongDuThiTuO(
-  cells: Array<{ assessedSkill: string; band: number | null; rawScore: number | null; noShow?: { state?: string } | null }>,
-  skill: string, lichSu: boolean,
+  cells: Array<{ assessedSkill: string; band: number | null; rawScore: number | null; noShow?: { state?: string } | null; daChot?: unknown }>,
+  skill: string,
 ): boolean {
   const o = cells.filter((c) => c.assessedSkill === skill);
-  return lichSu && o.length > 0 && o.every((c) => c.noShow?.state === 'khong-du-thi' && c.band === null && c.rawScore === null);
+  return o.length > 0 && o.every((c) => c.noShow?.state === 'khong-du-thi' && !c.daChot && c.band === null && c.rawScore === null);
 }

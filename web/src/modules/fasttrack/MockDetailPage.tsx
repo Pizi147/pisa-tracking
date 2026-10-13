@@ -178,7 +178,7 @@ export default function MockDetailPage() {
   /* Ô MT đầu trang (không bấm): cùng luật `oMt` với lưới và bảng Lộ trình. */
   const omtDau: OMtVao = {
     so: d.attemptNo, attemptId: d.id, cu: d.lichSu,
-    kn: Object.fromEntries(d.skillSchedule.filter((r) => (KY_NANG_KE_HOACH as readonly string[]).includes(r.skill)).map((r) => [r.skill, oKyNangTuLich(r, khongDuThiTuO(d.cells, r.skill, d.lichSu))])),
+    kn: Object.fromEntries(d.skillSchedule.filter((r) => (KY_NANG_KE_HOACH as readonly string[]).includes(r.skill)).map((r) => [r.skill, oKyNangTuLich(r, khongDuThiTuO(d.cells, r.skill))])),
   };
   /* Đủ điểm và có kỳ vọng thì mới kết luận đạt; còn lại là "chưa biết" — không phải "đạt". */
   const passed: boolean | null = d.result.evaluable ? d.result.sosLevel === 0 : null;
@@ -406,7 +406,7 @@ function knHop(d: Detail): KnO {
     const bands = o.map((c) => c.band).filter((b): b is number => b !== null);
     const coDiem = o.some((c) => c.band !== null || c.rawScore !== null);
     kn[r.skill as KyNangKH] = {
-      ...oKyNangTuLich(r, khongDuThiTuO(d.cells, r.skill, d.lichSu)),
+      ...oKyNangTuLich(r, khongDuThiTuO(d.cells, r.skill)),
       khoa: r.sitStatus === 'cancelled' ? 'đã huỷ phần thi' : coDiem ? 'đã có điểm' : r.sitStatus === 'sat' ? 'đã thi' : null,
       ...(bands.length ? { diem: bands.map((b) => b.toFixed(1)).join(' / ') } : {}),
     };
@@ -499,6 +499,7 @@ function SkillWorkTable({ d, onMoDiem, onDone, onOpenHistory, onDoiLich }: {
   const order = ['listening', 'reading', 'writing1', 'writing2', 'speaking'];
   const cells = [...d.cells].sort((a, b) => order.indexOf(a.skill) - order.indexOf(b.skill));
   const coDiemO = (c: Cell) => c.band !== null || c.rawScore !== null;
+  const khongDuThiO = (c: Cell) => c.noShow?.state === 'khong-du-thi' && !c.daChot && !coDiemO(c);
 
   const renderRow = (c: Cell) => {
     const r = d.skillSchedule.find((x) => x.skill === c.assessedSkill)!;
@@ -506,7 +507,8 @@ function SkillWorkTable({ d, onMoDiem, onDone, onOpenHistory, onDoiLich }: {
     const ownsSchedule = c.skill !== 'writing2';
     const canScore = !cancelled && r.required && c.canEdit && !lockedByNoShow(c)
       && r.sitStatus !== 'absent' && r.sitStatus !== 'cancelled' && r.progress !== 'cancelled';
-    const hasValue = c.rawScore !== null || c.band !== null || c.criteria.some((v) => v !== null) || !!c.noShow;
+    /* OV-11a: "Không dự thi" chưa có điểm → nút chính "Nhập điểm" (không "Sửa điểm"). */
+    const hasValue = c.rawScore !== null || c.band !== null || c.criteria.some((v) => v !== null) || (!!c.noShow && !khongDuThiO(c));
 
     const tt = trangThaiTT({
       batBuoc: r.required, tuanBatDau: r.weekStart, coDiem: coDiemO(c), sit: r.sitStatus, choDuyet: !!r.pendingMove, lichSu: d.lichSu, homNay, huyVang: !!r.huyVang,
@@ -529,6 +531,11 @@ function SkillWorkTable({ d, onMoDiem, onDone, onOpenHistory, onDoiLich }: {
     const nhanChinh = chinh === 'nhap-diem' && hasValue ? CHU_THAO_TAC['sua-diem'] : chinh ? CHU_THAO_TAC[chinh] : '';
 
     const prog = c.progress === 'scored' ? 'scored' : r.progress;
+    /* OV-11a: MỘT dòng trạng thái — Không dự thi (CA3-5) thay "Chờ nhập điểm"; huỷ vì vắng ghi số lần thật, bỏ dòng "Đã dời do vắng" (CA3-3). */
+    const khongDuThi = khongDuThiO(c);
+    const huy = prog === 'cancelled';
+    const nhanTT = khongDuThi ? 'Không dự thi'
+      : huy && r.huyVang ? `${progressLabel('cancelled')} · vắng ${r.absenceMoveCount + 1} lần` : progressLabel(prog);
 
     return (
       <div key={c.skill} id={`kn-${c.skill}`}
@@ -548,7 +555,7 @@ function SkillWorkTable({ d, onMoDiem, onDone, onOpenHistory, onDoiLich }: {
               ? <>{tuanLich(r.weekStart, homNay)} <span className="text-slate-500 text-xs block sm:inline">({r.weekRange})</span></>
               : <Tag pending>Chưa xếp tuần</Tag>}
           {/* K4-30: bài dời do vắng nói rõ dời từ tuần nào. */}
-          {r.required && r.doiTu && r.absenceMoveCount > 0 && (
+          {r.required && r.doiTu && r.absenceMoveCount > 0 && !huy && (
             <span className="block text-xs text-slate-500">(dời từ {r.doiTu} · vắng lần {r.absenceMoveCount})</span>
           )}
         </div>
@@ -558,15 +565,15 @@ function SkillWorkTable({ d, onMoDiem, onDone, onOpenHistory, onDoiLich }: {
           {r.required && (
             <Status kind={prog === 'scored' ? 'done'
               /* MT lịch sử: nhập bù, không hạn — xám như việc "không tính hạn", không màu chờ. */
-              : prog === 'skipped' || prog === 'cancelled' || prog === 'not_scheduled' || prog === 'lich_su' ? 'idle'
+              : khongDuThi || prog === 'skipped' || prog === 'cancelled' || prog === 'not_scheduled' || prog === 'lich_su' ? 'idle'
               : prog === 'due' || prog === 'sat' ? 'doing' : 'waiting'}>
-              {progressLabel(prog)}
+              {nhanTT}
             </Status>
           )}
           {/* Đã có điểm thì chip trạng thái đã nói đủ; hạn chỉ còn nghĩa khi bài còn nợ. */}
           {/* MT lịch sử không có hạn (T34) — chip tình trạng "Nhập bù, không tính hạn" đã nói đủ. */}
-          {prog !== 'scored' && !(prog === 'cancelled' && c.progress === 'cancelled') && !d.lichSu && <div><DeadlinePill cell={c} /></div>}
-          {ownsSchedule && r.absenceMoveCount > 0 && (
+          {prog !== 'scored' && !khongDuThi && !(prog === 'cancelled' && c.progress === 'cancelled') && !d.lichSu && <div><DeadlinePill cell={c} /></div>}
+          {ownsSchedule && r.absenceMoveCount > 0 && !huy && (
             <div className="text-xs text-amber-200">Đã dời do vắng {r.absenceMoveCount} lần</div>
           )}
           {/* ĐANG CHỜ AI, ĐẾN NGÀY NÀO: không nói hạn thì người xem không biết còn bao lâu nữa phần thi bị huỷ. */}

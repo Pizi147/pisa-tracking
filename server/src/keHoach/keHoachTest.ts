@@ -184,16 +184,24 @@ export function danhSachLop(p: Principal, i: { branchId?: number | null } = {}) 
 
 type CheDo = 'ft' | 'thuong';
 
-/** Một kỹ năng đã có ĐỦ điểm chưa: FT cần mọi ô nhập có band (Writing = W1 + W2); lớp thường có `raw_score`. */
-function xongKyNang(cheDo: CheDo, skill: string, scores: any[]): boolean {
-  if (cheDo === 'thuong') return scores.some((s) => s.skill === skill && s.raw_score !== null && s.raw_score !== undefined);
+/** Một kỹ năng đã có ĐỦ điểm chưa: FT cần mọi ô nhập có band (Writing = W1 + W2); lớp thường có `raw_score`. Không dự thi tính là xong. */
+function xongKyNang(cheDo: CheDo, skill: string, scores: any[], periodId: number | null): boolean {
+  if (cheDo === 'thuong') {
+    return scores.some((s) => s.skill === skill && s.raw_score !== null && s.raw_score !== undefined) || khongDuThiCua(cheDo, skill, scores, periodId);
+  }
   return entrySkillsOf(skill as any).every((k) => scores.some((r) => r.skill === k && r.band !== null && r.band !== undefined))
-    || khongDuThiCua(cheDo, skill, scores);
+    || khongDuThiCua(cheDo, skill, scores, periodId);
 }
 
-/** PR-MTb sau rà (I2): MT cũ ghi "-" (`assessment_scores.no_show_cu`) ở MỌI ô nhập của kỹ năng, chưa có điểm = không dự thi → xong / không yêu cầu. */
-function khongDuThiCua(cheDo: CheDo, skill: string, scores: any[]): boolean {
-  return cheDo === 'ft' && entrySkillsOf(skill as any).every((k) => scores.some((r) => r.skill === k && r.no_show_cu === 1
+/**
+ * PR-MTb sau rà (I2): MT cũ ghi "-" (`assessment_scores.no_show_cu`) ở MỌI ô nhập của kỹ năng, chưa có điểm = không dự thi → xong / không yêu cầu.
+ * OV-11a (Q1): lớp thường cùng luật `regularSkillViews` — "-" Không dự thi ở CHÍNH tuần đang xếp của môn (`periodId`), chưa có điểm.
+ */
+function khongDuThiCua(cheDo: CheDo, skill: string, scores: any[], periodId: number | null): boolean {
+  if (cheDo === 'thuong') {
+    return scores.some((r) => r.skill === skill && r.no_show_cu === 1 && r.no_show_period_id === periodId && (r.raw_score ?? null) === null);
+  }
+  return entrySkillsOf(skill as any).every((k) => scores.some((r) => r.skill === k && r.no_show_cu === 1
     && (r.band ?? null) === null && (r.raw_score ?? null) === null));
 }
 
@@ -227,7 +235,7 @@ function diemChu(cheDo: CheDo, row: any, scores: any[]): string | undefined {
 function oKyNangCua(cheDo: CheDo, row: any, scores: any[], daDoi: boolean, doiTu: string | null,
   them?: { choDuyet: boolean; lichSu: boolean; homNay: string; attemptOverride?: string | null; mt0?: boolean }): OKyNang {
   const batBuoc = row.required === 1;
-  const xong = xongKyNang(cheDo, row.skill, scores);
+  const xong = xongKyNang(cheDo, row.skill, scores, row.planned_period_id ?? null);
   const choDuyet = !!them?.choDuyet;
   const co = them ? {
     choDuyet,
@@ -243,7 +251,7 @@ function oKyNangCua(cheDo: CheDo, row: any, scores: any[], daDoi: boolean, doiTu
     khoa: khoaCua(cheDo, row, scores),
     sit: row.sit_status ?? null, tuanKetThuc: row.week_end ?? null, choDuyet,
     ...(row.huy_vang ? { huyVang: true } : {}),
-    ...(khongDuThiCua(cheDo, row.skill, scores) ? { khongDuThi: true } : {}),
+    ...(khongDuThiCua(cheDo, row.skill, scores, row.planned_period_id ?? null) ? { khongDuThi: true } : {}),
     ...(diem ? { diem } : {}),
     hanCham: them && batBuoc && !them.lichSu && row.sit_status !== 'cancelled'
       ? effectiveSkillDeadline({ mode: 'band', weekStart: row.week_start ?? null, skillOverride: row.deadline_override ?? null, attemptOverride: them.attemptOverride ?? null, mt0: them.mt0 }).date
