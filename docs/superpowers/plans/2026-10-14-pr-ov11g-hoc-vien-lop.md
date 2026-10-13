@@ -6,8 +6,9 @@ Mockup: không cần — em kết thúc học hiện mờ theo mẫu `row-muted`
 
 ## Đầu ra
 1. **[HL-1] Seed demo đúng trạng thái lớp kết thúc.** `server/src/seed/journeys.ts:250,256` + `seed.ts:177`: `status = 'finished'` + `finished_at` (ngày cuối khoá). Chụp lại băm phép kiểm nếu đổi (DL-2).
-2. **[HL-2 · Q3] "Thiếu thông tin" một hàm.** `server/src/classes/schedule.ts:764` `missingForStudent` thêm **ngày sinh** (email không tính); chip, badge dòng, ô Tổng quan TVV / CX
-   (`server/src/worklist/hvCuaToi.ts:102-106`) cùng hàm. Sửa câu nhật ký OV-2c trong plan.md mục 11 cho khỏi hiểu sai (planning duyệt diff).
+2. **[HL-2 · Q3 chủ SP chốt] "Thiếu thông tin" một hàm, tính cả ngày sinh và email.** `server/src/classes/schedule.ts:764` `missingForStudent` thêm **ngày sinh + email**; chip, badge dòng,
+   ô Tổng quan TVV / CX (`server/src/worklist/hvCuaToi.ts:102-106`) cùng hàm. **Thêm học viên** (một em, lưới, dán Excel) và **Sửa cả lớp**: ngày sinh, email **không bắt buộc**
+   (gõ thì kiểm dạng) — không chặn nhập danh sách ban đầu. TVV thấy em thiếu ở ô "Thiếu thông tin" (Tổng quan TVV, chip Học viên & Lớp) — **việc không hạn**, không thẻ, không nhắc.
 3. **[HL-19 · Q11] Em "Đã kết thúc học" chưa Lưu trữ không biến mất.** Học viên & Lớp (`server/src/classes/hocVienLop.ts:154`) hiện em đó **mờ** ở cuối lớp cuối, chip "Đã kết thúc học",
    ⋯ Lưu trữ · Học lại; không đếm vào chip việc; "Tất cả" của QL = CX trên cùng chi nhánh. Sau Chọn nhiều › Kết thúc học (hết Hoàn tác) em vẫn thấy ở đó.
 4. **[HL-9]** Lọc một lớp (badge "n HV quá hạn việc", "Thiếu n thông tin"): số trên chip đếm theo lớp đang lọc (`web/src/modules/students/StudentsPage.tsx:128` lọc `chiLop` trước `demLoc`).
@@ -43,7 +44,7 @@ Mockup: không cần — em kết thúc học hiện mờ theo mẫu `row-muted`
 - Luật không đổi: thứ tự badge lớp QL (B4/T53 — đề xuất CA2-5 chưa làm); quyền Sửa cả lớp; T9 chi nhánh mặc định.
 
 ## Kiểm
-- `prOv11g.tests.ts` (đỏ trước): (1) em thiếu ngày sinh vào "Thiếu thông tin" ở chip + ô TVV/CX (cùng số); (2) em `finished` chưa lưu trữ có trong `/hoc-vien-lop` (cờ mờ), không vào chip việc;
+- `prOv11g.tests.ts` (đỏ trước): (1) em thiếu ngày sinh hoặc email vào "Thiếu thông tin" ở chip + ô TVV/CX (cùng số); Thêm HV / Sửa cả lớp thiếu ngày sinh, email → lưu được; (2) em `finished` chưa lưu trữ có trong `/hoc-vien-lop` (cờ mờ), không vào chip việc;
   (3) GV ghi điểm lớp `finished` → 403, QL → 200 + nhật ký; (4) đầu hồ sơ lớp và khối điểm cùng mẫu số; (5) seed: lớp 1, 2 `finished`, Lưu trữ có 2 lớp.
 - `npm run check` xanh MỘT lần cuối. Bấm thử MỘT lần (QL, GVCN, Admin, CX; 1440 tối + 375 sáng): Học viên & Lớp (lọc lớp, em kết thúc học), hồ sơ lớp thường + FT + đã kết thúc, Thêm HV, hộp Lộ trình. Ảnh đính PR.
 

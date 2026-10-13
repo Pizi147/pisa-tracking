@@ -27,24 +27,24 @@ Cách rà: web chạy local (bản build main, dữ liệu demo 14/09/2026), m�
 | QT-4 | "Không duyệt" nhầm không có đường lui; cấp vai báo "Đã lưu" mà vẫn 403 | `accounts.ts:213`, `auth.ts:64` | OV-11b |
 | HV-10 | GVCN cho em Tạm dừng → mất mọi quyền với em (không Quay lại học, không Ý thức) | `permissions.ts:193` chỉ ghi danh `active` | OV-11d |
 | PT-4 | Huỷ lượt MT → có người mở trang → Khôi phục: thẻ Chờ duyệt mất hẳn (không nguyên trạng) | `ketQuaHuy.ts:113` không cất yêu cầu duyệt | OV-11e |
-| OV-1e | PR #366 (rà sâu đạt, check xanh): migrate chạy lại ở **deploy 2** → ô "giữ lịch thi lại" đã qua tuần mà còn trống thành "Không dự thi" (mất nợ chấm). Deploy 1 không bị | `prOv1b.ts` điều kiện theo ngày | OV-11e (merge #366 như hiện có) |
+| OV-1e | #366 đã merge. `kiem-truoc-ov1b` bản chính 14/10: 18 ô giữ lịch thi lại W3 OCT — đúng hôm nay. Nhưng điều kiện **theo ngày**: deploy sau W3 OCT thì các ô này (và ô đã thi lại W2 OCT đang chờ chấm: Tô Xuân Tùng MT3 W1, Nguyễn Vũ Nam Phương MT1 R) thành "Không dự thi" → mất lịch / bài đã thi | `prOv1b.ts` `giuLichThiLai` (`ws >= tuần này`) | OV-11e: giữ **mọi** ô đã có lịch thi lại, **không theo ngày** |
 
-## 3. Quyết định của planning (tự quyết 14/10 — chủ SP đổi được, xem "Câu hỏi chưa chắc" ở báo cáo)
+## 3. Quyết định (planning tự quyết 14/10; **chủ SP chốt lại 14/10 sáng** Q1, Q3, Q8, Q13 — các mục còn lại chủ SP "ok")
 | # | Việc | Chọn | Lý do |
 |---|---|---|---|
-| Q1 | TE-6: lớp thường gõ "-" sau tuần thi (nhập bù) đang dời môn vào **tuần đã qua** (nợ ảo) | Dời sang **tuần sau tính từ tuần hiện tại** (giữ luật lớp thường "vắng = thi bù tuần sau") | Ít đổi luật nhất, em vẫn có lịch thi bù (đầu ra) |
+| Q1 | TE-6: lớp thường gõ "-" sau tuần thi (nhập bù) đang dời môn vào **tuần đã qua** (nợ ảo) | **Chủ SP chốt:** tuần thi cách tuần hiện tại **≥ 2 tuần → bỏ** (Không dự thi: không dời, không nợ); tuần thi **trong 2 tuần đổ lại** (tuần này / tuần trước) → **dời sang tuần sau của tuần hiện tại**. GV gõ "-" vẫn tự dời (Q13) | Chủ SP 14/10 |
 | Q2 | TE-5: "Báo vắng" ở Kế hoạch Test sau tuần thi dời tuần, "-" ở lưới = Không dự thi | Theo luật "-" (OV-1b): sau tuần thi → Không dự thi; nút ghi đúng hậu quả | Một luật cho mọi cổng (T14) |
-| Q3 | HL-2: "Thiếu thông tin" không tính ngày sinh | **Một hàm** `missingForStudent` + **ngày sinh** (chip, badge dòng, ô TVV/CX); email không tính | Đặc tả §2 + OV-2c (ngày sinh bắt buộc) |
+| Q3 | HL-2: "Thiếu thông tin" không tính ngày sinh | **Chủ SP chốt:** "Thiếu thông tin" tính **cả ngày sinh lẫn email** (email để phân biệt học viên về sau), một hàm cho chip, badge, ô TVV / CX. **Không chặn** khi nhập danh sách ban đầu / sửa thông tin (ngày sinh, email đều không bắt buộc); sau đó **TVV phải cập nhật** — việc của TVV, **không hạn** | Chủ SP 14/10 (thay dòng 11/10 "bắt buộc khi thêm/sửa") |
 | Q4 | HL-10 lớp đã kết thúc vẫn sửa điểm · HV-3 hồ sơ Lưu trữ vẫn sửa được | Lớp kết thúc: **chỉ QL** sửa điểm (nhật ký), GV chỉ xem; HV Lưu trữ: **khoá** (Bỏ lưu trữ trước) | Chữ "chỉ xem" phải đúng; QL vẫn có đường sửa sai |
 | Q5 | TQ-10 "xong MT3, chưa có MT kế" | "xong" = **đủ điểm bắt buộc** (cùng nghĩa Kế hoạch Test) | Một khái niệm một nghĩa |
 | Q6 | CV-8 "Của GV" thiếu Bàn giao của GV | "Của GV" gồm **mọi việc của GV** (cùng hàm "Của một GV") | QL nhắc được Bàn giao quá hạn |
 | Q7 | CV-9 thẻ "Lớp hết khoá · chưa có quyết định chuyển lớp" trùng việc Chốt lộ trình | Bỏ cho **lớp thường**; FT giữ, sửa chữ "Lớp chưa có GVCN" | Một việc một chỗ |
-| Q8 | HV-18 tích KCK viết lại lượt MT đã chốt (Case SOS vẫn chạy) | KCK **chụp theo lượt lúc chốt** (như Target); lượt đã chốt giữ kết luận | Một lượt một kết luận |
+| Q8 | HV-18 tích KCK viết lại lượt MT đã chốt (Case SOS vẫn chạy) | **Chủ SP chốt:** tích KCK **lúc nào cũng được**, **chỉ QL (và Quản trị) + TVV** tích / bỏ; luật nhẹ áp **từ sau khi tích** — KCK chụp theo lượt lúc chốt, lượt đã chốt giữ kết luận | Chủ SP 14/10 |
 | Q9 | CA1-2 chuông ở Góc nhìn khác vẫn hiện việc vai gốc, bấm thì mất | Chuông **lọc theo vai đang chọn**; về vai gốc thấy lại (không đánh dấu đã đọc) | Đổi góc nhìn = làm đúng vai |
 | Q10 | HV-14 hạn Thêm PA: Công việc quá hạn 18 ngày, hồ sơ "không hạn" | **Giữ hạn** (Công việc) — hồ sơ dùng cùng hàm | Không em nào bị bỏ sót |
 | Q11 | HL-19 em "Đã kết thúc học" chưa Lưu trữ không ở danh sách nào | Hiện **mờ ở lớp cuối** (mẫu `row-muted` như lưới chấm OV-1d), ⋯ Lưu trữ · Học lại | Không kẹt, không màn mới |
 | Q12 | HV-8 Lưu trữ bắt tích "Tôi hiểu…" | Bỏ ô tích; lưu ngay + **Hoàn tác** (như Thôi học) | Xác nhận chỉ khi hậu quả lớn |
-| Q13 | TE-9 GV không có nút dời môn lớp thường (máy chủ cho) | **Giữ như nay** (chỉ QL có nút — QL-TEST #289); không đổi máy chủ | Không đổi luật khi chưa hỏi |
+| Q13 | TE-9 GV không có nút dời môn lớp thường (máy chủ cho) | **Chủ SP chốt:** dời lịch môn **chỉ QL** (giữ nút như nay); GV gõ "-" thì **máy vẫn tự dời** theo Q1 | Chủ SP 14/10 |
 | Q14 | Tên sản phẩm | **PISA Tracking** (chốt 05/10, plan.md mục 11) — tiêu đề tab `{màn} · PISA Tracking` | Đã quyết |
 | Q15 | Đề xuất mức "đổi thứ tự badge đỏ khỏi +n" (CA2-5), gộp công tắc FT/Lớp thường 3 kiểu (CA1-5), bỏ "(không bắt buộc)" lặp (P3-9) | **Không làm** đợt này (mục 5) | Đổi luật hiển thị cũ, chờ chủ SP |
 Không PR nào cần mockup: mọi đổi dùng mẫu sẵn có (ô Vắng hai dòng, `row-muted`, khung đổi nội dung kiểu `NganCase`, dòng "phần của bạn" của khối 2 Lịch Test).

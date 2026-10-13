@@ -16,11 +16,13 @@ Nguồn: đặc tả `docs/superpowers/specs/2026-10-14-ra-soat-cuoi-truoc-en-de
 5. **[HL-6]** Điểm theo lớp mở từ hồ sơ lớp có **"‹ Hồ sơ lớp {mã}"** (chồng nguồn Quay lại OV-5b, `DuongVe`).
 6. **[PT-4 · chặn] Khôi phục lượt = nguyên trạng.** Huỷ lượt cất id các yêu cầu duyệt đang "cho" của Case / PA bị đóng vào bản huỷ (`server/src/fasttrack/ketQuaHuy.ts:113`); Khôi phục
    (`attempts.ts` `reopenAttempt` ~:1581) trả các yêu cầu đó về "cho" — kể cả khi `quetYeuCau` đã đóng chúng thành `tu_dong` trong lúc lượt huỷ. Không sửa `duyet/yeuCau.ts`.
-7. **[HV-18 · Q8] KCK chụp theo lượt.** Cột mới trên lượt (kiểu `target_at_attempt`) ghi KCK **lúc lượt chốt**; `kckCuaLuot` (`fasttrack/attempts.ts:218-224`) đọc cột đó cho lượt đã chốt,
+7. **[HV-18 · Q8 chủ SP chốt] KCK chụp theo lượt (luật nhẹ từ sau khi tích).** Cột mới trên lượt (kiểu `target_at_attempt`) ghi KCK **lúc lượt chốt**; `kckCuaLuot` (`fasttrack/attempts.ts:218-224`) đọc cột đó cho lượt đã chốt,
    cờ hiện tại của lộ trình cho lượt chưa chốt. Tích / bỏ KCK không đổi kết luận + Case của lượt đã chốt. **Migrate `server/src/migrate/prOv11e.ts`**: thêm cột; lượt đã chốt điền theo cờ hiện tại
    (giữ đúng như màn đang hiện); chạy lặp không đổi gì. Thêm vào `migrate.ts` + danh sách migrate plan.md mục 5.
-8. **[OV-1e bền]** `server/src/migrate/prOv1b.ts`: ô "giữ lịch thi lại" (`B-giu`) không bị đổi ở **các lần migrate sau** khi tuần thi lại đã qua mà ô còn trống (vd ghi một lần `no_show_late = 0`
-   cho ô giữ — tương đương "-" đã chốt + dời của OV-1b — hoặc dấu khác, chọn cách nhỏ nhất, không đổi màn). `kiemTruocOv1b` khớp.
+8. **[OV-1e — giữ lịch thi lại KHÔNG theo ngày]** `server/src/migrate/prOv1b.ts` `giuLichThiLai`: bỏ điều kiện `ws >= tuần này`. Giữ (không đổi gì) **mọi** ô "-" nhập bù đã chốt mà máy đã
+   dời bài sang **tuần khác tuần "-"** (có lịch thi lại), `sit_status` `scheduled` / `sat`, chưa huỷ / chưa chờ QL — **dù tuần thi lại đã qua** (đã thi chờ chấm, hoặc chưa nhập = nợ chấm bình thường).
+   Lý do (`kiem-truoc-ov1b` bản chính 14/10): deploy sau W3 OCT thì 18 ô giữ hôm nay sẽ thành "Không dự thi"; 2 ô đã thi lại W2 OCT đang chờ chấm (Tô Xuân Tùng MT3 W1 `sat`,
+   Nguyễn Vũ Nam Phương MT1 R) đã bị đổi. Kết quả không phụ thuộc ngày deploy, chạy lặp không đổi gì. `kiemTruocOv1b` cùng hàm.
 9. **[TE-12 phần còn]** Admin hộp một đợt: "Dời hạn chấm" mờ lý do **"Chỉ Quản lý"** (`shared/domain/thaoTacMt.ts:90`) · hồ sơ MT › Lịch sử mã tuần không kèm năm khi cùng năm ·
    hồ sơ MT lượt chưa tới tuần: ẩn "Nhập điểm" · hộp "Huỷ MT{n}?" nêu cả PA (chưa có kết quả) sẽ đóng (`HopHuyMt.tsx`) · Kế hoạch Test lớp thường chip bài quá tuần chưa chấm có "· trễ" như FT
    (`shared/domain/keHoachTest.ts:221-240`).
@@ -39,7 +41,7 @@ Nguồn: đặc tả `docs/superpowers/specs/2026-10-14-ra-soat-cuoi-truoc-en-de
 - `prOv11e.tests.ts` (đỏ trước): (1) GVBM S lớp MB FT 101: dải số "Quá hạn chấm" = bài của mình (0), không đếm S chấm chéo; QL = toàn lớp như cũ; badge lớp = số trang mở;
   (2) Điểm theo lớp "trống" không đếm ô tuần sau tuần này; (3) `luotMacDinh` hoà tuần → Final; (4) huỷ lượt có yêu cầu "Không cần theo dõi" chờ → gọi `/hoc-vien-lop` → khôi phục → yêu cầu "cho" lại,
   Chờ duyệt + Chờ nguyên nhân như trước huỷ; (5) KCK tích sau khi lượt chốt SOS 2 → lượt vẫn SOS 2 + Case giữ; lượt mới chốt sau đó → KCK; migrate `prOv11e` chạy hai lần không đổi;
-  (6) `prOv1b`: lần 1 (hôm nay trước tuần thi lại) giữ; lần 2 với hôm nay sau tuần thi lại, ô vẫn trống → vẫn không đổi; `kiem-truoc-ov1b` khớp.
+  (6) `prOv1b`: ô có lịch thi lại giữ nguyên với hôm nay trước, trong và **sau** tuần thi lại (cả `sat` chưa điểm); ô không có lịch thi lại (bài ở đúng tuần "-") vẫn đổi như cũ; `kiem-truoc-ov1b` khớp; chạy hai lần không đổi.
 - `npm run check` xanh MỘT lần cuối. Bấm thử MỘT lần (GVBM 9, GVW 10, GVCN 7, QL, Admin 22; 1440 tối + 375 sáng): Lịch Test 3 khối, dòng MT cũ, Điểm theo lớp (từ hồ sơ lớp),
   hồ sơ MT, Kế hoạch Test lớp thường. Ảnh đính PR.
 
