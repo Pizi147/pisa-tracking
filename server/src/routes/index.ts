@@ -93,7 +93,8 @@ import { myWork, viecCuaNguoi } from '../worklist/mywork.ts';
 import { bangGvChiNhanh, hoSoGiaoVien, ketQuaHoSoGv, oHoSoGv, viecHoSoGv } from '../giaoVien/hoSo.ts';
 import { nhacViec, nhacViecLo } from '../worklist/nhacViec.ts';
 import { phamViXemViec } from '../worklist/xemViec.ts';
-import { hvCuaToi } from '../worklist/hvCuaToi.ts';
+import { soHocVien } from '../worklist/hvCuaToi.ts';
+import { tongQuanMt } from '../worklist/tongQuanMt.ts';
 import * as caseSvc from '../cases/cases.ts';
 import * as regularSvc from '../normal/regular.ts';
 import * as chamSvc from '../cham/canCham.ts';
@@ -1724,10 +1725,15 @@ api.get('/tong-quan/diem-chu-y', requireAuth, wrap((req) => {
 }));
 
 /** Khối giáo viên (PR-VAI-a Q12): Lớp tôi dạy theo khung `ct=ft|thuong` — thay "Học viên cần hỗ trợ". */
-/* PR-OV2a: Tổng quan TVV — "Học viên của tôi" (chỉ đọc, chỉ em mình phụ trách tư vấn trong phạm vi xem). */
-api.get('/tong-quan/hv-cua-toi', requireAuth, wrap((req) => {
+/* OV-10c: Tổng quan TVV ("Học viên của tôi") / CX ("Số liệu") — ô đếm học viên, cùng nguồn chip Học viên & Lớp. */
+api.get('/tong-quan/hoc-vien', requireAuth, wrap((req) => {
   maybeSimulateReadError();
-  return hvCuaToi(principalOf(req));
+  return soHocVien(principalOf(req), { branchId: qInt(req, 'branchId') ?? null });
+}));
+/* OV-10c: Tổng quan Admin — tab "Mock Test" (4 ô + GV chấm quá hạn); mỗi số từ hàm của màn ô đó mở. */
+api.get('/tong-quan/mock-test', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return tongQuanMt(principalOf(req), { branchId: qInt(req, 'branchId') ?? null });
 }));
 api.get('/tong-quan/lop-toi-day', requireAuth, wrap((req) => {
   maybeSimulateReadError();

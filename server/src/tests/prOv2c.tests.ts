@@ -10,7 +10,8 @@ export async function runPrOv2cTests(t: YThucTestKit) {
   const suaCaLop: any = await import('../classes/suaCaLop.ts');
   const dm: any = await import('../../../shared/domain/index.ts');
   const { xoaNho } = await import('../platform/nguCanhRequest.ts');
-  const { hvCuaToi } = await import('../worklist/hvCuaToi.ts');
+  /* OV-10c thay `hvCuaToi` bằng `soHocVien` (ô Thiếu thông tin = cờ `thieu_tt` của Học viên & Lớp) — gộp main 13/10. */
+  const { soHocVien } = await import('../worklist/hvCuaToi.ts');
   console.log('\nPR-OV2c · email không bắt buộc (Thêm HV, dán Excel, Sửa thông tin, Sửa cả lớp, Thiếu thông tin)');
 
   const all = (sql: string, ...a: unknown[]) => conn.prepare(sql).all(...a) as any[];
@@ -98,16 +99,19 @@ export async function runPrOv2cTests(t: YThucTestKit) {
     });
   });
 
-  check('OV2c-5 · "Thiếu thông tin" ở Tổng quan TVV không đếm em chỉ thiếu email (thiếu ngày sinh vẫn đếm)', () => {
+  /* OV-10c (gộp 13/10): ô "Thiếu thông tin" của Tổng quan TVV = cờ `thieu_tt` của Học viên & Lớp (`missingForStudent` — thiếu sót học thuật,
+     không gồm email / ngày sinh). Ý OV-2c giữ: em chỉ thiếu email không làm tăng số. */
+  check('OV2c-5 · "Thiếu thông tin" ở Tổng quan TVV không đếm em chỉ thiếu email', () => {
     thu(() => {
       const tk = accounts.createAccount(P.admin, { email: `ov2c${accounts.EMAIL_SUFFIX}`, password: 'matkhau-ov2c', fullName: 'Thử OV2c', roles: [{ role: 'consultant', branches: ['CP'] }] }).userId as number;
       const id = dsEm[0].id;
-      run('UPDATE students SET consultant_user_id = ?, dob = ?, email = NULL WHERE id = ?', tk, DOB, id);
-      const khongEmail = hvCuaToi(loadPrincipal(tk));
-      assert(khongEmail.tong >= 1, 'TVV không thấy em');
-      run('UPDATE students SET dob = NULL WHERE id = ?', id);
-      const thieuNs = hvCuaToi(loadPrincipal(tk));
-      assert(thieuNs.thieuTt === khongEmail.thieuTt + 1, `trước ${khongEmail.thieuTt}, thiếu ngày sinh ${thieuNs.thieuTt}`);
+      run('UPDATE students SET consultant_user_id = ?, dob = ?, email = ? WHERE id = ?', tk, DOB, 'co.email@gmail.com', id);
+      const coEmail = soHocVien(loadPrincipal(tk));
+      assert(coEmail.tong >= 1, 'TVV không thấy em');
+      run('UPDATE students SET email = NULL WHERE id = ?', id);
+      xoaNho();
+      const khongEmail = soHocVien(loadPrincipal(tk));
+      assert(khongEmail.dem.thieu_tt === coEmail.dem.thieu_tt, `có email ${coEmail.dem.thieu_tt}, thiếu email ${khongEmail.dem.thieu_tt}`);
     });
   });
 }

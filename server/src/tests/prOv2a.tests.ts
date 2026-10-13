@@ -13,7 +13,7 @@ export async function runPrOv2aTests(t: YThucTestKit) {
   const dm: any = await import('../../../shared/domain/index.ts');
   const { ROLE_PERMISSIONS } = await import('../seed/data.ts');
   const { xoaNho } = await import('../platform/nguCanhRequest.ts');
-  const { hvCuaToi } = await import('../worklist/hvCuaToi.ts');
+  const { soHocVien } = await import('../worklist/hvCuaToi.ts');
   console.log('\nPR-OV2a · vai TVV / CX / Admin, quyền, đổi góc nhìn');
 
   const all = (sql: string, ...a: unknown[]) => conn.prepare(sql).all(...a) as any[];
@@ -255,13 +255,13 @@ export async function runPrOv2aTests(t: YThucTestKit) {
 
     await checkAsync('OV2a-9 · Tổng quan TVV: chưa gán em → 0 và danh sách rỗng; gán em → em hiện', async () => {
       const ck = await vao(idTvv);
-      const r = await goi('GET', '/tong-quan/hv-cua-toi', ck);
-      assert(r.status === 200 && r.json.tong === 0 && r.json.canChuY.length === 0, `trống: ${r.status} ${JSON.stringify(r.json)}`);
+      const r = await goi('GET', '/tong-quan/hoc-vien', ck);
+      assert(r.status === 200 && r.json.tong === 0 && r.json.dem['can-chu-y'] === 0, `trống: ${r.status} ${JSON.stringify(r.json)}`);
       conn.prepare('UPDATE students SET consultant_user_id = ? WHERE id = ?').run(idTvv, em);
-      const r2 = await goi('GET', '/tong-quan/hv-cua-toi', ck);
+      const r2 = await goi('GET', '/tong-quan/hoc-vien', ck);
       conn.prepare('UPDATE students SET consultant_user_id = NULL WHERE id = ?').run(em);
       assert(r2.status === 200 && r2.json.tong === 1, `gán 1 em: ${JSON.stringify(r2.json)}`);
-      for (const k of ['duoiKyVong', 'caseMo', 'sapThi', 'thieuTt']) assert(typeof r2.json[k] === 'number', `thiếu số ${k}`);
+      for (const k of ['can-chu-y', 'tam-dung', 'sap-thi', 'thieu_tt', 'cho-buoc-tiep']) assert(typeof r2.json.dem[k] === 'number', `thiếu số ${k}`);
     });
   } finally {
     may.close();
@@ -273,8 +273,8 @@ export async function runPrOv2aTests(t: YThucTestKit) {
       assert(n >= 1, `demo thiếu ${k}`);
     }
     const tvv = one(`SELECT ur.user_id id FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE r.key = 'consultant' ORDER BY ur.user_id LIMIT 1`).id;
-    const hv = hvCuaToi(loadPrincipal(tvv));
-    assert(hv.tong >= 1 && hv.canChuY.length >= 1, `TVV demo: ${JSON.stringify({ ...hv, canChuY: hv.canChuY.length })}`);
+    const hv = soHocVien(loadPrincipal(tvv));
+    assert(hv.tong >= 1 && hv.dem['can-chu-y'] >= 1, `TVV demo: ${JSON.stringify(hv)}`);
   });
 
   await checkAsync('OV2a-10 · migrate prOv2: DB cũ chưa có 3 vai → có đủ quyền; chạy lần hai không đổi gì', async () => {

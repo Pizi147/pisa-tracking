@@ -29,9 +29,10 @@ const {
   chayTrongRequest, nho, coNho, trongBoNho, soCauSql, soDongSql, demHienTai,
 } = await import('../platform/nguCanhRequest.ts');
 const { loadPrincipal, can, napTruocPhamVi, scopeFor } = await import('../permissions.ts');
+const accounts = await import('../platform/accounts.ts');
 const { PERMISSIONS, LO_LUU_SUA_CA_LOP } = await import('../../../shared/domain/index.ts');
 const { listCases } = await import('../cases/cases.ts');
-const { DUONG_DO, TRAN, TRAN_DONG, TRAN_GHI_LO } = await import('./tocDoDuong.ts');
+const { DUONG_DO, MOI_VAI, TRAN, TRAN_DONG, TRAN_GHI_LO } = await import('./tocDoDuong.ts');
 
 runSeed();
 
@@ -177,11 +178,20 @@ const USER: Record<Vai, number> = {
   GVBM: subjectOnlyTeacherOf('MB FT 101'),
   GVCN_THUONG: coreTeacherOf('MB FOU 12'),
   QT: userByRole('system_admin', null),
+  /* OV-10c: Admin MT ở chi nhánh mẫu MB (demo chỉ có Admin Cẩm Phả, ít MT); TVV, CX của demo. */
+  ADMIN: accounts.createAccount(loadPrincipal(userByRole('system_admin', null)), {
+    email: `do.admin.mb${accounts.EMAIL_SUFFIX}`, password: 'matkhau-do-admin', fullName: 'Đo Admin MB',
+    roles: [{ role: 'office_admin', branches: ['MB'] }],
+  }).userId as number,
+  TVV: userByRole('consultant', 'CP'),
+  CX: userByRole('cx', null),
 };
 /** Quản lý chi nhánh CP — dùng riêng ở Task 2 phép kiểm (c)/(e) (chi nhánh KHÁC với MB của mọi vai trên). */
 const QL_CP = userByRole('manager', 'CP');
 
 const server = createApp().listen(0);
+/* Giữa hai lượt gọi có đoạn đo đồng bộ dài (nhân dữ liệu, vòng mọi vai) > 5 s mặc định: máy chủ đóng kết nối giữ sống, fetch kế tiếp dùng lại → ECONNRESET. */
+server.keepAliveTimeout = 120_000;
 const port = (server.address() as any).port as number;
 
 function urlFor(mau: string): string {
@@ -828,7 +838,7 @@ check('TD2-a · sau khi nhân dữ liệu ×3, mọi (đường × vai) trong TR
 await checkAsync('TD3-a-1 (×3) · listAttempts chiConO trùng JSON sau conBaiCanCham — mọi vai đo', async () => {
   const { listAttempts, conBaiCanCham } = await import('../fasttrack/attempts.ts');
   const sai: string[] = [];
-  for (const vai of Object.keys(USER) as Vai[]) {
+  for (const vai of MOI_VAI) {   // OV-10c: ADMIN / TVV / CX chỉ đo đường Tổng quan
     const p = PRINCIPAL_CUA.get(USER[vai]) ?? loadPrincipal(USER[vai]);
     const f = { scope: 'managed' as const, chiDangHoc: true, phamViCham: true };
     const a = JSON.stringify(listAttempts(p, f).rows.filter(conBaiCanCham));
@@ -849,7 +859,7 @@ check('TD3-a-2 · GET /cham/lich-test (QL, ×3) ≤ 40 % số dòng trước TD3
 await checkAsync('TD3-b-1 (×3) · listClassSummaries { classId } trùng dòng của lớp trong danh sách đủ — mọi vai đo', async () => {
   const { listClassSummaries } = await import('../classes/classes.ts');
   const sai: string[] = [];
-  for (const vai of Object.keys(USER) as Vai[]) {
+  for (const vai of MOI_VAI) {   // OV-10c: ADMIN / TVV / CX chỉ đo đường Tổng quan
     const p = PRINCIPAL_CUA.get(USER[vai]) ?? loadPrincipal(USER[vai]);
     for (const r of listClassSummaries(p, {}).rows) {
       const mot = listClassSummaries(p, { classId: r.id }).rows;
