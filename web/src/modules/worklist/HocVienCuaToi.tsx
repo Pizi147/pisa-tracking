@@ -2,39 +2,32 @@ import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { Card, Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
-import { Nhan, type ToneNhan } from '../../ui/Nhan.tsx';
-import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
-import { tuanLich } from '@shared/domain/index.ts';
 
-/** Trả lời của `GET /tong-quan/hv-cua-toi` (server/src/worklist/hvCuaToi.ts). */
-type DongChuY = { loai: 'sos' | 'case' | 'y-thuc' | 'thi'; nhan: string; studentId: number; ten: string; chiTiet: string; tuan: string | null };
-type HvCuaToi = { tong: number; duoiKyVong: number; caseMo: number; caseMoiTuan: number; sapThi: number; thieuTt: number; canChuY: DongChuY[] };
+/** Trả lời của `GET /tong-quan/hoc-vien` (server/src/worklist/hvCuaToi.ts). */
+type Chip = 'can-chu-y' | 'tam-dung' | 'sap-thi' | 'thieu_tt' | 'cho-buoc-tiep';
+type SoHocVien = { phamVi: 'cua-toi' | 'chi-nhanh' | 'tat-ca'; tong: number; dem: Record<Chip, number> };
 
-const TONE: Record<DongChuY['loai'], ToneNhan> = { sos: 'bad', case: 'wait', 'y-thuc': 'soon', thi: 'muted' };
-
-function O({ nhan, so, donVi, phu }: { nhan: string; so: number; donVi: ReactNode; phu: string }) {
+/** Ô đếm bấm được của Tổng quan theo vai (OV-10c): cả ô là link mở đúng danh sách đã lọc sẵn. Số 0 vẫn bấm được (danh sách trống nói rõ). */
+export function ODem({ to, so, nhan, phu }: { to: string; so: number; nhan: string; phu?: ReactNode }) {
   return (
-    <div className="card p-4 h-full">
-      <div className="text-xs uppercase tracking-wide text-slate-400 font-semibold">{nhan}</div>
-      <div className="mt-2 flex items-baseline gap-1.5">
-        <span className={`text-2xl font-semibold tabular-nums ${so ? 'text-slate-100' : 'text-slate-500'}`}>{so}</span>
-        <span className="text-xs text-slate-400">{donVi}</span>
-      </div>
-      <div className="text-xs text-slate-500 mt-1">{phu}</div>
-    </div>
+    <Link to={to} className="card block h-full p-4 no-underline hover:brightness-125 focus-visible:outline focus-visible:outline-2"
+      aria-label={`${so} — ${nhan}. Mở danh sách`}>
+      <span className={`block text-2xl font-semibold tabular-nums ${so ? 'text-slate-100' : 'text-slate-500'}`}>{so}</span>
+      <span className="mt-1 block text-sm font-medium text-slate-200">{nhan}</span>
+      {phu && <span className="mt-0.5 block text-xs text-slate-500">{phu}</span>}
+    </Link>
   );
 }
 
 /**
- * TỔNG QUAN TVV (PR-OV2a, mockup overhaul-3 §3): 4 số + "Cần chú ý" về học viên mình phụ trách tư vấn — chỉ đọc, bấm tên ra hồ sơ.
- * Chưa được gán em nào (trước OV-2b chưa có ô chọn TVV) → câu hướng dẫn thay cho bảng trống.
+ * Ô ĐẾM HỌC VIÊN — Tổng quan TVV (tab "Học viên của tôi") và CX (tab "Số liệu"), OV-10c. Mỗi ô mở Học viên & Lớp với đúng chip (`view=`),
+ * số cùng hàm với chip (`chipHocVien`). Chỉ đếm, không bảng thứ hai — danh sách chi tiết ở Học viên & Lớp.
  */
-export function HocVienCuaToi() {
-  const { data, loading, error, reload } = useApi<HvCuaToi>('/tong-quan/hv-cua-toi');
-  const { homNay } = useNgayNghiepVu();
+export function HocVienCuaToi({ branchId = null }: { branchId?: number | null }) {
+  const { data, loading, error, reload } = useApi<SoHocVien>(branchId ? `/tong-quan/hoc-vien?branchId=${branchId}` : '/tong-quan/hoc-vien', [branchId]);
   if (error) return <ErrorState message={error.message} hint={error.hint} onRetry={reload} />;
-  if (loading || !data) return <Skeleton rows={6} />;
-  if (!data.tong) {
+  if (loading || !data) return <Skeleton rows={3} />;
+  if (!data.tong && data.phamVi === 'cua-toi') {
     return (
       <Card>
         <Empty title="Chưa có học viên nào của bạn" hint="Học viên có TVV là bạn sẽ hiện ở đây."
@@ -42,36 +35,15 @@ export function HocVienCuaToi() {
       </Card>
     );
   }
+  const den = (chip: Chip) => `/hoc-vien?phamVi=${data.phamVi}${data.phamVi === 'chi-nhanh' && branchId ? `&cn=${branchId}` : ''}&view=${chip}`;
+  const d = data.dem;
   return (
-    <div className="space-y-3">
-      <div className="grid gap-3 grid-cols-2 lg:grid-cols-4" aria-label="Số liệu học viên của tôi">
-        <O nhan="Dưới kỳ vọng" so={data.duoiKyVong} donVi={`/ ${data.tong} em`} phu="MT gần nhất" />
-        <O nhan="Có Case đang mở" so={data.caseMo} donVi="em" phu={data.caseMoiTuan ? `${data.caseMoiTuan} Case mới tuần này` : 'Không có Case mới tuần này'} />
-        <O nhan="Sắp thi IELTS" so={data.sapThi} donVi="em" phu="trong 6 tuần tới" />
-        <O nhan="Thiếu thông tin" so={data.thieuTt} donVi="em" phu="email / ngày sinh" />
-      </div>
-      <section className="card" aria-labelledby="can-chu-y">
-        <div className="flex flex-wrap items-baseline gap-x-2 px-4 pt-3 pb-2">
-          <h2 id="can-chu-y" className="m-0 text-[15px] font-semibold text-slate-100">Cần chú ý</h2>
-          <span className="text-xs text-slate-500">· học viên của tôi</span>
-        </div>
-        {data.canChuY.length === 0
-          ? <p className="m-0 px-4 pb-4 text-sm text-slate-400">Không có em nào cần chú ý.</p>
-          : (
-            <ul className="list-none m-0 p-0">
-              {data.canChuY.map((d) => (
-                <li key={`${d.loai}-${d.studentId}`}
-                  className="grid items-center gap-x-3 gap-y-0.5 border-t px-4 py-2.5 text-sm grid-cols-[auto_minmax(0,1fr)_auto] md:grid-cols-[110px_220px_minmax(0,1fr)_auto]"
-                  style={{ borderColor: 'var(--line)' }}>
-                  <span><Nhan tone={TONE[d.loai]}>{d.nhan}</Nhan></span>
-                  <Link to={`/hoc-vien/${d.studentId}`} className="min-w-0 truncate font-medium max-sm:py-2.5 max-sm:-my-2.5">{d.ten}</Link>
-                  <span className="min-w-0 text-slate-400 max-md:col-span-3 max-md:row-start-2 max-md:text-xs">{d.chiTiet}</span>
-                  <span className="text-xs tabular-nums text-slate-500 max-md:col-start-3 max-md:row-start-1">{d.tuan ? tuanLich(d.tuan, homNay) : ''}</span>
-                </li>
-              ))}
-            </ul>
-          )}
-      </section>
+    <div className="grid gap-3 grid-cols-2 lg:grid-cols-4" aria-label={data.phamVi === 'cua-toi' ? 'Số liệu học viên của tôi' : 'Số liệu học viên'}>
+      <ODem to={den('can-chu-y')} so={d['can-chu-y']} nhan="Cần chú ý" phu="SOS · Case mới · Ý thức" />
+      <ODem to={den('tam-dung')} so={d['tam-dung']} nhan="Tạm dừng" phu="đang Tạm dừng học" />
+      <ODem to={den('sap-thi')} so={d['sap-thi']} nhan="Sắp thi" phu="thi IELTS trong 6 tuần tới" />
+      <ODem to={den('thieu_tt')} so={d.thieu_tt} nhan="Thiếu thông tin" phu="hồ sơ chưa đủ để theo dõi" />
+      {d['cho-buoc-tiep'] > 0 && <ODem to={den('cho-buoc-tiep')} so={d['cho-buoc-tiep']} nhan="Chờ QL chọn bước tiếp" phu="đã có kết quả thi thật" />}
     </div>
   );
 }

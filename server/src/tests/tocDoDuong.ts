@@ -11,7 +11,8 @@
  * URL có chỗ thay bằng ID thật lúc chạy: `{lopFT}`, `{lopThuong}`, `{lopBe}`, `{lopPet}`, `{hv}`, `{case}`, `{cn}`.
  */
 
-export type Vai = 'QL' | 'GVCN' | 'GVBM' | 'GVCN_THUONG' | 'QT';
+/** OV-10c: ADMIN (Admin MT, Móng Bình), TVV, CX chỉ đo đường Tổng quan của vai đó — không nằm trong MOI_VAI. */
+export type Vai = 'QL' | 'GVCN' | 'GVBM' | 'GVCN_THUONG' | 'QT' | 'ADMIN' | 'TVV' | 'CX';
 
 export const MOI_VAI: readonly Vai[] = ['QL', 'GVCN', 'GVBM', 'GVCN_THUONG', 'QT'];
 
@@ -35,7 +36,10 @@ export const DUONG_DO: MucDo[] = [
     maChuDich: { GVCN: 403, GVBM: 403 },
   },
   { trang: 'Tổng quan QL', vai: ['QL', 'QT'], url: '/highlights' },
-  { trang: 'Tổng quan TVV', vai: ['QL'], url: '/tong-quan/hv-cua-toi' },   // PR-OV2a: QL không có em nào → trả rỗng, vẫn đo câu SQL
+  { trang: 'Tổng quan TVV / CX', vai: ['TVV', 'CX', 'QT'], url: '/tong-quan/hoc-vien' },   // OV-10c: QT đi nhánh CX (mọi em) trên chi nhánh mẫu
+  { trang: 'Tổng quan CX', vai: ['CX'], url: '/tong-quan/hoc-vien?branchId={cn}' },
+  { trang: 'Tổng quan Admin', vai: ['ADMIN'], url: '/tong-quan/mock-test' },
+  { trang: 'Tổng quan Admin', vai: ['ADMIN'], url: '/highlights' },
   {
     trang: 'Tổng quan QL', vai: ['QL', 'QT', 'GVCN'], url: '/tong-quan/diem-chu-y?ct=ft',   // PR-VAI-a: tách khỏi /tong-quan/quan-ly
     maChuDich: { GVCN: 403 },
@@ -304,6 +308,13 @@ export const TRAN: Record<string, number> = {
   'GVBM /tong-quan/quan-ly': 15,
   'QL /highlights': 25,
   'QT /highlights': 25,
+  /* OV-10c: Tổng quan theo vai — CX / QT gọi thêm danh sách Học viên & Lớp (chip Thiếu thông tin cùng nguồn): đo TVV 71, CX 95, QT 94, CX một CN 77, Admin 62 / 15. */
+  'TVV /tong-quan/hoc-vien': 85,
+  'CX /tong-quan/hoc-vien': 100,
+  'QT /tong-quan/hoc-vien': 100,
+  'CX /tong-quan/hoc-vien?branchId=1': 90,   // {cn} = Móng Bình
+  'ADMIN /tong-quan/mock-test': 75,
+  'ADMIN /highlights': 20,
   'QL /tong-quan/chi-nhanh': 45,
   'QT /tong-quan/chi-nhanh': 41,
   'QL /tong-quan/chi-nhanh/o?cot=caseMo&khoa=tong': 46,
@@ -828,10 +839,10 @@ export const TAI_TRANG: Record<string, { vai: Vai; urls: string[]; tran: number 
     vai: 'GVCN', tran: 205,   // đo 157 (trước PR ≈ 157 + 2 × 66 = 289)
     urls: ['/demo/session', '/my-work', '/notifications', '/ref/classes', '/tong-quan/lop-toi-day?ct=ft', '/yeu-cau/dem'],
   },
-  /* PR-OV2a: Tổng quan TVV — đo bằng QL (bộ đo chưa có vai TVV); QL không có em nào nên đo phần khung + câu học viên. */
+  /* OV-10c: Tổng quan TVV ("Học viên của tôi"), CX ("Số liệu"), Admin ("Mock Test") — đo bằng chính vai đó. */
   'TVV trang Tổng quan': {
-    vai: 'QL', tran: 120,
-    urls: ['/demo/session', '/notifications', '/ref/classes', '/tong-quan/hv-cua-toi'],
+    vai: 'TVV', tran: 120,
+    urls: ['/demo/session', '/notifications', '/ref/classes', '/tong-quan/hoc-vien'],
   },
   'QL trang Tổng quan': {
     vai: 'QL', tran: 450,   // PR-Dọn (9e): đủ 15 GET lúc mở trang → đo 346 câu (trước chỉ 6 GET, đo 126) — max(346 + 10, ⌈346 × 1,3⌉)
@@ -840,5 +851,15 @@ export const TAI_TRANG: Record<string, { vai: Vai; urls: string[]; tran: number 
     urls: ['/demo/session', '/notifications', '/ref/branches', '/ref/classes', '/yeu-cau/dem', '/tong-quan/quan-ly', '/tong-quan/diem-chu-y?ct=ft',
       '/metrics/hv-duoi-ky-vong-mon?ct=ft', '/metrics/hv-co-case-mo?ct=ft', '/metrics/case-mo?ct=ft', '/metrics/case-cho-xac-dinh-nguyen-nhan?ct=ft',
       '/metrics/case-xac-dinh-nguyen-nhan-qua-han?ct=ft', '/metrics/pa-can-cap-nhat?ct=ft', '/highlights?ct=ft', '/tong-quan/chi-nhanh?ct=ft'],
+  },
+  'CX trang Tổng quan': {
+    vai: 'CX', tran: 450,
+    urls: ['/demo/session', '/notifications', '/ref/branches', '/ref/classes', '/tong-quan/hoc-vien', '/tong-quan/diem-chu-y?ct=ft',
+      '/metrics/hv-duoi-ky-vong-mon?ct=ft', '/metrics/hv-co-case-mo?ct=ft', '/metrics/case-mo?ct=ft', '/metrics/case-cho-xac-dinh-nguyen-nhan?ct=ft',
+      '/metrics/case-xac-dinh-nguyen-nhan-qua-han?ct=ft', '/metrics/pa-can-cap-nhat?ct=ft', '/highlights?ct=ft', '/tong-quan/chi-nhanh?ct=ft'],
+  },
+  'Admin trang Tổng quan': {
+    vai: 'ADMIN', tran: 450,
+    urls: ['/demo/session', '/notifications', '/ref/branches', '/ref/classes', '/tong-quan/mock-test', '/highlights'],
   },
 };

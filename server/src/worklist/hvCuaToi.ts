@@ -1,98 +1,96 @@
 /**
- * TỔNG QUAN TVV — "Học viên của tôi" (PR-OV2a, mockup overhaul-3 §3). HV của tôi = `students.consultant_user_id` = người xem, còn trong
- * phạm vi xem (`student.view`). Chỉ đọc: 4 số + danh sách em cần để ý (khối dưới của mockup) để báo phụ huynh; mọi dòng bấm ra hồ sơ.
- * Một câu học viên + `standingFor` (dùng chung với Học viên & Lớp) + một câu Case + một câu Ý thức — không tăng theo số em.
+ * TỔNG QUAN TVV / CX — ô đếm học viên bấm được (OV-10c, mockup vai 13/10 mục 6; thay khối "Học viên của tôi" của PR-OV2a).
+ * Phạm vi: TVV = em có `students.consultant_user_id` = người xem ("HV của tôi"); vai khác (CX) = mọi em xem được, lọc chi nhánh nếu chọn.
+ *
+ * MỘT NGUỒN cho số ở Tổng quan và chip ở Học viên & Lớp (OV-10b dùng lại `chipHocVien`, không viết hàm đếm thứ hai):
+ *  · Cần chú ý — em đang học có SOS (MT gần nhất), Case mở trong 14 ngày, Ý thức trong 14 ngày, hoặc đang chờ QL chọn bước tiếp sau thi.
+ *  · Tạm dừng — em Tạm dừng học. · Sắp thi — dự kiến thi trong 6 tuần tới. · Chờ QL chọn bước tiếp — cùng tập với việc QL (`choBuocTiep`).
+ *  · Thiếu thông tin — chính cờ `thieu_tt` của danh sách Học viên & Lớp (`danhSachHocVienLop`), chip đó đã có sẵn.
+ * Câu đọc không theo danh sách id (Turso ≤ 900 tham số): Case / Ý thức đọc khoảng 14 ngày rồi lọc theo tập em.
  */
 import { db } from '../db.ts';
-import { PERMISSIONS, tenMon } from '../../../shared/domain/index.ts';
+import { PERMISSIONS } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addDays } from '../util.ts';
 import { can, napTruocPhamVi, type Principal } from '../permissions.ts';
 import { mondayOf } from '../platform/week.ts';
 import { standingFor } from '../students/standing.ts';
+import { danhSachHocVienLop } from '../classes/hocVienLop.ts';
+import { choBuocTiep } from '../loTrinh/buocTiep.ts';
 
-/** "Sắp thi" = dự kiến thi trong từng này tuần tới (mockup: "trong 6 tuần tới"). "Mới" = trong 14 ngày gần nhất. */
+/** "Sắp thi" = dự kiến thi trong từng này tuần tới. "Mới" = trong 14 ngày gần nhất. */
 const SAP_THI_TUAN = 6;
 const MOI_NGAY = 14;
 
-export type DongChuY = { loai: 'sos' | 'case' | 'y-thuc' | 'thi'; nhan: string; studentId: number; ten: string; chiTiet: string; tuan: string | null };
-export type HvCuaToi = { tong: number; duoiKyVong: number; caseMo: number; caseMoiTuan: number; sapThi: number; thieuTt: number; canChuY: DongChuY[] };
+export const CHIP_HOC_VIEN = ['can-chu-y', 'tam-dung', 'sap-thi', 'thieu_tt', 'cho-buoc-tiep'] as const;
+export type ChipHocVien = (typeof CHIP_HOC_VIEN)[number];
+export type SoHocVien = { phamVi: 'cua-toi' | 'chi-nhanh' | 'tat-ca'; tong: number; dem: Record<ChipHocVien, number> };
 
-export function hvCuaToi(p: Principal): HvCuaToi {
+const laTvv = (p: Principal) => p.roleKeys.includes('consultant');
+
+/** Id học viên theo từng chip, trong phạm vi người xem (`student.view`). */
+export function chipHocVien(p: Principal, f: { branchId?: number | null } = {}): { phamVi: SoHocVien['phamVi']; tong: number; ids: Record<ChipHocVien, number[]> } {
   const conn = db();
   const homNay = demoToday();
   const dauTuan = mondayOf(homNay);
+  const tvv = laTvv(p);
+  const phamVi: SoHocVien['phamVi'] = tvv ? 'cua-toi' : f.branchId ? 'chi-nhanh' : 'tat-ca';
+  const dieuKien: string[] = ['s.archived_at IS NULL'];
+  const thamSo: unknown[] = [];
+  if (tvv) { dieuKien.push('s.consultant_user_id = ?'); thamSo.push(p.userId); }
   const rows = conn.prepare(
-    `SELECT s.id, s.full_name, s.email, s.dob, c.code AS lop, cy.exam_date, cy.exam_month, rp.week_start AS tuan_thi
+    `SELECT s.id, s.status, COALESCE(c.branch_id, s.branch_id) AS branch_id, cy.exam_date, cy.exam_month, rp.week_start AS tuan_thi
        FROM students s
-       LEFT JOIN enrollments e ON e.student_id = s.id AND e.status = 'active'
+       LEFT JOIN enrollments e ON e.student_id = s.id AND e.status IN ('active', 'paused')
        LEFT JOIN classes c ON c.id = e.class_id
        LEFT JOIN learning_cycles cy ON cy.student_id = s.id AND cy.status = 'active'
        LEFT JOIN report_periods rp ON rp.id = cy.exam_period_id
-      WHERE s.consultant_user_id = ? AND s.archived_at IS NULL AND s.status != 'finished'
-      ORDER BY s.full_name`,
-  ).all(p.userId) as any[];
+      WHERE ${dieuKien.join(' AND ')}`,
+  ).all(...thamSo) as any[];
   napTruocPhamVi(rows.map((r) => r.id));
   const em = new Map<number, any>();
-  for (const r of rows) if (!em.has(r.id) && can(p, PERMISSIONS.STUDENT_VIEW, { studentId: r.id })) em.set(r.id, r);
-  const ids = [...em.keys()];
-  const rong: HvCuaToi = { tong: 0, duoiKyVong: 0, caseMo: 0, caseMoiTuan: 0, sapThi: 0, thieuTt: 0, canChuY: [] };
-  if (!ids.length) return rong;
-  const ph = ids.map(() => '?').join(',');
+  for (const r of rows) {
+    if (em.has(r.id) || (!tvv && f.branchId && r.branch_id !== f.branchId)) continue;
+    if (can(p, PERMISSIONS.STUDENT_VIEW, { studentId: r.id })) em.set(r.id, r);
+  }
+  const dangHoc = [...em.values()].filter((r) => r.status === 'active');
+  const ids = Object.fromEntries(CHIP_HOC_VIEN.map((k) => [k, [] as number[]])) as Record<ChipHocVien, number[]>;
 
-  const standing = standingFor(ids);
-  const caseMo = conn.prepare(
-    `SELECT sc.id, COALESCE(sc.student_id, a.student_id) AS sid, sc.topic, sc.title, sc.created_at
-       FROM sos_cases sc LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
-      WHERE COALESCE(sc.student_id, a.student_id) IN (${ph}) AND sc.status != 'done' ORDER BY sc.created_at DESC`,
-  ).all(...ids) as any[];
-  const viPham = conn.prepare(
-    `SELECT student_id AS sid, ten, description, occurred_on FROM violations
-      WHERE student_id IN (${ph}) AND occurred_on >= ? ORDER BY occurred_on DESC`,
-  ).all(...ids, addDays(homNay, -MOI_NGAY)) as any[];
+  ids['tam-dung'] = [...em.values()].filter((r) => r.status === 'inactive').map((r) => r.id);
+  ids['cho-buoc-tiep'] = [...new Set(choBuocTiep().map((c) => c.student_id as number))].filter((id) => em.has(id));
 
-  const ngayThi = (r: any): string | null => r.exam_date ?? r.tuan_thi ?? (r.exam_month ? `${r.exam_month}-01` : null);
   const cuoiKhoang = addDays(dauTuan, SAP_THI_TUAN * 7 - 1);
   /* Chỉ ghi tháng thi → sắp thi khi tháng đó chạm khoảng 6 tuần. */
   const sapThi = (r: any) => {
     if (!r.exam_date && !r.tuan_thi && r.exam_month) return `${r.exam_month}-01` <= cuoiKhoang && `${r.exam_month}-31` >= dauTuan;
-    const d = ngayThi(r); return !!d && d >= dauTuan && d <= cuoiKhoang;
+    const d = r.exam_date ?? r.tuan_thi;
+    return !!d && d >= dauTuan && d <= cuoiKhoang;
   };
-  const moi = (d: string | null) => !!d && d.slice(0, 10) >= addDays(homNay, -MOI_NGAY);
+  ids['sap-thi'] = dangHoc.filter(sapThi).map((r) => r.id);
 
-  const canChuY: DongChuY[] = [];
-  const daCo = new Set<number>();
-  const them = (d: DongChuY) => { if (daCo.has(d.studentId)) return; daCo.add(d.studentId); canChuY.push(d); };
-  /* Thứ tự ưu tiên: SOS → Case mới → Ý thức → Thi IELTS (một em một dòng — lý do nặng nhất). */
-  for (const [id, r] of em) {
-    const st = standing.get(id);
-    if (st?.sosLevel && st.mode === 'ielts_band') {
-      const duoi = st.belowSkills.map((b) => `${tenMon(null, b.skill)} ${b.band}`).join(' · ');
-      them({ loai: 'sos', nhan: `SOS ${st.sosLevel}`, studentId: id, ten: r.full_name,
-        chiTiet: [r.lop, st.attemptLabel, duoi, st.expectation != null ? `(kỳ vọng ${st.expectation})` : null].filter(Boolean).join(' · '), tuan: null });
-    }
+  const tuNgay = addDays(homNay, -MOI_NGAY);
+  const chuY = new Set<number>(ids['cho-buoc-tiep']);
+  const laDangHoc = new Set(dangHoc.map((r) => r.id as number));
+  const standing = standingFor([...laDangHoc]);
+  for (const id of laDangHoc) if (standing.get(id)?.sosLevel && standing.get(id)?.mode === 'ielts_band') chuY.add(id);
+  for (const c of conn.prepare(
+    `SELECT COALESCE(sc.student_id, a.student_id) AS sid FROM sos_cases sc LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
+      WHERE sc.status != 'done' AND substr(sc.created_at, 1, 10) >= ?`,
+  ).all(tuNgay) as any[]) if (laDangHoc.has(c.sid)) chuY.add(c.sid);
+  for (const v of conn.prepare('SELECT student_id AS sid FROM violations WHERE occurred_on >= ?').all(tuNgay) as any[]) {
+    if (laDangHoc.has(v.sid)) chuY.add(v.sid);
   }
-  for (const c of caseMo) {
-    if (!moi(c.created_at) || !em.has(c.sid)) continue;
-    them({ loai: 'case', nhan: 'Case mới', studentId: c.sid, ten: em.get(c.sid).full_name,
-      chiTiet: c.title ?? (c.topic ? tenMon(null, c.topic) : 'Case học thuật'), tuan: mondayOf(c.created_at.slice(0, 10)) });
-  }
-  for (const v of viPham) {
-    them({ loai: 'y-thuc', nhan: 'Ý thức', studentId: v.sid, ten: em.get(v.sid).full_name, chiTiet: v.ten ?? v.description, tuan: mondayOf(v.occurred_on) });
-  }
-  for (const [id, r] of em) {
-    if (!sapThi(r)) continue;
-    them({ loai: 'thi', nhan: 'Thi IELTS', studentId: id, ten: r.full_name,
-      chiTiet: [r.lop, standing.get(id)?.overall != null ? `MT gần nhất ${standing.get(id)!.overall}` : null].filter(Boolean).join(' · '), tuan: mondayOf(ngayThi(r)!) });
-  }
+  ids['can-chu-y'] = [...chuY];
 
-  return {
-    tong: ids.length,
-    duoiKyVong: ids.filter((id) => (standing.get(id)?.sosLevel ?? 0) > 0).length,
-    caseMo: new Set(caseMo.map((c) => c.sid)).size,
-    caseMoiTuan: caseMo.filter((c) => (c.created_at ?? '').slice(0, 10) >= dauTuan).length,
-    sapThi: [...em.values()].filter(sapThi).length,
-    thieuTt: [...em.values()].filter((r) => !r.email || !r.dob).length,
-    canChuY,
-  };
+  /* Thiếu thông tin: đúng cờ của danh sách Học viên & Lớp (cùng phạm vi trang đó mở ra). */
+  if (dangHoc.length) {
+    const ds = danhSachHocVienLop(p, { phamVi, branchId: phamVi === 'chi-nhanh' ? f.branchId : null });
+    ids.thieu_tt = ds.hocVien.filter((h) => h.loc.includes('thieu_tt')).map((h) => h.id);
+  }
+  return { phamVi, tong: em.size, ids };
+}
+
+export function soHocVien(p: Principal, f: { branchId?: number | null } = {}): SoHocVien {
+  const { phamVi, tong, ids } = chipHocVien(p, f);
+  return { phamVi, tong, dem: Object.fromEntries(CHIP_HOC_VIEN.map((k) => [k, ids[k].length])) as Record<ChipHocVien, number> };
 }

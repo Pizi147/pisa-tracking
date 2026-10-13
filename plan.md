@@ -335,6 +335,7 @@ Nhật ký chi tiết tới 04/10 ở `git show 575e898d:plan.md` (mục 14) và
 
 | Ngày | PR / nhánh · model | Kết quả |
 |---|---|---|
+| 13/10/2026 | OV-10c (Opus 5.5) · `claude/elegant-lovelace-0sh1fe` | Tổng quan theo vai: Admin "Mock Test" (4 ô mở Test / Công việc, số cùng hàm màn đó; GV chấm quá hạn + Nhắc), TVV "Học viên của tôi" / CX "Số liệu" ô đếm bấm được (`chipHocVien` — OV-10b dùng cho chip), CX bỏ "Theo giáo viên"; bộ đo tốc độ có vai ADMIN / TVV / CX (`prOv10c.tests`) |
 | 13/10/2026 | OV-8b (Opus 5.5) · `claude/happy-fermat-7tqtgh` | Quyền TVV / CX: quyền hẹp `student.edit_more` (migrate `prOv8b`, một lần) — Target sửa thẳng có lý do, Ghi chú, Tạm dừng / Quay lại / Thôi học + Hoàn tác, kết quả thi thật; ô TVV chỉ cùng chi nhánh (máy chủ 400); học thuật gọi thẳng → 403 (`prOv8b.tests`) |
 | 13/10/2026 | OV-8a (Opus 5.5) · `claude/pr-ov8a-buoc-tiep-sau-thi-rdlok4` | Bước tiếp sau thi: có kết quả thi thật không tự Lưu trữ nữa → việc QL "Chọn bước tiếp sau thi" (+7 ngày); mục Bước tiếp ở ngăn Tổng kết: Kết thúc (Lưu trữ) · Học tiếp lộ trình mới · Học lại (panel Học lại), gợi ý theo Target, đổi = hoàn tác cái cũ, mốc Hành trình; migrate `prOv8a` |
 | 13/10/2026 | OV-7b (Opus 5.5) · `claude/affectionate-edison-avs75c` | Sửa sau khi lưu 2/2: sửa lần ghi Kết quả PA gần nhất (người ghi + QL; giữ lựa chọn = sửa chữ, đổi = đảo hệ quả cũ + ghi lại, một giao dịch; nhóm bổ trợ, Mini Test, PA thay, thẻ Xin hỗ trợ); Sửa Xem lại tại chỗ; GV đã hoàn thành Case Mở lại được; "Sửa xác nhận" |

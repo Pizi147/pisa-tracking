@@ -10,10 +10,11 @@ import { DaiChoDuyet, DiemDangChuY, KhoiCanXuLy } from './KhoiCanXuLy.tsx';
 import { ViecCuaToi, YeuCauCuaToi } from './ViecCuaToi.tsx';
 import { LopToiDay } from './LopToiDay.tsx';
 import { HocVienCuaToi } from './HocVienCuaToi.tsx';
+import { MockTestAdmin } from './MockTestAdmin.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { HangTab } from '../../ui/HangTab.tsx';
 import { CongTacKhung, khungDaNho } from '../../ui/CongTacKhung.tsx';
-import { TAB_TONG_QUAN_LABEL, ngay, tuanLich, type TabTongQuan } from '@shared/domain/index.ts';
+import { TAB_TONG_QUAN_LABEL, laVaiQuanLy, ngay, tuanLich, type TabTongQuan } from '@shared/domain/index.ts';
 
 /**
  * TỔNG QUAN THEO VAI (PR-VAI-a, mockup 23). Trang đầu trả lời một câu: hôm nay tôi phải làm gì.
@@ -84,29 +85,47 @@ export default function OverviewPage({ tab: tabProp = 'tong-quan' }: { tab?: Tab
     );
   }
 
+  /*
+   * OV-10c (mockup vai 13/10 mục 4–6): tab đầu theo việc của vai — Admin "Mock Test" (4 ô + GV chấm quá hạn + Lịch sắp tới, không khối Case / PA);
+   * CX "Số liệu" (ô đếm học viên mọi chi nhánh + Số liệu, không "Việc hôm nay"). QL / Quản trị giữ nguyên.
+   */
+  const ql = laVaiQuanLy(session?.roles);
+  const vai: 'ql' | 'admin' | 'cx' = ql ? 'ql' : session?.nav?.workChamDiem ? 'admin' : session?.roles?.includes('cx') ? 'cx' : 'ql';
+  const nhanTabDau = vai === 'admin' ? 'Mock Test' : vai === 'cx' ? 'Số liệu' : TAB_TONG_QUAN_LABEL['tong-quan'];
+
   return (
     <div className="page space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-x-3 gap-y-2">
         <HangTab ariaLabel="Tổng quan" value={tabProp} onChange={goTab}
-          tabs={(['tong-quan', 'phan-tich'] as const).map((k) => ({ key: k, label: TAB_TONG_QUAN_LABEL[k] }))} />
+          tabs={(['tong-quan', 'phan-tich'] as const).map((k) => ({ key: k, label: k === 'tong-quan' ? nhanTabDau : TAB_TONG_QUAN_LABEL[k] }))} />
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
           {duLieuDen && <span className="text-xs text-slate-500">{duLieuDen}</span>}
           <BranchFilter branchId={branchId} onBranch={setBranchId} />
         </div>
       </div>
       {tab === 'board' && <PhanTich />}
-      {tab === 'work' && (
+      {tab === 'work' && vai === 'admin' && (
+        <>
+          <MockTestAdmin branchId={branchId} />
+          <LichSapToi branchId={branchId} ct={null} />
+        </>
+      )}
+      {tab === 'work' && vai !== 'admin' && (
         <>
           {/* ─────────────── tầng 1: việc chờ Quản lý quyết + việc đang trễ (gộp hai khung) */}
           {session?.nav?.workApprove && <DaiChoDuyet branchId={branchId} />}
           {/* PR-OV2a: Cần xử lý là việc — CX (không có Công việc) chỉ xem Số liệu. */}
           {session?.nav?.work && <KhoiCanXuLy branchId={branchId} />}
 
+          {/* OV-10c: CX — ô đếm học viên bấm được (mọi chi nhánh, hoặc chi nhánh đang chọn), như TVV. */}
+          {vai === 'cx' && <HocVienCuaToi branchId={branchId} />}
+
           {/* ─────────────── tầng 3: số theo khung */}
-          <section aria-labelledby="so-lieu" className="space-y-3 pt-3">
+          <section aria-labelledby="so-lieu" className={`space-y-3 ${vai === 'cx' ? '' : 'pt-3'}`}>
             <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
               <div className="flex flex-wrap items-center gap-3">
-                <h2 id="so-lieu" className="m-0 text-base font-semibold text-slate-100">Số liệu</h2>
+                {/* CX: tab đã tên "Số liệu" — không lặp tiêu đề, giữ tên cho trình đọc màn hình. */}
+                <h2 id="so-lieu" className={vai === 'cx' ? 'sr-only' : 'm-0 text-base font-semibold text-slate-100'}>Số liệu</h2>
                 <CongTacKhung trang="tong-quan" value={khung} onChange={(k) => setKhung(k === 'thuong' ? 'thuong' : 'ft')} />
               </div>
             </div>
