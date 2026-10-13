@@ -8,6 +8,7 @@
  *   đường dẫn của một thông báo `duongThongBao`
  */
 import type { HoSoTab } from './hoSoHocVien.ts';
+import type { NavQuyen } from './dieuHuong.ts';
 import { duongThe } from './yeuCauDuyet.ts';
 
 export type ThamSoHoSo = {
@@ -132,6 +133,8 @@ export type ThongBaoRow = {
   duong?: string | null;
   /** PR-VAI-a (Q18, Q21): tên em, môn của Case, lớp em đang học; `con_viec` 1/0 = việc còn chờ / đã xong (Case chờ nguyên nhân, thẻ `cho`). */
   ten_hv?: string | null; mon?: string | null; lop?: string | null; con_viec?: number | null;
+  /** OV-11f (TQ-7): Case mà tín hiệu đã vào — chuông mở thẳng Case. */
+  case_id?: number | null;
 };
 
 /**
@@ -171,6 +174,24 @@ export function noiDenThongBao(n: ThongBaoRow): string | null {
 }
 
 /**
+ * OV-11f (CA1-2, Q9): thông báo MỞ ĐƯỢC ở vai đang chọn — đường của nó vào khu mà quyền điều hướng (`nav`) của vai cho vào (App đưa khu không có
+ * quyền về `/`). Ở Góc nhìn khác vai gốc, chuông chỉ hiện thông báo mở được; không bao giờ đánh dấu đọc một thông báo không mở được.
+ * Không điều hướng / hồ sơ / lớp (máy chủ tự chặn) → mở được.
+ */
+export function moDuocThongBao(n: ThongBaoRow, nav: Partial<Pick<NavQuyen, 'work' | 'workApprove' | 'workOps' | 'workReports' | 'workRequests' | 'admin' | 'test' | 'analysis'>>): boolean {
+  const path = (duongThongBao(n) ?? '').split('?')[0];
+  if (path.startsWith('/cong-viec/cho-duyet')) return !!nav.workApprove;
+  if (path.startsWith('/cong-viec/yeu-cau')) return !!nav.workRequests;
+  if (path.startsWith('/cong-viec/van-hanh')) return !!nav.workOps;
+  if (path.startsWith('/cong-viec/bao-cao')) return !!nav.workReports;
+  if (path.startsWith('/cong-viec')) return !!nav.work;
+  if (path.startsWith('/quan-tri')) return !!nav.admin;
+  if (path.startsWith('/test')) return !!nav.test;
+  if (path.startsWith('/phan-tich')) return !!nav.analysis;
+  return true;
+}
+
+/**
  * ĐƯỜNG DẪN CỦA MỘT THÔNG BÁO (R8, Q12) — mỗi loại về đúng chỗ LÀM ĐƯỢC VIỆC của nó, không phải chỗ có
  * chữ giống tên. Tra không ra (loại lạ, thiếu học viên) → `null`, chuông không điều hướng chứ không đoán.
  */
@@ -181,12 +202,14 @@ export function duongThongBao(n: ThongBaoRow): string | null {
     case 'sos_case':
       return n.student_id != null ? duongHoSoHocVien(n.student_id, { caseId: n.entity_id }) : null;
     case 'case_signal':
-      return n.student_id != null ? duongHoSoHocVien(n.student_id) : null;
+      return n.student_id != null ? duongHoSoHocVien(n.student_id, n.case_id ? { caseId: n.case_id } : undefined) : null;
     case 'assessment_attempt':
       if (n.kind === 'sos') {
         return n.student_id != null ? duongHoSoHocVien(n.student_id, { dot: n.attempt_id ?? n.entity_id }) : null;
       }
       if (n.kind === 'schedule_move' || n.kind === 'tu_doi_lich' || n.kind === 'huy_vang') return duongDotTest({ id: n.attempt_id ?? n.entity_id });
+      /* OV-11f (TQ-6): Báo phụ huynh qua TVV — chỗ làm là thẻ Phối hợp trong hồ sơ em. */
+      if (n.kind === 'phoi_hop') return n.student_id != null ? duongHoSoHocVien(n.student_id, { tab: 'y-thuc', sub: 'phoi-hop' }) : null;
       return null;
     case 'skill_move_requests':
       return n.attempt_id != null ? duongDotTest({ id: n.attempt_id }) : null;

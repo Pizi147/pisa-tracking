@@ -73,8 +73,10 @@ export function DongDanhSach({ rows, onPick }: { rows: DongSoLieu[]; onPick?: ()
 }
 
 /** Panel "{n} {đơn vị} — {tên}": đúng tập ID sinh ra con số (cùng hàm, cùng quyền, cùng bộ lọc). */
-export function DanhSachSoLieu({ id, giaTri, phamVi, extra, open, onClose }: {
+export function DanhSachSoLieu({ id, giaTri, phamVi, extra, open, onClose, ten }: {
   id: string; giaTri: number; phamVi?: PhamViSoLieu; extra?: Record<string, string>; open: boolean; onClose: () => void;
+  /** OV-11f (TQ-11): tên ở ô / dòng vừa bấm — panel nói đúng chữ người dùng vừa đọc (một khái niệm một tên). Không có → tên trong sổ. */
+  ten?: string;
 }) {
   const cs = metricById(id);
   const qs = qsSoLieu(phamVi, extra);
@@ -82,7 +84,7 @@ export function DanhSachSoLieu({ id, giaTri, phamVi, extra, open, onClose }: {
   if (!cs || !open) return null;
   const dv = METRIC_UNIT_LABEL[cs.donVi];
   return (
-    <KhungPanel tieuDe={`${data ? data.n : giaTri} ${dv} — ${cs.ten}`} onDong={onClose}
+    <KhungPanel tieuDe={`${data ? data.n : giaTri} ${dv} — ${ten ?? cs.ten}`} onDong={onClose}
       ngCanh="Đúng những mục tạo nên con số vừa bấm">
       <div className="mb-3 pt-3"><CachTinh cs={cs} /></div>
       {error ? <ErrorState message={error.message} hint={error.hint} onRetry={reload} />
@@ -134,7 +136,8 @@ export function SoLieu({ id, giaTri, phamVi, rong, className = '', extra, nhan, 
           <button type="button" onClick={() => setHowTo(true)} aria-expanded={howTo} aria-describedby={howTo ? idCachTinh : undefined}
             onFocus={() => setHowTo(true)} onBlur={() => setHowTo(false)}
             onKeyDown={(e) => { if (e.key === 'Escape' && howTo) { e.stopPropagation(); setHowTo(false); } }}
-            className="appearance-none bg-transparent border-0 p-0 max-sm:py-3 max-sm:-my-3 cursor-pointer text-xs text-slate-500 hover:text-slate-300 whitespace-nowrap">Cách tính</button>
+            aria-label="Cách tính"
+            className="appearance-none bg-transparent border-0 p-0 max-sm:p-3 max-sm:-m-3 cursor-pointer text-sm leading-none text-slate-500 hover:text-slate-300">ⓘ</button>
           {howTo && (
             <div id={idCachTinh} role="tooltip" className="card absolute right-0 top-full z-30 mt-1.5 w-[min(20rem,calc(100vw-2.5rem))] p-3 shadow-2xl">
               <CachTinh cs={cs} />
@@ -154,7 +157,7 @@ export function SoLieu({ id, giaTri, phamVi, rong, className = '', extra, nhan, 
       </div>
       {phu ? <div className="text-xs text-slate-500 mt-1">{phu}</div>
         : (rong || giaTri === 0) && <div className="text-xs text-slate-500 mt-1">{rong ? 'Không có dữ liệu trong phạm vi' : 'Không có mục nào'}</div>}
-      <DanhSachSoLieu id={id} giaTri={giaTri} phamVi={phamVi} extra={extra} open={open} onClose={() => setOpen(false)} />
+      <DanhSachSoLieu id={id} giaTri={giaTri} phamVi={phamVi} extra={extra} open={open} onClose={() => setOpen(false)} ten={nhan} />
     </div>
   );
 }

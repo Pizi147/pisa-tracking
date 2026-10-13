@@ -48,6 +48,8 @@ export type AttemptEval = {
   chot?: boolean;
   /** Theo kỹ năng ĐÁNH GIÁ: listening · reading · writing · speaking. */
   skills: Record<string, SkillEval>;
+  /** OV-11f (PT-6): lượt của em KCK (`luotKck`) — ngoài tử / mẫu "Dưới kỳ vọng". */
+  kck?: boolean;
   /** MH7: lớp không chia môn (Pre FOU) — kết quả là % tổng (`tyLeTong`, đủ điểm mới có), không phải SOS. */
   khongChiaMon?: boolean;
   tyLeTong?: number | null;
@@ -132,7 +134,10 @@ function attemptsNewestFirstGoc(studentIds: number[]): Map<number, any[]> {
     for (const r of db()
       .prepare(
         `SELECT a.*, c.programme_code, pr.week_start AS period_start, pr.week_end AS period_end,
-                (SELECT cy.route FROM learning_cycles cy WHERE cy.id = a.cycle_id) AS route, (SELECT cy.khong_cam_ket FROM learning_cycles cy WHERE cy.id = a.cycle_id) AS cy_kck
+                (SELECT cy.route FROM learning_cycles cy WHERE cy.id = a.cycle_id) AS route, (SELECT cy.khong_cam_ket FROM learning_cycles cy WHERE cy.id = a.cycle_id) AS cy_kck,
+                /* OV-11f (PT-3): lộ trình FAST TRACK đang chạy của em (nếu có) — SOS / dưới kỳ vọng chỉ đọc lượt của lộ trình này, không rơi về Final lớp thường cũ. */
+                (SELECT cy2.id FROM learning_cycles cy2 WHERE cy2.student_id = a.student_id AND cy2.status = 'active' AND cy2.route IS NOT NULL
+                  ORDER BY cy2.id DESC LIMIT 1) AS cy_ft_dang_chay
            FROM assessment_attempts a
            LEFT JOIN classes c ON c.id = a.class_id
            LEFT JOIN report_periods pr ON pr.id = a.planned_period_id
@@ -175,12 +180,14 @@ export function latestAttempts(studentIds: number[], pick: 'valid' | 'due', toda
       for (const a of list) {
         if (pick === 'due' && !(a.period_start && a.period_start <= today)) continue;
         if (pick === 'valid' && !luotSinhViecRow(a, today)) continue;
+        if (pick === 'valid' && a.cy_ft_dang_chay && a.cycle_id !== a.cy_ft_dang_chay) continue;   // OV-11f (PT-3): như `standingFor`
         const ev = evaluateAttemptRow(a, bundle, programmes);
         if (pick === 'valid' && ev.scored === 0) continue;
         /* Độ phủ: MT lịch sử chưa đủ điểm không phải "cần được đánh giá" (nhập bù, không hạn — T34). */
         if (pick === 'due' && a.lich_su && !ev.complete) continue;
         out.set(sid, {
           attemptId: a.id, studentId: sid, kind: a.kind, weekStart: a.period_start ?? null, attemptNo: a.attempt_no, ...ev,
+          kck: luotKck({ kck: a.cy_kck, kind: a.kind }),
         });
         break;
       }
@@ -213,6 +220,7 @@ export function hvDuoiKyVongMon(p: Principal, branchId: number | null, today: st
   const latest = latestAttempts(studentsInScope(p, branchId), 'valid', today);
   const under: number[] = [], evaluable: number[] = [];
   for (const [sid, ev] of latest) {
+    if (ev.kck) continue;   // OV-11f (PT-6, Q29-1): lượt em KCK ngoài tử và mẫu "Dưới kỳ vọng" — như Phân tích (`luotKck`)
     const picked = skill ? [ev.skills[skill]].filter(Boolean) : Object.values(ev.skills);
     if (picked.some((s) => s.evaluable)) evaluable.push(sid);
     if (picked.some((s) => s.evaluable && s.under)) under.push(sid);

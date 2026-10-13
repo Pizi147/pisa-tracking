@@ -59,7 +59,8 @@ export function BranchPulse({ branchId, ct }: { branchId: number | null; ct: Chu
   const coGv = data.cheDo === 'lop' && !!session?.nav?.phanTichGv;
   const o = (h: { khoa: string; nhan: string }, c: CotBang, x: OBang) => (
     <td key={c} className="td text-right tabular-nums">
-      <SoLieuO giaTri={x.n} tieuDe={`${COT.find((k) => k.key === c)!.nhan(ct)} · ${h.nhan}`}
+      {/* OV-11f (TQ-14, P2-2): số bấm được có vùng chạm 44 px cả ngang trên điện thoại (dọc đã có ở SoLieuO), không đổi hình. */}
+      <SoLieuO giaTri={x.n} className="max-sm:px-3 max-sm:-mx-3" tieuDe={`${COT.find((k) => k.key === c)!.nhan(ct)} · ${h.nhan}`}
         nguon={`/tong-quan/chi-nhanh/o?cot=${c}&khoa=${h.khoa}${q ? `&${q}` : ''}`} />
       {c === 'duDuLieu' && <span className="text-slate-500">/{x.mau ?? 0}</span>}
     </td>

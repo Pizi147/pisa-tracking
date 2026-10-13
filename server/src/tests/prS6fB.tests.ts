@@ -229,7 +229,8 @@ async function runTask9(t: YThucTestKit, d: any) {
     try {
       const dong = (tq.tongQuanQuanLy(P.mbManager, { branchId: mb }).canXuLy as any[]).find((x) => x.metricId === 'lop-thieu-gv-mon');
       const m = (['ft', 'thuong'] as const).reduce((s, ct) => s + (hoSoGv.bangGvChiNhanh(P.mbManager, { cn: mb, ct }).chuaPhanCong?.quaHan ?? 0), 0);
-      assert(m > 0 && dong?.kem?.includes(`${m} bài chưa có người chấm`), `kem: ${dong?.kem} · bảng GV: ${m}`);
+      /* OV-11f (TQ-13): vế "bài chưa có người chấm" là chỉ số bấm được `bai-qua-han-chua-phan-cong`. */
+      assert(m > 0 && dong?.kem?.some((x: any) => x.metricId === 'bai-qua-han-chua-phan-cong' && x.n === m), `kem: ${JSON.stringify(dong?.kem)} · bảng GV: ${m}`);
     } finally { conn.prepare(`UPDATE teacher_assignments SET status = 'active' WHERE id IN (${ids.map(() => '?').join(',')})`).run(...ids); }
     assert(!doc('server/src/worklist/tongQuan.ts').includes('chờ hàng "Chưa phân công"'), 'chú thích ponytail cũ');
   });
