@@ -64,7 +64,9 @@ export async function runPrOv1cTests(t: YThucTestKit) {
     xoaNho();
     return a.student_id as number;
   };
-  const diem = (aid: number, s: string, band: number, today = TRONG) => attempts.saveScore(QL, aid, s, { band }, today);
+  /* OV-4c: W1 / W2 / S ở lượt thường chỉ nhận 4 tiêu chí — bốn tiêu chí bằng nhau cho đúng band cần dựng. */
+  const diem = (aid: number, s: string, band: number, today = TRONG) =>
+    attempts.saveScore(QL, aid, s, s === 'listening' || s === 'reading' ? { band } : { criteria: [band, band, band, band] }, today);
   const vang = (aid: number, s: string, today = TRONG) => attempts.saveScore(QL, aid, s, { noShow: true }, today);
   const kq = (aid: number) => { xoaNho(); return attempts.resultOf(one('SELECT * FROM assessment_attempts WHERE id = ?', aid)); };
   const caseCua = (aid: number) => all(
