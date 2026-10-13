@@ -183,7 +183,8 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
   quy trình (lộ trình → bàn giao → KQĐR, SOS MT, dấu "-", huỷ/khôi phục), giao diện, **12 PR OV-1a … OV-6b** + phụ thuộc, tiêu chí nghiệm thu.
 - Mockup bản 2 (góp ý 11/10 đã áp): `thiet-ke/mockup-overhaul-{1,2,3}-*-2026-10-11.html`.
 - Quyết định: mục 3 (các dòng 11/10). Thứ tự, model, prompt: mục 5, 6, 9.
-- **Tình trạng 13/10 (đêm): ĐÃ MERGE HẾT OV** (tới OV-10b #363). Việc tiếp: chủ SP chạy 3 lệnh chỉ đọc (mục 5) → planning đọc kết quả → **deploy MỘT lần** theo `DEPLOY_2026-10.md` → PR-EN → PR-SOTAY → deploy lần 2.
+- **Tình trạng 13/10 (đêm): ĐÃ MERGE HẾT OV** (tới OV-10b #363); đã chạy 3 lệnh chỉ đọc trên bản chính. Bàn giao: `docs/superpowers/plans/2026-10-14-ban-giao-planning.md`.
+  Việc tiếp: **OV-1e** (giữ lịch thi lại trong migrate `prOv1b`) + rà soát cuối (OV-11x) → chạy lại `kiem-truoc-ov1b` → **deploy MỘT lần** → PR-EN → PR-SOTAY → deploy lần 2.
   OV-4 và OV-6b của đặc tả **tách đôi** (mỗi nửa một vùng mã, rà riêng). Thứ tự + song song: mục 5; prompt: mục 9.3.
 - **Chủ SP trả lời 12/10:** (1) hạn khi SOS MT chốt = luật hiện có (5 ngày, SOS 3 = 3 ngày), tính từ ngày chốt; (2) **không làm** ô "Dự kiến quay lại" (mục 3).
 
@@ -283,7 +284,8 @@ Xong: [x] kế hoạch, một dòng mục 11, CODE_MAP.md nếu thêm/xoá file.
 | OV-1c #335 · OV-3c #337 · OV-6b2 #336 | ✅ merge 12–13/10 | | | |
 | OV-5a #343 · OV-5b #342 · OV-7a #344 · OV-7b #347 · OV-8a #348 | ✅ merge 13/10 | | | |
 | OV-8b #352 · OV-10a #355 · OV-9 #356 · OV-1d #357 · OV-2c #360 · OV-10c #361 · OV-4c #362 · OV-10b #363 | ✅ merge 13/10 — **hết OV** | | | |
-| **OV-10c** | **OV-10b** | **OV-1d** | **OV-4c** | **OV-2c** - OV-8b rà sâu + `/security-review` (TVV KHÔNG được `cycle.edit`; bước tiếp sau thi vẫn chỉ QL). Sau OV-8b: **OV-9 + OV-10a + OV-10c chạy cùng lúc** (3 máy); OV-10b sau OV-9 + OV-10a (chung ô Sửa thông tin, đầu hồ sơ). Rà sâu: OV-9, OV-10a, OV-10b (+ `/security-review`). Cổng tiếp theo: 4310/5483.
+| **OV-1e** | `docs/superpowers/plans/2026-10-14-pr-ov1e-giu-lich-thi-lai.md` | Opus 5.5 · High (Sonnet 5.5 · High) | 4310/5483 | ngay — trước deploy |
+| **OV-10c** | **OV-10b** | **OV-1d** | **OV-4c** | **OV-2c** - OV-8b rà sâu + `/security-review` (TVV KHÔNG được `cycle.edit`; bước tiếp sau thi vẫn chỉ QL). Sau OV-8b: **OV-9 + OV-10a + OV-10c chạy cùng lúc** (3 máy); OV-10b sau OV-9 + OV-10a (chung ô Sửa thông tin, đầu hồ sơ). Rà sâu: OV-9, OV-10a, OV-10b (+ `/security-review`). Cổng tiếp theo: 4320/5493.
 
 ## 10. Mẫu giao việc cho agent (session planning dùng)
 
