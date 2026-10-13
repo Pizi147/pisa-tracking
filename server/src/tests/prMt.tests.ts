@@ -1,5 +1,6 @@
 /** PHÉP KIỂM PR-MT — lịch MT tự tạo, MT lịch sử, đánh số liền mạch, RF, dời do vắng. Harness do `run.ts` truyền vào. */
 import type { YThucTestKit } from './yThuc.tests.ts';
+import { chotSan } from './luotThu.ts';
 
 export async function runPrMtTests(t: YThucTestKit) {
   const { check, assert } = t;
@@ -218,10 +219,13 @@ export async function runPrMtTests(t: YThucTestKit) {
     const sid = them(lop, ten, addDays(tuanNay, -7 * (d.tuanHocCuaMt(d.lichMtGoc(route), 1) - 1)));
     return { sid, a: luotCua(sid)[0] };
   };
-  const nhap = (a: any, b: { l: number; r: number; w: number; s: number }) => {
+  /* OV-1c: `w: null` = Writing chưa thi, lượt chốt sẵn (`chotSan`) — Overall không tính, mức SOS chỉ theo kỹ năng dưới kỳ vọng
+     (đủ 4 kỹ năng mà Overall ≥ kỳ vọng thì không SOS — không dựng được "chỉ L dưới 6.5 mà LT1 vẫn đạt 5.5" bằng 4 kỹ năng). */
+  const nhap = (a: any, b: { l: number; r: number; w: number | null; s: number }) => {
+    if (b.w === null) chotSan(conn, a.id);
     attemptsSvc.saveScore(P.admin, a.id, 'listening', { rawScore: scoringSvc.LISTENING_BY_RAW.indexOf(b.l) });
     attemptsSvc.saveScore(P.admin, a.id, 'reading', { rawScore: scoringSvc.READING_BY_RAW.indexOf(b.r) });
-    for (const k of ['writing1', 'writing2']) attemptsSvc.saveScore(P.admin, a.id, k, { criteria: [b.w, b.w, b.w, b.w] });
+    for (const k of b.w === null ? [] : ['writing1', 'writing2']) attemptsSvc.saveScore(P.admin, a.id, k, { criteria: [b.w, b.w, b.w, b.w] });
     attemptsSvc.saveScore(P.admin, a.id, 'speaking', { criteria: [b.s, b.s, b.s, b.s] });
     return attemptsSvc.attemptDetail(P.admin, a.id).result;
   };
@@ -229,14 +233,14 @@ export async function runPrMtTests(t: YThucTestKit) {
   const lt1 = emMt1TuanNay('MB FT 101', 'PRMT LT1 so sánh', 'LT1');
   check('PR-MT (4) · RF target 6.5, MT1 L 6.0 → dưới kỳ vọng 6.5, SOS 1; LT1 cùng điểm → kỳ vọng 5.5, đạt (M2, Q27-4)', () => {
     assert(rf1.a.no === 1 && rf1.a.lich_su === 0 && lt1.a.lich_su === 0, JSON.stringify([rf1.a, lt1.a]));
-    const r = nhap(rf1.a, { l: 6, r: 7, w: 7, s: 7 });
+    const r = nhap(rf1.a, { l: 6, r: 7, w: null, s: 7 });
     assert(r.expectation === 6.5 && r.sosLevel === 1, `RF: kỳ vọng ${r.expectation}, SOS ${r.sosLevel}`);
-    const l = nhap(lt1.a, { l: 6, r: 7, w: 7, s: 7 });
+    const l = nhap(lt1.a, { l: 6, r: 7, w: null, s: 7 });
     assert(l.expectation === 5.5 && l.sosLevel === 0, `LT1: kỳ vọng ${l.expectation}, SOS ${l.sosLevel}`);
   });
   const rf2 = emMt1TuanNay('MB FT RF 12', 'PRMT RF D1 SOS2', 'RF');
   check('PR-MT (4) · RF MT1 SOS 2 → PA quy chế `Tutor · đến lúc thi` (hàng MT3), Phối hợp theo hàng MT4 (T4, D1)', () => {
-    const r = nhap(rf2.a, { l: 6, r: 6, w: 7, s: 7 });
+    const r = nhap(rf2.a, { l: 6, r: 6, w: null, s: 7 });
     assert(r.sosLevel === 2, `SOS ${r.sosLevel}`);
     const pa = conn.prepare(
       `SELECT ci.description FROM case_interventions ci JOIN sos_cases sc ON sc.id = ci.case_id
@@ -249,7 +253,7 @@ export async function runPrMtTests(t: YThucTestKit) {
     const row = casesSvc.skillSupportBoard(P.admin, rf1.sid).rows.find((x: any) => x.category === 'listening');
     assert(row?.expectation === 6.5 && row.gap === -0.5, JSON.stringify(row && { e: row.expectation, g: row.gap }));
     const o = ptLop.phanTichLop(P.admin, classId('MB FT RF 12')).o['listening|mt1'];
-    assert(o?.tong >= 2 && o.dat === 0, JSON.stringify(o));   // bộ demo có thêm em RF Đặng Quốc Bảo (MT1 L 6.0 — cũng dưới 6.5)
+    assert(o?.tong >= 2 && o.dat === 0, JSON.stringify(o));   // bộ demo có thêm em RF Đặng Quốc Bảo (MT1 L 5.5 — cũng dưới 6.5)
     const th = tongHopSvc.tongHop(P.admin, { branchId: null, ct: 'ft', soTuan: 4, classId: classId('MB FT RF 12'), theo: 'lop' });
     assert(th.tong['kn:listening'] >= 2 && th.tong.dat === 0, JSON.stringify(th.tong));   // + em RF Đặng Quốc Bảo của bộ demo
   });
@@ -344,9 +348,10 @@ export async function runPrMtTests(t: YThucTestKit) {
     attemptsSvc.saveScore(P.mbManager, mt2H1.id, 'listening', { noShow: false });
   });
   check('PR-MT (6) · H2: MT2 lịch sử cách 10+ tuần, đủ 4 kỹ năng SOS 2 → KHÔNG Case, không tín hiệu, không Phối hợp (M4, M-14)', () => {
-    attemptsSvc.saveScore(P.mbManager, mt2H1.id, 'listening', { rawScore: scoringSvc.LISTENING_BY_RAW.indexOf(5) });
-    attemptsSvc.saveScore(P.mbManager, mt2H1.id, 'reading', { rawScore: scoringSvc.READING_BY_RAW.indexOf(5) });
-    for (const k of ['writing1', 'writing2']) attemptsSvc.saveScore(P.mbManager, mt2H1.id, k, tieuChi(7));
+    /* OV-1c: L/R 4.0, W 6.0 — Overall 5.0 dưới kỳ vọng (L/R 5, W 7 cho Overall đạt → không SOS). */
+    attemptsSvc.saveScore(P.mbManager, mt2H1.id, 'listening', { rawScore: scoringSvc.LISTENING_BY_RAW.indexOf(4) });
+    attemptsSvc.saveScore(P.mbManager, mt2H1.id, 'reading', { rawScore: scoringSvc.READING_BY_RAW.indexOf(4) });
+    for (const k of ['writing1', 'writing2']) attemptsSvc.saveScore(P.mbManager, mt2H1.id, k, tieuChi(6));
     const r = attemptsSvc.attemptDetail(P.mbManager, mt2H1.id).result;
     assert(r.sosLevel === 2, `SOS ${r.sosLevel}`);
     const n = (sql: string) => (conn.prepare(sql).get(mt2H1.id) as any).n;

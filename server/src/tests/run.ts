@@ -6,7 +6,7 @@ import path from 'node:path';
 import fs from 'node:fs';
 import os from 'node:os';
 import { fileURLToPath } from 'node:url';
-import { boLichTuTao } from './luotThu.ts';
+import { boLichTuTao, chotSan } from './luotThu.ts';
 
 /*
  * Dọn rác thư mục tạm của các lần `npm run check` trước (tiền tố `z2-`, xem server/src/tests/banChinh.tests.ts):
@@ -149,6 +149,8 @@ const datNguyenNhanThu = (who: { userId: number }, caseId: number, primaryCode: 
   dongBoCaseThu(caseId);
 };
 const TODAY = demoToday();
+/** OV-1c: lượt thử chốt sẵn (`chotSan`) cho các phép kiểm cũ dựng SOS từ lượt dở — kỹ năng chưa điểm coi như đã dời tuần. */
+const chotThu = (attemptId: number) => { skillSchedule.ensureSkillRows(attemptId); chotSan(conn, attemptId); };
 const classId = (code: string) => (conn.prepare('SELECT id FROM classes WHERE code = ?').get(code) as any).id;
 /* Tuần chưa từng dùng tới thì chưa có trong bảng — tạo luôn, đúng như hệ thống vẫn làm. */
 const periodOf = (weekStart: string) => week.ensurePeriod(weekStart).id;
@@ -408,7 +410,7 @@ check('Học lại trong cùng lộ trình: MT tăng tiếp, kỳ vọng vẫn b
 });
 check('Bằng kỳ vọng là đạt; 0/1/2/3/4 kỹ năng trượt → 0/1/2/3/3', () => {
   const build = (fails: number) => {
-    const low = 6, ok = 6.5;
+    const low = 5, ok = 6.5;   // OV-1c: trượt 5.0 (không 6.0) để Overall một kỹ năng trượt vẫn dưới kỳ vọng — Overall ≥ kỳ vọng là không SOS
     const v = ['listening', 'reading', 'speaking'].map((_, i) => (i < fails ? low : ok));
     const wFail = fails >= 4;
     return scoring.evaluateAttempt(6.5, 3, {
@@ -953,6 +955,7 @@ check('[6.2→v3] Mock Test FT điểm dưới kỳ vọng: tín hiệu nối NG
   const attempt = attempts.createAttempt(P.cpManager, {
     studentId: s.id, cycleId: s.cycle_id, periodId: cpPeriod,
   }) as any;
+  chotThu(attempt.id);
 
   const exp = s.target_score;           // từ MT3 trở đi kỳ vọng bằng target
   const low = exp - 0.5;
@@ -985,7 +988,8 @@ check('[6.2→v3] Mock Test FT điểm dưới kỳ vọng: tín hiệu nối NG
   attempts.saveScore(t('listening'), attempt.id, 'listening', { rawScore: scoring.LISTENING_BY_RAW.indexOf(low) }, chuNhatCuoiOf(attempt.id));
   const early = attempts.attemptDetail(P.cpManager, attempt.id);
   assert(early.result.sosLevel === 1, `Một kỹ năng dưới kỳ vọng phải ra SOS 1 ngay, đang là ${early.result.sosLevel}`);
-  assert(early.result.provisional, 'Chưa đủ điểm thì phải đánh dấu là kết luận tạm thời');
+  /* OV-1c: lượt thử chốt sẵn (`chotThu`) → không "tạm thời"; lượt dở chưa chốt = tạm thời, không Case — phép kiểm prOv1c (OV1c-1). */
+  assert(early.result.chot && !early.result.provisional, 'Lượt đã chốt thì không còn là kết luận tạm thời');
   assert(!preOpen.has('listening'), 'Học viên thử đang có sẵn case Listening mở — chọn học viên khác');
   assert(casesOf() === 1, `Mock FT dưới kỳ vọng phải tự tạo đúng 1 case (v3 S01), đang có ${casesOf()}`);
   assert(plansOf() === 1, `Case tự tạo phải có sẵn đúng 1 phương án (v3 S03), đang có ${plansOf()}`);
@@ -1113,6 +1117,7 @@ check('[9.4] Case chỉ sống nhờ con số vừa sửa thì rút khỏi danh 
   const attempt = attempts.createAttempt(ubManager, {
     studentId: s.id, cycleId: s.cycle_id, periodId: periodOf('2026-12-07'),
   }) as any;
+  chotThu(attempt.id);
   const exp = s.target_score;
   const t = (skill: string) => loadPrincipal(teacherOfSkill('UB FT 401', skill));
 
@@ -2658,7 +2663,8 @@ check('Case sinh từ điểm ghi thẳng học viên và lộ trình, không ch
     )
     .get() as any;
   assert(a, 'Dữ liệu mẫu thiếu một lượt chưa chấm để thử');
-  // Một kỹ năng dưới kỳ vọng là đủ để mở case ngay.
+  chotThu(a.id);
+  // Một kỹ năng dưới kỳ vọng là đủ để mở case ngay (OV-1c: khi lượt đã chốt).
   attempts.saveScore(P.admin, a.id, 'listening', { rawScore: 10 });
   const made = conn
     .prepare(
@@ -3576,6 +3582,7 @@ check('Trượt Listening ở MT1 rồi MT2 → ĐÚNG MỘT case, tên đổi t
     const a = attempts.createAttempt(mgr, {
       studentId: s.id, cycleId: s.cycle_id, periodId: periodOf(date),
     }) as any;
+    chotThu(a.id);
     return a;
   };
   const bandBelow = (no: number) => {
@@ -3651,6 +3658,7 @@ check('Case đã đóng mà MT sau trượt lại → MỞ CASE MỚI nối vào
     const a = attempts.createAttempt(mgr, {
       studentId: s.id, cycleId: s.cycle_id, periodId: periodOf(date),
     }) as any;
+    chotThu(a.id);
     return a;
   };
   const low = (no: number) => {
@@ -9241,6 +9249,9 @@ await runPrOv4bTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, 
 // ==================================================================== PR-OV6b1 (Quản trị › Chương trình: cấu hình, bản chụp lớp, tuần MT FT, ngưỡng đạt)
 const { runPrOv6b1Tests } = await import('./prOv6b1.tests.ts');
 await runPrOv6b1Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== PR-OV1c (SOS MT tạm thời → chốt → xoá, migrate prOv1c)
+const { runPrOv1cTests } = await import('./prOv1c.tests.ts');
+await runPrOv1cTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`

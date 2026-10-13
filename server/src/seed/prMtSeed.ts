@@ -69,7 +69,7 @@ export function buildPrMtDemo(ctx: BuildCtx): { students: number } {
   them(rf12, 'Phan Gia Hân', tuan(0));
   const bao = them(rf12, 'Đặng Quốc Bảo', tuan(-4));                     // MT1 (tuần học 4) = tuần trước, lên lịch từ đầu khoá
   const baoA = luot(bao.cycleId, 1); luotThuong(baoA);
-  nhap(admin, baoA, { l: 6, r: 6, w: 7, s: 7 });                         // RF: kỳ vọng = target 6.5 → L R dưới → SOS 2
+  nhap(admin, baoA, { l: 5.5, r: 5.5, w: 7, s: 6.5 });                   // RF: kỳ vọng = target 6.5 → L R dưới → SOS 2 (OV-1c: Overall 6.0 < 6.5)
 
   // ---------------------------------------------------------------- D2/D3 · HS cũ, MT lịch sử
   const khang = them(ft101, 'Lê Minh Khang', tuan(-17));                  // MT1 −12 tuần · MT2 −6 tuần · MT3 −2 tuần — cả ba là MT lịch sử

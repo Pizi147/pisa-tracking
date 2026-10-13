@@ -28,6 +28,7 @@ import { buildDuyetDemo } from './duyetSeed.ts';
 import { buildCtDemo } from './ctSeed.ts';
 import { buNgayPb2b, buildPb2bDemo } from './pb2bSeed.ts';
 import { dienNguocBanChup } from '../migrate/prTk.ts';
+import { migratePrOv1c } from '../migrate/prOv1c.ts';
 
 const NOW = nowIso();
 
@@ -279,6 +280,8 @@ export function runSeed() {
     buildPb2bDemo({ conn, adminId, branchId, classId, userId, classBranch, nextStudentCode, studentIdByCode });
     /* PR-TK: bộ demo dựng lộ trình đã đóng bằng SQL thẳng — điền ngược bản chụp (cùng hàm với migrate). Đứng SAU mọi bộ demo. */
     dienNguocBanChup(conn);
+    /* OV-1c: Case dựng bằng SQL thẳng theo luật cũ → đúng luật chốt / xoá SOS (cùng hàm với migrate; seed không chạy migrate()). */
+    migratePrOv1c(conn, []);
     /* PR-Pb2-b: bù ngày nhập đầu ô điểm + hạn xử lý chốt / ngày phản hồi vi phạm cho dữ liệu dựng bằng SQL. LUÔN CUỐI. */
     buNgayPb2b(conn);
     /* PR-OV2a: tài khoản Admin · TVV · CX + em của TVV — CUỐI CÙNG để id người dùng cũ không đổi. */

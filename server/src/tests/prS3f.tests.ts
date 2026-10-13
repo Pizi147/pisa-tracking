@@ -29,7 +29,7 @@ export async function runPrS3fTests(t: YThucTestKit) {
     return { id: st.id as number, cycleId: cy.id as number, name: `S3F ${name}` };
   };
   const PAST_WEEK = weekSvc.mondayOf(addDays(TODAY, -14));
-  const mkAttempt = (st: { id: number; cycleId: number }, no: number): any => luotThu(conn, attemptsSvc.createAttempt, P.admin, {
+  const mkAttempt = (st: { id: number; cycleId: number }, no: number): any => luotThu(conn, attemptsSvc.createAttempt, P.admin, { chot: true,
     studentId: st.id, cycleId: st.cycleId, classId: CLASS, no, periodId: weekSvc.ensurePeriod(PAST_WEEK).id });
   const enter = (a: any, skill: string, band: number) => attemptsSvc.saveScore(P.admin, a.id, skill, {
     ...(skill === 'listening' ? { rawScore: scoring.LISTENING_BY_RAW.indexOf(band) }

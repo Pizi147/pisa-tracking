@@ -80,6 +80,16 @@ function DongDau({ cell }: { cell: Cell }) {
 }
 
 /**
+ * KIỂU Ô theo mockup duyệt 11/10 (`.od.vang` · `.od.trong` · `.od.huy`): vắng tím chờ, trống "Nhập" viền đứt màu nhấn, huỷ viền chấm mờ.
+ * Ô vắng hai dòng ("Vắng" / "→ W3 SEP") để vừa cột 104 px của lưới (bảng `table-layout: fixed`).
+ */
+const KIEU_O = {
+  vang: 'flex-col !gap-0 leading-tight border-[color:rgb(var(--wait-line-rgb))] text-[color:rgb(var(--wait-rgb))]',
+  trong: 'justify-center border-dashed text-[color:var(--accent)]',
+  huy: 'border-dotted text-slate-500',
+} as const;
+
+/**
  * Ô ĐIỂM MT: nút mở hộp; ô không mở được là chữ (E5: không viền, không mờ) có câu "vì sao" ở tooltip.
  * `mo` do nơi gọi giữ (lưới / danh sách: một hộp một lúc, "em tiếp" chuyển sang dòng kế).
  */
@@ -100,14 +110,15 @@ export function ODiemMt({ cell, lon = false, mo, onMo, ...hop }: Omit<HopProps, 
       </span>
     );
   }
+  const kieu = cell.progress === 'cancelled' ? 'huy' : cell.daChot?.doiSang ? 'vang' : chu === null ? 'trong' : null;
   return (
-    <span className="inline-flex flex-col items-end gap-0.5">
+    <span className="inline-flex max-w-full flex-col items-end gap-0.5">
       <button ref={setNeo} type="button" aria-expanded={mo} aria-haspopup="dialog"
         aria-label={`${skillLabel(cell.skill)} · ${hop.ctx.tenHv}: ${cell.rawScore !== null ? `${cell.rawScore} câu, band ${fmtBand(cell.band)}` : typeof chu === 'string' ? chu : 'Nhập'}`}
-        className={`btn tabular-nums ${lon ? 'min-h-[44px] min-w-[60px] justify-center text-base font-semibold' : 'btn-sm'} ${chu === null ? 'text-slate-400' : ''} ${mo ? 'border-[color:var(--accent)]' : ''}`}
+        className={`btn max-w-full tabular-nums ${lon ? 'min-h-[44px] min-w-[60px] justify-center text-base font-semibold' : 'btn-sm'} ${kieu ? KIEU_O[kieu] : ''} ${mo ? 'border-[color:var(--accent)]' : ''}`}
         title={cell.noShow?.text ?? `${skillLabel(cell.skill)} — bấm để nhập`}
         onClick={() => onMo(!mo)}>
-        {chu ?? 'Nhập'}
+        {kieu === 'vang' ? <><span>Vắng</span><span className="text-[11px]">→ {cell.daChot!.doiSang}</span></> : chu ?? 'Nhập'}
       </button>
       <DongDau cell={cell} />
       {mo && neo && <HopNhapDiem cell={cell} anchor={neo} onDong={() => onMo(false)} {...hop} />}

@@ -1,7 +1,7 @@
 import { db, tx } from '../db.ts';
 import {
   ASSESSED_SKILLS, ASSESSED_SKILL_LABEL, duongDotTest, ENTRY_SKILLS, ENTRY_SKILL_LABEL, NO_SHOW_OVERRIDDEN_NOTE,
-  CHAM_CHEO, PERMISSIONS, awaitingScore, laChamCheo, cachHuyLuot, kiemBand, kiemNhanXet, kiemSoMtMoi, kyNangSosMt0, laMt0, laMtCu, ngay, dauTruCuaO, noShowText, pendingSkillsOf, soMtKeTiep, tenGvCham, tenMon, tuanHocCuaMt, tuanLich,
+  CHAM_CHEO, PERMISSIONS, awaitingScore, kyNangXongThieu, laChamCheo, cachHuyLuot, kiemBand, kiemNhanXet, kiemSoMtMoi, kyNangSosMt0, laMt0, laMtCu, ngay, dauTruCuaO, noShowText, pendingSkillsOf, soMtKeTiep, tenGvCham, tenMon, tuanHocCuaMt, tuanLich,
   type CachHuy, CASE_CATEGORY_LABEL, INTERVENTION_KIND_LABEL, SYSTEM_CLOSE_REASON_LABEL, categoryOf, type CaseCategory, type InterventionKind,
   type AssessedSkill, type EntrySkill, type NoShowState, type PendingCell, type SkillProgress, type WorkScope,
 } from '../../../shared/domain/index.ts';
@@ -213,7 +213,8 @@ export function routeCuaLuot(attempt: any): string | null {
     (db().prepare('SELECT route FROM learning_cycles WHERE id = ?').get(attempt.cycle_id) as any)?.route ?? null);
 }
 
-export function resultOf(attempt: any, rows?: ScoreRow[], skips?: AssessedSkill[]): AttemptResult {
+/** `skillRows` bỏ trống → `loadSkillRows` (nhớ trong request GET; danh sách đã nạp ở `loadBundle` không hỏi lại). */
+export function resultOf(attempt: any, rows?: ScoreRow[], skips?: AssessedSkill[], skillRows?: SkillRow[]): AttemptResult {
   const scores = rows ?? scoresOf(attempt.id);
   return evaluateAttempt(
     laMt0(attempt) ? null : attempt.target_at_attempt,   // PR-MT0: không kỳ vọng / mức SOS — chip SOS riêng (`kyNangSosMt0`)
@@ -221,6 +222,7 @@ export function resultOf(attempt: any, rows?: ScoreRow[], skips?: AssessedSkill[
     entryBandsOf(scores),
     skips ?? skipsOf(attempt.id),
     routeCuaLuot(attempt),
+    kyNangXongThieu(skillRows ?? loadSkillRows([attempt.id]).get(attempt.id) ?? [], scores),
   );
 }
 
@@ -770,7 +772,7 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
       };
     }
 
-    const result = resultOf(a, scores, skips);
+    const result = resultOf(a, scores, skips, bundle.skillRows.get(a.id) ?? []);
     /* Không truyền `hoanTat` (R11) có chủ ý: dòng này chỉ đọc band/noShow/mine/lịch, không đọc canEdit/khoa — đỡ 3 câu SQL. */
     const cells = skillCells(p, a, scores, skips, today, bundle.skillRows.get(a.id));
     const active = cells.filter((c) => c.required);
@@ -980,7 +982,7 @@ export function attemptDetail(p: Principal, attemptId: number) {
    */
   const skillRows = ensureSkillRows(attemptId);
   const skips = skippedSkillsOf(skillRows);
-  const result = resultOf(a, scores, skips);
+  const result = resultOf(a, scores, skips, skillRows);
   const today = demoToday();
   /* R11 (Z2c-c, A3): đợt đã hoàn tất thì ô chỉ sửa được bởi Quản lý — thiếu dòng này GVBM thấy nút "Sửa điểm" rồi bị máy chủ chặn. */
   const cells = skillCells(p, a, scores, skips, today, skillRows, dotHoanTat(attemptId, today));
@@ -1846,6 +1848,7 @@ export function saveScore(
     if (patch.noShow !== undefined) {
       const hasOfficial = (existing?.band ?? null) !== null || (existing?.raw_score ?? null) !== null;
       const done = () => {
+        refreshOutcome(p, attemptId);   // OV-1c: "-" / Vắng / Không dự thi / gỡ "-" có thể làm lượt chốt (hoặc hết chốt)
         const fresh = conn.prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(attemptId) as any;
         return {
           score: conn.prepare('SELECT * FROM assessment_scores WHERE attempt_id = ? AND skill = ?').get(attemptId, skill),
@@ -2148,7 +2151,7 @@ export function classScoreSheet(
         attemptNo: a.attempt_no,
         status: a.status,
         cells: skillCells(p, a, scores, skips, today, bundle.skillRows.get(a.id), hoanTat),
-        result: resultOf(a, scores, skips),
+        result: resultOf(a, scores, skips, bundle.skillRows.get(a.id) ?? []),
         /* PR-MT0: chip SOS chỉ để nhìn (band ≤ Target − 2.0) thay cho mức SOS. */
         ...(laMt0(a) ? { mt0Sos: kyNangSosMt0(resultOf(a, scores, skips).bands, a.target_at_attempt ?? null) } : {}),
         hoanTat: hoanTat.hoanTat,

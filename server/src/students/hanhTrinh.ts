@@ -102,12 +102,14 @@ export function hanhTrinhHocVien(p: Principal, studentId: number, giaiDoanMuon: 
   const scoresByAttempt = new Map<number, any[]>();
   const skipsByAttempt = new Map<number, AssessedSkill[]>();
   const coDongKyNang = new Set<number>();
+  const kyNangByAttempt = new Map<number, any[]>();   // OV-1c: xét chốt
   theoLo(attemptIds, (lo, ph) => {
     for (const r of conn.prepare(`SELECT * FROM assessment_scores WHERE attempt_id IN (${ph})`).all(...lo) as any[]) {
       scoresByAttempt.set(r.attempt_id, [...(scoresByAttempt.get(r.attempt_id) ?? []), r]);
     }
-    for (const r of conn.prepare(`SELECT attempt_id, skill, required FROM attempt_skills WHERE attempt_id IN (${ph})`).all(...lo) as any[]) {
+    for (const r of conn.prepare(`SELECT attempt_id, skill, required, sit_status, absence_move_count FROM attempt_skills WHERE attempt_id IN (${ph})`).all(...lo) as any[]) {
       coDongKyNang.add(r.attempt_id);
+      kyNangByAttempt.set(r.attempt_id, [...(kyNangByAttempt.get(r.attempt_id) ?? []), r]);
       if (!r.required) skipsByAttempt.set(r.attempt_id, [...(skipsByAttempt.get(r.attempt_id) ?? []), r.skill]);
     }
   });
@@ -119,7 +121,8 @@ export function hanhTrinhHocVien(p: Principal, studentId: number, giaiDoanMuon: 
   });
   const typed = new Map<number, ReturnType<typeof typedResult>>();
   for (const a of attemptRows) {
-    typed.set(a.id, typedResult(a, { scores: scoresByAttempt.get(a.id) ?? [], skips: skipsByAttempt.get(a.id) ?? [], prog: a.class_id ? progOf(a.class_programme) : null }));
+    typed.set(a.id, typedResult(a, { scores: scoresByAttempt.get(a.id) ?? [], skips: skipsByAttempt.get(a.id) ?? [], prog: a.class_id ? progOf(a.class_programme) : null },
+      kyNangByAttempt.get(a.id) ?? []));
   }
 
   // -------------------------------------------------------------- (4) Case · (5) PA · (6) lần ghi kết quả — của MỌI lộ trình
@@ -206,7 +209,7 @@ export function hanhTrinhHocVien(p: Principal, studentId: number, giaiDoanMuon: 
       }
       return {
         ...chung, cheDo: 'ielts' as const, nhanNgan: `MT${a.attempt_no}`, lichSu: !!a.lich_su,
-        overall: r.overall, sosLevel: r.sosLevel, soDat: null, soYeuCau: r.required.length, soCoDiem: r.scoredRequired, kyVong: r.expectation,
+        overall: r.overall, sosLevel: r.sosLevel, soDat: null, soYeuCau: r.required.length, soCoDiem: r.scoredRequired, kyVong: r.expectation, chot: r.chot,
         kyNangChuaDat: r.verdicts.filter((v) => v.passed === false).map((v) => v.skill as string),
       };
     });

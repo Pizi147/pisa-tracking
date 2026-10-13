@@ -114,6 +114,8 @@ export type LuotTomTat = {
   id: number; attemptNo: number; kind: string; status: string; periodCode: string | null;
   weekStart: string | null;
   mode: string; scored: number; required: number; complete: boolean;
+  /** OV-1c: lượt FT đã chốt (máy chủ, `AttemptResult.chot`). Thiếu (lớp thường) = theo `complete`. */
+  chot?: boolean;
   overall: number | null; expectation: number | null; sosLevel: number | null;
   /** Chỉ lớp thường — dùng để đếm số môn chưa đạt THẬT (`sosLevel` bị chặn trần ở 3, không dùng được khi trượt cả 4). */
   skills?: { outcome: string }[] | null;
@@ -125,6 +127,8 @@ export type LuotTomTat = {
 export type KetQuaTestGanNhat = {
   attemptId: number; nhan: string; coDiem: number; yeuCau: number;
   dat: boolean | null; sos: number | null;
+  /** OV-1c: lượt đã chốt — chưa chốt thì SOS là số tạm ("tạm thời"). */
+  chot: boolean;
   /** Chỉ lớp thường — số môn chưa đạt THẬT (không bị chặn trần như `sos`); FT luôn `null`. */
   soMonChuaDat: number | null;
   /** `<KetQuaDot>` chỉ nhận 1–4 kỹ năng (ATTEMPT_SKILL_UNITS); ngoài khoảng đó giao diện ghi `{có}/{cần} phần có điểm`. */
@@ -153,7 +157,7 @@ export function ketQuaTestGanNhat(attempts: readonly LuotTomTat[], homNay?: stri
     : (a.complete && a.overall !== null && a.expectation !== null ? a.overall >= a.expectation : null);
   const soMonChuaDat = ratio ? (a.skills ?? []).filter((s) => s.outcome === 'fail').length : null;
   return {
-    attemptId: a.id, nhan, coDiem: a.scored, yeuCau: a.required, dat, sos: a.sosLevel, soMonChuaDat,
+    attemptId: a.id, nhan, coDiem: a.scored, yeuCau: a.required, dat, sos: a.sosLevel, soMonChuaDat, chot: a.chot ?? a.complete,
     dungKetQuaDot: a.required >= 1 && a.required <= ATTEMPT_SKILL_UNITS,
     phanTram: ratio && a.kind === 'final' && a.complete && a.tyLeTong != null ? Math.round(a.tyLeTong * 100) : null,
   };
@@ -178,8 +182,10 @@ export type DauVaoCau = {
   ketQua: {
     dau: string; ratio: boolean; sos: number | null; dat: boolean | null; overall: number | null; kck: boolean;
     soDat: number; soMon: number; monTruot: string[]; phanTram: number | null;
-    /** Số kỹ năng đã có điểm (FT). Thiếu so với `soMon` thì SOS chỉ là số tạm → câu phải ghi "tạm thời" (UX-G G1). */
+    /** Số kỹ năng đã có điểm (FT). */
     coDiem?: number;
+    /** OV-1c: lượt chưa chốt thì SOS chỉ là số tạm → câu phải ghi "tạm thời" (UX-G G1). Thiếu = theo `coDiem < soMon`. */
+    chot?: boolean;
   } | null;
   /** Tên đầy đủ các kỹ năng có Case đang mở. */
   hoTro: string[];
@@ -212,7 +218,7 @@ export function cauTomTat(i: DauVaoCau): ManhCau[] {
     const dau = k.phanTram !== null ? `${k.dau} ${k.phanTram}%` : `${k.dau} ${k.soDat}/${k.soMon} môn đạt`;
     m1 = { chu: k.monTruot.length ? `${dau}: không đạt ${noiVa(k.monTruot)}` : dau, tone: k.monTruot.length ? 'warn' : null };
   } else if (k.kck) m1 = { chu: voiHoTro(k.overall !== null ? `${k.dau} OVR ${k.overall.toFixed(1)}` : k.dau), tone: null };
-  else if (k.sos) m1 = { chu: voiHoTro(`${k.dau} SOS ${k.sos}${k.coDiem !== undefined && k.coDiem < k.soMon ? ' tạm thời' : ''}`), tone: toneSos(k.sos) };
+  else if (k.sos) m1 = { chu: voiHoTro(`${k.dau} SOS ${k.sos}${!(k.chot ?? (k.coDiem === undefined || k.coDiem >= k.soMon)) ? ' tạm thời' : ''}`), tone: toneSos(k.sos) };
   else if (k.dat) m1 = { chu: voiHoTro(`${k.dau} đạt kỳ vọng`), tone: null };
   else m1 = { chu: voiHoTro(`${k.dau} chưa đủ điểm`), tone: null };
 

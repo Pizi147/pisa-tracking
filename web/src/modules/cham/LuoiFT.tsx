@@ -350,11 +350,13 @@ function SheetRow({ row, lop, active, cot, tuanDangXem, onReload, gvMacDinh, moS
               : row.result.complete ? <Level tone="ok">MT0 ✓</Level>
               : <Level tone="muted">{`Chờ ${row.result.required.length - row.result.scoredRequired} kỹ năng`}</Level>
           ) : (
-            <Level tone={row.result.evaluable ? sosTone(row.result.sosLevel) : 'muted'}>
-              {row.result.evaluable
-                ? sosLabel(row.result.sosLevel)
-                : `Chờ ${row.result.required.length - row.result.scoredRequired} kỹ năng`}
-            </Level>
+            /* OV-1c: lượt CHỐT (đủ điểm, hoặc kỹ năng thiếu đã dời / huỷ / Không dự thi) mới có mức SOS — cờ của máy chủ, không suy từ số ô.
+               Chưa chốt mà đã có SOS → chip "SOS tạm · a/4" vàng viền đứt (mockup 11/10). */
+            row.result.chot && row.result.sosLevel !== null ? <Level tone={sosTone(row.result.sosLevel)}>{sosLabel(row.result.sosLevel)}</Level>
+              : row.result.provisional && (row.result.sosLevel ?? 0) > 0
+                ? <Level tone="warn" dut title={`SOS tạm thời: mới có ${row.result.scoredRequired}/${row.result.required.length} kỹ năng`}>
+                  SOS tạm · {row.result.scoredRequired}/{row.result.required.length}</Level>
+                : <Level tone="muted">{`Chờ ${row.result.required.length - row.result.scoredRequired} kỹ năng`}</Level>
           )}
           {row.result.scopeNote && (
             <span className="text-xs text-slate-500 truncate max-w-full" title={row.result.scopeDetail ?? row.result.scopeNote}>

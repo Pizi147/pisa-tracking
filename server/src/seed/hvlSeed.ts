@@ -46,10 +46,11 @@ export function buildHvlDemo(ctx: BuildCtx): { students: number } {
   const ngoc = them(ft101, 'Trịnh Bảo Ngọc', mondayOf(addDays(DEMO_DATE, -7 * 8)));   // MT1 (tuần học 6) = 2 tuần trước → lượt thường
   conn.prepare('UPDATE assessment_attempts SET lich_su = 0 WHERE cycle_id = ?').run(ngoc.cycleId);
   const mt1 = conn.prepare('SELECT id FROM assessment_attempts WHERE cycle_id = ? AND attempt_no = 1').get(ngoc.cycleId) as any;
-  saveScore(admin, mt1.id, 'listening', { rawScore: LISTENING_BY_RAW.indexOf(6.5) });
-  saveScore(admin, mt1.id, 'reading', { rawScore: READING_BY_RAW.indexOf(5) });          // dưới kỳ vọng MT1 (target 6.5 − 1.0 = 5.5) → Case Reading
-  for (const k of ['writing1', 'writing2']) saveScore(admin, mt1.id, k, { criteria: [4.5, 4.5, 4.5, 4.5] });   // Writing dưới kỳ vọng → Case Writing
-  saveScore(admin, mt1.id, 'speaking', { criteria: [6.5, 6.5, 6.5, 6.5] });
+  /* OV-1c: Overall (6 + 4.5 + 4 + 6) / 4 = 5.0 < 5.5 — Overall đạt kỳ vọng thì không SOS, không Case. */
+  saveScore(admin, mt1.id, 'listening', { rawScore: LISTENING_BY_RAW.indexOf(6) });
+  saveScore(admin, mt1.id, 'reading', { rawScore: READING_BY_RAW.indexOf(4.5) });        // dưới kỳ vọng MT1 (target 6.5 − 1.0 = 5.5) → Case Reading
+  for (const k of ['writing1', 'writing2']) saveScore(admin, mt1.id, k, { criteria: [4, 4, 4, 4] });   // Writing dưới kỳ vọng → Case Writing
+  saveScore(admin, mt1.id, 'speaking', { criteria: [6, 6, 6, 6] });
   const caseCua = (topicLike: string) =>
     conn.prepare(`SELECT id FROM sos_cases WHERE student_id = ? AND topic LIKE ? AND status != 'done' ORDER BY id LIMIT 1`).get(ngoc.id, topicLike) as any;
   const caW = caseCua('writing%');
