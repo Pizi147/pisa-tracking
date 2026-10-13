@@ -2,7 +2,7 @@ import { db, tx } from '../db.ts';
 import {
   ENTRY_SKILLS, JOURNEY_GROUP, chuTargetKck, NO_HANDOVER_NOTE, PERMISSIONS, STUDENT_STATUSES, luatDoiLop, NGAY_SINH_TOI_THIEU, docEmail, docNgayNhap,
   type LoaiLop, type ProgrammeCode,
-  CHI_SUA_THONG_TIN,
+  CHI_SUA_THONG_TIN, LIEN_HE_TOI_DA, NHAN_LIEN_HE, docSoDienThoai,
 } from '../../../shared/domain/index.ts';
 import { luotSinhViecRow } from '../worklist/danhGia.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -629,8 +629,8 @@ export function unarchiveStudent(p: Principal, studentId: number) {
  */
 export function chuanHoaSuaHoSo(patch: any) {
   patch = { ...patch };
-  kiemKieuO(patch, ['fullName', 'dob', 'email', 'consultantName', 'note'], ['consultantUserId'],
-    (k) => ({ fullName: 'Họ tên', dob: 'Ngày sinh', email: 'Email', consultantName: 'Tư vấn viên', note: 'Ghi chú', consultantUserId: 'TVV' })[k] ?? k);
+  kiemKieuO(patch, ['fullName', 'dob', 'email', 'consultantName', 'note', 'phone', 'parentName', 'parentRelation', 'parentPhone'], ['consultantUserId'],
+    (k) => ({ fullName: 'Họ tên', dob: 'Ngày sinh', email: 'Email', consultantName: 'Tư vấn viên', note: 'Ghi chú', consultantUserId: 'TVV', ...NHAN_LIEN_HE } as Record<string, string>)[k] ?? k);
   if (patch.fullName !== undefined) {
     patch.fullName = String(patch.fullName ?? '').trim();
     if (!patch.fullName) throw badRequest('Họ tên không được trống.');
@@ -646,6 +646,14 @@ export function chuanHoaSuaHoSo(patch: any) {
     if (e.loi) throw badRequest('Email: ' + e.loi);
     patch.email = e.email;
   }
+  /* OV-10b: liên hệ không bắt buộc — trống = xoá; câu lỗi không lặp lại số đã gõ (dữ liệu cá nhân). */
+  for (const k of ['phone', 'parentPhone'] as const) {
+    if (patch[k] === undefined) continue;
+    const d = docSoDienThoai(patch[k]);
+    if (d.loi) throw badRequest(`${NHAN_LIEN_HE[k]}: ${d.loi}.`);
+    patch[k] = d.sdt;
+  }
+  for (const k of ['parentName', 'parentRelation'] as const) if (patch[k] !== undefined) patch[k] = chuTuDo(patch[k], NHAN_LIEN_HE[k], LIEN_HE_TOI_DA[k]);
   if (patch.consultantUserId !== undefined && patch.consultantUserId !== null) {
     const id = Number(patch.consultantUserId);
     if (!Number.isInteger(id) || !laTvvHoatDong(id)) throw badRequest('TVV: chọn một tài khoản Tư vấn viên đang hoạt động.');
@@ -713,8 +721,8 @@ function docDauVao(v: any): { overall: number; bands: (number | null)[] } | null
   return { overall, bands };
 }
 
-/** PR-OV2a: trường `student.edit_info` (Admin, TVV, CX) sửa được ở hồ sơ — gửi trường khác thì 403. OV-8b: `student.edit_more` (TVV, CX) thêm ghi chú. */
-const TRUONG_THONG_TIN = new Set(['fullName', 'dob', 'email', 'consultantName', 'consultantUserId', 'dauVao']);
+/** PR-OV2a: trường `student.edit_info` (Admin, TVV, CX) sửa được ở hồ sơ — gửi trường khác thì 403. OV-8b: `student.edit_more` (TVV, CX) thêm ghi chú. OV-10b: liên hệ. */
+const TRUONG_THONG_TIN = new Set(['fullName', 'dob', 'email', 'consultantName', 'consultantUserId', 'dauVao', 'phone', 'parentName', 'parentRelation', 'parentPhone']);
 
 export function updateStudent(p: Principal, studentId: number, patch: any) {
   if (!can(p, PERMISSIONS.STUDENT_EDIT, { studentId })) {
@@ -728,6 +736,7 @@ export function updateStudent(p: Principal, studentId: number, patch: any) {
   // Target và ngày thi IELTS nằm ở LỘ TRÌNH, sửa qua updateCycle chứ không qua hồ sơ.
   const map: Record<string, string> = {
     fullName: 'full_name', note: 'note', dob: 'dob', consultantName: 'consultant_name', email: 'email', consultantUserId: 'consultant_user_id',
+    phone: 'phone', parentName: 'parent_name', parentRelation: 'parent_relation', parentPhone: 'parent_phone',
   };
   const { dauVao: dauVaoGui, ...hoSo } = patch ?? {};
   patch = chuanHoaSuaHoSo(hoSo);

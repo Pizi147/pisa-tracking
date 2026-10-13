@@ -9,7 +9,7 @@
  * Câu đọc không theo danh sách id (Turso ≤ 900 tham số): Case / Ý thức đọc khoảng 14 ngày rồi lọc theo tập em.
  */
 import { db } from '../db.ts';
-import { PERMISSIONS } from '../../../shared/domain/index.ts';
+import { PERMISSIONS, VIOLATION_CATEGORY_LABEL } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addDays } from '../util.ts';
 import { can, napTruocPhamVi, type Principal } from '../permissions.ts';
@@ -25,15 +25,22 @@ const MOI_NGAY = 14;
 export const CHIP_HOC_VIEN = ['can-chu-y', 'tam-dung', 'sap-thi', 'thieu_tt', 'cho-buoc-tiep'] as const;
 export type ChipHocVien = (typeof CHIP_HOC_VIEN)[number];
 export type SoHocVien = { phamVi: 'cua-toi' | 'chi-nhanh' | 'tat-ca'; tong: number; dem: Record<ChipHocVien, number> };
+/** OV-10b: vì sao em vào "Cần chú ý" — ghi NGAY trong vòng xếp chip (cột Cần chú ý của Học viên & Lớp đọc đúng lý do này). */
+export type LyDoChuY = { sos?: number; caseMoi?: string[]; yThuc?: string; choBuocTiep?: true };
 
 const laTvv = (p: Principal) => p.roleKeys.includes('consultant');
 
-/** Id học viên theo từng chip, trong phạm vi người xem (`student.view`). */
-export function chipHocVien(p: Principal, f: { branchId?: number | null } = {}): { phamVi: SoHocVien['phamVi']; tong: number; ids: Record<ChipHocVien, number[]> } {
+/**
+ * Id học viên theo từng chip, trong phạm vi người xem (`student.view`). OV-10b: `phamVi` cho TVV xem "Cả chi nhánh" ở Học viên & Lớp (không truyền = như
+ * Tổng quan: TVV "HV của tôi"); `tatCa` = mọi em trong phạm vi, `lyDo` = lý do Cần chú ý của từng em.
+ */
+export function chipHocVien(p: Principal, f: { branchId?: number | null; phamVi?: SoHocVien['phamVi'] } = {}): {
+  phamVi: SoHocVien['phamVi']; tong: number; ids: Record<ChipHocVien, number[]>; tatCa: number[]; lyDo: Map<number, LyDoChuY>;
+} {
   const conn = db();
   const homNay = demoToday();
   const dauTuan = mondayOf(homNay);
-  const tvv = laTvv(p);
+  const tvv = f.phamVi ? f.phamVi === 'cua-toi' : laTvv(p);
   const phamVi: SoHocVien['phamVi'] = tvv ? 'cua-toi' : f.branchId ? 'chi-nhanh' : 'tat-ca';
   const dieuKien: string[] = ['s.archived_at IS NULL'];
   const thamSo: unknown[] = [];
@@ -69,25 +76,33 @@ export function chipHocVien(p: Principal, f: { branchId?: number | null } = {}):
   ids['sap-thi'] = dangHoc.filter(sapThi).map((r) => r.id);
 
   const tuNgay = addDays(homNay, -MOI_NGAY);
-  const chuY = new Set<number>(ids['cho-buoc-tiep']);
+  const lyDo = new Map<number, LyDoChuY>();
+  const ghi = (id: number, sua: (l: LyDoChuY) => void) => { const l = lyDo.get(id) ?? {}; sua(l); lyDo.set(id, l); };
+  for (const id of ids['cho-buoc-tiep']) ghi(id, (l) => { l.choBuocTiep = true; });
   const laDangHoc = new Set(dangHoc.map((r) => r.id as number));
   const standing = standingFor([...laDangHoc]);
-  for (const id of laDangHoc) if (standing.get(id)?.sosLevel && standing.get(id)?.mode === 'ielts_band') chuY.add(id);
-  for (const c of conn.prepare(
-    `SELECT COALESCE(sc.student_id, a.student_id) AS sid FROM sos_cases sc LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
-      WHERE sc.status != 'done' AND substr(sc.created_at, 1, 10) >= ?`,
-  ).all(tuNgay) as any[]) if (laDangHoc.has(c.sid)) chuY.add(c.sid);
-  for (const v of conn.prepare('SELECT student_id AS sid FROM violations WHERE occurred_on >= ?').all(tuNgay) as any[]) {
-    if (laDangHoc.has(v.sid)) chuY.add(v.sid);
+  for (const id of laDangHoc) {
+    const st = standing.get(id);
+    if (st?.sosLevel && st.mode === 'ielts_band') ghi(id, (l) => { l.sos = st.sosLevel!; });
   }
-  ids['can-chu-y'] = [...chuY];
+  for (const c of conn.prepare(
+    `SELECT COALESCE(sc.student_id, a.student_id) AS sid, sc.category FROM sos_cases sc LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
+      WHERE sc.status != 'done' AND substr(sc.created_at, 1, 10) >= ? ORDER BY sc.id`,
+  ).all(tuNgay) as any[]) {
+    if (laDangHoc.has(c.sid)) ghi(c.sid, (l) => { l.caseMoi = [...new Set([...(l.caseMoi ?? []), c.category ?? 'tong_hop'])]; });
+  }
+  for (const v of conn.prepare('SELECT student_id AS sid, ten, category FROM violations WHERE occurred_on >= ? ORDER BY occurred_on DESC, id DESC').all(tuNgay) as any[]) {
+    /* Vi phạm gần nhất làm nhãn ("Đi muộn"); không có tên ngắn thì tên nhóm. */
+    if (laDangHoc.has(v.sid)) ghi(v.sid, (l) => { l.yThuc ??= v.ten || (VIOLATION_CATEGORY_LABEL as Record<string, string>)[v.category] || 'Ý thức'; });
+  }
+  ids['can-chu-y'] = [...lyDo.keys()];
 
   /* Thiếu thông tin: đúng cờ của danh sách Học viên & Lớp (cùng phạm vi trang đó mở ra). */
   if (dangHoc.length) {
     const ds = danhSachHocVienLop(p, { phamVi, branchId: phamVi === 'chi-nhanh' ? f.branchId : null });
     ids.thieu_tt = ds.hocVien.filter((h) => h.loc.includes('thieu_tt')).map((h) => h.id);
   }
-  return { phamVi, tong: em.size, ids };
+  return { phamVi, tong: em.size, ids, tatCa: [...em.keys()], lyDo };
 }
 
 export function soHocVien(p: Principal, f: { branchId?: number | null } = {}): SoHocVien {

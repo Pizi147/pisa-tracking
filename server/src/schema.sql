@@ -286,7 +286,9 @@ CREATE TABLE students (
   note TEXT,
   email TEXT,                         -- T8: bắt buộc khi thêm mới, HS cũ có thể trống — không vào badge Thiếu thông tin
   created_at TEXT NOT NULL,
-  consultant_user_id INTEGER REFERENCES users(id)   -- PR-OV2a: TVV là NGƯỜI (vai consultant); consultant_name giữ để đọc
+  consultant_user_id INTEGER REFERENCES users(id),  -- PR-OV2a: TVV là NGƯỜI (vai consultant); consultant_name giữ để đọc
+  -- OV-10b: liên hệ, không bắt buộc (không tính Thiếu thông tin); chỉ nhập ở hồ sơ HV + Sửa cả lớp
+  phone TEXT, parent_name TEXT, parent_relation TEXT, parent_phone TEXT
 );
 CREATE INDEX idx_student_name ON students(normalized_name);
 CREATE INDEX idx_student_consultant ON students(consultant_user_id);

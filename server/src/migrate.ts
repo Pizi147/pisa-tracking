@@ -21,6 +21,7 @@ import { migratePrLt2a } from './migrate/prLt2a.ts';
 import { migratePrOv2 } from './migrate/prOv2.ts';
 import { migratePrOv8b } from './migrate/prOv8b.ts';
 import { migratePrOv9 } from './migrate/prOv9.ts';
+import { migratePrOv10b } from './migrate/prOv10b.ts';
 import { migratePrLt2b } from './migrate/prLt2b.ts';
 import { migratePrCt } from './migrate/prCt.ts';
 import { migratePrPb2b } from './migrate/prPb2b.ts';
@@ -303,6 +304,7 @@ function migrateCaseEngine(applied: string[], skipped: string[]) {
     /* PR-OV4a: ket_qua_huy.loai (doi_vuot | huy_luot) + dong_json — Huỷ cả lượt giữ điểm ẩn, Khôi phục lượt (chỉ thêm cột). */ migratePrOv4(conn, applied);
     /* PR-OV1c: Case SOS MT theo luật chốt — lượt chưa chốt đóng Case chưa ai đụng ("Chờ chốt SOS"), Overall đạt xoá SOS (đổi dữ liệu, chạy lặp được). */ migratePrOv1c(conn, applied);
     /* OV-8a: Bước tiếp sau thi thật — bốn cột ở learning_cycles (chỉ thêm, chạy lặp được). */ migratePrOv8a(conn, applied);
+    /* OV-10b: liên hệ học viên — SĐT em, phụ huynh (chỉ thêm cột, chạy lặp được). */ migratePrOv10b(conn, applied);
 
     conn.prepare("INSERT OR REPLACE INTO demo_config (key, value, updated_at) VALUES ('case_engine_migrated_at', ?, ?)")
       .run(nowIso(), nowIso());
