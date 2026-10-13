@@ -23,6 +23,8 @@ import type { ViecHangLoat } from '@shared/domain/index.ts';
  * (Lưu trữ · Kết thúc học · Huỷ chuyển lớp · Bỏ chọn), bấm một việc ra panel xem trước rồi xác nhận.
  */
 export type CheDoHocVien = 'diem' | 'lo-trinh' | 'can-ho-tro' | 'ket-qua';
+/** Tên cách xem — cũng là chi tiết của nút "‹ Hồ sơ lớp …" khi đi từ hồ sơ lớp sang hồ sơ khác (PR-OV5b). */
+export const CHE_DO_NHAN: Record<CheDoHocVien, string> = { diem: 'Tổng hợp', 'lo-trinh': 'Lộ trình tiếp theo', 'can-ho-tro': 'Cần hỗ trợ', 'ket-qua': 'Kết quả đầu ra' };
 export function TabHocVienLop({ lop, cheDo: cheDoUrl, onCheDo, onDoi, onThemHocVien, onSuaThongTin, emMo = null, onDaMoEm }: {
   lop: HoSoLop; cheDo: CheDoHocVien; onCheDo: (m: CheDoHocVien) => void;
   /** OV-3b: `&em={id}` — mở sẵn hộp Lộ trình của em đó (cách xem Lộ trình tiếp theo). */
@@ -47,8 +49,8 @@ export function TabHocVienLop({ lop, cheDo: cheDoUrl, onCheDo, onDoi, onThemHocV
     <div className="space-y-2">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <BoLocDoan ariaLabel="Cách xem" value={cheDo} onChange={doiCheDo}
-          muc={[{ key: 'diem', nhan: 'Tổng hợp' }, ...(thuong ? [{ key: 'lo-trinh' as const, nhan: 'Lộ trình tiếp theo' }] : []), { key: 'can-ho-tro', nhan: 'Cần hỗ trợ' },
-            ...(soDot ? [{ key: 'ket-qua' as const, nhan: 'Kết quả đầu ra', so: `${soDot} đợt` }] : [])]} />
+          muc={[{ key: 'diem', nhan: CHE_DO_NHAN.diem }, ...(thuong ? [{ key: 'lo-trinh' as const, nhan: CHE_DO_NHAN['lo-trinh'] }] : []), { key: 'can-ho-tro', nhan: CHE_DO_NHAN['can-ho-tro'] },
+            ...(soDot ? [{ key: 'ket-qua' as const, nhan: CHE_DO_NHAN['ket-qua'], so: `${soDot} đợt` }] : [])]} />
         <span className="flex flex-wrap items-center gap-2">
           {onSuaThongTin && <button type="button" className="btn btn-ghost btn-sm min-h-[44px] sm:min-h-0" onClick={onSuaThongTin}>Sửa thông tin</button>}
           {coTheChon && (

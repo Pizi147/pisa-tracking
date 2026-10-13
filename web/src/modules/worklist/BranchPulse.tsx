@@ -1,6 +1,7 @@
-import { Fragment, useState } from 'react';
+import { Fragment } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
+import { useTapUrl, useThamSoUrl } from '../../lib/quayLai.ts';
 import { BoLocDoan, Card, ErrorState, Skeleton, Th } from '../../ui/ui.tsx';
 import { HangCon, HangNhom } from '../../ui/HangNhom.tsx';
 import { SoLieuO } from '../../ui/SoLieuO.tsx';
@@ -43,8 +44,10 @@ export function BranchPulse({ branchId, ct }: { branchId: number | null; ct: Chu
   const navigate = useNavigate();
   const q = `${branchId ? `branchId=${branchId}` : ''}${thamSoCt(ct)}`.replace(/^&/, '');
   const { data, loading, error, reload } = useApi<Bang>(q ? `/tong-quan/chi-nhanh?${q}` : '/tong-quan/chi-nhanh', [branchId, ct]);
-  const [mo, setMo] = useState<Set<string>>(new Set());
-  const [view, setView] = useState<'lop' | 'gv'>('lop');
+  /* PR-OV5b: hàng mở + cách xem trên URL — Quay lại từ hồ sơ lớp về đúng chỗ. */
+  const [mo, setMo] = useTapUrl('nhip-mo');
+  const [xem, setView] = useThamSoUrl('nhip', 'lop');
+  const view = xem === 'gv' ? 'gv' : 'lop';
   const COT = cotCua(ct);
   const tieuDeTam = branchId ? 'Theo lớp' : 'Theo chi nhánh';   // tiêu đề trung tính khi chưa có dữ liệu, tránh nhấp nháy
   if (error) return <Card title={tieuDeTam}><ErrorState message={error.message} hint={error.hint} onRetry={reload} /></Card>;

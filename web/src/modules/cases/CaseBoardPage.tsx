@@ -1,7 +1,8 @@
-import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { Navigate, useParams, useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { docThamSoHoSo, duongHoSoHocVien } from '@shared/domain/index.ts';
+import { useChongVe, useVe } from '../../lib/quayLai.ts';
 import { NganCase } from '../students/NganCase.tsx';
 
 /**
@@ -12,11 +13,12 @@ import { NganCase } from '../students/NganCase.tsx';
 export function CaseRoutePage() {
   const { id } = useParams();
   const [sp] = useSearchParams();
-  const nav = useNavigate();
+  const chong = useChongVe();
+  const ve = useVe();
   const { paId, viec } = docThamSoHoSo((k) => sp.get(k));
   const rieng = viec === 'ghi-ket-qua' && !!id;
   const ca = useApi<{ student: { id: number } | null }>(id && !rieng ? `/cases/${id}` : null);
-  if (rieng) return <NganCase caseId={Number(id)} paId={paId ?? null} viec="ghi-ket-qua" onClose={() => nav('/cong-viec')} />;
+  if (rieng) return <NganCase caseId={Number(id)} paId={paId ?? null} viec="ghi-ket-qua" onClose={() => ve(chong[0]?.url ?? '/cong-viec', !chong.length)} />;
   if (ca.data?.student) return <Navigate replace to={duongHoSoHocVien(ca.data.student.id, { caseId: Number(id) })} />;
   if (ca.error) return <ErrorState message={ca.error.message} onRetry={ca.reload} />;
   if (ca.data) return <ErrorState message="Case này không gắn học viên nào." />;

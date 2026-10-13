@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
+import { useThamSoUrl } from '../../lib/quayLai.ts';
 import { Card, Info, Skeleton } from '../../ui/ui.tsx';
 import { HangTab } from '../../ui/HangTab.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
@@ -71,7 +72,7 @@ function gomTheoLop(w: Week, hienFt: boolean, hienThuong: boolean): DongLop[] {
 export function LichSapToi({ branchId, ct }: { branchId: number | null; ct: ChuongTrinh | null }) {
   const { homNay } = useNgayNghiepVu();
   const hep = useDienThoai();
-  const [tab, setTab] = useState('0');
+  const [tab, setTab] = useThamSoUrl('lich-tuan', '0');   // PR-OV5b: tab tuần trên URL — Quay lại về đúng tuần
   const [moHet, setMoHet] = useState(false);
   const { data, loading } = useApi<Data | null>(
     `/highlights?${branchId ? `branchId=${branchId}` : ''}${thamSoCt(ct)}`.replace(/\?&/, '?'), [branchId, ct],

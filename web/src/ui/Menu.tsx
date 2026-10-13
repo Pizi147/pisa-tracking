@@ -57,7 +57,7 @@ export function Menu({ label, items, align = 'right', className = 'btn btn-sm bt
             const dauNhom = !!it.nhom && it.nhom !== items[i - 1]?.nhom;
             const vach = it.keTruoc === 'do' ? '1px solid rgb(var(--bad-rgb))' : it.keTruoc === 'dam' ? '2px solid var(--line-strong)' : it.keTruoc ? '1px solid var(--line)' : null;
             return (
-              <Fragment key={it.label}>
+              <Fragment key={`${i}-${it.label}`}>
                 {dauNhom && (
                   <div role="presentation" className={`px-3 pb-0.5 pt-2 text-[11px] font-bold uppercase tracking-[.05em] text-slate-400 ${i > 0 ? 'mt-1' : ''}`}
                     style={i > 0 ? { borderTop: '1px solid var(--line)' } : undefined}>{it.nhom}</div>

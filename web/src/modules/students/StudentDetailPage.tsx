@@ -24,7 +24,7 @@ import {
 } from '../../lib/format.ts';
 import {
   HO_SO_TAB_LABEL, duongDotTest, caseCategoriesFor, tenMon, tenMonNgan, docThamSoHoSo, duongHoSoHocVien,
-  nhanKetQuaThuong, tenBaiThuong, CHUONG_TRINH_KHONG_CHIA_MON, ngay, tuanLich, maHocVienNgan, type HoSoTab,
+  nhanKetQuaThuong, tenBaiThuong, CHUONG_TRINH_KHONG_CHIA_MON, ngay, tuanLich, maHocVienNgan, trangCha, type HoSoTab,
 } from '@shared/domain/index.ts';
 import { HangTab } from '../../ui/HangTab.tsx';
 import { KetQuaDot } from '../../ui/KetQuaDot.tsx';
@@ -183,7 +183,7 @@ export default function StudentDetailPage() {
         và việc tiếp theo là gì — mỗi câu một ô, đọc được trong một cái liếc.
       */}
       <div>
-        <ThanhTruocSau loai="hoc-vien" id={data.id}
+        <ThanhTruocSau loai="hoc-vien" id={data.id} cha={trangCha('hoc-vien')} ten={`Hồ sơ ${data.fullName}`} chiTiet={data.currentClass?.code}
           duong={(sid) => duongHoSoHocVien(sid, { tab: p.tab })}
           dsDuPhong={data.currentClass ? async () => {
             const r = await api.get<{ id: number; fullName: string; archived: boolean }[]>(`/classes/${data.currentClass.id}/roster?chiId=1`);   // PR-TD2-b

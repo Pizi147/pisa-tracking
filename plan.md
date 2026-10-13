@@ -319,6 +319,7 @@ Nhật ký chi tiết tới 04/10 ở `git show 575e898d:plan.md` (mục 14) và
 
 | Ngày | PR / nhánh · model | Kết quả |
 |---|---|---|
+| 13/10/2026 | OV-5b (Opus 5.5) · `claude/modest-franklin-dj5v0d` | Quay lại toàn hệ thống: "‹ {tên nguồn}" + menu Các bước ở hồ sơ HV / lớp / MT / GV / Nhập điểm / Case riêng, về đúng URL + cuộn; chồng ≤ 5 theo tab, mở link thẳng / tải lại → trang cha; Tổng quan (tab tuần, Theo lớp), Phân tích (hàng mở), Điểm theo lớp (lượt) lên URL |
 | 12/10/2026 | OV-1c (Opus 5.5) · `claude/dazzling-albattani-24iilg` | SOS MT tạm thời → chốt → xoá: cờ `chot` (`kyNangXongThieu`: dời / huỷ / Không dự thi), chưa chốt không Case; Overall ≥ kỳ vọng = không SOS; xoá SOS đóng "Overall đạt" / giữ + mốc; mọi màn đọc `chot`; migrate `prOv1c` + `kiem-truoc-ov1c`; seed demo chốt; ô điểm lưới theo mockup (vắng tím 2 dòng · trống viền đứt · huỷ viền chấm) + chip "SOS tạm · a/4" |
 | 12/10/2026 | OV-3c (Opus 5.5) · `claude/festive-wright-jzy4xv` | Hồ sơ lớp FT › Học viên › "Kết quả đầu ra" (`?che-do=ket-qua`, số đợt ở nút): mỗi chương trình nguồn một bảng, nhóm theo đợt, hiện 4 tuần, chỉ QL đã chốt, Admin 403; Hành trình có dòng Kết quả đầu ra; không seed mới (demo MB FT 101 — xem mục 4) |
 | 12/10/2026 | OV-6b1 (Opus 5.5) · `claude/pensive-knuth-qt9uk0` | Quản trị › Chương trình: bảng + panel sửa (Tên, Đạt từ, số tuần, mốc / tuần MT LT1 LT2 RF), áp lớp mở sau; bản chụp `classes.lich_mt` + `nguong_dat`; tuần MT FT + ngưỡng đạt đọc bản chụp lớp; migrate `prOv6b1` điền mọi lớp cũ |
