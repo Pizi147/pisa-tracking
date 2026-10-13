@@ -110,8 +110,9 @@ export async function runPrDlTests(t: YThucTestKit) {
    * ("-" trong tuần nay dời ngay thay vì vắng chờ QL; "-" nhập bù = Không dự thi rồi nhập điểm đè; W1 "-" một mình = Không dự thi), không trường nào khác.
    * Chụp lại 12/10 (PR-OV1c): bộ demo SOS MB FT 101 nay nhập đủ / chốt lượt (Khôi, Lan, Vy đủ 4 kỹ năng; Bảo, Ngọc "Không dự thi"; Châu, Đặng Thu Hà
    * vắng dời) và luật Overall ≥ kỳ vọng = không SOS đổi `sosLevel` / `provisional`; cờ `chot` mới bỏ khỏi băm.
+   * Chụp lại 13/10 (OV-6b2 gộp sau OV-1c): bộ demo thêm lớp MB PET 01 (5 lượt Checkpoint) → id lượt Ánh/Bình dời; MB FT 101 không đổi lượt nào (`idsTuan` vẫn đối chiếu).
    */
-  const ANH_CHUP = { tuan: '6b378182db22e8ac', moi: '1c9c68b44cb2bb94' };
+  const ANH_CHUP = { tuan: '84cc0e2e64d9dd36', moi: '3d41809fb7e148a6' };
   /* Mã cố ý độc lập với hàm: điều kiện lọc tuần của bản trước refactor, viết lại bằng SQL. */
   const idsTuan = (periodId: number) => (conn.prepare(
     `SELECT a.id FROM assessment_attempts a JOIN students s ON s.id = a.student_id
