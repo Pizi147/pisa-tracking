@@ -32,7 +32,7 @@ export async function runPrOv1cTests(t: YThucTestKit) {
   const lop = classId('MB FT 101');
   const QL = P.mbManager;
   const WS = '2026-11-02', WS1 = '2026-11-09';
-  const TRONG = '2026-11-04', BU = '2026-11-11', SAU = '2026-11-18';
+  const TRONG = '2026-11-04', BU = '2026-11-11';
   const W = week.ensurePeriod(WS).id as number, W1 = week.ensurePeriod(WS1).id as number;
   week.ensurePeriod('2026-11-16');
 
@@ -111,14 +111,14 @@ export async function runPrOv1cTests(t: YThucTestKit) {
     assert(caseCua(a).length === 1 && caseCua(a)[0].category === 'listening', `Case L: ${JSON.stringify(caseCua(a).map((c) => c.category))}`);
   }));
 
-  check('OV1c-2b · chốt nhờ HUỶ PHẦN THI (vắng chờ QL → QL từ chối): 1 Case, không trùng', () => thu(() => {
+  /* OV-11a (TE-5): "Vắng" sau tuần thi nay là Không dự thi (OV1c-2c) — đường huỷ phần thi đi qua vắng lần 2 ở tuần thi bù. */
+  check('OV1c-2b · chốt nhờ HUỶ PHẦN THI (vắng lần 1 dời → "-" lần 2 ở tuần thi bù): 1 Case, không trùng', () => thu(() => {
     const a = luot[0];
     dung(a);
     baKyNang(a);
-    absence.baoVang(P.coreTeacher, a, 'speaking', null, SAU);   // tuần kế tiếp đã qua → chuyển Quản lý, kỹ năng 'absent'
-    assert(caseCua(a).length === 1, `vắng chờ QL đã là chốt: ${caseCua(a).length}`);
-    const req = one(`SELECT id FROM skill_move_requests WHERE attempt_id = ? AND status = 'pending'`, a);
-    absence.decideAbsenceMove(QL, req.id, { approve: false, note: 'Không xếp lại được' });
+    absence.baoVang(P.coreTeacher, a, 'speaking', null, TRONG);   // lần 1 → dời W2 NOV
+    assert(caseCua(a).length === 1, `vắng đã dời đã là chốt: ${caseCua(a).length}`);
+    vang(a, 'speaking', BU);   // "-" ở tuần thi bù = lần 2 → huỷ phần thi
     assert(one('SELECT sit_status s FROM attempt_skills WHERE attempt_id = ? AND skill = ?', a, 'speaking').s === 'cancelled', 'S phải huỷ');
     const r = kq(a);
     assert(r.chot && !r.provisional, 'huỷ phần thi = chốt');

@@ -54,7 +54,8 @@ export function OMt({ v, homNay, ct = null, chon, chuChon, ghiChu, onClick, href
       {!chon && r.kieu === 'dang-thi' && <span aria-hidden className="h-1.5 w-1.5 flex-none rounded-full bg-current" />}
       <span className={`font-bold tabular-nums ${huy ? 'line-through' : ''}`}>MT{v.so}</span>
       {phan.map((x, i) => <span key={i} className="inline-flex items-center gap-1 tabular-nums"><span aria-hidden className="font-medium opacity-60">·</span>{x}</span>)}
-      {chon && <span aria-hidden>✓</span>}
+      {/* OV-11a (CA3-2): "xong" có chữ ✓ như lớp thường — không chỉ màu xanh. */}
+      {(chon || (!huy && r.kieu === 'xong')) && <span aria-hidden>✓</span>}
     </>
   );
   const doc = [chon && chuChon !== undefined ? `MT${v.so}, ${chuChon}` : r.doc, v.cu ? 'MT cũ' : null, v.khongDung ? 'không dùng' : null, chon ? 'đang chọn' : null].filter(Boolean).join(', ');

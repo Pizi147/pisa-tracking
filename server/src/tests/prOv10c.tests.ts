@@ -112,7 +112,8 @@ export async function runPrOv10cTests(t: YThucTestKit) {
     const w = myWork(ad, { branchId: mb, nguoi: 'tat-ca' }) as any;
     assert(w.dong.every((d: any) => d.group === 'score'), 'Admin chỉ có Chấm điểm');
     assert(r.oChuaNhap.so === demPhamVi(w.dong, true).so, `Ô chưa nhập ${r.oChuaNhap.so} ≠ Công việc`);
-    assert(r.oChuaNhap.quaHan === demPhamVi(w.dong.filter((d: any) => khopLocNhanh(d, 'qua-han', today)), true).so, 'Quá hạn ≠ Công việc lọc Quá hạn');
+    /* OV-11c (TE-4): lọc Quá hạn chỉ đếm bài quá hạn (việc con khớp lọc). */
+    assert(r.oChuaNhap.quaHan === demPhamVi(w.dong.filter((d: any) => khopLocNhanh(d, 'qua-han', today)), true, { loc: 'qua-han', homNay: today }).so, 'Quá hạn ≠ Công việc lọc Quá hạn');
     const lich = lichTest(ad, ensurePeriod(today).id, mb, today, { phamVi: 'tat-ca' });
     assert(r.deNghiDoi === lich.lop.reduce((n: number, l: any) => n + l.choDuyetDoi, 0), 'Đề nghị dời ≠ Lịch Test');
     const kh = danhSachLop(ad, { branchId: mb });

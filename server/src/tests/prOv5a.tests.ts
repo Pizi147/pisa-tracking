@@ -109,15 +109,16 @@ export async function runPrOv5aTests(t: YThucTestKit) {
     assert(pa.length === 2, 'Xác nhận PA FT: từng dòng');
   });
 
-  check('OV5a-1c · dòng phạm vi đếm đúng đơn vị: nhóm việc = số dòng; học viên khác nhau (dòng gom sẵn cộng số em); Chấm điểm = bài (kỹ năng × em)', () => {
+  /* OV-11c (CV-1): dòng gom sẵn mang id em (`emIds`) — đếm em KHÁC NHAU, không cộng dồn số em. */
+  check('OV5a-1c · dòng phạm vi đếm đúng đơn vị: nhóm việc = số dòng; học viên khác nhau (dòng gom sẵn theo id em); Chấm điểm = bài (kỹ năng × em)', () => {
     const ds = [
       { group: 'cause', studentId: null, count: 3, con: [{ group: 'cause', studentId: 1, count: null }, { group: 'cause', studentId: 2, count: null }, { group: 'cause', studentId: 3, count: null }] },
       { group: 'ghi_ket_qua_pa', studentId: 2, count: null },
-      { group: 'score', studentId: null, count: 6, soBai: 12 },
+      { group: 'score', studentId: null, count: 6, soBai: 12, emIds: [1, 4, 5, 6, 7, 8] },
       { group: 'mgmt', studentId: null, count: null },
     ];
     const r = d.demPhamVi(ds, false);
-    assert(r.nhom === 4 && r.so === 3 + 6 && r.donVi === 'học viên', JSON.stringify(r));
+    assert(r.nhom === 4 && r.so === 8 && r.donVi === 'học viên', JSON.stringify(r));   // em 1 ở hai dòng chỉ đếm một lần
     const c = d.demPhamVi([ds[2], { group: 'score', studentId: 5, count: 1 }], true);
     assert(c.nhom === 2 && c.so === 13 && c.donVi === 'bài cần chấm', JSON.stringify(c));
   });

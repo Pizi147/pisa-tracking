@@ -254,6 +254,9 @@ console.log('\n0. Bộ demo vừa dựng có nhất quán không');
   await runPrDuyetDemoTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
   const { runPrHvlDemoTests } = await import('./prHvl.tests.ts');
   await runPrHvlDemoTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+  /* PR-OV11c: một cách đếm ở Công việc — so số của bộ demo (Tổng quan "58 bài" = Công việc lọc Quá hạn); mỗi phép kiểm cuộn lại. */
+  const { runPrOv11cTests } = await import('./prOv11c.tests.ts');
+  await runPrOv11cTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 }
 
 check('[12.1-16] Bộ demo nhất quán: không có sự kiện "đã xong" nào nằm ở tương lai', () => {
@@ -9297,6 +9300,9 @@ await runPrOv10bTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P,
 // ==================================================================== PR-OV4c (W / S: Band tự tính từ 4 tiêu chí; nhập Band thẳng chỉ ở MT cũ)
 const { runPrOv4cTests } = await import('./prOv4c.tests.ts');
 await runPrOv4cTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== PR-OV11a (vắng · thi bù · hộp nhập điểm: hoàn tất, Vắng sau tuần thi, lớp thường "-")
+const { runPrOv11aTests } = await import('./prOv11a.tests.ts');
+await runPrOv11aTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== PR-OV11b (Quản trị · tài khoản: không tự khoá, Duyệt lại, vai thiếu CN, nhật ký)
 const { runPrOv11bTests } = await import('./prOv11b.tests.ts');
 await runPrOv11bTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);

@@ -14,7 +14,7 @@ import {
   type SystemCloseReason,
   NEXT_STEP_LABEL, isProposalKind, outcomeLabelFor,
   RESCHEDULE_TARGETS, RESCHEDULE_TARGET_LABEL, RESULT_MODES, RESULT_MODE_LABEL,
-  canEndWithOutcome, planDueDate, stepsForMode, weeklyUpdateDue,
+  canEndWithOutcome, hanThemPa, stepsForMode, weeklyUpdateDue,
   HAN_DUYET_NGAY, hanTheoNgay,
   type NextStep, type RescheduleTarget,
   issueBranchOf, issueLabel, caseTopicLabel, urgencyFromSos,
@@ -1930,7 +1930,7 @@ export function caseDetail(p: Principal, caseId: number) {
         batBuoc: i.batBuoc, choXacNhan: i.awaitingConfirmation, xong: i.status === 'completed', actionDue: i.actionDue,
         followupDue: i.followupDue, choDuyet: i.approvalState === 'pending',
       }));
-      const hanLapPa = c.origin_kind === 'mock' ? null : planDueDate(String(c.detected_at ?? c.created_at ?? demoToday()).slice(0, 10), c.urgency);
+      const hanLapPa = hanThemPa(c)   /* OV-11c (HV-14): cùng hàm với Công việc, kể cả Case hệ thống mở */;
       return { trangThaiV4: trangThaiCaseV4(v4, demoToday()), viecTiep: viecTiepCuaCase(v4, pas, demoToday(), hanLapPa) };
     })(),
     history: history.map((h) => ({
@@ -2925,7 +2925,7 @@ function caseCardOf(p: Principal, caseId: number, c: any, soBangChung: Map<numbe
     lopCu: laPaLopCu(ivs.find((iv) => iv.id === pl.id)),
     id: pl.id, ten: tenPaViecTiep(pl.kind, pl.name), batBuoc: pl.batBuoc, choXacNhan: pl.choXacNhan, xong: pl.status === 'completed',
     actionDue: pl.actionDue, followupDue: pl.followupDue, choDuyet: pl.pendingApproval,
-  })), today, c.origin_kind === 'mock' ? null : planDueDate(String(c.detected_at ?? c.created_at ?? today).slice(0, 10), c.urgency));
+  })), today, hanThemPa(c))   // OV-11c (HV-14);
   /* Lượt đánh giá mà Case này đã đi qua — "MT2 · 17/08" ở chân thẻ (lớp thường: "Giữa khoá"/"Cuối khoá" thay MT{n}). */
   const attempts = (conn
     .prepare(
@@ -3376,7 +3376,7 @@ export function updateResult(p: Principal, interventionId: number, input: {
       nextStep, observedOn, completedOn, lanCuoi, nextDue: weeklyUpdateDue(addDays(observedOn, 1)),
       apDungDieuChinh: (sib, fid) => apDungDieuChinh(sib, adjustPatch!, { followupId: fid, actorUserId: p.userId, reason: decisionNote!, on: observedOn }),
     });
-    if (mtDong && mtGhi) ghiMiniTestTrongTx(conn, p, mtDong, mtGhi);   // PR-LT2b: sau khi cả nhóm đã khép
+    if (mtDong && mtGhi) ghiMiniTestTrongTx(conn, p, mtDong, mtGhi, input.outcome);   // PR-LT2b: sau khi cả nhóm đã khép · OV-11c: Case theo mức GV chọn
 
     addJourney({
       studentId: c.eff_student_id, cycleId: c.eff_cycle_id,

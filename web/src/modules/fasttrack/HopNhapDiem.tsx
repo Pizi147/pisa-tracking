@@ -11,11 +11,13 @@
  * `useSaveScore` với `nem` — lỗi máy chủ hiện TRONG hộp, chữ đã gõ giữ nguyên; chỉ đóng / sang em kế khi máy chủ đã trả về.
  * Sửa ô đã có điểm: thêm ô "Lý do sửa (tuỳ chọn)" (RB-5, T7 — như `SuaDiemCoLyDo`). Ô đang Vắng (`daChot`): "Vắng lần n · đã dời
  * sang …", Bỏ vắng (quyền OV-1b do máy chủ tính: `goDuoc`), Lưu điểm.
+ * OV-11a: ô đã dời vì vắng chỉ là ô Vắng ở lưới TUẦN GỐC (`tuanXem` ≠ tuần thi); ở tuần thi bù là ô thường + dòng "vắng lần 1 · dời từ …"
+ * (nút Vắng = lần 2). Nút Vắng sau tuần thi / MT cũ ghi "Không dự thi" (`chuNutVang`). Đóng khi đã gõ: hỏi ngay chân hộp (Bỏ · Gõ tiếp).
  */
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import {
-  LOI_SO_CAU, LOI_SO_CAU_KHOANG, NHAN_XET_TOI_DA, bandTuSoCau, criteriaPatchFrom, demNguocSuaDau, ngay, rawPatchFrom, tieuChiNganCua, tuanLich,
+  LOI_SO_CAU, LOI_SO_CAU_KHOANG, NHAN_XET_TOI_DA, bandTuSoCau, chuNutVang, criteriaPatchFrom, demNguocSuaDau, ngay, rawPatchFrom, tieuChiNganCua, tuanLich,
   type NguoiChon,
 } from '@shared/domain/index.ts';
 import { fmtBand, skillLabel } from '../../lib/format.ts';
@@ -26,7 +28,7 @@ import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import { useBaoHopLyDoMo } from '../../ui/SaveState.tsx';
 import { cungGvCham, gvChamPayload, gvChamThanhChon } from '../cham/GvCham.tsx';
 import {
-  bandBanDau, chanDau, coDau, coDiemChinhThuc, lockedByNoShow, lyDoChiDoc, suaDuoc, type Cell, type SaveOpts, type SavePatch,
+  bandBanDau, chanDau, coDiemChinhThuc, lockedByNoShow, lyDoChiDoc, suaDuoc, type Cell, type SaveOpts, type SavePatch,
 } from './ScoreEntry.tsx';
 
 /** Ngữ cảnh đầu hộp + dòng phụ: em · lớp · lượt ("MT2" / "MT0"), kỳ vọng (L/R), MT0 = một ô Band. */
@@ -50,30 +52,48 @@ type HopProps = {
   onTiep?: () => void;
   /** Speaking: người chấm mặc định của cột (lớp × tuần) khi ô chưa có. */
   gvMacDinh?: NguoiChon | null;
+  /** Thứ Hai của tuần lưới đang xem (null: nơi không theo tuần — hồ sơ MT, Điểm theo lớp theo lượt). */
+  tuanXem?: string | null;
 };
 
 const laLR = (s: string) => s === 'listening' || s === 'reading';
 
-/** Chữ trên nút ô điểm (lưới, danh sách). */
-function chuO(c: Cell) {
-  if (c.progress === 'cancelled') return laLR(c.skill) ? 'Đã huỷ phần thi' : 'Đã huỷ';
-  if (c.daChot?.doiSang) return `Vắng → ${c.daChot.doiSang}`;
-  if (coDau(c)) return '-';
-  if (c.rawScore !== null) return <>{c.rawScore} <span className="text-xs text-slate-500">· {fmtBand(c.band)}</span></>;
-  if (c.band !== null) return fmtBand(c.band);
-  return null;
+/**
+ * OV-11a (TE-2/TE-3): ô mở hộp ở chế độ VẮNG (dòng "Vắng lần n", không nút Vắng) khi dấu "-" đã chốt là của CHÍNH tuần thi (vắng chờ
+ * Quản lý, huỷ phần thi), hoặc bài đã dời và đang xem ở lưới TUẦN GỐC. Ở tuần thi bù / nơi không theo tuần: ô thường.
+ */
+export const oVangCua = (c: Cell, tuanXem?: string | null) =>
+  !!c.daChot && (!c.daChot.doiSang || (!!tuanXem && !!c.weekStart && c.weekStart !== tuanXem));
+
+/**
+ * CHỮ TRÊN Ô ĐIỂM (lưới, danh sách) — đọc được khi bỏ màu (CA3-2): ô đã chốt ghi CHỮ hai dòng theo mẫu ô Vắng; "-" chỉ còn là dấu chưa
+ * chốt (Writing mới một task); ô chỉ đọc không có gì: một ký tự "—". `doc` = câu cho trình đọc màn hình.
+ */
+function hienO(c: Cell, vangGoc: boolean): { chu: ReactNode; doc: string; kieu: keyof typeof KIEU_O | null } {
+  const hai = (a: string, b: string) => <><span>{a}</span><span className="text-[11px]">{b}</span></>;
+  if (c.progress === 'cancelled') return { chu: 'Đã huỷ', doc: 'Đã huỷ phần thi', kieu: 'huy' };
+  if (vangGoc && c.daChot?.doiSang) return { chu: hai('Vắng', `→ ${c.daChot.doiSang}`), doc: `Vắng, đã dời sang ${c.daChot.doiSang}`, kieu: 'vang' };
+  if (c.daChot && !c.daChot.doiSang && c.sitStatus === 'absent') return { chu: hai('Vắng', 'chờ QL'), doc: 'Vắng, chờ Quản lý xếp lại', kieu: 'vang' };
+  if (c.noShow?.state === 'khong-du-thi') return { chu: hai('Không', 'dự thi'), doc: 'Không dự thi', kieu: 'chot' };
+  if (c.noShow) return { chu: '-', doc: c.noShow.text, kieu: null };
+  if (c.rawScore !== null) {
+    return { chu: <>{c.rawScore} <span className="text-xs text-slate-500">· {fmtBand(c.band)}</span></>, doc: `${c.rawScore} câu, band ${fmtBand(c.band)}`, kieu: null };
+  }
+  if (c.band !== null) return { chu: fmtBand(c.band), doc: `band ${fmtBand(c.band)}`, kieu: null };
+  return { chu: 'Nhập', doc: 'Nhập', kieu: 'trong' };
 }
 
 /**
- * DÒNG NHỎ DƯỚI Ô ĐANG MANG "-" CHƯA CHỐT (DS02, Q17, C41): còn cửa sổ sửa thì đếm ngược bằng chữ xám; câu đầy đủ ở tooltip.
- * Điện thoại xuống dòng, không cắt.
+ * DÒNG NHỎ DƯỚI Ô: dấu "-" chưa chốt (DS02, Q17, C41) — còn cửa sổ sửa thì đếm ngược bằng chữ xám, câu đầy đủ ở tooltip; OV-11a: ô tuần
+ * thi bù — "vắng lần 1". Xuống dòng, không cắt (CA3-2).
  */
-function DongDau({ cell }: { cell: Cell }) {
+function DongDau({ cell, thiBu = false }: { cell: Cell; thiBu?: boolean }) {
   const { homNay } = useNgayNghiepVu();
-  if (!cell.noShow || cell.daChot) return null;
-  const dem = cell.noShow.state === 'khong-co-bai' ? demNguocSuaDau(cell.noShow.editableUntil ?? null, homNay) : null;
+  if (thiBu && cell.daChot) return <span className="block text-xs leading-tight text-slate-400">vắng lần {Math.max(1, cell.daChot.lan)}</span>;
+  if (cell.noShow?.state !== 'khong-co-bai' || cell.daChot) return null;
+  const dem = demNguocSuaDau(cell.noShow.editableUntil ?? null, homNay);
   return (
-    <span className="block max-w-[6rem] truncate text-xs leading-tight text-slate-400 max-sm:max-w-none max-sm:whitespace-normal max-sm:text-right" title={cell.noShow.text}>
+    <span className="block text-xs leading-tight text-slate-400 max-sm:text-right" title={cell.noShow.text}>
       {dem ?? cell.noShow.text}
     </span>
   );
@@ -87,6 +107,8 @@ const KIEU_O = {
   vang: 'flex-col !gap-0 leading-tight border-[color:rgb(var(--wait-line-rgb))] text-[color:rgb(var(--wait-rgb))]',
   trong: 'justify-center border-dashed text-[color:var(--accent)]',
   huy: 'border-dotted text-slate-500',
+  /* OV-11a (CA3-2): Không dự thi — hai dòng chữ như ô Vắng, màu trung tính (trạng thái cuối, không phải việc). */
+  chot: 'flex-col !gap-0 leading-tight text-slate-400',
 } as const;
 
 /**
@@ -97,41 +119,44 @@ export function ODiemMt({ cell, lon = false, mo, onMo, ...hop }: Omit<HopProps, 
   lon?: boolean; mo: boolean; onMo: (mo: boolean) => void;
 }) {
   const [neo, setNeo] = useState<HTMLButtonElement | null>(null);
-  const chu = chuO(cell);
+  const vangGoc = oVangCua(cell, hop.tuanXem);
+  const h = hienO(cell, vangGoc);
   if (!suaDuoc(cell)) {
     const vang = cell.sitStatus === 'absent' && cell.band === null && !cell.daChot;
+    const hai = h.kieu === 'chot' || h.kieu === 'vang';
     return (
       <span className="inline-flex flex-col items-end gap-0.5">
-        <span className={`tabular-nums ${vang || cell.progress === 'cancelled' ? 'text-xs text-slate-500' : 'text-slate-300'} ${lon ? 'text-base' : ''}`}
+        <span className={`tabular-nums ${hai ? 'inline-flex flex-col items-end leading-tight' : ''} ${vang || hai || cell.progress === 'cancelled' ? 'text-xs text-slate-500' : 'text-slate-300'} ${lon ? 'text-base' : ''}`}
           title={cell.noShow?.text ?? lyDoChiDoc(cell)}>
-          {vang ? 'vắng' : chu ?? '—'}
+          {vang ? 'Vắng' : h.kieu === 'trong' ? '—' : h.chu}
         </span>
         <DongDau cell={cell} />
       </span>
     );
   }
-  const kieu = cell.progress === 'cancelled' ? 'huy' : cell.daChot?.doiSang ? 'vang' : chu === null ? 'trong' : null;
   return (
     <span className="inline-flex max-w-full flex-col items-end gap-0.5">
       <button ref={setNeo} type="button" aria-expanded={mo} aria-haspopup="dialog"
-        aria-label={`${skillLabel(cell.skill)} · ${hop.ctx.tenHv}: ${cell.rawScore !== null ? `${cell.rawScore} câu, band ${fmtBand(cell.band)}` : typeof chu === 'string' ? chu : 'Nhập'}`}
-        className={`btn max-w-full tabular-nums ${lon ? 'min-h-[44px] min-w-[60px] justify-center text-base font-semibold' : 'btn-sm'} ${kieu ? KIEU_O[kieu] : ''} ${mo ? 'border-[color:var(--accent)]' : ''}`}
+        aria-label={`${skillLabel(cell.skill)} · ${hop.ctx.tenHv}: ${h.doc}`}
+        className={`btn max-w-full tabular-nums ${lon ? 'min-h-[44px] min-w-[60px] justify-center text-base font-semibold' : 'btn-sm'} ${h.kieu ? KIEU_O[h.kieu] : ''} ${mo ? 'border-[color:var(--accent)]' : ''}`}
         title={cell.noShow?.text ?? `${skillLabel(cell.skill)} — bấm để nhập`}
         onClick={() => onMo(!mo)}>
-        {kieu === 'vang' ? <><span>Vắng</span><span className="text-[11px]">→ {cell.daChot!.doiSang}</span></> : chu ?? 'Nhập'}
+        {h.chu}
       </button>
-      <DongDau cell={cell} />
+      <DongDau cell={cell} thiBu={!!cell.daChot?.doiSang && !vangGoc} />
       {mo && neo && <HopNhapDiem cell={cell} anchor={neo} onDong={() => onMo(false)} {...hop} />}
     </span>
   );
 }
 
-export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, gvMacDinh = null }: HopProps) {
+export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, gvMacDinh = null, tuanXem = null }: HopProps) {
   const { homNay } = useNgayNghiepVu();
   const { session } = useSession();
   const motO = laLR(cell.skill) || !!ctx.mt0;     // một ô: số câu (L/R) hoặc Band (MT0)
   const theoBand = !!ctx.mt0;
-  const vang = !!cell.daChot;
+  const vang = oVangCua(cell, tuanXem);
+  /* OV-11a (TE-2): tuần thi bù — ô thường, dấu "-" tuần gốc chỉ còn là dòng "vắng lần 1 · dời từ …" (+ Bỏ vắng). */
+  const thiBu = !!cell.daChot?.doiSang && !vang;
   const nhapDuoc = cell.canEdit && !lockedByNoShow(cell);
   const laS = cell.skill === 'speaking';
   const laW = cell.skill === 'writing1' || cell.skill === 'writing2';
@@ -139,11 +164,12 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, gvMacDi
 
   const [t0] = useState(() => {
     if (vang) return '';
-    if (theoBand) return cell.band !== null ? fmtBand(cell.band) : coDau(cell) ? '-' : '';
-    return cell.rawScore !== null ? String(cell.rawScore) : cell.band !== null ? fmtBand(cell.band) : coDau(cell) ? '-' : '';
+    /* "-" sẵn trong ô chỉ khi là dấu của CHÍNH tuần thi (`chanDau`) — dấu tuần gốc ở tuần thi bù thì ô trống: gõ "-" là lệnh mới (TE-2). */
+    if (theoBand) return cell.band !== null ? fmtBand(cell.band) : chanDau(cell) ? '-' : '';
+    return cell.rawScore !== null ? String(cell.rawScore) : cell.band !== null ? fmtBand(cell.band) : chanDau(cell) ? '-' : '';
   });
   const [vals0] = useState<string[]>(() => (vang || motO ? ['', '', '', '']
-    : coDau(cell) && cell.criteria.every((v) => v === null) ? ['-', '', '', ''] : cell.criteria.map((v) => (v === null ? '' : String(v)))));
+    : chanDau(cell) && cell.criteria.every((v) => v === null) ? ['-', '', '', ''] : cell.criteria.map((v) => (v === null ? '' : String(v)))));
   /* OV-4c: ô Band chỉ là ô nhập khi máy chủ cho nhập thẳng (`bandThang`: MT cũ); lượt thường Band tự tính — ô chỉ đọc, `bandText` luôn trống. */
   const [band0] = useState(() => (vang || motO || !cell.bandThang ? '' : bandBanDau(cell)));
   const [t, setT] = useState(t0);
@@ -164,7 +190,7 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, gvMacDi
       if (theoBand) {
         const s = t.trim();
         if (s === '-') return { doi, patch: { noShow: true } as SavePatch, loi: null, o: null, preview: null };
-        if (s === '') return { doi, patch: (coDau(cell) ? { noShow: false } : { band: null }) as SavePatch, loi: null, o: null, preview: null };
+        if (s === '') return { doi, patch: (chanDau(cell) ? { noShow: false } : { band: null }) as SavePatch, loi: null, o: null, preview: null };
         const r = criteriaPatchFrom(['', '', '', ''], cell, s, true);   // MT0: một ô Band, nhập thẳng
         return { doi, patch: r.patch as SavePatch | null, loi: r.loi, o: r.patch ? null : 0, preview: r.preview };
       }
@@ -181,8 +207,9 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, gvMacDi
     const sai = vals.findIndex((v) => { const s = v.trim(); return s !== '' && s !== '-' && !Number.isFinite(Number(s)); });
     return { doi, patch: r.patch as SavePatch | null, loi: r.loi, o: r.patch ? null : sai >= 0 ? sai : 4, preview: r.preview };
   })();
-  /* Ô vắng: xoá trắng ô "Em có làm bài?" không phải lệnh gì — Bỏ vắng là nút riêng. */
+  /* Ô vắng: xoá trắng ô "Em có làm bài?" không phải lệnh gì — Bỏ vắng là nút riêng; gõ "-" ở đó báo ngay (không nuốt, không đóng hộp). */
   const doiDiem = diem.doi && !(vang && diem.patch && 'noShow' in diem.patch);
+  const dauLai = vang && diem.doi && diem.patch?.noShow === true;
   const doiNx = nx.trim() !== (cell.nhanXet ?? '').trim();
   const doiGv = laS && !cungGvCham(gv, gv0, session?.user?.id);
   const daGo = doiDiem || doiNx || doiGv || lyDo.trim() !== '';
@@ -206,6 +233,7 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, gvMacDi
   };
 
   const luu = (tiep: boolean) => {
+    if (dauLai) { setLoi({ cau: 'Đã ghi vắng — muốn gỡ thì bấm Bỏ vắng.', o: 0 }); return; }
     if (doiDiem && !diem.patch) { setLoi({ cau: diem.loi ?? LOI_SO_CAU, o: diem.o }); return; }
     const them: SavePatch = {};
     if (doiNx) them.nhanXet = nx.trim() || null;
@@ -222,11 +250,8 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, gvMacDi
     void gui(lenh, sau);
   };
 
-  const dong = () => {
-    if (busy) return;
-    if (daGo && !window.confirm('Bỏ các giá trị đã gõ?')) return;
-    onDong();
-  };
+  /* CA3-8: đã gõ thì `KhungHop` hỏi ngay chân hộp ("Bỏ điểm Listening · {em}?" · Bỏ · Gõ tiếp) — không hộp trình duyệt. */
+  const dong = () => { if (!busy) onDong(); };
 
   const phim = (e: React.KeyboardEvent) => {
     if (e.key !== 'Enter' || e.nativeEvent.isComposing) return;
@@ -249,9 +274,21 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, gvMacDi
     <>
       {vang && (
         <div className="flex flex-col gap-1.5 rounded-lg border border-wait-line bg-wait-bg px-3 py-2.5 text-[13px] text-slate-200">
-          <span><b className="text-wait">Vắng lần {Math.max(1, cell.daChot!.lan)}</b>
-            {cell.daChot!.doiSang && <> · đã dời sang <span className="tabular-nums">{cell.daChot!.doiSang}</span></>}</span>
+          {/* CA3-3: ô huỷ một trạng thái — "Đã huỷ phần thi · vắng 2 lần", không "Vắng lần 1". */}
+          {cell.progress === 'cancelled'
+            ? <span><b className="text-wait">Đã huỷ phần thi</b> · vắng {Math.max(2, cell.daChot!.lan)} lần</span>
+            : <span><b className="text-wait">Vắng lần {Math.max(1, cell.daChot!.lan)}</b>
+              {cell.daChot!.doiSang && <> · đã dời sang <span className="tabular-nums">{cell.daChot!.doiSang}</span></>}</span>}
           {cell.daChot!.ghiLuc && <span className="text-slate-400">Ghi {ngay(cell.daChot!.ghiLuc, homNay)}{cell.daChot!.ghiBoi ? ` bởi ${cell.daChot!.ghiBoi}` : ''}</span>}
+        </div>
+      )}
+      {thiBu && (
+        <div className="flex min-h-[28px] items-center gap-2 text-xs text-slate-400">
+          <span>vắng lần {Math.max(1, cell.daChot!.lan)} · dời từ <span className="tabular-nums">{cell.daChot!.tuTuan}</span></span>
+          {cell.daChot!.goDuoc && (
+            <button type="button" className="btn btn-sm btn-ghost ml-auto max-sm:min-h-[44px]" disabled={busy}
+              onClick={() => void gui([{ noShow: false }], onDong)}>Bỏ vắng</button>
+          )}
         </div>
       )}
       {(!vang || nhapDuoc) && (motO ? (
@@ -348,7 +385,10 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, gvMacDi
   ) : (
     <>
       {nhanVang && (
-        <button type="button" className={`${nut} btn-ghost`} disabled={busy} onClick={() => void gui([{ noShow: true }], onTiep ?? onDong)}>Vắng</button>
+        /* CA3-1: sau tuần thi / MT cũ nút nói đúng hậu quả — "Không dự thi" (không dời). */
+        <button type="button" className={`${nut} btn-ghost`} disabled={busy} onClick={() => void gui([{ noShow: true }], onTiep ?? onDong)}>
+          {chuNutVang({ weekStart: cell.weekStart, lichSu: cell.progress === 'lich_su', homNay })}
+        </button>
       )}
       <span className="flex-1" />
       <button type="button" className={onTiep ? nut : `${nut} btn-primary`} disabled={busy} onClick={() => luu(false)}>{busy && !onTiep ? 'Đang lưu…' : 'Lưu'}</button>
@@ -359,7 +399,7 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, gvMacDi
   const ten = `${skillLabel(cell.skill)} · ${ctx.luot}`;
   return (
     <KhungHop anchor={anchor} ten={ten} phu={<>{[ctx.tenHv, ctx.lop].filter(Boolean).join(' · ')}{tuan && <> · <span className="tabular-nums">{tuan}</span></>}</>}
-      nhanHop={`${ten} · ${ctx.tenHv}`} daGo={daGo} onDong={dong} onKeyDown={phim} chan={chan}>
+      nhanHop={`${ten} · ${ctx.tenHv}`} daGo={daGo} cauBo={`Bỏ điểm ${skillLabel(cell.skill)} · ${ctx.tenHv}?`} onDong={dong} onKeyDown={phim} chan={chan}>
       {than}
     </KhungHop>
   );
@@ -368,13 +408,21 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, gvMacDi
 /**
  * KHUNG HỘP NHỎ NEO Ô (đầu · thân · chân) — dùng chung cho hộp nhập điểm MT và hộp nhận xét lớp thường. Neo dưới ô, kẹp trong màn,
  * hết chỗ thì lật lên (như `HopKyNang`); < 640 px → tấm trượt từ dưới. Mở: con trỏ vào ô nhập đầu; Tab vòng trong hộp; đóng trả focus
- * về ô. Esc / bấm ra ngoài → `onDong` (bấm ra ngoài khi đã gõ thì giữ hộp — không mất chữ).
+ * về ô. Esc / bấm ra ngoài → `onDong` (bấm ra ngoài khi đã gõ thì giữ hộp — không mất chữ). Esc khi đã gõ (CA3-8): chân hộp thành câu
+ * `cauBo` + Bỏ · Gõ tiếp (không hộp thứ hai); Esc lần nữa = Gõ tiếp.
  */
-function KhungHop({ anchor, ten, phu, nhanHop, daGo, onDong, onKeyDown, chan, children }: {
-  anchor: HTMLElement; ten: string; phu: ReactNode; nhanHop: string; daGo: boolean; onDong: () => void;
+function KhungHop({ anchor, ten, phu, nhanHop, daGo, cauBo, onDong, onKeyDown, chan, children }: {
+  anchor: HTMLElement; ten: string; phu: ReactNode; nhanHop: string; daGo: boolean; cauBo: string; onDong: () => void;
   onKeyDown: (e: React.KeyboardEvent) => void; chan: ReactNode; children: ReactNode;
 }) {
   const box = useRef<HTMLDivElement>(null);
+  const goTiepRef = useRef<HTMLButtonElement>(null);
+  const [hoi, setHoi] = useState(false);
+  useEffect(() => { if (hoi) goTiepRef.current?.focus(); }, [hoi]);
+  const goTiep = () => {
+    setHoi(false);
+    box.current?.querySelector<HTMLElement>('input:not([disabled]), textarea:not([disabled])')?.focus();
+  };
   useGiuFocus(box);
   const dienThoai = typeof window !== 'undefined' && window.innerWidth < 640;
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
@@ -386,23 +434,30 @@ function KhungHop({ anchor, ten, phu, nhanHop, daGo, onDong, onKeyDown, chan, ch
     const top = r.bottom + 4 + cao > window.innerHeight - 8 ? Math.max(8, r.top - cao - 4) : r.bottom + 4;
     setPos((p) => (p && p.top === top && p.left === left ? p : { top, left }));
   };
-  useLayoutEffect(() => { if (!dienThoai) anchor.scrollIntoView({ block: 'nearest', inline: 'nearest' }); }, []);   // eslint-disable-line react-hooks/exhaustive-deps
+  /* CA3-7: ô lên giữa vùng cuộn — hộp em kế neo dưới, ô vừa lưu phía trên vẫn thấy. */
+  useLayoutEffect(() => { if (!dienThoai) anchor.scrollIntoView({ block: 'center', inline: 'nearest' }); }, []);   // eslint-disable-line react-hooks/exhaustive-deps
   useLayoutEffect(() => { dat(); });   // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     const o = box.current?.querySelector<HTMLInputElement | HTMLTextAreaElement>('input:not([disabled]), textarea:not([disabled])');
     o?.focus({ preventScroll: true });
     o?.select();
   }, []);
-  const moi = useRef({ daGo, onDong });
-  moi.current = { daGo, onDong };
+  const moi = useRef({ daGo, onDong, hoi });
+  moi.current = { daGo, onDong, hoi };
   useEffect(() => {
     const away = (e: MouseEvent) => {
       const el = e.target as HTMLElement;
       if (box.current?.contains(el) || anchor.contains(el) || el.closest('[role="dialog"], [role="menu"], [role="listbox"]')) return;
       if (!moi.current.daGo) moi.current.onDong();
     };
-    /* Esc chỉ đóng lớp trên cùng: hộp chọn người mở trong hộp tự đóng trước (`defaultPrevented`). */
-    const esc = (e: KeyboardEvent) => { if (e.key === 'Escape' && !e.defaultPrevented) { e.preventDefault(); moi.current.onDong(); } };
+    /* Esc chỉ đóng lớp trên cùng: hộp chọn người mở trong hộp tự đóng trước (`defaultPrevented`). Đã gõ → hỏi ở chân hộp. */
+    const esc = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape' || e.defaultPrevented) return;
+      e.preventDefault();
+      if (moi.current.hoi) goTiep();
+      else if (moi.current.daGo) setHoi(true);
+      else moi.current.onDong();
+    };
     document.addEventListener('mousedown', away);
     document.addEventListener('keydown', esc);
     window.addEventListener('resize', dat);
@@ -415,8 +470,8 @@ function KhungHop({ anchor, ten, phu, nhanHop, daGo, onDong, onKeyDown, chan, ch
 
   return createPortal(
     <>
-      {dienThoai && <div className="fixed inset-0 z-[59] bg-black/60" aria-hidden onClick={() => { if (!daGo) onDong(); }} />}
-      <div ref={box} role="dialog" aria-label={nhanHop} tabIndex={-1} onKeyDown={onKeyDown}
+      {dienThoai && <div className="fixed inset-0 z-[59] bg-black/60" aria-hidden onClick={() => { if (daGo) setHoi(true); else onDong(); }} />}
+      <div ref={box} role="dialog" aria-label={nhanHop} tabIndex={-1} onKeyDown={(e) => { if (!hoi) onKeyDown(e); }}
         className={`z-[60] border outline-none ${dienThoai
           ? 'fixed inset-x-0 bottom-0 max-h-[85vh] overflow-y-auto rounded-t-2xl'
           : 'fixed w-[min(400px,calc(100vw-32px))] rounded-xl shadow-2xl'}`}
@@ -427,7 +482,15 @@ function KhungHop({ anchor, ten, phu, nhanHop, daGo, onDong, onKeyDown, chan, ch
           <div className="mt-0.5 truncate text-xs text-slate-400" title={nhanHop}>{phu}</div>
         </div>
         <div className="flex flex-col gap-3 px-3.5 py-3">{children}</div>
-        <div className="flex flex-wrap items-center gap-2 border-t px-3.5 py-2.5" style={{ borderColor: 'var(--line)' }}>{chan}</div>
+        <div className="flex flex-wrap items-center gap-2 border-t px-3.5 py-2.5" style={{ borderColor: 'var(--line)' }}>
+          {hoi ? (
+            <>
+              <span role="alert" className="min-w-0 flex-1 text-[13px] text-slate-200">{cauBo}</span>
+              <button type="button" className="btn btn-sm btn-danger max-sm:min-h-[44px]" onClick={onDong}>Bỏ</button>
+              <button ref={goTiepRef} type="button" className="btn btn-sm max-sm:min-h-[44px]" onClick={goTiep}>Gõ tiếp</button>
+            </>
+          ) : chan}
+        </div>
       </div>
     </>,
     document.body,
@@ -475,9 +538,11 @@ function HopNhanXetThuong({ anchor, tenMon, phu, giaTri, onLuu, onDong }: {
     setBusy(false);
     onDong();
   };
-  const dong = () => { if (!busy && (!daGo || window.confirm('Bỏ các giá trị đã gõ?'))) onDong(); };
+  const dong = () => { if (!busy) onDong(); };
   return (
     <KhungHop anchor={anchor} ten={`Nhận xét · ${tenMon}`} phu={phu} nhanHop={`Nhận xét · ${tenMon} · ${phu}`} daGo={daGo} onDong={dong}
+      /* `phu` luôn bắt đầu bằng tên em (lưới lớp thường, màn một kỹ năng). */
+      cauBo={`Bỏ nhận xét ${tenMon} · ${phu.split(' · ')[0]}?`}
       onKeyDown={(e) => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); void luu(); } }}
       chan={<><span className="flex-1" /><button type="button" className="btn btn-sm btn-primary max-sm:min-h-[44px]" disabled={busy} onClick={() => void luu()}>{busy ? 'Đang lưu…' : 'Lưu'}</button></>}>
       <label className="block">

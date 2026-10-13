@@ -741,7 +741,7 @@ export function demChuaCoLenh(classIds: readonly number[]): Map<number, number> 
  * (Chốt = ra lệnh); em chỉ có đề xuất GVCN chờ duyệt vẫn là chưa xong (đếm riêng); `deXuat` = em có nháp. Một câu lớp + tiến độ lớp + một câu em theo lô.
  * `lopId`: chỉ một lớp (thanh nhắc ở hồ sơ lớp).
  */
-export type ChotLoTrinh = DemChotLoTrinh & { classId: number; code: string; han: string | null };
+export type ChotLoTrinh = DemChotLoTrinh & { classId: number; code: string; han: string | null; emIds: number[] };
 
 export function lopChoChotLoTrinh(p: Principal, branchId: number | null, today: string, lopId?: number): ChotLoTrinh[] {
   /* Tổng quan gọi hai lần (chỉ số + dòng Cần xử lý) — nhớ trong request. */
@@ -766,12 +766,13 @@ function tinhLopChoChotLoTrinh(p: Principal, branchId: number | null, today: str
     return den && can(p, PERMISSIONS.CLASS_EDIT, { classId: c.id }) ? [{ classId: c.id as number, code: c.code as string, han }] : [];
   });
   if (!toi.length) return [];
-  const dem = new Map<number, DemChotLoTrinh>();
+  const dem = new Map<number, DemChotLoTrinh & { emIds: number[] }>();
   theoLo(toi.map((x) => x.classId), (lo, ph) => {
     for (const r of conn.prepare(
       `SELECT x.class_id, COUNT(*) AS tong, SUM(NOT x.co_lenh) AS chua_lenh, SUM(NOT x.co_lenh AND x.cho_duyet) AS cho_duyet,
-              SUM(NOT x.co_lenh AND NOT x.cho_duyet AND x.co_huong) AS de_xuat
-         FROM (SELECT e.class_id,
+              SUM(NOT x.co_lenh AND NOT x.cho_duyet AND x.co_huong) AS de_xuat,
+              GROUP_CONCAT(CASE WHEN NOT x.co_lenh THEN x.student_id END) AS em_chua   -- OV-11c (CV-1): id em chưa có quyết định (dòng phạm vi đếm em riêng)
+         FROM (SELECT e.class_id, e.student_id,
                       EXISTS (SELECT 1 FROM lenh_chuyen_lop l WHERE l.student_id = e.student_id AND l.trang_thai = 'cho') AS co_lenh,
                       EXISTS (SELECT 1 FROM yeu_cau_duyet y WHERE y.trang_thai = 'cho' AND y.loai = 'de_xuat_chuyen_lop'
                                 AND y.doi_tuong_loai = 'student:chuyen-lop' AND y.doi_tuong_id = e.student_id) AS cho_duyet,
@@ -781,7 +782,7 @@ function tinhLopChoChotLoTrinh(p: Principal, branchId: number | null, today: str
         GROUP BY x.class_id`,
     ).all(...lo) as any[]) {
       const chuaLenh = Number(r.chua_lenh), choDuyet = Number(r.cho_duyet), deXuat = Number(r.de_xuat);
-      dem.set(r.class_id, { tong: Number(r.tong), chuaLenh, choDuyet, deXuat, chuaHuong: chuaLenh - choDuyet - deXuat });
+      dem.set(r.class_id, { tong: Number(r.tong), chuaLenh, choDuyet, deXuat, chuaHuong: chuaLenh - choDuyet - deXuat, emIds: String(r.em_chua ?? '').split(',').filter(Boolean).map(Number) });
     }
   });
   return toi.flatMap((x) => { const d = dem.get(x.classId); return d?.chuaLenh ? [{ ...x, ...d }] : []; });

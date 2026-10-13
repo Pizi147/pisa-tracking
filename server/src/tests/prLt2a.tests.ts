@@ -364,9 +364,11 @@ export async function runPrLt2aTests(t: YThucTestKit) {
     conn.prepare(`UPDATE assessment_attempts SET status = 'cancelled' WHERE cycle_id = (SELECT cycle_id FROM assessment_attempts WHERE id = ?) AND kind = 'final'`).run(em.pt);   // Final Test tuần này chặn dời L (T15) — bỏ để thử vắng lần 2
     const ha = P.normalCoreTeacher;
     const co = (lan: number) => all('SELECT 1 FROM notifications WHERE user_id = ? AND dedup_key = ?', ha.userId, `vang-thuong:${em.pt}:reading:${lan}`).length;
-    regular.saveRegularScore(P.admin, em.pt!, 'reading', { noShow: true });
+    /* OV-11a (Q1): "-" trong tuần thi → dời tuần sau; lần 2 = ghi "-" khi tuần mới đã tới (ghi bù ≥ 2 tuần là Không dự thi, không tính vắng). */
+    const tuanThi = get(`SELECT rp.week_start AS w FROM attempt_skills k JOIN report_periods rp ON rp.id = k.planned_period_id WHERE k.attempt_id = ? AND k.skill = 'reading'`, em.pt).w as string;
+    regular.saveRegularScore(P.admin, em.pt!, 'reading', { noShow: true }, t.addDays(tuanThi, 2));
     assert(co(1) === 0 && co(2) === 0, 'lần 1 không thông báo');
-    regular.saveRegularScore(P.admin, em.pt!, 'reading', { noShow: true });
+    regular.saveRegularScore(P.admin, em.pt!, 'reading', { noShow: true }, t.addDays(tuanThi, 9));
     assert(co(2) === 1, 'lần 2 phải có thông báo');
     const tb = get('SELECT title FROM notifications WHERE user_id = ? AND dedup_key = ?', ha.userId, `vang-thuong:${em.pt}:reading:2`);
     assert(/vắng R Progress Test lần 2 — đã dời sang W\d/.test(tb.title) && !/SOS/.test(tb.title), tb.title);

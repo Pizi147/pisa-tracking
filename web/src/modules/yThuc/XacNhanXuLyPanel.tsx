@@ -83,9 +83,7 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', onClose,
     if (daLuu?.loai === 'nhap') {
       try { await api.del(`/y-thuc/xu-ly/${daLuu.id}`); } catch { /* nháp đã gửi hoặc đã xoá — không có gì để dọn */ }
     }
-    const coLuu = daLuu?.loai === 'xu-ly';
     onClose();
-    if (coLuu) onDone?.();
   };
 
   const luuXuLy = async () => {
@@ -96,6 +94,8 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', onClose,
       const m = await api.post<XuLyView>(`/students/${studentId}/y-thuc/xu-ly`, {
         violationIds: [...chon], performedOn: ngayTh, ...nguoiThanhPayload(nguoi), note: moTa.trim(), idempotencyKey, bacDaThay: d.bac,
       });
+      /* OV-11c (CV-7): báo nơi gọi TRƯỚC khi làm mới — Công việc giữ chỗ dòng (mờ + gạch) và panel ở lại bước "Đã lưu · Tệp hoặc liên kết". */
+      onDone?.();
       lamMoi();
       setDaLuu({ id: m.id, loai: 'xu-ly', nhan: m.nhan });
     } catch (e: any) {

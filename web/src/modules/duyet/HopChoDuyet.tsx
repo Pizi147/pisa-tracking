@@ -7,8 +7,10 @@ import { BoLocDoan, Card, Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { BranchFilter } from '../../ui/Filters.tsx';
 import { NganCase } from '../students/NganCase.tsx';
 import { TheYeuCau } from './TheYeuCau.tsx';
+import { ConfirmDialog } from '../../ui/Drawer.tsx';
+import { DsGvNhac } from '../congViec/HoTroHocVienTab.tsx';
 import {
-  LOAI_YC_META, PHAN_LOAI_CAN_QUYET, PHAN_LOAI_LABEL, TRAN_HANG_LOAT, chiaLo, chonHet, chonMot, laPhanLoai, tomTatKetQuaHangLoat,
+  LOAI_YC_META, PHAN_LOAI_CAN_QUYET, PHAN_LOAI_LABEL, TRAN_HANG_LOAT, chiaLo, chonHet, chonMot, laPhanLoai, lapNhacTatCa, tomTatKetQuaHangLoat,
   type KhoaChip, type LoaiYeuCau, type TheYeuCauDto,
 } from '@shared/domain/index.ts';
 
@@ -144,12 +146,18 @@ export function HopChoDuyet() {
       xong();
     } finally { setBusy(false); }
   };
+  /* OV-11c (CV-14): "Nhắc tất cả" hỏi lại như ở Hỗ trợ học viên (cùng hộp: n việc · k GV, danh sách GV). */
+  const [hoiNhac, setHoiNhac] = useState(false);
+  const lo = useMemo(() => lapNhacTatCa(nhacDuoc.map((x) => ({
+    id: x.id, owner: typeof x.duLieu?.tenGv === 'string' ? x.duLieu.tenGv : null, nhac: { ownerId: x.duLieu!.ownerId as number, daNhacLuc: null },
+  }))), [nhacDuoc]);
   const nhacTatCa = async () => {
-    if (busy || !nhacDuoc.length) return;
+    setHoiNhac(false);
+    if (busy || !lo.gui.length) return;
     setBusy(true);
     try {
       const r = await api.post<{ ok: { id: number; daNhacLuc: string }[]; loi: { id: number; loi: string; ma: number }[] }>(
-        '/yeu-cau/nhac-nhieu', { ids: nhacDuoc.slice(0, TRAN_HANG_LOAT).map((x) => x.id) });
+        '/yeu-cau/nhac-nhieu', { ids: lo.gui.map((x) => x.id) });
       setDaNhacNgoai((s) => ({ ...s, ...Object.fromEntries(r.ok.map((x) => [x.id, x.daNhacLuc])) }));
       setNhacLoi((s) => new Set([...s, ...r.loi.filter((l) => l.ma !== 503).map((l) => l.id)]));
       baoKetQua('nhac', r.ok.length, r.loi);
@@ -195,11 +203,14 @@ export function HopChoDuyet() {
       {xem !== 'da-xu-ly' && ds.length > 1 && <p className="m-0 text-[12px] text-slate-400">Xếp: quá hạn trước → hạn gần nhất</p>}
       {coCapHangLoat && <p className="m-0 text-[12px] text-slate-400">Đánh dấu ô ở thẻ để duyệt nhiều cùng loại.</p>}
       {xem === 'de-biet' && nhacDuoc.length > 0 && (
-        <div><button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={busy} onClick={nhacTatCa}>
+        <div><button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => setHoiNhac(true)}>
           {busy ? 'Đang nhắc…' : nhacDuoc.length > TRAN_HANG_LOAT ? `Nhắc ${TRAN_HANG_LOAT} thẻ đầu` : `Nhắc tất cả (${nhacDuoc.length})`}
         </button></div>
       )}
 
+      <ConfirmDialog open={hoiNhac} onClose={() => setHoiNhac(false)} onConfirm={() => void nhacTatCa()}
+        title={`Nhắc ${lo.gui.length} việc · ${lo.gv.length} GV?`} confirmLabel={`Nhắc ${lo.gv.length} GV`}
+        body={<DsGvNhac gv={lo.gv} boQua={0} />} />
       {theLac && (
         <p role="status" className="m-0 flex flex-wrap items-center gap-2 rounded-lg border px-3 py-2 text-[13px] text-slate-300"
           style={{ borderColor: 'var(--line)' }}>

@@ -49,17 +49,17 @@ export function dotHoanTatMany(attemptIds: number[], today: string): Map<number,
     if (r.lich_su) nhapCuoiLichSu.set(r.id, r.nhap_cuoi ? addDays(mondayOfDate(addDays(String(r.nhap_cuoi), 7)), 6) : null);
   }
 
-  const skillsOf = new Map<number, Array<{ skill: string; batBuoc: boolean; huy: boolean; sitAbsent: boolean; weekEnd: string | null }>>();
+  const skillsOf = new Map<number, Array<{ skill: string; batBuoc: boolean; huy: boolean; sitAbsent: boolean; weekEnd: string | null; periodId: number | null }>>();
   /* TD2-a: lịch kỹ năng qua `loadSkillRows` (nhớ theo lượt trong request) — bảng điểm lớp đã đọc đúng các lượt này ngay trước. */
   for (const r of [...loadSkillRows(attemptIds).values()].flat()) {
     if (!skillsOf.has(r.attempt_id)) skillsOf.set(r.attempt_id, []);
     skillsOf.get(r.attempt_id)!.push({
       skill: r.skill, batBuoc: r.required === 1, huy: r.sit_status === 'cancelled',
-      sitAbsent: r.sit_status === 'absent', weekEnd: r.week_end ?? null,
+      sitAbsent: r.sit_status === 'absent', weekEnd: r.week_end ?? null, periodId: r.planned_period_id ?? null,
     });
   }
 
-  const scoresOf = new Map<number, Array<{ skill: string; band: number | null; rawScore: number | null; coDau: boolean }>>();
+  const scoresOf = new Map<number, Array<{ skill: string; band: number | null; rawScore: number | null; dauTuan: number | null }>>();
   for (const r of conn
     .prepare(
       `SELECT attempt_id, skill, band, raw_score, no_show_period_id
@@ -68,7 +68,7 @@ export function dotHoanTatMany(attemptIds: number[], today: string): Map<number,
     .all(...attemptIds) as any[]) {
     if (!scoresOf.has(r.attempt_id)) scoresOf.set(r.attempt_id, []);
     scoresOf.get(r.attempt_id)!.push({
-      skill: r.skill, band: r.band ?? null, rawScore: r.raw_score ?? null, coDau: r.no_show_period_id !== null,
+      skill: r.skill, band: r.band ?? null, rawScore: r.raw_score ?? null, dauTuan: r.no_show_period_id ?? null,
     });
   }
 
@@ -85,7 +85,9 @@ export function dotHoanTatMany(attemptIds: number[], today: string): Map<number,
         const row = entryRows.find((sc) => sc.skill === k);
         return cheDo === 'ratio' ? (row?.rawScore ?? null) !== null : (row?.band ?? null) !== null;
       });
-      const coDau = s.sitAbsent || entryRows.some((sc) => sc.coDau);
+      /* OV-11a (TE-1): "-" chỉ làm kỹ năng xong khi thuộc TUẦN ĐANG XẾP của nó (cùng luật `sameWeek` của `dauTruCuaO`) — bài đã dời vì
+       * vắng sang tuần thi bù là chưa xong, không khoá đợt "hoàn tất" với GV đúng kỹ năng. */
+      const coDau = s.sitAbsent || entryRows.some((sc) => sc.dauTuan !== null && sc.dauTuan === s.periodId);
       return { batBuoc: s.batBuoc, huy: s.huy, coDiem, coDau, weekEnd: s.weekEnd };
     });
 
