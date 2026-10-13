@@ -617,11 +617,12 @@ function KetQua({ row, sheet }: { row: Row; sheet: ThuongSheet }) {
 
   return (
     <div className="flex flex-col items-start gap-0.5 min-w-0">
-      <div className="flex items-center gap-1.5 min-w-0">
+      <div className="flex flex-wrap items-center gap-1.5 min-w-0">
         {chinh}
         {nhanCase}
       </div>
-      {phu && <span className={`text-xs leading-tight truncate max-w-full ${phu.tone}`} title={phu.title}>{phu.chu}</span>}
+      {/* OV-11e (CA3-11): dòng phụ xuống dòng, không cắt. */}
+      {phu && <span className={`text-xs leading-tight max-w-full [overflow-wrap:anywhere] ${phu.tone}`} title={phu.title}>{phu.chu}</span>}
     </div>
   );
 }

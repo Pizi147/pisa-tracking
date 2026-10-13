@@ -29,7 +29,7 @@ import {
   attemptHref, attemptStatusLabel, fmtBand, fmtDate, progressLabel, skillLabel,
 } from '../../lib/format.ts';
 import {
-  ATTEMPT_KIND_SHORT, maHocVienNgan, CHU_THAO_TAC, chipSosMt0, nhanLuot, thaoTacKyNang, trangThaiTT, tuanLich,
+  ATTEMPT_KIND_SHORT, maHocVienNgan, CHU_THAO_TAC, chipSosMt0, mondayOfDate, nhanLuot, thaoTacKyNang, trangThaiTT, tuanLich,
   type AssessedSkill, type AttemptKind, type LoiTruong, type TheYeuCauDto, type ThaoTac,
   docKnMock, KY_NANG_KE_HOACH, type KyNangKH, khongDuThiTuO, oKyNangTuLich, type KetQuaHuy, type OMtVao, trangCha,
 } from '@shared/domain/index.ts';
@@ -270,7 +270,9 @@ export default function MockDetailPage() {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Link className="btn min-h-[44px] no-underline sm:min-h-0" to={`/hoc-vien/${d.student.id}`}>Hồ sơ học viên</Link>
-          {d.classId && d.viewer.editableSkills.length > 0 && (
+          {/* OV-11e (TE-12): lượt chưa tới tuần (chưa kỹ năng nào tới tuần thi) thì không có "Nhập điểm" — lưới tuần đó chưa mở. */}
+          {d.classId && d.viewer.editableSkills.length > 0
+            && [d.period?.weekStart, ...d.skillSchedule.map((r) => r.weekStart)].some((w) => !!w && w.slice(0, 10) <= mondayOfDate(homNay)) && (
             /* R16 — mở lưới cả lớp đúng TUẦN của đợt đang xem, không phải tuần hôm nay. */
             <Link className="btn min-h-[44px] no-underline sm:min-h-0"
               to={d.mt0 ? `/nhap-diem/${d.classId}?kind=mt0${d.period ? `&periodId=${d.period.id}` : ''}`

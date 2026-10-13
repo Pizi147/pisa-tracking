@@ -6,6 +6,7 @@ export type OSo = 'da-cham' | 'con-phai-cham' | 'no';
 /**
  * DẢI SỐ của Lịch Test (PR-UX1, G-10; PR-LT3 Q1 còn ba ô) — số nào cũng bấm được và mở đúng khối tạo ra số đó: hai ô đầu → khối 2
  * (tuần hiện tại) hoặc khối 3 (tuần khác), ô ba → khối 1. Ba ô một hàng cả trên điện thoại. Số đã cộng sẵn ở máy chủ từ chính các hàng.
+ * OV-11e (TE-7): người có phân công — số là bài của CHÍNH họ; bài GV khác ghi nhạt dưới số ("n bài của GV khác").
  */
 export function DaiSo({ tq, tenTuan, onBam }: {
   tq: TongQuanLich; tenTuan: string; onBam: (o: OSo) => void;
@@ -17,16 +18,19 @@ export function DaiSo({ tq, tenTuan, onBam }: {
       </O>
       <O onClick={() => onBam('con-phai-cham')} nhan="Còn phải chấm" mo={tq.conPhaiCham === 0}>
         {tq.conPhaiCham} <Don>bài</Don>
+        {tq.khac.con > 0 && <Khac n={tq.khac.con} />}
       </O>
       <O onClick={() => onBam('no')} nhan="Quá hạn chấm" mo={tq.no.bai === 0} mau={tq.no.bai > 0 ? 'text-late' : undefined}>
         {tq.no.bai} <Don>bài</Don>
         {tq.no.lop > 0 && <Don> · {tq.no.lop} lớp</Don>}
+        {tq.khac.no > 0 && <Khac n={tq.khac.no} />}
       </O>
     </div>
   );
 }
 
 const Don = ({ children }: { children: ReactNode }) => <span className="text-xs font-normal text-slate-400">{children}</span>;
+const Khac = ({ n }: { n: number }) => <span className="block text-[11px] font-normal leading-tight text-slate-500">{n} bài của GV khác</span>;
 
 /** Một ô số: nhãn nhỏ trên, số to dưới (`tabular-nums`). `mo` = số 0 → chữ phụ, vẫn bấm được. */
 function O({ nhan, children, onClick, mo, mau }: {

@@ -1000,7 +1000,8 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       key: `lich-su:${l.classId}`, group: 'missing_data', urgency: 'normal',
       studentId: null, studentName: `Lớp ${l.classCode}`, classId: l.classId, classCode: l.classCode,
       attemptId: null, attemptNo: null, caseId: null, level: null, contextLabel: null, count: l.soEm, emIds: l.emIds,
-      reason: `Nhập MT cũ · ${l.soEm} em · không tính hạn`,
+      /* OV-11e (TE-8): số theo lượt — link mở lượt đầu, số đầu = số hàng ở đó. */
+      reason: `Nhập MT cũ · ${l.luot.map((x) => `MT${x.so} · ${x.soEm} em`).join(' · ')} · không tính hạn`,
       tieuDe: 'Nhập điểm MT cũ', actionLabel: 'Nhập điểm', href: l.href,
       ownerId: tatCa ? gvcnLop().get(l.classId) ?? p.userId : p.userId, owner: null, mine: true, due: null, statusLabel: 'Không tính hạn',
     });

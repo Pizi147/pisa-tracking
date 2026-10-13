@@ -30,6 +30,7 @@ import { buildCtDemo } from './ctSeed.ts';
 import { buNgayPb2b, buildPb2bDemo } from './pb2bSeed.ts';
 import { dienNguocBanChup } from '../migrate/prTk.ts';
 import { migratePrOv1c } from '../migrate/prOv1c.ts';
+import { migratePrOv11e } from '../migrate/prOv11e.ts';
 
 const NOW = nowIso();
 
@@ -289,6 +290,8 @@ export function runSeed() {
     const ov2a = buildOv2aDemo(conn);
     /* OV-6b2: lớp MB PET 01 (3 em, Checkpoint 1 một Đạt · một SOS) — sau OV-2a để id học viên / người dùng cũ không đổi. */
     const pet = buildPetDemo(conn, { adminId, mbId: branchId.get('MB')!, userId });
+    /* OV-11e (Q8): lượt MT đã chốt dựng bằng SQL thẳng chưa có dấu KCK theo lượt — chụp theo cờ hiện tại (cùng hàm với migrate). Sau mọi bộ demo. */
+    migratePrOv11e(conn, []);
 
     return {
       'Chi nhánh': BRANCHES.length,

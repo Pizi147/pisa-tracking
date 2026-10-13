@@ -41,8 +41,10 @@ export type CongRoi = { roi: (lam: () => void) => void; giu: (e: MouseEvent) => 
 /** Mã đích "ra ngoài bảng" trong luồng hỏi đổi lượt — không bao giờ trùng mã lượt (`docMaLuot`). */
 const DICH_NGOAI = 'ngoai';
 
-export function DiemTheoLop({ classId, luotBanDau, gon = false, congRoi, onDaLuu, onLuot }: {
+export function DiemTheoLop({ classId, luotBanDau, chiOTrongBanDau = false, gon = false, congRoi, onDaLuu, onLuot }: {
   classId: number; luotBanDau?: string; gon?: boolean; congRoi?: MutableRefObject<CongRoi | null>;
+  /** OV-11e (TE-8): vào từ link "MT cũ chưa nhập" (`?trong=1`) — bật sẵn "Chỉ ô còn trống". */
+  chiOTrongBanDau?: boolean;
   /** Vừa lưu một ô (Test › Điểm theo lớp: gộp tải lại số ô trống của danh sách lớp). */
   onDaLuu?: () => void;
   /** PR-OV5b: lượt đang xem đổi — Test › Điểm theo lớp ghi `?luot=` để Quay lại từ hồ sơ về đúng lượt. */
@@ -59,7 +61,7 @@ export function DiemTheoLop({ classId, luotBanDau, gon = false, congRoi, onDaLuu
   const nhanLuot = dsLuot.find((l) => l.ma === luot)?.nhan;
   useEffect(() => { if (luot && nhanLuot) onLuot?.(luot, nhanLuot); }, [luot, nhanLuot]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const [chiOTrong, setChiOTrong] = useState(docChiOTrong);
+  const [chiOTrong, setChiOTrong] = useState(() => chiOTrongBanDau || docChiOTrong());
 
   /* Mỗi dòng của lưới báo: còn ô đang gửi không, mấy ô hỏng/gõ sai (`useTrangThaiLuuO`). */
   const [luu, setLuu] = useState<Record<string, { dang: boolean; loi: number }>>({});

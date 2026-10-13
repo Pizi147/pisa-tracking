@@ -35,14 +35,18 @@ export type TomTatLuot = {
 /**
  * Lượt mở sẵn (DL-6b): trong các lượt còn ô trống, ưu tiên (1) tuần lớn nhất ≤ tuần chứa `homNay` (bài đã qua / đang thi);
  * (2) không có → tuần tương lai gần nhất; (3) không có → lượt chưa xếp tuần (NULL); mọi lượt đủ → lượt cuối theo tuần (NULL cuối).
+ * OV-11e (TE-11): hai lượt cùng tuần → lượt nhiều ô trống hơn (Final cả lớp trước MT0 một em), không theo thứ tự đầu vào.
  */
 export function luotMacDinh(ds: TomTatLuot[], homNay: string): string | null {
   const xep = [...ds].sort((a, b) =>
     a.tuanStart === b.tuanStart ? 0 : a.tuanStart === null ? 1 : b.tuanStart === null ? -1 : a.tuanStart < b.tuanStart ? -1 : 1);
   const thuHai = mondayOfDate(homNay);
   const conTrong = xep.filter((l) => l.oTrong > 0);
-  const daToi = conTrong.filter((l) => l.tuanStart !== null && l.tuanStart <= thuHai).at(-1);
-  const tuongLai = conTrong.find((l) => l.tuanStart !== null && l.tuanStart > thuHai);
+  /* Cùng tuần: lượt nhiều ô trống nhất. */
+  const nhieuNhat = (cung: TomTatLuot[]) => cung.reduce<TomTatLuot | undefined>((m, l) => (!m || l.oTrong > m.oTrong ? l : m), undefined);
+  const cungTuan = (l: TomTatLuot | undefined) => (l ? nhieuNhat(conTrong.filter((x) => x.tuanStart === l.tuanStart)) : undefined);
+  const daToi = cungTuan(conTrong.filter((l) => l.tuanStart !== null && l.tuanStart <= thuHai).at(-1));
+  const tuongLai = cungTuan(conTrong.find((l) => l.tuanStart !== null && l.tuanStart > thuHai));
   return (daToi ?? tuongLai ?? conTrong.at(-1) ?? xep.at(-1))?.ma ?? null;
 }
 
@@ -69,16 +73,17 @@ export function dongThiHocVien(muc: { nhan: string; weekStart: string | null }[]
 
 /**
  * "CHỈ Ô CÒN TRỐNG" (DL-5) — cùng nghĩa ô trống với số đếm máy chủ (G6): ô bắt buộc, chưa huỷ, chưa điểm, không mang dấu "-".
- * Không xét quyền sửa của người xem — khớp chip "MT2 còn 3 ô trống".
+ * Không xét quyền sửa của người xem — khớp chip "MT2 còn 3 ô trống". OV-11e (T19): ô chưa tới tuần thi / chưa xếp tuần không là ô trống.
  */
+const chuaToiTuan = (progress: string) => progress === 'upcoming' || progress === 'not_scheduled';
 export const oTrongLuotFt = (c: { required: boolean; progress: string; band: number | null; noShow?: unknown }) =>
-  c.required && c.progress !== 'cancelled' && c.band === null && !c.noShow;
+  c.required && c.progress !== 'cancelled' && !chuaToiTuan(c.progress) && c.band === null && !c.noShow;
 
 /** Lớp thường: "-" chỉ tính là xong khi dấu nằm đúng tuần thi hiện tại của môn; môn đã dời sang tuần sau vẫn là ô trống. */
 export const hangThuongConTrong = (r: {
   skillSchedule: { skill: string; progress: string; noShow: boolean; movedFrom: string | null; periodCode: string | null }[];
   result: { skills: { skill: string; score: number | null }[] };
-}) => r.skillSchedule.some((s) => s.progress !== 'cancelled' && s.progress !== 'skipped' && !(s.noShow && s.movedFrom === s.periodCode)
+}) => r.skillSchedule.some((s) => s.progress !== 'cancelled' && s.progress !== 'skipped' && !chuaToiTuan(s.progress) && !(s.noShow && s.movedFrom === s.periodCode)
   && (r.result.skills.find((k) => k.skill === s.skill)?.score ?? null) === null);
 
 /**

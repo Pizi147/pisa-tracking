@@ -87,7 +87,8 @@ function viSaoMo(muc: MucHop, tt: TrangThaiTT, moi: boolean): string {
     case 'da-huy': case 'huy-vang': return 'Phần thi đã huỷ';
     case 'cho-duyet': return 'Chờ duyệt';
     case 'lich-su': return 'MT cũ';
-    default: return muc === 'doi-tuan' ? 'Chỉ Quản lý' : 'Không thi đợt này';
+    /* OV-11e (TE-12): Đổi tuần / Dời hạn chấm mờ ở đây là thiếu quyền (Admin không dời hạn — OV-10a), không phải "không thi". */
+    default: return muc === 'doi-tuan' || muc === 'doi-han' ? 'Chỉ Quản lý' : 'Không thi đợt này';
   }
 }
 

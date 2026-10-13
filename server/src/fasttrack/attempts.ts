@@ -32,7 +32,7 @@ import { raiseSignalsForResult, stepsFor } from '../cases/sos.ts';
 import { reconcileCorrectedSignals } from '../cases/signals.ts';
 import { currentCycle, cycleById, examPlanOf, luotSoCuaLoTrinh } from './cycles.ts';
 import { closeCasesBySystem, moLaiCaseHeThongDong } from '../cases/systemClose.ts';
-import { banHuyLuotCua, catHuyLuot, ketQuaHuyCua, traBanDoiVuot, traBanHuyLuot, type BanHuyLuot } from './ketQuaHuy.ts';
+import { banHuyLuotCua, catHuyLuot, ketQuaHuyCua, traBanDoiVuot, traBanHuyLuot, traYeuCauCat, yeuCauChoCua, type BanHuyLuot } from './ketQuaHuy.ts';
 import { chuanHoaNguoiThucHien } from '../cases/nguoiThucHien.ts';
 import { allProgrammes, evaluateRegular, isRatioClass, nguongDatLop, programmeOfClass, refreshRegularOutcome, regularDeadline } from '../normal/regular.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
@@ -214,8 +214,14 @@ export function routeCuaLuot(attempt: any): string | null {
 /**
  * OV-9: dấu KCK của lượt = `learning_cycles.khong_cam_ket` HIỆN TẠI của lộ trình lượt (như số liệu PR-KCK: bỏ KCK thì lượt lại tính SOS). Hàng đã JOIN
  * `cy.khong_cam_ket` (`khong_cam_ket` / `cy_kck`) thì dùng luôn; không thì một câu, nhớ theo `cycle_id` trong request (mẫu `routeCuaLuot`).
+ * OV-11e (HV-18, Q8 chủ SP chốt): lượt ĐÃ CHỐT giữ dấu KCK lúc chốt (`kck_at_attempt`, như `target_at_attempt`) — tích / bỏ KCK sau đó không viết lại
+ * kết luận + Case của lượt đó; lượt chưa chốt (NULL) theo cờ hiện tại. Hàng không có cột (câu chọn cột riêng) → một câu, nhớ theo lượt.
  */
 export function kckCuaLuot(attempt: any): boolean {
+  const chup = 'kck_at_attempt' in attempt ? attempt.kck_at_attempt
+    : attempt.id ? nho(`kck-luot:${attempt.id}`, () => (db().prepare('SELECT kck_at_attempt k FROM assessment_attempts WHERE id = ?').get(attempt.id) as any)?.k ?? null)
+    : null;
+  if (chup !== null && chup !== undefined) return !!chup;
   if ('cy_kck' in attempt) return !!attempt.cy_kck;
   if ('khong_cam_ket' in attempt) return !!attempt.khong_cam_ket;
   if (!attempt.cycle_id) return false;
@@ -1563,7 +1569,9 @@ export function huyLuot(p: Principal, attemptId: number, input: { lyDo?: string 
       tinHieu = (conn.prepare(`SELECT id FROM case_signals WHERE attempt_id = ? AND status = 'pending' ORDER BY id`).all(attemptId) as any[]).map((r) => r.id as number);
       if (tinHieu.length) conn.prepare(`UPDATE case_signals SET status = 'withdrawn', withdrawn_reason = ?, updated_at = ? WHERE attempt_id = ? AND status = 'pending'`)
         .run(SYSTEM_CLOSE_REASON_LABEL.luot_da_huy, nowIso(), attemptId);
-      soDiem = catHuyLuot(p, attemptId, lyDo, { luot: a, case: chup, pa: paDong, phoiHop: phoiHopIds, tinHieu });
+      /* OV-11e (PT-4): yêu cầu duyệt đang chờ của Case / PA vừa đóng — cất để Khôi phục trả về đúng như trước. */
+      const yeuCau = yeuCauChoCua(chup.map((c) => c.id), [...chup.flatMap((c) => c.pa.map((x) => x.id)), ...paDong.map((x) => x.id)]);
+      soDiem = catHuyLuot(p, attemptId, lyDo, { luot: a, case: chup, pa: paDong, phoiHop: phoiHopIds, tinHieu, yeuCau });
     }
     lamMoiDiemBanChup(conn, [attemptId]);   // PR-VN5: bản chụp (lộ trình đã đóng) thấy `cancelled` + điểm ẩn ngay, không trễ một nhịp
     writeAudit({ actorUserId: p.userId, action: 'attempt.cancel', entityType: 'assessment_attempt', entityId: attemptId,
@@ -1623,6 +1631,7 @@ export function reopenAttempt(p: Principal, attemptId: number, o: { banId?: numb
         soPa += conn.prepare(`UPDATE case_interventions SET status = ?, closed_reason = NULL, updated_at = ? WHERE id = ? AND status = 'cancelled' AND closed_reason = 'system_closed'`)
           .run(pa.status, nowIso(), pa.id).changes;
       }
+      traYeuCauCat(tra.dong.yeuCau ?? []);   // OV-11e (PT-4): sau khi Case / PA mở lại
       if (tra.dong.phoiHop.length) soPhoiHop = conn.prepare(
         `UPDATE sos_coordination_actions SET status = 'pending', remove_reason_code = NULL, removed_by = NULL, removed_at = NULL, updated_at = ?
           WHERE id IN (${tra.dong.phoiHop.map(() => '?').join(',')}) AND status = 'removed' AND remove_reason_code = 'system_luot_huy'`)
@@ -1746,6 +1755,10 @@ export function refreshOutcome(p: Principal, attemptId: number, thiLai = false) 
   if (nextStatus !== fresh.status) {
     conn.prepare('UPDATE assessment_attempts SET status = ?, updated_at = ? WHERE id = ?')
       .run(nextStatus, nowIso(), attemptId);
+  }
+  /* OV-11e (Q8): lần đầu lượt CHỐT → chụp dấu KCK lúc đó (cờ hiện tại của lộ trình); đã chụp thì giữ (hết chốt rồi chốt lại vẫn cùng kết luận với Case đã sinh). */
+  if (result.chot && (fresh.kck_at_attempt ?? null) === null) {
+    conn.prepare('UPDATE assessment_attempts SET kck_at_attempt = ? WHERE id = ?').run(kckCuaLuot(fresh) ? 1 : 0, attemptId);
   }
   raiseSignalsForResult(p, { ...fresh, status: nextStatus }, result);
 

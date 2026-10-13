@@ -253,7 +253,7 @@ export function NganXepHangLoat({ lopThuong, classIdBanDau, coFt, onDoiKhung, on
                       <span className="min-w-0 flex-1 truncate">{h.ten}</span>
                       <span className="shrink-0 text-xs text-slate-500">{tinhTrang}</span>
                     </label>
-                    {loi && <div className="truncate pb-1 pl-6 text-xs text-bad" title={loi}>{loi}</div>}
+                    {loi && <div className="pb-1 pl-6 text-xs text-bad [overflow-wrap:anywhere]">{loi}</div>}
                   </div>
                 );
               })}

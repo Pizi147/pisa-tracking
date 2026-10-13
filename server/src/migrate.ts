@@ -45,6 +45,7 @@ import { migratePrOv6b1 } from './migrate/prOv6b1.ts';
 import { migratePrOv6b2 } from './migrate/prOv6b2.ts';
 import { migratePrOv8a } from './migrate/prOv8a.ts';
 import { migratePrOv1c } from './migrate/prOv1c.ts';
+import { migratePrOv11e, themCotPrOv11e } from './migrate/prOv11e.ts';
 
 /**
  * Nâng cấp database ĐANG CÓ lên schema mới, không xoá dữ liệu. PR-SO (DEP-gỡ): nhánh nâng cấp từ mô hình `mock_attempts` (trước overhaul)
@@ -88,6 +89,7 @@ function migrateCaseEngine(applied: string[], skipped: string[]) {
 
   conn.pragma('foreign_keys = OFF');
   conn.transaction(() => {
+    /* PR-OV11e: cột KCK theo lượt — TRƯỚC mọi bước tính kết quả lượt (`kckCuaLuot` đọc cột này). Chỉ thêm cột. */ themCotPrOv11e(conn, applied);
     // 1. Cột mới trên các bảng đang có.
     for (const [col, decl] of [
       ['student_id', 'INTEGER REFERENCES students(id)'],
@@ -305,6 +307,7 @@ function migrateCaseEngine(applied: string[], skipped: string[]) {
     /* PR-OV1c: Case SOS MT theo luật chốt — lượt chưa chốt đóng Case chưa ai đụng ("Chờ chốt SOS"), Overall đạt xoá SOS (đổi dữ liệu, chạy lặp được). */ migratePrOv1c(conn, applied);
     /* OV-8a: Bước tiếp sau thi thật — bốn cột ở learning_cycles (chỉ thêm, chạy lặp được). */ migratePrOv8a(conn, applied);
     /* OV-10b: liên hệ học viên — SĐT em, phụ huynh (chỉ thêm cột, chạy lặp được). */ migratePrOv10b(conn, applied);
+    /* PR-OV11e (SAU prOv1b / prOv1c): lượt MT đã chốt chụp dấu KCK hiện tại — kết luận giữ như màn đang hiện (đổi dữ liệu, chạy lặp được). */ migratePrOv11e(conn, applied);
 
     conn.prepare("INSERT OR REPLACE INTO demo_config (key, value, updated_at) VALUES ('case_engine_migrated_at', ?, ?)")
       .run(nowIso(), nowIso());

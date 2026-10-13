@@ -649,9 +649,10 @@ export async function runChamDiemTests(t: YThucTestKit) {
       const q = r.tongQuan;
       /* PR-LT3 Q1: tuần hiện tại — đã chấm / còn phải chấm cộng khối 2 + khối 3; ô "Quá hạn" cũ bỏ (khối 1 toàn quá hạn). */
       const hang = [...(r.chamTuanNay ?? []), ...r.lop];
-      assert(q.tong === hang.reduce((n: number, l: any) => n + l.tong, 0), `${ten}: tổng = cộng các hàng`);
+      /* OV-11e (TE-7): hàng có `phan` (người có phân công) cộng phần của người xem. */
+      assert(q.tong === hang.reduce((n: number, l: any) => n + (l.phan ? l.tongCuaToi : l.tong), 0), `${ten}: tổng = cộng các hàng`);
       assert(q.daCham + q.conPhaiCham === q.tong, `${ten}: đã chấm + còn phải chấm = tổng`);
-      assert(q.conPhaiCham === hang.reduce((n: number, l: any) => n + l.conBai, 0), `${ten}: còn phải chấm = cộng các hàng`);
+      assert(q.conPhaiCham === hang.reduce((n: number, l: any) => n + (l.phan ? l.conBaiCuaToi : l.conBai), 0), `${ten}: còn phải chấm = cộng các hàng`);
       assert(r.no.every((x: any) => x.quaHan), `${ten}: khối 1 chỉ có dòng quá hạn`);
       for (const l of hang) {
         assert(l.daCham === l.tong - l.conBai, `${ten} ${l.key}: đã chấm = tổng − còn`);

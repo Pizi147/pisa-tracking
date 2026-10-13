@@ -8,7 +8,7 @@
 import { NHOM_VIEC_LABEL, type NhomViec } from './tongQuan.ts';
 import { LOC_NHANH_LABEL, type LocNhanh } from './congViec.ts';
 import { GOC_NHIN_LABEL, GOC_NHIN_MAC_DINH, type GocNhin } from './phanTich.ts';
-import { TAB_CONG_VIEC_LABEL, tabCongViecTuDuong } from './dieuHuong.ts';
+import { DUONG_TAB_TEST, TAB_CONG_VIEC_LABEL, tabCongViecTuDuong } from './dieuHuong.ts';
 
 export type BuocVe = { url: string; ten: string; chiTiet?: string; cuon: number };
 export type TenTrang = { ten: string; chiTiet?: string };
@@ -59,14 +59,17 @@ export function docChong(x: unknown): BuocVe[] {
  *   về đúng URL một bước          → cắt từ bước đó (bước 0 = nguồn → chồng rỗng)
  *   nguồn → hồ sơ                  → chồng = [nguồn] (bắt đầu lại)
  *   hồ sơ → hồ sơ khác (PUSH)      → thêm bước; quá 5 thì bỏ bước cũ nhất SAU nguồn (nút luôn về nguồn đầu)
+ *   hồ sơ lớp → Điểm theo lớp (PUSH) → thêm bước hồ sơ lớp (OV-11e, HL-6: Điểm theo lớp có "‹ Hồ sơ lớp {mã}")
  *   còn lại (POP, REPLACE giữa hai hồ sơ = Trước/Sau hoặc Case chuyển thẳng, cùng hồ sơ đổi query, sang trang nguồn) → giữ nguyên
  */
 export function buocMoi(chong: BuocVe[], o: { tu: BuocVe | null; den: string; kieu: KieuDi }): { chong: BuocVe[]; cuonVe: number | null } {
   const k = chong.findIndex((b) => b.url === o.den);
   if (k >= 0) return { chong: chong.slice(0, k), cuonVe: chong[k].cuon };
   const giu = { chong, cuonVe: null };
-  if (o.kieu === 'POP' || !o.tu || !loaiHoSo(tachUrl(o.den).path)) return giu;
+  if (o.kieu === 'POP' || !o.tu) return giu;
   const tuPath = tachUrl(o.tu.url).path;
+  const vaoDiemLop = o.kieu === 'PUSH' && loaiHoSo(tuPath) === 'lop' && tachUrl(o.den).path === DUONG_TAB_TEST['diem-lop'];
+  if (!loaiHoSo(tachUrl(o.den).path) && !vaoDiemLop) return giu;
   if (tuPath === tachUrl(o.den).path) return giu;
   if (!loaiHoSo(tuPath)) return { chong: [o.tu], cuonVe: null };
   if (o.kieu === 'REPLACE') return giu;

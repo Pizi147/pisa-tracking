@@ -111,7 +111,40 @@ function ghiDiemCat(p: Principal, attemptId: number, diem: any[], hienTai: any[]
 /** Những gì MỘT lần Huỷ cả lượt đã đóng + dòng lượt trước huỷ — đủ để Khôi phục đưa về đúng như cũ. */
 export type DongHuyLuot = {
   luot: Record<string, unknown>; case: ChupCaseDong[]; pa: { id: number; status: string }[]; phoiHop: number[]; tinHieu: number[];
+  /**
+   * OV-11e (PT-4): yêu cầu duyệt đang chờ của Case / PA vừa đóng — trong lúc lượt huỷ, mọi đường đọc (`quetYeuCau`) đóng chúng thành `tu_dong`
+   * ("Case đã đóng"); Khôi phục trả về "cho". Bản cất cũ (trước OV-11e) không có trường này.
+   */
+  yeuCau?: number[];
 };
+
+/** Id yêu cầu duyệt còn chờ gắn với các Case / PA (`sos_case` / `intervention`) — cất cùng bản huỷ lượt. Gọi trong tx của `huyLuot`. */
+export function yeuCauChoCua(caseIds: number[], paIds: number[]): number[] {
+  if (!caseIds.length && !paIds.length) return [];
+  const ph = (n: number) => (n ? Array(n).fill('?').join(',') : 'NULL');
+  return (db().prepare(
+    `SELECT id FROM yeu_cau_duyet WHERE trang_thai = 'cho'
+        AND ((doi_tuong_loai = 'sos_case' AND doi_tuong_id IN (${ph(caseIds.length)})) OR (doi_tuong_loai = 'intervention' AND doi_tuong_id IN (${ph(paIds.length)})))
+      ORDER BY id`,
+  ).all(...caseIds, ...paIds) as any[]).map((r) => r.id as number);
+}
+
+/**
+ * OV-11e (PT-4): Khôi phục lượt trả các yêu cầu đã cất về "cho" — chỉ thẻ hệ thống tự đóng (`tu_dong`) mà Case / PA của nó đã mở lại; thẻ người
+ * đã duyệt / từ chối giữ nguyên. Gọi trong tx của `reopenAttempt`, SAU khi mở lại Case / PA. Trả số thẻ trả về.
+ */
+export function traYeuCauCat(ids: readonly number[]): number {
+  let n = 0;
+  for (const id of ids) {
+    n += db().prepare(
+      `UPDATE yeu_cau_duyet SET trang_thai = 'cho', nguoi_duyet = NULL, ly_do_dong = NULL, tu_duyet = 0, xu_ly_luc = NULL
+        WHERE id = ? AND trang_thai = 'tu_dong'
+          AND ((doi_tuong_loai = 'sos_case' AND EXISTS (SELECT 1 FROM sos_cases sc WHERE sc.id = doi_tuong_id AND sc.status != 'done'))
+            OR (doi_tuong_loai = 'intervention' AND EXISTS (SELECT 1 FROM case_interventions iv WHERE iv.id = doi_tuong_id AND iv.status IN ('planned', 'started'))))`,
+    ).run(id).changes as number;
+  }
+  return n;
+}
 
 /**
  * CẤT lượt sắp huỷ: MỌI dòng điểm (kể cả dấu "-") chuyển sang bản cất `huy_luot` cùng nguyên dòng lịch kỹ năng và `dong`. Dòng điểm XOÁ khỏi

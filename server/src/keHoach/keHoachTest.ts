@@ -231,18 +231,20 @@ function diemChu(cheDo: CheDo, row: any, scores: any[]): string | undefined {
  * Trễ = tuần thi đã hết (Chủ nhật < hôm nay), chưa đủ điểm, không vắng/huỷ, lượt không lịch sử.
  * `hanCham` (PR-MTb, T6 — chỉ khi có `them`, tức lưới FT): hạn chấm hiệu lực (`effectiveSkillDeadline`: hạn riêng kỹ năng › hạn cả
  * đợt `attemptOverride` › thứ Tư tuần kế tuần thi); không bắt buộc / MT cũ / đã huỷ phần thi / chưa có tuần → null.
+ * OV-11e (TE-12): lớp thường truyền `chiTre` — chỉ thêm chip trễ như FT (không vắng / chờ duyệt / hạn chấm).
  */
 function oKyNangCua(cheDo: CheDo, row: any, scores: any[], daDoi: boolean, doiTu: string | null,
-  them?: { choDuyet: boolean; lichSu: boolean; homNay: string; attemptOverride?: string | null; mt0?: boolean }): OKyNang {
+  them?: { choDuyet: boolean; lichSu: boolean; homNay: string; attemptOverride?: string | null; mt0?: boolean; chiTre?: boolean }): OKyNang {
   const batBuoc = row.required === 1;
   const xong = xongKyNang(cheDo, row.skill, scores, row.planned_period_id ?? null);
   const choDuyet = !!them?.choDuyet;
-  const co = them ? {
+  const tre = !!them && !xong && !them.lichSu && !!row.week_end && row.sit_status !== 'absent' && row.sit_status !== 'cancelled'
+    && String(row.week_end).slice(0, 10) < them.homNay;
+  const co = them?.chiTre ? { tre } : them ? {
     choDuyet,
     vang: row.sit_status === 'absent' && !choDuyet,
     huy: row.sit_status === 'cancelled',
-    tre: !xong && !them.lichSu && !!row.week_end && row.sit_status !== 'absent' && row.sit_status !== 'cancelled'
-      && String(row.week_end).slice(0, 10) < them.homNay,
+    tre,
   } : {};
   const diem = diemChu(cheDo, row, scores);
   return {
@@ -253,7 +255,7 @@ function oKyNangCua(cheDo: CheDo, row: any, scores: any[], daDoi: boolean, doiTu
     ...(row.huy_vang ? { huyVang: true } : {}),
     ...(khongDuThiCua(cheDo, row.skill, scores, row.planned_period_id ?? null) ? { khongDuThi: true } : {}),
     ...(diem ? { diem } : {}),
-    hanCham: them && batBuoc && !them.lichSu && row.sit_status !== 'cancelled'
+    hanCham: them && !them.chiTre && batBuoc && !them.lichSu && row.sit_status !== 'cancelled'
       ? effectiveSkillDeadline({ mode: 'band', weekStart: row.week_start ?? null, skillOverride: row.deadline_override ?? null, attemptOverride: them.attemptOverride ?? null, mt0: them.mt0 }).date
       : null,
   };
@@ -749,7 +751,7 @@ function docLopThuong(classId: number) {
   return { cls, prog };
 }
 
-export function luoiThuong(p: Principal, classId: number) {
+export function luoiThuong(p: Principal, classId: number, today: string = demoToday()) {
   const conn = db();
   require_(p, PERMISSIONS.PLAN_WEEK, { classId }, PLAN_MSG);
   const { cls, prog } = docLopThuong(classId);
@@ -801,7 +803,8 @@ export function luoiThuong(p: Principal, classId: number) {
       if (!(bo as readonly string[]).includes(r.skill)) continue;
       const sc = scores.find((s: any) => s.skill === r.skill);
       const daDoi = !!sc?.no_show_period_id && sc.no_show_period_id !== r.planned_period_id;
-      kn[r.skill as KyNangKH] = oKyNangCua('thuong', r, scores, daDoi, daDoi ? tuanDau.get(sc.no_show_period_id as number) ?? null : null);
+      kn[r.skill as KyNangKH] = oKyNangCua('thuong', r, scores, daDoi, daDoi ? tuanDau.get(sc.no_show_period_id as number) ?? null : null,
+        { choDuyet: false, lichSu: false, homNay: today, chiTre: true });
     }
     return { attemptId: a.id, kn };
   };
