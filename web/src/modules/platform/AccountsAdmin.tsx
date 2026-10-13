@@ -312,7 +312,7 @@ function PendingRow({ user, branches, onDone, duyetLai }: {
     setBusy(true);
     try { await fn(); onDone(msg); } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
   };
-  const cnChon = branches.filter((b) => picked.has(b.code)).map((b) => b.code).join(', ') || 'Toàn hệ thống';
+  const cnChon = branches.filter((b) => picked.has(b.code)).map((b) => b.name).join(', ') || 'Toàn hệ thống';
 
   return (
     <li className="px-4 py-3">

@@ -213,9 +213,7 @@ export function approve(p: Principal, userId: number, o: {
   const conn = db();
   const user = conn.prepare("SELECT * FROM users WHERE id = ? AND approval_state IN ('pending', 'declined') AND status = 'active'").get(userId) as any;
   if (!user) throw notFound('Không tìm thấy đăng ký nào đang chờ duyệt.');
-  const role = o.role ?? 'teacher';
-  const codes = (o.branches ?? JSON.parse(user.requested_branches ?? '[]')).map((c: string) => String(c).toUpperCase());
-  kiemChiNhanh([{ role, branches: codes }]);
+  const [{ role, branches: codes }] = chuanVai([{ role: o.role ?? 'teacher', branches: o.branches ?? JSON.parse(user.requested_branches ?? '[]') }]);
 
   return tx(() => {
     grantRole(conn, userId, role, codes);
@@ -254,11 +252,21 @@ export function decline(p: Principal, userId: number, reason: string) {
 /** Vai không cần chi nhánh: Quản trị luôn toàn hệ thống; CX bỏ trống chi nhánh = toàn hệ thống (PR-OV2a). */
 const VAI_TOAN_HE_THONG = ['system_admin', 'cx'];
 
-/** OV-11b (QT-1): vai khác Quản trị / CX mà chưa chọn chi nhánh → 400, không bỏ im lặng (trước đây tạo tài khoản không vai mà báo xong). */
-function kiemChiNhanh(roles: { role: string; branches?: string[] }[]) {
-  for (const r of roles) {
-    if (!VAI_TOAN_HE_THONG.includes(r.role) && !(r.branches ?? []).length) throw badRequest(`Chọn chi nhánh cho vai ${roleLabel(r.role)}.`);
-  }
+/**
+ * OV-11b: kiểm danh sách vai gửi lên (createAccount / setRoles / approve) — mảng đối tượng `{ role, branches: string[] }`, sai dạng → 400
+ * (không 500); mã chi nhánh viết hoa. QT-1: vai khác Quản trị / CX mà chưa chọn chi nhánh → 400, không bỏ im lặng.
+ */
+function chuanVai(raw: unknown): { role: string; branches: string[] }[] {
+  if (!Array.isArray(raw)) throw badRequest('Danh sách vai không hợp lệ.');
+  return raw.map((r: any) => {
+    if (!r || typeof r !== 'object' || typeof r.role !== 'string' || !r.role.trim()) throw badRequest('Vai không hợp lệ.');
+    const role = r.role.trim();
+    const b = r.branches ?? [];
+    if (!Array.isArray(b) || b.some((c: unknown) => typeof c !== 'string')) throw badRequest(`Chi nhánh của vai ${roleLabel(role)}: cần danh sách mã.`);
+    const branches = b.map((c: string) => c.trim().toUpperCase()).filter(Boolean);
+    if (!VAI_TOAN_HE_THONG.includes(role) && !branches.length) throw badRequest(`Chọn chi nhánh cho vai ${roleLabel(role)}.`);
+    return { role, branches };
+  });
 }
 
 function grantRole(conn: any, userId: number, roleKey: string, branchCodes: string[]) {
@@ -314,8 +322,8 @@ export function createAccount(p: Principal, input: {
   if (conn.prepare('SELECT 1 FROM users WHERE email = ?').get(email)) {
     throw conflict('Email này đã có tài khoản.');   // OV-11b (QT-10a): 409 như Sửa thông tin — web hiện dưới ô Email
   }
-  if (!input.roles?.length) throw badRequest('Cấp ít nhất một vai trò.');
-  kiemChiNhanh(input.roles);
+  const roles = chuanVai(input.roles);
+  if (!roles.length) throw badRequest('Cấp ít nhất một vai trò.');
 
   return tx(() => {
     const { hash, salt } = hashPassword(password);
@@ -327,11 +335,11 @@ export function createAccount(p: Principal, input: {
       )
       .run(nextUserCode(conn), fullName, email, input.title ?? null, input.phone ?? null, hash, salt, nowIso());
     const userId = Number(info.lastInsertRowid);
-    for (const r of input.roles) grantRole(conn, userId, r.role, r.branches ?? []);
+    for (const r of roles) grantRole(conn, userId, r.role, r.branches);
     setSkills(conn, userId, input.skills ?? []);
     writeAudit({
       actorUserId: p.userId, action: 'user_created', entityType: 'users', entityId: userId, entityLabel: fullName,
-      after: { note: input.roles.map((r) => `${r.role}:${(r.branches ?? []).join('/') || 'toàn hệ thống'}`).join(' · ') },
+      after: { note: roles.map((r) => `${r.role}:${r.branches.join('/') || 'toàn hệ thống'}`).join(' · ') },
     });
     return { userId };
   });
@@ -350,9 +358,7 @@ export function setRoles(p: Principal, userId: number, roles: { role: string; br
   if (user.status === 'deleted') throw badRequest('Tài khoản đã xoá.');   // PR-XOA: xoá mềm là khoá hẳn
   if (user.approval_state === 'declined') throw badRequest('Chưa duyệt — bấm Duyệt lại.');
   if (user.approval_state !== 'approved') throw badRequest('Chưa duyệt — duyệt ở Đăng ký chờ duyệt.');
-  if (!Array.isArray(roles)) throw badRequest('Danh sách vai không hợp lệ.');
-  roles = roles.map((r) => ({ role: String(r?.role ?? ''), branches: (r?.branches ?? []).map((c) => String(c).trim().toUpperCase()) }));
-  kiemChiNhanh(roles);
+  roles = chuanVai(roles);
   const cu = conn.prepare(
     `SELECT r.key, b.code FROM user_roles ur JOIN roles r ON r.id = ur.role_id LEFT JOIN branches b ON b.id = ur.branch_id
       WHERE ur.user_id = ? AND ur.status = 'active'`,

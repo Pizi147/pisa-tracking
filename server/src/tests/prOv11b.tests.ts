@@ -79,6 +79,16 @@ export async function runPrOv11bTests(t: YThucTestKit) {
     assert(loi(() => accounts.approve(P.admin, userId, { role: 'consultant', branches: [] }))?.status === 400, 'approve TVV không CN');
     accounts.approve(P.admin, userId, { role: 'cx', branches: [] });
     assert(vai(userId).length === 1 && vai(userId)[0].key === 'cx' && vai(userId)[0].code === null, `CX toàn hệ thống: ${JSON.stringify(vai(userId))}`);
+    /* Đầu vào sai dạng → 400 câu rõ, không 500. */
+    let e2 = loi(() => accounts.setRoles(P.admin, id, [{ role: 'teacher', branches: 'MB' }]));
+    assert(e2?.status === 400 && /cần danh sách mã/.test(e2.message), `branches chuỗi: ${e2?.status} ${e2?.message}`);
+    e2 = loi(() => accounts.setRoles(P.admin, id, [null]));
+    assert(e2?.status === 400 && e2.message === 'Vai không hợp lệ.', `roles [null]: ${e2?.status} ${e2?.message}`);
+    assert(loi(() => accounts.setRoles(P.admin, id, 'teacher'))?.status === 400, 'roles chuỗi');
+    assert(loi(() => accounts.createAccount(P.admin, { email: email(), password: 'matkhau-x', fullName: 'x', roles: [{ role: 'teacher', branches: 'MB' }] }))?.status === 400,
+      'createAccount branches chuỗi');
+    const { userId: cho2 } = accounts.register({ email: email(), password: 'matkhau-dk', fullName: 'Chờ 2', branches: ['MB'] });
+    assert(loi(() => accounts.approve(P.admin, cho2, { role: 'teacher', branches: 'MB' as any }))?.status === 400, 'approve branches chuỗi');
     /* Trùng email khi tạo → 409 như Sửa thông tin (web hiện dưới ô). */
     const em = one('SELECT email FROM users WHERE id = ?', id).email;
     assert(loi(() => accounts.createAccount(P.admin, { email: em, password: 'matkhau-x', fullName: 'Trùng', roles: [{ role: 'teacher', branches: ['MB'] }] }))?.status === 409,
