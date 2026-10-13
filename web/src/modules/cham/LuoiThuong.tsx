@@ -41,6 +41,8 @@ type SkillSchedule = {
   nhanXet?: string | null;
   /** PR-BV: người xem gỡ được dấu "-" lúc này. */
   goDau?: boolean;
+  /** OV-11a (Q1): "-" ở tuần thi đã qua ≥ 2 tuần — Không dự thi (không dời, không nợ). */
+  khongDuThi?: boolean;
   /** R11: đợt đã hoàn tất — khoá với người không có `PLAN_WEEK`/`SCORE_OVERRIDE`. */
   khoa?: boolean;
 };
@@ -96,7 +98,7 @@ export function oThuong(r: Row, k: string, homNay: string) {
   const canEdit = s?.canEdit ?? false;
   const diem = kq?.score ?? null;
   const trong = canEdit && diem === null && s?.progress !== 'upcoming'
-    && s?.progress !== 'cancelled' && s?.progress !== 'absent';
+    && s?.progress !== 'cancelled' && s?.progress !== 'absent' && !s?.khongDuThi;
   const dung = diem === null && (s?.progress === 'absent' || s?.progress === 'cancelled');
   const chuDung = !dung ? null : s!.progress === 'absent' ? 'Đã vắng · chờ xếp lại' : 'Đã huỷ phần thi';
   /* Quá hạn chấm của CHÍNH môn này (hạn riêng từng môn, mục 10.5), ngày dạng dd/mm. */
@@ -104,6 +106,7 @@ export function oThuong(r: Row, k: string, homNay: string) {
   const cell = {
     diem, tong: kq?.total ?? null,
     dau: !!s?.noShow,
+    khongDuThi: !!s?.khongDuThi,
     goDau: !!s?.goDau,
     tuanDoiTu: s?.noShow ? (s.movedFromStart ? tuanLich(s.movedFromStart, homNay) : 'tuần cũ') : null,
     tuanHienTai: s?.weekStart ? tuanLich(s.weekStart, homNay) : null,
@@ -161,7 +164,7 @@ export function tuanThiTheoMon(data: ThuongSheet | null | undefined, homNay: str
     const dem = new Map<string, number>();
     for (const r of data.rows) {
       const s = lichCua(r, k);
-      if (!s?.weekStart || (s.noShow && s.movedFromStart)) continue;
+      if (!s?.weekStart || (s.noShow && s.movedFromStart && !s.khongDuThi)) continue;
       dem.set(s.weekStart, (dem.get(s.weekStart) ?? 0) + 1);
     }
     const nhieuNhat = [...dem.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))[0]?.[0] ?? null;
@@ -247,7 +250,8 @@ export function useLuuThuong(attemptId: number, onReload: () => void, ct: string
   const dau = async (skill: string, bat: boolean) => {
     const r = await gui(skill, { noShow: bat });
     if (r && bat) {
-      thongBaoVang(toast, `${attemptId}:${skill}`, tenMonNgan(ct, skill), tenHv, r.tuanMoi);   // K4: gõ "-" và nút Vắng cùng một thông báo
+      thongBaoVang(toast, `${attemptId}:${skill}`, tenMonNgan(ct, skill), tenHv,   // K4: gõ "-" và nút Vắng cùng một thông báo
+        r.khongDuThi ? { kq: 'khong-du-thi' } : r.moved ? { kq: 'doi', tuanMoi: r.tuanMoi } : null);
     } else if (r && r.moved) {
       toast.push('ok', `Đã bỏ vắng ${tenMonNgan(ct, skill)}${tenHv ? ` · ${tenHv}` : ''} · về ${r.tuanMoi ?? 'tuần cũ'}`);
     } else if (r && r.giuLich) {
@@ -559,8 +563,10 @@ function KetQua({ row, sheet }: { row: Row; sheet: ThuongSheet }) {
 
   /* Dòng phụ — một dòng, ≤ ~60 ký tự. */
   const doi = new Map<string, string[]>();
+  /* OV-11a: môn Không dự thi không "dời" — dòng phụ ghi đúng tên. */
+  const kdt = row.skillSchedule.filter((s) => s.khongDuThi).map((s) => s.skill);
   for (const s of row.skillSchedule) {
-    if (!s.noShow || ketQuaCua(row, s.skill)?.outcome !== 'missing' || !s.weekStart) continue;
+    if (!s.noShow || s.khongDuThi || ketQuaCua(row, s.skill)?.outcome !== 'missing' || !s.weekStart) continue;
     const t = tuanLich(s.weekStart, sheet.today);
     doi.set(t, [...(doi.get(t) ?? []), s.skill]);
   }
@@ -570,6 +576,7 @@ function KetQua({ row, sheet }: { row: Row; sheet: ThuongSheet }) {
       chu: `${doiDau[1].map(ngan).join(', ')} dời sang ${doiDau[0]}`, tone: 'text-slate-400',
       title: `${doiDau[1].map(du).join(', ')}: em không làm bài, môn đã dời sang ${doiDau[0]}.`,
     }
+    : kdt.length ? { chu: `${kdt.map(ngan).join(', ')} không dự thi`, tone: 'text-slate-400', title: `${kdt.map(du).join(', ')}: Không dự thi.` }
     : row.goiY
       ? { chu: row.goiY.nhanNgan, tone: 'text-slate-500', title: `${row.goiY.nhan}${kq.phu ? ` — ${kq.phu}` : ''}` }
     : kq.phu && !row.chip

@@ -3,7 +3,7 @@ import {
   ASSESSED_SKILLS, ASSESSED_SKILL_LABEL, duongDotTest, ENTRY_SKILLS, ENTRY_SKILL_LABEL, NO_SHOW_OVERRIDDEN_NOTE,
   CHAM_CHEO, LOI_BAND_TU_TINH, PERMISSIONS, awaitingScore, kyNangXongThieu, laChamCheo, cachHuyLuot, kiemBand, kiemNhanXet, kiemSoMtMoi, kyNangSosMt0, laMt0, laMtCu, ngay, dauTruCuaO, duocNhapBandThang, noShowText, pendingSkillsOf, soMtKeTiep, tenGvCham, tenMon, tuanHocCuaMt, tuanLich,
   type CachHuy, CASE_CATEGORY_LABEL, INTERVENTION_KIND_LABEL, SYSTEM_CLOSE_REASON_LABEL, categoryOf, type CaseCategory, type InterventionKind,
-  type AssessedSkill, type EntrySkill, type NoShowState, type PendingCell, type SkillProgress, type WorkScope,
+  type AssessedSkill, type EntrySkill, type KetQuaVang, type NoShowState, type PendingCell, type SkillProgress, type WorkScope,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { phanCongDangHieuLuc } from '../worklist/scoreDebt.ts';
@@ -305,6 +305,8 @@ export type SkillCell = {
    */
   daChot: {
     doiSang: string | null; hanGo: string | null; goDuoc: boolean;
+    /** OV-11a: mã tuần có "-" (tuần gốc). */
+    tuTuan: string;
     /** OV-4b (hộp "Vắng lần n · đã dời sang …"): lần vắng của kỹ năng · lúc ghi "-" · người ghi. */
     lan: number; ghiLuc: string | null; ghiBoi: string | null;
   } | null;
@@ -417,11 +419,15 @@ export function skillCells(
           });
           return {
             doiSang: boVang && view.weekStart ? tuanLich(view.weekStart, today) : null,
+            /* OV-11a (TE-2): tuần gốc của lần vắng — hộp ở tuần thi bù ghi "vắng lần 1 · dời từ W2 SEP". */
+            tuTuan: tuanLich(tuanGoc, today),
             /* Chỉ người có quyền gỡ (trong khung) mới có hạn; Quản lý không hạn; người không có quyền / Bỏ vắng: null. */
             hanGo: boVang || can(p, PERMISSIONS.PLAN_WEEK, { classId: attempt.class_id }) || (loi && loi !== CAU_QUA_HAN_GO)
               ? null : skillScoreDeadline(mode, tuanGoc),
             goDuoc: loi === null,
-            lan: view.absenceMoveCount, ghiLuc: row.no_show_at ?? null, ghiBoi: row.no_show_by_name ?? null,
+            /* Vắng lần n huỷ phần thi (`huyVangNoi`) không cộng bộ đếm dời — ô huỷ ghi đúng "vắng 2 lần" (CA3-3). */
+            lan: view.absenceMoveCount + (view.huyVang && view.sitStatus === 'cancelled' ? 1 : 0),
+            ghiLuc: row.no_show_at ?? null, ghiBoi: row.no_show_by_name ?? null,
           };
         })()
       : null;
@@ -504,15 +510,20 @@ export function regularSkillViews(
   for (const skill of skills) {
     const row = schedule[skill];
     const entry = scores.find((r) => r.skill === skill);
-    out.set(skill, viewSkill({
+    const scored = entry?.raw_score !== null && entry?.raw_score !== undefined;
+    const v = viewSkill({
       row,
       mode: 'ratio',
       attemptOverride: attempt.deadline_override ?? null,
       attemptCancelled: attempt.status === 'cancelled',
-      scored: entry?.raw_score !== null && entry?.raw_score !== undefined,
+      scored,
       today,
       pendingMove: pendingView(attempt.id, skill),
-    }));
+    });
+    /* OV-11a (Q1): "-" lớp thường ở tuần thi đã qua ≥ 2 tuần = Không dự thi — không còn là việc / nợ ở MỌI nơi đọc hàm này
+     * (lưới, Lịch Test, Công việc, Tổng quan, Phân tích). */
+    const khongDuThi = !scored && !!entry?.no_show_cu && entry.no_show_period_id === row.planned_period_id;
+    out.set(skill, khongDuThi ? { ...v, progress: 'skipped', overdue: false, deadline: null, deadlineSource: 'none' } : v);
   }
   return out;
 }
@@ -1930,7 +1941,13 @@ export function saveScore(
           entityLabel: skill, before, after: { noShow: true, week: scheduleRow.period_code, late, khongDuThi: !!cu },
         });
         if (!cu && a.kind === 'mock') chotVangNgay(conn, p, a, scheduleRow, today);
-        return done();
+        /* OV-11a (CA3-1): hậu quả thật của lần ghi — web nói đúng ("· dời W4 SEP" / "· huỷ phần thi" / "Không dự thi"). */
+        const sau = ensureSkillRows(attemptId).find((r) => r.skill === assessed)!;
+        const vang: KetQuaVang = cu ? { kq: 'khong-du-thi' }
+          : sau.sit_status === 'cancelled' ? { kq: 'huy' }
+          : sau.planned_period_id !== scheduleRow.planned_period_id ? { kq: 'doi', tuanMoi: sau.week_start ? tuanLich(sau.week_start, today) : null }
+          : sau.sit_status === 'absent' ? { kq: 'cho-ql' } : { kq: 'cho-o-kia' };
+        return { ...done(), vang };
       }
       /* patch.noShow === false: gỡ dấu trước khi tuần kết thúc. Sau chốt thì đã bị chặn ở kiểm `absent` phía trên. */
       if (!existing?.no_show_period_id) return done();

@@ -5,7 +5,7 @@ import { dongBoBaoPh, monBaoPh } from '../yThuc/phoiHop.ts';
 import { raiseSignal, reconcileCorrectedSignals } from '../cases/signals.ts';
 import {
   ATTEMPT_KIND_LABEL, ATTEMPT_KIND_SHORT, LIEN_TUC_SQL, PERMISSIONS, laChuongTrinhGoc, RATIO_PASS_THRESHOLD, boMonLich, boTroGiuaKhoa, chipCheckpoint, khoaBai, nhanBai,
-  caseCategoriesFor, categoryOf, goiYCuoiKhoa, kiemNhanXet, ngay, ratioResult, sosFromFailCount, tenMon, tenMonNgan, tuanKeTiep, tuanLich,
+  caseCategoriesFor, categoryOf, goiYCuoiKhoa, kiemNhanXet, luatVangThuong, ngay, ratioResult, sosFromFailCount, tenMon, tenMonNgan, tuanLich,
   type AssessedSkill, type AttemptKind, type CaseCategory, type RatioOutcome, type SosLevel,
 } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
@@ -730,12 +730,15 @@ export function saveRegularScore(
  * ký, không chặn. Dòng điểm chỉ giữ tuần của LẦN GHI GẦN NHẤT, nên gỡ dấu chỉ lùi về đúng tuần vừa dời khỏi. `today`
  * dùng đúng chỗ đó: tuần mới CHƯA TỚI thì ghi lại là vô hại (em chưa có dịp vắng tuần ấy); dời sang tuần sau thì vẫn tính
  * từ TUẦN THI của môn, không từ hôm nay.
+ *
+ * OV-11a (Q1, chủ SP 14/10 — `luatVangThuong`): tuần thi là tuần này / tuần trước → dời sang TUẦN SAU CỦA TUẦN HIỆN TẠI (không dời vào tuần đã
+ * qua); tuần thi cách tuần hiện tại ≥ 2 tuần → Không dự thi (`no_show_cu`: không dời, không tính lần vắng, hết nợ). Gỡ "-" trả như cũ.
  */
 export function reportRegularNoShow(
   p: Principal, attemptId: number, skill: string, bat: boolean, today: string = demoToday(),
   /** K4-32 (PR-XLMT): "Báo vắng" từ menu ⋯ ô lưới — có lý do (ghi vào nhật ký lịch). Gõ "-" trong ô thì không có. */
   lyDo?: string,
-): { moved: boolean; tuanCu: string | null; tuanMoi: string | null; result: RegularResult; giuLich?: boolean } {
+): { moved: boolean; tuanCu: string | null; tuanMoi: string | null; result: RegularResult; giuLich?: boolean; khongDuThi?: boolean } {
   const conn = db();
   const a = conn.prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(attemptId) as any;
   if (!a) throw notFound('Không tìm thấy lượt đánh giá');
@@ -752,11 +755,12 @@ export function reportRegularNoShow(
    */
   /* PR-BV: GỠ dấu = hết vắng — quyền / khung chung với Mock (`duocGoDau`: QL mọi lúc; GV chấm môn, GVCN đến hết thứ Tư sau tuần có "-"). */
   const dauCu = bat ? null : conn.prepare(
-    `SELECT rp.week_start FROM assessment_scores s JOIN report_periods rp ON rp.id = s.no_show_period_id WHERE s.attempt_id = ? AND s.skill = ?`,
+    `SELECT rp.week_start, s.no_show_cu FROM assessment_scores s JOIN report_periods rp ON rp.id = s.no_show_period_id WHERE s.attempt_id = ? AND s.skill = ?`,
   ).get(attemptId, skill) as any;
   const hoanTat = dotHoanTat(attemptId, today);
   let path = scoreEditPath(p, a.class_id, skill);
-  if (dauCu) {
+  /* OV-11a: gỡ "Không dự thi" như FT (`no_show_cu`) — người nhập được môn đó, không theo khung gỡ vắng. */
+  if (dauCu && !dauCu.no_show_cu) {
     const loi = duocGoDau(p, { classId: a.class_id, skill, mode: 'ratio', tuanGocStart: dauCu.week_start, today });
     if (loi) throw forbidden(loi);
   } else if (hoanTat.hoanTat) {
@@ -813,7 +817,28 @@ export function reportRegularNoShow(
         throw badRequest(`Chưa tới tuần thi ${tuanLich(row.week_start, today)} — chưa ghi "-" được.`);
       }
       const cu = { id: row.planned_period_id, code: row.period_code, weekStart: row.week_start };
-      const moi = ensurePeriod(tuanKeTiep(cu.weekStart));
+      const luat = luatVangThuong(cu.weekStart, today);
+      if (luat.khongDuThi) {
+        const kq = () => ({ moved: false, khongDuThi: true, tuanCu: tuanLich(cu.weekStart, today), tuanMoi: null, result: regularResultOf(attemptId) });
+        if (existing?.no_show_cu && existing.no_show_period_id === cu.id) return kq();   // ghi lại cùng tuần: vô hại
+        const now = nowIso();
+        if (existing) {
+          conn.prepare(
+            `UPDATE assessment_scores SET no_show_period_id = ?, no_show_by = ?, no_show_at = ?, no_show_late = 1, no_show_settled_at = ?, no_show_cu = 1 WHERE id = ?`,
+          ).run(cu.id, p.userId, now, now, existing.id);
+        } else {
+          conn.prepare(
+            `INSERT INTO assessment_scores (attempt_id, skill, no_show_period_id, no_show_by, no_show_at, no_show_late, no_show_settled_at, no_show_cu)
+             VALUES (?,?,?,?,?,1,?,1)`,
+          ).run(attemptId, skill, cu.id, p.userId, now, now);
+        }
+        writeAudit({
+          actorUserId: p.userId, action: 'regular.no_show', entityType: 'assessment_attempt', entityId: attemptId,
+          entityLabel: skill, before: { week: cu.code }, after: { week: cu.code, noShow: true, khongDuThi: true, ...(lyDo?.trim() ? { lyDo: lyDo.trim() } : {}) },
+        });
+        return kq();
+      }
+      const moi = ensurePeriod(luat.tuanMoi);
       /*
        * Kiểm T15 TRƯỚC khi ghi gì (đọc thuần, không đụng DB) — dấu "-" tự dời sang tuần sau, nhưng tuần đó có
        * thể trùng/vượt một đợt khác (vd Cuối khoá cùng lộ trình). Giữ NGUYÊN câu chặn gốc của `checkSkillWeekMove`
@@ -886,7 +911,8 @@ export function reportRegularNoShow(
       });
     }
     conn.prepare(
-      `UPDATE assessment_scores SET no_show_period_id = NULL, no_show_by = NULL, no_show_at = NULL WHERE id = ?`,
+      `UPDATE assessment_scores SET no_show_period_id = NULL, no_show_by = NULL, no_show_at = NULL, no_show_late = 0, no_show_settled_at = NULL,
+              no_show_cu = 0 WHERE id = ?`,
     ).run(existing.id);
     writeAudit({
       actorUserId: p.userId, action: 'regular.no_show_cleared', entityType: 'assessment_attempt', entityId: attemptId,
@@ -1184,6 +1210,8 @@ export function regularSheet(p: Principal, classId: number, kind?: string, today
             overdue: !scored && v.overdue,
             /** C08: ô mang dấu "-" — môn đã tự dời khỏi tuần `movedFrom`. Dấu "-" không phải điểm 0. */
             noShow: !!row?.no_show_period_id,
+            /** OV-11a (Q1): "-" ở tuần thi đã qua ≥ 2 tuần — Không dự thi, không dời, không nợ (`regularSkillViews` đã bỏ khỏi việc). */
+            khongDuThi: !scored && !!row?.no_show_cu && row.no_show_period_id === v.periodId,
             /** OV-4b: nhận xét của môn (nút "Nhận xét" cạnh ô). */
             nhanXet: (row?.comment ?? null) as string | null,
             movedFrom: row?.no_show_period_id ? periodCode.get(row.no_show_period_id) ?? null : null,

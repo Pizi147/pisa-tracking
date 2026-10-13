@@ -11,7 +11,7 @@
  * Kỹ năng mình được phân công đứng trước; kỹ năng khác vẫn chọn được để đối chiếu, nhưng ô chỉ đọc.
  */
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import {
   ENTRY_SKILLS, nhanBai, maHocVienNgan, ngay, tenMon, tenMonNgan, tuanLich, type NguoiChon,
 } from '@shared/domain/index.ts';
@@ -25,7 +25,7 @@ import {
 import { NutNhanXet, ODiemMt } from '../fasttrack/HopNhapDiem.tsx';
 import { GOI_Y_COT_MT, NutGvCham, useGvChamCot } from './GvCham.tsx';
 import { DongThi, nhanKyNangFt } from './DongThi.tsx';
-import { DauLuu, DauO, LuoiFT, VIEN_LOI, khopKn, oTrongFt, type FtSheet, type HangMo } from './LuoiFT.tsx';
+import { DauLuu, DauO, LuoiFT, VIEN_LOI, khacTuanFt, khopKn, nutTuanGoc, oTrongFt, type FtSheet, type HangMo } from './LuoiFT.tsx';
 import {
   LuoiThuong, ketQuaCua, lichCua, oThuong, tongPhoBien, useLuuThuong, type ThuongSheet,
 } from './LuoiThuong.tsx';
@@ -34,26 +34,30 @@ const KHONG_PHAN_CONG = 'Bạn không được phân công kỹ năng này';
 
 type Chung = { onReload: () => void; kn?: string | null; hv?: number | null };
 
-export function MotKyNang(p: Chung & ({ mode: 'ielts_band'; data: FtSheet; hangMo?: HangMo[] } | { mode: 'ratio'; data: ThuongSheet; anNutTao?: boolean; tuanDangXem?: string | null })) {
+export function MotKyNang(p: Chung & ({ mode: 'ielts_band'; data: FtSheet; hangMo?: HangMo[]; tuanDangXem?: string | null } | { mode: 'ratio'; data: ThuongSheet; anNutTao?: boolean; tuanDangXem?: string | null })) {
   return p.mode === 'ielts_band'
-    ? <MotKyNangFt data={p.data} onReload={p.onReload} kn={p.kn ?? null} hv={p.hv ?? null} hangMo={p.hangMo ?? []} />
+    ? <MotKyNangFt data={p.data} onReload={p.onReload} kn={p.kn ?? null} hv={p.hv ?? null} hangMo={p.hangMo ?? []} tuanDangXem={p.tuanDangXem ?? null} />
     : <MotKyNangThuong data={p.data} onReload={p.onReload} kn={p.kn ?? null} hv={p.hv ?? null} anNutTao={p.anNutTao} tuanDangXem={p.tuanDangXem ?? null} />;
 }
 
 /**
  * KỸ NĂNG ĐANG CHỌN. Mở từ Lịch Test / Việc cần làm với `?kn=` thì chọn sẵn kỹ năng đó (`writing` = W1 của FT); không thì kỹ năng đầu
  * tiên của mình còn ô trống, rồi kỹ năng đầu tiên của mình, rồi kỹ năng đầu tiên.
+ *
+ * OV-11a (CV-5): `kn` truyền vào chỉ đặt chip LẦN ĐẦU; sau đó chỉ `?kn=` trên đường dẫn thật đổi mới đặt lại. `kn` của việc ở Công việc đổi
+ * sau mỗi lần lưu (`/my-work` tải lại) — chip đang chọn GIỮ NGUYÊN, điểm không vào nhầm kỹ năng.
  */
 function useKyNangChon(dsKn: string[], cuaMinh: (k: string) => boolean, conTrong: (k: string) => boolean, kn: string | null) {
-  const tuUrl = () => (kn ? dsKn.find((k) => khopKn(k, kn)) ?? null : null);
-  const macDinh = () => tuUrl()
+  const tim = (x: string | null) => (x ? dsKn.find((k) => khopKn(k, x)) ?? null : null);
+  const macDinh = () => tim(kn)
     ?? dsKn.find((k) => cuaMinh(k) && conTrong(k)) ?? dsKn.find(cuaMinh) ?? dsKn[0] ?? null;
   const [chon, setChon] = useState<string | null>(macDinh);
+  const knUrl = useSearchParams()[0].get('kn');
   useEffect(() => {
-    const k = tuUrl();
+    const k = tim(knUrl);
     if (k) setChon(k);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- chỉ theo `?kn=` trên đường dẫn
-  }, [kn]);
+  }, [knUrl]);
   return [chon && dsKn.includes(chon) ? chon : macDinh(), setChon] as const;
 }
 
@@ -144,15 +148,18 @@ const oCua = (r: FtSheet['rows'][number], k: string): Cell | undefined => r.cell
 /** Ô tính vào "{đã nhập}/{tổng}" của chip: kỹ năng bắt buộc, không huỷ, không vắng chờ xếp lại. "-" tính là đã nhập. */
 const tinhFt = (c: Cell | undefined): c is Cell => !!c && c.required && c.progress !== 'cancelled' && c.progress !== 'absent';
 
-function MotKyNangFt({ data, onReload, kn, hv, hangMo }: {
-  data: FtSheet; onReload: () => void; kn: string | null; hv: number | null; hangMo: HangMo[];
+function MotKyNangFt({ data, onReload, kn, hv, hangMo, tuanDangXem }: {
+  data: FtSheet; onReload: () => void; kn: string | null; hv: number | null; hangMo: HangMo[]; tuanDangXem: string | null;
 }) {
   const minh = useMemo(() => new Set(data.editableSkills), [data.editableSkills]);
   const dsKn = useMemo(
     () => [...ENTRY_SKILLS.filter((k) => minh.has(k)), ...ENTRY_SKILLS.filter((k) => !minh.has(k))] as string[],
     [minh],
   );
-  const conTrong = (k: string) => data.rows.some((r) => { const c = oCua(r, k); return !r.ngungHoc && !!c && oTrongFt(c); });
+  /* CA3-9: 375 = 1440 — ô thi tuần khác tuần đang xem (`khacTuanFt`, như lưới) ghi mã tuần, không "Nhập", không đếm vào chip. */
+  const khac = (c: Cell) => khacTuanFt(c, tuanDangXem);
+  const tuanXem = tuanDangXem ?? data.period?.weekStart ?? null;
+  const conTrong = (k: string) => data.rows.some((r) => { const c = oCua(r, k); return !r.ngungHoc && !!c && oTrongFt(c) && !khac(c); });
   const [chon, setChon] = useKyNangChon(dsKn, (k) => minh.has(k), conTrong, kn);
   /* Hộp đang mở (lượt) — "Lưu · em tiếp ›" sang em kế có ô mở được của kỹ năng đang chọn. */
   const [mo, setMo] = useState<number | null>(null);
@@ -164,7 +171,7 @@ function MotKyNangFt({ data, onReload, kn, hv, hangMo }: {
   if (data.rows.length === 0 || !chon) return <LuoiFT data={data} onReload={onReload} kn={kn} hv={hv} hangMo={hangMo} />;
 
   const chips = dsKn.map((k) => {
-    const cs = data.rows.filter((r) => !r.ngungHoc).map((r) => oCua(r, k)).filter(tinhFt);   // OV-1d: em đã Kết thúc học / Lưu trữ không tính
+    const cs = data.rows.filter((r) => !r.ngungHoc).map((r) => oCua(r, k)).filter(tinhFt).filter((c) => !khac(c));   // OV-1d: em đã Kết thúc học / Lưu trữ không tính
     return { k, cuaMinh: minh.has(k), daNhap: cs.filter((c) => c.band !== null || !!c.noShow).length, tong: cs.length };
   });
   const nhieuMt = new Set(data.rows.map((r) => r.attemptNo)).size > 1;
@@ -178,11 +185,11 @@ function MotKyNangFt({ data, onReload, kn, hv, hangMo }: {
       )}
       <ul className="m-0 p-0 list-none">
         {data.rows.map((r, i) => (
-          <DongFt key={r.attemptId} row={r} k={chon} nhieuMt={nhieuMt} lop={data.classCode}
+          <DongFt key={r.attemptId} row={r} k={chon} nhieuMt={nhieuMt} lop={data.classCode} tuanDangXem={tuanDangXem} tuanXem={tuanXem}
             active={hv !== null && r.studentId === hv} onReload={onReload} gvMacDinh={gvCot}
             mo={mo === r.attemptId && moChon === chon} onMo={(m) => { setMo(m ? r.attemptId : null); setMoChon(chon); }}
             onTiep={() => {
-              const ke = data.rows.slice(i + 1).find((x) => { const c = oCua(x, chon); return !x.ngungHoc && !!c && suaDuoc(c); });
+              const ke = data.rows.slice(i + 1).find((x) => { const c = oCua(x, chon); return !x.ngungHoc && !!c && suaDuoc(c) && !khac(c); });
               setMo(ke?.attemptId ?? null);
             }} />
         ))}
@@ -199,9 +206,9 @@ function MotKyNangFt({ data, onReload, kn, hv, hangMo }: {
   );
 }
 
-function DongFt({ row, k, nhieuMt, lop, active, onReload, gvMacDinh, mo, onMo, onTiep }: {
+function DongFt({ row, k, nhieuMt, lop, active, onReload, gvMacDinh, mo, onMo, onTiep, tuanDangXem, tuanXem }: {
   row: FtSheet['rows'][number]; k: string; nhieuMt: boolean; lop: string; active: boolean; onReload: () => void;
-  gvMacDinh: NguoiChon | null;
+  gvMacDinh: NguoiChon | null; tuanDangXem: string | null; tuanXem: string | null;
   mo: boolean; onMo: (mo: boolean) => void; onTiep: () => void;
 }) {
   const { save, status, lastError, retry, o, loi, luuLai, soLoi, coGuiLai } = useSaveScore(row.attemptId, onReload, row.studentName);
@@ -218,10 +225,14 @@ function DongFt({ row, k, nhieuMt, lop, active, onReload, gvMacDinh, mo, onMo, o
       thi={row.cells.filter((x) => x.required && x.progress !== 'cancelled')
         .map((x) => ({ nhan: nhanKyNangFt(x.skill), weekStart: x.weekStart ?? null }))}>
       <div className={`shrink-0 flex items-center justify-end gap-1 rounded-md ${o[k] === 'loi' ? VIEN_LOI : ''}`} data-kn={k}
-        data-trong={!row.ngungHoc && c && oTrongFt(c) ? '1' : undefined} data-luu={o[k]}>
+        data-trong={!row.ngungHoc && c && oTrongFt(c) && !khacTuanFt(c, tuanDangXem) ? '1' : undefined} data-luu={o[k]}>
         <DauO lon tt={o[k]} loi={loi[k]} onLuuLai={() => luuLai(k)} />
-        {!c ? <span className="text-slate-600">—</span> : (
-          <ODiemMt lon cell={c} mo={mo} onMo={onMo} onTiep={onTiep} onSave={(p, x) => save(k, p, x)}
+        {!c ? <span className="text-slate-600">—</span>
+          /* CA3-9: cùng điều kiện ô tuần khác của lưới máy tính (`LuoiFT` › `oKhacTuan`). */
+          : khacTuanFt(c, tuanDangXem) && !nutTuanGoc(c) ? (
+            <span className="text-xs tabular-nums text-slate-500">{c.daChot?.doiSang ? `Đã dời sang ${c.daChot.doiSang}` : tuanLich(c.weekStart)}</span>
+          ) : (
+          <ODiemMt lon cell={c} mo={mo} onMo={onMo} onTiep={onTiep} onSave={(p, x) => save(k, p, x)} tuanXem={tuanXem}
             gvMacDinh={k === 'speaking' ? gvMacDinh : null}
             ctx={{ tenHv: row.studentName, lop, luot: `MT${row.attemptNo}`, kyVong: kv, mt0: !!row.mt0Sos,
               bandTaskKia: k === 'writing1' ? oCua(row, 'writing2')?.band ?? null : k === 'writing2' ? oCua(row, 'writing1')?.band ?? null : undefined }} />
@@ -311,7 +322,8 @@ function DongThuongMot({ row, k, sheet, tongCot, active, onReload, inputRef, onK
    * bằng nhau) → mã học viên.
    */
   const ketQua = datPhanTram(cell.ketQua, cell.tiLe);
-  const phu = (cell.dau && cell.diem === null && cell.tuanHienTai ? `Đã dời sang ${cell.tuanHienTai}` : null)
+  const phu = (cell.khongDuThi ? 'Không dự thi' : null)
+    ?? (cell.dau && cell.diem === null && cell.tuanHienTai ? `Đã dời sang ${cell.tuanHienTai}` : null)
     ?? quaHan
     ?? (cell.chuaToiTuan && cell.tuanHienTai ? `Thi ${cell.tuanHienTai}` : null)
     ?? ketQua

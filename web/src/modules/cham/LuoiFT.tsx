@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { Empty, Info, Level, Status, Th } from '../../ui/ui.tsx';
 import { NhanCu } from '../../ui/OMt.tsx';
@@ -48,10 +48,20 @@ export const oTrongFt = (c: Cell) => c.required && c.canEdit && c.band === null 
 
 /**
  * Ô THI TUẦN KHÁC tuần đang xem mà chưa có điểm (Lịch Test, PR-UX1 Q10): chưa phải việc của tuần này — hiện chữ mờ
- * `W4 SEP`, không có ô nhập, không `data-trong` (con trỏ không nhảy vào).
+ * `W4 SEP`, không có ô nhập, không `data-trong` (con trỏ không nhảy vào). Ô đã huỷ phần thi không tính (OV-11a CA3-3: luôn "Đã huỷ").
  */
 export const khacTuanFt = (c: Cell, tuanDangXem: string | null | undefined) =>
-  !!tuanDangXem && !!c.weekStart && c.weekStart !== tuanDangXem && c.band === null && !c.noShow;
+  !!tuanDangXem && !!c.weekStart && c.weekStart !== tuanDangXem && c.band === null && !c.noShow && c.progress !== 'cancelled';
+
+/** OV-1d: ô thi tuần khác mà vẫn là nút — bài đã dời vì vắng, người xem gỡ được (lưới tuần gốc: "Vắng → W3 OCT"). */
+export const nutTuanGoc = (c: Cell) => !!c.daChot?.doiSang && suaDuoc(c);
+
+/**
+ * OV-11a (TE-12): hàng chỉ còn ô "Đã huỷ" ở tuần đang xem, không ô nào khác để nhập / Bỏ vắng — không có việc gì, ẩn khỏi lưới theo tuần.
+ */
+const chiConHuy = (r: FtSheet['rows'][number], tuanDangXem: string | null) => !!tuanDangXem
+  && r.cells.some((c) => c.required && c.progress === 'cancelled' && c.weekStart === tuanDangXem)
+  && !r.cells.some((c) => c.required && c.progress !== 'cancelled' && (!khacTuanFt(c, tuanDangXem) || nutTuanGoc(c)));
 
 /** Hạn nhập điểm sớm nhất còn nợ trên cả lưới — cho `<Han>` ở đầu trang (mockup 05a §2). */
 export function hanSomNhatFt(data: FtSheet | null | undefined): string | null {
@@ -122,11 +132,14 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
         hint="Đổi tuần ở trên, hoặc quay lại Test để chọn lớp khác." />
     );
   }
+  const rows = data.rows.filter((r) => !chiConHuy(r, tuanDangXem));
+  /* Hộp ở lưới tuần: tuần đang xem (Lịch Test) hoặc tuần của lưới (Nhập điểm) — ô dời vì vắng chỉ là ô Vắng ở tuần gốc (OV-11a). */
+  const tuanXem = tuanDangXem ?? data.period?.weekStart ?? null;
 
   /* "Lưu · em tiếp ›": em kế CÓ Ô MỞ ĐƯỢC ở cùng cột (bỏ dòng chỉ đọc / thi tuần khác / em đã Kết thúc học); hết em thì đóng. */
   const tiep = (aid: number, s: string) => {
-    const i = data.rows.findIndex((r) => r.attemptId === aid);
-    const ke = data.rows.slice(i + 1).find((r) => {
+    const i = rows.findIndex((r) => r.attemptId === aid);
+    const ke = rows.slice(i + 1).find((r) => {
       if (r.ngungHoc) return false;
       const c = r.cells.find((x) => x.skill === s);
       return !!c && suaDuoc(c) && !khacTuanFt(c, tuanDangXem);
@@ -170,13 +183,13 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
           </tr>
         </thead>
         <tbody>
-          {data.rows.map((r) => (
+          {rows.map((r) => (
             <SheetRow
               key={r.attemptId}
               row={r}
               lop={data.classCode}
               active={hv !== null && r.studentId === hv}
-              cot={cot} tuanDangXem={tuanDangXem}
+              cot={cot} tuanDangXem={tuanDangXem} tuanXem={tuanXem}
               onReload={onReload}
               gvMacDinh={gvCot}
               moS={mo?.aid === r.attemptId ? mo.s : null}
@@ -246,9 +259,9 @@ function DeadlineSummary({ cells }: { cells: Cell[] }) {
   );
 }
 
-function SheetRow({ row, lop, active, cot, tuanDangXem, onReload, gvMacDinh, moS, onMo, onTiep }: {
+function SheetRow({ row, lop, active, cot, tuanDangXem, tuanXem, onReload, gvMacDinh, moS, onMo, onTiep }: {
   row: FtSheet['rows'][number]; lop: string; active: boolean;
-  cot: { mt: boolean; trangThai: boolean; han: boolean; kyVong: boolean }; tuanDangXem: string | null;
+  cot: { mt: boolean; trangThai: boolean; han: boolean; kyVong: boolean }; tuanDangXem: string | null; tuanXem: string | null;
   onReload: () => void;
   gvMacDinh: NguoiChon | null;
   moS: string | null; onMo: (s: string | null) => void; onTiep: (s: string) => void;
@@ -257,7 +270,7 @@ function SheetRow({ row, lop, active, cot, tuanDangXem, onReload, gvMacDinh, moS
   const cellOf = (skill: string) => row.cells.find((c) => c.skill === skill);
   /* Một ô điểm MT (mọi cột L/R/W1/W2/S): nút → hộp nhập điểm. */
   const oDiem = (s: string, cell: Cell) => (
-    <ODiemMt cell={cell} mo={moS === s} onMo={(m) => onMo(m ? s : null)} onTiep={() => onTiep(s)}
+    <ODiemMt cell={cell} mo={moS === s} onMo={(m) => onMo(m ? s : null)} onTiep={() => onTiep(s)} tuanXem={tuanXem}
       onSave={(p, x) => save(s, p, x)} gvMacDinh={s === 'speaking' ? gvMacDinh : null}
       ctx={{ tenHv: row.studentName, lop, luot: `MT${row.attemptNo}`, kyVong: row.result.expectation ?? null, mt0: !!row.mt0Sos,
         bandTaskKia: s === 'writing1' ? cellOf('writing2')?.band ?? null : s === 'writing2' ? cellOf('writing1')?.band ?? null : undefined }} />
@@ -265,7 +278,7 @@ function SheetRow({ row, lop, active, cot, tuanDangXem, onReload, gvMacDinh, moS
   /* OV-1b: mọi phần thi đã huỷ / bỏ khỏi đợt — lượt không còn "Đã lên lịch". */
   const huyHet = row.cells.every((c) => !c.required || c.progress === 'cancelled');
   /* OV-1d: ô đã dời vì vắng mà người xem gỡ được → ở lưới tuần gốc vẫn là nút "Vắng → W3 OCT" (hộp có Bỏ vắng); không gỡ được thì chữ. */
-  const khacTuan = (cell: Cell) => khacTuanFt(cell, tuanDangXem) && !(cell.daChot?.doiSang && suaDuoc(cell));
+  const khacTuan = (cell: Cell) => khacTuanFt(cell, tuanDangXem) && !nutTuanGoc(cell);
   const oKhacTuan = (s: string, cell: Cell) => (
     <td key={s} className="td py-1.5 text-right text-slate-500" data-kn={s}
       title={cell.daChot?.doiSang ? `${skillLabel(s)}: vắng, đã dời sang ${cell.daChot.doiSang}` : `${skillLabel(s)}: thi tuần ${tuanLich(cell.weekStart)}`}>
@@ -409,7 +422,7 @@ export function DauLuu({ status, error, onRetry, soLoi = 0, lon = false }: {
     );
   }
   if (status === 'saving') return <span className="text-xs text-slate-400">Đang lưu…</span>;
-  if (status === 'saved') return <span className="text-[11px] text-slate-500" title="Đã lưu">✓</span>;
+  if (status === 'saved') return <span className="text-[11px] text-ok" title="Đã lưu">✓</span>;
   return null;
 }
 
@@ -417,20 +430,13 @@ export function DauLuu({ status, error, onRetry, soLoi = 0, lon = false }: {
 export const VIEN_LOI = 'ring-1 ring-inset ring-bad bg-bad-bg/40';
 
 /**
- * DẤU LƯU CỦA MỘT Ô (PR-UX1): đang lưu "…" · đã lưu ✓ nhỏ, mảnh, tự mờ sau vài giây (mockup 13 (2)) · lỗi → nút
- * "Lưu lại" (gửi lại đúng lệnh đã hỏng; giá trị đã gõ vẫn nằm trong ô). Góc dưới-phải của ô, không đẩy hàng cao lên.
- * `lon` (điện thoại) → nằm cạnh ô, nút cao 44px.
+ * DẤU LƯU CỦA MỘT Ô (PR-UX1): đang lưu "…" · đã lưu ✓ màu `ok`, giữ tới lần lưu sau (OV-11a CA3-7: không tự tắt — nhập 20 em liền vẫn
+ * thấy em nào đã vào) · lỗi → nút "Lưu lại" (gửi lại đúng lệnh đã hỏng; giá trị đã gõ vẫn nằm trong ô). Góc dưới-phải của ô, không đẩy
+ * hàng cao lên. `lon` (điện thoại) → nằm cạnh ô, nút cao 44px.
  */
 export function DauO({ tt, loi, onLuuLai, lon = false }: {
   tt?: TrangThaiLuuO; loi?: string; onLuuLai: () => void; lon?: boolean;
 }) {
-  const [hienXong, setHienXong] = useState(false);
-  useEffect(() => {
-    if (tt !== 'da-luu') { setHienXong(false); return; }
-    setHienXong(true);
-    const t = setTimeout(() => setHienXong(false), 3000);
-    return () => clearTimeout(t);
-  }, [tt]);
   const cho = lon ? 'inline-flex items-center' : 'absolute bottom-0.5 right-1 leading-none';
   if (tt === 'loi') {
     return (
@@ -441,6 +447,6 @@ export function DauO({ tt, loi, onLuuLai, lon = false }: {
     );
   }
   if (tt === 'dang-luu') return <span className={`${cho} text-[11px] text-slate-500`} title="Đang lưu">…</span>;
-  if (hienXong) return <span className={`${cho} text-[11px] text-slate-500`} title="Đã lưu">✓</span>;
+  if (tt === 'da-luu') return <span className={`${cho} text-[11px] text-ok`} title="Đã lưu">✓</span>;
   return null;
 }

@@ -132,7 +132,7 @@ export function ChipDotFT({ so, kn, cu, homNay, ct = null, chon, onMo }: {
           <span className="font-bold">
             {g.ten}{g.viec && <span className="font-medium"> · {g.viec}</span>}
           </span>
-          <span className="ml-auto whitespace-nowrap tabular-nums">{g.tuan ?? 'chưa xếp'}</span>
+          <span className="ml-auto whitespace-nowrap tabular-nums">{g.tuan ?? 'chưa xếp'}{g.kieu === 'xong' && <span aria-hidden> ✓</span>}</span>
         </button>
       ))}
     </div>
