@@ -42,8 +42,10 @@ export type AttemptEval = {
   scored: number;
   required: number;
   sosLevel: number | null;
-  /** Kết luận SOS còn TẠM THỜI (mới chấm một phần). */
+  /** Kết luận SOS còn TẠM THỜI (lượt chưa chốt — OV-1c). */
   provisional: boolean;
+  /** OV-1c: lượt FT đã chốt (`AttemptResult.chot`). Lớp thường: không có (= `complete`). */
+  chot?: boolean;
   /** Theo kỹ năng ĐÁNH GIÁ: listening · reading · writing · speaking. */
   skills: Record<string, SkillEval>;
   /** MH7: lớp không chia môn (Pre FOU) — kết quả là % tổng (`tyLeTong`, đủ điểm mới có), không phải SOS. */
@@ -73,14 +75,14 @@ export function evaluateAttemptRow(
       khongChiaMon: CHUONG_TRINH_KHONG_CHIA_MON.includes(prog.code), tyLeTong: r.tyLeTong, nguong: r.passThreshold,
     };
   }
-  const r = resultOf(a, scores, bundle.skips.get(a.id) ?? []);
+  const r = resultOf(a, scores, bundle.skips.get(a.id) ?? [], bundle.skillRows.get(a.id) ?? []);
   const skills: Record<string, SkillEval> = {};
   for (const v of r.verdicts) {
     skills[v.skill] = { evaluable: v.required && v.band !== null && v.passed !== null, under: v.passed === false };
   }
   return {
     complete: r.complete, scored: r.scoredRequired, required: r.required.length,
-    sosLevel: r.sosLevel, provisional: r.provisional, skills,
+    sosLevel: r.sosLevel, provisional: r.provisional, chot: r.chot, skills,
   };
 }
 

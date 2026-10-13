@@ -217,6 +217,25 @@ export function awaitingScore(progress: SkillProgress): boolean {
 }
 
 /**
+ * OV-1c (đặc tả OV 3.2) — kỹ năng bắt buộc CHƯA có band mà phần thiếu đã là CUỐI, nên lượt chốt được không chờ: đã dời tuần vì vắng
+ * (`absence_move_count > 0` còn `scheduled`, hoặc `absent` chờ Quản lý), huỷ phần thi (`cancelled`), hay mọi ô của buổi là "Không dự thi"
+ * hoặc đã có điểm (`no_show_cu`; Writing: W1 + W2). "Không mock lại" = `required = 0` nên không nằm ở đây. Thuần: dữ liệu đã nạp sẵn.
+ * `evaluateAttempt` ghép kết quả này với band → cờ `chot` — MỘT luật cho mọi màn, Case và migrate.
+ */
+export function kyNangXongThieu(
+  kyNang: readonly { skill: string; required: number | boolean; sit_status: string; absence_move_count: number }[],
+  diem: readonly { skill: string; band: number | null; no_show_cu?: number | null }[],
+): string[] {
+  const o = (k: string) => diem.find((d) => d.skill === k);
+  return kyNang.filter((k) => {
+    if (!k.required) return false;
+    if (k.sit_status === 'cancelled' || k.sit_status === 'absent' || (k.sit_status === 'scheduled' && k.absence_move_count > 0)) return true;
+    const buoi = (k.skill === 'writing' ? ['writing1', 'writing2'] : [k.skill]).map(o);
+    return buoi.some((d) => d?.no_show_cu) && buoi.every((d) => d && (d.no_show_cu || d.band !== null));
+  }).map((k) => k.skill);
+}
+
+/**
  * DỰ KIẾN THI của một lộ trình, ở đúng mức chắc chắn mà người ta thực sự biết.
  *
  *   `week`  đã chốt tuần   → "W2 FEB 2027"                  — có đếm ngược

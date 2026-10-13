@@ -26,7 +26,7 @@ import {
 type GiaiDoan = { loai: 'thuong' | 'ft'; tu: string; den: string | null };
 type Ghim = {
   attemptId: number; classId: number | null; tuan: string; cheDo: 'ielts' | 'ratio'; attemptNo: number; kind: string; lichSu?: boolean;
-  overall: number | null; sosLevel: number | null; soDat: number | null; soYeuCau: number; soCoDiem: number;
+  overall: number | null; sosLevel: number | null; soDat: number | null; soYeuCau: number; soCoDiem: number; chot?: boolean;
   maLop: string | null; kyVong: number | null; kyNangChuaDat: string[];
   khongChiaMon?: boolean; tyLe?: number | null;
   goiY?: { dai: string; nhan: string; nhanNgan: string } | null;

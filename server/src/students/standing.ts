@@ -1,7 +1,7 @@
 import { db } from '../db.ts';
 import { demoToday } from '../demoConfig.ts';
 import {
-  ASSESSED_SKILLS, CHUONG_TRINH_KHONG_CHIA_MON, PROGRAMME_TEMPLATES, REGULAR_SKILLS, SOS_LABEL, boMonLich, mocKeTiep, LUOT_HUY_HET_SQL, moiNhatTruoc, nhanBaiThuong } from '../../../shared/domain/index.ts';
+  ASSESSED_SKILLS, CHUONG_TRINH_KHONG_CHIA_MON, PROGRAMME_TEMPLATES, REGULAR_SKILLS, SOS_LABEL, boMonLich, mocKeTiep, LUOT_HUY_HET_SQL, kyNangXongThieu, moiNhatTruoc, nhanBaiThuong } from '../../../shared/domain/index.ts';
 import { entryBandsOf, loadBundle } from '../fasttrack/attempts.ts';
 import { evaluateAttempt, expectationFor } from '../fasttrack/scoring.ts';
 import { allProgrammes, evaluateRegular, nguongDatLop } from '../normal/regular.ts';
@@ -260,6 +260,7 @@ export function standingFor(studentIds: number[]): Map<number, Standing> {
          * Target sau này. */
         a.target_at_attempt ?? cycle.target_score ?? null, a.attempt_no,
         entryBandsOf(scores as any), skips.map((x: any) => x.skill ?? x), a.route ?? cycle.route,
+        kyNangXongThieu(bundle.skillRows.get(a.id) ?? [], scores as any),
       );
       /* PR-S4F #11: lượt chưa có kỹ năng nào ĐỦ điểm (chỉ W1 lẻ, chỉ dòng nhận xét) không nói được gì — xuống lượt cũ hơn. */
       if ((rr ? rr.scored : ri!.scoredRequired) === 0) continue;

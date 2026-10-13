@@ -4,6 +4,7 @@
  * V (xoá "-" đã chốt ở Mock) · L (xoá "-" lớp thường). Mỗi rủi ro (1)–(5) của chủ sản phẩm một phép kiểm (V5, V6, V8, V9, V10, L2).
  */
 import type { YThucTestKit } from './yThuc.tests.ts';
+import { chotSan } from './luotThu.ts';
 
 export async function runPrBvTests(t: YThucTestKit) {
   const { check, assert, conn, P, TODAY, classId } = t;
@@ -42,6 +43,8 @@ export async function runPrBvTests(t: YThucTestKit) {
     });
     return { sid, m1: ds[0].id as number, m2: ds[1].id as number, m3: ds[2].id as number };
   };
+  /* OV-1c: các ca C dựng Case từ MT1 dở (L/R/S) — lượt chốt sẵn (`chotSan`: kỹ năng chưa điểm coi như đã dời tuần). */
+  const emMoiChot = () => { const a = emMoi(); for (const id of [a.m1, a.m2, a.m3]) chotSan(conn, id); return a; };
   const luot = (id: number) => get('SELECT * FROM assessment_attempts WHERE id = ?', id);
   const kyNang = (id: number, skill: string) => get(
     `SELECT k.*, p.week_start, p.code FROM attempt_skills k LEFT JOIN report_periods p ON p.id = k.planned_period_id WHERE k.attempt_id = ? AND k.skill = ?`, id, skill);
@@ -131,7 +134,7 @@ export async function runPrBvTests(t: YThucTestKit) {
   const paCua = (caseId: number) => all('SELECT id, status, closed_reason FROM case_interventions WHERE case_id = ? ORDER BY id', caseId);
 
   check('BV C1 · FT: L trượt → Case + PA; xoá L → Case đóng; nhập lại vẫn trượt → CÙNG Case mở lại, PA về như cũ, có lịch sử + nhật ký', () => {
-    const a = emMoi();
+    const a = emMoiChot();
     for (const k of ['listening', 'reading', 'speaking']) nhapFt(QL, a.m1, k, 5);
     const [c] = caseL(a.sid);
     assert(c && c.status !== 'done', `chưa có Case L: ${JSON.stringify(c)}`);
@@ -155,7 +158,7 @@ export async function runPrBvTests(t: YThucTestKit) {
   });
 
   check('BV C2 · xoá L rồi nhập lại ĐẠT → Case giữ đóng, không Case mới', () => {
-    const a = emMoi();
+    const a = emMoiChot();
     for (const k of ['listening', 'reading', 'speaking']) nhapFt(QL, a.m1, k, 5);
     const [c] = caseL(a.sid);
     nhapFt(QL, a.m1, 'listening', null);
@@ -165,7 +168,7 @@ export async function runPrBvTests(t: YThucTestKit) {
   });
 
   check('BV C3 · Case đóng vì SỬA THÀNH ĐẠT rồi sửa lại trượt → Case mới (luật cũ)', () => {
-    const a = emMoi();
+    const a = emMoiChot();
     for (const k of ['listening', 'reading', 'speaking']) nhapFt(QL, a.m1, k, 5);
     const [c] = caseL(a.sid);
     nhapFt(QL, a.m1, 'listening', 8.5);
@@ -176,7 +179,7 @@ export async function runPrBvTests(t: YThucTestKit) {
   });
 
   check('BV C4 · Case đóng do xoá L của MT1, rồi MT2 L trượt → Case mới (chỉ mở lại khi cùng lượt + kỹ năng)', () => {
-    const a = emMoi();
+    const a = emMoiChot();
     for (const k of ['listening', 'reading', 'speaking']) nhapFt(QL, a.m1, k, 5);
     const [c] = caseL(a.sid);
     nhapFt(QL, a.m1, 'listening', null);
@@ -201,7 +204,7 @@ export async function runPrBvTests(t: YThucTestKit) {
   });
 
   check('BV C6 · Case có PA đã làm (có kết quả tuần) → xoá L không đóng; nhập lại → cùng Case, PA giữ nguyên', () => {
-    const a = emMoi();
+    const a = emMoiChot();
     for (const k of ['listening', 'reading', 'speaking']) nhapFt(QL, a.m1, k, 5);
     const [c] = caseL(a.sid);
     const iv = paCua(c.id)[0];
@@ -453,7 +456,7 @@ export async function runPrBvTests(t: YThucTestKit) {
 
   /* Rà độc lập (#2): Case đóng vì thi lại TRƯỚC PR-BV (không có mã `dong_do_xoa`) — không được mở lại (dữ liệu cũ). */
   check('BV C7 · Case đóng không có mã "đóng do xoá" (thi lại / dữ liệu trước PR) → nhập điểm trượt tạo Case mới', () => {
-    const a = emMoi();
+    const a = emMoiChot();
     for (const k of ['listening', 'reading', 'speaking']) nhapFt(QL, a.m1, k, 5);
     const [c] = caseL(a.sid);
     nhapFt(QL, a.m1, 'listening', null);
@@ -465,7 +468,7 @@ export async function runPrBvTests(t: YThucTestKit) {
 
   /* Rà planning #228 (2): nhận "đóng do xoá" bằng MÃ MÁY — chữ outcome_note đổi (vd PR-EN dịch) vẫn mở lại đúng Case. */
   check('BV C8 · xoá L → đổi chữ outcome_note → nhập lại trượt vẫn mở lại CÙNG Case; người đóng lại sau khi mở → không mở lại', () => {
-    const a = emMoi();
+    const a = emMoiChot();
     for (const k of ['listening', 'reading', 'speaking']) nhapFt(QL, a.m1, k, 5);
     const [c] = caseL(a.sid);
     nhapFt(QL, a.m1, 'listening', null);
