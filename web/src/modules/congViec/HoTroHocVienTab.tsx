@@ -104,6 +104,7 @@ export function HoTroHocVienTab() {
    * (không nhảy vị trí). Chỉ để nhìn: mọi số đếm dưới đây đọc `tatCaViec` (máy chủ).
    */
   const [giu, setGiu] = useState<ReadonlyMap<string, WorkItem>>(new Map());
+  useEffect(() => { setGiu(new Map()); }, [url]);   // đổi người xem / chi nhánh = nguồn khác: bỏ giữ chỗ của nguồn cũ
   const conTrenMayChu = useMemo(() => new Set(phang(tatCaViec).map((x) => x.key)), [tatCaViec]);
   const xong = useMemo(() => new Set([...giu.keys()].filter((k) => !conTrenMayChu.has(k))), [giu, conTrenMayChu]);
   const hienThi = useMemo(() => [...tatCaViec, ...[...giu.values()].filter((x) => xong.has(x.key))], [tatCaViec, giu, xong]);

@@ -215,7 +215,8 @@ export async function runPrOv5aTests(t: YThucTestKit) {
   check('OV5a-9 · việc mang đủ dữ liệu cho panel: Nhập điểm có mã lượt + kỹ năng; Kết quả PA có paId; nhóm "Kết quả đầu ra" đổi tên, gợi ý có FOU', () => {
     const w = mywork.myWork(GV_R);
     const sc = (w.items as any[]).find((x) => x.group === 'score' && x.classId);
-    if (sc) assert(/^(mt:[1-9]\d*|thuong:(progress|final|mt0))$/.test(sc.luot) && typeof sc.kn === 'string', `Nhập điểm: ${sc.luot} ${sc.kn}`);
+    for (const x of (w.items as any[]).filter((y) => y.group === 'score' && y.classId)) assert(d.docMaLuot(x.luot), `mã lượt sai: ${x.luot}`);
+    if (sc) assert(/^((mt|cp):[1-9]\d*|thuong:(progress|final|mt0))$/.test(sc.luot) && typeof sc.kn === 'string', `Nhập điểm: ${sc.luot} ${sc.kn}`);
     const ql = mywork.myWork(P.mbManager, { nguoi: 'tat-ca' });
     const kq = (ql.items as any[]).find((x) => x.group === 'ghi_ket_qua_pa');
     if (kq) assert(kq.paId === Number(kq.key.split(':')[1]), `paId: ${kq.paId} / ${kq.key}`);

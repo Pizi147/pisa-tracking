@@ -439,7 +439,8 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
         tieuDe: `Nhập điểm ${skills}`, phu: skills,
         actionLabel: 'Nhập điểm',
         href: first.href,
-        luot: first.kind && first.kind !== 'mock' ? `thuong:${first.kind}` : `mt:${first.attemptNo}`, kn: first.skill,
+        /* Mã lượt của Điểm theo lớp (`docMaLuot`): MT `mt:n`, Checkpoint lớp liên tục `cp:n` (OV-6b2), lớp thường `thuong:{bài}`. */
+        luot: first.kind === 'checkpoint' ? `cp:${first.attemptNo}` : first.kind && first.kind !== 'mock' ? `thuong:${first.kind}` : `mt:${first.attemptNo}`, kn: first.skill,
         soBai: list.reduce((n, b) => n + b.students.size, 0),   // OV-5a: "bài cần chấm" = kỹ năng × em
         ownerId: first.ownerId, owner: null, mine: first.ownerId === p.userId,
         due: first.due,
