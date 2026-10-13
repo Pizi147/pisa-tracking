@@ -545,10 +545,10 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
       {nhapLienHe && (
         <Khoi tieuDe="Liên hệ">
           <Truong nhan={NHAN_LIEN_HE.phone} tuyChon loi={lf.loiCua(loi, 'phone')}>
-            <input className="field w-full tabular-nums" type="tel" inputMode="tel" autoComplete="off" {...lf.o(loi, 'phone')}
+            <input className="field w-full tabular-nums" type="tel" inputMode="tel" autoComplete="off" maxLength={LIEN_HE_TOI_DA.sdt} {...lf.o(loi, 'phone')}
               value={lh.phone} onChange={(e) => sua(setLh)({ ...lh, phone: e.target.value })} placeholder="Ví dụ: 0901 234 567" />
           </Truong>
-          <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_9rem]">
+          <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_12rem]">
             <Truong nhan={NHAN_LIEN_HE.parentName} tuyChon>
               <input className="field w-full" maxLength={LIEN_HE_TOI_DA.parentName} autoComplete="off"
                 value={lh.parentName} onChange={(e) => sua(setLh)({ ...lh, parentName: e.target.value })} placeholder="Ví dụ: Phạm Văn Long" />
@@ -560,7 +560,7 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
             </Truong>
           </div>
           <Truong nhan={NHAN_LIEN_HE.parentPhone} tuyChon loi={lf.loiCua(loi, 'parentPhone')}>
-            <input className="field w-full tabular-nums" type="tel" inputMode="tel" autoComplete="off" {...lf.o(loi, 'parentPhone')}
+            <input className="field w-full tabular-nums" type="tel" inputMode="tel" autoComplete="off" maxLength={LIEN_HE_TOI_DA.sdt} {...lf.o(loi, 'parentPhone')}
               value={lh.parentPhone} onChange={(e) => sua(setLh)({ ...lh, parentPhone: e.target.value })} placeholder="Ví dụ: 0912 345 678" />
           </Truong>
         </Khoi>

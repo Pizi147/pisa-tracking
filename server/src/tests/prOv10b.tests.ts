@@ -76,7 +76,7 @@ export async function runPrOv10bTests(t: YThucTestKit) {
   check('OV10b-3 · kiểm ở máy chủ: SĐT sai → 400 câu rõ (không lặp lại số); tên > 100 → 400; trống = xoá', () => {
     thu(() => {
       const v = vai().TVV;
-      for (const sai of ['abc12345', '1234567', '12345678901234567', '0912 345 678 ext 9', '0912345678#']) {
+      for (const sai of ['abc12345', '1234567', '12345678901234567', '0912 345 678 ext 9', '0912345678#', `0${'.'.repeat(40)}912345678`]) {
         const e = loi(() => students.updateStudent(v, em[0], { phone: sai }));
         assert(e?.status === 400 && /SĐT em/.test(e.message) && !e.message.includes(sai), `"${sai}": ${e?.status} ${e?.message}`);
       }

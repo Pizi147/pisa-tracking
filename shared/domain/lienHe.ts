@@ -9,7 +9,7 @@ export const NHAN_LIEN_HE: Record<(typeof TRUONG_LIEN_HE)[number], string> = {
   phone: 'SĐT em', parentName: 'Tên phụ huynh', parentRelation: 'Quan hệ', parentPhone: 'SĐT phụ huynh',
 };
 /** Trần ký tự của ô chữ (sau khi bỏ khoảng trắng hai đầu). */
-export const LIEN_HE_TOI_DA = { parentName: 100, parentRelation: 30 } as const;
+export const LIEN_HE_TOI_DA = { parentName: 100, parentRelation: 30, sdt: 25 } as const;
 /** Gợi ý ô Quan hệ — gõ tự do, không danh mục. */
 export const QUAN_HE_GOI_Y = ['Bố', 'Mẹ', 'Ông', 'Bà', 'Anh', 'Chị'] as const;
 
@@ -21,7 +21,7 @@ export function docSoDienThoai(raw: unknown): { sdt: string | null; loi: string 
   const s = String(raw ?? '').trim().replace(/\s+/g, ' ');
   if (!s) return { sdt: null, loi: null };
   const so = s.replace(/\D/g, '').length;
-  if (!/^\+?[\d .-]+$/.test(s) || so < 8 || so > 15) return { sdt: null, loi: 'chỉ gồm chữ số (cho phép dấu cách, +, ., -), 8–15 chữ số' };
+  if (s.length > LIEN_HE_TOI_DA.sdt || !/^\+?[\d .-]+$/.test(s) || so < 8 || so > 15) return { sdt: null, loi: 'chỉ gồm chữ số (cho phép dấu cách, +, ., -), 8–15 chữ số' };
   return { sdt: s, loi: null };
 }
 

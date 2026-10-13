@@ -36,6 +36,8 @@ type TrangVai = {
 };
 
 const SELECT_GON = 'field h-8 w-auto !py-0 text-xs max-sm:min-h-[44px] max-sm:w-full';
+/** Quá từng này em đang hiện thì các nhóm lớp mặc định gập (bấm đầu nhóm để mở). */
+const NHIEU_DONG = 150;
 
 /** Ô "Cần chú ý" (chỉ đọc): SOS · Case mới (kỹ năng) · Ý thức · Chờ QL chọn bước tiếp — đúng lý do em vào chip Cần chú ý. */
 export function OCanChuY({ c }: { c: LyDoChuY | null }) {
@@ -104,7 +106,8 @@ export function HocVienTheoVai({ vai }: { vai: 'tvv' | 'cx' }) {
   const trang = useApi<TrangVai>(duong, [duong]);
   const branches = useApi<Branch[]>(vai === 'cx' ? '/ref/branches' : null);
   const data = trang.data;
-  const [dong, setDong] = useState<Set<number | 'chua-xep'>>(new Set());
+  /* Nhóm đã bấm đảo so với mặc định. Mặc định mở hết; danh sách dài (CX "Tất cả" mọi chi nhánh) thì mặc định gập — không vẽ hàng nghìn dòng một lúc. */
+  const [dao, setDao] = useState<Set<number | 'chua-xep'>>(new Set());
 
   /* Ô tìm lọc tại chỗ: tên · mã em · mã lớp. Chip đếm trên tập đã tìm (như bảng Học viên & Lớp cũ). */
   const ql = q.trim().toLowerCase();
@@ -118,6 +121,8 @@ export function HocVienTheoVai({ vai }: { vai: 'tvv' | 'cx' }) {
     for (const d of hien) m.set(d.lop?.id ?? 'chua-xep', [...(m.get(d.lop?.id ?? 'chua-xep') ?? []), d]);
     return [...m.entries()].sort(([a, x], [b, y]) => (a === 'chua-xep' ? 1 : b === 'chua-xep' ? -1 : (x[0].lop!.code).localeCompare(y[0].lop!.code, 'vi')));
   }, [hien]);
+  const gapSan = hien.length > NHIEU_DONG;
+  const dong = { has: (k: number | 'chua-xep') => gapSan !== dao.has(k) };
   const ds: NguCanhDs = { loai: 'hoc-vien', nhan: 'Học viên & Lớp', ids: nhom.flatMap(([k, em]) => (dong.has(k) ? [] : em.map((d) => d.id))) };
 
   const tt = useThaoTacDongHocVien({
@@ -150,7 +155,7 @@ export function HocVienTheoVai({ vai }: { vai: 'tvv' | 'cx' }) {
       </span>
     );
   };
-  const doiDong = (k: number | 'chua-xep') => setDong((cu) => { const s = new Set(cu); if (s.has(k)) s.delete(k); else s.add(k); return s; });
+  const doiDong = (k: number | 'chua-xep') => setDao((cu) => { const s = new Set(cu); if (s.has(k)) s.delete(k); else s.add(k); return s; });
 
   return (
     <div className="page space-y-3">

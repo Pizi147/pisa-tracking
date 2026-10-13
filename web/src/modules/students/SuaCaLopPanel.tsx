@@ -246,7 +246,7 @@ export function SuaCaLopPanel({ classId, onClose, onDone }: { classId: number; o
                                       type={c.key === 'email' ? 'email' : c.key === 'phone' || c.key === 'parentPhone' ? 'tel' : 'text'} autoComplete="off"
                                       inputMode={c.key === 'baseline' ? 'decimal' : c.key === 'email' ? 'email' : c.key === 'phone' || c.key === 'parentPhone' ? 'tel' : undefined}
                                       list={c.key === 'parentRelation' ? 'quan-he-goi-y-lop' : undefined}
-                                      maxLength={c.key === 'parentName' || c.key === 'parentRelation' ? LIEN_HE_TOI_DA[c.key] : undefined}
+                                      maxLength={c.key === 'parentName' || c.key === 'parentRelation' ? LIEN_HE_TOI_DA[c.key] : c.key === 'phone' || c.key === 'parentPhone' ? LIEN_HE_TOI_DA.sdt : undefined}
                                       onChange={(e) => datO(r.studentId, c.key, e.target.value)}
                                       onBlur={c.key === 'target' ? (e) => { const v = chuanOTarget(e.target.value); if (v !== e.target.value) datO(r.studentId, 'target', v); } : undefined} />
                                   )}

@@ -13,7 +13,7 @@ import { TenGiaoVien } from './TenGiaoVien.tsx';
 import { DaiLopChuyen } from './DaiChuyenLop.tsx';
 import type { TinhTrangXoaKetThuc } from './XoaKetThucLopPanel.tsx';
 import {
-  DUONG_TAB_TEST, ROUTE_NAME, TAB_HO_SO_LOP_NHAN, trangCha, type TabHoSoLop, badgeLop, khungCua, duongLichTest, laVaiQuanLy, needScoresText, menuHoSoLop, nhomGiaoVienBoMon, tuanKhoa, type ViecMenuLop, tuanLich, type BadgeLop, type DaiLop, type NhomGiaoVien, type WorkScope,
+  DUONG_TAB_TEST, ROUTE_NAME, TAB_HO_SO_LOP_NHAN, trangCha, type TabHoSoLop, badgeLop, vaiXemHocVien, khungCua, duongLichTest, laVaiQuanLy, needScoresText, menuHoSoLop, nhomGiaoVienBoMon, tuanKhoa, type ViecMenuLop, tuanLich, type BadgeLop, type DaiLop, type NhomGiaoVien, type WorkScope,
 } from '@shared/domain/index.ts';
 
 /** `GET /classes/:id/overview` (server/src/classes/classes.ts → classOverview). */
@@ -95,8 +95,13 @@ export function DauTrangLop({ data, onViec, onBanGiao }: {
   });
   /* PR-S5F-a (mockup 20): lớp đã có dải "Lộ trình tiếp theo" (OV-3b) thì bỏ chip "n HV cần xếp lớp tiếp" — hai chỗ nói cùng một việc. */
   const boXep = (ds: BadgeLop[]) => (data.dai?.loTrinh ? ds.filter((x) => x.key !== 'xep-lop') : ds);
-  /* OV-10b: badge "n bài chờ chấm" dẫn vào Test — vai không có Test (TVV / CX) không thấy. */
-  const boCham = (ds: BadgeLop[]) => (session?.nav?.test ? ds : ds.filter((x) => x.key !== 'cham'));
+  /*
+   * OV-10b: badge "n bài chờ chấm" dẫn vào Test — vai không có Test không thấy. TVV / CX: chỉ badge thông tin (chặng · thiếu GV · thiếu thông tin),
+   * không badge việc của GV / QL (quá hạn việc, chờ duyệt, xếp lớp).
+   */
+  const vai = vaiXemHocVien(session?.roles);
+  const boCham = (ds: BadgeLop[]) => ds.filter((x) => (x.key !== 'cham' || !!session?.nav?.test)
+    && ((vai !== 'tvv' && vai !== 'cx') || x.key === 'chang' || x.key === 'thieu-gv' || x.key === 'thieu-tt'));
   const b0 = { hien: boCham(boXep(bGoc.hien)), an: boCham(boXep(bGoc.an)) };
   /* DH: nhãn chặng chỉ là chữ — không vào menu "+n" (mục bấm không làm gì); nếu bị ẩn thì hiện thẳng ở hàng. */
   const b = { hien: [...b0.hien, ...b0.an.filter((x) => x.key === 'chang')], an: b0.an.filter((x) => x.key !== 'chang') };
