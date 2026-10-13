@@ -1,6 +1,7 @@
 import { Fragment, useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
+import { useSession } from '../../lib/session.tsx';
 import { Card, Empty, ErrorState, Skeleton, Th } from '../../ui/ui.tsx';
 import { HangCon, HangNhom } from '../../ui/HangNhom.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
@@ -13,6 +14,7 @@ import { KHOANG_LABEL, nhanSoVoiTruoc, type DongVanDeHv, type VanDeHvKetQua } fr
  * Mọi số mở đúng danh sách bằng `/phan-tich/van-de-hv/o` (cùng hàm sinh ra số — G-10); không có nút giao việc (G-12).
  */
 export function TongHopVanDeHv(props: PhamViPhanTich) {
+  const { session } = useSession();
   const [params, setParams] = useSearchParams();
   const chiChinh = params.get('loi') === 'chinh';
   const gop = params.get('gop') === '1';
@@ -158,7 +160,7 @@ export function TongHopVanDeHv(props: PhamViPhanTich) {
                       <td className="text-right tabular-nums"><SoLieuO giaTri={data.chuaPhanLoai.lop} nguon={nguon('chua-phan-loai', 'lop')} tieuDe="Chưa phân loại · lớp" /></td>
                       <td colSpan={3} className="pl-6 text-xs font-normal">
                         {/* PR-SOS (K1-22): việc của GV nằm ở Công việc — trỏ thẳng nhóm Xác nhận nguyên nhân. */}
-                        <Link to="/cong-viec?loai=cause" className="underline underline-offset-2">Xem trong Công việc →</Link>
+                        {session?.nav?.work && <Link to="/cong-viec?loai=cause" className="underline underline-offset-2">Xem trong Công việc →</Link>}
                       </td>
                     </tr>
                   )}

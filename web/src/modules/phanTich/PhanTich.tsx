@@ -5,6 +5,7 @@ import { useSession } from '../../lib/session.tsx';
 import { useChiNhanhMacDinh } from '../../ui/Filters.tsx';
 import { ChonChuongTrinh } from '../worklist/ChonChuongTrinh.tsx';
 import { HieuQuaPa } from './HieuQuaPa.tsx';
+import { PERMISSIONS } from '@shared/domain/index.ts';
 import { PhanTichGiaoVien } from './PhanTichGiaoVien.tsx';
 import { TongHopTestSos } from './TongHopTestSos.tsx';
 import { TongHopVanDeHv } from './TongHopVanDeHv.tsx';
@@ -22,9 +23,10 @@ import {
  * (chương trình · khoảng thời gian · lớp) — mọi góc nhìn đọc CÙNG bộ lọc này.
  */
 export function PhanTich() {
-  const { branchCount, session } = useSession();
+  const { branchCount, session, can } = useSession();
   /* PR-OV2a: CX, TVV không có phần giáo viên (`nav.phanTichGv`); link cũ `?goc=giao-vien` về góc đầu. */
-  const gocCo = GOC_NHIN.filter((k) => k !== 'giao-vien' || !!session?.nav?.phanTichGv);
+  /* OV-10a: góc Ý thức cần `discipline.stats` (QL, Quản trị) — TVV, CX, Admin không có thì ẩn, không để ra lỗi 403. */
+  const gocCo = GOC_NHIN.filter((k) => (k !== 'giao-vien' || !!session?.nav?.phanTichGv) && (k !== 'y-thuc' || can(PERMISSIONS.DISCIPLINE_STATS)));
   const [params, setParams] = useSearchParams();
   /* PR-NV (T9): cùng mặc định với Tổng quan (tab Phân tích nằm trong Tổng quan). */
   const macDinh = useChiNhanhMacDinh();
