@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import {
-  ENTRY_SKILLS, ENTRY_SKILL_SHORT, NHOM_VIEC_LABEL, duongHieuQuaPaGv, duongHoSoHocVien, duongViecCuaGv, laVaiQuanLy, tuanLich, viecTiepCuaEm,
+  ENTRY_SKILLS, ENTRY_SKILL_SHORT, NHOM_VIEC_LABEL, duongHieuQuaPaGv, duongHoSoHocVien, duongViecCuaGv, laVaiQuanLy, trangCha, tuanLich, viecTiepCuaEm,
   type ChipBanGiao, type NhomViec, type TrangThai, type ViecTiepCase,
 } from '@shared/domain/index.ts';
 import { useApi } from '../../lib/useApi.ts';
@@ -10,6 +10,7 @@ import { Card, Empty, ErrorState, NhanTrangThai, Skeleton, Th } from '../../ui/u
 import { CHIP_TRON } from '../../ui/Nhan.tsx';
 import { SoLieuO } from '../../ui/SoLieuO.tsx';
 import { ViecTiep } from '../../ui/ViecTiep.tsx';
+import { DuongVe } from '../../ui/ThanhTruocSau.tsx';
 import { TheDong, useDienThoai } from '../../ui/TheDong.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { TenCase } from '../cases/SkillBoard.tsx';
@@ -74,26 +75,29 @@ export function HoSoGiaoVienPage() {
   const tenGoi = gv.ten.split(' ').pop() ?? gv.ten;
   return (
     <div className="space-y-4">
-      <Card>
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="min-w-0 space-y-1">
-            <h1 className="m-0 text-xl font-bold text-slate-100">{gv.ten}</h1>
-            <p className="m-0 text-sm text-slate-400">{[gv.vai.join(' · '), gv.chiNhanh.join(', ')].filter(Boolean).join(' · ')}</p>
-            <p className="m-0 flex flex-wrap items-center gap-1.5 text-xs">
-              <span className="text-slate-400">Kỹ năng phụ trách được</span>
-              {gv.kyNang.length ? gv.kyNang.map((k) => <span key={k} className={chipVai}>{k}</span>) : <span className="text-slate-500">chưa khai</span>}
-            </p>
-            {!gv.laChinhMinh && data.phamVi.chiNhanh && (
-              <p className="m-0 text-xs text-slate-400">Quản lý đang xem · chỉ tính lớp, Case, yêu cầu ở {data.phamVi.chiNhanh.join(', ')}</p>
+      <div>
+        <DuongVe cha={trangCha('gv', { nav: session?.nav })} ten={`Hồ sơ ${gv.ten}`} />
+        <Card>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="min-w-0 space-y-1">
+              <h1 className="m-0 text-xl font-bold text-slate-100">{gv.ten}</h1>
+              <p className="m-0 text-sm text-slate-400">{[gv.vai.join(' · '), gv.chiNhanh.join(', ')].filter(Boolean).join(' · ')}</p>
+              <p className="m-0 flex flex-wrap items-center gap-1.5 text-xs">
+                <span className="text-slate-400">Kỹ năng phụ trách được</span>
+                {gv.kyNang.length ? gv.kyNang.map((k) => <span key={k} className={chipVai}>{k}</span>) : <span className="text-slate-500">chưa khai</span>}
+              </p>
+              {!gv.laChinhMinh && data.phamVi.chiNhanh && (
+                <p className="m-0 text-xs text-slate-400">Quản lý đang xem · chỉ tính lớp, Case, yêu cầu ở {data.phamVi.chiNhanh.join(', ')}</p>
+              )}
+            </div>
+            {coNutViec && (
+              <Link to={duongViecCuaGv(gv.id, nguoiXem, null)} className="btn no-underline max-sm:min-h-11 max-sm:items-center">
+                {gv.laChinhMinh ? 'Mở Công việc ›' : `Việc của ${tenGoi} ›`}
+              </Link>
             )}
           </div>
-          {coNutViec && (
-            <Link to={duongViecCuaGv(gv.id, nguoiXem, null)} className="btn no-underline max-sm:min-h-11 max-sm:items-center">
-              {gv.laChinhMinh ? 'Mở Công việc ›' : `Việc của ${tenGoi} ›`}
-            </Link>
-          )}
-        </div>
-      </Card>
+        </Card>
+      </div>
 
       <KhoiViec gvId={gv.id} nguoiXem={nguoiXem} homNay={homNay} ngan={ngan} />
       <KhoiLopVaKetQua data={data} />

@@ -9255,6 +9255,9 @@ await runPrOv1cTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, 
 // ==================================================================== PR-OV3c (Kết quả đầu ra lớp trước ở hồ sơ lớp FT, 4 tuần theo đợt)
 const { runPrOv3cTests } = await import('./prOv3c.tests.ts');
 await runPrOv3cTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== PR-OV5b (Quay lại đúng nơi bắt đầu: chồng nguồn, trang cha, tên nguồn)
+const { runPrOv5bTests } = await import('./prOv5b.tests.ts');
+await runPrOv5bTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== PR-OV6b2 (chương trình mới: Liên tục, Checkpoint lặp, môn gộp + PET / KET)
 const { runPrOv6b2Tests } = await import('./prOv6b2.tests.ts');
 await runPrOv6b2Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);

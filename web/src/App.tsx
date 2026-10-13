@@ -4,6 +4,7 @@ import { useSession } from './lib/session.tsx';
 import { useApi } from './lib/useApi.ts';
 import { DemoBar } from './modules/platform/DemoBar.tsx';
 import { LA_BAN_CHINH } from './lib/banChinh.ts';
+import { useGhiNguon } from './lib/quayLai.ts';
 import { Header } from './modules/platform/Header.tsx';
 import { Skeleton } from './ui/ui.tsx';
 import { useToast } from './ui/Toast.tsx';
@@ -95,6 +96,7 @@ export default function App() {
   const { session, loading, reload, doiGocNhin } = useSession();
   const toast = useToast();
   const location = useLocation();
+  useGhiNguon();   // PR-OV5b: nguồn của nút "‹ Quay lại" ở mọi hồ sơ
   /* PR-PH / HK2: bấm "Thử lại" ở dải Mất kết nối → nút khoá, chữ "Đang thử…" tới khi tải xong. */
   const [dangThu, setDangThu] = useState(false);
   const thuLai = async () => { setDangThu(true); try { await reload(); } finally { setDangThu(false); } };

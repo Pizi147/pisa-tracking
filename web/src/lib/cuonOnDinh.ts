@@ -19,3 +19,23 @@ export function cuonOnDinh(layDich: () => HTMLElement | null, theoDoi: HTMLEleme
   t = window.setTimeout(dung, ms);
   return () => { cancelAnimationFrame(raf); dung(); };
 }
+
+/**
+ * PR-OV5b: về lại trang nguồn → đặt `el.scrollTop = top`, đặt lại mỗi khung hình trong `ms` (bảng tải xong làm trang cao dần mới cuộn
+ * tới được) — dừng ngay khi người dùng tự cuộn / bấm. Trả hàm dọn.
+ */
+export function cuonVeViTri(el: HTMLElement, top: number, ms = 3000): () => void {
+  const het = Date.now() + ms;
+  let raf = 0;
+  const dat = () => {
+    if (Math.abs(el.scrollTop - top) > 1) el.scrollTop = top;
+    raf = Date.now() < het ? requestAnimationFrame(dat) : 0;
+  };
+  const dung = () => {
+    cancelAnimationFrame(raf);
+    for (const e of [...SU_KIEN, 'pointerdown'] as const) window.removeEventListener(e, dung);
+  };
+  for (const e of [...SU_KIEN, 'pointerdown'] as const) window.addEventListener(e, dung, { passive: true });
+  raf = requestAnimationFrame(dat);
+  return dung;
+}
