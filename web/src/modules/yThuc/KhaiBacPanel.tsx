@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import { api, invalidate } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { useToast } from '../../ui/Toast.tsx';
-import { Khoi, KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
+import { Khoi, KhungPanel, KhungTaiCho, Truong } from '../../ui/KhungPanel.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { NutChon } from '../../ui/ui.tsx';
@@ -29,6 +29,9 @@ export function KhaiBacPanel({ studentId, sua, onClose, onDone }: {
   const [ghiChu, setGhiChu] = useState('');
   const lf = useLoiForm();
   const [busy, setBusy] = useState(false);
+  /* OV-11c (CV-7): ở Công việc (tại chỗ) lưu xong panel ở lại "Đã lưu", dòng giữ chỗ mờ + gạch; nơi khác đóng như cũ. */
+  const taiCho = useContext(KhungTaiCho);
+  const [daLuu, setDaLuu] = useState<string | null>(null);
   useEffect(() => {
     setBac(sua && d?.khai ? d.khai.bac : 0); setThang(sua && d?.khai?.thang ? d.khai.thang : ''); setGhiChu(sua && d?.khai ? d.khai.ghiChu : ''); lf.datLai();
   }, [studentId, sua, d?.khai?.bac]);
@@ -37,6 +40,14 @@ export function KhaiBacPanel({ studentId, sua, onClose, onDone }: {
   const tieuDe = sua ? 'Sửa cấp bậc vi phạm' : 'Xác nhận cấp bậc vi phạm';
   if (!d) return <KhungPanel tieuDe={tieuDe} onDong={onClose}><p className="mt-3 text-sm text-slate-400">Đang tải…</p></KhungPanel>;
 
+  if (daLuu) {
+    return (
+      <KhungPanel tieuDe={tieuDe} hocVien={d.ten} onDong={onClose}
+        chan={{ huy: null, chinh: <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={onClose}>Đóng</button> }}>
+        <Khoi tieuDe="Đã lưu"><p className="m-0 text-sm text-slate-200">{daLuu}</p></Khoi>
+      </KhungPanel>
+    );
+  }
   const loi = dsLoi([{ khoa: 'bac', nhan: 'Bậc', chon: true }, { khoa: 'ghi-chu', nhan: 'Ghi chú', toiThieu: GHI_CHU_MIN }],
     { bac: bac || '', 'ghi-chu': ghiChu });
   const luu = async () => {
@@ -47,9 +58,11 @@ export function KhaiBacPanel({ studentId, sua, onClose, onDone }: {
       const body = { bac, thang: thang || undefined, ghiChu: ghiChu.trim() };
       if (sua) await api.put(`/students/${studentId}/y-thuc/khai-bac`, body);
       else await api.post(`/students/${studentId}/y-thuc/khai-bac`, body);
+      onDone?.();
       DUONG_LAM_MOI_Y_THUC.forEach((x) => invalidate(x));
-      toast.push('ok', `Đã xác nhận cấp bậc ${nhanLoaiXuLy(BAC_KHAI[bac - 1])} cho ${d.ten}. Lần xử lý kế tiếp: ${nhanLoaiXuLy(kindCuaBac(bac + 1))}.`);
-      onClose(); onDone?.();
+      const chu = `Đã xác nhận cấp bậc ${nhanLoaiXuLy(BAC_KHAI[bac - 1])} cho ${d.ten}. Lần xử lý kế tiếp: ${nhanLoaiXuLy(kindCuaBac(bac + 1))}.`;
+      toast.push('ok', chu);
+      if (taiCho) setDaLuu(chu); else onClose();
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
   };
 

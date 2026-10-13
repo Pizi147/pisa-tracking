@@ -87,8 +87,10 @@ export async function runPrGvTests(t: YThucTestKit) {
     const goc = new Set((myWork(loadPrincipal(gv)) as any).items.map((i: any) => i.key));
     const r = viecCuaNguoi(P.mbManager, gv) as any;
     assert(r.xemNguoiKhac === true && r.items.every((i: any) => goc.has(i.key)), 'mọi dòng thuộc việc của GV');
-    assert(r.items.every((i: any) => (i.classId !== null || i.studentId !== null) && can(P.mbManager, PERMISSIONS.ATTEMPT_VIEW, { classId: i.classId, studentId: i.studentId })),
-      'bỏ dòng không lớp/HV, lọc theo quyền người xem');
+    /* OV-11c (PT-7): việc Vận hành giao cho GV (không lớp / HV) nay được tính; dòng khác vẫn lọc theo quyền người xem. */
+    assert(r.items.every((i: any) => (i.group === 'mgmt' && i.classId === null && i.studentId === null)
+      || ((i.classId !== null || i.studentId !== null) && can(P.mbManager, PERMISSIONS.ATTEMPT_VIEW, { classId: i.classId, studentId: i.studentId }))),
+      'dòng không lớp/HV chỉ là việc Vận hành; lọc theo quyền người xem');
     assertThrows(() => viecCuaNguoi(P.subjectTeacher, gv), /chỉ xem được việc của mình/, 'GV gửi nguoi= → 403');
     const chiMb = dungGv('TMP-GV-MB2', 'MB', { lop: 'MB FT 101', den: null });
     try { assertThrows(() => viecCuaNguoi(P.cpManager, chiMb), /chi nhánh bạn quản lý/, 'QL CP xem GV chỉ ở MB → 403'); } finally { don(chiMb); }

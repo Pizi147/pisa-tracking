@@ -327,7 +327,11 @@ export function NganViecVanHanh({ taskId, onClose, onDone }: {
           )}
           {data.note && <p className="text-sm text-slate-300 m-0">{data.note}</p>}
 
-          {data.viewer.canUpdate && (
+          {/* OV-11c (CV-12): cập nhật tiến độ mở NGAY trong thân panel (chip trạng thái + Ghi chú) — không ngăn kéo thứ hai đè lên. */}
+          {data.viewer.canUpdate && updating && (
+            <UpdateDialog open onClose={() => setUpdating(false)} task={data} onDone={() => { reload(); onDone(); }} />
+          )}
+          {data.viewer.canUpdate && !updating && (
             <div className="flex flex-wrap gap-2">
               <button type="button" className="btn btn-primary btn-sm min-h-[44px] sm:min-h-0" onClick={() => setUpdating(true)}>Cập nhật tiến độ</button>
               {data.viewer.canEdit && (
@@ -409,10 +413,6 @@ export function NganViecVanHanh({ taskId, onClose, onDone }: {
       )}
 
       {data && (
-        <UpdateDialog open={updating} onClose={() => setUpdating(false)} task={data}
-          onDone={() => { reload(); onDone(); }} />
-      )}
-      {data && (
         <SuaViec open={editing} onClose={() => setEditing(false)} task={data}
           onDone={() => { reload(); onDone(); }} />
       )}
@@ -424,7 +424,7 @@ export function NganViecVanHanh({ taskId, onClose, onDone }: {
   );
 }
 
-/** Ghi một lần cập nhật — cách DUY NHẤT trạng thái công việc đổi. Panel mở đè ngăn chi tiết (`longTrong`). */
+/** Ghi một lần cập nhật — cách DUY NHẤT trạng thái công việc đổi. OV-11c (CV-12): khối trong thân ngăn chi tiết, không panel lồng panel. */
 function UpdateDialog({ open, onClose, task, onDone }: {
   open: boolean; onClose: () => void; task: any; onDone: () => void;
 }) {
@@ -469,13 +469,9 @@ function UpdateDialog({ open, onClose, task, onDone }: {
   };
 
   return (
-    <KhungPanel tieuDe="Cập nhật tiến độ" hocVien={task.title} longTrong onDong={onClose}
-      chan={{
-        huy: { onClick: onClose, disabled: busy },
-        conThieu: chanKhepLai ? [{ nhan: 'Việc con', lyDo: `Còn ${conChuaXong.length} việc con chưa khép lại` }] : lf.conThieu(loi),
-        chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={luu}>{busy ? 'Đang lưu…' : 'Lưu'}</button>,
-      }}>
-      <div className="space-y-3 pt-3">
+    <section className="space-y-3 rounded-[10px] border p-3" style={{ borderColor: 'var(--line-strong)' }} aria-label="Cập nhật tiến độ">
+      <b className="block text-[13.5px] text-slate-100">Cập nhật tiến độ</b>
+      <div className="space-y-3">
         <Field label="Trạng thái" as="div">
           <div className="flex flex-wrap gap-1.5">
             {TASK_PROGRESS.map((s) => (
@@ -514,7 +510,11 @@ function UpdateDialog({ open, onClose, task, onDone }: {
           <textarea className="field" rows={2} maxLength={2000} value={note} onChange={(e) => setNote(e.target.value)} />
         </Field>
       </div>
-    </KhungPanel>
+      <div className="flex flex-wrap justify-end gap-2">
+        <button type="button" className="btn min-h-[44px] sm:min-h-0" disabled={busy} onClick={onClose}>Đóng</button>
+        <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={luu}>{busy ? 'Đang lưu…' : 'Lưu'}</button>
+      </div>
+    </section>
   );
 }
 

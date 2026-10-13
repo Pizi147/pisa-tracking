@@ -245,7 +245,9 @@ export function chipChoDuyet(d: DemYeuCau): ChipDem[] {
 
 /** PR-S4F #14: thẻ Báo QL không có người để Nhắc (`duLieu.ownerId` rỗng) — ghi rõ vì sao thay cho nút Nhắc. */
 export const nhanKhongNguoiNhac = (loai: string): string =>
-  loai === 'bao_len_nguyen_nhan' ? 'Case chưa có người phụ trách' : 'Lớp chưa có GVCN';
+  loai === 'bao_len_nguyen_nhan' ? 'Case chưa có người phụ trách'
+    : loai === 'bao_len_chua_lenh' ? 'Việc của Quản lý · Chuyển tiếp lớp'   // OV-11c (CV-9): không phải "chưa có GVCN"
+      : 'Lớp chưa có GVCN';
 
 /** Trường của thẻ Đề xuất sửa (PR-DUYET T44) — MỘT bản cho máy chủ (`duyet/deXuatSua.ts`) và web (`DeXuatSuaPanel`). PR-CT: bỏ 'lop' — dùng Đề xuất chuyển lớp. */
 export const TRUONG_DE_XUAT = ['target', 'lo-trinh', 'lich-mt', 'khac'] as const;

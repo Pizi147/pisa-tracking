@@ -276,7 +276,7 @@ function BangGvbm({ dto, mon, lenhId, onClose, onDone, reload }: Chung & { mon: 
     <KhungPanel rong="rong" tieuDe={`Bàn giao môn ${m0.ngan} (${m0.ten})`} onDong={() => { onDone(); onClose(); }}
       ngCanh={<span className="tabular-nums">{dto.lop.code} · {dto.tong} em{han && <> · <Han loai="viec-van-hanh" han={han} /></>} · mỗi em một câu</span>}
       chan={{
-        huy: { nhan: 'Xong', onClick: () => { onDone(); onClose(); } },
+        huy: { nhan: 'Đóng', onClick: () => { onDone(); onClose(); } },
         dongTren: <p className="m-0 px-4 pt-2 text-right text-xs tabular-nums text-slate-400">Lưu từng dòng khi rời ô · {soDaCo}/{dto.tong} đã có</p>,
       }}>
       <div className="surface-2 mt-3 divide-y rounded-lg" style={{ borderColor: 'var(--line)' }} role="table" aria-label={`Bàn giao môn ${m0.ngan}`}>

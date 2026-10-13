@@ -850,6 +850,16 @@ export function planDueDate(assignedOn: string, urgency: string | null | undefin
 }
 
 /**
+ * OV-11c (HV-14, Q10): HẠN THÊM PA của Case chưa có PA — MỘT hàm cho Công việc ("Thêm PA học thuật") và hồ sơ HV (việc tiếp của Case), kể cả Case
+ * hệ thống mở (Progress Test lớp thường); Case nhẹ KCK / SOS 0 không hạn. Mốc = ngày phát hiện (thiếu thì ngày tạo); mức gấp = `urgency` của Case, không có thì suy từ SOS.
+ */
+export function hanThemPa(c: { detected_at?: string | null; created_at?: string | null; urgency?: string | null; sos_level?: number | null; kck?: number | boolean | null }): string | null {
+  if (c.kck || c.sos_level === 0) return null;   // OV-9: Case nhẹ (KCK) không bắt Thêm PA, không hạn — cùng điều kiện việc "Thêm PA" ở Công việc
+  const moc = c.detected_at ?? (c.created_at ?? '').slice(0, 10);
+  return moc ? planDueDate(String(moc).slice(0, 10), c.urgency ?? urgencyFromSos(c.sos_level ?? null)) : null;
+}
+
+/**
  * HẠN GHI KẾT QUẢ PA HẰNG TUẦN (§5.6 R-PA1, chủ sản phẩm 27/09): kết quả của tuần Thứ Hai → Chủ nhật chứa `fromDate` phải ghi
  * xong trước HẾT THỨ HAI tuần kế tiếp. Máy chủ gọi `weeklyUpdateDue(ngàyGhi + 1)` sau mỗi lần ghi → ghi ngày CN hay T2 đều khép
  * đúng tuần vừa hết, hạn mới là Thứ Hai tuần sau nữa.

@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import { api, invalidate } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { useToast } from '../../ui/Toast.tsx';
-import { Hang2, Khoi, KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
+import { Hang2, Khoi, KhungPanel, KhungTaiCho, Truong } from '../../ui/KhungPanel.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { ChonNgayGan } from '../../ui/ChonNgay.tsx';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
@@ -23,11 +23,22 @@ export function DaThucHienPanel({ measureId, onClose, onDone }: { measureId: num
   const [ghiChu, setGhiChu] = useState('');
   const lf = useLoiForm();
   const [busy, setBusy] = useState(false);
+  /* OV-11c (CV-7): ở Công việc (tại chỗ) lưu xong panel ở lại "Đã lưu", dòng giữ chỗ mờ + gạch; nơi khác đóng như cũ. */
+  const taiCho = useContext(KhungTaiCho);
+  const [daLuu, setDaLuu] = useState<string | null>(null);
   useEffect(() => { setNgayTh(homNay); setNguoi({ kieu: 'toi' }); setGhiChu(''); lf.datLai(); }, [measureId, homNay]);
 
   if (!measureId) return null;
   if (!m) return <KhungPanel tieuDe="Đã thực hiện" onDong={onClose}><p className="mt-3 text-sm text-slate-400">Đang tải…</p></KhungPanel>;
 
+  if (daLuu) {
+    return (
+      <KhungPanel tieuDe="Đã thực hiện" hocVien={m.ten} onDong={onClose}
+        chan={{ huy: null, chinh: <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={onClose}>Đóng</button> }}>
+        <Khoi tieuDe="Đã lưu"><p className="m-0 text-sm text-slate-200">{daLuu}</p></Khoi>
+      </KhungPanel>
+    );
+  }
   const loiNgay = m.quyetLuc && ngayTh < m.quyetLuc.slice(0, 10) ? `Chọn từ ngày QL duyệt (${ngay(m.quyetLuc, homNay)}) trở đi` : null;
   const loiNguoi = nguoiThieu(nguoi, true);
   const luu = async () => {
@@ -36,9 +47,11 @@ export function DaThucHienPanel({ measureId, onClose, onDone }: { measureId: num
     setBusy(true);
     try {
       await api.post(`/y-thuc/xu-ly/${measureId}/da-thuc-hien`, { performedOn: ngayTh, ...nguoiThanhPayload(nguoi), note: ghiChu.trim() || undefined });
+      onDone?.();
       DUONG_LAM_MOI_Y_THUC.forEach((d) => invalidate(d));
-      toast.push('ok', `Đã ghi ${m.nhan} cho ${m.ten} — ${m.viPham.length} vi phạm chuyển sang Đã xử lý.`);
-      onClose(); onDone?.();
+      const chu = `Đã ghi ${m.nhan} cho ${m.ten} — ${m.viPham.length} vi phạm chuyển sang Đã xử lý.`;
+      toast.push('ok', chu);
+      if (taiCho) setDaLuu(chu); else onClose();
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
   };
 

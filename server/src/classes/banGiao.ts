@@ -382,32 +382,36 @@ export function nhacGvbm(p: Principal, lenhId: number, mon: string): { soNguoi: 
 // ==================================================================== VIỆC (Công việc › Vận hành) — gộp theo lớp, đọc theo lô
 
 export type ViecBanGiao =
-  | { loai: 'gvcn'; lopId: number; code: string; n: number; daXacNhan: number; chua: string[]; han: string; motEm: { ten: string; lopDich: string | null } | null }
-  | { loai: 'gvbm'; lopId: number; code: string; mon: string; monNgan: string; daGhi: number; n: number; han: string };
+  | { loai: 'gvcn'; userId: number; lopId: number; code: string; n: number; daXacNhan: number; chua: string[]; han: string; motEm: { ten: string; lopDich: string | null } | null; emIds: number[] }
+  | { loai: 'gvbm'; userId: number; lopId: number; code: string; mon: string; monNgan: string; daGhi: number; n: number; han: string; emIds: number[] };
 
 /**
  * Việc bàn giao của MỘT người: GVCN — MỘT việc mỗi lớp nguồn có lệnh (không `huy`, có phiếu, còn phiếu chưa xác nhận); GVBM — MỘT việc mỗi (lớp,
  * môn) còn em chưa ghi. Ba câu đọc cho mọi lớp của người xem (phân công · lệnh · dòng môn), không hỏi lại theo em.
+ * OV-11c (CV-8): `userId` null = việc của MỌI người được phân công (Công việc › Của GV) — vẫn ba câu, không hỏi lại theo người.
  */
-export function viecBanGiao(userId: number, branchId?: number | null): ViecBanGiao[] {
+export function viecBanGiao(userId: number | null, branchId?: number | null): ViecBanGiao[] {
   const conn = db();
+  const dk = [`ta.status = 'active'`, ...(userId !== null ? ['ta.user_id = ?'] : []), ...(branchId ? ['c.branch_id = ?'] : [])];
   const pc = conn.prepare(
-    `SELECT ta.class_id, ta.is_core, ta.skill, c.code, c.programme_code AS ct FROM teacher_assignments ta JOIN classes c ON c.id = ta.class_id
-      WHERE ta.user_id = ? AND ta.status = 'active'${branchId ? ' AND c.branch_id = ?' : ''}`,
-  ).all(...(branchId ? [userId, branchId] : [userId])) as any[];
+    `SELECT ta.user_id, ta.class_id, ta.is_core, ta.skill, c.code, c.programme_code AS ct FROM teacher_assignments ta JOIN classes c ON c.id = ta.class_id
+      WHERE ${dk.join(' AND ')}`,
+  ).all(...[userId, branchId].filter((x) => x !== null && x !== undefined)) as any[];
   if (!pc.length) return [];
-  const lop = new Map<number, { code: string; ct: string | null; gvcn: boolean; kyNang: Set<string> }>();
+  /* Khoá (người, lớp). */
+  const lop = new Map<string, { userId: number; lopId: number; code: string; ct: string | null; gvcn: boolean; kyNang: Set<string> }>();
   for (const r of pc) {
-    const x = lop.get(r.class_id) ?? { code: r.code as string, ct: (r.ct ?? null) as string | null, gvcn: false, kyNang: new Set<string>() };
+    const k = `${r.user_id}|${r.class_id}`;
+    const x = lop.get(k) ?? { userId: r.user_id as number, lopId: r.class_id as number, code: r.code as string, ct: (r.ct ?? null) as string | null, gvcn: false, kyNang: new Set<string>() };
     if (r.is_core) x.gvcn = true;
     if (r.skill) x.kyNang.add(r.skill);
-    lop.set(r.class_id, x);
+    lop.set(k, x);
   }
-  const ids = [...lop.keys()];
+  const ids = [...new Set(pc.map((r) => r.class_id as number))];
   const lenh: any[] = [];
   theoLo(ids, (lo, ph) => {
     lenh.push(...conn.prepare(
-      `SELECT l.id, l.lop_nguon_id, l.han_gvbm, l.han_gvcn, l.xac_nhan_luc, s.full_name, d.code AS dich
+      `SELECT l.id, l.student_id, l.lop_nguon_id, l.han_gvbm, l.han_gvcn, l.xac_nhan_luc, s.full_name, d.code AS dich
          FROM lenh_chuyen_lop l JOIN students s ON s.id = l.student_id LEFT JOIN classes d ON d.id = l.lop_dich_id
         WHERE l.lop_nguon_id IN (${ph}) AND l.trang_thai != 'huy' AND l.huong != 'dung_hoc' ORDER BY s.full_name`,
     ).all(...lo) as any[]);
@@ -418,7 +422,8 @@ export function viecBanGiao(userId: number, branchId?: number | null): ViecBanGi
     for (const r of conn.prepare(`SELECT lenh_id, mon FROM ban_giao_mon WHERE lam_lai = 0 AND lenh_id IN (${ph})`).all(...lo) as any[]) daGhi.add(`${r.lenh_id}:${r.mon}`);
   });
   const out: ViecBanGiao[] = [];
-  for (const [lopId, x] of lop) {
+  for (const x of lop.values()) {
+    const { lopId } = x;
     const cua = lenh.filter((l) => l.lop_nguon_id === lopId);
     const chuaXn = cua.filter((l) => !l.xac_nhan_luc);
     if (!chuaXn.length) continue;
@@ -426,9 +431,10 @@ export function viecBanGiao(userId: number, branchId?: number | null): ViecBanGi
     if (x.gvcn) {
       const thieu = mons.filter((m) => chuaXn.some((l) => !daGhi.has(`${l.id}:${m}`))).map((m) => tenMonNgan(x.ct, m));
       out.push({
-        loai: 'gvcn', lopId, code: x.code, n: cua.length, daXacNhan: cua.length - chuaXn.length, chua: thieu,
+        loai: 'gvcn', userId: x.userId, lopId, code: x.code, n: cua.length, daXacNhan: cua.length - chuaXn.length, chua: thieu,
         han: chuaXn.map((l) => l.han_gvcn as string).filter(Boolean).sort()[0] ?? '',
         motEm: cua.length === 1 ? { ten: cua[0].full_name, lopDich: cua[0].dich ?? null } : null,
+        emIds: cua.map((l) => l.student_id as number),
       });
     }
     for (const m of mons) {
@@ -436,8 +442,9 @@ export function viecBanGiao(userId: number, branchId?: number | null): ViecBanGi
       const chua = chuaXn.filter((l) => !daGhi.has(`${l.id}:${m}`));
       if (!chua.length) continue;
       out.push({
-        loai: 'gvbm', lopId, code: x.code, mon: m, monNgan: tenMonNgan(x.ct, m), daGhi: chuaXn.length - chua.length, n: chuaXn.length,
+        loai: 'gvbm', userId: x.userId, lopId, code: x.code, mon: m, monNgan: tenMonNgan(x.ct, m), daGhi: chuaXn.length - chua.length, n: chuaXn.length,
         han: chua.map((l) => l.han_gvbm as string).filter(Boolean).sort()[0] ?? '',
+        emIds: chua.map((l) => l.student_id as number),
       });
     }
   }

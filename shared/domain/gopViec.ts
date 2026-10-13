@@ -23,6 +23,8 @@ export type ViecGopDuoc = {
   caseSos?: boolean;
   /** OV-5a: phần thêm của khoá gộp (Xác nhận nguyên nhân: `{bài}{số}:{kỹ năng}`). Có thì gộp kể cả một việc; tiêu đề `{loại} · {phu}`. */
   gopThem?: string | null;
+  /** Nhập điểm: số bài (kỹ năng × em) — OV-11c: dòng gộp Nhập điểm một đơn vị "bài". */
+  soBai?: number;
 };
 /** Một em (một việc) trong dòng gộp: `conTen` đậm, `conPhu` mờ — mockup phần 4 ("Lý Minh Châu" / "Reading · MT2"). */
 export type ConGop<T> = T & { conTen: string; conPhu: string };
@@ -55,7 +57,8 @@ function conCua<T extends ViecGopDuoc>(it: T): ConGop<T> {
     return { ...it, conTen: it.studentName, conPhu: phu.join(' · ') };
   }
   /* Dòng đã gom sẵn (Nhập điểm theo bài, Thiếu dữ liệu): tên = việc + bài, phụ = số em. */
-  return { ...it, conTen: [rieng || it.tieuDe, it.contextLabel].filter(Boolean).join(' · '), conPhu: it.count !== null && it.count > 1 ? `${it.count} HV` : '' };
+  const phu = it.group === 'score' && it.soBai ? `${it.soBai} bài` : it.count !== null && it.count > 1 ? `${it.count} HV` : '';
+  return { ...it, conTen: [rieng || it.tieuDe, it.contextLabel].filter(Boolean).join(' · '), conPhu: phu };
 }
 
 /**
@@ -80,10 +83,16 @@ export function gopViecTheoLop<T extends ViecGopDuoc>(items: readonly T[], nhan:
     const nhanLoai = nhan(it.group);
     const con = [...nhom].sort(sapViec).map((x) => conCua(x));
     const dau = con[0];
-    /* "n em" chỉ khi mỗi việc là một em khác nhau; một em hai PA, hay dòng đã gom sẵn → "n việc". */
-    const theoEm = nhom.every((x) => x.studentId !== null) && new Set(nhom.map((x) => x.studentId)).size === nhom.length;
-    const donVi = theoEm ? 'em' : 'việc';
-    const quaHan = nhom.filter((x) => x.urgency === 'overdue').length;
+    /*
+     * OV-11c (TE-4, CV-17): MỘT đơn vị mỗi dòng — Nhập điểm đếm "bài" (kỹ năng × em); việc theo em đếm em KHÁC NHAU (một em hai PA vẫn "1 em");
+     * còn lại (dòng đã gom sẵn) "việc".
+     */
+    const laBai = it.group === 'score';
+    const theoEm = !laBai && nhom.every((x) => x.studentId !== null);
+    const donVi = laBai ? 'bài' : theoEm ? 'em' : 'việc';
+    const dem = (ds: readonly T[]) => (laBai ? ds.reduce((n, x) => n + (x.soBai ?? x.count ?? 1), 0) : theoEm ? new Set(ds.map((x) => x.studentId)).size : ds.length);
+    const so = dem(nhom);
+    const quaHan = dem(nhom.filter((x) => x.urgency === 'overdue'));
     const due = nhom.map((x) => x.due).filter((x): x is string => !!x).sort()[0] ?? null;
     const chung = [...new Set(nhom.map((x) => x.contextLabel))];
     const href = [...new Set(nhom.map((x) => x.href))];
@@ -93,10 +102,10 @@ export function gopViecTheoLop<T extends ViecGopDuoc>(items: readonly T[], nhan:
       studentId: null, studentName: `Lớp ${it.classCode ?? ''}`.trim(),
       attemptId: null, attemptNo: null, caseId: null, level: null, nhac: undefined,
       /* OV-5a: dòng gom theo kỹ năng + lượt — tiêu đề nói kỹ năng; lượt luôn chung (khoá có lượt), hạn ở cột riêng. */
-      tieuDe: it.gopThem ? `${nhanLoai} · ${it.phu ?? ''}` : `${nhanLoai} · ${it.classCode ?? ''} · ${nhom.length} ${donVi}`,
+      tieuDe: it.gopThem ? `${nhanLoai} · ${it.phu ?? ''}` : `${nhanLoai} · ${it.classCode ?? ''} · ${so} ${donVi}`,
       contextLabel: it.gopThem ? it.contextLabel : quaHan ? `${quaHan} ${donVi} quá hạn` : chung.length === 1 ? chung[0] : null,
-      count: nhom.length, actionLabel: `${nhom.length} ${donVi}`,
-      reason: `${nhom.length} ${donVi}`,
+      count: nhom.length, actionLabel: `${so} ${donVi}`,
+      reason: `${so} ${donVi}`,
       /* OV-5a: dòng gom kỹ năng + lượt làm cả nhóm ở panel Công việc — chuông Nhắc / Tổng quan mở đúng dòng (`viec=` khoá dòng). */
       href: it.gopThem ? `/cong-viec?viec=${encodeURIComponent(k)}` : href.length === 1 ? href[0] : '/cong-viec?khung=tat-ca',
       con,

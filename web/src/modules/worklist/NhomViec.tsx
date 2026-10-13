@@ -27,7 +27,7 @@ export function NhomViec({ nhom, soHien, moHet, onOpen, nutPhu, chon, xong, moTr
   return (
     <div className="divide-y" style={{ borderColor: 'var(--line)' }}>
       {nhom.map((g) => {
-        const dangMo = moHet || (mo[g.key] ?? g.moSan);
+        const dangMo = moHet || (mo[g.key] ?? (g.moSan || nhom.length === 1));   // OV-11c (CV-17g): chỉ một nhóm thì mở sẵn
         const soHienNhom = soHien + (them[g.key] ?? 0);
         const phu = (g.quaHan > 0 || g.homNay > 0) ? (
           <span className="flex flex-wrap items-center gap-x-2">
@@ -43,7 +43,8 @@ export function NhomViec({ nhom, soHien, moHet, onOpen, nutPhu, chon, xong, moTr
               <>
                 <ul className="list-none m-0 p-0 divide-y" style={{ borderColor: 'var(--line)' }}>
                   {g.items.slice(0, soHienNhom).map((it) => (
-                    <li key={it.key}><DongViec gon it={it} onOpen={onOpen} nutPhu={nutPhu?.(it)} chon={chon} xong={xong} moTrang={!it.con && !!moTrang?.(it)} /></li>
+                    /* OV-11c: "Của GV" có thể có hai GV cùng một việc Bàn giao môn (W1, W2) — khoá vẽ kèm người giữ việc. */
+                    <li key={`${it.key}|${it.ownerId ?? ''}`}><DongViec gon it={it} onOpen={onOpen} nutPhu={nutPhu?.(it)} chon={chon} xong={xong} moTrang={!it.con && !!moTrang?.(it)} conMoTrang={moTrang} /></li>
                   ))}
                 </ul>
                 {g.items.length > soHienNhom && (

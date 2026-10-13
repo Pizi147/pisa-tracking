@@ -9,7 +9,7 @@
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import type { Principal } from '../permissions.ts';
 import {
-  INTERVENTION_KIND_LABEL, LIEN_TUC_SQL, REGULAR_SKILLS, caseTopicLabel, duongHoSoHocVien, moTaBoTro, nhanDotNgan, nhanLoaiXuLy, outcomeLabelFor, shortDate, tenMonNgan, tuanLich,
+  INTERVENTION_KIND_LABEL, REGULAR_SKILLS, caseTopicLabel, duongHoSoHocVien, khoaDongGop, moTaBoTro, nhanDotNgan, nhanLoaiXuLy, outcomeLabelFor, shortDate, tenMonNgan, tuanLich,
   type InterventionKind, type LoaiYeuCau, type TrangThaiYc,
   type TruongDeXuat,
 } from '../../../shared/domain/index.ts';
@@ -28,7 +28,6 @@ import { NHAN_TRUONG_DE_XUAT, TRUONG_TU_AP, hienTaiCua, kiemGiaTriDeXuat, lyDoDe
 import { CO_THE_KHONG_THEO_DOI, awaitingCauseCaseIds } from '../cases/sosState.ts';
 import { chotYeuCau, taoYeuCau } from './yeuCau.ts';
 import { trangThaiYThuc, ungVienVaThe, type EmYThuc } from '../yThuc/trangThai.ts';
-import { classProgressMany } from '../classes/schedule.ts';
 import { apDungDeXuatChuyenLop, demChuaCoLenh, kiemDeXuatChuyenLop, nguoiNhanCuaLop } from '../classes/lenhChuyen.ts';
 import { rutDeXuatYThuc, suaDeXuatYThuc } from '../yThuc/xuLy.ts';
 
@@ -122,8 +121,41 @@ function napNguoiNhac(conn: any, ds: YeuCauRow[], them: Map<number, any>): Map<n
                AND n.dedup_key = 'nhac:' || REPLACE(json_extract(y.du_lieu, '$.viecKey'), 'mini_test:', 'minitest:') || ':' || ?
         WHERE y.id IN (${ids.map(() => '?').join(',')})`).all(demoToday(), ...ids) as any[]) nhac.set(r.id, r);
   }
-  return new Map(ds.map((y) => [y.id, { ...them.get(y.id), ...nhac.get(y.id) }]));
+  return kemNhacGop(conn, ds, new Map(ds.map((y) => [y.id, { ...them.get(y.id), ...nhac.get(y.id) }])));
 }
+
+/** Tiền tố khoá việc của thẻ → nhóm dòng việc (`myWork`); khoá khác (Cuối khoá…) không có dòng gộp. */
+const NHOM_CUA_VIEC_KEY: Record<string, string> = { cause: 'cause', yt_xu_ly: 'yt_xu_ly', yt_xem: 'yt_xem', yt_thuc_hien: 'yt_thuc_hien', ban_giao: 'ban_giao', minitest: 'mini_test', mini_test: 'mini_test' };
+const nhomLopCua = (y: YeuCauRow) => {
+  let du: any = {};
+  try { du = y.du_lieu ? JSON.parse(y.du_lieu) : {}; } catch { du = {}; }
+  return { owner: typeof du.ownerId === 'number' ? du.ownerId : null, nhom: NHOM_CUA_VIEC_KEY[String(du.viecKey ?? '').split(':')[0]] ?? null, lop: y.lop_id ?? null };
+};
+/**
+ * OV-11c (CV-14): "đã nhắc hôm nay" qua DÒNG GỘP ở Hỗ trợ học viên (`gop:{nhóm}:{lớp}:u{người}[:{thêm}]`) — Nhắc một dòng gộp là nhắc mọi việc trong đó
+ * (`khoaCungViec` của lõi Nhắc), nên thẻ Báo QL của một việc trong dòng cũng là "đã nhắc". Một câu cho cả lô thẻ.
+ */
+function daNhacQuaGop(conn: any, ds: readonly { id: number; owner: number | null; nhom: string | null; lop: number | null; them?: string | null }[]): Map<number, string> {
+  const co = ds.filter((x) => x.owner && x.nhom && x.lop);
+  if (!co.length) return new Map();
+  const homNay = demoToday();
+  const nguoi = [...new Set(co.map((x) => x.owner as number))];
+  const luc = new Map((conn.prepare(
+    `SELECT user_id, dedup_key, created_at FROM notifications WHERE kind = 'nhac_viec' AND user_id IN (${nguoi.map(() => '?').join(',')}) AND dedup_key LIKE ?`,
+  ).all(...nguoi, `nhac:gop:%:${homNay}`) as any[]).map((r) => [`${r.user_id}|${r.dedup_key}`, r.created_at as string]));
+  const out = new Map<number, string>();
+  for (const x of co) {
+    const l = luc.get(`${x.owner}|nhac:${khoaDongGop(x.nhom!, x.lop!, x.owner, x.them)}:${homNay}`);
+    if (l) out.set(x.id, l);
+  }
+  return out;
+}
+/** Gắn giờ nhắc qua dòng gộp vào bảng `nap` (giữ giờ nhắc theo khoá việc nếu đã có). */
+const kemNhacGop = (conn: any, ds: YeuCauRow[], bang: Map<number, any>, them?: (y: YeuCauRow, x: any) => string | null) => {
+  const gop = daNhacQuaGop(conn, ds.map((y) => ({ id: y.id, ...nhomLopCua(y), them: them?.(y, bang.get(y.id)) ?? null })));
+  for (const [id, l] of gop) { const x = bang.get(id); if (x && !x.da_nhac) x.da_nhac = l; }
+  return bang;
+};
 const ngay = (iso: string | null | undefined, ngu: NguCanhThe) => shortDate(iso ?? null, ngu.homNay);
 const nguoiXin = (yc: YeuCauRow, ngu: NguCanhThe) => (yc.nguoi_xin == null ? 'Hệ thống' : ngu.nguoi.get(yc.nguoi_xin) ?? 'Giáo viên');
 
@@ -276,7 +308,8 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
     khiRut: () => {},
     /* Em thôi học / lưu trữ, hoặc giá trị hiện tại đã bằng giá trị đề xuất (ai đó đã sửa rồi). */
     chet: {
-      sql: `EXISTS (SELECT 1 FROM students s WHERE s.id = y.hoc_vien_id AND (s.status != 'active' OR s.archived_at IS NOT NULL))
+      /* OV-11c (HV-16): Tạm dừng (`inactive`) giữ lớp và lộ trình — đề xuất vẫn chờ; chỉ Thôi học (`finished`) / Lưu trữ mới đóng. */
+      sql: `EXISTS (SELECT 1 FROM students s WHERE s.id = y.hoc_vien_id AND (s.status = 'finished' OR s.archived_at IS NOT NULL))
          OR (y.doi_tuong_loai = 'student:target' AND EXISTS (SELECT 1 FROM learning_cycles lc WHERE lc.student_id = y.hoc_vien_id
                AND lc.status = 'active' AND (CASE WHEN json_extract(y.du_lieu, '$.moi') LIKE '%KCK'   /* OV-9: "6.5 KCK" / "KCK" = Target + dấu */
                  THEN lc.khong_cam_ket = 1 AND COALESCE(lc.target_score, -1)
@@ -334,11 +367,14 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
     },
     nap: (conn, ds) => {
       const ids = ds.map((y) => y.id);
-      return new Map((conn.prepare(
-        `SELECT y.id, sc.topic, sc.owner_user_id, u.full_name AS ten_gv, n.created_at AS da_nhac
+      return kemNhacGop(conn, ds, new Map((conn.prepare(
+        `SELECT y.id, sc.topic, sc.owner_user_id, u.full_name AS ten_gv, n.created_at AS da_nhac, a.kind AS luot_kind, a.attempt_no
            FROM yeu_cau_duyet y JOIN sos_cases sc ON sc.id = y.doi_tuong_id LEFT JOIN users u ON u.id = sc.owner_user_id
+           LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
            LEFT JOIN notifications n ON n.user_id = sc.owner_user_id AND n.dedup_key = 'nhac:cause:' || sc.id || ':' || ?
-          WHERE y.id IN (${ids.map(() => '?').join(',')})`).all(demoToday(), ...ids) as any[]).map((r) => [r.id as number, r]));
+          WHERE y.id IN (${ids.map(() => '?').join(',')})`).all(demoToday(), ...ids) as any[]).map((r) => [r.id as number, r])),
+        /* Phần thêm của khoá gộp Xác nhận nguyên nhân (`gopThem` ở `mywork.ts`): bài + số lượt + kỹ năng. */
+        (_y, x) => (x ? `${x.luot_kind ?? 'mock'}${x.attempt_no ?? ''}:${x.topic ?? ''}` : null));
     },
     moTa: (yc, ngu) => {
       const x = ngu.them.get(yc.id);
@@ -459,7 +495,7 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
            LEFT JOIN notifications n ON n.user_id = json_extract(y.du_lieu, '$.ownerId')
                  AND n.dedup_key = 'nhac:' || json_extract(y.du_lieu, '$.viecKey') || ':' || ?
           WHERE y.id IN (${ids.map(() => '?').join(',')})`).all(hom, ...ids) as any[];
-      return new Map(rows.map((r) => [r.id as number, { ...r, em: trang.get(r.sid) }]));
+      return kemNhacGop(conn, ds, new Map(rows.map((r) => [r.id as number, { ...r, em: trang.get(r.sid) }])));
     },
     moTa: (yc, ngu) => {
       const x = ngu.them.get(yc.id);
@@ -531,18 +567,18 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
     },
     nap: (conn, ds) => {
       const ids = ds.map((y) => y.id);
-      return new Map((conn.prepare(
+      return kemNhacGop(conn, ds, new Map((conn.prepare(
         `SELECT y.id, c.code AS lop, json_extract(y.du_lieu, '$.ownerId') AS owner, u.full_name AS ten_gv, n.created_at AS da_nhac,
                 (SELECT COUNT(*) FROM lenh_chuyen_lop l WHERE l.lop_nguon_id = y.doi_tuong_id AND l.trang_thai != 'huy' AND l.huong != 'dung_hoc' AND l.xac_nhan_luc IS NULL) AS n
            FROM yeu_cau_duyet y JOIN classes c ON c.id = y.doi_tuong_id LEFT JOIN users u ON u.id = json_extract(y.du_lieu, '$.ownerId')
            LEFT JOIN notifications n ON n.user_id = json_extract(y.du_lieu, '$.ownerId') AND n.dedup_key = 'nhac:' || json_extract(y.du_lieu, '$.viecKey') || ':' || ?
           WHERE y.id IN (${ids.map(() => '?').join(',')})`,
-      ).all(demoToday(), ...ids) as any[]).map((r) => [r.id as number, r]));
+      ).all(demoToday(), ...ids) as any[]).map((r) => [r.id as number, r])));
     },
     moTa: (yc, ngu) => {
       const x = ngu.them.get(yc.id);
       return {
-        tieuDe: `Bàn giao quá hạn${x?.lop ? ` · ${x.lop}` : ''}`,
+        tieuDe: 'Bàn giao quá hạn',   // OV-11c (CV-10): lớp đã ở dòng phụ của thẻ (`yc.lop`) — không lặp
         phu: x?.ten_gv ? `GVCN ${x.ten_gv}` : 'Lớp chưa có GVCN',
         dong: [`${x?.n ?? 0} em chưa được xác nhận bàn giao (hạn hết ${ngay(yc.han_duyet, ngu)}).`],
         mo: `/hoc-vien/lop/${yc.doi_tuong_id}?viec=ban-giao`,
@@ -553,29 +589,12 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
   /* ------------------------------------------------------------ PR-CT · Báo QL: lớp thường HẾT tuần kết thúc còn em chưa có lệnh (Q30-4, Q13) */
   {
     loai: 'bao_len_chua_lenh',
-    /* Quét chỉ TẠO: một câu ra các lớp thường CÓ THỂ đã hết khoá (ngày bắt đầu + số tuần ≤ hôm nay — tập rộng hơn `phase = finished` một chút), còn em chưa có lệnh
-       và chưa có thẻ; thường rỗng → không tính tiến độ lớp. ĐÓNG do `chet` (hết em chưa có lệnh, hoặc lớp đã kết thúc). */
-    quet: (conn, homNay) => {
-      const lop = (conn.prepare(
-        `SELECT c.id FROM classes c LEFT JOIN report_periods rp ON rp.id = c.start_period_id
-          WHERE c.status = 'active' AND c.is_fast_track = 0 AND NOT (${LIEN_TUC_SQL('c')})   -- OV-6b2: lớp liên tục không hết khoá
-            AND (c.so_tuan IS NULL OR rp.week_start IS NULL OR date(rp.week_start, '+' || (c.so_tuan * 7) || ' days') <= ?)
-            AND EXISTS (SELECT 1 FROM enrollments e JOIN students s ON s.id = e.student_id WHERE e.class_id = c.id AND e.status = 'active'
-                          AND ${HV_DANG_HOC_SQL('s')}
-                          AND NOT EXISTS (SELECT 1 FROM lenh_chuyen_lop l WHERE l.student_id = e.student_id AND l.trang_thai = 'cho'))
-            AND NOT EXISTS (SELECT 1 FROM yeu_cau_duyet y WHERE y.loai = 'bao_len_chua_lenh' AND y.doi_tuong_id = c.id AND y.trang_thai = 'cho')`,
-      ).all(homNay) as any[]).map((r) => r.id as number);
-      if (!lop.length) return 0;
-      const tienDo = classProgressMany(lop);
-      const tao = lop.filter((id) => tienDo.get(id)?.phase === 'finished');
-      if (!tao.length) return 0;
-      return tx(() => tao.filter((id) => taoYeuCau(conn, {
-        loai: 'bao_len_chua_lenh', doiTuongLoai: 'lop:chua-lenh', doiTuongId: id, lopId: id, nguoiXin: null, hanDuyet: null,
-        duLieu: { viecKey: `chua_lenh:${id}`, ownerId: null },
-      }) !== null).length);
-    },
+    /*
+     * OV-11c (CV-9, Q7): KHÔNG còn quét tạo thẻ — lớp thường đã có việc "Chốt lộ trình" của chính Quản lý (một việc một chỗ; quét cũ chỉ chạy cho lớp thường).
+     * Định nghĩa giữ để thẻ cũ đọc được ở Đã xử lý; thẻ lớp thường đang chờ tự đóng (`chet`).
+     */
     chet: {
-      sql: `NOT EXISTS (SELECT 1 FROM classes c WHERE c.id = y.doi_tuong_id AND c.status = 'active')
+      sql: `NOT EXISTS (SELECT 1 FROM classes c WHERE c.id = y.doi_tuong_id AND c.status = 'active' AND c.is_fast_track = 1)
          OR NOT EXISTS (SELECT 1 FROM enrollments e JOIN students s ON s.id = e.student_id WHERE e.class_id = y.doi_tuong_id AND e.status = 'active'
               AND ${HV_DANG_HOC_SQL('s')} AND NOT EXISTS (SELECT 1 FROM lenh_chuyen_lop l WHERE l.student_id = e.student_id AND l.trang_thai = 'cho'))`,
       lyDo: 'Việc gốc đã xong',
@@ -592,7 +611,7 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
     moTa: (yc, ngu) => {
       const x = ngu.them.get(yc.id);
       return {
-        tieuDe: `Lớp hết khoá · chưa có quyết định chuyển lớp${x?.lop ? ` · ${x.lop}` : ''}`,
+        tieuDe: 'Lớp hết khoá · chưa có quyết định chuyển lớp',   // OV-11c (CV-10): lớp ở dòng phụ của thẻ
         dong: [`${x?.n ?? 0} em chưa có quyết định chuyển lớp.`],
         mo: `/hoc-vien/lop/${yc.doi_tuong_id}?viec=chuyen-tiep`,
       };
@@ -654,7 +673,7 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
       const pt = x?.ty_le != null ? `${Math.round(x.ty_le * 100)}%` : '';
       return {
         tieuDe: `Mini Test chưa đạt${pt ? ` · ${pt}` : ''}`,
-        phu: x?.full_name ?? null,
+        phu: x?.ten_gv ?? null,   // OV-11c (CV-10): người giữ việc — tên em đã ở dòng phụ của thẻ
         dong: [`Mini Test ${pt} ngày ${ngay(x?.ngay_lam, ngu)} (cần từ 70%) — Case để mở, Quản lý xử lý từng trường hợp.`],
         mo: yc.hoc_vien_id ? duongHoSoHocVien(yc.hoc_vien_id, x?.case_id ? { caseId: x.case_id } : undefined) : undefined,
         duLieu: { tenGv: x?.ten_gv ?? null, daNhacLuc: x?.da_nhac ?? null },

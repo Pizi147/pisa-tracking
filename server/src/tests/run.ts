@@ -254,6 +254,9 @@ console.log('\n0. Bộ demo vừa dựng có nhất quán không');
   await runPrDuyetDemoTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
   const { runPrHvlDemoTests } = await import('./prHvl.tests.ts');
   await runPrHvlDemoTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+  /* PR-OV11c: một cách đếm ở Công việc — so số của bộ demo (Tổng quan "58 bài" = Công việc lọc Quá hạn); mỗi phép kiểm cuộn lại. */
+  const { runPrOv11cTests } = await import('./prOv11c.tests.ts');
+  await runPrOv11cTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 }
 
 check('[12.1-16] Bộ demo nhất quán: không có sự kiện "đã xong" nào nằm ở tương lai', () => {

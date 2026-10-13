@@ -271,7 +271,8 @@ export async function runPrMonTests(t: YThucTestKit) {
     const ct = cases.caseDetail(P.admin, c.id);
     assert(ct.chuongTrinh === 'FOU' && ct.topicLabel === 'Grammar + Vocabulary' && ct.categoryLabel === 'Grammar + Vocabulary',
       JSON.stringify({ ct: ct.chuongTrinh, t: ct.topicLabel, c: ct.categoryLabel }));
-    const dong = (mywork.myWork(P.mbManager).groups as any[]).flatMap((g) => g.items).find((i: any) => i.caseId === c.id);
+    /* OV-11c (CV-11): việc GV giữ nằm ở "Của GV", không ở "Của tôi" của QL. */
+    const dong = (mywork.myWork(P.mbManager, { nguoi: 'tat-ca' }).groups as any[]).flatMap((g) => g.items).find((i: any) => i.caseId === c.id);
     assert(!!dong && /Grammar \+ Vocabulary/.test(dong.tieuDe) && !/writing|Writing/.test(dong.tieuDe), JSON.stringify(dong?.tieuDe));
   });
   // ------------------------------------------------------------------ Task 7 · tên môn phía web

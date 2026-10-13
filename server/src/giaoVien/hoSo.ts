@@ -18,6 +18,7 @@ import { chiTietCaseMo, type CaseChiTiet } from '../cases/caseLop.ts';
 import { trongPhamVi, yeuCauCuaToi } from '../duyet/yeuCau.ts';
 import { rowsFor, type MetricRow } from '../worklist/metrics.ts';
 import { myWork, viecCuaNguoi } from '../worklist/mywork.ts';
+import { phamViXemViec } from '../worklist/xemViec.ts';
 import { scoreDebtCells, type DebtCell } from '../worklist/scoreDebt.ts';
 import { viecBanGiao } from '../classes/banGiao.ts';
 import { phamViHoSoGv } from './phamVi.ts';
@@ -35,7 +36,9 @@ const theoLo = <T>(ds: readonly T[]) => Array.from({ length: Math.ceil(ds.length
 export function viecCuaGv(p: Principal, gvId: number): { nhom: NhomViec; n: number; quaHan: number }[] {
   /* PR-VN3 (GOP): đếm DÒNG (`dong`) như badge Công việc — trước đây đếm từng việc nên lệch. */
   const dong = p.userId === gvId ? myWork(p).dong : viecCuaNguoi(p, gvId).dong;
-  return demViecTheoNhom(dong ?? []);
+  /* OV-11c (PT-7): chỉ ô nhóm người xem được xem — Admin chỉ Chấm điểm (không bày ô "0" của nhóm mình không thấy). */
+  const chiChamDiem = p.userId !== gvId && phamViXemViec(p) === 'cham-diem';
+  return demViecTheoNhom(dong ?? []).filter((x) => !chiChamDiem || x.nhom === 'cham-diem');
 }
 
 // ------------------------------------------------------------------ các hàm tập — MỘT nguồn cho số ở ô và danh sách khi bấm

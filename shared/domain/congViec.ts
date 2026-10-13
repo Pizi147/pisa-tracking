@@ -70,24 +70,26 @@ export function baViecDau<T extends MucLocNhanh>(items: readonly T[], homNay: st
 }
 
 /** Dòng tối thiểu để đếm phạm vi (OV-5a) — trùng `WorkItem` của `mywork.ts`. */
-export type DongDemPhamVi = { group: string; studentId: number | null; count: number | null; soBai?: number | null; con?: readonly DongDemPhamVi[] };
+export type DongDemPhamVi = MucLocNhanh & {
+  group: string; studentId: number | null; count: number | null; soBai?: number | null; emIds?: readonly number[] | null; con?: readonly DongDemPhamVi[];
+};
 
 /**
- * DÒNG PHẠM VI Công việc (OV-5a, mockup M1 §1): "n nhóm việc · m học viên" — n = số DÒNG (cùng badge), m = em KHÁC NHAU (dòng gom sẵn không có tên em
- * — Nhập điểm theo bài, việc cả lớp — cộng số em của dòng). Chỉ xem Chấm điểm: "m bài cần chấm" (một bài = một kỹ năng của một em trong một lượt).
+ * DÒNG PHẠM VI Công việc (OV-5a, mockup M1 §1): "n nhóm việc · m học viên" — n = số DÒNG (cùng badge), m = em KHÁC NHAU: em của việc một em + id em
+ * của việc cả lớp (`emIds`, OV-11c CV-1 — không cộng dồn `count`). Chỉ xem Chấm điểm: "m bài cần chấm" (một bài = một kỹ năng của một em trong một lượt).
+ * OV-11c (TE-4): đang lọc hạn (`loc`) thì dòng gộp chỉ đếm việc con KHỚP lọc — dưới "Quá hạn" chỉ bài quá hạn (= chỉ số Tổng quan).
  */
-export function demPhamVi(dong: readonly DongDemPhamVi[], chiChamDiem: boolean): { nhom: number; so: number; donVi: 'học viên' | 'bài cần chấm' } {
-  const soBai = (d: DongDemPhamVi): number => (d.con?.length ? d.con.reduce((n, c) => n + soBai(c), 0) : d.soBai ?? d.count ?? (d.studentId !== null ? 1 : 0));
-  if (chiChamDiem) return { nhom: dong.length, so: dong.reduce((n, d) => n + soBai(d), 0), donVi: 'bài cần chấm' };
+export function demPhamVi(dong: readonly DongDemPhamVi[], chiChamDiem: boolean, loc?: { loc: LocNhanh; homNay: string }): { nhom: number; so: number; donVi: 'học viên' | 'bài cần chấm' } {
+  const khop = (d: DongDemPhamVi) => !loc || khopLocNhanh(d, loc.loc, loc.homNay);
+  const la = (d: DongDemPhamVi): DongDemPhamVi[] => (d.con?.length ? d.con.filter(khop).flatMap(la) : [d]);
+  const ds = dong.flatMap(la);
+  if (chiChamDiem) return { nhom: dong.length, so: ds.reduce((n, d) => n + (d.soBai ?? d.count ?? (d.studentId !== null ? 1 : 0)), 0), donVi: 'bài cần chấm' };
   const em = new Set<number>();
-  let them = 0;
-  const dem = (d: DongDemPhamVi) => {
-    if (d.con?.length) d.con.forEach(dem);
-    else if (d.studentId !== null) em.add(d.studentId);
-    else them += d.count ?? 0;
-  };
-  dong.forEach(dem);
-  return { nhom: dong.length, so: em.size + them, donVi: 'học viên' };
+  for (const d of ds) {
+    if (d.studentId !== null) em.add(d.studentId);
+    for (const id of d.emIds ?? []) em.add(id);
+  }
+  return { nhom: dong.length, so: em.size, donVi: 'học viên' };
 }
 
 /** Số việc ở mỗi ô lọc nhanh — ĐÃ áp Loại việc đang chọn, CHƯA áp chính lọc nhanh (facet không tự lọc chính nó). */
