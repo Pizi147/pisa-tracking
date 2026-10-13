@@ -15,8 +15,8 @@ Mockup: không cần — dùng mẫu sẵn có (ô Vắng hai dòng, hộp nhậ
    - sau "Khôi phục phần thi" ô không còn "-".
 3. **[TE-5 · Q2] "Báo vắng" một luật với "-".** `server/src/fasttrack/absence.ts:948-981` `baoVang`: tuần thi đã hết → ghi **Không dự thi** (không dời, không tính lần vắng) như `saveScore`;
    hộp xác nhận nói đúng hậu quả; nhãn ⋯ "Báo vắng" → **"Vắng"** (CA3-12).
-4. **[TE-6 · Q1] Lớp thường "-" sau tuần thi.** `server/src/normal/regular.ts:~800-875`: tuần mới = **tuần sau của max(tuần thi, tuần hiện tại)** (không dời vào tuần đã qua).
-   Trong tuần thi giữ như cũ. Không đổi MT.
+4. **[TE-6 · Q1 chủ SP chốt] Lớp thường "-".** `server/src/normal/regular.ts:~800-875`: tuần thi = tuần này hoặc tuần trước → dời sang **tuần sau của tuần hiện tại** (không dời vào tuần đã qua);
+   tuần thi cách tuần hiện tại **≥ 2 tuần** → **Không dự thi** (không dời, không tính vắng, ô hết nợ — cùng mốc "cũ" T1). GV gõ "-" vẫn tự dời (chỉ QL có nút dời lịch). Không đổi MT.
 5. **[CV-5 · chặn] Chip kỹ năng không tự nhảy.** `web/src/modules/cham/MotKyNang.tsx:47-58` `useKyNangChon`: `kn` truyền vào chỉ đặt chip **lần đầu** (và khi người dùng đổi `?kn=`
    trên URL thật); `kn` của việc đổi do `/my-work` tải lại thì **giữ chip đang chọn**. Sửa trong `MotKyNang` — KHÔNG đụng `congViec/PanelViec.tsx` (OV-11c).
    Ca: Công việc GVCN › "Listening, Reading · MT2 · 3 HV" → chip L → lưu 3 em liền → cả 3 điểm vào Listening.
@@ -46,7 +46,7 @@ Mockup: không cần — dùng mẫu sẵn có (ô Vắng hai dòng, hộp nhậ
 ## Kiểm
 - `prOv11a.tests.ts` (đỏ trước trên DB test): (1) vắng lần 1 → dời → Thứ Hai sau tuần thi bù, GV đúng kỹ năng `saveScore` **200** (trước: 403), `hoanTat` false khi còn bài thi bù;
   (2) tuần thi bù `noShow` → lần 2 → `cancelled`; ô tuần thi bù không mang `daChot` của tuần cũ (dữ liệu ô cho hộp); (3) `baoVang` tuần đã hết → `no_show_cu = 1`, không dời,
-  `absence_move_count` không tăng; trong tuần → dời như cũ; (4) lớp thường "-" sau tuần thi → tuần mới = tuần sau tuần hiện tại (không < tuần này); trong tuần thi như cũ;
+  `absence_move_count` không tăng; trong tuần → dời như cũ; (4) lớp thường "-": tuần thi = tuần này / tuần trước → tuần mới = tuần sau tuần hiện tại; tuần thi ≤ tuần hiện tại − 2 → Không dự thi, không dời, không còn là việc;
   (5) hàm thuần (nếu tách) cho chữ nút / thông báo vắng theo trạng thái (trong tuần · sau tuần · lần 2).
 - `npm run check` xanh MỘT lần cuối. Bấm thử MỘT lần (1440 tối + 375 sáng; QL + GVBM 9 + GVCN 7): Lịch Test khối 2/3 ô thi bù (nhập điểm, Vắng lần 2), Kế hoạch Test ⋯ Vắng sau tuần thi,
   Công việc › Nhập điểm lưu 3 em liền (chip giữ), hồ sơ MT ô Không dự thi / đã huỷ, 375 MotKyNang. Ảnh đính PR.

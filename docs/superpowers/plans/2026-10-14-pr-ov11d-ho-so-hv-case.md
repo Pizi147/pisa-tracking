@@ -26,7 +26,10 @@ Rà: **sâu** (quyền, luồng Tạm dừng / Lưu trữ / Bước tiếp) + `/
 9. **[HV-19]** + Case › "Đã xong từ trước": kỹ năng GV không dạy hiện mờ + một dòng "Chỉ ghi bù Case môn bạn dạy" (`QuickReport.tsx`); lỗi 403 hiện `details.hint`. Luật C02 giữ.
 10. **[HV-15]** FT: ⋯ Lộ trình (`StudentPlanPanel.tsx`) chỉ còn lịch MT; Tuần bắt đầu / Dự kiến thi / Target / Điểm đầu vào chỉ ở Sửa thông tin (một chữ "Tuần bắt đầu");
     GVCN bỏ mục "Đề xuất sửa thông tin…" (Sửa thông tin đã gửi đề xuất Target). Lớp thường: kiểm panel trước khi bớt, chỉ bớt ô trùng.
-11. **[HL-11 · HV-25]** Sửa thông tin một em: chỉ sửa liên hệ thì **không đòi ngày sinh** (cùng điều kiện `LIEN_HE` của `server/src/classes/suaCaLop.ts:142`), web `StudentManagePanel.tsx:446` + máy chủ `PATCH /students/:id`.
+11. **[HL-11 · HV-25 · Q3 chủ SP chốt]** Sửa thông tin một em: **ngày sinh và email không bắt buộc** (gõ thì vẫn kiểm dạng; xoá trống = NULL) — không chặn lưu việc khác (`StudentManagePanel.tsx:446` + `PATCH /students/:id`).
+    Em còn thiếu → nằm ở "Thiếu thông tin" (OV-11g) để TVV cập nhật.
+11b. **[Q8 chủ SP chốt] Ai tích KCK.** Ô KCK (Sửa thông tin, Sửa cả lớp, lưới / dán Excel "6.5 KCK") chỉ **QL, Quản trị, TVV** đổi được — tích lúc nào cũng được, luật nhẹ áp từ lượt chốt sau khi tích (OV-11e).
+    GVCN, CX, Admin: ô KCK chỉ đọc; máy chủ 403 khi đổi `kck` bằng vai khác.
 
 **C. Một số liệu một nguồn**
 12. **[HV-13]** Hạn bàn giao ở panel Chuyển lớp (`ChuyenLopPanel.tsx:168`) và thanh "Việc của tôi" (`server/src/students/viecHocVien.ts:143`) dùng `hanBanGiaoLenh` / hạn lưu trên lệnh — bỏ `hanBanGiao` cũ.
@@ -54,7 +57,7 @@ Rà: **sâu** (quyền, luồng Tạm dừng / Lưu trữ / Bước tiếp) + `/
 - `prOv11d.tests.ts` (đỏ trước): (1) GVCN Tạm dừng em lớp mình → PATCH hồ sơ 200, Quay lại học 200, Ý thức 200; GVCN lớp khác vẫn 403; (2) Bước tiếp Học lại với em còn ghi danh → 200, một giao dịch,
   lỗi giữa chừng thì quay lui; (3) hồ sơ Lưu trữ: PATCH / outcome / cases/report → 400; Bỏ lưu trữ rồi sửa → 200; (4) de-xuat-sua bằng Admin / TVV / CX → 403, GV của lớp → 200;
   (5) KQĐR em BE → ELE → không có dòng, PUT 400 đúng lý do; em đã chốt Lên FT chưa Final → có dòng; (6) hạn bàn giao panel = lệnh = thanh việc; (7) `oHocThuat` ca `missed: null` → "chưa có điểm"
-  (sửa `prVaiB.tests.ts:271` theo); (8) chỉ sửa SĐT khi thiếu ngày sinh → 200; sửa họ tên khi thiếu ngày sinh → 400 như cũ.
+  (sửa `prVaiB.tests.ts:271` theo); (8) sửa thông tin khi thiếu ngày sinh / email → 200 (không bắt buộc); ngày sinh sai dạng → 400; (9) đổi KCK bằng QL / TVV → 200, GVCN / CX / Admin → 403.
 - `npm run check` xanh MỘT lần cuối. Bấm thử MỘT lần (QL + GVCN 7 + TVV 23 + Admin 22; 1440 tối + 375 sáng): Tạm dừng → Hoàn tác / Quay lại học (GVCN), Lưu trữ, hồ sơ lưu trữ,
   Tổng kết › Học lại, Sửa thông tin (Target chờ duyệt, chỉ SĐT), + Case ghi bù, Chuyển lớp (hạn), Hành trình. Ảnh đính PR.
 
