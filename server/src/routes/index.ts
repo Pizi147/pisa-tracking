@@ -20,6 +20,7 @@ import * as accessSvc from '../yThuc/access.ts';
 import * as xuLySvc from '../yThuc/xuLy.ts';
 import * as phoiHopSvc from '../yThuc/phoiHop.ts';
 import * as sosAutoSvc from '../cases/sosAuto.ts';
+import * as xacNhanNhomSvc from '../cases/xacNhanNhom.ts';
 import { bangYThucLop } from '../yThuc/board.ts';
 import { maybeSimulateReadError, maybeSimulateSaveFailure, pInt, qInt, qStr, wrap } from './helpers.ts';
 
@@ -1717,6 +1718,19 @@ api.get('/tong-quan/chi-nhanh/o', requireAuth, wrap((req) => {
     branchId: qInt(req, 'branchId') ?? null, ct: chuongTrinhTuThamSo(qStr(req, 'ct')),
     cot: qStr(req, 'cot') ?? '', khoa: qStr(req, 'khoa') ?? '',
   });
+}));
+
+/**
+ * OV-5a: XÁC NHẬN NGUYÊN NHÂN CẢ NHÓM (Công việc › panel gom lớp + kỹ năng + lượt). GET đọc nhóm (`?ids=1,2,3`), POST xác nhận các em đã chọn trong
+ * MỘT giao dịch (mỗi Case đi đúng `xacNhanCase` + `xacNhanPaQuyChe`). Đứng TRƯỚC `/cases/:id` để không bị bắt nhầm.
+ */
+api.get('/cases/xac-nhan-nhom', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return xacNhanNhomSvc.nhomXacNhan(principalOf(req), qStr(req, 'ids'));
+}));
+api.post('/cases/xac-nhan-nhom', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return xacNhanNhomSvc.xacNhanNhom(principalOf(req), (req.body ?? {}) as any);
 }));
 
 api.get('/cases/:id', requireAuth, wrap((req) => caseSvc.caseDetail(principalOf(req), pInt(req, 'id'))));

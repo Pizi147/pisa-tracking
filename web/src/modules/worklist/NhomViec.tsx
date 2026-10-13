@@ -1,5 +1,4 @@
 import { type ReactNode, useState } from 'react';
-import { type NavigateFunction } from 'react-router-dom';
 import { KhoiNhom } from '../../ui/HangNhom.tsx';
 import { type NhomViecXem } from '@shared/domain/index.ts';
 import { DongViec, type WorkItem } from './WorkList.tsx';
@@ -9,12 +8,17 @@ import { DongViec, type WorkItem } from './WorkList.tsx';
  * nhóm cố định, mỗi nhóm gập/mở, nhóm có việc quá hạn tự mở sẵn. Tổng quan giữ đúng hành vi cũ
  * (`soHien = 5`); Hỗ trợ học viên gọi với `soHien = 10` và có thể ép mở hết khi đang lọc.
  */
-export function NhomViec({ nhom, soHien, moHet, onOpen, nutPhu }: {
+export function NhomViec({ nhom, soHien, moHet, onOpen, nutPhu, chon, xong, moTrang }: {
   nhom: NhomViecXem<WorkItem>[];
   soHien: number;
   /** Ép mở hết mọi nhóm — dùng khi đang lọc nhanh/loại việc, kết quả đã ít thì không cần gập nữa. */
   moHet?: boolean;
-  onOpen: NavigateFunction | ((href: string) => void);
+  /** OV-5a: bấm một việc → panel phải (Công việc tại chỗ); dòng kiểu gọn (`DongViec gon`). */
+  onOpen: (it: WorkItem) => void;
+  /** OV-5a: việc đang mở ở panel · việc vừa xong (mờ + gạch, giữ chỗ). */
+  chon?: string | null; xong?: ReadonlySet<string>;
+  /** OV-5a: việc mở trang khác thay vì panel (dấu ↗). */
+  moTrang?: (it: WorkItem) => boolean;
   /** Nút phụ đứng cạnh nhãn việc, ví dụ Nhắc (Hỗ trợ học viên). Duyệt nằm ở hộp Chờ duyệt (PR-DUYET, K1-32). */
   nutPhu?: (it: WorkItem) => ReactNode;
 }) {
@@ -39,7 +43,7 @@ export function NhomViec({ nhom, soHien, moHet, onOpen, nutPhu }: {
               <>
                 <ul className="list-none m-0 p-0 divide-y" style={{ borderColor: 'var(--line)' }}>
                   {g.items.slice(0, soHienNhom).map((it) => (
-                    <li key={it.key}><DongViec it={it} onOpen={onOpen} nutPhu={nutPhu?.(it)} /></li>
+                    <li key={it.key}><DongViec gon it={it} onOpen={onOpen} nutPhu={nutPhu?.(it)} chon={chon} xong={xong} moTrang={!it.con && !!moTrang?.(it)} /></li>
                   ))}
                 </ul>
                 {g.items.length > soHienNhom && (

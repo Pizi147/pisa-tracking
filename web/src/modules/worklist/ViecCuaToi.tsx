@@ -102,7 +102,7 @@ export function ViecCuaToi() {
             {g.homNay > 0 && <span className="text-xs font-semibold text-soon">{g.homNay} hôm nay</span>}
           </div>
           <ul className="m-0 list-none divide-y p-0 pl-4" style={{ borderColor: 'var(--line)' }}>
-            {g.items.map((it) => <li key={it.key}><DongViec it={it} onOpen={navigate} /></li>)}
+            {g.items.map((it) => <li key={it.key}><DongViec it={it} onOpen={(x) => navigate(x.href)} /></li>)}
           </ul>
         </div>
       ))}

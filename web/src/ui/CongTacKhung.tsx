@@ -24,7 +24,7 @@ export function khungDaNho(trang: Trang): KhungLoc | null {
     return hopLe(v) ? v : null;
   } catch { return null; }
 }
-function nhoKhung(trang: Trang, k: KhungLoc) {
+export function nhoKhung(trang: Trang, k: KhungLoc) {
   try { localStorage.setItem(khoa(trang), k); } catch { /* không lưu được thì thôi — lần sau về mặc định */ }
 }
 

@@ -109,7 +109,7 @@ export function NgayKhoa({ chu, phu }: { chu: string; phu?: string }) {
  * Ô KHOÁ (Loại PA, Ngày bắt đầu): ô `readOnly` vào được vòng Tab, nhãn bọc ô (trình đọc nghe "Loại PA, Tutor, chỉ đọc"),
  * chữ phụ nối qua `aria-describedby`. Phụ vẽ ngoài `Truong` (cùng lớp chữ phụ của `Truong`) để không lẫn vào tên ô.
  */
-function OKhoa({ nhan, chu, phu, sau }: { nhan: string; chu: string; phu?: string; sau?: string }) {
+export function OKhoa({ nhan, chu, phu, sau }: { nhan: string; chu: string; phu?: string; sau?: string }) {
   const idPhu = useId();
   return (
     <div>
