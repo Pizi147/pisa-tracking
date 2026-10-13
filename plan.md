@@ -199,6 +199,8 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 - Case Học viên (KQĐR "Không đạt · Học viên") mang kỹ năng đầu tiên — KV, chủ SP xem khi rà OV-3b.
 - Hồ sơ GV › Việc đang có đếm từng việc (`items`), lệch badge Công việc (đếm dòng) — GOP; **OV-5 làm cùng**.
 - CT2: `huyNhieuLenh` / khôi phục nhiều lệnh ~25 câu/em — thêm phép đo 8 em, vượt thì gom lô (**OV-3b** chạm lệnh chuyển); giới hạn tự ghi (đổi lớp đích / tuần mà giữ quyết định không sinh lại bộ; Pre FOU Người dạy trống; sinh từ ô điểm cuối thì người xác nhận = người nhập).
+- **MT0 lớp thường đã nhập band vẫn là việc "Nhập điểm MT0"** (lỗi có sẵn, OV-3c phát hiện): `listAttempts` (`server/src/fasttrack/attempts.ts` ~655) đi nhánh lớp thường cho `kind = 'mt0'` → đòi `raw_score`; lệch Nợ điểm (`scoringModeOf` đã coi mt0 là band). Sửa: bỏ mt0 khỏi nhánh `regularSkills` — **OV-1c / OV-4b** (vùng `fasttrack/*`).
+- **Bộ demo không thêm được lượt MT nào** (OV-3c đo 12/10): `tocDo.run.ts` PR-TD Task5(2) — demo có 299 lượt, ×3 = 897 sát lô 900 tham số (`theoLo`); thêm ≥ 2 lượt (vd một em chuyển vào FT, tự sinh lịch MT) → QT `/tong-quan/chi-nhanh`, `/my-work` thêm 6–8 câu (một lô nữa) → đỏ. Vì vậy OV-3c không seed đợt FOU / nhiều đợt (MB FT 104) — planning chọn: nới phép đo theo số lô, hoặc chấp nhận +1 lô. Kèm: thêm seed làm dời id → chụp lại băm DL-2 (`prDl.tests.ts`).
 - Sổ tay lỗi thời ("Nộp kế hoạch bổ trợ", "Đánh dấu kỳ vọng đầu ra") → PR-SOTAY.
 
 ## 5. Đợt chạy, thứ tự merge, deploy (chủ SP 11/10)
@@ -318,6 +320,7 @@ Nhật ký chi tiết tới 04/10 ở `git show 575e898d:plan.md` (mục 14) và
 | Ngày | PR / nhánh · model | Kết quả |
 |---|---|---|
 | 12/10/2026 | OV-1c (Opus 5.5) · `claude/dazzling-albattani-24iilg` | SOS MT tạm thời → chốt → xoá: cờ `chot` (`kyNangXongThieu`: dời / huỷ / Không dự thi), chưa chốt không Case; Overall ≥ kỳ vọng = không SOS; xoá SOS đóng "Overall đạt" / giữ + mốc; mọi màn đọc `chot`; migrate `prOv1c` + `kiem-truoc-ov1c`; seed demo chốt; ô điểm lưới theo mockup (vắng tím 2 dòng · trống viền đứt · huỷ viền chấm) + chip "SOS tạm · a/4" |
+| 12/10/2026 | OV-3c (Opus 5.5) · `claude/festive-wright-jzy4xv` | Hồ sơ lớp FT › Học viên › "Kết quả đầu ra" (`?che-do=ket-qua`, số đợt ở nút): mỗi chương trình nguồn một bảng, nhóm theo đợt, hiện 4 tuần, chỉ QL đã chốt, Admin 403; Hành trình có dòng Kết quả đầu ra; không seed mới (demo MB FT 101 — xem mục 4) |
 | 12/10/2026 | OV-6b1 (Opus 5.5) · `claude/pensive-knuth-qt9uk0` | Quản trị › Chương trình: bảng + panel sửa (Tên, Đạt từ, số tuần, mốc / tuần MT LT1 LT2 RF), áp lớp mở sau; bản chụp `classes.lich_mt` + `nguong_dat`; tuần MT FT + ngưỡng đạt đọc bản chụp lớp; migrate `prOv6b1` điền mọi lớp cũ |
 | 12/10 | OV-4b `claude/peaceful-galileo-kc1jh5` · Opus 5.5 | Hộp nhập điểm MT chung (`HopNhapDiem`: L/R/W1/W2/S/MT0, Lưu · em tiếp, ô Vắng + Bỏ vắng, lỗi giữ chữ) thay CriteriaModal / InlineScoreEditor / ô gõ L/R; nhận xét 4 kỹ năng + lớp thường (nút Nhận xét). |
 | 12/10/2026 | OV-4a (Opus 5.5) · `claude/peaceful-clarke-xsn9zr` | Huỷ cả lượt MT cất điểm + lịch + danh sách đóng vào `ket_qua_huy` (`huy_luot`, migrate `prOv4`), đóng Case sinh riêng / PA "Chưa đủ dữ liệu" / Phối hợp; Khôi phục lượt (`/reopen`) về nguyên trạng, chặn khi đã xếp MT mới, kèm bản dời vượt treo (ca MT4 Ngọc); ô "MT2 · Đã huỷ" ở Kế hoạch Test / Lộ trình; Admin không nút |

@@ -1268,6 +1268,12 @@ api.get('/classes/:id/can-ho-tro', requireAuth, wrap((req) => {
   return canHoTroLop(principalOf(req), pInt(req, 'id'));
 }));
 
+/** OV-3c: hồ sơ lớp FT › Học viên › Kết quả đầu ra — KQĐR QL đã chốt của em vào từ FOU/BE/ELE, 4 tuần theo đợt. Admin 403. */
+api.get('/classes/:id/ket-qua-dau-ra', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return kyVongSvc.kqdrLopFt(principalOf(req), pInt(req, 'id'));
+}));
+
 /** ⋮ Sửa thông tin lớp: mã lớp, LT (FT), ghi chú; chương trình chỉ khi lớp chưa có học viên và bài Test. */
 api.patch('/classes/:id/thong-tin', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();

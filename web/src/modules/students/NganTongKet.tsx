@@ -19,12 +19,17 @@ type TongKet = {
   khongCamKet: boolean; thoiGian: string; dich: { target: number | null; thiDuKien: string | null };
   ketQua:
     | { loai: 'ft'; ovr: number | null; l: number | null; r: number | null; w: number | null; s: number | null; ngay: string | null; khongThi: boolean; khongCoThi: boolean; nhan: string; ketLuan: string | null; choNhap: boolean; coTheNhap: boolean }
-    | { loai: 'thuong'; tyLe: number | null; dai: string | null; kyVongDat: boolean | null };
+    | { loai: 'thuong'; tyLe: number | null; dai: string | null; kyVongDat: boolean | null;
+        /** OV-3c: Kết quả đầu ra QL đã chốt (em lên FT) — tra lại sau khi bảng ở lớp FT hết 4 tuần. */
+        kqdr: { dat: boolean; nguyenNhan: string | null; mon: string[] } | null };
   huongTiep: { khoa: string; nhan: string | null };
   luot: Luot[];
 };
 
 const b1 = (v: number | null | undefined) => (v === null || v === undefined ? '—' : v.toFixed(1));
+const NGAN_KN: Record<string, string> = { listening: 'L', reading: 'R', writing: 'W', speaking: 'S' };
+const chuKqdr = (k: { dat: boolean; nguyenNhan: string | null; mon: string[] }) => (k.dat ? 'Đạt'
+  : ['Không đạt', k.nguyenNhan === 'hoc_sinh' ? 'Học viên' : k.nguyenNhan === 'trung_tam' ? 'Trung tâm' : null, k.mon.map((m) => NGAN_KN[m] ?? m).join(' ') || null].filter(Boolean).join(' · '));
 const DAI: Record<string, { nhan: string; tone: ToneNhan }> = {
   dat: { nhan: '≥ 70%', tone: 'ok' }, '60_69': { nhan: '60–69%', tone: 'soon' }, '50_59': { nhan: '50–59%', tone: 'soon' }, duoi_50: { nhan: '< 50%', tone: 'late' },
 };
@@ -194,7 +199,8 @@ export function NganTongKet({ cycleId, onClose, onDoi }: { cycleId: number; onCl
             </div>
 
             <div className="flex flex-wrap gap-x-3.5 gap-y-1 text-[12.5px] text-slate-400">
-              {[['Lớp', data.lop], ['GVCN', data.gvcn], ['Đầu vào', data.dauVao !== null ? b1(data.dauVao) : null], ...(ft ? [] : [['Target', data.khongCamKet ? 'KCK' : data.target !== null ? b1(data.target) : null]]), ['Thời gian', data.thoiGian]]
+              {[['Lớp', data.lop], ['GVCN', data.gvcn], ['Đầu vào', data.dauVao !== null ? b1(data.dauVao) : null], ...(ft ? [] : [['Target', data.khongCamKet ? 'KCK' : data.target !== null ? b1(data.target) : null]]), ['Thời gian', data.thoiGian],
+                ...(kq.loai === 'thuong' && kq.kqdr ? [['Kết quả đầu ra', chuKqdr(kq.kqdr)]] : [])]
                 .filter(([, v]) => v).map(([k, v]) => <span key={k as string}>{k} <b className="font-semibold text-slate-200">{v}</b></span>)}
             </div>
 

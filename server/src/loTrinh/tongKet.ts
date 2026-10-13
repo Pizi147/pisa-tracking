@@ -123,6 +123,8 @@ function gomLuot(rows: any[], maCt: string | null, laFt: boolean, homNay: string
   }).sort((x, y) => x.attemptNo - y.attemptNo);
 }
 
+const monKqdr = (x: string | null): string[] => { try { const v = JSON.parse(x ?? '[]'); return Array.isArray(v) ? v.map(String) : []; } catch { return []; } };
+
 export function tongKetLoTrinh(p: Principal, cycleId: number) {
   const conn = db();
   const c = conn.prepare('SELECT id, student_id, status FROM learning_cycles WHERE id = ?').get(cycleId) as any;
@@ -135,6 +137,12 @@ export function tongKetLoTrinh(p: Principal, cycleId: number) {
   const homNay = demoToday();
   const laFt = !!b.route;
   const luot = gomLuot(conn.prepare('SELECT * FROM ban_chup_luot WHERE ban_chup_id = ? ORDER BY attempt_no, id').all(b.id) as any[], b.programme_code, laFt, homNay);
+  /* OV-3c: Kết quả đầu ra QL chốt SAU khi đóng lộ trình (thường gặp: MT0 sau ngày chuyển) không có trong bản chụp → đọc dòng hiện tại, bản chụp làm dự phòng. */
+  const kv = !laFt && b.class_id
+    ? conn.prepare('SELECT ky_vong_dat, ky_vong_nguyen_nhan, ky_vong_mon FROM lo_trinh_tiep_theo WHERE student_id = ? AND class_id = ? AND ky_vong_dat IS NOT NULL').get(c.student_id, b.class_id) as any
+    : null;
+  const kqdr = kv ? { dat: !!kv.ky_vong_dat, nguyenNhan: kv.ky_vong_nguyen_nhan as string | null, mon: monKqdr(kv.ky_vong_mon) }
+    : b.ky_vong_dat === null || b.ky_vong_dat === undefined ? null : { dat: !!b.ky_vong_dat, nguyenNhan: null, mon: [] as string[] };
   const khongCoThi = laFt && b.ly_do === 'chuyen_lop';
   const daCoKq = laFt && (b.thi_that_ovr !== null || b.ket_luan === 'reached' || b.ket_luan === 'not_reached');
   const kq = laFt ? ketQuaThiThat({ l: b.thi_that_l, r: b.thi_that_r, w: b.thi_that_w, s: b.thi_that_s, khongThi: !!b.thi_that_khong_thi }, b.khong_cam_ket ? null : b.target) : null;
@@ -151,7 +159,7 @@ export function tongKetLoTrinh(p: Principal, cycleId: number) {
           nhan: daCoKq ? (b.ket_luan === 'reached' ? 'Đạt Target' : b.ket_luan === 'not_reached' ? 'Chưa đạt Target' : '') : kq!.nhan, ketLuan: b.ket_luan as string | null,
           choNhap: !khongCoThi && !daCoKq && (kq!.nhan === 'Chờ kết quả thi thật' || kq!.nhan === 'Chờ đủ 4 kỹ năng'),
           coTheNhap: !khongCoThi && coTheNhapThiThat(p, { id: cycleId, student_id: c.student_id }) }
-      : { loai: 'thuong' as const, tyLe: b.ty_le_cuoi_khoa as number | null, dai: b.dai_cuoi_khoa as string | null, kyVongDat: b.ky_vong_dat === null ? null : !!b.ky_vong_dat },
+      : { loai: 'thuong' as const, tyLe: b.ty_le_cuoi_khoa as number | null, dai: b.dai_cuoi_khoa as string | null, kyVongDat: kqdr ? kqdr.dat : null, kqdr },
     huongTiep: { khoa: b.huong_tiep as string, nhan: nhanHuong(b.huong_tiep) },
     luot,
   };

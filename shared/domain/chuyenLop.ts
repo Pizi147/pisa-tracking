@@ -237,6 +237,8 @@ export type DaiLop = {
   sapNhan: { n: number; tuLop: { id: number; code: string }[]; tuan: string; daXacNhan: number } | null;
   /** PR-S5F-a: lệnh của lớp (nguồn) đã tới tuần mà CHƯA chuyển được — chỉ Quản lý thấy, để sửa tuần/lớp chuyển đến hoặc huỷ. */
   chuaChuyenDuoc: { n: number; loi: string } | null;
+  /** OV-3c: lớp FT — số đợt em vào từ FOU/BE/ELE còn trong 4 tuần (cách xem "Kết quả đầu ra"); 0 = ẩn. */
+  kqdrDot: number;
   viewer: { coTheRaLenh: boolean; coTheChuyenNhieuEm: boolean; laGvcn: boolean; xacNhanDuoc: boolean };
 };
 
