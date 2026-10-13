@@ -383,7 +383,7 @@ export function HocLaiPanel({ studentId, studentName, lop, onClose, onDone, buoc
 }
 
 /**
- * SỬA THÔNG TIN (PR-OV2b, mockup overhaul-2 §6): Họ tên · Ngày sinh * · Email * · TVV (chọn người) · Dự kiến thi · Target · Điểm đầu vào (FT);
+ * SỬA THÔNG TIN (PR-OV2b, mockup overhaul-2 §6): Họ tên · Ngày sinh * · Email · TVV (chọn người) · Dự kiến thi · Target · Điểm đầu vào (FT);
  * QL / GVCN thêm Tuần bắt đầu + Ghi chú. Admin (`student.edit_info`): Target chỉ đọc, không Tuần bắt đầu / Ghi chú. OV-8b TVV / CX: thêm Ghi chú + Target.
  * Target: `cycle.edit` / `student.edit_more` sửa thẳng kèm lý do (`target-revision`); GVCN cùng ô → Đề xuất sửa gửi QL duyệt (`de-xuat-sua`).
  * Lưu một lần, ba phần theo thứ tự (hồ sơ + TVV + điểm đầu vào · lộ trình · Target): phần lỗi báo đúng phần, phần đã lưu nói rõ, panel còn mở.
@@ -431,7 +431,7 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
 
   const loi = dsLoi([{ khoa: 'ho-ten', nhan: 'Họ tên', toiThieu: 1 }], { 'ho-ten': fullName });
   if (!dob) loi.push({ khoa: 'ngay-sinh', nhan: 'Ngày sinh', lyDo: 'Bắt buộc' });
-  const loiEmail = email.trim() ? docEmail(email).loi : 'Bắt buộc';
+  const loiEmail = docEmail(email).loi;   // PR-OV2c: trống được, có gõ thì đúng dạng
   if (loiEmail) loi.push({ khoa: 'email', nhan: 'Email', lyDo: loiEmail });
   if (quanLy && cycle && !tuan) loi.push({ khoa: 'tuan', nhan: 'Tuần bắt đầu', lyDo: 'Chưa chọn' });
   if (doiTarget && (target !== '' || !kck) && !laBand(target)) loi.push({ khoa: 'target', nhan: 'Target', lyDo: target ? 'Band từ 0 đến 9, bước 0.5' : 'Chưa điền — hoặc tích KCK' });
@@ -506,8 +506,7 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
           <ONgay kieu="ngay" toiDa={homNay} id={lf.oId('ngay-sinh')} onBlur={lf.roi('ngay-sinh')} invalid={!!lf.loiCua(loi, 'ngay-sinh')}
             value={dob} onChange={sua(setDob)} />
         </Truong>
-        <Truong nhan="Email" batBuoc loi={lf.loiCua(loi, 'email')}
-          phu={!student.email ? 'Em chưa có email — điền để lưu' : undefined}>
+        <Truong nhan="Email" loi={lf.loiCua(loi, 'email')}>
           <input className="field w-full" type="email" inputMode="email" autoComplete="off" {...lf.o(loi, 'email')}
             value={email} onChange={(e) => sua(setEmail)(e.target.value)} placeholder="Ví dụ: an.nguyen@gmail.com" />
         </Truong>

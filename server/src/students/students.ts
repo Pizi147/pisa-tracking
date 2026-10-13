@@ -624,7 +624,7 @@ export function unarchiveStudent(p: Principal, studentId: number) {
 }
 
 /**
- * Kiểm ở biên (PR-NHAP): họ tên không rỗng, ngày sinh có thật và không sau hôm nay, email đúng dạng (trống → NULL, T8). Trả bản đã chuẩn
+ * Kiểm ở biên (PR-NHAP): họ tên không rỗng, ngày sinh có thật và không sau hôm nay, email trống → NULL, có gõ thì đúng dạng (T8, PR-OV2c). Trả bản đã chuẩn
  * hoá; sai → 400. Chung cho `updateStudent` và Sửa cả lớp (PR-SL, kiểm trước khi ghi).
  */
 export function chuanHoaSuaHoSo(patch: any) {
@@ -644,7 +644,6 @@ export function chuanHoaSuaHoSo(patch: any) {
   if (patch.email !== undefined) {
     const e = docEmail(patch.email);
     if (e.loi) throw badRequest('Email: ' + e.loi);
-    if (!e.email) throw badRequest('Email: bắt buộc.');
     patch.email = e.email;
   }
   if (patch.consultantUserId !== undefined && patch.consultantUserId !== null) {
