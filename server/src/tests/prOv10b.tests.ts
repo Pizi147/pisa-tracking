@@ -37,17 +37,23 @@ export async function runPrOv10bTests(t: YThucTestKit) {
   const idAdmin = tao([{ role: 'office_admin', branches: ['MB'] }]);
   const mb = one(`SELECT id FROM branches WHERE code = 'MB'`).id as number;
   const lop = one(`SELECT id FROM classes WHERE code = 'MB FT 101'`).id as number;
+  /* Em chỉ một lớp đang học / giữ chỗ (các phép kiểm trước có thể để lại em nhiều dòng lớp). */
   const em = all(`SELECT s.id FROM students s JOIN enrollments e ON e.student_id = s.id AND e.status = 'active'
-      WHERE e.class_id = ? AND s.status = 'active' AND s.archived_at IS NULL ORDER BY s.id LIMIT 4`, lop).map((r) => r.id as number);
+      WHERE e.class_id = ? AND s.status = 'active' AND s.archived_at IS NULL
+        AND (SELECT COUNT(*) FROM enrollments x WHERE x.student_id = s.id AND x.status IN ('active', 'paused')) = 1 ORDER BY s.id LIMIT 4`, lop).map((r) => r.id as number);
+  /* GVCN / GVBM HIỆN TẠI của lớp (phân công có thể đã đổi ở các phép kiểm trước — không dùng `P.coreTeacher` chụp lúc đầu). */
+  const gvcn = one(`SELECT user_id id FROM teacher_assignments WHERE class_id = ? AND is_core = 1 AND status = 'active' ORDER BY id LIMIT 1`, lop)?.id;
+  const gvbm = one(`SELECT user_id id FROM teacher_assignments WHERE class_id = ? AND skill IS NOT NULL AND status = 'active'
+      AND user_id NOT IN (SELECT user_id FROM teacher_assignments WHERE class_id = ? AND is_core = 1 AND status = 'active') ORDER BY id LIMIT 1`, lop, lop)?.id;
   const vai = () => ({
     TVV: loadPrincipal(idTvv), CX: loadPrincipal(idCx), ADMIN: loadPrincipal(idAdmin), QL: P.mbManager, QT: P.admin,
-    GVCN: P.coreTeacher, GVBM: P.subjectTeacher,
+    GVCN: loadPrincipal(gvcn), GVBM: loadPrincipal(gvbm),
   });
   const hs = (id: number) => one('SELECT * FROM students WHERE id = ?', id);
   const LH = { phone: '0901 234 567', parentName: 'Phạm Văn Long', parentRelation: 'Bố', parentPhone: '+84 912.345-678' };
 
   check('OV10b-0 · dữ liệu thử đủ (MB FT 101, 4 em, TVV / CX / Admin)', () => {
-    assert(em.length === 4 && idTvv && idCx && idAdmin, `em ${em.length}`);
+    assert(em.length === 4 && idTvv && idCx && idAdmin && gvcn && gvbm, `em ${em.length} gvcn ${gvcn} gvbm ${gvbm}`);
   });
 
   check('OV10b-1 · migrate prOv10b: đủ 4 cột ở students; chạy lại không làm gì', () => {

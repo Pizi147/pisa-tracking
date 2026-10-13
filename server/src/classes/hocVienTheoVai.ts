@@ -1,6 +1,6 @@
 /**
  * HỌC VIÊN & LỚP CỦA TVV / CX (OV-10b, mockup vai 13/10 mục 1 + 5) — một request cho cả trang: mỗi em một dòng theo việc của vai (trạng thái chữ,
- * lớp, Target · Dự kiến thi, kết quả gần nhất, Cần chú ý, phụ huynh, TVV, chi nhánh), web nhóm theo lớp và lọc chip tại chỗ.
+ * lớp, Target · Dự kiến thi, kết quả gần nhất, lý do chip `can-chu-y`, phụ huynh, TVV, chi nhánh), web nhóm theo lớp và lọc chip tại chỗ.
  * Tập em và chip = `chipHocVien` (OV-10c, cùng số ô Tổng quan) — không hàm đếm thứ hai; em Tạm dừng / Kết thúc học (chưa lưu trữ) vẫn có dòng.
  * QL / Quản trị / GV / Admin dùng bảng cũ (`danhSachHocVienLop`) — đường này 403.
  */

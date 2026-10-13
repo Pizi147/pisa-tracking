@@ -555,7 +555,7 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
             </Truong>
             <Truong nhan={NHAN_LIEN_HE.parentRelation} tuyChon>
               <input className="field w-full" list="quan-he-goi-y" maxLength={LIEN_HE_TOI_DA.parentRelation} autoComplete="off"
-                value={lh.parentRelation} onChange={(e) => sua(setLh)({ ...lh, parentRelation: e.target.value })} placeholder="Bố, mẹ…" />
+                value={lh.parentRelation} onChange={(e) => sua(setLh)({ ...lh, parentRelation: e.target.value })} placeholder="Ví dụ: Bố" />
               <datalist id="quan-he-goi-y">{QUAN_HE_GOI_Y.map((x) => <option key={x} value={x} />)}</datalist>
             </Truong>
           </div>

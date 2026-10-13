@@ -25,14 +25,14 @@ const MOI_NGAY = 14;
 export const CHIP_HOC_VIEN = ['can-chu-y', 'tam-dung', 'sap-thi', 'thieu_tt', 'cho-buoc-tiep'] as const;
 export type ChipHocVien = (typeof CHIP_HOC_VIEN)[number];
 export type SoHocVien = { phamVi: 'cua-toi' | 'chi-nhanh' | 'tat-ca'; tong: number; dem: Record<ChipHocVien, number> };
-/** OV-10b: vì sao em vào "Cần chú ý" — ghi NGAY trong vòng xếp chip (cột Cần chú ý của Học viên & Lớp đọc đúng lý do này). */
+/** OV-10b: vì sao em vào chip `can-chu-y` — ghi NGAY trong vòng xếp chip (cột tương ứng của Học viên & Lớp TVV / CX đọc đúng lý do này). */
 export type LyDoChuY = { sos?: number; caseMoi?: string[]; yThuc?: string; choBuocTiep?: true };
 
 const laTvv = (p: Principal) => p.roleKeys.includes('consultant');
 
 /**
  * Id học viên theo từng chip, trong phạm vi người xem (`student.view`). OV-10b: `phamVi` cho TVV xem "Cả chi nhánh" ở Học viên & Lớp (không truyền = như
- * Tổng quan: TVV "HV của tôi"); `tatCa` = mọi em trong phạm vi, `lyDo` = lý do Cần chú ý của từng em.
+ * Tổng quan: TVV "HV của tôi"); `tatCa` = mọi em trong phạm vi, `lyDo` = lý do chip `can-chu-y` của từng em.
  */
 export function chipHocVien(p: Principal, f: { branchId?: number | null; phamVi?: SoHocVien['phamVi'] } = {}): {
   phamVi: SoHocVien['phamVi']; tong: number; ids: Record<ChipHocVien, number[]>; tatCa: number[]; lyDo: Map<number, LyDoChuY>;

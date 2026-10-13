@@ -53,15 +53,7 @@ export const coONhapLienHe = (roles: readonly string[] | null | undefined): bool
 /** OV-10b: chip Học viên & Lớp của TVV / CX — số = `chipHocVien` (OV-10c, cùng ô Tổng quan). "Chờ QL chọn bước tiếp" chỉ hiện khi có em. */
 export const CHIP_VAI = ['tat-ca', 'can-chu-y', 'tam-dung', 'sap-thi', 'thieu_tt', 'cho-buoc-tiep'] as const;
 export type ChipVai = (typeof CHIP_VAI)[number];
-export const CHIP_VAI_NHAN: Record<ChipVai, { nhan: string; goiY: string }> = {
-  'tat-ca': { nhan: 'Tất cả', goiY: 'Mọi học viên trong phạm vi đang xem (chưa lưu trữ).' },
-  'can-chu-y': { nhan: 'Cần chú ý', goiY: 'SOS ở MT gần nhất, Case mới hoặc Ý thức trong 14 ngày, chờ Quản lý chọn bước tiếp sau thi.' },
-  'tam-dung': { nhan: 'Tạm dừng', goiY: 'Đang Tạm dừng học.' },
-  'sap-thi': { nhan: 'Sắp thi', goiY: 'Dự kiến thi IELTS trong 6 tuần tới.' },
-  thieu_tt: { nhan: 'Thiếu thông tin', goiY: 'Hồ sơ còn thiếu thông tin cần để xếp lịch và theo dõi (không tính liên hệ).' },
-  'cho-buoc-tiep': { nhan: 'Chờ QL chọn bước tiếp', goiY: 'Đã có kết quả thi thật, chờ Quản lý chọn bước tiếp.' },
-};
-/** CX mở ở "Cần chú ý" (không phải 1 000+ em), TVV ở "Tất cả" của HV mình. */
+/** CX mở ở chip `can-chu-y` (không phải 1 000+ em), TVV ở `tat-ca` của HV mình. Nhãn chip ở web (`HocVienTheoVai.tsx`). */
 export const chipMacDinhVai = (vai: 'tvv' | 'cx'): ChipVai => (vai === 'cx' ? 'can-chu-y' : 'tat-ca');
 export const docChipVai = (s: string | null | undefined, vai: 'tvv' | 'cx'): ChipVai =>
   (CHIP_VAI as readonly string[]).includes(s ?? '') ? (s as ChipVai) : chipMacDinhVai(vai);

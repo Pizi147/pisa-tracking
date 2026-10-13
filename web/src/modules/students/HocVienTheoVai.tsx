@@ -13,7 +13,7 @@ import { sosTone } from '../../lib/format.ts';
 import { useThaoTacDongHocVien } from '../classes/thaoTacDongHocVien.tsx';
 import { KetQuaOHocVien } from './BangHocVienLop.tsx';
 import {
-  CHIP_VAI, CHIP_VAI_NHAN, PHAM_VI_NHAN, chipMacDinhVai, chuPhuHuynh, docChipVai, ketQuaGanNhat, maHocVienNgan, ngay, tenMon,
+  CHIP_VAI, PHAM_VI_NHAN, chipMacDinhVai, chuPhuHuynh, docChipVai, ketQuaGanNhat, maHocVienNgan, ngay, tenMon,
   type ChipVai, type ExamPlan, type KetQuaVao, type LienHe, type NguCanhDs,
 } from '@shared/domain/index.ts';
 
@@ -33,6 +33,16 @@ type TrangVai = {
   phamVi: { coThe: PhamViVai[]; dangDung: PhamViVai; chiNhanh: number | null };
   ids: Record<Exclude<ChipVai, 'tat-ca'>, number[]>;
   rows: DongVai[];
+};
+
+/** Nhãn chip TVV / CX (OV-10b) — số = `chipHocVien` (OV-10c, cùng ô Tổng quan). */
+const CHIP_VAI_NHAN: Record<ChipVai, { nhan: string; goiY: string }> = {
+  'tat-ca': { nhan: 'Tất cả', goiY: 'Mọi học viên trong phạm vi đang xem (chưa lưu trữ).' },
+  'can-chu-y': { nhan: 'Cần chú ý', goiY: 'SOS ở MT gần nhất, Case mới hoặc Ý thức trong 14 ngày, chờ Quản lý chọn bước tiếp sau thi.' },
+  'tam-dung': { nhan: 'Tạm dừng', goiY: 'Đang Tạm dừng học.' },
+  'sap-thi': { nhan: 'Sắp thi', goiY: 'Dự kiến thi IELTS trong 6 tuần tới.' },
+  thieu_tt: { nhan: 'Thiếu thông tin', goiY: 'Hồ sơ còn thiếu thông tin cần để xếp lịch và theo dõi (không tính liên hệ).' },
+  'cho-buoc-tiep': { nhan: 'Chờ QL chọn bước tiếp', goiY: 'Đã có kết quả thi thật, chờ Quản lý chọn bước tiếp.' },
 };
 
 const SELECT_GON = 'field h-8 w-auto !py-0 text-xs max-sm:min-h-[44px] max-sm:w-full';
@@ -220,7 +230,7 @@ export function HocVienTheoVai({ vai }: { vai: 'tvv' | 'cx' }) {
                   dau={(
                     <span className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1">
                       <Link className="link font-semibold" to={`/hoc-vien/${d.id}`} state={{ ds }}>{d.ten}</Link>
-                      <span className="text-[11px] tabular-nums text-slate-500">{maHocVienNgan(d.ma)}</span>
+                      <span className="text-xs tabular-nums text-slate-500">{maHocVienNgan(d.ma)}</span>
                       <TrangThaiEm d={d} thieu={!!tap.thieu_tt?.has(d.id)} />
                     </span>
                   )}
@@ -252,7 +262,7 @@ export function HocVienTheoVai({ vai }: { vai: 'tvv' | 'cx' }) {
                     <td className="td h-14">
                       <span className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5">
                         <Link className="link max-w-full truncate font-semibold" title={d.ten} to={`/hoc-vien/${d.id}`} state={{ ds }}>{d.ten}</Link>
-                        <span className="shrink-0 text-[11px] tabular-nums text-slate-500">{maHocVienNgan(d.ma)}</span>
+                        <span className="shrink-0 text-xs tabular-nums text-slate-500">{maHocVienNgan(d.ma)}</span>
                         <TrangThaiEm d={d} thieu={!!tap.thieu_tt?.has(d.id)} />
                       </span>
                     </td>
