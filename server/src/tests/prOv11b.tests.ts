@@ -34,8 +34,11 @@ export async function runPrOv11bTests(t: YThucTestKit) {
 
   check('OV11b-1 · Quản trị tự gỡ vai Quản trị → 400; QT cuối cùng đổi sang QL → 400; còn QT khác thì gỡ QT kia 200', () => thu(() => {
     const id = P.admin.userId;
+    /* Phép kiểm trước có thể đã tạo thêm QT — đóng vai QT của người khác (trong giao dịch thử) để còn đúng một QT. */
+    conn.prepare(`UPDATE user_roles SET status = 'ended' WHERE user_id != ? AND status = 'active'
+      AND role_id = (SELECT id FROM roles WHERE key = 'system_admin')`).run(id);
     assert(one(`SELECT COUNT(DISTINCT ur.user_id) n FROM user_roles ur JOIN roles r ON r.id = ur.role_id JOIN users u ON u.id = ur.user_id
-      WHERE r.key = 'system_admin' AND ur.status = 'active' AND u.status = 'active'`).n === 1, 'demo không còn đúng một QT');
+      WHERE r.key = 'system_admin' AND ur.status = 'active' AND u.status = 'active'`).n === 1, 'còn hơn một QT');
     let e = loi(() => accounts.setRoles(P.admin, id, [{ role: 'manager', branches: ['MB'] }]));
     assert(e?.status === 400, `QT cuối đổi sang QL: ${e?.status} ${e?.message}`);
     assert(vai(id).some((g) => g.key === 'system_admin'), 'đã mất vai QT');
