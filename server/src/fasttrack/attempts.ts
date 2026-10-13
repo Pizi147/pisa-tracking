@@ -609,7 +609,7 @@ function ownersByClass(classIds: number[]): Map<number, Record<string, string>> 
 }
 
 const ATTEMPT_SELECT = `
-  SELECT a.*, s.full_name, s.student_code,
+  SELECT a.*, s.full_name, s.student_code, s.status AS student_status, s.archived_at AS student_archived_at,
          cy.route, cy.target_score, cy.khong_cam_ket, cy.exam_month, cy.exam_period_id, cy.exam_date, cy.seq AS cycle_seq,
          c.code AS class_code, c.programme_code, c.lich_mt AS lop_lich_mt, c.route AS lop_route, c.branch_id, b.name AS branch_name, b.code AS branch_code,
          pr.code AS period_code, pr.week_start AS period_start, pr.week_end AS period_end
@@ -1228,6 +1228,18 @@ function hoiSinhLuot(p: Principal, cu: any, o: { classId: number | null; period:
 
 // ---------------------------------------------------------------- lịch: tuần và ngày tách nhau
 
+/**
+ * OV-1d (chủ SP 13/10): em ĐÃ KẾT THÚC HỌC hoặc LƯU TRỮ — lưới chấm FT làm mờ hàng (chữ ở cột Kết quả), ô không phải việc / quá hạn.
+ * Chỉ Lưu trữ mới khoá ghi (`khoa`: ô chỉ đọc, `saveScore` 400 kèm câu chỉ đường). Kết thúc học chưa lưu trữ (FT chờ kết quả thi thật /
+ * Bước tiếp, OV-8a) vẫn nhập bù / sửa — điểm vào bản chụp lộ trình (PR-TK). Em Tạm dừng: như đang học (thi xong rồi mới dừng); số đếm
+ * vẫn theo `HV_DANG_HOC_SQL`. `null` = hàng bình thường.
+ */
+export function ngungHocCua(status: string | null | undefined, archivedAt: string | null | undefined): { nhan: string; khoa: string | null } | null {
+  if (archivedAt) return { nhan: 'Lưu trữ', khoa: 'Em đã lưu trữ — Bỏ lưu trữ trước khi nhập điểm.' };
+  if (status === 'active' || status === 'inactive') return null;
+  return { nhan: 'Đã kết thúc học', khoa: null };
+}
+
 function loadAttempt(attemptId: number) {
   const a = db().prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(attemptId) as any;
   if (!a) throw notFound('Không tìm thấy lượt Mock Test');
@@ -1765,6 +1777,10 @@ export function saveScore(
   const a = loadAttempt(attemptId);
   if (!(ENTRY_SKILLS as readonly string[]).includes(skill)) throw badRequest('Kỹ năng không hợp lệ.');
   if (a.status === 'cancelled') throw badRequest('Lượt này đã huỷ, không nhập điểm được.');
+  /* OV-1d: em đã Lưu trữ → không ghi gì vào ô (điểm, "-", Bỏ vắng, nhận xét) — điểm cũ giữ nguyên. */
+  const hv = conn.prepare('SELECT status, archived_at FROM students WHERE id = ?').get(a.student_id) as any;
+  const khoa = ngungHocCua(hv?.status, hv?.archived_at)?.khoa;
+  if (khoa) throw badRequest(khoa);
   /*
    * T23 (PR-MTa, thay K4-20): MT cũ nhận "-" = em không dự thi kỹ năng đó (`no_show_cu`) — không tính lần vắng, không tự dời,
    * không Case / thẻ / chuông; ô không còn đếm "còn trống". OV-1b: "-" nhập bù sau tuần thi cũng vậy (nhánh "-" bên dưới).
@@ -2154,6 +2170,8 @@ export function classScoreSheet(
       const scores = bundle.scores.get(a.id) ?? [];
       const skips = bundle.skips.get(a.id) ?? [];
       const hoanTat = hoanTatOf.get(a.id) ?? { hoanTat: false, chuNhatCuoi: null };
+      const ngung = ngungHocCua(a.student_status, a.student_archived_at);
+      const cells = skillCells(p, a, scores, skips, today, bundle.skillRows.get(a.id), hoanTat);
       return {
         attemptId: a.id,
         studentId: a.student_id,
@@ -2161,7 +2179,10 @@ export function classScoreSheet(
         studentCode: a.student_code,
         attemptNo: a.attempt_no,
         status: a.status,
-        cells: skillCells(p, a, scores, skips, today, bundle.skillRows.get(a.id), hoanTat),
+        /* OV-1d: em đã Kết thúc học / Lưu trữ — ô không việc / quá hạn; Lưu trữ thêm chỉ đọc, không Bỏ vắng (máy chủ cũng chặn ở `saveScore`). */
+        cells: ngung ? cells.map((c) => ({ ...c, viec: false, overdue: false,
+          ...(ngung.khoa ? { canEdit: false, lyDoKhoa: ngung.khoa, daChot: c.daChot && { ...c.daChot, goDuoc: false, hanGo: null } } : {}) })) : cells,
+        ...(ngung ? { ngungHoc: ngung.nhan } : {}),
         result: resultOf(a, scores, skips, bundle.skillRows.get(a.id) ?? []),
         /* PR-MT0: chip SOS chỉ để nhìn (band ≤ Target − 2.0) thay cho mức SOS. */
         ...(laMt0(a) ? { mt0Sos: kyNangSosMt0(resultOf(a, scores, skips).bands, a.target_at_attempt ?? null) } : {}),

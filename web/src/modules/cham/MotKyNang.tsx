@@ -17,7 +17,7 @@ import {
 } from '@shared/domain/index.ts';
 import { dotGvCham, duongDotTest } from '@shared/domain/index.ts';
 import { fmtBand } from '../../lib/format.ts';
-import { Info } from '../../ui/ui.tsx';
+import { Info, Level } from '../../ui/ui.tsx';
 import { NhanCu } from '../../ui/OMt.tsx';
 import {
   ChoNutDau, KHOA_HOAN_TAT_HINT, ODiemThuong, datPhanTram, suaDuoc, useSaveScore, type Cell,
@@ -102,8 +102,10 @@ function useDiChuyen() {
 }
 
 /** Một dòng học viên: tên + TỐI ĐA một dòng phụ ngắn bên trái (G-3), một ô to bên phải. */
-function DongHv({ studentId, active, ten, href, phu, phuTitle, phuDo = false, luu, children, nhan, thi }: {
+function DongHv({ studentId, active, ten, href, phu, phuTitle, phuDo = false, luu, children, nhan, thi, mo = false }: {
   studentId: number; active: boolean; ten: string; href: string;
+  /** OV-1d: em đã Kết thúc học / Lưu trữ — dòng mờ. */
+  mo?: boolean;
   phu: string; phuTitle?: string; phuDo?: boolean; luu: React.ReactNode; children: React.ReactNode;
   /** R11: nhãn "Đã hoàn tất" cạnh tên khi đợt/bài của dòng này đã hoàn tất. */
   nhan?: React.ReactNode;
@@ -112,7 +114,7 @@ function DongHv({ studentId, active, ten, href, phu, phuTitle, phuDo = false, lu
 }) {
   return (
     <li data-hv={studentId}
-      className={`flex items-center gap-3 px-3 py-2 min-h-[60px] border-t ${active ? 'row-active' : ''}`}
+      className={`flex items-center gap-3 px-3 py-2 min-h-[60px] border-t ${mo ? 'row-muted' : ''} ${active ? 'row-active' : ''}`}
       style={{ borderColor: 'var(--line)' }}>
       <div className="min-w-0 flex-1">
         <div className="min-w-0">
@@ -150,7 +152,7 @@ function MotKyNangFt({ data, onReload, kn, hv, hangMo }: {
     () => [...ENTRY_SKILLS.filter((k) => minh.has(k)), ...ENTRY_SKILLS.filter((k) => !minh.has(k))] as string[],
     [minh],
   );
-  const conTrong = (k: string) => data.rows.some((r) => { const c = oCua(r, k); return !!c && oTrongFt(c); });
+  const conTrong = (k: string) => data.rows.some((r) => { const c = oCua(r, k); return !r.ngungHoc && !!c && oTrongFt(c); });
   const [chon, setChon] = useKyNangChon(dsKn, (k) => minh.has(k), conTrong, kn);
   /* Hộp đang mở (lượt) — "Lưu · em tiếp ›" sang em kế có ô mở được của kỹ năng đang chọn. */
   const [mo, setMo] = useState<number | null>(null);
@@ -162,7 +164,7 @@ function MotKyNangFt({ data, onReload, kn, hv, hangMo }: {
   if (data.rows.length === 0 || !chon) return <LuoiFT data={data} onReload={onReload} kn={kn} hv={hv} hangMo={hangMo} />;
 
   const chips = dsKn.map((k) => {
-    const cs = data.rows.map((r) => oCua(r, k)).filter(tinhFt);
+    const cs = data.rows.filter((r) => !r.ngungHoc).map((r) => oCua(r, k)).filter(tinhFt);   // OV-1d: em đã Kết thúc học / Lưu trữ không tính
     return { k, cuaMinh: minh.has(k), daNhap: cs.filter((c) => c.band !== null || !!c.noShow).length, tong: cs.length };
   });
   const nhieuMt = new Set(data.rows.map((r) => r.attemptNo)).size > 1;
@@ -180,7 +182,7 @@ function MotKyNangFt({ data, onReload, kn, hv, hangMo }: {
             active={hv !== null && r.studentId === hv} onReload={onReload} gvMacDinh={gvCot}
             mo={mo === r.attemptId && moChon === chon} onMo={(m) => { setMo(m ? r.attemptId : null); setMoChon(chon); }}
             onTiep={() => {
-              const ke = data.rows.slice(i + 1).find((x) => { const c = oCua(x, chon); return !!c && suaDuoc(c); });
+              const ke = data.rows.slice(i + 1).find((x) => { const c = oCua(x, chon); return !x.ngungHoc && !!c && suaDuoc(c); });
               setMo(ke?.attemptId ?? null);
             }} />
         ))}
@@ -211,11 +213,12 @@ function DongFt({ row, k, nhieuMt, lop, active, onReload, gvMacDinh, mo, onMo, o
     <DongHv studentId={row.studentId} active={active} ten={row.studentName} href={duongDotTest({ id: row.attemptId }, k)}
       phu={phu} phuTitle={kv !== null ? `Kỳ vọng (KV) của lượt này: ${fmtBand(kv)} · ${maHocVienNgan(row.studentCode)}` : undefined}
       luu={<>{row.lichSu && <NhanCu />}<DauLuu lon status={status} error={lastError} onRetry={coGuiLai ? retry : undefined} soLoi={soLoi} /></>}
-      nhan={<NhanHoanTat hoanTat={row.hoanTat} chuNhatCuoi={row.chuNhatCuoi} />}
+      mo={!!row.ngungHoc}
+      nhan={row.ngungHoc ? <Level tone="muted" title={row.cells[0]?.lyDoKhoa}>{row.ngungHoc}</Level> : <NhanHoanTat hoanTat={row.hoanTat} chuNhatCuoi={row.chuNhatCuoi} />}
       thi={row.cells.filter((x) => x.required && x.progress !== 'cancelled')
         .map((x) => ({ nhan: nhanKyNangFt(x.skill), weekStart: x.weekStart ?? null }))}>
       <div className={`shrink-0 flex items-center justify-end gap-1 rounded-md ${o[k] === 'loi' ? VIEN_LOI : ''}`} data-kn={k}
-        data-trong={c && oTrongFt(c) ? '1' : undefined} data-luu={o[k]}>
+        data-trong={!row.ngungHoc && c && oTrongFt(c) ? '1' : undefined} data-luu={o[k]}>
         <DauO lon tt={o[k]} loi={loi[k]} onLuuLai={() => luuLai(k)} />
         {!c ? <span className="text-slate-600">—</span> : (
           <ODiemMt lon cell={c} mo={mo} onMo={onMo} onTiep={onTiep} onSave={(p, x) => save(k, p, x)}

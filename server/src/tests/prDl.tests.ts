@@ -113,8 +113,10 @@ export async function runPrDlTests(t: YThucTestKit) {
    * Chụp lại 13/10 (OV-6b2 gộp sau OV-1c): bộ demo thêm lớp MB PET 01 (5 lượt Checkpoint) → id lượt Ánh/Bình dời; MB FT 101 không đổi lượt nào (`idsTuan` vẫn đối chiếu).
    * Chụp lại 13/10 (OV-9, chỉ `moi`): em thử S3F (3) ở MB FT 101 đổi sang KCK sau khi có điểm — lượt dưới kỳ vọng của em KCK nay `sosLevel` null (Case nhẹ,
    * không SOS); băm theo tuần (`tuan`) không đổi.
+   * Chụp lại 13/10 (OV-1d, gộp sau OV-9): hàng em đã Kết thúc học / Lưu trữ (MB FT 101 có em Kết thúc học) thêm `ngungHoc`, ô `viec`/`overdue`
+   * false (Lưu trữ thêm chỉ đọc + `lyDoKhoa`); hàng em khác không đổi byte nào (`ngungHoc` chỉ gửi khi có).
    */
-  const ANH_CHUP = { tuan: '84cc0e2e64d9dd36', moi: '8d72158b6cd97411' };
+  const ANH_CHUP = { tuan: '30cde2272cac96c7', moi: 'b15b0168532ed7ac' };
   /* Mã cố ý độc lập với hàm: điều kiện lọc tuần của bản trước refactor, viết lại bằng SQL. */
   const idsTuan = (periodId: number) => (conn.prepare(
     `SELECT a.id FROM assessment_attempts a JOIN students s ON s.id = a.student_id

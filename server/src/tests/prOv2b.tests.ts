@@ -1,4 +1,4 @@
-/** PHÉP KIỂM PR-OV2b — hồ sơ HV: Sửa thông tin (TVV = người, email + ngày sinh bắt buộc, Target, điểm đầu vào), ⋯ Tạm dừng / Thôi học. */
+/** PHÉP KIỂM PR-OV2b — hồ sơ HV: Sửa thông tin (TVV = người, ngày sinh bắt buộc; email đã hết bắt buộc ở PR-OV2c, Target, điểm đầu vào), ⋯ Tạm dừng / Thôi học. */
 import type { YThucTestKit } from './yThuc.tests.ts';
 
 export async function runPrOv2bTests(t: YThucTestKit) {
@@ -104,7 +104,7 @@ export async function runPrOv2bTests(t: YThucTestKit) {
     });
   });
 
-  check('OV2b-3 · Thêm học viên (một em / cả lớp / dán Excel) thiếu ngày sinh hoặc email → lỗi đúng ô, không lưu dòng đó', () => {
+  check('OV2b-3 · Thêm học viên (một em / cả lớp / dán Excel) thiếu ngày sinh → lỗi đúng ô, không lưu dòng đó (email: PR-OV2c không còn bắt buộc)', () => {
     thu(() => {
       const v = V();
       const r = intake.previewIntake(v.QL, { classId: lop, rows: [
@@ -112,7 +112,7 @@ export async function runPrOv2bTests(t: YThucTestKit) {
       ] });
       const o = (row: number, field: string) => r.issues.some((i: any) => i.row === row && i.field === field && i.muc === 'loi');
       assert(!r.issues.some((i: any) => i.row === 1 && i.muc === 'loi'), `dòng đủ bị chặn: ${JSON.stringify(r.issues.filter((i: any) => i.row === 1))}`);
-      assert(o(2, 'dob') && o(3, 'email'), `lỗi ô: ${JSON.stringify(r.issues)}`);
+      assert(o(2, 'dob') && !o(3, 'email') && !r.issues.some((i: any) => i.row === 3 && i.muc === 'loi'), `lỗi ô: ${JSON.stringify(r.issues)}`);   // OV2c: dòng 3 chỉ thiếu email → không lỗi
       const c = intake.commitIntake(v.QL, { classId: lop, rows: [{ fullName: 'OV2b Đủ', ...DU }, { fullName: 'OV2b Thiếu NS', email: DU.email }] });
       assert(!one(`SELECT 1 FROM students WHERE full_name = 'OV2b Thiếu NS'`) && one(`SELECT 1 FROM students WHERE full_name = 'OV2b Đủ'`), `commit: ${JSON.stringify(c.failed)}`);
       const dan = intake.parsePaste('Họ và tên\tNgày sinh\tEmail\nOV2b Dán\t\tdan@gmail.com', { classId: lop });
@@ -122,13 +122,12 @@ export async function runPrOv2bTests(t: YThucTestKit) {
     });
   });
 
-  check('OV2b-4 · Sửa một em: xoá trống email / ngày sinh → 400; em thiếu email vẫn nhập điểm được', () => {
+  check('OV2b-4 · Sửa một em: xoá trống ngày sinh → 400 (email trống: PR-OV2c lưu được); em thiếu email vẫn nhập điểm được', () => {
     thu(() => {
       const v = V();
       run('UPDATE students SET dob = ?, email = ? WHERE id = ?', DU.dob, DU.email, em.id);
-      assert(loi(() => students.updateStudent(v.QL, em.id, { email: '' }))?.status === 400, 'xoá trống email phải 400');
       assert(loi(() => students.updateStudent(v.QL, em.id, { dob: null }))?.status === 400, 'xoá trống ngày sinh phải 400');
-      assert(hs().email === DU.email && hs().dob === DU.dob, 'đã ghi dù lỗi');
+      assert(hs().dob === DU.dob, 'đã ghi dù lỗi');
       run('UPDATE students SET email = NULL WHERE id = ?', em.id);
       const a = one(`SELECT a.id FROM assessment_attempts a WHERE a.student_id = ? AND a.status != 'cancelled' AND a.kind = 'mock' ORDER BY a.attempt_no LIMIT 1`, em.id);
       if (a) {
@@ -138,7 +137,7 @@ export async function runPrOv2bTests(t: YThucTestKit) {
     });
   });
 
-  check('OV2b-5 · Sửa cả lớp: dòng không đổi không bị chặn; dòng có đổi mà em thiếu email / ngày sinh → lỗi; có cột TVV', () => {
+  check('OV2b-5 · Sửa cả lớp: dòng không đổi không bị chặn; dòng có đổi mà em thiếu ngày sinh → lỗi (email: PR-OV2c không còn); có cột TVV', () => {
     thu(() => {
       const v = V();
       run('UPDATE students SET email = NULL, dob = NULL WHERE id = ?', em.id);
@@ -148,7 +147,7 @@ export async function runPrOv2bTests(t: YThucTestKit) {
       assert(ok.rows.every((r: any) => !r.issues.length), `dòng đủ bị chặn: ${JSON.stringify(ok.rows)}`);
       const x = suaCaLop.xemTruocSuaCaLop(v.QL, lop, { rows: [{ studentId: em.id, fullName: hs().full_name + ' X' }] });
       const f = x.rows[0].issues.map((i: any) => i.field);
-      assert(f.includes('email') && f.includes('dob'), `dòng có đổi mà thiếu: ${JSON.stringify(x.rows)}`);
+      assert(!f.includes('email') && f.includes('dob'), `dòng có đổi mà thiếu: ${JSON.stringify(x.rows)}`);
       suaCaLop.luuSuaCaLop(v.QL, lop, { rows: [{ studentId: khac, consultantUserId: idTvv }] });
       assert(one('SELECT consultant_user_id c FROM students WHERE id = ?', khac).c === idTvv, 'Sửa cả lớp không lưu TVV');
       const d = suaCaLop.duLieuSuaCaLop(v.QL, lop);
