@@ -215,7 +215,7 @@ export async function runPrOv8bTests(t: YThucTestKit) {
   };
 
   try {
-    await checkAsync('OV8b-10 · TVV / CX gọi thẳng API học thuật → 403 từng đường (điểm, Case / PA, Ý thức, Lộ trình tiếp theo, KQĐR, lịch Test, Học lại, Lưu trữ, Chuyển lớp)', async () => {
+    await checkAsync('OV8b-10 · TVV / CX gọi thẳng API học thuật → 403 từng đường (điểm, Case / PA, Ý thức, Lộ trình tiếp theo, KQĐR, lịch Test, Học lại, Lưu trữ, Chuyển lớp, bước tiếp sau thi)', async () => {
       const tv = await vao(idTvv); const cx = await vao(idCx);
       const duong: [string, string, string, unknown?][] = [
         ['nhập điểm', 'PUT', `/attempts/${luot}/scores/listening`, { rawScore: 30, rawTotal: 40 }],
@@ -235,6 +235,9 @@ export async function runPrOv8bTests(t: YThucTestKit) {
         ['Lưu trữ', 'POST', `/students/${em.id}/archive`],
         ['Chuyển lớp', 'POST', `/students/${em.id}/transfer`, { toClassId: em.lop, lyDo: 'thử' }],
         ['Kết thúc hàng loạt', 'POST', '/hang-loat-hoc-vien', { viec: 'ket-thuc', studentIds: [em.id], lyDo: 'x' }],
+        /* OV-8a: bước tiếp sau thi thật vẫn chỉ QL. */
+        ['chọn bước tiếp sau thi', 'POST', `/cycles/${em.cycleId}/buoc-tiep`, { chon: 'ket_thuc' }],
+        ['bỏ chọn bước tiếp', 'DELETE', `/cycles/${em.cycleId}/buoc-tiep`],
       ];
       const sai: string[] = [];
       for (const [ten, ck] of [['TVV', tv], ['CX', cx]] as const) {
