@@ -72,8 +72,7 @@ export async function runPrOv10aTests(t: YThucTestKit) {
     assert(loi(() => attempts.setSkillSkip(V.Admin, luot, 'listening', true, 'x'))?.status === 403, 'Huỷ kỹ năng → 403');
     assert(loi(() => attempts.duaLaiCaLuot(V.Admin, luot))?.status === 403, 'Đưa lại → 403');
     assert(loi(() => skillSchedule.setSkillDeadline(V.Admin, luot, 'listening', demoToday(), 'x'))?.status === 403, 'Dời hạn chấm → 403');
-    const kq = hangLoat.xemTruoc(V.Admin, { viec: 'luu-tru', studentIds: [em.id] });
-    assert(JSON.stringify(kq).includes('Ngoài phạm vi'), 'hàng loạt: em ngoài phạm vi của Admin → bị loại (không lưu được)');
+    assert(loi(() => hangLoat.xemTruoc(V.Admin, { viec: 'luu-tru', studentIds: [em.id] }))?.status === 403, 'hàng loạt (Lưu trữ) → 403');
     assert(/can\(PERMISSIONS\.CYCLE_EDIT\)/.test(doc('web/src/modules/classes/TabHocVienLop.tsx')), 'TabHocVienLop: chọn nhiều gắn cycle.edit');
   });
 
@@ -88,9 +87,10 @@ export async function runPrOv10aTests(t: YThucTestKit) {
     }
     const a = d.thaoTacKyNang('dang-thi', { nhapDiem: false, quanLy: true, gvcn: false, laFt: true, dotHoanTat: false, huy: false, han: false });
     assert(a.menu.includes('bao-vang') && a.menu.includes('doi-lich'), 'Admin vẫn Báo vắng / Dời lịch (plan.week)');
-    for (const f of ['web/src/modules/fasttrack/MockDetailPage.tsx', 'web/src/modules/cham/LuoiThuong.tsx', 'web/src/modules/test/keHoach/HopKyNang.tsx']) {
-      assert(/huy: [^,}]*ATTEMPT_SKIP_SKILL/.test(doc(f)) && /han: [^,}]*DEADLINE_OVERRIDE/.test(doc(f)), `${f}: truyền huy / han theo can(PERMISSIONS…)`);
+    for (const f of ['web/src/modules/cham/LuoiThuong.tsx', 'web/src/modules/test/keHoach/HopKyNang.tsx']) {
+      assert(/huy: can\(PERMISSIONS\.ATTEMPT_SKIP_SKILL\)/.test(doc(f)) && /han: can\(PERMISSIONS\.DEADLINE_OVERRIDE\)/.test(doc(f)), `${f}: truyền huy / han theo can(PERMISSIONS…)`);
     }
+    assert(/huy: d\.viewer\.canSkipSkill, han: d\.viewer\.canOverrideDeadline/.test(doc('web/src/modules/fasttrack/MockDetailPage.tsx')), 'MockDetailPage: huy / han theo cờ máy chủ');
   });
 
   check('OV10a-5 · link vào Test / Công việc: TVV · CX không có khu (nav.test / nav.work), Admin có Test + Công việc nhưng không Chờ duyệt; web gắn link theo nav', () => {
@@ -98,11 +98,11 @@ export async function runPrOv10aTests(t: YThucTestKit) {
     const n = navOf(V.Admin);
     assert(n.test && n.work && !n.workApprove, 'Admin: có Test, Công việc, không Chờ duyệt');
     const lop = doc('web/src/modules/classes/DauTrangLop.tsx');
-    assert(/x\.key === 'cham' && nav\?\.test\b/.test(lop) && /x\.key === 'cho-duyet' && nav\?\.workApprove\b/.test(lop), 'DauTrangLop: badge chờ chấm / chờ duyệt theo nav');
+    assert(/x\.key === 'cham' && session\?\.nav\?\.test\b/.test(lop) && /x\.key === 'cho-duyet' && session\?\.nav\?\.workApprove\b/.test(lop), 'DauTrangLop: badge chờ chấm / chờ duyệt theo nav');
     const ds = doc('web/src/modules/students/StudentsPage.tsx');
-    assert(/x\.key === 'cham' && nav\?\.test\b/.test(ds) && /x\.key === 'cho-duyet' && nav\?\.workApprove\b/.test(ds), 'StudentsPage: như trên');
-    assert(/nav\?\.work\b/.test(doc('web/src/modules/phanTich/TongHopVanDeHv.tsx')), 'Tổng hợp vấn đề HV: link Công việc theo nav.work');
-    assert(/nav\?\.testPlan\b/.test(doc('web/src/modules/classes/ClassProgressPanel.tsx')), 'ClassProgressPanel: link Kế hoạch Test theo nav.testPlan');
+    assert(/x\.key === 'cham' && session\?\.nav\?\.test\b/.test(ds) && /x\.key === 'cho-duyet' && session\?\.nav\?\.workApprove\b/.test(ds), 'StudentsPage: như trên');
+    assert(/session\?\.nav\?\.work\b/.test(doc('web/src/modules/phanTich/TongHopVanDeHv.tsx')), 'Tổng hợp vấn đề HV: link Công việc theo nav.work');
+    assert(/session\?\.nav\?\.testPlan\b/.test(doc('web/src/modules/classes/ClassProgressPanel.tsx')), 'ClassProgressPanel: link Kế hoạch Test theo nav.testPlan');
   });
 
   check('OV10a-6 · Phân tích › Ý thức (discipline.stats): TVV · CX · Admin không có khoá, đường API 403; góc Ý thức ẩn', () => {
@@ -115,7 +115,7 @@ export async function runPrOv10aTests(t: YThucTestKit) {
 
   check('OV10a-7 · Admin: tên GV là link (như QL, có analysis.view_teacher); TVV · CX không', () => {
     assert(navOf(V.Admin).phanTichGv && !navOf(V.TVV).phanTichGv && !navOf(V.CX).phanTichGv, 'phanTichGv: Admin có, TVV / CX không');
-    assert(/nav\?\.phanTichGv/.test(doc('web/src/modules/classes/TenGiaoVien.tsx')), 'TenGiaoVien: link theo nav.phanTichGv');
+    assert(/session\?\.nav\?\.phanTichGv/.test(doc('web/src/modules/classes/TenGiaoVien.tsx')), 'TenGiaoVien: link theo nav.phanTichGv');
   });
 
   check('OV10a-8 · Admin › Công việc: tab đổi tên "Chấm điểm"; vai khác giữ "Hỗ trợ học viên"', () => {

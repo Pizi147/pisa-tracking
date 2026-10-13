@@ -4,6 +4,7 @@ import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate } from '../../lib/api.ts';
 import { WeekPicker } from '../../ui/Filters.tsx';
 import { useToast } from '../../ui/Toast.tsx';
+import { useSession } from '../../lib/session.tsx';
 import { Field, SectionNote, Skeleton } from '../../ui/ui.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
@@ -48,6 +49,7 @@ export function PhanLichTest({ classId, tieuDe, suaDuoc, onDone, onChuyenTiep }:
   onChuyenTiep?: () => void;
 }) {
   const toast = useToast();
+  const { session } = useSession();
   const { homNay } = useNgayNghiepVu();
   const { data, loading, error, reload } = useApi<Progress>(`/classes/${classId}/progress`, [classId]);
   const [dangSua, setDangSua] = useState(false);
@@ -134,7 +136,7 @@ export function PhanLichTest({ classId, tieuDe, suaDuoc, onDone, onChuyenTiep }:
           {!laLopThuong && data.tomTatMt && (
             <p className="m-0 mt-2 text-sm tabular-nums text-slate-200">
               {data.tomTatMt.soEm} em · {data.tomTatMt.coMocSapToi} em có MT sắp tới · {data.tomTatMt.daXongMtCuoi} em đã xong MT cuối
-              {' '}<Link to={`/test/ke-hoach?loai=ft&classId=${classId}`} className="link">Xem ở Kế hoạch Test →</Link>
+              {session?.nav?.testPlan && <>{' '}<Link to={`/test/ke-hoach?loai=ft&classId=${classId}`} className="link">Xem ở Kế hoạch Test →</Link></>}
             </p>
           )}
           {laLopThuong && hetKhoa}
