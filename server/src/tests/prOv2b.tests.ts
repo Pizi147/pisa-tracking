@@ -79,7 +79,7 @@ export async function runPrOv2bTests(t: YThucTestKit) {
     });
   });
 
-  check('OV2b-2 · Admin / TVV / CX sửa được TVV; GVBM → 403; ô chọn chỉ có TVV đang hoạt động, cùng chi nhánh lên trước', () => {
+  check('OV2b-2 · Admin / TVV / CX sửa được TVV; GVBM → 403; ô chọn chỉ có TVV đang hoạt động, cùng chi nhánh (OV-8b)', () => {
     thu(() => {
       const v = V();
       for (const k of ['Admin', 'TVV', 'CX'] as const) {
@@ -89,8 +89,9 @@ export async function runPrOv2bTests(t: YThucTestKit) {
       }
       assert(loi(() => students.updateStudent(v.GVBM, em.id, { consultantUserId: idTvv }))?.status === 403, 'GVBM phải 403');
       const ds = students.dsTvv(em.id) as { id: number; ten: string; phu: string }[];
+      /* OV-8b (chủ SP 13/10, thay "cùng chi nhánh lên trước"): TVV chi nhánh khác không còn trong ô. */
       const iCp = ds.findIndex((x) => x.id === idTvv); const iHl = ds.findIndex((x) => x.id === idTvvHl);
-      assert(iCp >= 0 && iHl > iCp, `TVV CP trước MB: ${JSON.stringify(ds)}`);
+      assert(iCp >= 0 && iHl < 0, `chỉ TVV CP, không TVV MB: ${JSON.stringify(ds)}`);
       assert(!ds.some((x) => x.id === gvcn || x.id === idAdmin), 'ô TVV lọt người không phải TVV');
       assert(/Cẩm Phả/.test(ds[iCp].phu), `dòng phụ chi nhánh: ${ds[iCp].phu}`);
       students.updateStudent(v.QL, em.id, { consultantUserId: idTvv });
@@ -157,7 +158,7 @@ export async function runPrOv2bTests(t: YThucTestKit) {
     });
   });
 
-  check('OV2b-6 · Target: QL có lý do → đổi ngay; thiếu lý do → 400; GVCN → Đề xuất sửa, Target chưa đổi; TVV → 403', () => {
+  check('OV2b-6 · Target: QL có lý do → đổi ngay; thiếu lý do → 400; GVCN → Đề xuất sửa, Target chưa đổi; Admin → 403 (TVV sửa được: OV-8b)', () => {
     thu(() => {
       const v = V();
       const c0 = cycles.cycleById(em.cycleId);
@@ -169,7 +170,8 @@ export async function runPrOv2bTests(t: YThucTestKit) {
       deXuat.guiDeXuatSua(v.GVCN, em.id, { truong: 'target', moi: lai, lyDo: 'Em tiến bộ nhanh' });
       assert(cycles.cycleById(em.cycleId).target_score === moi, 'GVCN đề xuất mà Target đã đổi');
       assert(one(`SELECT 1 FROM yeu_cau_duyet WHERE hoc_vien_id = ? AND doi_tuong_loai = 'student:target' ORDER BY id DESC LIMIT 1`, em.id), 'không có thẻ Đề xuất sửa');
-      assert(loi(() => cycles.reviseTarget(v.TVV, em.cycleId, { newTarget: lai, reason: 'x' }))?.status === 403, 'TVV đổi Target phải 403');
+      /* OV-8b (chủ SP 13/10): TVV sửa Target như QL (prOv8b.tests OV8b-2) — Admin vẫn không. */
+      assert(loi(() => cycles.reviseTarget(v.Admin, em.cycleId, { newTarget: lai, reason: 'x' }))?.status === 403, 'Admin đổi Target phải 403');
     });
   });
 

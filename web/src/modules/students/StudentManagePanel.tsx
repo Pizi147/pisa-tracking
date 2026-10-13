@@ -80,8 +80,11 @@ export type ThongTinEm = {
   dob?: string | null; email?: string | null; consultantName?: string | null; note?: string | null; status?: string;
   tvv?: { id: number; ten: string } | null; tvvChon?: NguoiTrongDs[] | null;
 };
-/** `canEdit` = `student.edit` (QL, GVCN) · `coTheSuaThongTin` = thêm Admin / TVV / CX · `canEditCycle` = Target sửa thẳng (QL). */
-export type QuyenSua = { canEdit: boolean; coTheSuaThongTin?: boolean; canEditCycle?: boolean; coTheDeXuatSua?: boolean };
+/**
+ * `canEdit` = `student.edit` (QL, GVCN) · `coTheSuaThongTin` = thêm Admin / TVV / CX · `canEditCycle` = Target sửa thẳng (QL) ·
+ * `coTheSuaThem` = OV-8b TVV / CX: Target sửa thẳng + Ghi chú.
+ */
+export type QuyenSua = { canEdit: boolean; coTheSuaThongTin?: boolean; canEditCycle?: boolean; coTheDeXuatSua?: boolean; coTheSuaThem?: boolean };
 
 /**
  * SỬA THÔNG TIN MỘT EM TỪ DÒNG BẢNG (PR-OV2b — ⋯ dòng ở hồ sơ lớp / Học viên & Lớp): nạp hồ sơ em rồi mở đúng panel của ⋯ hồ sơ HV.
@@ -348,8 +351,8 @@ function HocLaiPanel({ studentId, studentName, lop, onClose, onDone }: ChungViec
 
 /**
  * SỬA THÔNG TIN (PR-OV2b, mockup overhaul-2 §6): Họ tên · Ngày sinh * · Email * · TVV (chọn người) · Dự kiến thi · Target · Điểm đầu vào (FT);
- * QL / GVCN thêm Tuần bắt đầu + Ghi chú. Admin / TVV / CX (`student.edit_info`): Target chỉ đọc, không Tuần bắt đầu / Ghi chú.
- * Target: `cycle.edit` sửa thẳng kèm lý do (`target-revision`); GVCN cùng ô → Đề xuất sửa gửi QL duyệt (`de-xuat-sua`).
+ * QL / GVCN thêm Tuần bắt đầu + Ghi chú. Admin (`student.edit_info`): Target chỉ đọc, không Tuần bắt đầu / Ghi chú. OV-8b TVV / CX: thêm Ghi chú + Target.
+ * Target: `cycle.edit` / `student.edit_more` sửa thẳng kèm lý do (`target-revision`); GVCN cùng ô → Đề xuất sửa gửi QL duyệt (`de-xuat-sua`).
  * Lưu một lần, ba phần theo thứ tự (hồ sơ + TVV + điểm đầu vào · lộ trình · Target): phần lỗi báo đúng phần, phần đã lưu nói rõ, panel còn mở.
  */
 function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, attempts, quyen, onDeXuatSua }: ChungViec & {
@@ -358,7 +361,8 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
   const toast = useToast();
   const { homNay } = useNgayNghiepVu();
   const quanLy = quyen.canEdit;                                   // QL, GVCN: thêm Tuần bắt đầu, Ghi chú
-  const targetThang = !!quyen.canEditCycle;                       // QL / Quản trị
+  const ghiChu = quanLy || !!quyen.coTheSuaThem;                  // OV-8b: TVV / CX sửa Ghi chú
+  const targetThang = !!quyen.canEditCycle || !!quyen.coTheSuaThem;   // QL / Quản trị · OV-8b: TVV / CX
   const targetDeXuat = quanLy && !targetThang;                    // GVCN
   const [fullName, setFullName] = useState(student.name);
   const [dob, setDob] = useState(student.dob ?? '');
@@ -420,7 +424,7 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
       await api.patch(`/students/${student.id}`, {
         fullName, dob, email: email.trim(),
         ...(tvvId !== (student.tvv?.id ?? null) ? { consultantUserId: tvvId } : {}),
-        ...(quanLy ? { note: note || null } : {}),
+        ...(ghiChu ? { note: note || null } : {}),
         ...(dauVao !== undefined ? { dauVao } : {}),
       });
       xong.push('thông tin');
@@ -479,7 +483,7 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
             placeholder="Chọn tư vấn viên" ariaLabel="TVV" id={lf.oId('tvv')} invalid={!!lf.loiCua(loi, 'tvv')}
             value={tvv} onChange={sua(setTvv)} khongKhop={(go) => `Không có tư vấn viên khớp “${go}”`} />
         </Truong>
-        {quanLy && (
+        {ghiChu && (
           <Truong nhan="Ghi chú" tuyChon>
             <textarea className="field w-full" rows={3} value={note} onChange={(e) => setNote(e.target.value)} />
           </Truong>

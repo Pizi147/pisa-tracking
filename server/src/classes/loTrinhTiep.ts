@@ -389,6 +389,7 @@ export function lopHocCua(p: Principal, studentId: number, current: any): {
   }
 
   const coTheChuyenLop = !!current && can(p, PERMISSIONS.STUDENT_EDIT, { classId: current.class_id });
+  const suaTrangThai = can(p, PERMISSIONS.STUDENT_EDIT, { studentId }) || can(p, PERMISSIONS.STUDENT_EDIT_MORE, { studentId });
   return {
     tiepTheo, chiXem: false,
     quyen: {
@@ -397,9 +398,10 @@ export function lopHocCua(p: Principal, studentId: number, current: any): {
       /* PR-CT: Quản lý ra lệnh (`Chuyển lớp…`); GVCN đề xuất (`Đề xuất chuyển lớp…`). */
       chuyenLop: !!current && coTheRaLenh(p, current.class_id),
       deXuatChuyenLop: coTheChuyenLop && !coTheRaLenh(p, current.class_id),
-      tamDung: can(p, PERMISSIONS.STUDENT_EDIT, { studentId }),
-      quayLai: can(p, PERMISSIONS.STUDENT_EDIT, { studentId }),
-      ketThuc: can(p, PERMISSIONS.STUDENT_EDIT, { studentId }),
+      /* OV-8b: TVV / CX (`student.edit_more`) cũng Tạm dừng / Quay lại / Thôi học. */
+      tamDung: suaTrangThai,
+      quayLai: suaTrangThai,
+      ketThuc: suaTrangThai,
       luuTru: can(p, PERMISSIONS.CYCLE_EDIT, { studentId }) && s?.status === 'finished',
       boLuuTru: false,
       hocLai: can(p, PERMISSIONS.CYCLE_EDIT, { studentId }) && s?.status === 'finished',   // PR-LUI-b

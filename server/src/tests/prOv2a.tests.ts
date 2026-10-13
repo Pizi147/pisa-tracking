@@ -130,8 +130,10 @@ export async function runPrOv2aTests(t: YThucTestKit) {
         const p = loadPrincipal(id);
         const ok = students.updateStudent(p, em, { fullName: 'Thử Đổi Tên', email: 'thu.doi@example.com', dob: '2010-01-02' });
         assert(ok.full_name === 'Thử Đổi Tên', `${id}: không lưu được họ tên`);
+        /* OV-8b (chủ SP 13/10): TVV / CX sửa được ghi chú (`student.edit_more`, prOv8b.tests) — Admin vẫn 403. */
         const e = loi(() => students.updateStudent(p, em, { note: 'ghi chú' }));
-        assert(e?.status === 403, `${id} sửa ghi chú: ${e?.status} ${e?.message}`);
+        if (id === idAdmin) assert(e?.status === 403, `${id} sửa ghi chú: ${e?.status} ${e?.message}`);
+        else assert(!e, `${id} sửa ghi chú (OV-8b): ${e?.status} ${e?.message}`);
         const e2 = loi(() => cycles.updateCycle(p, chuKy, { targetScore: 7, lyDo: 'thử' }));
         assert(e2?.status === 403, `${id} sửa Target: ${e2?.status} ${e2?.message}`);
         const e3 = loi(() => cycles.updateCycle(p, chuKy, { startWeek: '2026-09-07' }));

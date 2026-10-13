@@ -141,6 +141,11 @@ export const PERMISSIONS = {
   STUDENT_EDIT: 'student.edit',
   /** PR-OV2a: sửa THÔNG TIN HV — họ tên, ngày sinh, email, TVV, dự kiến thi, điểm đầu vào. Không ghi chú, không lộ trình, không chuyển lớp. */
   STUDENT_EDIT_INFO: 'student.edit_info',
+  /**
+   * PR-OV8b (chủ SP 13/10): phần thông tin HV còn lại của TVV / CX — Target (sửa thẳng, có lý do), ghi chú, Tạm dừng / Quay lại học / Thôi học
+   * (+ Hoàn tác), kết quả thi thật. Quyền HẸP: không mở `student.edit` / `cycle.edit` (lộ trình tiếp theo, chuyển lớp, lưu trữ, học lại).
+   */
+  STUDENT_EDIT_MORE: 'student.edit_more',
   /** PR-OV2a: vào Test (Lịch Test, Điểm theo lớp, Kế hoạch Test). Xem điểm trong hồ sơ vẫn là `attempt.view`. */
   TEST_VIEW: 'test.view',
   /** PR-OV2a: vào Công việc. */
@@ -186,6 +191,7 @@ export const PERMISSION_LABEL: Record<string, string> = {
   'student.view': 'Xem hồ sơ học viên',
   'student.edit': 'Sửa hồ sơ học viên',
   'student.edit_info': 'Sửa thông tin học viên',
+  'student.edit_more': 'Sửa Target, ghi chú, trạng thái học và kết quả thi thật của học viên',
   'test.view': 'Vào Test',
   'work.view': 'Vào Công việc',
   'analysis.view': 'Xem Tổng quan số liệu và Phân tích',

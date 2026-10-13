@@ -518,7 +518,8 @@ export function reviseTarget(p: Principal, cycleId: number, input: {
   const c = cycleById(cycleId);
   if (!c) throw notFound('Không tìm thấy lộ trình');
   /* `daDuyet`: chỉ quyết định chuyển lớp lúc thi hành truyền — lệnh đã được kiểm quyền lúc ra (như `applyTransition`). */
-  if (!o?.daDuyet) require_(p, PERMISSIONS.CYCLE_EDIT, { studentId: c.student_id }, CHI_QL_SUA);
+  /* OV-8b: TVV / CX (`student.edit_more`) sửa thẳng như QL — cùng đường, cùng lý do bắt buộc, cùng nhật ký. */
+  if (!o?.daDuyet && !coQuyen(p, PERMISSIONS.STUDENT_EDIT_MORE, { studentId: c.student_id })) require_(p, PERMISSIONS.CYCLE_EDIT, { studentId: c.student_id }, CHI_QL_SUA);
   /* OV-6b2: lộ trình của chương trình liên tục (PET, KET…) không có Target. */
   if (!c.route && programmeByCode(c.programme_code)?.lapMoiTuan) throw badRequest(CAU_LIEN_TUC.target);
   const { target, kck } = docTarget(input.newTarget);

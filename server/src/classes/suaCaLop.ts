@@ -6,7 +6,7 @@ import { demoToday } from '../demoConfig.ts';
 import { chanGiaoDichNeuSapHetGio } from '../platform/hanGio.ts';
 import { can, require_, type Principal } from '../permissions.ts';
 import { HttpError, badRequest, forbidden, kiemKieuO, notFound, nowIso } from '../util.ts';
-import { chuanHoaSuaHoSo, dsTvv, updateStudent } from '../students/students.ts';
+import { chuanHoaSuaHoSo, dsTvv, kiemTvvCungChiNhanh, updateStudent } from '../students/students.ts';
 import {
   docDiemXuatPhat, docDuKienThi, docTarget, docTuanBatDau, reviseTarget, setBaseline, updateCycle,
 } from '../fasttrack/cycles.ts';
@@ -95,7 +95,7 @@ function kiemLo(p: Principal, classId: number, input: DauVao) {
   }
   if (input.rows.length > TOI_DA_DONG_SUA_CA_LOP) throw badRequest(`Tối đa ${TOI_DA_DONG_SUA_CA_LOP} học viên một lần sửa.`);
   const conn = db();
-  const cls = conn.prepare('SELECT id, code, programme_code, lich_mt, route FROM classes WHERE id = ?').get(classId) as any;
+  const cls = conn.prepare('SELECT id, code, programme_code, lich_mt, route, branch_id FROM classes WHERE id = ?').get(classId) as any;
   if (!cls) throw notFound('Không tìm thấy lớp');
   require_(p, PERMISSIONS.STUDENT_EDIT, { classId: cls.id }, `Lớp ${cls.code} nằm ngoài phạm vi bạn được cấp quyền.`);
   const cot = new Set<string>(cotLuoiNhap(laLopThuong(cls.programme_code ?? null)).map((c) => c.key));
@@ -133,6 +133,8 @@ function kiemLo(p: Principal, classId: number, input: DauVao) {
 
     const hoSo = Object.fromEntries(HO_SO.filter((k) => r[k] !== undefined).map((k) => [k, r[k]]));
     for (const k of Object.keys(hoSo)) thu(k, () => chuanHoaSuaHoSo({ [k]: hoSo[k] }));
+    /* OV-8b: TVV cùng chi nhánh (lớp đang học = chi nhánh của em) — báo ở xem trước, cùng câu với hồ sơ. */
+    if (hoSo.consultantUserId != null && Number(hoSo.consultantUserId) !== s.consultant_user_id) thu('consultantUserId', () => kiemTvvCungChiNhanh(Number(hoSo.consultantUserId), cls.branch_id));
     /* PR-OV2b: CHỈ dòng có sửa phải đủ email + ngày sinh (em cũ thiếu mà không đụng tới thì không chặn). Ô gửi trống đã báo ở trên. */
     if ([...HO_SO, ...LO_TRINH].some((k) => r[k] !== undefined)) {
       for (const k of ['dob', 'email'] as const) if (r[k] === undefined && !s[k]) issues.push({ row: i + 1, field: k, message: 'Bắt buộc — em chưa có, điền khi sửa dòng này.', muc: 'loi' });

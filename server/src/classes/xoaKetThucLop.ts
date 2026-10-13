@@ -136,8 +136,8 @@ export function ketThucLop(p: Principal, classId: number) {
  * ponytail: lớp thường đã hết khoá mà mở lại khi chưa có học viên đang học thì `dongLopNeuHet` (luatLoTrinh.ts) có thể kết thúc lại ở lần đổi trạng thái / chuyển
  * lớp kế tiếp của một học viên trong lớp; Học lại một học viên vào lớp (ghi danh `active`) thì lớp ở lại.
  */
-export function moLaiLop(p: Principal, classId: number, o: { lyDo?: unknown } = {}) {
-  require_(p, PERMISSIONS.CLASS_EDIT, { classId }, CHI_QL_LOP);
+export function moLaiLop(p: Principal, classId: number, o: { lyDo?: unknown; /** OV-8b: lớp tự đóng vì việc đang được hoàn tác — nơi gọi đã kiểm quyền việc đó. */ heQua?: true } = {}) {
+  if (!o.heQua) require_(p, PERMISSIONS.CLASS_EDIT, { classId }, CHI_QL_LOP);
   const c = docLop(classId);
   if (c.status !== 'finished') throw badRequest('Lớp chưa kết thúc.');
   const lyDo = chuTuDo(o.lyDo, 'Lý do', 2000);

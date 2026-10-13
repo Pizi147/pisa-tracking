@@ -996,7 +996,9 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
         coTheSuaThongTin: can(p, PERMISSIONS.STUDENT_EDIT, { studentId }) || can(p, PERMISSIONS.STUDENT_EDIT_INFO, { studentId }),
         /* PR-DUYET (T44): target / lộ trình — Quản lý. GV của lớp không có quyền này thì gửi "Đề xuất sửa". */
         canEditCycle: can(p, PERMISSIONS.CYCLE_EDIT, { studentId }),
-        coTheDeXuatSua: !can(p, PERMISSIONS.CYCLE_EDIT, { studentId }) && can(p, PERMISSIONS.STUDENT_VIEW, { classId: lopDangHoc, studentId }),
+        /* OV-8b: TVV / CX — Target sửa thẳng (có lý do), Ghi chú, Kết quả thi thật (`student.edit_more`). */
+        coTheSuaThem: can(p, PERMISSIONS.STUDENT_EDIT_MORE, { studentId }),
+        coTheDeXuatSua: !can(p, PERMISSIONS.CYCLE_EDIT, { studentId }) && !can(p, PERMISSIONS.STUDENT_EDIT_MORE, { studentId }) && can(p, PERMISSIONS.STUDENT_VIEW, { classId: lopDangHoc, studentId }),
         canPlanWeek: can(p, PERMISSIONS.PLAN_WEEK, { studentId }),
         canReport: can(p, PERMISSIONS.SOS_REPORT, { classId: lopDangHoc, studentId }),
         /* RB-6 (PR-S1): quyền hoàn thành Case tính theo MÔN của từng Case — xem `canClose` trên từng thẻ Case, không có cờ chung ở đây. */

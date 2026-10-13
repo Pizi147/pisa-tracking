@@ -208,13 +208,14 @@ export default function StudentDetailPage() {
               <DongThongTin tt={data.dauHoSo.thongTin} />
             </div>
 
-            <div className="flex flex-wrap gap-2 items-start">
+            {/* ml-auto: xuống dòng ở 375 thì nút vẫn bám phải — menu ⋯ (mở về bên trái) không tràn khỏi màn. */}
+            <div className="flex flex-wrap gap-2 items-start ml-auto">
               {data.viewer.canReport && !data.lopHoc?.chiXem && (
                 <button className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={() => setReportOpen(true)}>+ Case</button>
               )}
               {/* ⋮ = MENU THẢ; mỗi mục mở THẲNG panel của việc đó (Q10). Không có quyền nào → Menu không vẽ gì. */}
               <Menu label="⋯" className="btn min-h-[44px] sm:min-h-0" items={mucQuanLyHocVien({
-                canEdit: data.viewer.canEdit, suaThongTin: !!data.viewer.coTheSuaThongTin, lopHoc: data.lopHoc ?? null, cycle: cy, status: data.status, coTheXoa: !!data.viewer.coTheXoa,
+                canEdit: data.viewer.canEdit, suaThongTin: !!data.viewer.coTheSuaThongTin, suaThem: !!data.viewer.coTheSuaThem, lopHoc: data.lopHoc ?? null, cycle: cy, status: data.status, coTheXoa: !!data.viewer.coTheXoa,
                 deXuatSua: !!data.viewer.coTheDeXuatSua,
               }).map((m) => ({
                 label: m.nhan, danger: m.nguyHiem, keTruoc: m.keTruoc, hint: m.phu,
