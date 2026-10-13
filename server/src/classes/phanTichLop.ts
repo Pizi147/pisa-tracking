@@ -62,7 +62,7 @@ export function phanTichNhieuLop(classIds: readonly number[]): Map<number, PhanT
   const baiCua = new Map<number, any[]>();
   for (const l of lo(cycleIds)) {
     for (const a of conn.prepare(
-      `SELECT a.*, cy.route FROM assessment_attempts a JOIN learning_cycles cy ON cy.id = a.cycle_id
+      `SELECT a.*, cy.route, cy.khong_cam_ket AS cy_kck FROM assessment_attempts a JOIN learning_cycles cy ON cy.id = a.cycle_id
         WHERE a.cycle_id IN (${cho(l.length)}) AND a.status != 'cancelled'`,
     ).all(...l) as any[]) baiCua.set(a.cycle_id, [...(baiCua.get(a.cycle_id) ?? []), a]);
   }

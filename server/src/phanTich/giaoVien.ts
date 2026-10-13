@@ -210,7 +210,7 @@ export function tapChamDiem(c: NguCanhPtGv, nap: NapBai): { tap: Tap; dong: Map<
 
 // ------------------------------------------------------------------ cột 5 · Kết quả môn (mục = ô có điểm, `baiId`) + cột 6 · HV tiến bộ
 
-/** Q15, Q20: `danhGiaMon` (cùng luật tab Phân tích lớp), gán cho người dạy môn đó ở TUẦN THI; em KCK không tính (không kỳ vọng). */
+/** Q15, Q20: `danhGiaMon` (cùng luật tab Phân tích lớp), gán cho người dạy môn đó ở TUẦN THI; em KCK không tính (OV-9: có kỳ vọng nhưng ngoài số liệu SOS). */
 function tapKetQua(c: NguCanhPtGv, nap: NapBai): Map<string, Tap & { lop?: Map<number, Set<number>> }> {
   const out = new Map<string, Tap>();
   const lop = new Map<string, Map<number, Set<number>>>();

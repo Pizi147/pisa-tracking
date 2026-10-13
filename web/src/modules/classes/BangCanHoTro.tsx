@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { Empty, ErrorState, Level, NhanTrangThai, Skeleton, TargetText } from '../../ui/ui.tsx';
+import { ChipDuoiKck } from '../../ui/KetQuaDot.tsx';
 import { ViecTiep } from '../../ui/ViecTiep.tsx';
 import { TheDong, useDienThoai } from '../../ui/TheDong.tsx';
 import { MenuDong } from '../../ui/MenuDong.tsx';
@@ -120,6 +121,7 @@ export function BangCanHoTro({ classId, maLop, laLopThuong, quyen, onDoi, chuong
               <p className="m-0 flex flex-wrap items-center gap-1.5 text-xs text-slate-400">
                 {k.sos ? <Level tone={sosTone(r?.standing?.sosLevel ?? null)} dut={k.sosTamThoi}>{k.sos}{k.sosTamThoi ? ' tạm thời' : ''}</Level>
                   : <span className="tabular-nums text-slate-300">{k.chinh}</span>}
+                {k.kckDuoi && <ChipDuoiKck />}
                 {r?.standing?.attemptLabel && <span>{r.standing.attemptLabel}</span>}
               </p>
               <p className="m-0 text-xs tabular-nums text-slate-500">

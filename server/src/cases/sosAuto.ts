@@ -122,16 +122,19 @@ export function resyncUnconfirmedPresets(
 /** Ghi hành trình + audit + báo GVBM (người phụ trách) cho một Case vừa được SOS tự tạo. `hanXacNhan` = `sos_cases.han_xac_nhan`. */
 export function announceAutoCase(input: {
   caseId: number; studentId: number; cycleId: number | null; skillLabel: string; attemptNo: number;
-  sosLevel: number | null; ownerUserId: number | null; detectedOn: string; hanXacNhan: string; actorUserId: number | null;
+  sosLevel: number | null; ownerUserId: number | null; detectedOn: string; hanXacNhan: string | null; actorUserId: number | null;
+  /** OV-9: Case nhẹ của em KCK — không hạn, không PA quy chế. */
+  kck?: boolean;
   /** PR-LT2a: Giữa khoá lớp thường — tên Case dựng sẵn (không `[MT n]`/`[SOS n]`) + chữ hành trình riêng. */
   ten?: string; dot?: 'giua-khoa';
 }) {
   const st = db().prepare('SELECT full_name FROM students WHERE id = ?').get(input.studentId) as any;
-  const ten = input.ten ?? tenCaseSos({ mt: input.attemptNo, giua: `${input.skillLabel} không đạt`, sos: input.sosLevel });
+  const ten = input.ten ?? tenCaseSos({ mt: input.attemptNo, giua: `${input.skillLabel} không đạt`, sos: input.sosLevel, kck: input.kck });
   addJourney({
     studentId: input.studentId, cycleId: input.cycleId, eventType: 'case_opened', eventDate: input.detectedOn,
     title: input.dot === 'giua-khoa' ? `Progress Test tự tạo Case ${ten}` : `SOS tự tạo Case ${ten}`,
-    detail: input.dot === 'giua-khoa' ? 'PA Bổ trợ chờ GVBM xác nhận nguyên nhân và kế hoạch bài giảng.' : 'PA theo quy chế chờ GVBM xác nhận.',
+    detail: input.kck ? 'Em KCK dưới kỳ vọng — Case nhẹ: GVBM xác nhận nguyên nhân, không hạn, không PA quy chế.'
+      : input.dot === 'giua-khoa' ? 'PA Bổ trợ chờ GVBM xác nhận nguyên nhân và kế hoạch bài giảng.' : 'PA theo quy chế chờ GVBM xác nhận.',
     refTable: 'sos_cases', refId: input.caseId, createdBy: input.actorUserId,
     dedupKey: `case_open:${input.caseId}`,
   });
@@ -146,7 +149,7 @@ export function announceAutoCase(input: {
     notify({
       userId: input.ownerUserId, kind: 'sos',
       title: `Xác nhận nguyên nhân ${input.skillLabel} · ${[st?.full_name, lop].filter(Boolean).join(' · ')}`,
-      body: `Case mới sau ${input.dot === 'giua-khoa' ? nhanBaiThuong('progress') : `MT${input.attemptNo}`}: ${ten} · hạn ${ngay(input.hanXacNhan, demoToday())}`,
+      body: `Case mới sau ${input.dot === 'giua-khoa' ? nhanBaiThuong('progress') : `MT${input.attemptNo}`}: ${ten}${input.hanXacNhan ? ` · hạn ${ngay(input.hanXacNhan, demoToday())}` : ' · KCK, không hạn'}`,
       entityType: 'sos_case', entityId: input.caseId, dedupKey: `sos-case:${input.caseId}`,
     });
   }
@@ -530,17 +533,17 @@ export function apDungKhongTheoDoi(conn: any, yc: { doi_tuong_id: number; du_lie
 /** QUẢN LÝ TỪ CHỐI "Không cần theo dõi" (trong tx của hộp): Case về chờ nguyên nhân, hạn mới 5 ngày (Gấp / SOS 3: 3) từ ngày từ chối; báo GVBM phụ trách. */
 export function tuChoiKhongTheoDoi(conn: any, yc: { doi_tuong_id: number; nguoi_xin: number | null }, nguoiDuyet: number, lyDo: string) {
   const caseId = yc.doi_tuong_id;
-  const c = conn.prepare('SELECT id, owner_user_id, sos_level, urgency, (SELECT full_name FROM students WHERE id = sos_cases.student_id) AS hv FROM sos_cases WHERE id = ?').get(caseId) as any;
+  const c = conn.prepare('SELECT id, owner_user_id, sos_level, urgency, kck, (SELECT full_name FROM students WHERE id = sos_cases.student_id) AS hv FROM sos_cases WHERE id = ?').get(caseId) as any;
   if (!c) throw notFound('Không tìm thấy Case');
   const today = demoToday();
-  const han = hanXacNhan(today, { sosLevel: c.sos_level, urgency: c.urgency });
+  const han = c.kck ? null : hanXacNhan(today, { sosLevel: c.sos_level, urgency: c.urgency });   // OV-9: Case nhẹ không hạn
   conn.prepare('UPDATE sos_cases SET han_xac_nhan = ?, updated_at = ? WHERE id = ?').run(han, nowIso(), caseId);
   ghiMoc(caseId, 'ql_tu_choi_khong_theo_doi', today, lyDo, nguoiDuyet);
   /* Người xin đã nhận "Quản lý từ chối: …" từ hộp; GVBM phụ trách khác người xin thì báo riêng. */
   if (c.owner_user_id && c.owner_user_id !== yc.nguoi_xin && c.owner_user_id !== nguoiDuyet) {
     notify({
       userId: c.owner_user_id, kind: 'sos', title: `Bị từ chối · Không cần theo dõi · ${c.hv ?? 'học viên'}`.slice(0, 200),
-      body: `${lyDo.slice(0, 120)} — xác nhận nguyên nhân trước hết ${ngay(han, today)}`,
+      body: `${lyDo.slice(0, 120)} — xác nhận nguyên nhân${han ? ` trước hết ${ngay(han, today)}` : ' (KCK, không hạn)'}`,
       entityType: 'sos_case', entityId: caseId, dedupKey: `tu_choi_ktd:${caseId}:${today}`,
     });
   }

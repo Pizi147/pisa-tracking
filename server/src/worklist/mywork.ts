@@ -661,7 +661,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
          LEFT JOIN enrollments cur ON cur.student_id = s.id AND cur.status = 'active'
          LEFT JOIN classes ac ON ac.id = a.class_id
          LEFT JOIN classes cc ON cc.id = cur.class_id
-        WHERE sc.status != 'done' AND COALESCE(sc.sos_level, 1) > 0
+        WHERE sc.status != 'done' AND COALESCE(sc.sos_level, 1) > 0 AND sc.kck = 0   /* OV-9: Case nhẹ (KCK) không bắt Thêm PA, không hạn */
           AND sc.disposition IS NULL AND COALESCE(s.status, 'active') = 'active'   /* K3-41: em Tạm dừng dừng hạn */
         GROUP BY sc.id`,
     )
@@ -746,7 +746,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
    * AI THẤY: người phụ trách Case (GVBM đúng kỹ năng); "Của GV (nhắc)" liệt kê dòng của GV cho Quản lý. Em Tạm dừng không sinh dòng (K3-41).
    * Mọi trường hợp đều kiểm đúng quyền sửa Case theo kỹ năng (C02).
    */
-  const cotCase = `sc.id, sc.topic, sc.summary, sc.origin_kind, sc.sos_level, sc.urgency, sc.owner_user_id, sc.attempt_id,
+  const cotCase = `sc.id, sc.topic, sc.summary, sc.origin_kind, sc.sos_level, sc.urgency, sc.owner_user_id, sc.attempt_id, sc.kck,
               COALESCE(sc.student_id, a.student_id) AS eff_student_id,
               COALESCE(a.class_id, cur.class_id) AS eff_class_id,
               COALESCE(ac.branch_id, cc.branch_id) AS eff_branch_id,
@@ -789,6 +789,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     const skillLabel = c.topic ? (laThuong ? tenMonNgan(ctCua(c.eff_class_id), c.topic) : caseTopicLabel(c.topic, ctCua(c.eff_class_id))) : 'Kỹ năng';
     const hv = c.full_name ?? 'Học viên';
     const nguyenNhan = loai === 'cause';
+    const kck = c.kck ? ' · KCK' : '';   // OV-9: Case nhẹ — không hạn (`due` null), không đỏ
     items.push({
       key: nguyenNhan ? `cause:${c.id}` : `xnpa:${c.iv_id}`, group: loai, urgency: u, paId: nguyenNhan ? null : c.iv_id,
       /* OV-5a: Xác nhận nguyên nhân gom theo lớp + kỹ năng + lượt (panel gom ở Công việc). */
@@ -800,10 +801,10 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       contextLabel: nhanDot(c.attempt_kind, c.attempt_no),
       count: null,
       reason: [
-        nguyenNhan ? `${skillLabel} ${laThuong ? 'chưa đạt' : 'dưới kỳ vọng'} — chưa xác nhận nguyên nhân` : `${skillLabel} — PA theo quy chế chưa bắt đầu`,
+        nguyenNhan ? `${skillLabel} ${laThuong ? 'chưa đạt' : 'dưới kỳ vọng'}${kck} — chưa xác nhận nguyên nhân${kck ? ', không hạn' : ''}` : `${skillLabel} — PA theo quy chế chưa bắt đầu`,
         mine ? null : 'người phụ trách chưa làm',
       ].filter(Boolean).join(' — '),
-      tieuDe: nguyenNhan ? `Xác nhận nguyên nhân ${skillLabel} · ${hv}` : `Xác nhận PA · ${skillLabel} · ${hv}`, phu: skillLabel,
+      tieuDe: nguyenNhan ? `Xác nhận nguyên nhân ${skillLabel}${kck} · ${hv}` : `Xác nhận PA · ${skillLabel} · ${hv}`, phu: skillLabel,
       actionLabel: nguyenNhan ? 'Xác nhận nguyên nhân' : 'Xác nhận PA',
       /* PR-DUYET (K5-12): mở thẳng Ngăn Case — Nhắc lưu đường này vào thông báo, chuông về đúng chỗ. */
       href: duongHoSoHocVien(c.eff_student_id, { caseId: c.id }),
@@ -935,7 +936,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
            JOIN students s ON s.id = cy.student_id AND ${HV_DANG_HOC_SQL('s')}
            JOIN enrollments e ON e.student_id = s.id AND e.status = 'active'
            JOIN classes c ON c.id = e.class_id
-          WHERE cy.status = 'active' AND cy.route IS NOT NULL AND cy.target_score IS NULL AND cy.khong_cam_ket = 0
+          WHERE cy.status = 'active' AND cy.route IS NOT NULL AND cy.target_score IS NULL   /* OV-9: em KCK chưa có Target cũng thiếu Target */
             AND e.class_id IN (${lopCn.map(() => '?').join(',')}) AND (? IS NULL OR c.branch_id = ?)`,
       ).all(...lopCn, f.branchId ?? null, f.branchId ?? null) as any[])
         /* PR-VAI-a (từ UXF-a, mywork.ts:927): sắp lớp theo `soSanhLop` (MB FT 9 trước MB FT 10), rồi tên em. */

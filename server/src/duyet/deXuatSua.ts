@@ -8,7 +8,7 @@ import { db, tx } from '../db.ts';
 import { badRequest, notFound } from '../util.ts';
 import { require_, type Principal } from '../permissions.ts';
 import { writeAudit } from '../platform/audit.ts';
-import { KCK, PERMISSIONS, TRUONG_DE_XUAT, laKck, type TruongDeXuat } from '../../../shared/domain/index.ts';
+import { PERMISSIONS, TRUONG_DE_XUAT, chuTargetKck, tachKck, type TruongDeXuat } from '../../../shared/domain/index.ts';
 import { taoYeuCau } from './yeuCau.ts';
 
 export const NHAN_TRUONG_DE_XUAT: Record<TruongDeXuat, string> = {
@@ -63,14 +63,16 @@ export function kiemGiaTriDeXuat(conn: any, studentId: number, truong: TruongDeX
   let moi: string | number;
   let cu: string | number | null = null;
   if (truong === 'target') {
-    /* Q29-1: KCK (không cam kết) là một giá trị Target hợp lệ — lưu chữ 'KCK' trong thẻ. */
-    const kck = laKck(moiVao);
-    const n = Number(moiVao);
-    if (!kck && (moiVao === '' || moiVao == null || !Number.isFinite(n) || n < 0 || n > 9 || Math.round(n * 2) !== n * 2)) {
-      throw badRequest('Target mới là một band từ 0 đến 9, bước 0.5 — hoặc KCK (không cam kết).');
+    /* Q29-1 + OV-9: KCK là dấu riêng, Target giữ — thẻ lưu "6.5 KCK" / "KCK" (chưa có Target) / số. */
+    const { so, kck } = tachKck(moiVao);
+    const coSo = so !== '' && so != null;
+    const n = Number(so);
+    if ((!kck || coSo) && (!coSo || !Number.isFinite(n) || n < 0 || n > 9 || Math.round(n * 2) !== n * 2)) {
+      throw badRequest('Target mới là một band từ 0 đến 9, bước 0.5 — thêm KCK nếu không cam kết.');
     }
     if (!ht.cycle) throw badRequest('Em chưa có lộ trình đang chạy để đổi Target.');
-    moi = kck ? KCK : n; cu = ht.cycle.khong_cam_ket ? KCK : ht.cycle.target_score ?? null;
+    moi = kck ? chuTargetKck(coSo ? n : null, true) : n;
+    cu = ht.cycle.khong_cam_ket ? chuTargetKck(ht.cycle.target_score ?? null, true) : ht.cycle.target_score ?? null;
     if (cu === moi) throw badRequest('Target mới trùng Target hiện tại.');
   } else if (truong === 'lo-trinh') {
     const code = String(moiVao ?? '').trim();

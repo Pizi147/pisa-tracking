@@ -4,7 +4,7 @@ import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { Modal } from '../../ui/Drawer.tsx';
-import { Empty, ErrorState, NutChon, Skeleton } from '../../ui/ui.tsx';
+import { Empty, ErrorState, NutChon, OKck, Skeleton } from '../../ui/ui.tsx';
 import { Nhan } from '../../ui/Nhan.tsx';
 import { DauDuoi } from '../../ui/Nhan.tsx';
 import { TheDong, useDienThoai } from '../../ui/TheDong.tsx';
@@ -14,14 +14,14 @@ import { OTuan } from './TransitionPanel.tsx';
 import { BanGiaoPanel } from './BanGiaoPanel.tsx';
 import { nhapDiemCua, type QuyenDong } from './thaoTacDongHocVien.tsx';
 import {
-  NORMAL_LADDER, REGULAR_SKILLS, RATIO_PASS_THRESHOLD, canLopDich, coPhieu, khopLocLoTrinh, maHocLai, mocLoTrinh, nhomLoTrinh, tenMonNgan, tuanLich,
-  type HuongLenh, type LocLoTrinh, type NhomLoTrinh, type ProgrammeCode, type RegularSkill,
+  NORMAL_LADDER, REGULAR_SKILLS, RATIO_PASS_THRESHOLD, canLopDich, ghepMucTieu, hienMucTieu, tachMucTieu, coPhieu, khopLocLoTrinh, maHocLai, mocLoTrinh, nhomLoTrinh, tenMonNgan, tuanLich,
+  type HuongLenh, type LocLoTrinh, type MucTieuLenh, type NhomLoTrinh, type ProgrammeCode, type RegularSkill,
 } from '@shared/domain/index.ts';
 
 type BanGiao = { xacNhan: boolean; monXong: string[]; lamLai: boolean; hanGvbm: string | null; hanGvcn: string | null };
-type Lenh = { id: number; huong: HuongLenh; lopDichId: number | null; lopDichMa: string | null; tuan: string; mucTieu: number | 'KCK' | null;
+type Lenh = { id: number; huong: HuongLenh; lopDichId: number | null; lopDichMa: string | null; tuan: string; mucTieu: MucTieuLenh | null;
   ngayXemLai: string | null; lyDo: string | null; loi: string | null; banGiao: BanGiao };
-type Nhap = { huong: HuongLenh; lopDichId: number | null; tuan: string | null; mucTieu: number | 'KCK' | null; ngayXemLai: string | null; ghiChu: string | null };
+type Nhap = { huong: HuongLenh; lopDichId: number | null; tuan: string | null; mucTieu: MucTieuLenh | null; ngayXemLai: string | null; ghiChu: string | null };
 type KetLuan = { dat: boolean; nguyenNhan: 'trung_tam' | 'hoc_sinh' | null; mon: string[]; ghiChu: string | null };
 type Kqdr = {
   nguong: number; goiY: { overall: number; dat: boolean; monTruot: RegularSkill[] } | null;
@@ -42,7 +42,7 @@ type KeHoach = {
 type ODiem = { score: number | null; total: number | null };
 type DongRoster = { id: number; timeline: { kind: string; kindLabel: string; myPending: string[]; ratios: Record<string, ODiem> | null; nguong?: number }[]; cuoiKhoa?: { tyLe: number | null } | null };
 /** Lộ trình hiện của một em: lệnh đã chốt, không thì nháp (chỉ QL nhận được nháp từ máy chủ). */
-type Lt = { huong: HuongLenh; lopDichId: number | null; lopDichMa: string | null; tuan: string | null; mucTieu: number | 'KCK' | null; ngayXemLai: string | null;
+type Lt = { huong: HuongLenh; lopDichId: number | null; lopDichMa: string | null; tuan: string | null; mucTieu: MucTieuLenh | null; ngayXemLai: string | null;
   ghiChu: string | null; chot: boolean };
 
 const NHOM: { key: NhomLoTrinh; nhan: (ke: string | null) => string }[] = [
@@ -117,7 +117,7 @@ export function BangLoTrinhTiep({ classId, quyen, onDoi, emMo, onDaMoEm }: {
     const dau = lt.huong === 'fast_track' ? 'Lên FT' : lt.huong === 'len_lop' ? `Lên ${ke ?? ''}`
       : lt.huong === 'hoc_lai' ? (lop && lop.programmeCode !== ma ? `Xuống ${lop.programmeCode}` : `Học lại${ma ? ` ${ma}` : ''}`)
       : lt.huong === 'bao_luu' ? 'Tạm dừng học (bảo lưu)' : lt.huong === 'chuyen_lop' ? 'Chuyển lớp' : 'Dừng học hẳn';
-    const phu = [lt.tuan ? tuanLich(lt.tuan, h) : null, lt.huong === 'fast_track' && lt.mucTieu !== null ? `Target ${lt.mucTieu === 'KCK' ? 'KCK' : b1(lt.mucTieu)}` : null,
+    const phu = [lt.tuan ? tuanLich(lt.tuan, h) : null, lt.huong === 'fast_track' && lt.mucTieu !== null ? `Target ${hienMucTieu(lt.mucTieu)}` : null,
       lt.huong === 'bao_luu' && lt.ngayXemLai ? `xem lại ${tuanLich(lt.ngayXemLai, h)}` : null].filter(Boolean).join(' · ');
     return { a: [dau, canLopDich(lt.huong) ? maLop : null].filter(Boolean).join(' · '), b: phu };
   };
@@ -367,10 +367,10 @@ function HopLoTrinh({ classId, kh, em, ke, onDong, onXong }: {
   const [huong, setHuong] = useState<HuongLenh | ''>(goc?.huong ?? '');
   const [lop, setLop] = useState<number | ''>(goc?.lopDichId ?? '');
   const [tuan, setTuan] = useState(goc?.tuan ?? '');
-  const [target, setTarget] = useState(() => {
-    const m = goc?.mucTieu ?? (em.kck ? 'KCK' : em.target);
-    return m === null || m === undefined ? '' : String(m);
-  });
+  /* OV-9: Target số + ô tích KCK riêng (dấu của em giữ khi chưa có quyết định). */
+  const tgGoc = goc?.mucTieu != null ? tachMucTieu(goc.mucTieu) : { target: em.target, kck: em.kck };
+  const [target, setTarget] = useState(tgGoc.target == null ? '' : String(tgGoc.target));
+  const [kck, setKck] = useState(tgGoc.kck);
   const [xemLai, setXemLai] = useState(goc?.ngayXemLai ?? '');
   const [ghiChu, setGhiChu] = useState(goc?.ghiChu ?? '');
   const [loi, setLoi] = useState<string | null>(null);
@@ -378,7 +378,7 @@ function HopLoTrinh({ classId, kh, em, ke, onDong, onXong }: {
   const [huy, setHuy] = useState<string | null>(null);
   const ma = kh.from.programmeCode;
   const dsLop = lopTheoHuong(kh.candidates, huong, ma, ke);
-  const muc = (): number | 'KCK' | null => (huong !== 'fast_track' || !target.trim() ? null : target.trim().toUpperCase() === 'KCK' ? 'KCK' : Number(target.replace(',', '.')));
+  const muc = (): MucTieuLenh | null => (huong !== 'fast_track' ? null : ghepMucTieu(target.trim() ? Number(target.replace(',', '.')) : null, kck));
   const than = () => ({
     huong, toClassId: huong && canLopDich(huong) ? lop || null : null, tuan: tuan || null, mucTieu: muc(),
     ngayXemLai: huong === 'bao_luu' ? xemLai || null : null,
@@ -461,7 +461,14 @@ function HopLoTrinh({ classId, kh, em, ke, onDong, onXong }: {
               <Truong nhan="Tuần bắt đầu"><OTuan tuanChon={kh.tuanChon} value={tuan} onChange={setTuan} ariaLabel="Tuần bắt đầu" chuaChon="Chọn tuần" /></Truong>
             )}
             {huong === 'fast_track' && (
-              <Truong nhan="Target"><input className="field w-24 tabular-nums" inputMode="decimal" value={target} onChange={(e) => setTarget(e.target.value)} aria-label="Target (hoặc KCK)" /></Truong>
+              /* OV-9: ô Target + ô tích KCK — khung div (không lồng label). */
+              <div className="grid grid-cols-[110px_minmax(0,1fr)] items-center gap-2 text-sm max-sm:grid-cols-1">
+                <span className="text-[12px] font-semibold text-slate-300">Target</span>
+                <span className="flex flex-wrap items-center gap-3">
+                  <input className="field w-24 tabular-nums" inputMode="decimal" value={target} onChange={(e) => setTarget(e.target.value)} aria-label="Target" />
+                  <OKck chon={kck} onChange={setKck} />
+                </span>
+              </div>
             )}
             {huong === 'bao_luu' && (
               <Truong nhan="Xem lại"><OTuan tuanChon={kh.tuanChon} value={xemLai} onChange={setXemLai} ariaLabel="Tuần xem lại" chuaChon="Chọn tuần" rong /></Truong>

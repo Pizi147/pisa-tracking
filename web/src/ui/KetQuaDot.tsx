@@ -1,4 +1,4 @@
-import { attemptProgressView, type ProgressTone } from '@shared/domain/index.ts';
+import { DUOI_KY_VONG_KCK, GIAI_THICH_KCK, attemptProgressView, type ProgressTone } from '@shared/domain/index.ts';
 import { SCORE_CHIP, type ScoreTone } from './ui.tsx';
 
 /**
@@ -35,7 +35,17 @@ const TONE_MARK: Record<ProgressTone, string> = { muted: '', danger: '●', info
  * `phan="overall"` chỉ vẽ ô Overall (`Chưa đủ điểm` / `Đạt kỳ vọng` …) để bảng có một cột
  * Overall mà không phải tự dựng chữ.
  */
-export function KetQuaDot({ coDiem, yeuCau, dat, sos, phan = 'cau', cheDo, soMonChuaDat, duoiKyVong, chot }: {
+/** OV-9: chip TRUNG TÍNH "Dưới kỳ vọng · KCK" — em KCK dưới kỳ vọng: không SOS, không đỏ (chữ nói trạng thái, không chỉ màu). */
+export function ChipDuoiKck() {
+  return (
+    <span title={GIAI_THICH_KCK}
+      className="inline-flex items-center gap-1 whitespace-nowrap rounded-md border border-[color:var(--line-strong)] px-2 py-0.5 text-xs font-medium text-slate-300">
+      {DUOI_KY_VONG_KCK}
+    </span>
+  );
+}
+
+export function KetQuaDot({ coDiem, yeuCau, dat, sos, phan = 'cau', cheDo, soMonChuaDat, duoiKyVong, chot, kckDuoi }: {
   /** Số KỸ NĂNG (L/R/W/S) đã có điểm. */
   coDiem: number;
   /** Số KỸ NĂNG bắt buộc của đợt. */
@@ -53,7 +63,10 @@ export function KetQuaDot({ coDiem, yeuCau, dat, sos, phan = 'cau', cheDo, soMon
   soMonChuaDat?: number | null;
   /** PR-S4F #10: chip cạnh Overall — kỹ năng dưới kỳ vọng ("W", "L · S") thay cho "Chưa đạt kỳ vọng" chung chung. */
   duoiKyVong?: readonly string[];
+  /** OV-9: em KCK dưới kỳ vọng (máy chủ `kckDuoi`) — chip trung tính thay cho SOS / "chưa đạt". */
+  kckDuoi?: boolean;
 }) {
+  if (kckDuoi) return <ChipDuoiKck />;
   const v = attemptProgressView({ scored: coDiem, required: yeuCau, passed: dat, sos, cheDo, soMonChuaDat, chot });
   const tone: ProgressTone = phan === 'overall' && v.overall === 'incomplete' ? 'muted' : v.tone;
   /* ⚠ chỉ nghĩa quá hạn (G-4): số tạm thời dùng ◌ (viền đứt), không dùng ⚠. */

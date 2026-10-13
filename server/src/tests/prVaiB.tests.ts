@@ -236,7 +236,10 @@ export async function runPrVaiBTests(t: YThucTestKit) {
     const td = cau({ ...day, dacBiet: { loai: 'tam-dung', tu: '2026-09-07' } });
     assert(td[0].chu === 'Tạm dừng từ 07/09' && td[0].tone === 'warn' && td.length === 3 && !td.some((m) => m.chu.startsWith('Ý thức')), JSON.stringify(td));
     const kck = cau({ dacBiet: { loai: 'kck' }, ketQua: { ...KQ_FT, kck: true, sos: null }, hoTro: ['Reading'] });
-    assert(chu(kck).join(' · ') === 'KCK · không đặt kỳ vọng MT, không SOS · MT1 OVR 5.5: đang hỗ trợ Reading', JSON.stringify(kck));
+    /* OV-9: KCK là dấu riêng — mảnh 0 "KCK · không tính SOS" (em KCK có Target thì có kỳ vọng); em KCK chưa có Target vẫn chỉ OVR. */
+    assert(chu(kck).join(' · ') === 'KCK · không tính SOS · MT1 OVR 5.5: đang hỗ trợ Reading', JSON.stringify(kck));
+    const kckDuoi = cau({ dacBiet: { loai: 'kck' }, ketQua: { ...KQ_FT, kck: true, sos: null, kckDuoi: true }, hoTro: ['Reading'] });
+    assert(chu(kckDuoi).join(' · ') === 'KCK · không tính SOS · MT1 dưới kỳ vọng: đang hỗ trợ Reading' && kckDuoi.every((m) => !m.tone || !/^sos|danger/.test(m.tone)), JSON.stringify(kckDuoi));
     const sc = cau({ dacBiet: { loai: 'sap-chuyen', lop: 'MB FT 103', tuan: '2026-10-05' } });
     assert(sc[0].chu === 'Sắp chuyển MB FT 103 từ W2 OCT' && sc[0].tone === 'accent', JSON.stringify(sc));
     const kt = cau({ ...day, dacBiet: { loai: 'ket-thuc' } });
@@ -274,8 +277,11 @@ export async function runPrVaiBTests(t: YThucTestKit) {
       next: { dau: 'MT2', attemptNo: 2, tuan: '2026-10-19', kyVong: 6, soPhan: 5, final: false }, ...o });
     let s = st({});
     assert(s.gt === 'MT2 · W4 OCT' && s.phu === 'kỳ vọng 6.0 · 5 phần', JSON.stringify(s));
+    /* OV-9: em KCK có Target → kỳ vọng như thường; chỉ KCK chưa có Target (kỳ vọng null) mới "không kỳ vọng". */
     s = st({ kck: true });
-    assert(s.phu === 'so với MT1, không kỳ vọng' && !s.phu.includes('kỳ vọng 6'), JSON.stringify(s));
+    assert(s.phu === 'kỳ vọng 6.0 · 5 phần', JSON.stringify(s));
+    s = st({ kck: true, next: { dau: 'MT2', attemptNo: 2, tuan: '2026-10-19', kyVong: null, soPhan: 5, final: false } });
+    assert(s.phu === 'so với MT1, không kỳ vọng', JSON.stringify(s));
     s = st({ ratio: true, bacKe: 'BE', next: { dau: 'Final Test', attemptNo: 2, tuan: '2026-10-19', kyVong: null, soPhan: 4, final: true } });
     assert(s.gt === 'Final Test · W4 OCT' && s.phu === '4 môn · xét lên BE', JSON.stringify(s));
     s = st({ sauCuoiKhoa: { tuanKetThuc: '2026-10-19' } });
@@ -332,14 +338,15 @@ export async function runPrVaiBTests(t: YThucTestKit) {
     assert(/data\.tamDungTu \? <NhanTamDung/.test(fs.readFileSync(path.join(REPO, 'web/src/modules/cases/CasePanel.tsx'), 'utf8')), 'Ngăn Case thay quá hạn bằng NhanTamDung');
   });
 
-  check('VAI-b (4) · KCK (Q31-7): câu mở đầu "KCK · không đặt kỳ vọng MT, không SOS"; ô Kết quả cờ KCK; ô Sắp tới không có số kỳ vọng; bảng kỹ năng không kỳ vọng', () => {
+  /* OV-9: em KCK CHƯA có Target (demo Hồ Gia Hân) — câu mở đầu đổi "KCK · không tính SOS"; Target + KCK tách ở dòng thông tin. */
+  check('VAI-b (4) · KCK (Q31-7 → OV-9): câu mở đầu "KCK · không tính SOS"; ô Kết quả cờ KCK; em KCK chưa có Target: ô Sắp tới không có số kỳ vọng; bảng kỹ năng không kỳ vọng', () => {
     const em = all(`SELECT s.id FROM students s JOIN learning_cycles cy ON cy.student_id = s.id AND cy.status = 'active' AND cy.khong_cam_ket = 1
       WHERE s.status = 'active' AND s.id <= ? ORDER BY s.id`, seedMax.students).map((r) => r.id as number)[0];
     assert(em, 'bộ demo phải có em KCK (Hồ Gia Hân, sosV3Seed)');
     const dh = (studentProfile(P.admin, em) as any).dauHoSo;
-    assert(dh.tomTat[0].chu === 'KCK · không đặt kỳ vọng MT, không SOS', JSON.stringify(dh.tomTat));
+    assert(dh.tomTat[0].chu === 'KCK · không tính SOS', JSON.stringify(dh.tomTat));
     assert(dh.o.ketQua.kck === true && !/kỳ vọng \d/.test(dh.o.sapToi.phu ?? ''), JSON.stringify(dh.o));
-    assert(dh.thongTin.target === 'KCK', `dòng thông tin: target ${dh.thongTin.target}`);
+    assert(dh.thongTin.target === null && dh.thongTin.kck === true, `dòng thông tin: target ${dh.thongTin.target} · kck ${dh.thongTin.kck}`);
     assert((skillSupportBoard(P.admin, em) as any).rows.every((r: any) => r.kck && r.expectation === null), 'bảng kỹ năng KCK: không kỳ vọng');
   });
 
