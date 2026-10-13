@@ -40,13 +40,16 @@ export function cacTabTrangThai(quyen: Pick<LopHocQuyen, 'tamDung' | 'ketThuc'> 
 /**
  * Các mục của menu ⋯ hồ sơ HV (PR-OV2b, mockup overhaul-2 §6): Sửa thông tin · Chuyển lớp · Tạm dừng / Thôi học · Lưu trữ trước; các mục
  * khác giữ điều kiện cũ, xếp sau một vạch (Lộ trình tiếp theo, Lộ trình FT, Đề xuất…, Kết quả thi thật, Quay lại học, Học lại, Bỏ lưu trữ);
- * Xoá học viên CUỐI, vạch đỏ, chỉ Quản trị hệ thống. `suaThongTin`: Admin / TVV / CX (`student.edit_info`) — chỉ mục Sửa thông tin.
+ * Xoá học viên CUỐI, vạch đỏ, chỉ Quản trị hệ thống. `suaThongTin`: Admin / TVV / CX (`student.edit_info`) — mục Sửa thông tin. OV-8b: `suaThem`
+ * (TVV / CX, `student.edit_more`) thêm Kết quả thi thật; Tạm dừng / Thôi học / Quay lại học theo cờ `lopHoc.quyen` của máy chủ.
  * Không có mục nào → nơi gọi không vẽ ⋯. Ẩn một mục không phải là chặn nó: máy chủ vẫn kiểm quyền.
  */
-export function mucQuanLyHocVien({ canEdit, suaThongTin, lopHoc, cycle, status, coTheXoa, deXuatSua }: {
+export function mucQuanLyHocVien({ canEdit, suaThongTin, suaThem, lopHoc, cycle, status, coTheXoa, deXuatSua }: {
   canEdit: boolean;
   /** PR-OV2b: có `student.edit_info` (không cần `student.edit`). */
   suaThongTin?: boolean;
+  /** OV-8b: có `student.edit_more` (TVV / CX) — Kết quả thi thật. */
+  suaThem?: boolean;
   lopHoc?: { quyen: LopHocQuyen } | null;
   cycle: { ratio?: boolean } | null;
   status?: string;
@@ -68,7 +71,7 @@ export function mucQuanLyHocVien({ canEdit, suaThongTin, lopHoc, cycle, status, 
   if (canEdit && cycle && !ratio) sau.push('lo-trinh');
   if (deXuatSua && dangHoc) sau.push('de-xuat-sua');
   if (quyen?.deXuatChuyenLop && dangHoc) sau.push('de-xuat-chuyen-lop');
-  if (canEdit && cycle && !ratio) sau.push('outcome');
+  if ((canEdit || suaThem) && cycle && !ratio) sau.push('outcome');
   if (quyen?.quayLai && status === 'inactive') sau.push('quay-lai');
   if (quyen?.hocLai) sau.push('hoc-lai');
   if (quyen?.boLuuTru) sau.push('bo-luu-tru');

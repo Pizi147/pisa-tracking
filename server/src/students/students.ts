@@ -253,7 +253,8 @@ export function setStudentStatus(
   /** PR-LT: "Kết thúc vì" của dòng enrollment đóng lại (Q18). Mặc định theo `status` khi không truyền. */
   endKind?: 'bao_luu' | 'dung_hoc' | 'ket_thuc' | null,
 ) {
-  require_(p, PERMISSIONS.STUDENT_EDIT, { studentId });
+  /* OV-8b: TVV / CX Tạm dừng / Quay lại học / Thôi học (`student.edit_more`) — cùng luật. */
+  if (!can(p, PERMISSIONS.STUDENT_EDIT_MORE, { studentId })) require_(p, PERMISSIONS.STUDENT_EDIT, { studentId });
   if (!(STUDENT_STATUSES as readonly string[]).includes(status)) throw badRequest('Trạng thái không hợp lệ.');
   if (!isIsoDate(date)) throw badRequest('Ngày không hợp lệ.');
   /* PR-S3F #11: ngày hiệu lực không ở tương lai — và ngày Quay lại không trước ngày Tạm dừng, để hạn Case (`datLaiHanCase`) không tính từ ngày quá khứ tuỳ ý. */
@@ -540,7 +541,8 @@ export function hoanTacHocLai(p: Principal, studentId: number) {
  * cái đóng từ trước giữ đóng. Chỉ khi Kết thúc học vẫn là việc trạng thái CUỐI. Lớp tự đóng vì lần đó thì mở lại. Khác `hocLai`: Case đóng được mở lại.
  */
 export function hoanTacKetThuc(p: Principal, studentId: number) {
-  require_(p, PERMISSIONS.CYCLE_EDIT, { studentId }, 'Chỉ Quản lý mới hoàn tác được việc Kết thúc học.');
+  /* OV-8b: TVV / CX Thôi học được thì Hoàn tác được. */
+  if (!can(p, PERMISSIONS.STUDENT_EDIT_MORE, { studentId })) require_(p, PERMISSIONS.CYCLE_EDIT, { studentId }, 'Chỉ Quản lý mới hoàn tác được việc Kết thúc học.');
   const conn = db();
   const s = conn.prepare('SELECT * FROM students WHERE id = ?').get(studentId) as any;
   if (!s) throw notFound('Không tìm thấy học viên');
@@ -553,7 +555,7 @@ export function hoanTacKetThuc(p: Principal, studentId: number) {
     for (const e of nk.ghiDanhDong) {
       conn.prepare('UPDATE enrollments SET status = ?, end_kind = ? WHERE id = ?').run(e.truoc, e.truoc === 'paused' ? 'bao_luu' : null, e.id);
       const l = conn.prepare(`SELECT c.id FROM enrollments e JOIN classes c ON c.id = e.class_id WHERE e.id = ? AND c.status = 'finished'`).get(e.id) as any;
-      if (l) moLaiLop(p, l.id, { lyDo: `Hoàn tác Kết thúc học: ${s.full_name}` });
+      if (l) moLaiLop(p, l.id, { lyDo: `Hoàn tác Kết thúc học: ${s.full_name}`, heQua: true });
     }
     for (const id of nk.loTrinhDong) conn.prepare(`UPDATE learning_cycles SET status = 'active', ended_at = NULL WHERE id = ? AND student_id = ? AND status = 'abandoned'`).run(id, studentId);
     const cs = moLaiCaseHeThongDong({ actorUserId: p.userId, studentId, reason: 'course_ended', chup: nk.dongCase, tinHieu: nk.rutTinHieu });
@@ -660,22 +662,35 @@ const TVV_SQL = `SELECT u.id, u.full_name, ur.branch_id, b.name AS cn FROM users
   WHERE u.status = 'active' AND u.approval_state = 'approved'`;
 const laTvvHoatDong = (id: number) => !!db().prepare(`${TVV_SQL} AND u.id = ?`).get(id);
 
+/** Chi nhánh của em: lớp đang học / tạm dừng mới nhất, không có thì `students.branch_id`. */
+function chiNhanhCuaEm(studentId: number): number | null {
+  const conn = db();
+  return (conn.prepare(`SELECT c.branch_id b FROM enrollments e JOIN classes c ON c.id = e.class_id
+    WHERE e.student_id = ? AND e.status IN ('active','paused') ORDER BY e.id DESC LIMIT 1`).get(studentId) as any)?.b
+    ?? (conn.prepare('SELECT branch_id b FROM students WHERE id = ?').get(studentId) as any)?.b ?? null;
+}
+
+/** OV-8b (chủ SP 13/10): TVV chia theo chi nhánh — gán TVV khác chi nhánh của em → 400. Không biết chi nhánh (`cn` null) thì không chặn. */
+export function kiemTvvCungChiNhanh(id: number, cn: number | null) {
+  if (cn != null && !db().prepare(`${TVV_SQL} AND u.id = ? AND ur.branch_id = ?`).get(id, cn)) {
+    throw badRequest('TVV: chọn Tư vấn viên cùng chi nhánh của học viên.');
+  }
+}
+
 /**
- * Ô chọn TVV (PR-OV2b): mọi TVV đang hoạt động, TVV cùng chi nhánh lớp đang học của em (hoặc `branchId`) lên trước, rồi A→Z.
+ * Ô chọn TVV (PR-OV2b; OV-8b chủ SP 13/10): CHỈ TVV đang hoạt động cùng chi nhánh của em (hoặc `branchId`), A→Z. Không biết chi nhánh → mọi TVV.
  * Dòng phụ "TVV · {chi nhánh}" (CX toàn hệ thống không phải TVV — không lọt).
  */
 export function dsTvv(studentId: number | null, branchId?: number | null): { id: number; ten: string; phu: string }[] {
-  const conn = db();
-  const cn = branchId ?? (studentId == null ? null : (conn.prepare(`SELECT c.branch_id b FROM enrollments e JOIN classes c ON c.id = e.class_id
-    WHERE e.student_id = ? AND e.status = 'active' ORDER BY e.id DESC LIMIT 1`).get(studentId) as any)?.b ?? null);
+  const cn = branchId ?? (studentId == null ? null : chiNhanhCuaEm(studentId));
   const nguoi = new Map<number, { id: number; ten: string; cns: string[]; cung: boolean }>();
-  for (const r of conn.prepare(TVV_SQL).all() as any[]) {
+  for (const r of db().prepare(TVV_SQL).all() as any[]) {
     const x = nguoi.get(r.id) ?? { id: r.id, ten: r.full_name, cns: [] as string[], cung: false };
     if (r.cn && !x.cns.includes(r.cn)) x.cns.push(r.cn);
     if (cn != null && r.branch_id === cn) x.cung = true;
     nguoi.set(r.id, x);
   }
-  return [...nguoi.values()].sort((a, b) => Number(b.cung) - Number(a.cung) || a.ten.localeCompare(b.ten, 'vi'))
+  return [...nguoi.values()].filter((x) => cn == null || x.cung).sort((a, b) => a.ten.localeCompare(b.ten, 'vi'))
     .map((x) => ({ id: x.id, ten: x.ten, phu: ['TVV', ...(x.cns.length ? x.cns : ['toàn hệ thống'])].join(' · ') }));
 }
 
@@ -699,13 +714,14 @@ function docDauVao(v: any): { overall: number; bands: (number | null)[] } | null
   return { overall, bands };
 }
 
-/** PR-OV2a: trường `student.edit_info` (Admin, TVV, CX) sửa được ở hồ sơ — gửi trường khác (ghi chú…) thì 403. */
+/** PR-OV2a: trường `student.edit_info` (Admin, TVV, CX) sửa được ở hồ sơ — gửi trường khác thì 403. OV-8b: `student.edit_more` (TVV, CX) thêm ghi chú. */
 const TRUONG_THONG_TIN = new Set(['fullName', 'dob', 'email', 'consultantName', 'consultantUserId', 'dauVao']);
 
 export function updateStudent(p: Principal, studentId: number, patch: any) {
   if (!can(p, PERMISSIONS.STUDENT_EDIT, { studentId })) {
     require_(p, PERMISSIONS.STUDENT_EDIT_INFO, { studentId });
-    if (Object.keys(patch ?? {}).some((k) => !TRUONG_THONG_TIN.has(k))) throw forbidden(CHI_SUA_THONG_TIN);
+    const ghiChu = can(p, PERMISSIONS.STUDENT_EDIT_MORE, { studentId });
+    if (Object.keys(patch ?? {}).some((k) => !TRUONG_THONG_TIN.has(k) && !(k === 'note' && ghiChu))) throw forbidden(CHI_SUA_THONG_TIN);
   }
   const conn = db();
   const s = conn.prepare('SELECT * FROM students WHERE id = ?').get(studentId) as any;
@@ -716,6 +732,8 @@ export function updateStudent(p: Principal, studentId: number, patch: any) {
   };
   const { dauVao: dauVaoGui, ...hoSo } = patch ?? {};
   patch = chuanHoaSuaHoSo(hoSo);
+  /* OV-8b: TVV phải cùng chi nhánh của em; TVV cũ (khác chi nhánh, gán trước luật này) gửi lại nguyên thì không chặn. */
+  if (patch.consultantUserId != null && patch.consultantUserId !== s.consultant_user_id) kiemTvvCungChiNhanh(patch.consultantUserId, chiNhanhCuaEm(studentId));
   if (dauVaoGui !== undefined) {
     const dv = docDauVao(dauVaoGui);
     const c = currentCycle(studentId);

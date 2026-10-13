@@ -9273,6 +9273,9 @@ await runPrOv8aTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, 
 // ==================================================================== PR-OV7b (sửa sau khi lưu 2/2: Kết quả PA gần nhất, Xem lại, GV Mở lại Case)
 const { runPrOv7bTests } = await import('./prOv7b.tests.ts');
 await runPrOv7bTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== PR-OV8b (quyền TVV: Target, Tạm dừng / Quay lại / Thôi học, kết quả thi thật, ô TVV theo chi nhánh)
+const { runPrOv8bTests } = await import('./prOv8b.tests.ts');
+await runPrOv8bTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`

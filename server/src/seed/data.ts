@@ -94,10 +94,13 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
    */
   office_admin: ['attempt.view', 'test.view', 'work.view', 'plan.week', 'schedule.move', 'score.override', 'case.view',
     'student.view', 'student.edit_info', 'analysis.view', 'analysis.view_teacher'],
-  /* TVV: xem HV chi nhánh (mặc định "HV của tôi"), điểm, Case, PA, Ý thức, nhận xét; sửa thông tin HV. Không Test, không Công việc. */
-  consultant: ['attempt.view', 'case.view', 'student.view', 'student.edit_info', 'analysis.view'],
+  /*
+   * TVV: xem HV chi nhánh (mặc định "HV của tôi"), điểm, Case, PA, Ý thức, nhận xét; sửa MỌI thông tin HV — OV-8b (chủ SP 13/10): cả Target, ghi chú,
+   * Tạm dừng / Quay lại / Thôi học, kết quả thi thật (`student.edit_more`). Học thuật vẫn của GV / QL. Không Test, không Công việc.
+   */
+  consultant: ['attempt.view', 'case.view', 'student.view', 'student.edit_info', 'student.edit_more', 'analysis.view'],
   /* CX: như TVV, grant toàn hệ thống; Tổng quan · Phân tích trừ phần giáo viên (không `analysis.view_teacher`). */
-  cx: ['attempt.view', 'case.view', 'student.view', 'student.edit_info', 'analysis.view'],
+  cx: ['attempt.view', 'case.view', 'student.view', 'student.edit_info', 'student.edit_more', 'analysis.view'],
 };
 
 /*

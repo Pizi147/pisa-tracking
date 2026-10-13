@@ -35,9 +35,13 @@ function docIds(v: unknown, toiDa: number): number[] {
 type Em = { s: any; lopCuoi: any | null; lenhCho: any | null; lenhHuy: any | null };
 
 /** Em này có làm được `viec` không? Chữ = KHÔNG (lý do ngắn hiện ở màn xem trước và ở "chưa lưu"); `null` = làm được. */
+/** OV-8b: Hoàn tác Thôi học — TVV / CX (`student.edit_more`) làm được như QL (họ Thôi học được); mọi việc khác của hàng loạt chỉ QL. */
+const coQuyenViec = (p: Principal, viec: ViecHangLoat, studentId: number): boolean =>
+  can(p, PERMISSIONS.CYCLE_EDIT, { studentId }) || (viec === 'hoan-tac-ket-thuc' && can(p, PERMISSIONS.STUDENT_EDIT_MORE, { studentId }));
+
 function lyDoBo(p: Principal, viec: ViecHangLoat, e: Em): string | null {
   const { s, lopCuoi } = e;
-  if (!can(p, PERMISSIONS.CYCLE_EDIT, { studentId: s.id })) return 'Ngoài phạm vi của bạn.';
+  if (!coQuyenViec(p, viec, s.id)) return 'Ngoài phạm vi của bạn.';
   switch (viec) {
     case 'ket-thuc': return s.status === 'finished' ? 'Đã kết thúc học' : null;
     case 'luu-tru': return s.status !== 'finished' ? 'Chưa kết thúc học' : s.archived_at ? 'Đã lưu trữ' : null;
@@ -80,7 +84,7 @@ export function xemTruoc(p: Principal, input: { viec?: unknown; studentIds?: unk
   napTruocPhamVi(ids);
   const em = docEm(ids);
   /* Chỉ người có quyền ở ÍT NHẤT một học viên mới được xem trước (GVCN / GVBM → 403 cả lô, như `chay`); em ngoài phạm vi chỉ hiện "#id" — không lộ tên, mã, lớp. */
-  const trongPhamVi = (id: number) => em.has(id) && can(p, PERMISSIONS.CYCLE_EDIT, { studentId: id });
+  const trongPhamVi = (id: number) => em.has(id) && coQuyenViec(p, viec, id);
   if (!ids.some(trongPhamVi)) throw forbidden(CHI_QL);
   const rows: DongXemTruoc[] = ids.map((id) => {
     const e = em.get(id);
@@ -137,7 +141,7 @@ export function chay(p: Principal, input: {
   napTruocPhamVi(ids);
   const em = docEm(ids);
   /* Không học viên nào trong phạm vi người gọi → 403 cả lô (GVCN gọi thẳng API). */
-  if (!ids.some((id) => em.has(id) && can(p, PERMISSIONS.CYCLE_EDIT, { studentId: id }))) throw forbidden(CHI_QL);
+  if (!ids.some((id) => em.has(id) && coQuyenViec(p, viec, id))) throw forbidden(CHI_QL);
 
   const kq: KetQuaHangLoat = { ok: [], failed: [] };
   const lyDoCua = (id: number): string | null => { const e = em.get(id); return e ? lyDoBo(p, viec, e) : 'Không tìm thấy học viên.'; };

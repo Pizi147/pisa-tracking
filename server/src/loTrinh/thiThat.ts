@@ -26,11 +26,12 @@ export function lopCuoiCuaLoTrinh(cycleId: number): number | null {
 }
 
 /**
- * Ai được nhập: người sửa hồ sơ em như thường (`student.edit`: GVCN đang dạy, Quản lý, Quản trị) VÀ — ngoại lệ DUY NHẤT trên hồ sơ chỉ xem —
+ * Ai được nhập: người sửa hồ sơ em như thường (`student.edit`: GVCN đang dạy, Quản lý, Quản trị; OV-8b: TVV / CX `student.edit_more`) VÀ — ngoại lệ DUY NHẤT trên hồ sơ chỉ xem —
  * GVCN của lớp cuối của lộ trình (kể cả lớp đã kết thúc, em đã Kết thúc học / Lưu trữ) và Quản lý chi nhánh.
  */
 export function coTheNhapThiThat(p: Principal, c: { id: number; student_id: number }): boolean {
-  if (can(p, PERMISSIONS.STUDENT_EDIT, { studentId: c.student_id }) || can(p, PERMISSIONS.CYCLE_EDIT, { studentId: c.student_id })) return true;
+  /* OV-8b: TVV / CX (`student.edit_more`) nhập kết quả thi thật của HV chi nhánh mình (CX: mọi chi nhánh). */
+  if ([PERMISSIONS.STUDENT_EDIT, PERMISSIONS.CYCLE_EDIT, PERMISSIONS.STUDENT_EDIT_MORE].some((q) => can(p, q, { studentId: c.student_id }))) return true;
   const lop = lopCuoiCuaLoTrinh(c.id);
   return !!lop && !!db().prepare(`SELECT 1 FROM teacher_assignments WHERE user_id = ? AND class_id = ? AND is_core = 1 AND status = 'active'`).get(p.userId, lop);
 }
@@ -45,7 +46,7 @@ const docDiem = (v: unknown, nhan: string): number | null => {
 export function datKetQuaThiThat(p: Principal, cycleId: number, input: NhapThiThat) {
   const c = cycleById(cycleId);
   if (!c) throw notFound('Không tìm thấy lộ trình');
-  if (!coTheNhapThiThat(p, c)) throw forbidden('Chỉ GVCN lớp cuối hoặc Quản lý nhập được kết quả thi thật.');
+  if (!coTheNhapThiThat(p, c)) throw forbidden('Chỉ GVCN lớp cuối, Quản lý hoặc TVV của chi nhánh nhập được kết quả thi thật.');
   if (!c.route) throw badRequest('Chỉ lộ trình Fast Track có kết quả thi thật.');
   if ((db().prepare(`SELECT ly_do FROM ban_chup_lo_trinh WHERE cycle_id = ? ORDER BY lan DESC LIMIT 1`).get(cycleId) as any)?.ly_do === 'chuyen_lop') throw badRequest('Lộ trình đóng vì chuyển lớp — em không đi thi.');
   const homNay = demoToday();
