@@ -260,6 +260,9 @@ console.log('\n0. Bộ demo vừa dựng có nhất quán không');
   /* PR-OV11f: Tổng quan · chuông — số ở ô = nơi nó mở, chuông chỉ việc còn mở (so số bộ demo); mỗi phép kiểm cuộn lại. */
   const { runPrOv11fTests } = await import('./prOv11f.tests.ts');
   await runPrOv11fTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+  /* PR-OV11h: Phân tích · PET / KET — Checkpoint có mặt ở mọi nơi (so số bộ demo MB PET 01); mỗi phép kiểm cuộn lại. */
+  const { runPrOv11hTests } = await import('./prOv11h.tests.ts');
+  await runPrOv11hTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 }
 
 check('[12.1-16] Bộ demo nhất quán: không có sự kiện "đã xong" nào nằm ở tương lai', () => {

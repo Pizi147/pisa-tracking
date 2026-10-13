@@ -1,7 +1,7 @@
 import { useId, useState, type ReactNode } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import {
-  COT_KET_QUA_GV, chuOPtGv, khungPtGvTuThamSo, mauKetQuaGv, ngay, tuanLich,
+  cotKetQuaGv, chuOPtGv, khungPtGvTuThamSo, mauKetQuaGv, ngay, tuanLich,
   type HangPtGv, type KhungPtGv, type OPtGv, type PhanTichGvKq,
 } from '@shared/domain/index.ts';
 import { useApi } from '../../lib/useApi.ts';
@@ -36,7 +36,9 @@ const GIAI: Record<string, (ft: boolean) => string> = {
 const NHAN_KQ: Record<string, [string, string | null]> = {
   listening: ['L', null], reading: ['R', null], writing1: ['W1', null], writing2: ['W2', null], speaking: ['S', null],
 };
-const NHAN_KQ_THUONG: Record<string, [string, string | null]> = { listening: ['L', null], reading: ['R', null], writing: ['W', '(G+V)'], speaking: ['S', '(P)'] };
+const NHAN_KQ_THUONG: Record<string, [string, string | null]> = {
+  listening: ['L', null], reading: ['R', null], writing: ['W', '(G+V)'], speaking: ['S', '(P)'], listening_speaking: ['L+S', null], reading_writing: ['R+W', null],
+};
 const MAU: Record<'thap' | 'vua' | 'cao', string> = { thap: 'text-bad', vua: 'text-soon', cao: 'text-ok' };
 
 /** Tên cột 2–3 chữ + chú thích nổi hiện khi rê chuột HOẶC Tab tới (không dựa vào `title` một mình). */
@@ -179,14 +181,14 @@ export function PhanTichGiaoVien({ branchId }: { branchId: number | null }) {
 
 function BangGv({ kq, onChamDiem }: { kq: PhanTichGvKq; onChamDiem: (h: HangPtGv) => void }) {
   const ft = kq.khung === 'ft';
-  const cotKq = COT_KET_QUA_GV[kq.khung];
+  const cotKq = cotKetQuaGv(kq);
   const nhanKq = ft ? NHAN_KQ : NHAN_KQ_THUONG;
   const th = 'th whitespace-normal align-bottom leading-snug';
   const bl = 'border-l border-[color:var(--line)]';
   const rongKq = ft ? 60 : 72;
   return (
     <div className="table-scroll min-h-[13rem] rounded-lg border" style={{ borderColor: 'var(--line)' }} role="region" aria-label="Bảng Phân tích giáo viên, cuộn ngang" tabIndex={0}>
-      <table className="w-full text-sm" style={{ tableLayout: 'fixed', minWidth: ft ? '1000px' : '820px' }}>
+      <table className="w-full text-sm" style={{ tableLayout: 'fixed', minWidth: ft || cotKq.length > 4 ? '1000px' : '820px' }}>
         <colgroup>
           <col style={{ width: 176 }} /><col style={{ width: 80 }} /><col style={{ width: 88 }} /><col style={{ width: 112 }} /><col style={{ width: 108 }} />
           {ft && <col style={{ width: 88 }} />}
@@ -258,7 +260,7 @@ function TheGv({ kq, onChamDiem }: { kq: PhanTichGvKq; onChamDiem: (h: HangPtGv)
           { nhan: 'Kết quả PA đúng hạn', o: h.ghiKetQuaPa, noiDung: <OSo o={h.ghiKetQuaPa} den={d.ghiPa} mo={!ft} /> },
           { nhan: 'Xử lý vi phạm đúng hạn', o: h.xuLyViPham, noiDung: <OSo o={h.xuLyViPham} den={d.viPham} /> },
           ...(ft ? [{ nhan: 'PA hiệu quả', o: h.paHieuQua, noiDung: <OSo o={h.paHieuQua} den={d.pa} /> }] : []),
-          ...COT_KET_QUA_GV[kq.khung].map((k) => ({
+          ...cotKetQuaGv(kq).map((k) => ({
             nhan: `Kết quả ${nhanKq[k][0]}${nhanKq[k][1] ? ` ${nhanKq[k][1]}` : ''} · ${ft ? 'đạt kỳ vọng' : 'đạt'}`, o: h.ketQua[k],
             noiDung: <OSo o={h.ketQua[k]} den={d.ketQua(k)} ketQua />,
           })),

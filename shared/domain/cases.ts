@@ -1,7 +1,7 @@
 /** CASE — hạng mục, nhóm nguyên nhân, phương án, phê duyệt và kết quả. */
 
 import { ENTRY_SKILLS } from './skills.ts';
-import { REGULAR_SKILLS, programmeOf, tenMon } from './normal.ts';
+import { CHUONG_TRINH_LIEN_TUC_CO_SAN, REGULAR_SKILLS, programmeOf, tenMon } from './normal.ts';
 
 // ------------------------------------------------ Chủ đề của một Case học thuật
 
@@ -14,6 +14,8 @@ import { REGULAR_SKILLS, programmeOf, tenMon } from './normal.ts';
  */
 export function caseTopicsFor(ratio: boolean, ct?: string | null): readonly string[] {
   if (programmeOf(ct) === 'PREFOU') return ['tong_hop'];
+  const lienTuc = CHUONG_TRINH_LIEN_TUC_CO_SAN.find((x) => x.code === programmeOf(ct));
+  if (lienTuc) return lienTuc.skills;   // OV-11h (HV-5): PET / KET — cùng bộ với bảng kỹ năng (`caseCategoriesFor`)
   return ratio ? REGULAR_SKILLS : ENTRY_SKILLS;
 }
 
@@ -50,6 +52,7 @@ export function caseTopicLabel(topic: string, ct?: string | null): string {
  */
 export const CASE_CATEGORIES = [
   'listening', 'reading', 'writing1', 'writing2', 'writing', 'speaking', 'tong_hop',
+  'listening_speaking', 'reading_writing',   // OV-11h (HV-5): môn gộp PET / KET — bảng kỹ năng theo 2 môn của chương trình (vẫn chỉ chip SOS, không tự tạo Case)
 ] as const;
 export type CaseCategory = (typeof CASE_CATEGORIES)[number];
 
@@ -58,8 +61,8 @@ export type CaseCategory = (typeof CASE_CATEGORIES)[number];
  * Kỹ năng ngoài danh sách → ném lỗi, không để trùng id.
  * ponytail: ≤ 10 kỹ năng (hệ số 10); thêm kỹ năng thứ 11 thì đổi hệ số.
  */
-/** Ô điểm của một bài: các hạng mục Case + OV-6b2 môn gộp L+S, R+W (không phải hạng mục Case — Checkpoint không sinh Case). Thứ tự cố định: id đã phát ra không đổi. */
-const KY_NANG_BAI: readonly string[] = [...CASE_CATEGORIES, 'listening_speaking', 'reading_writing'];
+/** Ô điểm của một bài = các hạng mục (OV-11h: L+S, R+W đã nằm cuối `CASE_CATEGORIES`, đúng chỗ cũ 7, 8). Thứ tự cố định: id đã phát ra không đổi. */
+const KY_NANG_BAI: readonly string[] = CASE_CATEGORIES;
 export function baiId(attemptId: number, skill: string): number {
   const k = KY_NANG_BAI.indexOf(skill);
   if (k < 0) throw new Error(`baiId: kỹ năng lạ "${skill}"`);
@@ -76,6 +79,8 @@ export const CASE_CATEGORY_LABEL: Record<CaseCategory, string> = {
   writing: 'Writing',
   speaking: 'Speaking',
   tong_hop: 'Tổng hợp',
+  listening_speaking: 'L+S',
+  reading_writing: 'R+W',
 };
 /**
  * HẠNG MỤC CASE → KỸ NĂNG ĐƯỢC PHÂN CÔNG.
@@ -89,10 +94,12 @@ export const CASE_CATEGORY_SKILL: Record<string, string> = {
   writing: 'writing',
   /* Pre FOU: ô duy nhất, GVCN dạy luôn (T56). */
   tong_hop: 'tong_hop',
+  listening_speaking: 'listening_speaking', reading_writing: 'reading_writing',
 };
 
 export const CASE_CATEGORY_SHORT: Record<CaseCategory, string> = {
   listening: 'L', reading: 'R', writing1: 'W1', writing2: 'W2', writing: 'W', speaking: 'S', tong_hop: 'Tổng hợp',
+  listening_speaking: 'L+S', reading_writing: 'R+W',
 };
 
 /**
@@ -110,9 +117,11 @@ export const NORMAL_CASE_CATEGORIES = [
   'listening', 'reading', 'writing', 'speaking',
 ] as const;
 
-/** `ratio` = lớp thường. Không rõ chương trình thì lấy bộ của Fast Track. Pre FOU: một hạng mục "Tổng hợp". */
+/** `ratio` = lớp thường. Không rõ chương trình thì lấy bộ của Fast Track. Pre FOU: một hạng mục "Tổng hợp". OV-11h (HV-5): PET / KET hai môn L+S, R+W. */
 export function caseCategoriesFor(scoringMode: string | null | undefined, ct?: string | null): readonly CaseCategory[] {
   if (programmeOf(ct) === 'PREFOU') return ['tong_hop'];
+  const lienTuc = CHUONG_TRINH_LIEN_TUC_CO_SAN.find((x) => x.code === programmeOf(ct));
+  if (lienTuc) return lienTuc.skills as readonly CaseCategory[];
   return scoringMode === 'ratio' ? NORMAL_CASE_CATEGORIES : FT_CASE_CATEGORIES;
 }
 

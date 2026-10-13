@@ -87,7 +87,7 @@ function tinh(p: Principal, f: FilterVanDeHv) {
   }
   const hvIds = [...lopCuaHv.keys()];
 
-  // 2) Case của các HV đó: đang mở, hoặc đóng trong khoảng (Q4).
+  // 2) Case của các HV đó: đang mở, hoặc đóng trong khoảng (Q4). OV-11h (PT-5): Case đóng vì huỷ lượt không tính (như mọi nơi khác — OV-4a).
   const cases = new Map<number, CaseInfo>();
   for (const chunk of chunks(hvIds)) {
     for (const r of conn.prepare(
@@ -96,7 +96,8 @@ function tinh(p: Principal, f: FilterVanDeHv) {
          FROM sos_cases sc
          LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
          LEFT JOIN users u ON u.id = sc.owner_user_id
-        WHERE sc.student_id IN (${marks(chunk.length)}) AND (sc.status != 'done' OR substr(sc.closed_at, 1, 10) >= ?)`,
+        WHERE sc.student_id IN (${marks(chunk.length)}) AND (sc.status != 'done' OR substr(sc.closed_at, 1, 10) >= ?)
+          AND COALESCE(sc.system_close_reason, '') != 'luot_da_huy'`,
     ).all(...chunk, tuNgay) as any[]) {
       cases.set(r.id, {
         id: r.id, studentId: r.student_id, category: r.category, topic: r.topic, attemptId: r.attempt_id,
@@ -305,7 +306,7 @@ export function vanDeHv(p: Principal, f: FilterVanDeHv): VanDeHvKetQua {
   hang.sort((a, b) => thuTuCha(a) - thuTuCha(b) || b.soHv - a.soHv || thuTuHo(a) - thuTuHo(b));
 
   const cpl = r.chuaPhanLoai;
-  /* PR-SOS (K1-22): Case chưa phân loại = Case chờ xác nhận nguyên nhân — đếm số đã quá hạn (lô ≤ 400). */
+  /* PR-SOS (K1-22): Case chưa phân nhóm nguyên nhân (OV-11h: tên khác "chờ xác nhận nguyên nhân" của trangThaiCaseV4) — đếm số đã quá hạn (lô ≤ 400). */
   const idCpl = [...cpl.cases];
   let quaHan = 0;
   for (let i = 0; i < idCpl.length; i += 400) {
@@ -363,14 +364,14 @@ export function oVanDeHv(p: Principal, f: FilterVanDeHv & { dong: string; cot: s
         const sub = [lop, catNgan(c), c.owner ?? 'chưa có người phụ trách', c.openedAt ? `mở ${tuanLich(c.openedAt, demoToday())}` : null].filter(Boolean).join(' · ');
         return { ...row, title: row.sub.split(' · ')[0] || row.title, sub: catMotDong(sub) };
       });
-      return { n: ids.length, tieuDe: `Chưa phân loại · ${ids.length} Case`, rows };
+      return { n: ids.length, tieuDe: `Chưa phân nhóm nguyên nhân · ${ids.length} Case`, rows };
     }
     if (f.cot === 'hv') {
       const ids = [...cpl.hv].sort((a, b) => a - b);
-      return { n: ids.length, tieuDe: `Chưa phân loại · ${ids.length} HV`, rows: rowsFor('hoc-vien', ids) };
+      return { n: ids.length, tieuDe: `Chưa phân nhóm nguyên nhân · ${ids.length} HV`, rows: rowsFor('hoc-vien', ids) };
     }
-    if (f.cot === 'lop') return dongLop(r, [...cpl.lop], 'Chưa phân loại', (k) => [...cpl.hv].filter((h) => r.lopCuaHv.get(h)?.has(k)).length);
-    throw badRequest(`Cột "${f.cot}" không có ở dòng Chưa phân loại.`);
+    if (f.cot === 'lop') return dongLop(r, [...cpl.lop], 'Chưa phân nhóm nguyên nhân', (k) => [...cpl.hv].filter((h) => r.lopCuaHv.get(h)?.has(k)).length);
+    throw badRequest(`Cột "${f.cot}" không có ở dòng Chưa phân nhóm nguyên nhân.`);
   }
 
   const m = r.tap.get(f.dong);

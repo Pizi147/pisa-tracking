@@ -178,8 +178,10 @@ export type CotTongHop = {
   /** PR-HK2 (Q1): cột ghép — MỘT ô hiện hai số của hai cột số liệu (`cotSoLieu`), mỗi số bấm mở danh sách riêng. */
   gop?: readonly [string, string];
 };
-export type NhomCon = 'giua' | 'cuoi' | 'mini';
-export const NHAN_NHOM_CON: Record<NhomCon, string> = { giua: 'Progress Test (theo môn)', cuoi: 'Final Test (% tổng)', mini: 'Mini Test' };
+export type NhomCon = 'giua' | 'cuoi' | 'checkpoint' | 'mini';
+export const NHAN_NHOM_CON: Record<NhomCon, string> = {
+  giua: 'Progress Test (theo môn)', cuoi: 'Final Test (% tổng)', checkpoint: 'Checkpoint (theo môn)', mini: 'Mini Test',
+};
 
 /** Cột lượt — nhãn đổi theo chương trình (Q18); đứng đầu bảng, cùng nhóm "Kết quả" (sáu cột sau cộng lại đúng bằng nó). */
 const COT_LUOT: CotTongHop = {
@@ -189,7 +191,7 @@ const COT_LUOT: CotTongHop = {
 };
 const COT_LUOT_THUONG: CotTongHop = {
   ...COT_LUOT,
-  goiY: 'Số bài đã chấm ít nhất một môn trong khoảng đang xem. Ba cột Progress Test, bốn cột Final Test và Thiếu điểm cộng lại đúng bằng cột này. Không tính học viên KCK.',
+  goiY: 'Số bài đã chấm ít nhất một môn trong khoảng đang xem. Các cột Progress Test, Final Test, Checkpoint và Thiếu điểm cộng lại đúng bằng cột này. Không tính học viên KCK.',
 };
 const COT_KET_QUA: CotTongHop[] = [
   { khoa: 'dat', nhom: 'ket-qua', donVi: 'dot-test', nhan: () => 'Đạt', goiY: 'Đủ điểm mọi kỹ năng, không kỹ năng nào dưới kỳ vọng.' },
@@ -198,7 +200,7 @@ const COT_KET_QUA: CotTongHop[] = [
   { khoa: 'sos3', nhom: 'ket-qua', donVi: 'dot-test', nhan: () => 'SOS 3', goiY: 'Đủ điểm, từ ba kỹ năng dưới kỳ vọng.' },
   /* PR-HK2 (Q1, 07/10): bỏ cột "Tạm thời" — lượt chưa đủ điểm (kể cả đã tạm có mức SOS) nằm hết ở đây. */
   { khoa: 'chuaDu', nhom: 'ket-qua', donVi: 'dot-test', nhan: () => 'Thiếu điểm',
-    goiY: 'Lượt còn thiếu điểm ít nhất một kỹ năng — kể cả lượt đã tạm có mức SOS (mức còn có thể đổi khi vào thêm điểm).' },
+    goiY: 'Lượt còn thiếu điểm ít nhất một kỹ năng — gồm SOS tạm (chưa chốt): mức còn có thể đổi khi vào thêm điểm.' },
 ];
 /**
  * PR-Pb2-a (P4, K1-19, Q12): khung lớp thường KHÔNG có chữ SOS. Giữa khoá đếm MÔN trượt; Cuối khoá theo 4 dải % tổng (`daiCuoiKhoa`);
@@ -212,7 +214,11 @@ const COT_KET_QUA_THUONG: CotTongHop[] = [
   { khoa: 'ck-50', nhom: 'ket-qua', nhomCon: 'cuoi', donVi: 'dot-test', nhan: () => '50–59%', goiY: 'Bài Final Test đủ điểm, % tổng 50–59% — Quản lý cân nhắc.' },
   { khoa: 'ck-60', nhom: 'ket-qua', nhomCon: 'cuoi', donVi: 'dot-test', nhan: () => '60–69%', goiY: 'Bài Final Test đủ điểm, % tổng 60–69% — lên lớp kèm bổ trợ.' },
   { khoa: 'ck-dat', nhom: 'ket-qua', nhomCon: 'cuoi', donVi: 'dot-test', nhan: () => 'Từ 70%', goiY: 'Bài Final Test đủ điểm, % tổng từ 70% — Pass.' },
-  { khoa: 'chuaDu', nhom: 'ket-qua', donVi: 'dot-test', nhan: () => 'Thiếu điểm', goiY: 'Bài chưa nhập đủ điểm các môn — chưa xếp vào cột Progress Test hay Final Test.' },
+  /* OV-11h (PT-1): Checkpoint PET / KET — cùng luật đếm môn trượt như Progress Test, nhóm riêng (chỉ hiện khi bảng có Checkpoint: `cotTheoDuLieu`). */
+  { khoa: 'cp-dat', nhom: 'ket-qua', nhomCon: 'checkpoint', donVi: 'dot-test', nhan: () => 'Đạt hết', goiY: 'Bài Checkpoint đủ điểm, mọi môn đạt.' },
+  { khoa: 'cp-1', nhom: 'ket-qua', nhomCon: 'checkpoint', donVi: 'dot-test', nhan: () => '1 môn trượt', goiY: 'Bài Checkpoint đủ điểm, đúng một môn chưa đạt.' },
+  { khoa: 'cp-2', nhom: 'ket-qua', nhomCon: 'checkpoint', donVi: 'dot-test', nhan: () => '≥ 2 môn trượt', goiY: 'Bài Checkpoint đủ điểm, từ hai môn chưa đạt.' },
+  { khoa: 'chuaDu', nhom: 'ket-qua', donVi: 'dot-test', nhan: () => 'Thiếu điểm', goiY: 'Bài chưa nhập đủ điểm các môn — chưa xếp vào cột Progress Test, Final Test hay Checkpoint.' },
   { khoa: 'mini-dat', nhom: 'ket-qua', nhomCon: 'mini', donVi: 'hoc-vien', nhan: () => 'Đạt', goiY: 'Học viên làm Mini Test sau bổ trợ (từ bài Final Test của dòng này) đạt từ 70% — đếm học viên.' },
   { khoa: 'mini-truot', nhom: 'ket-qua', nhomCon: 'mini', donVi: 'hoc-vien', nhan: () => 'Trượt', goiY: 'Học viên làm Mini Test sau bổ trợ dưới 70% — đếm học viên.' },
 ];
@@ -221,10 +227,15 @@ export function cotKetQuaCong(ct: ChuongTrinh): string[] {
   return (ct === 'thuong' ? COT_KET_QUA_THUONG : COT_KET_QUA).filter((c) => c.nhomCon !== 'mini').map((c) => c.khoa);
 }
 /** Ô không áp dụng (dòng không có bài loại đó) → web và Excel ghi "—" thay vì 0. */
-export function oKhongApDung(c: CotTongHop, coDot: { giua: boolean; cuoi: boolean } | undefined): boolean {
+export function oKhongApDung(c: CotTongHop, coDot: CoDot | undefined): boolean {
   if (!coDot || !c.nhomCon) return false;
-  return c.nhomCon === 'giua' ? !coDot.giua : !coDot.cuoi;
+  return c.nhomCon === 'giua' ? !coDot.giua : c.nhomCon === 'checkpoint' ? !coDot.checkpoint : !coDot.cuoi;
 }
+/** OV-11h (PT-1): dòng có bài Giữa khoá / Cuối khoá / Checkpoint không. */
+export type CoDot = { giua: boolean; cuoi: boolean; checkpoint?: boolean };
+/** Nhóm Checkpoint chỉ hiện khi bảng có bài Checkpoint (PET / KET) — lớp FOU / BE / ELE không thêm ba cột "—". */
+export const cotTheoDuLieu = (cols: readonly CotTongHop[], tongCoDot: CoDot | undefined): CotTongHop[] =>
+  cols.filter((c) => c.nhomCon !== 'checkpoint' || !!tongCoDot?.checkpoint);
 /**
  * PR-HK2 (Q1): hai cột số liệu `hvCoCase` + `case` hiện chung MỘT ô `HV - Case` (`17 - 26`, mỗi số bấm mở danh sách riêng). Máy chủ, Excel và
  * nguồn mở danh sách vẫn đi theo hai cột này (`cotSoLieu`); màn chỉ vẽ cột ghép.
@@ -396,7 +407,7 @@ export type DongTongHop = {
   o: Record<string, number>;
   con?: DongTongHop[];
   /** PR-Pb2-a (lớp thường): dòng có bài Giữa khoá / Cuối khoá không — ô không áp dụng hiện "—". */
-  coDot?: { giua: boolean; cuoi: boolean };
+  coDot?: CoDot;
   /** PR-OV1a (7.2): chỉ hàng lớn khi xếp theo tuần — tuần chứa hôm nay nghiệp vụ (web mở sẵn tuần TRƯỚC, tuần này còn đang chấm). */
   tuanNay?: boolean;
 };
@@ -405,7 +416,7 @@ export type TongHopKetQua = {
   hang: DongTongHop[];
   /** Dòng Tổng = HỢP các tập (đếm duy nhất), không phải cộng các dòng — nhất là các cột học viên. */
   tong: Record<string, number>;
-  tongCoDot?: { giua: boolean; cuoi: boolean };
+  tongCoDot?: CoDot;
   scopeEmpty: boolean;
 };
 
@@ -486,7 +497,7 @@ export type YThucPhanTichKetQua = {
 export function bangXuatTongHop(
   kq: TongHopKetQua, cotHien: ReadonlySet<NhomCot>, moTaBoLoc: string,
 ): (string | number)[][] {
-  const cols = cotSoLieu(kq.ct).filter((c) => cotHien.has(c.nhom));   // số liệu thô: HV có Case và Case là hai cột riêng (ô web ghép "HV - Case")
+  const cols = cotTheoDuLieu(cotSoLieu(kq.ct), kq.tongCoDot).filter((c) => cotHien.has(c.nhom));   // số liệu thô: HV có Case và Case là hai cột riêng (ô web ghép "HV - Case")
   const out: (string | number)[][] = [];
   out.push([`${nhanGocNhin('tong-hop', kq.ct)} · ${moTaBoLoc}`]);
   out.push([]);

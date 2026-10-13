@@ -12,7 +12,7 @@ import { DINH_TRAI, SoO as SoLieuO } from './dungChung.tsx';
 import { NganXuatMt } from '../test/NganXuatMt.tsx';
 import {
   CHUONG_TRINH_LABEL, KHOANG_LABEL, KHOANG_MAC_DINH, THEO_DONG, THEO_DONG_COT_DAU, THEO_DONG_DANH_TU, THEO_DONG_LABEL,
-  NHAN_NHOM_CON, addDaysIso, bangXuatTongHop, cotSoLieu, cotTongHopFor, mauOKetQua, mondayOfDate, ngay, nhomCotNhanNgan, oKhongApDung,
+  NHAN_NHOM_CON, addDaysIso, bangXuatTongHop, cotSoLieu, cotTheoDuLieu, cotTongHopFor, mauOKetQua, mondayOfDate, ngay, nhomCotNhanNgan, oKhongApDung,
   type ChuongTrinh, type CotTongHop, type DongTongHop, type Khoang, type MauOKetQua, type NhomCot, type TheoDong, type TongHopKetQua,
 } from '@shared/domain/index.ts';
 
@@ -98,7 +98,7 @@ export function TongHopTestSos({ branchId, ct, tg, classId }: {
     if (dau?.con?.length) setOpen(new Set([dau.khoa]));
   }, [data, theo]);
 
-  const allCols = cotTongHopFor(ct);
+  const allCols = cotTheoDuLieu(cotTongHopFor(ct), data?.tongCoDot);   // OV-11h: nhóm Checkpoint chỉ khi bảng có PET / KET
   const cols = allCols.filter((c) => cotHien.has(c.nhom));
   /*
    * Tầng đầu đề trên: FT theo nhóm cột (Kết quả · Dưới kỳ vọng · Xử lý). Lớp thường (PR-Pb2-a, P4) theo nhóm con — Giữa khoá (theo môn) ·

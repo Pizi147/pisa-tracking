@@ -18,7 +18,8 @@ export function phamViHoSoGv(p: Principal, gvId: number): { branchIds: number[] 
     `SELECT 1 FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE ur.user_id = ? AND ur.status = 'active' AND r.key = 'teacher' LIMIT 1`,
   ).get(gvId)) throw notFound('Không tìm thấy giáo viên này.');
   const scope = scopeFor(p, PERMISSIONS.ANALYSIS_VIEW_TEACHER);
-  if (scope.none) throw forbidden('Bạn chỉ xem được hồ sơ giáo viên của chính mình.');
+  /* OV-11h (PT-11): câu theo vai — GV được xem hồ sơ của chính mình; TVV / CX / Admin không có phần GV. */
+  if (scope.none) throw forbidden(p.roleKeys.includes('teacher') ? 'Bạn chỉ xem được hồ sơ giáo viên của chính mình.' : 'Hồ sơ giáo viên dành cho Quản lý.');
   if (scope.all) return { branchIds: null, laChinhMinh: false };
   if (!scope.branchIds.length) throw forbidden('Giáo viên này không thuộc chi nhánh bạn quản lý.');
   const ph = scope.branchIds.map(() => '?').join(',');
