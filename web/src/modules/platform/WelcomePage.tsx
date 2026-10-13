@@ -294,7 +294,7 @@ function RegisterForm({ info, onDone }: { info: AuthInfo | null; onDone: () => v
         CHI NHÁNH LÀ ĐỀ NGHỊ, KHÔNG PHẢI QUYẾT ĐỊNH. Nói thẳng điều đó ngay ở đây để không ai
         tưởng mình vừa tự cấp cho mình quyền vào năm chi nhánh.
       */}
-      <Field label="Chi nhánh bạn đang hoạt động" required
+      <Field as="div" label="Chi nhánh bạn đang hoạt động" required
         hint="Đây là đề nghị của bạn — người duyệt sửa lại được trước khi đồng ý.">
         <div className="flex flex-wrap gap-1.5">
           {(branches.data ?? []).map((b) => (
@@ -336,9 +336,8 @@ function DemoAccounts({ accounts, loading }: { accounts: Account[]; loading: boo
   return (
     <div>
       <p className="text-sm text-slate-400 mb-4 leading-relaxed">
-        Bấm một tài khoản để vào ngay, không cần mật khẩu. Ba nhóm: <strong>Quản trị hệ thống</strong> (quản
-        phần mềm), <strong>Quản lý</strong> (điều hành chuyên môn) và <strong>Giáo viên</strong>. Mỗi tài khoản có phạm vi khác nhau, để thử cùng một màn hình
-        dưới nhiều góc nhìn. Toàn bộ dữ liệu trong bản demo là dữ liệu giả.
+        Bấm một tài khoản để vào ngay, không cần mật khẩu. Vai: Quản trị · Quản lý · GV · Admin · TVV · CX; QL / Quản trị nắm ≥ 2 vai
+        đổi được góc nhìn. Dữ liệu demo là dữ liệu giả.
       </p>
       {loading && <div className="text-slate-400">Đang tải danh sách tài khoản…</div>}
 

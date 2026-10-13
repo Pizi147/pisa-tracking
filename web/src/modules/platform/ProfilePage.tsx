@@ -5,7 +5,8 @@ import { useSession } from '../../lib/session.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 import { Card, ErrorState, Field, Info, NutChon, SectionNote, Skeleton } from '../../ui/ui.tsx';
 import { skillLabel, skillShort } from '../../lib/format.ts';
-import { ENTRY_SKILLS } from '@shared/domain/index.ts';
+import { ENTRY_SKILLS, nhanPhamVi } from '@shared/domain/index.ts';
+import { LA_BAN_CHINH } from '../../lib/banChinh.ts';
 
 type Profile = {
   id: number; code: string; fullName: string; email: string | null; phone: string | null;
@@ -87,8 +88,12 @@ export default function ProfilePage() {
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
   };
 
+  /* OV-11b (QT-10h): nút Đổi mật khẩu chỉ bật khi đủ độ dài và hai ô khớp; lệch thì báo dưới ô. */
+  const lechMk = !!pw.confirm && pw.next !== pw.confirm;
+  const duMk = !!pw.current && pw.next.length >= 6 && pw.next === pw.confirm;
+  /* QT-10d: kỹ năng phụ trách được chỉ có nghĩa với người dạy. */
+  const nguoiDay = (session?.grants ?? []).some((g) => g.role === 'teacher');
   const changePassword = async () => {
-    if (pw.next !== pw.confirm) { toast.push('error', 'Hai ô mật khẩu mới chưa khớp nhau.'); return; }
     setBusy(true);
     try {
       await api.patch('/me/profile', { currentPassword: pw.current, newPassword: pw.next });
@@ -129,10 +134,12 @@ export default function ProfilePage() {
               onChange={(e) => set({ extraEmails: e.target.value })} />
           </Field>
 
-          <Field label="Kỹ năng bạn phụ trách được"
-            hint="Đây là NĂNG LỰC, dùng để gợi ý khi phân công — không phải quyền nhập điểm.">
-            <ChonKyNang value={d.skills} onToggle={toggleSkill} />
-          </Field>
+          {nguoiDay && (
+            <Field label="Kỹ năng bạn phụ trách được"
+              hint="Đây là NĂNG LỰC, dùng để gợi ý khi phân công — không phải quyền nhập điểm.">
+              <ChonKyNang value={d.skills} onToggle={toggleSkill} />
+            </Field>
+          )}
           {/* K1-54: Lưu ở CHÂN thẻ — sau khi đã đọc hết các ô, không lẫn với tiêu đề. */}
           <div className="flex justify-end border-t pt-3" style={{ borderColor: 'var(--line)' }}>
             <button className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy || !draft} onClick={save}>Lưu</button>
@@ -141,23 +148,18 @@ export default function ProfilePage() {
       </Card>
 
       <Card title="Vai trò và phạm vi">
-        <div className="flex flex-wrap gap-1.5">
-          {(session?.grants ?? []).map((g, i) => (
-            <Info key={i}>
-              {g.roleName} · {g.branchName ?? 'Toàn hệ thống'}
-            </Info>
-          ))}
+        <div className="flex flex-wrap gap-1.5 [&>span]:whitespace-normal">
+          {(session?.grants ?? []).map((g, i) => <Info key={i}>{nhanPhamVi(g)}</Info>)}
         </div>
         <SectionNote>
           Vai trò và chi nhánh do <strong>Quản trị hệ thống</strong> cấp — không tự sửa được ở đây, vì tự cấp cho
-          mình thì bước duyệt thành vô nghĩa. Nhãn màu vàng là <strong>quyền cấp riêng</strong> cho cá nhân bạn,
-          ngoài quyền đến từ vai trò.
+          mình thì bước duyệt thành vô nghĩa.
         </SectionNote>
       </Card>
 
       <Card title="Đổi mật khẩu"
         action={
-          <button className="btn btn-sm" disabled={busy || !pw.current || !pw.next} onClick={changePassword}>
+          <button className="btn btn-sm" disabled={busy || !duMk} onClick={changePassword}>
             Đổi mật khẩu
           </button>
         }>
@@ -170,15 +172,18 @@ export default function ProfilePage() {
             <input className="field w-full" type="password" autoComplete="new-password"
               value={pw.next} onChange={(e) => setPw({ ...pw, next: e.target.value })} />
           </Field>
-          <Field label="Nhập lại mật khẩu mới" required>
+          <Field label="Nhập lại mật khẩu mới" required loi={lechMk ? 'Hai ô chưa khớp' : null}>
             <input className="field w-full" type="password" autoComplete="new-password"
               value={pw.confirm} onChange={(e) => setPw({ ...pw, confirm: e.target.value })} />
           </Field>
         </div>
-        <SectionNote>
-          Bản demo không gửi email thật nên <strong>không có luồng quên mật khẩu</strong>. Quên thì nhờ Quản trị
-          hệ thống đặt lại hộ.
-        </SectionNote>
+        {/* CA1-7: câu "Bản demo…" chỉ ở bản demo. */}
+        {!(LA_BAN_CHINH || session?.banChinh) && (
+          <SectionNote>
+            Bản demo không gửi email thật nên <strong>không có luồng quên mật khẩu</strong>. Quên thì nhờ Quản trị
+            hệ thống đặt lại hộ.
+          </SectionNote>
+        )}
       </Card>
     </div>
   );
