@@ -14,11 +14,6 @@ File này **thay** cho: `plan.md` cũ (mục 0–24), `PROMPT_SESSION_CODE.md`, 
 |---|---|
 | `docs/superpowers/specs/2026-10-11-overhaul-ux-workflow-design.md` | **Đặc tả Overhaul (OV)** — duyệt 11/10; nguồn chi tiết cho 12 PR OV-1a … OV-6b |
 | `thiet-ke/mockup-vai-tvv-admin-cx-2026-10-13.html` | Mockup **hiển thị theo vai** TVV / Admin / CX — **đã duyệt 13/10** (OV-10a/b/c) |
-| `docs/superpowers/plans/2026-10-13-pr-ov10b-tvv-cx-lien-he.md` | PR **OV-10b** Liên hệ (SĐT em, phụ huynh) + Học viên & Lớp, hồ sơ HV / lớp theo vai |
-| `docs/superpowers/plans/2026-10-13-pr-ov10c-tong-quan-theo-vai.md` | PR **OV-10c** Tổng quan theo vai (Admin Mock Test · TVV · CX Số liệu) |
-| `docs/superpowers/plans/2026-10-13-pr-ov1d-luoi-cham-sua-lai.md` | PR **OV-1d** lưới chấm FT: ô dời vì vắng bấm được (Bỏ vắng), em đã kết thúc học không báo chờ |
-| `docs/superpowers/plans/2026-10-13-pr-ov4c-ovr-chi-mt-cu.md` | PR **OV-4c** W / S: Band tự tính, nhập Band thẳng chỉ MT cũ |
-| `docs/superpowers/plans/2026-10-13-pr-ov2c-email-khong-bat-buoc.md` | PR **OV-2c** email học viên không bắt buộc |
 | `docs/superpowers/plans/2026-10-07-pr-en-tieng-anh.md` | PR-EN (sau toàn bộ OV — đếm lại chữ trước khi chạy) |
 | `docs/superpowers/plans/2026-10-07-pr-sotay-so-tay-moi.md` | PR-SOTAY (cuối cùng) |
 
@@ -188,7 +183,7 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
   quy trình (lộ trình → bàn giao → KQĐR, SOS MT, dấu "-", huỷ/khôi phục), giao diện, **12 PR OV-1a … OV-6b** + phụ thuộc, tiêu chí nghiệm thu.
 - Mockup bản 2 (góp ý 11/10 đã áp): `thiet-ke/mockup-overhaul-{1,2,3}-*-2026-10-11.html`.
 - Quyết định: mục 3 (các dòng 11/10). Thứ tự, model, prompt: mục 5, 6, 9.
-- **Tình trạng 13/10 (tối):** đã merge OV-7b #347, OV-8a #348. Còn **OV-8b** (đang chạy) → **OV-9** + **OV-10a** + **OV-10c** (song song) → **OV-10b**; **OV-1d** (lỗi lưới chấm chủ SP báo 13/10) khi có máy trống. Sau đó: **deploy MỘT lần** (mục 5) → PR-EN → PR-SOTAY → deploy lần 2.
+- **Tình trạng 13/10 (đêm): ĐÃ MERGE HẾT OV** (tới OV-10b #363). Việc tiếp: chủ SP chạy 3 lệnh chỉ đọc (mục 5) → planning đọc kết quả → **deploy MỘT lần** theo `DEPLOY_2026-10.md` → PR-EN → PR-SOTAY → deploy lần 2.
   OV-4 và OV-6b của đặc tả **tách đôi** (mỗi nửa một vùng mã, rà riêng). Thứ tự + song song: mục 5; prompt: mục 9.3.
 - **Chủ SP trả lời 12/10:** (1) hạn khi SOS MT chốt = luật hiện có (5 ngày, SOS 3 = 3 ngày), tính từ ngày chốt; (2) **không làm** ô "Dự kiến quay lại" (mục 3).
 
@@ -234,8 +229,9 @@ Bản chính hiện chạy **#285**; các lệnh chỉ đọc (`kiem-du-lieu-mt`
 **Migrate mới từ bản chính (#285) tới hết OV** (chạy theo thứ tự trong `migrate.ts`, tập dượt trên bản sao — `DEPLOY_2026-10.md` mục C):
 `prOv6b1`, `prOv6b2` (chỉ thêm cột + bản chụp lịch lớp + chèn PET/KET) · `prOv2` (vai mới, chỉ thêm) · `prOv3b` (bảng nháp lộ trình, chỉ thêm + chép Hướng GVCN) ·
 `prOv1b` (**đổi dữ liệu**: dấu "-" cũ — xem `kiem-truoc-ov1b`) · `prOv4` (chỉ thêm cột `ket_qua_huy`) · `prOv1c` (**đổi dữ liệu**: Case SOS MT cũ — xem `kiem-truoc-ov1c`) ·
-`prOv8a` (chỉ thêm 4 cột `buoc_tiep*` vào `learning_cycles`) · `prOv8b` (khi merge: thêm quyền TVV / CX) · `prOv10b` (khi merge: chỉ thêm cột liên hệ vào `students`).
-OV-3b đổi Lộ trình đề xuất GVCN → nháp: xem `kiem-truoc-ov3b`. Ba lệnh chỉ đọc chạy được NGAY (không cần chờ OV-7b).
+`prOv8a` (chỉ thêm 4 cột `buoc_tiep*` vào `learning_cycles`) · `prOv8b` (thêm quyền `student.edit_more` cho TVV / CX) · `prOv9` (chỉ thêm cột `sos_cases.kck`) ·
+`prOv10b` (chỉ thêm 4 cột liên hệ vào `students`). **Đủ 11 migrate** (đối chiếu `git diff --name-status #285..main -- server/src/migrate/`).
+OV-3b đổi Lộ trình đề xuất GVCN → nháp: xem `kiem-truoc-ov3b`. Ba lệnh chỉ đọc chạy được NGAY.
 
 ## 6. Model, effort, skill cho từng PR (OV)
 Chọn model ở ô chọn model **trước khi dán prompt**. **Không Fable**; không Haiku. Người rà: session planning (Opus 5.5).
@@ -286,13 +282,8 @@ Xong: [x] kế hoạch, một dòng mục 11, CODE_MAP.md nếu thêm/xoá file.
 | OV-4a #332 · OV-4b #333 · OV-6b1 #331 | ✅ merge 12/10 | | | |
 | OV-1c #335 · OV-3c #337 · OV-6b2 #336 | ✅ merge 12–13/10 | | | |
 | OV-5a #343 · OV-5b #342 · OV-7a #344 · OV-7b #347 · OV-8a #348 | ✅ merge 13/10 | | | |
-| OV-8b #352 · OV-10a #355 · OV-9 #356 | ✅ merge 13/10 | | | |
-| **OV-10c** | `docs/superpowers/plans/2026-10-13-pr-ov10c-tong-quan-theo-vai.md` | Opus 5.5 · High (Sonnet 5.5 · High) | 4270/5443 | sau OV-8b merge |
-| **OV-10b** | `docs/superpowers/plans/2026-10-13-pr-ov10b-tvv-cx-lien-he.md` | Opus 5.5 · XHigh (Opus 5.5 · High) | 4260/5433 | sau OV-9 + OV-10a merge |
-| **OV-1d** | `docs/superpowers/plans/2026-10-13-pr-ov1d-luoi-cham-sua-lai.md` | Opus 5.5 · High (Sonnet 5.5 · High) | 4280/5453 | khi có máy trống (≤ 3 cùng lúc) |
-| **OV-4c** | `docs/superpowers/plans/2026-10-13-pr-ov4c-ovr-chi-mt-cu.md` | Sonnet 5.5 · High (Opus 5.5 · High) | 4290/5463 | sau OV-1d merge |
-| **OV-2c** | `docs/superpowers/plans/2026-10-13-pr-ov2c-email-khong-bat-buoc.md` | Sonnet 5.5 · High (Opus 5.5 · High) | 4300/5473 | ngay (song song) |
-- OV-8b rà sâu + `/security-review` (TVV KHÔNG được `cycle.edit`; bước tiếp sau thi vẫn chỉ QL). Sau OV-8b: **OV-9 + OV-10a + OV-10c chạy cùng lúc** (3 máy); OV-10b sau OV-9 + OV-10a (chung ô Sửa thông tin, đầu hồ sơ). Rà sâu: OV-9, OV-10a, OV-10b (+ `/security-review`). Cổng tiếp theo: 4310/5483.
+| OV-8b #352 · OV-10a #355 · OV-9 #356 · OV-1d #357 · OV-2c #360 · OV-10c #361 · OV-4c #362 · OV-10b #363 | ✅ merge 13/10 — **hết OV** | | | |
+| **OV-10c** | **OV-10b** | **OV-1d** | **OV-4c** | **OV-2c** - OV-8b rà sâu + `/security-review` (TVV KHÔNG được `cycle.edit`; bước tiếp sau thi vẫn chỉ QL). Sau OV-8b: **OV-9 + OV-10a + OV-10c chạy cùng lúc** (3 máy); OV-10b sau OV-9 + OV-10a (chung ô Sửa thông tin, đầu hồ sơ). Rà sâu: OV-9, OV-10a, OV-10b (+ `/security-review`). Cổng tiếp theo: 4310/5483.
 
 ## 10. Mẫu giao việc cho agent (session planning dùng)
 
