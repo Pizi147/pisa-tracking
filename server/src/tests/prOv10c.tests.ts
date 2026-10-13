@@ -122,11 +122,23 @@ export async function runPrOv10cTests(t: YThucTestKit) {
   check('OV10c-5b · việc đã xong không còn đếm: đề nghị dời đã duyệt → ô "Đề nghị dời chờ" giảm', () => {
     thu(() => {
       const ad = loadPrincipal(idAdmin);
+      /* Tự dựng: một kỹ năng MT tuần này của lớp FT Móng Bình vắng + đề nghị dời chờ (các phép trước có thể đã xử lý đề nghị của demo). */
+      const tuan = ensurePeriod(demoToday()).id;
+      const k = one(`SELECT k.attempt_id, k.skill FROM attempt_skills k JOIN assessment_attempts a ON a.id = k.attempt_id JOIN classes c ON c.id = a.class_id
+          JOIN enrollments e ON e.student_id = a.student_id AND e.class_id = a.class_id AND e.status = 'active'
+         WHERE c.branch_id = ? AND c.is_fast_track = 1 AND a.kind = 'mock' AND a.status != 'cancelled' AND k.planned_period_id = ? AND k.sit_status = 'scheduled'
+           AND NOT EXISTS (SELECT 1 FROM skill_move_requests r WHERE r.attempt_id = k.attempt_id AND r.skill = k.skill AND r.status = 'pending')
+         ORDER BY k.attempt_id LIMIT 1`, mb, tuan);
+      assert(k, 'demo Móng Bình cần một kỹ năng MT tuần này');
       const truoc = tongQuanMt(ad, { branchId: mb }).deNghiDoi;
-      assert(truoc > 0, 'demo Móng Bình cần ít nhất một đề nghị dời chờ tuần này');
-      conn.prepare(`UPDATE skill_move_requests SET status = 'approved' WHERE status = 'pending'`).run();
+      conn.prepare(`UPDATE attempt_skills SET sit_status = 'absent' WHERE attempt_id = ? AND skill = ?`).run(k.attempt_id, k.skill);
+      const id = conn.prepare(`INSERT INTO skill_move_requests (attempt_id, skill, move_no, from_period_id, to_period_id, requested_on, decide_by, status, created_at)
+        VALUES (?, ?, 2, ?, ?, ?, ?, 'pending', datetime('now'))`).run(k.attempt_id, k.skill, tuan, tuan, demoToday(), demoToday()).lastInsertRowid;
       xoaNho();
-      assert(tongQuanMt(ad, { branchId: mb }).deNghiDoi === 0, 'đề nghị đã duyệt vẫn đếm');
+      assert(tongQuanMt(ad, { branchId: mb }).deNghiDoi === truoc + 1, 'đề nghị chờ mới không được đếm');
+      conn.prepare(`UPDATE skill_move_requests SET status = 'approved' WHERE id = ?`).run(id);
+      xoaNho();
+      assert(tongQuanMt(ad, { branchId: mb }).deNghiDoi === truoc, 'đề nghị đã duyệt vẫn đếm');
     });
   });
 

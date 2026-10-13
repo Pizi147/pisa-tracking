@@ -3,7 +3,7 @@
  * Phạm vi: TVV = em có `students.consultant_user_id` = người xem ("HV của tôi"); vai khác (CX) = mọi em xem được, lọc chi nhánh nếu chọn.
  *
  * MỘT NGUỒN cho số ở Tổng quan và chip ở Học viên & Lớp (OV-10b dùng lại `chipHocVien`, không viết hàm đếm thứ hai):
- *  · Cần chú ý — em đang học có SOS (MT gần nhất), Case mở trong 14 ngày, Ý thức trong 14 ngày, hoặc đang chờ QL chọn bước tiếp sau thi.
+ *  · `can-chu-y` — em đang học có SOS (MT gần nhất), Case mở trong 14 ngày, Ý thức trong 14 ngày, hoặc đang chờ QL chọn bước tiếp sau thi.
  *  · Tạm dừng — em Tạm dừng học. · Sắp thi — dự kiến thi trong 6 tuần tới. · Chờ QL chọn bước tiếp — cùng tập với việc QL (`choBuocTiep`).
  *  · Thiếu thông tin — chính cờ `thieu_tt` của danh sách Học viên & Lớp (`danhSachHocVienLop`), chip đó đã có sẵn.
  * Câu đọc không theo danh sách id (Turso ≤ 900 tham số): Case / Ý thức đọc khoảng 14 ngày rồi lọc theo tập em.
