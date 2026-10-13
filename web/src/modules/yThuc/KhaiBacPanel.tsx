@@ -15,8 +15,8 @@ const GHI_CHU_MIN = 3;
 const BAC_KHAI = THANG;
 
 /**
- * KHAI BẬC — "em đã bị xử lý trước khi dùng web" (H5, T27). Một lần cho mỗi chuỗi thang, chỉ khi chuỗi chưa có lần xử lý nào trên web;
- * sau đó chỉ QL sửa được (`sua`). Bậc kế tiếp của em đi tiếp từ bậc khai.
+ * KHAI BẬC — "em đã bị xử lý trước khi dùng web" (H5, T27). Một lần cho mỗi chuỗi thang, chỉ khi chuỗi chưa có lần xử lý nào trên web.
+ * Sửa (`sua`, OV-7a): GVCN khi chuỗi chưa có lần xử lý; QL cả sau đó (máy chủ quyết — `canSuaKhai`). Bậc kế tiếp của em đi tiếp từ bậc khai.
  */
 export function KhaiBacPanel({ studentId, sua, onClose, onDone }: {
   studentId: number | null; sua?: boolean; onClose: () => void; onDone?: () => void;

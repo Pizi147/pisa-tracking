@@ -452,11 +452,12 @@ export function addCoordination(p: Principal, attemptId: number, input: { kind?:
 /**
  * P07 — XÁC NHẬN ĐÃ XONG. Bắt buộc NGÀY THỰC HIỆN (không cho ngày tương lai); ghi chú và tệp tuỳ chọn; không hỏi tiến bộ (đó là chuyện của Case
  * học thuật, không phải của Phối hợp). Người thực hiện mặc định là người xác nhận; ghi `performerName` khi việc do người khác làm (CS, GĐCN…).
+ * OV-7a: việc ĐÃ XONG lưu lại được (sửa ngày / ghi chú / người) — cùng form, cùng kiểm; Báo PH chụp lại nội dung; nhật ký giữ bản trước.
  */
 export function confirmCoordination(p: Principal, id: number, input: { performedOn?: string | null; note?: string | null; performerName?: string | null }): CoordinationAction {
   const r = loadAction(id);
   requireManageDiscipline(p, r.student_id, ACT_MESSAGE);
-  if (r.status !== 'pending') throw badRequest('Việc này không còn ở trạng thái "Cần xử lý" — việc đã xong hoặc đã bỏ thì không xác nhận nữa.');
+  if (r.status === 'removed') throw badRequest('Việc này đã bỏ — bấm Khôi phục trước khi xác nhận.');
   if (!input.performedOn) throw badRequest('Cần chọn ngày thực hiện.');
   if (!isIsoDate(input.performedOn)) throw badRequest('Ngày thực hiện không hợp lệ.');
   if (input.performedOn > demoToday()) throw badRequest('Ngày thực hiện không được ở tương lai.');
@@ -473,7 +474,9 @@ export function confirmCoordination(p: Principal, id: number, input: { performed
       .run(input.performedOn, who ? null : p.userId, who || null, note || null, chup ? JSON.stringify(chup) : null, nowIso(), id);
     writeAudit({
       actorUserId: p.userId, action: 'sos_coordination.confirm', entityType: 'sos_coordination_action', entityId: id,
-      entityLabel: `${r.kind}${r.custom_name ? ` · ${r.custom_name}` : ''}`, before: { status: r.status }, after: { status: 'done', performedOn: input.performedOn, ...(r.kind === 'bao_ph_tvv' ? { noiDungLuu: !!chup } : {}) },
+      entityLabel: `${r.kind}${r.custom_name ? ` · ${r.custom_name}` : ''}`,
+      before: r.status === 'done' ? { status: r.status, performedOn: r.performed_on, note: r.note, performerName: r.performer_name } : { status: r.status },
+      after: { status: 'done', performedOn: input.performedOn, note: note || null, performerName: who || null, ...(r.kind === 'bao_ph_tvv' ? { noiDungLuu: !!chup } : {}) },
     });
   });
   return viewOf(id);
@@ -505,6 +508,32 @@ export function removeCoordination(p: Principal, id: number, input: { reasonCode
     writeAudit({
       actorUserId: p.userId, action: 'sos_coordination.remove', entityType: 'sos_coordination_action', entityId: id,
       entityLabel: `${r.kind}${r.custom_name ? ` · ${r.custom_name}` : ''}`, before: { status: r.status }, after: { status: 'removed', reason: code, text: text || null },
+    });
+  });
+  return viewOf(id);
+}
+
+/**
+ * OV-7a: việc "Đã xong" bấm nhầm → "Đưa lại Cần xử lý" (bỏ ngày / người / bản chụp Báo PH; ghi chú giữ để lưu lại); việc người dùng đã Bỏ → "Khôi phục".
+ * Việc HỆ THỐNG bỏ (mức SOS đổi, lượt huỷ) theo điểm — không khôi phục tay. Số liệu Phối hợp đọc trạng thái hiện tại nên tự đếm lại.
+ */
+export function moLaiCoordination(p: Principal, id: number): CoordinationAction {
+  const r = loadAction(id);
+  requireManageDiscipline(p, r.student_id, ACT_MESSAGE);
+  if (r.status === 'pending') throw badRequest('Việc này đang ở trạng thái Cần xử lý.');
+  if (r.status === 'removed' && !(COORDINATION_USER_REMOVE_REASONS as readonly string[]).includes(r.remove_reason_code)) {
+    throw badRequest('Việc này do hệ thống bỏ theo điểm — không khôi phục tay được.');
+  }
+  tx(() => {
+    db().prepare(
+      `UPDATE sos_coordination_actions SET status = 'pending', performed_on = NULL, performed_by = NULL, performer_name = NULL, noi_dung_luc_bao = NULL,
+              remove_reason_code = NULL, remove_reason_text = NULL, removed_by = NULL, removed_at = NULL, updated_at = ? WHERE id = ?`,
+    ).run(nowIso(), id);
+    writeAudit({
+      actorUserId: p.userId, action: 'sos_coordination.reopen', entityType: 'sos_coordination_action', entityId: id,
+      entityLabel: `${r.kind}${r.custom_name ? ` · ${r.custom_name}` : ''}`,
+      before: { status: r.status, performedOn: r.performed_on, performerName: r.performer_name, removeReason: r.remove_reason_code, removeText: r.remove_reason_text },
+      after: { status: 'pending' },
     });
   });
   return viewOf(id);

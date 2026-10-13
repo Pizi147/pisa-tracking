@@ -20,7 +20,7 @@ import { luotSinhViecRow } from '../worklist/danhGia.ts';
 import { lichMtCua, missingForStudent, suggestedMockWeeks } from '../classes/schedule.ts';
 import { lopHocCua } from '../classes/loTrinhTiep.ts';
 import { daiHocVien } from '../classes/daiChuyenLop.ts';
-import { cuoiKhoaTheoHocVien, emConMiniTest, miniTestCuaHocVien, type EmCuoiKhoa } from '../normal/cuoiKhoa.ts';
+import { cuoiKhoaTheoHocVien, emConMiniTest, miniTestCuaHocVien, quyenGhiMiniTest, type EmCuoiKhoa } from '../normal/cuoiKhoa.ts';
 import { mt0TheoLop } from '../normal/kyVong.ts';
 import { quyenBoTro } from '../cases/boTro.ts';
 import { ensurePeriod, mondayOf } from '../platform/week.ts';
@@ -777,7 +777,8 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
     const pa = iv?.pa_id ? db().prepare('SELECT * FROM case_interventions WHERE id = ?').get(iv.pa_id) as any : null;
     /* PR-CT2 (§8): `gv` = người giữ việc Ghi Mini Test (`nguoiGiuMiniTest` qua `emConMiniTest`, cùng Công việc / bảng lớp) — không còn là Người dạy (GV cũ). */
     const gv = mt.tyLe === null ? emConMiniTest([studentId]).get(studentId)?.gv ?? null : null;
-    return { ...mt, caseId: iv?.case_id ?? null, paId: iv?.pa_id ?? null, gv, coTheGhi: mt.tyLe === null && !!pa && (gv === p.userId || quyenBoTro(p, pa)) };
+    return { ...mt, caseId: iv?.case_id ?? null, paId: iv?.pa_id ?? null, gv, coTheGhi: mt.tyLe === null && !!pa && (gv === p.userId || quyenBoTro(p, pa)),
+      coTheSua: mt.tyLe !== null && quyenGhiMiniTest(p, { id: mt.id, student_id: studentId, nhom_bo_tro: mt.nhom }) };   // OV-7a
   })();
   const dai = daiHocVien(p, studentId);
   /*

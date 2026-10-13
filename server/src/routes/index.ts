@@ -1136,11 +1136,22 @@ api.delete('/discipline-measures/:id', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return xuLySvc.xoaXuLy(principalOf(req), pInt(req, 'id'));
 }));
+/** OV-7a: sửa mô tả / ngày / người thực hiện của lần xử lý đã xong — chỉ trường có gửi mới đổi. Quyền như Sửa vi phạm. */
+api.patch('/discipline-measures/:id', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  const b = yThucBody(req);
+  return xuLySvc.suaXuLy(principalOf(req), pInt(req, 'id'), { note: b.note, performedOn: b.performedOn, performerSelf: b.performerSelf, performerUserId: b.performerUserId, performerName: b.performerName });
+}));
 
 /** V4-1: Ghi nhận — "đã xem, không cần biện pháp". Vi phạm đang bắt buộc thì từ chối (V4-2). */
 api.post('/students/:id/y-thuc/ghi-nhan', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return xuLySvc.ghiNhan(principalOf(req), pInt(req, 'id'), yThucBody(req).violationIds);
+}));
+/** OV-7a: Bỏ ghi nhận bấm nhầm — vi phạm về Mới. */
+api.post('/students/:id/y-thuc/bo-ghi-nhan', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return xuLySvc.boGhiNhan(principalOf(req), pInt(req, 'id'), yThucBody(req).violationIds);
 }));
 /** V4-7: Xác nhận xử lý một bước — bậc do máy chủ tính (`bacDaThay` lệch → 409). */
 api.post('/students/:id/y-thuc/xu-ly', requireAuth, wrap((req) => {
@@ -1177,6 +1188,11 @@ api.post('/y-thuc/xu-ly/:id/gui', requireAuth, wrap((req) => {
 api.delete('/y-thuc/xu-ly/:id', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return xuLySvc.xoaNhap(principalOf(req), pInt(req, 'id'));
+}));
+/** OV-7a: "Đã thực hiện" bấm nhầm → về QL đã duyệt, chờ thực hiện. */
+api.post('/y-thuc/xu-ly/:id/chua-thuc-hien', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return xuLySvc.chuaThucHien(principalOf(req), pInt(req, 'id'));
 }));
 /** V4-10: QL đã duyệt → GVCN ghi "Đã thực hiện". */
 api.post('/y-thuc/xu-ly/:id/da-thuc-hien', requireAuth, wrap((req) => {
@@ -1549,6 +1565,12 @@ api.post('/lenh-chuyen/:id/xac-nhan', requireAuth, wrap((req) => {
   banGiaoSvc.xacNhanBanGiao(principalOf(req), pInt(req, 'id'), String(req.body?.nhanXetChung ?? ''));
   return { ok: true };
 }));
+/* OV-7a: sửa nhận xét chung của phiếu đã xác nhận (tới ngày thi hành lệnh; sau đó chỉ Quản lý). */
+api.put('/lenh-chuyen/:id/ban-giao', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  banGiaoSvc.suaBanGiao(principalOf(req), pInt(req, 'id'), String(req.body?.nhanXetChung ?? ''));
+  return { ok: true };
+}));
 api.post('/lenh-chuyen/:id/nhac', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return banGiaoSvc.nhacGvbm(principalOf(req), pInt(req, 'id'), String(req.body?.mon ?? ''));
@@ -1771,6 +1793,11 @@ api.post('/phoi-hop-sos/:id/confirm', requireAuth, wrap((req) => {
     performedOn: b.performedOn ?? null, note: b.note ?? null, performerName: b.performerName ?? null,
   });
 }));
+/* OV-7a: Đưa lại Cần xử lý (việc đã xong) · Khôi phục (việc đã bỏ). */
+api.post('/phoi-hop-sos/:id/mo-lai', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return phoiHopSvc.moLaiCoordination(principalOf(req), pInt(req, 'id'));
+}));
 api.post('/phoi-hop-sos/:id/remove', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   const b = (req.body ?? {}) as Record<string, any>;
@@ -1824,6 +1851,19 @@ api.post('/yeu-cau/:id/tu-choi', requireAuth, wrap((req) => {
 api.post('/yeu-cau/:id/tra-loi', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return yeuCauSvc.traLoiYeuCau(principalOf(req), pInt(req, 'id'), (req.body ?? {}).traLoi);
+}));
+/* OV-7a: QL sửa câu trả lời Xin ý kiến · người gửi Sửa / Rút thẻ còn chờ (Đề xuất sửa, chuyển lớp, Không cần theo dõi, Ý thức). */
+api.post('/yeu-cau/:id/sua-tra-loi', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return yeuCauSvc.suaTraLoi(principalOf(req), pInt(req, 'id'), (req.body ?? {}).traLoi);
+}));
+api.put('/yeu-cau/:id', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return yeuCauSvc.suaYeuCau(principalOf(req), pInt(req, 'id'), req.body ?? {});
+}));
+api.post('/yeu-cau/:id/rut', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return yeuCauSvc.rutYeuCau(principalOf(req), pInt(req, 'id'));
 }));
 
 /**

@@ -7,6 +7,7 @@ import { Level, NutChon } from '../../ui/ui.tsx';
 import { Khoi, KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
+import { ONgay } from '../../ui/ONgay.tsx';
 import { REGULAR_SKILLS, chuHopKetLuan, dsLoi, duongLoTrinhLop, ngay, tenMon, tenMonNgan, type GoiYCuoiKhoa } from '@shared/domain/index.ts';
 
 /** `studentProfile().cuoiKhoa` — cùng hình với `EmCuoiKhoa` của máy chủ. */
@@ -23,6 +24,8 @@ export type CuoiKhoaEm = {
 export type MiniTestEm = {
   id: number; soBuoi: number; ngayDuKien: string; han: string; tyLe: number | null; ngayLam: string | null;
   caseId: number | null; paId: number | null; coTheGhi: boolean;
+  /** OV-7a: người ghi được (người dạy · GVCN · người giữ việc · QL) sửa % và ngày của Mini Test đã ghi. */
+  coTheSua?: boolean;
 };
 
 const TONE = { ok: 'ok', warn: 'warn', bad: 'sos3', muted: 'muted' } as const;
@@ -167,13 +170,56 @@ export function MiniTestO({ mt, onGhi }: { mt: MiniTestEm; onGhi: (caseId: numbe
       </div>
     );
   }
+  return <MiniTestDaGhi mt={mt as MiniTestEm & { tyLe: number }} />;
+}
+
+/** Mini Test đã ghi — OV-7a: `Sửa` mở ô % + ngày ngay tại chỗ; máy tính lại như lần ghi đầu (≥ 70% Case Hoàn thành, < 70% Case mở + Báo QL). */
+function MiniTestDaGhi({ mt }: { mt: MiniTestEm & { tyLe: number } }) {
+  const { homNay } = useNgayNghiepVu();
+  const toast = useToast();
+  const [sua, setSua] = useState<{ pt: string; ngay: string } | null>(null);
+  const [loi, setLoi] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
   const dat = mt.tyLe >= 0.7;
+  const pt = sua ? Number(sua.pt.replace(',', '.')) : NaN;
+  const loiPt = sua && (sua.pt.trim() === '' || !Number.isFinite(pt) || pt < 0 || pt > 100) ? 'Nhập % từ 0 đến 100' : null;
+  const luu = async () => {
+    if (!sua || loiPt || !sua.ngay) return;
+    setBusy(true); setLoi(null);
+    try {
+      await api.put(`/mini-test/${mt.id}`, { tyLe: pt, ngay: sua.ngay });
+      invalidate('/students'); invalidate('/cases'); invalidate('/yeu-cau'); invalidate('/my-work');
+      toast.push('ok', `Đã lưu Mini Test ${Math.round(pt)}%`);
+      setSua(null);
+    } catch (e: any) { setLoi(e.message); } finally { setBusy(false); }
+  };
   return (
-    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border px-3 py-2 text-sm" style={{ borderColor: 'var(--line)' }}>
-      <span className="font-semibold text-slate-100">Mini Test</span>
-      <span className="font-bold tabular-nums text-slate-100">{Math.round(mt.tyLe * 100)}%</span>
-      <span className="text-xs tabular-nums text-slate-400">{mt.ngayLam ? ngay(mt.ngayLam, homNay) : ''}</span>
-      <Level tone={dat ? 'ok' : 'warn'}>{dat ? 'Đạt' : 'Chưa đạt — đã báo QL'}</Level>
+    <div className="rounded-lg border px-3 py-2 text-sm" style={{ borderColor: 'var(--line)' }}>
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+        <span className="font-semibold text-slate-100">Mini Test</span>
+        <span className="font-bold tabular-nums text-slate-100">{Math.round(mt.tyLe * 100)}%</span>
+        <span className="text-xs tabular-nums text-slate-400">{mt.ngayLam ? ngay(mt.ngayLam, homNay) : ''}</span>
+        <Level tone={dat ? 'ok' : 'warn'}>{dat ? 'Đạt' : 'Chưa đạt — đã báo QL'}</Level>
+        {mt.coTheSua && !sua && (
+          <button type="button" className="btn btn-sm ml-auto min-h-[44px] sm:min-h-0"
+            onClick={() => { setLoi(null); setSua({ pt: String(Math.round(mt.tyLe * 100)), ngay: mt.ngayLam ?? homNay }); }}>Sửa</button>
+        )}
+      </div>
+      {sua && (
+        <div className="mt-2 flex flex-wrap items-end gap-2" onKeyDown={(e) => { if (e.key === 'Escape') { e.stopPropagation(); setSua(null); } if (e.key === 'Enter') void luu(); }}>
+          <Truong nhan="Mini Test (%)" batBuoc loi={loiPt}>
+            <input className="field w-24 tabular-nums" inputMode="decimal" autoFocus aria-invalid={!!loiPt} value={sua.pt} onChange={(e) => setSua({ ...sua, pt: e.target.value })} />
+          </Truong>
+          <Truong nhan="Ngày làm" batBuoc>
+            <span className="block w-[11.5rem]"><ONgay kieu="ngay" value={sua.ngay} onChange={(v) => setSua({ ...sua, ngay: v })} toiDa={homNay || null} /></span>
+          </Truong>
+          <div className="flex gap-1.5 pb-0.5">
+            <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => setSua(null)}>Đóng</button>
+            <button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" disabled={busy || !!loiPt || !sua.ngay} onClick={() => void luu()}>{busy ? 'Đang lưu…' : 'Lưu'}</button>
+          </div>
+          {loi && <p role="alert" className="m-0 w-full text-xs text-late">{loi}</p>}
+        </div>
+      )}
     </div>
   );
 }

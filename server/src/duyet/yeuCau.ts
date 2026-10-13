@@ -12,12 +12,13 @@ import { can, napTruocPhamVi, require_, type Principal } from '../permissions.ts
 import { notify, writeAudit } from '../platform/audit.ts';
 import { nho, trongBoNho } from '../platform/nguCanhRequest.ts';
 import {
-  PERMISSIONS, LOAI_YC_META, PHAN_LOAI_LABEL, TRAN_HANG_LOAT, demHop, duongHoSoHocVien, hanDuyetMacDinh, laPhanLoai, laTuDuyet,
+  PERMISSIONS, LOAI_NGUOI_XIN_SUA, LOAI_YC_META, LY_DO_RUT, PHAN_LOAI_LABEL, TRAN_HANG_LOAT, demHop, duongHoSoHocVien, hanDuyetMacDinh, laPhanLoai, laTuDuyet,
   nhanKhongNguoiNhac, nhomCuaLoai, sapThe,
   type DemYeuCau, type LoaiYcMeta, type LoaiYeuCau, type PhanLoai, type TheYeuCauDto,
 } from '../../../shared/domain/index.ts';
 import { nhacViecNhieu, type DongNhac, type ViecCanNhac } from '../worklist/nhacViec.ts';
 import { DINH_NGHIA_LOAI, dinhNghiaCua, type NguCanhThe, type YeuCauRow } from './loaiYeuCau.ts';
+import { xoaTepSauGiaoDich } from '../platform/attachments.ts';
 
 const P_DUYET = PERMISSIONS.REQUEST_APPROVE;
 /** "Đã xử lý" trong hộp và "bị từ chối" ở Tổng quan GV nhìn lại 30 ngày; "Yêu cầu của tôi" 60 ngày. */
@@ -440,6 +441,78 @@ export function traLoiYeuCau(p: Principal, id: number, traLoi: unknown) {
     dinhNghiaCua(yc.loai)?.khiTraLoi?.(p, yc, tl);
     chotYeuCau(db(), doiTuongCua(yc), 'da_tra_loi', { nguoiDuyet: p.userId, traLoi: tl });
     writeAudit({ actorUserId: p.userId, action: 'request.answer', entityType: 'yeu_cau_duyet', entityId: id, entityLabel: meta.nhan, after: { traLoi: tl } });
+    return { ok: true, id, trangThai: 'da_tra_loi' as const };
+  });
+}
+
+// ------------------------------------------------------------------------------------------------ sửa sau khi lưu (OV-7a, chủ SP 13/10)
+
+/** Thẻ còn chờ của CHÍNH người gửi, loại sửa / rút được. QL đã trả lời → 400 như mọi thẻ đã xử lý. */
+function theCuaNguoiGui(p: Principal, id: number): YeuCauRow {
+  const yc = docThe(id);
+  if (yc.nguoi_xin !== p.userId) throw forbidden('Chỉ người gửi mới sửa hoặc rút được yêu cầu này.');
+  if (yc.trang_thai !== 'cho') throw badRequest('Yêu cầu này đã được xử lý. Danh sách đã được làm mới.');
+  if (!LOAI_NGUOI_XIN_SUA.includes(yc.loai)) throw badRequest('Loại yêu cầu này không sửa hoặc rút được.');
+  return yc;
+}
+
+/** NGƯỜI GỬI RÚT thẻ Quản lý chưa trả lời: thẻ đóng `tu_dong` "Người gửi đã rút" (không chuông — người đóng là người gửi), bảng nguồn đảo qua `khiRut`. */
+export function rutYeuCau(p: Principal, id: number) {
+  theCuaNguoiGui(p, id);
+  const khoaTep: string[] = [];
+  tx(() => {
+    const yc = theCuaNguoiGui(p, id);
+    chotYeuCau(db(), doiTuongCua(yc), 'tu_dong', { nguoiDuyet: p.userId, lyDo: LY_DO_RUT });
+    dinhNghiaCua(yc.loai)?.khiRut?.(p, yc, khoaTep);
+    writeAudit({ actorUserId: p.userId, action: 'request.withdraw', entityType: 'yeu_cau_duyet', entityId: id, entityLabel: metaCua(yc.loai).nhan,
+      before: { trangThai: 'cho', lyDo: yc.ly_do, duLieu: yc.du_lieu }, after: { trangThai: 'tu_dong', lyDoDong: LY_DO_RUT } });
+  });
+  xoaTepSauGiaoDich(khoaTep);
+  return { ok: true, id, trangThai: 'tu_dong' as const };
+}
+
+/** NGƯỜI GỬI SỬA nội dung thẻ còn chờ — kiểm như lúc gửi (`khiSua` của loại), nhật ký trước → sau. Người nhận không đổi nên không chuông. */
+export function suaYeuCau(p: Principal, id: number, vao: unknown) {
+  theCuaNguoiGui(p, id);
+  return tx(() => {
+    const yc = theCuaNguoiGui(p, id) as YeuCauRow & { bang_chung: string | null };
+    const kq = dinhNghiaCua(yc.loai)!.khiSua!(p, yc, (vao ?? {}) as Record<string, unknown>);
+    db().prepare('UPDATE yeu_cau_duyet SET ly_do = ?, du_lieu = ?, bang_chung = ? WHERE id = ?')
+      .run(kq.lyDo, JSON.stringify(kq.duLieu), kq.bangChung ? JSON.stringify(kq.bangChung) : yc.bang_chung, id);
+    writeAudit({ actorUserId: p.userId, action: 'request.edit', entityType: 'yeu_cau_duyet', entityId: id, entityLabel: metaCua(yc.loai).nhan,
+      before: { lyDo: yc.ly_do, duLieu: yc.du_lieu ? JSON.parse(yc.du_lieu) : null }, after: { lyDo: kq.lyDo, duLieu: kq.duLieu } });
+    return { ok: true, id };
+  });
+}
+
+/**
+ * QUẢN LÝ SỬA CÂU TRẢ LỜI "Xin ý kiến" (cùng quyền trả lời — phạm vi CỦA THẺ). Người hỏi thấy bản mới + MỘT chuông "QL đã sửa câu trả lời" mỗi lần
+ * sửa; chữ không đổi thì không làm gì. Hành trình: sự kiện trả lời cũ đổi khoá, ghi sự kiện mới.
+ */
+export function suaTraLoi(p: Principal, id: number, traLoi: unknown) {
+  const tl = typeof traLoi === 'string' ? chuTuDo(traLoi, 'Câu trả lời', 2000) ?? '' : '';
+  if (!tl) throw badRequest('Ghi câu trả lời.');
+  const truoc = docThe(id);
+  require_(p, P_DUYET, ctxThe(truoc), 'Yêu cầu này nằm ngoài phạm vi bạn được duyệt.');
+  return tx(() => {
+    const conn = db();
+    const yc = conn.prepare('SELECT * FROM yeu_cau_duyet WHERE id = ?').get(id) as any;
+    if (yc.trang_thai !== 'da_tra_loi') throw badRequest('Yêu cầu này chưa có câu trả lời để sửa.');
+    if (yc.tra_loi === tl) return { ok: true, id, trangThai: 'da_tra_loi' as const };
+    const meta = metaCua(yc.loai);
+    const luc = nowIso();
+    conn.prepare('UPDATE yeu_cau_duyet SET tra_loi = ?, nguoi_duyet = ? WHERE id = ?').run(tl, p.userId, id);
+    conn.prepare('UPDATE journey_events SET dedup_key = dedup_key || ? WHERE dedup_key = ?').run(`:sua:${luc}`, `xin-y-kien:${id}`);
+    dinhNghiaCua(yc.loai)?.khiTraLoi?.(p, yc, tl);
+    if (yc.nguoi_xin != null && yc.nguoi_xin !== p.userId) {
+      const hv = tenHocVien(conn, yc.hoc_vien_id);
+      notify({
+        userId: yc.nguoi_xin, kind: 'duyet_ket_qua', title: `QL đã sửa câu trả lời · ${meta.nhan}${hv ? ` · ${hv}` : ''}: ${tl}`.slice(0, 200),
+        entityType: 'yeu_cau_duyet', entityId: id, dedupKey: `sua_tra_loi:${id}:${luc}`,
+      });
+    }
+    writeAudit({ actorUserId: p.userId, action: 'request.answer_edit', entityType: 'yeu_cau_duyet', entityId: id, entityLabel: meta.nhan,
+      before: { traLoi: yc.tra_loi }, after: { traLoi: tl } });
     return { ok: true, id, trangThai: 'da_tra_loi' as const };
   });
 }

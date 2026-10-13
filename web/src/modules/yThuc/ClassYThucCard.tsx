@@ -88,6 +88,15 @@ export function ClassYThucCard({ classId, thuong = false }: { classId: number; t
       lamMoi();
     } catch (e: any) { toast.push('error', e.message); }
   };
+  /* OV-7a: Ghi nhận bấm nhầm → Bỏ ghi nhận (vi phạm về Mới). */
+  const boGhiNhan = async (v: ViPhamV4) => {
+    try {
+      await api.post(`/students/${v.studentId}/y-thuc/bo-ghi-nhan`, { violationIds: [v.id] });
+      DUONG_LAM_MOI_Y_THUC.forEach((x) => invalidate(x));
+      toast.push('ok', 'Đã bỏ ghi nhận');
+      lamMoi();
+    } catch (e: any) { toast.push('error', e.message); }
+  };
 
   const khungTrai = (
     <div className="min-w-0">
@@ -161,6 +170,7 @@ export function ClassYThucCard({ classId, thuong = false }: { classId: number; t
                       <NhanViPham t={v.trangThai} nhan={v.nhanTrangThai} />
                       {coGhiNhan && <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => void ghiNhan(v)}
                         title="Đã xem, không cần xử lý">Ghi nhận</button>}
+                      {hv.canManage && v.trangThai === 'da_ghi_nhan' && <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => void boGhiNhan(v)}>Bỏ ghi nhận</button>}
                     </span>
                   ),
                   mo: moViPhamId === v.id,

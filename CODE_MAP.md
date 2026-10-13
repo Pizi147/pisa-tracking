@@ -492,6 +492,7 @@ Hướng dẫn cho chủ sản phẩm: `TRIEN_KHAI.md`. Kế hoạch cũ: `git s
 |---|---|
 | Sáu họ nhãn (`Level` · `Status` · `Task` · `Alert` · `Outcome` · `Info`), nút, thẻ, bảng | `web/src/ui/ui.tsx` |
 | Panel trượt bên phải (một khung cho mọi panel) | `web/src/ui/KhungPanel.tsx` |
+| **Sửa sau khi lưu** (OV-7a): bàn giao đã xác nhận (`suaBanGiao`, tới ngày chuyển lớp, sau đó chỉ QL) · Ý thức `suaXuLy`, `chuaThucHien`, `boGhiNhan`, `suaKhaiBac` · Phối hợp lưu lại + `moLaiCoordination` · Mini Test `quyenGhiMiniTest` + đảo Case (`daoCaseMiniTest`) · người gửi Sửa / Rút thẻ còn chờ (`suaYeuCau`, `rutYeuCau`, `khiSua` / `khiRut` theo `LOAI_NGUOI_XIN_SUA`) · QL `suaTraLoi` | `server/src/classes/banGiao.ts` · `server/src/yThuc/xuLy.ts` · `server/src/yThuc/phoiHop.ts` · `server/src/normal/cuoiKhoa.ts` · `server/src/duyet/yeuCau.ts` + `loaiYeuCau.ts` · web: `BanGiaoPanel`, `XemXuLyPanel`, `PhoiHopSosSection`, `KetLuanKhoa` (`MiniTestDaGhi`), `TheYeuCau` · phép kiểm `server/src/tests/prOv7a.tests.ts` |
 | Hộp thoại giữa màn, hộp xác nhận | `web/src/ui/Drawer.tsx` → `Modal`, `ConfirmDialog` |
 | Ô ngày · tuần · tháng (gõ + lịch), lịch tự vẽ | `web/src/ui/ONgay.tsx` · `web/src/ui/LichNho.tsx` · luật `shared/domain/oNgay.ts` |
 | Ô "Khác" → Ghi rõ | `web/src/ui/OKhac.tsx` · luật `shared/domain/khac.ts` |

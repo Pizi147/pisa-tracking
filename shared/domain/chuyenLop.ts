@@ -279,11 +279,14 @@ export type PhieuEm = {
   nhanXetChung: string | null;
   xacNhan: { boi: string | null; luc: string; thay: boolean } | null;
   gvbmChuaBanGiao: string[];
+  /** OV-7a: phiếu đã xác nhận mà người xem còn sửa được (tới ngày thi hành lệnh; sau đó chỉ Quản lý). */
+  suaDuoc: boolean;
 };
 export type PhieuBanGiaoDto = {
   lop: { id: number; code: string; ct: string | null; ft: boolean; mon: { ma: string; ten: string; ngan: string }[] };
   homNay: string;
-  nguoiXem: { gvcn: boolean; qlThay: boolean; monGhi: string[]; xacNhan: boolean; xemTuNguon: boolean };
+  /** `ql`: Quản lý lớp nguồn — OV-7a: sửa được phiếu đã xác nhận cả sau ngày thi hành. */
+  nguoiXem: { gvcn: boolean; qlThay: boolean; monGhi: string[]; xacNhan: boolean; xemTuNguon: boolean; ql: boolean };
   tong: number; daXacNhan: number; hanGvcn: string | null;
   theoMon: { ma: string; daGhi: number; tong: number; han: string | null }[];
   ds: PhieuEm[];

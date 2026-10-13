@@ -52,11 +52,14 @@ function MasterDetail({ dto, lenhId, onClose, onDone, reload }: Chung) {
   const [daBam, setDaBam] = useState(false);
   const [busy, setBusy] = useState(false);
   const [dienThay, setDienThay] = useState<{ lenhId: number; mon: string; chu: string } | null>(null);
+  /* OV-7a: phiếu đã xác nhận — "Sửa" mở lại ô nhận xét + câu từng môn (tới ngày thi hành lệnh; sau đó chỉ Quản lý). */
+  const [dangSua, setDangSua] = useState(false);
   const dsRef = useRef<HTMLUListElement>(null);
   const ghi = dto.nguoiXem.xemTuNguon && dto.nguoiXem.xacNhan;   // được viết nhận xét + xác nhận (GVCN, hoặc Quản lý thay)
-  const docThoi = !ghi;
+  const suaPhieu = !!em?.xacNhan && dangSua;
+  const docThoi = !ghi && !suaPhieu;
 
-  useEffect(() => { setDaBam(false); setDienThay(null); }, [chon]);
+  useEffect(() => { setDaBam(false); setDienThay(null); setDangSua(false); }, [chon]);
   const nhap = em ? nhanXet[em.lenhId] ?? em.nhanXetChung ?? '' : '';
   const thieu = nhap.trim().length < NHAN_XET_TOI_THIEU;
   const dsXn = dto.ds.filter((e) => !e.xacNhan).length;
@@ -84,6 +87,18 @@ function MasterDetail({ dto, lenhId, onClose, onDone, reload }: Chung) {
       if (con.length) setChon(con[0].lenhId);
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
   };
+  const luuSua = async () => {
+    if (!em) return;
+    setDaBam(true);
+    if (thieu) return;
+    setBusy(true);
+    try {
+      await api.put(`/lenh-chuyen/${em.lenhId}/ban-giao`, { nhanXetChung: nhap.trim() });
+      invalidate('/lenh-chuyen'); invalidate('/students');
+      toast.push('ok', `Đã lưu bàn giao ${em.ten}`);
+      setDangSua(false); setDaBam(false); reload();
+    } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
+  };
   const nhac = async (e: PhieuEm, mon: string) => {
     try { await api.post(`/lenh-chuyen/${e.lenhId}/nhac`, { mon }); toast.push('ok', 'Đã nhắc GVBM'); } catch (er: any) { toast.push('error', er.message); }
   };
@@ -103,14 +118,20 @@ function MasterDetail({ dto, lenhId, onClose, onDone, reload }: Chung) {
     <KhungPanel rong="toan" tieuDe={`Bàn giao · ${dto.lop.code}`} onDong={onClose}
       ngCanh={<span className="tabular-nums">{dto.tong} em · {dto.daXacNhan}/{dto.tong} đã xác nhận{dto.hanGvcn && <> · <Han loai="viec-van-hanh" han={dto.hanGvcn} /></>}</span>}
       chan={{
-        huy: { nhan: 'Đóng', onClick: onClose },
+        huy: suaPhieu
+          ? { nhan: 'Huỷ thay đổi', disabled: busy, onClick: () => { setDangSua(false); setDaBam(false); setDienThay(null); setNhanXet((m) => { const { [em!.lenhId]: _, ...con } = m; return con; }); } }
+          : { nhan: 'Đóng', onClick: onClose },
         dongTren: ghi && em && !em.xacNhan ? (
           <p className="m-0 px-4 pt-2 text-right text-xs text-slate-400">Xác nhận được khi đủ nhận xét chung. Môn chưa có thông tin sẽ ghi “GVBM chưa bàn giao”.</p>
         ) : undefined,
         chinh: ghi && em && !em.xacNhan ? (
           <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={xacNhan} disabled={busy || !nhap.trim()} title={!nhap.trim() ? 'Viết nhận xét chung trước khi xác nhận' : undefined}>{CHU_CHUYEN_LOP.banGiao}</button>
+        ) : suaPhieu ? (
+          <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={luuSua} disabled={busy}>{busy ? 'Đang lưu…' : 'Lưu'}</button>
+        ) : em?.xacNhan && em.suaDuoc && (ghi || dto.nguoiXem.ql) ? (
+          <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={() => setDangSua(true)}>Sửa</button>
         ) : undefined,
-        conThieu: daBam && thieu && em && ghi ? [{ nhan: 'Nhận xét chung', oId: 'o-nhan-xet' }] : undefined,
+        conThieu: daBam && thieu && em && (ghi || suaPhieu) ? [{ nhan: 'Nhận xét chung', oId: 'o-nhan-xet' }] : undefined,
       }}>
       {dto.ds.length === 0 && <p className="mt-3 text-sm text-slate-400">Chưa có quyết định chuyển lớp nào cần bàn giao.</p>}
       {em && (
@@ -177,9 +198,14 @@ function MasterDetail({ dto, lenhId, onClose, onDone, reload }: Chung) {
                           {ghi && <button type="button" className="link border-0 bg-transparent p-0 text-xs" onClick={() => setDienThay({ lenhId: em.lenhId, mon: m.ma, chu: '' })}>Điền thay</button>}
                         </span>
                       )}
+                      {suaPhieu && (dto.nguoiXem.monGhi.includes(m.ma) || dto.nguoiXem.ql) && !(dienThay?.lenhId === em.lenhId && dienThay.mon === m.ma) && (
+                        <button type="button" className="link ml-2 border-0 bg-transparent p-0 text-xs" onClick={() => setDienThay({ lenhId: em.lenhId, mon: m.ma, chu: m.noiDung ?? '' })}>
+                          {m.noiDung ? 'Sửa' : 'Điền thay'}
+                        </button>
+                      )}
                       {dienThay && dienThay.lenhId === em.lenhId && dienThay.mon === m.ma && (
                         <span className="mt-1 flex flex-wrap items-center gap-1.5">
-                          <input className="field min-w-[14rem] flex-1" autoFocus maxLength={300} aria-label={`Điền thay môn ${m.ngan}`} value={dienThay.chu}
+                          <input className="field min-w-[14rem] flex-1" autoFocus maxLength={300} aria-label={`${m.noiDung ? 'Sửa' : 'Điền thay'} môn ${m.ngan}`} value={dienThay.chu}
                             placeholder="Viết một câu…" onChange={(e) => setDienThay({ ...dienThay, chu: e.target.value })}
                             onKeyDown={(e) => { if (e.key === 'Enter') void luuDienThay(); if (e.key === 'Escape') { e.stopPropagation(); setDienThay(null); } }} />
                           <button type="button" className="btn btn-sm btn-primary" disabled={!dienThay.chu.trim()} onClick={luuDienThay}>Lưu</button>
@@ -192,15 +218,16 @@ function MasterDetail({ dto, lenhId, onClose, onDone, reload }: Chung) {
               </ul>
             </section>
 
-            <Truong nhan="Nhận xét chung của GVCN" batBuoc={ghi && !em.xacNhan} dem={ghi && !em.xacNhan ? { co: nhap.trim().length, can: NHAN_XET_TOI_THIEU } : undefined}
-              loi={daBam && thieu && ghi ? `Cần ít nhất ${NHAN_XET_TOI_THIEU} ký tự` : null}>
-              <textarea id="o-nhan-xet" className="field w-full" rows={3} readOnly={docThoi || !!em.xacNhan} aria-invalid={daBam && thieu && ghi}
+            <Truong nhan="Nhận xét chung của GVCN" batBuoc={(ghi && !em.xacNhan) || suaPhieu} dem={(ghi && !em.xacNhan) || suaPhieu ? { co: nhap.trim().length, can: NHAN_XET_TOI_THIEU } : undefined}
+              loi={daBam && thieu && (ghi || suaPhieu) ? `Cần ít nhất ${NHAN_XET_TOI_THIEU} ký tự` : null}>
+              <textarea id="o-nhan-xet" className="field w-full" rows={3} readOnly={docThoi || (!!em.xacNhan && !suaPhieu)} aria-invalid={daBam && thieu && (ghi || suaPhieu)}
                 value={nhap} placeholder={docThoi ? undefined : 'Ví dụ: Em chăm, ngại nói trước lớp. Mẹ theo sát, liên hệ qua Zalo.'}
                 onChange={(e) => setNhanXet((m) => ({ ...m, [em.lenhId]: e.target.value }))} />
             </Truong>
             {em.xacNhan && (
               <p className="m-0 text-xs text-slate-400">
                 Xác nhận bởi {em.xacNhan.boi ?? 'GVCN'}{em.xacNhan.thay ? ' (Quản lý xác nhận thay)' : ''} · {ngay(em.xacNhan.luc, homNay)}
+                {!em.suaDuoc && (ghi || dto.nguoiXem.monGhi.length > 0) && ' · đã qua ngày chuyển lớp, chỉ Quản lý sửa'}
               </p>
             )}
             {!ghi && !em.xacNhan && dto.nguoiXem.xemTuNguon && <p className="m-0 text-xs text-slate-400">Chỉ GVCN lớp cũ xác nhận. Quản lý xác nhận thay khi lớp chưa có GVCN hoặc quá hạn 3 ngày.</p>}
@@ -258,7 +285,7 @@ function BangGvbm({ dto, mon, lenhId, onClose, onDone, reload }: Chung & { mon: 
         </div>
         {dto.ds.map((e) => {
           const cu = e.mon.find((x) => x.ma === mon)?.noiDung ?? '';
-          const khoa = !!e.xacNhan;
+          const khoa = !!e.xacNhan && !e.suaDuoc;   // OV-7a: đã xác nhận vẫn sửa được tới ngày chuyển lớp
           return (
             <div key={e.lenhId} role="row" className="grid gap-x-3 gap-y-1 px-3 py-2.5 text-sm sm:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)_minmax(0,2fr)]">
               <span role="cell" className="min-w-0 truncate text-slate-100" title={e.ten}>{e.ten}
@@ -271,7 +298,7 @@ function BangGvbm({ dto, mon, lenhId, onClose, onDone, reload }: Chung & { mon: 
                   onBlur={() => void ghi(e)} />
                 {loi[e.lenhId] && <span role="alert" className="mt-0.5 block text-xs text-late">{loi[e.lenhId]}</span>}
                 {!loi[e.lenhId] && luu[e.lenhId] && <span className="mt-0.5 block text-xs text-ok">Đã lưu</span>}
-                {khoa && <span className="mt-0.5 block text-xs text-slate-500">GVCN đã xác nhận phiếu — không sửa thêm</span>}
+                {khoa && <span className="mt-0.5 block text-xs text-slate-500">Đã qua ngày chuyển lớp — chỉ Quản lý sửa</span>}
                 {!khoa && oMon(e)?.lamLai && !luu[e.lenhId] && (
                   <span className="mt-1 flex flex-wrap items-center gap-2 text-xs">
                     <Nhan tone="soon">Cần làm lại</Nhan><span className="text-slate-400">Quản lý đổi lộ trình — sửa hoặc giữ câu cũ</span>

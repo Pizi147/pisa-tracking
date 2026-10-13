@@ -117,6 +117,24 @@ export function ghiNhan(p: Principal, studentId: number, violationIds: unknown):
   return { ok: true, soGhiNhan: n };
 }
 
+/** OV-7a: Bỏ ghi nhận bấm nhầm — xoá `ghi_nhan_luc`, vi phạm về Mới (luật trạng thái tự tính lại). Cùng quyền với Ghi nhận. */
+export function boGhiNhan(p: Principal, studentId: number, violationIds: unknown): { ok: true; soBo: number } {
+  const hv = hocVien(studentId);
+  requireManageDiscipline(p, studentId, MANAGE_MESSAGE);
+  const ids = [...new Set((Array.isArray(violationIds) ? violationIds : []).map(Number).filter((x) => Number.isInteger(x) && x > 0))];
+  if (!ids.length) throw badRequest('Chọn ít nhất một vi phạm.');
+  return tx(() => {
+    const doi = db().prepare(
+      `UPDATE violations SET ghi_nhan_luc = NULL, ghi_nhan_boi = NULL WHERE student_id = ? AND ghi_nhan_luc IS NOT NULL AND id IN (${ids.map(() => '?').join(',')})`,
+    ).run(studentId, ...ids).changes as number;
+    if (!doi) throw badRequest('Vi phạm đã chọn chưa được ghi nhận — mở lại panel.');
+    chotHanXuLy([studentId]);
+    writeAudit({ actorUserId: p.userId, action: 'discipline.unacknowledge', entityType: 'student', entityId: studentId,
+      entityLabel: `${hv.student_code} · Bỏ ghi nhận ${doi} vi phạm`, before: { ghiNhan: ids }, after: { ghiNhan: [] } });
+    return { ok: true as const, soBo: doi };
+  });
+}
+
 // ---------------------------------------------------------------- Xác nhận xử lý một bước (V4-7, V4-8, V4-12)
 
 export type XuLyVao = {
@@ -184,7 +202,7 @@ export function khaiBac(p: Principal, studentId: number, v: { bac?: unknown; tha
   return tx(() => {
     const em = emCua(studentId);
     if (!em.chuoi.length) throw badRequest('Em chưa có lộ trình — chưa xác nhận cấp bậc vi phạm được.');
-    if (em.khai) throw badRequest('Chuỗi này đã xác nhận cấp bậc vi phạm — cần sửa thì nhờ Quản lý.');
+    if (em.khai) throw badRequest('Chuỗi này đã xác nhận cấp bậc vi phạm — bấm Sửa để sửa bậc đã khai.');
     if (em.soXuLyChuoi > 0) throw badRequest('Chuỗi này đã có lần xử lý trên web — không xác nhận cấp bậc nữa.');
     db().prepare(
       `INSERT INTO y_thuc_khai_bac (student_id, chuoi_cycle_id, bac, thang, ghi_chu, khai_boi, khai_luc) VALUES (?,?,?,?,?,?,?)`,
@@ -195,15 +213,19 @@ export function khaiBac(p: Principal, studentId: number, v: { bac?: unknown; tha
   });
 }
 
-/** Chỉ QL (`request.approve` trong phạm vi em), chỉ khi chuỗi chưa có lần xử lý nào. */
+/**
+ * OV-7a: GVCN (người khai) sửa bậc đã khai khi chuỗi chưa có lần xử lý; Quản lý (`request.approve` trong phạm vi em) sửa cả sau khi đã có lần xử lý
+ * trên web — bậc / thang tính lại từ bậc mới (`bacHienTai` = max bậc lần xử lý, bậc khai).
+ */
 export function suaKhaiBac(p: Principal, studentId: number, v: { bac?: unknown; thang?: unknown; ghiChu?: unknown }) {
   const hv = hocVien(studentId);
-  require_(p, PERMISSIONS.REQUEST_APPROVE, { studentId }, 'Chỉ Quản lý sửa được cấp bậc vi phạm đã xác nhận.');
+  const ql = can(p, PERMISSIONS.REQUEST_APPROVE, { studentId });
+  if (!ql) requireManageDiscipline(p, studentId, MANAGE_MESSAGE);
   const { bac, thang, ghiChu } = kiemKhai(v);
   return tx(() => {
     const em = emCua(studentId);
     if (!em.khai) throw badRequest('Chuỗi này chưa xác nhận cấp bậc vi phạm.');
-    if (em.soXuLyChuoi > 0) throw badRequest('Chuỗi này đã có lần xử lý trên web — không sửa cấp bậc nữa.');
+    if (!ql && em.soXuLyChuoi > 0) throw badRequest('Chuỗi này đã có lần xử lý trên web — chỉ Quản lý sửa được cấp bậc đã khai.');
     db().prepare(`UPDATE y_thuc_khai_bac SET bac = ?, thang = ?, ghi_chu = ?, sua_boi = ?, sua_luc = ? WHERE student_id = ? AND chuoi_cycle_id = ?`)
       .run(bac, thang, ghiChu, p.userId, demoToday(), studentId, em.chuoi[0]);
     writeAudit({ actorUserId: p.userId, action: 'discipline.declare_level_edit', entityType: 'student', entityId: studentId,
@@ -248,12 +270,60 @@ export function daThucHien(p: Principal, measureId: number, v: { performedOn?: u
   return xemXuLy(p, measureId);
 }
 
+/** OV-7a: "Đã thực hiện" bấm nhầm → "Chưa thực hiện": lần xử lý về QL đã duyệt, chờ thực hiện. Ghi chú giữ (không mất chữ); chỉ lần đã qua QL duyệt. */
+export function chuaThucHien(p: Principal, measureId: number): XuLyView {
+  const m = loadXuLy(measureId);
+  const hv = hocVien(m.student_id);
+  requireSuaXuLy(p, m);
+  if (m.status !== 'done') throw badRequest('Lần xử lý này chưa ghi "Đã thực hiện".');
+  if (!m.quyet_luc) throw badRequest('Lần xử lý này không qua QL duyệt — sửa hoặc Xoá lần xử lý.');
+  tx(() => {
+    const doi = db().prepare(
+      `UPDATE discipline_measures SET status = 'da_duyet', performed_on = NULL, performed_by = NULL, performer_name = NULL, confirmed_by = NULL, confirmed_at = NULL,
+              updated_at = ? WHERE id = ? AND status = 'done'`,
+    ).run(nowIso(), measureId).changes;
+    if (!doi) throw conflict('Lần xử lý này vừa được cập nhật — mở lại.');
+    chotHanXuLy([m.student_id]);
+    writeAudit({ actorUserId: p.userId, action: 'discipline.not_performed', entityType: 'discipline_measure', entityId: measureId,
+      entityLabel: `${hv.student_code} · ${nhanLoaiXuLy(m.kind, m.custom_name)} · chưa thực hiện`,
+      before: { status: 'done', performedOn: m.performed_on ?? null, performedBy: m.performed_by ?? null, performerName: m.performer_name ?? null }, after: { status: 'da_duyet' } });
+  });
+  return xemXuLy(p, measureId);
+}
+
+/**
+ * OV-7a: sửa GHI CHÚ · NGÀY · NGƯỜI THỰC HIỆN của lần xử lý đã xong (cùng quyền Sửa vi phạm — GVCN em + QL). Chỉ trường có gửi mới đổi; kiểm như lúc
+ * lưu (mô tả ≥ 10, ngày ≤ hôm nay và từ ngày QL duyệt). Nhật ký trước → sau. Bậc không đổi (đọc từ loại) — hạn xử lý chốt lại như Sửa vi phạm.
+ */
+export function suaXuLy(p: Principal, measureId: number, v: { note?: unknown; performedOn?: unknown; performerSelf?: unknown; performerUserId?: unknown; performerName?: unknown }): XuLyView {
+  const m = loadXuLy(measureId);
+  const hv = hocVien(m.student_id);
+  requireSuaXuLy(p, m);
+  if (m.status !== 'done') throw badRequest('Chỉ sửa ngày / người / mô tả của lần xử lý đã thực hiện — đề xuất đang chờ thì sửa ở thẻ Chờ duyệt.');
+  const note = v.note !== undefined ? moTa(v.note) : m.note;
+  const performedOn = v.performedOn !== undefined ? ngayThucHien(v.performedOn) : m.performed_on;
+  if (m.quyet_luc && performedOn < String(m.quyet_luc).slice(0, 10)) throw badRequest('Ngày thực hiện phải từ ngày QL duyệt trở đi.');
+  const nguoi = v.performerSelf || v.performerUserId !== undefined || v.performerName !== undefined ? nguoiThucHien(p, v) : { by: m.performed_by ?? null, ten: m.performer_name ?? null };
+  tx(() => {
+    db().prepare('UPDATE discipline_measures SET note = ?, performed_on = ?, performed_by = ?, performer_name = ?, updated_at = ? WHERE id = ?')
+      .run(note, performedOn, nguoi.by, nguoi.ten, nowIso(), measureId);
+    chotHanXuLy([m.student_id]);
+    writeAudit({ actorUserId: p.userId, action: 'discipline.edit_info', entityType: 'discipline_measure', entityId: measureId,
+      entityLabel: `${hv.student_code} · sửa ${nhanLoaiXuLy(m.kind, m.custom_name)}`,
+      before: { note: m.note ?? null, performedOn: m.performed_on ?? null, performedBy: m.performed_by ?? null, performerName: m.performer_name ?? null },
+      after: { note, performedOn, performedBy: nguoi.by, performerName: nguoi.ten } });
+  });
+  return xemXuLy(p, measureId);
+}
+
 // ---------------------------------------------------------------- đọc
 
 export type XuLyView = {
   id: number; studentId: number; ten: string; kind: string; nhan: string; customName: string | null;
   status: string; statusLabel: string; bac: number; note: string | null;
   performedOn: string | null; nguoi: string | null; quyetLuc: string | null; createdAt: string;
+  /** OV-7a: điền sẵn ô Người thực hiện khi Sửa — tài khoản (`nguoiId`) hoặc tên ngoài (`nguoiNgoai`). */
+  nguoiId: number | null; nguoiNgoai: string | null;
   viPham: ViolationView[]; soTep: number; canManage: boolean;
   /** PR-LUI-a1: Sửa vi phạm / Xoá lần xử lý (quyền Q5) và tên lần xử lý SAU (chặn Xoá khi còn). */
   coTheSua: boolean; coTheXoa: boolean; lanSau: string | null;
@@ -283,6 +353,7 @@ export function xemXuLy(p: Principal, id: number): XuLyView {
     id, studentId: m.student_id, ten: m.ten, kind: m.kind, nhan: nhanLoaiXuLy(m.kind, m.custom_name), customName: m.custom_name ?? null,
     status: m.status, statusLabel: (XU_LY_STATUS_LABEL as Record<string, string>)[m.status] ?? m.status, bac: bacCuaLoai(m.kind),
     note: m.note ?? null, performedOn: m.performed_on ?? null, nguoi: m.status === 'done' ? m.nguoi ?? null : null,
+    nguoiId: m.performed_by ?? null, nguoiNgoai: m.performer_name ?? null,
     quyetLuc: m.quyet_luc ?? null, createdAt: m.created_at,
     viPham: violationsByIds(vIds), soTep: m.so_tep, canManage: canManageDiscipline(p, m.student_id), the,
     coTheSua, coTheXoa: coTheSua && !sau, lanSau: sau ? nhanLoaiXuLy(sau.kind, sau.custom_name) : null, bacVe,
@@ -335,7 +406,7 @@ export function yThucHocVien(p: Principal, studentId: number, o: { phamVi?: 'chu
   return {
     studentId, ten: hv.full_name, maHv: hv.student_code, homNay,
     canManage, canRecord: can(p, PERMISSIONS.VIOLATION_RECORD, { studentId, classId: em.lopId }),
-    canSuaKhai: can(p, PERMISSIONS.REQUEST_APPROVE, { studentId }) && !!em.khai?.coTheSua,
+    canSuaKhai: !!em.khai && (can(p, PERMISSIONS.REQUEST_APPROVE, { studentId }) || (canManage && em.khai.coTheSua)),
     coTheKhai: canManage && khaiDuoc(em),
     chuoi: { nhan: em.nhanChuoi, cycleIds: em.chuoi, soXuLy: em.xuLy.filter((m) => m.status === 'done' && m.cycleId != null && em.chuoi.includes(m.cycleId)).length },
     bac: em.bac, bacNhan: em.bac > 0 ? nhanLoaiXuLy(kindCuaBac(em.bac)) : null,
@@ -460,10 +531,10 @@ export function guiDeXuat(p: Principal, measureId: number) {
 
 // ---------------------------------------------------------------- Sửa / Xoá lần xử lý đã xác nhận (PR-LUI-a1)
 
-/** Q5 (chủ sản phẩm 06/10): QL / Quản trị mọi lúc; GVCN lớp em chỉ khi lần xử lý CHƯA "Đã thực hiện". Lần nháp đi `xoaNhap`. */
+/** OV-7a (chủ SP 13/10, thay Q5 06/10): ai lưu được thì sửa được — GVCN lớp em (cả lần đã thực hiện) + QL / Quản trị. Lần nháp đi `xoaNhap`. */
 function quyenSuaXuLy(p: Principal, m: any): boolean {
   if (m.status === 'nhap') return false;
-  return can(p, PERMISSIONS.REQUEST_APPROVE, { studentId: m.student_id }) || (m.status !== 'done' && canManageDiscipline(p, m.student_id));
+  return can(p, PERMISSIONS.REQUEST_APPROVE, { studentId: m.student_id }) || canManageDiscipline(p, m.student_id);
 }
 
 function loadXuLy(id: number): any {
@@ -485,10 +556,7 @@ function lanSauCua(m: any, em: EmYThuc): any | null {
 
 function requireSuaXuLy(p: Principal, m: any) {
   if (m.status === 'nhap') throw badRequest('Đây là đề xuất chưa gửi — đóng panel để xoá nháp.');
-  if (!quyenSuaXuLy(p, m)) {
-    /* "Chỉ Quản lý" chỉ đúng với người VỐN xử lý được Ý thức của em (GVCN) gặp lần đã thực hiện; GVBM / QL chi nhánh khác nhận câu quyền chung. */
-    throw forbidden(m.status === 'done' && canManageDiscipline(p, m.student_id) ? 'Lần xử lý đã thực hiện — chỉ Quản lý sửa hoặc xoá được.' : MANAGE_MESSAGE);
-  }
+  if (!quyenSuaXuLy(p, m)) throw forbidden(MANAGE_MESSAGE);
 }
 
 /** Thêm / bỏ vi phạm của lần xử lý. Thêm: cùng em, chưa nằm trong lần xử lý khác. Còn ≥ 1. Mỗi thay đổi một dòng lịch sử vi phạm. */
@@ -539,22 +607,48 @@ export function xoaXuLy(p: Principal, measureId: number): { ok: true; bac: numbe
       const ten = nhanLoaiXuLy(sau.kind, sau.custom_name);
       throw badRequest(`Đã có ${ten} sau lần này — xoá ${ten} trước.`);
     }
-    const vIds = (db().prepare('SELECT violation_id FROM measure_violations WHERE measure_id = ? ORDER BY violation_id').all(measureId) as any[]).map((r) => r.violation_id as number);
-    const daBaoPh = !!db().prepare("SELECT 1 FROM sos_coordination_actions WHERE student_id = ? AND kind = 'bao_ph_tvv' AND status = 'done' LIMIT 1").get(m.student_id);
-    const files = purgeAttachmentsOf('discipline_measure', measureId, p.userId, khoaTep);
-    for (const id of vIds) noteMeasureChange(id, measureId, null, p.userId);
-    db().prepare('DELETE FROM measure_violations WHERE measure_id = ?').run(measureId);
-    db().prepare('DELETE FROM discipline_measures WHERE id = ?').run(measureId);
-    chotYeuCau(db(), { loai: 'y_thuc', doiTuongLoai: 'discipline_measure', doiTuongId: measureId }, 'tu_dong', { lyDo: 'Lần xử lý đã xoá' });
-    chotHanXuLy([m.student_id]);
-    writeAudit({ actorUserId: p.userId, action: 'discipline.delete', entityType: 'discipline_measure', entityId: measureId,
-      entityLabel: `${hv.student_code} · xoá ${nhanLoaiXuLy(m.kind, m.custom_name)}`,
-      before: { studentId: m.student_id, kind: m.kind, customName: m.custom_name ?? null, status: m.status, note: m.note ?? null, performedOn: m.performed_on ?? null,
-        performedBy: m.performed_by ?? null, performerName: m.performer_name ?? null, createdBy: m.created_by, violations: vIds, attachments: files, daBaoPhuHuynh: daBaoPh } });
+    xoaXuLyTrongTx(p, m, hv, khoaTep, 'Lần xử lý đã xoá');
     return emCua(m.student_id).bac;
   });
   xoaTepSauGiaoDich(khoaTep);
   return { ok: true, bac };
+}
+
+/**
+ * OV-7a: GVCN RÚT đề xuất "Gửi QL" còn chờ (gọi từ `rutYeuCau`, trong tx của hộp — thẻ đã đóng "Người gửi đã rút"): lần xử lý chờ duyệt bị xoá như Xoá lần
+ * xử lý (vi phạm về chưa xử lý, tệp xoá sau giao dịch qua `khoaTep`, nhật ký đủ nội dung).
+ */
+export function rutDeXuatYThuc(p: Principal, measureId: number, khoaTep: string[]): void {
+  const m = loadXuLy(measureId);
+  if (m.status !== 'cho_duyet') throw badRequest('Đề xuất này không còn chờ QL duyệt.');
+  xoaXuLyTrongTx(p, m, hocVien(m.student_id), khoaTep, 'Người gửi đã rút');
+}
+
+/** OV-7a: GVCN sửa GHI CHÚ của đề xuất còn chờ (từ `suaYeuCau`) — kiểm như lúc gửi; bằng chứng đếm lại cho thẻ. Trả phần thẻ đổi theo. */
+export function suaDeXuatYThuc(measureId: number, note: unknown): { lyDo: string; bangChung: number[]; soTep: number } {
+  const m = loadXuLy(measureId);
+  if (m.status !== 'cho_duyet') throw badRequest('Đề xuất này không còn chờ QL duyệt.');
+  const ghi = moTa(note);
+  const tep = (db().prepare(`SELECT id FROM attachments WHERE owner_type = 'discipline_measure' AND owner_id = ? ORDER BY id`).all(measureId) as any[]).map((r) => r.id as number);
+  if (!tep.length) throw badRequest('Cần đính kèm tệp hoặc liên kết làm bằng chứng trước khi gửi QL.');
+  db().prepare('UPDATE discipline_measures SET note = ?, updated_at = ? WHERE id = ?').run(ghi, nowIso(), measureId);
+  return { lyDo: ghi, bangChung: tep, soTep: tep.length };
+}
+
+function xoaXuLyTrongTx(p: Principal, m: any, hv: { student_code: string }, khoaTep: string[], lyDoDong: string): void {
+  const measureId = m.id as number;
+  const vIds = (db().prepare('SELECT violation_id FROM measure_violations WHERE measure_id = ? ORDER BY violation_id').all(measureId) as any[]).map((r) => r.violation_id as number);
+  const daBaoPh = !!db().prepare("SELECT 1 FROM sos_coordination_actions WHERE student_id = ? AND kind = 'bao_ph_tvv' AND status = 'done' LIMIT 1").get(m.student_id);
+  const files = purgeAttachmentsOf('discipline_measure', measureId, p.userId, khoaTep);
+  for (const id of vIds) noteMeasureChange(id, measureId, null, p.userId);
+  db().prepare('DELETE FROM measure_violations WHERE measure_id = ?').run(measureId);
+  db().prepare('DELETE FROM discipline_measures WHERE id = ?').run(measureId);
+  chotYeuCau(db(), { loai: 'y_thuc', doiTuongLoai: 'discipline_measure', doiTuongId: measureId }, 'tu_dong', { lyDo: lyDoDong });
+  chotHanXuLy([m.student_id]);
+  writeAudit({ actorUserId: p.userId, action: 'discipline.delete', entityType: 'discipline_measure', entityId: measureId,
+    entityLabel: `${hv.student_code} · xoá ${nhanLoaiXuLy(m.kind, m.custom_name)}`,
+    before: { studentId: m.student_id, kind: m.kind, customName: m.custom_name ?? null, status: m.status, note: m.note ?? null, performedOn: m.performed_on ?? null,
+      performedBy: m.performed_by ?? null, performerName: m.performer_name ?? null, createdBy: m.created_by, violations: vIds, attachments: files, daBaoPhuHuynh: daBaoPh } });
 }
 
 /** Đóng panel giữa chừng: xoá NHÁP (chỉ `nhap`). Tệp trong kho xoá SAU khi giao dịch chốt. ponytail: nháp bỏ dở (đóng tab) không dọn tự động. */

@@ -14,7 +14,7 @@ import {
   type TruongDeXuat,
 } from '../../../shared/domain/index.ts';
 import { caseTitleOf, huyQuyetDinhPa, respondToPlan } from '../cases/cases.ts';
-import { apDungKhongTheoDoi, tuChoiKhongTheoDoi } from '../cases/sosAuto.ts';
+import { apDungKhongTheoDoi, rutKhongTheoDoi, suaKhongTheoDoi, tuChoiKhongTheoDoi } from '../cases/sosAuto.ts';
 import { chuTheDoiLan2, decideAbsenceMove } from '../fasttrack/absence.ts';
 import { attemptHref } from '../fasttrack/attempts.ts';
 import { ensurePeriod } from '../platform/week.ts';
@@ -24,12 +24,13 @@ import { chotHanXuLy } from '../yThuc/trangThai.ts';
 import { demoToday } from '../demoConfig.ts';
 import { badRequest, conflict } from '../util.ts';
 import { reviseTarget, updateCycle } from '../fasttrack/cycles.ts';
-import { NHAN_TRUONG_DE_XUAT, TRUONG_TU_AP, hienTaiCua } from './deXuatSua.ts';
+import { NHAN_TRUONG_DE_XUAT, TRUONG_TU_AP, hienTaiCua, kiemGiaTriDeXuat, lyDoDeXuat } from './deXuatSua.ts';
 import { CO_THE_KHONG_THEO_DOI, awaitingCauseCaseIds } from '../cases/sosState.ts';
 import { chotYeuCau, taoYeuCau } from './yeuCau.ts';
 import { trangThaiYThuc, ungVienVaThe, type EmYThuc } from '../yThuc/trangThai.ts';
 import { classProgressMany } from '../classes/schedule.ts';
-import { apDungDeXuatChuyenLop, demChuaCoLenh, nguoiNhanCuaLop } from '../classes/lenhChuyen.ts';
+import { apDungDeXuatChuyenLop, demChuaCoLenh, kiemDeXuatChuyenLop, nguoiNhanCuaLop } from '../classes/lenhChuyen.ts';
+import { rutDeXuatYThuc, suaDeXuatYThuc } from '../yThuc/xuLy.ts';
 
 /**
  * PR-YT4 — vì sao em cần Báo QL (null = không): bắt buộc quá hạn · Mới quá 5 ngày chưa ai xem · đã duyệt chưa thực hiện quá 5 ngày
@@ -79,6 +80,12 @@ export type DinhNghiaLoai = {
    */
   khiHuy?: (p: Principal, yc: YeuCauRow) => void;
   huyDuoc?: (conn: any, ds: YeuCauRow[]) => Set<number>;
+  /**
+   * OV-7a: NGƯỜI GỬI sửa / rút thẻ còn chờ (loại trong `LOAI_NGUOI_XIN_SUA`) — chạy TRONG tx của hộp. `khiSua` kiểm như lúc gửi và trả phần thẻ mới;
+   * `khiRut` đảo bảng nguồn (thẻ đã đóng trước), đẩy khoá tệp cần xoá sau giao dịch vào `khoaTep`.
+   */
+  khiSua?: (p: Principal, yc: YeuCauRow, vao: Record<string, unknown>) => { lyDo: string; duLieu: Record<string, unknown>; bangChung?: number[] };
+  khiRut?: (p: Principal, yc: YeuCauRow, khoaTep: string[]) => void;
   /** Điều kiện SQL "đối tượng không còn ý nghĩa" trên bí danh `y` (một biểu thức, không tham số) + lý do hiện trên thẻ. */
   chet?: { sql: string; lyDo: string };
   /** Báo QL: tạo thẻ mới (ON CONFLICT DO NOTHING) + trả số thẻ tạo. Gọi trong `quetYeuCau`; không có gì để tạo thì không mở tx. */
@@ -260,6 +267,13 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
       if (d.truong === 'target') reviseTarget(p, cyc.id, { newTarget: d.moi, reason: yc.ly_do });   // số hoặc KCK (Q29-1)
       else updateCycle(p, cyc.id, { route: String(d.moi) });
     },
+    /* OV-7a: người gửi sửa giá trị mới + lý do (trường giữ — đổi trường thì Rút rồi gửi lại). */
+    khiSua: (_p, yc, v) => {
+      const d = JSON.parse(yc.du_lieu ?? '{}') as { truong: TruongDeXuat };
+      const lyDo = lyDoDeXuat(v.lyDo);
+      return { lyDo, duLieu: { truong: d.truong, ...kiemGiaTriDeXuat(db(), yc.hoc_vien_id!, d.truong, v.moi) } };
+    },
+    khiRut: () => {},
     /* Em thôi học / lưu trữ, hoặc giá trị hiện tại đã bằng giá trị đề xuất (ai đó đã sửa rồi). */
     chet: {
       sql: `EXISTS (SELECT 1 FROM students s WHERE s.id = y.hoc_vien_id AND (s.status != 'active' OR s.archived_at IS NOT NULL))
@@ -340,6 +354,8 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
     loai: 'khong_theo_doi',
     khiDuyet: (p, yc) => apDungKhongTheoDoi(db(), yc, p.userId),
     khiTuChoi: (p, yc, lyDo) => tuChoiKhongTheoDoi(db(), yc, p.userId, lyDo),
+    khiSua: (_p, yc, v) => suaKhongTheoDoi(db(), yc, v),
+    khiRut: (_p, yc) => rutKhongTheoDoi(db(), yc),
     /* S4-7: Case đóng vì lý do khác (điểm sửa thành đạt, lượt huỷ, đổi chương trình) → thẻ tự đóng. */
     chet: { sql: `NOT EXISTS (SELECT 1 FROM sos_cases sc WHERE sc.id = y.doi_tuong_id AND sc.status != 'done')`, lyDo: 'Case đã đóng' },
     nap: (conn, ds) => napTheoDoiTuong(conn, ds,
@@ -368,15 +384,25 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
       /* PR-Pb2-b (Q14): vi phạm chưa từng bắt buộc nay thành Cần xử lý → chốt hạn; đã chốt thì giữ. */
       if (yc.hoc_vien_id) chotHanXuLy([yc.hoc_vien_id]);
     },
+    /* OV-7a: GVCN sửa ghi chú (bằng chứng thêm / bỏ ở panel lần xử lý — thẻ đếm lại) hoặc Rút (lần xử lý chờ duyệt xoá như Xoá lần xử lý). */
+    khiSua: (_p, yc, v) => {
+      const m = suaDeXuatYThuc(yc.doi_tuong_id, v.note);
+      return { lyDo: m.lyDo, duLieu: { ...JSON.parse(yc.du_lieu ?? '{}'), soTep: m.soTep }, bangChung: m.bangChung };
+    },
+    khiRut: (p, yc, khoaTep) => rutDeXuatYThuc(p, yc.doi_tuong_id, khoaTep),
     chet: {
       sql: `NOT EXISTS (SELECT 1 FROM discipline_measures m WHERE m.id = y.doi_tuong_id AND m.status = 'cho_duyet')
          OR EXISTS (SELECT 1 FROM students s WHERE s.id = y.hoc_vien_id AND s.archived_at IS NOT NULL)`,
       lyDo: 'Không còn chờ duyệt',
     },
-    /* Không `nap`: loại, tên, số vi phạm, bậc kế lưu ở `du_lieu` lúc gửi (guiDeXuat) — thẻ nói đúng điều QL được xin duyệt. */
+    /* Loại, tên, số vi phạm, bậc kế lưu ở `du_lieu` lúc gửi (guiDeXuat) — thẻ nói đúng điều QL được xin duyệt. OV-7a: số bằng chứng đếm SỐNG (GVCN thêm / bỏ
+       tệp khi thẻ còn chờ) — một câu cho cả lô; lần xử lý đã xoá thì giữ số lúc gửi. */
+    nap: (conn, ds) => napTheoDoiTuong(conn, ds,
+      `SELECT m.id, (SELECT COUNT(*) FROM attachments a WHERE a.owner_type = 'discipline_measure' AND a.owner_id = m.id) AS so_tep FROM discipline_measures m WHERE m.id IN (?)`),
     moTa: (yc, ngu) => {
       const d = (() => { try { return JSON.parse(yc.du_lieu ?? '{}'); } catch { return {}; } })() as
         { kind?: string; customName?: string | null; bacKe?: string | null; soViPham?: number; soTep?: number };
+      d.soTep = ngu.them.get(yc.id)?.so_tep ?? d.soTep;
       const nhan = nhanLoaiXuLy(d.kind ?? '', d.customName ?? null);
       return {
         tieuDe: `Đề xuất ${nhan}`,
@@ -449,6 +475,11 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
   {
     loai: 'de_xuat_chuyen_lop',
     khiDuyet: (p, yc, v) => { apDungDeXuatChuyenLop(p, yc, v.duLieu); },
+    khiSua: (p, yc, v) => {
+      const k = kiemDeXuatChuyenLop(p, yc.hoc_vien_id!, v);
+      return { lyDo: k.lyDo, duLieu: { lopDichId: k.toClassId, tuan: k.tuan } };
+    },
+    khiRut: () => {},
     /* Em không còn học, hoặc đã có quyết định chuyển lớp từ đường khác → thẻ không còn ý nghĩa. */
     chet: {
       sql: `NOT EXISTS (SELECT 1 FROM enrollments e WHERE e.student_id = y.hoc_vien_id AND e.status = 'active')
