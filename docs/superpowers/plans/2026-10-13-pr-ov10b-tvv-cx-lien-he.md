@@ -1,5 +1,7 @@
 # PR OV-10b — TVV / CX: Liên hệ (SĐT em, phụ huynh) + bảng Học viên & Lớp, hồ sơ HV, hồ sơ lớp theo vai
 
+- [x] Đã làm 13/10 — nhánh `claude/awesome-fermi-w8cfmt` (Đầu ra 1–7 + migrate `prOv10b`; ghi chú lệch kế hoạch ở mô tả PR).
+
 Nguồn: **chủ SP 13/10** "hiển thị hợp lý theo từng vai"; mockup `thiet-ke/mockup-vai-tvv-admin-cx-2026-10-13.html` **đã duyệt 13/10** (mục 1, 2, 3, 5, 6).
 Trả lời 13/10 về liên hệ: **thêm**; **mọi vai xem được**; **không bắt nhập**; **chỉ nhập ở hồ sơ HV và hồ sơ lớp**; thường TVV nhập; **GV không cần thấy ô nhập**
 (không ép — bỏ cho đỡ dày hàng). Chạy **sau OV-9 và OV-10a merge** (chung ô Sửa thông tin / Target, đầu hồ sơ). Rà: **sâu** (migrate, quyền, dữ liệu cá nhân).
