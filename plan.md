@@ -17,6 +17,8 @@ File này **thay** cho: `plan.md` cũ (mục 0–24), `PROMPT_SESSION_CODE.md`, 
 | `docs/superpowers/plans/2026-10-13-pr-ov7b-sua-case-pa.md` | PR **OV-7b** Sửa sau khi lưu 2/2 (Case, PA) — sau OV-5a |
 | `docs/superpowers/plans/2026-10-13-pr-ov8a-buoc-tiep-sau-thi.md` | PR **OV-8a** Bước tiếp sau thi thật (QL) |
 | `docs/superpowers/plans/2026-10-13-pr-ov8b-quyen-tvv.md` | PR **OV-8b** TVV sửa mọi thông tin HV + Target, Tạm dừng/Thôi học, kết quả thi |
+| `docs/superpowers/plans/2026-10-13-pr-ov9-kck-nhe.md` | PR **OV-9** KCK nhẹ (sau OV-8b) |
+| `thiet-ke/mockup-vai-tvv-admin-cx-2026-10-13.html` | Mockup **hiển thị theo vai** TVV / Admin / CX — **chờ chủ SP duyệt** → planning viết OV-10 |
 | `docs/superpowers/plans/2026-10-07-pr-en-tieng-anh.md` | PR-EN (sau toàn bộ OV — đếm lại chữ trước khi chạy) |
 | `docs/superpowers/plans/2026-10-07-pr-sotay-so-tay-moi.md` | PR-SOTAY (cuối cùng) |
 
@@ -175,6 +177,7 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 | 13/10 | **Sửa sau khi lưu**: việc đã lưu / xác nhận / gửi phải mở lại sửa và lưu lại được ở hầu hết các chỗ (ai lưu được thì sửa được + QL; không thêm bước duyệt; nhật ký trước → sau). Giữ khoá: báo cáo đơn vị hết cửa sổ, lệnh chuyển lớp đã thi hành, Case hệ thống đóng, nhật ký, chuông đã gửi | OV-7a, OV-7b |
 | 13/10 | **Bước tiếp sau thi thật**: có kết quả thi → **QL** chọn Kết thúc (Lưu trữ) · Học tiếp lộ trình mới (LT1 → LT2…) · Học lại; không tự Lưu trữ khi nhập kết quả; việc QL nhắc | OV-8a |
 | 13/10 | **TVV** (thay dòng 11/10): sửa mọi thông tin HV **kể cả Target** (có lý do, như QL) · Tạm dừng / Quay lại học / Thôi học · nhập kết quả thi thật · ô TVV chỉ TVV cùng chi nhánh; học thuật (điểm, Case/PA, Ý thức, lộ trình, KQĐR) vẫn của GV / QL. CX như TVV | OV-8b |
+| 13/10 | **KCK nhẹ**: KCK là dấu riêng, Target giữ; em KCK dưới kỳ vọng → không SOS, chip xám, Case nhẹ cho GV (không PA quy chế, không hạn, không Phối hợp / báo QL) | OV-9 |
 
 ## 4. Việc chưa làm (kiểm với danh sách PR GitHub 11/10 — mọi PR tới #312 đã merge)
 
@@ -284,7 +287,8 @@ Xong: [x] kế hoạch, một dòng mục 11, CODE_MAP.md nếu thêm/xoá file.
 | **OV-7b** | `docs/superpowers/plans/2026-10-13-pr-ov7b-sua-case-pa.md` | Opus 5.5 · XHigh (Opus 5.5 · High) | 4210/5383 | ngay |
 | **OV-8a** | `docs/superpowers/plans/2026-10-13-pr-ov8a-buoc-tiep-sau-thi.md` | Opus 5.5 · XHigh (Opus 5.5 · High) | 4220/5393 | ngay |
 | **OV-8b** | `docs/superpowers/plans/2026-10-13-pr-ov8b-quyen-tvv.md` | Opus 5.5 · XHigh (Opus 5.5 · High) | 4230/5403 | ngay |
-- OV-7b + OV-8a + OV-8b chạy cùng lúc. Rà sâu cả ba (+ `/security-review` OV-8b). Migrate + lệnh kiểm trước deploy: mục 5 (thêm `prOv8b`). Cổng tiếp theo: 4240/5413.
+| **OV-9** | `docs/superpowers/plans/2026-10-13-pr-ov9-kck-nhe.md` | Opus 5.5 · XHigh (Opus 5.5 · High) | 4240/5413 | sau OV-8b merge |
+- OV-7b + OV-8a + OV-8b chạy cùng lúc. Rà sâu cả ba (+ `/security-review` OV-8b). Migrate + lệnh kiểm trước deploy: mục 5 (thêm `prOv8b`). Cổng tiếp theo: 4250/5423.
 
 ## 10. Mẫu giao việc cho agent (session planning dùng)
 
