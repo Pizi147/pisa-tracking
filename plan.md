@@ -13,7 +13,6 @@ File này **thay** cho: `plan.md` cũ (mục 0–24), `PROMPT_SESSION_CODE.md`, 
 | File chi tiết | Dùng cho |
 |---|---|
 | `docs/superpowers/specs/2026-10-11-overhaul-ux-workflow-design.md` | **Đặc tả Overhaul (OV)** — duyệt 11/10; nguồn chi tiết cho 12 PR OV-1a … OV-6b |
-| `docs/superpowers/plans/2026-10-13-pr-ov8b-quyen-tvv.md` | PR **OV-8b** TVV sửa mọi thông tin HV + Target, Tạm dừng/Thôi học, kết quả thi |
 | `thiet-ke/mockup-vai-tvv-admin-cx-2026-10-13.html` | Mockup **hiển thị theo vai** TVV / Admin / CX — **đã duyệt 13/10** (OV-10a/b/c) |
 | `docs/superpowers/plans/2026-10-13-pr-ov10b-tvv-cx-lien-he.md` | PR **OV-10b** Liên hệ (SĐT em, phụ huynh) + Học viên & Lớp, hồ sơ HV / lớp theo vai |
 | `docs/superpowers/plans/2026-10-13-pr-ov10c-tong-quan-theo-vai.md` | PR **OV-10c** Tổng quan theo vai (Admin Mock Test · TVV · CX Số liệu) |
@@ -287,7 +286,6 @@ Xong: [x] kế hoạch, một dòng mục 11, CODE_MAP.md nếu thêm/xoá file.
 | OV-4a #332 · OV-4b #333 · OV-6b1 #331 | ✅ merge 12/10 | | | |
 | OV-1c #335 · OV-3c #337 · OV-6b2 #336 | ✅ merge 12–13/10 | | | |
 | OV-5a #343 · OV-5b #342 · OV-7a #344 · OV-7b #347 · OV-8a #348 | ✅ merge 13/10 | | | |
-| **OV-8b** | `docs/superpowers/plans/2026-10-13-pr-ov8b-quyen-tvv.md` | Opus 5.5 · XHigh (Opus 5.5 · High) | 4230/5403 | ngay |
 | OV-8b #352 · OV-10a #355 · OV-9 #356 | ✅ merge 13/10 | | | |
 | **OV-10c** | `docs/superpowers/plans/2026-10-13-pr-ov10c-tong-quan-theo-vai.md` | Opus 5.5 · High (Sonnet 5.5 · High) | 4270/5443 | sau OV-8b merge |
 | **OV-10b** | `docs/superpowers/plans/2026-10-13-pr-ov10b-tvv-cx-lien-he.md` | Opus 5.5 · XHigh (Opus 5.5 · High) | 4260/5433 | sau OV-9 + OV-10a merge |
