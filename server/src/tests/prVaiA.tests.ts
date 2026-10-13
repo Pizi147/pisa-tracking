@@ -97,7 +97,9 @@ export async function runPrVaiATests(t: YThucTestKit) {
       const bai = metricsSvc.metricSet(P.mbManager, 'bai-qua-han-nhap-diem', { branchId: MB });
       /* PR-LT3 (T18, D4): ô Speaking Mock có người giữ việc "GV chấm chéo" — không phải "chưa có người chấm". */
       const m = (bai.ids as number[]).filter((id) => !bai.chiTiet?.get(id)?.nguoi.length && !bai.chiTiet?.get(id)?.chamCheo).length;
-      eq(lop.kem ?? null, [k ? `${k} Case chưa có người nhận` : '', m ? `${m} bài chưa có người chấm` : ''].filter(Boolean).join(' · ') || null, 'số Case chưa có người nhận = chỉ số giữ lại; m bài chưa có người chấm');
+      /* OV-11f (TQ-13): mỗi vế là một chỉ số bấm được (`case-chua-co-nguoi-phu-trach`, `bai-qua-han-chua-phan-cong`). */
+      eq(JSON.stringify((lop.kem ?? []).map((x: any) => [x.metricId, x.n])), JSON.stringify([...(k ? [['case-chua-co-nguoi-phu-trach', k]] : []), ...(m ? [['bai-qua-han-chua-phan-cong', m]] : [])]),
+        'số Case chưa có người nhận = chỉ số giữ lại; m bài chưa có người chấm');
     } finally { khoiPhuc(); }
   });
 

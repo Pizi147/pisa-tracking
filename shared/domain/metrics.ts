@@ -80,6 +80,13 @@ export const METRICS: readonly ChiSo[] = [
     thoiGian: 'hien-trang', khuTrung: 'Mỗi ô điểm chỉ đếm 1 lần', drilldown: '/metrics/bai-qua-han-nhap-diem',
   },
   {
+    id: 'bai-qua-han-chua-phan-cong', ten: 'Bài quá hạn chưa có người chấm',
+    cauHoi: 'Trong các bài quá hạn chưa nhập điểm, bao nhiêu bài thuộc môn chưa phân công giáo viên?',
+    donVi: 'bai',
+    tapDuDieuKien: 'Tập con của "Bài quá hạn chưa nhập điểm": ô không có giáo viên phân công đang hiệu lực (Speaking Mock chấm chéo không tính — có "GV chấm chéo").',
+    thoiGian: 'hien-trang', khuTrung: 'Mỗi ô điểm chỉ đếm 1 lần', drilldown: '/metrics/bai-qua-han-chua-phan-cong',
+  },
+  {
     id: 'case-chua-co-nguoi-phu-trach', ten: 'Case chưa có người phụ trách',
     cauHoi: 'Bao nhiêu Case đang mở mà chưa ai nhận điều phối?',
     donVi: 'case',

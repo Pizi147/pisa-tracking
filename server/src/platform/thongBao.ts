@@ -34,8 +34,12 @@ export function thongBaoCua(userId: number) {
                   COALESCE(sc.student_id, cs.student_id, aa.student_id, aa2.student_id, dm.student_id, ycd.hoc_vien_id,
                            CASE WHEN n.entity_type = 'student' THEN n.entity_id END) AS student_id,
                   CASE WHEN n.entity_type = 'assessment_attempt' THEN n.entity_id ELSE smr.attempt_id END AS attempt_id,
-                  COALESCE(sc.category, sc.topic) AS mon_goc, cy.programme_code AS ct,
+                  COALESCE(sc.category, sc.topic) AS mon_goc, cy.programme_code AS ct, cs.case_id,
                   CASE
+                    /* OV-11f (TQ-7): tín hiệu đã vào Case / đã rút → việc xong (Case có chuông riêng). Báo PH qua TVV: còn khi việc phối hợp của lượt chưa làm. */
+                    WHEN n.entity_type = 'case_signal' THEN CASE WHEN cs.status = 'pending' THEN 1 ELSE 0 END
+                    WHEN n.entity_type = 'assessment_attempt' AND n.kind = 'phoi_hop' THEN
+                      CASE WHEN EXISTS (SELECT 1 FROM sos_coordination_actions x WHERE x.attempt_id = aa.id AND x.kind = 'bao_ph_tvv' AND x.status = 'pending') THEN 1 ELSE 0 END
                     WHEN n.entity_type = 'sos_case' AND n.kind IN ('sos', 'sos_new') THEN
                       CASE WHEN sc.status != 'done' AND ${LA_CASE_SOS('sc')} AND NOT ${CO_THE_KHONG_THEO_DOI('sc')}
                                 AND NOT EXISTS (SELECT 1 FROM case_issues ci WHERE ci.case_id = sc.id AND ci.role = 'primary') THEN 1 ELSE 0 END

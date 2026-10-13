@@ -4,7 +4,7 @@
  * Chỉ đọc quyền đã cấu hình — không cấp thêm quyền nào. Khu vực/tab nào cờ false thì giao diện bỏ hẳn; API vẫn tự chặn.
  * Một hàm thuần để phép kiểm gọi thẳng được (server/src/tests/khung.tests.ts).
  */
-import { PERMISSIONS, type NavQuyen } from '../../../shared/domain/index.ts';
+import { PERMISSIONS, laVaiQuanLy, type NavQuyen } from '../../../shared/domain/index.ts';
 import { can, scopeFor, type Principal } from '../permissions.ts';
 import { canSeeBoard } from '../worklist/mgmttasks.ts';
 import { coPhamViXuat, phamViXuatMt } from '../phanTich/xuatMt.ts';
@@ -27,7 +27,8 @@ export function navOf(p: Principal): NavQuyen {
     admin: can(p, PERMISSIONS.ADMIN_CONFIG, { anyScope: true }),
     analysis: coPhamVi(PERMISSIONS.ANALYSIS_VIEW),
     phanTichGv: coPhamVi(PERMISSIONS.ANALYSIS_VIEW_TEACHER),
-    hvCuaToi: p.roleKeys.includes('consultant'),
+    /* OV-11f (TQ-8): QL / Quản trị kiêm TVV ở vai gốc giữ Tổng quan QL; Học viên của tôi chỉ khi Góc nhìn = TVV (vai QL bị lọc khỏi `roleKeys`). */
+    hvCuaToi: p.roleKeys.includes('consultant') && !laVaiQuanLy(p.roleKeys),
     test, testGrade: test, testSchedule: test, testPlan: test && plan,
     work: viec && (attempt || board || meeting),
     workSupport: support, workOps: viec && board, workReports: viec && meeting,

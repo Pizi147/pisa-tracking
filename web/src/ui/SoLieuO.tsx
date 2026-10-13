@@ -11,7 +11,8 @@ import { DanhSachSoLieu, DongDanhSach, type DongSoLieu, type PhamViSoLieu } from
  *   · `nguon` — một đường máy chủ trả `{ n, tieuDe, rows }` tính bằng CHÍNH hàm sinh ra số (ví dụ ô bảng chi nhánh).
  * Số 0 không bấm được, chữ mờ.
  */
-type Props = { giaTri: number; className?: string; /** Chữ hiện trên nút thay cho `giaTri` (vd "5/8": số bấm được là 8 học viên). */ nhan?: string } & (
+type Props = { giaTri: number; className?: string; /** Chữ hiện trên nút thay cho `giaTri` (vd "5/8": số bấm được là 8 học viên). */ nhan?: string;
+  /** OV-11f (TQ-11): tên ở dòng đang bấm — tiêu đề panel dùng đúng chữ này. */ ten?: string } & (
   | { id: string; phamVi?: PhamViSoLieu; extra?: Record<string, string>; nguon?: undefined; tieuDe?: undefined }
   | { nguon: string; tieuDe: string; id?: undefined; phamVi?: undefined; extra?: undefined }
 );
@@ -22,14 +23,14 @@ export function SoLieuO(props: Props) {
   // Mã không có trong sổ thì KHÔNG vẽ số (cùng luật với <SoLieu>).
   if (props.id !== undefined && !metricById(props.id)) return <span className="text-xs text-bad">Chỉ số không có trong sổ: {props.id}</span>;
   if (giaTri <= 0) return <span className={`tabular-nums text-slate-500 ${className}`}>{giaTri}</span>;
-  const ten = props.id !== undefined ? (metricById(props.id)?.ten ?? props.id) : props.tieuDe;
+  const ten = props.ten ?? (props.id !== undefined ? (metricById(props.id)?.ten ?? props.id) : props.tieuDe);
   return (
     <>
       <button type="button" onClick={() => setOpen(true)}
         className={`appearance-none bg-transparent border-0 p-0 max-sm:py-3 max-sm:-my-3 cursor-pointer tabular-nums underline decoration-dotted underline-offset-4 hover:text-white ${className}`}
         aria-label={`${props.nhan ?? giaTri} — ${ten}. Bấm để xem danh sách`}>{props.nhan ?? giaTri}</button>
       {props.id !== undefined
-        ? <DanhSachSoLieu id={props.id} giaTri={giaTri} phamVi={props.phamVi} extra={props.extra} open={open} onClose={() => setOpen(false)} />
+        ? <DanhSachSoLieu id={props.id} giaTri={giaTri} phamVi={props.phamVi} extra={props.extra} open={open} onClose={() => setOpen(false)} ten={props.ten} />
         : <DanhSachNguon nguon={props.nguon} tieuDe={props.tieuDe} open={open} onClose={() => setOpen(false)} />}
     </>
   );

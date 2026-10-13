@@ -586,13 +586,13 @@ export function tomTatMt(classId: number): { soEm: number; coMocSapToi: number; 
 /**
  * HAI ĐIỀU KIỆN CỦA `tomTatMt`, tách thành hằng SQL để chỉ số `hv-ft-xong-mt-cuoi-chua-mt-ke` (PR-VAI-a Q8c) dùng ĐÚNG luật này.
  *   CO_MOC_KE_TIEP  — lộ trình có lượt mốc kế tiếp (`MOC_KE_TIEP_SQL`), MỘT tham số `?` = thứ Hai tuần này.
- *   XONG_MT_CUOI    — đã có lượt MT có điểm ở số thứ tự ≥ số MT trong lịch của lớp `c` (bản chụp, cùng lộ trình) / của lộ trình em, tính cả MT lịch sử. Không tham số.
+ *   XONG_MT_CUOI    — đã có lượt MT ĐỦ ĐIỂM bắt buộc (OV-11f Q5) ở số thứ tự ≥ số MT trong lịch của lớp `c` (bản chụp, cùng lộ trình) / của lộ trình em, tính cả MT lịch sử. Không tham số.
  */
 export const CO_MOC_KE_TIEP_SQL = (cy: string) => `EXISTS (SELECT 1 FROM assessment_attempts a JOIN report_periods rp ON rp.id = a.planned_period_id
   WHERE a.cycle_id = ${cy}.id AND ${MOC_KE_TIEP_SQL('a', 'rp')})`;
 export const XONG_MT_CUOI_SQL = (cy: string, c: string) => `EXISTS (SELECT 1 FROM assessment_attempts a2 WHERE a2.cycle_id = ${cy}.id AND a2.kind = 'mock'
   AND a2.attempt_no >= (CASE WHEN ${c}.route = ${cy}.route THEN json_array_length(${c}.lich_mt)
-    ELSE (SELECT json_array_length(r.lich_mt) FROM routes r WHERE r.code = ${cy}.route) END) AND ${CO_DIEM_SQL('a2')})`;
+    ELSE (SELECT json_array_length(r.lich_mt) FROM routes r WHERE r.code = ${cy}.route) END) AND a2.status = 'done')`;   // OV-11f (Q5): "xong" = đủ điểm bắt buộc (lượt `done`), cùng nghĩa Kế hoạch Test
 
 /**
  * PR-LTGON (luật 6): đổi mốc Progress/Final của lớp → bài chưa có điểm của các em đang học dời theo, không hỏi. Chỉ kỹ năng đang ở ĐÚNG tuần mốc cũ
