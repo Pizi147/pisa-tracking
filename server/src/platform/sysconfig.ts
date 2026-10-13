@@ -130,7 +130,8 @@ export function saveProgramme(p: Principal, input: {
   const conn = db();
   const code = String(input.code ?? '').trim().toUpperCase();
   if (input.taoMoi) {
-    if (!MA_CHUONG_TRINH_MOI.test(code) || programmeOf(code) !== code) throw loiO('ma', 'Mã 2–6 ký tự: chữ in hoa và số, bắt đầu bằng chữ (vd PET).');
+    if (!MA_CHUONG_TRINH_MOI.test(code)) throw loiO('ma', 'Mã 2–6 ký tự: chữ in hoa và số, bắt đầu bằng chữ (vd PET).');
+    if (programmeOf(code) !== code) throw loiO('ma', `${code} là mã cũ của ${programmeOf(code)} — chọn mã khác.`);   // OV-11b (QT-10f)
     if (conn.prepare('SELECT 1 FROM programmes WHERE code = ?').get(code)) throw loiO('ma', `Đã có chương trình ${code}.`);
     return taoChuongTrinh(p, code, input);
   }
@@ -140,6 +141,8 @@ export function saveProgramme(p: Principal, input: {
 
   const had = conn.prepare('SELECT * FROM programmes WHERE code = ?').get(code) as any;
   if (!had) throw badRequest('Không có chương trình này — thêm mới bằng "+ Chương trình".');
+  /* OV-11b (QT-7, "Sửa sau khi lưu" 13/10): chương trình Quản trị tạo, chưa có lớp nào → sửa như lúc tạo (thêm / bỏ Progress, Số tuần ↔ Liên tục). */
+  if (!laChuongTrinhGoc(code) && !conn.prepare('SELECT 1 FROM classes WHERE programme_code = ? LIMIT 1').get(code)) return taoChuongTrinh(p, code, input, had);
   /* Cách chấm không đổi sau khi tạo (đổi là đổi ý nghĩa mọi điểm đã nhập). Môn: chương trình gốc khoá; chương trình mới đổi được khi chưa có lớp. */
   const scoring = had.scoring_mode;
   const doiMon = !laChuongTrinhGoc(code) && input.skills !== undefined
@@ -226,16 +229,21 @@ function ghiMon(conn: any, code: string, mon: readonly string[]) {
 /**
  * OV-6b2 — "+ CHƯƠNG TRÌNH": mã mới chấm Đúng / tổng ("Band IELTS" chỉ FT). Độ dài = số tuần (mốc Progress / Final cố định) hoặc liên tục
  * (Checkpoint mỗi n tuần). Kiểm hết trước khi ghi, lỗi gắn đúng ô (`details.o`). Áp cho lớp mở sau (bản chụp lúc tạo lớp).
+ * OV-11b (QT-7): `had` = sửa chương trình mới chưa có lớp — cùng luật kiểm; môn / đạt từ / mỗi n tuần không gửi thì giữ.
  */
-function taoChuongTrinh(p: Principal, code: string, input: Parameters<typeof saveProgramme>[1]) {
+function taoChuongTrinh(p: Principal, code: string, input: Parameters<typeof saveProgramme>[1], had?: any) {
   const conn = db();
   const name = String(input.name ?? '').trim();
   if (!name) throw loiO('ten', 'Đặt tên cho chương trình.');
-  const mon = kiemMon(input.skills);
-  const pt = Number(input.nguongDat);
-  if (input.nguongDat === null || input.nguongDat === undefined || !Number.isFinite(pt) || pt < 1 || pt > 100) throw loiO('nguong', 'Đạt từ là phần trăm từ 1 đến 100.');
+  const mon = had && input.skills === undefined
+    ? (conn.prepare('SELECT skill FROM programme_skills WHERE programme_code = ? ORDER BY seq').all(code) as any[]).map((x) => x.skill as string)
+    : kiemMon(input.skills);
+  const nguongVao = had && (input.nguongDat === null || input.nguongDat === undefined)
+    ? Math.round((had.nguong_dat ?? RATIO_PASS_THRESHOLD) * 1000) / 10 : input.nguongDat;
+  const pt = Number(nguongVao);
+  if (nguongVao === null || nguongVao === undefined || !Number.isFinite(pt) || pt < 1 || pt > 100) throw loiO('nguong', 'Đạt từ là phần trăm từ 1 đến 100.');
   const lienTuc = input.weeks === null || input.weeks === undefined;
-  const lap = lienTuc ? kiemLap(input.lapMoiTuan) : null;
+  const lap = lienTuc ? kiemLap(had && input.lapMoiTuan === undefined ? had.lap_moi_tuan : input.lapMoiTuan) : null;
   let moc: [string, number][] = [];
   const weeks = lienTuc ? null : Number(input.weeks);
   if (weeks !== null) {
@@ -251,11 +259,18 @@ function taoChuongTrinh(p: Principal, code: string, input: Parameters<typeof sav
   const status = input.status === 'inactive' ? 'inactive' : 'active';
   return tx(() => {
     clearScoringModeCache();
-    conn.prepare(`INSERT INTO programmes (code, name, weeks, scoring_mode, nguong_dat, lap_moi_tuan, status, created_at) VALUES (?,?,?, 'ratio', ?,?,?,?)`)
-      .run(code, name, weeks, Math.round(pt * 100) / 10000, lap, status, nowIso());
+    if (had) {
+      conn.prepare('UPDATE programmes SET name=?, weeks=?, nguong_dat=?, lap_moi_tuan=?, status=? WHERE code=?')
+        .run(name, weeks, Math.round(pt * 100) / 10000, lap, status, code);
+      conn.prepare('DELETE FROM programme_checkpoints WHERE programme_code = ?').run(code);
+    } else {
+      conn.prepare(`INSERT INTO programmes (code, name, weeks, scoring_mode, nguong_dat, lap_moi_tuan, status, created_at) VALUES (?,?,?, 'ratio', ?,?,?,?)`)
+        .run(code, name, weeks, Math.round(pt * 100) / 10000, lap, status, nowIso());
+    }
     ghiMon(conn, code, mon);
     for (const [k, w] of moc) conn.prepare('INSERT INTO programme_checkpoints (programme_code, kind, study_week) VALUES (?,?,?)').run(code, k, w);
-    writeAudit({ actorUserId: p.userId, action: 'programme_created', entityType: 'programmes', entityLabel: code,
+    writeAudit({ actorUserId: p.userId, action: had ? 'programme_updated' : 'programme_created', entityType: 'programmes', entityLabel: code,
+      ...(had ? { before: { weeks: had.weeks, nguongDat: had.nguong_dat, lapMoiTuan: had.lap_moi_tuan } } : {}),
       after: { name, mon, weeks, lapMoiTuan: lap, nguongDat: pt, status } });
     return { ok: true };
   });

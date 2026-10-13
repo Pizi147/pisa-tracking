@@ -9310,6 +9310,9 @@ await runPrOv4cTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, 
 // ==================================================================== PR-OV11a (vắng · thi bù · hộp nhập điểm: hoàn tất, Vắng sau tuần thi, lớp thường "-")
 const { runPrOv11aTests } = await import('./prOv11a.tests.ts');
 await runPrOv11aTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== PR-OV11b (Quản trị · tài khoản: không tự khoá, Duyệt lại, vai thiếu CN, nhật ký)
+const { runPrOv11bTests } = await import('./prOv11b.tests.ts');
+await runPrOv11bTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`

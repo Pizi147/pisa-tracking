@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { Card, ErrorState, Info, SectionNote, Skeleton, Th } from '../../ui/ui.tsx';
 import { ConfirmDialog } from '../../ui/Drawer.tsx';
@@ -9,7 +10,7 @@ import { api } from '../../lib/api.ts';
 import { AccountsAdmin } from './AccountsAdmin.tsx';
 import { CatalogAdmin } from './CatalogAdmin.tsx';
 import { fmtDateTime, roleLabel } from '../../lib/format.ts';
-import { MO_TA_QUYEN, NHOM_QUYEN, lyDoCamVai, nhanHanhDongNhatKy } from '@shared/domain/index.ts';
+import { MO_TA_QUYEN, NHOM_QUYEN, lyDoCamVai, nhanDoiTuongNhatKy, nhanHanhDongNhatKy } from '@shared/domain/index.ts';
 
 type AdminData = {
   users: { id: number; code: string; fullName: string; title: string | null; grants: { role: string; roleName: string; scope: string }[]; assignments: number }[];
@@ -26,7 +27,7 @@ type AdminData = {
  *   CHƯƠNG TRÌNH  chương trình + FT theo lộ trình — tên, đạt từ, số tuần, mốc Test; áp cho lớp mở sau (OV-6b1); không thêm mã mới (K1-48).
  *   CẤU HÌNH   ma trận quyền theo vai (`/admin/permissions/matrix`), đơn vị báo cáo, nhật ký thay đổi (`/admin/overview`).
  *
- * Đây là quản trị PHẦN MỀM — khác với Admin chi nhánh là nhân sự văn phòng.
+ * Tab nằm trên URL (`?tab=`, OV-11b QT-10g): rời trang rồi Quay lại về đúng tab.
  */
 const TABS = [
   { key: 'accounts', label: 'Tài khoản' },
@@ -35,7 +36,10 @@ const TABS = [
 ] as const;
 
 export default function AdminPage() {
-  const [tab, setTab] = useState<(typeof TABS)[number]['key']>('accounts');
+  const [params, setParams] = useSearchParams();
+  const tab = TABS.find((t) => t.key === params.get('tab'))?.key ?? 'accounts';
+  /* Đổi tab: bỏ bộ lọc của tab cũ (bộ lọc Tài khoản cũng ở URL), thêm một mục lịch sử để Quay lại về tab trước. */
+  const setTab = (k: (typeof TABS)[number]['key']) => setParams(k === 'accounts' ? {} : { tab: k });
   const { data, loading, error, reload } = useApi<AdminData>(tab === 'config' ? '/admin/overview' : null, [tab]);
 
   return (
@@ -96,7 +100,7 @@ function ConfigTab({ data, onDone }: { data: AdminData; onDone: () => void }) {
             {data.audit.map((a) => (
               <li key={a.id} className="px-4 py-2 text-xs">
                 <span className="text-slate-200" title={a.action}>{nhanHanhDongNhatKy(a.action)}</span>
-                <span className="text-slate-500"> · {a.entityLabel ?? a.entityType}</span>
+                <span className="text-slate-500"> · {a.entityLabel ? nhanDoiTuongNhatKy(a.entityLabel) : a.entityType}</span>
                 <div className="text-slate-500">{a.actorName ?? '—'} · {fmtDateTime(a.createdAt)}</div>
               </li>
             ))}
