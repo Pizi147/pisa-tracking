@@ -13,14 +13,12 @@ File này **thay** cho: `plan.md` cũ (mục 0–24), `PROMPT_SESSION_CODE.md`, 
 | File chi tiết | Dùng cho |
 |---|---|
 | `docs/superpowers/specs/2026-10-11-overhaul-ux-workflow-design.md` | **Đặc tả Overhaul (OV)** — duyệt 11/10; nguồn chi tiết cho 12 PR OV-1a … OV-6b |
-| `docs/superpowers/plans/2026-10-13-pr-ov8b-quyen-tvv.md` | PR **OV-8b** TVV sửa mọi thông tin HV + Target, Tạm dừng/Thôi học, kết quả thi |
-| `docs/superpowers/plans/2026-10-13-pr-ov9-kck-nhe.md` | PR **OV-9** KCK nhẹ (sau OV-8b) |
 | `thiet-ke/mockup-vai-tvv-admin-cx-2026-10-13.html` | Mockup **hiển thị theo vai** TVV / Admin / CX — **đã duyệt 13/10** (OV-10a/b/c) |
-| `docs/superpowers/plans/2026-10-13-pr-ov10a-nut-dung-quyen.md` | PR **OV-10a** nút / link đúng quyền (TVV · CX · Admin) |
 | `docs/superpowers/plans/2026-10-13-pr-ov10b-tvv-cx-lien-he.md` | PR **OV-10b** Liên hệ (SĐT em, phụ huynh) + Học viên & Lớp, hồ sơ HV / lớp theo vai |
 | `docs/superpowers/plans/2026-10-13-pr-ov10c-tong-quan-theo-vai.md` | PR **OV-10c** Tổng quan theo vai (Admin Mock Test · TVV · CX Số liệu) |
 | `docs/superpowers/plans/2026-10-13-pr-ov1d-luoi-cham-sua-lai.md` | PR **OV-1d** lưới chấm FT: ô dời vì vắng bấm được (Bỏ vắng), em đã kết thúc học không báo chờ |
 | `docs/superpowers/plans/2026-10-13-pr-ov4c-ovr-chi-mt-cu.md` | PR **OV-4c** W / S: Band tự tính, nhập Band thẳng chỉ MT cũ |
+| `docs/superpowers/plans/2026-10-13-pr-ov2c-email-khong-bat-buoc.md` | PR **OV-2c** email học viên không bắt buộc |
 | `docs/superpowers/plans/2026-10-07-pr-en-tieng-anh.md` | PR-EN (sau toàn bộ OV — đếm lại chữ trước khi chạy) |
 | `docs/superpowers/plans/2026-10-07-pr-sotay-so-tay-moi.md` | PR-SOTAY (cuối cùng) |
 
@@ -288,14 +286,13 @@ Xong: [x] kế hoạch, một dòng mục 11, CODE_MAP.md nếu thêm/xoá file.
 | OV-4a #332 · OV-4b #333 · OV-6b1 #331 | ✅ merge 12/10 | | | |
 | OV-1c #335 · OV-3c #337 · OV-6b2 #336 | ✅ merge 12–13/10 | | | |
 | OV-5a #343 · OV-5b #342 · OV-7a #344 · OV-7b #347 · OV-8a #348 | ✅ merge 13/10 | | | |
-| **OV-8b** | `docs/superpowers/plans/2026-10-13-pr-ov8b-quyen-tvv.md` | Opus 5.5 · XHigh (Opus 5.5 · High) | 4230/5403 | ngay |
-| **OV-9** | `docs/superpowers/plans/2026-10-13-pr-ov9-kck-nhe.md` | Opus 5.5 · XHigh (Opus 5.5 · High) | 4240/5413 | sau OV-8b merge |
-| **OV-10a** | `docs/superpowers/plans/2026-10-13-pr-ov10a-nut-dung-quyen.md` | Sonnet 5.5 · High (Opus 5.5 · High) | 4250/5423 | sau OV-8b merge |
+| OV-8b #352 · OV-10a #355 · OV-9 #356 | ✅ merge 13/10 | | | |
 | **OV-10c** | `docs/superpowers/plans/2026-10-13-pr-ov10c-tong-quan-theo-vai.md` | Opus 5.5 · High (Sonnet 5.5 · High) | 4270/5443 | sau OV-8b merge |
 | **OV-10b** | `docs/superpowers/plans/2026-10-13-pr-ov10b-tvv-cx-lien-he.md` | Opus 5.5 · XHigh (Opus 5.5 · High) | 4260/5433 | sau OV-9 + OV-10a merge |
 | **OV-1d** | `docs/superpowers/plans/2026-10-13-pr-ov1d-luoi-cham-sua-lai.md` | Opus 5.5 · High (Sonnet 5.5 · High) | 4280/5453 | khi có máy trống (≤ 3 cùng lúc) |
 | **OV-4c** | `docs/superpowers/plans/2026-10-13-pr-ov4c-ovr-chi-mt-cu.md` | Sonnet 5.5 · High (Opus 5.5 · High) | 4290/5463 | sau OV-1d merge |
-- OV-8b rà sâu + `/security-review` (TVV KHÔNG được `cycle.edit`; bước tiếp sau thi vẫn chỉ QL). Sau OV-8b: **OV-9 + OV-10a + OV-10c chạy cùng lúc** (3 máy); OV-10b sau OV-9 + OV-10a (chung ô Sửa thông tin, đầu hồ sơ). Rà sâu: OV-9, OV-10a, OV-10b (+ `/security-review`). Cổng tiếp theo: 4300/5473.
+| **OV-2c** | `docs/superpowers/plans/2026-10-13-pr-ov2c-email-khong-bat-buoc.md` | Sonnet 5.5 · High (Opus 5.5 · High) | 4300/5473 | ngay (song song) |
+- OV-8b rà sâu + `/security-review` (TVV KHÔNG được `cycle.edit`; bước tiếp sau thi vẫn chỉ QL). Sau OV-8b: **OV-9 + OV-10a + OV-10c chạy cùng lúc** (3 máy); OV-10b sau OV-9 + OV-10a (chung ô Sửa thông tin, đầu hồ sơ). Rà sâu: OV-9, OV-10a, OV-10b (+ `/security-review`). Cổng tiếp theo: 4310/5483.
 
 ## 10. Mẫu giao việc cho agent (session planning dùng)
 
