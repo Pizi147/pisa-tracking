@@ -9294,6 +9294,9 @@ await runPrOv1dTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, 
 // ==================================================================== PR-OV10b (Liên hệ SĐT em + phụ huynh; Học viên & Lớp / hồ sơ theo vai TVV · CX)
 const { runPrOv10bTests } = await import('./prOv10b.tests.ts');
 await runPrOv10bTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== PR-OV4c (W / S: Band tự tính từ 4 tiêu chí; nhập Band thẳng chỉ ở MT cũ)
+const { runPrOv4cTests } = await import('./prOv4c.tests.ts');
+await runPrOv4cTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`

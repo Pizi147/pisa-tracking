@@ -23,6 +23,8 @@ export type Cell = {
   rawScore: number | null;
   criteria: (number | null)[];
   band: number | null;
+  /** OV-4c: máy chủ cho nhập Band thẳng ở W / S (MT cũ, MT0). Lượt thường: Band chỉ đọc, tự tính từ bốn tiêu chí. */
+  bandThang: boolean;
   resultDate: string | null;
   enteredByName: string | null;
   enteredAt: string | null;
