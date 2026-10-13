@@ -15,6 +15,8 @@ File này **thay** cho: `plan.md` cũ (mục 0–24), `PROMPT_SESSION_CODE.md`, 
 | `docs/superpowers/specs/2026-10-11-overhaul-ux-workflow-design.md` | **Đặc tả Overhaul (OV)** — duyệt 11/10; nguồn chi tiết cho 12 PR OV-1a … OV-6b |
 | `docs/superpowers/plans/2026-10-13-pr-ov7a-sua-sau-luu.md` | ✅ OV-7a #344 đã merge — giữ file vì OV-7b đọc mục "Luật chung" |
 | `docs/superpowers/plans/2026-10-13-pr-ov7b-sua-case-pa.md` | PR **OV-7b** Sửa sau khi lưu 2/2 (Case, PA) — sau OV-5a |
+| `docs/superpowers/plans/2026-10-13-pr-ov8a-buoc-tiep-sau-thi.md` | PR **OV-8a** Bước tiếp sau thi thật (QL) |
+| `docs/superpowers/plans/2026-10-13-pr-ov8b-quyen-tvv.md` | PR **OV-8b** TVV sửa mọi thông tin HV + Target, Tạm dừng/Thôi học, kết quả thi |
 | `docs/superpowers/plans/2026-10-07-pr-en-tieng-anh.md` | PR-EN (sau toàn bộ OV — đếm lại chữ trước khi chạy) |
 | `docs/superpowers/plans/2026-10-07-pr-sotay-so-tay-moi.md` | PR-SOTAY (cuối cùng) |
 
@@ -171,6 +173,8 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 | 11/10 (duyệt đặc tả) | **Deploy MỘT lần sau khi xong toàn bộ OV** (không deploy sớm sau OV-1a); lệnh chỉ đọc chạy từ máy chủ SP trên bản chính không cần deploy · 3 mục [tự quyết] của đặc tả được đồng ý (CX trừ phần GV; MT0 tạo lúc chốt; xoá SOS: Case chưa ai làm đóng, đã làm giữ + ghi "Overall đã đạt") | OV |
 | 12/10 | SOS MT chốt: hạn xác nhận **giữ `soNgayHanXacNhan`** (5 ngày, SOS 3 = 3 ngày) **tính từ ngày chốt** · **Không làm** ô "Dự kiến quay lại" ở tab Tạm dừng (mockup M2 §6) | OV-1c / — |
 | 13/10 | **Sửa sau khi lưu**: việc đã lưu / xác nhận / gửi phải mở lại sửa và lưu lại được ở hầu hết các chỗ (ai lưu được thì sửa được + QL; không thêm bước duyệt; nhật ký trước → sau). Giữ khoá: báo cáo đơn vị hết cửa sổ, lệnh chuyển lớp đã thi hành, Case hệ thống đóng, nhật ký, chuông đã gửi | OV-7a, OV-7b |
+| 13/10 | **Bước tiếp sau thi thật**: có kết quả thi → **QL** chọn Kết thúc (Lưu trữ) · Học tiếp lộ trình mới (LT1 → LT2…) · Học lại; không tự Lưu trữ khi nhập kết quả; việc QL nhắc | OV-8a |
+| 13/10 | **TVV** (thay dòng 11/10): sửa mọi thông tin HV **kể cả Target** (có lý do, như QL) · Tạm dừng / Quay lại học / Thôi học · nhập kết quả thi thật · ô TVV chỉ TVV cùng chi nhánh; học thuật (điểm, Case/PA, Ý thức, lộ trình, KQĐR) vẫn của GV / QL. CX như TVV | OV-8b |
 
 ## 4. Việc chưa làm (kiểm với danh sách PR GitHub 11/10 — mọi PR tới #312 đã merge)
 
@@ -179,7 +183,7 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
   quy trình (lộ trình → bàn giao → KQĐR, SOS MT, dấu "-", huỷ/khôi phục), giao diện, **12 PR OV-1a … OV-6b** + phụ thuộc, tiêu chí nghiệm thu.
 - Mockup bản 2 (góp ý 11/10 đã áp): `thiet-ke/mockup-overhaul-{1,2,3}-*-2026-10-11.html`.
 - Quyết định: mục 3 (các dòng 11/10). Thứ tự, model, prompt: mục 5, 6, 9.
-- **Tình trạng 13/10 (chiều):** đã merge hết OV trừ **OV-7b** (chạy ngay): 1a 1b 1c 2a 2b 3a 3b 3c 4a 4b 5a #343 5b #342 6a 6b1 6b2 7a #344. Sau OV-7b: **deploy MỘT lần** (mục 5 "Deploy") → PR-EN → PR-SOTAY → deploy lần 2.
+- **Tình trạng 13/10 (chiều):** đã merge hết OV trừ **OV-7b**; thêm **OV-8a, OV-8b** (yêu cầu chủ SP 13/10). Ba PR chạy song song ngay. Sau cả ba: **deploy MỘT lần** (mục 5) → PR-EN → PR-SOTAY → deploy lần 2.
   OV-4 và OV-6b của đặc tả **tách đôi** (mỗi nửa một vùng mã, rà riêng). Thứ tự + song song: mục 5; prompt: mục 9.3.
 - **Chủ SP trả lời 12/10:** (1) hạn khi SOS MT chốt = luật hiện có (5 ngày, SOS 3 = 3 ngày), tính từ ngày chốt; (2) **không làm** ô "Dự kiến quay lại" (mục 3).
 
@@ -278,7 +282,9 @@ Xong: [x] kế hoạch, một dòng mục 11, CODE_MAP.md nếu thêm/xoá file.
 - Rà sâu (mục 1.3): OV-4a, OV-4b, OV-1c, OV-6b1, OV-6b2. OV-3c rà mặc định.
 | **OV-5a** | **OV-5b** | OV-5a #343 · OV-5b #342 · OV-7a #344 | ✅ merge 13/10 | | | |
 | **OV-7b** | `docs/superpowers/plans/2026-10-13-pr-ov7b-sua-case-pa.md` | Opus 5.5 · XHigh (Opus 5.5 · High) | 4210/5383 | ngay |
-- Rà sâu OV-7b. Migrate + lệnh kiểm trước deploy: mục 5. Cổng tiếp theo: 4220/5393.
+| **OV-8a** | `docs/superpowers/plans/2026-10-13-pr-ov8a-buoc-tiep-sau-thi.md` | Opus 5.5 · XHigh (Opus 5.5 · High) | 4220/5393 | ngay |
+| **OV-8b** | `docs/superpowers/plans/2026-10-13-pr-ov8b-quyen-tvv.md` | Opus 5.5 · XHigh (Opus 5.5 · High) | 4230/5403 | ngay |
+- OV-7b + OV-8a + OV-8b chạy cùng lúc. Rà sâu cả ba (+ `/security-review` OV-8b). Migrate + lệnh kiểm trước deploy: mục 5 (thêm `prOv8b`). Cổng tiếp theo: 4240/5413.
 
 ## 10. Mẫu giao việc cho agent (session planning dùng)
 
