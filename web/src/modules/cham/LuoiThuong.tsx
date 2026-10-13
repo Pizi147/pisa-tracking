@@ -256,6 +256,8 @@ export function useLuuThuong(attemptId: number, onReload: () => void, ct: string
       toast.push('ok', `Đã bỏ vắng ${tenMonNgan(ct, skill)}${tenHv ? ` · ${tenHv}` : ''} · về ${r.tuanMoi ?? 'tuần cũ'}`);
     } else if (r && r.giuLich) {
       toast.push('ok', `Đã bỏ vắng ${tenMonNgan(ct, skill)}${tenHv ? ` · ${tenHv}` : ''} · giữ ${r.tuanMoi ?? 'tuần mới'}`);   // PR-BV: tuần mới đã có điểm
+    } else if (r) {
+      toast.push('ok', `Đã bỏ vắng ${tenMonNgan(ct, skill)}${tenHv ? ` · ${tenHv}` : ''}`);   // OV-11a: gỡ Không dự thi — tuần không đổi
     }
     return r !== null;
   };

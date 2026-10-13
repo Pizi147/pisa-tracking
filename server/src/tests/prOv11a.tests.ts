@@ -15,6 +15,7 @@ export async function runPrOv11aTests(t: YThucTestKit) {
   const absence: any = await import('../fasttrack/absence.ts');
   const hoanTat: any = await import('../fasttrack/hoanTat.ts');
   const regular: any = await import('../normal/regular.ts');
+  const keHoach: any = await import('../keHoach/keHoachTest.ts');
   const skillSchedule: any = await import('../fasttrack/skillSchedule.ts');
   const week: any = await import('../platform/week.ts');
   const d: any = await import('../../../shared/domain/index.ts');
@@ -164,7 +165,13 @@ export async function runPrOv11aTests(t: YThucTestKit) {
     const o2 = (regular.regularSheet(QL, LOP_THUONG, 'progress', TODAY) as any).rows.find((x: any) => x.attemptId === aid)
       ?.skillSchedule.find((x: any) => x.skill === 'listening');
     assert(o2?.khongDuThi === true && o2.overdue === false, `ô lưới: ${JSON.stringify(o2)}`);
-    regular.reportRegularNoShow(QL, aid, 'listening', false, TODAY);
+    /* Rà OV-11a (1): Kế hoạch Test lớp thường cùng luật — môn mang cờ Không dự thi, tính là xong. */
+    xoaNho();
+    const kh = (keHoach.luoiThuong(QL, LOP_THUONG) as any).hang.flatMap((h: any) => Object.values(h.dot)).find((x: any) => x.attemptId === aid)?.kn.listening;
+    assert(kh?.khongDuThi === true && kh.trangThai === 'xong', `Kế hoạch Test lớp thường: ${JSON.stringify(kh)}`);
+    /* Rà OV-11a (2): gỡ Không dự thi không dời gì → moved false (web không ghi "về W…"). */
+    const g = regular.reportRegularNoShow(QL, aid, 'listening', false, TODAY);
+    assert(g.moved === false && ky(aid, 'listening').planned_period_id === tuan(-2).id, `gỡ: ${JSON.stringify({ ...g, result: undefined })}`);
     const s2 = diem(aid, 'listening');
     assert(s2.no_show_period_id === null && s2.no_show_cu === 0 && conViec(aid).includes('listening'), `gỡ: ${JSON.stringify(s2)}`);
   }));
@@ -184,5 +191,7 @@ export async function runPrOv11aTests(t: YThucTestKit) {
     const nhom = d.nhomKyNang({ listening: kn({ trangThai: 'xong' }), reading: kn({ khongDuThi: true }) }, TODAY);
     assert(nhom.some((g: any) => g.kyNang.includes('reading') && g.viec === 'không dự thi'), `chip R không dự thi: ${JSON.stringify(nhom)}`);
     assert(d.chipDongKyNang(kn({ khongDuThi: true }), TODAY)?.chu === 'Không dự thi', 'dòng R hộp một đợt');
+    const gc = d.gomChip({ listening: kn({ trangThai: 'xong', khongDuThi: true }), reading: kn({ trangThai: 'xong' }) });
+    assert(!gc.xong && gc.chip.some((c: any) => c.khongDuThi && c.kyNang.join() === 'listening'), `lớp thường: môn Không dự thi hiện riêng: ${JSON.stringify(gc)}`);
   });
 }

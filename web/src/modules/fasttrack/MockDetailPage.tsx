@@ -499,6 +499,7 @@ function SkillWorkTable({ d, onMoDiem, onDone, onOpenHistory, onDoiLich }: {
   const order = ['listening', 'reading', 'writing1', 'writing2', 'speaking'];
   const cells = [...d.cells].sort((a, b) => order.indexOf(a.skill) - order.indexOf(b.skill));
   const coDiemO = (c: Cell) => c.band !== null || c.rawScore !== null;
+  const khongDuThiO = (c: Cell) => c.noShow?.state === 'khong-du-thi' && !c.daChot && !coDiemO(c);
 
   const renderRow = (c: Cell) => {
     const r = d.skillSchedule.find((x) => x.skill === c.assessedSkill)!;
@@ -506,7 +507,8 @@ function SkillWorkTable({ d, onMoDiem, onDone, onOpenHistory, onDoiLich }: {
     const ownsSchedule = c.skill !== 'writing2';
     const canScore = !cancelled && r.required && c.canEdit && !lockedByNoShow(c)
       && r.sitStatus !== 'absent' && r.sitStatus !== 'cancelled' && r.progress !== 'cancelled';
-    const hasValue = c.rawScore !== null || c.band !== null || c.criteria.some((v) => v !== null) || !!c.noShow;
+    /* OV-11a: "Không dự thi" chưa có điểm → nút chính "Nhập điểm" (không "Sửa điểm"). */
+    const hasValue = c.rawScore !== null || c.band !== null || c.criteria.some((v) => v !== null) || (!!c.noShow && !khongDuThiO(c));
 
     const tt = trangThaiTT({
       batBuoc: r.required, tuanBatDau: r.weekStart, coDiem: coDiemO(c), sit: r.sitStatus, choDuyet: !!r.pendingMove, lichSu: d.lichSu, homNay, huyVang: !!r.huyVang,
@@ -530,7 +532,7 @@ function SkillWorkTable({ d, onMoDiem, onDone, onOpenHistory, onDoiLich }: {
 
     const prog = c.progress === 'scored' ? 'scored' : r.progress;
     /* OV-11a: MỘT dòng trạng thái — Không dự thi (CA3-5) thay "Chờ nhập điểm"; huỷ vì vắng ghi số lần thật, bỏ dòng "Đã dời do vắng" (CA3-3). */
-    const khongDuThi = c.noShow?.state === 'khong-du-thi' && !c.daChot && !coDiemO(c);
+    const khongDuThi = khongDuThiO(c);
     const huy = prog === 'cancelled';
     const nhanTT = khongDuThi ? 'Không dự thi'
       : huy && r.huyVang ? `${progressLabel('cancelled')} · vắng ${r.absenceMoveCount + 1} lần` : progressLabel(prog);

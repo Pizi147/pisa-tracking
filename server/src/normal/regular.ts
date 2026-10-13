@@ -905,7 +905,9 @@ export function reportRegularNoShow(
       return { moved: false, tuanCu: null, tuanMoi: row.week_start ? tuanLich(row.week_start, today) : null, result: regularResultOf(attemptId) };
     }
     const ve = tuanCua(existing.no_show_period_id);
-    if (!coDiem && existing.no_show_period_id !== row.planned_period_id) {
+    /* OV-11a: gỡ "Không dự thi" (dấu ở chính tuần đang xếp) không dời gì — `moved` false, web không ghi "về W…". */
+    const doi = !coDiem && existing.no_show_period_id !== row.planned_period_id;
+    if (doi) {
       setSkillWeek(p, attemptId, skill, existing.no_show_period_id, {
         reason: 'Gỡ dấu "-": trả lịch về tuần cũ.', force: true, today, ghiBuDau: true,
       });
@@ -919,7 +921,7 @@ export function reportRegularNoShow(
       entityLabel: skill, before: { week: row.period_code }, after: { week: coDiem ? row.period_code : ve?.code ?? null, noShow: false, giuLich: coDiem },
     });
     const tuanCu = row.week_start ? tuanLich(row.week_start, today) : null;
-    return { moved: !coDiem, tuanCu, tuanMoi: coDiem ? tuanCu : ve ? tuanLich(ve.week_start, today) : null, result: regularResultOf(attemptId), giuLich: coDiem };
+    return { moved: doi, tuanCu, tuanMoi: doi && ve ? tuanLich(ve.week_start, today) : tuanCu, result: regularResultOf(attemptId), giuLich: coDiem };
   });
 }
 
