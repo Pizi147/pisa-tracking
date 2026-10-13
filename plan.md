@@ -13,10 +13,9 @@ File này **thay** cho: `plan.md` cũ (mục 0–24), `PROMPT_SESSION_CODE.md`, 
 | File chi tiết | Dùng cho |
 |---|---|
 | `docs/superpowers/specs/2026-10-11-overhaul-ux-workflow-design.md` | **Đặc tả Overhaul (OV)** — duyệt 11/10; nguồn chi tiết cho 12 PR OV-1a … OV-6b |
-| `docs/superpowers/plans/2026-10-13-pr-ov7a-sua-sau-luu.md` | ✅ OV-7a #344 đã merge — giữ file vì OV-7b đọc mục "Luật chung" |
-| `docs/superpowers/plans/2026-10-13-pr-ov7b-sua-case-pa.md` | PR **OV-7b** Sửa sau khi lưu 2/2 (Case, PA) — sau OV-5a |
-| `docs/superpowers/plans/2026-10-13-pr-ov8a-buoc-tiep-sau-thi.md` | PR **OV-8a** Bước tiếp sau thi thật (QL) |
 | `docs/superpowers/plans/2026-10-13-pr-ov8b-quyen-tvv.md` | PR **OV-8b** TVV sửa mọi thông tin HV + Target, Tạm dừng/Thôi học, kết quả thi |
+| `docs/superpowers/plans/2026-10-13-pr-ov9-kck-nhe.md` | PR **OV-9** KCK nhẹ (sau OV-8b) |
+| `thiet-ke/mockup-vai-tvv-admin-cx-2026-10-13.html` | Mockup **hiển thị theo vai** TVV / Admin / CX — **chờ chủ SP duyệt** → planning viết OV-10 |
 | `docs/superpowers/plans/2026-10-07-pr-en-tieng-anh.md` | PR-EN (sau toàn bộ OV — đếm lại chữ trước khi chạy) |
 | `docs/superpowers/plans/2026-10-07-pr-sotay-so-tay-moi.md` | PR-SOTAY (cuối cùng) |
 
@@ -175,6 +174,7 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 | 13/10 | **Sửa sau khi lưu**: việc đã lưu / xác nhận / gửi phải mở lại sửa và lưu lại được ở hầu hết các chỗ (ai lưu được thì sửa được + QL; không thêm bước duyệt; nhật ký trước → sau). Giữ khoá: báo cáo đơn vị hết cửa sổ, lệnh chuyển lớp đã thi hành, Case hệ thống đóng, nhật ký, chuông đã gửi | OV-7a, OV-7b |
 | 13/10 | **Bước tiếp sau thi thật**: có kết quả thi → **QL** chọn Kết thúc (Lưu trữ) · Học tiếp lộ trình mới (LT1 → LT2…) · Học lại; không tự Lưu trữ khi nhập kết quả; việc QL nhắc | OV-8a |
 | 13/10 | **TVV** (thay dòng 11/10): sửa mọi thông tin HV **kể cả Target** (có lý do, như QL) · Tạm dừng / Quay lại học / Thôi học · nhập kết quả thi thật · ô TVV chỉ TVV cùng chi nhánh; học thuật (điểm, Case/PA, Ý thức, lộ trình, KQĐR) vẫn của GV / QL. CX như TVV | OV-8b |
+| 13/10 | **KCK nhẹ**: KCK là dấu riêng, Target giữ; em KCK dưới kỳ vọng → không SOS, chip xám, Case nhẹ cho GV (không PA quy chế, không hạn, không Phối hợp / báo QL) | OV-9 |
 
 ## 4. Việc chưa làm (kiểm với danh sách PR GitHub 11/10 — mọi PR tới #312 đã merge)
 
@@ -183,7 +183,7 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
   quy trình (lộ trình → bàn giao → KQĐR, SOS MT, dấu "-", huỷ/khôi phục), giao diện, **12 PR OV-1a … OV-6b** + phụ thuộc, tiêu chí nghiệm thu.
 - Mockup bản 2 (góp ý 11/10 đã áp): `thiet-ke/mockup-overhaul-{1,2,3}-*-2026-10-11.html`.
 - Quyết định: mục 3 (các dòng 11/10). Thứ tự, model, prompt: mục 5, 6, 9.
-- **Tình trạng 13/10 (chiều):** đã merge hết OV trừ **OV-7b**; thêm **OV-8a, OV-8b** (yêu cầu chủ SP 13/10). Ba PR chạy song song ngay. Sau cả ba: **deploy MỘT lần** (mục 5) → PR-EN → PR-SOTAY → deploy lần 2.
+- **Tình trạng 13/10 (tối):** đã merge OV-7b #347, OV-8a #348. Còn **OV-8b** (đang chạy) → **OV-9** (KCK nhẹ) → OV-10 (hiển thị theo vai, chờ duyệt mockup). Sau đó: **deploy MỘT lần** (mục 5) → PR-EN → PR-SOTAY → deploy lần 2.
   OV-4 và OV-6b của đặc tả **tách đôi** (mỗi nửa một vùng mã, rà riêng). Thứ tự + song song: mục 5; prompt: mục 9.3.
 - **Chủ SP trả lời 12/10:** (1) hạn khi SOS MT chốt = luật hiện có (5 ngày, SOS 3 = 3 ngày), tính từ ngày chốt; (2) **không làm** ô "Dự kiến quay lại" (mục 3).
 
@@ -228,7 +228,8 @@ Bản chính hiện chạy **#285**; các lệnh chỉ đọc (`kiem-du-lieu-mt`
 **Trước deploy cuối OV** chủ SP chạy (chỉ đọc, bản chính): `kiem-truoc-ov1b`, `kiem-truoc-ov3b`, `kiem-truoc-ov1c` (khi OV-1c merge) — Windows: nạp `TURSO_DATABASE_URL` + `TURSO_AUTH_TOKEN`, `npm run build:server`, rồi `node dist-server/server/src/ops/<tên>.js`; planning nhắc khi tới lúc.
 **Migrate mới từ bản chính (#285) tới hết OV** (chạy theo thứ tự trong `migrate.ts`, tập dượt trên bản sao — `DEPLOY_2026-10.md` mục C):
 `prOv6b1`, `prOv6b2` (chỉ thêm cột + bản chụp lịch lớp + chèn PET/KET) · `prOv2` (vai mới, chỉ thêm) · `prOv3b` (bảng nháp lộ trình, chỉ thêm + chép Hướng GVCN) ·
-`prOv1b` (**đổi dữ liệu**: dấu "-" cũ — xem `kiem-truoc-ov1b`) · `prOv4` (chỉ thêm cột `ket_qua_huy`) · `prOv1c` (**đổi dữ liệu**: Case SOS MT cũ — xem `kiem-truoc-ov1c`).
+`prOv1b` (**đổi dữ liệu**: dấu "-" cũ — xem `kiem-truoc-ov1b`) · `prOv4` (chỉ thêm cột `ket_qua_huy`) · `prOv1c` (**đổi dữ liệu**: Case SOS MT cũ — xem `kiem-truoc-ov1c`) ·
+`prOv8a` (chỉ thêm 4 cột `buoc_tiep*` vào `learning_cycles`) · `prOv8b` (khi merge: thêm quyền TVV / CX).
 OV-3b đổi Lộ trình đề xuất GVCN → nháp: xem `kiem-truoc-ov3b`. Ba lệnh chỉ đọc chạy được NGAY (không cần chờ OV-7b).
 
 ## 6. Model, effort, skill cho từng PR (OV)
@@ -278,13 +279,11 @@ Xong: [x] kế hoạch, một dòng mục 11, CODE_MAP.md nếu thêm/xoá file.
 | PR | Prompt | Model (B) | Cổng | Khi nào |
 |---|---|---|---|---|
 | OV-4a #332 · OV-4b #333 · OV-6b1 #331 | ✅ merge 12/10 | | | |
-| **OV-3c** | **OV-1c** | **OV-6b2** #336 - OV-3c + OV-1c + OV-6b2 chạy cùng lúc được (không chung vùng chính; chung `routes/index.ts`, `run.ts`, `plan.md` → gộp main trước khi mở PR).
-- Rà sâu (mục 1.3): OV-4a, OV-4b, OV-1c, OV-6b1, OV-6b2. OV-3c rà mặc định.
-| **OV-5a** | **OV-5b** | OV-5a #343 · OV-5b #342 · OV-7a #344 | ✅ merge 13/10 | | | |
-| **OV-7b** | `docs/superpowers/plans/2026-10-13-pr-ov7b-sua-case-pa.md` | Opus 5.5 · XHigh (Opus 5.5 · High) | 4210/5383 | ngay |
-| **OV-8a** | `docs/superpowers/plans/2026-10-13-pr-ov8a-buoc-tiep-sau-thi.md` | Opus 5.5 · XHigh (Opus 5.5 · High) | 4220/5393 | ngay |
+| OV-1c #335 · OV-3c #337 · OV-6b2 #336 | ✅ merge 12–13/10 | | | |
+| OV-5a #343 · OV-5b #342 · OV-7a #344 · OV-7b #347 · OV-8a #348 | ✅ merge 13/10 | | | |
 | **OV-8b** | `docs/superpowers/plans/2026-10-13-pr-ov8b-quyen-tvv.md` | Opus 5.5 · XHigh (Opus 5.5 · High) | 4230/5403 | ngay |
-- OV-7b + OV-8a + OV-8b chạy cùng lúc. Rà sâu cả ba (+ `/security-review` OV-8b). Migrate + lệnh kiểm trước deploy: mục 5 (thêm `prOv8b`). Cổng tiếp theo: 4240/5413.
+| **OV-9** | `docs/superpowers/plans/2026-10-13-pr-ov9-kck-nhe.md` | Opus 5.5 · XHigh (Opus 5.5 · High) | 4240/5413 | sau OV-8b merge |
+- OV-8b rà sâu + `/security-review` (TVV KHÔNG được `cycle.edit`; bước tiếp sau thi vẫn chỉ QL). OV-9 chạy sau OV-8b merge. Cổng tiếp theo: 4250/5423.
 
 ## 10. Mẫu giao việc cho agent (session planning dùng)
 
@@ -329,6 +328,7 @@ Nhật ký chi tiết tới 04/10 ở `git show 575e898d:plan.md` (mục 14) và
 | Ngày | PR / nhánh · model | Kết quả |
 |---|---|---|
 | 13/10/2026 | OV-8b (Opus 5.5) · `claude/happy-fermat-7tqtgh` | Quyền TVV / CX: quyền hẹp `student.edit_more` (migrate `prOv8b`, một lần) — Target sửa thẳng có lý do, Ghi chú, Tạm dừng / Quay lại / Thôi học + Hoàn tác, kết quả thi thật; ô TVV chỉ cùng chi nhánh (máy chủ 400); học thuật gọi thẳng → 403 (`prOv8b.tests`) |
+| 13/10/2026 | OV-8a (Opus 5.5) · `claude/pr-ov8a-buoc-tiep-sau-thi-rdlok4` | Bước tiếp sau thi: có kết quả thi thật không tự Lưu trữ nữa → việc QL "Chọn bước tiếp sau thi" (+7 ngày); mục Bước tiếp ở ngăn Tổng kết: Kết thúc (Lưu trữ) · Học tiếp lộ trình mới · Học lại (panel Học lại), gợi ý theo Target, đổi = hoàn tác cái cũ, mốc Hành trình; migrate `prOv8a` |
 | 13/10/2026 | OV-7b (Opus 5.5) · `claude/affectionate-edison-avs75c` | Sửa sau khi lưu 2/2: sửa lần ghi Kết quả PA gần nhất (người ghi + QL; giữ lựa chọn = sửa chữ, đổi = đảo hệ quả cũ + ghi lại, một giao dịch; nhóm bổ trợ, Mini Test, PA thay, thẻ Xin hỗ trợ); Sửa Xem lại tại chỗ; GV đã hoàn thành Case Mở lại được; "Sửa xác nhận" |
 | 13/10/2026 | OV-5a (Opus 5.5) · `claude/clever-hypatia-2tslwm` | Công việc tại chỗ: danh sách trái · panel phải (`viec=` trên URL, điện thoại màn đầy đủ "‹ Công việc"), lọc hai tầng + dòng phạm vi + Xoá lọc; panel dùng lại Ngăn Case / Bàn giao / Ý thức / Vận hành / Nhập điểm (`MotKyNang`); Xác nhận nguyên nhân gom lớp + kỹ năng + lượt, xác nhận nhóm + PA quy chế MỘT giao dịch (≤ 6 em/lô, ~30 câu/em); dòng xong mờ + gạch; "Kết quả đầu ra · lớp" |
 | 13/10/2026 | OV-7a (Opus 5.5) · `claude/optimistic-euler-oideqr` | Sửa sau khi lưu 1/2: bàn giao đã xác nhận sửa tới ngày chuyển lớp (sau đó chỉ QL); Ý thức sửa ngày/người/mô tả, Chưa thực hiện, Bỏ ghi nhận, GVCN sửa khai bậc; Phối hợp lưu lại / Đưa lại Cần xử lý / Khôi phục; Mini Test người ghi sửa (đảo Case + Báo QL); người gửi Sửa / Rút thẻ còn chờ; QL sửa trả lời Xin ý kiến |

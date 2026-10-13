@@ -375,6 +375,8 @@ CREATE TABLE learning_cycles (
   -- PR-TK (TK-K): KẾT QUẢ THI THẬT do GVCN nhập (FT). OVR ở `outcome_score`, `outcome` do máy ghi.
   thi_that_ngay TEXT, thi_that_l REAL, thi_that_r REAL, thi_that_w REAL, thi_that_s REAL,
   thi_that_khong_thi INTEGER NOT NULL DEFAULT 0, thi_that_nhap_boi INTEGER, thi_that_nhap_luc TEXT,
+  -- OV-8a: BƯỚC TIẾP SAU THI do QL chọn (ket_thuc | hoc_tiep | hoc_lai), ngày nghiệp vụ, người chọn, dữ liệu hoàn tác (JSON).
+  buoc_tiep TEXT, buoc_tiep_luc TEXT, buoc_tiep_boi INTEGER, buoc_tiep_json TEXT,
   UNIQUE (student_id, seq)
 );
 

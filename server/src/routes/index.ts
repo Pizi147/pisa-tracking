@@ -39,6 +39,7 @@ import * as ketQuaHuySvc from '../fasttrack/ketQuaHuy.ts';
 import * as effectiveness from '../cases/effectiveness.ts';
 import * as cycleSvc from '../fasttrack/cycles.ts';
 import * as thiThatSvc from '../loTrinh/thiThat.ts';
+import * as buocTiepSvc from '../loTrinh/buocTiep.ts';
 import * as tongKetSvc from '../loTrinh/tongKet.ts';
 import * as profileSvc from '../students/profile.ts';
 import { hanhTrinhHocVien } from '../students/hanhTrinh.ts';
@@ -1453,6 +1454,16 @@ api.put('/cycles/:id/outcome', requireAuth, wrap((req) => {
   const body = (req.body ?? {}) as Record<string, any>;
   if (['ngayThi', 'l', 'r', 'w', 's', 'khongThi', 'ghiChu'].some((k) => k in body)) return thiThatSvc.datKetQuaThiThat(principalOf(req), pInt(req, 'id'), body);
   return cycleSvc.setOutcome(principalOf(req), pInt(req, 'id'), body as any);
+}));
+
+/** OV-8a: Bước tiếp sau thi thật — CHỈ Quản lý / Quản trị (máy chủ kiểm `cycle.edit` của em). Chọn / đổi = một giao dịch; DELETE = hoàn tác lựa chọn. */
+api.post('/cycles/:id/buoc-tiep', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return buocTiepSvc.chonBuocTiep(principalOf(req), pInt(req, 'id'), req.body ?? {});
+}));
+api.delete('/cycles/:id/buoc-tiep', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return buocTiepSvc.boChonBuocTiep(principalOf(req), pInt(req, 'id'));
 }));
 
 /** PR-DUYET (T44): GV của lớp gửi Đề xuất sửa thông tin HV — thành thẻ ở hộp Chờ duyệt. */

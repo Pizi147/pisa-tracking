@@ -1,13 +1,16 @@
 import { useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
+import { api, invalidate } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
+import { useToast } from '../../ui/Toast.tsx';
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { Nhan, type ToneNhan } from '../../ui/Nhan.tsx';
 import { ErrorState, Skeleton } from '../../ui/ui.tsx';
-import { duongHoSoHocVien, ngay } from '@shared/domain/index.ts';
+import { LUA_CHON_SAU_THI, NHAN_SAU_THI, duongHoSoHocVien, ngay, type LuaChonSauThi } from '@shared/domain/index.ts';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { toneHuong } from './CacLoTrinh.tsx';
 import { KetQuaThiThatPanel } from './KetQuaThiThatPanel.tsx';
+import { HocLaiPanel } from './StudentManagePanel.tsx';
 
 type KyNang = { k: string; nhan: string; diem: number | null; tong: number | null; dat: boolean | null };
 type Luot = {
@@ -23,6 +26,8 @@ type TongKet = {
         /** OV-3c: Kết quả đầu ra QL đã chốt (em lên FT) — tra lại sau khi bảng ở lớp FT hết 4 tuần. */
         kqdr: { dat: boolean; nguyenNhan: string | null; mon: string[] } | null };
   huongTiep: { khoa: string; nhan: string | null };
+  /** OV-8a: Bước tiếp sau thi (FT có kết quả thi thật); null = không có mục. */
+  buocTiep: { chon: LuaChonSauThi | null; luc: string | null; boi: string | null; goiY: LuaChonSauThi | null; coTheChon: boolean } | null;
   luot: Luot[];
 };
 
@@ -141,6 +146,77 @@ function BangLuot({ luot, ft }: { luot: Luot[]; ft: boolean }) {
   );
 }
 
+const LAM_MOI = ['/students', '/classes', '/hoc-vien-lop', '/cases', '/lo-trinh', '/my-work'];
+
+/**
+ * MỤC "BƯỚC TIẾP" (OV-8a) — ngay dưới kết quả thi thật. Chỉ Quản lý / Quản trị có nút: Kết thúc (vào Lưu trữ, Hoàn tác trên thông báo) · Học tiếp lộ trình mới ·
+ * Học lại (hai nút sau mở panel Học lại sẵn có). Gợi ý chỉ là chữ. Đã chọn → "Đã chọn: … · ngày · người" + Sửa (đổi = hoàn tác lựa chọn cũ rồi làm cái mới).
+ */
+function MucBuocTiep({ bt, cycleId, hocVien, lop, ketQua, onDoi }: {
+  bt: NonNullable<TongKet['buocTiep']>; cycleId: number; hocVien: { id: number; ten: string }; lop: string | null; ketQua: string; onDoi: () => void;
+}) {
+  const toast = useToast();
+  const { homNay } = useNgayNghiepVu();
+  const [sua, setSua] = useState(false);
+  const [mo, setMo] = useState<'hoc_tiep' | 'hoc_lai' | null>(null);
+  const [busy, setBusy] = useState(false);
+  const doi = !!bt.chon;
+  const xong = () => { setSua(false); setMo(null); onDoi(); };
+  const ketThuc = async () => {
+    setBusy(true);
+    try {
+      await api.post(`/cycles/${cycleId}/buoc-tiep`, { chon: 'ket_thuc' });
+      for (const k of LAM_MOI) invalidate(k);
+      const chu = `Đã chọn Kết thúc — ${hocVien.ten} vào Lưu trữ`;
+      if (doi) toast.push('ok', chu);
+      else {
+        toast.hoanTac(chu, async () => {
+          try { await api.del(`/cycles/${cycleId}/buoc-tiep`); } catch (e: any) { toast.push('error', e.message); return; }
+          for (const k of LAM_MOI) invalidate(k);
+          toast.push('ok', 'Đã hoàn tác');
+          onDoi();
+        }, { key: `buoc-tiep:${cycleId}` });
+      }
+      xong();
+    } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
+  };
+  const bam = (k: LuaChonSauThi) => (k === 'ket_thuc' ? void ketThuc() : setMo(k));
+  return (
+    <section aria-labelledby={`buoc-tiep-${cycleId}`} className="rounded-[10px] border px-3 py-2.5" style={{ background: 'var(--surface-2)', borderColor: 'var(--line)' }}>
+      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
+        <h3 id={`buoc-tiep-${cycleId}`} className="m-0 text-xs font-normal text-slate-500">Bước tiếp</h3>
+        {bt.goiY && (!bt.chon || sua) && <span className="text-xs text-slate-400">Gợi ý: <b className="font-semibold text-slate-200">{NHAN_SAU_THI[bt.goiY]}</b> · {ketQua}</span>}
+      </div>
+      {bt.chon && !sua ? (
+        <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
+          <span className="text-sm text-slate-200">Đã chọn: <b className="font-semibold text-slate-100">{NHAN_SAU_THI[bt.chon]}</b>
+            <span className="text-slate-400">{bt.luc ? ` · ${ngay(bt.luc, homNay)}` : ''}{bt.boi ? ` · ${bt.boi}` : ''}</span></span>
+          {bt.coTheChon && <button type="button" className="btn btn-ghost btn-sm min-h-[44px] sm:min-h-0" onClick={() => setSua(true)}>Sửa</button>}
+        </div>
+      ) : bt.coTheChon ? (
+        <>
+          {sua && <p className="m-0 mt-1 text-[12.5px] text-slate-400">Đổi lựa chọn: lựa chọn cũ được hoàn tác trước (lớp / lộ trình mới chưa có điểm thì gỡ).</p>}
+          <div role="group" aria-label="Chọn bước tiếp" className="mt-2 flex flex-wrap gap-1.5">
+            {LUA_CHON_SAU_THI.map((k) => (
+              <button key={k} type="button" disabled={busy || k === bt.chon} onClick={() => bam(k)}
+                className="btn btn-sm min-h-[44px] max-sm:flex-1 sm:min-h-0">
+                {NHAN_SAU_THI[k]}{k === bt.chon ? ' · đang chọn' : ''}
+              </button>
+            ))}
+            {sua && <button type="button" className="btn btn-ghost btn-sm min-h-[44px] sm:min-h-0" onClick={() => setSua(false)}>Giữ nguyên</button>}
+          </div>
+        </>
+      ) : (
+        <p className="m-0 mt-1 text-sm text-slate-400">Chờ Quản lý chọn: Kết thúc · Học tiếp lộ trình mới · Học lại.</p>
+      )}
+      {mo && (
+        <HocLaiPanel chong studentId={hocVien.id} studentName={hocVien.ten} lop={lop} buocTiep={{ cycleId, chon: mo, doi }}
+          onClose={() => setMo(null)} onDone={xong} />
+      )}
+    </section>
+  );
+}
+
 /**
  * NGĂN "TỔNG KẾT LỘ TRÌNH" (PR-TK, TK-8) — chỉ lộ trình ĐÃ ĐÓNG, số lấy từ bản chụp (đóng băng). FT: Đích → Thi thật → Hướng tiếp (kết quả thi thật do GVCN nhập,
  * máy so với Target lúc đóng); lớp thường: Cuối khoá % → Hướng tiếp. Dưới: lượt Test từng lượt. Chân: Mở hồ sơ · Đóng. Chữ đúng mockup.
@@ -194,9 +270,15 @@ export function NganTongKet({ cycleId, onClose, onDoi }: { cycleId: number; onCl
                 </>
               )}
               <O nho="Hướng tiếp">
-                <div className="mt-1">{data.huongTiep.nhan ? <Nhan tone={toneHuong(data.huongTiep.nhan)}>{data.huongTiep.nhan}</Nhan> : <span className="text-slate-600">—</span>}</div>
+                <div className="mt-1">{data.buocTiep && !data.buocTiep.chon ? <span className="text-sm text-slate-400">Chờ chọn bước tiếp</span>
+                  : data.huongTiep.nhan ? <Nhan tone={toneHuong(data.huongTiep.nhan)}>{data.huongTiep.nhan}</Nhan> : <span className="text-slate-600">—</span>}</div>
               </O>
             </div>
+
+            {data.buocTiep && (
+              <MucBuocTiep bt={data.buocTiep} cycleId={cycleId} hocVien={data.hocVien} lop={data.lop} onDoi={() => { reload(); onDoi?.(); }}
+                ketQua={kq.loai === 'ft' ? (kq.khongThi ? 'Không thi' : kq.nhan || (kq.ovr !== null ? `OVR ${b1(kq.ovr)}` : 'Có kết quả')) : ''} />
+            )}
 
             <div className="flex flex-wrap gap-x-3.5 gap-y-1 text-[12.5px] text-slate-400">
               {[['Lớp', data.lop], ['GVCN', data.gvcn], ['Đầu vào', data.dauVao !== null ? b1(data.dauVao) : null], ...(ft ? [] : [['Target', data.khongCamKet ? 'KCK' : data.target !== null ? b1(data.target) : null]]), ['Thời gian', data.thoiGian],
