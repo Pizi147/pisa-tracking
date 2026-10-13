@@ -336,6 +336,7 @@ Nhật ký chi tiết tới 04/10 ở `git show 575e898d:plan.md` (mục 14) và
 
 | Ngày | PR / nhánh · model | Kết quả |
 |---|---|---|
+| 13/10/2026 | OV-4c (Sonnet 5.5) · `claude/sleepy-dijkstra-vys22n` | W1 / W2 / S: ô Band chỉ đọc, hiện ngay khi gõ 4 tiêu chí (thiếu → "—"; band cũ nhập thẳng vẫn hiện, gõ tiêu chí thì thay); nhập Band thẳng chỉ MT cũ + MT0; `saveScore` 400 band thẳng ở lượt thường (`band: null` xoá vẫn nhận; L/R không đổi) (`prOv4c.tests`; T10 cũ ở prMta / prMtb đổi đúng ý) |
 | 13/10/2026 | OV-1d (Opus 5.5) · `claude/pr-ov1d-luoi-cham-joijqa` | Lưới chấm FT: ô đã dời vì vắng ở lưới tuần gốc là nút "Vắng → W3 OCT" mở hộp Bỏ vắng (không quyền: "Đã dời sang …"); em đã Kết thúc học / Lưu trữ hàng mờ, Kết quả "Đã kết thúc học" / "Lưu trữ", ô không là việc; chỉ Lưu trữ chỉ đọc + `saveScore` 400 (Kết thúc học nhập bù được — PR-TK; Tạm dừng như đang học; chủ SP 13/10) (`prOv1d.tests`) |
 | 13/10/2026 | OV-2c (Sonnet 5.5) · `claude/funny-cori-n7ebb3` | Email học viên không bắt buộc ở Thêm HV (lưới + dán Excel), Sửa thông tin, Sửa cả lớp; gõ thì vẫn kiểm dạng, xoá trống = NULL; ngày sinh giữ bắt buộc; "Thiếu thông tin" chỉ đếm ngày sinh (`prOv2c.tests`; phép kiểm OV2b-3/4/5 + NHAP đổi đúng ý) |
 | 13/10/2026 | OV-10c (Opus 5.5) · `claude/elegant-lovelace-0sh1fe` | Tổng quan theo vai: Admin "Mock Test" (4 ô mở Test / Công việc, số cùng hàm màn đó; GV chấm quá hạn + Nhắc), TVV "Học viên của tôi" / CX "Số liệu" ô đếm bấm được (`chipHocVien` — OV-10b dùng cho chip), CX bỏ "Theo giáo viên"; bộ đo tốc độ có vai ADMIN / TVV / CX (`prOv10c.tests`) |

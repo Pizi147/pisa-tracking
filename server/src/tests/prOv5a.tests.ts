@@ -56,7 +56,8 @@ export async function runPrOv5aTests(t: YThucTestKit) {
     conn.prepare(`UPDATE attempt_skills SET planned_period_id = ?, plan_source = 'manual' WHERE attempt_id = ?`).run(tuan(-1), m1);
     chotSan(conn, m1);
     /* Quản trị nhập điểm: không phụ thuộc phân công môn của lớp (phép kiểm chạy trước có thể đã đổi GV L / S của MB FT 101). */
-    for (const [k, band] of Object.entries(diem)) attempts.saveScore(P.admin, m1, k, { band });
+    /* OV-4c: W1 / W2 / S ở lượt thường chỉ nhận 4 tiêu chí. */
+    for (const [k, band] of Object.entries(diem)) attempts.saveScore(P.admin, m1, k, k === 'listening' || k === 'reading' ? { band } : { criteria: [band, band, band, band] });
     const caseCua = (k: string) => one(`SELECT id FROM sos_cases WHERE student_id = ? AND topic = ? AND status != 'done'`, sid, k)?.id as number;
     return { sid, ten: `OV5a Em ${dem}`, m1, r: caseCua('reading'), l: caseCua('listening') };
   };

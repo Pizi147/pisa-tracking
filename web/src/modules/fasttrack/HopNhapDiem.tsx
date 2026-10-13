@@ -7,7 +7,7 @@
  *   HopNhapDiem  Đầu "Reading · MT2" / "{em} · {lớp} · {W2 OCT}"; con trỏ đứng sẵn ở ô điểm; chân Vắng · Lưu · Lưu · em tiếp ›.
  *                Enter = "Lưu · em tiếp ›" (trang một em: Lưu). Esc đóng. < 640 px: tấm trượt từ dưới.
  *
- * Luật dùng lại, không luật thứ hai: `rawPatchFrom` / `criteriaPatchFrom` dựng lệnh ("-" = Vắng, T10 band nhập thẳng), lưu qua
+ * Luật dùng lại, không luật thứ hai: `rawPatchFrom` / `criteriaPatchFrom` dựng lệnh ("-" = Vắng; Band nhập thẳng chỉ MT cũ / MT0 — OV-4c), lưu qua
  * `useSaveScore` với `nem` — lỗi máy chủ hiện TRONG hộp, chữ đã gõ giữ nguyên; chỉ đóng / sang em kế khi máy chủ đã trả về.
  * Sửa ô đã có điểm: thêm ô "Lý do sửa (tuỳ chọn)" (RB-5, T7 — như `SuaDiemCoLyDo`). Ô đang Vắng (`daChot`): "Vắng lần n · đã dời
  * sang …", Bỏ vắng (quyền OV-1b do máy chủ tính: `goDuoc`), Lưu điểm.
@@ -144,7 +144,8 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, gvMacDi
   });
   const [vals0] = useState<string[]>(() => (vang || motO ? ['', '', '', '']
     : coDau(cell) && cell.criteria.every((v) => v === null) ? ['-', '', '', ''] : cell.criteria.map((v) => (v === null ? '' : String(v)))));
-  const [band0] = useState(() => (vang || motO ? '' : bandBanDau(cell)));
+  /* OV-4c: ô Band chỉ là ô nhập khi máy chủ cho nhập thẳng (`bandThang`: MT cũ); lượt thường Band tự tính — ô chỉ đọc, `bandText` luôn trống. */
+  const [band0] = useState(() => (vang || motO || !cell.bandThang ? '' : bandBanDau(cell)));
   const [t, setT] = useState(t0);
   const [vals, setVals] = useState(vals0);
   const [bandText, setBandText] = useState(band0);
@@ -164,7 +165,7 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, gvMacDi
         const s = t.trim();
         if (s === '-') return { doi, patch: { noShow: true } as SavePatch, loi: null, o: null, preview: null };
         if (s === '') return { doi, patch: (coDau(cell) ? { noShow: false } : { band: null }) as SavePatch, loi: null, o: null, preview: null };
-        const r = criteriaPatchFrom(['', '', '', ''], cell, s);
+        const r = criteriaPatchFrom(['', '', '', ''], cell, s, true);   // MT0: một ô Band, nhập thẳng
         return { doi, patch: r.patch as SavePatch | null, loi: r.loi, o: r.patch ? null : 0, preview: r.preview };
       }
       const p = rawPatchFrom(t, cell) as SavePatch | null;
@@ -176,7 +177,7 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, gvMacDi
       return { doi, patch: p, loi: null, o: null, preview: p.band ?? null };
     }
     const doi = vals.some((v, i) => v.trim() !== vals0[i].trim()) || bandText.trim() !== band0.trim();
-    const r = criteriaPatchFrom(vals, cell, bandText);
+    const r = criteriaPatchFrom(vals, cell, bandText, cell.bandThang);
     const sai = vals.findIndex((v) => { const s = v.trim(); return s !== '' && s !== '-' && !Number.isFinite(Number(s)); });
     return { doi, patch: r.patch as SavePatch | null, loi: r.loi, o: r.patch ? null : sai >= 0 ? sai : 4, preview: r.preview };
   })();
@@ -285,8 +286,10 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, gvMacDi
                 value={vals[i] ?? ''} aria-label={`${skillLabel(cell.skill)} — ${n}`} aria-invalid={loi?.o === i || undefined} disabled={busy}
                 onChange={(e) => { setVals((v) => v.map((x, j) => (j === i ? e.target.value : x))); setLoi(null); }} />
             ))}
-            {coTieuChi ? (
-              <b className="self-center text-center text-base tabular-nums text-slate-100" aria-live="polite">{diem.patch && 'noShow' in diem.patch ? '-' : fmtBand(diem.preview)}</b>
+            {coTieuChi || !cell.bandThang ? (
+              <output className="self-center text-center text-base font-bold tabular-nums text-slate-100" aria-label={`${skillLabel(cell.skill)} — band`}>
+                {diem.patch && 'noShow' in diem.patch ? '-' : fmtBand(coTieuChi ? diem.preview : cell.band)}
+              </output>
             ) : (
               <input className={oSo('w-full px-1 max-sm:h-11 max-sm:text-base')} style={stSai(loi?.o === 4)} inputMode="decimal" value={bandText}
                 aria-label={`${skillLabel(cell.skill)} — band`} aria-invalid={loi?.o === 4 || undefined} disabled={busy}
