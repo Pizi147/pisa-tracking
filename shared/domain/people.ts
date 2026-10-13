@@ -21,7 +21,7 @@ export const ROLE_LABEL: Record<Role, string> = {
   office_admin: 'Admin', consultant: 'Tư vấn viên', cx: 'CX',
 };
 /** PR-OV2a: câu 403 khi Admin / TVV / CX gửi trường ngoài "thông tin HV". */
-export const CHI_SUA_THONG_TIN = 'Bạn chỉ sửa được thông tin học viên: họ tên, ngày sinh, email, TVV, dự kiến thi, điểm đầu vào.';
+export const CHI_SUA_THONG_TIN = 'Bạn chỉ sửa được thông tin học viên: họ tên, ngày sinh, email, TVV, liên hệ, dự kiến thi, điểm đầu vào.';
 /** Vai đổi được góc nhìn (đặc tả OV mục 2): QL hoặc Quản trị nắm từ hai vai trở lên. */
 export function coTheDoiGocNhin(roleKeys: readonly string[]): boolean {
   return roleKeys.length >= 2 && roleKeys.some((k) => k === 'manager' || k === 'system_admin');

@@ -21,16 +21,27 @@ export function ThongTinLopPanel({ lop, phan, onClose, onDone, onChuyenTiep }: {
   /** Lớp hết khoá: nút "Lộ trình tiếp theo" trong phần Lịch Test (chỉ khi người xem chuyển tiếp được). */
   onChuyenTiep?: () => void;
 }) {
-  const thuong = lop.programme?.scoringMode === 'ratio';
   return (
     <KhungPanel tieuDe="Thông tin lớp" lop={lop.code} onDong={onClose}>
-      <PhanLop suaDuoc={lop.viewer.canEditProgress} onDone={onDone}
+      <NoiDungThongTinLop lop={lop} phan={phan} onDone={onDone} onChuyenTiep={onChuyenTiep} />
+    </KhungPanel>
+  );
+}
+
+/** Ba phần Lớp → Phân công → Lịch Test; nút Sửa theo quyền. OV-10b: cách xem "Thông tin lớp" (TVV / CX / Admin) vẽ chỉ đọc ngay trong tab (`chiDoc`). */
+export function NoiDungThongTinLop({ lop, phan, onDone, onChuyenTiep, chiDoc = false }: {
+  lop: HoSoLop; phan?: 'phan-cong' | null; onDone: () => void; onChuyenTiep?: () => void; chiDoc?: boolean;
+}) {
+  const thuong = lop.programme?.scoringMode === 'ratio';
+  return (
+    <>
+      <PhanLop suaDuoc={!chiDoc && lop.viewer.canEditProgress} onDone={onDone}
         lop={{ id: lop.id, code: lop.code, branchCode: lop.branchCode, route: lop.route, programmeCode: lop.programme?.code ?? null,
           programmeName: lop.programme?.name ?? null, soHocVien: lop.summary?.studentCount ?? 0 }} />
-      <PhanPhanCong lop={lop} suaDuoc={lop.viewer.canAssign || !!lop.viewer.canAssignSubject} moSua={phan === 'phan-cong'} onDone={onDone} />
-      <PhanLichTest classId={lop.id} tieuDe={thuong ? 'Lịch Test của lớp' : 'Tuần khai giảng'} suaDuoc={lop.viewer.canEditProgress}
-        onDone={onDone} onChuyenTiep={onChuyenTiep} />
-    </KhungPanel>
+      <PhanPhanCong lop={lop} suaDuoc={!chiDoc && (lop.viewer.canAssign || !!lop.viewer.canAssignSubject)} moSua={phan === 'phan-cong'} onDone={onDone} />
+      <PhanLichTest classId={lop.id} tieuDe={thuong ? 'Lịch Test của lớp' : 'Tuần khai giảng'} suaDuoc={!chiDoc && lop.viewer.canEditProgress}
+        onDone={onDone} onChuyenTiep={chiDoc ? undefined : onChuyenTiep} />
+    </>
   );
 }
 

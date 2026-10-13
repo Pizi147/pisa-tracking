@@ -10,7 +10,8 @@ import { KetLuanKhoa, MiniTestO } from './KetLuanKhoa.tsx';
 import { HanhTrinh } from './HanhTrinh.tsx';
 import { CacLoTrinh } from './CacLoTrinh.tsx';
 import { NganTongKet } from './NganTongKet.tsx';
-import { BonO, CauTomTat, DaiChoDuyet, DaiTamDung, DongThongTin, ThanhViec, type Viec } from './DauHoSo.tsx';
+import { BonO, CauTomTat, DaiChoDuyet, DaiTamDung, DangXuLy, DongLienHe, DongThongTin, ThanhViec, type Viec } from './DauHoSo.tsx';
+import { useSession } from '../../lib/session.tsx';
 import { NganCase } from './NganCase.tsx';
 import { MissingBadge } from './MissingBadge.tsx';
 import { StudentPlanPanel } from './StudentPlanPanel.tsx';
@@ -24,7 +25,7 @@ import {
 } from '../../lib/format.ts';
 import {
   HO_SO_TAB_LABEL, duongDotTest, caseCategoriesFor, tenMon, tenMonNgan, docThamSoHoSo, duongHoSoHocVien,
-  nhanKetQuaThuong, tenBaiThuong, CHUONG_TRINH_KHONG_CHIA_MON, ngay, tuanLich, maHocVienNgan, trangCha, type HoSoTab,
+  nhanKetQuaThuong, tenBaiThuong, CHUONG_TRINH_KHONG_CHIA_MON, ngay, tuanLich, maHocVienNgan, trangCha, vaiXemHocVien, type HoSoTab,
 } from '@shared/domain/index.ts';
 import { HangTab } from '../../ui/HangTab.tsx';
 import { KetQuaDot } from '../../ui/KetQuaDot.tsx';
@@ -73,6 +74,8 @@ export default function StudentDetailPage() {
   const { data, loading, error, reload } = useApi<Profile>(id ? `/students/${id}${q}` : null, [p.loTrinh, p.dot]);
   const [viecQuanLy, setViecQuanLy] = useState<ViecQuanLy | null>(null);
   const dienThoai = useDienThoai();
+  /* OV-10b (mockup vai mục 3): TVV / CX / Admin — nút việc của vai hiện thẳng (không ⋯), khối Đang xử lý. QL / GV không đổi. */
+  const vaiXem = vaiXemHocVien(useSession().session?.roles);
   const [planOpen, setPlanOpen] = useState(false);
   const dongPlan = () => {
     setPlanOpen(false);
@@ -206,6 +209,7 @@ export default function StudentDetailPage() {
                 {data.archivedAt && <Info>Đã lưu trữ</Info>}
               </h1>
               <DongThongTin tt={data.dauHoSo.thongTin} />
+              <DongLienHe l={data.lienHe} email={data.email} dob={data.dob} tvv={data.tvv?.ten ?? data.consultantName} />
             </div>
 
             {/* ml-auto: xuống dòng ở 375 thì nút vẫn bám phải — menu ⋯ (mở về bên trái) không tràn khỏi màn. */}
@@ -213,14 +217,21 @@ export default function StudentDetailPage() {
               {data.viewer.canReport && !data.lopHoc?.chiXem && (
                 <button className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={() => setReportOpen(true)}>+ Case</button>
               )}
-              {/* ⋮ = MENU THẢ; mỗi mục mở THẲNG panel của việc đó (Q10). Không có quyền nào → Menu không vẽ gì. */}
-              <Menu label="⋯" className="btn min-h-[44px] sm:min-h-0" items={mucQuanLyHocVien({
-                canEdit: data.viewer.canEdit, suaThongTin: !!data.viewer.coTheSuaThongTin, suaThem: !!data.viewer.coTheSuaThem, lopHoc: data.lopHoc ?? null, cycle: cy, status: data.status, coTheXoa: !!data.viewer.coTheXoa,
-                deXuatSua: !!data.viewer.coTheDeXuatSua,
-              }).map((m) => ({
-                label: m.nhan, danger: m.nguyHiem, keTruoc: m.keTruoc, hint: m.phu,
-                onClick: () => (m.key === 'lo-trinh' ? setPlanOpen(true) : setViecQuanLy(m.key)),
-              }))} />
+              {/* ⋮ = MENU THẢ; mỗi mục mở THẲNG panel của việc đó (Q10). Không có quyền nào → Menu không vẽ gì. OV-10b: TVV / CX / Admin — cùng các mục thành nút. */}
+              {(() => {
+                const muc = mucQuanLyHocVien({
+                  canEdit: data.viewer.canEdit, suaThongTin: !!data.viewer.coTheSuaThongTin, suaThem: !!data.viewer.coTheSuaThem, lopHoc: data.lopHoc ?? null, cycle: cy, status: data.status, coTheXoa: !!data.viewer.coTheXoa,
+                  deXuatSua: !!data.viewer.coTheDeXuatSua,
+                });
+                const mo = (k: typeof muc[number]['key']) => (k === 'lo-trinh' ? setPlanOpen(true) : setViecQuanLy(k));
+                return vaiXem ? muc.map((m) => (
+                  <button key={m.key} type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" title={m.phu} onClick={() => mo(m.key)}>{m.nhan}</button>
+                )) : (
+                  <Menu label="⋯" className="btn min-h-[44px] sm:min-h-0" items={muc.map((m) => ({
+                    label: m.nhan, danger: m.nguyHiem, keTruoc: m.keTruoc, hint: m.phu, onClick: () => mo(m.key),
+                  }))} />
+                );
+              })()}
             </div>
           </div>
 
@@ -249,6 +260,7 @@ export default function StudentDetailPage() {
 
       {/* PR-VAI-b (K3-01, T72): việc gấp nhất của NGƯỜI XEM với em; không có việc thì không vẽ gì. */}
       <ThanhViec viec={data.dauHoSo.viec} homNay={homNay} onLam={lamViec} />
+      {vaiXem && <DangXuLy viec={data.dauHoSo.viec} homNay={homNay} />}
       {/* PR-VAI-b (V1/K3-47): Quản lý duyệt ngay trong hồ sơ — chỗ của thanh việc (Quản lý không có việc học thuật với em). */}
       {data.viewer.coTheDuyet && <DaiChoDuyet studentId={data.id} homNay={homNay} onDoi={reload} onThemPa={(caseId) => setOpenCase({ caseId, viec: 'them-pa' })} />}
 

@@ -5,11 +5,25 @@ import { RecordViolationPanel } from '../yThuc/RecordViolationPanel.tsx';
 import { ChuyenLopPanel } from '../students/ChuyenLopPanel.tsx';
 import { SuaThongTinMotEm } from '../students/StudentManagePanel.tsx';
 import type { MucMenu } from '../../ui/MenuDong.tsx';
-import { khoaBai, nhanBai, MUC_MENU_DONG_HIEM, MUC_MENU_DONG_NHAN, duongHoSoHocVien, duongLoTrinhLop, mucMenuDongHocVien, type ViecTiepTheo } from '@shared/domain/index.ts';
+import {
+  khoaBai, nhanBai, MUC_MENU_DONG_HIEM, MUC_MENU_DONG_NHAN, duongHoSoHocVien, duongLoTrinhLop, mucDongTheoVai, mucMenuDongHocVien, type ViecQuanLy, type ViecTiepTheo,
+} from '@shared/domain/index.ts';
 
-/** `coTheChuyenTiep` = `class.edit` ở lớp (Quản lý — ra quyết định chuyển lớp); người chỉ có `coTheSuaHocVien` (GVCN) thì Đề xuất chuyển lớp. */
-export type QuyenDong = { coTheSuaHocVien: boolean; coTheBaoCase: boolean; coTheGhiViPham: boolean; coTheNhapDiem: boolean; coTheChuyenTiep?: boolean };
-export type DongChoMenu = { id: number; ten: string; dangHoc: boolean; nhapDiem: { nhan: string; den: string } | null };
+/**
+ * `coTheChuyenTiep` = `class.edit` ở lớp (Quản lý — ra quyết định chuyển lớp); người chỉ có `coTheSuaHocVien` (GVCN) thì Đề xuất chuyển lớp.
+ * OV-10b: `theoVai` (TVV / CX / Admin) — ⋯ dòng là việc thông tin / trạng thái của vai (`mucDongTheoVai`) + Mở hồ sơ, theo `coTheSuaThongTin` /
+ * `coTheSuaThem` của máy chủ; không có việc học thuật.
+ */
+export type QuyenDong = {
+  coTheSuaHocVien: boolean; coTheBaoCase: boolean; coTheGhiViPham: boolean; coTheNhapDiem: boolean; coTheChuyenTiep?: boolean;
+  theoVai?: boolean; coTheSuaThongTin?: boolean; coTheSuaThem?: boolean;
+};
+/** `status` / `ft` chỉ cần cho ⋯ theo vai (Tạm dừng / Quay lại, Kết quả thi thật chỉ FT); `ft` không gửi = theo lớp của bảng. */
+export type DongChoMenu = {
+  id: number; ten: string; dangHoc: boolean; nhapDiem: { nhan: string; den: string } | null; status?: string; ft?: boolean;
+  /** Danh sách nhiều lớp (Học viên & Lớp TVV / CX): lớp và quyền của chính dòng — không gửi thì theo bảng. */
+  maLop?: string | null; suaThongTin?: boolean; suaThem?: boolean;
+};
 
 /** "Nhập điểm MT3" / "Nhập điểm Giữa khoá" khi em còn kỹ năng người xem phải chấm; không có thì không có mục (g3-072). */
 export function nhapDiemCua(
@@ -50,9 +64,17 @@ export function useThaoTacDongHocVien({ laLopThuong, quyen, onDone, maLop, class
   maLop?: string | null;
 }): { mucCua: (d: DongChoMenu) => MucMenu[]; panels: ReactNode } {
   const navigate = useNavigate();
-  const [mo, setMo] = useState<{ viec: 'case' | 'vi-pham' | 'sua-thong-tin' | 'chuyen-lop' | 'de-xuat-chuyen-lop'; id: number; ten: string } | null>(null);
+  const [mo, setMo] = useState<{
+    viec: 'case' | 'vi-pham' | 'sua-thong-tin' | 'chuyen-lop' | 'de-xuat-chuyen-lop'; id: number; ten: string; quanLy?: ViecQuanLy; lop?: string | null;
+  } | null>(null);
 
-  const mucCua = (d: DongChoMenu): MucMenu[] => mucMenuDongHocVien({
+  const mucCua = (d: DongChoMenu): MucMenu[] => quyen.theoVai ? [
+    ...mucDongTheoVai({
+      suaThongTin: d.suaThongTin ?? !!quyen.coTheSuaThongTin, suaThem: d.suaThem ?? !!quyen.coTheSuaThem,
+      ft: d.ft ?? !laLopThuong, status: d.status ?? (d.dangHoc ? 'active' : 'finished'),
+    }).map((m): MucMenu => ({ key: m.key, nhan: m.nhan, onChon: () => setMo({ viec: 'sua-thong-tin', id: d.id, ten: d.ten, quanLy: m.key, lop: d.maLop }) })),
+    { key: 'ho-so', nhan: 'Mở hồ sơ', keTruoc: true, onChon: () => navigate(duongHoSoHocVien(d.id)) },
+  ] : mucMenuDongHocVien({
     laLopThuong, dangHoc: d.dangHoc,
     coTheGhiViPham: quyen.coTheGhiViPham, coTheBaoCase: quyen.coTheBaoCase,
     coTheNhapDiem: quyen.coTheNhapDiem && d.nhapDiem !== null,
@@ -78,7 +100,7 @@ export function useThaoTacDongHocVien({ laLopThuong, quyen, onDone, maLop, class
         studentId={mo?.id ?? 0} studentName={mo?.ten} lop={maLop} onDone={xong} />
       <ChuyenLopPanel open={mo?.viec === 'chuyen-lop' || mo?.viec === 'de-xuat-chuyen-lop'} cheDo={mo?.viec === 'de-xuat-chuyen-lop' ? 'de-xuat' : 'lenh'} onClose={() => setMo(null)}
         studentId={mo?.id ?? 0} studentName={mo?.ten} lop={maLop} onDone={xong} />
-      {mo?.viec === 'sua-thong-tin' && <SuaThongTinMotEm studentId={mo.id} studentName={mo.ten} lop={maLop} onClose={() => setMo(null)} onDone={xong} />}
+      {mo?.viec === 'sua-thong-tin' && <SuaThongTinMotEm viec={mo.quanLy} studentId={mo.id} studentName={mo.ten} lop={mo.lop ?? maLop} onClose={() => setMo(null)} onDone={xong} />}
     </>
   );
   return { mucCua, panels };

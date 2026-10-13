@@ -57,6 +57,7 @@ import * as cuoiKhoaSvc from '../normal/cuoiKhoa.ts';
 import * as kyVongSvc from '../normal/kyVong.ts';
 import * as luatLoTrinhSvc from '../classes/luatLoTrinh.ts';
 import * as hocVienLopSvc from '../classes/hocVienLop.ts';
+import { hocVienTheoVai } from '../classes/hocVienTheoVai.ts';
 import * as luuTruSvc from '../classes/luuTru.ts';
 import * as phanTichLopSvc from '../classes/phanTichLop.ts';
 import { canHoTroLop } from '../classes/canHoTro.ts';
@@ -1271,6 +1272,8 @@ api.get('/hoc-vien-lop', requireAuth, wrap((req) => {
 
 /** Trước/Sau của hồ sơ lớp mở bằng link (PR-TD2-b): id + cách chấm của `/hoc-vien-lop` mặc định, không nạp lượt. */
 api.get('/hoc-vien-lop/ids', requireAuth, wrap((req) => hocVienLopSvc.idsHocVienLop(principalOf(req))));
+/* OV-10b: Học viên & Lớp của TVV / CX — mỗi em một dòng theo việc của vai, chip = `chipHocVien` (cùng ô Tổng quan). */
+api.get('/hoc-vien-lop/theo-vai', requireAuth, wrap((req) => hocVienTheoVai(principalOf(req), { phamVi: qStr(req, 'phamVi'), branchId: qInt(req, 'branchId') })));
 
 /** Khu Lưu trữ (PR-LT, Q16/Q22): lớp đã kết thúc · học viên đã lưu trữ — ⋯ góc phải trang Học viên & Lớp. */
 api.get('/hoc-vien-lop/luu-tru', requireAuth, wrap((req) => {

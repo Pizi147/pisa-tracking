@@ -5,7 +5,8 @@ import {
   ASSESSED_SKILL_LABEL, INTERVENTION_KIND_LABEL, JOURNEY_GROUP, PERMISSIONS,
   caseHeadline, duongCase, issueLabel, caseCategoryLabel, categoryOf, fmtExamMonth, cauTomTat, ketQuaTestGanNhat, oHocThuat, oSapToi, oYThuc,
   bacHoacNgoaiThang, nhanLoaiXuLy, programmeOf, tenBacKe, tenMonNgan, mocKeTiep, LUOT_HUY_HET_SQL, quaHan, studyWeekOf, tenMon, tuanHocTai, tuanLich,
-  type AssessedSkill, type EntrySkill, type InterventionKind, kyNangXongThieu, nhanBaiThuong, ATTEMPT_KIND_SHORT, soThuTuLuot, laChuongTrinhGoc, laLienTuc, type ProgrammeCode } from '../../../shared/domain/index.ts';
+  type AssessedSkill, type EntrySkill, type InterventionKind, kyNangXongThieu, nhanBaiThuong, ATTEMPT_KIND_SHORT, soThuTuLuot, laChuongTrinhGoc, laLienTuc, type ProgrammeCode,
+  coONhapLienHe, type LienHe } from '../../../shared/domain/index.ts';
 import { outcomeGroup } from '../cases/effectiveness.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addDays, diffDays, notFound } from '../util.ts';
@@ -825,6 +826,8 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
     id: s.id, studentCode: s.student_code, fullName: s.full_name, dob: s.dob, email: s.email ?? null,
     status: s.status, finishedAt: s.finished_at, archivedAt: s.archived_at,
     consultantName: s.consultant_name, note: s.note,
+    /** OV-10b: liên hệ — mọi vai xem được (dòng Liên hệ đầu hồ sơ), không bắt buộc. */
+    lienHe: { phone: s.phone ?? null, parentName: s.parent_name ?? null, parentRelation: s.parent_relation ?? null, parentPhone: s.parent_phone ?? null } satisfies LienHe,
     /** PR-OV2b: TVV = người (`consultant_user_id`); `consultantName` là chữ cũ, chỉ để đọc ("Ghi cũ: …"). */
     tvv: s.consultant_user_id ? (conn.prepare('SELECT id, full_name AS ten FROM users WHERE id = ?').get(s.consultant_user_id) as any) ?? null : null,
     /** Ô chọn TVV — chỉ khi người xem sửa được thông tin. */
@@ -995,6 +998,8 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
         canEdit: can(p, PERMISSIONS.STUDENT_EDIT, { studentId }),
         /** PR-OV2b: Admin / TVV / CX (`student.edit_info`) — ⋯ Sửa thông tin, chỉ các ô thông tin. */
         coTheSuaThongTin: can(p, PERMISSIONS.STUDENT_EDIT, { studentId }) || can(p, PERMISSIONS.STUDENT_EDIT_INFO, { studentId }),
+        /** OV-10b: ô nhập Liên hệ ở Sửa thông tin — QL, Quản trị, TVV, CX, Admin; GV không thấy (máy chủ vẫn nhận theo `student.edit_info`). */
+        nhapLienHe: coONhapLienHe(p.roleKeys) && (can(p, PERMISSIONS.STUDENT_EDIT, { studentId }) || can(p, PERMISSIONS.STUDENT_EDIT_INFO, { studentId })),
         /* PR-DUYET (T44): target / lộ trình — Quản lý. GV của lớp không có quyền này thì gửi "Đề xuất sửa". */
         canEditCycle: can(p, PERMISSIONS.CYCLE_EDIT, { studentId }),
         /* OV-8b: TVV / CX — Target sửa thẳng (có lý do), Ghi chú, Kết quả thi thật (`student.edit_more`). */

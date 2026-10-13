@@ -37,6 +37,27 @@ export function laVaiQuanLy(roles: readonly string[] | null | undefined): boolea
   return (roles ?? []).some((r) => r === 'system_admin' || r === 'manager');
 }
 
+/**
+ * OV-10b (mockup vai 13/10 mục 6): góc xem Học viên & Lớp / hồ sơ theo việc của vai — `null` = Quản lý / Quản trị / GV (bảng, hồ sơ không đổi).
+ * Máy chủ (`p.roleKeys`) và web (`session.roles`) cùng một hàm.
+ */
+export type VaiXemHocVien = 'tvv' | 'cx' | 'admin';
+export function vaiXemHocVien(roles: readonly string[] | null | undefined): VaiXemHocVien | null {
+  const r = roles ?? [];
+  if (laVaiQuanLy(r) || r.includes('teacher')) return null;
+  return r.includes('consultant') ? 'tvv' : r.includes('cx') ? 'cx' : r.includes('office_admin') ? 'admin' : null;
+}
+/** OV-10b: ô nhập Liên hệ hiện cho QL, Quản trị, TVV, CX, Admin — GV (GVCN, GVBM) không thấy (máy chủ vẫn nhận theo `student.edit_info`). */
+export const coONhapLienHe = (roles: readonly string[] | null | undefined): boolean => laVaiQuanLy(roles) || vaiXemHocVien(roles) !== null;
+
+/** OV-10b: chip Học viên & Lớp của TVV / CX — số = `chipHocVien` (OV-10c, cùng ô Tổng quan). "Chờ QL chọn bước tiếp" chỉ hiện khi có em. */
+export const CHIP_VAI = ['tat-ca', 'can-chu-y', 'tam-dung', 'sap-thi', 'thieu_tt', 'cho-buoc-tiep'] as const;
+export type ChipVai = (typeof CHIP_VAI)[number];
+/** CX mở ở chip `can-chu-y` (không phải 1 000+ em), TVV ở `tat-ca` của HV mình. Nhãn chip ở web (`HocVienTheoVai.tsx`). */
+export const chipMacDinhVai = (vai: 'tvv' | 'cx'): ChipVai => (vai === 'cx' ? 'can-chu-y' : 'tat-ca');
+export const docChipVai = (s: string | null | undefined, vai: 'tvv' | 'cx'): ChipVai =>
+  (CHIP_VAI as readonly string[]).includes(s ?? '') ? (s as ChipVai) : chipMacDinhVai(vai);
+
 // ---------------------------------------------------------------- chip lọc (§3.6, Q4)
 
 /** PR-S4F #4: `qua-han` — đích của badge "n HV quá hạn việc" (hộp lớp + đầu hồ sơ lớp); chip chỉ hiện khi đang lọc bằng nó (`chipHienLoc`). */

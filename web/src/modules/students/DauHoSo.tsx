@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { chuTamDung, chuTuanHoc, deadlineView, type DeadlineKind, type TheYeuCauDto } from '@shared/domain/index.ts';
+import { chuPhuHuynh, chuTamDung, chuTuanHoc, deadlineView, ngay, type DeadlineKind, type LienHe, type TheYeuCauDto } from '@shared/domain/index.ts';
 import { TargetText } from '../../ui/ui.tsx';
 import { KetQuaDot } from '../../ui/KetQuaDot.tsx';
 import { ChipDuoiKck } from '../../ui/KetQuaDot.tsx';
@@ -48,6 +48,61 @@ export function DongThongTin({ tt }: { tt: any }) {
         <li key={i}>{m}{i < muc.length - 1 && <span aria-hidden className="px-[7px] opacity-70">·</span>}</li>
       ))}
     </ul>
+  );
+}
+
+/** Số gọi được trên điện thoại (`tel:`), chữ giữ nguyên như người nhập. */
+function So({ sdt }: { sdt: string }) {
+  return <a href={`tel:${sdt.replace(/[^\d+]/g, '')}`} className="font-semibold tabular-nums text-slate-100 no-underline hover:underline">{sdt}</a>;
+}
+
+/**
+ * DÒNG LIÊN HỆ (OV-10b, mockup vai 13/10 mục 3) — MỌI vai, chỉ đọc: SĐT em · PH tên (quan hệ) · SĐT · email · ngày sinh · TVV. Chưa có SĐT / phụ huynh
+ * → "Chưa có liên hệ" mờ (không đỏ, không bắt nhập). Nhập ở Sửa thông tin.
+ */
+export function DongLienHe({ l, email, dob, tvv }: { l: LienHe | null | undefined; email?: string | null; dob?: string | null; tvv?: string | null }) {
+  const ph = chuPhuHuynh(l);
+  const muc: ReactNode[] = [
+    l?.phone && <span key="em">Em <So sdt={l.phone} /></span>,
+    (ph || l?.parentPhone) && <span key="ph">PH{ph ? `: ${ph}` : ''}{l?.parentPhone && <>{ph ? ' · ' : ' '}<So sdt={l.parentPhone} /></>}</span>,
+    !l?.phone && !ph && !l?.parentPhone && <span key="chua" className="text-slate-500">Chưa có liên hệ</span>,
+    email && <span key="mail" className="break-all">{email}</span>,
+    dob && <span key="dob">Sinh <span className="tabular-nums">{ngay(dob)}</span></span>,
+    tvv && <span key="tvv">TVV {tvv}</span>,
+  ].filter(Boolean);
+  return (
+    <ul aria-label="Liên hệ" className="m-0 mt-1 flex list-none flex-wrap items-baseline gap-y-0.5 p-0 text-[12.5px] text-slate-300">
+      <li className="pr-2 text-[11.5px] font-semibold tracking-[.03em] text-slate-500">Liên hệ</li>
+      {muc.map((m, i) => (
+        <li key={i}>{m}{i < muc.length - 1 && <span aria-hidden className="px-[7px] text-slate-500">·</span>}</li>
+      ))}
+    </ul>
+  );
+}
+
+/**
+ * KHỐI "ĐANG XỬ LÝ" (OV-10b, mockup vai mục 3) — TVV / CX / Admin, chỉ đọc: ai đang làm việc gì với em và hạn — để trả lời phụ huynh không phải hỏi
+ * từng người. Cùng nguồn với thanh "Việc của tôi" (`dauHoSo.viec` — luật người làm như Công việc, việc đã xong không có). Không có việc → không vẽ.
+ */
+export function DangXuLy({ viec, homNay }: { viec: { cuaBan: Viec[]; nguoiKhac: Viec[] } | null | undefined; homNay: string | null }) {
+  /* Người xem có việc với em → thanh "Việc của tôi" đã có "việc của người khác" (gập) — không vẽ hai lần. */
+  const ds = viec?.cuaBan.length ? [] : viec?.nguoiKhac ?? [];
+  if (!ds.length) return null;
+  return (
+    <section aria-label="Đang xử lý" className="rounded-[10px] bg-[color:var(--surface-2)] px-3 py-[9px]">
+      <h2 className="m-0 mb-1 text-[11.5px] font-bold uppercase tracking-[.04em] text-slate-400">Đang xử lý</h2>
+      <ul className="m-0 flex list-none flex-col gap-1 p-0">
+        {ds.map((x) => (
+          <li key={x.key} className="grid grid-cols-1 items-baseline gap-x-3 gap-y-0.5 text-[13px] sm:grid-cols-[minmax(0,1fr)_auto]">
+            <span className="min-w-0 text-slate-200">
+              <b className="font-semibold text-slate-100">{x.nguoi.ten}</b>{x.nguoi.vai && <span className="text-slate-400"> ({x.nguoi.vai})</span>}
+              <span className="text-slate-400"> · </span>{x.chu}
+            </span>
+            <span className="sm:text-right"><HanViec x={x} homNay={homNay} /></span>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 

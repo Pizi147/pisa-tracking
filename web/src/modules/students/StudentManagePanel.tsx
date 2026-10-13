@@ -9,6 +9,7 @@ import { ChonNgayGan } from '../../ui/ChonNgay.tsx';
 import {
   NHAN_VIEC_QUAN_LY, mucQuanLyHocVien, cacTabTrangThai, type LopHocQuyen, type ViecQuanLy, type TabTrangThai, dsLoi, docEmail,
   cauMtSeDoi, tuanLich, GIAI_THICH_KCK, chuTargetKck, tachKck, roundToHalf, type NguoiChon, duongLoTrinhLop, NHAN_SAU_THI,
+  LIEN_HE_TOI_DA, NHAN_LIEN_HE, QUAN_HE_GOI_Y, TRUONG_LIEN_HE, docSoDienThoai, type LienHe,
 } from '@shared/domain/index.ts';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
@@ -63,7 +64,7 @@ export function StudentManagePanel({ viec, onClose, student, lop, cycle, attempt
     case 'hoc-lai': return <HocLaiPanel {...chung} />;
     case 'luu-tru': return <LuuTruPanel {...chung} boLuuTru={false} />;
     case 'bo-luu-tru': return <LuuTruPanel {...chung} boLuuTru />;
-    case 'outcome': return <KetQuaThiThatPanel cycleId={cycle.id} studentName={chung.studentName} lop={chung.lop} onClose={chung.onClose} onDone={chung.onDone} />;
+    case 'outcome': return cycle && <KetQuaThiThatPanel cycleId={cycle.id} studentName={chung.studentName} lop={chung.lop} onClose={chung.onClose} onDone={chung.onDone} />;
     case 'info': return <ThongTinPanel {...chung} student={student} cycle={cycle} attempts={attempts} quyen={quyen} onDeXuatSua={onDeXuatSua} />;
     case 'xoa-hoc-vien': return <XoaHocVienPanel studentId={student.id} studentName={student.name} lop={lop} onClose={onClose} />;
     case 'de-xuat-sua': return (
@@ -79,26 +80,32 @@ export type ThongTinEm = {
   id: number; name: string; classId: number | null;
   dob?: string | null; email?: string | null; consultantName?: string | null; note?: string | null; status?: string;
   tvv?: { id: number; ten: string } | null; tvvChon?: NguoiTrongDs[] | null;
+  /** OV-10b: liên hệ (SĐT em, phụ huynh). */
+  lienHe?: LienHe | null;
 };
 /**
  * `canEdit` = `student.edit` (QL, GVCN) · `coTheSuaThongTin` = thêm Admin / TVV / CX · `canEditCycle` = Target sửa thẳng (QL) ·
  * `coTheSuaThem` = OV-8b TVV / CX: Target sửa thẳng + Ghi chú.
  */
-export type QuyenSua = { canEdit: boolean; coTheSuaThongTin?: boolean; canEditCycle?: boolean; coTheDeXuatSua?: boolean; coTheSuaThem?: boolean };
+export type QuyenSua = { canEdit: boolean; coTheSuaThongTin?: boolean; canEditCycle?: boolean; coTheDeXuatSua?: boolean; coTheSuaThem?: boolean;
+  /** OV-10b: ô Liên hệ — QL, Quản trị, TVV, CX, Admin; GV không thấy (chủ SP 13/10). */
+  nhapLienHe?: boolean };
 
 /**
  * SỬA THÔNG TIN MỘT EM TỪ DÒNG BẢNG (PR-OV2b — ⋯ dòng ở hồ sơ lớp / Học viên & Lớp): nạp hồ sơ em rồi mở đúng panel của ⋯ hồ sơ HV.
+ * OV-10b: `viec` — ⋯ dòng của TVV / CX mở cả Tạm dừng / Thôi học · Quay lại học · Kết quả thi thật (cùng panel, cùng quyền của hồ sơ).
  */
-export function SuaThongTinMotEm({ studentId, studentName, lop, onClose, onDone }: {
-  studentId: number; studentName: string; lop?: string | null; onClose: () => void; onDone: () => void;
+export function SuaThongTinMotEm({ viec = 'info', studentId, studentName, lop, onClose, onDone }: {
+  viec?: ViecQuanLy; studentId: number; studentName: string; lop?: string | null; onClose: () => void; onDone: () => void;
 }) {
   const { data, error, reload } = useApi<any>(`/students/${studentId}`, [studentId]);
   const [deXuat, setDeXuat] = useState(false);
-  if (error) return <KhungPanel tieuDe={NHAN_VIEC.info} hocVien={studentName} lop={lop} onDong={onClose}><ErrorState message={error.message} hint={error.hint} onRetry={reload} /></KhungPanel>;
-  if (!data) return <KhungPanel tieuDe={NHAN_VIEC.info} hocVien={studentName} lop={lop} onDong={onClose}><Skeleton rows={6} /></KhungPanel>;
+  if (error) return <KhungPanel tieuDe={NHAN_VIEC[viec]} hocVien={studentName} lop={lop} onDong={onClose}><ErrorState message={error.message} hint={error.hint} onRetry={reload} /></KhungPanel>;
+  if (!data) return <KhungPanel tieuDe={NHAN_VIEC[viec]} hocVien={studentName} lop={lop} onDong={onClose}><Skeleton rows={6} /></KhungPanel>;
   return (
-    <StudentManagePanel viec={deXuat ? 'de-xuat-sua' : 'info'} onClose={onClose} lop={lop} cycle={data.cycle} attempts={data.attempts ?? []} onDone={onDone}
-      student={thongTinEmCua(data)} quyen={data.viewer} onDeXuatSua={() => setDeXuat(true)} />
+    <StudentManagePanel viec={deXuat ? 'de-xuat-sua' : viec} onClose={onClose} lop={lop} cycle={data.cycle} attempts={data.attempts ?? []} onDone={onDone}
+      student={thongTinEmCua(data)} quyen={data.viewer} lopHoc={data.lopHoc ?? null} soViPhamMo={data.dauHoSo?.soViPhamMo ?? 0}
+      onDeXuatSua={() => setDeXuat(true)} />
   );
 }
 
@@ -107,6 +114,7 @@ export function thongTinEmCua(d: any): ThongTinEm {
   return {
     id: d.id, name: d.fullName, classId: d.currentClass?.id ?? null, dob: d.dob ?? null, email: d.email ?? null,
     consultantName: d.consultantName ?? null, note: d.note ?? null, status: d.status, tvv: d.tvv ?? null, tvvChon: d.tvvChon ?? null,
+    lienHe: d.lienHe ?? null,
   };
 }
 
@@ -403,6 +411,11 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
   const tvvCu: NguoiChon | null = student.tvv ? { kieu: 'tai_khoan', id: student.tvv.id, ten: student.tvv.ten } : null;
   const [tvv, setTvv] = useState<NguoiChon | null>(tvvCu);
   const [note, setNote] = useState(student.note ?? '');
+  /* OV-10b: liên hệ — không bắt buộc, trống = xoá; chỉ gửi ô đã đổi. */
+  const nhapLienHe = !!quyen.nhapLienHe;
+  const lhCu = Object.fromEntries(TRUONG_LIEN_HE.map((k) => [k, student.lienHe?.[k] ?? ''])) as Record<keyof LienHe, string>;
+  const [lh, setLh] = useState(lhCu);
+  const lhDoi = TRUONG_LIEN_HE.filter((k) => lh[k].trim() !== lhCu[k]);
   const tuanCu: string = cycle?.startWeek?.week_start ?? '';
   const [tuan, setTuan] = useState(tuanCu);
   const thiCu: string = cycle?.examDate ?? cycle?.examMonth ?? '';
@@ -433,6 +446,10 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
   if (!dob) loi.push({ khoa: 'ngay-sinh', nhan: 'Ngày sinh', lyDo: 'Bắt buộc' });
   const loiEmail = docEmail(email).loi;   // PR-OV2c: trống được, có gõ thì đúng dạng
   if (loiEmail) loi.push({ khoa: 'email', nhan: 'Email', lyDo: loiEmail });
+  for (const k of ['phone', 'parentPhone'] as const) {
+    const e = nhapLienHe ? docSoDienThoai(lh[k]).loi : null;
+    if (e) loi.push({ khoa: k, nhan: NHAN_LIEN_HE[k], lyDo: `${e[0].toUpperCase()}${e.slice(1)}` });
+  }
   if (quanLy && cycle && !tuan) loi.push({ khoa: 'tuan', nhan: 'Tuần bắt đầu', lyDo: 'Chưa chọn' });
   if (doiTarget && (target !== '' || !kck) && !laBand(target)) loi.push({ khoa: 'target', nhan: 'Target', lyDo: target ? 'Band từ 0 đến 9, bước 0.5' : 'Chưa điền — hoặc tích KCK' });
   if (doiTarget) loi.push(...dsLoi([{ khoa: 'ly-do-target', nhan: 'Lý do đổi Target', toiThieu: 1 }], { 'ly-do-target': lyDo }));
@@ -460,6 +477,7 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
         fullName, dob, email: email.trim(),
         ...(tvvId !== (student.tvv?.id ?? null) ? { consultantUserId: tvvId } : {}),
         ...(ghiChu ? { note: note || null } : {}),
+        ...(nhapLienHe ? Object.fromEntries(lhDoi.map((k) => [k, lh[k].trim() || null])) : {}),
         ...(dauVao !== undefined ? { dauVao } : {}),
       });
       xong.push('thông tin');
@@ -488,7 +506,8 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
   };
 
   const daSua = fullName !== student.name || dob !== (student.dob ?? '') || email !== (student.email ?? '') || tvv?.kieu === 'tai_khoan' && tvv.id !== student.tvv?.id
-    || (!tvv && !!student.tvv) || note !== (student.note ?? '') || tuan !== tuanCu || thi !== thiCu || target !== targetCu || kck !== kckCu || doiDauVao;
+    || (!tvv && !!student.tvv) || note !== (student.note ?? '') || tuan !== tuanCu || thi !== thiCu || target !== targetCu || kck !== kckCu || doiDauVao
+    || lhDoi.length > 0;
 
   return (
     <KhungPanel tieuDe={NHAN_VIEC.info} hocVien={studentName} lop={lop} onDong={onClose}
@@ -523,6 +542,29 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
           </Truong>
         )}
       </Khoi>
+      {nhapLienHe && (
+        <Khoi tieuDe="Liên hệ">
+          <Truong nhan={NHAN_LIEN_HE.phone} tuyChon loi={lf.loiCua(loi, 'phone')}>
+            <input className="field w-full tabular-nums" type="tel" inputMode="tel" autoComplete="off" maxLength={LIEN_HE_TOI_DA.sdt} {...lf.o(loi, 'phone')}
+              value={lh.phone} onChange={(e) => sua(setLh)({ ...lh, phone: e.target.value })} placeholder="Ví dụ: 0901 234 567" />
+          </Truong>
+          <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_12rem]">
+            <Truong nhan={NHAN_LIEN_HE.parentName} tuyChon>
+              <input className="field w-full" maxLength={LIEN_HE_TOI_DA.parentName} autoComplete="off"
+                value={lh.parentName} onChange={(e) => sua(setLh)({ ...lh, parentName: e.target.value })} placeholder="Ví dụ: Phạm Văn Long" />
+            </Truong>
+            <Truong nhan={NHAN_LIEN_HE.parentRelation} tuyChon>
+              <input className="field w-full" list="quan-he-goi-y" maxLength={LIEN_HE_TOI_DA.parentRelation} autoComplete="off"
+                value={lh.parentRelation} onChange={(e) => sua(setLh)({ ...lh, parentRelation: e.target.value })} placeholder="Ví dụ: Bố" />
+              <datalist id="quan-he-goi-y">{QUAN_HE_GOI_Y.map((x) => <option key={x} value={x} />)}</datalist>
+            </Truong>
+          </div>
+          <Truong nhan={NHAN_LIEN_HE.parentPhone} tuyChon loi={lf.loiCua(loi, 'parentPhone')}>
+            <input className="field w-full tabular-nums" type="tel" inputMode="tel" autoComplete="off" maxLength={LIEN_HE_TOI_DA.sdt} {...lf.o(loi, 'parentPhone')}
+              value={lh.parentPhone} onChange={(e) => sua(setLh)({ ...lh, parentPhone: e.target.value })} placeholder="Ví dụ: 0912 345 678" />
+          </Truong>
+        </Khoi>
+      )}
       {cycle ? (
         <Khoi tieuDe="Lộ trình đang học"
           luat={cycle.ratio
@@ -602,7 +644,8 @@ function s5(v: number | null | undefined): string { return v == null ? '' : Stri
 /** Câu lỗi máy chủ mở đầu bằng tên ô ("Email: …", "Ngày sinh: …") → ô đó. */
 function oCuaLoi(m: string): { khoa: string; nhan: string } | null {
   const o: [RegExp, string, string][] = [[/^Họ tên/, 'ho-ten', 'Họ tên'], [/^Ngày sinh/, 'ngay-sinh', 'Ngày sinh'], [/^Email/, 'email', 'Email'],
-    [/^TVV/, 'tvv', 'TVV'], [/^Dự kiến thi/, 'thi', 'Dự kiến thi'], [/^Điểm đầu vào/, 'dau-vao', 'Điểm đầu vào'], [/Target/, 'target', 'Target']];
+    [/^TVV/, 'tvv', 'TVV'], [/^Dự kiến thi/, 'thi', 'Dự kiến thi'], [/^Điểm đầu vào/, 'dau-vao', 'Điểm đầu vào'], [/Target/, 'target', 'Target'],
+    [/^SĐT em/, 'phone', NHAN_LIEN_HE.phone], [/^SĐT phụ huynh/, 'parentPhone', NHAN_LIEN_HE.parentPhone]];
   const x = o.find(([re]) => re.test(m));
   return x ? { khoa: x[1], nhan: x[2] } : null;
 }

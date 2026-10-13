@@ -1,5 +1,9 @@
 import { useState } from 'react';
-import { BoLocDoan } from '../../ui/ui.tsx';
+import { Link } from 'react-router-dom';
+import { BoLocDoan, Level } from '../../ui/ui.tsx';
+import { Nhan } from '../../ui/Nhan.tsx';
+import { useApi } from '../../lib/useApi.ts';
+import { NoiDungThongTinLop } from './ThongTinLopPanel.tsx';
 import { ClassRoster } from '../students/ClassRoster.tsx';
 import { BangDiemLopThuong } from './BangDiemLopThuong.tsx';
 import { BangCanHoTro } from './BangCanHoTro.tsx';
@@ -9,7 +13,7 @@ import { ThanhChonNhieu, useChonNhieu } from '../students/chonNhieuHocVien.tsx';
 import { XemTruocHangLoatPanel } from '../students/XemTruocHangLoatPanel.tsx';
 import type { HoSoLop } from './DauTrangLop.tsx';
 import type { QuyenDong } from './thaoTacDongHocVien.tsx';
-import { PERMISSIONS, type ViecHangLoat } from '@shared/domain/index.ts';
+import { PERMISSIONS, vaiXemHocVien, type ViecHangLoat } from '@shared/domain/index.ts';
 import { useSession } from '../../lib/session.tsx';
 
 /**
@@ -23,9 +27,11 @@ import { useSession } from '../../lib/session.tsx';
  * PR-LUI-b (06/10): Quản lý / Quản trị có nút "Chọn nhiều học viên" ở cách xem Tổng hợp — ô chọn hiện ngay trên danh sách, thanh thao tác dính đáy
  * (Lưu trữ · Kết thúc học · Huỷ chuyển lớp · Bỏ chọn), bấm một việc ra panel xem trước rồi xác nhận.
  */
-export type CheDoHocVien = 'diem' | 'lo-trinh' | 'can-ho-tro' | 'ket-qua';
+export type CheDoHocVien = 'diem' | 'lo-trinh' | 'can-ho-tro' | 'ket-qua' | 'thong-tin';
 /** Tên cách xem — cũng là chi tiết của nút "‹ Hồ sơ lớp …" khi đi từ hồ sơ lớp sang hồ sơ khác (PR-OV5b). */
-export const CHE_DO_NHAN: Record<CheDoHocVien, string> = { diem: 'Tổng hợp', 'lo-trinh': 'Lộ trình tiếp theo', 'can-ho-tro': 'Cần hỗ trợ', 'ket-qua': 'Kết quả đầu ra' };
+export const CHE_DO_NHAN: Record<CheDoHocVien, string> = {
+  diem: 'Tổng hợp', 'lo-trinh': 'Lộ trình tiếp theo', 'can-ho-tro': 'Cần hỗ trợ', 'ket-qua': 'Kết quả đầu ra', 'thong-tin': 'Thông tin lớp',
+};
 export function TabHocVienLop({ lop, cheDo: cheDoUrl, onCheDo, onDoi, onThemHocVien, onSuaThongTin, emMo = null, onDaMoEm }: {
   lop: HoSoLop; cheDo: CheDoHocVien; onCheDo: (m: CheDoHocVien) => void;
   /** OV-3b: `&em={id}` — mở sẵn hộp Lộ trình của em đó (cách xem Lộ trình tiếp theo). */
@@ -38,12 +44,22 @@ export function TabHocVienLop({ lop, cheDo: cheDoUrl, onCheDo, onDoi, onThemHocV
   const thuong = lop.programme?.scoringMode === 'ratio';
   const coLoTrinh = thuong && !lop.lienTuc;
   const soDot = lop.dai?.kqdrDot ?? 0;
-  const cheDo: CheDoHocVien = cheDoUrl === 'ket-qua' && !soDot ? 'diem' : cheDoUrl;
+  const { can, session } = useSession();
+  /*
+   * OV-10b (mockup vai mục 2, 6): TVV / CX — Tổng hợp (cột Phụ huynh thay Theo dõi) · Lộ trình tiếp theo / KQĐR đã chốt · Cần hỗ trợ (đọc) · Thông tin
+   * lớp (đọc); Admin — Tổng hợp · Thông tin lớp. QL / GV không đổi.
+   */
+  const vai = vaiXemHocVien(session?.roles);
+  const cacCheDo: CheDoHocVien[] = [
+    'diem', ...(coLoTrinh && vai !== 'admin' ? ['lo-trinh' as const] : []), ...(vai !== 'admin' ? ['can-ho-tro' as const] : []),
+    ...(soDot && vai !== 'admin' ? ['ket-qua' as const] : []), ...(vai ? ['thong-tin' as const] : []),
+  ];
+  const cheDo: CheDoHocVien = cacCheDo.includes(cheDoUrl) ? cheDoUrl : 'diem';
   const quyen: QuyenDong = {
     coTheSuaHocVien: lop.viewer.canAddStudents, coTheBaoCase: lop.viewer.canReportCase,
     coTheGhiViPham: lop.viewer.canRecordViolation, coTheNhapDiem: lop.viewer.canEnterScores, coTheChuyenTiep: lop.viewer.coTheChuyenTiep,
+    theoVai: !!vai, coTheSuaThongTin: !!lop.viewer.coTheSuaThongTin, coTheSuaThem: !!lop.viewer.coTheSuaThem,
   };
-  const { can } = useSession();
   const chon = useChonNhieu();
   const [viecChon, setViecChon] = useState<{ viec: ViecHangLoat; ids: number[] } | null>(null);
   /* Chỉ Quản lý / Quản trị (`plan.week` của lớp), chỉ cách xem Tổng hợp; lớp đã kết thúc thì mọi cờ viewer tắt nên không có nút. */
@@ -54,8 +70,7 @@ export function TabHocVienLop({ lop, cheDo: cheDoUrl, onCheDo, onDoi, onThemHocV
     <div className="space-y-2">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <BoLocDoan ariaLabel="Cách xem" value={cheDo} onChange={doiCheDo}
-          muc={[{ key: 'diem', nhan: CHE_DO_NHAN.diem }, ...(coLoTrinh ? [{ key: 'lo-trinh' as const, nhan: CHE_DO_NHAN['lo-trinh'] }] : []), { key: 'can-ho-tro', nhan: CHE_DO_NHAN['can-ho-tro'] },
-            ...(soDot ? [{ key: 'ket-qua' as const, nhan: CHE_DO_NHAN['ket-qua'], so: `${soDot} đợt` }] : [])]} />
+          muc={cacCheDo.map((k) => ({ key: k, nhan: CHE_DO_NHAN[k], ...(k === 'ket-qua' ? { so: `${soDot} đợt` } : {}) }))} />
         <span className="flex flex-wrap items-center gap-2">
           {onSuaThongTin && <button type="button" className="btn btn-ghost btn-sm min-h-[44px] sm:min-h-0" onClick={onSuaThongTin}>Sửa thông tin</button>}
           {coTheChon && (
@@ -64,7 +79,14 @@ export function TabHocVienLop({ lop, cheDo: cheDoUrl, onCheDo, onDoi, onThemHocV
           )}
         </span>
       </div>
-      {cheDo === 'lo-trinh' && coLoTrinh
+      {cheDo === 'thong-tin'
+        ? (
+          <div className="grid items-start gap-3 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
+            <section className="card px-4 py-1" aria-label="Thông tin lớp"><NoiDungThongTinLop lop={lop} chiDoc onDone={onDoi} /></section>
+            {vai === 'tvv' && <EmCuaToiOLop lop={lop} />}
+          </div>
+        )
+        : cheDo === 'lo-trinh' && coLoTrinh
         ? <BangLoTrinhTiep classId={lop.id} quyen={quyen} onDoi={onDoi} emMo={emMo} onDaMoEm={() => onDaMoEm?.()} />
         : cheDo === 'ket-qua'
         ? <BangKqdrLopFt classId={lop.id} />
@@ -85,5 +107,32 @@ export function TabHocVienLop({ lop, cheDo: cheDoUrl, onCheDo, onDoi, onThemHocV
           onClose={() => setViecChon(null)} onDone={() => { chon.bo(); setViecChon(null); onDoi(); }} />
       )}
     </div>
+  );
+}
+
+/**
+ * "Ở LỚP NÀY · HỌC VIÊN CỦA TÔI" (OV-10b, mockup vai mục 2) — TVV: số em mình phụ trách trong lớp, SOS · Case mới · Tạm dừng. Cùng nguồn với Học viên &
+ * Lớp của TVV (`/hoc-vien-lop/theo-vai`, chip = `chipHocVien`); bấm mở danh sách đã lọc theo lớp.
+ */
+function EmCuaToiOLop({ lop }: { lop: HoSoLop }) {
+  const { data } = useApi<{ rows: { id: number; status: string; lop: { id: number } | null; chuY: { sos?: number; caseMoi?: string[] } | null }[] }>('/hoc-vien-lop/theo-vai');
+  if (!data) return null;
+  const em = data.rows.filter((r) => r.lop?.id === lop.id);
+  const so = (f: (r: (typeof em)[number]) => boolean) => em.filter(f).length;
+  return (
+    <section aria-label="Ở lớp này · học viên của tôi" className="rounded-[10px] bg-[color:var(--surface-2)] px-3 py-2.5 text-[13px] text-slate-200">
+      <h2 className="m-0 mb-1.5 text-[11.5px] font-bold uppercase tracking-[.04em] text-slate-400">Ở lớp này · học viên của tôi</h2>
+      {em.length ? (
+        <>
+          <p className="m-0 flex flex-wrap items-center gap-x-2 gap-y-1">
+            <b className="font-semibold tabular-nums">{em.length} em</b>
+            <span aria-hidden className="text-slate-500">·</span><Level tone="sos3">SOS</Level><span className="tabular-nums">{so((r) => !!r.chuY?.sos)}</span>
+            <span aria-hidden className="text-slate-500">·</span><Nhan tone="wait">Case mới</Nhan><span className="tabular-nums">{so((r) => !!r.chuY?.caseMoi?.length)}</span>
+            <span aria-hidden className="text-slate-500">·</span><Nhan tone="soon">Tạm dừng</Nhan><span className="tabular-nums">{so((r) => r.status === 'inactive')}</span>
+          </p>
+          <Link to={`/hoc-vien?q=${encodeURIComponent(lop.code)}`} className="link mt-1.5 inline-flex min-h-[44px] items-center sm:min-h-0">Xem từng em ở Học viên & Lớp</Link>
+        </>
+      ) : <p className="m-0 text-slate-400">Lớp này chưa có học viên nào của bạn.</p>}
+    </section>
   );
 }

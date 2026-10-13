@@ -1,6 +1,6 @@
 import { db, theoLo, tx } from '../db.ts';
 import {
-  CO_DIEM_SQL, chuTargetKck, PERMISSIONS, TOI_DA_LUU_SUA_CA_LOP, cauMtSeDoi, cotLuoiNhap, type VanDeNhap,
+  CO_DIEM_SQL, chuTargetKck, PERMISSIONS, TOI_DA_LUU_SUA_CA_LOP, cauMtSeDoi, coONhapLienHe, cotLuoiNhap, NHAN_LIEN_HE, TRUONG_LIEN_HE, type VanDeNhap,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { chanGiaoDichNeuSapHetGio } from '../platform/hanGio.ts';
@@ -14,7 +14,7 @@ import { donKhoaGuiCu, laLopThuong } from './intake.ts';
 import { lichMtCua } from './schedule.ts';
 
 /**
- * PR-SL (Q-0310-3): SỬA THÔNG TIN CẢ LỚP — Họ tên, Ngày sinh, Email, Tuần bắt đầu, Dự kiến thi, Target, Điểm đầu vào. Mỗi dòng chỉ gửi
+ * PR-SL (Q-0310-3): SỬA THÔNG TIN CẢ LỚP — Họ tên, Ngày sinh, Email, Tuần bắt đầu, Dự kiến thi, Target, Điểm đầu vào (OV-10b: + liên hệ). Mỗi dòng chỉ gửi
  * trường ĐÃ ĐỔI. Luật kiểm là của đường sửa một em (`chuanHoaSuaHoSo`, `docTuanBatDau`, `docDuKienThi`, `docTarget`, `docDiemXuatPhat`),
  * không viết lại. Lưu: kiểm HẾT (thuộc lớp, quyền theo trường, dữ liệu) trước khi ghi, rồi MỘT giao dịch gọi lần lượt các hàm ghi sẵn có
  * (giao dịch lồng = savepoint, `db.ts`) — lỗi ở bất kỳ dòng nào cuộn lại cả lô. Cột theo `cotLuoiNhap(lopThuong)`: lớp thường không có
@@ -23,15 +23,17 @@ import { lichMtCua } from './schedule.ts';
 export type DongSua = {
   studentId: number; fullName?: string; dob?: string | null; email?: string | null; consultantUserId?: number | null; startWeek?: string;
   examDate?: string | null; target?: number | string | null; baseline?: number | null;
+  phone?: string | null; parentName?: string | null; parentRelation?: string | null; parentPhone?: string | null;
 };
 type DauVao = { rows: DongSua[]; lyDoTarget?: string };
 
 export const TOI_DA_DONG_SUA_CA_LOP = 60;
 /** Panel này không có nút "Đề xuất sửa" (khác `CHI_QL_SUA` của đường một em) — chỉ nói ai được đổi. */
 export const CHI_QL_DOI_TARGET = 'Chỉ Quản lý đổi được Target.';
-const HO_SO = ['fullName', 'dob', 'email', 'consultantUserId'] as const;
+const HO_SO = ['fullName', 'dob', 'email', 'consultantUserId', 'phone', 'parentName', 'parentRelation', 'parentPhone'] as const;
 const LO_TRINH = ['startWeek', 'examDate', 'target', 'baseline'] as const;
-const NHAN: Record<string, string> = { fullName: 'Họ tên', dob: 'Ngày sinh', email: 'Email', consultantUserId: 'TVV', startWeek: 'Tuần bắt đầu', examDate: 'Dự kiến thi', target: 'Target', baseline: 'Điểm đầu vào' };
+const LIEN_HE = new Set<string>(TRUONG_LIEN_HE);
+const NHAN: Record<string, string> = { fullName: 'Họ tên', dob: 'Ngày sinh', email: 'Email', consultantUserId: 'TVV', startWeek: 'Tuần bắt đầu', examDate: 'Dự kiến thi', target: 'Target', baseline: 'Điểm đầu vào', ...NHAN_LIEN_HE };
 
 /**
  * Em ĐANG HỌC lớp `classId` (`ids` = chỉ những em này; `null` = cả lớp) + lộ trình hiện tại (đang chạy, seq lớn nhất — như
@@ -46,7 +48,8 @@ function emVaLoTrinh(classId: number, ids: number[] | null) {
         WHERE e.class_id = ? AND e.status = 'active'`).all(classId) as any[]).map((r) => r.id as number)
     : [...new Set(ids)];
   theoLo(dsEm, (lo, ph) => {
-    for (const s of conn.prepare(`SELECT s.id, s.full_name, s.dob, s.email, s.consultant_user_id, s.consultant_name FROM students s JOIN enrollments e ON e.student_id = s.id
+    for (const s of conn.prepare(`SELECT s.id, s.full_name, s.dob, s.email, s.consultant_user_id, s.consultant_name, s.phone, s.parent_name, s.parent_relation, s.parent_phone
+        FROM students s JOIN enrollments e ON e.student_id = s.id
         WHERE e.class_id = ? AND e.status = 'active' AND s.id IN (${ph})`).all(classId, ...lo) as any[]) em.set(s.id, s);
     for (const c of conn.prepare(`SELECT * FROM learning_cycles WHERE student_id IN (${ph}) ORDER BY (status = 'active') ASC, seq ASC`)
       .all(...lo) as any[]) loTrinh.set(c.student_id, c);
@@ -78,11 +81,15 @@ export function duLieuSuaCaLop(p: Principal, classId: number) {
       examDate: (c ? c.exam_date ?? c.exam_month ?? null : null) as string | null,
       target: (c ? (c.khong_cam_ket ? chuTargetKck(c.target_score ?? null, true) : c.target_score ?? null) : null) as number | string | null,   // OV-9: "6.5 KCK"
       baseline: (c?.baseline_score ?? null) as number | null,
+      phone: (s.phone ?? null) as string | null, parentName: (s.parent_name ?? null) as string | null,
+      parentRelation: (s.parent_relation ?? null) as string | null, parentPhone: (s.parent_phone ?? null) as string | null,
     };
   }).sort((a, b) => a.fullName.localeCompare(b.fullName, 'vi'));
   return {
     lop: { id: cls.id as number, code: cls.code as string }, lopThuong: laLopThuong(cls.programme_code ?? null),
     coTheSuaTarget: can(p, PERMISSIONS.CYCLE_EDIT, { classId: cls.id }), rows,
+    /** OV-10b: cột Liên hệ — QL / Quản trị; GVCN không thấy ô nhập (chủ SP 13/10). */
+    nhapLienHe: coONhapLienHe(p.roleKeys),
     /** PR-OV2b: ô chọn TVV — TVV cùng chi nhánh lớp lên trước. */
     tvv: dsTvv(null, cls.branch_id ?? null),
   };
@@ -110,7 +117,7 @@ function kiemLo(p: Principal, classId: number, input: DauVao) {
   const dong = input.rows.map((r, i) => {
     const s = em.get(ids[i]);
     if (!s) throw badRequest(`Học viên #${r.studentId} không thuộc lớp này.`);
-    kiemKieuO(r as Record<string, unknown>, ['fullName', 'dob', 'email', 'startWeek', 'examDate'], ['target', 'baseline', 'consultantUserId'],
+    kiemKieuO(r as Record<string, unknown>, ['fullName', 'dob', 'email', 'startWeek', 'examDate', 'phone', 'parentName', 'parentRelation', 'parentPhone'], ['target', 'baseline', 'consultantUserId'],
       (k) => `${s.full_name} · ${NHAN[k] ?? k}`);
     const c = loTrinh.get(s.id) ?? null;
     const issues: VanDeNhap[] = [];
@@ -136,7 +143,7 @@ function kiemLo(p: Principal, classId: number, input: DauVao) {
     /* OV-8b: TVV cùng chi nhánh (lớp đang học = chi nhánh của em) — báo ở xem trước, cùng câu với hồ sơ. */
     if (hoSo.consultantUserId != null && Number(hoSo.consultantUserId) !== s.consultant_user_id) thu('consultantUserId', () => kiemTvvCungChiNhanh(Number(hoSo.consultantUserId), cls.branch_id));
     /* PR-OV2b: CHỈ dòng có sửa phải đủ ngày sinh (em cũ thiếu mà không đụng tới thì không chặn); email không bắt buộc (PR-OV2c). Ô gửi trống đã báo ở trên. */
-    if ([...HO_SO, ...LO_TRINH].some((k) => r[k] !== undefined)) {
+    if ([...HO_SO, ...LO_TRINH].some((k) => !LIEN_HE.has(k) && r[k] !== undefined)) {   // OV-10b: chỉ sửa liên hệ thì không đòi ngày sinh
       if (r.dob === undefined && !s.dob) issues.push({ row: i + 1, field: 'dob', message: 'Bắt buộc — em chưa có, điền khi sửa dòng này.', muc: 'loi' });
     }
     if (LO_TRINH.some((k) => r[k] !== undefined) && !c) issues.push({ row: i + 1, field: 'studentId', message: 'Học viên chưa có lộ trình.', muc: 'loi' });

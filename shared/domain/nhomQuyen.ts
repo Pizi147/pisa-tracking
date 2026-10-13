@@ -51,7 +51,7 @@ export const MO_TA_QUYEN: Record<PermissionKey, { nhom: NhomQuyenKey; moTa: stri
   'student.view': { nhom: 'hv_lop', moTa: 'Xem hồ sơ học viên.', phamVi: GV_LOP_MINH },
   'student.edit': { nhom: 'hv_lop', moTa: 'Sửa hồ sơ học viên, thêm học viên vào lớp, chuyển lớp.',
     phamVi: 'GV: chỉ GVCN, học viên lớp mình chủ nhiệm.' },
-  'student.edit_info': { nhom: 'hv_lop', moTa: 'Sửa thông tin học viên: họ tên, ngày sinh, email, TVV, dự kiến thi, điểm đầu vào.',
+  'student.edit_info': { nhom: 'hv_lop', moTa: 'Sửa thông tin học viên: họ tên, ngày sinh, email, TVV, liên hệ, dự kiến thi, điểm đầu vào.',
     phamVi: 'GV: chỉ GVCN, học viên lớp mình chủ nhiệm.' },
   'student.edit_more': { nhom: 'hv_lop', moTa: 'Sửa Target (có lý do), ghi chú; Tạm dừng / Quay lại học / Thôi học; nhập kết quả thi thật. Không mở việc học thuật.' },
   'cycle.edit': { nhom: 'hv_lop', moTa: 'Sửa Target và lộ trình của học viên.' },

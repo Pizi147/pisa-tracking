@@ -631,6 +631,8 @@ export function classRoster(p: Principal, classId: number, q?: string) {
        */
       standing: standing.get(s.id) ?? null,
       standingLine: standing.has(s.id) ? standingLine(standing.get(s.id)!) : null,
+      /** OV-10b: liên hệ — cột Phụ huynh của TVV / CX (mọi vai xem được ở hồ sơ HV). */
+      lienHe: { phone: s.phone ?? null, parentName: s.parent_name ?? null, parentRelation: s.parent_relation ?? null, parentPhone: s.parent_phone ?? null },
       /** Giữ tên cũ cho các màn đang đọc, nhưng nay lấy từ KẾT QUẢ BÀI chứ không từ case. */
       sosLevel: standing.get(s.id)?.sosLevel ?? null,
       /** OV-9: em KCK dưới kỳ vọng — chip trung tính, không SOS. */
@@ -861,6 +863,7 @@ function classOverviewThat(p: Principal, classId: number) {
       canPlanWeek: false, canAddStudents: false, canAssign: false, canAssignSubject: false, canEditProgress: false,
       editableSkills: [] as string[], isCoreTeacher: false,
       canReportCase: false, canRecordViolation: false, canEnterScores: false, coTheChuyenTiep: false,
+      coTheSuaThongTin: false, coTheSuaThem: false,
     } : {
       canPlanWeek: can(p, PERMISSIONS.PLAN_WEEK, { classId }),
       canAddStudents: can(p, PERMISSIONS.STUDENT_EDIT, { classId }),
@@ -877,6 +880,9 @@ function classOverviewThat(p: Principal, classId: number) {
       canEnterScores: editableSkills(p, classId, classSkills).length > 0,
       /** Cùng luật với `canEditProgress` (Q2) — tên riêng để nút Chuyển tiếp lớp/badge/việc đỏ dùng chung một cờ. */
       coTheChuyenTiep: can(p, PERMISSIONS.CLASS_EDIT, { classId }),
+      /** OV-10b: ⋯ dòng của Admin / TVV / CX — Sửa thông tin (`student.edit_info`), Tạm dừng / Kết quả thi thật (`student.edit_more`). */
+      coTheSuaThongTin: can(p, PERMISSIONS.STUDENT_EDIT_INFO, { classId }),
+      coTheSuaThem: can(p, PERMISSIONS.STUDENT_EDIT_MORE, { classId }),
     }),
       /** ⋮ Xoá lớp / Kết thúc lớp — CHỈ Quản trị hệ thống (PR-UX3); máy chủ kiểm lại ở từng đường. */
       coTheXoaKetThuc: can(p, PERMISSIONS.ADMIN_CONFIG, { anyScope: true }),
