@@ -131,7 +131,9 @@ export function HoTroHocVienTab() {
   }, [viec, hienThi, giu]);
   /* Thứ tự "việc tiếp": đúng thứ tự đang vẽ; dòng gộp thường đi vào từng em; bỏ việc mở trang và việc đã xong. */
   const thuTu = useMemo(() => dsNhom.flatMap((g) => g.items.flatMap((x) => (x.con && !x.gopThem ? x.con : [x]))).filter((x) => lamTaiCho(x)), [dsNhom]);
-  const daDay = useRef(false);
+  /* Địa chỉ (không `viec`) lúc mở panel bằng một bước lịch sử — đóng chỉ lùi khi bộ lọc chưa đổi, không thì mất lựa chọn lọc vừa bấm. */
+  const daDay = useRef<string | null>(null);
+  const khongViec = (p: URLSearchParams) => { const x = new URLSearchParams(p); x.delete('viec'); return x.toString(); };
   const cuon = useRef(0);
   const mo = (it: WorkItem) => {
     if (!lamTaiCho(it)) { navigate(it.href); return; }
@@ -140,14 +142,16 @@ export function HoTroHocVienTab() {
     /* Mở từ danh sách: một bước lịch sử (nút Lùi của điện thoại về danh sách); đổi việc khi panel đang mở: thay tại chỗ. */
     if (viec) setParams(next, { replace: true });
     else {
-      daDay.current = true;
+      daDay.current = khongViec(params);
       const v = vungCuon();
       if (v && window.matchMedia(MAN_HEP).matches) { cuon.current = v.scrollTop; v.scrollTo(0, 0); }
       setParams(next);
     }
   };
   const dong = () => {
-    if (daDay.current) { daDay.current = false; navigate(-1); }
+    const lui = daDay.current !== null && daDay.current === khongViec(params);
+    daDay.current = null;
+    if (lui) navigate(-1);
     else setParam('viec', null);
   };
   /* Điện thoại: danh sách hiện lại (nút "‹ Công việc" hay nút Lùi) → về đúng chỗ cuộn cũ, SAU khi vẽ (trước đó cuộn neo theo nội dung panel). */

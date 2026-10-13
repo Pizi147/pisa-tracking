@@ -50,7 +50,8 @@ export function XacNhanNhomPanel({ it, onDong, onDaLuu, onTiep }: {
   const [ghiRo, setGhiRo] = useState('');
   const [moTa, setMoTa] = useState('');
   const [cungLuc, setCungLuc] = useState(true);
-  const [v, setV] = useState<GiaTriPa | null>(null);
+  /* Form PA theo TỪNG PA quy chế (khoá id PA): chọn em mức khác thì form đổi sang PA của mức đó, chữ đã gõ của mức kia còn nguyên. */
+  const [vs, setVs] = useState<Record<number, GiaTriPa>>({});
   const [busy, setBusy] = useState(false);
   const [loiGui, setLoiGui] = useState<string | null>(null);
   const [daLuu, setDaLuu] = useState<{ soEm: number; tenPa: string | null; ngay: string } | null>(null);
@@ -58,14 +59,19 @@ export function XacNhanNhomPanel({ it, onDong, onDaLuu, onTiep }: {
   const lf = useLoiForm();
 
   const cho = (data?.em ?? []).filter((e) => e.cho);
-  const pa = data?.paChung ?? null;
-  /* Tải (lại) nhóm: chọn sẵn em còn chờ cùng mức; PA theo mức chung mới (sau khi xác nhận bớt em, em "làm riêng" có thể thành mức chung). */
+  /* Tải (lại) nhóm: chọn sẵn em còn chờ cùng mức chung (sau khi xác nhận bớt em, em "làm riêng" có thể thành mức chung). */
   useEffect(() => {
-    if (!data) return;
-    setChon(new Set(data.em.filter((e) => e.cho && !e.lamRieng).map((e) => e.caseId)));
-    setV(pa ? { ...paMoi(pa.kind), soBuoi: pa.soBuoi == null ? '' : String(pa.soBuoi), nguoi: nguoiCuaPa(pa) ?? nguoiMacDinh(pa.kind) } : null);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- theo bản tải mới
+    if (data) setChon(new Set(data.em.filter((e) => e.cho && !e.lamRieng).map((e) => e.caseId)));
   }, [data]);
+  const emChon = cho.filter((e) => chon.has(e.caseId));
+  const muc = (e: EmNhom) => (e.pa ? `${e.pa.kind}|${e.pa.mocChu}` : '-');
+  /* Mức chuẩn của lựa chọn: mức chung nếu có em mức chung được chọn, không thì em đầu tiên; em lệch mức → không gửi (máy chủ chỉ kiểm trong một lô). */
+  const chuan = emChon.find((e) => !e.lamRieng) ?? emChon[0] ?? null;
+  const lech = chuan ? emChon.filter((e) => muc(e) !== muc(chuan)) : [];
+  const pa = chuan ? chuan.pa : data?.paChung ?? null;
+  const v: GiaTriPa | null = pa
+    ? vs[pa.id] ?? { ...paMoi(pa.kind), soBuoi: pa.soBuoi == null ? '' : String(pa.soBuoi), nguoi: nguoiCuaPa(pa) ?? nguoiMacDinh(pa.kind) }
+    : null;
 
   const dongTieuDe = `${it.tieuDe}`;
   const ngCanh = data ? (
@@ -80,7 +86,7 @@ export function XacNhanNhomPanel({ it, onDong, onDaLuu, onTiep }: {
   ) : null;
 
   if (error) return <KhungPanel tieuDe={dongTieuDe} onDong={onDong}><ErrorState message={error.message} hint={error.hint} onRetry={reload} /></KhungPanel>;
-  if (!data || (pa && !v)) return <KhungPanel tieuDe={dongTieuDe} onDong={onDong}><div className="pt-3"><Skeleton rows={6} /></div></KhungPanel>;
+  if (!data) return <KhungPanel tieuDe={dongTieuDe} onDong={onDong}><div className="pt-3"><Skeleton rows={6} /></div></KhungPanel>;
 
   const causes = issuesForTopic(data.kyNang.topic, data.lop.ct);
   const coPa = !!pa && cungLuc;
@@ -99,8 +105,9 @@ export function XacNhanNhomPanel({ it, onDong, onDaLuu, onTiep }: {
     lf.bam();
     setLoiGui(null);
     if (loi.length > 0 || !n) return;
+    if (lech.length) { setLoiGui(`${lech.map((e) => e.ten).join(', ')}: PA theo quy chế khác mức các em còn lại — bỏ chọn, xác nhận riêng.`); return; }
     setBusy(true);
-    const dsChon = cho.filter((e) => chon.has(e.caseId)).map((e) => e.caseId);
+    const dsChon = emChon.map((e) => e.caseId);
     const paGui = coPa && v && pa ? (() => {
       const { description, soBuoi } = paPayload(v);
       return { description, soBuoi, ...(khacNguoi(v.nguoi, nguoiCuaPa(pa)) ? datLaiNguoi(v.nguoi) : {}) };
@@ -223,7 +230,7 @@ export function XacNhanNhomPanel({ it, onDong, onDaLuu, onTiep }: {
                 {cungLuc && (
                   <>
                     <OKhoa nhan="Loại PA" chu={pa.ten} sau="theo quy chế" phu={`Kết thúc theo quy chế: ${pa.mocChu}`} />
-                    <FormPa phang v={v} dat={(p) => setV((x) => (x ? { ...x, ...p } : x))} lf={lf} loi={loiPa} toiThieu={15}
+                    <FormPa phang v={v} dat={(p) => setVs((m) => ({ ...m, [pa.id]: { ...v, ...p } }))} lf={lf} loi={loiPa} toiThieu={15}
                       ngay={<NgayKhoa chu={`Tuần này · ${tuanLich(homNay, homNay)}`} />}
                       cuoi={<p className="m-0 text-xs text-slate-500">Áp chung cho {n} em đã chọn; sửa riêng từng em sau trong Ngăn Case.</p>} />
                   </>
