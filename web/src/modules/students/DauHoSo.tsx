@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { chuTamDung, chuTuanHoc, deadlineView, type DeadlineKind, type TheYeuCauDto } from '@shared/domain/index.ts';
 import { TargetText } from '../../ui/ui.tsx';
 import { KetQuaDot } from '../../ui/KetQuaDot.tsx';
+import { ChipDuoiKck } from '../../ui/KetQuaDot.tsx';
 import { useApi } from '../../lib/useApi.ts';
 import { TheYeuCau } from '../duyet/TheYeuCau.tsx';
 import { IconCanhBao, IconGap, IconTamDung } from '../../ui/BieuTuong.tsx';
@@ -29,8 +30,8 @@ export type Viec = {
  */
 export function DongThongTin({ tt }: { tt: any }) {
   if (!tt?.lop) return <p className="mb-0 mt-1 text-[12.5px] text-slate-400">Chưa xếp lớp</p>;
-  const target = tt.target !== null && tt.target !== undefined
-    && <span key="tg">Target <b><TargetText band={tt.target === 'KCK' ? null : tt.target} kck={tt.target === 'KCK'} /></b></span>;
+  const target = ((tt.target !== null && tt.target !== undefined) || tt.kck)   // OV-9: "6.5 · KCK" · "— · KCK"
+    && <span key="tg">Target <b><TargetText band={tt.target} kck={tt.kck} /></b></span>;
   const muc: ReactNode[] = [
     <b key="lop">{tt.lop}</b>,
     tt.loTrinh && <b key="lt">{tt.loTrinh}</b>,
@@ -201,9 +202,12 @@ export function BonO({ o, homNay, onDot, onKn, onYThuc, kyNangHref }: {
   const h = o.hocThuat;
   const y = o.yThuc;
   const s = o.sapToi;
+  /* OV-9: em KCK có Target thì có kỳ vọng như thường; chỉ em KCK CHƯA có Target (không kỳ vọng) mới hiện OVR trơn. */
+  const kckKhongKyVong = k.kck && !!kq && !kq.kckDuoi && kq.sos === null;
   const giaTriKq = !kq ? '—'
     : k.ratio ? (kq.phanTram !== null ? `Final Test ${kq.phanTram}%` : kq.dat === null ? `${kq.coDiem}/${kq.yeuCau} môn có điểm` : `${kq.yeuCau - (kq.soMonChuaDat ?? 0)}/${kq.yeuCau} môn đạt`)
-    : k.kck ? null
+    : kq.kckDuoi ? <ChipDuoiKck />
+    : kckKhongKyVong ? null
     : kq.sos ? <KetQuaDot coDiem={kq.coDiem} yeuCau={kq.yeuCau} dat={kq.dat} sos={kq.sos} chot={kq.chot} />   /* G1: một câu chung, giữ "tạm thời" + viền đứt */
     : kq.dat ? <span className="text-ok">Đạt kỳ vọng</span> : 'Chưa đủ điểm';
   /* Chưa có đợt nào chấm xong (kq null) mà vẫn có kỹ năng "dưới kỳ vọng" từ bảng Học thuật: không có tên đợt để ghi → không vẽ dòng này (trước đây sập cả hồ sơ). */
@@ -220,7 +224,7 @@ export function BonO({ o, homNay, onDot, onKn, onYThuc, kyNangHref }: {
   const phuKq = !kq ? 'chưa có điểm nào'
     : k.ratio ? (k.huong ? <>{k.huong}{k.duoi?.length ? <> · không đạt: {k.duoi.map((d: any) => d.ngan).join(' · ')}</> : null}</>
       : k.duoi?.length ? <>Không đạt: {k.duoi.map((d: any) => d.ngan).join(' · ')}</> : null)
-    : k.kck ? 'KCK · không đặt kỳ vọng MT'
+    : kckKhongKyVong ? 'KCK · chưa có Target'
     : kq.sos && kq.coDiem < kq.yeuCau ? duoi   /* KetQuaDot đã ghi "n/4 kỹ năng" */
     : <>{kq.coDiem}/{kq.yeuCau} phần có điểm{duoi && <> · {duoi}</>}</>;
   const gap = h.dong[0];
@@ -228,7 +232,7 @@ export function BonO({ o, homNay, onDot, onKn, onYThuc, kyNangHref }: {
     <div className="grid grid-cols-2 gap-2.5 min-[760px]:grid-cols-4">
       <O nhan="Kết quả gần nhất" tren={kq?.nhan} phu={phuKq} title="Mở đợt Test này ở bảng Học thuật" phuNgoai={!!kyNangHref && !!k.duoi?.length}
         onClick={kq ? () => onDot(kq.attemptId) : undefined}>
-        {k.kck && kq
+        {kckKhongKyVong
           ? <span className="rounded-md border px-2 text-[15px] leading-6 tabular-nums text-slate-300" style={{ borderColor: 'var(--line-strong)' }}>OVR {k.overall !== null ? k.overall.toFixed(1) : '—'}</span>
           : giaTriKq}
       </O>

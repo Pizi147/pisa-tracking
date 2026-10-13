@@ -57,7 +57,7 @@ export function hanhTrinhHocVien(p: Principal, studentId: number, giaiDoanMuon: 
   theoLo(moiCycleIds, (lo, ph) => {
     attemptRows.push(...conn.prepare(
       `SELECT a.*, c.code AS class_code, c.programme_code AS class_programme, pr.week_start AS week_start,
-              (SELECT cy.route FROM learning_cycles cy WHERE cy.id = a.cycle_id) AS route
+              (SELECT cy.route FROM learning_cycles cy WHERE cy.id = a.cycle_id) AS route, (SELECT cy.khong_cam_ket FROM learning_cycles cy WHERE cy.id = a.cycle_id) AS cy_kck
          FROM assessment_attempts a
          LEFT JOIN classes c ON c.id = a.class_id
          LEFT JOIN report_periods pr ON pr.id = a.planned_period_id

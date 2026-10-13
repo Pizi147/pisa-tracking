@@ -94,11 +94,11 @@ export function chiaLo<T>(ds: readonly T[], co: number): T[][] {
 }
 
 /**
- * Q29-1 (PR-KCK): ô Target ghi `KCK` / `-` / "không cam kết" = học viên KHÔNG CAM KẾT đầu ra → không kỳ vọng MT, không SOS.
+ * Q29-1 (PR-KCK): ô Target ghi `KCK` / `-` / "không cam kết" = học viên KHÔNG CAM KẾT đầu ra (OV-9: dấu riêng — Target giữ, có kỳ vọng; không SOS).
  * KHÁC ô trống (= chưa có target, vẫn có việc "Điền target"). Dùng chung cho nhập học viên, sửa target, Đề xuất sửa.
  */
 export const KCK = 'KCK';
-export const GIAI_THICH_KCK = 'Không cam kết đầu ra — không tính SOS, dưới kỳ vọng chỉ mở Case nhẹ cho GV';
+export const GIAI_THICH_KCK = 'Không cam kết đầu ra — không tính SOS';
 export const laKck = (v: unknown): boolean => {
   const s = String(v ?? '').trim();
   return /^[-–—]$/.test(s) || ['kck', 'khong cam ket'].includes(chuanTieuDe(s));

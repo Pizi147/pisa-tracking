@@ -223,8 +223,8 @@ export function cauTomTat(i: DauVaoCau): ManhCau[] {
   else if (k.ratio) {
     const dau = k.phanTram !== null ? `${k.dau} ${k.phanTram}%` : `${k.dau} ${k.soDat}/${k.soMon} môn đạt`;
     m1 = { chu: k.monTruot.length ? `${dau}: không đạt ${noiVa(k.monTruot)}` : dau, tone: k.monTruot.length ? 'warn' : null };
-  } else if (k.kck && k.kckDuoi) m1 = { chu: voiHoTro(`${k.dau} dưới kỳ vọng · KCK`), tone: null };   // OV-9: không SOS, không màu
-  else if (k.kck && k.dat === null && !k.sos) m1 = { chu: voiHoTro(k.overall !== null ? `${k.dau} OVR ${k.overall.toFixed(1)}` : k.dau), tone: null };   // KCK chưa có Target
+  } else if (k.kck && k.kckDuoi) m1 = { chu: voiHoTro(`${k.dau} dưới kỳ vọng${d?.loai === 'kck' ? '' : ' · KCK'}`), tone: null };   // OV-9: không SOS, không màu; mảnh 0 đã nói KCK thì không lặp
+  else if (k.kck && k.sos === null && !k.dat) m1 = { chu: voiHoTro(k.overall !== null ? `${k.dau} OVR ${k.overall.toFixed(1)}` : k.dau), tone: null };   // KCK chưa có Target (không kỳ vọng)
   else if (k.sos) m1 = { chu: voiHoTro(`${k.dau} SOS ${k.sos}${!(k.chot ?? (k.coDiem === undefined || k.coDiem >= k.soMon)) ? ' tạm thời' : ''}`), tone: toneSos(k.sos) };
   else if (k.dat) m1 = { chu: voiHoTro(`${k.dau} đạt kỳ vọng`), tone: null };
   else m1 = { chu: voiHoTro(`${k.dau} chưa đủ điểm`), tone: null };

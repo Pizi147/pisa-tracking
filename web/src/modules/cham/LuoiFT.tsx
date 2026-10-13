@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { Empty, Info, Level, Status, Th } from '../../ui/ui.tsx';
 import { NhanCu } from '../../ui/OMt.tsx';
+import { ChipDuoiKck } from '../../ui/KetQuaDot.tsx';
 import { DeadlinePill, KHOA_HOAN_TAT_HINT, suaDuoc, useSaveScore, type Cell } from '../fasttrack/ScoreEntry.tsx';
 import { ODiemMt } from '../fasttrack/HopNhapDiem.tsx';
 import {
@@ -352,7 +353,8 @@ function SheetRow({ row, lop, active, cot, tuanDangXem, onReload, gvMacDinh, moS
           ) : (
             /* OV-1c: lượt CHỐT (đủ điểm, hoặc kỹ năng thiếu đã dời / huỷ / Không dự thi) mới có mức SOS — cờ của máy chủ, không suy từ số ô.
                Chưa chốt mà đã có SOS → chip "SOS tạm · a/4" vàng viền đứt (mockup 11/10). */
-            row.result.chot && row.result.sosLevel !== null ? <Level tone={sosTone(row.result.sosLevel)}>{sosLabel(row.result.sosLevel)}</Level>
+            row.result.kckDuoi ? <ChipDuoiKck />   /* OV-9: em KCK dưới kỳ vọng — chip trung tính, không SOS */
+              : row.result.chot && row.result.sosLevel !== null ? <Level tone={sosTone(row.result.sosLevel)}>{sosLabel(row.result.sosLevel)}</Level>
               : row.result.provisional && (row.result.sosLevel ?? 0) > 0
                 ? <Level tone="warn" dut title={`SOS tạm thời: mới có ${row.result.scoredRequired}/${row.result.required.length} kỹ năng`}>
                   SOS tạm · {row.result.scoredRequired}/{row.result.required.length}</Level>

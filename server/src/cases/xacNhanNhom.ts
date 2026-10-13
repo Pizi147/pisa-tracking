@@ -39,7 +39,7 @@ function docIds(v: unknown): number[] {
 /** MỘT câu cho cả nhóm: Case · em · lớp của lượt (như dòng việc) · lượt · điểm kỹ năng · PA quy chế chờ xác nhận (đầu tiên, không phải Bổ trợ). */
 function napNhom(ids: number[]) {
   const rows = db().prepare(
-    `SELECT sc.id, sc.topic, sc.sos_level, sc.urgency, sc.status, sc.title, sc.category, sc.cycle_id, sc.attempt_id,
+    `SELECT sc.id, sc.topic, sc.sos_level, sc.kck, sc.urgency, sc.status, sc.title, sc.category, sc.cycle_id, sc.attempt_id,
             COALESCE(sc.student_id, a.student_id) AS sid, s.full_name,
             COALESCE(a.class_id, cur.class_id) AS lop, COALESCE(ac.code, cc.code) AS lop_code, COALESCE(ac.programme_code, cc.programme_code) AS ct,
             a.kind AS attempt_kind, a.attempt_no, a.target_at_attempt, a.cycle_id AS a_cycle_id, cy.route,
@@ -100,7 +100,7 @@ export function nhomXacNhan(p: Principal, idsVao: unknown) {
     caseId: r.id as number, studentId: r.sid as number, ten: r.full_name ?? 'Học viên',
     band: r.band ?? null, raw: r.raw_score ?? null, total: r.raw_total ?? null,
     kyVong: thuong ? null : expectationFor(r.target_at_attempt ?? null, r.attempt_no ?? 1, routeCuaLuot({ cycle_id: r.a_cycle_id, route: r.route })),
-    sos: r.sos_level ?? null, pa: paCua(r), lamRieng: mucCua(r) !== chung, cho: cho.has(r.id),
+    sos: r.sos_level ?? null, kck: !!r.kck, pa: paCua(r), lamRieng: mucCua(r) !== chung, cho: cho.has(r.id),   // OV-9: Case nhẹ
   }));
   const paChung = em.find((e) => !e.lamRieng)?.pa ?? null;
   return {

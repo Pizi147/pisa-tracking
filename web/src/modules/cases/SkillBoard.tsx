@@ -112,7 +112,7 @@ export type Row = {
   /** PR-VAI-b (G5): id lượt của `bandAttemptNo` — liên kết hồ sơ Mock cuộn tới kỹ năng. */
   bandAttemptId?: number | null;
   expectation: number | null; missed: boolean | null;
-  /** PR-S3F #5: lộ trình KCK (không cam kết) — `missed` null vì không có kỳ vọng, KHÔNG phải "đạt". */
+  /** PR-S3F #5 + OV-9: lộ trình có dấu KCK — có Target thì có kỳ vọng (dưới kỳ vọng tô trung tính); chưa có Target thì `missed` null, KHÔNG phải "đạt". */
   kck?: boolean;
   /** Còn thiếu bao nhiêu để đạt kỳ vọng CỦA CHÍNH ĐỢT ĐÓ — đây là dấu ± hiện mặc định. */
   gap: number | null;
@@ -635,7 +635,7 @@ export function DongMt({ row }: { row: Row }) {
         : `MT${row.bandAttemptNo}`) : ''}
       {row.ratio
         ? (row.missed === false ? ' · đạt' : row.missed === true ? ' · chưa đạt' : '')
-        : row.kck ? ' · KCK' : row.expectation !== null ? ` · kỳ vọng ${fmtBand(row.expectation)}` : ''}
+        : `${row.expectation !== null ? ` · kỳ vọng ${fmtBand(row.expectation)}` : ''}${row.kck ? ' · KCK' : ''}`}
     </>
   );
 }
@@ -662,7 +662,7 @@ function scoreToneFamily(row: Row): ScoreTone {
     return row.missed ? 'rose' : 'emerald';
   }
   if (row.expectation === null) return 'slate';
-  if (row.band < row.expectation) return 'rose';
+  if (row.band < row.expectation) return row.kck ? 'slate' : 'rose';   // OV-9: em KCK dưới kỳ vọng — không đỏ
   if (row.band === row.expectation) return 'sky';
   return 'emerald';
 }

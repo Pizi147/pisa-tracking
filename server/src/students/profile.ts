@@ -555,7 +555,7 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
   const attemptRows = selected
     ? conn
       .prepare(
-        `SELECT a.*, c.code AS class_code, pr.code AS period_code, pr.week_start, pr.week_end AS period_end, (SELECT cy.route FROM learning_cycles cy WHERE cy.id = a.cycle_id) AS route,
+        `SELECT a.*, c.code AS class_code, pr.code AS period_code, pr.week_start, pr.week_end AS period_end, (SELECT cy.route FROM learning_cycles cy WHERE cy.id = a.cycle_id) AS route, (SELECT cy.khong_cam_ket FROM learning_cycles cy WHERE cy.id = a.cycle_id) AS cy_kck,
                 ${LUOT_HUY_HET_SQL('a')} AS huyHet
            FROM assessment_attempts a
            LEFT JOIN classes c ON c.id = a.class_id

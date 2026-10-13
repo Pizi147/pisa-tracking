@@ -101,7 +101,7 @@ export function standingLine(s: Standing): string {
   const unit = ratio ? 'môn' : 'kỹ năng';
   let head: string;
   if (s.kckDuoi) {
-    head = `${s.attemptLabel}: ${DUOI_KY_VONG_KCK.toLowerCase()}`;   // OV-9: không SOS
+    head = `${s.attemptLabel}: ${DUOI_KY_VONG_KCK}`;   // OV-9: không SOS
   } else if (s.sosLevel === null) {
     head = s.attemptId === null
       ? (ratio ? 'Chưa có kết quả trong khoá này' : 'Chưa có kết quả trong lộ trình này')

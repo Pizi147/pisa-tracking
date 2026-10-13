@@ -201,7 +201,7 @@ export async function runPrNtTests(t: YThucTestKit) {
     assert(tt.thiIelts === '05/2027', JSON.stringify(tt));
     conn.prepare("UPDATE learning_cycles SET khong_cam_ket = 1, target_score = NULL, exam_month = NULL WHERE id = ?").run(em.cid);
     const kck = prof.studentProfile(P.admin, em.sid).dauHoSo.thongTin;
-    assert(kck.target === 'KCK' && kck.thiIelts === null, JSON.stringify(kck));
+    assert(kck.target === null && kck.kck === true && kck.thiIelts === null, JSON.stringify(kck));   // OV-9: Target và dấu KCK tách ("— · KCK")
   });
 
   // ------------------------------------------------------------------ NT-6 (chủ sản phẩm 04/10): lên lớp thường mang Target + Dự kiến thi

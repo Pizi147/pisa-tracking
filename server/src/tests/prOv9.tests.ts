@@ -20,6 +20,7 @@ export async function runPrOv9Tests(t: YThucTestKit) {
   const { migratePrOv9 } = await import('../migrate/prOv9.ts');
   const tongHop: any = await import('../phanTich/tongHop.ts');
   const { demoToday } = await import('../demoConfig.ts');
+  const sosAuto: any = await import('../cases/sosAuto.ts');
   const { xoaNho } = await import('../platform/nguCanhRequest.ts');
   console.log('\nPR-OV9 · KCK nhẹ: dấu riêng, Target giữ, Case nhẹ');
 
@@ -127,11 +128,20 @@ export async function runPrOv9Tests(t: YThucTestKit) {
     assert(!ql.some((i) => i.caseId === c.id && i.urgency === 'overdue'), 'QL thấy quá hạn');
   });
 
+  check('OV9 (3) · GV xác nhận nguyên nhân Case nhẹ (như Case thường) → Đang xử lý, hết việc chờ nguyên nhân; vẫn 0 PA, không hạn', () => {
+    const c = caseCua(nhe.sid).find((x) => x.category === 'reading');
+    sosAuto.xacNhanCase(loadPrincipal(c.owner_user_id), c.id, { primaryCode: d.issuesForTopic('reading', null)[0].code, urgency: 'attention', moTa: 'Em đọc chậm, chưa quen dạng bài.' });
+    const sau = one('SELECT status, han_xac_nhan, kck FROM sos_cases WHERE id = ?', c.id);
+    assert(sau.status === 'in_progress' && sau.han_xac_nhan === null && sau.kck === 1, JSON.stringify(sau));
+    assert(n('SELECT COUNT(*) n FROM case_interventions WHERE case_id = ?', c.id) === 0, 'xác nhận Case nhẹ sinh PA');
+    assert(!sosCaseState(c.id).awaitingCause, 'vẫn chờ nguyên nhân');
+  });
+
   check('OV9 (3) · hồ sơ: câu tóm tắt "Dưới kỳ vọng · KCK", không SOS, không đỏ; Target "6.5" + KCK', () => {
     xoaNho();
     const h = studentProfile(P.admin, nhe.sid).dauHoSo;
     const chu = h.tomTat.map((m: any) => m.chu).join(' | ');
-    assert(/dưới kỳ vọng · KCK/i.test(chu) && !/SOS \d/.test(chu), chu);
+    assert(/^KCK/.test(h.tomTat[0].chu) && /MT1 dưới kỳ vọng/.test(chu) && !/SOS \d/.test(chu), chu);
     assert(!h.tomTat.some((m: any) => m.tone === 'danger' || /^sos/.test(m.tone ?? '')), JSON.stringify(h.tomTat));
     assert(h.thongTin.target === 6.5 && h.thongTin.kck === true, JSON.stringify({ t: h.thongTin.target, k: h.thongTin.kck }));
   });
@@ -168,6 +178,33 @@ export async function runPrOv9Tests(t: YThucTestKit) {
     assert(cs.length === 3 && cs.every((c) => c.kck === 0 && c.han_xac_nhan !== null && c.sos_level === 3), JSON.stringify(cs.map((c) => [c.kck, c.han_xac_nhan, c.sos_level])));
     assert(n(`SELECT COUNT(*) n FROM case_interventions WHERE preset = 1 AND case_id IN (SELECT id FROM sos_cases WHERE student_id = ?)`, x.sid) === 3, 'thiếu PA quy chế');
   });
+
+  {
+    const regular: any = await import('../normal/regular.ts');
+    const fou = t.classId('MB FOU 15');
+    /** Em lớp thường, bài Giữa khoá (tuần đã qua — QL xếp tay như bộ demo LT2a), điểm /20 theo môn. */
+    const emThuong = (ten: string, target: string, diem: Record<string, number>) => {
+      intake.commitIntake(P.admin, { classId: fou, rows: [{ fullName: ten, target, email: 'ov9@demo.test', dob: '2010-01-01' }], idempotencyKey: `ov9-${ten}` });
+      const sid = one('SELECT id FROM students WHERE full_name = ?', ten).id as number;
+      regular.planRegularTests(P.mbManager, fou, { studentIds: [sid], kinds: ['progress'] });
+      const pt = one(`SELECT id FROM assessment_attempts WHERE student_id = ? AND kind = 'progress' ORDER BY id DESC LIMIT 1`, sid).id as number;
+      for (const [k, v] of Object.entries(diem)) regular.saveRegularScore(P.admin, pt, k, { score: v, total: 20 });
+      return { sid, pt };
+    };
+    const dat = { listening: 18, reading: 18, writing: 18, speaking: 18 };
+    check('OV9 (3) · lớp thường: em KCK trượt Progress Test → Case nhẹ (kck, không hạn, không PA Bổ trợ), không Báo PH; em thường vẫn PA Bổ trợ + Báo PH', () => {
+      const k = emThuong('OV9 Thường KCK', '-', { ...dat, reading: 8 });
+      const ck = caseCua(k.sid);
+      assert(ck.length === 1 && ck[0].kck === 1 && ck[0].han_xac_nhan === null, JSON.stringify(ck.map((c) => [c.category, c.kck, c.han_xac_nhan])));
+      assert(n('SELECT COUNT(*) n FROM case_interventions WHERE case_id = ?', ck[0].id) === 0, 'Case nhẹ lớp thường có PA');
+      assert(n(`SELECT COUNT(*) n FROM sos_coordination_actions WHERE attempt_id = ? AND kind = 'bao_ph_tvv' AND status = 'pending'`, k.pt) === 0, 'em KCK còn Báo PH');
+      const th = emThuong('OV9 Thường Có Target', '', { ...dat, reading: 8 });
+      const ct = caseCua(th.sid);
+      assert(ct.length === 1 && ct[0].kck === 0 && ct[0].han_xac_nhan !== null, JSON.stringify(ct.map((c) => [c.kck, c.han_xac_nhan])));
+      assert(n(`SELECT COUNT(*) n FROM case_interventions WHERE case_id = ? AND kind = 'bo_tro'`, ct[0].id) === 1, 'em thường mất PA Bổ trợ');
+      assert(n(`SELECT COUNT(*) n FROM sos_coordination_actions WHERE attempt_id = ? AND kind = 'bao_ph_tvv' AND status = 'pending'`, th.pt) === 1, 'em thường mất Báo PH');
+    });
+  }
 
   check('OV9 (5) · lệnh chuyển: ô Target "6.5 kck" hợp lệ (Target + KCK); "KCK" vẫn được; MucTieuLenh tách số + dấu', () => {
     const o = d.docOTarget('6,5 kck');
