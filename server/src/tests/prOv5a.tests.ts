@@ -25,7 +25,11 @@ export async function runPrOv5aTests(t: YThucTestKit) {
 
   const thu = <T>(fn: () => T): T => {
     conn.exec('BEGIN IMMEDIATE');
-    try { return fn(); } finally { conn.exec('ROLLBACK'); xoaNho(); }
+    try { return fn(); } catch (e) {
+      /* Lỗi lạ (không phải assert): kèm 3 dòng vị trí — bộ kiểm chỉ in message. */
+      if (e instanceof TypeError) e.message += ` @ ${String(e.stack).split('\n').slice(1, 4).map((x) => x.trim()).join(' | ')}`;
+      throw e;
+    } finally { conn.exec('ROLLBACK'); xoaNho(); }
   };
   const all = (sql: string, ...a: unknown[]) => conn.prepare(sql).all(...a) as any[];
   const one = (sql: string, ...a: unknown[]) => all(sql, ...a)[0];
