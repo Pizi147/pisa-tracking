@@ -171,6 +171,8 @@ export default function MockDetailPage() {
 
   const d = data;
   const cancelled = d.status === 'cancelled';
+  /* OV-11e (TE-12): lượt chưa tới tuần (chưa kỹ năng nào tới tuần thi) thì không có "Nhập điểm" — lưới tuần đó chưa mở. */
+  const daToiTuan = [d.period?.weekStart, ...d.skillSchedule.map((r) => r.weekStart)].some((w) => !!w && w.slice(0, 10) <= mondayOfDate(homNay));
   /** PR-MT0: kết luận MT0 đủ điểm — chip SOS hiển thị, hoặc `MT0 ✓` (cùng chữ Chuyển tiếp lớp, lưới Nhập điểm). */
   const ketQuaMt0 = d.mt0 && d.result.complete
     ? (d.mt0.sos.length ? <>{d.mt0.sos.map((x) => <Nhan key={x.skill} tone="bad">{chipSosMt0(x)}</Nhan>)}</> : <Nhan tone="ok">MT0 ✓</Nhan>)
@@ -270,9 +272,7 @@ export default function MockDetailPage() {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Link className="btn min-h-[44px] no-underline sm:min-h-0" to={`/hoc-vien/${d.student.id}`}>Hồ sơ học viên</Link>
-          {/* OV-11e (TE-12): lượt chưa tới tuần (chưa kỹ năng nào tới tuần thi) thì không có "Nhập điểm" — lưới tuần đó chưa mở. */}
-          {d.classId && d.viewer.editableSkills.length > 0
-            && [d.period?.weekStart, ...d.skillSchedule.map((r) => r.weekStart)].some((w) => !!w && w.slice(0, 10) <= mondayOfDate(homNay)) && (
+          {d.classId && d.viewer.editableSkills.length > 0 && daToiTuan && (
             /* R16 — mở lưới cả lớp đúng TUẦN của đợt đang xem, không phải tuần hôm nay. */
             <Link className="btn min-h-[44px] no-underline sm:min-h-0"
               to={d.mt0 ? `/nhap-diem/${d.classId}?kind=mt0${d.period ? `&periodId=${d.period.id}` : ''}`

@@ -119,7 +119,7 @@ export async function runPrDlTests(t: YThucTestKit) {
   /* OV-11a: ảnh mới — `moi` đổi ĐÚNG một hàng (Lý Minh Châu MT2: bài thi bù S chưa điểm → hết khoá "hoàn tất", TE-1: hoanTat / khoa / canEdit /
    * viec); `tuan` chỉ lệch id (phép kiểm lớp thường chạy trước thêm một em). Đã so JSON từng trường bản cũ ↔ mới. */
   /* OV-11e (Q8, chỉ `moi`): em thử S3F (3) ở MB FT 101 — lượt CHỐT SẴN rồi mới tích KCK — giữ KCK lúc chốt (`kck_at_attempt` = 0), lượt dưới kỳ vọng
-   * lại có `sosLevel` như trước OV-9. Đặt `kck_at_attempt` NULL cho lượt của lớp (đọc cờ hiện tại như trước) ra đúng băm cũ 184be8d29c1e33ca. */
+   * lại có `sosLevel` như trước OV-9. Đặt `kck_at_attempt` NULL cho lượt của lớp (đọc cờ hiện tại như trước) ra đúng băm cũ 184be8d29c1e33ca (đã đo 14/10). */
   const ANH_CHUP = { tuan: '42bdce7893ef63f1', moi: 'f7580e81ed878fb5' };
   /* Mã cố ý độc lập với hàm: điều kiện lọc tuần của bản trước refactor, viết lại bằng SQL. */
   const idsTuan = (periodId: number) => (conn.prepare(
@@ -147,8 +147,6 @@ export async function runPrDlTests(t: YThucTestKit) {
   check('DL-2 classScoreSheet theo tuần: cùng kết quả như trước refactor (ảnh chụp); số/null và {theo:"tuan"} như nhau', () => {
     const cu = svc.classScoreSheet(QL, LOP, pid, TODAY);
     const moi = svc.classScoreSheet(P.lrTeacher, LOP, null, TODAY);
-    /* TAM-OV11E */ conn.exec('SAVEPOINT tam_ov11e'); conn.prepare('UPDATE assessment_attempts SET kck_at_attempt = NULL WHERE class_id = ?').run(LOP);
-    /* TAM-OV11E */ console.log('TAM-OV11E moi khi kck_at_attempt NULL:', bam(svc.classScoreSheet(P.lrTeacher, LOP, null, TODAY))); conn.exec('ROLLBACK TO tam_ov11e'); conn.exec('RELEASE tam_ov11e');
     assert(bam(cu) === ANH_CHUP.tuan && bam(moi) === ANH_CHUP.moi, `ảnh chụp lệch: tuan=${bam(cu)} moi=${bam(moi)}`);
     assert(idsCua(cu) === idsTuan(pid), `${idsCua(cu)} ≠ ${idsTuan(pid)}`);
     assert(!cu.rows.some((r: any) => r.attemptId === binh.aid), 'lượt tuần NULL không thuộc tuần nào');

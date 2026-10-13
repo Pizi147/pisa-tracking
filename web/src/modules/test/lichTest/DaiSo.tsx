@@ -30,7 +30,7 @@ export function DaiSo({ tq, tenTuan, onBam }: {
 }
 
 const Don = ({ children }: { children: ReactNode }) => <span className="text-xs font-normal text-slate-400">{children}</span>;
-const Khac = ({ n }: { n: number }) => <span className="block text-[11px] font-normal leading-tight text-slate-500">{n} bài của GV khác</span>;
+const Khac = ({ n }: { n: number }) => <span className="block text-xs font-normal leading-tight text-slate-500">{n} bài của GV khác</span>;
 
 /** Một ô số: nhãn nhỏ trên, số to dưới (`tabular-nums`). `mo` = số 0 → chữ phụ, vẫn bấm được. */
 function O({ nhan, children, onClick, mo, mau }: {

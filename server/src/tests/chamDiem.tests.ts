@@ -653,7 +653,8 @@ export async function runChamDiemTests(t: YThucTestKit) {
       assert(q.tong === hang.reduce((n: number, l: any) => n + (l.phan ? l.tongCuaToi : l.tong), 0), `${ten}: tổng = cộng các hàng`);
       assert(q.daCham + q.conPhaiCham === q.tong, `${ten}: đã chấm + còn phải chấm = tổng`);
       assert(q.conPhaiCham === hang.reduce((n: number, l: any) => n + (l.phan ? l.conBaiCuaToi : l.conBai), 0), `${ten}: còn phải chấm = cộng các hàng`);
-      assert(r.no.every((x: any) => x.quaHan), `${ten}: khối 1 chỉ có dòng quá hạn`);
+      /* OV-11e: người có phân công — `quaHan` là ô của mình; dòng chỉ còn ô GV khác quá hạn ghi ở `phan.khac.quaHanNgay`. */
+      assert(r.no.every((x: any) => x.quaHan || x.phan?.khac?.quaHanNgay != null), `${ten}: khối 1 chỉ có dòng quá hạn`);
       for (const l of hang) {
         assert(l.daCham === l.tong - l.conBai, `${ten} ${l.key}: đã chấm = tổng − còn`);
         assert(l.conBaiCuaToi <= l.conBai, `${ten} ${l.key}: bài của tôi ≤ bài còn lại`);

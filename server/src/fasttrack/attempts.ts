@@ -1749,14 +1749,20 @@ export function refreshOutcome(p: Principal, attemptId: number, thiLai = false) 
   if (!fresh || fresh.status === 'cancelled') return;
   const rows = scoresOf(attemptId);
   const skips = skipsOf(attemptId);
-  const result = resultOf(fresh, rows, skips);
+  let result = resultOf(fresh, rows, skips);
+  /* OV-11e (Q8): dấu KCK chỉ nằm trên lượt ĐANG chốt. Hết chốt (huỷ điểm, khôi phục, đưa lại kỹ năng) → xoá dấu, lượt theo cờ hiện tại của
+     lộ trình (tính lại kết quả); chốt lần đầu / chốt lại → chụp cờ lúc đó. `chot` không phụ thuộc KCK. */
+  if (!result.chot && (fresh.kck_at_attempt ?? null) !== null) {
+    conn.prepare('UPDATE assessment_attempts SET kck_at_attempt = NULL WHERE id = ?').run(attemptId);
+    fresh.kck_at_attempt = null;
+    result = resultOf(fresh, rows, skips);
+  }
 
   const nextStatus = result.complete ? 'done' : 'planned';
   if (nextStatus !== fresh.status) {
     conn.prepare('UPDATE assessment_attempts SET status = ?, updated_at = ? WHERE id = ?')
       .run(nextStatus, nowIso(), attemptId);
   }
-  /* OV-11e (Q8): lần đầu lượt CHỐT → chụp dấu KCK lúc đó (cờ hiện tại của lộ trình); đã chụp thì giữ (hết chốt rồi chốt lại vẫn cùng kết luận với Case đã sinh). */
   if (result.chot && (fresh.kck_at_attempt ?? null) === null) {
     conn.prepare('UPDATE assessment_attempts SET kck_at_attempt = ? WHERE id = ?').run(kckCuaLuot(fresh) ? 1 : 0, attemptId);
   }

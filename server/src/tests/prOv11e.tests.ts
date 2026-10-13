@@ -20,6 +20,7 @@ export async function runPrOv11eTests(t: YThucTestKit) {
   const cycles: any = await import('../fasttrack/cycles.ts');
   const yeuCau: any = await import('../duyet/yeuCau.ts');
   const keHoach: any = await import('../keHoach/keHoachTest.ts');
+  const { can } = await import('../permissions.ts');
   const week: any = await import('../platform/week.ts');
   const d: any = await import('../../../shared/domain/index.ts');
   const { migratePrOv11e } = await import('../migrate/prOv11e.ts');
@@ -108,13 +109,14 @@ export async function runPrOv11eTests(t: YThucTestKit) {
   });
 
   check('OV11e-5 · PT-4: huỷ lượt → có người mở trang (quét yêu cầu) → khôi phục: yêu cầu duyệt về "cho", Case mở lại', () => thu(() => {
-    const y = one(`SELECT y.id, y.doi_tuong_id AS cid, m.attempt_id AS aid FROM yeu_cau_duyet y
+    /* Bộ kiểm chạy trước đổi dữ liệu MB — chọn yêu cầu mà QL huỷ được lượt và Case sinh riêng từ lượt đó. */
+    const y = all(`SELECT DISTINCT y.id, y.doi_tuong_id AS cid, m.attempt_id AS aid, a.class_id, a.student_id FROM yeu_cau_duyet y
         JOIN sos_cases sc ON sc.id = y.doi_tuong_id AND sc.status != 'done'
         JOIN case_milestones m ON m.case_id = sc.id AND m.attempt_id IS NOT NULL
         JOIN assessment_attempts a ON a.id = m.attempt_id AND a.kind = 'mock' AND a.status != 'cancelled'
-       WHERE y.trang_thai = 'cho' AND y.doi_tuong_loai = 'sos_case' ORDER BY y.id LIMIT 1`);
-    assert(y, 'demo cần một yêu cầu duyệt đang chờ trên Case của lượt Mock');
-    assert(attempts.caseSinhRieng(y.aid).includes(y.cid), 'tiền đề: Case sinh riêng từ lượt');
+       WHERE y.trang_thai = 'cho' AND y.doi_tuong_loai = 'sos_case' ORDER BY y.id`)
+      .find((r: any) => can(QL, d.PERMISSIONS.ATTEMPT_CANCEL, { classId: r.class_id, studentId: r.student_id }) && attempts.caseSinhRieng(r.aid).includes(r.cid));
+    assert(y, 'demo cần một yêu cầu duyệt đang chờ trên Case sinh riêng của lượt Mock QL huỷ được');
     attempts.huyLuot(QL, y.aid, { lyDo: 'Thử huỷ' });
     xoaNho();
     yeuCau.quetYeuCau(TODAY);
@@ -135,7 +137,8 @@ export async function runPrOv11eTests(t: YThucTestKit) {
     assert(a, 'demo cần một lượt MB FT 101 đã chốt SOS, có Case SOS đang mở');
     const kq0 = attempts.resultOf(a);
     assert(kq0.chot && (kq0.sosLevel ?? 0) > 0, `tiền đề: lượt đã chốt SOS: ${JSON.stringify({ chot: kq0.chot, sos: kq0.sosLevel })}`);
-    const chuaChot = one(`SELECT * FROM assessment_attempts WHERE cycle_id = ? AND kind = 'mock' AND status != 'cancelled' AND id != ? ORDER BY attempt_no DESC LIMIT 1`, a.cy, a.id);
+    const chuaChot = one(`SELECT * FROM assessment_attempts WHERE cycle_id = ? AND kind = 'mock' AND status != 'cancelled' AND id != ? AND kck_at_attempt IS NULL
+      ORDER BY attempt_no DESC LIMIT 1`, a.cy, a.id);
     cycles.reviseTarget(QL, a.cy, { newTarget: `${a.target_score} KCK`, reason: 'Thử KCK theo lượt' });
     xoaNho();
     const sau = one('SELECT * FROM assessment_attempts WHERE id = ?', a.id);
@@ -153,6 +156,13 @@ export async function runPrOv11eTests(t: YThucTestKit) {
     const ap2: string[] = [];
     migratePrOv11e(conn, ap2);
     assert(one('SELECT total_changes() n').n === n0 && ap2.length === 0, `chạy lần hai còn đổi: ${ap2.join(' | ')}`);
+    /* Hết chốt (Huỷ điểm một kỹ năng bắt buộc) → xoá dấu, lượt theo cờ hiện tại (KCK). */
+    const o = one(`SELECT skill FROM assessment_scores WHERE attempt_id = ? AND band IS NOT NULL AND skill IN ('listening', 'reading', 'speaking') ORDER BY id LIMIT 1`, a.id);
+    keHoach.huyDiem(QL, { attemptId: a.id, skill: o.skill, lyDo: 'Thử hết chốt' });
+    xoaNho();
+    const hetChot = one('SELECT * FROM assessment_attempts WHERE id = ?', a.id);
+    assert(!attempts.resultOf(hetChot).chot, 'tiền đề: huỷ điểm làm lượt hết chốt');
+    assert(hetChot.kck_at_attempt === null && attempts.kckCuaLuot(hetChot) === true, `hết chốt phải xoá dấu: ${hetChot.kck_at_attempt}`);
   }));
 
   check('OV11e-7 · HL-6: hồ sơ lớp → Điểm theo lớp thêm bước hồ sơ lớp; đổi lượt giữ; về hồ sơ lớp cắt đúng bước', () => {
@@ -169,12 +179,15 @@ export async function runPrOv11eTests(t: YThucTestKit) {
   });
 
   check('OV11e-8 · TE-12: Kế hoạch Test lớp thường — bài quá tuần chưa chấm có chip trễ như FT; chưa tới tuần thì không', () => thu(() => {
-    const a = one(`SELECT a.id, a.kind FROM assessment_attempts a WHERE a.class_id = ? AND a.kind IN ('progress', 'final') AND a.status != 'cancelled' ORDER BY a.id LIMIT 1`, FOU12);
-    conn.prepare('DELETE FROM assessment_scores WHERE attempt_id = ?').run(a.id);
+    /* Lượt lấy từ chính lưới (em đang học, bài đầu của em theo loại). */
+    const o = keHoach.luoiThuong(QL, FOU12, TODAY).hang.flatMap((h: any) => ['progress', 'final'].map((kind) => ({ kind, id: h.dot[kind]?.attemptId })))
+      .find((x: any) => x.id);
+    assert(o, 'demo cần một bài Progress / Final ở MB FOU 12');
+    conn.prepare('DELETE FROM assessment_scores WHERE attempt_id = ?').run(o.id);
     const dat = (ws: string) => {
-      conn.prepare(`UPDATE attempt_skills SET planned_period_id = ?, sit_status = 'scheduled', required = 1 WHERE attempt_id = ?`).run(week.ensurePeriod(ws).id, a.id);
+      conn.prepare(`UPDATE attempt_skills SET planned_period_id = ?, sit_status = 'scheduled', required = 1 WHERE attempt_id = ?`).run(week.ensurePeriod(ws).id, o.id);
       xoaNho();
-      const kn = keHoach.luoiThuong(QL, FOU12, TODAY).hang.map((h: any) => h.dot[a.kind]).find((x: any) => x?.attemptId === a.id).kn;
+      const kn = keHoach.luoiThuong(QL, FOU12, TODAY).hang.map((h: any) => h.dot[o.kind]).find((x: any) => x?.attemptId === o.id).kn;
       return Object.values(kn) as any[];
     };
     const qua = dat(t.addDays(week.mondayOf(TODAY), -14));
