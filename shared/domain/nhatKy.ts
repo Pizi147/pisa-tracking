@@ -25,7 +25,7 @@ const NHAN_NHAT_KY: Record<string, string> = {
   'lenh_chuyen.thi_hanh': 'Thi hành quyết định chuyển lớp', 'ban_giao.ghi_mon': 'Ghi bàn giao môn', 'ban_giao.xac_nhan': 'GVCN xác nhận bàn giao', 'ban_giao.sua': 'Sửa bàn giao đã xác nhận',
   'class.info': 'Sửa thông tin lớp', 'class.progress': 'Đổi tiến độ lớp', 'class.progress.doi_bai': 'Dời bài theo mốc lớp', 'class.transition': 'Chuyển tiếp lớp',
   'cycle.baseline.clear': 'Xoá điểm đầu vào', 'cycle.baseline.set': 'Ghi điểm đầu vào', 'cycle.create': 'Mở lộ trình',
-  'cycle.outcome': 'Kết luận lộ trình', 'cycle.thi_that': 'Kết quả thi thật', 'cycle.target.revise': 'Đổi Target', 'cycle.update': 'Sửa lộ trình',
+  'cycle.outcome': 'Kết luận lộ trình', 'cycle.thi_that': 'Kết quả thi thật', 'cycle.buoc_tiep': 'Bước tiếp sau thi', 'cycle.target.revise': 'Đổi Target', 'cycle.update': 'Sửa lộ trình',
   'discipline.acknowledge': 'Ghi nhận vi phạm (đã xem)', 'discipline.handle': 'Xác nhận xử lý vi phạm', 'discipline.edit': 'Sửa vi phạm của lần xử lý', 'discipline.delete': 'Xoá lần xử lý',
   'discipline.propose': 'Đề xuất QL duyệt xử lý Ý thức', 'discipline.performed': 'Đã thực hiện xử lý Ý thức',
   'discipline.not_performed': 'Đưa lần xử lý về Chưa thực hiện', 'discipline.edit_info': 'Sửa ngày / người / mô tả lần xử lý', 'discipline.unacknowledge': 'Bỏ ghi nhận vi phạm',

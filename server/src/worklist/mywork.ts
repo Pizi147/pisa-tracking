@@ -30,6 +30,7 @@ import { quetYeuCau } from '../duyet/yeuCau.ts';
 import { mtLichSuChuaNhap } from '../cham/canCham.ts';
 import { trangThaiYThuc, ungVienVaThe } from '../yThuc/trangThai.ts';
 import { viecThiThat } from '../loTrinh/thiThat.ts';
+import { viecBuocTiep } from '../loTrinh/buocTiep.ts';
 import { khaiDuoc } from '../yThuc/xuLy.ts';
 
 /**
@@ -136,6 +137,8 @@ export type WorkGroupKey =
   | 'phoi_hop_sos' | 'khai_bac' | 'ky_vong_dau_ra'
   /* PR-TK (TK-K): GVCN cập nhật kết quả thi thật (L R W S) của em FT đã qua mốc thi. */
   | 'thi_that'
+  /* OV-8a: Quản lý chọn bước tiếp sau khi lộ trình FT có kết quả thi thật (Kết thúc · Học tiếp lộ trình mới · Học lại). */
+  | 'buoc_tiep'
   /* PR-YT4 (K5 §3 dòng 6–8): việc Ý thức THẬT có hạn — thay nhắc mềm W01–W06. */
   | 'yt_xu_ly' | 'yt_xem' | 'yt_thuc_hien'
   /* PR-CT (Q30-2): bàn giao khi có quyết định chuyển lớp — một việc mỗi lớp (GVCN), mỗi (lớp, môn) (GVBM). */
@@ -196,6 +199,11 @@ const GROUP_META: Record<WorkGroupKey, { label: string; hint: string }> = {
   thi_that: {
     label: 'Cập nhật kết quả thi thật',
     hint: 'Em Fast Track đã qua kỳ thi — nhập điểm L, R, W, S em báo về hoặc chọn Không thi. Hạn 4 tuần kể từ thứ Hai sau kỳ thi.',
+  },
+  /* OV-8a: hạn = ngày có kết quả + 7, đỏ không chặn. */
+  buoc_tiep: {
+    label: 'Chọn bước tiếp sau thi',
+    hint: 'Em Fast Track đã có kết quả thi thật — chọn Kết thúc (vào Lưu trữ), Học tiếp lộ trình mới hoặc Học lại. Hạn 7 ngày kể từ ngày có kết quả.',
   },
   /* PR-LT2b (M-05, T47): Mini Test sau bổ trợ miễn phí — hạn = ngày buổi cuối + 2. */
   mini_test: {
@@ -1146,6 +1154,8 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
 
   // ------------------------------------------------- 5d. cập nhật kết quả thi thật (PR-TK, TK-K)
   if (co('thi_that')) items.push(...viecThiThat(p, { today, tatCa, branchId: f.branchId ?? null }));
+  // ------------------------------------------------- 5e. chọn bước tiếp sau thi (OV-8a) — việc của Quản lý
+  if (co('buoc_tiep')) items.push(...viecBuocTiep(p, { today, branchId: f.branchId ?? null }));
 
   // ------------------------------------------------- 6. công việc quản lý được giao
   /*
@@ -1188,7 +1198,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   if (f.chiNhom) for (let i = items.length - 1; i >= 0; i--) if (!f.chiNhom.has(items[i].group)) items.splice(i, 1);
   const order: WorkGroupKey[] = [
     'cause', 'xac_nhan_pa', 'phoi_hop', 'phoi_hop_sos', 'mini_test', 'score', 'no_plan', 'ghi_ket_qua_pa', 'yt_xu_ly', 'yt_xem', 'yt_thuc_hien', 'khai_bac',
-    'chot_len_ft', 'xet_lai_lo_trinh', 'ky_vong_dau_ra', 'thi_that', 'ban_giao', 'no_owner', 'mgmt', 'missing_data',
+    'chot_len_ft', 'xet_lai_lo_trinh', 'ky_vong_dau_ra', 'thi_that', 'buoc_tiep', 'ban_giao', 'no_owner', 'mgmt', 'missing_data',
   ];
   const weight = (u: WorkUrgency) => (u === 'overdue' ? 0 : u === 'today' ? 1 : 2);
 

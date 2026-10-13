@@ -29,6 +29,16 @@ export function huongTiep(lyDo: LyDoDong, routeMoi: string | null): HuongTiepTk 
   }
 }
 
+/** OV-8a: BƯỚC TIẾP SAU THI — Quản lý chọn sau khi lộ trình FT có kết quả thi thật. */
+export const LUA_CHON_SAU_THI = ['ket_thuc', 'hoc_tiep', 'hoc_lai'] as const;
+export type LuaChonSauThi = (typeof LUA_CHON_SAU_THI)[number];
+export const NHAN_SAU_THI: Record<LuaChonSauThi, string> = { ket_thuc: 'Kết thúc', hoc_tiep: 'Học tiếp lộ trình mới', hoc_lai: 'Học lại' };
+/** Gợi ý (chỉ chữ, QL vẫn chọn): Đạt Target → Kết thúc; chưa đạt / Không thi → Học lại; không có Target → không gợi ý. */
+export function goiYSauThi(o: { khongThi: boolean; ketLuan: string | null }): LuaChonSauThi | null {
+  if (o.khongThi || o.ketLuan === 'not_reached') return 'hoc_lai';
+  return o.ketLuan === 'reached' ? 'ket_thuc' : null;
+}
+
 /** Làm tròn về 0.5 gần nhất, .25 / .75 lên (như Excel). `server/src/fasttrack/scoring.ts` re-export hàm này. */
 export function roundToHalf(value: number): number {
   return Math.round(value * 2 + 1e-9) / 2;

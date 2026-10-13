@@ -1,6 +1,6 @@
 import { db, tx } from '../db.ts';
 import {
-  ENTRY_SKILLS, JOURNEY_GROUP, NO_HANDOVER_NOTE, PERMISSIONS, canChoThiThat, coKetQuaCu, STUDENT_STATUSES, luatDoiLop, NGAY_SINH_TOI_THIEU, docEmail, docNgayNhap,
+  ENTRY_SKILLS, JOURNEY_GROUP, NO_HANDOVER_NOTE, PERMISSIONS, STUDENT_STATUSES, luatDoiLop, NGAY_SINH_TOI_THIEU, docEmail, docNgayNhap,
   type LoaiLop, type ProgrammeCode,
   CHI_SUA_THONG_TIN,
 } from '../../../shared/domain/index.ts';
@@ -287,9 +287,8 @@ export function setStudentStatus(
   /* PR-XOA §2: thôi học (finished) tự vào Lưu trữ từ ngày hiệu lực; tạm dừng / quay lại học thì không lưu trữ. */
   let archivedAt: string | null = status === 'finished' ? date : null;
   return tx(() => {
-    /* PR-TK (TK-L): lộ trình FT còn "Chờ kết quả thi thật" thì Kết thúc học CHƯA lưu trữ — `datKetQuaThiThat` tự đưa vào Lưu trữ khi có kết quả / "Không thi". */
-    if (archivedAt && (conn.prepare(`SELECT route, thi_that_l, thi_that_r, thi_that_w, thi_that_s, thi_that_khong_thi, outcome, outcome_score FROM learning_cycles WHERE student_id = ? AND status = 'active'`).all(studentId) as any[])
-      .some((c) => canChoThiThat({ laFt: !!c.route, cu: coKetQuaCu(c), l: c.thi_that_l, r: c.thi_that_r, w: c.thi_that_w, s: c.thi_that_s, khongThi: !!c.thi_that_khong_thi }))) archivedAt = null;
+    /* PR-TK (TK-L) → OV-8a: Kết thúc học đóng lộ trình FT thì CHƯA lưu trữ — chờ kết quả thi thật rồi Quản lý chọn Bước tiếp (Kết thúc = Lưu trữ, `buocTiep.ts`). */
+    if (archivedAt && conn.prepare(`SELECT 1 FROM learning_cycles WHERE student_id = ? AND status = 'active' AND route IS NOT NULL`).get(studentId)) archivedAt = null;
     /* PR-LUI-b: nhớ ĐÚNG những ghi danh / lộ trình lần Kết thúc học này đóng (+ Case / tín hiệu, bên dưới) — Học lại và Hoàn tác chỉ đụng chúng, không đụng cái đã đóng từ trước. */
     const dongBoiLanNay = status === 'finished' ? {
       ghiDanhDong: (conn.prepare(`SELECT id, status AS truoc FROM enrollments WHERE student_id = ? AND status IN ('active','paused')`).all(studentId) as any[]).map((r) => ({ id: r.id as number, truoc: r.truoc as string })),

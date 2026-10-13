@@ -15,6 +15,7 @@ import { duongDiemTheoLuot, type BangTheoLuot } from '../cham/LuoiChamLop.tsx';
 import { LOAI_HAN_CUA_VIEC } from '@shared/domain/index.ts';
 import type { WorkItem } from '../worklist/WorkList.tsx';
 import { XacNhanNhomPanel } from './XacNhanNhomPanel.tsx';
+import { NganTongKet } from '../students/NganTongKet.tsx';
 
 /** Số sau dấu `:` cuối của khoá việc (`yt_thuc_hien:12`, `mgmt:5`). */
 const soCuaKhoa = (k: string) => Number(k.slice(k.lastIndexOf(':') + 1)) || null;
@@ -22,7 +23,7 @@ const soCuaKhoa = (k: string) => Number(k.slice(k.lastIndexOf(':') + 1)) || null
 /**
  * VIỆC NÀO LÀM TẠI CHỖ (OV-5a, mockup M1 §2): Xác nhận nguyên nhân (gom) · Thêm PA / Kết quả PA / Xác nhận PA / Mini Test (Ngăn Case) · Nhập điểm
  * (một lớp · một lượt) · Bàn giao · Ý thức (xử lý, đã thực hiện, khai bậc một em) · việc Vận hành. Còn lại (Chốt lộ trình, Kết quả đầu ra, Xét lại
- * lộ trình cần cả bảng lớp; Phối hợp, Thiếu dữ liệu, thi thật…) mở trang như cũ.
+ * lộ trình cần cả bảng lớp; Phối hợp, Thiếu dữ liệu, thi thật…) mở trang như cũ. OV-8a: Chọn bước tiếp sau thi = ngăn Tổng kết lộ trình (mục Bước tiếp).
  */
 export function lamTaiCho(it: WorkItem): boolean {
   switch (it.group) {
@@ -32,7 +33,7 @@ export function lamTaiCho(it: WorkItem): boolean {
     case 'score': return !!it.luot && it.classId !== null;
     case 'ban_giao': return it.classId !== null;
     case 'yt_xu_ly': case 'khai_bac': return it.studentId !== null;
-    case 'yt_thuc_hien': case 'mgmt': return soCuaKhoa(it.key) !== null;
+    case 'yt_thuc_hien': case 'mgmt': case 'buoc_tiep': return soCuaKhoa(it.key) !== null;
     default: return false;
   }
 }
@@ -69,6 +70,8 @@ export function PanelViec({ it, onDong, onDaLam, onTiep }: {
       return <KhaiBacPanel key={it.key} studentId={it.studentId} onClose={onDong} onDone={doi} />;
     case 'mgmt':
       return <NganViecVanHanh key={it.key} taskId={soCuaKhoa(it.key)} onClose={onDong} onDone={doi} />;
+    case 'buoc_tiep':
+      return <NganTongKet key={it.key} cycleId={soCuaKhoa(it.key)!} onClose={onDong} onDoi={doi} />;
     default:
       return null;
   }
