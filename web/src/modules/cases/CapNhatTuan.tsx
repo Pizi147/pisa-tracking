@@ -1,20 +1,21 @@
 import { useState } from 'react';
 import { api, invalidate } from '../../lib/api.ts';
+import { useApi } from '../../lib/useApi.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import { Hang2, Khoi, KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { QuaHan } from '../../ui/Nhan.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
-import { NutChon } from '../../ui/ui.tsx';
+import { ErrorState, NutChon, Skeleton } from '../../ui/ui.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
-import { FormPa, VachBuoi } from './FormPa.tsx';
+import { FormPa, KhoaNho, VachBuoi } from './FormPa.tsx';
 import {
   FOLLOWUP_OUTCOMES, INTERVENTION_KIND_LABEL,
   GOI_Y_KET_QUA_PA, NUT_LUU_KET_QUA, PLAN_DECISION_HINT, PLAN_DECISION_NGAN, PLAN_DECISION_NGHIA, quyetDinhChoPa,
   decisionBlockedReason, decisionNeedsReason, deadlineView, interventionKindsFor, nhanTuanGhiKetQua, outcomeLabelFor,
   type NguoiChon, type PlanDecision, dsLoi, type LuatTruong,
-  coNguoiDay, coSoBuoi, demSauKetQua, giaTriCuaPa, loiFormPa, loiKetQuaTuan, paMoi, paPayload, thanKetQuaTuan, thanSuaPa,
+  coNguoiDay, coSoBuoi, demSauKetQua, giaTriCuaPa, loiFormPa, loiKetQuaTuan, nguoiCuaPa, paMoi, paPayload, tachKhac, thanKetQuaTuan, thanSuaPa,
   type GiaTriPa,
 } from '@shared/domain/index.ts';
 
@@ -39,6 +40,36 @@ export type PaCanCapNhat = {
   soBuoi?: number | null; daDay?: number;
 };
 
+/**
+ * OV-7b: điền sẵn của `GET /followups/:id/sua` — PA như NGAY TRƯỚC lần ghi (`pa`), giá trị đã ghi (`giaTri`), `chan` = vì sao không đổi được lựa chọn
+ * (PA thay thế đã chạy, Quản lý đã trả lời) — khi đó chỉ sửa chữ.
+ */
+export type SuaKetQua = {
+  followupId: number; caseId: number; chan: string | null; pa: PaCanCapNhat;
+  giaTri: {
+    outcome: string; note: string; remainingIssue: string; decision: PlanDecision | null; decisionNote: string; observedOn: string;
+    completedOn: string | null; soBuoi: number | null; nguoiDay: { userId: number | null; ten: string } | null;
+    miniTest: { tyLe: number; ngay: string } | null;
+    adjust: { description: string | null; soBuoi: number | null; performerUserId: number | null; performer: string | null } | null;
+    newPlan: { kind: string; description: string | null; soBuoi: number | null; performerUserId: number | null; performer: string | null } | null;
+  };
+};
+
+/** Giá trị đầu của form (ghi mới: trống; sửa: điền sẵn) — tính MỘT lần; "giữ lựa chọn" so với chính các giá trị này. */
+function giaTriDau(pa: PaCanCapNhat, sua: SuaKetQua | undefined, homNay: string) {
+  const g = sua?.giaTri;
+  const goc = giaTriCuaPa(pa);
+  const thay = g?.newPlan ? giaTriCuaPa(g.newPlan) : paMoi(interventionKindsFor().selfServe[0]);
+  if (g?.newPlan && thay.kind === 'other_proposal') Object.assign(thay, (({ ghiRo, moTa }) => ({ ghiRo, description: moTa }))(tachKhac(thay.description)));
+  return {
+    goc, thay,
+    dc: g?.adjust ? giaTriCuaPa({ kind: pa.kind, ...g.adjust }) : goc,
+    nguoiDay: g ? nguoiCuaPa({ performerUserId: g.nguoiDay?.userId, performer: g.nguoiDay?.ten }) : goc.nguoi,
+    tuan: g?.soBuoi != null ? String(g.soBuoi) : '1',
+    mtTyLe: g?.miniTest ? String(g.miniTest.tyLe) : '', mtNgay: g?.miniTest?.ngay ?? homNay ?? '',
+  };
+}
+
 const DA_LUU: Record<PlanDecision, string> = {
   keep: 'Đã lưu kết quả, PA vẫn đang chạy',
   adjust: 'Đã điều chỉnh PA, bản cũ giữ trong lịch sử',
@@ -52,8 +83,10 @@ function ngiaBiChan(outcome: string): string {
   return !outcome ? 'Chọn kết quả trước' : outcome === 'insufficient' ? 'Cần có kết quả để so' : 'Không hợp với kết quả này';
 }
 
-export function GhiKetQuaPanel({ pa, hocVien, lop, quayLai, onClose, onSaved, onThemPa }: {
+export function GhiKetQuaPanel({ pa, sua, hocVien, lop, quayLai, onClose, onSaved, onThemPa }: {
   pa: PaCanCapNhat; hocVien?: string | null; lop?: string | null;
+  /** OV-7b: sửa lần ghi gần nhất — form điền sẵn, lưu qua `POST /followups/:id/sua`. */
+  sua?: SuaKetQua;
   /** PA theo quy chế cần thêm hỗ trợ → mở Thêm PA (T63, K3-12). */
   onThemPa?: () => void;
   quayLai?: { nhan: string; onClick: () => void };
@@ -61,26 +94,31 @@ export function GhiKetQuaPanel({ pa, hocVien, lop, quayLai, onClose, onSaved, on
 }) {
   const toast = useToast();
   const { homNay } = useNgayNghiepVu();
-  const [outcome, setOutcome] = useState('');
-  const [progress, setProgress] = useState('');
-  const [remaining, setRemaining] = useState('');
-  const [decision, setDecision] = useState<PlanDecision | ''>('');
-  const [reason, setReason] = useState('');
-  const [on, setOn] = useState(homNay);
-  const [endOn, setEndOn] = useState(homNay);
-  /* Điều chỉnh: cùng form PA (Nội dung · Số buổi · Người dạy), giá trị đầu = bản hiện tại; gửi ô đã đổi như Sửa PA (`thanSuaPa`). */
-  const [gocDc] = useState(() => giaTriCuaPa(pa));
-  const [dc, setDc] = useState<GiaTriPa>(gocDc);
+  const g = sua?.giaTri;
+  const [dau] = useState(() => giaTriDau(pa, sua, homNay));
+  const [outcome, setOutcome] = useState(g?.outcome ?? '');
+  const [progress, setProgress] = useState(g?.note ?? '');
+  const [remaining, setRemaining] = useState(g?.remainingIssue ?? '');
+  const [decision, setDecision] = useState<PlanDecision | ''>(g?.decision ?? '');
+  const [reason, setReason] = useState(g?.decisionNote ?? '');
+  const [on, setOn] = useState(g?.observedOn ?? homNay);
+  const [endOn, setEndOn] = useState(g?.completedOn ?? homNay);
+  /* Điều chỉnh: cùng form PA (Nội dung · Số buổi · Người dạy), giá trị đầu = bản hiện tại (sửa: bản trước lần ghi); gửi ô đã đổi như Sửa PA (`thanSuaPa`). */
+  const gocDc = dau.goc;
+  const [dc, setDc] = useState<GiaTriPa>(dau.dc);
   /* PR-PA (§8): khối đếm — Số buổi tuần này (PA có Số buổi; mặc định 1) · Người dạy tuần này (điền sẵn người của PA; lưu ở cột phụ trách cũ). */
   const coDem = pa.soBuoi != null;
-  const [tuan, setTuan] = useState('1');
-  const [nguoiDay, setNguoiDay] = useState<NguoiChon | null>(gocDc.nguoi);
+  const [tuan, setTuan] = useState(dau.tuan);
+  const [nguoiDay, setNguoiDay] = useState<NguoiChon | null>(dau.nguoiDay);
   /* Thay PA: PA mới dùng một form PA (PR-PA §8) — không có Ngày bắt đầu (PA mới chạy từ Ngày ghi). */
-  const [paThay, setPaThay] = useState<GiaTriPa>(() => paMoi(interventionKindsFor().selfServe[0]));
+  const [paThay, setPaThay] = useState<GiaTriPa>(dau.thay);
+  /* OV-7b: PA thay thế đã chạy / Quản lý đã trả lời → chỉ sửa chữ: khoá kết quả, quyết định, ngày. */
+  const khoaLuaChon = !!sua?.chan;
   const lf = useLoiForm();
   const [busy, setBusy] = useState(false);
 
   const pickOutcome = (o: string) => {
+    if (khoaLuaChon) return;
     setOutcome(o);
     if (decision && decisionBlockedReason(o, decision)) setDecision('');
   };
@@ -88,8 +126,8 @@ export function GhiKetQuaPanel({ pa, hocVien, lop, quayLai, onClose, onSaved, on
   const lanCuoi = !!pa.lanCuoi;
   /* PR-LT2b (M-05): lần ghi cuối của PA Bổ trợ miễn phí bắt buộc kèm Mini Test — một lần cho cả nhóm PA của em. */
   const coMiniTest = lanCuoi && pa.kind === 'bo_tro_mien_phi';
-  const [mtTyLe, setMtTyLe] = useState('');
-  const [mtNgay, setMtNgay] = useState(homNay ?? '');
+  const [mtTyLe, setMtTyLe] = useState(dau.mtTyLe);
+  const [mtNgay, setMtNgay] = useState(dau.mtNgay);
   /* T63, K3-12: PA theo quy chế chỉ có Giữ nguyên / Điều chỉnh / Xin hỗ trợ — Thay và Kết thúc ẨN (không mờ). */
   const dsQuyetDinh = quyetDinhChoPa({ preset: !!pa.batBuoc }, lanCuoi);
   const needReason = !!decision && decisionNeedsReason(decision);
@@ -136,20 +174,24 @@ export function GhiKetQuaPanel({ pa, hocVien, lop, quayLai, onClose, onSaved, on
         ...thanKetQuaTuan(pa, tuan, nguoiDay),
       };
       if (decision === 'end') body.completedOn = endOn || undefined;
-      if (coMiniTest) body.miniTest = { tyLe: Number(mtTyLe.replace(',', '.')), ngay: mtNgay };
+      /* OV-7b: sửa mà giữ lựa chọn + không đổi Điều chỉnh / PA thay / Mini Test → không gửi ba khối đó: máy chủ chỉ sửa chữ, không đảo gì. */
+      const giuLuaChon = !!g && outcome === g.outcome && (decision || null) === g.decision && on === g.observedOn
+        && (decision !== 'end' || endOn === g.completedOn) && JSON.stringify([dc, paThay, mtTyLe, mtNgay]) === JSON.stringify([dau.dc, dau.thay, dau.mtTyLe, dau.mtNgay]);
+      if (coMiniTest && !giuLuaChon) body.miniTest = { tyLe: Number(mtTyLe.replace(',', '.')), ngay: mtNgay };
       /* Chỉ ô đã đổi; đổi người gửi đủ ba khoá (cả ba trống = xoá người). */
-      if (decision === 'adjust') body.adjust = thanDc;
-      if (decision === 'replace') body.newPlan = paPayload(paThay);
-      await api.post(`/interventions/${pa.id}/result`, body);
-      invalidate('/cases'); invalidate('/my-work'); invalidate('/students'); invalidate('/tong-quan');
-      toast.push('ok', lanCuoi ? 'Đã lưu kết quả cuối — PA theo quy chế kết thúc' : DA_LUU[decision as PlanDecision]);
+      if (decision === 'adjust' && !giuLuaChon) body.adjust = thanDc;
+      if (decision === 'replace' && !giuLuaChon) body.newPlan = paPayload(paThay);
+      await api.post(sua ? `/followups/${sua.followupId}/sua` : `/interventions/${pa.id}/result`, body);
+      invalidate('/cases'); invalidate('/my-work'); invalidate('/students'); invalidate('/tong-quan'); invalidate('/followups');
+      toast.push('ok', sua ? 'Đã sửa kết quả' : lanCuoi ? 'Đã lưu kết quả cuối — PA theo quy chế kết thúc' : DA_LUU[decision as PlanDecision]);
       onSaved();
     } catch (e: any) {
       toast.push('error', e?.message ?? 'Không lưu được');
     } finally { setBusy(false); }
   };
 
-  const hanGhi = pa.actionDue ? deadlineView({ kind: 'cap-nhat-pa', due: pa.actionDue, today: homNay }) : null;
+  /* Sửa: hạn của lần đã ghi không còn là việc phải làm — không hiện. */
+  const hanGhi = pa.actionDue && !sua ? deadlineView({ kind: 'cap-nhat-pa', due: pa.actionDue, today: homNay }) : null;
   /* K3-17: tiêu đề khối nói TUẦN đang ghi ('Kết quả tuần W4 SEP'); trễ nhiều tuần thì nói khoảng + số tuần ghi bù. */
   const tuanGhi = nhanTuanGhiKetQua(pa.actionDue ?? null, homNay).tieuDe;
   const tenLoai = INTERVENTION_KIND_LABEL[pa.kind as keyof typeof INTERVENTION_KIND_LABEL] ?? pa.kind;
@@ -209,7 +251,7 @@ export function GhiKetQuaPanel({ pa, hocVien, lop, quayLai, onClose, onSaved, on
   };
 
   return (
-    <KhungPanel tieuDe={lanCuoi ? 'Kết quả cuối' : 'Kết quả'} hocVien={hocVien} lop={lop} quayLai={quayLai} onDong={onClose}
+    <KhungPanel tieuDe={`${sua ? 'Sửa k' : 'K'}ết quả${lanCuoi ? ' cuối' : ''}`} hocVien={hocVien} lop={lop} quayLai={quayLai} onDong={onClose}
       ngCanh={(
         <span className="flex items-center gap-1.5 max-sm:flex-col max-sm:items-start max-sm:gap-0.5">
           <span className="truncate max-sm:whitespace-normal max-sm:break-words" title={tenPa}>{tenPa}{pa.cycleNo && pa.cycleNo > 1 ? ` · Đợt ${pa.cycleNo}` : ''}</span>
@@ -225,12 +267,17 @@ export function GhiKetQuaPanel({ pa, hocVien, lop, quayLai, onClose, onSaved, on
         conThieu: lf.conThieu(loi),
         chinh: (
           <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={luu}>
-            {busy ? 'Đang lưu…' : lanCuoi ? 'Lưu kết quả cuối' : NUT_LUU_KET_QUA[decision || 'keep']}
+            {busy ? 'Đang lưu…' : sua ? 'Lưu' : lanCuoi ? 'Lưu kết quả cuối' : NUT_LUU_KET_QUA[decision || 'keep']}
           </button>
         ),
       }}>
+      {sua?.chan && (
+        <p className="m-0 mt-3 flex items-start gap-1.5 text-[12.5px] text-slate-300">
+          <span className="mt-0.5 text-slate-400"><KhoaNho /></span><span>{sua.chan}</span>
+        </p>
+      )}
       <Khoi tieuDe={lanCuoi ? tuanGhi : `1 · ${tuanGhi}`}>
-        {lanCuoi && (
+        {lanCuoi && !sua && (
           <p className="m-0 text-xs text-slate-300">
             Tuần này chạm mốc quy chế{pa.mocChu ? ` (${pa.mocChu})` : ''} — lưu là PA kết thúc.
           </p>
@@ -239,14 +286,14 @@ export function GhiKetQuaPanel({ pa, hocVien, lop, quayLai, onClose, onSaved, on
           {/* PR-LUI-a2: 2 cột ở mọi cỡ (panel ≤ 560 px), chữ cho xuống dòng, bỏ dấu ✓ ↗ – ↓ — không cắt / lệch. Sửa chung NutChon là PR-KHUNG. */}
           <div {...o('ket-qua')} tabIndex={-1} className="grid grid-cols-2 gap-2 outline-none" role="group" aria-label={tuanGhi}>
             {FOLLOWUP_OUTCOMES.filter((o) => o !== 'insufficient').map((o) => (
-              <NutChon key={o} chon={outcome === o} onClick={() => pickOutcome(o)} className="justify-center text-sm">
+              <NutChon key={o} chon={outcome === o} disabled={khoaLuaChon && outcome !== o} onClick={() => pickOutcome(o)} className="justify-center text-sm">
                 {outcomeLabelFor(o)}
               </NutChon>
             ))}
           </div>
           <p className="m-0 mt-1.5 flex flex-wrap items-center gap-1.5 text-xs text-slate-500">
             Chưa có bài để so?
-            <NutChon nho chon={outcome === 'insufficient'} onClick={() => pickOutcome('insufficient')}>
+            <NutChon nho chon={outcome === 'insufficient'} disabled={khoaLuaChon && outcome !== 'insufficient'} onClick={() => pickOutcome('insufficient')}>
               {outcomeLabelFor('insufficient')}
             </NutChon>
           </p>
@@ -311,7 +358,7 @@ export function GhiKetQuaPanel({ pa, hocVien, lop, quayLai, onClose, onSaved, on
         )}
         <div {...o('quyet-dinh')} tabIndex={-1} role="radiogroup" aria-label="Quyết định" className="space-y-1.5 outline-none">
           {dsQuyetDinh.map((d) => {
-            const chan = outcome ? decisionBlockedReason(outcome, d) : 'Chọn kết quả trước.';
+            const chan = khoaLuaChon && decision !== d ? sua!.chan : outcome ? decisionBlockedReason(outcome, d) : 'Chọn kết quả trước.';
             const chon = decision === d;
             return (
               <div key={d}>
@@ -323,7 +370,7 @@ export function GhiKetQuaPanel({ pa, hocVien, lop, quayLai, onClose, onSaved, on
                   <span aria-hidden className={`mt-[3px] inline-block h-3 w-3 shrink-0 rounded-full border ${chon ? 'border-[color:var(--accent)] bg-[color:var(--accent)]' : 'border-slate-500'}`} />
                   <span className="min-w-0">
                     <span className="block text-sm font-semibold text-slate-100">{PLAN_DECISION_NGAN[d]}</span>
-                    <span className="block text-xs text-slate-500">{chan ? ngiaBiChan(outcome) : PLAN_DECISION_NGHIA[d]}</span>
+                    <span className="block text-xs text-slate-500">{chan ? (khoaLuaChon ? 'Chỉ sửa được chữ' : ngiaBiChan(outcome)) : PLAN_DECISION_NGHIA[d]}</span>
                   </span>
                 </button>
                 {chon && khoiCon(d) && (
@@ -338,10 +385,23 @@ export function GhiKetQuaPanel({ pa, hocVien, lop, quayLai, onClose, onSaved, on
       )}
 
       <div className="mt-3.5">
-        <Truong nhan="Ngày ghi"><ONgay kieu="ngay" value={on} onChange={setOn} toiDa={homNay} /></Truong>
+        <Truong nhan="Ngày ghi"><ONgay kieu="ngay" value={on} onChange={setOn} toiDa={homNay} disabled={khoaLuaChon} /></Truong>
       </div>
     </KhungPanel>
   );
+}
+
+/** OV-7b: SỬA lần ghi Kết quả gần nhất — tải điền sẵn (`GET /followups/:id/sua`) rồi mở ĐÚNG form Kết quả; bị chặn thì nói lý do. */
+export function SuaKetQuaPanel({ followupId, ...rest }: { followupId: number } & Omit<Parameters<typeof GhiKetQuaPanel>[0], 'pa' | 'sua'>) {
+  const { data, error, reload } = useApi<SuaKetQua>(`/followups/${followupId}/sua`);
+  if (!data) {
+    return (
+      <KhungPanel tieuDe="Sửa kết quả" hocVien={rest.hocVien} lop={rest.lop} quayLai={rest.quayLai} onDong={rest.onClose}>
+        {error ? <ErrorState message={error.message} hint={error.hint} onRetry={reload} /> : <div className="pt-3"><Skeleton rows={6} /></div>}
+      </KhungPanel>
+    );
+  }
+  return <GhiKetQuaPanel {...rest} pa={data.pa} sua={data} />;
 }
 
 type MatPa = { description: string | null; performer: string | null; soBuoi?: number | null; startedDate?: string | null };

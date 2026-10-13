@@ -10,7 +10,7 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { caseStatusLabel } from '../../lib/format.ts';
 import { outcomeLabelFor, tuanLich } from '@shared/domain/index.ts';
 import { ThanCase, tenNganCase, type CaseDetail, type ViewCase } from '../cases/CasePanel.tsx';
-import { GhiKetQuaPanel } from '../cases/CapNhatTuan.tsx';
+import { GhiKetQuaPanel, SuaKetQuaPanel } from '../cases/CapNhatTuan.tsx';
 import { HoanThanhCasePanel, SuaCasePanel, SuaPaPanel, ThemPaPanel } from '../cases/ThaoTacCase.tsx';
 import { XacNhanCasePanel, XacNhanPaPanel, type PaQuyChe } from '../yThuc/CaseSosControls.tsx';
 import { TheYeuCau } from '../duyet/TheYeuCau.tsx';
@@ -99,6 +99,9 @@ export function NganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose
       );
     }
   }
+  if (view.loai === 'sua-ket-qua') {
+    return <SuaKetQuaPanel key={view.followupId} followupId={view.followupId} {...chung} onSaved={xong} onThemPa={() => setView({ loai: 'them-pa' })} />;
+  }
   /* PR-SOS (Q28-3): Xác nhận Case → chuyển thẳng sang Xác nhận PA của PA theo quy chế đầu tiên còn chờ; còn PA chờ khác (trượt lại) → mở tiếp. */
   const paCho = (data.interventions ?? []).filter((x: any) => x.awaitingConfirmation) as PaQuyChe[];
   if (view.loai === 'xac-nhan') {
@@ -153,7 +156,7 @@ export function NganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose
    * Hoàn thành Case. PA theo quy chế chưa khép → ẨN Hoàn thành, hiện dòng mờ nói khi nào hoàn thành được.
    */
   const v = data.viecTiep ?? null;
-  /* PR-LUI-a2: Mở lại Case đã hoàn thành — Quản lý / Quản trị, một bấm, không lý do. */
+  /* PR-LUI-a2: Mở lại Case đã hoàn thành — Quản lý / Quản trị, và người đã hoàn thành Case (OV-7b); một bấm, không lý do. */
   const moLai = async () => {
     setMoLaiBusy(true);
     try {
@@ -166,7 +169,8 @@ export function NganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose
   const nutDau = data.viewer.coTheMoLai
     ? <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={moLaiBusy} onClick={() => void moLai()}>{moLaiBusy ? 'Đang mở lại…' : 'Mở lại'}</button>
     : canDong && data.viewer.coTheSua
-      ? <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setView({ loai: 'sua' })}>Sửa</button>
+      /* OV-7b: Case từ SOS đã xác nhận nguyên nhân — cùng panel Sửa Case, chữ nói đúng việc ("Sửa xác nhận": nguyên nhân, mô tả). */
+      ? <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setView({ loai: 'sua' })}>{data.sos?.fromSos && data.sos?.hasCause ? 'Sửa xác nhận' : 'Sửa'}</button>
       /* Rà #229: Case hệ thống đóng — không có Mở lại tay, nói đường mở. */
       : data.status === 'done' && data.systemCloseLabel && data.viewer.canApprove
         ? <span className="text-xs text-slate-400">Hệ thống đóng — Hoàn tác Kết thúc học để mở</span>
