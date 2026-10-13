@@ -55,7 +55,8 @@ export async function runPrOv5aTests(t: YThucTestKit) {
     conn.prepare(`UPDATE assessment_attempts SET planned_period_id = ?, plan_source = 'manual' WHERE id = ?`).run(tuan(-1), m1);
     conn.prepare(`UPDATE attempt_skills SET planned_period_id = ?, plan_source = 'manual' WHERE attempt_id = ?`).run(tuan(-1), m1);
     chotSan(conn, m1);
-    for (const [k, band] of Object.entries(diem)) attempts.saveScore(gvMon(k), m1, k, { band });
+    /* Quản trị nhập điểm: không phụ thuộc phân công môn của lớp (phép kiểm chạy trước có thể đã đổi GV L / S của MB FT 101). */
+    for (const [k, band] of Object.entries(diem)) attempts.saveScore(P.admin, m1, k, { band });
     const caseCua = (k: string) => one(`SELECT id FROM sos_cases WHERE student_id = ? AND topic = ? AND status != 'done'`, sid, k)?.id as number;
     return { sid, ten: `OV5a Em ${dem}`, m1, r: caseCua('reading'), l: caseCua('listening') };
   };
@@ -81,9 +82,8 @@ export async function runPrOv5aTests(t: YThucTestKit) {
     assert(r.con.every((c: any) => c.gopThem === 'mock1:reading' && c.classId === LOP), 'con khác lớp / kỹ năng / lượt');
     assert(r.tieuDe === 'Xác nhận nguyên nhân · Reading' && r.contextLabel === 'MT1' && r.count === ids.length && r.studentId === null, `${r.tieuDe} / ${r.contextLabel} / ${r.count}`);
     assert(r.href === `/cong-viec?viec=${encodeURIComponent(r.key)}`, `href: ${r.href}`);
-    /* D có Case Listening: kỹ năng khác → dòng khác (người giữ việc Listening có thể là GV khác). */
-    const gvL = gvMon('listening');
-    const rl = dongR(mywork.myWork(gvL), D.l);
+    /* D có Case Listening: kỹ năng khác → dòng khác (QL xem "Của GV": không phụ thuộc ai đang dạy Listening). */
+    const rl = dongR(mywork.myWork(P.mbManager, { nguoi: 'tat-ca' }), D.l);
     assert(rl && rl.key !== r.key && rl.key.endsWith(':mock1:listening') && rl.con.every((c: any) => c.gopThem === 'mock1:listening'), `dòng Listening: ${rl?.key}`);
     const phang = (w.dong as any[]).flatMap((x) => x.con ?? [x]).map((x) => x.key).sort();
     assert(JSON.stringify(phang) === JSON.stringify((w.items as any[]).map((x) => x.key).sort()), 'dòng không phủ đúng mọi việc');
