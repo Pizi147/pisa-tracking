@@ -93,8 +93,8 @@ export async function runPrDlTests(t: YThucTestKit) {
    */
   const bam = (x: unknown) => createHash('sha256')
     /* PR-BV: ô thêm `daChot` ("-" đã chốt, phép kiểm riêng prBv V13) — bỏ khỏi băm để ảnh chụp cũ vẫn chứng minh mọi trường khác không lệch.
-       OV-1c: kết quả lượt thêm `chot` (phép kiểm riêng prOv1c) — bỏ khỏi băm như trên. */
-    .update(JSON.stringify(x, (k, v) => (k.endsWith('At') || k === 'chuNhatCuoi' || k === 'daChot' || k === 'chot' ? undefined : v))).digest('hex').slice(0, 16);
+       OV-1c: kết quả lượt thêm `chot` (phép kiểm riêng prOv1c) — bỏ khỏi băm như trên. OV-9: `kckDuoi` (phép kiểm riêng prOv9) — cũng vậy. */
+    .update(JSON.stringify(x, (k, v) => (k.endsWith('At') || k === 'chuNhatCuoi' || k === 'daChot' || k === 'chot' || k === 'kckDuoi' ? undefined : v))).digest('hex').slice(0, 16);
   /*
    * Chụp lại 06/10 (PR-MTa): T1 đổi cờ MT cũ của lượt seed (tuần trước nay là MT thường) và các phép kiểm chạy trước (PR-MT, PR-XLMT, PR-LM)
    * đổi dữ liệu MB FT 101. Không chụp được bằng mã 666dcfbf (gọi `kiemLyDo` đã bỏ ở T7) — băm của mã hiện tại; khẳng định `idsTuan` bên dưới
@@ -111,8 +111,10 @@ export async function runPrDlTests(t: YThucTestKit) {
    * Chụp lại 12/10 (PR-OV1c): bộ demo SOS MB FT 101 nay nhập đủ / chốt lượt (Khôi, Lan, Vy đủ 4 kỹ năng; Bảo, Ngọc "Không dự thi"; Châu, Đặng Thu Hà
    * vắng dời) và luật Overall ≥ kỳ vọng = không SOS đổi `sosLevel` / `provisional`; cờ `chot` mới bỏ khỏi băm.
    * Chụp lại 13/10 (OV-6b2 gộp sau OV-1c): bộ demo thêm lớp MB PET 01 (5 lượt Checkpoint) → id lượt Ánh/Bình dời; MB FT 101 không đổi lượt nào (`idsTuan` vẫn đối chiếu).
+   * Chụp lại 13/10 (OV-9, chỉ `moi`): em thử S3F (3) ở MB FT 101 đổi sang KCK sau khi có điểm — lượt dưới kỳ vọng của em KCK nay `sosLevel` null (Case nhẹ,
+   * không SOS); băm theo tuần (`tuan`) không đổi.
    */
-  const ANH_CHUP = { tuan: '84cc0e2e64d9dd36', moi: '3d41809fb7e148a6' };
+  const ANH_CHUP = { tuan: '84cc0e2e64d9dd36', moi: '8d72158b6cd97411' };
   /* Mã cố ý độc lập với hàm: điều kiện lọc tuần của bản trước refactor, viết lại bằng SQL. */
   const idsTuan = (periodId: number) => (conn.prepare(
     `SELECT a.id FROM assessment_attempts a JOIN students s ON s.id = a.student_id

@@ -342,7 +342,7 @@ export async function runPrClTests(t: YThucTestKit) {
     const ca: [any, string[], boolean][] = [
       [{ dichFt: true, routeDich: 'LT1', mt0: { tuXep: 'W4 SEP' }, target: { giaTri: 6, nguon: 'gvcn' }, soCase: 2, dongCase: 'ft' },
         ['Đóng lộ trình FOU, mở lộ trình FT LT1', 'MT0 làm đầu vào, tự xếp W4 SEP', 'Target 6.0 (GVCN ghi)', '2 Case đang mở tự đóng “Lên FT”'], false],
-      [{ dichFt: true, routeDich: 'LT2', mt0: { tuXep: null }, target: { giaTri: 'KCK', nguon: 'khoa' } }, ['Đóng lộ trình FOU, mở lộ trình FT LT2', 'MT0 làm đầu vào', 'Target KCK (khoá)'], false],
+      [{ dichFt: true, routeDich: 'LT2', mt0: { tuXep: null }, target: { giaTri: 'KCK', nguon: 'khoa' } }, ['Đóng lộ trình FOU, mở lộ trình FT LT2', 'MT0 làm đầu vào', 'Target — · KCK (khoá)'], false],   // OV-9: KCK chưa có Target → "— · KCK"
       [{ dichFt: true, routeDich: 'LT1' }, ['Đóng lộ trình FOU, mở lộ trình FT LT1'], false],
       [{ nguonFt: true, dichFt: true, khoa: 'giu', routeNguon: 'LT1', routeDich: 'LT1', soCase: 1, goiYNhan: 'Trần Ngọc Hà' },
         ['Giữ lộ trình FT LT1', 'MT chưa thi chuyển sang lớp mới', '1 Case đang mở đi theo em, người nhận gợi ý: Trần Ngọc Hà'], false],

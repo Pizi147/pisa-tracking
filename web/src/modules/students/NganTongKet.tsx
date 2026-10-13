@@ -6,7 +6,7 @@ import { useToast } from '../../ui/Toast.tsx';
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { Nhan, type ToneNhan } from '../../ui/Nhan.tsx';
 import { ErrorState, Skeleton } from '../../ui/ui.tsx';
-import { LUA_CHON_SAU_THI, NHAN_SAU_THI, duongHoSoHocVien, ngay, type LuaChonSauThi } from '@shared/domain/index.ts';
+import { LUA_CHON_SAU_THI, NHAN_SAU_THI, duongHoSoHocVien, hienTargetKck, ngay, type LuaChonSauThi } from '@shared/domain/index.ts';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { toneHuong } from './CacLoTrinh.tsx';
 import { KetQuaThiThatPanel } from './KetQuaThiThatPanel.tsx';
@@ -241,7 +241,7 @@ export function NganTongKet({ cycleId, onClose, onDoi }: { cycleId: number; onCl
               {kq.loai === 'ft' ? (
                 <>
                   <O nho="Đích">
-                    <Lon em="Target">{data.khongCamKet ? 'KCK' : b1(data.dich.target)}</Lon>
+                    <Lon em="Target">{data.khongCamKet ? hienTargetKck(data.dich.target !== null ? b1(data.dich.target) : null, true) : b1(data.dich.target)}</Lon>
                     {data.dich.thiDuKien && <div className="mt-0.5 text-xs tabular-nums text-slate-400">Thi {data.dich.thiDuKien}</div>}
                   </O>
                   {MUI}
@@ -281,7 +281,7 @@ export function NganTongKet({ cycleId, onClose, onDoi }: { cycleId: number; onCl
             )}
 
             <div className="flex flex-wrap gap-x-3.5 gap-y-1 text-[12.5px] text-slate-400">
-              {[['Lớp', data.lop], ['GVCN', data.gvcn], ['Đầu vào', data.dauVao !== null ? b1(data.dauVao) : null], ...(ft ? [] : [['Target', data.khongCamKet ? 'KCK' : data.target !== null ? b1(data.target) : null]]), ['Thời gian', data.thoiGian],
+              {[['Lớp', data.lop], ['GVCN', data.gvcn], ['Đầu vào', data.dauVao !== null ? b1(data.dauVao) : null], ...(ft ? [] : [['Target', data.khongCamKet ? hienTargetKck(data.target !== null ? b1(data.target) : null, true) : data.target !== null ? b1(data.target) : null]]), ['Thời gian', data.thoiGian],
                 ...(kq.loai === 'thuong' && kq.kqdr ? [['Kết quả đầu ra', chuKqdr(kq.kqdr)]] : [])]
                 .filter(([, v]) => v).map(([k, v]) => <span key={k as string}>{k} <b className="font-semibold text-slate-200">{v}</b></span>)}
             </div>

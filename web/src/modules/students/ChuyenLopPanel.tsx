@@ -4,14 +4,14 @@ import { useApi } from '../../lib/useApi.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { Khoi, KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
-import { ErrorState, NutChon, Skeleton } from '../../ui/ui.tsx';
+import { ErrorState, NutChon, OKck, Skeleton } from '../../ui/ui.tsx';
 import { ChonNguoi, type NguoiTrongDs } from '../../ui/PeoplePicker.tsx';
 import { useDienThoai } from '../../ui/TheDong.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { OTuan } from '../classes/TransitionPanel.tsx';
 import {
-  CHU_CHUYEN_LOP, TOI_DA_NHIEU_EM, canHoiTarget, chonGuiNhieuEm, docOTarget, chuTuanHoc, chuTyLeXetLai, dsLoi, hanBanGiao, kyHieuLop, ngay, phuLopDich, tomTatChuyenEm,
-  tuanChonDuoc, tuanLich, type LoiTruong, type LuatTruong,
+  CHU_CHUYEN_LOP, TOI_DA_NHIEU_EM, canHoiTarget, chuTargetKck, tachKck, chonGuiNhieuEm, docOTarget, chuTuanHoc, chuTyLeXetLai, dsLoi, hanBanGiao, kyHieuLop, ngay, phuLopDich, tomTatChuyenEm,
+  tuanChonDuoc, tuanLich, type LoiTruong, type LuatTruong, type MucTieuLenh,
 } from '@shared/domain/index.ts';
 
 type LopDich = {
@@ -19,12 +19,12 @@ type LopDich = {
   tenChuongTrinh: string | null; tuan: string | null; gvcn: string | null; siSo?: number;
 };
 type LopDichData = { lop: LopDich[]; nguon: { ft: boolean; tuCuoiKhoa: boolean } };
-type LenhCho = { id: number; huong: string; lopDichId: number | null; tuan: string; mucTieu: number | 'KCK' | null; lyDo: string | null; loi: string | null };
+type LenhCho = { id: number; huong: string; lopDichId: number | null; tuan: string; mucTieu: MucTieuLenh | null; lyDo: string | null; loi: string | null };
 type XemChuyenLopData = {
   hienTai: { lop: { id: number; code: string }; ma: string | null; ft: boolean; chiNhanhId: number; route: string | null; tuanHoc: { tuan: number | null; tong: number | null; dangDung: boolean } | null };
   lenh: LenhCho | null; tuanChon: string[]; today: string;
   /** PR-CL (B3): null khi chưa chọn lớp. */
-  huong: string | null; targetSan: number | 'KCK' | null; khiChuyen: string[]; canhBao: boolean; tuLopThuong: string | null;
+  huong: string | null; targetSan: MucTieuLenh | null; khiChuyen: string[]; canhBao: boolean; tuLopThuong: string | null;
 };
 
 /** Thẻ Đề xuất chuyển lớp đang được duyệt: panel mở điền sẵn, nút chính `Duyệt và quyết định` (mockup 20 — thẻ Chờ duyệt → D). */
@@ -61,15 +61,17 @@ function OLopDich({ ds, value, onChange, ariaLabel, id, invalid, onBlur, disable
   );
 }
 
-/** Target + KCK (§7: chỉ khi em chưa có Target nào) — panel một em và hàng nhiều em. */
+/** Target + ô tích KCK (§7: chỉ khi em chưa có Target nào) — panel một em và hàng nhiều em. OV-9: giá trị chữ "6.5" · "6.5 KCK" · "KCK". */
 function OTarget({ value, onChange, ariaLabel, oProps, disabled }: {
   value: string; onChange: (v: string) => void; ariaLabel: string; oProps?: Record<string, unknown>; disabled?: boolean;
 }) {
+  const { so, kck } = tachKck(value);
+  const s = String(so ?? '');
   return (
-    <span className="flex items-center gap-1.5">
-      <input className="field w-20 tabular-nums" inputMode="decimal" aria-label={ariaLabel} {...oProps} disabled={disabled || value === 'KCK'}
-        value={value === 'KCK' ? '' : value} onChange={(e) => onChange(e.target.value)} />
-      <NutChon chon={value === 'KCK'} disabled={disabled} title="Không cam kết — không tính SOS" onClick={() => onChange(value === 'KCK' ? '' : 'KCK')}>KCK</NutChon>
+    <span className="flex items-center gap-3">
+      <input className="field w-20 tabular-nums" inputMode="decimal" aria-label={ariaLabel} {...oProps} disabled={disabled}
+        value={s} onChange={(e) => onChange(chuTargetKck(e.target.value || null, kck))} />
+      <OKck chon={kck} disabled={disabled} onChange={(v) => onChange(chuTargetKck(s || null, v))} />
     </span>
   );
 }
@@ -271,7 +273,7 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone, cheDo,
                 placeholder={dx ? 'Ví dụ: Phụ huynh xin chuyển sang lớp khác giờ học' : 'Ghi lý do'} />
             </Truong>
             {oTarget && (
-              <Truong nhan="Target" batBuoc as="div" loi={lf.loiCua(loi, 'muc-tieu')} phu="Em chưa có Target · band 0–9 hoặc KCK">
+              <Truong nhan="Target" batBuoc as="div" loi={lf.loiCua(loi, 'muc-tieu')} phu="Em chưa có Target · band 0–9, hoặc tích KCK">
                 <OTarget value={mucTieu} onChange={setMucTieu} ariaLabel="Target" oProps={lf.o(loi, 'muc-tieu')} />
               </Truong>
             )}
@@ -472,7 +474,7 @@ function HangNhieuEm({ e, dt, chon, xong, lop, loi, busy, onChon, onLop, hoiTarg
     <span className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1">
       <span className="text-xs font-bold text-slate-200">Target <span aria-hidden className="text-bad">*</span></span>
       <OTarget value={mucTieu} onChange={onMucTieu} ariaLabel={`Target của ${e.ten}`} disabled={khoa} oProps={{ id: `o-muc-tieu-${e.studentId}`, 'aria-invalid': !!loiTarget }} />
-      {loiTarget && <span className="text-xs text-late">{loiTarget === 'Chưa điền' ? 'Em chưa có Target — ghi band hoặc KCK' : loiTarget}</span>}
+      {loiTarget && <span className="text-xs text-late">{loiTarget === 'Chưa điền' ? 'Em chưa có Target — ghi band hoặc tích KCK' : loiTarget}</span>}
     </span>
   );
   const chuLoi = loi && <span role="alert" className="mt-1 block text-xs text-late">{loi}</span>;

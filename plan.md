@@ -13,12 +13,12 @@ File này **thay** cho: `plan.md` cũ (mục 0–24), `PROMPT_SESSION_CODE.md`, 
 | File chi tiết | Dùng cho |
 |---|---|
 | `docs/superpowers/specs/2026-10-11-overhaul-ux-workflow-design.md` | **Đặc tả Overhaul (OV)** — duyệt 11/10; nguồn chi tiết cho 12 PR OV-1a … OV-6b |
-| `docs/superpowers/plans/2026-10-13-pr-ov8b-quyen-tvv.md` | PR **OV-8b** TVV sửa mọi thông tin HV + Target, Tạm dừng/Thôi học, kết quả thi |
-| `docs/superpowers/plans/2026-10-13-pr-ov9-kck-nhe.md` | PR **OV-9** KCK nhẹ (sau OV-8b) |
 | `thiet-ke/mockup-vai-tvv-admin-cx-2026-10-13.html` | Mockup **hiển thị theo vai** TVV / Admin / CX — **đã duyệt 13/10** (OV-10a/b/c) |
-| `docs/superpowers/plans/2026-10-13-pr-ov10a-nut-dung-quyen.md` | PR **OV-10a** nút / link đúng quyền (TVV · CX · Admin) |
 | `docs/superpowers/plans/2026-10-13-pr-ov10b-tvv-cx-lien-he.md` | PR **OV-10b** Liên hệ (SĐT em, phụ huynh) + Học viên & Lớp, hồ sơ HV / lớp theo vai |
 | `docs/superpowers/plans/2026-10-13-pr-ov10c-tong-quan-theo-vai.md` | PR **OV-10c** Tổng quan theo vai (Admin Mock Test · TVV · CX Số liệu) |
+| `docs/superpowers/plans/2026-10-13-pr-ov1d-luoi-cham-sua-lai.md` | PR **OV-1d** lưới chấm FT: ô dời vì vắng bấm được (Bỏ vắng), em đã kết thúc học không báo chờ |
+| `docs/superpowers/plans/2026-10-13-pr-ov4c-ovr-chi-mt-cu.md` | PR **OV-4c** W / S: Band tự tính, nhập Band thẳng chỉ MT cũ |
+| `docs/superpowers/plans/2026-10-13-pr-ov2c-email-khong-bat-buoc.md` | PR **OV-2c** email học viên không bắt buộc |
 | `docs/superpowers/plans/2026-10-07-pr-en-tieng-anh.md` | PR-EN (sau toàn bộ OV — đếm lại chữ trước khi chạy) |
 | `docs/superpowers/plans/2026-10-07-pr-sotay-so-tay-moi.md` | PR-SOTAY (cuối cùng) |
 
@@ -188,7 +188,7 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
   quy trình (lộ trình → bàn giao → KQĐR, SOS MT, dấu "-", huỷ/khôi phục), giao diện, **12 PR OV-1a … OV-6b** + phụ thuộc, tiêu chí nghiệm thu.
 - Mockup bản 2 (góp ý 11/10 đã áp): `thiet-ke/mockup-overhaul-{1,2,3}-*-2026-10-11.html`.
 - Quyết định: mục 3 (các dòng 11/10). Thứ tự, model, prompt: mục 5, 6, 9.
-- **Tình trạng 13/10 (tối):** đã merge OV-7b #347, OV-8a #348. Còn **OV-8b** (đang chạy) → **OV-9** + **OV-10a** + **OV-10c** (song song) → **OV-10b**. Sau đó: **deploy MỘT lần** (mục 5) → PR-EN → PR-SOTAY → deploy lần 2.
+- **Tình trạng 13/10 (tối):** đã merge OV-7b #347, OV-8a #348. Còn **OV-8b** (đang chạy) → **OV-9** + **OV-10a** + **OV-10c** (song song) → **OV-10b**; **OV-1d** (lỗi lưới chấm chủ SP báo 13/10) khi có máy trống. Sau đó: **deploy MỘT lần** (mục 5) → PR-EN → PR-SOTAY → deploy lần 2.
   OV-4 và OV-6b của đặc tả **tách đôi** (mỗi nửa một vùng mã, rà riêng). Thứ tự + song song: mục 5; prompt: mục 9.3.
 - **Chủ SP trả lời 12/10:** (1) hạn khi SOS MT chốt = luật hiện có (5 ngày, SOS 3 = 3 ngày), tính từ ngày chốt; (2) **không làm** ô "Dự kiến quay lại" (mục 3).
 
@@ -286,12 +286,13 @@ Xong: [x] kế hoạch, một dòng mục 11, CODE_MAP.md nếu thêm/xoá file.
 | OV-4a #332 · OV-4b #333 · OV-6b1 #331 | ✅ merge 12/10 | | | |
 | OV-1c #335 · OV-3c #337 · OV-6b2 #336 | ✅ merge 12–13/10 | | | |
 | OV-5a #343 · OV-5b #342 · OV-7a #344 · OV-7b #347 · OV-8a #348 | ✅ merge 13/10 | | | |
-| **OV-8b** | `docs/superpowers/plans/2026-10-13-pr-ov8b-quyen-tvv.md` | Opus 5.5 · XHigh (Opus 5.5 · High) | 4230/5403 | ngay |
-| **OV-9** | `docs/superpowers/plans/2026-10-13-pr-ov9-kck-nhe.md` | Opus 5.5 · XHigh (Opus 5.5 · High) | 4240/5413 | sau OV-8b merge |
-| **OV-10a** | `docs/superpowers/plans/2026-10-13-pr-ov10a-nut-dung-quyen.md` | Sonnet 5.5 · High (Opus 5.5 · High) | 4250/5423 | sau OV-8b merge |
+| OV-8b #352 · OV-10a #355 · OV-9 #356 | ✅ merge 13/10 | | | |
 | **OV-10c** | `docs/superpowers/plans/2026-10-13-pr-ov10c-tong-quan-theo-vai.md` | Opus 5.5 · High (Sonnet 5.5 · High) | 4270/5443 | sau OV-8b merge |
 | **OV-10b** | `docs/superpowers/plans/2026-10-13-pr-ov10b-tvv-cx-lien-he.md` | Opus 5.5 · XHigh (Opus 5.5 · High) | 4260/5433 | sau OV-9 + OV-10a merge |
-- OV-8b rà sâu + `/security-review` (TVV KHÔNG được `cycle.edit`; bước tiếp sau thi vẫn chỉ QL). Sau OV-8b: **OV-9 + OV-10a + OV-10c chạy cùng lúc** (3 máy); OV-10b sau OV-9 + OV-10a (chung ô Sửa thông tin, đầu hồ sơ). Rà sâu: OV-9, OV-10a, OV-10b (+ `/security-review`). Cổng tiếp theo: 4280/5453.
+| **OV-1d** | `docs/superpowers/plans/2026-10-13-pr-ov1d-luoi-cham-sua-lai.md` | Opus 5.5 · High (Sonnet 5.5 · High) | 4280/5453 | khi có máy trống (≤ 3 cùng lúc) |
+| **OV-4c** | `docs/superpowers/plans/2026-10-13-pr-ov4c-ovr-chi-mt-cu.md` | Sonnet 5.5 · High (Opus 5.5 · High) | 4290/5463 | sau OV-1d merge |
+| **OV-2c** | `docs/superpowers/plans/2026-10-13-pr-ov2c-email-khong-bat-buoc.md` | Sonnet 5.5 · High (Opus 5.5 · High) | 4300/5473 | ngay (song song) |
+- OV-8b rà sâu + `/security-review` (TVV KHÔNG được `cycle.edit`; bước tiếp sau thi vẫn chỉ QL). Sau OV-8b: **OV-9 + OV-10a + OV-10c chạy cùng lúc** (3 máy); OV-10b sau OV-9 + OV-10a (chung ô Sửa thông tin, đầu hồ sơ). Rà sâu: OV-9, OV-10a, OV-10b (+ `/security-review`). Cổng tiếp theo: 4310/5483.
 
 ## 10. Mẫu giao việc cho agent (session planning dùng)
 
@@ -336,6 +337,8 @@ Nhật ký chi tiết tới 04/10 ở `git show 575e898d:plan.md` (mục 14) và
 | Ngày | PR / nhánh · model | Kết quả |
 |---|---|---|
 | 13/10/2026 | OV-10c (Opus 5.5) · `claude/elegant-lovelace-0sh1fe` | Tổng quan theo vai: Admin "Mock Test" (4 ô mở Test / Công việc, số cùng hàm màn đó; GV chấm quá hạn + Nhắc), TVV "Học viên của tôi" / CX "Số liệu" ô đếm bấm được (`chipHocVien` — OV-10b dùng cho chip), CX bỏ "Theo giáo viên"; bộ đo tốc độ có vai ADMIN / TVV / CX (`prOv10c.tests`) |
+| 13/10/2026 | OV-10a (Sonnet 5.5) · `claude/stoic-cori-kmj3bl` | Nút / link đúng quyền TVV · CX · Admin: ẩn "+ Case cho {kỹ năng}", Nhập điểm lượt MT, Chọn nhiều HV, Huỷ kỹ năng / Đưa lại / Dời hạn chấm, ô tích kỹ năng, link Test / Công việc, góc Ý thức, "Đề xuất sửa" khi không có quyền; tên GV là link cho Admin; tab Admin "Chấm điểm"; không nới quyền máy chủ (`prOv10a.tests`) |
+| 13/10/2026 | OV-9 (Opus 5.5) · `claude/gallant-mayer-dkd8it` | KCK nhẹ: KCK là dấu riêng, Target giữ (ô tích KCK; lưới / dán Excel "6.5 KCK"); em KCK có kỳ vọng, dưới kỳ vọng → chip "Dưới kỳ vọng · KCK" + Case nhẹ `sos_cases.kck` (không PA quy chế / Bổ trợ, không hạn, không Phối hợp / Báo PH / chuông; Overall đạt tự đóng; bỏ KCK → lượt sau SOS thường); lệnh chuyển / LTT / bản chụp mang Target + KCK; migrate `prOv9` (chỉ thêm cột) |
 | 13/10/2026 | OV-8b (Opus 5.5) · `claude/happy-fermat-7tqtgh` | Quyền TVV / CX: quyền hẹp `student.edit_more` (migrate `prOv8b`, một lần) — Target sửa thẳng có lý do, Ghi chú, Tạm dừng / Quay lại / Thôi học + Hoàn tác, kết quả thi thật; ô TVV chỉ cùng chi nhánh (máy chủ 400); học thuật gọi thẳng → 403 (`prOv8b.tests`) |
 | 13/10/2026 | OV-8a (Opus 5.5) · `claude/pr-ov8a-buoc-tiep-sau-thi-rdlok4` | Bước tiếp sau thi: có kết quả thi thật không tự Lưu trữ nữa → việc QL "Chọn bước tiếp sau thi" (+7 ngày); mục Bước tiếp ở ngăn Tổng kết: Kết thúc (Lưu trữ) · Học tiếp lộ trình mới · Học lại (panel Học lại), gợi ý theo Target, đổi = hoàn tác cái cũ, mốc Hành trình; migrate `prOv8a` |
 | 13/10/2026 | OV-7b (Opus 5.5) · `claude/affectionate-edison-avs75c` | Sửa sau khi lưu 2/2: sửa lần ghi Kết quả PA gần nhất (người ghi + QL; giữ lựa chọn = sửa chữ, đổi = đảo hệ quả cũ + ghi lại, một giao dịch; nhóm bổ trợ, Mini Test, PA thay, thẻ Xin hỗ trợ); Sửa Xem lại tại chỗ; GV đã hoàn thành Case Mở lại được; "Sửa xác nhận" |

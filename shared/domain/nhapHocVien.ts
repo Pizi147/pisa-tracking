@@ -94,7 +94,7 @@ export function chiaLo<T>(ds: readonly T[], co: number): T[][] {
 }
 
 /**
- * Q29-1 (PR-KCK): ô Target ghi `KCK` / `-` / "không cam kết" = học viên KHÔNG CAM KẾT đầu ra → không kỳ vọng MT, không SOS.
+ * Q29-1 (PR-KCK): ô Target ghi `KCK` / `-` / "không cam kết" = học viên KHÔNG CAM KẾT đầu ra (OV-9: dấu riêng — Target giữ, có kỳ vọng; không SOS).
  * KHÁC ô trống (= chưa có target, vẫn có việc "Điền target"). Dùng chung cho nhập học viên, sửa target, Đề xuất sửa.
  */
 export const KCK = 'KCK';
@@ -102,6 +102,33 @@ export const GIAI_THICH_KCK = 'Không cam kết đầu ra — không tính SOS';
 export const laKck = (v: unknown): boolean => {
   const s = String(v ?? '').trim();
   return /^[-–—]$/.test(s) || ['kck', 'khong cam ket'].includes(chuanTieuDe(s));
+};
+
+/*
+ * OV-9 (chủ SP 13/10, KCK nhẹ): KCK là DẤU RIÊNG, Target giữ. Ô Target nhận "6.5", "6.5 KCK", "KCK" (/ "-" / "không cam kết") hoặc trống.
+ * Dưới kỳ vọng em KCK không SOS — chỉ chip trung tính `DUOI_KY_VONG_KCK` + Case nhẹ cho GV.
+ */
+export const DUOI_KY_VONG_KCK = 'Dưới kỳ vọng · KCK';
+/** "6.5 KCK" → { so: '6.5', kck: true }; "KCK" / "-" → { so: '', kck: true }; còn lại giữ nguyên, kck false. Nơi gọi tự kiểm phần số. */
+export function tachKck(v: unknown): { so: unknown; kck: boolean } {
+  if (laKck(v)) return { so: '', kck: true };
+  const m = typeof v === 'string' ? /^(.+?)\s*kck$/i.exec(v.trim()) : null;
+  return m ? { so: m[1].trim(), kck: true } : { so: v, kck: false };
+}
+/** Chữ ô Target (lưới nhập, gửi máy chủ): "6.5 KCK" · "KCK" · "6.5" · "". */
+export const chuTargetKck = (target: number | string | null | undefined, kck: boolean | null | undefined): string => {
+  const so = target === null || target === undefined ? '' : String(target);
+  return kck ? (so ? `${so} ${KCK}` : KCK) : so;
+};
+/** Ô Target dạng chữ (lưới nhập, dán Excel, Sửa cả lớp): "-" / "kck" → "KCK", "6.5 kck" → "6.5 KCK"; còn lại giữ nguyên. */
+export function chuanOTarget(v: string): string {
+  const t = tachKck(v);
+  return t.kck ? chuTargetKck(String(t.so ?? '').trim() || null, true) : v;
+}
+/** Hiện Target ở mọi màn / Hành trình: "6.5 · KCK" · "— · KCK" (KCK mà chưa có Target) · "6.5" · "—". */
+export const hienTargetKck = (target: number | string | null | undefined, kck: boolean | null | undefined): string => {
+  const so = target === null || target === undefined ? '—' : String(target);
+  return kck ? `${so} · ${KCK}` : so;
 };
 
 const BANG_TIEU_DE = new Map<string, CotNhap>(Object.entries(TIEU_DE).flatMap(([k, ds]) => ds.map((a) => [a, k as CotNhap] as const)));

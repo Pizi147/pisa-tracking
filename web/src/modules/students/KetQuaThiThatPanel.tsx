@@ -8,7 +8,7 @@ import { useToast } from '../../ui/Toast.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { ErrorState, Skeleton } from '../../ui/ui.tsx';
-import { MONTH_CODE, ketQuaThiThat, ngay } from '@shared/domain/index.ts';
+import { MONTH_CODE, hienTargetKck, ketQuaThiThat, ngay } from '@shared/domain/index.ts';
 import { laBand } from './StudentPlanPanel.tsx';
 
 const KY_NANG = ['l', 'r', 'w', 's'] as const;
@@ -47,7 +47,7 @@ export function KetQuaThiThatPanel({ cycleId, studentName, lop, chong, onClose, 
   if (error) return <KhungPanel tieuDe="Kết quả thi thật" hocVien={studentName} lop={lop} longTrong={chong} z={chong ? 'z-[60]' : undefined} onDong={onClose}><ErrorState message={error.message} hint={error.hint} onRetry={reload} /></KhungPanel>;
   if (!c || !form) return <KhungPanel tieuDe="Kết quả thi thật" hocVien={studentName} lop={lop} longTrong={chong} z={chong ? 'z-[60]' : undefined} onDong={onClose}><Skeleton rows={5} /></KhungPanel>;
 
-  const target: number | null = c.khong_cam_ket ? null : c.target_score ?? null;
+  const target: number | null = c.target_score ?? null;   // OV-9: KCK giữ Target — so như máy chủ (`ketQuaThiThat`)
   const so = (s: string) => (s.trim() === '' ? null : Number(s));
   const sai = (s: string) => s.trim() !== '' && !laBand(s);
   const diem = { l: so(form.l), r: so(form.r), w: so(form.w), s: so(form.s) };
@@ -79,7 +79,7 @@ export function KetQuaThiThatPanel({ cycleId, studentName, lop, chong, onClose, 
       chan={{ huy: { onClick: onClose }, daSua: JSON.stringify(form) !== goc, conThieu: lf.conThieu(loi), chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={luu} disabled={busy}>Lưu</button> }}>
       <div className="max-w-[560px] space-y-3">
         <div className="flex flex-wrap gap-x-4 gap-y-1 text-[12.5px] text-slate-400">
-          <span>Target <b className="tabular-nums text-slate-200">{c.khong_cam_ket ? 'KCK' : target !== null ? target.toFixed(1) : '—'}</b></span>
+          <span>Target <b className="tabular-nums text-slate-200">{hienTargetKck(target !== null ? target.toFixed(1) : null, !!c.khong_cam_ket)}</b></span>
           <span>Dự kiến thi <b className="tabular-nums text-slate-200">{nhanThi(c, homNay) ?? '—'}</b></span>
         </div>
         <label className="flex items-center gap-2 text-[13px] text-slate-300">

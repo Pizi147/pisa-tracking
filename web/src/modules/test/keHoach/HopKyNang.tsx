@@ -60,14 +60,16 @@ export function HopKyNang({ anchor, tieuDe, loai, classId, studentId, dot, attem
   const [nhatKy, setNhatKy] = useState<KyNangKH | 'ca-luot' | null>(null);
   const [huyMt, setHuyMt] = useState(false);
   /* PR-OV4a: "Huỷ MT{n}" chỉ Quản lý / Quản trị (`attempt.cancel`) — Admin mở được hộp xếp lịch nhưng không có nút Huỷ (máy chủ cũng 403). */
-  const coHuy = useSession().can(PERMISSIONS.ATTEMPT_CANCEL);
+  const { can } = useSession();
+  const coHuy = can(PERMISSIONS.ATTEMPT_CANCEL);
   const navigate = useNavigate();
   const { pathname } = useLocation();
 
   /* PR-MTa T20: Quản lý dời được kỹ năng đã có điểm / đã thi (điểm đi theo) — chỉ phần đã huỷ là chỉ đọc. */
   const laKhoa = (k: KyNangKH) => !moi && kn[k]?.khoa === 'đã huỷ phần thi';
   /* Menu ⋯ từng dòng theo `thaoTacKyNang` qua `menuHopKyNang` (T38; mockup phần 2). Hộp là màn của Quản lý. */
-  const quyen = { nhapDiem: true, quanLy: true, gvcn: false, laFt: loai === 'ft', dotHoanTat: false };
+  const quyen = { nhapDiem: true, quanLy: true, gvcn: false, laFt: loai === 'ft', dotHoanTat: false,
+    huy: can(PERMISSIONS.ATTEMPT_SKIP_SKILL), han: can(PERMISSIONS.DEADLINE_OVERRIDE) };
   const ttCua = (k: KyNangKH): TrangThaiTT => {
     const o = kn[k];
     if (moi) return 'chua-xep';
@@ -364,7 +366,9 @@ function DongKyNangHop({ k, o, khoa, moi, loai, d, noiBat, khaiGiang, tongTuan, 
   k: KyNangKH; o?: OKyNang; khoa: boolean; moi: boolean; loai: 'ft' | 'thuong'; d: Dong; noiBat: boolean; homNay: string | null;
   khaiGiang?: string | null; tongTuan?: number | null; onTick: (v: boolean) => void; onTuan: (t: Tuan) => void; goc: string | null;
 }) {
-  const coTick = loai === 'ft';     // lớp thường luôn đủ bộ môn — không có ô tích (Q3)
+  /* Lớp thường luôn đủ bộ môn — không có ô tích (Q3). OV-10a: bỏ / đưa lại kỹ năng cần `attempt.skip_skill` (Admin không có → không ô tích, máy chủ 403). */
+  const { can } = useSession();
+  const coTick = loai === 'ft' && can(PERMISSIONS.ATTEMPT_SKIP_SKILL);
   const bo = !d.tick;
   const nhanTuan = loai === 'thuong' && d.weekStart ? nhanTuanKhoa(d.weekStart, khaiGiang ?? null, tongTuan ?? null) : null;
   const coDiem = !moi && o?.khoa === 'đã có điểm';

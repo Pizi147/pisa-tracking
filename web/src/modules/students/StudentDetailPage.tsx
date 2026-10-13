@@ -291,7 +291,7 @@ export default function StudentDetailPage() {
                 loading={board.loading} error={board.error} onRetry={board.reload}
                 selected={skillPick}
                 onPick={setSkillPick}
-                onReport={() => setReportOpen(true)}
+                onReport={data.viewer.canReport && !data.lopHoc?.chiXem ? () => setReportOpen(true) : undefined}
                 onChanged={() => { board.reload(); reload(); }}
                 onMoCase={(caseId, o) => setOpenCase({ caseId, paId: o?.paId, viec: o?.viec })}
                 tamDungTu={board.data?.tamDungTu ?? null} />
@@ -365,7 +365,7 @@ export default function StudentDetailPage() {
           studentName={data.fullName}
           ratio={!!cy.ratio}
           canEditCycle={!!data.viewer.canEditCycle}
-          onDeXuatSua={() => { dongPlan(); setViecQuanLy('de-xuat-sua'); }}
+          onDeXuatSua={data.viewer.coTheDeXuatSua ? () => { dongPlan(); setViecQuanLy('de-xuat-sua'); } : undefined}
           onClose={dongPlan}
           onDone={reload}
         />
@@ -468,7 +468,7 @@ function IeltsAttempts({ attempts, dotId, homNay, onOpen }: {
                   <div className="text-xs text-slate-500">{a.weekStart ? tuanLich(a.weekStart, homNay) : <Info pending>Chưa có tuần</Info>}</div>
                 </div>
                 <div className="shrink-0 text-right">
-                  <KetQuaDot coDiem={a.scored} yeuCau={a.required} dat={a.evaluable ? a.sosLevel === 0 : null} sos={a.sosLevel ?? null} chot={a.chot} />
+                  <KetQuaDot coDiem={a.scored} yeuCau={a.required} dat={a.evaluable ? a.sosLevel === 0 : null} sos={a.sosLevel ?? null} chot={a.chot} kckDuoi={a.kckDuoi} />
                   {a.scopeNote && <div className="text-xs text-slate-500">{a.scopeNote}</div>}
                 </div>
               </div>
@@ -523,7 +523,7 @@ function IeltsAttempts({ attempts, dotId, homNay, onOpen }: {
                 <td className={`${so} text-slate-100`}>{fmtBand(a.overall)}</td>
                 <td className={so}>{fmtBand(a.expectation)}</td>
                 <td className="td">
-                  <KetQuaDot coDiem={a.scored} yeuCau={a.required} dat={a.evaluable ? a.sosLevel === 0 : null} sos={a.sosLevel ?? null} chot={a.chot} />
+                  <KetQuaDot coDiem={a.scored} yeuCau={a.required} dat={a.evaluable ? a.sosLevel === 0 : null} sos={a.sosLevel ?? null} chot={a.chot} kckDuoi={a.kckDuoi} />
                   {a.scopeNote && <div className="text-xs text-slate-500">{a.scopeNote}</div>}
                 </td>
               </tr>

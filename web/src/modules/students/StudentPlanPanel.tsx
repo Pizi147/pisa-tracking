@@ -6,11 +6,11 @@ import { WeekPicker } from '../../ui/Filters.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
-import { Empty, Field, NutChon, SectionNote, Skeleton, TargetText, Th } from '../../ui/ui.tsx';
+import { Empty, Field, OKck, SectionNote, Skeleton, TargetText, Th } from '../../ui/ui.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { HopKyNang } from '../test/keHoach/HopKyNang.tsx';
 import { HangLichMt, type BangLichMt } from './HangLichMt.tsx';
-import { BASELINE_SOURCES, BASELINE_SOURCE_LABEL, GIAI_THICH_KCK, KCK, dsLoi, type LoiTruong } from '@shared/domain/index.ts';
+import { BASELINE_SOURCES, BASELINE_SOURCE_LABEL, GIAI_THICH_KCK, chuTargetKck, dsLoi, type LoiTruong } from '@shared/domain/index.ts';
 
 /** Band 0–9, bước 0.5 — cùng luật máy chủ (máy chủ vẫn kiểm lại). */
 export const laBand = (s: string) => s.trim() !== '' && Number.isFinite(Number(s)) && Number(s) >= 0 && Number(s) <= 9 && Number(s) * 2 === Math.round(Number(s) * 2);
@@ -226,7 +226,8 @@ function TargetAndBaseline({ cycleId, cy, canEditCycle, onDeXuatSua, onDone }: {
   const lfT = useLoiForm();
   const lfB = useLoiForm();
   const loiT: LoiTruong[] = [
-    ...(!kck && !laBand(newTarget) ? [{ khoa: 'target-moi', nhan: 'Target mới', lyDo: newTarget ? 'Band từ 0 đến 9, bước 0.5 — hoặc chọn KCK' : 'Chưa điền' }] : []),
+    /* OV-9: KCK là dấu riêng — Target vẫn nhập; KCK mà để trống Target được (thiếu Target như em thường). */
+    ...((newTarget !== '' || !kck) && !laBand(newTarget) ? [{ khoa: 'target-moi', nhan: 'Target mới', lyDo: newTarget ? 'Band từ 0 đến 9, bước 0.5' : 'Chưa điền — hoặc tích KCK' }] : []),
     ...dsLoi([{ khoa: 'ly-do-target', nhan: 'Lý do', toiThieu: 1 }, { khoa: 'hieu-luc', nhan: 'Có hiệu lực từ ngày', chon: true }], { 'ly-do-target': reason, 'hieu-luc': effectiveFrom }),
   ];
   const loiB: LoiTruong[] = laBand(score) ? [] : [{ khoa: 'diem-dau-vao', nhan: 'Điểm đầu vào', lyDo: score ? 'Band từ 0 đến 9, bước 0.5' : 'Chưa điền' }];
@@ -237,7 +238,7 @@ function TargetAndBaseline({ cycleId, cy, canEditCycle, onDeXuatSua, onDone }: {
     setBusy(true);
     try {
       await api.post(`/cycles/${cycleId}/target-revision`, {
-        newTarget: kck ? KCK : newTarget === '' ? null : Number(newTarget),
+        newTarget: kck ? chuTargetKck(newTarget === '' ? null : Number(newTarget), true) : Number(newTarget),
         reason, effectiveFrom: effectiveFrom || undefined,
       });
       invalidate('/cycles'); invalidate('/students'); invalidate('/attempts');
@@ -264,14 +265,16 @@ function TargetAndBaseline({ cycleId, cy, canEditCycle, onDeXuatSua, onDone }: {
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="text-sm text-slate-200">
           Target:{' '}
-          {cy?.khong_cam_ket
-            ? <strong><TargetText band={null} kck /></strong>
-            : cy?.target_score !== null && cy?.target_score !== undefined
-            ? <strong>{cy.target_score}</strong>
+          {cy?.khong_cam_ket || (cy?.target_score !== null && cy?.target_score !== undefined)
+            ? <strong><TargetText band={cy.target_score} kck={!!cy.khong_cam_ket} /></strong>
             : <span className="text-amber-300">chưa đặt</span>}
         </span>
         {canEditCycle ? (
-          <button className="btn btn-sm" onClick={() => setOpenTarget(!openTarget)}>
+          <button className="btn btn-sm" onClick={() => {
+            /* OV-9: mở form điền sẵn Target + dấu KCK đang có — sửa một trong hai không phải gõ lại cái kia. */
+            if (!openTarget) { setNewTarget(cy?.target_score != null ? String(cy.target_score) : ''); setKck(!!cy?.khong_cam_ket); }
+            setOpenTarget(!openTarget);
+          }}>
             {openTarget ? 'Đóng' : 'Đổi Target'}
           </button>
         ) : onDeXuatSua && (
@@ -283,12 +286,10 @@ function TargetAndBaseline({ cycleId, cy, canEditCycle, onDeXuatSua, onDone }: {
       {openTarget && canEditCycle && (
         <div className="space-y-2">
           <Field label="Target mới" required as="div" hint={`KCK: ${GIAI_THICH_KCK}.`} loi={lfT.loiCua(loiT, 'target-moi')}>
-            <span className="flex flex-wrap items-center gap-2">
+            <span className="flex flex-wrap items-center gap-3">
               <input className="field max-w-[8rem]" type="number" inputMode="decimal" step="0.5" min={0} max={9} aria-label="Target mới"
-                {...lfT.o(loiT, 'target-moi')} value={newTarget} disabled={kck} onChange={(e) => setNewTarget(e.target.value)} />
-              {!cy?.khong_cam_ket && (
-                <NutChon nho chon={kck} onClick={() => { setKck(!kck); setNewTarget(''); }}>Không cam kết (KCK)</NutChon>
-              )}
+                {...lfT.o(loiT, 'target-moi')} value={newTarget} onChange={(e) => setNewTarget(e.target.value)} />
+              <OKck chon={kck} onChange={setKck} />
             </span>
           </Field>
           <Field label="Lý do" required loi={lfT.loiCua(loiT, 'ly-do-target')}
@@ -309,8 +310,8 @@ function TargetAndBaseline({ cycleId, cy, canEditCycle, onDeXuatSua, onDone }: {
           <SectionNote>
             Các lượt đã chốt GIỮ NGUYÊN kỳ vọng tính theo Target lúc đó. Đổi Target từ hôm
             nay không chấm lại quá khứ — sửa một Target lịch sử ghi sai là một thao tác hiệu
-            chỉnh riêng, có nhật ký và phải đối soát lại các kết luận đã ra. Chọn KCK: MT chưa có điểm bỏ kỳ vọng, không
-            sinh SOS; Case đang mở giữ nguyên tới khi xử lý xong.
+            chỉnh riêng, có nhật ký và phải đối soát lại các kết luận đã ra. Tích KCK: kỳ vọng MT vẫn tính theo Target; dưới
+            kỳ vọng không SOS, chỉ mở Case nhẹ cho GV (không hạn, không PA quy chế). Case đang mở giữ nguyên tới khi xử lý xong.
           </SectionNote>
         </div>
       )}

@@ -440,14 +440,23 @@ export function BandCell({ cell, target }: {
 }
 
 /**
- * TARGET của lộ trình (Q29-1, PR-KCK): "KCK" = không cam kết đầu ra (không kỳ vọng MT, không SOS) — gạch chấm mờ báo có giải thích khi rê
- * chuột; hoặc band "6.5" / "—" (chưa có). Mọi màn hiện target dùng chung, để KCK không bị đọc nhầm thành "chưa có".
+ * TARGET của lộ trình (Q29-1, PR-KCK; OV-9: KCK là DẤU RIÊNG, Target giữ): "6.5 · KCK" · "— · KCK" (KCK chưa có Target) · "6.5" · "—". Chữ KCK gạch
+ * chấm mờ báo có giải thích khi rê chuột. Mọi màn hiện target dùng chung.
  */
 export function TargetText({ band, kck }: { band: number | null | undefined; kck?: boolean | null }) {
   if (!kck) return <>{fmtBand(band)}</>;
   return (
-    <abbr title={GIAI_THICH_KCK} aria-label={`${KCK}: ${GIAI_THICH_KCK}`}
-      className="cursor-help underline decoration-dotted decoration-slate-500 underline-offset-2">{KCK}</abbr>
+    <>{fmtBand(band)} · <abbr title={GIAI_THICH_KCK} aria-label={`${KCK}: ${GIAI_THICH_KCK}`}
+      className="cursor-help underline decoration-dotted decoration-slate-500 underline-offset-2">{KCK}</abbr></>
+  );
+}
+
+/** OV-9: ô tích "KCK" cạnh ô Target (mẫu ô tích "Không thi") — dấu riêng, Target vẫn nhập như thường. */
+export function OKck({ chon, onChange, disabled }: { chon: boolean; onChange: (v: boolean) => void; disabled?: boolean }) {
+  return (
+    <label className="inline-flex min-h-[44px] shrink-0 cursor-pointer items-center gap-1.5 text-[13px] text-slate-300 sm:min-h-0" title={GIAI_THICH_KCK}>
+      <input type="checkbox" className="h-4 w-4" checked={chon} disabled={disabled} onChange={(e) => onChange(e.target.checked)} /> {KCK}
+    </label>
   );
 }
 

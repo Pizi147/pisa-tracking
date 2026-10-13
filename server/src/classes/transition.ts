@@ -1,6 +1,6 @@
 import { db, tx } from '../db.ts';
 import {
-  NGUONG_KY_VONG, PERMISSIONS, CAU_LIEN_TUC, laLienTuc, PROGRAMME_TEMPLATES, boMonLich, chuanHoaHuong, maHocLai, tenMonNgan, dienSanChuyenTiep, kiemDongChuyenTiep, tuanChonDuoc, kyHieuLop, soSanhLop, tachSoLop, luatDoiLop, nextStepsAfter, programmeOf, tuanHocTai, tuanKhoa,
+  NGUONG_KY_VONG, PERMISSIONS, CAU_LIEN_TUC, ghepMucTieu, laLienTuc, PROGRAMME_TEMPLATES, boMonLich, chuanHoaHuong, maHocLai, tenMonNgan, dienSanChuyenTiep, kiemDongChuyenTiep, tuanChonDuoc, kyHieuLop, soSanhLop, tachSoLop, luatDoiLop, nextStepsAfter, programmeOf, tuanHocTai, tuanKhoa,
   type DongChuyenTiep, type Huong, type LoaiLop, type ProgrammeCode,
 } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, isIsoDate, notFound } from '../util.ts';
@@ -104,7 +104,7 @@ export function transitionPlan(p: Principal, classId: number) {
   ).all(classId) as any[]).map((l) => [l.student_id as number, {
     id: l.id as number, huong: l.huong as string, lopDichId: (l.lop_dich_id ?? null) as number | null,
     lopDichMa: (l.lop_dich_ma ?? null) as string | null, ngayRaLenh: (l.ngay_ra_lenh ?? null) as string | null, tuan: l.tuan_bat_dau as string,
-    mucTieu: l.khong_cam_ket ? 'KCK' : (l.muc_tieu ?? null) as number | 'KCK' | null, ngayThi: (l.ngay_thi ?? null) as string | null,
+    mucTieu: ghepMucTieu(l.muc_tieu, l.khong_cam_ket), ngayThi: (l.ngay_thi ?? null) as string | null,
     ngayXemLai: (l.ngay_xem_lai ?? null) as string | null, lyDo: (l.ly_do ?? null) as string | null, khacGoiY: !!l.khac_goi_y,
     loi: (l.loi ?? null) as string | null,
     /** OV-3b: cột Bàn giao — CN đã xác nhận, môn GVBM đã ghi (chưa tính dòng cần làm lại), hạn. */

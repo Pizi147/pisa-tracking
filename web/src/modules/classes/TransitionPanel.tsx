@@ -9,7 +9,7 @@ import { Nhan } from '../../ui/Nhan.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { chayHangLoat, hoanTacHangLoat } from '../students/hangLoatEm.ts';
 import {
-  CHU_CHUYEN_LOP, chipSosMt0, chuTuanHoc, hanBanGiao, kiemDongLenh, ketQuaGanNhat, maHocVienNgan, ngay, tomTatLenh, tuanLich,
+  CHU_CHUYEN_LOP, chipSosMt0, chuTuanHoc, ghepMucTieu, tachMucTieu, hanBanGiao, kiemDongLenh, ketQuaGanNhat, maHocVienNgan, ngay, tomTatLenh, tuanLich,
   type AssessedSkill, type DongTomTatLenh, type HuongLenh, type KetQuaVao, type MucTieuLenh } from '@shared/domain/index.ts';
 import { ClassCreatePanel } from './ClassCreatePanel.tsx';
 
@@ -97,7 +97,11 @@ function NoiDung({ classId, onClose, onDone }: { classId: number; onClose: () =>
   const nhanLop = (c: any) => [c.code, c.ft ? c.route : null, `${c.studentCount} em`].filter(Boolean).join(' · ');
 
   const dichCua = (d: Dong) => (typeof d.toClassId === 'number' ? (data?.candidates ?? []).find((c: any) => c.id === d.toClassId) ?? null : null);
-  const mucTieuCua = (d: Dong): MucTieuLenh | null => (d.mucTieu.trim().toUpperCase() === 'KCK' ? 'KCK' : d.mucTieu.trim() === '' ? null : Number(d.mucTieu));
+  const mucTieuCua = (d: Dong): MucTieuLenh | null => {   // OV-9: "6.5 KCK" = Target + dấu KCK
+    if (!d.mucTieu.trim()) return null;
+    const t = tachMucTieu(d.mucTieu.trim());
+    return ghepMucTieu(t.target, t.kck);
+  };
   /* Lớp FT không có Final Test → không có gợi ý Cuối khoá (`khacGoiY` false); máy chủ vẫn kiểm lại. */
   const kiemTra = (d: Dong): string | null => {
     if (!d.kieu) return null;

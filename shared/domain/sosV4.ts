@@ -51,8 +51,9 @@ export function quyetDinhChoPa(pa: { preset: boolean }, lanCuoi: boolean): PlanD
 }
 
 /** Tên Case SOS ở chỗ chỉ có chữ (thông báo, hành trình, Việc): `[MT1] Reading không đạt [SOS 3]` (T21). */
-export function tenCaseSos(x: { mt: number | null; giua: string; sos: number | null }): string {
-  return [x.mt ? `[MT${x.mt}]` : '', x.giua, x.sos ? `[SOS ${x.sos}]` : ''].filter(Boolean).join(' ');
+export function tenCaseSos(x: { mt: number | null; giua: string; sos: number | null; kck?: boolean | number | null }): string {
+  /* OV-9: Case nhẹ của em KCK — không mức SOS, đuôi [KCK]. */
+  return [x.mt ? `[MT${x.mt}]` : '', x.giua, x.kck ? '[KCK]' : x.sos ? `[SOS ${x.sos}]` : ''].filter(Boolean).join(' ');
 }
 
 export type TrangThaiCaseV4 = 'cho-nguyen-nhan' | 'cho-duyet-khong-theo-doi' | 'cho-xac-nhan-pa' | 'dang-lam' | 'xong' | 'huy-khong-theo-doi' | 'he-thong-dong' | 'rut-sua-diem';

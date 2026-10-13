@@ -52,7 +52,7 @@ function Chip({ children, sos }: { children: string; sos?: number | null }) {
  */
 export function XacNhanCasePanel({ caseId, topic, kyNang, ct, tenSos, paQuyChe, boTro = null, onXong, ...chung }: ChungPanel & {
   caseId: number; topic: string | null; kyNang: string; ct?: string | null;
-  tenSos: { mt: number | null; giua: string; sos: number | null } | null;
+  tenSos: { mt: number | null; giua: string; sos: number | null; kck?: boolean } | null;
   paQuyChe: PaQuyChe[];
   /** Case Giữa khoá lớp thường (PR-LT2a): tên môn ngắn cho Tên Case. PR-CT2: xác nhận xong PA Bổ trợ chạy ngay (bỏ kế hoạch bài giảng). */
   boTro?: BoTro | null;
@@ -103,11 +103,11 @@ export function XacNhanCasePanel({ caseId, topic, kyNang, ct, tenSos, paQuyChe, 
         <Truong nhan="Kỹ năng" as="div">
           <span className="field flex items-center text-slate-300" aria-readonly>{kyNang}</span>
         </Truong>
-        <Truong nhan="Tên Case" batBuoc phu={boTro ? 'Chỉ sửa được phần giữa. Đợt kiểm tra do hệ thống gắn.' : 'Chỉ sửa được phần giữa. MT# và SOS do hệ thống gắn.'} loi={lf.loiCua(loi, 'ten')}>
+        <Truong nhan="Tên Case" batBuoc phu={boTro ? 'Chỉ sửa được phần giữa. Đợt kiểm tra do hệ thống gắn.' : tenSos?.kck ? 'Chỉ sửa được phần giữa. MT# và KCK do hệ thống gắn.' : 'Chỉ sửa được phần giữa. MT# và SOS do hệ thống gắn.'} loi={lf.loiCua(loi, 'ten')}>
           <span className="flex items-center gap-1.5">
             {boTro ? <Chip>Progress Test</Chip> : tenSos?.mt ? <Chip>{`MT${tenSos.mt}`}</Chip> : null}
             <input className="field min-w-0 flex-1" maxLength={80} {...lf.o(loi, 'ten')} value={giua} onChange={(e) => setGiua(e.target.value)} />
-            {tenSos?.sos ? <Chip sos={tenSos.sos}>{`SOS ${tenSos.sos}`}</Chip> : null}
+            {tenSos?.kck ? <Chip>KCK</Chip> : tenSos?.sos ? <Chip sos={tenSos.sos}>{`SOS ${tenSos.sos}`}</Chip> : null}
           </span>
         </Truong>
         <div>

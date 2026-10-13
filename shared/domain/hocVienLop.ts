@@ -126,6 +126,8 @@ export type KetQuaVao = {
   tyLeTong?: number | null;
   /** OV-6b1: ngưỡng đạt của lớp (lớp thường) — gợi ý Cuối khoá đọc cùng ngưỡng. */
   nguong?: number;
+  /** OV-9: em KCK dưới kỳ vọng — không SOS (`sosLevel` null). */
+  kckDuoi?: boolean;
 };
 /**
  * Cột Kết quả gần nhất (T18, K2-01, E7): tầng 1 `chinh` (+ `lech` FT) + tối đa HAI dòng chữ 12 px, không "…" (đủ chữ, không cắt).
@@ -137,6 +139,8 @@ export type KetQuaHien = {
   dat: boolean; sos: string | null;
   /** Chỉ có (true) khi SOS mới chấm một phần, còn đổi được khi đủ điểm: vẽ viền nét đứt, không ⚠ (⚠ chỉ nghĩa quá hạn). */
   sosTamThoi?: boolean;
+  /** OV-9: em KCK dưới kỳ vọng — chip trung tính "Dưới kỳ vọng · KCK", độ lệch không tô đỏ. */
+  kckDuoi?: boolean;
   dong1: string | null;          // "MT3 · kỳ vọng 7.0 · 3/4 kỹ năng có điểm" · "Final Test · 2/4 môn có điểm" · "Chưa có kết quả"
   dong2: string | null;          // "Không đạt: L R W" · "Không đạt: L G+V" · null
 };
@@ -170,8 +174,9 @@ export function ketQuaGanNhat(k: KetQuaVao | null): KetQuaHien {
   return {
     chinh, lech, dat: k.sosLevel === 0 && !k.provisional, sos,
     dong1: noiDong(k.attemptLabel, k.expectation !== null && `kỳ vọng ${band1(k.expectation)}`, k.scored < k.required && `${k.scored}/${k.required} kỹ năng có điểm`),
-    dong2: k.belowSkills.length ? `Không đạt: ${k.belowSkills.map((b) => skillShort(b.skill)).join(' ')}` : null,
+    dong2: k.belowSkills.length ? `${k.kckDuoi ? 'Dưới kỳ vọng' : 'Không đạt'}: ${k.belowSkills.map((b) => skillShort(b.skill)).join(' ')}` : null,
     ...(sosTamThoi ? { sosTamThoi } : {}),
+    ...(k.kckDuoi ? { kckDuoi: true } : {}),
   };
 }
 

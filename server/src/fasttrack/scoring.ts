@@ -142,7 +142,10 @@ export type AttemptResult = {
    */
   provisional: boolean;
   failedCount: number | null;
+  /** OV-9: em KCK dưới kỳ vọng → `null` (không SOS) và `kckDuoi` = true; em KCK đạt → 0 như thường. */
   sosLevel: SosLevel | null;
+  /** OV-9: lượt của em KCK có kỹ năng dưới kỳ vọng (Overall chưa đạt) — chip trung tính "Dưới kỳ vọng · KCK", Case nhẹ khi chốt. */
+  kckDuoi: boolean;
   /** Chỉ có khi đủ CẢ BỐN kỹ năng — không dựng Overall từ hai/ba kỹ năng. */
   overall: number | null;
   /** Nhãn cho biết đang đánh giá trên mấy kỹ năng, ví dụ "Đánh giá trên 3 kỹ năng". */
@@ -167,6 +170,8 @@ export function evaluateAttempt(
   route?: string | null,
   /** OV-1c: kỹ năng bắt buộc thiếu band mà đã xong (`kyNangXongThieu`). Bỏ trống = chốt khi đủ điểm. */
   xongThieu: readonly string[] = [],
+  /** OV-9: lộ trình của lượt có dấu KCK (`kckCuaLuot`) — kỳ vọng tính như thường, dưới kỳ vọng không thành SOS. */
+  kck = false,
 ): AttemptResult {
   const expectation = expectationFor(target, attemptNo, route);
   const bands = assessedBands(entry);
@@ -227,12 +232,14 @@ export function evaluateAttempt(
     : null;
   /* OV-1c (đặc tả 3.2): Overall tính được và ≥ kỳ vọng → không SOS, kể cả có kỹ năng dưới kỳ vọng (`failedCount` vẫn đếm để tra lại). */
   const overallDat = overall !== null && expectation !== null && overall >= expectation;
-  const sosLevel: SosLevel | null = failedCount === null ? null
+  const mucSos: SosLevel | null = failedCount === null ? null
     : overallDat || failedCount === 0 ? 0 : failedCount === 1 ? 1 : failedCount === 2 ? 2 : 3;
+  const kckDuoi = kck && !!mucSos;
+  const sosLevel = kckDuoi ? null : mucSos;
 
   return {
     expectation, bands, verdicts, required, skipped,
-    scoredRequired, complete, evaluable, failedCount, sosLevel, overall,
+    scoredRequired, complete, evaluable, failedCount, sosLevel, kckDuoi, overall,
     chot, provisional,
     /*
      * Ở danh sách chỉ cần con số. "Đánh giá trên 3 kỹ năng" là một câu giải thích, và giải

@@ -270,7 +270,7 @@ export default function MockDetailPage() {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Link className="btn min-h-[44px] no-underline sm:min-h-0" to={`/hoc-vien/${d.student.id}`}>Hồ sơ học viên</Link>
-          {d.classId && (
+          {d.classId && d.viewer.editableSkills.length > 0 && (
             /* R16 — mở lưới cả lớp đúng TUẦN của đợt đang xem, không phải tuần hôm nay. */
             <Link className="btn min-h-[44px] no-underline sm:min-h-0"
               to={d.mt0 ? `/nhap-diem/${d.classId}?kind=mt0${d.period ? `&periodId=${d.period.id}` : ''}`
@@ -286,7 +286,7 @@ export default function MockDetailPage() {
         {/* Rà #119: `sosLevel` (chặn trần 3) — `failedCount` 4 môn từng ra "SOS 4". */}
         {/* PR-MT0 (planning 07/10): MT0 không có kỳ vọng — đủ điểm thì chỉ `MT0 ✓` / chip SOS, không câu "chưa có kỳ vọng". */}
         {ketQuaMt0 ?? <KetQuaDot coDiem={d.result.scoredRequired} yeuCau={d.result.required.length} dat={passed}
-          sos={d.result.sosLevel ?? null} chot={d.result.chot} />}
+          sos={d.result.sosLevel ?? null} chot={d.result.chot} kckDuoi={d.result.kckDuoi} />}
         {d.mt0 ? (!ketQuaMt0 && d.mt0.sos.map((x) => <Nhan key={x.skill} tone="bad">{chipSosMt0(x)}</Nhan>)) : (
           <span className="text-sm text-slate-400 tabular-nums">
             Kỳ vọng {fmtBand(d.result.expectation)}{laRf && d.result.expectation !== null ? ' = Target' : ''}
@@ -324,7 +324,7 @@ export default function MockDetailPage() {
           </Info>
           <Info label="Dự kiến thi"><ExamPlanText plan={d.cycle.examPlan} /></Info>
           <Info label="Target tại thời điểm đánh giá">
-            <TargetText band={d.targetAtAttempt} kck={d.targetAtAttempt === null && d.cycle.khongCamKet} />
+            <TargetText band={d.targetAtAttempt} kck={d.cycle.khongCamKet} />
           </Info>
           {d.studyWeekHint && (
             <Info label="Mốc gợi ý" title="Tuần học của chương trình và mã tuần lịch là hai khái niệm khác nhau.">
@@ -512,7 +512,8 @@ function SkillWorkTable({ d, onMoDiem, onDone, onOpenHistory, onDoiLich }: {
       batBuoc: r.required, tuanBatDau: r.weekStart, coDiem: coDiemO(c), sit: r.sitStatus, choDuyet: !!r.pendingMove, lichSu: d.lichSu, homNay, huyVang: !!r.huyVang,
     });
     const tat = cancelled ? { chinh: null, menu: [] as ThaoTac[] }
-      : thaoTacKyNang(tt, { nhapDiem: c.canEdit, quanLy: d.viewer.canPlanWeek, gvcn: d.viewer.laGvcn, laFt: true, dotHoanTat: !!c.khoa });
+      : thaoTacKyNang(tt, { nhapDiem: c.canEdit, quanLy: d.viewer.canPlanWeek, gvcn: d.viewer.laGvcn, laFt: true, dotHoanTat: !!c.khoa,
+          huy: d.viewer.canSkipSkill, han: d.viewer.canOverrideDeadline });
     const laDiem = (x: ThaoTac | null) => x === 'nhap-diem' || x === 'sua-diem';
     const chinh0 = ownsSchedule || laDiem(tat.chinh) ? tat.chinh : null;
     /* Nhập/Sửa điểm chỉ khi ô thật sự mở (không bị dấu "-" khoá, không vắng/huỷ). */
