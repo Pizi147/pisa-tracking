@@ -18,6 +18,8 @@ import {
 /** `GET /classes/:id/overview` (server/src/classes/classes.ts → classOverview). */
 export type HoSoLop = {
   id: number; code: string; kind: string; route: string | null; isFastTrack: boolean; startDate: string | null; note: string | null;
+  /** OV-6b2: lớp liên tục (PET, KET…) — không Lộ trình tiếp theo, nhãn "tuần n". */
+  lienTuc?: boolean;
   branchId: number; branchCode: string; branchName: string;
   summary: {
     studentCount: number; needScores: number; workScope: WorkScope; phase: string;
@@ -110,7 +112,7 @@ export function DauTrangLop({ data, onViec, onBanGiao }: {
   const nhapDiem = `${DUONG_TAB_TEST['diem-lop']}?lop=${data.id}`;
   /* PR-OV3a (M2 §1): nút cố định Nhập điểm · + Case · ⋯ — không đổi chỗ theo chặng. ⋯ gom Lớp → Lộ trình → Công cụ → (kẻ) kết thúc, cùng thứ tự hai loại lớp. */
   const mucLop = menuHoSoLop({
-    thuong, chuongTrinh: data.programme?.code ?? null, soHocVien: s?.studentCount ?? 0,
+    thuong, lienTuc: !!data.lienTuc, chuongTrinh: data.programme?.code ?? null, soHocVien: s?.studentCount ?? 0,
     canEditProgress: data.viewer.canEditProgress, canAssign: data.viewer.canAssign, canAssignSubject: !!data.viewer.canAssignSubject,
     canAddStudents: data.viewer.canAddStudents, coTheChuyenTiep: data.viewer.coTheChuyenTiep, coTheChuyenNhieuEm: !!data.dai?.viewer.coTheChuyenNhieuEm,
     /* PR-XUAT (Q8): GVCN của lớp hoặc người xếp lịch (Quản lý) — máy chủ xuất vẫn kiểm lại phạm vi. */
@@ -122,8 +124,8 @@ export function DauTrangLop({ data, onViec, onBanGiao }: {
     const dau = m.nhom && m.nhom !== truoc?.nhom ? [{ key: `nhom-${m.nhom}`, nhan: m.nhom, tieuDe: true, keTruoc: false, onChon: () => undefined }] : [];
     return [...dau, { key: m.key, nhan: m.nhan, keTruoc: !m.nhom && !!truoc?.nhom, nguyHiem: m.key === 'xoa-lop', onChon: () => onViec(m.key) }];
   });
-  const tuan = thuong && s?.currentWeek && s.totalWeeks && s.currentWeek >= 1
-    ? tuanKhoa(Math.min(s.currentWeek, s.totalWeeks), s.totalWeeks) : null;
+  const tuan = thuong && s?.currentWeek && s.currentWeek >= 1
+    ? s.totalWeeks ? tuanKhoa(Math.min(s.currentWeek, s.totalWeeks), s.totalWeeks) : data.lienTuc ? `tuần ${s.currentWeek}` : null : null;   // OV-6b2: liên tục không "/tổng"
   /* K2-13: giữ ký hiệu LT1 · LT2 · RF, tên đủ ở tooltip. */
   const thongTin = [
     data.branchName,

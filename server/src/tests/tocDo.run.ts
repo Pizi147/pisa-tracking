@@ -147,6 +147,7 @@ function coreTeacherOf(classCode: string) {
 const LOP_FT = classId('MB FT 101');
 const LOP_THUONG = classId('MB FOU 12');
 const LOP_BE = classId('MB BE 08');   // PR-KV: panel Kỳ vọng đầu ra
+const LOP_PET = classId('MB PET 01');   // OV-6b2: lớp liên tục (Checkpoint)
 const CN = (conn.prepare('SELECT branch_id AS b FROM classes WHERE id = ?').get(LOP_FT) as any).b as number;
 const HV = (
   conn
@@ -188,6 +189,7 @@ function urlFor(mau: string): string {
     .replace('{lopFT}', String(LOP_FT))
     .replace('{lopThuong}', String(LOP_THUONG))
     .replace('{lopBe}', String(LOP_BE))
+    .replace('{lopPet}', String(LOP_PET))
     .replace('{hv}', String(HV))
     .replace('{loTrinhDong}', String(LO_TRINH_DONG))
     .replace('{lopKetThuc}', String(LOP_KET_THUC))

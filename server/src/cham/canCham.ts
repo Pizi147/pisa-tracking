@@ -16,7 +16,7 @@ import {
   activeAt, can, classScopeSql, defaultWorkScope, editableSkills, isCoreTeacherOf, lopFtChoGvSpeaking, mySkills, scopeXemLuotCham, type Principal,
 } from '../permissions.ts';
 import {
-  ASSESSED_SKILLS, ATTEMPT_KIND_SHORT, CHAM_CHEO, dauTruCuaO, LUOT_TINH_NO_SQL, PERMISSIONS, boMonLich, khoiCham, khungCua, laChamCheo, lopTuMo,
+  ASSESSED_SKILLS, khoaBai, nhanBai, CHAM_CHEO, dauTruCuaO, LUOT_TINH_NO_SQL, PERMISSIONS, boMonLich, khoiCham, khungCua, laChamCheo, lopTuMo,
   tenMonNgan, type Khung, nhanLopLichTest,
   soSanhLop, trangThaiChamLabel, type AssessedSkill, type AttemptKind, type LoaiNhanLop, type PhamViLichTest,
 } from '../../../shared/domain/index.ts';
@@ -48,7 +48,7 @@ export function chamSheet(
     return { ...chung, mode: 'ielts_band' as const, ft: classScoreSheet(p, classId, { theo: 'mt0', periodId: opts.periodId ?? null }, today), thuong: null };
   }
   if (isRatioClass(classId)) {
-    return { ...chung, mode: 'ratio' as const, thuong: regularSheet(p, classId, opts.kind ?? undefined, today), ft: null };
+    return { ...chung, mode: 'ratio' as const, thuong: regularSheet(p, classId, opts.kind ?? undefined, today, opts.attemptNo), ft: null };
   }
   return { ...chung, mode: 'ielts_band' as const, ft: classScoreSheet(p, classId, opts.attemptNo ? { theo: 'luot', attemptNo: opts.attemptNo } : opts.periodId ?? null, today), thuong: null };
 }
@@ -101,7 +101,7 @@ export type DongNo = {
 
 /** Tên đợt trên dòng: FT gọi MT{n}; lớp thường gọi "Giữa khoá"/"Cuối khoá" — không bao giờ gọi đợt lớp thường là MT. */
 const dotLabelOf = (kind: string, attemptNo: number | null) =>
-  (kind === 'mock' ? `MT${attemptNo ?? ''}` : ATTEMPT_KIND_SHORT[kind as AttemptKind] ?? kind);
+  (kind === 'mock' ? `MT${attemptNo ?? ''}` : nhanBai(khoaBai(kind, attemptNo)));   // OV-6b2: "Checkpoint 2"
 
 /** Thứ tự môn cố định L · R · W · S (W1, W2 của FT nằm chỗ W) — dòng nào cũng đọc cùng một thứ tự. */
 const THU_TU_KY_NANG = ['listening', 'reading', 'writing', 'writing1', 'writing2', 'speaking', 'tong_hop'];
@@ -327,7 +327,7 @@ export function noQuaHan(
       hrefDayDu: d.kind === 'mt0' ? `/nhap-diem/${d.classId}?kind=mt0${d.periodId ? `&periodId=${d.periodId}` : ''}`
         : d.mode === 'ielts_band'
         ? `/nhap-diem/${d.classId}${d.periodId ? `?periodId=${d.periodId}` : ''}`
-        : `/nhap-diem/${d.classId}?kind=${encodeURIComponent(d.kind)}`,
+        : `/nhap-diem/${d.classId}?kind=${encodeURIComponent(khoaBai(d.kind, d.attemptNo))}`,
     };
   });
   /* PR-UXF-a (UX-F7, U1): NHÓM THEO LỚP (`soSanhLop` — MB FT 9 trước MB FT 10); trong lớp: quá hạn trước, rồi hạn tăng dần, rồi tuần thi. */
@@ -518,18 +518,19 @@ function hangLopTuan(
     /* PR-MT0 (mockup ⑤): MT0 ở lớp thường = một hàng riêng `{lớp}:mt0`, lưới band, tên môn IELTS, mở Nhập điểm `kind=mt0`. */
     const mt0 = r.kind === 'mt0';
     const mode: CheDo = mt0 ? 'ielts_band' : cheDoCua(r.programme_code);
-    const khoa = mt0 || mode === 'ratio' ? `${r.class_id}:${r.kind}` : String(r.class_id);
+    const bai = khoaBai(r.kind, r.attempt_no);   // OV-6b2: mỗi Checkpoint một hàng (`checkpoint:2`)
+    const khoa = mt0 || mode === 'ratio' ? `${r.class_id}:${bai}` : String(r.class_id);
     let lop = byLop.get(khoa);
     if (!lop) {
       lop = {
         key: khoa, classId: r.class_id, classCode: r.class_code, branchName: r.branch_name, mode,
         chuongTrinh: mt0 ? null : r.programme_code ?? null,
         boMon: mt0 ? [...ASSESSED_SKILLS] : [...boMonLich(r.programme_code, modes.get(r.programme_code)?.skills)],
-        kind: mt0 || mode === 'ratio' ? r.kind : null,
+        kind: mt0 || mode === 'ratio' ? bai : null,
         tong: 0, conBai: 0, conBaiCuaToi: 0, quaHan: false,
         hrefDayDu: mt0 ? `/nhap-diem/${r.class_id}?kind=mt0&periodId=${periodId}`
           : mode === 'ratio'
-          ? `/nhap-diem/${r.class_id}?kind=${encodeURIComponent(r.kind)}`
+          ? `/nhap-diem/${r.class_id}?kind=${encodeURIComponent(bai)}`
           : `/nhap-diem/${r.class_id}?periodId=${periodId}`,
         dong: new Map(), _dot: [], _kn: new Set(), _hanNo: null, _conKhongCheo: 0,
         _toiKn: new Set(), _toiQuaHan: false, _quaHanMoi: false, _khacKn: new Set(), _khacCon: 0, _khacTre: null,
@@ -543,7 +544,7 @@ function hangLopTuan(
     let d = lop.dong.get(key);
     if (!d) {
       const qs = new URLSearchParams();
-      if (r.kind !== 'mock') qs.set('kind', r.kind);
+      if (r.kind !== 'mock') qs.set('kind', bai);
       /* Lớp FT mở lưới đúng tuần đang xem. Lớp thường kèm `kn` = môn của dòng: con trỏ đặt sẵn vào ô trống đầu tiên
          của môn đó. */
       if (mode === 'ielts_band') qs.set('periodId', String(periodId));

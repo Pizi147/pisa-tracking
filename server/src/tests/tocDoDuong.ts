@@ -8,7 +8,7 @@
  * Đường của Qa (`/hoc-vien-lop`, `/classes/:id/phan-tich-lop`) và Rc1 (`/cham/can-cham`, `/cham/lich-test`,
  * `/classes/:id/cham`) đã thêm ở Task 4 sau khi rebase lên #69/#70.
  *
- * URL có chỗ thay bằng ID thật lúc chạy: `{lopFT}`, `{lopThuong}`, `{lopBe}`, `{hv}`, `{case}`, `{cn}`.
+ * URL có chỗ thay bằng ID thật lúc chạy: `{lopFT}`, `{lopThuong}`, `{lopBe}`, `{lopPet}`, `{hv}`, `{case}`, `{cn}`.
  */
 
 export type Vai = 'QL' | 'GVCN' | 'GVBM' | 'GVCN_THUONG' | 'QT';
@@ -127,6 +127,10 @@ export const DUONG_DO: MucDo[] = [
   /* PR-DL: bảng Điểm theo lớp — danh sách lượt (hồ sơ lớp gọi mỗi lần mở), một lượt MT, danh sách lớp của tab Test (trang web /test/diem-lop). */
   { trang: 'Điểm theo lớp', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/classes/{lopFT}/diem-theo-luot' },
   { trang: 'Điểm theo lớp', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/classes/{lopFT}/diem-theo-luot/mt:2' },
+  /* OV-6b2: lớp liên tục MB PET 01 — lượt Checkpoint (quét Checkpoint kế tiếp khi đọc) + Kế hoạch Test cột Checkpoint. */
+  { trang: 'Điểm theo lớp', vai: ['QL', 'QT'], url: '/classes/{lopPet}/diem-theo-luot' },
+  { trang: 'Điểm theo lớp', vai: ['QL', 'QT'], url: '/classes/{lopPet}/diem-theo-luot/cp:1' },
+  { trang: 'Kế hoạch Test', vai: ['QL', 'QT'], url: '/ke-hoach-test/thuong/{lopPet}' },
   { trang: 'Điểm theo lớp', vai: ['QL', 'QT', 'GVCN', 'GVBM', 'GVCN_THUONG'], url: '/diem-theo-lop/lop' },
   /* PR-UX3: ⋮ Xoá lớp / Kết thúc lớp. PR-LUI-b (06/10): Quản lý của lớp cũng xem + Kết thúc được; GV nhận 403 (máy chủ kiểm quyền, không chỉ ẩn nút). */
   {
@@ -482,6 +486,10 @@ export const TRAN: Record<string, number> = {
   'GVCN /classes/3/diem-theo-luot/mt:2': 36,   // TD2-a: đo 31 → max(đo+10, ⌈đo×1,3⌉), cũ 42
   'GVBM /classes/3/diem-theo-luot/mt:2': 36,   // TD2-a: đo 31 → max(đo+10, ⌈đo×1,3⌉), cũ 42
   'QT /classes/3/diem-theo-luot/mt:2': 35,   // TD2-a: đo 30 → max(đo+10, ⌈đo×1,3⌉), cũ 41
+  /* OV-6b2: lớp liên tục MB PET 01 (id 30) — trần = max(đo+10, ⌈đo×1,3⌉), đo 12/10 (gồm 1–3 câu quét Checkpoint kế tiếp khi đọc). */
+  'QL /classes/30/diem-theo-luot': 24, 'QT /classes/30/diem-theo-luot': 23,
+  'QL /classes/30/diem-theo-luot/cp:1': 32, 'QT /classes/30/diem-theo-luot/cp:1': 31,
+  'QL /ke-hoach-test/thuong/30': 31, 'QT /ke-hoach-test/thuong/30': 30,
   'QL /diem-theo-lop/lop': 21,
   'GVCN /diem-theo-lop/lop': 21,
   'GVBM /diem-theo-lop/lop': 21,

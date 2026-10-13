@@ -1,7 +1,7 @@
 import { chenNhieuDong, db, theoLo, tx } from '../db.ts';
 import {
   CHO_TAO_PRE_FOU, ENTRY_SKILLS, PERMISSIONS, PROGRAMME_TEMPLATES, chuanHoaMaLop, ghepMaLop, khoaMaLopSql, kiemSoLop,
-  moRongPhanCong, programmeOf, TOI_DA_DONG_TAO_LOP, type LoiDong, type Route, type SlotPhanCong,
+  moRongPhanCong, programmeOf, laLienTuc, type ProgrammeCode, TOI_DA_DONG_TAO_LOP, type LoiDong, type Route, type SlotPhanCong,
   KCK, NGAY_SINH_TOI_THIEU, canNamGan, laKck, docDongDan, docEmail, docNgayNhap, laDongTieuDe, laMtCu, nhanCotNhap, mtDaThiChuaQua, tuanBatDauMacDinh, tuanHocCuaMt, tuanLich, type CachDoc, type VanDeNhap,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -133,7 +133,7 @@ const coDuLieu = (v: unknown) => !['', '-', '–', '—', 'n/a'].includes(String
 /** Lớp chấm theo tỷ lệ (lớp thường) — chương trình quyết định bộ cột của lưới nhập. */
 export function laLopThuong(programmeCode: string | null): boolean {
   const pc = programmeCode ? programmeOf(programmeCode) ?? 'FT' : null;
-  return ((pc ? programmeByCode(pc)?.scoringMode ?? PROGRAMME_TEMPLATES[pc]?.scoringMode : null) ?? 'ielts_band') === 'ratio';
+  return ((pc ? programmeByCode(pc)?.scoringMode ?? PROGRAMME_TEMPLATES[pc as ProgrammeCode]?.scoringMode : null) ?? 'ielts_band') === 'ratio';
 }
 
 /**
@@ -495,7 +495,9 @@ export function commitIntake(
           const thi = r.examDate ?? null;
           const examDate = examDateOf(r);
           /* TUẦN BẮT ĐẦU HỌC lấy từ ô của dòng, hoặc mặc định của cả lô (mục 12.1). */
-          return [sids[i], 1, route, cls.programme_code ?? null, r.target === KCK ? null : r.target ?? null, r.target === KCK ? 1 : 0,
+          /* OV-6b2: lớp liên tục không có Target (cột Target của file bỏ qua). */
+          const tg = laLienTuc(cls) ? null : r.target;
+          return [sids[i], 1, route, cls.programme_code ?? null, tg === KCK ? null : tg ?? null, tg === KCK ? 1 : 0,
             thi ? thi.slice(0, 7) : null,
             examDate, examDate ? tuan.get(mondayOf(examDate))!.id : null,
             ovr, hasEntry ? 'entrance' : null, ...bands,
@@ -511,7 +513,7 @@ export function commitIntake(
       chenNhieuDong(
         'INSERT INTO journey_events (student_id, event_type, event_date, title, detail, ref_table, ref_id, created_by, created_at)',
         ok.map((r, i) => [sids[i], 'cycle_start', startWeek(r), route ? `Bắt đầu lộ trình ${route}` : 'Bắt đầu khoá học',
-          r.target ? `Target ${r.target}` : 'Chưa có Target', 'learning_cycles', cycOf.get(sids[i]), p.userId, now]));
+          laLienTuc(cls) ? null : r.target ? `Target ${r.target}` : 'Chưa có Target', 'learning_cycles', cycOf.get(sids[i]), p.userId, now]));
 
       /* M1: lịch MT mặc định tạo ngay, MT đã qua là MT lịch sử (T33, T34). Tuần do hệ thống tính, không lấy từ file dán. */
       if (cls.is_fast_track && route) {
@@ -583,19 +585,19 @@ export function createClass(p: Principal, input: {
          */
         `INSERT INTO classes (code, branch_id, kind, programme_code, route, is_fast_track,
                               start_date, start_period_id, previous_class_id, status, note, created_at,
-                              so_tuan, tuan_giua_khoa, tuan_cuoi_khoa, lich_mt, nguong_dat)
-         VALUES (?,?,?,?,?,?,?,?,?, 'active', ?, ?, ?,?,?,?,?)`,
+                              so_tuan, tuan_giua_khoa, tuan_cuoi_khoa, lich_mt, nguong_dat, moc_lap)
+         VALUES (?,?,?,?,?,?,?,?,?, 'active', ?, ?, ?,?,?,?,?,?)`,
       )
       .run(code, input.branchId, (input.kind ?? 'FT').trim(),
            ct, input.route ?? null,
            input.isFastTrack ? 1 : 0, input.startDate ?? null, input.startPeriodId ?? null,
            input.previousClassId ?? null,
            input.note ?? null, nowIso(),
-           chup.so_tuan, chup.tuan_giua_khoa, chup.tuan_cuoi_khoa, chup.lich_mt, chup.nguong_dat);
+           chup.so_tuan, chup.tuan_giua_khoa, chup.tuan_cuoi_khoa, chup.lich_mt, chup.nguong_dat, chup.moc_lap);
     const id = Number(info.lastInsertRowid);
     /* Không khai kỹ năng thì lấy ĐÚNG bộ môn của chương trình lớp đó (bảng `programmes`, K5-45), không mặc định bộ FT. */
     const fallback = allProgrammes().get(ct ?? '')?.skills
-      ?? (ct ? PROGRAMME_TEMPLATES[ct]?.skills : null) ?? ENTRY_SKILLS;
+      ?? (ct ? PROGRAMME_TEMPLATES[ct as ProgrammeCode]?.skills : null) ?? ENTRY_SKILLS;
     for (const skill of input.skills?.length ? input.skills : fallback) {
       conn.prepare('INSERT INTO class_skills (class_id, skill, sessions_per_week) VALUES (?,?,1)').run(id, skill);
     }
@@ -631,12 +633,13 @@ export function kiemDongTaoLop(input: TaoLopInput, dong: number): { ok: DongDaKi
   const ct = programmeOf(String(input.chuongTrinh ?? ''));
   const prog = ct ? allProgrammes().get(ct) : null;
   if (!ct || !prog) return { loi: [...loi, { dong, truong: 'chuongTrinh', loi: 'Chọn chương trình của lớp.' }] };
+  if (!prog.active) return { loi: [...loi, { dong, truong: 'chuongTrinh', loi: `Chương trình ${ct} đã ngừng dùng — chọn chương trình khác.` }] };
   if (ct === 'PREFOU' && !CHO_TAO_PRE_FOU) loi.push({ dong, truong: 'chuongTrinh', loi: 'Lớp Pre FOU chưa mở — sẽ mở cùng đợt cập nhật hệ môn học.' });
   const loTrinh = ct === 'FT' ? String(input.loTrinh ?? '') : null;
   if (ct === 'FT' && !activeRouteCodes().includes(loTrinh!)) loi.push({ dong, truong: 'loTrinh', loi: 'Chọn lộ trình LT1, LT2 hoặc RF.' });
   const loiSo = kiemSoLop(String(input.so ?? ''));
   if (loiSo) loi.push({ dong, truong: 'so', loi: loiSo });
-  if (ct !== 'FT' && !input.startPeriodId) loi.push({ dong, truong: 'tuan', loi: 'Chọn tuần khai giảng — mốc Progress/Final Test đếm từ tuần này.' });
+  if (ct !== 'FT' && !input.startPeriodId) loi.push({ dong, truong: 'tuan', loi: `Chọn tuần khai giảng — mốc ${prog.lapMoiTuan ? 'Checkpoint' : 'Progress/Final Test'} đếm từ tuần này.` });
   /* Lớp thường: ngày khai giảng = thứ Hai của tuần khai giảng (mốc Giữa/Cuối khoá đếm từ đây). */
   const tuan = input.startPeriodId ? periodById(input.startPeriodId) : null;
   if (input.startPeriodId && !tuan) loi.push({ dong, truong: 'tuan', loi: 'Tuần khai giảng không hợp lệ.' });

@@ -9,7 +9,7 @@
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import type { Principal } from '../permissions.ts';
 import {
-  INTERVENTION_KIND_LABEL, REGULAR_SKILLS, caseTopicLabel, duongHoSoHocVien, moTaBoTro, nhanDotNgan, nhanLoaiXuLy, outcomeLabelFor, shortDate, tenMonNgan, tuanLich,
+  INTERVENTION_KIND_LABEL, LIEN_TUC_SQL, REGULAR_SKILLS, caseTopicLabel, duongHoSoHocVien, moTaBoTro, nhanDotNgan, nhanLoaiXuLy, outcomeLabelFor, shortDate, tenMonNgan, tuanLich,
   type InterventionKind, type LoaiYeuCau, type TrangThaiYc,
   type TruongDeXuat,
 } from '../../../shared/domain/index.ts';
@@ -525,7 +525,7 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
     quet: (conn, homNay) => {
       const lop = (conn.prepare(
         `SELECT c.id FROM classes c LEFT JOIN report_periods rp ON rp.id = c.start_period_id
-          WHERE c.status = 'active' AND c.is_fast_track = 0
+          WHERE c.status = 'active' AND c.is_fast_track = 0 AND NOT (${LIEN_TUC_SQL('c')})   -- OV-6b2: lớp liên tục không hết khoá
             AND (c.so_tuan IS NULL OR rp.week_start IS NULL OR date(rp.week_start, '+' || (c.so_tuan * 7) || ' days') <= ?)
             AND EXISTS (SELECT 1 FROM enrollments e JOIN students s ON s.id = e.student_id WHERE e.class_id = c.id AND e.status = 'active'
                           AND ${HV_DANG_HOC_SQL('s')}

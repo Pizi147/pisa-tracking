@@ -611,7 +611,7 @@ export async function runPrHk2Tests(t: YThucTestKit) {
 
   check('C40 · dữ liệu không đổi: kind progress / final, khoá hành động nhật ký; tên Case cũ đọc nguyên chữ; không mã nào tách tên Case theo tiền tố', () => {
     const { conn } = t;
-    assert(d.ATTEMPT_KINDS.join() === 'mock,progress,final,mt0', d.ATTEMPT_KINDS.join());
+    assert(d.ATTEMPT_KINDS.join() === 'mock,progress,final,mt0,checkpoint', d.ATTEMPT_KINDS.join());   // OV-6b2: thêm Checkpoint (lớp liên tục), kind cũ giữ nguyên
     const kinds = (conn.prepare(`SELECT DISTINCT kind FROM assessment_attempts`).all() as any[]).map((r) => r.kind as string);
     assert(kinds.includes('progress') && kinds.includes('final') && kinds.every((k) => d.ATTEMPT_KINDS.includes(k)), kinds.join());
     assert(d.nhanHanhDongNhatKy('case.auto_from_giua_khoa') === 'Tạo Case từ Progress Test', d.nhanHanhDongNhatKy('case.auto_from_giua_khoa'));

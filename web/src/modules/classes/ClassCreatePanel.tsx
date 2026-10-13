@@ -8,7 +8,7 @@ import { WeekPicker } from '../../ui/Filters.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 import { NutChon } from '../../ui/ui.tsx';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
-import { LuoiTaoLop, dongMoi, type TrangThaiLuoi } from './LuoiTaoLop.tsx';
+import { LuoiTaoLop, chuongTrinhThuong, dongMoi, type TrangThaiLuoi } from './LuoiTaoLop.tsx';
 import {
   CHO_TAO_PRE_FOU, ENTRY_SKILLS, PROGRAMME_TEMPLATES,
   chonKhiDoiTach, chuanHoaMaLop, dsLoi, ghepMaLop, kiemPhanCong, kiemSoLop, kyHieuLop, kyNangGoiY, locSoLop, nhanDayDuoc, oPhanCong, slotsTuO,
@@ -16,9 +16,12 @@ import {
 } from '@shared/domain/index.ts';
 
 type Branch = { id: number; code: string; name: string };
-type Programme = { code: string; name: string; weeks: number | null; skills: readonly string[]; checkpoints: readonly { kind: string; studyWeek: number }[] };
+type Programme = {
+  code: string; name: string; weeks: number | null; skills: readonly string[]; checkpoints: readonly { kind: string; studyWeek: number }[];
+  /** OV-6b2: liên tục — Checkpoint mỗi n tuần. */
+  lapMoiTuan?: number | null;
+};
 type Kieu = 'FT' | 'THUONG';
-const CHUONG_TRINH_THUONG = ['PREFOU', 'FOU', 'BE', 'ELE'] as const;
 
 /**
  * TẠO LỚP MỚI (PR-LOP, mockup 21 mục 1–3) — MỘT lệnh `POST /classes` tạo lớp + phân công cùng giao dịch (YC-1).
@@ -99,6 +102,7 @@ export function ClassCreatePanel({ onClose, onDone, macDinh, moHoSo }: {
   const moc = (k: string) => mau?.checkpoints.find((c) => c.kind === k)?.studyWeek;
   const lopSeCo = ct === 'FT'
     ? 'Lịch MT theo từng HV'
+    : prog?.lapMoiTuan ? `Liên tục · Checkpoint mỗi ${prog.lapMoiTuan} tuần`
     : [mau?.weeks && `${mau.weeks} tuần`, moc('progress') && `Progress Test tuần ${moc('progress')}`, moc('final') && `Final Test tuần ${moc('final')}`]
       .filter(Boolean).join(' · ');
 
@@ -171,7 +175,7 @@ export function ClassCreatePanel({ onClose, onDone, macDinh, moHoSo }: {
         ) : (
           <Truong nhan="Chương trình" as="div" phu={CHO_TAO_PRE_FOU ? undefined : 'Mở cùng đợt cập nhật hệ môn học'}>
             <PhanDoan nhan="Chương trình" giaTri={chuongTrinh} onChon={setChuongTrinh}
-              muc={CHUONG_TRINH_THUONG.map((c) => ({
+              muc={chuongTrinhThuong(programmes.data).map((c) => ({
                 v: c, nhan: kyHieuLop(c, null) ?? c, tat: c === 'PREFOU' && !CHO_TAO_PRE_FOU,
                 title: c === 'PREFOU' && !CHO_TAO_PRE_FOU ? 'Mở cùng đợt cập nhật hệ môn học' : undefined,
               }))} />

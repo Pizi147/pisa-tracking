@@ -1,6 +1,13 @@
 /** TÊN LỚP (T1, T2, L1, PF5): máy ghép `{CN} {ký hiệu} {số}`; người dùng chỉ chọn và gõ số. Một nguồn cho web + máy chủ + migrate. */
+import { MA_CHUONG_TRINH_MOI } from './normal.ts';
 export const THU_TU_KY_HIEU = ['FT', 'FT RF', 'Pre FOU', 'FOU', 'BE', 'ELE'] as const;
-export type KyHieuLop = (typeof THU_TU_KY_HIEU)[number];
+/** OV-6b2: ngoài bộ cố định, ký hiệu = mã chương trình Quản trị tạo (PET, KET…) — xếp sau bộ cố định. */
+export type KyHieuLop = (typeof THU_TU_KY_HIEU)[number] | (string & {});
+/** Thứ tự xếp lớp / chương trình theo ký hiệu: bộ cố định trước, mã mới sau. */
+export const thuTuKyHieu = (kh: string | null | undefined): number => {
+  const i = (THU_TU_KY_HIEU as readonly string[]).indexOf(kh ?? '');
+  return i < 0 ? THU_TU_KY_HIEU.length : i;
+};
 /** PF6: chỉ mở "Pre FOU" ở Tạo lớp khi PR-MON (một ô Tổng hợp) có trong cùng đợt deploy. PR-MON đổi dòng này thành `true`. */
 export const CHO_TAO_PRE_FOU = true;
 export const MAU_SO_LOP = /^\d{1,4}[A-Za-z]?$/;
@@ -11,7 +18,7 @@ export function kyHieuLop(chuongTrinh: string | null, loTrinh: string | null): K
   if (c === 'PREFOU') return 'Pre FOU';
   if (c === 'FOU' || c === 'FOUND') return 'FOU';
   if (c === 'BE' || c === 'ELE') return c;
-  return null;
+  return MA_CHUONG_TRINH_MOI.test(c) ? c : null;   // OV-6b2: `{CN} PET {số}`
 }
 export function kiemSoLop(so: string): string | null {
   const s = so.trim();
@@ -37,11 +44,11 @@ export const khoaMaLopSql = (cot = 'code') => `lower(replace(replace(${cot}, '-'
 function tachDuoi(code: string, maCn: string): { kh: KyHieuLop; so: string } | 'khong-tien-to' | 'khong-theo-mau' {
   const m = new RegExp(`^${maCn}[\\s-]+(.+)$`, 'i').exec(code.trim());
   if (!m) return 'khong-tien-to';
-  const d = /^(FT[\s-]*RF|FT|PRE[\s-]*FOU|FOUND|FOU|BE|ELE)[\s-]*(\d{1,4}[A-Za-z]?)$/i.exec(m[1].trim());
+  const d = /^(FT[\s-]*RF|FT|PRE[\s-]*FOU|FOUND|FOU|BE|ELE|[A-Z][A-Z0-9]{1,5})[\s-]+(\d{1,4}[A-Za-z]?)$|^(FT[\s-]*RF|FT|PRE[\s-]*FOU|FOUND|FOU|BE|ELE)(\d{1,4}[A-Za-z]?)$/i.exec(m[1].trim());
   if (!d) return 'khong-theo-mau';
-  const t = d[1].toUpperCase().replace(/[\s-]/g, '');
-  const kh: KyHieuLop = t === 'FTRF' ? 'FT RF' : t === 'PREFOU' ? 'Pre FOU' : t === 'FOUND' ? 'FOU' : (t as KyHieuLop);
-  return { kh, so: d[2].toUpperCase() };
+  const t = (d[1] ?? d[3]).toUpperCase().replace(/[\s-]/g, '');
+  const kh: KyHieuLop = t === 'FTRF' ? 'FT RF' : t === 'PREFOU' ? 'Pre FOU' : t === 'FOUND' ? 'FOU' : t;
+  return { kh, so: (d[2] ?? d[4]).toUpperCase() };
 }
 export function tachSoLop(code: string, maCn: string): string | null {
   const r = tachDuoi(code, maCn);
@@ -55,11 +62,11 @@ export function soSanhLop(a: LopSapXep, b: LopSapXep): number {
     const cn = x.code.trim().split(/[\s-]+/)[0] ?? '';
     const r = tachDuoi(x.code, cn);
     return typeof r === 'string'
-      ? { cn, bac: 99, so: Number.MAX_SAFE_INTEGER, chu: x.code }
-      : { cn, bac: THU_TU_KY_HIEU.indexOf(r.kh), so: parseInt(r.so, 10), chu: r.so.replace(/^\d+/, '') };
+      ? { cn, bac: 99, so: Number.MAX_SAFE_INTEGER, chu: x.code, kh: '' }
+      : { cn, bac: thuTuKyHieu(r.kh), so: parseInt(r.so, 10), chu: r.so.replace(/^\d+/, ''), kh: r.kh as string };
   };
   const x = khoa(a); const y = khoa(b);
-  return x.cn.localeCompare(y.cn) || x.bac - y.bac || x.so - y.so || x.chu.localeCompare(y.chu) || a.code.localeCompare(b.code);
+  return x.cn.localeCompare(y.cn) || x.bac - y.bac || (x.kh ?? '').localeCompare(y.kh ?? '') || x.so - y.so || x.chu.localeCompare(y.chu) || a.code.localeCompare(b.code);
 }
 export type DoiTenCu = { moi: string } | { loi: 'khong-tien-to' | 'khong-theo-mau' | 'lech-chuong-trinh' };
 /** T2: ký hiệu trên tên phải KHỚP cột chương trình/lộ trình — lệch thì không đoán, đưa vào danh sách hỏi chủ sản phẩm. */

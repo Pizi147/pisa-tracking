@@ -7,6 +7,7 @@
 import { PERMISSION_LABEL, PROGRAMME_TEMPLATES } from '../../../shared/domain/index.ts';
 import { seedRoutes } from '../platform/sysconfig.ts';
 import { dienCauHinh } from '../migrate/prOv6b1.ts';
+import { chenPetKet } from '../migrate/prOv6b2.ts';
 import { RETIRED_ROLES, ROLES, ROLE_PERMISSIONS } from './data.ts';
 
 export function napDuLieuNen(conn: any, now: string): { roleId: Map<string, number>; permId: Map<string, number> } {
@@ -58,6 +59,7 @@ export function napDuLieuNen(conn: any, now: string): { roleId: Map<string, numb
     }
   }
   dienCauHinh(conn);   // OV-6b1: tuần MT lộ trình + ngưỡng đạt — cùng luật với migrate
+  chenPetKet(conn);    // OV-6b2: PET, KET — cùng hàm với migrate
   /*
    * DẤU NGƯỠNG ĐẠT LỚP NORMAL (PR-Z2c-b). Ngưỡng thật là hằng RATIO_PASS_THRESHOLD trong mã; dòng này chỉ là dấu cho bước
    * migrate `migrateNormalPassThreshold` biết database đã ở luật 70%. Thiếu dấu thì lần migrate đầu trên một database MỚI

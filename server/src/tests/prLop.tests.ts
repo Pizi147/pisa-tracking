@@ -204,9 +204,12 @@ export async function runPrLopTests(t: YThucTestKit) {
     }
   });
 
-  check('LOP (10) · Quản trị Lộ trình & chương trình: không thêm mã, Pre FOU không có Progress Test, Final Test mặc định = số tuần (K1-46…K1-50)', () => {
+  check('LOP (10) · Quản trị Lộ trình & chương trình: lộ trình không thêm mã; chương trình mới chỉ qua "+ Chương trình" (OV-6b2), Pre FOU không có Progress Test, Final Test mặc định = số tuần (K1-46…K1-50)', () => {
     assertThrows(() => sys.saveRoute(P.admin, { code: 'LT3', name: 'x' }), /không thêm/i, 'thêm được lộ trình');
-    assertThrows(() => sys.saveProgramme(P.admin, { code: 'PRE-IELTS', name: 'x' }), /không thêm/i, 'thêm được chương trình');
+    /* OV-6b2 bỏ K1-48 cho chương trình: lưu mã chưa có mà không qua "+ Chương trình" vẫn bị từ chối; mã sai dạng bị từ chối ở ô Mã. */
+    assertThrows(() => sys.saveProgramme(P.admin, { code: 'PRE-IELTS', name: 'x' }), /\+ Chương trình/, 'sửa được mã chưa có');
+    assertThrows(() => sys.saveProgramme(P.admin, { code: 'PRE-IELTS', name: 'x', taoMoi: true, skills: ['listening'], nguongDat: 70, lapMoiTuan: 6 }),
+      /Mã 2–6 ký tự/, 'mã có gạch ngang được tạo');
     assertThrows(() => sys.saveProgramme(P.admin, { code: 'PREFOU', name: 'Pre Foundation', weeks: 5, progressWeek: 2 }),
       /không có bài Progress Test/, 'Pre FOU nhận tuần Progress Test');
     const r = sys.saveProgramme(P.admin, { code: 'PREFOU', name: 'Pre Foundation', weeks: 6 });

@@ -1,7 +1,7 @@
 import { chenNhieuDong, db, theoLo, tx } from '../db.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import {
-  KHOI_PHUC_LENH_GIO, LO_HANG_LOAT_EM, NHAN_XET_TOI_THIEU, PERMISSIONS, coPhieu, canLopDich, hanBanGiaoLenh, khacGoiY, mocLoTrinh, kiemDongChuyenTiep, kiemDongLenh, targetLenFt, tuanHopLe, tuanLich,
+  KHOI_PHUC_LENH_GIO, LO_HANG_LOAT_EM, laLienTuc, NHAN_XET_TOI_THIEU, PERMISSIONS, coPhieu, canLopDich, hanBanGiaoLenh, khacGoiY, mocLoTrinh, kiemDongChuyenTiep, kiemDongLenh, targetLenFt, tuanHopLe, tuanLich,
   type DemChotLoTrinh, type Huong, type HuongLenh, type MucTieuLenh, type ProgrammeCode,
 } from '../../../shared/domain/index.ts';
 import { HttpError, badRequest, chuTuDo, conflict, forbidden, notFound, nowIso } from '../util.ts';
@@ -479,9 +479,9 @@ export function dongTuBody(x: any): DongLenhVao {
 
 /** Q4: panel cả lớp — lớp thường hết khoá (`cuoi-khoa`, thi hành theo lô), lớp FT giữa khoá (thi hành từng em). */
 export function boiCanhTheoLop(lopId: number): BoiCanhLenh {
-  const c = db().prepare('SELECT is_fast_track FROM classes WHERE id = ?').get(lopId) as any;
+  const c = db().prepare('SELECT is_fast_track, moc_lap FROM classes WHERE id = ?').get(lopId) as any;
   if (!c) throw notFound('Không tìm thấy lớp');
-  return c.is_fast_track ? 'giua-khoa' : 'cuoi-khoa';
+  return c.is_fast_track || laLienTuc(c) ? 'giua-khoa' : 'cuoi-khoa';   // OV-6b2: lớp liên tục không có Cuối khoá — chuyển từng em như FT
 }
 
 /** PATCH: chỉ những khoá có trong thân yêu cầu mới ghi đè (khoá vắng = giữ giá trị cũ của lệnh). */
@@ -749,7 +749,8 @@ function tinhLopChoChotLoTrinh(p: Principal, branchId: number | null, today: str
   const toi = lop.flatMap((c) => {
     const pr = tienDo.get(c.id);
     /* Chương trình theo `classProgress` (programme_code, lớp cũ NULL thì theo `kind`) — như việc `placement` cũ. */
-    if (!pr || !['PREFOU', 'FOU', 'BE', 'ELE'].includes(pr.programmeCode ?? '')) return [];
+    /* Lớp thường CÓ SỐ TUẦN (mọi mã, cả mã Quản trị tạo); lớp liên tục (PET, KET — OV-6b2) không có Chốt lộ trình. */
+    if (!pr || pr.programmeCode === 'FT' || !pr.totalWeeks) return [];
     const moc = pr.finalWeekStart ? mocLoTrinh(pr.finalWeekStart) : null;
     const han = moc?.hanChot ?? null;
     const den = moc ? today >= moc.nhacTu : mocKetKhoa(pr, today).hetKhoa;
