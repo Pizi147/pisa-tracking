@@ -1,6 +1,6 @@
 /**
  * PHÉP KIỂM PR-OV1d — lưới chấm FT: ô đã dời vì vắng ở lưới TUẦN GỐC có đủ dữ liệu để mở hộp + Bỏ vắng tại chỗ; em không còn đang học
- * (Kết thúc học / Lưu trữ; em Tạm dừng vẫn ghi được) → hàng có cờ `ngungHoc`, ô chỉ đọc, máy chủ chặn ghi (400). Mỗi ca cuộn lại (`thu`).
+ * (Kết thúc học / Lưu trữ) → hàng có cờ `ngungHoc`, ô không là việc; chỉ Lưu trữ chỉ đọc + máy chủ chặn ghi (400). Em Tạm dừng như đang học. Mỗi ca cuộn lại (`thu`).
  */
 import type { YThucTestKit } from './yThuc.tests.ts';
 
@@ -75,28 +75,28 @@ export async function runPrOv1dTests(t: YThucTestKit) {
     assert(!o(a, 'listening', gvL, W, THU6).daChot, 'sau Bỏ vắng ô về tuần gốc, không còn dấu dời');
   }));
 
-  check('OV1d-2 · em Lưu trữ / Kết thúc học: hàng có cờ ngungHoc, ô chỉ đọc (cả Bỏ vắng), ghi → 400; em Tạm dừng ghi được, hàng không mờ; trở lại học → ghi được', () => thu(() => {
+  check('OV1d-2 · em Lưu trữ: cờ ngungHoc, ô chỉ đọc (cả Bỏ vắng), ghi → 400; em Kết thúc học chưa lưu trữ: cờ, ô không là việc nhưng vẫn ghi được (PR-TK); em Tạm dừng như đang học; trở lại học → ghi được', () => thu(() => {
     const a = luot[1], s = sid(a);
     dung(a);
-    attempts.saveScore(gvL, a, 'reading', { noShow: true }, TRONG);   // ô dời vì vắng — Bỏ vắng cũng phải khoá
-    const ca: [string, string, RegExp][] = [
-      [`archived_at = '2026-10-01T00:00:00Z'`, 'Lưu trữ', /Bỏ lưu trữ/],
-      [`status = 'finished'`, 'Đã kết thúc học', /Học lại/],
-    ];
-    for (const [dat, nhan, cau] of ca) {
-      conn.prepare(`UPDATE students SET ${dat} WHERE id = ?`).run(s);
-      xoaNho();
-      const r = hang(a, QL, W, THU6);
-      assert(r?.ngungHoc === nhan, `${nhan}: cờ hàng = ${JSON.stringify(r?.ngungHoc)}`);
-      assert(r.cells.every((c: any) => !c.canEdit && !c.viec && !c.overdue && !c.daChot?.goDuoc),
-        `${nhan}: ô phải chỉ đọc: ${JSON.stringify(r.cells.map((c: any) => [c.skill, c.canEdit, c.viec, c.overdue, c.daChot?.goDuoc]))}`);
-      for (const [k, patch] of [['listening', { rawScore: 30 }], ['reading', { noShow: false }], ['speaking', { nhanXet: 'x' }]] as const) {
-        const e = loi(() => attempts.saveScore(QL, a, k, patch, THU6));
-        assert(e?.status === 400 && cau.test(e.message), `${nhan} ghi ${k}: ${e?.status} ${e?.message}`);
-      }
-      conn.prepare(`UPDATE students SET status = 'active', archived_at = NULL WHERE id = ?`).run(s);
-      xoaNho();
+    attempts.saveScore(gvL, a, 'reading', { noShow: true }, TRONG);   // ô dời vì vắng — Bỏ vắng cũng phải khoá khi Lưu trữ
+    const dat = (sql: string) => { conn.prepare(`UPDATE students SET ${sql} WHERE id = ?`).run(s); xoaNho(); };
+    dat(`archived_at = '2026-10-01T00:00:00Z'`);
+    let r = hang(a, QL, W, THU6);
+    assert(r?.ngungHoc === 'Lưu trữ', `Lưu trữ: cờ hàng = ${JSON.stringify(r?.ngungHoc)}`);
+    assert(r.cells.every((c: any) => !c.canEdit && !c.viec && !c.overdue && !c.daChot?.goDuoc),
+      `Lưu trữ: ô phải chỉ đọc: ${JSON.stringify(r.cells.map((c: any) => [c.skill, c.canEdit, c.viec, c.overdue, c.daChot?.goDuoc]))}`);
+    for (const [k, patch] of [['listening', { rawScore: 30 }], ['reading', { noShow: false }], ['speaking', { nhanXet: 'x' }]] as const) {
+      const e = loi(() => attempts.saveScore(QL, a, k, patch, THU6));
+      assert(e?.status === 400 && /Bỏ lưu trữ/.test(e.message), `Lưu trữ ghi ${k}: ${e?.status} ${e?.message}`);
     }
+    /* Kết thúc học chưa lưu trữ (FT chờ thi thật / Bước tiếp): hàng mờ, không việc / quá hạn, nhưng ô vẫn mở — nhập bù vào bản chụp (PR-TK). */
+    dat(`archived_at = NULL, status = 'finished'`);
+    r = hang(a, QL, W, THU6);
+    assert(r?.ngungHoc === 'Đã kết thúc học' && r.cells.every((c: any) => !c.viec && !c.overdue)
+      && r.cells.find((c: any) => c.skill === 'listening').canEdit && r.cells.find((c: any) => c.skill === 'reading').daChot?.goDuoc === true,
+      `Kết thúc học: ${JSON.stringify(r?.ngungHoc)} ${JSON.stringify(r?.cells.map((c: any) => [c.skill, c.canEdit, c.viec, c.overdue, c.daChot?.goDuoc]))}`);
+    attempts.saveScore(QL, a, 'speaking', { nhanXet: 'nhập bù sau Kết thúc học' }, THU6);
+    dat(`status = 'active'`);
     /* Em Tạm dừng (thi xong rồi mới dừng): hàng KHÔNG mờ, vẫn nhập điểm / Bỏ vắng như thường (chủ SP 13/10). */
     conn.prepare(`UPDATE students SET status = 'inactive' WHERE id = ?`).run(s);
     xoaNho();

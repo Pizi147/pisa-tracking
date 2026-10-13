@@ -1229,14 +1229,15 @@ function hoiSinhLuot(p: Principal, cu: any, o: { classId: number | null; period:
 // ---------------------------------------------------------------- lịch: tuần và ngày tách nhau
 
 /**
- * OV-1d: em ĐÃ KẾT THÚC HỌC hoặc LƯU TRỮ — lưới chấm FT làm mờ hàng (chữ ở cột Kết quả), ô chỉ đọc; `saveScore` chặn ghi với câu chỉ đường.
- * Em Tạm dừng (`inactive`, chưa lưu trữ) vẫn nhập / sửa điểm, Bỏ vắng như thường — thi xong rồi mới dừng (chủ SP 13/10); số đếm vẫn theo
- * `HV_DANG_HOC_SQL` (em Tạm dừng không bị nhắc). `null` = ghi được.
+ * OV-1d (chủ SP 13/10): em ĐÃ KẾT THÚC HỌC hoặc LƯU TRỮ — lưới chấm FT làm mờ hàng (chữ ở cột Kết quả), ô không phải việc / quá hạn.
+ * Chỉ Lưu trữ mới khoá ghi (`khoa`: ô chỉ đọc, `saveScore` 400 kèm câu chỉ đường). Kết thúc học chưa lưu trữ (FT chờ kết quả thi thật /
+ * Bước tiếp, OV-8a) vẫn nhập bù / sửa — điểm vào bản chụp lộ trình (PR-TK). Em Tạm dừng: như đang học (thi xong rồi mới dừng); số đếm
+ * vẫn theo `HV_DANG_HOC_SQL`. `null` = hàng bình thường.
  */
-export function ngungHocCua(status: string | null | undefined, archivedAt: string | null | undefined): { nhan: string; cau: string } | null {
-  if (archivedAt) return { nhan: 'Lưu trữ', cau: 'Em đã lưu trữ — Bỏ lưu trữ trước khi nhập điểm.' };
+export function ngungHocCua(status: string | null | undefined, archivedAt: string | null | undefined): { nhan: string; khoa: string | null } | null {
+  if (archivedAt) return { nhan: 'Lưu trữ', khoa: 'Em đã lưu trữ — Bỏ lưu trữ trước khi nhập điểm.' };
   if (status === 'active' || status === 'inactive') return null;
-  return { nhan: 'Đã kết thúc học', cau: 'Em đã kết thúc học — Học lại trước khi nhập điểm.' };
+  return { nhan: 'Đã kết thúc học', khoa: null };
 }
 
 function loadAttempt(attemptId: number) {
@@ -1776,10 +1777,10 @@ export function saveScore(
   const a = loadAttempt(attemptId);
   if (!(ENTRY_SKILLS as readonly string[]).includes(skill)) throw badRequest('Kỹ năng không hợp lệ.');
   if (a.status === 'cancelled') throw badRequest('Lượt này đã huỷ, không nhập điểm được.');
-  /* OV-1d: em đã Kết thúc học / Lưu trữ → không ghi gì vào ô (điểm, "-", Bỏ vắng, nhận xét) — điểm cũ giữ nguyên. */
+  /* OV-1d: em đã Lưu trữ → không ghi gì vào ô (điểm, "-", Bỏ vắng, nhận xét) — điểm cũ giữ nguyên. */
   const hv = conn.prepare('SELECT status, archived_at FROM students WHERE id = ?').get(a.student_id) as any;
-  const ngung = ngungHocCua(hv?.status, hv?.archived_at);
-  if (ngung) throw badRequest(ngung.cau);
+  const khoa = ngungHocCua(hv?.status, hv?.archived_at)?.khoa;
+  if (khoa) throw badRequest(khoa);
   /*
    * T23 (PR-MTa, thay K4-20): MT cũ nhận "-" = em không dự thi kỹ năng đó (`no_show_cu`) — không tính lần vắng, không tự dời,
    * không Case / thẻ / chuông; ô không còn đếm "còn trống". OV-1b: "-" nhập bù sau tuần thi cũng vậy (nhánh "-" bên dưới).
@@ -2178,9 +2179,9 @@ export function classScoreSheet(
         studentCode: a.student_code,
         attemptNo: a.attempt_no,
         status: a.status,
-        /* OV-1d: em đã Kết thúc học / Lưu trữ — ô chỉ đọc, không việc / quá hạn, không Bỏ vắng (máy chủ cũng chặn ở `saveScore`). */
-        cells: ngung ? cells.map((c) => ({ ...c, canEdit: false, viec: false, overdue: false, lyDoKhoa: ngung.cau,
-          daChot: c.daChot && { ...c.daChot, goDuoc: false, hanGo: null } })) : cells,
+        /* OV-1d: em đã Kết thúc học / Lưu trữ — ô không việc / quá hạn; Lưu trữ thêm chỉ đọc, không Bỏ vắng (máy chủ cũng chặn ở `saveScore`). */
+        cells: ngung ? cells.map((c) => ({ ...c, viec: false, overdue: false,
+          ...(ngung.khoa ? { canEdit: false, lyDoKhoa: ngung.khoa, daChot: c.daChot && { ...c.daChot, goDuoc: false, hanGo: null } } : {}) })) : cells,
         ...(ngung ? { ngungHoc: ngung.nhan } : {}),
         result: resultOf(a, scores, skips, bundle.skillRows.get(a.id) ?? []),
         /* PR-MT0: chip SOS chỉ để nhìn (band ≤ Target − 2.0) thay cho mức SOS. */

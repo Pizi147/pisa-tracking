@@ -27,7 +27,7 @@ export type FtSheet = {
     cells: Cell[]; result: any;
     /** PR-MT0: hàng MT0 — chip `W 4.0 SOS` thay cho mức SOS (không kỳ vọng). */
     mt0Sos?: { skill: AssessedSkill; band: number }[];
-    /** OV-1d: em đã Kết thúc học / Lưu trữ ("Đã kết thúc học" / "Lưu trữ") — hàng mờ, ô chỉ đọc (máy chủ đã khoá). Em Tạm dừng: không có cờ. */
+    /** OV-1d: em đã Kết thúc học / Lưu trữ ("Đã kết thúc học" / "Lưu trữ") — hàng mờ, ô không là việc; Lưu trữ ô chỉ đọc (máy chủ khoá). Em Tạm dừng: không cờ. */
     ngungHoc?: string | null;
   }[];
 };
@@ -123,10 +123,11 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
     );
   }
 
-  /* "Lưu · em tiếp ›": em kế CÓ Ô MỞ ĐƯỢC ở cùng cột (bỏ dòng chỉ đọc / thi tuần khác); hết em thì đóng. */
+  /* "Lưu · em tiếp ›": em kế CÓ Ô MỞ ĐƯỢC ở cùng cột (bỏ dòng chỉ đọc / thi tuần khác / em đã Kết thúc học); hết em thì đóng. */
   const tiep = (aid: number, s: string) => {
     const i = data.rows.findIndex((r) => r.attemptId === aid);
     const ke = data.rows.slice(i + 1).find((r) => {
+      if (r.ngungHoc) return false;
       const c = r.cells.find((x) => x.skill === s);
       return !!c && suaDuoc(c) && !khacTuanFt(c, tuanDangXem);
     });
@@ -317,7 +318,7 @@ function SheetRow({ row, lop, active, cot, tuanDangXem, onReload, gvMacDinh, moS
         if (khacTuan(cell)) return oKhacTuan(s, cell);
         return (
           <td key={s} className={`td py-1.5 relative text-right ${o[s] === 'loi' ? VIEN_LOI : ''}`} data-kn={s}
-            data-trong={oTrongFt(cell) && !khacTuanFt(cell, tuanDangXem) ? '1' : undefined}
+            data-trong={!row.ngungHoc && oTrongFt(cell) && !khacTuanFt(cell, tuanDangXem) ? '1' : undefined}
             data-luu={o[s]}>
             <DauO tt={o[s]} loi={loi[s]} onLuuLai={() => luuLai(s)} />
             {oDiem(s, cell)}
@@ -339,7 +340,7 @@ function SheetRow({ row, lop, active, cot, tuanDangXem, onReload, gvMacDinh, moS
         if (khacTuan(cell)) return oKhacTuan(s, cell);
         return (
           <td key={s} className={`td py-1.5 relative text-right ${o[s] === 'loi' ? VIEN_LOI : ''}`} data-kn={s}
-            data-trong={oTrongFt(cell) && !khacTuanFt(cell, tuanDangXem) ? '1' : undefined}
+            data-trong={!row.ngungHoc && oTrongFt(cell) && !khacTuanFt(cell, tuanDangXem) ? '1' : undefined}
             data-luu={o[s]}>
             <DauO tt={o[s]} loi={loi[s]} onLuuLai={() => luuLai(s)} />
             {oDiem(s, cell)}

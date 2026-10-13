@@ -152,7 +152,7 @@ function MotKyNangFt({ data, onReload, kn, hv, hangMo }: {
     () => [...ENTRY_SKILLS.filter((k) => minh.has(k)), ...ENTRY_SKILLS.filter((k) => !minh.has(k))] as string[],
     [minh],
   );
-  const conTrong = (k: string) => data.rows.some((r) => { const c = oCua(r, k); return !!c && oTrongFt(c); });
+  const conTrong = (k: string) => data.rows.some((r) => { const c = oCua(r, k); return !r.ngungHoc && !!c && oTrongFt(c); });
   const [chon, setChon] = useKyNangChon(dsKn, (k) => minh.has(k), conTrong, kn);
   /* Hộp đang mở (lượt) — "Lưu · em tiếp ›" sang em kế có ô mở được của kỹ năng đang chọn. */
   const [mo, setMo] = useState<number | null>(null);
@@ -182,7 +182,7 @@ function MotKyNangFt({ data, onReload, kn, hv, hangMo }: {
             active={hv !== null && r.studentId === hv} onReload={onReload} gvMacDinh={gvCot}
             mo={mo === r.attemptId && moChon === chon} onMo={(m) => { setMo(m ? r.attemptId : null); setMoChon(chon); }}
             onTiep={() => {
-              const ke = data.rows.slice(i + 1).find((x) => { const c = oCua(x, chon); return !!c && suaDuoc(c); });
+              const ke = data.rows.slice(i + 1).find((x) => { const c = oCua(x, chon); return !x.ngungHoc && !!c && suaDuoc(c); });
               setMo(ke?.attemptId ?? null);
             }} />
         ))}
@@ -218,7 +218,7 @@ function DongFt({ row, k, nhieuMt, lop, active, onReload, gvMacDinh, mo, onMo, o
       thi={row.cells.filter((x) => x.required && x.progress !== 'cancelled')
         .map((x) => ({ nhan: nhanKyNangFt(x.skill), weekStart: x.weekStart ?? null }))}>
       <div className={`shrink-0 flex items-center justify-end gap-1 rounded-md ${o[k] === 'loi' ? VIEN_LOI : ''}`} data-kn={k}
-        data-trong={c && oTrongFt(c) ? '1' : undefined} data-luu={o[k]}>
+        data-trong={!row.ngungHoc && c && oTrongFt(c) ? '1' : undefined} data-luu={o[k]}>
         <DauO lon tt={o[k]} loi={loi[k]} onLuuLai={() => luuLai(k)} />
         {!c ? <span className="text-slate-600">—</span> : (
           <ODiemMt lon cell={c} mo={mo} onMo={onMo} onTiep={onTiep} onSave={(p, x) => save(k, p, x)}

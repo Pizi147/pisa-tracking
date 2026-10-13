@@ -248,7 +248,7 @@ export async function runPrTkTests(t: YThucTestKit) {
 
   // ------------------------------------------------------------------ TK-5 · điểm nhập / sửa sau khi đóng cập nhật bản chụp
   const attemptsSvc: any = await import('../fasttrack/attempts.ts');
-  await checkAsync('TK-5 · em Kết thúc học, MT thiếu S → ghi điểm 400 (OV-1d); về đang học rồi nhập bù S: bản chụp có S, OVR, SOS mới; kỳ vọng giữ; đổi route rồi sửa tiếp vẫn giữ', () => thu(() => {
+  await checkAsync('TK-5 · em Kết thúc học, MT thiếu S → nhập bù S: bản chụp có S, OVR, SOS mới; kỳ vọng giữ; đổi route rồi sửa tiếp vẫn giữ', () => thu(() => {
     const fx = get(`SELECT c.id, c.student_id FROM learning_cycles c WHERE c.route IS NOT NULL AND c.status = 'active' AND EXISTS (SELECT 1 FROM assessment_attempts a JOIN report_periods rp ON rp.id = a.planned_period_id WHERE a.cycle_id = c.id AND a.status != 'cancelled' AND rp.week_start <= ? AND EXISTS (SELECT 1 FROM assessment_scores s WHERE s.attempt_id = a.id AND s.band IS NOT NULL)) ORDER BY c.id LIMIT 1`, NGAY);
     assert(fx, 'tiền đề: lộ trình FT đang chạy có lượt đã tới tuần thi và có điểm');
     const luot = get(`SELECT a.id FROM assessment_attempts a JOIN report_periods rp ON rp.id = a.planned_period_id WHERE a.cycle_id = ? AND a.status != 'cancelled' AND rp.week_start <= ? AND EXISTS (SELECT 1 FROM assessment_scores s WHERE s.attempt_id = a.id AND s.band IS NOT NULL) ORDER BY a.attempt_no DESC LIMIT 1`, fx.id, NGAY);
@@ -257,11 +257,6 @@ export async function runPrTkTests(t: YThucTestKit) {
     const dongS = () => get(`SELECT * FROM ban_chup_luot WHERE ban_chup_id = (SELECT MAX(id) FROM ban_chup_lo_trinh WHERE cycle_id = ?) AND attempt_id = ? AND ky_nang = 'speaking'`, fx.id, luot.id);
     const truoc = dongS();
     assert(truoc.diem === null && truoc.overall === null, 'tiền đề: S trống lúc đóng');
-    /* OV-1d: em đã Kết thúc học thì không ghi điểm (400, "Học lại trước") — đưa em về đang học (lộ trình vẫn đóng, bản chụp giữ) rồi nhập bù. */
-    let loi: any = null;
-    try { attemptsSvc.saveScore(P.admin, luot.id, 'speaking', { criteria: [7, 7, 7, 7] }); } catch (e) { loi = e; }
-    assert(loi?.status === 400 && /Học lại/.test(loi.message), `em Kết thúc học ghi điểm: ${loi?.status} ${loi?.message}`);
-    conn.prepare(`UPDATE students SET status = 'active', archived_at = NULL WHERE id = ?`).run(fx.student_id);
     attemptsSvc.saveScore(P.admin, luot.id, 'speaking', { criteria: [7, 7, 7, 7] });
     const sau = dongS();
     assert(sau.diem === 7 && sau.nhap_luc !== null, `S ${sau.diem}`);
