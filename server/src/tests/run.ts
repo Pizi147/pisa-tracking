@@ -9285,6 +9285,9 @@ await runPrOv9Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, a
 // ==================================================================== PR-OV10a (nút / link đúng quyền: TVV · CX · Admin)
 const { runPrOv10aTests } = await import('./prOv10a.tests.ts');
 await runPrOv10aTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== PR-OV10c (Tổng quan theo vai: Admin Mock Test · TVV Học viên của tôi · CX Số liệu)
+const { runPrOv10cTests } = await import('./prOv10c.tests.ts');
+await runPrOv10cTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== PR-OV1d (lưới chấm FT: Bỏ vắng từ tuần gốc, em không còn đang học chỉ đọc)
 const { runPrOv1dTests } = await import('./prOv1d.tests.ts');
 await runPrOv1dTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);

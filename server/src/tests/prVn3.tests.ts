@@ -126,6 +126,7 @@ export async function runPrVn3Tests(t: YThucTestKit) {
 
   await t.checkAsync('VN3-4 · /my-work không còn items, groups; dong + summary trùng byte với myWork()', async () => {
     const may = createApp().listen(0);
+    may.keepAliveTimeout = 120_000;   // `myWork()` đồng bộ giữa hai lượt fetch có thể quá 5 s mặc định → ECONNRESET
     try {
       const cong = (may.address() as any).port as number;
       for (const [pr, q] of [[P.coreTeacher, ''], [P.mbManager, '?nguoi=tat-ca']] as const) {

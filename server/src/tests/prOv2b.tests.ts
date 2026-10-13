@@ -15,7 +15,7 @@ export async function runPrOv2bTests(t: YThucTestKit) {
   const deXuat: any = await import('../duyet/deXuatSua.ts');
   const dm: any = await import('../../../shared/domain/index.ts');
   const { xoaNho } = await import('../platform/nguCanhRequest.ts');
-  const { hvCuaToi } = await import('../worklist/hvCuaToi.ts');
+  const { soHocVien } = await import('../worklist/hvCuaToi.ts');
   console.log('\nPR-OV2b · hồ sơ HV: Sửa thông tin, TVV, email + ngày sinh, Target, điểm đầu vào, Tạm dừng / Thôi học');
 
   const all = (sql: string, ...a: unknown[]) => conn.prepare(sql).all(...a) as any[];
@@ -66,10 +66,10 @@ export async function runPrOv2bTests(t: YThucTestKit) {
     thu(() => {
       const v = V();
       run(`UPDATE students SET consultant_name = 'Hương TVV', consultant_user_id = NULL WHERE id = ?`, em.id);
-      const truoc = hvCuaToi(v.TVV).tong;
+      const truoc = soHocVien(v.TVV).tong;
       students.updateStudent(v.QL, em.id, { consultantUserId: idTvv });
       assert(hs().consultant_user_id === idTvv && hs().consultant_name === 'Hương TVV', `gán: ${hs().consultant_user_id} · ${hs().consultant_name}`);
-      assert(hvCuaToi(loadPrincipal(idTvv)).tong === truoc + 1, 'Tổng quan TVV không thấy em vừa gán');
+      assert(soHocVien(loadPrincipal(idTvv)).tong === truoc + 1, 'Tổng quan TVV không thấy em vừa gán');
       assert(loi(() => students.updateStudent(v.QL, em.id, { consultantUserId: gvcn }))?.status === 400, 'gán GV làm TVV phải 400');
       assert(loi(() => students.updateStudent(v.QL, em.id, { consultantUserId: 'abc' }))?.status === 400, 'mã sai kiểu phải 400');
       run(`UPDATE users SET status = 'deleted' WHERE id = ?`, idTvvHl);

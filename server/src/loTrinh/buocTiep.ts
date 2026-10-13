@@ -140,18 +140,23 @@ export function boChonBuocTiep(p: Principal, cycleId: number) {
 }
 
 // ------------------------------------------------------------------ việc QL "Chọn bước tiếp sau thi"
-/**
- * Một dòng mỗi lộ trình chờ chọn. Ai thấy: người chọn được (`cycle.edit` của em — Quản lý / Quản trị), là việc của chính họ. Một câu cho cả tập;
- * quyền hỏi theo em (tập nhỏ: em đã kết thúc, chưa Lưu trữ, có kết quả). Lớp = lớp cuối trong bản chụp (gộp dòng theo lớp như việc khác).
- */
-export function viecBuocTiep(p: Principal, f: { today: string; branchId: number | null }): any[] {
-  const ds = db().prepare(
+/** Lộ trình chờ Quản lý chọn bước tiếp (chưa lọc quyền) — một nguồn cho việc QL và ô "Chờ QL chọn bước tiếp" ở Tổng quan TVV / CX (OV-10c). */
+export function choBuocTiep(): any[] {
+  return db().prepare(
     `SELECT c.id, c.student_id, s.full_name AS ten, c.thi_that_khong_thi, c.outcome, b.ket_luan, b.class_id, b.class_code, b.branch_id, ${NGAY_CO_KQ} AS ngay_kq
        FROM learning_cycles c JOIN students s ON s.id = c.student_id JOIN ban_chup_lo_trinh b ON ${BAN_CHUP_CUOI}
       WHERE c.route IS NOT NULL AND c.status != 'active' AND c.buoc_tiep IS NULL AND s.status = 'finished' AND s.archived_at IS NULL
         AND b.ly_do != 'chuyen_lop' AND ${CO_KET_QUA}
         AND c.seq = (SELECT MAX(seq) FROM learning_cycles x WHERE x.student_id = c.student_id)`,
   ).all() as any[];
+}
+
+/**
+ * Một dòng mỗi lộ trình chờ chọn. Ai thấy: người chọn được (`cycle.edit` của em — Quản lý / Quản trị), là việc của chính họ. Một câu cho cả tập;
+ * quyền hỏi theo em (tập nhỏ: em đã kết thúc, chưa Lưu trữ, có kết quả). Lớp = lớp cuối trong bản chụp (gộp dòng theo lớp như việc khác).
+ */
+export function viecBuocTiep(p: Principal, f: { today: string; branchId: number | null }): any[] {
+  const ds = choBuocTiep();
   const out: any[] = [];
   for (const c of ds) {
     if (f.branchId && c.branch_id && c.branch_id !== f.branchId) continue;

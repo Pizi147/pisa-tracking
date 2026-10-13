@@ -1,6 +1,7 @@
 import { Fragment } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
+import { useSession } from '../../lib/session.tsx';
 import { useTapUrl, useThamSoUrl } from '../../lib/quayLai.ts';
 import { BoLocDoan, Card, ErrorState, Skeleton, Th } from '../../ui/ui.tsx';
 import { HangCon, HangNhom } from '../../ui/HangNhom.tsx';
@@ -42,6 +43,7 @@ const HANG = '2.5rem';
 
 export function BranchPulse({ branchId, ct }: { branchId: number | null; ct: ChuongTrinh }) {
   const navigate = useNavigate();
+  const { session } = useSession();
   const q = `${branchId ? `branchId=${branchId}` : ''}${thamSoCt(ct)}`.replace(/^&/, '');
   const { data, loading, error, reload } = useApi<Bang>(q ? `/tong-quan/chi-nhanh?${q}` : '/tong-quan/chi-nhanh', [branchId, ct]);
   /* PR-OV5b: hàng mở + cách xem trên URL — Quay lại từ hồ sơ lớp về đúng chỗ. */
@@ -53,7 +55,8 @@ export function BranchPulse({ branchId, ct }: { branchId: number | null; ct: Chu
   if (error) return <Card title={tieuDeTam}><ErrorState message={error.message} hint={error.hint} onRetry={reload} /></Card>;
   if (loading) return <Card title={tieuDeTam}><Skeleton rows={3} /></Card>;
   if (!data) return null;
-  const coGv = data.cheDo === 'lop';                            // QL một chi nhánh không có `cn` trên URL, server tự khoanh phạm vi
+  /* QL một chi nhánh không có `cn` trên URL, server tự khoanh phạm vi. OV-10c: CX không xem GV (máy chủ 403) → không có "Theo giáo viên". */
+  const coGv = data.cheDo === 'lop' && !!session?.nav?.phanTichGv;
   const o = (h: { khoa: string; nhan: string }, c: CotBang, x: OBang) => (
     <td key={c} className="td text-right tabular-nums">
       <SoLieuO giaTri={x.n} tieuDe={`${COT.find((k) => k.key === c)!.nhan(ct)} · ${h.nhan}`}
