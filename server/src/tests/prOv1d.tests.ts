@@ -1,6 +1,6 @@
 /**
  * PHÉP KIỂM PR-OV1d — lưới chấm FT: ô đã dời vì vắng ở lưới TUẦN GỐC có đủ dữ liệu để mở hộp + Bỏ vắng tại chỗ; em không còn đang học
- * (`HV_DANG_HOC_SQL`: Kết thúc học / Lưu trữ / Tạm dừng) → hàng có cờ `ngungHoc`, ô chỉ đọc, máy chủ chặn ghi (400). Mỗi ca cuộn lại (`thu`).
+ * (Kết thúc học / Lưu trữ; em Tạm dừng vẫn ghi được) → hàng có cờ `ngungHoc`, ô chỉ đọc, máy chủ chặn ghi (400). Mỗi ca cuộn lại (`thu`).
  */
 import type { YThucTestKit } from './yThuc.tests.ts';
 
@@ -75,14 +75,13 @@ export async function runPrOv1dTests(t: YThucTestKit) {
     assert(!o(a, 'listening', gvL, W, THU6).daChot, 'sau Bỏ vắng ô về tuần gốc, không còn dấu dời');
   }));
 
-  check('OV1d-2 · em Lưu trữ / Kết thúc học / Tạm dừng: hàng có cờ ngungHoc, ô chỉ đọc (cả Bỏ vắng), ghi → 400; trở lại học → ghi được', () => thu(() => {
+  check('OV1d-2 · em Lưu trữ / Kết thúc học: hàng có cờ ngungHoc, ô chỉ đọc (cả Bỏ vắng), ghi → 400; em Tạm dừng ghi được, hàng không mờ; trở lại học → ghi được', () => thu(() => {
     const a = luot[1], s = sid(a);
     dung(a);
     attempts.saveScore(gvL, a, 'reading', { noShow: true }, TRONG);   // ô dời vì vắng — Bỏ vắng cũng phải khoá
     const ca: [string, string, RegExp][] = [
       [`archived_at = '2026-10-01T00:00:00Z'`, 'Lưu trữ', /Bỏ lưu trữ/],
       [`status = 'finished'`, 'Đã kết thúc học', /Học lại/],
-      [`status = 'inactive'`, 'Tạm dừng', /Quay lại học/],
     ];
     for (const [dat, nhan, cau] of ca) {
       conn.prepare(`UPDATE students SET ${dat} WHERE id = ?`).run(s);
@@ -98,6 +97,16 @@ export async function runPrOv1dTests(t: YThucTestKit) {
       conn.prepare(`UPDATE students SET status = 'active', archived_at = NULL WHERE id = ?`).run(s);
       xoaNho();
     }
+    /* Em Tạm dừng (thi xong rồi mới dừng): hàng KHÔNG mờ, vẫn nhập điểm / Bỏ vắng như thường (chủ SP 13/10). */
+    conn.prepare(`UPDATE students SET status = 'inactive' WHERE id = ?`).run(s);
+    xoaNho();
+    const td = hang(a, QL, W, THU6);
+    assert(!td.ngungHoc && td.cells.find((c: any) => c.skill === 'reading').daChot?.goDuoc === true, `em Tạm dừng: ${JSON.stringify(td.ngungHoc)}`);
+    attempts.saveScore(gvL, a, 'reading', { noShow: false }, THU6);
+    attempts.saveScore(gvL, a, 'reading', { rawScore: 25 }, THU6);
+    assert(one(`SELECT raw_score FROM assessment_scores WHERE attempt_id = ? AND skill = 'reading'`, a).raw_score === 25, 'em Tạm dừng: ghi được');
+    conn.prepare(`UPDATE students SET status = 'active' WHERE id = ?`).run(s);
+    xoaNho();
     const r = hang(a, QL, W, THU6);
     assert(!r.ngungHoc && r.cells.some((c: any) => c.canEdit), 'em học lại: hàng bình thường');
     attempts.saveScore(QL, a, 'listening', { rawScore: 30 }, THU6);

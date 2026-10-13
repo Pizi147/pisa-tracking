@@ -15,7 +15,7 @@ import {
 
 export type Cell = {
   skill: EntrySkill;
-  /** OV-1d: em không còn đang học — câu "vì sao chỉ đọc" của máy chủ (chỉ lưới chấm FT gửi). */
+  /** OV-1d: em đã Kết thúc học / Lưu trữ — câu "vì sao chỉ đọc" của máy chủ (chỉ lưới chấm FT gửi). */
   lyDoKhoa?: string;
   assessedSkill: string;
   /** false khi Quản lý đã chốt trước là đợt này không yêu cầu kỹ năng đó. */

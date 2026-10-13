@@ -104,7 +104,7 @@ function useDiChuyen() {
 /** Một dòng học viên: tên + TỐI ĐA một dòng phụ ngắn bên trái (G-3), một ô to bên phải. */
 function DongHv({ studentId, active, ten, href, phu, phuTitle, phuDo = false, luu, children, nhan, thi, mo = false }: {
   studentId: number; active: boolean; ten: string; href: string;
-  /** OV-1d: em không còn đang học — dòng mờ. */
+  /** OV-1d: em đã Kết thúc học / Lưu trữ — dòng mờ. */
   mo?: boolean;
   phu: string; phuTitle?: string; phuDo?: boolean; luu: React.ReactNode; children: React.ReactNode;
   /** R11: nhãn "Đã hoàn tất" cạnh tên khi đợt/bài của dòng này đã hoàn tất. */
@@ -164,7 +164,7 @@ function MotKyNangFt({ data, onReload, kn, hv, hangMo }: {
   if (data.rows.length === 0 || !chon) return <LuoiFT data={data} onReload={onReload} kn={kn} hv={hv} hangMo={hangMo} />;
 
   const chips = dsKn.map((k) => {
-    const cs = data.rows.filter((r) => !r.ngungHoc).map((r) => oCua(r, k)).filter(tinhFt);   // OV-1d: em không còn học không tính
+    const cs = data.rows.filter((r) => !r.ngungHoc).map((r) => oCua(r, k)).filter(tinhFt);   // OV-1d: em đã Kết thúc học / Lưu trữ không tính
     return { k, cuaMinh: minh.has(k), daNhap: cs.filter((c) => c.band !== null || !!c.noShow).length, tong: cs.length };
   });
   const nhieuMt = new Set(data.rows.map((r) => r.attemptNo)).size > 1;

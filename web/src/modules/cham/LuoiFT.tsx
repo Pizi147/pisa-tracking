@@ -26,7 +26,7 @@ export type FtSheet = {
     cells: Cell[]; result: any;
     /** PR-MT0: hàng MT0 — chip `W 4.0 SOS` thay cho mức SOS (không kỳ vọng). */
     mt0Sos?: { skill: AssessedSkill; band: number }[];
-    /** OV-1d: em không còn đang học ("Lưu trữ" / "Đã kết thúc học" / "Tạm dừng") — hàng mờ, ô chỉ đọc (máy chủ đã khoá). */
+    /** OV-1d: em đã Kết thúc học / Lưu trữ ("Đã kết thúc học" / "Lưu trữ") — hàng mờ, ô chỉ đọc (máy chủ đã khoá). Em Tạm dừng: không có cờ. */
     ngungHoc?: string | null;
   }[];
 };
