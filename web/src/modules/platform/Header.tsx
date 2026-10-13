@@ -7,7 +7,7 @@ import { Info } from '../../ui/ui.tsx';
 import { CongTacGiaoDien } from '../../ui/CongTacGiaoDien.tsx';
 import { useDienThoai } from '../../ui/TheDong.tsx';
 import { roleLabel, skillShort } from '../../lib/format.ts';
-import { buocDanhSach, chuanHoaMaLop, duongThongBao, maHocVienNgan, ngayTheoGioVN, noiDenThongBao, nhomThongBao, thoiGianThongBao } from '@shared/domain/index.ts';
+import { buocDanhSach, chuanHoaMaLop, duongThongBao, maHocVienNgan, moDuocThongBao, ngayTheoGioVN, noiDenThongBao, nhomThongBao, thoiGianThongBao } from '@shared/domain/index.ts';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { useToast } from '../../ui/Toast.tsx';
 
@@ -103,9 +103,20 @@ export function Header() {
     onClick: () => moMuc(i),
   });
 
-  const unread = useMemo(() => (notifications.data ?? []).filter((n) => !n.read_at).length, [notifications.data]);
-  const core = (session?.assignments ?? []).filter((a) => a.isCore);
-  const skills = (session?.assignments ?? []).filter((a) => a.skill);
+  /*
+   * OV-11f (CA1-2, Q9): ở Góc nhìn khác vai gốc, chuông chỉ hiện thông báo vai đang chọn MỞ ĐƯỢC (`moDuocThongBao` theo `nav`); về vai gốc thấy lại.
+   * Bấm thông báo không mở được thì không đánh dấu đọc (không mất nhắc việc).
+   */
+  const gn = session?.gocNhin;
+  const gocKhac = !!gn?.dangChon && gn.dangChon !== gn.vaiGoc;
+  const moDuoc = (n: any) => moDuocThongBao(n, session?.nav ?? {});
+  const dsThongBao = useMemo(() => (notifications.data ?? []).filter((n) => !gocKhac || moDuocThongBao(n, session?.nav ?? {})), [notifications.data, gocKhac, session?.nav]);
+  const unread = useMemo(() => dsThongBao.filter((n) => !n.read_at).length, [dsThongBao]);
+  /* OV-11f (TQ-15): chỉ lớp đang mở (`/ref/classes` = lớp đang hoạt động trong phạm vi) — lớp đã kết thúc không còn ở menu tài khoản. */
+  const lopMo = lopRef.data ? new Set(lopRef.data.map((l) => l.id)) : null;
+  const lopDangMo = (a: { classId: number }) => !lopMo || lopMo.has(a.classId);
+  const core = (session?.assignments ?? []).filter((a) => a.isCore && lopDangMo(a));
+  const skills = (session?.assignments ?? []).filter((a) => a.skill && lopDangMo(a));
   /* Chữ cái đầu của TÊN GỌI (chữ cuối của họ tên: "Nguyễn Khánh Vy" → V) cho vòng tròn tài khoản trên điện thoại. */
   const hoTen = session?.user?.fullName ?? '';
   const chuCaiDau = [...(hoTen.trim().split(/\s+/).pop() ?? '')][0]?.toUpperCase() ?? '';
@@ -211,13 +222,18 @@ export function Header() {
               <h2 className="m-0 text-sm font-semibold text-slate-100">Thông báo <span className="font-normal text-slate-500">· <span className="tabular-nums">{unread}</span> chưa đọc</span></h2>
               <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={!unread}
                 onClick={async () => {
-                  try { await api.post('/notifications/doc-het'); notifications.reload(); }
+                  /* Góc nhìn khác: chỉ đánh dấu những thông báo đang thấy (vai này mở được) — thông báo của vai gốc giữ chưa đọc. */
+                  try {
+                    if (gocKhac) await Promise.all(dsThongBao.filter((n) => !n.read_at).map((n) => api.post(`/notifications/${n.id}/read`)));
+                    else await api.post('/notifications/doc-het');
+                    notifications.reload();
+                  }
                   catch (e: any) { toast.push('error', e?.message || 'Chưa đánh dấu đã đọc được — thử lại.'); }
                 }}>Đánh dấu đã đọc</button>
             </div>
-            {(notifications.data ?? []).length === 0 && <div className="p-4 text-sm text-slate-500">Không có thông báo nào.</div>}
+            {dsThongBao.length === 0 && <div className="p-4 text-sm text-slate-500">Không có thông báo nào.</div>}
             {(['can-lam', 'de-biet'] as const).map((nhom) => {
-              const ds = (notifications.data ?? []).filter((n) => nhomThongBao(n) === nhom);
+              const ds = dsThongBao.filter((n) => nhomThongBao(n) === nhom);
               if (!ds.length) return null;
               return (
                 <div key={nhom}>
@@ -232,6 +248,7 @@ export function Header() {
                         className="grid w-full grid-cols-[10px_minmax(0,1fr)_auto] items-start gap-x-2.5 gap-y-0.5 border-b px-3.5 py-2.5 text-left hover:bg-white/5"
                         style={{ borderColor: 'var(--line)' }}
                         onClick={async () => {
+                          if (!moDuoc(n)) { toast.push('error', 'Mở ở vai gốc (đổi Góc nhìn trong menu tài khoản).'); return; }
                           await api.post(`/notifications/${n.id}/read`);
                           notifications.reload();
                           /* Mỗi loại thông báo về đúng chỗ làm được việc của nó (R8, Q12) — một quy ước duy nhất. */

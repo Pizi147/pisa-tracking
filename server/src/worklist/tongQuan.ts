@@ -16,6 +16,7 @@ import { CT_LOP, metricSet, rowsFor } from './metrics.ts';
 import { lopCuaTap, tachTheoLop } from './chuongTrinh.ts';
 import { demYeuCau, quetYeuCau } from '../duyet/yeuCau.ts';
 import { noDiemCuaGv } from '../giaoVien/hoSo.ts';
+import { phamViXemViec } from './xemViec.ts';
 
 /**
  * TỔNG QUAN (PR-Pa, đặc tả §3.2). File này KHÔNG ĐẾM gì: mọi số lấy từ `metricSet` (hợp đồng số liệu luật 1), ở đây chỉ
@@ -24,6 +25,12 @@ import { noDiemCuaGv } from '../giaoVien/hoSo.ts';
 
 const laQuanLy = (p: Principal) => {
   if (scopeFor(p, PERMISSIONS.ANALYSIS_VIEW).none) throw forbidden('Khối này dành cho Quản lý.');
+};
+/* OV-11f (TQ-9): Cần xử lý + dải Chờ duyệt là VIỆC của Quản lý (GV nào trễ, nhắc ai) — đòi quyền xem việc người khác (`case.approve`, `phamViXemViec`
+   = 'het'), không chỉ `analysis.view` (TVV / CX / Admin cũng có). Điểm đáng chú ý / bảng chi nhánh giữ `analysis.view`. */
+const laViecQuanLy = (p: Principal) => {
+  laQuanLy(p);
+  if (phamViXemViec(p) !== 'het') throw forbidden('Khối này dành cho Quản lý.');
 };
 
 /**
@@ -35,8 +42,8 @@ export type DongCanXuLy = DongCanXuLyGoc & {
   /** Chữ đứng TRƯỚC con số ("Chốt lộ trình · MB FOU 12 ·"). */
   truoc?: string;
   phu: string;
-  /** Vế nối sau nhãn ("3 Case chưa có người nhận"). */
-  kem?: string;
+  /** Vế nối sau nhãn ("3 Case chưa có người nhận") — OV-11f (TQ-13): mỗi vế là một chỉ số, số bấm được ra đúng tập. */
+  kem?: { metricId: string; n: number; nhan: string }[];
   /** Chú thích khi rê chuột (Q9: "Lộ trình RF: xong MT2"). */
   goiY?: string;
   nguoi: 'ban' | { dau: string; phu: string; ids: number[] };
@@ -59,7 +66,7 @@ const NGAY_MS = 86_400_000;
 const soNgay = (tu: string, den: string) => Math.round((Date.parse(`${den.slice(0, 10)}T00:00:00Z`) - Date.parse(`${tu.slice(0, 10)}T00:00:00Z`)) / NGAY_MS);
 
 export function tongQuanQuanLy(p: Principal, f: { branchId?: number | null }) {
-  laQuanLy(p);
+  laViecQuanLy(p);
   quetYeuCau();   // PR-DUYET (K5-17)
   const today = demoToday();
   const base = { branchId: f.branchId ?? null };
@@ -118,7 +125,7 @@ export function tongQuanQuanLy(p: Principal, f: { branchId?: number | null }) {
         nhan: r.hanCu ? `${x.nhan} ${tuanCuaHanGhiKetQua(r.hanCu, today)}` : x.nhan,
         phu: [soFt ? `Fast Track ${soFt}` : '', soThuong ? `Lớp thường ${soThuong}` : ''].filter(Boolean).join(' · '),
         nguoi, han: r.hanCu ? { ngay: r.hanCu, loai: 'cap-nhat-pa' as const } : chuaCoHan,
-        den: `/cong-viec?nhom=case-hoc-thuat&loc=qua-han&khung=tat-ca${cn}` };
+        den: `/cong-viec?loai=ghi_ket_qua_pa&loc=qua-han&khung=tat-ca${cn}` };   // OV-11f (TQ-2): lọc đúng loại việc, không cả nhóm
     }
     const chung = { nguoi: 'ban' as const, han: chuaCoHan };
     switch (x.metricId) {
@@ -137,12 +144,14 @@ export function tongQuanQuanLy(p: Principal, f: { branchId?: number | null }) {
         /* Q6: dòng phụ "MB BE 06 thiếu W · HD FT 108 thiếu S" — cùng dòng panel (`rowsFor('lop')`); kèm số Case chưa có người nhận (chỉ số giữ). */
         const lop = rowsFor('lop', r.ids);
         const k = metricSet(p, 'case-chua-co-nguoi-phu-trach', base).n;
-        /* Q6 vế m: bài quá hạn KHÔNG có người chấm — cùng tập `bai-qua-han-nhap-diem` (ô chưa phân công không có người trong `chiTiet`) = hàng "Chưa phân công" bảng GV. */
-        const bai = sets.get('bai-qua-han-nhap-diem')!;
-        const m = bai.ids.filter((id) => !bai.chiTiet?.get(id)?.nguoi.length && !bai.chiTiet?.get(id)?.chamCheo).length;
-        const kem = [k ? `${k} Case chưa có người nhận` : '', m ? `${m} bài chưa có người chấm` : ''].filter(Boolean).join(' · ');
+        /* Q6 vế m: bài quá hạn KHÔNG có người chấm — chỉ số `bai-qua-han-chua-phan-cong` (tập con của `bai-qua-han-nhap-diem`) = hàng "Chưa phân công" bảng GV. */
+        const m = metricSet(p, 'bai-qua-han-chua-phan-cong', base).n;
+        const kem = [
+          ...(k ? [{ metricId: 'case-chua-co-nguoi-phu-trach', n: k, nhan: 'Case chưa có người nhận' }] : []),
+          ...(m ? [{ metricId: 'bai-qua-han-chua-phan-cong', n: m, nhan: 'bài chưa có người chấm' }] : []),
+        ];
         return { ...x, ...chung, phu: dongPhuGon(lop.map((l) => `${l.title} ${l.sub}`.trim())),
-          ...(kem ? { kem } : {}), den: lop.length === 1 ? lop[0].href : null };
+          ...(kem.length ? { kem } : {}), den: lop.length === 1 ? lop[0].href : null };
       }
       case 'hv-ft-xong-mt-cuoi-chua-mt-ke': {
         const lop = [...new Set([...lopCuaTap(r.unit, r.ids).values()].map((l) => l.classId).filter((id): id is number => !!id))];

@@ -25,6 +25,9 @@ function hanNgan(it: WorkItem, homNay: string, ngan: (d: string) => string): { c
   return { chu: `hạn ${ngan(it.due)}`, mau: 'text-slate-400' };
 }
 
+/** OV-11f (CA1-10): GV chưa có lớp — một câu đúng lý do, máy tính và điện thoại cùng chữ. */
+const CHUA_CO_LOP = 'Chưa có lớp được phân công';
+
 export function ViecCuaToi() {
   const navigate = useNavigate();
   const dienThoai = useDienThoai();
@@ -55,7 +58,9 @@ export function ViecCuaToi() {
           <h2 id="viec-hom-nay" className="m-0 text-sm font-semibold text-slate-200">Hôm nay</h2>
           {data && tong}
         </header>
-        {loading || !data ? <div className="p-3"><Skeleton rows={3} /></div> : !ds.length ? (
+        {loading || !data ? <div className="p-3"><Skeleton rows={3} /></div> : data.scopeEmpty ? (
+          <p className="m-0 px-3.5 py-3 text-sm text-slate-400">{CHUA_CO_LOP}</p>
+        ) : !ds.length ? (
           <p className="m-0 px-3.5 py-3 text-sm text-slate-400">Không có việc quá hạn hay đến hạn tuần này.</p>
         ) : ds.map((it) => {
           const h = hanNgan(it, homNay, ngan);
@@ -90,7 +95,7 @@ export function ViecCuaToi() {
         {data && tong}
       </header>
       {loading || !data ? <div className="p-4"><Skeleton rows={5} /></div> : data.scopeEmpty ? (
-        <div className="p-4"><Empty title="Bạn chưa được cấp phạm vi nào" /></div>
+        <div className="p-4"><Empty title={CHUA_CO_LOP} /></div>
       ) : !khoi.length ? (
         <p className="m-0 px-4 py-3 text-sm text-slate-400">Không có việc quá hạn hay đến hạn trong tuần {tuan}.</p>
       ) : nhom.map((g) => (

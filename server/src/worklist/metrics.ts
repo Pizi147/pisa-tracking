@@ -1,6 +1,8 @@
 import { db } from '../db.ts';
+/** dd/mm — hạn cụ thể trên dòng panel. */
+const ngayNgan = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
-import { ATTEMPT_KIND_SHORT, addDaysIso, daiDienNhomBoTro, baiId, duongCase, duongDotTest, nhanLoaiXuLy, nhanTuanGhiKetQua, PERMISSIONS, VIOLATION_CATEGORY_LABEL, tachTenMoTa, metricById, tachBaiId, tenMon, tenMonNgan, tuanLich, type AttemptKind, type ChiSo, type ChuongTrinh } from '../../../shared/domain/index.ts';
+import { ATTEMPT_KIND_SHORT, addDaysIso, chuViecChotLoTrinh, daiDienNhomBoTro, baiId, duongCase, duongDotTest, nhanLoaiXuLy, nhanTuanGhiKetQua, PERMISSIONS, VIOLATION_CATEGORY_LABEL, tachTenMoTa, metricById, tachBaiId, tenMon, tenMonNgan, tuanLich, type AttemptKind, type ChiSo, type ChuongTrinh } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { classScopeSql, scopeFor, type Principal, type Scope } from '../permissions.ts';
 import { badRequest, forbidden, HttpError, notFound } from '../util.ts';
@@ -58,6 +60,8 @@ export type MetricResult = {
   chiTiet?: Map<number, { nguoi: number[]; han: string[]; /** T18: ô Speaking Mock — người giữ việc "GV chấm chéo". */ chamCheo?: boolean }>;
   /** Hạn cũ nhất của tập (sau bộ lọc khung) — ô "PA quá hạn ghi kết quả" ghi "tuần W4 SEP" từ đây. */
   hanCu?: string | null;
+  /** OV-11f (TQ-3): dòng phụ RIÊNG của chỉ số cho từng phần tử (lớp cần Chốt lộ trình: "2 em chưa chọn · hạn 20/09") — thay dòng phụ chung của đơn vị. */
+  dongPhu?: Map<number, string>;
   /** Phạm vi rỗng — không có gì để đếm. KHÔNG được hiểu thành toàn hệ thống. */
   empty: boolean;
   note: string | null;
@@ -77,7 +81,7 @@ export type MetricRow = {
  * DỰNG DÒNG CHO MỘT TẬP ID — chỉ "tô màu" tập đã có (tên, lớp, đường dẫn), KHÔNG lọc thêm gì.
  * Tập ID đã qua quyền ở `metricSet`; hàm này không nhận phạm vi nên không thể mở rộng hay thu hẹp nó.
  */
-export function rowsFor(unit: ChiSo['donVi'], ids: number[]): MetricRow[] {
+export function rowsFor(unit: ChiSo['donVi'], ids: number[], metricId?: string): MetricRow[] {
   const conn = db();
   const byId = new Map<number, MetricRow>();
   const chunks = <T>(list: T[]) => Array.from({ length: Math.ceil(list.length / 400) }, (_, i) => list.slice(i * 400, i * 400 + 400));
@@ -218,7 +222,10 @@ export function rowsFor(unit: ChiSo['donVi'], ids: number[]): MetricRow[] {
       const thieu = missingForClasses(chunk);
       for (const r of conn.prepare(`SELECT id, code, programme_code AS ct FROM classes WHERE id IN (${ph})`).all(...chunk) as any[]) {
         const mon = (thieu.get(r.id)?.missingSkills ?? []).map((k) => tenMonNgan(r.ct ?? null, k)).join(', ');
-        byId.set(r.id, { id: r.id, title: r.code, sub: mon ? `thiếu ${mon}` : '', href: `/hoc-vien/lop/${r.id}?viec=phan-cong` });
+        /* OV-11f (TQ-3): lớp cần Chốt lộ trình mở Lộ trình tiếp theo cả lớp (cùng việc "Chốt lộ trình · lớp" ở Công việc), không Sửa phân công. */
+        byId.set(r.id, metricId === 'lop-chua-chot-len-ft'
+          ? { id: r.id, title: r.code, sub: '', href: `/hoc-vien/lop/${r.id}?viec=lo-trinh-ca-lop` }
+          : { id: r.id, title: r.code, sub: mon ? `thiếu ${mon}` : '', href: `/hoc-vien/lop/${r.id}?viec=phan-cong` });
       }
     } else if (unit === 'luot-sos') {
       /* Phối hợp SOS (PR-T): dòng lượt Mock có SOS mở hồ sơ học viên — sub-tab `Phối hợp SOS` là việc của PR-K. */
@@ -253,14 +260,14 @@ export function metricResponse(r: MetricResult, withRows: boolean) {
   if (!withRows) return lean;
   return {
     ...lean, ids: r.ids, numeratorIds: r.numeratorIds, denominatorIds: r.denominatorIds, splitIds: r.splits, byKindIds: r.byKind,
-    rows: rowsFor(r.unit, r.ids),
+    rows: rowsFor(r.unit, r.ids, r.id).map((x) => (r.dongPhu?.has(x.id) ? { ...x, sub: r.dongPhu.get(x.id)! } : x)),
   };
 }
 
 /** Các chỉ số ĐÃ CÓ hàm tập ID. Chỉ số khác trong sổ chưa dùng được. */
 export const LISTED_METRICS: readonly string[] = [
   'hv-sos-hien-tai', 'hv-duoi-ky-vong-mon', 'hv-co-case-mo', 'case-mo',
-  'case-xac-dinh-nguyen-nhan-qua-han', 'bai-qua-han-nhap-diem', 'case-chua-co-nguoi-phu-trach',
+  'case-xac-dinh-nguyen-nhan-qua-han', 'bai-qua-han-nhap-diem', 'bai-qua-han-chua-phan-cong', 'case-chua-co-nguoi-phu-trach',
   'case-cho-xac-dinh-nguyen-nhan', 'case-thieu-pa', 'pa-can-cap-nhat', 'pa-cho-duyet', 'pa-co-ket-qua', 'ty-le-co-cai-thien',
   'dung-han-cap-nhat', 'do-phu-danh-gia', 'lop-thieu-gv-mon',
   'van-hanh-can-quyet-dinh', 'hv-ft-xong-mt-cuoi-chua-mt-ke', 'hv-len-ft-chua-ky-vong', 'lop-chua-chot-len-ft',
@@ -626,6 +633,11 @@ function metricSetGoc(
       const r = overdueScoreBai(p, scope.branchId, today);
       return done(r.ids, { chiTiet: r.chiTiet });
     }
+    case 'bai-qua-han-chua-phan-cong': {
+      /* OV-11f (TQ-13): tập con của `bai-qua-han-nhap-diem` — ô không có người chấm (môn chưa phân công; chấm chéo có người: "GV chấm chéo"). */
+      const r = overdueScoreBai(p, scope.branchId, today);
+      return done(r.ids.filter((x) => !r.chiTiet.get(x)?.nguoi.length && !r.chiTiet.get(x)?.chamCheo), { chiTiet: r.chiTiet });
+    }
     case 'case-chua-co-nguoi-phu-trach':
       return done(openCases().filter((c: any) => !c.ownerUserId).map((c: any) => c.id as number));
     case 'case-cho-xac-dinh-nguyen-nhan':
@@ -691,7 +703,13 @@ function metricSetGoc(
       return done(lopKyVong(p, scope.branchId).flatMap((x) => x.chua).sort((a, b) => a - b));
     case 'lop-chua-chot-len-ft':
       /* PR-LCb: cùng `lopChoChotLoTrinh` của việc "Chốt lộ trình" (`myWork`); PR-LCb bỏ `hv-chua-co-lenh-chuyen` (gộp vào đây). */
-      return done(lopChoChotLoTrinh(p, scope.branchId, today).map((x) => x.classId).sort((a, b) => a - b));
+    {
+      /* OV-11f (TQ-3): dòng phụ = chữ của việc "Chốt lộ trình" (`chuViecChotLoTrinh`) + hạn — cùng hàm, không luật thứ hai. */
+      const ds = lopChoChotLoTrinh(p, scope.branchId, today);
+      return done(ds.map((x) => x.classId).sort((a, b) => a - b), {
+        dongPhu: new Map(ds.map((x) => [x.classId, [chuViecChotLoTrinh(x), x.han ? `hạn ${ngayNgan(x.han)}` : null].filter(Boolean).join(' · ')])),
+      });
+    }
     case 'lop-thieu-gv-mon': {
       /* K1-05: phạm vi PHÂN CÔNG (Quản lý, Quản trị) — giáo viên không phân công được nên nhận tập rỗng có nhãn, như chỉ số QL khác. */
       const sc = scopeFor(p, PERMISSIONS.CLASS_ASSIGN);

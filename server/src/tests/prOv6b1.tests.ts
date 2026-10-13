@@ -86,8 +86,12 @@ export async function runPrOv6b1Tests(t: YThucTestKit) {
     const xong = (sid: number) => one(
       `SELECT ${schedule.XONG_MT_CUOI_SQL('cy', 'c')} AS x FROM learning_cycles cy JOIN enrollments e ON e.student_id = cy.student_id AND e.status = 'active'
          JOIN classes c ON c.id = e.class_id WHERE cy.student_id = ? AND cy.status = 'active'`, sid).x;
-    const diem = (sid: number, no: number) => conn.prepare(`INSERT INTO assessment_scores (attempt_id, skill, band, entered_at)
-      SELECT id, 'listening', 5.5, ? FROM assessment_attempts WHERE student_id = ? AND attempt_no = ? AND kind = 'mock' AND status != 'cancelled'`).run(TODAY, sid, no);
+    /* OV-11f (Q5): "xong" = lượt ĐỦ ĐIỂM bắt buộc (`status = 'done'`) — ca dựng ghi điểm rồi đánh dấu lượt đủ điểm. */
+    const diem = (sid: number, no: number) => {
+      conn.prepare(`INSERT INTO assessment_scores (attempt_id, skill, band, entered_at)
+        SELECT id, 'listening', 5.5, ? FROM assessment_attempts WHERE student_id = ? AND attempt_no = ? AND kind = 'mock' AND status != 'cancelled'`).run(TODAY, sid, no);
+      conn.prepare(`UPDATE assessment_attempts SET status = 'done' WHERE student_id = ? AND attempt_no = ? AND kind = 'mock' AND status != 'cancelled'`).run(sid, no);
+    };
     const rf = them(classId('MB FT RF 12'), 'OV6B RF', tuanNay);
     diem(rf, 1);
     assert(xong(rf) === 0, 'RF chỉ MT1 → chưa xong');

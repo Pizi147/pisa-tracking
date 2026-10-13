@@ -16,7 +16,7 @@ import { chipChoDuyet, type ChuongTrinh, type DemYeuCau, type DiemChuY, type Don
  * Điện thoại (< 640 px): mỗi dòng một thẻ, không cuộn ngang.
  */
 type DongCanXuLy = DongCanXuLyGoc & {
-  truoc?: string; phu: string; kem?: string; goiY?: string;
+  truoc?: string; phu: string; kem?: { metricId: string; n: number; nhan: string }[]; goiY?: string;
   nguoi: 'ban' | { dau: string; phu: string; ids: number[] };
   han: { ngay: string; loai: 'cap-nhat-pa' | 'viec-van-hanh' | 'chot-len-ft' } | { chu: string; quaHan?: true };
   den: string | null;
@@ -26,7 +26,7 @@ type Data = { canXuLy: DongCanXuLy[]; choDuyet?: DemYeuCau };
 export function KhoiCanXuLy({ branchId }: { branchId: number | null }) {
   const { data, loading, error, reload } = useApi<Data>(branchId ? `/tong-quan/quan-ly?branchId=${branchId}` : '/tong-quan/quan-ly', [branchId]);
   const dienThoai = useDienThoai();
-  const [mo, setMo] = useState<{ id: string; n: number } | null>(null);
+  const [mo, setMo] = useState<{ id: string; n: number; ten: string } | null>(null);
   const phamVi = { branchId };
   if (error) return <ErrorState message={error.message} hint={error.hint} onRetry={reload} />;
 
@@ -34,7 +34,9 @@ export function KhoiCanXuLy({ branchId }: { branchId: number | null }) {
     <span className="min-w-0" title={x.goiY}>
       <span className="block text-sm text-slate-100">
         {x.truoc && <>{x.truoc} </>}
-        <SoLieuO id={x.metricId} giaTri={x.n} phamVi={phamVi} className="text-base font-semibold" /> {x.nhan}{x.kem ? ` · ${x.kem}` : ''}
+        <SoLieuO id={x.metricId} giaTri={x.n} phamVi={phamVi} className="text-base font-semibold" ten={x.nhan || undefined} /> {x.nhan}
+        {/* OV-11f (TQ-13): số kèm ("2 Case · 6 bài chưa có người") bấm được ra đúng danh sách. */}
+        {x.kem?.map((k) => <span key={k.metricId}> · <SoLieuO id={k.metricId} giaTri={k.n} phamVi={phamVi} ten={k.nhan} /> {k.nhan}</span>)}
       </span>
       {x.phu && <span className="block truncate text-xs text-slate-500">{x.phu}</span>}
     </span>
@@ -50,7 +52,7 @@ export function KhoiCanXuLy({ branchId }: { branchId: number | null }) {
     : <span className={`text-xs tabular-nums ${x.han.quaHan ? 'font-semibold text-late' : 'text-slate-500'}`}>{x.han.quaHan ? <>⚠ {x.han.chu}</> : x.han.chu}</span>);
   const nut = (x: DongCanXuLy) => (x.den
     ? <Link to={x.den} className="btn btn-sm w-full min-h-[44px] justify-center no-underline sm:min-h-[32px]">{x.nut}</Link>
-    : <button type="button" className="btn btn-sm w-full min-h-[44px] justify-center sm:min-h-[32px]" onClick={() => setMo({ id: x.metricId, n: x.n })}>{x.nut}</button>);
+    : <button type="button" className="btn btn-sm w-full min-h-[44px] justify-center sm:min-h-[32px]" onClick={() => setMo({ id: x.metricId, n: x.n, ten: x.nhan || x.truoc || '' })}>{x.nut}</button>);
 
   return (
     <section className="card" aria-labelledby="can-xu-ly">
@@ -98,7 +100,7 @@ export function KhoiCanXuLy({ branchId }: { branchId: number | null }) {
         <span className="text-slate-500">"Xem và nhắc" mở Công việc đã lọc sẵn, có tên từng người và nút Nhắc</span>
         <Link to="/cong-viec" className="link max-sm:py-3 max-sm:-my-3">Tất cả việc trong Công việc →</Link>
       </footer>
-      {mo && <DanhSachSoLieu id={mo.id} giaTri={mo.n} phamVi={phamVi} open onClose={() => setMo(null)} />}
+      {mo && <DanhSachSoLieu id={mo.id} giaTri={mo.n} phamVi={phamVi} open onClose={() => setMo(null)} ten={mo.ten || undefined} />}
     </section>
   );
 }
@@ -136,13 +138,16 @@ export function DaiChoDuyet({ branchId }: { branchId: number | null }) {
 }
 
 /** Q11: nhãn chữ của Điểm đáng chú ý (mockup 23). Đặt ở web: luật PR-T cấm chữ này trong máy chủ/shared (tên trạng thái SOS cũ). */
-const MUC_CHU_Y_LABEL: Record<DiemChuY['muc'], string> = { 'can-chu-y': 'Cần chú ý', tot: 'Tốt' };
+/* OV-11f (CA1-11): "Cần chú ý" chỉ còn MỘT nghĩa trên Tổng quan (ô học viên TVV / CX) — chip ở đây là "Chưa ổn". */
+const MUC_CHU_Y_LABEL: Record<DiemChuY['muc'], string> = { 'can-chu-y': 'Chưa ổn', tot: 'Tốt' };
 
 /** ĐIỂM ĐÁNG CHÚ Ý (tầng 3, theo khung) — route riêng `/tong-quan/diem-chu-y` để đổi công tắc chỉ tải lại khối này. */
 export function DiemDangChuY({ branchId, ct }: { branchId: number | null; ct: ChuongTrinh }) {
   const { data, loading, error, reload } = useApi<DiemChuY[]>(`/tong-quan/diem-chu-y?ct=${ct}${branchId ? `&branchId=${branchId}` : ''}`, [branchId, ct]);
   const [mo, setMo] = useState<{ id: string; n: number; extra?: Record<string, string> } | null>(null);
   const phamVi = { branchId, chuongTrinh: ct };
+  /* OV-11f (TQ-11): panel "Dưới kỳ vọng" theo khung — lớp thường nói "chưa đạt" như câu vừa đọc. */
+  const tenPanel = (id: string) => (id === 'hv-duoi-ky-vong-mon' ? (ct === 'thuong' ? 'Học viên chưa đạt' : 'Học viên dưới kỳ vọng') : undefined);
   return (
     <Card title="Điểm đáng chú ý" bodyClass="p-0">
       {error ? <ErrorState message={error.message} hint={error.hint} onRetry={reload} />
@@ -163,7 +168,7 @@ export function DiemDangChuY({ branchId, ct }: { branchId: number | null; ct: Ch
             ))}
           </ul>
         )}
-      {mo && <DanhSachSoLieu id={mo.id} giaTri={mo.n} phamVi={phamVi} extra={mo.extra} open onClose={() => setMo(null)} />}
+      {mo && <DanhSachSoLieu id={mo.id} giaTri={mo.n} phamVi={phamVi} extra={mo.extra} open onClose={() => setMo(null)} ten={tenPanel(mo.id)} />}
     </Card>
   );
 }
