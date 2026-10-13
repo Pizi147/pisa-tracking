@@ -153,11 +153,9 @@ export function tongQuanQuanLy(p: Principal, f: { branchId?: number | null }) {
         return { ...x, ...chung, phu: dongPhuGon(lop.map((l) => `${l.title} ${l.sub}`.trim())),
           ...(kem.length ? { kem } : {}), den: lop.length === 1 ? lop[0].href : null };
       }
-      case 'hv-ft-xong-mt-cuoi-chua-mt-ke': {
-        const lop = [...new Set([...lopCuaTap(r.unit, r.ids).values()].map((l) => l.classId).filter((id): id is number => !!id))];
-        return { ...x, ...chung, phu: tachTheoLop(r.unit, r.ids), goiY: 'Lộ trình RF: xong MT2',
-          den: lop.length === 1 ? `/test/ke-hoach?classId=${lop[0]}` : null };
-      }
+      case 'hv-ft-xong-mt-cuoi-chua-mt-ke':
+        /* OV-11f (TQ-10): Kế hoạch Test chưa có lọc theo em — nút mở danh sách ĐÚNG các em đó (panel của chỉ số, mỗi dòng mở hồ sơ em), không mở cả lớp. */
+        return { ...x, ...chung, phu: tachTheoLop(r.unit, r.ids), goiY: 'Lộ trình RF: xong MT2', den: null };
       default:   // hv-len-ft-chua-ky-vong
         return { ...x, ...chung, phu: tachTheoLop(r.unit, r.ids), den: r.ids.length === 1 ? duongHoSoHocVien(r.ids[0]) : null };
     }

@@ -224,7 +224,11 @@ export function Header() {
                 onClick={async () => {
                   /* Góc nhìn khác: chỉ đánh dấu những thông báo đang thấy (vai này mở được) — thông báo của vai gốc giữ chưa đọc. */
                   try {
-                    if (gocKhac) await Promise.all(dsThongBao.filter((n) => !n.read_at).map((n) => api.post(`/notifications/${n.id}/read`)));
+                    if (gocKhac) {
+                      /* Lô ≤ 20 yêu cầu song song (đường sẵn có `/notifications/:id/read`) — không dồn 40+ yêu cầu một lúc. */
+                      const ids = dsThongBao.filter((n) => !n.read_at).map((n) => n.id);
+                      for (let i = 0; i < ids.length; i += 20) await Promise.all(ids.slice(i, i + 20).map((id) => api.post(`/notifications/${id}/read`)));
+                    }
                     else await api.post('/notifications/doc-het');
                     notifications.reload();
                   }
