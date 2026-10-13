@@ -9270,6 +9270,9 @@ await runPrOv7aTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, 
 // ==================================================================== PR-OV8a (Bước tiếp sau thi thật: QL chọn Kết thúc · Học tiếp · Học lại; việc QL)
 const { runPrOv8aTests } = await import('./prOv8a.tests.ts');
 await runPrOv8aTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== PR-OV7b (sửa sau khi lưu 2/2: Kết quả PA gần nhất, Xem lại, GV Mở lại Case)
+const { runPrOv7bTests } = await import('./prOv7b.tests.ts');
+await runPrOv7bTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`

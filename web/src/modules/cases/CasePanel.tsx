@@ -3,6 +3,8 @@ import { MenuPa } from './MenuXoaPa.tsx';
 import { KhoaNho, NhatKyPa, VachBuoi } from './FormPa.tsx';
 import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
+import { api, invalidate } from '../../lib/api.ts';
+import { useToast } from '../../ui/Toast.tsx';
 import { Empty, ErrorState, Level, NhanTrangThai, Outcome, Skeleton } from '../../ui/ui.tsx';
 import { BangChung } from '../../ui/BangChung.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
@@ -12,7 +14,7 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { CHUA_CO_PHUONG_AN, GOI_Y_THEM_PHUONG_AN } from '../../ui/chu.ts';
 import { caseStatusLabel, fmtBand, skillLabel, sosLabel, sosTone } from '../../lib/format.ts';
 import {
-  INTERVENTION_KIND_LABEL, INTERVENTION_STATUS_LABEL,
+  FOLLOWUP_OUTCOMES, INTERVENTION_KIND_LABEL, INTERVENTION_STATUS_LABEL,
   NEXT_STEP_LABEL, OUTCOME_MARK, OUTCOME_TONE,
   chuKhoangPa, coNguoiDay, deadlineView, demBuoi, nhanNguoiDay, nutDongPa, outcomeLabelFor, soDongNhatKyPa, tenMon, tuanLich, type TrangThai,
 } from '@shared/domain/index.ts';
@@ -96,7 +98,9 @@ export type ViewCase = { loai: 'case' } | { loai: 'ghi-ket-qua'; paId: number } 
   /* PR-LUI-a2: Sửa Case (+ Xoá Case ở chân). */
   | { loai: 'sua' }
   /* PR-PA (§8): Sửa PA — cùng form Thêm PA; mở từ ⋯ của dòng PA. */
-  | { loai: 'sua-pa'; paId: number };
+  | { loai: 'sua-pa'; paId: number }
+  /* OV-7b: sửa lần ghi Kết quả gần nhất của PA — cùng form Kết quả, điền sẵn. */
+  | { loai: 'sua-ket-qua'; followupId: number };
 
 /** "Case Listening" — tên ngắn của Case cho tiêu đề ngăn và dòng "← Case Listening". */
 export function tenNganCase(d: { categoryLabel: string | null; category: string | null; chuongTrinh?: string | null }): string {
@@ -223,6 +227,7 @@ export function ThanCase({ data, onViec }: { data: CaseDetail; onViec: (v: ViewC
                   <span className="block text-xs tabular-nums text-slate-500">{ngan(m.on)}{m.dot ? <> · {m.dotHref ? <Link to={m.dotHref} className="link">{m.dot}</Link> : m.dot}</> : ''}</span>
                   <span className="flex flex-wrap items-center gap-1.5 text-slate-200">{m.tieuDe}{m.badge}</span>
                   {m.than}
+                  {m.suaXemLai && <SuaXemLai f={m.suaXemLai} />}
                 </li>
               ))}
             </ol>
@@ -286,6 +291,8 @@ function TheKhoiPa({ iv, data, homNay, ngan, onViec }: {
   const coChan = hienHan || hienChoQl || nutXacNhan || nutKetQua;
   /* Nhật ký PA (mockup §8): Tạo · Kết quả từng tuần · Sửa PA / Điều chỉnh — luôn có ít nhất dòng Tạo. */
   const ketQuaPa = data.followups ?? [];
+  /* OV-7b: lần ghi Kết quả gần nhất mà người xem sửa được (người đã ghi + QL, máy chủ quyết `suaDuoc`). */
+  const fSua = ketQuaPa.find((f: any) => f.interventionId === iv.id && f.nextStep && f.suaDuoc) ?? null;
   return (
     <li className="flex flex-col gap-[5px] rounded-lg border px-3 py-2.5 surface-2" style={{ borderColor: 'var(--line)', opacity: dangChay || choDuyet ? undefined : 0.75 }} data-pa-id={iv.id}>
       <div className="flex flex-wrap items-center gap-1.5">
@@ -335,6 +342,16 @@ function TheKhoiPa({ iv, data, homNay, ngan, onViec }: {
       )}
       {/* PR-DUYET (T64): Xin ý kiến không dừng PA — dòng tím khi đang chờ, câu trả lời của QL khi đã có. */}
       <DongXinYKien x={iv.xinYKien} ngan={ngan} />
+      {fSua && (
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[12.5px] text-slate-300">
+          <span className="min-w-0">
+            <span className="text-slate-500">Kết quả {tuanLich(fSua.observedOn, homNay)} · </span>{outcomeLabelFor(fSua.outcome)}
+            <span className="text-slate-500"> → {NEXT_STEP_LABEL[fSua.nextStep as keyof typeof NEXT_STEP_LABEL] ?? fSua.nextStep}</span>
+          </span>
+          <button type="button" className="btn btn-sm ml-auto min-h-[44px] sm:min-h-0" aria-label={`Sửa kết quả ${tuanLich(fSua.observedOn, homNay)}`}
+            onClick={() => onViec({ loai: 'sua-ket-qua', followupId: fSua.id })}>Sửa</button>
+        </div>
+      )}
       {coChan && (
         <div className="flex flex-wrap items-center gap-2 border-t border-dashed pt-1" style={{ borderColor: 'var(--line)' }}>
           {/* Hạn Kết quả: "Kết quả · hạn T2 13/10"; quá hạn → "Kết quả · quá hạn n ngày" cam đậm; em Tạm dừng → nhãn Tạm dừng. */}
@@ -372,7 +389,7 @@ function TheKhoiPa({ iv, data, homNay, ngan, onViec }: {
 
 // ==================================================================== lịch sử cập nhật (thu gọn)
 
-type MucLichSu = { key: string; on: string; dot: string | null; dotHref?: string | null; tieuDe: ReactNode; badge: ReactNode; than: ReactNode };
+type MucLichSu = { key: string; on: string; dot: string | null; dotHref?: string | null; tieuDe: ReactNode; badge: ReactNode; than: ReactNode; suaXemLai?: any };
 
 const MILESTONE_TITLE: Record<string, string> = {
   repeat: 'Trượt lại',
@@ -395,6 +412,41 @@ const MILESTONE_TITLE: Record<string, string> = {
   /* OV-1c: Overall ≥ kỳ vọng sau khi kỹ năng dời có điểm — Case đã có người làm giữ, GV tự đóng. */
   overall_dat: 'Overall đã đạt',
 };
+
+/** OV-7b: sửa "Xem lại sau hỗ trợ" lần mới nhất TẠI CHỖ — kết quả quan sát + ghi chú; Đóng trả về chữ đã lưu, lỗi thì giữ chữ đang gõ. */
+function SuaXemLai({ f }: { f: any }) {
+  const toast = useToast();
+  const [mo, setMo] = useState(false);
+  const [outcome, setOutcome] = useState<string>(f.outcome ?? '');
+  const [note, setNote] = useState<string>(f.note ?? '');
+  const [busy, setBusy] = useState(false);
+  if (!mo) {
+    return <button type="button" className="btn btn-sm mt-1 min-h-[44px] sm:min-h-0" aria-label="Sửa lần xem lại này" onClick={() => setMo(true)}>Sửa</button>;
+  }
+  const huy = () => { setOutcome(f.outcome ?? ''); setNote(f.note ?? ''); setMo(false); };
+  const luu = async () => {
+    setBusy(true);
+    try {
+      await api.patch(`/followups/${f.id}`, { outcome: outcome || null, note });
+      invalidate('/cases'); invalidate('/students');
+      toast.push('ok', 'Đã sửa lần xem lại');
+      setMo(false);
+    } catch (e: any) { toast.push('error', e?.message ?? 'Không lưu được'); } finally { setBusy(false); }
+  };
+  return (
+    <div className="mt-1.5 flex flex-col gap-2">
+      <select className="field w-full sm:w-auto" aria-label="Kết quả quan sát" value={outcome} onChange={(e) => setOutcome(e.target.value)}>
+        <option value="">Chưa chọn kết quả</option>
+        {FOLLOWUP_OUTCOMES.map((o) => <option key={o} value={o}>{outcomeLabelFor(o)}</option>)}
+      </select>
+      <textarea className="field w-full" rows={2} aria-label="Ghi chú lần xem lại" maxLength={2000} value={note} onChange={(e) => setNote(e.target.value)} />
+      <div className="flex gap-2">
+        <button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => void luu()}>{busy ? 'Đang lưu…' : 'Lưu'}</button>
+        <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={busy} onClick={huy}>Đóng</button>
+      </div>
+    </div>
+  );
+}
 
 /** Điểm cô tự chấm: LUÔN có chữ "cô chấm" — một con số 6.5 đứng trơ sẽ bị đọc nhầm thành điểm mock. */
 function MetricPills({ metrics, ct = null }: {
@@ -470,6 +522,7 @@ function buildLichSu(data: CaseDetail, ngan: (d: string | null | undefined) => s
           <MetricPills metrics={f.metrics} ct={data.chuongTrinh ?? null} />
         </>
       ),
+      suaXemLai: !f.nextStep && f.suaDuoc ? f : undefined,
     });
   }
   out.sort((a, b) => (b.on ?? '').localeCompare(a.on ?? '') || b.key.localeCompare(a.key));
