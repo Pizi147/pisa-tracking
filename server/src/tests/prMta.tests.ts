@@ -507,13 +507,14 @@ export async function runPrMtaTests(t: YThucTestKit) {
     for (const v of [6.25, -0.5, 9.5, '6', NaN, null]) assert(d.kiemBand(v) !== null, String(v));
   });
 
-  check('MTa T10 (B2) · saveScore nhận band L/W1/W2/S, overall như cũ; dạng sai → 400 không đổi DB; sửa không lý do, xoá cần lý do', () => {
+  check('MTa T10 (B2; OV-4c) · saveScore nhận band thẳng L/R (W1/W2/S: lượt thường chỉ 4 tiêu chí), overall như cũ; dạng sai → 400 không đổi DB; sửa không lý do, xoá cần lý do', () => {
     const a = emMoi([0, 4, 8]);
     const ghi = (k: string, patch: object) => attemptsSvc.saveScore(P.admin, a.m1, k, patch);
     ghi('listening', { band: 6.5 });
     const l = conn.prepare(`SELECT band, raw_score FROM assessment_scores WHERE attempt_id = ? AND skill = 'listening'`).get(a.m1) as any;
     assert(l.band === 6.5 && l.raw_score === null, JSON.stringify(l));
-    ghi('writing1', { band: 6 }); ghi('writing2', { band: 7 }); ghi('speaking', { band: 6 });
+    /* OV-4c: W1 / W2 / S ở lượt thường không nhận band thẳng nữa → tiêu chí cho cùng band (6 / 7 / 6). */
+    ghi('writing1', { criteria: [6, 6, 6, 6] }); ghi('writing2', { criteria: [7, 7, 7, 7] }); ghi('speaking', { criteria: [6, 6, 6, 6] });
     const kq = ghi('reading', { rawScore: 30 });
     assert(kq.result.complete && kq.result.overall !== null, JSON.stringify(kq.result));
     for (const [k, patch] of [['listening', { band: 6.25 }], ['listening', { band: 9.5 }], ['listening', { band: -1 }], ['listening', { band: 'b' }],
@@ -682,7 +683,7 @@ export async function runPrMtaTests(t: YThucTestKit) {
     assert(loiCua(() => absence.restoreCancelledSkill(P.coreTeacher, a.m1, 'speaking', tuan(0).id)).status === 403, 'GVCN');
     absence.restoreCancelledSkill(QL, a.m1, 'speaking', tuan(0).id);
     absence.restoreCancelledSkill(QL, a.m1, 'reading', tuan(-1).id);
-    attemptsSvc.saveScore(P.admin, a.m1, 'speaking', { band: 6 });
+    attemptsSvc.saveScore(P.admin, a.m1, 'speaking', { criteria: [6, 6, 6, 6] });   // OV-4c: lượt thường — Band tự tính từ tiêu chí
     attemptsSvc.saveScore(P.admin, a.m1, 'reading', { rawScore: 25 });
     const r = kyNang(a.m1, 'reading');
     assert(r.sit_status !== 'cancelled' && r.week_start === t.addDays(tuanNay, -7) && diemCua(a.m1, 'speaking').band === 6 && diemCua(a.m1, 'reading').raw_score === 25,

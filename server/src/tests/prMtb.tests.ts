@@ -595,15 +595,15 @@ export async function runPrMtbTests(t: YThucTestKit) {
     assert(typeof d.LOI_SO_CAU === 'string' && /band/.test(d.LOI_SO_CAU), 'câu lỗi nhắc band');
   });
 
-  check('MTb (T10) · criteriaPatchFrom: band một mình → {band}, preview = band; band + tiêu chí → null + lỗi; band sai → null; không band → như cũ', () => {
+  check('MTb (T10; OV-4c: bandThang = MT cũ / MT0) · criteriaPatchFrom: band một mình → {band}, preview = band; band + tiêu chí → null + lỗi; band sai → null; không band → như cũ', () => {
     const o = { noShow: null };
-    const a = d.criteriaPatchFrom(['', '', '', ''], o, '6.5');
+    const a = d.criteriaPatchFrom(['', '', '', ''], o, '6.5', true);
     assert(a.patch?.band === 6.5 && a.preview === 6.5 && !('criteria' in a.patch), JSON.stringify(a));
-    assert(d.criteriaPatchFrom(['', '', '', ''], o, 'b7').patch?.band === 7, 'b7');
-    const b = d.criteriaPatchFrom(['6', '6', '', ''], o, '6.5');
+    assert(d.criteriaPatchFrom(['', '', '', ''], o, 'b7', true).patch?.band === 7, 'b7');
+    const b = d.criteriaPatchFrom(['6', '6', '', ''], o, '6.5', true);
     assert(b.patch === null && b.loi === 'Điền band hoặc tiêu chí', JSON.stringify(b));
-    assert(d.criteriaPatchFrom(['-', '', '', ''], o, '6.5').patch === null, '"-" cùng band');
-    for (const x of ['6.3', '10', 'abc', '-1']) assert(d.criteriaPatchFrom(['', '', '', ''], o, x).patch === null, `band ${x}`);
+    assert(d.criteriaPatchFrom(['-', '', '', ''], o, '6.5', true).patch === null, '"-" cùng band');
+    for (const x of ['6.3', '10', 'abc', '-1']) assert(d.criteriaPatchFrom(['', '', '', ''], o, x, true).patch === null, `band ${x}`);
     const c = d.criteriaPatchFrom(['6', '6', '6.5', '7'], o);
     assert(c.patch?.criteria?.length === 4 && c.preview === 6.5 && c.loi === null, JSON.stringify(c));
     assert(d.criteriaPatchFrom(['', '', '', ''], { noShow: { state: 'khong-co-bai' } }).patch?.noShow === false, 'gỡ dấu');
@@ -654,7 +654,7 @@ export async function runPrMtbTests(t: YThucTestKit) {
   check('MTb (T10) · quét nguồn: hộp nhập điểm (OV-4b, một hộp thay 3 hộp tiêu chí) có ô "Band"; rawPatchFrom / criteriaPatchFrom ở shared', () => {
     const se = nguon('web/src/modules/fasttrack/ScoreEntry.tsx');
     const hop = nguon('web/src/modules/fasttrack/HopNhapDiem.tsx');
-    assert(/>Band<\/span>/.test(hop) && /inputMode="decimal"/.test(hop) && /bandText/.test(hop) && /criteriaPatchFrom\(vals, cell, bandText\)/.test(hop), 'hộp nhập điểm thiếu ô Band');
+    assert(/>Band<\/span>/.test(hop) && /inputMode="decimal"/.test(hop) && /bandText/.test(hop) && /criteriaPatchFrom\(vals, cell, bandText, cell\.bandThang\)/.test(hop), 'hộp nhập điểm thiếu ô Band');
     assert(/band\?: number \| null/.test(se) && !/export function rawPatchFrom/.test(se), 'SavePatch.band / chuyển rawPatchFrom');
     const cd = nguon('shared/domain/chamDiem.ts');
     assert(/export function rawPatchFrom/.test(cd) && /export function criteriaPatchFrom/.test(cd) && /docONhapLR\(/.test(cd), 'chamDiem.ts');

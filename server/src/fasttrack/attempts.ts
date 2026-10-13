@@ -1,7 +1,7 @@
 import { db, tx } from '../db.ts';
 import {
   ASSESSED_SKILLS, ASSESSED_SKILL_LABEL, duongDotTest, ENTRY_SKILLS, ENTRY_SKILL_LABEL, NO_SHOW_OVERRIDDEN_NOTE,
-  CHAM_CHEO, PERMISSIONS, awaitingScore, kyNangXongThieu, laChamCheo, cachHuyLuot, kiemBand, kiemNhanXet, kiemSoMtMoi, kyNangSosMt0, laMt0, laMtCu, ngay, dauTruCuaO, noShowText, pendingSkillsOf, soMtKeTiep, tenGvCham, tenMon, tuanHocCuaMt, tuanLich,
+  CHAM_CHEO, LOI_BAND_TU_TINH, PERMISSIONS, awaitingScore, kyNangXongThieu, laChamCheo, cachHuyLuot, kiemBand, kiemNhanXet, kiemSoMtMoi, kyNangSosMt0, laMt0, laMtCu, ngay, dauTruCuaO, duocNhapBandThang, noShowText, pendingSkillsOf, soMtKeTiep, tenGvCham, tenMon, tuanHocCuaMt, tuanLich,
   type CachHuy, CASE_CATEGORY_LABEL, INTERVENTION_KIND_LABEL, SYSTEM_CLOSE_REASON_LABEL, categoryOf, type CaseCategory, type InterventionKind,
   type AssessedSkill, type EntrySkill, type NoShowState, type PendingCell, type SkillProgress, type WorkScope,
 } from '../../../shared/domain/index.ts';
@@ -265,6 +265,8 @@ export type SkillCell = {
   rawScore: number | null;
   criteria: [number | null, number | null, number | null, number | null];
   band: number | null;
+  /** OV-4c: ô W1 / W2 / S nhập Band thẳng được (MT cũ, MT0) — lượt thường: Band chỉ tự tính từ bốn tiêu chí. */
+  bandThang: boolean;
   resultDate: string | null;
   enteredByName: string | null;
   enteredAt: string | null;
@@ -436,6 +438,8 @@ export function skillCells(
       rawScore: row?.raw_score ?? null,
       criteria: [row?.c1 ?? null, row?.c2 ?? null, row?.c3 ?? null, row?.c4 ?? null],
       band: row?.band ?? null,
+      /* OV-4c: ô W / S nhập Band thẳng được không — cùng hàm với `saveScore` (web chỉ đọc cờ này). */
+      bandThang: duocNhapBandThang({ lichSu: !!attempt.lich_su, mt0: laMt0(attempt) }),
       resultDate: row?.result_date ?? null,
       enteredByName: row?.entered_by_name ?? null,
       enteredAt: row?.entered_at ?? null,
@@ -1958,6 +1962,10 @@ export function saveScore(
     const coBand = patch.band !== undefined;
     if (coBand && patch.band !== null) { const loi = kiemBand(patch.band); if (loi) throw badRequest(loi); }
     if (coBand && isRawSkill(skill) && patch.rawScore !== undefined) throw badRequest('Nhập số câu hoặc band, không cả hai.');
+    /* OV-4c: W1 / W2 / S ở lượt thường — Band chỉ tự tính từ bốn tiêu chí. MT cũ + MT0 nhập thẳng; `band: null` (xoá) luôn nhận; lớp thường không đổi. */
+    if (coBand && patch.band !== null && isCriteriaSkill(skill) && scoringModeOf(a) !== 'ratio' && !duocNhapBandThang({ lichSu: !!a.lich_su, mt0: laMt0(a) })) {
+      throw badRequest(LOI_BAND_TU_TINH);
+    }
     if (coBand && patch.band !== null && Array.isArray(patch.criteria) && patch.criteria.some((v) => v !== null && v !== undefined && (v as unknown) !== '')) {
       throw badRequest('Nhập band hoặc 4 tiêu chí, không cả hai.');
     }
