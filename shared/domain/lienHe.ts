@@ -31,5 +31,3 @@ export function chuPhuHuynh(l: Pick<LienHe, 'parentName' | 'parentRelation'> | n
   const qh = l?.parentRelation?.trim().toLowerCase() || null;
   return ten && qh ? `${ten} (${qh})` : ten ?? (qh ? `(${qh})` : null);
 }
-
-export const coLienHe = (l: LienHe | null | undefined): boolean => !!(l && (l.phone || l.parentName || l.parentRelation || l.parentPhone));

@@ -115,7 +115,7 @@ export function HocVienTheoVai({ vai }: { vai: 'tvv' | 'cx' }) {
     || (d.lop?.code ?? '').toLowerCase().includes(ql)), [data, ql]);
   const tap = useMemo(() => Object.fromEntries(Object.entries(data?.ids ?? {}).map(([k, v]) => [k, new Set(v)])) as Record<string, Set<number>>, [data]);
   const dem = (k: ChipVai) => (k === 'tat-ca' ? khop.length : khop.filter((d) => tap[k]?.has(d.id)).length);
-  const hien = khop.filter((d) => chip === 'tat-ca' || tap[chip]?.has(d.id)).sort((a, b) => a.ten.localeCompare(b.ten, 'vi'));
+  const hien = useMemo(() => khop.filter((d) => chip === 'tat-ca' || tap[chip]?.has(d.id)).sort((a, b) => a.ten.localeCompare(b.ten, 'vi')), [khop, chip, tap]);
   const nhom = useMemo(() => {
     const m = new Map<number | 'chua-xep', DongVai[]>();
     for (const d of hien) m.set(d.lop?.id ?? 'chua-xep', [...(m.get(d.lop?.id ?? 'chua-xep') ?? []), d]);
