@@ -193,7 +193,7 @@ export function XacNhanNhomPanel({ it, onDong, onDaLuu, onTiep }: {
                         </Link>
                         {/* Điện thoại: điểm · kỳ vọng · làm riêng dưới tên (mockup 375). */}
                         <span className="block text-xs tabular-nums text-slate-500 sm:hidden">
-                          {knNgan} {diem(e)}{e.kyVong !== null ? ` · kỳ vọng ${fmtBand(e.kyVong)}` : ''}{e.kck ? ' · KCK' : ''}{e.lamRieng ? ' · làm riêng' : ''}
+                          {knNgan} {diem(e)}{e.kyVong !== null ? ` · kỳ vọng ${fmtBand(e.kyVong)}` : ''}{e.lamRieng ? ' · làm riêng' : ''}
                         </span>
                       </span>
                       <span className={`hidden text-right tabular-nums sm:block ${!e.kck && e.kyVong !== null && e.band !== null && e.band < e.kyVong - 1 ? 'font-bold text-bad' : ''}`}>{diem(e)}</span>
