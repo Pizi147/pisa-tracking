@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { taoKhoPanel } from '@shared/domain/index.ts';
 import { NutLuat } from './NutLuat.tsx';
@@ -10,6 +10,14 @@ import { BaoOTrongNhan, coOTuNhan } from './ONgay.tsx';
 export const khoPanelChung = taoKhoPanel();
 /** Panel đang mở, mở sau ở cuối — Esc chỉ đóng panel cuối (panel vẽ qua portal nên không còn lồng nhau trong DOM). */
 const nganPanel: string[] = [];
+
+/**
+ * OV-5a: PANEL TẠI CHỖ — cột phải trang Công việc (mockup M1 §1). Panel nằm ngay trong context này vẽ trong luồng trang (thẻ dính, cao tối đa
+ * một màn), không phủ nền, không khoá cuộn, không giữ focus, không vào `khoPanelChung` (mở việc khác = nơi gọi thay nội dung). Panel mở TỪ BÊN
+ * TRONG nó (hộp con, ngăn phụ) vẫn phủ như cũ — context bị đặt lại `false` trong thân. Nơi gọi đặt cột dính (`sticky`) — thẻ cao tối đa vùng nhìn của
+ * `<main>` (trừ thanh trên). Điện thoại: thẻ thay chỗ danh sách, nơi gọi có "‹ Công việc".
+ */
+export const KhungTaiCho = createContext(false);
 
 /**
  * KHUÔN PANEL CHUNG (PR-UX0, N-4 — mockup 15 (1)). Ngăn phải 560px (form dạng bảng `rong` = 720px), 375px toàn màn.
@@ -44,20 +52,23 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong = 'hep', tabs, ngCanh, q
   const khung = useRef<HTMLDivElement>(null);
   const dongRef = useRef(onDong);
   dongRef.current = onDong;
+  const taiCho = useContext(KhungTaiCho);
 
   useEffect(() => {
-    if (longTrong) return undefined;
+    if (longTrong || taiCho) return undefined;
     khoPanelChung.mo(id, () => dongRef.current());
     return () => khoPanelChung.dong(id);
-  }, [id, longTrong]);
+  }, [id, longTrong, taiCho]);
 
   useEffect(() => {
+    if (taiCho) return undefined;
     const cu = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     return () => { document.body.style.overflow = cu; };
-  }, []);
+  }, [taiCho]);
 
   useEffect(() => {
+    if (taiCho) return undefined;   // tại chỗ: Esc chỉ khi focus trong panel (`onKeyDown` dưới)
     /* Esc chỉ đóng lớp TRÊN CÙNG: panel mở sau cùng (`nganPanel`); `Modal` mở chồng trong panel (không portal) tự đóng bằng Esc — panel đứng yên. */
     nganPanel.push(id);
     const onKey = (e: KeyboardEvent) => {
@@ -66,24 +77,22 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong = 'hep', tabs, ngCanh, q
     };
     document.addEventListener('keydown', onKey);
     return () => { document.removeEventListener('keydown', onKey); nganPanel.splice(nganPanel.indexOf(id), 1); };
-  }, [id]);
+  }, [id, taiCho]);
 
   const ngu = [hocVien, lop].filter(Boolean).join(' · ');
   const huy = chan?.huy === null ? null : chan?.huy ?? { onClick: onDong };
-  useGiuFocus(khung);
+  useGiuFocus(khung, !taiCho);
   /* `!mt-0`: panel đứng trong trang có `space-y-*` thì bị cộng margin-top 12–16 px → lệch xuống, lộ dải demo bar/đầu trang (PR-DH, DH-13).
      Vẽ qua portal ra <body>: panel mở từ ô bảng (GV chấm ở tiêu đề cột dính, hộp bốn tiêu chí trong ô điểm) không bị kẹt dưới
      lớp xếp chồng của ô, không kế thừa chữ in hoa / căn phải của ô. Sự kiện React vẫn nổi theo cây React như cũ. */
-  return createPortal(
-    <div className={`fixed inset-0 !mt-0 ${z} flex justify-end`} role="dialog" aria-modal="true" aria-label={tieuDe}>
-      <div className="absolute inset-0 bg-black/60" onClick={onDong} />
-      <div ref={khung} tabIndex={-1} className={`relative flex h-full w-full flex-col rounded-none border-l shadow-2xl -outline-offset-2 ${rong === 'toan' ? 'max-w-[1440px]' : rong === 'rong' ? 'sm:w-[720px]' : 'sm:w-[560px]'}`}
-        style={{ background: 'var(--surface)', borderColor: 'var(--line-strong)' }}>
+  const than = (
+    <>
         <header className="flex h-[52px] shrink-0 items-center gap-2 border-b px-4" style={{ borderColor: 'var(--line)' }}>
           <h2 className="m-0 min-w-0 truncate text-sm font-extrabold text-slate-100" title={tieuDe}>{tieuDe}</h2>
           {ngu && <span className="min-w-0 flex-1 truncate text-xs text-slate-400" title={ngu}>{ngu}</span>}
           {!ngu && <span className="flex-1" />}
-          <button type="button" className="btn btn-sm btn-ghost min-h-[44px] min-w-[44px] justify-center sm:min-h-[32px] sm:min-w-[32px]" onClick={onDong} aria-label="Đóng">✕</button>
+          {/* Tại chỗ trên điện thoại: "‹ Công việc" của nơi gọi thay ✕. */}
+          <button type="button" className={`btn btn-sm btn-ghost min-h-[44px] min-w-[44px] justify-center sm:min-h-[32px] sm:min-w-[32px] ${taiCho ? 'max-lg:hidden' : ''}`} onClick={onDong} aria-label="Đóng">✕</button>
         </header>
         {quayLai && (
           <div className="shrink-0 border-b px-4 py-1.5 text-xs" style={{ borderColor: 'var(--line)' }}>
@@ -98,7 +107,7 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong = 'hep', tabs, ngCanh, q
           <footer className="shrink-0 border-t" style={{ borderColor: 'var(--line)' }}>
             {chan.conThieu?.length ? <DongCanSua muc={chan.conThieu} /> : null}
             {chan.dongTren}
-            <div className="flex items-center gap-2 px-4 py-2.5">
+            <div className="flex flex-wrap items-center gap-2 px-4 py-2.5">
               {huy && <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={huy.onClick} disabled={huy.disabled}>{huy.nhan ?? (chan.daSua ? 'Huỷ thay đổi' : 'Đóng')}</button>}
               {chan.xoa && <button type="button" className="btn btn-danger min-h-[44px] sm:min-h-0" onClick={chan.xoa.onClick}>{chan.xoa.nhan ?? 'Xoá'}</button>}
               <span className="flex-1" />
@@ -107,6 +116,22 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong = 'hep', tabs, ngCanh, q
             </div>
           </footer>
         )}
+    </>
+  );
+  if (taiCho) {
+    return (
+      <section ref={khung} tabIndex={-1} aria-label={tieuDe} onKeyDown={(e) => { if (e.key === 'Escape' && !e.defaultPrevented && !khung.current?.querySelector('[aria-modal="true"]')) dongRef.current(); }}
+        className="card flex flex-col overflow-hidden -outline-offset-2 lg:max-h-[calc(100dvh-8rem)]">
+        <KhungTaiCho.Provider value={false}>{than}</KhungTaiCho.Provider>
+      </section>
+    );
+  }
+  return createPortal(
+    <div className={`fixed inset-0 !mt-0 ${z} flex justify-end`} role="dialog" aria-modal="true" aria-label={tieuDe}>
+      <div className="absolute inset-0 bg-black/60" onClick={onDong} />
+      <div ref={khung} tabIndex={-1} className={`relative flex h-full w-full flex-col rounded-none border-l shadow-2xl -outline-offset-2 ${rong === 'toan' ? 'max-w-[1440px]' : rong === 'rong' ? 'sm:w-[720px]' : 'sm:w-[560px]'}`}
+        style={{ background: 'var(--surface)', borderColor: 'var(--line-strong)' }}>
+        {than}
       </div>
     </div>,
     document.body,

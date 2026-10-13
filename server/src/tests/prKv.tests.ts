@@ -92,14 +92,14 @@ export async function runPrKvTests(t: YThucTestKit) {
   const [A, B, C] = [hocVien(ele, 'ELE'), hocVien(ele, 'ELE'), hocVien(ele, 'ELE')];
   const ma = get('SELECT code FROM classes WHERE id = ?', ele).code as string;
 
-  check('KV2 · việc QL: chưa em nào đủ MT0 → không dòng; đủ MT0 → MỘT dòng mỗi lớp "Kỳ vọng đầu ra · lớp · n em", không dòng mỗi em; chỉ số = em chưa đánh dấu; GVCN không thấy', () => {
+  check('KV2 · việc QL: chưa em nào đủ MT0 → không dòng; đủ MT0 → MỘT dòng mỗi lớp "Kết quả đầu ra · lớp · n em" (OV-5a đổi tên), không dòng mỗi em; chỉ số = em chưa đánh dấu; GVCN không thấy', () => {
     lenFt(ele, [A, B, C], ft, true);
     assert(!viecKv(P.mbManager).some((i) => i.classId === ele), 'chưa có MT0 mà đã có việc');
     diemMt0(A, { L: 5, R: 4.5, W: 4.5, S: 5.5 });
     diemMt0(B, { L: 4.5, R: 4.5, W: 3.5, S: 4 });
     const v = viecKv(P.mbManager).filter((i) => i.classId === ele);
     assert(v.length === 1 && v[0].key === `kyvong:${ele}` && v[0].count === 3 && v[0].studentId === null, JSON.stringify(v));
-    assert(v[0].tieuDe === `Kỳ vọng đầu ra · ${ma} · 3 em` && v[0].href === `/hoc-vien/lop/${ele}?viec=ky-vong` && v[0].reason === 'MT0 đủ 2/3', JSON.stringify(v[0]));
+    assert(v[0].tieuDe === `Kết quả đầu ra · ${ma} · 3 em` && v[0].href === `/hoc-vien/lop/${ele}?viec=ky-vong` && v[0].reason === 'MT0 đủ 2/3', JSON.stringify(v[0]));
     assert(!viecKv(P.mbManager).some((i) => /^ky_vong:/.test(i.key)), 'còn dòng mỗi em cũ');
     const ids = metrics.metricSet(P.mbManager, 'hv-len-ft-chua-ky-vong', {}).ids as number[];
     assert([A, B, C].every((x) => ids.includes(x)), `chỉ số: ${ids}`);
