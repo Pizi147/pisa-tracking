@@ -8,22 +8,23 @@ import { chuOChuaLuu } from './chamDiem.ts';
 import { tuanLich } from './hienThiNgay.ts';
 import { mondayOfDate } from './week.ts';
 
-export type MaLuot = { loai: 'mt'; so: number } | { loai: 'thuong'; kind: 'progress' | 'final' | 'mt0' };
+/** OV-6b2: `cp:<n>` = Checkpoint n của lớp liên tục (số Checkpoint là chung cả lớp: tuần học n × mỗi-n-tuần). */
+export type MaLuot = { loai: 'mt'; so: number } | { loai: 'thuong'; kind: 'progress' | 'final' | 'mt0' } | { loai: 'cp'; so: number };
 
 /** Sai dạng → null (máy chủ trả 400). Số MT dương, không số 0 đầu. */
 export function docMaLuot(s: string): MaLuot | null {
-  const mt = /^mt:([1-9]\d{0,5})$/.exec(s);
-  if (mt) return { loai: 'mt', so: Number(mt[1]) };
+  const mt = /^(mt|cp):([1-9]\d{0,5})$/.exec(s);
+  if (mt) return { loai: mt[1] as 'mt' | 'cp', so: Number(mt[2]) };
   if (s === 'thuong:progress' || s === 'thuong:final' || s === 'thuong:mt0') return { loai: 'thuong', kind: s.slice(7) as 'progress' | 'final' | 'mt0' };
   return null;
 }
 
 export function vietMaLuot(m: MaLuot): string {
-  return m.loai === 'mt' ? `mt:${m.so}` : `thuong:${m.kind}`;
+  return m.loai === 'thuong' ? `thuong:${m.kind}` : `${m.loai}:${m.so}`;
 }
 
 export function nhanMaLuot(m: MaLuot): string {
-  return m.loai === 'mt' ? `MT${m.so}` : ATTEMPT_KIND_SHORT[m.kind];
+  return m.loai === 'mt' ? `MT${m.so}` : m.loai === 'cp' ? `Checkpoint ${m.so}` : ATTEMPT_KIND_SHORT[m.kind];
 }
 
 export type TomTatLuot = {

@@ -13,7 +13,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  ATTEMPT_KIND_SHORT, ENTRY_SKILLS, maHocVienNgan, ngay, tenMon, tenMonNgan, tuanLich, type AttemptKind, type NguoiChon,
+  ENTRY_SKILLS, nhanBai, maHocVienNgan, ngay, tenMon, tenMonNgan, tuanLich, type NguoiChon,
 } from '@shared/domain/index.ts';
 import { dotGvCham, duongDotTest } from '@shared/domain/index.ts';
 import { fmtBand } from '../../lib/format.ts';
@@ -268,7 +268,7 @@ function MotKyNangThuong({ data, onReload, kn, hv, anNutTao, tuanDangXem }: {
       {skills.length === 1 ? (
         /* PF6 (Pre FOU): một môn — không có gì để chọn, nên không hàng chip; một dòng nói bài nào, môn nào. */
         <div className="flex min-h-[44px] items-center gap-1.5 px-3 pt-3 pb-2 text-sm">
-          <span className="font-semibold text-slate-100">{ATTEMPT_KIND_SHORT[data.rows[0].kind as AttemptKind] ?? 'Bài kiểm tra'}</span>
+          <span className="font-semibold text-slate-100">{nhanBai(data.rows[0].kind)}</span>
           <span className="text-slate-500" aria-hidden>·</span>
           <span className="text-slate-200">{tenMonChon}</span>
           <span className="ml-auto tabular-nums text-xs text-slate-500">{chips[0].daNhap}/{chips[0].tong}</span>

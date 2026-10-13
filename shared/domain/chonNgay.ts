@@ -7,7 +7,7 @@
  */
 import { ngayTheoGioVN } from './display.ts';
 import { ngay, tuanLich } from './hienThiNgay.ts';
-import { ATTEMPT_KIND_SHORT, type AttemptKind } from './normal.ts';
+import { ATTEMPT_KIND_SHORT, khoaBai, nhanBai, type AttemptKind } from './normal.ts';
 import { mondayOfDate } from './week.ts';
 
 export type LuaChon = { giaTri: string; nhan: string; phu?: string };
@@ -72,6 +72,7 @@ export function dsThang(homNay: string, soThang: number): LuaChon[] {
  * `null` khi không có đợt.
  */
 export function nhanDotNgan(kind: string | null | undefined, attemptNo: number | null | undefined): string | null {
+  if (kind === 'checkpoint') return nhanBai(khoaBai(kind, attemptNo));   // OV-6b2: "Checkpoint 2"
   if (kind && kind !== 'mock') return ATTEMPT_KIND_SHORT[kind as AttemptKind] ?? 'Bài kiểm tra';
   return attemptNo ? `MT${attemptNo}` : null;
 }

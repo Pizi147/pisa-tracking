@@ -121,6 +121,8 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiCanXepLai = f
                             : { onClick: moHop, ghiChu: `Bấm để xếp ${nhanDot(c.dot)}` })} />
                       )
                     ) : (
+                      /* OV-6b2: Checkpoint tự sinh theo lịch lớp — em không có Checkpoint này (vào sau) thì không có gì để xếp. */
+                      /^cp\d+$/.test(c.key) && dot.attemptId === null ? <span className="text-xs text-slate-500" title="Em không có Checkpoint này">—</span> : (
                       <div className="flex flex-wrap items-center gap-1.5">
                         <ChipKyNang kn={dot.kn} attemptId={dot.attemptId} ct={(data as LuoiThuongData).chuongTrinh} khaiGiang={khaiGiang} tongTuan={tongTuan}
                           deXuat={c.deXuat} nhanDeXuat={c.nhanDeXuat} tenDot={nhanDot(c.dot)}
@@ -131,6 +133,7 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiCanXepLai = f
                           return <OMt v={{ so: 0, attemptId: m.attemptId, kn: m.kn, cu: false, khongDung: m.khongDung }} homNay={homNay} href={duongDotTest({ id: m.attemptId, kind: 'mt0' })} />;
                         })()}
                       </div>
+                      )
                     )}
                   </td>
                 );

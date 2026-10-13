@@ -1,7 +1,7 @@
 import { db, tx } from '../db.ts';
 import {
   ATTEMPT_KIND_SHORT, ENTRY_SKILLS, PERMISSIONS, awaitingScore, chuanHoaMaLop, soSanhLop, kiemPhanCong, moRongPhanCong, nhanKetThucVi, nhanTiepTheo,
-  oPhanCong, pendingSkillsOf, tenMonNgan, viecTiepCuaEm,
+  oPhanCong, pendingSkillsOf, laLienTuc, tenMonNgan, viecTiepCuaEm,
   type AssessedSkill, type SlotPhanCong, type AttemptKind, type PendingCell, type ProgrammeCode, type WorkScope,
   coMocTiepTheo, coMocTiepTheoThuong, mocKeTiep, NORMAL_LADDER, chuMonTruot, coBoTroFinal, nhanHuongNgan, type Huong,
 } from '../../../shared/domain/index.ts';
@@ -813,6 +813,8 @@ function classOverviewThat(p: Principal, classId: number) {
   return {
     id: cls.id, code: cls.code, kind: cls.kind, route: cls.route,
     isFastTrack: cls.is_fast_track === 1, startDate: cls.start_date, note: cls.note,
+    /** OV-6b2: lớp liên tục (PET, KET…) — web ẩn Lộ trình tiếp theo / Chuyển tiếp lớp / Cuối khoá. */
+    lienTuc: laLienTuc(cls),
     branchId: cls.branch_id, branchCode: cls.branch_code, branchName: cls.branch_name,
     programme: prog ? {
       code: prog.code, name: prog.name, weeks: prog.weeks, scoringMode: prog.scoringMode,

@@ -5,7 +5,7 @@ import { RecordViolationPanel } from '../yThuc/RecordViolationPanel.tsx';
 import { ChuyenLopPanel } from '../students/ChuyenLopPanel.tsx';
 import { SuaThongTinMotEm } from '../students/StudentManagePanel.tsx';
 import type { MucMenu } from '../../ui/MenuDong.tsx';
-import { MUC_MENU_DONG_HIEM, MUC_MENU_DONG_NHAN, duongHoSoHocVien, duongLoTrinhLop, mucMenuDongHocVien, type ViecTiepTheo } from '@shared/domain/index.ts';
+import { khoaBai, nhanBai, MUC_MENU_DONG_HIEM, MUC_MENU_DONG_NHAN, duongHoSoHocVien, duongLoTrinhLop, mucMenuDongHocVien, type ViecTiepTheo } from '@shared/domain/index.ts';
 
 /** `coTheChuyenTiep` = `class.edit` ở lớp (Quản lý — ra quyết định chuyển lớp); người chỉ có `coTheSuaHocVien` (GVCN) thì Đề xuất chuyển lớp. */
 export type QuyenDong = { coTheSuaHocVien: boolean; coTheBaoCase: boolean; coTheGhiViPham: boolean; coTheNhapDiem: boolean; coTheChuyenTiep?: boolean };
@@ -13,13 +13,13 @@ export type DongChoMenu = { id: number; ten: string; dangHoc: boolean; nhapDiem:
 
 /** "Nhập điểm MT3" / "Nhập điểm Giữa khoá" khi em còn kỹ năng người xem phải chấm; không có thì không có mục (g3-072). */
 export function nhapDiemCua(
-  classId: number, laLopThuong: boolean, timeline: readonly { kind: string; kindLabel: string; myPending: string[] }[],
+  classId: number, laLopThuong: boolean, timeline: readonly { kind: string; kindLabel: string; myPending: string[]; attemptNo?: number }[],
 ): DongChoMenu['nhapDiem'] {
   const t = timeline.find((x) => x.myPending.length > 0);
   if (!t) return null;
   return {
-    nhan: `Nhập điểm ${t.kindLabel}`,
-    den: laLopThuong ? `/bang-diem-thuong/${classId}?kind=${t.kind}` : `/nhap-diem/${classId}`,
+    nhan: `Nhập điểm ${t.kind === 'checkpoint' ? nhanBai(khoaBai(t.kind, t.attemptNo)) : t.kindLabel}`,   // OV-6b2: "Checkpoint 2"
+    den: laLopThuong ? `/bang-diem-thuong/${classId}?kind=${encodeURIComponent(khoaBai(t.kind, t.attemptNo))}` : `/nhap-diem/${classId}`,
   };
 }
 

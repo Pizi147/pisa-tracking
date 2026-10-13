@@ -33,6 +33,7 @@ CREATE TABLE programmes (
   weeks INTEGER,                      -- số tuần của khoá; NULL với FT vì không cố định
   scoring_mode TEXT NOT NULL,         -- ielts_band | ratio
   nguong_dat REAL,                    -- OV-6b1: đạt từ (0.7 = 70 %), chỉ chương trình đúng/tổng; chép vào lớp lúc tạo
+  lap_moi_tuan INTEGER,               -- OV-6b2: chương trình LIÊN TỤC — Checkpoint mỗi n tuần (weeks NULL); chép vào lớp lúc tạo (classes.moc_lap)
   status TEXT NOT NULL DEFAULT 'active',
   created_at TEXT NOT NULL
 );
@@ -96,6 +97,7 @@ CREATE TABLE classes (
   -- OV-6b1: chụp lúc tạo / đổi chương trình — FT: tuần học của từng MT ("[6,12,16]"), lớp thường: ngưỡng đạt. Quản trị sửa sau chỉ áp lớp mở sau.
   lich_mt TEXT,
   nguong_dat REAL,
+  moc_lap INTEGER,                    -- OV-6b2: lớp liên tục — Checkpoint mỗi n tuần (bản chụp `programmes.lap_moi_tuan`); NULL = lớp có số tuần
 
   /*
    * LỚP NÀY HỌC TIẾP TỪ LỚP NÀO — chuỗi chuyển tiếp FOU → BE → FT.

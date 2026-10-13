@@ -54,13 +54,21 @@ export const RATIO_PASS_THRESHOLD_PREVIOUS = 0.6;
  * Loại lượt đánh giá. `mock` là MT của FT; lớp thường có bài giữa và bài cuối khoá.
  * Vẫn KHÔNG dùng từ "thi" — đây là bài kiểm tra, "thi" dành cho kỳ IELTS chính thức.
  */
-export const ATTEMPT_KINDS = ['mock', 'progress', 'final', 'mt0'] as const;
+export const ATTEMPT_KINDS = ['mock', 'progress', 'final', 'mt0', 'checkpoint'] as const;
 export type AttemptKind = (typeof ATTEMPT_KINDS)[number];
+/** OV-6b2: `checkpoint` = Test lặp mỗi n tuần của chương trình liên tục; số Checkpoint = `attempt_no` (tuần học n × mỗi-n-tuần của lớp). */
 export const ATTEMPT_KIND_LABEL: Record<AttemptKind, string> = {
-  mock: 'Mock Test', progress: 'Progress Test', final: 'Final Test', mt0: 'MT0',
+  mock: 'Mock Test', progress: 'Progress Test', final: 'Final Test', mt0: 'MT0', checkpoint: 'Checkpoint',
 };
 export const ATTEMPT_KIND_SHORT: Record<AttemptKind, string> = {
-  mock: 'MT', progress: 'Progress Test', final: 'Final Test', mt0: 'MT0',
+  mock: 'MT', progress: 'Progress Test', final: 'Final Test', mt0: 'MT0', checkpoint: 'Checkpoint',
+};
+/** Khoá "bài" của dòng lưới lớp thường: Progress / Final theo `kind`; Checkpoint kèm số (`checkpoint:2`) — mỗi Checkpoint là một bài riêng. */
+export const khoaBai = (kind: string, attemptNo: number | null | undefined): string => (kind === 'checkpoint' ? `checkpoint:${attemptNo ?? 0}` : kind);
+/** Tên bài theo khoá `khoaBai`: `checkpoint:2` → "Checkpoint 2"; còn lại như `ATTEMPT_KIND_SHORT`. */
+export const nhanBai = (khoa: string): string => {
+  const cp = /^checkpoint:(\d+)$/.exec(khoa);
+  return cp ? `Checkpoint ${cp[1]}` : ATTEMPT_KIND_SHORT[khoa as AttemptKind] ?? khoa;
 };
 /** Tên bài của lớp thường theo `kind` (không phải `final` thì là Progress Test) — một chỗ cho mọi nhãn cứng. */
 /**
@@ -77,7 +85,8 @@ export const soThuTuLuot = (a: { kind: string; attempt_no: number }, b: { kind: 
 export const moiNhatTruoc = (a: { kind: string; attempt_no: number }, b: { kind: string; attempt_no: number }): number =>
   Number(a.kind === 'mt0') - Number(b.kind === 'mt0') || soThuTuLuot(b, a);
 /** Tên bài của lớp thường theo `kind` (không phải `final` thì là Progress Test) — một chỗ cho mọi nhãn cứng. */
-export const nhanBaiThuong = (kind: string): string => (kind === 'final' ? ATTEMPT_KIND_SHORT.final : ATTEMPT_KIND_SHORT.progress);
+export const nhanBaiThuong = (kind: string): string =>
+  (kind === 'final' ? ATTEMPT_KIND_SHORT.final : kind.startsWith('checkpoint') ? nhanBai(kind) : ATTEMPT_KIND_SHORT.progress);   // OV-6b2: Checkpoint
 /** Một từ cho cột hẹp (ghim Hành trình): `Progress` / `Final`. */
 export const ATTEMPT_KIND_NGAN = { progress: 'Progress', final: 'Final' } as const;
 
@@ -116,6 +125,7 @@ export const SKILL_SHORT: Record<string, string> = {
   listening: 'L', reading: 'R', writing1: 'W1', writing2: 'W2', speaking: 'S',
   writing: 'W',
   tong_hop: 'Tổng hợp',
+  listening_speaking: 'L+S', reading_writing: 'R+W',   // OV-6b2: môn gộp (PET, KET)
   // Hai mã CŨ, chỉ để dữ liệu chưa di trú không hiện mã thô trên giao diện.
   prep_writing: 'W', pronunciation: 'S',
 };
@@ -128,7 +138,12 @@ const TEN_MON_RIENG: Record<string, Record<string, { ten: string; ngan: string }
 const TEN_CHUNG: Record<string, string> = {
   listening: 'Listening', reading: 'Reading', writing1: 'Writing Task 1', writing2: 'Writing Task 2',
   writing: 'Writing', speaking: 'Speaking', tong_hop: 'Tổng hợp',
+  listening_speaking: 'Listening + Speaking', reading_writing: 'Reading + Writing',
 };
+/** OV-6b2: môn Quản trị chọn được cho chương trình mới — danh sách cố định (không tự đặt môn). L+S / R+W là MỘT ô điểm. */
+export const MON_CHON = ['listening', 'reading', 'writing', 'speaking', 'listening_speaking', 'reading_writing'] as const;
+/** Môn gộp → hai môn nó đã gồm (không chọn cùng lúc). */
+export const MON_GOP: Record<string, readonly string[]> = { listening_speaking: ['listening', 'speaking'], reading_writing: ['reading', 'writing'] };
 const oChuan = (o: string) => LEGACY_REGULAR_SKILL_MAP[o] ?? o;       // prep_writing → writing, pronunciation → speaking
 /** MH2: MỘT nơi ra tên môn. `ct` = mã chương trình của lớp/lộ trình (null = không rõ → tên chung). */
 export function tenMon(ct: string | null | undefined, o: string): string {
@@ -143,11 +158,13 @@ export function tenMonNgan(ct: string | null | undefined, o: string): string {
 export function boMonLich(ct: string | null | undefined, skillsBang?: readonly string[] | null): readonly string[] {
   const c = programmeOf(ct);
   if (!c || c === 'FT') return ASSESSED_SKILLS;                       // FT: lịch theo 4 kỹ năng đánh giá (W = W1 + W2)
-  return skillsBang?.length ? skillsBang : PROGRAMME_TEMPLATES[c]?.skills ?? REGULAR_SKILLS;
+  return skillsBang?.length ? skillsBang : PROGRAMME_TEMPLATES[c as ProgrammeCode]?.skills ?? REGULAR_SKILLS;
 }
 /** MH6, T55: ô môn của lớp → kỹ năng GV đã khai hợp để dạy ô đó (gợi ý phân công). */
 export function kyNangGoiY(_ct: string | null | undefined, o: string): readonly string[] {
   if (o === 'writing') return ['writing1', 'writing2'];               // BE/ELE W, FOU G+V (T55, MH6)
+  if (o === 'listening_speaking') return ['listening', 'speaking'];   // OV-6b2: môn gộp — GV dạy một trong hai
+  if (o === 'reading_writing') return ['reading', 'writing1', 'writing2'];
   return (ENTRY_SKILLS as readonly string[]).includes(o) ? [o] : [];   // tong_hop: GVCN dạy luôn — không gợi ý
 }
 /**
@@ -205,13 +222,41 @@ export const PROGRAMME_TEMPLATES: Record<ProgrammeCode, ProgrammeTemplate> = {
   },
 };
 
-/** Đưa mã chương trình về mã canonical. Nhận cả mã cũ, nhưng không sửa dữ liệu gốc. */
-export function programmeOf(kind: string | null | undefined): ProgrammeCode | null {
+/**
+ * OV-6b2: PET, KET — chủ SP 11/10: môn L+S, R+W · đúng/tổng · đạt từ 70 % · liên tục · Checkpoint mỗi 6 tuần. Migrate `prOv6b2` + seed chèn
+ * khi chưa có; sau đó là DỮ LIỆU (Quản trị sửa ở Quản trị › Chương trình), không phải mẫu cố định như `PROGRAMME_TEMPLATES`.
+ */
+export const CHUONG_TRINH_LIEN_TUC_CO_SAN: readonly { code: string; name: string; skills: readonly string[]; nguongDat: number; lapMoiTuan: number }[] = [
+  { code: 'PET', name: 'Preliminary English Test', skills: ['listening_speaking', 'reading_writing'], nguongDat: 0.7, lapMoiTuan: 6 },
+  { code: 'KET', name: 'Key English Test', skills: ['listening_speaking', 'reading_writing'], nguongDat: 0.7, lapMoiTuan: 6 },
+];
+
+/**
+ * Đưa mã chương trình về mã canonical. Nhận cả mã cũ, nhưng không sửa dữ liệu gốc.
+ * OV-6b2: mã Quản trị tạo (PET, KET… — bảng `programmes`, 2–6 chữ in hoa / số) trả CHÍNH mã đó — không còn thành null (null bị đọc là FT).
+ */
+export function programmeOf(kind: string | null | undefined): string | null {
   if (!kind) return null;
   const k = kind.trim().toUpperCase();
-  if ((PROGRAMME_CODES as readonly string[]).includes(k)) return k as ProgrammeCode;
-  return LEGACY_PROGRAMME_CODE[k] ?? null;
+  if ((PROGRAMME_CODES as readonly string[]).includes(k)) return k;
+  return LEGACY_PROGRAMME_CODE[k] ?? (MA_CHUONG_TRINH_MOI.test(k) ? k : null);
 }
+/** OV-6b2: dạng mã chương trình Quản trị tạo — 2–6 chữ in hoa / số (thành ký hiệu tên lớp `{CN} {MÃ} {số}`). */
+export const MA_CHUONG_TRINH_MOI = /^[A-Z][A-Z0-9]{1,5}$/;
+/** OV-6b2: chương trình có sẵn trong mã (luật riêng FOU/BE/ELE/FT…); còn lại là chương trình Quản trị tạo. */
+export const laChuongTrinhGoc = (ct: string | null | undefined): boolean => !!ct && ct in PROGRAMME_TEMPLATES;
+
+/**
+ * OV-6b2 — CHƯƠNG TRÌNH LIÊN TỤC (PET, KET…): không số tuần, Test lặp mỗi n tuần (`classes.moc_lap`, chụp lúc tạo lớp). MỘT cổng cho mọi nơi:
+ * không Progress / Final, không Lộ trình tiếp theo, KQĐR, Cuối khoá, MT0, Target; lớp không tự kết thúc.
+ */
+export const laLienTuc = (c: { moc_lap?: number | null } | null | undefined): boolean => c?.moc_lap != null;
+/** = `laLienTuc` viết bằng SQL cho bí danh bảng lớp. */
+export const LIEN_TUC_SQL = (lop = 'c') => `${lop}.moc_lap IS NOT NULL`;
+export const CAU_LIEN_TUC = {
+  loTrinhTiep: 'Chương trình liên tục không có Lộ trình tiếp theo.',
+  target: 'Chương trình liên tục không có Target.',
+} as const;
 
 /**
  * Kết quả một kỹ năng của lớp thường.

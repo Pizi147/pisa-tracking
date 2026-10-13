@@ -1,6 +1,6 @@
 import { db, tx } from '../db.ts';
 import {
-  NGUONG_KY_VONG, PERMISSIONS, PROGRAMME_TEMPLATES, boMonLich, chuanHoaHuong, maHocLai, tenMonNgan, dienSanChuyenTiep, kiemDongChuyenTiep, tuanChonDuoc, kyHieuLop, soSanhLop, tachSoLop, luatDoiLop, nextStepsAfter, programmeOf, tuanHocTai, tuanKhoa,
+  NGUONG_KY_VONG, PERMISSIONS, CAU_LIEN_TUC, laLienTuc, PROGRAMME_TEMPLATES, boMonLich, chuanHoaHuong, maHocLai, tenMonNgan, dienSanChuyenTiep, kiemDongChuyenTiep, tuanChonDuoc, kyHieuLop, soSanhLop, tachSoLop, luatDoiLop, nextStepsAfter, programmeOf, tuanHocTai, tuanKhoa,
   type DongChuyenTiep, type Huong, type LoaiLop, type ProgrammeCode,
 } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, isIsoDate, notFound } from '../util.ts';
@@ -47,13 +47,16 @@ export function transitionPlan(p: Principal, classId: number) {
   if (!cls) throw notFound('Không tìm thấy lớp');
   require_(p, PERMISSIONS.ATTEMPT_VIEW, { classId }, 'Lớp này nằm ngoài phạm vi bạn được xem.');
 
+  /* OV-6b2: lớp liên tục (PET, KET…) không có Chuyển tiếp lớp / Lộ trình tiếp theo. */
+  if (laLienTuc(cls)) throw badRequest(CAU_LIEN_TUC.loTrinhTiep);
   const progress = classProgress(classId);
-  const from = programmeOf(cls.programme_code ?? cls.kind);
+  /* Chương trình Quản trị tạo (có số tuần) không có bậc kế: chỉ "học lại" cùng chương trình + Lên FT. */
+  const from = programmeOf(cls.programme_code ?? cls.kind) as ProgrammeCode | null;
   const steps = from ? nextStepsAfter(from) : [];
   const defaultProgramme = steps[0] ?? null;
   /* Q8: mỗi bước bậc kế/FT nói rõ hướng; "học lại" (cùng chương trình) luôn có, cạnh chúng — không phải mặc định. */
   const options = [
-    ...(from ? [{ code: from, name: PROGRAMME_TEMPLATES[from].name, huong: 'hoc_lai' as Huong }] : []),
+    ...(from ? [{ code: from, name: PROGRAMME_TEMPLATES[from]?.name ?? from, huong: 'hoc_lai' as Huong }] : []),
     ...steps.map((c) => ({ code: c, name: PROGRAMME_TEMPLATES[c].name, huong: (c === 'FT' ? 'fast_track' : 'len_lop') as Huong })),
   ];
   /* PR-CT (màn I): lớp FT chuyển giữa lộ trình — lớp chuyển đến là mọi lớp FT còn chạy (mọi lộ trình), không lọc "quá nửa". */

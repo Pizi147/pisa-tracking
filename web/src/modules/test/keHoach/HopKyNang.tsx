@@ -11,7 +11,7 @@ import {
   nhanTuanKhoa, tenMon, tenMonNgan, thaoTacKyNang, theoTuanChung, trangThaiTT, tuanDaSo, tuanLich, tuanMacDinhDotMoi,
   type BaiXemTruoc, type DongHangLoat, type KyNangKH, type MucHop, type OKyNang, type ThaoTac, type TrangThaiTT,
 } from '@shared/domain/index.ts';
-import { KY, thanDot, type DotChon, type KnO } from './kieu.ts';
+import { KY, khoaBaiThuong, thanDot, type DotChon, type KnO } from './kieu.ts';
 import { Nhan } from '../../../ui/Nhan.tsx';
 import { Truong } from '../../../ui/KhungPanel.tsx';
 import { TuanNho, resolveTuan, type Tuan } from './TuanNho.tsx';
@@ -288,7 +288,7 @@ export function HopKyNang({ anchor, tieuDe, loai, classId, studentId, dot, attem
         {/* Đợt đã có → tên là liên kết tới hồ sơ đợt (`duongDotTest`, một đường dẫn ở mọi màn); bấm thì đóng hộp. Đợt mới: chữ. */}
         <div className="min-w-0 flex-1 text-sm font-bold text-slate-100" title={tieuDe}>
           {attemptId !== null
-            ? <Link to={duongDotTest({ id: attemptId, kind: dot.loai === 'thuong' ? dot.kind : 'mock', classId }, null)} onClick={onClose}
+            ? <Link to={duongDotTest({ id: attemptId, kind: dot.loai === 'thuong' ? khoaBaiThuong(dot.kind) : 'mock', classId }, null)} onClick={onClose}
                 className="link flex min-h-[44px] items-center sm:min-h-0"><span className="truncate">{tieuDe}</span></Link>
             : <span className="block truncate">{tieuDe}</span>}
         </div>

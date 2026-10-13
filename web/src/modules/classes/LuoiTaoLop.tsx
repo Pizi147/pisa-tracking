@@ -7,7 +7,7 @@ import { WeekPicker } from '../../ui/Filters.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import {
-  CHO_TAO_PRE_FOU, ENTRY_SKILLS, PROGRAMME_TEMPLATES, TOI_DA_DONG_TAO_LOP,
+  CHO_TAO_PRE_FOU, ENTRY_SKILLS, PROGRAMME_TEMPLATES, TOI_DA_DONG_TAO_LOP, thuTuKyHieu,
   chuanHoaMaLop, ghepMaLop, goiYSoTiep, gopLoiTheoDong, kiemPhanCong, kiemSoLop, kyHieuLop, locSoLop, oPhanCong, slotsTuO,
   themDongGiong, type LoiDong, type OPhanCong, type TruongDongTaoLop,
 } from '@shared/domain/index.ts';
@@ -31,8 +31,10 @@ export function dongMoi(p: Partial<Omit<DongLuoi, 'k'>> = {}): DongLuoi {
   return { branchId: null, chuongTrinh: 'FT', loTrinh: 'LT1', so: '', soTay: false, startPeriodId: null, chon: {}, ...p, k: demKhoa };
 }
 
-const CHUONG_TRINH = ['FT', 'PREFOU', 'FOU', 'BE', 'ELE'] as const;
 const NHAN_CT: Record<string, string> = { FT: 'Fast Track' };
+/** OV-6b2: chương trình lớp thường đang dùng — đọc `/ref/programmes` (gồm mã Quản trị tạo: PET, KET…), xếp như tên lớp. */
+export const chuongTrinhThuong = (ds: readonly { code: string }[] | null | undefined): string[] =>
+  (ds ?? []).map((p) => p.code).filter((c) => c !== 'FT').sort((a, b) => thuTuKyHieu(kyHieuLop(a, null)) - thuTuKyHieu(kyHieuLop(b, null)) || a.localeCompare(b));
 const ltCua = (d: DongLuoi) => (d.chuongTrinh === 'FT' ? d.loTrinh : null);
 const tienToCua = (d: DongLuoi, cn: Branch | undefined) => (cn ? ghepMaLop(cn.code, d.chuongTrinh, ltCua(d), '').trim() : null);
 
@@ -256,7 +258,7 @@ export function LuoiTaoLop({ cheDo, luoi, setLuoi, branches, onClose }: {
         </p>
         <ol className="m-0 list-none space-y-2.5 p-0">
           {tinh.map((t, i) => (
-            <DongThe key={t.d.k} t={t} i={i} soDong={ds.length} busy={busy} routes={routes.data ?? []} branches={branches}
+            <DongThe key={t.d.k} t={t} i={i} soDong={ds.length} busy={busy} routes={routes.data ?? []} dsCt={['FT', ...chuongTrinhThuong(programmes.data)]} branches={branches}
               gv={t.d.branchId !== null ? gvCn[t.d.branchId] : undefined} hienLoi={(o) => hienLoi(t, o)} idO={(o) => idO(t.d.k, o)}
               sua={(p, laSua) => sua(t.d.k, p, laSua)} xoa={() => xoa(t.d.k)} />
           ))}
@@ -279,9 +281,9 @@ export function LuoiTaoLop({ cheDo, luoi, setLuoi, branches, onClose }: {
 }
 
 /** Một dòng = một thẻ: điện thoại xếp dọc; màn rộng các ô nằm một hàng, phân công một hàng dưới. */
-function DongThe({ t, i, soDong, busy, routes, branches, gv, hienLoi, idO, sua, xoa }: {
+function DongThe({ t, i, soDong, busy, routes, dsCt, branches, gv, hienLoi, idO, sua, xoa }: {
   t: { d: DongLuoi; cn: Branch | undefined; ma: string | null; oList: OPhanCong[]; coGv: boolean; loiO: (o: OPhanCong) => string | null; may: LoiO };
-  i: number; soDong: number; busy: boolean; routes: { code: string; name: string }[]; branches: Branch[];
+  i: number; soDong: number; busy: boolean; routes: { code: string; name: string }[]; dsCt: string[]; branches: Branch[];
   gv: GiaoVien[] | 'loi' | undefined; hienLoi: (o: O) => string | null; idO: (o: string) => string;
   sua: (p: Partial<DongLuoi>, laSua?: boolean) => void; xoa: () => void;
 }) {
@@ -313,7 +315,7 @@ function DongThe({ t, i, soDong, busy, routes, branches, gv, hienLoi, idO, sua, 
         <O1 nhan="Chương trình" htmlFor={idO('chuongTrinh')} loi={hienLoi('chuongTrinh')}>
           <select className="field w-full" {...o('chuongTrinh')} value={d.chuongTrinh}
             onChange={(e) => sua({ chuongTrinh: e.target.value })}>
-            {CHUONG_TRINH.map((c) => (
+            {dsCt.map((c) => (
               <option key={c} value={c} disabled={c === 'PREFOU' && !CHO_TAO_PRE_FOU}>{NHAN_CT[c] ?? kyHieuLop(c, null) ?? c}</option>
             ))}
           </select>

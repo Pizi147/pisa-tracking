@@ -1,5 +1,8 @@
 import { db, tx } from '../db.ts';
-import { MT_TOI_DA, PERMISSIONS, QUYEN_SUY_RA_GV, RATIO_PASS_THRESHOLD, ROUTES as BUILTIN_ROUTES, ROUTE_NAME, docLichMt, lichMtGoc, lyDoCamVai, nhanBaiThuong } from '../../../shared/domain/index.ts';
+import {
+  MA_CHUONG_TRINH_MOI, MON_CHON, MON_GOP, MT_TOI_DA, PERMISSIONS, QUYEN_SUY_RA_GV, RATIO_PASS_THRESHOLD, ROUTES as BUILTIN_ROUTES, ROUTE_NAME, docLichMt,
+  laChuongTrinhGoc, lichMtGoc, lyDoCamVai, nhanBaiThuong, programmeOf,
+} from '../../../shared/domain/index.ts';
 import { badRequest, notFound, nowIso } from '../util.ts';
 import { clearScoringModeCache } from '../fasttrack/skillSchedule.ts';
 import { require_, type Principal } from '../permissions.ts';
@@ -8,15 +11,16 @@ import { writeAudit } from './audit.ts';
 /**
  * CẤU HÌNH HỆ THỐNG — mục 7.3: Quản trị hệ thống SỬA lộ trình và chương trình.
  *
- * KHÔNG THÊM MÃ MỚI (K1-48): tên lớp, lịch MT và kỳ vọng đang gắn với các mã có sẵn, nên một mã
- * thêm ở đây sẽ không có tên lớp / lịch / kỳ vọng nào đi kèm. Mã mới đi bằng một PR.
+ * LỘ TRÌNH FT không thêm mã mới (K1-48): lịch MT và kỳ vọng gắn với LT1 / LT2 / RF. CHƯƠNG TRÌNH thì thêm được từ OV-6b2 (bỏ K1-48 cho
+ * chương trình): mã mới chấm đúng/tổng, môn chọn từ danh sách cố định, số tuần (Progress / Final) hoặc liên tục (Checkpoint mỗi n tuần) —
+ * tên lớp `{CN} {MÃ} {số}`; luật riêng FOU / BE / ELE / FT không áp cho mã mới.
  *
  * ĐIỀU KHÔNG CHO PHÉP: XOÁ một lộ trình hay loại lớp đang có lớp/học viên dùng. Xoá nó thì
  * mọi lớp cũ mất chỗ tựa, và lịch sử đọc lại thành vô nghĩa. Thay vào đó là NGỪNG DÙNG:
  * biến mất khỏi các ô chọn khi tạo mới, nhưng lớp cũ vẫn đọc được.
  */
 
-const KHONG_THEM_MA = 'Không thêm lộ trình/chương trình mới ở đây — tên lớp, lịch MT và kỳ vọng đang gắn với các mã có sẵn.';
+const KHONG_THEM_MA = 'Không thêm lộ trình mới ở đây — lịch MT và kỳ vọng đang gắn với LT1, LT2, RF.';
 /** OV-6b1: lỗi 400 gắn đúng ô của panel sửa (`details.o`: ten · so-tuan · moc · nguong) — web hiện dưới ô, giữ chữ đã gõ. */
 const loiO = (o: string, m: string) => badRequest(m, { o });
 
@@ -90,6 +94,9 @@ export function listProgrammes(p: Principal) {
       .all(r.code) as any[]).map((x) => ({ kind: x.kind, studyWeek: x.study_week })),
     /* OV-6b1: đạt từ (%) — chỉ chương trình đúng/tổng. */
     nguongDat: r.scoring_mode === 'ratio' ? Math.round((r.nguong_dat ?? RATIO_PASS_THRESHOLD) * 1000) / 10 : null,   // 0.725 → 72.5
+    /* OV-6b2: liên tục — Checkpoint mỗi n tuần; `goc` = chương trình có sẵn trong mã (môn, cách chấm khoá); `coLop` = đã có lớp (môn khoá, mã không đổi). */
+    lapMoiTuan: r.lap_moi_tuan ?? null, goc: laChuongTrinhGoc(r.code),
+    coLop: !!conn.prepare('SELECT 1 FROM classes WHERE programme_code = ? LIMIT 1').get(r.code),
     /* Chỉ lớp ĐANG CHẠY — lớp đã kết thúc không còn chịu ảnh hưởng gì của cấu hình. */
     lopDangChay: (conn.prepare("SELECT COUNT(*) n FROM classes WHERE programme_code = ? AND status = 'active'").get(r.code) as any).n,
   }));
@@ -112,18 +119,34 @@ export function saveProgramme(p: Principal, input: {
   /** OV-6b1: đạt từ, phần trăm 1–100 (chỉ chương trình đúng/tổng). Bỏ trống = giữ. */
   nguongDat?: number | null;
   status?: string;
+  /** OV-6b2: "+ Chương trình" — tạo mã mới (mã đã có → 400). Không có = sửa mã đã có. */
+  taoMoi?: boolean;
+  /** OV-6b2: môn (chọn từ `MON_CHON`) — chỉ chương trình mới, khi chưa có lớp nào. */
+  skills?: unknown;
+  /** OV-6b2: liên tục (`weeks` trống) — Checkpoint mỗi n tuần (1–52). */
+  lapMoiTuan?: number | null;
 }) {
   require_(p, PERMISSIONS.ADMIN_CONFIG, { anyScope: true }, 'Chỉ Quản trị hệ thống sửa được chương trình.');
   const conn = db();
   const code = String(input.code ?? '').trim().toUpperCase();
+  if (input.taoMoi) {
+    if (!MA_CHUONG_TRINH_MOI.test(code) || programmeOf(code) !== code) throw loiO('ma', 'Mã 2–6 ký tự: chữ in hoa và số, bắt đầu bằng chữ (vd PET).');
+    if (conn.prepare('SELECT 1 FROM programmes WHERE code = ?').get(code)) throw loiO('ma', `Đã có chương trình ${code}.`);
+    return taoChuongTrinh(p, code, input);
+  }
   if (!/^[A-Z0-9-]{2,12}$/.test(code)) throw badRequest('Mã chương trình dùng chữ in hoa, số và gạch ngang, 2–12 ký tự.');
   const name = String(input.name ?? '').trim();
   if (!name) throw loiO('ten', 'Đặt tên cho chương trình.');
 
   const had = conn.prepare('SELECT * FROM programmes WHERE code = ?').get(code) as any;
-  if (!had) throw badRequest(KHONG_THEM_MA);
-  /* PR-Dọn (Q22): mọi chương trình đều có mẫu và không thêm mã mới được (KHONG_THEM_MA) — cách chấm và bộ kỹ năng luôn giữ nguyên. */
+  if (!had) throw badRequest('Không có chương trình này — thêm mới bằng "+ Chương trình".');
+  /* Cách chấm không đổi sau khi tạo (đổi là đổi ý nghĩa mọi điểm đã nhập). Môn: chương trình gốc khoá; chương trình mới đổi được khi chưa có lớp. */
   const scoring = had.scoring_mode;
+  const doiMon = !laChuongTrinhGoc(code) && input.skills !== undefined
+    && !conn.prepare('SELECT 1 FROM classes WHERE programme_code = ? LIMIT 1').get(code) ? kiemMon(input.skills) : null;
+  /* OV-6b2: liên tục giữ liên tục (không số tuần) — chỉ đổi "mỗi n tuần", áp lớp mở sau. */
+  const lap = had.lap_moi_tuan == null ? null : input.lapMoiTuan === undefined ? had.lap_moi_tuan : kiemLap(input.lapMoiTuan);
+  if (lap !== null) input = { ...input, weeks: null, progressWeek: null, finalWeek: null };
   const weeks = input.weeks === null || input.weeks === undefined ? null : Number(input.weeks);
   if (weeks !== null && (!Number.isInteger(weeks) || weeks < 1 || weeks > 104)) {
     throw loiO('so-tuan', 'Số tuần phải là số nguyên từ 1 đến 104, hoặc để trống nếu khoá không cố định.');
@@ -158,8 +181,9 @@ export function saveProgramme(p: Principal, input: {
      * để danh sách không phải hỏi từng dòng. Sửa chương trình thì bỏ hết phần đã nhớ.
      */
     clearScoringModeCache();
-    conn.prepare('UPDATE programmes SET name=?, weeks=?, scoring_mode=?, status=?, nguong_dat=? WHERE code=?')
-      .run(name, weeks, scoring, status, nguong, code);
+    conn.prepare('UPDATE programmes SET name=?, weeks=?, scoring_mode=?, status=?, nguong_dat=?, lap_moi_tuan=? WHERE code=?')
+      .run(name, weeks, scoring, status, nguong, lap, code);
+    if (doiMon) ghiMon(conn, code, doiMon);
 
     if (weeks !== null && finalWeek) {
       conn.prepare('DELETE FROM programme_checkpoints WHERE programme_code = ?').run(code);
@@ -173,8 +197,66 @@ export function saveProgramme(p: Principal, input: {
 
     writeAudit({
       actorUserId: p.userId, action: 'programme_updated',
-      entityType: 'programmes', entityLabel: code, before: { nguongDat: had.nguong_dat }, after: { name, weeks, scoring, status, nguongDat: nguong },
+      entityType: 'programmes', entityLabel: code, before: { nguongDat: had.nguong_dat, lapMoiTuan: had.lap_moi_tuan }, after: { name, weeks, scoring, status, nguongDat: nguong, lapMoiTuan: lap },
     });
+    return { ok: true };
+  });
+}
+
+/** OV-6b2: môn chọn từ danh sách cố định, không trùng, môn gộp không đi cùng môn nó đã gồm (L+S với L hoặc S). */
+function kiemMon(v: unknown): string[] {
+  if (!Array.isArray(v) || !v.length) throw loiO('mon', 'Chọn ít nhất một môn.');
+  const ds = v.map(String);
+  if (ds.some((k) => !(MON_CHON as readonly string[]).includes(k))) throw loiO('mon', 'Môn chỉ chọn trong L · R · W · S · L+S · R+W.');
+  if (new Set(ds).size !== ds.length) throw loiO('mon', 'Môn bị trùng.');
+  const gop = ds.find((k) => MON_GOP[k]?.some((x) => ds.includes(x)));
+  if (gop) throw loiO('mon', `${gop === 'listening_speaking' ? 'L+S' : 'R+W'} đã gồm ${gop === 'listening_speaking' ? 'L và S' : 'R và W'} — bỏ môn lẻ.`);
+  return ds;
+}
+function kiemLap(v: unknown): number {
+  const n = Number(v);
+  if (v === null || v === undefined || v === '' || !Number.isInteger(n) || n < 1 || n > 52) throw loiO('moc', 'Lặp mỗi 1–52 tuần.');
+  return n;
+}
+function ghiMon(conn: any, code: string, mon: readonly string[]) {
+  conn.prepare('DELETE FROM programme_skills WHERE programme_code = ?').run(code);
+  mon.forEach((k, i) => conn.prepare('INSERT INTO programme_skills (programme_code, skill, seq) VALUES (?,?,?)').run(code, k, i));
+}
+
+/**
+ * OV-6b2 — "+ CHƯƠNG TRÌNH": mã mới chấm Đúng / tổng ("Band IELTS" chỉ FT). Độ dài = số tuần (mốc Progress / Final cố định) hoặc liên tục
+ * (Checkpoint mỗi n tuần). Kiểm hết trước khi ghi, lỗi gắn đúng ô (`details.o`). Áp cho lớp mở sau (bản chụp lúc tạo lớp).
+ */
+function taoChuongTrinh(p: Principal, code: string, input: Parameters<typeof saveProgramme>[1]) {
+  const conn = db();
+  const name = String(input.name ?? '').trim();
+  if (!name) throw loiO('ten', 'Đặt tên cho chương trình.');
+  const mon = kiemMon(input.skills);
+  const pt = Number(input.nguongDat);
+  if (input.nguongDat === null || input.nguongDat === undefined || !Number.isFinite(pt) || pt < 1 || pt > 100) throw loiO('nguong', 'Đạt từ là phần trăm từ 1 đến 100.');
+  const lienTuc = input.weeks === null || input.weeks === undefined;
+  const lap = lienTuc ? kiemLap(input.lapMoiTuan) : null;
+  let moc: [string, number][] = [];
+  const weeks = lienTuc ? null : Number(input.weeks);
+  if (weeks !== null) {
+    if (!Number.isInteger(weeks) || weeks < 1 || weeks > 104) throw loiO('so-tuan', 'Số tuần phải là số nguyên từ 1 đến 104.');
+    const fi = Number(input.finalWeek || weeks);
+    const pr = input.progressWeek ? Number(input.progressWeek) : null;
+    for (const [k, w] of [['progress', pr], ['final', fi]] as const) {
+      if (w !== null && (!Number.isInteger(w) || w < 1 || w > weeks)) throw loiO('moc', `Tuần ${nhanBaiThuong(k)} phải nằm trong 1–${weeks}.`);
+    }
+    if (pr !== null && pr >= fi) throw loiO('moc', 'Progress Test phải ở trước Final Test.');
+    moc = [...(pr !== null ? [['progress', pr] as [string, number]] : []), ['final', fi]];
+  }
+  const status = input.status === 'inactive' ? 'inactive' : 'active';
+  return tx(() => {
+    clearScoringModeCache();
+    conn.prepare(`INSERT INTO programmes (code, name, weeks, scoring_mode, nguong_dat, lap_moi_tuan, status, created_at) VALUES (?,?,?, 'ratio', ?,?,?,?)`)
+      .run(code, name, weeks, Math.round(pt * 100) / 10000, lap, status, nowIso());
+    ghiMon(conn, code, mon);
+    for (const [k, w] of moc) conn.prepare('INSERT INTO programme_checkpoints (programme_code, kind, study_week) VALUES (?,?,?)').run(code, k, w);
+    writeAudit({ actorUserId: p.userId, action: 'programme_created', entityType: 'programmes', entityLabel: code,
+      after: { name, mon, weeks, lapMoiTuan: lap, nguongDat: pt, status } });
     return { ok: true };
   });
 }

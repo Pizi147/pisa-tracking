@@ -3,7 +3,7 @@ import { nho } from '../platform/nguCanhRequest.ts';
 import {
   BASELINE_SOURCES, CO_DIEM_SQL, CYCLE_OUTCOMES, CYCLE_OUTCOME_LABEL, CYCLE_STATUSES, PERMISSIONS, soMtKeTiep, tuanLich,
   KCK, canNamGan, docNgayNhap, laKck, mondayOfDate, ngay, type ExamPlan, type LuotSo, type Route,
-  CHI_SUA_THONG_TIN,
+  CHI_SUA_THONG_TIN, CAU_LIEN_TUC,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { closeCasesBySystem } from '../cases/systemClose.ts';
@@ -15,6 +15,7 @@ import { apLichMacDinh } from '../classes/schedule.ts';
 import { taoMtMacDinh } from './mtMacDinh.ts';
 import { activeRouteCodes } from '../platform/sysconfig.ts';
 import { ghiBanChup } from '../loTrinh/banChup.ts';
+import { programmeByCode } from '../normal/regular.ts';
 
 /**
  * Lộ trình học của một học viên.
@@ -518,6 +519,8 @@ export function reviseTarget(p: Principal, cycleId: number, input: {
   if (!c) throw notFound('Không tìm thấy lộ trình');
   /* `daDuyet`: chỉ quyết định chuyển lớp lúc thi hành truyền — lệnh đã được kiểm quyền lúc ra (như `applyTransition`). */
   if (!o?.daDuyet) require_(p, PERMISSIONS.CYCLE_EDIT, { studentId: c.student_id }, CHI_QL_SUA);
+  /* OV-6b2: lộ trình của chương trình liên tục (PET, KET…) không có Target. */
+  if (!c.route && programmeByCode(c.programme_code)?.lapMoiTuan) throw badRequest(CAU_LIEN_TUC.target);
   const { target, kck } = docTarget(input.newTarget);
   if (target === (c.target_score ?? null) && kck === !!c.khong_cam_ket) return { cycle: c, revision: null };
   const effectiveFrom = input.effectiveFrom ?? nowIso().slice(0, 10);
