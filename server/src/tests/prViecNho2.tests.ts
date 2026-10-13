@@ -39,6 +39,8 @@ export async function runPrViecNho2Tests(t: YThucTestKit) {
 
   /* ---------------------------------------------------------------- 1. Nhắc tất cả (máy chủ, qua HTTP thật) */
   const httpApp = createApp().listen(0);
+  /* Giữa hai lượt gọi có `myWork()` đồng bộ của QL (vài giây): quá 5 s giữ kết nối mặc định thì máy chủ đóng đúng lúc fetch kế tiếp ghi → ECONNRESET. */
+  httpApp.keepAliveTimeout = 120_000;
   const port = (httpApp.address() as any).port as number;
   const goi = async (userId: number, url: string, body: unknown) => {
     const res = await fetch(`http://127.0.0.1:${port}/api${url}`, {
