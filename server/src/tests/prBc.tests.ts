@@ -74,7 +74,8 @@ export async function runPrBcTests(t: Pick<YThucTestKit, 'check' | 'assert'>) {
     assert(d.locTaiKhoan(ds, L({ q: 'u2@pisa' })).map((u: any) => u.id).join() === '2', 'tìm theo email');
     assert(d.locTaiKhoan(ds, L({ phanLoai: 'chua-email' })).map((u: any) => u.id).join() === '5', 'chưa có email → 5');
     const pl = d.phanLoaiTaiKhoan(ds);
-    assert(pl['chua-vai'] === 1 && pl['chua-email'] === 1 && pl['chua-ky-nang'] === 2, JSON.stringify(pl));
+    /* OV-11b (QT-10d): "Chưa có kỹ năng" chỉ đếm người dạy — QT (4) và người chưa vai (5) không tính. */
+    assert(pl['chua-vai'] === 1 && pl['chua-email'] === 1 && pl['chua-ky-nang'] === 0, JSON.stringify(pl));
   });
   check('PR-BC L3 · nhóm theo chi nhánh: người 2 chi nhánh ở cả 2 nhóm, đếm đúng; không vai → nhóm "Chưa có vai trò"; nhóm theo vai không lặp người', () => {
     const g = d.nhomTaiKhoan(ds, 'chi-nhanh', new Map([['MB', 'Monbay'], ['BC', 'Bãi Cháy'], ['CP', 'Cẩm Phả']]));

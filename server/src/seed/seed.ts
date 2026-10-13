@@ -210,8 +210,10 @@ export function runSeed() {
       }
     }
     dienBanChupLop(conn);   // PF1 + OV-6b1: chụp số tuần, tuần MT, ngưỡng đạt vào lớp — seed không chạy migrate()
-    /* PR-S5F-b: "Phụ trách được" (hồ sơ GV) đọc `user_skills` — GV demo khai đúng các kỹ năng đang được phân công. */
-    conn.prepare(`INSERT OR IGNORE INTO user_skills (user_id, skill) SELECT DISTINCT user_id, skill FROM teacher_assignments WHERE skill IS NOT NULL`).run();
+    /* PR-S5F-b: "Phụ trách được" (hồ sơ GV) đọc `user_skills` — GV demo khai đúng các kỹ năng đang được phân công.
+       OV-11b (QT-10j): chỉ 5 ô MH1 (L R W1 W2 S) — mã ô lớp thường (`writing`, `tong_hop`…) không phải năng lực của người. */
+    conn.prepare(`INSERT OR IGNORE INTO user_skills (user_id, skill) SELECT DISTINCT user_id, skill FROM teacher_assignments
+      WHERE skill IN ('listening', 'reading', 'writing1', 'writing2', 'speaking')`).run();
 
     // ---------------------------------------------------------------- học viên & hành trình
     conn.prepare('INSERT INTO student_code_seq (id, next_value) VALUES (1, 1)').run();
