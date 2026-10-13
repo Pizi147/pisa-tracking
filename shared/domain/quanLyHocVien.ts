@@ -83,6 +83,16 @@ export function mucQuanLyHocVien({ canEdit, suaThongTin, suaThem, lopHoc, cycle,
   }));
 }
 
+/**
+ * OV-10b (mockup vai 13/10 mục 1, 6): ⋯ dòng học viên của TVV / CX / Admin — cùng mục, cùng thứ tự ⋯ hồ sơ HV của vai đó (`mucQuanLyHocVien`), chỉ
+ * việc thông tin / trạng thái: Sửa thông tin · Tạm dừng / Thôi học · Quay lại học · Kết quả thi thật. Nơi gọi thêm "Mở hồ sơ".
+ */
+export function mucDongTheoVai(i: { suaThongTin: boolean; suaThem: boolean; ft: boolean; status: string }) {
+  const quyen: LopHocQuyen = { ghiLoTrinhTiep: false, chuyenLop: false, tamDung: i.suaThem, quayLai: i.suaThem, ketThuc: i.suaThem, luuTru: false, boLuuTru: false };
+  return mucQuanLyHocVien({ canEdit: false, suaThongTin: i.suaThongTin, suaThem: i.suaThem, lopHoc: { quyen }, cycle: { ratio: !i.ft }, status: i.status })
+    .filter((m) => m.key === 'info' || m.key === 'tam-dung-thoi-hoc' || m.key === 'quay-lai' || m.key === 'outcome');
+}
+
 /** Một dòng hệ quả (mockup 24 B) — chỉ mục có hệ quả mới có. */
 const PHU_VIEC: Partial<Record<ViecQuanLy, string>> = {
   'lo-trinh': 'Target, dự kiến thi, lịch MT',

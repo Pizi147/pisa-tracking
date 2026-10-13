@@ -36,6 +36,8 @@ const laTvv = (p: Principal) => p.roleKeys.includes('consultant');
  */
 export function chipHocVien(p: Principal, f: { branchId?: number | null; phamVi?: SoHocVien['phamVi'] } = {}): {
   phamVi: SoHocVien['phamVi']; tong: number; ids: Record<ChipHocVien, number[]>; tatCa: number[]; lyDo: Map<number, LyDoChuY>;
+  /** Kết quả gần nhất của mọi em trong phạm vi (một lần `standingFor`) — cột Kết quả gần nhất của Học viên & Lớp TVV / CX dùng lại. */
+  standing: ReturnType<typeof standingFor>;
 } {
   const conn = db();
   const homNay = demoToday();
@@ -80,7 +82,7 @@ export function chipHocVien(p: Principal, f: { branchId?: number | null; phamVi?
   const ghi = (id: number, sua: (l: LyDoChuY) => void) => { const l = lyDo.get(id) ?? {}; sua(l); lyDo.set(id, l); };
   for (const id of ids['cho-buoc-tiep']) ghi(id, (l) => { l.choBuocTiep = true; });
   const laDangHoc = new Set(dangHoc.map((r) => r.id as number));
-  const standing = standingFor([...laDangHoc]);
+  const standing = standingFor([...em.keys()]);
   for (const id of laDangHoc) {
     const st = standing.get(id);
     if (st?.sosLevel && st.mode === 'ielts_band') ghi(id, (l) => { l.sos = st.sosLevel!; });
@@ -102,7 +104,7 @@ export function chipHocVien(p: Principal, f: { branchId?: number | null; phamVi?
     const ds = danhSachHocVienLop(p, { phamVi, branchId: phamVi === 'chi-nhanh' ? f.branchId : null });
     ids.thieu_tt = ds.hocVien.filter((h) => h.loc.includes('thieu_tt')).map((h) => h.id);
   }
-  return { phamVi, tong: em.size, ids, tatCa: [...em.keys()], lyDo };
+  return { phamVi, tong: em.size, ids, tatCa: [...em.keys()], lyDo, standing };
 }
 
 export function soHocVien(p: Principal, f: { branchId?: number | null } = {}): SoHocVien {

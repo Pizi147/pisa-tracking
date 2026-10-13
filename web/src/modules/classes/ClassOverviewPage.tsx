@@ -23,7 +23,8 @@ import { duongDiemTheoLuot, type DanhSachLuot } from '../cham/LuoiChamLop.tsx';
 import { MuiTen } from '../cases/SkillBoard.tsx';
 import { Nhan } from '../../ui/Nhan.tsx';
 import { PhanTichLopTab } from './PhanTichLopTab.tsx';
-import { DOT_XUAT_FT, DOT_XUAT_THUONG, TAB_HO_SO_LOP_NHAN, ngay, tabHienCuaLop, tabMacDinhLop, type TabHoSoLop } from '@shared/domain/index.ts';
+import { DOT_XUAT_FT, DOT_XUAT_THUONG, TAB_HO_SO_LOP_NHAN, ngay, tabHienCuaLop, tabMacDinhLop, vaiXemHocVien, type TabHoSoLop } from '@shared/domain/index.ts';
+import { useSession } from '../../lib/session.tsx';
 import { TabTongKetLop } from './TabTongKetLop.tsx';
 
 /**
@@ -36,7 +37,7 @@ export default function ClassOverviewPage() {
   const { homNay } = useNgayNghiepVu();
   const [params, setParams] = useSearchParams();
   const cheDoUrl = params.get('che-do');
-  const cheDo: CheDoHocVien = cheDoUrl === 'can-ho-tro' || cheDoUrl === 'lo-trinh' || cheDoUrl === 'ket-qua' ? cheDoUrl : 'diem';
+  const cheDo: CheDoHocVien = cheDoUrl === 'can-ho-tro' || cheDoUrl === 'lo-trinh' || cheDoUrl === 'ket-qua' || cheDoUrl === 'thong-tin' ? cheDoUrl : 'diem';
   const periods = usePeriods();
   const [periodId, setPeriodId] = useState<number | null>(null);
   const [viec, setViec] = useState<ViecDauTrang | null>(null);
@@ -174,6 +175,8 @@ export default function ClassOverviewPage() {
 function KhoiDiemLop({ classId, thuong, mo, onDoi }: { classId: number; thuong: boolean; mo: boolean; onDoi: () => void }) {
   const ds = useApi<DanhSachLuot>(duongDiemTheoLuot(classId), [classId]);
   const l = ds.data?.luot.find((x) => x.ma === ds.data?.macDinh);
+  /* OV-10b: TVV / CX không nhập điểm — điểm vẫn hiện (chỉ đọc), bỏ chip "còn n ô trống". */
+  const vai = vaiXemHocVien(useSession().session?.roles);
   /* Đã mở một lần thì giữ bảng gắn, thu gọn chỉ ẩn — gỡ bảng sẽ mất ô đang gõ / hộp lý do đang mở. */
   const [daMo, setDaMo] = useState(mo);
   if (mo && !daMo) setDaMo(true);
@@ -184,7 +187,7 @@ function KhoiDiemLop({ classId, thuong, mo, onDoi }: { classId: number; thuong: 
           className="flex w-full min-h-[44px] scroll-mt-4 flex-wrap items-center gap-x-2.5 gap-y-1 rounded-xl px-3 py-3 text-left sm:px-4">
           <span className="text-slate-400"><MuiTen mo={mo} /></span>
           <span>{thuong ? 'Điểm Test của lớp' : 'Điểm Mock Test của lớp'}</span>
-          {l && l.oTrong > 0 && <Nhan tone="wait">{`${l.nhan} còn ${l.oTrong} ô trống`}</Nhan>}
+          {l && l.oTrong > 0 && vai !== 'tvv' && vai !== 'cx' && <Nhan tone="wait">{`${l.nhan} còn ${l.oTrong} ô trống`}</Nhan>}
           <span className="flex-1" />
           <span className="text-xs font-normal text-slate-500 max-sm:hidden">{mo ? 'bấm để thu gọn' : 'bấm để mở'}</span>
         </button>

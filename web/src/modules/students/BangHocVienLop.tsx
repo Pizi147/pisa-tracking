@@ -32,7 +32,11 @@ export type DongRoster = {
   missing: { key: string; label: string; who: string }[];
   canhBaoYThuc: NhanYThucEm | null;
   viecTiepTheo: ViecTiepTheo[];
-  timeline: { id: number; kind: string; kindLabel: string; myPending: string[]; overdueSkills: number }[];
+  timeline: {
+    id: number; kind: string; kindLabel: string; myPending: string[]; overdueSkills: number;
+    /** OV-10b: cột Admin "Lượt MT gần nhất" · "Ô chưa nhập". */
+    weekStart?: string | null; status?: string; scoredRequired?: number; requiredCount?: number;
+  }[];
   /** PR-LT: cột Khoá "tiếp theo: …" và cờ chưa có lộ trình tiếp theo (chỉ lớp thường). */
   tiepTheo: string | null;
   chuaLoTrinh: boolean;
@@ -54,8 +58,10 @@ export type LopChoBang = {
  * chữ ở ≥ 2 em thành MỘT hàng "Cả lớp" đầu lớp. `chiHien` = id học viên còn lại sau chip lọc / ô tìm (máy chủ tính); `null` = mọi em đang học.
  * Nằm ở: Học viên & Lớp (menu trái) → mở một lớp. Điện thoại (< 640 px, D2): `the` = mỗi em một `TheDong` thay vì `<tr>` (cùng dữ liệu, cùng thứ tự cột).
  */
-export function BangHocVienLop({ lop, chiHien, sapXep, onDoi, soCot, the = false, ds, onThuTu }: {
+export function BangHocVienLop({ lop, chiHien, sapXep, onDoi, soCot, the = false, ds, onThuTu, admin = false }: {
   lop: LopChoBang; chiHien: Set<number> | null; sapXep: SapXep; onDoi: () => void;
+  /** OV-10b (mockup vai mục 6): Admin — Học viên · Lượt MT gần nhất · Ô chưa nhập · ⋯ (Sửa thông tin · Mở hồ sơ). */
+  admin?: boolean;
   /** PR-DH (Q-0310-4): danh sách học viên đang hiện (đúng lọc + thứ tự) — đi cùng link tên em để hồ sơ có Trước/Sau; `onThuTu` báo thứ tự của lớp này lên trang. */
   ds?: NguCanhDs; onThuTu?: (classId: number, ids: number[]) => void;
   /** Số cột của bảng ngoài — để hàng lỗi / đang tải / rỗng trải hết bề ngang. */
@@ -66,7 +72,24 @@ export function BangHocVienLop({ lop, chiHien, sapXep, onDoi, soCot, the = false
   const { homNay } = useNgayNghiepVu();
   const thuong = lop.scoringMode === 'ratio';
   const { data, loading, error, reload } = useApi<DongRoster[]>(`/classes/${lop.id}/roster`, [lop.id]);
-  const tt = useThaoTacDongHocVien({ laLopThuong: thuong, quyen: lop.viewer, maLop: lop.code, classId: lop.id, onDone: () => { reload(); onDoi(); } });
+  const tt = useThaoTacDongHocVien({ laLopThuong: thuong, quyen: admin ? { ...lop.viewer, theoVai: true } : lop.viewer, maLop: lop.code, classId: lop.id, onDone: () => { reload(); onDoi(); } });
+  /** Admin: lượt đã tới tuần thi gần nhất (không tính lượt huỷ) + số ô còn trống của lượt đó. */
+  const luotGanNhat = (s: DongRoster) => {
+    const t = s.timeline.filter((x) => !!x.weekStart && x.weekStart <= homNay && x.status !== 'cancelled').at(-1);
+    return t ? { nhan: `${t.kindLabel} · ${tuanLich(t.weekStart!, homNay)}`, co: t.scoredRequired ?? 0, can: t.requiredCount ?? 0 } : null;
+  };
+  const oLuot = (s: DongRoster) => {
+    const l = luotGanNhat(s);
+    return l ? <><span className="block tabular-nums text-slate-200">{l.nhan}</span><span className="block text-xs tabular-nums text-slate-500">{l.co}/{l.can} ô có điểm</span></>
+      : <span className="text-slate-600">—</span>;
+  };
+  const oTrong = (s: DongRoster) => {
+    const l = luotGanNhat(s);
+    return l && l.can > l.co ? <span className="tabular-nums text-slate-100">{l.can - l.co}</span> : <span className="text-slate-600">—</span>;
+  };
+  const menuDong = (s: DongRoster) => tt.mucCua({
+    id: s.id, ten: s.fullName, dangHoc: s.status === 'active', nhapDiem: nhapDiemCua(lop.id, thuong, s.timeline), status: s.status,
+  });
   const rows = useMemo(() => sapXepHocVien(
     (data ?? [])
       .filter((s) => !s.archived && (!chiHien || chiHien.has(s.id)))
@@ -129,10 +152,11 @@ export function BangHocVienLop({ lop, chiHien, sapXep, onDoi, soCot, the = false
                   <CanhBaoYThuc cb={s.canhBaoYThuc} />
                 </span>
               )}
-              hanhDong={(
-                <MenuDong muc={tt.mucCua({ id: s.id, ten: s.fullName, dangHoc: s.status === 'active', nhapDiem: nhapDiemCua(lop.id, thuong, s.timeline) })} />
-              )}
-              dong={[
+              hanhDong={<MenuDong muc={menuDong(s)} />}
+              dong={admin ? [
+                { nhan: 'Lượt MT', noiDung: oLuot(s) },
+                { nhan: 'Ô chưa nhập', noiDung: oTrong(s) },
+              ] : [
                 { nhan: 'Kết quả', noiDung: <KetQuaOHocVien k={k} standing={s.standing} thuong={thuong} /> },
                 { nhan: thuong ? 'Khoá' : 'Target', noiDung: thuong
                   ? <>{khoa?.chinh}{khoa?.phu && <span className="block text-xs text-slate-500">{khoa.phu}</span>}</>
@@ -174,6 +198,12 @@ export function BangHocVienLop({ lop, chiHien, sapXep, onDoi, soCot, the = false
                 <CanhBaoYThuc cb={s.canhBaoYThuc} />
               </span>
             </td>
+            {admin ? (
+              <>
+                <td className="td text-xs">{oLuot(s)}</td>
+                <td className="td text-right">{oTrong(s)}</td>
+              </>
+            ) : (<>
             <td className="td"><KetQuaOHocVien k={k} standing={s.standing} thuong={thuong} /></td>
             <td className="td">
               {thuong ? (
@@ -195,11 +225,8 @@ export function BangHocVienLop({ lop, chiHien, sapXep, onDoi, soCot, the = false
               <DanhSachViecTiep viec={conLai.get(s.id) ?? []}
                 den={(v) => duongViecTiep(v, { studentId: s.id, classId: lop.id, laLopThuong: thuong, timeline: s.timeline })} />
             </td>
-            <td className="td text-center">
-              <MenuDong muc={tt.mucCua({
-                id: s.id, ten: s.fullName, dangHoc: s.status === 'active', nhapDiem: nhapDiemCua(lop.id, thuong, s.timeline),
-              })} />
-            </td>
+            </>)}
+            <td className="td text-center"><MenuDong muc={menuDong(s)} /></td>
           </HangCon>
         );
       })}
@@ -209,7 +236,7 @@ export function BangHocVienLop({ lop, chiHien, sapXep, onDoi, soCot, the = false
 }
 
 /** Ô Kết quả gần nhất — chung cho hàng bảng và thẻ điện thoại: số chính + độ lệch FT + ✓ + SOS (FT) và tối đa hai dòng chữ 12 px, không cắt "…". */
-function KetQuaOHocVien({ k, standing, thuong }: { k: ReturnType<typeof ketQuaGanNhat>; standing: KetQuaVao | null; thuong: boolean }) {
+export function KetQuaOHocVien({ k, standing, thuong }: { k: ReturnType<typeof ketQuaGanNhat>; standing: KetQuaVao | null; thuong: boolean }) {
   return (
     <>
       <span className="flex flex-wrap items-center gap-x-1.5">

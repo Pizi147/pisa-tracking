@@ -107,6 +107,12 @@ export const DUONG_DO: MucDo[] = [
   { trang: 'Học viên & Lớp', vai: ['QL', 'QT'], url: '/classes?branchId={cn}' },
   { trang: 'Học viên & Lớp', vai: MOI_VAI, url: '/hoc-vien-lop' },
   { trang: 'Học viên & Lớp', vai: ['QL', 'QT'], url: '/hoc-vien-lop?phamVi=chi-nhanh&branchId={cn}' },
+  /* OV-10b: Học viên & Lớp của TVV / CX (mỗi em một dòng, chip = chipHocVien) — TVV "HV của tôi" / Cả chi nhánh, CX mọi / một chi nhánh. */
+  { trang: 'Học viên & Lớp TVV / CX', vai: ['TVV', 'CX'], url: '/hoc-vien-lop/theo-vai' },
+  { trang: 'Học viên & Lớp TVV', vai: ['TVV'], url: '/hoc-vien-lop/theo-vai?phamVi=chi-nhanh' },
+  { trang: 'Học viên & Lớp CX', vai: ['CX'], url: '/hoc-vien-lop/theo-vai?branchId={cn}' },
+  { trang: 'Học viên & Lớp Admin', vai: ['ADMIN'], url: '/hoc-vien-lop' },
+  { trang: 'Hồ sơ HV CX / Admin', vai: ['CX', 'ADMIN'], url: '/students/{hv}' },
   { trang: 'Học viên & Lớp', vai: MOI_VAI, url: '/hoc-vien-lop/luu-tru' },
   { trang: 'Học viên & Lớp', vai: MOI_VAI, url: '/hoc-vien-lop/ids' },   // PR-TD2-b: Trước/Sau của hồ sơ lớp
   { trang: 'Học viên & Lớp', vai: MOI_VAI, url: '/hoc-vien-lop/luu-tru?branchId={cn}' },
@@ -313,6 +319,14 @@ export const TRAN: Record<string, number> = {
   'CX /tong-quan/hoc-vien': 100,
   'QT /tong-quan/hoc-vien': 100,
   'CX /tong-quan/hoc-vien?branchId=1': 90,   // {cn} = Móng Bình
+  /* OV-10b: Học viên & Lớp / hồ sơ HV theo vai — trần = min(max(đo+10, ⌈đo×1,3⌉), 100); đo 13/10: TVV 74 · TVV cả CN 72 · CX 97 (chip = chipHocVien, 95 như Tổng quan) · CX một CN 80 · Admin 70 · hồ sơ CX 83 / Admin 86. */
+  'TVV /hoc-vien-lop/theo-vai': 97,
+  'TVV /hoc-vien-lop/theo-vai?phamVi=chi-nhanh': 94,
+  'CX /hoc-vien-lop/theo-vai': 100,
+  'CX /hoc-vien-lop/theo-vai?branchId=1': 100,
+  'ADMIN /hoc-vien-lop': 91,
+  'CX /students/1': 100,
+  'ADMIN /students/1': 100,
   'ADMIN /tong-quan/mock-test': 75,
   'ADMIN /highlights': 20,
   'QL /tong-quan/chi-nhanh': 45,

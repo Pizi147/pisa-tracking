@@ -11,7 +11,8 @@ import { CanhBaoYThuc } from './CanhBaoYThuc.tsx';
 import { nhapDiemCua, useThaoTacDongHocVien, type QuyenDong } from './thaoTacDongHocVien.tsx';
 import { OChon, OChonTatCa, type ChonNhieu } from '../students/chonNhieuHocVien.tsx';
 import { MoiVao } from './DaiChuyenLop.tsx';
-import { ATTEMPT_KIND_SHORT, CHUONG_TRINH_KHONG_CHIA_MON, khoaBai, maHocVienNgan, mondayOfDate, nhanBai, tenMon, tenMonNgan, tuanLich, type AttemptKind } from '@shared/domain/index.ts';
+import { ATTEMPT_KIND_SHORT, CHUONG_TRINH_KHONG_CHIA_MON, khoaBai, maHocVienNgan, mondayOfDate, nhanBai, tenMon, tenMonNgan, tuanLich, type AttemptKind, type LienHe } from '@shared/domain/index.ts';
+import { OPhuHuynh } from '../students/HocVienTheoVai.tsx';
 
 type ODiem = { score: number | null; total: number | null; outcome: string };
 type LuotThuong = {
@@ -31,6 +32,8 @@ type DongThuong = {
   cuoiKhoa?: { tyLe: number | null } | null;
   /** PR-OV3a: hướng Quản lý ĐÃ CHỐT (máy chủ `loTrinhDaChot`) — nháp / đề xuất GVCN / gợi ý tự tính không có ở đây. */
   loTrinhChot?: { nhan: string; boTro: string | null; lopDich: string | null; tuan: string | null } | null;
+  /** OV-10b: cột Phụ huynh (TVV / CX / Admin). */
+  lienHe?: LienHe;
 };
 type LoTrinhChot = NonNullable<DongThuong['loTrinhChot']>;
 const TIEU_DE_LO_TRINH = 'Hướng Quản lý đã chốt (+ bổ trợ nếu có). Chưa chốt thì để trống — xem gợi ý ở panel Lộ trình tiếp theo.';
@@ -102,7 +105,7 @@ export function BangDiemLopThuong({ classId, maLop, quyen, onDoi, chuongTrinh = 
                 {s.ketThucVi && <span className="mt-0.5 block text-xs text-slate-400">{s.ketThucVi}</span>}
               </>
             )}
-            hanhDong={<MenuDong muc={tt.mucCua({ id: s.id, ten: s.fullName, dangHoc: s.status === 'active', nhapDiem: nhapDiemCua(classId, true, s.timeline) })} />}
+            hanhDong={<MenuDong muc={tt.mucCua({ id: s.id, ten: s.fullName, dangHoc: s.status === 'active', nhapDiem: nhapDiemCua(classId, true, s.timeline), status: s.status })} />}
             dong={(lienTuc ? [] : [
               { nhan: 'Target', noiDung: <TargetText band={s.cycle?.target} kck={s.cycle?.khongCamKet} /> },
             ]).concat(BAI.map((b) => {
@@ -124,7 +127,8 @@ export function BangDiemLopThuong({ classId, maLop, quyen, onDoi, chuongTrinh = 
                   </span>
                 ),
               };
-            })).concat([{ nhan: 'Lộ trình tiếp theo', noiDung: <OLoTrinh lt={s.loTrinhChot ?? null} homNay={homNay} /> }])} />
+            })).concat([{ nhan: 'Lộ trình tiếp theo', noiDung: <OLoTrinh lt={s.loTrinhChot ?? null} homNay={homNay} /> }],
+              quyen.theoVai ? [{ nhan: 'Phụ huynh', noiDung: s.lienHe ? <OPhuHuynh l={s.lienHe} /> : <>—</> }] : [])} />
         ))}
         {tt.panels}
       </div>
@@ -137,7 +141,7 @@ export function BangDiemLopThuong({ classId, maLop, quyen, onDoi, chuongTrinh = 
         <colgroup>
           <col className="w-[19%]" />{!lienTuc && <col className="w-[6%]" />}
           {BAI.flatMap((b) => [...mon, ...cotPhu(b.kind)].map((k) => <col key={`${b.kind}-${k}`} />))}
-          {!lienTuc && <col className="w-[11rem]" />}<col className="w-12" />
+          {!lienTuc && <col className="w-[11rem]" />}{quyen.theoVai && <col className="w-[10rem]" />}<col className="w-12" />
         </colgroup>
         <thead>
           <tr>
@@ -147,6 +151,7 @@ export function BangDiemLopThuong({ classId, maLop, quyen, onDoi, chuongTrinh = 
               <th key={b.kind} className="th border-b text-center" colSpan={mon.length + cotPhu(b.kind).length} style={{ borderColor: 'var(--line)' }}>{b.nhan}</th>
             ))}
             {!lienTuc && <th className="th align-bottom" rowSpan={2} title={TIEU_DE_LO_TRINH}>Lộ trình tiếp theo</th>}
+            {quyen.theoVai && <th className="th align-bottom" rowSpan={2}>Phụ huynh</th>}
             <th className="th" rowSpan={2}><span className="sr-only">Thao tác</span></th>
           </tr>
           <tr>
@@ -188,8 +193,9 @@ export function BangDiemLopThuong({ classId, maLop, quyen, onDoi, chuongTrinh = 
                 ];
               })}
               {!lienTuc && <td className="td"><OLoTrinh lt={s.loTrinhChot ?? null} homNay={homNay} /></td>}
+              {quyen.theoVai && <td className="td">{s.lienHe ? <OPhuHuynh l={s.lienHe} /> : '—'}</td>}
               <td className="td text-center">
-                <MenuDong muc={tt.mucCua({ id: s.id, ten: s.fullName, dangHoc: s.status === 'active', nhapDiem: nhapDiemCua(classId, true, s.timeline) })} />
+                <MenuDong muc={tt.mucCua({ id: s.id, ten: s.fullName, dangHoc: s.status === 'active', nhapDiem: nhapDiemCua(classId, true, s.timeline), status: s.status })} />
               </td>
             </tr>
           ))}

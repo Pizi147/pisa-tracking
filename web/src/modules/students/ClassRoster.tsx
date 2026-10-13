@@ -15,8 +15,9 @@ import { MoiVao } from '../classes/DaiChuyenLop.tsx';
 import { OChon, OChonTatCa, type ChonNhieu } from './chonNhieuHocVien.tsx';
 import { fmtBand, sosTone } from '../../lib/format.ts';
 import {
-  ENTRY_SKILL_LABEL, GIAI_THICH_KCK, duongHoSoHocVien, maHocVienNgan, skillShort, type EntrySkill, type ExamPlan, type ViecTiepTheo,
+  ENTRY_SKILL_LABEL, GIAI_THICH_KCK, duongHoSoHocVien, maHocVienNgan, skillShort, type EntrySkill, type ExamPlan, type LienHe, type ViecTiepTheo,
 } from '@shared/domain/index.ts';
+import { OPhuHuynh } from './HocVienTheoVai.tsx';
 
 type Timeline = {
   id: number; attemptNo: number; cycleSeq: number; route: string | null;
@@ -64,6 +65,8 @@ type RosterRow = {
   viecTiepTheo: ViecTiepTheo[];
   /** PR-OV3a (M2 §5): điểm đầu vào của lộ trình khi em CHƯA có MT0 — dòng "Đầu vào" chỉ để nhìn (không SOS, không so kỳ vọng). */
   dauVao?: DauVao | null;
+  /** OV-10b: cột Phụ huynh (TVV / CX / Admin) thay cột Theo dõi (việc của GV). */
+  lienHe?: LienHe;
 };
 type DauVao = { overall: number | null; listening: number | null; reading: number | null; writing: number | null; speaking: number | null };
 /** Dòng "Đầu vào" chiếm chỗ MT0 trong 2 mốc gần nhất — em đã có 2 mốc MT thì không còn chỗ. */
@@ -150,7 +153,7 @@ export function ClassRoster({ classId, maLop, quyen, onDoi, onAddStudents, chon 
                   <span className="mt-1 block"><KetLuan row={s} /></span>
                 </>
               )}
-              hanhDong={<MenuDong muc={tt.mucCua({ id: s.id, ten: s.fullName, dangHoc: s.status === 'active', nhapDiem: nhapDiemCua(classId, false, s.timeline) })} />}
+              hanhDong={<MenuDong muc={tt.mucCua({ id: s.id, ten: s.fullName, dangHoc: s.status === 'active', nhapDiem: nhapDiemCua(classId, false, s.timeline), status: s.status })} />}
               dong={[
                 { nhan: 'Target', noiDung: <TargetText band={s.cycle?.target} kck={s.cycle?.khongCamKet} /> },
                 { nhan: 'Dự kiến thi', noiDung: <ExamPlanText plan={s.examPlan} /> },
@@ -178,7 +181,7 @@ export function ClassRoster({ classId, maLop, quyen, onDoi, onAddStudents, chon 
                     </span>
                   </>
                 ) }]),
-                { nhan: 'Theo dõi', noiDung: <FollowCell row={s} classId={classId} /> },
+                quyen.theoVai ? { nhan: 'Phụ huynh', noiDung: s.lienHe ? <OPhuHuynh l={s.lienHe} /> : '—' } : { nhan: 'Theo dõi', noiDung: <FollowCell row={s} classId={classId} /> },
               ]} />
           );
         })}
@@ -221,9 +224,11 @@ export function ClassRoster({ classId, maLop, quyen, onDoi, onAddStudents, chon 
                   {k === 'writing' ? 'W' : skillLabel(k)}
                 </Th>
               ))}
-              <Th hint="Một việc tiếp theo (bấm để làm), kèm số Case đang xử lý. Quá hạn là thông tin của việc đó, không phải một việc riêng.">
-                Theo dõi
-              </Th>
+              {quyen.theoVai ? <Th hint="Tên phụ huynh (quan hệ) và số điện thoại — sửa ở Sửa thông tin của em.">Phụ huynh</Th> : (
+                <Th hint="Một việc tiếp theo (bấm để làm), kèm số Case đang xử lý. Quá hạn là thông tin của việc đó, không phải một việc riêng.">
+                  Theo dõi
+                </Th>
+              )}
               <th className="th"><span className="sr-only">Thao tác</span></th>
             </tr>
           </thead>
@@ -295,9 +300,9 @@ export function ClassRoster({ classId, maLop, quyen, onDoi, onAddStudents, chon 
                     </td>
                   ))}
 
-                  <td className="td"><FollowCell row={s} classId={classId} /></td>
+                  <td className="td">{quyen.theoVai ? (s.lienHe ? <OPhuHuynh l={s.lienHe} /> : '—') : <FollowCell row={s} classId={classId} />}</td>
                   <td className="td text-center">
-                    <MenuDong muc={tt.mucCua({ id: s.id, ten: s.fullName, dangHoc: s.status === 'active', nhapDiem: nhapDiemCua(classId, false, s.timeline) })} />
+                    <MenuDong muc={tt.mucCua({ id: s.id, ten: s.fullName, dangHoc: s.status === 'active', nhapDiem: nhapDiemCua(classId, false, s.timeline), status: s.status })} />
                   </td>
                 </tr>
               );

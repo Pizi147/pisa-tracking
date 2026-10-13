@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate } from '../../lib/api.ts';
@@ -86,7 +86,8 @@ export function BangLoTrinhTiep({ classId, quyen, onDoi, emMo, onDaMoEm }: {
   const [lo, setLo] = useState<{ huong: HuongLenh | ''; lop: number | ''; tuan: string }>({ huong: '', lop: '', tuan: '' });
   const [busy, setBusy] = useState(false);
 
-  const d = kh.data;
+  /* OV-10b: TVV / CX / Admin chỉ đọc lộ trình ĐÃ CHỐT — nháp của Quản lý không hiện. */
+  const d = useMemo(() => (kh.data && quyen.theoVai ? { ...kh.data, students: kh.data.students.map((e) => ({ ...e, nhap: null })) } : kh.data), [kh.data, quyen.theoVai]);
   useEffect(() => {
     if (!d || emMo === null) return;
     if (d.coTheRaLenh && d.students.some((s) => s.id === emMo)) setHop(emMo);

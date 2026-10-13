@@ -38,6 +38,8 @@ type MoNgan = { caseId: number; paId?: number; viec?: 'ghi-ket-qua' | 'xac-nhan'
 
 /** Lưới bốn cột thẳng nhau giữa mọi khối: Kỹ năng · Case · Phương án đang làm · Việc tiếp + hạn. */
 const LUOI = 'md:grid md:grid-cols-[3.5rem_minmax(0,1.5fr)_minmax(0,1.2fr)_minmax(0,1fr)] md:gap-x-3';
+/** OV-10b: TVV / CX / Admin chỉ đọc — bỏ cột Việc tiếp (việc của GV / QL). */
+const LUOI_DOC = 'md:grid md:grid-cols-[3.5rem_minmax(0,1.5fr)_minmax(0,1.2fr)] md:gap-x-3';
 const CAO_TRAI = 'md:grid md:grid-cols-[13.5rem_minmax(0,1fr)]';
 
 /**
@@ -60,6 +62,8 @@ export function BangCanHoTro({ classId, maLop, laLopThuong, quyen, onDoi, chuong
   const tai = () => { trang.reload(); roster.reload(); onDoi(); };
   const tt = useThaoTacDongHocVien({ laLopThuong, quyen, maLop, classId, onDone: tai });
   const dienThoai = useDienThoai();
+  const chiDoc = !!quyen.theoVai;
+  const luoi = chiDoc ? LUOI_DOC : LUOI;
   const rosterTheoEm = useMemo(() => new Map((roster.data ?? []).map((s) => [s.id, s])), [roster.data]);
   const d = trang.data;
   const ct = d ? d.ct ?? chuongTrinh : chuongTrinh;
@@ -92,7 +96,7 @@ export function BangCanHoTro({ classId, maLop, laLopThuong, quyen, onDoi, chuong
 
       <div className={`hidden px-3 text-[11px] font-semibold uppercase tracking-wide text-slate-500 ${CAO_TRAI}`}>
         <span>Học viên</span>
-        <span className={LUOI}><span>Kỹ năng</span><span>Case</span><span>PA đang làm</span><span>Việc tiếp · hạn</span></span>
+        <span className={luoi}><span>Kỹ năng</span><span>Case</span><span>PA đang làm</span>{!chiDoc && <span>Việc tiếp · hạn</span>}</span>
       </div>
 
       {em.map((e) => {
@@ -109,7 +113,7 @@ export function BangCanHoTro({ classId, maLop, laLopThuong, quyen, onDoi, chuong
                   <span className="text-[11px] tabular-nums text-slate-500">{maHocVienNgan(e.ma)}</span>
                 </span>
                 {r && (
-                  <MenuDong muc={tt.mucCua({ id: e.id, ten: e.ten, dangHoc: r.status === 'active', nhapDiem: nhapDiemCua(classId, laLopThuong, r.timeline ?? []) })} />
+                  <MenuDong muc={tt.mucCua({ id: e.id, ten: e.ten, dangHoc: r.status === 'active', nhapDiem: nhapDiemCua(classId, laLopThuong, r.timeline ?? []), status: r.status })} />
                 )}
               </div>
               {r?.cycle && (
@@ -136,7 +140,7 @@ export function BangCanHoTro({ classId, maLop, laLopThuong, quyen, onDoi, chuong
                 }
                 if (!h.cases.length) {
                   return (
-                    <div key={h.khoa} className={`px-3 py-1 ${LUOI}`}>
+                    <div key={h.khoa} className={`px-3 py-1 ${luoi}`}>
                       <span className="text-xs font-semibold text-slate-500" title={h.tenDu}>{h.nhan}</span>
                       <span className="text-[11.5px] text-slate-600">—</span>
                     </div>
@@ -147,7 +151,7 @@ export function BangCanHoTro({ classId, maLop, laLopThuong, quyen, onDoi, chuong
                 return (
                   <div key={h.khoa}>
                     {(hienHet ? h.cases : h.hien).map((c, i) => (
-                      <DongCase key={c.id} h={h} c={c} dau={i === 0} ct={ct} homNay={homNay} the={dienThoai}
+                      <DongCase key={c.id} h={h} c={c} dau={i === 0} ct={ct} homNay={homNay} the={dienThoai} chiDoc={chiDoc}
                         onMo={(viec, paId) => setNgan({ caseId: c.id, viec, paId, em: e.ten })} />
                     ))}
                     {h.them > 0 && (
@@ -176,8 +180,8 @@ export function BangCanHoTro({ classId, maLop, laLopThuong, quyen, onDoi, chuong
 }
 
 /** Một dòng Case trong hàng kỹ năng: Kỹ năng (chỉ dòng đầu) · Case · Phương án đang làm · Việc tiếp + hạn. */
-function DongCase({ h, c, dau, ct, homNay, onMo, the = false }: {
-  h: HangKyNang<CaseCua>; c: CaseCua; dau: boolean; ct: string | null; homNay: string;
+function DongCase({ h, c, dau, ct, homNay, onMo, the = false, chiDoc = false }: {
+  h: HangKyNang<CaseCua>; c: CaseCua; dau: boolean; ct: string | null; homNay: string; chiDoc?: boolean;
   /** Điện thoại (D2): mỗi Case của hàng kỹ năng là một `TheDong` (mockup M4 "trên điện thoại"). */
   the?: boolean;
   onMo: (viec?: 'ghi-ket-qua' | 'xac-nhan' | 'xac-nhan-pa', paId?: number) => void;
@@ -213,12 +217,12 @@ function DongCase({ h, c, dau, ct, homNay, onMo, the = false }: {
               {c.banGiaoTu && <span className="text-slate-500" title="Case bàn giao">từ {c.banGiaoTu}</span>}</span>
           ) },
           { nhan: 'PA', noiDung: <span className="text-[11.5px]">{cacPa}</span> },
-          { nhan: 'Việc tiếp', noiDung: cauViec },
+          ...(chiDoc ? [] : [{ nhan: 'Việc tiếp', noiDung: cauViec }]),
         ]} />
     );
   }
   return (
-    <div className={`px-3 py-2 ${LUOI}`}>
+    <div className={`px-3 py-2 ${chiDoc ? LUOI_DOC : LUOI}`}>
       <span className={`text-xs font-semibold text-slate-300 ${dau ? '' : 'md:invisible'}`} title={h.tenDu}>{h.nhan}</span>
       <span className="min-w-0">
         <button type="button" className="link block max-w-full cursor-pointer truncate border-0 bg-transparent p-0 text-left text-xs font-semibold" title={c.tieuDe}
@@ -230,7 +234,7 @@ function DongCase({ h, c, dau, ct, homNay, onMo, the = false }: {
         </span>
       </span>
       <span className="min-w-0 text-[11.5px] text-slate-300">{cacPa}</span>
-      <span className="min-w-0">{cauViec}</span>
+      {!chiDoc && <span className="min-w-0">{cauViec}</span>}
     </div>
   );
 }

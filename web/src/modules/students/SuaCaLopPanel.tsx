@@ -7,22 +7,27 @@ import { ConfirmDialog } from '../../ui/Drawer.tsx';
 import { ErrorState, Skeleton, Th } from '../../ui/ui.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
-import { KCK, LO_LUU_SUA_CA_LOP, chiaLo, chuTargetKck, chuanOTarget, tachKck, type VanDeNhap } from '@shared/domain/index.ts';
+import { KCK, LIEN_HE_TOI_DA, LO_LUU_SUA_CA_LOP, NHAN_LIEN_HE, QUAN_HE_GOI_Y, TRUONG_LIEN_HE, chiaLo, chuTargetKck, chuanOTarget, tachKck, type VanDeNhap } from '@shared/domain/index.ts';
 import { ChonNguoi, type NguoiTrongDs } from '../../ui/PeoplePicker.tsx';
 
-type Cot = 'fullName' | 'dob' | 'email' | 'consultantUserId' | 'startWeek' | 'examDate' | 'target' | 'baseline';
+type Cot = 'fullName' | 'dob' | 'email' | 'consultantUserId' | 'phone' | 'parentName' | 'parentRelation' | 'parentPhone' | 'startWeek' | 'examDate' | 'target' | 'baseline';
 type DongGoc = {
   studentId: number; fullName: string; dob: string | null; email: string | null; coLoTrinh: boolean;
   /** PR-OV2b: TVV = người; `consultantName` = chữ cũ, chỉ để đọc. */
   consultantUserId: number | null; consultantName: string | null;
   startWeek: string | null; examDate: string | null; target: number | string | null; baseline: number | null;
+  phone: string | null; parentName: string | null; parentRelation: string | null; parentPhone: string | null;
 };
-type DuLieu = { lop: { id: number; code: string }; lopThuong: boolean; coTheSuaTarget: boolean; rows: DongGoc[]; tvv: NguoiTrongDs[] };
+/** `nhapLienHe` (OV-10b): cột Liên hệ — QL / Quản trị; GVCN không thấy (chủ SP 13/10). */
+type DuLieu = { lop: { id: number; code: string }; lopThuong: boolean; coTheSuaTarget: boolean; nhapLienHe: boolean; rows: DongGoc[]; tvv: NguoiTrongDs[] };
 type XemTruoc = { rows: { studentId: number; issues: VanDeNhap[] }[]; canhBaoMt: { studentId: number; cau: string }[] };
 
 const COT: { key: Cot; nhan: string; rong: number; so?: boolean }[] = [
   { key: 'fullName', nhan: 'Họ và tên', rong: 210 }, { key: 'dob', nhan: 'Ngày sinh *', rong: 190 },
-  { key: 'email', nhan: 'Email', rong: 250 }, { key: 'consultantUserId', nhan: 'TVV', rong: 210 }, { key: 'startWeek', nhan: 'Tuần bắt đầu học', rong: 172 },
+  { key: 'email', nhan: 'Email', rong: 250 }, { key: 'consultantUserId', nhan: 'TVV', rong: 210 },
+  { key: 'phone', nhan: NHAN_LIEN_HE.phone, rong: 150 }, { key: 'parentName', nhan: NHAN_LIEN_HE.parentName, rong: 190 },
+  { key: 'parentRelation', nhan: NHAN_LIEN_HE.parentRelation, rong: 110 }, { key: 'parentPhone', nhan: NHAN_LIEN_HE.parentPhone, rong: 150 },
+  { key: 'startWeek', nhan: 'Tuần bắt đầu học', rong: 172 },
   { key: 'examDate', nhan: 'Dự kiến thi', rong: 190 }, { key: 'target', nhan: 'Target', rong: 100, so: true },
   { key: 'baseline', nhan: 'Điểm đầu vào', rong: 112, so: true },
 ];
@@ -69,7 +74,7 @@ export function SuaCaLopPanel({ classId, onClose, onDone }: { classId: number; o
   const khoa = useRef(moiKhoa());
 
   const d = du.data;
-  const cot = COT.filter((c) => !(d?.lopThuong && c.key === 'baseline'));
+  const cot = COT.filter((c) => !(d?.lopThuong && c.key === 'baseline') && (d?.nhapLienHe || !(TRUONG_LIEN_HE as readonly string[]).includes(c.key)));
   const goc = useMemo(() => new Map((d?.rows ?? []).map((r) => [r.studentId, r])), [d]);
 
   /** Giá trị gốc của ô: đã lưu ở lô trước (lưu dở) thì lấy giá trị đó. */
@@ -183,6 +188,7 @@ export function SuaCaLopPanel({ classId, onClose, onDone }: { classId: number; o
                 </Truong>
               </div>
             )}
+            {d.nhapLienHe && <datalist id="quan-he-goi-y-lop">{QUAN_HE_GOI_Y.map((x) => <option key={x} value={x} />)}</datalist>}
             <div className="overflow-x-auto">
               <table className="w-full table-fixed text-sm" style={{ minWidth: cot.reduce((n, c) => n + c.rong, 0) + RONG_LUU_Y }}>
                 <colgroup>
@@ -237,8 +243,10 @@ export function SuaCaLopPanel({ classId, onClose, onDone }: { classId: number; o
                                     <input className={`field w-full${c.so ? ' text-right tabular-nums' : ''}${loi ? ' border-late' : ''}`}
                                       value={v} aria-label={nhan} aria-invalid={!!loi || undefined} aria-describedby={loi ? idLoi : undefined}
                                       disabled={khoaO} title={khoaO ? (c.key === 'target' && !d.coTheSuaTarget ? 'Chỉ Quản lý đổi Target' : 'Em chưa có lộ trình') : undefined}
-                                      type={c.key === 'email' ? 'email' : 'text'} autoComplete="off"
-                                      inputMode={c.key === 'baseline' ? 'decimal' : c.key === 'email' ? 'email' : undefined}
+                                      type={c.key === 'email' ? 'email' : c.key === 'phone' || c.key === 'parentPhone' ? 'tel' : 'text'} autoComplete="off"
+                                      inputMode={c.key === 'baseline' ? 'decimal' : c.key === 'email' ? 'email' : c.key === 'phone' || c.key === 'parentPhone' ? 'tel' : undefined}
+                                      list={c.key === 'parentRelation' ? 'quan-he-goi-y-lop' : undefined}
+                                      maxLength={c.key === 'parentName' || c.key === 'parentRelation' ? LIEN_HE_TOI_DA[c.key] : undefined}
                                       onChange={(e) => datO(r.studentId, c.key, e.target.value)}
                                       onBlur={c.key === 'target' ? (e) => { const v = chuanOTarget(e.target.value); if (v !== e.target.value) datO(r.studentId, 'target', v); } : undefined} />
                                   )}

@@ -46,6 +46,8 @@ export type HoSoLop = {
     canPlanWeek: boolean; canAddStudents: boolean; canAssign: boolean; canAssignSubject?: boolean; canEditProgress: boolean;
     editableSkills: string[]; isCoreTeacher: boolean;
     canReportCase: boolean; canRecordViolation: boolean; canEnterScores: boolean;
+    /** OV-10b: ⋯ dòng của Admin / TVV / CX (`student.edit_info` · `student.edit_more`). */
+    coTheSuaThongTin?: boolean; coTheSuaThem?: boolean;
     /** PR-LT: nút Chuyển tiếp lớp/badge — cùng luật CLASS_EDIT với canEditProgress, tên riêng cho rõ ý. */
     coTheChuyenTiep: boolean;
     /** PR-UX3: ⋮ Xoá lớp — chỉ Quản trị hệ thống (máy chủ kiểm lại). */
@@ -93,7 +95,9 @@ export function DauTrangLop({ data, onViec, onBanGiao }: {
   });
   /* PR-S5F-a (mockup 20): lớp đã có dải "Lộ trình tiếp theo" (OV-3b) thì bỏ chip "n HV cần xếp lớp tiếp" — hai chỗ nói cùng một việc. */
   const boXep = (ds: BadgeLop[]) => (data.dai?.loTrinh ? ds.filter((x) => x.key !== 'xep-lop') : ds);
-  const b0 = { hien: boXep(bGoc.hien), an: boXep(bGoc.an) };
+  /* OV-10b: badge "n bài chờ chấm" dẫn vào Test — vai không có Test (TVV / CX) không thấy. */
+  const boCham = (ds: BadgeLop[]) => (session?.nav?.test ? ds : ds.filter((x) => x.key !== 'cham'));
+  const b0 = { hien: boCham(boXep(bGoc.hien)), an: boCham(boXep(bGoc.an)) };
   /* DH: nhãn chặng chỉ là chữ — không vào menu "+n" (mục bấm không làm gì); nếu bị ẩn thì hiện thẳng ở hàng. */
   const b = { hien: [...b0.hien, ...b0.an.filter((x) => x.key === 'chang')], an: b0.an.filter((x) => x.key !== 'chang') };
   const bamBadge = (x: BadgeLop): (() => void) | null =>

@@ -17,8 +17,9 @@ import { TenGiaoVien } from '../classes/TenGiaoVien.tsx';
 import { BangHocVienLop } from './BangHocVienLop.tsx';
 import {
   LOC_HOC_VIEN, LOC_HOC_VIEN_NHAN, PHAM_VI_NHAN, badgeLop, chipHienLoc, demLoc, docThamSoLoc, duongLichTest, khungCua, laVaiQuanLy, lopMoSan, needScoresText,
-  type BadgeLop, type LocHocVien, type NguCanhDs, type PhamVi, type SapXep, type WorkScope,
+  type BadgeLop, type LocHocVien, type NguCanhDs, type PhamVi, type SapXep, type WorkScope, vaiXemHocVien,
 } from '@shared/domain/index.ts';
+import { HocVienTheoVai } from './HocVienTheoVai.tsx';
 
 /** Ô chọn gọn của đầu trang: cùng cao 32 px với chip (điện thoại 44 px, `.field` đã có min-height 40). */
 const SELECT_GON = 'field h-8 w-auto !py-0 text-xs max-sm:min-h-[44px] max-sm:w-full';
@@ -34,7 +35,7 @@ export type LopTrenTrang = {
   gvcn: { id: number; name: string } | null; soCaseMo: number; tuanKetThuc: string | null;
   /** B4: yêu cầu chờ Quản lý duyệt (chỉ người duyệt được) và số em có việc đã quá hạn — badge `cho-duyet` / `qua-han`. */
   soChoDuyet: number; soEmQuaHan: number;
-  viewer: { coTheSuaHocVien: boolean; coTheBaoCase: boolean; coTheGhiViPham: boolean; coTheNhapDiem: boolean; coTheChuyenTiep: boolean };
+  viewer: { coTheSuaHocVien: boolean; coTheBaoCase: boolean; coTheGhiViPham: boolean; coTheNhapDiem: boolean; coTheChuyenTiep: boolean; coTheSuaThongTin?: boolean; coTheSuaThem?: boolean };
   /** PR-LT: số em thật sự cần xếp lớp tiếp (Q9), số em lớp thường chưa có lộ trình tiếp theo (chỉ hai tuần cuối khoá, Q5). */
   canXepLop: number; soChuaLoTrinhTiep: number; nhacLoTrinh: boolean;
 };
@@ -61,6 +62,13 @@ function nhanLuuTru(dem: { lop: number; hv: number }): string {
  * Mọi trạng thái nằm trên URL: tải lại trang và nút Back giữ đúng chỗ đang đứng.
  */
 export default function StudentsPage() {
+  const { session } = useSession();
+  /* OV-10b: TVV / CX — bảng theo việc của vai (mockup vai 13/10 mục 1, 5); Admin giữ trang này với cột riêng; QL / GV không đổi. */
+  const vai = vaiXemHocVien(session?.roles);
+  return vai === 'tvv' || vai === 'cx' ? <HocVienTheoVai vai={vai} /> : <TrangTheoLop admin={vai === 'admin'} />;
+}
+
+function TrangTheoLop({ admin }: { admin: boolean }) {
   const navigate = useNavigate();
   const { can, session } = useSession();
   const [params, setParams] = useSearchParams();
@@ -142,7 +150,9 @@ export default function StudentsPage() {
   const nhomLop = (['ft', 'thuong'] as const)
     .map((k) => ({ k, lop: lopHien.filter((c) => khungCua(c.scoringMode) === k) })).filter((g) => g.lop.length > 0);
   /* PR-DH (04/10): cột Dự kiến thi cho CẢ hai nhóm (lớp thường cũng có Target + Dự kiến thi sau PR-NT). */
-  const tieuDeCot = (k: 'ft' | 'thuong') => ['Học viên', 'Kết quả gần nhất', k === 'ft' ? 'Target' : 'Khoá', 'Dự kiến thi', 'Sắp tới', 'Case', 'Việc tiếp theo', ''];
+  /* OV-10b (mockup vai mục 6): Admin — Học viên · Lượt MT gần nhất · Ô chưa nhập · ⋯ (không Case / Việc tiếp theo). */
+  const tieuDeCot = (k: 'ft' | 'thuong') => admin ? ['Học viên', 'Lượt MT gần nhất', 'Ô chưa nhập', '']
+    : ['Học viên', 'Kết quả gần nhất', k === 'ft' ? 'Target' : 'Khoá', 'Dự kiến thi', 'Sắp tới', 'Case', 'Việc tiếp theo', ''];
   const openIds = lopMoSan({
     thamSoOpen: openRaw === null ? null : openRaw === '-' ? []
       : openRaw.split(',').map(Number).filter((n) => Number.isFinite(n) && n > 0),
@@ -262,7 +272,7 @@ export default function StudentsPage() {
             <section key={g.k} className="space-y-2" aria-label={g.k === 'ft' ? 'Lớp Fast Track' : 'Lớp thường'}>
               {nhomLop.length > 1 && <h2 className="m-0 px-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">{g.k === 'ft' ? 'Fast Track' : 'Lớp thường'}</h2>}
               {g.lop.map((c) => (
-                <HopLop key={c.id} the lop={c} mo={openIds.includes(c.id)} onDoiMo={() => doiMo(c.id)} dsHocVien={dsHocVien} dsLop={dsLopCua(g)} onThuTu={baoThuTu}
+                <HopLop key={c.id} the admin={admin} lop={c} mo={openIds.includes(c.id)} onDoiMo={() => doiMo(c.id)} dsHocVien={dsHocVien} dsLop={dsLopCua(g)} onThuTu={baoThuTu}
                   chiHien={dangLoc ? (idsTheoLop.get(c.id) ?? new Set()) : null} sapXep={sapXep}
                   onThemHocVien={() => setThem({ id: c.id, code: c.code })} onDoi={trang.reload} />
               ))}
@@ -272,15 +282,15 @@ export default function StudentsPage() {
             <section key={g.k} className="card overflow-x-auto md:overflow-visible" aria-label={g.k === 'ft' ? 'Lớp Fast Track' : 'Lớp thường'}>
               <div className="md:sticky md:-top-5 md:z-10" aria-hidden>
                 <table className="w-full min-w-[960px] table-fixed text-sm">
-                  <CotBangLop />
-                  <thead><tr>{tieuDeCot(g.k).map((t, i) => <th key={i} className={`th ${i === 5 ? 'text-right' : ''}`}>{t}</th>)}</tr></thead>
+                  <CotBangLop admin={admin} />
+                  <thead><tr>{tieuDeCot(g.k).map((t, i) => <th key={i} className={`th ${i === (admin ? 2 : 5) ? 'text-right' : ''}`}>{t}</th>)}</tr></thead>
                 </table>
               </div>
               {g.lop.map((c) => (
                 <table key={c.id} className="w-full min-w-[960px] table-fixed text-sm" aria-label={`Lớp ${c.code}`}>
-                  <CotBangLop />
+                  <CotBangLop admin={admin} />
                   <thead className="sr-only"><tr>{tieuDeCot(g.k).map((t, i) => <th key={i}>{t || 'Thao tác'}</th>)}</tr></thead>
-                  <HopLop lop={c} mo={openIds.includes(c.id)} onDoiMo={() => doiMo(c.id)} dsHocVien={dsHocVien} dsLop={dsLopCua(g)} onThuTu={baoThuTu}
+                  <HopLop admin={admin} lop={c} mo={openIds.includes(c.id)} onDoiMo={() => doiMo(c.id)} dsHocVien={dsHocVien} dsLop={dsLopCua(g)} onThuTu={baoThuTu}
                     chiHien={dangLoc ? (idsTheoLop.get(c.id) ?? new Set()) : null} sapXep={sapXep}
                     onThemHocVien={() => setThem({ id: c.id, code: c.code })} onDoi={trang.reload} />
                 </table>
@@ -303,7 +313,8 @@ export default function StudentsPage() {
 }
 
 /** Cột chung của khối tiêu đề và mọi bảng lớp — một chỗ khai báo để cột luôn thẳng nhau. */
-function CotBangLop() {
+function CotBangLop({ admin }: { admin: boolean }) {
+  if (admin) return <colgroup><col className="w-[40%]" /><col className="w-[34%]" /><col className="w-[20%]" /><col className="w-12" /></colgroup>;
   return (
     <colgroup>
       <col className="w-[19%]" /><col className="w-[20%]" /><col className="w-[10%]" /><col className="w-[11%]" />
@@ -316,7 +327,9 @@ function CotBangLop() {
  * HÀNG LỚN của một lớp (đặc tả §3.6; PR-UX0 N-2): ▸ · mã (mở Hồ sơ lớp) · chương trình · n HV · GVCN · tối đa 2 badge (+n) · ⋯.
  * ⋯ của lớp: Hồ sơ lớp · Nhập điểm (Q11, Q6) · + Học viên — chỉ mục người xem làm được.
  */
-function HopLop({ lop, mo, onDoiMo, chiHien, sapXep, onThemHocVien, onDoi, dsHocVien, dsLop, onThuTu, the = false }: {
+function HopLop({ lop, mo, onDoiMo, chiHien, sapXep, onThemHocVien, onDoi, dsHocVien, dsLop, onThuTu, the = false, admin }: {
+  /** OV-10b: bảng cột Admin (`BangHocVienLop admin`). */
+  admin: boolean;
   lop: LopTrenTrang; mo: boolean; onDoiMo: () => void; chiHien: Set<number> | null; sapXep: SapXep;
   /** PR-DH: danh sách đi cùng link sang hồ sơ em / hồ sơ lớp (Trước/Sau). */
   dsHocVien: NguCanhDs; dsLop: NguCanhDs; onThuTu: (classId: number, ids: number[]) => void;
@@ -383,14 +396,14 @@ function HopLop({ lop, mo, onDoiMo, chiHien, sapXep, onThemHocVien, onDoi, dsHoc
           <MenuDong muc={mucLop} nhan="Thao tác khác" />
         </div>
         {(cacBadge.length > 0 || menuBadgeAn) && <div className="flex flex-wrap items-center gap-1.5 px-3 pb-2">{cacBadge}{menuBadgeAn}</div>}
-        {mo && <BangHocVienLop the lop={lop} chiHien={chiHien} sapXep={sapXep} onDoi={onDoi} soCot={1} ds={dsHocVien} onThuTu={onThuTu} />}
+        {mo && <BangHocVienLop the admin={admin} lop={lop} chiHien={chiHien} sapXep={sapXep} onDoi={onDoi} soCot={1} ds={dsHocVien} onThuTu={onThuTu} />}
       </div>
     );
   }
 
   return (
     <tbody>
-      <HangNhom mo={mo} onMo={onDoiMo} nhan={`lớp ${lop.code}`} soCotDau={3} className={mo ? 'hang-lon-dinh' : ''}
+      <HangNhom mo={mo} onMo={onDoiMo} nhan={`lớp ${lop.code}`} soCotDau={admin ? 1 : 3} className={mo ? 'hang-lon-dinh' : ''}
         tieuDe={
           <span className="flex min-w-0 items-baseline gap-2">
             <Link to={`/hoc-vien/lop/${lop.id}`} state={{ ds: dsLop }} className="shrink-0 font-extrabold text-slate-100 underline decoration-dotted underline-offset-4">
@@ -403,12 +416,12 @@ function HopLop({ lop, mo, onDoiMo, chiHien, sapXep, onThemHocVien, onDoi, dsHoc
             </span>
           </span>
         }>
-        <td className="px-3" colSpan={4}>
+        <td className="px-3" colSpan={admin ? 2 : 4}>
           <span className="flex items-center justify-end gap-1.5">{cacBadge}{menuBadgeAn}</span>
         </td>
         <td className="px-2 text-center"><MenuDong muc={mucLop} nhan="Thao tác khác" /></td>
       </HangNhom>
-      {mo && <BangHocVienLop lop={lop} chiHien={chiHien} sapXep={sapXep} onDoi={onDoi} soCot={8} ds={dsHocVien} onThuTu={onThuTu} />}
+      {mo && <BangHocVienLop admin={admin} lop={lop} chiHien={chiHien} sapXep={sapXep} onDoi={onDoi} soCot={admin ? 4 : 8} ds={dsHocVien} onThuTu={onThuTu} />}
     </tbody>
   );
 }
