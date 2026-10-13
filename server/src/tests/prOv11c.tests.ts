@@ -87,20 +87,37 @@ export async function runPrOv11cTests(t: YThucTestKit) {
     assert(!(toi.items as any[]).some((it) => it.group === 'mgmt'), 'QL "Của tôi" còn việc Vận hành');
   }));
 
-  check('OV11c-4 · PA bổ trợ (cả `bo_tro_mien_phi`) gộp MỘT dòng mỗi nhóm; nhóm có Mini Test chờ chỉ còn dòng Ghi Mini Test', () => thu(() => {
+  check('OV11c-4 · PA bổ trợ (cả `bo_tro_mien_phi`) gộp MỘT dòng mỗi nhóm; Mini Test chờ chỉ thay dòng Kết quả ở LẦN GHI CUỐI — tuần giữa vẫn là việc Kết quả PA', () => thu(() => {
     const r = (id: number, kind: string, nhom: string | null, han: string | null) => ({ id, kind, nhom_bo_tro: nhom, action_due: han });
     const ds = [r(1, 'bo_tro_mien_phi', 'n1', '2026-09-10'), r(2, 'bo_tro_mien_phi', 'n1', '2026-09-09'), r(3, 'bo_tro', 'n2', null), r(4, 'bo_tro', 'n2', null), r(5, 'tutor', null, null)];
     assert(d.daiDienNhomBoTro(ds).map((x: any) => x.id).join() === '2,3,5', `đại diện: ${d.daiDienNhomBoTro(ds).map((x: any) => x.id)}`);
-    assert(d.daiDienNhomBoTro(ds, new Set(['n1'])).map((x: any) => x.id).join() === '3,5', 'nhóm có Mini Test chờ phải bỏ dòng Kết quả');
-    /* Demo: em có Mini Test chờ không còn dòng "Kết quả PA" của nhóm. */
-    const mt = all(`SELECT m.nhom_bo_tro, m.student_id FROM mini_test m WHERE m.ty_le IS NULL`);
+    assert(d.daiDienNhomBoTro(ds, (x: any) => x.nhom_bo_tro === 'n1').map((x: any) => x.id).join() === '3,5', 'boDaiDien đúng → bỏ dòng Kết quả của nhóm');
+    /* Demo: nhóm có Mini Test chờ — đại diện ở lần ghi cuối thì không còn dòng Kết quả PA; tuần giữa (vd PA 66, hạn 07/09) VẪN có dòng, quá hạn. */
+    const mt = all(`SELECT m.nhom_bo_tro FROM mini_test m WHERE m.ty_le IS NULL`);
+    /* Ca tuần giữa: một nhóm có Mini Test chờ, PA đại diện còn cách mốc ≥ 1 tuần mà hạn ghi tuần đã qua (rà planning: PA 66 hạn 07/09). */
+    const giua = one(`SELECT iv.id FROM case_interventions iv JOIN mini_test m ON m.nhom_bo_tro = iv.nhom_bo_tro AND m.ty_le IS NULL
+      WHERE iv.status IN ('planned', 'started') AND iv.followup_due >= ? ORDER BY iv.id LIMIT 1`, t.addDays(TODAY, 7));
+    assert(giua, 'demo phải có nhóm bổ trợ còn ≥ 1 tuần tới mốc (Mini Test đã tạo sẵn)');
+    conn.prepare('UPDATE case_interventions SET action_due = ? WHERE id = ?').run(t.addDays(TODAY, -7), giua.id);
     xoaNho();
     const w = mywork.myWork(P.mbManager, { nguoi: 'tat-ca' });
+    const co = new Set((w.items as any[]).map((it) => it.key));
+    let tuanGiua = 0;
     for (const m of mt) {
-      const pa = new Set(all(`SELECT id FROM case_interventions WHERE nhom_bo_tro = ?`, m.nhom_bo_tro).map((x) => `action:${x.id}`));
-      const lap = (w.items as any[]).filter((it) => pa.has(it.key));
-      assert(!lap.length, `nhóm ${m.nhom_bo_tro} có Mini Test chờ vẫn còn ${lap.map((x: any) => x.key)}`);
+      const pa = all(`SELECT id, action_due, followup_due FROM case_interventions WHERE nhom_bo_tro = ? AND status IN ('planned', 'started') AND action_due IS NOT NULL
+        ORDER BY action_due, id`, m.nhom_bo_tro);
+      if (!pa.length || pa[0].action_due > t.addDays(TODAY, 1)) continue;
+      const cuoi = d.laLanGhiCuoi({ preset: true, followupDue: pa[0].followup_due, actionDue: pa[0].action_due }, TODAY);
+      const k = pa.map((x) => `action:${x.id}`).filter((x) => co.has(x));
+      if (cuoi) assert(!k.length, `nhóm ${m.nhom_bo_tro} lần ghi cuối có Mini Test chờ vẫn còn ${k}`);
+      else {
+        tuanGiua++;
+        assert(k.length === 1, `nhóm ${m.nhom_bo_tro} tuần giữa phải còn MỘT dòng Kết quả PA: ${k}`);
+      }
     }
+    assert(tuanGiua > 0 && (w.items as any[]).find((it) => it.key === `action:${giua.id}`)?.urgency === 'overdue', `action:${giua.id} (tuần giữa, hạn đã qua) phải còn và quá hạn`);
+    /* Chỉ số Tổng quan cùng luật: PA tuần giữa quá hạn vẫn được đếm. */
+    assert(metrics.metricSet(P.mbManager, 'pa-can-cap-nhat', {}).ids.includes(giua.id), `pa-can-cap-nhat thiếu PA ${giua.id}`);
   }));
 
   check('OV11c-5 · Tạm dừng em KHÔNG đóng đề xuất sửa đang chờ; Thôi học thì đóng', () => thu(() => {

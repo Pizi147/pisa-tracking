@@ -1,6 +1,6 @@
 import { THAM_SO_TOI_DA, chenNhieuDong, db, theoLo, tx } from '../db.ts';
 import {
-  CASE_OUTCOME_LABEL, NGUONG_KY_VONG, NGUONG_MINI_TEST, PERMISSIONS, laPaBoTro, caseDedupKey, categoryOf, chuHopKetLuan, coBoTroFinal, khongPhuHopLoTrinh, chuMonTruot, goiYCuoiKhoa, kyHieuLop, kyNangLopDich, lichBoTro, ngay, tenMon, weeklyUpdateDue,
+  CASE_OUTCOME_LABEL, NGUONG_KY_VONG, NGUONG_MINI_TEST, PERMISSIONS, laLanGhiCuoi, laPaBoTro, caseDedupKey, categoryOf, chuHopKetLuan, coBoTroFinal, khongPhuHopLoTrinh, chuMonTruot, goiYCuoiKhoa, kyHieuLop, kyNangLopDich, lichBoTro, ngay, tenMon, weeklyUpdateDue,
   type BoTroMienPhi, type GoiYCuoiKhoa, type RegularSkill,
 } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, chuTuDo, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
@@ -609,14 +609,18 @@ export function capNhatCuoiKhoaSauChuyen(p: Principal, a: { id: number; student_
 
 
 /**
- * OV-11c (CV-4): nhóm bổ trợ có Mini Test CHỜ ghi — Công việc và chỉ số `pa-can-cap-nhat` bỏ dòng Kết quả PA của nhóm (việc là "Ghi Mini Test").
- * Chỉ hỏi khi có PA bổ trợ trong tập (không thêm câu cho người không có).
+ * OV-11c (CV-4): PA đại diện nhóm bổ trợ ở LẦN GHI CUỐI mà nhóm có Mini Test chờ → bỏ dòng Kết quả PA (việc là "Ghi Mini Test", cùng form Kết quả cuối).
+ * Các tuần giữa vẫn là việc Kết quả PA (Mini Test tạo cùng lúc PA). Một hàm cho Công việc và chỉ số `pa-can-cap-nhat`; chỉ hỏi khi có PA bổ trợ trong tập.
  */
-export function nhomMiniTestCho(rows: readonly { kind: string; nhom_bo_tro: string | null }[]): Set<string> {
+export function boKetQuaChoMiniTest<T extends { kind: string; nhom_bo_tro: string | null; followup_due?: string | null; action_due: string | null }>(
+  rows: readonly T[], today: string,
+): (daiDien: T) => boolean {
   const nhom = [...new Set(rows.filter((r) => laPaBoTro(r.kind) && r.nhom_bo_tro).map((r) => r.nhom_bo_tro as string))];
-  if (!nhom.length) return new Set();
-  return new Set((db().prepare(`SELECT DISTINCT nhom_bo_tro FROM mini_test WHERE ty_le IS NULL AND nhom_bo_tro IN (${nhom.map(() => '?').join(',')})`)
+  if (!nhom.length) return () => false;
+  const cho = new Set((db().prepare(`SELECT DISTINCT nhom_bo_tro FROM mini_test WHERE ty_le IS NULL AND nhom_bo_tro IN (${nhom.map(() => '?').join(',')})`)
     .all(...nhom) as any[]).map((r) => r.nhom_bo_tro as string));
+  return (r) => !!r.nhom_bo_tro && cho.has(r.nhom_bo_tro)
+    && laLanGhiCuoi({ preset: true, followupDue: r.followup_due ?? null, actionDue: r.action_due ?? null }, today);
 }
 
 /** Kiểm đầu vào Mini Test: 0–100 (lưu 0–1), ngày ≤ hôm nay và không trước `ngày dự kiến − 14`. */

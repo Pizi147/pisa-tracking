@@ -197,13 +197,29 @@ export function HoTroHocVienTab() {
 
   // ------------------------------------------------------------------ Nhắc (QL / Quản trị, Của GV)
   const [dangNhac, setDangNhac] = useState<Record<string, boolean>>({});
+  /*
+   * OV-11c (TQ-1): việc được nhắc khi bấm Nhắc một dòng — đang lọc hạn thì dòng gộp nhắc đúng các việc con khớp lọc (lọc Quá hạn chỉ nhắc bài quá hạn);
+   * cả dòng khớp lọc thì nhắc khoá dòng (một chuông). Cùng luật cho "Nhắc tất cả".
+   */
+  const viecNhac = (x: WorkItem): WorkItem[] => {
+    if (loc === 'tat-ca' || !x.con || x.gopThem) return [x];
+    const khop = x.con.filter((c) => khopLocNhanh(c, loc, homNay));
+    return khop.length === x.con.length ? [x] : khop;
+  };
   const bamNhac = async (it: WorkItem) => {
     if (!it.nhac || dangNhac[it.key]) return;
     setDangNhac((s) => ({ ...s, [it.key]: true }));
     try {
-      const r = await api.post<{ daNhacLuc: string }>('/my-work/nhac', { key: it.key, ownerId: it.nhac.ownerId });
+      const ds = viecNhac(it);
+      const daNhacLuc = ds.length === 1 && ds[0].key === it.key
+        ? (await api.post<{ daNhacLuc: string }>('/my-work/nhac', { key: it.key, ownerId: it.nhac.ownerId })).daNhacLuc
+        : await (async () => {
+          const r = await api.post<{ ok: { daNhacLuc: string }[]; loi: { loi: string }[] }>('/my-work/nhac-nhieu', { viec: ds.map((c) => ({ key: c.key, ownerId: it.nhac!.ownerId })) });
+          if (!r.ok.length) throw new Error(r.loi[0]?.loi ?? 'Không nhắc được.');
+          return r.ok[0].daNhacLuc;
+        })();
       setData((prev) => (prev
-        ? { ...prev, dong: prev.dong.map((x) => (x.key === it.key ? { ...x, nhac: { ...x.nhac!, daNhacLuc: r.daNhacLuc } } : x)) }
+        ? { ...prev, dong: prev.dong.map((x) => (x.key === it.key ? { ...x, nhac: { ...x.nhac!, daNhacLuc } } : x)) }
         : prev) as Work);
     } catch (e: any) { toast.push('error', e.message); } finally { setDangNhac((s) => ({ ...s, [it.key]: false })); }
   };
@@ -217,9 +233,7 @@ export function HoTroHocVienTab() {
   useEffect(() => { setNhacLoi(new Set()); }, [url]);
   const [dangNhacHet, setDangNhacHet] = useState(false);
   const khoaNhac = (key: string, ownerId: number) => `${ownerId}|${key}`;
-  /* OV-11c (TQ-1): đang lọc hạn thì dòng gộp nhắc đúng các việc con khớp lọc — lọc Quá hạn chỉ nhắc bài quá hạn. */
-  const nhacNguon = useMemo(() => (loc === 'tat-ca' ? cuoiItems
-    : cuoiItems.flatMap((x) => (x.con && !x.gopThem ? x.con.filter((c) => khopLocNhanh(c, loc, homNay)) : [x]))), [cuoiItems, loc, homNay]);
+  const nhacNguon = useMemo(() => cuoiItems.flatMap(viecNhac), [cuoiItems, loc, homNay]);   // eslint-disable-line react-hooks/exhaustive-deps
   const nhacHet = useMemo(
     () => lapNhacTatCa(nhacNguon.filter((it) => !it.nhac || !nhacLoi.has(khoaNhac(it.key, it.nhac.ownerId)))),
     [nhacNguon, nhacLoi],

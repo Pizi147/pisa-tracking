@@ -19,7 +19,7 @@ import { lopChoChotLoTrinh } from '../classes/lenhChuyen.ts';
 import { canSeeBoard, myMgmtTasks } from './mgmttasks.ts';
 import { LA_CASE_SOS, NOT_UNCONFIRMED_PRESET, UNCONFIRMED_PRESET, awaitingCauseCaseIds } from '../cases/sosState.ts';
 import { quyenBoTro } from '../cases/boTro.ts';
-import { emXetLaiLoTrinh, nguoiGiuMiniTest, nhomMiniTestCho, tyLeTongLo } from '../normal/cuoiKhoa.ts';
+import { boKetQuaChoMiniTest, emXetLaiLoTrinh, nguoiGiuMiniTest, tyLeTongLo } from '../normal/cuoiKhoa.ts';
 import { dongPhoiHopLop, myCoordinationLines } from '../yThuc/phoiHop.ts';
 import { lopKyVong } from '../normal/kyVong.ts';
 import { phanCongDangHieuLuc } from './scoreDebt.ts';
@@ -577,7 +577,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       : can(p, PERMISSIONS.SOS_EDIT, { classId: iv.eff_class_id, studentId: iv.eff_student_id, skill: iv.topic ?? undefined });
   });
   /* PR-SO (D2): chọn PA đại diện nhóm SAU phạm vi/quyền — cùng hàm với chỉ số `pa-can-cap-nhat`. */
-  for (const iv of daiDienNhomBoTro(duocThay, nhomMiniTestCho(duocThay))) {   // OV-11c (CV-4): nhóm có Mini Test chờ → chỉ dòng Ghi Mini Test
+  for (const iv of daiDienNhomBoTro(duocThay, boKetQuaChoMiniTest(duocThay, today))) {   // OV-11c (CV-4): lần ghi cuối + Mini Test chờ → chỉ dòng Ghi Mini Test
     const u = urgencyOf(iv.action_due, today);
     const mine = iv.owner_id === p.userId;
     reviewedCases.add(iv.case_id);
