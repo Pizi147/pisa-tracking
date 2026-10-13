@@ -116,7 +116,7 @@ export async function runPrDlTests(t: YThucTestKit) {
    * Chụp lại 13/10 (OV-1d, gộp sau OV-9): hàng em đã Kết thúc học / Lưu trữ (MB FT 101 có em Kết thúc học) thêm `ngungHoc`, ô chỉ đọc
    * (`canEdit`/`viec`/`overdue` false, `lyDoKhoa`); hàng em khác không đổi byte nào (`ngungHoc` chỉ gửi khi có).
    */
-  const ANH_CHUP = { tuan: 'CHUP_LAI', moi: 'CHUP_LAI' };
+  const ANH_CHUP = { tuan: 'a2180945be089345', moi: '98bf0dcc954ad8a1' };
   /* Mã cố ý độc lập với hàm: điều kiện lọc tuần của bản trước refactor, viết lại bằng SQL. */
   const idsTuan = (periodId: number) => (conn.prepare(
     `SELECT a.id FROM assessment_attempts a JOIN students s ON s.id = a.student_id
