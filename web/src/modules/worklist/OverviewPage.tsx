@@ -54,6 +54,7 @@ export default function OverviewPage({ tab: tabProp = 'tong-quan' }: { tab?: Tab
       <div className="page space-y-4">
         {canSeeBoard ? (
           <div className="flex flex-wrap items-end justify-between gap-x-3 gap-y-2">
+            <h1 className="sr-only">Học viên của tôi</h1>
             <HangTab ariaLabel="Tổng quan" value={tabProp} onChange={goTab}
               tabs={(['tong-quan', 'phan-tich'] as const).map((k) => ({ key: k, label: k === 'tong-quan' ? 'Học viên của tôi' : TAB_TONG_QUAN_LABEL[k] }))} />
             {tab === 'board' && <BranchFilter branchId={branchId} onBranch={setBranchId} />}
@@ -95,6 +96,7 @@ export default function OverviewPage({ tab: tabProp = 'tong-quan' }: { tab?: Tab
 
   return (
     <div className="page space-y-4">
+      <h1 className="sr-only">Tổng quan</h1>{/* OV-11f (P2-5): mọi vai có h1 */}
       <div className="flex flex-wrap items-end justify-between gap-x-3 gap-y-2">
         <HangTab ariaLabel="Tổng quan" value={tabProp} onChange={goTab}
           tabs={(['tong-quan', 'phan-tich'] as const).map((k) => ({ key: k, label: k === 'tong-quan' ? nhanTabDau : TAB_TONG_QUAN_LABEL[k] }))} />
@@ -130,7 +132,8 @@ export default function OverviewPage({ tab: tabProp = 'tong-quan' }: { tab?: Tab
               </div>
             </div>
             <MetricTiles branchId={branchId} ct={khung} />
-            <div className="grid items-start gap-3 lg:grid-cols-2">
+            {/* OV-11f (P1-1): dưới `lg` một cột co theo màn (không phình theo nội dung rộng nhất → trang không trượt ngang ở 375). */}
+            <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-3 lg:grid-cols-2">
               <DiemDangChuY branchId={branchId} ct={khung} />
               <LichSapToi branchId={branchId} ct={khung} />
             </div>

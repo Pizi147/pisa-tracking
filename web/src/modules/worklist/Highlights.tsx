@@ -55,14 +55,15 @@ function gomTheoLop(w: Week, hienFt: boolean, hienThuong: boolean): DongLop[] {
   };
   if (hienFt) {
     for (const m of [...w.ft.mockClasses].sort((a, b) => (a.attemptNo ?? 0) - (b.attemptNo ?? 0))) {
+      if (!m.students) continue;   // OV-11f (TQ-12): lớp 0 em không lên Lịch sắp tới
       const d = lay(m.id, m.code, 'FT');
       d.chip.push({ chu: m.attemptNo !== null ? `MT${m.attemptNo}` : 'MT', so: m.students });
       d.soEm += m.students;
     }
   }
   if (hienThuong) {
-    for (const r of w.normal.progressClasses) { const d = lay(r.id, r.code, r.programme); d.chip.push({ chu: 'Progress', so: r.students }); d.soEm += r.students; }
-    for (const r of w.normal.finalClasses) { const d = lay(r.id, r.code, r.programme); d.chip.push({ chu: 'Final', so: r.students }); d.soEm += r.students; }
+    for (const r of w.normal.progressClasses) { if (!r.students) continue; const d = lay(r.id, r.code, r.programme); d.chip.push({ chu: 'Progress', so: r.students }); d.soEm += r.students; }
+    for (const r of w.normal.finalClasses) { if (!r.students) continue; const d = lay(r.id, r.code, r.programme); d.chip.push({ chu: 'Final', so: r.students }); d.soEm += r.students; }
     for (const r of w.normal.endingClasses) lay(r.id, r.code, r.programme).chip.push({ chu: 'Hết khoá', so: null, den: `/hoc-vien/lop/${r.id}?viec=chuyen-tiep` });
   }
   return [...lop.values()].sort((a, b) => a.code.localeCompare(b.code, 'vi', { numeric: true }));

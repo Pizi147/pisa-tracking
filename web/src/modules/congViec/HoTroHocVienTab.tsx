@@ -27,6 +27,9 @@ type Work = {
   dong: WorkItem[]; scopeEmpty: boolean; xemNguoiKhac?: boolean;
 };
 
+/** Tên loại việc mở từ Tổng quan bằng `loai=` (dòng "Đang xem"). */
+const TEN_LOAI: Record<string, string> = { ghi_ket_qua_pa: 'Kết quả PA' };
+
 const thamSoNguoi = (s: string | null): NguoiPhuTrach => {
   if (s === 'toi') return 'toi';
   if (s && /^[1-9]\d*$/.test(s)) return Number(s);
@@ -66,6 +69,8 @@ export function HoTroHocVienTab() {
   /* PR-DUYET (K1-30): chip 4 nhóm `nhom=`; link cũ `loai=` (một loại việc) vẫn đọc — quy về nhóm chứa loại đó. */
   const nhomTs = params.get('nhom') ?? (params.get('loai') ? nhomViecCua(params.get('loai')!) : null);
   const nhom: MaNhomViec | null = (NHOM_VIEC as readonly string[]).includes(nhomTs ?? '') ? (nhomTs as MaNhomViec) : null;
+  /* OV-11f (TQ-2): `loai=` (từ Tổng quan, vd "PA chưa có Kết quả") lọc ĐÚNG loại việc — số ở ô = số việc nơi mở; đổi nhóm / Xoá lọc thì bỏ. */
+  const loai = !params.get('nhom') && params.get('loai') ? params.get('loai') : null;
   const moViec = params.get('mo-viec') ? Number(params.get('mo-viec')) : null;
   const viec = params.get('viec');
 
@@ -122,8 +127,8 @@ export function HoTroHocVienTab() {
     return [...ds, ...le];
   }, [tatCaViec, giu, xong]);
 
-  const theoKhung = (ds: WorkItem[]) => (khung === 'tat-ca' ? ds : ds.filter((it) => !it.khung || it.khung === khung));
-  const items = useMemo(() => theoKhung(tatCaViec), [tatCaViec, khung]);   // eslint-disable-line react-hooks/exhaustive-deps
+  const theoKhung = (ds: WorkItem[]) => ds.filter((it) => (khung === 'tat-ca' || !it.khung || it.khung === khung) && (!loai || it.group === loai));
+  const items = useMemo(() => theoKhung(tatCaViec), [tatCaViec, khung, loai]);   // eslint-disable-line react-hooks/exhaustive-deps
   const trongNhom = useMemo(() => (nhom ? items.filter((it) => nhomViecCua(it.group) === nhom) : items), [items, nhom]);
   const demHan = useMemo(() => demLocNhanh(trongNhom, 'tat-ca', homNay), [trongNhom, homNay]);
   const locItems = useMemo(() => items.filter((it) => khopLocNhanh(it, loc, homNay)), [items, loc, homNay]);
@@ -141,7 +146,7 @@ export function HoTroHocVienTab() {
    * Số đầu nhóm (CV-15) chỉ từ máy chủ (`cuoiItems`) — dòng giữ chỗ chỉ để vẽ.
    */
   const thuTuCu = useRef<{ khoa: string; vt: Map<string, number> } | null>(null);
-  const khoaLoc = `${url}|${khung}|${loc}|${nhom ?? ''}`;
+  const khoaLoc = `${url}|${khung}|${loc}|${nhom ?? ''}|${loai ?? ''}`;
   const dsNhom = useMemo(() => {
     const goc = gomNhomViec(theoKhung(hienThi).filter((it) => khopLocNhanh(it, loc, homNay) && (!nhom || nhomViecCua(it.group) === nhom)));
     const dem = new Map(gomNhomViec(cuoiItems).map((g) => [g.key, g]));
@@ -153,7 +158,7 @@ export function HoTroHocVienTab() {
     }
     const vt = (x: WorkItem) => cu.vt.get(x.key) ?? Number.MAX_SAFE_INTEGER;
     return ds.map((g) => ({ ...g, items: [...g.items].sort((a, b) => vt(a) - vt(b)) }));
-  }, [hienThi, cuoiItems, khung, loc, nhom, homNay, chon, khoaLoc]);   // eslint-disable-line react-hooks/exhaustive-deps
+  }, [hienThi, cuoiItems, khung, loai, loc, nhom, homNay, chon, khoaLoc]);   // eslint-disable-line react-hooks/exhaustive-deps
   const phamVi = useMemo(() => demPhamVi(cuoiItems, nhom === 'cham-diem' || chiChamDiem, { loc, homNay }), [cuoiItems, nhom, chiChamDiem, loc, homNay]);
   /* Đang lọc thì kết quả đã ít — mở hết luôn, không bắt bấm thêm một lần gập/mở nữa. */
   const moHet = loc !== 'tat-ca' || !!nhom;
@@ -292,7 +297,7 @@ export function HoTroHocVienTab() {
   const ai = typeof nguoi === 'number'
     ? (tenGv ?? tatCaViec.find((x) => x.ownerId === nguoi)?.owner ?? 'một GV')
     : laQuanLy && nguoi !== 'toi' ? 'Của GV' : 'Của tôi';
-  const dangXem = [tenCn, ai, loc === 'tat-ca' ? 'Tất cả hạn' : LOC_NHANH_LABEL[loc], nhom ? NHOM_VIEC_LABEL[nhom] : null,
+  const dangXem = [tenCn, ai, loc === 'tat-ca' ? 'Tất cả hạn' : LOC_NHANH_LABEL[loc], loai ? TEN_LOAI[loai] ?? (nhom ? NHOM_VIEC_LABEL[nhom] : null) : nhom ? NHOM_VIEC_LABEL[nhom] : null,
     khung === 'ft' ? 'Fast Track' : khung === 'thuong' ? 'Lớp thường' : null].filter(Boolean).join(' · ');
 
   if (error) return <ErrorState message={error.message} hint={error.hint} onRetry={reload} />;

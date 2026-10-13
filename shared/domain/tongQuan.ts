@@ -108,7 +108,7 @@ export const CAN_XU_LY: readonly {
   /* PR-LCb: MỘT dòng "lớp cần Chốt lộ trình" (thay "em chưa có quyết định chuyển lớp" + "lớp cần Chốt lên FT") — cùng hàm với việc "Chốt lộ trình · lớp". */
   { metricId: 'lop-chua-chot-len-ft', nhan: 'lớp cần Chốt lộ trình', nut: 'Lộ trình tiếp theo', cuaNguoiXem: true },
   { metricId: 'lop-thieu-gv-mon', nhan: 'lớp thiếu GV môn', nut: 'Sửa phân công', cuaNguoiXem: true },
-  { metricId: 'hv-ft-xong-mt-cuoi-chua-mt-ke', nhan: 'học viên FT xong MT3, chưa có MT kế tiếp', nut: 'Kế hoạch Test', cuaNguoiXem: true },
+  { metricId: 'hv-ft-xong-mt-cuoi-chua-mt-ke', nhan: 'học viên FT xong MT3, chưa có MT kế tiếp', nut: 'Xem học viên', cuaNguoiXem: true },   // OV-11f: mở danh sách em
   { metricId: 'hv-len-ft-chua-ky-vong', nhan: 'học viên lên FT chưa chốt Kết quả đầu ra', nut: 'Mở hồ sơ', cuaNguoiXem: true },
 ];
 export const CAN_XU_LY_TOI_DA = 10;
