@@ -205,13 +205,19 @@ export function kiemNoiDungCase(topic: string | null, ct: string | null, input: 
  * Chỉ khi Case từ SOS còn chờ nguyên nhân và KHÔNG có thẻ Không cần theo dõi đang chờ (S4-2 hai lựa chọn loại trừ). Case vẫn `open`
  * tới khi có PA do người xác nhận (Q28-5) — giao diện chuyển thẳng sang Xác nhận PA.
  */
+/**
+ * OV-5a: gọi từ xác nhận nhóm (`xacNhanNhom.ts`) — `chiGhi`: không đọc lại chi tiết Case để trả; `daKiemQuyen`: quyền sửa Case ĐÃ kiểm bằng
+ * đúng `caseAccess(...).requireEdit` trong CÙNG giao dịch (không kiểm lần hai sau mỗi câu ghi — bộ nhớ quyền bị xoá theo câu ghi).
+ */
+export type XacNhanTrongLo = { chiGhi?: boolean; daKiemQuyen?: boolean };
+
 export function xacNhanCase(p: Principal, caseId: number, input: {
   primaryCode?: string | null; observation?: string | null; urgency?: string | null; moTa?: string | null; tenGiua?: string | null;
-}) {
+}, o: XacNhanTrongLo = {}) {
   const conn = db();
   const c = conn.prepare('SELECT * FROM sos_cases WHERE id = ?').get(caseId) as any;
   if (!c) throw notFound('Không tìm thấy Case');
-  caseAccess(caseId).requireEdit(p, EDIT_MESSAGE);
+  if (!o.daKiemQuyen) caseAccess(caseId).requireEdit(p, EDIT_MESSAGE);
   const st = sosCaseState(caseId);
   if (!st.fromSos) throw badRequest('Chỉ Case tự tạo từ kết quả Test mới có bước Xác nhận Case.');
   if (c.status === 'done') throw badRequest('Case này đã đóng rồi.');
@@ -239,7 +245,7 @@ export function xacNhanCase(p: Principal, caseId: number, input: {
       actorUserId: p.userId, action: 'case.confirm', entityType: 'sos_case', entityId: caseId, entityLabel: ten,
       after: { primaryCode, urgency, tenGiua },
     });
-    return caseDetail(p, caseId);
+    return o.chiGhi ? null : caseDetail(p, caseId);   // OV-5a: xác nhận nhóm không đọc lại chi tiết từng Case
   });
 }
 
@@ -353,12 +359,12 @@ export function xacNhanPaQuyChe(p: Principal, interventionId: number, input: {
   performerSelf?: boolean; performerUserId?: number | null; performerName?: string | null; description?: string | null;
   /** PR-PA (§8): Số buổi — cùng luật Thêm PA (loại có Số buổi, 1–60; không gửi = giữ). */
   soBuoi?: unknown;
-}) {
+}, o: XacNhanTrongLo = {}) {
   const conn = db();
   const iv = conn.prepare(`SELECT iv.*, sc.status AS case_status, sc.cycle_id AS case_cycle_id FROM case_interventions iv
       JOIN sos_cases sc ON sc.id = iv.case_id WHERE iv.id = ?`).get(interventionId) as any;
   if (!iv) throw notFound('Không tìm thấy phương án.');
-  caseAccess(iv.case_id).requireEdit(p, EDIT_MESSAGE);
+  if (!o.daKiemQuyen) caseAccess(iv.case_id).requireEdit(p, EDIT_MESSAGE);
   if (!iv.preset) throw badRequest('Phương án này không phải PA theo quy chế — không cần xác nhận.');
   if (iv.kind === 'bo_tro') throw badRequest('PA bổ trợ chạy khi Xác nhận Case — không xác nhận riêng.');
   if (iv.case_status === 'done') throw badRequest('Case đã đóng — không còn xác nhận PA được.');
@@ -403,7 +409,7 @@ export function xacNhanPaQuyChe(p: Principal, interventionId: number, input: {
       actorUserId: p.userId, action: 'case.preset.confirm', entityType: 'case_intervention', entityId: interventionId,
       entityLabel: `Case ${iv.case_id} · ${iv.kind}`, before: { description: iv.description }, after: { description, followupDue: moc, performerUserId },
     });
-    return caseDetail(p, iv.case_id);
+    return o.chiGhi ? null : caseDetail(p, iv.case_id);
   });
 }
 /**

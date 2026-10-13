@@ -36,13 +36,17 @@ export default function CongViecPage() {
 
   const cn = params.get('cn');
   const go = (k: TabCongViec) => navigate(`${DUONG_TAB_CONG_VIEC[k]}${cn ? `?cn=${cn}` : ''}`);
+  /* OV-5a (CV2): điện thoại đang mở một việc → màn đầy đủ của việc đó ("‹ Công việc" ở trên panel), đầu trang ẩn. */
+  const anDau = tab === 'ho-tro' && params.has('viec') ? 'max-lg:hidden' : '';
 
   return (
     <div className="page space-y-4">
-      <h1 className="text-lg font-semibold text-slate-100 m-0">Công việc</h1>
+      <h1 className={`text-lg font-semibold text-slate-100 m-0 ${anDau}`}>Công việc</h1>
       {tabs.length > 1 && (
-        <HangTab ariaLabel="Công việc" value={tab} onChange={go}
-          tabs={tabs.map((k) => ({ key: k, label: TAB_CONG_VIEC_LABEL[k] }))} />
+        <div className={anDau}>
+          <HangTab ariaLabel="Công việc" value={tab} onChange={go}
+            tabs={tabs.map((k) => ({ key: k, label: TAB_CONG_VIEC_LABEL[k] }))} />
+        </div>
       )}
       {tab === 'cho-duyet' && <HopChoDuyet />}
       {tab === 'ho-tro' && <HoTroHocVienTab />}

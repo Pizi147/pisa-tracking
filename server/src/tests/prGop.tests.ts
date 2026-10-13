@@ -1,7 +1,8 @@
 /**
  * PR-GOP (đặc tả 2026-10-08 §5, §7 Q1; mockup `thiet-ke/mockup-cuoi-khoa-2-2026-10-08.html` phần 4; kế hoạch tổng X10):
  * Công việc / Việc của tôi / badge — MỘT DÒNG = MỘT LỚP × MỘT LOẠI VIỆC (cùng người giữ việc). Bên trong là danh sách em; hạn = sớm nhất;
- * có em quá hạn → dòng quá hạn. Giữ từng dòng: Case SOS Fast Track (Xác nhận nguyên nhân · Xác nhận PA · Thêm PA ở lớp FT), việc không gắn lớp.
+ * có em quá hạn → dòng quá hạn. Giữ từng dòng: Case SOS Fast Track (Xác nhận PA · Thêm PA ở lớp FT), việc không gắn lớp. OV-5a: Xác nhận nguyên nhân
+ * (cả FT) gom theo lớp + kỹ năng + lượt (`gopThem`, phép kiểm prOv5a).
  * Badge / summary đếm DÒNG; số việc thật (`items`) không đổi. Nhắc một dòng gộp = một chuông.
  */
 import type { YThucTestKit } from './yThuc.tests.ts';
@@ -53,12 +54,12 @@ export async function runPrGopTests(t: YThucTestKit) {
     assert(g.con[0].conPhu === 'Reading · MT2', `phụ của em: ${g.con[0].conPhu}`);
   });
 
-  check('GOP-1c · khác người giữ việc / không gắn lớp / Case SOS FT → KHÔNG gộp; Case FT GV tạo tay, Xác nhận nguyên nhân lớp thường → gộp', () => {
+  check('GOP-1c · khác người giữ việc / không gắn lớp / Case SOS FT (Xác nhận PA, Thêm PA) → KHÔNG gộp; Case FT GV tạo tay, Xác nhận nguyên nhân (OV-5a: theo kỹ năng + lượt) → gộp', () => {
     const khacNguoi = d.gopViecTheoLop([v({ key: 'a', ownerId: 7 }), v({ key: 'b', ownerId: 9, studentId: 2 })], nhan);
     assert(khacNguoi.length === 2, 'khác người: hai dòng');
     const khongLop = d.gopViecTheoLop([v({ key: 'a', classId: null, group: 'mgmt' }), v({ key: 'b', classId: null, group: 'mgmt', studentId: 2 })], nhan);
     assert(khongLop.length === 2, 'không lớp: hai dòng');
-    for (const group of ['cause', 'xac_nhan_pa', 'no_plan']) {
+    for (const group of ['xac_nhan_pa', 'no_plan']) {
       const ft = d.gopViecTheoLop([v({ key: 'a', group, khung: 'ft', caseSos: true }), v({ key: 'b', group, khung: 'ft', caseSos: true, studentId: 2 })], nhan);
       assert(ft.length === 2, `${group} FT Case SOS: giữ từng dòng`);
     }
@@ -68,6 +69,10 @@ export async function runPrGopTests(t: YThucTestKit) {
     assert(d.khoaGopCua(v({ group: 'no_plan', khung: 'ft', caseSos: true })) === null && d.khoaGopCua(v({})) === 'gop:phoi_hop:10:u7', 'khoaGopCua');
     const thuong = d.gopViecTheoLop([v({ key: 'a', group: 'cause' }), v({ key: 'b', group: 'cause', studentId: 2 })], nhan);
     assert(thuong.length === 1 && thuong[0].con.length === 2, 'Xác nhận nguyên nhân lớp thường: gộp');
+    /* OV-5a: Xác nhận nguyên nhân Case SOS FT gộp theo lớp + kỹ năng + lượt (trước đây giữ từng dòng). */
+    const ftCause = d.gopViecTheoLop([v({ key: 'a', group: 'cause', khung: 'ft', caseSos: true, gopThem: 'mock2:reading', phu: 'Reading' }),
+      v({ key: 'b', group: 'cause', khung: 'ft', caseSos: true, gopThem: 'mock2:reading', phu: 'Reading', studentId: 2 })], nhan);
+    assert(ftCause.length === 1 && ftCause[0].con.length === 2 && ftCause[0].key === 'gop:cause:10:u7:mock2:reading', 'Xác nhận nguyên nhân FT: gộp theo kỹ năng + lượt');
   });
 
   check('GOP-1d · dòng đã gom sẵn (Nhập điểm theo bài) cùng lớp → một dòng "n việc", con tên theo việc', () => {

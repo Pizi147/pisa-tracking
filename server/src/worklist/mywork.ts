@@ -110,6 +110,15 @@ export type WorkItem = {
   caseSos?: boolean;
   /** PR-GOP (§5): dòng gộp "Loại việc · lớp · n em" — các việc thật của dòng (khoá, nút, hạn riêng). Chỉ có ở `dong`. */
   con?: ConGop<WorkItem>[];
+  /** OV-5a: Xác nhận nguyên nhân gom theo lớp + kỹ năng + lượt — phần thêm của khoá gộp (`gopViec.ts`). */
+  gopThem?: string | null;
+  /** OV-5a (panel Công việc): PA của việc — Kết quả PA, Xác nhận PA, Ghi Mini Test mở đúng PA trong Ngăn Case. */
+  paId?: number | null;
+  /** OV-5a: Nhập điểm mở panel một lớp · một lượt (`mt:2`, `thuong:progress`) · kỹ năng đầu tiên của dòng. */
+  luot?: string;
+  kn?: string;
+  /** OV-5a: số bài của dòng Nhập điểm (một kỹ năng của một em) — dòng phạm vi "m bài cần chấm". */
+  soBai?: number;
 };
 
 /**
@@ -177,9 +186,10 @@ const GROUP_META: Record<WorkGroupKey, { label: string; hint: string }> = {
     hint: 'Em đã học ở trung tâm trước khi có web — xác nhận cấp bậc vi phạm đã có để thang tính tiếp đúng. Không có hạn; qua 14 ngày thì thôi nhắc.',
   },
   /* PR-VAI-a (K5-11): em BE/ELE lên Fast Track — Quản lý đánh dấu Đạt / Không đạt kỳ vọng đầu ra. */
+  /* OV-5a: đổi tên việc "Kỳ vọng đầu ra" → "Kết quả đầu ra" (OV-3b gộp vào bảng Lộ trình tiếp theo, có FOU). Tiêu đề Case "Kỳ vọng đầu ra…" giữ (chống trùng `LIKE`). */
   ky_vong_dau_ra: {
-    label: 'Kỳ vọng đầu ra',
-    hint: 'Lớp BE/ELE có em lên FT có MT0 đủ 3 kỹ năng có điểm — Đạt khi Overall MT0 ≥ 4.0 (BE) / 4.5 (ELE). Một lần lưu cho cả lớp.',
+    label: 'Kết quả đầu ra',
+    hint: 'Lớp FOU/BE/ELE có em lên FT có MT0 đủ 3 kỹ năng có điểm — Đạt khi Overall MT0 > 3.5 (FOU) / ≥ 4.0 (BE) / ≥ 4.5 (ELE). Một lần lưu cho cả lớp.',
   },
 
   /* PR-TK (TK-K): kết quả thi thật do GVCN lớp cuối nhập — hạn = thứ Hai sau kỳ thi + 4 tuần, đỏ không chặn. */
@@ -429,6 +439,9 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
         tieuDe: `Nhập điểm ${skills}`, phu: skills,
         actionLabel: 'Nhập điểm',
         href: first.href,
+        /* Mã lượt của Điểm theo lớp (`docMaLuot`): MT `mt:n`, Checkpoint lớp liên tục `cp:n` (OV-6b2), lớp thường `thuong:{bài}`. */
+        luot: first.kind === 'checkpoint' ? `cp:${first.attemptNo}` : first.kind && first.kind !== 'mock' ? `thuong:${first.kind}` : `mt:${first.attemptNo}`, kn: first.skill,
+        soBai: list.reduce((n, b) => n + b.students.size, 0),   // OV-5a: "bài cần chấm" = kỹ năng × em
         ownerId: first.ownerId, owner: null, mine: first.ownerId === p.userId,
         due: first.due,
         statusLabel: laChamCheo(first.kind, first.skill) ? CHAM_CHEO : first.ownerId === null ? 'Chưa phân công giáo viên' : 'Chưa nhập điểm',
@@ -543,7 +556,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     const tuanCuoi = laLanGhiCuoi({ preset: iv.preset === 1, followupDue: iv.followup_due ?? null, actionDue: iv.action_due ?? null }, today);
     const tenPa = (iv.description ?? '').trim() || INTERVENTION_KIND_LABEL[iv.kind as InterventionKind] || 'PA học thuật';
     items.push({
-      key: `action:${iv.id}`, group: 'ghi_ket_qua_pa', urgency: u,
+      key: `action:${iv.id}`, group: 'ghi_ket_qua_pa', urgency: u, paId: iv.id,
       studentId: iv.eff_student_id, studentName: iv.full_name ?? 'Học viên',
       classId: iv.eff_class_id ?? null, classCode: iv.class_code ?? null,
       attemptId: iv.attempt_id ?? null, attemptNo: iv.attempt_no ?? null,
@@ -769,7 +782,9 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     const hv = c.full_name ?? 'Học viên';
     const nguyenNhan = loai === 'cause';
     items.push({
-      key: nguyenNhan ? `cause:${c.id}` : `xnpa:${c.iv_id}`, group: loai, urgency: u,
+      key: nguyenNhan ? `cause:${c.id}` : `xnpa:${c.iv_id}`, group: loai, urgency: u, paId: nguyenNhan ? null : c.iv_id,
+      /* OV-5a: Xác nhận nguyên nhân gom theo lớp + kỹ năng + lượt (panel gom ở Công việc). */
+      gopThem: nguyenNhan ? `${c.attempt_kind ?? 'mock'}${c.attempt_no ?? ''}:${c.topic ?? ''}` : null,
       studentId: c.eff_student_id, studentName: hv,
       classId: c.eff_class_id ?? null, classCode: c.class_code ?? null,
       attemptId: c.attempt_id ?? null, attemptNo: c.attempt_no ?? null,
@@ -869,7 +884,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     const cuaGv = tatCa && can(p, PERMISSIONS.CASE_APPROVE, { classId: m.cur_class_id, studentId: m.student_id });
     if (!mine && !cuaGv) continue;
     items.push({
-      key: `minitest:${m.id}`, group: 'mini_test', urgency: urgencyOf(m.han, today),
+      key: `minitest:${m.id}`, group: 'mini_test', urgency: urgencyOf(m.han, today), paId: m.pa_id ?? null,
       studentId: m.student_id, studentName: m.full_name ?? 'Học viên',
       classId: m.cur_class_id, classCode: m.class_code ?? null,
       attemptId: null, attemptNo: null, caseId: m.case_id ?? null, level: null,
@@ -1124,7 +1139,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       studentId: null, studentName: `Lớp ${x.code}`, classId: x.classId, classCode: x.code,
       attemptId: null, attemptNo: null, caseId: null, level: null, contextLabel: chu, count: n,
       reason: chu,
-      tieuDe: `Kỳ vọng đầu ra · ${x.code} · ${n} em`, actionLabel: 'Mở',
+      tieuDe: `Kết quả đầu ra · ${x.code} · ${n} em`, actionLabel: 'Mở',
       href: `/hoc-vien/lop/${x.classId}?viec=ky-vong`, ownerId: null, owner: null, mine: false, due: null, statusLabel: 'Chưa có hạn',
     });
   }
@@ -1274,7 +1289,7 @@ function nhacHomNay(today: string): Map<string, string> {
 const daNhacHomNay = (nhacToday: Map<string, string>, it: WorkItem): string | null =>
   khoaCungViec(it as any, it.key).map((k) => nhacToday.get(k)).find(Boolean) ?? null;
 
-const nhanNhomViec = (g: string) => GROUP_META[g as WorkGroupKey]?.label ?? g;
+export const nhanNhomViec = (g: string) => GROUP_META[g as WorkGroupKey]?.label ?? g;
 
 /** PR-GOP: gộp dòng (hàm chung `gopViecTheoLop`); dòng gộp của người khác có nút Nhắc riêng (một chuông cho cả dòng). */
 function dungDong(items: WorkItem[], nguoiXem: number, nhacToday: Map<string, string> | null): WorkItem[] {

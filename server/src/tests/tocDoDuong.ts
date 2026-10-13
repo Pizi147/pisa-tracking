@@ -772,6 +772,12 @@ export const TRAN_GHI_LO = {
   khoiPhucLuot: 106,   // đo 81 câu (272 lượt) → max(81 + 10, ⌈81 × 1,3⌉)
   /** POST /my-work/nhac-nhieu — VIEC-NHO-2: "Nhắc tất cả" ở Công việc › Của GV, lô 50 việc (trần 10 s Netlify ≈ 200 câu ở 35 ms/câu). */
   nhacTatCaCuaGv: 200,
+  /** OV-5a: POST /cases/xac-nhan-nhom — 3 em Reading MT1 + PA quy chế cùng lúc (một giao dịch; mỗi em đi đúng `xacNhanCase` + `xacNhanPaQuyChe`). */
+  xacNhanNhom3: 123,   // đo 94 câu (1 em 34, +30/em) → max(94 + 10, ⌈94 × 1,3⌉)
+  /** OV-5a: GET /cases/xac-nhan-nhom — panel gom 4 em (một câu chọn + quyền từng Case). */
+  docNhomXacNhan: 36,   // đo 26 câu → max(26 + 10, ⌈26 × 1,3⌉)
+  /** OV-5a: lô tối đa `TOI_DA_EM` em (ước từ đo 1 em và 3 em) — ≤ 200 câu ≈ 7 s ở 35 ms/câu, còn ≥ 2,5 s cho phiên + tx. */
+  xacNhanNhomToiDa: 200,
   /** POST /notifications/doc-het — một câu UPDATE (S6F-a 10e) + phiên/quyền. PR-Dọn (9d): trần đặt sau khi đo. */
   docHet: 19,   // đo 9 câu → max(9 + 10, ⌈9 × 1,3⌉)
   /** POST /intake/commit — 35 em lớp FT (lịch MT mặc định, có em "Đã thi tới MT", ngày thi, tuần riêng). Trước PR-TOC 1949, sau 44 (49 sau gộp PR-MON + rà #121: đọc chương trình lớp, đọc lại khoá trong giao dịch). */

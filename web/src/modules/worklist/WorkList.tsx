@@ -25,6 +25,10 @@ export type WorkItem = {
   nhac?: { ownerId: number; daNhacLuc: string | null } | null;
   /** PR-GOP (§5): dòng gộp "Loại việc · lớp · n em" — các việc thật bên trong (mỗi việc giữ nút, hạn riêng). */
   con?: (WorkItem & { conTen: string; conPhu: string })[];
+  /** OV-5a: Xác nhận nguyên nhân gom theo lớp + kỹ năng + lượt (`{bài}{số}:{kỹ năng}`) — cả dòng là MỘT việc ở panel. */
+  gopThem?: string | null;
+  /** OV-5a: PA của việc (Kết quả PA, Xác nhận PA, Mini Test) · Nhập điểm: mã lượt (`mt:2`) + kỹ năng — panel Công việc mở đúng chỗ. */
+  paId?: number | null; luot?: string; kn?: string; soBai?: number;
 };
 export type WorkGroup = { key: string; label: string; hint: string; items: WorkItem[]; overdue: number; today: number };
 
@@ -36,49 +40,71 @@ export type WorkGroup = { key: string; label: string; hint: string; items: WorkI
  * quá hạn nối ngay sau bằng chữ "⚠ quá hạn n ngày" (B-3, B-5). Thẻ ngoài là `div` để nút phụ
  * đứng cạnh phần bấm-mở mà không lồng `button` trong `button`. Loại việc chưa có loại hạn thì hạn là ngày trơn.
  */
-export function DongViec({ it, onOpen, nutPhu }: {
-  it: WorkItem; onOpen: (href: string) => void;
+export function DongViec({ it, onOpen, nutPhu, gon = false, chon = null, xong, moTrang = false }: {
+  it: WorkItem; onOpen: (it: WorkItem) => void;
   /** Nút phụ đứng cạnh nút chính (PR-Ra: Nhắc/Duyệt). */
   nutPhu?: ReactNode;
+  /** OV-5a: cột trái Công việc (mockup M1 §1) — ba cột: nhãn · việc · hạn (+ nút phụ); cả dòng bấm được, không cột nút làm việc. */
+  gon?: boolean;
+  /** OV-5a: khoá việc đang mở ở panel phải (tô dòng) · khoá việc vừa làm xong (mờ + gạch, giữ chỗ). */
+  chon?: string | null; xong?: ReadonlySet<string>;
+  /** OV-5a: việc mở trang khác (Chốt lộ trình, Kết quả đầu ra…) — dấu ↗ cạnh tiêu đề, tách khỏi việc làm tại chỗ. */
+  moTrang?: boolean;
 }) {
   const [mo, setMo] = useState(false);
-  const con = it.con;
+  /* OV-5a: Xác nhận nguyên nhân gom kỹ năng + lượt là MỘT việc (panel gom) — không mở danh sách em. */
+  const gomKn = !!it.gopThem && !!it.con;
+  const con = gomKn ? undefined : it.con;
   const loaiHan = LOAI_HAN_CUA_VIEC[it.group];
   /* Lớp chỉ hiện khi dòng đang nói về MỘT EM — dòng gom đã lấy chính tên lớp làm tiêu đề phụ. */
   /* PR-LCb: "Chốt lộ trình · lớp" là việc cả lớp (thay "Chuyển tiếp lớp" + "Chốt lên FT"): tiêu đề đã có lớp, chữ việc đã có số em — dòng phụ không nhắc lại. PR-CL: "Xét lại lộ trình · lớp · n em" cũng vậy; PR-KV: "Kỳ vọng đầu ra · lớp · n em". */
   /* PR-GOP: dòng gộp — tiêu đề đã có lớp và số em; dòng phụ chỉ còn chữ chung ("Progress Test" / "1 em quá hạn"). */
   const viecCaLop = it.group === 'chot_len_ft' || it.group === 'xet_lai_lo_trinh' || it.group === 'ky_vong_dau_ra';
   const gomLop = !!con || viecCaLop;
-  const dongPhu = [
-    gomLop ? null : it.studentName,
-    it.classCode && it.studentName !== `Lớp ${it.classCode}` ? it.classCode : null,
-    it.contextLabel,
-    !gomLop && it.count !== null && it.count > 1 ? `${it.count} HV` : null,
-  ].filter(Boolean).join(' · ');
+  /* OV-5a (mockup M1 §1): "CP FT 131 · MT2 · 4 em" — tiêu đề đã có kỹ năng; một em thì gọi tên em. */
+  const dongPhu = gomKn
+    ? [it.classCode, it.contextLabel, it.con!.length === 1 ? it.con![0].studentName : `${it.con!.length} em`].filter(Boolean).join(' · ')
+    : [
+      gomLop ? null : it.studentName,
+      it.classCode && it.studentName !== `Lớp ${it.classCode}` ? it.classCode : null,
+      it.contextLabel,
+      !gomLop && it.count !== null && it.count > 1 ? `${it.count} HV` : null,
+    ].filter(Boolean).join(' · ');
   /* Q31-4 (D9): người phụ trách 12 px — tách khỏi phần ngữ cảnh 11 px của dòng phụ. */
   const nguoi = it.owner ?? (it.ownerId === null && !it.mine && !viecCaLop ? 'chưa ai phụ trách' : null);
   /* PR-GOP (mockup phần 4): bấm tiêu đề hay nút "n em ▾" đều mở / đóng danh sách em; có em quá hạn → nền đỏ nhạt cả dòng. */
-  const bam = () => (con ? setMo(!mo) : onOpen(it.href));
+  const bam = () => (con ? setMo(!mo) : onOpen(it));
   const maDs = `con-${it.key}`;
+  const daXong = !!xong?.has(it.key);
+  const dangChon = chon === it.key;
+  /* OV-5a: dòng đang mở ở panel — `row-active` (nền nhấn + vạch trái, DESIGN.md); vừa xong — mờ + gạch, đứng nguyên chỗ (mockup M1 §1). */
+  const nen = dangChon ? 'row-active' : con && it.urgency === 'overdue' ? 'bg-late-bg/60' : 'hover:bg-white/5';
   return (
-    /* PR-VAI-a (§7.3, mockup 23 màn A): bốn cột thẳng qua mọi nhóm — nhãn trạng thái · việc · hạn (12 px) · nút. */
-    <div className={`grid grid-cols-[78px_minmax(0,1fr)] gap-x-3 gap-y-1 py-2 pr-3 sm:grid-cols-[78px_minmax(0,1fr)_150px_230px] sm:items-center ${
-      con && it.urgency === 'overdue' ? 'bg-late-bg/60' : 'hover:bg-white/5'}`} title={con ? undefined : it.reason}>
-      <span className="pt-0.5 sm:pt-0"><NhanTrangThai t={it.urgency === 'overdue' ? 'qua-han' : 'can-lam'} /></span>
-      <button type="button" className="min-w-0 appearance-none border-0 bg-transparent p-0 text-left cursor-pointer" onClick={bam}
-        aria-expanded={con ? mo : undefined} aria-controls={con && mo ? maDs : undefined}>
+    /* PR-VAI-a (§7.3, mockup 23 màn A): bốn cột thẳng qua mọi nhóm — nhãn trạng thái · việc · hạn (12 px) · nút. OV-5a `gon`: ba cột, cả dòng bấm. */
+    <div className={`grid grid-cols-[78px_minmax(0,1fr)] gap-x-3 gap-y-1 py-2 pr-3 ${gon
+      ? `cursor-pointer sm:grid-cols-[78px_minmax(0,1fr)_auto] sm:items-center ${daXong ? 'opacity-55' : ''}`
+      : 'sm:grid-cols-[78px_minmax(0,1fr)_150px_230px] sm:items-center'} ${nen}`}
+      title={con ? undefined : it.reason} onClick={gon ? bam : undefined}>
+      <span className="pt-0.5 sm:pt-0">{daXong ? <NhanTrangThai t="xong" /> : <NhanTrangThai t={it.urgency === 'overdue' ? 'qua-han' : 'can-lam'} />}</span>
+      <button type="button" className="min-w-0 appearance-none border-0 bg-transparent p-0 text-left cursor-pointer"
+        onClick={gon ? (e) => { e.stopPropagation(); bam(); } : bam}
+        aria-expanded={con ? mo : undefined} aria-controls={con && mo ? maDs : undefined} aria-current={dangChon ? 'true' : undefined}>
         <span className="flex min-w-0 items-center gap-2">
-          <span className="truncate text-[13px] font-semibold text-slate-100 max-sm:whitespace-normal max-sm:overflow-visible max-sm:break-words">{it.tieuDe}</span>
+          <span className="truncate text-[13px] font-semibold text-slate-100 max-sm:whitespace-normal max-sm:overflow-visible max-sm:break-words">
+            <span className={daXong ? 'line-through decoration-slate-500' : undefined}>{it.tieuDe}</span>
+            {moTrang && <span aria-label="mở trang" className="ml-1 text-xs font-normal text-[color:var(--accent)]">↗</span>}
+          </span>
           {it.level && <Level tone={toneTheoNhan(it.level.text, it.level.tone)}>{it.level.text}</Level>}
         </span>
         <span className="block truncate text-xs text-slate-500 max-sm:whitespace-normal max-sm:overflow-visible max-sm:break-words">
           {dongPhu}{nguoi && <>{dongPhu ? ' · ' : ''}<span className="text-xs text-slate-400">{nguoi}</span></>}
         </span>
       </button>
-      <span className="col-start-2 text-xs sm:col-start-auto [&>span]:text-xs">
+      <span className={`col-start-2 text-xs sm:col-start-auto [&>span]:text-xs ${gon ? 'flex flex-wrap items-center gap-2 sm:justify-end sm:text-right' : ''}`}>
         {it.due ? <Han loai={loaiHan ?? 'viec-van-hanh'} han={it.due} haiDong /> : <span className="text-slate-500">Chưa có hạn</span>}
+        {gon && nutPhu && <span onClick={(e) => e.stopPropagation()}>{nutPhu}</span>}
       </span>
-      <span className="col-start-2 flex items-center gap-2 sm:col-start-auto sm:justify-end">
+      {!gon && <span className="col-start-2 flex items-center gap-2 sm:col-start-auto sm:justify-end">
         {nutPhu}
         {con ? (
           <button type="button" className="btn btn-sm inline-flex min-h-[44px] items-center gap-1.5 sm:min-h-[32px]" onClick={bam}
@@ -89,13 +115,13 @@ export function DongViec({ it, onOpen, nutPhu }: {
             </svg>
           </button>
         ) : (
-          <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-[32px]" onClick={() => onOpen(it.href)}>{it.actionLabel}</button>
+          <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-[32px]" onClick={() => onOpen(it)}>{it.actionLabel}</button>
         )}
-      </span>
+      </span>}
       {con && mo && (
         <ul id={maDs} className="col-span-full m-0 mb-0.5 mt-1 list-none divide-y rounded-lg border p-0 sm:col-start-2 sm:col-end-[-1]"
-          style={{ borderColor: 'var(--line)', background: 'var(--surface)' }}>
-          {con.map((c) => <li key={c.key}><DongCon it={c} loaiHan={loaiHan} onOpen={onOpen} /></li>)}
+          style={{ borderColor: 'var(--line)', background: 'var(--surface)' }} onClick={(e) => e.stopPropagation()}>
+          {con.map((c) => <li key={c.key}><DongCon it={c} loaiHan={loaiHan} onOpen={onOpen} gon={gon} chon={chon === c.key} xong={!!xong?.has(c.key)} /></li>)}
         </ul>
       )}
     </div>
@@ -103,10 +129,29 @@ export function DongViec({ it, onOpen, nutPhu }: {
 }
 
 /** Một em trong dòng gộp (mockup phần 4 `.con-ds .ce`): tên + phụ · hạn riêng · nút làm việc của em. Điện thoại: nút sang phải, hạn dưới tên. */
-function DongCon({ it, loaiHan, onOpen }: { it: WorkItem & { conTen: string; conPhu: string }; loaiHan: ReturnType<typeof loaiHanCua>; onOpen: (href: string) => void }) {
+function DongCon({ it, loaiHan, onOpen, gon, chon, xong }: {
+  it: WorkItem & { conTen: string; conPhu: string }; loaiHan: ReturnType<typeof loaiHanCua>; onOpen: (it: WorkItem) => void;
+  gon?: boolean; chon?: boolean; xong?: boolean;
+}) {
+  if (gon) {
+    /* OV-5a: cột trái Công việc — một em là một việc bấm được (panel phải), không nút riêng. */
+    return (
+      <button type="button" onClick={() => onOpen(it)} aria-current={chon ? 'true' : undefined}
+        className={`grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 border-0 px-2.5 py-1.5 text-left text-[12.5px] ${
+          chon ? 'row-active' : 'bg-transparent hover:bg-white/5'} ${xong ? 'opacity-55' : ''}`}>
+        <span className="min-w-0">
+          <span className={`block break-words font-semibold text-slate-100 ${xong ? 'line-through decoration-slate-500' : ''}`}>{it.conTen}</span>
+          {it.conPhu && <small className="block break-words text-[11.5px] font-normal text-slate-500">{it.conPhu}</small>}
+        </span>
+        <span className="text-xs [&>span]:text-xs">
+          {it.due ? <Han loai={loaiHan ?? 'viec-van-hanh'} han={it.due} haiDong /> : <span className="text-slate-500">Chưa có hạn</span>}
+        </span>
+      </button>
+    );
+  }
   return (
     <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-0.5 px-2.5 py-1.5 text-[12.5px] sm:grid-cols-[minmax(0,1fr)_150px_220px]">
-      <button type="button" className="min-w-0 appearance-none border-0 bg-transparent p-0 text-left cursor-pointer" onClick={() => onOpen(it.href)}>
+      <button type="button" className="min-w-0 appearance-none border-0 bg-transparent p-0 text-left cursor-pointer" onClick={() => onOpen(it)}>
         <span className="block break-words font-semibold text-slate-100">{it.conTen}</span>
         {it.conPhu && <small className="block break-words text-[11.5px] font-normal text-slate-500">{it.conPhu}</small>}
       </button>
@@ -114,7 +159,7 @@ function DongCon({ it, loaiHan, onOpen }: { it: WorkItem & { conTen: string; con
         {it.due ? <Han loai={loaiHan ?? 'viec-van-hanh'} han={it.due} haiDong /> : <span className="text-slate-500">Chưa có hạn</span>}
       </span>
       <span className="col-start-2 row-span-2 row-start-1 flex justify-end sm:col-start-auto sm:row-span-1 sm:row-start-auto">
-        <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-[32px]" onClick={() => onOpen(it.href)}>{it.actionLabel}</button>
+        <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-[32px]" onClick={() => onOpen(it)}>{it.actionLabel}</button>
       </span>
     </div>
   );

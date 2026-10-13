@@ -12,11 +12,11 @@ const DICH = new WeakMap<HTMLElement, HTMLElement | null>();
  * GIỮ FOCUS TRONG KHUNG (E2, Q18) — dùng cho lịch `LichNho` và panel (Task 4).
  * Focus vào khung (khung có tabIndex=-1, không bật bàn phím ảo trên điện thoại); Tab/Shift+Tab vòng bên trong; đóng thì trả focus.
  */
-export function useGiuFocus(ref: RefObject<HTMLElement>) {
+export function useGiuFocus(ref: RefObject<HTMLElement>, bat = true) {
   /* Nhớ ô đang focus NGAY LÚC VẼ ĐẦU: effect của con (vd. ChonNguoi tự focus ô gõ) chạy trước effect này. */
   const [truoc] = useState(() => (document.activeElement instanceof HTMLElement ? document.activeElement : null));
   useEffect(() => {
-    const el = ref.current; if (!el) return undefined;
+    const el = ref.current; if (!el || !bat) return undefined;   // OV-5a: panel tại chỗ (cột phải Công việc) không giữ focus
     /* Lúc vẽ, focus đã rơi về <body> (nút Lưu bị khoá khi đang lưu → trình duyệt bỏ focus) mà panel cũ vừa đóng đã trả focus
        về nút mở ban đầu (dọn effect cũ chạy trước effect mới) → lấy chỗ đó, để đóng panel xong focus không rơi về <body>. */
     const hienTai = document.activeElement;
@@ -44,5 +44,5 @@ export function useGiuFocus(ref: RefObject<HTMLElement>) {
       traFocusVe<HTMLElement>(dich, (x) => x.isConnected, (x) => x.closest<HTMLElement>('[data-giu-focus]'), (k) => DICH.get(k) ?? null)
         ?.focus({ preventScroll: true });
     };
-  }, [ref, truoc]);
+  }, [ref, truoc, bat]);
 }
