@@ -99,9 +99,9 @@ export function DauTrangLop({ data, onViec, onBanGiao }: {
   const bamBadge = (x: BadgeLop): (() => void) | null =>
     /* PR-S4F #4: cùng đích với hộp lớp ở Học viên & Lớp — số trên badge = số dòng. */
     x.key === 'qua-han' ? () => navigate(`/hoc-vien?view=qua-han&classId=${data.id}`)
-      : x.key === 'cham' ? () => navigate(duongLichTest({ classId: data.id }))
+      : x.key === 'cham' && session?.nav?.test ? () => navigate(duongLichTest({ classId: data.id }))
       : x.key === 'xep-lop' && data.viewer.coTheChuyenTiep ? () => onViec('chuyen-tiep')
-      : x.key === 'cho-duyet' ? () => navigate(`/cong-viec/cho-duyet?lop=${data.id}`)
+      : x.key === 'cho-duyet' && session?.nav?.workApprove ? () => navigate(`/cong-viec/cho-duyet?lop=${data.id}`)
       /* DH: "Thiếu GV …" → panel Phân công (chỉ ai sửa được phân công, người khác để chữ); "Thiếu n thông tin" → em thiếu của lớp. */
       : x.key === 'thieu-gv' && (data.viewer.canAssign || data.viewer.canAssignSubject) ? () => onViec('phan-cong')
       : x.key === 'thieu-tt' ? () => navigate(`/hoc-vien?view=thieu_tt&classId=${data.id}`)

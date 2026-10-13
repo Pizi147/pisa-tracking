@@ -339,9 +339,9 @@ function HopLop({ lop, mo, onDoiMo, chiHien, sapXep, onThemHocVien, onDoi, dsHoc
   });
   const denBadge = (x: BadgeLop): string | null =>
     /* PR-UX1: badge "n bài chờ chấm" mở Lịch Test lọc đúng lớp (Lịch Test tự mở "Lớp tôi dạy" cho GV). */
-    x.key === 'cham' ? duongLichTest({ classId: lop.id })
+    x.key === 'cham' && session?.nav?.test ? duongLichTest({ classId: lop.id })
       : x.key === 'xep-lop' ? (lop.viewer.coTheChuyenTiep ? `/hoc-vien/lop/${lop.id}?viec=chuyen-tiep` : `/hoc-vien/lop/${lop.id}`)
-      : x.key === 'cho-duyet' ? `/cong-viec/cho-duyet?lop=${lop.id}`
+      : x.key === 'cho-duyet' && session?.nav?.workApprove ? `/cong-viec/cho-duyet?lop=${lop.id}`
       : x.key === 'qua-han' ? `/hoc-vien?view=qua-han&classId=${lop.id}`
       : null;
   const mucLop: MucMenu[] = [

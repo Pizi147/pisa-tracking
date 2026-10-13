@@ -7,7 +7,7 @@ import { HoTroHocVienTab } from './HoTroHocVienTab.tsx';
 import { HopChoDuyet } from '../duyet/HopChoDuyet.tsx';
 import { YeuCauCuaToi } from '../duyet/YeuCauCuaToi.tsx';
 import {
-  DUONG_TAB_CONG_VIEC, NAV_RONG, TAB_CONG_VIEC_LABEL, tabCongViecHienThi, tabCongViecTuDuong, type TabCongViec,
+  DUONG_TAB_CONG_VIEC, NAV_RONG, nhanTabCongViec, tabCongViecHienThi, tabCongViecTuDuong, type TabCongViec,
 } from '@shared/domain/index.ts';
 
 /**
@@ -45,7 +45,7 @@ export default function CongViecPage() {
       {tabs.length > 1 && (
         <div className={anDau}>
           <HangTab ariaLabel="Công việc" value={tab} onChange={go}
-            tabs={tabs.map((k) => ({ key: k, label: TAB_CONG_VIEC_LABEL[k] }))} />
+            tabs={tabs.map((k) => ({ key: k, label: nhanTabCongViec(k, session?.nav ?? NAV_RONG) }))} />
         </div>
       )}
       {tab === 'cho-duyet' && <HopChoDuyet />}
