@@ -37,33 +37,8 @@ export function guiDeXuatSua(p: Principal, studentId: number, body: { truong?: u
   const truong = body.truong as TruongDeXuat;
   if (truong === 'lich-mt') throw badRequest('Lịch Test do Quản lý xử lý — không gửi đề xuất.');   // luật 09/10; thẻ cũ vẫn hiện để đóng
   if (!(TRUONG_DE_XUAT as readonly string[]).includes(String(truong))) throw badRequest('Chọn thông tin cần sửa.');
-  const lyDo = typeof body.lyDo === 'string' ? body.lyDo.trim() : '';
-  if (!lyDo) throw badRequest('Ghi lý do để Quản lý có căn cứ duyệt.');   // T7 (PR-MTa): không tối thiểu ký tự
-  const ht = hienTaiCua(conn, studentId);
-  let moi: string | number;
-  let cu: string | number | null = null;
-  if (truong === 'target') {
-    /* Q29-1: KCK (không cam kết) là một giá trị Target hợp lệ — lưu chữ 'KCK' trong thẻ. */
-    const kck = laKck(body.moi);
-    const n = Number(body.moi);
-    if (!kck && (body.moi === '' || body.moi == null || !Number.isFinite(n) || n < 0 || n > 9 || Math.round(n * 2) !== n * 2)) {
-      throw badRequest('Target mới là một band từ 0 đến 9, bước 0.5 — hoặc KCK (không cam kết).');
-    }
-    if (!ht.cycle) throw badRequest('Em chưa có lộ trình đang chạy để đổi Target.');
-    moi = kck ? KCK : n; cu = ht.cycle.khong_cam_ket ? KCK : ht.cycle.target_score ?? null;
-    if (cu === moi) throw badRequest('Target mới trùng Target hiện tại.');
-  } else if (truong === 'lo-trinh') {
-    const code = String(body.moi ?? '').trim();
-    if (!conn.prepare(`SELECT 1 FROM routes WHERE code = ? AND status = 'active'`).get(code)) throw badRequest('Chọn một lộ trình còn dùng.');
-    if (!ht.cycle) throw badRequest('Em chưa có lộ trình đang chạy để đổi.');
-    moi = code; cu = ht.cycle.route ?? null;
-    if (cu === code) throw badRequest('Lộ trình mới trùng lộ trình hiện tại.');
-  } else {
-    const chu = String(body.moi ?? '').trim();
-    if (chu.length < 2) throw badRequest('Ghi giá trị mới cần sửa.');
-    if (chu.length > 200) throw badRequest('Giá trị mới tối đa 200 ký tự.');
-    moi = chu; cu = null;
-  }
+  const lyDo = lyDoDeXuat(body.lyDo);
+  const { cu, moi } = kiemGiaTriDeXuat(conn, studentId, truong, body.moi);
   return tx(() => {
     const id = taoYeuCau(conn, {
       loai: 'sua_thong_tin', doiTuongLoai: `student:${truong}`, doiTuongId: studentId, hocVienId: studentId,
@@ -74,4 +49,40 @@ export function guiDeXuatSua(p: Principal, studentId: number, body: { truong?: u
       entityLabel: `Đề xuất sửa ${NHAN_TRUONG_DE_XUAT[truong]} · ${hv.full_name}`, after: { truong, cu, moi, lyDo } });
     return { ok: true, id };
   });
+}
+
+export function lyDoDeXuat(v: unknown): string {
+  const lyDo = typeof v === 'string' ? v.trim() : '';
+  if (!lyDo) throw badRequest('Ghi lý do để Quản lý có căn cứ duyệt.');   // T7 (PR-MTa): không tối thiểu ký tự
+  return lyDo;
+}
+
+/** Giá trị mới của một trường đề xuất + giá trị cũ ghi vào thẻ — dùng chung lúc gửi và lúc người gửi Sửa (OV-7a). */
+export function kiemGiaTriDeXuat(conn: any, studentId: number, truong: TruongDeXuat, moiVao: unknown): { cu: string | number | null; moi: string | number } {
+  const ht = hienTaiCua(conn, studentId);
+  let moi: string | number;
+  let cu: string | number | null = null;
+  if (truong === 'target') {
+    /* Q29-1: KCK (không cam kết) là một giá trị Target hợp lệ — lưu chữ 'KCK' trong thẻ. */
+    const kck = laKck(moiVao);
+    const n = Number(moiVao);
+    if (!kck && (moiVao === '' || moiVao == null || !Number.isFinite(n) || n < 0 || n > 9 || Math.round(n * 2) !== n * 2)) {
+      throw badRequest('Target mới là một band từ 0 đến 9, bước 0.5 — hoặc KCK (không cam kết).');
+    }
+    if (!ht.cycle) throw badRequest('Em chưa có lộ trình đang chạy để đổi Target.');
+    moi = kck ? KCK : n; cu = ht.cycle.khong_cam_ket ? KCK : ht.cycle.target_score ?? null;
+    if (cu === moi) throw badRequest('Target mới trùng Target hiện tại.');
+  } else if (truong === 'lo-trinh') {
+    const code = String(moiVao ?? '').trim();
+    if (!conn.prepare(`SELECT 1 FROM routes WHERE code = ? AND status = 'active'`).get(code)) throw badRequest('Chọn một lộ trình còn dùng.');
+    if (!ht.cycle) throw badRequest('Em chưa có lộ trình đang chạy để đổi.');
+    moi = code; cu = ht.cycle.route ?? null;
+    if (cu === code) throw badRequest('Lộ trình mới trùng lộ trình hiện tại.');
+  } else {
+    const chu = String(moiVao ?? '').trim();
+    if (chu.length < 2) throw badRequest('Ghi giá trị mới cần sửa.');
+    if (chu.length > 200) throw badRequest('Giá trị mới tối đa 200 ký tự.');
+    moi = chu; cu = null;
+  }
+  return { cu, moi };
 }

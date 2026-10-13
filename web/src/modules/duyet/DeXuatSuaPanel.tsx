@@ -16,18 +16,20 @@ const TRUONG: { key: TruongDeXuat; nhan: string }[] = [
   { key: 'khac', nhan: 'Thông tin khác' },
 ];
 
-export function DeXuatSuaPanel({ studentId, studentName, lop, truongDau, hienTai, onClose, onDone }: {
+export function DeXuatSuaPanel({ studentId, studentName, lop, truongDau, hienTai, sua, onClose, onDone }: {
   studentId: number; studentName: string; lop?: string | null;
   truongDau?: TruongDeXuat;
   /** Giá trị đang có — hiện cạnh ô mới để người gửi thấy mình đổi từ đâu. */
   hienTai?: { target?: number | null; khongCamKet?: boolean; route?: string | null };
+  /** OV-7a: người gửi Sửa thẻ còn chờ — điền sẵn, giữ trường (đổi trường thì Rút rồi gửi lại). */
+  sua?: { id: number; truong: TruongDeXuat; moi: string; lyDo: string };
   onClose: () => void; onDone?: () => void;
 }) {
   const toast = useToast();
   const lf = useLoiForm();
-  const [truong, setTruong] = useState<TruongDeXuat | null>(truongDau ?? null);
-  const [moi, setMoi] = useState('');
-  const [lyDo, setLyDo] = useState('');
+  const [truong, setTruong] = useState<TruongDeXuat | null>(sua?.truong ?? truongDau ?? null);
+  const [moi, setMoi] = useState(sua?.moi ?? '');
+  const [lyDo, setLyDo] = useState(sua?.lyDo ?? '');
   const [busy, setBusy] = useState(false);
   const routes = useApi<{ code: string; name: string }[]>(truong === 'lo-trinh' ? '/ref/routes' : null, [truong]);
 
@@ -46,27 +48,29 @@ export function DeXuatSuaPanel({ studentId, studentName, lop, truongDau, hienTai
     if (loi.length > 0 || busy) return;
     setBusy(true);
     try {
-      await api.post(`/students/${studentId}/de-xuat-sua`, { truong, moi: truong === 'target' && moi !== KCK ? Number(moi) : moi.trim(), lyDo: lyDo.trim() });
+      const than = { truong, moi: truong === 'target' && moi !== KCK ? Number(moi) : moi.trim(), lyDo: lyDo.trim() };
+      if (sua) await api.put(`/yeu-cau/${sua.id}`, than);
+      else await api.post(`/students/${studentId}/de-xuat-sua`, than);
       invalidate('/yeu-cau');
-      toast.push('ok', 'Đã gửi — xem ở Công việc › Yêu cầu của tôi');
+      toast.push('ok', sua ? 'Đã lưu đề xuất' : 'Đã gửi — xem ở Công việc › Yêu cầu của tôi');
       onDone?.();
       onClose();
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
   };
 
   return (
-    <KhungPanel tieuDe="Đề xuất sửa thông tin" hocVien={studentName} lop={lop} onDong={onClose}
+    <KhungPanel tieuDe={sua ? 'Sửa đề xuất' : 'Đề xuất sửa thông tin'} hocVien={studentName} lop={lop} onDong={onClose}
       chan={{
         conThieu: lf.conThieu(loi),
         chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={gui} disabled={busy}>
-          {busy ? 'Đang gửi…' : 'Gửi Quản lý'}
+          {busy ? 'Đang lưu…' : sua ? 'Lưu' : 'Gửi Quản lý'}
         </button>,
       }}>
       <Khoi tieuDe="Đề xuất sửa" luat="Target và lộ trình do Quản lý sửa. Quản lý duyệt trong 5 ngày; kết quả báo ở chuông và Yêu cầu của tôi.">
         <Truong nhan="Thông tin cần sửa" batBuoc loi={lf.loiCua(loi, 'truong')}>
           <div className="flex flex-wrap gap-1.5" {...lf.o(loi, 'truong')}>
             {TRUONG.map((x) => (
-              <NutChon key={x.key} nho chon={truong === x.key} onClick={() => { setTruong(x.key); setMoi(''); }}>{x.nhan}</NutChon>
+              <NutChon key={x.key} nho chon={truong === x.key} disabled={!!sua && sua.truong !== x.key} onClick={() => { setTruong(x.key); setMoi(''); }}>{x.nhan}</NutChon>
             ))}
           </div>
         </Truong>

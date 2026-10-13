@@ -211,14 +211,18 @@ export function phieuBanGiao(p: Principal, f: { lopNguonId?: number; lenhId?: nu
       mon, nhanXetChung: r.nhan_xet_chung ?? null,
       xacNhan: r.xac_nhan_luc ? { boi: r.xn_ten ?? null, luc: r.xac_nhan_luc, thay: !!r.xac_nhan_thay } : null,
       gvbmChuaBanGiao: chup?.gvbmChuaBanGiao ?? mon.filter((m) => !m.noiDung || m.lamLai).map((m) => m.ngan),
+      suaDuoc: false,
     };
   });
 
   const monGhi = q.doNguon ? monDs.filter((m) => q.laGvcn || q.qlThay || kyNangPhuTrach(ct, m.ma).some((k) => q.kyNang.has(k))).map((m) => m.ma) : [];
+  /* OV-7a: phiếu đã xác nhận — người ghi được (GVCN / GVBM đúng môn) sửa tới ngày thi hành lệnh; Quản lý lớp nguồn sửa mọi lúc. */
+  const ql = coTheRaLenh(p, lopId);
+  for (const e of ds) e.suaDuoc = !!e.xacNhan && e.trangThaiLenh !== 'huy' && (ql || ((q.xacNhan || monGhi.length > 0) && homNay <= e.tuan));
   return {
     lop: { id: nguon.id, code: nguon.code, ct, ft: !!nguon.is_fast_track, mon: monDs },
     homNay,
-    nguoiXem: { gvcn: q.laGvcn, qlThay: q.qlThay, monGhi, xacNhan: q.xacNhan, xemTuNguon: q.doNguon },
+    nguoiXem: { gvcn: q.laGvcn, qlThay: q.qlThay, monGhi, xacNhan: q.xacNhan, xemTuNguon: q.doNguon, ql },
     tong: ds.length, daXacNhan: ds.filter((e) => e.xacNhan).length,
     hanGvcn: thay.filter((r) => !r.xac_nhan_luc).map((r) => r.han_gvcn as string | null).filter(Boolean).sort()[0] ?? null,
     theoMon: monDs.map((m) => ({
@@ -240,25 +244,48 @@ function docLenhPhieu(id: number): any {
   return l;
 }
 
-/** Một dòng môn (UPSERT). GVBM đúng môn ghi; GVCN (hoặc Quản lý khi thay được) điền thay → `dien_thay`. */
+/**
+ * OV-7a (chủ SP 13/10): phiếu ĐÃ XÁC NHẬN vẫn sửa được tới NGÀY THI HÀNH lệnh (`tuan_bat_dau`); qua ngày đó chỉ Quản lý lớp nguồn sửa.
+ * Việc / thẻ "báo lên bàn giao" không mở lại — phiếu vẫn là đã xác nhận.
+ */
+function kiemSuaSauXacNhan(p: Principal, l: { tuan_bat_dau: string; lop_nguon_id: number }) {
+  if (demoToday() > l.tuan_bat_dau && !coTheRaLenh(p, l.lop_nguon_id)) throw badRequest('Đã qua ngày chuyển lớp — chỉ Quản lý sửa được bàn giao.');
+}
+
+/** Môn chưa có câu bàn giao (tên ngắn) — ghi vào bản chụp lúc xác nhận / sửa. */
+function chuaBanGiaoCua(lenhId: number, ct: string | null): string[] {
+  const da = new Set((db().prepare('SELECT mon FROM ban_giao_mon WHERE lenh_id = ? AND lam_lai = 0').all(lenhId) as any[]).map((r) => r.mon as string));
+  return boMonCt(ct).filter((m) => !da.has(m)).map((m) => tenMonNgan(ct, m));
+}
+
+/** Một dòng môn (UPSERT). GVBM đúng môn ghi; GVCN (hoặc Quản lý khi thay được) điền thay → `dien_thay`. OV-7a: sau xác nhận vẫn sửa được (`kiemSuaSauXacNhan`). */
 export function ghiMon(p: Principal, lenhId: number, mon: string, noiDung: string): void {
   const l = docLenhPhieu(lenhId);
   const q = quyenBanGiao(p, l, mon, { ct: l.ct });
-  if (!q.ghiMon) throw forbidden('Bạn chỉ ghi được bàn giao cho môn mình được phân công (GVCN điền thay được).');
+  const qlSua = !!l.xac_nhan_luc && coTheRaLenh(p, l.lop_nguon_id);
+  if (!q.ghiMon && !qlSua) throw forbidden('Bạn chỉ ghi được bàn giao cho môn mình được phân công (GVCN điền thay được).');
   if (l.trang_thai === 'huy') throw badRequest('Quyết định chuyển lớp đã huỷ — không ghi bàn giao được.');
   if (!coPhieu(l.huong)) throw badRequest('Quyết định Dừng học hẳn không có phiếu bàn giao.');
-  if (l.xac_nhan_luc) throw badRequest('Phiếu đã được xác nhận — không ghi thêm được.');
+  if (l.xac_nhan_luc) kiemSuaSauXacNhan(p, l);
   if (!boMonCt(l.ct).includes(mon)) throw badRequest('Môn này không có ở lớp nguồn.');
   const text = String(noiDung ?? '').trim();
   if (!text) throw badRequest('Viết một câu bàn giao.');
   if (text.length > 300) throw badRequest('Câu bàn giao tối đa 300 ký tự.');
   tx(() => {
+    const cu = db().prepare('SELECT noi_dung FROM ban_giao_mon WHERE lenh_id = ? AND mon = ?').get(lenhId, mon) as any;
     db().prepare(
       `INSERT INTO ban_giao_mon (lenh_id, mon, noi_dung, nguoi_ghi, dien_thay, ghi_luc) VALUES (?,?,?,?,?,?)
        ON CONFLICT (lenh_id, mon) DO UPDATE SET noi_dung = excluded.noi_dung, nguoi_ghi = excluded.nguoi_ghi, dien_thay = excluded.dien_thay, ghi_luc = excluded.ghi_luc,
          lam_lai = 0`,
     ).run(lenhId, mon, text, p.userId, q.gvbmDungMon ? 0 : 1, mocNghiepVu());   // ngày nghiệp vụ (bản demo: ngày demo + giờ thật)
-    writeAudit({ actorUserId: p.userId, action: 'ban_giao.ghi_mon', entityType: 'student', entityId: l.student_id, entityLabel: l.full_name, after: { lenhId, mon, dienThay: !q.gvbmDungMon } });
+    const tuDien = (db().prepare('SELECT tu_dien FROM lenh_chuyen_lop WHERE id = ?').get(lenhId) as any).tu_dien as string | null;   // đọc trong tx: không đè bản chụp mới hơn
+    if (tuDien) {
+      /* Phiếu đã chụp: "GVBM chưa bàn giao" đếm lại — phần tự điền giữ bản chụp. */
+      const chup = JSON.parse(tuDien);
+      db().prepare('UPDATE lenh_chuyen_lop SET tu_dien = ?, sua_luc = ? WHERE id = ?').run(JSON.stringify({ ...chup, gvbmChuaBanGiao: chuaBanGiaoCua(lenhId, l.ct) }), mocNghiepVu(), lenhId);
+    }
+    writeAudit({ actorUserId: p.userId, action: 'ban_giao.ghi_mon', entityType: 'student', entityId: l.student_id, entityLabel: l.full_name,
+      before: cu ? { lenhId, mon, noiDung: cu.noi_dung } : undefined, after: { lenhId, mon, noiDung: text, dienThay: !q.gvbmDungMon } });
   });
 }
 
@@ -275,28 +302,58 @@ export function xacNhanBanGiao(p: Principal, lenhId: number, nhanXetChung: strin
   tx(() => {
     const conn = db();
     const tuDien = tuDienTheoLo({ id: l.lop_nguon_id, ct: l.ct }, [l]).get(l.id)!;
-    const da = new Set((conn.prepare('SELECT mon FROM ban_giao_mon WHERE lenh_id = ? AND lam_lai = 0').all(lenhId) as any[]).map((r) => r.mon as string));
-    const chuaBanGiao = boMonCt(l.ct).filter((m) => !da.has(m)).map((m) => tenMonNgan(l.ct, m));
+    const chuaBanGiao = chuaBanGiaoCua(lenhId, l.ct);
     const luc = mocNghiepVu();
     const r = conn.prepare(
       `UPDATE lenh_chuyen_lop SET nhan_xet_chung = ?, tu_dien = ?, xac_nhan_boi = ?, xac_nhan_luc = ?, xac_nhan_thay = ?, sua_luc = ?
         WHERE id = ? AND xac_nhan_luc IS NULL`,
     ).run(nx, JSON.stringify({ tuDien, gvbmChuaBanGiao: chuaBanGiao }), p.userId, luc, q.xacNhanThay ? 1 : 0, luc, lenhId);
     if (!r.changes) throw conflict('Phiếu vừa được xác nhận.');
-    addJourney({
-      studentId: l.student_id, eventType: 'handover', eventDate: demoToday(), title: `Bàn giao từ ${l.nguon_code}`,
-      detail: nx, refTable: 'lenh_chuyen_lop', refId: lenhId, createdBy: p.userId, dedupKey: `ban_giao:${lenhId}`,
-    });
     writeAudit({ actorUserId: p.userId, action: 'ban_giao.xac_nhan', entityType: 'student', entityId: l.student_id, entityLabel: l.full_name, after: { lenhId, thay: q.xacNhanThay, gvbmChuaBanGiao: chuaBanGiao } });
-    if (l.lop_dich_id) {
-      for (const userId of nguoiNhanCuaLop([l.lop_dich_id]).get(l.lop_dich_id) ?? []) {
-        if (userId === p.userId) continue;
-        notify({
-          userId, kind: 'ban_giao', title: `Đã có bàn giao · ${l.full_name}`, body: `Từ ${l.nguon_code}`,
-          entityType: 'student', entityId: l.student_id, dedupKey: `ban_giao:${lenhId}`, duong: `/hoc-vien/lop/${l.lop_dich_id}`,
-        });
-      }
+    baoBanGiao(p, l, nx);
+  });
+}
+
+/** Hành trình + chuông lớp chuyển đến (khoá `ban_giao:{lệnh}` — lưu lại không báo lại người đã nhận, chỉ người mới của lớp đích). */
+function baoBanGiao(p: Principal, l: any, nx: string) {
+  addJourney({
+    studentId: l.student_id, eventType: 'handover', eventDate: demoToday(), title: `Bàn giao từ ${l.nguon_code}`,
+    detail: nx, refTable: 'lenh_chuyen_lop', refId: l.id, createdBy: p.userId, dedupKey: `ban_giao:${l.id}`,
+  });
+  if (!l.lop_dich_id) return;
+  for (const userId of nguoiNhanCuaLop([l.lop_dich_id]).get(l.lop_dich_id) ?? []) {
+    if (userId === p.userId) continue;
+    notify({
+      userId, kind: 'ban_giao', title: `Đã có bàn giao · ${l.full_name}`, body: `Từ ${l.nguon_code}`,
+      entityType: 'student', entityId: l.student_id, dedupKey: `ban_giao:${l.id}`, duong: `/hoc-vien/lop/${l.lop_dich_id}`,
+    });
+  }
+}
+
+/**
+ * OV-7a: SỬA phiếu đã xác nhận — GVCN lớp nguồn (hoặc Quản lý xác nhận thay) tới ngày thi hành lệnh, Quản lý lớp nguồn mọi lúc. Lưu lại = nhận xét chung
+ * mới + chụp lại phần tự điền; người / lúc xác nhận đầu giữ. Hành trình: sự kiện cũ đổi khoá (giữ làm lịch sử) rồi ghi sự kiện mới.
+ */
+export function suaBanGiao(p: Principal, lenhId: number, nhanXetChung: string): void {
+  const l = docLenhPhieu(lenhId);
+  if (l.trang_thai === 'huy') throw badRequest('Quyết định chuyển lớp đã huỷ — không sửa bàn giao được.');
+  if (!l.xac_nhan_luc) throw badRequest('Phiếu chưa xác nhận — viết nhận xét chung rồi Xác nhận bàn giao.');
+  const q = quyenBanGiao(p, l, undefined, { ct: l.ct });
+  if (!q.xacNhan && !coTheRaLenh(p, l.lop_nguon_id)) throw forbidden('Chỉ GVCN lớp nguồn hoặc Quản lý sửa được nhận xét chung của bàn giao.');
+  kiemSuaSauXacNhan(p, l);
+  const nx = String(nhanXetChung ?? '').trim();
+  if (nx.length < NHAN_XET_TOI_THIEU) throw badRequest(`Nhận xét chung cần ít nhất ${NHAN_XET_TOI_THIEU} ký tự.`);
+  tx(() => {
+    const conn = db();
+    const tuDien = tuDienTheoLo({ id: l.lop_nguon_id, ct: l.ct }, [l]).get(l.id)!;
+    conn.prepare('UPDATE lenh_chuyen_lop SET nhan_xet_chung = ?, tu_dien = ?, sua_luc = ? WHERE id = ?')
+      .run(nx, JSON.stringify({ tuDien, gvbmChuaBanGiao: chuaBanGiaoCua(lenhId, l.ct) }), mocNghiepVu(), lenhId);
+    if (nx !== l.nhan_xet_chung) {
+      conn.prepare(`UPDATE journey_events SET dedup_key = dedup_key || ? WHERE dedup_key = ?`).run(`:sua:${nowIso()}`, `ban_giao:${lenhId}`);
+      baoBanGiao(p, l, nx);
     }
+    writeAudit({ actorUserId: p.userId, action: 'ban_giao.sua', entityType: 'student', entityId: l.student_id, entityLabel: l.full_name,
+      before: { lenhId, nhanXetChung: l.nhan_xet_chung }, after: { lenhId, nhanXetChung: nx } });
   });
 }
 

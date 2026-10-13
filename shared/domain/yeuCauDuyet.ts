@@ -20,6 +20,13 @@ export const PHAN_LOAI_LABEL: Record<PhanLoai, string> = {
 export const LOAI_YEU_CAU = ['de_xuat_pa', 'xin_y_kien', 'lich_thi', 'sua_thong_tin', 'bao_len_nguyen_nhan', 'khong_theo_doi', 'y_thuc', 'bao_len_y_thuc', 'de_xuat_chuyen_lop', 'bao_len_ban_giao', 'bao_len_chua_lenh', 'ke_hoach_bo_tro', 'bao_len_mini_test', 'bao_len_cuoi_khoa'] as const;
 export type LoaiYeuCau = (typeof LOAI_YEU_CAU)[number];
 
+/**
+ * OV-7a (chủ SP 13/10): loại thẻ NGƯỜI GỬI còn Sửa / Rút được khi Quản lý chưa trả lời — máy chủ (`khiSua` / `khiRut` của loại) và giao diện
+ * (nút Sửa… / Rút trên thẻ) đọc CÙNG danh sách này. Rút = thẻ `tu_dong` lý do "Người gửi đã rút", không chuông.
+ */
+export const LOAI_NGUOI_XIN_SUA: readonly LoaiYeuCau[] = ['sua_thong_tin', 'de_xuat_chuyen_lop', 'khong_theo_doi', 'y_thuc'];
+export const LY_DO_RUT = 'Người gửi đã rút';
+
 /** `da_tra_loi` chỉ của Xin ý kiến; `tu_dong` = hệ thống tự đóng (đối tượng không còn ý nghĩa). */
 export const TRANG_THAI_YC = ['cho', 'duyet', 'tu_choi', 'tu_dong', 'da_tra_loi'] as const;
 export type TrangThaiYc = (typeof TRANG_THAI_YC)[number];

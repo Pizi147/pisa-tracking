@@ -649,10 +649,15 @@ export function ghiMiniTestTrongTx(conn: any, p: Principal, mt: any, x: { tyLe: 
     /* PR-CT2 (§8): thẻ về người giữ việc Ghi Mini Test (GVCN lớp đang học; không có → chủ Case), không về Người dạy (GV cũ). */
     const chu = nguoiGiuMotMiniTest(conn, mt, lopId);
     const lyDo = `Mini Test ${phanTram}% chưa đạt (cần từ 70%) — Quản lý xử lý từng trường hợp`;
-    taoYeuCau(conn, {
-      loai: 'bao_len_mini_test', doiTuongLoai: 'mini_test', doiTuongId: mt.id, hocVienId: mt.student_id, lopId, nguoiXin: null, hanDuyet: null, lyDo,
-      duLieu: { viecKey: `minitest:${mt.id}`, ownerId: chu, lyDo, tyLe: x.tyLe },
+    const duLieu = { viecKey: `minitest:${mt.id}`, ownerId: chu, lyDo, tyLe: x.tyLe };
+    const moi = taoYeuCau(conn, {
+      loai: 'bao_len_mini_test', doiTuongLoai: 'mini_test', doiTuongId: mt.id, hocVienId: mt.student_id, lopId, nguoiXin: null, hanDuyet: null, lyDo, duLieu,
     });
+    /* OV-7a: sửa từ < 70% sang < 70% khác — thẻ đang chờ đổi chữ, không báo QL lần hai. */
+    if (moi === null) {
+      conn.prepare(`UPDATE yeu_cau_duyet SET ly_do = ?, du_lieu = ? WHERE loai = 'bao_len_mini_test' AND doi_tuong_loai = 'mini_test' AND doi_tuong_id = ? AND trang_thai = 'cho'`)
+        .run(lyDo, JSON.stringify(duLieu), mt.id);
+    }
   }
   writeAudit({ actorUserId: p.userId, action: 'cuoi_khoa.mini_test', entityType: 'student', entityId: mt.student_id, after: { miniTestId: mt.id, tyLe: x.tyLe, ngay: x.ngay, dat } });
   return { dat };
@@ -660,21 +665,15 @@ export function ghiMiniTestTrongTx(conn: any, p: Principal, mt: any, x: { tyLe: 
 
 /**
  * Ghi / sửa Mini Test ngoài form "Ghi kết quả cuối" (đường hồ sơ HV). Ghi lần đầu: người dạy của nhóm · GVCN lớp đang học · người giữ việc (PR-CT2) · QL — PA còn mở của nhóm
- * được khép (`het_moc`). SỬA Mini Test đã ghi: CHỈ Quản lý (`request.approve`), có lý do ≥ 8 ký tự; Case đã đóng giữ nguyên (Q12).
+ * được khép (`het_moc`). OV-7a (thay Q12): SỬA Mini Test đã ghi — cùng những người ghi được (`quyenGhiMiniTest`), máy tính lại như lần ghi đầu: PA bổ trợ giữ khép;
+ * từ ≥ 70% xuống < 70% thì Case do Mini Test đóng mở lại + thẻ Báo QL; ngược lại Case Hoàn thành + thẻ tự đóng (`ghiMiniTestTrongTx`).
  */
 export function ghiMiniTest(p: Principal, miniTestId: number, input: { tyLe?: unknown; ngay?: unknown; lyDo?: unknown }) {
   const conn = db();
   const mt = conn.prepare('SELECT * FROM mini_test WHERE id = ?').get(miniTestId) as any;
   if (!mt) throw notFound('Không tìm thấy Mini Test.');
   const daGhi = mt.ty_le !== null;
-  const lopHienTai = (conn.prepare(`SELECT class_id FROM enrollments WHERE student_id = ? AND status = 'active' ORDER BY id DESC LIMIT 1`).get(mt.student_id) as any)?.class_id ?? null;
-  const la_ql = can(p, PERMISSIONS.REQUEST_APPROVE, { studentId: mt.student_id, classId: lopHienTai ?? undefined });
-  const nguoiDay = conn.prepare(`SELECT 1 FROM case_interventions WHERE nhom_bo_tro = ? AND performer_user_id = ? LIMIT 1`).get(mt.nhom_bo_tro, p.userId);
-  const gvcn = lopHienTai ? isCoreTeacherOf(p, lopHienTai) : false;
-  /* PR-CT2 (§8): người giữ việc Ghi Mini Test (`nguoiGiuMiniTest`) ghi được lần đầu. */
-  const giu = () => nguoiGiuMotMiniTest(conn, mt, lopHienTai) === p.userId;
-  if (daGhi && !la_ql) throw forbidden('Chỉ Quản lý mới sửa được Mini Test đã ghi.');
-  if (!daGhi && !la_ql && !nguoiDay && !gvcn && !giu()) throw forbidden('Bạn không có quyền ghi Mini Test của học viên này.');
+  if (!quyenGhiMiniTest(p, mt)) throw forbidden(`Bạn không có quyền ${daGhi ? 'sửa' : 'ghi'} Mini Test của học viên này.`);
   const v = kiemMiniTest(mt, input);
   const lyDo = String(input.lyDo ?? '').trim();
   /* T7 (PR-MTa): sửa điểm Mini Test đã ghi — lý do tuỳ chọn (như sửa điểm Test). */
@@ -684,11 +683,54 @@ export function ghiMiniTest(p: Principal, miniTestId: number, input: { tyLe?: un
         `UPDATE case_interventions SET status = 'completed', completed_date = ?, closed_reason = 'het_moc', started_date = COALESCE(started_date, cycle_started_on, ?), updated_at = ?
           WHERE nhom_bo_tro = ? AND kind = 'bo_tro_mien_phi' AND status IN ('planned', 'started')`,
       ).run(v.ngay, v.ngay, nowIso(), mt.nhom_bo_tro);
+    } else if (mt.ty_le >= NGUONG_MINI_TEST) {
+      daoCaseMiniTest(conn, p, mt, v);
     }
     const kq = ghiMiniTestTrongTx(conn, p, mt, v);
     if (daGhi) writeAudit({ actorUserId: p.userId, action: 'cuoi_khoa.mini_test', entityType: 'student', entityId: mt.student_id, entityLabel: 'Sửa Mini Test', before: { tyLe: mt.ty_le, ngay: mt.ngay_lam }, after: { tyLe: v.tyLe, ngay: v.ngay, lyDo } });
     return { id: mt.id, tyLe: v.tyLe, ngay: v.ngay, dat: kq.dat };
   });
+}
+
+/** Ai ghi / sửa được Mini Test: QL trong phạm vi · người dạy của nhóm · GVCN lớp em đang học · người giữ việc (PR-CT2). Hồ sơ HV dùng chung (`coTheSua`). */
+export function quyenGhiMiniTest(p: Principal, mt: { id: number; student_id: number; nhom_bo_tro: string }): boolean {
+  const conn = db();
+  const lop = (conn.prepare(`SELECT class_id FROM enrollments WHERE student_id = ? AND status = 'active' ORDER BY id DESC LIMIT 1`).get(mt.student_id) as any)?.class_id ?? null;
+  return can(p, PERMISSIONS.REQUEST_APPROVE, { studentId: mt.student_id, classId: lop ?? undefined })
+    || !!conn.prepare(`SELECT 1 FROM case_interventions WHERE nhom_bo_tro = ? AND performer_user_id = ? LIMIT 1`).get(mt.nhom_bo_tro, p.userId)
+    || (lop ? isCoreTeacherOf(p, lop) : false)
+    || nguoiGiuMotMiniTest(conn, mt, lop) === p.userId;
+}
+
+/**
+ * OV-7a: sửa Mini Test đã ĐẠT — đảo hệ quả của lần đạt trước. Vẫn đạt: Case do Mini Test đóng đổi chữ / ngày theo % mới. Xuống dưới 70%: Case đó MỞ LẠI
+ * (mốc đóng cũ đổi khoá, thêm mốc mở lại) để `ghiMiniTestTrongTx` tạo thẻ Báo QL như lần ghi đầu. Case đóng vì lý do khác không đụng.
+ */
+function daoCaseMiniTest(conn: any, p: Principal, mt: any, x: { tyLe: number; ngay: string }): void {
+  const ds = conn.prepare(
+    `SELECT DISTINCT sc.id, sc.closed_at FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id
+      WHERE iv.nhom_bo_tro = ? AND sc.status = 'done' AND sc.outcome_note LIKE 'Mini Test %≥ 70%'`,
+  ).all(mt.nhom_bo_tro) as { id: number; closed_at: string }[];
+  if (!ds.length) return;
+  const now = nowIso();
+  if (x.tyLe >= NGUONG_MINI_TEST) {
+    const ghiChu = `Mini Test ${Math.round(x.tyLe * 100)}% ≥ 70%`;
+    for (const c of ds) {
+      conn.prepare('UPDATE sos_cases SET outcome_note = ?, closed_at = ?, updated_at = ? WHERE id = ?').run(ghiChu, x.ngay, now, c.id);
+      conn.prepare(`UPDATE case_milestones SET note = ?, occurred_on = ?, dedup_key = ? WHERE dedup_key = ?`)
+        .run(`Tiến bộ — ${ghiChu}`, x.ngay, `outcome:${c.id}:${x.ngay}:end`, `outcome:${c.id}:${c.closed_at}:end`);
+    }
+    return;
+  }
+  for (const c of ds) {
+    conn.prepare(`UPDATE sos_cases SET status = 'open', outcome = NULL, outcome_note = NULL, outcome_decision = NULL, outcome_by = NULL, outcome_at = NULL,
+                   closed_by = NULL, closed_at = NULL, updated_at = ? WHERE id = ?`).run(now, c.id);
+    conn.prepare(`UPDATE case_milestones SET dedup_key = dedup_key || ? WHERE case_id = ? AND kind = 'closed' AND dedup_key IS NOT NULL`).run(`:mo-lai:${now}`, c.id);
+    conn.prepare(`INSERT INTO case_milestones (case_id, kind, occurred_on, note, created_by, created_at, dedup_key) VALUES (?, 'reopened', ?, ?, ?, ?, ?)`)
+      .run(c.id, demoToday(), `Mini Test sửa còn ${Math.round(x.tyLe * 100)}%`, p.userId, now, `reopen:${c.id}:${now}`);
+    conn.prepare(`INSERT INTO sos_case_history (case_id, field, old_value, new_value, actor_user_id, created_at) VALUES (?, 'status', 'done', 'open', ?, ?)`).run(c.id, p.userId, now);
+  }
+  dongBoTrangThaiCaseLo(ds.map((c) => c.id));
 }
 
 /** Mini Test của các em (theo lộ trình mới), MỘT câu — cho hồ sơ HV, việc, Excel. */

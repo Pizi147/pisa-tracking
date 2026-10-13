@@ -432,16 +432,7 @@ export function guiKhongTheoDoi(p: Principal, caseId: number, input: { reasonCod
   }
   if (st.choDuyetKhongTheoDoi) throw badRequest('Case đã gửi "Không cần theo dõi" — đang chờ Quản lý duyệt.');
   if (st.hasCause) throw badRequest('Case đã xác nhận nguyên nhân — kết thúc bằng Hoàn thành Case.');
-  const code = String(input.reasonCode ?? '');
-  if (!(CASE_DISMISS_REASONS as readonly string[]).includes(code)) {
-    throw badRequest(`Chọn một lý do: ${CASE_DISMISS_REASONS.map((r) => CASE_DISMISS_REASON_LABEL[r]).join(' · ')}.`);
-  }
-  const text = String(input.reasonText ?? '').trim();
-  if (reasonNeedsText(code)) {
-    const loi = kiemGhiRoKhac(text);
-    if (loi) throw badRequest(`Lý do "Khác": ${loi}.`);
-  }
-  if (text.length > 300) throw badRequest('Lý do tối đa 300 ký tự.');
+  const { code, text, lyDo } = lyDoKhongTheoDoi(input);
   const started = conn
     .prepare(`SELECT COUNT(*) n FROM case_interventions iv WHERE iv.case_id = ? AND iv.status != 'cancelled'
                 AND NOT ${UNCONFIRMED_PRESET('iv')} AND NOT ${PA_QUY_CHE_CHUA_GHI('iv')}`)
@@ -450,7 +441,6 @@ export function guiKhongTheoDoi(p: Principal, caseId: number, input: { reasonCod
   if (started.n > 0 || followed.n > 0) {
     throw badRequest('Case này đã có phương án được xác nhận hoặc đang chạy — kết thúc bằng Hoàn thành Case.');
   }
-  const lyDo = `${CASE_DISMISS_REASON_LABEL[code as CaseDismissReason]}${reasonNeedsText(code) ? ` — ${text}` : ''}`;
   const today = demoToday();
   return tx(() => {
     const id = taoYeuCau(conn, {
@@ -465,6 +455,36 @@ export function guiKhongTheoDoi(p: Principal, caseId: number, input: { reasonCod
     });
     return caseDetail(p, caseId);
   });
+}
+
+/** Lý do chọn nhanh của "Không cần theo dõi" — dùng chung lúc gửi và lúc người gửi Sửa thẻ (OV-7a). */
+function lyDoKhongTheoDoi(input: { reasonCode?: unknown; reasonText?: unknown }): { code: string; text: string; lyDo: string } {
+  const code = String(input.reasonCode ?? '');
+  if (!(CASE_DISMISS_REASONS as readonly string[]).includes(code)) {
+    throw badRequest(`Chọn một lý do: ${CASE_DISMISS_REASONS.map((r) => CASE_DISMISS_REASON_LABEL[r]).join(' · ')}.`);
+  }
+  const text = String(input.reasonText ?? '').trim();
+  if (reasonNeedsText(code)) {
+    const loi = kiemGhiRoKhac(text);
+    if (loi) throw badRequest(`Lý do "Khác": ${loi}.`);
+  }
+  if (text.length > 300) throw badRequest('Lý do tối đa 300 ký tự.');
+  return { code, text, lyDo: `${CASE_DISMISS_REASON_LABEL[code as CaseDismissReason]}${reasonNeedsText(code) ? ` — ${text}` : ''}` };
+}
+
+/** OV-7a: người gửi SỬA lý do thẻ "Không cần theo dõi" còn chờ (trong tx của hộp) — mốc "Xin không theo dõi" của Case đổi chữ theo. */
+export function suaKhongTheoDoi(conn: any, yc: { doi_tuong_id: number }, input: { reasonCode?: unknown; reasonText?: unknown }) {
+  const { code, text, lyDo } = lyDoKhongTheoDoi(input);
+  conn.prepare(`UPDATE case_milestones SET note = ? WHERE id = (SELECT MAX(id) FROM case_milestones WHERE case_id = ? AND kind = 'xin_khong_theo_doi')`).run(lyDo, yc.doi_tuong_id);
+  return { lyDo, duLieu: { reasonCode: code, reasonText: reasonNeedsText(code) ? text : null } };
+}
+
+/**
+ * OV-7a: người gửi RÚT thẻ "Không cần theo dõi" còn chờ (trong tx của hộp, thẻ đã đóng) — Case về chờ nguyên nhân như trước khi gửi: mốc xin gỡ,
+ * hạn xác nhận giữ nguyên (lúc gửi không đổi hạn), việc Xác nhận nguyên nhân về lại người phụ trách.
+ */
+export function rutKhongTheoDoi(conn: any, yc: { doi_tuong_id: number }) {
+  conn.prepare(`DELETE FROM case_milestones WHERE id = (SELECT MAX(id) FROM case_milestones WHERE case_id = ? AND kind = 'xin_khong_theo_doi')`).run(yc.doi_tuong_id);
 }
 
 /**

@@ -105,7 +105,7 @@ const xongChuyen = () => {
  *   · `cheDo="lenh"` (Quản lý): MỘT ô gõ tên lớp (mọi chi nhánh, máy chủ đã lọc lớp hợp lệ), Tuần bắt đầu, Lý do → `Quyết định chuyển lớp`.
  *     Khối "Khi chuyển, web sẽ" do máy chủ tính (`dongKhiChuyen`); FT → Thường viền vàng. Target chỉ hỏi khi Lên FT mà em chưa có Target nào (§7).
  *     Em đã có lệnh: sửa (`Lưu quyết định` + `Huỷ quyết định`) — vẫn `POST /transfer` (máy chủ sửa lệnh, tự tính bối cảnh/hướng). Thẻ Đề xuất: `Duyệt và quyết định`.
- *   · `cheDo="de-xuat"` (GVCN): `Đề xuất chuyển lớp` → thẻ Chờ duyệt (5 ngày); gợi ý lớp không có sĩ số.
+ *   · `cheDo="de-xuat"` (GVCN): `Đề xuất chuyển lớp` → thẻ Chờ duyệt (5 ngày); gợi ý lớp không có sĩ số. Kèm `duyet` = người gửi Sửa thẻ còn chờ (OV-7a).
  * Nằm ở: Hồ sơ học viên › ⋮ · ⋯ cuối dòng học viên trong hồ sơ lớp · thẻ duyệt Đề xuất chuyển lớp.
  */
 export function ChuyenLopPanel({ open, onClose, studentId, studentName, lop, onDone, cheDo = 'lenh', duyet }: {
@@ -191,7 +191,11 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone, cheDo,
     if (loi.length > 0) return;
     setBusy(true);
     try {
-      if (dx) {
+      if (dx && duyet) {
+        /* OV-7a: người gửi sửa thẻ Đề xuất còn chờ — cùng form, điền sẵn. */
+        await api.put(`/yeu-cau/${duyet.id}`, { toClassId: toClassId ?? null, tuan: tuan || null, lyDo: lyDo.trim() });
+        xong('Đã lưu đề xuất');
+      } else if (dx) {
         await api.post(`/students/${studentId}/de-xuat-chuyen-lop`, { toClassId: toClassId ?? undefined, tuan: tuan || undefined, lyDo: lyDo.trim() });
         xong('Đã gửi đề xuất — Quản lý sẽ xem trong Chờ duyệt');
       } else if (duyet) {
@@ -210,12 +214,12 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone, cheDo,
     try { await api.post(`/lenh-chuyen/${lenh.id}/huy`, { lyDo: lyDoHuy.trim() }); xong('Đã huỷ quyết định chuyển lớp'); } catch (e: any) { toast.push('error', loiMayChu(e)); } finally { setBusy(false); }
   };
 
-  const nhanChinh = dx ? 'Gửi đề xuất' : duyet ? 'Duyệt và quyết định' : lenh ? CHU_CHUYEN_LOP.luu : CHU_CHUYEN_LOP.quyetDinh;
+  const nhanChinh = dx ? (duyet ? 'Lưu' : 'Gửi đề xuất') : duyet ? 'Duyệt và quyết định' : lenh ? CHU_CHUYEN_LOP.luu : CHU_CHUYEN_LOP.quyetDinh;
   /* Lỗi nạp lần đầu → cả panel báo lỗi + Thử lại; lỗi xem trước của MỘT lớp → chỉ khối "Khi chuyển" (ô đã nhập giữ nguyên). */
   const loiNap = lopDich.error ?? (dx || nen ? null : xem.error);
 
   return (
-    <KhungPanel tieuDe={dx ? 'Đề xuất chuyển lớp' : 'Chuyển lớp'} hocVien={studentName} lop={dt ? null : lop} onDong={onClose}
+    <KhungPanel tieuDe={dx ? (duyet ? 'Sửa đề xuất chuyển lớp' : 'Đề xuất chuyển lớp') : 'Chuyển lớp'} hocVien={studentName} lop={dt ? null : lop} onDong={onClose}
       chan={{
         daSua, huy: { onClick: onClose, disabled: busy },
         ...(!dx && lenh && !duyet ? { xoa: { nhan: CHU_CHUYEN_LOP.huy, onClick: () => setDangHuy((v) => !v) } } : {}),

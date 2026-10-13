@@ -18,7 +18,7 @@ type CoordAction = {
   id: number; kind: string; kindLabel: string; customName: string | null; name: string;
   preset: boolean; status: 'pending' | 'done' | 'removed'; statusLabel: string;
   performedOn: string | null; performerName: string | null; note: string | null;
-  removeReasonLabel: string | null; attachmentCount: number;
+  removeReasonCode: string | null; removeReasonLabel: string | null; attachmentCount: number;
   /** Báo phụ huynh qua TVV (PR-LT2a): bốn nội dung GVCN chuyển cho TVV — null với việc khác. */
   noiDung?: string[] | null;
   /** PR-PHH: việc đã xong mà chưa lưu bản chụp (xác nhận trước PR-PHH) — `noiDung` là nội dung hiện tại. */
@@ -131,10 +131,25 @@ export function TheSos({ t, cot1 = 'luot', onGoAcademic, onChanged }: {
   );
 }
 
-/** Một việc phối hợp — một dòng lưới `tên + dòng phụ · trạng thái/nút`; form Xác nhận/Bỏ mở ngay dưới, rộng hết thẻ. */
+/**
+ * Một việc phối hợp — một dòng lưới `tên + dòng phụ · trạng thái/nút`; form Xác nhận/Bỏ mở ngay dưới, rộng hết thẻ.
+ * OV-7a: việc đã xong → `Sửa` (form Xác nhận điền sẵn) · `Đưa lại Cần xử lý`; việc người dùng đã bỏ → `Khôi phục` (việc hệ thống bỏ theo điểm thì không).
+ */
 function ActionRow({ a, canAct, onChanged }: { a: CoordAction; canAct: boolean; onChanged?: () => void }) {
+  const toast = useToast();
   const [confirming, setConfirming] = useState(false);
   const [removing, setRemoving] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const khoiPhucDuoc = a.status === 'removed' && (COORDINATION_USER_REMOVE_REASONS as readonly string[]).includes(a.removeReasonCode ?? '');
+  const moLai = async () => {
+    setBusy(true);
+    try {
+      await api.post(`/phoi-hop-sos/${a.id}/mo-lai`);
+      invalidate('/classes'); invalidate('/students');
+      toast.push('ok', a.status === 'done' ? 'Đã đưa lại Cần xử lý' : 'Đã khôi phục');
+      onChanged?.();
+    } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
+  };
   const dongPhu = a.status === 'done'
     ? `${fmtDate(a.performedOn)}${a.performerName ? ` · ${a.performerName}` : ''}`
     /* PR-NEN: nhãn cột phải đã nói "Đã huỷ" — dòng phụ chỉ còn lý do, không lặp. */
@@ -169,21 +184,33 @@ function ActionRow({ a, canAct, onChanged }: { a: CoordAction; canAct: boolean; 
           ) : <NhanTrangThai t={trangThaiPhoiHop(a.status)} />}
         </span>
       </div>
-      {confirming && <ConfirmCoordinationForm actionId={a.id} onClose={() => setConfirming(false)} onChanged={onChanged} />}
+      {/* Thao tác sửa sai nằm DƯỚI tên việc (không chiếm cột nhãn) — màn 375 tên việc không bị ép hẹp. */}
+      {canAct && (a.status === 'done' || khoiPhucDuoc) && (
+        <div className="-mt-1 flex flex-wrap gap-1.5 pb-2">
+          {a.status === 'done' && <>
+            <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" aria-expanded={confirming} onClick={() => setConfirming(!confirming)}>Sửa</button>
+            <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => void moLai()}>Đưa lại Cần xử lý</button>
+          </>}
+          {khoiPhucDuoc && <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => void moLai()}>Khôi phục</button>}
+        </div>
+      )}
+      {confirming && <ConfirmCoordinationForm a={a} onClose={() => setConfirming(false)} onChanged={onChanged} />}
       {removing && <RemoveCoordinationForm actionId={a.id} onClose={() => setRemoving(false)} onChanged={onChanged} />}
     </div>
   );
 }
 
-function ConfirmCoordinationForm({ actionId, onClose, onChanged }: {
-  actionId: number; onClose: () => void; onChanged?: () => void;
+/** Xác nhận đã xong — OV-7a: cùng form để Sửa việc đã xong (điền sẵn ngày / người / ghi chú; lưu lại thì Báo PH chụp lại nội dung). */
+function ConfirmCoordinationForm({ a, onClose, onChanged }: {
+  a: CoordAction; onClose: () => void; onChanged?: () => void;
 }) {
+  const actionId = a.id;
   const toast = useToast();
   const { homNay: today } = useNgayNghiepVu();
-  const [performedOn, setPerformedOn] = useState(today);
-  const [note, setNote] = useState('');
+  const [performedOn, setPerformedOn] = useState(a.performedOn ?? today);
+  const [note, setNote] = useState(a.note ?? '');
   /* PR-NEN T14 (M11): mặc định "Tôi" — máy chủ tự lấy người đang đăng nhập khi không gửi tên (`confirmCoordination`). */
-  const [nguoi, setNguoi] = useState<NguoiChon | null>({ kieu: 'toi' });
+  const [nguoi, setNguoi] = useState<NguoiChon | null>(a.performerName ? { kieu: 'ngoai', ten: a.performerName } : { kieu: 'toi' });
   const [busy, setBusy] = useState(false);
   const loiNguoi = nguoiThieu(nguoi, false);
 

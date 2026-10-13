@@ -617,7 +617,8 @@ export async function runPrCtTests(t: YThucTestKit) {
     assert(chup.tuDien.ketQua && chup.gvbmChuaBanGiao.length === 2, `chưa bàn giao: ${chup.gvbmChuaBanGiao}`);
     assert(get(`SELECT COUNT(*) n FROM journey_events WHERE student_id = ? AND ref_table = 'lenh_chuyen_lop' AND ref_id = ?`, em5[0], l.id).n === 1, 'một sự kiện Hành trình');
     assert(maLoi(() => bg.xacNhanBanGiao(gvcn5, l.id, 'Xác nhận lần hai của GVCN.')) === 409, 'xác nhận hai lần → 409');
-    assert(maLoi(() => bg.ghiMon(gvbmL, l.id, monL, 'Ghi sau khi xác nhận')) === 400, 'phiếu đã xác nhận không ghi thêm');
+    /* OV-7a (chủ SP 13/10) thay "phiếu đã xác nhận không ghi thêm": GVBM sửa câu môn mình tới ngày thi hành lệnh (prOv7a.tests.ts). */
+    bg.ghiMon(gvbmL, l.id, monL, 'Nghe tốt, cần luyện dạng điền bản đồ.');
     assert(get(`SELECT COUNT(*) n FROM notifications WHERE user_id = ? AND dedup_key = ?`, gvDich.userId, `ban_giao:${l.id}`).n === 1, 'báo GVCN lớp chuyển đến');
     /* Sau xác nhận GV lớp chuyển đến đọc được (chỉ đọc) */
     const doc = bg.phieuBanGiao(gvDich, { lenhId: l.id });

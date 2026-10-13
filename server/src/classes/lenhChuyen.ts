@@ -784,6 +784,21 @@ function tinhLopChoChotLoTrinh(p: Principal, branchId: number | null, today: str
  */
 export function guiDeXuatChuyenLop(p: Principal, sid: number, v: { toClassId?: number | null; tuan?: string | null; lyDo?: unknown }) {
   const conn = db();
+  const { hv, enr, lyDo, toClassId, tuan } = kiemDeXuatChuyenLop(p, sid, v);
+  return tx(() => {
+    const id = taoYeuCau(conn, {
+      loai: 'de_xuat_chuyen_lop', doiTuongLoai: 'student:chuyen-lop', doiTuongId: sid, hocVienId: sid, lopId: enr.class_id,
+      nguoiXin: p.userId, lyDo, duLieu: { lopDichId: toClassId, tuan },
+    });
+    if (id === null) throw badRequest('Đã có một đề xuất chuyển lớp của em đang chờ Quản lý.');
+    writeAudit({ actorUserId: p.userId, action: 'request.create', entityType: 'yeu_cau_duyet', entityId: id, entityLabel: `Đề xuất chuyển lớp · ${hv.full_name}`, after: { toClassId, tuan, lyDo } });
+    return { ok: true, id };
+  });
+}
+
+/** Kiểm đề xuất chuyển lớp — dùng chung lúc gửi và lúc người gửi Sửa thẻ còn chờ (OV-7a): cùng quyền, cùng luật lớp / tuần / lý do. */
+export function kiemDeXuatChuyenLop(p: Principal, sid: number, v: { toClassId?: unknown; tuan?: unknown; lyDo?: unknown }) {
+  const conn = db();
   const hv = conn.prepare('SELECT id, full_name, status, archived_at FROM students WHERE id = ?').get(sid) as any;
   if (!hv) throw notFound('Không tìm thấy học viên');
   const enr = conn.prepare(`SELECT e.class_id FROM enrollments e WHERE e.student_id = ? AND e.status = 'active' LIMIT 1`).get(sid) as any;
@@ -794,19 +809,11 @@ export function guiDeXuatChuyenLop(p: Principal, sid: number, v: { toClassId?: n
   if (!lyDo) throw badRequest('Ghi lý do để Quản lý có căn cứ duyệt.');   // T7 (PR-MTa): không tối thiểu ký tự
   const toClassId = v.toClassId ? Number(v.toClassId) : null;
   if (toClassId && !lopDichHopLe(toClassId, enr.class_id)) throw badRequest('Lớp chuyển đến không hợp lệ.');
-  const tuan = v.tuan || null;
+  const tuan = typeof v.tuan === 'string' && v.tuan ? v.tuan : null;
   if (tuan && !tuanHopLe(tuan, demoToday())) throw badRequest('Từ tuần phải là Thứ Hai của tuần sau trở đi.');
   /* Lệnh CHƯA chuyển được (có lỗi) không chặn đề xuất — Quản lý duyệt thì chính lệnh đó được sửa theo đề xuất (cùng lớp nguồn). */
   if (conn.prepare(`SELECT 1 FROM lenh_chuyen_lop WHERE student_id = ? AND trang_thai = 'cho' AND loi IS NULL`).get(sid)) throw badRequest('Em đã có quyết định chuyển lớp đang chờ.');
-  return tx(() => {
-    const id = taoYeuCau(conn, {
-      loai: 'de_xuat_chuyen_lop', doiTuongLoai: 'student:chuyen-lop', doiTuongId: sid, hocVienId: sid, lopId: enr.class_id,
-      nguoiXin: p.userId, lyDo, duLieu: { lopDichId: toClassId, tuan },
-    });
-    if (id === null) throw badRequest('Đã có một đề xuất chuyển lớp của em đang chờ Quản lý.');
-    writeAudit({ actorUserId: p.userId, action: 'request.create', entityType: 'yeu_cau_duyet', entityId: id, entityLabel: `Đề xuất chuyển lớp · ${hv.full_name}`, after: { toClassId, tuan, lyDo } });
-    return { ok: true, id };
-  });
+  return { hv, enr, lyDo, toClassId, tuan };
 }
 
 /** `khiDuyet` của thẻ Đề xuất chuyển lớp: `duLieu` là ô của panel D do Quản lý sửa (lớp chuyển đến, tuần, Target…) → RA LỆNH (`tu_yeu_cau_id`). */

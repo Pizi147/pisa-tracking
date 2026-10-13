@@ -899,7 +899,9 @@ export async function runSosV3Tests(t: YThucTestKit) {
     phoiHop.confirmCoordination(gvcn, id, { performedOn: addDays(TODAY, -2) });               // không ghi chú, không tệp
     const r = get('SELECT * FROM sos_coordination_actions WHERE id = ?', id);
     assert(r.status === 'done' && r.performed_on === addDays(TODAY, -2) && r.performed_by === gvcn.userId && r.note === null, `Sau xác nhận: ${JSON.stringify(r)}`);
-    assertThrows(() => phoiHop.confirmCoordination(gvcn, id, { performedOn: TODAY }), /đã xong|cần xử lý/, 'Xác nhận hai lần');
+    /* OV-7a (chủ SP 13/10) thay "xác nhận hai lần → 400": lưu lại việc đã xong = Sửa (prOv7a 3a); việc đã bỏ thì phải Khôi phục trước. */
+    phoiHop.confirmCoordination(gvcn, id, { performedOn: addDays(TODAY, -2) });
+    assert(get('SELECT performed_on FROM sos_coordination_actions WHERE id = ?', id).performed_on === addDays(TODAY, -2), 'lưu lại việc đã xong');
     /* Tệp bằng chứng: chủ là `sos_coordination_action`; quyền thêm = GVCN/QL, quyền xem = quyền xem học viên. */
     const link = attachmentsSvc.addLink(gvcn, { ownerType: 'sos_coordination_action', ownerId: id, url: 'https://example.com/bien-ban', displayName: 'Biên bản trao đổi' });
     assert(link.ownerType === 'sos_coordination_action', 'Tệp gắn vào việc phối hợp');

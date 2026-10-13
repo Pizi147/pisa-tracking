@@ -47,6 +47,7 @@ export type XuLyView = {
   id: number; studentId: number; ten: string; kind: string; nhan: string; customName: string | null;
   status: string; statusLabel: string; bac: number; note: string | null;
   performedOn: string | null; nguoi: string | null; quyetLuc: string | null; createdAt: string;
+  nguoiId: number | null; nguoiNgoai: string | null;
   viPham: ViPhamV4[]; soTep: number; canManage: boolean; the: TheYeuCauDto | null;
   /** PR-LUI-a1: Sửa vi phạm / Xoá lần xử lý (quyền do máy chủ tính). `lanSau` = tên lần sau (còn thì chưa xoá được); `bacVe` = bậc sau khi xoá. */
   coTheSua: boolean; coTheXoa: boolean; lanSau: string | null; bacVe: number | null; chuaXuLy: ViPhamV4[];
