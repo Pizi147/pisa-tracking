@@ -20,6 +20,7 @@ File này **thay** cho: `plan.md` cũ (mục 0–24), `PROMPT_SESSION_CODE.md`, 
 | `docs/superpowers/plans/2026-10-13-pr-ov10b-tvv-cx-lien-he.md` | PR **OV-10b** Liên hệ (SĐT em, phụ huynh) + Học viên & Lớp, hồ sơ HV / lớp theo vai |
 | `docs/superpowers/plans/2026-10-13-pr-ov10c-tong-quan-theo-vai.md` | PR **OV-10c** Tổng quan theo vai (Admin Mock Test · TVV · CX Số liệu) |
 | `docs/superpowers/plans/2026-10-13-pr-ov1d-luoi-cham-sua-lai.md` | PR **OV-1d** lưới chấm FT: ô dời vì vắng bấm được (Bỏ vắng), em đã kết thúc học không báo chờ |
+| `docs/superpowers/plans/2026-10-13-pr-ov4c-ovr-chi-mt-cu.md` | PR **OV-4c** W / S: Band tự tính, nhập Band thẳng chỉ MT cũ |
 | `docs/superpowers/plans/2026-10-07-pr-en-tieng-anh.md` | PR-EN (sau toàn bộ OV — đếm lại chữ trước khi chạy) |
 | `docs/superpowers/plans/2026-10-07-pr-sotay-so-tay-moi.md` | PR-SOTAY (cuối cùng) |
 
@@ -293,7 +294,8 @@ Xong: [x] kế hoạch, một dòng mục 11, CODE_MAP.md nếu thêm/xoá file.
 | **OV-10c** | `docs/superpowers/plans/2026-10-13-pr-ov10c-tong-quan-theo-vai.md` | Opus 5.5 · High (Sonnet 5.5 · High) | 4270/5443 | sau OV-8b merge |
 | **OV-10b** | `docs/superpowers/plans/2026-10-13-pr-ov10b-tvv-cx-lien-he.md` | Opus 5.5 · XHigh (Opus 5.5 · High) | 4260/5433 | sau OV-9 + OV-10a merge |
 | **OV-1d** | `docs/superpowers/plans/2026-10-13-pr-ov1d-luoi-cham-sua-lai.md` | Opus 5.5 · High (Sonnet 5.5 · High) | 4280/5453 | khi có máy trống (≤ 3 cùng lúc) |
-- OV-8b rà sâu + `/security-review` (TVV KHÔNG được `cycle.edit`; bước tiếp sau thi vẫn chỉ QL). Sau OV-8b: **OV-9 + OV-10a + OV-10c chạy cùng lúc** (3 máy); OV-10b sau OV-9 + OV-10a (chung ô Sửa thông tin, đầu hồ sơ). Rà sâu: OV-9, OV-10a, OV-10b (+ `/security-review`). Cổng tiếp theo: 4290/5463.
+| **OV-4c** | `docs/superpowers/plans/2026-10-13-pr-ov4c-ovr-chi-mt-cu.md` | Sonnet 5.5 · High (Opus 5.5 · High) | 4290/5463 | sau OV-1d merge |
+- OV-8b rà sâu + `/security-review` (TVV KHÔNG được `cycle.edit`; bước tiếp sau thi vẫn chỉ QL). Sau OV-8b: **OV-9 + OV-10a + OV-10c chạy cùng lúc** (3 máy); OV-10b sau OV-9 + OV-10a (chung ô Sửa thông tin, đầu hồ sơ). Rà sâu: OV-9, OV-10a, OV-10b (+ `/security-review`). Cổng tiếp theo: 4300/5473.
 
 ## 10. Mẫu giao việc cho agent (session planning dùng)
 
