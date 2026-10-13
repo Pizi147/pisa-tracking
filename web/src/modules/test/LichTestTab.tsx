@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import { Link, useSearchParams } from 'react-router-dom';
 import { useApi, useGopTaiLai } from '../../lib/useApi.ts';
 import { useSession } from '../../lib/session.tsx';
+import { useTenTrang } from '../../lib/quayLai.ts';
 import { Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { Nhan } from '../../ui/Nhan.tsx';
 import { BranchFilter, WeekPicker, useChiNhanhMacDinh } from '../../ui/Filters.tsx';
@@ -87,6 +88,7 @@ export function LichTestTab() {
      xong KHÔNG nhớ qua lần tải lại (Q4 — luôn thu gọn). `moXong` = hàng khối 2 đang mở TRONG PHIÊN — hàng vừa chấm xong ô cuối vẫn mở
      (Q14: lưới không biến mất giữa lúc gõ), tới khi người dùng thu. */
   const tuanId = data?.tuan?.id ?? null;
+  useTenTrang(null, data?.tuan ? tuanLich(data.tuan.weekStart, homNay) : null);   // PR-OV5b: "‹ Lịch Test · W2 OCT"
   const [nho, setNho] = useState<Record<string, boolean>>({});
   const [moXong, setMoXong] = useState<Set<string>>(new Set());
   const [epMo, setEpMo] = useState<Set<string>>(new Set());

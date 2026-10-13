@@ -41,10 +41,12 @@ export type CongRoi = { roi: (lam: () => void) => void; giu: (e: MouseEvent) => 
 /** Mã đích "ra ngoài bảng" trong luồng hỏi đổi lượt — không bao giờ trùng mã lượt (`docMaLuot`). */
 const DICH_NGOAI = 'ngoai';
 
-export function DiemTheoLop({ classId, luotBanDau, gon = false, congRoi, onDaLuu }: {
+export function DiemTheoLop({ classId, luotBanDau, gon = false, congRoi, onDaLuu, onLuot }: {
   classId: number; luotBanDau?: string; gon?: boolean; congRoi?: MutableRefObject<CongRoi | null>;
   /** Vừa lưu một ô (Test › Điểm theo lớp: gộp tải lại số ô trống của danh sách lớp). */
   onDaLuu?: () => void;
+  /** PR-OV5b: lượt đang xem đổi — Test › Điểm theo lớp ghi `?luot=` để Quay lại từ hồ sơ về đúng lượt. */
+  onLuot?: (ma: string, nhan: string) => void;
 }) {
   const ds = useApi<DanhSachLuot>(duongDiemTheoLuot(classId), [classId]);
   const [chon, setChon] = useState<string | null>(luotBanDau ?? null);
@@ -54,6 +56,8 @@ export function DiemTheoLop({ classId, luotBanDau, gon = false, congRoi, onDaLuu
      bảng không được tự nhảy (bỏ qua đường chặn → mất điểm đang gõ, hộp lý do). Sau đó chỉ người dùng đổi lượt, qua `sang`. */
   useEffect(() => { if (luot && luot !== chon && !ds.refreshing) setChon(luot); }, [luot, chon, ds.refreshing]);
   const bang = useApi<BangTheoLuot>(luot ? duongDiemTheoLuot(classId, luot) : null, [classId, luot]);
+  const nhanLuot = dsLuot.find((l) => l.ma === luot)?.nhan;
+  useEffect(() => { if (luot && nhanLuot) onLuot?.(luot, nhanLuot); }, [luot, nhanLuot]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const [chiOTrong, setChiOTrong] = useState(docChiOTrong);
 
