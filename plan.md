@@ -13,9 +13,10 @@ File này **thay** cho: `plan.md` cũ (mục 0–24), `PROMPT_SESSION_CODE.md`, 
 | File chi tiết | Dùng cho |
 |---|---|
 | `docs/superpowers/specs/2026-10-11-overhaul-ux-workflow-design.md` | **Đặc tả Overhaul (OV)** — duyệt 11/10; nguồn chi tiết cho 12 PR OV-1a … OV-6b |
-| `docs/superpowers/plans/2026-10-12-pr-ov6b2-pet-ket.md` | PR **OV-6b2** chương trình mới + PET/KET (sau OV-6b1) |
 | `docs/superpowers/plans/2026-10-13-pr-ov5a-cong-viec-tai-cho.md` | PR **OV-5a** Công việc làm tại chỗ (song song OV-5b) |
 | `docs/superpowers/plans/2026-10-13-pr-ov5b-quay-lai.md` | PR **OV-5b** Quay lại toàn hệ thống (song song OV-5a) |
+| `docs/superpowers/plans/2026-10-13-pr-ov7a-sua-sau-luu.md` | PR **OV-7a** Sửa sau khi lưu 1/2 (bàn giao, Ý thức, Phối hợp, Mini Test, rút đề xuất) |
+| `docs/superpowers/plans/2026-10-13-pr-ov7b-sua-case-pa.md` | PR **OV-7b** Sửa sau khi lưu 2/2 (Case, PA) — sau OV-5a |
 | `docs/superpowers/plans/2026-10-07-pr-en-tieng-anh.md` | PR-EN (sau toàn bộ OV — đếm lại chữ trước khi chạy) |
 | `docs/superpowers/plans/2026-10-07-pr-sotay-so-tay-moi.md` | PR-SOTAY (cuối cùng) |
 
@@ -171,6 +172,7 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 | 11/10 (mockup bản 1) | **Bảng Lộ trình tiếp theo** chia theo hướng: Chưa chọn · Lên FT · Lên {lớp kế} · **Học lại** (gồm học lại cùng trình độ và xuống lộ trình dưới) · Tạm dừng · Dừng học; **mọi bảng có ô chọn lộ trình cạnh điểm**, đổi lộ trình → em sang bảng tương ứng · không làm nút "Lộ trình" hai tab · QL chốt KQĐR → hệ quả chạy ngay; đổi lộ trình đã chốt → chuông "Cần làm" bàn giao lại · **Điểm đầu vào** hiện thành dòng mốc "Đầu vào" ở chỗ MT0 trong **bảng Điểm hồ sơ lớp FT** (chỉ để nhìn) · Hồ sơ HV: làm cả (a) lộ trình một em mở hộp Lộ trình của bảng lớp, (b) Target gộp vào Sửa thông tin (GVCN → Đề xuất sửa) · Admin xem Case/PA/Ý thức/Phân tích; TVV/CX đọc nhận xét GV · **PET/KET chưa đạt: chỉ chip SOS nhỏ**, không tự tạo Case/PA (bàn sau); không Target, không lộ trình tiếp theo; tên `{CN} PET {số}` | OV |
 | 11/10 (duyệt đặc tả) | **Deploy MỘT lần sau khi xong toàn bộ OV** (không deploy sớm sau OV-1a); lệnh chỉ đọc chạy từ máy chủ SP trên bản chính không cần deploy · 3 mục [tự quyết] của đặc tả được đồng ý (CX trừ phần GV; MT0 tạo lúc chốt; xoá SOS: Case chưa ai làm đóng, đã làm giữ + ghi "Overall đã đạt") | OV |
 | 12/10 | SOS MT chốt: hạn xác nhận **giữ `soNgayHanXacNhan`** (5 ngày, SOS 3 = 3 ngày) **tính từ ngày chốt** · **Không làm** ô "Dự kiến quay lại" ở tab Tạm dừng (mockup M2 §6) | OV-1c / — |
+| 13/10 | **Sửa sau khi lưu**: việc đã lưu / xác nhận / gửi phải mở lại sửa và lưu lại được ở hầu hết các chỗ (ai lưu được thì sửa được + QL; không thêm bước duyệt; nhật ký trước → sau). Giữ khoá: báo cáo đơn vị hết cửa sổ, lệnh chuyển lớp đã thi hành, Case hệ thống đóng, nhật ký, chuông đã gửi | OV-7a, OV-7b |
 
 ## 4. Việc chưa làm (kiểm với danh sách PR GitHub 11/10 — mọi PR tới #312 đã merge)
 
@@ -179,7 +181,7 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
   quy trình (lộ trình → bàn giao → KQĐR, SOS MT, dấu "-", huỷ/khôi phục), giao diện, **12 PR OV-1a … OV-6b** + phụ thuộc, tiêu chí nghiệm thu.
 - Mockup bản 2 (góp ý 11/10 đã áp): `thiet-ke/mockup-overhaul-{1,2,3}-*-2026-10-11.html`.
 - Quyết định: mục 3 (các dòng 11/10). Thứ tự, model, prompt: mục 5, 6, 9.
-- **Tình trạng 13/10:** đã merge thêm OV-4a #332, 4b #333, 6b1 #331, **1c #335, 3c #337** (main xanh). Còn: OV-6b2 #336 (đang sửa), **OV-5a + OV-5b** (kế hoạch sẵn, chạy ngay, song song OV-6b2). OV-5 của đặc tả tách đôi.
+- **Tình trạng 13/10:** đã merge thêm OV-4a #332, 4b #333, 6b1 #331, 1c #335, 3c #337, **6b2 #336** (main xanh). Còn: **OV-5a + OV-5b + OV-7a** (chạy ngay, song song) → **OV-7b** (sau OV-5a). OV-7 = yêu cầu chủ SP 13/10 "sửa sau khi lưu".
   OV-4 và OV-6b của đặc tả **tách đôi** (mỗi nửa một vùng mã, rà riêng). Thứ tự + song song: mục 5; prompt: mục 9.3.
 - **Chủ SP trả lời 12/10:** (1) hạn khi SOS MT chốt = luật hiện có (5 ngày, SOS 3 = 3 ngày), tính từ ngày chốt; (2) **không làm** ô "Dự kiến quay lại" (mục 3).
 
@@ -270,12 +272,13 @@ Xong: [x] kế hoạch, một dòng mục 11, CODE_MAP.md nếu thêm/xoá file.
 | PR | Prompt | Model (B) | Cổng | Khi nào |
 |---|---|---|---|---|
 | OV-4a #332 · OV-4b #333 · OV-6b1 #331 | ✅ merge 12/10 | | | |
-| **OV-3c** | **OV-1c** | **OV-6b2** #336 | `docs/superpowers/plans/2026-10-12-pr-ov6b2-pet-ket.md` | Opus 5.5 · XHigh (Opus 5.5 · High) | 4170/5343 | đang sửa: PR-TD Task5(2) đỏ sau gộp OV-1c (demo ×3 vượt lô 900) |
-- OV-3c + OV-1c + OV-6b2 chạy cùng lúc được (không chung vùng chính; chung `routes/index.ts`, `run.ts`, `plan.md` → gộp main trước khi mở PR).
+| **OV-3c** | **OV-1c** | **OV-6b2** #336 - OV-3c + OV-1c + OV-6b2 chạy cùng lúc được (không chung vùng chính; chung `routes/index.ts`, `run.ts`, `plan.md` → gộp main trước khi mở PR).
 - Rà sâu (mục 1.3): OV-4a, OV-4b, OV-1c, OV-6b1, OV-6b2. OV-3c rà mặc định.
 | **OV-5a** | `docs/superpowers/plans/2026-10-13-pr-ov5a-cong-viec-tai-cho.md` | Opus 5.5 · XHigh (Opus 5.5 · High) | 4180/5353 | ngay |
 | **OV-5b** | `docs/superpowers/plans/2026-10-13-pr-ov5b-quay-lai.md` | Opus 5.5 · High (Sonnet 5.5 · High) | 4190/5363 | ngay |
-- OV-5a + OV-5b + OV-6b2 chạy cùng lúc (ranh giới trong kế hoạch). Rà sâu OV-5a. Sau cùng: liệt kê migrate mới (#286 → hết OV) + nhắc chủ SP chạy lệnh kiểm trước deploy. Cổng tiếp theo: 4200/5373.
+| **OV-7a** | `docs/superpowers/plans/2026-10-13-pr-ov7a-sua-sau-luu.md` | Opus 5.5 · XHigh (Opus 5.5 · High) | 4200/5373 | ngay |
+| **OV-7b** | `docs/superpowers/plans/2026-10-13-pr-ov7b-sua-case-pa.md` | Opus 5.5 · XHigh (Opus 5.5 · High) | 4210/5383 | sau OV-5a merge |
+- OV-5a + OV-5b + OV-7a chạy cùng lúc (ranh giới trong kế hoạch). Rà sâu OV-5a, OV-7a, OV-7b. Sau cùng: liệt kê migrate mới (#286 → hết OV) + nhắc chủ SP chạy lệnh kiểm trước deploy. Cổng tiếp theo: 4220/5393.
 
 ## 10. Mẫu giao việc cho agent (session planning dùng)
 
