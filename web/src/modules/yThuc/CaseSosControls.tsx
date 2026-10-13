@@ -52,7 +52,7 @@ function Chip({ children, sos }: { children: string; sos?: number | null }) {
  */
 export function XacNhanCasePanel({ caseId, topic, kyNang, ct, tenSos, paQuyChe, boTro = null, onXong, ...chung }: ChungPanel & {
   caseId: number; topic: string | null; kyNang: string; ct?: string | null;
-  tenSos: { mt: number | null; giua: string; sos: number | null } | null;
+  tenSos: { mt: number | null; giua: string; sos: number | null; kck?: boolean } | null;
   paQuyChe: PaQuyChe[];
   /** Case Giữa khoá lớp thường (PR-LT2a): tên môn ngắn cho Tên Case. PR-CT2: xác nhận xong PA Bổ trợ chạy ngay (bỏ kế hoạch bài giảng). */
   boTro?: BoTro | null;

@@ -2,7 +2,7 @@ import { db, theoLo } from '../db.ts';
 import {
   CASE_CATEGORY_LABEL, INTERVENTION_KIND_LABEL, PERMISSIONS, caseCategoriesFor, caseTitle, chiaChuong, goiYCuoiKhoa, lapLaiQuaLop,
   ASSESSED_SKILLS, tenCaseSos, tenMon, tenMonNgan, tuanHocTai, type CaseCategory, type CaseChuongVao, type LopChuong, type TonePaChuong,
-  mondayOfDate, nhanMt0, type AssessedSkill, type DiemMoc, type DotRef, nhanBaiThuong } from '../../../shared/domain/index.ts';
+  mondayOfDate, hienTargetKck, nhanMt0, type AssessedSkill, type DiemMoc, type DotRef, nhanBaiThuong } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { require_, type Principal } from '../permissions.ts';
 import { allProgrammes } from '../normal/regular.ts';
@@ -223,7 +223,7 @@ export function hanhTrinhHocVien(p: Principal, studentId: number, giaiDoanMuon: 
     /* PR-SOS T21: Case SOS Fast Track = `[MT1] {phần giữa} [SOS 3]` như `caseTitleOf` (không gọi nó — mỗi Case một truy vấn). Lớp thường
        không mượn "… dưới kỳ vọng" của Fast Track. */
     if (c.origin_kind === 'mock' && (c.attempt_kind ?? 'mock') === 'mock') {
-      return tenCaseSos({ mt: c.attempt_no ?? null, giua: (c.title ?? '').trim() || `${tenMon(ctCase, c.category ?? c.topic ?? '')} không đạt`, sos: c.sos_level ?? null });
+      return tenCaseSos({ mt: c.attempt_no ?? null, giua: (c.title ?? '').trim() || `${tenMon(ctCase, c.category ?? c.topic ?? '')} không đạt`, sos: c.sos_level ?? null, kck: c.kck });
     }
     return (c.title ?? '').trim() || (ratioCase
       ? `${tenMon(ctCase, c.category ?? c.topic ?? '')} chưa đạt`
@@ -331,7 +331,8 @@ export function hanhTrinhHocVien(p: Principal, studentId: number, giaiDoanMuon: 
       dangDung: hienTai?.dangDung ?? false,
     } : null;
     const lenh = lenhRows.filter((l) => l.lop_nguon_id === e.class_id).at(-1);
-    const target = cy ? (cy.khong_cam_ket ? 'KCK' : cy.target_score != null ? Number(cy.target_score).toFixed(1) : null) : null;
+    const target = cy && (cy.khong_cam_ket || cy.target_score != null)   // OV-9: "6.5 · KCK"
+      ? hienTargetKck(cy.target_score != null ? Number(cy.target_score).toFixed(1) : null, !!cy.khong_cam_ket) : null;
     return {
       enrollmentId: e.id, classId: e.class_id, code: e.class_code, ngan: String(e.class_code).split(' ').slice(1).join(' ') || e.class_code,
       nhan: ft ? ['FT', cy?.route, dangHoc ? 'đang học' : target ? `Target ${target}` : null].filter(Boolean).join(' · ') : `${e.class_programme ?? '—'} · lớp thường`,

@@ -24,7 +24,7 @@ export type CaseChiTiet = {
   /** `[MT1] Reading không đạt [SOS 3]` với Case SOS Fast Track (`tenCaseSos`), còn lại tên Case như cũ. */
   tieuDe: string;
   /** Ba phần của tên Case SOS Fast Track (web vẽ chip `[MT1]` + phần giữa + chip SOS) — null với Case tay / lớp thường. */
-  tenSos: { mt: number | null; giua: string; sos: number | null } | null;
+  tenSos: { mt: number | null; giua: string; sos: number | null; kck?: boolean } | null;
   nguyenNhan: string | null; urgency: string | null;
   /** Mức gấp (`Gấp`) — dòng phụ dưới tên Case (web nối `nguyenNhan · moTu`). Tên giữ để không đổi hợp đồng API. */
   moTu: string;
@@ -105,8 +105,8 @@ export function chiTietCaseMo(cases: readonly MappedCase[]): Map<number, CaseChi
     const giua = (g.title ?? '').trim() || (nhanMon ? `${nhanMon} không đạt` : 'Không đạt');
     out.set(c.id, {
       id: c.id, studentId: c.studentId as number, topic: c.topic, sosLevel: c.sosLevel,
-      tieuDe: laSosFt ? tenCaseSos({ mt: mt ?? null, giua, sos: c.sosLevel }) : c.title,
-      tenSos: laSosFt ? { mt: mt ?? null, giua, sos: c.sosLevel } : null,
+      tieuDe: laSosFt ? tenCaseSos({ mt: mt ?? null, giua, sos: c.sosLevel, kck: c.kck }) : c.title,
+      tenSos: laSosFt ? { mt: mt ?? null, giua, sos: c.sosLevel, kck: !!c.kck } : null,
       nguyenNhan: c.primaryLabel, urgency: c.urgency,
       /* PR-S5F-b: bỏ "mở dd/mm" — thời gian trên màn ưu tiên mã tuần, và việc tiếp đã nói hạn. */
       moTu: c.urgency ? URGENCY_LABEL[c.urgency] ?? '' : '',

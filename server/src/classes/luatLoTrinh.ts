@@ -1,6 +1,6 @@
 import { THAM_SO_TOI_DA, chenNhieuDong, db, theoLo, tx } from '../db.ts';
 import {
-  PERMISSIONS, coMt0, dongKhiChuyen, huongMotEm, kiemDongChuyenTiep, luatDoiLop, targetLenFt, tuanChonDuoc, tuanHocTai, tuanLich,
+  PERMISSIONS, coMt0, dongKhiChuyen, ghepMucTieu, huongMotEm, kiemDongChuyenTiep, luatDoiLop, targetLenFt, tuanChonDuoc, tuanHocTai, tuanLich,
   type HuongLenh, type LoaiLop, type LuatDoiLop, type MucTieuLenh, type ProgrammeCode,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -461,7 +461,7 @@ export function xemChuyenLop(p: Principal, sid: number, toClassId?: number | nul
       nguonTarget = targetSan === null ? null : typeof lt?.muc_tieu === 'number' ? 'gvcn' : 'khoa';
       /* R-C6: lệnh `cho` mang Target → giữ Target đó (như R-C3), chữ "(đã quyết)". */
       const lc = conn.prepare(`SELECT muc_tieu, khong_cam_ket FROM lenh_chuyen_lop WHERE student_id = ? AND trang_thai = 'cho'`).get(sid) as any;
-      if (lc && (lc.khong_cam_ket || typeof lc.muc_tieu === 'number')) { targetSan = lc.khong_cam_ket ? 'KCK' : lc.muc_tieu; nguonTarget = 'quyet-dinh'; }
+      if (lc && (lc.khong_cam_ket || typeof lc.muc_tieu === 'number')) { targetSan = ghepMucTieu(lc.muc_tieu, lc.khong_cam_ket); nguonTarget = 'quyet-dinh'; }
       /* MT0 thành đầu vào: MT0 đang có (giữa khoá `noiMt0VaoFt` mang theo); Cuối khoá thì `dongBoMt0` mở lại / tự xếp ở tuần Final. */
       const m = cyc && !cyc.route ? conn.prepare(`SELECT status FROM assessment_attempts WHERE cycle_id = ? AND kind = 'mt0' ORDER BY id DESC LIMIT 1`).get(cyc.id) as any : null;
       const cuoiKhoaCoMt0 = tuCuoiKhoa && coMt0(tuLop.ma, 'fast_track');
@@ -516,7 +516,7 @@ export function xemChuyenLop(p: Principal, sid: number, toClassId?: number | nul
       const l = conn.prepare(`SELECT id, huong, lop_dich_id, tuan_bat_dau, muc_tieu, khong_cam_ket, ngay_thi, ly_do, loi FROM lenh_chuyen_lop WHERE student_id = ? AND trang_thai = 'cho'`).get(sid) as any;
       return l ? {
         id: l.id as number, huong: l.huong as string, lopDichId: (l.lop_dich_id ?? null) as number | null, tuan: l.tuan_bat_dau as string,
-        mucTieu: (l.khong_cam_ket ? 'KCK' : l.muc_tieu ?? null) as number | 'KCK' | null, ngayThi: (l.ngay_thi ?? null) as string | null,
+        mucTieu: ghepMucTieu(l.muc_tieu, l.khong_cam_ket), ngayThi: (l.ngay_thi ?? null) as string | null,
         lyDo: (l.ly_do ?? null) as string | null, loi: (l.loi ?? null) as string | null,
       } : null;
     })(),

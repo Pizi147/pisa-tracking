@@ -13,7 +13,7 @@ import { can, editableSkills, isCoreTeacherOf, require_, scoreEditPath, type Pri
 import { demoToday } from '../demoConfig.ts';
 import { addJourney, notify, writeAudit } from '../platform/audit.ts';
 import { ensurePeriod, ensurePeriods, mondayOf, skillScoreDeadline } from '../platform/week.ts';
-import { regularSkillViews, weekStartOf } from '../fasttrack/attempts.ts';
+import { kckCuaLuot, regularSkillViews, weekStartOf } from '../fasttrack/attempts.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
 import { checkSkillWeekMove, ensureSkillRows, kiemDaToiTuanThi, loadSkillRows, setSkillWeek } from '../fasttrack/skillSchedule.ts';
 import { dotHoanTat, dotHoanTatMany, quyenSuaSauHoanTat } from '../fasttrack/hoanTat.ts';
@@ -1005,6 +1005,7 @@ function taoCaseGiuaKhoa(p: Principal, a: any, r: RegularResult) {
     } else if (!(signal.status === 'linked' && signal.case_id != null)) {
       open.push(taoCaseTuDong(p, {
         attempt: a, category, skill, sosLevel: null, detectedAt, band: null, expectation: null, signalId: signal.id, pa: 'bo_tro',
+        kck: kckCuaLuot(a),   // OV-9: em KCK — Case nhẹ, không PA Bổ trợ, không hạn
       }));
     }
   }

@@ -140,7 +140,8 @@ export type DongFT = {
   ma: string; ten: string; chiNhanh: string; lop: string; loTrinh: string;
   mt: number; tuan: string; tuanBd: string;
   l: number | null; r: number | null; w: number | null; s: number | null; overall: number | null;
-  target: number | 'KCK' | null; kyVong: number | null; sos: number | null; trangThai: string;
+  /** OV-9: "6.5 KCK" / "KCK" = có dấu KCK (Target giữ). */
+  target: number | string | null; kyVong: number | null; sos: number | null; trangThai: string;
   w1: number | null; w2: number | null;
   tieuChi: Record<'writing1' | 'writing2' | 'speaking', (number | null)[]>;
   tuanKn: Record<'listening' | 'reading' | 'writing' | 'speaking', string | null>;
@@ -266,7 +267,7 @@ const thuTuKhoa = (k: string) => (k === 'giua' ? 1000 : k === 'cuoi' ? 1001 : Nu
 const so1 = (n: number | null) => (n === null ? '—' : n.toFixed(1));
 /** Một dòng xem trước — `PISA-000001 Nguyễn Minh An · MB FT 101 · MT3 · W3 SEP · L 6.0 · R 6.5 · W — · S — · SOS 2 tạm thời`. */
 export function dongXemTruoc(d: DongFT, homNay?: string): string {
-  const sos = d.target === 'KCK' ? 'KCK' : d.sos === null ? 'SOS —' : `SOS ${d.sos}${d.trangThai.includes('SOS tạm thời') ? ' tạm thời' : ''}`;
+  const sos = String(d.target ?? '').endsWith('KCK') ? 'KCK' : d.sos === null ? 'SOS —' : `SOS ${d.sos}${d.trangThai.includes('SOS tạm thời') ? ' tạm thời' : ''}`;
   return `${d.ma} ${d.ten} · ${d.lop} · MT${d.mt} · ${tuanLich(d.tuanBd, homNay)} · L ${so1(d.l)} · R ${so1(d.r)} · W ${so1(d.w)} · S ${so1(d.s)} · ${sos}`;
 }
 export function dongXemTruocThuong(d: DongThuong, homNay?: string): string {

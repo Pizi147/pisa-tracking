@@ -117,6 +117,8 @@ export type LuotTomTat = {
   /** OV-1c: lượt FT đã chốt (máy chủ, `AttemptResult.chot`). Thiếu (lớp thường) = theo `complete`. */
   chot?: boolean;
   overall: number | null; expectation: number | null; sosLevel: number | null;
+  /** OV-9: em KCK dưới kỳ vọng (không SOS) — chip trung tính `DUOI_KY_VONG_KCK`. */
+  kckDuoi?: boolean;
   /** Chỉ lớp thường — dùng để đếm số môn chưa đạt THẬT (`sosLevel` bị chặn trần ở 3, không dùng được khi trượt cả 4). */
   skills?: { outcome: string }[] | null;
   /** Chỉ lớp thường: % tổng (chưa làm tròn) — Cuối khoá đủ điểm thì ô ghi `66%` như hộp Kết luận khoá (PR-S5F-a). */
@@ -127,6 +129,8 @@ export type LuotTomTat = {
 export type KetQuaTestGanNhat = {
   attemptId: number; nhan: string; coDiem: number; yeuCau: number;
   dat: boolean | null; sos: number | null;
+  /** OV-9: em KCK dưới kỳ vọng — không SOS, chip trung tính "Dưới kỳ vọng · KCK". */
+  kckDuoi: boolean;
   /** OV-1c: lượt đã chốt — chưa chốt thì SOS là số tạm ("tạm thời"). */
   chot: boolean;
   /** Chỉ lớp thường — số môn chưa đạt THẬT (không bị chặn trần như `sos`); FT luôn `null`. */
@@ -157,7 +161,7 @@ export function ketQuaTestGanNhat(attempts: readonly LuotTomTat[], homNay?: stri
     : (a.complete && a.overall !== null && a.expectation !== null ? a.overall >= a.expectation : null);
   const soMonChuaDat = ratio ? (a.skills ?? []).filter((s) => s.outcome === 'fail').length : null;
   return {
-    attemptId: a.id, nhan, coDiem: a.scored, yeuCau: a.required, dat, sos: a.sosLevel, soMonChuaDat, chot: a.chot ?? a.complete,
+    attemptId: a.id, nhan, coDiem: a.scored, yeuCau: a.required, dat, sos: a.sosLevel, kckDuoi: !!a.kckDuoi, soMonChuaDat, chot: a.chot ?? a.complete,
     dungKetQuaDot: a.required >= 1 && a.required <= ATTEMPT_SKILL_UNITS,
     phanTram: ratio && a.kind === 'final' && a.complete && a.tyLeTong != null ? Math.round(a.tyLeTong * 100) : null,
   };
@@ -181,6 +185,8 @@ export type DauVaoCau = {
   /** Đợt Test gần nhất. FT: `dau` = "MT1"; lớp thường: "Giữa khoá" / "Cuối khoá". `monTruot`: tên ngắn môn không đạt (lớp thường). */
   ketQua: {
     dau: string; ratio: boolean; sos: number | null; dat: boolean | null; overall: number | null; kck: boolean;
+    /** OV-9: em KCK dưới kỳ vọng — mảnh trung tính "MT1 dưới kỳ vọng · KCK" (không SOS, không đỏ). */
+    kckDuoi?: boolean;
     soDat: number; soMon: number; monTruot: string[]; phanTram: number | null;
     /** Số kỹ năng đã có điểm (FT). */
     coDiem?: number;
@@ -207,7 +213,7 @@ export function cauTomTat(i: DauVaoCau): ManhCau[] {
     : d.loai === 'ket-thuc' ? { chu: 'Đã kết thúc', tone: null }
     : d.loai === 'tam-dung' ? { chu: chuTamDung(ngay(d.tu, i.homNay), true), tone: 'warn' }
     : d.loai === 'sap-chuyen' ? { chu: `Sắp chuyển ${d.lop} từ ${tuanLich(d.tuan, i.homNay)}`, tone: 'accent' }
-    : { chu: 'KCK · không đặt kỳ vọng MT, không SOS', tone: null };
+    : { chu: 'KCK · không tính SOS', tone: null };
 
   const k = i.ketQua;
   const hoTro = i.hoTro.length ? `đang hỗ trợ ${noiVa(i.hoTro)}` : null;
@@ -217,7 +223,8 @@ export function cauTomTat(i: DauVaoCau): ManhCau[] {
   else if (k.ratio) {
     const dau = k.phanTram !== null ? `${k.dau} ${k.phanTram}%` : `${k.dau} ${k.soDat}/${k.soMon} môn đạt`;
     m1 = { chu: k.monTruot.length ? `${dau}: không đạt ${noiVa(k.monTruot)}` : dau, tone: k.monTruot.length ? 'warn' : null };
-  } else if (k.kck) m1 = { chu: voiHoTro(k.overall !== null ? `${k.dau} OVR ${k.overall.toFixed(1)}` : k.dau), tone: null };
+  } else if (k.kck && k.kckDuoi) m1 = { chu: voiHoTro(`${k.dau} dưới kỳ vọng · KCK`), tone: null };   // OV-9: không SOS, không màu
+  else if (k.kck && k.dat === null && !k.sos) m1 = { chu: voiHoTro(k.overall !== null ? `${k.dau} OVR ${k.overall.toFixed(1)}` : k.dau), tone: null };   // KCK chưa có Target
   else if (k.sos) m1 = { chu: voiHoTro(`${k.dau} SOS ${k.sos}${!(k.chot ?? (k.coDiem === undefined || k.coDiem >= k.soMon)) ? ' tạm thời' : ''}`), tone: toneSos(k.sos) };
   else if (k.dat) m1 = { chu: voiHoTro(`${k.dau} đạt kỳ vọng`), tone: null };
   else m1 = { chu: voiHoTro(`${k.dau} chưa đủ điểm`), tone: null };
@@ -315,7 +322,7 @@ export function oSapToi(i: {
   const gt = n.tuan ? `${n.dau} · ${tuanLich(n.tuan, i.homNay)}` : n.dau;
   if (i.tamDung) return { tren: 'mốc kế tiếp', gt, phu: 'giữ lịch · Quản lý dời nếu cần' };
   if (i.ratio) return { tren: 'mốc kế tiếp', gt, phu: `${n.soPhan} môn${n.final && i.bacKe ? ` · xét lên ${i.bacKe}` : ''}` };
-  if (i.kck) return { tren: 'mốc kế tiếp', gt, phu: n.attemptNo > 1 ? `so với MT${n.attemptNo - 1}, không kỳ vọng` : 'không kỳ vọng' };
+  if (i.kck && n.kyVong === null) return { tren: 'mốc kế tiếp', gt, phu: n.attemptNo > 1 ? `so với MT${n.attemptNo - 1}, không kỳ vọng` : 'không kỳ vọng' };   // OV-9: KCK chưa có Target
   return { tren: 'mốc kế tiếp', gt, phu: `${n.kyVong !== null ? `kỳ vọng ${n.kyVong.toFixed(1)} · ` : ''}${n.soPhan} phần` };
 }
 

@@ -46,7 +46,7 @@ export type CaseDetail = {
   /** PR-SOS: trạng thái Case SOS, tên ba phần, MỘT nhãn + MỘT việc tiếp, thẻ Không cần theo dõi đang chờ. */
   sos?: { fromSos: boolean; hasCause: boolean; awaitingCause: boolean; dueOn: string | null;
     choDuyetKhongTheoDoi: { hanDuyet: string | null } | null; coPaChoXacNhan: boolean } | null;
-  tenSos?: { mt: number | null; giua: string; sos: number | null } | null;
+  tenSos?: { mt: number | null; giua: string; sos: number | null; kck?: boolean } | null;
   /** PR-LT2a: khối PA Bổ trợ Giữa khoá (nhóm, môn) — null nếu Case không có PA bổ trợ. */
   boTro?: BoTro | null;
   trangThaiV4?: { k: string; t: TrangThai; chu: string; han: string | null };

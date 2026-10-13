@@ -1,7 +1,7 @@
 import { chenNhieuDong, db, theoLo, tx } from '../db.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import {
-  KHOI_PHUC_LENH_GIO, LO_HANG_LOAT_EM, laLienTuc, NHAN_XET_TOI_THIEU, PERMISSIONS, coPhieu, canLopDich, hanBanGiaoLenh, khacGoiY, mocLoTrinh, kiemDongChuyenTiep, kiemDongLenh, targetLenFt, tuanHopLe, tuanLich,
+  KHOI_PHUC_LENH_GIO, LO_HANG_LOAT_EM, chuTargetKck, ghepMucTieu, tachMucTieu, laLienTuc, NHAN_XET_TOI_THIEU, PERMISSIONS, coPhieu, canLopDich, hanBanGiaoLenh, khacGoiY, mocLoTrinh, kiemDongChuyenTiep, kiemDongLenh, targetLenFt, tuanHopLe, tuanLich,
   type DemChotLoTrinh, type Huong, type HuongLenh, type MucTieuLenh, type ProgrammeCode,
 } from '../../../shared/domain/index.ts';
 import { HttpError, badRequest, chuTuDo, conflict, forbidden, notFound, nowIso } from '../util.ts';
@@ -167,11 +167,11 @@ export function raLenh(p: Principal, v: {
         if (lech) { loi(lech); continue; }
       } else if (d.huong === 'fast_track' && !lopDich.is_fast_track) { loi('Lớp chuyển đến phải là Fast Track'); continue; }
       const han = coPhieu(d.huong) ? hanMoi : null;
-      const kck = d.mucTieu === 'KCK';
+      const mt = d.mucTieu == null ? null : tachMucTieu(d.mucTieu);   // OV-9: Target + dấu KCK lưu riêng
       if (cu) daSua.add(d.studentId);
       if (cu && v.boiCanh === 'cuoi-khoa' && !nguonFt && coPhieu(d.huong) && (cu.huong !== d.huong || (cu.lop_dich_id ?? null) !== (lopDich?.id ?? null))) lamLai.push(d.studentId);
       hang.push([
-        d.studentId, v.lopNguonId, lopDich?.id ?? null, d.huong, v.boiCanh, tuan, kck || d.mucTieu == null ? null : d.mucTieu, kck ? 1 : 0,
+        d.studentId, v.lopNguonId, lopDich?.id ?? null, d.huong, v.boiCanh, tuan, mt?.target ?? null, mt?.kck ? 1 : 0,
         d.ngayThi ?? null, d.huong === 'bao_luu' ? d.ngayXemLai ?? null : null, (d.lyDo ?? '').trim() || null, khac ? 1 : 0,
         p.userId, homNay, v.tuYeuCauId ?? null, 'cho', han?.gvbm ?? null, han?.gvcn ?? null, nowIso(), nowIso(),
       ]);
@@ -292,7 +292,7 @@ export function suaLenh(p: Principal, id: number, v: Partial<DongLenhVao>): void
   kiemConSuaDuoc(l);
   const gop: DongLenhVao = {
     studentId: l.student_id, huong: (v.huong ?? l.huong) as HuongLenh, toClassId: v.toClassId !== undefined ? v.toClassId : l.lop_dich_id,
-    tuan: v.tuan ?? l.tuan_bat_dau, mucTieu: v.mucTieu !== undefined ? v.mucTieu : l.khong_cam_ket ? 'KCK' : l.muc_tieu,
+    tuan: v.tuan ?? l.tuan_bat_dau, mucTieu: v.mucTieu !== undefined ? v.mucTieu : ghepMucTieu(l.muc_tieu, l.khong_cam_ket),
     ngayThi: v.ngayThi !== undefined ? v.ngayThi : l.ngay_thi, lyDo: v.lyDo !== undefined ? v.lyDo : l.ly_do,
     ngayXemLai: v.ngayXemLai !== undefined ? v.ngayXemLai : l.ngay_xem_lai,
   };
@@ -438,7 +438,7 @@ export function khoiPhucLenh(p: Principal, ids: unknown): KetQuaLenhNhieu {
         if (nguonThuong) {
           dongBoTuLenh(p, [{
             studentId: l.student_id, classId: l.lop_nguon_id, ma: (nguonThuong.programme_code ?? null) as ProgrammeCode | null, huong: l.huong as Huong,
-            lopDuKienId: l.lop_dich_id ?? null, mucTieu: l.khong_cam_ket ? null : l.muc_tieu ?? null, ngayXemLai: l.ngay_xem_lai ?? null,
+            lopDuKienId: l.lop_dich_id ?? null, mucTieu: l.muc_tieu ?? null, ngayXemLai: l.ngay_xem_lai ?? null,
             huongCu: (nguonThuong.huong ?? null) as Huong | null, cuLaQl: false,
           }]);
           dongBoCheTaiFinal(p, l.lop_nguon_id, [l.student_id]);   // PR-CT2 (§8): quyết định chờ lại → bổ trợ Final như lúc ra lệnh
@@ -466,7 +466,13 @@ export function khoiPhucLenh(p: Principal, ids: unknown): KetQuaLenhNhieu {
 
 // ---------------------------------------------------------------- ranh giới API
 
-const soHoacKck = (v: unknown): MucTieuLenh | null => (v === 'KCK' ? 'KCK' : v === null || v === undefined || v === '' ? null : Number.isFinite(Number(v)) ? Number(v) : null);
+/** Ô Target của lệnh: số · "KCK" · "6.5 KCK" (OV-9); sai → null (`kiemDongLenh` báo "Ghi Target"). */
+function soHoacKck(v: unknown): MucTieuLenh | null {
+  if (v === null || v === undefined || v === '') return null;
+  const t = tachMucTieu(typeof v === 'number' ? v : String(v));
+  if (t.target !== null && !Number.isFinite(t.target)) return null;
+  return ghepMucTieu(t.target, t.kck);
+}
 
 /** Dòng từ web/API (kiểu lỏng) → `DongLenhVao`. Web cũ còn gửi `thangThi` → `ngayThi`. */
 export function dongTuBody(x: any): DongLenhVao {
@@ -496,7 +502,7 @@ export function suaTuBody(b: any): Partial<DongLenhVao> {
 
 /** Q22: mỗi lượt tối đa 40 nhóm (lớp nguồn × tuần × bối cảnh); phần còn lại lượt quét sau làm. Lời gọi Netlify có hạn giờ. */
 export const NHOM_TOI_DA = 40;
-/** Placeholder cho Target KCK: `apDungMotDong`/`applyTransition` chỉ nhận số, KCK đặt ngay sau ở `datKck` (Q29-1) — số tạm không ra Hành trình. */
+/** Placeholder cho lệnh KCK CHƯA có Target: `apDungMotDong`/`applyTransition` chỉ nhận số, KCK đặt ngay sau ở `datKck` (Q29-1) — số tạm không ra Hành trình. */
 const TARGET_TAM = 5;
 
 type KetQuaThiHanh = { daChuyen: number; huy: number; loi: number };
@@ -598,11 +604,12 @@ function thongBaoNguoiRaLenh(ds: { l: any; vi: 'huy' | 'loi'; msg: string }[]) {
   }
 }
 
-const soTuKck = (l: any): number | null => (l.khong_cam_ket ? TARGET_TAM : l.muc_tieu ?? null);
+const soTuKck = (l: any): number | null => l.muc_tieu ?? (l.khong_cam_ket ? TARGET_TAM : null);
 
 /**
- * Sau khi chuyển: em có lệnh KCK thì đặt Target = KCK. Lộ trình VỪA MỞ bởi lệnh (bắt đầu đúng Thứ Hai của lệnh, còn số tạm) → ghi thẳng, không có
- * sự kiện "Đổi Target 5 → KCK" (số tạm không phải Target thật). Lộ trình giữ nguyên (FT → FT cùng lộ trình) → đường sửa target có Hành trình.
+ * Sau khi chuyển: em có lệnh KCK thì đặt dấu KCK (OV-9: Target của lệnh giữ; lệnh "KCK" không số → Target trống). Lộ trình VỪA MỞ bởi lệnh (bắt đầu
+ * đúng Thứ Hai của lệnh, Target = số của lệnh hoặc số tạm) → ghi thẳng, không có sự kiện "Đổi Target 5 → KCK" (số tạm không phải Target thật).
+ * Lộ trình giữ nguyên (FT → FT cùng lộ trình) → đường sửa target có Hành trình (Target cũ giữ khi lệnh không số).
  * Không kiểm quyền lại: lệnh đã được kiểm lúc ra — người ra lệnh mất vai sau đó không được làm cả nhóm cuộn lại. Một câu đọc cho cả lô.
  */
 function datKck(p: Principal, ds: any[]) {
@@ -613,17 +620,19 @@ function datKck(p: Principal, ds: any[]) {
   theoLo(kck.map((l) => l.student_id as number), (lo, ph) => {
     for (const r of conn.prepare(`SELECT id, student_id, started_at, target_score, khong_cam_ket FROM learning_cycles WHERE status = 'active' AND student_id IN (${ph})`).all(...lo) as any[]) cyc.set(r.student_id, r);
   });
-  const moi: number[] = [];
+  const moiTam: number[] = [], moiCoSo: number[] = [];
   for (const l of kck) {
     const c = cyc.get(l.student_id);
     if (!c || c.khong_cam_ket) continue;
-    if (c.started_at === l.tuan_bat_dau && c.target_score === TARGET_TAM) moi.push(c.id);
-    else reviseTarget(p, c.id, { newTarget: 'KCK', effectiveFrom: l.tuan_bat_dau, reason: 'Không cam kết (quyết định chuyển lớp)' }, { daDuyet: true });
+    const tg = (l.muc_tieu ?? null) as number | null;
+    if (c.started_at === l.tuan_bat_dau && c.target_score === (tg ?? TARGET_TAM)) (tg === null ? moiTam : moiCoSo).push(c.id);
+    else reviseTarget(p, c.id, { newTarget: chuTargetKck(tg ?? c.target_score ?? null, true), effectiveFrom: l.tuan_bat_dau, reason: 'Không cam kết (quyết định chuyển lớp)' }, { daDuyet: true });
   }
-  theoLo(moi, (lo, ph) => {
+  theoLo(moiTam, (lo, ph) => {
     conn.prepare(`UPDATE learning_cycles SET target_score = NULL, khong_cam_ket = 1 WHERE id IN (${ph})`).run(...lo);
     conn.prepare(`UPDATE assessment_attempts SET target_at_attempt = NULL WHERE cycle_id IN (${ph})`).run(...lo);   // lộ trình vừa mở: chưa có điểm
   });
+  theoLo(moiCoSo, (lo, ph) => { conn.prepare(`UPDATE learning_cycles SET khong_cam_ket = 1 WHERE id IN (${ph})`).run(...lo); });
 }
 
 /** Lớp thường hết khoá: cả nhóm qua MỘT `applyTransition` (theo lô, luật cũ nguyên vẹn, `daDuyet`). Trả các lệnh bị luật từ chối. */
@@ -637,8 +646,8 @@ function thiHanhCuoiKhoa(p: Principal, g: any, con: any[]): { id: number; loi: s
   }, { daDuyet: true });
   const hong = new Set<number>(r.failed.map((f: any) => f.studentId));
   datKck(p, con.filter((l) => !hong.has(l.student_id)));
-  /* PR-LCa (LCa-3): KCK đi qua `applyTransition` bằng số tạm — Lộ trình tiếp theo giữ Target thật (KCK = trống). */
-  theoLo(con.filter((l) => l.khong_cam_ket && !hong.has(l.student_id)).map((l) => l.student_id as number), (lo, ph) => {
+  /* PR-LCa (LCa-3): KCK không số đi qua `applyTransition` bằng số tạm — Lộ trình tiếp theo giữ Target thật (trống). OV-9: KCK có số → LTT giữ số đó. */
+  theoLo(con.filter((l) => l.khong_cam_ket && l.muc_tieu == null && !hong.has(l.student_id)).map((l) => l.student_id as number), (lo, ph) => {
     db().prepare(`UPDATE lo_trinh_tiep_theo SET muc_tieu = NULL WHERE class_id = ? AND student_id IN (${ph})`).run(g.lop_nguon_id, ...lo);
   });
   return r.failed.map((f: any) => ({ id: byStudent.get(f.studentId)!.id as number, loi: f.message as string }));

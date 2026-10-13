@@ -199,6 +199,20 @@ export async function runPrLcTests(t: YThucTestKit) {
     assert(ltt(sid, l.classId)?.muc_tieu == null, `LTT muc_tieu: ${ltt(sid, l.classId)?.muc_tieu}`);
   });
 
+  // ------------------------------------------------------------------ OV-9: lệnh Lên FT mang Target + KCK (KCK là dấu riêng, Target giữ)
+  check('OV9 · lệnh Lên FT "6.5 KCK" → lưu muc_tieu 6.5 + khong_cam_ket 1; thi hành: lộ trình FT Target 6.5 + KCK, lượt MT có Target, LTT giữ 6.5', () => {
+    const l = taoLop(1);
+    const sid = l.sids[0];
+    raDu(l.classId, [{ studentId: sid, huong: 'fast_track', toClassId: FT, mucTieu: '6.5 KCK' }]);
+    assert(lenhCua(sid)?.muc_tieu === 6.5 && lenhCua(sid)?.khong_cam_ket === 1, `lệnh: ${JSON.stringify(lenhCua(sid))}`);
+    thiHanh(l.classId);
+    assert(lenhCua(sid).trang_thai === 'da_chuyen', `tiền đề: lệnh đã thi hành — ${lenhCua(sid).trang_thai} ${lenhCua(sid).loi ?? ''}`);
+    const ft = get(`SELECT id, route, target_score, khong_cam_ket FROM learning_cycles WHERE student_id = ? AND status = 'active'`, sid);
+    assert(ft?.route && ft.khong_cam_ket === 1 && ft.target_score === 6.5, `lộ trình FT: ${JSON.stringify(ft)}`);
+    assert(!get(`SELECT 1 FROM assessment_attempts WHERE cycle_id = ? AND kind = 'mock' AND (target_at_attempt IS NULL OR target_at_attempt != 6.5)`, ft.id), 'lượt MT mất Target');
+    assert(ltt(sid, l.classId)?.muc_tieu === 6.5, `LTT muc_tieu: ${ltt(sid, l.classId)?.muc_tieu}`);
+  });
+
   // ------------------------------------------------------------------ (g) transitionPlan điền sẵn từ LTT dù chưa lớp dự kiến
   check('LC-g · transitionPlan `dienSan`: LTT Lên FT chưa lớp dự kiến → { fast_track, Target khoá, lớp FT duy nhất | null }; có lớp dự kiến → lớp đó; không LTT → null', () => {
     const l = taoLop(3);

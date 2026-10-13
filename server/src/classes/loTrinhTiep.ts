@@ -1,6 +1,7 @@
 import { chenNhieuDong, db, tx } from '../db.ts';
 import { HV_DANG_HOC_SQL, dongHocVien } from '../students/tamDung.ts';
 import {
+  ghepMucTieu, tachMucTieu, type MucTieuLenh,
   CAU_LIEN_TUC, NORMAL_LADDER, PERMISSIONS, canLopDich, laLienTuc, maHocLai, chuanHoaHuong, kiemDongChuyenTiep, nhanHuong, nhanTiepTheo, soSanhLop, tuanHopLe,
   type Huong, type HuongLenh, type ProgrammeCode,
 } from '../../../shared/domain/index.ts';
@@ -223,7 +224,7 @@ function chanQlDaQuyet(classId: number, dongs: readonly DongGhi[], ten?: (sid: n
      * Target chỉ so khi quyết định là Lên FT — lệnh đổi sang hướng khác có thể còn Target cũ. Gửi lại Target đang lưu ở LTT được: lệnh KCK
      * không xoá Target đã ghi (I3), ghi lại ghi chú không bị chặn.
      */
-    const doiTarget = l?.huong === 'fast_track' && (l.khong_cam_ket ? null : l.muc_tieu ?? null) !== d.mucTieu && (l.muc_tieu_ltt ?? null) !== d.mucTieu;
+    const doiTarget = l?.huong === 'fast_track' && (l.muc_tieu ?? null) !== d.mucTieu && (l.muc_tieu_ltt ?? null) !== d.mucTieu;   // OV-9: lệnh KCK giữ số
     if (l && (l.huong !== d.huong || doiTarget)) {
       throw conflict(`${ten ? `${ten(d.studentId)}: ` : ''}Quản lý đã quyết.`, { studentId: d.studentId });
     }
@@ -414,10 +415,10 @@ export function lopHocCua(p: Principal, studentId: number, current: any): {
 /** Hướng của nháp = hướng của quyết định Cuối khoá (không có "Chưa quyết"). */
 const HUONG_NHAP: readonly HuongLenh[] = ['len_lop', 'hoc_lai', 'fast_track', 'bao_luu', 'dung_hoc'];
 export type NhapLoTrinh = {
-  huong: HuongLenh; lopDichId: number | null; tuan: string | null; mucTieu: number | 'KCK' | null; ngayXemLai: string | null; ghiChu: string | null;
+  huong: HuongLenh; lopDichId: number | null; tuan: string | null; mucTieu: MucTieuLenh | null; ngayXemLai: string | null; ghiChu: string | null;
 };
 export const nhapRowToView = (r: any): NhapLoTrinh => ({
-  huong: r.huong, lopDichId: r.lop_dich_id ?? null, tuan: r.tuan ?? null, mucTieu: r.khong_cam_ket ? 'KCK' : r.muc_tieu ?? null,
+  huong: r.huong, lopDichId: r.lop_dich_id ?? null, tuan: r.tuan ?? null, mucTieu: ghepMucTieu(r.muc_tieu, r.khong_cam_ket),
   ngayXemLai: r.ngay_xem_lai ?? null, ghiChu: r.ghi_chu ?? null,
 });
 const CHI_QL_NHAP = 'Chỉ Quản lý lưu nháp lộ trình.';
@@ -466,8 +467,10 @@ export function luuNhap(p: Principal, classId: number, body: { items?: unknown }
     }
     const tuan = it?.tuan || null;
     if (tuan && !tuanHopLe(tuan, homNay)) { loi('Tuần bắt đầu phải từ tuần sau trở đi.'); continue; }
-    const kck = huong === 'fast_track' && it?.mucTieu === 'KCK';
-    const mucTieu = huong === 'fast_track' && !kck && it?.mucTieu !== null && it?.mucTieu !== undefined && it?.mucTieu !== '' ? Number(it.mucTieu) : null;
+    /* OV-9: "6.5 KCK" = Target + dấu KCK; "KCK" = dấu, chưa có Target. */
+    const tg = huong === 'fast_track' && it?.mucTieu !== null && it?.mucTieu !== undefined && it?.mucTieu !== '' ? tachMucTieu(it.mucTieu) : null;
+    const kck = !!tg?.kck;
+    const mucTieu = tg?.target ?? null;
     if (mucTieu !== null && (!Number.isFinite(mucTieu) || mucTieu < 0 || mucTieu > 9 || Math.round(mucTieu * 2) !== mucTieu * 2)) { loi('Target phải từ 0 đến 9, bước 0,5.'); continue; }
     const ngayXemLai = huong === 'bao_luu' ? it?.ngayXemLai || null : null;
     if (ngayXemLai && !isIsoDate(ngayXemLai)) { loi('Tuần xem lại không hợp lệ.'); continue; }

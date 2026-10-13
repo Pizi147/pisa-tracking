@@ -13,6 +13,7 @@ import type { ProgrammeCode } from './normal.ts';
 import { tuanLich } from './hienThiNgay.ts';
 import { mondayOfDate } from './week.ts';
 import { kyHieuLop } from './tenLop.ts';
+import { hienTargetKck, tachKck } from './nhapHocVien.ts';
 
 /**
  * PR-S3 (chủ sản phẩm 02/10): bộ chữ chuyển lớp — MỘT nơi. Quyết định của Quản lý (6 hướng) gọi là "Quyết định chuyển lớp"; chữ "lệnh"
@@ -96,20 +97,39 @@ export function khopLocLoTrinh(e: { lenh: { huong: HuongLenh; banGiao: { xacNhan
 /** Tạm dừng học (bảo lưu) và Dừng học hẳn không có lớp chuyển đến. */
 export const canLopDich = (h: HuongLenh): boolean => h !== 'bao_luu' && h !== 'dung_hoc';
 
-export type MucTieuLenh = number | 'KCK';
-const mucTieuHopLe = (m: MucTieuLenh | null | undefined) =>
-  m === 'KCK' || (typeof m === 'number' && m >= 0 && m <= 9 && Math.round(m * 2) === m * 2);
+/** OV-9: Target của lệnh — số, "KCK" (chưa có Target), hoặc "6.5 KCK" (Target + dấu KCK). Lưu `muc_tieu` + `khong_cam_ket` riêng. */
+export type MucTieuLenh = number | 'KCK' | `${number} KCK`;
+const laBandLenh = (m: unknown) => typeof m === 'number' && m >= 0 && m <= 9 && Math.round(m * 2) === m * 2;
+/** MucTieuLenh → Target + dấu KCK. Phần số sai → target NaN (nơi gọi kiểm bằng `mucTieuHopLe`). */
+export function tachMucTieu(m: MucTieuLenh | string | null | undefined): { target: number | null; kck: boolean } {
+  if (typeof m === 'number') return { target: m, kck: false };
+  const t = tachKck(m ?? '');
+  const so = String(t.so ?? '').trim().replace(',', '.');
+  return { target: so ? Number(so) : null, kck: t.kck };
+}
+/** Target + dấu KCK → MucTieuLenh (`null` khi không có gì). */
+export const ghepMucTieu = (target: number | null | undefined, kck: boolean | null | undefined): MucTieuLenh | null =>
+  kck ? (target != null ? `${target} KCK` as MucTieuLenh : 'KCK') : target ?? null;
+/** Hiện Target của lệnh: "6.5 · KCK" · "— · KCK" · "6.5". */
+export const hienMucTieu = (m: MucTieuLenh): string => {
+  const t = tachMucTieu(m);
+  return hienTargetKck(t.target !== null ? t.target.toFixed(1) : null, t.kck);
+};
+const mucTieuHopLe = (m: MucTieuLenh | null | undefined) => {
+  if (m === null || m === undefined) return false;
+  const t = tachMucTieu(m);
+  return t.target === null ? t.kck : laBandLenh(t.target);
+};
 
 /**
- * PR-LCa (LCa-2, Q2): Target Lên FT khi Quản lý không gửi — Target ghi ở Lộ trình tiếp theo → khoá lớp thường đang chạy (KCK giữ KCK)
+ * PR-LCa (LCa-2, Q2): Target Lên FT khi Quản lý không gửi — Target ghi ở Lộ trình tiếp theo → khoá lớp thường đang chạy (dấu KCK của khoá giữ)
  * → `null` (nơi gọi để `kiemDongLenh` báo "Ghi Target (hoặc KCK)").
  */
 export function targetLenFt({ lt, khoa }: {
   lt: { mucTieu: number | null } | null; khoa: { target: number | null; kck: boolean } | null;
 }): MucTieuLenh | null {
-  if (typeof lt?.mucTieu === 'number') return lt.mucTieu;
-  if (khoa?.kck) return 'KCK';
-  return typeof khoa?.target === 'number' ? khoa.target : null;
+  /* OV-9: dấu KCK của khoá đi cùng Target (LTT → khoá), không thay Target. */
+  return ghepMucTieu(typeof lt?.mucTieu === 'number' ? lt.mucTieu : khoa?.target ?? null, !!khoa?.kck);
 }
 
 /**
@@ -398,7 +418,7 @@ export function dongKhiChuyen(x: DuLieuKhiChuyen): { khiChuyen: string[]; canhBa
   if (!x.nguonFt && x.dichFt) {
     dong.push(`Đóng lộ trình ${ct}, mở lộ trình FT ${x.routeDich ?? 'LT1'}`);
     if (x.mt0) dong.push(x.mt0.tuXep ? `MT0 làm đầu vào, tự xếp ${x.mt0.tuXep}` : 'MT0 làm đầu vào');
-    if (x.target) dong.push(`Target ${x.target.giaTri === 'KCK' ? 'KCK' : x.target.giaTri.toFixed(1)} (${x.target.nguon === 'gvcn' ? 'GVCN ghi' : x.target.nguon === 'quyet-dinh' ? 'đã quyết' : 'khoá'})`);
+    if (x.target) dong.push(`Target ${hienMucTieu(x.target.giaTri)} (${x.target.nguon === 'gvcn' ? 'GVCN ghi' : x.target.nguon === 'quyet-dinh' ? 'đã quyết' : 'khoá'})`);
   } else if (x.nguonFt && !x.dichFt) {
     dong.push(`Đóng lộ trình FT ${x.routeNguon ?? ''}`.trim());
     const v = x.veThuong;
@@ -452,6 +472,7 @@ export const canHoiTarget = (nguonFt: boolean, dichFt: boolean, targetSan: MucTi
 export function docOTarget(v: string): { giaTri: MucTieuLenh | undefined; loi: string | null } {
   const s = v.trim().replace(',', '.');
   if (!s) return { giaTri: undefined, loi: 'Chưa điền' };
-  const g: MucTieuLenh = s.toUpperCase() === 'KCK' ? 'KCK' : Number(s);
-  return mucTieuHopLe(g) ? { giaTri: g, loi: null } : { giaTri: undefined, loi: 'Gõ band 0–9, bước 0,5 (ví dụ 6.5) hoặc KCK' };
+  const t = tachMucTieu(s);
+  const g = t.kck ? ghepMucTieu(t.target, true)! : Number(s);
+  return mucTieuHopLe(g) ? { giaTri: g, loi: null } : { giaTri: undefined, loi: 'Gõ band 0–9, bước 0,5 (ví dụ 6.5), thêm KCK nếu không cam kết' };
 }

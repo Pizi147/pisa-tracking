@@ -10,7 +10,7 @@ import { outcomeGroup } from '../cases/effectiveness.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addDays, diffDays, notFound } from '../util.ts';
 import { can, require_, type Principal } from '../permissions.ts';
-import { diemCuaLuot, entryBandsOf, routeCuaLuot, scoresOf, skipsOf } from '../fasttrack/attempts.ts';
+import { diemCuaLuot, entryBandsOf, kckCuaLuot, routeCuaLuot, scoresOf, skipsOf } from '../fasttrack/attempts.ts';
 import { assessedBands, evaluateAttempt, expectationFor } from '../fasttrack/scoring.ts';
 import { evaluateRegular, isRatioClass, nguongDatLop, isRatioCycle, programmeByCode, programmeCodeOfCycle, programmeOfClass } from '../normal/regular.ts';
 import { cycleById, cyclesOf, currentCycle, examPlanOf, targetRevisions } from '../fasttrack/cycles.ts';
@@ -84,7 +84,7 @@ export function typedResult(attempt: any, pre?: { scores: any[]; skips: Assessed
   const scores = pre?.scores ?? scoresOf(attempt.id);
   const r = evaluateAttempt(attempt.kind === 'mt0' ? null : attempt.target_at_attempt, attempt.attempt_no,   // PR-MT0: không kỳ vọng
     entryBandsOf(scores), pre?.skips ?? skipsOf(attempt.id), routeCuaLuot(attempt),
-    kyNangXongThieu(kyNang ?? loadSkillRows([attempt.id]).get(attempt.id) ?? [], scores));
+    kyNangXongThieu(kyNang ?? loadSkillRows([attempt.id]).get(attempt.id) ?? [], scores), kckCuaLuot(attempt));
   return { mode: 'ielts' as const, ratio: null, ft: r };
 }
 
@@ -407,7 +407,7 @@ function boOVaCau(i: {
       : dai?.loai === 'sap' && dai.lopDich ? { loai: 'sap-chuyen', lop: dai.lopDich.code, tuan: dai.tuan }
       : kck ? { loai: 'kck' } : null,
     ketQua: a && kq ? {
-      dau: dauDot(a), ratio, sos: kq.sos, dat: kq.dat, overall: a.overall ?? null, kck,
+      dau: dauDot(a), ratio, sos: kq.sos, dat: kq.dat, overall: a.overall ?? null, kck, kckDuoi: kq.kckDuoi,
       soDat: ratio ? (a.skills ?? []).filter((x: any) => x.outcome === 'pass').length : 0, soMon: a.required,
       monTruot: ratio ? (a.skills ?? []).filter((x: any) => x.outcome === 'fail').map((x: any) => tenMonNgan(ct, x.skill)) : [],
       phanTram: kq.phanTram, coDiem: kq.coDiem, chot: kq.chot,
@@ -441,7 +441,7 @@ function boOVaCau(i: {
         sauCuoiKhoa: daCuoiKhoa ? { tuanKetThuc: i.khoaHienTai?.tuanKetThuc ?? null } : null,
         next: nextA ? {
           dau: dauDot(nextA), attemptNo: nextA.attemptNo, tuan: nextA.weekStart ?? null, soPhan: nextA.required, final: nextA.kind === 'final',
-          kyVong: nextA.mode === 'ratio' || kck ? null : expectationFor(selected?.target_score ?? null, nextA.attemptNo, selected?.route ?? null),
+          kyVong: nextA.mode === 'ratio' ? null : expectationFor(selected?.target_score ?? null, nextA.attemptNo, selected?.route ?? null),
         } : null,
         ratio: !!nextA ? nextA.mode === 'ratio' : i.cuoiKhoaDang, kck, bacKe: pc && pc !== 'FT' && laChuongTrinhGoc(pc) ? tenBacKe(pc as ProgrammeCode) : null, homNay: today,
         tamDung: s.status === 'inactive',
@@ -473,7 +473,7 @@ function dongThongTin(i: {
     ? (db().prepare('SELECT full_name FROM users WHERE id = ?').get(dangDung.boiId) as any)?.full_name ?? null
     : null;
   const tamDung = dangDung ? { tu: dangDung.tu, lyDo: dangDung.lyDo, boi } : null;
-  if (!current) return { lop: null, lopId: null, loTrinh: null, target: null, tuanHoc: null, thiDuKien: null, thiIelts: null, gvcn: null, tamDung };
+  if (!current) return { lop: null, lopId: null, loTrinh: null, target: null, kck: false, tuanHoc: null, thiDuKien: null, thiIelts: null, gvcn: null, tamDung };
 
   let tuanHoc: { tuan: number | null; tong: number | null; dangDung: boolean } | null = null;
   let thiDuKien: { nhan: string; gt: string } | null = null;
@@ -509,7 +509,8 @@ function dongThongTin(i: {
     lop: current.class_code as string, lopId: current.class_id as number,
     /* FT: lộ trình LT1/RF… · lớp thường: mã chương trình. */
     loTrinh: khoa ? khoa.ma : dangChay?.route ?? null,
-    target: !dangChay ? null : dangChay.khong_cam_ket ? 'KCK' as const : (dangChay.target_score as number | null) ?? null,
+    /* OV-9: Target và dấu KCK tách — "6.5 · KCK", KCK chưa có Target "— · KCK". */
+    target: (dangChay?.target_score as number | null | undefined) ?? null, kck: !!dangChay?.khong_cam_ket,
     tuanHoc, thiDuKien, thiIelts, lopThuong: !!khoa, gvcn: i.gvcn, tamDung,
   };
 }
@@ -624,7 +625,7 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
       ...base, expectation: r.expectation, bands: r.bands, overall: r.overall, evaluable: r.evaluable, skills: null,
       scored: r.scoredRequired, required: r.required.length,
       complete: r.complete, chot: r.chot, provisional: r.provisional,
-      sosLevel: r.sosLevel, scopeNote: r.scopeNote,
+      sosLevel: r.sosLevel, kckDuoi: r.kckDuoi, scopeNote: r.scopeNote,
       ...(mt0 ? { sosMt0: kyNangSosMt0(r.bands, a.target_at_attempt ?? null) } : {}),
     };
   });

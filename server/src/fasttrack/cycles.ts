@@ -2,7 +2,7 @@ import { db, tx } from '../db.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
 import {
   BASELINE_SOURCES, CO_DIEM_SQL, CYCLE_OUTCOMES, CYCLE_OUTCOME_LABEL, CYCLE_STATUSES, PERMISSIONS, soMtKeTiep, tuanLich,
-  KCK, canNamGan, docNgayNhap, laKck, mondayOfDate, ngay, type ExamPlan, type LuotSo, type Route,
+  canNamGan, docNgayNhap, hienTargetKck, mondayOfDate, tachKck, ngay, type ExamPlan, type LuotSo, type Route,
   CHI_SUA_THONG_TIN, CAU_LIEN_TUC,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -117,18 +117,21 @@ export function examPlanOf(cycle: {
   return none;
 }
 
-/** Q29-1 (PR-KCK): ô Target → { target, kck }. KCK / '-' / "không cam kết" = không cam kết; trống = chưa có; sai → 400. */
+/**
+ * Q29-1 (PR-KCK) + OV-9: ô Target → { target, kck }. KCK là DẤU RIÊNG, Target giữ: "6.5 KCK" = Target 6.5 + KCK; KCK / '-' / "không cam kết" =
+ * KCK chưa có Target; trống = chưa có; sai → 400.
+ */
 export function docTarget(v: unknown): { target: number | null; kck: boolean } {
-  if (laKck(v)) return { target: null, kck: true };
-  if (v === null || v === undefined || v === '') return { target: null, kck: false };
-  const n = Number(v);
-  if (!Number.isFinite(n) || n < 0 || n > 9) throw badRequest('Target phải nằm trong khoảng 0–9, hoặc KCK (không cam kết).');
-  return { target: n, kck: false };
+  const { so, kck } = tachKck(v);
+  if (so === null || so === undefined || so === '') return { target: null, kck };
+  const n = Number(so);
+  if (!Number.isFinite(n) || n < 0 || n > 9) throw badRequest('Target phải nằm trong khoảng 0–9 (thêm KCK nếu không cam kết).');
+  return { target: n, kck };
 }
-const hienTarget = (target: number | null, kck: unknown) => (kck ? KCK : target ?? 'chưa có');
+const hienTarget = (target: number | null, kck: unknown) => hienTargetKck(target, !!kck);
 
 /**
- * Q29-1: đổi target (kể cả ↔ KCK) → lượt CHƯA CÓ ĐIỂM lấy target mới (KCK = bỏ kỳ vọng). Lượt đã có điểm giữ `target_at_attempt`
+ * Q29-1: đổi target → lượt CHƯA CÓ ĐIỂM lấy target mới (OV-9: dấu KCK không đụng Target — đọc ở lộ trình). Lượt đã có điểm giữ `target_at_attempt`
  * cũ — lịch sử SOS không viết lại. Case SOS đang mở KHÔNG đụng tới (GV xử lý xong mới đóng).
  */
 function apTargetLuotChuaDiem(cycleId: number, target: number | null) {
@@ -512,7 +515,7 @@ export function targetRevisions(cycleId: number) {
  * Target của em này lại khác trong hồ sơ.
  */
 export function reviseTarget(p: Principal, cycleId: number, input: {
-  /** Số, `null`/'' (chưa có) hoặc KCK / '-' / "không cam kết" (Q29-1). */
+  /** Số, `null`/'' (chưa có), "6.5 KCK" hoặc KCK / '-' / "không cam kết" (Q29-1, OV-9: KCK là dấu riêng). */
   newTarget: number | string | null; effectiveFrom?: string; reason?: string | null;
 }, o?: { daDuyet?: true }) {
   const c = cycleById(cycleId);

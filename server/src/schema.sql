@@ -301,7 +301,7 @@ CREATE TABLE learning_cycles (
   route TEXT,                         -- LT1 | LT2 với FT; NULL với lớp thường
   programme_code TEXT REFERENCES programmes(code),
   target_score REAL,                  -- điểm cam kết của CHÍNH lộ trình này
-  khong_cam_ket INTEGER NOT NULL DEFAULT 0,  -- Q29-1 (PR-KCK): 1 = Target "KCK" — không cam kết, target_score NULL, không kỳ vọng/SOS
+  khong_cam_ket INTEGER NOT NULL DEFAULT 0,  -- Q29-1 (PR-KCK) + OV-9: 1 = dấu KCK — Target giữ (có thể trống); dưới kỳ vọng không SOS, chỉ Case nhẹ
 
   /*
    * TUẦN BẮT ĐẦU HỌC của học viên — TUẦN HỌC THỨ 1 của em.
@@ -947,7 +947,9 @@ CREATE TABLE sos_cases (
    * khi INSERT nên mọi đường mở Case đều có. Không REFERENCES có chủ ý: xoá lớp không được vướng Case. Không dấu phẩy ở chú thích này (DROP COLUMN)
    */
   goc_class_id INTEGER,
-  goc_programme_code TEXT
+  goc_programme_code TEXT,
+  /* PR-OV9: 1 = Case nhẹ của em KCK dưới kỳ vọng — không PA quy chế, không hạn, không Phối hợp / chuông. Không dấu phẩy (DROP COLUMN) */
+  kck INTEGER NOT NULL DEFAULT 0
 );
 /*
  * MỘT HỌC VIÊN × MỘT HẠNG MỤC = MỘT CASE.

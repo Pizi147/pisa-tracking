@@ -29,11 +29,12 @@ export const PA_QUY_CHE_CHUA_GHI = (a = 'iv') => `(${a}.preset = 1 AND ${a}.conf
  * NGƯỜI xác nhận (PA quy chế đã bấm Xác nhận — `confirmed_by` có người — hoặc PA GV tự thêm), chưa huỷ. PA máy gán chưa ai xác
  * nhận không tính. `sc` là bí danh `sos_cases`. MỘT điều kiện cho hàm đồng bộ dưới đây và migrate PR-N1.
  */
+/* OV-9: Case nhẹ của em KCK (`kck = 1`) là Case từ SOS dù không có PA quy chế — vẫn chờ xác nhận nguyên nhân (không hạn); có nguyên nhân là đang xử lý. */
 export const LA_CASE_SOS = (sc = 'sc') =>
-  `(EXISTS (SELECT 1 FROM case_interventions p_s WHERE p_s.case_id = ${sc}.id AND p_s.preset = 1) AND COALESCE(${sc}.origin_kind, '') != 'chuyen_cap')`;   // PR-LT2b: Case Final Test không chờ nguyên nhân
+  `((EXISTS (SELECT 1 FROM case_interventions p_s WHERE p_s.case_id = ${sc}.id AND p_s.preset = 1) OR ${sc}.kck = 1) AND COALESCE(${sc}.origin_kind, '') != 'chuyen_cap')`;   // PR-LT2b: Case Final Test không chờ nguyên nhân
 export const CASE_SOS_DANG_XU_LY = (sc = 'sc') => `(EXISTS (SELECT 1 FROM case_issues ci_s WHERE ci_s.case_id = ${sc}.id AND ci_s.role = 'primary')
-  AND EXISTS (SELECT 1 FROM case_interventions p_x WHERE p_x.case_id = ${sc}.id AND p_x.status != 'cancelled'
-               AND (COALESCE(p_x.preset, 0) = 0 OR p_x.confirmed_by IS NOT NULL)))`;
+  AND (${sc}.kck = 1 OR EXISTS (SELECT 1 FROM case_interventions p_x WHERE p_x.case_id = ${sc}.id AND p_x.status != 'cancelled'
+               AND (COALESCE(p_x.preset, 0) = 0 OR p_x.confirmed_by IS NOT NULL))))`;
 
 /**
  * Đặt lại "Chưa xử lý" / "Đang xử lý" của một Case chưa đóng sau mỗi việc có thể đổi trạng thái (thêm PA, ghi kết quả, xác nhận

@@ -8,7 +8,7 @@ import { useLoiForm } from '../../ui/loiForm.tsx';
 import { ChonNgayGan } from '../../ui/ChonNgay.tsx';
 import {
   NHAN_VIEC_QUAN_LY, mucQuanLyHocVien, cacTabTrangThai, type LopHocQuyen, type ViecQuanLy, type TabTrangThai, dsLoi, docEmail,
-  cauMtSeDoi, tuanLich, GIAI_THICH_KCK, KCK, roundToHalf, type NguoiChon, duongLoTrinhLop, NHAN_SAU_THI,
+  cauMtSeDoi, tuanLich, GIAI_THICH_KCK, chuTargetKck, tachKck, roundToHalf, type NguoiChon, duongLoTrinhLop, NHAN_SAU_THI,
 } from '@shared/domain/index.ts';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
@@ -18,7 +18,7 @@ import { XoaHocVienPanel } from './XoaHocVienPanel.tsx';
 import { DeXuatSuaPanel } from '../duyet/DeXuatSuaPanel.tsx';
 import { laBand } from './StudentPlanPanel.tsx';
 import { KetQuaThiThatPanel } from './KetQuaThiThatPanel.tsx';
-import { ErrorState, NutChon, Skeleton, TargetText } from '../../ui/ui.tsx';
+import { ErrorState, NutChon, OKck, Skeleton, TargetText } from '../../ui/ui.tsx';
 import { HangTab } from '../../ui/HangTab.tsx';
 import { ChonNguoi, type NguoiTrongDs } from '../../ui/PeoplePicker.tsx';
 
@@ -267,6 +267,7 @@ export function HocLaiPanel({ studentId, studentName, lop, onClose, onDone, buoc
   const [dich, setDich] = useState<'cu' | 'moi'>(chiLopMoi ? 'moi' : 'cu');
   const [lopMoiId, setLopMoiId] = useState<number | ''>('');
   const [targetGo, setTargetGo] = useState<string | null>(null);   // null = chưa gõ → dùng Target cũ khi FT → FT
+  const [kckGo, setKckGo] = useState<boolean | null>(null);   // OV-9: dấu KCK riêng — null = theo lộ trình cũ
   const [thi, setThi] = useState('');
   const [lyDo, setLyDo] = useState('');
   const [ngayHl, setNgayHl] = useState('');
@@ -275,10 +276,12 @@ export function HocLaiPanel({ studentId, studentName, lop, onClose, onDone, buoc
   const canTarget = dich === 'moi' && !!lopMoi?.ft;
   /* FT → FT: máy chủ giữ Target cũ → điền sẵn, không bắt nhập lại; từ lớp thường lên FT mới bắt buộc. */
   const giuTargetCu = !!data?.lopCu?.ft;
-  const target = targetGo ?? (giuTargetCu ? data?.loTrinh.target ?? '' : '');
+  const tgCu = tachKck(giuTargetCu ? data?.loTrinh.target ?? '' : '');
+  const target = targetGo ?? String(tgCu.so ?? '');
+  const kck = kckGo ?? tgCu.kck;
   const setTarget = (v: string) => setTargetGo(v);
   const loi = dsLoi([...(dich === 'moi' ? [{ khoa: 'lop', nhan: 'Lớp', toiThieu: 1 }] : [])], { lop: lopMoiId === '' ? '' : String(lopMoiId) });
-  if (canTarget && !giuTargetCu && !target.trim()) loi.push({ khoa: 'target', nhan: 'Target', lyDo: 'Lên FT cần Target' });
+  if (canTarget && !giuTargetCu && !target.trim() && !kck) loi.push({ khoa: 'target', nhan: 'Target', lyDo: 'Lên FT cần Target (hoặc tích KCK)' });
   /* Tên lộ trình đúng như hồ sơ gọi: lớp FT = LT1 / RF…, lớp thường = chương trình (FOU…). */
   const tenLoTrinhMoi = lopMoi ? (lopMoi.ft ? lopMoi.route : lopMoi.ma) : null;
   const chan = !data?.lopCu ? 'Chưa có lớp để học lại' : null;
@@ -290,7 +293,7 @@ export function HocLaiPanel({ studentId, studentName, lop, onClose, onDone, buoc
     try {
       const than = {
         date: ngayHl || undefined, lyDo: lyDo.trim() || undefined, moLaiLop: true,
-        ...(dich === 'moi' ? { lopMoiId, mucTieu: canTarget && target.trim() ? (target.trim().toUpperCase() === KCK ? KCK : Number(target)) : undefined, thangThi: thi || undefined } : {}),
+        ...(dich === 'moi' ? { lopMoiId, mucTieu: canTarget && (target.trim() || kck) ? chuTargetKck(target.trim().replace(',', '.') || null, kck) : undefined, thangThi: thi || undefined } : {}),
       };
       const lamMoi = ['/students', '/classes', '/hoc-vien-lop', '/cases', '/lo-trinh', '/my-work'];
       if (buocTiep) {
@@ -355,8 +358,11 @@ export function HocLaiPanel({ studentId, studentName, lop, onClose, onDone, buoc
                 </Truong>
                 {canTarget && (
                   <>
-                    <Truong nhan="Target" batBuoc={!giuTargetCu} loi={lf.loiCua(loi, 'target')}>
-                      <input className="field w-full max-w-[8rem]" inputMode="decimal" placeholder="Ví dụ: 6.5" {...lf.o(loi, 'target')} value={target} onChange={(e) => setTarget(e.target.value)} />
+                    <Truong nhan="Target" batBuoc={!giuTargetCu} as="div" loi={lf.loiCua(loi, 'target')}>
+                      <span className="flex flex-wrap items-center gap-3">
+                        <input className="field w-full max-w-[8rem]" inputMode="decimal" placeholder="Ví dụ: 6.5" aria-label="Target" {...lf.o(loi, 'target')} value={target} onChange={(e) => setTarget(e.target.value)} />
+                        <OKck chon={kck} onChange={setKckGo} />
+                      </span>
                     </Truong>
                     <Truong nhan="Dự kiến thi" tuyChon><ONgay kieu="ngay-hoac-thang" value={thi} goiY="dd/mm/yyyy hoặc mm/yyyy" onChange={setThi} /></Truong>
                   </>
@@ -401,9 +407,11 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
   const [tuan, setTuan] = useState(tuanCu);
   const thiCu: string = cycle?.examDate ?? cycle?.examMonth ?? '';
   const [thi, setThi] = useState(thiCu);
-  /* Target: '' = chưa có, KCK = không cam kết, còn lại là band. */
-  const targetCu: string = cycle?.khongCamKet ? KCK : cycle?.target != null ? String(cycle.target) : '';
+  /* Target: '' = chưa có, còn lại là band; OV-9: dấu KCK riêng (ô tích), Target giữ. */
+  const targetCu: string = cycle?.target != null ? String(cycle.target) : '';
+  const kckCu = !!cycle?.khongCamKet;
   const [target, setTarget] = useState(targetCu);
+  const [kck, setKck] = useState(kckCu);
   const [lyDo, setLyDo] = useState('');
   /* Điểm đầu vào — chỉ FT (lớp thường không có, như Thêm học viên). */
   const coDauVao = !!cycle && !cycle.ratio;
@@ -414,7 +422,7 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
   const duKn = kn.every((x) => laBand(x));
   const overall = duKn ? String(roundToHalf(kn.reduce((a, x) => a + Number(x), 0) / 4)) : dv.o;
   const doiDauVao = coDauVao && JSON.stringify(dv) !== JSON.stringify(dvCu);
-  const doiTarget = !!cycle && (targetThang || targetDeXuat) && target !== targetCu;
+  const doiTarget = !!cycle && (targetThang || targetDeXuat) && (target !== targetCu || kck !== kckCu);
   const lf = useLoiForm();
   const [busy, setBusy] = useState(false);
   /* Lỗi máy chủ gắn đúng ô (câu lỗi mở đầu bằng tên ô); gõ lại thì bỏ. */
@@ -426,7 +434,7 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
   const loiEmail = email.trim() ? docEmail(email).loi : 'Bắt buộc';
   if (loiEmail) loi.push({ khoa: 'email', nhan: 'Email', lyDo: loiEmail });
   if (quanLy && cycle && !tuan) loi.push({ khoa: 'tuan', nhan: 'Tuần bắt đầu', lyDo: 'Chưa chọn' });
-  if (doiTarget && target !== KCK && !laBand(target)) loi.push({ khoa: 'target', nhan: 'Target', lyDo: 'Band từ 0 đến 9, bước 0.5 — hoặc chọn KCK' });
+  if (doiTarget && (target !== '' || !kck) && !laBand(target)) loi.push({ khoa: 'target', nhan: 'Target', lyDo: target ? 'Band từ 0 đến 9, bước 0.5' : 'Chưa điền — hoặc tích KCK' });
   if (doiTarget) loi.push(...dsLoi([{ khoa: 'ly-do-target', nhan: 'Lý do đổi Target', toiThieu: 1 }], { 'ly-do-target': lyDo }));
   if (doiDauVao) {
     if (kn.some((x) => x !== '' && !laBand(x))) loi.push({ khoa: 'dau-vao', nhan: 'Điểm đầu vào', lyDo: 'Band 0–9, bước 0.5' });
@@ -464,7 +472,7 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
       }
       if (doiTarget) {
         phan = 'Target';
-        const moi = target === '' ? null : target === KCK ? KCK : Number(target);
+        const moi = kck ? chuTargetKck(target === '' ? null : Number(target), true) : Number(target);
         if (targetThang) { await api.post(`/cycles/${cycle.id}/target-revision`, { newTarget: moi, reason: lyDo.trim() }); xong.push('Target'); }
         else { await api.post(`/students/${student.id}/de-xuat-sua`, { truong: 'target', moi: moi ?? '', lyDo: lyDo.trim() }); invalidate('/yeu-cau'); xong.push('đề xuất Target'); }
       }
@@ -480,7 +488,7 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
   };
 
   const daSua = fullName !== student.name || dob !== (student.dob ?? '') || email !== (student.email ?? '') || tvv?.kieu === 'tai_khoan' && tvv.id !== student.tvv?.id
-    || (!tvv && !!student.tvv) || note !== (student.note ?? '') || tuan !== tuanCu || thi !== thiCu || target !== targetCu || doiDauVao;
+    || (!tvv && !!student.tvv) || note !== (student.note ?? '') || tuan !== tuanCu || thi !== thiCu || target !== targetCu || kck !== kckCu || doiDauVao;
 
   return (
     <KhungPanel tieuDe={NHAN_VIEC.info} hocVien={studentName} lop={lop} onDong={onClose}
@@ -534,18 +542,17 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
             <ONgay kieu="ngay-hoac-thang" id={lf.oId('thi')} value={thi} goiY="dd/mm/yyyy hoặc mm/yyyy" onChange={sua(setThi)} />
           </Truong>
           {targetThang || targetDeXuat ? (
-            <Truong nhan="Target" tuyChon loi={lf.loiCua(loi, 'target')}
+            <Truong nhan="Target" tuyChon as="div" loi={lf.loiCua(loi, 'target')}
               phu={targetDeXuat ? 'Lưu thành Đề xuất sửa — Quản lý duyệt rồi Target mới đổi.' : `Band 0–9, bước 0,5. KCK: ${GIAI_THICH_KCK}.`}>
-              <span className="flex flex-wrap items-center gap-2">
+              <span className="flex flex-wrap items-center gap-3">
                 <input className="field max-w-[8rem]" type="number" inputMode="decimal" step="0.5" min={0} max={9} aria-label="Target"
-                  {...lf.o(loi, 'target')} value={target === KCK ? '' : target} disabled={target === KCK}
-                  onChange={(e) => sua(setTarget)(e.target.value)} />
-                <NutChon nho chon={target === KCK} onClick={() => sua(setTarget)(target === KCK ? '' : KCK)}>Không cam kết (KCK)</NutChon>
+                  {...lf.o(loi, 'target')} value={target} onChange={(e) => sua(setTarget)(e.target.value)} />
+                <OKck chon={kck} onChange={sua(setKck)} />
               </span>
             </Truong>
           ) : (
             <div className="text-sm text-slate-200">
-              Target: {targetCu ? <strong><TargetText band={cycle.target ?? null} kck={!!cycle.khongCamKet} /></strong> : <span className="text-slate-500">chưa có</span>}
+              Target: {targetCu || kckCu ? <strong><TargetText band={cycle.target ?? null} kck={kckCu} /></strong> : <span className="text-slate-500">chưa có</span>}
               <span className="text-slate-500"> · Quản lý sửa</span>
             </div>
           )}
