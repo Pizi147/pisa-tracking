@@ -15,6 +15,8 @@ import {
 
 export type Cell = {
   skill: EntrySkill;
+  /** OV-1d: em không còn đang học — câu "vì sao chỉ đọc" của máy chủ (chỉ lưới chấm FT gửi). */
+  lyDoKhoa?: string;
   assessedSkill: string;
   /** false khi Quản lý đã chốt trước là đợt này không yêu cầu kỹ năng đó. */
   required: boolean;
@@ -105,10 +107,10 @@ export const VANG_HINT = 'Đã xác nhận vắng — Quản lý xếp lại bà
 export const bandBanDau = (cell: Cell) => (cell.band !== null && cell.criteria.every((v) => v === null) ? fmtBand(cell.band) : '');
 
 /** Vì sao ô này chỉ đọc — MỘT câu cho ô số câu và ô tiêu chí. */
-export const lyDoChiDoc = (cell: Cell) => (cell.daChot?.hanGo && !cell.daChot.goDuoc ? 'Quá hạn gỡ "-" — nhờ Quản lý.'   // PR-BV
+export const lyDoChiDoc = (cell: Cell) => cell.lyDoKhoa ?? (cell.daChot?.hanGo && !cell.daChot.goDuoc ? 'Quá hạn gỡ "-" — nhờ Quản lý.'   // PR-BV
   : cell.sitStatus === 'absent' ? VANG_HINT
   : lockedByNoShow(cell) ? 'Đã chốt — cần Quản lý hiệu chỉnh'
-  : cell.khoa ? KHOA_HOAN_TAT_HINT : 'Bạn không được phân công kỹ năng này');
+  : cell.khoa ? KHOA_HOAN_TAT_HINT : 'Bạn không được phân công kỹ năng này'));
 
 /**
  * Lưu điểm một kỹ năng. Khi lỗi, giữ nguyên giá trị người dùng vừa gõ để họ bấm lại,

@@ -26,6 +26,8 @@ export type FtSheet = {
     cells: Cell[]; result: any;
     /** PR-MT0: hàng MT0 — chip `W 4.0 SOS` thay cho mức SOS (không kỳ vọng). */
     mt0Sos?: { skill: AssessedSkill; band: number }[];
+    /** OV-1d: em không còn đang học ("Lưu trữ" / "Đã kết thúc học" / "Tạm dừng") — hàng mờ, ô chỉ đọc (máy chủ đã khoá). */
+    ngungHoc?: string | null;
   }[];
 };
 
@@ -52,7 +54,7 @@ export const khacTuanFt = (c: Cell, tuanDangXem: string | null | undefined) =>
 
 /** Hạn nhập điểm sớm nhất còn nợ trên cả lưới — cho `<Han>` ở đầu trang (mockup 05a §2). */
 export function hanSomNhatFt(data: FtSheet | null | undefined): string | null {
-  const ds = (data?.rows ?? []).flatMap((r) => r.cells)
+  const ds = (data?.rows ?? []).filter((r) => !r.ngungHoc).flatMap((r) => r.cells)
     .filter((c) => c.required && c.band === null && c.deadline && !c.noShow
       && c.progress !== 'cancelled' && c.progress !== 'absent')
     .map((c) => c.deadline!.slice(0, 10))
@@ -260,14 +262,17 @@ function SheetRow({ row, lop, active, cot, tuanDangXem, onReload, gvMacDinh, moS
   );
   /* OV-1b: mọi phần thi đã huỷ / bỏ khỏi đợt — lượt không còn "Đã lên lịch". */
   const huyHet = row.cells.every((c) => !c.required || c.progress === 'cancelled');
+  /* OV-1d: ô đã dời vì vắng mà người xem gỡ được → ở lưới tuần gốc vẫn là nút "Vắng → W3 OCT" (hộp có Bỏ vắng); không gỡ được thì chữ. */
+  const khacTuan = (cell: Cell) => khacTuanFt(cell, tuanDangXem) && !(cell.daChot?.doiSang && suaDuoc(cell));
   const oKhacTuan = (s: string, cell: Cell) => (
-    <td key={s} className="td py-1.5 text-right text-slate-500" data-kn={s} title={`${skillLabel(s)}: thi tuần ${tuanLich(cell.weekStart)}`}>
-      {tuanLich(cell.weekStart)}
+    <td key={s} className="td py-1.5 text-right text-slate-500" data-kn={s}
+      title={cell.daChot?.doiSang ? `${skillLabel(s)}: vắng, đã dời sang ${cell.daChot.doiSang}` : `${skillLabel(s)}: thi tuần ${tuanLich(cell.weekStart)}`}>
+      {cell.daChot?.doiSang ? `Đã dời sang ${cell.daChot.doiSang}` : tuanLich(cell.weekStart)}
     </td>
   );
 
   return (
-    <tr className={`row-hover h-16 ${active ? 'row-active' : ''}`} data-hv={row.studentId}>
+    <tr className={`row-hover h-16 ${row.ngungHoc ? 'row-muted' : ''} ${active ? 'row-active' : ''}`} data-hv={row.studentId}>
       <td className="td py-1.5 sticky-col">
         <div className="min-w-0">
           <Link className="link block break-words max-sm:py-3 max-sm:-my-3" to={duongDotTest({ id: row.attemptId })} title={row.studentName}>{row.studentName}</Link>
@@ -302,15 +307,16 @@ function SheetRow({ row, lop, active, cot, tuanDangXem, onReload, gvMacDinh, moS
       */}
       {cot.han && (
         <td className="td py-1.5 overflow-hidden">{/* cột 140 px: câu hạn dài gói dòng, không tràn sang cột L */}
-          <DeadlineSummary cells={row.cells} />
+          {row.ngungHoc ? <span className="text-slate-500">—</span> : <DeadlineSummary cells={row.cells} />}
         </td>
       )}
       {RAW_SKILLS.map((s) => {
         const cell = cellOf(s);
         if (!cell) return <td key={s} className="td py-1.5 text-right text-slate-600">—</td>;
-        if (khacTuanFt(cell, tuanDangXem)) return oKhacTuan(s, cell);
+        if (khacTuan(cell)) return oKhacTuan(s, cell);
         return (
-          <td key={s} className={`td py-1.5 relative text-right ${o[s] === 'loi' ? VIEN_LOI : ''}`} data-kn={s} data-trong={oTrongFt(cell) ? '1' : undefined}
+          <td key={s} className={`td py-1.5 relative text-right ${o[s] === 'loi' ? VIEN_LOI : ''}`} data-kn={s}
+            data-trong={oTrongFt(cell) && !khacTuanFt(cell, tuanDangXem) ? '1' : undefined}
             data-luu={o[s]}>
             <DauO tt={o[s]} loi={loi[s]} onLuuLai={() => luuLai(s)} />
             {oDiem(s, cell)}
@@ -329,9 +335,10 @@ function SheetRow({ row, lop, active, cot, tuanDangXem, onReload, gvMacDinh, moS
         }
         const cell = cellOf(s);
         if (!cell) return <td key={s} className="td py-1.5 text-right text-slate-600">—</td>;
-        if (khacTuanFt(cell, tuanDangXem)) return oKhacTuan(s, cell);
+        if (khacTuan(cell)) return oKhacTuan(s, cell);
         return (
-          <td key={s} className={`td py-1.5 relative text-right ${o[s] === 'loi' ? VIEN_LOI : ''}`} data-kn={s} data-trong={oTrongFt(cell) ? '1' : undefined}
+          <td key={s} className={`td py-1.5 relative text-right ${o[s] === 'loi' ? VIEN_LOI : ''}`} data-kn={s}
+            data-trong={oTrongFt(cell) && !khacTuanFt(cell, tuanDangXem) ? '1' : undefined}
             data-luu={o[s]}>
             <DauO tt={o[s]} loi={loi[s]} onLuuLai={() => luuLai(s)} />
             {oDiem(s, cell)}
@@ -343,8 +350,13 @@ function SheetRow({ row, lop, active, cot, tuanDangXem, onReload, gvMacDinh, moS
       {/* Badge ôm sát nội dung: items-start để ô bảng rộng cũng không kéo giãn nó ra. */}
       <td className="td py-1.5">
         <div className="flex flex-col items-start gap-0.5 min-w-0">
-          {/* N-1b: chưa đủ điểm là TẠM — xám, không mang màu mức SOS. */}
-          {row.mt0Sos && row.result.scoredRequired > 0 ? (
+          {/* N-1b: chưa đủ điểm là TẠM — xám, không mang màu mức SOS. OV-1d: em không còn đang học → không "Chờ n" / SOS tạm. */}
+          {row.ngungHoc ? (
+            <>
+              {row.result.chot && row.result.sosLevel !== null && <Level tone={sosTone(row.result.sosLevel)}>{sosLabel(row.result.sosLevel)}</Level>}
+              <Level tone="muted" title={row.cells[0]?.lyDoKhoa}>{row.ngungHoc}</Level>
+            </>
+          ) : row.mt0Sos && row.result.scoredRequired > 0 ? (
             /* PR-MT0: chỉ chip SOS hiển thị; đủ điểm mà không SOS → `MT0 ✓` (chủ sản phẩm Q3). */
             row.mt0Sos.length ? row.mt0Sos.map((x) => <Level key={x.skill} tone="danger">{chipSosMt0(x)}</Level>)
               : row.result.complete ? <Level tone="ok">MT0 ✓</Level>
