@@ -21,11 +21,12 @@ Trả lời 13/10 về liên hệ: **thêm**; **mọi vai xem được**; **khô
    **Kết quả gần nhất** (so kỳ vọng) · **Cần chú ý** (SOS, Case mới, Ý thức, chờ QL chọn bước tiếp — chỉ đọc) · **Phụ huynh** (tên + SĐT) · **⋯**.
    Bỏ với TVV: "Việc tiếp theo", "Case", chip Cần làm / Quá hạn / Chờ duyệt → chip **Tất cả · Cần chú ý · Tạm dừng · Sắp thi · Thiếu thông tin**.
    ⋯ dòng: **Sửa thông tin · Tạm dừng / Thôi học · Kết quả thi · Mở hồ sơ** (panel tại chỗ sẵn có, OV-8b). 375: thẻ như mockup.
+   **Chia theo lớp** (chủ SP 13/10): bảng nhóm theo lớp như danh sách hiện nay (đầu nhóm: tên lớp · tuần · số em của tôi), cột Lớp bỏ trong nhóm.
 3. **CX › Học viên & Lớp** (mục 5): như TVV, mọi chi nhánh, **mặc định chip "Cần chú ý"**, thêm cột **Chi nhánh** và **TVV**.
 4. **Admin › Học viên & Lớp** (mục 6): cột Học viên · Lớp · Lượt MT gần nhất · Ô chưa nhập; ⋯ Sửa thông tin · Mở hồ sơ. Không cột Case / Việc tiếp theo.
 5. **Hồ sơ lớp TVV / CX** (mục 2): đầu trang không Nhập điểm / + Case / ⋯ rỗng; cách xem **Tổng hợp** (cột như mục 2, bỏ cột Lớp) · **Cần hỗ trợ** (chỉ đọc, không "Việc tiếp")
    · Lộ trình tiếp theo / KQĐR **đã chốt** (đọc) · **Thông tin lớp** (chỉ đọc — mở cho mọi vai không sửa được lớp); khối "Ở lớp này · học viên của tôi" (TVV);
-   bảng điểm cuối trang chỉ đọc, bỏ chip "MT còn n ô trống" với TVV / CX. Admin: Tổng hợp · Thông tin lớp (đọc) · bảng điểm sửa được (như nay).
+   **điểm MT từng kỹ năng + Overall vẫn hiện ở Tổng hợp và bảng điểm** (chỉ đọc, chủ SP 13/10), bỏ chip "MT còn n ô trống" với TVV / CX. Admin: Tổng hợp · Thông tin lớp (đọc) · bảng điểm sửa được (như nay).
 6. **Hồ sơ HV TVV / CX** (mục 3): dòng Liên hệ (mục 1) + khối **Đang xử lý** (chỉ đọc: ai · việc gì · hạn — từ Case / PA / Phối hợp / Báo PH đang mở, **cùng hàm** với
    Công việc, việc đã xong không hiện); nút theo quyền OV-8b: Sửa thông tin · Tạm dừng / Thôi học · Kết quả thi.
 7. QL, GVCN, GVBM: bảng / hồ sơ **không đổi** (trừ dòng Liên hệ chỉ đọc ở hồ sơ HV).
