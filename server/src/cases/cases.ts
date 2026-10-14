@@ -36,7 +36,7 @@ import { caseKhacChuongTrinh, chuongTrinhCuaLop } from './sos.ts';
 import { LA_CASE_SOS, NOT_UNCONFIRMED_PRESET, awaitingCauseCaseIds, dongBoTrangThaiCase, dongBoTrangThaiCaseLo, sosCaseState } from './sosState.ts';
 import { CAU_LUU_TRU, PLAN_DECISIONS, canBuoiTutor, coNguoiDay, coSoBuoiKy, decisionToStep, duongDotTest, kiemBuoiTutor, kiemSoBuoiTuan, soBuoiTu, tuanLich, type BuoiTutor, type PlanDecision } from '../../../shared/domain/index.ts';
 import { chenPa } from './taoPa.ts';
-import { nguoiGiuKetQua } from './giuKetQua.ts';
+import { nguoiGiuKetQua, type DongGiuKetQua } from './giuKetQua.ts';
 import { apDungDieuChinh, chuanHoaDieuChinh, daDayCua, ghiBanDieuChinh, lichSuDieuChinhCuaCase, nguoiSauSua, soBuoiMoi } from './planRevisions.ts';
 import { chuanHoaNguoiThucHien } from './nguoiThucHien.ts';
 import { dienMocQuyChe, kiemNoiDungCase, tenGiuaCua } from './sosAuto.ts';
@@ -3880,15 +3880,30 @@ const quyenPaTheoVaiTro = (p: Principal, iv: any, c: any) => laBoTro(iv)
 
 /**
  * OV-12e: `ghiDuoc` của NHIỀU PA một lần (dòng panel số liệu) — CÙNG luật `caseDetail` (người giữ việc || `quyenPaTheoVaiTro`), ngữ cảnh lấy từ cột
- * đã JOIN (`class_id` = lớp hiện tại của em trước, lớp của lượt sau — như `loadCase`). Người giữ việc theo lô.
+ * đã JOIN (`class_id` = lớp hiện tại của em trước, lớp của lượt sau — như `loadCase`), kèm cổng xem Case của `caseDetail`. Người giữ việc theo lô.
  * shortcut: PA bổ trợ miễn phí (`mt:`) mà người xem không có quyền theo vai hỏi thêm `laNguoiGiuMiniTestCuaPa` từng PA (hiếm: chỉ GVBM giữ Mini Test) — gom lô nếu đo thấy chậm.
  */
 export function ghiDuocPaMany(p: Principal, rows: readonly {
   id: number; kind: string; performer_user_id: number | null; case_id: number; nhom_bo_tro: string | null;
   topic: string | null; class_id: number | null; eff_student_id: number | null; owner_user_id: number | null;
 }[]): Map<number, boolean> {
-  const giu = nguoiGiuKetQua(rows.map((r) => ({ id: r.id, topic: r.topic, nhomBoTro: r.nhom_bo_tro, classId: r.class_id, ownerUserId: r.owner_user_id })), demoToday());
-  return new Map(rows.map((r) => [r.id, giu.get(r.id) === p.userId || quyenPaTheoVaiTro(p, r, r)]));
+  const ngay = demoToday();
+  const giu = nguoiGiuKetQua(rows.map((r) => ({ id: r.id, topic: r.topic, nhomBoTro: r.nhom_bo_tro, classId: r.class_id, ownerUserId: r.owner_user_id })), ngay);
+  /* Cổng xem của `caseDetail`: giữ việc một PA đang chạy của Case, hoặc ATTEMPT_VIEW — không qua thì Ngăn Case 403, nút "Ghi kết quả" vô ích
+     (vd. người dạy PA bổ trợ khi em đã chuyển lớp). PA đang chạy của các Case: một câu mỗi lô. */
+  const caseCua = new Map(rows.map((r) => [r.case_id, r]));
+  const dangChay: (DongGiuKetQua & { caseId: number })[] = [];
+  theoLo([...caseCua.keys()], (lo, ph) => {
+    for (const iv of db().prepare(`SELECT id, case_id, nhom_bo_tro FROM case_interventions WHERE case_id IN (${ph}) AND status IN ('planned', 'started')`)
+      .all(...lo) as any[]) {
+      const c = caseCua.get(iv.case_id)!;
+      dangChay.push({ id: iv.id, caseId: iv.case_id, topic: c.topic, nhomBoTro: iv.nhom_bo_tro ?? null, classId: c.class_id, ownerUserId: c.owner_user_id });
+    }
+  });
+  const giuChay = nguoiGiuKetQua(dangChay, ngay);
+  const giuCase = new Set(dangChay.filter((d) => giuChay.get(d.id) === p.userId).map((d) => d.caseId));
+  const xem = (r: typeof rows[number]) => giuCase.has(r.case_id) || can(p, PERMISSIONS.ATTEMPT_VIEW, { classId: r.class_id, studentId: r.eff_student_id });
+  return new Map(rows.map((r) => [r.id, xem(r) && (giu.get(r.id) === p.userId || quyenPaTheoVaiTro(p, r, r))]));
 }
 
 /** PR-PA: quyền ghi Kết quả / Sửa PA của MỘT PA — một chỗ. Người giữ việc (§8) luôn ghi được, dù không qua quyền theo vai trò. */
