@@ -104,7 +104,7 @@ export async function runPrHvlTests(t: YThucTestKit) {
     eq([gk.viec, gk.han, gk.tone, gk.dich.ghiKetQua], ['Kết quả PA S · kỳ W2–W3 SEP', 'hạn hết T3 21/09', 'info', true], 'Kết quả');
     const cuoi = theoViec(/^Kết quả cuối/);
     eq([cuoi.viec, cuoi.tone, cuoi.quaHanNgay], ['Kết quả cuối W1 · tuần W2 SEP', 'danger', 2], 'Kết quả cuối');
-    assert(/hạn hết T2 14\/09 · quá hạn 2 ngày/.test(cuoi.title), cuoi.title);
+    assert(/hạn hết T3 14\/09 · quá hạn 2 ngày/.test(cuoi.title), cuoi.title);
     eq(theoViec(/^Thêm PA/).tone, 'warn', 'Thêm PA chưa hạn');
     eq([theoViec(/^Chờ Quản lý/).viec, theoViec(/^Chờ Quản lý/).tone], ['Chờ Quản lý duyệt Case', 'info'], 'Chờ QL duyệt');
     const yt = theoViec(/^Xử lý vi phạm/);
