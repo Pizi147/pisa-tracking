@@ -19,8 +19,10 @@ export async function doiNgonNgu(nn: NgonNgu, daDangNhap: boolean): Promise<void
   if (nn === NGON_NGU) return;
   if (coPanelDangSua() && !window.confirm(t('Đang sửa dở — đổi ngôn ngữ sẽ tải lại trang và mất phần chưa lưu. Vẫn đổi?'))) return;
   if (!luuMay(nn)) return;
-  if (daDangNhap) await api.patch('/me/profile', { ngonNgu: nn }).catch(() => { /* tài khoản lưu lần sau (đồng bộ lúc tải phiên) */ });
-  else try { sessionStorage.setItem(VUA_CHON, '1'); } catch { /* không sao: tài khoản giữ tiếng cũ */ }
+  /* Chưa đăng nhập, hoặc lưu tài khoản lỗi (mất mạng): đánh dấu "vừa chọn" — lần đồng bộ sau đẩy lựa chọn của máy lên tài khoản,
+     không kéo máy về tiếng cũ. */
+  const daLuu = daDangNhap && await api.patch('/me/profile', { ngonNgu: nn }).then(() => true, () => false);
+  if (!daLuu) try { sessionStorage.setItem(VUA_CHON, '1'); } catch { /* không sao: tài khoản giữ tiếng cũ */ }
   location.reload();
 }
 
