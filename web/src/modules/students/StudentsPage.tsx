@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { useSession } from '../../lib/session.tsx';
@@ -16,7 +16,7 @@ import { ClassCreatePanel } from '../classes/ClassCreatePanel.tsx';
 import { TenGiaoVien } from '../classes/TenGiaoVien.tsx';
 import { BangHocVienLop } from './BangHocVienLop.tsx';
 import {
-  DUONG_TAB_CONG_VIEC, DUONG_TAB_TEST, LOAI_HAN_CUA_VIEC, PHAM_VI_NHAN, badgeHienTheoVai, badgeLop, demLoc, docGoc, docThamSoLoc, duongLichTest, khungCua, laVaiQuanLy, lopMoSan, needScoresText,
+  DUONG_TAB_CONG_VIEC, DUONG_TAB_TEST, duongHocVienLop, LOAI_HAN_CUA_VIEC, PHAM_VI_NHAN, badgeHienTheoVai, badgeLop, demLoc, docGoc, docThamSoLoc, duongLichTest, khungCua, laVaiQuanLy, lopMoSan, needScoresText,
   type BadgeLop, type GocHocVien, type LocHocVien, type LocPhuCanLam, type NguCanhDs, type PhamVi, type SapXep, type WorkScope, vaiXemHocVien,
 } from '@shared/domain/index.ts';
 import { HocVienTheoVai } from './HocVienTheoVai.tsx';
@@ -95,8 +95,10 @@ function TrangTheoLop({ admin }: { admin: boolean }) {
   const q = params.get('q') ?? '';
   const cnUrl = params.get('cn') ?? params.get('branchId');
   const branchId = cnUrl ? Number(cnUrl) : null;
-  /* Link trỏ một lớp / học viên (`classId`, `open`) không gửi lần chọn trước — lớp có thể ở chi nhánh khác (rà PR #205). */
-  const daNho = coDichLienKet(params) ? null : docChiNhanhDaNho(session?.user?.id);
+  /* Link trỏ một lớp / học viên (`classId`, `open`) không gửi lần chọn trước — lớp có thể ở chi nhánh khác (rà PR #205). Chỉ xét LÚC VÀO trang:
+     mở / đóng lớp ghi `open=` nhưng không được đổi đường API (lỗi bản chính 14/10: mở lớp lần đầu → cả trang tải lại). */
+  const tuLienKet = useRef(coDichLienKet(params)).current;
+  const daNho = tuLienKet ? null : docChiNhanhDaNho(session?.user?.id);
   const phamViUrl = params.get('phamVi');
   const sapXep: SapXep = params.get('sx') === 'chu-y' ? 'chu-y' : 'ten';
   const chiLop = params.get('classId') ? Number(params.get('classId')) : null;
@@ -126,15 +128,7 @@ function TrangTheoLop({ admin }: { admin: boolean }) {
     return () => clearTimeout(t);
   }, [draftQ, q, setParam]);
 
-  const qs = useMemo(() => {
-    const s = new URLSearchParams();
-    if (q.trim()) s.set('q', q.trim());
-    if (phamViUrl) s.set('phamVi', phamViUrl);
-    if (branchId) s.set('branchId', String(branchId));
-    /* PR-NV (T9): lần chọn trước — máy chủ bỏ nếu ngoài phạm vi; không đổi Phạm vi như `branchId`. */
-    else if (typeof daNho === 'number') s.set('cnNho', String(daNho));
-    return `/hoc-vien-lop?${s.toString()}`;
-  }, [q, phamViUrl, branchId, daNho]);
+  const qs = useMemo(() => duongHocVienLop(params, { tuLienKet, daNho }), [q, phamViUrl, branchId, daNho, tuLienKet]);   // eslint-disable-line react-hooks/exhaustive-deps
   const trang = useApi<TrangHocVienLop>('chuyenDen' in doc ? null : qs);
   const branches = useApi<Branch[]>('/ref/branches');
   const data = trang.data;

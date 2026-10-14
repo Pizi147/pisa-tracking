@@ -100,6 +100,24 @@ export function docGoc(view: string | null | undefined, loc: string | null | und
   return { goc: 'can-lam', loc: phu === 'qua-han' || phu === 'cho-duyet' || phu === 'thieu_tt' ? phu : null };
 }
 
+/**
+ * ĐƯỜNG `/hoc-vien-lop` của trang (ô tìm · Phạm vi · chi nhánh · lần chọn trước `cnNho`). `tuLienKet` = trang được MỞ bằng link trỏ một đích
+ * (`coDichLienKet` LÚC VÀO, không phải mỗi lần vẽ): mở / đóng lớp ghi `open=` lên URL nhưng không được đổi đường — đổi đường là tải lại cả trang
+ * (lỗi bản chính 14/10: bấm mở lớp lần đầu → Skeleton).
+ */
+export function duongHocVienLop(params: { get(k: string): string | null }, o: { tuLienKet: boolean; daNho: number | 'tat-ca' | null }): string {
+  const s = new URLSearchParams();
+  const q = (params.get('q') ?? '').trim();
+  if (q) s.set('q', q);
+  const phamVi = params.get('phamVi');
+  if (phamVi) s.set('phamVi', phamVi);
+  const cn = params.get('cn') ?? params.get('branchId');
+  if (cn) s.set('branchId', String(Number(cn)));
+  /* PR-NV (T9): lần chọn trước — máy chủ bỏ nếu ngoài phạm vi; không đổi Phạm vi như `branchId`. Link trỏ một đích thì không gửi (rà PR #205). */
+  else if (!o.tuLienKet && typeof o.daNho === 'number') s.set('cnNho', String(o.daNho));
+  return `/hoc-vien-lop?${s.toString()}`;
+}
+
 /** Nhóm xử lý của một Case — cùng ba chữ với bảng Tổng hợp (chủ SP 14/10): Chờ duyệt (chưa có PA chạy, PA chờ xác nhận, "Không cần theo dõi" chờ QL) · Đang xử lý (có PA đã chạy) · Xong. */
 export type NhomXuLy = 'cho-duyet' | 'dang-xu-ly' | 'xong';
 export const NHAN_NHOM_XU_LY = { 'cho-duyet': 'Chờ duyệt', 'dang-xu-ly': 'Đang xử lý', xong: 'Xong' } as const satisfies Record<NhomXuLy, string>;

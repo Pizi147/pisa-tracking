@@ -157,4 +157,17 @@ export async function runPrOv12fTests(t: YThucTestKit) {
     const lopMb = new Set(all('SELECT id FROM classes WHERE branch_id = ?', mb).map((x) => x.id));
     assert(r.rows.length > 0 && r.rows.every((x: any) => lopMb.has(x.classId)), `TVV hai chi nhánh: ${r.rows.length} dòng`);
   }));
+
+  check('OV12f-8 · Lỗi bản chính 14/10: mở / đóng lớp (ghi `open=` lên URL) KHÔNG đổi đường /hoc-vien-lop (đổi đường = cả trang tải lại); vào bằng link một đích thì không gửi cnNho', () => {
+    const vao = new URLSearchParams('phamVi=chi-nhanh');
+    const o = { tuLienKet: d.coDichLienKet(vao), daNho: 3 };
+    const truoc = d.duongHocVienLop(vao, o);
+    for (const open of ['12', '12,15', '-']) {
+      const sau = new URLSearchParams(`phamVi=chi-nhanh&open=${open}`);
+      assert(d.duongHocVienLop(sau, o) === truoc, `mở lớp đổi đường: ${d.duongHocVienLop(sau, o)} ≠ ${truoc}`);
+    }
+    assert(truoc.includes('cnNho=3'), `thiếu lần chọn trước: ${truoc}`);
+    const link = new URLSearchParams('classId=7');
+    assert(!d.duongHocVienLop(link, { tuLienKet: d.coDichLienKet(link), daNho: 3 }).includes('cnNho'), 'link một lớp vẫn gửi cnNho');
+  });
 }

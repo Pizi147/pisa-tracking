@@ -178,7 +178,7 @@ export function HocVienTheoVai({ vai }: { vai: 'tvv' | 'cx' }) {
 
   const pv = data?.phamVi;
   const tenCn = vai === 'cx' ? (cn ? branches.data?.find((b) => b.id === cn)?.name ?? 'Một chi nhánh' : 'Tất cả chi nhánh') : null;
-  const tenGoc: Record<GocVai, string> = { 'tat-ca': t('Tất cả'), sos: t('Đang SOS'), 'can-lam': t('Cần làm'), 'can-chu-y': t('Cần chú ý') };
+  const tenGoc: Record<GocVai, string> = { 'tat-ca': t('Tất cả'), sos: t('Đang SOS'), 'can-lam': t('Cần làm'), 'can-chu-y': CHIP_VAI_NHAN['can-chu-y'].nhan };   // nhãn chip TVV / CX sẵn có (cùng chữ, bản Anh theo EN-c)
   const dangXem = [tenCn, vai === 'tvv' && pv ? PHAM_VI_NHAN[pv.dangDung] : null, tenGoc[goc], goc === 'tat-ca' && chip !== 'tat-ca' ? CHIP_VAI_NHAN[chip].nhan : null,
     q.trim() ? `“${q.trim()}”` : null].filter(Boolean).join(' · ');
   const coLoc = (goc === 'tat-ca' && chip !== 'tat-ca') || !!q.trim();

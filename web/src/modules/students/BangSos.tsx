@@ -90,7 +90,7 @@ function OSos({ r, toanBo }: { r: DongSos; toanBo: boolean }) {
 
 const chuNguyenNhan = (c: CaseTomTat) => c.nguyenNhan ?? <span className="text-slate-500">{t('chưa xác nhận')}</span>;
 const chuPa = (c: CaseTomTat) => (c.pa.length
-  ? `${c.pa[0].ten}${c.pa[0].nguoi ? ` · ${c.pa[0].nguoi}` : ''}${c.pa.length > 1 ? ` ${t('+{n} PA', { n: c.pa.length - 1 })}` : ''}`
+  ? `${c.pa[0].ten}${c.pa[0].nguoi ? ` · ${c.pa[0].nguoi}` : ''}${c.pa.length > 1 ? ` +${c.pa.length - 1} PA` : ''}`
   : <span className="text-slate-500">{t('Chưa có PA')}</span>);
 const chuKetQua = (c: CaseTomTat) => (c.done && c.ketQua ? `${t('Xong')} · ${c.ketQua}` : c.ketQua ?? <span className="text-slate-500">{c.done ? t('Xong') : t('Chưa có kết quả')}</span>);
 

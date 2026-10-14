@@ -6,7 +6,6 @@ const so = (n: unknown, mot: string, nhieu: string) => `${n} ${Number(n) === 1 ?
 export const EN_F = {
   /* Thanh góc nhìn · lọc phụ · tuần thi */
   'Đang SOS': 'In SOS',
-  'Cần chú ý': 'Needs attention',
   'Lọc phụ': 'More filters',
   'Tuần thi': 'Test week',
   'Toàn bộ': 'All weeks',
@@ -41,7 +40,6 @@ export const EN_F = {
   'chưa xác nhận nguyên nhân': 'cause not confirmed',
   'Chưa có PA': 'No PA yet',
   'Chưa có kết quả': 'No result yet',
-  '+{n} PA': '+{n} PA',
   '{n} em SOS': (b) => `${so(b.n, 'student', 'students')} in SOS`,
   '{n} em · {m} lượt SOS': (b) => `${so(b.n, 'student', 'students')} · ${so(b.m, 'SOS attempt', 'SOS attempts')}`,
   '{n} chờ duyệt': '{n} pending',
