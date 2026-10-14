@@ -203,8 +203,17 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 - **Dọn bộ bổ trợ trùng**: chỉ khi `npm run dem-bo-tro-trung` (chỉ đọc) trên bản chính báo có em > 1 bộ PA bổ trợ cùng bài.
 
 ### OV-12 (prompt overhaul chủ SP 14/10) — đặc tả `docs/superpowers/specs/2026-10-14-ov12-sos-workflow-design.md`
-- **OV-12a** (đang làm, trước deploy): hạn ghi kết quả PA 2 tuần (hạn Thứ Ba, theo tuần từ ngày bắt đầu PA, hạn cố định, PA đang chạy tính lại) + QL xoá lớp trống / xoá nhiều HV (Chọn nhiều ở hồ sơ lớp) + TVV chọn Bước tiếp sau thi cả 3 hướng.
-- **OV-12b…g** chờ chủ SP duyệt 4 mockup `thiet-ke/mockup-ov12-*` + trả lời đặc tả mục 7. Thứ tự: mục 5.
+- **Đã merge 14/10:** OV-12a #381 · OV-12b #383 · OV-12h #386 · OV-12g #388 · EN-a #385 · sửa build #387. Mockup v3 (`thiet-ke/mockup-ov12-panel-v3-2026-10-14.html`): chủ SP trả lời 3 câu cuối 14/10 tối (đặc tả mục 7.12).
+- **Đang chạy (cloud, mỗi PR một session; báo cáo trong mô tả PR):** OV-12c (Case MT từ nhận xét · Progress "Xác nhận Case" 5 ngày giữ PA Bổ trợ · xoá Case khi đạt chưa xác nhận PA · migrate `prOv12c` ĐỔI DỮ LIỆU) · EN-b (tiếng Anh Công việc / Test / nhập điểm / ghi kết quả PA).
+- **Việc tiếp (planning viết prompt, chờ chủ SP cho giao):** OV-12d (Tổng hợp nhóm Xử lý 3 cột HV - Case · Chờ duyệt · Đang xử lý + hồ sơ MT khối Case & PA, sửa Rulebook 17.5) · OV-12e (hệ panel v3 toàn web: Công việc, Tổng quan, panel số liệu, hồ sơ, Ý thức; chip hạn ≤ 3 ngày vàng ở `deadlineView`) · OV-12f (Học viên & Lớp ba góc nhìn Tất cả · Đang SOS · Cần làm + panel một em; CX "Cần chú ý") · EN-c (hồ sơ HV / lớp) · EN-d (Case, Ý thức) → PR-SOTAY.
+- **Việc nhỏ còn lại từ rà OV-12 (không chặn, gom vào PR chạm vùng đó):**
+  - Nhãn nhật ký PA "ghi thêm" mang kỳ sau (`shared/domain/paDongBo.ts:180`).
+  - Ghi muộn T2/T3 sau kỳ kế: phải ghi lại hôm sau (đúng ví dụ chủ SP — giữ, chỉ ghi để biết).
+  - QL xoá em đã chuyển chi nhánh: xoá luôn lịch sử cũ (luật xoá có sẵn).
+  - Form kết quả PA còn chữ "Người dạy tuần này" (chữ "tuần") → OV-12e / EN-b.
+  - Bàn giao bỏ cả Nhắc GVCN→GVBM (chủ SP chưa phản đối).
+  - Góp ý hàng tuần: em đã chuyển đi không hiện hàng ở lớp cũ; rời trang trong app không hỏi.
+  - Nhóm nguyên nhân đòi cả em KCK và W1 dưới kỳ vọng khi Writing tổng đạt — planning chọn giữ theo từng task.
 
 ### Sau OV
 - **PR-EN** bản tiếng Anh (kế hoạch `2026-10-07-pr-en-tieng-anh.md` — đếm lại chuỗi vì OV / OV-12 đổi nhiều màn; chạy **sau OV-12**) → **PR-SOTAY** (cuối cùng) → deploy lần nữa.
@@ -237,13 +246,15 @@ Chạy **từng PR một** theo phụ thuộc (đặc tả mục 5). Song song c
 **OV-12 (14/10, đặc tả `2026-10-14-ov12-sos-workflow-design.md` mục 5):**
 | PR | Việc | Sau | Song song | Rà |
 |---|---|---|---|---|
-| **OV-12a** | Hạn PA 2 tuần + quyền QL xoá / TVV bước tiếp (migrate `prOv12a`) | — | — | sâu + security — **trước deploy** |
-| **OV-12b** | Hộp chấm MT: nhận xét bắt buộc + nhóm nguyên nhân khi dưới kỳ vọng | deploy + mockup 1 duyệt | OV-12g | sâu |
-| **OV-12g** | Góp ý hàng tuần (bảng mới) | mockup 4 duyệt | OV-12b | mặc định |
-| **OV-12c** | Case SOS MT không còn chờ nguyên nhân + migrate Case cũ → "Ghi nhận xét" | OV-12b | — | sâu + migrate |
+| ✅ | OV-12a #381 · OV-12b #383 · OV-12h #386 · OV-12g #388 · EN-a #385 | — | — | — |
+| **OV-12c** (đang chạy) | Case MT từ nhận xét · Progress "Xác nhận Case" · xoá Case khi đạt · migrate `prOv12c` | OV-12b, OV-12h | EN-b | sâu + tập dượt migrate (đếm dòng đổi) |
+| **EN-b** (đang chạy) | Tiếng Anh Công việc / Test / nhập điểm / kết quả PA | EN-a, OV-12b, OV-12h | OV-12c | mặc định |
 | **OV-12d** | Tổng hợp nhóm Xử lý 3 cột + hồ sơ MT khối Case & PA (sửa Rulebook 17.5) | OV-12c | OV-12e, f | mặc định |
 | **OV-12e** | Panel số liệu mở rộng dòng toàn web | OV-12c | OV-12d, f | sâu |
 | **OV-12f** | Học viên & Lớp ba góc nhìn + SOS theo tuần | OV-12c | OV-12d, e | sâu |
+| **EN-c**, **EN-d** | Tiếng Anh hồ sơ HV / lớp · Case, Ý thức | EN-b + PR OV-12 chạm cùng màn | — | mặc định |
+
+**Deploy (14/10):** lần 1 = main tới #384 (13 migrate, tới `prOv12a`), chủ SP làm từ thư mục chính. **Lần 2 (đêm 14/10, GV nước ngoài dùng sáng 15/10):** migrate mới chỉ thêm cột / bảng `prEn` (`users.ngon_ngu` — PHẢI migrate TRƯỚC khi đưa web, thiếu cột không ai đăng nhập được), `prOv12b`, `prOv12h`, `prOv12g`; + `prOv12c` nếu đã merge (đổi dữ liệu Case — tập dượt, đếm dòng). Theo `DEPLOY_2026-10.md`. Sau deploy: đổi mã Turso; báo QL meeting CX chờ quá 5 ngày sẽ hiện quá hạn ngay.
 
 | Bước | PR | Chạy sau | Song song được với |
 |---|---|---|---|
@@ -322,8 +333,9 @@ Xong: [x] kế hoạch, một dòng mục 11, CODE_MAP.md nếu thêm/xoá file.
 | OV-8b #352 · OV-10a #355 · OV-9 #356 · OV-1d #357 · OV-2c #360 · OV-10c #361 · OV-4c #362 · OV-10b #363 | ✅ merge 13/10 — **hết OV** | | | |
 | **OV-1e** #366 | — | Opus 5.5 | — | ✅ merge 14/10 (giữ lịch thi lại không theo ngày → OV-11e) |
 | OV-11a #372 · b #374 · c #371 · d #378 · e #375 · f #373 · g #379 · h #376 · i #377 | ✅ merge 14/10 (kế hoạch đã xoá: `git show 0e3adf32:docs/superpowers/plans/`) | Opus 5.5 | | |
-| **OV-12a** | prompt trong chat planning 14/10 (luật đã chốt ghi ở đặc tả OV-12 mục 2) | Opus 5.5 · XHigh | 4340/5513 | đang làm — trước deploy |
-| **OV-12b…g** | planning viết kế hoạch + prompt khi mockup duyệt | Opus 5.5 · XHigh (High) | 4341…4346 / 5514…5519 | sau deploy |
+| OV-12a #381 · OV-12b #383 · OV-12h #386 · OV-12g #388 · EN-a #385 | ✅ merge 14/10 (prompt trong chat planning) | Opus 5.5 | | |
+| **OV-12c** · **EN-b** | prompt trong chat planning 14/10 | Opus 5.5 · XHigh | | đang chạy (cloud) |
+| **OV-12d · e · f** · **EN-c · d** | planning viết prompt theo đặc tả mục 7 + mockup v3, mỗi PR một session cloud | Opus 5.5 · XHigh (High) | 4343…4346 / 5516…5519 | sau OV-12c |
 
 ## 10. Mẫu giao việc cho agent (session planning dùng)
 
@@ -367,6 +379,7 @@ Nhật ký chi tiết tới 04/10 ở `git show 575e898d:plan.md` (mục 14) và
 
 | Ngày | PR / nhánh · model | Kết quả |
 |---|---|---|
+| 14/10/2026 | Planning (Opus 5.5) · `claude/ov12-tai-lieu-1410` | Chủ SP chốt 3 câu mockup v3 (Tiến triển (2 tuần) + Nhận xét, bỏ Ghi chú · Thay PA / Xin hỗ trợ gộp vào Điều chỉnh · chip hạn ≤ 3 ngày vàng); plan mục 4/5/9.3 theo trạng thái 14/10 tối + việc nhỏ còn lại từ rà OV-12 |
 | 14/10/2026 | OV-12g (Opus 5.5) · `claude/ov12g-weekly-feedback-l7srnh` | Góp ý hàng tuần: hồ sơ lớp › Học viên › cách xem "Góp ý hàng tuần" (`?che-do=gop-y&tuan=`), hàng = em, cột = kỹ năng lớp, ‹ › tuần, lưu khi rời ô, ▸ 4 tuần; quyền máy chủ GV dạy kỹ năng / GVCN / QL·QT ghi, TVV·CX·Admin đọc; bảng `gop_y_tuan` (migrate `prOv12g`), xoá HV xoá dòng. |
 | 14/10/2026 | EN-a (Opus 5.5) · `claude/en-a-i18n-foundation-5z7qvt` | Nền tiếng Anh: `shared/i18n` (`t('chữ Việt')`, khoá = chữ Việt, tsc ép bản Anh), nút VI \| EN (đăng nhập · thanh trên · menu Tài khoản), nhớ theo tài khoản (`users.ngon_ngu`, migrate `prEn`) + máy, câu lỗi có khoá (`loi()`); dịch nhóm A: khung, đăng nhập, Hồ sơ cá nhân, `ui/*`, `lib/*`, shared điều hướng / vai / trạng thái / ô ngày (`prEn.tests`; do-khung `KHUNG_NGON_NGU=en`) |
 | 14/10/2026 | OV-12b (Opus 5.5) · `claude/luong-l-sos-ov12-eqx1fb` | Nhận xét MT bắt buộc (luật chủ SP 14/10): ô MT (không MT0 / MT cũ) có điểm phải có nhận xét ≥ 10 ký tự, band ô (W1/W2 từng task) dưới kỳ vọng → chip Nhóm nguyên nhân (thứ tự, 1 = chính); thiếu → 400 ở `PUT /attempts/:id/scores/:skill`, hộp chấm tắt Lưu + lý do, hồ sơ MT không lưu dưới 10 ký tự; ô cũ thiếu ghi "thiếu nhận xét"; Excel cột Nhận xét L/R/W1/W2/S + Nhóm; migrate `prOv12b` (cột `nhom_nguyen_nhan`) (`prOv12b.tests`) |
