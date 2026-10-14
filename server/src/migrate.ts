@@ -47,6 +47,7 @@ import { migratePrOv8a } from './migrate/prOv8a.ts';
 import { migratePrOv1c } from './migrate/prOv1c.ts';
 import { migratePrOv11e, themCotPrOv11e } from './migrate/prOv11e.ts';
 import { migratePrOv12a } from './migrate/prOv12a.ts';
+import { migratePrOv12g } from './migrate/prOv12g.ts';
 import { migratePrEn } from './migrate/prEn.ts';
 import { migratePrOv12b } from './migrate/prOv12b.ts';
 import { migratePrOv12c } from './migrate/prOv12c.ts';
@@ -318,6 +319,7 @@ function migrateCaseEngine(applied: string[], skipped: string[]) {
     /* PR-OV12b: assessment_scores.nhom_nguyen_nhan — nhóm nguyên nhân của ô MT dưới kỳ vọng (chỉ thêm cột, chạy lặp được). */ migratePrOv12b(conn, applied);
     /* PR-OV12c (SAU PR-OV12b — cần cột nhom_nguyen_nhan): Case MT chờ nguyên nhân → nguyên nhân từ nhận xét / việc Ghi nhận xét, thẻ Báo lên nguyên nhân đóng, nhãn SOS Progress (đổi dữ liệu, chạy lặp được). */ migratePrOv12c(conn, applied);
     /* PR-OV12h: bảng case_followup_buoi — Kết quả PA Tutor theo buổi (chỉ thêm bảng, chạy lặp được). */ migratePrOv12h(conn, applied);
+    /* PR-OV12g: bảng Góp ý hàng tuần (chỉ cấu trúc, chạy lặp được). */ migratePrOv12g(conn, applied);
 
     conn.prepare("INSERT OR REPLACE INTO demo_config (key, value, updated_at) VALUES ('case_engine_migrated_at', ?, ?)")
       .run(nowIso(), nowIso());

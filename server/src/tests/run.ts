@@ -9352,6 +9352,9 @@ await runPrOv12cTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P,
 // ==================================================================== PR-OV12h (bỏ Nhắc · kết quả PA từng em · Tutor theo buổi · meeting CX hạn 5 ngày)
 const { runPrOv12hTests } = await import('./prOv12h.tests.ts');
 await runPrOv12hTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== PR-OV12g (Góp ý hàng tuần ở hồ sơ lớp: ghi / sửa / xoá · quyền · 4 tuần · migrate)
+const { runPrOv12gTests } = await import('./prOv12g.tests.ts');
+await runPrOv12gTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`

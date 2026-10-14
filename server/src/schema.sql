@@ -1989,3 +1989,18 @@ CREATE TABLE ban_chup_luot (
 CREATE INDEX idx_bcl_student ON ban_chup_lo_trinh(student_id);
 CREATE INDEX idx_bcl_class ON ban_chup_lo_trinh(class_id);
 CREATE INDEX idx_bcluot_class ON ban_chup_luot(class_id);
+
+-- PR-OV12g: GÓP Ý HÀNG TUẦN ở hồ sơ lớp — một ô chữ mỗi em × lớp × tuần × kỹ năng (cột của lớp: FT L R W S, lớp thường theo môn chương trình).
+-- Không bắt buộc, không việc, không thông báo. Em chuyển lớp: dòng giữ class_id lớp cũ. Xoá học viên xoá dòng (`CAU_XOA_HOC_VIEN`).
+CREATE TABLE gop_y_tuan (
+  id INTEGER PRIMARY KEY,
+  student_id INTEGER NOT NULL REFERENCES students(id),
+  class_id INTEGER NOT NULL REFERENCES classes(id),
+  period_id INTEGER NOT NULL REFERENCES report_periods(id),
+  skill TEXT NOT NULL,
+  noi_dung TEXT NOT NULL,              -- ≤ 500 ký tự; xoá hết chữ = xoá dòng
+  ghi_boi INTEGER REFERENCES users(id),
+  ghi_luc TEXT NOT NULL,
+  UNIQUE (student_id, class_id, period_id, skill)
+);
+CREATE INDEX idx_gop_y_tuan_lop ON gop_y_tuan(class_id, period_id);
