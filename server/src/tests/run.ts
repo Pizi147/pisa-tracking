@@ -9337,6 +9337,9 @@ await runPrOv12aTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P,
 // ==================================================================== PR-EN (bản tiếng Anh: từ điển, ngôn ngữ theo tài khoản, mã lỗi, quét nguồn)
 const { runPrEnTests } = await import('./prEn.tests.ts');
 await runPrEnTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== PR-OV12g (Góp ý hàng tuần ở hồ sơ lớp: ghi / sửa / xoá · quyền · 4 tuần · migrate)
+const { runPrOv12gTests } = await import('./prOv12g.tests.ts');
+await runPrOv12gTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`

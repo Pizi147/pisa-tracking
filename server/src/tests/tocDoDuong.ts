@@ -131,6 +131,8 @@ export const DUONG_DO: MucDo[] = [
   { trang: 'Hồ sơ lớp FT', vai: MOI_VAI, url: '/classes/{lopFT}/can-ho-tro' },
   /* OV-3c: cách xem Kết quả đầu ra (KQĐR lớp trước, 4 tuần theo đợt) — em · MT0 · Final · Case theo lô. */
   { trang: 'Hồ sơ lớp FT', vai: MOI_VAI, url: '/classes/{lopFT}/ket-qua-dau-ra' },
+  /* OV-12g: cách xem Góp ý hàng tuần — 4 tuần một câu + cột / GV phân công một câu. */
+  { trang: 'Hồ sơ lớp FT', vai: MOI_VAI, url: '/classes/{lopFT}/gop-y' },
   { trang: 'Hồ sơ lớp FT', vai: MOI_VAI, url: '/classes/{lopFT}/y-thuc' },
   { trang: 'Hồ sơ lớp FT', vai: MOI_VAI, url: '/classes/{lopFT}/violations' },
   { trang: 'Hồ sơ lớp FT', vai: MOI_VAI, url: '/classes/{lopFT}/cham' },
@@ -156,6 +158,7 @@ export const DUONG_DO: MucDo[] = [
   { trang: 'Hồ sơ lớp thường', vai: ['QL', 'QT', 'GVCN_THUONG'], url: '/classes/{lopThuong}/roster' },
   { trang: 'Hồ sơ lớp thường', vai: ['QL', 'QT', 'GVCN_THUONG'], url: '/classes/{lopThuong}/phan-tich-lop' },
   { trang: 'Hồ sơ lớp thường', vai: ['QL', 'QT', 'GVCN_THUONG'], url: '/classes/{lopThuong}/can-ho-tro' },
+  { trang: 'Hồ sơ lớp thường', vai: ['QL', 'QT', 'GVCN_THUONG'], url: '/classes/{lopThuong}/gop-y' },
   { trang: 'Hồ sơ lớp thường', vai: ['QL', 'QT', 'GVCN_THUONG'], url: '/classes/{lopThuong}/y-thuc' },
   { trang: 'Hồ sơ lớp thường', vai: ['QL', 'QT', 'GVCN_THUONG'], url: '/classes/{lopThuong}/cham' },
   /* PR-LT, Task 5: GVCN_THUONG đọc được kế hoạch Chuyển tiếp lớp (canEdit=false ở đó), không sửa được (chỉ QL/QT gọi POST). */
@@ -451,6 +454,9 @@ export const TRAN: Record<string, number> = {
   /* OV-3c: đo 13 (QT 12) — trần max(đo + 10, ⌈đo × 1.3⌉). */
   'QL /classes/3/ket-qua-dau-ra': 23, 'GVCN /classes/3/ket-qua-dau-ra': 23, 'GVBM /classes/3/ket-qua-dau-ra': 23,
   'GVCN_THUONG /classes/3/ket-qua-dau-ra': 23, 'QT /classes/3/ket-qua-dau-ra': 22,
+  /* OV-12g: Góp ý hàng tuần đo 9 (QT 8) — trần max(đo + 10, ⌈đo × 1.3⌉). */
+  'QL /classes/3/gop-y': 19, 'GVCN /classes/3/gop-y': 19, 'GVBM /classes/3/gop-y': 19, 'GVCN_THUONG /classes/3/gop-y': 19, 'QT /classes/3/gop-y': 18,
+  'QL /classes/6/gop-y': 19, 'GVCN_THUONG /classes/6/gop-y': 19, 'QT /classes/6/gop-y': 18,
   'QL /classes/6/can-ho-tro': 25,
   'GVCN_THUONG /classes/6/can-ho-tro': 25,
   'QT /classes/6/can-ho-tro': 22,

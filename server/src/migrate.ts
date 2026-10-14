@@ -47,6 +47,7 @@ import { migratePrOv8a } from './migrate/prOv8a.ts';
 import { migratePrOv1c } from './migrate/prOv1c.ts';
 import { migratePrOv11e, themCotPrOv11e } from './migrate/prOv11e.ts';
 import { migratePrOv12a } from './migrate/prOv12a.ts';
+import { migratePrOv12g } from './migrate/prOv12g.ts';
 import { migratePrEn } from './migrate/prEn.ts';
 
 /**
@@ -312,6 +313,7 @@ function migrateCaseEngine(applied: string[], skipped: string[]) {
     /* PR-OV11e (SAU prOv1b / prOv1c): lượt MT đã chốt chụp dấu KCK hiện tại — kết luận giữ như màn đang hiện (đổi dữ liệu, chạy lặp được). */ migratePrOv11e(conn, applied);
     /* PR-OV12a: hạn ghi kết quả PA → lịch kỳ hai tuần, hết Thứ Ba, không sớm hơn hạn cũ (đổi dữ liệu, chạy lặp được). */ migratePrOv12a(conn, applied);
     /* PR-EN: ngôn ngữ theo tài khoản — users.ngon_ngu (chỉ thêm cột, chạy lặp được). */ migratePrEn(conn, applied);
+    /* PR-OV12g: bảng Góp ý hàng tuần (chỉ cấu trúc, chạy lặp được). */ migratePrOv12g(conn, applied);
 
     conn.prepare("INSERT OR REPLACE INTO demo_config (key, value, updated_at) VALUES ('case_engine_migrated_at', ?, ?)")
       .run(nowIso(), nowIso());

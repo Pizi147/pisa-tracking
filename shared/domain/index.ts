@@ -86,3 +86,4 @@ export * from './tongKetLoTrinh.ts';
 export * from './paDongBo.ts';
 export * from './gopViec.ts';
 export * from './lienHe.ts';
+export * from './gopYTuan.ts';

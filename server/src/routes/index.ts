@@ -55,6 +55,7 @@ import * as banGiaoSvc from '../classes/banGiao.ts';
 import * as loTrinhTiepSvc from '../classes/loTrinhTiep.ts';
 import * as cuoiKhoaSvc from '../normal/cuoiKhoa.ts';
 import * as kyVongSvc from '../normal/kyVong.ts';
+import * as gopYSvc from '../classes/gopYTuan.ts';
 import * as luatLoTrinhSvc from '../classes/luatLoTrinh.ts';
 import * as hocVienLopSvc from '../classes/hocVienLop.ts';
 import { hocVienTheoVai } from '../classes/hocVienTheoVai.ts';
@@ -1303,6 +1304,16 @@ api.get('/classes/:id/can-ho-tro', requireAuth, wrap((req) => {
 api.get('/classes/:id/ket-qua-dau-ra', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   return kyVongSvc.kqdrLopFt(principalOf(req), pInt(req, 'id'));
+}));
+
+/** OV-12g: hồ sơ lớp › Học viên › Góp ý hàng tuần — tuần đang xem + 3 tuần trước; ghi một ô (chữ trống = xoá). Quyền kiểm ở máy chủ. */
+api.get('/classes/:id/gop-y', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return gopYSvc.gopYTuan(principalOf(req), pInt(req, 'id'), qStr(req, 'tuan'));
+}));
+api.put('/classes/:id/gop-y', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return gopYSvc.ghiGopYTuan(principalOf(req), pInt(req, 'id'), req.body ?? {});
 }));
 
 /** ⋮ Sửa thông tin lớp: mã lớp, LT (FT), ghi chú; chương trình chỉ khi lớp chưa có học viên và bài Test. */
