@@ -170,8 +170,8 @@ export function NganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose
   const nutDau = data.viewer.coTheMoLai
     ? <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={moLaiBusy} onClick={() => void moLai()}>{moLaiBusy ? 'Đang mở lại…' : 'Mở lại'}</button>
     : canDong && data.viewer.coTheSua
-      /* OV-7b: Case từ SOS đã xác nhận nguyên nhân — cùng panel Sửa Case, chữ nói đúng việc ("Sửa xác nhận": nguyên nhân, mô tả). */
-      ? <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setView({ loai: 'sua' })}>{data.sos?.fromSos && data.sos?.hasCause ? 'Sửa xác nhận' : 'Sửa'}</button>
+      /* OV-7b: Case từ SOS đã xác nhận nguyên nhân — cùng panel Sửa Case, chữ nói đúng việc ("Sửa xác nhận": nguyên nhân, mô tả). OV-12c: Case MT không có bước xác nhận → "Sửa". */
+      ? <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setView({ loai: 'sua' })}>{data.sos?.fromSos && data.sos?.hasCause && !data.sos?.laMt ? 'Sửa xác nhận' : 'Sửa'}</button>
       /* Rà #229: Case hệ thống đóng — không có Mở lại tay, nói đường mở. */
       : data.status === 'done' && data.systemCloseLabel && data.viewer.canApprove
         ? <span className="text-xs text-slate-400">Hệ thống đóng — Hoàn tác Kết thúc học để mở</span>

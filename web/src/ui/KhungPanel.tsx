@@ -134,7 +134,9 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong = 'hep', tabs, ngCanh, q
         {ngCanh && <div className="shrink-0 truncate px-4 pb-2 pt-2 text-xs text-slate-400 max-sm:whitespace-normal">{ngCanh}</div>}
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-4">{children}</div>
         {chan?.v3 && (
-          <footer className={`flex shrink-0 flex-col gap-2 border-t px-4 pb-3.5 pt-2.5 ${chan.dongTren || chan.conThieu?.length ? '' : 'sm:hidden'}`} style={{ borderColor: 'var(--line-strong)', background: 'var(--surface)' }}>
+          /* Tại chỗ ở 375 (thẻ trong `main` cuộn): chân dính đáy, sát trên thanh điều hướng dưới — mép dính tính từ đệm `pb-20` (80 px) của `main`,
+             thanh dưới cao 57 px + vùng an toàn → lùi 23 px. */
+          <footer className={`flex shrink-0 flex-col gap-2 border-t px-4 pb-3.5 pt-2.5 ${chan.dongTren || chan.conThieu?.length ? '' : 'sm:hidden'} ${taiCho ? 'max-sm:sticky max-sm:bottom-[calc(env(safe-area-inset-bottom)-23px)] max-sm:z-20' : ''}`} style={{ borderColor: 'var(--line-strong)', background: 'var(--surface)' }}>
             {chan.conThieu?.length ? <DongCanSua muc={chan.conThieu} /> : null}
             {chan.dongTren && <div className="flex min-h-6 items-center gap-2 text-[13px] text-slate-400">{chan.dongTren}</div>}
             {chan.chinh && <div className="sm:hidden [&>button]:min-h-[48px] [&>button]:w-full [&>button]:justify-center [&>button]:text-[15px] [&>button]:font-bold">{chan.chinh}</div>}
@@ -158,7 +160,7 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong = 'hep', tabs, ngCanh, q
   if (taiCho) {
     return (
       <section ref={khung} tabIndex={-1} aria-label={tieuDe} onKeyDown={(e) => { if (e.key === 'Escape' && !e.defaultPrevented && !khung.current?.querySelector('[aria-modal="true"]')) dongRef.current(); }}
-        className="card flex flex-col overflow-hidden -outline-offset-2 lg:max-h-[calc(100dvh-8rem)]">
+        className={`card flex flex-col -outline-offset-2 lg:max-h-[calc(100dvh-8rem)] ${chan?.v3 ? 'max-sm:overflow-visible sm:overflow-hidden' : 'overflow-hidden'}`}>
         <KhungTaiCho.Provider value={false}>{than}</KhungTaiCho.Provider>
       </section>
     );

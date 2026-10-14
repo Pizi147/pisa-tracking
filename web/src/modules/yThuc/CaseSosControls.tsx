@@ -128,7 +128,7 @@ export function XacNhanCasePanel({ data, onXong, ...chung }: ChungPanel & { data
   return (
     <KhungPanel tieuDe="Xác nhận Case" {...chung} onDong={chung.onClose}
       dau={dauCase(data, chung.lop, `Progress · ${tenMonNgan(ct, topic)}`, true)}
-      chan={{ v3: true, chinh: nut, daSua, conThieu: lf.conThieu(loi), dongTren: <TrangThaiLuu tt={busy ? 'dang' : sua ? 'nhap' : null} onHuy={() => { setSua(false); setV(goc); }} /> }}>
+      chan={{ v3: true, chinh: nut, daSua, conThieu: lf.conThieu(loi), dongTren: busy || sua ? <TrangThaiLuu tt={busy ? 'dang' : 'nhap'} onHuy={() => { setSua(false); setV(goc); }} /> : undefined }}>
       <div className="flex flex-col gap-5 pt-4">
         <CanLam>
           <div>
@@ -196,7 +196,7 @@ export function XacNhanPaPanel({ pa, data, onXong, ...chung }: ChungPanel & { pa
   return (
     <KhungPanel tieuDe="Xác nhận PA" {...chung} onDong={chung.onClose}
       dau={dauCase(data, chung.lop, `MT${data.tenSos?.mt ?? data.attemptNo ?? ''} · ${data.categoryLabel ?? ''}`, true)}
-      chan={{ v3: true, chinh: ktd ? undefined : nut, daSua: sua, conThieu: lf.conThieu(loi), dongTren: <TrangThaiLuu tt={busy ? 'dang' : sua ? 'nhap' : null} onHuy={() => { setSua(false); setV(goc); }} /> }}>
+      chan={{ v3: true, chinh: ktd ? undefined : nut, daSua: sua, conThieu: lf.conThieu(loi), dongTren: busy || sua ? <TrangThaiLuu tt={busy ? 'dang' : 'nhap'} onHuy={() => { setSua(false); setV(goc); }} /> : undefined }}>
       <div className="flex flex-col gap-5 pt-4">
         <CanLam>
           {ktd ? (

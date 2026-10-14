@@ -534,14 +534,15 @@ export function raiseSignalsForResult(p: Principal, attempt: any, result: Attemp
 
 /**
  * Case TỰ TẠO chưa có PA được xác nhận (OV-1c → OV-12c, chủ SP 14/10): chính lượt `attemptSql` mở (mốc `opened`), không thẻ "Không cần theo
- * dõi" chờ duyệt, không tệp, mọi PA còn sống là PA quy chế máy gán chưa ghi gì (chưa xác nhận, chưa PA GV thêm). Nguyên nhân KHÔNG còn là dấu
+ * dõi" chờ duyệt, không tệp (của Case hay PA — xoá không để mất bằng chứng), mọi PA còn sống là PA quy chế máy gán chưa ghi gì (chưa xác nhận, chưa PA GV thêm). Nguyên nhân KHÔNG còn là dấu
  * "đã đụng" — Case MT có nguyên nhân từ nhận xét ngay khi ra đời. `sc` là bí danh `sos_cases`. Dùng cho xoá SOS (em đạt lại → xoá hẳn).
  * Migrate `prOv1c` giữ luật cũ (`CASE_CHUA_DUNG_OV1C`, có điều kiện chưa nguyên nhân) — chạy lại không đổi kết quả đã ra.
  */
 export const CASE_CHUA_DUNG = (sc = 'sc', attemptSql = '?') => `(${sc}.status != 'done'
   AND EXISTS (SELECT 1 FROM case_milestones m_o WHERE m_o.case_id = ${sc}.id AND m_o.kind = 'opened' AND m_o.attempt_id = ${attemptSql})
   AND NOT ${CO_THE_KHONG_THEO_DOI(sc)}
-  AND NOT EXISTS (SELECT 1 FROM attachments t_o WHERE t_o.owner_type = 'sos_case' AND t_o.owner_id = ${sc}.id)
+  AND NOT EXISTS (SELECT 1 FROM attachments t_o WHERE (t_o.owner_type = 'sos_case' AND t_o.owner_id = ${sc}.id)
+    OR (t_o.owner_type = 'case_intervention' AND t_o.owner_id IN (SELECT iv_t.id FROM case_interventions iv_t WHERE iv_t.case_id = ${sc}.id)))
   AND NOT EXISTS (SELECT 1 FROM case_interventions iv_o WHERE iv_o.case_id = ${sc}.id AND iv_o.status != 'cancelled' AND NOT ${PA_QUY_CHE_CHUA_GHI('iv_o')}))`;
 /** Luật OV-1c nguyên bản (thêm "chưa nguyên nhân") — chỉ cho migrate `prOv1c` / `kiem-truoc-ov1c`. */
 export const CASE_CHUA_DUNG_OV1C = (sc = 'sc', attemptSql = '?') => `(${CASE_CHUA_DUNG(sc, attemptSql)}

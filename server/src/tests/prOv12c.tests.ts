@@ -155,17 +155,19 @@ export async function runPrOv12cTests(t: YThucTestKit) {
     assert(one('SELECT status, confirmed_by FROM case_interventions WHERE id = ?', pa2.id).status === 'started', 'PA chạy');
   }));
 
-  check('OV12c-5 · em đạt lại (Overall ≥ kỳ vọng) → Case chưa xác nhận PA XOÁ HẲN; đã xác nhận PA thì giữ + mốc "Overall đã đạt"', () => thu(() => {
-    for (const daXacNhan of [false, true]) {
+  check('OV12c-5 · em đạt lại (Overall ≥ kỳ vọng) → Case chưa xác nhận PA XOÁ HẲN; đã xác nhận PA / PA có tệp đính thì giữ + mốc "Overall đã đạt"', () => thu(() => {
+    for (const ca of ['xoa', 'xac-nhan', 'tep'] as const) {
+      const daXacNhan = ca !== 'xoa';
       dung(luot);
       diem(luot, 'listening', 5); diem(luot, 'reading', 7); diem(luot, 'writing1', 7); diem(luot, 'writing2', 7);
       attempts.saveScore(QL, luot, 'speaking', { noShow: true }, TRONG);   // S dời tuần → chốt, L dưới kỳ vọng
       const c = caseCua(luot)[0];
       assert(c && c.status !== 'done', 'phải có Case L sau chốt');
-      if (daXacNhan) {
-        const pa = one(`SELECT * FROM case_interventions WHERE case_id = ? AND preset = 1`, c.id);
-        sosAuto.xacNhanPaQuyChe(QL, pa.id, { description: pa.description });
-      }
+      const pa = one(`SELECT * FROM case_interventions WHERE case_id = ? AND preset = 1`, c.id);
+      if (ca === 'xac-nhan') sosAuto.xacNhanPaQuyChe(QL, pa.id, { description: pa.description });
+      /* GV đính bằng chứng vào PA quy chế chưa xác nhận — xoá Case sẽ mất tệp, nên giữ. */
+      if (ca === 'tep') conn.prepare(`INSERT INTO attachments (owner_type, owner_id, kind, url, display_name, uploaded_by, created_at)
+        VALUES ('case_intervention', ?, 'link', 'https://vd.test/a', 'Ảnh bài', ?, ?)`).run(pa.id, QL.userId, new Date().toISOString());
       diem(luot, 'speaking', 7, { today: BU });   // (5 + 7 + 7 + 7) / 4 = 6.5 ≥ 6.5
       const sau = one('SELECT * FROM sos_cases WHERE id = ?', c.id);
       if (!daXacNhan) {
@@ -173,7 +175,7 @@ export async function runPrOv12cTests(t: YThucTestKit) {
         assert(!all('SELECT 1 FROM case_issues WHERE case_id = ?', c.id).length && !all('SELECT 1 FROM case_interventions WHERE case_id = ?', c.id).length, 'xoá cả nguyên nhân / PA');
         assert(one(`SELECT COUNT(*) n FROM audit_logs WHERE action = 'case.xoa_overall_dat' AND entity_id = ?`, c.id).n === 1, 'nhật ký xoá');
       } else {
-        assert(sau && sau.status !== 'done', 'Case đã xác nhận PA phải giữ');
+        assert(sau && sau.status !== 'done', `Case ${ca} phải giữ`);
         assert(one(`SELECT COUNT(*) n FROM case_milestones WHERE case_id = ? AND kind = 'overall_dat'`, c.id).n === 1, 'thiếu mốc Overall đã đạt');
       }
       conn.exec('ROLLBACK'); conn.exec('BEGIN IMMEDIATE'); xoaNho();
