@@ -132,7 +132,7 @@ function dongThuong(a: any, b: AttemptBundle, prog: { code: string; skills: stri
   const skillRows = b.skillRows.get(a.id) ?? [];
   const r = evaluateRegular(prog.skills, scores, prog.code, nguongDatLop(a.class_id));
   const d: DongThuong = {
-    ma: a.student_code, ten: a.full_name, chiNhanh: a.branch_name ?? '', lop: a.class_code, bai: nhanDot(a.kind, null), tuan: a.tuan_code, tuanBd: a.week_start,
+    ma: a.student_code, ten: a.full_name, chiNhanh: a.branch_name ?? '', lop: a.class_code, bai: nhanDot(a.kind, a.attempt_no), tuan: a.tuan_code, tuanBd: a.week_start,
     mon: r.skills.map((m) => ({
       ten: tenMon(prog.code, m.skill), pct: phanTram(m.ratio), diem: m.score, tong: m.total,
       tuan: skillRows.find((x) => x.skill === m.skill)?.period_code ?? null,
@@ -177,7 +177,7 @@ export function duLieuXuatMt(p: Principal, f: BoLocXuatMt, toiDa = XUAT_TOI_DA_L
   const cs = manhPhamVi(v);
   const tg = manhThoiGian(f);
   const dk: [string, (string | number)[]][] = [
-    [`a.status != 'cancelled'`, []], [f.khung === 'ft' ? `a.kind = 'mock'` : `a.kind IN ('progress','final')`, []], [cs.sql, cs.params], [tg.sql, tg.params],
+    [`a.status != 'cancelled'`, []], [f.khung === 'ft' ? `a.kind = 'mock'` : `a.kind IN ('progress','final','checkpoint')`, []], [cs.sql, cs.params], [tg.sql, tg.params],
   ];
   if (f.chiNhanh.length) dk.push([`c.branch_id IN (${dauHoi(f.chiNhanh.length)})`, f.chiNhanh]);
   if (f.lop.length) dk.push([`c.id IN (${dauHoi(f.lop.length)})`, f.lop]);

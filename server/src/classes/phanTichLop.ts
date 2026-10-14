@@ -9,7 +9,7 @@
  */
 import {
   ATTEMPT_KIND_SHORT, ENTRY_SKILLS, ENTRY_SKILL_SHORT, PERMISSIONS, type AttemptKind, RATIO_PASS_THRESHOLD, REGULAR_SKILLS, categoryOf, tenKyNang, tenMon, tenMonNgan,
-  caseCategoryLabel,
+  caseCategoryLabel, khoaBai, nhanBai,
 } from '../../../shared/domain/index.ts';
 import { db } from '../db.ts';
 import { require_, type Principal } from '../permissions.ts';
@@ -92,10 +92,13 @@ function tinhMotLop(prog: ProgrammeInfo | null, nguong: number, soHocVien: numbe
     for (const a of attempts) {
       const r = danhGiaMon(a, bundle.scores.get(a.id) ?? [], prog, null);
       if (!r) continue;
-      for (const x of r.mon) cong(`${x.skill}|${a.kind}`, x.dat, a.student_id);
+      const k = khoaBai(a.kind, a.attempt_no);   // OV-11h (PT-1): Checkpoint mỗi số một cột (`checkpoint:2`)
+      for (const x of r.mon) cong(`${x.skill}|${k}`, x.dat, a.student_id);
       /* K2-40: "Cả bài" = % tổng của bài (đủ điểm mới có) so với ngưỡng đạt của lớp lượt đó (OV-6b1) — không viết số 0.7 thứ hai. */
-      if (!khongChiaMon && r.tyLeTong != null) cong(`ca-bai|${a.kind}`, r.tyLeTong >= r.nguong, a.student_id);
+      if (!khongChiaMon && r.tyLeTong != null) cong(`ca-bai|${k}`, r.tyLeTong >= r.nguong, a.student_id);
     }
+    /* OV-11h (PT-1): chương trình liên tục (PET / KET) — cột theo số Checkpoint đã có, không rơi về Progress · Final. */
+    const soCp = [...new Set(attempts.filter((a) => a.kind === 'checkpoint').map((a) => a.attempt_no as number))].sort((x, y) => x - y);
     return {
       loai: 'thuong',
       dong: [
@@ -104,8 +107,10 @@ function tinhMotLop(prog: ProgrammeInfo | null, nguong: number, soHocVien: numbe
         ...mon.map((k) => ({ key: k, nhan: tenMonNgan(prog?.code, k), tenDayDu: tenMon(prog?.code, k), category: categoryOf(k) ?? k })),
       ],
       /* K2-40, PF6: cột theo mốc của chương trình — Pre FOU chỉ Cuối khoá, một dòng Tổng hợp. */
-      cot: (prog?.checkpoints.length ? prog.checkpoints.map((c) => c.kind) : ['progress', 'final'] as const)
-        .map((k) => ({ key: k as string, nhan: ATTEMPT_KIND_SHORT[k as AttemptKind] ?? k })),
+      cot: prog?.lapMoiTuan != null
+        ? soCp.map((n) => { const k = khoaBai('checkpoint', n); return { key: k, nhan: nhanBai(k) }; })
+        : (prog?.checkpoints.length ? prog.checkpoints.map((c) => c.kind) : ['progress', 'final'] as const)
+          .map((k) => ({ key: k as string, nhan: ATTEMPT_KIND_SHORT[k as AttemptKind] ?? k })),
       o, ds, soHocVien,
     };
   }
@@ -129,12 +134,12 @@ function tinhMotLop(prog: ProgrammeInfo | null, nguong: number, soHocVien: numbe
 /**
  * LUẬT CHẤM ĐẠT TỪNG MÔN CỦA MỘT BÀI (PR-Pb2-b tách nguyên thân từ `tinhMotLop` — tab Phân tích lớp và bảng Phân tích giáo viên gọi chung):
  *   FT (`mock`)          band ≥ kỳ vọng của đợt (`expectationFor`, theo Target + lộ trình); không kỳ vọng (KCK) → null. W1, W2 so riêng.
- *   Lớp thường           Giữa / Cuối khoá: `evaluateRegular` (từ 70%) — chỉ môn đã đủ điểm (pass / fail); kèm % tổng cho dòng "Cả bài".
+ *   Lớp thường           Giữa / Cuối khoá, Checkpoint (PET / KET — OV-11h): `evaluateRegular` (từ 70%) — chỉ môn đã đủ điểm (pass / fail); kèm % tổng cho dòng "Cả bài".
  * `null` = bài không chấm đạt ở đây (loại bài khác, hoặc không có kỳ vọng).
  */
 export function danhGiaMon(a: any, scores: readonly any[], prog: ProgrammeInfo | null, mucTieu: number | null): { mon: { skill: string; dat: boolean }[]; tyLeTong: number | null; nguong: number } | null {
   if (prog?.scoringMode === 'ratio') {
-    if (a.kind !== 'progress' && a.kind !== 'final') return null;
+    if (a.kind !== 'progress' && a.kind !== 'final' && a.kind !== 'checkpoint') return null;
     const r = evaluateRegular([...(prog?.skills ?? REGULAR_SKILLS)], scores as any, prog?.code, nguongDatLop(a.class_id));
     return {
       mon: r.skills.filter((x) => x.outcome === 'pass' || x.outcome === 'fail').map((x) => ({ skill: x.skill as string, dat: x.outcome === 'pass' })),

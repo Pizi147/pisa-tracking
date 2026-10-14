@@ -162,13 +162,13 @@ export async function runPrHk2Tests(t: YThucTestKit) {
     assert(!/tamThoi/.test(doc('server/src/phanTich/tongHop.ts')), 'tongHop.ts còn tamThoi');
   });
 
-  check('C12 · nhãn chuaDu = "Thiếu điểm" (FT và lớp thường); gợi ý FT ghi "kể cả lượt đã tạm có mức SOS"; choDuyet = "Chờ duyệt"', () => {
+  check('C12 · nhãn chuaDu = "Thiếu điểm" (FT và lớp thường); gợi ý FT ghi "gồm SOS tạm (chưa chốt)" (OV-11h PT-9); choDuyet = "Chờ duyệt"', () => {
     for (const ct of ['ft', 'thuong'] as const) {
       const c = d.cotTongHopFor(ct).find((x: any) => x.khoa === 'chuaDu');
       assert(c && c.nhan(ct) === 'Thiếu điểm', `${ct}: nhãn ${c?.nhan(ct)}`);
       assert(!/Chưa đủ điểm|Tạm thời/.test(c.goiY + d.cotTongHopFor(ct)[0].goiY), `${ct}: gợi ý còn chữ cũ`);
     }
-    assert(d.cotTongHopFor('ft').find((x: any) => x.khoa === 'chuaDu').goiY.includes('kể cả lượt đã tạm có mức SOS'), 'gợi ý FT');
+    assert(d.cotTongHopFor('ft').find((x: any) => x.khoa === 'chuaDu').goiY.includes('gồm SOS tạm (chưa chốt)'), 'gợi ý FT');
     assert(d.cotTongHopFor('ft').find((x: any) => x.khoa === 'choDuyet').nhan('ft') === 'Chờ duyệt', 'choDuyet');
   });
 

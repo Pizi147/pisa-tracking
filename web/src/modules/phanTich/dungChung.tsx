@@ -44,7 +44,7 @@ export function NutMoDanhSach({ nguon, tieuDe, children, className = '' }: { ngu
   return (
     <>
       <button type="button" onClick={() => setMo(true)}
-        className={`appearance-none bg-transparent border-0 p-0 max-sm:py-3 max-sm:-my-3 cursor-pointer underline decoration-dotted underline-offset-4 hover:text-white ${className}`}>
+        className={`appearance-none bg-transparent border-0 p-0 max-sm:py-3 max-sm:-my-3 max-sm:px-3 max-sm:-mx-3 cursor-pointer underline decoration-dotted underline-offset-4 hover:text-white ${className}`}>
         {children}
       </button>
       {mo && (

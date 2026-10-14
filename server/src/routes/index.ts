@@ -337,10 +337,14 @@ api.get('/ref/classes', requireAuth, wrap((req) => {
   rows.sort((a, b) => soSanhLop({ code: a.code, branchId: a.branch_id }, { code: b.code, branchId: b.branch_id }));
   /* Kế hoạch Test CHỈ dành cho Fast Track (sổ MT-01) — Normal thi theo lịch lớp, không xếp lượt. */
   const fastTrackOnly = qStr(req, 'fastTrackOnly') === '1';
-  return rows
-    .filter((c) => scope.all || scope.branchIds.includes(c.branch_id) || scope.classIds.includes(c.id))
-    .filter((c) => !branchId || c.branch_id === branchId)
-    .filter((c) => !fastTrackOnly || c.scoring_mode === 'ielts_band');
+  /* OV-11h (PT-10): `tg` = số tuần của Phân tích → thêm lớp đã kết thúc có lượt trong khoảng (`ket_thuc: true`, web xếp nhóm "Đã kết thúc"). */
+  const tg = qInt(req, 'tg');
+  return [
+    ...rows
+      .filter((c) => scope.all || scope.branchIds.includes(c.branch_id) || scope.classIds.includes(c.id))
+      .filter((c) => !branchId || c.branch_id === branchId),
+    ...(tg ? tongHopSvc.lopKetThucCoLuot(p, tg, branchId ?? null) : []),
+  ].filter((c) => !fastTrackOnly || c.scoring_mode === 'ielts_band');
 }));
 
 api.get('/ref/periods', requireAuth, wrap(() => {
