@@ -118,7 +118,9 @@ export async function runPrDlTests(t: YThucTestKit) {
    */
   /* OV-11a: ảnh mới — `moi` đổi ĐÚNG một hàng (Lý Minh Châu MT2: bài thi bù S chưa điểm → hết khoá "hoàn tất", TE-1: hoanTat / khoa / canEdit /
    * viec); `tuan` chỉ lệch id (phép kiểm lớp thường chạy trước thêm một em). Đã so JSON từng trường bản cũ ↔ mới. */
-  const ANH_CHUP = { tuan: '42bdce7893ef63f1', moi: '184be8d29c1e33ca' };
+  /* OV-11e (Q8, chỉ `moi`): em thử S3F (3) ở MB FT 101 — lượt CHỐT SẴN rồi mới tích KCK — giữ KCK lúc chốt (`kck_at_attempt` = 0), lượt dưới kỳ vọng
+   * lại có `sosLevel` như trước OV-9. Đặt `kck_at_attempt` NULL cho lượt của lớp (đọc cờ hiện tại như trước) ra đúng băm cũ 184be8d29c1e33ca (đã đo 14/10). */
+  const ANH_CHUP = { tuan: '42bdce7893ef63f1', moi: 'f7580e81ed878fb5' };
   /* Mã cố ý độc lập với hàm: điều kiện lọc tuần của bản trước refactor, viết lại bằng SQL. */
   const idsTuan = (periodId: number) => (conn.prepare(
     `SELECT a.id FROM assessment_attempts a JOIN students s ON s.id = a.student_id
@@ -366,16 +368,19 @@ export async function runPrDlTests(t: YThucTestKit) {
     check('DL-4 oTrong/duDiem: ô "-" hợp lệ không tính trống; đủ mọi kỹ năng bắt buộc mới là đủ điểm', () => {
       const ds = dl.danhSachLuot(QL, LOP, TODAY);
       const mt2 = luotCua(ds, 'mt:2');
-      /* Tính độc lập: ô nhập của kỹ năng bắt buộc chưa huỷ (Writing FT = W1 + W2) không có điểm, không có "-" đúng tuần của kỹ năng. */
-      const o = conn.prepare(`SELECT k.attempt_id, k.skill, k.planned_period_id FROM attempt_skills k JOIN assessment_attempts a ON a.id = k.attempt_id
+      /* Tính độc lập: ô nhập của kỹ năng bắt buộc chưa huỷ (Writing FT = W1 + W2) không có điểm, không có "-" đúng tuần của kỹ năng.
+         OV-11e (T19): ô TRỐNG chỉ khi kỹ năng đã tới tuần thi; đủ điểm vẫn xét mọi ô. */
+      const o = conn.prepare(`SELECT k.attempt_id, k.skill, k.planned_period_id, rp.week_start FROM attempt_skills k JOIN assessment_attempts a ON a.id = k.attempt_id
+        LEFT JOIN report_periods rp ON rp.id = k.planned_period_id
         WHERE a.class_id = ? AND a.kind = 'mock' AND a.attempt_no = 2 AND a.status != 'cancelled' AND k.required = 1 AND k.sit_status != 'cancelled'`).all(LOP) as any[];
       const trong = new Map<number, number>();
+      let tong = 0;
       for (const k of o) for (const nhap of k.skill === 'writing' ? ['writing1', 'writing2'] : [k.skill]) {
         const sc = get('SELECT * FROM assessment_scores WHERE attempt_id = ? AND skill = ?', k.attempt_id, nhap);
         const xong = sc && (sc.band !== null || sc.raw_score !== null || (sc.no_show_period_id !== null && sc.no_show_period_id === k.planned_period_id));
         trong.set(k.attempt_id, (trong.get(k.attempt_id) ?? 0) + (xong ? 0 : 1));
+        if (!xong && k.week_start && k.week_start <= week.mondayOf(TODAY)) tong += 1;
       }
-      const tong = [...trong.values()].reduce((n, x) => n + x, 0);
       assert(mt2.oTrong === tong, `oTrong ${mt2.oTrong} ≠ ${tong}`);
       assert(mt2.duDiem === [...trong.values()].filter((x) => x === 0).length, `duDiem ${mt2.duDiem}`);
       /* Ô "-" đúng tuần của kỹ năng là đã xử lý; "-" của tuần cũ (lịch đã dời) vẫn là ô trống. */
@@ -401,7 +406,8 @@ export async function runPrDlTests(t: YThucTestKit) {
     check('DL-6b danhSachLuot lớp thường: Progress Test đã qua còn ô + Final Test chưa tới → macDinh thuong:progress', () => {
       const ds = dl.danhSachLuot(gvcn, lopT, TODAY);
       const g = luotCua(ds, 'thuong:progress'), c = luotCua(ds, 'thuong:final');
-      assert(g.oTrong > 0 && g.tuanStart <= week.mondayOf(TODAY) && c.oTrong > 0 && c.tuanStart > week.mondayOf(TODAY), `tiền đề: ${JSON.stringify(ds.luot)}`);
+      /* OV-11e (T19): Final chưa tới tuần thi — ô chưa tới tuần không là ô trống (0), chưa đủ điểm. */
+      assert(g.oTrong > 0 && g.tuanStart <= week.mondayOf(TODAY) && c.oTrong === 0 && c.duDiem < c.coLich && c.tuanStart > week.mondayOf(TODAY), `tiền đề: ${JSON.stringify(ds.luot)}`);
       assert(ds.macDinh === 'thuong:progress', `macDinh ${ds.macDinh}`);
     });
 
@@ -613,7 +619,8 @@ export async function runPrDlTests(t: YThucTestKit) {
   check('DL-6 fix: đổi lớp đi CÙNG đường chặn với đổi lượt (CongRoi); danh sách + ô chọn lớp giữ hộp lý do; số ô trống tải lại sau khi lưu', () => {
     const f = doc('web/src/modules/test/TabDiemLop.tsx');
     assert(/congRoi=\{cong\}/.test(f) && /cong\.current\.roi\(sang\)/.test(f), 'đổi lớp gọi CongRoi.roi');
-    assert((f.match(/onMouseDown=\{giu\}/g) ?? []).length === 3 && f.includes('cong.current?.giu(e)'), 'hàng lọc, danh sách lớp và ô chọn 375 chặn mousedown');
+    /* OV-11e (HL-6): thêm nút "‹ Hồ sơ lớp {mã}" — cũng qua CongRoi. */
+    assert((f.match(/onMouseDown=\{giu\}/g) ?? []).length === 4 && f.includes('cong.current?.giu(e)'), 'hàng lọc, danh sách lớp, ô chọn 375 và nút về hồ sơ lớp chặn mousedown');
     const dt = doc('web/src/modules/cham/DiemTheoLop.tsx');
     assert(/roi: \(lam\) => \{ dichNgoai\.current = lam; doiLuot\(DICH_NGOAI\); \}, giu: giuHopLyDo/.test(dt), 'roi đi qua doiLuot (blur + yeuCauDoiLuot)');
     assert(/if \(ma === DICH_NGOAI\) \{ dichNgoai\.current\?\.\(\); return; \}/.test(dt), 'sang đích ngoài chạy hành động đổi lớp');

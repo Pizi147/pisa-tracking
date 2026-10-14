@@ -99,8 +99,9 @@ export async function runPrNtTests(t: YThucTestKit) {
   });
 
   check('NT-2 · em lớp thường KCK vẫn nằm trong mẫu số Tổng hợp Test lớp thường (luotKck chỉ cho lượt Mock)', () => {
-    assert(dg.luotKck({ kck: 1, target_at_attempt: null, kind: 'mock' }), 'Mock KCK phải ngoài mẫu số');
-    for (const kind of ['progress', 'final']) assert(!dg.luotKck({ kck: 1, target_at_attempt: null, kind }), `${kind} KCK bị loại khỏi mẫu số`);
+    /* OV-11e (Q8): `luotKck` = `kckCuaLuot` — dấu của lượt (`kck_at_attempt`), chưa có thì cờ lộ trình (`cy_kck`). */
+    assert(dg.luotKck({ cy_kck: 1, kck_at_attempt: null, kind: 'mock' }), 'Mock KCK phải ngoài mẫu số');
+    for (const kind of ['progress', 'final']) assert(!dg.luotKck({ cy_kck: 1, kck_at_attempt: null, kind }), `${kind} KCK bị loại khỏi mẫu số`);
   });
 
   check('NT-2 · Phân tích giáo viên (lớp thường): em đổi sang KCK vẫn tính ở Kết quả môn — số liệu không đổi', () => {

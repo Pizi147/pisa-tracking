@@ -268,6 +268,10 @@ function SheetRow({ row, lop, active, cot, tuanDangXem, tuanXem, onReload, gvMac
 }) {
   const { save, status, lastError, retry, o, loi, luuLai, soLoi, coGuiLai } = useSaveScore(row.attemptId, onReload, row.studentName);
   const cellOf = (skill: string) => row.cells.find((c) => c.skill === skill);
+  /* OV-11e (TE-10): hàng chưa tới tuần thi (mọi ô bắt buộc còn "Chưa đến lịch") ghi mã tuần sớm nhất thay "Chờ n kỹ năng". */
+  const can = row.cells.filter((c) => c.required && c.progress !== 'cancelled');
+  const tuanChuaToi = can.length > 0 && can.every((c) => c.progress === 'upcoming' && c.weekStart)
+    ? can.map((c) => c.weekStart!).sort()[0] : null;
   /* Một ô điểm MT (mọi cột L/R/W1/W2/S): nút → hộp nhập điểm. */
   const oDiem = (s: string, cell: Cell) => (
     <ODiemMt cell={cell} mo={moS === s} onMo={(m) => onMo(m ? s : null)} onTiep={() => onTiep(s)} tuanXem={tuanXem}
@@ -385,6 +389,7 @@ function SheetRow({ row, lop, active, cot, tuanDangXem, tuanXem, onReload, gvMac
               : row.result.provisional && (row.result.sosLevel ?? 0) > 0
                 ? <Level tone="warn" dut title={`SOS tạm thời: mới có ${row.result.scoredRequired}/${row.result.required.length} kỹ năng`}>
                   SOS tạm · {row.result.scoredRequired}/{row.result.required.length}</Level>
+                : tuanChuaToi ? <Level tone="muted" title="Chưa tới tuần thi">{tuanLich(tuanChuaToi)}</Level>
                 : <Level tone="muted">{`Chờ ${row.result.required.length - row.result.scoredRequired} kỹ năng`}</Level>
           )}
           {row.result.scopeNote && (

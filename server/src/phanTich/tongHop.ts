@@ -114,7 +114,7 @@ function tinh(p: Principal, f: FilterTongHop) {
 
   const attempts = conn
     .prepare(
-      `SELECT a.id, a.status, a.kind, a.attempt_no, a.class_id, a.planned_period_id, a.target_at_attempt, a.student_id,
+      `SELECT a.id, a.status, a.kind, a.attempt_no, a.class_id, a.planned_period_id, a.target_at_attempt, a.kck_at_attempt, a.student_id,
               (SELECT cy.route FROM learning_cycles cy WHERE cy.id = a.cycle_id) AS route, (SELECT cy.khong_cam_ket FROM learning_cycles cy WHERE cy.id = a.cycle_id) AS cy_kck,
               (SELECT cy.khong_cam_ket FROM learning_cycles cy WHERE cy.id = a.cycle_id) AS kck,
               c.programme_code, c.code AS class_code, c.branch_id, c.is_fast_track,

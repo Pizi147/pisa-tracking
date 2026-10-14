@@ -106,8 +106,10 @@ export async function runPrS3fTests(t: YThucTestKit) {
   });
 
   // ------------------------------------------------------------------ 3 · em KCK, lượt đã có điểm một phần
-  /* OV-9 (chủ SP 13/10): em KCK dưới kỳ vọng mở Case NHẸ (không SOS / PA quy chế / hạn) — đổi ý phép kiểm cũ "không sinh Case / tín hiệu". */
-  check('S3F (3) → OV-9 · Đổi sang KCK khi lượt có điểm một phần: điểm nhập THÊM dưới target cũ chỉ mở Case nhẹ (kck, không hạn, không PA); Case cũ giữ', () => {
+  /* OV-9 (chủ SP 13/10): em KCK dưới kỳ vọng mở Case NHẸ (không SOS / PA quy chế / hạn) — đổi ý phép kiểm cũ "không sinh Case / tín hiệu".
+     OV-11e (Q8 chủ SP 14/10): lượt thử CHỐT SẴN (`chotSan`) trước khi tích → giữ KCK lúc chốt (`kck_at_attempt` = 0): điểm nhập thêm mở Case
+     THƯỜNG như kết luận lúc chốt. Lượt CHƯA chốt theo KCK hiện tại (Case nhẹ) — `prOv11e.tests` OV11e-6. */
+  check('S3F (3) → OV-9 → OV-11e · Tích KCK sau khi lượt đã chốt: điểm nhập THÊM giữ kết luận lúc chốt (Case thường, không Case nhẹ); Case cũ giữ', () => {
     const st = makeStudent('KCK');
     const a = mkAttempt(st, 1);
     enter(a, 'listening', 5);
@@ -116,10 +118,10 @@ export async function runPrS3fTests(t: YThucTestKit) {
     conn.prepare('UPDATE learning_cycles SET khong_cam_ket = 1, target_score = NULL WHERE id = ?').run(st.cycleId);   // lượt giữ target_at_attempt cũ (cycles.ts apTargetLuotChuaDiem)
     enter(a, 'reading', 5);
     enter(a, 'speaking', 5);
+    assert(get('SELECT kck_at_attempt k FROM assessment_attempts WHERE id = ?', a.id).k === 0, 'lượt chốt phải chụp KCK = 0');
     for (const k of ['reading', 'speaking']) {
       const c = caseOf(st.id, k);
-      assert(c && c.kck === 1 && c.han_xac_nhan === null && c.sos_level === null, `${k}: không phải Case nhẹ — ${JSON.stringify(c)}`);
-      assert(get('SELECT COUNT(*) n FROM case_interventions WHERE case_id = ?', c.id).n === 0, `${k}: Case nhẹ có PA`);
+      assert(c && c.kck === 0 && c.sos_level !== null, `${k}: lượt đã chốt mà thành Case nhẹ — ${JSON.stringify(c)}`);
     }
     assert(get('SELECT status FROM sos_cases WHERE id = ?', cL.id).status === 'open', 'Case cũ (lịch sử) phải giữ');
   });

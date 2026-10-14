@@ -535,9 +535,9 @@ export async function runPrMtTests(t: YThucTestKit) {
   check('PR-MT (9) · Dòng nhắc "MT lịch sử chưa nhập" ở Lịch Test (GVCN lớp) + việc xám không hạn ở Việc cần làm — cùng một hàm (K2-32)', () => {
     const lt = cham.lichTest(GVCN, week.ensurePeriod(tuanNay).id, null, TODAY, { phamVi: 'tat-ca' });
     const n = lt.nhacLichSu.find((x: any) => x.classId === MB101);
-    assert(n && n.soEm >= 1 && n.href.startsWith(`/nhap-diem/${MB101}?periodId=`), JSON.stringify(lt.nhacLichSu));
+    assert(n && n.soEm >= 1 && n.href.startsWith(`/test/diem-lop?lop=${MB101}&luot=mt:`), JSON.stringify(lt.nhacLichSu));   // OV-11e (TE-8)
     const viec = mywork.myWork(GVCN).groups.find((g: any) => g.key === 'missing_data')?.items.find((x: any) => x.key === `lich-su:${MB101}`);
-    assert(viec && viec.due === null && viec.urgency === 'normal' && viec.count === n.soEm && viec.reason === `Nhập MT cũ · ${n.soEm} em · không tính hạn`,
+    assert(viec && viec.due === null && viec.urgency === 'normal' && viec.count === n.soEm && viec.reason === `Nhập MT cũ · ${n.luot.map((x: any) => `MT${x.so} · ${x.soEm} em`).join(' · ')} · không tính hạn`,
       JSON.stringify(viec));
     assert(!cham.lichTest(P.sTeacher, week.ensurePeriod(tuanNay).id, null, TODAY, { phamVi: 'tat-ca' }).nhacLichSu.length, 'GVBM không phải GVCN mà thấy dòng nhắc');
   });

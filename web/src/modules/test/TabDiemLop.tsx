@@ -5,7 +5,7 @@ import { Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { CongTacKhung, khungDaNho } from '../../ui/CongTacKhung.tsx';
 import { BranchFilter, useChiNhanhMacDinh } from '../../ui/Filters.tsx';
 import { DiemTheoLop, type CongRoi } from '../cham/DiemTheoLop.tsx';
-import { useTenTrang } from '../../lib/quayLai.ts';
+import { useChongVe, useTenTrang, useVe } from '../../lib/quayLai.ts';
 
 /** `GET /diem-theo-lop/lop` (`lopCuaToi`, server/src/cham/diemTheoLuot.ts). */
 type LopCuaToi = { classId: number; classCode: string; mode: 'ielts_band' | 'ratio'; branchId: number; oTrong: number };
@@ -30,6 +30,8 @@ export function TabDiemLop() {
   /* Số ô trống của danh sách lớp: tải lại GỘP 1,5 s sau lần lưu cuối (như Lịch Test, Q14) — không tải mọi lớp sau mỗi ô. */
   const daLuu = useGopTaiLai(reload);
   const macDinh = useChiNhanhMacDinh();
+  const chong = useChongVe();
+  const ve = useVe();
 
   if (error && !data) return <ErrorState message={error.message} hint={error.hint} onRetry={reload} />;
   if (loading || !data) return <Skeleton rows={6} />;
@@ -61,19 +63,31 @@ export function TabDiemLop() {
     const sang = () => {
       const q = new URLSearchParams(sp);
       q.set('lop', String(id));
-      q.delete('luot');   // lượt của link vào chỉ dành cho lớp đó
+      q.delete('luot');   // lượt (và "Chỉ ô còn trống" `trong`) của link vào chỉ dành cho lớp đó
+      q.delete('trong');
       setSp(q, { replace: true });
     };
     if (cong.current) cong.current.roi(sang); else sang();
   };
   const giu = (e: MouseEvent) => cong.current?.giu(e);
+  /* OV-11e (HL-6): mở từ hồ sơ lớp (bước cuối của chồng Quay lại, `buocMoi`) → "‹ Hồ sơ lớp {mã}" về đúng hồ sơ đó, chỉ khi đang xem lớp đó. */
+  const buoc = chong[chong.length - 1];
+  const veLop = buoc && buoc.url.split('?')[0] === `/hoc-vien/lop/${chon.classId}` ? buoc : null;
 
   /* `grid-cols-1` = minmax(0,1fr): lưới một cột không giãn theo bề rộng nội dung (thanh lượt, bảng một kỹ năng) → không tràn ngang ở 375. */
   return (
     <div className="grid grid-cols-1 items-start gap-4 md:grid-cols-[240px_minmax(0,1fr)]">
+      {veLop && (
+        <div className="-mb-2 md:col-span-2" onMouseDown={giu}>
+          <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-[32px]" onClick={() => (cong.current ? cong.current.roi(() => ve(veLop.url)) : ve(veLop.url))}>
+            <span aria-hidden>‹</span> Hồ sơ lớp {chon.classCode}
+          </button>
+        </div>
+      )}
       <div className="flex min-w-0 flex-col gap-2">
       <div className="flex flex-wrap items-end gap-x-3 gap-y-2" onMouseDown={giu}>
-        <CongTacKhung trang="diem-theo-lop" value={loai} dem={{ ft: lopFT.length, thuong: lopThuong.length }} donVi="lớp"
+        {/* OV-11e (CA3-11): cột trái 240 px — số không kèm "lớp" để công tắc không bị cắt. */}
+        <CongTacKhung trang="diem-theo-lop" value={loai} dem={{ ft: lopFT.length, thuong: lopThuong.length }}
           onChange={(k) => { if (k !== 'tat-ca') doiLoc((q) => q.set('loai', k)); }} />
         <BranchFilter branchId={branchId} onBranch={(id) => doiLoc((q) => { if (id) q.set('cn', String(id)); else q.delete('cn'); })} />
       </div>
@@ -97,7 +111,9 @@ export function TabDiemLop() {
       </div>
       {/* `key`: đổi lớp thì lượt và trạng thái lưu bắt đầu lại từ lượt mở sẵn của lớp mới. `?luot=` (PR-OV1a, vd `thuong:mt0`): lượt mở
           đầu khi vào từ link ngoài — sai / không có thì lượt mặc định. */}
-      <DiemTheoLop key={chon.classId} classId={chon.classId} luotBanDau={sp.get('luot') ?? undefined} congRoi={cong} onDaLuu={daLuu}
+      <DiemTheoLop key={chon.classId} classId={chon.classId} luotBanDau={sp.get('luot') ?? undefined}
+        locBanDau={sp.get('trong') === 'cu' ? 'cu' : sp.get('trong') === '1' ? 'trong' : undefined}
+        congRoi={cong} onDaLuu={daLuu}
         onLuot={(ma, nhan) => {
           setNhanLuot(nhan);
           if (sp.get('luot') !== ma) { const q = new URLSearchParams(sp); q.set('luot', ma); setSp(q, { replace: true }); }

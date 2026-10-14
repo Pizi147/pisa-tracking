@@ -3,7 +3,7 @@ import { db } from '../db.ts';
 import { CHUONG_TRINH_KHONG_CHIA_MON, PERMISSIONS, luotSinhViec, moiNhatTruoc } from '../../../shared/domain/index.ts';
 import { ngayTaoLuot } from '../classes/schedule.ts';
 import { classScopeSql, scopeFor, type Principal } from '../permissions.ts';
-import { loadBundle, resultOf, type AttemptBundle } from '../fasttrack/attempts.ts';
+import { kckCuaLuot, loadBundle, resultOf, type AttemptBundle } from '../fasttrack/attempts.ts';
 import { allProgrammes, evaluateRegular, nguongDatLop, type ProgrammeInfo } from '../normal/regular.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
 
@@ -90,10 +90,10 @@ export function evaluateAttemptRow(
 
 /**
  * Q29-1 (PR-KCK) + OV-9: lượt của em có dấu KCK — ngoài mẫu số số liệu SOS / đạt kỳ vọng (sĩ số vẫn đếm), dù nay em KCK có Target và kỳ vọng.
- * Hàng cần cột `kck` (= `learning_cycles.khong_cam_ket` HIỆN TẠI của lộ trình lượt — cùng nguồn `kckCuaLuot`).
+ * OV-11e (Q8): CÙNG `kckCuaLuot` — dấu KCK lúc chốt của lượt, chưa có thì cờ hiện tại của lộ trình. Hàng nên có `kck_at_attempt` + `cy_kck`.
  */
 /* PR-NT: Target lớp thường không bật FT (chủ sản phẩm 04/10) — KCK chỉ đưa lượt MOCK ra ngoài mẫu số; Giữa/Cuối khoá lớp thường vẫn đếm. */
-export const luotKck = (a: { kck?: number | null; kind?: string | null }) => !!a.kck && (a.kind ?? 'mock') === 'mock';
+export const luotKck = (a: any) => (a.kind ?? 'mock') === 'mock' && kckCuaLuot(a);
 
 /**
  * Học viên ĐANG HỌC trong phạm vi của người xem (và chi nhánh được hỏi). Phạm vi rỗng trả rỗng.
@@ -187,7 +187,7 @@ export function latestAttempts(studentIds: number[], pick: 'valid' | 'due', toda
         if (pick === 'due' && a.lich_su && !ev.complete) continue;
         out.set(sid, {
           attemptId: a.id, studentId: sid, kind: a.kind, weekStart: a.period_start ?? null, attemptNo: a.attempt_no, ...ev,
-          kck: luotKck({ kck: a.cy_kck, kind: a.kind }),
+          kck: luotKck(a),
         });
         break;
       }

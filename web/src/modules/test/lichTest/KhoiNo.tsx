@@ -6,7 +6,7 @@ import { Han } from '../../../ui/Han.tsx';
 import { CHAM_CHEO, chuOChuaLuu, tenMon, tenMonNgan, tuanLich } from '@shared/domain/index.ts';
 import type { DongNo } from './kieu.ts';
 import { LuoiNhung } from './LuoiNhung.tsx';
-import { COT_DAU_LICH_TEST } from './HangLop.tsx';
+import { COT_DAU_LICH_TEST, OPhan } from './HangLop.tsx';
 
 /**
  * Kỹ năng của dòng — viết tắt (tooltip tên đủ, G-7). Có lùi lịch thật (Q15) thì thêm "· lùi lịch", tuần cũ/mới và
@@ -29,10 +29,14 @@ function kyNangCua(d: DongNo, homNay: string): { chu: string; goiY: string; phu:
 /** Cột thao tác: nút "Nhập điểm" 86 px + đệm ô 2×12 — hẹp hơn thì nút lòi khỏi khung `card` và bị cắt (UX-G G4). */
 const COT_THAO_TAC = 112;
 
-/** Dòng là của ai: chờ mình · chờ GV khác (mình dạy lớp) · chờ chấm (Quản lý). Dòng đã chấm xong (Q14) → "Đã chấm ✓". */
+/**
+ * Dòng là của ai: chờ mình · chờ GV khác (mình dạy lớp) · chờ chấm (Quản lý). Dòng đã chấm xong (Q14) → "Đã chấm ✓".
+ * OV-11e (TE-7): người có phân công thấy ô "{kn} của bạn: còn n · {kn}: GV khác" như khối 2 — "Quá hạn" đã ở cột Hạn nên không lặp.
+ */
 function NhanDong({ d, xong, chuaLuu = 0 }: { d: DongNo; xong: boolean; chuaLuu?: number }) {
   if (chuaLuu > 0) return <Nhan tone="bad" title="Ô viền đỏ chưa lưu được — bấm Lưu lại ở ô đó.">{chuOChuaLuu(chuaLuu)}</Nhan>;
   if (xong) return <Nhan tone="done">Đã chấm <span className="font-normal" aria-hidden>✓</span></Nhan>;
+  if (d.phan && (d.phan.toi || d.phan.khac)) return <OPhan phan={d.phan} ct={d.chuongTrinh} quaHan={false} />;
   if (d.cuaToi) return <Nhan tone={TONE_TRANG_THAI['cho-cham']}>Chờ bạn chấm</Nhan>;
   return <Nhan tone={TONE_TRANG_THAI['cho-cham']}>{d.coDayLop ? 'Chờ GV khác' : 'Chờ chấm'}</Nhan>;
 }
@@ -54,6 +58,8 @@ function GvCham({ gv }: { gv: string[] }) {
 
 /** PR-UXF-a (UX-F7, K4-06): ô Đợt ghi kèm TUẦN THI — "MT3 · W3 SEP"; một lớp có MT3 ở hai tuần thi ra hai dòng khác chữ. */
 const dotTuan = (d: DongNo, homNay: string) => (d.weekStart ? `${d.dotLabel} · ${tuanLich(d.weekStart, homNay)}` : d.dotLabel);
+/** OV-11e (TE-7): số bài của người xem — người có phân công chỉ đếm phần của mình (dải số, badge khối, cột Còn cùng số). */
+const conCua = (d: DongNo) => (d.phan ? d.phan.toi?.con ?? 0 : d.conBai);
 
 /**
  * KHỐI 1 "TEST QUÁ HẠN CHẤM" (PR-LT3 T16–T17; trước là "Nợ tuần trước") — bài thi từ hai tuần trước mà đã quá hạn, theo HÔM NAY
@@ -72,7 +78,7 @@ export function KhoiNo({ no, mo, onMo, dongMo, onMoDong, hep, homNay, onDaLuu, k
   chuaLuu: Readonly<Record<string, number>>;
   baoChuaLuu: (khoa: string, n: number) => void;
 }) {
-  const soBai = no.reduce((n, d) => n + d.conBai, 0);
+  const soBai = no.reduce((n, d) => n + conCua(d), 0);
   const soLop = new Set(no.map((d) => d.classId)).size;
 
   /* Dòng đang mở mà máy chủ không còn trả thì chèn lại đúng chỗ cũ. */
@@ -102,7 +108,7 @@ export function KhoiNo({ no, mo, onMo, dongMo, onMoDong, hep, homNay, onDaLuu, k
               <>
                 {/* E5: ba cột đầu cùng độ rộng với bảng lớp (`COT_DAU_LICH_TEST`) — các bảng thẳng cột. GV chấm giãn (cột không cố định). */}
                 {COT_DAU_LICH_TEST.map((w, i) => <col key={i} style={{ width: w }} />)}
-                <col style={{ width: 72 }} /><col style={{ width: 200 }} /><col /><col style={{ width: 128 }} /><col style={{ width: 44 }} />
+                <col style={{ width: 72 }} /><col style={{ width: 200 }} /><col /><col style={{ width: 220 }} /><col style={{ width: 44 }} />
                 <col style={{ width: COT_THAO_TAC }} />
               </>
             )}
@@ -141,8 +147,8 @@ export function KhoiNo({ no, mo, onMo, dongMo, onMoDong, hep, homNay, onDaLuu, k
                           </div>
                           {k.phu && <div className="truncate text-xs text-slate-500">{k.phu}</div>}
                           <div className="mt-0.5 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 text-[11.5px] text-slate-400 tabular-nums">
-                            <span className="whitespace-nowrap">còn {xong ? 0 : d.conBai} bài</span>
-                            {!xong && <span className="whitespace-nowrap"><Han loai="nhap-diem" han={d.han} /></span>}
+                            <span className="whitespace-nowrap">còn {xong ? 0 : conCua(d)} bài</span>
+                            {!xong && <span className="whitespace-nowrap"><Han loai="nhap-diem" han={d.han} boTinHieu={!!d.phan && !d.quaHan} /></span>}
                             <NhanDong d={d} xong={xong} chuaLuu={chuaLuu[`no:${d.key}`]} />
                           </div>
                           {d.gvNo.length > 0 && <div className="mt-0.5 text-xs text-slate-400">GV chấm: <GvCham gv={d.gvNo} /></div>}
@@ -152,14 +158,15 @@ export function KhoiNo({ no, mo, onMo, dongMo, onMoDong, hep, homNay, onDaLuu, k
                     ) : (
                       <>
                         <td className="td truncate font-semibold text-slate-100" title={d.classCode}>{d.classCode}</td>
-                        <td className="td truncate text-slate-300" title={dotTuan(d, homNay)}>{dotTuan(d, homNay)}</td>
+                        {/* OV-11e (CA3-11): Đợt xuống dòng, không cắt. */}
+                        <td className="td py-1.5 leading-[1.35] text-slate-300">{dotTuan(d, homNay)}</td>
                         {/* Kỹ năng xuống dòng, không cắt "W…" (rà #218). */}
                         <td className="td py-1.5 leading-[1.35] text-slate-300 [overflow-wrap:anywhere]" title={k.goiY}>
                           {k.chu}
                           {k.phu && <span className="block truncate text-xs leading-4 text-slate-500">{k.phu}</span>}
                         </td>
-                        <td className="td text-right tabular-nums text-slate-200">{xong ? 0 : d.conBai} <span className="text-xs text-slate-500">bài</span></td>
-                        <td className="td whitespace-nowrap">{xong ? <span className="text-slate-600">—</span> : <Han loai="nhap-diem" han={d.han} />}</td>
+                        <td className="td text-right tabular-nums text-slate-200">{xong ? 0 : conCua(d)} <span className="text-xs text-slate-500">bài</span></td>
+                        <td className="td whitespace-nowrap">{xong ? <span className="text-slate-600">—</span> : <Han loai="nhap-diem" han={d.han} boTinHieu={!!d.phan && !d.quaHan} />}</td>
                         <td className="td py-1.5 text-xs leading-[1.35] text-slate-300"><GvCham gv={d.gvNo} /></td>
                         <td className="td"><NhanDong d={d} xong={xong} chuaLuu={chuaLuu[`no:${d.key}`]} /></td>
                         <td className="px-1 text-center">

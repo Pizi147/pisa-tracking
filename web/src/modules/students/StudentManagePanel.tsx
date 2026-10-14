@@ -9,8 +9,9 @@ import { ChonNgayGan } from '../../ui/ChonNgay.tsx';
 import {
   NHAN_VIEC_QUAN_LY, mucQuanLyHocVien, cacTabTrangThai, type LopHocQuyen, type ViecQuanLy, type TabTrangThai, dsLoi, docEmail,
   cauMtSeDoi, tuanLich, GIAI_THICH_KCK, chuTargetKck, tachKck, roundToHalf, type NguoiChon, duongLoTrinhLop, NHAN_SAU_THI,
-  LIEN_HE_TOI_DA, NHAN_LIEN_HE, QUAN_HE_GOI_Y, TRUONG_LIEN_HE, docSoDienThoai, type LienHe,
+  LIEN_HE_TOI_DA, NHAN_LIEN_HE, QUAN_HE_GOI_Y, TRUONG_LIEN_HE, docSoDienThoai, type LienHe, duocDoiKck,
 } from '@shared/domain/index.ts';
+import { useSession } from '../../lib/session.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { hoanTacHangLoat } from './hangLoatEm.ts';
@@ -405,6 +406,8 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
   const ghiChu = quanLy || !!quyen.coTheSuaThem;                  // OV-8b: TVV / CX sửa Ghi chú
   const targetThang = !!quyen.canEditCycle || !!quyen.coTheSuaThem;   // QL / Quản trị · OV-8b: TVV / CX
   const targetDeXuat = quanLy && !targetThang;                    // GVCN
+  /* OV-11e (Q8): ô tích KCK — QL / Quản trị / TVV sửa thẳng, GVCN đề xuất; CX không (máy chủ `reviseTarget` cũng chặn). */
+  const oKck = targetDeXuat || duocDoiKck(useSession().session?.roles, !!quyen.canEditCycle);
   const [fullName, setFullName] = useState(student.name);
   const [dob, setDob] = useState(student.dob ?? '');
   const [email, setEmail] = useState(student.email ?? '');
@@ -584,11 +587,11 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
           </Truong>
           {targetThang || targetDeXuat ? (
             <Truong nhan="Target" tuyChon as="div" loi={lf.loiCua(loi, 'target')}
-              phu={targetDeXuat ? 'Lưu thành Đề xuất sửa — Quản lý duyệt rồi Target mới đổi.' : `Band 0–9, bước 0,5. KCK: ${GIAI_THICH_KCK}.`}>
+              phu={targetDeXuat ? 'Lưu thành Đề xuất sửa — Quản lý duyệt rồi Target mới đổi.' : `Band 0–9, bước 0,5.${oKck ? ` KCK: ${GIAI_THICH_KCK}.` : ''}`}>
               <span className="flex flex-wrap items-center gap-3">
                 <input className="field max-w-[8rem]" type="number" inputMode="decimal" step="0.5" min={0} max={9} aria-label="Target"
                   {...lf.o(loi, 'target')} value={target} onChange={(e) => sua(setTarget)(e.target.value)} />
-                <OKck chon={kck} onChange={sua(setKck)} />
+                {oKck && <OKck chon={kck} onChange={sua(setKck)} />}
               </span>
             </Truong>
           ) : (

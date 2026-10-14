@@ -65,6 +65,10 @@ export function HopHuyMt({ open, onClose, attemptId, attemptNo, heQua, phu, tron
                 <li><b className="text-slate-100">{hq.caseDong.length === 1 ? hq.caseDong[0].ten : `${hq.caseDong.length} Case`}</b>
                   {hq.caseDong.length > 1 ? ` (${hq.caseDong.map((c) => c.ten.replace(/^Case /, '')).join(', ')})` : ''} đóng (“Lượt đã huỷ”).</li>
               )}
+              {/* OV-11e (TE-12): PA đang chạy của Case sinh riêng (`pa` = PA của Case đóng + `paDong`) — chưa có kết quả, đóng cùng Case. */}
+              {hq.pa - hq.paDong.length > 0 && (
+                <li><b className="text-slate-100">{hq.pa - hq.paDong.length} PA</b> chưa có kết quả của Case trên — đóng cùng Case.</li>
+              )}
               {hq.paDong.map((x) => <li key={x.id}><b className="text-slate-100">{x.ten}</b> kết quả gần nhất “Chưa đủ dữ liệu” — đóng cùng lượt.</li>)}
               {hq.paGiu.map((x) => <li key={x.id}><b className="text-slate-100">{x.ten}</b> đang chạy có kết quả — giữ nguyên.</li>)}
               {hq.phoiHop > 0 && <li><b className="text-slate-100">{hq.phoiHop} việc Phối hợp</b> còn chờ bỏ.</li>}

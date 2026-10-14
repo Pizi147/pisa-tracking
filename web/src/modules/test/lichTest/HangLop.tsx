@@ -3,8 +3,35 @@ import { HangCon, HangNhom } from '../../../ui/HangNhom.tsx';
 import { Nhan } from '../../../ui/Nhan.tsx';
 import { Han } from '../../../ui/Han.tsx';
 import { chuOChuaLuu, tenMon, tenMonNgan, tuanLich } from '@shared/domain/index.ts';
-import { TONE_NHAN_LOP, khoaHang, type LopLichTest } from './kieu.ts';
+import { TONE_NHAN_LOP, khoaHang, type LopLichTest, type PhanCuaBan } from './kieu.ts';
 import { LuoiNhung } from './LuoiNhung.tsx';
+
+/**
+ * OV-1b (3.5, mockup overhaul-1 §4): GV thấy "phần của bạn" tách với phần GV khác — "Quá hạn" đỏ chỉ khi ô của chính mình (`quaHan`).
+ * OV-11e (TE-7): khối 1 dùng chung. Chữ tắt kỹ năng, tên đủ ở `title`.
+ */
+export function OPhan({ phan, ct, quaHan }: { phan: PhanCuaBan; ct: string | null; quaHan: boolean }) {
+  const mon = (ds: string[]) => ds.map((k) => tenMonNgan(ct, k)).join(', ');
+  const du = (ds: string[]) => ds.map((k) => tenMon(ct, k)).join(', ');
+  const { toi, khac } = phan;
+  return (
+    <span className="flex flex-col gap-0.5 text-[12.5px] font-normal leading-tight">
+      {toi && (toi.con === 0
+        ? <span className="font-semibold text-ok" title={du(toi.kyNang)}>✓ {mon(toi.kyNang)} của bạn xong</span>
+        : (
+          <span className="flex flex-wrap items-center gap-1.5">
+            {quaHan && <Nhan tone="late">Quá hạn</Nhan>}
+            <span className="font-semibold text-slate-200" title={du(toi.kyNang)}>{mon(toi.kyNang)} của bạn: còn {toi.con} bài</span>
+          </span>
+        ))}
+      {khac && (
+        <span className="text-slate-500" title={du(khac.kyNang)}>
+          {mon(khac.kyNang)}: GV khác{khac.quaHanNgay !== null && <> · <b className="font-semibold text-late">⚠ quá hạn {khac.quaHanNgay} ngày</b></>}
+        </span>
+      )}
+    </span>
+  );
+}
 
 /**
  * Một badge cho hàng lớp (N-3). "Đã chấm" thêm ✓ nhỏ, mảnh (G-1). Còn ô lưu hỏng trong lưới của lớp thì badge là
@@ -12,28 +39,9 @@ import { LuoiNhung } from './LuoiNhung.tsx';
  */
 function NhanLop({ l, chuaLuu = 0 }: { l: LopLichTest; chuaLuu?: number }) {
   if (chuaLuu > 0) return <Nhan tone="bad" title="Ô viền đỏ chưa lưu được — bấm Lưu lại ở ô đó.">{chuOChuaLuu(chuaLuu)}</Nhan>;
-  const mon = (ds: string[]) => ds.map((k) => tenMonNgan(l.chuongTrinh, k)).join(', ');
-  const { toi, khac } = l.phan ?? { toi: null, khac: null };
   return (
     <>
-      {/* OV-1b (3.5, mockup overhaul-1 §4): GV thấy "phần của bạn" tách với phần GV khác — "Quá hạn" đỏ chỉ khi ô của chính mình. */}
-      {toi || khac ? (
-        <span className="flex flex-col gap-0.5 text-[12.5px] font-normal leading-tight">
-          {toi && (toi.con === 0
-            ? <span className="font-semibold text-ok">✓ {mon(toi.kyNang)} của bạn xong</span>
-            : (
-              <span className="flex flex-wrap items-center gap-1.5">
-                {l.quaHan && <Nhan tone="late">Quá hạn</Nhan>}
-                <span className="font-semibold text-slate-200">{mon(toi.kyNang)} của bạn: còn {toi.con} bài</span>
-              </span>
-            ))}
-          {khac && (
-            <span className="text-slate-500">
-              {mon(khac.kyNang)}: GV khác{khac.quaHanNgay !== null && <> · <b className="font-semibold text-late">⚠ quá hạn {khac.quaHanNgay} ngày</b></>}
-            </span>
-          )}
-        </span>
-      ) : (
+      {l.phan && (l.phan.toi || l.phan.khac) ? <OPhan phan={l.phan} ct={l.chuongTrinh} quaHan={l.quaHan} /> : (
         <Nhan tone={TONE_NHAN_LOP[l.nhan.loai]}>
           {l.nhan.chu}
           {l.nhan.loai === 'da-cham' && <span className="ml-1 font-normal" aria-hidden>✓</span>}
@@ -161,7 +169,8 @@ export function HangLop({ lop, moCua, onMo, coChiNhanh, hep, homNay, tuanChinh, 
               ) : <span className={`block truncate ${chuMa}`} title={l.classCode}>{l.classCode}</span>}>
               {!hep && (
                 <>
-                  <td className={`px-3 truncate font-semibold ${nhat ? 'text-slate-500' : 'text-slate-200'}`} title={dotCua(l)}>{dotCua(l)}</td>
+                  {/* OV-11e (CA3-11): Đợt xuống dòng, không cắt. */}
+                  <td className={`px-3 py-1.5 leading-[1.35] font-semibold ${nhat ? 'text-slate-500' : 'text-slate-200'}`}>{dotCua(l)}</td>
                   <td className="px-3"><KyNang l={l} /></td>
                   {coChiNhanh && <td className="px-3 truncate text-slate-400" style={THUONG} title={l.branchName}>{l.branchName}</td>}
                   <td className="px-3"><TienDo l={l} nhat={nhat} /></td>

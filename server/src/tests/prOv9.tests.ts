@@ -149,9 +149,14 @@ export async function runPrOv9Tests(t: YThucTestKit) {
   check('OV9 (4) · Phân tích: lượt em KCK ngoài mẫu số "Lượt MT" (Tổng hợp); bỏ KCK thì lại vào', () => {
     const dem = () => tongHop.oTongHop(P.admin, { branchId: null, ct: 'ft', soTuan: 52, classId: null, theo: 'lop', khoa: 'tong', cot: 'luot' }).n as number;
     const co = dem();
-    conn.prepare('UPDATE learning_cycles SET khong_cam_ket = 0 WHERE id = ?').run(nhe.cid);
+    /* OV-11e (Q8): lượt đã chốt theo dấu KCK lúc chốt (`kck_at_attempt`) — đổi cả dấu trên lượt cùng cờ lộ trình. */
+    const doi = (k: number) => {
+      conn.prepare('UPDATE learning_cycles SET khong_cam_ket = ? WHERE id = ?').run(k, nhe.cid);
+      conn.prepare('UPDATE assessment_attempts SET kck_at_attempt = ? WHERE cycle_id = ? AND kck_at_attempt IS NOT NULL').run(k, nhe.cid);
+    };
+    doi(0);
     const khong = dem();
-    conn.prepare('UPDATE learning_cycles SET khong_cam_ket = 1 WHERE id = ?').run(nhe.cid);
+    doi(1);
     assert(khong === co + 1, JSON.stringify({ co, khong }));
   });
 

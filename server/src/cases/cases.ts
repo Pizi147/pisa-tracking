@@ -2442,7 +2442,7 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
    */
   const scoreRows = conn
     .prepare(
-      `SELECT a.attempt_no, a.id AS attempt_id, a.kind, rp.code AS period_code, a.target_at_attempt, a.class_id,
+      `SELECT a.attempt_no, a.id AS attempt_id, a.kind, rp.code AS period_code, a.target_at_attempt, a.kck_at_attempt, a.class_id,
               (SELECT cy.route FROM learning_cycles cy WHERE cy.id = a.cycle_id) AS route, (SELECT cy.khong_cam_ket FROM learning_cycles cy WHERE cy.id = a.cycle_id) AS cy_kck,
               sc.skill, sc.band, sc.raw_score, sc.raw_total
          FROM assessment_attempts a

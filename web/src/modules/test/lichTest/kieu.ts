@@ -19,6 +19,13 @@ export type DongNo = {
   cuaToi: boolean; duocCham: boolean; coDayLop: boolean; hrefDayDu: string;
   /** PR-VAI-a (UX-B5): tên GV đang nợ, sắp theo tên; rồi `GV chấm chéo` (Speaking Mock, T18); môn chưa phân công → "chưa phân công". */
   gvNo: string[];
+  /** OV-11e (TE-7): phần của người có phân công như khối 2; `null` với Quản lý / Quản trị. `quaHan` khi có `phan` = ô của chính họ. */
+  phan: PhanCuaBan | null;
+};
+/** OV-1b (3.5) "Phần của bạn" (kỹ năng L R W S; W1 + W2 cùng người gộp "W"). */
+export type PhanCuaBan = {
+  toi: { kyNang: string[]; con: number } | null;
+  khac: { kyNang: string[]; con: number; quaHanNgay: number | null } | null;
 };
 export type LopLichTest = {
   key: string; classId: number; classCode: string; mode: 'ielts_band' | 'ratio'; branchName: string;
@@ -26,13 +33,12 @@ export type LopLichTest = {
   chuongTrinh: string | null; boMon: string[];
   kind: string | null; dotLabel: string; kyNangTuan: string[];
   tong: number; daCham: number; conBai: number; conBaiCuaToi: number;
+  /** OV-11e: số bài của người xem trong hàng (có `phan`) — dải số cộng phần này thay `tong`. */
+  tongCuaToi: number;
   /** OV-1b (3.5): GV — chỉ ô của chính họ quá hạn; Quản lý / Quản trị — mọi ô. */
   han: string | null; quaHan: boolean;
   /** OV-1b (3.5) "Phần của bạn" (kỹ năng L R W S); `null` với Quản lý / Quản trị — họ thấy toàn bộ qua `nhan`. */
-  phan: {
-    toi: { kyNang: string[]; con: number } | null;
-    khac: { kyNang: string[]; con: number; quaHanNgay: number | null } | null;
-  } | null;
+  phan: PhanCuaBan | null;
   nhan: { loai: LoaiNhanLop; chu: string };
   moSan: boolean; hrefDayDu: string;
   /** Số bài vắng tuần này đang chờ Quản lý duyệt dời (PR-MT). */
@@ -41,7 +47,8 @@ export type LopLichTest = {
   periodId: number; weekStart: string;
 };
 /** Dải số (PR-LT3 Q1): đã chấm / còn phải chấm (khối 2 + 3 ở tuần hiện tại; tuần khác: khối 3) · quá hạn chấm = khối 1. */
-export type TongQuanLich = { daCham: number; tong: number; conPhaiCham: number; no: { bai: number; lop: number } };
+/** OV-11e (TE-7): người có phân công — số của CHÍNH họ; `khac` = bài của GV khác (ghi nhạt). */
+export type TongQuanLich = { daCham: number; tong: number; conPhaiCham: number; no: { bai: number; lop: number }; khac: { con: number; no: number } };
 export type LichTest = {
   scopeEmpty: boolean;
   tuan: { id: number; weekStart: string; weekEnd: string } | null;
@@ -59,7 +66,7 @@ export type LichTest = {
   /** Khối 3 "Lịch Test" — tuần đang xem. */
   lop: LopLichTest[];
   /** PR-MT (K2-32): MT lịch sử chưa nhập theo lớp — dòng nhắc mờ cuối trang. */
-  nhacLichSu: { classId: number; classCode: string; soEm: number; href: string }[];
+  nhacLichSu: { classId: number; classCode: string; soEm: number; href: string; luot: { so: number; soEm: number; href: string }[] }[];
 };
 
 /** Màu badge theo loại nhãn (N-3): chờ mình = vàng · chờ người khác = chờ · xong = đã xong · chưa tới = xám. */

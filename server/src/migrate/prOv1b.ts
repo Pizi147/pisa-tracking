@@ -8,7 +8,8 @@
  *        đã chốt theo luật cũ (vắng + máy dời / chờ QL / huỷ) → "Không dự thi"; lần vắng do chính dấu đó sinh ra −1; chưa ai quyết định gì
  *        sau lần chốt thì bài về tuần có "-", `scheduled`; đã có quyết định của người (ca Thảo: dời cả lượt về tuần cũ) thì giữ lịch.
  *        Đề nghị dời đang chờ của buổi rút. Lịch không dời thêm.
- *        OV-1e: bài đang chờ THI LẠI ở tuần hiện tại / sau (`giuLichThiLai`) → bỏ qua, không đổi gì (giữ "-", lần vắng, lịch thi lại).
+ *        OV-1e → OV-11e: bài ĐÃ CÓ LỊCH THI LẠI (đang xếp ở tuần khác tuần "-", còn `scheduled` / `sat`) → bỏ qua, không đổi gì (giữ "-",
+ *        lần vắng, lịch thi lại) — KHÔNG theo ngày: tuần thi lại đã qua (đã thi chờ chấm / chưa nhập = nợ chấm thường) cũng giữ (`giuLichThiLai`).
  *   C. "-" TRONG TUẦN chưa chốt (luật cũ chờ hết Chủ nhật), đủ mọi ô của buổi, đúng tuần đang xếp → chốt MỘT lần theo luật mới
  *      (`settleGroup`: lần 1 dời tuần sau, lần 2 huỷ phần thi). Buổi Writing mới một task "-" giữ nguyên (đã là "xong" ở ô, không quá hạn).
  *
@@ -16,7 +17,7 @@
  * chủ SP chạy trên bản chính trước deploy) — cột "sau" của buổi C ở bản chỉ đọc ghi luật, bản ghi thật ghi tuần cụ thể.
  */
 import { nowIso } from '../util.ts';
-import { mondayOfDate, tuanLich } from '../../../shared/domain/index.ts';
+import { tuanLich } from '../../../shared/domain/index.ts';
 import { rutDeNghiDoi, sauLanChot, settleGroup } from '../fasttrack/absence.ts';
 import { ensureSkillRows, recomputeCompletionWeek, logSchedule } from '../fasttrack/skillSchedule.ts';
 import { assessedSkillOf, entrySkillsOf } from '../fasttrack/scoring.ts';
@@ -33,15 +34,16 @@ type Buoi = {
 };
 
 /**
- * OV-1e: "-" nhập bù đã chốt mà bài đang xếp ở tuần ≥ tuần hiện tại, chưa thi xong / chưa huỷ / chưa chờ QL = em đang chờ THI LẠI
- * → migrate không đụng. Một điều kiện cho migrate và `kiemTruocOv1b`.
+ * OV-1e, OV-11e (đặc tả rà soát 14/10 — bền khi deploy muộn): "-" nhập bù đã chốt mà máy đã dời bài sang TUẦN KHÁC tuần "-" (có lịch thi lại), còn
+ * `scheduled` / `sat` (chưa huỷ / chưa chờ QL) → migrate không đụng, BẤT KỂ hôm nay (tuần thi lại đã qua vẫn giữ). Một điều kiện cho migrate và
+ * `kiemTruocOv1b`.
  */
-export function giuLichThiLai(ky: { ws: string | null; sit_status: string }, today: string): boolean {
-  return !!ky.ws && ky.ws >= mondayOfDate(today) && (ky.sit_status === 'scheduled' || ky.sit_status === 'sat');
+export function giuLichThiLai(ky: { planned_period_id: number | null; sit_status: string }, dauPeriodId: number | null): boolean {
+  return !!ky.planned_period_id && ky.planned_period_id !== dauPeriodId && (ky.sit_status === 'scheduled' || ky.sit_status === 'sat');
 }
 
 /** Đọc mọi buổi cần dọn — CHỈ `SELECT`. */
-function lapKeHoach(conn: any, today: string): Buoi[] {
+function lapKeHoach(conn: any): Buoi[] {
   const rows = conn.prepare(
     `SELECT s.id, s.attempt_id, s.skill, s.no_show_period_id, s.no_show_late, s.no_show_settled_at, rp.code AS tuan_tru, rp.week_start AS tru_start,
             a.attempt_no, a.lich_su, st.full_name, st.student_code, c.code AS lop
@@ -76,7 +78,7 @@ function lapKeHoach(conn: any, today: string): Buoi[] {
     if (d0.lich_su) { ra.push({ ...chung, loai: 'A' }); continue; }
     if (dau.some((d) => d.no_show_late)) {
       const daChot = dau.some((d) => d.no_show_settled_at);
-      ra.push(!daChot ? { ...chung, loai: 'B-chua' } : giuLichThiLai(ky, today) ? { ...chung, loai: 'B-giu' }
+      ra.push(!daChot ? { ...chung, loai: 'B-chua' } : giuLichThiLai(ky, d0.no_show_period_id) ? { ...chung, loai: 'B-giu' }
         : { ...chung, loai: 'B-da', ...sauLanChot(conn, attemptId, assessed) });
       continue;
     }
@@ -104,8 +106,8 @@ const dongCua = (b: Buoi, sau: (d: any) => string): DongDoiOv1b[] =>
   b.dau.map((d) => ({ attemptId: b.attemptId, o: d.skill as string, ...b.ten, truoc: truocCua(b, d), sau: sau(d) }));
 
 /** LỆNH CHỈ ĐỌC `kiem-truoc-ov1b`: danh sách ô migrate sẽ đổi — không ghi câu nào. */
-export function kiemTruocOv1b(conn: any, today: string = demoToday()): DongDoiOv1b[] {
-  return lapKeHoach(conn, today).flatMap((b) => dongCua(b, () => sauDuKien(b)));
+export function kiemTruocOv1b(conn: any): DongDoiOv1b[] {
+  return lapKeHoach(conn).flatMap((b) => dongCua(b, () => sauDuKien(b)));
 }
 
 /** Ghi "Không dự thi" cho các ô "-" của buổi. */
@@ -119,7 +121,7 @@ function ghiKhongDuThi(conn: any, dau: any[]) {
 export function migratePrOv1b(conn: any, applied: string[], today: string = demoToday()): DongDoiOv1b[] {
   const ra: DongDoiOv1b[] = [];
   const giu: DongDoiOv1b[] = [];
-  for (const b of lapKeHoach(conn, today)) {
+  for (const b of lapKeHoach(conn)) {
     if (b.loai === 'B-giu') {
       giu.push(...dongCua(b, () => sauDuKien(b)));
       continue;

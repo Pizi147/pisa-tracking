@@ -97,7 +97,10 @@ export async function runPrOv1aTests(t: YThucTestKit) {
 
   check('OV1a-4 · lượt MT0 chưa điểm, 4 kỹ năng bắt buộc → 5 ô trống (L, R, W1, W2, S)', () => {
     thu(() => {
-      taoMt0();
+      const a = taoMt0();
+      /* OV-11e (T19): ô chưa tới tuần thi không là ô trống — đưa MT0 về tuần đã tới rồi đếm. */
+      conn.prepare(`UPDATE attempt_skills SET planned_period_id = (SELECT id FROM report_periods WHERE week_start <= ? ORDER BY week_start DESC LIMIT 1) WHERE attempt_id = ?`)
+        .run(t.TODAY, a.id);
       const l = dl.danhSachLuot(QL, em.classId).luot.find((x: any) => x.ma === 'thuong:mt0');
       assert(l?.oTrong === 5 && l.coLich === 1, `oTrong ${l?.oTrong} coLich ${l?.coLich}`);
     });

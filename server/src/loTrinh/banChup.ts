@@ -42,7 +42,7 @@ const ketQuaTu = (huy: boolean, sos: number | null): LuotTinh['ketQua'] => (huy 
  * `target` là `target_at_attempt` của lượt (hoặc giá trị đóng băng ở bản chụp).
  */
 export function tinhLuot(
-  nc: NguCanhLuot, a: { attempt_no: number }, target: number | null, rows: any[], skips: readonly string[], huy: boolean,
+  nc: NguCanhLuot, a: { attempt_no: number; kck_at_attempt?: number | null }, target: number | null, rows: any[], skips: readonly string[], huy: boolean,
 ): LuotTinh {
   const diemRows = huy ? [] : rows;
   if (!nc.laFt) {
@@ -55,7 +55,8 @@ export function tinhLuot(
   }
   const entry: Record<string, number | null> = {};
   for (const r of diemRows) entry[r.skill] = r.band ?? null;
-  const res = evaluateAttempt(target, a.attempt_no, entry, skips, nc.route, [], !!nc.kck);
+  /* OV-11e (Q8): lượt có dấu KCK lúc chốt thì theo dấu đó; chưa có thì theo cờ của lộ trình (bản chụp). */
+  const res = evaluateAttempt(target, a.attempt_no, entry, skips, nc.route, [], a.kck_at_attempt != null ? !!a.kck_at_attempt : !!nc.kck);
   const dong: DongLuotTinh[] = ASSESSED_SKILLS.map((k: AssessedSkill) => {
     const v = res.verdicts.find((x) => x.skill === k)!;
     const t = k === 'listening' || k === 'reading' ? diemRows.find((r) => r.skill === k) : null;
@@ -251,7 +252,7 @@ export function lamMoiDiemBanChup(conn: any, attemptIds: number[]): void {
   if (!attemptIds.length) return;
   const dong: any[] = [];
   theoLo(attemptIds, (lo, ph) => {
-    dong.push(...conn.prepare(`SELECT a.id, a.attempt_no, a.status, a.cycle_id, a.kind FROM assessment_attempts a JOIN learning_cycles c ON c.id = a.cycle_id
+    dong.push(...conn.prepare(`SELECT a.id, a.attempt_no, a.status, a.cycle_id, a.kind, a.kck_at_attempt FROM assessment_attempts a JOIN learning_cycles c ON c.id = a.cycle_id
       WHERE a.id IN (${ph}) AND c.status <> 'active'`).all(...lo));
   }, LO);
   const ngay = nowIso();

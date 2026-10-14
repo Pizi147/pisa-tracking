@@ -183,7 +183,7 @@ export function duLieuXuatMt(p: Principal, f: BoLocXuatMt, toiDa = XUAT_TOI_DA_L
   if (f.lop.length) dk.push([`c.id IN (${dauHoi(f.lop.length)})`, f.lop]);
   const where = dk.map(([sql]) => sql), params = dk.flatMap(([, ps]) => ps);
   const luot = db().prepare(
-    `SELECT a.id, a.kind, a.attempt_no, a.lich_su, a.class_id, a.target_at_attempt, a.student_id, a.cycle_id,
+    `SELECT a.id, a.kind, a.attempt_no, a.lich_su, a.class_id, a.target_at_attempt, a.kck_at_attempt, a.student_id, a.cycle_id,
             cy.route, cy.khong_cam_ket AS kck, cy.khong_cam_ket AS cy_kck, st.student_code, st.full_name,
             c.code AS class_code, c.branch_id, c.programme_code, b.name AS branch_name,
             t.week_start, t.code AS tuan_code

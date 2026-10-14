@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { fmtDateTime } from '../../lib/format.ts';
-import { CHU_THAO_TAC, tenMon } from '@shared/domain/index.ts';
+import { CHU_THAO_TAC, docTuanLich, tenMon, tuanLich } from '@shared/domain/index.ts';
+import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 
 type LichSuLich = { id: number; action: string; field: string | null; oldValue: string | null; newValue: string | null; reason: string | null; actorName: string | null; createdAt: string };
 type LichSuDiem = { id: number; kind: 'edit' | 'override' | 'no_show' | 'nhan_xet'; skill: string; before: string; after: string; actorName: string | null; createdAt: string; lyDo: string | null };
@@ -41,11 +42,14 @@ export function DongThoiGianLuot({ history, scoreHistory, ct = null, gioiHan = 5
   history: LichSuLich[]; scoreHistory: LichSuDiem[]; ct?: string | null; gioiHan?: number;
 }) {
   const [het, setHet] = useState(false);
+  const { homNay } = useNgayNghiepVu();
+  /* OV-11e (TE-12): mã tuần lưu kèm năm ("W4 SEP 2026") — cùng năm thì bỏ năm như mọi chỗ khác (G-6). */
+  const gia = (v: string) => { const t2 = docTuanLich(v, homNay); return t2 ? tuanLich(t2, homNay) : SIT[v] ?? v; };
   const mon = (k: string | null) => (k && /^(listening|reading|writing|writing1|writing2|speaking|tong_hop)$/.test(k) ? tenMon(ct, k) : null);
   const dong = [
     ...history.map((h) => {
       const n = NHAN_VIEC[h.action] ?? { chu: h.action, loai: 'lich' as Loai };
-      const doi = [h.oldValue && `${SIT[h.oldValue] ?? h.oldValue} →`, h.newValue && (SIT[h.newValue] ?? h.newValue)].filter(Boolean).join(' ');
+      const doi = [h.oldValue && `${gia(h.oldValue)} →`, h.newValue && gia(h.newValue)].filter(Boolean).join(' ');
       return { key: `l${h.id}`, at: h.createdAt ?? '', loai: n.loai, viec: n.chu, mon: mon(h.field), doi: doi || null, ai: h.actorName, lyDo: h.reason };
     }),
     ...scoreHistory.map((h) => {

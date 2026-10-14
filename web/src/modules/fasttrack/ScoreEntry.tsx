@@ -210,12 +210,12 @@ export function ChoNutDau() {
 }
 
 /**
- * C9 — CÂU LỖI NHẬP NGAY DƯỚI Ô (không chỉ ở tooltip): một dòng (điện thoại: xuống dòng — không có rê chuột để đọc), chữ đầy đủ vẫn nằm trong DOM cho trình đọc màn hình
+ * C9 — CÂU LỖI NHẬP NGAY DƯỚI Ô (không chỉ ở tooltip): xuống dòng, không cắt (OV-11e, CA3-11), chữ đầy đủ nằm trong DOM cho trình đọc màn hình
  * (`role="alert"`, ô trỏ tới bằng `aria-describedby`). Báo QL dòng (`onLoiNhap`) để dòng đếm "n ô chưa lưu".
  */
 function DongLoiNhap({ id, cau }: { id: string; cau: string | null }) {
   if (!cau) return null;
-  return <span id={id} role="alert" className="block max-w-[6.5rem] truncate text-xs leading-tight text-bad max-sm:max-w-[14rem] max-sm:whitespace-normal max-sm:text-right" title={cau}>{cau}</span>;
+  return <span id={id} role="alert" className="block max-w-[6.5rem] text-xs leading-tight text-bad [overflow-wrap:anywhere] max-sm:max-w-[14rem] max-sm:text-right">{cau}</span>;
 }
 function useBaoLoiNhap(cau: string | null, onLoiNhap?: (cau: string | null) => void) {
   const bao = useRef(onLoiNhap);

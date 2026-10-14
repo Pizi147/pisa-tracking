@@ -13,7 +13,7 @@ import { db, theoLo } from '../db.ts';
 import { demoToday } from '../demoConfig.ts';
 import { classScopeSql, requireXemLuotCham, scopeXemLuotCham, type Principal } from '../permissions.ts';
 import {
-  docMaLuot, luotMacDinh, nhanMaLuot, soSanhLop, vietMaLuot, type AssessedSkill, type MaLuot, type TomTatLuot,
+  docMaLuot, luotMacDinh, mondayOfDate, nhanMaLuot, soSanhLop, vietMaLuot, type AssessedSkill, type MaLuot, type TomTatLuot,
 } from '../../../shared/domain/index.ts';
 import { entrySkillsOf } from '../fasttrack/scoring.ts';
 import { cheDoCua, type CheDo } from '../normal/regular.ts';
@@ -33,12 +33,14 @@ type Gom = TomTatLuot & { classId: number; thuTu: number };
 /**
  * Tóm tắt mọi lượt của các lớp — ba câu mỗi lô lớp (không hỏi theo từng lớp/lượt). FT: lượt = `attempt_no` của bài mock;
  * lớp thường: bài = `kind` (DL-0), bỏ em đã lưu trữ như `regularSheet`. Ô trống = ô nhập của kỹ năng bắt buộc chưa huỷ
- * (Writing FT = W1 + W2) không có điểm và không có dấu "-" đúng tuần hiện tại của kỹ năng (G6).
+ * (Writing FT = W1 + W2) không có điểm và không có dấu "-" đúng tuần hiện tại của kỹ năng (G6). OV-11e (TE-10): và ĐÃ TỚI tuần thi của kỹ năng
+ * (T19 — chưa tới tuần / chưa xếp tuần thì chưa nhập được, không phải việc).
  */
-function tomTatLop(classIds: number[]): Map<number, TomTatLuot[]> {
+function tomTatLop(classIds: number[], today: string): Map<number, TomTatLuot[]> {
   const conn = db();
+  const thuHai = mondayOfDate(today);
   /* Mỗi attempt: lượt của nó + số ô trống `n`. */
-  const luotCua = new Map<number, { g: Gom; ft: boolean; n: number }>();
+  const luotCua = new Map<number, { g: Gom; ft: boolean; n: number; thieu: number }>();
   const gom = new Map<string, Gom>();
   theoLo(classIds, (lo, ph) => {
     for (const a of conn.prepare(
@@ -66,7 +68,7 @@ function tomTatLop(classIds: number[]): Map<number, TomTatLuot[]> {
       /* Lượt "lịch sử" chỉ khi MỌI attempt không huỷ của lượt là lịch sử (chủ sản phẩm 05/10); lượt lẫn đánh dấu theo từng em. */
       if (!a.lich_su) g.lichSu = false;
       if (a.week_start && (g.tuanStart === null || a.week_start < g.tuanStart)) g.tuanStart = a.week_start;
-      luotCua.set(a.id, { g, ft: ft || a.kind === 'mt0', n: 0 });
+      luotCua.set(a.id, { g, ft: ft || a.kind === 'mt0', n: 0, thieu: 0 });
     }
     const diem = new Map<string, any>();
     for (const sc of conn.prepare(
@@ -74,23 +76,26 @@ function tomTatLop(classIds: number[]): Map<number, TomTatLuot[]> {
          JOIN assessment_attempts a ON a.id = sc.attempt_id WHERE a.class_id IN (${ph}) AND a.status != 'cancelled'`,
     ).all(...lo) as any[]) diem.set(`${sc.attempt_id}|${sc.skill}`, sc);
     for (const k of conn.prepare(
-      `SELECT k.attempt_id, k.skill, k.planned_period_id FROM attempt_skills k
+      `SELECT k.attempt_id, k.skill, k.planned_period_id, rp.week_start FROM attempt_skills k
          JOIN assessment_attempts a ON a.id = k.attempt_id
+         LEFT JOIN report_periods rp ON rp.id = k.planned_period_id
         WHERE a.class_id IN (${ph}) AND a.status != 'cancelled' AND k.required = 1 AND k.sit_status != 'cancelled'`,
     ).all(...lo) as any[]) {
       const l = luotCua.get(k.attempt_id);
       if (!l) continue;
+      /* OV-11e (T19): ô chưa tới tuần thi / chưa xếp tuần không là ô TRỐNG — nhưng vẫn là chưa đủ điểm (`thieu`). */
+      const daToi = !!k.week_start && String(k.week_start).slice(0, 10) <= thuHai;
       for (const nhap of l.ft ? entrySkillsOf(k.skill as AssessedSkill) : [k.skill as string]) {
         const sc = diem.get(`${k.attempt_id}|${nhap}`);
         const xong = sc && (sc.band !== null || sc.raw_score !== null
           || (sc.no_show_period_id !== null && sc.no_show_period_id === k.planned_period_id));
-        if (!xong) l.n += 1;
+        if (!xong) { l.thieu += 1; if (daToi) l.n += 1; }
       }
     }
   });
-  for (const { g, n } of luotCua.values()) {
+  for (const { g, n, thieu } of luotCua.values()) {
     g.oTrong += n;
-    if (n === 0) g.duDiem += 1;
+    if (thieu === 0) g.duDiem += 1;
   }
   const out = new Map<number, TomTatLuot[]>(classIds.map((id) => [id, []]));
   for (const { classId, thuTu, ...l } of [...gom.values()].sort((x, y) => x.thuTu - y.thuTu)) out.get(classId)!.push(l);
@@ -100,7 +105,7 @@ function tomTatLop(classIds: number[]): Map<number, TomTatLuot[]> {
 /** Các lượt của một lớp + lượt mở sẵn (luật DL-1, sửa DL-6b theo `today`). */
 export function danhSachLuot(p: Principal, classId: number, today: string = demoToday()): { classId: number; mode: CheDo; luot: TomTatLuot[]; macDinh: string | null } {
   const mode = lopDuocXem(p, classId);
-  const luot = tomTatLop([classId]).get(classId)!;
+  const luot = tomTatLop([classId], today).get(classId)!;
   return { classId, mode, luot, macDinh: luotMacDinh(luot, today) };
 }
 
@@ -110,7 +115,7 @@ export function bangTheoLuot(p: Principal, classId: number, ma: string, today: s
   const m = docMaLuot(ma);
   /* Sai dạng, hoặc đúng dạng nhưng sai họ lớp (`thuong:*` ở lớp FT, `mt:*` ở lớp thường). */
   if (!m || (m.loai === 'mt') !== (mode === 'ielts_band')) throw badRequest('Mã lượt không hợp lệ');
-  const luot = tomTatLop([classId]).get(classId)!.find((l) => l.ma === ma);
+  const luot = tomTatLop([classId], today).get(classId)!.find((l) => l.ma === ma);
   if (!luot) throw notFound('Lớp chưa có lượt này');
   const sheet = chamSheet(p, classId, m.loai === 'mt' ? { attemptNo: m.so } : m.loai === 'cp' ? { kind: 'checkpoint', attemptNo: m.so } : { kind: m.kind }, today);
   /* Lớp thường không có hàng mờ: em vào sau bài đó không có bài (DL-0). */
@@ -141,13 +146,13 @@ export function bangTheoLuot(p: Principal, classId: number, ma: string, today: s
  * `classScopeSql` (GV/GVCN: lớp được phân công; QL: lớp chi nhánh) + lớp FT GV Speaking chấm S chéo (`lopFtChoGvSpeaking`)
  * — như Lịch Test.
  */
-export function lopCuaToi(p: Principal): { classId: number; classCode: string; mode: CheDo; branchId: number; oTrong: number }[] {
+export function lopCuaToi(p: Principal, today: string = demoToday()): { classId: number; classCode: string; mode: CheDo; branchId: number; oTrong: number }[] {
   const scope = scopeXemLuotCham(p);
   if (scope.none) return [];
   const cs = classScopeSql(scope);
   const lop = (db().prepare(`SELECT c.id, c.code, c.programme_code, c.branch_id FROM classes c WHERE ${cs.sql} AND c.status = 'active'`)
     .all(...cs.params) as any[]).sort((a, b) => soSanhLop({ code: a.code }, { code: b.code }));
-  const tt = tomTatLop(lop.map((c) => c.id as number));
+  const tt = tomTatLop(lop.map((c) => c.id as number), today);
   return lop.map((c) => ({
     classId: c.id as number, classCode: c.code as string, mode: cheDoCua(c.programme_code), branchId: c.branch_id as number,
     oTrong: tt.get(c.id)!.reduce((n, l) => n + l.oTrong, 0),

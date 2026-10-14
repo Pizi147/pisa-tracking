@@ -534,6 +534,7 @@ CREATE TABLE assessment_attempts (
   cancel_reason TEXT,
   cancelled_at TEXT,
   target_at_attempt REAL,             -- target chốt tại lượt này, đổi hồ sơ không viết lại lịch sử
+  kck_at_attempt INTEGER,             -- OV-11e (Q8): dấu KCK lúc lượt CHỐT (NULL = chưa chốt → đọc cờ hiện tại của lộ trình)
 
   -- Hạn nhập điểm riêng, ghi đè hạn mặc định (thứ Tư tuần kế tiếp).
   deadline_override TEXT,

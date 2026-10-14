@@ -3,7 +3,7 @@ import { nho } from '../platform/nguCanhRequest.ts';
 import {
   BASELINE_SOURCES, CO_DIEM_SQL, CYCLE_OUTCOMES, CYCLE_OUTCOME_LABEL, CYCLE_STATUSES, PERMISSIONS, soMtKeTiep, tuanLich,
   canNamGan, docNgayNhap, hienTargetKck, mondayOfDate, tachKck, ngay, type ExamPlan, type LuotSo, type Route,
-  CHI_SUA_THONG_TIN, CAU_LIEN_TUC,
+  CHI_SUA_THONG_TIN, CAU_LIEN_TUC, duocDoiKck,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { closeCasesBySystem } from '../cases/systemClose.ts';
@@ -142,6 +142,7 @@ function apTargetLuotChuaDiem(cycleId: number, target: number | null) {
 
 /** PR-DUYET (T44, Câu 1 = B): GVCN không tự sửa target/lộ trình — gửi Đề xuất sửa. Chuyển lớp vẫn là của GVCN. */
 export const CHI_QL_SUA = 'Target và lộ trình do Quản lý sửa. Bấm "Đề xuất sửa" để gửi Quản lý duyệt.';
+export const CHI_DOI_KCK = 'Chỉ Quản lý, Quản trị và Tư vấn viên tích / bỏ KCK.';
 
 export function createCycle(p: Principal, input: {
   studentId: number; route?: Route | null; targetScore?: number | string | null;
@@ -527,6 +528,10 @@ export function reviseTarget(p: Principal, cycleId: number, input: {
   if (!c.route && programmeByCode(c.programme_code)?.lapMoiTuan) throw badRequest(CAU_LIEN_TUC.target);
   const { target, kck } = docTarget(input.newTarget);
   if (target === (c.target_score ?? null) && kck === !!c.khong_cam_ket) return { cycle: c, revision: null };
+  /* OV-11e (Q8): đổi dấu KCK chỉ QL / Quản trị / TVV (`duocDoiKck`) — CX sửa Target số được, KCK thì không. */
+  if (!o?.daDuyet && kck !== !!c.khong_cam_ket && !duocDoiKck(p.roleKeys, coQuyen(p, PERMISSIONS.CYCLE_EDIT, { studentId: c.student_id }))) {
+    throw forbidden(CHI_DOI_KCK);
+  }
   const effectiveFrom = input.effectiveFrom ?? nowIso().slice(0, 10);
   if (!isIsoDate(effectiveFrom)) throw badRequest('Ngày hiệu lực không hợp lệ.');
   const reason = chuTuDo(input.reason, 'Lý do', 2000) ?? '';   // rà Dọn-a P2 (Q4): kiểu + trần, không cắt ngầm

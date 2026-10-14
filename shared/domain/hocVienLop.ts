@@ -47,6 +47,8 @@ export function vaiXemHocVien(roles: readonly string[] | null | undefined): VaiX
   if (laVaiQuanLy(r) || r.includes('teacher')) return null;
   return r.includes('consultant') ? 'tvv' : r.includes('cx') ? 'cx' : r.includes('office_admin') ? 'admin' : null;
 }
+/** OV-11e (Q8 chủ SP): tích / bỏ KCK chỉ Quản lý / Quản trị (`cycle.edit`) và TVV — CX sửa được Target số, không đổi dấu KCK. Máy chủ + web cùng hàm. */
+export const duocDoiKck = (roles: readonly string[] | null | undefined, suaLoTrinh: boolean): boolean => suaLoTrinh || (roles ?? []).includes('consultant');
 /** OV-10b: ô nhập Liên hệ hiện cho QL, Quản trị, TVV, CX, Admin — GV (GVCN, GVBM) không thấy (máy chủ vẫn nhận theo `student.edit_info`). */
 export const coONhapLienHe = (roles: readonly string[] | null | undefined): boolean => laVaiQuanLy(roles) || vaiXemHocVien(roles) !== null;
 

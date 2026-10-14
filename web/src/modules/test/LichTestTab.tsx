@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useApi, useGopTaiLai } from '../../lib/useApi.ts';
 import { useSession } from '../../lib/session.tsx';
@@ -215,7 +215,8 @@ export function LichTestTab() {
   const tenTuan = data.laTuanNay ? 'Tuần này' : maTuan;
   const trong = data.lop.length === 0 && data.no.length === 0 && !(data.chamTuanNay ?? []).length && !dongMo;
   const soLop = (ds: LopLichTest[]) => `${new Set(ds.map((l) => l.classId)).size} lớp`;
-  const conBai = (ds: LopLichTest[]) => ds.reduce((n, l) => n + l.conBai, 0);
+  /* OV-11e (TE-7): badge khối của người có phân công = phần của họ (cùng số dải số). */
+  const conBai = (ds: LopLichTest[]) => ds.reduce((n, l) => n + (l.phan ? l.conBaiCuaToi : l.conBai), 0);
   /* Tuần chính của khối (hàng của tuần khác ghi Đợt kèm mã tuần): khối 2 = tuần trước, khối 3 = tuần đang xem. */
   const tuanXem = data.tuan?.weekStart ?? '';
   const hangLop = (ds: LopLichTest[], khoi2: boolean) => (
@@ -358,10 +359,18 @@ export function LichTestTab() {
       {/* PR-MT (K2-32): nhắc MỜ — không số đỏ, không vào dải số hay Nợ, không hạn. Chỉ GVCN của lớp / Quản lý thấy. */}
       {data.nhacLichSu.length > 0 && (
         <div className="space-y-1 px-1">
+          {/* OV-11e (TE-8): mỗi lượt một link → Điểm theo lớp đúng lượt, "Chỉ ô còn trống"; số em = số hàng ở đó. */}
           {data.nhacLichSu.map((n) => (
             <p key={n.classId} className="m-0 text-[12.5px] text-slate-500 tabular-nums">
-              MT cũ chưa nhập · {n.soEm} em · {n.classCode}{' '}
-              <Link to={n.href} className="link inline-flex min-h-[44px] items-center sm:min-h-0" aria-label={`Nhập MT cũ lớp ${n.classCode}`}>Nhập điểm</Link>
+              MT cũ chưa nhập · {n.classCode}
+              {n.luot.map((x) => (
+                <Fragment key={x.so}>
+                  {' · '}
+                  <Link to={x.href} className="link inline-flex min-h-[44px] items-center sm:min-h-0" aria-label={`Nhập MT${x.so} cũ lớp ${n.classCode}`}>
+                    MT{x.so} · {x.soEm} em
+                  </Link>
+                </Fragment>
+              ))}
             </p>
           ))}
         </div>

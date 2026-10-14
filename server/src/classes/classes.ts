@@ -193,7 +193,7 @@ function listClassSummariesThat(p: Principal, f: { branchId?: number; classId?: 
   const attempts = conn
     .prepare(
       `SELECT a.id, a.class_id, a.status, a.planned_period_id, a.kind,   -- PR-LT3 T18: \`skillCells\` đọc loại lượt (Speaking Mock chấm chéo)
-              a.deadline_override, a.target_at_attempt, a.attempt_no, a.lich_su,
+              a.deadline_override, a.target_at_attempt, a.kck_at_attempt, a.attempt_no, a.lich_su,
               (SELECT cy.route FROM learning_cycles cy WHERE cy.id = a.cycle_id) AS route, (SELECT cy.khong_cam_ket FROM learning_cycles cy WHERE cy.id = a.cycle_id) AS cy_kck,
               pr.week_start AS period_start, pr.week_end AS period_end
          FROM assessment_attempts a
