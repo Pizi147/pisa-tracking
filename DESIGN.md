@@ -41,6 +41,10 @@ typography:
     fontFamily: "'Be Vietnam Pro', system-ui, sans-serif"
     fontSize: "12.5px"
     fontWeight: 800
+  work-object:
+    fontFamily: "'Be Vietnam Pro', system-ui, sans-serif"
+    fontSize: "15px"
+    fontWeight: 700
   chip:
     fontFamily: "'Be Vietnam Pro', system-ui, sans-serif"
     fontSize: "11.5px"
@@ -123,6 +127,7 @@ Nền xanh than tối, một màu nhấn xanh pastel, và một bộ màu trạn
 
 - **Be Vietnam Pro** cho mọi chữ; **chữ số lấy từ Inter** (khai báo `@font-face` cùng tên, `unicode-range` 0–9) để số thẳng hàng.
 - Cỡ gốc 14 px. Nhãn ô 12 px. Đầu cột bảng 11 px in hoa, giãn 0.04em. Hàng nhóm 12.5 px đậm 800, hàng con 12 px.
+- Đối tượng trong khối **Cần làm** của panel v3 (tên PA, mức kỷ luật, loại meeting): **15 px đậm 700** (OV-12e, chủ SP 14/10).
 - **Không chữ < 11 px** ở bất kỳ đâu.
 - Số liệu, điểm, mã tuần: `tabular-nums`.
 

@@ -269,7 +269,7 @@ function ConfirmCoordinationForm({ a, onClose, onChanged }: {
         <button type="button" className="btn btn-primary min-h-[44px] px-4 font-bold sm:min-h-[40px]" disabled={busy || !performedOn || !!loiNguoi} title={loiNguoi ?? undefined} onClick={save}>
           {busy ? t('Đang lưu…') : meeting && a.status !== 'done' ? t('Xác nhận meeting') : t('Lưu')}
         </button>
-        <NutChu mo onClick={onClose} disabled={busy}>Đóng</NutChu>
+        <NutChu mo onClick={onClose} disabled={busy}>{t('Đóng')}</NutChu>
       </div>
     </CanLam></div>
   );

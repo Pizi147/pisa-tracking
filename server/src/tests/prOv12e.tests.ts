@@ -61,7 +61,7 @@ export async function runPrOv12eTests(t: YThucTestKit) {
   check('OV12e-2c · không mất chữ đang gõ: "← Danh sách / ← tên em / ← Case" (nút quayLai của KhungPanel) hỏi trước khi panel đang sửa dở (chan.daSua); Hoàn thành Case báo daSua', () => {
     const kp = doc('web/src/ui/KhungPanel.tsx');
     assert(/const veLai = \(\) => \{\s*if \(daSua && !window\.confirm\(/.test(kp) && /onClick=\{veLai\}>← \{quayLai\.nhan\}/.test(kp), 'quayLai chưa qua veLai');
-    assert(/tieuDe="Hoàn thành Case"[\s\S]{0,200}daSua:/.test(doc('web/src/modules/cases/ThaoTacCase.tsx')), 'Hoàn thành Case thiếu daSua');
+    assert(/tieuDe=\{?t?\(?['"]Hoàn thành Case['"]\)?\}?[\s\S]{0,200}daSua:/.test(doc('web/src/modules/cases/ThaoTacCase.tsx')), 'Hoàn thành Case thiếu daSua');
   });
 
   check('OV12e-1b · ngưỡng hạn một chỗ: panel số liệu, Ngăn Case chỉ đọc, thẻ Chờ duyệt, bảng kỹ năng, thẻ kỹ năng, Han không tự so ngày / chỉ "hôm nay" mới vàng', () => {
