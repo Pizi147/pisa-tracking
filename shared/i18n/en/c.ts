@@ -317,6 +317,8 @@ export const EN_C = {
   'kết quả': 'result',
   'nguyên nhân': 'cause',
   'xác nhận PA': 'PA confirmation',
+  'xác nhận Case': 'case confirmation',
+  'ghi nhận xét': 'comment',
   'bậc đã xử lý': 'action level',
   'Không có vi phạm': 'No incidents',
   'Chưa xử lý lần nào': 'No action yet',
