@@ -17,6 +17,7 @@ import {
 } from '@shared/domain/index.ts';
 import { MuiTenGap, NhanViPham } from './NhanViPham.tsx';
 import { DUONG_LAM_MOI_Y_THUC, type ViPhamV4, type XuLyView, type YThucHocVien } from './kieu.ts';
+import { t } from '@shared/i18n/index.ts';
 
 const MO_TA_MIN = 10;
 const lamMoi = () => DUONG_LAM_MOI_Y_THUC.forEach((d) => invalidate(d));
@@ -71,7 +72,7 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', lop, onC
   if (!studentId) return null;
   const tieuDe = cheDo === 'de-xuat' ? 'Đề xuất QL duyệt' : 'Xác nhận xử lý';
   if (!d) return <KhungPanel tieuDe={tieuDe} onDong={onClose}><p className="mt-3 text-sm text-slate-400">Đang tải…</p></KhungPanel>;
-  const dau = (han: boolean) => dauViec({ han: han ? <ChipHan loai="xu-ly-vi-pham" han={d.han} /> : null, em: { id: d.studentId, ten: d.ten }, lop, ngCanh: 'Ý thức' });
+  const dau = (han: boolean) => dauViec({ han: han ? <ChipHan loai="xu-ly-vi-pham" han={d.han} /> : null, em: { id: d.studentId, ten: d.ten }, lop, ngCanh: t('Ý thức') });
 
   const theoId = new Map(d.viPham.map((v) => [v.id, v]));
   const tick = d.macDinh.tick.map((id) => theoId.get(id)).filter((v): v is ViPhamV4 => !!v);
@@ -144,10 +145,10 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', lop, onC
     const xong = <button type="button" className="btn btn-primary min-h-[40px] px-4 font-bold" onClick={dong}>Xong</button>;
     return (
       <KhungPanel tieuDe="Xác nhận xử lý" hocVien={d.ten} onDong={dong} dau={dau(false)}
-        chan={{ v3: true, chinh: xong, dongTren: <span className="font-semibold text-ok">✓ Đã lưu</span> }}>
+        chan={{ v3: true, chinh: xong, dongTren: <span className="font-semibold text-ok">✓ {t('Đã lưu')}</span> }}>
         <div className="flex flex-col gap-5 pt-4">
           <div className="flex flex-col gap-2 rounded-[10px] border px-4 py-3.5" style={{ background: 'var(--surface-2)', borderColor: 'var(--line)' }}>
-            <span className="text-sm font-bold text-ok">✓ Đã xác nhận</span>
+            <span className="text-sm font-bold text-ok">✓ {t('Đã xác nhận')}</span>
             <p className="m-0 text-sm text-slate-200">{daLuu.nhan} · {chon.size} vi phạm · {ngay(ngayTh, homNay)}</p>
             <BangChung ownerType="discipline_measure" ownerId={daLuu.id} canEdit tieuDe="" />
           </div>
@@ -159,7 +160,7 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', lop, onC
   if (daLuu?.loai === 'nhap') {
     const soTep = nhap.data?.soTep ?? 0;
     const nutGui = <button type="button" className="btn btn-primary min-h-[40px] px-4 font-bold" disabled={busy}
-      onClick={() => { lf.bam(); if (soTep > 0) void gui(); }}>Gửi QL duyệt</button>;
+      onClick={() => { lf.bam(); if (soTep > 0) void gui(); }}>{t('Gửi QL duyệt')}</button>;
     return (
       <KhungPanel tieuDe="Đề xuất QL duyệt" hocVien={d.ten} onDong={dong} dau={dau(false)}
         chan={{ v3: true, chinh: nutGui, conThieu: soTep === 0 && lf.daBam ? [{ nhan: 'Bằng chứng', lyDo: 'Cần đính kèm tệp hoặc liên kết' }] : undefined }}>
@@ -217,7 +218,7 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', lop, onC
         <CanLam>
           {cheDo === 'xu-ly' && bacKe ? (
             <div>
-              {nhanO('Bậc xử lý')}
+              {nhanO(t('Bậc xử lý'))}
               <p className="m-0 text-[15px] font-bold text-slate-100">{bacKe.nhan}</p>
               {d.chuoi.soXuLy === 0 && !d.khai && d.coTheKhai && onKhai && (
                 <p className="m-0 mt-1 text-xs text-slate-300">
@@ -266,10 +267,10 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', lop, onC
 
           {cheDo === 'xu-ly' && (
             <Hang2>
-              <Truong nhan="Ngày" batBuoc>
+              <Truong nhan={t('Ngày')} batBuoc>
                 <ONgay kieu="ngay" value={ngayTh} onChange={setNgayTh} toiDa={homNay} />
               </Truong>
-              <Truong nhan="Người" batBuoc as="div" loi={lf.daBam ? loiNguoi : null}>
+              <Truong nhan={t('Người')} batBuoc as="div" loi={lf.daBam ? loiNguoi : null}>
                 <ChonNguoi nhom="nhan_vien" value={nguoi} onChange={setNguoi} studentId={studentId} />
               </Truong>
             </Hang2>
@@ -289,8 +290,8 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', lop, onC
           </div>
         </CanLam>
         <BoiCanh dong={[
-          ['Lần trước', truoc ? [truoc.nhan, ngay(truoc.ngay, homNay), truoc.nguoi].filter(Boolean).join(' · ') : null],
-          ['Bậc tiếp theo', cheDo === 'xu-ly' ? bacSau : null],
+          [t('Lần trước'), truoc ? [truoc.nhan, ngay(truoc.ngay, homNay), truoc.nguoi].filter(Boolean).join(' · ') : null],
+          [t('Bậc tiếp theo'), cheDo === 'xu-ly' ? bacSau : null],
         ]} />
       </div>
     </KhungPanel>

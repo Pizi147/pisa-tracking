@@ -11,6 +11,7 @@ import { ONgay } from '../../ui/ONgay.tsx';
 import { BoLocDoan, ErrorState, NutChon, Skeleton } from '../../ui/ui.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { FormPa, KhoaNho, VachBuoi } from './FormPa.tsx';
+import { t } from '@shared/i18n/index.ts';
 import {
   FOLLOWUP_OUTCOMES, INTERVENTION_KIND_LABEL,
   GOI_Y_KET_QUA_PA, NUT_LUU_KET_QUA, PLAN_DECISION_NGAN, nhomQuyetDinh, quyetDinhChoPa,
@@ -240,9 +241,9 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
   );
   /* PR-CT2: không bắt buộc ở mọi trường hợp (cùng `loiKetQuaTuan` và máy chủ). OV-12e: bỏ chữ "tuần" (kết quả ghi theo kỳ hai tuần). */
   const oNguoi = coNguoiDay(pa.kind) && (
-    <Truong nhan="Người dạy" as="div" loi={loiCua('nguoi-day')}>
+    <Truong nhan={t('Người dạy')} as="div" loi={loiCua('nguoi-day')}>
       <ChonNguoi nhom="nhan_vien" value={nguoiDay} onChange={setNguoiDay} choTrong="Để trống" placeholder="Chưa chọn · gõ tên để tìm"
-        ariaLabel="Người dạy" id={lf.oId('nguoi-day')} onBlur={lf.roi('nguoi-day')} invalid={!!loiCua('nguoi-day')} />
+        ariaLabel={t('Người dạy')} id={lf.oId('nguoi-day')} onBlur={lf.roi('nguoi-day')} invalid={!!loiCua('nguoi-day')} />
     </Truong>
   );
 
@@ -297,7 +298,7 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
   const nhanNut = busy ? 'Đang lưu…' : sua ? 'Lưu' : lanCuoi ? 'Lưu kết quả cuối' : NUT_LUU_KET_QUA[decision || 'keep'];
   const nut = <button type="button" className="btn btn-primary min-h-[40px] px-4 font-bold" disabled={busy} onClick={luu}>{nhanNut}</button>;
   const daSua = !!(outcome || progress.trim() || buoi.some((b) => b.tutor.trim() || b.nhanXet.trim()) || (decision && decision !== 'keep'));
-  const tieuDe = sua ? (lanCuoi ? 'Sửa kết quả cuối' : 'Sửa kết quả') : lanCuoi ? 'Ghi kết quả cuối' : `Ghi ${tuanGhi.charAt(0).toLowerCase()}${tuanGhi.slice(1)}`;
+  const tieuDe = sua ? (lanCuoi ? 'Sửa kết quả cuối' : 'Sửa kết quả') : lanCuoi ? t('Ghi kết quả cuối') : `Ghi ${tuanGhi.charAt(0).toLowerCase()}${tuanGhi.slice(1)}`.replace(/\b(W\d) ([A-Z]{3})\b/g, '$1\u00a0$2');   // mã tuần không tách dòng
 
   return (
     <KhungPanel tieuDe={tieuDe} hocVien={hocVien} lop={lop} quayLai={quayLai} onDong={onClose}
@@ -315,10 +316,10 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
         )}
         <CanLam>
           {lanCuoi && !sua && (
-            <p className="m-0 text-[13px] text-slate-300">Kỳ này chạm mốc quy chế{pa.mocChu ? ` (${pa.mocChu})` : ''} — lưu là PA kết thúc.</p>
+            <p className="m-0 text-[13px] text-slate-300">{t('Kỳ này chạm mốc quy chế{moc} — lưu là PA kết thúc.', { moc: pa.mocChu ? ` (${pa.mocChu})` : '' })}</p>
           )}
           <div>
-            <span id={`tt-${pa.id}`} className="mb-1.5 block text-[13px] font-semibold text-slate-300">Tiến triển (2 tuần)<span aria-hidden className="text-bad"> *</span></span>
+            <span id={`tt-${pa.id}`} className="mb-1.5 block text-[13px] font-semibold text-slate-300">{t('Tiến triển (2 tuần)')}<span aria-hidden className="text-bad"> *</span></span>
             {/* 5 mức một hàng chip (xuống dòng khi hẹp); "Chưa đủ dữ liệu" là mức thứ năm. */}
             <div {...o('ket-qua')} tabIndex={-1} className="flex flex-wrap gap-1.5 outline-none" role="group" aria-labelledby={`tt-${pa.id}`}>
               {FOLLOWUP_OUTCOMES.map((x) => (
@@ -330,7 +331,7 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
             {loiCua('ket-qua') && <span className="mt-1 block text-xs text-late">{loiCua('ket-qua')}</span>}
           </div>
           {!nhanXetTheoBuoi && (
-            <Truong nhan="Nhận xét" batBuoc loi={loiCua('tien-trien')} dem={{ co: progress.trim().length, can: 8 }}>
+            <Truong nhan={t('Nhận xét')} batBuoc loi={loiCua('tien-trien')} dem={{ co: progress.trim().length, can: 8 }}>
               <textarea className="field w-full" {...o('tien-trien')} rows={2} value={progress} onChange={(e) => setProgress(e.target.value)}
                 placeholder={GOI_Y_KET_QUA_PA} />
             </Truong>
@@ -352,13 +353,13 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
                 <ol className="m-0 list-none space-y-3 p-0" aria-label="Các buổi tutor">
                   {Array.from({ length: soDong }, (_, i) => (
                     <li key={i} className="border-t border-dashed pt-3" style={{ borderColor: 'var(--line-strong)' }}>
-                      <span className="mb-1.5 block text-[13px] font-bold text-slate-200">Buổi {i + 1}</span>
+                      <span className="mb-1.5 block text-[13px] font-bold text-slate-200">{t('Buổi {n}', { n: i + 1 })}</span>
                       <Hang2>
-                        <Truong nhan="Tutor" batBuoc loi={loiCua(`buoi-${i}-tutor`)}>
+                        <Truong nhan={t('Tutor')} batBuoc loi={loiCua(`buoi-${i}-tutor`)}>
                           <input className="field w-full" maxLength={100} {...o(`buoi-${i}-tutor`)} value={buoi[i]?.tutor ?? ''}
                             onChange={(e) => datBuoi(i, { tutor: e.target.value })} placeholder="Gõ tên tutor" />
                         </Truong>
-                        <Truong nhan="Nhận xét buổi" batBuoc loi={loiCua(`buoi-${i}-nx`)}>
+                        <Truong nhan={t('Nhận xét buổi')} batBuoc loi={loiCua(`buoi-${i}-nx`)}>
                           <input className="field w-full" maxLength={1000} {...o(`buoi-${i}-nx`)} value={buoi[i]?.nhanXet ?? ''}
                             onChange={(e) => datBuoi(i, { nhanXet: e.target.value })} placeholder="Ví dụ: luyện số đếm, còn nhầm 15 và 50" />
                         </Truong>
@@ -388,8 +389,8 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
           )}
           {!lanCuoi && (
             <div {...o('quyet-dinh')} tabIndex={-1} className="flex flex-col gap-2 outline-none">
-              <span className="block text-[13px] font-semibold text-slate-300">Quyết định</span>
-              <BoLocDoan ariaLabel="Quyết định" value={(trongDc ? 'adjust' : decision || '') as PlanDecision}
+              <span className="block text-[13px] font-semibold text-slate-300">{t('Quyết định')}</span>
+              <BoLocDoan ariaLabel={t('Quyết định')} value={(trongDc ? 'adjust' : decision || '') as PlanDecision}
                 muc={dsTren.map((d) => ({ key: d, nhan: PLAN_DECISION_NGAN[d] }))} onChange={chonQd} />
               {chanQd && <p className="m-0 text-xs text-late" role="alert">{chanQd}</p>}
               {pa.batBuoc && (
@@ -401,10 +402,10 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
               {decision && decision !== 'keep' && (trongDc ? dsDc.length > 1 || khoiCon(decision as PlanDecision) : khoiCon(decision as PlanDecision)) && (
                 <div className="ml-1 space-y-3 border-l-2 pl-3" style={{ borderColor: 'var(--accent-line)' }}>
                   {trongDc && dsDc.length > 1 && (
-                    <div className="flex flex-wrap gap-1.5" role="group" aria-label="Cách điều chỉnh">
+                    <div className="flex flex-wrap gap-1.5" role="group" aria-label={t('Cách điều chỉnh')}>
                       {dsDc.map((x) => (
                         <NutChon key={x} nho chon={decision === x} disabled={!!chanCua(x)} title={chanCua(x) ?? undefined} onClick={() => { setDecision(x); setChanQd(null); }}>
-                          {x === 'adjust' ? 'Sửa PA này' : PLAN_DECISION_NGAN[x]}
+                          {x === 'adjust' ? t('Sửa PA này') : PLAN_DECISION_NGAN[x]}
                         </NutChon>
                       ))}
                     </div>
@@ -418,7 +419,7 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
           <Truong nhan="Ngày ghi"><ONgay kieu="ngay" value={on} onChange={setOn} toiDa={homNay} disabled={khoaLuaChon} /></Truong>
           <div className="flex flex-wrap items-center gap-1.5 pt-0.5 max-sm:hidden">{nut}</div>
         </CanLam>
-        <BoiCanh dong={boiCanh ?? [['Phương án', [tenPa, pa.performer, pa.mocChu].filter(Boolean).join(' · ')]]} />
+        <BoiCanh dong={boiCanh ?? [[t('Phương án'), [tenPa, pa.performer, pa.mocChu].filter(Boolean).join(' · ')]]} />
       </div>
     </KhungPanel>
   );

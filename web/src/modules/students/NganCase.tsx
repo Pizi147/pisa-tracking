@@ -18,6 +18,7 @@ import { dauViec } from '../../ui/KhuonViec.tsx';
 import { TheYeuCau } from '../duyet/TheYeuCau.tsx';
 import { NhanTamDung } from '../cases/SkillBoard.tsx';
 import { KhoaNho } from '../cases/FormPa.tsx';
+import { t } from '@shared/i18n/index.ts';
 
 export type { ViewCase };
 
@@ -95,7 +96,7 @@ export function NganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose
   const chung = { hocVien: hv, lop, quayLai: veNguon ?? { nhan: ten, onClick: veCase }, onClose };
   /* OV-12e: đầu + Bối cảnh panel v3 cho các việc của Case (Ghi kết quả · Thêm PA). */
   const em = data.student ? { id: data.student.id, ten: data.student.name } : null;
-  const nguyenNhan: [string, ReactNode] = ['Nguyên nhân', (data.issues ?? []).length ? <DongNguyenNhan issues={data.issues ?? []} /> : null];
+  const nguyenNhan: [string, ReactNode] = [t('Nguyên nhân'), (data.issues ?? []).length ? <DongNguyenNhan issues={data.issues ?? []} /> : null];
 
   if (view.loai === 'ghi-ket-qua') {
     const iv = (data.interventions ?? []).find((x: any) => x.id === view.paId);
@@ -106,8 +107,8 @@ export function NganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose
         <GhiKetQuaPanel key={iv.id} {...chung} onSaved={xong} onThemPa={() => setView({ loai: 'them-pa' })}
           em={em} ngCanh={[tenLoai, data.categoryLabel].filter(Boolean).join(' · ')}
           boiCanh={[
-            ['Phương án', [iv.description || tenLoai, iv.performer, iv.mocChu].filter(Boolean).join(' · ')],
-            ['Kết quả kỳ trước', truoc ? <><b className="font-semibold text-slate-300">{outcomeLabelFor(truoc.outcome)}</b> · {tuanLich(truoc.observedOn, homNay)}</> : null],
+            [t('Phương án'), [iv.description || tenLoai, iv.performer, iv.mocChu].filter(Boolean).join(' · ')],
+            [t('Kết quả kỳ trước'), truoc ? <><b className="font-semibold text-slate-300">{outcomeLabelFor(truoc.outcome)}</b> · {tuanLich(truoc.observedOn, homNay)}</> : null],
             nguyenNhan,
           ]}
           pa={{
@@ -150,7 +151,7 @@ export function NganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose
     return <ThemPaPanel {...chung} caseId={caseId} studentId={data.student?.id} onSaved={xong}
       dau={dauViec({ han: data.viewer.canEdit && data.viecTiep?.loaiHan === 'lap-pa' ? <ChipHan loai="lap-pa" han={data.viecTiep.han ?? null} /> : null,
         em, lop, ngCanh: [data.tenSos?.mt ? `MT${data.tenSos.mt}` : null, data.categoryLabel, data.tenSos?.kck ? 'KCK' : null].filter(Boolean).join(' · ') })}
-      boiCanh={[nguyenNhan, ['Kết quả gần nhất', ketQuaGanNhat(data)]]}
+      boiCanh={[nguyenNhan, [t('Kết quả gần nhất'), ketQuaGanNhat(data)]]}
       coPaBatBuoc={(data.interventions ?? []).some((x: any) => x.batBuoc && (x.status === 'planned' || x.status === 'started'))} />;
   }
   if (view.loai === 'sua' && data.viewer.coTheSua) {

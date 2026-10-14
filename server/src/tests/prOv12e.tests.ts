@@ -53,6 +53,13 @@ export async function runPrOv12eTests(t: YThucTestKit) {
     assert(cuoi.tren.length === 0 && cuoi.dieuChinh.length === 0, 'lần cuối không có Quyết định');
   });
 
+  check('OV12e-2b · ⋯ cạnh tên em: "Xác nhận xử lý" ngay sau Ghi vi phạm khi em cần xử lý Ý thức, không có thì không hiện', () => {
+    const q = { laLopThuong: false, dangHoc: true, coTheGhiViPham: true, coTheBaoCase: true, coTheNhapDiem: false, coTheSuaHocVien: false, coTheChuyenLop: false };
+    const co = dm.mucMenuDongHocVien({ ...q, coTheXuLyYThuc: true });
+    assert(co[0] === 'vi-pham' && co[1] === 'xu-ly-y-thuc' && dm.MUC_MENU_DONG_NHAN['xu-ly-y-thuc'] === 'Xác nhận xử lý', JSON.stringify(co));
+    assert(!dm.mucMenuDongHocVien(q).includes('xu-ly-y-thuc'), 'không cần xử lý thì không có mục');
+  });
+
   check('OV12e-3 · số ở ô = số dòng panel (QL, GVCN, GVBM) cho các chỉ số Case · PA · bài · Vận hành · lớp · HV', () => {
     const ids = ['case-mo', 'case-cho-xac-dinh-nguyen-nhan', 'case-thieu-pa', 'case-xac-dinh-nguyen-nhan-qua-han', 'pa-can-cap-nhat', 'pa-cho-duyet',
       'bai-qua-han-nhap-diem', 'van-hanh-can-quyet-dinh', 'lop-thieu-gv-mon', 'hv-co-case-mo'];

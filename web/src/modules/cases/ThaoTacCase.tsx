@@ -19,6 +19,7 @@ import {
 import { ComponentsField, componentsPayload } from './ChiTietKyNang.tsx';
 import { FormPa, NgayKhoa, NhatKyPa } from './FormPa.tsx';
 import type { BanDieuChinh } from './CapNhatTuan.tsx';
+import { t } from '@shared/i18n/index.ts';
 
 /**
  * BA THAO TÁC CỦA NGĂN CASE (PR-UX3, N-4): Thêm PA · Hoàn thành Case · Trả lời đề xuất — trước đây là hộp thoại giữa màn đè lên
@@ -89,7 +90,7 @@ export function ThemPaPanel({ caseId, studentId, coPaBatBuoc, hocVien, lop, quay
 
   const nut = (
     <button type="button" className="btn btn-primary min-h-[40px] px-4 font-bold" disabled={busy} onClick={luu}>
-      {busy ? 'Đang lưu…' : deXuat ? 'Gửi QL duyệt' : 'Thêm PA'}
+      {busy ? t('Đang lưu…') : deXuat ? t('Gửi QL duyệt') : t('Thêm PA')}
     </button>
   );
   const daSua = !!(v.description.trim() || status === 'completed');
@@ -112,7 +113,7 @@ export function ThemPaPanel({ caseId, studentId, coPaBatBuoc, hocVien, lop, quay
                   id={lf.oId('ngay-lam')} onBlur={lf.roi('ngay-lam')} invalid={!!lf.loiCua(loi, 'ngay-lam')} />
               </Truong>
             ) : (
-              <Truong nhan="Bắt đầu" batBuoc>
+              <Truong nhan={t('Bắt đầu')} batBuoc>
                 <ONgay kieu="ngay" value={startedDate} onChange={setStartedDate} />
               </Truong>
             )}

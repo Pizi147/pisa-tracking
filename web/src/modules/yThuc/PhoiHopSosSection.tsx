@@ -15,6 +15,7 @@ import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import { Hang2, Truong } from '../../ui/KhungPanel.tsx';
 import { CanLam, NutChu } from '../../ui/KhuonViec.tsx';
 import { Han } from '../../ui/Han.tsx';
+import { t } from '@shared/i18n/index.ts';
 
 type CoordAction = {
   id: number; kind: string; kindLabel: string; customName: string | null; name: string;
@@ -242,12 +243,12 @@ function ConfirmCoordinationForm({ a, onClose, onChanged }: {
   const meeting = laMeetingCx(a.kind);
   return (
     <div className="mb-2 mt-1"><CanLam>
-      {meeting && <span className="text-[15px] font-bold text-slate-100">{a.kind === 'cx_meeting_family' ? 'CX / GĐCN gặp HV và PH' : 'CX / GĐCN gặp HV'}</span>}
+      {meeting && <span className="text-[15px] font-bold text-slate-100">{a.kind === 'cx_meeting_family' ? t('CX / GĐCN gặp HV và PH') : t('CX / GĐCN gặp HV')}</span>}
       <Hang2>
-        <Truong nhan={meeting ? 'Ngày' : 'Ngày thực hiện'} batBuoc>
+        <Truong nhan={meeting ? t('Ngày') : 'Ngày thực hiện'} batBuoc>
           <span className="block w-[11.5rem]"><ONgay kieu="ngay" value={performedOn} onChange={setPerformedOn} toiDa={today} /></span>
         </Truong>
-        <Truong nhan={meeting ? 'Người' : 'Người thực hiện'} batBuoc={meeting} as="div" loi={loiNguoi}>
+        <Truong nhan={meeting ? t('Người') : 'Người thực hiện'} batBuoc={meeting} as="div" loi={loiNguoi}>
           <ChonNguoi nhom="nhan_vien" value={nguoi} onChange={setNguoi} />
         </Truong>
       </Hang2>
@@ -261,12 +262,12 @@ function ConfirmCoordinationForm({ a, onClose, onChanged }: {
           onChange={(e) => setNote(e.target.value)} />
       )}
       <div>
-        {meeting && <span className="mb-1 block text-[13px] font-semibold text-slate-300">Tệp</span>}
+        {meeting && <span className="mb-1 block text-[13px] font-semibold text-slate-300">{t('Tệp')}</span>}
         <BangChung ownerType="sos_coordination_action" ownerId={actionId} canEdit tieuDe="" />
       </div>
       <div className="flex flex-wrap items-center gap-1.5">
         <button type="button" className="btn btn-primary min-h-[44px] px-4 font-bold sm:min-h-[40px]" disabled={busy || !performedOn || !!loiNguoi} title={loiNguoi ?? undefined} onClick={save}>
-          {busy ? 'Đang lưu…' : meeting && a.status !== 'done' ? 'Xác nhận meeting' : 'Lưu'}
+          {busy ? t('Đang lưu…') : meeting && a.status !== 'done' ? t('Xác nhận meeting') : t('Lưu')}
         </button>
         <NutChu mo onClick={onClose} disabled={busy}>Đóng</NutChu>
       </div>
