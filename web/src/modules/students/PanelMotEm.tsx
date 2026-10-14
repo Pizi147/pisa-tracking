@@ -74,7 +74,7 @@ export function PanelMotEm({ studentId, caseMo, onClose, onDoi }: {
   });
   const nganCanh = data && (
     <span className="flex flex-wrap items-center gap-x-1.5 gap-y-1">
-      <Link className="link" to={`/hoc-vien/${studentId}`}>Hồ sơ <span aria-hidden className="text-xs">↗</span></Link>
+      <Link className="link inline-flex min-h-[44px] items-center sm:min-h-0" to={`/hoc-vien/${studentId}`}>Hồ sơ <span aria-hidden className="text-xs">↗</span></Link>
       {lop && <><span aria-hidden>·</span><span>{lop}</span></>}
       {data.luot?.nhan && <><span aria-hidden>·</span><span>{data.luot.nhan}</span></>}
       {!!data.luot?.sosLevel && <Level tone={sosTone(data.luot.sosLevel)}>SOS {data.luot.sosLevel}</Level>}
@@ -142,7 +142,7 @@ export function PanelMotEm({ studentId, caseMo, onClose, onDoi }: {
                           <dt className="text-slate-500">Kết quả gần nhất</dt>
                           <dd className="m-0 text-slate-300">{c.ketQua ?? 'Chưa có kết quả'}</dd>
                         </dl>
-                        <button type="button" className="link appearance-none border-0 bg-transparent p-0 text-xs" onClick={() => setView({ caseId: c.id })}>Xem thêm ›</button>
+                        <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 text-xs sm:min-h-0" onClick={() => setView({ caseId: c.id })}>Xem thêm ›</button>
                       </div>
                     )}
                   </section>

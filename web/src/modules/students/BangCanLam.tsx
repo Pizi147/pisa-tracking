@@ -127,11 +127,12 @@ export function BangCanLam({ viec, coNguoi, coPhuHuynh, dienThoai, ds }: {
             <HangNhom mo={mo(g.k)} onMo={() => doi(g.k)} nhan={`lớp ${g.code}`} soCotDau={tieuDe.length} tieuDe={dauLop(g)} />
             {mo(g.k) && g.em.flatMap((e) => e.map((v, i) => (
               <HangCon key={v.key} className="row-hover">
-                {i === 0 && <td className="td align-top" rowSpan={e.length}>{tenEm(v)}</td>}
+                {/* Khối một em: tên chỉ ở dòng đầu (ô trống ở dòng sau — không rowSpan để thụt lề hàng con giữ đúng cột). */}
+                <td className="td align-top">{i === 0 ? tenEm(v) : null}</td>
                 <td className="td"><ChipViec v={v} /></td>
                 {coNguoi && <td className="td">{nguoi(v)}</td>}
                 <td className="td"><OHan v={v} /></td>
-                {coPhuHuynh && (i === 0 ? <td className="td align-top text-sm" rowSpan={e.length}>{v.lienHe ? <OPhuHuynh l={v.lienHe} /> : null}</td> : null)}
+                {coPhuHuynh && <td className="td align-top text-sm">{i === 0 && v.lienHe ? <OPhuHuynh l={v.lienHe} /> : null}</td>}
                 <td className="td text-center">{nut(v)}</td>
               </HangCon>
             )))}
