@@ -19,6 +19,7 @@ export async function runPrOv11gTests(t: YThucTestKit) {
   const suaCaLop: any = await import('../classes/suaCaLop.ts');
   const regular: any = await import('../normal/regular.ts');
   const attempts: any = await import('../fasttrack/attempts.ts');
+  const absence: any = await import('../fasttrack/absence.ts');
   const diemLuot: any = await import('../cham/diemTheoLuot.ts');
   const luuTru: any = await import('../classes/luuTru.ts');
   const transition: any = await import('../classes/transition.ts');
@@ -139,6 +140,36 @@ export async function runPrOv11gTests(t: YThucTestKit) {
     run(`UPDATE classes SET status = 'finished', finished_at = ? WHERE id = ?`, TODAY, FT101);
     xoaNho();
     assert(loi(() => attempts.saveScore(loadPrincipal(gvL), m.id, 'listening', { rawScore: 30 }))?.status === 403, 'GV FT ghi điểm lớp kết thúc phải 403');
+  }));
+
+  check('OV11g-3b · rà #379: lớp đã kết thúc — Báo vắng / "-" bị chặn (GV 403, QL 400, cả FT lẫn lớp thường); QL sửa điểm thiếu lý do 400; có lý do → lưu, KHÔNG tự tạo Case / tín hiệu', () => thu(() => {
+    /* (1)(3) FT: Báo vắng + "-" — GVCN 403, QL 400; không ghi gì. */
+    const k = one(`SELECT a.id, k.skill FROM assessment_attempts a JOIN attempt_skills k ON k.attempt_id = a.id JOIN report_periods rp ON rp.id = k.planned_period_id
+        WHERE a.class_id = ? AND a.kind = 'mock' AND a.status != 'cancelled' AND a.lich_su = 0 AND k.required = 1 AND k.sit_status = 'scheduled'
+          AND k.skill IN ('listening', 'reading') AND rp.week_start <= ?
+          AND NOT EXISTS (SELECT 1 FROM assessment_scores sc WHERE sc.attempt_id = a.id AND sc.skill = k.skill)
+        ORDER BY a.id LIMIT 1`, FT101, TODAY);
+    assert(!!k, 'không có ô FT chờ thi để thử Báo vắng');
+    const gvcn = loadPrincipal(one(`SELECT user_id FROM teacher_assignments WHERE class_id = ? AND is_core = 1 AND status = 'active' ORDER BY id LIMIT 1`, FT101).user_id);
+    run(`UPDATE classes SET status = 'finished', finished_at = ? WHERE id IN (?, ?)`, TODAY, FT101, FOU12);
+    xoaNho();
+    assert(loi(() => absence.baoVang(gvcn, k.id, k.skill, 'ốm', TODAY))?.status === 403, 'GVCN Báo vắng lớp kết thúc phải 403');
+    assert(loi(() => absence.baoVang(QL, k.id, k.skill, 'ốm', TODAY))?.status === 400, 'QL Báo vắng lớp kết thúc phải 400');
+    assert(loi(() => attempts.saveScore(QL, k.id, k.skill, { noShow: true }, TODAY))?.status === 400, 'QL "-" FT lớp kết thúc phải 400');
+    assert(!one('SELECT 1 FROM assessment_scores WHERE attempt_id = ? AND skill = ?', k.id, k.skill), 'đã ghi vắng dù bị chặn');
+    /* (3)(4)(2) lớp thường: "-" QL 400 · thiếu lý do 400 · có lý do → lưu + nhật ký, không Case / tín hiệu mới. */
+    const g = one(`SELECT a.id, a.student_id FROM assessment_attempts a WHERE a.class_id = ? AND a.kind = 'progress' AND a.status != 'cancelled'
+        AND EXISTS (SELECT 1 FROM attempt_skills k JOIN report_periods rp ON rp.id = k.planned_period_id WHERE k.attempt_id = a.id AND k.skill = 'listening' AND rp.week_start <= ?)
+      ORDER BY a.id LIMIT 1`, FOU12, TODAY);
+    assert(!!g, 'không có bài Giữa khoá để thử');
+    assert(loi(() => regular.saveRegularScore(QL, g.id, 'listening', { noShow: true }))?.status === 400, 'QL "-" lớp thường kết thúc phải 400');
+    assert(loi(() => regular.saveRegularScore(QL, g.id, 'listening', { score: 3, total: 40 }))?.status === 400, 'thiếu lý do phải 400');
+    const dem = () => [one('SELECT COUNT(*) n FROM sos_cases WHERE student_id = ?', g.student_id).n,
+      one('SELECT COUNT(*) n FROM case_signals WHERE student_id = ?', g.student_id).n].join('/');
+    const truoc = dem();
+    regular.saveRegularScore(QL, g.id, 'listening', { score: 3, total: 40, lyDo: 'Nhập sai, sửa lại' });
+    assert(one(`SELECT raw_score FROM assessment_scores WHERE attempt_id = ? AND skill = 'listening'`, g.id).raw_score === 3, 'QL có lý do không lưu được');
+    assert(dem() === truoc, `tự tạo Case / tín hiệu ở lớp đã kết thúc: ${truoc} → ${dem()}`);
   }));
 
   check('OV11g-4 · HL-4: đầu hồ sơ lớp thường "Final Test a/b em có đủ điểm" = duDiem / coLich của khối điểm (danhSachLuot)', () => thu(() => {

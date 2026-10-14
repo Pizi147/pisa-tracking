@@ -16,7 +16,7 @@ import { ensurePeriod, ensurePeriods, mondayOf, skillScoreDeadline } from '../pl
 import { kckCuaLuot, regularSkillViews, weekStartOf } from '../fasttrack/attempts.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
 import { checkSkillWeekMove, ensureSkillRows, kiemDaToiTuanThi, loadSkillRows, setSkillWeek } from '../fasttrack/skillSchedule.ts';
-import { dotHoanTat, dotHoanTatMany, kiemLopKetThuc, quyenSuaSauHoanTat } from '../fasttrack/hoanTat.ts';
+import { chanVangLopKetThuc, dotHoanTat, dotHoanTatMany, kiemLopKetThuc, laLopKetThuc, quyenSuaSauHoanTat } from '../fasttrack/hoanTat.ts';
 import { canRequest, duocGoDau } from '../fasttrack/absence.ts';
 import { classProgress, classProgressMany, lichMtCua } from '../classes/schedule.ts';
 import { baoLenCuoiKhoaDoiQuaHan, capNhatCuoiKhoaSauChuyen, dongBoCheTaiFinal } from './cuoiKhoa.ts';
@@ -677,6 +677,8 @@ export function saveRegularScore(
    */
   /* T7 + T22 (PR-MTa): đổi giá trị hay xoá điểm đã có → lý do tuỳ chọn. */
 
+  /* OV-11g (rà PR #379): QL sửa điểm lớp đã kết thúc phải ghi lý do (như RB-5 Mock) — nhật ký nói vì sao kết quả lớp đã đóng đổi. */
+  if (lopKetThuc && !String(patch.lyDo ?? '').trim()) throw badRequest('Lớp đã kết thúc — ghi lý do sửa điểm.');
   /* PR-Pb2-b (Q13): cùng luật FT — ngày nghiệp vụ lần đầu ô có điểm, sửa sau giữ nguyên, xoá điểm về NULL. */
   const nhapDau = (score ?? null) !== null ? existing?.nhap_dau_ngay ?? today : null;
   return tx(() => {
@@ -750,6 +752,7 @@ export function reportRegularNoShow(
   const prog = a.class_id ? programmeOfClass(a.class_id) : null;
   if (!prog || prog.scoringMode !== 'ratio') throw badRequest('Lượt này không thuộc lớp thường.');
   if (!prog.skills.includes(skill)) throw badRequest(`Lớp ${prog.name} không có kỹ năng ${tenMon(prog.code, skill)}.`);
+  chanVangLopKetThuc(p, a.class_id);
 
   /*
    * Ghi dấu là việc của NGƯỜI CHẤM môn đó (hoặc người nhập bù) — cùng cửa với nhập điểm.
@@ -946,6 +949,7 @@ export function refreshRegularOutcome(p: Principal, attemptId: number) {
   if (a.status !== 'cancelled' && a.status !== next) {
     conn.prepare('UPDATE assessment_attempts SET status = ?, updated_at = ? WHERE id = ?').run(next, nowIso(), attemptId);
   }
+  if (laLopKetThuc(a.class_id)) return r;   // OV-11g (Q4): lớp đã kết thúc — chỉ điểm + nhật ký, không Case / tín hiệu / bổ trợ
   /*
    * RB-8: môn vừa được sửa thành ĐẠT → rút tín hiệu và xử lý Case dựng trên con số sai — CÙNG hàm với Fast Track. Đặt TRƯỚC lối thoát
    * `sosLevel === null`: sửa một môn lên đạt khi ba môn kia chưa có điểm thì chưa kết luận được mức, nhưng căn cứ của tín hiệu đã mất.

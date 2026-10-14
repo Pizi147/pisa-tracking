@@ -8,7 +8,7 @@ import {
 import { demoToday } from '../demoConfig.ts';
 import { phanCongDangHieuLuc } from '../worklist/scoreDebt.ts';
 import { badRequest, chuTuDo, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
-import { dotHoanTat, dotHoanTatMany, kiemLopKetThuc, quyenSuaSauHoanTat } from './hoanTat.ts';
+import { chanVangLopKetThuc, dotHoanTat, dotHoanTatMany, kiemLopKetThuc, laLopKetThuc, quyenSuaSauHoanTat } from './hoanTat.ts';
 import {
   can, classScopeSql, defaultWorkScope, editableSkills, isCoreTeacherOf, moveableSkills, mySkills, require_, requireXemLuotCham, scopeFor, scopeXemLuotCham, scoreEditPath, type LuotQuyen,
   type Principal,
@@ -1766,6 +1766,7 @@ export function refreshOutcome(p: Principal, attemptId: number, thiLai = false) 
   if (result.chot && (fresh.kck_at_attempt ?? null) === null) {
     conn.prepare('UPDATE assessment_attempts SET kck_at_attempt = ? WHERE id = ?').run(kckCuaLuot(fresh) ? 1 : 0, attemptId);
   }
+  if (laLopKetThuc(fresh.class_id)) return;   // OV-11g (Q4): lớp đã kết thúc — chỉ điểm + nhật ký, không tín hiệu / Case
   raiseSignalsForResult(p, { ...fresh, status: nextStatus }, result);
 
   /*
@@ -1817,6 +1818,7 @@ export function saveScore(
   if (khoa) throw badRequest(khoa);
   /* OV-11g (HL-10): lớp đã kết thúc — GV 403 trước mọi việc ghi; Quản lý đi đường `override` (dưới). */
   const lopKetThuc = kiemLopKetThuc(p, a.class_id);
+  if (patch.noShow !== undefined) chanVangLopKetThuc(p, a.class_id);   // lớp đã kết thúc: không ghi / gỡ "-", kể cả QL
   /*
    * T23 (PR-MTa, thay K4-20): MT cũ nhận "-" = em không dự thi kỹ năng đó (`no_show_cu`) — không tính lần vắng, không tự dời,
    * không Case / thẻ / chuông; ô không còn đếm "còn trống". OV-1b: "-" nhập bù sau tuần thi cũng vậy (nhánh "-" bên dưới).
