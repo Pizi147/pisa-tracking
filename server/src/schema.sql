@@ -744,6 +744,9 @@ CREATE TABLE assessment_scores (
   examiner_name TEXT,
   -- PR-Pb2-b (Q13): NGÀY NGHIỆP VỤ lần đầu ô có điểm. Sửa sau không đổi; ô mất hết điểm → NULL; dấu "-" không đặt. Bảng GV "Chấm điểm đúng hạn".
   nhap_dau_ngay TEXT,
+  -- OV-12b (chủ SP 14/10): nhóm nguyên nhân của ô MT DƯỚI kỳ vọng — JSON mảng mã `ISSUE_TAXONOMY` theo thứ tự chọn (phần tử đầu = chính).
+  -- NULL = không cần (đạt / chưa điểm / không phải MT) hoặc dữ liệu trước luật. Xoá điểm hay sửa thành đạt → NULL.
+  nhom_nguyen_nhan TEXT,
   UNIQUE (attempt_id, skill)
 );
 CREATE INDEX idx_score_attempt ON assessment_scores(attempt_id);
@@ -1221,6 +1224,19 @@ CREATE TABLE case_followups (
 );
 CREATE UNIQUE INDEX ux_case_followups_khoa_gui ON case_followups(observer_user_id, idempotency_key) WHERE idempotency_key IS NOT NULL;
 CREATE INDEX idx_followup_case ON case_followups(case_id);
+
+/*
+ * OV-12h (chủ SP 14/10): KẾT QUẢ PA TUTOR THEO BUỔI — lần ghi Kết quả PA Tutor có "Số buổi kỳ này" n thì có đúng n dòng (buổi 1…n): tên tutor (gõ tự do,
+ * danh sách tutor làm sau) + nhận xét buổi, cả hai bắt buộc. Chỉ lần ghi từ OV-12h; Kết quả cũ không có dòng. Xoá lần ghi → xoá theo (CASCADE).
+ */
+CREATE TABLE case_followup_buoi (
+  id INTEGER PRIMARY KEY,
+  followup_id INTEGER NOT NULL REFERENCES case_followups(id) ON DELETE CASCADE,
+  buoi_so INTEGER NOT NULL,
+  tutor_ten TEXT NOT NULL,
+  nhan_xet TEXT NOT NULL,
+  UNIQUE (followup_id, buoi_so)
+);
 
 /*
  * LỊCH SỬ ĐIỀU CHỈNH PHƯƠNG ÁN HỌC THUẬT (PR-S2 · S2 · rulebook §18.2 điểm 2 · nguồn §7).

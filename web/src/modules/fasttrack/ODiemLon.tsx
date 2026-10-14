@@ -9,7 +9,7 @@
  * `HopNhapDiem`) neo ngay ô, chỉ "Lưu" (trang một em). W: dòng phụ là HAI nút W1 · W2 — hai hộp riêng, mỗi task lưu riêng (K4-31).
  */
 import { useRef, type ReactNode } from 'react';
-import { chuDoiVang, ngay, skillShort, tuanLich } from '@shared/domain/index.ts';
+import { CHU_O_THIEU, chuDoiVang, ngay, skillShort, tuanLich } from '@shared/domain/index.ts';
 import { fmtBand, skillLabel } from '../../lib/format.ts';
 import { KetQuaDot } from '../../ui/KetQuaDot.tsx';
 import { Han } from '../../ui/Han.tsx';
@@ -128,6 +128,12 @@ export function DaiODiemLon({ cells, lich, result, lichSu, homNay, mo, onMo, sav
           )}
         </span>
         <span className={`mt-1 block min-h-[1rem] truncate text-xs ${phu.mau ?? 'text-slate-500'}`} title={laW ? undefined : phu.title}>{phu.chu}</span>
+        {/* OV-12b: bài có điểm còn thiếu nhận xét / nhóm (dữ liệu trước luật) — chữ, không chỉ màu. Writing ghi task. */}
+        {bai.filter((c) => c.thieuNhanXet).map((c) => (
+          <span key={c.skill} className="mt-0.5 block text-xs font-semibold leading-tight text-soon">
+            {laW ? `${c.skill === 'writing1' ? 'W1' : 'W2'} ` : ''}{CHU_O_THIEU[c.thieuNhanXet!]}
+          </span>
+        ))}
       </>
     );
     /* PR-S4F #10: flex-col cho cả nút và ô chỉ đọc — nút căn giữa nội dung theo chiều dọc nên lệch ~3 px so với ô bên cạnh. */

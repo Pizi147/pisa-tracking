@@ -610,7 +610,7 @@ function metricSetGoc(
   if (isPhoiHopMetric(id)) {
     const r = phoiHopMetric(p, id, { branchId: scope.branchId, from: f.from ?? null, to: f.to ?? null, kind: f.kind ?? null, classId: f.classId ?? null });
     if (r.none) return { ...done([]), empty: true, note: EMPTY_NOTE };
-    return done(r.ids, r.byKind ? { byKind: r.byKind } : {});
+    return done(r.ids, { ...(r.byKind ? { byKind: r.byKind } : {}), ...(r.chiTiet ? { chiTiet: r.chiTiet } : {}) });
   }
 
   const branchId = scope.branchId ?? undefined;

@@ -10,6 +10,7 @@
  * Lớp thường không có gì trong file này (Q-V3-1): Normal giữ mô hình tín hiệu cũ.
  */
 import type { InterventionKind } from './cases.ts';
+import { ngayTheoGioVN } from './display.ts';
 
 export function addDaysIso(date: string, n: number): string {
   const d = new Date(`${date.slice(0, 10)}T00:00:00Z`);
@@ -110,6 +111,18 @@ export const COORDINATION_KIND_LABEL: Record<CoordinationKind, string> = {
   cx_meeting_family: 'CX / GĐCN meeting với HV / PH',
   other: 'Khác',
   bao_ph_tvv: 'Báo phụ huynh qua TVV',
+};
+
+/**
+ * OV-12h (chủ SP 14/10): "CX / GĐCN meeting với HV" và "… với HV / PH" phải XÁC NHẬN trong 5 ngày kể từ lúc tạo việc — hạn = ngày tạo (giờ VN) + 5,
+ * quá hạn khi hôm nay > hạn. Xác nhận cần Ghi chú ≥ 10 ký tự. Việc phối hợp khác giữ không hạn (P10).
+ */
+export const HAN_MEETING_CX_NGAY = 5;
+export const GHI_CHU_MEETING_TOI_THIEU = 10;
+export const laMeetingCx = (kind: string): boolean => kind === 'cx_meeting_student' || kind === 'cx_meeting_family';
+export const hanPhoiHop = (kind: string, taoLuc: string | null | undefined): string | null => {
+  const ngay = laMeetingCx(kind) ? ngayTheoGioVN(taoLuc) : null;
+  return ngay ? addDaysIso(ngay, HAN_MEETING_CX_NGAY) : null;
 };
 
 export const COORDINATION_STATUSES = ['pending', 'done', 'removed'] as const;

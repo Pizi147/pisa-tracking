@@ -12,7 +12,7 @@ import { chipChoDuyet, type ChuongTrinh, type DemYeuCau, type DiemChuY, type Don
 /**
  * CẦN XỬ LÝ (PR-VAI-a, mockup 23 màn B, K1-06): bảng năm cột — nhãn trạng thái · việc · Người giữ việc · Hạn · nút đúng việc. Quá hạn lên
  * đầu, việc giáo viên đang trễ trước việc của Bạn. Mỗi dòng là MỘT chỉ số của sổ: bấm số mở đúng tập (panel), nút mở chỗ làm được việc
- * ("Xem và nhắc" → Công việc đã lọc sẵn, có nút Nhắc). Gộp hai khung (Q5) nên số và danh sách không mang `ct`.
+ * ("Xem" → Công việc đã lọc sẵn; OV-12h bỏ Nhắc). Gộp hai khung (Q5) nên số và danh sách không mang `ct`.
  * Điện thoại (< 640 px): mỗi dòng một thẻ, không cuộn ngang.
  */
 type DongCanXuLy = DongCanXuLyGoc & {
@@ -97,7 +97,7 @@ export function KhoiCanXuLy({ branchId }: { branchId: number | null }) {
         </div>
       )}
       <footer className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-t px-4 py-2.5 text-xs" style={{ borderColor: 'var(--line)' }}>
-        <span className="text-slate-500">"Xem và nhắc" mở Công việc đã lọc sẵn, có tên từng người và nút Nhắc</span>
+        <span className="text-slate-500">"Xem" mở Công việc đã lọc sẵn, có tên từng người</span>
         <Link to="/cong-viec" className="link max-sm:py-3 max-sm:-my-3">Tất cả việc trong Công việc →</Link>
       </footer>
       {mo && <DanhSachSoLieu id={mo.id} giaTri={mo.n} phamVi={phamVi} open onClose={() => setMo(null)} ten={mo.ten || undefined} />}

@@ -14,7 +14,6 @@ export async function runPrNvTests(t: YThucTestKit) {
   const { check, assert, conn, TODAY, P } = t;
   const d: any = await import('../../../shared/domain/index.ts');
   const yc = await import('../duyet/yeuCau.ts');
-  const nv: any = await import('../worklist/nhacViec.ts');
   const ck = await import('../normal/cuoiKhoa.ts');
   const { tx } = await import('../db.ts');
   const { soCauSql, trongBoNho } = await import('../platform/nguCanhRequest.ts');
@@ -48,97 +47,6 @@ export async function runPrNvTests(t: YThucTestKit) {
   for (const id of cho) conn.prepare('UPDATE sos_cases SET han_xac_nhan = ? WHERE id = ?').run(t.addDays(TODAY, -2), id);
   yc.quetYeuCau(TODAY);
 
-  check('NV-1 (a) · nhắc thẻ Mini Test chưa đạt không 404 — chuông khoá nhac:minitest:{id}:{ngày}', () => {
-    const the = theCho().find((r) => r.loai === 'bao_len_mini_test');
-    assert(the, 'seed cần một thẻ Mini Test chưa đạt có người nhận');
-    xoaNhac();
-    const r = yc.nhacNhieu(P.admin, [the.id]);
-    assert(r.ok.length === 1 && r.loi.length === 0, JSON.stringify(r));
-    const tb = conn.prepare(`SELECT * FROM notifications WHERE user_id = ? AND dedup_key = ?`).get(the.du.ownerId, `nhac:minitest:${the.doi_tuong_id}:${TODAY}`) as any;
-    assert(tb && tb.duong, `chuông: ${JSON.stringify(tb)}`);
-  });
-
-  check('NV-1 (b) · nhắc thẻ Final Test dời quá hạn tới đúng GVCN; đổi GVCN → 404', () => {
-    const a = conn.prepare(
-      `SELECT a.id, a.student_id, a.class_id, ta.user_id AS gv FROM assessment_attempts a
-         JOIN classes c ON c.id = a.class_id
-         JOIN teacher_assignments ta ON ta.class_id = a.class_id AND ta.is_core = 1 AND ta.status = 'active'
-        WHERE a.status = 'planned' AND ta.user_id != ? ORDER BY a.id LIMIT 1`,
-    ).get(P.admin.userId) as any;
-    assert(a, 'cần một bài đang lên lịch của lớp có GVCN');
-    tx(() => ck.baoLenCuoiKhoaDoiQuaHan(conn, a));
-    const the = theCho().find((r) => r.loai === 'bao_len_cuoi_khoa' && r.doi_tuong_id === a.id);
-    assert(the && typeof the.du.ownerId === 'number', `thẻ: ${JSON.stringify(the)}`);
-    a.gv = the.du.ownerId;
-    xoaNhac();
-    const r = yc.nhacNhieu(P.admin, [the.id]);
-    assert(r.ok.length === 1 && r.ok[0].moi, JSON.stringify(r));
-    const tb = conn.prepare(`SELECT * FROM notifications WHERE user_id = ? AND dedup_key = ?`).get(a.gv, `nhac:cuoi_khoa:${a.id}:${TODAY}`) as any;
-    assert(tb && tb.duong === d.duongHoSoHocVien(a.student_id) && tb.title.startsWith('Final Test dời quá hạn · ') && tb.title.endsWith(`· ${P.admin.fullName} nhắc`),
-      `chuông: ${JSON.stringify(tb)}`);
-    xoaNhac();
-    conn.prepare(`UPDATE teacher_assignments SET status = 'ended' WHERE class_id = ? AND user_id = ? AND is_core = 1 AND status = 'active'`).run(a.class_id, a.gv);
-    try {
-      const r2 = yc.nhacNhieu(P.admin, [the.id]);
-      assert(r2.ok.length === 0 && r2.loi.length === 1 && r2.loi[0].ma === 404, JSON.stringify(r2));
-      assert(nhacHomNay().length === 0, 'GVCN cũ vẫn nhận chuông');
-    } finally {
-      conn.prepare(`UPDATE teacher_assignments SET status = 'active' WHERE class_id = ? AND user_id = ? AND is_core = 1 AND status = 'ended'`).run(a.class_id, a.gv);
-    }
-  });
-
-  check('NV-1 (c) · gom = gọi lẻ: nhắc cả lô và nhắc từng thẻ ra cùng tập (người, khoá, tiêu đề, đường)', () => {
-    const ds = theCho();
-    assert(new Set(ds.map((r) => r.du.ownerId)).size >= 2, `cần thẻ của ít nhất hai người: ${ds.length}`);
-    const ids = ds.slice(0, d.TRAN_HANG_LOAT).map((r) => r.id);
-    xoaNhac();
-    const lo = yc.nhacNhieu(P.admin, ids);
-    const a = nhacHomNay();
-    xoaNhac();
-    const le = ids.map((id) => yc.nhacNhieu(P.admin, [id]));
-    const b = nhacHomNay();
-    assert(a.length > 0 && a.join('\n') === b.join('\n'), `lô:\n${a.join('\n')}\nlẻ:\n${b.join('\n')}`);
-    const loLe = le.flatMap((r) => r.loi.map((l) => `${l.id}:${l.ma}`)).sort().join();
-    assert(lo.loi.map((l) => `${l.id}:${l.ma}`).sort().join() === loLe, `lỗi lô ${JSON.stringify(lo.loi)} ≠ lẻ ${loLe}`);
-  });
-
-  check('NV-1 (d) · số câu không tăng theo số thẻ của cùng một người; thẻ hai người ≤ 2 × một người', () => {
-    const ds = theCho();
-    xoaNhac();
-    const thu = yc.nhacNhieu(P.admin, ds.slice(0, d.TRAN_HANG_LOAT).map((r) => r.id));
-    const duoc = new Set(thu.ok.map((x) => x.id));
-    /* Thẻ có dòng `myWork` (Cuối khoá / Mini Test nạp riêng một lô cố định — không theo số thẻ, nhưng làm lệch phép so). */
-    const tot = ds.filter((r) => duoc.has(r.id) && r.loai !== 'bao_len_cuoi_khoa' && r.loai !== 'bao_len_mini_test');
-    /* NV-2: `myWork` chỉ dựng nhóm của khoá được nhắc → so thẻ CÙNG người CÙNG nhóm (tiền tố khoá); số nhóm mới làm tăng câu. */
-    const theoNguoi = new Map<string, number[]>();
-    for (const r of tot) {
-      const k = `${r.du.ownerId}|${r.du.viecKey.split(':')[0]}`;
-      theoNguoi.set(k, [...(theoNguoi.get(k) ?? []), r.id]);
-    }
-    const nhieu = [...theoNguoi.entries()].sort((x, y) => y[1].length - x[1].length);
-    const khac = nhieu.find(([k]) => k.split('|')[0] !== nhieu[0][0].split('|')[0]);
-    assert(nhieu[0][1].length >= 2 && khac, `cần một người ≥ 2 thẻ cùng nhóm và người thứ hai: ${JSON.stringify(nhieu)}`);
-    const do_ = (ids: number[]) => { xoaNhac(); return dem(() => yc.nhacNhieu(P.admin, ids)); };
-    const mot = do_([nhieu[0][1][0]]);
-    const m = do_(nhieu[0][1]);
-    const hai = do_([nhieu[0][1][0], khac![1][0]]);
-    const lo50 = ds.slice(0, d.TRAN_HANG_LOAT);
-    const lon = do_(lo50.map((r) => r.id));
-    /* Lô 5 người / 15 thẻ: một thẻ mỗi người đầu, rồi thêm thẻ của chính 5 người đó tới 15. */
-    const nam = [...new Set(lo50.map((r) => r.du.ownerId))].slice(0, 5);
-    const dau = nam.map((u) => lo50.find((r) => r.du.ownerId === u)!.id);
-    const lo15 = [...dau, ...lo50.filter((r) => nam.includes(r.du.ownerId) && !dau.includes(r.id)).map((r) => r.id)].slice(0, 15);
-    const muoiLam = do_(lo15);
-    const soNguoiLon = new Set(lo50.map((r) => r.du.ownerId)).size;
-    console.log('NV-1 số câu', JSON.stringify({ mot, m, soTheM: nhieu[0][1].length, hai, lon, soTheLon: lo50.length, soNguoiLon, muoiLam, soThe15: lo15.length }));
-    assert(m === mot, `1 thẻ ${mot} câu ≠ ${nhieu[0][1].length} thẻ cùng người cùng nhóm ${m} câu`);
-    assert(hai <= 2 * mot, `thẻ 2 người ${hai} câu > 2 × ${mot}`);
-    /* Trần tuyệt đối (NV-1 Step 5, đạt nhờ NV-2): ≈ 7 s ở 35 ms/câu, còn ≥ 2,5 s cho `tx`. */
-    assert(soNguoiLon >= 5 && nam.length === 5, `cần thẻ của ≥ 5 người: ${soNguoiLon}`);
-    assert(lon <= 200, `${lo50.length} thẻ / ${soNguoiLon} người: ${lon} câu > 200`);
-    assert(muoiLam <= 200, `${lo15.length} thẻ / 5 người: ${muoiLam} câu > 200`);
-  });
-
   check('NV-2 · myWork(người, { chiNhom: G }) = đúng các dòng của myWork(người) có nhóm ∈ G (mọi GV/QL seed, từng nhóm + tập gộp)', () => {
     const NHOM = ['cause', 'xac_nhan_pa', 'phoi_hop', 'phoi_hop_sos', 'mini_test', 'score', 'no_plan', 'ghi_ket_qua_pa',
       'yt_xu_ly', 'yt_xem', 'yt_thuc_hien', 'khai_bac', 'chot_len_ft', 'ky_vong_dau_ra', 'ban_giao', 'no_owner', 'mgmt', 'missing_data'];
@@ -152,12 +60,7 @@ export async function runPrNvTests(t: YThucTestKit) {
     for (const { id } of nguoi) {
       const p = loadPrincipal(id);
       const du = (mw.myWork(p).items ?? []) as any[];
-      for (const i of du) {
-        coNhom.add(i.group);
-        /* Bảng tiền tố → nhóm (`nhacViec.ts`) phải khớp nhóm thật — sai thì lọc mất dòng, Nhắc ra 404 nhầm. */
-        const g = nv.nhomCuaKhoa([i.key]);
-        assert(!g || g.has(i.group), `khoá ${i.key} thuộc nhóm ${i.group}, bảng tiền tố nói ${g && [...g]}`);
-      }
+      for (const i of du) coNhom.add(i.group);
       for (const G of tap) {
         const loc = (mw.myWork(p, { chiNhom: new Set(G) }).items ?? []) as any[];
         const can_ = dong(du.filter((i) => G.includes(i.group)));
@@ -165,57 +68,6 @@ export async function runPrNvTests(t: YThucTestKit) {
       }
     }
     assert(nguoi.length >= 5 && coNhom.size >= 6, `mẫu quá nhỏ: ${nguoi.length} người, nhóm ${[...coNhom].join(',')}`);
-  });
-
-  check('NV-1 (e) · nhắc lần hai trong ngày: 0 chuông mới, mọi ok.moi = false, không dựng myWork (≤ 6 câu sau quét)', () => {
-    xoaNhac();
-    /* Chỉ thẻ đã nhắc được lần một — thẻ lỗi (việc đã hết…) lần hai vẫn phải kiểm lại dòng. */
-    const ids = yc.nhacNhieu(P.admin, theCho().slice(0, d.TRAN_HANG_LOAT).map((r) => r.id)).ok.map((x) => x.id);
-    const truoc = nhacHomNay().length;
-    let r: any;
-    const n = trongBoNho(() => { yc.quetYeuCau(TODAY); return dem(() => { r = yc.nhacNhieu(P.admin, ids); }); });
-    assert(nhacHomNay().length === truoc && r.ok.length > 0 && r.ok.every((x: any) => !x.moi), JSON.stringify(r));
-    assert(n <= 6, `nhắc lại ${n} câu`);
-  });
-
-  check('NV-1 (h) · người được nhắc đã gỡ vai (myWork không có dòng): việc của người đó 404, phần còn lại của lô vẫn nhắc', () => {
-    const ds = theCho().filter((r) => !['bao_len_mini_test', 'bao_len_cuoi_khoa'].includes(r.loai));
-    const a = ds[0];
-    const b = ds.find((r) => r.du.ownerId !== a?.du.ownerId);
-    assert(a && b, 'seed cần thẻ của hai người');
-    const vai = conn.prepare(`SELECT id FROM user_roles WHERE user_id = ? AND status = 'active'`).all(a.du.ownerId) as any[];
-    conn.prepare(`UPDATE user_roles SET status = 'inactive' WHERE user_id = ? AND status = 'active'`).run(a.du.ownerId);
-    try {
-      xoaNhac();
-      const r = yc.nhacNhieu(P.admin, [a.id, b.id]);
-      assert(r.loi.some((l: any) => l.id === a.id && l.ma === 404) && r.ok.some((x: any) => x.id === b.id), JSON.stringify(r));
-    } finally {
-      for (const v of vai) conn.prepare(`UPDATE user_roles SET status = 'active' WHERE id = ?`).run(v.id);
-    }
-  });
-
-  check('NV-1 (f) · sắp hết giờ: mọi thẻ lỗi 503 "Chưa kịp nhắc", không chuông nào được ghi', () => {
-    /* OV-1c: bộ demo đổi thứ tự thẻ — bỏ thẻ mà Quản trị là người phụ trách (tự nhắc là 403 trước mọi kiểm giờ, NV-1 (g)). */
-    const ids = theCho().filter((r) => r.du.ownerId !== P.admin.userId).slice(0, d.TRAN_HANG_LOAT).map((r) => r.id);
-    xoaNhac();
-    const r = chayVoiHan(Date.now() + 3000, () => yc.nhacNhieu(P.admin, ids));
-    assert(r.ok.length === 0 && r.loi.length === ids.length && r.loi.every((l) => l.ma === 503 && /Chưa kịp nhắc/.test(l.loi)), JSON.stringify(r));
-    assert(nhacHomNay().length === 0, 'đã ghi chuông khi sắp hết giờ');
-  });
-
-  check('NV-1 (g) · quyền không nới: QL MB thẻ chi nhánh khác 403; GV 403; khoá bịa 404; tự nhắc 403 trước khi tra khoá', () => {
-    const mb = (conn.prepare(`SELECT id FROM branches WHERE code = 'MB'`).get() as any).id;
-    const ngoai = theCho().find((r) => r.chi_nhanh_id !== mb && r.chi_nhanh_id != null);
-    assert(ngoai, 'cần thẻ Báo QL ngoài Monbay');
-    xoaNhac();
-    const r = yc.nhacNhieu(P.mbManager, [ngoai.id]);
-    assert(r.ok.length === 0 && r.loi[0]?.ma === 403, JSON.stringify(r));
-    assert(maLoi(() => yc.nhacNhieu(P.coreTeacher, [ngoai.id])) === 403, 'GV');
-    assert(maLoi(() => nv.nhacViec(P.mbManager, { key: 'score:bia-khong-ton-tai', ownerId: P.coreTeacher.userId })) === 404, 'khoá bịa');
-    let loi: any = null;
-    try { nv.nhacViec(P.mbManager, { key: 'score:bia-khong-ton-tai', ownerId: P.mbManager.userId }); } catch (e) { loi = e; }
-    assert(loi?.status === 403 && /chính mình/.test(loi.message), `tự nhắc: ${loi?.status} ${loi?.message}`);
-    assert(nhacHomNay().length === 0, 'có chuông bị ghi');
   });
 
   for (const [id, h] of hanCu) conn.prepare('UPDATE sos_cases SET han_xac_nhan = ? WHERE id = ?').run(h, id);
@@ -235,14 +87,6 @@ export async function runPrNvTests(t: YThucTestKit) {
     assert(biet.length > 0, 'seed cần thẻ Nhắc việc');
     const sai = biet.filter((x: any) => x.dong.some((s: string) => /để QL biết|không cần duyệt/i.test(s)));
     assert(!sai.length, JSON.stringify(sai.map((x: any) => [x.loai, x.dong])));
-  });
-
-  check('NV-3 · hết giờ giữa chừng: "Đã nhắc 30/50 — 20 chưa nhắc, bấm lại" (chủ sản phẩm 05/10)', () => {
-    const l = (n: number, ma: number) => Array.from({ length: n }, () => ({ ma, loi: 'x' }));
-    const a = d.tomTatKetQuaHangLoat('nhac', 30, l(20, 503));
-    assert(a === 'Đã nhắc 30/50 — 20 chưa nhắc, bấm lại', a);
-    const b = d.tomTatKetQuaHangLoat('nhac', 28, [...l(20, 503), ...l(2, 404)]);
-    assert(b === 'Đã nhắc 28/50 — 2 không còn, 20 chưa nhắc, bấm lại', b);
   });
 
   // ---------------------------------------------------------------- NV-4: chi nhánh mặc định
@@ -322,18 +166,5 @@ export async function runPrNvTests(t: YThucTestKit) {
   check('NV-5 (rà) · hộp Chờ duyệt LUÔN mở Tất cả chi nhánh (chủ sản phẩm 06/10): không dùng chi nhánh mặc định; chip Tất cả = badge', () => {
     assert(!/useChiNhanhMacDinh/.test(docNguon('web/src/modules/duyet/HopChoDuyet.tsx')), 'HopChoDuyet còn áp chi nhánh mặc định');
     for (const p of [P.admin, P.mbManager]) assert(yc.hopChoDuyet(p, {}).dem['tat-ca'] === yc.demYeuCau(p).cho, `badge ≠ chip Tất cả (${p.userId})`);
-  });
-
-  check('NV-3 (rà) · thẻ Mini Test / Final Test có tên người nhận; nhắc xong GET trả daNhacLuc (nút Nhắc tất cả không đếm lại)', () => {
-    const ds = theCho().filter((r) => r.loai === 'bao_len_mini_test' || r.loai === 'bao_len_cuoi_khoa');
-    assert(ds.length > 0, 'seed cần thẻ Mini Test / Final Test có người nhận');
-    xoaNhac();
-    const truoc = yc.hopChoDuyet(P.admin, { xem: 'de-biet' }).the.filter((x: any) => ds.some((r) => r.id === x.id));
-    assert(truoc.length && truoc.every((x: any) => typeof x.duLieu?.tenGv === 'string' && !x.duLieu?.daNhacLuc), JSON.stringify(truoc.map((x: any) => x.duLieu)));
-    const r = yc.nhacNhieu(P.admin, ds.map((x) => x.id));
-    const ok = new Set(r.ok.map((x: any) => x.id));
-    assert(ok.size > 0, JSON.stringify(r));
-    const sau = yc.hopChoDuyet(P.admin, { xem: 'de-biet' }).the.filter((x: any) => ok.has(x.id));
-    assert(sau.length === ok.size && sau.every((x: any) => typeof x.duLieu?.daNhacLuc === 'string'), JSON.stringify(sau.map((x: any) => x.duLieu)));
   });
 }

@@ -1,6 +1,6 @@
 import { db } from '../db.ts';
 import {
-  PERMISSIONS, ROUTE_NAME, chuTargetKck, XUAT_TOI_DA_BYTE, XUAT_TOI_DA_LUOT, soTenVi, nhanXetW, tenGvCham, bangBoLoc, bangFT, bangThuong, goiYCuoiKhoa, dongXemTruoc, dongXemTruocThuong, moTaBoLoc, nhanDot, phanTram,
+  PERMISSIONS, ROUTE_NAME, chuTargetKck, XUAT_TOI_DA_BYTE, XUAT_TOI_DA_LUOT, soTenVi, chuNhomNguyenNhan, docNhomNguyenNhan, tenGvCham, bangBoLoc, bangFT, bangThuong, goiYCuoiKhoa, dongXemTruoc, dongXemTruocThuong, moTaBoLoc, nhanDot, phanTram,
   soSanhLop, tenMon, tenSheetThuong, tenTepXuatMt, trangThaiLuotXuat,
   type BoLocXuatMt, type Cell, type DongFT, type DongThuong,
 } from '../../../shared/domain/index.ts';
@@ -120,8 +120,9 @@ function dongFT(a: any, b: AttemptBundle): { d: DongFT; du: boolean } {
     tieuChi: { writing1: tieuChiCua(scores, 'writing1'), writing2: tieuChiCua(scores, 'writing2'), speaking: tieuChiCua(scores, 'speaking') },
     tuanKn: { listening: tuanKn('listening'), reading: tuanKn('reading'), writing: tuanKn('writing'), speaking: tuanKn('speaking') },
     nguoiNhap: nguoiNhapCua(scores),
-    nhanXetW: nhanXetW(nhanXetCua(scores, 'writing1'), nhanXetCua(scores, 'writing2')),
-    nhanXetS: nhanXetCua(scores, 'speaking'),
+    nhanXet: { listening: nhanXetCua(scores, 'listening'), reading: nhanXetCua(scores, 'reading'), writing1: nhanXetCua(scores, 'writing1'),
+      writing2: nhanXetCua(scores, 'writing2'), speaking: nhanXetCua(scores, 'speaking') },
+    nhom: chuNhomNguyenNhan(Object.fromEntries(scores.map((x) => [x.skill, docNhomNguyenNhan(x.nhom_nguyen_nhan)]))),
     gvChamS: tenGvCham({ examinerUserName: gvS?.examiner_user_name, examinerName: gvS?.examiner_name }),
   };
   return { d, du: r.complete };

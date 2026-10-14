@@ -49,6 +49,8 @@ import { migratePrOv11e, themCotPrOv11e } from './migrate/prOv11e.ts';
 import { migratePrOv12a } from './migrate/prOv12a.ts';
 import { migratePrOv12g } from './migrate/prOv12g.ts';
 import { migratePrEn } from './migrate/prEn.ts';
+import { migratePrOv12b } from './migrate/prOv12b.ts';
+import { migratePrOv12h } from './migrate/prOv12h.ts';
 
 /**
  * Nâng cấp database ĐANG CÓ lên schema mới, không xoá dữ liệu. PR-SO (DEP-gỡ): nhánh nâng cấp từ mô hình `mock_attempts` (trước overhaul)
@@ -313,6 +315,8 @@ function migrateCaseEngine(applied: string[], skipped: string[]) {
     /* PR-OV11e (SAU prOv1b / prOv1c): lượt MT đã chốt chụp dấu KCK hiện tại — kết luận giữ như màn đang hiện (đổi dữ liệu, chạy lặp được). */ migratePrOv11e(conn, applied);
     /* PR-OV12a: hạn ghi kết quả PA → lịch kỳ hai tuần, hết Thứ Ba, không sớm hơn hạn cũ (đổi dữ liệu, chạy lặp được). */ migratePrOv12a(conn, applied);
     /* PR-EN: ngôn ngữ theo tài khoản — users.ngon_ngu (chỉ thêm cột, chạy lặp được). */ migratePrEn(conn, applied);
+    /* PR-OV12b: assessment_scores.nhom_nguyen_nhan — nhóm nguyên nhân của ô MT dưới kỳ vọng (chỉ thêm cột, chạy lặp được). */ migratePrOv12b(conn, applied);
+    /* PR-OV12h: bảng case_followup_buoi — Kết quả PA Tutor theo buổi (chỉ thêm bảng, chạy lặp được). */ migratePrOv12h(conn, applied);
     /* PR-OV12g: bảng Góp ý hàng tuần (chỉ cấu trúc, chạy lặp được). */ migratePrOv12g(conn, applied);
 
     conn.prepare("INSERT OR REPLACE INTO demo_config (key, value, updated_at) VALUES ('case_engine_migrated_at', ?, ?)")

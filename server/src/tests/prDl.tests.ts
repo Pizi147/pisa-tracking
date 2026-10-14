@@ -91,10 +91,12 @@ export async function runPrDlTests(t: YThucTestKit) {
    * bỏ các trường theo đồng hồ thật (`…At`; `chuNhatCuoi` của MT lịch sử seed = ngày nhập thật). Seed + TODAY cố định nên băm cố định; đổi seed/phép kiểm phía trên
    * làm lệch băm thì chụp lại bằng mã trước refactor (`git show 666dcfbf:server/src/fasttrack/attempts.ts`), không sửa cho khớp.
    */
+  const OV12B = new Set(['nhomNguyenNhan', 'batBuocNhanXet', 'kyVong', 'thieuNhanXet']);
   const bam = (x: unknown) => createHash('sha256')
     /* PR-BV: ô thêm `daChot` ("-" đã chốt, phép kiểm riêng prBv V13) — bỏ khỏi băm để ảnh chụp cũ vẫn chứng minh mọi trường khác không lệch.
-       OV-1c: kết quả lượt thêm `chot` (phép kiểm riêng prOv1c) — bỏ khỏi băm như trên. OV-9: `kckDuoi` (phép kiểm riêng prOv9) — cũng vậy. OV-4c: ô thêm `bandThang` (phép kiểm riêng prOv4c) — cũng vậy. */
-    .update(JSON.stringify(x, (k, v) => (k.endsWith('At') || k === 'chuNhatCuoi' || k === 'daChot' || k === 'chot' || k === 'kckDuoi' || k === 'bandThang' ? undefined : v))).digest('hex').slice(0, 16);
+       OV-1c: kết quả lượt thêm `chot` (phép kiểm riêng prOv1c) — bỏ khỏi băm như trên. OV-9: `kckDuoi` (phép kiểm riêng prOv9) — cũng vậy. OV-4c: ô thêm `bandThang` (phép kiểm riêng prOv4c) — cũng vậy.
+       OV-12b: ô thêm `nhomNguyenNhan` · `batBuocNhanXet` · `kyVong` · `thieuNhanXet` (phép kiểm riêng prOv12b) — cũng vậy. */
+    .update(JSON.stringify(x, (k, v) => (k.endsWith('At') || k === 'chuNhatCuoi' || k === 'daChot' || k === 'chot' || k === 'kckDuoi' || k === 'bandThang' || OV12B.has(k) ? undefined : v))).digest('hex').slice(0, 16);
   /*
    * Chụp lại 06/10 (PR-MTa): T1 đổi cờ MT cũ của lượt seed (tuần trước nay là MT thường) và các phép kiểm chạy trước (PR-MT, PR-XLMT, PR-LM)
    * đổi dữ liệu MB FT 101. Không chụp được bằng mã 666dcfbf (gọi `kiemLyDo` đã bỏ ở T7) — băm của mã hiện tại; khẳng định `idsTuan` bên dưới
@@ -120,7 +122,9 @@ export async function runPrDlTests(t: YThucTestKit) {
    * viec); `tuan` chỉ lệch id (phép kiểm lớp thường chạy trước thêm một em). Đã so JSON từng trường bản cũ ↔ mới. */
   /* OV-11e (Q8, chỉ `moi`): em thử S3F (3) ở MB FT 101 — lượt CHỐT SẴN rồi mới tích KCK — giữ KCK lúc chốt (`kck_at_attempt` = 0), lượt dưới kỳ vọng
    * lại có `sosLevel` như trước OV-9. Đặt `kck_at_attempt` NULL cho lượt của lớp (đọc cờ hiện tại như trước) ra đúng băm cũ 184be8d29c1e33ca (đã đo 14/10). */
-  const ANH_CHUP = { tuan: '42bdce7893ef63f1', moi: 'f7580e81ed878fb5' };
+  /* OV-12h: chỉ lệch id — bỏ các phép kiểm Nhắc chạy trước (congViec PR-Ra dựng em BC, prNv…) và prPa dựng hai Case cùng em thay hai em → id em / lượt
+   * tạo sau dời. Đã so JSON hai bảng origin/main ↔ nhánh sau khi bỏ trường id + studentCode (mã theo thứ tự tạo): trùng từng byte. */
+  const ANH_CHUP = { tuan: 'b7faa8f10cf9f613', moi: 'f05f19f123679119' };
   /* Mã cố ý độc lập với hàm: điều kiện lọc tuần của bản trước refactor, viết lại bằng SQL. */
   const idsTuan = (periodId: number) => (conn.prepare(
     `SELECT a.id FROM assessment_attempts a JOIN students s ON s.id = a.student_id
@@ -413,14 +417,16 @@ export async function runPrDlTests(t: YThucTestKit) {
 
     await t.checkAsync('DL-4 PUT một ô (đường ghi cũ) → oTrong giảm 1; xoá ô đã có điểm không lý do → được (PR-MTa T22)', async () => {
       const truoc = luotCua((await goi(QL.userId, `/classes/${LOP}/diem-theo-luot`)).body, 'mt:2').oTrong;
-      const w = await goi(QL.userId, `/attempts/${anh.aid}/scores/reading`, 'PUT', { rawScore: 28 });
+      /* OV-12b: đường người dùng đòi nhận xét MT (+ nhóm khi dưới kỳ vọng — gửi kèm, máy chủ bỏ khi đạt). */
+      const NX = { nhanXet: 'Làm tốt Passage 1–2, Passage 3 còn chậm.', nhomNguyenNhan: ['student.reading.time'] };
+      const w = await goi(QL.userId, `/attempts/${anh.aid}/scores/reading`, 'PUT', { rawScore: 28, ...NX });
       assert(w.status === 200, `PUT reading: ${w.status} ${JSON.stringify(w.body)}`);
       const sau = luotCua((await goi(QL.userId, `/classes/${LOP}/diem-theo-luot`)).body, 'mt:2').oTrong;
       assert(sau === truoc - 1, `oTrong ${truoc} → ${sau}`);
       /* PR-MTa T7 thay RB-5 (sửa điểm — lý do tuỳ chọn); T22 thay "xoá cần lý do": xoá trắng ô cũng tuỳ chọn. Nhập lại 30 cho các phép kiểm sau. */
       const s = await goi(QL.userId, `/attempts/${anh.aid}/scores/listening`, 'PUT', { rawScore: null });
       assert(s.status === 200 && get(`SELECT raw_score FROM assessment_scores WHERE attempt_id = ? AND skill = 'listening'`, anh.aid).raw_score === null, `xoá: ${s.status}`);
-      assert((await goi(QL.userId, `/attempts/${anh.aid}/scores/listening`, 'PUT', { rawScore: 30 })).status === 200, 'nhập lại');
+      assert((await goi(QL.userId, `/attempts/${anh.aid}/scores/listening`, 'PUT', { rawScore: 30, nhanXet: 'Nghe Part 3 còn chậm; điền bảng tốt.', nhomNguyenNhan: ['student.listening.focus'] })).status === 200, 'nhập lại');
     });
 
     await t.checkAsync('DL-4 /diem-theo-lop/lop: GV thấy lớp mình dạy; GVCN thấy lớp chủ nhiệm; QL thấy lớp chi nhánh; oTrong = tổng các lượt', async () => {

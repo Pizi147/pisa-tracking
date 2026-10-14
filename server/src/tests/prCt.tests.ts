@@ -673,14 +673,6 @@ export async function runPrCtTests(t: YThucTestKit) {
     assert(lenhCua(e2).xac_nhan_thay === 1, 'quá hạn → QL thay được');
     assert(maLoi(() => bg.xacNhanBanGiao(P.cpManager, lenhCua(e).id, 'QL chi nhánh khác không được xác nhận.')) === 403, 'QL chi nhánh khác 403');
   });
-  check('CT (5g) · Nhắc: GVCN nhắc GVBM môn còn thiếu → thông báo đúng người, dedup mỗi ngày; GVBM / QL chưa quá hạn nhắc → 403', () => {
-    const l = lenhCua(em5[2]);
-    const r = bg.nhacGvbm(gvcn5, l.id, monL);
-    assert(r.soNguoi === 1, JSON.stringify(r));
-    bg.nhacGvbm(gvcn5, l.id, monL);
-    assert(get(`SELECT COUNT(*) n FROM notifications WHERE user_id = ? AND kind = 'nhac_ban_giao'`, gvbmL.userId).n === 1, 'một thông báo mỗi ngày');
-    assert(maLoi(() => bg.nhacGvbm(gvbmL, l.id, monL)) === 403 && maLoi(() => bg.nhacGvbm(gvDich, l.id, monL)) === 403, 'GVBM / GV lớp chuyển đến nhắc → 403');
-  });
   check('CT (5h) · số câu SQL của phiếu cả lớp KHÔNG tăng theo số em (3 em vs 30 em)', () => {
     const lop = lopMoi({ kind: 'FOU', tuanHienTai: 8 });
     const dich = lopMoi({ kind: 'BE', tuanHienTai: 1 });
@@ -698,7 +690,7 @@ export async function runPrCtTests(t: YThucTestKit) {
     assert(it === nhieu, `số câu đổi theo số em: ${it} → ${nhieu}`);
     console.log(`      (phiếu cả lớp: ${it} câu cho 3 em, ${nhieu} câu cho 30 em)`);
   });
-  await checkAsync('CT (5i) · qua HTTP: GET ban-giao (GVCN 200, GVBM 200, GV không dạy 403) · PUT ban-giao-mon · POST xac-nhan · POST nhac', async () => {
+  await checkAsync('CT (5i) · qua HTTP: GET ban-giao (GVCN 200, GVBM 200, GV không dạy 403) · PUT ban-giao-mon · POST xac-nhan · POST nhac → 404 (OV-12h bỏ Nhắc)', async () => {
     const lop = lopMoi({ kind: 'FOU', tuanHienTai: 8 });
     const dich = lopMoi({ kind: 'BE', tuanHienTai: 1 });
     ganGv(lop, GV[0].userId, null, true);
@@ -717,7 +709,7 @@ export async function runPrCtTests(t: YThucTestKit) {
       const gvbmXn = await goi(bm, `/lenh-chuyen/${l.id}/xac-nhan`, { method: 'POST', body: JSON.stringify({ nhanXetChung: 'Em chăm chỉ và cẩn thận.' }) });
       const nhac = await goi(cn, `/lenh-chuyen/${l.id}/nhac`, { method: 'POST', body: JSON.stringify({ mon: 'reading' }) });
       const ok = await goi(cn, `/lenh-chuyen/${l.id}/xac-nhan`, { method: 'POST', body: JSON.stringify({ nhanXetChung: 'Em chăm chỉ và cẩn thận.' }) });
-      assert(ngan.status === 400 && gvbmXn.status === 403 && nhac.status === 200 && ok.status === 200, `${ngan.status}/${gvbmXn.status}/${nhac.status}/${ok.status}`);
+      assert(ngan.status === 400 && gvbmXn.status === 403 && nhac.status === 404 && ok.status === 200, `${ngan.status}/${gvbmXn.status}/${nhac.status}/${ok.status}`);
     });
   });
 
@@ -881,16 +873,6 @@ export async function runPrCtTests(t: YThucTestKit) {
     (conn as any).exec = (sql: string) => { if (/^(BEGIN|SAVEPOINT)/i.test(String(sql))) begin += 1; return goc(sql); };
     try { yc.quetYeuCau(TODAY); } finally { (conn as any).exec = goc; }
     assert(begin === 0, `quét lần hai mở ${begin} giao dịch`);
-  });
-  await checkAsync('CT (6j) · Nhắc: QL nhắc GVCN qua việc bàn giao (khoá ban_giao:{lớp}) — nhacViec tìm đúng dòng', async () => {
-    /* dựng lệnh cho lớp có GVCN GV[0] (n6 ở khối 6a đã xác nhận hết → dựng lớp mới) */
-    const n = lopMoi({ kind: 'FOU', tuanHienTai: 8 });
-    ganGv(n, GV[0].userId, null, true);
-    ra(P.mbManager, n, 'cuoi-khoa', [dongCua(hocVien(n, 'FOU', false).sid, 'len_lop', d6)]);
-    const { nhacViec } = await import('../worklist/nhacViec.ts');
-    const r = nhacViec(P.mbManager, { key: `ban_giao:${n}`, ownerId: GV[0].userId });
-    assert(r.daNhacLuc, 'đã nhắc');
-    assert(get(`SELECT COUNT(*) n FROM notifications WHERE user_id = ? AND kind = 'nhac_viec' AND dedup_key = ?`, GV[0].userId, `nhac:ban_giao:${n}:${TODAY}`).n === 1, 'thông báo nhắc');
   });
 
   // ------------------------------------------------------------------ khối 7 · dữ liệu dải cho hồ sơ lớp và hồ sơ HV (Task 7)
