@@ -8,7 +8,7 @@ import { badRequest, notFound, nowIso } from '../util.ts';
 import { can, require_, type Principal } from '../permissions.ts';
 import { addJourney, notify, writeAudit } from '../platform/audit.ts';
 import { chuyenCaseSangLoTrinh, closeCasesOnProgrammeSwitch, programmeOfCase } from '../cases/systemClose.ts';
-import { banGiaoPaQuyChe } from '../cases/sosAuto.ts';
+import { banGiaoPaQuyChe, datLaiHanCase } from '../cases/sosAuto.ts';
 import { taoMtMacDinh, taoMtMacDinhLo } from '../fasttrack/mtMacDinh.ts';
 import { classProgressMany, mocKetKhoa } from './schedule.ts';
 import { isRatioClass, programmeByCode, taoBaiThuongMacDinh } from '../normal/regular.ts';
@@ -292,6 +292,10 @@ export function apDungMotDong(p: Principal, d: DongApDung): { luat: LuatDoiLop |
   /* Xếp lớp LẦN ĐẦU (chưa từng ghi danh) — không có khoá cũ để đóng, không luật lộ trình nào áp dụng. */
   if (!enr) {
     return tx((): { luat: LuatDoiLop | null; toClassCode: string } => {
+      /* OV-11d: em Tạm dừng (ghi danh `paused` giữ lớp cũ) được xếp lớp mới → đóng lớp giữ, em đang học lại — không để hai ghi danh / quyền GVCN cũ. */
+      const giu = (conn.prepare(`SELECT id FROM enrollments WHERE student_id = ? AND status = 'paused'`).all(d.sid) as any[]).map((r) => r.id as number);
+      for (const id of giu) conn.prepare(`UPDATE enrollments SET status = 'completed', ended_at = ?, end_reason = ?, end_kind = NULL WHERE id = ?`).run(d.ngay, d.lyDo ?? null, id);
+      const quayLai = giu.length > 0 && conn.prepare(`UPDATE students SET status = 'active' WHERE id = ? AND status = 'inactive'`).run(d.sid).changes > 0;
       const insEnr = conn
         .prepare(`INSERT INTO enrollments (student_id, class_id, status, started_at, created_at) VALUES (?,?, 'active', ?, ?)`)
         .run(d.sid, d.toClassId, d.ngay, nowIso());
@@ -302,8 +306,14 @@ export function apDungMotDong(p: Principal, d: DongApDung): { luat: LuatDoiLop |
       });
       writeAudit({
         actorUserId: p.userId, action: 'student.transfer', entityType: 'student', entityId: d.sid, entityLabel: toClass.code,
-        before: { classId: null }, after: { classId: d.toClassId },
+        before: { classId: null, ...(giu.length ? { ghiDanhGiu: giu } : {}) }, after: { classId: d.toClassId },
       });
+      /* Hết Tạm dừng (như Quay lại học): mốc resume khép khoảng dừng, hạn Case / Ý thức tính lại từ ngày vào lớp mới. */
+      if (quayLai) {
+        addJourney({ studentId: d.sid, eventType: 'resume', eventDate: d.ngay, title: 'Quay lại học', detail: `vào lớp ${toClass.code}`, createdBy: p.userId });
+        datLaiHanCase(d.sid, d.ngay);
+        chotHanXuLy([d.sid], { ghiDe: true });
+      }
       thongBaoChuyenVao({
         sid: d.sid, tenHocVien: (conn.prepare('SELECT full_name FROM students WHERE id = ?').get(d.sid) as any).full_name,
         enrollmentMoiId: Number(insEnr.lastInsertRowid), actorUserId: p.userId,

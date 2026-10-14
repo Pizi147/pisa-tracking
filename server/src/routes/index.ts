@@ -1432,6 +1432,7 @@ api.post('/students/:id/cycles', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   /* PR-Dọn (quét #20): chỉ lấy các khoá cần — không trải cả thân yêu cầu (ghi nguyên vào audit `after`). */
   const { route, targetScore, examPeriodId, startedAt, note } = (req.body ?? {}) as Record<string, any>;
+  studentSvc.chanLuuTruHv(principalOf(req), pInt(req, 'id'));
   return cycleSvc.createCycle(principalOf(req), { route, targetScore, examPeriodId, startedAt, note, studentId: pInt(req, 'id') });
 }));
 

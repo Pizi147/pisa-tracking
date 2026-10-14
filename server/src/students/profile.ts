@@ -1046,7 +1046,8 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
       const r = conn.prepare(`SELECT id, nguoi_xin, ly_do, du_lieu FROM yeu_cau_duyet
         WHERE loai = 'sua_thong_tin' AND doi_tuong_loai = 'student:target' AND doi_tuong_id = ? AND trang_thai = 'cho' ORDER BY id DESC LIMIT 1`).get(studentId) as any;
       if (!r) return null;
-      const moi = (JSON.parse(r.du_lieu ?? '{}') as { moi?: string | number }).moi;
+      let moi: string | number | undefined;
+      try { moi = (JSON.parse(r.du_lieu ?? '{}') as { moi?: string | number })?.moi; } catch { moi = undefined; }   // dữ liệu hỏng không làm hỏng cả hồ sơ
       const cuaToi = r.nguoi_xin === p.userId;
       return { id: r.id as number, moi: moi == null ? '' : String(moi), lyDo: cuaToi ? (r.ly_do ?? '') as string : '', cuaToi };   // lý do chỉ người gửi (để Sửa đề xuất)
     })(),

@@ -94,6 +94,23 @@ export async function runPrOv11dTests(t: YThucTestKit) {
     assert(loi(() => students.hoanTacTamDung(GVCN_KHAC, sid))?.status === 403, 'GVCN lớp khác không hoàn tác');
   }));
 
+  check('OV11d-1c · rà planning: Tạm dừng → QL chuyển lớp → lớp giữ đóng, đúng MỘT ghi danh active, em đang học, hạn chạy lại; GVCN cũ hết quyền (403)', () => thu(() => {
+    const sid = emFt();
+    students.setStudentStatus(GVCN, sid, 'inactive', TODAY, 'Thử Tạm dừng rồi chuyển lớp');
+    xoaNho();
+    const dich = one(`SELECT id FROM classes WHERE is_fast_track = 1 AND status = 'active' AND id != ? AND branch_id = (SELECT branch_id FROM classes WHERE id = ?)
+      AND id NOT IN (SELECT class_id FROM teacher_assignments WHERE user_id = ?) ORDER BY id LIMIT 1`, FT101, FT101, GVCN.userId).id;
+    students.transferStudent(QL, sid, dich, TODAY, 'Thử chuyển em Tạm dừng', { note: 'Bàn giao thử OV11d' });
+    xoaNho();
+    const gd = all(`SELECT class_id, status FROM enrollments WHERE student_id = ? AND status IN ('active', 'paused')`, sid);
+    assert(gd.length === 1 && gd[0].status === 'active' && gd[0].class_id === dich, `ghi danh: ${JSON.stringify(gd)}`);
+    assert(one('SELECT status FROM students WHERE id = ?', sid).status === 'active', 'em phải đang học');
+    assert(one(`SELECT event_type FROM journey_events WHERE student_id = ? AND event_type IN ('pause', 'resume') ORDER BY id DESC LIMIT 1`, sid).event_type === 'resume', 'khoảng Tạm dừng phải khép (hạn chạy lại)');
+    assert(loi(() => students.updateStudent(GVCN, sid, { note: 'x' }))?.status === 403, 'GVCN lớp cũ PATCH phải 403');
+    assert(!yThuc.canManageDiscipline(GVCN, sid), 'GVCN lớp cũ không còn xử lý Ý thức');
+    assert(loi(() => students.setStudentStatus(GVCN, sid, 'inactive', TODAY))?.status === 403, 'GVCN lớp cũ không Tạm dừng được');
+  }));
+
   /* Em lộ trình FT đã đóng mà còn ghi danh (demo UB FT 401) — cùng câu chỉ đọc của kiem-truoc. */
   const dongCon = buocTiep.emDongConGhiDanh(conn) as any[];
   check('OV11d-2 · HV-6: câu đếm chỉ đọc (kiem-truoc) thấy em lộ trình FT đã đóng mà còn ghi danh', () => {
@@ -143,6 +160,11 @@ export async function runPrOv11dTests(t: YThucTestKit) {
     assert(la400(loi(() => students.updateStudent(ql, sid, { phone: '0912345678' }))), 'PATCH /students/:id phải 400');
     assert(la400(loi(() => students.updateStudent(CX, sid, { phone: '0912345678' }))), 'CX PATCH phải 400');
     if (cy) assert(la400(loi(() => students.chanLuuTru(ql, cy))), 'đường /cycles/:id… phải 400');
+    assert(la400(loi(() => students.chanLuuTruHv(ql, sid))), 'POST /students/:id/cycles phải 400');
+    assert(la400(loi(() => students.setStudentStatus(ql, sid, 'active', TODAY))), 'status → đang học phải 400 (chỉ qua Học lại / Bỏ lưu trữ)');
+    const lopDich = one(`SELECT id FROM classes WHERE status = 'active' AND branch_id IN (SELECT branch_id FROM classes c JOIN enrollments e ON e.class_id = c.id WHERE e.student_id = ?) ORDER BY id LIMIT 1`, sid)?.id
+      ?? one(`SELECT id FROM classes WHERE status = 'active' ORDER BY id LIMIT 1`).id;
+    assert(la400(loi(() => students.transferStudent(ql, sid, lopDich, TODAY, 'Thử chuyển em lưu trữ', { noNote: true }))), 'chuyển / xếp lớp em Lưu trữ phải 400');
     assert(la400(loi(() => cases.reportIssue(ql, { studentId: sid, topic: 'listening', title: 'Thử Case hồ sơ lưu trữ', summary: 'Em nghe sót số và tên riêng ở Part 1.', urgency: 'attention' }))), '+ Case phải 400');
     assert(la400(loi(() => cases.backfillCase(ql, { studentId: sid, topic: 'listening', primaryCode: 'x', summary: 'Thử ghi bù hồ sơ lưu trữ', fromDate: '2026-08-03', toDate: '2026-08-10', actions: [] }))), 'ghi bù phải 400');
     const muc = d.mucQuanLyHocVien({ canEdit: true, suaThongTin: true, suaThem: true, lopHoc: { chiXem: true, quyen: { boLuuTru: true, hocLai: true } }, cycle: { ratio: false }, status: 'finished' }).map((m: any) => m.key);

@@ -199,6 +199,8 @@ export function transferStudent(p: Principal, studentId: number, toClassId: numb
     require_(p, PERMISSIONS.STUDENT_EDIT, { studentId }, 'Bạn không có quyền chuyển lớp học viên này.');
     require_(p, PERMISSIONS.STUDENT_EDIT, { classId: toClassId }, 'Lớp chuyển đến nằm ngoài phạm vi bạn được cấp quyền.');
   }
+  /* OV-11d (Q4): hồ sơ Lưu trữ khoá — xếp / chuyển lớp phải Bỏ lưu trữ (hoặc Học lại) trước. */
+  if ((db().prepare('SELECT archived_at FROM students WHERE id = ?').get(studentId) as any)?.archived_at) throw badRequest(CAU_LUU_TRU);
   const toClass = lopDichHopLe(toClassId, enr?.class_id ?? -1);
   if (!toClass) throw badRequest('Lớp chuyển đến không hợp lệ.');
   if (!isIsoDate(effectiveDate)) throw badRequest('Ngày hiệu lực không hợp lệ.');
@@ -267,6 +269,7 @@ export function setStudentStatus(
   const s = conn.prepare('SELECT * FROM students WHERE id = ?').get(studentId) as any;
   if (!s) throw notFound('Không tìm thấy học viên');
   if (s.status === status) return s;
+  if (s.archived_at) throw badRequest(CAU_LUU_TRU);   // OV-11d (Q4): em Lưu trữ về đang học chỉ qua Học lại / Bỏ lưu trữ
   if (status === 'active' && s.status === 'inactive') {
     const tamDung = (conn.prepare(`SELECT MAX(event_date) d FROM journey_events WHERE student_id = ? AND event_type = 'pause'`).get(studentId) as any)?.d as string | null;
     if (tamDung && date < tamDung) throw badRequest(`Ngày quay lại không được trước ngày tạm dừng (${tamDung.split('-').reverse().join('/')}).`);
@@ -770,6 +773,12 @@ const TRUONG_THONG_TIN = new Set(['fullName', 'dob', 'email', 'consultantName', 
 export function chanLuuTru(p: Principal, cycleId: number) {
   const r = db().prepare('SELECT s.id, s.archived_at FROM learning_cycles c JOIN students s ON s.id = c.student_id WHERE c.id = ?').get(cycleId) as any;
   if (r?.archived_at && can(p, PERMISSIONS.STUDENT_VIEW, { studentId: r.id })) throw badRequest(CAU_LUU_TRU);
+}
+
+/** Như `chanLuuTru` nhưng theo học viên (`POST /students/:id/cycles`). */
+export function chanLuuTruHv(p: Principal, studentId: number) {
+  const r = db().prepare('SELECT archived_at FROM students WHERE id = ?').get(studentId) as any;
+  if (r?.archived_at && can(p, PERMISSIONS.STUDENT_VIEW, { studentId })) throw badRequest(CAU_LUU_TRU);
 }
 
 export function updateStudent(p: Principal, studentId: number, patch: any) {
