@@ -1,4 +1,5 @@
 import { issuesForTopic } from './cases.ts';
+import { t } from '../i18n/index.ts';
 
 /** Nhận xét (OV-4b: mọi bài nhập L/R/W1/W2/S; OV-12b: MT bắt buộc — `thieuNhanXetMt`) + GV chấm Speaking (YC-13.5, T39) — luật một chỗ cho máy chủ, lưới, hồ sơ Mock và xuất Excel (PR-XUAT). */
 export const NHAN_XET_TOI_DA = 1000;
@@ -6,10 +7,10 @@ export const NHAN_XET_TOI_DA = 1000;
 /** `null` = xoá. Trả chuỗi đã cắt (rỗng → null) hoặc câu lỗi. */
 export function kiemNhanXet(s: unknown): { gt: string | null } | { loi: string } {
   if (s === null) return { gt: null };
-  if (typeof s !== 'string') return { loi: 'Nhận xét phải là chữ.' };
-  const t = s.trim();
-  if (t.length > NHAN_XET_TOI_DA) return { loi: `Nhận xét tối đa ${NHAN_XET_TOI_DA} ký tự (đang ${t.length}).` };
-  return { gt: t || null };
+  if (typeof s !== 'string') return { loi: t('Nhận xét phải là chữ.') };
+  const gon = s.trim();
+  if (gon.length > NHAN_XET_TOI_DA) return { loi: t('Nhận xét tối đa {x} ký tự (đang {length}).', { x: NHAN_XET_TOI_DA, length: gon.length }) };
+  return { gt: gon || null };
 }
 
 /**
@@ -21,17 +22,17 @@ export const NHAN_XET_MT_TOI_THIEU = 10;
 export type ThieuNhanXet = 'ghi-nhan-xet' | 'nhan-xet-ngan' | 'chon-nhom';
 /** Dòng lý do ngay trên nút Lưu (hộp chấm). */
 export const CAU_THIEU_NHAN_XET: Record<ThieuNhanXet, string> = {
-  'ghi-nhan-xet': 'Ghi nhận xét', 'nhan-xet-ngan': `Nhận xét ≥ ${NHAN_XET_MT_TOI_THIEU} ký tự`, 'chon-nhom': 'Chọn nhóm nguyên nhân',
+  'ghi-nhan-xet': t('Ghi nhận xét'), 'nhan-xet-ngan': t('Nhận xét ≥ {x} ký tự', { x: NHAN_XET_MT_TOI_THIEU }), 'chon-nhom': t('Chọn nhóm nguyên nhân'),
 };
 /** Chữ dưới ô điểm trên lưới (dữ liệu trước luật) — không chỉ bằng màu. */
 export const CHU_O_THIEU: Record<ThieuNhanXet, string> = {
-  'ghi-nhan-xet': 'thiếu nhận xét', 'nhan-xet-ngan': 'thiếu nhận xét', 'chon-nhom': 'thiếu nhóm nguyên nhân',
+  'ghi-nhan-xet': t('thiếu nhận xét'), 'nhan-xet-ngan': t('thiếu nhận xét'), 'chon-nhom': t('thiếu nhóm nguyên nhân'),
 };
 /** Câu 400 của máy chủ. */
 export const LOI_THIEU_NHAN_XET: Record<ThieuNhanXet, string> = {
-  'ghi-nhan-xet': `Bài Mock Test có điểm phải có nhận xét (≥ ${NHAN_XET_MT_TOI_THIEU} ký tự).`,
-  'nhan-xet-ngan': `Nhận xét cần ≥ ${NHAN_XET_MT_TOI_THIEU} ký tự.`,
-  'chon-nhom': 'Điểm dưới kỳ vọng — chọn ít nhất một nhóm nguyên nhân.',
+  'ghi-nhan-xet': t('Bài Mock Test có điểm phải có nhận xét (≥ {x} ký tự).', { x: NHAN_XET_MT_TOI_THIEU }),
+  'nhan-xet-ngan': t('Nhận xét cần ≥ {x} ký tự.', { x: NHAN_XET_MT_TOI_THIEU }),
+  'chon-nhom': t('Điểm dưới kỳ vọng — chọn ít nhất một nhóm nguyên nhân.'),
 };
 export const batBuocNhanXetMt = (a: { kind?: string | null; lichSu: boolean }): boolean => a.kind === 'mock' && !a.lichSu;
 /** Ô cần chip "Nhóm nguyên nhân": band của chính ô dưới kỳ vọng của lượt. */
@@ -62,9 +63,9 @@ export function docNhomNguyenNhan(s: string | null | undefined): string[] {
 /** Kiểm nhóm gửi lên cho một ô (W1 / W2 dùng bộ Writing): mảng mã khác nhau của đúng kỹ năng, theo thứ tự chọn. */
 export function kiemNhomNguyenNhan(v: unknown, skill: string): { gt: string[] } | { loi: string } {
   if (v === null) return { gt: [] };
-  if (!Array.isArray(v) || !v.every((x) => typeof x === 'string')) return { loi: 'Nhóm nguyên nhân không hợp lệ.' };
+  if (!Array.isArray(v) || !v.every((x) => typeof x === 'string')) return { loi: t('Nhóm nguyên nhân không hợp lệ.') };
   const hopLe = new Set(issuesForTopic(skill).map((i) => i.code));
-  if (new Set(v).size !== v.length || v.some((x) => !hopLe.has(x))) return { loi: 'Nhóm nguyên nhân không thuộc kỹ năng này.' };
+  if (new Set(v).size !== v.length || v.some((x) => !hopLe.has(x))) return { loi: t('Nhóm nguyên nhân không thuộc kỹ năng này.') };
   return { gt: v as string[] };
 }
 

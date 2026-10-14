@@ -76,7 +76,7 @@ export async function runPrUxdTests(t: YThucTestKit) {
   check('UXD (5) · Lịch Test: nhánh điện thoại (useDienThoai) với nút Lọc + IconGap, không ký tự ▾; Esc đóng khối Lọc', () => {
     const lt = doc('web/src/modules/test/LichTestTab.tsx');
     assert(/useDienThoai/.test(lt), 'LichTestTab chưa dùng useDienThoai');
-    assert(/Lọc\{/.test(lt) && /<IconGap\b/.test(lt), 'thiếu nút Lọc + IconGap');
+    assert(/(?:Lọc|t\('Lọc'\)\})\{/.test(lt) && /<IconGap\b/.test(lt), 'thiếu nút Lọc + IconGap');
     assert(!lt.includes('▾'), 'LichTestTab còn ký tự ▾');
     /* Dải số giữ 2×2 trên điện thoại (Câu 2 = A: ô "Nợ tuần trước · n lớp" xuống dòng ở 375 nên về 2×2). */
     assert(/useEffect/.test(lt) && /Escape/.test(lt), 'khối Lọc chưa đóng bằng Esc');

@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import type { TongQuanLich } from './kieu.ts';
+import { t } from '@shared/i18n/index.ts';
 
 export type OSo = 'da-cham' | 'con-phai-cham' | 'no';
 
@@ -12,17 +13,17 @@ export function DaiSo({ tq, tenTuan, onBam }: {
   tq: TongQuanLich; tenTuan: string; onBam: (o: OSo) => void;
 }) {
   return (
-    <div className="grid grid-cols-3 gap-2" role="group" aria-label="Tiến độ chấm điểm">
-      <O onClick={() => onBam('da-cham')} nhan={`${tenTuan} đã chấm`} mo={tq.tong === 0}>
-        {tq.daCham}/{tq.tong} <Don>bài</Don>
+    <div className="grid grid-cols-3 gap-2" role="group" aria-label={t('Tiến độ chấm điểm')}>
+      <O onClick={() => onBam('da-cham')} nhan={t('{tenTuan} đã chấm', { tenTuan })} mo={tq.tong === 0}>
+        {tq.daCham}/{tq.tong} <Don>{t('bài')}</Don>
       </O>
-      <O onClick={() => onBam('con-phai-cham')} nhan="Còn phải chấm" mo={tq.conPhaiCham === 0}>
-        {tq.conPhaiCham} <Don>bài</Don>
+      <O onClick={() => onBam('con-phai-cham')} nhan={t('Còn phải chấm')} mo={tq.conPhaiCham === 0}>
+        {tq.conPhaiCham} <Don>{t('bài')}</Don>
         {tq.khac.con > 0 && <Khac n={tq.khac.con} />}
       </O>
-      <O onClick={() => onBam('no')} nhan="Quá hạn chấm" mo={tq.no.bai === 0} mau={tq.no.bai > 0 ? 'text-late' : undefined}>
-        {tq.no.bai} <Don>bài</Don>
-        {tq.no.lop > 0 && <Don> · {tq.no.lop} lớp</Don>}
+      <O onClick={() => onBam('no')} nhan={t('Quá hạn chấm')} mo={tq.no.bai === 0} mau={tq.no.bai > 0 ? 'text-late' : undefined}>
+        {tq.no.bai} <Don>{t('bài')}</Don>
+        {tq.no.lop > 0 && <Don>{' '}{t('· {lop} lớp', { lop: tq.no.lop })}</Don>}
         {tq.khac.no > 0 && <Khac n={tq.khac.no} />}
       </O>
     </div>
@@ -30,7 +31,7 @@ export function DaiSo({ tq, tenTuan, onBam }: {
 }
 
 const Don = ({ children }: { children: ReactNode }) => <span className="text-xs font-normal text-slate-400">{children}</span>;
-const Khac = ({ n }: { n: number }) => <span className="block text-xs font-normal leading-tight text-slate-500">{n} bài của GV khác</span>;
+const Khac = ({ n }: { n: number }) => <span className="block text-xs font-normal leading-tight text-slate-500">{t('{n} bài của GV khác', { n })}</span>;
 
 /** Một ô số: nhãn nhỏ trên, số to dưới (`tabular-nums`). `mo` = số 0 → chữ phụ, vẫn bấm được. */
 function O({ nhan, children, onClick, mo, mau }: {

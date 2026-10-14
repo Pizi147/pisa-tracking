@@ -367,7 +367,7 @@ export function nhanTuanGhiKetQua(actionDue: string | null, homNay: string): { t
 export const CHUA_CO_HAN = t('Chưa có hạn');
 
 export function deadlineView(i: DeadlineInput): DeadlineView {
-  const { viec, tien } = DEADLINE_VIEC[i.kind];
+  const { viec, tien } = DEADLINE_VIEC[i.kind];   // bảng đã dịch theo tiếng của trang (EN-c)
   if (!validIso(i.due)) {
     return {
       text: `${viec} · ${CHUA_CO_HAN}`, tone: 'neutral', daysOverdue: null, title: null,

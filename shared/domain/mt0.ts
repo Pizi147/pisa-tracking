@@ -10,6 +10,7 @@ import { addDaysIso } from './sos.ts';
 import type { ProgrammeCode } from './normal.ts';
 import type { Huong } from './lenLop.ts';
 import { ASSESSED_SKILLS, type AssessedSkill } from './skills.ts';
+import { t } from '../i18n/index.ts';
 
 /** Chương trình có MT0 (không Pre FOU). */
 export const MT0_CHUONG_TRINH: readonly ProgrammeCode[] = ['FOU', 'BE', 'ELE'];
@@ -40,10 +41,10 @@ export function kiemTuanMt0(o: {
 }): string | null {
   const moi = mondayOfDate(o.tuanMoi.slice(0, 10));
   if (o.tuanSomNhat && mondayOfDate((o.tuanDau ?? o.tuanMoi).slice(0, 10)) < mondayOfDate(o.tuanSomNhat.slice(0, 10))) {
-    return `MT0 sớm nhất ${tuanLich(o.tuanSomNhat)}.`;
+    return t('MT0 sớm nhất {tuanLich}.', { tuanLich: tuanLich(o.tuanSomNhat) });
   }
-  if (o.tuanMuonNhat && moi > o.tuanMuonNhat.slice(0, 10)) return `MT0 muộn nhất ${tuanLich(o.tuanMuonNhat)}.`;
-  if (o.tuanMt1 && moi >= mondayOfDate(o.tuanMt1.slice(0, 10))) return `MT0 phải trước MT1 (${tuanLich(o.tuanMt1)}).`;
+  if (o.tuanMuonNhat && moi > o.tuanMuonNhat.slice(0, 10)) return t('MT0 muộn nhất {tuanLich}.', { tuanLich: tuanLich(o.tuanMuonNhat) });
+  if (o.tuanMt1 && moi >= mondayOfDate(o.tuanMt1.slice(0, 10))) return t('MT0 phải trước MT1 ({tuanLich}).', { tuanLich: tuanLich(o.tuanMt1) });
   return null;
 }
 
@@ -66,8 +67,8 @@ export function trangThaiMt0(o: { status: string; trongLoTrinhFt: boolean; huong
   return 'cho';
 }
 
-export function nhanMt0(t: TrangThaiMt0): string {
-  return t === 'khong_dung' ? 'MT0 · không dùng' : t === 'huy' ? 'MT0 · huỷ' : 'MT0';
+export function nhanMt0(tt: TrangThaiMt0): string {
+  return tt === 'khong_dung' ? t('MT0 · không dùng') : tt === 'huy' ? t('MT0 · huỷ') : 'MT0';
 }
 
 /** Chip SOS MT0: `W 4.0 SOS`. */

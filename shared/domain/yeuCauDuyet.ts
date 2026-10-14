@@ -6,11 +6,12 @@
  */
 import { hanTheoNgay, HAN_DUYET_NGAY } from './cases.ts';
 import type { TrangThai } from './trangThai.ts';
+import { t } from '../i18n/index.ts';
 
 export const PHAN_LOAI = ['hoc-thuat', 'y-thuc', 'lich-thi', 'thong-tin-hv', 'bao-len'] as const;
 export type PhanLoai = (typeof PHAN_LOAI)[number];
 export const PHAN_LOAI_LABEL: Record<PhanLoai, string> = {
-  'hoc-thuat': 'Học thuật', 'y-thuc': 'Ý thức', 'lich-thi': 'Lịch thi', 'thong-tin-hv': 'Thông tin HV', 'bao-len': 'Báo QL',
+  'hoc-thuat': t('Học thuật'), 'y-thuc': t('Ý thức'), 'lich-thi': t('Lịch thi'), 'thong-tin-hv': t('Thông tin HV'), 'bao-len': t('Báo QL'),
 };
 
 /**
@@ -25,7 +26,7 @@ export type LoaiYeuCau = (typeof LOAI_YEU_CAU)[number];
  * (nút Sửa… / Rút trên thẻ) đọc CÙNG danh sách này. Rút = thẻ `tu_dong` lý do "Người gửi đã rút", không chuông.
  */
 export const LOAI_NGUOI_XIN_SUA: readonly LoaiYeuCau[] = ['sua_thong_tin', 'de_xuat_chuyen_lop', 'khong_theo_doi', 'y_thuc'];
-export const LY_DO_RUT = 'Người gửi đã rút';
+export const LY_DO_RUT = t('Người gửi đã rút');
 
 /** `da_tra_loi` chỉ của Xin ý kiến; `tu_dong` = hệ thống tự đóng (đối tượng không còn ý nghĩa). */
 export const TRANG_THAI_YC = ['cho', 'duyet', 'tu_choi', 'tu_dong', 'da_tra_loi'] as const;
@@ -45,26 +46,26 @@ export type LoaiYcMeta = {
 };
 
 export const LOAI_YC_META: Record<LoaiYeuCau, LoaiYcMeta> = {
-  de_xuat_pa: { phanLoai: 'hoc-thuat', nhan: 'Đề xuất PA', kieuNut: 'duyet-tu-choi', hanNgay: HAN_DUYET_NGAY, hangLoat: true },
-  xin_y_kien: { phanLoai: 'hoc-thuat', nhan: 'Xin ý kiến', kieuNut: 'tra-loi', hanNgay: HAN_DUYET_NGAY, hangLoat: false },
-  lich_thi: { phanLoai: 'lich-thi', nhan: 'Dời lịch thi lần 2', kieuNut: 'duyet-tu-choi', hanNgay: null, hangLoat: true },
-  sua_thong_tin: { phanLoai: 'thong-tin-hv', nhan: 'Đề xuất sửa', kieuNut: 'duyet-tu-choi', hanNgay: HAN_DUYET_NGAY, hangLoat: false },
-  bao_len_nguyen_nhan: { phanLoai: 'bao-len', nhan: 'Case quá hạn xác nhận', kieuNut: 'nhac', hanNgay: null, hangLoat: false },
+  de_xuat_pa: { phanLoai: 'hoc-thuat', nhan: t('Đề xuất PA'), kieuNut: 'duyet-tu-choi', hanNgay: HAN_DUYET_NGAY, hangLoat: true },
+  xin_y_kien: { phanLoai: 'hoc-thuat', nhan: t('Xin ý kiến'), kieuNut: 'tra-loi', hanNgay: HAN_DUYET_NGAY, hangLoat: false },
+  lich_thi: { phanLoai: 'lich-thi', nhan: t('Dời lịch thi lần 2'), kieuNut: 'duyet-tu-choi', hanNgay: null, hangLoat: true },
+  sua_thong_tin: { phanLoai: 'thong-tin-hv', nhan: t('Đề xuất sửa'), kieuNut: 'duyet-tu-choi', hanNgay: HAN_DUYET_NGAY, hangLoat: false },
+  bao_len_nguyen_nhan: { phanLoai: 'bao-len', nhan: t('Case quá hạn xác nhận'), kieuNut: 'nhac', hanNgay: null, hangLoat: false },
   /* PR-SOS (S4-5, T23): GVBM xin không theo dõi Case SOS chờ nguyên nhân — Quản lý duyệt trong 5 ngày. */
-  khong_theo_doi: { phanLoai: 'hoc-thuat', nhan: 'Không cần theo dõi', kieuNut: 'duyet-tu-choi', hanNgay: 5, hangLoat: false },
+  khong_theo_doi: { phanLoai: 'hoc-thuat', nhan: t('Không cần theo dõi'), kieuNut: 'duyet-tu-choi', hanNgay: 5, hangLoat: false },
   /* PR-YT4 (V4-9, V4-10): Meeting CX/GĐCN · WL 3 · Đình chỉ · Khác — QL duyệt trong 5 ngày. */
-  y_thuc: { phanLoai: 'y-thuc', nhan: 'Xử lý Ý thức cần duyệt', kieuNut: 'duyet-tu-choi', hanNgay: HAN_DUYET_NGAY, hangLoat: false },
+  y_thuc: { phanLoai: 'y-thuc', nhan: t('Xử lý Ý thức cần duyệt'), kieuNut: 'duyet-tu-choi', hanNgay: HAN_DUYET_NGAY, hangLoat: false },
   /* PR-YT4 (V4-4, V4-5, K3-37, Q9): một thẻ mỗi em — không duyệt, QL biết và nhắc. */
-  bao_len_y_thuc: { phanLoai: 'bao-len', nhan: 'Ý thức quá hạn', kieuNut: 'nhac', hanNgay: null, hangLoat: false },
+  bao_len_y_thuc: { phanLoai: 'bao-len', nhan: t('Ý thức quá hạn'), kieuNut: 'nhac', hanNgay: null, hangLoat: false },
   /* PR-CT (Q30-1, Q30-2, Q30-4): GVCN đề xuất chuyển lớp (5 ngày) · Báo QL bàn giao quá hạn 3 ngày (một thẻ mỗi lớp nguồn) · Báo QL lớp hết khoá còn em chưa có lệnh. */
-  de_xuat_chuyen_lop: { phanLoai: 'thong-tin-hv', nhan: 'Đề xuất chuyển lớp', kieuNut: 'duyet-tu-choi', hanNgay: 5, hangLoat: false },
-  bao_len_ban_giao: { phanLoai: 'bao-len', nhan: 'Bàn giao quá hạn', kieuNut: 'nhac', hanNgay: null, hangLoat: false },
-  bao_len_chua_lenh: { phanLoai: 'bao-len', nhan: 'Lớp hết khoá · chưa có quyết định chuyển lớp', kieuNut: 'nhac', hanNgay: null, hangLoat: false },
+  de_xuat_chuyen_lop: { phanLoai: 'thong-tin-hv', nhan: t('Đề xuất chuyển lớp'), kieuNut: 'duyet-tu-choi', hanNgay: 5, hangLoat: false },
+  bao_len_ban_giao: { phanLoai: 'bao-len', nhan: t('Bàn giao quá hạn'), kieuNut: 'nhac', hanNgay: null, hangLoat: false },
+  bao_len_chua_lenh: { phanLoai: 'bao-len', nhan: t('Lớp hết khoá · chưa có quyết định chuyển lớp'), kieuNut: 'nhac', hanNgay: null, hangLoat: false },
   /* PR-LT2a (T54, M-05): kế hoạch bài giảng PA bổ trợ Giữa khoá. PR-CT2: CHỈ ĐỌC LỊCH SỬ — không còn đường tạo; duyệt / từ chối → 409. */
-  ke_hoach_bo_tro: { phanLoai: 'hoc-thuat', nhan: 'Kế hoạch bổ trợ', kieuNut: 'duyet-tu-choi', hanNgay: 3, hangLoat: false },
+  ke_hoach_bo_tro: { phanLoai: 'hoc-thuat', nhan: t('Kế hoạch bổ trợ'), kieuNut: 'duyet-tu-choi', hanNgay: 3, hangLoat: false },
   /* PR-LT2b (M-05, T76): Mini Test dưới 70% — QL xử lý case-by-case. Bài Cuối khoá dời quá tuần cuối khoá (K4-23) — QL biết và nhắc. */
-  bao_len_mini_test: { phanLoai: 'bao-len', nhan: 'Mini Test chưa đạt', kieuNut: 'nhac', hanNgay: null, hangLoat: false },
-  bao_len_cuoi_khoa: { phanLoai: 'bao-len', nhan: 'Final Test dời quá hạn', kieuNut: 'nhac', hanNgay: null, hangLoat: false },
+  bao_len_mini_test: { phanLoai: 'bao-len', nhan: t('Mini Test chưa đạt'), kieuNut: 'nhac', hanNgay: null, hangLoat: false },
+  bao_len_cuoi_khoa: { phanLoai: 'bao-len', nhan: t('Final Test dời quá hạn'), kieuNut: 'nhac', hanNgay: null, hangLoat: false },
 };
 
 export function laPhanLoai(x: unknown): x is PhanLoai {
@@ -129,19 +130,19 @@ export function chonHet<T extends ChonDuoc & { trangThai: string }>(ds: readonly
 
 /** Kết quả hàng loạt một câu: "Đã duyệt 7/9 — 2 không có quyền". Lý do gom theo mã (PR-GVb G7). */
 export function tomTatKetQuaHangLoat(viec: 'duyet' | 'tu-choi', ok: number, loi: readonly { ma: number; loi: string }[]): string {
-  const dong = viec === 'duyet' ? 'duyệt' : 'từ chối';
-  const dau = `Đã ${dong} ${ok}/${ok + loi.length}`;
+  const dong = viec === 'duyet' ? t('duyệt') : t('từ chối');
+  const dau = t('Đã {dong} {ok}/{x}', { dong, ok, x: ok + loi.length });
   if (!loi.length) return dau;
   const nhom: [string, number][] = [
-    ['không có quyền', loi.filter((l) => l.ma === 403).length],
-    ['đã có người xử lý', loi.filter((l) => l.ma === 400 && /đã được xử lý/.test(l.loi)).length],
-    ['không còn', loi.filter((l) => l.ma === 404).length],
+    [t('không có quyền'), loi.filter((l) => l.ma === 403).length],
+    [t('đã có người xử lý'), loi.filter((l) => l.ma === 400 && /đã được xử lý/.test(l.loi)).length],
+    [t('không còn'), loi.filter((l) => l.ma === 404).length],
   ];
   /* PR-NV: hết giờ giữa chừng (503) — nói cuối, kèm việc cần làm (chủ sản phẩm 05/10: "20 chưa nhắc, bấm lại"). */
   const chuaKip = loi.filter((l) => l.ma === 503).length;
   const khac = loi.length - chuaKip - nhom.reduce((s, [, n]) => s + n, 0);
-  if (khac) nhom.push(['lỗi khác', khac]);
-  if (chuaKip) nhom.push([`chưa ${dong}, bấm lại`, chuaKip]);
+  if (khac) nhom.push([t('lỗi khác'), khac]);
+  if (chuaKip) nhom.push([t('chưa {dong}, bấm lại', { dong }), chuaKip]);
   return `${dau} — ${nhom.filter(([, n]) => n > 0).map(([c, n]) => `${n} ${c}`).join(', ')}`;
 }
 
@@ -173,14 +174,14 @@ export function duongThe(id: number, vai: 'duyet' | 'nguoi-xin' | 'de-biet'): st
 }
 
 /** Trạng thái thẻ → nhãn chung §7.3 (`NhanTrangThai`) + chữ riêng của hộp. */
-export function nhanTrangThaiYc(t: TrangThaiYc, tuDuyet = false): { t: TrangThai; chu: string } {
-  switch (t) {
-    case 'cho': return { t: 'cho-duyet', chu: 'Chờ duyệt' };
-    case 'duyet': return { t: 'xong', chu: tuDuyet ? 'Đã duyệt · tự duyệt' : 'Đã duyệt' };
-    case 'da_tra_loi': return { t: 'xong', chu: 'Đã trả lời' };
+export function nhanTrangThaiYc(tt: TrangThaiYc, tuDuyet = false): { t: TrangThai; chu: string } {
+  switch (tt) {
+    case 'cho': return { t: 'cho-duyet', chu: t('Chờ duyệt') };
+    case 'duyet': return { t: 'xong', chu: tuDuyet ? t('Đã duyệt · tự duyệt') : t('Đã duyệt') };
+    case 'da_tra_loi': return { t: 'xong', chu: t('Đã trả lời') };
     /* PR-GVb (chủ sản phẩm 03/10): Bị từ chối = người xin phải làm lại → kiểu Cần làm ở mọi nơi. */
-    case 'tu_choi': return { t: 'can-lam', chu: 'Bị từ chối' };
-    case 'tu_dong': return { t: 'da-huy', chu: 'Tự đóng' };
+    case 'tu_choi': return { t: 'can-lam', chu: t('Bị từ chối') };
+    case 'tu_dong': return { t: 'da-huy', chu: t('Tự đóng') };
   }
 }
 
@@ -239,7 +240,7 @@ export type ChipDem = { key: string; nhan: string; so: number; den: string; quaH
 export function chipChoDuyet(d: DemYeuCau): ChipDem[] {
   const kq: ChipDem[] = PHAN_LOAI_CAN_QUYET.filter((k) => (d.chip?.[k] ?? 0) > 0)
     .map((k) => ({ key: k, nhan: PHAN_LOAI_LABEL[k], so: d.chip![k], den: `?phan=${k}` }));
-  if (d.quaHan > 0) kq.push({ key: 'qua-han', nhan: 'Quá hạn', so: d.quaHan, den: '?qua-han=1', quaHan: true });
+  if (d.quaHan > 0) kq.push({ key: 'qua-han', nhan: t('Quá hạn'), so: d.quaHan, den: '?qua-han=1', quaHan: true });
   return kq;
 }
 

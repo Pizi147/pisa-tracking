@@ -5,15 +5,16 @@
  * thường đều vẽ theo `thaoTacKyNang` — không nơi nào tự dựng menu thứ hai. Máy chủ kiểm lại mọi luật chặn.
  */
 import { mondayOfDate } from './week.ts';
+import { t } from '../i18n/index.ts';
 
 export type ThaoTac = 'nhap-diem' | 'sua-diem' | 'dat-lich' | 'doi-lich' | 'doi-han' | 'bo-ky-nang' | 'dua-lai' | 'bao-vang' | 'huy-diem'
   | 'xep-lai' | 'tra-loi-de-nghi' | 'khoi-phuc' | 'khong-mock-lai';
 
 export const CHU_THAO_TAC: Record<ThaoTac, string> = {
-  'nhap-diem': 'Nhập điểm', 'sua-diem': 'Sửa điểm', 'dat-lich': 'Xếp lịch', 'doi-lich': 'Dời lịch thi', 'doi-han': 'Dời hạn chấm',
-  'bo-ky-nang': 'Huỷ kỹ năng', 'dua-lai': 'Đưa lại vào đợt', 'bao-vang': 'Vắng', 'huy-diem': 'Huỷ điểm',
-  'xep-lai': 'Xếp lại bài vắng', 'tra-loi-de-nghi': 'Trả lời đề nghị dời', 'khoi-phuc': 'Khôi phục và đặt tuần',
-  'khong-mock-lai': 'Không mock lại',
+  'nhap-diem': t('Nhập điểm'), 'sua-diem': t('Sửa điểm'), 'dat-lich': t('Xếp lịch'), 'doi-lich': t('Dời lịch thi'), 'doi-han': t('Dời hạn chấm'),
+  'bo-ky-nang': t('Huỷ kỹ năng'), 'dua-lai': t('Đưa lại vào đợt'), 'bao-vang': t('Vắng'), 'huy-diem': t('Huỷ điểm'),
+  'xep-lai': t('Xếp lại bài vắng'), 'tra-loi-de-nghi': t('Trả lời đề nghị dời'), 'khoi-phuc': t('Khôi phục và đặt tuần'),
+  'khong-mock-lai': t('Không mock lại'),
 };
 
 export type TrangThaiTT = 'khong-yeu-cau' | 'chua-xep' | 'chua-toi-tuan' | 'dang-thi' | 'co-diem' | 'vang' | 'cho-duyet' | 'da-huy' | 'lich-su'
@@ -74,21 +75,21 @@ export function thaoTacKyNang(tt: TrangThaiTT, q: QuyenTT): { chinh: ThaoTac | n
  * Khôi phục và đặt tuần). "Không mock lại", "Khôi phục kết quả" không nằm ở đây (hồ sơ Mock / ⋯ hàng Lộ trình).
  */
 export type MucHop = 'doi-tuan' | 'doi-han' | 'bao-vang' | 'huy-diem' | 'nhat-ky';
-export const CHU_MUC_HOP: Record<MucHop, string> = { 'doi-tuan': 'Đổi tuần', 'doi-han': 'Dời hạn chấm', 'bao-vang': 'Vắng', 'huy-diem': 'Huỷ điểm', 'nhat-ky': 'Nhật ký' };
+export const CHU_MUC_HOP: Record<MucHop, string> = { 'doi-tuan': t('Đổi tuần'), 'doi-han': t('Dời hạn chấm'), 'bao-vang': t('Vắng'), 'huy-diem': t('Huỷ điểm'), 'nhat-ky': t('Nhật ký') };
 
 /** Vì sao mục mờ (≤ 6 từ). `moi` = đợt chưa tạo. */
 function viSaoMo(muc: MucHop, tt: TrangThaiTT, moi: boolean): string {
-  if (moi) return 'Đợt chưa tạo';
-  if (muc === 'huy-diem' && tt !== 'co-diem') return 'Chưa có điểm';
+  if (moi) return t('Đợt chưa tạo');
+  if (muc === 'huy-diem' && tt !== 'co-diem') return t('Chưa có điểm');
   switch (tt) {
-    case 'co-diem': return 'Đã có điểm';
-    case 'chua-xep': case 'chua-toi-tuan': return 'Chưa tới tuần thi';
-    case 'vang': return 'Bài đang vắng';
-    case 'da-huy': case 'huy-vang': return 'Phần thi đã huỷ';
-    case 'cho-duyet': return 'Chờ duyệt';
-    case 'lich-su': return 'MT cũ';
+    case 'co-diem': return t('Đã có điểm');
+    case 'chua-xep': case 'chua-toi-tuan': return t('Chưa tới tuần thi');
+    case 'vang': return t('Bài đang vắng');
+    case 'da-huy': case 'huy-vang': return t('Phần thi đã huỷ');
+    case 'cho-duyet': return t('Chờ duyệt');
+    case 'lich-su': return t('MT cũ');
     /* OV-11e (TE-12): Đổi tuần / Dời hạn chấm mờ ở đây là thiếu quyền (Admin không dời hạn — OV-10a), không phải "không thi". */
-    default: return muc === 'doi-tuan' || muc === 'doi-han' ? 'Chỉ Quản lý' : 'Không thi đợt này';
+    default: return muc === 'doi-tuan' || muc === 'doi-han' ? t('Chỉ Quản lý') : t('Không thi đợt này');
   }
 }
 
@@ -124,7 +125,7 @@ export function theoTuanChung(tt: TrangThaiTT, q: QuyenTT, moi: boolean): boolea
 export type ThaoTacLyDo = ThaoTac | 'huy-luot' | 'huy-ket-qua' | 'tu-choi' | 'thi-lai' | 'huy-lich';
 
 export const CHU_LY_DO: Record<ThaoTacLyDo, string> = {
-  ...CHU_THAO_TAC, 'huy-luot': 'Huỷ lượt', 'huy-ket-qua': 'Huỷ kết quả', 'tu-choi': 'Từ chối', 'thi-lai': 'Thi lại', 'huy-lich': 'Huỷ lịch',
+  ...CHU_THAO_TAC, 'huy-luot': t('Huỷ lượt'), 'huy-ket-qua': t('Huỷ kết quả'), 'tu-choi': t('Từ chối'), 'thi-lai': t('Thi lại'), 'huy-lich': t('Huỷ lịch'),
 };
 
 /** T7 (PR-MTa, 05/10): lý do BẮT BUỘC chỉ khi huỷ kết quả (dữ liệu cũ), Quản lý từ chối. Huỷ điểm một kỹ năng: tuỳ chọn, như xoá
@@ -136,6 +137,6 @@ export function canLyDo(t: ThaoTacLyDo): boolean {
 }
 
 /** `null` = được; thao tác bắt buộc mà trống → "Huỷ điểm: cần ghi lý do.". Không tối thiểu ký tự (T7). Máy chủ gọi lại đúng hàm này. */
-export function kiemLyDoThaoTac(t: ThaoTacLyDo, s: string | null | undefined): string | null {
-  return canLyDo(t) && !(s ?? '').trim() ? `${CHU_LY_DO[t]}: cần ghi lý do.` : null;
+export function kiemLyDoThaoTac(tt: ThaoTacLyDo, s: string | null | undefined): string | null {
+  return canLyDo(tt) && !(s ?? '').trim() ? t('{x}: cần ghi lý do.', { x: CHU_LY_DO[tt] }) : null;
 }

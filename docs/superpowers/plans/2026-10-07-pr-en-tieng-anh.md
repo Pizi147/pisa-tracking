@@ -202,15 +202,15 @@ vai GVCN (7) + GVBM (9) ở EN; QL (2) ở EN thấy khung Anh, màn QL Việt. 
 shared `{worklist,congViec,tongQuan,sapToi,yeuCauDuyet,chamDiem,fasttrack,lopThuong,oMt,lichMt,diemTheoLuot,normal,thaoTacMt,mt0,nhanXet}.ts`;
 máy chủ `worklist/{mywork (GROUP_META :136, tieuDe 24 chỗ, nhóm :1252-1253),tongQuan (:115),nhacViec}.ts`, `platform/audit.ts` `notify` + 35 chỗ gọi, lỗi `fasttrack/{absence,attempts,skillSchedule}.ts`, `normal/{regular,cuoiKhoa}.ts`, `cham/{diemTheoLuot,canCham}.ts`, `duyet/yeuCau.ts`.
 
-**Task b1 — Máy chủ gửi khoá**
-- [ ] **Đỏ:** E-VIEC, E-TB; E-NGUON thêm file EN-b.
-- [ ] `mywork.ts` mọi `tieuDe` / `actionLabel` / nhóm thêm `khoa` + `bien`; `tongQuan.ts:115` "quá hạn a–b ngày" → `{a,b}`; `notify()` nhận `khoa`, `bien` (35 chỗ gọi). Chữ Việt giữ nguyên từng chữ.
-- [ ] Mã hoá lỗi GV gặp ở các route nhập điểm / vắng / dời lịch / chấm / yêu cầu.
+**Task b1 — Máy chủ gửi khoá** — ✅ 14/10 làm KHÁC (session EN-b): máy chủ KHÔNG đổi; web dịch chữ máy chủ theo MẪU (`dichChu`, khoá có `{biến}` của từ điển, tách đoạn " · ") → không cột `notifications.khoa/bien`, không migrate, thông báo đã lưu cũng dịch. Phép kiểm E-MAU, E-VIEC, E-TB đo kết quả thật.
+- [x] **Đỏ:** E-VIEC, E-TB; E-NGUON thêm file EN-b.
+- [x] `mywork.ts` mọi `tieuDe` / `actionLabel` / nhóm thêm `khoa` + `bien`; `tongQuan.ts:115` "quá hạn a–b ngày" → `{a,b}`; `notify()` nhận `khoa`, `bien` (35 chỗ gọi). Chữ Việt giữ nguyên từng chữ.
+- [x] Mã hoá lỗi GV gặp ở các route nhập điểm / vắng / dời lịch / chấm / yêu cầu (bản Anh theo chính câu Việt / mẫu).
 
 **Task b2 — Web**
-- [ ] Màn B + C dùng `t()` / `dich(row)`; `thongBaoVang.ts` một khoá có biến cho mọi đường ghi vắng; gỡ vắng (`LuoiThuong.tsx:242-244`, `ScoreEntry.tsx:140`) cùng khoá.
-- [ ] `/impeccable clarify` (chữ EN ngắn), `/impeccable adapt` (375: lưới nhập điểm, thẻ việc, KPI Lịch Test, chip nowrap). Đúng mockup mục 3–5, 8.
-- [ ] Xanh. do-khung EN 0 lỗi (a)–(e): `tong-quan-gv`, `cv-gv`, `gvbm`, `gvbm-test`, `test-lichTest`, `test-diem-lop`, `nhap-diem`, `bang-diem-thuong`, `mock`, chuông. Commit theo màn.
+- [x] Màn B + C dùng `t()` / `dich(row)`; `thongBaoVang.ts` một khoá có biến cho mọi đường ghi vắng; gỡ vắng (`LuoiThuong.tsx:242-244`, `ScoreEntry.tsx:140`) cùng khoá.
+- [x] `/impeccable clarify` (chữ EN ngắn), `/impeccable adapt` (375: lưới nhập điểm, thẻ việc, KPI Lịch Test, chip nowrap). Đúng mockup mục 3–5, 8.
+- [x] Xanh. do-khung EN 0 lỗi (a)–(e): `tong-quan-gv`, `cv-gv`, `gvbm`, `gvbm-test`, `test-lichTest`, `test-diem-lop`, `nhap-diem`, `bang-diem-thuong`, `mock`, chuông. Commit theo màn.
 
 **Nghiệm thu EN-b:** ảnh 375 + 1440, sáng + tối: Home GV, My tasks, chuông mở, Test schedule, Scores by class, Enter scores (máy tính + điện thoại, thông báo Absent) — vai 7, 9 ở EN; vai 2 VI không đổi.
 

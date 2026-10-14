@@ -8,7 +8,6 @@ import { useLoiForm } from '../../ui/loiForm.tsx';
 import { QuaHan } from '../../ui/Nhan.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { ErrorState, NutChon, Skeleton } from '../../ui/ui.tsx';
-import { t } from '@shared/i18n/index.ts';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { FormPa, KhoaNho, VachBuoi } from './FormPa.tsx';
 import {
@@ -19,6 +18,7 @@ import {
   canBuoiTutor, coNguoiDay, coSoBuoi, coSoBuoiKy, demSauKetQua, kiemSoBuoiTuan, soBuoiTu, type BuoiTutor, giaTriCuaPa, loiFormPa, loiKetQuaTuan, nguoiCuaPa, paMoi, paPayload, tachKhac, thanKetQuaTuan, thanSuaPa,
   type GiaTriPa,
 } from '@shared/domain/index.ts';
+import { dich, t } from '@shared/i18n/index.ts';
 
 /**
  * KẾT QUẢ CỦA MỘT PA — MỘT PANEL (PR-UX3, N-4, mockup 15 §4–§5; nguồn §8). Thay `CapNhatTuanForm` (form trải trong trang + hộp
@@ -74,16 +74,16 @@ function giaTriDau(pa: PaCanCapNhat, sua: SuaKetQua | undefined, homNay: string)
 }
 
 const DA_LUU: Record<PlanDecision, string> = {
-  keep: 'Đã lưu kết quả, PA vẫn đang chạy',
-  adjust: 'Đã điều chỉnh PA, bản cũ giữ trong lịch sử',
-  replace: 'Đã thay PA',
-  end: 'Đã kết thúc PA',
-  ask_manager: 'Đã gửi Quản lý — PA vẫn chạy',
+  keep: t('Đã lưu kết quả, PA vẫn đang chạy'),
+  adjust: t('Đã điều chỉnh PA, bản cũ giữ trong lịch sử'),
+  replace: t('Đã thay PA'),
+  end: t('Đã kết thúc PA'),
+  ask_manager: t('Đã gửi Quản lý — PA vẫn chạy'),
 };
 
 /** Nghĩa ngắn (≤ 1 dòng) của dòng quyết định bị chặn — bản đủ ở `title`. */
 function ngiaBiChan(outcome: string): string {
-  return !outcome ? 'Chọn kết quả trước' : outcome === 'insufficient' ? 'Cần có kết quả để so' : 'Không hợp với kết quả này';
+  return !outcome ? t('Chọn kết quả trước') : outcome === 'insufficient' ? t('Cần có kết quả để so') : t('Không hợp với kết quả này');
 }
 
 export function GhiKetQuaPanel({ pa, sua, hocVien, lop, quayLai, onClose, onSaved, onThemPa }: {
@@ -165,22 +165,22 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, quayLai, onClose, onSave
     { khoa: 'ket-qua', nhan: t('Tiến triển (2 tuần)'), chon: true },
     /* Chủ SP 14/10 tối: PA Tutor có buổi — nhận xét nằm ở từng buổi, không ô Nhận xét chung (máy chủ nhận nhận xét buổi ghép làm ghi chú). */
     ...(nhanXetTheoBuoi ? [] : [{ khoa: 'tien-trien', nhan: t('Nhận xét'), toiThieu: 8 }]),
-    ...(lanCuoi ? [] : [{ khoa: 'quyet-dinh', nhan: 'Quyết định', chon: true }]),
-    ...(lanCuoi && outcome === 'insufficient' ? [{ khoa: 'ly-do', nhan: 'Lý do chưa đủ dữ liệu', toiThieu: 1 }] : []),
-    ...(needReason ? [{ khoa: 'ly-do', nhan: decision === 'adjust' ? 'Lý do điều chỉnh' : 'Lý do thay', toiThieu: 1 }] : []),
-    ...(decision === 'ask_manager' ? [{ khoa: 'ly-do', nhan: 'Cần Quản lý giúp gì', toiThieu: 8 }] : []),
+    ...(lanCuoi ? [] : [{ khoa: 'quyet-dinh', nhan: t('Quyết định'), chon: true }]),
+    ...(lanCuoi && outcome === 'insufficient' ? [{ khoa: 'ly-do', nhan: t('Lý do chưa đủ dữ liệu'), toiThieu: 1 }] : []),
+    ...(needReason ? [{ khoa: 'ly-do', nhan: decision === 'adjust' ? t('Lý do điều chỉnh') : t('Lý do thay'), toiThieu: 1 }] : []),
+    ...(decision === 'ask_manager' ? [{ khoa: 'ly-do', nhan: t('Cần Quản lý giúp gì'), toiThieu: 8 }] : []),
   ];
   const loi = dsLoi(LUAT, { 'ket-qua': outcome, 'tien-trien': progress, 'quyet-dinh': decision, 'ly-do': reason });
   if (decision === 'replace') loi.push(...loiFormPa(paThay, { tienTo: 'moi-' }));   // khoá riêng: không đụng ô Số buổi tuần này
   if (coMiniTest) {
     const so = Number(mtTyLe.replace(',', '.'));
-    if (mtTyLe.trim() === '' || !Number.isFinite(so) || so < 0 || so > 100) loi.push({ khoa: 'mt-ty-le', nhan: 'Mini Test (%)', lyDo: 'Nhập số từ 0 đến 100' });
-    if (!mtNgay) loi.push({ khoa: 'mt-ngay', nhan: 'Ngày làm', lyDo: 'Chọn ngày làm Mini Test' });
+    if (mtTyLe.trim() === '' || !Number.isFinite(so) || so < 0 || so > 100) loi.push({ khoa: 'mt-ty-le', nhan: 'Mini Test (%)', lyDo: t('Nhập số từ 0 đến 100') });
+    if (!mtNgay) loi.push({ khoa: 'mt-ngay', nhan: t('Ngày làm'), lyDo: t('Chọn ngày làm Mini Test') });
   }
   loi.push(...loiKetQuaTuan(paKq, tuan, nguoiDay));
   for (let i = 0; i < soDong; i += 1) {
-    if (!buoi[i]?.tutor.trim()) loi.push({ khoa: `buoi-${i}-tutor`, nhan: `Tên tutor buổi ${i + 1}`, lyDo: 'Chưa điền' });
-    if (!buoi[i]?.nhanXet.trim()) loi.push({ khoa: `buoi-${i}-nx`, nhan: `Nhận xét buổi ${i + 1}`, lyDo: 'Chưa điền' });
+    if (!buoi[i]?.tutor.trim()) loi.push({ khoa: `buoi-${i}-tutor`, nhan: t('Tên tutor buổi {x}', { x: i + 1 }), lyDo: t('Chưa điền') });
+    if (!buoi[i]?.nhanXet.trim()) loi.push({ khoa: `buoi-${i}-nx`, nhan: t('Nhận xét buổi {x}', { x: i + 1 }), lyDo: t('Chưa điền') });
   }
   if (nhanXetTheoBuoi && !loi.some((l) => l.khoa.startsWith('buoi-')) && ghepBuoi.replace(/^Buổi \d+: /, '').length < 8) {
     loi.push({ khoa: 'buoi-0-nx', nhan: t('Nhận xét buổi {n}', { n: 1 }), lyDo: t('Ghi rõ hơn — ít nhất 8 ký tự') });
@@ -188,7 +188,7 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, quayLai, onClose, onSave
   if (decision === 'adjust') {
     /* Số buổi mới ≥ đã dạy SAU tuần này (máy chủ kiểm cùng luật). */
     loi.push(...loiFormPa(dc, { goc: gocDc, daDay: dem?.da ?? daDay, tienTo: 'dc-' }));
-    if (!Object.keys(thanDc).length) loi.push({ khoa: 'dc-noi-dung', nhan: 'Nội dung', lyDo: 'Đổi ít nhất một ô: nội dung, số buổi hoặc người' });
+    if (!Object.keys(thanDc).length) loi.push({ khoa: 'dc-noi-dung', nhan: t('Nội dung'), lyDo: t('Đổi ít nhất một ô: nội dung, số buổi hoặc người') });
   }
   const thieu = loi.map((l) => l.nhan);
   const loiCua = (khoa: string) => lf.loiCua(loi, khoa);
@@ -217,10 +217,10 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, quayLai, onClose, onSave
       if (decision === 'replace' && !giuLuaChon) body.newPlan = paPayload(paThay);
       await api.post(sua ? `/followups/${sua.followupId}/sua` : `/interventions/${pa.id}/result`, body);
       invalidate('/cases'); invalidate('/my-work'); invalidate('/students'); invalidate('/tong-quan'); invalidate('/followups');
-      toast.push('ok', sua ? 'Đã sửa kết quả' : lanCuoi ? 'Đã lưu kết quả cuối — PA theo quy chế kết thúc' : DA_LUU[decision as PlanDecision]);
+      toast.push('ok', sua ? t('Đã sửa kết quả') : lanCuoi ? t('Đã lưu kết quả cuối — PA theo quy chế kết thúc') : DA_LUU[decision as PlanDecision]);
       onSaved();
     } catch (e: any) {
-      toast.push('error', e?.message ?? 'Không lưu được');
+      toast.push('error', e?.message ?? t('Không lưu được'));
     } finally { setBusy(false); }
   };
 
@@ -228,21 +228,21 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, quayLai, onClose, onSave
   const hanGhi = pa.actionDue && !sua ? deadlineView({ kind: 'cap-nhat-pa', due: pa.actionDue, today: homNay }) : null;
   /* K3-17: tiêu đề khối nói TUẦN đang ghi ('Kết quả tuần W4 SEP'); trễ nhiều tuần thì nói khoảng + số tuần ghi bù. */
   const tuanGhi = nhanTuanGhiKetQua(pa.actionDue ?? null, homNay).tieuDe;
-  const tenLoai = INTERVENTION_KIND_LABEL[pa.kind as keyof typeof INTERVENTION_KIND_LABEL] ?? pa.kind;
+  const tenLoai = dich(INTERVENTION_KIND_LABEL[pa.kind as keyof typeof INTERVENTION_KIND_LABEL] ?? pa.kind);
   /* PR-PA (§7): PA có Số buổi → "Học Tutor · 10 buổi"; còn lại giữ nội dung PA. */
-  const tenPa = coDem ? `${tenLoai} · ${pa.soBuoi} buổi` : pa.description || tenLoai;
+  const tenPa = coDem ? t('{tenLoai} · {soBuoi} buổi', { tenLoai, soBuoi: pa.soBuoi }) : pa.description || tenLoai;
 
   /* Khối đếm (mockup §7): hai ô cùng hàng khi PA có Số buổi; PA không Số buổi chỉ có Người dạy tuần này (không bắt buộc). */
   const oBuoi = coO && (
-    <Truong nhan="Số buổi kỳ này" batBuoc loi={loiCua('so-buoi-tuan')}>
+    <Truong nhan={t('Số buổi kỳ này')} batBuoc loi={loiCua('so-buoi-tuan')}>
       <input className="field w-24 tabular-nums" inputMode="numeric" maxLength={2} {...o('so-buoi-tuan')} value={tuan} onChange={(e) => setTuan(e.target.value)} />
     </Truong>
   );
   /* PR-CT2: không bắt buộc ở mọi trường hợp (cùng `loiKetQuaTuan` và máy chủ). */
   const oNguoi = coNguoiDay(pa.kind) && (
-    <Truong nhan="Người dạy tuần này" tuyChon as="div" loi={loiCua('nguoi-day')}>
-      <ChonNguoi nhom="nhan_vien" value={nguoiDay} onChange={setNguoiDay} choTrong="Để trống" placeholder="Chưa chọn · gõ tên để tìm"
-        ariaLabel="Người dạy tuần này" id={lf.oId('nguoi-day')} onBlur={lf.roi('nguoi-day')} invalid={!!loiCua('nguoi-day')} />
+    <Truong nhan={t('Người dạy tuần này')} tuyChon as="div" loi={loiCua('nguoi-day')}>
+      <ChonNguoi nhom="nhan_vien" value={nguoiDay} onChange={setNguoiDay} choTrong={t('Để trống')} placeholder={t('Chưa chọn · gõ tên để tìm')}
+        ariaLabel={t('Người dạy tuần này')} id={lf.oId('nguoi-day')} onBlur={lf.roi('nguoi-day')} invalid={!!loiCua('nguoi-day')} />
     </Truong>
   );
 
@@ -252,7 +252,7 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, quayLai, onClose, onSave
       return (
         <div className="space-y-3">
           <FormPa phang tienTo="dc-" v={dc} dat={(p) => setDc((x) => ({ ...x, ...p }))} lf={lf} loi={loi} daDay={dem?.da ?? daDay} />
-          <Truong nhan="Lý do điều chỉnh" batBuoc loi={loiCua('ly-do')}>
+          <Truong nhan={t('Lý do điều chỉnh')} batBuoc loi={loiCua('ly-do')}>
             <input className="field w-full" {...o('ly-do')} value={reason} onChange={(e) => setReason(e.target.value)} />
           </Truong>
         </div>
@@ -262,7 +262,7 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, quayLai, onClose, onSave
       return (
         <div className="space-y-3">
           <FormPa phang chonLoai tienTo="moi-" v={paThay} dat={(p) => setPaThay((x) => ({ ...x, ...p }))} lf={lf} loi={loi} />
-          <Truong nhan="Lý do thay" batBuoc loi={loiCua('ly-do')}>
+          <Truong nhan={t('Lý do thay')} batBuoc loi={loiCua('ly-do')}>
             <input className="field w-full" {...o('ly-do')} value={reason} onChange={(e) => setReason(e.target.value)} />
           </Truong>
         </div>
@@ -271,24 +271,24 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, quayLai, onClose, onSave
     if (d === 'ask_manager') {
       return (
         <div className="space-y-2">
-          <Truong nhan="Cần Quản lý giúp gì" batBuoc loi={loiCua('ly-do')}>
+          <Truong nhan={t('Cần Quản lý giúp gì')} batBuoc loi={loiCua('ly-do')}>
             <textarea className="field w-full" {...o('ly-do')} rows={2} value={reason} onChange={(e) => setReason(e.target.value)} />
           </Truong>
-          <p className="m-0 text-xs text-slate-500">Gửi Quản lý · trả lời trong 5 ngày · xem ở Yêu cầu của tôi</p>
+          <p className="m-0 text-xs text-slate-500">{t('Gửi Quản lý · trả lời trong 5 ngày · xem ở Yêu cầu của tôi')}</p>
         </div>
       );
     }
     if (d === 'end') {
-      return <Truong nhan="Ngày kết thúc"><ONgay kieu="ngay" value={endOn} onChange={setEndOn} toiDa={homNay} /></Truong>;
+      return <Truong nhan={t('Ngày kết thúc')}><ONgay kieu="ngay" value={endOn} onChange={setEndOn} toiDa={homNay} /></Truong>;
     }
     return null;
   };
 
   return (
-    <KhungPanel tieuDe={sua ? (lanCuoi ? 'Sửa kết quả cuối' : 'Sửa kết quả') : lanCuoi ? 'Kết quả cuối' : 'Kết quả'} hocVien={hocVien} lop={lop} quayLai={quayLai} onDong={onClose}
+    <KhungPanel tieuDe={sua ? (lanCuoi ? t('Sửa kết quả cuối') : t('Sửa kết quả')) : lanCuoi ? t('Kết quả cuối') : t('Kết quả')} hocVien={hocVien} lop={lop} quayLai={quayLai} onDong={onClose}
       ngCanh={(
         <span className="flex items-center gap-1.5 max-sm:flex-col max-sm:items-start max-sm:gap-0.5">
-          <span className="truncate max-sm:whitespace-normal max-sm:break-words" title={tenPa}>{tenPa}{pa.cycleNo && pa.cycleNo > 1 ? ` · Đợt ${pa.cycleNo}` : ''}</span>
+          <span className="truncate max-sm:whitespace-normal max-sm:break-words" title={tenPa}>{tenPa}{pa.cycleNo && pa.cycleNo > 1 ? t(' · Đợt {cycleNo}', { cycleNo: pa.cycleNo }) : ''}</span>
           {hanGhi && (
             <span className="flex items-center gap-1.5">
               <span className="whitespace-nowrap text-slate-500"><span className="max-sm:hidden">· </span>{hanGhi.han}</span>
@@ -301,7 +301,7 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, quayLai, onClose, onSave
         conThieu: lf.conThieu(loi),
         chinh: (
           <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={luu}>
-            {busy ? 'Đang lưu…' : sua ? 'Lưu' : lanCuoi ? 'Lưu kết quả cuối' : NUT_LUU_KET_QUA[decision || 'keep']}
+            {busy ? t('Đang lưu…') : sua ? t('Lưu') : lanCuoi ? t('Lưu kết quả cuối') : dich(NUT_LUU_KET_QUA[decision || 'keep'])}
           </button>
         ),
       }}>
@@ -313,7 +313,7 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, quayLai, onClose, onSave
       <Khoi tieuDe={lanCuoi ? tuanGhi : `1 · ${tuanGhi}`}>
         {lanCuoi && !sua && (
           <p className="m-0 text-xs text-slate-300">
-            Tuần này chạm mốc quy chế{pa.mocChu ? ` (${pa.mocChu})` : ''} — lưu là PA kết thúc.
+            {t('Tuần này chạm mốc quy chế')}{pa.mocChu ? ` (${pa.mocChu})` : ''}{' '}{t('— lưu là PA kết thúc.')}
           </p>
         )}
         <div>
@@ -322,14 +322,14 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, quayLai, onClose, onSave
           <div {...o('ket-qua')} tabIndex={-1} className="grid grid-cols-2 gap-2 outline-none" role="group" aria-label={t('Tiến triển (2 tuần)')}>
             {FOLLOWUP_OUTCOMES.filter((o) => o !== 'insufficient').map((o) => (
               <NutChon key={o} chon={outcome === o} disabled={khoaLuaChon && outcome !== o} onClick={() => pickOutcome(o)} className="justify-center text-sm">
-                {outcomeLabelFor(o)}
+                {dich(outcomeLabelFor(o))}
               </NutChon>
             ))}
           </div>
           <p className="m-0 mt-1.5 flex flex-wrap items-center gap-1.5 text-xs text-slate-500">
-            Chưa có bài để so?
+            {t('Chưa có bài để so?')}
             <NutChon nho chon={outcome === 'insufficient'} disabled={khoaLuaChon && outcome !== 'insufficient'} onClick={() => pickOutcome('insufficient')}>
-              {outcomeLabelFor('insufficient')}
+              {dich(outcomeLabelFor('insufficient'))}
             </NutChon>
           </p>
           {loiCua('ket-qua') && <span className="mt-1 block text-xs text-late">{loiCua('ket-qua')}</span>}
@@ -337,7 +337,7 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, quayLai, onClose, onSave
         {!nhanXetTheoBuoi && (
           <Truong nhan={t('Nhận xét')} batBuoc loi={loiCua('tien-trien')} dem={{ co: progress.trim().length, can: 8 }}>
             <textarea className="field w-full" {...o('tien-trien')} rows={2} value={progress} onChange={(e) => setProgress(e.target.value)}
-              placeholder={GOI_Y_KET_QUA_PA} />
+              placeholder={dich(GOI_Y_KET_QUA_PA)} />
           </Truong>
         )}
         {(coO || coNguoiDay(pa.kind)) && (
@@ -347,24 +347,24 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, quayLai, onClose, onSave
               <div className="flex flex-wrap items-center gap-2.5 text-[13px] text-slate-300">
                 <VachBuoi da={dem.da} tong={dem.tong} tt={dem.tt} />
                 {/* Đuôi "· còn n" đi cùng "sau khi lưu x/y" (không rớt dòng một mình ở 375). */}
-                <span>Đã dạy <b className="font-semibold text-slate-100 tabular-nums">{dem.truoc}/{dem.tong}</b> → <span className="whitespace-nowrap">sau khi lưu <b className="font-semibold text-slate-100 tabular-nums">{dem.da}/{dem.tong}</b>{' '}
-                  {dem.tt === 'du' ? <span className="font-semibold text-ok">· đủ buổi</span>
-                    : dem.tt === 'vuot' ? <span className="font-semibold text-late">· vượt {dem.vuot} buổi</span>
-                    : <span>· còn <b className="font-semibold text-slate-100 tabular-nums">{dem.con}</b></span>}</span></span>
+                <span>{t('Đã dạy')}{' '}<b className="font-semibold text-slate-100 tabular-nums">{dem.truoc}/{dem.tong}</b> → <span className="whitespace-nowrap">{t('sau khi lưu')}{' '}<b className="font-semibold text-slate-100 tabular-nums">{dem.da}/{dem.tong}</b>{' '}
+                  {dem.tt === 'du' ? <span className="font-semibold text-ok">{t('· đủ buổi')}</span>
+                    : dem.tt === 'vuot' ? <span className="font-semibold text-late">{t('· vượt {vuot} buổi', { vuot: dem.vuot })}</span>
+                    : <span>{t('· còn')}{' '}<b className="font-semibold text-slate-100 tabular-nums">{dem.con}</b></span>}</span></span>
               </div>
             )}
             {soDong > 0 && (
-              <ol className="m-0 list-none space-y-2.5 border-t p-0 pt-2.5" style={{ borderColor: 'var(--line)' }} aria-label="Các buổi tutor">
+              <ol className="m-0 list-none space-y-2.5 border-t p-0 pt-2.5" style={{ borderColor: 'var(--line)' }} aria-label={t('Các buổi tutor')}>
                 {Array.from({ length: soDong }, (_, i) => (
                   <li key={i}>
                     <Hang2>
-                      <Truong nhan={`Tên tutor · buổi ${i + 1}`} batBuoc loi={loiCua(`buoi-${i}-tutor`)}>
+                      <Truong nhan={t('Tên tutor · buổi {x}', { x: i + 1 })} batBuoc loi={loiCua(`buoi-${i}-tutor`)}>
                         <input className="field w-full" maxLength={100} {...o(`buoi-${i}-tutor`)} value={buoi[i]?.tutor ?? ''}
-                          onChange={(e) => datBuoi(i, { tutor: e.target.value })} placeholder="Gõ tên tutor" />
+                          onChange={(e) => datBuoi(i, { tutor: e.target.value })} placeholder={t('Gõ tên tutor')} />
                       </Truong>
-                      <Truong nhan={`Nhận xét buổi ${i + 1}`} batBuoc loi={loiCua(`buoi-${i}-nx`)}>
+                      <Truong nhan={t('Nhận xét buổi {x}', { x: i + 1 })} batBuoc loi={loiCua(`buoi-${i}-nx`)}>
                         <input className="field w-full" maxLength={1000} {...o(`buoi-${i}-nx`)} value={buoi[i]?.nhanXet ?? ''}
-                          onChange={(e) => datBuoi(i, { nhanXet: e.target.value })} placeholder="Ví dụ: luyện số đếm, còn nhầm 15 và 50" />
+                          onChange={(e) => datBuoi(i, { nhanXet: e.target.value })} placeholder={t('Ví dụ: luyện số đếm, còn nhầm 15 và 50')} />
                       </Truong>
                     </Hang2>
                   </li>
@@ -372,8 +372,8 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, quayLai, onClose, onSave
               </ol>
             )}
             {/* Đủ buổi: chỉ gợi ý — không tự kết thúc; PA không có "Kết thúc PA" (quy chế, Kết quả cuối) thì không gợi ý. */}
-            {dem?.tt === 'du' && !lanCuoi && dsQuyetDinh.includes('end') && <span className="text-xs text-slate-500">Xong PA thì chọn Kết thúc PA ở mục 2.</span>}
-            {!coDem && coSoBuoi(pa.kind) && <span className="text-xs text-slate-500">PA chưa có Số buổi — thêm ở ⋯ › Sửa PA nếu muốn đếm.</span>}
+            {dem?.tt === 'du' && !lanCuoi && dsQuyetDinh.includes('end') && <span className="text-xs text-slate-500">{t('Xong PA thì chọn Kết thúc PA ở mục 2.')}</span>}
+            {!coDem && coSoBuoi(pa.kind) && <span className="text-xs text-slate-500">{t('PA chưa có Số buổi — thêm ở ⋯ › Sửa PA nếu muốn đếm.')}</span>}
           </div>
         )}
         {/* Chủ SP 14/10 tối: bỏ ô "Vấn đề còn tồn / Ghi chú" — lần ghi cũ có chữ thì vẫn giữ nguyên khi sửa (gửi lại giá trị cũ). */}
@@ -382,50 +382,50 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, quayLai, onClose, onSave
       {coMiniTest && (
         <Khoi tieuDe="Mini Test">
           <Hang2>
-            <Truong nhan="Mini Test (%)" batBuoc loi={loiCua('mt-ty-le')} phu="Đạt từ 70%">
-              <input className="field w-full tabular-nums" inputMode="decimal" {...o('mt-ty-le')} value={mtTyLe} onChange={(e) => setMtTyLe(e.target.value)} placeholder="Ví dụ: 72" />
+            <Truong nhan="Mini Test (%)" batBuoc loi={loiCua('mt-ty-le')} phu={t('Đạt từ 70%')}>
+              <input className="field w-full tabular-nums" inputMode="decimal" {...o('mt-ty-le')} value={mtTyLe} onChange={(e) => setMtTyLe(e.target.value)} placeholder={t('Ví dụ: 72')} />
             </Truong>
-            <Truong nhan="Ngày làm Mini Test" batBuoc loi={loiCua('mt-ngay')}>
+            <Truong nhan={t('Ngày làm Mini Test')} batBuoc loi={loiCua('mt-ngay')}>
               <ONgay kieu="ngay" value={mtNgay} onChange={setMtNgay} toiDa={homNay} />
             </Truong>
           </Hang2>
         </Khoi>
       )}
       {lanCuoi && outcome === 'insufficient' && (
-        <Khoi tieuDe="Lý do">
-          <Truong nhan="Lý do chưa đủ dữ liệu" batBuoc loi={loiCua('ly-do')}>
+        <Khoi tieuDe={t('Lý do')}>
+          <Truong nhan={t('Lý do chưa đủ dữ liệu')} batBuoc loi={loiCua('ly-do')}>
             <input className="field w-full" {...o('ly-do')} value={reason} onChange={(e) => setReason(e.target.value)}
-              placeholder="Ví dụ: Em nghỉ ốm cả tuần cuối, chưa có bài để so" />
+              placeholder={t('Ví dụ: Em nghỉ ốm cả tuần cuối, chưa có bài để so')} />
           </Truong>
         </Khoi>
       )}
       {!lanCuoi && (
-      <Khoi tieuDe="2 · Quyết định"
-        luat="Điều chỉnh: cùng PA, sửa nội dung, số buổi hoặc người — bản cũ giữ trong lịch sử. Thay PA: khép PA này và mở PA mới. Kết thúc PA: Case chỉ hoàn thành được khi mọi PA đã khép.">
+      <Khoi tieuDe={t('2 · Quyết định')}
+        luat={t('Điều chỉnh: cùng PA, sửa nội dung, số buổi hoặc người — bản cũ giữ trong lịch sử. Thay PA: khép PA này và mở PA mới. Kết thúc PA: Case chỉ hoàn thành được khi mọi PA đã khép.')}>
         {pa.batBuoc && (
           <p className="m-0 flex flex-wrap items-center gap-1.5 text-xs text-slate-400">
-            PA theo quy chế — không thay, không kết thúc sớm. Cần thêm hỗ trợ?
-            {onThemPa && <button type="button" className="btn btn-sm" onClick={onThemPa}>+ Thêm PA</button>}
+            {t('PA theo quy chế — không thay, không kết thúc sớm. Cần thêm hỗ trợ?')}
+            {onThemPa && <button type="button" className="btn btn-sm" onClick={onThemPa}>{t('+ Thêm PA')}</button>}
           </p>
         )}
-        <div {...o('quyet-dinh')} tabIndex={-1} role="radiogroup" aria-label="Quyết định" className="space-y-1.5 outline-none">
+        <div {...o('quyet-dinh')} tabIndex={-1} role="radiogroup" aria-label={t('Quyết định')} className="space-y-1.5 outline-none">
           {dsTren.map((d) => {
             /* Chủ SP 14/10 tối: 3 nút Giữ nguyên · Điều chỉnh · Kết thúc PA — "Thay PA", "Xin hỗ trợ QL" mở bên trong Điều chỉnh. */
-            const chanCua = (x: PlanDecision) => (khoaLuaChon && decision !== x ? sua!.chan : outcome ? decisionBlockedReason(outcome, x) : 'Chọn kết quả trước.');
+            const chanCua = (x: PlanDecision) => (khoaLuaChon && decision !== x ? sua!.chan : outcome ? decisionBlockedReason(outcome, x) : t('Chọn kết quả trước.'));
             const conDc = dsDc.filter((x) => !chanCua(x));
             const chan = d === 'adjust' ? (conDc.length ? null : chanCua(dsDc[0])) : chanCua(d);
             const chon = d === 'adjust' ? dsDc.includes(decision as PlanDecision) : decision === d;
             return (
               <div key={d}>
-                <button type="button" role="radio" aria-checked={chon} disabled={!!chan} title={chan ?? PLAN_DECISION_HINT[d]}
+                <button type="button" role="radio" aria-checked={chon} disabled={!!chan} title={dich(chan ?? PLAN_DECISION_HINT[d])}
                   onClick={() => setDecision(d === 'adjust' ? (chon ? decision as PlanDecision : conDc[0]) : d)}
                   className={`flex w-full items-start gap-2.5 rounded-md border px-2.5 py-2 text-left disabled:cursor-not-allowed disabled:opacity-45 ${
                     chon ? 'border-[color:var(--accent)] bg-[color:var(--accent-soft)]' : 'border-[color:var(--line)] hover:border-[color:var(--line-strong)]'}`}
                   style={{ background: chon ? undefined : 'transparent' }}>
                   <span aria-hidden className={`mt-[3px] inline-block h-3 w-3 shrink-0 rounded-full border ${chon ? 'border-[color:var(--accent)] bg-[color:var(--accent)]' : 'border-slate-500'}`} />
                   <span className="min-w-0">
-                    <span className="block text-sm font-semibold text-slate-100">{PLAN_DECISION_NGAN[d]}</span>
-                    <span className="block text-xs text-slate-500">{chan ? (khoaLuaChon ? 'Chỉ sửa được chữ' : ngiaBiChan(outcome)) : d === 'adjust' && dsDc.length > 1 ? `${t('Sửa PA này')} · ${dsDc.filter((x) => x !== 'adjust').map((x) => PLAN_DECISION_NGAN[x]).join(' · ')}` : PLAN_DECISION_NGHIA[d]}</span>
+                    <span className="block text-sm font-semibold text-slate-100">{dich(PLAN_DECISION_NGAN[d])}</span>
+                    <span className="block text-xs text-slate-500">{chan ? (khoaLuaChon ? t('Chỉ sửa được chữ') : ngiaBiChan(outcome)) : d === 'adjust' && dsDc.length > 1 ? `${t('Sửa PA này')} · ${dsDc.filter((x) => x !== 'adjust').map((x) => dich(PLAN_DECISION_NGAN[x])).join(' · ')}` : dich(PLAN_DECISION_NGHIA[d])}</span>
                   </span>
                 </button>
                 {chon && (d === 'adjust' ? dsDc.length > 1 || khoiCon(decision as PlanDecision) : khoiCon(d)) && (
@@ -451,7 +451,7 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, quayLai, onClose, onSave
       )}
 
       <div className="mt-3.5">
-        <Truong nhan="Ngày ghi"><ONgay kieu="ngay" value={on} onChange={setOn} toiDa={homNay} disabled={khoaLuaChon} /></Truong>
+        <Truong nhan={t('Ngày ghi')}><ONgay kieu="ngay" value={on} onChange={setOn} toiDa={homNay} disabled={khoaLuaChon} /></Truong>
       </div>
     </KhungPanel>
   );
@@ -462,7 +462,7 @@ export function SuaKetQuaPanel({ followupId, ...rest }: { followupId: number } &
   const { data, error, reload } = useApi<SuaKetQua>(`/followups/${followupId}/sua`);
   if (!data) {
     return (
-      <KhungPanel tieuDe="Sửa kết quả" hocVien={rest.hocVien} lop={rest.lop} quayLai={rest.quayLai} onDong={rest.onClose}>
+      <KhungPanel tieuDe={t('Sửa kết quả')} hocVien={rest.hocVien} lop={rest.lop} quayLai={rest.quayLai} onDong={rest.onClose}>
         {error ? <ErrorState message={error.message} hint={error.hint} onRetry={reload} /> : <div className="pt-3"><Skeleton rows={6} /></div>}
       </KhungPanel>
     );

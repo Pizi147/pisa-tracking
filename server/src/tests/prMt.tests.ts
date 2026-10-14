@@ -545,7 +545,7 @@ export async function runPrMtTests(t: YThucTestKit) {
     const mock = docSach('web/src/modules/fasttrack/MockDetailPage.tsx');
     assert(/prog !== 'scored' && [^\n]*!d\.lichSu && <div><DeadlinePill/.test(mock), 'MockDetailPage vẽ DeadlinePill cho MT lịch sử');  // PR-MTb audit thay: thêm điều kiện bỏ chip huỷ trùng, vẫn bắt !d.lichSu
     assert(/cu: d\.lichSu/.test(mock) && /<OMt v=\{omtDau\}/.test(mock), 'đầu trang thiếu ô MT mang nhãn "cũ"');  // PR-MTb T2 thay nhãn rời → ô MT
-    assert(/progress === 'lich_su'\) return <Info pending>Nhập bù, không tính hạn<\/Info>/.test(docSach('web/src/modules/fasttrack/ScoreEntry.tsx')), 'DeadlinePill thiếu nhánh lịch sử');
+    assert(/progress === 'lich_su'\) return <Info pending>\{t\('Nhập bù, không tính hạn'\)\}<\/Info>/.test(docSach('web/src/modules/fasttrack/ScoreEntry.tsx')), 'DeadlinePill thiếu nhánh lịch sử');
     for (const f of ['web/src/modules/test/lichTest/KhoiNo.tsx', 'web/src/modules/test/LichTestTab.tsx', 'web/src/modules/fasttrack/MockDetailPage.tsx',
       'web/src/modules/test/keHoach/ChipKyNang.tsx', 'web/src/modules/students/StudentDetailPage.tsx', 'web/src/ui/Nhan.tsx']) {
       assert(!/>[^<{]*lich_su[^<]*</.test(docSach(f)), `${f}: chữ "lich_su" lọt vào JSX`);

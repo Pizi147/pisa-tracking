@@ -17,6 +17,7 @@ import {
   LOC_NHANH_LABEL, NHOM_VIEC, NHOM_VIEC_LABEL, demLocNhanh, demNhomChip, demPhamVi, gomNhomViec, khoaGopCua, khopLocNhanh, nhomViecCua,
   LOC_NHANH, type LocNhanh, type NhomViec as MaNhomViec,
 } from '@shared/domain/index.ts';
+import { t } from '@shared/i18n/index.ts';
 
 type Work = {
   summary: { total: number; overdue: number; today: number; mine: number };
@@ -25,7 +26,7 @@ type Work = {
 };
 
 /** Tên loại việc mở từ Tổng quan bằng `loai=` (dòng "Đang xem"). */
-const TEN_LOAI: Record<string, string> = { ghi_ket_qua_pa: 'Kết quả PA' };
+const TEN_LOAI: Record<string, string> = { ghi_ket_qua_pa: t('Kết quả PA') };
 
 const thamSoNguoi = (s: string | null): NguoiPhuTrach => {
   if (s === 'toi') return 'toi';
@@ -208,12 +209,12 @@ export function HoTroHocVienTab() {
     if (khung !== 'tat-ca') { nhoKhung('cong-viec', 'tat-ca'); next.set('khung', 'tat-ca'); }
     setParams(next, { replace: true });
   };
-  const tenCn = branchId ? branches?.find((b) => b.id === branchId)?.name : branches?.length === 1 ? branches[0].name : 'Tất cả chi nhánh';
+  const tenCn = branchId ? branches?.find((b) => b.id === branchId)?.name : branches?.length === 1 ? branches[0].name : t('Tất cả chi nhánh');
   const ai = typeof nguoi === 'number'
-    ? (tenGv ?? tatCaViec.find((x) => x.ownerId === nguoi)?.owner ?? 'một GV')
-    : laQuanLy && nguoi !== 'toi' ? 'Của GV' : 'Của tôi';
-  const dangXem = [tenCn, ai, loc === 'tat-ca' ? 'Tất cả hạn' : LOC_NHANH_LABEL[loc], loai ? TEN_LOAI[loai] ?? (nhom ? NHOM_VIEC_LABEL[nhom] : null) : nhom ? NHOM_VIEC_LABEL[nhom] : null,
-    khung === 'ft' ? 'Fast Track' : khung === 'thuong' ? 'Lớp thường' : null].filter(Boolean).join(' · ');
+    ? (tenGv ?? tatCaViec.find((x) => x.ownerId === nguoi)?.owner ?? t('một GV'))
+    : laQuanLy && nguoi !== 'toi' ? t('Của GV') : t('Của tôi');
+  const dangXem = [tenCn, ai, loc === 'tat-ca' ? t('Tất cả hạn') : LOC_NHANH_LABEL[loc], loai ? TEN_LOAI[loai] ?? (nhom ? NHOM_VIEC_LABEL[nhom] : null) : nhom ? NHOM_VIEC_LABEL[nhom] : null,
+    khung === 'ft' ? 'Fast Track' : khung === 'thuong' ? t('Lớp thường') : null].filter(Boolean).join(' · ');
 
   if (error) return <ErrorState message={error.message} hint={error.hint} onRetry={reload} />;
   const anTrenDienThoai = chon ? 'max-lg:hidden' : '';
@@ -224,16 +225,16 @@ export function HoTroHocVienTab() {
         <div className="flex flex-wrap items-end gap-2">
           {laQuanLy && data && !chiChamDiem && (
             /* Mặc định KHÔNG có `nguoi` trên URL là "tất cả" (`thamSoNguoi`) — "Của tôi" phải GHI rõ `nguoi=toi`. Admin không có việc của riêng mình. */
-            <BoLocDoan ariaLabel="Việc của ai" value={nguoi === 'toi' ? 'toi' : 'tat-ca'}
+            <BoLocDoan ariaLabel={t('Việc của ai')} value={nguoi === 'toi' ? 'toi' : 'tat-ca'}
               onChange={(k) => setParam('nguoi', k === 'toi' ? 'toi' : null)}
-              muc={[{ key: 'toi', nhan: 'Của tôi' }, { key: 'tat-ca', nhan: 'Của GV', title: 'Việc của giáo viên trong phạm vi' }]} />
+              muc={[{ key: 'toi', nhan: t('Của tôi') }, { key: 'tat-ca', nhan: t('Của GV'), title: t('Việc của giáo viên trong phạm vi') }]} />
           )}
-          <BoLocDoan ariaLabel="Hạn" value={loc} onChange={(k) => setParam('loc', k === 'tat-ca' ? null : k)}
+          <BoLocDoan ariaLabel={t('Hạn')} value={loc} onChange={(k) => setParam('loc', k === 'tat-ca' ? null : k)}
             muc={[...HAN_CHINH, ...(loc === 'den-het-tuan' ? ['den-het-tuan' as const] : [])].map((k) => ({ key: k, nhan: LOC_NHANH_LABEL[k], so: demHan[k] }))} />
           <BranchFilter branchId={branchId} onBranch={(id) => setParam('cn', id ? String(id) : null)} />
           <button type="button" aria-expanded={locThem} onClick={() => setLocThem((x) => !x)}
             className={`btn btn-sm min-h-[44px] sm:min-h-[32px] ${soLocThem ? 'border-[color:var(--accent)] text-[color:var(--accent)]' : ''}`}>
-            Lọc thêm{soLocThem ? ` · ${soLocThem}` : ''}
+            {t('Lọc thêm')}{soLocThem ? ` · ${soLocThem}` : ''}
             <svg aria-hidden viewBox="0 0 8 8" width="8" height="8" className={`transition-transform ${locThem ? '-rotate-90' : 'rotate-90'}`}>
               <path d="M2.5 1 6 4 2.5 7" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
@@ -242,21 +243,21 @@ export function HoTroHocVienTab() {
         {locThem && (
           <div className="card flex max-w-[640px] flex-col gap-2.5 px-3.5 py-3">
             {demKhung.ft > 0 && demKhung.thuong > 0 && (
-              <div role="group" aria-label="Chương trình">
-                <div className="mb-1.5 text-xs font-bold text-slate-300">Chương trình</div>
+              <div role="group" aria-label={t('Chương trình')}>
+                <div className="mb-1.5 text-xs font-bold text-slate-300">{t('Chương trình')}</div>
                 <CongTacKhung trang="cong-viec" coTatCa value={khung} dem={{ ft: demKhung.ft, thuong: demKhung.thuong }} onChange={(k) => setParam('khung', k === 'tat-ca' ? null : k)} />
               </div>
             )}
             <div>
-              <div className="mb-1.5 text-xs font-bold text-slate-300">Nhóm việc</div>
-              <BoLocDoan ariaLabel="Nhóm việc" value={nhom ?? 'tat-ca'}
+              <div className="mb-1.5 text-xs font-bold text-slate-300">{t('Nhóm việc')}</div>
+              <BoLocDoan ariaLabel={t('Nhóm việc')} value={nhom ?? 'tat-ca'}
                 onChange={(k) => { const next = new URLSearchParams(params); next.delete('loai'); if (k === 'tat-ca') next.delete('nhom'); else next.set('nhom', k); setParams(next, { replace: true }); }}
-                muc={[{ key: 'tat-ca', nhan: 'Tất cả', so: demNhom['tat-ca'] },
+                muc={[{ key: 'tat-ca', nhan: t('Tất cả'), so: demNhom['tat-ca'] },
                   ...NHOM_VIEC.filter((k) => !chiChamDiem || k === 'cham-diem').map((k) => ({ key: k, nhan: NHOM_VIEC_LABEL[k], so: demNhom[k] }))]} />
             </div>
             {laQuanLy && data && (
               <div>
-                <div className="mb-1.5 text-xs font-bold text-slate-300">Của một GV</div>
+                <div className="mb-1.5 text-xs font-bold text-slate-300">{t('Của một GV')}</div>
                 <ChonPhuTrach chiChonGv value={nguoi} valueName={typeof nguoi === 'number' ? tenGv : null}
                   onChange={(v, name) => { setTenGv(name ?? null); setParam('nguoi', v === 'tat-ca' ? null : String(v)); }} />
               </div>
@@ -265,10 +266,10 @@ export function HoTroHocVienTab() {
         )}
         {data && !data.scopeEmpty && (
           <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[12.5px] text-slate-400" aria-live="polite">
-            <span>Đang xem: <b className="font-semibold text-slate-200">{dangXem}</b></span>
+            <span>{t('Đang xem:')}{' '}<b className="font-semibold text-slate-200">{dangXem}</b></span>
             <span aria-hidden>·</span>
-            <span className="tabular-nums">{phamVi.nhom} nhóm việc · {phamVi.so} {phamVi.donVi}</span>
-            {coLoc && <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 sm:min-h-0" onClick={xoaLoc}>Xoá lọc</button>}
+            <span className="tabular-nums">{t('{nhom} nhóm việc · {so} {donVi}', { nhom: phamVi.nhom, so: phamVi.so, donVi: phamVi.donVi })}</span>
+            {coLoc && <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 sm:min-h-0" onClick={xoaLoc}>{t('Xoá lọc')}</button>}
           </div>
         )}
       </div>
@@ -277,9 +278,9 @@ export function HoTroHocVienTab() {
       <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] lg:items-start lg:gap-3.5 xl:grid-cols-[560px_minmax(0,1fr)]">
         <div className={anTrenDienThoai}>
           {loading && !data && <Card><Skeleton rows={8} /></Card>}
-          {data && data.scopeEmpty && <Card><Empty title="Bạn chưa được cấp phạm vi nào" /></Card>}
+          {data && data.scopeEmpty && <Card><Empty title={t('Bạn chưa được cấp phạm vi nào')} /></Card>}
           {data && !data.scopeEmpty && dsNhom.length === 0 && (
-            <Card><Empty title={coLoc ? 'Không có việc nào khớp bộ lọc' : 'Không có việc nào'} action={coLoc ? <button type="button" className="btn btn-sm" onClick={xoaLoc}>Xoá lọc</button> : undefined} /></Card>
+            <Card><Empty title={coLoc ? t('Không có việc nào khớp bộ lọc') : t('Không có việc nào')} action={coLoc ? <button type="button" className="btn btn-sm" onClick={xoaLoc}>{t('Xoá lọc')}</button> : undefined} /></Card>
           )}
           {data && !data.scopeEmpty && dsNhom.length > 0 && (
             <Card bodyClass="p-0">
@@ -293,13 +294,13 @@ export function HoTroHocVienTab() {
             <>
               {/* Điện thoại: danh sách vừa ẩn → focus về nút lùi (máy tính nút ẩn, `autoFocus` không có tác dụng). */}
               {/* eslint-disable-next-line jsx-a11y/no-autofocus */}
-              <button type="button" autoFocus className="link flex min-h-[44px] items-center gap-1.5 appearance-none border-0 bg-transparent p-0 text-[13px] lg:hidden" onClick={dong}>‹ Công việc</button>
+              <button type="button" autoFocus className="link flex min-h-[44px] items-center gap-1.5 appearance-none border-0 bg-transparent p-0 text-[13px] lg:hidden" onClick={dong}>{t('‹ Công việc')}</button>
               <KhungTaiCho.Provider value>
                 <PanelViec key={chon.key} it={chon} onDong={dong} onDaLam={() => daLam(chon)} onTiep={keTiep ? () => mo(keTiep) : null} />
               </KhungTaiCho.Provider>
             </>
           ) : data && !data.scopeEmpty && dsNhom.length > 0 ? (
-            <Card><Empty title="Chọn một việc ở danh sách" /></Card>
+            <Card><Empty title={t('Chọn một việc ở danh sách')} /></Card>
           ) : null}
         </div>
       </div>

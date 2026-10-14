@@ -7,6 +7,7 @@ import { ATTEMPT_KIND_SHORT } from './normal.ts';
 import { chuOChuaLuu } from './chamDiem.ts';
 import { tuanLich } from './hienThiNgay.ts';
 import { mondayOfDate } from './week.ts';
+import { t } from '../i18n/index.ts';
 
 /** OV-6b2: `cp:<n>` = Checkpoint n của lớp liên tục (số Checkpoint là chung cả lớp: tuần học n × mỗi-n-tuần). */
 export type MaLuot = { loai: 'mt'; so: number } | { loai: 'thuong'; kind: 'progress' | 'final' | 'mt0' } | { loai: 'cp'; so: number };
@@ -52,7 +53,7 @@ export function luotMacDinh(ds: TomTatLuot[], homNay: string): string | null {
 
 /** Dòng nhỏ dưới nút lượt: "6/7 đủ điểm" (tuần thi nằm dưới mã từng em — `dongThiHocVien`); không ai có lịch → "chưa ai có lịch". */
 export function dongPhuLuot(l: TomTatLuot): string {
-  return l.coLich ? `${l.duDiem}/${l.coLich} đủ điểm` : 'chưa ai có lịch';
+  return l.coLich ? t('{duDiem}/{coLich} đủ điểm', { duDiem: l.duDiem, coLich: l.coLich }) : t('chưa ai có lịch');
 }
 
 /**
@@ -62,12 +63,12 @@ export function dongPhuLuot(l: TomTatLuot): string {
 export function dongThiHocVien(muc: { nhan: string; weekStart: string | null }[]): string {
   const dem = new Map<string, number>();
   for (const m of muc) if (m.weekStart) dem.set(m.weekStart, (dem.get(m.weekStart) ?? 0) + 1);
-  if (!dem.size) return 'Chưa xếp tuần';
+  if (!dem.size) return t('Chưa xếp tuần');
   const chung = [...dem].sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : 1))[0][0];
   const lech = new Map<string | null, string[]>();
   for (const m of muc) if (m.weekStart !== chung) lech.set(m.weekStart, [...(lech.get(m.weekStart) ?? []), m.nhan]);
   const nhom = [...lech].sort((a, b) => (a[0] ?? '9') < (b[0] ?? '9') ? -1 : 1)
-    .map(([w, ds]) => `${[...new Set(ds)].join(' ')} ${w ? tuanLich(w) : 'chưa xếp'}`);
+    .map(([w, ds]) => `${[...new Set(ds)].join(' ')} ${w ? tuanLich(w) : t('chưa xếp')}`);
   return [tuanLich(chung), ...nhom].join(' · ');
 }
 
@@ -113,6 +114,6 @@ export function buocHoiDoiLuot(h: HoiDoiLuot, dangLuu: boolean, soLoi: number): 
  */
 export function cauChanDoiLuot(soLoi: number, soHopLyDo: number, dich: 'luot' | 'lop'): string {
   const n = Math.max(soLoi, 1), hop = Math.min(soHopLyDo, n), o = n - hop;
-  const nut = hop === 0 ? 'Bấm "Lưu lại" ở ô đó' : o === 0 ? 'Bấm "Lưu" trong hộp lý do' : 'Bấm "Lưu lại" ở ô lỗi, "Lưu" ở hộp lý do';
-  return `${chuOChuaLuu(n)}. ${nut} rồi mới chuyển ${dich === 'lop' ? 'lớp' : 'lượt'}.`;
+  const nut = hop === 0 ? t('Bấm "Lưu lại" ở ô đó') : o === 0 ? t('Bấm "Lưu" trong hộp lý do') : t('Bấm "Lưu lại" ở ô lỗi, "Lưu" ở hộp lý do');
+  return t('{chuOChuaLuu}. {nut} rồi mới chuyển {x}.', { chuOChuaLuu: chuOChuaLuu(n), nut, x: dich === 'lop' ? t('lớp') : t('lượt') });
 }
