@@ -234,7 +234,8 @@ export async function runPrVaiBTests(t: YThucTestKit) {
     const day = { hoTro: ['Reading'], viec: [{ loai: 'ghi-ket-qua', chu: 'Kết quả', kyNangTen: 'Reading', quaHanNgay: 2 }],
       yThuc: { nhom: 'bat_buoc', keTiep: 'Report 1', han: '2026-10-04', quaHanNgay: null, deXuat: null } };
     const td = cau({ ...day, dacBiet: { loai: 'tam-dung', tu: '2026-09-07' } });
-    assert(td[0].chu === 'Tạm dừng từ 07/09' && td[0].tone === 'warn' && td.length === 3 && !td.some((m) => m.chu.startsWith('Ý thức')), JSON.stringify(td));
+    /* OV-11d (CA2-12): Tạm dừng nói ở dải ngay dưới (ngày, lý do, nút Quay lại học) — câu không lặp "Tạm dừng từ". */
+    assert(!td.some((m) => m.chu.startsWith('Tạm dừng')) && td.length === 3, JSON.stringify(td));
     const kck = cau({ dacBiet: { loai: 'kck' }, ketQua: { ...KQ_FT, kck: true, sos: null }, hoTro: ['Reading'] });
     /* OV-9: KCK là dấu riêng — mảnh 0 "KCK · không tính SOS" (em KCK có Target thì có kỳ vọng); em KCK chưa có Target vẫn chỉ OVR. */
     assert(chu(kck).join(' · ') === 'KCK · không tính SOS · MT1 OVR 5.5: đang hỗ trợ Reading', JSON.stringify(kck));
@@ -269,6 +270,10 @@ export async function runPrVaiBTests(t: YThucTestKit) {
     assert(h.so === 2 && h.dong[0].kn === 'W2' && h.dong[0].nhan === 'Quá hạn' && h.dong[0].viec === 'kết quả'
       && h.dong[1].kn === 'S' && h.dong[1].nhan === 'Cần làm' && h.dong[1].viec === 'nguyên nhân', JSON.stringify(h));
     assert(d.oHocThuat([{ short: 'L', label: 'L', category: 'listening', missed: false, cases: [] }]).phu === 'mọi kỹ năng đạt', 'không Case');
+    /* OV-11d (HV-4, CA2-1): chưa hàng nào có điểm → "chưa có điểm"; có hàng chưa điểm + hàng đạt → "Không có Case mở" (không nói đạt khi chưa thi). */
+    assert(d.oHocThuat([{ short: 'L', label: 'L', category: 'listening', missed: null, cases: [] }, { short: 'R', label: 'R', category: 'reading', missed: null, cases: [] }]).phu === 'chưa có điểm', 'chưa điểm');
+    assert(d.oHocThuat([{ short: 'L', label: 'L', category: 'listening', missed: false, cases: [] }, { short: 'R', label: 'R', category: 'reading', missed: null, cases: [] }]).phu === 'Không có Case mở', 'thiếu điểm một kỹ năng');
+    assert(d.oHocThuat([]).phu === 'chưa có điểm', 'bảng trống (PET)');
     const y = d.oYThuc({ bacTen: 'Report 1', nhom: 'bat_buoc', soBatBuoc: 3, keTiep: 'Report 2', han: '2026-10-04', quaHanNgay: null, deXuat: null, soMo: 3, tamDung: false }, '2026-09-14');
     assert(y.gt === 'Report 1' && y.tren === 'bậc đã xử lý' && y.phu === '3 vi phạm / 2 tuần → bắt buộc Report 2 · hạn hết 04/10' && y.tone === 'warn', JSON.stringify(y));
     const y0 = d.oYThuc(null);
@@ -326,7 +331,8 @@ export async function runPrVaiBTests(t: YThucTestKit) {
         assert((caseDetail(P.admin, caseId) as any).tamDungTu === tu, 'chi tiết Case: tamDungTu = ngày dừng');
         const dh = (studentProfile(P.admin, sid) as any).dauHoSo;
         assert(dh.viec.cuaBan.length === 0 && dh.viec.nguoiKhac.length === 0, 'em Tạm dừng không có việc');
-        assert(dh.tomTat[0].chu === `Tạm dừng từ ${tu.slice(8, 10)}/${tu.slice(5, 7)}` && dh.tomTat[0].tone === 'warn', JSON.stringify(dh.tomTat));
+        /* OV-11d (CA2-12): Tạm dừng nói ở dải ngay dưới (ngày · lý do · nút Quay lại học) — câu tóm tắt không lặp, dải có ngày dừng. */
+        assert(!dh.tomTat.some((m: any) => m.chu.startsWith('Tạm dừng')) && dh.thongTin.tamDung?.tu === tu, JSON.stringify({ t: dh.tomTat, d: dh.thongTin.tamDung }));
         assert(!dh.o.hocThuat.dong.some((x: any) => x.t === 'qua-han'), `ô Học thuật còn "Quá hạn": ${JSON.stringify(dh.o.hocThuat.dong)}`);
       });
     } finally { conn.prepare(`UPDATE students SET status = 'active' WHERE id = ?`).run(sid); }
@@ -372,7 +378,7 @@ export async function runPrVaiBTests(t: YThucTestKit) {
     const cu = (i: any): string[] => {
       const q = i.lopHoc?.quyen; const ratio = !!i.cycle?.ratio; const hoc = i.status === 'active'; const ds: string[] = [];
       if (i.canEdit) ds.push('info'); if (q?.ghiLoTrinhTiep) ds.push('lo-trinh-tiep'); if (i.canEdit && i.cycle && !ratio) ds.push('lo-trinh');
-      if (i.deXuatSua && hoc) ds.push('de-xuat-sua'); if (q?.chuyenLop) ds.push('chuyen-lop'); if (q?.deXuatChuyenLop && hoc) ds.push('de-xuat-chuyen-lop');
+      if (i.deXuatSua && hoc && !i.canEdit) ds.push('de-xuat-sua'); /* OV-11d (HV-15): GVCN đề xuất Target ở Sửa thông tin */ if (q?.chuyenLop) ds.push('chuyen-lop'); if (q?.deXuatChuyenLop && hoc) ds.push('de-xuat-chuyen-lop');
       if (i.canEdit && i.cycle && !ratio) ds.push('outcome'); if ((q?.tamDung && hoc) || (q?.ketThuc && i.status !== 'finished')) ds.push('tam-dung-thoi-hoc'); if (q?.quayLai && !hoc && i.status === 'inactive') ds.push('quay-lai');
       if (q?.luuTru) ds.push('luu-tru'); if (q?.boLuuTru) ds.push('bo-luu-tru'); if (i.coTheXoa) ds.push('xoa-hoc-vien');
       return ds;

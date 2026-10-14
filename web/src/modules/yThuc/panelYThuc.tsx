@@ -12,7 +12,7 @@ export type ViolationChoSua = Pick<ViolationDetail, 'id' | 'studentId' | 'catego
 /** Một state duy nhất cho MỌI panel Ý thức — mở mới thay cũ, không bao giờ chồng hai panel cùng lúc (G-8, YT-13). */
 export type PanelYThuc =
   | { loai: 'ghi'; studentId: number; studentName?: string }
-  | { loai: 'sua'; v: ViolationChoSua }
+  | { loai: 'sua'; v: ViolationChoSua; studentName?: string }
   | { loai: 'xu-ly'; studentId: number; cheDo?: 'xu-ly' | 'de-xuat' }
   | { loai: 'khai'; studentId: number; sua?: boolean }
   | { loai: 'da-thuc-hien'; id: number }
@@ -50,6 +50,8 @@ export function usePanelYThuc({ onDone, roster, maLop }: {
         open={panel?.loai === 'sua'} onClose={dong}
         studentId={panel?.loai === 'sua' ? panel.v.studentId : 0}
         violation={panel?.loai === 'sua' ? panel.v : null} lop={maLop}
+        /* OV-11d (HV-22): tiêu đề "Sửa vi phạm · {tên em}" — tên từ nơi mở, không thì từ danh sách lớp. */
+        studentName={panel?.loai === 'sua' ? panel.studentName ?? roster?.find((r) => r.id === panel.v.studentId)?.name : undefined}
         onDone={onDone}
         onDelete={(id) => { dong(); setDeleteId(id); }}
       />

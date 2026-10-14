@@ -4,8 +4,8 @@ import { useApi } from '../../lib/useApi.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { Khoi, KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
-import { NutChon, OKck, TargetText } from '../../ui/ui.tsx';
-import { GIAI_THICH_KCK, chuTargetKck, dsLoi, tachKck, type LuatTruong, type TruongDeXuat } from '@shared/domain/index.ts';
+import { NutChon, TargetText } from '../../ui/ui.tsx';
+import { chuTargetKck, dsLoi, tachKck, type LuatTruong, type TruongDeXuat } from '@shared/domain/index.ts';
 
 /**
  * ĐỀ XUẤT SỬA THÔNG TIN HV (PR-DUYET, T44) — GV của lớp gửi, Quản lý duyệt ở Công việc › Chờ duyệt.
@@ -31,7 +31,8 @@ export function DeXuatSuaPanel({ studentId, studentName, lop, truongDau, hienTai
   /* OV-9: Target = số + ô tích KCK riêng; thẻ cũ "6.5 KCK" / "KCK" tách ra khi Sửa. */
   const tachSua = sua?.truong === 'target' ? tachKck(sua.moi) : null;
   const [moi, setMoi] = useState(tachSua ? String(tachSua.so ?? '') : sua?.moi ?? '');
-  const [kck, setKck] = useState(tachSua ? tachSua.kck : !!hienTai?.khongCamKet);
+  /* OV-11d (Q8): dấu KCK chỉ QL / Quản trị / TVV đổi — đề xuất của GV giữ dấu đang có (chỉ đọc; máy chủ 403 nếu khác). */
+  const kck = tachSua ? tachSua.kck : !!hienTai?.khongCamKet;
   const moiGui = truong === 'target' ? chuTargetKck(moi.trim() || null, kck) : moi;
   const [lyDo, setLyDo] = useState(sua?.lyDo ?? '');
   const [busy, setBusy] = useState(false);
@@ -80,12 +81,12 @@ export function DeXuatSuaPanel({ studentId, studentName, lop, truongDau, hienTai
         </Truong>
         {truong && (
           <Truong nhan={truong === 'target' ? 'Target mới' : truong === 'lo-trinh' ? 'Lộ trình mới' : 'Giá trị mới'} batBuoc loi={lf.loiCua(loi, 'moi')}
-            as={truong === 'target' ? 'div' : undefined} phu={truong === 'target' ? `KCK: ${GIAI_THICH_KCK}.` : undefined}>
+            as={truong === 'target' ? 'div' : undefined}>
             {truong === 'target' ? (
               <div className="flex flex-wrap items-center gap-2">
                 <input className="field w-24 tabular-nums" aria-label="Target mới" type="number" inputMode="decimal" step="0.5" min={0} max={9}
                   {...lf.o(loi, 'moi')} value={moi} onChange={(e) => setMoi(e.target.value)} />
-                <OKck chon={kck} onChange={setKck} />
+                {kck && <span className="text-sm text-slate-300">KCK</span>}
                 {(hienTai?.target != null || hienTai?.khongCamKet) && (
                   <span className="text-xs text-slate-400 tabular-nums">đang là <TargetText band={hienTai.target} kck={hienTai.khongCamKet} /></span>
                 )}

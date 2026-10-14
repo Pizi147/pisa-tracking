@@ -293,7 +293,7 @@ export async function runPrDuyetTests(t: YThucTestKit) {
     const { id } = deXuat6.guiDeXuatSua(P.lrTeacher, sid, { truong: 'target', moi: 7, lyDo: 'PH đăng ký thi 12/2026, cần 7.0' });
     assert(maLoi(() => deXuat6.guiDeXuatSua(P.lrTeacher, sid, { truong: 'target', moi: 7.5, lyDo: 'PH đăng ký thi 12/2026, cần 7.5' })) === 400, 'thẻ đôi');
     const tren = yc.hopChoDuyet(P.mbManager).the.find((x: any) => x.id === id);
-    assert(tren?.tieuDe === 'Đề xuất sửa target 6.5 → 7.0' && tren.phanLoai === 'thong-tin-hv', JSON.stringify(tren));
+    assert(tren?.tieuDe === 'Đề xuất sửa Target 6.5 → 7.0' && tren.phanLoai === 'thong-tin-hv', JSON.stringify(tren));
     yc.duyetYeuCau(P.mbManager, id);
     const rev = conn.prepare('SELECT * FROM cycle_target_revisions WHERE cycle_id = ? ORDER BY id DESC LIMIT 1').get(cyc.id) as any;
     assert(cycCua(sid).target_score === 7 && rev.reason === 'PH đăng ký thi 12/2026, cần 7.0' && rev.actor_user_id === P.mbManager.userId, JSON.stringify(rev));
@@ -450,7 +450,7 @@ export async function runPrDuyetDemoTests(t: YThucTestKit) {
     assert(hop.the.some((x: any) => x.hanDuyet && x.hanDuyet < t.TODAY && x.kieuNut !== 'nhac'), 'không có thẻ quá hạn');
     assert(hop.the.some((x: any) => x.loai === 'xin_y_kien'), 'không có Xin ý kiến');
     assert(hop.the.some((x: any) => x.nguoiXinId === P.mbManager.userId), 'không có thẻ QL tự gửi');
-    assert(hop.the.some((x: any) => x.tieuDe === 'Đề xuất sửa target 6.5 → 7.0'), 'không có Đề xuất sửa target 6.5 → 7.0');
+    assert(hop.the.some((x: any) => x.tieuDe === 'Đề xuất sửa Target 6.5 → 7.0'), 'không có Đề xuất sửa Target 6.5 → 7.0 (OV-11d: chữ Target viết hoa)');
     const daXuLy = yc.hopChoDuyet(P.mbManager, { xem: 'da-xu-ly' }).the;
     assert(daXuLy.some((x: any) => x.trangThai === 'tu_dong'), 'không có thẻ tự đóng');
     const ha = (conn.prepare(`SELECT id FROM users WHERE full_name = 'Trần Ngọc Hà'`).get() as any).id;

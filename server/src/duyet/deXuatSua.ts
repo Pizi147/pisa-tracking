@@ -5,14 +5,16 @@
  * được (Q6; "Lớp" có luồng riêng, "Lịch MT" bỏ từ 09/10 — thẻ cũ vẫn hiện để Quản lý đóng) nhưng Duyệt không tự áp — Quản lý làm ở màn gốc rồi Duyệt, ghi đã làm gì.
  */
 import { db, tx } from '../db.ts';
-import { badRequest, notFound } from '../util.ts';
-import { require_, type Principal } from '../permissions.ts';
+import { badRequest, forbidden, notFound } from '../util.ts';
+import { hasAssignment, type Principal } from '../permissions.ts';
+import { activeClassOf } from '../yThuc/access.ts';
+import { CHI_DOI_KCK } from '../fasttrack/cycles.ts';
 import { writeAudit } from '../platform/audit.ts';
-import { PERMISSIONS, TRUONG_DE_XUAT, chuTargetKck, tachKck, type TruongDeXuat } from '../../../shared/domain/index.ts';
+import { TRUONG_DE_XUAT, chuTargetKck, tachKck, type TruongDeXuat } from '../../../shared/domain/index.ts';
 import { taoYeuCau } from './yeuCau.ts';
 
 export const NHAN_TRUONG_DE_XUAT: Record<TruongDeXuat, string> = {
-  target: 'target', 'lo-trinh': 'lộ trình', 'lich-mt': 'lịch MT', khac: 'thông tin khác',
+  target: 'Target', 'lo-trinh': 'lộ trình', 'lich-mt': 'lịch MT', khac: 'thông tin khác',
 };
 /** Hai trường Duyệt là áp luôn; ba trường còn lại Quản lý tự làm ở màn gốc (Q6). */
 export const TRUONG_TU_AP: readonly TruongDeXuat[] = ['target', 'lo-trinh'];
@@ -26,12 +28,20 @@ export function hienTaiCua(conn: any, studentId: number) {
   return { cycle: cyc ?? null, lop: (lop?.code ?? null) as string | null };
 }
 
+/**
+ * OV-11d (HV-2): người gửi Đề xuất sửa = GV có phân công ở lớp em ĐANG học (GVCN hoặc GVBM). Admin / TVV / CX không (Target / lộ trình không phải
+ * việc của họ, TVV / CX sửa thẳng). Một hàm cho máy chủ (`guiDeXuatSua`) và nút ở hồ sơ (`viewer.coTheDeXuatSua`).
+ */
+export function laGvLopDangHoc(p: Principal, studentId: number): boolean {
+  const lop = activeClassOf(studentId);
+  return lop != null && hasAssignment(p, { classId: lop }, 'any');
+}
+
 export function guiDeXuatSua(p: Principal, studentId: number, body: { truong?: unknown; moi?: unknown; lyDo?: unknown }) {
   const conn = db();
   const hv = conn.prepare('SELECT id, full_name, status, archived_at FROM students WHERE id = ?').get(studentId) as any;
   if (!hv) throw notFound('Không tìm thấy học viên');
-  /* GV của lớp em đang học (GVCN hoặc GVBM) — cùng phạm vi "xem hồ sơ" của giáo viên. */
-  require_(p, PERMISSIONS.STUDENT_VIEW, { studentId }, 'Chỉ giáo viên của lớp em đang học mới gửi được đề xuất sửa.');
+  if (!laGvLopDangHoc(p, studentId)) throw forbidden('Chỉ giáo viên của lớp em đang học mới gửi được đề xuất sửa.');
   if (hv.status !== 'active' || hv.archived_at) throw badRequest('Học viên không còn đang học — không gửi đề xuất sửa được.');
   if (body.truong === 'lop') throw badRequest('Dùng Đề xuất chuyển lớp.');   // PR-CT (Q30-1)
   const truong = body.truong as TruongDeXuat;
@@ -44,7 +54,7 @@ export function guiDeXuatSua(p: Principal, studentId: number, body: { truong?: u
       loai: 'sua_thong_tin', doiTuongLoai: `student:${truong}`, doiTuongId: studentId, hocVienId: studentId,
       nguoiXin: p.userId, lyDo, duLieu: { truong, cu, moi },
     });
-    if (id === null) throw badRequest(`Đã có một đề xuất sửa ${NHAN_TRUONG_DE_XUAT[truong]} của em đang chờ Quản lý duyệt.`);
+    if (id === null) throw badRequest(`Đã có một đề xuất sửa ${NHAN_TRUONG_DE_XUAT[truong]} của em đang chờ Quản lý duyệt — sửa ở Công việc › Yêu cầu của tôi.`);
     writeAudit({ actorUserId: p.userId, action: 'request.create', entityType: 'yeu_cau_duyet', entityId: id,
       entityLabel: `Đề xuất sửa ${NHAN_TRUONG_DE_XUAT[truong]} · ${hv.full_name}`, after: { truong, cu, moi, lyDo } });
     return { ok: true, id };
@@ -71,6 +81,8 @@ export function kiemGiaTriDeXuat(conn: any, studentId: number, truong: TruongDeX
       throw badRequest('Target mới là một band từ 0 đến 9, bước 0.5 — thêm KCK nếu không cam kết.');
     }
     if (!ht.cycle) throw badRequest('Em chưa có lộ trình đang chạy để đổi Target.');
+    /* OV-11d (Q8): đề xuất là đường của GV — dấu KCK chỉ QL / Quản trị / TVV đổi (`reviseTarget`), đề xuất giữ dấu đang có. */
+    if (kck !== !!ht.cycle.khong_cam_ket) throw forbidden(CHI_DOI_KCK);
     moi = kck ? chuTargetKck(coSo ? n : null, true) : n;
     cu = ht.cycle.khong_cam_ket ? chuTargetKck(ht.cycle.target_score ?? null, true) : ht.cycle.target_score ?? null;
     if (cu === moi) throw badRequest('Target mới trùng Target hiện tại.');

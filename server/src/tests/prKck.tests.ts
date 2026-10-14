@@ -141,17 +141,16 @@ export async function runPrKckTests(t: YThucTestKit) {
     assert(cy(x.sid).khong_cam_ket === 0 && cy(x.sid).target_score === 6, 'PATCH số bỏ KCK');
   });
 
-  check('KCK (3) · quyền: GVCN gửi thẳng API đặt KCK cho em đã có lộ trình → 403; Đề xuất sửa KCK → QL duyệt áp được', () => {
+  check('KCK (3) · quyền: GVCN gửi thẳng API đặt KCK cho em đã có lộ trình → 403; OV-11d (Q8): Đề xuất sửa đổi dấu KCK → 403 (chỉ QL / Quản trị / TVV tích KCK)', () => {
     const x = them('KCK Quyền GVCN', '6.5');
     assert(maLoi(() => cycles.reviseTarget(P.coreTeacher, x.cid, { newTarget: 'KCK', reason: 'GVCN tự đặt' })) === 403, 'reviseTarget');
     assert(maLoi(() => cycles.updateCycle(P.coreTeacher, x.cid, { targetScore: 'KCK' })) === 403, 'PATCH targetScore');
     assert(maLoi(() => cycles.updateCycle(P.coreTeacher, x.cid, { khongCamKetGhi: 1 })) === 'không ném' && cy(x.sid).khong_cam_ket === 0,
       'khoá nội bộ gửi thẳng lọt qua');
-    const { id } = deXuat.guiDeXuatSua(P.coreTeacher, x.sid, { truong: 'target', moi: 'KCK', lyDo: 'Gia đình chưa đăng ký thi IELTS' });
-    const the = conn.prepare('SELECT du_lieu FROM yeu_cau_duyet WHERE id = ?').get(id) as any;
-    assert(JSON.parse(the.du_lieu).moi === 'KCK' && JSON.parse(the.du_lieu).cu === 6.5, the.du_lieu);
-    yc.duyetYeuCau(P.mbManager, id, { ghiChu: 'Đồng ý' });
-    assert(cy(x.sid).khong_cam_ket === 1, 'duyệt không áp KCK');
+    assert(maLoi(() => deXuat.guiDeXuatSua(P.coreTeacher, x.sid, { truong: 'target', moi: 'KCK', lyDo: 'Gia đình chưa đăng ký thi IELTS' })) === 403,
+      'OV-11d: GVCN đề xuất đổi dấu KCK phải 403');
+    cycles.reviseTarget(P.mbManager, x.cid, { newTarget: 'KCK', reason: 'Gia đình chưa đăng ký thi IELTS' });
+    assert(cy(x.sid).khong_cam_ket === 1, 'QL tích KCK');
     assert(maLoi(() => deXuat.guiDeXuatSua(P.coreTeacher, x.sid, { truong: 'target', moi: '-', lyDo: 'Gia đình chưa đăng ký thi IELTS' })) === 400,
       'đề xuất KCK trùng hiện tại');
   });

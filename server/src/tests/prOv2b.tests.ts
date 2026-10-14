@@ -122,12 +122,14 @@ export async function runPrOv2bTests(t: YThucTestKit) {
     });
   });
 
-  check('OV2b-4 · Sửa một em: xoá trống ngày sinh → 400 (email trống: PR-OV2c lưu được); em thiếu email vẫn nhập điểm được', () => {
+  check('OV2b-4 · Sửa một em: xoá trống ngày sinh → lưu NULL (OV-11d Q3; email trống: PR-OV2c lưu được); em thiếu email vẫn nhập điểm được', () => {
     thu(() => {
       const v = V();
       run('UPDATE students SET dob = ?, email = ? WHERE id = ?', DU.dob, DU.email, em.id);
-      assert(loi(() => students.updateStudent(v.QL, em.id, { dob: null }))?.status === 400, 'xoá trống ngày sinh phải 400');
-      assert(hs().dob === DU.dob, 'đã ghi dù lỗi');
+      /* OV-11d (Q3 chủ SP 14/10): ngày sinh không bắt buộc khi sửa — xoá trống lưu NULL (em vào "Thiếu thông tin"). */
+      students.updateStudent(v.QL, em.id, { dob: null });
+      assert(hs().dob === null, 'xoá trống ngày sinh phải lưu NULL');
+      run('UPDATE students SET dob = ? WHERE id = ?', DU.dob, em.id);
       run('UPDATE students SET email = NULL WHERE id = ?', em.id);
       const a = one(`SELECT a.id FROM assessment_attempts a WHERE a.student_id = ? AND a.status != 'cancelled' AND a.kind = 'mock' ORDER BY a.attempt_no LIMIT 1`, em.id);
       if (a) {

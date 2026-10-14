@@ -509,15 +509,17 @@ export function xemChuyenLop(p: Principal, sid: number, toClassId?: number | nul
     /** PR-CL (B3): bối cảnh + hướng máy chủ sẽ ra lệnh; Target đã có khi Lên FT (`null` → web hiện ô Target); MT0; việc FT → thường. */
     boiCanh: huong?.boiCanh ?? null, huong: huong?.huong ?? null, targetSan, nguonTarget, mt0, veThuong,
     khiChuyen: khoi.khiChuyen, canhBao: khoi.canhBao,
+    /** OV-11d (HV-13): tuần Final của lớp nguồn (lớp thường) — panel tính hạn bàn giao bằng `hanBanGiaoLenh` như lúc ra lệnh. */
+    tuanFinal: (pr?.finalWeekStart ?? null) as string | null,
     /** Em FT có ghi danh ngay trước ở lớp thường → mã lớp đó ("tuần 1 · từ CP ELE 30"). */
     tuLopThuong: truoc && !truoc.is_fast_track ? (truoc.code as string) : null,
     /** PR-CT: lệnh đang chờ của em (nếu có) — panel mở ở chế độ sửa + Huỷ quyết định. */
     lenh: (() => {
-      const l = conn.prepare(`SELECT id, huong, lop_dich_id, tuan_bat_dau, muc_tieu, khong_cam_ket, ngay_thi, ly_do, loi FROM lenh_chuyen_lop WHERE student_id = ? AND trang_thai = 'cho'`).get(sid) as any;
+      const l = conn.prepare(`SELECT id, huong, lop_dich_id, tuan_bat_dau, muc_tieu, khong_cam_ket, ngay_thi, ly_do, loi, han_gvcn FROM lenh_chuyen_lop WHERE student_id = ? AND trang_thai = 'cho'`).get(sid) as any;
       return l ? {
         id: l.id as number, huong: l.huong as string, lopDichId: (l.lop_dich_id ?? null) as number | null, tuan: l.tuan_bat_dau as string,
         mucTieu: ghepMucTieu(l.muc_tieu, l.khong_cam_ket), ngayThi: (l.ngay_thi ?? null) as string | null,
-        lyDo: (l.ly_do ?? null) as string | null, loi: (l.loi ?? null) as string | null,
+        lyDo: (l.ly_do ?? null) as string | null, loi: (l.loi ?? null) as string | null, hanGvcn: (l.han_gvcn ?? null) as string | null,
       } : null;
     })(),
     tuanChon: tuanChonDuoc(homNay),

@@ -13,6 +13,7 @@ import { RATIO_PASS_THRESHOLD } from './normal.ts';
 import { addDaysIso } from './sos.ts';
 import { ASSESSED_SKILL_LABEL } from './skills.ts';
 import { mondayOfDate, owningMonthOf, weekNumberInMonthOf, MONTH_CODE } from './week.ts';
+import type { TrangThai } from './trangThai.ts';
 
 const DAY_MS = 86_400_000;
 const ngayThu = (iso: string) => Date.parse(`${iso.slice(0, 10)}T00:00:00Z`) / DAY_MS;
@@ -198,7 +199,8 @@ export function nhanKhoiPa(
 // ====================================================================== badge hộp kỹ năng (Q6)
 
 export type ToneHop = 'ok' | 'warn' | 'danger';
-export type TrangThaiHop = { chu: string; ngan: string; tone: ToneHop } | null;
+/** `t`: nhãn chung §7.3 (`NhanTrangThai`) — cùng kiểu chip với tab Học thuật (OV-11d CA2-3: "Đang làm" một màu, quá hạn đỏ). */
+export type TrangThaiHop = { chu: string; ngan: string; tone: ToneHop; t: TrangThai } | null;
 
 const soTuanTron = (tu: string, den: string): number => Math.max(0, Math.ceil((ngayThu(den) - ngayThu(tu)) / 7));
 
@@ -209,21 +211,23 @@ const soTuanTron = (tu: string, den: string): number => Math.max(0, Math.ceil((n
  */
 export function trangThaiHop(
   i: {
-    caseMo: { mo: string; soPa: number; choNguyenNhan?: boolean; choDuyet?: boolean }[]; coTungCase: boolean;
+    caseMo: { mo: string; soPa: number; choNguyenNhan?: boolean; choDuyet?: boolean; /** OV-11d: quá hạn xác nhận (cùng `trangThaiCaseV4`). */ quaHan?: 'nguyen-nhan' | 'xac-nhan-pa' | null }[]; coTungCase: boolean;
     diemCuoiChuaDat: boolean | null; xongGanNhat: string | null; huyGanNhat?: boolean;
   },
   homNay: string,
 ): TrangThaiHop {
-  const dung = (chu: string, tone: ToneHop): NonNullable<TrangThaiHop> => ({ chu, ngan: chu.split(' · ')[0], tone });
+  const dung = (chu: string, tone: ToneHop, t: TrangThai): NonNullable<TrangThaiHop> => ({ chu, ngan: chu.split(' · ')[0], tone, t });
   if (i.caseMo.length > 0) {
-    if (i.caseMo.some((c) => c.choNguyenNhan)) return dung('Cần làm · chờ nguyên nhân', 'warn');
-    if (i.caseMo.some((c) => c.choDuyet)) return dung('Chờ duyệt', 'warn');
-    if (i.caseMo.some((c) => c.soPa === 0)) return dung('Cần làm · chưa có PA', 'warn');
+    const qh = i.caseMo.find((c) => c.quaHan);
+    if (qh) return dung(`Quá hạn · ${qh.quaHan === 'xac-nhan-pa' ? 'chờ xác nhận PA' : 'chờ nguyên nhân'}`, 'danger', 'qua-han');   // web thêm ⚠ (SVG)
+    if (i.caseMo.some((c) => c.choNguyenNhan)) return dung('Cần làm · chờ nguyên nhân', 'warn', 'can-lam');
+    if (i.caseMo.some((c) => c.choDuyet)) return dung('Chờ duyệt', 'warn', 'cho-duyet');
+    if (i.caseMo.some((c) => c.soPa === 0)) return dung('Cần làm · chưa có PA', 'warn', 'can-lam');
     const somNhat = i.caseMo.reduce((a, b) => (b.mo < a ? b.mo : a), i.caseMo[0].mo);
-    return dung(`Đang làm · ${soTuanTron(somNhat, homNay)} tuần`, i.diemCuoiChuaDat ? 'danger' : 'warn');
+    return dung(`Đang làm · ${soTuanTron(somNhat, homNay)} tuần`, 'warn', 'dang-lam');   // OV-11d (CA2-3): một màu như tab Học thuật
   }
-  if (i.coTungCase && i.huyGanNhat) return dung('Đã huỷ', 'ok');
-  if (i.coTungCase && i.xongGanNhat) return dung(`Xong ${tuanLich(i.xongGanNhat, homNay)}`, 'ok');   // PR-VAI-b (Q19): mã tuần
+  if (i.coTungCase && i.huyGanNhat) return dung('Đã huỷ', 'ok', 'da-huy');
+  if (i.coTungCase && i.xongGanNhat) return dung(`Xong ${tuanLich(i.xongGanNhat, homNay)}`, 'ok', 'xong');   // PR-VAI-b (Q19): mã tuần
   return null;
 }
 /** Dòng phụ của một vấn đề (G-3, ≤ 60 ký tự) — PR-VAI-b (Q19): mã tuần `từ W2 SEP · 1 PA` / `W3 JUL → W2 SEP · 2 PA`. */
@@ -605,10 +609,12 @@ export function chiaChuong<G extends { classId: number | null; tuan: string | nu
     (i.ghim.filter((g) => g.classId === classId && g.kind === 'final').at(-1)?.goiY as { boTroNeuLen?: BoTroMienPhi | null } | null | undefined)?.boTroNeuLen ?? null;
   return lop.map((l, k) => {
     const sau = lop[k + 1] ?? null;
-    const loai = l.endKind ? RA_THEO_END_KIND[l.endKind] ?? null : l.status === 'transferred' ? 'chuyen' : l.status === 'completed' ? 'ket-thuc' : null;
+    /* OV-11d (HV-12): ghi danh `completed` không `end_kind` (dữ liệu trước PR-LT) mà còn lớp sau = em sang lớp sau, không phải Kết thúc học. */
+    const sangLopSau = !l.endKind && l.status === 'completed' && !!sau;
+    const loai = l.endKind ? RA_THEO_END_KIND[l.endKind] ?? null : l.status === 'transferred' || sangLopSau ? 'chuyen' : l.status === 'completed' ? 'ket-thuc' : null;
     const ra: RaChuong | null = l.dangHoc ? null : {
       loai,
-      chu: loai === 'len' ? chuLen(sau, boTroCuaChuong(l.classId), l.ct) : loai === 'chuyen' ? 'Chuyển lớp' : loai === 'hoc-lai' ? 'Học lại'
+      chu: loai === 'len' ? chuLen(sau, boTroCuaChuong(l.classId), l.ct) : sangLopSau ? `Sang ${sau!.code}` : loai === 'chuyen' ? 'Chuyển lớp' : loai === 'hoc-lai' ? 'Học lại'
         : loai === 'bao-luu' ? 'Tạm dừng học (bảo lưu)' : loai === 'dung' ? 'Dừng học hẳn' : loai === 'ket-thuc' ? 'Kết thúc học' : l.status === 'paused' ? 'Tạm dừng học' : 'Rời lớp',
       how: l.lenh ? 'Quản lý quyết định' : loai === 'len' ? 'theo Final Test' : l.endReason,
       tu: sau?.tu ?? null,

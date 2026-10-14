@@ -169,9 +169,16 @@ export function ThanCase({ data, onViec }: { data: CaseDetail; onViec: (v: ViewC
   const chiXem = !data.viewer.canClose && data.status !== 'done';
   /* Số bằng chứng ở đầu thẻ: cùng đường với `BangChung` (lời gọi đang bay dùng chung), thêm / gỡ xong thì tải lại. */
   const bc = useApi<{ rows: unknown[] }>(`/attachments?ownerType=sos_case&ownerId=${data.id}`, [data.id]);
+  /* OV-11d (HV-20): Case giữ sau "Overall đã đạt" (OV-1c) — nói ngay đầu Case, không chỉ trong Lịch sử thu gọn. */
+  const overallDat = data.status !== 'done' ? [...(data.milestones ?? [])].reverse().find((m) => m.kind === 'overall_dat') : null;
 
   return (
     <>
+      {overallDat && (
+        <p className="m-0 mb-2 rounded-lg bg-ok-bg px-3 py-2 text-[12.5px] text-ok">
+          Overall {overallDat.dot ?? (overallDat.attemptNo ? `MT${overallDat.attemptNo}` : '')} đã đạt — xem và Hoàn thành Case
+        </p>
+      )}
       <The tieuDe="Vấn đề">
         <div className="flex flex-wrap items-center gap-2 text-sm font-bold text-slate-100">
           <TenCase c={{ title: data.title ?? data.headline, tenSos: data.tenSos ?? null }} />

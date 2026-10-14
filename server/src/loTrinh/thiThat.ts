@@ -30,6 +30,8 @@ export function lopCuoiCuaLoTrinh(cycleId: number): number | null {
  * GVCN của lớp cuối của lộ trình (kể cả lớp đã kết thúc, em đã Kết thúc học / Lưu trữ) và Quản lý chi nhánh.
  */
 export function coTheNhapThiThat(p: Principal, c: { id: number; student_id: number }): boolean {
+  /* OV-11d (HV-3, Q4): hồ sơ Lưu trữ khoá — không nút "Nhập kết quả" (máy chủ 400 `CAU_LUU_TRU`); Bỏ lưu trữ trước. */
+  if ((db().prepare('SELECT archived_at FROM students WHERE id = ?').get(c.student_id) as any)?.archived_at) return false;
   /* OV-8b: TVV / CX (`student.edit_more`) nhập kết quả thi thật của HV chi nhánh mình (CX: mọi chi nhánh). */
   if ([PERMISSIONS.STUDENT_EDIT, PERMISSIONS.CYCLE_EDIT, PERMISSIONS.STUDENT_EDIT_MORE].some((q) => can(p, q, { studentId: c.student_id }))) return true;
   const lop = lopCuoiCuaLoTrinh(c.id);

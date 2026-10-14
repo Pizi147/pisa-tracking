@@ -271,7 +271,7 @@ export function BonO({ o, homNay, onDot, onKn, onYThuc, kyNangHref }: {
       const href = kyNangHref?.(d.kn, d.attemptId ?? null) ?? null;
       return (
         <span key={d.kn}>{i > 0 && ' · '}{href
-          ? <Link to={href} className="link" title={`Mở Hồ sơ Mock Test · ${kq.nhan.split(' · ')[0]} · ${d.ngan}`}>{d.ngan}</Link>
+          ? <Link to={href} className="link max-sm:inline-block max-sm:px-1.5 max-sm:py-3 max-sm:-my-3" title={`Mở Hồ sơ Mock Test · ${kq.nhan.split(' · ')[0]} · ${d.ngan}`}>{d.ngan}</Link>
           : d.ngan}</span>
       );
     })}</>
@@ -324,7 +324,11 @@ export function BonO({ o, homNay, onDot, onKn, onYThuc, kyNangHref }: {
  * DẢI TẠM DỪNG (T65, K3-41, mockup 24 D1) — ngay dưới khung thông tin, trên bốn ô: mọi hạn của em đang dừng. Nền vàng nhạt, biểu tượng
  * tạm dừng SVG; dòng phụ nói hạn tính lại thế nào khi quay lại. < 640 px chữ xuống dòng trọn, không dồn.
  */
-export function DaiTamDung({ tamDung }: { tamDung: { tu: string; lyDo: string | null; boi: string | null } | null | undefined }) {
+export function DaiTamDung({ tamDung, onQuayLai }: {
+  tamDung: { tu: string; lyDo: string | null; boi: string | null } | null | undefined;
+  /** OV-11d (CA2-12): người được Quay lại học (máy chủ `lopHoc.quyen.quayLai`) có nút ngay trên dải. */
+  onQuayLai?: () => void;
+}) {
   if (!tamDung) return null;
   const ngayDung = `${tamDung.tu.slice(8, 10)}/${tamDung.tu.slice(5, 7)}`;
   return (
@@ -336,6 +340,7 @@ export function DaiTamDung({ tamDung }: { tamDung: { tu: string; lyDo: string | 
         {tamDung.boi && <> · người ghi: {tamDung.boi}</>}
         <span className="block text-[12px] text-slate-400">Quay lại học thì hạn tính lại từ ngày quay lại</span>
       </span>
+      {onQuayLai && <button type="button" className="btn btn-sm ml-auto shrink-0 min-h-[44px] sm:min-h-0" onClick={onQuayLai}>Quay lại học</button>}
     </section>
   );
 }

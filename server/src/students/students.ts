@@ -2,7 +2,7 @@ import { db, tx } from '../db.ts';
 import {
   ENTRY_SKILLS, JOURNEY_GROUP, chuTargetKck, NO_HANDOVER_NOTE, PERMISSIONS, STUDENT_STATUSES, luatDoiLop, NGAY_SINH_TOI_THIEU, docEmail, docNgayNhap,
   type LoaiLop, type ProgrammeCode,
-  CHI_SUA_THONG_TIN, LIEN_HE_TOI_DA, NHAN_LIEN_HE, docSoDienThoai,
+  CHI_SUA_THONG_TIN, LIEN_HE_TOI_DA, NHAN_LIEN_HE, docSoDienThoai, CAU_LUU_TRU,
 } from '../../../shared/domain/index.ts';
 import { luotSinhViecRow } from '../worklist/danhGia.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -192,6 +192,10 @@ export function transferStudent(p: Principal, studentId: number, toClassId: numb
     /* PR-CT (Q30-1): thi hành chuyển lớp là việc của lệnh do Quản lý ra; hàm này chỉ còn nội bộ (thi hành, phép kiểm, seed). */
     require_(p, PERMISSIONS.CLASS_EDIT, { classId: enr.class_id }, 'Bạn không có quyền chuyển lớp học viên này.');
   } else {
+    /* OV-11d (rà bảo mật): em Tạm dừng GIỮ lớp (`paused`) — không phải "xếp lớp lần đầu"; GVCN lớp đó nay có `student.edit` với em nên phải đòi quyền
+       ra lệnh ở lớp nguồn như em đang học (Quản lý), không để GVCN gọi thẳng API chuyển em đi. */
+    const lopGiu = (db().prepare(`SELECT class_id FROM enrollments WHERE student_id = ? AND status = 'paused' ORDER BY id DESC LIMIT 1`).get(studentId) as any)?.class_id;
+    if (lopGiu) require_(p, PERMISSIONS.CLASS_EDIT, { classId: lopGiu }, 'Bạn không có quyền chuyển lớp học viên này.');
     require_(p, PERMISSIONS.STUDENT_EDIT, { studentId }, 'Bạn không có quyền chuyển lớp học viên này.');
     require_(p, PERMISSIONS.STUDENT_EDIT, { classId: toClassId }, 'Lớp chuyển đến nằm ngoài phạm vi bạn được cấp quyền.');
   }
@@ -295,6 +299,9 @@ export function setStudentStatus(
       ghiDanhDong: (conn.prepare(`SELECT id, status AS truoc FROM enrollments WHERE student_id = ? AND status IN ('active','paused')`).all(studentId) as any[]).map((r) => ({ id: r.id as number, truoc: r.truoc as string })),
       loTrinhDong: (conn.prepare(`SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active'`).all(studentId) as any[]).map((r) => r.id as number),
     } : null;
+    /* OV-11d (HV-21): nhớ ghi danh lần Tạm dừng này dừng — Hoàn tác trả đúng chúng về `active`. */
+    const ghiDanhDung = status === 'inactive'
+      ? (conn.prepare(`SELECT id FROM enrollments WHERE student_id = ? AND status = 'active'`).all(studentId) as any[]).map((r) => r.id as number) : null;
     conn.prepare('UPDATE students SET status = ?, finished_at = ?, archived_at = ? WHERE id = ?')
       .run(status, status === 'finished' ? date : null, archivedAt, studentId);
     // Enrollment đi theo nhưng vẫn giữ nguyên lịch sử lớp.
@@ -318,7 +325,7 @@ export function setStudentStatus(
       /* PR-TK: cùng giao dịch; mọi đường Kết thúc học (một em, nhiều em, dừng học ở Chuyển tiếp) đều đi qua đây. */
       ghiBanChup(conn, dongBoiLanNay!.loTrinhDong, { lyDo: 'ket_thuc', ngay: date });
     }
-    addJourney({
+    const journeyId = addJourney({
       studentId, eventType: status === 'inactive' ? 'pause' : status === 'active' ? 'resume' : 'finish',
       eventDate: date,
       title: status === 'inactive' ? 'Tạm dừng học' : status === 'active' ? 'Quay lại học' : 'Kết thúc học',
@@ -327,7 +334,7 @@ export function setStudentStatus(
     /* PR-Pb2-b (Q14, T65): Quay lại học → hạn xử lý vi phạm chưa phản hồi chốt lại từ ngày quay lại (sau `addJourney` — mốc đọc sự kiện resume). */
     if (status === 'active' && s.status === 'inactive') chotHanXuLy([studentId], { ghiDe: true });
     writeAudit({ actorUserId: p.userId, action: 'student.status', entityType: 'student', entityId: studentId,
-      entityLabel: s.student_code, before: { status: s.status }, after: { status, date, reason, archivedAt, ...dongBoiLanNay, dongCase, rutTinHieu } });
+      entityLabel: s.student_code, before: { status: s.status }, after: { status, date, reason, archivedAt, ...dongBoiLanNay, dongCase, rutTinHieu, ...(ghiDanhDung ? { ghiDanhDung, journeyId } : {}) } });
     if (curEnr && status !== 'active') dongLopNeuHet([curEnr.class_id], date);
     return conn.prepare('SELECT * FROM students WHERE id = ?').get(studentId);
   });
@@ -350,7 +357,7 @@ function nhatKyKetThucGanNhat(studentId: number): NhatKyKetThuc | null {
 }
 /** Hành động `student.status` / `student.rejoin` mới nhất của em — Hoàn tác chỉ cho việc ĐANG là việc cuối. */
 function viecTrangThaiCuoi(studentId: number): { action: string; before: any; after: any } | null {
-  const r = db().prepare(`SELECT action, before_json, after_json FROM audit_logs WHERE entity_type = 'student' AND entity_id = ? AND action IN ('student.status', 'student.rejoin', 'student.rejoin_undo', 'student.finish_undo', 'student.transfer') ORDER BY id DESC LIMIT 1`).get(studentId) as any;
+  const r = db().prepare(`SELECT action, before_json, after_json FROM audit_logs WHERE entity_type = 'student' AND entity_id = ? AND action IN ('student.status', 'student.rejoin', 'student.rejoin_undo', 'student.finish_undo', 'student.pause_undo', 'student.transfer') ORDER BY id DESC LIMIT 1`).get(studentId) as any;
   if (!r) return null;
   try { return { action: r.action, before: JSON.parse(r.before_json ?? 'null'), after: JSON.parse(r.after_json ?? 'null') }; } catch { return null; }
 }
@@ -548,7 +555,8 @@ export function hoanTacKetThuc(p: Principal, studentId: number) {
   if (!s) throw notFound('Không tìm thấy học viên');
   const cuoi = viecTrangThaiCuoi(studentId);
   const nk = nhatKyKetThucGanNhat(studentId);
-  if (s.status !== 'finished' || cuoi?.action !== 'student.status' || !nk) throw conflict('Không còn hoàn tác được — học viên đã đổi trạng thái hoặc chuyển lớp sau lần Kết thúc học.');
+  /* OV-11d: Học lại rồi Hoàn tác Học lại (`rejoin_undo`) trả đúng trạng thái ngay sau Kết thúc học — vẫn hoàn tác được (Bước tiếp đổi lựa chọn). */
+  if (s.status !== 'finished' || (cuoi?.action !== 'student.status' && cuoi?.action !== 'student.rejoin_undo') || !nk) throw conflict('Không còn hoàn tác được — học viên đã đổi trạng thái hoặc chuyển lớp sau lần Kết thúc học.');
   return tx(() => {
     const date = demoToday();
     conn.prepare('UPDATE students SET status = ?, finished_at = NULL, archived_at = NULL WHERE id = ?').run(nk.truocStatus === 'inactive' ? 'inactive' : 'active', studentId);
@@ -563,6 +571,35 @@ export function hoanTacKetThuc(p: Principal, studentId: number) {
     addJourney({ studentId, eventType: 'resume', eventDate: date, title: 'Hoàn tác Kết thúc học', detail: null, createdBy: p.userId });
     writeAudit({ actorUserId: p.userId, action: 'student.finish_undo', entityType: 'student', entityId: studentId, entityLabel: s.student_code,
       before: { status: 'finished', finishedAt: s.finished_at, archivedAt: s.archived_at }, after: { status: nk.truocStatus, caseMoLai: cs.moLai, caseBoQua: cs.boQua } });
+    return conn.prepare('SELECT * FROM students WHERE id = ?').get(studentId);
+  });
+}
+
+/**
+ * HOÀN TÁC TẠM DỪNG (OV-11d, HV-21) — bấm nhầm Tạm dừng: trả NGUYÊN TRẠNG (em đang học, đúng ghi danh lần đó dừng, bỏ mốc "Tạm dừng học" của lần đó),
+ * KHÔNG tính lại hạn Case / Ý thức (khác Quay lại học — hạn chưa từng dừng). Chỉ khi Tạm dừng vẫn là việc trạng thái CUỐI. Ai Tạm dừng được thì Hoàn tác được.
+ * Lớp tự đóng vì lần dừng đó (em là người cuối) thì mở lại.
+ */
+export function hoanTacTamDung(p: Principal, studentId: number) {
+  if (!can(p, PERMISSIONS.STUDENT_EDIT_MORE, { studentId })) require_(p, PERMISSIONS.STUDENT_EDIT, { studentId });
+  const conn = db();
+  const s = conn.prepare('SELECT * FROM students WHERE id = ?').get(studentId) as any;
+  if (!s) throw notFound('Không tìm thấy học viên');
+  const cuoi = viecTrangThaiCuoi(studentId);
+  if (s.status !== 'inactive' || cuoi?.action !== 'student.status' || cuoi.after?.status !== 'inactive' || cuoi.before?.status !== 'active' || !Array.isArray(cuoi.after?.ghiDanhDung)) {
+    throw conflict('Không còn hoàn tác được — học viên đã đổi trạng thái sau lần Tạm dừng.');
+  }
+  const { ghiDanhDung, journeyId } = cuoi.after as { ghiDanhDung: number[]; journeyId?: number };
+  return tx(() => {
+    conn.prepare(`UPDATE students SET status = 'active' WHERE id = ?`).run(studentId);
+    for (const id of ghiDanhDung) {
+      conn.prepare(`UPDATE enrollments SET status = 'active', end_kind = NULL WHERE id = ? AND student_id = ? AND status = 'paused'`).run(id, studentId);
+      const l = conn.prepare(`SELECT c.id FROM enrollments e JOIN classes c ON c.id = e.class_id WHERE e.id = ? AND c.status = 'finished'`).get(id) as any;
+      if (l) moLaiLop(p, l.id, { lyDo: `Hoàn tác Tạm dừng: ${s.full_name}`, heQua: true });
+    }
+    if (journeyId) conn.prepare(`DELETE FROM journey_events WHERE id = ? AND student_id = ? AND event_type = 'pause'`).run(journeyId, studentId);
+    writeAudit({ actorUserId: p.userId, action: 'student.pause_undo', entityType: 'student', entityId: studentId, entityLabel: s.student_code,
+      before: { status: 'inactive', ...cuoi.after }, after: { status: 'active' } });
     return conn.prepare('SELECT * FROM students WHERE id = ?').get(studentId);
   });
 }
@@ -624,7 +661,7 @@ export function unarchiveStudent(p: Principal, studentId: number) {
 }
 
 /**
- * Kiểm ở biên (PR-NHAP): họ tên không rỗng, ngày sinh có thật và không sau hôm nay, email trống → NULL, có gõ thì đúng dạng (T8, PR-OV2c). Trả bản đã chuẩn
+ * Kiểm ở biên (PR-NHAP): họ tên không rỗng, ngày sinh có thật và không sau hôm nay (trống → NULL, OV-11d), email trống → NULL, có gõ thì đúng dạng (T8, PR-OV2c). Trả bản đã chuẩn
  * hoá; sai → 400. Chung cho `updateStudent` và Sửa cả lớp (PR-SL, kiểm trước khi ghi).
  */
 export function chuanHoaSuaHoSo(patch: any) {
@@ -638,8 +675,7 @@ export function chuanHoaSuaHoSo(patch: any) {
   if (patch.dob !== undefined) {
     const d = docNgayNhap(patch.dob, demoToday(), { toiThieu: NGAY_SINH_TOI_THIEU, toiDa: demoToday() });
     if (d.loi) throw badRequest('Ngày sinh: ' + d.loi);
-    if (!d.iso) throw badRequest('Ngày sinh: bắt buộc.');   // PR-OV2b: sửa không được xoá trống (em cũ thiếu vẫn làm việc khác)
-    patch.dob = d.iso;
+    patch.dob = d.iso ?? null;   // OV-11d (Q3 chủ SP 14/10): không bắt buộc — trống = NULL (em thiếu nằm ở "Thiếu thông tin" để TVV cập nhật)
   }
   if (patch.email !== undefined) {
     const e = docEmail(patch.email);
@@ -724,6 +760,15 @@ function docDauVao(v: any): { overall: number; bands: (number | null)[] } | null
 /** PR-OV2a: trường `student.edit_info` (Admin, TVV, CX) sửa được ở hồ sơ — gửi trường khác thì 403. OV-8b: `student.edit_more` (TVV, CX) thêm ghi chú. OV-10b: liên hệ. */
 const TRUONG_THONG_TIN = new Set(['fullName', 'dob', 'email', 'consultantName', 'consultantUserId', 'dauVao', 'phone', 'parentName', 'parentRelation', 'parentPhone']);
 
+/**
+ * OV-11d (HV-3, Q4): lộ trình của em đã Lưu trữ → 400 `CAU_LUU_TRU` (đường `/cycles/:id…`). Chỉ báo cho người xem được em — người ngoài phạm vi
+ * đi tiếp tới kiểm quyền của hàm sửa (403), không biết em đã lưu trữ. Bỏ lưu trữ, Học lại không qua đây.
+ */
+export function chanLuuTru(p: Principal, cycleId: number) {
+  const r = db().prepare('SELECT s.id, s.archived_at FROM learning_cycles c JOIN students s ON s.id = c.student_id WHERE c.id = ?').get(cycleId) as any;
+  if (r?.archived_at && can(p, PERMISSIONS.STUDENT_VIEW, { studentId: r.id })) throw badRequest(CAU_LUU_TRU);
+}
+
 export function updateStudent(p: Principal, studentId: number, patch: any) {
   if (!can(p, PERMISSIONS.STUDENT_EDIT, { studentId })) {
     require_(p, PERMISSIONS.STUDENT_EDIT_INFO, { studentId });
@@ -733,6 +778,7 @@ export function updateStudent(p: Principal, studentId: number, patch: any) {
   const conn = db();
   const s = conn.prepare('SELECT * FROM students WHERE id = ?').get(studentId) as any;
   if (!s) throw notFound();
+  if (s.archived_at) throw badRequest(CAU_LUU_TRU);
   // Target và ngày thi IELTS nằm ở LỘ TRÌNH, sửa qua updateCycle chứ không qua hồ sơ.
   const map: Record<string, string> = {
     fullName: 'full_name', note: 'note', dob: 'dob', consultantName: 'consultant_name', email: 'email', consultantUserId: 'consultant_user_id',

@@ -63,8 +63,6 @@ export function StudentManagePanel({ viec, onClose, student, lop, cycle, attempt
     case 'tam-dung-thoi-hoc': return <TamDungThoiHocPanel {...chung} tabs={cacTabTrangThai(lopHoc?.quyen, student.status)} soViPhamMo={soViPhamMo} />;
     case 'quay-lai': return <TrangThaiPanel {...chung} status="active" soViPhamMo={soViPhamMo} />;
     case 'hoc-lai': return <HocLaiPanel {...chung} />;
-    case 'luu-tru': return <LuuTruPanel {...chung} boLuuTru={false} />;
-    case 'bo-luu-tru': return <LuuTruPanel {...chung} boLuuTru />;
     case 'outcome': return cycle && <KetQuaThiThatPanel cycleId={cycle.id} studentName={chung.studentName} lop={chung.lop} onClose={chung.onClose} onDone={chung.onDone} />;
     case 'info': return <ThongTinPanel {...chung} student={student} cycle={cycle} attempts={attempts} quyen={quyen} onDeXuatSua={onDeXuatSua} />;
     case 'xoa-hoc-vien': return <XoaHocVienPanel studentId={student.id} studentName={student.name} lop={lop} onClose={onClose} />;
@@ -83,6 +81,8 @@ export type ThongTinEm = {
   tvv?: { id: number; ten: string } | null; tvvChon?: NguoiTrongDs[] | null;
   /** OV-10b: liên hệ (SĐT em, phụ huynh). */
   lienHe?: LienHe | null;
+  /** OV-11d (HV-1): đề xuất sửa Target đang chờ Quản lý duyệt (`cuaToi`: người xem đã gửi — Sửa đề xuất). */
+  deXuatTarget?: { id: number; moi: string; lyDo: string; cuaToi: boolean } | null;
 };
 /**
  * `canEdit` = `student.edit` (QL, GVCN) · `coTheSuaThongTin` = thêm Admin / TVV / CX · `canEditCycle` = Target sửa thẳng (QL) ·
@@ -115,7 +115,7 @@ export function thongTinEmCua(d: any): ThongTinEm {
   return {
     id: d.id, name: d.fullName, classId: d.currentClass?.id ?? null, dob: d.dob ?? null, email: d.email ?? null,
     consultantName: d.consultantName ?? null, note: d.note ?? null, status: d.status, tvv: d.tvv ?? null, tvvChon: d.tvvChon ?? null,
-    lienHe: d.lienHe ?? null,
+    lienHe: d.lienHe ?? null, deXuatTarget: d.deXuatTarget ?? null,
   };
 }
 
@@ -130,7 +130,7 @@ type ChungViec = { studentId: number; studentName: string; lop?: string | null; 
 function TamDungThoiHocPanel({ tabs, soViPhamMo, ...chung }: ChungViec & { tabs: TabTrangThai[]; soViPhamMo?: number }) {
   const [tab, setTab] = useState<TabTrangThai>(tabs[0] ?? 'thoi-hoc');
   return (
-    <TrangThaiPanel {...chung} status={tab === 'tam-dung' ? 'inactive' : 'finished'} soViPhamMo={soViPhamMo} tieuDeKhung={NHAN_VIEC['tam-dung-thoi-hoc']}
+    <TrangThaiPanel {...chung} status={tab === 'tam-dung' ? 'inactive' : 'finished'} soViPhamMo={soViPhamMo} tieuDeKhung={tabs.length > 1 ? NHAN_VIEC['tam-dung-thoi-hoc'] : undefined}
       dau={tabs.length > 1 ? (
         <HangTab cap="con" ariaLabel="Tạm dừng hoặc thôi học" value={tab} onChange={setTab}
           tabs={tabs.map((k) => ({ key: k, label: k === 'tam-dung' ? 'Tạm dừng' : 'Thôi học' }))} />
@@ -183,6 +183,14 @@ function TrangThaiPanel({ studentId, studentName, lop, onClose, onDone, status, 
           toast.push('ok', 'Đã hoàn tác');
           onDone();
         }, { key: `ket-thuc:${studentId}` });
+      } else if (status === 'inactive') {
+        /* OV-11d (HV-21): Tạm dừng có Hoàn tác — trả nguyên trạng, không tính lại hạn (máy chủ: `hoan-tac-tam-dung`). */
+        toast.hoanTac(`Đã cho ${studentName} tạm dừng`, async () => {
+          try { await api.post(`/students/${studentId}/hoan-tac-tam-dung`, {}); } catch (e: any) { toast.push('error', e.message); return; }
+          for (const k of ['/students', '/classes', '/hoc-vien-lop', '/cases']) invalidate(k);
+          toast.push('ok', 'Đã hoàn tác');
+          onDone();
+        }, { key: `tam-dung:${studentId}` });
       } else toast.push('ok', 'Đã lưu');
       onDone();
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
@@ -212,47 +220,23 @@ function TrangThaiPanel({ studentId, studentName, lop, onClose, onDone, status, 
   );
 }
 
-/** LƯU TRỮ / BỎ LƯU TRỮ (RB-9, Q22) — hỏi xác nhận ngay trong panel, không mở hộp thoại riêng. */
-function LuuTruPanel({ studentId, studentName, lop, onClose, onDone, boLuuTru }: ChungViec & { boLuuTru: boolean }) {
+/**
+ * LƯU TRỮ / BỎ LƯU TRỮ (RB-9; OV-11d Q12) — MỘT bấm từ ⋯, không ô tích xác nhận (việc đảo được): thông báo có Hoàn tác = việc ngược
+ * (`archive` ↔ `unarchive`, như Thôi học). Máy chủ kiểm quyền / trạng thái như cũ.
+ */
+export function useLuuTru(onDone: () => void) {
   const toast = useToast();
-  const [xacNhan, setXacNhan] = useState(false);
-  const lf = useLoiForm();
-  const [busy, setBusy] = useState(false);
-  const tieuDe = NHAN_VIEC[boLuuTru ? 'bo-luu-tru' : 'luu-tru'];
-  const loi = dsLoi([{ khoa: 'xac-nhan', nhan: 'Xác nhận', chon: true }], { 'xac-nhan': xacNhan });
-
-  const luu = async () => {
-    lf.bam();
-    if (loi.length > 0) return;
-    setBusy(true);
-    try {
-      await api.post(`/students/${studentId}/${boLuuTru ? 'unarchive' : 'archive'}`, {});
-      invalidate('/students'); invalidate('/hoc-vien-lop');
-      toast.push('ok', boLuuTru ? 'Đã bỏ lưu trữ' : 'Đã lưu trữ');
-      onDone();
-    } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
+  const goi = (id: number, bo: boolean) => api.post(`/students/${id}/${bo ? 'unarchive' : 'archive'}`, {});
+  const lamMoi = () => { for (const k of ['/students', '/hoc-vien-lop', '/classes']) invalidate(k); onDone(); };
+  return async (id: number, ten: string, bo: boolean) => {
+    try { await goi(id, bo); } catch (e: any) { toast.push('error', e.message); return; }
+    lamMoi();
+    toast.hoanTac(bo ? `Đã bỏ lưu trữ ${ten}` : `Đã lưu trữ ${ten}`, async () => {
+      try { await goi(id, !bo); } catch (e: any) { toast.push('error', e.message); return; }
+      lamMoi();
+      toast.push('ok', 'Đã hoàn tác');
+    }, { key: `luu-tru:${id}` });
   };
-
-  return (
-    <KhungPanel tieuDe={tieuDe} hocVien={studentName} lop={lop} onDong={onClose}
-      chan={{
-        conThieu: lf.conThieu(loi),
-        chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={luu} disabled={busy}>{tieuDe}</button>,
-      }}>
-      <Khoi tieuDe={tieuDe}>
-        <p className="m-0 text-sm text-slate-300">
-          {boLuuTru
-            ? 'Hồ sơ sẽ trở lại danh sách chính của Học viên & Lớp.'
-            : 'Hồ sơ sẽ ẩn khỏi danh sách chính. Không đổi trạng thái, không xoá dữ liệu, không đóng việc còn dở. Xem lại được ở khu Lưu trữ.'}
-        </p>
-        <label className="flex items-center gap-2 text-sm text-slate-300">
-          <input type="checkbox" {...lf.o(loi, 'xac-nhan')} checked={xacNhan} onChange={(e) => setXacNhan(e.target.checked)} />
-          Tôi hiểu và muốn {boLuuTru ? 'bỏ lưu trữ' : 'lưu trữ'} học viên này.
-        </label>
-        {lf.loiCua(loi, 'xac-nhan') && <span className="block text-xs text-late">Chưa đánh dấu xác nhận</span>}
-      </Khoi>
-    </KhungPanel>
-  );
 }
 
 type LopDich = { id: number; code: string; ft: boolean; ma: string | null; route: string | null; tenChuongTrinh: string | null; tuan: string | null; gvcn: string | null; siSo?: number };
@@ -265,8 +249,10 @@ type DuLieuHocLai = { lopCu: { id: number; code: string; daKetThuc: boolean; ft:
  * OV-8a: `buocTiep` = Bước tiếp sau thi (ngăn Tổng kết) — gửi `/cycles/:id/buoc-tiep`; "Học tiếp lộ trình mới" chỉ có Sang lớp mới; về lớp cũ luôn là lộ trình MỚI
  * (lộ trình đã thi không chạy tiếp). `doi` = đang đổi lựa chọn cũ (không có Hoàn tác trên thông báo — Sửa lại ở mục Bước tiếp).
  */
-export function HocLaiPanel({ studentId, studentName, lop, onClose, onDone, buocTiep, chong }: ChungViec & {
-  buocTiep?: { cycleId: number; chon: 'hoc_tiep' | 'hoc_lai'; doi: boolean }; chong?: boolean;
+export function HocLaiPanel({ studentId, studentName, lop, onClose, onDone, buocTiep, quayLai }: ChungViec & {
+  buocTiep?: { cycleId: number; chon: 'hoc_tiep' | 'hoc_lai'; doi: boolean };
+  /** OV-11d (HV-9): mở trong ngăn Tổng kết (dòng "← Tổng kết") — không chồng panel. */
+  quayLai?: { nhan: string; onClick: () => void };
 }) {
   const toast = useToast();
   const lf = useLoiForm();
@@ -335,7 +321,7 @@ export function HocLaiPanel({ studentId, studentName, lop, onClose, onDone, buoc
   };
 
   return (
-    <KhungPanel tieuDe={tieuDe} hocVien={studentName} lop={lop} longTrong={chong} z={chong ? 'z-[60]' : undefined} onDong={onClose}
+    <KhungPanel tieuDe={tieuDe} hocVien={studentName} lop={lop} quayLai={quayLai} onDong={onClose}
       chan={{
         daSua: !!lyDo.trim() || !!ngayHl || (dich === 'moi' && !chiLopMoi) || lopMoiId !== '',
         conThieu: lf.conThieu(loi),
@@ -406,8 +392,11 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
   const ghiChu = quanLy || !!quyen.coTheSuaThem;                  // OV-8b: TVV / CX sửa Ghi chú
   const targetThang = !!quyen.canEditCycle || !!quyen.coTheSuaThem;   // QL / Quản trị · OV-8b: TVV / CX
   const targetDeXuat = quanLy && !targetThang;                    // GVCN
-  /* OV-11e (Q8): ô tích KCK — QL / Quản trị / TVV sửa thẳng, GVCN đề xuất; CX không (máy chủ `reviseTarget` cũng chặn). */
-  const oKck = targetDeXuat || duocDoiKck(useSession().session?.roles, !!quyen.canEditCycle);
+  /* OV-11e → OV-11d (Q8 chủ SP chốt): ô tích KCK chỉ QL / Quản trị / TVV; GVCN, CX, Admin chỉ đọc (máy chủ `reviseTarget` + đề xuất cũng chặn). */
+  const oKck = duocDoiKck(useSession().session?.roles, !!quyen.canEditCycle);
+  /* OV-11d (HV-1): đề xuất Target đang chờ duyệt — GVCN không gửi trùng; người gửi Sửa đề xuất ngay tại đây (thay nội dung panel). */
+  const dx = student.deXuatTarget ?? null;
+  const [suaDx, setSuaDx] = useState(false);
   const [fullName, setFullName] = useState(student.name);
   const [dob, setDob] = useState(student.dob ?? '');
   const [email, setEmail] = useState(student.email ?? '');
@@ -445,8 +434,8 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
   const [loiMay, setLoiMay] = useState<{ khoa: string; nhan: string; lyDo: string } | null>(null);
   const sua = <T,>(f: (v: T) => void) => (v: T) => { setLoiMay(null); f(v); };
 
+  /* OV-11d (Q3 chủ SP, HL-11): ngày sinh và email không bắt buộc — gõ thì kiểm dạng (ONgay / máy chủ), xoá trống = bỏ; em thiếu nằm ở "Thiếu thông tin". */
   const loi = dsLoi([{ khoa: 'ho-ten', nhan: 'Họ tên', toiThieu: 1 }], { 'ho-ten': fullName });
-  if (!dob) loi.push({ khoa: 'ngay-sinh', nhan: 'Ngày sinh', lyDo: 'Bắt buộc' });
   const loiEmail = docEmail(email).loi;   // PR-OV2c: trống được, có gõ thì đúng dạng
   if (loiEmail) loi.push({ khoa: 'email', nhan: 'Email', lyDo: loiEmail });
   for (const k of ['phone', 'parentPhone'] as const) {
@@ -512,6 +501,14 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
     || (!tvv && !!student.tvv) || note !== (student.note ?? '') || tuan !== tuanCu || thi !== thiCu || target !== targetCu || kck !== kckCu || doiDauVao
     || lhDoi.length > 0;
 
+  if (suaDx && dx) {
+    return (
+      <DeXuatSuaPanel studentId={student.id} studentName={studentName} lop={lop} onClose={onClose} onDone={onDone}
+        hienTai={{ target: cycle?.target ?? null, khongCamKet: kckCu, route: cycle?.route ?? null }}
+        sua={{ id: dx.id, truong: 'target', moi: dx.moi, lyDo: dx.lyDo }} />
+    );
+  }
+
   return (
     <KhungPanel tieuDe={NHAN_VIEC.info} hocVien={studentName} lop={lop} onDong={onClose}
       chan={{
@@ -523,12 +520,11 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
         <Truong nhan="Họ tên" batBuoc loi={lf.loiCua(loi, 'ho-ten')}>
           <input className="field w-full" {...lf.o(loi, 'ho-ten')} value={fullName} onChange={(e) => sua(setFullName)(e.target.value)} />
         </Truong>
-        <Truong nhan="Ngày sinh" batBuoc loi={lf.loiCua(loi, 'ngay-sinh')}
-          phu={!student.dob ? 'Em chưa có ngày sinh — điền để lưu' : undefined}>
+        <Truong nhan="Ngày sinh" tuyChon loi={lf.loiCua(loi, 'ngay-sinh')}>
           <ONgay kieu="ngay" toiDa={homNay} id={lf.oId('ngay-sinh')} onBlur={lf.roi('ngay-sinh')} invalid={!!lf.loiCua(loi, 'ngay-sinh')}
             value={dob} onChange={sua(setDob)} />
         </Truong>
-        <Truong nhan="Email" loi={lf.loiCua(loi, 'email')}>
+        <Truong nhan="Email" tuyChon loi={lf.loiCua(loi, 'email')}>
           <input className="field w-full" type="email" inputMode="email" autoComplete="off" {...lf.o(loi, 'email')}
             value={email} onChange={(e) => sua(setEmail)(e.target.value)} placeholder="Ví dụ: an.nguyen@gmail.com" />
         </Truong>
@@ -585,19 +581,22 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
           <Truong nhan="Dự kiến thi" tuyChon loi={lf.loiCua(loi, 'thi')} phu="dd/mm/yyyy hoặc mm/yyyy">
             <ONgay kieu="ngay-hoac-thang" id={lf.oId('thi')} value={thi} goiY="dd/mm/yyyy hoặc mm/yyyy" onChange={sua(setThi)} />
           </Truong>
-          {targetThang || targetDeXuat ? (
+          {(targetThang || targetDeXuat) && !(targetDeXuat && dx) ? (
             <Truong nhan="Target" tuyChon as="div" loi={lf.loiCua(loi, 'target')}
-              phu={targetDeXuat ? 'Lưu thành Đề xuất sửa — Quản lý duyệt rồi Target mới đổi.' : `Band 0–9, bước 0,5.${oKck ? ` KCK: ${GIAI_THICH_KCK}.` : ''}`}>
+              phu={[targetDeXuat ? 'Lưu thành Đề xuất sửa — Quản lý duyệt rồi Target mới đổi.' : `Band 0–9, bước 0,5.${oKck ? ` KCK: ${GIAI_THICH_KCK}.` : ''}`,
+                dx ? `Chờ duyệt: ${chuDeXuat(dx.moi)}` : null].filter(Boolean).join(' · ')}>
               <span className="flex flex-wrap items-center gap-3">
                 <input className="field max-w-[8rem]" type="number" inputMode="decimal" step="0.5" min={0} max={9} aria-label="Target"
                   {...lf.o(loi, 'target')} value={target} onChange={(e) => sua(setTarget)(e.target.value)} />
-                {oKck && <OKck chon={kck} onChange={sua(setKck)} />}
+                {oKck ? <OKck chon={kck} onChange={sua(setKck)} /> : kckCu && <span className="text-sm text-slate-300">KCK</span>}
               </span>
             </Truong>
           ) : (
-            <div className="text-sm text-slate-200">
-              Target: {targetCu || kckCu ? <strong><TargetText band={cycle.target ?? null} kck={kckCu} /></strong> : <span className="text-slate-500">chưa có</span>}
-              <span className="text-slate-500"> · Quản lý sửa</span>
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-slate-200">
+              <span>Target: {targetCu || kckCu ? <strong><TargetText band={cycle.target ?? null} kck={kckCu} /></strong> : <span className="text-slate-500">chưa có</span>}</span>
+              {dx ? <span className="text-slate-400">· Chờ duyệt: <strong className="text-slate-200">{chuDeXuat(dx.moi)}</strong></span>
+                : <span className="text-slate-500">· Quản lý / TVV sửa</span>}
+              {dx?.cuaToi && <button type="button" className="btn btn-sm btn-ghost min-h-[44px] sm:min-h-0" onClick={() => setSuaDx(true)}>Sửa đề xuất</button>}
             </div>
           )}
           {doiTarget && (
@@ -639,6 +638,13 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
       )}
     </KhungPanel>
   );
+}
+
+/** Giá trị đề xuất Target ("7" · "6.5 KCK" · "KCK") → chữ hiện "7.0" · "6.5 · KCK". */
+function chuDeXuat(moi: string): string {
+  const t = tachKck(moi);
+  const so = t.so === '' || t.so == null ? null : Number(t.so);
+  return [so != null && Number.isFinite(so) ? so.toFixed(1) : null, t.kck ? 'KCK' : null].filter(Boolean).join(' · ') || moi;
 }
 
 /** Band → chữ cho ô ('' khi trống). */
