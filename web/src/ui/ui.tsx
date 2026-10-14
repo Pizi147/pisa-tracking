@@ -507,12 +507,14 @@ export function ExamPlanText({ plan }: { plan?: { confidence: string; label: str
 const CHON = '!border-teal-600 !bg-ink-800 text-slate-100';
 type NutChonProps = {
   chon: boolean; onClick: () => void; children: ReactNode; nho?: boolean; className?: string; disabled?: boolean; title?: string;
+  /** Dấu góc khi đang chọn — mặc định ✓; OV-12b: số thứ tự chọn (chip nhóm nguyên nhân, 1 = chính). */
+  dau?: ReactNode;
 };
-export function NutChon({ chon, onClick, children, nho, className = '', disabled, title }: NutChonProps) {
+export function NutChon({ chon, onClick, children, nho, className = '', disabled, title, dau = '✓' }: NutChonProps) {
   return (
     <button type="button" aria-pressed={chon} onClick={onClick} disabled={disabled} title={title}
       className={`btn ${nho ? 'btn-sm' : ''} relative min-h-[44px] min-w-0 gap-1 whitespace-normal text-center leading-tight sm:min-h-0 ${chon ? CHON : ''} ${className}`}>
-      {chon && <span aria-hidden className="pointer-events-none absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-md border border-teal-600 bg-[color:var(--surface)] text-[11px] leading-none text-teal-300">✓</span>}{children}
+      {chon && <span aria-hidden className="pointer-events-none absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-md border border-teal-600 bg-[color:var(--surface)] text-[11px] leading-none tabular-nums text-teal-300">{dau}</span>}{children}
     </button>
   );
 }

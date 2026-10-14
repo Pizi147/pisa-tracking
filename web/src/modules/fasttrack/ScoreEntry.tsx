@@ -10,7 +10,7 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { fmtBand, skillLabel } from '../../lib/format.ts';
 import type { gvChamPayload } from '../cham/GvCham.tsx';
 import {
-  oLuoiThuong, tuanLich, ENTRY_SKILL_SHORT, type EntrySkill,
+  oLuoiThuong, tuanLich, ENTRY_SKILL_SHORT, type EntrySkill, type ThieuNhanXet,
 } from '@shared/domain/index.ts';
 
 export type Cell = {
@@ -63,6 +63,11 @@ export type Cell = {
   } | null;
   /** PR-HSM (YC-13.5), OV-4b: nhận xét của bài nhập (L/R/W1/W2/S). */
   nhanXet?: string | null;
+  /** OV-12b (máy chủ tính, `thieuNhanXetMt`): nhóm nguyên nhân đã chọn (thứ tự) · lượt MT đòi nhận xét · kỳ vọng lượt · ô có điểm còn thiếu. */
+  nhomNguyenNhan?: string[];
+  batBuocNhanXet?: boolean;
+  kyVong?: number | null;
+  thieuNhanXet?: ThieuNhanXet | null;
   /** PR-HSM (T39): GV chấm Speaking — tài khoản (`userId`) hoặc người ngoài (`userId: null`). */
   gvCham?: { userId: number | null; ten: string } | null;
 };
@@ -80,6 +85,8 @@ export type SavePatch = {
   nhanXet?: string | null;
   /** PR-HSM: GV chấm Speaking, dạng `nguoiThanhPayload` (`null` = xoá). */
   gvCham?: ReturnType<typeof gvChamPayload>;
+  /** OV-12b: nhóm nguyên nhân (mã, thứ tự chọn) — ô MT dưới kỳ vọng. */
+  nhomNguyenNhan?: string[];
 };
 
 /** Tuỳ chọn của một lần lưu. `nem` = ném lỗi ra cho nơi gọi (hộp lý do hiện câu lỗi ngay tại ô) thay vì chỉ toast. */

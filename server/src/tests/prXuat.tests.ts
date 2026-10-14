@@ -50,7 +50,7 @@ export async function runPrXuatTests(t: YThucTestKit) {
     l: 6, r: 6.5, w: null, s: null, overall: null, target: 7, kyVong: 6.5, sos: 2, trangThai: 'Thiếu điểm 2/4 · SOS tạm thời',
     w1: null, w2: null, tieuChi: { writing1: [null, null, null, null], writing2: [null, null, null, null], speaking: [null, null, null, null] },
     tuanKn: { listening: 'W3 SEP 2026', reading: 'W3 SEP 2026', writing: null, speaking: null }, nguoiNhap: 'Trần Ngọc Hà',
-    nhanXetW: null, nhanXetS: null, gvChamS: null, ...o,
+    nhanXet: { listening: null, reading: null, writing1: null, writing2: null, speaking: null }, nhom: null, gvChamS: null, ...o,
   });
 
   check('PR-XUAT (1) · bangFT: 16 cột gọn đúng thứ tự T40; đầy đủ = 16 + COT_FT_THEM, 16 cột đầu không đổi', () => {
@@ -60,7 +60,7 @@ export async function runPrXuatTests(t: YThucTestKit) {
     const day = d.bangFT([dong()], 'day-du');
     assert(day[0].length === 16 + d.COT_FT_THEM.length && day[1].length === day[0].length, `đầy đủ ${day[0].length} cột`);
     assert(day[0].slice(0, 16).join() === gon[0].join() && day[1].slice(0, 16).join() === gon[1].join(), '16 cột đầu giữ vị trí');
-    assert(day[0].includes('W2 TR') && day[0].includes('W1 TA') && day[0].includes('S FC') && day[0].at(-4) === 'Người nhập' && day[0].at(-1) === 'GV chấm S', 'tiêu chí T39, cột nhận xét ở cuối');
+    assert(day[0].includes('W2 TR') && day[0].includes('W1 TA') && day[0].includes('S FC') && day[0].at(-8) === 'Người nhập' && day[0].at(-1) === 'GV chấm S', 'tiêu chí T39, cột nhận xét ở cuối (OV-12b: 5 nhận xét + Nhóm + GV chấm S)');
   });
 
   check('PR-XUAT (1) · ô thiếu là null (không "—", không ""); điểm là number; KCK → Target "KCK", Kỳ vọng/SOS null', () => {
@@ -314,7 +314,7 @@ async function mayChu(t: YThucTestKit) {
     assert(!JSON.stringify(pf.sheets).includes('SOS'), 'không SOS');
   });
 
-  check('PR-XUAT (8) · cột Nhận xét W (gộp W1 + W2) · Nhận xét S · GV chấm S: đúng chữ, null khi không có, cột gọn không có, không thêm câu SQL (YC-13.5)', () => {
+  check('PR-XUAT (8) · OV-12b: cột Nhận xét W1 · W2 (riêng) · Nhận xét S · GV chấm S: đúng chữ, null khi không có, cột gọn không có, không thêm câu SQL (YC-13.5)', () => {
     const a = conn.prepare(
       `SELECT a.id, a.attempt_no, st.student_code FROM assessment_attempts a JOIN students st ON st.id = a.student_id
         WHERE a.class_id = ? AND a.kind = 'mock' AND a.status != 'cancelled' ORDER BY a.id LIMIT 2`,
@@ -333,10 +333,10 @@ async function mayChu(t: YThucTestKit) {
       const f = (cot: 'gon' | 'day-du') => xm.duLieuXuatMt(P.mbManager, loc({ lop: String(mbLop), cot }));
       const n0 = nguCanh.soCauSql(); const r = f('day-du'); const nSql = nguCanh.soCauSql() - n0;
       const [tieuDe, ...dong] = r.sheets[0].aoa;
-      const [iW, iS, iGv] = ['Nhận xét W', 'Nhận xét S', 'GV chấm S'].map((c) => tieuDe.indexOf(c));
-      assert(iW > 0 && iS > iW && iGv > iS, `thiếu cột: ${tieuDe.slice(-5)}`);
+      const [iW, iW2, iS, iGv] = ['Nhận xét W1', 'Nhận xét W2', 'Nhận xét S', 'GV chấm S'].map((c) => tieuDe.indexOf(c));
+      assert(iW > 0 && iW2 === iW + 1 && iS > iW2 && iGv > iS, `thiếu cột: ${tieuDe.slice(-8)}`);
       const co = dong.find((x) => x[0] === a[0].student_code && x[5] === `MT${a[0].attempt_no}`)!;
-      assert(co[iW] === 'Task 1: Thiếu ví dụ\nTask 2: Lạc đề một phần' && co[iS] === 'Nói tự nhiên' && co[iGv] === 'Giám khảo ngoài', JSON.stringify([co[iW], co[iS], co[iGv]]));
+      assert(co[iW] === 'Thiếu ví dụ' && co[iW2] === 'Lạc đề một phần' && co[iS] === 'Nói tự nhiên' && co[iGv] === 'Giám khảo ngoài', JSON.stringify([co[iW], co[iW2], co[iS], co[iGv]]));
       const khong = dong.find((x) => x[0] === a[1].student_code && x[5] === `MT${a[1].attempt_no}`)!;
       assert(khong[iW] === null && khong[iS] === null && khong[iGv] === null, 'lượt không nhận xét → ô trống (null)');
       assert(!f('gon').sheets[0].aoa[0].some((c) => /Nhận xét|GV chấm/.test(String(c))), 'cột gọn không có 3 cột này');

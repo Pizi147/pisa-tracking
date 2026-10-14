@@ -875,7 +875,9 @@ api.put('/attempts/:id/scores/:skill', requireAuth, wrap((req) => {
     noShow: b.noShow === true ? true : b.noShow === false ? false : undefined,
     /* PR-HSM: nhận xét W/S + GV chấm Speaking — máy chủ kiểm lại mọi luật trong `saveScore`. */
     nhanXet: b.nhanXet, gvCham: b.gvCham,
-  });
+    /* OV-12b: nhóm nguyên nhân (ô MT dưới kỳ vọng) — `saveScore` kiểm mã + luật nhận xét bắt buộc (cửa người dùng: `tuNguoiDung`). */
+    nhomNguyenNhan: b.nhomNguyenNhan,
+  }, undefined, { tuNguoiDung: true });
 }));
 
 /**

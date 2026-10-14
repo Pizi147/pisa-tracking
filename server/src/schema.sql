@@ -743,6 +743,9 @@ CREATE TABLE assessment_scores (
   examiner_name TEXT,
   -- PR-Pb2-b (Q13): NGÀY NGHIỆP VỤ lần đầu ô có điểm. Sửa sau không đổi; ô mất hết điểm → NULL; dấu "-" không đặt. Bảng GV "Chấm điểm đúng hạn".
   nhap_dau_ngay TEXT,
+  -- OV-12b (chủ SP 14/10): nhóm nguyên nhân của ô MT DƯỚI kỳ vọng — JSON mảng mã `ISSUE_TAXONOMY` theo thứ tự chọn (phần tử đầu = chính).
+  -- NULL = không cần (đạt / chưa điểm / không phải MT) hoặc dữ liệu trước luật. Xoá điểm hay sửa thành đạt → NULL.
+  nhom_nguyen_nhan TEXT,
   UNIQUE (attempt_id, skill)
 );
 CREATE INDEX idx_score_attempt ON assessment_scores(attempt_id);

@@ -1,7 +1,7 @@
 import { db, tx } from '../db.ts';
 import {
   ASSESSED_SKILLS, ASSESSED_SKILL_LABEL, duongDotTest, ENTRY_SKILLS, ENTRY_SKILL_LABEL, NO_SHOW_OVERRIDDEN_NOTE,
-  CHAM_CHEO, LOI_BAND_TU_TINH, PERMISSIONS, awaitingScore, kyNangXongThieu, laChamCheo, cachHuyLuot, kiemBand, kiemNhanXet, kiemSoMtMoi, kyNangSosMt0, laMt0, laMtCu, ngay, dauTruCuaO, duocNhapBandThang, noShowText, pendingSkillsOf, soMtKeTiep, tenGvCham, tenMon, tuanHocCuaMt, tuanLich,
+  CHAM_CHEO, LOI_BAND_TU_TINH, PERMISSIONS, awaitingScore, kyNangXongThieu, laChamCheo, cachHuyLuot, kiemBand, kiemNhanXet, kiemNhomNguyenNhan, kiemSoMtMoi, batBuocNhanXetMt, canNhomNguyenNhan, docNhomNguyenNhan, issueLabel, thieuNhanXetMt, LOI_THIEU_NHAN_XET, type ThieuNhanXet, kyNangSosMt0, laMt0, laMtCu, ngay, dauTruCuaO, duocNhapBandThang, noShowText, pendingSkillsOf, soMtKeTiep, tenGvCham, tenMon, tuanHocCuaMt, tuanLich,
   type CachHuy, CASE_CATEGORY_LABEL, INTERVENTION_KIND_LABEL, SYSTEM_CLOSE_REASON_LABEL, categoryOf, type CaseCategory, type InterventionKind,
   type AssessedSkill, type EntrySkill, type KetQuaVang, type NoShowState, type PendingCell, type SkillProgress, type WorkScope,
 } from '../../../shared/domain/index.ts';
@@ -16,7 +16,7 @@ import {
 import { addJourney, notify, writeAudit } from '../platform/audit.ts';
 import {
   ScoreError, assessedSkillOf, bandFromCriteria, bandFromRaw, entrySkillsOf, evaluateAttempt,
-  failingEntrySkills, isCriteriaSkill, isRawSkill, type AttemptResult,
+  expectationFor, failingEntrySkills, isCriteriaSkill, isRawSkill, type AttemptResult,
 } from './scoring.ts';
 import { mondayOf, quaHanNhapDiem, skillScoreDeadline, weekInfo } from '../platform/week.ts';
 import { nho, nhoTheoId } from '../platform/nguCanhRequest.ts';
@@ -58,7 +58,12 @@ export type ScoreRow = {
   comment?: string | null; examiner_user_id?: number | null; examiner_name?: string | null; examiner_user_name?: string | null;
   /** PR-Pb2-b (Q13): ngày nghiệp vụ lần đầu ô có điểm. */
   nhap_dau_ngay?: string | null;
+  /** OV-12b: JSON mảng mã nhóm nguyên nhân (thứ tự chọn) — chỉ ô MT dưới kỳ vọng. */
+  nhom_nguyen_nhan?: string | null;
 };
+
+/** OV-12b: kỳ vọng của lượt cho chip nhóm nguyên nhân (MT0 không kỳ vọng) — cùng `expectationFor` với `resultOf`. */
+const kyVongCuaLuot = (a: any): number | null => (laMt0(a) ? null : expectationFor(a.target_at_attempt ?? null, a.attempt_no, routeCuaLuot(a)));
 
 /** PR-TD: nhớ trong request GET theo attemptId — hồ sơ HV gọi lặp cho mỗi lượt của em (`profile.ts`, `students.ts`). */
 export function scoresOf(attemptId: number): ScoreRow[] {
@@ -316,8 +321,14 @@ export type SkillCell = {
     /** OV-4b (hộp "Vắng lần n · đã dời sang …"): lần vắng của kỹ năng · lúc ghi "-" · người ghi. */
     lan: number; ghiLuc: string | null; ghiBoi: string | null;
   } | null;
-  /** PR-HSM (YC-13.5), OV-4b: nhận xét của bài nhập này (L/R/W1/W2/S), không bắt buộc. */
+  /** PR-HSM (YC-13.5), OV-4b: nhận xét của bài nhập này (L/R/W1/W2/S); OV-12b: MT bắt buộc (`batBuocNhanXet`). */
   nhanXet: string | null;
+  /** OV-12b: nhóm nguyên nhân đã chọn (thứ tự, phần tử đầu = chính) · lượt MT đòi nhận xét · kỳ vọng của lượt (chip khi band dưới) ·
+   *  ô đã có điểm mà còn thiếu (dữ liệu trước luật) — lưới ghi chữ "thiếu nhận xét" / "thiếu nhóm nguyên nhân". */
+  nhomNguyenNhan: string[];
+  batBuocNhanXet: boolean;
+  kyVong: number | null;
+  thieuNhanXet: ThieuNhanXet | null;
   /** PR-HSM (T39): GV chấm Speaking — tài khoản (`userId`) hoặc người ngoài (`userId: null`). Chỉ ô `speaking`. */
   gvCham: { userId: number | null; ten: string } | null;
 };
@@ -356,6 +367,8 @@ export function skillCells(
   const schedule = skillScheduleOf(attempt, skillRows);
   const cancelled = attempt.status === 'cancelled';
   const suaSauHoanTat = hoanTat.hoanTat && attempt.class_id ? quyenSuaSauHoanTat(p, attempt.class_id, !!attempt.lich_su) : false;
+  const batBuocNx = batBuocNhanXetMt({ kind: attempt.kind, lichSu: !!attempt.lich_su });
+  const kyVong = kyVongCuaLuot(attempt);
 
   /* Một kỹ năng đánh giá coi là ĐÃ CÓ ĐIỂM khi mọi ô nhập của nó đã có band (W cần cả W1 và W2). */
   const scoredAssessed = (assessed: AssessedSkill): boolean =>
@@ -488,6 +501,12 @@ export function skillCells(
       noShowNote,
       daChot,
       nhanXet: row?.comment ?? null,
+      nhomNguyenNhan: docNhomNguyenNhan(row?.nhom_nguyen_nhan),
+      batBuocNhanXet: batBuocNx,
+      kyVong,
+      thieuNhanXet: thieuNhanXetMt({
+        batBuoc: batBuocNx, coDiem: hasScore, band: row?.band ?? null, kyVong, nhanXet: row?.comment, nhom: docNhomNguyenNhan(row?.nhom_nguyen_nhan),
+      }),
       gvCham: skill === 'speaking' && row && (row.examiner_user_id || row.examiner_name)
         ? { userId: row.examiner_user_id ?? null, ten: tenGvCham({ examinerUserName: row.examiner_user_name, examinerName: row.examiner_name }) ?? '' }
         : null,
@@ -966,10 +985,13 @@ export function scoreHistoryOf(attemptId: number) {
     const before = l.before_json ? JSON.parse(l.before_json) : null;
     const after = l.after_json ? JSON.parse(l.after_json) : null;
     if (l.action === 'score.nhan_xet') {
-      if ((before?.comment ?? null) === (after?.comment ?? null)) return [];
+      /* OV-12b: chỉ đổi nhóm nguyên nhân (chip) → dòng ghi nhóm trước → sau. */
+      const doiNx = (before?.comment ?? null) !== (after?.comment ?? null);
+      const nhom = (x: any) => docNhomNguyenNhan(x?.nhom).map(issueLabel).join(', ') || 'Trống';
+      if (!doiNx && nhom(before) === nhom(after)) return [];
       return [{
         id: l.id, kind: 'nhan_xet' as const, skill: l.entity_label as string, skillLabel: tenMon(null, l.entity_label),
-        before: rutGon(before?.comment), after: rutGon(after?.comment),
+        before: doiNx ? rutGon(before?.comment) : nhom(before), after: doiNx ? rutGon(after?.comment) : nhom(after),
         actorName: l.actor_name as string | null, createdAt: l.created_at as string, lyDo: null as string | null,
       }];
     }
@@ -1692,7 +1714,25 @@ export type ScorePatch = {
   nhanXet?: string | null;
   /** PR-HSM (T39): GV chấm Speaking, dạng `nguoiThanhPayload` — `null` = xoá. */
   gvCham?: { performerSelf?: boolean; performerUserId?: number | null; performerName?: string | null } | null;
+  /** OV-12b: nhóm nguyên nhân (mã `issuesForTopic`, thứ tự chọn) — chỉ giữ khi band của ô dưới kỳ vọng. `null` = bỏ hết. */
+  nhomNguyenNhan?: string[] | null;
 };
+
+/**
+ * OV-12b: nhóm sẽ lưu (JSON hoặc NULL) + kiểm luật nhận xét MT trên TRẠNG THÁI SAU KHI GHI của ô. `luat` = lệnh từ người dùng (route): thiếu → 400,
+ * chưa ghi gì. Đường nội bộ (seed, khôi phục, Thi lại) không đòi — dữ liệu ấy không phải bài GV vừa chấm.
+ */
+function nhomVaLuatNhanXet(
+  a: any, o: { band: number | null; coDiem: boolean; comment: string | null; nhomGui: string[] | undefined; nhomCu: string | null | undefined; luat: boolean },
+): string | null {
+  const kyVong = kyVongCuaLuot(a);
+  const nhom = canNhomNguyenNhan(o.band, kyVong) ? (o.nhomGui ?? docNhomNguyenNhan(o.nhomCu)) : [];
+  if (o.luat) {
+    const thieu = thieuNhanXetMt({ batBuoc: batBuocNhanXetMt({ kind: a.kind, lichSu: !!a.lich_su }), coDiem: o.coDiem, band: o.band, kyVong, nhanXet: o.comment, nhom });
+    if (thieu) throw badRequest(LOI_THIEU_NHAN_XET[thieu]);
+  }
+  return nhom.length ? JSON.stringify(nhom) : null;
+}
 
 /** GV chấm hợp lệ: nhân viên đang làm việc, hoặc tên người ngoài 2–100 ký tự (luật `chuanHoaNguoiThucHien`). */
 function gvChamHopLe(p: Principal, g: NonNullable<ScorePatch['gvCham']>) {
@@ -1709,25 +1749,29 @@ function gvChamHopLe(p: Principal, g: NonNullable<ScorePatch['gvCham']>) {
  * không điểm (GV ghi nhận xét trước khi chấm — Q7). Nhật ký `score.nhan_xet` giữ trước/sau.
  */
 function luuNhanXet(
-  p: Principal, attemptId: number, skill: string,
+  p: Principal, a: any, skill: string,
   nhanXet: string | null | undefined, gv: { userId: number | null; name: string | null } | null | undefined,
+  nhomGui: string[] | undefined, luat: boolean,
 ) {
   const conn = db();
+  const attemptId = a.id as number;
   const cu = conn.prepare('SELECT * FROM assessment_scores WHERE attempt_id = ? AND skill = ?').get(attemptId, skill) as ScoreRow | undefined;
   const comment = nhanXet !== undefined ? nhanXet : cu?.comment ?? null;
   const exUser = gv !== undefined ? gv?.userId ?? null : cu?.examiner_user_id ?? null;
   const exName = gv !== undefined ? gv?.name ?? null : cu?.examiner_name ?? null;
+  const band = cu?.band ?? null;
+  const nhom = nhomVaLuatNhanXet(a, { band, coDiem: band !== null || (cu?.raw_score ?? null) !== null, comment, nhomGui, nhomCu: cu?.nhom_nguyen_nhan, luat });
   if (cu) {
-    conn.prepare('UPDATE assessment_scores SET comment = ?, examiner_user_id = ?, examiner_name = ? WHERE id = ?')
-      .run(comment, exUser, exName, cu.id);
+    conn.prepare('UPDATE assessment_scores SET comment = ?, examiner_user_id = ?, examiner_name = ?, nhom_nguyen_nhan = ? WHERE id = ?')
+      .run(comment, exUser, exName, nhom, cu.id);
   } else {
-    conn.prepare('INSERT INTO assessment_scores (attempt_id, skill, comment, examiner_user_id, examiner_name) VALUES (?,?,?,?,?)')
-      .run(attemptId, skill, comment, exUser, exName);
+    conn.prepare('INSERT INTO assessment_scores (attempt_id, skill, comment, examiner_user_id, examiner_name, nhom_nguyen_nhan) VALUES (?,?,?,?,?,?)')
+      .run(attemptId, skill, comment, exUser, exName, nhom);
   }
   writeAudit({
     actorUserId: p.userId, action: 'score.nhan_xet', entityType: 'assessment_attempt', entityId: attemptId, entityLabel: skill,
-    before: cu ? { comment: cu.comment ?? null, examinerUserId: cu.examiner_user_id ?? null, examinerName: cu.examiner_name ?? null } : null,
-    after: { comment, examinerUserId: exUser, examinerName: exName },
+    before: cu ? { comment: cu.comment ?? null, examinerUserId: cu.examiner_user_id ?? null, examinerName: cu.examiner_name ?? null, nhom: cu.nhom_nguyen_nhan ?? null } : null,
+    after: { comment, examinerUserId: exUser, examinerName: exName, nhom },
   });
   const fresh = conn.prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(attemptId) as any;
   return {
@@ -1805,8 +1849,9 @@ function reconcileCorrectedScores(p: Principal, attemptId: number, result: Attem
 
 export function saveScore(
   p: Principal, attemptId: number, skill: string, patch: ScorePatch, today: string = demoToday(),
-  /** PR-BV: `thiLai` — ô xoá để THI LẠI (Case đóng theo không mở lại khi nhập điểm mới). Chỉ `keHoach.thiLai` truyền. */
-  o: { thiLai?: boolean } = {},
+  /** PR-BV: `thiLai` — ô xoá để THI LẠI (Case đóng theo không mở lại khi nhập điểm mới). Chỉ `keHoach.thiLai` truyền.
+   *  OV-12b: `tuNguoiDung` — lệnh từ route (cửa người dùng): áp luật nhận xét MT bắt buộc (`nhomVaLuatNhanXet`). */
+  o: { thiLai?: boolean; tuNguoiDung?: boolean } = {},
 ) {
   const conn = db();
   const a = loadAttempt(attemptId);
@@ -1894,13 +1939,18 @@ export function saveScore(
     throw badRequest('GV chấm không hợp lệ — gửi người chấm, hoặc null để xoá.');
   }
   const gv = coGvCham ? (patch.gvCham ? gvChamHopLe(p, patch.gvCham) : null) : undefined;
+  const coNhom = patch.nhomNguyenNhan !== undefined;
+  const nhomKiem = coNhom ? kiemNhomNguyenNhan(patch.nhomNguyenNhan, skill) : null;
+  if (nhomKiem && 'loi' in nhomKiem) throw badRequest(nhomKiem.loi);
+  const nhomGui = nhomKiem && 'gt' in nhomKiem ? nhomKiem.gt : undefined;
+  const luat = !!o.tuNguoiDung;
   /* T19: có ghi một giá trị điểm (không phải xoá) → kỹ năng phải tới tuần thi. */
   const ghiDiem = (patch.rawScore !== undefined && patch.rawScore !== null) || (patch.band !== undefined && patch.band !== null)
     || (Array.isArray(patch.criteria) && patch.criteria.some((v) => v !== null && v !== undefined && (v as unknown) !== ''));
   if (ghiDiem) kiemDaToiTuanThi(scheduleRow, today);
-  const chiNhanXet = (coNhanXet || coGvCham) && patch.rawScore === undefined && patch.band === undefined && patch.rawTotal === undefined
+  const chiNhanXet = (coNhanXet || coGvCham || coNhom) && patch.rawScore === undefined && patch.band === undefined && patch.rawTotal === undefined
     && patch.criteria === undefined && patch.noShow === undefined && patch.resultDate === undefined && patch.note === undefined;
-  if (chiNhanXet) return tx(() => luuNhanXet(p, attemptId, skill, nxGt, gv));
+  if (chiNhanXet) return tx(() => luuNhanXet(p, a, skill, nxGt, gv, nhomGui, luat));
 
   return tx(() => {
     const existing = conn.prepare('SELECT * FROM assessment_scores WHERE attempt_id = ? AND skill = ?')
@@ -2075,24 +2125,26 @@ export function saveScore(
      */
     const coDiemThat = raw !== null || band !== null;
     const nhapDau = coDiemThat ? existing?.nhap_dau_ngay ?? today : null;
+    /* OV-12b: ô mất hết điểm → nhóm về NULL như nhận xét; kiểm luật trước mọi câu ghi (400 không để lại gì). */
+    const nhom = nhomVaLuatNhanXet(a, { band, coDiem: coDiemThat, comment, nhomGui, nhomCu: existing?.nhom_nguyen_nhan, luat });
     if (existing) {
       conn
         .prepare(
           `UPDATE assessment_scores SET raw_score=?, raw_total=?, c1=?, c2=?, c3=?, c4=?, band=?,
                                         result_date=?, entered_by=?, entered_at=?, note=?,
-                                        comment=?, examiner_user_id=?, examiner_name=?, nhap_dau_ngay=? WHERE id=?`,
+                                        comment=?, examiner_user_id=?, examiner_name=?, nhap_dau_ngay=?, nhom_nguyen_nhan=? WHERE id=?`,
         )
         .run(raw, total, crit[0], crit[1], crit[2], crit[3], band, resultDate, enteredBy, enteredAt,
-             patch.note !== undefined ? patch.note : existing.note ?? null, comment, exUser, exName, nhapDau, existing.id);
+             patch.note !== undefined ? patch.note : existing.note ?? null, comment, exUser, exName, nhapDau, nhom, existing.id);
     } else {
       conn
         .prepare(
           `INSERT INTO assessment_scores (attempt_id, skill, raw_score, raw_total, c1, c2, c3, c4, band,
-                                          result_date, entered_by, entered_at, note, comment, examiner_user_id, examiner_name, nhap_dau_ngay)
-           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+                                          result_date, entered_by, entered_at, note, comment, examiner_user_id, examiner_name, nhap_dau_ngay, nhom_nguyen_nhan)
+           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
         )
         .run(attemptId, skill, raw, total, crit[0], crit[1], crit[2], crit[3], band,
-             resultDate, enteredBy, enteredAt, patch.note ?? null, comment, exUser, exName, nhapDau);
+             resultDate, enteredBy, enteredAt, patch.note ?? null, comment, exUser, exName, nhapDau, nhom);
     }
 
     /*

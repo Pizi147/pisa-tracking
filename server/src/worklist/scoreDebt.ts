@@ -54,7 +54,8 @@ export function scoreDebtCells(p: Principal, today: string, branchIds: number[] 
   if (branchIds) { where.push(`cl.branch_id IN (${branchIds.map(() => '?').join(',')})`); args.push(...branchIds); }
   const rows = conn
     .prepare(
-      `SELECT a.*, pg.scoring_mode, cl.programme_code, rp.week_start AS period_start, rp.week_end AS period_end, rp.code AS period_code
+      `SELECT a.*, pg.scoring_mode, cl.programme_code, rp.week_start AS period_start, rp.week_end AS period_end, rp.code AS period_code,
+              (SELECT cy.route FROM learning_cycles cy WHERE cy.id = a.cycle_id) AS route  -- OV-12b: kỳ vọng ô (skillCells) không hỏi lẻ từng lượt
          FROM assessment_attempts a
          JOIN classes cl ON cl.id = a.class_id
          JOIN students s ON s.id = a.student_id
