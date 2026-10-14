@@ -228,7 +228,7 @@ export async function runPrDonBTests(t: YThucTestKit) {
     const sotBac = webSrc().filter((x) => x.f.includes('/yThuc/') && /Xác nhận xử lý\$\{|`Xác nhận xử lý ·|Xác nhận xử lý · \$\{/.test(x.s)).map((x) => x.f);
     assert(sotBac.length === 0, sotBac.join(', '));
     for (const f of ['web/src/modules/yThuc/StudentYThucSection.tsx', 'web/src/modules/yThuc/ClassYThucCard.tsx']) assert(/<ThangYThuc[\s\S]{0,400}onXuLy=/.test(doc(f)), f);
-    assert(/phu: cheDo === 'xu-ly'[\s\S]{0,300}Đề xuất QL duyệt<\/button>/.test(doc('web/src/modules/yThuc/XacNhanXuLyPanel.tsx')), 'panel: Đề xuất là nút ở chân');
+    assert(/phu: cheDo === 'xu-ly'[\s\S]{0,300}\{t\('Đề xuất QL duyệt'\)\}<\/button>/.test(doc('web/src/modules/yThuc/XacNhanXuLyPanel.tsx')), 'panel: Đề xuất là nút ở chân');
   });
 
   // ------------------------------------------------------------------ khối A · mã cũ Dọn-a / S3 để lại
