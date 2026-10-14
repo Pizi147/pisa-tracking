@@ -18,8 +18,13 @@ const BASE = process.env.KHUNG_BASE ?? `http://localhost:${process.env.WEB_PORT 
 const ANH = process.env.KHUNG_ANH ?? 'thiet-ke/anh/khung';
 const LOC = process.argv[2] ?? '';
 const NN = process.env.KHUNG_NGON_NGU === 'en' ? 'en' : 'vi';
-/** (v) chỉ đo màn đã dịch: kịch bản → vùng đo. Mỗi đợt PR-EN thêm màn của mình (EN-a: đăng nhập, Hồ sơ cá nhân, thanh trên + menu Tài khoản). */
-const GOC_V = { 'dang-nhap': 'body', 'ho-so-ca-nhan': 'body', 'menu-tk': 'header' };
+/** (v) chỉ đo màn đã dịch: kịch bản → vùng đo. Mỗi đợt PR-EN thêm màn của mình (EN-a: đăng nhập, Hồ sơ cá nhân, thanh trên + menu Tài khoản; EN-b: màn GV Việc + Test). */
+const GOC_V = {
+  'dang-nhap': 'body', 'ho-so-ca-nhan': 'body', 'menu-tk': 'header',
+  /* EN-b: Tổng quan GV, Công việc, Yêu cầu của tôi, chuông, Lịch Test, Điểm theo lớp, nhập điểm, hộp chấm, hồ sơ Mock, Ghi kết quả PA. */
+  'tong-quan-gv': '#noi-dung', 'cv-gv': '#noi-dung', 'gvbm': '#noi-dung', 'gvbm-test': '#noi-dung', 'gv-diem-lop': '#noi-dung', 'gv-nhap-diem': '#noi-dung',
+  'gv-bang-diem-thuong': '#noi-dung', 'gv-mock': '#noi-dung', 'gv-yeu-cau': '#noi-dung', 'gv-hop-diem': '[role=dialog]', 'gv-ket-qua-pa': '[role=dialog]', 'gv-chuong': 'header',
+};
 /** Chữ dữ liệu (không phải chữ giao diện): mọi giá trị chữ có dấu tiếng Việt trong DB demo. Chỉ nạp khi chạy tiếng Anh. */
 const DU_LIEU = NN === 'en' ? await (async () => {
   const RE = /[àáảãạăằắẳẵặâầấẩẫậèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵđ]/i;
@@ -57,6 +62,12 @@ const KICH_BAN = [
   ['nhap-diem', 2, '/nhap-diem/3'], ['bang-diem-thuong', 2, '/bang-diem-thuong/6'], ['mock', 2, '/mock-test/5'],
   ['quan-tri', 1, '/quan-tri'], ['quan-tri-quyen', 1, '/quan-tri', async (p) => { await p.getByRole('tab', { name: /Quyền/ }).click(); await p.waitForTimeout(800); }], ['ho-so-ca-nhan', 7, '/ho-so-ca-nhan'],
   ['gvbm', 9, '/'], ['gvbm-test', 9, '/test/lich'],
+  // PR-EN đợt b: màn GV của Test (vai 7) — Điểm theo lớp, nhập điểm FT / lớp thường, hồ sơ Mock, Yêu cầu của tôi, hộp chấm MT, Ghi kết quả PA, chuông.
+  ['gv-diem-lop', 7, '/test/diem-lop'], ['gv-nhap-diem', 7, '/nhap-diem/3'], ['gv-bang-diem-thuong', 7, '/bang-diem-thuong/6'], ['gv-mock', 7, '/mock-test/5'],
+  ['gv-yeu-cau', 7, '/cong-viec/yeu-cau'],
+  ['gv-hop-diem', 7, '/test/diem-lop', async (p) => { await p.locator('#noi-dung button[aria-label$=": Nhập"], #noi-dung button[aria-label$=": Enter"]').first().click(); await p.waitForTimeout(500); }],
+  ['gv-ket-qua-pa', 7, '/cong-viec', async (p) => { await p.getByRole('button', { name: /^(Kết quả PA|PA result)/ }).first().click(); await p.waitForTimeout(800); }],
+  ['gv-chuong', 7, '/', async (p) => { await p.getByRole('button', { name: /^(Thông báo|Notifications)/ }).first().click(); await p.waitForTimeout(500); }],
   // PR-EN: màn chưa đăng nhập (vai 0) và menu Tài khoản mở (điện thoại: hàng Ngôn ngữ ngay trên Giao diện).
   ['dang-nhap', 0, '/'],
   ['menu-tk', 7, '/', async (p) => { await p.getByRole('button', { name: /^(Tài khoản|Account) / }).click(); await p.waitForTimeout(300); }],
@@ -176,7 +187,12 @@ function doTrang() {
 function chuVietSot([duLieu, goc]) {
   const RE = /[àáảãạăằắẳẵặâầấẩẫậèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵđ]/i;
   const data = new Set(duLieu);
-  const laDuLieu = (s) => data.has(s) || s.split(/\s*[·,—:|()«»“”"]\s*|\s+-\s+/).every((x) => !x.trim() || !RE.test(x) || data.has(x.trim()) || duLieu.some((d) => d.length > 3 && x.includes(d)));
+  // EN-b: đoạn ≥ 5 ký tự nằm trong một giá trị DB (chữ người gõ bị dấu phẩy cắt ra: lý do, ghi chú trên thẻ yêu cầu) cũng là dữ liệu; tên gọi
+  // ("Hi Hà") — mọi chữ có dấu là chữ cuối của một giá trị DB (tên người).
+  const cuoi = new Set(duLieu.map((d) => d.split(' ').pop()));
+  const laDuLieu = (s) => data.has(s) || s.split(/\s*[·,—:|()«»“”"]\s*|\s+-\s+/).every((x) => !x.trim() || !RE.test(x) || data.has(x.trim())
+    || duLieu.some((d) => d.length > 3 && x.includes(d)) || (x.trim().length >= 5 && duLieu.some((d) => d.includes(x.trim())))
+    || x.trim().split(/\s+/).every((w) => !RE.test(w) || cuoi.has(w)));
   const loi = [];
   const xem = (chu, el) => {
     const s = (chu ?? '').trim().replace(/\s+/g, ' ');
@@ -223,6 +239,8 @@ for (const [w, h] of [[1440, 900], [375, 812], [1366, 768], [1280, 800]]) for (c
     } catch (e) { tongLoi++; console.log(`✗ ${nhan}: kịch bản không mở được (${e.message.split('\n')[0]})`); continue; }
     let loi = await p.evaluate(doTrang);
     if (BO_QUA_CAT.some((k) => tenKb.includes(k))) loi = loi.filter((l) => !l.startsWith('c '));
+    // Panel tại chỗ của Công việc (máy tính) tự cuộn thân — thiết kế OV-5a, bản Việt cũng vậy; không phải cuộn lồng của trang.
+    if (tenKb === 'gv-ket-qua-pa') loi = loi.filter((l) => !l.startsWith('b '));
     if (NN === 'en' && [0, 7, 9].includes(v) && GOC_V[tenKb]) loi = [...loi, ...await p.evaluate(chuVietSot, [DU_LIEU, GOC_V[tenKb]])];
     console.log(`${loi.length ? '✗' : '✓'} ${nhan}${loi.map((l) => `\n    ${l}`).join('')}`);
     tongLoi += loi.length;

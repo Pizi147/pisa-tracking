@@ -547,9 +547,9 @@ export async function runPrMtbTests(t: YThucTestKit) {
   check('MTb (T7) · quét nguồn: HopThaoTacMt có prop quanLy, kiểm tuần đã qua chỉ khi không phải QL, chip "Tuần đã qua"; ba nơi gọi truyền quanLy', () => {
     const h = nguon('web/src/modules/fasttrack/HopThaoTacMt.tsx');
     assert(/quanLy: boolean/.test(h) && !/tuanDaBatDau/.test(h), 'prop quanLy / bỏ tuanDaBatDau');
-    assert(/const batBuoc = canLyDo\(t\)/.test(h), 'batBuoc = canLyDo(t)');
-    assert(/tuanNay = homNay && !quanLy && t !== 'khoi-phuc'/.test(h), 'tuanNay chỉ khi không phải Quản lý');
-    for (const c of ['kiemTuanXep', 'CAU_TUAN_DA_QUA', 'Tuần đã qua</Nhan>', 'tone="soon"']) assert(h.includes(c), `HopThaoTacMt thiếu ${c}`);
+    assert(/const batBuoc = canLyDo\(tt?\)/.test(h), 'batBuoc = canLyDo(t)');
+    assert(/tuanNay = homNay && !quanLy && tt? !== 'khoi-phuc'/.test(h), 'tuanNay chỉ khi không phải Quản lý');
+    for (const c of ['kiemTuanXep', 'CAU_TUAN_DA_QUA', "t('Tuần đã qua')}</Nhan>", 'tone="soon"']) assert(h.includes(c), `HopThaoTacMt thiếu ${c}`);
     assert(!/dem=/.test(h), 'ô lý do tuỳ chọn không có bộ đếm');
     assert(/quanLy=\{d\.viewer\.canPlanWeek\}/.test(nguon('web/src/modules/fasttrack/MockDetailPage.tsx')), 'hồ sơ Mock');
     assert(/quanLy/.test(nguon('web/src/modules/test/keHoach/HopKyNang.tsx').split('<HopThaoTacMt')[1] ?? ''), 'HopKyNang');
@@ -564,7 +564,7 @@ export async function runPrMtbTests(t: YThucTestKit) {
     const han = m.slice(m.indexOf('function DeadlineModal'), m.indexOf('function AbsenceMoveModal'));
     assert(!/<SectionNote>/.test(han), 'DeadlineModal: câu giải thích chuyển vào title');
     const vang = m.slice(m.indexOf('function AbsenceMoveModal'), m.indexOf('function TraLoiDeNghiModal'));
-    assert(/<Truong nhan="Lý do" tuyChon>/.test(vang), 'AbsenceMoveModal: lý do tuỳ chọn');
+    assert(/<Truong nhan=\{t\('Lý do'\)\} tuyChon>/.test(vang), 'AbsenceMoveModal: lý do tuỳ chọn');
     const the = nguon('web/src/modules/duyet/TheYeuCau.tsx');
     assert(/o\.loai === 'tu-choi'/.test(the) && /Chưa điền/.test(the), 'từ chối thẻ Xin dời bắt lý do');
   });
@@ -783,9 +783,9 @@ export async function runPrMtbTests(t: YThucTestKit) {
 
   check('MTb sau rà (minor) · LOI_TIEU_CHI không nhắc "b6"; lịch sử có nhãn skill_cancelled_absence; dòng đề nghị dời khi huyVang không nói "quá hạn thì huỷ"', () => {
     assert(!/b6/.test(d.LOI_TIEU_CHI), d.LOI_TIEU_CHI);
-    assert(/skill_cancelled_absence: \{ chu: 'Huỷ do vắng 2 lần'/.test(nguon('web/src/modules/fasttrack/DongThoiGianLuot.tsx')), 'nhãn lịch sử');
+    assert(/skill_cancelled_absence: \{ chu: t\('Huỷ do vắng 2 lần'\)/.test(nguon('web/src/modules/fasttrack/DongThoiGianLuot.tsx')), 'nhãn lịch sử');
     const m = nguon('web/src/modules/fasttrack/MockDetailPage.tsx');
-    assert(/r\.huyVang \? '' : ', quá hạn thì huỷ phần thi'/.test(m), 'dòng đề nghị dời chưa phân biệt huyVang');
+    assert(/r\.huyVang \? '' : (?:t\()?', quá hạn thì huỷ phần thi'/.test(m), 'dòng đề nghị dời chưa phân biệt huyVang');
   });
   // ------------------------------------------------------------------ sau rà độc lập — đợt 2 (giao diện)
   check('MTb sau rà đợt 2 (1) · đầu hộp một đợt: tên là Link tới `duongDotTest` khi đã có đợt (đóng hộp khi bấm), đợt mới là chữ', () => {

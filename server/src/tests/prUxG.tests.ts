@@ -71,7 +71,7 @@ export async function runPrUxGTests(t: YThucTestKit) {
   });
   check('G2d · "Yêu cầu của tôi" (Tổng quan GV): yêu cầu bị từ chối ghi "Bị từ chối", không "Cần làm" — nhãn ghi đúng chữ', () => {
     const s = doc('web/src/modules/worklist/ViecCuaToi.tsx');
-    assert(/chu=\{x\.trangThai === 'tu_choi' \? 'Bị từ chối'/.test(s), 'nhãn yêu cầu bị từ chối chưa ghi "Bị từ chối"');
+    assert(/chu=\{x\.trangThai === 'tu_choi' \? t\('Bị từ chối'\)/.test(s), 'nhãn yêu cầu bị từ chối chưa ghi "Bị từ chối"');
   });
 
   // ------------------------------------------------------------------ G3 · thông báo: giờ và chữ

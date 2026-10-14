@@ -10,6 +10,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { NHAN_XET_MT_TOI_THIEU, NHAN_XET_TOI_DA, issueLabel, issuesForTopic } from '@shared/domain/index.ts';
 import { NutChon } from '../../ui/ui.tsx';
+import { dich, t } from '@shared/i18n/index.ts';
 
 /** Đếm ký tự chỉ hiện khi đã gần trần (> 800) — không làm rối lúc gõ vài câu. */
 function Dem({ n }: { n: number }) {
@@ -53,18 +54,18 @@ export function ONhanXet({ nhan, phu, giaTri, onLuu, batBuoc = false }: {
         {phu && <span className="min-w-0 truncate text-slate-500" title={phu}>{phu}</span>}
         <span className="ml-auto flex items-baseline gap-2">
           <Dem n={nhap.length} />
-          {tt === 'dang' && <span className="text-slate-500">Đang lưu…</span>}
-          {tt === 'xong' && <span className="text-slate-500">Đã lưu</span>}
-          {tt === 'thieu' && <span role="alert" className="font-semibold text-bad">Cần nhận xét — chưa lưu</span>}
+          {tt === 'dang' && <span className="text-slate-500">{t('Đang lưu…')}</span>}
+          {tt === 'xong' && <span className="text-slate-500">{t('Đã lưu')}</span>}
+          {tt === 'thieu' && <span role="alert" className="font-semibold text-bad">{t('Cần nhận xét — chưa lưu')}</span>}
           {tt === 'loi' && (
             <button type="button" className="appearance-none border-0 bg-transparent p-0 text-xs font-semibold text-bad underline"
-              onMouseDown={(e) => e.preventDefault()} onClick={() => void luu()}>Chưa lưu — thử lại</button>
+              onMouseDown={(e) => e.preventDefault()} onClick={() => void luu()}>{t('Chưa lưu — thử lại')}</button>
           )}
         </span>
       </span>
       <textarea ref={o} className="field mt-1 w-full resize-none text-sm leading-relaxed" rows={2} maxLength={NHAN_XET_TOI_DA}
         style={tt === 'thieu' ? { borderColor: 'rgb(var(--bad-rgb))' } : undefined} aria-invalid={tt === 'thieu' || undefined} aria-required={batBuoc || undefined}
-        value={nhap} placeholder="Ví dụ: Nghe phần 3 còn chậm, cần luyện thêm dạng điền bảng"
+        value={nhap} placeholder={t('Ví dụ: Nghe phần 3 còn chậm, cần luyện thêm dạng điền bảng')}
         onChange={(e) => { sua.current = true; setNhap(e.target.value); if (tt !== 'dang') setTt('idle'); }}
         onBlur={() => void luu()}
         onKeyDown={(e) => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); void luu(); } }} />
@@ -82,9 +83,9 @@ export function ChonNhom({ skill, value, onChange, disabled, nhanId }: {
         const th = value.indexOf(i.code);
         return (
           <NutChon key={i.code} nho chon={th >= 0} dau={th + 1} disabled={disabled}
-            title={th === 0 ? 'Nguyên nhân chính' : i.hint}
+            title={th === 0 ? t('Nguyên nhân chính') : i.hint && dich(i.hint)}
             onClick={() => onChange(th >= 0 ? value.filter((x) => x !== i.code) : [...value, i.code])}>
-            {i.label}{th >= 0 && <span className="sr-only">, thứ {th + 1}{th === 0 ? ' (chính)' : ''}</span>}
+            {dich(i.label)}{th >= 0 && <span className="sr-only">{t(', thứ')}{' '}{th + 1}{th === 0 ? t(' (chính)') : ''}</span>}
           </NutChon>
         );
       })}
@@ -117,14 +118,14 @@ export function NhomTaiCho({ skill, giaTri, onLuu }: { skill: string; giaTri: st
   return (
     <div>
       <span className="mb-1.5 flex items-baseline gap-2 text-xs">
-        <span id={id} className="font-medium text-slate-300">Nhóm nguyên nhân<span aria-hidden className="text-bad"> *</span></span>
+        <span id={id} className="font-medium text-slate-300">{t('Nhóm nguyên nhân')}<span aria-hidden className="text-bad"> *</span></span>
         <span className="ml-auto">
-          {tt === 'dang' && <span className="text-slate-500">Đang lưu…</span>}
-          {tt === 'xong' && <span className="text-slate-500">Đã lưu</span>}
-          {tt === 'thieu' && <span role="alert" className="font-semibold text-bad">Cần ≥ 1 nhóm</span>}
+          {tt === 'dang' && <span className="text-slate-500">{t('Đang lưu…')}</span>}
+          {tt === 'xong' && <span className="text-slate-500">{t('Đã lưu')}</span>}
+          {tt === 'thieu' && <span role="alert" className="font-semibold text-bad">{t('Cần ≥ 1 nhóm')}</span>}
           {tt === 'loi' && (
             <button type="button" className="appearance-none border-0 bg-transparent p-0 text-xs font-semibold text-bad underline" onClick={() => void luu(v)}>
-              Chưa lưu — thử lại
+              {t('Chưa lưu — thử lại')}
             </button>
           )}
         </span>

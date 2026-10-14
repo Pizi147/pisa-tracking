@@ -34,6 +34,7 @@ import { ChonNhom } from './NhanXet.tsx';
 import {
   bandBanDau, chanDau, coDiemChinhThuc, lockedByNoShow, lyDoChiDoc, suaDuoc, type Cell, type SaveOpts, type SavePatch,
 } from './ScoreEntry.tsx';
+import { dich, t } from '@shared/i18n/index.ts';
 
 /** Ngữ cảnh đầu hộp + dòng phụ: em · lớp · lượt ("MT2" / "MT0"), kỳ vọng (L/R), MT0 = một ô Band. */
 export type NguCanhHop = {
@@ -75,16 +76,16 @@ export const oVangCua = (c: Cell, tuanXem?: string | null) =>
  */
 function hienO(c: Cell, vangGoc: boolean): { chu: ReactNode; doc: string; kieu: keyof typeof KIEU_O | null } {
   const hai = (a: string, b: string) => <><span>{a}</span><span className="text-[11px]">{b}</span></>;
-  if (c.progress === 'cancelled') return { chu: 'Đã huỷ', doc: 'Đã huỷ phần thi', kieu: 'huy' };
-  if (vangGoc && c.daChot?.doiSang) return { chu: hai('Vắng', `→ ${c.daChot.doiSang}`), doc: `Vắng, đã dời sang ${c.daChot.doiSang}`, kieu: 'vang' };
-  if (c.daChot && !c.daChot.doiSang && c.sitStatus === 'absent') return { chu: hai('Vắng', 'chờ QL'), doc: 'Vắng, chờ Quản lý xếp lại', kieu: 'vang' };
-  if (c.noShow?.state === 'khong-du-thi') return { chu: hai('Không', 'dự thi'), doc: 'Không dự thi', kieu: 'chot' };
+  if (c.progress === 'cancelled') return { chu: t('Đã huỷ'), doc: t('Đã huỷ phần thi'), kieu: 'huy' };
+  if (vangGoc && c.daChot?.doiSang) return { chu: hai(t('Vắng'), `→ ${c.daChot.doiSang}`), doc: t('Vắng, đã dời sang {doiSang}', { doiSang: c.daChot.doiSang }), kieu: 'vang' };
+  if (c.daChot && !c.daChot.doiSang && c.sitStatus === 'absent') return { chu: hai(t('Vắng'), t('chờ QL')), doc: t('Vắng, chờ Quản lý xếp lại'), kieu: 'vang' };
+  if (c.noShow?.state === 'khong-du-thi') return { chu: hai(t('Không'), t('dự thi')), doc: t('Không dự thi'), kieu: 'chot' };
   if (c.noShow) return { chu: '-', doc: c.noShow.text, kieu: null };
   if (c.rawScore !== null) {
-    return { chu: <>{c.rawScore} <span className="text-xs text-slate-500">· {fmtBand(c.band)}</span></>, doc: `${c.rawScore} câu, band ${fmtBand(c.band)}`, kieu: null };
+    return { chu: <>{c.rawScore} <span className="text-xs text-slate-500">· {fmtBand(c.band)}</span></>, doc: t('{rawScore} câu, band {fmtBand}', { rawScore: c.rawScore, fmtBand: fmtBand(c.band) }), kieu: null };
   }
   if (c.band !== null) return { chu: fmtBand(c.band), doc: `band ${fmtBand(c.band)}`, kieu: null };
-  return { chu: 'Nhập', doc: 'Nhập', kieu: 'trong' };
+  return { chu: t('Nhập'), doc: t('Nhập'), kieu: 'trong' };
 }
 
 /**
@@ -93,11 +94,11 @@ function hienO(c: Cell, vangGoc: boolean): { chu: ReactNode; doc: string; kieu: 
  */
 function DongDau({ cell, thiBu = false }: { cell: Cell; thiBu?: boolean }) {
   const { homNay } = useNgayNghiepVu();
-  if (thiBu && cell.daChot) return <span className="block text-xs leading-tight text-slate-400">vắng lần {Math.max(1, cell.daChot.lan)}</span>;
+  if (thiBu && cell.daChot) return <span className="block text-xs leading-tight text-slate-400">{t('vắng lần')}{' '}{Math.max(1, cell.daChot.lan)}</span>;
   if (cell.noShow?.state !== 'khong-co-bai' || cell.daChot) return null;
   const dem = demNguocSuaDau(cell.noShow.editableUntil ?? null, homNay);
   return (
-    <span className="block text-xs leading-tight text-slate-400 max-sm:text-right" title={cell.noShow.text}>
+    <span className="block text-xs leading-tight text-slate-400 max-sm:text-right" title={dich(cell.noShow.text)}>
       {dem ?? cell.noShow.text}
     </span>
   );
@@ -143,7 +144,7 @@ export function ODiemMt({ cell, lon = false, mo, onMo, ...hop }: Omit<HopProps, 
       <span className="inline-flex flex-col items-end gap-0.5">
         <span className={`tabular-nums ${hai ? 'inline-flex flex-col items-end leading-tight' : ''} ${vang || hai || cell.progress === 'cancelled' ? 'text-xs text-slate-500' : 'text-slate-300'} ${lon ? 'text-base' : ''}`}
           title={cell.noShow?.text ?? lyDoChiDoc(cell)}>
-          {vang ? 'Vắng' : h.kieu === 'trong' ? '—' : h.chu}
+          {vang ? t('Vắng') : h.kieu === 'trong' ? '—' : h.chu}
         </span>
         <ChuThieu cell={cell} />
         <DongDau cell={cell} />
@@ -155,7 +156,7 @@ export function ODiemMt({ cell, lon = false, mo, onMo, ...hop }: Omit<HopProps, 
       <button ref={setNeo} type="button" aria-expanded={mo} aria-haspopup="dialog"
         aria-label={`${skillLabel(cell.skill)} · ${hop.ctx.tenHv}: ${h.doc}${cell.thieuNhanXet ? `, ${CHU_O_THIEU[cell.thieuNhanXet]}` : ''}`}
         className={`btn max-w-full tabular-nums ${lon ? 'min-h-[44px] min-w-[60px] justify-center text-base font-semibold' : 'btn-sm'} ${h.kieu ? KIEU_O[h.kieu] : ''} ${mo ? 'border-[color:var(--accent)]' : ''}`}
-        title={cell.noShow?.text ?? `${skillLabel(cell.skill)} — bấm để nhập`}
+        title={cell.noShow?.text ?? t('{skillLabel} — bấm để nhập', { skillLabel: skillLabel(cell.skill) })}
         onClick={() => onMo(!mo)}>
         {h.chu}
       </button>
@@ -189,7 +190,7 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, gvMacDi
     : chanDau(cell) && cell.criteria.every((v) => v === null) ? ['-', '', '', ''] : cell.criteria.map((v) => (v === null ? '' : String(v)))));
   /* OV-4c: ô Band chỉ là ô nhập khi máy chủ cho nhập thẳng (`bandThang`: MT cũ); lượt thường Band tự tính — ô chỉ đọc, `bandText` luôn trống. */
   const [band0] = useState(() => (vang || motO || !cell.bandThang ? '' : bandBanDau(cell)));
-  const [t, setT] = useState(t0);
+  const [tho, setT] = useState(t0);
   const [vals, setVals] = useState(vals0);
   const [bandText, setBandText] = useState(band0);
   const [nx, setNx] = useState(cell.nhanXet ?? '');
@@ -207,15 +208,15 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, gvMacDi
   /* Lệnh điểm từ chữ đang gõ — cùng hàm với mọi nơi nhập. `o` = ô sai (0..3 tiêu chí / ô một, 4 = Band) để tô đỏ. */
   const diem = (() => {
     if (motO) {
-      const doi = t.trim() !== t0.trim();
+      const doi = tho.trim() !== t0.trim();
       if (theoBand) {
-        const s = t.trim();
+        const s = tho.trim();
         if (s === '-') return { doi, patch: { noShow: true } as SavePatch, loi: null, o: null, preview: null };
         if (s === '') return { doi, patch: (chanDau(cell) ? { noShow: false } : { band: null }) as SavePatch, loi: null, o: null, preview: null };
         const r = criteriaPatchFrom(['', '', '', ''], cell, s, true);   // MT0: một ô Band, nhập thẳng
         return { doi, patch: r.patch as SavePatch | null, loi: r.loi, o: r.patch ? null : 0, preview: r.preview };
       }
-      const p = rawPatchFrom(t, cell) as SavePatch | null;
+      const p = rawPatchFrom(tho, cell) as SavePatch | null;
       if (!p) return { doi, patch: null, loi: LOI_SO_CAU, o: 0, preview: null };
       if (p.rawScore != null) {
         const b = bandTuSoCau(cell.skill as 'listening' | 'reading', p.rawScore);
@@ -251,9 +252,9 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, gvMacDi
     if (busy) return;
     setBusy(true); setLoi(null);
     try {
-      for (const l of lenh) if (!(await onSave(l, { nem: true }))) throw new Error('Không lưu được — thử lại.');
+      for (const l of lenh) if (!(await onSave(l, { nem: true }))) throw new Error(t('Không lưu được — thử lại.'));
     } catch (e: any) {
-      setLoi({ cau: e?.message ?? 'Không lưu được — thử lại.', o: null });
+      setLoi({ cau: e?.message ?? t('Không lưu được — thử lại.'), o: null });
       setBusy(false);
       return;
     }
@@ -262,7 +263,7 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, gvMacDi
   };
 
   const luu = (tiep: boolean) => {
-    if (dauLai) { setLoi({ cau: 'Đã ghi vắng — muốn gỡ thì bấm Bỏ vắng.', o: 0 }); return; }
+    if (dauLai) { setLoi({ cau: t('Đã ghi vắng — muốn gỡ thì bấm Bỏ vắng.'), o: 0 }); return; }
     if (doiDiem && !diem.patch) { setLoi({ cau: diem.loi ?? LOI_SO_CAU, o: diem.o }); return; }
     /* OV-12b: thiếu → không gửi; con trỏ tới đúng chỗ thiếu (nút Lưu đã tắt, đây là đường Enter / Ctrl+Enter). */
     if (thieu) {
@@ -313,18 +314,18 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, gvMacDi
         <div className="flex flex-col gap-1.5 rounded-lg border border-wait-line bg-wait-bg px-3 py-2.5 text-[13px] text-slate-200">
           {/* CA3-3: ô huỷ một trạng thái — "Đã huỷ phần thi · vắng 2 lần", không "Vắng lần 1". */}
           {cell.progress === 'cancelled'
-            ? <span><b className="text-wait">Đã huỷ phần thi</b> · vắng {Math.max(2, cell.daChot!.lan)} lần</span>
-            : <span><b className="text-wait">Vắng lần {Math.max(1, cell.daChot!.lan)}</b>
-              {cell.daChot!.doiSang && <> · đã dời sang <span className="tabular-nums">{cell.daChot!.doiSang}</span></>}</span>}
-          {cell.daChot!.ghiLuc && <span className="text-slate-400">Ghi {ngay(cell.daChot!.ghiLuc, homNay)}{cell.daChot!.ghiBoi ? ` bởi ${cell.daChot!.ghiBoi}` : ''}</span>}
+            ? <span><b className="text-wait">{t('Đã huỷ phần thi')}</b>{' '}{t('· vắng')}{' '}{Math.max(2, cell.daChot!.lan)}{' '}{t('lần')}</span>
+            : <span><b className="text-wait">{t('Vắng lần')}{' '}{Math.max(1, cell.daChot!.lan)}</b>
+              {cell.daChot!.doiSang && <>{' '}{t('· đã dời sang')}{' '}<span className="tabular-nums">{cell.daChot!.doiSang}</span></>}</span>}
+          {cell.daChot!.ghiLuc && <span className="text-slate-400">Ghi {ngay(cell.daChot!.ghiLuc, homNay)}{cell.daChot!.ghiBoi ? t(' bởi {ghiBoi}', { ghiBoi: cell.daChot!.ghiBoi }) : ''}</span>}
         </div>
       )}
       {thiBu && (
         <div className="flex min-h-[28px] items-center gap-2 text-xs text-slate-400">
-          <span>vắng lần {Math.max(1, cell.daChot!.lan)} · dời từ <span className="tabular-nums">{cell.daChot!.tuTuan}</span></span>
+          <span>{t('vắng lần')}{' '}{Math.max(1, cell.daChot!.lan)}{' '}{t('· dời từ')}{' '}<span className="tabular-nums">{cell.daChot!.tuTuan}</span></span>
           {cell.daChot!.goDuoc && (
             <button type="button" className="btn btn-sm btn-ghost ml-auto max-sm:min-h-[44px]" disabled={busy}
-              onClick={() => void gui([{ noShow: false }], onDong)}>Bỏ vắng</button>
+              onClick={() => void gui([{ noShow: false }], onDong)}>{t('Bỏ vắng')}</button>
           )}
         </div>
       )}
@@ -332,9 +333,9 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, gvMacDi
         <div>
           <div className="flex flex-wrap items-center gap-2.5">
             <label className="text-xs font-medium text-slate-300" htmlFor="hop-diem-o">
-              {vang ? 'Em có làm bài? Số câu đúng' : theoBand ? 'Band' : 'Số câu đúng'}
+              {vang ? t('Em có làm bài? Số câu đúng') : theoBand ? 'Band' : t('Số câu đúng')}
             </label>
-            <input id="hop-diem-o" className={oSo('w-16 max-sm:h-11 max-sm:text-base')} style={stSai(loi?.o === 0)} inputMode="decimal" value={t}
+            <input id="hop-diem-o" className={oSo('w-16 max-sm:h-11 max-sm:text-base')} style={stSai(loi?.o === 0)} inputMode="decimal" value={tho}
               aria-invalid={loi?.o === 0 || undefined} disabled={busy}
               onChange={(e) => { setT(e.target.value); setLoi(null); }} />
             {!theoBand && <span className="text-xs tabular-nums text-slate-500">/ 40</span>}
@@ -346,7 +347,7 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, gvMacDi
         </div>
       ) : (
         <div>
-          {vang && <div className="mb-1.5 text-xs font-medium text-slate-300">Em có làm bài?</div>}
+          {vang && <div className="mb-1.5 text-xs font-medium text-slate-300">{t('Em có làm bài?')}</div>}
           <div className="grid grid-cols-[repeat(4,minmax(0,1fr))_4rem] items-end gap-1.5">
             {tc.map((n) => <span key={n} className="text-center text-xs font-semibold text-slate-400">{n}</span>)}
             <span className="text-center text-xs font-semibold text-slate-400">Band</span>
@@ -368,23 +369,23 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, gvMacDi
           {!vang && <DongKyVong luot={ctx.luot} kv={kvHien} band={bandSau} />}
           {laW && !vang && (
             <div className="mt-1.5 text-xs text-slate-500">
-              {ctx.bandTaskKia == null ? `Task ${3 - nTask} chưa có · ` : ''}Writing = (Task 1 + Task 2 × 2) / 3 khi đủ hai task
+              {ctx.bandTaskKia == null ? t('Task {x} chưa có · ', { x: 3 - nTask }) : ''}{t('Writing = (Task 1 + Task 2 × 2) / 3 khi đủ hai task')}
             </div>
           )}
         </div>
       ))}
       {laS && !vang && nhapDuoc && (
         <div className="flex items-center gap-2" data-chon-nguoi>
-          <span className="shrink-0 text-xs font-medium text-slate-300">Người chấm</span>
+          <span className="shrink-0 text-xs font-medium text-slate-300">{t('Người chấm')}</span>
           <div className="min-w-0 flex-1">
-            <ChonNguoi value={gv} onChange={setGv} nhom="nhan_vien" choNgoai macDinhTrong="Chưa chọn" ariaLabel="Người chấm Speaking" disabled={busy} />
+            <ChonNguoi value={gv} onChange={setGv} nhom="nhan_vien" choNgoai macDinhTrong={t('Chưa chọn')} ariaLabel={t('Người chấm Speaking')} disabled={busy} />
           </div>
         </div>
       )}
       {(!vang || (batBuoc && coDiemSau)) && nhapDuoc && (
         <label className="block">
           <span className="mb-1.5 flex items-baseline justify-between text-xs font-medium text-slate-300">
-            <span>{laW ? `Nhận xét Task ${nTask}` : 'Nhận xét'}{batBuoc && <span aria-hidden className="text-bad"> *</span>}</span>
+            <span>{laW ? t('Nhận xét Task {nTask}', { nTask }) : t('Nhận xét')}{batBuoc && <span aria-hidden className="text-bad"> *</span>}</span>
             {nx.length > 800 && <span className={`tabular-nums ${nx.length >= NHAN_XET_TOI_DA ? 'text-bad' : 'text-slate-500'}`}>{nx.length}/{NHAN_XET_TOI_DA}</span>}
           </span>
           <textarea ref={nxRef} className="field w-full text-sm" rows={2} maxLength={NHAN_XET_TOI_DA} value={nx} disabled={busy}
@@ -393,20 +394,20 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, gvMacDi
       )}
       {canNhom && nhapDuoc && (
         <div ref={nhomRef}>
-          <span id="hop-nhom-nn" className="mb-1.5 block text-xs font-medium text-slate-300">Nhóm nguyên nhân<span aria-hidden className="text-bad"> *</span></span>
+          <span id="hop-nhom-nn" className="mb-1.5 block text-xs font-medium text-slate-300">{t('Nhóm nguyên nhân')}<span aria-hidden className="text-bad"> *</span></span>
           <ChonNhom skill={cell.skill} value={nhom} onChange={setNhom} disabled={busy} nhanId="hop-nhom-nn" />
         </div>
       )}
       {hoiLyDo && (
         <label className="block">
-          <span className="mb-1 block text-xs font-medium text-slate-300">Lý do sửa (tuỳ chọn)</span>
-          <input className="field w-full text-sm" value={lyDo} placeholder="Ví dụ: chấm lại bài, nhập nhầm cột" disabled={busy}
+          <span className="mb-1 block text-xs font-medium text-slate-300">{t('Lý do sửa (tuỳ chọn)')}</span>
+          <input className="field w-full text-sm" value={lyDo} placeholder={t('Ví dụ: chấm lại bài, nhập nhầm cột')} disabled={busy}
             onChange={(e) => setLyDo(e.target.value)} />
         </label>
       )}
       {loi && (
         <div role="alert" className="rounded-lg border border-bad-line bg-bad-bg px-3 py-2.5 text-[13px] text-slate-200">
-          <b className="text-bad">Chưa lưu:</b> {loi.cau}
+          <b className="text-bad">{t('Chưa lưu:')}</b> {loi.cau}
         </div>
       )}
     </>
@@ -416,10 +417,10 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, gvMacDi
   const chan = vang ? (
     <>
       {cell.daChot!.goDuoc && (
-        <button type="button" className={nut} disabled={busy} onClick={() => void gui([{ noShow: false }], onDong)}>Bỏ vắng</button>
+        <button type="button" className={nut} disabled={busy} onClick={() => void gui([{ noShow: false }], onDong)}>{t('Bỏ vắng')}</button>
       )}
       <LyDoThieu thieu={thieu} />
-      {nhapDuoc && <button type="button" className={`${nut} btn-primary`} disabled={busy || !!thieu} onClick={() => luu(false)}>{busy ? 'Đang lưu…' : 'Lưu điểm'}</button>}
+      {nhapDuoc && <button type="button" className={`${nut} btn-primary`} disabled={busy || !!thieu} onClick={() => luu(false)}>{busy ? t('Đang lưu…') : t('Lưu điểm')}</button>}
     </>
   ) : (
     <>
@@ -430,15 +431,15 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, gvMacDi
         </button>
       )}
       <LyDoThieu thieu={thieu} />
-      <button type="button" className={onTiep ? nut : `${nut} btn-primary`} disabled={busy || !!thieu} onClick={() => luu(false)}>{busy && !onTiep ? 'Đang lưu…' : 'Lưu'}</button>
-      {onTiep && <button type="button" className={`${nut} btn-primary`} disabled={busy || !!thieu} onClick={() => luu(true)}>{busy ? 'Đang lưu…' : 'Lưu · em tiếp ›'}</button>}
+      <button type="button" className={onTiep ? nut : `${nut} btn-primary`} disabled={busy || !!thieu} onClick={() => luu(false)}>{busy && !onTiep ? t('Đang lưu…') : t('Lưu')}</button>
+      {onTiep && <button type="button" className={`${nut} btn-primary`} disabled={busy || !!thieu} onClick={() => luu(true)}>{busy ? t('Đang lưu…') : t('Lưu · em tiếp ›')}</button>}
     </>
   );
 
   const ten = `${skillLabel(cell.skill)} · ${ctx.luot}`;
   return (
     <KhungHop anchor={anchor} ten={ten} phu={<>{[ctx.tenHv, ctx.lop].filter(Boolean).join(' · ')}{tuan && <> · <span className="tabular-nums">{tuan}</span></>}</>}
-      nhanHop={`${ten} · ${ctx.tenHv}`} daGo={daGo} cauBo={`Bỏ điểm ${skillLabel(cell.skill)} · ${ctx.tenHv}?`} onDong={dong} onKeyDown={phim} chan={chan}>
+      nhanHop={`${ten} · ${ctx.tenHv}`} daGo={daGo} cauBo={t('Bỏ điểm {skillLabel} · {tenHv}?', { skillLabel: skillLabel(cell.skill), tenHv: ctx.tenHv })} onDong={dong} onKeyDown={phim} chan={chan}>
       {than}
     </KhungHop>
   );
@@ -449,8 +450,8 @@ function DongKyVong({ luot, kv, band }: { luot: string; kv: number | null; band:
   if (kv === null) return null;
   return (
     <div className="mt-1.5 text-xs tabular-nums text-slate-500">
-      Kỳ vọng {luot}: {fmtBand(kv)}
-      {band !== null && band < kv && <> · <span className="text-bad">dưới {fmtBand(kv - band)}</span></>}
+      {t('Kỳ vọng {luot}:', { luot })}{' '}{fmtBand(kv)}
+      {band !== null && band < kv && <> · <span className="text-bad">{t('dưới')}{' '}{fmtBand(kv - band)}</span></>}
     </div>
   );
 }
@@ -548,8 +549,8 @@ function KhungHop({ anchor, ten, phu, nhanHop, daGo, cauBo, onDong, onKeyDown, c
           {hoi ? (
             <>
               <span role="alert" className="min-w-0 flex-1 text-[13px] text-slate-200">{cauBo}</span>
-              <button type="button" className="btn btn-sm btn-danger max-sm:min-h-[44px]" onClick={onDong}>Bỏ</button>
-              <button ref={goTiepRef} type="button" className="btn btn-sm max-sm:min-h-[44px]" onClick={goTiep}>Gõ tiếp</button>
+              <button type="button" className="btn btn-sm btn-danger max-sm:min-h-[44px]" onClick={onDong}>{t('Bỏ')}</button>
+              <button ref={goTiepRef} type="button" className="btn btn-sm max-sm:min-h-[44px]" onClick={goTiep}>{t('Gõ tiếp')}</button>
             </>
           ) : chan}
         </div>
@@ -573,9 +574,9 @@ export function NutNhanXet({ tenMon, phu, giaTri, lon = false, onLuu }: {
   return (
     <>
       <button ref={setNeo} type="button" aria-haspopup="dialog" aria-expanded={mo} title={giaTri ?? undefined}
-        aria-label={`Nhận xét · ${tenMon} · ${phu}`}
+        aria-label={t('Nhận xét · {tenMon} · {phu}', { tenMon, phu })}
         className={`btn btn-sm btn-ghost shrink-0 px-1.5 text-xs ${lon ? 'min-h-[44px]' : ''} ${giaTri ? 'text-[color:var(--accent-strong)]' : 'text-slate-400'}`}
-        onClick={() => setMo((m) => !m)}>Nhận xét</button>
+        onClick={() => setMo((m) => !m)}>{t('Nhận xét')}</button>
       {mo && neo && <HopNhanXetThuong anchor={neo} tenMon={tenMon} phu={phu} giaTri={giaTri} onLuu={onLuu} onDong={() => setMo(false)} />}
     </>
   );
@@ -595,26 +596,26 @@ function HopNhanXetThuong({ anchor, tenMon, phu, giaTri, onLuu, onDong }: {
     if (!daGo) { onDong(); return; }
     setBusy(true); setLoi(null);
     try {
-      if (!(await onLuu(nx.trim() || null))) throw new Error('Không lưu được — thử lại.');
-    } catch (e: any) { setLoi(e?.message ?? 'Không lưu được — thử lại.'); setBusy(false); return; }
+      if (!(await onLuu(nx.trim() || null))) throw new Error(t('Không lưu được — thử lại.'));
+    } catch (e: any) { setLoi(e?.message ?? t('Không lưu được — thử lại.')); setBusy(false); return; }
     setBusy(false);
     onDong();
   };
   const dong = () => { if (!busy) onDong(); };
   return (
-    <KhungHop anchor={anchor} ten={`Nhận xét · ${tenMon}`} phu={phu} nhanHop={`Nhận xét · ${tenMon} · ${phu}`} daGo={daGo} onDong={dong}
+    <KhungHop anchor={anchor} ten={t('Nhận xét · {tenMon}', { tenMon })} phu={phu} nhanHop={t('Nhận xét · {tenMon} · {phu}', { tenMon, phu })} daGo={daGo} onDong={dong}
       /* `phu` luôn bắt đầu bằng tên em (lưới lớp thường, màn một kỹ năng). */
-      cauBo={`Bỏ nhận xét ${tenMon} · ${phu.split(' · ')[0]}?`}
+      cauBo={t('Bỏ nhận xét {tenMon} · {x}?', { tenMon, x: phu.split(' · ')[0] })}
       onKeyDown={(e) => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); void luu(); } }}
-      chan={<><span className="flex-1" /><button type="button" className="btn btn-sm btn-primary max-sm:min-h-[44px]" disabled={busy} onClick={() => void luu()}>{busy ? 'Đang lưu…' : 'Lưu'}</button></>}>
+      chan={<><span className="flex-1" /><button type="button" className="btn btn-sm btn-primary max-sm:min-h-[44px]" disabled={busy} onClick={() => void luu()}>{busy ? t('Đang lưu…') : t('Lưu')}</button></>}>
       <label className="block">
-        <span className="sr-only">Nhận xét</span>
+        <span className="sr-only">{t('Nhận xét')}</span>
         <textarea className="field w-full text-sm" rows={3} maxLength={NHAN_XET_TOI_DA} value={nx} disabled={busy} onChange={(e) => setNx(e.target.value)} />
       </label>
       {nx.length > 800 && <span className={`self-end text-xs tabular-nums ${nx.length >= NHAN_XET_TOI_DA ? 'text-bad' : 'text-slate-500'}`}>{nx.length}/{NHAN_XET_TOI_DA}</span>}
       {loi && (
         <div role="alert" className="rounded-lg border border-bad-line bg-bad-bg px-3 py-2.5 text-[13px] text-slate-200">
-          <b className="text-bad">Chưa lưu:</b> {loi}
+          <b className="text-bad">{t('Chưa lưu:')}</b> {loi}
         </div>
       )}
     </KhungHop>

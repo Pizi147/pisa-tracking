@@ -17,6 +17,7 @@ import {
   tuanLich, type GiaTriPa,
 } from '@shared/domain/index.ts';
 import type { WorkItem } from '../worklist/WorkList.tsx';
+import { dich, t } from '@shared/i18n/index.ts';
 
 type PaNhom = { id: number; kind: string; description: string | null; soBuoi: number | null; performer: string | null; performerUserId: number | null; mocChu: string; ten: string };
 type EmNhom = {
@@ -76,13 +77,13 @@ export function XacNhanNhomPanel({ it, onDong, onDaLuu, onTiep }: {
     ? vs[pa.id] ?? { ...paMoi(pa.kind), soBuoi: pa.soBuoi == null ? '' : String(pa.soBuoi), nguoi: nguoiCuaPa(pa) ?? nguoiMacDinh(pa.kind) }
     : null;
 
-  const dongTieuDe = `${it.tieuDe}`;
+  const dongTieuDe = dich(it.tieuDe);
   const ngCanh = data ? (
     <span className="flex flex-wrap items-center gap-x-1.5">
       <Link className="link" to={`/hoc-vien/lop/${data.lop.id}`}>{data.lop.code} <span aria-hidden className="text-xs">↗</span></Link>
       <span aria-hidden>·</span>
       <Link className="link" to={`/test/diem-lop?lop=${data.lop.id}${data.luot.kind === 'mock' && data.luot.no ? `&luot=mt:${data.luot.no}` : `&luot=thuong:${data.luot.kind}`}`}>
-        {data.luot.nhan} <span aria-hidden className="text-xs">↗</span>
+        {dich(data.luot.nhan)} <span aria-hidden className="text-xs">↗</span>
       </Link>
       {it.due && <><span aria-hidden>·</span><Han loai="xac-minh-sos" han={it.due} /></>}
     </span>
@@ -96,9 +97,9 @@ export function XacNhanNhomPanel({ it, onDong, onDaLuu, onTiep }: {
   const loiPa = coPa && v ? loiFormPa(v, { toiThieu: 15 }) : [];
   const loi = [
     ...dsLoi([
-      { khoa: 'nguyen-nhan', nhan: 'Nguyên nhân chính', chon: true },
-      ...(laKhac(code) ? [{ khoa: 'ghi-ro', nhan: 'Ghi rõ nguyên nhân', toiThieu: 3 }] : []),
-      { khoa: 'mo-ta', nhan: 'Mô tả', toiThieu: 15 },
+      { khoa: 'nguyen-nhan', nhan: t('Nguyên nhân chính'), chon: true },
+      ...(laKhac(code) ? [{ khoa: 'ghi-ro', nhan: t('Ghi rõ nguyên nhân'), toiThieu: 3 }] : []),
+      { khoa: 'mo-ta', nhan: t('Mô tả'), toiThieu: 15 },
     ], { 'nguyen-nhan': code, 'ghi-ro': ghiRo, 'mo-ta': moTa }),
     ...loiPa,
   ];
@@ -108,7 +109,7 @@ export function XacNhanNhomPanel({ it, onDong, onDaLuu, onTiep }: {
     lf.bam();
     setLoiGui(null);
     if (loi.length > 0 || !n) return;
-    if (lech.length) { setLoiGui(`${lech.map((e) => e.ten).join(', ')}: PA theo quy chế khác mức các em còn lại — bỏ chọn, xác nhận riêng.`); return; }
+    if (lech.length) { setLoiGui(t('{x}: PA theo quy chế khác mức các em còn lại — bỏ chọn, xác nhận riêng.', { x: lech.map((e) => e.ten).join(', ') })); return; }
     setBusy(true);
     const dsChon = emChon.map((e) => e.caseId);
     const paGui = coPa && v && pa ? (() => {
@@ -127,7 +128,7 @@ export function XacNhanNhomPanel({ it, onDong, onDaLuu, onTiep }: {
       }
     } catch (e: any) {
       /* Lỗi: chữ đã gõ giữ nguyên; câu máy chủ nói đúng em. Lô trước đã lưu (mỗi lô một giao dịch) thì nói rõ. */
-      setLoiGui(xong ? `Đã xác nhận ${xong} em. Lỗi ở lô sau: ${e.message}` : e.message);
+      setLoiGui(xong ? t('Đã xác nhận {xong} em. Lỗi ở lô sau: {message}', { xong, message: e.message }) : e.message);
     }
     if (kq) {
       setDaLuu(kq);
@@ -148,29 +149,29 @@ export function XacNhanNhomPanel({ it, onDong, onDaLuu, onTiep }: {
   return (
     <KhungPanel tieuDe={dongTieuDe} ngCanh={ngCanh} onDong={onDong}
       chan={cho.length ? {
-        huy: { nhan: 'Không cần theo dõi…', onClick: () => setKhongTheoDoi(cho.find((e) => chon.has(e.caseId))?.caseId ?? cho[0].caseId) },
+        huy: { nhan: t('Không cần theo dõi…'), onClick: () => setKhongTheoDoi(cho.find((e) => chon.has(e.caseId))?.caseId ?? cho[0].caseId) },
         conThieu: lf.conThieu(loi),
-        phu: onTiep ? <button type="button" className="btn min-h-[44px] sm:min-h-0" disabled={busy || !n} onClick={() => void gui(false)}>Xác nhận {n} em</button> : undefined,
+        phu: onTiep ? <button type="button" className="btn min-h-[44px] sm:min-h-0" disabled={busy || !n} onClick={() => void gui(false)}>{t('Xác nhận {n} em', { n })}</button> : undefined,
         chinh: (
           <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy || !n} onClick={() => void gui(!!onTiep)}>
-            {busy ? 'Đang lưu…' : onTiep ? 'Xác nhận · việc tiếp ›' : `Xác nhận ${n} em`}
+            {busy ? t('Đang lưu…') : onTiep ? t('Xác nhận · việc tiếp ›') : t('Xác nhận {n} em', { n })}
           </button>
         ),
       } : {
         huy: null,
-        chinh: onTiep ? <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={onTiep}>Việc tiếp ›</button>
-          : <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={onDong}>Đóng</button>,
+        chinh: onTiep ? <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={onTiep}>{t('Việc tiếp ›')}</button>
+          : <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={onDong}>{t('Đóng')}</button>,
       }}>
       <div className="space-y-4 pt-3">
         {daLuu && (
           <p role="status" className="m-0 inline-flex flex-wrap items-center gap-1.5 rounded-lg border border-ok-line px-3 py-2 text-[13px] text-ok" style={{ background: 'var(--surface)' }}>
-            ✓ Đã xác nhận {daLuu.soEm} em{daLuu.tenPa ? ` · PA ${daLuu.tenPa} chạy từ ${tuanLich(daLuu.ngay, homNay)}` : ''}
+            {t('✓ Đã xác nhận {soEm} em', { soEm: daLuu.soEm })}{daLuu.tenPa ? t(' · PA {tenPa} chạy từ {tuanLich}', { tenPa: daLuu.tenPa, tuanLich: tuanLich(daLuu.ngay, homNay) }) : ''}
           </p>
         )}
         {daGuiQl && (
           /* OV-11c (CV-17d): Không cần theo dõi → Gửi Quản lý duyệt — thân panel nói rõ đã gửi (không chỉ toast). */
           <p role="status" className="m-0 inline-flex flex-wrap items-center gap-1.5 rounded-lg border border-ok-line px-3 py-2 text-[13px] text-ok" style={{ background: 'var(--surface)' }}>
-            ✓ Đã gửi QL duyệt
+            {t('✓ Đã gửi QL duyệt')}
           </p>
         )}
         {loiGui && <p role="alert" className="m-0 rounded-lg border border-bad-line bg-bad-bg px-3 py-2 text-[13px] text-slate-200">{loiGui}</p>}
@@ -180,10 +181,10 @@ export function XacNhanNhomPanel({ it, onDong, onDaLuu, onTiep }: {
             <div className="overflow-hidden rounded-lg border" style={{ borderColor: 'var(--line)' }}>
               <div className="hidden grid-cols-[32px_minmax(0,1fr)_52px_64px_64px_minmax(0,96px)] items-center gap-2 border-b px-2.5 py-1.5 text-xs font-bold uppercase tracking-[.04em] text-slate-500 sm:grid"
                 style={{ borderColor: 'var(--line)' }}>
-                <input type="checkbox" className="h-[18px] w-[18px]" aria-label="Chọn tất cả" checked={tatCaChon}
+                <input type="checkbox" className="h-[18px] w-[18px]" aria-label={t('Chọn tất cả')} checked={tatCaChon}
                   onChange={() => setChon(tatCaChon ? new Set() : new Set(cho.map((e) => e.caseId)))} />
-                <span>Học viên</span><span className="text-right">{knNgan}</span><span className="text-right">{data.lop.thuong ? '' : 'Kỳ vọng'}</span>
-                <span>SOS</span><span>Ghi chú riêng</span>
+                <span>{t('Học viên')}</span><span className="text-right">{knNgan}</span><span className="text-right">{data.lop.thuong ? '' : t('Kỳ vọng')}</span>
+                <span>SOS</span><span>{t('Ghi chú riêng')}</span>
               </div>
               <ul className="m-0 list-none divide-y p-0" style={{ borderColor: 'var(--line)' }}>
                 {cho.map((e) => {
@@ -192,7 +193,7 @@ export function XacNhanNhomPanel({ it, onDong, onDaLuu, onTiep }: {
                     <li key={e.caseId} className={`grid grid-cols-[32px_minmax(0,1fr)_auto] items-center gap-x-2 gap-y-0.5 px-2.5 py-2 text-[13px] sm:grid-cols-[32px_minmax(0,1fr)_52px_64px_64px_minmax(0,96px)] ${on ? '' : 'text-slate-400'}`}>
                       {/* Vùng bấm 44 px trên điện thoại (ô vẽ 22 px). */}
                       <label className="-my-2 flex min-h-[44px] items-center sm:my-0 sm:min-h-0">
-                        <input type="checkbox" className="h-[22px] w-[22px] sm:h-[18px] sm:w-[18px]" checked={on} onChange={() => doiChon(e.caseId)} aria-label={`Chọn ${e.ten}`} />
+                        <input type="checkbox" className="h-[22px] w-[22px] sm:h-[18px] sm:w-[18px]" checked={on} onChange={() => doiChon(e.caseId)} aria-label={t('Chọn {ten}', { ten: e.ten })} />
                       </label>
                       <span className="min-w-0">
                         <Link className={`font-semibold ${on ? 'text-slate-100' : 'text-slate-400'} hover:underline`} to={duongHoSoHocVien(e.studentId)}>
@@ -200,48 +201,48 @@ export function XacNhanNhomPanel({ it, onDong, onDaLuu, onTiep }: {
                         </Link>
                         {/* Điện thoại: điểm · kỳ vọng · làm riêng dưới tên (mockup 375). */}
                         <span className="block text-xs tabular-nums text-slate-500 sm:hidden">
-                          {knNgan} {diem(e)}{e.kyVong !== null ? ` · kỳ vọng ${fmtBand(e.kyVong)}` : ''}{e.lamRieng ? ' · làm riêng' : ''}
+                          {knNgan} {diem(e)}{e.kyVong !== null ? t(' · kỳ vọng {fmtBand}', { fmtBand: fmtBand(e.kyVong) }) : ''}{e.lamRieng ? t(' · làm riêng') : ''}
                         </span>
                       </span>
                       <span className={`hidden text-right tabular-nums sm:block ${!e.kck && e.kyVong !== null && e.band !== null && e.band < e.kyVong - 1 ? 'font-bold text-bad' : ''}`}>{diem(e)}</span>
                       <span className="hidden text-right tabular-nums sm:block">{e.kyVong !== null ? fmtBand(e.kyVong) : ''}</span>
                       <span>{e.kck ? <Level tone="muted">KCK</Level> : e.sos ? <Level tone={toneTheoNhan(`SOS ${e.sos}`, 'info')}>SOS {e.sos}</Level> : null}</span>
-                      <span className="hidden text-xs text-slate-400 sm:block">{e.lamRieng ? <span title={e.pa ? `PA theo quy chế: ${e.pa.ten} · ${e.pa.mocChu}` : undefined}>làm riêng</span> : '—'}</span>
+                      <span className="hidden text-xs text-slate-400 sm:block">{e.lamRieng ? <span title={e.pa ? t('PA theo quy chế: {ten} · {mocChu}', { ten: e.pa.ten, mocChu: e.pa.mocChu }) : undefined}>{t('làm riêng')}</span> : '—'}</span>
                     </li>
                   );
                 })}
               </ul>
             </div>
 
-            <Truong nhan={`Nguyên nhân chính · ${n} em đã chọn`} batBuoc as="div" loi={lf.loiCua(loi, 'nguyen-nhan')}>
+            <Truong nhan={t('Nguyên nhân chính · {n} em đã chọn', { n })} batBuoc as="div" loi={lf.loiCua(loi, 'nguyen-nhan')}>
               <div className="flex flex-wrap gap-1.5" id={lf.oId('nguyen-nhan')} tabIndex={-1}>
-                {causes.map((c) => <NutChon key={c.code} nho chon={code === c.code} title={c.hint} onClick={() => setCode(c.code)}>{c.label}</NutChon>)}
+                {causes.map((c) => <NutChon key={c.code} nho chon={code === c.code} title={c.hint && dich(c.hint)} onClick={() => setCode(c.code)}>{dich(c.label)}</NutChon>)}
               </div>
             </Truong>
-            <OKhac hien={laKhac(code)} value={ghiRo} onChange={setGhiRo} goiY="Ví dụ: Chưa quen dạng bài mới"
+            <OKhac hien={laKhac(code)} value={ghiRo} onChange={setGhiRo} goiY={t('Ví dụ: Chưa quen dạng bài mới')}
               id={lf.oId('ghi-ro')} onBlur={lf.roi('ghi-ro')} loi={lf.hien('ghi-ro') ? kiemGhiRoKhac(ghiRo) : null} />
-            <Truong nhan="Mô tả" batBuoc loi={lf.loiCua(loi, 'mo-ta')} dem={{ co: moTa.trim().length, can: 15 }}>
+            <Truong nhan={t('Mô tả')} batBuoc loi={lf.loiCua(loi, 'mo-ta')} dem={{ co: moTa.trim().length, can: 15 }}>
               <textarea className="field w-full" rows={2} {...lf.o(loi, 'mo-ta')} value={moTa} onChange={(e) => setMoTa(e.target.value)}
-                placeholder="Ví dụ: Sai nhiều dạng True / False / Not Given" />
+                placeholder={t('Ví dụ: Sai nhiều dạng True / False / Not Given')} />
             </Truong>
 
             {pa && v && (
               <section className="space-y-3 rounded-[10px] border p-3" style={{ borderColor: 'var(--line-strong)' }}>
                 <div className="flex flex-wrap items-center gap-2">
-                  <b className="text-[13.5px] text-slate-100">Phương án</b>
-                  <span className="text-xs text-slate-500">theo quy chế {data.luot.nhan}</span>
+                  <b className="text-[13.5px] text-slate-100">{t('Phương án')}</b>
+                  <span className="text-xs text-slate-500">{t('theo quy chế {nhan}', { nhan: data.luot.nhan })}</span>
                   <span className="flex-1" />
                   <label className="inline-flex min-h-[44px] items-center gap-2 text-xs text-slate-300 sm:min-h-0">
-                    xác nhận cùng lúc
+                    {t('xác nhận cùng lúc')}
                     <input type="checkbox" className="h-[18px] w-[18px]" checked={cungLuc} onChange={(e) => setCungLuc(e.target.checked)} />
                   </label>
                 </div>
                 {cungLuc && (
                   <>
-                    <OKhoa nhan="Loại PA" chu={pa.ten} sau="theo quy chế" phu={`Kết thúc theo quy chế: ${pa.mocChu}`} />
+                    <OKhoa nhan={t('Loại PA')} chu={pa.ten} sau={t('theo quy chế')} phu={t('Kết thúc theo quy chế: {mocChu}', { mocChu: pa.mocChu })} />
                     <FormPa phang v={v} dat={(p) => setVs((m) => ({ ...m, [pa.id]: { ...v, ...p } }))} lf={lf} loi={loiPa} toiThieu={15}
-                      ngay={<NgayKhoa chu={`Tuần này · ${tuanLich(homNay, homNay)}`} />}
-                      cuoi={<p className="m-0 text-xs text-slate-500">Áp chung cho {n} em đã chọn; sửa riêng từng em sau trong Ngăn Case.</p>} />
+                      ngay={<NgayKhoa chu={t('Tuần này · {tuanLich}', { tuanLich: tuanLich(homNay, homNay) })} />}
+                      cuoi={<p className="m-0 text-xs text-slate-500">{t('Áp chung cho {n} em đã chọn; sửa riêng từng em sau trong Ngăn Case.', { n })}</p>} />
                   </>
                 )}
               </section>

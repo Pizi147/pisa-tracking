@@ -254,9 +254,9 @@ export async function runPrS4fTests(t: YThucTestKit) {
     const gc = docWeb('modules/cham/GvCham.tsx'), od = docWeb('modules/fasttrack/ODiemLon.tsx');
     assert(gc.includes('`pisa:gv-cham:${userId}:${classId}:${dot}`') && gc.includes('khoaGvChamCot(session?.user?.id'), 'khoá localStorage GV chấm phải gắn userId');
     assert(od.includes('const vo = `flex min-w-0 flex-col') && od.includes('col-span-2 flex min-w-0 flex-col'), 'ô nút và ô chỉ đọc/Overall cùng flex-col');
-    assert(od.includes('title: `GV chấm: ${bai[0].gvCham.ten}`') && od.includes('duoiKyVong='), 'title GV chấm + chip Dưới kỳ vọng');
+    assert(od.includes("title: t('GV chấm: {ten}', { ten: bai[0].gvCham.ten })") && od.includes('duoiKyVong='), 'title GV chấm + chip Dưới kỳ vọng');
     assert(docWeb('ui/KetQuaDot.tsx').includes("t('Dưới kỳ vọng: {ds}', { ds: duoiKyVong.join"), 'KetQuaDot liệt kê kỹ năng dưới kỳ vọng');
-    assert(docWeb('modules/fasttrack/MockDetailPage.tsx').includes('`Người nhập điểm: ${c.enteredByName}`'), '"Người nhập điểm: X"');
+    assert(docWeb('modules/fasttrack/MockDetailPage.tsx').includes("t('Người nhập điểm: {enteredByName}', { enteredByName: c.enteredByName })"), '"Người nhập điểm: X"');
   });
 
   check('S4F (11) · Kết quả gần nhất bỏ lượt chỉ có W1 lẻ; web: tên có title + ưu tiên chỗ, dòng Kết quả chỉ xuống dòng ở "·", nhãn thẻ theo baseline, Tỷ lệ tabular', () => {

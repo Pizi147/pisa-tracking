@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { api } from '../../lib/api.ts';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import { buocDanhSach, type NguoiChon } from '@shared/domain/index.ts';
+import { dich, t } from '@shared/i18n/index.ts';
 
 export type NguoiPhuTrach = 'toi' | 'tat-ca' | number;
 
@@ -64,28 +65,28 @@ export function ChonPhuTrach({ value, valueName, onChange, chiChonGv }: {
   /* Menu vừa mở (chưa vào ô chọn) → focus mục đầu. */
   useEffect(() => { if (open && !picking) tro(0); }, [open, picking]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const nhan = chiChonGv ? (typeof value === 'number' ? (ten ?? '…') : 'một GV…')
-    : value === 'toi' ? 'Tôi' : value === 'tat-ca' ? 'Tất cả trong phạm vi' : (ten ?? '…');
+  const nhan = chiChonGv ? (typeof value === 'number' ? (ten ?? '…') : t('một GV…'))
+    : value === 'toi' ? t('Tôi') : value === 'tat-ca' ? t('Tất cả trong phạm vi') : (ten ?? '…');
   const muc = [
-    { nhan: 'Tôi', chon: () => { onChange('toi'); dongVeNut(); } },
-    { nhan: 'Tất cả trong phạm vi', chon: () => { onChange('tat-ca'); dongVeNut(); } },
-    { nhan: 'Chọn giáo viên…', chon: () => setPicking(true) },
+    { nhan: t('Tôi'), chon: () => { onChange('toi'); dongVeNut(); } },
+    { nhan: t('Tất cả trong phạm vi'), chon: () => { onChange('tat-ca'); dongVeNut(); } },
+    { nhan: t('Chọn giáo viên…'), chon: () => setPicking(true) },
   ];
 
   return (
     <div className="relative inline-flex items-center gap-1" ref={box}>
       <button ref={nut} type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" aria-haspopup="menu" aria-expanded={open}
         onClick={() => { setOpen((o) => !o); setPicking(!!chiChonGv); }}>
-        {chiChonGv ? 'Xem việc của' : 'Người phụ trách'}: {nhan}
+        {chiChonGv ? t('Xem việc của') : t('Người phụ trách')}: {nhan}
         {/* ▾ ở chữ Inter 12px chỉ còn một chấm → vẽ SVG nét mảnh. */}
         <svg aria-hidden width="8" height="5" viewBox="0 0 8 5" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M1 1l3 3 3-3" /></svg>
       </button>
       {typeof value === 'number' && (
-        <button type="button" className="min-h-[44px] min-w-[44px] text-slate-500 hover:text-slate-200 text-xs sm:min-h-0 sm:min-w-0" aria-label="Bỏ chọn giáo viên, về Tất cả trong phạm vi"
+        <button type="button" className="min-h-[44px] min-w-[44px] text-slate-500 hover:text-slate-200 text-xs sm:min-h-0 sm:min-w-0" aria-label={t('Bỏ chọn giáo viên, về Tất cả trong phạm vi')}
           onClick={() => onChange('tat-ca')}>✕</button>
       )}
       {open && !picking && (
-        <div ref={menu} role="menu" aria-label="Người phụ trách"
+        <div ref={menu} role="menu" aria-label={t('Người phụ trách')}
           onKeyDown={(e) => {
             const k = buocDanhSach(muc.length, dang, e.key);
             if (k !== null) { e.preventDefault(); tro(k); }
@@ -93,9 +94,9 @@ export function ChonPhuTrach({ value, valueName, onChange, chiChonGv }: {
           }}
           className="absolute z-30 top-full mt-1 w-56 surface-2 rounded-lg border shadow-xl py-1" style={{ borderColor: 'var(--line-strong)' }}>
           {muc.map((m, i) => (
-            <button key={m.nhan} type="button" role="menuitem" tabIndex={-1} onFocus={() => setDang(i)}
+            <button key={dich(m.nhan)} type="button" role="menuitem" tabIndex={-1} onFocus={() => setDang(i)}
               className="w-full min-h-[44px] sm:min-h-0 text-left px-3 py-2 hover:bg-white/5 focus-visible:bg-white/5 appearance-none bg-transparent border-0 text-sm text-slate-100"
-              onClick={m.chon}>{m.nhan}</button>
+              onClick={m.chon}>{dich(m.nhan)}</button>
           ))}
         </div>
       )}
@@ -108,7 +109,7 @@ export function ChonPhuTrach({ value, valueName, onChange, chiChonGv }: {
               dongVeNut();
             }}
             nhom="giao_vien" choToi={false} choNgoai={false}
-            ariaLabel="Chọn giáo viên" tuMo
+            ariaLabel={t('Chọn giáo viên')} tuMo
           />
         </div>
       )}

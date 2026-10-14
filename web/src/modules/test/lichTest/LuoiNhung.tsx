@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { useApi } from '../../../lib/useApi.ts';
 import { ErrorState, Skeleton } from '../../../ui/ui.tsx';
 import { LuoiChamLop, duongCham, useManHinhHep, type Cham } from '../../cham/LuoiChamLop.tsx';
+import { t } from '@shared/i18n/index.ts';
 
 /**
  * LƯỚI CHẤM MỞ TẠI CHỖ (PR-UX1) — dưới một hàng lớp hoặc một dòng Nợ. Cùng lưới với trang lưới đầy đủ (`LuoiChamLop`),
@@ -20,8 +21,8 @@ export function LuoiNhung({ classId, periodId, kind, tuanDangXem, chiAttempt = n
   const hep = useManHinhHep();
   const link = coLinkRieng && !hep ? null : (
     <Link to={hrefDayDu} className="inline-flex min-h-[32px] max-sm:min-h-10 items-center px-2 text-xs text-slate-400 no-underline hover:text-slate-100"
-      title="Mở lưới đầy đủ của lớp này ở trang riêng">
-      Mở lưới đầy đủ ↗
+      title={t('Mở lưới đầy đủ của lớp này ở trang riêng')}>
+      {t('Mở lưới đầy đủ ↗')}
     </Link>
   );
   return (

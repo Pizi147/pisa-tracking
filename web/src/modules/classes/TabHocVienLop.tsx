@@ -9,6 +9,7 @@ import { BangDiemLopThuong } from './BangDiemLopThuong.tsx';
 import { BangCanHoTro } from './BangCanHoTro.tsx';
 import { BangLoTrinhTiep } from './BangLoTrinhTiep.tsx';
 import { BangKqdrLopFt } from './BangKqdrLopFt.tsx';
+import { t } from '@shared/i18n/index.ts';
 import { BangGopYTuan } from './BangGopYTuan.tsx';
 import { ThanhChonNhieu, useChonNhieu } from '../students/chonNhieuHocVien.tsx';
 import { XemTruocHangLoatPanel } from '../students/XemTruocHangLoatPanel.tsx';
@@ -32,7 +33,7 @@ import { useSession } from '../../lib/session.tsx';
 export type CheDoHocVien = 'diem' | 'gop-y' | 'lo-trinh' | 'can-ho-tro' | 'ket-qua' | 'thong-tin';
 /** Tên cách xem — cũng là chi tiết của nút "‹ Hồ sơ lớp …" khi đi từ hồ sơ lớp sang hồ sơ khác (PR-OV5b). */
 export const CHE_DO_NHAN: Record<CheDoHocVien, string> = {
-  diem: 'Tổng hợp', 'gop-y': 'Góp ý hàng tuần', 'lo-trinh': 'Lộ trình tiếp theo', 'can-ho-tro': 'Cần hỗ trợ', 'ket-qua': 'Kết quả đầu ra', 'thong-tin': 'Thông tin lớp',
+  diem: t('Tổng hợp'), 'gop-y': t('Góp ý hàng tuần'), 'lo-trinh': t('Lộ trình tiếp theo'), 'can-ho-tro': t('Cần hỗ trợ'), 'ket-qua': t('Kết quả đầu ra'), 'thong-tin': t('Thông tin lớp'),
 };
 export function TabHocVienLop({ lop, cheDo: cheDoUrl, onCheDo, onDoi, onThemHocVien, onSuaThongTin, emMo = null, onDaMoEm, tuan = null, onTuan }: {
   lop: HoSoLop; cheDo: CheDoHocVien; onCheDo: (m: CheDoHocVien) => void;

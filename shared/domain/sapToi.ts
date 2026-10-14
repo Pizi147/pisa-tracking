@@ -1,4 +1,5 @@
 import { tuanLich } from './hienThiNgay.ts';
+import { t } from '../i18n/index.ts';
 
 /** Ô "Sắp tới" của bảng Học viên & Lớp (chủ sản phẩm 03/10, mục 5): ngắn, chỉ thêm con số kỳ vọng. */
 export function chuSapToi(o: {
@@ -10,8 +11,8 @@ export function chuSapToi(o: {
     const so = o.kyVong !== null && o.khung === 'ft' ? ` · ${o.kyVong.toFixed(1)}` : '';
     return `${o.nhanLuot}${tuan}${so}`;
   }
-  if (o.conLuotChuaXep) return `${o.conLuotChuaXep} · chưa xếp`;
+  if (o.conLuotChuaXep) return t('{conLuotChuaXep} · chưa xếp', { conLuotChuaXep: o.conLuotChuaXep });
   if (o.khung !== 'ft') return null;
-  const nhan = o.duKienThi && o.duKienThi.confidence !== 'none' ? o.duKienThi.label : 'chưa có ngày';
-  return `Thi thật · ${nhan}`;
+  const nhan = o.duKienThi && o.duKienThi.confidence !== 'none' ? o.duKienThi.label : t('chưa có ngày');
+  return t('Thi thật · {nhan}', { nhan });
 }

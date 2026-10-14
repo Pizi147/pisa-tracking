@@ -6,12 +6,13 @@
  * Không có con số nào được tính ở đây — số luôn đến từ `metricSet` (hợp đồng số liệu luật 1).
  */
 import { kyGhiKetQua, type DeadlineKind } from './display.ts';
+import { t } from '../i18n/index.ts';
 
 // ------------------------------------------------------------------ chương trình
 /* PR-Pb2-a (Q31-1, T60): chỉ còn hai khung, FT trước. Nút "Cả hai" đã bỏ — khối không theo kỹ năng gộp bằng `null`. */
 export const CHUONG_TRINH = ['ft', 'thuong'] as const;
 export type ChuongTrinh = (typeof CHUONG_TRINH)[number];
-export const CHUONG_TRINH_LABEL: Record<ChuongTrinh, string> = { ft: 'Fast Track', thuong: 'Lớp thường' };
+export const CHUONG_TRINH_LABEL: Record<ChuongTrinh, string> = { ft: 'Fast Track', thuong: t('Lớp thường') };
 
 /** Q31-1: tham số `ct` vắng / lạ / giá trị của link cũ (đã bỏ "Cả hai") → `macDinh` (Quản lý: FT). */
 export function chuongTrinhTuThamSo(s: string | null | undefined, macDinh: ChuongTrinh = 'ft'): ChuongTrinh {
@@ -29,7 +30,7 @@ export const NHOM_VIEC = ['cham-diem', 'case-hoc-thuat', 'y-thuc', 'van-hanh'] a
 export type NhomViec = (typeof NHOM_VIEC)[number];
 /** T75 (PR-VAI-a Q13): "Ý thức" (Phối hợp SOS nay là việc thật ở Case học thuật), "Lớp & vận hành". */
 export const NHOM_VIEC_LABEL: Record<NhomViec, string> = {
-  'cham-diem': 'Chấm điểm', 'case-hoc-thuat': 'Case học thuật', 'y-thuc': 'Ý thức & Phối hợp', 'van-hanh': 'Vận hành',
+  'cham-diem': t('Chấm điểm'), 'case-hoc-thuat': t('Case học thuật'), 'y-thuc': t('Ý thức & Phối hợp'), 'van-hanh': t('Vận hành'),
 };
 /**
  * Loại việc của `mywork.ts` → 4 nhóm (PR-DUYET bỏ `decide`, `decide_move` — thẻ ở hộp Chờ duyệt). PR-YT4: ba loại việc Ý thức có hạn thật.
@@ -99,17 +100,17 @@ export const CAN_XU_LY: readonly {
   quaHan?: true;
   canQuyenDuyet?: true;
 }[] = [
-  { metricId: 'bai-qua-han-nhap-diem', nhan: 'bài quá hạn chưa nhập điểm', nut: 'Xem', cuaNguoiXem: false, quaHan: true },
-  { metricId: 'pa-can-cap-nhat', nhan: 'PA chưa có Kết quả', nut: 'Xem', cuaNguoiXem: false, quaHan: true },
+  { metricId: 'bai-qua-han-nhap-diem', nhan: t('bài quá hạn chưa nhập điểm'), nut: 'Xem', cuaNguoiXem: false, quaHan: true },
+  { metricId: 'pa-can-cap-nhat', nhan: t('PA chưa có Kết quả'), nut: 'Xem', cuaNguoiXem: false, quaHan: true },
   /* OV-12h: meeting CX / GĐCN quá 5 ngày chưa xác nhận — việc GVCN trễ, cùng tập với dòng Phối hợp SOS quá hạn ở Công việc. */
-  { metricId: 'phoi-hop-qua-han', nhan: 'lượt có meeting CX quá hạn xác nhận', nut: 'Xem', cuaNguoiXem: false, quaHan: true },
+  { metricId: 'phoi-hop-qua-han', nhan: t('lượt có meeting CX quá hạn xác nhận'), nut: 'Xem', cuaNguoiXem: false, quaHan: true },
   /* PR-VAI-a Q8: bốn việc "của Bạn" — mỗi dòng một chỉ số gọi đúng hàm màn khác đang dùng. */
-  { metricId: 'van-hanh-can-quyet-dinh', nhan: 'việc Vận hành cần quyết định', nut: 'Mở Vận hành', cuaNguoiXem: true },
+  { metricId: 'van-hanh-can-quyet-dinh', nhan: t('việc Vận hành cần quyết định'), nut: t('Mở Vận hành'), cuaNguoiXem: true },
   /* PR-LCb: MỘT dòng "lớp cần Chốt lộ trình" (thay "em chưa có quyết định chuyển lớp" + "lớp cần Chốt lên FT") — cùng hàm với việc "Chốt lộ trình · lớp". */
-  { metricId: 'lop-chua-chot-len-ft', nhan: 'lớp cần Chốt lộ trình', nut: 'Lộ trình tiếp theo', cuaNguoiXem: true },
-  { metricId: 'lop-thieu-gv-mon', nhan: 'lớp thiếu GV môn', nut: 'Sửa phân công', cuaNguoiXem: true },
-  { metricId: 'hv-ft-xong-mt-cuoi-chua-mt-ke', nhan: 'học viên FT xong MT3, chưa có MT kế tiếp', nut: 'Xem học viên', cuaNguoiXem: true },   // OV-11f: mở danh sách em
-  { metricId: 'hv-len-ft-chua-ky-vong', nhan: 'học viên lên FT chưa chốt Kết quả đầu ra', nut: 'Mở hồ sơ', cuaNguoiXem: true },
+  { metricId: 'lop-chua-chot-len-ft', nhan: t('lớp cần Chốt lộ trình'), nut: t('Lộ trình tiếp theo'), cuaNguoiXem: true },
+  { metricId: 'lop-thieu-gv-mon', nhan: t('lớp thiếu GV môn'), nut: t('Sửa phân công'), cuaNguoiXem: true },
+  { metricId: 'hv-ft-xong-mt-cuoi-chua-mt-ke', nhan: t('học viên FT xong MT3, chưa có MT kế tiếp'), nut: t('Xem học viên'), cuaNguoiXem: true },   // OV-11f: mở danh sách em
+  { metricId: 'hv-len-ft-chua-ky-vong', nhan: t('học viên lên FT chưa chốt Kết quả đầu ra'), nut: t('Mở hồ sơ'), cuaNguoiXem: true },
 ];
 export const CAN_XU_LY_TOI_DA = 10;
 export type DongCanXuLyGoc = {
@@ -138,14 +139,14 @@ export function sapCanXuLy(dem: Partial<Record<MaCanXuLy, number>>, coQuyenDuyet
  * Q25 → OV-12a: "kỳ W3–W4 SEP" — KỲ (hai tuần) của hạn ghi kết quả cũ nhất (hạn = hết Thứ Ba sau kỳ). Một chỗ cho dòng Cần xử lý và ô số.
  */
 export function tuanCuaHanGhiKetQua(han: string, homNay: string): string {
-  return `kỳ ${kyGhiKetQua(han, homNay)}`;
+  return t('kỳ {kyGhiKetQua}', { kyGhiKetQua: kyGhiKetQua(han, homNay) });
 }
 
 /** Cột Người giữ việc (Q4): "Bạn", hoặc "n giáo viên" + tên sắp theo tên, quá 3 thì "+k". */
 export function nguoiGiuViecChu(ten: readonly string[]): { dau: string; phu: string } {
   const ds = [...new Set(ten)].sort((a, b) => a.localeCompare(b, 'vi'));
-  if (!ds.length) return { dau: 'chưa phân công', phu: '' };
-  return { dau: `${ds.length} giáo viên`, phu: [...ds.slice(0, 3), ...(ds.length > 3 ? [`+${ds.length - 3}`] : [])].join(' · ') };
+  if (!ds.length) return { dau: t('chưa phân công'), phu: '' };
+  return { dau: t('{length} giáo viên', { length: ds.length }), phu: [...ds.slice(0, 3), ...(ds.length > 3 ? [`+${ds.length - 3}`] : [])].join(' · ') };
 }
 
 // ------------------------------------------------------------------ Điểm đáng chú ý (Quản lý)
@@ -178,24 +179,24 @@ export function chonDiemDangChuY(ds: UngVienChuY[], ct: ChuongTrinh): DiemChuY[]
   const mon = ct === 'ft' ? nhieuNhat('mon-duoi-ky-vong') : undefined;
   if (mon) {
     out.push({ loai: mon.loai, metricId: mon.metricId, extra: mon.extra, muc: 'can-chu-y',
-      cau: `${mon.nhanMon}: ${mon.tu}/${mon.mau} học viên dưới kỳ vọng`,
-      lienKet: `xem ${mon.tu} học viên`, soDanhSach: mon.tu });
+      cau: t('{nhanMon}: {tu}/{mau} học viên dưới kỳ vọng', { nhanMon: mon.nhanMon, tu: mon.tu, mau: mon.mau }),
+      lienKet: t('xem {tu} học viên', { tu: mon.tu }), soDanhSach: mon.tu });
   }
   const lop = ct === 'thuong' ? nhieuNhat('lop-chua-dat') : undefined;
   if (lop) {
     out.push({ loai: lop.loai, metricId: lop.metricId, extra: lop.extra, muc: 'can-chu-y',
-      cau: `${lop.nhanMon}: ${lop.tu}/${lop.mau} học viên chưa đạt ${lop.tenBai ?? 'ở bài gần nhất'}`,
-      lienKet: `xem ${lop.tu} học viên`, soDanhSach: lop.tu });
+      cau: t('{nhanMon}: {tu}/{mau} học viên chưa đạt {x}', { nhanMon: lop.nhanMon, tu: lop.tu, mau: lop.mau, x: lop.tenBai ?? t('ở bài gần nhất') }),
+      lienKet: t('xem {tu} học viên', { tu: lop.tu }), soDanhSach: lop.tu });
   }
   const pa = ds.find((x) => x.loai === 'pa-cai-thien' && x.mau >= N.mauToiThieu);
   if (pa) {
     out.push({ loai: pa.loai, metricId: pa.metricId, extra: pa.extra, muc: pa.tu / pa.mau >= 0.5 ? 'tot' : 'can-chu-y',
-      cau: `${pa.tu}/${pa.mau} PA học thuật đã kết thúc có cải thiện`, lienKet: `xem ${pa.mau} PA học thuật`, soDanhSach: pa.mau });
+      cau: t('{tu}/{mau} PA học thuật đã kết thúc có cải thiện', { tu: pa.tu, mau: pa.mau }), lienKet: t('xem {mau} PA học thuật', { mau: pa.mau }), soDanhSach: pa.mau });
   }
   const dh = ds.find((x) => x.loai === 'dung-han' && x.mau >= N.mauToiThieu && x.tu / x.mau < N.dungHanDuoi);
   if (dh) {
     out.push({ loai: dh.loai, metricId: dh.metricId, extra: dh.extra, muc: 'can-chu-y',
-      cau: `${dh.tu}/${dh.mau} lần cập nhật PA đúng hạn (30 ngày qua)`, lienKet: `xem ${dh.mau} lần`, soDanhSach: dh.mau });
+      cau: t('{tu}/{mau} lần cập nhật PA đúng hạn (30 ngày qua)', { tu: dh.tu, mau: dh.mau }), lienKet: t('xem {mau} lần', { mau: dh.mau }), soDanhSach: dh.mau });
   }
   return out.slice(0, N.toiDa);
 }

@@ -12,6 +12,7 @@ import { DuongVe } from '../../ui/ThanhTruocSau.tsx';
 import { hanSomNhatFt, tenDotFt } from './LuoiFT.tsx';
 import { hanSomNhatThuong, kindMacDinh, kindsThuong, tuanThiTheoMon, type ThuongSheet } from './LuoiThuong.tsx';
 import { LuoiChamLop, duongCham, thuongTheoBai, type Cham } from './LuoiChamLop.tsx';
+import { dich, t } from '@shared/i18n/index.ts';
 
 /**
  * LƯỚI CHẤM — MỘT TRANG CHO CẢ LỚP FAST TRACK VÀ LỚP THƯỜNG (spec §3.5, mockup 05a §2).
@@ -80,28 +81,20 @@ export default function ChamDiemPage() {
     <div className="page space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="min-w-0">
-          <DuongVe cha={trangCha('nhap-diem')} ten={`Nhập điểm ${data.classCode}`} chiTiet={tenDot} />
+          <DuongVe cha={trangCha('nhap-diem')} ten={t('Nhập điểm {classCode}', { classCode: data.classCode })} chiTiet={tenDot} />
           <h1 className="text-lg font-semibold text-slate-100 flex items-center gap-2 m-0">
             <span className="truncate" title={`${data.classCode}${tenDot ? ` · ${tenDot}` : ''}`}>{data.classCode}{tenDot ? ` · ${tenDot}` : ''}</span>
-            <NutLuat label="Luật chấm điểm">
+            <NutLuat label={t('Luật chấm điểm')}>
               <span className="block">
-                Ô để trống là chưa nhập, không phải 0 điểm. Chỉ kỹ năng bạn được phân công mới sửa được; kỹ năng khác
-                vẫn đọc được để đối chiếu. Enter hoặc ↓ xuống em kế tiếp, Esc huỷ ô đang sửa. Mỗi môn có tuần thi và
-                hạn chấm riêng.
+                {t('Ô để trống là chưa nhập, không phải 0 điểm. Chỉ kỹ năng bạn được phân công mới sửa được; kỹ năng khác vẫn đọc được để đối chiếu. Enter hoặc ↓ xuống em kế tiếp, Esc huỷ ô đang sửa. Mỗi môn có tuần thi và hạn chấm riêng.')}
               </span>
               {laFt ? (
                 <span className="block">
-                  Gõ <kbd className="px-1 rounded border text-slate-200" style={{ borderColor: 'var(--line-strong)' }}>-</kbd> khi
-                  em có lịch mà không làm bài; sửa lại được đến hết Chủ nhật của tuần thi, còn nguyên thì thành Không
-                  dự thi.
+                  {t('Gõ')}{' '}<kbd className="px-1 rounded border text-slate-200" style={{ borderColor: 'var(--line-strong)' }}>-</kbd>{' '}{t('khi em có lịch mà không làm bài; sửa lại được đến hết Chủ nhật của tuần thi, còn nguyên thì thành Không dự thi.')}
                 </span>
               ) : (
                 <span className="block">
-                  Mỗi ô hai số: số câu đúng / tổng số câu, cả hai đều điền. Writing và Speaking chấm theo thang điểm
-                  thì điền điểm đạt / tổng điểm. Ô tổng đầu cột để điền nhanh cả cột; em làm đề khác thì sửa riêng ô đó
-                  (viền vàng). Đạt từ 70% trở lên. Thiếu điểm khác chưa đạt. Gõ
-                  {' '}<kbd className="px-1 rounded border text-slate-200" style={{ borderColor: 'var(--line-strong)' }}>-</kbd>{' '}
-                  khi em không làm bài: môn đó tự dời sang tuần sau.
+                  {t('Mỗi ô hai số: số câu đúng / tổng số câu, cả hai đều điền. Writing và Speaking chấm theo thang điểm thì điền điểm đạt / tổng điểm. Ô tổng đầu cột để điền nhanh cả cột; em làm đề khác thì sửa riêng ô đó (viền vàng). Đạt từ 70% trở lên. Thiếu điểm khác chưa đạt. Gõ {x}', { x: ' ' })}<kbd className="px-1 rounded border text-slate-200" style={{ borderColor: 'var(--line-strong)' }}>-</kbd>{t('{x} khi em không làm bài: môn đó tự dời sang tuần sau.', { x: ' ' })}
                 </span>
               )}
             </NutLuat>
@@ -109,11 +102,11 @@ export default function ChamDiemPage() {
           <p className="text-xs text-slate-500 mt-0.5 mb-0">
             {data.branchName}
             {tuanMon && (
-              <span title="Tuần thi của từng môn (rê chuột lên tên cột để xem tên môn đầy đủ)"> · {tuanMon}</span>
+              <span title={t('Tuần thi của từng môn (rê chuột lên tên cột để xem tên môn đầy đủ)')}> · {tuanMon}</span>
             )}
             {laFt && (
               <span title={nhapDuoc.map((s) => `${skillShort(s)} = ${skillLabel(s)}`).join(' · ') || undefined}>
-                {' · '}Bạn được nhập: {nhapDuoc.length ? nhapDuoc.map(skillShort).join(', ') : 'không kỹ năng nào'}
+                {t('{x}Bạn được nhập:', { x: ' · ' })}{' '}{nhapDuoc.length ? nhapDuoc.map(skillShort).join(', ') : t('không kỹ năng nào')}
               </span>
             )}
           </p>
@@ -121,28 +114,28 @@ export default function ChamDiemPage() {
         <div className="flex flex-wrap items-end gap-3 min-w-0 max-w-full">
           {laFt && (
             <div className="w-[26rem] max-w-full">
-              <WeekPicker periodId={periodId} onPeriod={(id) => datThamSo('periodId', id ? String(id) : null)} label="Tuần" />
+              <WeekPicker periodId={periodId} onPeriod={(id) => datThamSo('periodId', id ? String(id) : null)} label={t('Tuần')} />
             </div>
           )}
           {!laFt && kinds.length > 1 && (
             <label className="block">
-              <span className="label">Bài</span>
+              <span className="label">{t('Bài')}</span>
               <select className="field w-40" value={kindChon ?? ''} onChange={(e) => datThamSo('kind', e.target.value || null)}>
-                {kinds.map((k) => <option key={k.kind} value={k.kind}>{k.label}</option>)}
+                {kinds.map((k) => <option key={k.kind} value={k.kind}>{dich(k.label)}</option>)}
               </select>
             </label>
           )}
           {han && <div className="pb-2"><Han loai="nhap-diem" han={han} /></div>}
           {chuaLuu > 0 && (
             <span className="pb-2 text-xs font-semibold text-bad whitespace-nowrap" role="alert"
-              title="Ô viền đỏ chưa lưu được — bấm Lưu lại ở ô đó.">
+              title={t('Ô viền đỏ chưa lưu được — bấm Lưu lại ở ô đó.')}>
               {chuOChuaLuu(chuaLuu)}
             </span>
           )}
           {luuLuc && chuaLuu === 0 && (
             <span className="pb-2 text-xs text-slate-500 tabular-nums whitespace-nowrap"
-              title="Mỗi ô tự lưu khi rời ô hoặc bấm Enter.">
-              Đã lưu {String(luuLuc.getHours()).padStart(2, '0')}:{String(luuLuc.getMinutes()).padStart(2, '0')} ✓
+              title={t('Mỗi ô tự lưu khi rời ô hoặc bấm Enter.')}>
+              {t('Đã lưu')}{' '}{String(luuLuc.getHours()).padStart(2, '0')}:{String(luuLuc.getMinutes()).padStart(2, '0')} ✓
             </span>
           )}
         </div>

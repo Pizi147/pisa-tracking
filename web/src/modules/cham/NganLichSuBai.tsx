@@ -3,6 +3,7 @@ import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { DongThoiGianLuot } from '../fasttrack/DongThoiGianLuot.tsx';
 import { tenMon } from '@shared/domain/index.ts';
+import { t } from '@shared/i18n/index.ts';
 
 /**
  * LỊCH SỬ MỘT EM × MỘT BÀI (PR-XLMT K4-32, #118) — mở từ mục cuối menu ⋯ của ô lưới lớp thường. Ngăn hẹp, cùng dòng thời gian với
@@ -19,7 +20,7 @@ export function NganLichSuBai({ attemptId, skill, ct, tenHv, trongHop, onClose }
   const laMon = (s: string | null) => skill === null || s === skill || (skill === 'writing' && !!s?.startsWith('writing'));
   const cuaMon = (f: string | null) => !f || laMon(f) || f === 'deadline_override';
   return (
-    <KhungPanel tieuDe={skill ? `Lịch sử · ${tenMon(ct, skill)}` : 'Lịch sử'} hocVien={tenHv} onDong={onClose} longTrong={trongHop} z={trongHop ? 'z-[70]' : undefined}>
+    <KhungPanel tieuDe={skill ? t('Lịch sử · {tenMon}', { tenMon: tenMon(ct, skill) }) : t('Lịch sử')} hocVien={tenHv} onDong={onClose} longTrong={trongHop} z={trongHop ? 'z-[70]' : undefined}>
       <div className="pt-3">
         {error ? <ErrorState message={error.message} hint={error.hint} onRetry={reload} />
           : loading || !data ? <Skeleton rows={4} />

@@ -256,8 +256,8 @@ export async function runThanhPhanChungTests(t: YThucTestKit) {
       'yThuc/XacNhanXuLyPanel.tsx']) {
       /* PR-PA: luật của form PA (gồm Ghi rõ) ở shared/domain/paDongBo.ts (`loiFormPa`). */
       const s = doc(m + f) + (f === 'cases/FormPa.tsx' ? doc('shared/domain/paDongBo.ts') : '');
-      /* PR-PA: FormPa đặt tiền tố khoá (`k('ghi-ro')`, `${t}ghi-ro`) cho Thay PA trong Kết quả. */
-      assert(/khoa: (?:'|`\$\{t\})ghi-ro/.test(s) && /id=\{lf\.oId\((?:k\()?'ghi-ro'\)\)?\}/.test(s) && !/loiGhiRo/.test(s), `${f}: Ghi rõ chưa vào luật useLoiForm / còn cơ chế dự phòng`);
+      /* PR-PA: FormPa đặt tiền tố khoá (`k('ghi-ro')`, `${tien}ghi-ro`) cho Thay PA trong Kết quả. */
+      assert(/khoa: (?:'|`\$\{(?:t|tien)\})ghi-ro/.test(s) && /id=\{lf\.oId\((?:k\()?'ghi-ro'\)\)?\}/.test(s) && !/loiGhiRo/.test(s), `${f}: Ghi rõ chưa vào luật useLoiForm / còn cơ chế dự phòng`);
     }
     assert(/id=\{lf\.oId\('tu-tuan'\)\}/.test(doc(m + 'cases/QuickReport.tsx')) && /id=\{lf\.oId\('ngay-lam'\)\}/.test(doc(m + 'cases/ThaoTacCase.tsx'))
       && !/ChonTuan/.test(doc(m + 'cases/CapNhatTuan.tsx')), 'ô ngày bắt buộc chưa nhận id của useLoiForm (PR-SOS Q28-4: Điều chỉnh không còn ô hạn)');

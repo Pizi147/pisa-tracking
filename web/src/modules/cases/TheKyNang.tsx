@@ -7,6 +7,7 @@ import { DongXinYKien } from './DongXinYKien.tsx';
 import {
   CHUA_CO_HAN, OUTCOME_MARK, OUTCOME_TONE, chuKetQuaPa, chuKhoangPa, dangChay, deadlineView, tienDoCase, xepTheKyNang,
 } from '@shared/domain/index.ts';
+import { t } from '@shared/i18n/index.ts';
 import {
   DongMt, NhanLoai, NhanTamDung, SCORE_CHIP_ROW, TamDungCtx, TenCase, chuBuoi, chuNguoi, gapText,
   type CaseCard, type MoCase, type Plan, type SkillBoardRow,
@@ -113,7 +114,7 @@ function KhoiCase({ c, onMoCase }: { c: CaseCard; onMoCase: (caseId: number, o?:
               {/* OV-11d (CA2-9): chữ hạn cùng luật bảng máy tính (`DongHan`): quá hạn ⚠ · hôm nay · hạn hết dd/mm. */}
               {han?.quaHan ? <span className="inline-flex items-center gap-1 font-semibold text-bad"> · <IconCanhBao />{han.quaHan}</span>
                 : han?.homNay ? <span className="font-semibold text-soon"> · hôm nay</span>
-                : han && han.han !== CHUA_CO_HAN && <span className="text-slate-400"> · {han.han}</span>}
+                : han && han.han !== t(CHUA_CO_HAN) && <span className="text-slate-400"> · {han.han}</span>}
             </>}
           </span>
           {viecMo && (viecMo.viec === 'ghi-ket-qua' ? !!c.plans.find((p) => p.id === viecMo.paId)?.ghiDuoc : c.canEdit)

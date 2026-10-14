@@ -498,7 +498,7 @@ export async function runPrDlTests(t: YThucTestKit) {
 
   check('DL-5 DiemTheoLop: chữ đúng đặc tả, tablist, hỏi khi còn ô đang lưu, nhớ "Chỉ ô còn trống" bọc try/catch', () => {
     const f = doc('web/src/modules/cham/DiemTheoLop.tsx');
-    for (const chu of ['Còn ô đang lưu. Đợi lưu xong rồi chuyển?', 'Chưa có lịch {b!.luot.nhan} — ', 'xếp ở panel Lộ trình', "{ mo: 'lo-trinh' }", 'Chỉ ô còn trống',
+    for (const chu of ['Còn ô đang lưu. Đợi lưu xong rồi chuyển?', 'Chưa có lịch {nhan} —', 'xếp ở panel Lộ trình', "{ mo: 'lo-trinh' }", 'Chỉ ô còn trống',
       'là MT cũ: nhập bù điểm; "-" là em không dự thi.',   // PR-MTa: "MT cũ"; T23 thay "không nhận dấu".
       'Lớp chưa có lượt Test nào. Xếp lịch ở Kế hoạch Test.', 'role="tablist"', 'colSpan', 'onRetry={'])
       assert(f.includes(chu) || doc('web/src/modules/cham/LuoiFT.tsx').includes(chu), `thiếu: ${chu}`);
@@ -616,7 +616,7 @@ export async function runPrDlTests(t: YThucTestKit) {
 
   check('DL-6 TabDiemLop: danh sách lopCuaToi, lớp chọn ở ?lop=, 375 thành ô chọn; TestPage gắn tab', () => {
     const f = doc('web/src/modules/test/TabDiemLop.tsx');
-    for (const chu of ["'/diem-theo-lop/lop'", "get('lop')", '<select', '<DiemTheoLop', 'aria-current', 'Lớp · còn ô trống', 'aria-label="Danh sách lớp"', ' trống', "'đủ'"]) assert(f.includes(chu), `TabDiemLop thiếu: ${chu}`);
+    for (const chu of ["'/diem-theo-lop/lop'", "get('lop')", '<select', '<DiemTheoLop', 'aria-current', 'Lớp · còn ô trống', "aria-label={t('Danh sách lớp')}", ' trống', "t('đủ')"]) assert(f.includes(chu), `TabDiemLop thiếu: ${chu}`);
     assert(/tab === 'diem-lop' && <TabDiemLop/.test(doc('web/src/modules/test/TestPage.tsx')), 'TestPage gắn tab');
     assert(!f.includes('Lớp tôi dạy') && !f.includes('Lớp của tôi'), 'tiêu đề trung tính (QL/GVCN không "dạy")');
     assert(f.includes('grid grid-cols-1 items-start gap-4 md:grid-cols-[240px_minmax(0,1fr)]'), '375: lưới một cột minmax(0,1fr), không tràn ngang');

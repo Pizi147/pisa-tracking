@@ -11,6 +11,7 @@ import { ngay } from './hienThiNgay.ts';
 import { mondayOfDate } from './week.ts';
 import { TASK_GROUPS, TASK_PROGRESS_CLOSED, type TaskGroup, type TaskProgress } from './worklist.ts';
 import { NHOM_VIEC, nhomViecCua, type NhomViec } from './tongQuan.ts';
+import { t } from '../i18n/index.ts';
 
 const DAY_MS = 86_400_000;
 const addDaysIso = (iso: string, n: number): string =>
@@ -24,7 +25,7 @@ const daysBetweenIso = (from: string, to: string): number =>
 export const LOC_NHANH = ['tat-ca', 'qua-han', 'hom-nay', 'tuan-nay', 'den-het-tuan'] as const;
 export type LocNhanh = (typeof LOC_NHANH)[number];
 export const LOC_NHANH_LABEL: Record<LocNhanh, string> = {
-  'tat-ca': 'Tất cả', 'qua-han': 'Quá hạn', 'hom-nay': 'Hôm nay', 'tuan-nay': 'Tuần này', 'den-het-tuan': 'Đến hết tuần',
+  'tat-ca': t('Tất cả'), 'qua-han': t('Quá hạn'), 'hom-nay': t('Hôm nay'), 'tuan-nay': t('Tuần này'), 'den-het-tuan': t('Đến hết tuần'),
 };
 
 /** Việc dòng Hỗ trợ học viên tối thiểu cần có — trùng `WorkItem` của `mywork.ts`. */
@@ -78,17 +79,17 @@ export type DongDemPhamVi = MucLocNhanh & {
  * của việc cả lớp (`emIds`, OV-11c CV-1 — không cộng dồn `count`). Chỉ xem Chấm điểm: "m bài cần chấm" (một bài = một kỹ năng của một em trong một lượt).
  * OV-11c (TE-4): đang lọc hạn (`loc`) thì dòng gộp chỉ đếm việc con KHỚP lọc — dưới "Quá hạn" chỉ bài quá hạn (= chỉ số Tổng quan).
  */
-export function demPhamVi(dong: readonly DongDemPhamVi[], chiChamDiem: boolean, loc?: { loc: LocNhanh; homNay: string }): { nhom: number; so: number; donVi: 'học viên' | 'bài cần chấm' } {
+export function demPhamVi(dong: readonly DongDemPhamVi[], chiChamDiem: boolean, loc?: { loc: LocNhanh; homNay: string }): { nhom: number; so: number; donVi: string } {
   const khop = (d: DongDemPhamVi) => !loc || khopLocNhanh(d, loc.loc, loc.homNay);
   const la = (d: DongDemPhamVi): DongDemPhamVi[] => (d.con?.length ? d.con.filter(khop).flatMap(la) : [d]);
   const ds = dong.flatMap(la);
-  if (chiChamDiem) return { nhom: dong.length, so: ds.reduce((n, d) => n + (d.soBai ?? d.count ?? (d.studentId !== null ? 1 : 0)), 0), donVi: 'bài cần chấm' };
+  if (chiChamDiem) return { nhom: dong.length, so: ds.reduce((n, d) => n + (d.soBai ?? d.count ?? (d.studentId !== null ? 1 : 0)), 0), donVi: t('bài cần chấm') };
   const em = new Set<number>();
   for (const d of ds) {
     if (d.studentId !== null) em.add(d.studentId);
     for (const id of d.emIds ?? []) em.add(id);
   }
-  return { nhom: dong.length, so: em.size, donVi: 'học viên' };
+  return { nhom: dong.length, so: em.size, donVi: t('học viên') };
 }
 
 /** Số việc ở mỗi ô lọc nhanh — ĐÃ áp Loại việc đang chọn, CHƯA áp chính lọc nhanh (facet không tự lọc chính nó). */
@@ -178,8 +179,8 @@ function isVuaXong(r: DongVanHanh, homNay: string): boolean {
 export const HANG_SO = ['qua-han', 'cho-nguoi-khac', 'can-quyet-dinh', 'vua-xong'] as const;
 export type HangSo = (typeof HANG_SO)[number];
 export const HANG_SO_LABEL: Record<HangSo, string> = {
-  'qua-han': 'Quá hạn', 'cho-nguoi-khac': 'Chờ người khác', 'can-quyet-dinh': 'Cần quyết định',
-  'vua-xong': 'Vừa hoàn thành (7 ngày)',
+  'qua-han': t('Quá hạn'), 'cho-nguoi-khac': t('Chờ người khác'), 'can-quyet-dinh': t('Cần quyết định'),
+  'vua-xong': t('Vừa hoàn thành (7 ngày)'),
 };
 
 export function khopHang(r: DongVanHanh, hang: HangSo, homNay: string): boolean {
@@ -246,7 +247,7 @@ export function facetVanHanh(rows: DongVanHanh[], f: LocVanHanh, homNay: string)
 /** Dòng phụ ở cột Hạn khi hạn đã dời (Q9) — hạn quá hạn vẫn tính theo hạn HIỆN TẠI, không đổi luật SLA. */
 export function dongHanDaDoi(i: { hanGoc: string | null; lyDo: string | null }, homNay: string): string | null {
   if (!i.hanGoc) return null;
-  const base = `đã dời từ ${ngay(i.hanGoc, homNay)}`;
+  const base = t('đã dời từ {ngay}', { ngay: ngay(i.hanGoc, homNay) });
   return catDongPhu(i.lyDo ? `${base} · "${i.lyDo}"` : base);
 }
 
@@ -268,9 +269,9 @@ export function trangThaiDonVi(o: OBaoCao[]): TrangThaiDonVi {
   const states = o.map(trangThaiO);
   const daNop = states.filter((s) => s === 'da-nop').length;
   const total = o.length;
-  if (total > 0 && daNop === total) return { ma: 'da-nop', nhan: 'Đã nộp', phu: null };
-  if (states.every((s) => s === 'chua')) return { ma: 'chua', nhan: 'Chưa báo cáo', phu: null };
-  return { ma: 'nhap', nhan: 'Nháp · chưa nộp', phu: `đã nộp ${daNop}/${total}` };
+  if (total > 0 && daNop === total) return { ma: 'da-nop', nhan: t('Đã nộp'), phu: null };
+  if (states.every((s) => s === 'chua')) return { ma: 'chua', nhan: t('Chưa báo cáo'), phu: null };
+  return { ma: 'nhap', nhan: t('Nháp · chưa nộp'), phu: t('đã nộp {daNop}/{total}', { daNop, total }) };
 }
 
 // ====================================================================== Form Giao việc (PR-GVa, F03 + F04)

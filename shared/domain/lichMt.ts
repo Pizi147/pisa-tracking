@@ -10,6 +10,7 @@
 import { addDaysIso } from './sos.ts';
 import { mondayOfDate } from './week.ts';
 import { tuanLich } from './hienThiNgay.ts';
+import { t } from '../i18n/index.ts';
 
 export const CUA_SO_CASE_LICH_SU_NGAY = 28;
 /** T37: một lộ trình tối đa MT8. */
@@ -68,12 +69,12 @@ export function soMtKeTiep(ds: LuotSo[]): number {
 /** `null` = tạo được MT(n); còn lại là câu lỗi tiếng Việt cho người dùng. Đếm lượt CÒN HIỆU LỰC (`status != 'cancelled'`). */
 export function kiemSoMtMoi(ds: LuotSo[], n: number): string | null {
   const con = ds.filter((x) => x.status !== 'cancelled');
-  if (!Number.isInteger(n) || n < 1) return 'Số MT không hợp lệ.';
-  if (n > MT_TOI_DA) return `Tối đa MT${MT_TOI_DA} cho một lộ trình.`;
-  if (con.some((x) => x.attempt_no === n)) return `Lộ trình này đã có MT${n}. Đổi tuần thay vì tạo mới.`;
+  if (!Number.isInteger(n) || n < 1) return t('Số MT không hợp lệ.');
+  if (n > MT_TOI_DA) return t('Tối đa MT{MT_TOI_DA} cho một lộ trình.', { MT_TOI_DA });
+  if (con.some((x) => x.attempt_no === n)) return t('Lộ trình này đã có MT{n}. Đổi tuần thay vì tạo mới.', { n });
   const ke = soMtKeTiep(ds);
-  if (n > ke) return `Chưa có MT${ke} — xếp MT${ke} trước rồi mới xếp MT${n}.`;
-  if (ds.some((x) => x.attempt_no === n && x.status === 'cancelled' && x.coDiem)) return `MT${n} đã huỷ nhưng còn điểm — không dùng lại số này.`;
+  if (n > ke) return t('Chưa có MT{ke} — xếp MT{ke2} trước rồi mới xếp MT{n}.', { ke, ke2: ke, n });
+  if (ds.some((x) => x.attempt_no === n && x.status === 'cancelled' && x.coDiem)) return t('MT{n} đã huỷ nhưng còn điểm — không dùng lại số này.', { n });
   return null;
 }
 
@@ -85,11 +86,11 @@ export function kiemSoMtMoi(ds: LuotSo[], n: number): string | null {
 export function kiemTuanXep(o: { ketThuc: string[]; homNay: string; quanLy: boolean }): { cau: string | null; quaTuan: boolean; mtCu: boolean } {
   const quaTuan = o.ketThuc.some((w) => laLichSu(w, o.homNay));
   const mtCu = o.ketThuc.length > 0 && laMtCu([...o.ketThuc].sort()[o.ketThuc.length - 1], o.homNay);
-  return { cau: !o.quanLy && quaTuan ? 'Chọn tuần từ tuần này trở đi.' : null, quaTuan, mtCu };
+  return { cau: !o.quanLy && quaTuan ? t('Chọn tuần từ tuần này trở đi.') : null, quaTuan, mtCu };
 }
 
 /** Tooltip chip vàng "Tuần đã qua" (T4) — panel Xếp lịch, hộp một đợt: Quản lý xếp MT chưa thi về tuần đã qua. */
-export const CAU_TUAN_DA_QUA = 'MT chưa thi xếp về tuần đã qua — tuần cách ≥ 2 tuần thì là MT cũ.';
+export const CAU_TUAN_DA_QUA = t('MT chưa thi xếp về tuần đã qua — tuần cách ≥ 2 tuần thì là MT cũ.');
 
 /** Rà #120: "Đã thi tới MT" = d mà MT1…MT(d) có MT rơi vào tuần chưa qua → số các MT đó (để nhắc lùi Tuần bắt đầu). */
 export function mtDaThiChuaQua(lich: readonly number[], tuanBatDau: string, daThiToiMt: number, homNay: string): number[] {
@@ -127,7 +128,7 @@ export function cauMtSeDoi(lich: readonly number[], luot: readonly { attemptNo: 
   if (!lich.length || !tuanMoi) return undefined;
   const seDoi = luot.filter((a) => a.status === 'planned' && a.planSource === 'auto' && !a.scored).sort((a, b) => a.attemptNo - b.attemptNo);
   return seDoi.length
-    ? `${seDoi.map((a) => `MT${a.attemptNo}`).join(', ')} sẽ dời sang `
+    ? t('{x} sẽ dời sang ', { x: seDoi.map((a) => `MT${a.attemptNo}`).join(', ') })
       + seDoi.map((a) => tuanLich(addDaysIso(tuanMoi, (tuanHocCuaMt(lich, a.attemptNo) - 1) * 7), homNay)).join(', ')
     : undefined;
 }
@@ -180,9 +181,9 @@ export type KetQuaHuy = { id: number; attemptId: number; luc: string; lyDo: stri
  */
 export function chuDoiVang(l: { weekStart: string | null; doiTu: string | null; absenceMoveCount: number }, homNay: string): { chu: string; title: string } {
   const tuan = tuanLich(l.weekStart, homNay);
-  const title = `Dời từ ${l.doiTu} sang ${tuan} (vắng lần ${l.absenceMoveCount}).`;
-  if (l.weekStart && homNay && mondayOfDate(l.weekStart) === mondayOfDate(homNay)) return { chu: `Thi bù tuần này (lần ${l.absenceMoveCount})`, title };
-  return { chu: `vắng · dời sang ${tuan} · lần ${l.absenceMoveCount}`, title };
+  const title = t('Dời từ {doiTu} sang {tuan} (vắng lần {x}).', { doiTu: l.doiTu, tuan, x: l.absenceMoveCount });
+  if (l.weekStart && homNay && mondayOfDate(l.weekStart) === mondayOfDate(homNay)) return { chu: t('Thi bù tuần này (lần {x})', { x: l.absenceMoveCount }), title };
+  return { chu: t('vắng · dời sang {tuan} · lần {x}', { tuan, x: l.absenceMoveCount }), title };
 }
 
 /** Một lượt cần lưu ở tab "Xếp theo học viên" (PR-XTHV): tuần sớm nhất trước / sau khi sửa; `taoMoi` = lượt chưa có (đi `/xep-moi`). */

@@ -19,7 +19,7 @@ export async function runPrSlTests(t: YThucTestKit) {
     assert(/daSua\?: boolean/.test(k) && k.includes("chan.daSua ? t('Huỷ thay đổi') : t('Đóng')"), 'KhungPanel chưa có chan.daSua');
     assert(/chan=\{\{\s*daSua,/.test(doc('web/src/modules/cases/QuickReport.tsx')), 'Tạo Case chưa truyền daSua');
     assert(/daSua: !!pasteText\.trim\(\)/.test(doc('web/src/modules/students/IntakePanel.tsx')), 'Thêm HV chưa truyền daSua');
-    assert(doc('web/src/modules/duyet/TheYeuCau.tsx').includes("chu.trim() ? 'Huỷ thay đổi' : 'Đóng'"), 'Từ chối inline');
+    assert(doc('web/src/modules/duyet/TheYeuCau.tsx').includes("chu.trim() ? t('Huỷ thay đổi') : t('Đóng')"), 'Từ chối inline');
     for (const f of ['web/src/modules/fasttrack/MockDetailPage.tsx', 'web/src/modules/platform/AccountsAdmin.tsx', 'web/src/modules/classes/LuoiTaoLop.tsx']) {
       assert(!doc(f).includes("? 'Huỷ thay đổi' : 'Đóng', onClick"), `${f}: còn tự viết nhãn, dùng chan.daSua`);
     }
