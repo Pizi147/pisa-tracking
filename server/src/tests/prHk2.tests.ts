@@ -268,9 +268,9 @@ export async function runPrHk2Tests(t: YThucTestKit) {
     const s = doc('web/src/modules/students/StudentsPage.tsx');
     assert(/placeholder=\{t\('🔍 Lọc trong danh sách này…'\)\}/.test(s) && !/Tìm tên, mã học viên hoặc mã lớp/.test(s), 'placeholder ô tìm');
     assert(/className="btn btn-sm max-sm:hidden"[^]*?>\{t\('\+ Lớp mới'\)\}</.test(s) && /className="btn btn-sm btn-primary max-sm:hidden"[^]*?>\{t\('\+ Học viên'\)\}</.test(s), 'hai nút ngoài phải max-sm:hidden');
-    const mn = s.slice(s.indexOf('<MenuDong nhan="Thao tác trang"'), s.indexOf('<MenuDong nhan="Thao tác trang"') + 900);
+    const mn = s.slice(s.indexOf("<MenuDong nhan={t('Thao tác trang')}"), s.indexOf("<MenuDong nhan={t('Thao tác trang')}") + 900);
     assert(/dienThoai && data\?\.coTheTaoLop/.test(mn) && /nhan: t\('\+ Lớp mới'\)/.test(mn), 'mục "+ Lớp mới" trong menu chỉ khi dienThoai');
-    assert(/dienThoai && data\?\.coTheThemHocVien/.test(mn) && /nhan: '\+ Học viên'/.test(mn), 'mục "+ Học viên" trong menu chỉ khi dienThoai');   // OV-11g HL-14: cờ trang
+    assert(/dienThoai && data\?\.coTheThemHocVien/.test(mn) && /nhan: t\('\+ Học viên'\)/.test(mn), 'mục "+ Học viên" trong menu chỉ khi dienThoai');   // OV-11g HL-14: cờ trang
     assert(/keTruoc/.test(mn), 'Lưu trữ cách một đường kẻ khi có mục thêm');
   });
 
