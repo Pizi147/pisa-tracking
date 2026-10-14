@@ -4,7 +4,7 @@
  *  · Ô điểm chưa nhập (n quá hạn) — `myWork` nhóm Chấm điểm, đếm bằng `demPhamVi` như dòng phạm vi Công việc ("m bài cần chấm"; lọc Quá hạn = `khopLocNhanh`).
  *  · Đề nghị dời chờ — `lichTest` tuần này, cột `choDuyetDoi` (hàng lớp Lịch Test ghi "n bài vắng · chờ Quản lý duyệt dời").
  *  · MT chưa xếp lịch — `danhSachLop` của Kế hoạch Test, `chuaCoLichTiep` các lớp FT (em đang học không có lượt MT nào có tuần).
- *  · GV chấm quá hạn — dòng Chấm điểm quá hạn của `myWork` có người phụ trách; Nhắc = `POST /my-work/nhac` (một lần / dòng / ngày, như Công việc).
+ *  · GV chấm quá hạn — dòng Chấm điểm quá hạn của `myWork` có người phụ trách (OV-12h: chỉ xem, bỏ Nhắc).
  */
 import { demPhamVi, khopLocNhanh } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -19,7 +19,6 @@ import { danhSachLop } from '../keHoach/keHoachTest.ts';
 
 export type GvQuaHan = {
   key: string; ownerId: number; gv: string; kyNang: string; lop: string | null; luot: string | null; soBai: number; han: string | null;
-  daNhacLuc: string | null;
 };
 export type TongQuanMt = {
   tuan: string;
@@ -45,7 +44,7 @@ export function tongQuanMt(p: Principal, f: { branchId?: number | null } = {}): 
     .filter((it) => it.group === 'score' && it.urgency === 'overdue' && it.ownerId !== null)
     .map((it) => ({
       key: it.key, ownerId: it.ownerId, gv: it.owner ?? '', kyNang: it.reason, lop: it.classCode ?? null, luot: it.contextLabel ?? null,
-      soBai: it.soBai ?? 0, han: it.due ?? null, daNhacLuc: it.nhac?.daNhacLuc ?? null,
+      soBai: it.soBai ?? 0, han: it.due ?? null,
     }));
 
   return {

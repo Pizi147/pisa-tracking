@@ -242,6 +242,13 @@ export const METRICS: readonly ChiSo[] = [
     tapDuDieuKien: 'Trong các lượt SOS: lượt có ít nhất một việc và mọi việc đều đã xong hoặc đã bỏ (kèm lý do). "Hoàn thành" là SUY RA, không lưu.',
     thoiGian: 'phat-sinh-trong-ky', khuTrung: 'Mỗi lượt Test chỉ đếm 1 lần', drilldown: '/metrics/phoi-hop-hoan-thanh',
   },
+  {
+    id: 'phoi-hop-qua-han', ten: 'Meeting CX quá hạn xác nhận',
+    cauHoi: 'Có bao nhiêu lượt SOS có việc "CX / GĐCN meeting" chưa xác nhận sau 5 ngày?',
+    donVi: 'luot-sos',
+    tapDuDieuKien: 'OV-12h: lượt Mock FT (chưa huỷ) có việc CX / GĐCN meeting với HV hoặc HV / PH còn Cần xử lý, tạo đã quá 5 ngày (hạn = ngày tạo + 5, quá hạn khi hôm nay sau hạn). Người phụ trách: GVCN lớp em đang học — cùng dòng Phối hợp SOS ở Công việc.',
+    thoiGian: 'hien-trang', khuTrung: 'Mỗi lượt Test chỉ đếm 1 lần', drilldown: '/metrics/phoi-hop-qua-han',
+  },
   /* PR-VAI-a (K1-09, V8, K5-11, Q8): bốn việc "của Bạn" ở Cần xử lý — mỗi chỉ số gọi đúng hàm màn khác đang dùng. */
   {
     id: 'van-hanh-can-quyet-dinh', ten: 'Việc Vận hành cần quyết định',

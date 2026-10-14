@@ -18,7 +18,6 @@ export async function runPrOv10cTests(t: YThucTestKit) {
   const { highlights } = await import('../worklist/highlights.ts');
   const { lichTest } = await import('../cham/canCham.ts');
   const { danhSachLop } = await import('../keHoach/keHoachTest.ts');
-  const { nhacViec } = await import('../worklist/nhacViec.ts');
   const { ensurePeriod } = await import('../platform/week.ts');
   const { demPhamVi, khopLocNhanh } = await import('../../../shared/domain/index.ts');
   const { xoaNho } = await import('../platform/nguCanhRequest.ts');
@@ -154,22 +153,6 @@ export async function runPrOv10cTests(t: YThucTestKit) {
       assert(it && g.gv && g.soBai === it.soBai && g.han === it.due && g.kyNang === it.reason, `dòng lệch: ${JSON.stringify(g)}`);
     }
     assert(r.gvQuaHan.reduce((n, g) => n + g.soBai, 0) <= r.oChuaNhap.quaHan, 'ô của GV quá hạn vượt số quá hạn');
-  });
-
-  check('OV10c-7 · Nhắc từ Tổng quan: ghi một thông báo cho đúng GV, bấm lại không nhắc trùng, Tổng quan + Công việc cùng thấy "đã nhắc"', () => {
-    thu(() => {
-      const ad = loadPrincipal(idAdmin);
-      const g = tongQuanMt(ad, { branchId: mb }).gvQuaHan[0];
-      assert(g, 'demo cần ít nhất một dòng GV chấm quá hạn ở Móng Bình');
-      const a = nhacViec(ad, { key: g.key, ownerId: g.ownerId });
-      const b = nhacViec(ad, { key: g.key, ownerId: g.ownerId });
-      assert(a.daNhacLuc && a.daNhacLuc === b.daNhacLuc, `nhắc lại phải giữ giờ cũ: ${a.daNhacLuc} / ${b.daNhacLuc}`);
-      const n = one(`SELECT COUNT(*) n FROM notifications WHERE user_id = ? AND kind = 'nhac_viec' AND dedup_key LIKE ?`, g.ownerId, `nhac:%${demoToday()}`).n;
-      assert(n === 1, `GV nhận ${n} thông báo`);
-      xoaNho();
-      const sau = tongQuanMt(ad, { branchId: mb }).gvQuaHan.find((x) => x.key === g.key);
-      assert(sau?.daNhacLuc === a.daNhacLuc, 'Tổng quan chưa thấy đã nhắc');
-    });
   });
 
   check('OV10c-8 · Khối Mock Test chỉ Admin: QL, TVV, CX gọi → 403 (QL giữ Tổng quan cũ)', () => {

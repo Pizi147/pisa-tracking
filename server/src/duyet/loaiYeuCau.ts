@@ -9,7 +9,7 @@
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import type { Principal } from '../permissions.ts';
 import {
-  INTERVENTION_KIND_LABEL, REGULAR_SKILLS, caseTopicLabel, duongHoSoHocVien, khoaDongGop, moTaBoTro, nhanDotNgan, nhanLoaiXuLy, outcomeLabelFor, shortDate, tenMonNgan, tuanLich,
+  INTERVENTION_KIND_LABEL, REGULAR_SKILLS, caseTopicLabel, duongHoSoHocVien, moTaBoTro, nhanDotNgan, nhanLoaiXuLy, outcomeLabelFor, shortDate, tenMonNgan, tuanLich,
   type InterventionKind, type LoaiYeuCau, type TrangThaiYc,
   type TruongDeXuat,
 } from '../../../shared/domain/index.ts';
@@ -106,56 +106,18 @@ export function napTheoDoiTuong(conn: any, ds: YeuCauRow[], sql: string): Map<nu
     .map((r) => [r.id as number, r]));
   return new Map(ds.map((y) => [y.id, theoId.get(y.doi_tuong_id)]));
 }
-/**
- * PR-NV (rà #205): tên người nhận + giờ "đã nhắc hôm nay" cho thẻ Báo QL nạp theo đối tượng (Mini Test, Cuối khoá) — cùng câu với
- * `bao_len_y_thuc`; khoá Mini Test cũ `mini_test:` chuẩn về `minitest:` như lõi nhắc (`nhacViec.ts`).
- */
+/** PR-NV (rà #205): tên người nhận cho thẻ Báo QL nạp theo đối tượng (Mini Test, Cuối khoá). OV-12h: bỏ giờ "đã nhắc". */
 function napNguoiNhac(conn: any, ds: YeuCauRow[], them: Map<number, any>): Map<number, any> {
   const ids = ds.map((y) => y.id);
   const nhac = new Map<number, any>();
   if (ids.length) {
     for (const r of conn.prepare(
-      `SELECT y.id, u.full_name AS ten_gv, n.created_at AS da_nhac
+      `SELECT y.id, u.full_name AS ten_gv
          FROM yeu_cau_duyet y LEFT JOIN users u ON u.id = json_extract(y.du_lieu, '$.ownerId')
-         LEFT JOIN notifications n ON n.user_id = json_extract(y.du_lieu, '$.ownerId')
-               AND n.dedup_key = 'nhac:' || REPLACE(json_extract(y.du_lieu, '$.viecKey'), 'mini_test:', 'minitest:') || ':' || ?
-        WHERE y.id IN (${ids.map(() => '?').join(',')})`).all(demoToday(), ...ids) as any[]) nhac.set(r.id, r);
+        WHERE y.id IN (${ids.map(() => '?').join(',')})`).all(...ids) as any[]) nhac.set(r.id, r);
   }
-  return kemNhacGop(conn, ds, new Map(ds.map((y) => [y.id, { ...them.get(y.id), ...nhac.get(y.id) }])));
+  return new Map(ds.map((y) => [y.id, { ...them.get(y.id), ...nhac.get(y.id) }]));
 }
-
-/** Tiền tố khoá việc của thẻ → nhóm dòng việc (`myWork`); khoá khác (Cuối khoá…) không có dòng gộp. */
-const NHOM_CUA_VIEC_KEY: Record<string, string> = { cause: 'cause', yt_xu_ly: 'yt_xu_ly', yt_xem: 'yt_xem', yt_thuc_hien: 'yt_thuc_hien', ban_giao: 'ban_giao', minitest: 'mini_test', mini_test: 'mini_test' };
-const nhomLopCua = (y: YeuCauRow) => {
-  let du: any = {};
-  try { du = y.du_lieu ? JSON.parse(y.du_lieu) : {}; } catch { du = {}; }
-  return { owner: typeof du.ownerId === 'number' ? du.ownerId : null, nhom: NHOM_CUA_VIEC_KEY[String(du.viecKey ?? '').split(':')[0]] ?? null, lop: y.lop_id ?? null };
-};
-/**
- * OV-11c (CV-14): "đã nhắc hôm nay" qua DÒNG GỘP ở Hỗ trợ học viên (`gop:{nhóm}:{lớp}:u{người}[:{thêm}]`) — Nhắc một dòng gộp là nhắc mọi việc trong đó
- * (`khoaCungViec` của lõi Nhắc), nên thẻ Báo QL của một việc trong dòng cũng là "đã nhắc". Một câu cho cả lô thẻ.
- */
-function daNhacQuaGop(conn: any, ds: readonly { id: number; owner: number | null; nhom: string | null; lop: number | null; them?: string | null }[]): Map<number, string> {
-  const co = ds.filter((x) => x.owner && x.nhom && x.lop);
-  if (!co.length) return new Map();
-  const homNay = demoToday();
-  const nguoi = [...new Set(co.map((x) => x.owner as number))];
-  const luc = new Map((conn.prepare(
-    `SELECT user_id, dedup_key, created_at FROM notifications WHERE kind = 'nhac_viec' AND user_id IN (${nguoi.map(() => '?').join(',')}) AND dedup_key LIKE ?`,
-  ).all(...nguoi, `nhac:gop:%:${homNay}`) as any[]).map((r) => [`${r.user_id}|${r.dedup_key}`, r.created_at as string]));
-  const out = new Map<number, string>();
-  for (const x of co) {
-    const l = luc.get(`${x.owner}|nhac:${khoaDongGop(x.nhom!, x.lop!, x.owner, x.them)}:${homNay}`);
-    if (l) out.set(x.id, l);
-  }
-  return out;
-}
-/** Gắn giờ nhắc qua dòng gộp vào bảng `nap` (giữ giờ nhắc theo khoá việc nếu đã có). */
-const kemNhacGop = (conn: any, ds: YeuCauRow[], bang: Map<number, any>, them?: (y: YeuCauRow, x: any) => string | null) => {
-  const gop = daNhacQuaGop(conn, ds.map((y) => ({ id: y.id, ...nhomLopCua(y), them: them?.(y, bang.get(y.id)) ?? null })));
-  for (const [id, l] of gop) { const x = bang.get(id); if (x && !x.da_nhac) x.da_nhac = l; }
-  return bang;
-};
 const ngay = (iso: string | null | undefined, ngu: NguCanhThe) => shortDate(iso ?? null, ngu.homNay);
 const nguoiXin = (yc: YeuCauRow, ngu: NguCanhThe) => (yc.nguoi_xin == null ? 'Hệ thống' : ngu.nguoi.get(yc.nguoi_xin) ?? 'Giáo viên');
 
@@ -367,14 +329,10 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
     },
     nap: (conn, ds) => {
       const ids = ds.map((y) => y.id);
-      return kemNhacGop(conn, ds, new Map((conn.prepare(
-        `SELECT y.id, sc.topic, sc.owner_user_id, u.full_name AS ten_gv, n.created_at AS da_nhac, a.kind AS luot_kind, a.attempt_no
+      return new Map((conn.prepare(
+        `SELECT y.id, sc.topic, sc.owner_user_id, u.full_name AS ten_gv
            FROM yeu_cau_duyet y JOIN sos_cases sc ON sc.id = y.doi_tuong_id LEFT JOIN users u ON u.id = sc.owner_user_id
-           LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
-           LEFT JOIN notifications n ON n.user_id = sc.owner_user_id AND n.dedup_key = 'nhac:cause:' || sc.id || ':' || ?
-          WHERE y.id IN (${ids.map(() => '?').join(',')})`).all(demoToday(), ...ids) as any[]).map((r) => [r.id as number, r])),
-        /* Phần thêm của khoá gộp Xác nhận nguyên nhân (`gopThem` ở `mywork.ts`): bài + số lượt + kỹ năng. */
-        (_y, x) => (x ? `${x.luot_kind ?? 'mock'}${x.attempt_no ?? ''}:${x.topic ?? ''}` : null));
+          WHERE y.id IN (${ids.map(() => '?').join(',')})`).all(...ids) as any[]).map((r) => [r.id as number, r]));
     },
     moTa: (yc, ngu) => {
       const x = ngu.them.get(yc.id);
@@ -383,7 +341,7 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
         phu: x?.ten_gv ? `GVBM ${x.ten_gv}` : null,
         dong: [],
         mo: yc.hoc_vien_id ? duongHoSoHocVien(yc.hoc_vien_id, { caseId: yc.doi_tuong_id }) : undefined,
-        duLieu: { tenGv: x?.ten_gv ?? null, daNhacLuc: x?.da_nhac ?? null, ownerId: x?.owner_user_id ?? null },
+        duLieu: { tenGv: x?.ten_gv ?? null, ownerId: x?.owner_user_id ?? null },
       };
     },
   },
@@ -490,12 +448,10 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
       /* Chỉ thẻ đang chờ cần trạng thái sống (thẻ đã đóng đọc lý do đã lưu) — trong request GET, quét vừa nạp nên không tốn thêm câu. */
       const trang = trangThaiYThuc(ds.filter((y) => y.trang_thai === 'cho').map((y) => y.doi_tuong_id), hom);
       const rows = conn.prepare(
-        `SELECT y.id, y.doi_tuong_id AS sid, json_extract(y.du_lieu, '$.ownerId') AS owner, u.full_name AS ten_gv, n.created_at AS da_nhac
+        `SELECT y.id, y.doi_tuong_id AS sid, json_extract(y.du_lieu, '$.ownerId') AS owner, u.full_name AS ten_gv
            FROM yeu_cau_duyet y LEFT JOIN users u ON u.id = json_extract(y.du_lieu, '$.ownerId')
-           LEFT JOIN notifications n ON n.user_id = json_extract(y.du_lieu, '$.ownerId')
-                 AND n.dedup_key = 'nhac:' || json_extract(y.du_lieu, '$.viecKey') || ':' || ?
-          WHERE y.id IN (${ids.map(() => '?').join(',')})`).all(hom, ...ids) as any[];
-      return kemNhacGop(conn, ds, new Map(rows.map((r) => [r.id as number, { ...r, em: trang.get(r.sid) }])));
+          WHERE y.id IN (${ids.map(() => '?').join(',')})`).all(...ids) as any[];
+      return new Map(rows.map((r) => [r.id as number, { ...r, em: trang.get(r.sid) }]));
     },
     moTa: (yc, ngu) => {
       const x = ngu.them.get(yc.id);
@@ -505,7 +461,7 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
         phu: x?.ten_gv ? `GVCN ${x.ten_gv}` : null,
         dong: [],
         mo: yc.hoc_vien_id ? duongHoSoHocVien(yc.hoc_vien_id, { tab: 'y-thuc' }) : undefined,
-        duLieu: { tenGv: x?.ten_gv ?? null, daNhacLuc: x?.da_nhac ?? null, ownerId: x?.owner ?? null },
+        duLieu: { tenGv: x?.ten_gv ?? null, ownerId: x?.owner ?? null },
       };
     },
   },
@@ -567,13 +523,12 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
     },
     nap: (conn, ds) => {
       const ids = ds.map((y) => y.id);
-      return kemNhacGop(conn, ds, new Map((conn.prepare(
-        `SELECT y.id, c.code AS lop, json_extract(y.du_lieu, '$.ownerId') AS owner, u.full_name AS ten_gv, n.created_at AS da_nhac,
+      return new Map((conn.prepare(
+        `SELECT y.id, c.code AS lop, json_extract(y.du_lieu, '$.ownerId') AS owner, u.full_name AS ten_gv,
                 (SELECT COUNT(*) FROM lenh_chuyen_lop l WHERE l.lop_nguon_id = y.doi_tuong_id AND l.trang_thai != 'huy' AND l.huong != 'dung_hoc' AND l.xac_nhan_luc IS NULL) AS n
            FROM yeu_cau_duyet y JOIN classes c ON c.id = y.doi_tuong_id LEFT JOIN users u ON u.id = json_extract(y.du_lieu, '$.ownerId')
-           LEFT JOIN notifications n ON n.user_id = json_extract(y.du_lieu, '$.ownerId') AND n.dedup_key = 'nhac:' || json_extract(y.du_lieu, '$.viecKey') || ':' || ?
           WHERE y.id IN (${ids.map(() => '?').join(',')})`,
-      ).all(demoToday(), ...ids) as any[]).map((r) => [r.id as number, r])));
+      ).all(...ids) as any[]).map((r) => [r.id as number, r]));
     },
     moTa: (yc, ngu) => {
       const x = ngu.them.get(yc.id);
@@ -582,7 +537,7 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
         phu: x?.ten_gv ? `GVCN ${x.ten_gv}` : 'Lớp chưa có GVCN',
         dong: [`${x?.n ?? 0} em chưa được xác nhận bàn giao (hạn hết ${ngay(yc.han_duyet, ngu)}).`],
         mo: `/hoc-vien/lop/${yc.doi_tuong_id}?viec=ban-giao`,
-        duLieu: { tenGv: x?.ten_gv ?? null, daNhacLuc: x?.da_nhac ?? null, ownerId: x?.owner ?? null },
+        duLieu: { tenGv: x?.ten_gv ?? null, ownerId: x?.owner ?? null },
       };
     },
   },
@@ -676,7 +631,7 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
         phu: x?.ten_gv ?? null,   // OV-11c (CV-10): người giữ việc — tên em đã ở dòng phụ của thẻ
         dong: [`Mini Test ${pt} ngày ${ngay(x?.ngay_lam, ngu)} (cần từ 70%) — Case để mở, Quản lý xử lý từng trường hợp.`],
         mo: yc.hoc_vien_id ? duongHoSoHocVien(yc.hoc_vien_id, x?.case_id ? { caseId: x.case_id } : undefined) : undefined,
-        duLieu: { tenGv: x?.ten_gv ?? null, daNhacLuc: x?.da_nhac ?? null },
+        duLieu: { tenGv: x?.ten_gv ?? null },
       };
     },
   },
@@ -696,7 +651,7 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
         phu: x?.full_name ?? null,
         dong: [`Bài Final Test bị dời tới ${x?.week_start ? tuanLich(x.week_start, ngu.homNay) : 'tuần sau'} — sau tuần Final Test của lớp.`],
         mo: yc.hoc_vien_id ? duongHoSoHocVien(yc.hoc_vien_id) : undefined,
-        duLieu: { tenGv: x?.ten_gv ?? null, daNhacLuc: x?.da_nhac ?? null },
+        duLieu: { tenGv: x?.ten_gv ?? null },
       };
     },
   },

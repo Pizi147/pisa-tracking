@@ -681,7 +681,6 @@ export async function runPrYt4Tests(t: YThucTestKit) {
 
   // ------------------------------------------------------------------ Task 6 · việc Ý thức thật có hạn + Tổng quan + chuyển lớp
   const myworkSvc: any = await import('../worklist/mywork.ts');
-  const nhacSvc: any = await import('../worklist/nhacViec.ts');
   const ltSvc: any = await import('../classes/luatLoTrinh.ts');
   const viec = (who: any, key: string, o: Record<string, unknown> = {}) => (myworkSvc.myWork(who, o).items as any[]).find((x) => x.key === key);
 
@@ -729,19 +728,11 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     xuLy.daThucHien(gvcn, m.id, { performedOn: TODAY });
     assert(!viec(gvcn, `yt_thuc_hien:${m.id}`), 'xong');
   });
-  check('YT4 (6) · QL "Của GV (nhắc)" (nguoi=tat-ca) thấy dòng của GVCN, có nút Nhắc; "Của tôi" của QL thì không', () => {
+  check('YT4 (6) · QL "Của GV" (nguoi=tat-ca) thấy dòng của GVCN (OV-12h: không còn Nhắc); "Của tôi" của QL thì không', () => {
     const sid = hv(); ba3(sid, addDays(TODAY, -12));
     const it = viec(P.mbManager, `yt_xu_ly:${sid}`, { nguoi: 'tat-ca' });
-    assert(it && !it.mine && it.ownerId === gvcn.userId && it.nhac?.ownerId === gvcn.userId, JSON.stringify(it));
+    assert(it && !it.mine && it.ownerId === gvcn.userId && !('nhac' in it), JSON.stringify(it));
     assert(!viec(P.mbManager, `yt_xu_ly:${sid}`), 'Của tôi');
-  });
-  check('YT4 (6) · Nhắc từ thẻ Báo QL Ý thức (viecKey) → đúng GVCN; bấm chuông mở tab lớp chọn sẵn em', () => {
-    const sid = hv(); ba3(sid, addDays(TODAY, -12));
-    yc.quetYeuCau(TODAY);
-    const du = JSON.parse(theCho('bao_len_y_thuc', sid).du_lieu);
-    const kq = nhacSvc.nhacViec(P.mbManager, { key: du.viecKey, ownerId: du.ownerId });
-    const tb = thongBao(gvcn.userId, `nhac:${du.viecKey}:%`);
-    assert(kq.daNhacLuc && tb.length === 1 && tb[0].duong === `/hoc-vien/lop/${LOP}?tab=y-thuc&hv=${sid}&mo=xu-ly`, JSON.stringify(tb));
   });
   check('YT4 (6) · Chuyển lớp: thông báo cho GVCN lớp mới kèm "· đang có n vi phạm cần xử lý" (K5-18)', () => {
     const sid = hv(); ba3(sid);

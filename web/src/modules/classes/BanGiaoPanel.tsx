@@ -12,7 +12,7 @@ import { CHU_CHUYEN_LOP, NHAN_XET_TOI_THIEU, ngay, tuanLich, type PhieuBanGiaoDt
 /**
  * BÀN GIAO (PR-CT, §3.1f Q30-2, mockup 20 màn F · G · đọc bàn giao) — MỘT panel, ba dạng theo người mở:
  *   F  GVCN lớp cũ (hoặc Quản lý xác nhận thay): trái danh sách em + trạng thái phiếu, phải phiếu của em đang chọn — Hệ thống tự điền (chỉ đọc), mỗi môn một câu của
- *      GVBM (Nhắc · Điền thay), Nhận xét chung (bắt buộc ≥ 15 ký tự) → Xác nhận bàn giao. ↑/↓ đi từng em. Dưới 820 px: danh sách trên, phiếu dưới.
+ *      GVBM (Điền thay; OV-12h bỏ Nhắc), Nhận xét chung (bắt buộc ≥ 15 ký tự) → Xác nhận bàn giao. ↑/↓ đi từng em. Dưới 820 px: danh sách trên, phiếu dưới.
  *   G  GVBM của môn: bảng mỗi em một câu, lưu khi rời ô.
  *   Đọc: GV / Quản lý lớp mới, hoặc bất kỳ ai không ghi được — cùng bố cục F, chỉ đọc, hiện "Xác nhận bởi …".
  * Lối vào: Công việc › việc Bàn giao · hồ sơ lớp › dải Bàn giao / Sắp nhận · hồ sơ học viên › dải Sắp chuyển (mở thẳng em đó — `lenhId`).
@@ -98,9 +98,6 @@ function MasterDetail({ dto, lenhId, onClose, onDone, reload }: Chung) {
       toast.push('ok', `Đã lưu bàn giao ${em.ten}`);
       setDangSua(false); setDaBam(false); reload();
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
-  };
-  const nhac = async (e: PhieuEm, mon: string) => {
-    try { await api.post(`/lenh-chuyen/${e.lenhId}/nhac`, { mon }); toast.push('ok', 'Đã nhắc GVBM'); } catch (er: any) { toast.push('error', er.message); }
   };
   const luuDienThay = async () => {
     if (!dienThay || !dienThay.chu.trim()) return;
@@ -194,7 +191,6 @@ function MasterDetail({ dto, lenhId, onClose, onDone, reload }: Chung) {
                       ) : (
                         <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
                           <span className="text-slate-400">Chưa có{m.gvbm.length ? ` · ${m.gvbm.join(', ')}` : ''}, <Han loai="viec-van-hanh" han={em.hanGvbm} /></span>
-                          {ghi && <button type="button" className="link border-0 bg-transparent p-0 text-xs" onClick={() => nhac(em, m.ma)}>Nhắc</button>}
                           {ghi && <button type="button" className="link border-0 bg-transparent p-0 text-xs" onClick={() => setDienThay({ lenhId: em.lenhId, mon: m.ma, chu: '' })}>Điền thay</button>}
                         </span>
                       )}

@@ -7,10 +7,8 @@ import { BoLocDoan, Card, Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { BranchFilter } from '../../ui/Filters.tsx';
 import { NganCase } from '../students/NganCase.tsx';
 import { TheYeuCau } from './TheYeuCau.tsx';
-import { ConfirmDialog } from '../../ui/Drawer.tsx';
-import { DsGvNhac } from '../congViec/HoTroHocVienTab.tsx';
 import {
-  LOAI_YC_META, PHAN_LOAI_CAN_QUYET, PHAN_LOAI_LABEL, TRAN_HANG_LOAT, chiaLo, chonHet, chonMot, laPhanLoai, lapNhacTatCa, tomTatKetQuaHangLoat,
+  LOAI_YC_META, PHAN_LOAI_CAN_QUYET, PHAN_LOAI_LABEL, TRAN_HANG_LOAT, chiaLo, chonHet, chonMot, laPhanLoai, tomTatKetQuaHangLoat,
   type KhoaChip, type LoaiYeuCau, type TheYeuCauDto,
 } from '@shared/domain/index.ts';
 
@@ -36,16 +34,15 @@ export function useTheNhanManh(ds: TheYeuCauDto[] | undefined): number | null {
 
 /**
  * CÔNG VIỆC › CHỜ DUYỆT (PR-DUYET, M8, Q27-3) — MỘT hộp cho mọi thứ "ai đó xin Quản lý quyết". Chip phân loại phải quyết đứng cố định kể cả
- * số 0 (Q12), ba tab Chờ duyệt · Nhắc việc (PR-GVb J5b; PR-NV đổi tên, mã `de-biet` giữ) · Đã xử lý 30 ngày, chi nhánh. Thẻ quá hạn đứng đầu (máy chủ xếp).
+ * số 0 (Q12), ba tab Chờ duyệt · Báo QL (PR-GVb J5b; OV-12h bỏ Nhắc, đổi tên — mã `de-biet` giữ) · Đã xử lý 30 ngày, chi nhánh. Thẻ quá hạn đứng đầu (máy chủ xếp).
  * Duyệt hàng loạt (PR-GVb D01/Q-B): mọi tab phân loại (cả Tất cả), chỉ cùng MỘT loại `hangLoat`, tối đa `TRAN_HANG_LOAT`; kết quả một câu.
- * Nhắc việc: "Nhắc tất cả (n)" — máy chủ kiểm quyền từng thẻ, không nhắc lặp trong ngày; hết giờ giữa chừng → thẻ chưa nhắc bấm lại được.
  */
 export function HopChoDuyet() {
   const toast = useToast();
   const [params, setParams] = useSearchParams();
   const thamXem = params.get('xem');
   const xem = thamXem === 'da-xu-ly' || thamXem === 'de-biet' ? thamXem : 'cho';
-  /* Phân loại chỉ lọc ở tab Chờ duyệt; Nhắc việc chỉ có một phân loại. */
+  /* Phân loại chỉ lọc ở tab Chờ duyệt; Báo QL chỉ có một phân loại. */
   const phan = xem !== 'de-biet' && laPhanLoai(params.get('phan')) && params.get('phan') !== 'bao-len' ? (params.get('phan') as KhoaChip) : 'tat-ca';
   /* Chủ sản phẩm 06/10: hộp LUÔN mở Tất cả chi nhánh (không áp chi nhánh mặc định) — số dòng khớp badge Công việc; tự lọc nếu muốn. */
   const branchId = params.get('cn') ? Number(params.get('cn')) : null;
@@ -59,7 +56,7 @@ export function HopChoDuyet() {
     next.delete('the');
     setParams(next, { replace: true });
   };
-  /* PR-GVb (J5b): link cũ `?phan=bao-len` (thông báo, Tổng quan cũ) → tab Nhắc việc, không gãy. */
+  /* PR-GVb (J5b): link cũ `?phan=bao-len` (thông báo, Tổng quan cũ) → tab Báo QL, không gãy. */
   useEffect(() => {
     if (params.get('phan') !== 'bao-len') return;
     const next = new URLSearchParams(params); next.delete('phan'); next.set('xem', 'de-biet');
@@ -94,21 +91,13 @@ export function HopChoDuyet() {
   const choHangLoat = xem === 'cho';
   /* Gợi ý một lần: có ≥ 2 thẻ cùng loại hàng loạt mà chưa chọn gì. */
   const coCapHangLoat = choHangLoat && !chon.size && ds.some((a, i) => a.hangLoat && ds.some((b, j) => j !== i && b.loai === a.loai));
-  /* Nhắc việc (G5): thẻ có người nhận + khoá việc, chưa nhắc hôm nay. `daNhacNgoai` = vừa nhắc hàng loạt. */
-  const [daNhacNgoai, setDaNhacNgoai] = useState<Record<number, string>>({});
-  /* Thẻ vừa nhắc lỗi (việc không còn, ngoài phạm vi…) không tính lại vào n — bấm lại cũng lỗi y hệt. Trừ 503 (chưa kịp): bấm lại được. */
-  const [nhacLoi, setNhacLoi] = useState<Set<number>>(new Set());
-  useEffect(() => { setDaNhacNgoai({}); setNhacLoi(new Set()); }, [url]);
-  const nhacDuoc = xem === 'de-biet'
-    ? ds.filter((x) => typeof x.duLieu?.ownerId === 'number' && typeof x.duLieu?.viecKey === 'string' && !x.duLieu?.daNhacLuc && !daNhacNgoai[x.id] && !nhacLoi.has(x.id))
-    : [];
   const [ngan, setNgan] = useState<number | null>(null);
 
   const xong = () => { reload(); invalidate('/yeu-cau/dem'); };
   /* Thẻ lỗi: một câu tổng + tối đa 3 dòng chi tiết, còn lại gộp — không dồn hàng chục toast. */
-  const baoKetQua = (viec: 'duyet' | 'nhac' | 'tu-choi', ok: number, loi: { id: number; loi: string; ma: number }[]) => {
+  const baoKetQua = (viec: 'duyet' | 'tu-choi', ok: number, loi: { id: number; loi: string; ma: number }[]) => {
     toast.push(loi.length ? 'error' : 'ok', tomTatKetQuaHangLoat(viec, ok, loi));
-    const chiTiet = loi.filter((l) => l.ma !== 503);   // "chưa nhắc, bấm lại" đã nói trong câu tổng
+    const chiTiet = loi;
     for (const l of chiTiet.slice(0, 3)) toast.push('error', `${ds.find((x) => x.id === l.id)?.hocVien ?? `Yêu cầu #${l.id}`}: ${l.loi}`);
     if (chiTiet.length > 3) toast.push('error', `…và ${chiTiet.length - 3} thẻ khác`);
   };
@@ -146,27 +135,6 @@ export function HopChoDuyet() {
       xong();
     } finally { setBusy(false); }
   };
-  /* OV-11c (CV-14): "Nhắc tất cả" hỏi lại như ở Hỗ trợ học viên (cùng hộp: n việc · k GV, danh sách GV). */
-  const [hoiNhac, setHoiNhac] = useState(false);
-  const lo = useMemo(() => lapNhacTatCa(nhacDuoc.map((x) => ({
-    id: x.id, owner: typeof x.duLieu?.tenGv === 'string' ? x.duLieu.tenGv : null, nhac: { ownerId: x.duLieu!.ownerId as number, daNhacLuc: null },
-  }))), [nhacDuoc]);
-  const nhacTatCa = async () => {
-    setHoiNhac(false);
-    if (busy || !lo.gui.length) return;
-    setBusy(true);
-    try {
-      const r = await api.post<{ ok: { id: number; daNhacLuc: string }[]; loi: { id: number; loi: string; ma: number }[] }>(
-        '/yeu-cau/nhac-nhieu', { ids: lo.gui.map((x) => x.id) });
-      setDaNhacNgoai((s) => ({ ...s, ...Object.fromEntries(r.ok.map((x) => [x.id, x.daNhacLuc])) }));
-      setNhacLoi((s) => new Set([...s, ...r.loi.filter((l) => l.ma !== 503).map((l) => l.id)]));
-      baoKetQua('nhac', r.ok.length, r.loi);
-    } catch (e: any) {
-      toast.push('error', e instanceof ApiError ? e.message : 'Mất kết nối giữa chừng — danh sách đã làm mới để thấy thẻ nào đã nhắc.');
-      xong();
-    } finally { setBusy(false); }
-  };
-
   if (error) return <ErrorState message={error.message} hint={error.hint} onRetry={reload} />;
   const dem = data?.dem;
   return (
@@ -180,12 +148,12 @@ export function HopChoDuyet() {
           setParams(next, { replace: true });
         }}
           muc={[{ key: 'cho', nhan: 'Chờ duyệt', so: xem === 'da-xu-ly' ? null : dem?.['tat-ca'] ?? null },
-            { key: 'de-biet', nhan: 'Nhắc việc', so: xem === 'da-xu-ly' ? null : data?.demBiet ?? null },
+            { key: 'de-biet', nhan: 'Báo QL', so: xem === 'da-xu-ly' ? null : data?.demBiet ?? null },
             { key: 'da-xu-ly', nhan: 'Đã xử lý (30 ngày)' }]} />
-        {/* VIEC-NHO-2 (phương án A): Trạng thái đứng đầu; nhóm Loại GIỮ CHỖ, mờ ở Nhắc việc — bấm Nhắc việc thì hàng lọc không nhảy. */}
+        {/* VIEC-NHO-2 (phương án A): Trạng thái đứng đầu; nhóm Loại GIỮ CHỖ, mờ ở Báo QL — bấm Báo QL thì hàng lọc không nhảy. */}
         <span className="mx-1 hidden h-5 w-px self-center sm:block" style={{ background: 'var(--line)' }} />
         <BoLocDoan ariaLabel="Loại yêu cầu" value={phan} onChange={(k) => setParam('phan', k === 'tat-ca' ? null : k)}
-          tat={xem === 'de-biet' ? 'Nhắc việc không chia loại' : undefined}
+          tat={xem === 'de-biet' ? 'Báo QL không chia loại' : undefined}
           muc={[{ key: 'tat-ca' as KhoaChip, nhan: 'Tất cả', so: dem?.['tat-ca'] ?? null },
             ...PHAN_LOAI_CAN_QUYET.map((k) => ({ key: k as KhoaChip, nhan: PHAN_LOAI_LABEL[k], so: dem?.[k] ?? null }))]} />
         <BranchFilter branchId={branchId} onBranch={(id) => setParam('cn', id ? String(id) : null)} />
@@ -202,15 +170,6 @@ export function HopChoDuyet() {
       </div>
       {xem !== 'da-xu-ly' && ds.length > 1 && <p className="m-0 text-[12px] text-slate-400">Xếp: quá hạn trước → hạn gần nhất</p>}
       {coCapHangLoat && <p className="m-0 text-[12px] text-slate-400">Đánh dấu ô ở thẻ để duyệt nhiều cùng loại.</p>}
-      {xem === 'de-biet' && nhacDuoc.length > 0 && (
-        <div><button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => setHoiNhac(true)}>
-          {busy ? 'Đang nhắc…' : nhacDuoc.length > TRAN_HANG_LOAT ? `Nhắc ${TRAN_HANG_LOAT} thẻ đầu` : `Nhắc tất cả (${nhacDuoc.length})`}
-        </button></div>
-      )}
-
-      <ConfirmDialog open={hoiNhac} onClose={() => setHoiNhac(false)} onConfirm={() => void nhacTatCa()}
-        title={`Nhắc ${lo.gui.length} việc · ${lo.gv.length} GV?`} confirmLabel={`Nhắc ${lo.gv.length} GV`}
-        body={<DsGvNhac gv={lo.gv} boQua={0} />} />
       {theLac && (
         <p role="status" className="m-0 flex flex-wrap items-center gap-2 rounded-lg border px-3 py-2 text-[13px] text-slate-300"
           style={{ borderColor: 'var(--line)' }}>
@@ -224,13 +183,13 @@ export function HopChoDuyet() {
       )}
       {loading && <Card><Skeleton rows={6} /></Card>}
       {data && ds.length === 0 && (
-        <Card><Empty title={xem === 'cho' ? 'Không có yêu cầu nào đang chờ' : xem === 'de-biet' ? 'Không có việc cần nhắc'
+        <Card><Empty title={xem === 'cho' ? 'Không có yêu cầu nào đang chờ' : xem === 'de-biet' ? 'Không có thẻ Báo QL'
           : 'Chưa có yêu cầu nào được xử lý trong 30 ngày'} /></Card>
       )}
       {ds.length > 0 && (
         <div className="space-y-2">
           {ds.map((y) => (
-            <TheYeuCau key={y.id} yc={y} nhanManh={nhan === y.id} onXong={xong} onThemPa={setNgan} daNhacNgoai={daNhacNgoai[y.id]}
+            <TheYeuCau key={y.id} yc={y} nhanManh={nhan === y.id} onXong={xong} onThemPa={setNgan}
               chon={choHangLoat && y.hangLoat && y.trangThai === 'cho' ? {
                 checked: chon.has(y.id),
                 onChange: (v) => setChon((s) => chonMot(ds, s, y.id, v)),

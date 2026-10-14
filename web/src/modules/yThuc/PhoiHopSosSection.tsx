@@ -5,7 +5,7 @@ import { Empty, NhanTrangThai, NutChon, Skeleton } from '../../ui/ui.tsx';
 import { BangChung } from '../../ui/BangChung.tsx';
 import {
   COORDINATION_KINDS, COORDINATION_KIND_LABEL, COORDINATION_USER_REMOVE_REASONS, COORDINATION_REMOVE_REASON_LABEL,
-  type CoordinationKind, type NguoiChon, kiemGhiRoKhac, nguoiThieu, reasonNeedsText, trangThaiPhoiHop,
+  type CoordinationKind, type NguoiChon, GHI_CHU_MEETING_TOI_THIEU, kiemGhiRoKhac, laMeetingCx, nguoiThieu, reasonNeedsText, trangThaiPhoiHop,
 } from '@shared/domain/index.ts';
 import { fmtDate, sosLabel } from '../../lib/format.ts';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
@@ -13,12 +13,15 @@ import { ONgay } from '../../ui/ONgay.tsx';
 import { OKhac } from '../../ui/OKhac.tsx';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import { Hang2, Truong } from '../../ui/KhungPanel.tsx';
+import { Han } from '../../ui/Han.tsx';
 
 type CoordAction = {
   id: number; kind: string; kindLabel: string; customName: string | null; name: string;
   preset: boolean; status: 'pending' | 'done' | 'removed'; statusLabel: string;
   performedOn: string | null; performerName: string | null; note: string | null;
   removeReasonCode: string | null; removeReasonLabel: string | null; attachmentCount: number;
+  /** OV-12h: hạn xác nhận (meeting CX / GĐCN: ngày tạo + 5) — null với việc khác. */
+  han?: string | null;
   /** Báo phụ huynh qua TVV (PR-LT2a): bốn nội dung GVCN chuyển cho TVV — null với việc khác. */
   noiDung?: string[] | null;
   /** PR-PHH: việc đã xong mà chưa lưu bản chụp (xác nhận trước PR-PHH) — `noiDung` là nội dung hiện tại. */
@@ -37,7 +40,6 @@ export type CoordTurn = {
  * K3-38 (PR-YT4): "CX / GĐCN meeting" của Phối hợp SOS KHÁC Meeting CX/GĐCN của Ý thức (cần QL duyệt) — nhãn ghi rõ "sau Mock" + chữ phụ
  * để GVCN không nhầm hai việc. Chỉ đổi chữ hiển thị, không đổi mã.
  */
-const laMeetingCx = (k: string) => k === 'cx_meeting_student' || k === 'cx_meeting_family';
 const nhanMeetingSauMock = (k: string) => `Meeting CX/GĐCN (sau Mock) · ${k === 'cx_meeting_family' ? 'HV / PH' : 'HV'}`;
 
 /**
@@ -164,6 +166,8 @@ function ActionRow({ a, canAct, onChanged }: { a: CoordAction; canAct: boolean; 
           <span className="block text-sm text-slate-200">{laMeetingCx(a.kind) ? nhanMeetingSauMock(a.kind) : a.name}</span>
           {laMeetingCx(a.kind) && <span className="block text-xs text-slate-500 mt-0.5">Việc phối hợp sau Mock — không phải xử lý vi phạm, không cần QL duyệt</span>}
           {dongPhu && <span className="block text-xs text-slate-500 mt-0.5">{dongPhu}</span>}
+          {/* OV-12h: meeting CX còn Cần xử lý — hạn 5 ngày từ lúc tạo, quá hạn ⚠ (cùng `<Han>` mọi nơi). */}
+          {a.status === 'pending' && a.han && <span className="block text-xs mt-0.5"><Han loai="phoi-hop" han={a.han} /></span>}
           {a.noiDung && a.noiDung.length > 0 && (
             <details className="mt-1">
               <summary className="cursor-pointer text-xs text-slate-400">{a.status === 'done' ? 'Nội dung đã báo TVV' : 'Nội dung gửi TVV'} ({a.noiDung.length})</summary>
@@ -213,9 +217,14 @@ function ConfirmCoordinationForm({ a, onClose, onChanged }: {
   const [nguoi, setNguoi] = useState<NguoiChon | null>(a.performerName ? { kieu: 'ngoai', ten: a.performerName } : { kieu: 'toi' });
   const [busy, setBusy] = useState(false);
   const loiNguoi = nguoiThieu(nguoi, false);
+  /* OV-12h: meeting CX / GĐCN — Ghi chú bắt buộc ≥ 10 ký tự (máy chủ kiểm cùng số). */
+  const canGhiChu = laMeetingCx(a.kind) ? GHI_CHU_MEETING_TOI_THIEU : 0;
+  const [daBam, setDaBam] = useState(false);
+  const loiGhiChu = canGhiChu && note.trim().length < canGhiChu ? `Ít nhất ${canGhiChu} ký tự` : null;
 
   const save = async () => {
-    if (loiNguoi) return;
+    setDaBam(true);
+    if (loiNguoi || loiGhiChu) return;
     setBusy(true);
     try {
       await api.post(`/phoi-hop-sos/${actionId}/confirm`, {
@@ -238,8 +247,15 @@ function ConfirmCoordinationForm({ a, onClose, onChanged }: {
           <ChonNguoi nhom="nhan_vien" value={nguoi} onChange={setNguoi} />
         </Truong>
       </Hang2>
-      <textarea className="field w-full" rows={2} placeholder="Ghi chú (tuỳ chọn)" value={note}
-        onChange={(e) => setNote(e.target.value)} />
+      {canGhiChu ? (
+        <Truong nhan="Ghi chú" batBuoc loi={daBam ? loiGhiChu : null} dem={{ co: note.trim().length, can: canGhiChu }}>
+          <textarea className="field w-full" rows={2} placeholder="Kết quả buổi gặp: đã thống nhất gì với em / phụ huynh" value={note}
+            onChange={(e) => setNote(e.target.value)} aria-invalid={daBam && !!loiGhiChu} />
+        </Truong>
+      ) : (
+        <textarea className="field w-full" rows={2} placeholder="Ghi chú (tuỳ chọn)" value={note}
+          onChange={(e) => setNote(e.target.value)} />
+      )}
       <BangChung ownerType="sos_coordination_action" ownerId={actionId} canEdit tieuDe="" />
       <div className="flex gap-1.5">
         <button type="button" className="btn btn-sm" onClick={onClose} disabled={busy}>Đóng</button>

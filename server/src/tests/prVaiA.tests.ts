@@ -265,7 +265,7 @@ export async function runPrVaiATests(t: YThucTestKit) {
     const tat = Object.fromEntries(d.CAN_XU_LY.map((x: any) => [x.metricId, 2]));
     const r = d.sapCanXuLy(tat, true, { 'van-hanh-can-quyet-dinh': true });
     assert(r.every((x: any) => x.trangThai === 'qua-han' || x.trangThai === 'can-lam'), 'chỉ hai nhãn');
-    eq(r.map((x: any) => x.metricId).slice(0, 3), ['bai-qua-han-nhap-diem', 'pa-can-cap-nhat', 'van-hanh-can-quyet-dinh'], 'quá hạn lên đầu: GV trễ trước, Vận hành quá hạn sau');
+    eq(r.map((x: any) => x.metricId).slice(0, 4), ['bai-qua-han-nhap-diem', 'pa-can-cap-nhat', 'phoi-hop-qua-han', 'van-hanh-can-quyet-dinh'], 'quá hạn lên đầu: GV trễ trước (OV-12h: + meeting CX), Vận hành quá hạn sau');
     const w = (x: any) => (x.trangThai === 'qua-han' ? 0 : 1) * 2 + (x.cuaNguoiXem ? 1 : 0);
     assert(r.every((x: any, i: number) => i === 0 || w(r[i - 1]) <= w(x)), 'thứ tự quá hạn → GV → Bạn');
     eq(d.nguoiGiuViecChu(['Trần Thu Trang', 'Lê Thu Hà', 'Lê Minh Đức', 'An Bình', 'Lê Thu Hà']),
@@ -288,10 +288,10 @@ export async function runPrVaiATests(t: YThucTestKit) {
     for (const u of dong.nguoi.ids) {
       assert((conn.prepare(`SELECT class_id FROM teacher_assignments WHERE user_id = ? AND status = 'active'`).all(u) as any[]).some((x) => mbLop.has(x.class_id)), `GV ${u} không dạy lớp MB`);
     }
-    /* Hai đường: tên ở Tổng quan = người được Nhắc ở Công việc (cùng link, `nguoi=tat-ca` mặc định của QL). */
-    const nhac = new Set((mywork.myWork(P.mbManager, { branchId: MB, nguoi: 'tat-ca' }).items as any[])
-      .filter((i) => i.group === 'score' && i.urgency === 'overdue' && i.nhac).map((i) => i.nhac.ownerId as number));
-    for (const u of dong.nguoi.ids) assert(nhac.has(u), `GV ${u} có tên ở Cần xử lý mà không có dòng Nhắc ở Công việc`);
+    /* Hai đường: tên ở Tổng quan = người giữ việc ở Công việc › Của GV (cùng link, `nguoi=tat-ca` mặc định của QL; OV-12h bỏ Nhắc). */
+    const giu = new Set((mywork.myWork(P.mbManager, { branchId: MB, nguoi: 'tat-ca' }).items as any[])
+      .filter((i) => i.group === 'score' && i.urgency === 'overdue' && i.ownerId !== null).map((i) => i.ownerId as number));
+    for (const u of dong.nguoi.ids) assert(giu.has(u), `GV ${u} có tên ở Cần xử lý mà không có dòng ở Công việc › Của GV`);
   });
 
   check('VAI-a (3c) · dòng PA: người giữ việc Kết quả (PR-PA §8: GVBM môn / GVCN lớp hiện tại, không có thì chủ Case), hạn = hạn cũ nhất = hanCu; panel Case/PA có người + hạn, mở hồ sơ HV ở Ngăn Case', () => {
@@ -427,7 +427,9 @@ export async function runPrVaiATests(t: YThucTestKit) {
       for (const it of viec) {
         thay++;
         eq(it.count, phoiHop.coordinationOfClass(gv, it.classId).pendingCount, `lớp ${it.classCode}: count = số lượt tab Phối hợp`);
-        assert(it.due === null && it.urgency === 'normal' && it.actionLabel === 'Mở Phối hợp SOS' && it.href.endsWith('?tab=y-thuc&sub=phoi-hop'), JSON.stringify(it));
+        /* OV-12h: không hạn, trừ meeting CX / GĐCN (hạn sớm nhất của lớp, `myCoordinationLines`). */
+        const han = phoiHop.myCoordinationLines(gv).find((l: any) => l.classId === it.classId)?.han ?? null;
+        assert(it.due === han && it.urgency === (han && han < TODAY ? 'overdue' : han === TODAY ? 'today' : 'normal') && it.actionLabel === 'Mở Phối hợp SOS' && it.href.endsWith('?tab=y-thuc&sub=phoi-hop'), JSON.stringify(it));
       }
       eq(viec.length, phoiHop.myCoordinationLines(gv).length, 'một dòng mỗi lớp của myCoordinationLines');
     }
