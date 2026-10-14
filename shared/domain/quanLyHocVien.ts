@@ -21,6 +21,9 @@ export const NHAN_VIEC_QUAN_LY: Record<ViecQuanLy, string> = {
   'de-xuat-sua': 'Đề xuất sửa thông tin…',
 };
 
+/** OV-11d (HV-3, Q4): hồ sơ đã Lưu trữ khoá — máy chủ trả câu này (400) ở mọi đường sửa hồ sơ / lộ trình / thi thật / Case. */
+export const CAU_LUU_TRU = 'Đã lưu trữ — Bỏ lưu trữ trước rồi sửa.';
+
 export type LopHocQuyen = {
   ghiLoTrinhTiep: boolean; chuyenLop: boolean; /** PR-CT: GVCN đề xuất; Quản lý (`chuyenLop`) ra lệnh. */ deXuatChuyenLop?: boolean; tamDung: boolean; quayLai: boolean;
   ketThuc: boolean; luuTru: boolean; boLuuTru: boolean;
@@ -50,7 +53,7 @@ export function mucQuanLyHocVien({ canEdit, suaThongTin, suaThem, lopHoc, cycle,
   suaThongTin?: boolean;
   /** OV-8b: có `student.edit_more` (TVV / CX) — Kết quả thi thật. */
   suaThem?: boolean;
-  lopHoc?: { quyen: LopHocQuyen } | null;
+  lopHoc?: { quyen: LopHocQuyen; chiXem?: boolean } | null;
   cycle: { ratio?: boolean } | null;
   status?: string;
   /** PR-XOA: chỉ Quản trị hệ thống. */
@@ -59,26 +62,31 @@ export function mucQuanLyHocVien({ canEdit, suaThongTin, suaThem, lopHoc, cycle,
   deXuatSua?: boolean;
 }): { key: ViecQuanLy; nhan: string; phu?: string; nguyHiem?: boolean; keTruoc?: boolean | 'dam' | 'do' }[] {
   const quyen = lopHoc?.quyen;
+  /* OV-11d (HV-3, Q4): hồ sơ Lưu trữ "chỉ xem" — không Sửa thông tin / Lộ trình / Kết quả thi thật (máy chủ 400 `CAU_LUU_TRU`). */
+  const chiXem = !!lopHoc?.chiXem;
   const ratio = !!cycle?.ratio;
   const dangHoc = status === 'active';
   const dau: ViecQuanLy[] = [];
   const sau: ViecQuanLy[] = [];
-  if (canEdit || suaThongTin) dau.push('info');
+  if ((canEdit || suaThongTin) && !chiXem) dau.push('info');
   if (quyen?.chuyenLop) dau.push('chuyen-lop');
   if (cacTabTrangThai(quyen, status).length) dau.push('tam-dung-thoi-hoc');
   if (quyen?.luuTru) dau.push('luu-tru');
   if (quyen?.ghiLoTrinhTiep) sau.push('lo-trinh-tiep');
-  if (canEdit && cycle && !ratio) sau.push('lo-trinh');
-  if (deXuatSua && dangHoc) sau.push('de-xuat-sua');
+  if (canEdit && cycle && !ratio && !chiXem) sau.push('lo-trinh');
+  /* OV-11d (HV-15): GVCN (`canEdit`) gửi đề xuất Target ngay ở Sửa thông tin — không thêm cửa thứ hai; GVBM giữ mục này. */
+  if (deXuatSua && dangHoc && !canEdit) sau.push('de-xuat-sua');
   if (quyen?.deXuatChuyenLop && dangHoc) sau.push('de-xuat-chuyen-lop');
-  if ((canEdit || suaThem) && cycle && !ratio) sau.push('outcome');
+  if ((canEdit || suaThem) && cycle && !ratio && !chiXem) sau.push('outcome');
   if (quyen?.quayLai && status === 'inactive') sau.push('quay-lai');
   if (quyen?.hocLai) sau.push('hoc-lai');
   if (quyen?.boLuuTru) sau.push('bo-luu-tru');
   if (coTheXoa) sau.push('xoa-hoc-vien');
+  /* OV-11d (HV-22): em đang Tạm dừng — mục chỉ còn Thôi học, gọi đúng tên. */
+  const thoiHoc = (key: ViecQuanLy) => key === 'tam-dung-thoi-hoc' && !cacTabTrangThai(quyen, status).includes('tam-dung');
   return [...dau, ...sau].map((key, i) => ({
-    key, nhan: NHAN_VIEC_QUAN_LY[key],
-    ...(PHU_VIEC[key] ? { phu: PHU_VIEC[key] } : {}),
+    key, nhan: thoiHoc(key) ? 'Thôi học' : NHAN_VIEC_QUAN_LY[key],
+    ...(thoiHoc(key) ? { phu: 'đóng lộ trình' } : PHU_VIEC[key] ? { phu: PHU_VIEC[key] } : {}),
     ...(key === 'xoa-hoc-vien' ? { nguyHiem: true, keTruoc: 'do' as const } : i === dau.length && i > 0 ? { keTruoc: 'dam' as const } : {}),
   }));
 }
@@ -95,7 +103,7 @@ export function mucDongTheoVai(i: { suaThongTin: boolean; suaThem: boolean; ft: 
 
 /** Một dòng hệ quả (mockup 24 B) — chỉ mục có hệ quả mới có. */
 const PHU_VIEC: Partial<Record<ViecQuanLy, string>> = {
-  'lo-trinh': 'Target, dự kiến thi, lịch MT',
+  'lo-trinh': 'lịch MT',
   'de-xuat-sua': 'Quản lý duyệt rồi mới đổi',
   'chuyen-lop': 'chọn lớp chuyển đến và tuần bắt đầu',
   'de-xuat-chuyen-lop': 'Quản lý duyệt rồi quyết định',

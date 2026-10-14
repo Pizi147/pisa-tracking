@@ -630,7 +630,7 @@ export function DongMt({ row }: { row: Row }) {
   return (
     <>
       {row.bandAttemptNo ? (row.ratio ? boNamCungNam(row.bandWeek, homNay) : row.bandAttemptId
-        ? <Link to={duongDotTest({ id: row.bandAttemptId, kind: 'mock' }, row.category)} className="link tabular-nums"
+        ? <Link to={duongDotTest({ id: row.bandAttemptId, kind: 'mock' }, row.category)} className="link tabular-nums max-sm:inline-block max-sm:py-3 max-sm:-my-3"
           title={`Mở Hồ sơ Mock Test · MT${row.bandAttemptNo} · ${row.label}`} onClick={(e) => e.stopPropagation()}>MT{row.bandAttemptNo}</Link>
         : `MT${row.bandAttemptNo}`) : ''}
       {row.ratio

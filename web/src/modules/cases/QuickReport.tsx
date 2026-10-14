@@ -13,6 +13,7 @@ import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import { OKhac } from '../../ui/OKhac.tsx';
 import { NutChon } from '../../ui/ui.tsx';
 import { ComponentsField, componentsPayload } from './ChiTietKyNang.tsx';
+import { TenCase } from './SkillBoard.tsx';
 import {
   URGENCY_LEVELS, URGENCY_LABEL, issuesForTopic, FOLLOWUP_OUTCOMES, GOI_Y_MO_TA_PA, outcomeLabelFor,
   CASE_OUTCOMES, CASE_OUTCOME_LABEL, CHU_THEM_PA, tenMon, tenMonNgan,
@@ -117,13 +118,19 @@ export function QuickReport({
    * (Q8) — form không tự đoán chương trình.
    */
   /* Cần mã chương trình để gọi đúng tên môn và bộ nguyên nhân (FOU G+V / P, Pre FOU Tổng hợp — T57). */
-  const chuDe = useApi<{ ratio: boolean; topics: string[]; chuongTrinh: string | null;
+  const chuDe = useApi<{ ratio: boolean; topics: string[]; chuongTrinh: string | null; ghiBuDuoc?: string[];
     choNguyenNhan?: Record<string, { caseId: number; mt: number | null; sos: number | null; dot?: string | null }> }>(
     open && studentId ? `/students/${studentId}/case-topics${cycleId ? `?cycleId=${cycleId}` : ''}` : null,
     [open, studentId, cycleId],
   );
   const topics: readonly string[] = chuDe.data?.topics ?? [];
   const topicsKey = topics.join('|');
+  /* OV-11d (HV-19): "Đã xong từ trước" — kỹ năng không ghi bù được (C02: chỉ môn mình dạy) mờ, không bấm; máy chủ trả danh sách theo cùng quyền. */
+  const khongGhiBu = (k: string) => mode === 'backfill' && !!chuDe.data?.ghiBuDuoc && !chuDe.data.ghiBuDuoc.includes(k);
+  useEffect(() => {
+    if (topic && khongGhiBu(topic)) { setTopic(''); setPrimaryCode(''); }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, topic]);
   /* Đổi học viên (trang lớp): bộ kỹ năng đổi theo — kỹ năng/phân loại cũ không còn hợp lệ thì bỏ, không giữ lại một lựa chọn sai chương trình. */
   useEffect(() => {
     if (topic && !topics.includes(topic)) { setTopic(''); setPrimaryCode(''); }
@@ -250,7 +257,7 @@ export function QuickReport({
     } catch (e: any) {
       const d = e?.details?.duplicateBackfill;
       if (d) { setBfDup(d); return; }
-      toast.push('error', e.message);
+      toast.push('error', e.hint ? `${e.message} ${e.hint}` : e.message);   // OV-11d (HV-19): 403 nói lý do (`details.hint`)
     } finally { setBusy(false); }
   };
 
@@ -392,8 +399,8 @@ export function QuickReport({
           ) : (
             <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${Math.max(topics.length, 1)}, minmax(0, 1fr))` }}>
               {topics.map((k) => (
-                <NutChon key={k} chon={topic === k} title={topicLabel(k)}
-                  className="justify-center px-1"
+                <NutChon key={k} chon={topic === k} title={topicLabel(k)} disabled={khongGhiBu(k)}
+                  className={`justify-center px-1 ${khongGhiBu(k) ? 'opacity-40' : ''}`}
                   onClick={() => { setTopic(k); setPrimaryCode(''); }}>
                   {topicShort(k)}
                   {chuDe.data?.choNguyenNhan?.[k] && (
@@ -404,6 +411,7 @@ export function QuickReport({
               ))}
             </div>
           )}
+          {topics.some(khongGhiBu) && <p className="m-0 mt-1.5 text-xs text-slate-400">Chỉ ghi bù Case môn bạn dạy</p>}
           </div>
         </Truong>
 
@@ -594,7 +602,7 @@ export function QuickReport({
       {mode === 'now' && dup && (
         <div className="mt-3.5 rounded-lg border p-3" style={{ borderColor: 'rgb(var(--soon-line-rgb))', background: 'rgb(var(--soon-bg-rgb))' }}>
           <p className="m-0 text-sm text-slate-100">
-            Đã có Case <strong>“{dup.title}”</strong> chưa xử lý xong ở {dup.categoryLabel}.
+            Đã có Case <strong className="inline-flex max-w-full align-bottom"><TenCase c={{ title: dup.title, tenSos: tachTenSos(dup.title) }} /></strong> chưa xử lý xong ở {dup.categoryLabel}.
             <span className="text-slate-400"> Mở {tuanLich(dup.detectedAt, homNay)}{dup.interventionCount > 0 ? ` · ${dup.interventionCount} PA` : ' · chưa có PA'}.</span>
           </p>
           <div className="mt-2 flex flex-wrap gap-2">
@@ -605,4 +613,10 @@ export function QuickReport({
       )}
     </KhungPanel>
   );
+}
+
+/** OV-11d (HV-22): tên Case hệ thống dạng chữ `[MT2] Listening mất điểm [SOS 1]` (máy chủ `tenCaseSos`) → chip như bảng kỹ năng; tên thường → null. */
+function tachTenSos(ten: string | null | undefined): { mt: number | null; giua: string; sos: number | null; kck: boolean } | null {
+  const m = /^(?:\[MT(\d+)\]\s*)?(.*?)\s*\[(?:SOS (\d)|(KCK))\]$/.exec(String(ten ?? '').trim());
+  return m ? { mt: m[1] ? Number(m[1]) : null, giua: m[2], sos: m[3] ? Number(m[3]) : null, kck: !!m[4] } : null;
 }

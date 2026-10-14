@@ -110,8 +110,10 @@ function KhoiCase({ c, onMoCase }: { c: CaseCard; onMoCase: (caseId: number, o?:
             {v.loaiHan === 'cap-nhat-pa' && han ? han.viec : v.chu}
             {/* Em Tạm dừng: mọi hạn đang dừng → nhãn vàng thay hạn (cùng luật DongHan ở bảng). */}
             {tamDung && han ? <> <NhanTamDung tu={tamDung} /></> : <>
-              {han && han.han !== CHUA_CO_HAN && <span className="text-slate-400"> · {han.han}</span>}
-              {han?.quaHan && <span className="inline-flex items-center gap-1 font-semibold text-bad"> <IconCanhBao />{han.quaHan}</span>}
+              {/* OV-11d (CA2-9): chữ hạn cùng luật bảng máy tính (`DongHan`): quá hạn ⚠ · hôm nay · hạn hết dd/mm. */}
+              {han?.quaHan ? <span className="inline-flex items-center gap-1 font-semibold text-bad"> · <IconCanhBao />{han.quaHan}</span>
+                : han?.homNay ? <span className="font-semibold text-soon"> · hôm nay</span>
+                : han && han.han !== CHUA_CO_HAN && <span className="text-slate-400"> · {han.han}</span>}
             </>}
           </span>
           {viecMo && (viecMo.viec === 'ghi-ket-qua' ? !!c.plans.find((p) => p.id === viecMo.paId)?.ghiDuoc : c.canEdit)

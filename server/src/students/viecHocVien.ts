@@ -140,7 +140,9 @@ export function viecCuaHocVien(p: Principal, sid: number, board: { rows: any[] }
   }
   if (dai?.nut.includes('ban-giao-mon') && dai.mon) {
     ds.push({ key: `ban_giao_mon:${dai.lopNguon.id}:${dai.mon.ma}`, loai: 'ban-giao-mon', chu: `Bàn giao môn ${dai.mon.ngan}`, kyNang: null, caseId: null, paId: null,
-      han: hanBanGiao(dai.ngayRaLenh).gvbm, tone: 'info', nguoiId: p.userId, nut: `Bàn giao môn ${dai.mon.ngan}`,
+      /* OV-11d (HV-13): hạn ĐÃ LƯU trên lệnh (`hanBanGiaoLenh` lúc ra lệnh) — cùng số với dải Sắp chuyển và Công việc; lệnh cũ không có thì luật cũ. */
+      han: (conn.prepare('SELECT han_gvbm FROM lenh_chuyen_lop WHERE id = ?').get(dai.lenhId) as any)?.han_gvbm ?? hanBanGiao(dai.ngayRaLenh).gvbm,
+      tone: 'info', nguoiId: p.userId, nut: `Bàn giao môn ${dai.mon.ngan}`,
       mo: { loai: 'duong', href: `/hoc-vien/lop/${dai.lopNguon.id}?viec=ban-giao&lenh=${dai.lenhId}&mon=${dai.mon.ma}` } });
   }
 

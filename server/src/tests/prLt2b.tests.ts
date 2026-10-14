@@ -268,6 +268,12 @@ export async function runPrLt2bTests(t: YThucTestKit) {
     assert(r.failed.length === 0, `dòng lỗi: ${JSON.stringify(r.failed)}`);
     return r;
   };
+  /* OV-11d (HV-17): Kết quả đầu ra chỉ cho em có lệnh / lộ trình Lên FT — giữ một lệnh `cho` tạm trong lúc đánh dấu (chuyển thật vẫn đi `chuyen`). */
+  const voiLenhFt = <T>(lop: number, sid: number, fn: () => T): T => {
+    const id = conn.prepare(`INSERT INTO lenh_chuyen_lop (student_id, lop_nguon_id, lop_dich_id, huong, boi_canh, tuan_bat_dau, nguoi_ra_lenh, ngay_ra_lenh, trang_thai, tao_luc)
+      VALUES (?, ?, ?, 'fast_track', 'cuoi-khoa', ?, ?, ?, 'cho', ?)`).run(sid, lop, classId('MB FT 101'), TODAY, P.mbManager.userId, TODAY, TODAY).lastInsertRowid;
+    try { return fn(); } finally { conn.prepare('DELETE FROM lenh_chuyen_lop WHERE id = ?').run(id); }
+  };
   const caseCuaEm = (sid: number, cycleId: number) => conn.prepare('SELECT * FROM sos_cases WHERE student_id = ? AND cycle_id = ? ORDER BY id').all(sid, cycleId) as any[];
   const paCuaCase = (caseId: number) => conn.prepare(`SELECT * FROM case_interventions WHERE case_id = ? AND kind = 'bo_tro_mien_phi' ORDER BY id`).all(caseId) as any[];
 
@@ -352,9 +358,9 @@ export async function runPrLt2bTests(t: YThucTestKit) {
     const [a, b, c2] = l.sids;
     for (const s of l.sids) ghiDiem(l.luot.get(s)!, { [L]: 30, [R]: 30, [W]: 30, [S]: 30 });   // 75%
     mt0Kv(l.classId, a, [4, 3.5, 3.5, 4]); mt0Kv(l.classId, b, [4, 4, 4, 4]); mt0Kv(l.classId, c2, [3.5, 4, 4, 4]);
-    cuoiSvc.ghiKetLuanFt(P.mbManager, a, { dat: false, nguyenNhan: 'trung_tam', mon: ['reading', 'writing'] });
-    assertThrows(() => cuoiSvc.ghiKetLuanFt(P.mbManager, b, { dat: false, nguyenNhan: 'hoc_sinh', mon: [], ghiChu: 'Em nghỉ nhiều — phương án case-by-case với phụ huynh' }),
-      /kỹ năng/, 'Học viên: MT0 không kỹ năng dưới ngưỡng, không chọn kỹ năng → 400');
+    voiLenhFt(l.classId, a, () => cuoiSvc.ghiKetLuanFt(P.mbManager, a, { dat: false, nguyenNhan: 'trung_tam', mon: ['reading', 'writing'] }));
+    voiLenhFt(l.classId, b, () => assertThrows(() => cuoiSvc.ghiKetLuanFt(P.mbManager, b, { dat: false, nguyenNhan: 'hoc_sinh', mon: [], ghiChu: 'Em nghỉ nhiều — phương án case-by-case với phụ huynh' }),
+      /kỹ năng/, 'Học viên: MT0 không kỹ năng dưới ngưỡng, không chọn kỹ năng → 400'));
     const ft = classId('MB FT 101');
     chuyen(l.classId, [a, b, c2].map((studentId) => ({ studentId, huong: 'fast_track', toClassId: ft, mucTieu: 6.5 })));
     const cs = caseCuaEm(a, cycleMoi(a));
@@ -486,6 +492,9 @@ export async function runPrLt2bTests(t: YThucTestKit) {
     const be = taoLop('BE', 1);
     const s = be.sids[0];
     ghiDiem(be.luot.get(s)!, { [L]: 30, [R]: 30, [W]: 30, [S]: 30 });
+    /* OV-11d (HV-17): em BE chưa có lệnh / lộ trình Lên FT → không có Kết quả đầu ra (không phải "Chờ MT0"). */
+    assertThrows(() => cuoiSvc.ghiKetLuanFt(P.mbManager, s, { dat: true }), /Chỉ em lên FT/, 'em không lên FT');
+    voiLenhFt(be.classId, s, () => {
     assertThrows(() => cuoiSvc.ghiKetLuanFt(P.mbManager, s, { dat: true }), /MT0/, 'chưa đủ MT0 (PR-KV)');
     mt0Kv(be.classId, s, [4, 4, 4, 4]);
     assertThrows(() => cuoiSvc.ghiKetLuanFt(gvcnDich(), s, { dat: true }), /Quản lý/, 'GVCN');
@@ -494,8 +503,9 @@ export async function runPrLt2bTests(t: YThucTestKit) {
     assertThrows(() => cuoiSvc.ghiKetLuanFt(P.mbManager, s, { dat: false, nguyenNhan: 'trung_tam' }), /kỹ năng/, 'Trung tâm, MT0 không kỹ năng dưới ngưỡng');
     assertThrows(() => cuoiSvc.ghiKetLuanFt(P.mbManager, s, { dat: 'x' }), /Đạt hoặc Không đạt/, 'dat sai kiểu');
     const fou = taoLop('FOU', 1);
-    assertThrows(() => cuoiSvc.ghiKetLuanFt(P.mbManager, fou.sids[0], { dat: true }), /Chờ MT0/, 'em FOU (OV-3b: FOU có Kết quả đầu ra) chưa có MT0');
+    voiLenhFt(fou.classId, fou.sids[0], () => assertThrows(() => cuoiSvc.ghiKetLuanFt(P.mbManager, fou.sids[0], { dat: true }), /Chờ MT0/, 'em FOU (OV-3b: FOU có Kết quả đầu ra) chưa có MT0'));
     cuoiSvc.ghiKetLuanFt(P.mbManager, s, { dat: true });
+    });
     assert(cuoiKhoaMod.cuoiKhoaTheoHocVien(be.classId).get(s).ketLuanFt.dat === true, 'đọc lại kết luận');
   });
   check('LT2b (7) · Final Test dời quá tuần Final Test → MỘT thẻ Báo QL; Progress Test dời quá → không thẻ; nhập đủ điểm → tự đóng', () => {
@@ -526,7 +536,7 @@ export async function runPrLt2bTests(t: YThucTestKit) {
   check('LT2b (9) · chuHopKetLuan: sáu trạng thái — thiếu môn · Pass · lên + bổ trợ · QL cân nhắc · QL đã quyết · học lại', () => {
     const mon = (ds: number[]) => ['listening', 'reading', 'writing', 'speaking'].map((skill, i) => ({ skill, ratio: ds[i] === undefined ? null : ds[i] / 100 }));
     const dung = (ct: string, tyLe: number | null, m: number[], truot: string[], quyet: any = null, kv: any = null) => d.chuHopKetLuan({
-      ct, tyLe, scored: m.length, required: 4, mon: mon(m), goiY: d.goiYCuoiKhoa({ ct, tyLe, monTruot: truot }), quyetDinh: quyet, ketLuanFt: kv, homNay: TODAY,
+      ct, tyLe, scored: m.length, required: 4, mon: mon(m), goiY: d.goiYCuoiKhoa({ ct, tyLe, monTruot: truot }), quyetDinh: quyet, ketLuanFt: kv, homNay: TODAY, lenFt: true,   // OV-11d: em Lên FT
     });
     const thieu = dung('BE', null, [70, 60, 66], []);
     assert(thieu.chinh === 'Final Test · 3/4 môn có điểm' && thieu.nhan === null && thieu.tone === 'muted', JSON.stringify(thieu));

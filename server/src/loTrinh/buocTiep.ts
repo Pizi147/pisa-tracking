@@ -61,6 +61,7 @@ function hoanTac(p: Principal, c: any) {
     } else {
       hoanTacHocLai(p, c.student_id);
       if (g.dongHan) db().prepare(`UPDATE learning_cycles SET status = 'abandoned' WHERE id = ? AND status = 'completed'`).run(c.id);
+      if (g.ketThucHoc) hoanTacKetThuc(p, c.student_id);   // OV-11d: em còn ghi danh lúc chọn → trả về đang học như trước
     }
   } catch (e) {
     if (e instanceof HttpError && e.status === 409) {
@@ -96,7 +97,11 @@ export function chonBuocTiep(p: Principal, cycleId: number, input: ChonBuocTiepV
       if (s.status !== 'finished') { setStudentStatus(p, c.student_id, 'finished', homNay, 'Kết thúc sau thi'); ghi.ketThucHoc = true; }
       if (!(conn.prepare('SELECT archived_at FROM students WHERE id = ?').get(c.student_id) as any).archived_at) { archiveStudent(p, c.student_id); ghi.luuTru = true; }
     } else {
-      if (s.status !== 'finished') throw badRequest('Em đang học — sang lớp khác thì dùng Chuyển lớp ở hồ sơ học viên.');
+      /* OV-11d (HV-6): em còn ghi danh (lộ trình đã đóng — dữ liệu cũ / Kết luận lộ trình) → Kết thúc học rồi Học lại, cùng giao dịch (như nhánh Kết thúc). */
+      if (s.status !== 'finished') {
+        setStudentStatus(p, c.student_id, 'finished', typeof input.date === 'string' && input.date ? input.date : homNay, 'Kết thúc sau thi');
+        ghi.ketThucHoc = true;
+      }
       /* Về lớp cũ: lộ trình đã thi KHÔNG chạy tiếp → đóng hẳn trước, `hocLai` thấy không còn lộ trình để chạy tiếp thì mở lộ trình mới ở lớp cũ. */
       if (!lopMoiId) ghi.dongHan = conn.prepare(`UPDATE learning_cycles SET status = 'completed' WHERE id = ? AND status = 'abandoned'`).run(cycleId).changes > 0;
       hocLai(p, c.student_id, { date: input.date, lyDo: input.lyDo, moLaiLop: input.moLaiLop === true, lopMoiId, mucTieu: input.mucTieu ?? null, thangThi: input.thangThi ?? null });
@@ -138,6 +143,20 @@ export function boChonBuocTiep(p: Principal, cycleId: number) {
     return trangThaiBuocTiep(p, cycleId);
   });
 }
+
+/**
+ * OV-11d (HV-6) — KIỂM TRƯỚC DEPLOY, CHỈ ĐỌC: em có lộ trình FT mới nhất ĐÃ ĐÓNG mà còn ghi danh (đang học / tạm dừng), chưa Kết thúc học, chưa Lưu trữ —
+ * những em Bước tiếp sẽ cho Kết thúc học + Học lại cùng giao dịch. Một câu `SELECT` (chạy được thẳng trên bản chính).
+ */
+export const SQL_DONG_CON_GHI_DANH = `SELECT s.id, s.student_code, s.full_name, c.code AS lop, cy.id AS cycle_id, cy.route, cy.status AS cycle_status
+  FROM students s
+  JOIN learning_cycles cy ON cy.student_id = s.id AND cy.route IS NOT NULL AND cy.status IN ('completed', 'abandoned')
+   AND cy.seq = (SELECT MAX(x.seq) FROM learning_cycles x WHERE x.student_id = s.id)
+  JOIN enrollments e ON e.id = (SELECT MAX(e2.id) FROM enrollments e2 WHERE e2.student_id = s.id AND e2.status IN ('active', 'paused'))
+  JOIN classes c ON c.id = e.class_id
+ WHERE s.status != 'finished' AND s.archived_at IS NULL
+ ORDER BY c.code, s.full_name`;
+export const emDongConGhiDanh = (conn: any): any[] => conn.prepare(SQL_DONG_CON_GHI_DANH).all() as any[];
 
 // ------------------------------------------------------------------ việc QL "Chọn bước tiếp sau thi"
 /** Lộ trình chờ Quản lý chọn bước tiếp (chưa lọc quyền) — một nguồn cho việc QL và ô "Chờ QL chọn bước tiếp" ở Tổng quan TVV / CX (OV-10c). */

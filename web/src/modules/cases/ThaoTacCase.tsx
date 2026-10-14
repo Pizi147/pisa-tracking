@@ -215,8 +215,8 @@ export function HoanThanhCasePanel({ caseId, category, categoryLabel, ratio, paG
 }) {
   const toast = useToast();
   const { homNay } = useNgayNghiepVu();
-  /* K3-19: không chọn sẵn — người kết luận tự chọn (máy chủ cũng bắt buộc). */
-  const [outcome, setOutcome] = useState<string>('');
+  /* OV-11d (HV-22, thay K3-19): điền sẵn theo Kết quả của PA gần nhất (cùng thang chữ) — đổi một bấm; PA "Chưa đủ dữ liệu" / chưa có thì để trống. */
+  const [outcome, setOutcome] = useState<string>(() => CASE_OUTCOMES.find((o) => CASE_OUTCOME_LABEL[o] === paGanNhat) ?? '');
   const [note, setNote] = useState('');
   const [closedOn, setClosedOn] = useState(homNay);
   const [metrics, setMetrics] = useState<Record<string, { score: string; total: string }>>({});

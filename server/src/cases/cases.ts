@@ -34,7 +34,7 @@ import { isRatioCycle, nguongDatLop, programmeCodeOfCycle } from '../normal/regu
 import { suggestCaseOwner } from './owner.ts';
 import { caseKhacChuongTrinh, chuongTrinhCuaLop } from './sos.ts';
 import { LA_CASE_SOS, NOT_UNCONFIRMED_PRESET, awaitingCauseCaseIds, dongBoTrangThaiCase, dongBoTrangThaiCaseLo, sosCaseState } from './sosState.ts';
-import { PLAN_DECISIONS, coNguoiDay, decisionToStep, duongDotTest, kiemSoBuoiTuan, soBuoiTu, tuanLich, type PlanDecision } from '../../../shared/domain/index.ts';
+import { CAU_LUU_TRU, PLAN_DECISIONS, coNguoiDay, decisionToStep, duongDotTest, kiemSoBuoiTuan, soBuoiTu, tuanLich, type PlanDecision } from '../../../shared/domain/index.ts';
 import { chenPa } from './taoPa.ts';
 import { nguoiGiuKetQua } from './giuKetQua.ts';
 import { apDungDieuChinh, chuanHoaDieuChinh, daDayCua, ghiBanDieuChinh, lichSuDieuChinhCuaCase, nguoiSauSua, soBuoiMoi } from './planRevisions.ts';
@@ -506,6 +506,7 @@ export function reportIssue(p: Principal, input: {
    */
   require_(p, PERMISSIONS.SOS_REPORT, { classId, studentId: input.studentId },
     'Bạn chỉ báo được vấn đề của học viên trong phạm vi mình phụ trách.');
+  if (student.archived_at) throw badRequest(CAU_LUU_TRU);   // OV-11d (HV-3): hồ sơ Lưu trữ khoá
 
   /*
    * BỐN TRƯỜNG BẮT BUỘC (mục 6.3): tên, mô tả, mức độ, phân loại.
@@ -752,7 +753,10 @@ export function caseTopicsOf(p: Principal, studentId: number, cycleId?: number |
   const cho = new Set(awaitingCauseCaseIds(mo.map((c) => c.id as number)));
   const choNguyenNhan: Record<string, { caseId: number; mt: number | null; sos: number | null; dot: string | null }> = {};
   for (const c of mo) if (cho.has(c.id)) choNguyenNhan[c.topic ?? c.category] = { caseId: c.id, mt: c.attempt_no ?? null, sos: c.sos_level ?? null, dot: c.attempt_kind ? nhanDot(c.attempt_kind, c.attempt_no ?? null) : null };   // lớp thường: `Progress Test` thay `MT2` (T58)
-  return { ratio, topics: caseTopicsFor(ratio, chuongTrinh), chuongTrinh, choNguyenNhan };
+  const topics = caseTopicsFor(ratio, chuongTrinh);
+  /* OV-11d (HV-19): kỹ năng người xem ghi bù được ("Đã xong từ trước") — CÙNG quyền `recordIntervention` (`SOS_EDIT` theo kỹ năng, C02 giữ). */
+  const ghiBuDuoc = topics.filter((t) => can(p, PERMISSIONS.SOS_EDIT, { classId: enr?.class_id ?? null, studentId, skill: t === 'tong_hop' ? undefined : t }));
+  return { ratio, topics, chuongTrinh, choNguyenNhan, ghiBuDuoc };
 }
 
 /**
@@ -1352,6 +1356,7 @@ export function backfillCase(p: Principal, input: {
     .get(input.studentId) as any)?.class_id ?? null;
   require_(p, PERMISSIONS.SOS_REPORT, { classId: lopDangHoc, studentId: input.studentId },
     'Bạn chỉ báo được vấn đề của học viên trong phạm vi mình phụ trách.');
+  if ((conn.prepare('SELECT archived_at FROM students WHERE id = ?').get(input.studentId) as any)?.archived_at) throw badRequest(CAU_LUU_TRU);   // OV-11d (HV-3)
   const key = typeof input.idempotencyKey === 'string' ? input.idempotencyKey.trim() || null : null;
   if (!isIsoDate(input.fromDate) || !isIsoDate(input.toDate)) {
     throw badRequest('Khoảng ngày "từ → đến" không hợp lệ.');

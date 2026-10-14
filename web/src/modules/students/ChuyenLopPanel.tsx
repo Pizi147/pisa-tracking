@@ -10,7 +10,7 @@ import { useDienThoai } from '../../ui/TheDong.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { OTuan } from '../classes/TransitionPanel.tsx';
 import {
-  CHU_CHUYEN_LOP, TOI_DA_NHIEU_EM, canHoiTarget, chuTargetKck, tachKck, chonGuiNhieuEm, docOTarget, chuTuanHoc, chuTyLeXetLai, dsLoi, hanBanGiao, kyHieuLop, ngay, phuLopDich, tomTatChuyenEm,
+  CHU_CHUYEN_LOP, TOI_DA_NHIEU_EM, canHoiTarget, chuTargetKck, tachKck, chonGuiNhieuEm, docOTarget, chuTuanHoc, chuTyLeXetLai, dsLoi, hanBanGiaoLenh, kyHieuLop, ngay, phuLopDich, tomTatChuyenEm,
   tuanChonDuoc, tuanLich, type LoiTruong, type LuatTruong, type MucTieuLenh,
 } from '@shared/domain/index.ts';
 
@@ -19,10 +19,10 @@ type LopDich = {
   tenChuongTrinh: string | null; tuan: string | null; gvcn: string | null; siSo?: number;
 };
 type LopDichData = { lop: LopDich[]; nguon: { ft: boolean; tuCuoiKhoa: boolean } };
-type LenhCho = { id: number; huong: string; lopDichId: number | null; tuan: string; mucTieu: MucTieuLenh | null; lyDo: string | null; loi: string | null };
+type LenhCho = { id: number; huong: string; lopDichId: number | null; tuan: string; mucTieu: MucTieuLenh | null; lyDo: string | null; loi: string | null; hanGvcn?: string | null };
 type XemChuyenLopData = {
   hienTai: { lop: { id: number; code: string }; ma: string | null; ft: boolean; chiNhanhId: number; route: string | null; tuanHoc: { tuan: number | null; tong: number | null; dangDung: boolean } | null };
-  lenh: LenhCho | null; tuanChon: string[]; today: string;
+  lenh: LenhCho | null; tuanChon: string[]; today: string; tuanFinal?: string | null; boiCanh?: string | null;
   /** PR-CL (B3): null khi chưa chọn lớp. */
   huong: string | null; targetSan: MucTieuLenh | null; khiChuyen: string[]; canhBao: boolean; tuLopThuong: string | null;
 };
@@ -165,7 +165,11 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone, cheDo,
 
   const dich = (lopDich.data?.lop ?? []).find((l) => l.id === toClassId) ?? null;
   const ds = dsLopDich(lopDich.data?.lop ?? []);
-  const han = hanBanGiao(nen?.today ?? homNay ?? '2000-01-01');
+  /* OV-11d (HV-13): CÙNG hạn máy chủ ghi lên lệnh — lệnh đang có giữ hạn đã lưu; lệnh mới `hanBanGiaoLenh` (FT 5 ngày · lớp thường Cuối khoá hết tuần Final). */
+  const hanGvcn = lenh?.hanGvcn ?? hanBanGiaoLenh({
+    nguonFt: !!nen?.hienTai.ft, boiCanh: xem.data?.boiCanh ?? (lopDich.data?.nguon.tuCuoiKhoa ? 'cuoi-khoa' : 'giua-khoa'),
+    tuanFinal: nen?.tuanFinal ?? null, ngay: nen?.today ?? homNay ?? '2000-01-01',
+  }).gvcn;
   const dangHoc = nen?.hienTai;
   /* Xem trước của ĐÚNG lớp đang chọn (đổi lớp → đường mới, dữ liệu cũ không dùng). */
   const xemLop = !dx && toClassId && xem.data?.huong && !xem.loading ? xem.data : null;
@@ -228,7 +232,7 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone, cheDo,
         conThieu: conThieuChu(lf.daBam, loi),
         chinh: <button type="button" className="btn btn-primary min-h-[44px] max-sm:flex-1 sm:min-h-0" onClick={gui} disabled={busy || !!loiNap || choXem}>{busy ? 'Đang lưu…' : nhanChinh}</button>,
         dongTren: !dx && dangHoc ? (
-          <p className="m-0 px-4 pt-2 text-xs text-slate-400">GVCN {dangHoc.lop.code} bàn giao, hạn hết {ngay(han.gvcn, homNay)}.</p>
+          <p className="m-0 px-4 pt-2 text-xs text-slate-400">GVCN {dangHoc.lop.code} bàn giao, hạn hết {ngay(hanGvcn, homNay)}.</p>
         ) : undefined,
       }}>
       {loiNap ? <ErrorState message={loiNap.message} hint={loiNap.hint} onRetry={() => { lopDich.reload(); xem.reload(); }} />

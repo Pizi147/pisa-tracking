@@ -135,6 +135,8 @@ export type HopKetLuanVao = {
   quyetDinh: { huong: string; luc: string } | null;
   ketLuanFt: { dat: boolean | null; nguyenNhan: string | null; mon: readonly string[] } | null;
   homNay?: string | null;
+  /** OV-11d (HV-17): em có lệnh / lộ trình Lên FT từ lớp này — chỉ khi đó có dòng Kết quả đầu ra. */
+  lenFt?: boolean;
 };
 export type HopKetLuan = {
   /** Dòng 1, tầng 1: `Cuối khoá 64%` (thiếu môn: `Cuối khoá · 3/4 môn có điểm`). */
@@ -151,7 +153,7 @@ export type HopKetLuan = {
 /** Chữ hộp "Kết luận khoá" ở hồ sơ HV (K3 §4b, K3-43) — MỘT hàm, sáu trạng thái: thiếu môn · Pass · lên + bổ trợ · QL cân nhắc · QL đã quyết · học lại. */
 export function chuHopKetLuan(x: HopKetLuanVao): HopKetLuan {
   const ct = programmeOf(x.ct) as ProgrammeCode | null;   // có gợi ý (`x.goiY`) chỉ khi là chương trình gốc — xem `goiYCuoiKhoa`
-  const kyVong = ct && KY_VONG_DAU_RA[ct]
+  const kyVong = ct && KY_VONG_DAU_RA[ct] && x.lenFt
     ? {
       nhan: `Kết quả đầu ra (${KY_VONG_DAU_RA[ct]})`,
       daDanhDau: x.ketLuanFt?.dat !== null && x.ketLuanFt?.dat !== undefined,
@@ -163,7 +165,7 @@ export function chuHopKetLuan(x: HopKetLuanVao): HopKetLuan {
     : null;
   const g = x.goiY;
   if (x.tyLe === null || !g || !ct) {
-    return { chinh: `Final Test · ${x.scored}/${x.required} môn có điểm`, phu: null, nhan: null, tone: 'muted', kyVong };
+    return { chinh: `Final Test · ${x.required ? `${x.scored}/${x.required} môn có điểm` : 'chưa có điểm'}`, phu: null, nhan: null, tone: 'muted', kyVong };
   }
   const phu = x.mon.map((m) => `${tenMonNgan(ct, m.skill)} ${m.ratio === null ? '—' : Math.round(m.ratio * 100)}`).join(' · ');
   const chinh = `Final Test ${Math.round(x.tyLe * 100)}%`;

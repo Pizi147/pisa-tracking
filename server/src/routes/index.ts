@@ -1432,6 +1432,7 @@ api.post('/students/:id/cycles', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   /* PR-Dọn (quét #20): chỉ lấy các khoá cần — không trải cả thân yêu cầu (ghi nguyên vào audit `after`). */
   const { route, targetScore, examPeriodId, startedAt, note } = (req.body ?? {}) as Record<string, any>;
+  studentSvc.chanLuuTruHv(principalOf(req), pInt(req, 'id'));
   return cycleSvc.createCycle(principalOf(req), { route, targetScore, examPeriodId, startedAt, note, studentId: pInt(req, 'id') });
 }));
 
@@ -1446,12 +1447,14 @@ api.get('/cycles/:id', requireAuth, wrap((req) => {
 
 api.patch('/cycles/:id', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
+  studentSvc.chanLuuTru(principalOf(req), pInt(req, 'id'));   // OV-11d (HV-3): hồ sơ Lưu trữ khoá
   return cycleSvc.updateCycle(principalOf(req), pInt(req, 'id'), req.body ?? {});
 }));
 
 /** Điểm xuất phát của lộ trình — phải ghi rõ NGUỒN, không lấy MT1 làm điểm đầu vào. */
 api.put('/cycles/:id/baseline', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
+  studentSvc.chanLuuTru(principalOf(req), pInt(req, 'id'));
   return cycleSvc.setBaseline(principalOf(req), pInt(req, 'id'), req.body ?? {});
 }));
 
@@ -1460,6 +1463,7 @@ api.put('/cycles/:id/outcome', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   /* PR-TK (TK-K): thân mới { ngayThi, l, r, w, s, khongThi, ghiChu } = kết quả thi thật (máy tính OVR + Đạt / Chưa đạt). Thân cũ { outcome, score, note } giữ nguyên hành vi. */
   const body = (req.body ?? {}) as Record<string, any>;
+  studentSvc.chanLuuTru(principalOf(req), pInt(req, 'id'));   // OV-11d (HV-3)
   if (['ngayThi', 'l', 'r', 'w', 's', 'khongThi', 'ghiChu'].some((k) => k in body)) return thiThatSvc.datKetQuaThiThat(principalOf(req), pInt(req, 'id'), body);
   return cycleSvc.setOutcome(principalOf(req), pInt(req, 'id'), body as any);
 }));
@@ -1490,6 +1494,7 @@ api.post('/students/:id/de-xuat-chuyen-lop', requireAuth, wrap((req) => {
 /** Đổi Target: có hiệu lực từ ngày ghi trở đi, KHÔNG chấm lại các lượt đã chốt. */
 api.post('/cycles/:id/target-revision', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
+  studentSvc.chanLuuTru(principalOf(req), pInt(req, 'id'));   // OV-11d (HV-3)
   return cycleSvc.reviseTarget(principalOf(req), pInt(req, 'id'), req.body ?? {});
 }));
 
@@ -2193,6 +2198,12 @@ api.post('/students/:id/status', requireAuth, wrap((req) => {
   if (!['active', 'inactive', 'finished'].includes(status)) throw badRequest('Trạng thái không hợp lệ.');
   return studentSvc.setStudentStatus(principalOf(req), pInt(req, 'id'), status,
     req.body?.date ?? demoToday(), req.body?.reason, req.body?.endKind ?? null);
+}));
+
+/** OV-11d (HV-21): Hoàn tác Tạm dừng — trả nguyên trạng, không tính lại hạn (ai Tạm dừng được thì hoàn tác được). */
+api.post('/students/:id/hoan-tac-tam-dung', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return studentSvc.hoanTacTamDung(principalOf(req), pInt(req, 'id'));
 }));
 
 /** RB-9: lưu trữ / bỏ lưu trữ — chỉ Quản lý, chỉ em đã kết thúc học. Không có tác vụ ngầm. */

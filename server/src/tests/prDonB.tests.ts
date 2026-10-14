@@ -34,9 +34,10 @@ export async function runPrDonBTests(t: YThucTestKit) {
 
   // ------------------------------------------------------------------ khối 11 · form dùng useLoiForm, hộp Vận hành thành panel (O5)
   console.log('\nPR-Dọn-b · (11) Form: useLoiForm, hộp Vận hành thành panel');
-  const FORM = ['platform/AccountsAdmin.tsx', 'platform/CatalogAdmin.tsx', 'students/IntakePanel.tsx', 'students/StudentPlanPanel.tsx',
+  /* OV-11d (HV-15): panel Lộ trình FT chỉ còn lịch MT (không ô nhập) — bỏ khỏi danh sách form. */
+  const FORM = ['platform/AccountsAdmin.tsx', 'platform/CatalogAdmin.tsx', 'students/IntakePanel.tsx',
     'classes/ClassProgressPanel.tsx', 'worklist/MgmtTasksPage.tsx'].map((f) => `web/src/modules/${f}`);
-  check('Dọn-b (11a) · 6 panel form đều dùng useLoiForm: lf.o( trên ô, lf.bam() trước khi gửi', () => {
+  check('Dọn-b (11a) · 5 panel form đều dùng useLoiForm: lf.o( trên ô, lf.bam() trước khi gửi', () => {
     for (const f of FORM) {
       const s = doc(f);
       assert(/import \{[^}]*useLoiForm/.test(s), `${f}: chưa import useLoiForm`);

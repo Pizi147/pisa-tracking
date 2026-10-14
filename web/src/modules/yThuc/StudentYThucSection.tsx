@@ -117,7 +117,7 @@ export function StudentYThucSection({ studentId, onGoAcademic, thuong = false }:
     ),
     mo: moViPhamId === x.id,
     onMo: () => setMoViPhamId((c) => (c === x.id ? null : x.id)),
-    chiTiet: <ChiTietViPham violationId={x.id} onSua={(vv) => mo({ loai: 'sua', v: vv })}
+    chiTiet: <ChiTietViPham violationId={x.id} onSua={(vv) => mo({ loai: 'sua', v: vv, studentName: d.ten })}
       onDaXoa={() => { setMoViPhamId(null); reload(); }} onMoXuLy={(id) => mo({ loai: 'xem', id })} />,
   });
 
