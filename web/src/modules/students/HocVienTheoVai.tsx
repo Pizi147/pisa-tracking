@@ -12,8 +12,16 @@ import type { Branch } from '../../ui/Filters.tsx';
 import { sosTone } from '../../lib/format.ts';
 import { useThaoTacDongHocVien } from '../classes/thaoTacDongHocVien.tsx';
 import { KetQuaOHocVien } from './BangHocVienLop.tsx';
+import { t } from '@shared/i18n/index.ts';
+import { BoLocDoan } from '../../ui/ui.tsx';
+import { BangSos, type TrangSos } from './BangSos.tsx';
+import { BangCanLam, type ViecCanLam } from './BangCanLam.tsx';
+import { ChonTuanSos } from './ChonTuanSos.tsx';
+import { PanelMotEm } from './PanelMotEm.tsx';
+import { NganTongKet } from './NganTongKet.tsx';
+import { SuaThongTinMotEm } from './StudentManagePanel.tsx';
 import {
-  CHIP_VAI, PHAM_VI_NHAN, chipMacDinhVai, chuPhuHuynh, docChipVai, ketQuaGanNhat, maHocVienNgan, ngay, tenMon,
+  PHAM_VI_NHAN, chuPhuHuynh, docChipVai, ketQuaGanNhat, maHocVienNgan, ngay, tenMon,
   type ChipVai, type ExamPlan, type KetQuaVao, type LienHe, type NguCanhDs,
 } from '@shared/domain/index.ts';
 
@@ -33,7 +41,21 @@ type TrangVai = {
   phamVi: { coThe: PhamViVai[]; dangDung: PhamViVai; chiNhanh: number | null };
   ids: Record<Exclude<ChipVai, 'tat-ca'>, number[]>;
   rows: DongVai[];
+  /** OV-12f: việc góc Cần làm của TVV — Chọn bước tiếp (lộ trình + hạn) · Kết quả thi thật chưa có. */
+  viec: { buocTiep: Record<number, { cycleId: number; han: string }>; ketQuaThi: Record<number, { han: string; thi: string | null }> };
 };
+/** OV-12f: góc nhìn TVV (Tất cả · Đang SOS · Cần làm) / CX (Tất cả · Đang SOS · Cần chú ý — mặc định). */
+type GocVai = 'tat-ca' | 'sos' | 'can-lam' | 'can-chu-y';
+/** Lọc phụ của góc Tất cả (mockup 3 v2 §10): TVV Cần chú ý · Tạm dừng · Sắp thi; CX Tạm dừng · Sắp thi (+ Thiếu thông tin, Chờ chọn bước tiếp khi có em — không mất chip cũ). */
+const LOC_PHU_VAI: Record<'tvv' | 'cx', readonly ChipVai[]> = { tvv: ['can-chu-y', 'tam-dung', 'sap-thi'], cx: ['tam-dung', 'sap-thi', 'thieu_tt', 'cho-buoc-tiep'] };
+/** `view` / `loc` → góc + lọc phụ; link cũ (`view=thieu_tt`, `cho-buoc-tiep`, `tam-dung`…) giữ nghĩa. */
+function docGocVai(view: string | null, loc: string | null, vai: 'tvv' | 'cx'): { goc: GocVai; chip: ChipVai } {
+  if (view === 'sos') return { goc: 'sos', chip: 'tat-ca' };
+  if (vai === 'tvv' && (view === 'can-lam' || view === 'thieu_tt' || view === 'cho-buoc-tiep')) return { goc: 'can-lam', chip: 'tat-ca' };
+  if (vai === 'cx' && (!view || view === 'can-chu-y')) return { goc: 'can-chu-y', chip: 'can-chu-y' };
+  const c = docChipVai(loc ?? (view === 'tat-ca' ? null : view), vai);
+  return { goc: 'tat-ca', chip: LOC_PHU_VAI[vai].includes(c) ? c : 'tat-ca' };
+}
 
 /** Nhãn chip TVV / CX (OV-10b) — số = `chipHocVien` (OV-10c, cùng ô Tổng quan). */
 const CHIP_VAI_NHAN: Record<ChipVai, { nhan: string; goiY: string }> = {
@@ -99,7 +121,8 @@ export function HocVienTheoVai({ vai }: { vai: 'tvv' | 'cx' }) {
   const dienThoai = useDienThoai();
   const q = params.get('q') ?? '';
   const [draftQ, setDraftQ] = useState(q);
-  const chip = docChipVai(params.get('view'), vai);
+  const { goc, chip } = docGocVai(params.get('view'), params.get('loc'), vai);
+  const { homNay } = useNgayNghiepVu();
   const phamViUrl = vai === 'tvv' && params.get('phamVi') === 'chi-nhanh' ? 'chi-nhanh' : null;
   const cn = vai === 'cx' ? Number(params.get('cn') ?? params.get('branchId')) || null : null;
   const setParam = (patch: Record<string, string | null>) => {
@@ -116,6 +139,15 @@ export function HocVienTheoVai({ vai }: { vai: 'tvv' | 'cx' }) {
   const trang = useApi<TrangVai>(duong, [duong]);
   const branches = useApi<Branch[]>(vai === 'cx' ? '/ref/branches' : null);
   const data = trang.data;
+  const tuan = params.get('tuan');
+  /* TVV "Cả chi nhánh": gửi ĐÚNG chi nhánh trang TVV đã chọn (`phamVi.chiNhanh`) — TVV hai chi nhánh không bị lệch sang chi nhánh khác (rà #391). */
+  const cnTvv = phamViUrl ? data?.phamVi.chiNhanh ?? null : null;
+  const duongSos = phamViUrl && !cnTvv ? null
+    : `/hoc-vien-lop?goc=sos${phamViUrl ? `&phamVi=chi-nhanh&branchId=${cnTvv}` : cn ? `&branchId=${cn}` : ''}${tuan ? `&tuan=${tuan}` : ''}`;
+  const sos = useApi<TrangSos>(duongSos, [duongSos]);
+  const [panelEm, setPanelEm] = useState<number | null>(null);
+  const [tongKet, setTongKet] = useState<number | null>(null);
+  const [suaEm, setSuaEm] = useState<{ id: number; ten: string; lop: string | null; viec: 'info' | 'outcome' } | null>(null);
   /* Nhóm đã bấm đảo so với mặc định. Mặc định mở hết; danh sách dài (CX "Tất cả" mọi chi nhánh) thì mặc định gập — không vẽ hàng nghìn dòng một lúc. */
   const [dao, setDao] = useState<Set<number | 'chua-xep'>>(new Set());
 
@@ -146,11 +178,34 @@ export function HocVienTheoVai({ vai }: { vai: 'tvv' | 'cx' }) {
 
   const pv = data?.phamVi;
   const tenCn = vai === 'cx' ? (cn ? branches.data?.find((b) => b.id === cn)?.name ?? 'Một chi nhánh' : 'Tất cả chi nhánh') : null;
-  const dangXem = [tenCn, vai === 'tvv' && pv ? PHAM_VI_NHAN[pv.dangDung] : null, CHIP_VAI_NHAN[chip].nhan, q.trim() ? `“${q.trim()}”` : null].filter(Boolean).join(' · ');
-  const macDinh = chipMacDinhVai(vai);
-  const coLoc = chip !== macDinh || !!q.trim();
-  const xoaLoc = () => { setDraftQ(''); setParam({ view: null, q: null }); };
-  const chips = CHIP_VAI.filter((k) => k !== 'cho-buoc-tiep' || chip === k || dem(k) > 0);
+  const tenGoc: Record<GocVai, string> = { 'tat-ca': t('Tất cả'), sos: t('Đang SOS'), 'can-lam': t('Cần làm'), 'can-chu-y': CHIP_VAI_NHAN['can-chu-y'].nhan };   // nhãn chip TVV / CX sẵn có (cùng chữ, bản Anh theo EN-c)
+  const dangXem = [tenCn, vai === 'tvv' && pv ? PHAM_VI_NHAN[pv.dangDung] : null, tenGoc[goc], goc === 'tat-ca' && chip !== 'tat-ca' ? CHIP_VAI_NHAN[chip].nhan : null,
+    q.trim() ? `“${q.trim()}”` : null].filter(Boolean).join(' · ');
+  const coLoc = (goc === 'tat-ca' && chip !== 'tat-ca') || !!q.trim();
+  const xoaLoc = () => { setDraftQ(''); setParam({ loc: null, q: null }); };
+  const chips = LOC_PHU_VAI[vai].filter((k) => (k !== 'cho-buoc-tiep' && k !== 'thieu_tt') || chip === k || dem(k) > 0);
+  const doiGoc = (g: GocVai) => setParam({ view: g === (vai === 'cx' ? 'can-chu-y' : 'tat-ca') ? null : g, loc: null });
+
+  /* OV-12f: Đang SOS (tìm lọc tại chỗ như bảng) · Cần làm của TVV (Chọn bước tiếp · Kết quả thi · Thiếu thông tin) — panel / hộp sẵn có. */
+  const khopEm = (ten: string, ma: string, lop: string | null) => !ql || ten.toLowerCase().includes(ql) || ma.toLowerCase().includes(ql) || (lop ?? '').toLowerCase().includes(ql);
+  const sosRows = (sos.data?.rows ?? []).filter((r) => khopEm(r.ten, r.ma, r.classCode));
+  const viecTvv: ViecCanLam[] = vai !== 'tvv' || !data ? [] : khop.flatMap((d): ViecCanLam[] => {
+    const chung = { studentId: d.id, ten: d.ten, ma: d.ma, classId: d.lop?.id ?? null, classCode: d.lop?.code ?? null, nguoi: null, lienHe: d.lienHe, loaiHan: null };
+    const bt = data.viec.buocTiep[d.id];
+    const kq = data.viec.ketQuaThi[d.id];
+    return [
+      ...(bt ? [{ ...chung, key: `buoc:${d.id}`, viec: t('Chọn bước tiếp sau thi'), phu: null, han: bt.han, quaHan: bt.han < homNay, kieu: bt.han < homNay ? 'qua-han' as const : null,
+        mo: () => setTongKet(bt.cycleId) }] : []),
+      ...(kq && d.viewer.suaThem ? [{ ...chung, key: `thi:${d.id}`, viec: t('Kết quả thi'), phu: kq.thi ? t('Thi {ngay} · chưa có kết quả', { ngay: ngay(kq.thi, homNay) }) : t('chưa có kết quả'), han: kq.han,
+        quaHan: kq.han < homNay, kieu: kq.han < homNay ? 'qua-han' as const : null, mo: () => setSuaEm({ id: d.id, ten: d.ten, lop: d.lop?.code ?? null, viec: 'outcome' }) }] : []),
+      ...(tap.thieu_tt?.has(d.id) && d.viewer.suaThongTin ? [{ ...chung, key: `thieu:${d.id}`, viec: t('Thiếu thông tin'), phu: null, han: null, quaHan: false, kieu: 'thieu-tt' as const,
+        mo: () => setSuaEm({ id: d.id, ten: d.ten, lop: d.lop?.code ?? null, viec: 'info' }) }] : []),
+    ];
+  });
+  const demGoc: Record<GocVai, number | undefined> = {
+    'tat-ca': data ? khop.length : undefined, sos: sos.data ? new Set(sosRows.map((r) => r.studentId)).size : undefined,
+    'can-lam': data ? new Set(viecTvv.map((v) => v.studentId)).size : undefined, 'can-chu-y': data ? dem('can-chu-y') : undefined,
+  };
   const cot = ['Học viên', 'Target · Dự kiến thi', 'Kết quả gần nhất', 'Cần chú ý', ...(vai === 'cx' ? ['TVV'] : []), 'Phụ huynh', ''];
 
   const dauNhom = (em: DongVai[]): ReactNode => {
@@ -185,20 +240,28 @@ export function HocVienTheoVai({ vai }: { vai: 'tvv' | 'cx' }) {
             </select>
           )}
         </div>
-        <div className="flex min-w-0 max-w-full items-center gap-2 overflow-x-auto [scrollbar-width:none] max-sm:pr-8 max-sm:[mask-image:linear-gradient(to_right,#000_calc(100%-2rem),transparent)]"
-          role="group" aria-label="Lọc học viên">
-          {chips.map((k) => (
-            <button key={k} type="button" className="nut-loc" title={CHIP_VAI_NHAN[k].goiY} aria-pressed={chip === k}
-              onClick={() => setParam({ view: k === macDinh ? null : k })}>
-              {CHIP_VAI_NHAN[k].nhan}<span className="tabular-nums font-medium">{data ? dem(k) : ''}</span>
-            </button>
-          ))}
+        <div className="flex min-w-0 max-w-full flex-wrap items-center gap-2">
+          <BoLocDoan ariaLabel={t('Góc nhìn')} value={goc} onChange={doiGoc}
+            muc={(vai === 'cx' ? (['tat-ca', 'sos', 'can-chu-y'] as const) : (['tat-ca', 'sos', 'can-lam'] as const)).map((k) => ({ key: k, nhan: tenGoc[k], so: demGoc[k] }))} />
+          {goc === 'tat-ca' && (
+            <div className="flex flex-wrap items-center gap-2" role="group" aria-label={t('Lọc phụ')}>
+              {chips.map((k) => (
+                <button key={k} type="button" className="nut-loc" title={CHIP_VAI_NHAN[k].goiY} aria-pressed={chip === k}
+                  onClick={() => setParam({ view: vai === 'cx' ? 'tat-ca' : null, loc: chip === k ? null : k })}>
+                  {CHIP_VAI_NHAN[k].nhan}<span className="tabular-nums font-medium">{data ? dem(k) : ''}</span>
+                </button>
+              ))}
+            </div>
+          )}
+          {goc === 'sos' && sos.data && (
+            <ChonTuanSos tuan={sos.data.tuan} toanBo={sos.data.toanBo} tu={sos.data.tu} den={sos.data.den} onChon={(t) => setParam({ tuan: t || null })} />
+          )}
         </div>
         {data && (
           <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[12.5px] text-slate-400" aria-live="polite">
             <span>Đang xem: <b className="font-semibold text-slate-200">{dangXem}</b></span>
             <span aria-hidden>·</span>
-            <span className="tabular-nums">{hien.length} học viên</span>
+            <span className="tabular-nums">{goc === 'sos' ? demGoc.sos ?? 0 : goc === 'can-lam' ? demGoc['can-lam'] : hien.length} học viên</span>
             {coLoc && <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 sm:min-h-0" onClick={xoaLoc}>Xoá lọc</button>}
           </div>
         )}
@@ -206,7 +269,19 @@ export function HocVienTheoVai({ vai }: { vai: 'tvv' | 'cx' }) {
 
       {trang.error && <ErrorState message={trang.error.message} hint={trang.error.hint} onRetry={trang.reload} />}
       {trang.loading && !data && <Skeleton rows={6} />}
-      {data && (hien.length === 0 ? (
+      {goc === 'sos' && (
+        sos.error ? <ErrorState message={sos.error.message} hint={sos.error.hint} onRetry={sos.reload} />
+          : !sos.data ? <Skeleton rows={6} />
+            : sosRows.length === 0 ? <Card><Empty title={sos.data.toanBo ? t('Không có học viên SOS trong 8 tuần') : t('Không có học viên SOS ở tuần thi này')} hint={t('Chọn tuần khác hoặc Toàn bộ.')} /></Card>
+              : <BangSos data={{ ...sos.data, rows: sosRows }} cot={vai} dam={null} dienThoai={dienThoai} ds={ds} onMo={(r) => setPanelEm(r.studentId)} />
+      )}
+      {goc === 'can-lam' && data && (viecTvv.length === 0
+        ? <Card><Empty title={t('Không có việc nào')} /></Card>
+        : <BangCanLam viec={viecTvv} coNguoi={false} coPhuHuynh dienThoai={dienThoai} ds={ds} />)}
+      {panelEm !== null && <PanelMotEm key={panelEm} studentId={panelEm} onClose={() => setPanelEm(null)} />}
+      {tongKet !== null && <NganTongKet cycleId={tongKet} onClose={() => setTongKet(null)} onDoi={trang.reload} />}
+      {suaEm && <SuaThongTinMotEm viec={suaEm.viec} studentId={suaEm.id} studentName={suaEm.ten} lop={suaEm.lop} onClose={() => setSuaEm(null)} onDone={() => { setSuaEm(null); trang.reload(); }} />}
+      {(goc === 'tat-ca' || goc === 'can-chu-y') && data && (hien.length === 0 ? (
         <Card>
           {!data.rows.length && pv?.dangDung === 'cua-toi'
             ? <Empty title="Chưa có học viên nào của bạn" hint="Học viên có TVV là bạn sẽ hiện ở đây."

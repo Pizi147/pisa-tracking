@@ -91,7 +91,7 @@ export function trangThaiCaseV4(c: CaseV4Input, homNay: string): { k: TrangThaiC
 }
 
 /** J9: bỏ phần mốc máy gán ở đuôi tên PA (`Tutor · đến lúc thi` → `Tutor`); tên người dạy tự viết giữ nguyên. */
-const tenPaGon = (ten: string) => ten.replace(/ · (đến lúc thi|đến MT\d+|1 tháng)$/, '');
+export const tenPaGon = (ten: string) => ten.replace(/ · (đến lúc thi|đến MT\d+|1 tháng)$/, '');
 
 /** Một PA như `viecTiepCuaCase` cần. Chỉ truyền PA CHƯA huỷ. */
 export type PaViecTiep = {

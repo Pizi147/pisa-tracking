@@ -7,7 +7,7 @@
 import { PROGRAMME_TEMPLATES, programmeOf, type ProgrammeCode, skillShort, tenMon, tenMonNgan } from './normal.ts';
 import { deadlineView } from './display.ts';
 import { goiYCuoiKhoa } from './cuoiKhoa.ts';
-import type { ViecTiepCase } from './sosV4.ts';
+import type { TrangThaiCaseV4, ViecTiepCase } from './sosV4.ts';
 import type { NhanYThucEm } from './yThuc.ts';
 import { tuanKhoa, tuanLich } from './hienThiNgay.ts';
 import { CHU_CHUYEN_LOP } from './chuyenLop.ts';
@@ -82,6 +82,48 @@ export function docThamSoLoc(view: string | null | undefined): DocLoc {
   if (view === 'can-lam' || view === 'qua-han' || view === 'cho-duyet' || view === 'thieu_tt') return { loc: view };
   if (view === 'missing_scores') return { chuyenDen: '/test/lich' };
   return { loc: 'tat-ca' };
+}
+
+// ---------------------------------------------------------------- ba góc nhìn (OV-12f, đặc tả OV-12 mục 3.5 / 7.9, P14)
+
+/** Góc nhìn của Học viên & Lớp — thay hàng chip. Lọc phụ (Quá hạn · Chờ duyệt · Thiếu thông tin) nằm TRONG góc Cần làm, không bỏ lọc nào. */
+export const GOC_HOC_VIEN = ['tat-ca', 'sos', 'can-lam'] as const;
+export type GocHocVien = (typeof GOC_HOC_VIEN)[number];
+export type LocPhuCanLam = 'qua-han' | 'cho-duyet' | 'thieu_tt';
+/** `view` (+ `loc`) trên URL → góc + lọc phụ. Link cũ giữ nghĩa qua `docThamSoLoc`: `qua-han` / `cho-duyet` / `thieu_tt` / `case_*` → Cần làm. */
+export function docGoc(view: string | null | undefined, loc: string | null | undefined): { goc: GocHocVien; loc: LocPhuCanLam | null } {
+  const d = docThamSoLoc(view);
+  const l = 'loc' in d ? d.loc : 'tat-ca';
+  if (l === 'sos') return { goc: 'sos', loc: null };
+  if (l === 'tat-ca') return { goc: 'tat-ca', loc: null };
+  const phu = l === 'can-lam' ? loc : l;
+  return { goc: 'can-lam', loc: phu === 'qua-han' || phu === 'cho-duyet' || phu === 'thieu_tt' ? phu : null };
+}
+
+/**
+ * ĐƯỜNG `/hoc-vien-lop` của trang (ô tìm · Phạm vi · chi nhánh · lần chọn trước `cnNho`). `tuLienKet` = trang được MỞ bằng link trỏ một đích
+ * (`coDichLienKet` LÚC VÀO, không phải mỗi lần vẽ): mở / đóng lớp ghi `open=` lên URL nhưng không được đổi đường — đổi đường là tải lại cả trang
+ * (lỗi bản chính 14/10: bấm mở lớp lần đầu → Skeleton).
+ */
+export function duongHocVienLop(params: { get(k: string): string | null }, o: { tuLienKet: boolean; daNho: number | 'tat-ca' | null }): string {
+  const s = new URLSearchParams();
+  const q = (params.get('q') ?? '').trim();
+  if (q) s.set('q', q);
+  const phamVi = params.get('phamVi');
+  if (phamVi) s.set('phamVi', phamVi);
+  const cn = params.get('cn') ?? params.get('branchId');
+  if (cn) s.set('branchId', String(Number(cn)));
+  /* PR-NV (T9): lần chọn trước — máy chủ bỏ nếu ngoài phạm vi; không đổi Phạm vi như `branchId`. Link trỏ một đích thì không gửi (rà PR #205). */
+  else if (!o.tuLienKet && typeof o.daNho === 'number') s.set('cnNho', String(o.daNho));
+  return `/hoc-vien-lop?${s.toString()}`;
+}
+
+/** Nhóm xử lý của một Case — cùng ba chữ với bảng Tổng hợp (chủ SP 14/10): Chờ duyệt (chưa có PA chạy, PA chờ xác nhận, "Không cần theo dõi" chờ QL) · Đang xử lý (có PA đã chạy) · Xong. */
+export type NhomXuLy = 'cho-duyet' | 'dang-xu-ly' | 'xong';
+export const NHAN_NHOM_XU_LY = { 'cho-duyet': 'Chờ duyệt', 'dang-xu-ly': 'Đang xử lý', xong: 'Xong' } as const satisfies Record<NhomXuLy, string>;
+export function nhomXuLyCase(k: TrangThaiCaseV4, coPaDaChay: boolean): NhomXuLy {
+  if (k === 'xong' || k === 'huy-khong-theo-doi' || k === 'he-thong-dong' || k === 'rut-sua-diem') return 'xong';
+  return k === 'dang-lam' && coPaDaChay ? 'dang-xu-ly' : 'cho-duyet';
 }
 
 /** Chip `qua-han` không nằm thường trực trên hàng chip — chỉ hiện (đang bấm) khi người dùng tới từ badge. */
