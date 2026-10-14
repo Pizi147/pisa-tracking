@@ -35,12 +35,6 @@ export async function runPrHsmTests(t: YThucTestKit) {
     assert('loi' in d.kiemNhanXet(5), 'số phải lỗi');
   });
 
-  check('HSM (1d) · nhanXetW gộp Task 1 / Task 2, bỏ phần trống', () => {
-    assert(d.nhanXetW(null, null) === null, 'cả hai trống');
-    assert(d.nhanXetW('A', null) === 'Task 1: A' && d.nhanXetW(null, 'B') === 'Task 2: B', 'một phần');
-    assert(d.nhanXetW('A', 'B') === 'Task 1: A\nTask 2: B', 'hai phần');
-  });
-
   check('HSM (1e) · tenGvCham ưu tiên tài khoản', () => {
     assert(d.tenGvCham({ examinerUserName: 'Trang', examinerName: 'Lan' }) === 'Trang', 'phải lấy tài khoản');
     assert(d.tenGvCham({ examinerName: 'Cô Lan' }) === 'Cô Lan' && d.tenGvCham({}) === null, 'tên ngoài / trống');

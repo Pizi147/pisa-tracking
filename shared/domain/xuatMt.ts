@@ -3,6 +3,7 @@ import { tuanLich } from './hienThiNgay.ts';
 import { tieuChiNganCua } from './skills.ts';
 import { kyHieuLop } from './tenLop.ts';
 import { ATTEMPT_KIND_SHORT } from './normal.ts';
+import { issueLabel } from './cases.ts';
 
 /**
  * XUẤT EXCEL KẾT QUẢ TEST (PR-XUAT · YC-13.9 · T40). LUẬT THUẦN: đọc + kiểm bộ lọc, bộ cột, dựng mảng hai chiều, tên tệp.
@@ -134,7 +135,17 @@ export const COT_FT_GON = ['Mã', 'Tên', 'Chi nhánh', 'Lớp', 'Lộ trình', 
   'Kỳ vọng', 'SOS', 'Trạng thái lượt'] as const;                                   // 16 cột — K4-35(c)
 /** T39/K4-25: W1 `TA CC LR GRA`, W2 `TR CC LR GRA` — một nguồn với lưới và hồ sơ Mock (`tieuChiNganCua`, PR-HSM). */
 export const COT_FT_THEM = ['W1', 'W2', ...tieuChiNganCua('writing1')!.map((t) => `W1 ${t}`), ...tieuChiNganCua('writing2')!.map((t) => `W2 ${t}`),
-  ...tieuChiNganCua('speaking')!.map((t) => `S ${t}`), 'Tuần L', 'Tuần R', 'Tuần W', 'Tuần S', 'Người nhập', 'Nhận xét W', 'Nhận xét S', 'GV chấm S'];
+  ...tieuChiNganCua('speaking')!.map((t) => `S ${t}`), 'Tuần L', 'Tuần R', 'Tuần W', 'Tuần S', 'Người nhập',
+  /* OV-12b: nhận xét từng bài (L, R, W1, W2, S) + nhóm nguyên nhân của ô dưới kỳ vọng (`chuNhomNguyenNhan`). */
+  'Nhận xét L', 'Nhận xét R', 'Nhận xét W1', 'Nhận xét W2', 'Nhận xét S', 'Nhóm nguyên nhân', 'GV chấm S'];
+
+const KY_HIEU_O = { listening: 'L', reading: 'R', writing1: 'W1', writing2: 'W2', speaking: 'S' } as const;
+type ONhap = keyof typeof KY_HIEU_O;
+/** Ô Excel "Nhóm nguyên nhân": `R: Kỹ năng làm bài, Quản lý thời gian · W1: Đáp ứng yêu cầu đề` (thứ tự chọn); không ô nào có nhóm → `null`. */
+export function chuNhomNguyenNhan(nhom: Partial<Record<ONhap, readonly string[]>>): string | null {
+  const phan = (Object.keys(KY_HIEU_O) as ONhap[]).filter((k) => nhom[k]?.length).map((k) => `${KY_HIEU_O[k]}: ${nhom[k]!.map(issueLabel).join(', ')}`);
+  return phan.length ? phan.join(' · ') : null;
+}
 
 export type DongFT = {
   ma: string; ten: string; chiNhanh: string; lop: string; loTrinh: string;
@@ -146,8 +157,8 @@ export type DongFT = {
   tieuChi: Record<'writing1' | 'writing2' | 'speaking', (number | null)[]>;
   tuanKn: Record<'listening' | 'reading' | 'writing' | 'speaking', string | null>;
   nguoiNhap: string | null;
-  /** YC-13.5: W1 + W2 gộp một ô (`nhanXetW`), nhận xét Speaking, GV chấm Speaking (`tenGvCham`) — `null` khi không có. */
-  nhanXetW: string | null; nhanXetS: string | null; gvChamS: string | null;
+  /** OV-12b: nhận xét từng bài, nhóm nguyên nhân (`chuNhomNguyenNhan`), GV chấm Speaking (`tenGvCham`) — `null` khi không có. */
+  nhanXet: Record<ONhap, string | null>; nhom: string | null; gvChamS: string | null;
 };
 
 /** Hàng 1 = tiêu đề; mọi điểm là số hoặc `null`. */
@@ -159,7 +170,8 @@ export function bangFT(dong: DongFT[], cot: 'gon' | 'day-du'): Cell[][] {
       d.kyVong, d.sos, d.trangThai];
     if (day) {
       hang.push(d.w1, d.w2, ...d.tieuChi.writing1, ...d.tieuChi.writing2, ...d.tieuChi.speaking,
-        d.tuanKn.listening, d.tuanKn.reading, d.tuanKn.writing, d.tuanKn.speaking, d.nguoiNhap, d.nhanXetW, d.nhanXetS, d.gvChamS);
+        d.tuanKn.listening, d.tuanKn.reading, d.tuanKn.writing, d.tuanKn.speaking, d.nguoiNhap,
+        d.nhanXet.listening, d.nhanXet.reading, d.nhanXet.writing1, d.nhanXet.writing2, d.nhanXet.speaking, d.nhom, d.gvChamS);
     }
     out.push(hang);
   }
