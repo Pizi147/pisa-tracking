@@ -53,7 +53,8 @@ export function DemoBar() {
 
   return (
     /* K5 (mockup HK2 mục 5): điện thoại một dòng — "Demo" · ngày · Công cụ · Tài khoản (nút 44 px, cả thanh ≤ 53 px). Máy tính giữ nguyên. */
-    <div className="flex items-center gap-2 flex-wrap px-4 py-1.5 max-sm:px-3 max-sm:py-1 text-xs border-b bg-[color:var(--bg)]" style={{ borderColor: 'var(--line)' }}>
+    /* PR-EN: thanh demo giữ tiếng Việt (chỉ bản demo, không phải màn GV) — `lang="vi"` để trình đọc màn hình đọc đúng, đo (v) bỏ qua. */
+    <div lang="vi" className="flex items-center gap-2 flex-wrap px-4 py-1.5 max-sm:px-3 max-sm:py-1 text-xs border-b bg-[color:var(--bg)]" style={{ borderColor: 'var(--line)' }}>
       <Alert tone="warn"><span className="sm:hidden">Demo</span><span className="max-sm:hidden">Dữ liệu demo</span></Alert>
       <span className="text-slate-500 hidden sm:inline">Toàn bộ dữ liệu là giả, không phải dữ liệu thật của trung tâm.</span>
       <div className="flex-1" />

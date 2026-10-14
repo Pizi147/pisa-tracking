@@ -811,7 +811,7 @@ export async function runPrMtbTests(t: YThucTestKit) {
     /* OV-11a (CA3-2): ô "xong" cũng có ✓ — vẫn MỘT phần tử ✓ duy nhất (đang chọn hoặc xong), không bao giờ hai. */
     assert(/\{\(chon \|\| \(!huy && r\.kieu === 'xong'\)\) && <span aria-hidden>✓<\/span>\}/.test(o)
       && (o.match(/<span aria-hidden>✓<\/span>/g) ?? []).length === 1 && !/startsWith\('✓'\)/.test(o), 'dấu ✓ đang chọn: đúng một dấu');
-    assert(/chon \? MAU_CHON/.test(o) && /chon \? 'đang chọn'|!!chon\)/.test(o), 'mất dấu đang chọn');
+    assert(/chon \? MAU_CHON/.test(o) && /chon \? t\('đang chọn'\)|chon \? 'đang chọn'|!!chon\)/.test(o), 'mất dấu đang chọn');
   });
 
   check('MTb sau rà đợt 2 (4) · dòng "xếp nốt": ô đợt sẽ xếp tô "đang chọn" và giữ chữ trạng thái (mockup: "2 vắng S"); chữ tuần chỉ cho tạo / dời', () => {

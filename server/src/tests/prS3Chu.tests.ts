@@ -12,7 +12,8 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '.
 // dist-server/server/src/tests → gốc repo.
 
 /** Dữ liệu kể chuyện của bộ demo, không phải chữ giao diện — trừ `seed.ts` (in ra màn hình lệnh) và `duLieuNen.ts` (dữ liệu nền bản chính). */
-const LOAI_TRU = (f: string) => f.startsWith('server/src/seed/') && f !== 'server/src/seed/seed.ts' && f !== 'server/src/seed/duLieuNen.ts';
+/* PR-EN: `shared/i18n/` là từ điển — khoá chính là chữ Việt ở nơi dùng (`t('…')`), nơi dùng đã được quét. */
+const LOAI_TRU = (f: string) => f.startsWith('shared/i18n/') || f.startsWith('server/src/seed/') && f !== 'server/src/seed/seed.ts' && f !== 'server/src/seed/duLieuNen.ts';
 
 function boChuThich(src: string): string {
   return src
@@ -95,7 +96,7 @@ export async function runPrS3ChuTests(t: YThucTestKit) {
     const sd = docNguon('web/src/modules/students/StudentDetailPage.tsx');
     // PR-U12: bỏ link riêng "Bảng điểm đợt ›" — ô Bài là liên kết; tên trang vẫn là "bảng điểm đợt" (gợi ý cột Bài)
     assert(!sd.includes('Bảng điểm đợt ›') && /mở bảng điểm đợt/.test(sd), 'link lớp thường');
-    assert(/'ho-tro': 'Hỗ trợ học viên'/.test(docNguon('shared/domain/dieuHuong.ts')), 'TAB_CONG_VIEC_LABEL');
+    assert(/'ho-tro': t\('Hỗ trợ học viên'\)/.test(docNguon('shared/domain/dieuHuong.ts')), 'TAB_CONG_VIEC_LABEL');
     assert(/'Tổng hợp'/.test(docNguon('web/src/modules/phanTich/TongHopTestSos.tsx')), 'Excel A-054');
   });
 
@@ -183,8 +184,8 @@ export async function runPrS3ChuTests(t: YThucTestKit) {
   ], KY_THUAT);
   check('S3 (4) · "Thêm PA" so khớp theo hằng CHU_THEM_PA (không so chuỗi hiển thị); KhungPanel / ConfirmDialog mặc định "Đóng"', () => {
     assert(/CHU_THEM_PA/.test(docNguon('server/src/students/viecHocVien.ts')) && /CHU_THEM_PA/.test(docNguon('web/src/modules/cases/QuickReport.tsx')) && /CHU_THEM_PA/.test(docNguon('shared/domain/sosV4.ts')), 'hằng CHU_THEM_PA');
-    assert(/huy\.nhan \?\? \(chan\.daSua \? 'Huỷ thay đổi' : 'Đóng'\)/.test(docNguon('web/src/ui/KhungPanel.tsx')), 'KhungPanel');   // PR-SL I1: chưa sửa → "Đóng"
-    assert(/closeLabel = 'Đóng'/.test(docNguon('web/src/ui/Drawer.tsx')), 'ConfirmDialog');   // PR-LM: nút trái đặt được ("Quay lại"), mặc định vẫn "Đóng"
+    assert(/huy\.nhan \?\? \(chan\.daSua \? t\('Huỷ thay đổi'\) : t\('Đóng'\)\)/.test(docNguon('web/src/ui/KhungPanel.tsx')), 'KhungPanel');   // PR-SL I1: chưa sửa → "Đóng"
+    assert(/closeLabel = t\('Đóng'\)/.test(docNguon('web/src/ui/Drawer.tsx')), 'ConfirmDialog');   // PR-LM: nút trái đặt được ("Quay lại"), mặc định vẫn "Đóng"
     assert(/nhan = 'Thao tác khác'/.test(docNguon('web/src/ui/MenuDong.tsx')), 'MenuDong');
   });
   // ------------------------------------------------------------------ Task 5 · tiêu đề cột & số liệu (nhóm E)
@@ -271,7 +272,7 @@ export async function runPrS3ChuTests(t: YThucTestKit) {
     /* PR-OV5b: nút Quay lại mọi hồ sơ (HV, lớp, MT, GV, Nhập điểm) là `DuongVe` "‹ {tên nguồn}" — 44 px ở điện thoại, cả menu Các bước. */
     cao('web/src/modules/fasttrack/MockDetailPage.tsx', /<DuongVe /);
     cao('web/src/ui/ThanhTruocSau.tsx', /className="btn btn-sm min-h-\[44px\] max-w-full sm:min-h-\[32px\]" onClick=\{\(\) => ve\(/);
-    cao('web/src/ui/ThanhTruocSau.tsx', /<Menu label=\{`Các bước[^\n]*className="btn btn-sm btn-ghost min-h-\[44px\] sm:min-h-\[32px\]"/);
+    cao('web/src/ui/ThanhTruocSau.tsx', /<Menu label=\{t\('Các bước[^\n]*className="btn btn-sm btn-ghost min-h-\[44px\] sm:min-h-\[32px\]"/);
     cao('web/src/ui/ThanhTruocSau.tsx', /btn btn-sm btn-ghost min-h-\[44px\] sm:min-h-0 disabled/);   // ‹ Trước · Sau ›
     cao('web/src/modules/students/StudentDetailPage.tsx', /className="btn btn-primary min-h-\[44px\] sm:min-h-0" onClick=\{\(\) => setReportOpen\(true\)\}>\+ Case/);
     cao('web/src/modules/students/StudentsPage.tsx', /className="nut-loc"/);   // PR-HK2: lớp .nut-loc giữ 44 px ở điện thoại

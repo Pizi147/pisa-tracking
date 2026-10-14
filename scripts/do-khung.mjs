@@ -6,6 +6,9 @@
 // KHUNG_RONG=1280,1366 thêm các chiều rộng đó cho MỌI kịch bản (dò trang nào tràn).
 // Chạy: npm run dev (PORT/WEB_PORT riêng) rồi `KHUNG_BASE=http://localhost:5530 node scripts/do-khung.mjs [lọc]`.
 // Playwright không nằm trong package.json: `npm i --no-save playwright` hoặc trỏ PW=<đường tới playwright>.
+// PR-EN: KHUNG_NGON_NGU=en — chạy cả bộ ở tiếng Anh (tài khoản + máy) và thêm lỗi (v) CHỮ VIỆT CÒN SÓT trên màn GV (vai 7, 9 và màn
+// chưa đăng nhập): bỏ khối [lang=vi] và chữ dữ liệu (mọi giá trị chữ có dấu trong DB demo — tên, mã, ghi chú, thông báo cũ). DB đọc từ
+// PISA_DB (mặc định data/pisa-demo.sqlite). Kịch bản `ngon-ngu` bấm bốn bước nhớ ngôn ngữ (E-NHO).
 import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -14,6 +17,21 @@ const { chromium } = await import(process.env.PW ? pathToFileURL(process.env.PW)
 const BASE = process.env.KHUNG_BASE ?? `http://localhost:${process.env.WEB_PORT ?? 5173}`;
 const ANH = process.env.KHUNG_ANH ?? 'thiet-ke/anh/khung';
 const LOC = process.argv[2] ?? '';
+const NN = process.env.KHUNG_NGON_NGU === 'en' ? 'en' : 'vi';
+/** (v) chỉ đo màn đã dịch: kịch bản → vùng đo. Mỗi đợt PR-EN thêm màn của mình (EN-a: đăng nhập, Hồ sơ cá nhân, thanh trên + menu Tài khoản). */
+const GOC_V = { 'dang-nhap': 'body', 'ho-so-ca-nhan': 'body', 'menu-tk': 'header' };
+/** Chữ dữ liệu (không phải chữ giao diện): mọi giá trị chữ có dấu tiếng Việt trong DB demo. Chỉ nạp khi chạy tiếng Anh. */
+const DU_LIEU = NN === 'en' ? await (async () => {
+  const RE = /[àáảãạăằắẳẵặâầấẩẫậèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵđ]/i;
+  const { default: Database } = await import('libsql');
+  const db = new Database(process.env.PISA_DB ?? 'data/pisa-demo.sqlite', { readonly: true });
+  const ra = new Set();
+  for (const { name } of db.prepare("SELECT name FROM sqlite_master WHERE type = 'table'").all()) {
+    for (const r of db.prepare(`SELECT * FROM "${name}"`).raw().all()) for (const v of r) if (typeof v === 'string' && v.length < 400 && RE.test(v)) ra.add(v.trim().replace(/\s+/g, ' '));
+  }
+  db.close();
+  return [...ra];
+})() : [];
 fs.mkdirSync(ANH, { recursive: true });
 
 /** Chỗ cắt chữ của PR khác: Lịch Test (#12 LT3), hồ sơ Mock (#13), Điểm theo lớp (#14 HK2), lưới chấm (`cham/*` — PR-BV #228),
@@ -39,6 +57,9 @@ const KICH_BAN = [
   ['nhap-diem', 2, '/nhap-diem/3'], ['bang-diem-thuong', 2, '/bang-diem-thuong/6'], ['mock', 2, '/mock-test/5'],
   ['quan-tri', 1, '/quan-tri'], ['quan-tri-quyen', 1, '/quan-tri', async (p) => { await p.getByRole('tab', { name: /Quyền/ }).click(); await p.waitForTimeout(800); }], ['ho-so-ca-nhan', 7, '/ho-so-ca-nhan'],
   ['gvbm', 9, '/'], ['gvbm-test', 9, '/test/lich'],
+  // PR-EN: màn chưa đăng nhập (vai 0) và menu Tài khoản mở (điện thoại: hàng Ngôn ngữ ngay trên Giao diện).
+  ['dang-nhap', 0, '/'],
+  ['menu-tk', 7, '/', async (p) => { await p.getByRole('button', { name: /^(Tài khoản|Account) / }).click(); await p.waitForTimeout(300); }],
   // Panel: chỉ đo nút tràn / chữ cắt — panel tự cuộn trong thân là đúng thiết kế.
   ['panel-pa', 7, '/hoc-thuat/case/5', async (p) => {
     // 375: Ngăn Case tự mở đè trang — bấm "Ghi kết quả" trong ngăn.
@@ -151,11 +172,33 @@ function doTrang() {
   return [...new Set(loi)];
 }
 
-const trinh = await chromium.launch({ channel: 'msedge' }).catch(() => chromium.launch({ channel: 'chrome' }));
+/** (v) PR-EN: chữ Việt còn sót trên màn tiếng Anh — bỏ [lang=vi], sr-only vẫn tính (đọc màn hình), chữ dữ liệu (`duLieu`) bỏ. */
+function chuVietSot([duLieu, goc]) {
+  const RE = /[àáảãạăằắẳẵặâầấẩẫậèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵđ]/i;
+  const data = new Set(duLieu);
+  const laDuLieu = (s) => data.has(s) || s.split(/\s*[·,—:|()«»“”"]\s*|\s+-\s+/).every((x) => !x.trim() || !RE.test(x) || data.has(x.trim()) || duLieu.some((d) => d.length > 3 && x.includes(d)));
+  const loi = [];
+  const xem = (chu, el) => {
+    const s = (chu ?? '').trim().replace(/\s+/g, ' ');
+    if (!s || !RE.test(s) || el.closest('[lang=vi]') || laDuLieu(s)) return;
+    loi.push(`v chữ Việt «${s.slice(0, 70)}»`);
+  };
+  const vung = document.querySelector(goc) ?? document.body;
+  const tw = document.createTreeWalker(vung, NodeFilter.SHOW_TEXT);
+  for (let n = tw.nextNode(); n; n = tw.nextNode()) {
+    const el = n.parentElement;
+    if (!el || ['SCRIPT', 'STYLE', 'TEXTAREA'].includes(el.tagName) || el.closest('[hidden]')) continue;
+    xem(n.textContent, el);
+  }
+  for (const el of vung.querySelectorAll('[aria-label],[title],[placeholder]')) for (const a of ['aria-label', 'title', 'placeholder']) if (el.hasAttribute(a)) xem(el.getAttribute(a), el);
+  return [...new Set(loi)];
+}
+
+const trinh = await chromium.launch({ channel: 'msedge' }).catch(() => chromium.launch({ channel: 'chrome' })).catch(() => chromium.launch());
 let tongLoi = 0;
 for (const [w, h] of [[1440, 900], [375, 812], [1366, 768], [1280, 800]]) for (const sang of [false, true]) {
   const ctx = await trinh.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: 1 });
-  await ctx.addInitScript((s) => { try { localStorage.setItem('pisa-giao-dien', s ? 'light' : 'dark'); } catch {} }, sang);
+  await ctx.addInitScript(([s, nn]) => { try { localStorage.setItem('pisa-giao-dien', s ? 'light' : 'dark'); localStorage.setItem('pisa-ngon-ngu', nn); } catch {} }, [sang, NN]);
   const p = await ctx.newPage();
   p.setDefaultTimeout(8000);
   let vai = 0;
@@ -163,8 +206,13 @@ for (const [w, h] of [[1440, 900], [375, 812], [1366, 768], [1280, 800]]) for (c
     if (LOC && !tenKb.includes(LOC)) continue;
     if (!rong.includes(w) && !RONG_THEM.includes(w)) continue;
     if (v !== vai) {
-      const r = await p.request.post(`${BASE}/api/demo/session`, { data: { userId: v } });
-      if (!r.ok()) throw new Error(`đăng nhập vai ${v}: ${r.status()}`);
+      if (v === 0) await p.request.delete(`${BASE}/api/demo/session`);
+      else {
+        const r = await p.request.post(`${BASE}/api/demo/session`, { data: { userId: v } });
+        if (!r.ok()) throw new Error(`đăng nhập vai ${v}: ${r.status()}`);
+        // Ngôn ngữ nhớ theo tài khoản: đặt đúng tiếng của lần chạy — chạy VI sau EN không bị kẹt EN.
+        await p.request.patch(`${BASE}/api/me/profile`, { data: { ngonNgu: NN } });
+      }
       vai = v;
     }
     const nhan = `${tenKb}-${w}-${sang ? 'sang' : 'toi'}`;
@@ -175,12 +223,54 @@ for (const [w, h] of [[1440, 900], [375, 812], [1366, 768], [1280, 800]]) for (c
     } catch (e) { tongLoi++; console.log(`✗ ${nhan}: kịch bản không mở được (${e.message.split('\n')[0]})`); continue; }
     let loi = await p.evaluate(doTrang);
     if (BO_QUA_CAT.some((k) => tenKb.includes(k))) loi = loi.filter((l) => !l.startsWith('c '));
+    if (NN === 'en' && [0, 7, 9].includes(v) && GOC_V[tenKb]) loi = [...loi, ...await p.evaluate(chuVietSot, [DU_LIEU, GOC_V[tenKb]])];
     console.log(`${loi.length ? '✗' : '✓'} ${nhan}${loi.map((l) => `\n    ${l}`).join('')}`);
     tongLoi += loi.length;
     // Ảnh lỗi; KHUNG_CHUP=1 chụp mọi lần đo (ảnh nghiệm thu).
     if (loi.length || process.env.KHUNG_CHUP) await p.screenshot({ path: path.join(ANH, `${nhan}.png`) });
   }
   await ctx.close();
+}
+/*
+ * E-NHO (PR-EN, kịch bản `ngon-ngu`): (1) chưa đăng nhập bấm English → tải lại vẫn EN; (2) đăng nhập vai chưa chọn → tài khoản lưu `en`;
+ * (3) máy mới (localStorage trống) đăng nhập cùng vai → tự EN; (4) bấm VI ở thanh trên → tài khoản `vi`. Vai 9; trả tài khoản về `vi`.
+ */
+if (!LOC || 'ngon-ngu'.includes(LOC)) {
+  const buoc = [];
+  const ktra = (dk, chu) => { if (!dk) buoc.push(chu); };
+  const ctx = await trinh.newContext({ viewport: { width: 1440, height: 900 } });
+  const p = await ctx.newPage();
+  p.setDefaultTimeout(8000);
+  const nnTk = async (pg) => (await (await pg.request.get(`${BASE}/api/demo/session`)).json()).ngonNgu ?? null;
+  try {
+    await p.request.post(`${BASE}/api/demo/session`, { data: { userId: 9 } });
+    await p.request.patch(`${BASE}/api/me/profile`, { data: { ngonNgu: 'vi' } });
+    await p.request.delete(`${BASE}/api/demo/session`);
+    await p.goto(BASE + '/', { waitUntil: 'networkidle' });
+    await p.getByRole('button', { name: 'English' }).click();
+    await p.waitForLoadState('networkidle');
+    await p.reload({ waitUntil: 'networkidle' });
+    ktra(await p.getByRole('button', { name: 'Sign in', exact: false }).count() > 0 && (await p.evaluate(() => document.documentElement.lang)) === 'en', '(1) bấm English rồi tải lại không còn EN');
+    await p.getByRole('button', { name: /Quick demo login/ }).click();
+    await p.getByRole('button', { name: /Lê|Phạm|Nguyễn|Trần|Hoàng|Vũ|Đỗ/ }).first().waitFor();
+    // Vào nhanh bằng giao diện (đúng đường người dùng): vai 9 = GVBM — gọi API cho chắc rồi tải lại.
+    await p.request.post(`${BASE}/api/demo/session`, { data: { userId: 9 } });
+    await p.reload({ waitUntil: 'networkidle' }); await p.waitForTimeout(800);
+    ktra(await nnTk(p) === 'en', `(2) đăng nhập sau khi chọn English: tài khoản ${await nnTk(p)}, cần en`);
+    const ctx2 = await trinh.newContext({ viewport: { width: 1440, height: 900 } });
+    const p2 = await ctx2.newPage();
+    await p2.request.post(`${BASE}/api/demo/session`, { data: { userId: 9 } });
+    await p2.goto(BASE + '/', { waitUntil: 'networkidle' }); await p2.waitForTimeout(1500);
+    ktra((await p2.evaluate(() => document.documentElement.lang)) === 'en', '(3) máy mới đăng nhập cùng vai không tự EN');
+    await p2.getByRole('group', { name: 'Language' }).getByRole('button', { name: 'VI' }).click();
+    await p2.waitForLoadState('networkidle'); await p2.waitForTimeout(800);
+    ktra(await nnTk(p2) === 'vi' && (await p2.evaluate(() => document.documentElement.lang)) === 'vi', `(4) bấm VI: tài khoản ${await nnTk(p2)}`);
+    await ctx2.close();
+  } catch (e) { buoc.push(`kịch bản dừng: ${e.message.split('\n')[0]}`); }
+  await p.request.patch(`${BASE}/api/me/profile`, { data: { ngonNgu: 'vi' } }).catch(() => {});
+  await ctx.close();
+  console.log(`${buoc.length ? '✗' : '✓'} ngon-ngu (E-NHO bốn bước)${buoc.map((l) => `\n    ${l}`).join('')}`);
+  tongLoi += buoc.length;
 }
 await trinh.close();
 console.log(tongLoi ? `\n${tongLoi} lỗi` : '\nKhông lỗi');

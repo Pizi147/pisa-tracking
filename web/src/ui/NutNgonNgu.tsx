@@ -15,7 +15,7 @@ export function NutNgonNgu({ kieu = 'nut', daDangNhap = true }: { kieu?: 'nut' |
   );
   if (kieu === 'to') {
     return (
-      <div role="group" aria-label="Ngôn ngữ / Language" className="grid grid-cols-2 gap-2.5">
+      <div role="group" aria-label={t('Ngôn ngữ')} className="grid grid-cols-2 gap-2.5">
         {([['vi', 'Tiếng Việt'], ['en', 'English']] as const).map(([nn, chu]) => (
           <button key={nn} type="button" aria-pressed={NGON_NGU === nn} onClick={chon(nn)} lang={nn}
             className={`min-h-[56px] rounded-[10px] border text-[17px] font-semibold ${NGON_NGU === nn
