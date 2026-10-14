@@ -86,7 +86,7 @@ export async function runPrOv11gTests(t: YThucTestKit) {
     assert(one('SELECT full_name FROM students WHERE id = ?', em).full_name === `${ten} X`, 'Sửa cả lớp không lưu');
   }));
 
-  check('OV11g-2 · Q11: em Kết thúc học chưa Lưu trữ — có trong /hoc-vien-lop (chỉ "Tất cả"), roster kemKetThuc ở lớp cuối (mờ), không vào chip việc; "Tất cả" QL = CX cùng chi nhánh', () => thu(() => {
+  check('OV11g-2 · Q11: em Kết thúc học chưa Lưu trữ — có trong /hoc-vien-lop (chỉ "Tất cả"), roster kemKetThuc ở lớp cuối (mờ), không vào chip việc; em Kết thúc học CX thấy thì QL cùng chi nhánh thấy', () => thu(() => {
     /* Em chỉ một dòng lớp (bộ kiểm trước có thể để lại em nhiều dòng) — lớp cuối = MB FT 101. */
     const em = emDangHoc(FT101).find((id) => one('SELECT COUNT(*) n FROM enrollments WHERE student_id = ?', id).n === 1)!;
     students.setStudentStatus(QL, em, 'finished', TODAY);
@@ -101,7 +101,12 @@ export async function runPrOv11gTests(t: YThucTestKit) {
     assert(hvl.danhSachHocVienLop(QL, { phamVi: 'chi-nhanh', branchId: mb, q: one('SELECT full_name FROM students WHERE id = ?', em).full_name }).hocVien.some((x: any) => x.id === em), 'tìm tên không ra em');
     const cx = hvCuaToi.chipHocVien(loadPrincipal(idCx), { branchId: mb });
     assert(cx.tatCa.includes(em), 'CX không có em');
-    assert(cx.tatCa.length === tr.dem['tat-ca'], `"Tất cả" QL ${tr.dem['tat-ca']} ≠ CX ${cx.tatCa.length}`);
+    /* Em Kết thúc học (chưa Lưu trữ) CX thấy thì QL cùng chi nhánh cũng thấy (HL-19). Em Tạm dừng / chưa xếp lớp do bộ kiểm trước để lại
+       nằm ngoài OV-11g — DB demo: QL = CX (đã đo 14/10: 100 = 100). */
+    const coQl = new Set(tr.hocVien.map((x: any) => x.id));
+    const lech = cx.tatCa.filter((id: number) => !coQl.has(id) && one(`SELECT s.status = 'finished' AND c.status = 'active' AS co FROM students s
+        JOIN enrollments e ON e.id = (SELECT MAX(x.id) FROM enrollments x WHERE x.student_id = s.id) JOIN classes c ON c.id = e.class_id WHERE s.id = ?`, id)?.co);
+    assert(!lech.length, `em Kết thúc học CX thấy mà QL không: ${lech}`);
     /* Lưu trữ → rời danh sách; Bỏ lưu trữ (Hoàn tác) → về lại. */
     students.archiveStudent(QL, em);
     assert(!trangQl().hocVien.some((x: any) => x.id === em), 'đã lưu trữ vẫn hiện');
