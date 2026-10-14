@@ -306,8 +306,10 @@ function listClassSummariesThat(p: Principal, f: { branchId?: number; classId?: 
     const matched = new Set(
       (conn
         .prepare(
+          /* OV-11g (HL-19): em Kết thúc học chưa Lưu trữ tìm ra ở lớp cuối — như dòng mờ của Học viên & Lớp. */
           `SELECT DISTINCT e.class_id FROM enrollments e JOIN students s ON s.id = e.student_id
-            WHERE e.status = 'active'
+            WHERE (e.status = 'active' OR (e.status = 'completed' AND s.status = 'finished' AND s.archived_at IS NULL
+                    AND e.id = (SELECT MAX(x.id) FROM enrollments x WHERE x.student_id = s.id)))
               AND (s.full_name LIKE ? OR s.normalized_name LIKE ? OR s.student_code LIKE ?)`,
         )
         .all(`%${q}%`, `%${q.toLowerCase()}%`, `%${q.toUpperCase()}%`) as any[]).map((r) => r.class_id),
