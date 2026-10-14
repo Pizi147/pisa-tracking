@@ -504,7 +504,7 @@ export async function runPrLt2aTests(t: YThucTestKit) {
     assert(!fs.existsSync(path.join(process.cwd(), 'web/src/modules/cases/NopKeHoachPanel.tsx')), 'NopKeHoachPanel phải gỡ');
     assert(!/gửi kế hoạch|Kế hoạch chung do/.test(doc('yThuc/CaseSosControls.tsx')), 'form Xác nhận Case còn kế hoạch');
     assert(/Đánh dấu đã làm/.test(doc('yThuc/PhoiHopSosSection.tsx')) && /Nội dung gửi TVV/.test(doc('yThuc/PhoiHopSosSection.tsx')), 'Phối hợp: Đánh dấu đã làm + 4 nội dung');
-    assert(/chuaChay/.test(doc('cases/SkillBoard.tsx')) && /chuaChay \? 'Chưa bắt đầu'/.test(doc('cases/CasePanel.tsx')), 'HangPA / TheKhoiPa: PA chưa chạy = "Chưa bắt đầu"');
+    assert(/chuaChay/.test(doc('cases/SkillBoard.tsx')) && /chuaChay \? t\('Chưa bắt đầu'\)/.test(doc('cases/CasePanel.tsx')), 'HangPA / TheKhoiPa: PA chưa chạy = "Chưa bắt đầu"');
     assert(!/>Nộp kế hoạch|'Nộp kế hoạch bổ trợ', \(\)/.test(doc('cases/SkillBoard.tsx') + doc('cases/CasePanel.tsx') + doc('students/NganCase.tsx')), 'còn nút Nộp kế hoạch');
   });
 

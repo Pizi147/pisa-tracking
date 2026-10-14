@@ -14,6 +14,7 @@ import { OKhac } from '../../ui/OKhac.tsx';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import { Hang2, Truong } from '../../ui/KhungPanel.tsx';
 import { Han } from '../../ui/Han.tsx';
+import { t } from '@shared/i18n/index.ts';
 
 type CoordAction = {
   id: number; kind: string; kindLabel: string; customName: string | null; name: string;
@@ -40,7 +41,7 @@ export type CoordTurn = {
  * K3-38 (PR-YT4): "CX / GĐCN meeting" của Phối hợp SOS KHÁC Meeting CX/GĐCN của Ý thức (cần QL duyệt) — nhãn ghi rõ "sau Mock" + chữ phụ
  * để GVCN không nhầm hai việc. Chỉ đổi chữ hiển thị, không đổi mã.
  */
-const nhanMeetingSauMock = (k: string) => `Meeting CX/GĐCN (sau Mock) · ${k === 'cx_meeting_family' ? 'HV / PH' : 'HV'}`;
+const nhanMeetingSauMock = (k: string) => t('Meeting CX/GĐCN (sau Mock) · {x}', { x: k === 'cx_meeting_family' ? 'HV / PH' : 'HV' });
 
 /**
  * DANH SÁCH `Phối hợp SOS` (§7.2/§7.3, prototype v3 — PR-HV) — dùng chung cho tab lớp (`cot1="hocVien"`: cột 1 là tên
@@ -53,7 +54,7 @@ export function PhoiHopSosSection({ turns, loading, cot1 = 'hocVien', onGoAcadem
 }) {
   if (loading || !turns) return <Skeleton rows={3} />;
   /* PR-S5F-b: tab dùng chung FT và lớp thường — màn rỗng không nói "SOS" (lớp thường không có SOS). */
-  if (!turns.length) return <Empty title="Không có lượt phối hợp nào" />;
+  if (!turns.length) return <Empty title={t('Không có lượt phối hợp nào')} />;
   return (
     <div className="space-y-2">
       {turns.map((t) => (
@@ -70,19 +71,19 @@ export function PhoiHopSosSection({ turns, loading, cot1 = 'hocVien', onGoAcadem
  * Đầu thẻ là `div role="button"` chứ không phải `<button>`: cột 2 có một nút link bên trong (đổi sang tab Học thuật),
  * nút lồng trong nút là HTML sai. Nút link gọi `stopPropagation` để không làm thẻ mở/đóng.
  */
-export function TheSos({ t, cot1 = 'luot', onGoAcademic, onChanged }: {
+export function TheSos({ t: luot, cot1 = 'luot', onGoAcademic, onChanged }: {
   t: CoordTurn;
   /** 'luot' (hồ sơ HV): cột 1 = `MT2 · SOS 2` + kỹ năng. 'hocVien' (hồ sơ lớp): cột 1 = tên HV + `MT2 · SOS 2 · kỹ năng`. */
   cot1?: 'luot' | 'hocVien';
   onGoAcademic?: () => void;
   onChanged?: () => void;
 }) {
-  const [open, setOpen] = useState(!t.summary.complete);
+  const [open, setOpen] = useState(!luot.summary.complete);
   const [adding, setAdding] = useState(false);
-  const mtSos = t.nhanDot
-    ? `${t.nhanDot}${t.ketQua ? ` · ${t.ketQua.chinh}` : ''}`
-    : `MT${t.attemptNo}${t.sosLevel !== null ? ` · ${sosLabel(t.sosLevel)}` : ''}`;
-  const kyNang = t.skillLabels.length > 0 ? t.skillLabels.join(' + ') : '—';
+  const mtSos = luot.nhanDot
+    ? `${luot.nhanDot}${luot.ketQua ? ` · ${luot.ketQua.chinh}` : ''}`
+    : `MT${luot.attemptNo}${luot.sosLevel !== null ? ` · ${sosLabel(luot.sosLevel)}` : ''}`;
+  const kyNang = luot.skillLabels.length > 0 ? luot.skillLabels.join(' + ') : '—';
 
   return (
     <div className="rounded-lg border" style={{ borderColor: 'var(--line)', background: 'var(--surface-2)' }}>
@@ -91,39 +92,39 @@ export function TheSos({ t, cot1 = 'luot', onGoAcademic, onChanged }: {
         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpen((v) => !v); } }}
         className="grid gap-x-3 gap-y-1 items-center px-3 py-2.5 cursor-pointer row-hover grid-cols-2 md:grid-cols-[minmax(0,13rem)_minmax(0,1fr)_auto]">
         <div className="col-span-2 md:col-span-1 min-w-0">
-          <span className="block text-sm font-semibold text-slate-100">{cot1 === 'luot' ? mtSos : t.studentName}</span>
+          <span className="block text-sm font-semibold text-slate-100">{cot1 === 'luot' ? mtSos : luot.studentName}</span>
           <span className="block text-xs text-slate-500">
-            {cot1 === 'luot' ? kyNang : `${mtSos}${t.skillLabels.length > 0 ? ` · ${t.skillLabels.join(' + ')}` : ''}`}
+            {cot1 === 'luot' ? kyNang : `${mtSos}${luot.skillLabels.length > 0 ? ` · ${luot.skillLabels.join(' + ')}` : ''}`}
           </span>
         </div>
         <div className="min-w-0">
-          <span className="block text-sm font-semibold text-slate-100">{t.summary.label} việc hoàn thành</span>
+          <span className="block text-sm font-semibold text-slate-100">{t('{label} việc hoàn thành', { label: luot.summary.label })}</span>
           {cot1 === 'luot' ? (
             onGoAcademic ? (
               <button type="button" className="link text-xs appearance-none bg-transparent border-0 p-0 cursor-pointer text-left"
                 onClick={(e) => { e.stopPropagation(); onGoAcademic(); }}>
-                Hỗ trợ học thuật xem ở tab Học thuật
+                {t('Hỗ trợ học thuật xem ở tab Học thuật')}
               </button>
-            ) : <span className="block text-xs text-slate-500">Hỗ trợ học thuật xem ở tab Học thuật</span>
-          ) : <span className="block text-xs text-slate-500">Học thuật theo dõi ở bảng kỹ năng</span>}
+            ) : <span className="block text-xs text-slate-500">{t('Hỗ trợ học thuật xem ở tab Học thuật')}</span>
+          ) : <span className="block text-xs text-slate-500">{t('Học thuật theo dõi ở bảng kỹ năng')}</span>}
         </div>
         <div className="justify-self-end">
-          <NhanTrangThai t={t.summary.complete ? 'xong' : 'dang-lam'} />
+          <NhanTrangThai t={luot.summary.complete ? 'xong' : 'dang-lam'} />
         </div>
       </div>
 
       {open && (
         <div className="border-t px-3 pb-3" style={{ borderColor: 'var(--line)' }}>
-          {t.actions.map((a) => (
-            <ActionRow key={a.id} a={a} canAct={t.canAct} onChanged={onChanged} />
+          {luot.actions.map((a) => (
+            <ActionRow key={a.id} a={a} canAct={luot.canAct} onChanged={onChanged} />
           ))}
           {/* PR-S5F-b: lượt Giữa khoá lớp thường (`nhanDot`) không thêm việc — máy chủ chỉ nhận ở lượt Mock FT có SOS. */}
-          {t.canAct && !adding && !t.nhanDot && (
-            <button type="button" className="btn btn-sm mt-2" onClick={() => setAdding(true)}>+ Thêm việc</button>
+          {luot.canAct && !adding && !luot.nhanDot && (
+            <button type="button" className="btn btn-sm mt-2" onClick={() => setAdding(true)}>{t('+ Thêm việc')}</button>
           )}
           {adding && (
             <div className="mt-2">
-              <AddCoordinationForm attemptId={t.attemptId} existing={t.actions.map((a) => a.kind)}
+              <AddCoordinationForm attemptId={luot.attemptId} existing={luot.actions.map((a) => a.kind)}
                 onClose={() => setAdding(false)} onChanged={onChanged} />
             </div>
           )}
@@ -148,7 +149,7 @@ function ActionRow({ a, canAct, onChanged }: { a: CoordAction; canAct: boolean; 
     try {
       await api.post(`/phoi-hop-sos/${a.id}/mo-lai`);
       invalidate('/classes'); invalidate('/students');
-      toast.push('ok', a.status === 'done' ? 'Đã đưa lại Cần xử lý' : 'Đã khôi phục');
+      toast.push('ok', a.status === 'done' ? t('Đã đưa lại Cần xử lý') : t('Đã khôi phục'));
       onChanged?.();
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
   };
@@ -157,21 +158,21 @@ function ActionRow({ a, canAct, onChanged }: { a: CoordAction; canAct: boolean; 
     /* PR-NEN: nhãn cột phải đã nói "Đã huỷ" — dòng phụ chỉ còn lý do, không lặp. */
     : a.status === 'removed' ? (a.removeReasonLabel ?? '')
     /* Người không có quyền: cột phải đã là nhãn `Cần làm` — không lặp ở dòng phụ (rà soát 22/09). */
-    : canAct ? 'Cần xử lý' : '';
+    : canAct ? t('Cần xử lý') : '';
 
   return (
     <div className="border-t first:border-t-0" style={{ borderColor: 'var(--line)' }}>
       <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 py-2 items-start">
         <span className="min-w-0 break-words">
           <span className="block text-sm text-slate-200">{laMeetingCx(a.kind) ? nhanMeetingSauMock(a.kind) : a.name}</span>
-          {laMeetingCx(a.kind) && <span className="block text-xs text-slate-500 mt-0.5">Việc phối hợp sau Mock — không phải xử lý vi phạm, không cần QL duyệt</span>}
+          {laMeetingCx(a.kind) && <span className="block text-xs text-slate-500 mt-0.5">{t('Việc phối hợp sau Mock — không phải xử lý vi phạm, không cần QL duyệt')}</span>}
           {dongPhu && <span className="block text-xs text-slate-500 mt-0.5">{dongPhu}</span>}
           {/* OV-12h: meeting CX còn Cần xử lý — hạn 5 ngày từ lúc tạo, quá hạn ⚠ (cùng `<Han>` mọi nơi). */}
           {a.status === 'pending' && a.han && <span className="block text-xs mt-0.5"><Han loai="phoi-hop" han={a.han} /></span>}
           {a.noiDung && a.noiDung.length > 0 && (
             <details className="mt-1">
-              <summary className="cursor-pointer text-xs text-slate-400">{a.status === 'done' ? 'Nội dung đã báo TVV' : 'Nội dung gửi TVV'} ({a.noiDung.length})</summary>
-              {a.noiDungLaHienTai && <p className="m-0 mt-1 text-xs text-slate-500">Chưa lưu nội dung lúc báo — dưới đây là nội dung hiện tại</p>}
+              <summary className="cursor-pointer text-xs text-slate-400">{a.status === 'done' ? t('Nội dung đã báo TVV') : t('Nội dung gửi TVV')} ({a.noiDung.length})</summary>
+              {a.noiDungLaHienTai && <p className="m-0 mt-1 text-xs text-slate-500">{t('Chưa lưu nội dung lúc báo — dưới đây là nội dung hiện tại')}</p>}
               <ol className="m-0 mt-1 space-y-1 pl-4 text-xs text-slate-300">
                 {a.noiDung.map((x, i) => <li key={i}>{x}</li>)}
               </ol>
@@ -182,8 +183,8 @@ function ActionRow({ a, canAct, onChanged }: { a: CoordAction; canAct: boolean; 
           {/* Việc chờ mà người xem làm được: hai nút đứng chỗ nhãn (dòng phụ đã nói "Cần xử lý"); còn lại là nhãn 6 chữ chung. */}
           {a.status === 'pending' && canAct ? (
             <>
-              <button type="button" className="btn btn-sm btn-primary" onClick={() => setConfirming(!confirming)}>{a.kind === 'bao_ph_tvv' ? 'Đánh dấu đã làm' : 'Xác nhận'}</button>
-              <button type="button" className="btn btn-sm btn-ghost" onClick={() => setRemoving(!removing)}>Bỏ ▾</button>
+              <button type="button" className="btn btn-sm btn-primary" onClick={() => setConfirming(!confirming)}>{a.kind === 'bao_ph_tvv' ? t('Đánh dấu đã làm') : t('Xác nhận')}</button>
+              <button type="button" className="btn btn-sm btn-ghost" onClick={() => setRemoving(!removing)}>{t('Bỏ ▾')}</button>
             </>
           ) : <NhanTrangThai t={trangThaiPhoiHop(a.status)} />}
         </span>
@@ -192,10 +193,10 @@ function ActionRow({ a, canAct, onChanged }: { a: CoordAction; canAct: boolean; 
       {canAct && (a.status === 'done' || khoiPhucDuoc) && (
         <div className="-mt-1 flex flex-wrap gap-1.5 pb-2">
           {a.status === 'done' && <>
-            <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" aria-expanded={confirming} onClick={() => setConfirming(!confirming)}>Sửa</button>
-            <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => void moLai()}>Đưa lại Cần xử lý</button>
+            <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" aria-expanded={confirming} onClick={() => setConfirming(!confirming)}>{t('Sửa')}</button>
+            <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => void moLai()}>{t('Đưa lại Cần xử lý')}</button>
           </>}
-          {khoiPhucDuoc && <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => void moLai()}>Khôi phục</button>}
+          {khoiPhucDuoc && <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => void moLai()}>{t('Khôi phục')}</button>}
         </div>
       )}
       {confirming && <ConfirmCoordinationForm a={a} onClose={() => setConfirming(false)} onChanged={onChanged} />}
@@ -220,7 +221,7 @@ function ConfirmCoordinationForm({ a, onClose, onChanged }: {
   /* OV-12h: meeting CX / GĐCN — Ghi chú bắt buộc ≥ 10 ký tự (máy chủ kiểm cùng số). */
   const canGhiChu = laMeetingCx(a.kind) ? GHI_CHU_MEETING_TOI_THIEU : 0;
   const [daBam, setDaBam] = useState(false);
-  const loiGhiChu = canGhiChu && note.trim().length < canGhiChu ? `Ít nhất ${canGhiChu} ký tự` : null;
+  const loiGhiChu = canGhiChu && note.trim().length < canGhiChu ? t('Ít nhất {canGhiChu} ký tự', { canGhiChu }) : null;
 
   const save = async () => {
     setDaBam(true);
@@ -232,7 +233,7 @@ function ConfirmCoordinationForm({ a, onClose, onChanged }: {
         performerName: !nguoi || nguoi.kieu === 'toi' ? undefined : nguoi.ten.trim(),
       });
       invalidate('/classes'); invalidate('/students');
-      toast.push('ok', 'Đã lưu');
+      toast.push('ok', t('Đã lưu'));
       onChanged?.(); onClose();
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
   };
@@ -240,26 +241,26 @@ function ConfirmCoordinationForm({ a, onClose, onChanged }: {
   return (
     <div className="mt-2 rounded-lg p-2.5 space-y-2" style={{ background: 'var(--surface-2)' }}>
       <Hang2>
-        <Truong nhan="Ngày thực hiện" batBuoc>
+        <Truong nhan={t('Ngày thực hiện')} batBuoc>
           <span className="block w-[11.5rem]"><ONgay kieu="ngay" value={performedOn} onChange={setPerformedOn} toiDa={today} /></span>
         </Truong>
-        <Truong nhan="Người thực hiện" as="div" loi={loiNguoi}>
+        <Truong nhan={t('Người thực hiện')} as="div" loi={loiNguoi}>
           <ChonNguoi nhom="nhan_vien" value={nguoi} onChange={setNguoi} />
         </Truong>
       </Hang2>
       {canGhiChu ? (
-        <Truong nhan="Ghi chú" batBuoc loi={daBam ? loiGhiChu : null} dem={{ co: note.trim().length, can: canGhiChu }}>
-          <textarea className="field w-full" rows={2} placeholder="Kết quả buổi gặp: đã thống nhất gì với em / phụ huynh" value={note}
+        <Truong nhan={t('Ghi chú')} batBuoc loi={daBam ? loiGhiChu : null} dem={{ co: note.trim().length, can: canGhiChu }}>
+          <textarea className="field w-full" rows={2} placeholder={t('Kết quả buổi gặp: đã thống nhất gì với em / phụ huynh')} value={note}
             onChange={(e) => setNote(e.target.value)} aria-invalid={daBam && !!loiGhiChu} />
         </Truong>
       ) : (
-        <textarea className="field w-full" rows={2} placeholder="Ghi chú (tuỳ chọn)" value={note}
+        <textarea className="field w-full" rows={2} placeholder={t('Ghi chú (tuỳ chọn)')} value={note}
           onChange={(e) => setNote(e.target.value)} />
       )}
       <BangChung ownerType="sos_coordination_action" ownerId={actionId} canEdit tieuDe="" />
       <div className="flex gap-1.5">
-        <button type="button" className="btn btn-sm" onClick={onClose} disabled={busy}>Đóng</button>
-        <button type="button" className="btn btn-sm btn-primary" disabled={busy || !performedOn || !!loiNguoi} title={loiNguoi ?? undefined} onClick={save}>Lưu</button>
+        <button type="button" className="btn btn-sm" onClick={onClose} disabled={busy}>{t('Đóng')}</button>
+        <button type="button" className="btn btn-sm btn-primary" disabled={busy || !performedOn || !!loiNguoi} title={loiNguoi ?? undefined} onClick={save}>{t('Lưu')}</button>
       </div>
     </div>
   );
@@ -274,7 +275,7 @@ function RemoveCoordinationForm({ actionId, onClose, onChanged }: {
   const [busy, setBusy] = useState(false);
 
   /* K2-3: ràng buộc nói TRƯỚC khi bấm — nút mờ + câu thiếu gì, không báo lỗi đỏ sau khi bấm. */
-  const missing = !reason ? 'Chọn một lý do.' : null;
+  const missing = !reason ? t('Chọn một lý do.') : null;
   const loiGhiRo = reasonNeedsText(reason) ? kiemGhiRoKhac(text) : null;
 
   const save = async () => {
@@ -283,7 +284,7 @@ function RemoveCoordinationForm({ actionId, onClose, onChanged }: {
     try {
       await api.post(`/phoi-hop-sos/${actionId}/remove`, { reasonCode: reason, reasonText: reasonNeedsText(reason) ? text.trim() : undefined });
       invalidate('/classes'); invalidate('/students');
-      toast.push('ok', 'Đã bỏ việc này');
+      toast.push('ok', t('Đã bỏ việc này'));
       onChanged?.(); onClose();
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
   };
@@ -297,11 +298,11 @@ function RemoveCoordinationForm({ actionId, onClose, onChanged }: {
           </NutChon>
         ))}
       </div>
-      <OKhac hien={reasonNeedsText(reason)} value={text} onChange={setText} goiY="Ví dụ: Gia đình xin dời sang tuần sau" loi={loiGhiRo} />
+      <OKhac hien={reasonNeedsText(reason)} value={text} onChange={setText} goiY={t('Ví dụ: Gia đình xin dời sang tuần sau')} loi={loiGhiRo} />
       {missing && <p className="text-xs text-amber-200 m-0">{missing}</p>}
       <div className="flex gap-1.5">
-        <button type="button" className="btn btn-sm" onClick={onClose} disabled={busy}>Đóng</button>
-        <button type="button" className="btn btn-sm btn-primary" disabled={busy || !!missing || !!loiGhiRo} title={missing ?? loiGhiRo ?? undefined} onClick={save}>Bỏ việc này</button>
+        <button type="button" className="btn btn-sm" onClick={onClose} disabled={busy}>{t('Đóng')}</button>
+        <button type="button" className="btn btn-sm btn-primary" disabled={busy || !!missing || !!loiGhiRo} title={missing ?? loiGhiRo ?? undefined} onClick={save}>{t('Bỏ việc này')}</button>
       </div>
     </div>
   );
@@ -316,7 +317,7 @@ function AddCoordinationForm({ attemptId, existing, onClose, onChanged }: {
   const [busy, setBusy] = useState(false);
 
   /* K2-3: ràng buộc nói TRƯỚC khi bấm — nút mờ + câu thiếu gì, không báo lỗi đỏ sau khi bấm. */
-  const missing = !kind ? 'Chọn loại việc.' : null;
+  const missing = !kind ? t('Chọn loại việc.') : null;
   const loiGhiRo = kind === 'other' ? kiemGhiRoKhac(customName) : null;
 
   const save = async () => {
@@ -325,7 +326,7 @@ function AddCoordinationForm({ attemptId, existing, onClose, onChanged }: {
     try {
       await api.post(`/attempts/${attemptId}/phoi-hop-sos`, { kind, customName: kind === 'other' ? customName.trim() : undefined });
       invalidate('/classes'); invalidate('/students');
-      toast.push('ok', 'Đã thêm việc');
+      toast.push('ok', t('Đã thêm việc'));
       onChanged?.(); onClose();
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
   };
@@ -339,11 +340,11 @@ function AddCoordinationForm({ attemptId, existing, onClose, onChanged }: {
           </NutChon>
         ))}
       </div>
-      <OKhac hien={kind === 'other'} value={customName} onChange={setCustomName} nhan="Tên việc" goiY="Ví dụ: Gặp Tutor sau giờ học" loi={loiGhiRo} />
+      <OKhac hien={kind === 'other'} value={customName} onChange={setCustomName} nhan={t('Tên việc')} goiY={t('Ví dụ: Gặp Tutor sau giờ học')} loi={loiGhiRo} />
       {missing && <p className="text-xs text-amber-200 m-0">{missing}</p>}
       <div className="flex gap-1.5">
-        <button type="button" className="btn btn-sm" onClick={onClose} disabled={busy}>Đóng</button>
-        <button type="button" className="btn btn-sm btn-primary" disabled={busy || !!missing || !!loiGhiRo} title={missing ?? loiGhiRo ?? undefined} onClick={save}>Thêm</button>
+        <button type="button" className="btn btn-sm" onClick={onClose} disabled={busy}>{t('Đóng')}</button>
+        <button type="button" className="btn btn-sm btn-primary" disabled={busy || !!missing || !!loiGhiRo} title={missing ?? loiGhiRo ?? undefined} onClick={save}>{t('Thêm')}</button>
       </div>
     </div>
   );

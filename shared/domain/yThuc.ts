@@ -18,6 +18,7 @@ import { addDaysIso } from './sos.ts';
 import { mondayOfDate } from './week.ts';
 import { tachKhac } from './khac.ts';
 import type { LoiTruong } from './loiForm.ts';
+import { t } from '../i18n/index.ts';
 
 /**
  * Y03 — ba khu vực Ý thức của GVCN nằm ở tab `Ý thức` của hồ sơ LỚP, cộng tab `Ý thức` ở hồ sơ học viên (không thêm khu vực cấp chính).
@@ -32,11 +33,11 @@ import type { LoiTruong } from './loiForm.ts';
 export const VIOLATION_CATEGORIES = ['attendance', 'homework', 'conduct', 'classroom', 'other'] as const;
 export type ViolationCategory = (typeof VIOLATION_CATEGORIES)[number];
 export const VIOLATION_CATEGORY_LABEL: Record<ViolationCategory, string> = {
-  attendance: 'Chuyên cần',
-  homework: 'BTVN',
-  conduct: 'Thái độ / hành vi',
-  classroom: 'Kỷ luật lớp học',
-  other: 'Khác',
+  attendance: t('Chuyên cần'),
+  homework: t('BTVN'),
+  conduct: t('Thái độ / hành vi'),
+  classroom: t('Kỷ luật lớp học'),
+  other: t('Khác'),
 };
 
 /** Đổi nhóm của dữ liệu cũ: `Tham gia trên lớp` (participation) đã bỏ, đổi sang `Thái độ / hành vi` (Y04). */
@@ -61,23 +62,23 @@ export const TOI_DA_EM_GHI_VI_PHAM = 60;
 
 export function kiemTenViPham(text: unknown): string | null {
   const n = String(text ?? '').trim().length;
-  if (n === 0) return 'Ghi vi phạm';
-  if (n < VI_PHAM_TEN_TOI_THIEU) return `Cần ít nhất ${VI_PHAM_TEN_TOI_THIEU} ký tự (đang có ${n})`;
-  if (n > VI_PHAM_TEN_TOI_DA) return `Tối đa ${VI_PHAM_TEN_TOI_DA} ký tự (đang có ${n})`;
+  if (n === 0) return t('Ghi vi phạm');
+  if (n < VI_PHAM_TEN_TOI_THIEU) return t('Cần ít nhất {VI_PHAM_TEN_TOI_THIEU} ký tự (đang có {n})', { VI_PHAM_TEN_TOI_THIEU, n });
+  if (n > VI_PHAM_TEN_TOI_DA) return t('Tối đa {VI_PHAM_TEN_TOI_DA} ký tự (đang có {n})', { VI_PHAM_TEN_TOI_DA, n });
   return null;
 }
 
 /** Lỗi ô của panel Ghi vi phạm (web dùng cho `useLoiForm`): khoá `hoc-vien`, `nhom-1`, `ten-1`, `nhom-2`… (số dòng bắt đầu từ 1). */
 export function dsLoiGhiViPham(i: { hocVien: readonly number[]; dong: readonly { nhom: string; ten: string }[] }): LoiTruong[] {
   const out: LoiTruong[] = [];
-  if (!i.hocVien.length) out.push({ khoa: 'hoc-vien', nhan: 'Học viên', lyDo: 'Chọn ít nhất một học viên' });
+  if (!i.hocVien.length) out.push({ khoa: 'hoc-vien', nhan: t('Học viên'), lyDo: t('Chọn ít nhất một học viên') });
   /* Nhiều học viên = MỘT vi phạm chung (Q1). Báo ngay tại ô, không gửi để máy chủ từ chối cả lô. */
-  else if (i.hocVien.length > 1 && i.dong.length > 1) out.push({ khoa: 'hoc-vien', nhan: 'Học viên', lyDo: 'Chọn nhiều học viên thì ghi một vi phạm.' });
+  else if (i.hocVien.length > 1 && i.dong.length > 1) out.push({ khoa: 'hoc-vien', nhan: t('Học viên'), lyDo: t('Chọn nhiều học viên thì ghi một vi phạm.') });
   i.dong.forEach((d, k) => {
     const so = i.dong.length > 1 ? ` ${k + 1}` : '';
-    if (!d.nhom) out.push({ khoa: `nhom-${k + 1}`, nhan: `Nhóm${so}`, lyDo: 'Chọn Nhóm' });
+    if (!d.nhom) out.push({ khoa: `nhom-${k + 1}`, nhan: t('Nhóm{so}', { so }), lyDo: t('Chọn Nhóm') });
     const loi = kiemTenViPham(d.ten);
-    if (loi) out.push({ khoa: `ten-${k + 1}`, nhan: `Vi phạm${so}`, lyDo: loi });
+    if (loi) out.push({ khoa: `ten-${k + 1}`, nhan: t('Vi phạm{so}', { so }), lyDo: loi });
   });
   return out;
 }
@@ -137,8 +138,8 @@ export const NGOAI_THANG = ['wl_3', 'meeting_cx', 'suspension', 'other'] as cons
 export const MEASURE_KINDS = [...THANG, ...NGOAI_THANG] as const;
 export type MeasureKind = (typeof MEASURE_KINDS)[number];
 export const MEASURE_KIND_LABEL: Record<MeasureKind, string> = {
-  report_1: 'Report 1', report_2: 'Report 2', wl_1: 'WL 1', report_4_meeting: 'Report 4 + Meeting CX/GĐCN', report_5: 'Report 5', wl_2: 'WL 2',
-  wl_3: 'WL 3', meeting_cx: 'Meeting CX/GĐCN', suspension: 'Đình chỉ học tạm thời', other: 'Khác',
+  report_1: 'Report 1', report_2: 'Report 2', wl_1: 'WL 1', report_4_meeting: t('Report 4 + Meeting CX/GĐCN'), report_5: 'Report 5', wl_2: 'WL 2',
+  wl_3: 'WL 3', meeting_cx: t('Meeting CX/GĐCN'), suspension: t('Đình chỉ học tạm thời'), other: t('Khác'),
 };
 
 /** `report_7`, `report_8`… (sau WL 2) → số; loại khác → 0. Số < 7 không hợp lệ (đã có trong `THANG`). */
@@ -155,10 +156,10 @@ export function kindCuaBac(bac: number): string {
 /** Tên một lần xử lý. `Khác` có tên riêng thì dùng tên riêng. Loại lạ (dòng cũ còn sót trong DB thử — Q2) → `Xử lý (loại cũ)`. */
 export function nhanLoaiXuLy(kind: string, customName?: string | null): string {
   if (kind === 'other' && customName?.trim()) return customName.trim();
-  if (kind === 'report_tiep') return `Report ${BAC_REPORT_TIEP} trở lên`;
+  if (kind === 'report_tiep') return t('Report {BAC_REPORT_TIEP} trở lên', { BAC_REPORT_TIEP });
   const n = soReportTiep(kind);
   if (n) return `Report ${n}`;
-  return (MEASURE_KIND_LABEL as Record<string, string>)[kind] ?? 'Xử lý (loại cũ)';
+  return (MEASURE_KIND_LABEL as Record<string, string>)[kind] ?? t('Xử lý (loại cũ)');
 }
 
 /**
@@ -185,7 +186,7 @@ export function bacCuaLoai(kind: string): number {
 export const MEASURE_STATUSES = ['done', 'nhap', 'cho_duyet', 'da_duyet', 'tu_choi'] as const;
 export type MeasureStatus = (typeof MEASURE_STATUSES)[number];
 export const XU_LY_STATUS_LABEL: Record<MeasureStatus, string> = {
-  done: 'Đã xử lý', nhap: 'Đang soạn', cho_duyet: 'Chờ QL duyệt', da_duyet: 'Đã duyệt · chờ thực hiện', tu_choi: 'QL từ chối',
+  done: t('Đã xử lý'), nhap: t('Đang soạn'), cho_duyet: t('Chờ QL duyệt'), da_duyet: t('Đã duyệt · chờ thực hiện'), tu_choi: t('QL từ chối'),
 };
 
 /** Hạn Ý thức: 5 ngày, tính cả ngày bắt đầu (T26, M-16). */
@@ -194,7 +195,7 @@ export const HAN_Y_THUC_NGAY = 5;
 export const TRANG_THAI_VP = ['moi', 'da_ghi_nhan', 'can_xu_ly', 'qua_han', 'cho_duyet', 'da_xu_ly'] as const;
 export type TrangThaiVp = (typeof TRANG_THAI_VP)[number];
 export const TRANG_THAI_VP_LABEL: Record<TrangThaiVp, string> = {
-  moi: 'Mới', da_ghi_nhan: 'Đã ghi nhận', can_xu_ly: 'Cần xử lý', qua_han: 'Quá hạn', cho_duyet: 'Chờ QL duyệt', da_xu_ly: 'Đã xử lý',
+  moi: t('Mới'), da_ghi_nhan: t('Đã ghi nhận'), can_xu_ly: t('Cần xử lý'), qua_han: t('Quá hạn'), cho_duyet: t('Chờ QL duyệt'), da_xu_ly: t('Đã xử lý'),
 };
 
 export type ViPhamVao = {
@@ -249,28 +250,28 @@ export type TrangThaiViPhamKq = {
 export function trangThaiViPham(v: ViPhamVao, batBuoc: string | null, n: NguCanhHan): TrangThaiViPhamKq {
   const xong = v.xuLy.filter((x) => x.status === 'done')
     .sort((a, b) => (a.performedOn ?? '').localeCompare(b.performedOn ?? '') || a.id - b.id).pop();
-  if (xong) return { t: 'da_xu_ly', nhan: `Đã xử lý · ${nhanLoaiXuLy(xong.kind)}`, han: null, quaHanNgay: null, lyDoQuaHan: null };
-  if (v.xuLy.some((x) => x.status === 'cho_duyet')) return { t: 'cho_duyet', nhan: 'Chờ QL duyệt', han: null, quaHanNgay: null, lyDoQuaHan: null };
+  if (xong) return { t: 'da_xu_ly', nhan: t('Đã xử lý · {nhanLoaiXuLy}', { nhanLoaiXuLy: nhanLoaiXuLy(xong.kind) }), han: null, quaHanNgay: null, lyDoQuaHan: null };
+  if (v.xuLy.some((x) => x.status === 'cho_duyet')) return { t: 'cho_duyet', nhan: t('Chờ QL duyệt'), han: null, quaHanNgay: null, lyDoQuaHan: null };
   const duyet = v.xuLy.find((x) => x.status === 'da_duyet');
   if (duyet) {
     const han = duyet.quyetLuc && !n.tamDung ? hanTheoNgay(duyet.quyetLuc.slice(0, 10), HAN_Y_THUC_NGAY) : null;
     return {
-      t: 'cho_duyet', nhan: 'Đã duyệt · chờ thực hiện', han,
+      t: 'cho_duyet', nhan: t('Đã duyệt · chờ thực hiện'), han,
       quaHanNgay: han && n.homNay > han ? ngayCach(han, n.homNay) : null, lyDoQuaHan: null,
     };
   }
-  const tinh = (t: 'can_xu_ly' | 'moi', batDau: string, lyDo: 'xu-ly' | 'xem'): TrangThaiViPhamKq => {
-    if (n.tamDung) return { t, nhan: TRANG_THAI_VP_LABEL[t], han: null, quaHanNgay: null, lyDoQuaHan: null };
+  const tinh = (k: 'can_xu_ly' | 'moi', batDau: string, lyDo: 'xu-ly' | 'xem'): TrangThaiViPhamKq => {
+    if (n.tamDung) return { t: k, nhan: TRANG_THAI_VP_LABEL[k], han: null, quaHanNgay: null, lyDoQuaHan: null };
     const han = hanTheoNgay(maxNgay(batDau, n.mocLop)!, HAN_Y_THUC_NGAY);
     if (n.homNay > han) {
       const q = ngayCach(han, n.homNay);
-      return { t: 'qua_han', nhan: `Quá hạn ${q} ngày`, han, quaHanNgay: q, lyDoQuaHan: lyDo };
+      return { t: 'qua_han', nhan: t('Quá hạn {q} ngày', { q }), han, quaHanNgay: q, lyDoQuaHan: lyDo };
     }
-    return { t, nhan: TRANG_THAI_VP_LABEL[t], han, quaHanNgay: null, lyDoQuaHan: null };
+    return { t: k, nhan: TRANG_THAI_VP_LABEL[k], han, quaHanNgay: null, lyDoQuaHan: null };
   };
   if (batBuoc) return tinh('can_xu_ly', batBuoc, 'xu-ly');
   if (!v.ghiNhanLuc) return tinh('moi', v.reportedOn, 'xem');
-  return { t: 'da_ghi_nhan', nhan: 'Đã ghi nhận', han: null, quaHanNgay: null, lyDoQuaHan: null };
+  return { t: 'da_ghi_nhan', nhan: t('Đã ghi nhận'), han: null, quaHanNgay: null, lyDoQuaHan: null };
 }
 
 /**
@@ -320,7 +321,7 @@ export type NhomEm = 'qua_han' | 'bat_buoc' | 'cho_duyet' | 'moi' | 'da_xu_ly';
 export type NhanYThucEm = { nhom: 'qua_han' | 'bat_buoc'; so: number; han: string | null; quaHanNgay: number | null };
 export const NHOM_EM: readonly NhomEm[] = ['qua_han', 'bat_buoc', 'cho_duyet', 'moi', 'da_xu_ly'];
 export const NHOM_EM_LABEL: Record<NhomEm, string> = {
-  qua_han: 'Quá hạn', bat_buoc: 'Bắt buộc xử lý', cho_duyet: 'Chờ QL duyệt', moi: 'Mới, chưa ghi nhận', da_xu_ly: 'Đã xử lý (7 ngày)',
+  qua_han: t('Quá hạn'), bat_buoc: t('Bắt buộc xử lý'), cho_duyet: t('Chờ QL duyệt'), moi: t('Mới, chưa ghi nhận'), da_xu_ly: t('Đã xử lý (7 ngày)'),
 };
 
 /**

@@ -21,7 +21,7 @@ import {
   SIGNAL_WITHDRAW_SCORE_FIXED, caseTopicsFor, ghepKhac, kiemGhiRoKhac, laKhac, chanHoanThanh, laLanGhiCuoi, mocChuPa, programmeOf, quyetDinhChoPa, trangThaiCaseV4, viecTiepCuaCase, tenCaseSos, tenCaseThuong, nhanDot, tenMon, tenMonNgan, moiNhatTruoc,
   type CaseOutcome, type FollowUpOutcome, type InterventionKind,
 } from '../../../shared/domain/index.ts';
-import { addDays, badRequest, chuTuDo, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
+import { addDays, badRequest, loi, chuTuDo, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
 import { can, isCoreTeacherOf, napTruocPhamVi, require_, scopeFor, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
 import { nho, trongBoNho } from '../platform/nguCanhRequest.ts';
@@ -201,7 +201,7 @@ export function closeCaseOutcome(p: Principal, caseId: number, input: {
    */
   const blockers = closeBlockers(caseId);
   if (blockers.length) {
-    throw badRequest(`Chưa chốt kết quả Case được. ${blockers.join(' ')}`);
+    throw loi(400, 'Chưa chốt kết quả Case được. {lyDo}', { lyDo: blockers.join(' ') });
   }
 
   return tx(() => {
@@ -571,7 +571,7 @@ export function reportIssue(p: Principal, input: {
   const allowedTopics: readonly string[] = !ratioForTopics ? ENTRY_SKILLS
     : programmeOf(ctCuaCase) === 'PREFOU' ? caseTopicsFor(true, ctCuaCase)          // Pre FOU chỉ "Tổng hợp" (PF6)
     : [...new Set([...caseTopicsFor(true, ctCuaCase), ...ENTRY_SKILLS])];
-  if (!allowedTopics.includes(topic)) throw badRequest(`Chủ đề không hợp lệ: ${topic}`);
+  if (!allowedTopics.includes(topic)) throw loi(400, 'Chủ đề không hợp lệ: {topic}', { topic });
 
   /*
    * CẢNH BÁO CASE TRÙNG (mục 7.13).
@@ -594,12 +594,12 @@ export function reportIssue(p: Principal, input: {
   const primaryCode = (input.primaryCode ?? '').trim();
   if (!primaryCode) throw badRequest('Chọn nhóm nguyên nhân — đây là căn cứ để tổng hợp về sau.');
   if (!allowed.includes(primaryCode)) {
-    throw badRequest(`Phân loại đã chọn không thuộc bộ phân loại của ${caseTopicLabel(topic, ctCuaCase)}.`);
+    throw loi(400, 'Phân loại đã chọn không thuộc bộ phân loại của {chuDe}.', { chuDe: caseTopicLabel(topic, ctCuaCase) });
   }
   /* T13: "Khác" cần ô Ghi rõ ≥ 3 ký tự, lưu ở `case_issues.observation` (Q9). Luật cũ "mô tả ≥ 30 ký tự" đã bỏ. */
   if (laKhac(primaryCode)) {
-    const loi = kiemGhiRoKhac(input.observation);
-    if (loi) throw badRequest(`Phân loại "Khác": ${loi}.`);
+    const sai = kiemGhiRoKhac(input.observation);
+    if (sai) throw loi(400, 'Phân loại "Khác": {loi}.', { loi: sai });
   }
 
   const category = categoryOf(topic);
@@ -620,8 +620,8 @@ export function reportIssue(p: Principal, input: {
     const mt = existing.attempt_id
       ? (conn.prepare('SELECT attempt_no FROM assessment_attempts WHERE id = ?').get(existing.attempt_id) as any)?.attempt_no ?? null : null;
     const nhan = [mt ? `MT${mt}` : null, existing.sos_level ? `SOS ${existing.sos_level}` : null].filter(Boolean).join(' · ');
-    throw badRequest(
-      `${caseTopicLabel(existing.topic ?? topic, ctCuaCase)} đang có Case ${stCu!.choNhanXet ? 'chờ ghi nhận xét' : 'chờ xác nhận'}${nhan ? ` (${nhan})` : ''} — mở Case để ${stCu!.choNhanXet ? 'ghi nhận xét' : 'xác nhận'}.`,
+    throw loi(400, stCu!.choNhanXet ? '{chuDe} đang có Case chờ ghi nhận xét{nhan} — mở Case để ghi nhận xét.' : '{chuDe} đang có Case chờ xác nhận{nhan} — mở Case để xác nhận.',
+      { chuDe: caseTopicLabel(existing.topic ?? topic, ctCuaCase), nhan: nhan ? ` (${nhan})` : '' },
       { caseChoNguyenNhan: { id: existing.id } },
     );
   }
@@ -631,8 +631,7 @@ export function reportIssue(p: Principal, input: {
      * Kèm đủ dữ liệu để giao diện dựng pop-up hai lựa chọn mà không phải hỏi lại máy chủ
      * lần nữa — người dùng đang dở tay gõ, không nên bắt chờ thêm một vòng mạng.
      */
-    throw badRequest(
-      `Học viên này đang có case "${caseTitleOf(existing)}" chưa xử lý xong ở hạng mục ${caseCategoryLabel(category)}.`,
+    throw loi(400, 'Học viên này đang có case "{ten}" chưa xử lý xong ở hạng mục {hangMuc}.', { ten: caseTitleOf(existing), hangMuc: caseCategoryLabel(category) },
       {
         duplicateCase: {
           id: existing.id,
@@ -851,7 +850,7 @@ export function recordIntervention(p: Principal, caseId: number, input: {
     ? input.status : 'completed';
   for (const [d, label] of [[input.plannedDate, 'Ngày dự kiến'], [input.startedDate, 'Ngày bắt đầu'],
     [input.completedDate, 'Ngày hoàn thành']] as const) {   // PR-SOS Q28-4: `followupDue` không còn nhận
-    if (d && !isIsoDate(d)) throw badRequest(`${label} không hợp lệ.`);
+    if (d && !isIsoDate(d)) throw loi(400, '{label} không hợp lệ.', { label });
   }
   /*
    * MÔ TẢ NGẮN BẮT BUỘC (mục 8.2).
@@ -866,8 +865,8 @@ export function recordIntervention(p: Principal, caseId: number, input: {
   }
   /* T13: PA đề xuất "Khác" cần ô Ghi rõ ≥ 3 ký tự; không có cột riêng nên ghép `{ghi rõ} — {mô tả}` (Q9). */
   if (input.kind === 'other_proposal') {
-    const loi = kiemGhiRoKhac(input.ghiRoKhac);
-    if (loi) throw badRequest(`PA đề xuất "Khác": ${loi}.`);
+    const sai = kiemGhiRoKhac(input.ghiRoKhac);
+    if (sai) throw loi(400, 'PA đề xuất "Khác": {loi}.', { loi: sai });
   }
   const description = input.kind === 'other_proposal' ? ghepKhac(input.ghiRoKhac ?? '', moTa) : moTa;
   /*
@@ -1216,10 +1215,10 @@ export function suaCase(p: Principal, caseId: number, input: {
     if (c.origin_kind === 'mock') throw badRequest('Case từ kết quả Test — không đổi kỹ năng.');
     if (conn.prepare('SELECT 1 FROM case_interventions WHERE case_id = ? LIMIT 1').get(caseId)) throw badRequest('Case đã có PA — không đổi kỹ năng.');
     const cycle = c.eff_cycle_id ? conn.prepare('SELECT * FROM learning_cycles WHERE id = ?').get(c.eff_cycle_id) as any : null;
-    if (!(caseTopicsFor(!!cycle && isRatioCycle(cycle), ct) as readonly string[]).includes(topic)) throw badRequest(`Chủ đề không hợp lệ: ${topic}`);
+    if (!(caseTopicsFor(!!cycle && isRatioCycle(cycle), ct) as readonly string[]).includes(topic)) throw loi(400, 'Chủ đề không hợp lệ: {topic}', { topic });
     khoaMoi = c.parallel ? null : caseDedupKey({ category: categoryOf(topic), studentId: c.eff_student_id, cycleId: c.eff_cycle_id });
     const giu = khoaMoi ? conn.prepare(`SELECT id, status FROM sos_cases WHERE dedup_key = ? AND id != ?`).get(khoaMoi, caseId) as any : null;
-    if (giu && giu.status !== 'done') throw badRequest(`Đã có Case ${caseTopicLabel(topic, ct)} đang mở.`);
+    if (giu && giu.status !== 'done') throw loi(400, 'Đã có Case {chuDe} đang mở.', { chuDe: caseTopicLabel(topic, ct) });
   }
   const truoc: Record<string, unknown> = {
     title: c.title ?? null, summary: c.summary ?? null, urgency: c.urgency ?? null, topic: c.topic ?? null,
@@ -1402,7 +1401,7 @@ export function backfillCase(p: Principal, input: {
   }
   if (input.actions.length > 50) throw badRequest('Tối đa 50 dòng "đã làm gì" cho một Case nhập bù.');   // PR-Dọn (Q6, quét #16)
   for (const [i, a] of input.actions.entries()) {
-    if (!(FOLLOWUP_OUTCOMES as readonly string[]).includes(String(a.ketQua ?? ''))) throw badRequest(`Dòng PA ${i + 1}: chọn Kết quả PA.`);
+    if (!(FOLLOWUP_OUTCOMES as readonly string[]).includes(String(a.ketQua ?? ''))) throw loi(400, 'Dòng PA {x}: chọn Kết quả PA.', { x: i + 1 });
     if (!isIsoDate(a.fromDate) || !isIsoDate(a.toDate)) throw badRequest('Một dòng "đã làm gì" có ngày không hợp lệ.');
     if (a.fromDate > a.toDate) throw badRequest('Một dòng "đã làm gì" có ngày bắt đầu sau ngày kết thúc.');
     if (a.toDate > today) throw badRequest('Không ghi được một việc đã xong ở ngày tương lai.');
@@ -1592,7 +1591,7 @@ export function setDisposition(p: Principal, caseId: number, input: {
      */
     const blockers = closeBlockers(caseId);
     if (blockers.length) {
-      throw badRequest(`Chưa hoàn thành Case được. ${blockers.join(' ')}`);
+      throw loi(400, 'Chưa hoàn thành Case được. {lyDo}', { lyDo: blockers.join(' ') });
     }
     if (disposition === 'monitor') {
       throw badRequest('"Chỉ theo dõi thêm" nghĩa là Case còn mở. Chọn hướng khác nếu muốn đóng.');
@@ -3099,7 +3098,7 @@ export function normalizeMetrics(input: unknown): TeacherMetric[] | null {
      */
     const component = (m?.component ?? '').toString().trim() || null;
     if (component && !(componentsFor(skill) as readonly string[]).includes(component)) {
-      throw badRequest(`"${component}" không phải thành phần của ${CASE_CATEGORY_LABEL[skill as CaseCategory] ?? skill}.`);
+      throw loi(400, '"{component}" không phải thành phần của {kyNang}.', { component, kyNang: CASE_CATEGORY_LABEL[skill as CaseCategory] ?? skill });
     }
     const key = `${skill}::${component ?? ''}`;
     if (seen.has(key)) {
@@ -3112,7 +3111,7 @@ export function normalizeMetrics(input: unknown): TeacherMetric[] | null {
      */
     if (component && componentsAreCounts(skill)
         && (m?.total === null || m?.total === undefined || m?.total === '')) {
-      throw badRequest(`${component} ghi theo số câu đạt/tổng số câu, không phải band.`);
+      throw loi(400, '{component} ghi theo số câu đạt/tổng số câu, không phải band.', { component });
     }
     const score = Number(m?.score);
     if (!Number.isFinite(score) || score < 0) throw badRequest('Điểm đánh giá phải là số không âm.');
@@ -3315,8 +3314,8 @@ export function updateResult(p: Principal, interventionId: number, input: {
   }
   /* T13: thay sang PA đề xuất "Khác" — báo thiếu Ghi rõ TRƯỚC khi ghi gì (`recordIntervention` kiểm lại lần nữa). */
   if (nextStep === 'propose' && input.newPlan?.kind === 'other_proposal') {
-    const loi = kiemGhiRoKhac(input.newPlan.ghiRoKhac ?? input.ghiRoKhac);
-    if (loi) throw badRequest(`PA đề xuất "Khác": ${loi}.`);
+    const sai = kiemGhiRoKhac(input.newPlan.ghiRoKhac ?? input.ghiRoKhac);
+    if (sai) throw loi(400, 'PA đề xuất "Khác": {loi}.', { loi: sai });
   }
   /* PR-LT2b: lần ghi cuối của PA Bổ trợ miễn phí = ghi Mini Test (một lần cho cả nhóm). Kiểm TRƯỚC khi ghi gì. */
   const mtDong = iv.kind === 'bo_tro_mien_phi' && lanCuoi
@@ -3481,7 +3480,7 @@ function chuKetQuaTuan(p: Principal, iv: any, c: any, input: {
      PR-CT2: Người dạy tuần này KHÔNG bắt buộc; có thì vẫn kiểm (tài khoản đang làm việc / tên ngoài). */
   const coDem = coSoBuoiKy({ kind: iv.kind, soBuoi: iv.so_buoi ?? null, cu });   // OV-12h: mọi PA Tutor có ô này
   const loiTuan = coDem ? kiemSoBuoiTuan(input.soBuoi) : null;
-  if (loiTuan) throw badRequest(`Số buổi kỳ này: ${loiTuan}.`);
+  if (loiTuan) throw loi(400, 'Số buổi kỳ này: {loi}.', { loi: loiTuan });
   const soBuoiTuan = coDem ? soBuoiTu(input.soBuoi) : null;
   const nguoiDay = coNguoiDay(iv.kind)
     ? chuanHoaNguoiThucHien(p, input.nguoiDay ?? {}, { nhom: 'nhan_vien', batBuoc: false, nhan: 'Người dạy tuần này' }) : null;
@@ -3496,8 +3495,8 @@ function chuKetQuaTuan(p: Principal, iv: any, c: any, input: {
 /** OV-12h: MỌI PA Tutor → bắt buộc đúng `soBuoiTuan` dòng buổi (0 buổi = không dòng); loại khác / sửa lần ghi cũ (`cu`) → null (không ghi bảng). */
 function buoiTutorCua(iv: any, soBuoiTuan: number | null, buoi: unknown, cu = false): BuoiTutor[] | null {
   if (!canBuoiTutor({ kind: iv.kind, cu }) || soBuoiTuan === null) return null;
-  const loi = kiemBuoiTutor(soBuoiTuan, buoi ?? []);
-  if (loi) throw badRequest(`Buổi tutor: ${loi}.`);
+  const sai = kiemBuoiTutor(soBuoiTuan, buoi ?? []);
+  if (sai) throw loi(400, 'Buổi tutor: {loi}.', { loi: sai });
   return (buoi as any[] ?? []).map((b) => ({ tutor: String(b.tutor).trim(), nhanXet: String(b.nhanXet).trim() }));
 }
 /** Ghi (thay) các dòng buổi của một lần ghi Kết quả — trong giao dịch của nơi gọi. `null` = không đụng. */

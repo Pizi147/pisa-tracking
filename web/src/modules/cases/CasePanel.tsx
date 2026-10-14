@@ -21,6 +21,7 @@ import {
 import { DongXinYKien } from './DongXinYKien.tsx';
 import { NganCase } from '../students/NganCase.tsx';
 import { TheYeuCau } from '../duyet/TheYeuCau.tsx';
+import { dich, t } from '@shared/i18n/index.ts';
 
 /**
  * MỘT VẤN ĐỀ HỌC VỤ (PR-UX3, N-4, mockup 15 §3) — kể theo hai câu người đọc cần: VẤN ĐỀ gì, và ĐÃ LÀM GÌ (các PA, mỗi PA một
@@ -146,9 +147,9 @@ export function CasePanel({ caseId }: { caseId: number }) {
       <ThanCase data={data} onViec={setNgan} />
       {data.viewer.canEdit && (
         <div className="flex flex-wrap gap-2">
-          <button type="button" className="btn btn-sm" onClick={() => setNgan({ loai: 'them-pa' })}>+ Thêm PA</button>
+          <button type="button" className="btn btn-sm" onClick={() => setNgan({ loai: 'them-pa' })}>{t('+ Thêm PA')}</button>
           {data.status !== 'done' && data.viewer.canClose && (
-            <button type="button" className="btn btn-sm btn-primary" onClick={() => setNgan({ loai: 'hoan-thanh' })}>Hoàn thành Case</button>
+            <button type="button" className="btn btn-sm btn-primary" onClick={() => setNgan({ loai: 'hoan-thanh' })}>{t('Hoàn thành Case')}</button>
           )}
         </div>
       )}
@@ -182,10 +183,10 @@ export function ThanCase({ data, onViec }: { data: CaseDetail; onViec: (v: ViewC
     <>
       {overallDat && (
         <p className="m-0 mb-2 rounded-lg bg-ok-bg px-3 py-2 text-[12.5px] text-ok">
-          Overall {overallDat.dot ?? (overallDat.attemptNo ? `MT${overallDat.attemptNo}` : '')} đã đạt — xem và Hoàn thành Case
+          {t('Overall {x} đã đạt — xem và Hoàn thành Case', { x: overallDat.dot ?? (overallDat.attemptNo ? `MT${overallDat.attemptNo}` : '') })}
         </p>
       )}
-      <The tieuDe="Vấn đề">
+      <The tieuDe={t('Vấn đề')}>
         <div className="flex flex-wrap items-center gap-2 text-sm font-bold text-slate-100">
           <TenCase c={{ title: data.title ?? data.headline, tenSos: data.tenSos ?? null }} />
         </div>
@@ -194,14 +195,14 @@ export function ThanCase({ data, onViec }: { data: CaseDetail; onViec: (v: ViewC
         {(primary || secondary.length > 0 || context.length > 0) && (
           <dl className="m-0 grid grid-cols-[max-content_1fr] gap-x-3 gap-y-1 text-[12.5px]">
             {(primary || secondary.length > 0) && <>
-              <dt className="text-slate-400">Nhóm nguyên nhân</dt>
+              <dt className="text-slate-400">{t('Nhóm nguyên nhân')}</dt>
               <dd className="m-0 flex flex-wrap items-center gap-1.5 text-slate-200">
-                {primary && <span title={primary.observation ?? undefined}>{primary.label}</span>}
+                {primary && <span title={primary.observation ?? undefined}>{dich(primary.label)}</span>}
                 {secondary.map((i) => <Nhan key={i.id} tone="muted" title={i.observation ?? undefined}>{i.label}</Nhan>)}
               </dd>
             </>}
             {context.length > 0 && <>
-              <dt className="text-slate-400">Bối cảnh</dt>
+              <dt className="text-slate-400">{t('Bối cảnh')}</dt>
               <dd className="m-0 flex flex-wrap items-center gap-1.5">
                 {context.map((i) => <Nhan key={i.id} tone="muted" dut title={i.observation ?? undefined}>{i.label}</Nhan>)}
               </dd>
@@ -210,11 +211,11 @@ export function ThanCase({ data, onViec }: { data: CaseDetail; onViec: (v: ViewC
         )}
       </The>
 
-      <The tieuDe="Phương án" dem={dsPa.length}
+      <The tieuDe={t('Phương án')} dem={dsPa.length}
         luat={(
           <>
-            <p className="m-0">Mỗi PA cần Kết quả hai tuần một lần, trước hết Thứ Ba sau kỳ. Case chỉ hoàn thành được khi mọi PA đã khép.</p>
-            {chiXem && <p className="m-0">Chỉ Quản lý, giáo viên dạy đúng môn của Case, hoặc GVCN (Case Ý thức) mới hoàn thành được Case này. Bạn vẫn ghi được kết quả của từng PA.</p>}
+            <p className="m-0">{t('Mỗi PA cần Kết quả hai tuần một lần, trước hết Thứ Ba sau kỳ. Case chỉ hoàn thành được khi mọi PA đã khép.')}</p>
+            {chiXem && <p className="m-0">{t('Chỉ Quản lý, giáo viên dạy đúng môn của Case, hoặc GVCN (Case Ý thức) mới hoàn thành được Case này. Bạn vẫn ghi được kết quả của từng PA.')}</p>}
           </>
         )}>
         {dsPa.length === 0 ? (
@@ -226,14 +227,14 @@ export function ThanCase({ data, onViec }: { data: CaseDetail; onViec: (v: ViewC
         )}
         {data.outcome || data.status === 'done' ? (
           <p className="m-0 text-sm text-slate-100">
-            Đã kết luận{data.outcomeLabel && <>: <strong>{data.outcomeLabel}</strong></>}
+            {t('Đã kết luận')}{data.outcomeLabel && <>: <strong>{dich(data.outcomeLabel)}</strong></>}
             {data.outcomeNote && <span className="text-slate-400"> — {data.outcomeNote}</span>}
-            {data.closedAt && <span className="text-slate-500"> · kết thúc theo dõi {tuanLich(data.closedAt, homNay)}</span>}
+            {data.closedAt && <span className="text-slate-500"> {t('· kết thúc theo dõi {tuanLich}', { tuanLich: tuanLich(data.closedAt, homNay) })}</span>}
           </p>
         ) : null}
         {lichSu.length > 0 && (
           <details>
-            <summary className="cursor-pointer text-[12.5px] text-slate-400">Lịch sử kết quả ({lichSu.length})</summary>
+            <summary className="cursor-pointer text-[12.5px] text-slate-400">{t('Lịch sử kết quả ({length})', { length: lichSu.length })}</summary>
             <ol className="m-0 mt-2 list-none space-y-2 border-l p-0 pl-3" style={{ borderColor: 'var(--line)' }}>
               {lichSu.map((m) => (
                 <li key={m.key} className="text-xs">
@@ -248,7 +249,7 @@ export function ThanCase({ data, onViec }: { data: CaseDetail; onViec: (v: ViewC
         )}
       </The>
 
-      <The tieuDe="Bằng chứng" dem={bc.data?.rows.length}>
+      <The tieuDe={t('Bằng chứng')} dem={bc.data?.rows.length}>
         <BangChung ownerType="sos_case" ownerId={data.id} canEdit={data.viewer.canEdit} tieuDe="" onChanged={bc.reload} />
       </The>
     </>
@@ -290,9 +291,9 @@ function TheKhoiPa({ iv, data, homNay, ngan, onViec }: {
   const batDau = iv.startedDate ?? iv.plannedDate ?? null;
   /* PR-SOS (Q28-4): không còn "dự kiến kết thúc"; PA quy chế nói mốc riêng. Khoảng PA nói MÃ TUẦN ("Từ W3 SEP", "Từ W3 SEP → W1 OCT"). */
   const ketThuc = iv.completedDate ?? null;
-  const khoang = batDau ? chuKhoangPa({ startedOn: batDau, completedOn: ketThuc }, homNay)?.replace(/^từ /, '') : ketThuc ? `đến ${tuanLich(ketThuc, homNay)}` : null;
+  const khoang = batDau ? chuKhoangPa({ startedOn: batDau, completedOn: ketThuc }, homNay)?.replace(/^từ /, '') : ketThuc ? t('đến {tuanLich}', { tuanLich: tuanLich(ketThuc, homNay) }) : null;
   /* Người: "Dạy X" (Tutor, Bổ trợ) · "Thực hiện X" (loại khác) · Tự học không có. Không có ô Người theo dõi (§8). */
-  const nguoi = iv.performer ? `${iv.performer}${iv.byProxy && iv.recordedBy ? ` (${iv.recordedBy} nhập hộ)` : ''}` : null;
+  const nguoi = iv.performer ? `${iv.performer}${iv.byProxy && iv.recordedBy ? t(' ({recordedBy} nhập hộ)', { recordedBy: iv.recordedBy }) : ''}` : null;
   const nut = nutDongPa(iv, { canApprove: data.viewer.canApprove, caseXong: data.status === 'done' });
   const dem = iv.soBuoi != null ? demBuoi(iv.daDay ?? 0, iv.soBuoi) : null;
   const quaHan = hanGhi?.tone === 'overdue';
@@ -311,46 +312,46 @@ function TheKhoiPa({ iv, data, homNay, ngan, onViec }: {
       <div className="flex flex-wrap items-center gap-1.5">
         <span className="text-sm font-bold text-slate-100">{INTERVENTION_KIND_LABEL[iv.kind as keyof typeof INTERVENTION_KIND_LABEL] ?? iv.kind}</span>
         {/* PR-N1 S4-1: PA theo quy chế SOS do máy gán — dấu nhỏ cạnh tên (khoảng cách lấy từ `gap-1.5` của hàng, nên không thêm `ml-1.5`). */}
-        {iv.preset && <span className="inline-flex items-center gap-1 whitespace-nowrap text-xs text-slate-400" title={iv.kind === 'bo_tro' ? 'PA Bổ trợ bắt buộc đến Cuối khoá — không thay, không kết thúc sớm' : 'PA theo quy chế SOS — không thay, không kết thúc sớm'}><KhoaNho />theo quy chế</span>}
+        {iv.preset && <span className="inline-flex items-center gap-1 whitespace-nowrap text-xs text-slate-400" title={iv.kind === 'bo_tro' ? t('PA Bổ trợ bắt buộc đến Cuối khoá — không thay, không kết thúc sớm') : t('PA theo quy chế SOS — không thay, không kết thúc sớm')}><KhoaNho />{t('theo quy chế')}</span>}
         {/* Trạng thái CÔNG VIỆC, không phải kết quả (mục 2.2): "Đã xong" chỉ nghĩa việc đã làm xong. */}
         {/* PR-SOS: PA quy chế chưa xác nhận = "Chờ xác nhận" (cùng chữ với hàng PA ở bảng kỹ năng), không phải "Đã lên kế hoạch". */}
-        <Nhan tone={toneTrangThaiPa(iv.status)}>{chuaChay ? 'Chưa bắt đầu' : iv.awaitingConfirmation ? 'Chờ xác nhận' : INTERVENTION_STATUS_LABEL[iv.status as keyof typeof INTERVENTION_STATUS_LABEL] ?? iv.status}</Nhan>
-        {choDuyet && <Nhan tone="wait" title={iv.approvalDue ? `Hạn Quản lý trả lời ${ngan(iv.approvalDue)}` : undefined}>Chờ Quản lý duyệt</Nhan>}
-        {iv.approvalState === 'approved' && <Nhan tone="done">Đã duyệt</Nhan>}
-        {iv.approvalState === 'declined' && <NhanTrangThai t="can-lam" chu="Bị từ chối" />}
+        <Nhan tone={toneTrangThaiPa(iv.status)}>{chuaChay ? t('Chưa bắt đầu') : iv.awaitingConfirmation ? t('Chờ xác nhận') : INTERVENTION_STATUS_LABEL[iv.status as keyof typeof INTERVENTION_STATUS_LABEL] ?? iv.status}</Nhan>
+        {choDuyet && <Nhan tone="wait" title={iv.approvalDue ? t('Hạn Quản lý trả lời {ngan}', { ngan: ngan(iv.approvalDue) }) : undefined}>{t('Chờ Quản lý duyệt')}</Nhan>}
+        {iv.approvalState === 'approved' && <Nhan tone="done">{t('Đã duyệt')}</Nhan>}
+        {iv.approvalState === 'declined' && <NhanTrangThai t="can-lam" chu={t('Bị từ chối')} />}
         <span className="flex-1" />
         <MenuPa iv={iv} ten={tenPA(iv)} xoa={nut.xoa} onSua={nut.sua ? () => onViec({ loai: 'sua-pa', paId: iv.id }) : undefined}
           soKetQua={(data.followups ?? []).filter((f: any) => f.interventionId === iv.id).length} />
       </div>
       {iv.description && <p className="m-0 text-[13.5px] text-slate-300">{iv.description}</p>}
       {iv.kind === 'bo_tro' && bt?.chung && bt.mon.length > 1 && (
-        <p className="m-0 text-xs text-slate-400">PA chung · {bt.mon.map((m) => m.tenMon).join(', ')}</p>
+        <p className="m-0 text-xs text-slate-400">{t('PA chung · {x}', { x: bt.mon.map((m) => m.tenMon).join(', ') })}</p>
       )}
       {(thayCho || thayBang) && (
         <p className="m-0 truncate text-xs text-slate-500">
-          {[thayCho && `Thay cho: ${tenPA(thayCho)}`, thayBang && `Được thay bằng: ${tenPA(thayBang)}`].filter(Boolean).join(' · ')}
+          {[thayCho && t('Thay cho: {tenPA}', { tenPA: tenPA(thayCho) }), thayBang && t('Được thay bằng: {tenPA}', { tenPA: tenPA(thayBang) })].filter(Boolean).join(' · ')}
         </p>
       )}
       <p className="m-0 flex flex-wrap gap-x-3.5 gap-y-0.5 text-[12.5px] text-slate-300">
         {coNguoiDay(iv.kind) && (
-          <span><span className="text-slate-500">{nhanNguoiDay(iv.kind) === 'Người dạy' ? 'Dạy' : 'Thực hiện'}</span> {nguoi ?? <span className="text-slate-500">chưa chọn</span>}</span>
+          <span><span className="text-slate-500">{nhanNguoiDay(iv.kind) === 'Người dạy' ? t('Dạy') : t('Thực hiện')}</span> {nguoi ?? <span className="text-slate-500">{t('chưa chọn')}</span>}</span>
         )}
         {(khoang || iv.mocChu) && (
-          <span className="tabular-nums">{batDau && <span className="text-slate-500">Từ </span>}{[khoang, iv.mocChu].filter(Boolean).join(' · ')}</span>
+          <span className="tabular-nums">{batDau && <span className="text-slate-500">{t('Từ')} </span>}{[khoang, iv.mocChu].filter(Boolean).join(' · ')}</span>
         )}
       </p>
       {dem && (
         <div className="flex flex-wrap items-center gap-2.5 text-[12.5px] text-slate-300">
           <VachBuoi da={dem.da} tong={dem.tong} tt={dem.tt} />
-          <span>Đã dạy <b className="font-semibold text-slate-100 tabular-nums">{dem.da}/{dem.tong}</b></span>
-          {dem.tt === 'du' ? <span className="font-semibold text-ok">· đủ buổi</span>
-            : dem.tt === 'vuot' ? <span className="font-semibold text-late">· vượt {dem.da - dem.tong}</span>
-            : <span>· còn <b className="font-semibold text-slate-100 tabular-nums">{dem.con}</b></span>}
+          <span>{t('Đã dạy')} <b className="font-semibold text-slate-100 tabular-nums">{dem.da}/{dem.tong}</b></span>
+          {dem.tt === 'du' ? <span className="font-semibold text-ok">{t('· đủ buổi')}</span>
+            : dem.tt === 'vuot' ? <span className="font-semibold text-late">{t('· vượt {x}', { x: dem.da - dem.tong })}</span>
+            : <span>{t('· còn')} <b className="font-semibold text-slate-100 tabular-nums">{dem.con}</b></span>}
         </div>
       )}
       {iv.approvalNote && (
         <p className="m-0 border-l pl-3 text-xs text-slate-300" style={{ borderColor: 'var(--line)' }}>
-          Quản lý{iv.approvedBy ? ` (${iv.approvedBy})` : ''}: {iv.approvalNote}
+          {t('Quản lý{x}: {approvalNote}', { x: iv.approvedBy ? ` (${iv.approvedBy})` : '', approvalNote: iv.approvalNote })}
         </p>
       )}
       {/* PR-DUYET (T64): Xin ý kiến không dừng PA — dòng tím khi đang chờ, câu trả lời của QL khi đã có. */}
@@ -358,38 +359,38 @@ function TheKhoiPa({ iv, data, homNay, ngan, onViec }: {
       {fSua && (
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[12.5px] text-slate-300">
           <span className="min-w-0">
-            <span className="text-slate-500">Kết quả {tuanLich(fSua.observedOn, homNay)} · </span>{outcomeLabelFor(fSua.outcome)}
+            <span className="text-slate-500">{t('Kết quả {tuanLich} ·', { tuanLich: tuanLich(fSua.observedOn, homNay) })} </span>{outcomeLabelFor(fSua.outcome)}
             <span className="text-slate-500"> → {NEXT_STEP_LABEL[fSua.nextStep as keyof typeof NEXT_STEP_LABEL] ?? fSua.nextStep}</span>
           </span>
-          <button type="button" className="btn btn-sm ml-auto min-h-[44px] sm:min-h-0" aria-label={`Sửa kết quả ${tuanLich(fSua.observedOn, homNay)}`}
-            onClick={() => onViec({ loai: 'sua-ket-qua', followupId: fSua.id })}>Sửa</button>
+          <button type="button" className="btn btn-sm ml-auto min-h-[44px] sm:min-h-0" aria-label={t('Sửa kết quả {tuanLich}', { tuanLich: tuanLich(fSua.observedOn, homNay) })}
+            onClick={() => onViec({ loai: 'sua-ket-qua', followupId: fSua.id })}>{t('Sửa')}</button>
         </div>
       )}
       {coChan && (
         <div className="flex flex-wrap items-center gap-2 border-t border-dashed pt-1" style={{ borderColor: 'var(--line)' }}>
           {/* Hạn Kết quả: "Kết quả · hạn T2 13/10"; quá hạn → "Kết quả · quá hạn n ngày" cam đậm; em Tạm dừng → nhãn Tạm dừng. */}
           {hienHan && hanGhi && (data.tamDungTu ? <NhanTamDung tu={data.tamDungTu} />
-            : <span className={`text-[12.5px] tabular-nums ${quaHan ? 'font-semibold text-late' : 'text-slate-500'}`}>Kết quả · {hanGhi.quaHan ?? hanGhi.han}</span>)}
+            : <span className={`text-[12.5px] tabular-nums ${quaHan ? 'font-semibold text-late' : 'text-slate-500'}`}>{t('Kết quả · {x}', { x: hanGhi.quaHan ?? hanGhi.han })}</span>)}
           {hienChoQl && (
             <span className="text-xs text-slate-500 tabular-nums">
-              Đang chờ Quản lý trả lời{iv.approvalDue ? ` · hạn ${ngan(iv.approvalDue)}` : ''} — thời gian chờ tính cho Quản lý.
+              {t('Đang chờ Quản lý trả lời{x} — thời gian chờ tính cho Quản lý.', { x: iv.approvalDue ? t(' · hạn {ngan}', { ngan: ngan(iv.approvalDue) }) : '' })}
             </span>
           )}
           <span className="flex-1" />
           {nutXacNhan && (
-            <button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" onClick={() => onViec({ loai: 'xac-nhan-pa', paId: iv.id })}>Xác nhận PA</button>
+            <button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" onClick={() => onViec({ loai: 'xac-nhan-pa', paId: iv.id })}>{t('Xác nhận PA')}</button>
           )}
           {nutKetQua && (
             <button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" onClick={() => onViec({ loai: 'ghi-ket-qua', paId: iv.id })}
-              title={`Kết quả kỳ, tiến triển, và quyết định ${iv.preset ? 'Giữ nguyên / Điều chỉnh / Xin ý kiến' : 'Giữ nguyên / Điều chỉnh / Thay / Kết thúc'}`}>
-              {iv.lanCuoi ? 'Kết quả cuối' : 'Kết quả'}
+              title={t('Kết quả kỳ, tiến triển, và quyết định {x}', { x: iv.preset ? t('Giữ nguyên / Điều chỉnh / Xin ý kiến') : t('Giữ nguyên / Điều chỉnh / Thay / Kết thúc') })}>
+              {iv.lanCuoi ? t('Kết quả cuối') : t('Kết quả')}
             </button>
           )}
         </div>
       )}
       {/* "Đã điều chỉnh n lần" gộp vào Nhật ký PA (mockup §8): n = số dòng nhật ký (`soDongNhatKyPa`, cùng danh sách `NhatKyPa` vẽ). */}
       <details>
-        <summary className="cursor-pointer text-xs text-slate-400 max-sm:flex max-sm:min-h-[44px] max-sm:items-center">Nhật ký PA ({soDongNhatKyPa(iv, ketQuaPa)})</summary>
+        <summary className="cursor-pointer text-xs text-slate-400 max-sm:flex max-sm:min-h-[44px] max-sm:items-center">{t('Nhật ký PA ({soDongNhatKyPa})', { soDongNhatKyPa: soDongNhatKyPa(iv, ketQuaPa) })}</summary>
         <div className="mt-1"><NhatKyPa pa={iv} ketQua={ketQuaPa} /></div>
       </details>
       {/* PR-DUYET (K3-20): người duyệt được quyết NGAY dưới PA — cùng thẻ với hộp Chờ duyệt, không còn panel "Trả lời đề xuất". */}
@@ -405,25 +406,25 @@ function TheKhoiPa({ iv, data, homNay, ngan, onViec }: {
 type MucLichSu = { key: string; on: string; dot: string | null; dotHref?: string | null; tieuDe: ReactNode; badge: ReactNode; than: ReactNode; suaXemLai?: any };
 
 const MILESTONE_TITLE: Record<string, string> = {
-  repeat: 'Trượt lại',
-  recurrence: 'Tái phát sau khi đã chốt kết thúc',
-  passed: 'Đã đạt kỳ vọng',
-  closed: 'Chốt kết thúc',
-  extended: 'Chốt đợt này, kéo dài theo dõi',
-  route_changed: 'Sang lộ trình mới',
+  repeat: t('Trượt lại'),
+  recurrence: t('Tái phát sau khi đã chốt kết thúc'),
+  passed: t('Đã đạt kỳ vọng'),
+  closed: t('Chốt kết thúc'),
+  extended: t('Chốt đợt này, kéo dài theo dõi'),
+  route_changed: t('Sang lộ trình mới'),
   /* PR-SOS (K3-21): Xác nhận Case + ba mốc của thẻ Không cần theo dõi (lý do ở dòng ghi chú). */
-  xac_nhan_case: 'Xác nhận Case',
-  xin_khong_theo_doi: 'Xin không theo dõi',
-  ql_duyet_khong_theo_doi: 'Quản lý duyệt không theo dõi',
-  ql_tu_choi_khong_theo_doi: 'Quản lý từ chối không theo dõi',
+  xac_nhan_case: t('Xác nhận Case'),
+  xin_khong_theo_doi: t('Xin không theo dõi'),
+  ql_duyet_khong_theo_doi: t('Quản lý duyệt không theo dõi'),
+  ql_tu_choi_khong_theo_doi: t('Quản lý từ chối không theo dõi'),
   /* PR-LT2a (K3-21): kế hoạch bổ trợ lớp thường — PR-CT2 bỏ bước này, nhãn giữ để đọc lịch sử Case cũ. */
-  nop_ke_hoach: 'Nộp kế hoạch bổ trợ',
-  ke_hoach_duyet: 'Quản lý duyệt kế hoạch',
-  ke_hoach_tu_choi: 'Quản lý từ chối kế hoạch',
+  nop_ke_hoach: t('Nộp kế hoạch bổ trợ'),
+  ke_hoach_duyet: t('Quản lý duyệt kế hoạch'),
+  ke_hoach_tu_choi: t('Quản lý từ chối kế hoạch'),
   /* PR-LUI-a2: Quản lý mở lại Case đã hoàn thành. */
-  reopened: 'Mở lại',
+  reopened: t('Mở lại'),
   /* OV-1c: Overall ≥ kỳ vọng sau khi kỹ năng dời có điểm — Case đã có người làm giữ, GV tự đóng. */
-  overall_dat: 'Overall đã đạt',
+  overall_dat: t('Overall đã đạt'),
 };
 
 /** OV-7b: sửa "Xem lại sau hỗ trợ" lần mới nhất TẠI CHỖ — kết quả quan sát + ghi chú; Đóng trả về chữ đã lưu, lỗi thì giữ chữ đang gõ. */
@@ -434,7 +435,7 @@ function SuaXemLai({ f }: { f: any }) {
   const [note, setNote] = useState<string>(f.note ?? '');
   const [busy, setBusy] = useState(false);
   if (!mo) {
-    return <button type="button" className="btn btn-sm mt-1 min-h-[44px] sm:min-h-0" aria-label="Sửa lần xem lại này" onClick={() => setMo(true)}>Sửa</button>;
+    return <button type="button" className="btn btn-sm mt-1 min-h-[44px] sm:min-h-0" aria-label={t('Sửa lần xem lại này')} onClick={() => setMo(true)}>{t('Sửa')}</button>;
   }
   const huy = () => { setOutcome(f.outcome ?? ''); setNote(f.note ?? ''); setMo(false); };
   const luu = async () => {
@@ -442,20 +443,20 @@ function SuaXemLai({ f }: { f: any }) {
     try {
       await api.patch(`/followups/${f.id}`, { outcome: outcome || null, note });
       invalidate('/cases'); invalidate('/students');
-      toast.push('ok', 'Đã sửa lần xem lại');
+      toast.push('ok', t('Đã sửa lần xem lại'));
       setMo(false);
-    } catch (e: any) { toast.push('error', e?.message ?? 'Không lưu được'); } finally { setBusy(false); }
+    } catch (e: any) { toast.push('error', e?.message ?? t('Không lưu được')); } finally { setBusy(false); }
   };
   return (
     <div className="mt-1.5 flex flex-col gap-2">
-      <select className="field w-full sm:w-auto" aria-label="Kết quả quan sát" value={outcome} onChange={(e) => setOutcome(e.target.value)}>
-        <option value="">Chưa chọn kết quả</option>
+      <select className="field w-full sm:w-auto" aria-label={t('Kết quả quan sát')} value={outcome} onChange={(e) => setOutcome(e.target.value)}>
+        <option value="">{t('Chưa chọn kết quả')}</option>
         {FOLLOWUP_OUTCOMES.map((o) => <option key={o} value={o}>{outcomeLabelFor(o)}</option>)}
       </select>
-      <textarea className="field w-full" rows={2} aria-label="Ghi chú lần xem lại" maxLength={2000} value={note} onChange={(e) => setNote(e.target.value)} />
+      <textarea className="field w-full" rows={2} aria-label={t('Ghi chú lần xem lại')} maxLength={2000} value={note} onChange={(e) => setNote(e.target.value)} />
       <div className="flex gap-2">
-        <button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => void luu()}>{busy ? 'Đang lưu…' : 'Lưu'}</button>
-        <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={busy} onClick={huy}>Đóng</button>
+        <button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => void luu()}>{busy ? t('Đang lưu…') : t('Lưu')}</button>
+        <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={busy} onClick={huy}>{t('Đóng')}</button>
       </div>
     </div>
   );
@@ -471,8 +472,7 @@ function MetricPills({ metrics, ct = null }: {
     <span className="mt-1 flex flex-wrap gap-1">
       {metrics.map((m) => (
         <Nhan key={`${m.skill}:${m.component ?? ''}`} tone="muted">
-          cô chấm {m.component ?? tenMon(ct, m.skill)}{' '}
-          {m.total ? `${m.score}/${m.total}` : fmtBand(m.score)}
+          {t('cô chấm {x} {x2}', { x: m.component ?? tenMon(ct, m.skill), x2: m.total ? `${m.score}/${m.total}` : fmtBand(m.score) })}
         </Nhan>
       ))}
     </span>
@@ -491,7 +491,7 @@ function buildLichSu(data: CaseDetail, ngan: (d: string | null | undefined) => s
         <>
           {m.band !== null && m.band !== undefined && (
             <Outcome tone={m.expectation !== null && m.band < m.expectation ? 'danger' : 'ok'}>
-              {fmtBand(m.band)}{m.expectation !== null ? ` · kỳ vọng ${fmtBand(m.expectation)}` : ''}
+              {fmtBand(m.band)}{m.expectation !== null ? t(' · kỳ vọng {fmtBand}', { fmtBand: fmtBand(m.expectation) }) : ''}
             </Outcome>
           )}
           {m.sosLevel ? <Level tone={sosTone(m.sosLevel)}>{sosLabel(m.sosLevel)}</Level> : null}
@@ -507,14 +507,14 @@ function buildLichSu(data: CaseDetail, ngan: (d: string | null | undefined) => s
   for (const f of data.followups ?? []) {
     const tre = f.late ? soNgayGiua(f.cycleDue, f.observedOn) : null;
     out.push({
-      key: `f${f.id}`, on: f.observedOn, dot: f.cycleNo ? `Đợt ${f.cycleNo}` : null,
-      tieuDe: f.interventionId ? (tenPa(f.interventionId) ?? 'Kết quả PA') : (f.metrics?.length ? 'Điểm giáo viên tự chấm' : 'Theo dõi chung'),
+      key: `f${f.id}`, on: f.observedOn, dot: f.cycleNo ? t('Đợt {cycleNo}', { cycleNo: f.cycleNo }) : null,
+      tieuDe: f.interventionId ? (tenPa(f.interventionId) ?? t('Kết quả PA')) : (f.metrics?.length ? t('Điểm giáo viên tự chấm') : t('Theo dõi chung')),
       badge: (
         <>
           {f.outcome && (
             <Outcome tone={OUTCOME_TONE[f.outcome] ?? 'muted'} mark={OUTCOME_MARK[f.outcome]}>{outcomeLabelFor(f.outcome)}</Outcome>
           )}
-          {f.late && <span className="text-xs text-slate-500">ghi trễ{tre && tre > 0 ? ` ${tre} ngày` : ''}</span>}
+          {f.late && <span className="text-xs text-slate-500">{t('ghi trễ{x}', { x: tre && tre > 0 ? t(' {tre} ngày', { tre }) : '' })}</span>}
         </>
       ),
       than: (
@@ -523,22 +523,22 @@ function buildLichSu(data: CaseDetail, ngan: (d: string | null | undefined) => s
             <span className="block text-xs text-slate-500">
               {f.nextStep && <>→ {NEXT_STEP_LABEL[f.nextStep as keyof typeof NEXT_STEP_LABEL] ?? f.nextStep}</>}
               {f.nextStep && f.observerName && ' · '}
-              {f.observerName && <>{f.observerName} ghi</>}
+              {f.observerName && t('{ten} ghi', { ten: f.observerName })}
             </span>
           )}
           {f.note && <span className="block text-slate-300">{f.note}</span>}
-          {f.nguoiDay && <span className="block text-xs text-slate-400">Người dạy: {f.nguoiDay}</span>}
+          {f.nguoiDay && <span className="block text-xs text-slate-400">{t('Người dạy: {nguoiDay}', { nguoiDay: f.nguoiDay })}</span>}
           {/* OV-12h: Kết quả PA Tutor theo buổi. */}
           {f.buoi?.length > 0 && (
-            <ol className="m-0 mt-0.5 list-none space-y-0.5 p-0 text-xs text-slate-400" aria-label="Các buổi tutor">
+            <ol className="m-0 mt-0.5 list-none space-y-0.5 p-0 text-xs text-slate-400" aria-label={t('Các buổi tutor')}>
               {f.buoi.map((b: { tutor: string; nhanXet: string }, i: number) => (
-                <li key={i} className="break-words">Buổi {i + 1} · {b.tutor}: <span className="text-slate-300">{b.nhanXet}</span></li>
+                <li key={i} className="break-words">{t('Buổi {x} · {tutor}:', { x: i + 1, tutor: b.tutor })} <span className="text-slate-300">{b.nhanXet}</span></li>
               ))}
             </ol>
           )}
-          {f.remainingIssue && <span className="block text-xs text-slate-400">Còn tồn / Ghi chú: {f.remainingIssue}</span>}
+          {f.remainingIssue && <span className="block text-xs text-slate-400">{t('Còn tồn / Ghi chú: {remainingIssue}', { remainingIssue: f.remainingIssue })}</span>}
           {f.decisionNote && (
-            <span className="block text-xs text-slate-400">{f.nextStep === 'adjust' || f.nextStep === 'propose' ? 'Lý do' : 'Ghi chú'}: {f.decisionNote}</span>
+            <span className="block text-xs text-slate-400">{f.nextStep === 'adjust' || f.nextStep === 'propose' ? t('Lý do') : t('Ghi chú')}: {f.decisionNote}</span>
           )}
           <MetricPills metrics={f.metrics} ct={data.chuongTrinh ?? null} />
         </>

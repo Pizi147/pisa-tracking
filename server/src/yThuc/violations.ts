@@ -8,7 +8,7 @@ import { chotHanXuLy, trangThaiYThuc, type EmYThuc } from './trangThai.ts';
 import { xoaNho } from '../platform/nguCanhRequest.ts';
 import { baoKhiGhiViPham, dangBatBuoc, laGvcnDangHoc } from './xuLy.ts';
 import type { Principal } from '../permissions.ts';
-import { badRequest, chuTuDo, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
+import { badRequest, loi, chuTuDo, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
 import { demoToday } from '../demoConfig.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { currentCycle } from '../fasttrack/cycles.ts';
@@ -126,7 +126,7 @@ function loadStudent(studentId: number): any {
 
 function checkCategory(category: unknown): ViolationCategory {
   if (typeof category !== 'string' || !(VIOLATION_CATEGORIES as readonly string[]).includes(category)) {
-    throw badRequest(`Chọn nhóm vi phạm: ${VIOLATION_CATEGORIES.map((c) => VIOLATION_CATEGORY_LABEL[c]).join(' · ')}.`);
+    throw loi(400, 'Chọn nhóm vi phạm: {ds}.', { ds: VIOLATION_CATEGORIES.map((c) => VIOLATION_CATEGORY_LABEL[c]).join(' · ') });
   }
   return category as ViolationCategory;
 }
@@ -139,8 +139,8 @@ function checkTenMoTa(input: { ten?: unknown; description?: unknown }): { ten: s
   const moTa = chuTuDo(input.description, 'Mô tả vi phạm', 2000) ?? '';
   const guiTen = input.ten !== undefined && input.ten !== null;
   const ten = guiTen ? String(input.ten).trim() : tachTenMoTa(null, moTa, '').ten;
-  const loi = kiemTenViPham(ten);
-  if (loi) throw badRequest(`Vi phạm: ${loi}.`);
+  const sai = kiemTenViPham(ten);
+  if (sai) throw loi(400, 'Vi phạm: {loi}.', { loi: sai });
   return { ten, moTa: !guiTen && moTa === ten ? '' : moTa };
 }
 
@@ -286,10 +286,10 @@ export function recordViolations(p: Principal, input: {
 }): { ok: { studentId: number; ids: number[] }[]; loi: { studentId: number; loi: string; ma: number }[] } {
   const ids = Array.isArray(input.studentIds) ? input.studentIds : [];
   if (!ids.length || ids.length > LO_GHI_VI_PHAM || new Set(ids).size !== ids.length || !ids.every((x) => Number.isInteger(x) && x > 0)) {
-    throw badRequest(`Chọn từ 1 đến ${LO_GHI_VI_PHAM} học viên mỗi lần gửi.`);
+    throw loi(400, 'Chọn từ 1 đến {n} học viên mỗi lần gửi.', { n: LO_GHI_VI_PHAM });
   }
   const lines = Array.isArray(input.lines) ? input.lines : [];
-  if (!lines.length || lines.length > VI_PHAM_TOI_DA_DONG) throw badRequest(`Mỗi học viên ghi từ 1 đến ${VI_PHAM_TOI_DA_DONG} vi phạm.`);
+  if (!lines.length || lines.length > VI_PHAM_TOI_DA_DONG) throw loi(400, 'Mỗi học viên ghi từ 1 đến {n} vi phạm.', { n: VI_PHAM_TOI_DA_DONG });
   if (!lines.every((l) => l && typeof l === 'object')) throw badRequest('Vi phạm: dòng không hợp lệ.');
   if (ids.length > 1 && lines.length > 1) throw badRequest('Chọn nhiều học viên thì ghi một vi phạm.');
   const key = String(input.idempotencyKey ?? '').trim();
@@ -319,7 +319,7 @@ export function recordViolations(p: Principal, input: {
   const truoc = trangThaiYThuc(ids);
 
   const ok: { studentId: number; ids: number[] }[] = [];
-  const loi: { studentId: number; loi: string; ma: number }[] = [];
+  const hong: { studentId: number; loi: string; ma: number }[] = [];
   const viec: { sid: number; lastId: number; category: ViolationCategory; truocBatBuoc: boolean }[] = [];
   for (const sid of ids) {
     try {
@@ -341,7 +341,7 @@ export function recordViolations(p: Principal, input: {
       const dongMoi = cu.map((x, i) => (x === null ? i : -1)).filter((i) => i >= 0);
       viec.push({ sid, lastId: moi[dongMoi[dongMoi.length - 1]], category: dong[dongMoi[dongMoi.length - 1]].category, truocBatBuoc: dangBatBuoc(sid, emT) });
     } catch (e: any) {
-      loi.push({ studentId: sid, loi: String(e?.message ?? 'Không lưu được.'), ma: Number(e?.status) || 500 });
+      hong.push({ studentId: sid, loi: String(e?.message ?? 'Không lưu được.'), ma: Number(e?.status) || 500 });
     }
   }
   /* Sau cả lô: MỘT lần tính lại trạng thái các em vừa ghi → báo GVCN (dedup mỗi em mỗi ngày) + chốt hạn xử lý. */
@@ -351,7 +351,7 @@ export function recordViolations(p: Principal, input: {
     for (const v of viec) baoKhiGhiViPham(p, v.sid, v.lastId, v.category, v.truocBatBuoc, sau.get(v.sid));
     chotHanXuLy(viec.map((v) => v.sid), { trang: sau });
   }
-  return { ok, loi };
+  return { ok, loi: hong };
 }
 
 // ---------------------------------------------------------------- sửa và xoá (V09–V10, V11′–V14′)

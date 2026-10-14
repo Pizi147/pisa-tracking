@@ -96,7 +96,7 @@ export async function runPrS5fbTests(t: YThucTestKit) {
     try { phoiHop.confirmCoordination(khoa, act.id, { performedOn: TODAY }); } catch (e) { loi = e; }
     assert(loi?.status === 403 && !/SOS/.test(loi.message), `403 không nói SOS: ${loi?.status} ${loi?.message}`);
     const web = doc('yThuc/PhoiHopSosSection.tsx');
-    assert(/t\.canAct && !adding && !t\.nhanDot/.test(web), 'ẩn "+ Thêm việc" ở lượt có nhanDot (lớp thường)');
+    assert(/luot\.canAct && !adding && !luot\.nhanDot/.test(web), 'ẩn "+ Thêm việc" ở lượt có nhanDot (lớp thường)');
     assert(!/Empty title="[^"]*SOS/.test(web), 'màn rỗng không nói SOS');
   });
 
@@ -122,7 +122,7 @@ export async function runPrS5fbTests(t: YThucTestKit) {
     assert(d.mocChuPa({ span: 'den_cuoi_khoa', followupDue: null, mtKe: null, daXacNhan: false }, '2026-09-14') === 'đến Cuối khoá', 'không có mốc thì không bịa tuần');
     const web = doc('cases/SkillBoard.tsx');
     /* PR-VAI-b (Q19): khoảng PA qua `chuKhoangPa` (mã tuần cho MỌI PA, không riêng Bổ trợ). */
-    assert(/buổi\/tuần · \$\{p\.mocChu \?\? 'đến Cuối khoá'\} · trừ buổi Free/.test(web) && /chuKhoangPa\(\{ startedOn: p\.startedOn/.test(web)
+    assert(/buổi\/tuần · \{x\} · trừ buổi Free', \{ buoiMoiTuan: c\.boTro!\.buoiMoiTuan, x: p\.mocChu \?\? t\('đến Cuối khoá'\) \}/.test(web) && /chuKhoangPa\(\{ startedOn: p\.startedOn/.test(web)
       && d.chuKhoangPa({ startedOn: '2026-09-16', completedOn: null, mocChu: null }, '2026-09-14') === 'từ W3 SEP', 'tên PA Bổ trợ có mốc + trừ buổi Free; từ W..');
   });
 

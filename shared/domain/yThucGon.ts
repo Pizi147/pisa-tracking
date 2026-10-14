@@ -7,6 +7,7 @@
  */
 import { ngay } from './hienThiNgay.ts';
 import { TRANG_THAI_VP, type TrangThaiVp, VIOLATION_CATEGORIES, VIOLATION_CATEGORY_LABEL, VIOLATION_SKILL_LABEL, type ViolationCategory } from './yThuc.ts';
+import { t } from '../i18n/index.ts';
 
 // ---------------------------------------------------------------- Q8: đếm lần sửa + nhãn lịch sử vi phạm
 
@@ -32,7 +33,7 @@ export function demLanSua(history: readonly LichSuViPhamRow[]): number {
 }
 
 const TRUONG_NHAN: Record<string, string> = {
-  ten: 'Vi phạm', description: 'Mô tả', category: 'Nhóm', skill: 'Môn', occurred_on: 'Ngày xảy ra',
+  ten: t('Vi phạm'), description: t('Mô tả'), category: t('Nhóm'), skill: t('Môn'), occurred_on: t('Ngày xảy ra'),
 };
 
 /**
@@ -42,7 +43,7 @@ const TRUONG_NHAN: Record<string, string> = {
  */
 export function nhanLichSuViPham(h: LichSuViPhamRow, homNay?: string | null): { truong: string; cu: string; moi: string } {
   if (h.field === 'measure') {
-    return { truong: '', cu: '', moi: h.newValue === null ? 'Bỏ khỏi lần xử lý' : 'Gắn vào lần xử lý' };
+    return { truong: '', cu: '', moi: h.newValue === null ? t('Bỏ khỏi lần xử lý') : t('Gắn vào lần xử lý') };
   }
   const dich = (v: string | null): string => {
     if (v === null) return '—';
@@ -68,7 +69,7 @@ export function cauCanhBaoTrung(
   const nhom = VIOLATION_CATEGORY_LABEL[rows[0].category as ViolationCategory] ?? rows[0].category;
   const ngayStr = ngay(rows[0].occurredOn, homNay);
   const chuaXuLy = rows.every((r) => r.trangThai !== 'da_xu_ly' && r.trangThai !== 'cho_duyet');
-  return `Đã có ${rows.length} vi phạm ${nhom} ngày ${ngayStr}${chuaXuLy ? ' chưa xử lý' : ''}`;
+  return t('Đã có {length} vi phạm {nhom} ngày {ngayStr}{x}', { length: rows.length, nhom, ngayStr, x: chuaXuLy ? t(' chưa xử lý') : '' });
 }
 
 // ---------------------------------------------------------------- Q17: khoá nhóm × trạng thái (P13)

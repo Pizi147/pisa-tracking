@@ -7,6 +7,7 @@ import { Skeleton } from '../../ui/ui.tsx';
 import { demLanSua, nhanLichSuViPham } from '@shared/domain/index.ts';
 import { fmtDate } from '../../lib/format.ts';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
+import { dich, t } from '@shared/i18n/index.ts';
 
 export type ViolationDetail = {
   id: number; studentId: number;
@@ -45,7 +46,7 @@ export function ChiTietViPham({ violationId, onSua, onDaXoa, onMoXuLy }: {
     try {
       await api.del(`/violations/${violationId}`);
       invalidate('/violations'); invalidate('/measures'); invalidate('/classes'); invalidate('/students'); invalidate('/y-thuc');
-      toast.push('ok', 'Đã xoá vi phạm');
+      toast.push('ok', t('Đã xoá vi phạm'));
       onDaXoa();
     } catch (e: any) {
       /* Q15: lỗi 400 hiện ngay dưới, KHÔNG đóng hộp hỏi — người dùng vừa đọc lý do vừa quyết định bước tiếp theo. */
@@ -57,22 +58,22 @@ export function ChiTietViPham({ violationId, onSua, onDaXoa, onMoXuLy }: {
     <div className="space-y-2.5 text-sm">
       {d.moTa && (
         <div>
-          <p className="text-xs text-slate-500 m-0 mb-1">Mô tả</p>
+          <p className="text-xs text-slate-500 m-0 mb-1">{t('Mô tả')}</p>
           <p className="m-0 whitespace-pre-wrap break-words">{d.moTa}</p>
         </div>
       )}
       <div>
-        <p className="text-xs text-slate-500 m-0 mb-1">Bằng chứng</p>
+        <p className="text-xs text-slate-500 m-0 mb-1">{t('Bằng chứng')}</p>
         <BangChung ownerType="violation" ownerId={d.id} canEdit={d.canEdit} tieuDe="" onChanged={reload} />
       </div>
 
       <div>
-        <p className="text-xs text-slate-500 m-0 mb-1">Lần xử lý</p>
-        {d.measures.length === 0 ? <p className="text-slate-400 m-0">Chưa nằm trong lần xử lý nào</p> : (
+        <p className="text-xs text-slate-500 m-0 mb-1">{t('Lần xử lý')}</p>
+        {d.measures.length === 0 ? <p className="text-slate-400 m-0">{t('Chưa nằm trong lần xử lý nào')}</p> : (
           <div className="flex flex-wrap gap-x-3 gap-y-1">
             {d.measures.map((m) => (
               <button key={m.id} type="button" className="link" onClick={() => onMoXuLy(m.id)}>
-                {m.kindLabel} · {m.statusLabel.toLowerCase()}
+                {dich(m.kindLabel)} · {m.statusLabel.toLowerCase()}
               </button>
             ))}
           </div>
@@ -83,7 +84,7 @@ export function ChiTietViPham({ violationId, onSua, onDaXoa, onMoXuLy }: {
         <div>
           <button type="button" className="text-xs text-slate-500 hover:underline underline-offset-2" aria-expanded={xemLichSu}
             onClick={() => setXemLichSu((v) => !v)}>
-            Đã sửa {soLanSua} lần · Xem
+            {t('Đã sửa {soLanSua} lần · Xem', { soLanSua })}
           </button>
           {xemLichSu && (
             <ul className="list-none p-0 m-0 mt-1 space-y-0.5 text-xs text-slate-400">
@@ -102,14 +103,14 @@ export function ChiTietViPham({ violationId, onSua, onDaXoa, onMoXuLy }: {
       )}
 
       <div className="flex items-center gap-2 pt-1">
-        {suaDuoc && <button type="button" className="btn btn-sm" onClick={() => onSua(d)}>Sửa</button>}
+        {suaDuoc && <button type="button" className="btn btn-sm" onClick={() => onSua(d)}>{t('Sửa')}</button>}
         {xoaDuoc && (!hoiXoa ? (
-          <button type="button" className="btn btn-sm btn-ghost text-rose-200" onClick={() => setHoiXoa(true)}>Xoá</button>
+          <button type="button" className="btn btn-sm btn-ghost text-rose-200" onClick={() => setHoiXoa(true)}>{t('Xoá')}</button>
         ) : (
           <span className="flex flex-wrap items-center gap-2 text-xs text-amber-200">
-            {d.measures.length ? `Xoá vi phạm này? Lần xử lý chứa nó vẫn giữ, bậc không lùi.` : 'Xoá vi phạm này?'}
-            <button type="button" className="btn btn-sm btn-ghost" disabled={busy} onClick={() => { setHoiXoa(false); setErrXoa(null); }}>Đóng</button>
-            <button type="button" className="btn btn-sm text-rose-200" disabled={busy} onClick={xoa}>Xoá</button>
+            {d.measures.length ? t('Xoá vi phạm này? Lần xử lý chứa nó vẫn giữ, bậc không lùi.') : t('Xoá vi phạm này?')}
+            <button type="button" className="btn btn-sm btn-ghost" disabled={busy} onClick={() => { setHoiXoa(false); setErrXoa(null); }}>{t('Đóng')}</button>
+            <button type="button" className="btn btn-sm text-rose-200" disabled={busy} onClick={xoa}>{t('Xoá')}</button>
           </span>
         ))}
       </div>
