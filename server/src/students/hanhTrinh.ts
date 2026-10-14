@@ -2,14 +2,14 @@ import { db, theoLo } from '../db.ts';
 import {
   CASE_CATEGORY_LABEL, INTERVENTION_KIND_LABEL, PERMISSIONS, caseCategoriesFor, caseTitle, chiaChuong, goiYCuoiKhoa, lapLaiQuaLop,
   ASSESSED_SKILLS, tenCaseSos, tenMon, tenMonNgan, tuanHocTai, type CaseCategory, type CaseChuongVao, type LopChuong, type TonePaChuong,
-  mondayOfDate, hienTargetKck, nhanMt0, type AssessedSkill, type DiemMoc, type DotRef, nhanBaiThuong } from '../../../shared/domain/index.ts';
+  mondayOfDate, hienTargetKck, nhanMt0, type AssessedSkill, type DiemMoc, type DotRef, nhanBaiThuong, trangThaiCaseV4 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { require_, type Principal } from '../permissions.ts';
 import { allProgrammes } from '../normal/regular.ts';
 import { typedResult } from './profile.ts';
 import { khoangTamDung } from './tamDung.ts';
 import { addDays } from '../util.ts';
-import { CO_THE_KHONG_THEO_DOI, awaitingCauseCaseIds } from '../cases/sosState.ts';
+import { CO_THE_KHONG_THEO_DOI, awaitingCauseCaseIds, sosCaseStateMany } from '../cases/sosState.ts';
 import { loTrinhTinhTuan } from '../fasttrack/cycles.ts';
 import { mt0TheoHocVien } from '../fasttrack/mt0.ts';
 
@@ -217,6 +217,16 @@ export function hanhTrinhHocVien(p: Principal, studentId: number, giaiDoanMuon: 
 
   // -------------------------------------------------------------- tên Case (một luật cho trục và chương)
   const choNguyenNhan = new Set(awaitingCauseCaseIds(caseRows.filter((c) => c.status !== 'done').map((c) => c.id as number)));
+  /* OV-11d (CA2-3): Case mở quá hạn xác nhận (nguyên nhân / PA) — CÙNG `trangThaiCaseV4` với tab Học thuật (một luật, một chữ). Một câu cho cả tập. */
+  const stMo = sosCaseStateMany(caseRows.filter((c) => c.status !== 'done').map((c) => c.id as number));
+  const dangDung = dung.some((k) => k.den === null);   // em đang Tạm dừng: mọi hạn dừng — như tab Học thuật (T65)
+  const quaHanCua = (c: any): 'nguyen-nhan' | 'xac-nhan-pa' | null => {
+    const st = stMo.get(c.id);
+    if (!st || dangDung) return null;
+    const v4 = trangThaiCaseV4({ status: c.status, fromSos: st.fromSos, hasCause: st.hasCause, dismissed: !!st.dismissed, systemClosed: !!c.system_close_reason,
+      choDuyetKhongTheoDoi: !!st.choDuyetKhongTheoDoi, coPaChoXacNhan: st.coPaChoXacNhan, hanXacNhan: st.dueOn }, homNay);
+    return v4.t !== 'qua-han' ? null : v4.k === 'cho-xac-nhan-pa' ? 'xac-nhan-pa' : 'nguyen-nhan';
+  };
   const tenCaseCua = (c: any): string => {
     const ctCase: string | null = c.cycle_programme ?? null;
     const ratioCase = !c.cycle_route && !!ctCase && progOf(ctCase)?.scoringMode === 'ratio';
@@ -295,7 +305,7 @@ export function hanhTrinhHocVien(p: Principal, studentId: number, giaiDoanMuon: 
     return {
       kyNang, nhan: ratio ? tenMon(ct, kyNang) : CASE_CATEGORY_LABEL[kyNang], nhanNgan: tenMonNgan(ratio ? ct : null, kyNang), cheDo: ratio ? ('ratio' as const) : ('ielts' as const),
       diem, conCho, dotCho: dotCho as DotRef | null,
-      caseMo: openCases.map((c) => ({ mo: c.detected_at, soPa: (ivByCase.get(c.id) ?? []).length, choNguyenNhan: choNguyenNhan.has(c.id), choDuyet: !!c.co_the_ktd })),
+      caseMo: openCases.map((c) => ({ mo: c.detected_at, soPa: (ivByCase.get(c.id) ?? []).length, choNguyenNhan: choNguyenNhan.has(c.id), choDuyet: !!c.co_the_ktd, quaHan: quaHanCua(c) })),
       coTungCase: casesOfSkill.length > 0, diemCuoiChuaDat: diem.length ? diem[diem.length - 1].chuaDat : null,
       xongGanNhat: !openCases.length && doneCases.length
         ? doneCases.reduce((mx: string | null, c) => { const d = c.closed_at ?? c.outcome_at ?? c.detected_at; return d && (!mx || d > mx) ? d : mx; }, null as string | null)

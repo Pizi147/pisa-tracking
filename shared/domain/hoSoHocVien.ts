@@ -209,25 +209,8 @@ export type DauVaoCau = {
  */
 export function cauTomTat(i: DauVaoCau): ManhCau[] {
   const d = i.dacBiet;
-  const m0: ManhCau | null = !d ? null
-    : d.loai === 'ket-thuc' ? { chu: 'Đã kết thúc', tone: null }
-    : d.loai === 'tam-dung' ? { chu: chuTamDung(ngay(d.tu, i.homNay), true), tone: 'warn' }
-    : d.loai === 'sap-chuyen' ? { chu: `Sắp chuyển ${d.lop} từ ${tuanLich(d.tuan, i.homNay)}`, tone: 'accent' }
-    : { chu: 'KCK · không tính SOS', tone: null };
-
   const k = i.ketQua;
   const hoTro = i.hoTro.length ? `đang hỗ trợ ${noiVa(i.hoTro)}` : null;
-  const voiHoTro = (dau: string) => (hoTro ? `${dau}: ${hoTro}` : dau);
-  let m1: ManhCau | null = null;
-  if (!k) m1 = hoTro ? { chu: hoTro, tone: null } : null;
-  else if (k.ratio) {
-    const dau = k.phanTram !== null ? `${k.dau} ${k.phanTram}%` : `${k.dau} ${k.soDat}/${k.soMon} môn đạt`;
-    m1 = { chu: k.monTruot.length ? `${dau}: không đạt ${noiVa(k.monTruot)}` : dau, tone: k.monTruot.length ? 'warn' : null };
-  } else if (k.kck && k.kckDuoi) m1 = { chu: voiHoTro(`${k.dau} dưới kỳ vọng${d?.loai === 'kck' ? '' : ' · KCK'}`), tone: null };   // OV-9: không SOS, không màu; mảnh 0 đã nói KCK thì không lặp
-  else if (k.kck && k.sos === null && !k.dat) m1 = { chu: voiHoTro(k.overall !== null ? `${k.dau} OVR ${k.overall.toFixed(1)}` : k.dau), tone: null };   // KCK chưa có Target (không kỳ vọng)
-  else if (k.sos) m1 = { chu: voiHoTro(`${k.dau} SOS ${k.sos}${!(k.chot ?? (k.coDiem === undefined || k.coDiem >= k.soMon)) ? ' tạm thời' : ''}`), tone: toneSos(k.sos) };
-  else if (k.dat) m1 = { chu: voiHoTro(`${k.dau} đạt kỳ vọng`), tone: null };
-  else m1 = { chu: voiHoTro(`${k.dau} chưa đủ điểm`), tone: null };
 
   const hoc = i.viec.filter((v) => VIEC_HOC_THUAT.has(v.loai));
   const quaHan = hoc.filter((v) => v.quaHanNgay !== null).sort((a, b) => b.quaHanNgay! - a.quaHanNgay!)[0];
@@ -252,6 +235,26 @@ export function cauTomTat(i: DauVaoCau): ManhCau[] {
     : y.nhom === 'bat_buoc' ? { chu: `Ý thức: bắt buộc ${y.keTiep ?? 'xử lý'}${y.han ? `, hạn hết ${ngay(y.han, i.homNay)}` : ''}`, tone: 'warn' }
     : y.nhom === 'cho_duyet' ? { chu: `Ý thức: ${y.deXuat ? `đề xuất ${y.deXuat}` : 'đề xuất'} chờ Quản lý`, tone: 'wait' }
     : null;
+
+  /* OV-11d (HV-22): nhãn "KCK · không tính SOS" không đẩy mất việc có hạn — đủ 3 mảnh khác thì bỏ nhãn, KCK nói ở mảnh kết quả. */
+  const kckRieng = d?.loai === 'kck' && !(m2 && m3 && (k || hoTro));
+  const m0: ManhCau | null = !d ? null
+    : d.loai === 'ket-thuc' ? { chu: 'Đã kết thúc', tone: null }
+    : d.loai === 'tam-dung' ? null   // OV-11d (CA2-12): dải Tạm dừng ngay dưới đã nói (ngày, lý do, nút Quay lại học) — câu không lặp
+    : d.loai === 'sap-chuyen' ? { chu: `Sắp chuyển ${d.lop} từ ${tuanLich(d.tuan, i.homNay)}`, tone: 'accent' }
+    : kckRieng ? { chu: 'KCK · không tính SOS', tone: null } : null;
+
+  const voiHoTro = (dau: string) => (hoTro ? `${dau}: ${hoTro}` : dau);
+  let m1: ManhCau | null = null;
+  if (!k) m1 = hoTro ? { chu: hoTro, tone: null } : null;
+  else if (k.ratio) {
+    const dau = k.phanTram !== null ? `${k.dau} ${k.phanTram}%` : `${k.dau} ${k.soDat}/${k.soMon} môn đạt`;
+    m1 = { chu: k.monTruot.length ? `${dau}: không đạt ${noiVa(k.monTruot)}` : dau, tone: k.monTruot.length ? 'warn' : null };
+  } else if (k.kck && k.kckDuoi) m1 = { chu: voiHoTro(`${k.dau} dưới kỳ vọng${kckRieng ? '' : ' · KCK'}`), tone: null };   // OV-9: không SOS, không màu; mảnh 0 đã nói KCK thì không lặp
+  else if (k.kck && k.sos === null && !k.dat) m1 = { chu: voiHoTro(k.overall !== null ? `${k.dau} OVR ${k.overall.toFixed(1)}` : k.dau), tone: null };   // KCK chưa có Target (không kỳ vọng)
+  else if (k.sos) m1 = { chu: voiHoTro(`${k.dau} SOS ${k.sos}${!(k.chot ?? (k.coDiem === undefined || k.coDiem >= k.soMon)) ? ' tạm thời' : ''}`), tone: toneSos(k.sos) };
+  else if (k.dat) m1 = { chu: voiHoTro(`${k.dau} đạt kỳ vọng`), tone: null };
+  else m1 = { chu: voiHoTro(`${k.dau} chưa đủ điểm`), tone: null };
 
   const ds = [m0, m1, m2, m3].filter((x): x is ManhCau => !!x).slice(0, 3);
   if (!m2 && !m3 && !hoTro && ds.length < 3) ds.push({ chu: 'không có việc đang mở', tone: null });
@@ -284,7 +287,11 @@ export function oHocThuat(rows: readonly {
   /* Gấp lên trước: Quá hạn › Cần làm › Chờ duyệt › Đang làm (trong nhóm giữ thứ tự bảng). */
   const thuTu = ['qua-han', 'tam-dung', 'can-lam', 'cho-duyet', 'dang-lam'];
   dong.sort((a, b) => thuTu.indexOf(a.t) - thuTu.indexOf(b.t));
-  if (!dong.length) phu = rows.some((r) => r.missed === true) ? 'Không có Case mở' : 'mọi kỹ năng đạt';
+  /* OV-11d (HV-4, CA2-1): "đạt" chỉ khi MỌI hàng có điểm và đạt; chưa hàng nào có điểm → "chưa có điểm" (không nói đạt khi chưa thi). */
+  if (!dong.length) {
+    phu = rows.length && rows.every((r) => r.missed === false) ? 'mọi kỹ năng đạt'
+      : rows.every((r) => r.missed === null) ? 'chưa có điểm' : 'Không có Case mở';
+  }
   return { so: dong.length, dong, phu };
 }
 

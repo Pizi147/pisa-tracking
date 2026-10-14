@@ -127,6 +127,6 @@ export async function runPrOv10aTests(t: YThucTestKit) {
 
   check('OV10a-9 · TVV / CX: ẩn "Đề xuất sửa" (sửa thẳng được); GVCN giữ — cờ `coTheDeXuatSua`', () => {
     const s = doc('web/src/modules/students/StudentDetailPage.tsx');
-    assert(/onDeXuatSua=\{data\.viewer\.coTheDeXuatSua \?/.test(s), 'Panel Lộ trình chỉ nhận onDeXuatSua khi coTheDeXuatSua');
+    assert(/onDeXuatSua=\{data\.viewer\.coTheDeXuatSua \?/.test(s), 'Sửa thông tin chỉ nhận onDeXuatSua khi coTheDeXuatSua (OV-11d: panel Lộ trình chỉ còn lịch MT)');
   });
 }

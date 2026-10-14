@@ -8,7 +8,7 @@ import { badRequest, notFound, nowIso } from '../util.ts';
 import { can, require_, type Principal } from '../permissions.ts';
 import { addJourney, notify, writeAudit } from '../platform/audit.ts';
 import { chuyenCaseSangLoTrinh, closeCasesOnProgrammeSwitch, programmeOfCase } from '../cases/systemClose.ts';
-import { banGiaoPaQuyChe } from '../cases/sosAuto.ts';
+import { banGiaoPaQuyChe, datLaiHanCase } from '../cases/sosAuto.ts';
 import { taoMtMacDinh, taoMtMacDinhLo } from '../fasttrack/mtMacDinh.ts';
 import { classProgressMany, mocKetKhoa } from './schedule.ts';
 import { isRatioClass, programmeByCode, taoBaiThuongMacDinh } from '../normal/regular.ts';
@@ -292,6 +292,10 @@ export function apDungMotDong(p: Principal, d: DongApDung): { luat: LuatDoiLop |
   /* Xếp lớp LẦN ĐẦU (chưa từng ghi danh) — không có khoá cũ để đóng, không luật lộ trình nào áp dụng. */
   if (!enr) {
     return tx((): { luat: LuatDoiLop | null; toClassCode: string } => {
+      /* OV-11d: em Tạm dừng (ghi danh `paused` giữ lớp cũ) được xếp lớp mới → đóng lớp giữ, em đang học lại — không để hai ghi danh / quyền GVCN cũ. */
+      const giu = (conn.prepare(`SELECT id FROM enrollments WHERE student_id = ? AND status = 'paused'`).all(d.sid) as any[]).map((r) => r.id as number);
+      for (const id of giu) conn.prepare(`UPDATE enrollments SET status = 'completed', ended_at = ?, end_reason = ?, end_kind = NULL WHERE id = ?`).run(d.ngay, d.lyDo ?? null, id);
+      const quayLai = giu.length > 0 && conn.prepare(`UPDATE students SET status = 'active' WHERE id = ? AND status = 'inactive'`).run(d.sid).changes > 0;
       const insEnr = conn
         .prepare(`INSERT INTO enrollments (student_id, class_id, status, started_at, created_at) VALUES (?,?, 'active', ?, ?)`)
         .run(d.sid, d.toClassId, d.ngay, nowIso());
@@ -302,8 +306,14 @@ export function apDungMotDong(p: Principal, d: DongApDung): { luat: LuatDoiLop |
       });
       writeAudit({
         actorUserId: p.userId, action: 'student.transfer', entityType: 'student', entityId: d.sid, entityLabel: toClass.code,
-        before: { classId: null }, after: { classId: d.toClassId },
+        before: { classId: null, ...(giu.length ? { ghiDanhGiu: giu } : {}) }, after: { classId: d.toClassId },
       });
+      /* Hết Tạm dừng (như Quay lại học): mốc resume khép khoảng dừng, hạn Case / Ý thức tính lại từ ngày vào lớp mới. */
+      if (quayLai) {
+        addJourney({ studentId: d.sid, eventType: 'resume', eventDate: d.ngay, title: 'Quay lại học', detail: `vào lớp ${toClass.code}`, createdBy: p.userId });
+        datLaiHanCase(d.sid, d.ngay);
+        chotHanXuLy([d.sid], { ghiDe: true });
+      }
       thongBaoChuyenVao({
         sid: d.sid, tenHocVien: (conn.prepare('SELECT full_name FROM students WHERE id = ?').get(d.sid) as any).full_name,
         enrollmentMoiId: Number(insEnr.lastInsertRowid), actorUserId: p.userId,
@@ -509,15 +519,17 @@ export function xemChuyenLop(p: Principal, sid: number, toClassId?: number | nul
     /** PR-CL (B3): bối cảnh + hướng máy chủ sẽ ra lệnh; Target đã có khi Lên FT (`null` → web hiện ô Target); MT0; việc FT → thường. */
     boiCanh: huong?.boiCanh ?? null, huong: huong?.huong ?? null, targetSan, nguonTarget, mt0, veThuong,
     khiChuyen: khoi.khiChuyen, canhBao: khoi.canhBao,
+    /** OV-11d (HV-13): tuần Final của lớp nguồn (lớp thường) — panel tính hạn bàn giao bằng `hanBanGiaoLenh` như lúc ra lệnh. */
+    tuanFinal: (pr?.finalWeekStart ?? null) as string | null,
     /** Em FT có ghi danh ngay trước ở lớp thường → mã lớp đó ("tuần 1 · từ CP ELE 30"). */
     tuLopThuong: truoc && !truoc.is_fast_track ? (truoc.code as string) : null,
     /** PR-CT: lệnh đang chờ của em (nếu có) — panel mở ở chế độ sửa + Huỷ quyết định. */
     lenh: (() => {
-      const l = conn.prepare(`SELECT id, huong, lop_dich_id, tuan_bat_dau, muc_tieu, khong_cam_ket, ngay_thi, ly_do, loi FROM lenh_chuyen_lop WHERE student_id = ? AND trang_thai = 'cho'`).get(sid) as any;
+      const l = conn.prepare(`SELECT id, huong, lop_dich_id, tuan_bat_dau, muc_tieu, khong_cam_ket, ngay_thi, ly_do, loi, han_gvcn FROM lenh_chuyen_lop WHERE student_id = ? AND trang_thai = 'cho'`).get(sid) as any;
       return l ? {
         id: l.id as number, huong: l.huong as string, lopDichId: (l.lop_dich_id ?? null) as number | null, tuan: l.tuan_bat_dau as string,
         mucTieu: ghepMucTieu(l.muc_tieu, l.khong_cam_ket), ngayThi: (l.ngay_thi ?? null) as string | null,
-        lyDo: (l.ly_do ?? null) as string | null, loi: (l.loi ?? null) as string | null,
+        lyDo: (l.ly_do ?? null) as string | null, loi: (l.loi ?? null) as string | null, hanGvcn: (l.han_gvcn ?? null) as string | null,
       } : null;
     })(),
     tuanChon: tuanChonDuoc(homNay),

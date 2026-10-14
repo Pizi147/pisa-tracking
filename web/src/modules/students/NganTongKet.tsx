@@ -152,16 +152,17 @@ const LAM_MOI = ['/students', '/classes', '/hoc-vien-lop', '/cases', '/lo-trinh'
  * MỤC "BƯỚC TIẾP" (OV-8a) — ngay dưới kết quả thi thật. Chỉ Quản lý / Quản trị có nút: Kết thúc (vào Lưu trữ, Hoàn tác trên thông báo) · Học tiếp lộ trình mới ·
  * Học lại (hai nút sau mở panel Học lại sẵn có). Gợi ý chỉ là chữ. Đã chọn → "Đã chọn: … · ngày · người" + Sửa (đổi = hoàn tác lựa chọn cũ rồi làm cái mới).
  */
-function MucBuocTiep({ bt, cycleId, hocVien, lop, ketQua, onDoi }: {
-  bt: NonNullable<TongKet['buocTiep']>; cycleId: number; hocVien: { id: number; ten: string }; lop: string | null; ketQua: string; onDoi: () => void;
+function MucBuocTiep({ bt, cycleId, hocVien, ketQua, onDoi, onMo }: {
+  bt: NonNullable<TongKet['buocTiep']>; cycleId: number; hocVien: { id: number; ten: string }; ketQua: string; onDoi: () => void;
+  /** OV-11d (HV-9): Học tiếp / Học lại mở panel Học lại TRONG ngăn này (nơi gọi đổi nội dung). */
+  onMo: (chon: 'hoc_tiep' | 'hoc_lai', doi: boolean) => void;
 }) {
   const toast = useToast();
   const { homNay } = useNgayNghiepVu();
   const [sua, setSua] = useState(false);
-  const [mo, setMo] = useState<'hoc_tiep' | 'hoc_lai' | null>(null);
   const [busy, setBusy] = useState(false);
   const doi = !!bt.chon;
-  const xong = () => { setSua(false); setMo(null); onDoi(); };
+  const xong = () => { setSua(false); onDoi(); };
   const ketThuc = async () => {
     setBusy(true);
     try {
@@ -180,7 +181,7 @@ function MucBuocTiep({ bt, cycleId, hocVien, lop, ketQua, onDoi }: {
       xong();
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
   };
-  const bam = (k: LuaChonSauThi) => (k === 'ket_thuc' ? void ketThuc() : setMo(k));
+  const bam = (k: LuaChonSauThi) => (k === 'ket_thuc' ? void ketThuc() : onMo(k, doi));
   return (
     <section aria-labelledby={`buoc-tiep-${cycleId}`} className="rounded-[10px] border px-3 py-2.5" style={{ background: 'var(--surface-2)', borderColor: 'var(--line)' }}>
       <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
@@ -209,10 +210,6 @@ function MucBuocTiep({ bt, cycleId, hocVien, lop, ketQua, onDoi }: {
       ) : (
         <p className="m-0 mt-1 text-sm text-slate-400">Chờ Quản lý chọn: Kết thúc · Học tiếp lộ trình mới · Học lại.</p>
       )}
-      {mo && (
-        <HocLaiPanel chong studentId={hocVien.id} studentName={hocVien.ten} lop={lop} buocTiep={{ cycleId, chon: mo, doi }}
-          onClose={() => setMo(null)} onDone={xong} />
-      )}
     </section>
   );
 }
@@ -224,13 +221,28 @@ function MucBuocTiep({ bt, cycleId, hocVien, lop, ketQua, onDoi }: {
 export function NganTongKet({ cycleId, onClose, onDoi }: { cycleId: number; onClose: () => void; onDoi?: () => void }) {
   const { homNay } = useNgayNghiepVu();
   const { data, loading, error, reload } = useApi<TongKet>(`/lo-trinh/${cycleId}/tong-ket`, [cycleId]);
-  const [nhap, setNhap] = useState(false);
+  /* OV-11d (HV-9): Nhập kết quả / Học tiếp / Học lại THAY nội dung ngăn (dòng "← Tổng kết", như `NganCase`) — không panel chồng. */
+  const [view, setView] = useState<{ loai: 'nhap' } | { loai: 'hoc'; chon: 'hoc_tiep' | 'hoc_lai'; doi: boolean } | null>(null);
   const chuongTrinh = data ? (data.loai === 'ft' ? 'Fast Track' : data.ten) : null;
   const ft = data?.loai === 'ft';
   const kq = data?.ketQua;
+  const veTongKet = () => setView(null);
+  const daDoi = () => { setView(null); reload(); onDoi?.(); };
+  const quayLai = { nhan: 'Tổng kết', onClick: veTongKet };
+  if (data && view?.loai === 'nhap') {
+    return <KetQuaThiThatPanel cycleId={cycleId} studentName={data.hocVien.ten} lop={data.lop} quayLai={quayLai} onClose={veTongKet} onDone={daDoi} />;
+  }
+  if (data && view?.loai === 'hoc') {
+    return (
+      <HocLaiPanel studentId={data.hocVien.id} studentName={data.hocVien.ten} lop={data.lop} buocTiep={{ cycleId, chon: view.chon, doi: view.doi }}
+        quayLai={quayLai} onClose={veTongKet} onDone={daDoi} />
+    );
+  }
+  /* OV-11d (HV-7): lộ trình đóng bằng Kết luận CŨ (không điểm thi thật) — ô Thi thật nói đúng nguồn, không "Chờ kết quả thi thật". */
+  const ketLuanCu = kq?.loai === 'ft' && kq.ovr === null && !kq.khongThi && !kq.khongCoThi && (kq.ketLuan === 'reached' || kq.ketLuan === 'not_reached') ? kq.nhan : null;
   return (
     <>
-      <KhungPanel tieuDe="Tổng kết lộ trình" hocVien={data ? `${data.hocVien.ten} · ${chuongTrinh}` : null} rong="rong" onDong={nhap ? () => { /* Esc đóng ngăn nhập trước */ } : onClose}
+      <KhungPanel tieuDe="Tổng kết lộ trình" hocVien={data ? `${data.hocVien.ten} · ${chuongTrinh}` : null} rong="rong" onDong={onClose}
         chan={{ huy: null, phu: data ? <Link className="btn btn-ghost min-h-[44px] sm:min-h-0" to={duongHoSoHocVien(data.hocVien.id, { loTrinh: cycleId })}>Mở hồ sơ</Link> : undefined,
           chinh: <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={onClose}>Đóng</button> }}>
         {error && <ErrorState message={error.message} hint={error.hint} onRetry={reload} />}
@@ -253,10 +265,12 @@ export function NganTongKet({ cycleId, onClose, onDoi }: { cycleId: number; onCl
                     </O>
                   ) : kq.khongCoThi ? (
                     <O nho="Thi thật" cho><div className="text-sm font-semibold text-slate-500">—</div></O>
+                  ) : ketLuanCu ? (
+                    <O nho="Thi thật"><div className="text-sm font-semibold leading-snug text-slate-200">Kết luận cũ: {ketLuanCu}</div></O>
                   ) : (
                     <O nho="Thi thật" cho>
                       <div className="text-sm font-semibold leading-snug text-slate-400">{kq.khongThi ? 'Không thi' : 'Chờ kết quả thi thật'}</div>
-                      {kq.coTheNhap && <div className="mt-2"><button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setNhap(true)}>Nhập kết quả</button></div>}
+                      {kq.coTheNhap && <div className="mt-2"><button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setView({ loai: 'nhap' })}>Nhập kết quả</button></div>}
                     </O>
                   )}
                   {MUI}
@@ -276,8 +290,9 @@ export function NganTongKet({ cycleId, onClose, onDoi }: { cycleId: number; onCl
             </div>
 
             {data.buocTiep && (
-              <MucBuocTiep bt={data.buocTiep} cycleId={cycleId} hocVien={data.hocVien} lop={data.lop} onDoi={() => { reload(); onDoi?.(); }}
-                ketQua={kq.loai === 'ft' ? (kq.khongThi ? 'Không thi' : kq.nhan || (kq.ovr !== null ? `OVR ${b1(kq.ovr)}` : 'Có kết quả')) : ''} />
+              <MucBuocTiep bt={data.buocTiep} cycleId={cycleId} hocVien={data.hocVien} onDoi={() => { reload(); onDoi?.(); }}
+                onMo={(chon, doi) => setView({ loai: 'hoc', chon, doi })}
+                ketQua={kq.loai === 'ft' ? (kq.khongThi ? 'Không thi' : ketLuanCu ? 'theo kết luận cũ' : kq.nhan || (kq.ovr !== null ? `OVR ${b1(kq.ovr)}` : 'Có kết quả')) : ''} />
             )}
 
             <div className="flex flex-wrap gap-x-3.5 gap-y-1 text-[12.5px] text-slate-400">
@@ -293,9 +308,6 @@ export function NganTongKet({ cycleId, onClose, onDoi }: { cycleId: number; onCl
           </div>
         )}
       </KhungPanel>
-      {nhap && data && (
-        <KetQuaThiThatPanel chong cycleId={cycleId} studentName={data.hocVien.ten} lop={data.lop} onClose={() => setNhap(false)} onDone={() => { reload(); onDoi?.(); }} />
-      )}
     </>
   );
 }

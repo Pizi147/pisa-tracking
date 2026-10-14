@@ -3,9 +3,9 @@ import { datNho } from '../platform/nguCanhRequest.ts';
 import {
   ASSESSED_SKILLS, BASELINE_SOURCE_LABEL, CYCLE_OUTCOME_LABEL, ENTRY_SKILLS, kyNangSosMt0,
   ASSESSED_SKILL_LABEL, INTERVENTION_KIND_LABEL, JOURNEY_GROUP, PERMISSIONS,
-  caseHeadline, duongCase, issueLabel, caseCategoryLabel, categoryOf, fmtExamMonth, cauTomTat, ketQuaTestGanNhat, oHocThuat, oSapToi, oYThuc,
+  caseHeadline, duongCase, issueLabel, caseCategoryLabel, categoryOf, cauTomTat, ketQuaTestGanNhat, oHocThuat, oSapToi, oYThuc,
   bacHoacNgoaiThang, nhanLoaiXuLy, programmeOf, tenBacKe, tenMonNgan, mocKeTiep, LUOT_HUY_HET_SQL, quaHan, studyWeekOf, tenMon, tuanHocTai, tuanLich,
-  type AssessedSkill, type EntrySkill, type InterventionKind, kyNangXongThieu, nhanBaiThuong, ATTEMPT_KIND_SHORT, soThuTuLuot, laChuongTrinhGoc, laLienTuc, type ProgrammeCode,
+  type AssessedSkill, type EntrySkill, type InterventionKind, kyNangXongThieu, nhanBaiThuong, ATTEMPT_KIND_SHORT, laChuongTrinhGoc, laLienTuc, type ProgrammeCode,
   coONhapLienHe, type LienHe } from '../../../shared/domain/index.ts';
 import { outcomeGroup } from '../cases/effectiveness.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -21,7 +21,7 @@ import { luotSinhViecRow } from '../worklist/danhGia.ts';
 import { lichMtCua, missingForStudent, suggestedMockWeeks } from '../classes/schedule.ts';
 import { lopHocCua } from '../classes/loTrinhTiep.ts';
 import { daiHocVien } from '../classes/daiChuyenLop.ts';
-import { cuoiKhoaTheoHocVien, emConMiniTest, miniTestCuaHocVien, quyenGhiMiniTest, type EmCuoiKhoa } from '../normal/cuoiKhoa.ts';
+import { cuoiKhoaTheoHocVien, emConMiniTest, emLenFtTu, miniTestCuaHocVien, quyenGhiMiniTest, type EmCuoiKhoa } from '../normal/cuoiKhoa.ts';
 import { mt0TheoLop } from '../normal/kyVong.ts';
 import { quyenBoTro } from '../cases/boTro.ts';
 import { ensurePeriod, mondayOf } from '../platform/week.ts';
@@ -30,6 +30,7 @@ import { activeClassOf, canManageDiscipline } from '../yThuc/access.ts';
 import { dongHocVien, khoangTamDung } from './tamDung.ts';
 import { viecCuaHocVien } from './viecHocVien.ts';
 import { dsTvv } from './students.ts';
+import { laGvLopDangHoc } from '../duyet/deXuatSua.ts';
 import { trangThaiYThuc } from '../yThuc/trangThai.ts';
 
 /**
@@ -386,6 +387,8 @@ function boOVaCau(i: {
   s: any; selected: any; attempts: any[]; board: { rows: any[]; chuongTrinh: string | null };
   viec: { cuaBan: any[]; nguoiKhac: any[] }; yThucEm: any; dai: any; thongTin: any; nextRow: any;
   cuoiKhoaDang: boolean; khoaHienTai: { tuanKetThuc: string | null } | null; today: string; huong: string | null;
+  /** OV-11d (HV-11): em có lệnh / lộ trình Lên FT — Sắp tới ưu tiên MT0 (`mt0Ke`), không "xét lên {bậc kế}". */
+  lenFt?: boolean; mt0Ke?: { id: number; tuan: string | null; soPhan: number } | null;
 }) {
   const { s, selected, attempts, board, viec, yThucEm: em, dai, today } = i;
   const ct = board.chuongTrinh;
@@ -439,15 +442,17 @@ function boOVaCau(i: {
     sapToi: {
       ...oSapToi({
         ketLuan: s.status === 'finished' ? (selected?.outcome ? CYCLE_OUTCOME_LABEL[selected.outcome as keyof typeof CYCLE_OUTCOME_LABEL] ?? 'Kết thúc học' : 'Kết thúc học') : null,
-        sauCuoiKhoa: daCuoiKhoa ? { tuanKetThuc: i.khoaHienTai?.tuanKetThuc ?? null } : null,
-        next: nextA ? {
+        sauCuoiKhoa: daCuoiKhoa && !i.lenFt ? { tuanKetThuc: i.khoaHienTai?.tuanKetThuc ?? null } : null,   // OV-11d: đã chốt Lên FT — không còn "chờ Quản lý quyết định"
+        next: i.mt0Ke ? { dau: 'MT0', attemptNo: 0, tuan: i.mt0Ke.tuan, soPhan: i.mt0Ke.soPhan, final: false, kyVong: null }
+          : nextA ? {
           dau: dauDot(nextA), attemptNo: nextA.attemptNo, tuan: nextA.weekStart ?? null, soPhan: nextA.required, final: nextA.kind === 'final',
           kyVong: nextA.mode === 'ratio' ? null : expectationFor(selected?.target_score ?? null, nextA.attemptNo, selected?.route ?? null),
         } : null,
-        ratio: !!nextA ? nextA.mode === 'ratio' : i.cuoiKhoaDang, kck, bacKe: pc && pc !== 'FT' && laChuongTrinhGoc(pc) ? tenBacKe(pc as ProgrammeCode) : null, homNay: today,
+        ratio: i.mt0Ke ? false : !!nextA ? nextA.mode === 'ratio' : i.cuoiKhoaDang, kck: i.mt0Ke ? false : kck,
+        bacKe: !i.lenFt && pc && pc !== 'FT' && laChuongTrinhGoc(pc) ? tenBacKe(pc as ProgrammeCode) : null, homNay: today,
         tamDung: s.status === 'inactive',
       }),
-      attemptId: nextA?.id ?? null,
+      attemptId: i.mt0Ke?.id ?? nextA?.id ?? null,
     },
   };
   return { tomTat, o, soViPhamMo };
@@ -482,7 +487,7 @@ function dongThongTin(i: {
   const nhanThi = (cy: any) => {
     const ke = i.keSel && i.keSel.cycleId === cy.id ? i.keSel.ke : examPlanOf(cy);
     return ke.confidence === 'none' ? null
-      : ke.confidence === 'month' ? fmtExamMonth(ke.month)
+      : ke.confidence === 'month' ? ke.label   // OV-11d (CA2-9): "JAN 2027" — cùng `examPlanOf` với Học viên & Lớp
       : cy.exam_date ? ke.label : tuanLich(ke.weekStart, today);
   };
   let thiIelts: string | null = null;
@@ -667,11 +672,9 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
   const today = demoToday();
   const examPlan = examPlanOf(selected);
 
-  // Mốc tiếp theo. FT (K2-31): lượt planned, không lịch sử, từ tuần này, sớm nhất — cùng `mocKeTiep` với danh sách lớp.
-  // Lớp thường: lượt planned sớm nhất theo loại (Progress trước Final — soThuTuLuot), không theo attempt_no.
-  const nextRow = selected?.route
-    ? mocKeTiep(attemptRows.map((a) => ({ ...a, weekStart: a.week_start ?? null })), today)
-    : attemptRows.filter((a) => a.status === 'planned').sort(soThuTuLuot)[0] ?? null;
+  // Mốc tiếp theo (K2-31): lượt planned, không lịch sử, từ tuần này, sớm nhất — cùng `mocKeTiep` với danh sách lớp, FT và lớp thường
+  // (OV-11d CA2-2: lớp thường không còn hiện bài đã qua tuần — bài qua tuần thiếu điểm nằm ở ô Kết quả).
+  const nextRow = mocKeTiep(attemptRows.map((a) => ({ ...a, weekStart: a.week_start ?? null })), today);
 
   // --------------------------------------------------------- đường đi từng kỹ năng
   /*
@@ -810,16 +813,27 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
     const kem = (r: any, x: EmCuoiKhoa | null, daChuyen: boolean) => (x ? {
       ...x, ct: r.programme_code ?? null, lop: r.code ?? null, daChuyen,
       kyVongMt0: ['FOU', 'BE', 'ELE'].includes(r.programme_code) ? mt0TheoLop([{ sid: studentId, lop: r.class_id, ct: r.programme_code }]).get(studentId)?.goiY ?? null : null,
+      /* OV-11d (HV-17): dòng Kết quả đầu ra chỉ cho em có lệnh / lộ trình Lên FT từ lớp này (cùng nguồn `ghiKetLuanFt`) — kể cả Final chưa có điểm. */
+      lenFt: ['FOU', 'BE', 'ELE'].includes(r.programme_code) && emLenFtTu(studentId, r.class_id),
     } : null);
     /* OV-6b2: lớp liên tục không có Cuối khoá. */
     const dang = !dangHoc.is_fast_track && !laLienTuc(dangHoc) && isRatioClass(dangHoc.class_id) ? cuoiKhoaTheoHocVien(dangHoc.class_id, [studentId]).get(studentId) ?? null : null;
-    if (dang && dang.scored > 0) return kem(dangHoc, dang, false);   // bài Final Test của lớp đang học đã có điểm
+    /* bài Final Test của lớp đang học đã có điểm — hoặc em đã chốt Lên FT từ lớp này (OV-11d: dòng KQĐR của lớp đang học, dù Final chưa điểm) */
+    if (dang && (dang.scored > 0 || emLenFtTu(studentId, dangHoc.class_id))) return kem(dangHoc, dang, false);
     const cu = ds.find((r) => r.status === 'transferred');
     const x = cu && isRatioClass(cu.class_id) ? cuoiKhoaTheoHocVien(cu.class_id, [studentId], { daRoi: true }).get(studentId) ?? null : null;
     return x && x.scored > 0 ? kem(cu, x, true) : kem(dangHoc, dang, false);
   })();
+  /* OV-11d (HV-11): em đã chốt Lên FT từ lớp thường — mốc kế tiếp là MT0 (bảng lớp thường không có MT0, PR-MT0) — cùng `mocKeTiep`. */
+  const mt0Ke = cuoiKhoaEm?.lenFt && selected && !selected.route
+    ? mocKeTiep((conn.prepare(`SELECT a.*, pr.week_start, ${LUOT_HUY_HET_SQL('a')} AS huyHet,
+          (SELECT COUNT(*) FROM attempt_skills k WHERE k.attempt_id = a.id AND k.required = 1) AS so_phan
+        FROM assessment_attempts a LEFT JOIN report_periods pr ON pr.id = a.planned_period_id WHERE a.cycle_id = ? AND a.kind = 'mt0'`).all(selected.id) as any[])
+        .map((a) => ({ ...a, weekStart: a.week_start ?? null })), today)
+    : null;
   const dau = boOVaCau({
     s, selected, attempts, board, viec, yThucEm, dai, thongTin, nextRow, cuoiKhoaDang: progHienTai?.scoringMode === 'ratio', khoaHienTai, today, huong: cuoiKhoaEm?.goiY?.nhanHuong ?? null,
+    lenFt: !!cuoiKhoaEm?.lenFt, mt0Ke: mt0Ke ? { id: mt0Ke.id as number, tuan: (mt0Ke.week_start ?? null) as string | null, soPhan: Number(mt0Ke.so_phan) || 0 } : null,
   });
 
   return {
@@ -1004,7 +1018,8 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
         canEditCycle: can(p, PERMISSIONS.CYCLE_EDIT, { studentId }),
         /* OV-8b: TVV / CX — Target sửa thẳng (có lý do), Ghi chú, Kết quả thi thật (`student.edit_more`). */
         coTheSuaThem: can(p, PERMISSIONS.STUDENT_EDIT_MORE, { studentId }),
-        coTheDeXuatSua: !can(p, PERMISSIONS.CYCLE_EDIT, { studentId }) && !can(p, PERMISSIONS.STUDENT_EDIT_MORE, { studentId }) && can(p, PERMISSIONS.STUDENT_VIEW, { classId: lopDangHoc, studentId }),
+        /* OV-11d (HV-2): cùng hàm máy chủ `guiDeXuatSua` — GV có phân công ở lớp em đang học; Admin / TVV / CX / QL không có nút. */
+        coTheDeXuatSua: !can(p, PERMISSIONS.CYCLE_EDIT, { studentId }) && !can(p, PERMISSIONS.STUDENT_EDIT_MORE, { studentId }) && laGvLopDangHoc(p, studentId),
         canPlanWeek: can(p, PERMISSIONS.PLAN_WEEK, { studentId }),
         canReport: can(p, PERMISSIONS.SOS_REPORT, { classId: lopDangHoc, studentId }),
         /* RB-6 (PR-S1): quyền hoàn thành Case tính theo MÔN của từng Case — xem `canClose` trên từng thẻ Case, không có cờ chung ở đây. */
@@ -1026,6 +1041,16 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
       duoi: board.rows.filter((r) => r.missed === true).map((r) => (r.short ?? r.label) as string),
     },
     lopHoc: lopHocCua(p, studentId, current),
+    /** OV-11d (HV-1): đề xuất sửa Target đang chờ Quản lý duyệt — Sửa thông tin hiện "Đang chờ duyệt: 7.0", người gửi Sửa đề xuất (không gửi trùng). */
+    deXuatTarget: (() => {
+      const r = conn.prepare(`SELECT id, nguoi_xin, ly_do, du_lieu FROM yeu_cau_duyet
+        WHERE loai = 'sua_thong_tin' AND doi_tuong_loai = 'student:target' AND doi_tuong_id = ? AND trang_thai = 'cho' ORDER BY id DESC LIMIT 1`).get(studentId) as any;
+      if (!r) return null;
+      let moi: string | number | undefined;
+      try { moi = (JSON.parse(r.du_lieu ?? '{}') as { moi?: string | number })?.moi; } catch { moi = undefined; }   // dữ liệu hỏng không làm hỏng cả hồ sơ
+      const cuaToi = r.nguoi_xin === p.userId;
+      return { id: r.id as number, moi: moi == null ? '' : String(moi), lyDo: cuaToi ? (r.ly_do ?? '') as string : '', cuaToi };   // lý do chỉ người gửi (để Sửa đề xuất)
+    })(),
     /** PR-CT: dải "Sắp chuyển / Đã chuyển" ngay dưới dòng thông tin đầu trang (mockup 20 — E). */
     dai,
     /** PR-LT2b: % Cuối khoá, hướng gợi ý, kết luận kỳ vọng đầu ra của lớp thường ĐANG học (null với FT / chưa có lớp). */

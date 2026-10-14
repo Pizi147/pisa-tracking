@@ -779,8 +779,8 @@ export function ghiKetLuanFt(p: Principal, sid: number, input: { dat?: unknown; 
   if (!can(p, PERMISSIONS.REQUEST_APPROVE, { studentId: sid })) throw forbidden('Chỉ Quản lý mới chốt được Kết quả đầu ra.');
   /*
    * PR-KV (§3): cùng điều kiện với panel cả lớp — em có điểm MT0 ở lớp BE/ELE, và có lệnh Lên FT (chờ / đã chuyển) từ lớp đó hoặc đã lên FT
-   * từ lớp đó (Lộ trình tiếp theo đã áp). Không còn đòi bài Final Test. Lớp BE/ELE = lớp nguồn của lệnh Lên FT mới nhất, không có thì lớp đang học
-   * (BE/ELE) hoặc lớp BE/ELE của Lộ trình tiếp theo đã áp (em đang ở FT).
+   * từ lớp đó (Lộ trình tiếp theo đã áp). Không còn đòi bài Final Test. Lớp BE/ELE = lớp nguồn của lệnh Lên FT mới nhất, không có thì lớp BE/ELE
+   * của Lộ trình tiếp theo đã áp (em đang ở FT). OV-11d (HV-17): bỏ nhánh "lớp đang học" — em BE → ELE (không lên FT) không có Kết quả đầu ra.
    */
   const nguon = conn.prepare(
     `SELECT x.class_id, x.programme_code, x.ft_class FROM (
@@ -788,15 +788,12 @@ export function ghiKetLuanFt(p: Principal, sid: number, input: { dat?: unknown; 
          FROM lenh_chuyen_lop l JOIN classes c ON c.id = l.lop_nguon_id
         WHERE l.student_id = ? AND l.huong = 'fast_track' AND l.trang_thai IN ('cho', 'da_chuyen') AND c.programme_code IN ('FOU', 'BE', 'ELE')
        UNION ALL
-       SELECT e.class_id, c.programme_code, NULL, 1, e.id FROM enrollments e JOIN classes c ON c.id = e.class_id
-        WHERE e.student_id = ? AND e.status = 'active' AND c.is_fast_track = 0 AND c.programme_code IN ('FOU', 'BE', 'ELE')
-       UNION ALL
        SELECT lt.class_id, c.programme_code, (SELECT e.class_id FROM enrollments e JOIN classes f ON f.id = e.class_id
                                                 WHERE e.student_id = lt.student_id AND e.status = 'active' AND f.is_fast_track = 1 ORDER BY e.id DESC LIMIT 1), 2, lt.id
          FROM lo_trinh_tiep_theo lt JOIN classes c ON c.id = lt.class_id
         WHERE lt.student_id = ? AND lt.huong = 'fast_track' AND lt.da_ap_dung_luc IS NOT NULL AND c.programme_code IN ('FOU', 'BE', 'ELE')
      ) x ORDER BY x.uu, x.k DESC LIMIT 1`,
-  ).get(sid, sid, sid) as any;
+  ).get(sid, sid) as any;
   if (!nguon) throw badRequest('Chỉ em lên FT từ lớp FOU/BE/ELE mới có Kết quả đầu ra.');
   const lopBeEle = nguon.class_id as number, ftClass = (nguon.ft_class ?? null) as number | null;
   const goiY = mt0TheoLop([{ sid, lop: lopBeEle, ct: nguon.programme_code }]).get(sid)?.goiY ?? null;
@@ -826,6 +823,15 @@ export function ghiKetLuanFt(p: Principal, sid: number, input: { dat?: unknown; 
 }
 
 const CHO_MT0 = 'Chờ MT0: cần ít nhất 3 kỹ năng có điểm.';
+
+/** OV-11d (HV-17): em có lệnh Lên FT (chờ / đã chuyển) từ lớp này, hoặc Lộ trình tiếp theo Lên FT đã áp — cùng hai nhánh nguồn của `ghiKetLuanFt`. */
+export function emLenFtTu(sid: number, classId: number): boolean {
+  return !!db().prepare(
+    `SELECT 1 FROM lenh_chuyen_lop WHERE student_id = ? AND lop_nguon_id = ? AND huong = 'fast_track' AND trang_thai IN ('cho', 'da_chuyen')
+     UNION ALL
+     SELECT 1 FROM lo_trinh_tiep_theo WHERE student_id = ? AND class_id = ? AND huong = 'fast_track' AND da_ap_dung_luc IS NOT NULL`,
+  ).get(sid, classId, sid, classId);
+}
 
 /**
  * OV-3b: GVCN lớp nguồn ĐỀ XUẤT Kết quả đầu ra của em có lệnh Lên FT đang chờ từ lớp FOU / BE / ELE (Đạt / Không đạt · Trung tâm / Học viên · kỹ năng ·

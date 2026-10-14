@@ -184,7 +184,10 @@ export async function runHanhTrinhTests(t: YThucTestKit) {
     const chuaCoPa = d.trangThaiHop({ caseMo: [{ mo: '2026-08-01', soPa: 0 }], coTungCase: true, diemCuoiChuaDat: null, xongGanNhat: null }, homNay);
     assert(chuaCoPa?.tone === 'warn' && chuaCoPa.chu === 'Cần làm · chưa có PA', `Chưa có PA: ${JSON.stringify(chuaCoPa)}`);
     const canHoTro = d.trangThaiHop({ caseMo: [{ mo: '2026-08-01', soPa: 2 }], coTungCase: true, diemCuoiChuaDat: true, xongGanNhat: null }, homNay);
-    assert(canHoTro?.tone === 'danger' && canHoTro.chu.startsWith('Đang làm · '), `Đang làm (điểm chưa đạt): ${JSON.stringify(canHoTro)}`);
+    /* OV-11d (CA2-3): "Đang làm" một màu như tab Học thuật (chip `dang-lam`) — điểm chưa đạt không đổi màu nhãn Case. */
+    assert(canHoTro?.t === 'dang-lam' && canHoTro.chu.startsWith('Đang làm · '), `Đang làm (điểm chưa đạt): ${JSON.stringify(canHoTro)}`);
+    const quaHan = d.trangThaiHop({ caseMo: [{ mo: '2026-08-01', soPa: 1, choNguyenNhan: true, quaHan: 'nguyen-nhan' }], coTungCase: true, diemCuoiChuaDat: true, xongGanNhat: null }, homNay);
+    assert(quaHan?.t === 'qua-han' && quaHan.chu === 'Quá hạn · chờ nguyên nhân' && quaHan.tone === 'danger', `Quá hạn: ${JSON.stringify(quaHan)}`);
     const dangTheoDoi = d.trangThaiHop({ caseMo: [{ mo: '2026-08-01', soPa: 2 }], coTungCase: true, diemCuoiChuaDat: false, xongGanNhat: null }, homNay);
     assert(dangTheoDoi?.tone === 'warn' && dangTheoDoi.chu.startsWith('Đang làm · '), `Đang làm: ${JSON.stringify(dangTheoDoi)}`);
     const daOn = d.trangThaiHop({ caseMo: [], coTungCase: true, diemCuoiChuaDat: null, xongGanNhat: '2026-08-30' }, homNay);

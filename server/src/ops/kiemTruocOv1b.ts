@@ -7,6 +7,7 @@
 import { DB_PATH, closeDb, db } from '../db.ts';
 import { moTaDichDb } from '../moiTruong.ts';
 import { kiemTruocOv1b } from '../migrate/prOv1b.ts';
+import { emDongConGhiDanh } from '../loTrinh/buocTiep.ts';
 
 if (process.argv[1] && /kiemTruocOv1b\.[jt]s$/.test(process.argv[1])) {
   console.log(`[kiem-truoc-ov1b] Đích: ${moTaDichDb(DB_PATH)} — CHỈ ĐỌC, không sửa gì`);
@@ -18,6 +19,10 @@ if (process.argv[1] && /kiemTruocOv1b\.[jt]s$/.test(process.argv[1])) {
       console.log(`\n${ds.length - giu} ô "-" sẽ đổi khi deploy (migrate prOv1b)${giu ? `, ${giu} ô em đang chờ thi lại giữ nguyên` : ''}:`);
       for (const d of ds) console.log(`  ${d.hocVien} · ${d.ma} · ${d.lop} · ${d.luot} · ${d.o}: ${d.truoc} → ${d.sau}`);
     }
+    /* OV-11d (HV-6): em lộ trình FT đã đóng mà còn ghi danh — Bước tiếp Học lại / Học tiếp sẽ Kết thúc học + Học lại cùng giao dịch. */
+    const em = emDongConGhiDanh(db());
+    console.log(`\n${em.length} em có lộ trình FT đã đóng mà còn ghi danh (OV-11d)${em.length ? ':' : '.'}`);
+    for (const r of em) console.log(`  ${r.full_name} · ${r.student_code} · ${r.lop} · ${r.route} (${r.cycle_status})`);
   } catch (e) {
     console.error(`[kiem-truoc-ov1b] ${(e as Error).message}`);
     process.exitCode = 1;

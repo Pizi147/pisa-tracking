@@ -40,9 +40,9 @@ export async function runPrLmTests(t: YThucTestKit) {
     assert(b.biVuot.length === 1, JSON.stringify(b));
   });
 
-  check('PR-LM (2) · panel Lộ trình chỉ còn MỘT ô Dự kiến thi (ONgay), không còn WeekPicker tuần thi / examPeriodId', () => {
+  check('PR-LM (2) · panel Lộ trình không còn ô Dự kiến thi (OV-11d: chỉ ở Sửa thông tin), không còn WeekPicker tuần thi / examPeriodId', () => {
     const s = nguon('web/src/modules/students/StudentPlanPanel.tsx');
-    assert((s.match(/Dự kiến thi/g) ?? []).length === 1, 'nhãn "Dự kiến thi" chỉ một lần');
+    assert(!/Dự kiến thi/.test(s) && /nhan="Dự kiến thi"/.test(nguon('web/src/modules/students/StudentManagePanel.tsx')), 'Dự kiến thi chỉ ở Sửa thông tin');
     assert(!/examPeriodId/.test(s) && !/hienTuanThi/.test(s), 'bỏ examPeriodId và hienTuanThi');
   });
 

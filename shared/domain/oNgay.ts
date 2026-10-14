@@ -4,7 +4,7 @@
  */
 import { cuoiTuan, dsNgayGan, dsThang, dsTuan, type LuaChon } from './chonNgay.ts';
 import { docTuanLich, ngay, tuanLich } from './hienThiNgay.ts';
-import { mondayOfDate } from './week.ts';
+import { MONTH_CODE, mondayOfDate } from './week.ts';
 
 export const KIEU_O_NGAY = ['ngay', 'tuan', 'thang', 'ngay-hoac-thang'] as const;
 export type KieuONgay = (typeof KIEU_O_NGAY)[number];
@@ -98,6 +98,8 @@ export function hienONgay(iso: string | null | undefined, kieu: KieuONgay, homNa
 }
 
 export function phuONgay(iso: string | null | undefined, kieu: KieuONgay, homNay: string): string {
+  /* OV-11d (CA2-9): tháng dự kiến một dạng với đầu hồ sơ / Học viên & Lớp — ô gõ "01/2027", chữ phụ "JAN 2027". */
+  if (iso && /^\d{4}-\d{2}$/.test(iso)) return `${MONTH_CODE[Number(iso.slice(5, 7)) - 1] ?? iso.slice(5, 7)} ${iso.slice(0, 4)}`;
   if (kieu !== 'tuan' || !iso) return '';
   const t2 = mondayOfDate(iso);
   return `${ngay(t2, homNay)} – ${ngay(cong(t2, 6), homNay)}`;

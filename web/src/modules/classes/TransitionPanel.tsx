@@ -212,7 +212,7 @@ function NoiDung({ classId, onClose, onDone }: { classId: number; onClose: () =>
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dongs, data]);
 
-  const tieuDe = data ? `Chuyển lớp · ${data.from.code} · ${students.length} em` : 'Chuyển lớp';
+  const tieuDe = data ? `Chuyển tiếp lớp · ${data.from.code} · ${students.length} em` : 'Chuyển tiếp lớp';   // OV-11d (HL-16, CA2-4): cùng tên mục ⋯
   const cotTieuDe = 'hidden gap-3 border-b px-3 py-2 text-[11px] font-extrabold uppercase tracking-[.06em] text-slate-500 lg:grid';
 
   return (

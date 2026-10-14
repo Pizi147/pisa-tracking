@@ -937,7 +937,9 @@ export async function runLenLopTests(t: YThucTestKit) {
     ).run(sid, cls2, addDays3(TODAY3, -60), addDays3(TODAY3, -30), now);
     const rows = chuongCua(P.admin, sid);
     const oldRow = rows.find((r) => r.classId === cls2);
-    assert(oldRow?.ra?.chu === 'Kết thúc học', `Chương cũ 'completed' không end_kind phải suy "Kết thúc học": ${JSON.stringify(oldRow?.ra)}`);
+    /* OV-11d (HV-12): dòng cũ 'completed' không end_kind mà có lớp sau = em SANG lớp sau, không phải "Kết thúc học". */
+    const sau = rows.find((r) => r.classId === cls1);
+    assert(oldRow?.ra?.chu === `Sang ${sau?.code}` && oldRow.ra.loai === 'chuyen', `Chương cũ 'completed' không end_kind, có lớp sau phải "Sang {lớp sau}": ${JSON.stringify(oldRow?.ra)}`);
   });
 
   check('PR-LT (8) · GV ngoài phạm vi (chi nhánh khác) xem lịch sử lớp → 403', () => {

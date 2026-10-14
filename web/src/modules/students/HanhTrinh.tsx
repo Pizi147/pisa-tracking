@@ -1,8 +1,8 @@
 import { Fragment, useLayoutEffect, useState, type ReactNode } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
-import { BoLocDoan, Empty, ErrorState, SCORE_CHIP, Skeleton, type ScoreTone } from '../../ui/ui.tsx';
-import { Nhan, toneNhanTuBadge } from '../../ui/Nhan.tsx';
+import { BoLocDoan, Empty, ErrorState, NhanTrangThai, SCORE_CHIP, Skeleton, type ScoreTone } from '../../ui/ui.tsx';
+import { Nhan } from '../../ui/Nhan.tsx';
 import { IconCanhBao, IconChuyenLop, IconDangLam, IconDat, IconGap, IconKhong, IconMotPhan, IconTamDung } from '../../ui/BieuTuong.tsx';
 import { NhanLoai } from '../cases/SkillBoard.tsx';
 import { ChuongLop, type ChuongWeb } from './ChuongLop.tsx';
@@ -411,9 +411,9 @@ function HopKyNang({ hop, vi, vanDe, soAn, truc, boCuc, rongTuan, homNay, onOpen
           </div>
           {badge ? (
             <span className="ml-1.5">
-              <Nhan tone={badge.tone === 'ok' ? 'ok' : toneNhanTuBadge(badge.tone)} title={badge.chu}>
-                {boCuc.xuongDong ? badge.ngan : badge.chu}
-              </Nhan>
+              {/* OV-11d (CA2-3): Case mở — cùng chip trạng thái tab Học thuật (`NhanTrangThai`); Xong / Đã huỷ giữ nhãn xanh. */}
+              {badge.tone === 'ok' ? <Nhan tone="ok" title={badge.chu}>{boCuc.xuongDong ? badge.ngan : badge.chu}</Nhan>
+                : <span className="inline-flex items-center gap-1">{badge.t === 'qua-han' && <span className="text-late"><IconCanhBao /></span>}<NhanTrangThai t={badge.t} title={badge.chu} chu={boCuc.xuongDong ? badge.ngan : badge.chu} /></span>}
             </span>
           ) : (
             <span className="ml-1.5 text-[12px] text-faint">Không có Case mở</span>

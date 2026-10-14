@@ -74,7 +74,7 @@ export async function runPrOv2cTests(t: YThucTestKit) {
       assert(hs(id).email === 'moi@gmail.com', hs(id).email);
       assert(loi(() => students.updateStudent(v, id, { email: 'abc' }))?.status === 400, 'email sai dạng phải 400');
       assert(hs(id).email === 'moi@gmail.com', 'ghi dù lỗi');
-      assert(loi(() => students.updateStudent(v, id, { dob: null }))?.status === 400, 'xoá trống ngày sinh phải 400');
+      assert(loi(() => students.updateStudent(v, id, { dob: '31/02/2010' }))?.status === 400, 'ngày sinh sai dạng phải 400');   // OV-11d: trống thì được, sai dạng vẫn 400
       assert(hs(id).dob === DOB, 'ngày sinh bị ghi dù lỗi');
     });
   });

@@ -15,7 +15,7 @@ import { useSession } from '../../lib/session.tsx';
 import { NganCase } from './NganCase.tsx';
 import { MissingBadge } from './MissingBadge.tsx';
 import { StudentPlanPanel } from './StudentPlanPanel.tsx';
-import { StudentManagePanel, mucQuanLyHocVien, thongTinEmCua, type ViecQuanLy } from './StudentManagePanel.tsx';
+import { StudentManagePanel, mucQuanLyHocVien, thongTinEmCua, useLuuTru, type ViecQuanLy } from './StudentManagePanel.tsx';
 import { Menu } from '../../ui/Menu.tsx';
 import { QuickReport } from '../cases/QuickReport.tsx';
 import { StudentYThucSection } from '../yThuc/StudentYThucSection.tsx';
@@ -73,6 +73,7 @@ export default function StudentDetailPage() {
   const q = p.loTrinh ? `?cycleId=${p.loTrinh}` : p.dot != null ? `?attemptId=${p.dot}` : '';
   const { data, loading, error, reload } = useApi<Profile>(id ? `/students/${id}${q}` : null, [p.loTrinh, p.dot]);
   const [viecQuanLy, setViecQuanLy] = useState<ViecQuanLy | null>(null);
+  const luuTru = useLuuTru(reload);
   const dienThoai = useDienThoai();
   /* OV-10b (mockup vai mục 3): TVV / CX / Admin — nút việc của vai hiện thẳng (không ⋯), khối Đang xử lý. QL / GV không đổi. */
   const vaiXem = vaiXemHocVien(useSession().session?.roles);
@@ -144,6 +145,10 @@ export default function StudentDetailPage() {
   if (loading || !data) return <Skeleton rows={10} />;
 
   const cy = data.cycle;
+  /* Lớp cho Trước / Sau: lớp đang học, em Tạm dừng thì lớp em giữ chỗ (đầu hồ sơ đọc cùng ghi danh — `dauHoSo.thongTin`). */
+  const tt = data.dauHoSo?.thongTin;
+  const lopTruocSau: { id: number; code: string } | null = data.currentClass ? { id: data.currentClass.id, code: data.currentClass.code }
+    : data.status === 'inactive' && tt?.lopId ? { id: tt.lopId, code: tt.lop } : null;
   /* Mở đúng đợt (`?dot=`) hoặc do bấm trong trang — ngăn Case dùng chung một chỗ (Q9). */
   const ngan: OpenCase = p.caseId != null ? { caseId: p.caseId, paId: p.paId, viec: p.viec === 'thi-that' ? undefined : p.viec } : openCase;
   /* PR-TK: `?tong-ket=<cycleId>` mở ngăn Tổng kết lộ trình (Lưu trữ, hồ sơ lớp, link chia sẻ); `?viec=thi-that` (việc nhắc GVCN) mở ngăn Kết quả thi thật. */
@@ -186,11 +191,14 @@ export default function StudentDetailPage() {
         và việc tiếp theo là gì — mỗi câu một ô, đọc được trong một cái liếc.
       */}
       <div>
-        <ThanhTruocSau loai="hoc-vien" id={data.id} cha={trangCha('hoc-vien')} ten={`Hồ sơ ${data.fullName}`} chiTiet={data.currentClass?.code}
+        <ThanhTruocSau loai="hoc-vien" id={data.id} cha={trangCha('hoc-vien')} ten={`Hồ sơ ${data.fullName}`} chiTiet={lopTruocSau?.code}
           duong={(sid) => duongHoSoHocVien(sid, { tab: p.tab })}
-          dsDuPhong={data.currentClass ? async () => {
-            const r = await api.get<{ id: number; fullName: string; archived: boolean }[]>(`/classes/${data.currentClass.id}/roster?chiId=1`);   // PR-TD2-b
-            return { ids: r.filter((x) => !x.archived).sort((a, b) => a.fullName.localeCompare(b.fullName, 'vi')).map((x) => x.id), nhan: `Lớp ${data.currentClass.code}` };
+          dsDuPhong={lopTruocSau ? async () => {
+            const r = await api.get<{ id: number; fullName: string; archived: boolean }[]>(`/classes/${lopTruocSau.id}/roster?chiId=1`);   // PR-TD2-b
+            const ds = r.filter((x) => !x.archived);
+            /* OV-11d (HV-24): em đang Tạm dừng vẫn giữ lớp — mở thẳng hồ sơ em vẫn có Trước · n/N · Sau (danh sách lớp chỉ có em đang học). */
+            if (!ds.some((x) => x.id === data.id)) ds.push({ id: data.id, fullName: data.fullName, archived: false });
+            return { ids: ds.sort((a, b) => a.fullName.localeCompare(b.fullName, 'vi')).map((x) => x.id), nhan: `Lớp ${lopTruocSau.code}` };
           } : undefined} />
         {data.lopHoc?.chiXem && (
           <DaiChiXem>Học viên đã lưu trữ{data.archivedAt ? ` ${ngay(data.archivedAt, homNay)}` : ''} — chỉ xem</DaiChiXem>
@@ -223,7 +231,8 @@ export default function StudentDetailPage() {
                   canEdit: data.viewer.canEdit, suaThongTin: !!data.viewer.coTheSuaThongTin, suaThem: !!data.viewer.coTheSuaThem, lopHoc: data.lopHoc ?? null, cycle: cy, status: data.status, coTheXoa: !!data.viewer.coTheXoa,
                   deXuatSua: !!data.viewer.coTheDeXuatSua,
                 });
-                const mo = (k: typeof muc[number]['key']) => (k === 'lo-trinh' ? setPlanOpen(true) : setViecQuanLy(k));
+                const mo = (k: typeof muc[number]['key']) => (k === 'lo-trinh' ? setPlanOpen(true)
+                  : k === 'luu-tru' || k === 'bo-luu-tru' ? void luuTru(data.id, data.fullName, k === 'bo-luu-tru') : setViecQuanLy(k));
                 return vaiXem ? muc.map((m) => (
                   <button key={m.key} type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" title={m.phu} onClick={() => mo(m.key)}>{m.nhan}</button>
                 )) : (
@@ -242,7 +251,8 @@ export default function StudentDetailPage() {
       </div>
 
       {/* PR-VAI-b (T65, mockup 24 D1): dải vàng Tạm dừng — đọc TRƯỚC bốn ô vì nó đổi nghĩa mọi con số bên dưới. */}
-      <DaiTamDung tamDung={data.dauHoSo.thongTin.tamDung} />
+      <DaiTamDung tamDung={data.dauHoSo.thongTin.tamDung}
+        onQuayLai={data.lopHoc?.quyen?.quayLai && data.status === 'inactive' ? () => setViecQuanLy('quay-lai') : undefined} />
 
       {/* PR-CT (mockup 20 — E): dải Sắp chuyển / Đã chuyển ngay dưới dòng thông tin đầu trang; nút theo vai do máy chủ quyết. */}
       <DaiHocVienChuyen dai={data.dai ?? null} homNay={homNay}
@@ -290,7 +300,7 @@ export default function StudentDetailPage() {
           */}
           {/* PR-LT2b (M-05): ô Mini Test ở đầu tab (lộ trình mới có bổ trợ miễn phí) · hộp Kết luận khoá (lớp thường đã có điểm Cuối khoá). */}
           {data.miniTest && <MiniTestO mt={data.miniTest} onGhi={(caseId, paId) => setOpenCase({ caseId, paId, viec: 'ghi-ket-qua' })} />}
-          {data.cuoiKhoa && data.cuoiKhoa.scored > 0 && (
+          {data.cuoiKhoa && (data.cuoiKhoa.scored > 0 || data.cuoiKhoa.lenFt) && (
             <KetLuanKhoa studentId={data.id} studentName={data.fullName} lop={data.cuoiKhoa.lop ?? data.currentClass?.code ?? null} classId={data.currentClass?.id ?? null} ct={data.cuoiKhoa.ct ?? cy.programmeCode ?? null}
               cuoiKhoa={data.cuoiKhoa} coTheKetLuan={!!data.viewer?.coTheKetLuan} onDoi={reload} />
           )}
@@ -376,8 +386,7 @@ export default function StudentDetailPage() {
           cycleId={cy.id}
           studentName={data.fullName}
           ratio={!!cy.ratio}
-          canEditCycle={!!data.viewer.canEditCycle}
-          onDeXuatSua={data.viewer.coTheDeXuatSua ? () => { dongPlan(); setViecQuanLy('de-xuat-sua'); } : undefined}
+          onSuaThongTin={data.viewer.canEdit ? () => { dongPlan(); setViecQuanLy('info'); } : undefined}
           onClose={dongPlan}
           onDone={reload}
         />
@@ -400,7 +409,7 @@ export default function StudentDetailPage() {
         viec={viecQuanLy ?? (p.viec === 'thi-that' && cy?.route ? 'outcome' : null)} onClose={() => { setViecQuanLy(null); if (p.viec === 'thi-that') xoaThamSo('viec'); }} lop={data.currentClass?.code}
         student={thongTinEmCua(data)} quyen={data.viewer} lopHoc={data.lopHoc ?? null}
         cycle={cy} attempts={data.attempts} onDone={reload} soViPhamMo={data.dauHoSo?.soViPhamMo}
-        onDeXuatSua={() => setViecQuanLy('de-xuat-sua')}
+        onDeXuatSua={data.viewer.coTheDeXuatSua ? () => setViecQuanLy('de-xuat-sua') : undefined}
       />
     </div>
   );

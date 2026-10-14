@@ -189,11 +189,20 @@ function classesOfStudent(studentId: number): number[] {
       .map((r) => r.class_id));
 }
 
-/** K5-34 (PR-YT4): lớp em ĐANG HỌC (ghi danh `active`) — quyền xử lý Ý thức và sửa hồ sơ chỉ theo lớp này, không theo lớp em đã rời. */
+/**
+ * K5-34 (PR-YT4): lớp em ĐANG HỌC — quyền xử lý Ý thức và sửa hồ sơ chỉ theo lớp này, không theo lớp em đã rời.
+ * OV-11d (HV-10): ghi danh `paused` (Tạm dừng giữ lớp) vẫn tính — GVCN lớp đó vẫn Quay lại học / Thôi học / sửa hồ sơ / xử lý Ý thức —
+ * nhưng CHỈ khi em không có ghi danh `active` nào (em đã sang lớp khác thì lớp giữ cũ không còn quyền).
+ */
 function classesOfStudentDangHoc(studentId: number): number[] {
   return nho('hv-lop-dh:' + studentId, () =>
-    (db().prepare(`SELECT DISTINCT class_id FROM enrollments WHERE student_id = ? AND status = 'active'`).all(studentId) as any[])
-      .map((r) => r.class_id));
+    lopDangHocTu(db().prepare(`SELECT class_id, status FROM enrollments WHERE student_id = ? AND status IN ('active', 'paused')`).all(studentId) as any[]));
+}
+
+/** Lớp `active`; không có thì lớp `paused` (cùng luật cho `classesOfStudentDangHoc` và `napTruocPhamVi`). */
+function lopDangHocTu(rows: { class_id: number; status: string }[]): number[] {
+  const active = rows.filter((r) => r.status === 'active');
+  return [...new Set((active.length ? active : rows.filter((r) => r.status === 'paused')).map((r) => r.class_id))];
 }
 
 /**
@@ -216,7 +225,7 @@ export function napTruocPhamVi(studentIds: readonly (number | null | undefined)[
   if (!idsCanNap.length) return;
 
   const lopCua = new Map<number, number[]>();
-  const lopDangHoc = new Map<number, number[]>();
+  const lopDangHoc = new Map<number, { class_id: number; status: string }[]>();
   const cnDangHoc = new Map<number, Set<number>>();
   const cnMoiGhiDanh = new Map<number, Set<number>>();
   /* Id nào có ÍT NHẤT MỘT ghi danh `active` — quyết định dùng `cnDangHoc` hay lùi về `cnMoiGhiDanh`,
@@ -237,7 +246,8 @@ export function napTruocPhamVi(studentIds: readonly (number | null | undefined)[
       )
       .all(...lo) as any[]) {
       lopCua.get(r.sid)!.push(r.cid);
-      if (r.trang_thai === 'active') { coActive.add(r.sid); lopDangHoc.get(r.sid)!.push(r.cid); }
+      if (r.trang_thai === 'active') coActive.add(r.sid);
+      if (r.trang_thai === 'active' || r.trang_thai === 'paused') lopDangHoc.get(r.sid)!.push({ class_id: r.cid, status: r.trang_thai });   // cùng luật `classesOfStudentDangHoc`
       if (r.bid != null) {
         cnMoiGhiDanh.get(r.sid)!.add(r.bid);
         if (r.trang_thai === 'active') cnDangHoc.get(r.sid)!.add(r.bid);
@@ -253,7 +263,7 @@ export function napTruocPhamVi(studentIds: readonly (number | null | undefined)[
 
   for (const id of idsCanNap) {
     datNho('hv-lop:' + id, lopCua.get(id)!);
-    datNho('hv-lop-dh:' + id, [...new Set(lopDangHoc.get(id)!)]);
+    datNho('hv-lop-dh:' + id, lopDangHocTu(lopDangHoc.get(id)!));
     datNho('hv-cn:' + id, [...(coActive.has(id) ? cnDangHoc.get(id)! : cnMoiGhiDanh.get(id)!)]);
   }
 }
@@ -317,8 +327,8 @@ export function hasAssignment(p: Principal, ctx: Ctx, need: 'any' | 'skill' | 'c
 }
 
 /**
- * K5-34, M-08 (PR-YT4): GVCN của lớp em ĐANG HỌC. Ngữ cảnh chỉ có `studentId` → chỉ lớp có ghi danh `active` (GVCN lớp cũ mất quyền
- * ngay khi em chuyển lớp; em Tạm dừng không có GVCN xử lý). Ngữ cảnh có `classId` → như `hasAssignment`.
+ * K5-34, M-08 (PR-YT4): GVCN của lớp em ĐANG HỌC. Ngữ cảnh chỉ có `studentId` → chỉ lớp có ghi danh `active` / `paused` (GVCN lớp cũ mất quyền
+ * ngay khi em chuyển lớp; em Tạm dừng vẫn có GVCN lớp giữ chỗ — OV-11d). Ngữ cảnh có `classId` → như `hasAssignment`.
  */
 function coreDangHoc(p: Principal, ctx: Ctx): boolean {
   if (ctx.classId || !ctx.studentId) return hasAssignment(p, ctx, 'core');
