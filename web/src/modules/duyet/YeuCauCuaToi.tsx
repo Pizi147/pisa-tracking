@@ -3,6 +3,7 @@ import { Card, Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { TheYeuCau } from './TheYeuCau.tsx';
 import { useTheNhanManh } from './HopChoDuyet.tsx';
 import type { TheYeuCauDto } from '@shared/domain/index.ts';
+import { t } from '@shared/i18n/index.ts';
 
 /**
  * CÔNG VIỆC › YÊU CẦU CỦA TÔI (PR-DUYET, M8) — thẻ mình đã gửi Quản lý: đang chờ trước, rồi đã xử lý 60 ngày (Đã duyệt · Bị từ chối +
@@ -15,13 +16,13 @@ export function YeuCauCuaToi() {
   if (loading) return <Card><Skeleton rows={5} /></Card>;
   const ds = data?.the ?? [];
   if (!ds.length) {
-    return <Card><Empty title="Bạn chưa gửi yêu cầu nào cho Quản lý"
-      hint="Đề xuất PA cần duyệt, Xin hỗ trợ QL ở Kết quả tuần, hoặc Đề xuất sửa ở ⋯ hồ sơ học viên — mọi yêu cầu đều hiện ở đây." /></Card>;
+    return <Card><Empty title={t('Bạn chưa gửi yêu cầu nào cho Quản lý')}
+      hint={t('Đề xuất PA cần duyệt, Xin hỗ trợ QL ở Kết quả tuần, hoặc Đề xuất sửa ở ⋯ hồ sơ học viên — mọi yêu cầu đều hiện ở đây.')} /></Card>;
   }
   const cho = ds.filter((x) => x.trangThai === 'cho').length;
   return (
     <div className="space-y-2">
-      <p className="m-0 text-[12px] tabular-nums text-slate-400">{cho} đang chờ Quản lý · {ds.length - cho} đã xử lý (60 ngày)</p>
+      <p className="m-0 text-[12px] tabular-nums text-slate-400">{t('{cho} đang chờ Quản lý ·', { cho })}{' '}{ds.length - cho}{' '}{t('đã xử lý (60 ngày)')}</p>
       {ds.map((y) => <TheYeuCau key={y.id} yc={y} laNguoiXin nhanManh={nhan === y.id} onXong={reload} />)}
     </div>
   );

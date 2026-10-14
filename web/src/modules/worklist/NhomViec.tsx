@@ -2,6 +2,7 @@ import { type ReactNode, useState } from 'react';
 import { KhoiNhom } from '../../ui/HangNhom.tsx';
 import { type NhomViecXem } from '@shared/domain/index.ts';
 import { DongViec, type WorkItem } from './WorkList.tsx';
+import { dich, t } from '@shared/i18n/index.ts';
 
 /**
  * KHỐI NHÓM VIỆC — tách từ `ViecCuaToi.tsx` (PR-Ra) để dùng chung với Hỗ trợ học viên: bốn
@@ -31,13 +32,13 @@ export function NhomViec({ nhom, soHien, moHet, onOpen, nutPhu, chon, xong, moTr
         const soHienNhom = soHien + (them[g.key] ?? 0);
         const phu = (g.quaHan > 0 || g.homNay > 0) ? (
           <span className="flex flex-wrap items-center gap-x-2">
-            {g.quaHan > 0 && <span className="font-bold text-late">⚠ {g.quaHan} quá hạn</span>}
-            {g.homNay > 0 && <span className="font-semibold text-soon">{g.homNay} hôm nay</span>}
+            {g.quaHan > 0 && <span className="font-bold text-late">{t('⚠ {quaHan} quá hạn', { quaHan: g.quaHan })}</span>}
+            {g.homNay > 0 && <span className="font-semibold text-soon">{t('{homNay} hôm nay', { homNay: g.homNay })}</span>}
           </span>
         ) : null;
         return (
           <KhoiNhom key={g.key} id={`nhom-${g.key}`} mo={dangMo} onMo={() => setMo((s) => ({ ...s, [g.key]: !dangMo }))}
-            nhan={g.label} tieuDe={g.label} dem={g.n} phu={phu}>
+            nhan={dich(g.label)} tieuDe={dich(g.label)} dem={g.n} phu={phu}>
             {/* PR-YT4: nhóm Ý thức có việc thật (`yt_*`, có hạn). PR-VAI-a: Phối hợp SOS là việc `phoi_hop_sos` — hết dòng nhắc mềm. */}
             {(
               <>
@@ -50,7 +51,7 @@ export function NhomViec({ nhom, soHien, moHet, onOpen, nutPhu, chon, xong, moTr
                 {g.items.length > soHienNhom && (
                   <div className="py-2 pr-3">
                     <button type="button" className="btn btn-sm" onClick={() => setThem((s) => ({ ...s, [g.key]: (s[g.key] ?? 0) + soHien }))}>
-                      Xem thêm {Math.min(soHien, g.items.length - soHienNhom)} việc
+                      {t('Xem thêm')}{' '}{Math.min(soHien, g.items.length - soHienNhom)}{' '}{t('việc')}
                     </button>
                   </div>
                 )}

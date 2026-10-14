@@ -6,7 +6,7 @@ export class ApiError extends Error {
     super(message);
   }
   get hint(): string | undefined {
-    return this.details?.hint;
+    return typeof this.details?.hint === 'string' ? dich(this.details.hint) : this.details?.hint;
   }
 }
 

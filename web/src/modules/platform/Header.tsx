@@ -264,10 +264,10 @@ export function Header() {
                         }}>
                         <span aria-hidden className={`mt-1.5 h-1.5 w-1.5 rounded-full ${n.read_at ? '' : 'bg-[color:var(--accent)]'}`} />
                         <span className={`text-[13px] leading-snug text-slate-100 ${n.read_at ? 'font-normal' : 'font-semibold'}`}>
-                          {!n.read_at && <span className="sr-only">{t('Chưa đọc: ')}</span>}{n.title}
+                          {!n.read_at && <span className="sr-only">{t('Chưa đọc: ')}</span>}{dich(n.title)}
                         </span>
                         <time className="whitespace-nowrap pt-px text-xs tabular-nums text-slate-500" title={nhan(homNay, n.created_at)}>{thoiGianThongBao(n.created_at, homNay)}</time>
-                        {n.body && <span className="col-start-2 text-xs text-slate-400">{n.body}</span>}
+                        {n.body && <span className="col-start-2 text-xs text-slate-400">{dich(n.body)}</span>}
                         {toi && (
                           <span className="col-start-2 inline-flex items-center gap-1 text-xs text-[color:var(--accent)]">
                             {toi}

@@ -17,6 +17,7 @@ import { LOAI_HAN_CUA_VIEC } from '@shared/domain/index.ts';
 import type { WorkItem } from '../worklist/WorkList.tsx';
 import { NganTongKet } from '../students/NganTongKet.tsx';
 import { PhoiHopSosSection, type CoordTurn } from '../yThuc/PhoiHopSosSection.tsx';
+import { dich, t } from '@shared/i18n/index.ts';
 
 /** Số sau dấu `:` cuối của khoá việc (`yt_thuc_hien:12`, `mgmt:5`). */
 const soCuaKhoa = (k: string) => Number(k.slice(k.lastIndexOf(':') + 1)) || null;
@@ -102,7 +103,7 @@ function PanelNhapDiem({ it, onDong, onDaLam }: { it: WorkItem; onDong: () => vo
       <>
         {ve({ ...d, rows: viec })}
         <details className="border-t" style={{ borderColor: 'var(--line)' }}>
-          <summary className="min-h-[44px] cursor-pointer px-4 py-3 text-[13px] text-slate-300 sm:min-h-0 sm:py-2">Cả lớp ({khac.length})</summary>
+          <summary className="min-h-[44px] cursor-pointer px-4 py-3 text-[13px] text-slate-300 sm:min-h-0 sm:py-2">{t('Cả lớp ({length})', { length: khac.length })}</summary>
           {ve({ ...d, rows: khac })}
         </details>
       </>
@@ -111,13 +112,13 @@ function PanelNhapDiem({ it, onDong, onDaLam }: { it: WorkItem; onDong: () => vo
   const ngCanh = (
     <span className="flex flex-wrap items-center gap-x-1.5">
       <Link className="link" to={`/test/diem-lop?lop=${it.classId}&luot=${encodeURIComponent(it.luot!)}`}>
-        {it.classCode} · {it.contextLabel} <span aria-hidden className="text-xs">↗</span>
+        {it.classCode} · {dich(it.contextLabel ?? "")} <span aria-hidden className="text-xs">↗</span>
       </Link>
       {it.due && <><span aria-hidden>·</span><Han loai={LOAI_HAN_CUA_VIEC.score ?? 'nhap-diem'} han={it.due} /></>}
     </span>
   );
   return (
-    <KhungPanel tieuDe={it.tieuDe} ngCanh={ngCanh} onDong={onDong}>
+    <KhungPanel tieuDe={dich(it.tieuDe)} ngCanh={ngCanh} onDong={onDong}>
       {error ? <ErrorState message={error.message} hint={error.hint} onRetry={reload} />
         : !data ? <div className="pt-3"><Skeleton rows={6} /></div>
           : (
@@ -141,7 +142,7 @@ function PanelPhoiHop({ it, onDong, onDaLam }: { it: WorkItem; onDong: () => voi
     </span>
   );
   return (
-    <KhungPanel tieuDe={it.tieuDe} ngCanh={ngCanh} onDong={onDong}>
+    <KhungPanel tieuDe={dich(it.tieuDe)} ngCanh={ngCanh} onDong={onDong}>
       <div className="pt-3">
         {error ? <ErrorState message={error.message} hint={error.hint} onRetry={reload} />
           : <PhoiHopSosSection turns={data?.rows ?? null} loading={loading} cot1="hocVien" onChanged={() => { reload(); onDaLam(); }} />}

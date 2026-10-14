@@ -118,7 +118,7 @@ export function BangHocVienLop({ lop, chiHien, sapXep, onDoi, soCot, the = false
     const title = st?.nextAttemptLabel
       ? [st.nextAttemptLabel, st.nextWeekStart && t('tuần thi {tuan}', { tuan: tuanLich(st.nextWeekStart, homNay) }), st.nextKyVong != null && t('kỳ vọng {kv}', { kv: fmtBand(st.nextKyVong) })].filter(Boolean).join(' · ')
       : chu ? dich(chu) : undefined;
-    return { chu: chu && dich(chu), title, thiThat: !!chu?.startsWith('Thi thật') };
+    return { chu: chu && dich(chu), title, thiThat: !!chu?.startsWith(t('Thi thật')) };   // chuSapToi đã theo tiếng của trang (EN-b) — so cùng tiếng
   };
   const khoaCua = (s: DongRoster) => thuong
     ? khoaLopThuong({ maChuongTrinh: lop.programmeCode, tuanHienTai: lop.currentWeek, tongTuan: lop.totalWeeks,

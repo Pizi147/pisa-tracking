@@ -7,6 +7,7 @@ import { TabDiemLop } from './TabDiemLop.tsx';
 import {
   DUONG_TAB_TEST, NAV_RONG, TAB_TEST_LABEL, tabTestHienThi, tabTestMacDinh, tabTestTuDuong, type TabTest,
 } from '@shared/domain/index.ts';
+import { t } from '@shared/i18n/index.ts';
 
 /**
  * TEST — khu vực (O2; PR-UX1 bỏ Cần chấm): Lịch Test · Điểm theo lớp (PR-DL) · Kế hoạch Test, mỗi tab một đường dẫn. Mở `/test`
@@ -33,9 +34,9 @@ export default function TestPage() {
 
   return (
     <div className="page space-y-4">
-      <h1 className="text-lg font-semibold text-slate-100 m-0">Test</h1>
+      <h1 className="text-lg font-semibold text-slate-100 m-0">{t('Test')}</h1>
       {tabs.length > 1 && (
-        <HangTab ariaLabel="Test" value={tab} onChange={go}
+        <HangTab ariaLabel={t('Test')} value={tab} onChange={go}
           tabs={tabs.map((k) => ({ key: k, label: TAB_TEST_LABEL[k] }))} />
       )}
       {tab === 'lich' && <LichTestTab />}

@@ -29,8 +29,9 @@ import { DauLuu, DauO, LuoiFT, VIEN_LOI, chiConHuy, khacTuanFt, khopKn, nutTuanG
 import {
   LuoiThuong, ketQuaCua, lichCua, oThuong, tongPhoBien, useLuuThuong, type ThuongSheet,
 } from './LuoiThuong.tsx';
+import { dich, t } from '@shared/i18n/index.ts';
 
-const KHONG_PHAN_CONG = 'Bạn không được phân công kỹ năng này';
+const KHONG_PHAN_CONG = t('Bạn không được phân công kỹ năng này');
 
 type Chung = { onReload: () => void; kn?: string | null; hv?: number | null };
 
@@ -69,12 +70,12 @@ function HangChip({ ds, chon, onChon, ct = null }: {
   ct?: string | null;
 }) {
   return (
-    <div className="flex flex-wrap gap-1 px-3 pt-3 pb-2" role="group" aria-label="Chọn kỹ năng để chấm">
+    <div className="flex flex-wrap gap-1 px-3 pt-3 pb-2" role="group" aria-label={t('Chọn kỹ năng để chấm')}>
       {ds.map(({ k, cuaMinh, daNhap, tong }) => {
         const on = k === chon;
         return (
           <button key={k} type="button" aria-pressed={on} onClick={() => onChon(k)}
-            title={`${tenMon(ct, k)} — đã nhập ${daNhap}/${tong}${cuaMinh ? '' : `. ${KHONG_PHAN_CONG}`}`}
+            title={t('{tenMon} — đã nhập {daNhap}/{tong}{x}', { tenMon: tenMon(ct, k), daNhap, tong, x: cuaMinh ? '' : `. ${KHONG_PHAN_CONG}` })}
             className={`inline-flex items-center gap-1 min-h-[44px] min-w-[44px] justify-center px-2 rounded-full border text-sm tabular-nums ${
               on ? 'bg-[color:var(--accent-soft)] border-[color:var(--accent-line)] text-[color:var(--accent-strong)]'
                 : cuaMinh ? 'border-[color:var(--line-strong)] text-slate-200'
@@ -139,7 +140,7 @@ function DongHv({ studentId, active, ten, href, phu, phuTitle, phuDo = false, lu
 /** R11: nhãn "Đã hoàn tất" cạnh tên — dùng chung cho dòng FT và dòng lớp thường của `MotKyNang`. */
 function NhanHoanTat({ hoanTat, chuNhatCuoi }: { hoanTat?: boolean; chuNhatCuoi?: string | null }) {
   if (!hoanTat) return null;
-  return <Info title={`Hết Chủ nhật ${ngay(chuNhatCuoi)}. ${KHOA_HOAN_TAT_HINT}`}>Đã hoàn tất</Info>;
+  return <Info title={t('Hết Chủ nhật {ngay}. {x}', { ngay: ngay(chuNhatCuoi), x: KHOA_HOAN_TAT_HINT })}>{t('Đã hoàn tất')}</Info>;
 }
 
 /* ------------------------------------------------------------------ Lớp Fast Track */
@@ -183,7 +184,7 @@ function MotKyNangFt({ data, onReload, kn, hv, hangMo, tuanDangXem }: {
       <HangChip ds={chips} chon={chon} onChon={setChon} />
       {/* VIEC-NHO-2: hàng "GV chấm S [tên ▾]" có viền ngay dưới chip — cả Điểm theo lớp xem theo MT (nhớ theo lớp × MT). */}
       {chon === 'speaking' && minh.has('speaking') && dot && (
-        <NutGvCham hang nhan="GV chấm S" value={gvCot} onChange={setGvCot} goiY={data.period ? undefined : GOI_Y_COT_MT} />
+        <NutGvCham hang nhan={t('GV chấm S')} value={gvCot} onChange={setGvCot} goiY={data.period ? undefined : GOI_Y_COT_MT} />
       )}
       <ul className="m-0 p-0 list-none">
         {rows.map((r, i) => (
@@ -216,14 +217,14 @@ function DongFt({ row, k, nhieuMt, lop, active, onReload, gvMacDinh, mo, onMo, o
   const { save, status, lastError, retry, o, loi, luuLai, soLoi, coGuiLai } = useSaveScore(row.attemptId, onReload, row.studentName);
   const c = oCua(row, k);
   const kv = row.result?.expectation ?? null;
-  const phu = [nhieuMt ? `MT${row.attemptNo}` : null, kv !== null ? `KV ${fmtBand(kv)}` : maHocVienNgan(row.studentCode)]
+  const phu = [nhieuMt ? `MT${row.attemptNo}` : null, kv !== null ? t('KV {x}', { x: fmtBand(kv) }) : maHocVienNgan(row.studentCode)]
     .filter(Boolean).join(' · ');
   return (
     <DongHv studentId={row.studentId} active={active} ten={row.studentName} href={duongDotTest({ id: row.attemptId }, k)}
-      phu={phu} phuTitle={kv !== null ? `Kỳ vọng (KV) của lượt này: ${fmtBand(kv)} · ${maHocVienNgan(row.studentCode)}` : undefined}
+      phu={phu} phuTitle={kv !== null ? t('Kỳ vọng (KV) của lượt này: {fmtBand} · {maHocVienNgan}', { fmtBand: fmtBand(kv), maHocVienNgan: maHocVienNgan(row.studentCode) }) : undefined}
       luu={<>{row.lichSu && <NhanCu />}<DauLuu lon status={status} error={lastError} onRetry={coGuiLai ? retry : undefined} soLoi={soLoi} /></>}
       mo={!!row.ngungHoc}
-      nhan={row.ngungHoc ? <Level tone="muted" title={row.cells[0]?.lyDoKhoa}>{row.ngungHoc}</Level> : <NhanHoanTat hoanTat={row.hoanTat} chuNhatCuoi={row.chuNhatCuoi} />}
+      nhan={row.ngungHoc ? <Level tone="muted" title={row.cells[0]?.lyDoKhoa && dich(row.cells[0].lyDoKhoa)}>{dich(row.ngungHoc)}</Level> : <NhanHoanTat hoanTat={row.hoanTat} chuNhatCuoi={row.chuNhatCuoi} />}
       thi={row.cells.filter((x) => x.required && x.progress !== 'cancelled')
         .map((x) => ({ nhan: nhanKyNangFt(x.skill), weekStart: x.weekStart ?? null }))}>
       <div className={`shrink-0 flex items-center justify-end gap-1 rounded-md ${o[k] === 'loi' ? VIEN_LOI : ''}`} data-kn={k}
@@ -232,7 +233,7 @@ function DongFt({ row, k, nhieuMt, lop, active, onReload, gvMacDinh, mo, onMo, o
         {!c ? <span className="text-slate-600">—</span>
           /* CA3-9: cùng điều kiện ô tuần khác của lưới máy tính (`LuoiFT` › `oKhacTuan`). */
           : khacTuanFt(c, tuanDangXem) && !nutTuanGoc(c) ? (
-            <span className="text-xs tabular-nums text-slate-500">{c.daChot?.doiSang ? `Đã dời sang ${c.daChot.doiSang}` : tuanLich(c.weekStart)}</span>
+            <span className="text-xs tabular-nums text-slate-500">{c.daChot?.doiSang ? t('Đã dời sang {doiSang}', { doiSang: c.daChot.doiSang }) : tuanLich(c.weekStart)}</span>
           ) : (
           <ODiemMt lon cell={c} mo={mo} onMo={onMo} onTiep={onTiep} onSave={(p, x) => save(k, p, x)} tuanXem={tuanXem}
             gvMacDinh={k === 'speaking' ? gvMacDinh : null}
@@ -292,11 +293,11 @@ function MotKyNangThuong({ data, onReload, kn, hv, anNutTao, tuanDangXem }: {
       ) : <HangChip ds={chips} chon={chon} onChon={setChon} ct={data.programme.code} />}
       {minh(chon) && (
         <label className="flex items-center justify-end gap-2 px-3 pb-2 text-xs text-slate-500">
-          <span title="Tổng số câu của đề cả lớp làm. Ô tổng còn trống của từng em lấy sẵn số này; em làm đề khác thì sửa riêng ô đó.">
-            Tổng số câu của đề
+          <span title={t('Tổng số câu của đề cả lớp làm. Ô tổng còn trống của từng em lấy sẵn số này; em làm đề khác thì sửa riêng ô đó.')}>
+            {t('Tổng số câu của đề')}
           </span>
           <input className="field w-[60px] h-11 px-1 text-center tabular-nums text-base" inputMode="numeric"
-            value={chuTong} placeholder="—" aria-label={`Tổng số câu chung của ${tenMonChon}`}
+            value={chuTong} placeholder="—" aria-label={t('Tổng số câu chung của {tenMonChon}', { tenMonChon })}
             onChange={(e) => setTongGo((t) => ({ ...t, [chon]: e.target.value }))} />
         </label>
       )}
@@ -324,8 +325,8 @@ function DongThuongMot({ row, k, sheet, tongCot, active, onReload, inputRef, onK
    * bằng nhau) → mã học viên.
    */
   const ketQua = datPhanTram(cell.ketQua, cell.tiLe);
-  const phu = (cell.khongDuThi ? 'Không dự thi' : null)
-    ?? (cell.dau && cell.diem === null && cell.tuanHienTai ? `Đã dời sang ${cell.tuanHienTai}` : null)
+  const phu = (cell.khongDuThi ? t('Không dự thi') : null)
+    ?? (cell.dau && cell.diem === null && cell.tuanHienTai ? t('Đã dời sang {tuanHienTai}', { tuanHienTai: cell.tuanHienTai }) : null)
     ?? quaHan
     ?? (cell.chuaToiTuan && cell.tuanHienTai ? `Thi ${cell.tuanHienTai}` : null)
     ?? ketQua
@@ -342,7 +343,7 @@ function DongThuongMot({ row, k, sheet, tongCot, active, onReload, inputRef, onK
         <DauO lon tt={o[k]} loi={loi[k]} onLuuLai={() => luuLai(k)} />
         {dung || !s ? (
           <span className="inline-flex items-center gap-1">
-            <span className="text-xs text-slate-500" title={`${tenMonO}: ${chuDung ?? 'không có lịch'}`}>
+            <span className="text-xs text-slate-500" title={`${tenMonO}: ${chuDung ?? t('không có lịch')}`}>
               {chuDung ?? '—'}
             </span>
             {/* Giữ chỗ nút "−" để chữ trạng thái thẳng cột với ô nhập của các dòng khác. */}

@@ -620,7 +620,7 @@ function ScoreCell({ row }: { row: Row }) {
         {value}
       </span>
       {!row.ratio && g !== null && (
-        <span className={`text-[12px] ml-1.5 font-medium tabular-nums ${scoreToneText(row)}`} title={g === 0 ? t('đạt kỳ vọng') : t('{x} kỳ vọng {abs}', { x: g < 0 ? t('dưới') : t('trên'), abs: Math.abs(g) })}>{gapText(g)}</span>
+        <span className={`text-[12px] ml-1.5 font-medium tabular-nums ${scoreToneText(row)}`} title={g === 0 ? t('đạt kỳ vọng') : g < 0 ? t('dưới kỳ vọng {abs}', { abs: Math.abs(g) }) : t('trên kỳ vọng {abs}', { abs: Math.abs(g) })}>{gapText(g)}</span>
       )}
       <span className="block text-[12px] text-slate-400 mt-0.5"><DongMt row={row} /></span>
       {!row.ratio && xu !== null && row.trendFrom !== null && (

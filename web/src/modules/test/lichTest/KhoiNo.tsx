@@ -7,6 +7,7 @@ import { CHAM_CHEO, chuOChuaLuu, tenMon, tenMonNgan, tuanLich } from '@shared/do
 import type { DongNo } from './kieu.ts';
 import { LuoiNhung } from './LuoiNhung.tsx';
 import { COT_DAU_LICH_TEST, OPhan } from './HangLop.tsx';
+import { dich, t } from '@shared/i18n/index.ts';
 
 /**
  * Kỹ năng của dòng — viết tắt (tooltip tên đủ, G-7). Có lùi lịch thật (Q15) thì thêm "· lùi lịch", tuần cũ/mới và
@@ -19,11 +20,11 @@ function kyNangCua(d: DongNo, homNay: string): { chu: string; goiY: string; phu:
   const l = d.luiLich;
   if (!l) return { chu, goiY: tatCa, phu: null };
   /* PR-MT (YC-13.1 (3)): dời do vắng thì nói thẳng ra dòng phụ — "dời từ W3 SEP · vắng lần 1" — không giấu trong tooltip. */
-  const phu = l.lanVang && l.tuTuanStart ? `dời từ ${tuanLich(l.tuTuanStart, homNay)} · vắng lần ${l.lanVang}` : null;
-  const tu = l.tuTuanStart ? ` từ ${tuanLich(l.tuTuanStart, homNay)}` : '';
-  const sang = l.sangTuanStart ? ` sang ${tuanLich(l.sangTuanStart, homNay)}` : '';
-  const ai = l.hv.length === 1 ? ` của ${l.hv[0]}` : ` · ${l.hv.length} HV: ${l.hv.join(', ')}`;
-  return { chu: phu ? chu : `${chu} · lùi lịch`, goiY: `${tenMon(d.chuongTrinh, l.kyNang)}: lùi lịch${tu}${sang}${ai}\nCòn nợ: ${tatCa}`, phu };
+  const phu = l.lanVang && l.tuTuanStart ? t('dời từ {tuanLich} · vắng lần {lanVang}', { tuanLich: tuanLich(l.tuTuanStart, homNay), lanVang: l.lanVang }) : null;
+  const tu = l.tuTuanStart ? t(' từ {tuanLich}', { tuanLich: tuanLich(l.tuTuanStart, homNay) }) : '';
+  const sang = l.sangTuanStart ? t(' sang {tuanLich}', { tuanLich: tuanLich(l.sangTuanStart, homNay) }) : '';
+  const ai = l.hv.length === 1 ? t(' của {x}', { x: l.hv[0] }) : t(' · {n} HV: {ds}', { n: l.hv.length, ds: l.hv.join(', ') });
+  return { chu: phu ? chu : t('{chu} · lùi lịch', { chu }), goiY: t('{tenMon}: lùi lịch{tu}{sang}{ai}\nCòn nợ: {tatCa}', { tenMon: tenMon(d.chuongTrinh, l.kyNang), tu, sang, ai, tatCa }), phu };
 }
 
 /** Cột thao tác: nút "Nhập điểm" 86 px + đệm ô 2×12 — hẹp hơn thì nút lòi khỏi khung `card` và bị cắt (UX-G G4). */
@@ -34,11 +35,11 @@ const COT_THAO_TAC = 112;
  * OV-11e (TE-7): người có phân công thấy ô "{kn} của bạn: còn n · {kn}: GV khác" như khối 2 — "Quá hạn" đã ở cột Hạn nên không lặp.
  */
 function NhanDong({ d, xong, chuaLuu = 0 }: { d: DongNo; xong: boolean; chuaLuu?: number }) {
-  if (chuaLuu > 0) return <Nhan tone="bad" title="Ô viền đỏ chưa lưu được — bấm Lưu lại ở ô đó.">{chuOChuaLuu(chuaLuu)}</Nhan>;
-  if (xong) return <Nhan tone="done">Đã chấm <span className="font-normal" aria-hidden>✓</span></Nhan>;
+  if (chuaLuu > 0) return <Nhan tone="bad" title={t('Ô viền đỏ chưa lưu được — bấm Lưu lại ở ô đó.')}>{chuOChuaLuu(chuaLuu)}</Nhan>;
+  if (xong) return <Nhan tone="done">{t('Đã chấm')}{' '}<span className="font-normal" aria-hidden>✓</span></Nhan>;
   if (d.phan && (d.phan.toi || d.phan.khac)) return <OPhan phan={d.phan} ct={d.chuongTrinh} quaHan={false} />;
-  if (d.cuaToi) return <Nhan tone={TONE_TRANG_THAI['cho-cham']}>Chờ bạn chấm</Nhan>;
-  return <Nhan tone={TONE_TRANG_THAI['cho-cham']}>{d.coDayLop ? 'Chờ GV khác' : 'Chờ chấm'}</Nhan>;
+  if (d.cuaToi) return <Nhan tone={TONE_TRANG_THAI['cho-cham']}>{t('Chờ bạn chấm')}</Nhan>;
+  return <Nhan tone={TONE_TRANG_THAI['cho-cham']}>{d.coDayLop ? t('Chờ GV khác') : t('Chờ chấm')}</Nhan>;
 }
 
 /** GV chấm (T17): tên GV còn nợ; Speaking Mock chưa ai nhập = "GV chấm chéo" chữ tím (T18, Q3). Xuống dòng, không cắt. */
@@ -49,7 +50,7 @@ function GvCham({ gv }: { gv: string[] }) {
       {gv.map((t, i) => (
         <Fragment key={t}>
           {i > 0 && ', '}
-          {t === CHAM_CHEO ? <span className="whitespace-nowrap font-semibold text-wait">{t}</span> : t}
+          {dich(t) === CHAM_CHEO ? <span className="whitespace-nowrap font-semibold text-wait">{CHAM_CHEO}</span> : dich(t)}
         </Fragment>
       ))}
     </>
@@ -94,14 +95,14 @@ export function KhoiNo({ no, mo, onMo, dongMo, onMoDong, hep, homNay, onDaLuu, k
     [dongMo?.d.attemptIds.join(',')],
   );
 
-  const tieuDe = 'Test quá hạn chấm';
+  const tieuDe = t('Test quá hạn chấm');
   if (!ds.length) return <div id="lich-test-no" className="card overflow-clip p-0"><KhoiNhom id="lich-test-no-than" rong phang mo={false} onMo={onMo} nhan={tieuDe} tieuDe={tieuDe} dem={0} /></div>;
   const soCot = hep ? 2 : 9;
 
   return (
     <div id="lich-test-no" className="card overflow-clip p-0">
       <KhoiNhom id="lich-test-no-than" phang mo={mo} onMo={onMo} nhan={tieuDe} tieuDe={tieuDe} dem={soBai} demMau={soBai > 0 ? 'late' : undefined}
-        phu={`${soLop} lớp`}>
+        phu={t('{soLop} lớp', { soLop })}>
         <table className="w-full text-sm bang-dinh" style={{ tableLayout: 'fixed' }}>
           <colgroup>
             {hep ? (<><col /><col style={{ width: COT_THAO_TAC - 4 }} /></>) : (
@@ -116,11 +117,11 @@ export function KhoiNo({ no, mo, onMo, dongMo, onMoDong, hep, homNay, onDaLuu, k
           {!hep && (
             <thead>
               <tr>
-                <th className="th">Lớp</th><th className="th">Đợt</th><th className="th">Kỹ năng</th>
-                <th className="th text-right">Còn</th><th className="th">Hạn</th><th className="th">GV chấm</th>
-                <th className="th"><span className="sr-only">Trạng thái</span></th>
-                <th className="th"><span className="sr-only">Mở lưới đầy đủ</span></th>
-                <th className="th"><span className="sr-only">Thao tác</span></th>
+                <th className="th">{t('Lớp')}</th><th className="th">{t('Đợt')}</th><th className="th">{t('Kỹ năng')}</th>
+                <th className="th text-right">{t('Còn')}</th><th className="th">{t('Hạn')}</th><th className="th">{t('GV chấm')}</th>
+                <th className="th"><span className="sr-only">{t('Trạng thái')}</span></th>
+                <th className="th"><span className="sr-only">{t('Mở lưới đầy đủ')}</span></th>
+                <th className="th"><span className="sr-only">{t('Thao tác')}</span></th>
               </tr>
             </thead>
           )}
@@ -131,9 +132,9 @@ export function KhoiNo({ no, mo, onMo, dongMo, onMoDong, hep, homNay, onDaLuu, k
               const nut = (
                 <button type="button" className={d.duocCham && !xong && !dangMo ? 'btn btn-sm btn-primary min-h-[44px] md:min-h-0' : 'btn btn-sm min-h-[44px] md:min-h-0'}
                   aria-expanded={dangMo}
-                  title={dangMo ? 'Thu lưới lại' : d.duocCham ? 'Mở lưới ngay dưới dòng, chỉ các em còn nợ' : 'Xem lưới (môn người khác dạy)'}
+                  title={dangMo ? t('Thu lưới lại') : d.duocCham ? t('Mở lưới ngay dưới dòng, chỉ các em còn nợ') : t('Xem lưới (môn người khác dạy)')}
                   onClick={() => onMoDong(dangMo ? null : d, i)}>
-                  {dangMo ? 'Thu' : d.duocCham && !xong ? 'Nhập điểm' : 'Xem'}
+                  {dangMo ? 'Thu' : d.duocCham && !xong ? t('Nhập điểm') : 'Xem'}
                 </button>
               );
               return (
@@ -143,15 +144,15 @@ export function KhoiNo({ no, mo, onMo, dongMo, onMoDong, hep, homNay, onDaLuu, k
                       <>
                         <td className="td py-2">
                           <div className="font-semibold text-slate-100">
-                            {d.classCode} · {dotTuan(d, homNay)} · <span title={k.goiY}>{k.chu}</span>
+                            {d.classCode} · {dotTuan(d, homNay)} · <span title={k.goiY}>{dich(k.chu)}</span>
                           </div>
-                          {k.phu && <div className="truncate text-xs text-slate-500">{k.phu}</div>}
+                          {k.phu && <div className="truncate text-xs text-slate-500">{dich(k.phu)}</div>}
                           <div className="mt-0.5 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 text-[11.5px] text-slate-400 tabular-nums">
-                            <span className="whitespace-nowrap">còn {xong ? 0 : conCua(d)} bài</span>
+                            <span className="whitespace-nowrap">{t('còn')}{' '}{xong ? 0 : conCua(d)}{' '}{t('bài')}</span>
                             {!xong && <span className="whitespace-nowrap"><Han loai="nhap-diem" han={d.han} boTinHieu={!!d.phan && !d.quaHan} /></span>}
                             <NhanDong d={d} xong={xong} chuaLuu={chuaLuu[`no:${d.key}`]} />
                           </div>
-                          {d.gvNo.length > 0 && <div className="mt-0.5 text-xs text-slate-400">GV chấm: <GvCham gv={d.gvNo} /></div>}
+                          {d.gvNo.length > 0 && <div className="mt-0.5 text-xs text-slate-400">{t('GV chấm:')}{' '}<GvCham gv={d.gvNo} /></div>}
                         </td>
                         <td className="td py-2 pl-0 text-right">{nut}</td>
                       </>
@@ -162,15 +163,15 @@ export function KhoiNo({ no, mo, onMo, dongMo, onMoDong, hep, homNay, onDaLuu, k
                         <td className="td py-1.5 leading-[1.35] text-slate-300">{dotTuan(d, homNay)}</td>
                         {/* Kỹ năng xuống dòng, không cắt "W…" (rà #218). */}
                         <td className="td py-1.5 leading-[1.35] text-slate-300 [overflow-wrap:anywhere]" title={k.goiY}>
-                          {k.chu}
-                          {k.phu && <span className="block truncate text-xs leading-4 text-slate-500">{k.phu}</span>}
+                          {dich(k.chu)}
+                          {k.phu && <span className="block truncate text-xs leading-4 text-slate-500">{dich(k.phu)}</span>}
                         </td>
-                        <td className="td text-right tabular-nums text-slate-200">{xong ? 0 : conCua(d)} <span className="text-xs text-slate-500">bài</span></td>
+                        <td className="td text-right tabular-nums text-slate-200">{xong ? 0 : conCua(d)} <span className="text-xs text-slate-500">{t('bài')}</span></td>
                         <td className="td whitespace-nowrap">{xong ? <span className="text-slate-600">—</span> : <Han loai="nhap-diem" han={d.han} boTinHieu={!!d.phan && !d.quaHan} />}</td>
                         <td className="td py-1.5 text-xs leading-[1.35] text-slate-300"><GvCham gv={d.gvNo} /></td>
                         <td className="td"><NhanDong d={d} xong={xong} chuaLuu={chuaLuu[`no:${d.key}`]} /></td>
                         <td className="px-1 text-center">
-                          <Link to={d.hrefDayDu} title="Mở lưới đầy đủ" aria-label={`Mở lưới đầy đủ lớp ${d.classCode}`}
+                          <Link to={d.hrefDayDu} title={t('Mở lưới đầy đủ')} aria-label={t('Mở lưới đầy đủ lớp {classCode}', { classCode: d.classCode })}
                             className="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-400 no-underline hover:text-slate-100">↗</Link>
                         </td>
                         <td className="td text-right">{nut}</td>
