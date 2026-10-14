@@ -8,6 +8,7 @@ import { useLoiForm } from '../../ui/loiForm.tsx';
 import { QuaHan } from '../../ui/Nhan.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { ErrorState, NutChon, Skeleton } from '../../ui/ui.tsx';
+import { t } from '@shared/i18n/index.ts';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { FormPa, KhoaNho, VachBuoi } from './FormPa.tsx';
 import {
@@ -100,7 +101,7 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, quayLai, onClose, onSave
   const [dau] = useState(() => giaTriDau(pa, sua, homNay));
   const [outcome, setOutcome] = useState(g?.outcome ?? '');
   const [progress, setProgress] = useState(g?.note ?? '');
-  const [remaining, setRemaining] = useState(g?.remainingIssue ?? '');
+  const [remaining] = useState(g?.remainingIssue ?? '');
   const [decision, setDecision] = useState<PlanDecision | ''>(g?.decision ?? '');
   const [reason, setReason] = useState(g?.decisionNote ?? '');
   const [on, setOn] = useState(g?.observedOn ?? homNay);
@@ -148,15 +149,22 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, quayLai, onClose, onSave
   const [mtNgay, setMtNgay] = useState(dau.mtNgay);
   /* T63, K3-12: PA theo quy chế chỉ có Giữ nguyên / Điều chỉnh / Xin hỗ trợ — Thay và Kết thúc ẨN (không mờ). */
   const dsQuyetDinh = quyetDinhChoPa({ preset: !!pa.batBuoc }, lanCuoi);
+  /* Ba nút trên cùng; nhóm Điều chỉnh = Sửa PA này · Thay PA · Xin hỗ trợ QL (cái nào PA được phép). */
+  const dsDc: PlanDecision[] = dsQuyetDinh.filter((x) => x === 'adjust' || x === 'replace' || x === 'ask_manager');
+  const dsTren = (['keep', 'adjust', 'end'] as const).filter((x) => (x === 'adjust' ? dsDc.length > 0 : dsQuyetDinh.includes(x)));
   const needReason = !!decision && decisionNeedsReason(decision);
   const daDay = pa.daDay ?? 0;
+  /* Ghi chú gửi máy chủ của PA Tutor = nhận xét các buổi ghép lại (cùng luật ≥ 8 ký tự của ô Nhận xét). */
+  const nhanXetTheoBuoi = coBuoi && soDong > 0;
+  const ghepBuoi = Array.from({ length: soDong }, (_, i) => (buoi[i]?.nhanXet ?? '').trim()).filter(Boolean).map((x, i) => `Buổi ${i + 1}: ${x}`).join(' · ');
   const dem = coDem ? demSauKetQua(daDay, pa.soBuoi!, tuan) : null;
   const thanDc = thanSuaPa(dc, gocDc, { moi: '', cu: null });
 
   /* Ô lỗi (YC-12.5.2): lý do dưới ô, chân chỉ đếm "n ô cần sửa ↑". Luật giữ như bản cũ. */
   const LUAT: LuatTruong[] = [
-    { khoa: 'ket-qua', nhan: 'Kết quả', chon: true },
-    { khoa: 'tien-trien', nhan: 'Tiến triển', toiThieu: 8 },
+    { khoa: 'ket-qua', nhan: t('Tiến triển (2 tuần)'), chon: true },
+    /* Chủ SP 14/10 tối: PA Tutor có buổi — nhận xét nằm ở từng buổi, không ô Nhận xét chung (máy chủ nhận nhận xét buổi ghép làm ghi chú). */
+    ...(nhanXetTheoBuoi ? [] : [{ khoa: 'tien-trien', nhan: t('Nhận xét'), toiThieu: 8 }]),
     ...(lanCuoi ? [] : [{ khoa: 'quyet-dinh', nhan: 'Quyết định', chon: true }]),
     ...(lanCuoi && outcome === 'insufficient' ? [{ khoa: 'ly-do', nhan: 'Lý do chưa đủ dữ liệu', toiThieu: 1 }] : []),
     ...(needReason ? [{ khoa: 'ly-do', nhan: decision === 'adjust' ? 'Lý do điều chỉnh' : 'Lý do thay', toiThieu: 1 }] : []),
@@ -174,6 +182,9 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, quayLai, onClose, onSave
     if (!buoi[i]?.tutor.trim()) loi.push({ khoa: `buoi-${i}-tutor`, nhan: `Tên tutor buổi ${i + 1}`, lyDo: 'Chưa điền' });
     if (!buoi[i]?.nhanXet.trim()) loi.push({ khoa: `buoi-${i}-nx`, nhan: `Nhận xét buổi ${i + 1}`, lyDo: 'Chưa điền' });
   }
+  if (nhanXetTheoBuoi && !loi.some((l) => l.khoa.startsWith('buoi-')) && ghepBuoi.replace(/^Buổi \d+: /, '').length < 8) {
+    loi.push({ khoa: 'buoi-0-nx', nhan: t('Nhận xét buổi {n}', { n: 1 }), lyDo: t('Ghi rõ hơn — ít nhất 8 ký tự') });
+  }
   if (decision === 'adjust') {
     /* Số buổi mới ≥ đã dạy SAU tuần này (máy chủ kiểm cùng luật). */
     loi.push(...loiFormPa(dc, { goc: gocDc, daDay: dem?.da ?? daDay, tienTo: 'dc-' }));
@@ -189,7 +200,7 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, quayLai, onClose, onSave
     setBusy(true);
     try {
       const body: Record<string, unknown> = {
-        decision: lanCuoi ? undefined : decision, outcome, note: progress, observedOn: on || undefined,
+        decision: lanCuoi ? undefined : decision, outcome, note: nhanXetTheoBuoi ? ghepBuoi : progress, observedOn: on || undefined,
         remainingIssue: remaining.trim() || undefined,
         /* Lý do chỉ gửi khi có ô lý do thật — ô "Ghi chú" riêng đã gộp vào "Vấn đề còn tồn / Ghi chú" (PR-LUI-a2). */
         decisionNote: (needReason || decision === 'ask_manager' || (lanCuoi && outcome === 'insufficient')) ? reason.trim() || undefined : undefined,
@@ -306,8 +317,9 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, quayLai, onClose, onSave
           </p>
         )}
         <div>
+          <span className="mb-1 flex items-baseline gap-2 text-[11.5px] font-bold text-slate-200">{t('Tiến triển (2 tuần)')}<span aria-hidden className="text-bad">*</span></span>
           {/* PR-LUI-a2: 2 cột ở mọi cỡ (panel ≤ 560 px), chữ cho xuống dòng, bỏ dấu ✓ ↗ – ↓ — không cắt / lệch. Sửa chung NutChon là PR-KHUNG. */}
-          <div {...o('ket-qua')} tabIndex={-1} className="grid grid-cols-2 gap-2 outline-none" role="group" aria-label={tuanGhi}>
+          <div {...o('ket-qua')} tabIndex={-1} className="grid grid-cols-2 gap-2 outline-none" role="group" aria-label={t('Tiến triển (2 tuần)')}>
             {FOLLOWUP_OUTCOMES.filter((o) => o !== 'insufficient').map((o) => (
               <NutChon key={o} chon={outcome === o} disabled={khoaLuaChon && outcome !== o} onClick={() => pickOutcome(o)} className="justify-center text-sm">
                 {outcomeLabelFor(o)}
@@ -322,10 +334,12 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, quayLai, onClose, onSave
           </p>
           {loiCua('ket-qua') && <span className="mt-1 block text-xs text-late">{loiCua('ket-qua')}</span>}
         </div>
-        <Truong nhan="Tiến triển" batBuoc loi={loiCua('tien-trien')} dem={{ co: progress.trim().length, can: 8 }}>
-          <textarea className="field w-full" {...o('tien-trien')} rows={2} value={progress} onChange={(e) => setProgress(e.target.value)}
-            placeholder={GOI_Y_KET_QUA_PA} />
-        </Truong>
+        {!nhanXetTheoBuoi && (
+          <Truong nhan={t('Nhận xét')} batBuoc loi={loiCua('tien-trien')} dem={{ co: progress.trim().length, can: 8 }}>
+            <textarea className="field w-full" {...o('tien-trien')} rows={2} value={progress} onChange={(e) => setProgress(e.target.value)}
+              placeholder={GOI_Y_KET_QUA_PA} />
+          </Truong>
+        )}
         {(coO || coNguoiDay(pa.kind)) && (
           <div className="flex flex-col gap-2.5 rounded-lg border px-3 py-2.5" style={{ borderColor: 'var(--line)', background: 'var(--surface-2)' }}>
             {coO && coNguoiDay(pa.kind) ? <Hang2>{oBuoi}{oNguoi}</Hang2> : <>{oBuoi}{oNguoi}</>}
@@ -362,10 +376,7 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, quayLai, onClose, onSave
             {!coDem && coSoBuoi(pa.kind) && <span className="text-xs text-slate-500">PA chưa có Số buổi — thêm ở ⋯ › Sửa PA nếu muốn đếm.</span>}
           </div>
         )}
-        <Truong nhan="Vấn đề còn tồn / Ghi chú" tuyChon>
-          <input className="field w-full" maxLength={300} value={remaining} onChange={(e) => setRemaining(e.target.value)}
-            placeholder="Ví dụ: còn sai dạng T/F/NG" />
-        </Truong>
+        {/* Chủ SP 14/10 tối: bỏ ô "Vấn đề còn tồn / Ghi chú" — lần ghi cũ có chữ thì vẫn giữ nguyên khi sửa (gửi lại giá trị cũ). */}
       </Khoi>
 
       {coMiniTest && (
@@ -398,24 +409,38 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, quayLai, onClose, onSave
           </p>
         )}
         <div {...o('quyet-dinh')} tabIndex={-1} role="radiogroup" aria-label="Quyết định" className="space-y-1.5 outline-none">
-          {dsQuyetDinh.map((d) => {
-            const chan = khoaLuaChon && decision !== d ? sua!.chan : outcome ? decisionBlockedReason(outcome, d) : 'Chọn kết quả trước.';
-            const chon = decision === d;
+          {dsTren.map((d) => {
+            /* Chủ SP 14/10 tối: 3 nút Giữ nguyên · Điều chỉnh · Kết thúc PA — "Thay PA", "Xin hỗ trợ QL" mở bên trong Điều chỉnh. */
+            const chanCua = (x: PlanDecision) => (khoaLuaChon && decision !== x ? sua!.chan : outcome ? decisionBlockedReason(outcome, x) : 'Chọn kết quả trước.');
+            const conDc = dsDc.filter((x) => !chanCua(x));
+            const chan = d === 'adjust' ? (conDc.length ? null : chanCua(dsDc[0])) : chanCua(d);
+            const chon = d === 'adjust' ? dsDc.includes(decision as PlanDecision) : decision === d;
             return (
               <div key={d}>
                 <button type="button" role="radio" aria-checked={chon} disabled={!!chan} title={chan ?? PLAN_DECISION_HINT[d]}
-                  onClick={() => setDecision(d)}
+                  onClick={() => setDecision(d === 'adjust' ? (chon ? decision as PlanDecision : conDc[0]) : d)}
                   className={`flex w-full items-start gap-2.5 rounded-md border px-2.5 py-2 text-left disabled:cursor-not-allowed disabled:opacity-45 ${
                     chon ? 'border-[color:var(--accent)] bg-[color:var(--accent-soft)]' : 'border-[color:var(--line)] hover:border-[color:var(--line-strong)]'}`}
                   style={{ background: chon ? undefined : 'transparent' }}>
                   <span aria-hidden className={`mt-[3px] inline-block h-3 w-3 shrink-0 rounded-full border ${chon ? 'border-[color:var(--accent)] bg-[color:var(--accent)]' : 'border-slate-500'}`} />
                   <span className="min-w-0">
                     <span className="block text-sm font-semibold text-slate-100">{PLAN_DECISION_NGAN[d]}</span>
-                    <span className="block text-xs text-slate-500">{chan ? (khoaLuaChon ? 'Chỉ sửa được chữ' : ngiaBiChan(outcome)) : PLAN_DECISION_NGHIA[d]}</span>
+                    <span className="block text-xs text-slate-500">{chan ? (khoaLuaChon ? 'Chỉ sửa được chữ' : ngiaBiChan(outcome)) : d === 'adjust' && dsDc.length > 1 ? `${t('Sửa PA này')} · ${dsDc.filter((x) => x !== 'adjust').map((x) => PLAN_DECISION_NGAN[x]).join(' · ')}` : PLAN_DECISION_NGHIA[d]}</span>
                   </span>
                 </button>
-                {chon && khoiCon(d) && (
-                  <div className="ml-3 mt-2 border-l-2 pl-3" style={{ borderColor: 'var(--accent-line)' }}>{khoiCon(d)}</div>
+                {chon && (d === 'adjust' ? dsDc.length > 1 || khoiCon(decision as PlanDecision) : khoiCon(d)) && (
+                  <div className="ml-3 mt-2 space-y-3 border-l-2 pl-3" style={{ borderColor: 'var(--accent-line)' }}>
+                    {d === 'adjust' && dsDc.length > 1 && (
+                      <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label={t('Cách điều chỉnh')}>
+                        {dsDc.map((x) => (
+                          <NutChon key={x} nho chon={decision === x} disabled={!!chanCua(x)} onClick={() => setDecision(x)}>
+                            {x === 'adjust' ? t('Sửa PA này') : PLAN_DECISION_NGAN[x]}
+                          </NutChon>
+                        ))}
+                      </div>
+                    )}
+                    {khoiCon(d === 'adjust' ? decision as PlanDecision : d)}
+                  </div>
                 )}
               </div>
             );

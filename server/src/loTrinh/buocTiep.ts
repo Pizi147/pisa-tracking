@@ -176,6 +176,9 @@ export const emDongConGhiDanh = (conn: any): any[] => conn.prepare(SQL_DONG_CON_
 
 // ------------------------------------------------------------------ việc QL "Chọn bước tiếp sau thi"
 /** Lộ trình chờ chọn bước tiếp (chưa lọc quyền) — một nguồn cho việc QL / TVV (`viecBuocTiep`) và ô "Chờ chọn bước tiếp" ở Tổng quan TVV / CX (OV-10c). */
+/** Hạn chọn bước tiếp = ngày có kết quả thi + 7 — việc Công việc và góc Cần làm của TVV (OV-12f) cùng hàm. */
+export const hanBuocTiep = (c: { ngay_kq: unknown }, today: string): string => addDays(String(c.ngay_kq).slice(0, 10) || today, 7);
+
 export function choBuocTiep(): any[] {
   return db().prepare(
     `SELECT c.id, c.student_id, s.full_name AS ten, c.thi_that_khong_thi, c.outcome, b.ket_luan, b.class_id, b.class_code, b.branch_id, ${NGAY_CO_KQ} AS ngay_kq
@@ -196,7 +199,7 @@ export function viecBuocTiep(p: Principal, f: { today: string; branchId: number 
   for (const c of ds) {
     if ((f.branchId && c.branch_id && c.branch_id !== f.branchId) || (f.studentId && c.student_id !== f.studentId)) continue;
     if (!coQuyenBuocTiep(p, c.student_id)) continue;
-    const han = addDays(String(c.ngay_kq).slice(0, 10) || f.today, 7);
+    const han = hanBuocTiep(c, f.today);
     const goiY = goiYSauThi({ khongThi: !!c.thi_that_khong_thi, ketLuan: c.ket_luan ?? c.outcome ?? null });
     const kq = c.thi_that_khong_thi ? 'Không thi' : c.ket_luan === 'reached' ? 'Đạt Target' : c.ket_luan === 'not_reached' ? 'Chưa đạt Target' : 'Có kết quả thi';
     out.push({
