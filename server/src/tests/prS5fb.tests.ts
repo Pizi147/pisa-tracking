@@ -101,7 +101,7 @@ export async function runPrS5fbTests(t: YThucTestKit) {
   });
 
   // ------------------------------------------------------------------ 6 · Ô tóm tắt hồ sơ HV
-  check('S5F-b (6) · Hồ sơ HV (PR-CT2): xác nhận đủ hai môn → không còn việc "chờ Quản lý duyệt kế hoạch"; ô Học thuật tách "chờ nguyên nhân" khỏi "đang làm"', () => {
+  check('S5F-b (6) · Hồ sơ HV (PR-CT2): xác nhận đủ hai môn → không còn việc "chờ Quản lý duyệt kế hoạch"; ô Học thuật tách "chờ xác nhận Case" khỏi "đang làm"', () => {
     const { hv } = emFou('S5F-b FOU HAN');
     const cP = caseTheoMon(hv, 'speaking');
     sosAuto.xacNhanCase(gvOf('MB FOU 12', 'speaking'), cP.id, XN('speaking'));
@@ -109,10 +109,10 @@ export async function runPrS5fbTests(t: YThucTestKit) {
     assert(![...viec.cuaBan, ...viec.nguoiKhac].some((x: any) => /kế hoạch/.test(x.chu)), `còn việc kế hoạch: ${JSON.stringify(viec)}`);
     /* PR-VAI-b (K3-03): ô "Case" cũ thay bằng ô Học thuật — mỗi Case một dòng, Case chờ nguyên nhân tách khỏi Case đang làm. */
     const o = d.oHocThuat([{ short: 'P', label: 'P', category: 'speaking', missed: true, cases: [
-      { status: 'open', trangThaiV4: { t: 'can-lam' }, viecTiep: { chu: 'Xác nhận nguyên nhân' } },
+      { status: 'open', trangThaiV4: { t: 'can-lam' }, viecTiep: { chu: 'Xác nhận Case' } },
       { status: 'open', trangThaiV4: { t: 'dang-lam' }, viecTiep: { chu: 'Kết quả PA Bổ trợ' } },
     ] }]);
-    assert(o.dong.map((x: any) => `${x.nhan}|${x.viec}`).join() === 'Cần làm|nguyên nhân,Đang làm|kết quả', `ô Học thuật tách chờ nguyên nhân / đang làm: ${JSON.stringify(o.dong)}`);
+    assert(o.dong.map((x: any) => `${x.nhan}|${x.viec}`).join() === 'Cần làm|xác nhận Case,Đang làm|kết quả', `ô Học thuật tách chờ xác nhận Case / đang làm: ${JSON.stringify(o.dong)}`);
   });
 
   // ------------------------------------------------------------------ 7 · Dòng PA Bổ trợ có mã tuần

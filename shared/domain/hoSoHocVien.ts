@@ -220,13 +220,13 @@ export function cauTomTat(i: DauVaoCau): ManhCau[] {
   const m2: ManhCau | null = quaHan
     ? {
       chu: quaHan.loai === 'ghi-ket-qua' ? `PA ${kn(quaHan)}quá hạn Kết quả ${quaHan.quaHanNgay} ngày`
-        : quaHan.loai === 'nguyen-nhan' ? `${kn(quaHan)}quá hạn xác nhận nguyên nhân ${quaHan.quaHanNgay} ngày`
+        : quaHan.loai === 'nguyen-nhan' ? `${kn(quaHan)}quá hạn ${quaHan.chu.startsWith('Ghi nhận xét') ? 'ghi nhận xét' : 'xác nhận Case'} ${quaHan.quaHanNgay} ngày`
         : quaHan.loai === 'xac-nhan-pa' ? `${kn(quaHan)}quá hạn xác nhận PA ${quaHan.quaHanNgay} ngày`
         : `${quaHan.chu.split(' · ')[0]} quá hạn ${quaHan.quaHanNgay} ngày`,
       tone: 'danger',
     }
     : choDuyet ? { chu: choDuyet.chu, tone: 'wait' }
-    : choNn ? { chu: `${kn(choNn)}chờ xác nhận nguyên nhân`, tone: 'warn' }
+    : choNn ? { chu: `${kn(choNn)}${choNn.chu.startsWith('Ghi nhận xét') ? 'chờ ghi nhận xét' : 'chờ xác nhận Case'}`, tone: 'warn' }
     : null;
 
   const y = i.yThuc;
@@ -277,7 +277,7 @@ export function oHocThuat(rows: readonly {
       const t = quaHanGhi ? 'qua-han' : c.trangThaiV4?.t ?? 'dang-lam';
       const v = c.viecTiep?.chu ?? '';
       const viec = quaHanGhi || /^Kết quả/.test(v) ? 'kết quả'
-        : v === 'Xác nhận nguyên nhân' ? 'nguyên nhân'
+        : v === 'Xác nhận Case' ? 'xác nhận Case' : v === 'Ghi nhận xét' ? 'ghi nhận xét'
         : /^Xác nhận PA/.test(v) ? 'xác nhận PA' : null;
       /* T65 + Q13 (UXF-b): em Tạm dừng — MỌI hạn dừng: "Quá hạn" và "Cần làm" đổi thành nhãn vàng "Tạm dừng từ dd/mm" (chỉ đổi chữ). */
       if (tamDungTu && (t === 'qua-han' || t === 'can-lam')) dong.push({ kn: r.short ?? r.label, nhan: chuTamDung(ngay(tamDungTu, homNay), true), t: 'tam-dung', viec: null, category: r.category });

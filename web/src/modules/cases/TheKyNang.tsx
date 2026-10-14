@@ -79,7 +79,7 @@ function TheKyNang({ row, onMoCase, onGap }: { row: SkillBoardRow; onMoCase: (ca
 
 /** Nút động từ của việc tiếp (clarify: không "Xác nhận" trơn). */
 const NUT_VIEC: Record<NonNullable<MoCase['viec']>, string> = {
-  'xac-nhan': 'Xác nhận nguyên nhân', 'xac-nhan-pa': 'Xác nhận PA', 'ghi-ket-qua': 'Kết quả', 'them-pa': 'Thêm PA',
+  'xac-nhan': 'Xác nhận Case', 'xac-nhan-pa': 'Xác nhận PA', 'ghi-ket-qua': 'Kết quả', 'them-pa': 'Thêm PA',
 };
 
 function KhoiCase({ c, onMoCase }: { c: CaseCard; onMoCase: (caseId: number, o?: MoCase) => void }) {
@@ -90,7 +90,7 @@ function KhoiCase({ c, onMoCase }: { c: CaseCard; onMoCase: (caseId: number, o?:
   const v = c.viecTiep;
   const han = v?.loaiHan && v.han ? deadlineView({ kind: v.loaiHan, due: v.han, today: homNay }) : null;
   const viecMo: MoCase | undefined = !v ? undefined
-    : v.chu === 'Xác nhận nguyên nhân' ? { viec: 'xac-nhan' }
+    : v.chu === 'Xác nhận Case' || v.chu === 'Ghi nhận xét' ? { viec: 'xac-nhan' }   // OV-12c: Ngăn Case mở đúng khối theo trạng thái
     : v.chu.startsWith('Xác nhận PA') ? { viec: 'xac-nhan-pa', paId: v.paId }
     : v.loaiHan === 'cap-nhat-pa' ? { viec: 'ghi-ket-qua', paId: v.paId } : undefined;
   return (
@@ -117,7 +117,7 @@ function KhoiCase({ c, onMoCase }: { c: CaseCard; onMoCase: (caseId: number, o?:
             </>}
           </span>
           {viecMo && (viecMo.viec === 'ghi-ket-qua' ? !!c.plans.find((p) => p.id === viecMo.paId)?.ghiDuoc : c.canEdit)
-            ? <button type="button" className="btn btn-primary min-h-[44px] w-full" onClick={() => onMoCase(c.id, viecMo)}>{v.chu.startsWith('Kết quả cuối') ? 'Kết quả cuối' : NUT_VIEC[viecMo.viec!]}</button>
+            ? <button type="button" className="btn btn-primary min-h-[44px] w-full" onClick={() => onMoCase(c.id, viecMo)}>{v.chu.startsWith('Kết quả cuối') ? 'Kết quả cuối' : v.chu === 'Ghi nhận xét' ? v.chu : NUT_VIEC[viecMo.viec!]}</button>
             : (
               <span className="flex items-center justify-between gap-2 text-[12px] text-slate-400">
                 <span className="min-w-0 truncate">{c.nguoiLam?.ten ? `Việc của ${c.nguoiLam.ten}` : 'Việc của người khác'}</span>

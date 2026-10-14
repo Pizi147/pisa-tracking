@@ -17,7 +17,7 @@ import {
   canEndWithOutcome, hanThemPa, stepsForMode, hanKe, hanKyGhiKetQua,
   HAN_DUYET_NGAY, hanTheoNgay,
   type NextStep, type RescheduleTarget,
-  issueBranchOf, issueLabel, caseTopicLabel, urgencyFromSos,
+  issueBranchOf, issueLabel, caseTopicLabel, urgencyFromSos, docNhomNguyenNhan,
   SIGNAL_WITHDRAW_SCORE_FIXED, caseTopicsFor, ghepKhac, kiemGhiRoKhac, laKhac, chanHoanThanh, laLanGhiCuoi, mocChuPa, programmeOf, quyetDinhChoPa, trangThaiCaseV4, viecTiepCuaCase, tenCaseSos, tenCaseThuong, nhanDot, tenMon, tenMonNgan, moiNhatTruoc,
   type CaseOutcome, type FollowUpOutcome, type InterventionKind,
 } from '../../../shared/domain/index.ts';
@@ -93,10 +93,10 @@ export function caseTitleOf(c: {
     const cat = c.category ?? categoryOf(c.topic);
     return tenCaseSos({ mt: latest?.attempt_no ?? null, giua: own || `${cat ? tenMon(ctTen, cat) : caseCategoryLabel(cat)} không đạt`, sos: c.sos_level ?? null, kck: c.kck });
   }
-  /* PR-LT2a T58: Case tự tạo từ Giữa khoá lớp thường = `[Giữa khoá] G+V không đạt` — không MT, không SOS. */
+  /* PR-LT2a: Case tự tạo từ Progress Test lớp thường = `[Progress Test] G+V không đạt` — không MT; OV-12c: kèm `[SOS n]` theo số môn trượt. */
   if (c.origin_kind === 'mock' && (latest?.kind === 'progress' || latest?.kind === 'final')) {
     const cat = c.category ?? categoryOf(c.topic);
-    return tenCaseThuong({ dot: latest.kind, giua: own || `${cat ? tenMonNgan(ctTen, cat) : caseCategoryLabel(cat)} không đạt` });
+    return tenCaseThuong({ dot: latest.kind, giua: own || `${cat ? tenMonNgan(ctTen, cat) : caseCategoryLabel(cat)} không đạt`, sos: c.sos_level ?? null });
   }
   if (own) return own;
   return caseTitle({
@@ -603,13 +603,14 @@ export function reportIssue(p: Principal, input: {
   const caChuongTrinhKhac = !!caCu && caseKhacChuongTrinh(caCu, chuongTrinhCuaLop(activeClassOf(input.studentId)));
   const existing = caChuongTrinhKhac ? null : caCu;
 
-  /* PR-SOS K3-23 (M4): Case SOS cùng kỹ năng đang chờ xác nhận nguyên nhân → không gộp, không mở song song — xác nhận ở Case đó. */
-  if (existing && sosCaseState(existing.id).awaitingCause) {
+  /* PR-SOS K3-23 (M4): Case SOS cùng kỹ năng đang chờ (Xác nhận Case / ghi nhận xét MT cũ) → không gộp, không mở song song — làm ở Case đó. */
+  const stCu = existing ? sosCaseState(existing.id) : null;
+  if (existing && (stCu!.awaitingCause || stCu!.choNhanXet)) {
     const mt = existing.attempt_id
       ? (conn.prepare('SELECT attempt_no FROM assessment_attempts WHERE id = ?').get(existing.attempt_id) as any)?.attempt_no ?? null : null;
     const nhan = [mt ? `MT${mt}` : null, existing.sos_level ? `SOS ${existing.sos_level}` : null].filter(Boolean).join(' · ');
     throw badRequest(
-      `${caseTopicLabel(existing.topic ?? topic, ctCuaCase)} đang có Case chờ xác nhận nguyên nhân${nhan ? ` (${nhan})` : ''} — mở Case để xác nhận.`,
+      `${caseTopicLabel(existing.topic ?? topic, ctCuaCase)} đang có Case ${stCu!.choNhanXet ? 'chờ ghi nhận xét' : 'chờ xác nhận'}${nhan ? ` (${nhan})` : ''} — mở Case để ${stCu!.choNhanXet ? 'ghi nhận xét' : 'xác nhận'}.`,
       { caseChoNguyenNhan: { id: existing.id } },
     );
   }
@@ -1183,8 +1184,13 @@ export function suaCase(p: Principal, caseId: number, input: {
   if (c.status === 'done') throw badRequest('Case đã hoàn thành — Mở lại trước khi sửa.');
   if (!coTheSuaCase(p, c)) throw forbidden('Bạn không có quyền sửa Case này.');
   const st = sosCaseState(caseId);
-  if (st.fromSos && !st.hasCause) throw badRequest('Case chưa xác nhận nguyên nhân — Xác nhận Case trước.');
+  if (st.fromSos && !st.hasCause) throw badRequest(st.laMt ? 'Bài chưa có nhận xét — ghi nhận xét (nguyên nhân) trước.' : 'Case chưa xác nhận — Xác nhận Case trước.');
   const chinh = conn.prepare(`SELECT * FROM case_issues WHERE case_id = ? AND role = 'primary' ORDER BY id LIMIT 1`).get(caseId) as any;
+  /* OV-12c: nguyên nhân Case MT do máy lấy từ ô (`created_by` NULL) — một nguồn: sửa ở nhận xét / chip của bài (hồ sơ MT), không sửa ở Case. */
+  const nnTuO = st.laMt && !!chinh && chinh.created_by == null;
+  if (nnTuO && ((input.primaryCode != null && input.primaryCode !== chinh.taxonomy_code) || (input.observation !== undefined && (input.observation ?? null) !== (chinh.observation ?? null)))) {
+    throw badRequest('Nguyên nhân Case Mock Test là nhận xét + nhóm của bài — sửa ở hồ sơ MT (nhận xét, chip nhóm).');
+  }
   const ct: string | null = c.goc_programme_code ?? (c.eff_cycle_id ? programmeCodeOfCycle(c.eff_cycle_id) : null);
   const topic: string = input.topic === undefined || input.topic === null ? c.topic : String(input.topic).trim();
   const doiKyNang = topic !== c.topic;
@@ -1286,6 +1292,21 @@ export function xoaCase(p: Principal, caseId: number): { ok: true } {
   });
   xoaTepSauGiaoDich(khoaTep);
   return { ok: true };
+}
+
+/**
+ * OV-12c (chủ SP 14/10): HỆ THỐNG XOÁ HẲN Case SOS MT khi em đạt lại mà Case chưa có PA được xác nhận (`CASE_CHUA_DUNG` — không tệp, không kết
+ * quả). Cùng bộ câu xoá với `xoaCase`; thẻ Chờ duyệt đang chờ tự đóng; nhật ký `case.xoa_overall_dat` chụp Case + PA. Chạy trong tx của nơi gọi.
+ */
+export function xoaCaseHeThong(conn: any, caseId: number, actor: number | null, lyDo: string) {
+  const c = conn.prepare('SELECT * FROM sos_cases WHERE id = ?').get(caseId) as any;
+  if (!c) return;
+  const pa = conn.prepare('SELECT * FROM case_interventions WHERE case_id = ?').all(caseId) as any[];
+  for (const iv of pa) chotYeuCau(conn, { doiTuongLoai: 'intervention', doiTuongId: iv.id }, 'tu_dong', { lyDo });
+  chotYeuCau(conn, { doiTuongLoai: 'sos_case', doiTuongId: caseId }, 'tu_dong', { lyDo });
+  const ten = caseTitleOf(c);
+  for (const sql of CAU_XOA_CASE) conn.prepare(sql).run(caseId);
+  writeAudit({ actorUserId: actor, action: 'case.xoa_overall_dat', entityType: 'sos_case', entityId: caseId, entityLabel: ten, before: { case: c, pa }, after: { lyDo } });
 }
 
 /**
@@ -1678,6 +1699,16 @@ export function caseDetail(p: Principal, caseId: number) {
       branch: issueBranchOf(i.taxonomy_code), skill: i.skill, observation: i.observation,
       byName: i.by_name ?? null,
     }));
+  /* OV-12c (P5): Case MT — nguyên nhân theo TỪNG lượt (mốc mở / trượt lại ↔ nhận xét + nhóm của ô lượt đó, đọc sống từ ô): "MT1: … · MT2: …". */
+  const nguyenNhanTheoLuot = (conn.prepare(
+    `SELECT a.id AS attempt_id, a.attempt_no, s.comment, s.nhom_nguyen_nhan FROM case_milestones m
+       JOIN assessment_attempts a ON a.id = m.attempt_id AND a.kind = 'mock'
+       LEFT JOIN assessment_scores s ON s.attempt_id = a.id AND s.skill = ?
+      WHERE m.case_id = ? AND m.kind IN ('opened', 'repeat') GROUP BY a.id ORDER BY MIN(m.id)`,
+  ).all(c.topic ?? '', caseId) as any[]).map((r) => ({
+    attemptId: r.attempt_id as number, luot: `MT${r.attempt_no}`, nhanXet: (r.comment ?? null) as string | null,
+    nhom: docNhomNguyenNhan(r.nhom_nguyen_nhan).map((code) => ({ code, label: issueLabel(code) })),
+  }));
 
   /* PR-S2 (S2): lịch sử điều chỉnh của mọi PA trong Case, một truy vấn. */
   const revs = lichSuDieuChinhCuaCase(caseId);
@@ -1910,7 +1941,7 @@ export function caseDetail(p: Principal, caseId: number) {
     milestones: milestonesOf(caseId),
     /* Ngày demo, để giao diện so hạn mà không phải hỏi thêm một lần nữa. */
     today: demoToday(),
-    issues, interventions, followups,
+    issues, interventions, followups, nguyenNhanTheoLuot,
     /** Trạng thái Case từ SOS (rulebook v3): chờ xác định nguyên nhân, hạn `hanXacNhan` (5 ngày; Gấp / SOS 3: 3), lý do đóng `Không cần theo dõi`. */
     sos: sosSt,
     /** PR-SOS (S4-5): thẻ ĐANG CHỜ ở mức Case ("Không cần theo dõi") — Ngăn Case nhúng `TheYeuCau gon` cho Quản lý. */
@@ -1925,7 +1956,7 @@ export function caseDetail(p: Principal, caseId: number) {
     ...(() => {
       const st = sosSt;
       const v4 = {
-        status: c.status, fromSos: st.fromSos, hasCause: st.hasCause, dismissed: !!st.dismissed, systemClosed: !!c.system_close_reason,
+        status: c.status, fromSos: st.fromSos, hasCause: st.hasCause, laMt: st.laMt, dismissed: !!st.dismissed, systemClosed: !!c.system_close_reason,
         choDuyetKhongTheoDoi: !!st.choDuyetKhongTheoDoi, coPaChoXacNhan: st.coPaChoXacNhan, hanXacNhan: st.dueOn,
         lyDoHeThong: c.system_close_reason ? SYSTEM_CLOSE_REASON_LABEL[c.system_close_reason as keyof typeof SYSTEM_CLOSE_REASON_LABEL] ?? null : null,
         rutSuaDiem: laRutSuaDiem(c),
@@ -2922,7 +2953,7 @@ function caseCardOf(p: Principal, caseId: number, c: any, soBangChung: Map<numbe
 
   const sos = sosCaseState(caseId);
   const v4 = {
-    status: c.status, fromSos: sos.fromSos, hasCause: sos.hasCause, dismissed: !!sos.dismissed, systemClosed: !!c.system_close_reason,
+    status: c.status, fromSos: sos.fromSos, hasCause: sos.hasCause, laMt: sos.laMt, dismissed: !!sos.dismissed, systemClosed: !!c.system_close_reason,
     choDuyetKhongTheoDoi: !!sos.choDuyetKhongTheoDoi, coPaChoXacNhan: sos.coPaChoXacNhan, hanXacNhan: sos.dueOn,
     lyDoHeThong: c.system_close_reason ? SYSTEM_CLOSE_REASON_LABEL[c.system_close_reason as keyof typeof SYSTEM_CLOSE_REASON_LABEL] ?? null : null,
     rutSuaDiem: laRutSuaDiem(c),

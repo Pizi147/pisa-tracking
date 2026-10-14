@@ -29,9 +29,9 @@ export function moTaBoTro(ct: string | null | undefined, skill: string): string 
     : `Bổ trợ ${b.buoiMoiTuan} buổi/tuần · ${tenMonNgan(ct, skill)} · đến Cuối khoá · trừ buổi Free`;
 }
 
-/** Tên Case lớp thường: `[Giữa khoá] G+V không đạt` — không `[SOS n]` (T58, K3 §4b). `dot` chỉ để nhận diện lượt. */
-export function tenCaseThuong(x: { dot: 'progress' | 'final'; giua: string }): string {
-  return `[${nhanBaiThuong(x.dot)}] ${x.giua}`;
+/** Tên Case lớp thường: `[Progress Test] G+V không đạt [SOS 2]` — OV-12c (chủ SP 14/10, bỏ T58 ở Case): nhãn SOS theo số môn trượt của lượt. */
+export function tenCaseThuong(x: { dot: 'progress' | 'final'; giua: string; sos?: number | null }): string {
+  return `[${nhanBaiThuong(x.dot)}] ${x.giua}${x.sos ? ` [SOS ${x.sos}]` : ''}`;
 }
 
 /**

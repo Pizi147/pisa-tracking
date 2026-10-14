@@ -10,13 +10,13 @@ import { addJourney, notify, writeAudit } from '../platform/audit.ts';
 import { suggestCaseOwner } from './owner.ts';
 import { examPlanOf } from '../fasttrack/cycles.ts';
 import { routeCuaLuot } from '../fasttrack/attempts.ts';
-import { addIssues, caseAccess, caseDetail, caseTitleOf } from './cases.ts';
+import { addIssues, caseAccess, caseDetail, caseTitleOf, suaPa } from './cases.ts';
 import { chenPa } from './taoPa.ts';
 import { followUntilAfter } from './sos.ts';
 import { mondayOf } from '../platform/week.ts';
 import { taoYeuCau } from '../duyet/yeuCau.ts';
 import { dongBoBaoPhCuaBai } from '../yThuc/phoiHop.ts';
-import { PA_QUY_CHE_CHUA_GHI, UNCONFIRMED_PRESET, dongBoTrangThaiCase, sosCaseState } from './sosState.ts';
+import { LA_CASE_MT, PA_QUY_CHE_CHUA_GHI, UNCONFIRMED_PRESET, dongBoTrangThaiCase, sosCaseState } from './sosState.ts';
 import { ghiBanDieuChinh, nguoiSauSua, soBuoiMoi } from './planRevisions.ts';
 import { chayPaBoTro, mocCuoiKhoa } from './boTro.ts';
 
@@ -133,8 +133,9 @@ export function announceAutoCase(input: {
   addJourney({
     studentId: input.studentId, cycleId: input.cycleId, eventType: 'case_opened', eventDate: input.detectedOn,
     title: input.dot === 'giua-khoa' ? `Progress Test tự tạo Case ${ten}` : `SOS tự tạo Case ${ten}`,
-    detail: input.kck ? 'Em KCK dưới kỳ vọng — Case nhẹ: GVBM xác nhận nguyên nhân, không hạn, không PA quy chế.'
-      : input.dot === 'giua-khoa' ? 'PA Bổ trợ chờ GVBM xác nhận nguyên nhân và kế hoạch bài giảng.' : 'PA theo quy chế chờ GVBM xác nhận.',
+    detail: input.kck ? (input.dot === 'giua-khoa' ? 'Em KCK dưới kỳ vọng — Case nhẹ: GV xác nhận Case, không hạn, không PA Bổ trợ.'
+        : 'Em KCK dưới kỳ vọng — Case nhẹ: nguyên nhân từ nhận xét MT, không hạn, không PA quy chế.')
+      : input.dot === 'giua-khoa' ? 'Chờ GV xác nhận Case — nhóm nguyên nhân, mô tả và PA Bổ trợ.' : 'Nguyên nhân từ nhận xét MT — PA theo quy chế chờ xác nhận.',
     refTable: 'sos_cases', refId: input.caseId, createdBy: input.actorUserId,
     dedupKey: `case_open:${input.caseId}`,
   });
@@ -142,14 +143,15 @@ export function announceAutoCase(input: {
     actorUserId: input.actorUserId, action: input.dot ? 'case.auto_from_giua_khoa' : 'case.auto_from_sos', entityType: 'sos_case', entityId: input.caseId,
     entityLabel: `${st?.full_name ?? ''} · ${input.skillLabel}`, after: { attemptNo: input.attemptNo, sosLevel: input.sosLevel },
   });
-  if (input.ownerUserId) {
+  /* OV-12c: Case MT không chuông "Xác nhận nguyên nhân" (nguyên nhân đã có từ nhận xét; việc Xác nhận PA ở Công việc). Progress: chuông "Xác nhận Case". */
+  if (input.ownerUserId && input.dot === 'giua-khoa') {
     /* PR-VAI-a (K1-42, Q20): tiêu đề = việc + em + lớp; thân nói Case sinh ra từ đợt nào và hạn. */
     const lop = (db().prepare(`SELECT c.code FROM enrollments e JOIN classes c ON c.id = e.class_id WHERE e.student_id = ? AND e.status = 'active' ORDER BY e.id DESC LIMIT 1`)
       .get(input.studentId) as any)?.code ?? null;
     notify({
       userId: input.ownerUserId, kind: 'sos',
-      title: `Xác nhận nguyên nhân ${input.skillLabel} · ${[st?.full_name, lop].filter(Boolean).join(' · ')}`,
-      body: `Case mới sau ${input.dot === 'giua-khoa' ? nhanBaiThuong('progress') : `MT${input.attemptNo}`}: ${ten}${input.hanXacNhan ? ` · hạn ${ngay(input.hanXacNhan, demoToday())}` : ' · KCK, không hạn'}`,
+      title: `Xác nhận Case ${input.skillLabel} · ${[st?.full_name, lop].filter(Boolean).join(' · ')}`,
+      body: `Case mới sau ${nhanBaiThuong('progress')}: ${ten}${input.hanXacNhan ? ` · hạn ${ngay(input.hanXacNhan, demoToday())}` : ' · KCK, không hạn'}`,
       entityType: 'sos_case', entityId: input.caseId, dedupKey: `sos-case:${input.caseId}`,
     });
   }
@@ -204,18 +206,22 @@ export function kiemNoiDungCase(topic: string | null, ct: string | null, input: 
 }
 
 /**
- * XÁC NHẬN CASE (S4-3, M7, YC-12.3): GVBM đúng kỹ năng (C02) hoặc Quản lý trong phạm vi ghi nguyên nhân + mức gấp + mô tả + phần giữa tên.
- * Chỉ khi Case từ SOS còn chờ nguyên nhân và KHÔNG có thẻ Không cần theo dõi đang chờ (S4-2 hai lựa chọn loại trừ). Case vẫn `open`
- * tới khi có PA do người xác nhận (Q28-5) — giao diện chuyển thẳng sang Xác nhận PA.
+ * XÁC NHẬN CASE (S4-3, M7, YC-12.3) — OV-12c (chủ SP 14/10): CHỈ Case không phải Mock Test (Progress Test lớp thường, Case nhẹ KCK lớp thường).
+ * MỘT bước: Nhóm nguyên nhân (`nhom`, thứ tự chọn: 1 = chính, sau = phụ) · Mô tả ngắn · PA Bổ trợ điền sẵn sửa được tại chỗ (`pa`: Số buổi, người
+ * dạy, Nội dung) → PA Bổ trợ chạy ngay. Ai xác nhận: người phụ trách Case (GV dạy môn, C02), GVCN / Quản lý trong phạm vi (`requireEdit`). Case MT lấy nguyên
+ * nhân từ nhận xét của ô (`nguyenNhanO.ts`) → 400. Mức gấp / tên giữa: không gửi = mặc định (theo SOS / tên máy). Chỉ khi Case còn chờ và KHÔNG
+ * có thẻ Không cần theo dõi đang chờ (S4-2 hai lựa chọn loại trừ). Còn nhận `primaryCode` (một nhóm) như trước.
  */
 /**
- * OV-5a: gọi từ xác nhận nhóm (`xacNhanNhom.ts`) — `chiGhi`: không đọc lại chi tiết Case để trả; `daKiemQuyen`: quyền sửa Case ĐÃ kiểm bằng
- * đúng `caseAccess(...).requireEdit` trong CÙNG giao dịch (không kiểm lần hai sau mỗi câu ghi — bộ nhớ quyền bị xoá theo câu ghi).
+ * OV-5a: `chiGhi`: không đọc lại chi tiết Case để trả; `daKiemQuyen`: quyền sửa Case ĐÃ kiểm bằng đúng `caseAccess(...).requireEdit` trong CÙNG
+ * giao dịch (không kiểm lần hai sau mỗi câu ghi — bộ nhớ quyền bị xoá theo câu ghi).
  */
 export type XacNhanTrongLo = { chiGhi?: boolean; daKiemQuyen?: boolean };
 
 export function xacNhanCase(p: Principal, caseId: number, input: {
-  primaryCode?: string | null; observation?: string | null; urgency?: string | null; moTa?: string | null; tenGiua?: string | null;
+  primaryCode?: string | null; nhom?: unknown; observation?: string | null; urgency?: string | null; moTa?: string | null; tenGiua?: string | null;
+  /** PA Bổ trợ sửa tại chỗ — cùng khoá với Sửa PA (`soBuoi`, `performerSelf` / `performerUserId` / `performerName`). */
+  pa?: { description?: string | null; soBuoi?: unknown; performerSelf?: boolean; performerUserId?: number | null; performerName?: string | null } | null;
 }, o: XacNhanTrongLo = {}) {
   const conn = db();
   const c = conn.prepare('SELECT * FROM sos_cases WHERE id = ?').get(caseId) as any;
@@ -224,21 +230,36 @@ export function xacNhanCase(p: Principal, caseId: number, input: {
   const st = sosCaseState(caseId);
   if (!st.fromSos) throw badRequest('Chỉ Case tự tạo từ kết quả Test mới có bước Xác nhận Case.');
   if (c.status === 'done') throw badRequest('Case này đã đóng rồi.');
-  if (st.hasCause) throw badRequest('Case đã xác nhận nguyên nhân rồi.');
+  if (st.laMt) throw badRequest('Case Mock Test lấy nguyên nhân từ nhận xét của bài — ghi hoặc sửa nhận xét ở hộp chấm / hồ sơ MT.');
+  if (st.hasCause) throw badRequest('Case đã xác nhận rồi.');
   if (st.choDuyetKhongTheoDoi) throw badRequest('Case đang chờ Quản lý duyệt "Không cần theo dõi" — chờ trả lời rồi mới xác nhận.');
   const ct = c.cycle_id ? (conn.prepare('SELECT programme_code ct FROM learning_cycles WHERE id = ?').get(c.cycle_id) as any)?.ct ?? null : null;
+  const nhom = input.nhom === undefined || input.nhom === null ? (input.primaryCode ? [String(input.primaryCode)] : []) : input.nhom;
+  if (!Array.isArray(nhom) || !nhom.every((x) => typeof x === 'string')) throw badRequest('Nhóm nguyên nhân không hợp lệ.');
+  if (new Set(nhom).size !== nhom.length) throw badRequest('Nhóm nguyên nhân bị trùng.');
+  const boNhom = new Set(issuesForTopic(c.topic as string, ct).map((i) => i.code));
+  if (nhom.slice(1).some((x) => !boNhom.has(x))) throw badRequest(`Phân loại đã chọn không thuộc bộ phân loại của ${caseTopicLabel(c.topic ?? '', ct)}.`);
+  const moTaGui = String(input.moTa ?? '').trim();
   const { primaryCode, observation, urgency, moTa, tenGiua } = kiemNoiDungCase(c.topic, ct, {
-    ...input, tenGiua: input.tenGiua === undefined || input.tenGiua === null ? tenGiuaCua(c) : input.tenGiua,
+    ...input, primaryCode: nhom[0] ?? null,
+    /* OV-12c: "Khác" không còn ô Ghi rõ riêng — Mô tả ngắn là phần ghi rõ. */
+    observation: input.observation ?? (nhom[0] && laKhac(nhom[0]) ? moTaGui : null),
+    urgency: input.urgency ?? c.urgency ?? ((c.sos_level ?? 0) >= 3 ? 'urgent' : 'attention'),
+    tenGiua: input.tenGiua === undefined || input.tenGiua === null ? tenGiuaCua(c) : input.tenGiua,
   });
   const today = demoToday();
   return tx(() => {
-    addIssues(caseId, p.userId, { primaryCode, observation, topic: c.topic });
+    addIssues(caseId, p.userId, { primaryCode, secondaryCodes: nhom.slice(1), observation, topic: c.topic });
     conn.prepare('UPDATE sos_cases SET urgency = ?, summary = ?, title = ?, updated_at = ? WHERE id = ?').run(urgency, moTa, tenGiua, nowIso(), caseId);
     ghiMoc(caseId, 'xac_nhan_case', today, moTa, p.userId, `xac_nhan_case:${caseId}`);
     dongBoTrangThaiCase(caseId);
     /* PR-CT2 (§8): bỏ nộp / duyệt kế hoạch — PA Bổ trợ Giữa khoá chạy ngay (FOU nhóm chung: chỉ môn đã có nguyên nhân). */
-    const bt = conn.prepare(`SELECT nhom_bo_tro FROM case_interventions WHERE case_id = ? AND kind = 'bo_tro' AND status = 'planned' AND nhom_bo_tro IS NOT NULL LIMIT 1`).get(caseId) as any;
-    if (bt) chayPaBoTro(conn, bt.nhom_bo_tro, p.userId, today);
+    const bt = conn.prepare(`SELECT id, nhom_bo_tro FROM case_interventions WHERE case_id = ? AND kind = 'bo_tro' AND status = 'planned' AND nhom_bo_tro IS NOT NULL LIMIT 1`).get(caseId) as any;
+    if (bt) {
+      chayPaBoTro(conn, bt.nhom_bo_tro, p.userId, today);
+      /* OV-12c: PA sửa tại chỗ — sau khi chạy, đi đúng đường Sửa PA (quyền, nhật ký, áp cả nhóm FOU chung). */
+      if (input.pa && Object.keys(input.pa).length) suaPa(p, bt.id, input.pa);
+    }
     const ten = caseTitleOf({ ...c, title: tenGiua });
     addJourney({
       studentId: c.student_id, cycleId: c.cycle_id ?? null, eventType: 'intervention', eventDate: today,
@@ -246,9 +267,9 @@ export function xacNhanCase(p: Principal, caseId: number, input: {
     });
     writeAudit({
       actorUserId: p.userId, action: 'case.confirm', entityType: 'sos_case', entityId: caseId, entityLabel: ten,
-      after: { primaryCode, urgency, tenGiua },
+      after: { primaryCode, secondaryCodes: nhom.slice(1), urgency, tenGiua },
     });
-    return o.chiGhi ? null : caseDetail(p, caseId);   // OV-5a: xác nhận nhóm không đọc lại chi tiết từng Case
+    return o.chiGhi ? null : caseDetail(p, caseId);
   });
 }
 
@@ -336,11 +357,11 @@ export function banGiaoPaQuyChe(studentId: number, toClassId: number, actorUserI
 export function datLaiHanCase(studentId: number, homNay: string) {
   const conn = db();
   /* PR-HAN: hạn theo mức từng Case (5 ngày; Gấp / SOS 3: 3 ngày). */
-  for (const c of conn.prepare(`SELECT id, sos_level, urgency FROM sos_cases WHERE student_id = ? AND status != 'done' AND han_xac_nhan IS NOT NULL
+  for (const c of conn.prepare(`SELECT id, sos_level, urgency, NOT ${LA_CASE_MT('sos_cases')} AS thuong FROM sos_cases WHERE student_id = ? AND status != 'done' AND han_xac_nhan IS NOT NULL
       AND (NOT EXISTS (SELECT 1 FROM case_issues ci WHERE ci.case_id = sos_cases.id AND ci.role = 'primary')
            OR EXISTS (SELECT 1 FROM case_interventions iv WHERE iv.case_id = sos_cases.id AND ${UNCONFIRMED_PRESET('iv')} AND iv.status = 'planned' AND iv.kind != 'bo_tro'))`)
     .all(studentId) as any[]) {
-    conn.prepare('UPDATE sos_cases SET han_xac_nhan = ?, updated_at = ? WHERE id = ?').run(hanXacNhan(homNay, { sosLevel: c.sos_level, urgency: c.urgency }), nowIso(), c.id);
+    conn.prepare('UPDATE sos_cases SET han_xac_nhan = ?, updated_at = ? WHERE id = ?').run(hanXacNhan(homNay, { sosLevel: c.sos_level, urgency: c.urgency, thuong: !!c.thuong }), nowIso(), c.id);
   }
   /* OV-12a: quay lại học = hạn kỳ 1 tính từ ngày quay lại (đủ hai tuần, không phải Thứ Ba hôm sau). */
   conn.prepare(`UPDATE case_interventions SET action_due = ?, updated_at = ? WHERE status = 'started' AND action_due IS NOT NULL
@@ -373,7 +394,10 @@ export function xacNhanPaQuyChe(p: Principal, interventionId: number, input: {
   if (iv.kind === 'bo_tro') throw badRequest('PA bổ trợ chạy khi Xác nhận Case — không xác nhận riêng.');
   if (iv.case_status === 'done') throw badRequest('Case đã đóng — không còn xác nhận PA được.');
   if (iv.confirmed_at || iv.status !== 'planned') throw badRequest('PA này đã được xác nhận rồi.');
-  if (!sosCaseState(iv.case_id).hasCause) throw badRequest('Xác nhận nguyên nhân (Xác nhận Case) trước, rồi mới xác nhận PA.');
+  const stCase = sosCaseState(iv.case_id);
+  /* OV-12c: nguyên nhân Case MT = nhận xét của ô — Case MT cũ chưa có nhận xét thì ghi nhận xét trước. */
+  if (!stCase.hasCause) throw badRequest(stCase.laMt ? 'Bài này chưa có nhận xét — ghi nhận xét (nguyên nhân) trước, rồi mới xác nhận PA.' : 'Xác nhận Case trước, rồi mới xác nhận PA.');
+  if (stCase.choDuyetKhongTheoDoi) throw badRequest('Case đang chờ Quản lý duyệt "Không cần theo dõi" — chờ trả lời rồi mới xác nhận PA.');
   /* PR-S4F #9 (Q28-5): mô tả phải do người xác nhận gửi lên — không lấy mô tả máy gán thay (xác nhận "nguyên văn" thì gửi lại đúng chữ đó). */
   if (typeof input.description !== 'string' || !input.description.trim()) {
     throw badRequest('Thiếu mô tả PA — ghi hướng dẫn, trọng tâm và ai thực hiện rồi mới xác nhận.');
@@ -421,7 +445,7 @@ export function xacNhanPaQuyChe(p: Principal, interventionId: number, input: {
  * kèm lý do chọn nhanh. Case CHƯA đóng: hàng Case "Chờ Quản lý duyệt · không theo dõi", việc Xác nhận nguyên nhân rời Việc của GVBM và không
  * sinh Báo QL (`awaitingCauseCaseIds` loại thẻ đang chờ). Duyệt → `apDungKhongTheoDoi`; Từ chối → `tuChoiKhongTheoDoi` (hạn mới theo `hanXacNhan`).
  *
- * Chỉ khi Case còn CHỜ NGUYÊN NHÂN (S4-2: hai lựa chọn loại trừ, Q4) — đã xác nhận nguyên nhân thì kết thúc bằng Hoàn thành Case.
+ * OV-12c: mở khi Case còn chờ (Xác nhận Case lớp thường · Xác nhận PA của Case MT có nguyên nhân sẵn) — đã có PA chạy / kết quả thì kết thúc bằng Hoàn thành Case.
  * QL kiêm GVBM tự gửi thì tự duyệt được như mọi thẻ (Q-D, Câu hỏi 2 = A: thẻ ghi "tự duyệt", báo Quản trị).
  */
 export function guiKhongTheoDoi(p: Principal, caseId: number, input: { reasonCode?: string | null; reasonText?: string | null }) {
@@ -435,7 +459,7 @@ export function guiKhongTheoDoi(p: Principal, caseId: number, input: { reasonCod
     throw badRequest('Chỉ Case tự tạo từ kết quả Test mới gửi "Không cần theo dõi" được — Case này không phải Case tự tạo.');
   }
   if (st.choDuyetKhongTheoDoi) throw badRequest('Case đã gửi "Không cần theo dõi" — đang chờ Quản lý duyệt.');
-  if (st.hasCause) throw badRequest('Case đã xác nhận nguyên nhân — kết thúc bằng Hoàn thành Case.');
+  /* OV-12c: mở cả ở bước chờ xác nhận PA (Case MT có nguyên nhân sẵn) — chặn chỉ khi đã có PA chạy / kết quả (dưới). */
   const { code, text, lyDo } = lyDoKhongTheoDoi(input);
   const started = conn
     .prepare(`SELECT COUNT(*) n FROM case_interventions iv WHERE iv.case_id = ? AND iv.status != 'cancelled'
@@ -531,20 +555,21 @@ export function apDungKhongTheoDoi(conn: any, yc: { doi_tuong_id: number; du_lie
   });
 }
 
-/** QUẢN LÝ TỪ CHỐI "Không cần theo dõi" (trong tx của hộp): Case về chờ nguyên nhân, hạn mới 5 ngày (Gấp / SOS 3: 3) từ ngày từ chối; báo GVBM phụ trách. */
+/** QUẢN LÝ TỪ CHỐI "Không cần theo dõi" (trong tx của hộp): Case về bước chờ (Xác nhận Case / Xác nhận PA), hạn mới 5 ngày (MT Gấp / SOS 3: 3) từ ngày từ chối; báo GVBM phụ trách. */
 export function tuChoiKhongTheoDoi(conn: any, yc: { doi_tuong_id: number; nguoi_xin: number | null }, nguoiDuyet: number, lyDo: string) {
   const caseId = yc.doi_tuong_id;
-  const c = conn.prepare('SELECT id, owner_user_id, sos_level, urgency, kck, (SELECT full_name FROM students WHERE id = sos_cases.student_id) AS hv FROM sos_cases WHERE id = ?').get(caseId) as any;
+  const c = conn.prepare(`SELECT id, owner_user_id, sos_level, urgency, kck, NOT ${LA_CASE_MT('sos_cases')} AS thuong,
+      (SELECT full_name FROM students WHERE id = sos_cases.student_id) AS hv FROM sos_cases WHERE id = ?`).get(caseId) as any;
   if (!c) throw notFound('Không tìm thấy Case');
   const today = demoToday();
-  const han = c.kck ? null : hanXacNhan(today, { sosLevel: c.sos_level, urgency: c.urgency });   // OV-9: Case nhẹ không hạn
+  const han = c.kck ? null : hanXacNhan(today, { sosLevel: c.sos_level, urgency: c.urgency, thuong: !!c.thuong });   // OV-9: Case nhẹ không hạn
   conn.prepare('UPDATE sos_cases SET han_xac_nhan = ?, updated_at = ? WHERE id = ?').run(han, nowIso(), caseId);
   ghiMoc(caseId, 'ql_tu_choi_khong_theo_doi', today, lyDo, nguoiDuyet);
   /* Người xin đã nhận "Quản lý từ chối: …" từ hộp; GVBM phụ trách khác người xin thì báo riêng. */
   if (c.owner_user_id && c.owner_user_id !== yc.nguoi_xin && c.owner_user_id !== nguoiDuyet) {
     notify({
       userId: c.owner_user_id, kind: 'sos', title: `Bị từ chối · Không cần theo dõi · ${c.hv ?? 'học viên'}`.slice(0, 200),
-      body: `${lyDo.slice(0, 120)} — xác nhận nguyên nhân${han ? ` trước hết ${ngay(han, today)}` : ' (KCK, không hạn)'}`,
+      body: `${lyDo.slice(0, 120)} — ${c.thuong ? 'xác nhận Case' : 'xác nhận PA'}${han ? ` trước hết ${ngay(han, today)}` : ' (KCK, không hạn)'}`,
       entityType: 'sos_case', entityId: caseId, dedupKey: `tu_choi_ktd:${caseId}:${today}`,
     });
   }

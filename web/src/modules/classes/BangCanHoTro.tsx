@@ -188,7 +188,7 @@ function DongCase({ h, c, dau, ct, homNay, onMo, the = false, chiDoc = false }: 
 }) {
   const [viec] = viecTiepCuaEm({ nhapDiem: null, cases: [{ caseId: c.id, topic: c.topic, viecTiep: c.viecTiep }], yThuc: null, homNay, chuongTrinh: ct });
   const d = viec?.dich?.loai === 'case' ? viec.dich : null;
-  const loai = !viec ? undefined : viec.viec.startsWith('Xác nhận nguyên nhân') ? 'xac-nhan' as const
+  const loai = !viec ? undefined : viec.viec.startsWith('Xác nhận Case') || viec.viec.startsWith('Ghi nhận xét') ? 'xac-nhan' as const
     : viec.viec.startsWith('Xác nhận PA') ? 'xac-nhan-pa' as const : d?.ghiKetQua && d.paId != null ? 'ghi-ket-qua' as const : undefined;
   const dangLam = c.pas.filter((p) => !p.xong);
   const cacPa = dangLam.length === 0 ? <span className="text-slate-600">—</span> : dangLam.map((p) => (

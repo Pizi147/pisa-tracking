@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react';
-import { nhanQuaHan, TONE_TRANG_THAI } from '@shared/domain/index.ts';
+import { deadlineView, nhanQuaHan, shortDate, TONE_TRANG_THAI, type DeadlineKind } from '@shared/domain/index.ts';
+import { useNgayNghiepVu } from './ngayNghiepVu.ts';
+import { t } from '@shared/i18n/index.ts';
 
 /**
  * "⚠ quá hạn 15 ngày" — chữ đỏ cam đậm, KHÔNG nền, KHÔNG khung (B-3). ⚠ chỉ nghĩa quá hạn (G-4).
@@ -58,5 +60,20 @@ export function DauDuoi() {
     <svg aria-hidden viewBox="0 0 7 5" width="7" height="5" className="mr-1 inline-block align-middle" style={{ marginTop: -2 }}>
       <path d="M0 0h7L3.5 5z" fill="currentColor" />
     </svg>
+  );
+}
+
+const THU = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+/** OV-12c — MỘT chip hạn ở đầu panel làm việc v3: quá hạn nền cam + ⚠ + số ngày · hạn hôm nay vàng · còn lại viền xám. Màu theo `deadlineView`. */
+export function ChipHan({ loai, han }: { loai: DeadlineKind; han: string | null }) {
+  const { homNay } = useNgayNghiepVu();
+  if (!han) return null;
+  const v = deadlineView({ kind: loai, due: han, today: homNay });
+  const lop = v.tone === 'overdue' ? 'border-late-line bg-late-bg text-late' : v.homNay ? 'border-soon-line bg-soon-bg text-soon' : 'border-[color:var(--line-strong)] text-slate-200';
+  return (
+    <span title={v.text} className={`inline-flex h-6 shrink-0 items-center gap-1 whitespace-nowrap rounded-full border px-2.5 text-[12.5px] font-bold tabular-nums ${lop}`}>
+      {v.tone === 'overdue' ? <><span aria-hidden>⚠</span>{t('Quá hạn {n} ngày', { n: v.daysOverdue ?? 0 })}</> : v.homNay ? t('Hạn hôm nay')
+        : t('Hạn {thu} {ngay}', { thu: THU[new Date(`${han.slice(0, 10)}T00:00:00Z`).getUTCDay()], ngay: shortDate(han, homNay) })}
+    </span>
   );
 }

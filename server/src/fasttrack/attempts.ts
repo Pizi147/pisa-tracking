@@ -30,6 +30,7 @@ import {
 } from './absence.ts';
 import { raiseSignalsForResult, stepsFor } from '../cases/sos.ts';
 import { reconcileCorrectedSignals } from '../cases/signals.ts';
+import { dongBoNguyenNhanMt } from '../cases/nguyenNhanO.ts';
 import { currentCycle, cycleById, examPlanOf, luotSoCuaLoTrinh } from './cycles.ts';
 import { closeCasesBySystem, moLaiCaseHeThongDong } from '../cases/systemClose.ts';
 import { banHuyLuotCua, catHuyLuot, ketQuaHuyCua, traBanDoiVuot, traBanHuyLuot, traYeuCauCat, yeuCauChoCua, type BanHuyLuot } from './ketQuaHuy.ts';
@@ -1783,6 +1784,7 @@ function luuNhanXet(
     before: cu ? { comment: cu.comment ?? null, examinerUserId: cu.examiner_user_id ?? null, examinerName: cu.examiner_name ?? null, nhom: cu.nhom_nguyen_nhan ?? null } : null,
     after: { comment, examinerUserId: exUser, examinerName: exName, nhom },
   });
+  dongBoNguyenNhanMt({ attemptId, skill });   // OV-12c: nhận xét + nhóm của ô = nguyên nhân Case MT (liên kết sống)
   const fresh = conn.prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(attemptId) as any;
   return {
     score: conn.prepare('SELECT * FROM assessment_scores WHERE attempt_id = ? AND skill = ?').get(attemptId, skill),
@@ -1820,6 +1822,7 @@ export function refreshOutcome(p: Principal, attemptId: number, thiLai = false) 
   if (result.chot && (fresh.kck_at_attempt ?? null) === null) {
     conn.prepare('UPDATE assessment_attempts SET kck_at_attempt = ? WHERE id = ?').run(kckCuaLuot(fresh) ? 1 : 0, attemptId);
   }
+  dongBoNguyenNhanMt({ attemptId });   // OV-12c: Case MT đang theo lượt này — nguyên nhân theo nhận xét + nhóm mới của ô
   if (laLopKetThuc(fresh.class_id)) return;   // OV-11g (Q4): lớp đã kết thúc — chỉ điểm + nhật ký, không tín hiệu / Case
   raiseSignalsForResult(p, { ...fresh, status: nextStatus }, result);
 
@@ -1856,6 +1859,20 @@ function reconcileCorrectedScores(p: Principal, attemptId: number, result: Attem
   const cleared = ENTRY_SKILLS.filter((k) => (entry[k] ?? null) === null && !result.skipped.includes(assessedSkillOf(k))) as string[];
   reconcileCorrectedSignals(p, { attemptId, passingSkills: passing, passText: 'đạt kỳ vọng', clearedSkills: cleared, thiLai });
 }
+
+/** OV-12c: ô MT có điểm còn THIẾU nhận xét / nhóm (MT cũ, nhập bù) — dữ liệu luật OV-12b đòi, kể cả MT lịch sử (nguyên nhân Case cần nó). */
+export function oThieuNhanXet(a: any, row: { band?: number | null; raw_score?: number | null; comment?: string | null; nhom_nguyen_nhan?: string | null } | null | undefined) {
+  if (a.kind !== 'mock' || !row) return null;
+  return thieuNhanXetMt({ batBuoc: true, coDiem: row.band != null || row.raw_score != null, band: row.band ?? null, kyVong: kyVongCuaLuot(a),
+    nhanXet: row.comment, nhom: docNhomNguyenNhan(row.nhom_nguyen_nhan) });
+}
+/** Lệnh chỉ gồm nhận xét / nhóm, và ô đang thiếu một trong hai. */
+function boSungNhanXetDuoc(a: any, skill: string, patch: ScorePatch): boolean {
+  const chiHai = Object.keys(patch).every((k) => k === 'nhanXet' || k === 'nhomNguyenNhan') && Object.keys(patch).length > 0;
+  return chiHai && !!oThieuNhanXet(a, db().prepare('SELECT * FROM assessment_scores WHERE attempt_id = ? AND skill = ?').get(a.id, skill) as any);
+}
+const kiemNhanXetGt = (v: unknown) => { const r = kiemNhanXet(v); if ('loi' in r) throw badRequest(r.loi); return r.gt; };
+const kiemNhomGt = (v: unknown, skill: string) => { const r = kiemNhomNguyenNhan(v, skill); if ('loi' in r) throw badRequest(r.loi); return r.gt; };
 
 export function saveScore(
   p: Principal, attemptId: number, skill: string, patch: ScorePatch, today: string = demoToday(),
@@ -1901,6 +1918,9 @@ export function saveScore(
   let path = a.class_id ? scoreEditPath(p, a.class_id, skill, { lich_su: a.lich_su ?? 0 }) : null;
   if (hoanTat.hoanTat) {
     if (!a.class_id || !quyenSuaSauHoanTat(p, a.class_id, !!a.lich_su)) {
+      /* OV-12c: GV đúng kỹ năng vẫn BỔ SUNG nhận xét / nhóm còn thiếu của ô MT đã có điểm (Case MT cũ "Ghi nhận xét") — chỉ hai trường đó, không điểm. */
+      if (path && boSungNhanXetDuoc(a, skill, patch)) return tx(() => luuNhanXet(p, a, skill, patch.nhanXet === undefined ? undefined : kiemNhanXetGt(patch.nhanXet),
+        undefined, patch.nhomNguyenNhan === undefined ? undefined : kiemNhomGt(patch.nhomNguyenNhan, skill), !!o.tuNguoiDung));
       throw forbidden(
         `Đợt này đã hoàn tất (hết Chủ nhật ${ngay(hoanTat.chuNhatCuoi)}). `
         + 'Chỉ Quản lý sửa được điểm — nhờ Quản lý hiệu chỉnh.',

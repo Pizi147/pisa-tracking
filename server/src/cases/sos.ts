@@ -16,10 +16,12 @@ import { scoringModeOf } from '../fasttrack/skillSchedule.ts';
 import { announceAutoCase, createPresetPlan, isFastTrackMock, resyncUnconfirmedPresets } from './sosAuto.ts';
 import { CO_THE_KHONG_THEO_DOI, PA_QUY_CHE_CHUA_GHI, UNCONFIRMED_PRESET, sosCaseState } from './sosState.ts';
 import { closeCasesBySystem } from './systemClose.ts';
+import { xoaCaseHeThong } from './cases.ts';
 import { syncSosCoordination } from '../yThuc/phoiHop.ts';
 import { mondayOf } from '../platform/week.ts';
 import { ngayTaoLuot } from '../classes/schedule.ts';
 import { taoPaBoTro } from './boTro.ts';
+import { dongBoNguyenNhanMt } from './nguyenNhanO.ts';
 import { soThuTuLuot, tenCaseThuong, tenMonNgan } from '../../../shared/domain/index.ts';
 
 /**
@@ -464,6 +466,8 @@ export function raiseSignalsForResult(p: Principal, attempt: any, result: Attemp
                     follow_until = COALESCE(?, follow_until), updated_at = ? WHERE id = ?`,
           )
           .run(attempt.id, kck ? open.sos_level : result.sosLevel, followUntil, nowIso(), open.id);   // OV-9: lượt KCK không đổi mức SOS của Case
+        /* OV-12c: Case theo lượt mới → nguyên nhân = nhận xét + nhóm của ô lượt mới (lượt cũ giữ nhận xét của nó — `nguyenNhanTheoLuot`). */
+        if (autoCases) dongBoNguyenNhanMt({ caseIds: [open.id] });
         if (!kck && open.sos_level !== result.sosLevel) {
           recordChange(open.id, 'sos_level', String(open.sos_level), String(result.sosLevel), p.userId);
         }
@@ -477,7 +481,8 @@ export function raiseSignalsForResult(p: Principal, attempt: any, result: Attemp
         }
         /*
          * PR-SOS Q6 (S4-1, K3-16): Case FT ĐÃ có nguyên nhân mà trượt lại → thêm PA quy chế mới (chờ xác nhận) theo hàng lượt này + đặt lại
-         * hạn xác nhận. Không bắt xác nhận lại nguyên nhân. Chưa có nguyên nhân → PA chờ xác nhận cũ đi theo lượt mới (`resyncUnconfirmedPresets`).
+         * hạn xác nhận. OV-12c: nguyên nhân là nhận xét của ô lượt mới (đồng bộ ngay trên). Ô chưa có nhận xét (MT cũ) → PA chờ xác nhận cũ đi
+         * theo lượt mới (`resyncUnconfirmedPresets`).
          * Đã có một PA quy chế còn chờ xác nhận → không thêm cái thứ hai (resync đưa nó theo hàng mới).
          */
         if (autoCases && !kck && sosCaseState(open.id).hasCause
@@ -528,21 +533,26 @@ export function raiseSignalsForResult(p: Principal, attempt: any, result: Attemp
 }
 
 /**
- * Case TỰ TẠO chưa ai đụng (OV-1c, mục 8 kế hoạch): chính lượt `attemptSql` mở (mốc `opened`), chưa nguyên nhân, không thẻ "Không cần theo
- * dõi" chờ duyệt, mọi PA còn sống là PA quy chế máy gán chưa ghi gì. `sc` là bí danh `sos_cases`. Dùng chung xoá SOS và migrate `prOv1c`.
+ * Case TỰ TẠO chưa có PA được xác nhận (OV-1c → OV-12c, chủ SP 14/10): chính lượt `attemptSql` mở (mốc `opened`), không thẻ "Không cần theo
+ * dõi" chờ duyệt, không tệp, mọi PA còn sống là PA quy chế máy gán chưa ghi gì (chưa xác nhận, chưa PA GV thêm). Nguyên nhân KHÔNG còn là dấu
+ * "đã đụng" — Case MT có nguyên nhân từ nhận xét ngay khi ra đời. `sc` là bí danh `sos_cases`. Dùng cho xoá SOS (em đạt lại → xoá hẳn).
+ * Migrate `prOv1c` giữ luật cũ (`CASE_CHUA_DUNG_OV1C`, có điều kiện chưa nguyên nhân) — chạy lại không đổi kết quả đã ra.
  */
 export const CASE_CHUA_DUNG = (sc = 'sc', attemptSql = '?') => `(${sc}.status != 'done'
   AND EXISTS (SELECT 1 FROM case_milestones m_o WHERE m_o.case_id = ${sc}.id AND m_o.kind = 'opened' AND m_o.attempt_id = ${attemptSql})
-  AND NOT EXISTS (SELECT 1 FROM case_issues ci_o WHERE ci_o.case_id = ${sc}.id AND ci_o.role = 'primary')
   AND NOT ${CO_THE_KHONG_THEO_DOI(sc)}
+  AND NOT EXISTS (SELECT 1 FROM attachments t_o WHERE t_o.owner_type = 'sos_case' AND t_o.owner_id = ${sc}.id)
   AND NOT EXISTS (SELECT 1 FROM case_interventions iv_o WHERE iv_o.case_id = ${sc}.id AND iv_o.status != 'cancelled' AND NOT ${PA_QUY_CHE_CHUA_GHI('iv_o')}))`;
+/** Luật OV-1c nguyên bản (thêm "chưa nguyên nhân") — chỉ cho migrate `prOv1c` / `kiem-truoc-ov1c`. */
+export const CASE_CHUA_DUNG_OV1C = (sc = 'sc', attemptSql = '?') => `(${CASE_CHUA_DUNG(sc, attemptSql)}
+  AND NOT EXISTS (SELECT 1 FROM case_issues ci_o WHERE ci_o.case_id = ${sc}.id AND ci_o.role = 'primary'))`;
 
 /** Case đang mở của các kỹ năng `failing` đang theo lượt này (`attempt_id`, nối tín hiệu của lượt — CHỈ ĐỌC): `dong` = chưa ai đụng, `giu` = đã có người làm. Dùng chung với `kiem-truoc-ov1c`. */
-export function caseXoaSos(attemptId: number, failing: readonly string[]): { dong: number[]; giu: number[] } {
+export function caseXoaSos(attemptId: number, failing: readonly string[], dieuKien = CASE_CHUA_DUNG): { dong: number[]; giu: number[] } {
   const cats = [...new Set(failing.map((k) => categoryOf(k)).filter(Boolean))] as string[];
   if (!cats.length) return { dong: [], giu: [] };
   const ds = db().prepare(
-    `SELECT DISTINCT sc.id, ${CASE_CHUA_DUNG('sc', '?')} AS chua_dung FROM case_signals g JOIN sos_cases sc ON sc.id = g.case_id
+    `SELECT DISTINCT sc.id, ${dieuKien('sc', '?')} AS chua_dung FROM case_signals g JOIN sos_cases sc ON sc.id = g.case_id
       WHERE g.attempt_id = ? AND g.status = 'linked' AND sc.status != 'done' AND sc.attempt_id = g.attempt_id
         AND sc.category IN (${cats.map(() => '?').join(',')}) ORDER BY sc.id`,
   ).all(attemptId, attemptId, ...cats) as { id: number; chua_dung: number }[];
@@ -551,20 +561,22 @@ export function caseXoaSos(attemptId: number, failing: readonly string[]): { don
 
 /**
  * XOÁ SOS (OV-1c, đặc tả 3.2.3): lượt đã chốt có Case, rồi kỹ năng dời có điểm và Overall thành ≥ kỳ vọng. Case của các kỹ năng còn dưới
- * kỳ vọng nối với lượt này: chưa ai đụng → hệ thống đóng "Overall đạt" + thu hồi tín hiệu (trượt lại thì tín hiệu mở lại, sinh Case mới);
- * đã có người làm → GIỮ, ghi mốc "Overall đã đạt" để GV tự đóng. Phối hợp còn chờ do `syncSosCoordination(…, 0)` bỏ. Chạy lặp vô hại.
- * Gọi trong giao dịch của nơi gọi (`refreshOutcome`, migrate).
+ * kỳ vọng nối với lượt này: OV-12c (chủ SP 14/10) chưa có PA được xác nhận → XOÁ HẲN (thu hồi tín hiệu trước; trượt lại thì tín hiệu mở lại,
+ * sinh Case mới; GV muốn theo dõi thì + Case tay); đã có PA được xác nhận / GV thêm → GIỮ, ghi mốc "Overall đã đạt" để GV tự đóng. Phối hợp còn
+ * chờ do `syncSosCoordination(…, 0)` bỏ. Chạy lặp vô hại. Gọi trong giao dịch của nơi gọi (`refreshOutcome`, migrate).
+ * `luatOv1c`: migrate `prOv1c` chạy lại — luật cũ (chưa nguyên nhân mới là "chưa đụng") và ĐÓNG "Overall đạt" thay xoá.
  */
-export function xoaSosOverallDat(actor: number | null, attempt: any, result: AttemptResult, failing: readonly string[]) {
+export function xoaSosOverallDat(actor: number | null, attempt: any, result: AttemptResult, failing: readonly string[], luatOv1c = false) {
   const conn = db();
-  const { dong, giu } = caseXoaSos(attempt.id, failing);
+  const { dong, giu } = caseXoaSos(attempt.id, failing, luatOv1c ? CASE_CHUA_DUNG_OV1C : CASE_CHUA_DUNG);
   const on = demoToday();
   if (dong.length) {
-    closeCasesBySystem({ actorUserId: actor, studentId: attempt.student_id, reason: 'overall_dat', on, caseIds: dong });
     conn.prepare(
       `UPDATE case_signals SET status = 'withdrawn', withdrawn_reason = ?, updated_at = ?
         WHERE attempt_id = ? AND status = 'linked' AND case_id IN (${dong.map(() => '?').join(',')})`,
     ).run(SYSTEM_CLOSE_REASON_LABEL.overall_dat, nowIso(), attempt.id, ...dong);
+    if (luatOv1c) closeCasesBySystem({ actorUserId: actor, studentId: attempt.student_id, reason: 'overall_dat', on, caseIds: dong });
+    else for (const id of dong) xoaCaseHeThong(conn, id, actor, `${SYSTEM_CLOSE_REASON_LABEL.overall_dat} — em đạt lại, Case chưa có PA được xác nhận`);
   }
   for (const id of giu) {
     addMilestone({
@@ -609,7 +621,7 @@ export function taoCaseTuDong(p: Principal, x: {
       .run(up.id, nowIso(), 'Nhập lại điểm sau khi xoá — mở lại Case cũ.', nowIso(), x.signalId);
     return conn.prepare('SELECT * FROM sos_cases WHERE id = ?').get(up.id);
   }
-  const han = x.kck ? null : hanXacNhan(demoToday(), { sosLevel: x.sosLevel });
+  const han = x.kck ? null : hanXacNhan(demoToday(), { sosLevel: x.sosLevel, thuong: boTro });   // OV-12c: Progress 5 ngày cố định
   const ct = boTro ? (conn.prepare('SELECT programme_code FROM classes WHERE id = ?').get(attempt.class_id ?? 0) as any)?.programme_code ?? null : null;
   conn.prepare('UPDATE sos_cases SET han_xac_nhan = ?, kck = ? WHERE id = ?').run(han, x.kck ? 1 : 0, up.id);
   const open = conn.prepare('SELECT * FROM sos_cases WHERE id = ?').get(up.id) as any;
@@ -623,19 +635,22 @@ export function taoCaseTuDong(p: Principal, x: {
   if (x.kck) { /* OV-9: Case nhẹ — không PA tự sinh */ }
   else if (boTro) taoPaBoTro(conn, { caseId: up.id, attempt, skill: x.skill, category: x.category, ct });
   else createPresetPlan({ caseId: up.id, attempt, category: x.category, sosLevel: x.sosLevel });
+  /* OV-12c: Case MT ra đời đã có nguyên nhân = nhận xét + nhóm của ô → thẳng "Chờ xác nhận PA" (không việc / chuông / thẻ nguyên nhân). */
+  if (!boTro) dongBoNguyenNhanMt({ caseIds: [up.id] });
   /* Dây nối SOS ↔ Case (Q-V3-2): tín hiệu `linked` — thu hồi khi sửa điểm (S08) dùng lại nguyên vẹn. Hạn xác nhận ở `sos_cases.han_xac_nhan`. */
   conn
     .prepare(
       `UPDATE case_signals SET status = 'linked', case_id = ?, resolved_by = NULL, resolved_at = ?,
               resolution_note = ?, updated_at = ? WHERE id = ?`,
     )
-    .run(up.id, nowIso(), x.kck ? 'Em KCK dưới kỳ vọng — đã mở Case nhẹ (không PA quy chế, không hạn), chờ GVBM xác nhận nguyên nhân.'
-      : boTro ? 'Progress Test đã tự tạo Case và PA Bổ trợ cho môn này — chờ GVBM xác nhận nguyên nhân.'
-      : 'Mock Test có SOS đã tự tạo Case và PA theo quy chế cho kỹ năng này — chờ GVBM xác nhận nguyên nhân.', nowIso(), x.signalId);
+    .run(up.id, nowIso(), x.kck ? (boTro ? 'Em KCK dưới kỳ vọng — đã mở Case nhẹ (không PA Bổ trợ, không hạn), chờ GV xác nhận Case.'
+        : 'Em KCK dưới kỳ vọng — đã mở Case nhẹ (không PA quy chế, không hạn), nguyên nhân từ nhận xét MT.')
+      : boTro ? 'Progress Test đã tự tạo Case và PA Bổ trợ cho môn này — chờ GV xác nhận Case.'
+      : 'Mock Test có SOS đã tự tạo Case và PA theo quy chế cho kỹ năng này (nguyên nhân từ nhận xét MT) — chờ xác nhận PA.', nowIso(), x.signalId);
   announceAutoCase({
     caseId: up.id, studentId: attempt.student_id, cycleId: attempt.cycle_id ?? null, skillLabel: labelOf({ skill: x.skill, programme_code: ct }),
     attemptNo: attempt.attempt_no, sosLevel: x.sosLevel, ownerUserId: open.owner_user_id ?? null,
-    ...(boTro ? { ten: tenCaseThuong({ dot: 'progress', giua: `${tenMonNgan(ct, x.skill)} không đạt` }), dot: 'giua-khoa' as const } : {}),
+    ...(boTro ? { ten: tenCaseThuong({ dot: 'progress', giua: `${tenMonNgan(ct, x.skill)} không đạt`, sos: x.sosLevel }), dot: 'giua-khoa' as const } : {}),
     detectedOn: x.detectedAt, hanXacNhan: han, actorUserId: p.userId, kck: x.kck,
   });
   return open;

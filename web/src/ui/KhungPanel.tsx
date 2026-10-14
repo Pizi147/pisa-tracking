@@ -31,8 +31,11 @@ export const KhungTaiCho = createContext(false);
  * `DongCanSua`) — chỉ truyền `conThieu` SAU khi bấm Lưu; lý do từng ô nằm dưới ô (`Truong loi`). CHỈ thân cuộn, trang sau khoá cuộn. Mở việc khác thì THAY nội dung, không
  * chồng panel (`khoPanelChung`). Không chữ dev; chữ mẫu bắt đầu "Ví dụ:".
  */
-export function KhungPanel({ tieuDe, hocVien, lop, rong = 'hep', tabs, ngCanh, quayLai, chan, longTrong, z = 'z-50', onDong, children }: {
+export function KhungPanel({ tieuDe, hocVien, lop, rong = 'hep', tabs, ngCanh, quayLai, chan, longTrong, z = 'z-50', dau, onDong, children }: {
   tieuDe: string; hocVien?: string | null; lop?: string | null;
+  /** OV-12c — ĐẦU PANEL v3 (mockup panel v3 §1): dòng 1 tên việc 17 px + MỘT chip hạn (`ChipHan`) + ✕; dòng 2 em (link ↗) · lớp · ngữ cảnh.
+   *  Có `dau` thì `hocVien` / `lop` không vẽ ở đầu một dòng cũ. */
+  dau?: { han?: ReactNode; dong2: ReactNode[] };
   /** Lớp z — panel mở từ một popover `z-[60]` (hộp xếp lịch `HopKyNang`) cần nằm trên popover đó (PR-LM). */
   z?: string;
   /** Không vào `khoPanelChung`: panel con mở đè (Chuyển tiếp → Tạo lớp) không đóng panel này, state giữ nguyên.
@@ -49,6 +52,9 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong = 'hep', tabs, ngCanh, q
     daSua?: boolean;
     /** Một dòng riêng NGAY TRÊN hàng nút (ví dụ dòng xem trước trên điện thoại — PR-XLMT). Nơi gọi tự ẩn/hiện theo cỡ màn. */
     dongTren?: ReactNode;
+    /** OV-12c — CHÂN v3: không nút trái; ≥ 640 px nút chính nằm trong khối Cần làm (nơi gọi) nên chân chỉ hiện khi có `dongTren`
+     *  (trạng thái lưu); 375: dòng trạng thái trên nút chính rộng hết khung, dính đáy. */
+    v3?: boolean;
   };
   onDong: () => void; children: ReactNode;
 }) {
@@ -98,6 +104,18 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong = 'hep', tabs, ngCanh, q
      lớp xếp chồng của ô, không kế thừa chữ in hoa / căn phải của ô. Sự kiện React vẫn nổi theo cây React như cũ. */
   const than = (
     <>
+        {dau ? (
+          <header className="flex shrink-0 flex-col gap-1.5 border-b px-4 pb-3.5 pt-4 sm:px-5" style={{ borderColor: 'var(--line)' }}>
+            <div className="flex items-start gap-2.5">
+              <h2 className="m-0 min-w-0 flex-1 text-[17px] font-extrabold leading-6 text-slate-100">{tieuDe}</h2>
+              {dau.han}
+              <button type="button" className={`btn btn-sm btn-ghost -my-1 min-h-[44px] min-w-[44px] justify-center sm:min-h-[32px] sm:min-w-[32px] ${taiCho ? 'max-lg:hidden' : ''}`} onClick={onDong} aria-label={t('Đóng')}>✕</button>
+            </div>
+            <p className="m-0 flex flex-wrap items-baseline text-sm leading-snug text-slate-400">
+              {dau.dong2.filter(Boolean).map((x, i) => <span key={i} className="min-w-0">{i > 0 && <span aria-hidden className="mx-1.5 text-slate-500">·</span>}{x}</span>)}
+            </p>
+          </header>
+        ) : (
         <header className="flex h-[52px] shrink-0 items-center gap-2 border-b px-4" style={{ borderColor: 'var(--line)' }}>
           <h2 className="m-0 min-w-0 truncate text-sm font-extrabold text-slate-100" title={tieuDe}>{tieuDe}</h2>
           {ngu && <span className="min-w-0 flex-1 truncate text-xs text-slate-400" title={ngu}>{ngu}</span>}
@@ -105,6 +123,7 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong = 'hep', tabs, ngCanh, q
           {/* Tại chỗ trên điện thoại: "‹ Công việc" của nơi gọi thay ✕. */}
           <button type="button" className={`btn btn-sm btn-ghost min-h-[44px] min-w-[44px] justify-center sm:min-h-[32px] sm:min-w-[32px] ${taiCho ? 'max-lg:hidden' : ''}`} onClick={onDong} aria-label={t('Đóng')}>✕</button>
         </header>
+        )}
         {quayLai && (
           <div className="shrink-0 border-b px-4 py-1.5 text-xs" style={{ borderColor: 'var(--line)' }}>
             <button type="button" className="link appearance-none border-0 bg-transparent p-0" onClick={quayLai.onClick}>← {quayLai.nhan}</button>
@@ -114,7 +133,14 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong = 'hep', tabs, ngCanh, q
         {/* PR-KHUNG: pb-2 — thân cuộn bắt đầu cách dòng ngữ cảnh; không có thì ô bị cắt ngay sát chữ, trông như đè nhãn (rà LUI-a1, 375). */}
         {ngCanh && <div className="shrink-0 truncate px-4 pb-2 pt-2 text-xs text-slate-400 max-sm:whitespace-normal">{ngCanh}</div>}
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-4">{children}</div>
-        {chan && (
+        {chan?.v3 && (
+          <footer className={`flex shrink-0 flex-col gap-2 border-t px-4 pb-3.5 pt-2.5 ${chan.dongTren || chan.conThieu?.length ? '' : 'sm:hidden'}`} style={{ borderColor: 'var(--line-strong)', background: 'var(--surface)' }}>
+            {chan.conThieu?.length ? <DongCanSua muc={chan.conThieu} /> : null}
+            {chan.dongTren && <div className="flex min-h-6 items-center gap-2 text-[13px] text-slate-400">{chan.dongTren}</div>}
+            {chan.chinh && <div className="sm:hidden [&>button]:min-h-[48px] [&>button]:w-full [&>button]:justify-center [&>button]:text-[15px] [&>button]:font-bold">{chan.chinh}</div>}
+          </footer>
+        )}
+        {chan && !chan.v3 && (
           <footer className="shrink-0 border-t" style={{ borderColor: 'var(--line)' }}>
             {chan.conThieu?.length ? <DongCanSua muc={chan.conThieu} /> : null}
             {chan.dongTren}

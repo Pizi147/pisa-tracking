@@ -114,7 +114,7 @@ export function buildDuyetDemo(ctx: BuildCtx): { the: number } {
     setStudentStatus(admin, st.id, 'finished', DEMO_DATE, 'Gia đình chuyển em sang cơ sở khác');
   }
 
-  // (f) Báo lên: Case chờ xác nhận nguyên nhân (bộ SOS v3 — Đỗ Minh Khôi) quá hạn 2 ngày. PR-SOS: hạn ở `sos_cases.han_xac_nhan`.
+  // (f) Case MT cũ bài chưa nhận xét (bộ SOS v3 — Đỗ Minh Khôi · W2) quá hạn 2 ngày → việc "Ghi nhận xét" quá hạn (OV-12c: Case MT không còn thẻ Báo lên nguyên nhân).
   conn.prepare(
     `UPDATE sos_cases SET han_xac_nhan = ? WHERE id IN (
        SELECT sc.id FROM sos_cases sc JOIN students s ON s.id = sc.student_id

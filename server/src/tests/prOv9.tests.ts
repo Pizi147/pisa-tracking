@@ -4,7 +4,7 @@
  * Em thử ở MB FT 101, MT1 rơi 2 tuần trước ngày demo (mẫu `prKck`).
  */
 import type { YThucTestKit } from './yThuc.tests.ts';
-import { chotSan } from './luotThu.ts';
+import { chotSan, nhanXetCaseThu } from './luotThu.ts';
 
 export async function runPrOv9Tests(t: YThucTestKit) {
   const { check, assert, conn, P } = t;
@@ -114,14 +114,15 @@ export async function runPrOv9Tests(t: YThucTestKit) {
     assert(n(`SELECT COUNT(*) n FROM notifications WHERE user_id = ? AND entity_type = 'sos_case' AND entity_id IN (SELECT id FROM sos_cases WHERE student_id = ?)`,
       P.mbManager.userId, nhe.sid) === 0, 'chuông QL');
     const st = sosCaseState(cs[0].id);
-    assert(st.fromSos && st.awaitingCause && st.dueOn === null, JSON.stringify(st));
+    /* OV-12c: nguyên nhân Case MT = nhận xét — bài chưa nhận xét (dữ liệu cũ) → "Chờ ghi nhận xét", không hạn. */
+    assert(st.fromSos && st.choNhanXet && !st.awaitingCause && st.dueOn === null, JSON.stringify(st));
   });
 
-  check('OV9 (3) · GV phụ trách có việc "Xác nhận nguyên nhân · KCK" không hạn, không quá hạn; không dòng "Thêm PA" có hạn', () => {
+  check('OV9 (3) · GV phụ trách có việc "Ghi nhận xét · KCK" (OV-12c: Case MT) không hạn, không quá hạn; không dòng "Thêm PA" có hạn', () => {
     const c = caseCua(nhe.sid).find((x) => x.category === 'listening');
     assert(c.owner_user_id, 'Case chưa có người phụ trách');
     const items = myWork(loadPrincipal(c.owner_user_id), { nguoi: 'toi' }).items as any[];
-    const v = items.find((i) => i.key === `cause:${c.id}`);
+    const v = items.find((i) => i.key === `ghi_nhan_xet:${c.id}`);
     assert(v && v.due === null && v.urgency !== 'overdue' && /KCK/.test(v.tieuDe), JSON.stringify(v));
     assert(!items.some((i) => i.key === `support:${c.id}`), 'còn dòng Thêm PA (có hạn)');
     const ql = myWork(P.mbManager, { nguoi: 'tat-ca' }).items as any[];
@@ -130,11 +131,12 @@ export async function runPrOv9Tests(t: YThucTestKit) {
 
   check('OV9 (3) · GV xác nhận nguyên nhân Case nhẹ (như Case thường) → Đang xử lý, hết việc chờ nguyên nhân; vẫn 0 PA, không hạn', () => {
     const c = caseCua(nhe.sid).find((x) => x.category === 'reading');
-    sosAuto.xacNhanCase(loadPrincipal(c.owner_user_id), c.id, { primaryCode: d.issuesForTopic('reading', null)[0].code, urgency: 'attention', moTa: 'Em đọc chậm, chưa quen dạng bài.' });
+    /* OV-12c: "xác nhận nguyên nhân" Case MT = ghi nhận xét + nhóm vào bài. */
+    nhanXetCaseThu(conn, attempts.saveScore, loadPrincipal(c.owner_user_id), c.id, { primaryCode: d.issuesForTopic('reading', null)[0].code, moTa: 'Em đọc chậm, chưa quen dạng bài.' });
     const sau = one('SELECT status, han_xac_nhan, kck FROM sos_cases WHERE id = ?', c.id);
     assert(sau.status === 'in_progress' && sau.han_xac_nhan === null && sau.kck === 1, JSON.stringify(sau));
     assert(n('SELECT COUNT(*) n FROM case_interventions WHERE case_id = ?', c.id) === 0, 'xác nhận Case nhẹ sinh PA');
-    assert(!sosCaseState(c.id).awaitingCause, 'vẫn chờ nguyên nhân');
+    assert(!sosCaseState(c.id).awaitingCause && !sosCaseState(c.id).choNhanXet, 'vẫn chờ nguyên nhân');
   });
 
   check('OV9 (3) · hồ sơ: câu tóm tắt "Dưới kỳ vọng · KCK", không SOS, không đỏ; Target "6.5" + KCK', () => {

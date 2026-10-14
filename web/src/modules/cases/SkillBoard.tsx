@@ -401,8 +401,9 @@ function HangCase({ c, ngan, onChanged, onMoCase }: {
   const td = tienDoCase(c.plans, c);
   const chay = c.plans.filter(dangChay);
   const xong = c.plans.filter((p) => !dangChay(p));
-  const choNguyenNhan = tt.k === 'cho-nguyen-nhan';
-  const chanNut = tt.k === 'cho-nguyen-nhan' || tt.k === 'cho-duyet-khong-theo-doi';
+  /* OV-12c: Case còn chờ một bước trước PA — Progress "Xác nhận Case", Case MT cũ "Ghi nhận xét" (nguyên nhân = nhận xét của bài). */
+  const choNguyenNhan = tt.k === 'cho-nguyen-nhan' || tt.k === 'cho-nhan-xet';
+  const chanNut = choNguyenNhan || tt.k === 'cho-duyet-khong-theo-doi';
   /* K3-08: Case chờ nguyên nhân chưa có gì để tóm tắt — dòng phụ trống. */
   /* PR-S5F-b: Case rút vì sửa/xoá điểm — không tóm tắt PA ("Chưa có PA" / "n PA …" gây hiểu là chưa làm). */
   const dongPhu = choNguyenNhan ? null : [
@@ -444,7 +445,7 @@ function HangCase({ c, ngan, onChanged, onMoCase }: {
             khoiSos === null ? (
               <CotPhai nut={(
                 <>
-                  <button type="button" className="btn btn-sm btn-primary" onClick={() => onMoCase(c.id, { viec: 'xac-nhan' })}>Xác nhận nguyên nhân</button>
+                  <button type="button" className="btn btn-sm btn-primary" onClick={() => onMoCase(c.id, { viec: 'xac-nhan' })}>{tt.k === 'cho-nhan-xet' ? 'Ghi nhận xét' : 'Xác nhận Case'}</button>
                   <button type="button" className="btn btn-sm btn-ghost" onClick={() => setKhoiSos('khong-theo-doi')}>Không cần theo dõi…</button>
                 </>
               )} />
@@ -456,13 +457,17 @@ function HangCase({ c, ngan, onChanged, onMoCase }: {
                 {c.canEdit && !daXong && !chanNut && c.plans.length === 0 && (
                   <button type="button" className="btn btn-sm" onClick={() => onMoCase(c.id, { viec: 'them-pa' })}>+ Thêm PA</button>
                 )}
+                {/* OV-12c: Case MT có nguyên nhân sẵn — "Không cần theo dõi" mở ngay ở bước chờ xác nhận PA. */}
+                {c.canEdit && tt.k === 'cho-xac-nhan-pa' && khoiSos === null && (
+                  <button type="button" className="btn btn-sm btn-ghost" onClick={() => setKhoiSos('khong-theo-doi')}>Không cần theo dõi…</button>
+                )}
               </>
             )} />
           )}
         </td>
       </HangCon>
 
-      {/* YC-12.1: "Không cần theo dõi…" mở tại chỗ; nút Xác nhận nguyên nhân biến mất tới khi Huỷ. */}
+      {/* YC-12.1: "Không cần theo dõi…" mở tại chỗ; nút Xác nhận Case / Ghi nhận xét biến mất tới khi Huỷ. */}
       {khoiSos === 'khong-theo-doi' && (
         <HangCon>
           <td className="td" colSpan={4}>

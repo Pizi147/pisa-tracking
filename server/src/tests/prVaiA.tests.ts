@@ -621,14 +621,14 @@ export async function runPrVaiATests(t: YThucTestKit) {
     } finally { conn.prepare('DELETE FROM notifications WHERE id IN (?, ?)').run(a, b); }
   });
 
-  check('VAI-a (10e) · Q19–Q20: bốn loại tách tên; không còn tiêu đề "Lịch thi cần xử lý"; Case mới nói "Xác nhận nguyên nhân {môn} — {HV} · {lớp}"', () => {
+  check('VAI-a (10e) · Q19–Q20: bốn loại tách tên; không còn tiêu đề "Lịch thi cần xử lý"; Case mới (Progress — OV-12c) nói "Xác nhận Case {môn} · {HV} · {lớp}"', () => {
     const doc = (p: string) => fs.readFileSync(pathM.join(REPO, p), 'utf8');
     assert(!/'Lịch thi cần xử lý'/.test(doc('server/src/fasttrack/absence.ts')), 'absence.ts còn tiêu đề cũ');
     assert(/kind: 'tu_doi_lich'/.test(doc('server/src/fasttrack/absence.ts')), 'tu_doi_lich');
     assert(/kind: 'discipline_de_biet'/.test(doc('server/src/yThuc/xuLy.ts')), 'discipline_de_biet');
     assert(/'bo_tro_mien_phi', 'Mang theo PA Bổ trợ miễn phí'/.test(doc('server/src/normal/cuoiKhoa.ts')), 'bo_tro_mien_phi');
     assert(/'duyet_tu_choi' : 'duyet_ket_qua'/.test(doc('server/src/duyet/yeuCau.ts')), 'duyet_tu_choi');
-    assert(/title: `Xác nhận nguyên nhân \$\{input\.skillLabel\} · /.test(doc('server/src/cases/sosAuto.ts')), 'tiêu đề Case mới');
+    assert(/title: `Xác nhận Case \$\{input\.skillLabel\} · /.test(doc('server/src/cases/sosAuto.ts')), 'tiêu đề Case mới');
   });
 
   // ================================================================== Task 11 · dòng Nợ ghi tên GV · sắp lớp soSanhLop

@@ -2,8 +2,10 @@
  * SOS v4 (PR-SOS, đặc tả 27/09 §3.1d + §5.3 S4-1…S4-7, Q28-1…Q28-5) — LUẬT THUẦN, không đụng database.
  *
  * Mock FT dưới kỳ vọng → Case tự tạo + PA theo quy chế "Chờ xác nhận" (preset=1, planned, confirmed_at NULL — biểu diễn có sẵn).
- * GVBM có 5 ngày — Gấp / SOS 3: 3 ngày (tính cả ngày đầu, `soNgayHanXacNhan`) — chọn MỘT trong hai: Xác nhận nguyên nhân (→ Xác nhận PA, PA chạy từ hôm đó) hoặc
- * Không cần theo dõi (thẻ Chờ duyệt). PA quy chế không thay, không kết thúc sớm; tới mốc → "Ghi kết quả cuối".
+ * OV-12c (chủ SP 14/10): nguyên nhân Case MT = nhận xét + nhóm của ô (`cases/nguyenNhanO.ts`) → Case đi thẳng "Chờ xác nhận PA"; hạn 5 ngày — Gấp / SOS 3:
+ * 3 ngày (tính cả ngày đầu, `soNgayHanXacNhan`): Xác nhận PA (PA chạy từ hôm đó) hoặc Không cần theo dõi (thẻ Chờ duyệt). Case MT cũ mà ô chưa có
+ * nhận xét: "Chờ ghi nhận xét". Progress Test lớp thường: MỘT bước "Xác nhận Case" (nhóm + mô tả + PA Bổ trợ), hạn 5 ngày cố định.
+ * PA quy chế không thay, không kết thúc sớm; tới mốc → "Ghi kết quả cuối".
  */
 import { hanTheoNgay, PLAN_DECISIONS, soNgayHanXacNhan, type PlanDecision } from './cases.ts';
 import { sosPlanEndDate, type AcademicSupportSpan } from './sos.ts';
@@ -12,8 +14,8 @@ import type { TrangThai } from './trangThai.ts';
 import { ngay, tuanLich } from './hienThiNgay.ts';
 import { mocChuBoTro } from './lopThuong.ts';
 
-/** Hạn Xác nhận nguyên nhân / Xác nhận PA: 5 ngày ('2026-09-14' → '2026-09-18'); Gấp / SOS 3: 3 ngày (→ '2026-09-16'). */
-export const hanXacNhan = (ngay: string, muc: { sosLevel?: number | null; urgency?: string | null } = {}) => hanTheoNgay(ngay, soNgayHanXacNhan(muc));
+/** Hạn Xác nhận PA (MT) / Xác nhận Case (Progress): 5 ngày ('2026-09-14' → '2026-09-18'); MT Gấp / SOS 3: 3 ngày (→ '2026-09-16'); Progress luôn 5. */
+export const hanXacNhan = (ngay: string, muc: { sosLevel?: number | null; urgency?: string | null; thuong?: boolean } = {}) => hanTheoNgay(ngay, soNgayHanXacNhan(muc));
 
 export const GOI_Y_MO_TA_PA = 'Nêu hướng dẫn và trọng tâm cụ thể; ai sẽ thực hiện / hỗ trợ / Tutor';                       // Q28-1
 export const GOI_Y_KET_QUA_PA = 'Đã cải thiện ở phần nào, như thế nào, kết quả cụ thể';  // Q28-2; PR-LUI-a2: "ai" đã có ô Người phụ trách
@@ -60,7 +62,8 @@ export function tenCaseSos(x: { mt: number | null; giua: string; sos: number | n
   return [x.mt ? `[MT${x.mt}]` : '', x.giua, x.kck ? '[KCK]' : x.sos ? `[SOS ${x.sos}]` : ''].filter(Boolean).join(' ');
 }
 
-export type TrangThaiCaseV4 = 'cho-nguyen-nhan' | 'cho-duyet-khong-theo-doi' | 'cho-xac-nhan-pa' | 'dang-lam' | 'xong' | 'huy-khong-theo-doi' | 'he-thong-dong' | 'rut-sua-diem';
+/** `cho-nguyen-nhan` = Progress chờ "Xác nhận Case"; `cho-nhan-xet` = Case MT cũ mà ô chưa có nhận xét (OV-12c). */
+export type TrangThaiCaseV4 = 'cho-nguyen-nhan' | 'cho-nhan-xet' | 'cho-duyet-khong-theo-doi' | 'cho-xac-nhan-pa' | 'dang-lam' | 'xong' | 'huy-khong-theo-doi' | 'he-thong-dong' | 'rut-sua-diem';
 
 export type CaseV4Input = {
   status: 'open' | 'in_progress' | 'done'; fromSos: boolean; hasCause: boolean; dismissed: boolean; systemClosed: boolean;
@@ -69,6 +72,8 @@ export type CaseV4Input = {
   lyDoHeThong?: string | null;
   /** PR-S5F-b: Case rút khỏi danh sách vì điểm nguồn được sửa/huỷ (`retireCaseForCorrectedScore`) — không phải "Xong". */
   rutSuaDiem?: boolean;
+  /** OV-12c: Case SOS Mock Test — nguyên nhân lấy từ nhận xét của ô; thiếu = "Chờ ghi nhận xét", không phải "Xác nhận Case". */
+  laMt?: boolean;
 };
 
 /** MỘT nhãn trạng thái cho một Case (§7.3) — xét từ trên xuống. */
@@ -79,7 +84,8 @@ export function trangThaiCaseV4(c: CaseV4Input, homNay: string): { k: TrangThaiC
   if (c.status === 'done') return { k: 'xong', t: 'xong', chu: 'Xong', han: null };
   if (c.choDuyetKhongTheoDoi) return { k: 'cho-duyet-khong-theo-doi', t: 'cho-duyet', chu: 'Chờ Quản lý duyệt · không theo dõi', han: null };
   const t: TrangThai = c.hanXacNhan && c.hanXacNhan < homNay ? 'qua-han' : 'can-lam';
-  if (c.fromSos && !c.hasCause) return { k: 'cho-nguyen-nhan', t, chu: 'Chờ xác nhận nguyên nhân', han: c.hanXacNhan };
+  if (c.fromSos && !c.hasCause) return c.laMt ? { k: 'cho-nhan-xet', t, chu: 'Chờ ghi nhận xét', han: c.hanXacNhan }
+    : { k: 'cho-nguyen-nhan', t, chu: 'Chờ xác nhận Case', han: c.hanXacNhan };
   if (c.fromSos && c.coPaChoXacNhan) return { k: 'cho-xac-nhan-pa', t, chu: 'Chờ xác nhận PA', han: c.hanXacNhan };
   return { k: 'dang-lam', t: 'dang-lam', chu: 'Đang làm', han: null };
 }
@@ -105,7 +111,8 @@ export type ViecTiepCase = { chu: string; loaiHan: DeadlineKind | null; han: str
 export function viecTiepCuaCase(c: CaseV4Input, pas: PaViecTiep[], homNay: string, hanLapPa: string | null = null): ViecTiepCase | null {
   const s = trangThaiCaseV4(c, homNay);
   if (s.k === 'xong' || s.k === 'huy-khong-theo-doi' || s.k === 'he-thong-dong' || s.k === 'rut-sua-diem') return null;
-  if (s.k === 'cho-nguyen-nhan') return { chu: 'Xác nhận nguyên nhân', loaiHan: 'xac-minh-sos', han: c.hanXacNhan };
+  if (s.k === 'cho-nguyen-nhan') return { chu: 'Xác nhận Case', loaiHan: 'xac-minh-sos', han: c.hanXacNhan };
+  if (s.k === 'cho-nhan-xet') return { chu: 'Ghi nhận xét', loaiHan: 'xac-minh-sos', han: c.hanXacNhan };
   if (s.k === 'cho-duyet-khong-theo-doi') return { chu: 'Chờ Quản lý duyệt · không theo dõi', loaiHan: null, han: null };
   const choXn = pas.find((p) => p.choXacNhan && !p.xong);
   if (choXn) return { chu: `Xác nhận PA ${tenPaGon(choXn.ten)}`, loaiHan: 'xac-minh-sos', han: c.hanXacNhan, paId: choXn.id };

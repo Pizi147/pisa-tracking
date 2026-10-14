@@ -17,7 +17,7 @@ import { attemptHref, listAttempts } from '../fasttrack/attempts.ts';
 import { viecBanGiao } from '../classes/banGiao.ts';
 import { lopChoChotLoTrinh } from '../classes/lenhChuyen.ts';
 import { canSeeBoard, myMgmtTasks } from './mgmttasks.ts';
-import { LA_CASE_SOS, NOT_UNCONFIRMED_PRESET, UNCONFIRMED_PRESET, awaitingCauseCaseIds } from '../cases/sosState.ts';
+import { CO_THE_KHONG_THEO_DOI, LA_CASE_SOS, NOT_UNCONFIRMED_PRESET, UNCONFIRMED_PRESET, sosCaseStateMany } from '../cases/sosState.ts';
 import { quyenBoTro } from '../cases/boTro.ts';
 import { boKetQuaChoMiniTest, emXetLaiLoTrinh, nguoiGiuMiniTest, tyLeTongLo } from '../normal/cuoiKhoa.ts';
 import { dongPhoiHopLop, myCoordinationLines } from '../yThuc/phoiHop.ts';
@@ -111,8 +111,6 @@ export type WorkItem = {
   caseSos?: boolean;
   /** PR-GOP (§5): dòng gộp "Loại việc · lớp · n em" — các việc thật của dòng (khoá, nút, hạn riêng). Chỉ có ở `dong`. */
   con?: ConGop<WorkItem>[];
-  /** OV-5a: Xác nhận nguyên nhân gom theo lớp + kỹ năng + lượt — phần thêm của khoá gộp (`gopViec.ts`). */
-  gopThem?: string | null;
   /** OV-5a (panel Công việc): PA của việc — Kết quả PA, Xác nhận PA, Ghi Mini Test mở đúng PA trong Ngăn Case. */
   paId?: number | null;
   /** OV-5a: Nhập điểm mở panel một lớp · một lượt (`mt:2`, `thuong:progress`) · kỹ năng đầu tiên của dòng. */
@@ -133,7 +131,8 @@ export type WorkItem = {
  * chắn nhất để nó không bao giờ được làm.
  */
 export type WorkGroupKey =
-  | 'cause' | 'xac_nhan_pa' | 'phoi_hop' | 'mini_test' | 'score' | 'no_plan' | 'ghi_ket_qua_pa'
+  /* OV-12c: `cause` = "Xác nhận Case" Progress lớp thường; `ghi_nhan_xet` = Case MT cũ mà ô chưa có nhận xét (nguyên nhân Case MT = nhận xét). */
+  | 'cause' | 'ghi_nhan_xet' | 'xac_nhan_pa' | 'phoi_hop' | 'mini_test' | 'score' | 'no_plan' | 'ghi_ket_qua_pa'
   | 'no_owner' | 'missing_data' | 'mgmt'
   /* PR-VAI-a: Phối hợp SOS là việc thật (K5-10); khai bậc Ý thức HS cũ (K1-15); kỳ vọng đầu ra (K5-11). */
   | 'phoi_hop_sos' | 'khai_bac' | 'ky_vong_dau_ra'
@@ -165,14 +164,19 @@ const GROUP_META: Record<WorkGroupKey, { label: string; hint: string }> = {
    * "xác nhận PA gợi ý". Không có dòng này thì hạn ba ngày vô hình.
    */
   cause: {
-    label: 'Xác nhận nguyên nhân',
-    hint: 'Kết quả Test đã tự tạo Case cho môn/kỹ năng này. Chọn Xác nhận nguyên nhân, hoặc Không cần theo dõi (gửi Quản lý duyệt) — '
-      + '3 ngày, tính cả hôm nay.',
+    label: 'Xác nhận Case',
+    hint: 'Progress Test đã tự tạo Case cho môn này. Chọn nhóm nguyên nhân, ghi mô tả ngắn, xem PA Bổ trợ rồi Xác nhận Case — '
+      + 'hoặc Không cần theo dõi (gửi Quản lý duyệt). Hạn 5 ngày, tính cả ngày Case ra đời.',
   },
-  /* PR-SOS (§3.1d): đã Xác nhận Case mà PA theo quy chế còn chờ xác nhận — PA chưa chạy tới khi bấm Xác nhận PA. */
+  /* OV-12c: Case MT cũ (trước luật nhận xét bắt buộc) mà ô chưa có nhận xét — ghi nhận xét + nhóm ở hộp chấm, Case tự sang Xác nhận PA. */
+  ghi_nhan_xet: {
+    label: 'Ghi nhận xét',
+    hint: 'Nguyên nhân Case Mock Test là nhận xét của bài. Ghi nhận xét và nhóm nguyên nhân — lưu xong Case sang Xác nhận PA.',
+  },
+  /* PR-SOS (§3.1d) → OV-12c: Case MT có nguyên nhân từ nhận xét — PA theo quy chế chờ xác nhận, chưa chạy tới khi bấm Xác nhận PA. */
   xac_nhan_pa: {
     label: 'Xác nhận PA',
-    hint: 'Đã xác nhận Case — còn xác nhận PA theo quy chế để PA bắt đầu.',
+    hint: 'Nguyên nhân đã có từ nhận xét Mock Test — xác nhận PA theo quy chế để PA bắt đầu, hoặc Không cần theo dõi (gửi Quản lý duyệt).',
   },
   /* PR-LT2a (N3, T45): GVCN báo phụ huynh qua TVV — không hạn (M-05). */
   phoi_hop: {
@@ -773,10 +777,11 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     });
   }
 
-  // ------------------------------------- 3b. Case TỰ TẠO TỪ SOS: Xác nhận nguyên nhân · Xác nhận PA (S4-2, §3.1d)
+  // ------------------------------------- 3b. Case TỰ TẠO TỪ SOS: Xác nhận Case (Progress) · Ghi nhận xét (MT cũ) · Xác nhận PA (S4-2, §3.1d, OV-12c)
   /*
-   * MỘT DÒNG MỖI CASE (nguyên nhân) / MỖI PA (xác nhận PA). Hạn = `sos_cases.han_xac_nhan` (`hanXacNhan`: 5 ngày, Gấp / SOS 3: 3), hết ngày hạn mới tính
-   * quá hạn. "Chờ nguyên nhân" là của `awaitingCauseCaseIds` (đã loại thẻ Không cần theo dõi đang chờ).
+   * MỘT DÒNG MỖI CASE (Xác nhận Case / Ghi nhận xét) / MỖI PA (xác nhận PA). Hạn = `sos_cases.han_xac_nhan` (`hanXacNhan`: 5 ngày; MT Gấp / SOS 3: 3;
+   * Progress cố định 5), hết ngày hạn mới tính quá hạn. Case chờ = `sosCaseStateMany` (đã loại thẻ Không cần theo dõi đang chờ). Case MT mới
+   * có nguyên nhân từ nhận xét ngay khi ra đời → chỉ còn Xác nhận PA.
    *
    * AI THẤY: người phụ trách Case (GVBM đúng kỹ năng); "Của GV (nhắc)" liệt kê dòng của GV cho Quản lý. Em Tạm dừng không sinh dòng (K3-41).
    * Mọi trường hợp đều kiểm đúng quyền sửa Case theo kỹ năng (C02).
@@ -792,24 +797,27 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
          LEFT JOIN enrollments cur ON cur.student_id = s.id AND cur.status = 'active'
          LEFT JOIN classes ac ON ac.id = a.class_id
          LEFT JOIN classes cc ON cc.id = cur.class_id`;
-  const causeCandidates = !co('cause') ? [] : conn
+  const causeCandidates = !co('cause', 'ghi_nhan_xet') ? [] : conn
     .prepare(
       `SELECT ${cotCase} FROM sos_cases sc ${noiCase}
         WHERE sc.status != 'done' AND ${HV_DANG_HOC_SQL('s')}
-          AND ${LA_CASE_SOS('sc')}`,
+          AND ${LA_CASE_SOS('sc')}
+          AND NOT EXISTS (SELECT 1 FROM case_issues ci WHERE ci.case_id = sc.id AND ci.role = 'primary')`,
     )
     .all() as any[];
-  const waiting = new Set(awaitingCauseCaseIds(causeCandidates.map((c) => c.id as number)));
+  /* OV-12c: MỘT định nghĩa (`sosCaseStateMany`) — Progress chờ "Xác nhận Case", MT cũ chờ "Ghi nhận xét"; thẻ Không cần theo dõi đang chờ thì không. */
+  const stCho = sosCaseStateMany(causeCandidates.map((c) => c.id as number));
   const xacNhanPa = !co('xac_nhan_pa') ? [] : conn
     .prepare(
       `SELECT ${cotCase}, iv.id AS iv_id FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id ${noiCase}
         WHERE ${UNCONFIRMED_PRESET('iv')} AND iv.status = 'planned' AND iv.kind != 'bo_tro' AND sc.status != 'done' AND ${HV_DANG_HOC_SQL('s')}   /* PA bổ trợ chờ kế hoạch, không chờ "Xác nhận PA" (M8) */
-          AND EXISTS (SELECT 1 FROM case_issues ci WHERE ci.case_id = sc.id AND ci.role = 'primary')`,
+          AND EXISTS (SELECT 1 FROM case_issues ci WHERE ci.case_id = sc.id AND ci.role = 'primary')
+          AND NOT ${CO_THE_KHONG_THEO_DOI('sc')}   /* OV-12c: Không cần theo dõi mở ở bước này — thẻ đang chờ thì việc ở Quản lý */`,
     )
     .all() as any[];
   napTruocPhamVi([...causeCandidates, ...xacNhanPa].map((r) => r.eff_student_id));
   if (tatCa) napChu([...causeCandidates, ...xacNhanPa].map((r) => r.owner_user_id));
-  const dongCase = (c: any, loai: 'cause' | 'xac_nhan_pa') => {
+  const dongCase = (c: any, loai: 'cause' | 'ghi_nhan_xet' | 'xac_nhan_pa') => {
     if (f.branchId && c.eff_branch_id !== f.branchId) return;
     if (!can(p, PERMISSIONS.SOS_EDIT, { classId: c.eff_class_id, studentId: c.eff_student_id, skill: c.topic ?? undefined })) return;
     const u = urgencyOf(c.due ?? null, today);
@@ -821,39 +829,48 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     const cuaGv = tatCa && can(p, PERMISSIONS.CASE_APPROVE, { classId: c.eff_class_id, studentId: c.eff_student_id });
     if (!mine && !cuaGv) return;
     /* OV-11c (CV-8): chủ Case không còn quyền làm (C02: GVCN không dạy môn đó) — việc không của họ (họ không thấy, Nhắc 404): "Của GV" để trống người giữ. */
-    const chu = c.owner_user_id ?? null;
-    const chuLamDuoc = mine || chu === null || (() => { const x = nguoiCoQuyen.get(chu); return !!x && can(x, PERMISSIONS.SOS_EDIT, { classId: c.eff_class_id, studentId: c.eff_student_id, skill: c.topic ?? undefined }); })();
+    const chu_ = c.owner_user_id ?? null;
+    const chuLamDuoc = mine || chu_ === null || (() => { const x = nguoiCoQuyen.get(chu_); return !!x && can(x, PERMISSIONS.SOS_EDIT, { classId: c.eff_class_id, studentId: c.eff_student_id, skill: c.topic ?? undefined }); })();
     const laThuong = lopCua(c.eff_class_id)?.mode === 'ratio';
     /* T58/MH2: lớp thường nói tên môn ngắn (G+V, P) và "chưa đạt" — không "dưới kỳ vọng". */
     /* OV-11c (CV-17a): tên môn ĐỦ ở mọi khung ("Listening", "Grammar + Vocabulary") — cùng tên với "Thêm PA học thuật …". */
     const skillLabel = c.topic ? caseTopicLabel(c.topic, ctCua(c.eff_class_id)) : 'Kỹ năng';
     const hv = c.full_name ?? 'Học viên';
-    const nguyenNhan = loai === 'cause';
     const kck = c.kck ? ' · KCK' : '';   // OV-9: Case nhẹ — không hạn (`due` null), không đỏ
+    const mt = `MT${c.attempt_no ?? ''}`;
+    const chu = {
+      cause: { key: `cause:${c.id}`, ly: `${skillLabel} ${laThuong ? 'chưa đạt' : 'dưới kỳ vọng'}${kck} — chưa xác nhận Case${kck ? ', không hạn' : ''}`,
+        tieuDe: `Xác nhận Case ${skillLabel}${kck} · ${hv}`, nut: 'Xác nhận Case', tt: 'Chờ xác nhận Case' },
+      ghi_nhan_xet: { key: `ghi_nhan_xet:${c.id}`, ly: `${skillLabel} dưới kỳ vọng${kck} — bài chưa có nhận xét (nguyên nhân Case)`,
+        tieuDe: `Ghi nhận xét ${skillLabel}${kck} · ${mt} · ${hv}`, nut: 'Ghi nhận xét', tt: 'Chờ ghi nhận xét' },
+      xac_nhan_pa: { key: `xnpa:${c.iv_id}`, ly: `${skillLabel} — PA theo quy chế chưa bắt đầu`,
+        tieuDe: `Xác nhận PA · ${skillLabel} · ${hv}`, nut: 'Xác nhận PA', tt: 'Chờ xác nhận PA' },
+    }[loai];
     items.push({
-      key: nguyenNhan ? `cause:${c.id}` : `xnpa:${c.iv_id}`, group: loai, urgency: u, paId: nguyenNhan ? null : c.iv_id,
-      /* OV-5a: Xác nhận nguyên nhân gom theo lớp + kỹ năng + lượt (panel gom ở Công việc). */
-      gopThem: nguyenNhan ? `${c.attempt_kind ?? 'mock'}${c.attempt_no ?? ''}:${c.topic ?? ''}` : null,
+      key: chu.key, group: loai, urgency: u, paId: loai === 'xac_nhan_pa' ? c.iv_id : null,
       studentId: c.eff_student_id, studentName: hv,
       classId: c.eff_class_id ?? null, classCode: c.class_code ?? null,
       attemptId: c.attempt_id ?? null, attemptNo: c.attempt_no ?? null,
       caseId: c.id as number, level: levelOf(c),
       contextLabel: nhanDot(c.attempt_kind, c.attempt_no),
       count: null,
-      reason: [
-        nguyenNhan ? `${skillLabel} ${laThuong ? 'chưa đạt' : 'dưới kỳ vọng'}${kck} — chưa xác nhận nguyên nhân${kck ? ', không hạn' : ''}` : `${skillLabel} — PA theo quy chế chưa bắt đầu`,
-        mine ? null : 'người phụ trách chưa làm',
-      ].filter(Boolean).join(' — '),
-      tieuDe: nguyenNhan ? `Xác nhận nguyên nhân ${skillLabel}${kck} · ${hv}` : `Xác nhận PA · ${skillLabel} · ${hv}`, phu: skillLabel,
-      actionLabel: nguyenNhan ? 'Xác nhận nguyên nhân' : 'Xác nhận PA',
+      reason: [chu.ly, mine ? null : 'người phụ trách chưa làm'].filter(Boolean).join(' — '),
+      tieuDe: chu.tieuDe, phu: skillLabel,
+      actionLabel: chu.nut,
       /* PR-DUYET (K5-12): mở thẳng Ngăn Case — Nhắc lưu đường này vào thông báo, chuông về đúng chỗ. */
       href: duongHoSoHocVien(c.eff_student_id, { caseId: c.id }),
-      ownerId: chuLamDuoc ? chu : null, owner: null, mine,
-      due: c.due ?? null, statusLabel: nguyenNhan ? 'Chờ xác nhận nguyên nhân' : 'Chờ xác nhận PA',
+      ownerId: chuLamDuoc ? chu_ : null, owner: null, mine,
+      due: c.due ?? null, statusLabel: chu.tt,
       caseSos: true,   // LA_CASE_SOS / PA quy chế — luôn là Case sinh từ SOS
+      /* OV-12c: Ghi nhận xét mở hộp chấm tại chỗ — bảng điểm một lớp · một lượt · đúng bài của Case (cùng panel Nhập điểm). */
+      ...(loai === 'ghi_nhan_xet' ? { luot: `mt:${c.attempt_no}`, kn: c.topic ?? undefined } : {}),
     });
   };
-  for (const c of causeCandidates) if (waiting.has(c.id)) dongCase(c, 'cause');
+  for (const c of causeCandidates) {
+    const st = stCho.get(c.id);
+    if (st?.awaitingCause) dongCase(c, 'cause');
+    else if (st?.choNhanXet) dongCase(c, 'ghi_nhan_xet');
+  }
   for (const c of xacNhanPa) dongCase(c, 'xac_nhan_pa');
 
   // ------------------------------------- 3c. Giữa khoá lớp thường: BÁO PHỤ HUYNH QUA TVV (PR-LT2a; PR-CT2 bỏ nhóm Nộp kế hoạch bổ trợ)
@@ -1243,7 +1260,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   /* OV-11c (CV-11): QL / Quản trị "Của tôi" = việc mình giữ (hoặc chưa ai giữ mà mình làm được); việc GV giữ chỉ ở "Của GV". */
   if (xemNguoiKhac && !tatCa) for (let i = items.length - 1; i >= 0; i--) if (items[i].ownerId !== null && items[i].ownerId !== p.userId) items.splice(i, 1);
   const order: WorkGroupKey[] = [
-    'cause', 'xac_nhan_pa', 'phoi_hop', 'phoi_hop_sos', 'mini_test', 'score', 'no_plan', 'ghi_ket_qua_pa', 'yt_xu_ly', 'yt_xem', 'yt_thuc_hien', 'khai_bac',
+    'cause', 'ghi_nhan_xet', 'xac_nhan_pa', 'phoi_hop', 'phoi_hop_sos', 'mini_test', 'score', 'no_plan', 'ghi_ket_qua_pa', 'yt_xu_ly', 'yt_xem', 'yt_thuc_hien', 'khai_bac',
     'chot_len_ft', 'xet_lai_lo_trinh', 'ky_vong_dau_ra', 'thi_that', 'buoc_tiep', 'ban_giao', 'no_owner', 'mgmt', 'missing_data',
   ];
   const weight = (u: WorkUrgency) => (u === 'overdue' ? 0 : u === 'today' ? 1 : 2);
