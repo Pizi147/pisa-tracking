@@ -5,6 +5,7 @@ import { ApiError, api } from '../../lib/api.ts';
 import { useSession } from '../../lib/session.tsx';
 import { Alert, Field, Info, NutChon, SectionNote } from '../../ui/ui.tsx';
 import { ChonKyNang } from './ProfilePage.tsx';
+import { NutNgonNgu } from '../../ui/NutNgonNgu.tsx';
 
 import { ROLES, ROLE_LABEL, type Role } from '@shared/domain/index.ts';
 
@@ -139,6 +140,8 @@ export default function WelcomePage() {
           </div>
           {!LA_BAN_CHINH && <div className="ml-auto"><Alert tone="warn">Dữ liệu demo</Alert></div>}
         </div>
+        {/* PR-EN (chủ SP 07/10): hai nút to ngay trên khung đăng nhập — người không đọc được tiếng Việt vẫn thấy "English". */}
+        <div className="mt-4"><NutNgonNgu kieu="to" daDangNhap={false} /></div>
 
         {banChinhHong ? (
           <div className="mt-4">
@@ -148,7 +151,7 @@ export default function WelcomePage() {
           <div className="mt-4"><SetupHelp serverDown={!!serverDown} onRetry={accounts.reload} /></div>
         ) : (
           <>
-            <div className="flex flex-wrap gap-1 mt-5 mb-4 border-b pb-2" style={{ borderColor: 'var(--line)' }}>
+            <div className="flex flex-wrap gap-1 mt-4 mb-4 border-b pb-2" style={{ borderColor: 'var(--line)' }}>
               <Tab active={mode === 'login'} onClick={() => setMode('login')}>Đăng nhập</Tab>
               <Tab active={mode === 'register'} onClick={() => setMode('register')}>Giáo viên đăng ký</Tab>
               {!LA_BAN_CHINH && <Tab active={mode === 'demo'} onClick={() => setMode('demo')}>Vào nhanh bằng tài khoản demo</Tab>}

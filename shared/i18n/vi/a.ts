@@ -13,5 +13,6 @@ export const VI_A = {
   'loi.toiDaKyTu': '{ten}: Tối đa {toiDa} ký tự (đang có {n}).',
   'loi.http': 'Lỗi {status}',
   'loi.khongGoiDuocMayChu': 'Không gọi được máy chủ.',
+  'nn.ngonNgu': 'Ngôn ngữ',
   'nn.hoiMatChu': 'Đang sửa dở — đổi ngôn ngữ sẽ tải lại trang và mất phần chưa lưu. Vẫn đổi?',
 } as const;

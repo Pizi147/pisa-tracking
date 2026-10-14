@@ -5,6 +5,7 @@ import { useApi } from '../../lib/useApi.ts';
 import { api } from '../../lib/api.ts';
 import { Info } from '../../ui/ui.tsx';
 import { CongTacGiaoDien } from '../../ui/CongTacGiaoDien.tsx';
+import { NutNgonNgu } from '../../ui/NutNgonNgu.tsx';
 import { useDienThoai } from '../../ui/TheDong.tsx';
 import { skillShort } from '../../lib/format.ts';
 import { buocDanhSach, chuanHoaMaLop, duongThongBao, maHocVienNgan, moDuocThongBao, ngayTheoGioVN, nhanPhamVi, noiDenThongBao, nhomThongBao, thoiGianThongBao } from '@shared/domain/index.ts';
@@ -284,6 +285,8 @@ export function Header() {
 
       {/* Q2 = A: điện thoại (< 640 px) — Sáng/Tối nằm trong menu Tài khoản (bên dưới), không chiếm chỗ trên thanh. */}
       {!dienThoai && <CongTacGiaoDien />}
+      {/* PR-EN: VI | EN chữ nhỏ ngay sau ◐ (máy tính); điện thoại ở menu Tài khoản, ngay trên hàng Giao diện. */}
+      {!dienThoai && <NutNgonNgu />}
 
       <div className="relative">
         <button ref={nutTaiKhoan} className="btn btn-sm max-sm:min-h-[44px] max-sm:min-w-[44px] max-sm:justify-center max-sm:border-0 max-sm:bg-transparent" onClick={() => { setOpenMenu(openMenu === 'account' ? null : 'account'); setMoTimDt(false); }}
@@ -352,6 +355,7 @@ export function Header() {
               những màn dưới đây mở thỉnh thoảng nên không cần chiếm chỗ trên thanh menu.
             */}
             <div className="border-t pt-2 mb-2 space-y-1" style={{ borderColor: 'var(--line)' }}>
+              {dienThoai && <NutNgonNgu kieu="menu" />}
               {dienThoai && <CongTacGiaoDien kieu="menu" />}
               {/*
                 "Tổng hợp theo tuần" và "Báo cáo tuần" ĐÃ RỜI THANH ĐIỀU HƯỚNG ở vòng 4.

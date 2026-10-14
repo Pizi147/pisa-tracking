@@ -17,5 +17,6 @@ export const EN_A: BangEn<typeof VI_A> = {
   'loi.toiDaKyTu': '{ten}: max {toiDa} characters (now {n}).',
   'loi.http': 'Error {status}',
   'loi.khongGoiDuocMayChu': 'Cannot reach the server.',
+  'nn.ngonNgu': 'Language',
   'nn.hoiMatChu': 'You have unsaved changes — switching language reloads the page and loses them. Switch anyway?',
 };
