@@ -240,7 +240,7 @@ export function useLuuTru(onDone: () => void) {
 }
 
 type LopDich = { id: number; code: string; ft: boolean; ma: string | null; route: string | null; tenChuongTrinh: string | null; tuan: string | null; gvcn: string | null; siSo?: number };
-type DuLieuHocLai = { lopCu: { id: number; code: string; daKetThuc: boolean; ft: boolean } | null; loTrinh: { chayTiep: boolean; ten: string | null; target: string }; chiNhanh: { id: number; name: string }[]; lop: LopDich[] };
+type DuLieuHocLai = { conHoc?: boolean; lopCu: { id: number; code: string; daKetThuc: boolean; ft: boolean } | null; loTrinh: { chayTiep: boolean; ten: string | null; target: string }; chiNhanh: { id: number; name: string }[]; lop: LopDich[] };
 
 /**
  * HỌC LẠI (PR-LUI-b, chủ sản phẩm 06/10) — đường lui của Kết thúc học, chỉ Quản lý / Quản trị. CHỌN ĐÍCH: `Về lớp cũ` (lộ trình cũ chạy tiếp; lớp cũ đã kết thúc thì
@@ -321,7 +321,7 @@ export function HocLaiPanel({ studentId, studentName, lop, onClose, onDone, buoc
   };
 
   return (
-    <KhungPanel tieuDe={tieuDe} hocVien={studentName} lop={lop} quayLai={quayLai} onDong={onClose}
+    <KhungPanel tieuDe={tieuDe} hocVien={studentName} lop={lop} quayLai={quayLai} rong={quayLai ? 'rong' : undefined} onDong={onClose}
       chan={{
         daSua: !!lyDo.trim() || !!ngayHl || (dich === 'moi' && !chiLopMoi) || lopMoiId !== '',
         conThieu: lf.conThieu(loi),
@@ -340,7 +340,7 @@ export function HocLaiPanel({ studentId, studentName, lop, onClose, onDone, buoc
             )}
             {dich === 'cu' ? (
               <ul className="m-0 list-none space-y-1 p-0 text-sm text-slate-200">
-                <li>Về lớp {data.lopCu?.code}</li><li>{data.loTrinh.chayTiep && !buocTiep ? 'Lộ trình chạy tiếp' : 'Lộ trình mới'}{data.loTrinh.ten ? ` · ${data.loTrinh.ten}` : ''}</li><li>Ra khỏi Lưu trữ</li>
+                <li>Về lớp {data.lopCu?.code}</li><li>{data.loTrinh.chayTiep && !buocTiep ? 'Lộ trình chạy tiếp' : 'Lộ trình mới'}{data.loTrinh.ten ? ` · ${data.loTrinh.ten}` : ''}</li>{!data.conHoc && <li>Ra khỏi Lưu trữ</li>}
                 {data.lopCu?.daKetThuc && <li className="text-soon">Mở lại lớp {data.lopCu.code}</li>}
               </ul>
             ) : (
@@ -364,7 +364,7 @@ export function HocLaiPanel({ studentId, studentName, lop, onClose, onDone, buoc
                 )}
                 {lopMoi && (
                   <ul className="m-0 list-none space-y-1 p-0 text-sm text-slate-200">
-                    <li>Vào lớp {lopMoi.code}</li><li>Lộ trình mới{tenLoTrinhMoi ? ` · ${tenLoTrinhMoi}` : ''}</li><li>Lộ trình cũ giữ ở Hành trình</li><li>Ra khỏi Lưu trữ</li>
+                    <li>Vào lớp {lopMoi.code}</li><li>Lộ trình mới{tenLoTrinhMoi ? ` · ${tenLoTrinhMoi}` : ''}</li><li>Lộ trình cũ giữ ở Hành trình</li>{!data.conHoc && <li>Ra khỏi Lưu trữ</li>}
                   </ul>
                 )}
               </>

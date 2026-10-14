@@ -44,8 +44,8 @@ export function KetQuaThiThatPanel({ cycleId, studentName, lop, quayLai, onClose
     const f = { ngay: c.thi_that_ngay ?? '', l: fmt(c.thi_that_l), r: fmt(c.thi_that_r), w: fmt(c.thi_that_w), s: fmt(c.thi_that_s), khongThi: !!c.thi_that_khong_thi, ghiChu: c.outcome_note ?? '' };
     setForm(f); setGoc(JSON.stringify(f));
   }
-  if (error) return <KhungPanel tieuDe="Kết quả thi thật" hocVien={studentName} lop={lop} quayLai={quayLai} onDong={onClose}><ErrorState message={error.message} hint={error.hint} onRetry={reload} /></KhungPanel>;
-  if (!c || !form) return <KhungPanel tieuDe="Kết quả thi thật" hocVien={studentName} lop={lop} quayLai={quayLai} onDong={onClose}><Skeleton rows={5} /></KhungPanel>;
+  if (error) return <KhungPanel tieuDe="Kết quả thi thật" hocVien={studentName} lop={lop} quayLai={quayLai} rong={quayLai ? 'rong' : undefined} onDong={onClose}><ErrorState message={error.message} hint={error.hint} onRetry={reload} /></KhungPanel>;
+  if (!c || !form) return <KhungPanel tieuDe="Kết quả thi thật" hocVien={studentName} lop={lop} quayLai={quayLai} rong={quayLai ? 'rong' : undefined} onDong={onClose}><Skeleton rows={5} /></KhungPanel>;
 
   const target: number | null = c.target_score ?? null;   // OV-9: KCK giữ Target — so như máy chủ (`ketQuaThiThat`)
   const so = (s: string) => (s.trim() === '' ? null : Number(s));
@@ -75,7 +75,7 @@ export function KetQuaThiThatPanel({ cycleId, studentName, lop, quayLai, onClose
   };
 
   return (
-    <KhungPanel tieuDe="Kết quả thi thật" hocVien={studentName} lop={lop} quayLai={quayLai} onDong={onClose}
+    <KhungPanel tieuDe="Kết quả thi thật" hocVien={studentName} lop={lop} quayLai={quayLai} rong={quayLai ? 'rong' : undefined} onDong={onClose}
       chan={{ huy: { onClick: onClose }, daSua: JSON.stringify(form) !== goc, conThieu: lf.conThieu(loi), chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={luu} disabled={busy}>Lưu</button> }}>
       <div className="max-w-[560px] space-y-3">
         <div className="flex flex-wrap gap-x-4 gap-y-1 text-[12.5px] text-slate-400">

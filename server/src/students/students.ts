@@ -608,17 +608,20 @@ export function hoanTacTamDung(p: Principal, studentId: number) {
 export function lopChoHocLai(p: Principal, studentId: number) {
   require_(p, PERMISSIONS.CYCLE_EDIT, { studentId }, 'Chỉ Quản lý mới cho học viên học lại được.');
   const conn = db();
-  const nk = nhatKyKetThucGanNhat(studentId);
+  /* OV-11d (HV-6): em còn ghi danh (Bước tiếp sau lộ trình đã đóng) — lớp cũ = lớp đang giữ; máy chủ Kết thúc học rồi Học lại cùng giao dịch, lộ trình MỚI. */
+  const conHoc = (conn.prepare('SELECT status FROM students WHERE id = ?').get(studentId) as any)?.status !== 'finished';
+  const nk = conHoc ? null : nhatKyKetThucGanNhat(studentId);
   const dong = conn.prepare(
     `SELECT e.id, e.class_id, e.ended_at, c.code, c.status AS class_status, c.programme_code, c.route, c.is_fast_track FROM enrollments e JOIN classes c ON c.id = e.class_id
-      WHERE e.student_id = ? AND e.status = 'completed' ORDER BY e.id DESC`,
+      WHERE e.student_id = ? AND e.status IN (${conHoc ? "'active', 'paused'" : "'completed'"}) ORDER BY e.id DESC`,
   ).all(studentId) as any[];
-  const khoi = nk ? dong.filter((e) => nk.ghiDanhDong.some((x) => x.id === e.id)) : dong.some((e) => e.ended_at == null) ? dong.filter((e) => e.ended_at == null) : dong.slice(0, 1);
+  const khoi = conHoc ? dong.slice(0, 1) : nk ? dong.filter((e) => nk.ghiDanhDong.some((x) => x.id === e.id)) : dong.some((e) => e.ended_at == null) ? dong.filter((e) => e.ended_at == null) : dong.slice(0, 1);
   const enr = khoi[0] ?? null;
-  const dongBoi = (nk && nk.loTrinhDong.length
+  const dongBoi = conHoc ? [] : (nk && nk.loTrinhDong.length
     ? conn.prepare(`SELECT * FROM learning_cycles WHERE student_id = ? AND status = 'abandoned' AND id IN (${nk.loTrinhDong.map(() => '?').join(',')}) ORDER BY seq DESC`).all(studentId, ...nk.loTrinhDong)
     : nk ? [] : conn.prepare(`SELECT * FROM learning_cycles WHERE student_id = ? AND status = 'abandoned' ORDER BY seq DESC LIMIT 1`).all(studentId)) as any[];
   return {
+    conHoc,
     lopCu: enr ? { id: enr.class_id as number, code: enr.code as string, daKetThuc: enr.class_status === 'finished', ft: !!enr.is_fast_track } : null,
     /** `chayTiep`: lộ trình bị Kết thúc học đóng chạy tiếp; không có (đã đóng bằng Kết luận) thì Học lại về lớp cũ mở lộ trình MỚI — tên là của lộ trình đó. */
     /* `target`: Target của lộ trình gần nhất ("6.5 KCK" / 'KCK' = có dấu KCK, '' = chưa có) — Học lại FT → FT máy chủ GIỮ Target này, web điền sẵn chứ không bắt nhập lại. */

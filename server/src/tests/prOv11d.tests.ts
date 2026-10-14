@@ -111,6 +111,9 @@ export async function runPrOv11dTests(t: YThucTestKit) {
     const lop0 = one(`SELECT class_id FROM enrollments WHERE student_id = ? AND status = 'active'`, sid).class_id;
     const soLtActive = () => one(`SELECT COUNT(*) n FROM learning_cycles WHERE student_id = ? AND status = 'active'`, sid).n;
     const lt0 = soLtActive();
+    /* panel Học lại (xem trước) thấy lớp đang giữ — không "Chưa có lớp để học lại" */
+    const xt = students.lopChoHocLai(QLX, sid);
+    assert(xt.conHoc && xt.lopCu?.id === lop0 && !xt.loTrinh.chayTiep, `xem trước Học lại: ${JSON.stringify(xt.lopCu)}`);
     /* lỗi giữa chừng (lớp mới không hợp lệ) → cả giao dịch quay lui: em vẫn đang học */
     const e1 = loi(() => buocTiep.chonBuocTiep(QLX, cid, { chon: 'hoc_tiep', lopMoiId: 999999 }));
     xoaNho();
