@@ -963,7 +963,7 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
           baseline: selected.baseline_attempt_id !== null || selected.baseline_score !== null,
         }
         : null,
-      student: { dob: s.dob },
+      student: { dob: s.dob, email: s.email },
       isFastTrack: !isRatioCycle(selected ?? {}),
     }),
     /*

@@ -68,7 +68,7 @@ export async function runPrHvlTests(t: YThucTestKit) {
     const tat = [...ql.hien, ...ql.an];
     eq(tat.find((x: any) => x.key === 'qua-han'), { key: 'qua-han', nhan: '4 HV quá hạn việc', tone: 'danger', title: tat.find((x: any) => x.key === 'qua-han').title }, 'qua-han');
     eq(tat.find((x: any) => x.key === 'cho-duyet').tone, 'wait', 'cho-duyet tone');
-    eq(tat.find((x: any) => x.key === 'xep-lop').nhan, '3 HV chưa có quyết định chuyển lớp', 'xep-lop khi lớp chưa hết khoá (PR-Dọn Câu 2 = B)');
+    eq(tat.find((x: any) => x.key === 'xep-lop').nhan, '3 HV chưa chốt lộ trình', 'xep-lop khi lớp chưa hết khoá (PR-Dọn Câu 2 = B)');
     const het = d.badgeLop({ ...goc, vai: 'gv', needsPlacement: true, canXepLop: 5 });
     eq([...het.hien, ...het.an].find((x: any) => x.key === 'xep-lop').nhan, '5 HV cần xếp lớp tiếp', 'xep-lop khi hết khoá dùng canXepLop');
     assert(!JSON.stringify(tat).includes('"case"'), 'Còn badge case');

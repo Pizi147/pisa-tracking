@@ -16,7 +16,7 @@ import { ensurePeriod, ensurePeriods, mondayOf, skillScoreDeadline } from '../pl
 import { kckCuaLuot, regularSkillViews, weekStartOf } from '../fasttrack/attempts.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
 import { checkSkillWeekMove, ensureSkillRows, kiemDaToiTuanThi, loadSkillRows, setSkillWeek } from '../fasttrack/skillSchedule.ts';
-import { dotHoanTat, dotHoanTatMany, quyenSuaSauHoanTat } from '../fasttrack/hoanTat.ts';
+import { dotHoanTat, dotHoanTatMany, kiemLopKetThuc, quyenSuaSauHoanTat } from '../fasttrack/hoanTat.ts';
 import { canRequest, duocGoDau } from '../fasttrack/absence.ts';
 import { classProgress, classProgressMany, lichMtCua } from '../classes/schedule.ts';
 import { baoLenCuoiKhoaDoiQuaHan, capNhatCuoiKhoaSauChuyen, dongBoCheTaiFinal } from './cuoiKhoa.ts';
@@ -603,6 +603,8 @@ export function saveRegularScore(
   if (!prog.skills.includes(skill)) {
     throw badRequest(`Lớp ${prog.name} không có kỹ năng ${tenMon(prog.code, skill)}.`);
   }
+  /* OV-11g (HL-10): lớp đã kết thúc — GV 403 trước mọi việc ghi (điểm, "-", nhận xét); Quản lý đi đường `override`. */
+  const lopKetThuc = kiemLopKetThuc(p, a.class_id);
   /* Dấu "-" đi đường riêng vì nó KHÔNG phải một điểm: nó là một lần dời lịch (C08). */
   if (patch.noShow !== undefined) {
     if (patch.score !== undefined || patch.total !== undefined) {
@@ -632,6 +634,7 @@ export function saveRegularScore(
     require_(p, PERMISSIONS.SCORE_EDIT, { classId: a.class_id, studentId: a.student_id, skill },
       'Bạn chỉ nhập được điểm của kỹ năng mình được phân công.');
   }
+  if (lopKetThuc) path = 'override';
 
   /* OV-4b: chỉ nhận xét — cùng quyền nhập điểm môn đó (đã kiểm ở trên), cùng luật ≤ 1000 ký tự với Mock; một lệnh một việc. */
   if (patch.nhanXet !== undefined) {
@@ -1138,12 +1141,14 @@ export function regularSheet(p: Principal, classId: number, kind?: string, today
       });
   };
 
-  const editable = editableSkills(p, classId, prog.skills);
-  /* Quyền sửa ô tính MỘT lần cho mỗi môn — cùng cửa với `saveRegularScore`, không hỏi lại theo từng dòng. */
-  const canEditSkill = new Map(prog.skills.map((k) => [k, scoreEditPath(p, classId, k) !== null]));
   /* R11: một câu hỏi cho cả bảng (`dotHoanTatMany`) — không hỏi lẻ từng dòng. */
   const hoanTatOf = dotHoanTatMany(attempts.map((a) => a.id), today);
   const suaSauHoanTat = quyenSuaSauHoanTat(p, classId);
+  /* OV-11g (HL-10, Q4): lớp đã kết thúc — mọi bài như đã hoàn tất: Quản lý sửa qua hộp lý do, GV chỉ đọc (cùng `kiemLopKetThuc`). */
+  const ketThuc = cls.status === 'finished';
+  const editable = ketThuc && !suaSauHoanTat ? [] : editableSkills(p, classId, prog.skills);
+  /* Quyền sửa ô tính MỘT lần cho mỗi môn — cùng cửa với `saveRegularScore`, không hỏi lại theo từng dòng. */
+  const canEditSkill = new Map(prog.skills.map((k) => [k, ketThuc ? suaSauHoanTat : scoreEditPath(p, classId, k) !== null]));
   /* Lịch và hạn chấm RIÊNG từng môn — một bài có thể trải hai ba tuần (mục 10.1). */
   const skillRows = loadSkillRows(attempts.map((a) => a.id));
   /* Mã tuần mà dấu "-" đã dời môn đi (C08) — đọc gộp một lần cho cả bảng. */
@@ -1190,7 +1195,8 @@ export function regularSheet(p: Principal, classId: number, kind?: string, today
       const dl = pending.length
         ? pending.map((x) => x.v!.deadline!).sort().slice(-1)[0]
         : null;
-      const hoanTat = hoanTatOf.get(a.id) ?? { hoanTat: false, chuNhatCuoi: null };
+      const ht = hoanTatOf.get(a.id) ?? { hoanTat: false, chuNhatCuoi: null };
+      const hoanTat = ketThuc ? { hoanTat: true, chuNhatCuoi: ht.chuNhatCuoi ?? cls.finished_at ?? null } : ht;
       return {
         attemptId: a.id,
         deadline: dl,

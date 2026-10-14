@@ -102,6 +102,9 @@ function tomTatLop(classIds: number[], today: string): Map<number, TomTatLuot[]>
   return out;
 }
 
+/** OV-11g (HL-4): tóm tắt lượt một lớp, không kiểm quyền (nơi gọi đã kiểm) — đầu hồ sơ lớp đọc cùng `duDiem / coLich` với khối điểm. */
+export const tomTatLuotCuaLop = (classId: number, today: string = demoToday()): TomTatLuot[] => tomTatLop([classId], today).get(classId)!;
+
 /** Các lượt của một lớp + lượt mở sẵn (luật DL-1, sửa DL-6b theo `today`). */
 export function danhSachLuot(p: Principal, classId: number, today: string = demoToday()): { classId: number; mode: CheDo; luot: TomTatLuot[]; macDinh: string | null } {
   const mode = lopDuocXem(p, classId);

@@ -71,15 +71,15 @@ export function MissingBadge({ items, className = '', gon = false }: {
       <button
         ref={nut}
         type="button"
-        className="relative appearance-none border-0 bg-transparent p-0 cursor-pointer max-sm:after:absolute max-sm:after:-inset-2.5 max-sm:after:content-['']"   /* điện thoại: vùng bấm ≥ 40 px (adapt, PR-DH) */
+        className="relative appearance-none border-0 bg-transparent p-0 cursor-pointer max-sm:after:absolute max-sm:after:-inset-x-2 max-sm:after:-inset-y-3.5 max-sm:after:content-['']"   /* điện thoại: vùng bấm 44 px (HL-18) */
         aria-expanded={open}
         title={open ? undefined : items.map((i) => i.label).join(' · ')}
         onClick={(e) => { e.stopPropagation(); e.preventDefault(); setOpen((v) => !v); }}
       >
-        {/* G-4: ⚠ chỉ nghĩa là quá hạn — thiếu thông tin là badge chữ (Q12). */}
-        <span className={`${CHIP_VUONG} border-soon-line bg-soon-bg text-soon`}>
-          {gon ? `Thiếu ${items.length}` : `Thiếu ${items.length} thông tin`}
-        </span>
+        {/* G-4: ⚠ chỉ nghĩa là quá hạn — thiếu thông tin là badge chữ (Q12). CA2-7: dòng tên em (`gon`) chữ mờ không viền, vẫn bấm; vàng để cho SOS / sắp hạn. */}
+        {gon
+          ? <span className="text-xs text-slate-400 underline decoration-dotted underline-offset-2">Thiếu {items.length}</span>
+          : <span className={`${CHIP_VUONG} border-soon-line bg-soon-bg text-soon`}>Thiếu {items.length} thông tin</span>}
       </button>
 
       {/* Sự kiện React vẫn nổi lên cha qua portal (hàng bảng / thẻ có onClick riêng) → chặn ở đây. */}

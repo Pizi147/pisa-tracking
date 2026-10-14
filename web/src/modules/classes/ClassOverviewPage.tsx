@@ -153,9 +153,14 @@ export default function ClassOverviewPage() {
           thoiGianMacDinh={{ kieu: 'dot', dot: [...(thuong ? DOT_XUAT_THUONG : DOT_XUAT_FT)] }} onDong={dong} />
       )}
       {viec === 'xoa-lop' && <XoaLopPanel classId={data.id} classCode={data.code} onClose={dong} />}
-      {viec === 'ket-thuc-lop' && <KetThucLopPanel classId={data.id} classCode={data.code} onClose={dong} onDone={xong} />}
+      {viec === 'ket-thuc-lop' && (
+        <KetThucLopPanel classId={data.id} classCode={data.code} onClose={dong} onDone={xong}
+          diTiep={data.viewer.coTheChuyenTiep ? { nhan: thuong ? 'Lộ trình tiếp theo' : 'Chuyển tiếp lớp', onChon: () => { dong(); moViec('chuyen-tiep'); } } : undefined} />
+      )}
       {viec === 'mo-lai-lop' && (
-        <MoLaiLopPanel classId={data.id} classCode={data.code} chiNhanh={data.branchName} ketThuc={data.finishedAt ? ngay(data.finishedAt) : null} onClose={dong} onDone={xong} />
+        /* HL-17: bỏ `tab=tong-ket` trước khi tải lại — lớp mở lại không còn tab Tổng kết (hết 404 nền). */
+        <MoLaiLopPanel classId={data.id} classCode={data.code} chiNhanh={data.branchName} ketThuc={data.finishedAt ? ngay(data.finishedAt) : null} onClose={dong}
+          onDone={() => { if (params.get('tab') === 'tong-ket') doiThamSo({ tab: null }); xong(); }} />
       )}
       {viec === 'sua-hoc-vien' && <SuaCaLopPanel classId={data.id} onClose={dong} onDone={xong} />}
       {viec === 'hoc-vien' && (
@@ -170,7 +175,7 @@ export default function ClassOverviewPage() {
 
 /**
  * KHỐI "ĐIỂM MOCK TEST CỦA LỚP" (PR-DL, mockup `mockup-diem-theo-lop-2026-10-04.html` #v-lop) — cuối hồ sơ lớp, MỞ SẴN (PR-OV3a, M2 §1):
- * hàng tiêu đề + MỘT chip "MT2 còn 3 ô trống" (lượt mở sẵn của `danhSachLuot`), bấm để thu gọn. Bảng `DiemTheoLop gon` tải khi khối mở.
+ * hàng tiêu đề + MỘT chip "MT2 còn 3 ô trống" (lượt mở sẵn của `danhSachLuot`); bấm hàng tiêu đề thu gọn (CA2-10: không ghi chữ "bấm để…"). Bảng `DiemTheoLop gon` tải khi khối mở.
  */
 function KhoiDiemLop({ classId, thuong, mo, onDoi }: { classId: number; thuong: boolean; mo: boolean; onDoi: () => void }) {
   const ds = useApi<DanhSachLuot>(duongDiemTheoLuot(classId), [classId]);
@@ -188,8 +193,6 @@ function KhoiDiemLop({ classId, thuong, mo, onDoi }: { classId: number; thuong: 
           <span className="text-slate-400"><MuiTen mo={mo} /></span>
           <span>{thuong ? 'Điểm Test của lớp' : 'Điểm Mock Test của lớp'}</span>
           {l && l.oTrong > 0 && vai !== 'tvv' && vai !== 'cx' && <Nhan tone="wait">{`${l.nhan} còn ${l.oTrong} ô trống`}</Nhan>}
-          <span className="flex-1" />
-          <span className="text-xs font-normal text-slate-500 max-sm:hidden">{mo ? 'bấm để thu gọn' : 'bấm để mở'}</span>
         </button>
       </h2>
       <div id="khoi-diem-lop-bang" hidden={!mo} className="px-3 pb-3 sm:px-4 sm:pb-4">

@@ -27,7 +27,7 @@ export const CHU_CHUYEN_LOP = {
   huy: 'Huỷ quyết định',
   giu: 'Giữ quyết định',
   luu: 'Lưu quyết định',
-  chua: 'Chưa có quyết định chuyển lớp',
+  chua: 'Chưa chốt lộ trình',   // CA2-4: một khái niệm một tên — badge "n HV chưa chốt lộ trình", cột Khoá
   choDuyetDeXuat: 'Chờ QL duyệt đề xuất',
   sapChuyen: (tuan: string) => `Sắp chuyển · từ ${tuan}`,
   banGiao: 'GVCN xác nhận bàn giao',
@@ -164,6 +164,7 @@ export function kiemDongLenh(d: {
 }): string | null {
   if (!d.huong) return 'Chọn hướng cho em';
   if (canLopDich(d.huong) && !d.lopDichId) return 'Chọn lớp chuyển đến';
+  if (!d.tuan) return 'Chọn tuần bắt đầu.';   // HL-12: ô trống khác tuần sai
   if (!tuanHopLe(d.tuan, d.homNay)) return 'Tuần bắt đầu phải từ tuần sau trở đi';
   const canLyDo = d.khacGoiY || d.huong === 'chuyen_lop' || d.huong === 'bao_luu' || d.huong === 'dung_hoc';
   if (canLyDo && !(d.lyDo ?? '').trim()) return 'Ghi lý do ngắn';   // T7 (PR-MTa): không tối thiểu ký tự

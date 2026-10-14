@@ -238,5 +238,5 @@ function ODiemThuong({ o, tuan, homNay }: { o: ODiem | null; tuan: string | null
     if (daQua) return <span className="text-xs text-amber-200" title="Tuần thi đã qua nhưng chưa nhập điểm">Chưa có điểm</span>;
     return <span className="text-xs text-slate-500" title="Tuần thi môn này">{tuanLich(tuan, homNay)}</span>;
   }
-  return <span className="text-slate-700">–</span>;
+  return <span className="text-faint">–</span>;   // audit P3-1: "–" = không có, ≥ 4.5:1
 }

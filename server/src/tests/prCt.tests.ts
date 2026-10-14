@@ -46,9 +46,10 @@ export async function runPrCtTests(t: YThucTestKit) {
     assert(d.kiemDongLenh(dong({ huong: 'bao_luu', lopDichId: null, lyDo: 'đi xa', ngayXemLai: '2026-11-02' })) === null, 'tạm dừng học (bảo lưu) không cần lớp chuyển đến');
   });
   check('CT (1f) · kiemDongLenh: tuần hiện tại / trống / không phải Thứ Hai → "Tuần bắt đầu phải từ tuần sau trở đi"', () => {
-    for (const tuan of ['2026-09-28', null, '2026-10-06']) {
+    for (const tuan of ['2026-09-28', '2026-10-06']) {
       assert(d.kiemDongLenh(dong({ tuan })) === 'Tuần bắt đầu phải từ tuần sau trở đi', `tuần ${tuan}`);
     }
+    assert(d.kiemDongLenh(dong({ tuan: null })) === 'Chọn tuần bắt đầu.', 'OV-11g HL-12: ô trống nói "Chọn tuần bắt đầu."');
   });
   check('CT (1g) · kiemDongLenh: chọn khác gợi ý hoặc Chuyển lớp / Tạm dừng học (bảo lưu) / Dừng học hẳn mà lý do < 3 ký tự → "Ghi lý do ngắn"', () => {
     assert(d.kiemDongLenh(dong({ khacGoiY: true, lyDo: '' })) === 'Ghi lý do ngắn', 'khác gợi ý');   // PR-MTa T7: bỏ tối thiểu 3 ký tự

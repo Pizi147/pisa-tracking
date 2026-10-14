@@ -19,6 +19,7 @@ import { dotHoanTatMany, type HoanTatInfo } from '../fasttrack/hoanTat.ts';
 import { standingFor, standingLine } from '../students/standing.ts';
 import { allProgrammes, evaluateRegular, nguongDatLop, programmeOfClass } from '../normal/regular.ts';
 import { cuoiKhoaTheoHocVien, emConMiniTest, nguoiGhiMiniTest, type EmCuoiKhoa } from '../normal/cuoiKhoa.ts';
+import { tomTatLuotCuaLop } from '../cham/diemTheoLuot.ts';
 import { classProgressMany, lichMtCua, missingForClasses, missingForStudent, mocKetKhoa, type TienDoMoc } from './schedule.ts';
 import { canhBaoTheoHocVien, caseViecTheoHocVien, nhapDiemTheoEm, soEmCanXuLyYThuc, viecHocVienTheoLop } from './dongHocVien.ts';
 import { tiepTheoTheoHocVien } from './loTrinhTiep.ts';
@@ -322,7 +323,7 @@ export function rosterIds(p: Principal, classId: number) {
   return hocVienCuaLop(p, classId).students.map((s) => ({ id: s.id as number, fullName: s.full_name as string, archived: !!s.archived_at }));
 }
 
-function hocVienCuaLop(p: Principal, classId: number, q?: string) {
+function hocVienCuaLop(p: Principal, classId: number, q?: string, kemKetThuc = false) {
   require_(p, PERMISSIONS.ATTEMPT_VIEW, { classId }, 'Lớp này nằm ngoài phạm vi bạn được xem.');
   const conn = db();
   const cls = conn.prepare('SELECT status, lich_mt, route FROM classes WHERE id = ?').get(classId) as any;
@@ -343,9 +344,13 @@ function hocVienCuaLop(p: Principal, classId: number, q?: string) {
                LEFT JOIN report_periods sp ON sp.id = cy.start_period_id
                LEFT JOIN report_periods ep ON ep.id = cy.exam_period_id
               WHERE e.class_id = ?`;
+  /* OV-11g (HL-19, Q11): Học viên & Lớp — em Kết thúc học chưa Lưu trữ vẫn hiện (mờ) ở lớp CUỐI của em, để QL Lưu trữ / Học lại; bảng khác của lớp giữ em đang học. */
   sql += finished
     ? ` AND e.id IN (SELECT MAX(id) FROM enrollments WHERE class_id = ? GROUP BY student_id)`
-    : ` AND e.status = 'active'`;
+    : kemKetThuc
+      ? ` AND (e.status = 'active' OR (e.status = 'completed' AND s.status = 'finished' AND s.archived_at IS NULL
+            AND e.id = (SELECT MAX(x.id) FROM enrollments x WHERE x.student_id = s.id)))`
+      : ` AND e.status = 'active'`;
   if (finished) params.push(classId);
   if (q?.trim()) {
     sql += ' AND (s.full_name LIKE ? OR s.normalized_name LIKE ? OR s.student_code LIKE ?)';
@@ -359,8 +364,8 @@ function hocVienCuaLop(p: Principal, classId: number, q?: string) {
  * Danh sách học viên của một lớp — chỉ nạp khi người dùng mở rộng lớp đó.
  * Mỗi em kèm tiến trình MT gọn để không phải mở chi tiết mới biết đang ở đâu.
  */
-export function classRoster(p: Principal, classId: number, q?: string) {
-  const { conn, finished, students, lop } = hocVienCuaLop(p, classId, q);
+export function classRoster(p: Principal, classId: number, q?: string, kemKetThuc = false) {
+  const { conn, finished, students, lop } = hocVienCuaLop(p, classId, q, kemKetThuc);
   if (!students.length) return [];
   const sids = students.map((s) => s.id);
   const ph = sids.map(() => '?').join(',');
@@ -669,7 +674,7 @@ export function classRoster(p: Principal, classId: number, q?: string) {
             baseline: s.baseline_attempt_id !== null || s.baseline_score !== null,
           }
           : null,
-        student: { dob: s.dob },
+        student: { dob: s.dob, email: s.email },
         isFastTrack: !!isFt,
         /*
          * THIẾU MỐC ĐÁNH GIÁ TIẾP THEO cản trở việc lên kế hoạch, nên nó thuộc badge này —
@@ -801,13 +806,14 @@ function classOverviewThat(p: Principal, classId: number) {
       WHERE e.class_id = ? AND e.status = 'active' AND s.archived_at IS NULL`,
   ).all(classId) as any[]).map((r) => r.student_id as number);
   const caseCuaLop = listCases(p, { classId }).rows;
-  /* Đầu hồ sơ lớp thường ở tuần Cuối khoá / đã hết khoá (K2-14): "Cuối khoá: 6/8 em có đủ điểm" — chỉ tính ở hai chặng này (một lần `standingFor`). */
+  /* Đầu hồ sơ lớp thường ở tuần Cuối khoá / đã hết khoá (K2-14): "Cuối khoá: 6/8 em có đủ điểm" — chỉ tính ở hai chặng này. */
   const cuoiKhoa = (() => {
     if (finished || prog?.scoringMode !== 'ratio' || !summary || !mocKetKhoa(summary as TienDoMoc, demoToday()).tuCuoiKhoa || !emDangHoc.length) return null;
-    const st = standingFor(emDangHoc);
     /* PR-LT2b: em Cuối khoá 50–59% — Quản lý cân nhắc trước khi chuyển (không còn thẻ, Q30-3). */
     const canQl = [...cuoiKhoaTheoHocVien(classId, emDangHoc).values()].filter((e) => e.goiY?.canQuanLy).length;
-    return { du: emDangHoc.filter((id) => { const s = st.get(id); return !!s && s.attemptKind === 'final' && s.required > 0 && s.scored >= s.required; }).length, tong: emDangHoc.length, canQl };
+    /* HL-4: cùng `duDiem / coLich` của lượt Final ở khối "Điểm Test của lớp" (`danhSachLuot`) — một mẫu số trên một trang. */
+    const f = tomTatLuotCuaLop(classId).find((l) => l.ma === 'thuong:final');
+    return f ? { du: f.duDiem, tong: f.coLich, canQl } : null;
   })();
   const vl = viecHocVienTheoLop(p, {
     emTheoLop: new Map([[classId, emDangHoc]]), cases: caseCuaLop, homNay: demoToday(), chuongTrinhTheoLop: new Map([[classId, prog?.code ?? null]]),

@@ -936,7 +936,7 @@ api.get('/classes', requireAuth, wrap((req) => {
 api.get('/classes/:id/roster', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   if (qStr(req, 'chiId') === '1') return classSvc.rosterIds(principalOf(req), pInt(req, 'id'));   // id + tên cho Trước/Sau (PR-TD2-b)
-  return classSvc.classRoster(principalOf(req), pInt(req, 'id'), qStr(req, 'q'));
+  return classSvc.classRoster(principalOf(req), pInt(req, 'id'), qStr(req, 'q'), qStr(req, 'kemKetThuc') === '1');   // OV-11g: Học viên & Lớp
 }));
 
 /*

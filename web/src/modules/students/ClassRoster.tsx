@@ -135,7 +135,6 @@ export function ClassRoster({ classId, maLop, quyen, onDoi, onAddStudents, chon 
   if (dienThoai) {
     return (
       <div className="surface-2 overflow-hidden rounded-lg">
-        <p className="m-0 border-b px-3 py-2 text-xs text-slate-500" style={{ borderColor: 'var(--line)' }}>Mốc gần nhất của từng em (điểm 2 mốc gần nhất ở bảng trên máy tính).</p>
         {data.map((s) => {
           const h = s.history[0];
           const dv = dauVaoHien(s, s.history.length);
@@ -150,7 +149,7 @@ export function ClassRoster({ classId, maLop, quyen, onDoi, onAddStudents, chon 
                     <MissingBadge items={s.missing} gon />
                     <CanhBaoYThuc cb={s.canhBaoYThuc} />
                   </span>
-                  <span className="mt-1 block"><KetLuan row={s} /></span>
+                  <span className="mt-1 block"><KetLuan row={s} cotMocTrong={!h && !dv} /></span>
                 </>
               )}
               hanhDong={<MenuDong muc={tt.mucCua({ id: s.id, ten: s.fullName, dangHoc: s.status === 'active', nhapDiem: nhapDiemCua(classId, false, s.timeline), status: s.status })} />}
@@ -167,7 +166,7 @@ export function ClassRoster({ classId, maLop, quyen, onDoi, onAddStudents, chon 
                 ) }] : []),
                 ...(!h && dv ? [] : [{ nhan: 'Mốc', noiDung: !h ? <span className="text-slate-500">chưa có điểm</span> : (
                   <>
-                    <Link className="no-underline" to={duongHoSoHocVien(s.id, { dot: h.id })} title={`Mở hồ sơ ${s.fullName} ở ${h.label}`}>
+                    <Link className="no-underline max-sm:py-3 max-sm:-my-3" to={duongHoSoHocVien(s.id, { dot: h.id })} title={`Mở hồ sơ ${s.fullName} ở ${h.label}`}>
                       <span className="text-slate-200">{h.label}</span>
                       {h.lichSu && <> <NhanCu /></>}
                     </Link>
@@ -192,12 +191,7 @@ export function ClassRoster({ classId, maLop, quyen, onDoi, onAddStudents, chon 
 
   return (
     <div className="surface-2 rounded-lg">
-      <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 border-b"
-        style={{ borderColor: 'var(--line)' }}>
-        <span className="text-xs text-slate-500">
-          Điểm của {depth} mốc gần nhất, mốc mới nhất ở trên.
-        </span>
-      </div>
+      {/* CA2-10: câu "Điểm của 2 mốc gần nhất…" đã bỏ — ⓘ của cột Mốc nói "mốc mới nhất ở trên". */}
 
       <div className="table-scroll bang-dinh">
         <table className="w-full min-w-[940px] table-fixed text-sm">
@@ -252,7 +246,7 @@ export function ClassRoster({ classId, maLop, quyen, onDoi, onAddStudents, chon 
                       DƯỚI TÊN CHỈ CÒN KẾT LUẬN — một nhãn nhỏ có màu (PR-HV, chủ sản phẩm 22/09): "MTx:", "mới có
                       điểm k/n kỹ năng", "còn n Case đang theo dõi" đã bỏ vì cột Mốc và cột Theo dõi đã nói.
                     */}
-                    <span className="block mt-1"><KetLuan row={s} /></span>
+                    <span className="block mt-1"><KetLuan row={s} cotMocTrong={!rows.length && !dv} /></span>
                   </td>
 
                   <td className="td text-right tabular-nums whitespace-nowrap"><TargetText band={s.cycle?.target} kck={s.cycle?.khongCamKet} /></td>
@@ -320,13 +314,13 @@ export function ClassRoster({ classId, maLop, quyen, onDoi, onAddStudents, chon 
  *   SOS {n} · tạm thời (vàng) · SOS {n} (vàng) · Đạt kỳ vọng (xám; thêm "· tạm thời" khi mới có một phần điểm)
  *   · Chưa có kết quả (xám) · Dưới kỳ vọng · KCK (trung tính, OV-9) · Không tính SOS (xám, em KCK chưa có Target) · Đã kết thúc (xám).
  */
-function KetLuan({ row }: { row: RosterRow }) {
+function KetLuan({ row, cotMocTrong }: { row: RosterRow; /** CA2-7: cột Mốc đã ghi "chưa có điểm" → không lặp chip "Chưa có kết quả". */ cotMocTrong: boolean }) {
   const xam = `${CHIP_VUONG} border-muted-line bg-muted-bg text-muted`;
   if (row.status !== 'active') return <span className={xam}>{row.ketThucVi ?? 'Đã kết thúc'}</span>;
   if (row.kckDuoi) return <ChipDuoiKck />;
   /* Q29-1: em KCK chưa có Target có điểm vẫn không có kỳ vọng — nói rõ "không tính SOS", không để đọc thành "chưa chấm". */
   if (row.sosLevel === null && row.cycle?.khongCamKet) return <span className={xam} title={GIAI_THICH_KCK}>Không tính SOS</span>;
-  if (row.sosLevel === null) return <span className={xam}>Chưa có kết quả</span>;
+  if (row.sosLevel === null) return cotMocTrong ? null : <span className={xam}>Chưa có kết quả</span>;
   const tamThoi = row.provisional ? ' · tạm thời' : '';
   /* PR-N1 A2: màu theo đúng mức SOS (hết vàng cho mọi mức); tạm thời = viền đứt + chữ "tạm thời". */
   if (row.sosLevel > 0) return <Level tone={sosTone(row.sosLevel)} dut={row.provisional}>SOS {row.sosLevel}{row.provisional ? ' tạm thời' : ''}</Level>;
@@ -346,7 +340,8 @@ function Stack({ children, n, align = 'left' }: {
   );
 }
 
-function Dash() { return <span className="text-slate-700">–</span>; }
+/* audit P3-1: "–" = không có → `text-faint` (≥ 4.5:1), không phải dấu ngăn. */
+function Dash() { return <span className="text-faint">–</span>; }
 
 /**
  * Ô band (PR-N1 K2-10, A3, A9): so KỲ VỌNG CỦA ĐÚNG MỐC (không so target); dưới kỳ vọng có dấu mảnh ▾ (không chỉ dựa màu);

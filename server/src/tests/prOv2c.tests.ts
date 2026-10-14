@@ -11,7 +11,7 @@ export async function runPrOv2cTests(t: YThucTestKit) {
   const dm: any = await import('../../../shared/domain/index.ts');
   const { xoaNho } = await import('../platform/nguCanhRequest.ts');
   /* OV-10c thay `hvCuaToi` bằng `soHocVien` (ô Thiếu thông tin = cờ `thieu_tt` của Học viên & Lớp) — gộp main 13/10. */
-  const { soHocVien } = await import('../worklist/hvCuaToi.ts');
+  const { soHocVien, chipHocVien } = await import('../worklist/hvCuaToi.ts');
   console.log('\nPR-OV2c · email không bắt buộc (Thêm HV, dán Excel, Sửa thông tin, Sửa cả lớp, Thiếu thông tin)');
 
   const all = (sql: string, ...a: unknown[]) => conn.prepare(sql).all(...a) as any[];
@@ -35,22 +35,22 @@ export async function runPrOv2cTests(t: YThucTestKit) {
 
   check('OV2c-0 · dữ liệu thử đủ (lớp FT CP, 2 em, QL)', () => { assert(lop && dsEm.length === 2 && ql, `lop ${lop} em ${dsEm.length} ql ${ql}`); });
 
-  check('OV2c-1 · Thêm HV: cột Email không còn dấu *, Ngày sinh vẫn *', () => {
+  check('OV2c-1 · Thêm HV: cột Email không còn dấu *; OV-11g (Q3): Ngày sinh cũng không *', () => {
     for (const ft of [false, true]) {
       const cot = dm.cotLuoiNhap(ft);
       assert(!cot.find((x: any) => x.key === 'email')?.batBuoc, `Email còn bắt buộc (ft=${ft})`);
-      assert(cot.find((x: any) => x.key === 'dob')?.batBuoc, `Ngày sinh mất bắt buộc (ft=${ft})`);
+      assert(!cot.find((x: any) => x.key === 'dob')?.batBuoc, `Ngày sinh còn bắt buộc (ft=${ft})`);
     }
   });
 
-  check('OV2c-2 · Thêm HV (lưới + dán Excel): không email → xem trước không lỗi, lưu email NULL; email sai dạng / thiếu ngày sinh vẫn lỗi đúng ô', () => {
+  check('OV2c-2 · Thêm HV (lưới + dán Excel): không email → xem trước không lỗi, lưu email NULL; email sai dạng vẫn lỗi đúng ô; thiếu ngày sinh không lỗi (OV-11g Q3)', () => {
     thu(() => {
       const v = QL();
       const r = intake.previewIntake(v, { classId: lop, rows: [
         { fullName: 'OV2c Không Email', dob: DOB }, { fullName: 'OV2c Email Sai', dob: DOB, email: 'abc' }, { fullName: 'OV2c Thiếu NS', email: 'a@b.vn' },
       ] });
       assert(!r.issues.some((i: any) => i.row === 1 && i.muc === 'loi'), `dòng không email bị chặn: ${JSON.stringify(r.issues)}`);
-      assert(loiO(r.issues, 2, 'email') && loiO(r.issues, 3, 'dob'), `lỗi ô: ${JSON.stringify(r.issues)}`);
+      assert(loiO(r.issues, 2, 'email') && !loiO(r.issues, 3, 'dob'), `lỗi ô: ${JSON.stringify(r.issues)}`);
       intake.commitIntake(v, { classId: lop, rows: [{ fullName: 'OV2c Không Email', dob: DOB }] });
       const s = one(`SELECT email FROM students WHERE full_name = 'OV2c Không Email'`);
       assert(s && s.email === null, `chưa lưu / email khác NULL: ${JSON.stringify(s)}`);
@@ -79,7 +79,7 @@ export async function runPrOv2cTests(t: YThucTestKit) {
     });
   });
 
-  check('OV2c-4 · Sửa cả lớp: dòng có sửa mà em chưa có email → không lỗi; xoá email → NULL; email sai dạng → lỗi đúng ô; em thiếu ngày sinh vẫn lỗi', () => {
+  check('OV2c-4 · Sửa cả lớp: dòng có sửa mà em chưa có email → không lỗi; xoá email → NULL; email sai dạng → lỗi đúng ô; em thiếu ngày sinh không lỗi (OV-11g Q3)', () => {
     thu(() => {
       const v = QL(); const [a, b] = [dsEm[0].id, dsEm[1].id];
       run('UPDATE students SET email = NULL, dob = ? WHERE id = ?', DOB, a);
@@ -89,8 +89,7 @@ export async function runPrOv2cTests(t: YThucTestKit) {
       const sai = suaCaLop.xemTruocSuaCaLop(v, lop, { rows: [{ studentId: a, email: 'abc' }] });
       assert(sai.rows[0].issues.some((i: any) => i.field === 'email'), `email sai dạng không báo: ${JSON.stringify(sai.rows[0].issues)}`);
       const thieuNs = suaCaLop.xemTruocSuaCaLop(v, lop, { rows: [{ studentId: b, fullName: hs(b).full_name + ' X' }] });
-      assert(thieuNs.rows[0].issues.some((i: any) => i.field === 'dob') && !thieuNs.rows[0].issues.some((i: any) => i.field === 'email'),
-        `ngày sinh phải còn bắt buộc, email thì không: ${JSON.stringify(thieuNs.rows[0].issues)}`);
+      assert(!thieuNs.rows[0].issues.length, `OV-11g Q3: ngày sinh, email không bắt buộc: ${JSON.stringify(thieuNs.rows[0].issues)}`);
       suaCaLop.luuSuaCaLop(v, lop, { rows: [{ studentId: a, fullName: hs(a).full_name + ' X' }] });
       assert(hs(a).full_name.endsWith(' X'), 'không lưu được dòng thiếu email');
       run('UPDATE students SET email = ? WHERE id = ?', 'a@gmail.com', a);
@@ -99,9 +98,9 @@ export async function runPrOv2cTests(t: YThucTestKit) {
     });
   });
 
-  /* OV-10c (gộp 13/10): ô "Thiếu thông tin" của Tổng quan TVV = cờ `thieu_tt` của Học viên & Lớp (`missingForStudent` — thiếu sót học thuật,
-     không gồm email / ngày sinh). Ý OV-2c giữ: em chỉ thiếu email không làm tăng số. */
-  check('OV2c-5 · "Thiếu thông tin" ở Tổng quan TVV không đếm em chỉ thiếu email', () => {
+  /* OV-10c (gộp 13/10): ô "Thiếu thông tin" của Tổng quan TVV = cờ `thieu_tt` của Học viên & Lớp (`missingForStudent`).
+     OV-11g (Q3 chủ SP 14/10): thay ý OV-2c — em thiếu email (hoặc ngày sinh) VÀO "Thiếu thông tin", TVV cập nhật (việc không hạn). */
+  check('OV2c-5 · OV-11g (Q3): "Thiếu thông tin" ở Tổng quan TVV đếm em thiếu email', () => {
     thu(() => {
       const tk = accounts.createAccount(P.admin, { email: `ov2c${accounts.EMAIL_SUFFIX}`, password: 'matkhau-ov2c', fullName: 'Thử OV2c', roles: [{ role: 'consultant', branches: ['CP'] }] }).userId as number;
       const id = dsEm[0].id;
@@ -111,7 +110,8 @@ export async function runPrOv2cTests(t: YThucTestKit) {
       run('UPDATE students SET email = NULL WHERE id = ?', id);
       xoaNho();
       const khongEmail = soHocVien(loadPrincipal(tk));
-      assert(khongEmail.dem.thieu_tt === coEmail.dem.thieu_tt, `có email ${coEmail.dem.thieu_tt}, thiếu email ${khongEmail.dem.thieu_tt}`);
+      assert(chipHocVien(loadPrincipal(tk)).ids.thieu_tt.includes(id) && khongEmail.dem.thieu_tt >= coEmail.dem.thieu_tt,
+        `em thiếu email không vào ô: có email ${coEmail.dem.thieu_tt}, thiếu email ${khongEmail.dem.thieu_tt}`);
     });
   });
 }

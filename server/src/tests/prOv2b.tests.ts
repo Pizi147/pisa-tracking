@@ -104,7 +104,7 @@ export async function runPrOv2bTests(t: YThucTestKit) {
     });
   });
 
-  check('OV2b-3 · Thêm học viên (một em / cả lớp / dán Excel) thiếu ngày sinh → lỗi đúng ô, không lưu dòng đó (email: PR-OV2c không còn bắt buộc)', () => {
+  check('OV2b-3 · Thêm học viên (một em / cả lớp / dán Excel) thiếu ngày sinh → OV-11g (Q3): không lỗi, lưu được; ngày sinh sai dạng vẫn lỗi đúng ô', () => {
     thu(() => {
       const v = V();
       const r = intake.previewIntake(v.QL, { classId: lop, rows: [
@@ -112,13 +112,14 @@ export async function runPrOv2bTests(t: YThucTestKit) {
       ] });
       const o = (row: number, field: string) => r.issues.some((i: any) => i.row === row && i.field === field && i.muc === 'loi');
       assert(!r.issues.some((i: any) => i.row === 1 && i.muc === 'loi'), `dòng đủ bị chặn: ${JSON.stringify(r.issues.filter((i: any) => i.row === 1))}`);
-      assert(o(2, 'dob') && !o(3, 'email') && !r.issues.some((i: any) => i.row === 3 && i.muc === 'loi'), `lỗi ô: ${JSON.stringify(r.issues)}`);   // OV2c: dòng 3 chỉ thiếu email → không lỗi
-      const c = intake.commitIntake(v.QL, { classId: lop, rows: [{ fullName: 'OV2b Đủ', ...DU }, { fullName: 'OV2b Thiếu NS', email: DU.email }] });
-      assert(!one(`SELECT 1 FROM students WHERE full_name = 'OV2b Thiếu NS'`) && one(`SELECT 1 FROM students WHERE full_name = 'OV2b Đủ'`), `commit: ${JSON.stringify(c.failed)}`);
+      assert(!o(2, 'dob') && !r.issues.some((i: any) => (i.row === 2 || i.row === 3) && i.muc === 'loi'), `lỗi ô: ${JSON.stringify(r.issues)}`);   // OV-11g Q3
+      const c = intake.commitIntake(v.QL, { classId: lop, rows: [{ fullName: 'OV2b Đủ', ...DU }, { fullName: 'OV2b Thiếu NS', email: DU.email }, { fullName: 'OV2b Sai NS', dob: '31/02/2010' }] });
+      assert(one(`SELECT 1 FROM students WHERE full_name = 'OV2b Thiếu NS'`) && one(`SELECT 1 FROM students WHERE full_name = 'OV2b Đủ'`)
+        && !one(`SELECT 1 FROM students WHERE full_name = 'OV2b Sai NS'`), `commit: ${JSON.stringify(c.failed)}`);
       const dan = intake.parsePaste('Họ và tên\tNgày sinh\tEmail\nOV2b Dán\t\tdan@gmail.com', { classId: lop });
       const rd = intake.previewIntake(v.QL, { classId: lop, rows: dan.rows });
-      assert(rd.issues.some((i: any) => i.field === 'dob' && i.muc === 'loi'), `dán Excel thiếu ngày sinh: ${JSON.stringify(rd.issues)}`);
-      assert(dm.cotLuoiNhap(false).find((x: any) => x.key === 'dob')?.batBuoc && dm.cotLuoiNhap(true).find((x: any) => x.key === 'dob')?.batBuoc, 'cột Ngày sinh phải *');
+      assert(!rd.issues.some((i: any) => i.field === 'dob' && i.muc === 'loi'), `dán Excel thiếu ngày sinh bị chặn: ${JSON.stringify(rd.issues)}`);
+      assert(!dm.cotLuoiNhap(false).find((x: any) => x.key === 'dob')?.batBuoc && !dm.cotLuoiNhap(true).find((x: any) => x.key === 'dob')?.batBuoc, 'cột Ngày sinh không còn *');
     });
   });
 
@@ -137,7 +138,7 @@ export async function runPrOv2bTests(t: YThucTestKit) {
     });
   });
 
-  check('OV2b-5 · Sửa cả lớp: dòng không đổi không bị chặn; dòng có đổi mà em thiếu ngày sinh → lỗi (email: PR-OV2c không còn); có cột TVV', () => {
+  check('OV2b-5 · Sửa cả lớp: dòng không đổi không bị chặn; dòng có đổi mà em thiếu ngày sinh → OV-11g (Q3): không lỗi; có cột TVV', () => {
     thu(() => {
       const v = V();
       run('UPDATE students SET email = NULL, dob = NULL WHERE id = ?', em.id);
@@ -147,7 +148,7 @@ export async function runPrOv2bTests(t: YThucTestKit) {
       assert(ok.rows.every((r: any) => !r.issues.length), `dòng đủ bị chặn: ${JSON.stringify(ok.rows)}`);
       const x = suaCaLop.xemTruocSuaCaLop(v.QL, lop, { rows: [{ studentId: em.id, fullName: hs().full_name + ' X' }] });
       const f = x.rows[0].issues.map((i: any) => i.field);
-      assert(!f.includes('email') && f.includes('dob'), `dòng có đổi mà thiếu: ${JSON.stringify(x.rows)}`);
+      assert(!f.includes('email') && !f.includes('dob'), `dòng có đổi mà thiếu: ${JSON.stringify(x.rows)}`);
       suaCaLop.luuSuaCaLop(v.QL, lop, { rows: [{ studentId: khac, consultantUserId: idTvv }] });
       assert(one('SELECT consultant_user_id c FROM students WHERE id = ?', khac).c === idTvv, 'Sửa cả lớp không lưu TVV');
       const d = suaCaLop.duLieuSuaCaLop(v.QL, lop);

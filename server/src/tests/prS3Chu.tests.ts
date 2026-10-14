@@ -126,7 +126,7 @@ export async function runPrS3ChuTests(t: YThucTestKit) {
   ], KY_THUAT);
   check('S3 (2) · Chuyển lớp: hằng chữ CHU_CHUYEN_LOP (quyết định · ba trạng thái · GVCN xác nhận bàn giao); OVR chỉ ở cột hẹp; Điểm đầu vào; Lên FT; Tạm dừng học (bảo lưu)', () => {
     const cl = docNguon('shared/domain/chuyenLop.ts');
-    for (const chu of ["'Quyết định chuyển lớp'", "'Chưa có quyết định chuyển lớp'", "'Chờ QL duyệt đề xuất'", 'Sắp chuyển · từ', "'GVCN xác nhận bàn giao'", "'Huỷ quyết định'"]) assert(cl.includes(chu), chu);
+    for (const chu of ["'Quyết định chuyển lớp'", "'Chưa chốt lộ trình'", "'Chờ QL duyệt đề xuất'", 'Sắp chuyển · từ', "'GVCN xác nhận bàn giao'", "'Huỷ quyết định'"]) assert(cl.includes(chu), chu);
     assert(/CHU_CHUYEN_LOP\.huy/.test(docNguon('web/src/modules/students/ChuyenLopPanel.tsx')), 'ChuyenLopPanel dùng hằng');
     assert(/CHU_CHUYEN_LOP\.sapChuyen/.test(docNguon('web/src/modules/classes/DaiChuyenLop.tsx')), 'DaiChuyenLop dùng hằng');
     const ll = docNguon('shared/domain/lenLop.ts');

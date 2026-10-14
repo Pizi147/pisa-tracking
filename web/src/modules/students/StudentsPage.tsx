@@ -16,7 +16,7 @@ import { ClassCreatePanel } from '../classes/ClassCreatePanel.tsx';
 import { TenGiaoVien } from '../classes/TenGiaoVien.tsx';
 import { BangHocVienLop } from './BangHocVienLop.tsx';
 import {
-  LOC_HOC_VIEN, LOC_HOC_VIEN_NHAN, PHAM_VI_NHAN, badgeLop, chipHienLoc, demLoc, docThamSoLoc, duongLichTest, khungCua, laVaiQuanLy, lopMoSan, needScoresText,
+  DUONG_TAB_TEST, LOC_HOC_VIEN, LOC_HOC_VIEN_NHAN, PHAM_VI_NHAN, badgeHienTheoVai, badgeLop, chipHienLoc, chipViecTheoVai, demLoc, docThamSoLoc, duongLichTest, khungCua, laVaiQuanLy, lopMoSan, needScoresText,
   type BadgeLop, type LocHocVien, type NguCanhDs, type PhamVi, type SapXep, type WorkScope, vaiXemHocVien,
 } from '@shared/domain/index.ts';
 import { HocVienTheoVai } from './HocVienTheoVai.tsx';
@@ -46,6 +46,8 @@ type TrangHocVienLop = {
   hocVien: { id: number; classId: number; loc: LocHocVien[]; khung: 'ft' | 'thuong' }[];
   /** Người xem có tạo được lớp MỚI ở chi nhánh nào không — không gắn với lớp đã tồn tại nào (điểm a rà soát cuối). */
   coTheTaoLop: boolean;
+  /** HL-14: "+ Học viên" theo phạm vi, không theo kết quả ô tìm. */
+  coTheThemHocVien: boolean;
   /** Số ở mục ⋯ "Lưu trữ" đầu trang (PR-LT, Q16). */
   demLuuTru: { lop: number; hv: number };
 };
@@ -125,10 +127,11 @@ function TrangTheoLop({ admin }: { admin: boolean }) {
   for (const c of data?.rows ?? []) soLopTheoKhung[khungCua(c.scoringMode)] += 1;
   const coHaiKhung = soLopTheoKhung.ft > 0 && soLopTheoKhung.thuong > 0;
   const khung: KhungLoc = coHaiKhung ? khungMuon : 'tat-ca';
-  const dem = useMemo(() => demLoc(data?.hocVien ?? [], khung), [data, khung]);
+  /* HL-9: lọc một lớp (badge "n HV quá hạn việc", "Thiếu n thông tin") → số trên chip đếm theo lớp đó, = số em hiện ra. */
+  const dem = useMemo(() => demLoc((data?.hocVien ?? []).filter((h) => !chiLop || h.classId === chiLop), khung), [data, khung, chiLop]);
   /* "Đang SOS" chỉ Fast Track (T58): chọn khung Lớp thường thì chip không còn nghĩa. */
   const chips = LOC_HOC_VIEN.filter((k) => { const c = LOC_HOC_VIEN_NHAN[k].can; return (!c || can(c)) && !(k === 'sos' && khung === 'thuong')
-    && chipHienLoc(k, 'loc' in doc ? doc.loc : null); });
+    && chipHienLoc(k, 'loc' in doc ? doc.loc : null) && chipViecTheoVai(admin ? 'admin' : null, k); });
   const loc: LocHocVien = 'loc' in doc && chips.includes(doc.loc) ? doc.loc : 'tat-ca';
   /* PR-OV2a: "HV của tôi" (TVV) — máy chủ chỉ gửi em mình; lọc như chip để mỗi lớp chỉ hiện các em đó. */
   const dangLoc = loc !== 'tat-ca' || !!q.trim() || data?.phamVi.dangDung === 'cua-toi';
@@ -183,13 +186,13 @@ function TrangTheoLop({ admin }: { admin: boolean }) {
             * TỪNG lớp/chi nhánh thay vào đó.
             */}
           {data?.coTheTaoLop && <button type="button" className="btn btn-sm max-sm:hidden" onClick={() => setTaoLop(true)}>+ Lớp mới</button>}
-          {(data?.rows ?? []).some((r) => r.viewer.coTheSuaHocVien) && (
+          {data?.coTheThemHocVien && (
             <button type="button" className="btn btn-sm btn-primary max-sm:hidden" onClick={() => setThem(null)}>+ Học viên</button>
           )}
           {/* Điện thoại (< 640 px, K1/DH): hai nút tạo vào ⋯ — đầu trang chỉ còn một nút 44 px. */}
           <MenuDong nhan="Thao tác trang" muc={[
             ...(dienThoai && data?.coTheTaoLop ? [{ key: 'lop-moi', nhan: '+ Lớp mới', onChon: () => setTaoLop(true) }] : []),
-            ...(dienThoai && (data?.rows ?? []).some((r) => r.viewer.coTheSuaHocVien) ? [{ key: 'hoc-vien-moi', nhan: '+ Học viên', onChon: () => setThem(null) }] : []),
+            ...(dienThoai && data?.coTheThemHocVien ? [{ key: 'hoc-vien-moi', nhan: '+ Học viên', onChon: () => setThem(null) }] : []),
             { key: 'luu-tru', nhan: nhanLuuTru(data?.demLuuTru ?? { lop: 0, hv: 0 }), keTruoc: dienThoai && !!data?.coTheTaoLop, onChon: () => navigate('/hoc-vien/luu-tru') },
           ]} />
         </div>
@@ -255,7 +258,8 @@ function TrangTheoLop({ admin }: { admin: boolean }) {
             title={data.scopeEmpty ? 'Bạn chưa được cấp phạm vi nào' : 'Không có lớp hay học viên nào khớp'}
             hint={data.scopeEmpty
               ? 'Tài khoản này chưa có vai trò kèm chi nhánh hoặc phân công lớp nào.'
-              : 'Bỏ bớt từ khoá, đổi chip lọc hoặc đổi phạm vi.'} />
+              : 'Bỏ bớt từ khoá, đổi chip lọc hoặc đổi phạm vi.'}
+            action={q.trim() ? <button type="button" className="btn btn-sm" onClick={() => { setDraftQ(''); setParam({ q: null }); }}>Xoá tìm</button> : undefined} />
         </Card>
       ) : (
         /*
@@ -342,7 +346,7 @@ function HopLop({ lop, mo, onDoiMo, chiHien, sapXep, onThemHocVien, onDoi, dsHoc
   const thuong = lop.scoringMode === 'ratio';
   /** Dòng phụ hàng lớp: `Fast Track · LT1 · 18 HV` — lớp thường không có lộ trình nên bỏ khúc giữa (mockup 21 mục 5). */
   const chuLop = [lop.programmeName ?? '—', !thuong && lop.route ? lop.route : null, `${lop.studentCount} HV`].filter(Boolean).join(' · ');
-  const b = badgeLop({
+  const bGoc = badgeLop({
     vai: laVaiQuanLy(session?.roles) ? 'ql' : 'gv', needsPlacement: lop.needsPlacement, canXepLop: lop.canXepLop, missingSkills: lop.missingSkills,
     soBaiChoCham: lop.needScores,
     needScoresTitle: lop.needScores > 0 ? needScoresText(lop.workScope, lop.needScores) : null,
@@ -350,6 +354,9 @@ function HopLop({ lop, mo, onDoiMo, chiHien, sapXep, onThemHocVien, onDoi, dsHoc
     missingCount: lop.missing.filter((m) => m.key !== 'teachers').length, soChuaLoTrinhTiep: lop.soChuaLoTrinhTiep,
     chuongTrinh: lop.programmeCode,
   });
+  /* HL-8: Admin không có badge việc của QL / GV — cùng hàm với đầu hồ sơ lớp. */
+  const bCon = [...bGoc.hien, ...bGoc.an].filter((x) => badgeHienTheoVai(admin ? 'admin' : null, x.key));
+  const b = { hien: bCon.slice(0, 2), an: bCon.slice(2) };
   const denBadge = (x: BadgeLop): string | null =>
     /* PR-UX1: badge "n bài chờ chấm" mở Lịch Test lọc đúng lớp (Lịch Test tự mở "Lớp tôi dạy" cho GV). */
     x.key === 'cham' && session?.nav?.test ? duongLichTest({ classId: lop.id })
@@ -360,7 +367,7 @@ function HopLop({ lop, mo, onDoiMo, chiHien, sapXep, onThemHocVien, onDoi, dsHoc
   const mucLop: MucMenu[] = [
     { key: 'ho-so', nhan: 'Hồ sơ lớp', onChon: () => navigate(`/hoc-vien/lop/${lop.id}`, { state: { ds: dsLop } }) },
     ...(lop.viewer.coTheNhapDiem
-      ? [{ key: 'nhap-diem', nhan: 'Nhập điểm', onChon: () => navigate(thuong ? `/bang-diem-thuong/${lop.id}` : `/nhap-diem/${lop.id}`) }]
+      ? [{ key: 'nhap-diem', nhan: 'Nhập điểm', onChon: () => navigate(`${DUONG_TAB_TEST['diem-lop']}?lop=${lop.id}`) }]   // HL-3: như nút đầu hồ sơ lớp
       : []),
     ...(lop.viewer.coTheSuaHocVien ? [{ key: 'them', nhan: '+ Học viên', onChon: onThemHocVien }] : []),
   ];
