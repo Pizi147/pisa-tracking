@@ -14,6 +14,7 @@ import { mondayOfDate } from './week.ts';
 import { type ChuongTrinh } from './tongQuan.ts';
 import type { TrangThaiCaseV4 } from './sosV4.ts';
 import { khoaBai, nhanBai, nhanBaiThuong } from './normal.ts';
+import { t } from '../i18n/index.ts';
 
 // ------------------------------------------------------------------ góc nhìn (Q1, Q16)
 
@@ -172,7 +173,8 @@ export function nhomCotNhanNgan(nhom: NhomCot, ct: ChuongTrinh): string {
 export type CotTongHop = {
   khoa: string; nhom: NhomCot; donVi: 'dot-test' | 'hoc-vien' | 'case';
   nhan: (ct: ChuongTrinh) => string;
-  goiY: string;
+  /** Chú giải cột (tooltip). Nhóm Xử lý không có — một ⓘ chung `GOI_Y_XU_LY` (OV-12d). */
+  goiY?: string;
   /** PR-Pb2-a (P4, K1-19): tầng đầu đề con của lớp thường — Giữa khoá (theo môn) · Cuối khoá (% tổng) · Mini Test. */
   nhomCon?: NhomCon;
   /** PR-HK2 (Q1): cột ghép — MỘT ô hiện hai số của hai cột số liệu (`cotSoLieu`), mỗi số bấm mở danh sách riêng. */
@@ -240,27 +242,27 @@ export const cotTheoDuLieu = (cols: readonly CotTongHop[], tongCoDot: CoDot | un
  * PR-HK2 (Q1): hai cột số liệu `hvCoCase` + `case` hiện chung MỘT ô `HV - Case` (`17 - 26`, mỗi số bấm mở danh sách riêng). Máy chủ, Excel và
  * nguồn mở danh sách vẫn đi theo hai cột này (`cotSoLieu`); màn chỉ vẽ cột ghép.
  */
-const COT_HV_CO_CASE: CotTongHop = { khoa: 'hvCoCase', nhom: 'xu-ly', donVi: 'hoc-vien', nhan: () => 'HV có Case',
-  goiY: 'Học viên có ít nhất một Case sinh từ các lượt trong dòng — một em nhiều Case vẫn tính một lần.' };
-const COT_CASE: CotTongHop = { khoa: 'case', nhom: 'xu-ly', donVi: 'case', nhan: () => 'Case',
-  goiY: 'Case sinh từ các lượt trong dòng — là tình trạng HÔM NAY của Case, không phải lúc lượt được chấm.' };
-const COT_HV_CASE: CotTongHop = { khoa: 'hvCase', nhom: 'xu-ly', donVi: 'hoc-vien', nhan: () => 'HV - Case', gop: ['hvCoCase', 'case'],
-  goiY: 'Số học viên có Case - số Case, sinh từ các lượt trong dòng. Một em nhiều Case vẫn tính một học viên. Là tình trạng HÔM NAY của Case, không phải lúc lượt được chấm.' };
+const COT_HV_CO_CASE: CotTongHop = { khoa: 'hvCoCase', nhom: 'xu-ly', donVi: 'hoc-vien', nhan: () => 'HV có Case' };
+const COT_CASE: CotTongHop = { khoa: 'case', nhom: 'xu-ly', donVi: 'case', nhan: () => 'Case' };
+const COT_HV_CASE: CotTongHop = { khoa: 'hvCase', nhom: 'xu-ly', donVi: 'hoc-vien', nhan: () => 'HV - Case', gop: ['hvCoCase', 'case'] };
+/** OV-12d: chữ chung của nhóm Xử lý — MỘT ⓘ trên đầu nhóm (web) thay ⓘ từng cột. */
+export const GOI_Y_XU_LY = t('HV - Case: học viên có Case - số Case sinh từ các lượt trong dòng (kể cả Case đã xong / huỷ). Chờ duyệt: Case đang chờ người chốt, chưa có PA đang theo dõi — chưa có PA, PA chờ xác nhận / chờ Quản lý duyệt, PA Bổ trợ chưa chạy, PA đã xong hết nhưng chưa Hoàn thành Case, "Không cần theo dõi" chờ Quản lý, Case Mock Test cũ chờ ghi nhận xét, Case Progress Test chờ Xác nhận Case; ⚠ = quá hạn. Đang xử lý: Case có PA đang theo dõi. Tính theo hôm nay, không phải lúc chấm.');
 const COT_XU_LY: CotTongHop[] = [
   COT_HV_CASE,
-  /* PR-SOS (K1-20): bốn cột theo MỘT nhãn trạng thái Case (`trangThaiCaseV4`) — tình trạng hôm nay. */
-  /* OV-12c: Case MT có nguyên nhân từ nhận xét ngay khi ra đời — cột này còn Progress chờ Xác nhận Case + Case MT cũ chờ ghi nhận xét. */
-  { khoa: 'choNguyenNhan', nhom: 'xu-ly', donVi: 'case', nhan: () => 'Chờ xác nhận',
-    goiY: 'Case Progress Test chưa Xác nhận Case, hoặc Case Mock Test cũ mà bài chưa có nhận xét — trong ngoặc là số đã quá hạn xác nhận.' },
-  { khoa: 'choDuyet', nhom: 'xu-ly', donVi: 'case', nhan: () => 'Chờ duyệt', goiY: 'Case đã gửi "Không cần theo dõi", chờ Quản lý duyệt.' },
-  { khoa: 'dangLam', nhom: 'xu-ly', donVi: 'case', nhan: () => 'Đang làm', goiY: 'Case đã có nguyên nhân (kể cả PA theo quy chế còn chờ xác nhận) hoặc Case giáo viên báo, chưa xong.' },
-  { khoa: 'xongHuy', nhom: 'xu-ly', donVi: 'case', nhan: () => 'Xong/Huỷ', goiY: 'Case đã hoàn thành, huỷ vì không cần theo dõi, hoặc hệ thống đóng.' },
+  /* OV-12d (chủ SP 14/10): hai cột theo `cotXuLy` — xong / huỷ chỉ nằm trong tổng HV - Case. */
+  { khoa: 'choDuyet', nhom: 'xu-ly', donVi: 'case', nhan: () => t('Chờ duyệt') },
+  { khoa: 'dangLam', nhom: 'xu-ly', donVi: 'case', nhan: () => t('Đang xử lý') },
 ];
-/** Trạng thái Case v4 → cột nhóm Xử lý của bảng Tổng hợp. `choNguyenNhanQuaHan` là số phụ trong ngoặc của cột Chờ nguyên nhân. */
-export const COT_XU_LY_V4: Record<TrangThaiCaseV4, string> = {
-  'cho-nguyen-nhan': 'choNguyenNhan', 'cho-nhan-xet': 'choNguyenNhan', 'cho-duyet-khong-theo-doi': 'choDuyet', 'cho-xac-nhan-pa': 'dangLam', 'dang-lam': 'dangLam',
-  xong: 'xongHuy', 'huy-khong-theo-doi': 'xongHuy', 'he-thong-dong': 'xongHuy', 'rut-sua-diem': 'xongHuy',
-};
+/**
+ * OV-12d: cột nhóm Xử lý của MỘT Case — Tổng hợp (cột) và Tổng quan ("Case chờ duyệt") cùng hàm (`xuLyCaseMany`). `coPaDangTheoDoi`: còn PA chưa
+ * huỷ / chưa xong, đã chạy (không phải PA quy chế chưa xác nhận) và không chờ Quản lý duyệt. Đang làm mà không có PA nào như vậy (chưa có PA, PA chờ
+ * duyệt, PA đã xong hết chờ Hoàn thành Case) = vẫn chờ người chốt.
+ */
+export type CotXuLy = 'choDuyet' | 'dangLam' | 'xongHuy';
+export function cotXuLy(k: TrangThaiCaseV4, coPaDangTheoDoi: boolean): CotXuLy {
+  if (k === 'xong' || k === 'huy-khong-theo-doi' || k === 'he-thong-dong' || k === 'rut-sua-diem') return 'xongHuy';
+  return k === 'dang-lam' && coPaDangTheoDoi ? 'dangLam' : 'choDuyet';
+}
 
 /**
  * Cột kỹ năng "dưới kỳ vọng", sinh từ `kyNangTheoCt` — khoá kỹ thuật `kn:<hạng mục>`, không lộ ra màn (chỉ dùng nội bộ).

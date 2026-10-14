@@ -462,12 +462,11 @@ export async function runPrSosTests(t: YThucTestKit) {
     for (const iv of all('SELECT id FROM case_interventions WHERE case_id IN (SELECT id FROM sos_cases WHERE student_id = ?)', st.id)) {
       assert(!ids.has(iv.id), `PA ${iv.id} vào hiệu quả`);
     }
-    const map = d.COT_XU_LY_V4;
-    assert(map['cho-nguyen-nhan'] === 'choNguyenNhan' && map['cho-xac-nhan-pa'] === 'dangLam' && map['huy-khong-theo-doi'] === 'xongHuy'
-      && map['cho-duyet-khong-theo-doi'] === 'choDuyet', JSON.stringify(map));
+    /* OV-12d (chủ SP 14/10): ba cột — mọi trạng thái chờ người chốt vào Chờ duyệt; xong / huỷ chỉ trong tổng HV - Case. */
+    assert(d.cotXuLy('cho-nguyen-nhan', false) === 'choDuyet' && d.cotXuLy('cho-xac-nhan-pa', false) === 'choDuyet' && d.cotXuLy('huy-khong-theo-doi', false) === 'xongHuy'
+      && d.cotXuLy('cho-duyet-khong-theo-doi', false) === 'choDuyet' && d.cotXuLy('cho-nhan-xet', false) === 'choDuyet', 'cotXuLy');
     const cot = d.cotTongHopFor('ft').filter((x: any) => x.nhom === 'xu-ly').map((x: any) => x.nhan('ft'));
-    assert(cot.join('|') === 'HV - Case|Chờ xác nhận|Chờ duyệt|Đang làm|Xong/Huỷ', cot.join('|'));
-    assert(map['cho-nhan-xet'] === 'choNguyenNhan', 'Case MT cũ chờ ghi nhận xét cùng cột chờ');
+    assert(cot.join('|') === 'HV - Case|Chờ duyệt|Đang xử lý', cot.join('|'));
   });
 
   // ------------------------------------------------------------------ Task 8 · HangCase / HangPA (quét nguồn + luật)

@@ -204,7 +204,7 @@ export async function runPrHk2Tests(t: YThucTestKit) {
         const r = th.oTongHop(P.admin, { ...bo, khoa, cot });
         assert(r.n === (o[cot] ?? 0) && r.rows.length === r.n, `[${ct}] ${khoa} · ${cot}: bảng ${o[cot] ?? 0} ≠ n ${r.n} / dòng ${r.rows.length}`);
       }
-      assert((kq.tong.choNguyenNhanQuaHan ?? 0) <= (kq.tong.choNguyenNhan ?? 0), `[${ct}] quá hạn > chờ nguyên nhân`);
+      assert((kq.tong.choDuyetQuaHan ?? 0) <= (kq.tong.choDuyet ?? 0), `[${ct}] quá hạn > chờ duyệt`);
     }
   });
 
