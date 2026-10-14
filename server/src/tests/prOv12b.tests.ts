@@ -8,6 +8,7 @@ export async function runPrOv12bTests(t: any) {
   const { check, checkAsync, assert, conn, P, classId } = t;
   const attempts: any = await import('../fasttrack/attempts.ts');
   const skillSchedule: any = await import('../fasttrack/skillSchedule.ts');
+  const hoanTatMod: any = await import('../fasttrack/hoanTat.ts');
   const week: any = await import('../platform/week.ts');
   const d: any = await import('../../../shared/domain/index.ts');
   const { migratePrOv12b } = await import('../migrate/prOv12b.ts');
@@ -157,6 +158,13 @@ export async function runPrOv12bTests(t: any) {
     assert(c('listening').thieuNhanXet === 'ghi-nhan-xet' && c('reading').thieuNhanXet === 'chon-nhom' && c('speaking').thieuNhanXet === null
       && c('writing1').thieuNhanXet === null, `cờ: ${['listening', 'reading', 'speaking', 'writing1'].map((s) => c(s).thieuNhanXet)}`);
     assert(c('listening').batBuocNhanXet === true && c('reading').kyVong === kv() && Array.isArray(c('reading').nhomNguyenNhan), 'trường ô');
+    /* Rà #383: lượt đã hoàn tất (đủ điểm, qua Chủ nhật) → không báo "thiếu …" (GV không còn bổ sung được). */
+    for (const k of ['writing1', 'writing2']) attempts.saveScore(P.admin, luot, k, { criteria: [8, 8, 8, 8] }, TRONG);
+    const SAU = '2026-12-14';
+    assert(hoanTatMod.dotHoanTat(luot, SAU).hoanTat, 'tiền đề: lượt phải hoàn tất');
+    xoaNho();
+    const l3 = attempts.classScoreSheet(P.admin, lop, W, SAU).rows.find((x: any) => x.attemptId === luot).cells.find((c: any) => c.skill === 'listening');
+    assert(l3.thieuNhanXet === null, `hoàn tất vẫn báo: ${l3.thieuNhanXet}`);
     conn.prepare('UPDATE assessment_attempts SET lich_su = 1 WHERE id = ?').run(luot);
     const c2 = o(true);
     assert(c2('listening').thieuNhanXet === null && c2('listening').batBuocNhanXet === false, 'MT cũ không đòi');
@@ -170,6 +178,23 @@ export async function runPrOv12bTests(t: any) {
       `chữ nhóm: ${d.chuNhomNguyenNhan({ reading: [R[1], R[3]], writing1: [Wc[0]] })}`);
     assert(d.chuNhomNguyenNhan({}) === null, 'không nhóm → ô trống');
   });
+
+  check('OV12b-10 · rà #383: ô cũ dưới kỳ vọng thiếu cả nhận xét lẫn nhóm — hồ sơ MT lưu RIÊNG từng phần được (chỉ kiểm phần gửi)', () => thu(() => {
+    dung(luot);
+    attempts.saveScore(P.admin, luot, 'reading', { rawScore: soCau(kv() - 1) }, TRONG);   // dữ liệu trước luật
+    luu('reading', { nhanXet: NX });
+    assert(dong('reading').comment === NX, 'nhận xét một mình phải lưu được');
+    luu('reading', { nhomNguyenNhan: [R[2]] });
+    assert(dong('reading').nhom_nguyen_nhan === JSON.stringify([R[2]]), 'chip một mình phải lưu được');
+    assert(loi(() => luu('reading', { nhanXet: 'ngắn' })).status === 400 && loi(() => luu('reading', { nhomNguyenNhan: [] })).status === 400, 'phần gửi vẫn kiểm');
+  }));
+
+  check('OV12b-11 · rà #383: ô S cũ có điểm chưa nhận xét — chỉ đổi GV chấm không bị đòi nhận xét', () => thu(() => {
+    dung(luot);
+    attempts.saveScore(P.admin, luot, 'speaking', { criteria: [4, 4, 4, 4] }, TRONG);
+    luu('speaking', { gvCham: { performerName: 'Cô Lan (giám khảo ngoài)' } });
+    assert(dong('speaking').examiner_name === 'Cô Lan (giám khảo ngoài)', 'đổi GV chấm phải lưu');
+  }));
 
   await checkAsync('OV12b-9 · HTTP PUT /attempts/:id/scores/:skill: thiếu nhận xét → 400 (không ghi); đủ → 200', async () => {
     /* API tự cuộn giao dịch bỏ dở → không bọc `thu`; dựng ca rồi trả lượt về trống ở cuối. */

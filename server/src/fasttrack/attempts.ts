@@ -1,7 +1,7 @@
 import { db, tx } from '../db.ts';
 import {
   ASSESSED_SKILLS, ASSESSED_SKILL_LABEL, duongDotTest, ENTRY_SKILLS, ENTRY_SKILL_LABEL, NO_SHOW_OVERRIDDEN_NOTE,
-  CHAM_CHEO, LOI_BAND_TU_TINH, PERMISSIONS, awaitingScore, kyNangXongThieu, laChamCheo, cachHuyLuot, kiemBand, kiemNhanXet, kiemNhomNguyenNhan, kiemSoMtMoi, batBuocNhanXetMt, canNhomNguyenNhan, docNhomNguyenNhan, issueLabel, thieuNhanXetMt, LOI_THIEU_NHAN_XET, type ThieuNhanXet, kyNangSosMt0, laMt0, laMtCu, ngay, dauTruCuaO, duocNhapBandThang, noShowText, pendingSkillsOf, soMtKeTiep, tenGvCham, tenMon, tuanHocCuaMt, tuanLich,
+  CHAM_CHEO, LOI_BAND_TU_TINH, PERMISSIONS, awaitingScore, kyNangXongThieu, laChamCheo, cachHuyLuot, kiemBand, kiemNhanXet, kiemNhomNguyenNhan, kiemSoMtMoi, batBuocNhanXetMt, canNhomNguyenNhan, docNhomNguyenNhan, issueLabel, thieuNhanXetMt, LOI_THIEU_NHAN_XET, NHAN_XET_MT_TOI_THIEU, type ThieuNhanXet, kyNangSosMt0, laMt0, laMtCu, ngay, dauTruCuaO, duocNhapBandThang, noShowText, pendingSkillsOf, soMtKeTiep, tenGvCham, tenMon, tuanHocCuaMt, tuanLich,
   type CachHuy, CASE_CATEGORY_LABEL, INTERVENTION_KIND_LABEL, SYSTEM_CLOSE_REASON_LABEL, categoryOf, type CaseCategory, type InterventionKind,
   type AssessedSkill, type EntrySkill, type KetQuaVang, type NoShowState, type PendingCell, type SkillProgress, type WorkScope,
 } from '../../../shared/domain/index.ts';
@@ -450,6 +450,12 @@ export function skillCells(
           };
         })()
       : null;
+    /* E8 (T53 Q6): bài đã xác nhận vắng không nhập ở đâu cả — nhập bù thì Quản lý "Xếp lại bài vắng" / "Khôi phục" trước. */
+    const canEdit = required && !cancelled && view.sitStatus !== 'cancelled' && view.sitStatus !== 'absent'
+      /* T19 (PR-MTa): kỹ năng chưa tới tuần thi / chưa xếp tuần → ô khoá như máy chủ (`kiemDaToiTuanThi`), kể cả ô đã có điểm mà
+       * Quản lý dời sang tuần chưa tới (T20) — điểm vẫn hiện. */
+      && (!!view.weekStart && view.weekStart.slice(0, 10) <= mondayOf(today))
+      && (hoanTat.hoanTat ? suaSauHoanTat : editable.includes(skill));
     const noShow = ns.state === 'none' ? null : {
       /* Tuần viết bằng `tuanLich` (G-6): "W3 SEP", chỉ kèm năm khi khác năm hôm nay — không in mã tuần có năm. */
       state: ns.state, text: noShowText(ns, view.weekStart ? tuanLich(view.weekStart, today) : view.periodCode, today) ?? '',
@@ -476,12 +482,7 @@ export function skillCells(
         /* Đã báo "không có bài" thì không nợ điểm ở ô này — hạn nhập điểm chỉ áp cho bài CÓ thực hiện. */
         && noShow === null,
       progress,
-      /* E8 (T53 Q6): bài đã xác nhận vắng không nhập ở đâu cả — nhập bù thì Quản lý "Xếp lại bài vắng" / "Khôi phục" trước. */
-      canEdit: required && !cancelled && view.sitStatus !== 'cancelled' && view.sitStatus !== 'absent'
-        /* T19 (PR-MTa): kỹ năng chưa tới tuần thi / chưa xếp tuần → ô khoá như máy chủ (`kiemDaToiTuanThi`), kể cả ô đã có điểm mà
-         * Quản lý dời sang tuần chưa tới (T20) — điểm vẫn hiện. */
-        && (!!view.weekStart && view.weekStart.slice(0, 10) <= mondayOf(today))
-        && (hoanTat.hoanTat ? suaSauHoanTat : editable.includes(skill)),
+      canEdit,
       /* Việc nhập điểm của người xem (bảng lớp "Nhập điểm …") — như `canEdit` nhưng trước hoàn tất bỏ quyền sửa mọi lúc của Quản lý. */
       viec: required && !cancelled && !chamCheo && view.sitStatus !== 'cancelled' && view.sitStatus !== 'absent'
         && (hoanTat.hoanTat ? suaSauHoanTat : viecList.includes(skill)),
@@ -504,7 +505,8 @@ export function skillCells(
       nhomNguyenNhan: docNhomNguyenNhan(row?.nhom_nguyen_nhan),
       batBuocNhanXet: batBuocNx,
       kyVong,
-      thieuNhanXet: thieuNhanXetMt({
+      /* Rà #383: chữ "thiếu …" chỉ ở ô GV còn bổ sung được — lượt đã hoàn tất không báo (Case cũ: OV-12c). */
+      thieuNhanXet: hoanTat.hoanTat || !canEdit ? null : thieuNhanXetMt({
         batBuoc: batBuocNx, coDiem: hasScore, band: row?.band ?? null, kyVong, nhanXet: row?.comment, nhom: docNhomNguyenNhan(row?.nhom_nguyen_nhan),
       }),
       gvCham: skill === 'speaking' && row && (row.examiner_user_id || row.examiner_name)
@@ -1394,7 +1396,7 @@ function xoaDiemLuot(p: Principal, a: ReturnType<typeof loadAttempt>, lyDo: stri
   if (thuong) return xoaDiemBaiThuong(p, a, o, lyDo, hoanTat.hoanTat, ct!.code);
   db().prepare(
     `UPDATE assessment_scores SET raw_score = NULL, c1 = NULL, c2 = NULL, c3 = NULL, c4 = NULL, band = NULL, entered_by = NULL, entered_at = NULL,
-            comment = NULL, examiner_user_id = NULL, examiner_name = NULL, nhap_dau_ngay = NULL
+            comment = NULL, examiner_user_id = NULL, examiner_name = NULL, nhap_dau_ngay = NULL, nhom_nguyen_nhan = NULL
       WHERE attempt_id = ? AND (band IS NOT NULL OR raw_score IS NOT NULL)`).run(a.id);
   for (const s of o) {
     const path = hoanTat.hoanTat
@@ -1760,7 +1762,15 @@ function luuNhanXet(
   const exUser = gv !== undefined ? gv?.userId ?? null : cu?.examiner_user_id ?? null;
   const exName = gv !== undefined ? gv?.name ?? null : cu?.examiner_name ?? null;
   const band = cu?.band ?? null;
-  const nhom = nhomVaLuatNhanXet(a, { band, coDiem: band !== null || (cu?.raw_score ?? null) !== null, comment, nhomGui, nhomCu: cu?.nhom_nguyen_nhan, luat });
+  const coDiem = band !== null || (cu?.raw_score ?? null) !== null;
+  const nhom = nhomVaLuatNhanXet(a, { band, coDiem, comment, nhomGui, nhomCu: cu?.nhom_nguyen_nhan, luat: false });
+  /* OV-12b (rà #383): chỉ kiểm phần ĐƯỢC GỬI — hồ sơ MT lưu nhận xét và chip riêng, ô cũ thiếu cả hai vẫn bổ sung được từng phần; chỉ đổi GV chấm không kiểm. */
+  if (luat && coDiem && batBuocNhanXetMt({ kind: a.kind, lichSu: !!a.lich_su })) {
+    const t = (comment ?? '').trim();
+    const thieu: ThieuNhanXet | null = nhanXet !== undefined && t.length < NHAN_XET_MT_TOI_THIEU ? (t ? 'nhan-xet-ngan' : 'ghi-nhan-xet')
+      : nhomGui !== undefined && !nhomGui.length && canNhomNguyenNhan(band, kyVongCuaLuot(a)) ? 'chon-nhom' : null;
+    if (thieu) throw badRequest(LOI_THIEU_NHAN_XET[thieu]);
+  }
   if (cu) {
     conn.prepare('UPDATE assessment_scores SET comment = ?, examiner_user_id = ?, examiner_name = ?, nhom_nguyen_nhan = ? WHERE id = ?')
       .run(comment, exUser, exName, nhom, cu.id);

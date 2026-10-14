@@ -68,12 +68,6 @@ export function kiemNhomNguyenNhan(v: unknown, skill: string): { gt: string[] } 
   return { gt: v as string[] };
 }
 
-/** Gộp nhận xét hai task Writing thành một ô (Excel): bỏ phần trống, cả hai trống → null. */
-export function nhanXetW(w1: string | null, w2: string | null): string | null {
-  const d = [w1 ? `Task 1: ${w1}` : null, w2 ? `Task 2: ${w2}` : null].filter(Boolean);
-  return d.length ? d.join('\n') : null;
-}
-
 /** Tên GV chấm Speaking: tài khoản trước, tên người ngoài sau. */
 export const tenGvCham = (o: { examinerUserName?: string | null; examinerName?: string | null }) =>
   o.examinerUserName ?? o.examinerName ?? null;
