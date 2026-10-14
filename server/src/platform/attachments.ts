@@ -1,7 +1,7 @@
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { DB_PATH, ROOT, db, laDbTuXa, tx } from '../db.ts';
-import { badRequest, notFound, nowIso } from '../util.ts';
+import { badRequest, loi, notFound, nowIso } from '../util.ts';
 import { ATTACHMENT_EXTENSIONS, ATTACHMENT_MAX_BYTES, ATTACHMENT_MIME_BY_EXT, PERMISSIONS, LO_GHI_VI_PHAM } from '../../../shared/domain/index.ts';
 import { can, require_, type Principal } from '../permissions.ts';
 import { caseAccess } from '../cases/cases.ts';
@@ -57,7 +57,7 @@ type OwnerAccess = {
  * chúng do chính module Ý thức quyết định (`server/src/yThuc/access.ts`).
  */
 function ownerAccess(ownerType: string, ownerId: number): OwnerAccess {
-  if (!(OWNER_TYPES as readonly string[]).includes(ownerType)) throw badRequest(`Loại bản ghi "${ownerType}" không hợp lệ.`);
+  if (!(OWNER_TYPES as readonly string[]).includes(ownerType)) throw loi(400, 'Loại bản ghi "{ownerType}" không hợp lệ.', { ownerType });
   if (!Number.isInteger(ownerId) || ownerId <= 0) throw badRequest('Bản ghi chủ không hợp lệ.');
   if (ownerType === 'sos_case') return caseOwner(ownerId);
   if (ownerType === 'case_intervention') {
@@ -69,7 +69,7 @@ function ownerAccess(ownerType: string, ownerId: number): OwnerAccess {
   if (ownerType === 'discipline_measure') return measureOwner(ownerId);
   if (ownerType === 'sos_coordination_action') return coordinationOwner(ownerId);
   if (ownerType === 'unit_report') return unitReportOwner(ownerId);
-  throw badRequest(`Loại bản ghi "${ownerType}" chưa hỗ trợ đính kèm.`);
+  throw loi(400, 'Loại bản ghi "{ownerType}" chưa hỗ trợ đính kèm.', { ownerType });
 }
 
 /** Báo cáo đơn vị (PR-Ra, Q15): xem = MEETING_VIEW của chi nhánh đơn vị; sửa (thêm/xoá bằng chứng) = MEETING_EDIT. */
@@ -191,7 +191,7 @@ export async function addFile(p: Principal, input: {
   const original = path.basename(String(input.fileName ?? '').replace(/\\/g, '/'));
   const ext = path.extname(original).slice(1).toLowerCase();
   if (!ext || !(ext in ALLOWED_EXT) || original !== String(input.fileName ?? '').replace(/\\/g, '/')) {
-    throw badRequest(`Không nhận loại tệp này. Chỉ nhận: ${ALLOWED_EXTENSIONS.join(', ')}.`);
+    throw loi(400, 'Không nhận loại tệp này. Chỉ nhận: {ds}.', { ds: ALLOWED_EXTENSIONS.join(', ') });
   }
   if (!input.data || input.data.length === 0) throw badRequest('Tệp rỗng — chưa có gì để lưu.');
   if (input.data.length > MAX_FILE_BYTES) throw badRequest('Tệp quá lớn: tối đa 4 MB.');
@@ -224,7 +224,7 @@ export function chepTep(p: Principal, input: { tuId: number; ownerType: string; 
   ownerAccess(src.owner_type, src.owner_id).requireView(p);
   if (input.ownerType !== src.owner_type) throw badRequest('Chỉ chép sang bản ghi cùng loại.');
   const ids = [...new Set(input.ownerIds)].filter((x) => Number.isInteger(x) && x > 0 && x !== src.owner_id);
-  if (!ids.length || ids.length > LO_GHI_VI_PHAM) throw badRequest(`Chọn từ 1 đến ${LO_GHI_VI_PHAM} bản ghi mỗi lần.`);
+  if (!ids.length || ids.length > LO_GHI_VI_PHAM) throw loi(400, 'Chọn từ 1 đến {n} bản ghi mỗi lần.', { n: LO_GHI_VI_PHAM });
   for (const id of ids) ownerAccess(input.ownerType, id).requireEdit(p);
   const co = new Set((db().prepare(`SELECT owner_id FROM attachments WHERE owner_type = ? AND url = ? AND owner_id IN (${ids.map(() => '?').join(',')})`)
     .all(input.ownerType, src.url, ...ids) as any[]).map((r) => r.owner_id as number));

@@ -17,6 +17,7 @@ import { PhoiHopSosSection, type CoordTurn } from './PhoiHopSosSection.tsx';
 import { NhanViPham } from './NhanViPham.tsx';
 import { ThangYThuc } from './ThangYThuc.tsx';
 import { DUONG_LAM_MOI_Y_THUC, type BangYThucLop, type DongEm, type ViPhamV4, type YThucHocVien } from './kieu.ts';
+import { dich, t } from '@shared/i18n/index.ts';
 
 /**
  * TAB `Ý THỨC & PHỐI HỢP` CỦA HỒ SƠ LỚP — HAI KHUNG (mockup M6, K2-38, PR-YT4).
@@ -75,7 +76,7 @@ export function ClassYThucCard({ classId, thuong = false }: { classId: number; t
   const d = board.data;
   const tatCaEm = useMemo(() => (d ? NHOM_EM.flatMap((k) => d.nhom[k].map((x) => ({ ...x, nhom: k }))) : []), [d]);
   if (board.error) return <ErrorState message={board.error.message} hint={board.error.hint} onRetry={board.reload} />;
-  if (board.loading || !d) return <Card title="Ý thức & Phối hợp"><Skeleton rows={4} /></Card>;
+  if (board.loading || !d) return <Card title={t('Ý thức & Phối hợp')}><Skeleton rows={4} /></Card>;
 
   const soCanLam = d.nhom.qua_han.length + d.nhom.bat_buoc.length;
   const chon = (id: number | null) => { setChonHv(id); setMoViPhamId(null); if (id) setKhungDt('vi-pham'); };
@@ -84,7 +85,7 @@ export function ClassYThucCard({ classId, thuong = false }: { classId: number; t
     try {
       await api.post(`/students/${v.studentId}/y-thuc/ghi-nhan`, { violationIds: [v.id] });
       DUONG_LAM_MOI_Y_THUC.forEach((x) => invalidate(x));
-      toast.push('ok', 'Đã ghi nhận');
+      toast.push('ok', t('Đã ghi nhận'));
       lamMoi();
     } catch (e: any) { toast.push('error', e.message); }
   };
@@ -93,7 +94,7 @@ export function ClassYThucCard({ classId, thuong = false }: { classId: number; t
     try {
       await api.post(`/students/${v.studentId}/y-thuc/bo-ghi-nhan`, { violationIds: [v.id] });
       DUONG_LAM_MOI_Y_THUC.forEach((x) => invalidate(x));
-      toast.push('ok', 'Đã bỏ ghi nhận');
+      toast.push('ok', t('Đã bỏ ghi nhận'));
       lamMoi();
     } catch (e: any) { toast.push('error', e.message); }
   };
@@ -101,7 +102,7 @@ export function ClassYThucCard({ classId, thuong = false }: { classId: number; t
   const khungTrai = (
     <div className="min-w-0">
       {tatCaEm.length === 0 ? (
-        <div className="p-4"><Empty title="Không em nào cần xử lý Ý thức" hint="Vi phạm mới, việc bắt buộc và đề xuất chờ QL sẽ hiện ở đây." /></div>
+        <div className="p-4"><Empty title={t('Không em nào cần xử lý Ý thức')} hint={t('Vi phạm mới, việc bắt buộc và đề xuất chờ QL sẽ hiện ở đây.')} /></div>
       ) : NHOM_EM.filter((k) => d.nhom[k].length > 0).map((k) => (
         <section key={k} aria-label={NHOM_EM_LABEL[k]}>
           <h3 className="m-0 border-b px-3 pb-1.5 pt-3 text-[11px] font-extrabold uppercase tracking-[.06em] text-slate-500" style={{ borderColor: 'var(--line)' }}>
@@ -121,16 +122,16 @@ export function ClassYThucCard({ classId, thuong = false }: { classId: number; t
     <div className="min-w-0">
       <div className="flex flex-wrap items-center gap-2 border-b px-3 py-2" style={{ borderColor: 'var(--line)' }}>
         <h3 className="m-0 min-w-full flex-1 truncate text-sm font-bold text-slate-100 sm:min-w-0">
-          {chonHv ? <>Vi phạm · {hv?.ten ?? tatCaEm.find((x) => x.studentId === chonHv)?.ten ?? '…'}</> : 'Vi phạm của lớp'}
+          {chonHv ? <>{t('Vi phạm · {x}', { x: hv?.ten ?? tatCaEm.find((x) => x.studentId === chonHv)?.ten ?? '…' })}</> : t('Vi phạm của lớp')}
         </h3>
         {chonHv && (
           <>
-            <Link className="link text-xs" to={`/hoc-vien/${chonHv}?tab=y-thuc`}>Hồ sơ</Link>
-            <button type="button" className="btn btn-sm btn-ghost" onClick={() => chon(null)}>Cả lớp</button>
+            <Link className="link text-xs" to={`/hoc-vien/${chonHv}?tab=y-thuc`}>{t('Hồ sơ')}</Link>
+            <button type="button" className="btn btn-sm btn-ghost" onClick={() => chon(null)}>{t('Cả lớp')}</button>
           </>
         )}
-        <select className="field w-auto py-1 text-xs" aria-label="Nhóm vi phạm" value={nhomVp} onChange={(e) => setNhomVp(e.target.value)}>
-          <option value="">Mọi nhóm vi phạm</option>
+        <select className="field w-auto py-1 text-xs" aria-label={t('Nhóm vi phạm')} value={nhomVp} onChange={(e) => setNhomVp(e.target.value)}>
+          <option value="">{t('Mọi nhóm vi phạm')}</option>
           {VIOLATION_CATEGORIES.map((c) => <option key={c} value={c}>{VIOLATION_CATEGORY_LABEL[c as ViolationCategory]}</option>)}
         </select>
       </div>
@@ -142,10 +143,10 @@ export function ClassYThucCard({ classId, thuong = false }: { classId: number; t
               key: `v${x.id}`, ngay: x.ngay,
               cot2: <button type="button" className="link block max-w-full truncate text-left text-sm" onClick={() => chon(x.studentId)}>{x.ten}</button>,
               tieuDe: x.viPham,
-              dongPhu: [x.nhom, x.nguoiGhi ? `${x.nguoiGhi} ghi` : null].filter(Boolean).join(' · '),
-              cuoi: <NhanViPham t={x.trangThai} nhan={x.nhanTrangThai} />,
+              dongPhu: [dich(x.nhom), x.nguoiGhi ? t('{ten} ghi', { ten: x.nguoiGhi }) : null].filter(Boolean).join(' · '),
+              cuoi: <NhanViPham t={x.trangThai} nhan={dich(x.nhanTrangThai)} />,
             }))}
-            rong={<Empty title={nhomVp ? 'Không có vi phạm nào thuộc nhóm này' : 'Lớp chưa có vi phạm nào'} />} />
+            rong={<Empty title={nhomVp ? t('Không có vi phạm nào thuộc nhóm này') : t('Lớp chưa có vi phạm nào')} />} />
         </div>
       ) : hvY.error ? <div className="p-3"><ErrorState message={hvY.error.message} hint={hvY.error.hint} onRetry={hvY.reload} /></div>   /* PR-S3F #12: lỗi tải hồ sơ Ý thức của em không xoay mãi */
       : !hv ? <div className="p-3"><Skeleton rows={4} /></div> : (
@@ -164,13 +165,13 @@ export function ClassYThucCard({ classId, thuong = false }: { classId: number; t
                 return {
                   key: `v${v.id}`, ngay: v.occurredOn,
                   tieuDe: v.ten,
-                  dongPhu: [v.categoryLabel, v.reportedByName ? `${v.reportedByName} ghi` : null].filter(Boolean).join(' · '),
+                  dongPhu: [dich(v.categoryLabel), v.reportedByName ? t('{ten} ghi', { ten: v.reportedByName }) : null].filter(Boolean).join(' · '),
                   cuoi: (
                     <span className="flex flex-wrap items-center justify-end gap-1.5">
-                      <NhanViPham t={v.trangThai} nhan={v.nhanTrangThai} />
+                      <NhanViPham t={v.trangThai} nhan={dich(v.nhanTrangThai)} />
                       {coGhiNhan && <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => void ghiNhan(v)}
-                        title="Đã xem, không cần xử lý">Ghi nhận</button>}
-                      {hv.canManage && v.trangThai === 'da_ghi_nhan' && <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => void boGhiNhan(v)}>Bỏ ghi nhận</button>}
+                        title={t('Đã xem, không cần xử lý')}>{t('Ghi nhận')}</button>}
+                      {hv.canManage && v.trangThai === 'da_ghi_nhan' && <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => void boGhiNhan(v)}>{t('Bỏ ghi nhận')}</button>}
                     </span>
                   ),
                   mo: moViPhamId === v.id,
@@ -181,7 +182,7 @@ export function ClassYThucCard({ classId, thuong = false }: { classId: number; t
                   ),
                 };
               })}
-              rong={<Empty title={nhomVp ? 'Em không có vi phạm nào thuộc nhóm này' : 'Em chưa có vi phạm nào'} />} />
+              rong={<Empty title={nhomVp ? t('Em không có vi phạm nào thuộc nhóm này') : t('Em chưa có vi phạm nào')} />} />
           </div>
           <ChanEm hv={hv} homNay={homNay}
             onDaThucHien={(id) => mo({ loai: 'da-thuc-hien', id })} />
@@ -191,14 +192,14 @@ export function ClassYThucCard({ classId, thuong = false }: { classId: number; t
   );
 
   return (
-    <Card title="Ý thức & Phối hợp"
-      action={d.canRecord ? <button type="button" className="btn btn-sm btn-primary" onClick={() => mo({ loai: 'ghi', studentId: 0 })}>+ Ghi vi phạm</button> : undefined}
+    <Card title={t('Ý thức & Phối hợp')}
+      action={d.canRecord ? <button type="button" className="btn btn-sm btn-primary" onClick={() => mo({ loai: 'ghi', studentId: 0 })}>{t('+ Ghi vi phạm')}</button> : undefined}
       bodyClass="p-0">
       <div className="px-4 pt-3">
-        <HangTab cap="con" ariaLabel="Ý thức & Phối hợp của lớp" value={sub} onChange={setSub}
+        <HangTab cap="con" ariaLabel={t('Ý thức & Phối hợp của lớp')} value={sub} onChange={setSub}
           tabs={[
-            { key: 'vi-pham', label: 'Vi phạm & xử lý', so: soCanLam },
-            { key: 'phoi-hop', label: thuong ? 'Phối hợp' : 'Phối hợp SOS', so: coord.data?.pendingCount ?? 0 },
+            { key: 'vi-pham', label: t('Vi phạm & xử lý'), so: soCanLam },
+            { key: 'phoi-hop', label: thuong ? t('Phối hợp') : t('Phối hợp SOS'), so: coord.data?.pendingCount ?? 0 },
           ]} />
       </div>
 
@@ -206,8 +207,8 @@ export function ClassYThucCard({ classId, thuong = false }: { classId: number; t
         <>
           {/* Dưới md: hai khung thành hai tab. */}
           <div className="px-4 pt-2 md:hidden">
-            <HangTab cap="con" ariaLabel="Khung Ý thức" value={khungDt} onChange={setKhungDt}
-              tabs={[{ key: 'xu-ly', label: 'Theo xử lý', so: soCanLam }, { key: 'vi-pham', label: 'Theo vi phạm' }]} />
+            <HangTab cap="con" ariaLabel={t('Khung Ý thức')} value={khungDt} onChange={setKhungDt}
+              tabs={[{ key: 'xu-ly', label: t('Theo xử lý'), so: soCanLam }, { key: 'vi-pham', label: t('Theo vi phạm') }]} />
           </div>
           <div className="md:grid md:grid-cols-[minmax(0,22rem)_minmax(0,1fr)]">
             <div className={`${khungDt === 'xu-ly' ? 'block' : 'hidden'} md:block md:border-r`} style={{ borderColor: 'var(--line)' }}>{khungTrai}</div>
@@ -220,7 +221,7 @@ export function ClassYThucCard({ classId, thuong = false }: { classId: number; t
         <div className="p-4 space-y-3">
           <div className="flex justify-end">
             <button type="button" className="btn btn-sm btn-ghost" onClick={() => setIncludeDone((v) => !v)}>
-              {includeDone ? 'Chỉ hiện lượt chưa xong' : 'Hiện cả lượt đã xong'}
+              {includeDone ? t('Chỉ hiện lượt chưa xong') : t('Hiện cả lượt đã xong')}
             </button>
           </div>
           <PhoiHopSosSection turns={coord.data?.rows ?? null} loading={coord.loading} cot1="hocVien" onChanged={() => { coord.reload(); }} />
@@ -234,13 +235,13 @@ export function ClassYThucCard({ classId, thuong = false }: { classId: number; t
 
 /** Một dòng em ở khung trái: tên · dòng phụ theo nhóm · hạn (cột phải thẳng hàng). Cả dòng là một nút chọn em. */
 function DongEmO({ x, nhom, chon, homNay, onChon }: { x: DongEm; nhom: NhomEm; chon: boolean; homNay: string; onChon: () => void }) {
-  const ke = <>bậc kế tiếp <b className="font-semibold text-slate-200">{x.keTiep.nhan}</b></>;
-  const chuDeXuat = x.deXuat && nhom !== 'cho_duyet' ? ` · 1 đề xuất ${x.deXuat.status === 'cho_duyet' ? 'chờ QL' : 'đã duyệt'}` : '';
+  const ke = <>{t('bậc kế tiếp')} <b className="font-semibold text-slate-200">{dich(x.keTiep.nhan)}</b></>;
+  const chuDeXuat = x.deXuat && nhom !== 'cho_duyet' ? t(' · 1 đề xuất {x}', { x: x.deXuat.status === 'cho_duyet' ? t('chờ QL') : t('đã duyệt') }) : '';
   const phu = nhom === 'qua_han' || nhom === 'bat_buoc'
-    ? (x.tuChoi ? <>Quản lý từ chối {x.tuChoi.nhan} · chọn cách xử lý khác · {ke}</> : x.soBatBuoc > 0 ? <>{x.soBatBuoc} vi phạm / 2 tuần · {ke}</> : <>{x.soMoi} vi phạm chưa xem</>)
-    : nhom === 'cho_duyet' ? <>{x.deXuat?.nhan ?? 'Đề xuất'} · {x.deXuat?.status === 'da_duyet' ? 'đã duyệt, chờ thực hiện' : 'chờ QL duyệt'}</>
-    : nhom === 'moi' ? <>{x.soMoi} vi phạm{x.moiTuoi !== null ? <> · <span className={x.moiTuoi >= 4 ? 'font-semibold text-soon' : ''}>{x.moiTuoi} ngày</span></> : null}</>
-    : <>{x.xuLyGanNhat?.nhan ?? 'Đã xử lý'}{x.xuLyGanNhat ? ` · ${ngay(x.xuLyGanNhat.ngay, homNay)}` : ''}</>;
+    ? (x.tuChoi ? <>{t('Quản lý từ chối {nhan} · chọn cách xử lý khác', { nhan: x.tuChoi.nhan })} · {ke}</> : x.soBatBuoc > 0 ? <>{t('{soBatBuoc} vi phạm / 2 tuần', { soBatBuoc: x.soBatBuoc })} · {ke}</> : <>{t('{soMoi} vi phạm chưa xem', { soMoi: x.soMoi })}</>)
+    : nhom === 'cho_duyet' ? <>{x.deXuat ? dich(x.deXuat.nhan) : t('Đề xuất')} · {x.deXuat?.status === 'da_duyet' ? t('đã duyệt, chờ thực hiện') : t('chờ QL duyệt')}</>
+    : nhom === 'moi' ? <>{t('{soMoi} vi phạm', { soMoi: x.soMoi })}{x.moiTuoi !== null ? <> · <span className={x.moiTuoi >= 4 ? 'font-semibold text-soon' : ''}>{t('{moiTuoi} ngày', { moiTuoi: x.moiTuoi })}</span></> : null}</>
+    : <>{x.xuLyGanNhat ? dich(x.xuLyGanNhat.nhan) : t('Đã xử lý')}{x.xuLyGanNhat ? ` · ${ngay(x.xuLyGanNhat.ngay, homNay)}` : ''}</>;
   const han = nhom === 'cho_duyet' ? x.deXuat?.han ?? null : nhom === 'qua_han' || nhom === 'bat_buoc' ? x.han ?? x.hanXem : nhom === 'moi' ? x.hanXem : null;
   return (
     <li>
@@ -253,7 +254,7 @@ function DongEmO({ x, nhom, chon, homNay, onChon }: { x: DongEm; nhom: NhomEm; c
         </span>
         <span className="pt-0.5 text-right">
           {han ? <Han loai={nhom === 'cho_duyet' && x.deXuat?.status === 'cho_duyet' ? 'duyet' : 'xu-ly-vi-pham'} han={han} haiDong />
-            : nhom === 'da_xu_ly' ? <span className="text-xs text-done">Xong</span> : null}
+            : nhom === 'da_xu_ly' ? <span className="text-xs text-done">{t('Xong')}</span> : null}
         </span>
       </button>
     </li>
@@ -266,13 +267,13 @@ function DongEmO({ x, nhom, chon, homNay, onChon }: { x: DongEm; nhom: NhomEm; c
  */
 function ChanEm({ hv, homNay, onDaThucHien }: { hv: YThucHocVien; homNay: string; onDaThucHien: (id: number) => void }) {
   const cau = hv.soBatBuoc > 0
-    ? `Em có ${hv.soBatBuoc} vi phạm trong tuần này + tuần trước → phải xử lý${hv.han ? `, hạn ${ngay(hv.han, homNay)}` : ''}; không còn nút Ghi nhận.`
-    : hv.deXuat?.status === 'cho_duyet' ? `Đề xuất ${hv.deXuat.nhan} đang chờ QL${hv.deXuat.han ? ` (hạn ${ngay(hv.deXuat.han, homNay)})` : ''}.`
-    : hv.deXuat?.status === 'da_duyet' ? `QL đã duyệt ${hv.deXuat.nhan} — ghi "Đã thực hiện"${hv.deXuat.han ? ` trước ${ngay(hv.deXuat.han, homNay)}` : ''}.`
-    : hv.soMoi > 0 ? 'Vi phạm mới: Ghi nhận (không cần xử lý) hoặc Xác nhận xử lý nếu cần.'
-    : 'Không có vi phạm nào cần làm. Vẫn Xác nhận xử lý được khi vi phạm nghiêm trọng.';
+    ? t('Em có {soBatBuoc} vi phạm trong tuần này + tuần trước → phải xử lý{x}; không còn nút Ghi nhận.', { soBatBuoc: hv.soBatBuoc, x: hv.han ? t(', hạn {ngay}', { ngay: ngay(hv.han, homNay) }) : '' })
+    : hv.deXuat?.status === 'cho_duyet' ? t('Đề xuất {nhan} đang chờ QL{x}.', { nhan: hv.deXuat.nhan, x: hv.deXuat.han ? t(' (hạn {ngay})', { ngay: ngay(hv.deXuat.han, homNay) }) : '' })
+    : hv.deXuat?.status === 'da_duyet' ? t('QL đã duyệt {nhan} — ghi "Đã thực hiện"{x}.', { nhan: hv.deXuat.nhan, x: hv.deXuat.han ? t(' trước {ngay}', { ngay: ngay(hv.deXuat.han, homNay) }) : '' })
+    : hv.soMoi > 0 ? t('Vi phạm mới: Ghi nhận (không cần xử lý) hoặc Xác nhận xử lý nếu cần.')
+    : t('Không có vi phạm nào cần làm. Vẫn Xác nhận xử lý được khi vi phạm nghiêm trọng.');
   const nut = hv.canManage && hv.deXuat?.status === 'da_duyet'
-    ? <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={() => onDaThucHien(hv.deXuat!.id)}>Đã thực hiện…</button> : null;
+    ? <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={() => onDaThucHien(hv.deXuat!.id)}>{t('Đã thực hiện…')}</button> : null;
   return (
     <div className="flex flex-wrap items-center gap-2 border-t px-3 py-2.5" style={{ borderColor: 'var(--line)' }}>
       <p className="m-0 min-w-0 flex-1 text-xs text-slate-400">{cau}</p>

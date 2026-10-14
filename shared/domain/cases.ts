@@ -2,6 +2,7 @@
 
 import { ENTRY_SKILLS } from './skills.ts';
 import { CHUONG_TRINH_LIEN_TUC_CO_SAN, REGULAR_SKILLS, programmeOf, tenMon } from './normal.ts';
+import { t } from '../i18n/index.ts';
 
 // ------------------------------------------------ Chủ đề của một Case học thuật
 
@@ -65,7 +66,7 @@ export type CaseCategory = (typeof CASE_CATEGORIES)[number];
 const KY_NANG_BAI: readonly string[] = CASE_CATEGORIES;
 export function baiId(attemptId: number, skill: string): number {
   const k = KY_NANG_BAI.indexOf(skill);
-  if (k < 0) throw new Error(`baiId: kỹ năng lạ "${skill}"`);
+  if (k < 0) throw new Error(t('baiId: kỹ năng lạ "{skill}"', { skill }));
   return attemptId * 10 + k;
 }
 /** Ngược của `baiId`. */
@@ -78,7 +79,7 @@ export const CASE_CATEGORY_LABEL: Record<CaseCategory, string> = {
   writing2: 'Writing Task 2',
   writing: 'Writing',
   speaking: 'Speaking',
-  tong_hop: 'Tổng hợp',
+  tong_hop: t('Tổng hợp'),
   listening_speaking: 'L+S',
   reading_writing: 'R+W',
 };
@@ -98,7 +99,7 @@ export const CASE_CATEGORY_SKILL: Record<string, string> = {
 };
 
 export const CASE_CATEGORY_SHORT: Record<CaseCategory, string> = {
-  listening: 'L', reading: 'R', writing1: 'W1', writing2: 'W2', writing: 'W', speaking: 'S', tong_hop: 'Tổng hợp',
+  listening: 'L', reading: 'R', writing1: 'W1', writing2: 'W2', writing: 'W', speaking: 'S', tong_hop: t('Tổng hợp'),
   listening_speaking: 'L+S', reading_writing: 'R+W',
 };
 
@@ -249,22 +250,22 @@ export const MILESTONE_KINDS = [
 ] as const;
 export type MilestoneKind = (typeof MILESTONE_KINDS)[number];
 export const MILESTONE_KIND_LABEL: Record<MilestoneKind, string> = {
-  opened: 'Mở Case',
-  repeat: 'Trượt lại',
-  recurrence: 'Tái phát',
-  passed: 'Đã đạt kỳ vọng',
-  closed: 'Chốt kết quả',
-  extended: 'Kéo dài theo dõi',
-  route_changed: 'Sang lộ trình mới',
-  xac_nhan_case: 'Xác nhận Case',
-  xin_khong_theo_doi: 'Xin không theo dõi',
-  ql_duyet_khong_theo_doi: 'Quản lý duyệt không theo dõi',
-  ql_tu_choi_khong_theo_doi: 'Quản lý từ chối không theo dõi',
-  nop_ke_hoach: 'Nộp kế hoạch bổ trợ',
-  ke_hoach_duyet: 'Quản lý duyệt kế hoạch',
-  ke_hoach_tu_choi: 'Quản lý từ chối kế hoạch',
-  reopened: 'Mở lại',
-  overall_dat: 'Overall đã đạt',
+  opened: t('Mở Case'),
+  repeat: t('Trượt lại'),
+  recurrence: t('Tái phát'),
+  passed: t('Đã đạt kỳ vọng'),
+  closed: t('Chốt kết quả'),
+  extended: t('Kéo dài theo dõi'),
+  route_changed: t('Sang lộ trình mới'),
+  xac_nhan_case: t('Xác nhận Case'),
+  xin_khong_theo_doi: t('Xin không theo dõi'),
+  ql_duyet_khong_theo_doi: t('Quản lý duyệt không theo dõi'),
+  ql_tu_choi_khong_theo_doi: t('Quản lý từ chối không theo dõi'),
+  nop_ke_hoach: t('Nộp kế hoạch bổ trợ'),
+  ke_hoach_duyet: t('Quản lý duyệt kế hoạch'),
+  ke_hoach_tu_choi: t('Quản lý từ chối kế hoạch'),
+  reopened: t('Mở lại'),
+  overall_dat: t('Overall đã đạt'),
 };
 
 /**
@@ -292,7 +293,7 @@ export function caseTitle(c: {
     : kind === 'final' ? 'Final Test - '
     : kind === 'progress' ? 'Progress Test - '
     : `MT${c.latestAttemptNo} - `;
-  return `${prefix}${label} dưới kỳ vọng`;
+  return t('{prefix}{label} dưới kỳ vọng', { prefix, label });
 }
 
 /**
@@ -305,10 +306,10 @@ export function caseTitle(c: {
 export const CASE_OUTCOMES = ['much_better', 'improved', 'unchanged', 'worse'] as const;
 export type CaseOutcome = (typeof CASE_OUTCOMES)[number];
 export const CASE_OUTCOME_LABEL: Record<CaseOutcome, string> = {
-  much_better: 'Tiến bộ rõ',
-  improved: 'Tiến bộ một phần',
-  unchanged: 'Không tiến bộ',
-  worse: 'Kém hơn',
+  much_better: t('Tiến bộ rõ'),
+  improved: t('Tiến bộ một phần'),
+  unchanged: t('Không tiến bộ'),
+  worse: t('Kém hơn'),
 };
 export const CASE_OUTCOME_TONE: Record<CaseOutcome, 'ok' | 'info' | 'warn' | 'danger'> = {
   much_better: 'ok', improved: 'info', unchanged: 'warn', worse: 'danger',
@@ -318,8 +319,8 @@ export const CASE_OUTCOME_TONE: Record<CaseOutcome, 'ok' | 'info' | 'warn' | 'da
 export const CASE_DECISIONS = ['end', 'extend'] as const;
 export type CaseDecision = (typeof CASE_DECISIONS)[number];
 export const CASE_DECISION_LABEL: Record<CaseDecision, string> = {
-  end: 'Kết thúc hẳn',
-  extend: 'Kéo dài theo dõi + thêm phương án',
+  end: t('Kết thúc hẳn'),
+  extend: t('Kéo dài theo dõi + thêm phương án'),
 };
 
 /**
@@ -346,7 +347,7 @@ export type IssueBranch = {
   items: IssueNode[];
 };
 
-const other = (code: string): IssueNode => ({ code, label: 'Khác' });
+const other = (code: string): IssueNode => ({ code, label: t('Khác') });
 
 /**
  * DANH MỤC PHÂN LOẠI VẤN ĐỀ — bộ của vòng 7 (mục 6.4).
@@ -362,18 +363,18 @@ export const ISSUE_TAXONOMY: IssueBranch[] = [
   {
     key: 'listening', label: 'Listening',
     items: [
-      { code: 'student.listening.language', label: 'Từ vựng / ngữ pháp' },
-      { code: 'student.listening.technique', label: 'Tư duy và kỹ năng làm bài' },
-      { code: 'student.listening.focus', label: 'Tâm lý và độ tập trung' },
+      { code: 'student.listening.language', label: t('Từ vựng / ngữ pháp') },
+      { code: 'student.listening.technique', label: t('Tư duy và kỹ năng làm bài') },
+      { code: 'student.listening.focus', label: t('Tâm lý và độ tập trung') },
       {
         code: 'student.listening.sound',
-        label: 'Ngôn ngữ',
+        label: t('Ngôn ngữ'),
         /*
          * "Ngôn ngữ" ở Listening KHÔNG phải vốn từ — nó là chuyện tai nghe ra được gì.
          * Không giải thích thì nó và "Từ vựng / ngữ pháp" sẽ bị chọn lẫn lộn, và hai hạng
          * mục lẫn nhau thì bảng tổng hợp mất nghĩa.
          */
-        hint: 'Nhận diện âm, nối âm, trọng âm, tốc độ lời nói — khác với vốn từ và ngữ pháp.',
+        hint: t('Nhận diện âm, nối âm, trọng âm, tốc độ lời nói — khác với vốn từ và ngữ pháp.'),
       },
       other('student.listening.other'),
     ],
@@ -381,30 +382,30 @@ export const ISSUE_TAXONOMY: IssueBranch[] = [
   {
     key: 'reading', label: 'Reading',
     items: [
-      { code: 'student.reading.language', label: 'Từ vựng / ngữ pháp' },
-      { code: 'student.reading.technique', label: 'Kỹ năng làm bài' },
-      { code: 'student.reading.logic', label: 'Tư duy logic' },
-      { code: 'student.reading.time', label: 'Quản lý thời gian' },
+      { code: 'student.reading.language', label: t('Từ vựng / ngữ pháp') },
+      { code: 'student.reading.technique', label: t('Kỹ năng làm bài') },
+      { code: 'student.reading.logic', label: t('Tư duy logic') },
+      { code: 'student.reading.time', label: t('Quản lý thời gian') },
       other('student.reading.other'),
     ],
   },
   {
     key: 'writing', label: 'Writing',
     items: [
-      { code: 'student.writing.task', label: 'Đáp ứng yêu cầu đề' },
-      { code: 'student.writing.organisation', label: 'Tổ chức bài / liên kết ý' },
-      { code: 'student.writing.lexical', label: 'Từ vựng' },
-      { code: 'student.writing.grammar', label: 'Ngữ pháp' },
+      { code: 'student.writing.task', label: t('Đáp ứng yêu cầu đề') },
+      { code: 'student.writing.organisation', label: t('Tổ chức bài / liên kết ý') },
+      { code: 'student.writing.lexical', label: t('Từ vựng') },
+      { code: 'student.writing.grammar', label: t('Ngữ pháp') },
       other('student.writing.other'),
     ],
   },
   {
     key: 'speaking', label: 'Speaking',
     items: [
-      { code: 'student.speaking.fluency', label: 'Trôi chảy / mạch lạc' },
-      { code: 'student.speaking.lexical', label: 'Từ vựng' },
-      { code: 'student.speaking.grammar', label: 'Ngữ pháp' },
-      { code: 'student.speaking.pronunciation', label: 'Phát âm' },
+      { code: 'student.speaking.fluency', label: t('Trôi chảy / mạch lạc') },
+      { code: 'student.speaking.lexical', label: t('Từ vựng') },
+      { code: 'student.speaking.grammar', label: t('Ngữ pháp') },
+      { code: 'student.speaking.pronunciation', label: t('Phát âm') },
       other('student.speaking.other'),
     ],
   },
@@ -412,27 +413,27 @@ export const ISSUE_TAXONOMY: IssueBranch[] = [
   {
     key: 'gv', label: 'Grammar + Vocabulary',
     items: [
-      { code: 'student.gv.vocabulary', label: 'Từ vựng' },
-      { code: 'student.gv.grammar', label: 'Ngữ pháp' },
+      { code: 'student.gv.vocabulary', label: t('Từ vựng') },
+      { code: 'student.gv.grammar', label: t('Ngữ pháp') },
       other('student.gv.other'),
     ],
   },
   {
     key: 'phat_am', label: 'Pronunciation',
     items: [
-      { code: 'student.phat_am.sound', label: 'Âm' },
-      { code: 'student.phat_am.stress', label: 'Trọng âm' },
-      { code: 'student.phat_am.intonation', label: 'Ngữ điệu' },
+      { code: 'student.phat_am.sound', label: t('Âm') },
+      { code: 'student.phat_am.stress', label: t('Trọng âm') },
+      { code: 'student.phat_am.intonation', label: t('Ngữ điệu') },
       other('student.phat_am.other'),
     ],
   },
   {
-    key: 'tong_hop', label: 'Tổng hợp',
+    key: 'tong_hop', label: t('Tổng hợp'),
     items: [
-      { code: 'student.tong_hop.language', label: 'Từ vựng / ngữ pháp' },
-      { code: 'student.tong_hop.receptive', label: 'Kỹ năng nghe – đọc' },
-      { code: 'student.tong_hop.productive', label: 'Kỹ năng nói – viết' },
-      { code: 'student.tong_hop.focus', label: 'Tâm lý và độ tập trung' },
+      { code: 'student.tong_hop.language', label: t('Từ vựng / ngữ pháp') },
+      { code: 'student.tong_hop.receptive', label: t('Kỹ năng nghe – đọc') },
+      { code: 'student.tong_hop.productive', label: t('Kỹ năng nói – viết') },
+      { code: 'student.tong_hop.focus', label: t('Tâm lý và độ tập trung') },
       other('student.tong_hop.other'),
     ],
   },
@@ -444,7 +445,7 @@ for (const b of ISSUE_TAXONOMY) {
 }
 
 export function issueLabel(code: string | null | undefined): string {
-  if (!code) return 'Chưa phân loại';
+  if (!code) return t('Chưa phân loại');
   return ISSUE_INDEX[code]?.label ?? code;
 }
 
@@ -499,7 +500,7 @@ export const LEGACY_ISSUE_CODE_MAP: Record<string, string> = {
 export const ISSUE_ROLES = ['primary', 'secondary'] as const;
 export type IssueRole = (typeof ISSUE_ROLES)[number];
 export const ISSUE_ROLE_LABEL: Record<IssueRole, string> = {
-  primary: 'Vấn đề chính', secondary: 'Yếu tố đi kèm',
+  primary: t('Vấn đề chính'), secondary: t('Yếu tố đi kèm'),
 };
 
 // ------------------------------------------------ Nguồn Case, hướng xử lý, tác động
@@ -508,7 +509,7 @@ export const ISSUE_ROLE_LABEL: Record<IssueRole, string> = {
 export const CASE_ORIGINS = ['mock', 'teacher_report', 'chuyen_cap'] as const;
 export type CaseOrigin = (typeof CASE_ORIGINS)[number];
 export const CASE_ORIGIN_LABEL: Record<CaseOrigin, string> = {
-  mock: 'Từ kết quả đánh giá', teacher_report: 'Giáo viên báo', chuyen_cap: 'Từ Chuyển tiếp lớp',
+  mock: t('Từ kết quả đánh giá'), teacher_report: t('Giáo viên báo'), chuyen_cap: t('Từ Chuyển tiếp lớp'),
 };
 
 /**
@@ -542,7 +543,7 @@ export const URGENCY_LABEL: Record<string, string> = {
    * ĐỔI TÊN 21/09/2026 (rulebook v3, T7): mức `attention` đổi tên hiển thị thành "Bình thường" (lịch sử tên cũ: xem plan.md mục 14). Chỉ đổi CHỮ:
    * mã `attention` giữ nguyên. Mức cũ `normal` (đã chuyển sang `attention` khi nâng cấp) đọc ra cùng chữ, không ra mã thô.
    */
-  normal: 'Bình thường', attention: 'Bình thường', urgent: 'Gấp',
+  normal: t('Bình thường'), attention: t('Bình thường'), urgent: t('Gấp'),
 };
 export const URGENCY_TONE: Record<string, 'neutral' | 'warn' | 'danger'> = {
   /* PR-N1 A8: "Bình thường" không tô màu cảnh báo — chỉ "Gấp" có màu. */
@@ -565,11 +566,11 @@ export const URGENCY_TONE: Record<string, 'neutral' | 'warn' | 'danger'> = {
 export const DISPOSITIONS = ['monitor', 'offline', 'no_action', 'action', 'other'] as const;
 export type Disposition = (typeof DISPOSITIONS)[number];
 export const DISPOSITION_LABEL: Record<Disposition, string> = {
-  monitor: 'Chỉ theo dõi thêm',
-  offline: 'Đã trao đổi ngoài hệ thống',
-  no_action: 'Không cần xử lý thêm',
-  action: 'Có kế hoạch hỗ trợ',
-  other: 'Khác',
+  monitor: t('Chỉ theo dõi thêm'),
+  offline: t('Đã trao đổi ngoài hệ thống'),
+  no_action: t('Không cần xử lý thêm'),
+  action: t('Có kế hoạch hỗ trợ'),
+  other: t('Khác'),
 };
 
 /**
@@ -581,19 +582,19 @@ export const DISPOSITION_LABEL: Record<Disposition, string> = {
 export const SYSTEM_CLOSE_REASONS = ['course_ended', 'moved_to_normal', 'moved_to_ft', 'luot_da_huy', 'ket_qua_huy', 'doi_quyet_dinh', 'overall_dat', 'cho_chot_sos'] as const;
 export type SystemCloseReason = (typeof SYSTEM_CLOSE_REASONS)[number];
 export const SYSTEM_CLOSE_REASON_LABEL: Record<SystemCloseReason, string> = {
-  course_ended: 'Học viên kết thúc khoá',
-  moved_to_normal: 'Chuyển sang lớp thường',
-  moved_to_ft: 'Lên FT',
+  course_ended: t('Học viên kết thúc khoá'),
+  moved_to_normal: t('Chuyển sang lớp thường'),
+  moved_to_ft: t('Lên FT'),
   /* PR-MT (T67): huỷ cả lượt → Case sinh RIÊNG từ lượt đó đóng theo; không tính thất bại, không vào hiệu quả PA. */
-  luot_da_huy: 'Lượt đã huỷ',
+  luot_da_huy: t('Lượt đã huỷ'),
   /* PR-MTa (T2): MT bị dời vượt → kết quả huỷ (lưu ở `ket_qua_huy`), Case sinh riêng từ lượt đó đóng theo. */
-  ket_qua_huy: 'Kết quả MT đã huỷ',
+  ket_qua_huy: t('Kết quả MT đã huỷ'),
   /* PR-CT2 (§8): đổi / huỷ quyết định lộ trình sau khi bổ trợ Final đã sinh sớm, chưa ai đụng → Case do lần sinh đó mở đóng theo. */
-  doi_quyet_dinh: 'Đổi quyết định lộ trình',
+  doi_quyet_dinh: t('Đổi quyết định lộ trình'),
   /* OV-1c (đặc tả 3.2): kỹ năng dời có điểm, Overall ≥ kỳ vọng → xoá SOS — Case tự tạo chưa ai đụng đóng theo. */
-  overall_dat: 'Overall đạt',
+  overall_dat: t('Overall đạt'),
   /* OV-1c (migrate `prOv1c`): Case sinh từ điểm đầu tiên theo luật cũ, lượt chưa chốt, chưa ai đụng — tạo lại lúc lượt chốt. */
-  cho_chot_sos: 'Chờ chốt SOS',
+  cho_chot_sos: t('Chờ chốt SOS'),
 };
 
 /**
@@ -618,20 +619,20 @@ export const SYSTEM_KINDS = ['bo_tro', 'bo_tro_mien_phi'] as const;
 export const INTERVENTION_KINDS = [...SUPPORT_KINDS, ...PROPOSAL_KINDS, ...SYSTEM_KINDS] as const;
 export type InterventionKind = (typeof INTERVENTION_KINDS)[number];
 export const INTERVENTION_KIND_LABEL: Record<InterventionKind, string> = {
-  self_study: 'Xếp tự học',
-  tutor: 'Học Tutor',
-  teaching_adjust: 'Điều chỉnh cách dạy',
-  extra_homework: 'Tăng cường bài tập',
+  self_study: t('Xếp tự học'),
+  tutor: t('Học Tutor'),
+  teaching_adjust: t('Điều chỉnh cách dạy'),
+  extra_homework: t('Tăng cường bài tập'),
   /* Mã cũ: "Khác" tự thực hiện đã bỏ khỏi danh sách chọn (mục 8.1), giữ để đọc dữ liệu cũ. */
-  other: 'Khác (mục cũ)',
-  reschedule_mt: 'Dời lịch thi',
-  extra_support: 'Hỗ trợ học thuật',
+  other: t('Khác (mục cũ)'),
+  reschedule_mt: t('Dời lịch thi'),
+  extra_support: t('Hỗ trợ học thuật'),
   /* Giữ ĐÚNG chức danh của trung tâm, không tự đổi thành "Ban giám đốc" hay tên khác. */
-  meeting_cx: 'Meeting CX / GĐCN',
-  other_proposal: 'Khác',
-  bo_tro: 'Bổ trợ',
+  meeting_cx: t('Meeting CX / GĐCN'),
+  other_proposal: t('Khác'),
+  bo_tro: t('Bổ trợ'),
   /** PR-LT2b (T47, M-05): sau Cuối khoá — miễn phí học viên, không tính lương GV; kết quả cuối là Mini Test. */
-  bo_tro_mien_phi: 'Bổ trợ miễn phí',
+  bo_tro_mien_phi: t('Bổ trợ miễn phí'),
 };
 /**
  * Tên PA trong câu VIỆC TIẾP (`Ghi kết quả PA …`): PA do hệ thống tạo nói tên loại ("Bổ trợ", "Bổ trợ miễn phí") — mô tả dài của nó
@@ -671,8 +672,8 @@ export function interventionKindsFor(): { selfServe: readonly InterventionKind[]
 export const RESCHEDULE_TARGETS = ['real_exam', 'mock_skill'] as const;
 export type RescheduleTarget = (typeof RESCHEDULE_TARGETS)[number];
 export const RESCHEDULE_TARGET_LABEL: Record<RescheduleTarget, string> = {
-  real_exam: 'Kế hoạch thi thật của em',
-  mock_skill: 'Một phần thi trong đợt MT',
+  real_exam: t('Kế hoạch thi thật của em'),
+  mock_skill: t('Một phần thi trong đợt MT'),
 };
 
 /** Chọn một loại trong nhóm Đề xuất TỨC LÀ đang xin ý kiến — không phải tick thêm gì. */
@@ -724,7 +725,7 @@ export function urgencyFromSos(sosLevel: number | null): 'normal' | 'attention' 
 export const APPROVAL_STATES = ['pending', 'approved', 'declined'] as const;
 export type ApprovalState = (typeof APPROVAL_STATES)[number];
 export const APPROVAL_LABEL: Record<ApprovalState, string> = {
-  pending: 'Chờ duyệt', approved: 'Đã duyệt', declined: 'Bị từ chối',
+  pending: t('Chờ duyệt'), approved: t('Đã duyệt'), declined: t('Bị từ chối'),
 };
 
 /**
@@ -760,7 +761,7 @@ function addDaysIso(date: string, n: number): string {
 
 /** HẠN "n NGÀY" DÙNG CHUNG (T24, T66, M-16): n ngày liên tiếp theo lịch, TÍNH CẢ ngày bắt đầu. Quá hạn khi hôm nay > hạn. */
 export function hanTheoNgay(batDau: string, n: number): string {
-  if (!Number.isInteger(n) || n < 1) throw new Error(`hanTheoNgay: số ngày phải ≥ 1 (nhận ${n})`);
+  if (!Number.isInteger(n) || n < 1) throw new Error(t('hanTheoNgay: số ngày phải ≥ 1 (nhận {n})', { n }));
   return addDaysIso(batDau, n - 1);
 }
 /** Quản lý trả lời Đề xuất PA / Xin hỗ trợ trong 5 ngày, tính cả ngày gửi (T54, K3-18). */
@@ -780,7 +781,7 @@ export function cycleDeadline(startDate: string): string {
  * `HAN_DUYET_NGAY`; `cycleDeadline` ở trên chỉ còn bộ demo dùng.
  */
 export function cycleDeadlineHint(): string {
-  return `Hạn Quản lý trả lời: ${HAN_DUYET_NGAY} ngày, tính cả ngày gửi.`;
+  return t('Hạn Quản lý trả lời: {HAN_DUYET_NGAY} ngày, tính cả ngày gửi.', { HAN_DUYET_NGAY });
 }
 
 /**
@@ -801,15 +802,15 @@ export function cycleDeadlineHint(): string {
 export const SIGNAL_STATUSES = ['pending', 'linked', 'noted', 'withdrawn'] as const;
 export type SignalStatus = (typeof SIGNAL_STATUSES)[number];
 export const SIGNAL_STATUS_LABEL: Record<SignalStatus, string> = {
-  pending: 'Chờ xác nhận nguyên nhân',
-  linked: 'Đã thành Case',
+  pending: t('Chờ xác nhận nguyên nhân'),
+  linked: t('Đã thành Case'),
   /*
    * BỎ QUA (S1, chủ sản phẩm chốt 22/09/2026, đặc tả §3.10 + §5): tín hiệu lớp thường được đóng mà KHÔNG tạo Case, một bấm, lý do
    * KHÔNG bắt buộc. `resolution_note` luôn có chữ (`SIGNAL_DISMISS_NOTE`, kèm lý do nếu có). Dòng `noted` cũ của bộ demo ("đã xem")
    * đọc ra cùng nhãn — cùng nghĩa: đã có người xem và không mở Case.
    */
-  noted: 'Đã bỏ qua',
-  withdrawn: 'Đã thu hồi',
+  noted: t('Đã bỏ qua'),
+  withdrawn: t('Đã thu hồi'),
 };
 
 /**
@@ -879,7 +880,7 @@ export function planEndDefault(startDate: string): string {
 export const INTERVENTION_STATUSES = ['planned', 'started', 'completed', 'cancelled'] as const;
 export type InterventionStatus = (typeof INTERVENTION_STATUSES)[number];
 export const INTERVENTION_STATUS_LABEL: Record<InterventionStatus, string> = {
-  planned: 'Đã lên kế hoạch', started: 'Đang thực hiện', completed: 'Xong', cancelled: 'Đã huỷ',
+  planned: t('Đã lên kế hoạch'), started: t('Đang thực hiện'), completed: t('Xong'), cancelled: t('Đã huỷ'),
 };
 
 /**
@@ -891,11 +892,11 @@ export const INTERVENTION_STATUS_LABEL: Record<InterventionStatus, string> = {
 export const FOLLOWUP_OUTCOMES = ['improved', 'partial', 'unchanged', 'worse', 'insufficient'] as const;
 export type FollowUpOutcome = (typeof FOLLOWUP_OUTCOMES)[number];
 export const FOLLOWUP_OUTCOME_LABEL: Record<FollowUpOutcome, string> = {
-  improved: 'Tiến bộ rõ',
-  partial: 'Tiến bộ một phần',
-  unchanged: 'Không tiến bộ',
-  worse: 'Kém hơn',
-  insufficient: 'Chưa đủ dữ liệu',
+  improved: t('Tiến bộ rõ'),
+  partial: t('Tiến bộ một phần'),
+  unchanged: t('Không tiến bộ'),
+  worse: t('Kém hơn'),
+  insufficient: t('Chưa đủ dữ liệu'),
 };
 export function outcomeLabelFor(outcome: string): string {
   return FOLLOWUP_OUTCOME_LABEL[outcome as FollowUpOutcome] ?? outcome;
@@ -926,12 +927,12 @@ export const OUTCOME_MARK: Record<string, string> = {
 export const NEXT_STEPS = ['complete', 'monitor', 'continue', 'adjust', 'propose', 'ask_manager'] as const;
 export type NextStep = (typeof NEXT_STEPS)[number];
 export const NEXT_STEP_LABEL: Record<NextStep, string> = {
-  complete: 'Kết thúc PA',
-  monitor: 'Theo dõi thêm',
-  continue: 'Giữ nguyên',
-  adjust: 'Điều chỉnh',
-  propose: 'Thay PA',
-  ask_manager: 'Xin hỗ trợ từ Quản lý',
+  complete: t('Kết thúc PA'),
+  monitor: t('Theo dõi thêm'),
+  continue: t('Giữ nguyên'),
+  adjust: t('Điều chỉnh'),
+  propose: t('Thay PA'),
+  ask_manager: t('Xin hỗ trợ từ Quản lý'),
 };
 /** Kết quả tốt được phép khép lại; kết quả chưa tốt BẮT BUỘC đi tiếp. */
 const GOOD_OUTCOMES = ['improved', 'partial'];
@@ -960,8 +961,8 @@ export function nextStepsFor(outcome: string): NextStep[] {
 export const RESULT_MODES = ['monitor', 'end'] as const;
 export type ResultMode = (typeof RESULT_MODES)[number];
 export const RESULT_MODE_LABEL: Record<ResultMode, string> = {
-  monitor: 'Theo dõi thêm',
-  end: 'Kết thúc PA',
+  monitor: t('Theo dõi thêm'),
+  end: t('Kết thúc PA'),
 };
 
 /**
@@ -1003,34 +1004,34 @@ export type PlanDecision = (typeof PLAN_DECISIONS)[number];
 /** Bốn nút chính, đúng thứ tự nguồn §8. `ask_manager` là nút chữ phụ. */
 export const PLAN_DECISION_CHIPS: readonly PlanDecision[] = ['keep', 'adjust', 'replace', 'end'];
 export const PLAN_DECISION_LABEL: Record<PlanDecision, string> = {
-  keep: 'Giữ nguyên',
-  adjust: 'Điều chỉnh',
-  replace: 'Thay PA',
-  end: 'Kết thúc PA',
-  ask_manager: 'Xin hỗ trợ từ Quản lý',
+  keep: t('Giữ nguyên'),
+  adjust: t('Điều chỉnh'),
+  replace: t('Thay PA'),
+  end: t('Kết thúc PA'),
+  ask_manager: t('Xin hỗ trợ từ Quản lý'),
 };
 export const PLAN_DECISION_HINT: Record<PlanDecision, string> = {
-  keep: 'Phương án chạy tiếp như cũ. Kết quả kỳ sau ghi trước hết Thứ Ba sau kỳ.',
-  adjust: 'Cùng phương án, sửa nội dung, số buổi hoặc người. Bản cũ giữ trong lịch sử.',
-  replace: 'Khép phương án này (Được thay thế) và mở phương án mới. Đổi loại phương án thì chọn ở đây.',
-  end: 'Khép phương án này. Case chỉ hoàn thành được khi mọi phương án đã khép.',
-  ask_manager: 'Kết quả tính như Giữ nguyên và gửi câu hỏi cho Quản lý. PA vẫn chạy.',
+  keep: t('Phương án chạy tiếp như cũ. Kết quả kỳ sau ghi trước hết Thứ Ba sau kỳ.'),
+  adjust: t('Cùng phương án, sửa nội dung, số buổi hoặc người. Bản cũ giữ trong lịch sử.'),
+  replace: t('Khép phương án này (Được thay thế) và mở phương án mới. Đổi loại phương án thì chọn ở đây.'),
+  end: t('Khép phương án này. Case chỉ hoàn thành được khi mọi phương án đã khép.'),
+  ask_manager: t('Kết quả tính như Giữ nguyên và gửi câu hỏi cho Quản lý. PA vẫn chạy.'),
 };
 
 /** Bản NGẮN cho danh sách dọc trong panel Ghi kết quả (PR-UX3, mockup 15 §4): tên một dòng + `PLAN_DECISION_NGHIA` một dòng nghĩa. */
 export const PLAN_DECISION_NGAN: Record<PlanDecision, string> = {
-  keep: 'Giữ nguyên', adjust: 'Điều chỉnh', replace: 'Thay PA', end: 'Kết thúc PA', ask_manager: 'Xin hỗ trợ QL',
+  keep: t('Giữ nguyên'), adjust: t('Điều chỉnh'), replace: t('Thay PA'), end: t('Kết thúc PA'), ask_manager: t('Xin hỗ trợ QL'),
 };
 export const PLAN_DECISION_NGHIA: Record<PlanDecision, string> = {
-  keep: 'Tiếp tục PA này, hẹn kết quả kỳ sau',
-  adjust: 'Cùng PA, sửa nội dung, số buổi hoặc người',
-  replace: 'Khép PA này, mở PA khác thay vào',
-  end: 'Khép PA này; Case chỉ xong khi mọi PA đã khép',
-  ask_manager: 'Lưu như Giữ nguyên, gửi câu hỏi cho Quản lý',
+  keep: t('Tiếp tục PA này, hẹn kết quả kỳ sau'),
+  adjust: t('Cùng PA, sửa nội dung, số buổi hoặc người'),
+  replace: t('Khép PA này, mở PA khác thay vào'),
+  end: t('Khép PA này; Case chỉ xong khi mọi PA đã khép'),
+  ask_manager: t('Lưu như Giữ nguyên, gửi câu hỏi cho Quản lý'),
 };
 /** Nút chính ở chân panel theo quyết định đang chọn. */
 export const NUT_LUU_KET_QUA: Record<PlanDecision, string> = {
-  keep: 'Lưu kết quả', adjust: 'Lưu điều chỉnh', replace: 'Thay PA', end: 'Kết thúc PA', ask_manager: 'Gửi Quản lý',
+  keep: t('Lưu kết quả'), adjust: t('Lưu điều chỉnh'), replace: t('Thay PA'), end: t('Kết thúc PA'), ask_manager: t('Gửi Quản lý'),
 };
 
 export function decisionToStep(d: PlanDecision): { mode: ResultMode; nextStep: NextStep } {
@@ -1056,8 +1057,8 @@ export function decisionsFor(outcome: string): PlanDecision[] {
 /** Vì sao một quyết định đang bị chặn với kết quả này (dùng cho `title` của nút mờ, G-7). `null` = được chọn. */
 export function decisionBlockedReason(outcome: string, d: PlanDecision): string | null {
   if (decisionsFor(outcome).includes(d)) return null;
-  if (!canEndWithOutcome(outcome)) return '"Chưa đủ dữ liệu" thì chưa kết thúc phương án được. Chọn Giữ nguyên, Điều chỉnh hoặc Thay PA.';
-  return 'Kết quả chưa tốt thì chưa khép suông được. Chọn Thay PA hoặc Xin hỗ trợ từ Quản lý.';
+  if (!canEndWithOutcome(outcome)) return t('"Chưa đủ dữ liệu" thì chưa kết thúc phương án được. Chọn Giữ nguyên, Điều chỉnh hoặc Thay PA.');
+  return t('Kết quả chưa tốt thì chưa khép suông được. Chọn Thay PA hoặc Xin hỗ trợ từ Quản lý.');
 }
 
 /** Điều chỉnh và Thay bắt buộc ghi lý do (rulebook §18.2: "vì sao đổi"). */
@@ -1072,10 +1073,10 @@ export const CONFIRM_EDIT_REASON = 'Chỉnh khi xác nhận gợi ý tự độn
 export const BASELINE_SOURCES = ['entrance', 'previous_cycle', 'external', 'manual', 'mt0'] as const;
 export type BaselineSource = (typeof BASELINE_SOURCES)[number];
 export const BASELINE_SOURCE_LABEL: Record<BaselineSource, string> = {
-  entrance: 'Bài kiểm tra đầu vào',
-  previous_cycle: 'Kết quả cuối lộ trình trước',
-  external: 'Điểm bên ngoài (IELTS, nơi khác)',
-  manual: 'Nhập tay có ghi chú',
+  entrance: t('Bài kiểm tra đầu vào'),
+  previous_cycle: t('Kết quả cuối lộ trình trước'),
+  external: t('Điểm bên ngoài (IELTS, nơi khác)'),
+  manual: t('Nhập tay có ghi chú'),
   mt0: 'MT0',   // PR-MT0: MT0 nối vào lộ trình FT lúc Chuyển tiếp lớp
 };
 
@@ -1083,17 +1084,17 @@ export const BASELINE_SOURCE_LABEL: Record<BaselineSource, string> = {
 export const CYCLE_OUTCOMES = ['reached', 'not_reached', 'unknown'] as const;
 export type CycleOutcome = (typeof CYCLE_OUTCOMES)[number];
 export const CYCLE_OUTCOME_LABEL: Record<CycleOutcome, string> = {
-  reached: 'Đạt Target', not_reached: 'Chưa đạt Target', unknown: 'Chưa có căn cứ kết luận',
+  reached: t('Đạt Target'), not_reached: t('Chưa đạt Target'), unknown: t('Chưa có căn cứ kết luận'),
 };
 
 // ---------------------------------------------------------------- Xử lý SOS
 
-export const MEETING_KINDS = ['Không cần', 'GVCN meeting với HV', 'CX / GĐCN meeting với HV'] as const;
+export const MEETING_KINDS = [t('Không cần'), t('GVCN meeting với HV'), t('CX / GĐCN meeting với HV')] as const;
 
 export const CASE_STATUSES = ['open', 'in_progress', 'done'] as const;
 export type CaseStatus = (typeof CASE_STATUSES)[number];
 export const CASE_STATUS_LABEL: Record<CaseStatus, string> = {
-  open: 'Chưa xử lý', in_progress: 'Đang xử lý', done: 'Đã xử lý',
+  open: t('Chưa xử lý'), in_progress: t('Đang xử lý'), done: t('Đã xử lý'),
 };
 
 /**

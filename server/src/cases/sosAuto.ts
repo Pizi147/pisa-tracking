@@ -4,7 +4,7 @@ import {
   hanXacNhan, issuesForTopic, kiemGhiRoKhac, laKhac, mocQuyChe, ngay, reasonNeedsText, tenCaseSos, hanKyGhiKetQua,
   type AcademicSupportPreset, type CaseDismissReason, type MilestoneKind, nhanBaiThuong } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
-import { addDays, badRequest, forbidden, notFound, nowIso } from '../util.ts';
+import { addDays, badRequest, loi, forbidden, notFound, nowIso } from '../util.ts';
 import type { Principal } from '../permissions.ts';
 import { addJourney, notify, writeAudit } from '../platform/audit.ts';
 import { suggestCaseOwner } from './owner.ts';
@@ -188,12 +188,12 @@ export function kiemNoiDungCase(topic: string | null, ct: string | null, input: 
   const primaryCode = String(input.primaryCode ?? '').trim();
   if (!primaryCode) throw badRequest('Chọn nhóm nguyên nhân.');
   if (!issueBranchOf(primaryCode) || !issuesForTopic(topic as string, ct).some((i) => i.code === primaryCode)) {
-    throw badRequest(`Phân loại đã chọn không thuộc bộ phân loại của ${caseTopicLabel(topic ?? '', ct)}.`);
+    throw loi(400, 'Phân loại đã chọn không thuộc bộ phân loại của {chuDe}.', { chuDe: caseTopicLabel(topic ?? '', ct) });
   }
   const observation = String(input.observation ?? '').trim() || null;
   if (laKhac(primaryCode)) {
-    const loi = kiemGhiRoKhac(observation);
-    if (loi) throw badRequest(`Phân loại "Khác": ${loi}.`);
+    const sai = kiemGhiRoKhac(observation);
+    if (sai) throw loi(400, 'Phân loại "Khác": {loi}.', { loi: sai });
   }
   const urgency = String(input.urgency ?? '');
   if (!(URGENCY_LEVELS as readonly string[]).includes(urgency)) throw badRequest('Chọn mức độ gấp.');
@@ -238,7 +238,7 @@ export function xacNhanCase(p: Principal, caseId: number, input: {
   if (!Array.isArray(nhom) || !nhom.every((x) => typeof x === 'string')) throw badRequest('Nhóm nguyên nhân không hợp lệ.');
   if (new Set(nhom).size !== nhom.length) throw badRequest('Nhóm nguyên nhân bị trùng.');
   const boNhom = new Set(issuesForTopic(c.topic as string, ct).map((i) => i.code));
-  if (nhom.slice(1).some((x) => !boNhom.has(x))) throw badRequest(`Phân loại đã chọn không thuộc bộ phân loại của ${caseTopicLabel(c.topic ?? '', ct)}.`);
+  if (nhom.slice(1).some((x) => !boNhom.has(x))) throw loi(400, 'Phân loại đã chọn không thuộc bộ phân loại của {chuDe}.', { chuDe: caseTopicLabel(c.topic ?? '', ct) });
   const moTaGui = String(input.moTa ?? '').trim();
   const { primaryCode, observation, urgency, moTa, tenGiua } = kiemNoiDungCase(c.topic, ct, {
     ...input, primaryCode: nhom[0] ?? null,
@@ -489,12 +489,12 @@ export function guiKhongTheoDoi(p: Principal, caseId: number, input: { reasonCod
 function lyDoKhongTheoDoi(input: { reasonCode?: unknown; reasonText?: unknown }): { code: string; text: string; lyDo: string } {
   const code = String(input.reasonCode ?? '');
   if (!(CASE_DISMISS_REASONS as readonly string[]).includes(code)) {
-    throw badRequest(`Chọn một lý do: ${CASE_DISMISS_REASONS.map((r) => CASE_DISMISS_REASON_LABEL[r]).join(' · ')}.`);
+    throw loi(400, 'Chọn một lý do: {ds}.', { ds: CASE_DISMISS_REASONS.map((r) => CASE_DISMISS_REASON_LABEL[r]).join(' · ') });
   }
   const text = String(input.reasonText ?? '').trim();
   if (reasonNeedsText(code)) {
-    const loi = kiemGhiRoKhac(text);
-    if (loi) throw badRequest(`Lý do "Khác": ${loi}.`);
+    const sai = kiemGhiRoKhac(text);
+    if (sai) throw loi(400, 'Lý do "Khác": {loi}.', { loi: sai });
   }
   if (text.length > 300) throw badRequest('Lý do tối đa 300 ký tự.');
   return { code, text, lyDo: `${CASE_DISMISS_REASON_LABEL[code as CaseDismissReason]}${reasonNeedsText(code) ? ` — ${text}` : ''}` };

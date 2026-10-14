@@ -8,6 +8,7 @@
  */
 
 import { chuanTieuDe } from './nhapHocVien.ts';
+import { t } from '../i18n/index.ts';
 
 /** Lọc danh sách người CÓ SẴN của ô `ChonNguoi` kiểu `ds` (phân công GV, học viên của lớp) theo chữ gõ — không dấu, giữ thứ tự. */
 export function locNguoiChon<T extends { ten: string }>(ds: readonly T[], go: string): T[] {
@@ -53,7 +54,7 @@ export function nguoiThanhPayloadYThuc(v: NguoiChon | null): { performedBy?: num
 
 /** Câu báo thiếu gì, hoặc `null` nếu đã đủ. */
 export function nguoiThieu(v: NguoiChon | null, batBuoc: boolean): string | null {
-  if (!v) return batBuoc ? 'Chọn người thực hiện.' : null;
-  if (v.kieu === 'ngoai' && v.ten.trim().length < 2) return 'Gõ tên ngoài hệ thống (ít nhất 2 ký tự).';
+  if (!v) return batBuoc ? t('Chọn người thực hiện.') : null;
+  if (v.kieu === 'ngoai' && v.ten.trim().length < 2) return t('Gõ tên ngoài hệ thống (ít nhất 2 ký tự).');
   return null;
 }

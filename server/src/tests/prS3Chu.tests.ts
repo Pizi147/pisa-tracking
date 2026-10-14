@@ -241,7 +241,7 @@ export async function runPrS3ChuTests(t: YThucTestKit) {
     assert(d.bacHoacNgoaiThang(0, [{ kind: 'suspension', status: 'done', performedOn: '2026-09-01' }]) === d.MEASURE_KIND_LABEL.suspension, 'Đình chỉ → hiện Đình chỉ');
     assert(d.bacHoacNgoaiThang(0, [{ kind: 'suspension', status: 'cho_duyet', performedOn: null }]) === null, 'đang chờ duyệt thì chưa tính là đã xử lý');
     assert(d.bacHoacNgoaiThang(3, []) === d.MEASURE_KIND_LABEL.wl_1, 'bậc 3 = WL 1 (kể cả bậc khai trước khi dùng web)');
-    assert(/thuong \? 'Phối hợp' : 'Phối hợp SOS'/.test(docNguon('web/src/modules/yThuc/ClassYThucCard.tsx')) && /thuong \? 'Phối hợp' : 'Phối hợp SOS'/.test(docNguon('web/src/modules/yThuc/StudentYThucSection.tsx')), 'tab Phối hợp theo khung');
+    assert(/thuong \? t\('Phối hợp'\) : t\('Phối hợp SOS'\)/.test(docNguon('web/src/modules/yThuc/ClassYThucCard.tsx')) && /thuong \? t\('Phối hợp'\) : t\('Phối hợp SOS'\)/.test(docNguon('web/src/modules/yThuc/StudentYThucSection.tsx')), 'tab Phối hợp theo khung');
     assert(/lanXuLyMoi/.test(docNguon('server/src/phanTich/yThucPhanTich.ts')) && /lanXuLyMoi/.test(docNguon('web/src/modules/phanTich/YThucPhoiHop.tsx')), 'lần xử lý mới hơn kèm nhãn trạng thái');
   });
   // ------------------------------------------------------------------ Task 8 · Case viết hoa, PA ngắn · Phương án rộng, Normal / Progress / Final còn sót

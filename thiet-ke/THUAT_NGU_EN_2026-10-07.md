@@ -213,6 +213,11 @@ Planning tự chọn (chủ sản phẩm 07/10), chủ sản phẩm xem trước
 | 3 vi phạm trong 2 tuần → bắt buộc xử lý | 3 incidents in 2 weeks → action required | |
 | Xác nhận xử lý · Đề xuất QL duyệt | Confirm action · Send to manager | |
 | Ghi "Đã thực hiện" | Mark as done | |
+| Ghi nhận (nút) · Bỏ ghi nhận | Note · Unmark | EN-d: nút cạnh vi phạm mới; trạng thái vẫn "Noted" |
+| Xác nhận cấp bậc vi phạm · Bậc | Confirm incident level · Level | EN-d |
+| Ghi nhận xét (Case MT) · Không cần theo dõi | Write feedback · Stop tracking | EN-d (OV-12c) |
+| Mở Case · Sửa Case · Xoá Case | Open case · Edit case · Delete case | EN-d |
+| Nhập bù / Đã xong từ trước | Back-entry / Already resolved | EN-d: Tạo Case › Loại Case |
 
 ## 7. Việc, duyệt, nhắc
 

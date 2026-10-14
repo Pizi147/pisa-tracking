@@ -5,7 +5,7 @@ import {
   type CoordinationKind, type CoordinationRemoveReason, type CoordinationStatus,
 } from '../../../shared/domain/index.ts';
 import { napTruocPhamVi, type Principal } from '../permissions.ts';
-import { badRequest, isIsoDate, notFound, nowIso } from '../util.ts';
+import { badRequest, loi, isIsoDate, notFound, nowIso } from '../util.ts';
 import { demoToday } from '../demoConfig.ts';
 import { notify, writeAudit } from '../platform/audit.ts';
 import { countAttachments } from '../platform/attachments.ts';
@@ -29,7 +29,7 @@ import { canManageDiscipline, requireManageDiscipline, requireViewClass, require
 /** Chữ do người dùng nhập: cắt khoảng trắng, và từ chối khi quá dài — không để một ô ghi chú thành kho chứa tuỳ ý. */
 function capText(value: string | null | undefined, max: number, label: string): string {
   const text = (value ?? '').trim();
-  if (text.length > max) throw badRequest(`${label} quá dài (tối đa ${max} ký tự).`);
+  if (text.length > max) throw loi(400, '{label} quá dài (tối đa {max} ký tự).', { label, max });
   return text;
 }
 
@@ -434,12 +434,12 @@ export function addCoordination(p: Principal, attemptId: number, input: { kind?:
   if (a.status === 'cancelled') throw badRequest('Lượt Mock Test này đã huỷ — không thêm việc phối hợp được.');
   const kind = String(input.kind ?? '');
   if (!(COORDINATION_KINDS as readonly string[]).includes(kind)) {
-    throw badRequest(`Chọn loại việc: ${COORDINATION_KINDS.map((k) => COORDINATION_KIND_LABEL[k]).join(' · ')}.`);
+    throw loi(400, 'Chọn loại việc: {ds}.', { ds: COORDINATION_KINDS.map((k) => COORDINATION_KIND_LABEL[k]).join(' · ') });
   }
   const name = capText(input.customName, 100, 'Tên việc');
   if (kind === 'other') {
-    const loi = kiemGhiRoKhac(name);
-    if (loi) throw badRequest(`Việc loại "Khác": ${loi}.`);
+    const sai = kiemGhiRoKhac(name);
+    if (sai) throw loi(400, 'Việc loại "Khác": {loi}.', { loi: sai });
   }
   if (kind !== 'other' && name) throw badRequest('Chỉ việc loại "Khác" mới có tên riêng.');
   if ((a.kind ?? 'mock') !== 'mock' || !(resultOf(a).sosLevel && resultOf(a).sosLevel! >= 1)) {
@@ -480,7 +480,7 @@ export function confirmCoordination(p: Principal, id: number, input: { performed
   if (input.performedOn > demoToday()) throw badRequest('Ngày thực hiện không được ở tương lai.');
   const who = capText(input.performerName, 100, 'Tên người thực hiện');
   const note = capText(input.note, 1000, 'Ghi chú');
-  if (laMeetingCx(r.kind) && note.length < GHI_CHU_MEETING_TOI_THIEU) throw badRequest(`Meeting CX / GĐCN: ghi chú nói rõ kết quả buổi gặp, ít nhất ${GHI_CHU_MEETING_TOI_THIEU} ký tự.`);
+  if (laMeetingCx(r.kind) && note.length < GHI_CHU_MEETING_TOI_THIEU) throw loi(400, 'Meeting CX / GĐCN: ghi chú nói rõ kết quả buổi gặp, ít nhất {n} ký tự.', { n: GHI_CHU_MEETING_TOI_THIEU });
   tx(() => {
     /* PR-PHH: bản chụp 4 nội dung bằng CHÍNH `turnsOf` đang dùng để hiển thị, tính như sau khi xong (ngày thực hiện) — trước UPDATE, cùng giao dịch. */
     const chup = r.kind === 'bao_ph_tvv'
@@ -510,12 +510,12 @@ export function removeCoordination(p: Principal, id: number, input: { reasonCode
   if (r.status !== 'pending') throw badRequest('Chỉ bỏ được việc đang ở trạng thái Cần xử lý — việc đã xong hoặc đã bỏ thì không bỏ nữa.');
   const code = String(input.reasonCode ?? '');
   if (!(COORDINATION_USER_REMOVE_REASONS as readonly string[]).includes(code)) {
-    throw badRequest(`Chọn một lý do: ${COORDINATION_USER_REMOVE_REASONS.map((c) => COORDINATION_REMOVE_REASON_LABEL[c]).join(' · ')}.`);
+    throw loi(400, 'Chọn một lý do: {ds}.', { ds: COORDINATION_USER_REMOVE_REASONS.map((c) => COORDINATION_REMOVE_REASON_LABEL[c]).join(' · ') });
   }
   const text = capText(input.reasonText, 300, 'Lý do');
   if (reasonNeedsText(code)) {
-    const loi = kiemGhiRoKhac(text);
-    if (loi) throw badRequest(`Lý do "Khác": ${loi}.`);
+    const sai = kiemGhiRoKhac(text);
+    if (sai) throw loi(400, 'Lý do "Khác": {loi}.', { loi: sai });
   }
   tx(() => {
     db()
