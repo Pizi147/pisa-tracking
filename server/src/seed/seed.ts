@@ -31,6 +31,7 @@ import { buNgayPb2b, buildPb2bDemo } from './pb2bSeed.ts';
 import { dienNguocBanChup } from '../migrate/prTk.ts';
 import { migratePrOv1c } from '../migrate/prOv1c.ts';
 import { migratePrOv11e } from '../migrate/prOv11e.ts';
+import { migratePrOv12a } from '../migrate/prOv12a.ts';
 
 const NOW = nowIso();
 
@@ -294,6 +295,8 @@ export function runSeed() {
     const pet = buildPetDemo(conn, { adminId, mbId: branchId.get('MB')!, userId });
     /* OV-11e (Q8): lượt MT đã chốt dựng bằng SQL thẳng chưa có dấu KCK theo lượt — chụp theo cờ hiện tại (cùng hàm với migrate). Sau mọi bộ demo. */
     migratePrOv11e(conn, []);
+    /* OV-12a: PA dựng bằng SQL thẳng với hạn kiểu cũ (Thứ Hai hằng tuần) → lịch kỳ hai tuần, hết Thứ Ba (cùng hàm với migrate; seed → migrate không đổi gì). */
+    migratePrOv12a(conn, []);
 
     return {
       'Chi nhánh': BRANCHES.length,

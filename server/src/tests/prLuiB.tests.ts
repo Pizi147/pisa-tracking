@@ -23,7 +23,7 @@ export async function runPrLuiBTests(t: YThucTestKit) {
 
   check('LUIb-2 · hằng làm nhiều học viên: việc ngược đối xứng, nhãn đủ, lô 8, trần xem trước 200', () => {
     for (const v of d.VIEC_HANG_LOAT) {
-      assert(d.VIEC_NGUOC[d.VIEC_NGUOC[v]] === v, `${v} ngược hai lần phải về ${v}`);
+      if (v !== 'xoa') assert(d.VIEC_NGUOC[d.VIEC_NGUOC[v]] === v, `${v} ngược hai lần phải về ${v}`);   // OV-12a: Xoá không có việc ngược (không Hoàn tác)
       assert(typeof d.NHAN_VIEC_HANG_LOAT[v] === 'string' && d.NHAN_VIEC_HANG_LOAT[v].length > 0, `thiếu nhãn ${v}`);
     }
     assert(d.NHAN_VIEC_HANG_LOAT['ket-thuc'] === 'Kết thúc học' && d.NHAN_VIEC_HANG_LOAT['hoc-lai'] === 'Học lại' && d.NHAN_VIEC_HANG_LOAT['huy-lenh'] === 'Huỷ chuyển lớp', 'nhãn');
@@ -284,7 +284,7 @@ export async function runPrLuiBTests(t: YThucTestKit) {
     assert(hv(P.mbManager).coTheHocLai === true && hv(P.admin).coTheHocLai === true, 'QL / QT thấy nút Học lại');
   }));
 
-  await checkAsync('LUIb-13 · Quản lý kết thúc lớp không còn học viên được, mở lại được; GVCN 403; Xoá lớp vẫn chỉ Quản trị; viewer.coTheMoLaiLop theo quyền', () => thu(async () => {
+  await checkAsync('LUIb-13 · Quản lý kết thúc lớp không còn học viên được, mở lại được; GVCN 403; Xoá lớp có dữ liệu 400 (OV-12a: QL xoá được lớp trống); viewer.coTheMoLaiLop theo quyền', () => thu(async () => {
     const xk: any = await import('../classes/xoaKetThucLop.ts');
     const cls: any = await import('../classes/classes.ts');
     const lop = classId('MB FOU 12');
@@ -295,7 +295,7 @@ export async function runPrLuiBTests(t: YThucTestKit) {
     assert(cls.classOverview(P.mbManager, lop).viewer.coTheMoLaiLop === true && cls.classOverview(P.normalCoreTeacher, lop).viewer.coTheMoLaiLop === false, 'coTheMoLaiLop');
     xk.moLaiLop(P.mbManager, lop);
     assert(cls.classOverview(P.mbManager, lop).viewer.coTheKetThucLop === true, 'coTheKetThucLop');
-    assert(maLoi(() => xk.xoaLop(P.mbManager, lop, { maLop: 'MB FOU 12' })) === 403, 'Xoá lớp vẫn chỉ Quản trị');
+    assert(maLoi(() => xk.xoaLop(P.mbManager, lop, { maLop: 'MB FOU 12' })) === 400, 'Xoá lớp có dữ liệu phải 400 (OV-12a: QL xoá được lớp trống)');
   }));
 
   // ---------------------------------------------------------------- Task 7 · web Mở lại lớp
@@ -323,7 +323,7 @@ export async function runPrLuiBTests(t: YThucTestKit) {
   });
   check('LUIb-16 · web: chia lô bằng LO_HANG_LOAT_EM, gom ok/failed, dừng khi một lô ném lỗi và ghi "chưa lưu" cho phần còn lại; Hoàn tác gọi việc ngược', () => {
     const h = doc('web/src/modules/students/hangLoatEm.ts');
-    assert(h.includes('chiaLo(ids, LO_HANG_LOAT_EM)') && h.includes("'/hang-loat-hoc-vien'") && h.includes('VIEC_NGUOC[viec]'), 'runner');
+    assert(h.includes("chiaLo(ids, viec === 'xoa' ? LO_XOA_EM : LO_HANG_LOAT_EM)") && h.includes("'/hang-loat-hoc-vien'") && h.includes('VIEC_NGUOC[viec]'), 'runner');
     assert(/catch \(e: any\) \{[\s\S]*break;/.test(h), 'lỗi giữa chừng phải dừng và ghi phần còn lại là chưa lưu');
   });
   check('LUIb-17 · web: thanh dính đáy, panel xem trước, ô chọn ở cả bảng FT và bảng lớp thường; đủ chữ đã duyệt; KHÔNG ô chọn ở bảng Học viên & Lớp', () => {

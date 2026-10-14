@@ -1,6 +1,6 @@
 import { THAM_SO_TOI_DA, chenNhieuDong, db, theoLo, tx } from '../db.ts';
 import {
-  CASE_OUTCOME_LABEL, NGUONG_KY_VONG, NGUONG_MINI_TEST, PERMISSIONS, laLanGhiCuoi, laPaBoTro, caseDedupKey, categoryOf, chuHopKetLuan, coBoTroFinal, khongPhuHopLoTrinh, chuMonTruot, goiYCuoiKhoa, kyHieuLop, kyNangLopDich, lichBoTro, ngay, tenMon, weeklyUpdateDue,
+  CASE_OUTCOME_LABEL, NGUONG_KY_VONG, NGUONG_MINI_TEST, PERMISSIONS, laLanGhiCuoi, laPaBoTro, caseDedupKey, categoryOf, chuHopKetLuan, coBoTroFinal, khongPhuHopLoTrinh, chuMonTruot, goiYCuoiKhoa, kyHieuLop, kyNangLopDich, lichBoTro, ngay, tenMon, hanKyGhiKetQua,
   type BoTroMienPhi, type GoiYCuoiKhoa, type RegularSkill,
 } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, chuTuDo, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
@@ -446,7 +446,7 @@ function taoBoTroFinal(p: Principal, dongs: readonly DongBoTroFinal[]): void {
       /* PR-CT2 (§8): Người dạy = GV cũ của môn (lớp của bài Final); việc Kết quả theo `nguoiGiuKetQua` (nhóm `mt:` → GVCN lớp đang học). */
       performerUserId: gvCu.get(y.x.ngay)?.get(`${y.x.fromClassId}|${y.mon}`)?.userId ?? null,
       recordedBy: p.userId, status: 'started', startedDate: y.batDau, preset: true, confirmedBy: p.userId, confirmedAt: nowIso(),
-      cycleStartedOn: y.batDau, actionDue: weeklyUpdateDue(y.batDau), followupDue: y.lich.ngayMiniTest, mocQuyChe: 'mini_test', nhomBoTro: `mt:${y.x.luot.id}`,
+      cycleStartedOn: y.batDau, actionDue: hanKyGhiKetQua(y.batDau), followupDue: y.lich.ngayMiniTest, mocQuyChe: 'mini_test', nhomBoTro: `mt:${y.x.luot.id}`,
     });
   }
 
@@ -620,7 +620,7 @@ export function boKetQuaChoMiniTest<T extends { kind: string; nhom_bo_tro: strin
   const cho = new Set((db().prepare(`SELECT DISTINCT nhom_bo_tro FROM mini_test WHERE ty_le IS NULL AND nhom_bo_tro IN (${nhom.map(() => '?').join(',')})`)
     .all(...nhom) as any[]).map((r) => r.nhom_bo_tro as string));
   return (r) => !!r.nhom_bo_tro && cho.has(r.nhom_bo_tro)
-    && laLanGhiCuoi({ preset: true, followupDue: r.followup_due ?? null, actionDue: r.action_due ?? null }, today);
+    && laLanGhiCuoi({ preset: true, followupDue: r.followup_due ?? null, actionDue: r.action_due ?? null, mienPhi: r.kind === 'bo_tro_mien_phi' }, today);
 }
 
 /** Kiểm đầu vào Mini Test: 0–100 (lưu 0–1), ngày ≤ hôm nay và không trước `ngày dự kiến − 14`. */

@@ -245,7 +245,7 @@ export async function runPrSosTests(t: YThucTestKit) {
     sosAuto.xacNhanPaQuyChe(P.admin, iv.id, { description: MO_TA, performerUserId: P.coreTeacher.userId });
     const sau = get('SELECT * FROM case_interventions WHERE id = ?', iv.id);
     assert(sau.status === 'started' && sau.started_date === TODAY && sau.cycle_started_on === TODAY && sau.cycle_no === 1
-      && sau.action_due === d.weeklyUpdateDue(TODAY) && sau.followup_due === null /* until_next_mt, chưa có lịch MT2 */
+      && sau.action_due === d.hanKyGhiKetQua(TODAY) && sau.followup_due === null /* until_next_mt, chưa có lịch MT2 */
       && sau.confirmed_by === P.admin.userId && sau.performer_user_id === P.coreTeacher.userId && sau.description === MO_TA, JSON.stringify(sau));
     assert(get('SELECT status FROM sos_cases WHERE id = ?', c.id).status === 'in_progress', 'Case in_progress');
     assertThrows(() => sosAuto.xacNhanPaQuyChe(P.admin, iv.id, { description: MO_TA }), /đã được xác nhận rồi/, 'lần hai');
@@ -442,7 +442,7 @@ export async function runPrSosTests(t: YThucTestKit) {
     assert(!get(`SELECT 1 FROM yeu_cau_duyet WHERE loai = 'bao_len_nguyen_nhan' AND doi_tuong_id = ? AND trang_thai = 'cho'`, c.id), 'em Tạm dừng bị Báo QL');
     studentsSvc.setStudentStatus(P.admin, st.id, 'active', TODAY, 'Quay lại học');
     assert(get('SELECT han_xac_nhan h FROM sos_cases WHERE id = ?', c.id).h === d.hanXacNhan(TODAY), 'hạn xác nhận chưa tính lại');
-    assert(get('SELECT action_due h FROM case_interventions WHERE id = ?', iv.id).h === d.weeklyUpdateDue(TODAY), 'hạn ghi kết quả chưa tính lại');
+    assert(get('SELECT action_due h FROM case_interventions WHERE id = ?', iv.id).h === d.hanKyGhiKetQua(TODAY), 'hạn ghi kết quả chưa tính lại');
   });
   check('SOS (7) · Hiệu quả PA: PA huỷ không theo dõi, PA chờ xác nhận, PA hệ thống đóng không vào N; cột Xử lý Tổng hợp theo trạng thái v4 (K1-20, K1-23, K5-55)', () => {
     const { st } = mt2W2('T7c');
@@ -549,7 +549,7 @@ export async function runPrSosTests(t: YThucTestKit) {
   });
 
   // ------------------------------------------------------------------ Task 11 · demo D7, D8 (soi bộ demo đã dựng)
-  check('SOS (11) · D7: Case SOS ở MB FT 101 đủ trạng thái v4; D8: PA hạn hết T2 đúng ngày demo, PA quá hạn 1 tuần (hạn Thứ Hai), PA ở tuần mốc; không còn Case đóng kiểu cũ', () => {
+  check('SOS (11) · D7: Case SOS ở MB FT 101 đủ trạng thái v4; D8: PA hạn hết T3 ngày mai, PA quá hạn ~1 tuần (hạn Thứ Ba, OV-12a), PA ở tuần mốc; không còn Case đóng kiểu cũ', () => {
     const caseCua = (ten: string, kn: string) => get(`SELECT sc.* FROM sos_cases sc JOIN students s ON s.id = sc.student_id
       WHERE s.full_name = ? AND sc.category = ? ORDER BY sc.id DESC LIMIT 1`, ten, kn);
     const k = (ten: string, kn: string) => (cases.caseDetail(P.admin, caseCua(ten, kn).id) as any).trangThaiV4.k as string;
@@ -563,8 +563,8 @@ export async function runPrSosTests(t: YThucTestKit) {
     assert(k('Trịnh Gia Bảo', 'listening') === 'cho-nguyen-nhan' && bao.han_xac_nhan === d.hanXacNhan(TODAY)
       && get(`SELECT 1 x FROM case_milestones WHERE case_id = ? AND kind = 'ql_tu_choi_khong_theo_doi'`, bao.id), 'Bảo: Quản lý từ chối, hạn mới');
     const paCua = (ten: string, kn: string) => get(`SELECT * FROM case_interventions WHERE case_id = ? AND preset = 1 AND status = 'started'`, caseCua(ten, kn).id);
-    assert(paCua('Đỗ Minh Khôi', 'speaking').action_due === TODAY, 'D8: hạn hết T2 đúng ngày demo');
-    assert(paCua('Lý Minh Châu', 'reading').action_due === addDays(TODAY, -7), 'D8: quá hạn 1 tuần');   // PR-Dọn (10a): hạn PA rơi Thứ Hai
+    assert(paCua('Đỗ Minh Khôi', 'speaking').action_due === addDays(TODAY, 1), 'D8: hạn hết T3 ngày mai');
+    assert(paCua('Lý Minh Châu', 'reading').action_due === addDays(TODAY, -6), 'D8: quá hạn ~1 tuần');   // OV-12a: hạn PA rơi Thứ Ba
     const ngoc = paCua('Hoàng Bảo Ngọc', 'listening');
     assert(d.laLanGhiCuoi({ preset: true, followupDue: ngoc.followup_due, actionDue: ngoc.action_due }, TODAY), `D8: tuần mốc ${JSON.stringify(ngoc)}`);
     assert(!get(`SELECT 1 x FROM case_interventions WHERE closed_reason = 'dismissed'`), 'còn PA huỷ kiểu cũ "GVBM tự đóng"');

@@ -5,7 +5,7 @@ import { LISTENING_BY_RAW, READING_BY_RAW } from '../fasttrack/scoring.ts';
 import { commitIntake } from '../classes/intake.ts';
 import { saveScore } from '../fasttrack/attempts.ts';
 import { baoVang } from '../fasttrack/absence.ts';
-import { issuesForTopic, lichMtGoc, tuanHocCuaMt, weeklyUpdateDue } from '../../../shared/domain/index.ts';
+import { hanKyGhiKetQua, issuesForTopic, lichMtGoc, tuanHocCuaMt } from '../../../shared/domain/index.ts';
 import { guiKhongTheoDoi, xacNhanCase, xacNhanPaQuyChe } from '../cases/sosAuto.ts';
 import { duyetYeuCau, tuChoiYeuCau } from '../duyet/yeuCau.ts';
 import { confirmCoordination } from '../yThuc/phoiHop.ts';
@@ -107,7 +107,7 @@ export function buildSosV3Demo(ctx: BuildCtx): { students: number; cases: number
   const khoiSp = caseOf(khoi.id, 'speaking');
   xacNhan(activeTeacher('speaking'), khoiSp.id, 'speaking', 'Em nói ngắn, ngập ngừng ở Part 2, thiếu ý mở rộng.');   // D7 (6)
   xacNhanPa(activeTeacher('speaking'), khoiSp.id, 'Tự học Speaking: ghi âm Part 2 mỗi ngày, GVBM nghe và chữa thứ Sáu.');
-  hanPa(khoiSp.id, addDays(DEMO_DATE, -7), DEMO_DATE);   // D8: hạn hết T2 ĐÚNG ngày demo
+  hanPa(khoiSp.id, addDays(DEMO_DATE, -14), addDays(DEMO_DATE, 1));   // D8 → OV-12a: hạn hết T3 NGÀY MAI (kỳ 31/08–13/09)
   confirmCoordination(gvcn, actionOf(khoiA.id, 'talk_student').id, { performedOn: addDays(DEMO_DATE, -1), note: 'Đã gặp em sau buổi học, em hứa luyện nói mỗi ngày.' });
   /*
    * Vi phạm Ý thức của cùng em: ghi thẳng xuống bảng với mốc thời gian theo NGÀY DEMO (như `yThucSeed.ts`) — `recordViolation` đóng dấu giờ thật của máy.
@@ -162,7 +162,7 @@ export function buildSosV3Demo(ctx: BuildCtx): { students: number; cases: number
   const chauR = caseOf(chau.id, 'reading');
   xacNhan(activeTeacher('reading'), chauR.id, 'reading', 'Em sai dạng Matching Headings ở cả ba passage.');
   xacNhanPa(activeTeacher('reading'), chauR.id, 'Tự học Reading: hai bài Matching Headings mỗi tuần, cô Hà chữa.');
-  hanPa(chauR.id, addDays(DEMO_DATE, -16), addDays(DEMO_DATE, -7));   // quá hạn 1 tuần — PR-Dọn (10a): hạn rơi Thứ Hai (07/09)
+  hanPa(chauR.id, addDays(DEMO_DATE, -20), addDays(DEMO_DATE, -6));   // quá hạn ~1 tuần — OV-12a: hạn hết T3 08/09 (kỳ 24/08–06/09)
 
   // ---------------------------------------------------------------- D8: Hoàng Bảo Ngọc — MT1 · Listening, PA quy chế ở TUẦN MỐC (Ghi kết quả cuối)
   const ngoc = addStudent('Hoàng Bảo Ngọc', 1, 5);
@@ -172,8 +172,8 @@ export function buildSosV3Demo(ctx: BuildCtx): { students: number; cases: number
   const ngocL = caseOf(ngoc.id, 'listening');
   xacNhan(activeTeacher('listening'), ngocL.id, 'listening', 'Em sót số và tên riêng ở Part 1–2.');
   xacNhanPa(activeTeacher('listening'), ngocL.id, 'Tự học Listening: nghe chép Part 1 mỗi ngày, gửi cô Hà thứ Năm.');
-  /* Mốc quy chế Chủ nhật tuần này (20/09) < hạn hết T2 21/09 → lần ghi này là lần cuối. */
-  hanPa(ngocL.id, addDays(DEMO_DATE, -28), weeklyUpdateDue(DEMO_DATE), addDays(DEMO_DATE, 6));
+  /* Mốc quy chế Chủ nhật tuần này (20/09) < hạn hết T3 29/09 (kỳ đang chạy, OV-12a) → lần ghi này là lần cuối. */
+  hanPa(ngocL.id, addDays(DEMO_DATE, -28), hanKyGhiKetQua(addDays(DEMO_DATE, -28), addDays(DEMO_DATE, 6)), addDays(DEMO_DATE, 6));
 
   // ---------------------------------------------------------------- OV-1c: xoá SOS (SOS tạm thời / Overall ≥ kỳ vọng: dùng em demo sẵn có — DEMO.md mục 9)
   /* Đặng Thu Hà — MT1 L 5 R/W 6.5, Speaking vắng dời → chốt, Case Listening; Speaking tuần mới 6.5 → Overall 6.0 ≥ 6.0 → xoá SOS (Case đóng "Overall đạt"). */

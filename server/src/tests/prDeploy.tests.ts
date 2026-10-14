@@ -343,11 +343,12 @@ export async function runPrDeployTests(t: YThucTestKit) {
       env: { ...process.env, TURSO_DATABASE_URL: '', TURSO_AUTH_TOKEN: '', BAN_CHINH: '', PISA_DB: f }, encoding: 'utf8', timeout: 600_000,
     });
     assert(r.status === 0, `seed lỗi: ${String(r.stderr).slice(-300)}`);
-    /* (2b) bẫy cho các dòng nghi ngờ của bảng rà: PA đang chạy hạn đặt tay rơi Chủ nhật; Case đóng mà chưa ghi hướng xử lý. */
+    /* (2b) bẫy cho các dòng nghi ngờ của bảng rà: PA đang chạy mốc đặt tay rơi Chủ nhật (OV-12a: hạn ghi kết quả đặt tay đúng lịch kỳ — hết Thứ Ba
+     * đầu tiên ≥ 04/10 tính từ ngày bắt đầu; hạn lệch lịch thì `prOv12a` dời là ĐÚNG luật); Case đóng mà chưa ghi hướng xử lý. */
     const c = new Database(f);
     try {
-      const pa = c.prepare(`SELECT id FROM case_interventions WHERE status IN ('planned','started') ORDER BY id LIMIT 1`).get() as any;
-      if (pa) c.prepare(`UPDATE case_interventions SET action_due = '2026-10-04', followup_due = '2026-10-04' WHERE id = ?`).run(pa.id);
+      const pa = c.prepare(`SELECT id, COALESCE(started_date, cycle_started_on) bd FROM case_interventions WHERE status IN ('planned','started') ORDER BY id LIMIT 1`).get() as any;
+      if (pa) c.prepare(`UPDATE case_interventions SET action_due = ?, followup_due = '2026-10-04' WHERE id = ?`).run(pa.bd ? d.hanKyGhiKetQua(pa.bd, '2026-10-03') : '2026-10-04', pa.id);
       const xong = c.prepare(`SELECT id FROM sos_cases WHERE status = 'done' ORDER BY id LIMIT 1`).get() as any;
       if (xong) c.prepare('UPDATE sos_cases SET disposition = NULL, disposition_note = NULL WHERE id = ?').run(xong.id);
     } finally { c.close(); }

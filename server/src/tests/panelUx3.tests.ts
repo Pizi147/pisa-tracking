@@ -107,8 +107,8 @@ export async function runPanelUx3Tests(t: YThucTestKit) {
     const dp = v.find((x: any) => /^Thêm PA/.test(x.viec));
     assert(dp && dp.viec === 'Thêm PA W2' && dp.quaHanNgay === null, JSON.stringify(dp));
     const gk = v.find((x: any) => /^Kết quả/.test(x.viec));
-    assert(gk && gk.viec === 'Kết quả PA L · tuần W1 SEP' && gk.han === 'hạn hết T2 13/09' && gk.quaHanNgay === 3 && gk.tone === 'danger'
-      && gk.title === 'Kết quả PA Nghe podcast · Listening · tuần W1 SEP · hạn hết T2 13/09 · quá hạn 3 ngày', JSON.stringify(gk));
+    assert(gk && gk.viec === 'Kết quả PA L · kỳ W4 AUG – W1 SEP' && gk.han === 'hạn hết T3 13/09' && gk.quaHanNgay === 3 && gk.tone === 'danger'
+      && gk.title === 'Kết quả PA Nghe podcast · Listening · kỳ W4 AUG – W1 SEP · hạn hết T3 13/09 · quá hạn 3 ngày', JSON.stringify(gk));
     assert(!/Cập nhật|Xác định nguyên nhân/.test(JSON.stringify(v)), JSON.stringify(v));
   });
 
@@ -330,7 +330,7 @@ export async function runPanelUx3Tests(t: YThucTestKit) {
       homNay: '2026-09-16',
     });
     assert(v.map((x: any) => x.tone).join() === 'danger,warn,info', v.map((x: any) => x.tone).join());
-    assert(v.length === 3 && v[0].viec === 'Kết quả PA R · tuần W1 SEP' && v[0].quaHanNgay === 6, JSON.stringify(v));
+    assert(v.length === 3 && v[0].viec === 'Kết quả PA R · kỳ W4 AUG – W1 SEP' && v[0].quaHanNgay === 6, JSON.stringify(v));
   });
 
   check('UX3 (1) · tienDoCase: PA đã xong không tính là việc tiếp; Case đã xong không có việc tiếp', () => {
@@ -439,16 +439,15 @@ export async function runPanelUx3Tests(t: YThucTestKit) {
       t.assertThrows(() => xoaKetThuc.xoaLop(who, l.id, { maLop: l.ma }), /Quản trị hệ thống/, 'xoá');
       t.assertThrows(() => xoaKetThuc.ketThucLop(who, l.id), /Quản trị hệ thống/, 'kết thúc');
     }
-    /* PR-LUI-b (06/10): Quản lý của lớp xem + kết thúc được; Xoá lớp vẫn chỉ Quản trị. */
-    t.assertThrows(() => xoaKetThuc.xoaLop(t.P.mbManager, l.id, { maLop: l.ma }), /Quản trị hệ thống/, 'QL xoá');
-    assert(xoaKetThuc.xemXoaKetThuc(t.P.mbManager, l.id).coTheXoa === false, 'QL không thấy Xoá lớp');
+    /* PR-LUI-b (06/10): Quản lý của lớp xem + kết thúc được; OV-12a (14/10): Quản lý xoá được lớp trống (phép kiểm OV12a-4). */
+    assert(xoaKetThuc.xemXoaKetThuc(t.P.mbManager, l.id).coTheXoa === true, 'QL thấy Xoá lớp trống');
     assert(demLop(l.id) === 1, 'lớp phải còn nguyên sau các lần bị từ chối');
   });
 
   check('UX3 (11) · viewer.coTheXoaKetThuc: Quản trị hệ thống true; Quản lý và GV false (Quản lý có coTheKetThucLop)', () => {
     const l = taoLopTrong();
     assert(classesSvc.classOverview(t.P.admin, l.id).viewer.coTheXoaKetThuc === true, 'QT');
-    assert(classesSvc.classOverview(t.P.mbManager, l.id).viewer.coTheXoaKetThuc === false, 'QL');
+    assert(classesSvc.classOverview(t.P.mbManager, l.id).viewer.coTheXoaKetThuc === true, 'QL (OV-12a)');
     assert(classesSvc.classOverview(t.P.coreTeacher, ftId).viewer.coTheXoaKetThuc === false, 'GV');
     assert(classesSvc.classOverview(t.P.mbManager, l.id).viewer.coTheKetThucLop === true && classesSvc.classOverview(t.P.coreTeacher, ftId).viewer.coTheKetThucLop === false, 'coTheKetThucLop');
   });

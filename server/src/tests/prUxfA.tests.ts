@@ -447,15 +447,15 @@ export async function runPrUxfATests(t: YThucTestKit) {
       `INSERT INTO case_followups (case_id, intervention_id, observed_on, outcome, cycle_no, cycle_due, late, created_at) VALUES (?, ?, ?, 'partial', 1, ?, ?, ?)`,
     ).run(caseId, iv, ghi, due, late, NOW);
     const truoc = metricsSvc.metricSet(P.admin, 'dung-han-cap-nhat', {});
-    const ghiBu = pa('2026-09-28'); fu(ghiBu, '2026-08-24', '2026-09-08', 1);   // hạn Thứ Hai 24/08, ghi 08/09
-    const boQuen = pa('2026-08-31');                                              // chưa ghi, hạn 31/08 → tới 14/09 trễ 2 tuần
+    const ghiBu = pa('2026-09-28'); fu(ghiBu, '2026-08-11', '2026-09-09', 1);   // OV-12a: hạn Thứ Ba 11/08, ghi 09/09 = 3 kỳ trễ
+    const boQuen = pa('2026-08-18');                                              // chưa ghi, hạn 18/08 → tới 14/09 trễ 2 kỳ
     const dungHan = pa('2026-09-28'); fu(dungHan, '2026-09-07', '2026-09-06', 0);
     const r = metricsSvc.metricSet(P.admin, 'dung-han-cap-nhat', {});
     const moi = (r.ids as number[]).filter((id) => !(truoc.ids as number[]).includes(id));
     const cua = (iv: number) => moi.filter((id) => metricsSvc.parseObligation(id).interventionId === iv);
     const dung = (iv: number) => cua(iv).filter((id) => (r.numeratorIds as number[]).includes(id)).length;
     assert(cua(ghiBu).length === 3 && dung(ghiBu) === 0, `ghi bù: ${cua(ghiBu).length} nghĩa vụ, ${dung(ghiBu)} đúng`);
-    assert(/ghi bù 3 tuần/.test(d.nhanTuanGhiKetQua('2026-08-24', '2026-09-08').tieuDe), d.nhanTuanGhiKetQua('2026-08-24', '2026-09-08').tieuDe);
+    assert(/ghi bù 3 kỳ/.test(d.nhanTuanGhiKetQua('2026-08-11', '2026-09-09').tieuDe), d.nhanTuanGhiKetQua('2026-08-11', '2026-09-09').tieuDe);
     assert(cua(boQuen).length === 2 && dung(boQuen) === 0, `bỏ quên: ${cua(boQuen).length}`);
     assert(cua(dungHan).length === 1 && dung(dungHan) === 1, `đúng hạn: ${cua(dungHan).length}/${dung(dungHan)}`);
     assert(r.n === r.ids.length && metricsSvc.rowsFor('nghia-vu', r.ids).length === r.n, 'n = ids = số dòng');

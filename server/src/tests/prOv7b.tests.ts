@@ -115,7 +115,7 @@ export async function runPrOv7bTests(t: YThucTestKit) {
     assert(get('SELECT status FROM case_interventions WHERE id = ?', ivId).status === 'completed', 'Kết thúc');
     cases.suaKetQua(GV, fuMoi(ivId).id, LUA_CHON.keep);
     const pa = get('SELECT * FROM case_interventions WHERE id = ?', ivId);
-    assert(pa.status === 'started' && pa.cycle_no === 2 && pa.completed_date === null && pa.action_due === d.weeklyUpdateDue(addDays(TODAY, 1)), JSON.stringify(pa));
+    assert(pa.status === 'started' && pa.cycle_no === 2 && pa.completed_date === null && pa.action_due === d.hanKe(TODAY, d.hanKyGhiKetQua(TODAY), TODAY), JSON.stringify(pa));
     const s2 = em(); const x = caseVaPa(s2);
     ghi(x.ivId, 'replace');
     const moiPa = get('SELECT superseded_by FROM case_interventions WHERE id = ?', x.ivId).superseded_by;
@@ -152,7 +152,7 @@ export async function runPrOv7bTests(t: YThucTestKit) {
       ivs.push(...chenPa(conn, [{
         caseId: cid, kind: mien ? 'bo_tro_mien_phi' : 'bo_tro', description: 'Bổ trợ 2 buổi/tuần', status: 'started', preset: true,
         confirmedAt: now, confirmedBy: GV.userId, performerUserId: GV.userId, nhomBoTro: nhom, mocQuyChe: mien ? 'mini_test' : 'den_cuoi_khoa',
-        followupDue: mien ? addDays(TODAY, -1) : addDays(TODAY, 40), actionDue: d.weeklyUpdateDue(TODAY), cycleStartedOn: TODAY, startedDate: TODAY,
+        followupDue: mien ? addDays(TODAY, -1) : addDays(TODAY, 40), actionDue: d.hanKyGhiKetQua(TODAY), cycleStartedOn: TODAY, startedDate: TODAY,
       }]));
     }
     if (mien) {
@@ -263,7 +263,7 @@ export async function runPrOv7bTests(t: YThucTestKit) {
     ghi(ivId, 'adjust');
     let mo = cases.moSuaKetQua(GV, fuMoi(ivId).id);
     assert(mo.chan === null && mo.giaTri.decision === 'adjust' && mo.giaTri.outcome === 'unchanged' && mo.giaTri.decisionNote === 'Đổi cách luyện', JSON.stringify(mo.giaTri));
-    assert(mo.pa.cycleNo === 1 && mo.pa.actionDue === d.weeklyUpdateDue(TODAY) && mo.pa.description.startsWith('Tự học Listening — nghe chép 15'), JSON.stringify(mo.pa));
+    assert(mo.pa.cycleNo === 1 && mo.pa.actionDue === d.hanKyGhiKetQua(TODAY) && mo.pa.description.startsWith('Tự học Listening — nghe chép 15'), JSON.stringify(mo.pa));
     assert(mo.giaTri.adjust?.description.includes('20 phút'), JSON.stringify(mo.giaTri.adjust));
     const s2 = em(); const x = caseVaPa(s2);
     ghi(x.ivId, 'replace');

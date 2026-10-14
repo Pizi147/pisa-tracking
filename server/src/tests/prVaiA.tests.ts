@@ -309,7 +309,7 @@ export async function runPrVaiATests(t: YThucTestKit) {
     const dong = tq.tongQuanQuanLy(P.admin, {}).canXuLy.find((x: any) => x.metricId === 'pa-can-cap-nhat');
     eq(sx(dong.nguoi.ids), sx([...new Set(goc.map((x) => x.u).filter(Boolean))]), 'tập người = người giữ việc');
     eq(dong.han, { ngay: cu, loai: 'cap-nhat-pa' }, 'hạn cũ nhất');
-    assert(/^PA chưa có Kết quả tuần W/.test(dong.nhan), `nhãn có mã tuần: ${dong.nhan}`);
+    assert(/^PA chưa có Kết quả kỳ W/.test(dong.nhan), `nhãn có mã tuần: ${dong.nhan}`);
     const dongPa = metricsSvc.rowsFor('phuong-an', m.ids.slice(0, 3));
     assert(dongPa.every((x: any) => /^\/hoc-vien\/\d+\?case=\d+$/.test(x.href) && 'nguoi' in x && x.han), `panel PA: ${JSON.stringify(dongPa[0])}`);
     const c = metricsSvc.metricSet(P.admin, 'case-mo', {}).ids.slice(0, 3);

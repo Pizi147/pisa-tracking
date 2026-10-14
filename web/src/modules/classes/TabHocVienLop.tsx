@@ -99,7 +99,7 @@ export function TabHocVienLop({ lop, cheDo: cheDoUrl, onCheDo, onDoi, onThemHocV
               onAddStudents={lop.viewer.canAddStudents ? onThemHocVien : undefined} />}
       {coTheChon && (
         <ThanhChonNhieu chon={chon}
-          viec={[{ key: 'luu-tru', nhan: 'Lưu trữ' }, { key: 'ket-thuc', nhan: 'Kết thúc học' }, { key: 'huy-lenh', nhan: 'Huỷ chuyển lớp' }]}
+          viec={[{ key: 'luu-tru', nhan: 'Lưu trữ' }, { key: 'ket-thuc', nhan: 'Kết thúc học' }, { key: 'huy-lenh', nhan: 'Huỷ chuyển lớp' }, { key: 'xoa', nhan: 'Xoá' }]}
           onViec={(k) => setViecChon({ viec: k as ViecHangLoat, ids: [...chon.chon] })} />
       )}
       {viecChon && (

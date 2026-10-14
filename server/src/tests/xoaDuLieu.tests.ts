@@ -384,12 +384,12 @@ export async function runXoaDuLieuTests(t: YThucTestKit) {
     assert(x.mat.every((m) => m.so > 0 && m.nhan), 'mat chỉ gồm loại > 0, có nhãn');
     assert(x.congViecGoLienKet === 2, `congViecGoLienKet = ${x.congViecGoLienKet}`);
     assert(profileSvc.studentProfile(P.admin, S.sid).viewer.coTheXoa === true, 'QT phải có coTheXoa');
-    assert(profileSvc.studentProfile(P.mbManager, S.sid).viewer.coTheXoa === false, 'QL không được có coTheXoa');
+    assert(profileSvc.studentProfile(P.mbManager, S.sid).viewer.coTheXoa === true, 'QL của em có coTheXoa (OV-12a)');
     assert(profileSvc.studentProfile(P.coreTeacher, S.sid).viewer.coTheXoa === false, 'GVCN không được có coTheXoa');
   });
 
   check('PR-XOA X9 · Quyền: QL, GVCN → 403 cả xem và xoá; mã sai → 400, không dòng nào mất; id lạ → 404', () => {
-    for (const [ten, p] of [['QL', P.mbManager], ['GVCN', P.coreTeacher]] as const) {
+    for (const [ten, p] of [['QL chi nhánh khác', P.cpManager], ['GVCN', P.coreTeacher]] as const) {   // OV-12a: QL của em xoá được
       assert(maLoi(() => xoaHV.xemXoaHocVien(p, S.sid)) === 403, `${ten} xem phải 403`);
       assert(maLoi(() => xoaHV.xoaHocVien(p, S.sid, { maXacNhan: S.ma })) === 403, `${ten} xoá phải 403`);
     }

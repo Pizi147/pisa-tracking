@@ -607,9 +607,19 @@ export function hoanTacTamDung(p: Principal, studentId: number) {
   });
 }
 
-/** GET /students/:id/hoc-lai/lop-dich — lớp cũ + lộ trình sẽ chạy tiếp (hay mở mới) + lớp ĐANG hoạt động để chọn "Sang lớp mới" (panel Học lại). Chỉ Quản lý / Quản trị của học viên. */
+/**
+ * BƯỚC TIẾP SAU THI THẬT (OV-12a, chủ SP 14/10): Quản lý (`cycle.edit`) HOẶC TVV của chi nhánh em (`student.edit_more` của vai TVV — CX không).
+ * Một hàm cho `loTrinh/buocTiep.ts` (chọn / bỏ / việc / nút) và danh sách lớp của panel Học lại mở từ Bước tiếp.
+ */
+export function coQuyenBuocTiep(p: Principal, studentId: number): boolean {
+  return can(p, PERMISSIONS.CYCLE_EDIT, { studentId })
+    || can({ ...p, grants: p.grants.filter((g) => g.roleKey === 'consultant') }, PERMISSIONS.STUDENT_EDIT_MORE, { studentId });
+}
+
+/** GET /students/:id/hoc-lai/lop-dich — lớp cũ + lộ trình sẽ chạy tiếp (hay mở mới) + lớp ĐANG hoạt động để chọn "Sang lớp mới" (panel Học lại). Quản lý / Quản trị của học viên;
+ * OV-12a: TVV của chi nhánh cũng đọc được (chỉ đọc — panel Học lại mở từ Bước tiếp sau thi; Học lại thẳng `/hoc-lai` vẫn chỉ Quản lý). */
 export function lopChoHocLai(p: Principal, studentId: number) {
-  require_(p, PERMISSIONS.CYCLE_EDIT, { studentId }, 'Chỉ Quản lý mới cho học viên học lại được.');
+  if (!coQuyenBuocTiep(p, studentId)) throw forbidden('Chỉ Quản lý mới cho học viên học lại được.');
   const conn = db();
   /* OV-11d (HV-6): em còn ghi danh (Bước tiếp sau lộ trình đã đóng) — lớp cũ = lớp đang giữ; máy chủ Kết thúc học rồi Học lại cùng giao dịch, lộ trình MỚI. */
   const conHoc = (conn.prepare('SELECT status FROM students WHERE id = ?').get(studentId) as any)?.status !== 'finished';
@@ -623,13 +633,18 @@ export function lopChoHocLai(p: Principal, studentId: number) {
   const dongBoi = conHoc ? [] : (nk && nk.loTrinhDong.length
     ? conn.prepare(`SELECT * FROM learning_cycles WHERE student_id = ? AND status = 'abandoned' AND id IN (${nk.loTrinhDong.map(() => '?').join(',')}) ORDER BY seq DESC`).all(studentId, ...nk.loTrinhDong)
     : nk ? [] : conn.prepare(`SELECT * FROM learning_cycles WHERE student_id = ? AND status = 'abandoned' ORDER BY seq DESC LIMIT 1`).all(studentId)) as any[];
+  /* OV-12a: TVV (không `cycle.edit`) chỉ thấy lớp chi nhánh của vai TVV — cùng phạm vi `chonBuocTiep` cho Học tiếp. */
+  const ds = danhSachLopDich(enr?.class_id ?? -1, true);
+  const cnTvv = can(p, PERMISSIONS.CYCLE_EDIT, { studentId }) ? null
+    : new Set(p.grants.filter((g) => g.roleKey === 'consultant').map((g) => g.branchId));
+  const dsLop = cnTvv ? { ...ds, lop: ds.lop.filter((l) => cnTvv.has(null) || cnTvv.has(l.chiNhanhId)) } : ds;
   return {
     conHoc,
     lopCu: enr ? { id: enr.class_id as number, code: enr.code as string, daKetThuc: enr.class_status === 'finished', ft: !!enr.is_fast_track } : null,
     /** `chayTiep`: lộ trình bị Kết thúc học đóng chạy tiếp; không có (đã đóng bằng Kết luận) thì Học lại về lớp cũ mở lộ trình MỚI — tên là của lộ trình đó. */
     /* `target`: Target của lộ trình gần nhất ("6.5 KCK" / 'KCK' = có dấu KCK, '' = chưa có) — Học lại FT → FT máy chủ GIỮ Target này, web điền sẵn chứ không bắt nhập lại. */
     loTrinh: { chayTiep: dongBoi.length > 0, ten: tenLoTrinh(dongBoi[0]) ?? tenLoTrinh(enr), target: targetCu(studentId, dongBoi[0]) },
-    ...danhSachLopDich(enr?.class_id ?? -1, true),
+    ...dsLop,
   };
 }
 

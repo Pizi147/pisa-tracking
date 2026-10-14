@@ -74,7 +74,7 @@ export function FormPa({ v, dat, lf, loi, chonLoai, quyChe, toiThieu = 8, daDay 
     </Truong>
     {coSoBuoi(v.kind) && (
       <Truong nhan="Số buổi" tuyChon loi={lf.loiCua(loi, k('so-buoi'))}
-        phu={daDay > 0 ? `Đã dạy ${daDay} buổi — không nhỏ hơn ${daDay}` : 'Có số buổi thì web đếm sau mỗi tuần Kết quả'}>
+        phu={daDay > 0 ? `Đã dạy ${daDay} buổi — không nhỏ hơn ${daDay}` : 'Có số buổi thì web đếm sau mỗi lần Kết quả'}>
         <input className="field w-24 tabular-nums" inputMode="numeric" maxLength={2} {...lf.o(loi, k('so-buoi'))} value={v.soBuoi}
           onChange={(e) => dat({ soBuoi: e.target.value })} placeholder="—" />
       </Truong>

@@ -366,7 +366,7 @@ export async function runPrPaTests(t: YThucTestKit) {
     const NHOM = 'mt:pa7';
     const ids: number[] = taoPa.chenPa(conn, [caseThu('NHOM1'), caseThu('NHOM2')].map((caseId) => ({
       caseId, kind: 'bo_tro_mien_phi', description: 'Bổ trợ miễn phí nhóm thử', status: 'started', soBuoi: 6, nhomBoTro: NHOM,
-      startedDate: TODAY, cycleStartedOn: TODAY, actionDue: d.weeklyUpdateDue(TODAY),
+      startedDate: TODAY, cycleStartedOn: TODAY, actionDue: d.hanKyGhiKetQua(TODAY),
     })));
     cases.updateResult(P.lrTeacher, ids[0], { ...KQ, soBuoi: 2, nguoiDay: { performerName: 'Cô Hà ngoài' } });
     const anh = fuCua(ids[1]);
@@ -414,7 +414,7 @@ export async function runPrPaTests(t: YThucTestKit) {
     const NHOM = 'mt:pa10';
     const ids: number[] = taoPa.chenPa(conn, [caseThu('N10A'), caseThu('N10B')].map((caseId) => ({
       caseId, kind: 'bo_tro_mien_phi', description: 'Bổ trợ miễn phí nhóm thử', status: 'started', soBuoi: 6, nhomBoTro: NHOM,
-      startedDate: TODAY, cycleStartedOn: TODAY, actionDue: d.weeklyUpdateDue(TODAY),
+      startedDate: TODAY, cycleStartedOn: TODAY, actionDue: d.hanKyGhiKetQua(TODAY),
     })));
     cases.updateResult(P.lrTeacher, ids[0], { ...KQ, soBuoi: 4, nguoiDay: { performerName: 'Cô Hà ngoài' } });   // chép sang dòng 2: cả hai đã dạy 4
     /* Dòng 2 đã dạy thêm 3 (7) → Số buổi 5 hợp lệ với dòng 1 (4) nhưng không với dòng 2 → 400, không dòng nào đổi. */
@@ -586,7 +586,7 @@ export async function runPrPaTests(t: YThucTestKit) {
     const kq = [{ id: 3, interventionId: 1, observedOn: '2026-10-06', observerName: 'Phạm Thu Trang', cycleDue: '2026-10-05', soBuoi: 3 },
       { id: 4, interventionId: 2, observedOn: '2026-10-07', observerName: 'X', soBuoi: 1 }];
     const nk = d.nhatKyPa(pa, kq, TODAY);
-    const tuan = d.tuanLich(d.tuanKetQuaCuaHan('2026-10-05'), TODAY);
+    const tuan = d.kyGhiKetQua('2026-10-05', TODAY);
     assert(nk.map((x: any) => `${x.ngay}|${x.ai}|${x.chu}`).join('\n') === [
       '2026-10-08|Ngô Bảo Nam|Sửa PA · Số buổi 10 → 8 · Nội dung đổi',
       `2026-10-06|Phạm Thu Trang|Kết quả ${tuan} · dạy 3 buổi`,

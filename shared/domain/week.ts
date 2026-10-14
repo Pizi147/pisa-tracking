@@ -26,11 +26,31 @@ export function mondayOfDate(date: string): string {
 }
 
 /**
- * PR-Dọn (6g): TUẦN của kết quả mà hạn `han` (Thứ Hai) đòi ghi — Thứ Hai tuần TRƯỚC tuần chứa hạn. MỘT hàm cho chữ tuần ở Cần xử lý
- * (`tuanCuaHanGhiKetQua`) và tiêu đề form Ghi kết quả (`nhanTuanGhiKetQua`).
+ * OV-12a: Thứ Hai ĐẦU KỲ (hai tuần) mà hạn `han` (Thứ Ba) đòi ghi — hai tuần trước tuần chứa hạn. MỘT hàm cho chữ kỳ ở Cần xử lý
+ * (`tuanCuaHanGhiKetQua`), tiêu đề form Ghi kết quả (`nhanTuanGhiKetQua`) và nhật ký PA.
  */
 export function tuanKetQuaCuaHan(han: string): string {
-  return iso(ms(mondayOfDate(han)) - 7 * DAY_MS);
+  return iso(ms(mondayOfDate(han)) - 14 * DAY_MS);
+}
+
+/**
+ * HẠN GHI KẾT QUẢ PA (OV-12a, chủ SP 14/10): hai tuần một lần, hết THỨ BA. Kỳ tính từ tuần (T2→CN) chứa ngày BẮT ĐẦU PA: kỳ k = 14 ngày từ
+ * Thứ Hai tuần bắt đầu + 14(k−1), hạn kỳ k = Thứ Hai đó + 14k + 1. Ví dụ bắt đầu T5 17/09/2026: kỳ 1 = 14/09–27/09 hạn 29/09, kỳ 2 hạn 13/10.
+ * Không `sau` → hạn kỳ 1 (lúc PA bắt đầu); có → hạn kỳ đầu tiên > `sau`.
+ */
+export function hanKyGhiKetQua(batDau: string, sau?: string | null): string {
+  const t2 = ms(mondayOfDate(batDau));
+  const k = sau ? Math.max(1, Math.floor((ms(sau) - t2 - DAY_MS) / (14 * DAY_MS)) + 1) : 1;
+  return iso(t2 + (14 * k + 1) * DAY_MS);
+}
+
+/**
+ * Hạn kế sau một lần ghi (OV-12a) — hạn CỐ ĐỊNH theo lịch PA: ghi khi kỳ đang đòi chưa bắt đầu (trước hạn − 15 ngày) → giữ hạn; không thì
+ * hạn kỳ đầu tiên > max(hạn hiện tại, ngày ghi) — ghi sớm, muộn hay bù nhiều kỳ đều khép tới đó. `hanHienTai` null = như lúc mới bắt đầu.
+ */
+export function hanKe(batDau: string, hanHienTai: string | null, ngayGhi: string): string {
+  if (hanHienTai && ngayGhi < iso(ms(hanHienTai) - 15 * DAY_MS)) return hanHienTai;
+  return hanKyGhiKetQua(batDau, hanHienTai && hanHienTai > ngayGhi ? hanHienTai : ngayGhi);
 }
 
 /** Tháng sở hữu tuần = tháng chứa ngày thứ Năm. */

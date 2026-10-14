@@ -1,7 +1,7 @@
 import { db, tx } from '../db.ts';
 import {
   CASE_DISMISS_REASONS, CASE_DISMISS_REASON_LABEL, CONFIRM_EDIT_REASON, URGENCY_LEVELS, academicSupportFor, caseTopicLabel, coNguoiDay, issueBranchOf, tenMonNgan,
-  hanXacNhan, issuesForTopic, kiemGhiRoKhac, laKhac, mocQuyChe, ngay, reasonNeedsText, tenCaseSos, weeklyUpdateDue,
+  hanXacNhan, issuesForTopic, kiemGhiRoKhac, laKhac, mocQuyChe, ngay, reasonNeedsText, tenCaseSos, hanKyGhiKetQua,
   type AcademicSupportPreset, type CaseDismissReason, type MilestoneKind, nhanBaiThuong } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addDays, badRequest, notFound, nowIso } from '../util.ts';
@@ -342,9 +342,10 @@ export function datLaiHanCase(studentId: number, homNay: string) {
     .all(studentId) as any[]) {
     conn.prepare('UPDATE sos_cases SET han_xac_nhan = ?, updated_at = ? WHERE id = ?').run(hanXacNhan(homNay, { sosLevel: c.sos_level, urgency: c.urgency }), nowIso(), c.id);
   }
+  /* OV-12a: quay lại học = hạn kỳ 1 tính từ ngày quay lại (đủ hai tuần, không phải Thứ Ba hôm sau). */
   conn.prepare(`UPDATE case_interventions SET action_due = ?, updated_at = ? WHERE status = 'started' AND action_due IS NOT NULL
       AND COALESCE(approval_state, '') != 'pending' AND case_id IN (SELECT id FROM sos_cases WHERE student_id = ? AND status != 'done')`)
-    .run(weeklyUpdateDue(homNay), nowIso(), studentId);
+    .run(hanKyGhiKetQua(homNay), nowIso(), studentId);
 }
 /** Lượt MT đã sinh PA quy chế này: mốc `opened`/`repeat` mới nhất của Case tạo không muộn hơn PA. */
 function luotSinhPa(iv: any): any | null {
@@ -391,7 +392,7 @@ export function xacNhanPaQuyChe(p: Principal, interventionId: number, input: {
   return tx(() => {
     conn.prepare(`UPDATE case_interventions SET description = ?, performer_user_id = ?, performer_name = ?, so_buoi = ?, status = 'started', started_date = ?,
         cycle_no = 1, cycle_started_on = ?, action_due = ?, followup_due = ?, confirmed_by = ?, confirmed_at = ?, updated_at = ? WHERE id = ?`)
-      .run(description, performerUserId, performerName, soBuoi, today, today, weeklyUpdateDue(today), moc, p.userId, nowIso(), nowIso(), interventionId);
+      .run(description, performerUserId, performerName, soBuoi, today, today, hanKyGhiKetQua(today), moc, p.userId, nowIso(), nowIso(), interventionId);
     /* Sửa bản máy gán lúc xác nhận thì giữ bản gợi ý trong lịch sử (PR-S2 S2, Q7). */
     if (description !== iv.description || performerUserId !== (iv.performer_user_id ?? null) || performerName !== (iv.performer_name ?? null)
         || soBuoi !== (iv.so_buoi ?? null)) {

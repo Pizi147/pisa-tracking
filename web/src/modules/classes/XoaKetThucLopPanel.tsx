@@ -6,7 +6,7 @@ import { useToast } from '../../ui/Toast.tsx';
 import { Khoi, KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
 import { ErrorState, Skeleton } from '../../ui/ui.tsx';
 
-/** `GET /classes/:id/xoa-ket-thuc` (Quản trị hệ thống; PR-LUI-b: Quản lý của lớp cũng xem được — `coTheXoa` vẫn chỉ Quản trị). */
+/** `GET /classes/:id/xoa-ket-thuc` — Quản lý của lớp hoặc Quản trị (OV-12a: cả hai xoá được lớp trống, `coTheXoa`). */
 export type TinhTrangXoaKetThuc = {
   id: number; ma: string; chiNhanh: string; daKetThuc: boolean; soDangHoc: number; soTungGhiDanh: number;
   coDuLieu: boolean; dangGan: string[]; coTheXoa: boolean; coTheKetThuc: boolean; lyDoChanKetThuc: string | null;
@@ -15,7 +15,7 @@ export type TinhTrangXoaKetThuc = {
 };
 
 /**
- * ⋮ HỒ SƠ LỚP › XOÁ LỚP (PR-UX3, chỉ Quản trị hệ thống; máy chủ kiểm quyền và kiểm lớp còn trống). Panel nêu mã lớp + chi nhánh +
+ * ⋮ HỒ SƠ LỚP › XOÁ LỚP (PR-UX3; OV-12a: Quản lý của lớp hoặc Quản trị; máy chủ kiểm quyền và kiểm lớp còn trống). Panel nêu mã lớp + chi nhánh +
  * "Không hoàn tác được"; chỉ khi GÕ LẠI ĐÚNG MÃ LỚP thì nút đỏ "Xoá lớp" mới bật.
  */
 export function XoaLopPanel({ classId, classCode, onClose }: { classId: number; classCode: string; onClose: () => void }) {

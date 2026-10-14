@@ -1468,7 +1468,7 @@ api.put('/cycles/:id/outcome', requireAuth, wrap((req) => {
   return cycleSvc.setOutcome(principalOf(req), pInt(req, 'id'), body as any);
 }));
 
-/** OV-8a: Bước tiếp sau thi thật — CHỈ Quản lý / Quản trị (máy chủ kiểm `cycle.edit` của em). Chọn / đổi = một giao dịch; DELETE = hoàn tác lựa chọn. */
+/** OV-8a: Bước tiếp sau thi thật — Quản lý / Quản trị (`cycle.edit` của em) và OV-12a: TVV cùng chi nhánh (`coQuyenBuocTiep`). Chọn / đổi = một giao dịch; DELETE = hoàn tác lựa chọn. */
 api.post('/cycles/:id/buoc-tiep', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return buocTiepSvc.chonBuocTiep(principalOf(req), pInt(req, 'id'), req.body ?? {});
@@ -2185,7 +2185,7 @@ api.get('/students/:id/handover', requireAuth, wrap((req) => {
   return studentSvc.handoverBrief(id);
 }));
 
-/** ⋮ Hồ sơ HV › Xoá học viên — CHỈ Quản trị hệ thống (máy chủ kiểm `admin.config`, PR-XOA). Xoá hẳn trong một giao dịch. */
+/** ⋮ Hồ sơ HV › Xoá học viên — Quản lý / Quản trị của em (máy chủ kiểm `cycle.edit` theo phạm vi em, OV-12a; PR-XOA). Xoá hẳn trong một giao dịch. */
 api.get('/students/:id/xoa', requireAuth, wrap((req) => xoaHocVienSvc.xemXoaHocVien(principalOf(req), pInt(req, 'id'))));
 api.post('/students/:id/xoa', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();

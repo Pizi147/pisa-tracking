@@ -96,7 +96,7 @@ export function chiTietCaseMo(cases: readonly MappedCase[]): Map<number, CaseChi
     const hanLapPa = hanThemPa({ detected_at: c.detectedAt, urgency: c.urgency, sos_level: c.sosLevel, kck: c.kck });   // OV-11c (HV-14): cùng hàm với Công việc
     const viecTiep = viecTiepCuaCase(v4, cua(paTheoCase, c.id).map((iv, i) => ({
       id: pas[i].id, ten: tenPaViecTiep(iv.kind, iv.description), batBuoc: pas[i].batBuoc, choXacNhan: pas[i].choXacNhan, xong: pas[i].xong,
-      actionDue: iv.action_due ?? null, followupDue: iv.followup_due ?? null, choDuyet: pas[i].choDuyet,
+      actionDue: iv.action_due ?? null, followupDue: iv.followup_due ?? null, choDuyet: pas[i].choDuyet, mienPhi: iv.kind === 'bo_tro_mien_phi',
     })), homNay, hanLapPa);
     const laSosFt = c.originKind === 'mock' && c.classKind === 'ft';
     const mt = moc.length ? Math.max(...moc.map((x) => x.attempt_no as number)) : c.attemptNo;

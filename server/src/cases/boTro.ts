@@ -1,6 +1,6 @@
 import { db } from '../db.ts';
 import { addDays, nowIso } from '../util.ts';
-import { PERMISSIONS, boTroGiuaKhoa, moTaBoTro, nhomBoTro, tenMonNgan, weeklyUpdateDue } from '../../../shared/domain/index.ts';
+import { PERMISSIONS, boTroGiuaKhoa, hanKyGhiKetQua, moTaBoTro, nhomBoTro, tenMonNgan } from '../../../shared/domain/index.ts';
 import { classProgress } from '../classes/schedule.ts';
 import { suggestCaseOwner } from './owner.ts';
 import { can, isCoreTeacherOf, type Principal } from '../permissions.ts';
@@ -95,7 +95,7 @@ export function chayPaBoTro(conn: any, nhom: string, nguoiNop: number | null, ho
     conn.prepare(
       `UPDATE case_interventions SET status = 'started', started_date = ?, cycle_no = 1, cycle_started_on = ?, action_due = ?, followup_due = ?,
               confirmed_by = ?, confirmed_at = ?, updated_at = ? WHERE id = ?`,
-    ).run(homNay, homNay, weeklyUpdateDue(homNay), r.followup_due ?? mocCuoiKhoa(r.cycle_id ?? null, r.class_id ?? null), nguoiNop, nowIso(), nowIso(), r.id);
+    ).run(homNay, homNay, hanKyGhiKetQua(homNay), r.followup_due ?? mocCuoiKhoa(r.cycle_id ?? null, r.class_id ?? null), nguoiNop, nowIso(), nowIso(), r.id);
     dongBoTrangThaiCase(r.case_id);
     addJourney({
       studentId: r.student_id, cycleId: r.cycle_id ?? null, eventType: 'intervention', eventDate: homNay,
@@ -137,7 +137,7 @@ export function chepKetQuaNhom(conn: any, iv: any, followupId: number, x: {
       conn.prepare(`UPDATE case_interventions SET status = 'completed', completed_date = ?, closed_reason = ?, started_date = COALESCE(started_date, cycle_started_on, ?), updated_at = ? WHERE id = ?`)
         .run(x.completedOn, x.lanCuoi ? 'het_moc' : 'done', x.completedOn, nowIso(), s.id);
     } else {
-      conn.prepare(`UPDATE case_interventions SET status = 'started', cycle_no = ?, cycle_started_on = ?, action_due = ?, started_date = COALESCE(started_date, ?), updated_at = ? WHERE id = ?`)
+      conn.prepare(`UPDATE case_interventions SET status = 'started', cycle_no = ?, cycle_started_on = ?, action_due = ?, started_date = COALESCE(started_date, cycle_started_on, ?), updated_at = ? WHERE id = ?`)
         .run((s.cycle_no ?? 1) + 1, x.observedOn, x.nextDue, x.observedOn, nowIso(), s.id);
       if (x.nextStep === 'adjust') x.apDungDieuChinh?.(s, Number(info.lastInsertRowid));
     }

@@ -38,18 +38,18 @@ type TrangVai = {
 /** Nhãn chip TVV / CX (OV-10b) — số = `chipHocVien` (OV-10c, cùng ô Tổng quan). */
 const CHIP_VAI_NHAN: Record<ChipVai, { nhan: string; goiY: string }> = {
   'tat-ca': { nhan: 'Tất cả', goiY: 'Mọi học viên trong phạm vi đang xem (chưa lưu trữ).' },
-  'can-chu-y': { nhan: 'Cần chú ý', goiY: 'SOS ở MT gần nhất, Case mới hoặc Ý thức trong 14 ngày, chờ Quản lý chọn bước tiếp sau thi.' },
+  'can-chu-y': { nhan: 'Cần chú ý', goiY: 'SOS ở MT gần nhất, Case mới hoặc Ý thức trong 14 ngày, chờ chọn bước tiếp sau thi.' },
   'tam-dung': { nhan: 'Tạm dừng', goiY: 'Đang Tạm dừng học.' },
   'sap-thi': { nhan: 'Sắp thi', goiY: 'Dự kiến thi IELTS trong 6 tuần tới.' },
   thieu_tt: { nhan: 'Thiếu thông tin', goiY: 'Hồ sơ còn thiếu thông tin cần để xếp lịch và theo dõi (không tính liên hệ).' },
-  'cho-buoc-tiep': { nhan: 'Chờ QL chọn bước tiếp', goiY: 'Đã có kết quả thi thật, chờ Quản lý chọn bước tiếp.' },
+  'cho-buoc-tiep': { nhan: 'Chờ chọn bước tiếp', goiY: 'Đã có kết quả thi thật, chờ chọn bước tiếp.' },
 };
 
 const SELECT_GON = 'field h-8 w-auto !py-0 text-xs max-sm:min-h-[44px] max-sm:w-full';
 /** Quá từng này em đang hiện thì các nhóm lớp mặc định gập (bấm đầu nhóm để mở). */
 const NHIEU_DONG = 150;
 
-/** Ô "Cần chú ý" (chỉ đọc): SOS · Case mới (kỹ năng) · Ý thức · Chờ QL chọn bước tiếp — đúng lý do em vào chip Cần chú ý. */
+/** Ô "Cần chú ý" (chỉ đọc): SOS · Case mới (kỹ năng) · Ý thức · Chờ chọn bước tiếp — đúng lý do em vào chip Cần chú ý. */
 export function OCanChuY({ c }: { c: LyDoChuY | null }) {
   if (!c) return <span className="text-slate-600">—</span>;
   return (
@@ -57,7 +57,7 @@ export function OCanChuY({ c }: { c: LyDoChuY | null }) {
       {!!c.sos && <Level tone={sosTone(c.sos)}>SOS {c.sos}</Level>}
       {!!c.caseMoi?.length && <><Nhan tone="wait">Case mới</Nhan><span>{c.caseMoi.map((k) => tenMon(null, k)).join(', ')}</span></>}
       {c.yThuc && <><Nhan tone="late">Ý thức</Nhan><span>{c.yThuc}</span></>}
-      {c.choBuocTiep && <Nhan tone="soon">Chờ QL chọn bước tiếp</Nhan>}
+      {c.choBuocTiep && <Nhan tone="soon">Chờ chọn bước tiếp</Nhan>}
     </span>
   );
 }

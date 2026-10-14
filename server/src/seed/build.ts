@@ -1,6 +1,6 @@
 import {
   ATTEMPT_KIND_SHORT, PROGRAMME_TEMPLATES, boMonLich, categoryOf, cycleDeadline, issuesForTopic,
-  hanDuyetDoiLan2, mondayOfDate, programmeOf, weeklyUpdateDue,
+  hanDuyetDoiLan2, hanKyGhiKetQua, mondayOfDate, programmeOf,
   type AttemptKind,
 } from '../../../shared/domain/index.ts';
 import { addDays, normalizeName, nowIso, padCode } from '../util.ts';
@@ -704,10 +704,10 @@ function insertCase(
       ? p.approval.on : p.cycleStart;
     /*
      * HAI MỐC KHÁC NHAU (mục 8.3), không còn gộp làm một con số:
-     *   · HẠN CẬP NHẬT — Chủ nhật gần nhất.
+     *   · HẠN GHI KẾT QUẢ — hết Thứ Ba sau kỳ hai tuần đầu (OV-12a).
      *   · PR-SOS (Q28-4): KHÔNG còn dự kiến kết thúc — PA thường `followup_due` NULL.
      */
-    const updateDue = weeklyUpdateDue(effectiveStart);
+    const updateDue = hanKyGhiKetQua(effectiveStart);
     const due = cycleDeadline(effectiveStart);
     const pinfo = conn
       .prepare(

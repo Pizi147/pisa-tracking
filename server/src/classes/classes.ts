@@ -892,8 +892,8 @@ function classOverviewThat(p: Principal, classId: number) {
       coTheSuaThongTin: can(p, PERMISSIONS.STUDENT_EDIT_INFO, { classId }),
       coTheSuaThem: can(p, PERMISSIONS.STUDENT_EDIT_MORE, { classId }),
     }),
-      /** ⋮ Xoá lớp / Kết thúc lớp — CHỈ Quản trị hệ thống (PR-UX3); máy chủ kiểm lại ở từng đường. */
-      coTheXoaKetThuc: can(p, PERMISSIONS.ADMIN_CONFIG, { anyScope: true }),
+      /** ⋮ Xoá lớp / Kết thúc lớp — Quản lý của lớp hoặc Quản trị (OV-12a: Quản lý xoá được lớp trống); máy chủ kiểm lại ở từng đường. */
+      coTheXoaKetThuc: can(p, PERMISSIONS.CLASS_EDIT, { classId }),
       /** PR-LUI-b (06/10): Quản lý của lớp cũng Kết thúc lớp / Mở lại lớp được (Xoá lớp vẫn chỉ Quản trị). `coTheMoLaiLop` nằm ngoài nhánh `finished`: lớp đã đóng thì mọi cờ khác false. */
       coTheKetThucLop: !finished && can(p, PERMISSIONS.CLASS_EDIT, { classId }),
       coTheMoLaiLop: finished && can(p, PERMISSIONS.CLASS_EDIT, { classId }),

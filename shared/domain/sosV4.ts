@@ -38,9 +38,13 @@ export function mocChuPa(x: { span: string | null; followupDue: string | null; m
   return `${dau} · ${x.span === 'until_exam' ? 'chưa có ngày thi' : 'chưa có lịch'}`;
 }
 
-/** Lần ghi này là lần CUỐI của PA bắt buộc (T22, K5-25, M-17): tuần đang ghi chạm/qua mốc, hoặc ghi sau mốc. */
-export function laLanGhiCuoi(pa: { preset: boolean; followupDue: string | null; actionDue: string | null }, ngayGhi: string): boolean {
+/**
+ * Lần ghi này là lần CUỐI của PA bắt buộc (T22, K5-25, M-17): kỳ đang ghi chạm/qua mốc, hoặc ghi sau mốc. OV-12a: bổ trợ miễn phí (`mienPhi`, mốc Mini Test)
+ * chỉ là lần cuối khi ghi từ ngày Mini Test — hạn kỳ hai tuần thường sau ngày Mini Test, lần ghi trước đó vẫn là Kết quả thường ("ghi bất cứ lúc nào").
+ */
+export function laLanGhiCuoi(pa: { preset: boolean; followupDue: string | null; actionDue: string | null; mienPhi?: boolean }, ngayGhi: string): boolean {
   if (!pa.preset || !pa.followupDue) return false;
+  if (pa.mienPhi) return ngayGhi >= pa.followupDue;
   return (pa.actionDue !== null && pa.followupDue < pa.actionDue) || ngayGhi > pa.followupDue;
 }
 
@@ -87,6 +91,8 @@ const tenPaGon = (ten: string) => ten.replace(/ · (đến lúc thi|đến MT\d+
 export type PaViecTiep = {
   id: number; ten: string; batBuoc: boolean; choXacNhan: boolean; xong: boolean;
   actionDue: string | null; followupDue: string | null; choDuyet?: boolean;
+  /** OV-12a: PA bổ trợ miễn phí — lần cuối theo ngày Mini Test (`laLanGhiCuoi`). */
+  mienPhi?: boolean;
   /** PR-S5F-a: PA bổ trợ Giữa khoá của lớp CŨ (Case đã đi theo em sang lớp mới) — người dạy cũ ghi tiếp; việc tiếp ưu tiên PA ở lớp mới. */
   lopCu?: boolean;
 };
@@ -107,7 +113,7 @@ export function viecTiepCuaCase(c: CaseV4Input, pas: PaViecTiep[], homNay: strin
   /* PR-S5F-a: có PA ở lớp mới (bổ trợ miễn phí) thì việc tiếp là của PA đó; PA lớp cũ chỉ thành việc tiếp khi không còn PA nào khác, ghi rõ "(lớp cũ)". */
   const chay = chayTatCa.some((p) => !p.lopCu) ? chayTatCa.filter((p) => !p.lopCu) : chayTatCa;
   const cu = (p: PaViecTiep) => (p.lopCu ? ' (lớp cũ)' : '');
-  const cuoi = chay.find((p) => laLanGhiCuoi({ preset: p.batBuoc, followupDue: p.followupDue, actionDue: p.actionDue }, homNay));
+  const cuoi = chay.find((p) => laLanGhiCuoi({ preset: p.batBuoc, followupDue: p.followupDue, actionDue: p.actionDue, mienPhi: p.mienPhi }, homNay));
   if (cuoi) return { chu: `Kết quả cuối ${tenPaGon(cuoi.ten)}${cu(cuoi)}`, loaiHan: 'cap-nhat-pa', han: cuoi.actionDue, paId: cuoi.id };
   const ganNhat = [...chay].sort((a, b) => (a.actionDue ?? '9999').localeCompare(b.actionDue ?? '9999'))[0];
   if (ganNhat) return { chu: `Kết quả PA ${tenPaGon(ganNhat.ten)}${cu(ganNhat)}`, loaiHan: 'cap-nhat-pa', han: ganNhat.actionDue, paId: ganNhat.id };

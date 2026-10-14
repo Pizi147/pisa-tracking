@@ -2311,8 +2311,8 @@ check('MỌI phương án đều có chu kỳ và hạn — không có phương 
   }) as any;
   const iv = started.interventions.find((i: any) => i.description === 'Bắt đầu từ 20 ngày trước')!;
   assert(iv.actionDue, 'Phương án bắt đầu rồi mà không có hạn nào');
-  assert(iv.actionDue === domain.weeklyUpdateDue(addDays(TODAY, -20)),
-    `Hạn ghi kết quả phải là hết Thứ Hai sau tuần bắt đầu: kỳ vọng ${domain.weeklyUpdateDue(addDays(TODAY, -20))}, đang là ${iv.actionDue}`);
+  assert(iv.actionDue === domain.hanKyGhiKetQua(addDays(TODAY, -20)),
+    `OV-12a: hạn ghi kết quả = hết Thứ Ba sau kỳ hai tuần đầu: kỳ vọng ${domain.hanKyGhiKetQua(addDays(TODAY, -20))}, đang là ${iv.actionDue}`);
   /* PR-SOS (Q28-4): PA thường không còn "dự kiến kết thúc" — chỉ còn hạn ghi kết quả tuần. */
   assert(iv.followupDue === null, `PA thường còn ngày dự kiến kết thúc: ${iv.followupDue}`);
   assert(iv.overdue || iv.actionOverdue, 'Bắt đầu 20 ngày trước, chưa cập nhật tuần nào mà không báo quá hạn');
@@ -2480,6 +2480,7 @@ check('[9.1] Hai tab cập nhật kết quả: theo dõi tiếp thì không ph�
    * đang chạy — không nhân đôi thành một phương án thứ hai giống hệt.
    */
   const before = d.interventions.length;
+  const r0 = conn.prepare('SELECT action_due, COALESCE(started_date, cycle_started_on) bat_dau FROM case_interventions WHERE id = ?').get(ivId) as any;
   const after = cases.updateResult(P.coreTeacher, ivId, {
     outcome: 'unchanged', note: 'Em có làm nhưng chưa đều, còn sai dạng T/F/NG',
   }) as any;
@@ -2487,8 +2488,8 @@ check('[9.1] Hai tab cập nhật kết quả: theo dõi tiếp thì không ph�
   const iv2 = after.interventions.find((i: any) => i.id === ivId);
   assert(iv2.status === 'started', 'Theo dõi tiếp mà phương án lại bị khép lại');
   assert(iv2.cycleNo === 2, `Phải sang chu kỳ 2, đang là ${iv2.cycleNo}`);
-  assert(iv2.actionDue === domain.weeklyUpdateDue(addDays(demoToday(), 1)),
-    `Hạn ghi kết quả mới phải là hết Thứ Hai kế tiếp, đang là ${iv2.actionDue}`);
+  assert(iv2.actionDue === domain.hanKe(r0.bat_dau, r0.action_due, demoToday()),
+    `OV-12a: hạn ghi kết quả mới phải là hạn kỳ kế (hết Thứ Ba), đang là ${iv2.actionDue}`);
   assert(iv2.actionDue > demoToday(), 'Vừa cập nhật xong đã báo quá hạn');
 
   // "Thay PA" khép phương án cũ với lý do ĐƯỢC THAY THẾ, không phải đã thành công.
@@ -3130,11 +3131,13 @@ check('Dữ liệu mẫu có đủ bốn mức độ ưu tiên, không phải m�
     )
     .all() as any[];
   const t = demoToday();
+  /* OV-12a: hạn ghi kết quả rơi Thứ Ba, ngày demo là Thứ Hai — mức "sát hạn" = hạn ngày mai. */
+  const ganNhat = addDays(t, 1);
   const late = open.filter((r) => r.action_due < t).length;
-  const today = open.filter((r) => r.action_due === t).length;
-  const soon = open.filter((r) => r.action_due > t).length;
+  const today = open.filter((r) => r.action_due >= t && r.action_due <= ganNhat).length;
+  const soon = open.filter((r) => r.action_due > ganNhat).length;
   assert(late > 0 && today > 0 && soon > 0,
-    `Hẹn xem lại phải có cả ba mức (quá hạn ${late}, hôm nay ${today}, còn hạn ${soon}) — `
+    `Hẹn xem lại phải có cả ba mức (quá hạn ${late}, hôm nay / ngày mai ${today}, còn hạn ${soon}) — `
     + 'neo hết vào ngày thi thì màn việc chỉ toàn một màu đỏ và không nhìn ra khác biệt');
 
   const untouched = conn
@@ -4718,7 +4721,7 @@ check('Ma trận tình huống vòng 5 có đủ những ô đã chốt ở mụ
   one('lộ trình đã chốt TUẦN thi', 'SELECT COUNT(*) n FROM learning_cycles WHERE exam_period_id IS NOT NULL');
 });
 
-check('[8.3] Phương án bắt đầu 14/09/2026: ghi kết quả trước hết T2 21/09, kết thúc 27/09', () => {
+check('[8.3] → OV-12a · Phương án bắt đầu 14/09/2026: ghi kết quả trước hết T3 29/09 (kỳ hai tuần), kết thúc 27/09', () => {
   /*
    * Ô kiểm tra BẢNG HẠN MỤC 8.3, viết thẳng vào dữ liệu mẫu và đối chiếu được bằng mắt trên
    * màn hình. Ví dụ của chính đề bài: bắt đầu thứ Bảy 19/9 → cập nhật 20/9, kết thúc 27/9.
@@ -4727,12 +4730,12 @@ check('[8.3] Phương án bắt đầu 14/09/2026: ghi kết quả trước hế
    * tuần cuối mới có người phải báo gì.
    */
   assert(demoToday() === '2026-09-14', `Ngày demo đã đổi thành ${demoToday()} — kiểm lại ví dụ hạn`);
-  /* PR-N1 (R-PA1): hạn ghi kết quả tuần T2→CN là HẾT THỨ HAI tuần kế tiếp (trước đây hết Chủ nhật — mỗi mốc +1 ngày). */
-  assert(domain.weeklyUpdateDue('2026-09-14') === '2026-09-21',
-    `Bắt đầu thứ Hai 14/09 thì ghi kết quả tuần đó trước hết T2 21/09, đang ra ${domain.weeklyUpdateDue('2026-09-14')}`);
-  assert(domain.weeklyUpdateDue('2026-09-19') === '2026-09-21',
-    'Bắt đầu thứ Bảy 19/09 vẫn phải ghi kết quả tuần đó trước hết T2 21/09 — chưa đủ dữ liệu thì ghi đúng là chưa đủ');
-  assert(domain.weeklyUpdateDue('2026-09-20') === '2026-09-21', 'Đúng Chủ nhật thì hạn là hết Thứ Hai ngay sau');
+  /* OV-12a (chủ SP 14/10): hạn ghi kết quả PA = HẾT THỨ BA sau kỳ hai tuần tính từ tuần bắt đầu (trước đây hết Thứ Hai hằng tuần). */
+  assert(domain.hanKyGhiKetQua('2026-09-14') === '2026-09-29',
+    `Bắt đầu thứ Hai 14/09 thì ghi kết quả kỳ 14/09–27/09 trước hết T3 29/09, đang ra ${domain.hanKyGhiKetQua('2026-09-14')}`);
+  assert(domain.hanKyGhiKetQua('2026-09-19') === '2026-09-29',
+    'Bắt đầu thứ Bảy 19/09 vẫn cùng kỳ 14/09–27/09, hạn hết T3 29/09');
+  assert(domain.hanKyGhiKetQua('2026-09-20') === '2026-09-29', 'Đúng Chủ nhật vẫn cùng kỳ, hạn hết T3 29/09');
   assert(domain.planEndDefault('2026-09-19') === '2026-09-27',
     `Ví dụ của đề bài: bắt đầu 19/09 → kết thúc mặc định 27/09, đang ra ${domain.planEndDefault('2026-09-19')}`);
 
@@ -4747,8 +4750,8 @@ check('[8.3] Phương án bắt đầu 14/09/2026: ghi kết quả trước hế
     )
     .get() as any | undefined;
   assert(row, 'Dữ liệu demo không có case nào mở đúng ngày demo để đối chiếu bằng mắt');
-  assert(row!.action_due === '2026-09-21',
-    `Hạn ghi kết quả trong dữ liệu mẫu là ${row!.action_due}, phải là 2026-09-21 (hết Thứ Hai, R-PA1)`);
+  assert(row!.action_due === '2026-09-29',
+    `Hạn ghi kết quả trong dữ liệu mẫu là ${row!.action_due}, phải là 2026-09-29 (hết Thứ Ba sau kỳ hai tuần, OV-12a)`);
   /* PR-SOS (Q28-4): PA thường không còn "dự kiến kết thúc" — `planEndDefault` vẫn là hàm thuần, dữ liệu mẫu không ghi. */
   assert(row!.followup_due === null,
     `PA thường trong dữ liệu mẫu còn ngày dự kiến kết thúc ${row!.followup_due} (Q28-4: phải NULL)`);
@@ -4927,7 +4930,7 @@ check('[6] Hạn: chu kỳ đầu, chu kỳ tiếp, chờ duyệt, cập nhật 
   assert(appr, 'Không có phương án nào đã được duyệt và còn đang chạy');
   assert(appr.cycle_started_on === appr.approval_at.slice(0, 10),
     `Chu kỳ bắt đầu ${appr.cycle_started_on} mà duyệt ngày ${appr.approval_at.slice(0, 10)}`);
-  assert(appr.action_due === domain.weeklyUpdateDue(appr.cycle_started_on),
+  assert(appr.action_due === domain.hanKyGhiKetQua(appr.cycle_started_on),
     'Hạn cập nhật không tính từ ngày được duyệt');
   assert(appr.followup_due === null, 'PR-SOS (Q28-4): PA thường được duyệt không có ngày dự kiến kết thúc');
   /* Cập nhật trễ GIỮ NGUYÊN dấu vết, không reset để che. */
@@ -7656,7 +7659,7 @@ check('PR-E · <Han>: sáu loại hạn có sáu nhãn khác nhau, đúng bảng
   const t = (loai: any, han = '2026-09-23') => domain.deadlineView({ kind: loai, due: han, today: '2026-09-14' }).text;
   assert(t('xac-minh-sos') === 'Xác nhận nguyên nhân · hạn 23/09', `xac-minh-sos: "${t('xac-minh-sos')}"`);
   assert(t('lap-pa') === 'Thêm PA · hạn 23/09', `lap-pa: "${t('lap-pa')}"`);
-  assert(t('cap-nhat-pa') === 'Kết quả tuần W3 SEP · hạn hết T2 23/09', `cap-nhat-pa: "${t('cap-nhat-pa')}"`);
+  assert(t('cap-nhat-pa') === 'Kết quả W2–W3 SEP · hạn hết T3 23/09', `cap-nhat-pa: "${t('cap-nhat-pa')}"`);
   /* PR-YT4 (K5-24): `thuc-hien-y-thuc`, `hoan-thanh-y-thuc` bỏ — Ý thức dùng `xu-ly-vi-pham`. */
   assert(t('xu-ly-vi-pham') === 'Xử lý vi phạm · hạn 23/09', `xu-ly-vi-pham: "${t('xu-ly-vi-pham')}"`);
   assert(!(domain.DEADLINE_KINDS as readonly string[]).includes('thuc-hien-y-thuc') && !(domain.DEADLINE_KINDS as readonly string[]).includes('hoan-thanh-y-thuc'), 'hai loại cũ còn');
@@ -7689,9 +7692,9 @@ check('PR-E · <Han>: "Dự kiến kết thúc" KHÔNG phải hạn — không b
   assert(!/quá hạn/.test(v.text), `Ngày dự kiến bị ghi là quá hạn: "${v.text}"`);
 });
 
-check('PR-E · <Han>: cập nhật phương án cũng đếm số ngày quá hạn từ mốc Thứ Hai (đổi nghĩa PR-UX0, mockup 17 #1; PR-N1 R-PA3)', () => {
-  const v = domain.deadlineView({ kind: 'cap-nhat-pa', due: '2026-09-07', today: '2026-09-14' });
-  assert(v.tone === 'overdue' && v.daysOverdue === 7 && v.quaHan === 'quá hạn 7 ngày' && v.han === 'hạn hết T2 07/09',
+check('PR-E · <Han>: cập nhật phương án cũng đếm số ngày quá hạn từ mốc hạn (Thứ Ba, OV-12a; đổi nghĩa PR-UX0, mockup 17 #1; PR-N1 R-PA3)', () => {
+  const v = domain.deadlineView({ kind: 'cap-nhat-pa', due: '2026-09-08', today: '2026-09-15' });
+  assert(v.tone === 'overdue' && v.daysOverdue === 7 && v.quaHan === 'quá hạn 7 ngày' && v.han === 'hạn hết T3 08/09',
     `Phải báo quá hạn 7 ngày: "${v.text}" (${v.daysOverdue}, ${v.han})`);
 });
 
@@ -8601,8 +8604,8 @@ check('PR-N · N1 dung-han-cap-nhat: nghĩa vụ (phương án × chu kỳ) đú
   const ontime = iv(c1.id, { due: '2026-09-20', cycle: 2 });                         // đã cập nhật đúng hạn ở chu kỳ 1, chu kỳ 2 chưa đến hạn
   fu(c1.id, ontime, { cycle: 1, due: '2026-09-06', observed: '2026-09-05', late: 0 });
   const lateIv = iv(c1.id, { due: '2026-09-20', cycle: 2 });                         // cập nhật TRỄ ở chu kỳ 1
-  fu(c1.id, lateIv, { cycle: 1, due: '2026-08-30', observed: '2026-09-03', late: 1 });
-  const missed = iv(c1.id, { due: '2026-09-06', cycle: 1 });                         // đến hạn 06/09, chưa ai cập nhật
+  fu(c1.id, lateIv, { cycle: 1, due: '2026-08-30', observed: '2026-09-13', late: 1 });   // OV-12a: kỳ 14 ngày — ghi bù 2 kỳ
+  const missed = iv(c1.id, { due: '2026-08-30', cycle: 1 });                         // đến hạn 30/08, chưa ai cập nhật (tới 14/09 = 2 kỳ)
   const pending = iv(c1.id, { due: '2026-09-06', cycle: 1, approval: 'pending' });   // chờ duyệt: không có nghĩa vụ cập nhật
   const future = iv(c1.id, { due: '2026-09-27', cycle: 1 });                         // chưa đến hạn
   /* Một em bấm ghi chú ba lần trong cùng một chu kỳ vẫn chỉ là MỘT nghĩa vụ. */
@@ -8618,7 +8621,7 @@ check('PR-N · N1 dung-han-cap-nhat: nghĩa vụ (phương án × chu kỳ) đú
    * PR-S6F-b (Q21): "lateIv" hạn 30/08, ghi 03/09 = "ghi bù 2 tuần" (`nhanTuanGhiKetQua`) → HAI nghĩa vụ: tuần 30/08 trễ, tuần 06/09 (hạn chưa qua
    * lúc ghi) đúng hạn — N nghĩa vụ = N của tiêu đề, không bỏ tuần cuối khỏi mẫu số.
    */
-  assert(domain.nhanTuanGhiKetQua('2026-08-30', '2026-09-03').soTuan === 2, 'tiền đề: ghi bù 2 tuần');
+  assert(domain.nhanTuanGhiKetQua('2026-08-30', '2026-09-13').soKy === 2, 'tiền đề: ghi bù 2 kỳ');
   assert(JSON.stringify(gained) === JSON.stringify([code(ontime, 1), code(lateIv, 1), code(lateIv, 1, 1), code(missed, 1), code(missed, 1, 1)].sort((x, y) => x - y)),
     `Nghĩa vụ đến hạn phải là: đúng hạn, ghi bù 2 tuần (1 trễ + 1 đúng), chưa làm (2 tuần); đang có [${gained.join(',')}]`);
   assert(!r.ids.includes(code(pending, 1)) && !r.ids.includes(code(future, 1)), 'Chờ duyệt và chưa đến hạn không phải nghĩa vụ đến hạn');
@@ -9328,6 +9331,9 @@ await runPrOv11dTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P,
 // ==================================================================== PR-OV11g (Học viên & Lớp · hồ sơ lớp: Thiếu thông tin, em Kết thúc học, lớp đã kết thúc)
 const { runPrOv11gTests } = await import('./prOv11g.tests.ts');
 await runPrOv11gTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== PR-OV12a (hạn ghi kết quả PA hai tuần · QL xoá lớp trống / nhiều HV · TVV Bước tiếp sau thi)
+const { runPrOv12aTests } = await import('./prOv12a.tests.ts');
+await runPrOv12aTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`

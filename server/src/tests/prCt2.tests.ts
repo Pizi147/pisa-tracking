@@ -125,7 +125,7 @@ export async function runPrCt2Tests(t: YThucTestKit) {
     const c = caseMon(sid, 'speaking'), gv = gvOf('MB BE 04', 'speaking');
     sosAuto.xacNhanCase(gv, c.id, XN('speaking', 'BE'));
     const pa = paBt(c.id);
-    assert(pa.status === 'started' && pa.action_due === d.weeklyUpdateDue(TODAY) && pa.started_date === TODAY && pa.confirmed_by === gv.userId, JSON.stringify(pa));
+    assert(pa.status === 'started' && pa.action_due === d.hanKyGhiKetQua(TODAY) && pa.started_date === TODAY && pa.confirmed_by === gv.userId, JSON.stringify(pa));
     assert(!get(`SELECT 1 FROM yeu_cau_duyet WHERE loai = 'ke_hoach_bo_tro' AND hoc_vien_id = ?`, sid), 'không còn thẻ kế hoạch');
     for (const who of [gv, P.normalCoreTeacher, P.mbManager]) {
       assert(!((mywork.myWork(who) as any).items as any[]).some((x) => x.group === 'ke_hoach_bo_tro'), 'Công việc còn nhóm Nộp kế hoạch');
@@ -175,7 +175,7 @@ export async function runPrCt2Tests(t: YThucTestKit) {
     assert(ma === 409 && get('SELECT trang_thai FROM yeu_cau_duyet WHERE id = ?', theId).trang_thai === 'cho', `duyệt thẻ cũ: ${ma}`);
     const a: string[] = []; migratePrCt2(conn, a);
     const p1 = paBt(c1.id), p2 = paBt(c2.id);
-    assert(p1.status === 'started' && p1.confirmed_by === ha.userId && p1.action_due === d.weeklyUpdateDue(TODAY), `nhóm có thẻ: ${JSON.stringify(p1)}`);
+    assert(p1.status === 'started' && p1.confirmed_by === ha.userId && p1.action_due === d.hanKyGhiKetQua(TODAY), `nhóm có thẻ: ${JSON.stringify(p1)}`);
     assert(p2.status === 'started' && p2.confirmed_by === khoaBe.userId, `nhóm chờ nộp: ${JSON.stringify(p2)}`);
     const the = get('SELECT * FROM yeu_cau_duyet WHERE id = ?', theId);
     assert(the.trang_thai === 'tu_dong' && /Bỏ bước duyệt kế hoạch/.test(the.ly_do_dong ?? ''), JSON.stringify(the));

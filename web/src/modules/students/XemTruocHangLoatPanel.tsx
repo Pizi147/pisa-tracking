@@ -6,7 +6,7 @@ import { ChonNgayGan } from '../../ui/ChonNgay.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { useApi } from '../../lib/useApi.ts';
 import { ErrorState, NutChon, Skeleton } from '../../ui/ui.tsx';
-import { NHAN_VIEC_HANG_LOAT, dsLoi, type ViecHangLoat, type XemTruocHangLoat } from '@shared/domain/index.ts';
+import { CHU_XAC_NHAN_XOA, NHAN_VIEC_HANG_LOAT, dsLoi, khopXacNhanXoa, type ViecHangLoat, type XemTruocHangLoat } from '@shared/domain/index.ts';
 import { chayHangLoat, hoanTacHangLoat } from './hangLoatEm.ts';
 
 const TEN_HUONG: Record<string, string> = { len_lop: 'Lên', fast_track: 'Lên FT', hoc_lai: 'Học lại', bao_luu: 'Tạm dừng học (bảo lưu)', dung_hoc: 'Dừng học hẳn', chuyen_lop: 'Chuyển lớp FT' };
@@ -16,6 +16,7 @@ const CO_NGAY: ViecHangLoat[] = ['ket-thuc', 'hoc-lai'];
 /**
  * PANEL XEM TRƯỚC LÀM NHIỀU HỌC VIÊN (PR-LUI-b, 06/10) — bấm một việc ở thanh dính đáy (hồ sơ lớp, Lưu trữ) thì ra đây: số hệ quả, học viên bị bỏ qua
  * (kèm lý do), lý do chung, rồi xác nhận. Gửi từng lô 8; lỗi giữa chừng giữ phần đã lưu, nút đổi thành "Thử lại n học viên". Xong thì toast Hoàn tác.
+ * OV-12a: Xoá — liệt kê em + dữ liệu sẽ mất, gõ XOÁ, nút đỏ, mỗi request một em; không Hoàn tác.
  */
 export function XemTruocHangLoatPanel({ viec, ids, maLop, onClose, onDone }: {
   viec: ViecHangLoat; ids: number[]; maLop?: string | null; onClose: () => void; onDone: () => void;
@@ -26,6 +27,7 @@ export function XemTruocHangLoatPanel({ viec, ids, maLop, onClose, onDone }: {
   const [loiXem, setLoiXem] = useState<string | null>(null);
   const [lyDo, setLyDo] = useState('');
   const [ngayHl, setNgayHl] = useState('');
+  const [goXoa, setGoXoa] = useState('');
   const [busy, setBusy] = useState(false);
   /* Học lại hàng loạt: `Về lớp cũ` (mặc định) hoặc `Sang lớp mới` — chỉ lớp THƯỜNG (sang Fast Track cần Target từng học viên → học lại từng em). */
   const [dich, setDich] = useState<'cu' | 'moi'>('cu');
@@ -49,22 +51,27 @@ export function XemTruocHangLoatPanel({ viec, ids, maLop, onClose, onDone }: {
   const idsLam = (xem?.rows ?? []).filter((r) => !r.lyDoBo).map((r) => r.studentId);
   const ten = (sid: number) => xem?.rows.find((r) => r.studentId === sid)?.ten ?? `#${sid}`;
   const dangThu = chuaLuu.length > 0;
+  /* OV-12a: Xoá nói "xoá", không nói "lưu". */
+  const chuKetQua = (ok: number, loi: number) => (viec === 'xoa' ? `Đã xoá ${ok} em · ${loi} em chưa xoá` : `Đã lưu ${ok} học viên · ${loi} học viên chưa lưu`);
 
   const chay = async () => {
     lf.bam();
     if (loi.length) return;
     const lam = dangThu ? chuaLuu.map((c) => c.studentId) : idsLam;
     setBusy(true); setChuaLuu([]);
-    const kq = await chayHangLoat(viec, lam, { lyDo: lyDo.trim(), date: ngayHl, moLaiLop: viec === 'hoc-lai', lopMoiId: dich === 'moi' && lopMoiId !== '' ? lopMoiId : undefined }, (xong, tong) => setTienDo({ xong, tong }));
+    const kq = await chayHangLoat(viec, lam, {
+      lyDo: lyDo.trim(), date: ngayHl, moLaiLop: viec === 'hoc-lai', lopMoiId: dich === 'moi' && lopMoiId !== '' ? lopMoiId : undefined, xacNhan: viec === 'xoa' ? goXoa : undefined,
+    }, (xong, tong) => setTienDo({ xong, tong }));
     setBusy(false); setTienDo(null);
     for (const k of ['/students', '/classes', '/hoc-vien-lop', '/cases', '/lenh-chuyen', '/my-work']) invalidate(k);
     const tatCa = [...daLuu, ...kq.ok];
     setDaLuu(tatCa);
     if (kq.failed.length) {
       setChuaLuu(kq.failed);
-      toast.push('error', `Đã lưu ${tatCa.length} học viên · ${kq.failed.length} học viên chưa lưu`);
+      toast.push('error', chuKetQua(tatCa.length, kq.failed.length));
       return;
     }
+    if (viec === 'xoa') { toast.push('ok', `Đã xoá ${tatCa.length} học viên`); onDone(); onClose(); return; }
     toast.hoanTac(`${NHAN_VIEC_HANG_LOAT[viec]} ${tatCa.length} học viên`, async () => {
       const r = await hoanTacHangLoat(viec, tatCa);
       for (const k of ['/students', '/classes', '/hoc-vien-lop', '/cases', '/lenh-chuyen', '/my-work']) invalidate(k);
@@ -78,11 +85,12 @@ export function XemTruocHangLoatPanel({ viec, ids, maLop, onClose, onDone }: {
   return (
     <KhungPanel tieuDe={`${NHAN_VIEC_HANG_LOAT[viec]} · ${ids.length} học viên`} lop={maLop} onDong={busy ? () => {} : onClose}
       chan={{
-        daSua: !!lyDo.trim() || !!ngayHl,
+        daSua: !!lyDo.trim() || !!ngayHl || !!goXoa.trim(),
         conThieu: lf.conThieu(loi),
-        dongTren: dangThu ? <p role="alert" className="m-0 px-4 pt-2 text-xs text-late tabular-nums">Đã lưu {daLuu.length} học viên · {chuaLuu.length} học viên chưa lưu</p> : undefined,
+        dongTren: dangThu ? <p role="alert" className="m-0 px-4 pt-2 text-xs text-late tabular-nums">{chuKetQua(daLuu.length, chuaLuu.length)}</p> : undefined,
         chinh: (
-          <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy || !xem || (!dangThu && !idsLam.length)} onClick={chay}>
+          <button type="button" className={`btn ${viec === 'xoa' ? 'btn-danger' : 'btn-primary'} min-h-[44px] sm:min-h-0`} onClick={chay}
+            disabled={busy || !xem || (!dangThu && !idsLam.length) || (viec === 'xoa' && !khopXacNhanXoa(goXoa))}>
             {busy ? (tienDo ? `Đang lưu ${tienDo.xong}/${tienDo.tong}…` : 'Đang lưu…') : dangThu ? `Thử lại ${chuaLuu.length} học viên` : xem ? `${NHAN_VIEC_HANG_LOAT[viec]} ${idsLam.length} học viên` : NHAN_VIEC_HANG_LOAT[viec]}
           </button>
         ),
@@ -118,12 +126,30 @@ export function XemTruocHangLoatPanel({ viec, ids, maLop, onClose, onDone }: {
                 <input className="field w-full" maxLength={2000} {...lf.o(loi, 'ly-do')} value={lyDo} onChange={(e) => setLyDo(e.target.value)} />
               </Truong>
             )}
-            {!batBuoc && viec !== 'luu-tru' && viec !== 'bo-luu-tru' && (
+            {viec === 'xoa' && (
+              <>
+                <p className="m-0 text-sm text-slate-200">Xoá hẳn hồ sơ và mọi dữ liệu của các em này. <span className="text-soon">Không hoàn tác được.</span></p>
+                <ul className="m-0 list-none space-y-0.5 p-0" aria-label="Học viên sẽ xoá">
+                  {xem.rows.filter((r) => !r.lyDoBo).map((r) => (
+                    <li key={r.studentId} className="text-sm text-slate-200">{r.ten}<span className="text-slate-400"> · {r.ma}{r.lop ? ` · ${r.lop}` : ''}</span></li>
+                  ))}
+                </ul>
+                {(xem.tong.mat ?? []).length > 0 && (
+                  <p className="m-0 flex flex-wrap gap-x-4 gap-y-1 text-sm tabular-nums text-slate-300">
+                    {xem.tong.mat!.map((m) => <span key={m.nhan}>{m.nhan} <b className="text-slate-100">{m.so}</b></span>)}
+                  </p>
+                )}
+                <Truong nhan={`Gõ ${CHU_XAC_NHAN_XOA} để xác nhận`} batBuoc>
+                  <input className="field w-full" value={goXoa} onChange={(e) => setGoXoa(e.target.value)} autoComplete="off" spellCheck={false} />
+                </Truong>
+              </>
+            )}
+            {!batBuoc && viec !== 'luu-tru' && viec !== 'bo-luu-tru' && viec !== 'xoa' && (
               <Truong nhan="Lý do" tuyChon><input className="field w-full" maxLength={2000} value={lyDo} onChange={(e) => setLyDo(e.target.value)} /></Truong>
             )}
           </Khoi>
           {dangThu && (
-            <Khoi tieuDe={`Chưa lưu · ${chuaLuu.length}`}>
+            <Khoi tieuDe={`${viec === 'xoa' ? 'Chưa xoá' : 'Chưa lưu'} · ${chuaLuu.length}`}>
               <ul className="m-0 list-none space-y-1 p-0">
                 {chuaLuu.map((c) => <li key={c.studentId} className="text-sm text-slate-200">{ten(c.studentId)}<span className="block text-xs text-late">{c.message}</span></li>)}
               </ul>

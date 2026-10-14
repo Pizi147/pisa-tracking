@@ -235,13 +235,14 @@ export async function runPrOv8bTests(t: YThucTestKit) {
         ['Lưu trữ', 'POST', `/students/${em.id}/archive`],
         ['Chuyển lớp', 'POST', `/students/${em.id}/transfer`, { toClassId: em.lop, lyDo: 'thử' }],
         ['Kết thúc hàng loạt', 'POST', '/hang-loat-hoc-vien', { viec: 'ket-thuc', studentIds: [em.id], lyDo: 'x' }],
-        /* OV-8a: bước tiếp sau thi thật vẫn chỉ QL. */
+        /* OV-8a: bước tiếp sau thi thật chỉ QL — OV-12a (chủ SP 14/10): TVV của chi nhánh chọn được (phép kiểm OV12a-6), CX vẫn 403. */
         ['chọn bước tiếp sau thi', 'POST', `/cycles/${em.cycleId}/buoc-tiep`, { chon: 'ket_thuc' }],
         ['bỏ chọn bước tiếp', 'DELETE', `/cycles/${em.cycleId}/buoc-tiep`],
       ];
       const sai: string[] = [];
       for (const [ten, ck] of [['TVV', tv], ['CX', cx]] as const) {
         for (const [viec, m, url, body] of duong) {
+          if (ten === 'TVV' && url.endsWith('/buoc-tiep')) continue;
           const r = await goi(m, url, ck, body);
           if (r.status !== 403) sai.push(`${ten} ${viec}: ${r.status} ${r.json?.error ?? ''}`);
         }

@@ -620,12 +620,12 @@ export async function runPrDonATests(t: YThucTestKit) {
     assert(/khaiDuoc\(em\)/.test(docNguon('server/src/worklist/mywork.ts')) && /coTheKhai: canManage && khaiDuoc\(em\)/.test(docNguon('server/src/yThuc/xuLy.ts')), 'hai đường không gọi chung khaiDuoc');
   });
 
-  check('Dọn-a (6g) · 8 hạn Thứ Hai liên tiếp: chữ tuần ở Cần xử lý (tuanCuaHanGhiKetQua) = tuần ở tiêu đề form Ghi kết quả (nhanTuanGhiKetQua)', () => {
+  check('Dọn-a (6g) → OV-12a · 8 hạn Thứ Ba liên tiếp: chữ kỳ ở Cần xử lý (tuanCuaHanGhiKetQua) = kỳ ở tiêu đề form Ghi kết quả (nhanTuanGhiKetQua)', () => {
     for (let k = 0; k < 8; k++) {
-      const han = t.addDays('2026-09-07', 7 * k);
+      const han = t.addDays('2026-09-08', 14 * k);
       const a = d.tuanCuaHanGhiKetQua(han, han);
       const b = d.nhanTuanGhiKetQua(han, han).tieuDe.replace(/^Kết quả /, '');
-      assert(a === b && d.tuanKetQuaCuaHan(han) === t.addDays(han, -7), `${han}: "${a}" ≠ "${b}"`);
+      assert(a === `kỳ ${b}` && d.tuanKetQuaCuaHan(han) === t.addDays(han, -15), `${han}: "${a}" ≠ "kỳ ${b}"`);
     }
   });
 
@@ -776,10 +776,10 @@ export async function runPrDonATests(t: YThucTestKit) {
   console.log('\nPR-Dọn-a · (10) Seed hạn Thứ Hai, câu demo không hàm ý ca học; badge lớp = em chưa có quyết định chuyển lớp');
   const lenhSvc: any = await import('../classes/lenhChuyen.ts');
   const classesSvc: any = await import('../classes/classes.ts');
-  check('Dọn-a (10a) · bộ demo: mọi hạn ghi kết quả PA (action_due) là Thứ Hai', () => {
-    const sai = all(`SELECT id, action_due FROM case_interventions WHERE action_due IS NOT NULL AND id <= ? AND strftime('%w', action_due) != '1'`,
+  check('Dọn-a (10a) → OV-12a · bộ demo: mọi hạn ghi kết quả PA (action_due) là Thứ Ba', () => {
+    const sai = all(`SELECT id, action_due FROM case_interventions WHERE action_due IS NOT NULL AND id <= ? AND strftime('%w', action_due) != '2'`,
       t.seedMax.case_interventions ?? 1e9);
-    assert(!sai.length, `PA có hạn không phải Thứ Hai: ${sai.map((r) => `${r.id}:${r.action_due}`).join(', ')}`);
+    assert(!sai.length, `PA có hạn không phải Thứ Ba: ${sai.map((r) => `${r.id}:${r.action_due}`).join(', ')}`);
   });
   check('Dọn-a (10b) · câu demo không hàm ý ca học cố định (Q27): seed không còn "buổi sáng", "buổi chiều", "ca tối", "đổi ca"', () => {
     const con = fs.readdirSync(path.join(REPO, 'server/src/seed')).filter((f) => f.endsWith('.ts'))

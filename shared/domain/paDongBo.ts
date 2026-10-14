@@ -6,9 +6,8 @@ import { dsLoi, type LoiTruong } from './loiForm.ts';
 import { nguoiThanhPayload, nguoiThieu, type NguoiChon } from './nguoiThucHien.ts';
 import { KHAC_TOI_THIEU } from './khac.ts';
 import { INTERVENTION_KIND_LABEL } from './cases.ts';
-import { ngayTheoGioVN } from './display.ts';
+import { kyGhiKetQua, ngayTheoGioVN } from './display.ts';
 import { tuanLich } from './hienThiNgay.ts';
-import { tuanKetQuaCuaHan } from './week.ts';
 
 export const LOAI_CO_SO_BUOI = ['tutor', 'self_study', 'bo_tro', 'bo_tro_mien_phi'] as const;
 const LOAI_NGUOI_DAY = new Set(['tutor', 'bo_tro', 'bo_tro_mien_phi']);
@@ -158,8 +157,8 @@ export type DongNhatKyPa = { khoa: string; ngay: string; ai: string; chu: string
 const NGUON_SUA_PA: Record<string, string> = { adjust: 'Điều chỉnh', confirm_edit: 'Sửa khi xác nhận PA', sua_pa: 'Sửa PA' };
 
 /**
- * NHẬT KÝ PA (mockup pa-dong-bo §6), mới nhất lên trên: dòng Tạo (giá trị LÚC TẠO = bản cũ của lần sửa đầu) · mỗi tuần Kết quả
- * ("Kết quả W1 OCT · dạy 3 buổi") · mỗi lần Sửa PA / Điều chỉnh (cũ → mới, chỉ ô đổi).
+ * NHẬT KÝ PA (mockup pa-dong-bo §6), mới nhất lên trên: dòng Tạo (giá trị LÚC TẠO = bản cũ của lần sửa đầu) · mỗi lần Kết quả
+ * ("Kết quả W1–W2 OCT · dạy 3 buổi", OV-12a: kỳ của hạn) · mỗi lần Sửa PA / Điều chỉnh (cũ → mới, chỉ ô đổi).
  */
 export function nhatKyPa(pa: PaNhatKy, ketQua: readonly KetQuaNhatKy[], homNay: string): DongNhatKyPa[] {
   const revs = pa.revisions ?? [];
@@ -178,7 +177,7 @@ export function nhatKyPa(pa: PaNhatKy, ketQua: readonly KetQuaNhatKy[], homNay: 
     if (f.interventionId !== pa.id) continue;
     dong.push({
       khoa: `kq-${f.id}`, ngay: f.observedOn, ai: f.observerName ?? '—',
-      chu: [`Kết quả ${f.cycleDue ? tuan(tuanKetQuaCuaHan(f.cycleDue)) : tuan(f.observedOn)}`, f.soBuoi != null ? `dạy ${f.soBuoi} buổi` : null,
+      chu: [`Kết quả ${f.cycleDue ? kyGhiKetQua(f.cycleDue, homNay) : tuan(f.observedOn)}`, f.soBuoi != null ? `dạy ${f.soBuoi} buổi` : null,
         f.nguoiDay && f.nguoiDay !== f.observerName ? `người dạy ${f.nguoiDay}` : null].filter(Boolean).join(' · '),
       hang: 1, id: f.id,
     });
