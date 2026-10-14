@@ -3,6 +3,7 @@ import { ApiError, api, invalidate } from '../lib/api.ts';
 import { useApi } from '../lib/useApi.ts';
 import { fmtDate } from '../lib/format.ts';
 import { ATTACHMENT_EXTENSIONS, ATTACHMENT_MAX_BYTES, CHU_KHOI_BANG_CHUNG, laLienKet, tenAnhDan } from '@shared/domain/index.ts';
+import { t } from '@shared/i18n/index.ts';
 
 type Row = {
   id: number; kind: 'file' | 'link'; displayName: string; href: string;
@@ -28,7 +29,7 @@ const ACCEPT = ATTACHMENT_EXTENSIONS.map((e) => `.${e}`).join(',');
  *   2. Quyền xem tệp là quyền xem bản ghi chủ — máy chủ kiểm ở mọi đường; nút ở đây chỉ ẩn cho gọn mắt.
  *   3. Gỡ tệp là hành động có xác nhận và có audit, không phải một dấu X im lặng.
  */
-export function BangChung({ ownerType, ownerId, canEdit, tieuDe = 'Bằng chứng', onChanged }: {
+export function BangChung({ ownerType, ownerId, canEdit, tieuDe = t('Bằng chứng'), onChanged }: {
   ownerType: 'sos_case' | 'case_intervention' | 'violation' | 'discipline_measure' | 'sos_coordination_action' | 'unit_report';
   ownerId: number;
   /** Được thêm/gỡ không (máy chủ vẫn kiểm lại). */
@@ -61,10 +62,10 @@ export function BangChung({ ownerType, ownerId, canEdit, tieuDe = 'Bằng chứn
     const ext = file.name.includes('.') ? file.name.split('.').pop()!.toLowerCase() : '';
     /* Báo lỗi SỚM ở máy người dùng cho hai lỗi chắc chắn — khỏi gửi cả tệp rồi mới bị từ chối. */
     if (!ATTACHMENT_EXTENSIONS.includes(ext)) {
-      patchUpload(key, { state: 'error', message: `Không nhận loại tệp này. Chỉ nhận: ${ATTACHMENT_EXTENSIONS.join(', ')}.` });
+      patchUpload(key, { state: 'error', message: t('Không nhận loại tệp này. Chỉ nhận: {ds}.', { ds: ATTACHMENT_EXTENSIONS.join(', ') }) });
       return;
     }
-    if (file.size > ATTACHMENT_MAX_BYTES) { patchUpload(key, { state: 'error', message: 'Tệp quá lớn: tối đa 4 MB.' }); return; }
+    if (file.size > ATTACHMENT_MAX_BYTES) { patchUpload(key, { state: 'error', message: t('Tệp quá lớn: tối đa 4 MB.') }); return; }
     try {
       const form = new FormData();
       form.append('ownerType', ownerType);
@@ -75,7 +76,7 @@ export function BangChung({ ownerType, ownerId, canEdit, tieuDe = 'Bằng chứn
       invalidate('/attachments');
       onChanged?.();
     } catch (e) {
-      patchUpload(key, { state: 'error', message: e instanceof ApiError ? e.message : 'Không tải được tệp — kiểm tra kết nối rồi thử lại.' });
+      patchUpload(key, { state: 'error', message: e instanceof ApiError ? e.message : t('Không tải được tệp — kiểm tra kết nối rồi thử lại.') });
     }
   };
 
@@ -153,14 +154,14 @@ export function BangChung({ ownerType, ownerId, canEdit, tieuDe = 'Bằng chứn
       invalidate('/attachments');
       onChanged?.();
     } catch (e) {
-      setLinkError(e instanceof ApiError ? e.message : 'Không lưu được liên kết — thử lại.');
+      setLinkError(e instanceof ApiError ? e.message : t('Không lưu được liên kết — thử lại.'));
     } finally { setLinkBusy(false); }
   };
 
   const remove = async (id: number) => {
     setRowError(null);
     try { await api.del(`/attachments/${id}`); setConfirmId(null); invalidate('/attachments'); onChanged?.(); }
-    catch (e) { setRowError({ id, message: e instanceof ApiError ? e.message : 'Không gỡ được — thử lại.' }); }
+    catch (e) { setRowError({ id, message: e instanceof ApiError ? e.message : t('Không gỡ được — thử lại.') }); }
   };
 
   const rows = data?.rows ?? [];
@@ -171,7 +172,7 @@ export function BangChung({ ownerType, ownerId, canEdit, tieuDe = 'Bằng chứn
       style={{ borderColor: isDragging ? 'var(--line-strong)' : 'var(--line)' }}
       data-bang-chung={`${ownerType}:${ownerId}`}
       tabIndex={0}
-      aria-label="Bằng chứng — dán ảnh, kéo thả tệp"
+      aria-label={t('Bằng chứng — dán ảnh, kéo thả tệp')}
       onPaste={onPaste}
       onDragOver={onDragOver}
       onDragLeave={onDragLeave}
@@ -185,9 +186,9 @@ export function BangChung({ ownerType, ownerId, canEdit, tieuDe = 'Bằng chứn
         ) : <span />}
         {canEdit && (
           <span className="flex flex-wrap items-center gap-1.5">
-            <button type="button" className="btn btn-sm btn-ghost" onClick={() => fileRef.current?.click()}>+ Đính kèm tệp</button>
-            <button type="button" className="btn btn-sm btn-ghost" onClick={() => setLinkOpen((o) => !o)} aria-expanded={linkOpen}>+ Thêm liên kết</button>
-            <input ref={fileRef} type="file" accept={ACCEPT} multiple className="hidden" aria-label={`${tieuDe || 'Bằng chứng'} — chọn tệp`}
+            <button type="button" className="btn btn-sm btn-ghost" onClick={() => fileRef.current?.click()}>{t('+ Đính kèm tệp')}</button>
+            <button type="button" className="btn btn-sm btn-ghost" onClick={() => setLinkOpen((o) => !o)} aria-expanded={linkOpen}>{t('+ Thêm liên kết')}</button>
+            <input ref={fileRef} type="file" accept={ACCEPT} multiple className="hidden" aria-label={t('{o} — chọn tệp', { o: tieuDe || t('Bằng chứng') })}
               onChange={(e) => pick(e.target.files)} />
           </span>
         )}
@@ -195,13 +196,13 @@ export function BangChung({ ownerType, ownerId, canEdit, tieuDe = 'Bằng chứn
 
       {error && (
         <p className="text-xs text-bad m-0 mt-1.5">
-          Không tải được danh sách bằng chứng. <button type="button" className="link appearance-none bg-transparent border-0 p-0 cursor-pointer" onClick={reload}>Tải lại</button>
+          {t('Không tải được danh sách bằng chứng.')} <button type="button" className="link appearance-none bg-transparent border-0 p-0 cursor-pointer" onClick={reload}>{t('Tải lại')}</button>
         </p>
       )}
-      {loading && !data && <p className="text-xs text-slate-500 m-0 mt-1.5">Đang tải…</p>}
+      {loading && !data && <p className="text-xs text-slate-500 m-0 mt-1.5">{t('Đang tải…')}</p>}
       {data && rows.length === 0 && uploads.length === 0 && !linkOpen && (
         <p className="text-xs text-slate-500 m-0 mt-1.5">
-          {canEdit ? CHU_KHOI_BANG_CHUNG : 'Chưa có bằng chứng nào.'}
+          {canEdit ? CHU_KHOI_BANG_CHUNG : t('Chưa có bằng chứng nào.')}
         </p>
       )}
 
@@ -214,17 +215,17 @@ export function BangChung({ ownerType, ownerId, canEdit, tieuDe = 'Bằng chứn
                 ? <a className="link" href={r.href} target="_blank" rel="noopener noreferrer">{r.displayName}</a>
                 : <a className="link" href={r.href} download>{r.displayName}</a>}
               <span className="text-slate-500">
-                {[r.kind === 'file' ? fmtSize(r.sizeBytes) : 'liên kết', r.uploadedByName, fmtDate(r.createdAt)].filter(Boolean).join(' · ')}
+                {[r.kind === 'file' ? fmtSize(r.sizeBytes) : t('liên kết'), r.uploadedByName, fmtDate(r.createdAt)].filter(Boolean).join(' · ')}
               </span>
               {canEdit && confirmId !== r.id && (
                 <button type="button" className="appearance-none bg-transparent border-0 p-0 cursor-pointer text-slate-500 hover:text-bad"
-                  onClick={() => { setConfirmId(r.id); setRowError(null); }} aria-label={`Gỡ ${r.displayName}`}>Gỡ</button>
+                  onClick={() => { setConfirmId(r.id); setRowError(null); }} aria-label={t('Gỡ {ten}', { ten: r.displayName })}>{t('Gỡ')}</button>
               )}
               {confirmId === r.id && (
                 <span className="inline-flex items-center gap-1.5 text-soon">
-                  Gỡ “{r.displayName}”? Việc này được ghi lại.
-                  <button type="button" className="btn btn-sm btn-danger" onClick={() => void remove(r.id)}>Gỡ</button>
-                  <button type="button" className="btn btn-sm btn-ghost" onClick={() => setConfirmId(null)}>Không</button>
+                  {t('Gỡ “{ten}”? Việc này được ghi lại.', { ten: r.displayName })}
+                  <button type="button" className="btn btn-sm btn-danger" onClick={() => void remove(r.id)}>{t('Gỡ')}</button>
+                  <button type="button" className="btn btn-sm btn-ghost" onClick={() => setConfirmId(null)}>{t('Không')}</button>
                 </span>
               )}
             </span>
@@ -239,12 +240,12 @@ export function BangChung({ ownerType, ownerId, canEdit, tieuDe = 'Bằng chứn
               <span aria-hidden>📎</span>
               <span className="text-slate-300">{u.file.name}</span>
               <span className="text-slate-500">{fmtSize(u.file.size)}</span>
-              {u.state === 'uploading' && <span className="text-doing">Đang tải…</span>}
+              {u.state === 'uploading' && <span className="text-doing">{t('Đang tải…')}</span>}
               {u.state === 'error' && (
                 <>
                   <span className="text-bad" role="alert">{u.message}</span>
-                  <button type="button" className="btn btn-sm btn-ghost" onClick={() => void send(u.key, u.file)}>Thử lại</button>
-                  <button type="button" className="btn btn-sm btn-ghost" onClick={() => setUploads((l) => l.filter((x) => x.key !== u.key))}>Bỏ</button>
+                  <button type="button" className="btn btn-sm btn-ghost" onClick={() => void send(u.key, u.file)}>{t('Thử lại')}</button>
+                  <button type="button" className="btn btn-sm btn-ghost" onClick={() => setUploads((l) => l.filter((x) => x.key !== u.key))}>{t('Bỏ')}</button>
                 </>
               )}
             </span>
@@ -255,18 +256,18 @@ export function BangChung({ ownerType, ownerId, canEdit, tieuDe = 'Bằng chứn
       {canEdit && linkOpen && (
         <div className="mt-2 grid gap-1.5 sm:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_auto] items-end">
           <label className="block">
-            <span className="text-xs text-slate-500 block">Địa chỉ liên kết</span>
+            <span className="text-xs text-slate-500 block">{t('Địa chỉ liên kết')}</span>
             <input className="field" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://…" inputMode="url" />
           </label>
           <label className="block">
-            <span className="text-xs text-slate-500 block">Tên hiển thị (không bắt buộc)</span>
-            <input className="field" value={name} onChange={(e) => setName(e.target.value)} placeholder="Ví dụ: Bài viết tuần 3" />
+            <span className="text-xs text-slate-500 block">{t('Tên hiển thị (không bắt buộc)')}</span>
+            <input className="field" value={name} onChange={(e) => setName(e.target.value)} placeholder={t('Ví dụ: Bài viết tuần 3')} />
           </label>
           <span className="flex gap-1.5">
             <button type="button" className="btn btn-sm btn-primary" disabled={linkBusy || !url.trim()} onClick={() => void saveLink()}>
-              {linkBusy ? 'Đang lưu…' : 'Lưu'}
+              {linkBusy ? t('Đang lưu…') : t('Lưu')}
             </button>
-            <button type="button" className="btn btn-sm" disabled={linkBusy} onClick={() => { setLinkOpen(false); setLinkError(null); }}>Đóng</button>
+            <button type="button" className="btn btn-sm" disabled={linkBusy} onClick={() => { setLinkOpen(false); setLinkError(null); }}>{t('Đóng')}</button>
           </span>
           {linkError && <p className="text-xs text-bad m-0 sm:col-span-3" role="alert">{linkError}</p>}
         </div>

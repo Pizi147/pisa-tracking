@@ -3,7 +3,7 @@ import { useApi } from '../../lib/useApi.ts';
 import { api } from '../../lib/api.ts';
 import { useSession } from '../../lib/session.tsx';
 import { useToast } from '../../ui/Toast.tsx';
-import { Card, ErrorState, Field, Info, NutChon, SectionNote, Skeleton } from '../../ui/ui.tsx';
+import { Card, ChuDam, ErrorState, Field, Info, NutChon, SectionNote, Skeleton } from '../../ui/ui.tsx';
 import { skillLabel, skillShort } from '../../lib/format.ts';
 import { ENTRY_SKILLS, nhanPhamVi } from '@shared/domain/index.ts';
 import { LA_BAN_CHINH } from '../../lib/banChinh.ts';
@@ -153,7 +153,7 @@ export default function ProfilePage() {
           {(session?.grants ?? []).map((g, i) => <Info key={i}>{nhanPhamVi(g)}</Info>)}
         </div>
         <SectionNote>
-          {t('Vai trò và chi nhánh do')} <strong>{t('Quản trị hệ thống')}</strong> {t('cấp — không tự sửa được ở đây, vì tự cấp cho mình thì bước duyệt thành vô nghĩa.')}
+          <ChuDam chu={t('Vai trò và chi nhánh do <b>Quản trị hệ thống</b> cấp — không tự sửa được ở đây, vì tự cấp cho mình thì bước duyệt thành vô nghĩa.')} />
         </SectionNote>
       </Card>
 
@@ -180,7 +180,7 @@ export default function ProfilePage() {
         {/* CA1-7: câu "Bản demo…" chỉ ở bản demo. */}
         {!(LA_BAN_CHINH || session?.banChinh) && (
           <SectionNote>
-            {t('Bản demo không gửi email thật nên')} <strong>{t('không có luồng quên mật khẩu')}</strong>. {t('Quên thì nhờ Quản trị hệ thống đặt lại hộ.')}
+            <ChuDam chu={t('Bản demo không gửi email thật nên <b>không có luồng quên mật khẩu</b>. Quên thì nhờ Quản trị hệ thống đặt lại hộ.')} />
           </SectionNote>
         )}
       </Card>

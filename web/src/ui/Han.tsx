@@ -1,6 +1,7 @@
 import { deadlineView, type DeadlineKind } from '@shared/domain/index.ts';
 import { QuaHan } from './Nhan.tsx';
 import { useNgayNghiepVu } from './ngayNghiepVu.ts';
+import { t } from '@shared/i18n/index.ts';
 
 /**
  * MỌI HẠN ĐỀU CÓ LOẠI (HE_GIAO_DIEN §4, đóng lỗi F11).
@@ -46,7 +47,7 @@ export function Han({ loai, han, hanGoc, hen, tienTo, ghiChu, coViec, haiDong, b
   const tinHieu = (
     <>
       {v.tone === 'overdue' && <QuaHan ngay={v.daysOverdue} />}
-      {v.homNay && <span className="font-semibold text-soon">hôm nay</span>}
+      {v.homNay && <span className="font-semibold text-soon">{t('hôm nay')}</span>}
     </>
   );
   const coTinHieu = !boTinHieu && (v.tone === 'overdue' || v.homNay);

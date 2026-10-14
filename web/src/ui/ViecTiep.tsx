@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import type { ViecTiepTheo } from '@shared/domain/index.ts';
 import { QuaHan } from './Nhan.tsx';
+import { t } from '@shared/i18n/index.ts';
 
 /**
  * MỘT VIỆC Ở CỘT "VIỆC TIẾP THEO" (PR-UX3, B-2/B-3): chữ việc không khung, sau đó hoặc "⚠ quá hạn 3 ngày" đỏ (quá hạn; PR-N1 A6
@@ -37,7 +38,7 @@ export function DanhSachViecTiep({ viec, den }: { viec: readonly ViecTiepTheo[];
     <span className="flex flex-col items-start gap-0.5">
       {viec.slice(0, 2).map((v) => <ViecTiep key={v.viec} v={v} den={den?.(v)} />)}
       {viec.length > 2 && (
-        <span className="text-xs text-slate-400" title={viec.slice(2).map((v) => v.title).join(' · ')}>+{viec.length - 2} việc</span>
+        <span className="text-xs text-slate-400" title={viec.slice(2).map((v) => v.title).join(' · ')}>{t('+{n} việc', { n: viec.length - 2 })}</span>
       )}
     </span>
   );

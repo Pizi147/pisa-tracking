@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { HOAN_TAC_MS, giayHoanTacConLai } from '@shared/domain/index.ts';
 import { IconDat } from './BieuTuong.tsx';
+import { t } from '@shared/i18n/index.ts';
 
 /** PR-YT2 Q5: nút trong toast (ví dụ `Hoàn tác`) — bấm thì chạy `onBam` rồi gỡ toast luôn, không chờ hết `ms`. */
 type HanhDong = { nhan: string; onBam: () => void };
@@ -37,7 +38,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     setTimeout(() => setItems((s) => s.filter((t) => t.id !== id)), ms);
   }, []);
   const hoanTac = useCallback((text: string, onHoanTac: () => void, opts?: { key?: string }) => {
-    push('ok', text, { ms: HOAN_TAC_MS, key: opts?.key, demLui: true, hanhDong: { nhan: 'Hoàn tác', onBam: onHoanTac } });
+    push('ok', text, { ms: HOAN_TAC_MS, key: opts?.key, demLui: true, hanhDong: { nhan: t('Hoàn tác'), onBam: onHoanTac } });
   }, [push]);
   const value = useMemo(() => ({ push, hoanTac }), [push, hoanTac]);
 

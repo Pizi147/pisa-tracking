@@ -9,6 +9,7 @@ import { NHOM_VIEC_LABEL, type NhomViec } from './tongQuan.ts';
 import { LOC_NHANH_LABEL, type LocNhanh } from './congViec.ts';
 import { GOC_NHIN_LABEL, GOC_NHIN_MAC_DINH, type GocNhin } from './phanTich.ts';
 import { DUONG_TAB_TEST, TAB_CONG_VIEC_LABEL, tabCongViecTuDuong } from './dieuHuong.ts';
+import { t } from '../i18n/index.ts';
 
 export type BuocVe = { url: string; ten: string; chiTiet?: string; cuon: number };
 export type TenTrang = { ten: string; chiTiet?: string };
@@ -22,8 +23,9 @@ const HO_SO: [RegExp, LoaiHoSo][] = [
   [/^\/hoc-vien\/\d+$/, 'hoc-vien'], [/^\/hoc-vien\/lop\/\d+$/, 'lop'], [/^\/mock-test\/\d+$/, 'mt'],
   [/^\/giao-vien\/\d+$/, 'gv'], [/^\/hoc-thuat\/case\/\d+$/, 'case'], [/^\/(nhap-diem|bang-diem-thuong)\/\d+$/, 'nhap-diem'],
 ];
+const TRANG_TRUOC = t('Trang trước');
 const TEN_HO_SO: Record<LoaiHoSo, string> = {
-  'hoc-vien': 'Hồ sơ học viên', lop: 'Hồ sơ lớp', mt: 'Hồ sơ Mock Test', gv: 'Hồ sơ giáo viên', case: 'Case', 'nhap-diem': 'Nhập điểm',
+  'hoc-vien': t('Hồ sơ học viên'), lop: t('Hồ sơ lớp'), mt: t('Hồ sơ Mock Test'), gv: t('Hồ sơ giáo viên'), case: 'Case', 'nhap-diem': t('Nhập điểm'),
 };
 
 /** Trang Nhập điểm tính như hồ sơ: có nút Quay lại theo nguồn (Đầu ra 6), bấm em trong lưới là đi tiếp hồ sơ → hồ sơ. */
@@ -79,19 +81,19 @@ export function buocMoi(chong: BuocVe[], o: { tu: BuocVe | null; den: string; ki
 
 /** Mở thẳng bằng link / tải lại trang: về trang cha như trước PR này. */
 export function trangCha(loai: LoaiHoSo, o: { studentId?: number | null; tenHv?: string | null; nav?: { phanTichGv?: boolean; admin?: boolean } | null } = {}): TenTrang & { url: string } {
-  const hvLop = { url: '/hoc-vien', ten: 'Học viên & Lớp' };
+  const hvLop = { url: '/hoc-vien', ten: t('Học viên & Lớp') };
   switch (loai) {
     case 'mt': case 'case':
-      return o.studentId ? { url: `/hoc-vien/${o.studentId}`, ten: o.tenHv ? `Hồ sơ ${o.tenHv}` : TEN_HO_SO['hoc-vien'] } : hvLop;
+      return o.studentId ? { url: `/hoc-vien/${o.studentId}`, ten: o.tenHv ? t('Hồ sơ {ten}', { ten: o.tenHv }) : TEN_HO_SO['hoc-vien'] } : hvLop;
     case 'gv':
-      if (o.nav?.phanTichGv) return { url: '/phan-tich?goc=giao-vien', ten: 'Phân tích', chiTiet: GOC_NHIN_LABEL['giao-vien'] };
-      return o.nav?.admin ? { url: '/quan-tri', ten: 'Quản trị' } : { url: '/', ten: 'Tổng quan' };
-    case 'nhap-diem': return { url: '/test', ten: 'Test' };
+      if (o.nav?.phanTichGv) return { url: '/phan-tich?goc=giao-vien', ten: t('Phân tích'), chiTiet: GOC_NHIN_LABEL['giao-vien'] };
+      return o.nav?.admin ? { url: '/quan-tri', ten: t('Quản trị') } : { url: '/', ten: t('Tổng quan') };
+    case 'nhap-diem': return { url: '/test', ten: t('Test') };
     default: return hvLop;
   }
 }
 
-const TEN_TAB_TEST: Record<string, string> = { lich: 'Lịch Test', 'diem-lop': 'Điểm theo lớp', 'ke-hoach': 'Kế hoạch Test' };
+const TEN_TAB_TEST: Record<string, string> = { lich: t('Lịch Test'), 'diem-lop': t('Điểm theo lớp'), 'ke-hoach': t('Kế hoạch Test') };
 const noi = (...x: (string | null | undefined | false)[]) => x.filter(Boolean).join(' · ') || undefined;
 const nhan = <K extends string>(bang: Record<K, string>, v: string | null, boQua?: K) => (v && v !== boQua && v in bang ? bang[v as K] : null);
 
@@ -100,8 +102,8 @@ const nhan = <K extends string>(bang: Record<K, string>, v: string | null, boQua
  * App đặt theo `tenNguon`; hồ sơ đặt tên riêng qua `useTenTrang` (tên em, mã lớp…).
  */
 export function tieuDeTab(ten: string | null | undefined): string {
-  const t = (ten ?? '').trim();
-  return t && t !== 'Trang trước' ? `${t} · PISA Tracking` : 'PISA Tracking';
+  const s = (ten ?? '').trim();
+  return s && s !== TRANG_TRUOC ? `${s} · PISA Tracking` : 'PISA Tracking';
 }
 
 /** Tên một trang theo URL (trang tự đặt tên chi tiết hơn — tuần, tên em — qua `web/src/lib/quayLai.ts › useTenTrang`). */
@@ -110,19 +112,19 @@ export function tenNguon(url: string): TenTrang {
   const p = path.length > 1 ? path.replace(/\/+$/, '') : path;
   const hs = loaiHoSo(p);
   if (hs) return { ten: TEN_HO_SO[hs] };
-  if (p === '/') return { ten: 'Tổng quan' };
-  if (p === '/phan-tich') return { ten: 'Phân tích', chiTiet: nhan<GocNhin>(GOC_NHIN_LABEL, q.get('goc')) ?? GOC_NHIN_LABEL[GOC_NHIN_MAC_DINH] };
+  if (p === '/') return { ten: t('Tổng quan') };
+  if (p === '/phan-tich') return { ten: t('Phân tích'), chiTiet: nhan<GocNhin>(GOC_NHIN_LABEL, q.get('goc')) ?? GOC_NHIN_LABEL[GOC_NHIN_MAC_DINH] };
   const cv = /^\/cong-viec(?:\/([^/]+))?$/.exec(p);
   if (cv) {
     const tab = tabCongViecTuDuong(cv[1]);
-    return { ten: 'Công việc', chiTiet: noi(tab && tab !== 'ho-tro' && TAB_CONG_VIEC_LABEL[tab],
+    return { ten: t('Công việc'), chiTiet: noi(tab && tab !== 'ho-tro' && TAB_CONG_VIEC_LABEL[tab],
       nhan<LocNhanh>(LOC_NHANH_LABEL, q.get('loc'), 'tat-ca'), nhan<NhomViec>(NHOM_VIEC_LABEL, q.get('nhom'))) };
   }
   const test = /^\/test(?:\/([^/]+))?$/.exec(p);
-  if (test) return { ten: TEN_TAB_TEST[test[1] ?? ''] ?? 'Test' };
-  if (p === '/hoc-vien') return { ten: 'Học viên & Lớp', chiTiet: q.get('q') ? `“${q.get('q')}”` : undefined };
-  if (p === '/hoc-vien/luu-tru') return { ten: 'Lưu trữ' };
-  if (p === '/quan-tri') return { ten: 'Quản trị' };
-  if (p === '/ho-so-ca-nhan') return { ten: 'Hồ sơ cá nhân' };
-  return { ten: 'Trang trước' };
+  if (test) return { ten: TEN_TAB_TEST[test[1] ?? ''] ?? t('Test') };
+  if (p === '/hoc-vien') return { ten: t('Học viên & Lớp'), chiTiet: q.get('q') ? `“${q.get('q')}”` : undefined };
+  if (p === '/hoc-vien/luu-tru') return { ten: t('Lưu trữ') };
+  if (p === '/quan-tri') return { ten: t('Quản trị') };
+  if (p === '/ho-so-ca-nhan') return { ten: t('Hồ sơ cá nhân') };
+  return { ten: TRANG_TRUOC };
 }

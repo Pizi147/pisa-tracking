@@ -141,31 +141,24 @@ export async function runPrEnTests(t: any) {
     const { quetFile } = await import(pathToFileURL(path.join(goc, 'scripts/quet-chu.mjs')).href);
     const ra: any[] = [];
     for (const f of FILE_DA_DICH) quetFile(path.join(goc, f), f, 'en', ra);
-    const con = ra.filter((r) => !CHO_PHEP.some((c) => c.file === r.file && c.text.test(r.text)));
+    const viet = (x: string) => /[àáảãạăằắẳẵặâầấẩẫậèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵđ]/i.test(x.replace(/\{[^}]*\}/g, ''));
+    const con = ra.filter((r) => viet(r.text) && !CHO_PHEP.some((c) => c.file === r.file && c.text.test(r.text)));
     assert(con.length === 0, `${con.length} chữ Việt còn sót: ` + con.slice(0, 8).map((r) => `${r.file}:${r.line} "${r.text}"`).join(' · '));
   });
 }
 
-/** Đợt a: file dịch trọn (mỗi đợt thêm file của mình). File dịch một phần (vd `people.ts` — nhãn quyền Quản trị giữ Việt) không vào đây. */
+/**
+ * Đợt a: file dịch trọn (mỗi đợt thêm file của mình) — khung chung web (`ui/*`, `lib/*`, App, thanh trên, đăng nhập, Hồ sơ cá nhân) + shared của khung.
+ * Không vào: `ui/chu.ts` (câu của hồ sơ / Case — đợt c, d; quet-chu tự kiểm dòng của nó), `shared/domain/people.ts` (nhãn quyền Quản trị giữ Việt).
+ */
+const GOC_REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
 const FILE_DA_DICH = [
   'web/src/App.tsx',
   'web/src/modules/platform/Header.tsx',
   'web/src/modules/platform/WelcomePage.tsx',
   'web/src/modules/platform/ProfilePage.tsx',
-  'web/src/ui/CongTacGiaoDien.tsx',
-  'web/src/ui/NutNgonNgu.tsx',
-  'web/src/ui/KhungPanel.tsx',
-  'web/src/ui/Toast.tsx',
-  'web/src/ui/ONgay.tsx',
-  'web/src/ui/LichNho.tsx',
-  'web/src/ui/SaveState.tsx',
-  'web/src/ui/Drawer.tsx',
-  'web/src/lib/session.tsx',
-  'shared/domain/oNgay.ts',
-  'shared/domain/chonNgay.ts',
-  'shared/domain/loiForm.ts',
-  'shared/domain/hienThiNgay.ts',
-  'shared/domain/trangThai.ts',
+  ...['web/src/ui', 'web/src/lib'].flatMap((d) => fs.readdirSync(path.join(GOC_REPO, d)).filter((f) => /\.tsx?$/.test(f) && f !== 'chu.ts').map((f) => `${d}/${f}`)),
+  ...['oNgay', 'chonNgay', 'loiForm', 'hienThiNgay', 'trangThai', 'dieuHuong', 'khac', 'quayLai'].map((f) => `shared/domain/${f}.ts`),
 ];
 
 /** Chuỗi so khớp dữ liệu (không hiện ra) — giữ Việt có chủ đích. */

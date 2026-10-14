@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { buocDanhSach } from '@shared/domain/index.ts';
 import { CHIP_TRON } from './Nhan.tsx';
+import { t } from '@shared/i18n/index.ts';
 
 export type MucMenu = {
   key: string; nhan: string; onChon: () => void;
@@ -28,7 +29,7 @@ export type MucMenu = {
  * Bàn phím (E2): mở → focus mục đầu; ↑/↓/Home/End đi vòng; Enter chọn; Esc/Tab đóng và trả focus về nút ⋯. Esc chỉ đóng menu,
  * không đóng panel chứa nó (pha bắt + chặn lan, như `LichNho`).
  */
-export function MenuDong({ muc, nhan = 'Thao tác khác', bieuTuong = '⋯', luonHien = false, kieu }: {
+export function MenuDong({ muc, nhan = t('Thao tác khác'), bieuTuong = '⋯', luonHien = false, kieu }: {
   /** `bieuTuong`: ⋯ · ⋮, hoặc chữ ngắn như "+2" (badge còn ẩn của hộp lớp — PR-HVL B4). `luonHien`: vẽ nút kể cả khi không có mục / mọi mục `tat`. */
   muc: MucMenu[]; nhan?: string; bieuTuong?: string; luonHien?: boolean;
   /** `chip`: mặt nút là chip họ tròn xám ("+2" cạnh các badge lớp, PR-HK2) thay cho ô vuông viền. */

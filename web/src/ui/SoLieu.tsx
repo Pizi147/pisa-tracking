@@ -5,11 +5,12 @@ import { useApi } from '../lib/useApi.ts';
 import { KhungPanel } from './KhungPanel.tsx';
 import { Empty, ErrorState, Skeleton } from './ui.tsx';
 import { useNgayNghiepVu } from './ngayNghiepVu.ts';
+import { t } from '@shared/i18n/index.ts';
 
 const THOI_GIAN_NHAN: Record<ChiSo['thoiGian'], string> = {
-  'hien-trang': 'Hiện trạng — tính tại ngày dữ liệu',
-  'phat-sinh-trong-ky': 'Phát sinh trong kỳ',
-  'ket-qua-trong-ky': 'Kết quả trong kỳ',
+  'hien-trang': t('Hiện trạng — tính tại ngày dữ liệu'),
+  'phat-sinh-trong-ky': t('Phát sinh trong kỳ'),
+  'ket-qua-trong-ky': t('Kết quả trong kỳ'),
 };
 
 export type PhamViSoLieu = { branchId?: number | null; chuongTrinh?: ChuongTrinh | null };
@@ -34,11 +35,11 @@ function CachTinh({ cs }: { cs: ChiSo }) {
   const { homNay, ngan } = useNgayNghiepVu();
   return (
     <div className="text-xs text-slate-400 leading-relaxed space-y-1">
-      <div><strong className="text-slate-300">Chỉ số:</strong> {cs.cauHoi}</div>
-      <div><strong className="text-slate-300">Đối tượng tính:</strong> {cs.tapDuDieuKien}</div>
-      <div><strong className="text-slate-300">Không đếm trùng:</strong> {cs.khuTrung}</div>
-      <div><strong className="text-slate-300">Thời gian:</strong> {THOI_GIAN_NHAN[cs.thoiGian]}</div>
-      <div><strong className="text-slate-300">Dữ liệu đến:</strong> {ngan(homNay)}</div>
+      <div><strong className="text-slate-300">{t('Chỉ số:')}</strong> {cs.cauHoi}</div>
+      <div><strong className="text-slate-300">{t('Đối tượng tính:')}</strong> {cs.tapDuDieuKien}</div>
+      <div><strong className="text-slate-300">{t('Không đếm trùng:')}</strong> {cs.khuTrung}</div>
+      <div><strong className="text-slate-300">{t('Thời gian:')}</strong> {THOI_GIAN_NHAN[cs.thoiGian]}</div>
+      <div><strong className="text-slate-300">{t('Dữ liệu đến:')}</strong> {ngan(homNay)}</div>
     </div>
   );
 }
@@ -49,8 +50,8 @@ function DongNguoiHan({ nguoi, han }: { nguoi: string | null; han: string | null
   const tre = han && han.slice(0, 10) < homNay ? Math.round((Date.parse(homNay) - Date.parse(han.slice(0, 10))) / 86_400_000) : 0;
   return (
     <span className="mt-0.5 block text-xs tabular-nums text-slate-400">
-      {nguoi ?? 'chưa có người phụ trách'}
-      {han && (tre > 0 ? <span className="font-semibold text-late"> · {nhanQuaHan(tre)}</span> : <> · hạn {ngan(han)}</>)}
+      {nguoi ?? t('chưa có người phụ trách')}
+      {han && (tre > 0 ? <span className="font-semibold text-late"> · {nhanQuaHan(tre)}</span> : <> · {t('hạn {ngay}', { ngay: ngan(han) })}</>)}
     </span>
   );
 }
@@ -85,12 +86,12 @@ export function DanhSachSoLieu({ id, giaTri, phamVi, extra, open, onClose, ten }
   const dv = METRIC_UNIT_LABEL[cs.donVi];
   return (
     <KhungPanel tieuDe={`${data ? data.n : giaTri} ${dv} — ${ten ?? cs.ten}`} onDong={onClose}
-      ngCanh="Đúng những mục tạo nên con số vừa bấm">
+      ngCanh={t('Đúng những mục tạo nên con số vừa bấm')}>
       <div className="mb-3 pt-3"><CachTinh cs={cs} /></div>
       {error ? <ErrorState message={error.message} hint={error.hint} onRetry={reload} />
         : loading || !data ? <Skeleton rows={5} />
-        : data.empty ? <Empty title="Không có dữ liệu trong phạm vi" />
-        : !data.rows?.length ? <Empty title={`Không có ${dv} nào trong tập này`} />
+        : data.empty ? <Empty title={t('Không có dữ liệu trong phạm vi')} />
+        : !data.rows?.length ? <Empty title={t('Không có {dv} nào trong tập này', { dv })} />
         : <DongDanhSach rows={data.rows} onPick={onClose} />}
     </KhungPanel>
   );
@@ -122,7 +123,7 @@ export function SoLieu({ id, giaTri, phamVi, rong, className = '', extra, nhan, 
   const [open, setOpen] = useState(false);
   const [howTo, setHowTo] = useState(false);
   const idCachTinh = useId();
-  if (!cs) return <span className="text-xs text-bad">Chỉ số không có trong sổ: {id}</span>;
+  if (!cs) return <span className="text-xs text-bad">{t('Chỉ số không có trong sổ: {id}', { id })}</span>;
   const dv = METRIC_UNIT_LABEL[cs.donVi];
   const clickable = giaTri > 0;
   const mau = tone === 'danger' ? 'text-bad' : tone === 'warn' ? 'text-soon' : 'text-slate-100';
@@ -136,7 +137,7 @@ export function SoLieu({ id, giaTri, phamVi, rong, className = '', extra, nhan, 
           <button type="button" onClick={() => setHowTo(true)} aria-expanded={howTo} aria-describedby={howTo ? idCachTinh : undefined}
             onFocus={() => setHowTo(true)} onBlur={() => setHowTo(false)}
             onKeyDown={(e) => { if (e.key === 'Escape' && howTo) { e.stopPropagation(); setHowTo(false); } }}
-            aria-label="Cách tính"
+            aria-label={t('Cách tính')}
             className="appearance-none bg-transparent border-0 p-0 max-sm:p-3 max-sm:-m-3 cursor-pointer text-sm leading-none text-slate-500 hover:text-slate-300">ⓘ</button>
           {howTo && (
             <div id={idCachTinh} role="tooltip" className="card absolute right-0 top-full z-30 mt-1.5 w-[min(20rem,calc(100vw-2.5rem))] p-3 shadow-2xl">
@@ -149,14 +150,14 @@ export function SoLieu({ id, giaTri, phamVi, rong, className = '', extra, nhan, 
         {clickable ? (
           <button type="button" onClick={() => setOpen(true)}
             className={`appearance-none bg-transparent border-0 p-0 max-sm:py-1.5 max-sm:-my-1.5 cursor-pointer text-2xl font-semibold tabular-nums underline decoration-dotted underline-offset-4 hover:text-white ${mau}`}
-            aria-label={`${giaTri} ${dv} — ${nhan ?? cs.ten}. Bấm để xem danh sách`}>{giaTri}</button>
+            aria-label={t('{gt} {dv} — {ten}. Bấm để xem danh sách', { gt: giaTri, dv, ten: nhan ?? cs.ten })}>{giaTri}</button>
         ) : (
           <span className="text-2xl font-semibold tabular-nums text-slate-500">{giaTri}</span>
         )}
         <span className="text-xs text-slate-400">{dv}</span>
       </div>
       {phu ? <div className="text-xs text-slate-500 mt-1">{phu}</div>
-        : (rong || giaTri === 0) && <div className="text-xs text-slate-500 mt-1">{rong ? 'Không có dữ liệu trong phạm vi' : 'Không có mục nào'}</div>}
+        : (rong || giaTri === 0) && <div className="text-xs text-slate-500 mt-1">{rong ? t('Không có dữ liệu trong phạm vi') : t('Không có mục nào')}</div>}
       <DanhSachSoLieu id={id} giaTri={giaTri} phamVi={phamVi} extra={extra} open={open} onClose={() => setOpen(false)} ten={nhan} />
     </div>
   );

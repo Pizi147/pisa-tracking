@@ -1,5 +1,6 @@
 import { DUOI_KY_VONG_KCK, GIAI_THICH_KCK, attemptProgressView, type ProgressTone } from '@shared/domain/index.ts';
 import { SCORE_CHIP, type ScoreTone } from './ui.tsx';
+import { t } from '@shared/i18n/index.ts';
 
 /**
  * Màu kết quả Test (N-1b) ↔ họ màu điểm ở `ui.tsx`. Một chỗ nối, không chép bảng màu:
@@ -79,7 +80,7 @@ export function KetQuaDot({ coDiem, yeuCau, dat, sos, phan = 'cau', cheDo, soMon
       className={`inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-medium ${SCORE_CHIP[mau]} ${v.overall === 'incomplete' && (tone !== 'danger' || v.tamThoi) ? 'border-dashed' : ''}`}>
       {mark && <span aria-hidden>{mark}</span>}
       {phan === 'overall'
-        ? (v.overall === 'not-passed' && duoiKyVong?.length ? `Dưới kỳ vọng: ${duoiKyVong.join(' · ')}` : v.overallText)
+        ? (v.overall === 'not-passed' && duoiKyVong?.length ? t('Dưới kỳ vọng: {ds}', { ds: duoiKyVong.join(' · ') }) : v.overallText)
         : v.text}
     </span>
   );

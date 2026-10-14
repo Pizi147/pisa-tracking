@@ -3,7 +3,7 @@ import { useApi } from '../../lib/useApi.ts';
 import { LA_BAN_CHINH } from '../../lib/banChinh.ts';
 import { ApiError, api } from '../../lib/api.ts';
 import { useSession } from '../../lib/session.tsx';
-import { Alert, Field, Info, NutChon, SectionNote } from '../../ui/ui.tsx';
+import { Alert, ChuDam, Field, Info, NutChon, SectionNote } from '../../ui/ui.tsx';
 import { ChonKyNang } from './ProfilePage.tsx';
 import { NutNgonNgu } from '../../ui/NutNgonNgu.tsx';
 
@@ -220,7 +220,7 @@ function LoginForm({ info }: { info: AuthInfo | null }) {
       */}
       {info?.demoAdmin && (
         <SectionNote>
-          {t('Tài khoản')} <strong>{t('Quản trị hệ thống')}</strong> {t('mặc định:')} <code className="text-sky-200">{info.demoAdmin.email}</code>{' '}
+          <ChuDam chu={t('Tài khoản <b>Quản trị hệ thống</b> mặc định:')} /> <code className="text-sky-200">{info.demoAdmin.email}</code>{' '}
           · {t('mật khẩu')} <code className="text-sky-200">{info.demoAdmin.password}</code>. {t('Mọi tài khoản mẫu khác dùng chung mật khẩu đó, email theo mẫu')}{' '}
           <code className="text-slate-300">ten.ho{info.emailSuffix}</code>.{' '}
           {t('Bản demo không gửi email thật và không có luồng quên mật khẩu — quên thì Quản trị hệ thống đặt lại hộ.')}
@@ -261,7 +261,7 @@ function RegisterForm({ info, onDone }: { info: AuthInfo | null; onDone: () => v
       <div className="card p-5">
         <h2 className="text-base font-semibold text-slate-100 m-0">{t('Đã gửi đăng ký')}</h2>
         <p className="text-sm text-slate-300 mt-2 leading-relaxed">
-          {t('Tài khoản của bạn đang')} <strong>{t('chờ Quản trị hệ thống duyệt')}</strong>. {t('Sau khi được duyệt bạn đăng nhập bằng chính email và mật khẩu vừa đặt. Trước đó, đăng nhập sẽ báo là đang chờ duyệt — đó là trạng thái bình thường, không phải lỗi.')}
+          <ChuDam chu={t('Tài khoản của bạn đang <b>chờ Quản trị hệ thống duyệt</b>.')} /> {t('Sau khi được duyệt bạn đăng nhập bằng chính email và mật khẩu vừa đặt. Trước đó, đăng nhập sẽ báo là đang chờ duyệt — đó là trạng thái bình thường, không phải lỗi.')}
         </p>
         <button className="btn mt-4" onClick={onDone}>{t('Về màn đăng nhập')}</button>
       </div>
