@@ -130,7 +130,7 @@ export function DaiODiemLon({ cells, lich, result, lichSu, homNay, mo, onMo, sav
         <span className={`mt-1 block min-h-[1rem] truncate text-xs ${phu.mau ?? 'text-slate-500'}`} title={laW ? undefined : phu.title}>{phu.chu}</span>
         {/* OV-12b: bài có điểm còn thiếu nhận xét / nhóm (dữ liệu trước luật) — chữ, không chỉ màu. Writing ghi task. */}
         {bai.filter((c) => c.thieuNhanXet).map((c) => (
-          <span key={c.skill} className="mt-0.5 block text-[11px] font-semibold leading-tight text-soon">
+          <span key={c.skill} className="mt-0.5 block text-xs font-semibold leading-tight text-soon">
             {laW ? `${c.skill === 'writing1' ? 'W1' : 'W2'} ` : ''}{CHU_O_THIEU[c.thieuNhanXet!]}
           </span>
         ))}
