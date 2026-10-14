@@ -7,6 +7,7 @@ import { TheDong } from '../../ui/TheDong.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { skillShort, sosTone } from '../../lib/format.ts';
 import { OPhuHuynh } from './HocVienTheoVai.tsx';
+import { t } from '@shared/i18n/index.ts';
 import {
   NHAN_NHOM_XU_LY, deadlineView, maHocVienNgan, tuanLich, type DeadlineKind, type LienHe, type NguCanhDs, type NhomXuLy,
 } from '@shared/domain/index.ts';
@@ -28,6 +29,11 @@ export type TrangSos = { tuan: string | null; toanBo: boolean; tu: string; den: 
 /** Cột theo vai (mockup 3 v2 §10): QL / GV đủ cột · TVV chỉ đọc + Phụ huynh · CX như TVV + TVV, đầu nhóm ghi chi nhánh. */
 export type CotSos = 'ql' | 'tvv' | 'cx';
 
+/** Tên cột theo tiếng của trang (khoá cột giữ chữ Việt để tra độ rộng). */
+const NHAN_COT: Record<string, string> = {
+  'Học viên': t('Học viên'), 'MT · tuần': t('MT · tuần'), 'Nguyên nhân': t('Nguyên nhân'), 'Phương án': t('Phương án'), 'Kết quả đến nay': t('Kết quả đến nay'),
+  'Trạng thái': t('Trạng thái'), 'Việc tiếp': t('Việc tiếp'), 'Phụ huynh': t('Phụ huynh'),
+};
 const TONE_NHOM: Record<NhomXuLy, 'wait' | 'doing' | 'done'> = { 'cho-duyet': 'wait', 'dang-xu-ly': 'doing', xong: 'done' };
 const THU_NHOM: Record<NhomXuLy, number> = { 'cho-duyet': 0, 'dang-xu-ly': 1, xong: 2 };
 /** Trạng thái của dòng = nhóm "gấp" nhất trong các Case của lượt (Chờ duyệt → Đang xử lý → Xong); chưa có Case thì Chờ duyệt. */
@@ -63,7 +69,7 @@ function ViecTiepDong({ r }: { r: DongSos }) {
       <span className="block truncate text-slate-200" title={v.chu}>{v.chu}</span>
       <span className="block text-slate-500">
         {v.quaHan && d ? <QuaHan ngay={d.daysOverdue} /> : d ? d.han : null}
-        {ds.length > 1 && <span>{d ? ' · ' : ''}+{ds.length - 1} việc</span>}
+        {ds.length > 1 && <span>{d ? ' · ' : ''}{t('+{n} việc', { n: ds.length - 1 })}</span>}
       </span>
     </span>
   );
@@ -82,11 +88,11 @@ function OSos({ r, toanBo }: { r: DongSos; toanBo: boolean }) {
   );
 }
 
-const chuNguyenNhan = (c: CaseTomTat) => c.nguyenNhan ?? <span className="text-slate-500">chưa xác nhận</span>;
+const chuNguyenNhan = (c: CaseTomTat) => c.nguyenNhan ?? <span className="text-slate-500">{t('chưa xác nhận')}</span>;
 const chuPa = (c: CaseTomTat) => (c.pa.length
-  ? `${c.pa[0].ten}${c.pa[0].nguoi ? ` · ${c.pa[0].nguoi}` : ''}${c.pa.length > 1 ? ` +${c.pa.length - 1} PA` : ''}`
-  : <span className="text-slate-500">Chưa có PA</span>);
-const chuKetQua = (c: CaseTomTat) => (c.done && c.ketQua ? `Xong · ${c.ketQua}` : c.ketQua ?? <span className="text-slate-500">{c.done ? 'Xong' : 'Chưa có kết quả'}</span>);
+  ? `${c.pa[0].ten}${c.pa[0].nguoi ? ` · ${c.pa[0].nguoi}` : ''}${c.pa.length > 1 ? ` ${t('+{n} PA', { n: c.pa.length - 1 })}` : ''}`
+  : <span className="text-slate-500">{t('Chưa có PA')}</span>);
+const chuKetQua = (c: CaseTomTat) => (c.done && c.ketQua ? `${t('Xong')} · ${c.ketQua}` : c.ketQua ?? <span className="text-slate-500">{c.done ? t('Xong') : t('Chưa có kết quả')}</span>);
 
 /**
  * GÓC "ĐANG SOS" (OV-12f, mockup 3 v2 §3 / §5 / §7 / §8): nhóm theo lớp (Fast Track trước, lớp thường sau), mỗi lượt SOS một dòng — Toàn bộ thêm cột
@@ -121,14 +127,14 @@ export function BangSos({ data, cot, dam, dienThoai, ds, onMo }: {
       <span className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-1">
         <Link to={`/hoc-vien/lop/${r.classId}`} className="shrink-0 font-extrabold text-slate-100 underline decoration-dotted underline-offset-4">{r.classCode}</Link>
         {cot === 'cx' && r.branchName && <span className="text-xs text-slate-400">{r.branchName}</span>}
-        <Nhan tone="muted">{toanBo ? `${soEm} em · ${em.length} lượt SOS` : `${soEm} em SOS`}</Nhan>
-        {cot === 'ql' && cho > 0 && <Nhan tone="wait">{cho} chờ duyệt</Nhan>}
-        {cot === 'ql' && tre > 0 && <Nhan tone="late">⚠ {tre} quá hạn</Nhan>}
+        <Nhan tone="muted">{toanBo ? t('{n} em · {m} lượt SOS', { n: soEm, m: em.length }) : t('{n} em SOS', { n: soEm })}</Nhan>
+        {cot === 'ql' && cho > 0 && <Nhan tone="wait">{t('{n} chờ duyệt', { n: cho })}</Nhan>}
+        {cot === 'ql' && tre > 0 && <Nhan tone="late">⚠ {t('{n} quá hạn', { n: tre })}</Nhan>}
       </span>
     );
   };
   const nutMo = (r: DongSos) => (
-    <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-[32px]" aria-label={`Mở ${r.ten}`} onClick={() => onMo(r)}>Mở</button>
+    <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-[32px]" aria-label={t('Mở {ten}', { ten: r.ten })} onClick={() => onMo(r)}>{t('Mở')}</button>
   );
   const tenEm = (r: DongSos, lap: boolean) => (
     <span className="flex min-w-0 flex-wrap items-baseline gap-x-1.5">
@@ -136,15 +142,15 @@ export function BangSos({ data, cot, dam, dienThoai, ds, onMo }: {
       {!lap && <span className="shrink-0 text-[11.5px] tabular-nums text-slate-500">{maHocVienNgan(r.ma)}</span>}
     </span>
   );
-  const trangThai = (r: DongSos) => { const n = nhomDong(r); return <Nhan tone={TONE_NHOM[n]}>{NHAN_NHOM_XU_LY[n]}</Nhan>; };
+  const trangThai = (r: DongSos) => { const n = nhomDong(r); return <Nhan tone={TONE_NHOM[n]}>{t(NHAN_NHOM_XU_LY[n])}</Nhan>; };
   const ketQua = (r: DongSos) => <TheoCase r={r} dam={dam} chu={chuKetQua} />;
 
   if (dienThoai) {
     return (
       <div className="space-y-2">
         {nhom.map((g) => (
-          <section key={g.k} className="space-y-2" aria-label={g.k === 'ft' ? 'Lớp Fast Track' : 'Lớp thường'}>
-            {nhom.length > 1 && <h2 className="m-0 px-1 text-[11.5px] font-semibold uppercase tracking-wide text-slate-500">{g.k === 'ft' ? 'Fast Track' : 'Lớp thường'}</h2>}
+          <section key={g.k} className="space-y-2" aria-label={g.k === 'ft' ? t('Lớp Fast Track') : t('Lớp thường')}>
+            {nhom.length > 1 && <h2 className="m-0 px-1 text-[11.5px] font-semibold uppercase tracking-wide text-slate-500">{g.k === 'ft' ? 'Fast Track' : t('Lớp thường')}</h2>}
             {g.lop.map((em) => (
               <div key={em[0].classId} className="card overflow-hidden">
                 <button type="button" aria-expanded={mo(em[0].classId)} onClick={() => doi(em[0].classId)}
@@ -159,13 +165,13 @@ export function BangSos({ data, cot, dam, dienThoai, ds, onMo }: {
                     dau={<span className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1">{tenEm(r, false)}<Level tone={sosTone(r.sosLevel)}>SOS {r.sosLevel}</Level>{trangThai(r)}</span>}
                     hanhDong={nutMo(r)}
                     dong={[
-                      { nhan: r.ft ? 'Kỹ năng' : 'Môn', noiDung: `${r.kyNang.map((k) => skillShort(k)).join(', ')} · ${r.luot} · ${tuanLich(r.tuan, homNay)}` },
-                      { nhan: 'Nguyên nhân', noiDung: <TheoCase r={r} dam={dam} chu={chuNguyenNhan} /> },
-                      ...(cot === 'ql' ? [{ nhan: 'Phương án', noiDung: <TheoCase r={r} dam={dam} chu={chuPa} /> }] : []),
-                      { nhan: 'Kết quả', noiDung: ketQua(r) },
-                      ...(cot === 'ql' ? [{ nhan: 'Việc tiếp', noiDung: <ViecTiepDong r={r} /> }] : []),
+                      { nhan: r.ft ? t('Kỹ năng') : t('Môn'), noiDung: `${r.kyNang.map((k) => skillShort(k)).join(', ')} · ${r.luot} · ${tuanLich(r.tuan, homNay)}` },
+                      { nhan: t('Nguyên nhân'), noiDung: <TheoCase r={r} dam={dam} chu={chuNguyenNhan} /> },
+                      ...(cot === 'ql' ? [{ nhan: t('Phương án'), noiDung: <TheoCase r={r} dam={dam} chu={chuPa} /> }] : []),
+                      { nhan: t('Kết quả'), noiDung: ketQua(r) },
+                      ...(cot === 'ql' ? [{ nhan: t('Việc tiếp'), noiDung: <ViecTiepDong r={r} /> }] : []),
                       ...(cot === 'cx' ? [{ nhan: 'TVV', noiDung: r.tvv ?? '—' }] : []),
-                      ...(cot !== 'ql' ? [{ nhan: 'Phụ huynh', noiDung: <OPhuHuynh l={r.lienHe} /> }] : []),
+                      ...(cot !== 'ql' ? [{ nhan: t('Phụ huynh'), noiDung: <OPhuHuynh l={r.lienHe} /> }] : []),
                     ]} />
                 ))}
               </div>
@@ -185,13 +191,13 @@ export function BangSos({ data, cot, dam, dienThoai, ds, onMo }: {
   return (
     <div className="space-y-3">
       {nhom.map((g) => (
-        <section key={g.k} className="card overflow-x-auto" aria-label={g.k === 'ft' ? 'Lớp Fast Track' : 'Lớp thường'}>
+        <section key={g.k} className="card overflow-x-auto" aria-label={g.k === 'ft' ? t('Lớp Fast Track') : t('Lớp thường')}>
           <table className="w-full min-w-[1000px] table-fixed text-sm">
-            <colgroup>{tieuDe.map((t, i) => <col key={i} className={rong[t]} />)}</colgroup>
-            <thead><tr>{tieuDe.map((t, i) => <th key={i} className="th">{t === 'SOS' && g.k === 'thuong' ? 'SOS · môn' : t || <span className="sr-only">Thao tác</span>}</th>)}</tr></thead>
+            <colgroup>{tieuDe.map((x, i) => <col key={i} className={rong[x]} />)}</colgroup>
+            <thead><tr>{tieuDe.map((x, i) => <th key={i} className="th">{x === 'SOS' && g.k === 'thuong' ? t('SOS · môn') : x ? (NHAN_COT[x] ?? x) : <span className="sr-only">{t('Thao tác')}</span>}</th>)}</tr></thead>
             {g.lop.map((em) => (
               <tbody key={em[0].classId}>
-                <HangNhom mo={mo(em[0].classId)} onMo={() => doi(em[0].classId)} nhan={`lớp ${em[0].classCode}`} soCotDau={tieuDe.length} tieuDe={dauLop(em)} />
+                <HangNhom mo={mo(em[0].classId)} onMo={() => doi(em[0].classId)} nhan={t('lớp {ma}', { ma: em[0].classCode })} soCotDau={tieuDe.length} tieuDe={dauLop(em)} />
                 {mo(em[0].classId) && em.map((r, i) => {
                   const lap = toanBo && i > 0 && em[i - 1].studentId === r.studentId;
                   return (

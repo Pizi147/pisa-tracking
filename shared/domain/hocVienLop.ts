@@ -102,7 +102,7 @@ export function docGoc(view: string | null | undefined, loc: string | null | und
 
 /** Nhóm xử lý của một Case — cùng ba chữ với bảng Tổng hợp (chủ SP 14/10): Chờ duyệt (chưa có PA chạy, PA chờ xác nhận, "Không cần theo dõi" chờ QL) · Đang xử lý (có PA đã chạy) · Xong. */
 export type NhomXuLy = 'cho-duyet' | 'dang-xu-ly' | 'xong';
-export const NHAN_NHOM_XU_LY: Record<NhomXuLy, string> = { 'cho-duyet': 'Chờ duyệt', 'dang-xu-ly': 'Đang xử lý', xong: 'Xong' };
+export const NHAN_NHOM_XU_LY = { 'cho-duyet': 'Chờ duyệt', 'dang-xu-ly': 'Đang xử lý', xong: 'Xong' } as const satisfies Record<NhomXuLy, string>;
 export function nhomXuLyCase(k: TrangThaiCaseV4, coPaDaChay: boolean): NhomXuLy {
   if (k === 'xong' || k === 'huy-khong-theo-doi' || k === 'he-thong-dong' || k === 'rut-sua-diem') return 'xong';
   return k === 'dang-lam' && coPaDaChay ? 'dang-xu-ly' : 'cho-duyet';

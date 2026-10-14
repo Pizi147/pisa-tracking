@@ -8,6 +8,7 @@ import { useLoiForm } from '../../ui/loiForm.tsx';
 import { QuaHan } from '../../ui/Nhan.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { ErrorState, NutChon, Skeleton } from '../../ui/ui.tsx';
+import { t } from '@shared/i18n/index.ts';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { FormPa, KhoaNho, VachBuoi } from './FormPa.tsx';
 import {
@@ -161,9 +162,9 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, quayLai, onClose, onSave
 
   /* Ô lỗi (YC-12.5.2): lý do dưới ô, chân chỉ đếm "n ô cần sửa ↑". Luật giữ như bản cũ. */
   const LUAT: LuatTruong[] = [
-    { khoa: 'ket-qua', nhan: 'Tiến triển (2 tuần)', chon: true },
+    { khoa: 'ket-qua', nhan: t('Tiến triển (2 tuần)'), chon: true },
     /* Chủ SP 14/10 tối: PA Tutor có buổi — nhận xét nằm ở từng buổi, không ô Nhận xét chung (máy chủ nhận nhận xét buổi ghép làm ghi chú). */
-    ...(nhanXetTheoBuoi ? [] : [{ khoa: 'tien-trien', nhan: 'Nhận xét', toiThieu: 8 }]),
+    ...(nhanXetTheoBuoi ? [] : [{ khoa: 'tien-trien', nhan: t('Nhận xét'), toiThieu: 8 }]),
     ...(lanCuoi ? [] : [{ khoa: 'quyet-dinh', nhan: 'Quyết định', chon: true }]),
     ...(lanCuoi && outcome === 'insufficient' ? [{ khoa: 'ly-do', nhan: 'Lý do chưa đủ dữ liệu', toiThieu: 1 }] : []),
     ...(needReason ? [{ khoa: 'ly-do', nhan: decision === 'adjust' ? 'Lý do điều chỉnh' : 'Lý do thay', toiThieu: 1 }] : []),
@@ -182,7 +183,7 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, quayLai, onClose, onSave
     if (!buoi[i]?.nhanXet.trim()) loi.push({ khoa: `buoi-${i}-nx`, nhan: `Nhận xét buổi ${i + 1}`, lyDo: 'Chưa điền' });
   }
   if (nhanXetTheoBuoi && !loi.some((l) => l.khoa.startsWith('buoi-')) && ghepBuoi.replace(/^Buổi \d+: /, '').length < 8) {
-    loi.push({ khoa: 'buoi-0-nx', nhan: 'Nhận xét buổi 1', lyDo: 'Ghi rõ hơn — ít nhất 8 ký tự' });
+    loi.push({ khoa: 'buoi-0-nx', nhan: t('Nhận xét buổi {n}', { n: 1 }), lyDo: t('Ghi rõ hơn — ít nhất 8 ký tự') });
   }
   if (decision === 'adjust') {
     /* Số buổi mới ≥ đã dạy SAU tuần này (máy chủ kiểm cùng luật). */
@@ -316,9 +317,9 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, quayLai, onClose, onSave
           </p>
         )}
         <div>
-          <span className="mb-1 flex items-baseline gap-2 text-[11.5px] font-bold text-slate-200">Tiến triển (2 tuần)<span aria-hidden className="text-bad">*</span></span>
+          <span className="mb-1 flex items-baseline gap-2 text-[11.5px] font-bold text-slate-200">{t('Tiến triển (2 tuần)')}<span aria-hidden className="text-bad">*</span></span>
           {/* PR-LUI-a2: 2 cột ở mọi cỡ (panel ≤ 560 px), chữ cho xuống dòng, bỏ dấu ✓ ↗ – ↓ — không cắt / lệch. Sửa chung NutChon là PR-KHUNG. */}
-          <div {...o('ket-qua')} tabIndex={-1} className="grid grid-cols-2 gap-2 outline-none" role="group" aria-label="Tiến triển (2 tuần)">
+          <div {...o('ket-qua')} tabIndex={-1} className="grid grid-cols-2 gap-2 outline-none" role="group" aria-label={t('Tiến triển (2 tuần)')}>
             {FOLLOWUP_OUTCOMES.filter((o) => o !== 'insufficient').map((o) => (
               <NutChon key={o} chon={outcome === o} disabled={khoaLuaChon && outcome !== o} onClick={() => pickOutcome(o)} className="justify-center text-sm">
                 {outcomeLabelFor(o)}
@@ -334,7 +335,7 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, quayLai, onClose, onSave
           {loiCua('ket-qua') && <span className="mt-1 block text-xs text-late">{loiCua('ket-qua')}</span>}
         </div>
         {!nhanXetTheoBuoi && (
-          <Truong nhan="Nhận xét" batBuoc loi={loiCua('tien-trien')} dem={{ co: progress.trim().length, can: 8 }}>
+          <Truong nhan={t('Nhận xét')} batBuoc loi={loiCua('tien-trien')} dem={{ co: progress.trim().length, can: 8 }}>
             <textarea className="field w-full" {...o('tien-trien')} rows={2} value={progress} onChange={(e) => setProgress(e.target.value)}
               placeholder={GOI_Y_KET_QUA_PA} />
           </Truong>
@@ -424,16 +425,16 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, quayLai, onClose, onSave
                   <span aria-hidden className={`mt-[3px] inline-block h-3 w-3 shrink-0 rounded-full border ${chon ? 'border-[color:var(--accent)] bg-[color:var(--accent)]' : 'border-slate-500'}`} />
                   <span className="min-w-0">
                     <span className="block text-sm font-semibold text-slate-100">{PLAN_DECISION_NGAN[d]}</span>
-                    <span className="block text-xs text-slate-500">{chan ? (khoaLuaChon ? 'Chỉ sửa được chữ' : ngiaBiChan(outcome)) : d === 'adjust' && dsDc.length > 1 ? `Sửa PA này · ${dsDc.filter((x) => x !== 'adjust').map((x) => PLAN_DECISION_NGAN[x]).join(' · ')}` : PLAN_DECISION_NGHIA[d]}</span>
+                    <span className="block text-xs text-slate-500">{chan ? (khoaLuaChon ? 'Chỉ sửa được chữ' : ngiaBiChan(outcome)) : d === 'adjust' && dsDc.length > 1 ? `${t('Sửa PA này')} · ${dsDc.filter((x) => x !== 'adjust').map((x) => PLAN_DECISION_NGAN[x]).join(' · ')}` : PLAN_DECISION_NGHIA[d]}</span>
                   </span>
                 </button>
                 {chon && (d === 'adjust' ? dsDc.length > 1 || khoiCon(decision as PlanDecision) : khoiCon(d)) && (
                   <div className="ml-3 mt-2 space-y-3 border-l-2 pl-3" style={{ borderColor: 'var(--accent-line)' }}>
                     {d === 'adjust' && dsDc.length > 1 && (
-                      <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Cách điều chỉnh">
+                      <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label={t('Cách điều chỉnh')}>
                         {dsDc.map((x) => (
                           <NutChon key={x} nho chon={decision === x} disabled={!!chanCua(x)} onClick={() => setDecision(x)}>
-                            {x === 'adjust' ? 'Sửa PA này' : PLAN_DECISION_NGAN[x]}
+                            {x === 'adjust' ? t('Sửa PA này') : PLAN_DECISION_NGAN[x]}
                           </NutChon>
                         ))}
                       </div>

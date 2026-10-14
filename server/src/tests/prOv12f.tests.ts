@@ -147,4 +147,14 @@ export async function runPrOv12fTests(t: YThucTestKit) {
     const ca = theoVai.hocVienTheoVai(loadPrincipal(idTvv), { phamVi: 'chi-nhanh' });
     assert(Object.keys(ca.viec.buocTiep).length >= Object.keys(tr.viec.buocTiep).length, 'Cả chi nhánh ít việc hơn HV của tôi');
   }));
+
+  check('OV12f-7 · TVV hai chi nhánh chọn "Cả chi nhánh": Đang SOS theo đúng chi nhánh trang TVV đã chọn (web gửi phamVi.chiNhanh) — có dòng, chỉ chi nhánh đó', () => thu(() => {
+    const idTvv = tao([{ role: 'consultant', branches: ['CP', 'MB'] }]);
+    const tvv = loadPrincipal(idTvv);
+    const cn = theoVai.hocVienTheoVai(tvv, { phamVi: 'chi-nhanh', branchId: mb }).phamVi.chiNhanh;
+    assert(cn === mb, `trang TVV không giữ chi nhánh đã chọn: ${cn}`);
+    const r = sos.dangSos(tvv, { phamVi: 'chi-nhanh', branchId: cn, tuan: 'tat-ca' });
+    const lopMb = new Set(all('SELECT id FROM classes WHERE branch_id = ?', mb).map((x) => x.id));
+    assert(r.rows.length > 0 && r.rows.every((x: any) => lopMb.has(x.classId)), `TVV hai chi nhánh: ${r.rows.length} dòng`);
+  }));
 }

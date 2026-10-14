@@ -4,6 +4,7 @@ import { Nhan } from '../../ui/Nhan.tsx';
 import { Han } from '../../ui/Han.tsx';
 import { HangCon, HangNhom } from '../../ui/HangNhom.tsx';
 import { OPhuHuynh } from './HocVienTheoVai.tsx';
+import { t } from '@shared/i18n/index.ts';
 import { maHocVienNgan, type DeadlineKind, type LienHe, type NguCanhDs } from '@shared/domain/index.ts';
 
 /**
@@ -24,6 +25,7 @@ export type ViecCanLam = {
   mo: () => void;
 };
 
+const NHAN_COT: Record<string, string> = { 'Học viên': t('Học viên'), Việc: t('Việc'), 'Người giữ': t('Người giữ'), Hạn: t('Hạn'), 'Phụ huynh': t('Phụ huynh') };
 const THU_KIEU = (v: ViecCanLam) => (v.quaHan ? 0 : v.han ? 1 : v.kieu === 'cho-duyet' ? 2 : v.kieu === 'thieu-tt' ? 4 : 3);
 const soSanh = (a: ViecCanLam, b: ViecCanLam) => THU_KIEU(a) - THU_KIEU(b) || (a.han ?? '9').localeCompare(b.han ?? '9');
 
@@ -58,7 +60,7 @@ export function BangCanLam({ viec, coNguoi, coPhuHuynh, dienThoai, ds }: {
     for (const v of [...ds].sort(soSanh)) { const kk = v.studentId === null ? `ca-lop:${v.key}` : String(v.studentId); em.set(kk, [...(em.get(kk) ?? []), v]); }
     /* "Cả lớp" đầu lớp, rồi em theo việc gấp nhất của em. */
     const dsEm = [...em.values()].sort((a, b) => Number(b[0].studentId === null) - Number(a[0].studentId === null) || soSanh(a[0], b[0]));
-    return { k, code: ds[0].classCode ?? 'Không gắn lớp', classId: ds[0].classId, em: dsEm, tre: ds.filter((v) => v.quaHan).length, cho: ds.filter((v) => v.kieu === 'cho-duyet').length };
+    return { k, code: ds[0].classCode ?? t('Không gắn lớp'), classId: ds[0].classId, em: dsEm, tre: ds.filter((v) => v.quaHan).length, cho: ds.filter((v) => v.kieu === 'cho-duyet').length };
   }).sort((a, b) => Number(b.tre > 0) - Number(a.tre > 0) || a.code.localeCompare(b.code, 'vi'));
   /* Tự mở khi ít (≤ 5 lớp hoặc ≤ 40 việc — đang lọc thường rơi vào đây); nhiều hơn thì gập, bấm đầu lớp để mở. */
   const mo = (k: string) => (nhom.length <= 5 || viec.length <= 40) !== gap.has(k);
@@ -67,21 +69,21 @@ export function BangCanLam({ viec, coNguoi, coPhuHuynh, dienThoai, ds }: {
     <span className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-1">
       {g.classId ? <Link to={`/hoc-vien/lop/${g.classId}`} className="shrink-0 font-extrabold text-slate-100 underline decoration-dotted underline-offset-4">{g.code}</Link>
         : <span className="font-extrabold text-slate-100">{g.code}</span>}
-      {g.tre > 0 && <Nhan tone="late">⚠ {g.tre} quá hạn</Nhan>}
-      {g.cho > 0 && <Nhan tone="wait">{g.cho} chờ duyệt</Nhan>}
-      {g.em.some((e) => e[0].studentId !== null) && <Nhan tone="muted">{g.em.filter((e) => e[0].studentId !== null).length} em</Nhan>}
+      {g.tre > 0 && <Nhan tone="late">⚠ {t('{n} quá hạn', { n: g.tre })}</Nhan>}
+      {g.cho > 0 && <Nhan tone="wait">{t('{n} chờ duyệt', { n: g.cho })}</Nhan>}
+      {g.em.some((e) => e[0].studentId !== null) && <Nhan tone="muted">{t('{n} em', { n: g.em.filter((e) => e[0].studentId !== null).length })}</Nhan>}
     </span>
   );
   const tenEm = (v: ViecCanLam) => (v.studentId === null
-    ? <span className="font-semibold text-slate-200">Cả lớp · {v.soEm ?? 0} em</span>
+    ? <span className="font-semibold text-slate-200">{t('Cả lớp · {n} em', { n: v.soEm ?? 0 })}</span>
     : (
       <span className="flex min-w-0 flex-wrap items-baseline gap-x-1.5">
         <Link className="link max-w-full truncate font-semibold" title={v.ten} to={`/hoc-vien/${v.studentId}`} state={{ ds }}>{v.ten}</Link>
         {v.ma && <span className="shrink-0 text-[11.5px] tabular-nums text-slate-500">{maHocVienNgan(v.ma)}</span>}
       </span>
     ));
-  const nut = (v: ViecCanLam) => <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-[32px]" aria-label={`Mở · ${v.viec} · ${v.ten}`} onClick={v.mo}>Mở</button>;
-  const nguoi = (v: ViecCanLam) => (v.nguoi ? <span className="text-xs text-slate-300">{v.nguoi}</span> : <span className="text-xs text-slate-500">Tôi</span>);
+  const nut = (v: ViecCanLam) => <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-[32px]" aria-label={`${t('Mở')} · ${v.viec} · ${v.ten}`} onClick={v.mo}>{t('Mở')}</button>;
+  const nguoi = (v: ViecCanLam) => (v.nguoi ? <span className="text-xs text-slate-300">{v.nguoi}</span> : <span className="text-xs text-slate-500">{t('Tôi')}</span>);
 
   if (dienThoai) {
     return (
@@ -101,12 +103,12 @@ export function BangCanLam({ viec, coNguoi, coPhuHuynh, dienThoai, ds }: {
                   <div key={v.key} className="mt-1.5 flex items-start gap-2">
                     <span className="min-w-0 flex-1 space-y-0.5">
                       <ChipViec v={v} />
-                      {(coNguoi || v.han) && <span className="block text-xs text-slate-500">{coNguoi && <>{v.nguoi ?? 'Tôi'} · </>}<OHan v={v} /></span>}
+                      {(coNguoi || v.han) && <span className="block text-xs text-slate-500">{coNguoi && <>{v.nguoi ?? t('Tôi')} · </>}<OHan v={v} /></span>}
                     </span>
                     {nut(v)}
                   </div>
                 ))}
-                {coPhuHuynh && e[0].lienHe && <div className="mt-1 text-xs text-slate-400">Phụ huynh: <OPhuHuynh l={e[0].lienHe} /></div>}
+                {coPhuHuynh && e[0].lienHe && <div className="mt-1 text-xs text-slate-400">{t('Phụ huynh')}: <OPhuHuynh l={e[0].lienHe} /></div>}
               </article>
             ))}
           </div>
@@ -118,13 +120,13 @@ export function BangCanLam({ viec, coNguoi, coPhuHuynh, dienThoai, ds }: {
   const tieuDe = ['Học viên', 'Việc', ...(coNguoi ? ['Người giữ'] : []), 'Hạn', ...(coPhuHuynh ? ['Phụ huynh'] : []), ''];
   const rong: Record<string, string> = { 'Học viên': 'w-[22%]', Việc: 'w-[34%]', 'Người giữ': 'w-[16%]', Hạn: 'w-[14%]', 'Phụ huynh': 'w-[18%]', '': 'w-20' };
   return (
-    <section className="card overflow-x-auto" aria-label="Cần làm theo lớp">
+    <section className="card overflow-x-auto" aria-label={t('Cần làm theo lớp')}>
       <table className="w-full min-w-[860px] table-fixed text-sm">
-        <colgroup>{tieuDe.map((t, i) => <col key={i} className={rong[t]} />)}</colgroup>
-        <thead><tr>{tieuDe.map((t, i) => <th key={i} className="th">{t || <span className="sr-only">Thao tác</span>}</th>)}</tr></thead>
+        <colgroup>{tieuDe.map((x, i) => <col key={i} className={rong[x]} />)}</colgroup>
+        <thead><tr>{tieuDe.map((x, i) => <th key={i} className="th">{x ? NHAN_COT[x] : <span className="sr-only">{t('Thao tác')}</span>}</th>)}</tr></thead>
         {nhom.map((g) => (
           <tbody key={g.k}>
-            <HangNhom mo={mo(g.k)} onMo={() => doi(g.k)} nhan={`lớp ${g.code}`} soCotDau={tieuDe.length} tieuDe={dauLop(g)} />
+            <HangNhom mo={mo(g.k)} onMo={() => doi(g.k)} nhan={t('lớp {ma}', { ma: g.code })} soCotDau={tieuDe.length} tieuDe={dauLop(g)} />
             {mo(g.k) && g.em.flatMap((e) => e.map((v, i) => (
               <HangCon key={v.key} className="row-hover">
                 {/* Khối một em: tên chỉ ở dòng đầu (ô trống ở dòng sau — không rowSpan để thụt lề hàng con giữ đúng cột). */}

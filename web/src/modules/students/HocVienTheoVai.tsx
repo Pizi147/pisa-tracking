@@ -12,6 +12,7 @@ import type { Branch } from '../../ui/Filters.tsx';
 import { sosTone } from '../../lib/format.ts';
 import { useThaoTacDongHocVien } from '../classes/thaoTacDongHocVien.tsx';
 import { KetQuaOHocVien } from './BangHocVienLop.tsx';
+import { t } from '@shared/i18n/index.ts';
 import { BoLocDoan } from '../../ui/ui.tsx';
 import { BangSos, type TrangSos } from './BangSos.tsx';
 import { BangCanLam, type ViecCanLam } from './BangCanLam.tsx';
@@ -139,7 +140,10 @@ export function HocVienTheoVai({ vai }: { vai: 'tvv' | 'cx' }) {
   const branches = useApi<Branch[]>(vai === 'cx' ? '/ref/branches' : null);
   const data = trang.data;
   const tuan = params.get('tuan');
-  const duongSos = `/hoc-vien-lop?goc=sos${phamViUrl ? '&phamVi=chi-nhanh' : cn ? `&branchId=${cn}` : ''}${tuan ? `&tuan=${tuan}` : ''}`;
+  /* TVV "Cả chi nhánh": gửi ĐÚNG chi nhánh trang TVV đã chọn (`phamVi.chiNhanh`) — TVV hai chi nhánh không bị lệch sang chi nhánh khác (rà #391). */
+  const cnTvv = phamViUrl ? data?.phamVi.chiNhanh ?? null : null;
+  const duongSos = phamViUrl && !cnTvv ? null
+    : `/hoc-vien-lop?goc=sos${phamViUrl ? `&phamVi=chi-nhanh&branchId=${cnTvv}` : cn ? `&branchId=${cn}` : ''}${tuan ? `&tuan=${tuan}` : ''}`;
   const sos = useApi<TrangSos>(duongSos, [duongSos]);
   const [panelEm, setPanelEm] = useState<number | null>(null);
   const [tongKet, setTongKet] = useState<number | null>(null);
@@ -174,7 +178,7 @@ export function HocVienTheoVai({ vai }: { vai: 'tvv' | 'cx' }) {
 
   const pv = data?.phamVi;
   const tenCn = vai === 'cx' ? (cn ? branches.data?.find((b) => b.id === cn)?.name ?? 'Một chi nhánh' : 'Tất cả chi nhánh') : null;
-  const tenGoc: Record<GocVai, string> = { 'tat-ca': 'Tất cả', sos: 'Đang SOS', 'can-lam': 'Cần làm', 'can-chu-y': 'Cần chú ý' };
+  const tenGoc: Record<GocVai, string> = { 'tat-ca': t('Tất cả'), sos: t('Đang SOS'), 'can-lam': t('Cần làm'), 'can-chu-y': t('Cần chú ý') };
   const dangXem = [tenCn, vai === 'tvv' && pv ? PHAM_VI_NHAN[pv.dangDung] : null, tenGoc[goc], goc === 'tat-ca' && chip !== 'tat-ca' ? CHIP_VAI_NHAN[chip].nhan : null,
     q.trim() ? `“${q.trim()}”` : null].filter(Boolean).join(' · ');
   const coLoc = (goc === 'tat-ca' && chip !== 'tat-ca') || !!q.trim();
@@ -190,11 +194,11 @@ export function HocVienTheoVai({ vai }: { vai: 'tvv' | 'cx' }) {
     const bt = data.viec.buocTiep[d.id];
     const kq = data.viec.ketQuaThi[d.id];
     return [
-      ...(bt ? [{ ...chung, key: `buoc:${d.id}`, viec: 'Chọn bước tiếp sau thi', phu: null, han: bt.han, quaHan: bt.han < homNay, kieu: bt.han < homNay ? 'qua-han' as const : null,
+      ...(bt ? [{ ...chung, key: `buoc:${d.id}`, viec: t('Chọn bước tiếp sau thi'), phu: null, han: bt.han, quaHan: bt.han < homNay, kieu: bt.han < homNay ? 'qua-han' as const : null,
         mo: () => setTongKet(bt.cycleId) }] : []),
-      ...(kq && d.viewer.suaThem ? [{ ...chung, key: `thi:${d.id}`, viec: 'Kết quả thi', phu: kq.thi ? `Thi ${ngay(kq.thi, homNay)} · chưa có kết quả` : 'chưa có kết quả', han: kq.han,
+      ...(kq && d.viewer.suaThem ? [{ ...chung, key: `thi:${d.id}`, viec: t('Kết quả thi'), phu: kq.thi ? t('Thi {ngay} · chưa có kết quả', { ngay: ngay(kq.thi, homNay) }) : t('chưa có kết quả'), han: kq.han,
         quaHan: kq.han < homNay, kieu: kq.han < homNay ? 'qua-han' as const : null, mo: () => setSuaEm({ id: d.id, ten: d.ten, lop: d.lop?.code ?? null, viec: 'outcome' }) }] : []),
-      ...(tap.thieu_tt?.has(d.id) && d.viewer.suaThongTin ? [{ ...chung, key: `thieu:${d.id}`, viec: 'Thiếu thông tin', phu: null, han: null, quaHan: false, kieu: 'thieu-tt' as const,
+      ...(tap.thieu_tt?.has(d.id) && d.viewer.suaThongTin ? [{ ...chung, key: `thieu:${d.id}`, viec: t('Thiếu thông tin'), phu: null, han: null, quaHan: false, kieu: 'thieu-tt' as const,
         mo: () => setSuaEm({ id: d.id, ten: d.ten, lop: d.lop?.code ?? null, viec: 'info' }) }] : []),
     ];
   });
@@ -237,10 +241,10 @@ export function HocVienTheoVai({ vai }: { vai: 'tvv' | 'cx' }) {
           )}
         </div>
         <div className="flex min-w-0 max-w-full flex-wrap items-center gap-2">
-          <BoLocDoan ariaLabel="Góc nhìn" value={goc} onChange={doiGoc}
+          <BoLocDoan ariaLabel={t('Góc nhìn')} value={goc} onChange={doiGoc}
             muc={(vai === 'cx' ? (['tat-ca', 'sos', 'can-chu-y'] as const) : (['tat-ca', 'sos', 'can-lam'] as const)).map((k) => ({ key: k, nhan: tenGoc[k], so: demGoc[k] }))} />
           {goc === 'tat-ca' && (
-            <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Lọc phụ">
+            <div className="flex flex-wrap items-center gap-2" role="group" aria-label={t('Lọc phụ')}>
               {chips.map((k) => (
                 <button key={k} type="button" className="nut-loc" title={CHIP_VAI_NHAN[k].goiY} aria-pressed={chip === k}
                   onClick={() => setParam({ view: vai === 'cx' ? 'tat-ca' : null, loc: chip === k ? null : k })}>
@@ -268,11 +272,11 @@ export function HocVienTheoVai({ vai }: { vai: 'tvv' | 'cx' }) {
       {goc === 'sos' && (
         sos.error ? <ErrorState message={sos.error.message} hint={sos.error.hint} onRetry={sos.reload} />
           : !sos.data ? <Skeleton rows={6} />
-            : sosRows.length === 0 ? <Card><Empty title={sos.data.toanBo ? 'Không có học viên SOS trong 8 tuần' : 'Không có học viên SOS ở tuần thi này'} hint="Chọn tuần khác hoặc Toàn bộ." /></Card>
+            : sosRows.length === 0 ? <Card><Empty title={sos.data.toanBo ? t('Không có học viên SOS trong 8 tuần') : t('Không có học viên SOS ở tuần thi này')} hint={t('Chọn tuần khác hoặc Toàn bộ.')} /></Card>
               : <BangSos data={{ ...sos.data, rows: sosRows }} cot={vai} dam={null} dienThoai={dienThoai} ds={ds} onMo={(r) => setPanelEm(r.studentId)} />
       )}
       {goc === 'can-lam' && data && (viecTvv.length === 0
-        ? <Card><Empty title="Không có việc nào" /></Card>
+        ? <Card><Empty title={t('Không có việc nào')} /></Card>
         : <BangCanLam viec={viecTvv} coNguoi={false} coPhuHuynh dienThoai={dienThoai} ds={ds} />)}
       {panelEm !== null && <PanelMotEm key={panelEm} studentId={panelEm} onClose={() => setPanelEm(null)} />}
       {tongKet !== null && <NganTongKet cycleId={tongKet} onClose={() => setTongKet(null)} onDoi={trang.reload} />}

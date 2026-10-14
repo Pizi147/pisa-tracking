@@ -20,6 +20,7 @@ import {
   type BadgeLop, type GocHocVien, type LocHocVien, type LocPhuCanLam, type NguCanhDs, type PhamVi, type SapXep, type WorkScope, vaiXemHocVien,
 } from '@shared/domain/index.ts';
 import { HocVienTheoVai } from './HocVienTheoVai.tsx';
+import { t } from '@shared/i18n/index.ts';
 import { BangSos, type TrangSos } from './BangSos.tsx';
 import { BangCanLam, type ViecCanLam } from './BangCanLam.tsx';
 import { PanelMotEm } from './PanelMotEm.tsx';
@@ -71,7 +72,7 @@ function nhanLuuTru(dem: { lop: number; hv: number }): string {
  * Mọi trạng thái nằm trên URL: tải lại trang và nút Back giữ đúng chỗ đang đứng.
  */
 /** Việc Case ở Công việc → Panel một em (các việc khác giữ panel / hộp sẵn có). */
-const VIEC_CASE = new Set(['xac_nhan_pa', 'ghi_ket_qua_pa', 'mini_test', 'no_plan', 'cause']);
+const VIEC_CASE = new Set(['xac_nhan_pa', 'ghi_ket_qua_pa', 'mini_test', 'no_plan', 'cause', 'ghi_nhan_xet']);
 
 export default function StudentsPage() {
   const { session } = useSession();
@@ -148,7 +149,8 @@ function TrangTheoLop({ admin }: { admin: boolean }) {
   /* Cần làm: việc ở Công việc (`/my-work`, cùng số) — QL / Admin "Của GV" (làm thay được), GV việc của mình; cùng chi nhánh trang đang xem. */
   const cnViec = data?.phamVi.dangDung === 'chi-nhanh' ? data.phamVi.chiNhanh : null;
   const duongViec = laQl || admin ? `/my-work?nguoi=tat-ca${cnViec ? `&branchId=${cnViec}` : ''}` : '/my-work';
-  const work = useApi<{ dong: WorkItem[] }>('chuyenDen' in doc ? null : duongViec, [duongViec]);
+  /* Chờ trang tải xong mới gọi: QL / Quản trị "Của GV" không chi nhánh = tính toàn hệ thống (nặng trên Turso). */
+  const work = useApi<{ dong: WorkItem[] }>('chuyenDen' in doc || !data ? null : duongViec, [duongViec]);
   const [panelEm, setPanelEm] = useState<{ id: number; caseMo: number | null } | null>(null);
   const [viecMo, setViecMo] = useState<WorkItem | null>(null);
   const [suaTT, setSuaTT] = useState<{ id: number; ten: string; lop: string | null } | null>(null);
@@ -211,10 +213,10 @@ function TrangTheoLop({ admin }: { admin: boolean }) {
       const chung = { studentId: h.id, ten: h.ten, ma: h.ma, classId: h.classId, classCode: lop?.code ?? null, han: null, loaiHan: null, quaHan: false, nguoi: '—' };
       return [
         ...(h.loc.includes('cho-duyet')
-          ? [{ ...chung, key: `cho-duyet:${h.id}`, viec: 'Chờ duyệt', phu: 'Yêu cầu chờ Quản lý', kieu: 'cho-duyet' as const, nguoi: session?.nav?.workApprove ? null : 'Quản lý',
+          ? [{ ...chung, key: `cho-duyet:${h.id}`, viec: t('Chờ duyệt'), phu: t('Yêu cầu chờ Quản lý'), kieu: 'cho-duyet' as const, nguoi: session?.nav?.workApprove ? null : t('Quản lý'),
             mo: () => navigate(session?.nav?.workApprove ? `${DUONG_TAB_CONG_VIEC['cho-duyet']}?lop=${h.classId}` : DUONG_TAB_CONG_VIEC['yeu-cau']) }] : []),
         ...(h.loc.includes('thieu_tt')
-          ? [{ ...chung, key: `thieu:${h.id}`, viec: 'Thiếu thông tin', phu: h.thieu?.join(' · ') ?? null, kieu: 'thieu-tt' as const,
+          ? [{ ...chung, key: `thieu:${h.id}`, viec: t('Thiếu thông tin'), phu: h.thieu?.join(' · ') ?? null, kieu: 'thieu-tt' as const,
             mo: () => setSuaTT({ id: h.id, ten: h.ten, lop: lop?.code ?? null }) }] : []),
       ];
     })),
@@ -225,7 +227,7 @@ function TrangTheoLop({ admin }: { admin: boolean }) {
   const viecHien = locPhu ? theoLocPhu(locPhu) : viecTatCa;
   /* Lọc phụ của Cần làm: Quá hạn thường trực; Chờ duyệt · Thiếu thông tin khi có em (chip cũ không mất — P14; Admin không có thẻ chờ duyệt). */
   const locPhuCo = (['qua-han', 'cho-duyet', 'thieu_tt'] as const).filter((k) => !(admin && k === 'cho-duyet') && (k === 'qua-han' || k === locPhu || theoLocPhu(k).length > 0));
-  const nhanLocPhu: Record<LocPhuCanLam, string> = { 'qua-han': 'Quá hạn', 'cho-duyet': 'Chờ duyệt', thieu_tt: 'Thiếu thông tin' };
+  const nhanLocPhu: Record<LocPhuCanLam, string> = { 'qua-han': t('Quá hạn'), 'cho-duyet': t('Chờ duyệt'), thieu_tt: t('Thiếu thông tin') };
   const demGoc: Record<GocHocVien, number | undefined> = {
     'tat-ca': data ? dem['tat-ca'] : undefined,
     sos: sos.data ? new Set(sosRows.map((r) => r.studentId)).size : undefined,
@@ -314,9 +316,9 @@ function TrangTheoLop({ admin }: { admin: boolean }) {
           {/* K1: điện thoại cuộn ngang, mép phải mờ báo còn chip; pr-8 để chip cuối cuộn ra khỏi vùng mờ. Không `pb` (không để lộ thanh cuộn). */}
           {/* OV-12f: thanh góc nhìn (số = số học viên) · vạch · lọc phụ của góc / tuần thi. Đổi góc thì lọc phụ về trống. */}
           <div className="flex min-w-0 max-w-full flex-wrap items-center gap-2 lg:flex-1">
-            <BoLocDoan ariaLabel="Góc nhìn" value={goc} onChange={doiGoc}
+            <BoLocDoan ariaLabel={t('Góc nhìn')} value={goc} onChange={doiGoc}
               muc={(admin ? (['tat-ca', 'can-lam'] as const) : (['tat-ca', 'sos', 'can-lam'] as const)).map((k) => ({
-                key: k, nhan: k === 'tat-ca' ? 'Tất cả' : k === 'sos' ? 'Đang SOS' : 'Cần làm', so: demGoc[k],
+                key: k, nhan: k === 'tat-ca' ? t('Tất cả') : k === 'sos' ? t('Đang SOS') : t('Cần làm'), so: demGoc[k],
               }))} />
             {chiLop && (
               <button type="button" className="btn btn-sm shrink-0 sm:h-8" title="Bỏ lọc lớp" onClick={() => setParam({ classId: null })}>
@@ -324,7 +326,7 @@ function TrangTheoLop({ admin }: { admin: boolean }) {
               </button>
             )}
             {goc === 'can-lam' && (
-              <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Lọc phụ">
+              <div className="flex flex-wrap items-center gap-2" role="group" aria-label={t('Lọc phụ')}>
                 {locPhuCo.map((k) => (
                   <button key={k} type="button" className="nut-loc" aria-pressed={locPhu === k}
                     onClick={() => setParam({ view: 'can-lam', loc: locPhu === k ? null : k, open: null })}>
@@ -414,11 +416,11 @@ function TrangTheoLop({ admin }: { admin: boolean }) {
             : (
               <>
                 <p className="m-0 text-[12.5px] text-slate-400" aria-live="polite">
-                  Đang xem: <b className="font-semibold text-slate-200">Đang SOS · {sos.data.toanBo ? 'Toàn bộ 8 tuần' : 'một tuần thi'}</b>
-                  {' · '}<span className="tabular-nums">{demGoc.sos} học viên{sos.data.toanBo ? ` · ${sosRows.length} lượt SOS` : ''} · {new Set(sosRows.map((r) => r.classId)).size} lớp</span>
+                  {t('Đang xem')}: <b className="font-semibold text-slate-200">{t('Đang SOS')} · {sos.data.toanBo ? t('Toàn bộ 8 tuần') : t('một tuần thi')}</b>
+                  {' · '}<span className="tabular-nums">{t('{n} học viên', { n: demGoc.sos ?? 0 })}{sos.data.toanBo ? ` · ${t('{n} lượt SOS', { n: sosRows.length })}` : ''} · {t('{n} lớp', { n: new Set(sosRows.map((r) => r.classId)).size })}</span>
                 </p>
                 {sosRows.length === 0
-                  ? <Card><Empty title={sos.data.toanBo ? 'Không có học viên SOS trong 8 tuần' : 'Không có học viên SOS ở tuần thi này'} hint="Chọn tuần khác hoặc Toàn bộ." /></Card>
+                  ? <Card><Empty title={sos.data.toanBo ? t('Không có học viên SOS trong 8 tuần') : t('Không có học viên SOS ở tuần thi này')} hint={t('Chọn tuần khác hoặc Toàn bộ.')} /></Card>
                   : <BangSos data={{ ...sos.data, rows: sosRows }} cot="ql" dam={dam} dienThoai={dienThoai} ds={dsHocVien}
                       onMo={(r) => setPanelEm({ id: r.studentId, caseMo: r.cases.find((c) => !c.done)?.id ?? null })} />}
               </>
@@ -430,12 +432,12 @@ function TrangTheoLop({ admin }: { admin: boolean }) {
             : (
               <>
                 <p className="m-0 flex flex-wrap items-center gap-x-2 text-[12.5px] text-slate-400" aria-live="polite">
-                  <span>Đang xem: <b className="font-semibold text-slate-200">Cần làm{locPhu ? ` · ${nhanLocPhu[locPhu]}` : ''}</b></span>
-                  <span className="tabular-nums">· {emCua(viecHien)} học viên · {new Set(viecHien.map((v) => v.classId)).size} lớp</span>
-                  {locPhu && <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 sm:min-h-0" onClick={() => setParam({ loc: null })}>Xoá lọc</button>}
+                  <span>{t('Đang xem')}: <b className="font-semibold text-slate-200">{t('Cần làm')}{locPhu ? ` · ${nhanLocPhu[locPhu]}` : ''}</b></span>
+                  <span className="tabular-nums">· {t('{n} học viên', { n: emCua(viecHien) })} · {t('{n} lớp', { n: new Set(viecHien.map((v) => v.classId)).size })}</span>
+                  {locPhu && <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 sm:min-h-0" onClick={() => setParam({ loc: null })}>{t('Xoá lọc')}</button>}
                 </p>
                 {viecHien.length === 0
-                  ? <Card><Empty title={locPhu ? 'Không có việc nào khớp lọc' : 'Không có việc nào'} /></Card>
+                  ? <Card><Empty title={locPhu ? t('Không có việc nào khớp lọc') : t('Không có việc nào')} /></Card>
                   : <BangCanLam viec={viecHien} coNguoi={laQl || admin} coPhuHuynh={false} dienThoai={dienThoai} ds={dsHocVien} />}
               </>
             )

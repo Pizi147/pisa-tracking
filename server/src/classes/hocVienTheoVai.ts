@@ -98,9 +98,10 @@ export function hocVienTheoVai(p: Principal, f: { phamVi?: string | null; branch
   const coEm = new Set(ids);
   const homNay = demoToday();
   const buocTiep: TrangHocVienVai['viec']['buocTiep'] = {};
-  for (const c of choBuocTiep()) if (coEm.has(c.student_id)) buocTiep[c.student_id] = { cycleId: c.id, han: hanBuocTiep(c, homNay) };
+  /* Chỉ TVV có góc Cần làm — CX không chạy hai câu này. */
+  if (vai === 'tvv') for (const c of choBuocTiep()) if (coEm.has(c.student_id)) buocTiep[c.student_id] = { cycleId: c.id, han: hanBuocTiep(c, homNay) };
   const ketQuaThi: TrangHocVienVai['viec']['ketQuaThi'] = {};
-  for (const { c, m } of loTrinhChoKetQuaThi(homNay)) if (coEm.has(c.student_id)) ketQuaThi[c.student_id] = { han: m.han, thi: c.exam_date ?? c.exam_week ?? null };
+  if (vai === 'tvv') for (const { c, m } of loTrinhChoKetQuaThi(homNay)) if (coEm.has(c.student_id)) ketQuaThi[c.student_id] = { han: m.han, thi: c.exam_date ?? c.exam_week ?? null };
   return {
     vai, phamVi: { coThe: vai === 'tvv' ? ['cua-toi', 'chi-nhanh'] : ['tat-ca', 'chi-nhanh'], dangDung, chiNhanh },
     ids: chip.ids, rows, viec: { buocTiep, ketQuaThi },
