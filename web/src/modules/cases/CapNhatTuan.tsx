@@ -164,8 +164,9 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
 
   /* Ô lỗi (YC-12.5.2): lý do dưới ô, chân chỉ đếm "n ô cần sửa ↑". Luật giữ như bản cũ. */
   const LUAT: LuatTruong[] = [
-    { khoa: 'ket-qua', nhan: 'Tiến triển (2 tuần)', chon: true },
-    ...(nhanXetTheoBuoi ? [] : [{ khoa: 'tien-trien', nhan: 'Nhận xét', toiThieu: 8 }]),
+    { khoa: 'ket-qua', nhan: t('Tiến triển (2 tuần)'), chon: true },
+    /* Chủ SP 14/10 tối: PA Tutor có buổi — nhận xét nằm ở từng buổi, không ô Nhận xét chung (máy chủ nhận nhận xét buổi ghép làm ghi chú). */
+    ...(nhanXetTheoBuoi ? [] : [{ khoa: 'tien-trien', nhan: t('Nhận xét'), toiThieu: 8 }]),
     ...(lanCuoi ? [] : [{ khoa: 'quyet-dinh', nhan: 'Quyết định', chon: true }]),
     ...(lanCuoi && outcome === 'insufficient' ? [{ khoa: 'ly-do', nhan: 'Lý do chưa đủ dữ liệu', toiThieu: 1 }] : []),
     ...(needReason ? [{ khoa: 'ly-do', nhan: decision === 'adjust' ? 'Lý do điều chỉnh' : 'Lý do thay', toiThieu: 1 }] : []),
@@ -184,7 +185,7 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
     if (!buoi[i]?.nhanXet.trim()) loi.push({ khoa: `buoi-${i}-nx`, nhan: `Nhận xét buổi ${i + 1}`, lyDo: 'Chưa điền' });
   }
   if (nhanXetTheoBuoi && !loi.some((l) => l.khoa.startsWith('buoi-')) && ghepBuoi.replace(/^Buổi \d+: /, '').length < 8) {
-    loi.push({ khoa: 'buoi-0-nx', nhan: 'Nhận xét buổi 1', lyDo: 'Ghi rõ hơn — ít nhất 8 ký tự' });
+    loi.push({ khoa: 'buoi-0-nx', nhan: t('Nhận xét buổi {n}', { n: 1 }), lyDo: t('Ghi rõ hơn — ít nhất 8 ký tự') });
   }
   if (decision === 'adjust') {
     /* Số buổi mới ≥ đã dạy SAU tuần này (máy chủ kiểm cùng luật). */

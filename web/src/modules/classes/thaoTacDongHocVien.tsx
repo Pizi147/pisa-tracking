@@ -11,6 +11,7 @@ import type { MucMenu } from '../../ui/MenuDong.tsx';
 import {
   DUONG_TAB_TEST, khoaBai, nhanBai, vietMaLuot, type MaLuot, MUC_MENU_DONG_HIEM, MUC_MENU_DONG_NHAN, duongHoSoHocVien, duongLoTrinhLop, mucDongTheoVai, mucMenuDongHocVien, type ViecQuanLy, type ViecTiepTheo,
 } from '@shared/domain/index.ts';
+import { dich, t } from '@shared/i18n/index.ts';
 
 /**
  * `coTheChuyenTiep` = `class.edit` ở lớp (Quản lý — ra quyết định chuyển lớp); người chỉ có `coTheSuaHocVien` (GVCN) thì Đề xuất chuyển lớp.
@@ -34,15 +35,15 @@ export type DongChoMenu = {
 export function nhapDiemCua(
   classId: number, laLopThuong: boolean, timeline: readonly { kind: string; kindLabel: string; myPending: string[]; attemptNo?: number }[],
 ): DongChoMenu['nhapDiem'] {
-  const t = timeline.find((x) => x.myPending.length > 0);
-  if (!t) return null;
+  const lu = timeline.find((x) => x.myPending.length > 0);
+  if (!lu) return null;
   /* HL-3: mọi "Nhập điểm" của lớp mở Điểm theo lớp (như nút đầu hồ sơ lớp), đúng lượt; route cũ `/nhap-diem`, `/bang-diem-thuong` vẫn chạy. */
   const ma: MaLuot | null = laLopThuong
-    ? t.kind === 'checkpoint' ? (t.attemptNo ? { loai: 'cp', so: t.attemptNo } : null)
-      : t.kind === 'progress' || t.kind === 'final' || t.kind === 'mt0' ? { loai: 'thuong', kind: t.kind } : null
-    : t.kind === 'mock' && t.attemptNo ? { loai: 'mt', so: t.attemptNo } : null;
+    ? lu.kind === 'checkpoint' ? (lu.attemptNo ? { loai: 'cp', so: lu.attemptNo } : null)
+      : lu.kind === 'progress' || lu.kind === 'final' || lu.kind === 'mt0' ? { loai: 'thuong', kind: lu.kind } : null
+    : lu.kind === 'mock' && lu.attemptNo ? { loai: 'mt', so: lu.attemptNo } : null;
   return {
-    nhan: `Nhập điểm ${t.kind === 'checkpoint' ? nhanBai(khoaBai(t.kind, t.attemptNo)) : t.kindLabel}`,   // OV-6b2: "Checkpoint 2"
+    nhan: t('Nhập điểm {dot}', { dot: lu.kind === 'checkpoint' ? nhanBai(khoaBai(lu.kind, lu.attemptNo)) : dich(lu.kindLabel) }),   // OV-6b2: "Checkpoint 2"
     den: `${DUONG_TAB_TEST['diem-lop']}?lop=${classId}${ma ? `&luot=${encodeURIComponent(vietMaLuot(ma))}` : ''}`,
   };
 }
@@ -84,7 +85,7 @@ export function useThaoTacDongHocVien({ laLopThuong, quyen, onDone, maLop, class
     try {
       await api.post(`/students/${d.id}/archive`, {});
       daDoi(d.id);
-      toast.hoanTac(`Đã lưu trữ ${d.ten}`, async () => {
+      toast.hoanTac(t('Đã lưu trữ {ten}', { ten: d.ten }), async () => {
         try { await api.post(`/students/${d.id}/unarchive`, {}); daDoi(d.id); } catch (e: any) { toast.push('error', e.message); }
       }, { key: `luu-tru:${d.id}` });
     } catch (e: any) { toast.push('error', e.message); }
@@ -92,14 +93,14 @@ export function useThaoTacDongHocVien({ laLopThuong, quyen, onDone, maLop, class
 
   const mucCua = (d: DongChoMenu): MucMenu[] => d.status === 'finished' && !quyen.theoVai && quyen.coTheChuyenTiep ? [
     /* OV-11g (HL-19): em Kết thúc học chưa Lưu trữ (dòng mờ cuối lớp) — việc của Quản lý (máy chủ kiểm `cycle.edit`). */
-    { key: 'luu-tru', nhan: 'Lưu trữ', onChon: () => { void luuTru(d); } },
-    { key: 'hoc-lai', nhan: 'Học lại', onChon: () => setMo({ viec: 'hoc-lai', id: d.id, ten: d.ten }) },
+    { key: 'luu-tru', nhan: t('Lưu trữ'), onChon: () => { void luuTru(d); } },
+    { key: 'hoc-lai', nhan: t('Học lại'), onChon: () => setMo({ viec: 'hoc-lai', id: d.id, ten: d.ten }) },
   ] : quyen.theoVai ? [
     ...mucDongTheoVai({
       suaThongTin: d.suaThongTin ?? !!quyen.coTheSuaThongTin, suaThem: d.suaThem ?? !!quyen.coTheSuaThem,
       ft: d.ft ?? !laLopThuong, status: d.status ?? (d.dangHoc ? 'active' : 'finished'),
     }).map((m): MucMenu => ({ key: m.key, nhan: m.nhan, onChon: () => setMo({ viec: 'sua-thong-tin', id: d.id, ten: d.ten, quanLy: m.key, lop: d.maLop }) })),
-    { key: 'ho-so', nhan: 'Mở hồ sơ', keTruoc: true, onChon: () => navigate(duongHoSoHocVien(d.id)) },
+    { key: 'ho-so', nhan: t('Mở hồ sơ'), keTruoc: true, onChon: () => navigate(duongHoSoHocVien(d.id)) },
   ] : mucMenuDongHocVien({
     laLopThuong, dangHoc: d.dangHoc,
     coTheGhiViPham: quyen.coTheGhiViPham, coTheBaoCase: quyen.coTheBaoCase, coTheXuLyYThuc: quyen.coTheGhiViPham && !!d.xuLyYThuc,

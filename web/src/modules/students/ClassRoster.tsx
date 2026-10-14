@@ -18,6 +18,8 @@ import {
   ENTRY_SKILL_LABEL, GIAI_THICH_KCK, duongHoSoHocVien, maHocVienNgan, skillShort, type EntrySkill, type ExamPlan, type LienHe, type ViecTiepTheo,
 } from '@shared/domain/index.ts';
 import { OPhuHuynh } from './HocVienTheoVai.tsx';
+import { dich, t } from '@shared/i18n/index.ts';
+import { dichViec } from './BangHocVienLop.tsx';
 
 type Timeline = {
   id: number; attemptNo: number; cycleSeq: number; route: string | null;
@@ -72,12 +74,12 @@ type DauVao = { overall: number | null; listening: number | null; reading: numbe
 /** Dòng "Đầu vào" chiếm chỗ MT0 trong 2 mốc gần nhất — em đã có 2 mốc MT thì không còn chỗ. */
 const dauVaoHien = (s: RosterRow, soMoc: number): DauVao | null => (s.dauVao && soMoc < 2 ? s.dauVao : null);
 const chiOverall = (d: DauVao) => d.listening === null && d.reading === null && d.writing === null && d.speaking === null;
-const nhanDauVao = (d: DauVao) => (chiOverall(d) ? 'Đầu vào · chỉ Overall' : 'Đầu vào');
+const nhanDauVao = (d: DauVao) => (chiOverall(d) ? t('Đầu vào · chỉ Overall') : t('Đầu vào'));
 function SoDauVao({ v }: { v: number | null }) {
   return v === null ? <Dash /> : <span className="tabular-nums text-xs text-slate-300">{fmtBand(v)}</span>;
 }
 function NhanDauVao({ d }: { d: DauVao }) {
-  return <span className="whitespace-nowrap text-xs text-slate-400" title="Điểm đầu vào khi nhập học — chỉ để nhìn, không tính SOS / Overall / Phân tích">{nhanDauVao(d)}</span>;
+  return <span className="whitespace-nowrap text-xs text-slate-400" title={t('Điểm đầu vào khi nhập học — chỉ để nhìn, không tính SOS / Overall / Phân tích')}>{nhanDauVao(d)}</span>;
 }
 
 /** Bộ cột điểm của lớp Fast Track — mục 5.2: Target · Dự kiến thi · Mốc · OVR · L · R · W1 · W2 · W · S (W = Writing tổng, PR-N1 K2-10). */
@@ -110,19 +112,19 @@ export function ClassRoster({ classId, maLop, quyen, onDoi, onAddStudents, chon 
   if (error) {
     return (
       <div className="surface-2 rounded-lg p-3 text-xs text-rose-200">
-        {error.message} <button className="btn btn-sm ml-2" onClick={reload}>Thử lại</button>
+        {error.message} <button className="btn btn-sm ml-2" onClick={reload}>{t('Thử lại')}</button>
       </div>
     );
   }
   if (!data) return null;
   /* PR-DH (Q-0310-4): hồ sơ em mở từ đây đi Trước/Sau theo đúng thứ tự bảng. */
-  const ds: NguCanhDs = { loai: 'hoc-vien', ids: data.map((s) => s.id), nhan: maLop ? `Lớp ${maLop}` : 'Lớp' };
+  const ds: NguCanhDs = { loai: 'hoc-vien', ids: data.map((s) => s.id), nhan: maLop ? t('Lớp {lop}', { lop: maLop }) : t('Lớp') };
   if (!data.length) {
     return (
       <div className="surface-2 rounded-lg">
         <Empty
-          title="Lớp chưa có học viên"
-          action={onAddStudents && <button className="btn btn-sm" onClick={onAddStudents}>Thêm học viên</button>}
+          title={t('Lớp chưa có học viên')}
+          action={onAddStudents && <button className="btn btn-sm" onClick={onAddStudents}>{t('Thêm học viên')}</button>}
         />
       </div>
     );
@@ -155,7 +157,7 @@ export function ClassRoster({ classId, maLop, quyen, onDoi, onAddStudents, chon 
               hanhDong={<MenuDong muc={tt.mucCua({ id: s.id, ten: s.fullName, dangHoc: s.status === 'active', nhapDiem: nhapDiemCua(classId, false, s.timeline), status: s.status, xuLyYThuc: !!s.canhBaoYThuc })} />}
               dong={[
                 { nhan: 'Target', noiDung: <TargetText band={s.cycle?.target} kck={s.cycle?.khongCamKet} /> },
-                { nhan: 'Dự kiến thi', noiDung: <ExamPlanText plan={s.examPlan} /> },
+                { nhan: t('Dự kiến thi'), noiDung: <ExamPlanText plan={s.examPlan} /> },
                 ...(dv ? [{ nhan: nhanDauVao(dv), noiDung: (
                   <span className="tabular-nums">
                     {'OVR '}<SoDauVao v={dv.overall} />
@@ -164,10 +166,10 @@ export function ClassRoster({ classId, maLop, quyen, onDoi, onAddStudents, chon 
                     ))}
                   </span>
                 ) }] : []),
-                ...(!h && dv ? [] : [{ nhan: 'Mốc', noiDung: !h ? <span className="text-slate-500">chưa có điểm</span> : (
+                ...(!h && dv ? [] : [{ nhan: t('Mốc'), noiDung: !h ? <span className="text-slate-500">{t('chưa có điểm')}</span> : (
                   <>
-                    <Link className="no-underline max-sm:py-3 max-sm:-my-3" to={duongHoSoHocVien(s.id, { dot: h.id })} title={`Mở hồ sơ ${s.fullName} ở ${h.label}`}>
-                      <span className="text-slate-200">{h.label}</span>
+                    <Link className="no-underline max-sm:py-3 max-sm:-my-3" to={duongHoSoHocVien(s.id, { dot: h.id })} title={t('Mở hồ sơ {ten} ở {dot}', { ten: s.fullName, dot: dich(h.label) })}>
+                      <span className="text-slate-200">{dich(h.label)}</span>
                       {h.lichSu && <> <NhanCu /></>}
                     </Link>
                     {' · OVR '}<Band v={h.overall} kyVong={h.expectation ?? null} faded={false} lichSu={h.lichSu} />
@@ -180,7 +182,7 @@ export function ClassRoster({ classId, maLop, quyen, onDoi, onAddStudents, chon 
                     </span>
                   </>
                 ) }]),
-                quyen.theoVai ? { nhan: 'Phụ huynh', noiDung: s.lienHe ? <OPhuHuynh l={s.lienHe} /> : '—' } : { nhan: 'Theo dõi', noiDung: <FollowCell row={s} classId={classId} /> },
+                quyen.theoVai ? { nhan: t('Phụ huynh'), noiDung: s.lienHe ? <OPhuHuynh l={s.lienHe} /> : '—' } : { nhan: t('Theo dõi'), noiDung: <FollowCell row={s} classId={classId} /> },
               ]} />
           );
         })}
@@ -202,28 +204,28 @@ export function ClassRoster({ classId, maLop, quyen, onDoi, onAddStudents, chon 
           </colgroup>
           <thead>
             <tr>
-              <Th hint="Tên em, và một câu về kết quả mốc gần nhất của em." className="sticky-col">{chon?.bat && <span className="mr-2 inline-flex align-middle"><OChonTatCa chon={chon} ids={data.map((s) => s.id)} /></span>}Học viên</Th>
-              <Th align="right" hint="Điểm Target của lộ trình em đang học. KCK = không cam kết đầu ra, không tính SOS.">Target</Th>
-              <Th hint="Kỳ thi IELTS thật, ở đúng mức chắc chắn đang biết: tuần, hoặc mới có tháng, hoặc chưa xác định.">
-                Dự kiến thi
+              <Th hint={t('Tên em, và một câu về kết quả mốc gần nhất của em.')} className="sticky-col">{chon?.bat && <span className="mr-2 inline-flex align-middle"><OChonTatCa chon={chon} ids={data.map((s) => s.id)} /></span>}{t('Học viên')}</Th>
+              <Th align="right" hint={t('Điểm Target của lộ trình em đang học. KCK = không cam kết đầu ra, không tính SOS.')}>Target</Th>
+              <Th hint={t('Kỳ thi IELTS thật, ở đúng mức chắc chắn đang biết: tuần, hoặc mới có tháng, hoặc chưa xác định.')}>
+                {t('Dự kiến thi')}
               </Th>
-              <Th hint="Lượt MT ứng với mỗi hàng điểm bên phải — mốc mới nhất ở trên.">
-                Mốc
+              <Th hint={t('Lượt MT ứng với mỗi hàng điểm bên phải — mốc mới nhất ở trên.')}>
+                {t('Mốc')}
               </Th>
-              <Th align="right" hint="Overall — chỉ có khi đợt Test đó đủ cả bốn kỹ năng. Không ghép điểm của đợt khác thành Overall.">
+              <Th align="right" hint={t('Overall — chỉ có khi đợt Test đó đủ cả bốn kỹ năng. Không ghép điểm của đợt khác thành Overall.')}>
                 OVR
               </Th>
               {skills.map((k) => (
-                <Th key={k} align="right" hint={k === 'writing' ? 'Writing tổng ở từng mốc — SOS xét cột này' : `${ENTRY_SKILL_LABEL[k as EntrySkill] ?? k} ở từng mốc`}>
+                <Th key={k} align="right" hint={k === 'writing' ? t('Writing tổng ở từng mốc — SOS xét cột này') : t('{kn} ở từng mốc', { kn: ENTRY_SKILL_LABEL[k as EntrySkill] ?? k })}>
                   {k === 'writing' ? 'W' : skillLabel(k)}
                 </Th>
               ))}
-              {quyen.theoVai ? <Th hint="Tên phụ huynh (quan hệ) và số điện thoại — sửa ở Sửa thông tin của em.">Phụ huynh</Th> : (
-                <Th hint="Một việc tiếp theo (bấm để làm), kèm số Case đang xử lý. Quá hạn là thông tin của việc đó, không phải một việc riêng.">
-                  Theo dõi
+              {quyen.theoVai ? <Th hint={t('Tên phụ huynh (quan hệ) và số điện thoại — sửa ở Sửa thông tin của em.')}>{t('Phụ huynh')}</Th> : (
+                <Th hint={t('Một việc tiếp theo (bấm để làm), kèm số Case đang xử lý. Quá hạn là thông tin của việc đó, không phải một việc riêng.')}>
+                  {t('Theo dõi')}
                 </Th>
               )}
-              <th className="th"><span className="sr-only">Thao tác</span></th>
+              <th className="th"><span className="sr-only">{t('Thao tác')}</span></th>
             </tr>
           </thead>
           <tbody>
@@ -256,12 +258,12 @@ export function ClassRoster({ classId, maLop, quyen, onDoi, onAddStudents, chon 
                   <td className="td p-0">
                     <Stack n={span}>
                       {rows.length === 0 && !dv
-                        ? [<span key="none" className="text-xs text-slate-500">chưa có điểm</span>]
+                        ? [<span key="none" className="text-xs text-slate-500">{t('chưa có điểm')}</span>]
                         : [...rows.map((h, i) => (
                           <Link key={h.id} className="no-underline"
-                            to={duongHoSoHocVien(s.id, { dot: h.id })} title={`Mở hồ sơ ${s.fullName} ở ${h.label}`}>
+                            to={duongHoSoHocVien(s.id, { dot: h.id })} title={t('Mở hồ sơ {ten} ở {dot}', { ten: s.fullName, dot: dich(h.label) })}>
                             <span className={`text-xs whitespace-nowrap ${i === 0 ? 'text-slate-200' : 'text-slate-500'}`}>
-                              {h.label}{h.lichSu && <> <NhanCu /></>}
+                              {dich(h.label)}{h.lichSu && <> <NhanCu /></>}
                               {h.scoredRequired < h.requiredCount && (
                                 <span className="text-xs text-amber-200 ml-1">
                                   {h.scoredRequired}/{h.requiredCount}
@@ -316,15 +318,15 @@ export function ClassRoster({ classId, maLop, quyen, onDoi, onAddStudents, chon 
  */
 export function KetLuan({ row, cotMocTrong }: { row: RosterRow; /** CA2-7: cột Mốc đã ghi "chưa có điểm" → không lặp chip "Chưa có kết quả". */ cotMocTrong: boolean }) {
   const xam = `${CHIP_VUONG} border-muted-line bg-muted-bg text-muted`;
-  if (row.status !== 'active') return <span className={xam}>{row.ketThucVi ?? 'Đã kết thúc'}</span>;
+  if (row.status !== 'active') return <span className={xam}>{row.ketThucVi ? dich(row.ketThucVi) : t('Đã kết thúc')}</span>;
   if (row.kckDuoi) return <ChipDuoiKck />;
   /* Q29-1: em KCK chưa có Target có điểm vẫn không có kỳ vọng — nói rõ "không tính SOS", không để đọc thành "chưa chấm". */
-  if (row.sosLevel === null && row.cycle?.khongCamKet) return <span className={xam} title={GIAI_THICH_KCK}>Không tính SOS</span>;
-  if (row.sosLevel === null) return cotMocTrong ? null : <span className={xam}>Chưa có kết quả</span>;
-  const tamThoi = row.provisional ? ' · tạm thời' : '';
+  if (row.sosLevel === null && row.cycle?.khongCamKet) return <span className={xam} title={dich(GIAI_THICH_KCK)}>{t('Không tính SOS')}</span>;
+  if (row.sosLevel === null) return cotMocTrong ? null : <span className={xam}>{t('Chưa có kết quả')}</span>;
+  const tamThoi = row.provisional ? ` · ${t('tạm thời')}` : '';
   /* PR-N1 A2: màu theo đúng mức SOS (hết vàng cho mọi mức); tạm thời = viền đứt + chữ "tạm thời". */
-  if (row.sosLevel > 0) return <Level tone={sosTone(row.sosLevel)} dut={row.provisional}>SOS {row.sosLevel}{row.provisional ? ' tạm thời' : ''}</Level>;
-  return <span className={xam}>Đạt kỳ vọng{tamThoi}</span>;
+  if (row.sosLevel > 0) return <Level tone={sosTone(row.sosLevel)} dut={row.provisional}>SOS {row.sosLevel}{row.provisional ? ` ${t('tạm thời')}` : ''}</Level>;
+  return <span className={xam}>{t('Đạt kỳ vọng')}{tamThoi}</span>;
 }
 
 /** Các hàng con của một ô, cao bằng nhau để mọi cột thẳng hàng theo cùng một mốc. */
@@ -350,12 +352,12 @@ function Dash() { return <span className="text-faint">–</span>; }
 function Band({ v, kyVong, faded, soSanh = true, lichSu = false }: { v: number | null; kyVong: number | null; faded: boolean; soSanh?: boolean; lichSu?: boolean }) {
   if (v === null) return <Dash />;
   /* MT lịch sử: xám, không đạt/chưa đạt, không dấu dưới — hết mâu thuẫn "Chưa có kết quả" cạnh "▾5.0" đỏ (rà #119). */
-  if (lichSu) return <span className="tabular-nums text-xs text-slate-400" title="MT cũ — không phải hiện trạng">{fmtBand(v)}</span>;
+  if (lichSu) return <span className="tabular-nums text-xs text-slate-400" title={t('MT cũ — không phải hiện trạng')}>{fmtBand(v)}</span>;
   const duoi = soSanh && kyVong !== null && v < kyVong;
   /* Mốc cũ (faded) nhạt hơn bằng MÀU XÁM chứ không bằng độ trong: opacity-55 làm chữ đạt/chưa đạt < 4.5:1 ở chế độ sáng (PR-SANG, Task 8). */
   const tone = faded ? 'text-slate-400' : !soSanh || kyVong === null ? 'text-slate-100' : duoi ? 'text-rose-200' : 'text-emerald-200';
   return (
-    <span className={`tabular-nums text-xs ${tone}`} title={kyVong !== null ? `kỳ vọng ${fmtBand(kyVong)}` : undefined}>
+    <span className={`tabular-nums text-xs ${tone}`} title={kyVong !== null ? t('kỳ vọng {kv}', { kv: fmtBand(kyVong) }) : undefined}>
       {duoi && <DauDuoi />}{fmtBand(v)}
     </span>
   );
@@ -377,7 +379,7 @@ function FollowCell({ row, classId }: { row: RosterRow; classId: number }) {
   const here = row.openCases - (row.handoverCases ?? 0);
   const bits: string[] = [];
   if (here > 0) bits.push(`${here} Case`);
-  if (row.handoverCases > 0) bits.push(`${row.handoverCases} Case bàn giao`);
+  if (row.handoverCases > 0) bits.push(t('{n} Case bàn giao', { n: row.handoverCases }));
 
   /* K2-04: MỘT việc chính = việc đầu của `viecTiepTheo` (đã xếp đỏ → vàng → xanh), cùng nguồn với cột Việc tiếp theo ở Học viên & Lớp; bấm được. */
   const v = row.viecTiepTheo[0];
@@ -386,12 +388,12 @@ function FollowCell({ row, classId }: { row: RosterRow; classId: number }) {
   return (
     <span className="flex flex-col items-start gap-1">
       {v
-        ? <ViecTiep v={v} den={duongViecTiep(v, { studentId: row.id, classId, laLopThuong: false, timeline: row.timeline })} />
+        ? <ViecTiep v={dichViec(v)} den={duongViecTiep(v, { studentId: row.id, classId, laLopThuong: false, timeline: row.timeline })} />
         : here > 0
-          ? <span className="text-xs text-slate-400">Đang theo dõi</span>
+          ? <span className="text-xs text-slate-400">{t('Đang theo dõi')}</span>
           : null}
       {bits.length > 0 && (
-        <span className="text-xs text-slate-500" title={row.handoverCases > 0 ? 'Case còn dở từ lớp hoặc chương trình trước — cần bàn giao' : undefined}>{bits.join(' · ')}</span>
+        <span className="text-xs text-slate-500" title={row.handoverCases > 0 ? t('Case còn dở từ lớp hoặc chương trình trước — cần bàn giao') : undefined}>{bits.join(' · ')}</span>
       )}
     </span>
   );

@@ -13,6 +13,7 @@ import { OChon, OChonTatCa, type ChonNhieu } from '../students/chonNhieuHocVien.
 import { MoiVao } from './DaiChuyenLop.tsx';
 import { ATTEMPT_KIND_SHORT, CHUONG_TRINH_KHONG_CHIA_MON, khoaBai, maHocVienNgan, mondayOfDate, nhanBai, tenMon, tenMonNgan, tuanLich, type AttemptKind, type LienHe } from '@shared/domain/index.ts';
 import { OPhuHuynh } from '../students/HocVienTheoVai.tsx';
+import { dich, t } from '@shared/i18n/index.ts';
 
 type ODiem = { score: number | null; total: number | null; outcome: string };
 type LuotThuong = {
@@ -36,7 +37,7 @@ type DongThuong = {
   lienHe?: LienHe;
 };
 type LoTrinhChot = NonNullable<DongThuong['loTrinhChot']>;
-const TIEU_DE_LO_TRINH = 'Hướng Quản lý đã chốt (+ bổ trợ nếu có). Chưa chốt thì để trống — xem gợi ý ở panel Lộ trình tiếp theo.';
+const TIEU_DE_LO_TRINH = t('Hướng Quản lý đã chốt (+ bổ trợ nếu có). Chưa chốt thì để trống — xem gợi ý ở panel Lộ trình tiếp theo.');
 
 /** Hồ sơ lớp cũ chưa gửi mốc: Giữa khoá + Cuối khoá như trước. */
 const MOC_MAC_DINH = ['progress', 'final'];
@@ -65,8 +66,8 @@ export function BangDiemLopThuong({ classId, maLop, quyen, onDoi, chuongTrinh = 
   if (error) return <p className="m-0 text-xs text-rose-200">{error.message}</p>;
   if (loading || !data) return <Skeleton rows={4} />;
   const rows = data.filter((s) => !s.archived);
-  if (!rows.length) return <Empty title="Lớp chưa có học viên" />;
-  const ds: NguCanhDs = { loai: 'hoc-vien', ids: rows.map((s) => s.id), nhan: maLop ? `Lớp ${maLop}` : 'Lớp' };   // PR-DH: Trước/Sau theo thứ tự bảng
+  if (!rows.length) return <Empty title={t('Lớp chưa có học viên')} />;
+  const ds: NguCanhDs = { loai: 'hoc-vien', ids: rows.map((s) => s.id), nhan: maLop ? t('Lớp {lop}', { lop: maLop }) : t('Lớp') };   // PR-DH: Trước/Sau theo thứ tự bảng
   const mon = rows[0].skills ?? [];
   /* OV-6b2: lớp liên tục — mỗi Checkpoint đã có một nhóm cột (khoá `checkpoint:n`), 4 Checkpoint gần nhất.
      shortcut: chỉ 4 Checkpoint gần nhất ở Tổng hợp (đủ ở Test › Điểm theo lớp), thêm cuộn / chọn khi chủ SP cần xem cả năm. */
@@ -102,15 +103,15 @@ export function BangDiemLopThuong({ classId, maLop, quyen, onDoi, chuongTrinh = 
                   <MissingBadge items={s.missing} gon />
                   <CanhBaoYThuc cb={s.canhBaoYThuc} />
                 </span>
-                {s.ketThucVi && <span className="mt-0.5 block text-xs text-slate-400">{s.ketThucVi}</span>}
+                {s.ketThucVi && <span className="mt-0.5 block text-xs text-slate-400">{dich(s.ketThucVi)}</span>}
               </>
             )}
             hanhDong={<MenuDong muc={tt.mucCua({ id: s.id, ten: s.fullName, dangHoc: s.status === 'active', nhapDiem: nhapDiemCua(classId, true, s.timeline), status: s.status, xuLyYThuc: !!s.canhBaoYThuc })} />}
             dong={(lienTuc ? [] : [
               { nhan: 'Target', noiDung: <TargetText band={s.cycle?.target} kck={s.cycle?.khongCamKet} /> },
             ]).concat(BAI.map((b) => {
-              const t = luotCua(s, b.kind);
-              const o = t?.ratios?.[mon[0]] ?? null;
+              const lu = luotCua(s, b.kind);
+              const o = lu?.ratios?.[mon[0]] ?? null;
               return {
                 nhan: b.nhan,
                 noiDung: (
@@ -118,17 +119,17 @@ export function BangDiemLopThuong({ classId, maLop, quyen, onDoi, chuongTrinh = 
                     {mon.map((k) => (
                       <span key={k} className="whitespace-nowrap">
                         <abbr className="text-slate-500 no-underline" title={tenMon(chuongTrinh, k)}>{tenMonNgan(chuongTrinh, k)}</abbr>{' '}
-                        <ODiemThuong o={t?.ratios?.[k] ?? null} tuan={t?.tuanMon?.[k] ?? null} homNay={homNay} />
+                        <ODiemThuong o={lu?.ratios?.[k] ?? null} tuan={lu?.tuanMon?.[k] ?? null} homNay={homNay} />
                       </span>
                     ))}
                     {cotPhu(b.kind).includes('%') && (
-                      <span className="whitespace-nowrap"><span className="text-slate-500">% tổng</span>{' '}<OPhanTram v={phanTram(s, b.kind, o)} /></span>
+                      <span className="whitespace-nowrap"><span className="text-slate-500">{t('% tổng')}</span>{' '}<OPhanTram v={phanTram(s, b.kind, o)} /></span>
                     )}
                   </span>
                 ),
               };
-            })).concat([{ nhan: 'Lộ trình tiếp theo', noiDung: <OLoTrinh lt={s.loTrinhChot ?? null} homNay={homNay} /> }],
-              quyen.theoVai ? [{ nhan: 'Phụ huynh', noiDung: s.lienHe ? <OPhuHuynh l={s.lienHe} /> : <>—</> }] : [])} />
+            })).concat([{ nhan: t('Lộ trình tiếp theo'), noiDung: <OLoTrinh lt={s.loTrinhChot ?? null} homNay={homNay} /> }],
+              quyen.theoVai ? [{ nhan: t('Phụ huynh'), noiDung: s.lienHe ? <OPhuHuynh l={s.lienHe} /> : <>—</> }] : [])} />
         ))}
         {tt.panels}
       </div>
@@ -145,21 +146,21 @@ export function BangDiemLopThuong({ classId, maLop, quyen, onDoi, chuongTrinh = 
         </colgroup>
         <thead>
           <tr>
-            <th className="th sticky-col align-bottom" rowSpan={2}>{chon?.bat && <span className="mr-2 inline-flex align-middle"><OChonTatCa chon={chon} ids={rows.map((s) => s.id)} /></span>}Học viên</th>
-            {!lienTuc && <th className="th text-right align-bottom" rowSpan={2} title="Điểm Target của lộ trình em đang học. KCK = không cam kết đầu ra. Lớp thường chỉ để theo dõi.">Target</th>}
+            <th className="th sticky-col align-bottom" rowSpan={2}>{chon?.bat && <span className="mr-2 inline-flex align-middle"><OChonTatCa chon={chon} ids={rows.map((s) => s.id)} /></span>}{t('Học viên')}</th>
+            {!lienTuc && <th className="th text-right align-bottom" rowSpan={2} title={t('Điểm Target của lộ trình em đang học. KCK = không cam kết đầu ra. Lớp thường chỉ để theo dõi.')}>Target</th>}
             {BAI.map((b) => (
               <th key={b.kind} className="th border-b text-center" colSpan={mon.length + cotPhu(b.kind).length} style={{ borderColor: 'var(--line)' }}>{b.nhan}</th>
             ))}
-            {!lienTuc && <th className="th align-bottom" rowSpan={2} title={TIEU_DE_LO_TRINH}>Lộ trình tiếp theo</th>}
-            {quyen.theoVai && <th className="th align-bottom" rowSpan={2}>Phụ huynh</th>}
-            <th className="th" rowSpan={2}><span className="sr-only">Thao tác</span></th>
+            {!lienTuc && <th className="th align-bottom" rowSpan={2} title={TIEU_DE_LO_TRINH}>{t('Lộ trình tiếp theo')}</th>}
+            {quyen.theoVai && <th className="th align-bottom" rowSpan={2}>{t('Phụ huynh')}</th>}
+            <th className="th" rowSpan={2}><span className="sr-only">{t('Thao tác')}</span></th>
           </tr>
           <tr>
             {BAI.flatMap((b) => [
               ...mon.map((k) => (
                 <th key={`${b.kind}-${k}`} className="th text-center"><abbr className="no-underline" title={tenMon(chuongTrinh, k)}>{tenMonNgan(chuongTrinh, k)}</abbr></th>
               )),
-              ...(cotPhu(b.kind).includes('%') ? [<th key={`${b.kind}-%`} className="th text-right" title="Điểm đạt / tổng điểm cả bài">% tổng</th>] : []),
+              ...(cotPhu(b.kind).includes('%') ? [<th key={`${b.kind}-%`} className="th text-right" title={t('Điểm đạt / tổng điểm cả bài')}>{t('% tổng')}</th>] : []),
             ])}
           </tr>
         </thead>
@@ -175,16 +176,16 @@ export function BangDiemLopThuong({ classId, maLop, quyen, onDoi, chuongTrinh = 
                   <MissingBadge items={s.missing} gon />
                   <CanhBaoYThuc cb={s.canhBaoYThuc} />
                 </span>
-                {s.ketThucVi && <span className="block mt-0.5 text-xs text-slate-400">{s.ketThucVi}</span>}
+                {s.ketThucVi && <span className="block mt-0.5 text-xs text-slate-400">{dich(s.ketThucVi)}</span>}
               </td>
               {!lienTuc && <td className="td text-right tabular-nums whitespace-nowrap"><TargetText band={s.cycle?.target} kck={s.cycle?.khongCamKet} /></td>}
               {BAI.flatMap((b) => {
-                const t = luotCua(s, b.kind);
-                const o = t?.ratios?.[mon[0]] ?? null;
+                const lu = luotCua(s, b.kind);
+                const o = lu?.ratios?.[mon[0]] ?? null;
                 return [
                   ...mon.map((k) => (
                     <td key={`${b.kind}-${k}`} className="td text-center tabular-nums">
-                      <ODiemThuong o={t?.ratios?.[k] ?? null} tuan={t?.tuanMon?.[k] ?? null} homNay={homNay} />
+                      <ODiemThuong o={lu?.ratios?.[k] ?? null} tuan={lu?.tuanMon?.[k] ?? null} homNay={homNay} />
                     </td>
                   )),
                   ...(cotPhu(b.kind).includes('%') ? [(
@@ -212,11 +213,11 @@ function OPhanTram({ v }: { v: number | null }) {
 
 /** Ô "Lộ trình tiếp theo" (M2 §3): dòng 1 hướng đã chốt (+ bổ trợ), dòng 2 số buổi · môn bổ trợ · lớp đích · tuần vào lớp. */
 function OLoTrinh({ lt, homNay }: { lt: LoTrinhChot | null; homNay: string }) {
-  if (!lt) return <span className="text-xs text-slate-500" title={TIEU_DE_LO_TRINH}>Chưa chốt</span>;
-  const phu = [lt.boTro, lt.lopDich, lt.tuan ? `từ ${tuanLich(lt.tuan, homNay)}` : null].filter(Boolean).join(' · ');
+  if (!lt) return <span className="text-xs text-slate-500" title={TIEU_DE_LO_TRINH}>{t('Chưa chốt')}</span>;
+  const phu = [lt.boTro && dich(lt.boTro), lt.lopDich, lt.tuan ? t('từ {tuan}', { tuan: tuanLich(lt.tuan, homNay) }) : null].filter(Boolean).join(' · ');
   return (
     <span className="block min-w-0 text-[12px] leading-snug">
-      <span className="block text-slate-100">{lt.nhan}</span>
+      <span className="block text-slate-100">{dich(lt.nhan)}</span>
       {phu && <span className="block break-words tabular-nums text-slate-400">{phu}</span>}
     </span>
   );
@@ -227,7 +228,7 @@ function ODiemThuong({ o, tuan, homNay }: { o: ODiem | null; tuan: string | null
     const truot = o.outcome === 'fail';
     /* PR-N1 A3: trượt có dấu mảnh ▾ — không chỉ dựa vào màu. */
     return (
-      <span className={truot ? 'font-semibold text-rose-300' : 'text-slate-100'} title={truot ? 'Chưa đạt' : 'Đạt'}>
+      <span className={truot ? 'font-semibold text-rose-300' : 'text-slate-100'} title={truot ? t('Chưa đạt') : t('Đạt')}>
         {truot && <DauDuoi />}{o.score}/{o.total}
       </span>
     );
@@ -235,8 +236,8 @@ function ODiemThuong({ o, tuan, homNay }: { o: ODiem | null; tuan: string | null
   if (tuan) {
     /* Tuần thi đã QUA mà vẫn chưa có điểm là một dạng quá hạn nhập điểm — khác với tuần chưa tới lịch. */
     const daQua = tuan < mondayOfDate(homNay);
-    if (daQua) return <span className="text-xs text-amber-200" title="Tuần thi đã qua nhưng chưa nhập điểm">Chưa có điểm</span>;
-    return <span className="text-xs text-slate-500" title="Tuần thi môn này">{tuanLich(tuan, homNay)}</span>;
+    if (daQua) return <span className="text-xs text-amber-200" title={t('Tuần thi đã qua nhưng chưa nhập điểm')}>{t('Chưa có điểm')}</span>;
+    return <span className="text-xs text-slate-500" title={t('Tuần thi môn này')}>{tuanLich(tuan, homNay)}</span>;
   }
   return <span className="text-faint">–</span>;   // audit P3-1: "–" = không có, ≥ 4.5:1
 }

@@ -14,6 +14,7 @@ import { NORMAL_LADDER } from './fasttrack.ts';
 import type { ProgrammeCode } from './normal.ts';
 import { kyHieuLop } from './tenLop.ts';
 import { ngay } from './hienThiNgay.ts';
+import { dich as dichChuoi, dichChu, kem, t, type ChuKhoa } from '../i18n/index.ts';
 
 export type DaiCuoiKhoa = 'duoi_50' | '50_59' | '60_69' | 'dat';
 /** Ngưỡng dưới của hai dải giữa; ngưỡng Pass là ngưỡng đạt của LỚP (OV-6b1, mặc định `RATIO_PASS_THRESHOLD`). */
@@ -47,6 +48,8 @@ export type GoiYCuoiKhoa = {
   boTroNeuLen: BoTroMienPhi | null;     // 50–59 (nếu Quản lý cho lên) và 60–69
   baoPhTvv: boolean;                    // < 50 (50–59 mà Quản lý chọn học lại thì máy chủ tự thêm — Q6)
   nhan: string;
+  /** PR-EN-c: khoá của `nhan` (máy chủ dựng, web dịch bằng `nhanGoiY`). */
+  nhanK?: ChuKhoa;
   nhanNgan: string;
   /** Chữ ô "Hướng gợi ý" ở Excel: `Học lại FOU` · `QL cân nhắc` · `Lên BE + bổ trợ` · `Pass`. */
   nhanExcel: string;
@@ -83,18 +86,25 @@ export function goiYCuoiKhoa(x: { ct: string | null; tyLe: number | null; monTru
   const dai = daiCuoiKhoa(x.tyLe, x.nguong);
   const ke = tenBacKe(ct);
   const chung = { dai, tyLe: x.tyLe };
-  const dong = (huong: HuongGoiY, canQuanLy: boolean, bo: BoTroMienPhi | null, baoPhTvv: boolean, nhan: string, nhanNgan: string, nhanExcel: string): GoiYCuoiKhoa => ({
-    ...chung, huong, canQuanLy, boTroNeuLen: bo, baoPhTvv, nhan, nhanNgan, nhanExcel,
+  const dong = (huong: HuongGoiY, canQuanLy: boolean, bo: BoTroMienPhi | null, baoPhTvv: boolean, nhanK: ChuKhoa, nhanNgan: string, nhanExcel: string): GoiYCuoiKhoa => ({
+    ...chung, huong, canQuanLy, boTroNeuLen: bo, baoPhTvv, nhan: dichChu(nhanK), nhanK, nhanNgan: dichChuoi(nhanNgan), nhanExcel,
     nhanHuong: canQuanLy ? 'Quản lý cân nhắc' : huong === 'hoc_lai' ? `Học lại ${tenBac(ct)}` : `Lên ${ke}${dai === '60_69' && bo ? ' + bổ trợ' : ''}`,
   });
-  if (dai === 'dat') return dong('len', false, null, false, 'Pass', '→ Pass', 'Pass');
-  if (dai === 'duoi_50') return dong('hoc_lai', false, null, true, `Học lại ${tenBac(ct)}`, '→ học lại', `Học lại ${tenBac(ct)}`);
+  if (dai === 'dat') return dong('len', false, null, false, { chu: 'Pass' }, '→ Pass', 'Pass');
+  if (dai === 'duoi_50') return dong('hoc_lai', false, null, true, kem('Học lại {bac}', { bac: tenBac(ct) }), '→ học lại', `Học lại ${tenBac(ct)}`);
   const bo = ct === 'ELE' ? null : boTro(ct, dai, x.monTruot);   // PR-CT2 (§8): ELE lên = FT, không bổ trợ
-  const chuBo = bo ? ` + bổ trợ miễn phí ${bo.soBuoi} buổi${bo.theoMon ? ` (${chuMonTruot(ct, bo.mon)})` : ''} · ${bo.soTuan} tuần · Mini Test sau buổi cuối` : '';
+  const chuBo: ChuKhoa = !bo ? { chu: '' } : bo.theoMon
+    ? kem(' + bổ trợ miễn phí {n} buổi ({mon}) · {tuan} tuần · Mini Test sau buổi cuối', { n: bo.soBuoi, mon: chuMonTruot(ct, bo.mon), tuan: bo.soTuan })
+    : kem(' + bổ trợ miễn phí {n} buổi · {tuan} tuần · Mini Test sau buổi cuối', { n: bo.soBuoi, tuan: bo.soTuan });
   if (dai === '50_59') {
-    return dong(null, true, bo, false, `Quản lý cân nhắc: học lại ${tenBac(ct)} hoặc lên ${ke}${chuBo}`, '→ QL cân nhắc', 'QL cân nhắc');
+    return dong(null, true, bo, false, kem('Quản lý cân nhắc: học lại {bac} hoặc lên {ke}{bo}', { bac: tenBac(ct), ke, bo: chuBo }), '→ QL cân nhắc', 'QL cân nhắc');
   }
-  return dong('len', false, bo, false, `Lên ${ke}${chuBo}`, bo ? '→ lên + bổ trợ' : '→ lên', bo ? `Lên ${ke} + bổ trợ` : `Lên ${ke}`);
+  return dong('len', false, bo, false, kem('Lên {ke}{bo}', { ke, bo: chuBo }), bo ? '→ lên + bổ trợ' : '→ lên', bo ? `Lên ${ke} + bổ trợ` : `Lên ${ke}`);
+}
+
+/** PR-EN-c: chữ gợi ý theo tiếng của trang — gợi ý máy chủ dựng mang `nhanK`. */
+export function nhanGoiY(g: { nhan: string; nhanK?: ChuKhoa }): string {
+  return g.nhanK ? dichChu(g.nhanK) : dichChuoi(g.nhan);
 }
 
 /** PR-CT2 (§8): BE/ELE sang FT thì không bổ trợ Final (FT có lộ trình riêng); còn lại theo `goiYCuoiKhoa`. */
@@ -155,25 +165,26 @@ export function chuHopKetLuan(x: HopKetLuanVao): HopKetLuan {
   const ct = programmeOf(x.ct) as ProgrammeCode | null;   // có gợi ý (`x.goiY`) chỉ khi là chương trình gốc — xem `goiYCuoiKhoa`
   const kyVong = ct && KY_VONG_DAU_RA[ct] && x.lenFt
     ? {
-      nhan: `Kết quả đầu ra (${KY_VONG_DAU_RA[ct]})`,
+      nhan: t('Kết quả đầu ra ({kv})', { kv: KY_VONG_DAU_RA[ct] }),
       daDanhDau: x.ketLuanFt?.dat !== null && x.ketLuanFt?.dat !== undefined,
-      trangThai: x.ketLuanFt?.dat === true ? 'Đạt'
+      trangThai: x.ketLuanFt?.dat === true ? t('Đạt')
         : x.ketLuanFt?.dat === false
-          ? `Không đạt · ${x.ketLuanFt.nguyenNhan === 'hoc_sinh' ? 'Học viên' : `Trung tâm${x.ketLuanFt.mon.length ? ` · ${x.ketLuanFt.mon.map((m) => tenMonNgan(ct, m)).join(', ')}` : ''}`}`
-          : 'Chưa đánh dấu',
+          ? `${t('Không đạt')} · ${x.ketLuanFt.nguyenNhan === 'hoc_sinh' ? t('Học viên') : `${t('Trung tâm')}${x.ketLuanFt.mon.length ? ` · ${x.ketLuanFt.mon.map((m) => tenMonNgan(ct, m)).join(', ')}` : ''}`}`
+          : t('Chưa đánh dấu'),
     }
     : null;
   const g = x.goiY;
   if (x.tyLe === null || !g || !ct) {
-    return { chinh: `Final Test · ${x.required ? `${x.scored}/${x.required} môn có điểm` : 'chưa có điểm'}`, phu: null, nhan: null, tone: 'muted', kyVong };
+    return { chinh: `Final Test · ${x.required ? t('{a}/{b} môn có điểm', { a: x.scored, b: x.required }) : t('chưa có điểm')}`, phu: null, nhan: null, tone: 'muted', kyVong };
   }
   const phu = x.mon.map((m) => `${tenMonNgan(ct, m.skill)} ${m.ratio === null ? '—' : Math.round(m.ratio * 100)}`).join(' · ');
   const chinh = `Final Test ${Math.round(x.tyLe * 100)}%`;
   if (g.dai === 'dat') return { chinh, phu, nhan: 'Pass', tone: 'ok', kyVong };
-  if (g.dai === '60_69') return { chinh, phu, nhan: g.nhan, tone: 'warn', kyVong };
-  if (g.dai === 'duoi_50') return { chinh, phu, nhan: `${g.nhan} · Quản lý báo phụ huynh qua TVV`, tone: 'bad', kyVong };
+  if (g.dai === '60_69') return { chinh, phu, nhan: nhanGoiY(g), tone: 'warn', kyVong };
+  if (g.dai === 'duoi_50') return { chinh, phu, nhan: t('{nhan} · Quản lý báo phụ huynh qua TVV', { nhan: nhanGoiY(g) }), tone: 'bad', kyVong };
   /* 50–59%: chưa quyết → Quản lý cân nhắc; đã chuyển thì hiện điều Quản lý đã quyết (Q30-3, không còn thẻ). */
-  if (!x.quyetDinh) return { chinh, phu, nhan: 'Quản lý cân nhắc: học lại hoặc lên (chọn khi chuyển lớp)', tone: 'warn', kyVong };
-  const dich = x.quyetDinh.huong === 'hoc_lai' ? `Học lại ${tenBac(ct)}` : `Lên ${tenBacKe(ct)}${g.boTroNeuLen && coBoTroFinal(ct, x.quyetDinh.huong === 'fast_track') ? ' + bổ trợ' : ''}`;   // PR-CT2: ELE / BE → FT không bổ trợ
-  return { chinh, phu, nhan: `QL đã quyết: ${dich} · ${ngay(x.quyetDinh.luc.slice(0, 10), x.homNay)}`, tone: 'warn', kyVong };
+  if (!x.quyetDinh) return { chinh, phu, nhan: t('Quản lý cân nhắc: học lại hoặc lên (chọn khi chuyển lớp)'), tone: 'warn', kyVong };
+  const dich = x.quyetDinh.huong === 'hoc_lai' ? t('Học lại {bac}', { bac: tenBac(ct) })
+    : g.boTroNeuLen && coBoTroFinal(ct, x.quyetDinh.huong === 'fast_track') ? t('Lên {bac} + bổ trợ', { bac: tenBacKe(ct) }) : t('Lên {bac}', { bac: tenBacKe(ct) });   // PR-CT2: ELE / BE → FT không bổ trợ
+  return { chinh, phu, nhan: t('QL đã quyết: {kl} · {ngay}', { kl: dich, ngay: ngay(x.quyetDinh.luc.slice(0, 10), x.homNay) }), tone: 'warn', kyVong };
 }
