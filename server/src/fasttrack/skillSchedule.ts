@@ -119,13 +119,11 @@ export function scoringModeOf(
   if (!attempt.class_id) return attempt.kind && attempt.kind !== 'mock' ? 'ratio' : 'band';
   const cached = modeByClass.get(attempt.class_id);
   if (cached) return cached;
-  const row = db()
-    .prepare(
-      `SELECT p.scoring_mode AS mode FROM classes c
-         LEFT JOIN programmes p ON p.code = c.programme_code WHERE c.id = ?`,
-    )
-    .get(attempt.class_id) as any;
-  const mode: ScoringMode = row?.mode === 'ratio' ? 'ratio' : 'band';
+  /* TD4: gặp lớp chưa nhớ thì nạp cách chấm của MỌI lớp một câu (bảng lớp vài trăm dòng) — trước một câu mỗi lớp, N+1 ở Công việc khi hàm mới khởi động. */
+  for (const r of db().prepare(`SELECT c.id, p.scoring_mode AS mode FROM classes c LEFT JOIN programmes p ON p.code = c.programme_code`).all() as any[]) {
+    modeByClass.set(r.id, r.mode === 'ratio' ? 'ratio' : 'band');
+  }
+  const mode = modeByClass.get(attempt.class_id) ?? 'band';
   modeByClass.set(attempt.class_id, mode);
   return mode;
 }

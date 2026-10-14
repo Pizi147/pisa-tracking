@@ -381,16 +381,16 @@ export const TRAN: Record<string, number> = {
   // PR-VAI-a (Q7): đường /phan-tich/bo-quen đã gỡ cùng boQuen.ts.
   'QL /metrics/case-xac-dinh-nguyen-nhan-qua-han': 24,
   'QT /metrics/case-xac-dinh-nguyen-nhan-qua-han': 21,
-  'GVCN /my-work': 76,   // PR-CT gộp LT2b: 68 → 76   // PR-LT2b: việc Ghi Mini Test + bộ demo D10–D13 (2 lớp mới: MB BE 04, MB ELE 02) 63 → 68 (+8 %)
-  'GVBM /my-work': 79,   // PR-CT gộp LT2b: 70 → 79   // PR-LT2b: như trên 62 → 70 (+13 %)
-  'GVCN_THUONG /my-work': 76,   // PR-CT gộp LT2b: 68 → 76
+  'GVCN /my-work': 63,   // TD4: đo 61 (trước 64), trần đo + 2
+  'GVBM /my-work': 63,   // TD4: đo 61 (trước 64)
+  'GVCN_THUONG /my-work': 63,   // TD4: đo 61 (trước 64)
   /* PR-Ra: trang "Công việc" dùng lại /my-work cho QL·QT, cộng chế độ nguoi=tat-ca/{gv} (Q1–Q2). */
-  'QL /my-work': 77,   // PR-CT gộp LT2b: 67 → 77   // PR-LT2b: bộ demo D10–D13
-  'QT /my-work': 79,   // PR-CT gộp LT2b: 69 → 79
-  'QL /my-work?nguoi=tat-ca': 86,   // PR-CT gộp LT2b: 77 → 86   // PR-LT2b: Mini Test + demo D10–D13 (+2)
-  'QT /my-work?nguoi=tat-ca': 88,   // PR-CT gộp LT2b: 79 → 88
+  'QL /my-work': 63,   // TD4: đo 61 (trước 64)
+  'QT /my-work': 63,   // TD4: đo 61 (trước 64)
+  'QL /my-work?nguoi=tat-ca': 71,   // TD4: đo 69 (trước 76) — một lần `listAttempts`
+  'QT /my-work?nguoi=tat-ca': 71,   // TD4: đo 69 (trước 76)
   'GVCN /my-work?nguoi=tat-ca': 15,
-  'QL /my-work?nguoi=7': 86,   // PR-CT gộp LT2b: 78 → 86
+  'QL /my-work?nguoi=7': 68,   // TD4: đo 66 (trước 70)
   /* PR-DUYET: đo khi hộp đã có thẻ thật (Task 4) — trần max(sau+10, ⌈sau×1,3⌉). */
   'QL /yeu-cau?hop=cho-duyet': 38,   // PR-CT gộp LT2b: 34 → 38   // PR-LT2a (11): demo G1–G5 có thẻ ke_hoach_bo_tro → loại thẻ thêm câu nạp (đo 32, MỘT lần mỗi loại, không theo số thẻ); PR-YT4 sau khi gộp PR-SOS: thẻ khong_theo_doi + bao_len_y_thuc cùng nạp (đo 29, +3,6%); PR-HVL (10): demo H1 thêm một thẻ "không theo dõi" chờ duyệt → đo 30   // PR-LT2b: hai loại thẻ Báo QL mới (+1–2 câu nap)
   'QT /yeu-cau?hop=cho-duyet': 37,   // PR-CT gộp LT2b: 33 → 37
@@ -751,13 +751,13 @@ export const TRAN: Record<string, number> = {
  * Trần = max(đo + 50, ⌈đo × 1,3⌉), đo NGAY SAU TD2-a trên bộ demo gốc. Sau nhân dữ liệu ×3: ≤ 3 × trần.
  */
 export const TRAN_DONG: Record<string, number> = {
-  'QL /my-work': 2975,   // đo 2288
-  'GVCN /my-work': 2498,   // đo 1921
-  'GVBM /my-work': 2823,   // đo 2171
-  'GVCN_THUONG /my-work': 2498,   // đo 1921
-  'QT /my-work': 3932,   // đo 3024
-  'QL /my-work?nguoi=tat-ca': 3497,   // đo 2690
-  'QT /my-work?nguoi=tat-ca': 4669,   // đo 3591
+  'QL /my-work': 1104,   // TD4: đo 849 (trước 2155)
+  'GVCN /my-work': 1069,   // TD4: đo 822 (trước 1784)
+  'GVBM /my-work': 1102,   // TD4: đo 847 (trước 2016)
+  'GVCN_THUONG /my-work': 1069,   // TD4: đo 822 (trước 1784)
+  'QT /my-work': 1263,   // TD4: đo 971 (trước 2889)
+  'QL /my-work?nguoi=tat-ca': 1455,   // TD4: đo 1119 (trước 2793)
+  'QT /my-work?nguoi=tat-ca': 1631,   // TD4: đo 1254 (trước 3688)
   'QL /classes/3/roster': 2226,   // đo 1712
   'GVCN /classes/3/roster': 2447,   // đo 1882
   'GVBM /classes/3/roster': 2463,   // đo 1894

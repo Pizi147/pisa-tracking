@@ -5,6 +5,7 @@ import { loadBundle, regularSkillViews, skillCells } from '../fasttrack/attempts
 import { scoringModeOf } from '../fasttrack/skillSchedule.ts';
 import { allProgrammes } from '../normal/regular.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
+import { nhoTheoId } from '../platform/nguCanhRequest.ts';
 
 /**
  * Ô ĐIỂM CÒN NỢ — một ô = một kỹ năng một lượt, tuần thi đã bắt đầu, người được phân công chưa nhập (S12 + đặc tả §6).
@@ -30,17 +31,23 @@ const NOT_DEBT = new Set(['absent', 'cancelled', 'skipped', 'reschedule_pending'
  * `active`, đang hiệu lực tại `ngay`; nhiều dòng cùng (lớp, môn) thì dòng `id` nhỏ nhất thắng (như `teacherOf` cũ). Khoá `lớp|môn`.
  */
 export function phanCongDangHieuLuc(classIds: readonly number[], ngay: string): Map<string, { userId: number; ten: string }> {
+  /* TD4: nhớ theo lớp trong request GET — Công việc gọi lại cùng tập lớp (danh sách lượt, "Tất cả", người giữ kết quả PA). */
+  const theoLop = nhoTheoId(`pc:${ngay}:`, [...new Set(classIds)], (thieu) => {
+    const m = new Map<number, any[]>();
+    theoLo(thieu, (lo, ph) => {
+      for (const r of db()
+        .prepare(`SELECT ta.id, ta.class_id, ta.skill, ta.user_id, u.full_name FROM teacher_assignments ta JOIN users u ON u.id = ta.user_id
+                   WHERE ta.class_id IN (${ph}) AND ta.status = 'active' AND ta.skill IS NOT NULL
+                     AND ta.effective_from <= ? AND (ta.effective_to IS NULL OR ta.effective_to >= ?) ORDER BY ta.id`)
+        .all(...lo, ngay, ngay) as any[]) (m.get(r.class_id) ?? m.set(r.class_id, []).get(r.class_id)!).push(r);
+    }, THAM_SO_TOI_DA - 2);   // + 2 tham số ngày
+    return m;
+  });
   const out = new Map<string, { userId: number; ten: string }>();
-  theoLo([...new Set(classIds)], (lo, ph) => {
-    for (const r of db()
-      .prepare(`SELECT ta.class_id, ta.skill, ta.user_id, u.full_name FROM teacher_assignments ta JOIN users u ON u.id = ta.user_id
-                 WHERE ta.class_id IN (${ph}) AND ta.status = 'active' AND ta.skill IS NOT NULL
-                   AND ta.effective_from <= ? AND (ta.effective_to IS NULL OR ta.effective_to >= ?) ORDER BY ta.id`)
-      .all(...lo, ngay, ngay) as any[]) {
-      const k = `${r.class_id}|${r.skill}`;
-      if (!out.has(k)) out.set(k, { userId: r.user_id, ten: r.full_name });
-    }
-  }, THAM_SO_TOI_DA - 2);   // + 2 tham số ngày
+  for (const r of [...theoLop.values()].flat().sort((a, b) => a.id - b.id)) {
+    const k = `${r.class_id}|${r.skill}`;
+    if (!out.has(k)) out.set(k, { userId: r.user_id, ten: r.full_name });
+  }
   return out;
 }
 

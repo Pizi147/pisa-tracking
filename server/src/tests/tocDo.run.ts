@@ -8,6 +8,7 @@
 import path from 'node:path';
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import { createHash } from 'node:crypto';
 import type { Vai } from './tocDoDuong.ts';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -808,8 +809,9 @@ console.log(
   `\nNhân dữ liệu ×3: HV ${soNhanDuLieu.hvTruoc} → ${soNhanDuLieu.hvSau}, Case ${soNhanDuLieu.caseTruoc} → ${soNhanDuLieu.caseSau} (lớp giữ nguyên — Q11).`,
 );
 
+let cauSauNhan = new Map<string, number>();   // TD4: số câu ×3 của từng (vai × đường)
 await checkAsync('PR-TD Task5(2) · sau khi nhân dữ liệu ×3, mọi (đường × vai) không tăng quá 5 câu so với trước', async () => {
-  const sauNhan = await doMotLuot(dongSauNhan);
+  const sauNhan = cauSauNhan = await doMotLuot(dongSauNhan);
   const sai: string[] = [];
   for (const [khoa, truoc] of truocNhan) {
     const sau = sauNhan.get(khoa) ?? 0;
@@ -877,6 +879,51 @@ check('TD3-b-2 · QL ×3: /classes/{lopFT}/overview ≤ 50 % (5 829), /hoc-vien-
   const ov = dongSauNhan.get(`QL /classes/${LOP_FT}/overview`) ?? Infinity, hvl = dongSauNhan.get('QL /hoc-vien-lop') ?? Infinity;
   console.log(`      (đo: overview ${ov}, hoc-vien-lop ${hvl} dòng)`);
   assert(ov <= Math.floor(5829 * 0.5) && hvl <= Math.floor(8417 * 0.8), `overview ${ov} / hoc-vien-lop ${hvl}`);
+});
+
+/*
+ * TD4-a: Công việc trên dữ liệu ×3 — JSON đầy đủ (`items`, `dong`, `groups`, `summary`) TRÙNG ảnh chụp chụp bằng mã TRƯỚC TD4 (main 35517670), mọi vai
+ * và mọi góc nhìn. Lọc sớm lượt ở `listAttempts` không được đổi một việc nào. Đổi đầu ra Công việc CÓ CHỦ Ý (hoặc seed / phép kiểm phía trên đổi
+ * dữ liệu) thì lệch: chụp lại băm bằng mã trước thay đổi đó (phép in băm đang ra), không sửa cho khớp.
+ */
+await checkAsync('TD4-a (×3) · Công việc trùng JSON ảnh chụp trước TD4 — 6 vai × Của tôi / Tất cả / Của một GV / lọc chi nhánh', async () => {
+  const { myWork, viecCuaNguoi } = await import('../worklist/mywork.ts');
+  const ANH: Record<string, string> = {
+    'QL toi': '6671f11bb8e4d60c', 'QT toi': '3ea09f00dba07abd', 'GVCN toi': 'bd18425dee5c6c07', 'GVBM toi': '130c23c92f42a1de',
+    'GVCN_THUONG toi': 'bd18425dee5c6c07', 'ADMIN toi': '4ed1fc3fa34653f2', 'QL tat-ca': 'e227ab66cdea9040', 'QT tat-ca': '73d4b4f3ef735af5',
+    'QT tat-ca cn': 'f10e5aa43b91e140', 'QL gvcn': 'e38f0811a97c27fd',
+  };
+  const p = (v: Vai) => loadPrincipal(USER[v]);
+  const goc: [string, () => unknown][] = [
+    ...(['QL', 'QT', 'GVCN', 'GVBM', 'GVCN_THUONG', 'ADMIN'] as const).map((v) => [`${v} toi`, () => myWork(p(v))] as [string, () => unknown]),
+    ...(['QL', 'QT'] as const).map((v) => [`${v} tat-ca`, () => myWork(p(v), { nguoi: 'tat-ca' })] as [string, () => unknown]),
+    ['QT tat-ca cn', () => myWork(p('QT'), { nguoi: 'tat-ca', branchId: CN })],
+    ['QL gvcn', () => viecCuaNguoi(p('QL'), USER.GVCN)],
+  ];
+  const sai: string[] = [];
+  for (const [ten, fn] of goc) {
+    const bam = chayTrongRequest('GET', () => createHash('sha256').update(JSON.stringify(fn())).digest('hex').slice(0, 16));
+    if (ANH[ten] !== bam) sai.push(`'${ten}': '${bam}',`);
+  }
+  assert(!sai.length, `lệch ảnh chụp:\n${sai.join('\n')}`);
+});
+
+/*
+ * TD4-b: bản chính 15/10 log `[cham]` /my-work 5–7,5 s, 75–126 câu, 6 900–18 400 dòng (top: lịch kỹ năng của MỌI lượt trong phạm vi). Mốc ×3 trước TD4
+ * (main 35517670, đo trong chính phép này): câu / dòng dưới đây. Khoá: dòng ≤ 40 % mốc, số câu ×3 ≤ ×1 + 2 (không tăng theo dữ liệu) và ≤ mốc − 3.
+ */
+check('TD4-b (×3) · /my-work mọi vai: dòng ≤ 40 % mốc trước TD4, số câu không tăng theo dữ liệu', () => {
+  const MOC: Record<string, [number, number]> = {
+    'QL /my-work': [66, 5647], 'QT /my-work': [66, 7775], 'GVCN /my-work': [66, 4502], 'GVBM /my-work': [66, 5140], 'GVCN_THUONG /my-work': [66, 4502],
+    'QL /my-work?nguoi=tat-ca': [78, 6721], 'QT /my-work?nguoi=tat-ca': [78, 9176], [`QL /my-work?nguoi=${USER.GVCN}`]: [72, 4530],
+  };
+  const sai: string[] = [];
+  for (const [k, [cau, dong]] of Object.entries(MOC)) {
+    const c = cauSauNhan.get(k) ?? Infinity, d = dongSauNhan.get(k) ?? Infinity, c1 = truocNhan.get(k) ?? -Infinity;
+    console.log(`      (đo ×3: ${k} ${cau} → ${c} câu · ${dong} → ${d} dòng)`);
+    if (d > Math.floor(dong * 0.4) || c > c1 + 2 || c > cau - 3) sai.push(`${k}: ${c} câu (×1 ${c1}), ${d} dòng`);
+  }
+  assert(!sai.length, sai.join('\n'));
 });
 
 await checkAsync('PR-TD Task5(3) · sau khi nhân dữ liệu, listCases vẫn ra ĐÚNG tập id như tham chiếu — 3 vai chính', async () => {
