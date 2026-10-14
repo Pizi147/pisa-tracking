@@ -5,6 +5,7 @@ import { LuoiFT, type FtSheet, type HangMo } from './LuoiFT.tsx';
 import { LuoiThuong, type ThuongSheet } from './LuoiThuong.tsx';
 import { MotKyNang } from './MotKyNang.tsx';
 import type { TomTatLuot } from '@shared/domain/index.ts';
+import { t } from '@shared/i18n/index.ts';
 
 /** Trả lời của `GET /classes/:classId/cham` (`chamSheet` ở server/src/cham/canCham.ts). */
 export type Cham = {
@@ -150,8 +151,8 @@ export function LuoiChamLop({
           {hep && (
             <button type="button" className="min-h-[44px] px-1 text-xs text-slate-500 hover:text-slate-200"
               onClick={() => setXemBang((v) => !v)}
-              title={xemBang ? 'Quay lại chấm từng kỹ năng, mỗi em một ô to' : 'Mở lưới đủ các cột; lưới cuộn ngang trong thẻ'}>
-              {xemBang ? 'Chấm từng kỹ năng' : 'Xem dạng bảng'}
+              title={xemBang ? t('Quay lại chấm từng kỹ năng, mỗi em một ô to') : t('Mở lưới đủ các cột; lưới cuộn ngang trong thẻ')}>
+              {xemBang ? t('Chấm từng kỹ năng') : t('Xem dạng bảng')}
             </button>
           )}
         </div>

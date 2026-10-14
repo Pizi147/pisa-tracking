@@ -13,6 +13,7 @@ import {
 } from '@shared/domain/index.ts';
 import { ChuyenLopPanel } from '../students/ChuyenLopPanel.tsx';
 import { DeXuatSuaPanel } from './DeXuatSuaPanel.tsx';
+import { dich, t } from '@shared/i18n/index.ts';
 
 /**
  * MỘT THẺ YÊU CẦU (PR-DUYET, mockup M8, đặc tả §7.6) — MỘT khuôn cho hộp Chờ duyệt, Yêu cầu của tôi, Ngăn Case (`gon`) và hồ sơ HV
@@ -90,7 +91,7 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
   const rut = (nut: HTMLButtonElement) => {
     /* Rút đề xuất Ý thức xoá cả tệp bằng chứng — hỏi một dòng; loại khác rút ngay (gửi lại được). */
     if (yc.loai === 'y_thuc') return moO('rut', nut);
-    void gui(`/yeu-cau/${yc.id}/rut`, {}, 'Đã rút — Quản lý không còn thấy yêu cầu này');
+    void gui(`/yeu-cau/${yc.id}/rut`, {}, t('Đã rút — Quản lý không còn thấy yêu cầu này'));
   };
   /* Đóng ô: nút gốc vẫn trong DOM (chỉ mờ khi ô mở) — đợi React bỏ `disabled` rồi mới trả focus. */
   const dongO = () => { setO(null); setLoiMay(null); setTimeout(() => nutMo.current?.focus(), 0); };
@@ -109,7 +110,7 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
       /* Người khác đã xử lý / thẻ tự đóng: nói rõ rồi làm mới — không để người dùng bấm lại vào một thẻ đã chết. */
       if (e?.status === 400 && /đã được xử lý/.test(e.message ?? '')) { toast.push('error', e.message); onXong(yc.id); return; }
       /* Lỗi mạng (không phải câu của máy chủ): nói bằng tiếng Việt, chữ đang gõ giữ nguyên để bấm lại. */
-      setLoiMay(e instanceof ApiError ? e.message : 'Mất kết nối, chưa lưu gì. Kiểm tra mạng rồi bấm lại — chữ bạn gõ vẫn còn.');
+      setLoiMay(e instanceof ApiError ? e.message : t('Mất kết nối, chưa lưu gì. Kiểm tra mạng rồi bấm lại — chữ bạn gõ vẫn còn.'));
     } finally { setBusy(false); }
   };
 
@@ -118,23 +119,23 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
     if (yc.duLieu?.moPanelChuyenLop) return setMoChuyenLop(true);
     if (yc.loai === 'lich_thi') return moO('tuan', nut);
     if (canGhiChu) return moO('ghi-chu', nut);
-    void gui(`/yeu-cau/${yc.id}/duyet`, {}, `Đã duyệt: ${yc.tieuDe}`);
+    void gui(`/yeu-cau/${yc.id}/duyet`, {}, t('Đã duyệt: {tieuDe}', { tieuDe: yc.tieuDe }));
   };
   const guiO = () => {
     setDaBam(true);
     if (!o) return;
-    if (o.loai === 'tuan') return void gui(`/yeu-cau/${yc.id}/duyet`, { duLieu: tuan ? { tuan } : undefined }, `Đã duyệt: ${yc.tieuDe}`);
-    if (o.loai === 'rut') return void gui(`/yeu-cau/${yc.id}/rut`, {}, 'Đã rút đề xuất');
+    if (o.loai === 'tuan') return void gui(`/yeu-cau/${yc.id}/duyet`, { duLieu: tuan ? { tuan } : undefined }, t('Đã duyệt: {tieuDe}', { tieuDe: yc.tieuDe }));
+    if (o.loai === 'rut') return void gui(`/yeu-cau/${yc.id}/rut`, {}, t('Đã rút đề xuất'));
     if (o.loai === 'sua' && yc.loai === 'khong_theo_doi') {
       if (!lyDoKtd || (reasonNeedsText(lyDoKtd) && kiemGhiRoKhac(chu))) return;
-      return void gui(`/yeu-cau/${yc.id}`, { reasonCode: lyDoKtd, reasonText: reasonNeedsText(lyDoKtd) ? chu.trim() : undefined }, 'Đã lưu yêu cầu', true);
+      return void gui(`/yeu-cau/${yc.id}`, { reasonCode: lyDoKtd, reasonText: reasonNeedsText(lyDoKtd) ? chu.trim() : undefined }, t('Đã lưu yêu cầu'), true);
     }
     if (!chu.trim()) return;
-    if (o.loai === 'sua') return void gui(`/yeu-cau/${yc.id}`, { note: chu.trim() }, 'Đã lưu đề xuất', true);
-    if (o.loai === 'sua-tra-loi') return void gui(`/yeu-cau/${yc.id}/sua-tra-loi`, { traLoi: chu.trim() }, 'Đã sửa câu trả lời — giáo viên được báo');
-    if (o.loai === 'tu-choi') return void gui(`/yeu-cau/${yc.id}/tu-choi`, { lyDo: chu.trim() }, 'Đã từ chối — người gửi nhận lý do');
-    if (o.loai === 'tra-loi') return void gui(`/yeu-cau/${yc.id}/tra-loi`, { traLoi: chu.trim() }, 'Đã trả lời — giáo viên nhận câu trả lời');
-    void gui(`/yeu-cau/${yc.id}/duyet`, { ghiChu: chu.trim() }, `Đã duyệt: ${yc.tieuDe}`);
+    if (o.loai === 'sua') return void gui(`/yeu-cau/${yc.id}`, { note: chu.trim() }, t('Đã lưu đề xuất'), true);
+    if (o.loai === 'sua-tra-loi') return void gui(`/yeu-cau/${yc.id}/sua-tra-loi`, { traLoi: chu.trim() }, t('Đã sửa câu trả lời — giáo viên được báo'));
+    if (o.loai === 'tu-choi') return void gui(`/yeu-cau/${yc.id}/tu-choi`, { lyDo: chu.trim() }, t('Đã từ chối — người gửi nhận lý do'));
+    if (o.loai === 'tra-loi') return void gui(`/yeu-cau/${yc.id}/tra-loi`, { traLoi: chu.trim() }, t('Đã trả lời — giáo viên nhận câu trả lời'));
+    void gui(`/yeu-cau/${yc.id}/duyet`, { ghiChu: chu.trim() }, t('Đã duyệt: {tieuDe}', { tieuDe: yc.tieuDe }));
   };
   const phim = (e: KeyboardEvent) => {
     if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); dongO(); }
@@ -147,29 +148,29 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
     try {
       await api.post(`/yeu-cau/${yc.id}/huy-quyet-dinh`);
       invalidate('/yeu-cau'); invalidate('/my-work'); invalidate('/cases'); invalidate('/tong-quan');
-      toast.push('ok', 'Đã huỷ quyết định · thẻ về Chờ duyệt');
+      toast.push('ok', t('Đã huỷ quyết định · thẻ về Chờ duyệt'));
       onXong(yc.id);
     } catch (e: any) {
-      setLoiMay(e instanceof ApiError ? e.message : 'Mất kết nối, chưa huỷ được. Kiểm tra mạng rồi bấm lại.');
+      setLoiMay(e instanceof ApiError ? e.message : t('Mất kết nối, chưa huỷ được. Kiểm tra mạng rồi bấm lại.'));
     } finally { setBusy(false); }
   };
 
   const hanV = yc.hanDuyet ? deadlineView({ kind: 'duyet', due: yc.hanDuyet, today: homNay }) : null;
-  const tang1 = !hanV ? null : hanV.tone === 'overdue' ? `Quá hạn · ${hanV.daysOverdue} ngày` : hanV.homNay ? 'Hạn hôm nay' : hanV.con ? hanV.con[0].toUpperCase() + hanV.con.slice(1) : null;
+  const tang1 = !hanV ? null : hanV.tone === 'overdue' ? t('Quá hạn · {daysOverdue} ngày', { daysOverdue: hanV.daysOverdue }) : hanV.homNay ? t('Hạn hôm nay') : hanV.con ? hanV.con[0].toUpperCase() + hanV.con.slice(1) : null;
   const tt = nhanTrangThaiYc(yc.trangThai, yc.tuDuyet);
-  const nhanO = o?.loai === 'tu-choi' ? 'Lý do từ chối (người gửi sẽ đọc)' : o?.loai === 'tra-loi' || o?.loai === 'sua-tra-loi' ? 'Câu trả lời cho giáo viên'
-    : o?.loai === 'sua' ? 'Mô tả đề xuất' : 'Ghi chú việc đã xử lý ở màn gốc';
+  const nhanO = o?.loai === 'tu-choi' ? t('Lý do từ chối (người gửi sẽ đọc)') : o?.loai === 'tra-loi' || o?.loai === 'sua-tra-loi' ? t('Câu trả lời cho giáo viên')
+    : o?.loai === 'sua' ? t('Mô tả đề xuất') : t('Ghi chú việc đã xử lý ở màn gốc');
   const suaKtd = o?.loai === 'sua' && yc.loai === 'khong_theo_doi';
   /* Nút mở thêm một bước (chọn tuần / ghi chú) có dấu "…", như Từ chối… — Duyệt trơn là quyết ngay. */
   const duyetCoBuoc = yc.loai === 'lich_thi' || canGhiChu || !!yc.duLieu?.moPanelChuyenLop;
   const loiChu = !daBam || !o || o.loai === 'tuan' || o.loai === 'rut' ? null
-    : suaKtd ? (!lyDoKtd ? 'Chọn một lý do' : reasonNeedsText(lyDoKtd) ? kiemGhiRoKhac(chu) : null)
-    : !chu.trim() ? 'Chưa điền'   // T7 (PR-MTa): không tối thiểu ký tự
-    : o.loai === 'sua' && chu.trim().length < 10 ? 'Mô tả cần ít nhất 10 ký tự' : null;
+    : suaKtd ? (!lyDoKtd ? t('Chọn một lý do') : reasonNeedsText(lyDoKtd) ? kiemGhiRoKhac(chu) : null)
+    : !chu.trim() ? t('Chưa điền')   // T7 (PR-MTa): không tối thiểu ký tự
+    : o.loai === 'sua' && chu.trim().length < 10 ? t('Mô tả cần ít nhất 10 ký tự') : null;
   const moTaPhu = [!gon && yc.hocVien, !gon && yc.lop, yc.phu].filter(Boolean).join(' · ');
 
   return (
-    <article id={`the-${yc.id}`} data-the-id={yc.id} aria-label={`${yc.nhanPhanLoai}: ${yc.tieuDe}`}
+    <article id={`the-${yc.id}`} data-the-id={yc.id} aria-label={`${dich(yc.nhanPhanLoai)}: ${dich(yc.tieuDe)}`}
       className={`rounded-lg border p-3 transition-shadow ${nhanManh ? 'shadow-[0_0_0_2px_var(--accent-strong)]' : ''}`}
       style={{ borderColor: hanV?.tone === 'overdue' && cho ? 'rgb(var(--late-line-rgb))' : 'var(--line)', background: 'var(--surface)' }}>
       <div className="grid gap-x-4 gap-y-2 sm:grid-cols-[minmax(0,1fr)_auto]">
@@ -179,27 +180,27 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
               /* OV-11i (P2-3): bọc <label> — vùng chạm 44 × 44 ở điện thoại (`after:`, mẫu MenuDong), ô tích giữ 16 px. */
               <label className="relative mt-1 inline-flex shrink-0 cursor-pointer max-sm:after:absolute max-sm:after:left-1/2 max-sm:after:top-1/2 max-sm:after:h-11 max-sm:after:w-11 max-sm:after:-translate-x-1/2 max-sm:after:-translate-y-1/2 max-sm:after:content-['']">
                 <input type="checkbox" className="h-4 w-4 accent-teal-500" checked={chon.checked}
-                  onChange={(e) => chon.onChange(e.target.checked)} aria-label={`Chọn: ${yc.tieuDe}`} />
+                  onChange={(e) => chon.onChange(e.target.checked)} aria-label={t('Chọn: {tieuDe}', { tieuDe: dich(yc.tieuDe) })} />
               </label>
             )}
             {!gon && (
               /* PR-HK1 H4: chip nền nhạt, không viền — viền xám làm nhãn trông như nút thao tác. */
-              <span className="w-24 shrink-0 truncate rounded bg-muted-bg px-1.5 py-0.5 text-center text-[11px] font-semibold text-muted">{yc.nhanPhanLoai}</span>
+              <span className="w-24 shrink-0 truncate rounded bg-muted-bg px-1.5 py-0.5 text-center text-[11px] font-semibold text-muted">{dich(yc.nhanPhanLoai)}</span>
             )}
             <p className="m-0 min-w-0 text-sm leading-snug">
-              <b className="font-semibold text-slate-100">{yc.tieuDe}</b>
-              {moTaPhu && <span className="text-slate-400"> · {moTaPhu}</span>}
+              <b className="font-semibold text-slate-100">{dich(yc.tieuDe)}</b>
+              {moTaPhu && <span className="text-slate-400"> · {dich(moTaPhu)}</span>}
             </p>
           </div>
           <div className={`mt-1 text-[13px] leading-snug text-slate-300 ${gon ? '' : 'sm:pl-[6.5rem]'}`}>
             <div ref={khungDong} className={moHet ? '' : 'line-clamp-2'}>
-              {yc.dong.map((d, i) => <p key={i} className="m-0 whitespace-pre-line">{d}</p>)}
+              {yc.dong.map((d, i) => <p key={i} className="m-0 whitespace-pre-line">{dich(d)}</p>)}
             </div>
             {(biCat || moHet) && (
               <button type="button" className="mt-0.5 min-h-[44px] text-[12px] text-teal-300 hover:underline sm:min-h-0" onClick={() => setMoHet(!moHet)}
-                aria-expanded={moHet}>{moHet ? 'Thu gọn' : 'Xem thêm'}</button>
+                aria-expanded={moHet}>{moHet ? t('Thu gọn') : t('Xem thêm')}</button>
             )}
-            {yc.neuDuyet && cho && <p className="m-0 mt-1 text-[12px] text-slate-400">Nếu duyệt: {yc.neuDuyet}</p>}
+            {yc.neuDuyet && cho && <p className="m-0 mt-1 text-[12px] text-slate-400">{t('Nếu duyệt: {neuDuyet}', { neuDuyet: dich(yc.neuDuyet) })}</p>}
             {!cho && <KetQua yc={yc} ngan={ngan} />}
           </div>
         </div>
@@ -215,34 +216,34 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
           ) : (
             <div className="flex flex-wrap items-center gap-1.5 sm:justify-end">
               <NhanTrangThai t={tt.t} />
-              <span className="text-[12px] text-slate-400">{tt.chu}{yc.xuLyLuc ? ` · ${ngan(yc.xuLyLuc)}` : ''}</span>
+              <span className="text-[12px] text-slate-400">{dich(tt.chu)}{yc.xuLyLuc ? ` · ${ngan(yc.xuLyLuc)}` : ''}</span>
             </div>
           )}
           {laNguoiXin && cho && <div><NhanTrangThai t="cho-duyet" /></div>}
           {nguoiGuiSua && (
             <div className="flex flex-wrap gap-1.5 sm:justify-end">
               <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={busy || !!o} aria-expanded={o?.loai === 'sua' || moPanelSua}
-                onClick={(e) => moSua(e.currentTarget)}>Sửa…</button>
+                onClick={(e) => moSua(e.currentTarget)}>{t('Sửa…')}</button>
               <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={busy || !!o} onClick={(e) => rut(e.currentTarget)}>
-                {busy && !o ? 'Đang rút…' : 'Rút'}</button>
+                {busy && !o ? t('Đang rút…') : t('Rút')}</button>
             </div>
           )}
           {suaTraLoiDuoc && (
             <div className="flex flex-wrap gap-1.5 sm:justify-end">
               <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={busy || !!o} aria-expanded={o?.loai === 'sua-tra-loi'}
-                onClick={(e) => moO('sua-tra-loi', e.currentTarget, yc.traLoi ?? '')}>Sửa trả lời…</button>
+                onClick={(e) => moO('sua-tra-loi', e.currentTarget, yc.traLoi ?? '')}>{t('Sửa trả lời…')}</button>
             </div>
           )}
           {!cho && !laNguoiXin && yc.coTheHuy && (
             <div className="flex flex-wrap gap-1.5 sm:justify-end">
               <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => void huy()}>
-                {busy ? 'Đang huỷ…' : 'Huỷ quyết định'}
+                {busy ? t('Đang huỷ…') : t('Huỷ quyết định')}
               </button>
             </div>
           )}
           {tuDuyetDuoc && (
-            <span className="text-[12px] text-wait" title="Bạn tự gửi yêu cầu này. Duyệt được — nhật ký ghi 'tự duyệt' và Quản trị được báo.">
-              Bạn tự gửi · tự duyệt được
+            <span className="text-[12px] text-wait" title={t('Bạn tự gửi yêu cầu này. Duyệt được — nhật ký ghi \'tự duyệt\' và Quản trị được báo.')}>
+              {t('Bạn tự gửi · tự duyệt được')}
             </span>
           )}
           {(coNut || yc.mo) && (
@@ -250,20 +251,20 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
               {coNut && yc.kieuNut === 'duyet-tu-choi' && <>
                 <button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" disabled={busy || !!o}
                   aria-expanded={o?.loai === 'tuan' || o?.loai === 'ghi-chu'}
-                  onClick={(e) => duyet(e.currentTarget)}>{busy && !o ? 'Đang lưu…' : duyetCoBuoc ? 'Duyệt…' : 'Duyệt'}</button>
+                  onClick={(e) => duyet(e.currentTarget)}>{busy && !o ? t('Đang lưu…') : duyetCoBuoc ? t('Duyệt…') : t('Duyệt')}</button>
                 <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={busy || !!o} aria-expanded={o?.loai === 'tu-choi'}
-                  onClick={(e) => moO('tu-choi', e.currentTarget)}>Từ chối…</button>
+                  onClick={(e) => moO('tu-choi', e.currentTarget)}>{t('Từ chối…')}</button>
               </>}
               {coNut && yc.kieuNut === 'tra-loi' && <>
                 <button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" disabled={busy || !!o} aria-expanded={o?.loai === 'tra-loi'}
-                  onClick={(e) => moO('tra-loi', e.currentTarget)}>Trả lời…</button>
+                  onClick={(e) => moO('tra-loi', e.currentTarget)}>{t('Trả lời…')}</button>
                 {onThemPa && typeof yc.duLieu?.caseId === 'number' && (
                   <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => onThemPa(yc.duLieu!.caseId as number)}>
-                    + Thêm PA
+                    {t('+ Thêm PA')}
                   </button>
                 )}
               </>}
-              {!gon && yc.mo && <Link to={yc.mo} className="btn btn-sm btn-ghost min-h-[44px] sm:min-h-0">Mở</Link>}
+              {!gon && yc.mo && <Link to={yc.mo} className="btn btn-sm btn-ghost min-h-[44px] sm:min-h-0">{t('Mở')}</Link>}
             </div>
           )}
         </div>
@@ -272,20 +273,20 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
       {o && (
         <div className="mt-2 space-y-1.5 border-t pt-2" style={{ borderColor: 'var(--line)' }} onKeyDown={phim}>
           {o.loai === 'rut' ? (
-            <p className="m-0 text-[13px] text-slate-300">Rút đề xuất này? Vi phạm về chưa xử lý, tệp bằng chứng bị xoá.</p>
+            <p className="m-0 text-[13px] text-slate-300">{t('Rút đề xuất này? Vi phạm về chưa xử lý, tệp bằng chứng bị xoá.')}</p>
           ) : suaKtd ? (
             <div className="space-y-1.5">
-              <div className="flex flex-wrap gap-1.5" role="group" aria-label="Lý do không cần theo dõi">
+              <div className="flex flex-wrap gap-1.5" role="group" aria-label={t('Lý do không cần theo dõi')}>
                 {CASE_DISMISS_REASONS.map((r) => <NutChon key={r} nho chon={lyDoKtd === r} onClick={() => setLyDoKtd(r)}>{CASE_DISMISS_REASON_LABEL[r]}</NutChon>)}
               </div>
-              <OKhac hien={reasonNeedsText(lyDoKtd)} value={chu} onChange={setChu} goiY="Ví dụ: Em ốm cả tuần thi" loi={daBam ? loiChu : null} />
+              <OKhac hien={reasonNeedsText(lyDoKtd)} value={chu} onChange={setChu} goiY={t('Ví dụ: Em ốm cả tuần thi')} loi={daBam ? loiChu : null} />
               {daBam && !lyDoKtd && <p className="m-0 text-[12px] text-late">{loiChu}</p>}
             </div>
           ) : o.loai === 'tuan' ? (
             <div>
-              <label className="mb-1 block text-[12px] text-slate-400" htmlFor={`${uid}-tuan`}>Tuần thi mới</label>
-              <ONgay id={`${uid}-tuan`} kieu="tuan" value={tuan || null} onChange={setTuan} toiThieu={homNay} ariaLabel="Tuần thi mới" />
-              <p className="m-0 mt-1 text-xs text-slate-400">Mặc định là tuần GV đề nghị. Tuần đã bắt đầu thì không chọn được.</p>
+              <label className="mb-1 block text-[12px] text-slate-400" htmlFor={`${uid}-tuan`}>{t('Tuần thi mới')}</label>
+              <ONgay id={`${uid}-tuan`} kieu="tuan" value={tuan || null} onChange={setTuan} toiThieu={homNay} ariaLabel={t('Tuần thi mới')} />
+              <p className="m-0 mt-1 text-xs text-slate-400">{t('Mặc định là tuần GV đề nghị. Tuần đã bắt đầu thì không chọn được.')}</p>
             </div>
           ) : (
             <div>
@@ -294,16 +295,16 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
               </label>
               <textarea ref={oNhap} id={`${uid}-o`} rows={2} className="field w-full" value={chu} aria-invalid={!!loiChu}
                 aria-describedby={loiChu ? `${uid}-loi` : undefined} onChange={(e) => setChu(e.target.value)}
-                placeholder={o.loai === 'ghi-chu' ? 'Ví dụ: Đã chuyển sang lớp MB FT 102' : undefined} />
+                placeholder={o.loai === 'ghi-chu' ? t('Ví dụ: Đã chuyển sang lớp MB FT 102') : undefined} />
               {loiChu && <p id={`${uid}-loi`} className="m-0 text-[12px] text-late">{loiChu}</p>}
             </div>
           )}
           {loiMay && <p role="alert" className="m-0 text-[12px] text-late">{loiMay}</p>}
           <div className="flex flex-wrap justify-end gap-1.5">
-            <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={dongO} disabled={busy}>{o.loai !== 'tuan' && o.loai !== 'rut' && chu.trim() ? 'Huỷ thay đổi' : 'Đóng'}</button>
+            <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={dongO} disabled={busy}>{o.loai !== 'tuan' && o.loai !== 'rut' && chu.trim() ? t('Huỷ thay đổi') : t('Đóng')}</button>
             <button type="button" className={`btn btn-sm ${o.loai === 'rut' ? 'btn-danger' : 'btn-primary'} min-h-[44px] sm:min-h-0`} onClick={guiO} disabled={busy}>
-              {busy ? 'Đang gửi…' : o.loai === 'tu-choi' ? 'Gửi từ chối' : o.loai === 'tra-loi' ? 'Gửi trả lời' : o.loai === 'tuan' ? 'Trả lời đề nghị dời'
-                : o.loai === 'rut' ? 'Rút đề xuất' : o.loai === 'sua' || o.loai === 'sua-tra-loi' ? 'Lưu' : 'Duyệt'}
+              {busy ? t('Đang gửi…') : o.loai === 'tu-choi' ? t('Gửi từ chối') : o.loai === 'tra-loi' ? t('Gửi trả lời') : o.loai === 'tuan' ? t('Trả lời đề nghị dời')
+                : o.loai === 'rut' ? t('Rút đề xuất') : o.loai === 'sua' || o.loai === 'sua-tra-loi' ? t('Lưu') : t('Duyệt')}
             </button>
           </div>
         </div>
@@ -330,12 +331,12 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
 
 /** Thẻ đã xử lý: ai quyết, lý do/câu trả lời, vì sao tự đóng. */
 function KetQua({ yc, ngan }: { yc: TheYeuCauDto; ngan: (d: string | null | undefined) => string }) {
-  const ai = yc.nguoiDuyet ? `${yc.nguoiDuyet}` : 'Quản lý';
+  const ai = yc.nguoiDuyet ? `${yc.nguoiDuyet}` : t('Quản lý');
   /* PR-BV: thẻ đã quyết mà sau đó "-" bị xoá — giữ quyết định, thêm "vắng đã gỡ" (`lyDoDong`). */
   const goVang = yc.lyDoDong && yc.trangThai !== 'tu_dong' ? ` · ${yc.lyDoDong}` : '';
-  if (yc.trangThai === 'tu_choi') return <p className="m-0 mt-1 text-[12px] text-slate-400">{ai} từ chối{yc.xuLyLuc ? ` ${ngan(yc.xuLyLuc)}` : ''}: “{yc.lyDoTuChoi}”{goVang}</p>;
-  if (yc.trangThai === 'da_tra_loi') return <p className="m-0 mt-1 text-[12px] text-slate-400">{ai} trả lời: “{yc.traLoi}”</p>;
-  if (yc.trangThai === 'tu_dong') return <p className="m-0 mt-1 text-[12px] text-slate-400">Tự đóng: {yc.lyDoDong}</p>;
-  if (!yc.traLoi) return goVang ? <p className="m-0 mt-1 text-[12px] text-slate-400">{ai} đã duyệt{goVang}</p> : null;
+  if (yc.trangThai === 'tu_choi') return <p className="m-0 mt-1 text-[12px] text-slate-400">{t('{ai} từ chối', { ai })}{yc.xuLyLuc ? ` ${ngan(yc.xuLyLuc)}` : ''}: “{yc.lyDoTuChoi}”{goVang}</p>;
+  if (yc.trangThai === 'da_tra_loi') return <p className="m-0 mt-1 text-[12px] text-slate-400">{t('{ai} trả lời: “{traLoi}”', { ai, traLoi: yc.traLoi })}</p>;
+  if (yc.trangThai === 'tu_dong') return <p className="m-0 mt-1 text-[12px] text-slate-400">{t('Tự đóng: {lyDoDong}', { lyDoDong: yc.lyDoDong })}</p>;
+  if (!yc.traLoi) return goVang ? <p className="m-0 mt-1 text-[12px] text-slate-400">{t('{ai} đã duyệt{goVang}', { ai, goVang })}</p> : null;
   return <p className="m-0 mt-1 text-[12px] text-slate-400">{ai}: “{yc.traLoi}”{goVang}</p>;
 }

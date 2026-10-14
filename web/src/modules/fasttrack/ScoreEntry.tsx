@@ -12,6 +12,7 @@ import type { gvChamPayload } from '../cham/GvCham.tsx';
 import {
   oLuoiThuong, tuanLich, ENTRY_SKILL_SHORT, type EntrySkill, type ThieuNhanXet,
 } from '@shared/domain/index.ts';
+import { dich, t } from '@shared/i18n/index.ts';
 
 export type Cell = {
   skill: EntrySkill;
@@ -108,9 +109,9 @@ export const lockedByNoShow = (cell: Cell) => (cell.noShow?.state === 'khong-du-
   || cell.noShow?.state === 'cho-ql-hieu-chinh';
 
 /** R11 — ô của một đợt đã hoàn tất mà người xem không sửa được: thay cho câu "không được phân công". */
-export const KHOA_HOAN_TAT_HINT = 'Đợt này đã hoàn tất. Chỉ Quản lý sửa được điểm — nhờ Quản lý hiệu chỉnh.';
+export const KHOA_HOAN_TAT_HINT = t('Đợt này đã hoàn tất. Chỉ Quản lý sửa được điểm — nhờ Quản lý hiệu chỉnh.');
 /** E8 (T53 Q6): bài đã xác nhận vắng không nhập điểm ở lưới — nhập bù thì Quản lý xếp lại bài trước. */
-export const VANG_HINT = 'Đã xác nhận vắng — Quản lý xếp lại bài trước khi nhập.';
+export const VANG_HINT = t('Đã xác nhận vắng — Quản lý xếp lại bài trước khi nhập.');
 
 /** T10: gợi ý band ở tooltip ô L/R. */
 
@@ -118,10 +119,10 @@ export const VANG_HINT = 'Đã xác nhận vắng — Quản lý xếp lại bà
 export const bandBanDau = (cell: Cell) => (cell.band !== null && cell.criteria.every((v) => v === null) ? fmtBand(cell.band) : '');
 
 /** Vì sao ô này chỉ đọc — MỘT câu cho ô số câu và ô tiêu chí. */
-export const lyDoChiDoc = (cell: Cell) => cell.lyDoKhoa ?? (cell.daChot?.hanGo && !cell.daChot.goDuoc ? 'Quá hạn gỡ "-" — nhờ Quản lý.'   // PR-BV
+export const lyDoChiDoc = (cell: Cell) => cell.lyDoKhoa ?? (cell.daChot?.hanGo && !cell.daChot.goDuoc ? t('Quá hạn gỡ "-" — nhờ Quản lý.')   // PR-BV
   : cell.sitStatus === 'absent' ? VANG_HINT
-  : lockedByNoShow(cell) ? 'Đã chốt — cần Quản lý hiệu chỉnh'
-  : cell.khoa ? KHOA_HOAN_TAT_HINT : 'Bạn không được phân công kỹ năng này');
+  : lockedByNoShow(cell) ? t('Đã chốt — cần Quản lý hiệu chỉnh')
+  : cell.khoa ? KHOA_HOAN_TAT_HINT : t('Bạn không được phân công kỹ năng này'));
 
 /**
  * Lưu điểm một kỹ năng. Khi lỗi, giữ nguyên giá trị người dùng vừa gõ để họ bấm lại,
@@ -147,7 +148,7 @@ export function useSaveScore(attemptId: number, onSaved?: () => void, tenHv?: st
       const r = await api.put<any>(`/attempts/${attemptId}/scores/${skill}`, patch);
       /* PR-BV: xoá "-" đã chốt — máy chủ trả tuần bài về / giữ (mockup bản 2). */
       if (r?.goVang?.tuanVe) {
-        toast.push('ok', `Đã bỏ vắng ${ENTRY_SKILL_SHORT[skill as EntrySkill]}${tenHv ? ` · ${tenHv}` : ''} · ${r.goVang.giuLich ? 'giữ' : 'về'} ${r.goVang.tuanVe}`);
+        toast.push('ok', t('Đã bỏ vắng {x}{x2} · {x3} {tuanVe}', { x: ENTRY_SKILL_SHORT[skill as EntrySkill], x2: tenHv ? ` · ${tenHv}` : '', x3: r.goVang.giuLich ? t('giữ') : t('về'), tuanVe: r.goVang.tuanVe }));
       }
       invalidate('/attempts');
       invalidate('/tong-quan');
@@ -204,9 +205,9 @@ function NutDau({ title, an, tat, onBam }: { title: string; an: boolean; tat: bo
   return (
     <button type="button" tabIndex={-1}
       className={`btn btn-ghost shrink-0 h-11 w-14 min-w-[44px] justify-center px-0 text-sm text-slate-300 ${an ? 'invisible' : ''}`}
-      title={title} aria-label={`Vắng — ${title}`} aria-hidden={an || undefined} disabled={an || tat}
+      title={title} aria-label={t('Vắng — {title}', { title })} aria-hidden={an || undefined} disabled={an || tat}
       onMouseDown={(e) => e.preventDefault()} onClick={onBam}>
-      Vắng
+      {t('Vắng')}
     </button>
   );
 }
@@ -266,8 +267,8 @@ function useGoLaiDau(giaTri: string, khiGoLai: () => void, inputRef?: (el: HTMLI
     return true;
   };
   const doi = (v: string): boolean => {
-    const t = v.trim();
-    if (giaTri.trim() !== '-' || t.length < 2 || !/^-+$/.test(t)) return false;
+    const tt = v.trim();
+    if (giaTri.trim() !== '-' || tt.length < 2 || !/^-+$/.test(tt)) return false;
     khiGoLai();
     return true;
   };
@@ -285,19 +286,19 @@ export const laTuChoi = (e: any) => typeof e?.status === 'number' && e.status >=
  */
 export function DeadlinePill({ cell }: { cell: Cell }) {
   const { homNay } = useNgayNghiepVu();
-  if (!cell.required) return <Info pending>Ngoài phạm vi</Info>;
-  if (cell.progress === 'cancelled') return <Info pending>Đã huỷ phần thi</Info>;
+  if (!cell.required) return <Info pending>{t('Ngoài phạm vi')}</Info>;
+  if (cell.progress === 'cancelled') return <Info pending>{t('Đã huỷ phần thi')}</Info>;
   /* MT lịch sử (T34): không hạn, không "Quá hạn" — chỉ là nhập bù. */
-  if (cell.progress === 'lich_su') return <Info pending>Nhập bù, không tính hạn</Info>;
+  if (cell.progress === 'lich_su') return <Info pending>{t('Nhập bù, không tính hạn')}</Info>;
   /*
    * HAI MỐC KHÔNG THAY NHAU (rule book §17.1): "Hạn nhập điểm 23/09" là hạn cho bài CÓ thực hiện; còn bài GV đã
    * báo "-" thì không nợ điểm mà có mốc chốt Chủ nhật — hai cái tên khác nhau, không dùng chung một chỗ.
    */
-  if (cell.noShow) return <Info>{cell.noShow.text}</Info>;
+  if (cell.noShow) return <Info>{dich(cell.noShow.text)}</Info>;
   /* "Đã nhập" là TRẠNG THÁI CÔNG VIỆC, không phải điểm tốt — nên không tô xanh lá. */
-  if (cell.band !== null) return <Status kind="done">Đã nhập</Status>;
-  if (cell.progress === 'absent') return <Info pending>Đã vắng — chờ xếp lại</Info>;
-  if (!cell.deadline) return <Info pending>Chưa xếp tuần</Info>;
+  if (cell.band !== null) return <Status kind="done">{t('Đã nhập')}</Status>;
+  if (cell.progress === 'absent') return <Info pending>{t('Đã vắng — chờ xếp lại')}</Info>;
+  if (!cell.deadline) return <Info pending>{t('Chưa xếp tuần')}</Info>;
   /*
    * Giữ NGUYÊN NGHĨA, đổi ĐƯỜNG RENDER (PR-E Step 2): bốn nhánh chuỗi tự dựng ở đây ("Hạn
    * riêng môn này" / "Hạn riêng cả đợt" / "Hạn" / "Quá hạn") nay đi qua `<Han>` — nên hạn nhập
@@ -307,8 +308,8 @@ export function DeadlinePill({ cell }: { cell: Cell }) {
   if (cell.progress === 'upcoming') {
     return <Han loai="nhap-diem" han={cell.deadline} tienTo={`Thi ${cell.weekStart ? tuanLich(cell.weekStart, homNay) : cell.weekRange ?? cell.periodCode ?? ''}`.trim()} />;
   }
-  const ghiChu = cell.deadlineSource === 'skill_override' ? 'riêng môn này'
-    : cell.deadlineSource === 'attempt_override' ? 'riêng cả đợt'
+  const ghiChu = cell.deadlineSource === 'skill_override' ? t('riêng môn này')
+    : cell.deadlineSource === 'attempt_override' ? t('riêng cả đợt')
     : undefined;
   return <Han loai="nhap-diem" han={cell.deadline} ghiChu={ghiChu} />;
 }
@@ -388,9 +389,9 @@ export function SuaDiemCoLyDo({ tieuDe, moTaCu, children, onLuu, onDong, loiGiaT
     setBusy(true); setLoi(null);
     try {
       const ok = await onLuu(lyDo.trim());
-      if (!ok) setLoi('Không lưu được — thử lại.');
+      if (!ok) setLoi(t('Không lưu được — thử lại.'));
     } catch (e: any) {
-      setLoi(e?.message ?? 'Không lưu được — thử lại.');
+      setLoi(e?.message ?? t('Không lưu được — thử lại.'));
     } finally {
       dangLuu.current = false;
       setBusy(false);
@@ -412,17 +413,17 @@ export function SuaDiemCoLyDo({ tieuDe, moTaCu, children, onLuu, onDong, loiGiaT
           <div className="text-xs text-slate-500 mt-0.5 tabular-nums">{moTaCu}</div>
           <div className="mt-2">{children}</div>
           <label className="block mt-2">
-            <span className="block text-xs text-slate-500 mb-0.5">Lý do sửa (tuỳ chọn)</span>
-            <input className="field py-1 text-sm" value={lyDo} placeholder="Ví dụ: chấm lại bài, nhập nhầm cột"
-              aria-label="Lý do sửa điểm đã nhập" onChange={(e) => setLyDo(e.target.value)} />
+            <span className="block text-xs text-slate-500 mb-0.5">{t('Lý do sửa (tuỳ chọn)')}</span>
+            <input className="field py-1 text-sm" value={lyDo} placeholder={t('Ví dụ: chấm lại bài, nhập nhầm cột')}
+              aria-label={t('Lý do sửa điểm đã nhập')} onChange={(e) => setLyDo(e.target.value)} />
           </label>
           {loi && <p className="m-0 mt-1 text-xs text-rose-300">{loi}</p>}
           <div className="flex justify-end gap-2 mt-2">
-            <button type="button" className="btn btn-sm" disabled={busy} onClick={() => dong.current()}>Đóng</button>
+            <button type="button" className="btn btn-sm" disabled={busy} onClick={() => dong.current()}>{t('Đóng')}</button>
             <span title={chan ?? undefined}>
               <button type="button" className="btn btn-sm btn-primary" disabled={busy || !!chan}
                 title={chan ?? undefined} onClick={() => void luu()}>
-                {busy ? 'Đang lưu…' : 'Lưu'}
+                {busy ? t('Đang lưu…') : t('Lưu')}
               </button>
             </span>
           </div>
@@ -442,7 +443,7 @@ const phanTram = (r: number | null | undefined) =>
 
 /** "Đạt · 82,5%" / "Chưa đạt · 67,5%" — chữ kết quả đứng trước (bấm thử C10). Chưa có kết quả thì null. */
 export function datPhanTram(ketQua: 'pass' | 'fail' | 'missing' | undefined, tiLe: number | null | undefined): string | null {
-  const chu = ketQua === 'pass' ? 'Đạt' : ketQua === 'fail' ? 'Chưa đạt' : null;
+  const chu = ketQua === 'pass' ? t('Đạt') : ketQua === 'fail' ? t('Chưa đạt') : null;
   const pt = phanTram(tiLe);
   return chu && pt ? `${chu} · ${pt}` : null;
 }
@@ -487,7 +488,7 @@ const SO_NGUYEN = /^\d+$/;
  * gõ gì thì không gửi gì; gõ số câu đúng thì lưu kèm tổng đó) — màn điện thoại không có ô tổng đầu cột + nút ↓.
  */
 export function ODiemThuong({
-  cell, tongCot, canEdit, onSave, onDau, inputRef, onKeyDown, dienTong = null, tenMon = 'Môn', tenHv,
+  cell, tongCot, canEdit, onSave, onDau, inputRef, onKeyDown, dienTong = null, tenMon = t('Môn'), tenHv,
   lon = false, tongLaySan = false, chiChuKetQua = false, onLoiNhap,
 }: {
   cell: {
@@ -558,9 +559,9 @@ export function ODiemThuong({
   const soTong = SO_NGUYEN.test(tong.trim()) ? Number(tong.trim()) : null;
   const o = oLuoiThuong({ diem: cell.diem, tong: coDiem ? cell.tong : soTong, tongCot });
   const pt = phanTram(cell.tiLe);
-  const ketQuaChu = cell.ketQua === 'pass' ? 'Đạt' : cell.ketQua === 'fail' ? 'Chưa đạt' : null;
+  const ketQuaChu = cell.ketQua === 'pass' ? t('Đạt') : cell.ketQua === 'fail' ? t('Chưa đạt') : null;
   const lamBu = dau && coDiem && cell.tuanHienTai
-    ? `Làm bù ở ${cell.tuanHienTai}${cell.tuanDoiTu ? ` (dời từ ${cell.tuanDoiTu})` : ''}.` : '';
+    ? t('Làm bù ở {tuanHienTai}{x}.', { tuanHienTai: cell.tuanHienTai, x: cell.tuanDoiTu ? t(' (dời từ {tuanDoiTu})', { tuanDoiTu: cell.tuanDoiTu }) : '' }) : '';
 
   /* `laDau` = lệnh "-" (ghi/gỡ dấu): không thành thì ô về giá trị đã lưu — không để một "-" nằm đó như đã ghi. */
   const gui = async (lam: () => Promise<boolean>, laDau = false) => {
@@ -571,21 +572,21 @@ export function ODiemThuong({
     setBusy(false);
     if (ok || laDau) { setDirty(false); goDiem.current = false; }   // lỗi điểm thì giữ bản nháp để sửa và thử lại
   };
-  const chuaToiCau = `Chưa tới tuần thi${cell.tuanHienTai ? ` ${cell.tuanHienTai}` : ''} — chưa ghi "-" được.`;
+  const chuaToiCau = t('Chưa tới tuần thi{x} — chưa ghi "-" được.', { x: cell.tuanHienTai ? ` ${cell.tuanHienTai}` : '' });
 
   /** Lỗi nhập của cặp ô chưa có điểm (ngoài lệnh "-") — một luật cho `commit` và cho phím Enter (A5). */
-  const loiNhap = (d: string, t: string): { o: 'diem' | 'tong'; cau: string } | null => {
-    if (d !== '' && !SO_NGUYEN.test(d)) return { o: 'diem', cau: 'Số câu đúng là số nguyên, hoặc "-" nếu em không làm bài.' };
-    if (t !== '' && (!SO_NGUYEN.test(t) || Number(t) <= 0)) return { o: 'tong', cau: 'Tổng số câu là số nguyên lớn hơn 0.' };
-    if (d !== '' && t === '') return { o: 'tong', cau: 'Nhập cả tổng số câu.' };
-    if (d !== '' && Number(d) > Number(t)) return { o: 'diem', cau: `Số câu đúng (${d}) không thể lớn hơn tổng (${t}).` };
+  const loiNhap = (d: string, tt: string): { o: 'diem' | 'tong'; cau: string } | null => {
+    if (d !== '' && !SO_NGUYEN.test(d)) return { o: 'diem', cau: t('Số câu đúng là số nguyên, hoặc "-" nếu em không làm bài.') };
+    if (tt !== '' && (!SO_NGUYEN.test(tt) || Number(tt) <= 0)) return { o: 'tong', cau: t('Tổng số câu là số nguyên lớn hơn 0.') };
+    if (d !== '' && tt === '') return { o: 'tong', cau: t('Nhập cả tổng số câu.') };
+    if (d !== '' && Number(d) > Number(tt)) return { o: 'diem', cau: t('Số câu đúng ({d}) không thể lớn hơn tổng ({t}).', { d, t: tt }) };
     return null;
   };
 
   const commit = async () => {
     if (!dirty || dangGui.current || coDiem) return;
     const d = diem.trim();
-    const t = tong.trim();
+    const tt = tong.trim();
     if (d === '-') {
       /* Đã mang dấu: chỉ dời tiếp khi tuần mới đã tới VÀ người dùng thật sự gõ lại "-" (Q4). */
       if (dau && (cell.chuaToiTuan || !goDiem.current)) { setDirty(false); goDiem.current = false; return; }
@@ -603,7 +604,7 @@ export function ODiemThuong({
       return gui(() => onDau(true), true);
     }
     if (d === '' && dau) { setCanhBao(null); return gui(() => onDau(false), true); }
-    const loi = loiNhap(d, t);
+    const loi = loiNhap(d, tt);
     if (loi) { setCanhBao(loi); return; }
     /*
      * Ô CHƯA CÓ ĐIỂM mà số câu đúng vẫn trống: không gửi gì. Lưới máy tính GIỮ bản nháp để tổng vừa ↓ điền còn hiện
@@ -615,7 +616,7 @@ export function ODiemThuong({
       return;
     }
     const score = d === '' ? null : Number(d);
-    const total = t === '' ? null : Number(t);
+    const total = tt === '' ? null : Number(tt);
     setCanhBao(null);
     if (score === cell.diem && total === cell.tong) { setDirty(false); return; }
     return gui(() => onSave({ score, total }));
@@ -672,8 +673,8 @@ export function ODiemThuong({
   const oSo = lon
     ? 'field w-[52px] h-11 px-1 text-center tabular-nums text-base'
     : 'field w-11 px-1 py-1 text-center tabular-nums text-[13px]';
-  const nutDauTitle = dau ? 'Em lại không làm bài — môn này dời tiếp sang tuần sau'
-    : 'Em không làm bài — môn này dời sang tuần sau';
+  const nutDauTitle = dau ? t('Em lại không làm bài — môn này dời tiếp sang tuần sau')
+    : t('Em không làm bài — môn này dời sang tuần sau');
 
   /*
    * ---- PR-BV (L2, rủi ro 1): xem TUẦN CÓ "-" mà tuần mới đã có điểm — ô hiện "-" kèm tuần mới. Xoá "-" (tẩy ô + Enter / rời ô) = hết
@@ -681,7 +682,7 @@ export function ODiemThuong({
    */
   if (cell.oTuanCu && dau && coDiem) {
     const duoi = cell.tuanHienTai ? <span className="text-xs tabular-nums text-slate-400 leading-tight">→ {cell.tuanHienTai}</span> : null;
-    const tieuDe = `Đã có điểm ở ${cell.tuanHienTai ?? 'tuần mới'}. Xoá "-" = hết vắng, giữ lịch và điểm.`;
+    const tieuDe = t('Đã có điểm ở {x}. Xoá "-" = hết vắng, giữ lịch và điểm.', { x: cell.tuanHienTai ?? t('tuần mới') });
     if (!cell.goDau) {
       return <span className="inline-flex flex-col items-end tabular-nums text-slate-400" title={tieuDe}><span>-</span>{duoi}</span>;
     }
@@ -693,7 +694,7 @@ export function ODiemThuong({
     return (
       <span className="inline-flex flex-col items-end gap-0.5">
         <input ref={inputRef} className={oSo} inputMode="numeric" value={conDau ? '-' : ''} disabled={busy} title={tieuDe}
-          aria-label={`${tenMon} — dấu "-" tuần này. Xoá để bỏ vắng`}
+          aria-label={t('{tenMon} — dấu "-" tuần này. Xoá để bỏ vắng', { tenMon })}
           onChange={(e) => setConDau(e.target.value.trim() !== '')}
           onBlur={goNgay}
           onKeyDown={(e) => {
@@ -708,7 +709,7 @@ export function ODiemThuong({
 
   /* ---- Chỉ đọc: môn không được phân công. */
   if (!canEdit) {
-    const khongDay = cell.khoa ? KHOA_HOAN_TAT_HINT : 'Bạn không được phân công kỹ năng này.';
+    const khongDay = cell.khoa ? KHOA_HOAN_TAT_HINT : t('Bạn không được phân công kỹ năng này.');
     if (coDiem) {
       return (
         <span className="inline-flex flex-col items-end justify-center tabular-nums text-slate-400"
@@ -721,9 +722,9 @@ export function ODiemThuong({
         </span>
       );
     }
-    const chu = cell.khongDuThi ? 'Không dự thi' : dau ? '-' : cell.chuaToiTuan && cell.tuanHienTai ? cell.tuanHienTai : '—';
-    const title = cell.khongDuThi ? `${khongDay} Không dự thi · ${cell.tuanHienTai ?? ''}`.trim()
-      : dau && cell.tuanHienTai ? `${khongDay} Đã dời sang ${cell.tuanHienTai}.`
+    const chu = cell.khongDuThi ? t('Không dự thi') : dau ? '-' : cell.chuaToiTuan && cell.tuanHienTai ? cell.tuanHienTai : '—';
+    const title = cell.khongDuThi ? t('{khongDay} Không dự thi · {x}', { khongDay, x: cell.tuanHienTai ?? '' }).trim()
+      : dau && cell.tuanHienTai ? t('{khongDay} Đã dời sang {tuanHienTai}.', { khongDay, tuanHienTai: cell.tuanHienTai })
       : cell.chuaToiTuan && cell.tuanHienTai ? `${khongDay} Thi ${cell.tuanHienTai}.` : khongDay;
     const chuDoc = <span className="text-xs text-slate-500 tabular-nums" title={title}>{chu}</span>;
     /* Điện thoại: giữ chỗ nút "−" để chữ thẳng cột với ô nhập của các dòng khác. */
@@ -735,22 +736,22 @@ export function ODiemThuong({
     const mo = (d: string) => setSua({ diem: d, tong: tongDaLuu() });
     const loiGiaTri = (() => {
       if (!sua) return null;
-      const d = sua.diem.trim(); const t = sua.tong.trim();
-      if (d === '-') return 'Ô đã có điểm không nhận dấu "-" — muốn đổi thì sửa số.';
-      if (d !== '' && !SO_NGUYEN.test(d)) return 'Số câu đúng là số nguyên.';
-      if (t !== '' && (!SO_NGUYEN.test(t) || Number(t) <= 0)) return 'Tổng số câu là số nguyên lớn hơn 0.';
-      if (d !== '' && t === '') return 'Nhập cả tổng số câu.';
-      if (d !== '' && Number(d) > Number(t)) return `Số câu đúng (${d}) không thể lớn hơn tổng (${t}).`;
-      if ((d === '' ? null : Number(d)) === cell.diem && (t === '' ? null : Number(t)) === cell.tong) return 'Chưa đổi gì.';
+      const d = sua.diem.trim(); const tt = sua.tong.trim();
+      if (d === '-') return t('Ô đã có điểm không nhận dấu "-" — muốn đổi thì sửa số.');
+      if (d !== '' && !SO_NGUYEN.test(d)) return t('Số câu đúng là số nguyên.');
+      if (tt !== '' && (!SO_NGUYEN.test(tt) || Number(tt) <= 0)) return t('Tổng số câu là số nguyên lớn hơn 0.');
+      if (d !== '' && tt === '') return t('Nhập cả tổng số câu.');
+      if (d !== '' && Number(d) > Number(tt)) return t('Số câu đúng ({d}) không thể lớn hơn tổng ({t}).', { d, t: tt });
+      if ((d === '' ? null : Number(d)) === cell.diem && (tt === '' ? null : Number(tt)) === cell.tong) return t('Chưa đổi gì.');
       return null;
     })();
-    const title = [pt && ketQuaChu ? `${ketQuaChu} · ${pt}.` : '', 'Đã có điểm — bấm để sửa.', lamBu]
+    const title = [pt && ketQuaChu ? `${ketQuaChu} · ${pt}.` : '', t('Đã có điểm — bấm để sửa.'), lamBu]
       .filter(Boolean).join(' ');
     return (
       <span className="inline-flex flex-col items-end justify-center" title={title}>
         <span className="inline-flex items-center justify-end gap-1">
           <input ref={inputRef} readOnly className={`${oSo} cursor-pointer ${cell.ketQua === 'fail' ? 'text-rose-300' : ''}`}
-            value={String(cell.diem)} aria-label={`${tenMon} — số câu đúng (đã có điểm, bấm để sửa)`}
+            value={String(cell.diem)} aria-label={t('{tenMon} — số câu đúng (đã có điểm, bấm để sửa)', { tenMon })}
             onClick={() => mo(String(cell.diem))}
             onKeyDown={(e) => {
               if (/^[0-9]$/.test(e.key)) { e.preventDefault(); mo(e.key); return; }
@@ -760,32 +761,32 @@ export function ODiemThuong({
             }} />
           <span className="text-slate-600">/</span>
           <input readOnly tabIndex={-1} className={`${oSo} cursor-pointer ${o.vienVang ? 'border-amber-400/80' : ''}`}
-            value={tongDaLuu()} placeholder="?" aria-label={`${tenMon} — tổng số câu`}
-            title={o.vienVang ? `Khác tổng của cột (${tongCot}) — em làm đề khác.` : undefined}
+            value={tongDaLuu()} placeholder="?" aria-label={t('{tenMon} — tổng số câu', { tenMon })}
+            title={o.vienVang ? t('Khác tổng của cột ({tongCot}) — em làm đề khác.', { tongCot }) : undefined}
             onClick={() => mo(String(cell.diem))} />
           {/* Ô đã có điểm không nhận "-": nút chỉ giữ chỗ để các dòng thẳng cột. */}
           {lon && <NutDau title={nutDauTitle} an tat onBam={() => undefined} />}
           {sua && (
             <SuaDiemCoLyDo
-              tieuDe={`Sửa ${tenMon}${tenHv ? ` · ${tenHv}` : ''}`}
-              moTaCu={`Đã lưu: ${cell.diem}/${cell.tong ?? '?'}${pt ? ` (${pt})` : ''}`}
+              tieuDe={t('Sửa {tenMon}{x}', { tenMon, x: tenHv ? ` · ${tenHv}` : '' })}
+              moTaCu={t('Đã lưu: {diem}/{x}{x2}', { diem: cell.diem, x: cell.tong ?? '?', x2: pt ? ` (${pt})` : '' })}
               loiGiaTri={loiGiaTri}
               onDong={() => setSua(null)}
               onLuu={async (lyDo) => {
-                const d = sua.diem.trim(); const t = sua.tong.trim();
-                const ok = await onSave({ score: d === '' ? null : Number(d), total: t === '' ? null : Number(t), lyDo }, { nem: true });
+                const d = sua.diem.trim(); const tt = sua.tong.trim();
+                const ok = await onSave({ score: d === '' ? null : Number(d), total: tt === '' ? null : Number(tt), lyDo }, { nem: true });
                 if (ok) setSua(null);
                 return ok;
               }}
             >
               <div className="flex items-center gap-1.5">
-                <span className="text-xs text-slate-500 w-20">Giá trị mới</span>
-                <input className={oSo} inputMode="numeric" value={sua.diem} aria-label={`${tenMon} — số câu đúng mới`}
+                <span className="text-xs text-slate-500 w-20">{t('Giá trị mới')}</span>
+                <input className={oSo} inputMode="numeric" value={sua.diem} aria-label={t('{tenMon} — số câu đúng mới', { tenMon })}
                   onChange={(e) => setSua({ ...sua, diem: e.target.value })} />
                 <span className="text-slate-600">/</span>
-                <input className={oSo} inputMode="numeric" value={sua.tong} aria-label={`${tenMon} — tổng số câu mới`}
+                <input className={oSo} inputMode="numeric" value={sua.tong} aria-label={t('{tenMon} — tổng số câu mới', { tenMon })}
                   onChange={(e) => setSua({ ...sua, tong: e.target.value })} />
-                {sua.diem.trim() === '' && <span className="text-xs text-slate-500">huỷ điểm</span>}
+                {sua.diem.trim() === '' && <span className="text-xs text-slate-500">{t('huỷ điểm')}</span>}
               </div>
             </SuaDiemCoLyDo>
           )}
@@ -798,14 +799,14 @@ export function ODiemThuong({
   /* ---- Ô chưa có điểm: hai ô nhập. Ô trái nhận số câu đúng hoặc "-". */
   const dangDau = diem.trim() === '-';
   const titleDiem = canhBao?.o === 'diem' ? canhBao.cau
-    : cell.khongDuThi ? `Không dự thi · ${cell.tuanHienTai ?? ''}. Xoá "-" để bỏ; gõ số khi em đã làm bài.`
+    : cell.khongDuThi ? t('Không dự thi · {x}. Xoá "-" để bỏ; gõ số khi em đã làm bài.', { x: cell.tuanHienTai ?? '' })
     : dau && !cell.chuaToiTuan
-      ? `Đã dời sang ${cell.tuanHienTai ?? 'tuần này'} (từ ${cell.tuanDoiTu ?? 'tuần cũ'}). Gõ số khi em đã làm bài; em lại không làm bài thì gõ lại "-" để dời tiếp.`
-    : dau ? `Đã dời sang ${cell.tuanHienTai ?? 'tuần sau'}. Xoá dấu "-" để trả lịch về ${cell.tuanDoiTu ?? 'tuần cũ'}; gõ số khi em đã làm bài.`
-    : cell.chuaToiTuan ? `Số câu đúng. Thi ${cell.tuanHienTai ?? 'tuần sau'} — tới tuần thi mới ghi được "-".`
-    : 'Số câu đúng. Gõ "-" nếu em không làm bài: môn này dời sang tuần sau.';
+      ? t('Đã dời sang {x} (từ {x2}). Gõ số khi em đã làm bài; em lại không làm bài thì gõ lại "-" để dời tiếp.', { x: cell.tuanHienTai ?? t('tuần này'), x2: cell.tuanDoiTu ?? t('tuần cũ') })
+    : dau ? t('Đã dời sang {x}. Xoá dấu "-" để trả lịch về {x2}; gõ số khi em đã làm bài.', { x: cell.tuanHienTai ?? t('tuần sau'), x2: cell.tuanDoiTu ?? t('tuần cũ') })
+    : cell.chuaToiTuan ? t('Số câu đúng. Thi {x} — tới tuần thi mới ghi được "-".', { x: cell.tuanHienTai ?? t('tuần sau') })
+    : t('Số câu đúng. Gõ "-" nếu em không làm bài: môn này dời sang tuần sau.');
   const titleTong = canhBao?.o === 'tong' ? canhBao.cau
-    : o.vienVang ? `Khác tổng của cột (${tongCot}) — em làm đề khác.` : 'Tổng số câu của đề em làm.';
+    : o.vienVang ? t('Khác tổng của cột ({tongCot}) — em làm đề khác.', { tongCot }) : t('Tổng số câu của đề em làm.');
   return (
     <span className="inline-flex flex-col items-end gap-0.5">
     <span ref={cap} className="inline-flex items-center justify-end gap-1"
@@ -814,7 +815,7 @@ export function ODiemThuong({
         className={`${oSo} ${canhBao?.o === 'diem' ? 'border-rose-400/70' : ''} ${dangDau ? 'text-slate-400' : ''}`}
         aria-invalid={canhBao?.o === 'diem' ? true : undefined} aria-describedby={canhBao?.o === 'diem' ? idLoi : undefined}
         inputMode="numeric" value={diem} disabled={busy} title={titleDiem}
-        aria-label={`${tenMon} — số câu đúng. Gõ "-" nếu em không làm bài`}
+        aria-label={t('{tenMon} — số câu đúng. Gõ "-" nếu em không làm bài', { tenMon })}
         onChange={(e) => {
           const v = e.target.value.trim();
           /* Dự phòng: "--" lọt vào ô (bàn phím ảo không cho chặn trước) → giữ "-", đi đúng đường gõ lại "-". */
@@ -824,14 +825,14 @@ export function ODiemThuong({
         }} onKeyDown={phim} />
       <span className="text-slate-600">/</span>
       <input ref={tongRef} className={`${oSo} ${canhBao?.o === 'tong' ? 'border-rose-400/70' : o.vienVang ? 'border-amber-400/80' : ''}`}
-        inputMode="numeric" value={dangDau ? '' : tong} disabled={busy || dangDau} placeholder={dangDau ? '' : 'tổng'}
-        title={dangDau ? 'Ô mang dấu "-" chưa cần tổng.' : titleTong}
+        inputMode="numeric" value={dangDau ? '' : tong} disabled={busy || dangDau} placeholder={dangDau ? '' : t('tổng')}
+        title={dangDau ? t('Ô mang dấu "-" chưa cần tổng.') : titleTong}
         aria-invalid={canhBao?.o === 'tong' ? true : undefined} aria-describedby={canhBao?.o === 'tong' ? idLoi : undefined}
-        aria-label={`${tenMon} — tổng số câu`}
+        aria-label={t('{tenMon} — tổng số câu', { tenMon })}
         onChange={(e) => { setTong(e.target.value); setDirty(true); }} onKeyDown={phim} />
       {lon && <NutDau title={nutDauTitle} an={!nhanDau || !!cell.khongDuThi} tat={busy} onBam={bamVang} />}
     </span>
-    {cell.khongDuThi && dangDau && <span className="text-xs leading-tight text-slate-400">Không dự thi</span>}
+    {cell.khongDuThi && dangDau && <span className="text-xs leading-tight text-slate-400">{t('Không dự thi')}</span>}
     <DongLoiNhap id={idLoi} cau={canhBao?.cau ?? null} />
     </span>
   );

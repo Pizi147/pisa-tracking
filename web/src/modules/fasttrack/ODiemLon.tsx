@@ -15,11 +15,12 @@ import { KetQuaDot } from '../../ui/KetQuaDot.tsx';
 import { Han } from '../../ui/Han.tsx';
 import { suaDuoc, type Cell, type SaveOpts, type SavePatch } from './ScoreEntry.tsx';
 import { HopNhapDiem, type NguCanhHop } from './HopNhapDiem.tsx';
+import { t } from '@shared/i18n/index.ts';
 
 export type KyNangLon = 'listening' | 'reading' | 'writing' | 'speaking';
 export const KY_NANG_LON: KyNangLon[] = ['listening', 'reading', 'writing', 'speaking'];
 const NHAN: Record<KyNangLon, string> = { listening: 'Listening', reading: 'Reading', writing: 'Writing', speaking: 'Speaking' };
-export const CONG_THUC_W = 'Band Writing = (Task 1 + Task 2 × 2) / 3, khi đủ hai task.';
+export const CONG_THUC_W = t('Band Writing = (Task 1 + Task 2 × 2) / 3, khi đủ hai task.');
 
 /** Dòng lịch của một kỹ năng đánh giá (phần `attemptDetail.skillSchedule` mà dải cần). */
 export type LichKn = {
@@ -45,20 +46,20 @@ function DauKyVong({ dat }: { dat: boolean }) {
  * Hạn nhập / quá hạn đi qua `<Han>` để cùng một câu ở mọi màn.
  */
 function trangThaiO(l: LichKn | undefined, c: Cell | undefined, lichSu: boolean, homNay: string): { chu: React.ReactNode; mau?: string; title?: string } {
-  if (!l || !l.required) return { chu: 'Ngoài phạm vi' };
-  if (l.sitStatus === 'cancelled' || l.progress === 'cancelled') return { chu: 'Đã huỷ phần thi' };
+  if (!l || !l.required) return { chu: t('Ngoài phạm vi') };
+  if (l.sitStatus === 'cancelled' || l.progress === 'cancelled') return { chu: t('Đã huỷ phần thi') };
   if (l.pendingMove) {
-    const cau = `chờ Quản lý duyệt dời lần ${l.pendingMove.moveNo} · hạn ${ngay(l.pendingMove.decideBy, homNay)}`;
-    return { chu: cau, mau: 'text-wait', title: `Đề nghị dời sang ${l.pendingMove.toWeek ?? 'tuần kế tiếp'} — Quản lý trả lời trước ${ngay(l.pendingMove.decideBy, homNay)}, quá hạn thì huỷ phần thi.` };
+    const cau = t('chờ Quản lý duyệt dời lần {moveNo} · hạn {ngay}', { moveNo: l.pendingMove.moveNo, ngay: ngay(l.pendingMove.decideBy, homNay) });
+    return { chu: cau, mau: 'text-wait', title: t('Đề nghị dời sang {x} — Quản lý trả lời trước {ngay}, quá hạn thì huỷ phần thi.', { x: l.pendingMove.toWeek ?? t('tuần kế tiếp'), ngay: ngay(l.pendingMove.decideBy, homNay) }) };
   }
-  if (l.sitStatus === 'absent') return { chu: 'vắng · chờ xếp lại', title: 'Đã xác nhận vắng — Quản lý xếp lại bài trước khi nhập.' };
-  if (lichSu) return { chu: 'Nhập bù, không tính hạn' };
+  if (l.sitStatus === 'absent') return { chu: t('vắng · chờ xếp lại'), title: t('Đã xác nhận vắng — Quản lý xếp lại bài trước khi nhập.') };
+  if (lichSu) return { chu: t('Nhập bù, không tính hạn') };
   if (l.doiTu && l.absenceMoveCount > 0) return chuDoiVang(l, homNay);
   if (c?.noShow) return { chu: c.noShow.text };
-  if (!l.weekStart) return { chu: 'Chưa xếp tuần' };
+  if (!l.weekStart) return { chu: t('Chưa xếp tuần') };
   if (l.progress === 'upcoming') return { chu: `Thi ${tuanLich(l.weekStart, homNay)}` };
   if (l.deadline) return { chu: <Han loai="nhap-diem" han={l.deadline} /> };
-  return { chu: 'Chưa có điểm' };
+  return { chu: t('Chưa có điểm') };
 }
 
 export function DaiODiemLon({ cells, lich, result, lichSu, homNay, mo, onMo, save, ketLuanOverall, nguCanh }: {
@@ -95,7 +96,7 @@ export function DaiODiemLon({ cells, lich, result, lichSu, homNay, mo, onMo, sav
             <button type="button" ref={(el) => { neo.current[c.skill] = el; }} aria-expanded={mo === c.skill}
               className="link appearance-none border-0 bg-transparent p-0 tabular-nums max-sm:inline-flex max-sm:min-h-[44px] max-sm:items-center"
               onClick={() => onMo(mo === c.skill ? null : c.skill)}>
-              {c.skill === 'writing1' ? 'W1' : 'W2'} {c.band !== null ? fmtBand(c.band) : 'Nhập'}
+              {c.skill === 'writing1' ? 'W1' : 'W2'} {c.band !== null ? fmtBand(c.band) : t('Nhập')}
             </button>
           ) : <span className="tabular-nums">{c.skill === 'writing1' ? 'W1' : 'W2'} {fmtBand(c.band)}</span>}
         </span>
@@ -104,16 +105,16 @@ export function DaiODiemLon({ cells, lich, result, lichSu, homNay, mo, onMo, sav
       const w = (s: string) => fmtBand(oCua(s)?.band ?? null);
       phu = { chu: `W1 ${w('writing1')} · W2 ${w('writing2')}`, title: CONG_THUC_W };
     } else if ((k === 'listening' || k === 'reading') && bai[0]?.rawScore != null) {
-      phu = { chu: `${bai[0].rawScore} câu` };
+      phu = { chu: t('{rawScore} câu', { rawScore: bai[0].rawScore }) };
     } else if (k === 'speaking' && bai[0]?.gvCham) {
       /* PR-S4F #10: tên dài bị cắt (truncate) — title cho đủ tên. */
-      phu = { chu: `GV chấm: ${bai[0].gvCham.ten}`, title: `GV chấm: ${bai[0].gvCham.ten}` };
+      phu = { chu: t('GV chấm: {ten}', { ten: bai[0].gvCham.ten }), title: t('GV chấm: {ten}', { ten: bai[0].gvCham.ten }) };
     } else if (band !== null) {
       phu = { chu: '' };
     } else {
       phu = trangThaiO(l, bai[0], lichSu, homNay);
     }
-    const nhapBoi = bai.filter((c) => c.enteredByName).map((c) => `${skillLabel(c.skill)}: nhập bởi ${c.enteredByName}`).join('\n');
+    const nhapBoi = bai.filter((c) => c.enteredByName).map((c) => t('{skillLabel}: nhập bởi {enteredByName}', { skillLabel: skillLabel(c.skill), enteredByName: c.enteredByName })).join('\n');
     const noiDung = (
       <>
         <span className="block text-xs font-medium text-slate-400">{NHAN[k]}</span>
@@ -122,8 +123,8 @@ export function DaiODiemLon({ cells, lich, result, lichSu, homNay, mo, onMo, sav
             {band === null ? '—' : fmtBand(band)}
           </span>
           {band !== null && v && v.passed !== null && (
-            <span title={v.passed ? 'Đạt kỳ vọng' : 'Dưới kỳ vọng'}>
-              <DauKyVong dat={v.passed} /><span className="sr-only">{v.passed ? 'Đạt kỳ vọng' : 'Dưới kỳ vọng'}</span>
+            <span title={v.passed ? t('Đạt kỳ vọng') : t('Dưới kỳ vọng')}>
+              <DauKyVong dat={v.passed} /><span className="sr-only">{v.passed ? t('Đạt kỳ vọng') : t('Dưới kỳ vọng')}</span>
             </span>
           )}
         </span>
@@ -141,7 +142,7 @@ export function DaiODiemLon({ cells, lich, result, lichSu, homNay, mo, onMo, sav
     const vo = `flex min-w-0 flex-col rounded-lg border px-3 py-2.5 text-left ${dangMo ? 'border-[color:var(--accent-strong)] bg-white/[0.04]' : ''}`;
     return sua ? (
       <button key={k} type="button" aria-expanded={dangMo} aria-haspopup="dialog" ref={(el) => { neo.current[bai[0].skill] = el; }}
-        title={[nhapBoi, 'Bấm để nhập / sửa điểm tại chỗ.'].filter(Boolean).join('\n')}
+        title={[nhapBoi, t('Bấm để nhập / sửa điểm tại chỗ.')].filter(Boolean).join('\n')}
         className={`${vo} hover:bg-white/[0.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-strong)]`}
         style={dangMo ? undefined : { borderColor: 'var(--line)' }}
         onClick={() => onMo(dangMo ? null : bai[0].skill)}>

@@ -180,14 +180,11 @@ export function xuLyCuaDong(r: any, homNay: string): { cot: CotXuLy; quaHan: boo
   return { cot, quaHan: cot === 'choDuyet' && (tt.t === 'qua-han' || (!!hanPa && hanPa < homNay)) };
 }
 
-/** `xuLyCuaDong` cho NHIỀU Case — lô 400, một câu mỗi lô. */
+/** `xuLyCuaDong` cho NHIỀU Case — một câu mỗi lô (`theoLo`). */
 export function xuLyCaseMany(caseIds: readonly number[], homNay: string): Map<number, { cot: CotXuLy; quaHan: boolean }> {
   const out = new Map<number, { cot: CotXuLy; quaHan: boolean }>();
-  for (let i = 0; i < caseIds.length; i += 400) {
-    const chunk = caseIds.slice(i, i + 400);
-    for (const r of db().prepare(`SELECT ${XU_LY_COT_SQL} FROM sos_cases sc WHERE sc.id IN (${chunk.map(() => '?').join(',')})`).all(...chunk) as any[]) {
-      out.set(r.id as number, xuLyCuaDong(r, homNay));
-    }
-  }
+  theoLo(caseIds, (lo, ph) => {
+    for (const r of db().prepare(`SELECT ${XU_LY_COT_SQL} FROM sos_cases sc WHERE sc.id IN (${ph})`).all(...lo) as any[]) out.set(r.id as number, xuLyCuaDong(r, homNay));
+  });
   return out;
 }

@@ -19,7 +19,7 @@ export async function runPrSlTests(t: YThucTestKit) {
     assert(/daSua\?: boolean/.test(k) && k.includes("chan.daSua ? t('Huỷ thay đổi') : t('Đóng')"), 'KhungPanel chưa có chan.daSua');
     assert(/chan=\{\{\s*daSua,/.test(doc('web/src/modules/cases/QuickReport.tsx')), 'Tạo Case chưa truyền daSua');
     assert(/daSua: !!pasteText\.trim\(\)/.test(doc('web/src/modules/students/IntakePanel.tsx')), 'Thêm HV chưa truyền daSua');
-    assert(doc('web/src/modules/duyet/TheYeuCau.tsx').includes("chu.trim() ? 'Huỷ thay đổi' : 'Đóng'"), 'Từ chối inline');
+    assert(doc('web/src/modules/duyet/TheYeuCau.tsx').includes("chu.trim() ? t('Huỷ thay đổi') : t('Đóng')"), 'Từ chối inline');
     for (const f of ['web/src/modules/fasttrack/MockDetailPage.tsx', 'web/src/modules/platform/AccountsAdmin.tsx', 'web/src/modules/classes/LuoiTaoLop.tsx']) {
       assert(!doc(f).includes("? 'Huỷ thay đổi' : 'Đóng', onClick"), `${f}: còn tự viết nhãn, dùng chan.daSua`);
     }
@@ -81,7 +81,7 @@ export async function runPrSlTests(t: YThucTestKit) {
     assert(pn.includes('/sua-ca-lop/xem-truoc') && pn.includes('daSua: soEm > 0') && pn.includes('Bỏ những gì vừa sửa?'), 'xem trước + luật S3 + hỏi khi đóng');
     assert(pn.includes('if (busy) return;'), 'đang lưu thì Esc / nền / ✕ không đóng panel (chống mất lưới khi lưu lỗi)');
     assert(doc('shared/domain/hocVienLop.ts').includes("'Sửa thông tin học viên'"), 'mục ⋯ (PR-OV3a: menuHoSoLop)');
-    assert(doc('web/src/modules/classes/TabHocVienLop.tsx').includes('>Sửa thông tin</button>'), 'nút ở tab Học viên');
+    assert(doc('web/src/modules/classes/TabHocVienLop.tsx').includes(">{t('Sửa thông tin')}</button>"), 'nút ở tab Học viên');
   });
   check('SL-4 · D11: Truong và Field nối dòng lỗi vào ô bằng aria-describedby (một hook useNoiLoi)', () => {
     assert(/aria-describedby/.test(doc('web/src/ui/loiForm.tsx')), 'useNoiLoi');

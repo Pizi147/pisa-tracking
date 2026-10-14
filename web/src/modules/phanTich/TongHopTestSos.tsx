@@ -271,7 +271,7 @@ export function TongHopTestSos({ branchId, ct, tg, classId }: {
                 </tr>
                 <tr>
                   {cols.filter((c) => !donCot(khoaNhom(c))).map((c) => (
-                    <Th key={c.khoa} align="right" hint={c.nhom === 'xu-ly' ? undefined : c.goiY} className="whitespace-normal align-bottom leading-tight">
+                    <Th key={c.khoa} align="right" hint={c.goiY} className="whitespace-normal align-bottom leading-tight">
                       {c.nhan(ct)}
                     </Th>
                   ))}

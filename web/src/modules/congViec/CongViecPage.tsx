@@ -9,6 +9,7 @@ import { YeuCauCuaToi } from '../duyet/YeuCauCuaToi.tsx';
 import {
   DUONG_TAB_CONG_VIEC, NAV_RONG, nhanTabCongViec, tabCongViecHienThi, tabCongViecTuDuong, type TabCongViec,
 } from '@shared/domain/index.ts';
+import { t } from '@shared/i18n/index.ts';
 
 /**
  * CÔNG VIỆC — khung tab (R1, spec §3.4; PR-DUYET thêm Chờ duyệt cho người duyệt, Yêu cầu của tôi cho GV). Mỗi tab có đường dẫn riêng; tab không có quyền thì bỏ hẳn.
@@ -41,10 +42,10 @@ export default function CongViecPage() {
 
   return (
     <div className="page space-y-4">
-      <h1 className={`text-lg font-semibold text-slate-100 m-0 ${anDau}`}>Công việc</h1>
+      <h1 className={`text-lg font-semibold text-slate-100 m-0 ${anDau}`}>{t('Công việc')}</h1>
       {tabs.length > 1 && (
         <div className={anDau}>
-          <HangTab ariaLabel="Công việc" value={tab} onChange={go}
+          <HangTab ariaLabel={t('Công việc')} value={tab} onChange={go}
             tabs={tabs.map((k) => ({ key: k, label: nhanTabCongViec(k, session?.nav ?? NAV_RONG) }))} />
         </div>
       )}

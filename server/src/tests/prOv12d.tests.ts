@@ -12,6 +12,7 @@ export async function runPrOv12dTests(t: YThucTestKit) {
   const metrics: any = await import('../worklist/metrics.ts');
   const attempts: any = await import('../fasttrack/attempts.ts');
   const accounts: any = await import('../platform/accounts.ts');
+  const hocVienSos: any = await import('../classes/hocVienSos.ts');
   const { loadPrincipal } = await import('../permissions.ts');
   const { xoaNho } = await import('../platform/nguCanhRequest.ts');
   console.log('\nPR-OV12d · Tổng hợp nhóm Xử lý 3 cột · hồ sơ MT khối Case & phương án');
@@ -105,6 +106,31 @@ export async function runPrOv12dTests(t: YThucTestKit) {
       const cho = ids(oCua(P.mbManager, 'ft', 'tong', 'choDuyet')), dl = ids(oCua(P.mbManager, 'ft', 'tong', 'dangLam'));
       assert(cho.has(dang) && !dl.has(dang), 'Case hết PA phải về Chờ duyệt');
       assert(dl.has(choPa.case_id) && !cho.has(choPa.case_id), 'PA quy chế đã xác nhận → Đang xử lý');
+    });
+  });
+
+  check('OV12d (8) · chủ SP chọn A: Progress đã Xác nhận Case mà Bổ trợ chưa chạy · PA xong hết chưa Hoàn thành Case → Chờ duyệt, CÙNG nhóm ở Tổng hợp và panel một em (/hoc-vien-lop/em/:id)', () => {
+    const dangFt = [...ids(oCua(P.mbManager, 'ft', 'tong', 'dangLam'))][0];
+    const thuong = all(`SELECT sc.id FROM sos_cases sc WHERE sc.status != 'done' AND sc.dismiss_reason_code IS NULL AND sc.system_close_reason IS NULL
+        AND sc.id IN (${[...ids(oCua(P.mbManager, 'thuong', 'tong', 'case'))].join(',') || 0}) ORDER BY sc.id LIMIT 1`)[0]?.id;
+    assert(dangFt && thuong, `dữ liệu demo: Case FT Đang xử lý ${dangFt} · Case lớp thường mở ${thuong}`);
+    thu(() => {
+      const now = new Date().toISOString();
+      /* (a) Progress: có nguyên nhân (đã Xác nhận Case), PA Bổ trợ điền sẵn chưa chạy, không PA nào khác. */
+      conn.prepare(`UPDATE case_interventions SET status = 'cancelled' WHERE case_id = ?`).run(thuong);
+      conn.prepare(`INSERT INTO case_interventions (case_id, kind, status, preset, created_at) VALUES (?, 'bo_tro', 'planned', 1, ?)`).run(thuong, now);
+      if (!one(`SELECT 1 FROM case_issues WHERE case_id = ? AND role = 'primary'`, thuong)) {
+        conn.prepare(`INSERT INTO case_issues (case_id, role, taxonomy_code, created_at) VALUES (?, 'primary', 'student.reading.logic', ?)`).run(thuong, now);
+      }
+      /* (b) FT: mọi PA đã xong, Case chưa Hoàn thành. */
+      conn.prepare(`UPDATE case_interventions SET status = 'completed' WHERE case_id = ? AND status != 'cancelled'`).run(dangFt);
+      xoaNho();
+      for (const [ct, id] of [['thuong', thuong], ['ft', dangFt]] as const) {
+        assert(ids(oCua(P.mbManager, ct, 'tong', 'choDuyet')).has(id) && !ids(oCua(P.mbManager, ct, 'tong', 'dangLam')).has(id), `[${ct}] Case ${id} phải ở Chờ duyệt Tổng hợp`);
+        const em = one('SELECT COALESCE(sc.student_id, a.student_id) s FROM sos_cases sc LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id WHERE sc.id = ?', id).s;
+        const c = hocVienSos.panelMotEm(P.mbManager, em).cases.find((x: any) => x.id === id);
+        assert(c?.nhom === 'cho-duyet', `[${ct}] panel một em: ${JSON.stringify(c?.nhom)}`);
+      }
     });
   });
 

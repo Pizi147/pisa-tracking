@@ -5,13 +5,14 @@
 import { mondayOfDate } from './week.ts';
 import { addDaysIso } from './sos.ts';
 import { tuanKeTiep } from './chamDiem.ts';
+import { t } from '../i18n/index.ts';
 
 /** Tuần thi (Thứ Hai `weekStart`) đã hết hẳn (qua Chủ nhật) — Mock: "-" lúc này là Không dự thi, không dời (OV-1b). */
 export const sauTuanThi = (weekStart: string, homNay: string) => homNay.slice(0, 10) > addDaysIso(weekStart.slice(0, 10), 6);
 
 /** Chữ nút trong hộp nhập điểm Mock: sau tuần thi / MT cũ → "Không dự thi" (không dời); trong tuần → "Vắng" (lần 1 dời, lần 2 huỷ). */
-export function chuNutVang(o: { weekStart: string | null | undefined; lichSu: boolean; homNay: string }): 'Vắng' | 'Không dự thi' {
-  return o.lichSu || (!!o.weekStart && sauTuanThi(o.weekStart, o.homNay)) ? 'Không dự thi' : 'Vắng';
+export function chuNutVang(o: { weekStart: string | null | undefined; lichSu: boolean; homNay: string }): string {
+  return o.lichSu || (!!o.weekStart && sauTuanThi(o.weekStart, o.homNay)) ? t('Không dự thi') : t('Vắng');
 }
 
 /**
@@ -23,9 +24,9 @@ export type KetQuaVang = { kq: 'doi' | 'huy' | 'khong-du-thi' | 'cho-ql' | 'cho-
 /** Thông báo sau khi ghi — nói đúng hậu quả (CA3-1). */
 export function cauDaGhiVang(mon: string, tenHv: string | undefined, k: KetQuaVang | null | undefined): string {
   const em = tenHv ? ` · ${tenHv}` : '';
-  if (k?.kq === 'khong-du-thi') return `Đã ghi Không dự thi · ${mon}${em}`;
-  const sau = k?.kq === 'doi' && k.tuanMoi ? ` · dời ${k.tuanMoi}` : k?.kq === 'huy' ? ' · huỷ phần thi' : k?.kq === 'cho-ql' ? ' · chờ Quản lý' : '';
-  return `Đã ghi vắng ${mon}${em}${sau}`;
+  if (k?.kq === 'khong-du-thi') return t('Đã ghi Không dự thi · {mon}{em}', { mon, em });
+  const sau = k?.kq === 'doi' && k.tuanMoi ? t(' · dời {tuanMoi}', { tuanMoi: k.tuanMoi }) : k?.kq === 'huy' ? t(' · huỷ phần thi') : k?.kq === 'cho-ql' ? t(' · chờ Quản lý') : '';
+  return t('Đã ghi vắng {mon}{em}{sau}', { mon, em, sau });
 }
 
 /**

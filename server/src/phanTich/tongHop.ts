@@ -90,6 +90,71 @@ function cmpKey(a: readonly unknown[], b: readonly unknown[]): number {
   return 0;
 }
 
+/** Cột của một lượt mà `phanLoaiCacLuot` (chấm lại bằng `evaluateAttemptRow`) và bảng cần — MỘT câu cho Tổng hợp và "Đang SOS" (OV-12f). */
+export function luotTrongKhoang(where: string, args: readonly unknown[]): any[] {
+  return db()
+    .prepare(
+      `SELECT a.id, a.status, a.kind, a.attempt_no, a.class_id, a.planned_period_id, a.target_at_attempt, a.kck_at_attempt, a.student_id,
+              (SELECT cy.route FROM learning_cycles cy WHERE cy.id = a.cycle_id) AS route, (SELECT cy.khong_cam_ket FROM learning_cycles cy WHERE cy.id = a.cycle_id) AS cy_kck,
+              (SELECT cy.khong_cam_ket FROM learning_cycles cy WHERE cy.id = a.cycle_id) AS kck,
+              c.programme_code, c.code AS class_code, c.branch_id, c.is_fast_track,
+              b.name AS branch_name,
+              rp.id AS period_id, rp.week_start, rp.week_end
+         FROM assessment_attempts a
+         JOIN report_periods rp ON rp.id = a.planned_period_id
+         LEFT JOIN classes c ON c.id = a.class_id
+         LEFT JOIN branches b ON b.id = c.branch_id
+        WHERE ${where}`,
+    )
+    .all(...args) as any[];
+}
+
+export type LuotPhanLoai = { loai: string; sosLevel: number | null; kyNangDuoi: string[] };
+
+/**
+ * PHÂN LOẠI LƯỢT — MỘT hàm cho bảng Tổng hợp (`tinh`) và góc "Đang SOS" của Học viên & Lớp (OV-12f): số em Đang SOS tuần X = số lượt có SOS ở
+ * Tổng hợp cùng tuần theo cấu tạo. Lượt chưa có điểm nào, hoặc của em KCK (Q29-1, ngoài mẫu số), không có trong kết quả. Fast Track theo
+ * `phanLoaiLuot`, lớp thường theo `phanLoaiBaiThuong`.
+ */
+export function phanLoaiCacLuot(attempts: readonly any[]): Map<number, LuotPhanLoai> {
+  const conn = db();
+  const out = new Map<number, LuotPhanLoai>();
+  if (!attempts.length) return out;
+  const bundle: AttemptBundle = loadBundle(attempts.map((a) => a.id));
+  const programmes: Map<string, ProgrammeInfo> = allProgrammes();
+  const scored = new Set<number>();
+  for (let i = 0; i < attempts.length; i += 400) {
+    const chunk = attempts.slice(i, i + 400).map((a) => a.id);
+    for (const r of conn
+      .prepare(
+        `SELECT DISTINCT attempt_id FROM assessment_scores
+          WHERE attempt_id IN (${chunk.map(() => '?').join(',')}) AND (band IS NOT NULL OR raw_score IS NOT NULL)`,
+      )
+      .all(...chunk) as any[]) scored.add(r.attempt_id);
+  }
+  for (const a of attempts) {
+    if (!scored.has(a.id) || luotKck(a)) continue;
+    const ev = evaluateAttemptRow(a, bundle, programmes);
+    const thuong = !a.is_fast_track;
+    /*
+     * Q8 — KỸ NĂNG DƯỚI KỲ VỌNG dùng CÙNG LUẬT VỚI NƠI SINH CASE, không phải bốn kỹ năng có band:
+     * Fast Track cần `failingEntrySkills` (cổng Writing hai tầng, W1/W2 tách riêng); lớp thường thì
+     * `evaluateAttemptRow` đã tự gọi `evaluateRegular` với đúng `scores` này rồi — đọc lại `ev.skills`
+     * (outcome fail ↔ `.under`) cho ra CÙNG kết quả mà không phải chấm lần hai.
+     */
+    const prog = a.programme_code ? programmes.get(a.programme_code) : null;
+    const kyNangDuoi: string[] = prog?.scoringMode === 'ratio'
+      ? Object.entries(ev.skills).filter(([, v]) => (v as { under: boolean }).under).map(([k]) => LEGACY_REGULAR_SKILL_MAP[k] ?? k)
+      : failingEntrySkills(
+          expectationFor(a.target_at_attempt, a.attempt_no, a.route),
+          entryBandsOf(bundle.scores.get(a.id) ?? []),
+          bundle.skips.get(a.id) ?? [],
+        );
+    out.set(a.id, { loai: thuong ? phanLoaiBaiThuong(a.kind, ev) : phanLoaiLuot(ev), sosLevel: ev.sosLevel ?? null, kyNangDuoi });
+  }
+  return out;
+}
+
 type CoDot = { giua: boolean; cuoi: boolean; checkpoint: boolean };
 type DongRaw = { khoa: string; nhan: string; phu?: string; tuanNay?: boolean; tap: Tap; sortKey: readonly unknown[]; con: Map<string, DongRaw>; coDot: CoDot };
 const coDotMoi = (): CoDot => ({ giua: false, cuoi: false, checkpoint: false });
@@ -112,35 +177,8 @@ function tinh(p: Principal, f: FilterTongHop) {
   if (f.classId) { where.push('c.id = ?'); args.push(f.classId); }
   where.push('c.is_fast_track = ?'); args.push(f.ct === 'ft' ? 1 : 0);
 
-  const attempts = conn
-    .prepare(
-      `SELECT a.id, a.status, a.kind, a.attempt_no, a.class_id, a.planned_period_id, a.target_at_attempt, a.kck_at_attempt, a.student_id,
-              (SELECT cy.route FROM learning_cycles cy WHERE cy.id = a.cycle_id) AS route, (SELECT cy.khong_cam_ket FROM learning_cycles cy WHERE cy.id = a.cycle_id) AS cy_kck,
-              (SELECT cy.khong_cam_ket FROM learning_cycles cy WHERE cy.id = a.cycle_id) AS kck,
-              c.programme_code, c.code AS class_code, c.branch_id, c.is_fast_track,
-              b.name AS branch_name,
-              rp.id AS period_id, rp.week_start, rp.week_end
-         FROM assessment_attempts a
-         JOIN report_periods rp ON rp.id = a.planned_period_id
-         LEFT JOIN classes c ON c.id = a.class_id
-         LEFT JOIN branches b ON b.id = c.branch_id
-        WHERE ${where.join(' AND ')}`,
-    )
-    .all(...args) as any[];
-
-  const bundle: AttemptBundle = loadBundle(attempts.map((a) => a.id));
-  const programmes: Map<string, ProgrammeInfo> = allProgrammes();
-
-  const scored = new Set<number>();
-  for (let i = 0; i < attempts.length; i += 400) {
-    const chunk = attempts.slice(i, i + 400).map((a) => a.id);
-    for (const r of conn
-      .prepare(
-        `SELECT DISTINCT attempt_id FROM assessment_scores
-          WHERE attempt_id IN (${chunk.map(() => '?').join(',')}) AND (band IS NOT NULL OR raw_score IS NOT NULL)`,
-      )
-      .all(...chunk) as any[]) scored.add(r.attempt_id);
-  }
+  const attempts = luotTrongKhoang(where.join(' AND '), args);
+  const phanLoai = phanLoaiCacLuot(attempts);
 
   /** Xem nhiều hơn một chi nhánh thì dòng lớp cần thêm tên chi nhánh mới phân biệt được (không chọn một chi nhánh cụ thể). */
   const manyBranches = !f.branchId;
@@ -199,28 +237,11 @@ function tinh(p: Principal, f: FilterTongHop) {
   for (const a of attempts) {
     const { cha, con } = dongOf(a);
     if (laThuong) for (const x of [cha.coDot, con.coDot, tongCoDot]) { if (a.kind === 'final') x.cuoi = true; else if (a.kind === 'checkpoint') x.checkpoint = true; else x.giua = true; }
-    if (!scored.has(a.id) || luotKck(a)) continue;   // Q29-1: em KCK ngoài mẫu số
-
-    const ev = evaluateAttemptRow(a, bundle, programmes);
-    const loai = laThuong ? phanLoaiBaiThuong(a.kind, ev) : phanLoaiLuot(ev);
+    const pl = phanLoai.get(a.id);
+    if (!pl) continue;   // chưa chấm · Q29-1: em KCK ngoài mẫu số
     if (laThuong && a.kind === 'final') cuoiDaDem.push(a.id);
-    for (const tap of [cha.tap, con.tap, tongTap]) { them(tap, 'luot', a.id); them(tap, loai, a.id); }
-
-    /*
-     * Q8 — KỸ NĂNG DƯỚI KỲ VỌNG dùng CÙNG LUẬT VỚI NƠI SINH CASE, không phải bốn kỹ năng có band:
-     * Fast Track cần `failingEntrySkills` (cổng Writing hai tầng, W1/W2 tách riêng); lớp thường thì
-     * `evaluateAttemptRow` đã tự gọi `evaluateRegular` với đúng `scores` này rồi — đọc lại `ev.skills`
-     * (outcome fail ↔ `.under`) cho ra CÙNG kết quả mà không phải chấm lần hai.
-     */
-    const prog = a.programme_code ? programmes.get(a.programme_code) : null;
-    const kyNangDuoi: string[] = prog?.scoringMode === 'ratio'
-      ? Object.entries(ev.skills).filter(([, v]) => (v as { under: boolean }).under).map(([k]) => LEGACY_REGULAR_SKILL_MAP[k] ?? k)
-      : failingEntrySkills(
-          expectationFor(a.target_at_attempt, a.attempt_no, a.route),
-          entryBandsOf(bundle.scores.get(a.id) ?? []),
-          bundle.skips.get(a.id) ?? [],
-        );
-    for (const kn of kyNangDuoi) for (const tap of [cha.tap, con.tap, tongTap]) them(tap, `kn:${kn}`, a.student_id);
+    for (const tap of [cha.tap, con.tap, tongTap]) { them(tap, 'luot', a.id); them(tap, pl.loai, a.id); }
+    for (const kn of pl.kyNangDuoi) for (const tap of [cha.tap, con.tap, tongTap]) them(tap, `kn:${kn}`, a.student_id);
   }
 
   /*

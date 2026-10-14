@@ -7,6 +7,7 @@
  */
 import { mondayOfDate } from './week.ts';
 import { addDaysIso } from './sos.ts';
+import { t } from '../i18n/index.ts';
 
 /** Lịch Test lọc lớp nào (PR-UX1 Q4): lớp người xem có phân công, hay cả phạm vi được xem. */
 export type PhamViLichTest = 'cua-toi' | 'tat-ca';
@@ -20,10 +21,10 @@ export type LoaiNhanLop = 'da-cham' | 'chua-toi-han' | 'cho-ban' | 'cho-gv-khac'
  */
 export function nhanLopLichTest(i: { conBai: number; conBaiCuaToi: number; chuaToiHan: boolean; coDayLop: boolean })
   : { loai: LoaiNhanLop; chu: string } {
-  if (i.conBai === 0) return { loai: 'da-cham', chu: 'Đã chấm' };          // web thêm ✓ nhỏ (G-1)
-  if (i.chuaToiHan) return { loai: 'chua-toi-han', chu: 'Chưa đến lịch' };
-  if (i.conBaiCuaToi > 0) return { loai: 'cho-ban', chu: 'Chờ bạn chấm' };
-  return i.coDayLop ? { loai: 'cho-gv-khac', chu: 'Chờ GV khác' } : { loai: 'cho-cham', chu: 'Chờ chấm' };
+  if (i.conBai === 0) return { loai: 'da-cham', chu: t('Đã chấm') };          // web thêm ✓ nhỏ (G-1)
+  if (i.chuaToiHan) return { loai: 'chua-toi-han', chu: t('Chưa đến lịch') };
+  if (i.conBaiCuaToi > 0) return { loai: 'cho-ban', chu: t('Chờ bạn chấm') };
+  return i.coDayLop ? { loai: 'cho-gv-khac', chu: t('Chờ GV khác') } : { loai: 'cho-cham', chu: t('Chờ chấm') };
 }
 
 /** Ba khối của Lịch Test (PR-LT3, T15): Test quá hạn chấm · Test chấm tuần này · Lịch Test tuần này. */
@@ -43,7 +44,7 @@ export function khoiCham(i: { tuanThi: string; tuanHomNay: string; quaHan: boole
 /** T18: Speaking của Mock Test không có GV mặc định — ai dạy Speaking cùng chi nhánh cũng chấm được. MT0 / lớp thường không áp. */
 export const laChamCheo = (kind: string | null | undefined, skill: string): boolean => kind === 'mock' && skill === 'speaking';
 /** Q3 (chủ sản phẩm 06/10): chữ ở chỗ "người giữ việc" của ô Speaking Mock chưa ai nhập. */
-export const CHAM_CHEO = 'GV chấm chéo';
+export const CHAM_CHEO = t('GV chấm chéo');
 
 /** Lớp nào tự mở khi vào Lịch Test (Q8): người có phân công — lớp còn bài của mình; Quản lý — lớp còn bài. */
 export const lopTuMo = (i: { conBai: number; conBaiCuaToi: number; coPhanCong: boolean }) =>
@@ -76,11 +77,11 @@ export function ketQuaThuong(i: { dat: number; daCham: number; tong: number; thi
 } {
   /* MH7: Pre FOU không chia môn — chỉ % tổng. Làm tròn CHỈ để hiện; đạt/không xét trên tỷ lệ chính xác ở máy chủ. */
   if (i.khongChiaMon && i.tyLe != null) return { chinh: `${Math.round(i.tyLe * 100)}%`, phu: null };
-  if (i.daCham === 0) return { chinh: 'Chưa nhập điểm', phu: null };
+  if (i.daCham === 0) return { chinh: t('Chưa nhập điểm'), phu: null };
   const du = i.daCham >= i.tong;
   return {
-    chinh: du ? `${i.dat}/${i.tong} môn đạt` : `${i.dat}/${i.daCham} môn đạt`,
-    phu: du || !i.thieu.length ? null : `còn ${i.thieu.join(', ')} chưa chấm`,
+    chinh: du ? t('{dat}/{tong} môn đạt', { dat: i.dat, tong: i.tong }) : t('{dat}/{daCham} môn đạt', { dat: i.dat, daCham: i.daCham }),
+    phu: du || !i.thieu.length ? null : t('còn {x} chưa chấm', { x: i.thieu.join(', ') }),
   };
 }
 
@@ -94,9 +95,9 @@ export function demNguocSuaDau(cuoiTuan: string | null, homNay: string): string 
   const het = cuoiTuan.slice(0, 10);
   const nay = homNay.slice(0, 10);
   if (nay > het) return null;
-  if (nay === het) return 'Còn hôm nay để sửa';
+  if (nay === het) return t('Còn hôm nay để sửa');
   const soNgay = Math.round((Date.parse(`${het}T00:00:00Z`) - Date.parse(`${nay}T00:00:00Z`)) / 86400000);
-  return `Còn ${soNgay} ngày để sửa`;
+  return t('Còn {soNgay} ngày để sửa', { soNgay });
 }
 
 /** Thứ Hai của tuần kế tiếp — dùng khi lớp thường ghi "-" và môn đó tự dời (C08). */
@@ -107,9 +108,9 @@ export function tuanKeTiep(weekStart: string): string {
 
 /** Một câu trạng thái chấm cho dòng kỹ năng của Lịch Test. */
 export function trangThaiChamLabel(i: { conBai: number; tong: number; quaHan: boolean; chuaToiHan: boolean }): string {
-  if (i.conBai === 0) return 'Đã chấm xong';
-  if (i.chuaToiHan) return 'Chưa đến lịch';
-  return i.quaHan ? `Quá hạn · còn ${i.conBai} bài` : `Còn ${i.conBai} bài`;
+  if (i.conBai === 0) return t('Đã chấm xong');
+  if (i.chuaToiHan) return t('Chưa đến lịch');
+  return i.quaHan ? t('Quá hạn · còn {conBai} bài', { conBai: i.conBai }) : t('Còn {conBai} bài', { conBai: i.conBai });
 }
 
 /**
@@ -138,7 +139,7 @@ export function tomTatLuuDong(cacO: readonly (TrangThaiLuuO | null | undefined)[
   if (cacO.includes('dang-luu')) return { tt: 'dang-luu', soLoi: 0 };
   return { tt: cacO.includes('da-luu') ? 'da-luu' : null, soLoi: 0 };
 }
-export const chuOChuaLuu = (n: number) => `${n} ô chưa lưu`;
+export const chuOChuaLuu = (n: number) => t('{n} ô chưa lưu', { n });
 
 /*
  * Bảng quy đổi số câu đúng → band của trung tâm (sheet 'Bang quy doi'), index = số câu 0–40. Hộp nhập điểm xem trước band khi gõ.
@@ -158,12 +159,12 @@ export function bandTuSoCau(skill: 'listening' | 'reading', n: number): number |
   return Number.isInteger(n) && n >= 0 && n <= 40 ? (skill === 'listening' ? L_THEO_CAU : R_THEO_CAU)[n] : null;
 }
 /** Câu lỗi số câu ngoài 0–40 (hộp nhập điểm, chủ SP mockup §3). */
-export const LOI_SO_CAU_KHOANG = 'số câu đúng từ 0 đến 40.';
+export const LOI_SO_CAU_KHOANG = t('số câu đúng từ 0 đến 40.');
 
 /** T10 (PR-MTa): band nhập tay — số hữu hạn 0..9, bậc 0.5. `null` = hợp lệ. */
 export function kiemBand(v: unknown): string | null {
   return typeof v === 'number' && Number.isFinite(v) && v >= 0 && v <= 9 && Number.isInteger(v * 2)
-    ? null : 'Band từ 0 đến 9, bậc 0.5 (ví dụ 6.5 hoặc b6).';
+    ? null : t('Band từ 0 đến 9, bậc 0.5 (ví dụ 6.5 hoặc b6).');
 }
 
 export type ONhapLR = { raw: number } | { band: number };
@@ -193,7 +194,7 @@ type OCoDau = { noShow?: unknown; daChot?: unknown };   // PR-BV: dấu đã ch�
  * `null` = chữ không hợp lệ ("--", "abc", "6,5", "b6.3", "10.5"…): KHÔNG gửi gì. Trước đây `Number("--")` ra NaN, lên
  * máy chủ thành `null` — tức là xoá ô mà không ai định xoá.
  */
-export const LOI_SO_CAU = 'Số câu đúng là số nguyên, hoặc band 6.5 / b6, hoặc "-" nếu học viên không làm bài.';
+export const LOI_SO_CAU = t('Số câu đúng là số nguyên, hoặc band 6.5 / b6, hoặc "-" nếu học viên không làm bài.');
 export function rawPatchFrom(text: string, cell: OCoDau): PatchDiem | null {
   const t = text.trim();
   if (t === '-') return { noShow: true };
@@ -215,11 +216,11 @@ export function rawPatchFrom(text: string, cell: OCoDau): PatchDiem | null {
  * `patch: null` = có ô không hợp lệ (không phải số, không phải đúng một "-", ví dụ "--"): KHÔNG gửi gì — trước đây ô
  * đó thành NaN rồi thành `null` trên máy chủ, tức là xoá tiêu chí mà không ai định xoá. `loi` = câu nói vì sao.
  */
-export const LOI_TIEU_CHI = 'Mỗi tiêu chí là một số như 6.5, hoặc "-" nếu học viên không làm bài.';
-export const LOI_BAND_HOAC_TIEU_CHI = 'Điền band hoặc tiêu chí';
+export const LOI_TIEU_CHI = t('Mỗi tiêu chí là một số như 6.5, hoặc "-" nếu học viên không làm bài.');
+export const LOI_BAND_HOAC_TIEU_CHI = t('Điền band hoặc tiêu chí');
 /** OV-4c: Band W1 / W2 / S ở lượt thường tự tính từ bốn tiêu chí; nhập thẳng chỉ MT cũ + MT0 (một ô Band). Một hàm cho web và máy chủ. */
 export const duocNhapBandThang = (a: { lichSu: boolean; mt0?: boolean }): boolean => a.lichSu || !!a.mt0;
-export const LOI_BAND_TU_TINH = 'Writing / Speaking: nhập 4 tiêu chí — Band tự tính. Band nhập thẳng chỉ cho MT cũ.';
+export const LOI_BAND_TU_TINH = t('Writing / Speaking: nhập 4 tiêu chí — Band tự tính. Band nhập thẳng chỉ cho MT cũ.');
 export function criteriaPatchFrom(vals: string[], cell: OCoDau, bandText = '', bandThang = false): {
   dash: boolean; preview: number | null; patch: PatchDiem | null; loi: string | null;
 } {

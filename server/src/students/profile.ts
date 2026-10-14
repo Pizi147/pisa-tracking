@@ -417,7 +417,7 @@ function boOVaCau(i: {
       phanTram: kq.phanTram, coDiem: kq.coDiem, chot: kq.chot,
     } : null,
     hoTro: board.rows.filter((r) => r.cases.some((c: any) => c.status !== 'done')).map((r) => r.label as string),
-    viec: [...viec.cuaBan, ...viec.nguoiKhac].map((v) => ({ loai: v.loai, chu: v.chu, quaHanNgay: v.quaHanNgay, kyNangTen: v.kyNang ? tenKn.get(v.kyNang) ?? null : null })),
+    viec: [...viec.cuaBan, ...viec.nguoiKhac].map((v) => ({ loai: v.loai, chu: v.chu, khoa: v.khoa, bien: v.bien, quaHanNgay: v.quaHanNgay, kyNangTen: v.kyNang ? tenKn.get(v.kyNang) ?? null : null })),
     yThuc: em && !em.tamDung ? { nhom: em.nhom ?? null, keTiep, han: em.han ?? null, quaHanNgay: quaHanYt, deXuat: deXuatCho } : null,
     homNay: today,
   });

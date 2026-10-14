@@ -266,11 +266,11 @@ export async function runPrHk2Tests(t: YThucTestKit) {
 
   check('C19a · Học viên & Lớp: ô tìm "Lọc trong danh sách này…"; "+ Lớp mới" / "+ Học viên" max-sm:hidden và có trong MenuDong "Thao tác trang" (chỉ < 640 px)', () => {
     const s = doc('web/src/modules/students/StudentsPage.tsx');
-    assert(/placeholder="🔍 Lọc trong danh sách này…"/.test(s) && !/Tìm tên, mã học viên hoặc mã lớp/.test(s), 'placeholder ô tìm');
-    assert(/className="btn btn-sm max-sm:hidden"[^]*?>\+ Lớp mới</.test(s) && /className="btn btn-sm btn-primary max-sm:hidden"[^]*?>\+ Học viên</.test(s), 'hai nút ngoài phải max-sm:hidden');
-    const mn = s.slice(s.indexOf('<MenuDong nhan="Thao tác trang"'), s.indexOf('<MenuDong nhan="Thao tác trang"') + 900);
-    assert(/dienThoai && data\?\.coTheTaoLop/.test(mn) && /nhan: '\+ Lớp mới'/.test(mn), 'mục "+ Lớp mới" trong menu chỉ khi dienThoai');
-    assert(/dienThoai && data\?\.coTheThemHocVien/.test(mn) && /nhan: '\+ Học viên'/.test(mn), 'mục "+ Học viên" trong menu chỉ khi dienThoai');   // OV-11g HL-14: cờ trang
+    assert(/placeholder=\{t\('🔍 Lọc trong danh sách này…'\)\}/.test(s) && !/Tìm tên, mã học viên hoặc mã lớp/.test(s), 'placeholder ô tìm');
+    assert(/className="btn btn-sm max-sm:hidden"[^]*?>\{t\('\+ Lớp mới'\)\}</.test(s) && /className="btn btn-sm btn-primary max-sm:hidden"[^]*?>\{t\('\+ Học viên'\)\}</.test(s), 'hai nút ngoài phải max-sm:hidden');
+    const mn = s.slice(s.indexOf("<MenuDong nhan={t('Thao tác trang')}"), s.indexOf("<MenuDong nhan={t('Thao tác trang')}") + 900);
+    assert(/dienThoai && data\?\.coTheTaoLop/.test(mn) && /nhan: t\('\+ Lớp mới'\)/.test(mn), 'mục "+ Lớp mới" trong menu chỉ khi dienThoai');
+    assert(/dienThoai && data\?\.coTheThemHocVien/.test(mn) && /nhan: t\('\+ Học viên'\)/.test(mn), 'mục "+ Học viên" trong menu chỉ khi dienThoai');   // OV-11g HL-14: cờ trang
     assert(/keTruoc/.test(mn), 'Lưu trữ cách một đường kẻ khi có mục thêm');
   });
 
@@ -331,10 +331,10 @@ export async function runPrHk2Tests(t: YThucTestKit) {
   check('C23 · J9: ô FT chưa có điểm ghi "Nhập" (không "— sửa"); ô có điểm ghi band; đầu cột S ghi "GV chấm: tên thật" + title có tên', () => {
     const s = doc('web/src/modules/fasttrack/HopNhapDiem.tsx');
     /* OV-11a: chữ ô dựng ở `hienO` (chữ + câu đọc màn hình + kiểu ô). */
-    assert(/return \{ chu: 'Nhập', doc: 'Nhập', kieu: 'trong' \};/.test(s), 'ô trống chưa ghi "Nhập"');
+    assert(/return \{ chu: t\('Nhập'\), doc: t\('Nhập'\), kieu: 'trong' \};/.test(s), 'ô trống chưa ghi "Nhập"');
     assert(/if \(c\.band !== null\) return \{ chu: fmtBand\(c\.band\),/.test(s), 'ô có điểm phải ghi band');
-    assert(/<NutGvCham nhan="GV chấm S" value=/.test(doc('web/src/modules/cham/LuoiFT.tsx')) && /<NutGvCham hang nhan="GV chấm S" value=/.test(doc('web/src/modules/cham/MotKyNang.tsx')), 'đầu cột S dùng NutGvCham (luôn ghi "GV chấm: tên thật")');
-    assert(/title=\{`GV chấm Speaking: \$\{ten/.test(doc('web/src/modules/cham/GvCham.tsx')), 'GvCham: title phải ghi tên (phòng khi tên dài)');
+    assert(/<NutGvCham nhan=\{t\('GV chấm S'\)\} value=/.test(doc('web/src/modules/cham/LuoiFT.tsx')) && /<NutGvCham hang nhan=\{t\('GV chấm S'\)\} value=/.test(doc('web/src/modules/cham/MotKyNang.tsx')), 'đầu cột S dùng NutGvCham (luôn ghi "GV chấm: tên thật")');
+    assert(/title=\{t\('GV chấm Speaking: \{x\} — \{goiY\}', \{ x: ten/.test(doc('web/src/modules/cham/GvCham.tsx')), 'GvCham: title phải ghi tên (phòng khi tên dài)');
   });
 
   check('C24 · J2 (Q3 = A): mọi chỗ in mã học viên ra màn đi qua maHocVienNgan; Excel giữ mã đầy đủ', () => {
@@ -367,7 +367,7 @@ export async function runPrHk2Tests(t: YThucTestKit) {
     assert(!/\(đã chấm\)/.test(doc('shared/domain/lopThuong.ts')) && !/\(đã chấm\)/.test(doc('shared/domain/chamDiem.ts')), 'còn "(đã chấm)"');
     const kq = d.nhanKetQuaThuong({ kind: 'progress', ct: 'MB', scored: 2, required: 4, failedSkills: ['reading'], tyLeTong: null, khongChiaMon: false });
     assert(kq.chinh === '1/2 môn đạt' && /^Không đạt: /.test(kq.phu), JSON.stringify(kq));
-    const chuaXong = /Chờ \{a\.required - a\.scored\} môn[^]*?<\/>/.exec(doc('web/src/modules/students/StudentDetailPage.tsx'))?.[0] ?? '';
+    const chuaXong = /Chờ \{n\} môn[^]*?<\/>/.exec(doc('web/src/modules/students/StudentDetailPage.tsx'))?.[0] ?? '';
     assert(/text-soon/.test(chuaXong) && !/text-slate-400/.test(chuaXong), 'dòng "Không đạt" của bài chấm dở chưa text-soon');
   });
 
@@ -375,7 +375,7 @@ export async function runPrHk2Tests(t: YThucTestKit) {
     const ad = doc('web/src/modules/platform/AdminPage.tsx');
     assert(!/ten: 'Khác'/.test(ad) && /ten: 'Chưa xếp nhóm'/.test(ad), 'AdminPage');
     const dx = doc('web/src/modules/duyet/DeXuatSuaPanel.tsx');
-    assert(/nhan: 'Thông tin khác'/.test(dx) && !/nhan: 'Khác'/.test(dx), 'DeXuatSuaPanel');
+    assert(/nhan: t\('Thông tin khác'\)/.test(dx) && !/nhan: (?:t\()?'Khác'/.test(dx), 'DeXuatSuaPanel');
     const lt = doc('web/src/modules/students/LuuTruPage.tsx');
     assert(/Không có lớp khớp "\$\{/.test(lt) && /Không có học viên khớp "\$\{/.test(lt), 'LuuTruPage chưa có câu "Không có … khớp"');
     assert(/Chưa có lớp nào kết thúc/.test(lt) && /Chưa có học viên nào được lưu trữ/.test(lt), 'ô tìm trống phải giữ câu cũ');
@@ -445,7 +445,7 @@ export async function runPrHk2Tests(t: YThucTestKit) {
     assert(/export function thongBaoVang\(/.test(f), 'chưa có cham/thongBaoVang.ts export thongBaoVang');
     /* OV-11a (CA3-1): câu dựng ở hàm thuần `cauDaGhiVang` (shared/domain/vang.ts, phép kiểm hành vi OV11a-5). */
     const vg = doc('shared/domain/vang.ts');
-    assert(/cauDaGhiVang\(/.test(f) && /Đã ghi vắng \$\{/.test(vg) && /· dời \$\{/.test(vg), 'chữ phải là "Đã ghi vắng R · Tên" (+ " · dời W3 OCT")');
+    assert(/cauDaGhiVang\(/.test(f) && /Đã ghi vắng (?:\$\{|\{)/.test(vg) && /· dời (?:\$\{|\{)/.test(vg), 'chữ phải là "Đã ghi vắng R · Tên" (+ " · dời W3 OCT")');
     assert(/key: `vang:/.test(f), 'toast phải có khoá theo ô (vang:<id>)');
     assert(!/hoanTac|hanhDong|Hoàn tác/.test(f), 'thông báo vắng không có nút');
     const se = doc('web/src/modules/fasttrack/ScoreEntry.tsx');
@@ -469,7 +469,7 @@ export async function runPrHk2Tests(t: YThucTestKit) {
     assert(i >= 0, 'không thấy DongDau');
     const dd = se2.slice(i, i + 700);   // thân hàm ngắn; không dò dấu } vì tệp có thể CRLF
     /* OV-11a (CA3-2): DongDau không cắt ở MỌI cỡ màn (bỏ `max-w-[6rem] truncate` máy tính), câu đầy đủ vẫn ở title. */
-    assert(!/truncate|max-w-\[6rem\]/.test(dd) && /title=\{cell\.noShow\.text\}/.test(dd), 'DongDau: không được cắt chữ, phải có title');
+    assert(!/truncate|max-w-\[6rem\]/.test(dd) && /title=\{(?:dich\()?cell\.noShow\.text\)?\}/.test(dd), 'DongDau: không được cắt chữ, phải có title');
   });
 
   console.log('\nPR-HK2 · Task 8 · DH "+n" hồ sơ lớp dẫn đúng chỗ');
@@ -500,7 +500,7 @@ export async function runPrHk2Tests(t: YThucTestKit) {
   check('C30 · Hộp nhập điểm (thay CriteriaModal): đã gõ thì Esc hỏi trước khi bỏ; bấm ra ngoài giữ hộp', () => {
     const s = doc('web/src/modules/fasttrack/HopNhapDiem.tsx');
     /* OV-11a (CA3-8): hỏi ngay chân hộp (`KhungHop`: câu `cauBo` + Bỏ · Gõ tiếp), không còn hộp trình duyệt. */
-    assert(!/window\.confirm/.test(s) && /else if \(moi\.current\.daGo\) setHoi\(true\);/.test(s) && /cauBo=\{`Bỏ điểm \$\{skillLabel\(cell\.skill\)\} · \$\{ctx\.tenHv\}\?`\}/.test(s),
+    assert(!/window\.confirm/.test(s) && /else if \(moi\.current\.daGo\) setHoi\(true\);/.test(s) && /cauBo=\{t\('Bỏ điểm \{skillLabel\} · \{tenHv\}\?', \{ skillLabel: skillLabel\(cell\.skill\), tenHv: ctx\.tenHv \}\)\}/.test(s),
       'Esc khi đã gõ phải hỏi ở chân hộp');
     assert(/if \(!moi\.current\.daGo\) moi\.current\.onDong\(\);/.test(s), 'bấm ra ngoài khi đã gõ phải giữ hộp');
   });
@@ -674,7 +674,7 @@ export async function runPrHk2Tests(t: YThucTestKit) {
     const nut = than(g, 'NutGvCham');
     assert(!/chiTen/.test(nut), 'NutGvCham còn chế độ chiTen (chỉ tên, không chữ "GV chấm:")');
     assert(/session\?\.user\?\.fullName/.test(nut) && /kieu === 'toi'/.test(nut), '"Tôi" phải đổi thành tên tài khoản');
-    assert(/nhan = 'GV chấm'/.test(nut) && /\{`\$\{nhan\}: `\}/.test(nut) && /title=\{`GV chấm Speaking: \$\{ten/.test(nut), 'nút phải ghi "GV chấm: tên" và title có tên');
+    assert(/nhan = t\('GV chấm'\)/.test(nut) && /\{`\$\{nhan\}: `\}/.test(nut) && /title=\{t\('GV chấm Speaking: \{x\}/.test(nut), 'nút phải ghi "GV chấm: tên" và title có tên');
     const nhan = /<span className="([^"]*)">\{`\$\{nhan\}: `\}/.exec(nut)?.[1];
     assert(nhan !== undefined && !/truncate/.test(nhan) && /break-words/.test(nhan), `nhãn tên không được cắt: ${nhan}`);
     for (const f of ['web/src/modules/cham/LuoiFT.tsx', 'web/src/modules/cham/MotKyNang.tsx'])

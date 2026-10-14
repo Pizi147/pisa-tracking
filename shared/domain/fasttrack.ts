@@ -1,6 +1,7 @@
 /** FAST TRACK — lịch Mock Test, kỳ vọng theo lượt và mức SOS. */
 
 import type { ProgrammeCode } from './normal.ts';
+import { t } from '../i18n/index.ts';
 
 // ---------------------------------------------------------------- Mock Test
 
@@ -77,14 +78,14 @@ export const CLASS_PHASES = [
 export type ClassPhase = (typeof CLASS_PHASES)[number];
 
 export const CLASS_PHASE_LABEL: Record<ClassPhase, string> = {
-  unknown: 'Chưa khai tuần bắt đầu',
-  not_started: 'Chưa khai giảng',
-  running: 'Đang học',
-  progress_soon: 'Tuần sau thi Progress Test',
-  progress_week: 'Thi Progress Test tuần này',
-  final_soon: 'Tuần sau thi Final Test',
-  final_week: 'Thi Final Test tuần này',
-  finished: 'Đã hết khoá',
+  unknown: t('Chưa khai tuần bắt đầu'),
+  not_started: t('Chưa khai giảng'),
+  running: t('Đang học'),
+  progress_soon: t('Tuần sau thi Progress Test'),
+  progress_week: t('Thi Progress Test tuần này'),
+  final_soon: t('Tuần sau thi Final Test'),
+  final_week: t('Thi Final Test tuần này'),
+  finished: t('Đã hết khoá'),
 };
 
 /** Chặng nào đáng nổi lên màn hình, và nổi ở mức nào. */
@@ -126,7 +127,7 @@ export function fmtExamMonth(v: string | null | undefined): string {
 export const ATTEMPT_STATUSES = ['planned', 'done', 'cancelled'] as const;
 export type AttemptStatus = (typeof ATTEMPT_STATUSES)[number];
 export const ATTEMPT_STATUS_LABEL: Record<AttemptStatus, string> = {
-  planned: 'Đã lên lịch', done: 'Xong', cancelled: 'Đã huỷ',
+  planned: t('Đã lên lịch'), done: 'Xong', cancelled: t('Đã huỷ'),
 };
 
 /**
@@ -137,9 +138,9 @@ export function nhanLuot(status: string, coDiem: number, yeuCau: number,
   /** OV-1b (ca thật 11/10): mọi kỹ năng bắt buộc đã huỷ phần thi / không còn kỹ năng nào — lượt không còn "Đã lên lịch". */
   huyHet = false): string {
   if (status === 'cancelled') return ATTEMPT_STATUS_LABEL.cancelled;
-  if (huyHet && coDiem === 0 && status !== 'done') return 'Đã huỷ phần thi';
+  if (huyHet && coDiem === 0 && status !== 'done') return t('Đã huỷ phần thi');
   if (status === 'done' || (yeuCau > 0 && coDiem >= yeuCau)) return ATTEMPT_STATUS_LABEL.done;
-  if (coDiem > 0) return `Đang chấm · ${coDiem}/${yeuCau}`;
+  if (coDiem > 0) return t('Đang chấm · {coDiem}/{yeuCau}', { coDiem, yeuCau });
   return ATTEMPT_STATUS_LABEL[status as AttemptStatus] ?? status;
 }
 
@@ -157,7 +158,7 @@ export function nhanLuot(status: string, coDiem: number, yeuCau: number,
 export const SKILL_REQUIREMENTS = ['required', 'skipped'] as const;
 export type SkillRequirement = (typeof SKILL_REQUIREMENTS)[number];
 export const SKILL_REQUIREMENT_LABEL: Record<SkillRequirement, string> = {
-  required: 'Trong phạm vi', skipped: 'Ngoài phạm vi',
+  required: t('Trong phạm vi'), skipped: t('Ngoài phạm vi'),
 };
 
 /**
@@ -169,10 +170,10 @@ export const SKILL_REQUIREMENT_LABEL: Record<SkillRequirement, string> = {
 export const SIT_STATUSES = ['scheduled', 'sat', 'absent', 'cancelled'] as const;
 export type SitStatus = (typeof SIT_STATUSES)[number];
 export const SIT_STATUS_LABEL: Record<SitStatus, string> = {
-  scheduled: 'Theo lịch',
-  sat: 'Đã thi',
-  absent: 'Đã xác nhận vắng',
-  cancelled: 'Đã huỷ phần thi',
+  scheduled: t('Theo lịch'),
+  sat: t('Đã thi'),
+  absent: t('Đã xác nhận vắng'),
+  cancelled: t('Đã huỷ phần thi'),
 };
 
 /**
@@ -190,20 +191,20 @@ export const SKILL_PROGRESS = [
 ] as const;
 export type SkillProgress = (typeof SKILL_PROGRESS)[number];
 export const SKILL_PROGRESS_LABEL: Record<SkillProgress, string> = {
-  skipped: 'Ngoài phạm vi',
-  not_scheduled: 'Chưa xếp tuần',
-  upcoming: 'Chưa đến lịch',
+  skipped: t('Ngoài phạm vi'),
+  not_scheduled: t('Chưa xếp tuần'),
+  upcoming: t('Chưa đến lịch'),
   /**
    * Tuần thi của CHÍNH kỹ năng này đã tới hoặc đã qua mà chưa có điểm. KHÔNG nói "chưa xác nhận đã thi" (MT-P03): có
    * lịch và đúng quyền là nhập được, không có bước xác nhận bắt buộc trước khi chấm.
    */
-  due: 'Chờ nhập điểm',
-  sat: 'Đã thi, chờ nhập điểm',
-  absent: 'Đã xác nhận vắng',
-  scored: 'Đã có điểm',
-  reschedule_pending: 'Chờ duyệt dời',
-  cancelled: 'Đã huỷ phần thi',
-  lich_su: 'Nhập bù, không tính hạn',
+  due: t('Chờ nhập điểm'),
+  sat: t('Đã thi, chờ nhập điểm'),
+  absent: t('Đã xác nhận vắng'),
+  scored: t('Đã có điểm'),
+  reschedule_pending: t('Chờ duyệt dời'),
+  cancelled: t('Đã huỷ phần thi'),
+  lich_su: t('Nhập bù, không tính hạn'),
 };
 
 /**
@@ -364,13 +365,13 @@ export function dauTruCuaO(i: {
 }
 
 /** Gợi ý trong ô nhập điểm (rule book §17.1, TU_DIEN_VA_CHU §3). */
-export const NO_SHOW_HINT = 'Nhập - nếu học viên không làm bài';
+export const NO_SHOW_HINT = t('Nhập - nếu học viên không làm bài');
 
 /**
  * S13 (quyết định 4.5, 22/09/2026): ô đã chốt "không dự thi" rồi Quản lý đổi kết luận — dấu "-" báo lại cho CÙNG tuần không chốt
  * lại và không hiện lại. Ô hiện đúng một dòng này để người nhập không tưởng máy bỏ sót thao tác của mình.
  */
-export const NO_SHOW_OVERRIDDEN_NOTE = 'Quản lý đã đổi kết luận tuần này — dấu "-" không được tính lại.';
+export const NO_SHOW_OVERRIDDEN_NOTE = t('Quản lý đã đổi kết luận tuần này — dấu "-" không được tính lại.');
 
 /** Câu trạng thái của một ô có dấu '-'. `weekCode` là nhãn tuần đã định dạng — nơi gọi dùng `tuanLich` (`W3 SEP`, G-6). */
 export function noShowText(v: NoShowView, weekCode: string | null, today: string): string | null {
@@ -380,9 +381,9 @@ export function noShowText(v: NoShowView, weekCode: string | null, today: string
     return s.slice(0, 4) === today.slice(0, 4) ? dm : `${dm}/${s.slice(0, 4)}`;
   };
   switch (v.state) {
-    case 'khong-co-bai': return `Không có bài · Có thể sửa đến hết Chủ nhật ${day(v.editableUntil!)}`;
-    case 'khong-du-thi': return `Không dự thi · Tuần ${weekCode ?? ''}`.trim();
-    case 'cho-ql-hieu-chinh': return 'Chờ quản lý hiệu chỉnh';
+    case 'khong-co-bai': return t('Không có bài · Có thể sửa đến hết Chủ nhật {day}', { day: day(v.editableUntil!) });
+    case 'khong-du-thi': return t('Không dự thi · Tuần {x}', { x: weekCode ?? '' }).trim();
+    case 'cho-ql-hieu-chinh': return t('Chờ quản lý hiệu chỉnh');
     default: return null;
   }
 }

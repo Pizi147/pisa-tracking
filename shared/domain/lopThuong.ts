@@ -7,6 +7,7 @@
  */
 import { programmeOf, RATIO_PASS_THRESHOLD, tenMonNgan, nhanBaiThuong } from './normal.ts';
 import { tuanLich } from './hienThiNgay.ts';
+import { t } from '../i18n/index.ts';
 
 /** N1: FOU bổ trợ CHUNG 2 buổi/tuần cho mọi môn trượt; BE/ELE 1 buổi/tuần/môn. Pre FOU (và FT) không có Giữa khoá → null. */
 export function boTroGiuaKhoa(ct: string | null | undefined): { buoiMoiTuan: 1 | 2; chung: boolean } | null {
@@ -25,8 +26,8 @@ export function moTaBoTro(ct: string | null | undefined, skill: string): string 
   const b = boTroGiuaKhoa(ct);
   if (!b) return '';
   return b.chung
-    ? `Bổ trợ ${b.buoiMoiTuan} buổi/tuần · chung các môn trượt · đến Cuối khoá · trừ buổi Free`
-    : `Bổ trợ ${b.buoiMoiTuan} buổi/tuần · ${tenMonNgan(ct, skill)} · đến Cuối khoá · trừ buổi Free`;
+    ? t('Bổ trợ {buoiMoiTuan} buổi/tuần · chung các môn trượt · đến Cuối khoá · trừ buổi Free', { buoiMoiTuan: b.buoiMoiTuan })
+    : t('Bổ trợ {buoiMoiTuan} buổi/tuần · {tenMonNgan} · đến Cuối khoá · trừ buổi Free', { buoiMoiTuan: b.buoiMoiTuan, tenMonNgan: tenMonNgan(ct, skill) });
 }
 
 /** Tên Case lớp thường: `[Progress Test] G+V không đạt [SOS 2]` — OV-12c (chủ SP 14/10, bỏ T58 ở Case): nhãn SOS theo số môn trượt của lượt. */
@@ -62,10 +63,10 @@ export function nhanKetQuaThuong(r: {
   const truot = r.failedSkills.length;
   const thieu = r.scored < r.required;
   const chinh = r.kind === 'final' && pct ? pct
-    : `${r.scored - truot}/${r.scored} môn đạt`;
+    : t('{x}/{scored} môn đạt', { x: r.scored - truot, scored: r.scored });
   return {
     chinh, pct,
-    phu: truot ? `Không đạt: ${r.failedSkills.map((s) => tenMonNgan(r.ct, s)).join(' ')}` : null,
+    phu: truot ? t('Không đạt: {x}', { x: r.failedSkills.map((s) => tenMonNgan(r.ct, s)).join(' ') }) : null,
     dat: truot > 0 ? false : thieu ? null : true,
   };
 }
@@ -76,16 +77,16 @@ export function nhanKetQuaThuong(r: {
  */
 export function noiDungBaoPh(x: { ketQua: string; monTruot: string[]; nguyenNhan: string[]; boTro: string }): [string, string, string, string] {
   return [
-    `Thực trạng kết quả học tập: ${x.ketQua}`,
-    `Kỹ năng đang gặp khó khăn: ${x.monTruot.join(', ') || '—'}`,
-    `Nguyên nhân / đánh giá ban đầu của giáo viên: ${x.nguyenNhan.filter(Boolean).join(' · ') || 'GVBM chưa xác nhận'}`,
-    `Phương án hỗ trợ: ${x.boTro}. Khả năng phải học lại level nếu không pass bài Final Test.`,
+    t('Thực trạng kết quả học tập: {ketQua}', { ketQua: x.ketQua }),
+    t('Kỹ năng đang gặp khó khăn: {x}', { x: x.monTruot.join(', ') || '—' }),
+    t('Nguyên nhân / đánh giá ban đầu của giáo viên: {x}', { x: x.nguyenNhan.filter(Boolean).join(' · ') || t('GVBM chưa xác nhận') }),
+    t('Phương án hỗ trợ: {boTro}. Khả năng phải học lại level nếu không pass bài Final Test.', { boTro: x.boTro }),
   ];
 }
 
 /** Chữ mốc PA bổ trợ: `đến Cuối khoá · W4 OCT` / `đến Cuối khoá · chưa có lịch`. */
 export function mocChuBoTro(followupDue: string | null, homNay: string): string {
-  return followupDue ? `đến Cuối khoá · ${tuanLich(followupDue, homNay)}` : 'đến Cuối khoá · chưa có lịch';
+  return followupDue ? t('đến Cuối khoá · {tuanLich}', { tuanLich: tuanLich(followupDue, homNay) }) : t('đến Cuối khoá · chưa có lịch');
 }
 
 /** Tên các môn của một nhóm theo `ct`, dạng `G+V, P` (dùng cho tiêu đề việc/thẻ). */
@@ -99,5 +100,5 @@ export function chipCheckpoint(r: { complete: boolean; skills: readonly { skill:
   { chu: string; dat: boolean } | null {
   if (!r.complete) return null;
   const truot = r.skills.filter((s) => s.outcome === 'fail').map((s) => tenMonNgan(ct, s.skill));
-  return truot.length ? { chu: `SOS · ${truot.join(' ')}`, dat: false } : { chu: 'Đạt', dat: true };
+  return truot.length ? { chu: `SOS · ${truot.join(' ')}`, dat: false } : { chu: t('Đạt'), dat: true };
 }

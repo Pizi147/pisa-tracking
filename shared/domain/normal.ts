@@ -1,6 +1,7 @@
 /** NORMAL — chương trình FOU/BE/ELE, mốc kiểm tra và cách chấm theo tỷ lệ. */
 
 import { ASSESSED_SKILLS, ENTRY_SKILLS } from './skills.ts';
+import { t } from '../i18n/index.ts';
 
 // ------------------------------------------------- Chương trình và lớp thường
 
@@ -22,7 +23,7 @@ export const SCORING_MODES = ['ielts_band', 'ratio'] as const;
 export type ScoringMode = (typeof SCORING_MODES)[number];
 export const SCORING_MODE_LABEL: Record<ScoringMode, string> = {
   ielts_band: 'Band IELTS (Mock Test)',
-  ratio: 'Điểm đạt / Tổng điểm',
+  ratio: t('Điểm đạt / Tổng điểm'),
 };
 
 /**
@@ -124,7 +125,7 @@ export const LEGACY_REGULAR_SKILL_MAP: Record<string, RegularSkill> = {
 export const SKILL_SHORT: Record<string, string> = {
   listening: 'L', reading: 'R', writing1: 'W1', writing2: 'W2', speaking: 'S',
   writing: 'W',
-  tong_hop: 'Tổng hợp',
+  tong_hop: t('Tổng hợp'),
   listening_speaking: 'L+S', reading_writing: 'R+W',   // OV-6b2: môn gộp (PET, KET)
   // Hai mã CŨ, chỉ để dữ liệu chưa di trú không hiện mã thô trên giao diện.
   prep_writing: 'W', pronunciation: 'S',
@@ -137,7 +138,7 @@ const TEN_MON_RIENG: Record<string, Record<string, { ten: string; ngan: string }
 };
 const TEN_CHUNG: Record<string, string> = {
   listening: 'Listening', reading: 'Reading', writing1: 'Writing Task 1', writing2: 'Writing Task 2',
-  writing: 'Writing', speaking: 'Speaking', tong_hop: 'Tổng hợp',
+  writing: 'Writing', speaking: 'Speaking', tong_hop: t('Tổng hợp'),
   listening_speaking: 'Listening + Speaking', reading_writing: 'Reading + Writing',
 };
 /** OV-6b2: môn Quản trị chọn được cho chương trình mới — danh sách cố định (không tự đặt môn). L+S / R+W là MỘT ô điểm. */
@@ -254,8 +255,8 @@ export const laLienTuc = (c: { moc_lap?: number | null } | null | undefined): bo
 /** = `laLienTuc` viết bằng SQL cho bí danh bảng lớp. */
 export const LIEN_TUC_SQL = (lop = 'c') => `${lop}.moc_lap IS NOT NULL`;
 export const CAU_LIEN_TUC = {
-  loTrinhTiep: 'Chương trình liên tục không có Lộ trình tiếp theo.',
-  target: 'Chương trình liên tục không có Target.',
+  loTrinhTiep: t('Chương trình liên tục không có Lộ trình tiếp theo.'),
+  target: t('Chương trình liên tục không có Target.'),
 } as const;
 
 /**
@@ -287,7 +288,7 @@ export function sosFromFailCount(failCount: number): SosLevel {
 
 export type SosLevel = 0 | 1 | 2 | 3;
 export const SOS_LABEL: Record<SosLevel, string> = {
-  0: 'Đạt kỳ vọng', 1: 'SOS 1', 2: 'SOS 2', 3: 'SOS 3',
+  0: t('Đạt kỳ vọng'), 1: 'SOS 1', 2: 'SOS 2', 3: 'SOS 3',
 };
 
 /**
@@ -311,7 +312,7 @@ export function caseHeadline(c: {
    * CASE DO NGƯỜI BÁO thì lấy đúng câu người ta viết. Không có thì nói thật là chưa có,
    * chứ không dựng một câu từ dữ liệu mà người báo không hề nói.
    */
-  if (c.originKind === 'teacher_report') return written || 'Chưa có tóm tắt';
+  if (c.originKind === 'teacher_report') return written || t('Chưa có tóm tắt');
 
   /*
    * CASE SINH TỪ ĐIỂM thì PHẦN SUY RA TỪ DỮ LIỆU ĐỨNG TRƯỚC, ghi chú của người dạy đứng sau.
@@ -324,11 +325,11 @@ export function caseHeadline(c: {
   /* LỚP THƯỜNG (đặc tả §2, §6): tên bài "Giữa khoá / Cuối khoá", đếm theo MÔN, không "MT{n}", không "kỳ vọng". */
   const ratio = !!c.attemptKind && c.attemptKind !== 'mock';
   const where = ratio
-    ? (ATTEMPT_KIND_SHORT[c.attemptKind as AttemptKind] ?? 'Bài kiểm tra')
-    : c.attemptNo ? `MT${c.attemptNo}` : 'Bài kiểm tra';
-  const derived = level === null ? `${where}: chưa đủ căn cứ kết luận`
-    : level === 0 ? (ratio ? `${where}: đạt tất cả các môn` : `${where}: đạt kỳ vọng ở mọi kỹ năng`)
-    : ratio ? `${where}: ${level >= 3 ? 'từ 3' : level} môn chưa đạt`
-    : `${where}: ${level} kỹ năng dưới kỳ vọng`;
+    ? (ATTEMPT_KIND_SHORT[c.attemptKind as AttemptKind] ?? t('Bài kiểm tra'))
+    : c.attemptNo ? `MT${c.attemptNo}` : t('Bài kiểm tra');
+  const derived = level === null ? t('{where}: chưa đủ căn cứ kết luận', { where })
+    : level === 0 ? (ratio ? t('{where}: đạt tất cả các môn', { where }) : t('{where}: đạt kỳ vọng ở mọi kỹ năng', { where }))
+    : ratio ? t('{where}: {x} môn chưa đạt', { where, x: level >= 3 ? t('từ 3') : level })
+    : t('{where}: {level} kỹ năng dưới kỳ vọng', { where, level });
   return written ? `${derived} — ${written}` : derived;
 }

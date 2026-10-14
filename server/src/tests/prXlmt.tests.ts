@@ -440,7 +440,7 @@ export async function runPrXlmtMayChu(t: YThucTestKit) {
     const hop = docSach('web/src/modules/fasttrack/HopThaoTacMt.tsx');
     assert(!/GVCN xác minh|Quản lý chốt trước/.test(hop), 'hộp còn lý do ghi cứng');
     /* OV-11a: "Vắng" sau tuần thi đổi tên thành "Không dự thi" — vẫn lấy từ CHU_THAO_TAC ở mọi trường hợp khác. */
-    assert(/const ten = [^;\n]*CHU_THAO_TAC\[t\]/.test(hop) && /(title|tieuDe)=\{`\$\{ten\} · \$\{mon\}`\}/.test(hop)   /* PR-LM: KhungPanel dùng tieuDe */ && /: ten\}/.test(hop), 'nhãn/tiêu đề phải qua CHU_THAO_TAC');
+    assert(/const ten = [^;\n]*CHU_THAO_TAC\[tt?\]/.test(hop) && /(title|tieuDe)=\{`\$\{ten\} · \$\{mon\}`\}/.test(hop)   /* PR-LM: KhungPanel dùng tieuDe */ && /: ten\}/.test(hop), 'nhãn/tiêu đề phải qua CHU_THAO_TAC');
     assert(/tenMon\(ct, skill\)/.test(hop), 'tên môn phải qua tenMon');
     const dtg = docSach('web/src/modules/fasttrack/DongThoiGianLuot.tsx');
     assert(/<svg/.test(dtg) && !/[✓✕▸◌●○]/.test(dtg), 'biểu tượng dòng thời gian phải là SVG');
