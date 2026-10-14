@@ -7,12 +7,14 @@
 import { PROGRAMME_TEMPLATES, programmeOf, type ProgrammeCode, skillShort, tenMon, tenMonNgan } from './normal.ts';
 import { deadlineView } from './display.ts';
 import { goiYCuoiKhoa } from './cuoiKhoa.ts';
-import type { ViecTiepCase } from './sosV4.ts';
+import type { TrangThaiCaseV4, ViecTiepCase } from './sosV4.ts';
 import type { NhanYThucEm } from './yThuc.ts';
 import { tuanKhoa, tuanLich } from './hienThiNgay.ts';
 import { CHU_CHUYEN_LOP } from './chuyenLop.ts';
 import { NHAN_TRANG_THAI, TONE_BADGE_TRANG_THAI } from './trangThai.ts';
 import { CLASS_PHASE_LABEL, type ClassPhase } from './fasttrack.ts';
+import { dich as dichChuoi, t } from '../i18n/index.ts';
+import { kyGhiKetQua } from './display.ts';
 
 // ---------------------------------------------------------------- chung
 
@@ -66,12 +68,12 @@ export const docChipVai = (s: string | null | undefined, vai: 'tvv' | 'cx'): Chi
 export const LOC_HOC_VIEN = ['tat-ca', 'can-lam', 'qua-han', 'cho-duyet', 'sos', 'thieu_tt'] as const;
 export type LocHocVien = (typeof LOC_HOC_VIEN)[number];
 export const LOC_HOC_VIEN_NHAN: Record<LocHocVien, { nhan: string; goiY: string; can: string | null }> = {
-  'tat-ca': { nhan: 'Tất cả', goiY: 'Mọi học viên đang học trong các lớp đang hiện.', can: null },
-  'can-lam': { nhan: NHAN_TRANG_THAI['can-lam'], goiY: 'Có việc quá hạn hoặc việc hạn ngắn (xác nhận, xử lý vi phạm).', can: null },
-  'qua-han': { nhan: NHAN_TRANG_THAI['qua-han'], goiY: 'Có việc đã quá hạn (xác nhận, kết quả, xử lý vi phạm) — cùng số với badge "HV quá hạn việc".', can: null },
-  'cho-duyet': { nhan: NHAN_TRANG_THAI['cho-duyet'], goiY: 'Có yêu cầu đang chờ Quản lý duyệt.', can: null },
-  sos: { nhan: 'Đang SOS', goiY: 'Chỉ Fast Track: Mock gần nhất ở mức SOS 1–3.', can: 'case.view' },
-  thieu_tt: { nhan: 'Thiếu thông tin', goiY: 'Hồ sơ còn thiếu thông tin cần để xếp lịch và theo dõi.', can: null },
+  'tat-ca': { nhan: t('Tất cả'), goiY: t('Mọi học viên đang học trong các lớp đang hiện.'), can: null },
+  'can-lam': { nhan: NHAN_TRANG_THAI['can-lam'], goiY: t('Có việc quá hạn hoặc việc hạn ngắn (xác nhận, xử lý vi phạm).'), can: null },
+  'qua-han': { nhan: NHAN_TRANG_THAI['qua-han'], goiY: t('Có việc đã quá hạn (xác nhận, kết quả, xử lý vi phạm) — cùng số với badge "HV quá hạn việc".'), can: null },
+  'cho-duyet': { nhan: NHAN_TRANG_THAI['cho-duyet'], goiY: t('Có yêu cầu đang chờ Quản lý duyệt.'), can: null },
+  sos: { nhan: t('Đang SOS'), goiY: t('Chỉ Fast Track: Mock gần nhất ở mức SOS 1–3.'), can: 'case.view' },
+  thieu_tt: { nhan: t('Thiếu thông tin'), goiY: t('Hồ sơ còn thiếu thông tin cần để xếp lịch và theo dõi.'), can: null },
 };
 
 export type DocLoc = { loc: LocHocVien } | { chuyenDen: string };
@@ -82,6 +84,48 @@ export function docThamSoLoc(view: string | null | undefined): DocLoc {
   if (view === 'can-lam' || view === 'qua-han' || view === 'cho-duyet' || view === 'thieu_tt') return { loc: view };
   if (view === 'missing_scores') return { chuyenDen: '/test/lich' };
   return { loc: 'tat-ca' };
+}
+
+// ---------------------------------------------------------------- ba góc nhìn (OV-12f, đặc tả OV-12 mục 3.5 / 7.9, P14)
+
+/** Góc nhìn của Học viên & Lớp — thay hàng chip. Lọc phụ (Quá hạn · Chờ duyệt · Thiếu thông tin) nằm TRONG góc Cần làm, không bỏ lọc nào. */
+export const GOC_HOC_VIEN = ['tat-ca', 'sos', 'can-lam'] as const;
+export type GocHocVien = (typeof GOC_HOC_VIEN)[number];
+export type LocPhuCanLam = 'qua-han' | 'cho-duyet' | 'thieu_tt';
+/** `view` (+ `loc`) trên URL → góc + lọc phụ. Link cũ giữ nghĩa qua `docThamSoLoc`: `qua-han` / `cho-duyet` / `thieu_tt` / `case_*` → Cần làm. */
+export function docGoc(view: string | null | undefined, loc: string | null | undefined): { goc: GocHocVien; loc: LocPhuCanLam | null } {
+  const d = docThamSoLoc(view);
+  const l = 'loc' in d ? d.loc : 'tat-ca';
+  if (l === 'sos') return { goc: 'sos', loc: null };
+  if (l === 'tat-ca') return { goc: 'tat-ca', loc: null };
+  const phu = l === 'can-lam' ? loc : l;
+  return { goc: 'can-lam', loc: phu === 'qua-han' || phu === 'cho-duyet' || phu === 'thieu_tt' ? phu : null };
+}
+
+/**
+ * ĐƯỜNG `/hoc-vien-lop` của trang (ô tìm · Phạm vi · chi nhánh · lần chọn trước `cnNho`). `tuLienKet` = trang được MỞ bằng link trỏ một đích
+ * (`coDichLienKet` LÚC VÀO, không phải mỗi lần vẽ): mở / đóng lớp ghi `open=` lên URL nhưng không được đổi đường — đổi đường là tải lại cả trang
+ * (lỗi bản chính 14/10: bấm mở lớp lần đầu → Skeleton).
+ */
+export function duongHocVienLop(params: { get(k: string): string | null }, o: { tuLienKet: boolean; daNho: number | 'tat-ca' | null }): string {
+  const s = new URLSearchParams();
+  const q = (params.get('q') ?? '').trim();
+  if (q) s.set('q', q);
+  const phamVi = params.get('phamVi');
+  if (phamVi) s.set('phamVi', phamVi);
+  const cn = params.get('cn') ?? params.get('branchId');
+  if (cn) s.set('branchId', String(Number(cn)));
+  /* PR-NV (T9): lần chọn trước — máy chủ bỏ nếu ngoài phạm vi; không đổi Phạm vi như `branchId`. Link trỏ một đích thì không gửi (rà PR #205). */
+  else if (!o.tuLienKet && typeof o.daNho === 'number') s.set('cnNho', String(o.daNho));
+  return `/hoc-vien-lop?${s.toString()}`;
+}
+
+/** Nhóm xử lý của một Case — cùng ba chữ với bảng Tổng hợp (chủ SP 14/10): Chờ duyệt (chưa có PA chạy, PA chờ xác nhận, "Không cần theo dõi" chờ QL) · Đang xử lý (có PA đã chạy) · Xong. */
+export type NhomXuLy = 'cho-duyet' | 'dang-xu-ly' | 'xong';
+export const NHAN_NHOM_XU_LY = { 'cho-duyet': 'Chờ duyệt', 'dang-xu-ly': 'Đang xử lý', xong: 'Xong' } as const satisfies Record<NhomXuLy, string>;
+export function nhomXuLyCase(k: TrangThaiCaseV4, coPaDaChay: boolean): NhomXuLy {
+  if (k === 'xong' || k === 'huy-khong-theo-doi' || k === 'he-thong-dong' || k === 'rut-sua-diem') return 'xong';
+  return k === 'dang-lam' && coPaDaChay ? 'dang-xu-ly' : 'cho-duyet';
 }
 
 /** Chip `qua-han` không nằm thường trực trên hàng chip — chỉ hiện (đang bấm) khi người dùng tới từ badge. */
@@ -104,7 +148,7 @@ export function demLoc(hocVien: readonly { loc: readonly string[]; khung: 'ft' |
 
 export const PHAM_VI = ['cua-toi', 'toi', 'chi-nhanh', 'tat-ca'] as const;
 export type PhamVi = (typeof PHAM_VI)[number];
-export const PHAM_VI_NHAN: Record<PhamVi, string> = { 'cua-toi': 'HV của tôi', toi: 'Lớp tôi dạy', 'chi-nhanh': 'Chi nhánh', 'tat-ca': 'Tất cả' };
+export const PHAM_VI_NHAN: Record<PhamVi, string> = { 'cua-toi': t('HV của tôi'), toi: t('Lớp tôi dạy'), 'chi-nhanh': t('Chi nhánh'), 'tat-ca': t('Tất cả') };
 
 /**
  * Chỉ lựa chọn có nghĩa: QL một chi nhánh thì "Tất cả" trùng "Chi nhánh" nên không có. PR-OV2a: "HV của tôi" (TVV) chỉ có khi đã được gán
@@ -172,13 +216,13 @@ const band1 = (n: number) => n.toFixed(1);
 const noiDong = (...p: (string | null | false)[]) => p.filter(Boolean).join(' · ');
 
 export function ketQuaGanNhat(k: KetQuaVao | null): KetQuaHien {
-  if (!k || !k.attemptLabel) return { chinh: '—', lech: null, dat: false, sos: null, dong1: 'Chưa có kết quả', dong2: null };
+  if (!k || !k.attemptLabel) return { chinh: '—', lech: null, dat: false, sos: null, dong1: t('Chưa có kết quả'), dong2: null };
   const ct = k.chuongTrinh ?? null;
   if (k.mode === 'ratio') {
     /* Cuối khoá (hoặc Pre FOU) đủ điểm → % tổng; còn lại "n/N môn đạt". OV-12c: Progress Test có môn trượt → chip SOS theo số môn trượt. */
     const thieuDiem = k.scored < k.required;
     const chinh = (k.attemptKind === 'final' || k.khongChiaMon) && k.tyLeTong != null ? `${Math.round(k.tyLeTong * 100)}%`
-      : k.khongChiaMon || k.scored === 0 ? '—' : `${k.scored - (k.failed ?? 0)}/${thieuDiem ? k.scored : k.required} môn đạt`;
+      : k.khongChiaMon || k.scored === 0 ? '—' : t('{a}/{b} môn đạt', { a: k.scored - (k.failed ?? 0), b: thieuDiem ? k.scored : k.required });
     /* Pre FOU: đạt/không xét trên tỷ lệ chính xác ở máy chủ (`sosLevel === 0`); lớp thường khác: đủ môn và không môn nào trượt. */
     const dat = k.khongChiaMon ? k.sosLevel === 0 : k.sosLevel === 0 && !k.provisional && !thieuDiem;
     /* PR-UXF-a K2-01 (Q3): Cuối khoá đủ điểm → hậu tố hướng ở dòng 1 ("Cuối khoá → học lại"), cùng luật `goiYCuoiKhoa`; không dính vào số %. */
@@ -186,8 +230,8 @@ export function ketQuaGanNhat(k: KetQuaVao | null): KetQuaHien {
       ? goiYCuoiKhoa({ ct, tyLe: k.tyLeTong, monTruot: k.failedSkills.map((f) => f.skill), nguong: k.nguong })?.nhanNgan ?? null : null;
     return {
       chinh, lech: null, dat, sos: k.attemptKind === 'progress' && !k.khongChiaMon && (k.sosLevel ?? 0) > 0 ? `SOS ${k.sosLevel}` : null,
-      dong1: huong ? `${k.attemptLabel} ${huong}` : k.khongChiaMon || !thieuDiem ? k.attemptLabel : `${k.attemptLabel} · ${k.scored}/${k.required} môn có điểm`,
-      dong2: k.khongChiaMon || !k.failedSkills.length ? null : `Không đạt: ${k.failedSkills.map((f) => tenMonNgan(ct, f.skill)).join(' ')}`,
+      dong1: huong ? `${k.attemptLabel} ${dichChuoi(huong)}` : k.khongChiaMon || !thieuDiem ? k.attemptLabel : t('{lan} · {a}/{b} môn có điểm', { lan: k.attemptLabel, a: k.scored, b: k.required }),
+      dong2: k.khongChiaMon || !k.failedSkills.length ? null : t('Không đạt: {ds}', { ds: k.failedSkills.map((f) => tenMonNgan(ct, f.skill)).join(' ') }),
     };
   }
   const sos = k.sosLevel !== null && k.sosLevel > 0 ? `SOS ${k.sosLevel}` : null;
@@ -196,8 +240,8 @@ export function ketQuaGanNhat(k: KetQuaVao | null): KetQuaHien {
   const lech = k.overall !== null && k.expectation !== null && k.overall < k.expectation ? `−${band1(k.expectation - k.overall)}` : null;
   return {
     chinh, lech, dat: k.sosLevel === 0 && !k.provisional, sos,
-    dong1: noiDong(k.attemptLabel, k.expectation !== null && `kỳ vọng ${band1(k.expectation)}`, k.scored < k.required && `${k.scored}/${k.required} kỹ năng có điểm`),
-    dong2: k.belowSkills.length ? `${k.kckDuoi ? 'Dưới kỳ vọng' : 'Không đạt'}: ${k.belowSkills.map((b) => skillShort(b.skill)).join(' ')}` : null,
+    dong1: noiDong(k.attemptLabel, k.expectation !== null && t('kỳ vọng {kv}', { kv: band1(k.expectation) }), k.scored < k.required && t('{a}/{b} kỹ năng có điểm', { a: k.scored, b: k.required })),
+    dong2: k.belowSkills.length ? t(k.kckDuoi ? 'Dưới kỳ vọng: {ds}' : 'Không đạt: {ds}', { ds: k.belowSkills.map((b) => skillShort(b.skill)).join(' ') }) : null,
     ...(sosTamThoi ? { sosTamThoi } : {}),
     ...(k.kckDuoi ? { kckDuoi: true } : {}),
   };
@@ -217,15 +261,15 @@ export function khoaLopThuong(i: {
 }): { chinh: string; phu: string | null } {
   const ma = i.maChuongTrinh ?? '—';
   let tuan: string | null = null;
-  if (i.tuanHienTai !== null && i.tuanHienTai < 1) tuan = 'chưa khai giảng';
+  if (i.tuanHienTai !== null && i.tuanHienTai < 1) tuan = t('chưa khai giảng');
   else if (i.tuanHienTai !== null && i.tongTuan) tuan = tuanKhoa(Math.min(i.tuanHienTai, i.tongTuan), i.tongTuan);
-  else if (i.tuanHienTai !== null) tuan = `tuần ${i.tuanHienTai}`;   // OV-6b2: lớp liên tục — không "/tổng"
+  else if (i.tuanHienTai !== null) tuan = t('tuần {n}', { n: i.tuanHienTai });   // OV-6b2: lớp liên tục — không "/tổng"
   // Thứ tự ưu tiên dòng phụ (PR-LT): tiếp theo đã ghi › nhắc chưa ghi › kết thúc khoá.
   /* PR-DH (D1): cờ "chưa có quyết định chuyển lớp" luôn hiện khi em thuộc số trên badge lớp — kể cả khi đã ghi lộ trình tiếp theo. */
-  const co = i.nhacLoTrinh ? CHU_CHUYEN_LOP.chua.toLowerCase() : null;
-  const phu = i.tiepTheo ? [`tiếp theo: ${i.tiepTheo}`, co].filter(Boolean).join(' · ')
-    : i.choDuyetChuyen ? CHU_CHUYEN_LOP.choDuyetDeXuat.replace(/^Chờ/, 'chờ')
-    : co ?? (i.tuanKetThuc ? `kết thúc ${tuanLich(i.tuanKetThuc, i.homNay)}` : null);
+  const co = i.nhacLoTrinh ? dichChuoi(CHU_CHUYEN_LOP.chua).toLowerCase() : null;
+  const phu = i.tiepTheo ? [t('tiếp theo: {lt}', { lt: i.tiepTheo }), co].filter(Boolean).join(' · ')
+    : i.choDuyetChuyen ? dichChuoi(CHU_CHUYEN_LOP.choDuyetDeXuat.replace(/^Chờ/, 'chờ'))
+    : co ?? (i.tuanKetThuc ? t('kết thúc {tuan}', { tuan: tuanLich(i.tuanKetThuc, i.homNay) }) : null);
   return { chinh: tuan ? `${ma} · ${tuan}` : ma, phu };
 }
 
@@ -263,16 +307,16 @@ export function badgeLop(c: {
   if (nXep > 0) {
     co['xep-lop'] = {
       /* PR-Dọn (Câu 2 = B): lớp chưa hết khoá → em chưa có quyết định chuyển lớp. PR-LCb: Quản lý quyết ở panel "Lộ trình tiếp theo". */
-      key: 'xep-lop', nhan: c.needsPlacement ? `${nXep} HV cần xếp lớp tiếp` : `${nXep} HV ${CHU_CHUYEN_LOP.chua.toLowerCase()}`, tone: 'warn',
-      title: c.needsPlacement ? 'Lớp đã hết khoá: những học viên này chưa được xếp lớp tiếp' : 'Quản lý quyết định ở Lộ trình tiếp theo',
+      key: 'xep-lop', nhan: c.needsPlacement ? t('{n} HV cần xếp lớp tiếp', { n: nXep }) : t('{n} HV chưa chốt lộ trình', { n: nXep }), tone: 'warn',
+      title: c.needsPlacement ? t('Lớp đã hết khoá: những học viên này chưa được xếp lớp tiếp') : t('Quản lý quyết định ở Lộ trình tiếp theo'),
     };
   }
-  if (c.missingSkills.length) co['thieu-gv'] = { key: 'thieu-gv', nhan: `Thiếu GV ${c.missingSkills.map((k) => tenMonNgan(c.chuongTrinh, k)).join(', ')}`, tone: 'warn' };
-  if (c.soBaiChoCham > 0) co.cham = { key: 'cham', nhan: `${c.soBaiChoCham} bài chờ chấm`, tone: TONE_BADGE_TRANG_THAI['cho-cham'], title: c.needScoresTitle ?? undefined };
-  if (CHANG_THI.includes(c.phase)) co.chang = { key: 'chang', nhan: CLASS_PHASE_LABEL[c.phase as ClassPhase], tone: 'info' };
-  if (c.missingCount > 0) co['thieu-tt'] = { key: 'thieu-tt', nhan: `Thiếu ${c.missingCount} thông tin`, tone: 'warn' };
-  if (c.soChoDuyet) co['cho-duyet'] = { key: 'cho-duyet', nhan: `${c.soChoDuyet} chờ duyệt`, tone: TONE_BADGE_TRANG_THAI['cho-duyet'], title: 'Yêu cầu đang chờ Quản lý duyệt' };
-  if (c.soEmQuaHan) co['qua-han'] = { key: 'qua-han', nhan: `${c.soEmQuaHan} HV quá hạn việc`, tone: 'danger', title: 'Học viên có việc đã quá hạn (xác nhận, kết quả, xử lý vi phạm)' };
+  if (c.missingSkills.length) co['thieu-gv'] = { key: 'thieu-gv', nhan: t('Thiếu GV {mon}', { mon: c.missingSkills.map((k) => tenMonNgan(c.chuongTrinh, k)).join(', ') }), tone: 'warn' };
+  if (c.soBaiChoCham > 0) co.cham = { key: 'cham', nhan: t('{n} bài chờ chấm', { n: c.soBaiChoCham }), tone: TONE_BADGE_TRANG_THAI['cho-cham'], title: c.needScoresTitle ?? undefined };
+  if (CHANG_THI.includes(c.phase)) co.chang = { key: 'chang', nhan: dichChuoi(CLASS_PHASE_LABEL[c.phase as ClassPhase]), tone: 'info' };
+  if (c.missingCount > 0) co['thieu-tt'] = { key: 'thieu-tt', nhan: t('Thiếu {n} thông tin', { n: c.missingCount }), tone: 'warn' };
+  if (c.soChoDuyet) co['cho-duyet'] = { key: 'cho-duyet', nhan: t('{n} chờ duyệt', { n: c.soChoDuyet }), tone: TONE_BADGE_TRANG_THAI['cho-duyet'], title: t('Yêu cầu đang chờ Quản lý duyệt') };
+  if (c.soEmQuaHan) co['qua-han'] = { key: 'qua-han', nhan: t('{n} HV quá hạn việc', { n: c.soEmQuaHan }), tone: 'danger', title: t('Học viên có việc đã quá hạn (xác nhận, kết quả, xử lý vi phạm)') };
   const all = THU_TU_BADGE[c.vai].flatMap((k) => (co[k] ? [co[k]!] : []));
   return { hien: all.slice(0, 2), an: all.slice(2) };
 }
@@ -303,7 +347,7 @@ export function nhomGiaoVienBoMon(
     const khoa = pc ? `gv-${pc.id}` : 'chua';
     let g = theoKhoa.get(khoa);
     if (!g) {
-      g = { id: pc?.id ?? null, ten: pc?.name ?? 'Chưa phân công', kyNang: [], nhan: '', title: '' };
+      g = { id: pc?.id ?? null, ten: pc?.name ?? t('Chưa phân công'), kyNang: [], nhan: '', title: '' };
       theoKhoa.set(khoa, g);
       nhom.push(g);
     }
@@ -321,8 +365,8 @@ export function nhomGiaoVienBoMon(
 /* PR-YT4 (K2-30 phần chữ): bỏ mục `Hồ sơ` (tên em đã là liên kết); "+ Ghi vi phạm" (T31 — "Ghi nhận" chỉ nghĩa đã xem). */
 export type MucMenuDong = 'vi-pham' | 'case' | 'nhap-diem' | 'sua-thong-tin' | 'lo-trinh-tiep' | 'chuyen-lop' | 'de-xuat-chuyen-lop';
 export const MUC_MENU_DONG_NHAN: Record<MucMenuDong, string> = {
-  'vi-pham': '+ Ghi vi phạm', case: '+ Case', 'nhap-diem': 'Nhập điểm', 'sua-thong-tin': 'Sửa thông tin',
-  'lo-trinh-tiep': 'Lộ trình tiếp theo', 'chuyen-lop': 'Chuyển lớp…', 'de-xuat-chuyen-lop': 'Đề xuất chuyển lớp…',
+  'vi-pham': t('+ Ghi vi phạm'), case: '+ Case', 'nhap-diem': t('Nhập điểm'), 'sua-thong-tin': t('Sửa thông tin'),
+  'lo-trinh-tiep': t('Lộ trình tiếp theo'), 'chuyen-lop': t('Chuyển lớp…'), 'de-xuat-chuyen-lop': t('Đề xuất chuyển lớp…'),
 };
 /** Việc HIẾM của dòng (K2-30): kẻ vạch trước mục hiếm đầu tiên — tách khỏi việc hằng ngày (Ghi vi phạm · Case · Nhập điểm). */
 export const MUC_MENU_DONG_HIEM: readonly MucMenuDong[] = ['sua-thong-tin', 'lo-trinh-tiep', 'chuyen-lop', 'de-xuat-chuyen-lop'];
@@ -410,7 +454,7 @@ export function viecTiepCuaEm(i: {
   const out: ViecTiepTheo[] = [];
   if (i.nhapDiem && i.nhapDiem.kyNang.length) {
     const n = i.nhapDiem;
-    const viec = `Nhập điểm ${n.kyNang.map((k) => tenMonNgan(ct, k)).join(', ')}${n.dot ? ` · ${n.dot}` : ''}`;
+    const viec = n.dot ? t('Nhập điểm {mon} · {dot}', { mon: n.kyNang.map((k) => tenMonNgan(ct, k)).join(', '), dot: n.dot }) : t('Nhập điểm {mon}', { mon: n.kyNang.map((k) => tenMonNgan(ct, k)).join(', ') });
     const dich: DichViec = { loai: 'nhap-diem' };
     if (n.han) {
       /*
@@ -421,18 +465,18 @@ export function viecTiepCuaEm(i: {
       const tre = n.quaHan;
       out.push({
         viec, han: v.han, quaHanNgay: tre ? v.daysOverdue : null, tone: tre ? 'danger' : 'warn', dich,
-        title: `${viec} · ${v.han}${tre ? (v.quaHan ? ` · ${v.quaHan}` : ' · quá hạn') : ''}`,
+        title: `${viec} · ${v.han}${tre ? ` · ${v.quaHan ?? t('quá hạn')}` : ''}`,
       });
     } else {
-      out.push({ viec, han: null, quaHanNgay: null, tone: n.quaHan ? 'danger' : 'warn', dich, title: n.quaHan ? `${viec} · quá hạn` : viec });
+      out.push({ viec, han: null, quaHanNgay: null, tone: n.quaHan ? 'danger' : 'warn', dich, title: n.quaHan ? `${viec} · ${t('quá hạn')}` : viec });
     }
   }
   if (i.miniTest) {
     const d = deadlineView({ kind: 'mini-test', due: i.miniTest.han, today: i.homNay });
     out.push({
-      viec: 'Ghi Mini Test', han: d.han, quaHanNgay: d.daysOverdue, tone: d.tone === 'overdue' ? 'danger' : 'warn',
+      viec: t('Ghi Mini Test'), han: d.han, quaHanNgay: d.daysOverdue, tone: d.tone === 'overdue' ? 'danger' : 'warn',
       dich: i.miniTest.caseId ? { loai: 'case', caseId: i.miniTest.caseId, paId: i.miniTest.paId ?? undefined, ghiKetQua: true } : { loai: 'y-thuc' },
-      title: `Ghi Mini Test · ${d.han}${d.quaHan ? ` · ${d.quaHan}` : ''}`,
+      title: `${t('Ghi Mini Test')} · ${d.han}${d.quaHan ? ` · ${d.quaHan}` : ''}`,
     });
   }
   for (const c of i.cases) {
@@ -440,16 +484,16 @@ export function viecTiepCuaEm(i: {
     if (!v) continue;
     const dongTu = RUT_GON.find((x) => v.chu.startsWith(x)) ?? v.chu;
     const kn = c.topic ? tenMonNgan(ct, c.topic) : 'Case';
-    const viec = kn === 'Case' && dongTu.endsWith('Case') ? dongTu : `${dongTu} ${kn}`;
+    const viec = kn === 'Case' && dongTu.endsWith('Case') ? dichChuoi(dongTu) : `${dichChuoi(dongTu)} ${kn}`;
     const dich: DichViec = { loai: 'case', caseId: c.caseId, paId: v.paId, ghiKetQua: v.loaiHan === 'cap-nhat-pa' };
-    const goc = `${v.chu} · ${c.topic ? tenMon(ct, c.topic) : 'Case'}`;
+    const goc = `${dichChuoi(v.chu)} · ${c.topic ? tenMon(ct, c.topic) : 'Case'}`;
     if (v.chu.startsWith('Chờ Quản lý duyệt')) {
-      out.push({ viec: `Chờ Quản lý duyệt ${kn}`, han: null, quaHanNgay: null, tone: 'info', dich, title: goc });
+      out.push({ viec: t('Chờ Quản lý duyệt {kn}', { kn }), han: null, quaHanNgay: null, tone: 'info', dich, title: goc });
     } else if (v.loaiHan && v.han) {
       const d = deadlineView({ kind: v.loaiHan, due: v.han, today: i.homNay });
       const tone = d.tone === 'overdue' ? 'danger' : v.loaiHan === 'xac-minh-sos' ? 'warn' : 'info';
       /* PR-S5F-b → OV-12a: ghi kết quả PA nói KỲ của kết quả (`Ghi kết quả PA W1 · kỳ W3–W4 SEP`) — hạn Thứ Ba là của kỳ hai tuần trước nó. */
-      const tuan = v.loaiHan === 'cap-nhat-pa' ? d.viec.replace(/^Kết quả /, 'kỳ ') : null;
+      const tuan = v.loaiHan === 'cap-nhat-pa' ? t('kỳ {ky}', { ky: kyGhiKetQua(v.han, i.homNay) }) : null;
       out.push({ viec: tuan ? `${viec} · ${tuan}` : viec, han: d.han, quaHanNgay: d.daysOverdue, tone, dich, title: `${goc}${tuan ? ` · ${tuan}` : ''} · ${d.han}${d.quaHan ? ` · ${d.quaHan}` : ''}` });
     } else {
       /* Chưa có hạn: Thêm PA (Case tay chưa có PA) vẫn là việc phải làm; "Hoàn thành Case" chỉ nhắc. */
@@ -463,14 +507,14 @@ export function viecTiepCuaEm(i: {
     const han = d ? d.han : null;
     if (y.nhom === 'qua_han') {
       const ngay = y.quaHanNgay ?? d?.daysOverdue ?? null;
-      out.push({ viec: 'Xử lý vi phạm', han, quaHanNgay: ngay, tone: 'danger', dich, title: `Xử lý vi phạm${d ? ` · ${d.han}` : ''}${ngay !== null ? ` · quá hạn ${ngay} ngày` : ' · quá hạn'}` });
+      out.push({ viec: t('Xử lý vi phạm'), han, quaHanNgay: ngay, tone: 'danger', dich, title: [t('Xử lý vi phạm'), d?.han, ngay !== null ? t('quá hạn {n} ngày', { n: ngay }) : t('quá hạn')].filter(Boolean).join(' · ') });
     } else {
-      out.push({ viec: 'Xử lý vi phạm', han, quaHanNgay: null, tone: 'warn', dich, title: `Xử lý vi phạm${d ? ` · ${d.han}` : ''}` });
+      out.push({ viec: t('Xử lý vi phạm'), han, quaHanNgay: null, tone: 'warn', dich, title: [t('Xử lý vi phạm'), d?.han].filter(Boolean).join(' · ') });
     }
   }
   const xep = out.map((v, idx) => ({ v, idx })).sort((a, b) => HANG_TONE[a.v.tone] - HANG_TONE[b.v.tone] || a.idx - b.idx).map((x) => x.v);
   /* Báo phụ huynh qua TVV: không hạn → luôn SAU việc có hạn (mở tab Ý thức & Phối hợp). */
-  if (i.baoPh) xep.push({ viec: 'Báo phụ huynh qua TVV', han: null, quaHanNgay: null, tone: 'info', dich: { loai: 'y-thuc' }, title: 'Báo phụ huynh qua TVV · Progress Test' });
+  if (i.baoPh) xep.push({ viec: t('Báo phụ huynh qua TVV'), han: null, quaHanNgay: null, tone: 'info', dich: { loai: 'y-thuc' }, title: t('Báo phụ huynh qua TVV · Progress Test') });
   return xep;
 }
 
@@ -533,10 +577,10 @@ export function hangCanHoTro<T extends CaseCuaHang>(i: {
   };
   let hang = khuon
     .filter((h) => !i.chiKyNang || h.kyNang.some((k) => i.chiKyNang!.includes(k)))
-    .map((h) => dungHang(h.khoa, c === 'PREFOU' ? 'Tổng hợp' : tenMonNgan(i.ct, h.khoa === 'writing' ? 'writing' : h.khoa),
-      c === 'PREFOU' ? 'Tổng hợp' : tenMon(i.ct, h.khoa === 'writing' ? 'writing' : h.khoa), h.kyNang, i.cases.filter((x) => thuocHang(x.topic, h))));
+    .map((h) => dungHang(h.khoa, c === 'PREFOU' ? t('Tổng hợp') : tenMonNgan(i.ct, h.khoa === 'writing' ? 'writing' : h.khoa),
+      c === 'PREFOU' ? t('Tổng hợp') : tenMon(i.ct, h.khoa === 'writing' ? 'writing' : h.khoa), h.kyNang, i.cases.filter((x) => thuocHang(x.topic, h))));
   const chung = i.cases.filter((x) => !khuon.some((h) => thuocHang(x.topic, h)));
-  if (chung.length) hang = [...hang, dungHang('chung', 'Chung', 'Case không gắn kỹ năng', [], chung)];
+  if (chung.length) hang = [...hang, dungHang('chung', t('Chung'), t('Case không gắn kỹ năng'), [], chung)];
   const out: (HangKyNang<T> | HangRong)[] = [];
   for (const h of hang) {
     const truoc = out[out.length - 1];
@@ -547,7 +591,7 @@ export function hangCanHoTro<T extends CaseCuaHang>(i: {
     else out.push(h);
   }
   const nhanCua = new Map(hang.map((h) => [h.khoa, h.nhan]));
-  return out.map((x) => (x.kind === 'rong' ? { ...x, nhan: `Không có Case: ${x.khoa.map((k) => nhanCua.get(k)).join(' · ')}` } : x));
+  return out.map((x) => (x.kind === 'rong' ? { ...x, nhan: t('Không có Case: {ds}', { ds: x.khoa.map((k) => nhanCua.get(k)).join(' · ') }) } : x));
 }
 
 /**
@@ -592,15 +636,15 @@ export function menuHoSoLop(i: {
 }): MucMenuLop[] {
   const m = (key: ViecMenuLop, nhan: string, nhom: MucMenuLop['nhom'], co: boolean): MucMenuLop[] => (co ? [{ key, nhan, nhom }] : []);
   return [
-    ...m('thong-tin', 'Thông tin lớp', 'Lớp', i.canEditProgress || i.canAssign || i.canAssignSubject),
-    ...m('sua-hoc-vien', 'Sửa thông tin học viên', 'Lớp', i.canAddStudents && i.soHocVien > 0),
-    ...m('hoc-vien', '+ Học viên', 'Lớp', i.canAddStudents),
-    ...m('lo-trinh-ca-lop', 'Lộ trình tiếp theo', 'Lộ trình', i.thuong && !i.lienTuc && (i.coTheChuyenTiep || i.canAddStudents)),
-    ...m('chuyen-tiep', 'Chuyển tiếp lớp', 'Lộ trình', !i.thuong && i.coTheChuyenNhieuEm),
-    ...m('xuat-mt', 'Xuất Excel', 'Công cụ', i.coTheXuatExcel),
-    ...m('mo-lai-lop', 'Mở lại lớp', null, i.coTheMoLaiLop),
-    ...m('xoa-lop', 'Xoá lớp', null, i.coTheXoa),
-    ...m('ket-thuc-lop', 'Kết thúc lớp', null, i.coTheKetThuc),
+    ...m('thong-tin', t('Thông tin lớp'), 'Lớp', i.canEditProgress || i.canAssign || i.canAssignSubject),
+    ...m('sua-hoc-vien', t('Sửa thông tin học viên'), 'Lớp', i.canAddStudents && i.soHocVien > 0),
+    ...m('hoc-vien', t('+ Học viên'), 'Lớp', i.canAddStudents),
+    ...m('lo-trinh-ca-lop', t('Lộ trình tiếp theo'), 'Lộ trình', i.thuong && !i.lienTuc && (i.coTheChuyenTiep || i.canAddStudents)),
+    ...m('chuyen-tiep', t('Chuyển tiếp lớp'), 'Lộ trình', !i.thuong && i.coTheChuyenNhieuEm),
+    ...m('xuat-mt', t('Xuất Excel'), 'Công cụ', i.coTheXuatExcel),
+    ...m('mo-lai-lop', t('Mở lại lớp'), null, i.coTheMoLaiLop),
+    ...m('xoa-lop', t('Xoá lớp'), null, i.coTheXoa),
+    ...m('ket-thuc-lop', t('Kết thúc lớp'), null, i.coTheKetThuc),
   ];
 }
 
@@ -626,7 +670,7 @@ export function duongHoSoGiaoVien(
 export const TAB_HO_SO_LOP = ['tong-ket', 'hoc-vien', 'y-thuc', 'phan-tich'] as const;
 export type TabHoSoLop = (typeof TAB_HO_SO_LOP)[number];
 export const TAB_HO_SO_LOP_NHAN: Record<TabHoSoLop, string> = {
-  'tong-ket': 'Tổng kết', 'hoc-vien': 'Học viên', 'y-thuc': 'Ý thức & Phối hợp', 'phan-tich': 'Phân tích lớp',
+  'tong-ket': t('Tổng kết'), 'hoc-vien': t('Học viên'), 'y-thuc': t('Ý thức & Phối hợp'), 'phan-tich': t('Phân tích lớp'),
 };
 /** Tab hiện của hồ sơ lớp: lớp đã kết thúc có thêm "Tổng kết". */
 export const tabHienCuaLop = (daKetThuc: boolean): readonly TabHoSoLop[] => TAB_HO_SO_LOP.filter((k) => k !== 'tong-ket' || daKetThuc);

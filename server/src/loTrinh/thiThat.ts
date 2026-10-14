@@ -95,12 +95,8 @@ export function datKetQuaThiThat(p: Principal, cycleId: number, input: NhapThiTh
 }
 
 // ------------------------------------------------------------------ việc nhắc "Cập nhật kết quả thi thật"
-/**
- * Một dòng việc cho mỗi lộ trình FT chưa có kết quả thi thật (chưa đủ 4 kỹ năng, không "Không thi") mà đã qua mốc nhắc (`mocNhacThiThat`).
- * Ai thấy: GVCN lớp cuối; lớp không có GVCN → Quản lý chi nhánh; Quản lý xem "Tất cả" thấy việc của GV. Quá hạn (mốc + 4 tuần) đỏ, KHÔNG chặn, không tự huỷ.
- * Hết việc khi lưu đủ 4 kỹ năng hoặc "Không thi". Một câu cho cả tập + một câu lớp + một câu GVCN (không N+1).
- */
-export function viecThiThat(p: Principal, f: { today: string; tatCa: boolean; branchId: number | null }): any[] {
+/** Lộ trình FT chưa có kết quả thi thật đã qua mốc nhắc — MỘT câu cho việc GVCN / QL (`viecThiThat`) và góc Cần làm của TVV (OV-12f). */
+export function loTrinhChoKetQuaThi(today: string): { c: any; m: NonNullable<ReturnType<typeof mocNhacThiThat>> }[] {
   const conn = db();
   const ds = conn.prepare(`SELECT c.id, c.student_id, s.full_name AS ten, c.ended_at, c.exam_month, c.exam_date, ep.week_start AS exam_week,
       COALESCE((SELECT class_id FROM ban_chup_lo_trinh b WHERE b.cycle_id = c.id AND b.class_id IS NOT NULL ORDER BY lan DESC LIMIT 1),
@@ -112,7 +108,18 @@ export function viecThiThat(p: Principal, f: { today: string; tatCa: boolean; br
      AND c.outcome_score IS NULL AND COALESCE(c.outcome, 'unknown') = 'unknown'
      /* Đóng vì CHUYỂN LỚP (đóng-mở): em không đi thi — không nhắc. */
      AND NOT EXISTS (SELECT 1 FROM ban_chup_lo_trinh b WHERE b.cycle_id = c.id AND b.ly_do = 'chuyen_lop' AND b.lan = (SELECT MAX(lan) FROM ban_chup_lo_trinh WHERE cycle_id = c.id))`).all() as any[];
-  const moc = ds.map((c) => ({ c, m: mocNhacThiThat({ thangThi: c.exam_month, tuanThi: c.exam_week, ngayThi: c.exam_date, ngayDong: c.ended_at }) })).filter((x) => x.m && x.m.tu <= f.today);
+  const moc = ds.map((c) => ({ c, m: mocNhacThiThat({ thangThi: c.exam_month, tuanThi: c.exam_week, ngayThi: c.exam_date, ngayDong: c.ended_at }) })).filter((x) => x.m && x.m.tu <= today);
+  return moc as any;
+}
+
+/**
+ * Một dòng việc cho mỗi lộ trình FT chưa có kết quả thi thật (chưa đủ 4 kỹ năng, không "Không thi") mà đã qua mốc nhắc (`mocNhacThiThat`).
+ * Ai thấy: GVCN lớp cuối; lớp không có GVCN → Quản lý chi nhánh; Quản lý xem "Tất cả" thấy việc của GV. Quá hạn (mốc + 4 tuần) đỏ, KHÔNG chặn, không tự huỷ.
+ * Hết việc khi lưu đủ 4 kỹ năng hoặc "Không thi". Một câu cho cả tập + một câu lớp + một câu GVCN (không N+1).
+ */
+export function viecThiThat(p: Principal, f: { today: string; tatCa: boolean; branchId: number | null }): any[] {
+  const conn = db();
+  const moc = loTrinhChoKetQuaThi(f.today);
   if (!moc.length) return [];
   const idLop = [...new Set(moc.map((x) => x.c.class_id as number | null).filter((x): x is number => !!x))];
   const lop = new Map<number, any>(); const gvcn = new Map<number, number[]>();

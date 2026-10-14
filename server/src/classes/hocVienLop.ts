@@ -41,7 +41,7 @@ export type TrangHocVienLop = {
   phamVi: { coThe: PhamVi[]; dangDung: PhamVi; chiNhanh: number | null };
   dem: Record<LocHocVien, number>;
   /** `khung`: Fast Track hay lớp thường của em — công tắc `Tất cả · Fast Track · Lớp thường` đếm chip bằng `demLoc(hocVien, khung)`. */
-  hocVien: { id: number; classId: number; loc: LocHocVien[]; khung: 'ft' | 'thuong' }[];
+  hocVien: { id: number; classId: number; loc: LocHocVien[]; khung: 'ft' | 'thuong'; ten: string; ma: string; thieu?: string[] }[];
   /** Người xem có tạo được lớp MỚI ở chi nhánh nào không — không gắn với lớp đã tồn tại nào (điểm a rà soát cuối). */
   coTheTaoLop: boolean;
   /** HL-14: "+ Học viên" đầu trang — có lớp trong phạm vi thêm được học viên, KHÔNG phụ thuộc ô tìm (tìm không ra em là lúc cần thêm). */
@@ -53,7 +53,7 @@ export type TrangHocVienLop = {
 const demRong = (): Record<LocHocVien, number> => demLoc([], 'tat-ca');
 
 /** Phạm vi đang dùng của trang (Lớp tôi dạy · Chi nhánh · Toàn hệ thống) + chi nhánh đang xem — dùng chung cho `/hoc-vien-lop` và `/hoc-vien-lop/ids`. */
-function phamViTrang(p: Principal, f: { branchId?: number | null; phamVi?: string | null; cnNho?: number | null }, today: string) {
+export function phamViTrang(p: Principal, f: { branchId?: number | null; phamVi?: string | null; cnNho?: number | null }, today: string) {
   const conn = db();
   const scope = scopeFor(p, PERMISSIONS.ATTEMPT_VIEW);
   const phanCong = p.assignments.filter((a) => a.effectiveFrom <= today && (!a.effectiveTo || a.effectiveTo >= today));
@@ -264,7 +264,9 @@ export function danhSachHocVienLop(
           : coMocTiepTheoThuong({ soLuotKeHoach: h.so_luot_ke_hoach, coCuoiKhoa: !!h.co_cuoi_khoa }),
     });
     if (thieu.length) loc.push('thieu_tt');
-    return { id: h.id as number, classId: h.class_id as number, loc, khung: ft ? 'ft' as const : 'thuong' as const };
+    /* OV-12f: tên + mã + ô thiếu — dòng "Thiếu thông tin" / "Chờ duyệt" của góc Cần làm (em không có việc ở Công việc vẫn có tên). */
+    return { id: h.id as number, classId: h.class_id as number, loc, khung: ft ? 'ft' as const : 'thuong' as const,
+      ten: h.full_name as string, ma: (h.student_code ?? '') as string, ...(thieu.length ? { thieu: thieu.map((m) => m.label) } : {}) };
   });
   /*
    * OV-11g (HL-19, Q11): em Kết thúc học chưa Lưu trữ — hiện mờ ở lớp CUỐI (cùng điều kiện `classRoster(…, kemKetThuc)`), chỉ trong "Tất cả":
@@ -276,7 +278,7 @@ export function danhSachHocVienLop(
       WHERE e.class_id IN (${ph}) AND e.status = 'completed' AND s.status = 'finished' AND s.archived_at IS NULL
         AND e.id = (SELECT MAX(x.id) FROM enrollments x WHERE x.student_id = s.id)${cuaToi ? ' AND s.consultant_user_id = ?' : ''}`,
   ).all(...ids, ...(cuaToi ? [p.userId] : [])) as any[]).filter(khop)) {
-    hocVien.push({ id: h.id as number, classId: h.class_id as number, loc: ['tat-ca'], khung: laFt.get(h.class_id) ? 'ft' : 'thuong' });
+    hocVien.push({ id: h.id as number, classId: h.class_id as number, loc: ['tat-ca'], khung: laFt.get(h.class_id) ? 'ft' : 'thuong', ten: h.full_name, ma: h.student_code ?? '' });
   }
 
   const coTheThemHocVien = themTheoPhamVi ?? rows.some((r) => r.viewer.coTheSuaHocVien);

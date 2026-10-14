@@ -13,7 +13,7 @@ export function DongXinYKien({ x, ngan, gon = false }: { x: XinYKien; ngan: (d: 
     return <p className={`m-0 ${gon ? 'mt-0.5 line-clamp-1 text-[12px]' : 'mt-1 text-xs'} text-wait tabular-nums`} title={gon ? chu : undefined}>{chu}</p>;
   }
   if (x?.trangThai === 'da_tra_loi') {
-    const chu = t('Quản lý{x} trả lời {ngan}: {traLoi}', { x: x.nguoiDuyet ? ` (${x.nguoiDuyet})` : '', ngan: ngan(x.xuLyLuc), traLoi: x.traLoi });
+    const chu = t('Quản lý{x} trả lời {ngan}: {traLoi}', { x: x.nguoiDuyet ? ` (${x.nguoiDuyet})` : '', ngan: ngan(x.xuLyLuc), traLoi: String(x.traLoi) });
     return gon
       ? <p className="m-0 mt-0.5 line-clamp-1 text-[12px] text-slate-300" title={chu}>{chu}</p>
       : <p className="m-0 mt-1 border-l pl-3 text-xs text-slate-300" style={{ borderColor: 'var(--line)' }}>{chu}</p>;

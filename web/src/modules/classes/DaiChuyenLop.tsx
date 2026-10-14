@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { Han } from '../../ui/Han.tsx';
 import { CHU_CHUYEN_LOP, ngay, tuanLich, type DaiHocVien, type DaiLop } from '@shared/domain/index.ts';
+import { dich, t } from '@shared/i18n/index.ts';
 
 /**
  * CÁC DẢI CHUYỂN LỚP / BÀN GIAO (PR-CT, mockup 20 — A · E · H). Mỗi dải MỘT dòng chữ + tối đa MỘT nút chính; chữ tuần là mã tuần (`W2 OCT`), ngày chỉ ở hạn cụ thể
@@ -34,37 +35,37 @@ export function DaiLopChuyen({ dai, homNay, onChuyenTiep, onBanGiao, anLoTrinh =
   return (
     <div className="space-y-2">
       {dai.chuaChuyenDuoc && (
-        <Dai nhan="Chưa chuyển được" do
-          nut={<button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={onChuyenTiep}>{CHU_CHUYEN_LOP.sua}</button>}>
-          <b className="tabular-nums text-slate-100">{dai.chuaChuyenDuoc.n} em</b> · {dai.chuaChuyenDuoc.loi.replace(/\.$/, '')} · chọn tuần hoặc lớp chuyển đến mới, hoặc huỷ quyết định
+        <Dai nhan={t('Chưa chuyển được')} do
+          nut={<button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={onChuyenTiep}>{dich(CHU_CHUYEN_LOP.sua)}</button>}>
+          <b className="tabular-nums text-slate-100">{t('{n} em', { n: dai.chuaChuyenDuoc.n })}</b> · {dich(dai.chuaChuyenDuoc.loi.replace(/\.$/, ''))} · {t('chọn tuần hoặc lớp chuyển đến mới, hoặc huỷ quyết định')}
         </Dai>
       )}
       {lt && !anLoTrinh && (
         /* HL-5 · CA2-6: hạn chốt bằng `<Han>` (quá hạn có ⚠ + chữ, không chỉ màu) như dải Bàn giao. */
-        <Dai nhan="Lộ trình tiếp theo" do={lt.do}
-          nut={<button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" onClick={onChuyenTiep}>{v.coTheRaLenh ? 'Chốt lộ trình' : 'Xem'}</button>}>
-          <b className="tabular-nums text-slate-100">{lt.daChot}/{lt.tong} em</b> đã chốt{lt.hanChot && <> · <Han loai="viec-van-hanh" han={lt.hanChot} /></>}
+        <Dai nhan={t('Lộ trình tiếp theo')} do={lt.do}
+          nut={<button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" onClick={onChuyenTiep}>{v.coTheRaLenh ? t('Chốt lộ trình') : t('Xem')}</button>}>
+          <b className="tabular-nums text-slate-100">{t('{a}/{b} em', { a: lt.daChot, b: lt.tong })}</b> {t('đã chốt')}{lt.hanChot && <> · <Han loai="viec-van-hanh" han={lt.hanChot} /></>}
         </Dai>
       )}
       {dai.banGiao && (v.laGvcn || v.xacNhanDuoc) && (
-        <Dai nhan="Bàn giao" nut={<button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => onBanGiao({})}>Mở phiếu</button>}>
-          <b className="tabular-nums text-slate-100">{dai.banGiao.daXacNhan}/{dai.banGiao.tong} em</b> đã xác nhận{dai.banGiao.hanGvcn && <> · <Han loai="viec-van-hanh" han={dai.banGiao.hanGvcn} /></>}
+        <Dai nhan={t('Bàn giao')} nut={<button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => onBanGiao({})}>{t('Mở phiếu')}</button>}>
+          <b className="tabular-nums text-slate-100">{t('{a}/{b} em', { a: dai.banGiao.daXacNhan, b: dai.banGiao.tong })}</b> {t('đã xác nhận')}{dai.banGiao.hanGvcn && <> · <Han loai="viec-van-hanh" han={dai.banGiao.hanGvcn} /></>}
         </Dai>
       )}
       {dai.banGiao && !v.laGvcn && !v.xacNhanDuoc && v.coTheRaLenh && (
-        <Dai nhan="Bàn giao" nut={<button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => onBanGiao({})}>Xem</button>}>
-          GVCN đang bàn giao · <b className="tabular-nums text-slate-100">{dai.banGiao.daXacNhan}/{dai.banGiao.tong} em</b> đã xác nhận{dai.banGiao.hanGvcn && <> · <Han loai="viec-van-hanh" han={dai.banGiao.hanGvcn} /></>}
+        <Dai nhan={t('Bàn giao')} nut={<button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => onBanGiao({})}>{t('Xem')}</button>}>
+          {t('GVCN đang bàn giao')} · <b className="tabular-nums text-slate-100">{t('{a}/{b} em', { a: dai.banGiao.daXacNhan, b: dai.banGiao.tong })}</b> {t('đã xác nhận')}{dai.banGiao.hanGvcn && <> · <Han loai="viec-van-hanh" han={dai.banGiao.hanGvcn} /></>}
         </Dai>
       )}
       {dai.banGiaoMon.map((m) => (
-        <Dai key={m.mon} nhan={`Bàn giao môn ${m.monNgan}`} nut={<button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => onBanGiao({ mon: m.mon })}>Ghi bàn giao</button>}>
-          <b className="tabular-nums text-slate-100">{m.daGhi}/{m.tong} em</b>{m.han && <> · <Han loai="viec-van-hanh" han={m.han} /></>}
+        <Dai key={m.mon} nhan={t('Bàn giao môn {mon}', { mon: m.monNgan })} nut={<button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => onBanGiao({ mon: m.mon })}>{t('Ghi bàn giao')}</button>}>
+          <b className="tabular-nums text-slate-100">{t('{a}/{b} em', { a: m.daGhi, b: m.tong })}</b>{m.han && <> · <Han loai="viec-van-hanh" han={m.han} /></>}
         </Dai>
       ))}
       {dai.sapNhan && (
-        <Dai nhan="Sắp nhận"
-          nut={dai.sapNhan.daXacNhan > 0 ? <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => onBanGiao({ lop: dai.sapNhan!.tuLop[0].id })}>Xem</button> : undefined}>
-          <b className="tabular-nums text-slate-100">{dai.sapNhan.n} em</b> từ {dai.sapNhan.tuLop.map((l) => l.code).join(', ')} vào lớp từ {tuanLich(dai.sapNhan.tuan, h)} · bàn giao {dai.sapNhan.daXacNhan}/{dai.sapNhan.n} đã xác nhận
+        <Dai nhan={t('Sắp nhận')}
+          nut={dai.sapNhan.daXacNhan > 0 ? <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => onBanGiao({ lop: dai.sapNhan!.tuLop[0].id })}>{t('Xem')}</button> : undefined}>
+          <b className="tabular-nums text-slate-100">{t('{n} em', { n: dai.sapNhan.n })}</b> {t('từ {lop} vào lớp từ {tuan} · bàn giao {a}/{b} đã xác nhận', { lop: dai.sapNhan.tuLop.map((l) => l.code).join(', '), tuan: tuanLich(dai.sapNhan.tuan, h), a: dai.sapNhan.daXacNhan, b: dai.sapNhan.n })}
         </Dai>
       )}
     </div>
@@ -82,36 +83,36 @@ export function DaiHocVienChuyen({ dai, homNay, onLam }: {
     <button key={k} type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => onLam(k)}>{nhan}</button>
   );
   const nut = [
-    dai.nut.includes('ban-giao') ? nutBtn('ban-giao', 'Bàn giao') : null,
-    dai.nut.includes('ban-giao-mon') && dai.mon ? nutBtn('ban-giao-mon', `Bàn giao môn ${dai.mon.ngan}`) : null,
-    dai.nut.includes('huy-lenh') ? nutBtn('huy-lenh', CHU_CHUYEN_LOP.huy) : null,
-    dai.nut.includes('doc-ban-giao') ? nutBtn('doc-ban-giao', 'Đọc bàn giao') : null,
+    dai.nut.includes('ban-giao') ? nutBtn('ban-giao', t('Bàn giao')) : null,
+    dai.nut.includes('ban-giao-mon') && dai.mon ? nutBtn('ban-giao-mon', t('Bàn giao môn {mon}', { mon: dai.mon.ngan })) : null,
+    dai.nut.includes('huy-lenh') ? nutBtn('huy-lenh', dich(CHU_CHUYEN_LOP.huy)) : null,
+    dai.nut.includes('doc-ban-giao') ? nutBtn('doc-ban-giao', t('Đọc bàn giao')) : null,
   ].filter(Boolean);
   if (dai.loai === 'cho-duyet') {
     return (
-      <Dai nhan={CHU_CHUYEN_LOP.choDuyetDeXuat}>
-        {dai.lopDich ? `Sang ${dai.lopDich.code}` : 'Chưa chọn lớp chuyển đến'}{dai.tuan && ` · từ ${tuanLich(dai.tuan, h)}`} · đề xuất của {dai.nguoiRaLenh ?? 'GVCN'}
+      <Dai nhan={dich(CHU_CHUYEN_LOP.choDuyetDeXuat)}>
+        {dai.lopDich ? t('Sang {lop}', { lop: dai.lopDich.code }) : t('Chưa chọn lớp chuyển đến')}{dai.tuan && ` · ${t('từ {tuan}', { tuan: tuanLich(dai.tuan, h) })}`} · {t('đề xuất của {ai}', { ai: dai.nguoiRaLenh ?? t('GVCN') })}
       </Dai>
     );
   }
-  const dich = dai.lopDich ? `Sang ${dai.lopDich.code}` : dai.huong === 'bao_luu' ? 'Tạm dừng học (bảo lưu)' : 'Rời lớp';
+  const lopDen = dai.lopDich ? t('Sang {lop}', { lop: dai.lopDich.code }) : dai.huong === 'bao_luu' ? t('Tạm dừng học (bảo lưu)') : t('Rời lớp');
   return (
     <div className="space-y-1">
-      <Dai nhan={dai.loai === 'sap' ? CHU_CHUYEN_LOP.sapChuyen(tuanLich(dai.tuan, h)) : 'Đã chuyển'} nut={nut.length ? <>{nut}</> : undefined}>
+      <Dai nhan={dai.loai === 'sap' ? dich(CHU_CHUYEN_LOP.sapChuyen(tuanLich(dai.tuan, h))) : t('Đã chuyển')} nut={nut.length ? <>{nut}</> : undefined}>
         {dai.loai === 'sap' ? (
           <>
-            {dich} · quyết định của {dai.nguoiRaLenh ?? 'Quản lý'}
-            {bg && <> · Bàn giao: {bg.daXacNhan ? 'GVCN đã xác nhận' : `đã có ${bg.daGhi}/${bg.soMon} môn`}{!bg.daXacNhan && bg.hanGvcn && <> · <Han loai="viec-van-hanh" han={bg.hanGvcn} /></>}</>}
+            {lopDen} · {t('quyết định của {ai}', { ai: dai.nguoiRaLenh ?? t('Quản lý') })}
+            {bg && <> · {t('Bàn giao:')} {bg.daXacNhan ? t('GVCN đã xác nhận') : t('đã có {a}/{b} môn', { a: bg.daGhi, b: bg.soMon })}{!bg.daXacNhan && bg.hanGvcn && <> · <Han loai="viec-van-hanh" han={bg.hanGvcn} /></>}</>}
           </>
         ) : (
           <>
-            Từ {dai.lopNguon.code} tuần {tuanLich(dai.tuan, h)}
-            {bg?.daXacNhan && <> · bàn giao của {bg.nguoiXacNhan ?? 'GVCN'}, xác nhận {ngay(bg.ngayXacNhan, h)}</>}
-            {bg && !bg.daXacNhan && <> · GVCN chưa xác nhận bàn giao</>}
+            {t('Từ {lop} tuần {tuan}', { lop: dai.lopNguon.code, tuan: tuanLich(dai.tuan, h) })}
+            {bg?.daXacNhan && <> · {t('bàn giao của {ai}, xác nhận {ngay}', { ai: bg.nguoiXacNhan ?? t('GVCN'), ngay: ngay(bg.ngayXacNhan, h) })}</>}
+            {bg && !bg.daXacNhan && <> · {t('GVCN chưa xác nhận bàn giao')}</>}
           </>
         )}
       </Dai>
-      {dai.loi && <p role="alert" className="m-0 text-[12px] text-late">Chưa chuyển được: {dai.loi.replace(/\.$/, '')} — sửa quyết định sang tuần mới hoặc huỷ quyết định.</p>}
+      {dai.loi && <p role="alert" className="m-0 text-[12px] text-late">{t('Chưa chuyển được: {loi} — sửa quyết định sang tuần mới hoặc huỷ quyết định.', { loi: dich(dai.loi.replace(/\.$/, '')) })}</p>}
     </div>
   );
 }
@@ -119,6 +120,6 @@ export function DaiHocVienChuyen({ dai, homNay, onLam }: {
 /** Nhãn nhỏ cạnh tên em trong tuần đầu ở lớp mới (mockup 20 — H). Viền mảnh, chữ xám: thông tin, không phải cảnh báo. */
 export function MoiVao() {
   return (
-    <span className="ml-1.5 inline-flex items-center whitespace-nowrap rounded border border-muted-line px-[5px] align-middle text-[11.5px] font-normal leading-4 text-muted">mới vào</span>
+    <span className="ml-1.5 inline-flex items-center whitespace-nowrap rounded border border-muted-line px-[5px] align-middle text-[11.5px] font-normal leading-4 text-muted">{t('mới vào')}</span>
   );
 }

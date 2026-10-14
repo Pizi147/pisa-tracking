@@ -5,6 +5,7 @@ import { demoToday } from '../demoConfig.ts';
 import { diffDays } from '../util.ts';
 import type { EmYThuc } from '../yThuc/trangThai.ts';
 import { viecBuocTiep } from '../loTrinh/buocTiep.ts';
+import { kem, type Bien } from '../../../shared/i18n/index.ts';
 
 export type ViecHocVien = {
   /** Đúng khoá của `myWork` (Q2) — phép kiểm so hai đường theo khoá. Việc "chờ Quản lý duyệt" không có ở Công việc → khoá `cho-duyet:…`. */
@@ -13,6 +14,8 @@ export type ViecHocVien = {
     | 'ban-giao' | 'ban-giao-mon' | 'buoc-tiep';
   /** "Kết quả W3–W4 SEP · PA Tăng cường bài tập Writing Task 2" — động từ đầu câu. */
   chu: string;
+  /** PR-EN-c: khoá + biến của `chu` (câu có biến) — web dịch bằng `dichChu`. Câu không biến dịch theo chính `chu`. */
+  khoa?: string; bien?: Bien;
   kyNang: string | null; caseId: number | null; paId: number | null;
   han: string | null; quaHanNgay: number | null; tone: 'danger' | 'warn' | 'info' | 'wait';
   /** "Đỗ Thanh Tùng · GVBM Speaking" · "Quản lý" (vai, không tên). */
@@ -71,32 +74,32 @@ export function viecCuaHocVien(p: Principal, sid: number, board: { rows: any[] }
     /* OV-12c: Progress "Xác nhận Case" (một bước); Case MT cũ ô chưa nhận xét → "Ghi nhận xét" (nguyên nhân Case MT = nhận xét). */
     if (v?.chu === 'Xác nhận Case' || v?.chu === 'Ghi nhận xét') {
       const xn = v.chu === 'Xác nhận Case';
-      ds.push({ key: `${xn ? 'cause' : 'ghi_nhan_xet'}:${c.id}`, loai: 'nguyen-nhan', chu: `${v.chu} ${kn}`, kyNang: r.category, caseId: c.id, paId: null,
+      ds.push({ key: `${xn ? 'cause' : 'ghi_nhan_xet'}:${c.id}`, loai: 'nguyen-nhan', ...(xn ? kem('Xác nhận Case {kn}', { kn }) : kem('Ghi nhận xét {kn}', { kn })), kyNang: r.category, caseId: c.id, paId: null,
         han: v.han, tone: 'info', nguoiId: c.ownerId ?? null, nut: v.chu, mo: { loai: 'case', caseId: c.id, viec: 'xac-nhan' } });   // Ngăn Case mở đúng khối theo trạng thái
     }
     /* PR-S6F-b (Q5): Case chưa có PA → "Thêm PA" của người phụ trách Case; khoá `support:{caseId}` như Công việc (nhóm no_plan), hạn = hạn lập PA. */
     if (v?.chu === CHU_THEM_PA) {
-      ds.push({ key: `support:${c.id}`, loai: 'de-ra-pa', chu: `${CHU_THEM_PA} ${kn}`, kyNang: r.category, caseId: c.id, paId: null,
+      ds.push({ key: `support:${c.id}`, loai: 'de-ra-pa', ...kem('Thêm PA {kn}', { kn }), kyNang: r.category, caseId: c.id, paId: null,
         han: v.han, tone: 'info', nguoiId: c.ownerId ?? null, nut: CHU_THEM_PA, mo: { loai: 'case', caseId: c.id, viec: 'them-pa' } });
     }
     if (v?.chu === 'Chờ Quản lý duyệt · không theo dõi') {
-      ds.push({ key: `cho-duyet:case:${c.id}`, loai: 'cho-duyet', chu: `Case ${kn} chờ Quản lý duyệt · không theo dõi`, kyNang: r.category, caseId: c.id, paId: null,
+      ds.push({ key: `cho-duyet:case:${c.id}`, loai: 'cho-duyet', ...kem('Case {kn} chờ Quản lý duyệt · không theo dõi', { kn }), kyNang: r.category, caseId: c.id, paId: null,
         han: null, tone: 'wait', nguoiId: null, vaiChu: 'Quản lý', nut: 'Mở Case', mo: { loai: 'case', caseId: c.id } });
     }
     for (const pl of c.plans) {
       if (pl.choXacNhan && c.sos?.hasCause) {
-        ds.push({ key: `xnpa:${pl.id}`, loai: 'xac-nhan-pa', chu: `Xác nhận PA ${pl.name} · ${kn}`, kyNang: r.category, caseId: c.id, paId: pl.id,
+        ds.push({ key: `xnpa:${pl.id}`, loai: 'xac-nhan-pa', ...kem('Xác nhận PA {pa} · {kn}', { pa: pl.name, kn }), kyNang: r.category, caseId: c.id, paId: pl.id,
           han: c.sos?.dueOn ?? null, tone: 'info', nguoiId: c.ownerId ?? null, nut: 'Xác nhận PA', mo: { loai: 'case', caseId: c.id, paId: pl.id, viec: 'xac-nhan-pa' } });
       }
       if (chayDuoc(pl) && !(pl.kind === 'bo_tro' && pl.nhom && minGhi.get(pl.nhom) !== pl.id)) {
         const cuoi = !!pl.lanCuoi;
         ds.push({ key: `action:${pl.id}`, loai: 'ghi-ket-qua',
-          chu: cuoi ? `Kết quả cuối · PA ${pl.name}` : `Kết quả ${kyGhiKetQua(pl.actionDue, today)} · PA ${pl.name}`,
+          ...(cuoi ? kem('Kết quả cuối · PA {pa}', { pa: pl.name }) : kem('Kết quả {ky} · PA {pa}', { ky: kyGhiKetQua(pl.actionDue, today), pa: pl.name })),
           kyNang: r.category, caseId: c.id, paId: pl.id, han: pl.actionDue, tone: 'info', nguoiId: pl.nguoiId ?? null,
           nut: cuoi ? 'Kết quả cuối' : 'Kết quả', mo: { loai: 'case', caseId: c.id, paId: pl.id, viec: 'ghi-ket-qua' } });
       }
       if (pl.pendingApproval) {
-        ds.push({ key: `cho-duyet:pa:${pl.id}`, loai: 'cho-duyet', chu: `PA ${pl.name} chờ Quản lý duyệt`, kyNang: r.category, caseId: c.id, paId: pl.id,
+        ds.push({ key: `cho-duyet:pa:${pl.id}`, loai: 'cho-duyet', ...kem('PA {pa} chờ Quản lý duyệt', { pa: pl.name }), kyNang: r.category, caseId: c.id, paId: pl.id,
           han: pl.approvalDue ?? null, tone: 'wait', nguoiId: null, vaiChu: 'Quản lý', nut: 'Mở Case', mo: { loai: 'case', caseId: c.id, paId: pl.id } });
       }
     }
@@ -109,7 +112,7 @@ export function viecCuaHocVien(p: Principal, sid: number, board: { rows: any[] }
   ).all(sid) as any[];
   for (const x of baoPh) {
     const cuoi = x.kind === 'final';
-    ds.push({ key: `baoph:${x.id}`, loai: 'bao-ph', chu: `Báo phụ huynh qua TVV · kết quả ${nhanBaiThuong(cuoi ? 'final' : 'progress')}`, kyNang: null, caseId: null, paId: null,
+    ds.push({ key: `baoph:${x.id}`, loai: 'bao-ph', ...kem('Báo phụ huynh qua TVV · kết quả {bai}', { bai: nhanBaiThuong(cuoi ? 'final' : 'progress') }), kyNang: null, caseId: null, paId: null,
       han: null, tone: 'info', nguoiId: cuoi ? null : -1, vaiChu: cuoi ? 'Quản lý' : undefined,
       cuaBanTheoVai: cuoi ? can(p, PERMISSIONS.REQUEST_APPROVE, { classId: n.lopId, studentId: sid }) : undefined,
       nut: 'Đánh dấu đã làm', mo: { loai: 'tab', tab: 'y-thuc', sub: 'phoi-hop' } });
@@ -126,18 +129,18 @@ export function viecCuaHocVien(p: Principal, sid: number, board: { rows: any[] }
   const em = n.yThuc;
   if (em && !em.tamDung && em.gvcnId && em.soBatBuoc > 0 && !em.coChoDuyet) {
     const ke = nhanLoaiXuLy(em.keTiep.kind);
-    ds.push({ key: `yt_xu_ly:${sid}`, loai: 'y-thuc', chu: `Xác nhận xử lý Ý thức · ${ke}`, kyNang: null, caseId: null, paId: null,
+    ds.push({ key: `yt_xu_ly:${sid}`, loai: 'y-thuc', ...kem('Xác nhận xử lý Ý thức · {ke}', { ke }), kyNang: null, caseId: null, paId: null,
       han: em.han, tone: 'warn', nguoiId: em.gvcnId, nut: 'Xác nhận xử lý', mo: { loai: 'tab', tab: 'y-thuc' } });
   }
   /* PR-S6F-b (Q5): hai việc Ý thức còn lại của GVCN — cùng khoá, chữ, hạn với `mywork.ts` 5b (`yt_xem`, `yt_thuc_hien`). */
   if (em && !em.tamDung && em.gvcnId) {
     if (em.soMoi > 0) {
-      ds.push({ key: `yt_xem:${sid}`, loai: 'yt-xem', chu: `Ghi nhận ${em.soMoi} vi phạm mới`, kyNang: null, caseId: null, paId: null,
+      ds.push({ key: `yt_xem:${sid}`, loai: 'yt-xem', ...kem('Ghi nhận {n} vi phạm mới', { n: em.soMoi }), kyNang: null, caseId: null, paId: null,
         han: em.hanXem, tone: 'warn', nguoiId: em.gvcnId, nut: 'Ghi nhận', mo: { loai: 'tab', tab: 'y-thuc' } });
     }
     for (const x of em.daDuyet) {
       const nhan = nhanLoaiXuLy(x.kind, x.customName);
-      ds.push({ key: `yt_thuc_hien:${x.id}`, loai: 'yt-thuc-hien', chu: `Ghi "Đã thực hiện" ${nhan}`, kyNang: null, caseId: null, paId: null,
+      ds.push({ key: `yt_thuc_hien:${x.id}`, loai: 'yt-thuc-hien', ...kem('Ghi "Đã thực hiện" {nhan}', { nhan }), kyNang: null, caseId: null, paId: null,
         han: x.han, tone: 'warn', nguoiId: em.gvcnId, nut: 'Đã thực hiện',
         mo: { loai: 'duong', href: `/hoc-vien/${sid}?tab=y-thuc&mo=da-thuc-hien&xl=${x.id}` } });
     }
@@ -145,12 +148,12 @@ export function viecCuaHocVien(p: Principal, sid: number, board: { rows: any[] }
   /* Bàn giao khi chuyển lớp — nút theo vai của NGƯỜI XEM (`daiHocVien`), hạn GVCN / GVBM của lệnh. */
   const dai = n.dai;
   if (dai?.nut.includes('ban-giao')) {
-    ds.push({ key: `ban_giao:${dai.lopNguon.id}`, loai: 'ban-giao', chu: `Bàn giao sang ${dai.lopDich?.code ?? 'lớp mới'}`, kyNang: null, caseId: null, paId: null,
+    ds.push({ key: `ban_giao:${dai.lopNguon.id}`, loai: 'ban-giao', ...(dai.lopDich?.code ? kem('Bàn giao sang {lop}', { lop: dai.lopDich.code }) : { chu: 'Bàn giao sang lớp mới' }), kyNang: null, caseId: null, paId: null,
       han: dai.banGiao?.hanGvcn ?? null, tone: 'info', nguoiId: p.userId, nut: 'Bàn giao',
       mo: { loai: 'duong', href: `/hoc-vien/lop/${dai.lopNguon.id}?viec=ban-giao&lenh=${dai.lenhId}` } });
   }
   if (dai?.nut.includes('ban-giao-mon') && dai.mon) {
-    ds.push({ key: `ban_giao_mon:${dai.lopNguon.id}:${dai.mon.ma}`, loai: 'ban-giao-mon', chu: `Bàn giao môn ${dai.mon.ngan}`, kyNang: null, caseId: null, paId: null,
+    ds.push({ key: `ban_giao_mon:${dai.lopNguon.id}:${dai.mon.ma}`, loai: 'ban-giao-mon', ...kem('Bàn giao môn {mon}', { mon: dai.mon.ngan }), kyNang: null, caseId: null, paId: null,
       /* OV-11d (HV-13): hạn ĐÃ LƯU trên lệnh (`hanBanGiaoLenh` lúc ra lệnh) — cùng số với dải Sắp chuyển và Công việc; lệnh cũ không có thì luật cũ. */
       han: (conn.prepare('SELECT han_gvbm FROM lenh_chuyen_lop WHERE id = ?').get(dai.lenhId) as any)?.han_gvbm ?? hanBanGiao(dai.ngayRaLenh).gvbm,
       tone: 'info', nguoiId: p.userId, nut: `Bàn giao môn ${dai.mon.ngan}`,

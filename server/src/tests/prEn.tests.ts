@@ -20,6 +20,7 @@ export async function runPrEnTests(t: any) {
   const { migratePrEn } = await import('../migrate/prEn.ts');
   const { createApp } = await import('../app.ts');
   const util: any = await import('../util.ts');
+  const { studentProfile } = await import('../students/profile.ts');
   console.log('\nPR-EN · từ điển hai tiếng · nhớ ngôn ngữ theo tài khoản · mã lỗi · quét nguồn');
 
   const bienCua = (s: string) => [...new Set([...s.matchAll(/\{(\w+)\}/g)].map((m) => m[1]))].sort().join();
@@ -139,7 +140,7 @@ export async function runPrEnTests(t: any) {
   });
 
   /* ---------------------------------------------------------------- E-NGUON */
-  await checkAsync('EN-NGUON · file đã dịch (đợt a) không còn chữ Việt hiện ra ngoài từ điển', async () => {
+  await checkAsync('EN-NGUON · file đã dịch (đợt a, c) không còn chữ Việt hiện ra ngoài từ điển', async () => {
     const goc = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
     const { quetFile } = await import(pathToFileURL(path.join(goc, 'scripts/quet-chu.mjs')).href);
     const ra: any[] = [];
@@ -177,6 +178,78 @@ export async function runPrEnTests(t: any) {
     }
     assert(thieu.length === 0, `${thieu.length} câu: ` + thieu.slice(0, 8).join(' · '));
   });
+
+  /* ---------------------------------------------------------------- E-HOSO (đợt c) */
+  /*
+   * Chữ máy chủ dựng cho đầu hồ sơ học viên (`dauHoSo`: việc của em theo người, câu tóm tắt, bốn ô) — chữ có biến mang `khoa` (+ `bien`, lồng được);
+   * mọi khoá có bản Anh; dịch sang EN (theo khoá, hoặc theo mẫu khi máy chủ không gửi khoá) không còn chữ Việt ngoài DỮ LIỆU (tên người, tên PA, mã).
+   * `standingLine` không hiện trên web (chỉ có trong kiểu `RosterRow`) nên không cần khoá.
+   */
+  check('EN-HOSO · chữ đầu hồ sơ HV máy chủ gửi có khoá / dịch được sang EN (vai GVCN, các em đang học)', () => {
+    const VIET = /[àáảãạăằắẳẵặâầấẩẫậèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵđ]/i;
+    const thieu = new Set<string>();
+    const sot = new Set<string>();
+    let soKhoa = 0;
+    let soEm = 0;
+    /* Biến là chữ dữ liệu (tên PA, tên người) được thay bằng "X" trước khi soi dấu Việt — chỉ chữ GIAO DIỆN phải sang tiếng Anh. */
+    const xet = (x: { chu: string; khoa?: string; bien?: Record<string, unknown> } | null | undefined, noi: string): void => {
+      if (!x?.chu) return;
+      if (x.khoa) {
+        soKhoa++;
+        if (!(x.khoa in EN) && /\p{L}{2}/u.test(x.khoa.replace(/\{\w+\}/g, ''))) thieu.add(`${noi}: ${x.khoa}`);
+        const b = Object.fromEntries(Object.entries(x.bien ?? {}).map(([k, v]) => {
+          if (v && typeof v === 'object') { xet(v as any, noi); return [k, v]; }
+          return [k, typeof v === 'string' && VIET.test(v) && !(v in EN) ? 'X' : v];
+        }));
+        const ra = i18n.dichSang('en', x.khoa, b);
+        if (VIET.test(ra)) sot.add(`${noi}: ${ra}`);
+      } else if (VIET.test(i18n.dichMau('en', x.chu))) sot.add(`${noi}: ${x.chu}`);
+    };
+    const chu = (s: string | null | undefined, noi: string) => xet(s ? { chu: s } : null, noi);
+    const ids = (conn.prepare("SELECT DISTINCT student_id AS id FROM enrollments WHERE status = 'active' ORDER BY student_id LIMIT 80").all() as any[]).map((r) => r.id as number);
+    for (const sid of ids) {
+      let hs: any;
+      try { hs = studentProfile(P.coreTeacher, sid); } catch { continue; }   // ngoài phạm vi GVCN
+      soEm++;
+      const d = hs.dauHoSo;
+      for (const m of d.tomTat ?? []) xet(m, `tomTat#${sid}`);
+      for (const v of [...(d.viec?.cuaBan ?? []), ...(d.viec?.nguoiKhac ?? [])]) {
+        xet(v, `viec#${sid}`);
+        chu(v.nut, `nut#${sid}`);
+        chu(v.nguoi.vai, `vai#${sid}`);
+        if (!v.nguoi.id) chu(v.nguoi.ten, `nguoi#${sid}`);
+      }
+      const o = d.o;
+      if (o) {
+        for (const r of o.hocThuat.dong) { xet(r.nhanK ?? { chu: r.nhan }, `hocThuat#${sid}`); chu(r.viec, `hocThuat#${sid}`); }
+        chu(o.hocThuat.phu, `hocThuat#${sid}`);
+        chu(o.yThuc.tren, `yThuc#${sid}`);
+        xet(o.yThuc.phuK ?? (o.yThuc.phu ? { chu: o.yThuc.phu } : null), `yThuc#${sid}`);
+        chu(o.sapToi.tren, `sapToi#${sid}`);
+        xet(o.sapToi.gtK ?? { chu: o.sapToi.gt }, `sapToi#${sid}`);
+        xet(o.sapToi.phuK ?? (o.sapToi.phu ? { chu: o.sapToi.phu } : null), `sapToi#${sid}`);
+      }
+      chu(d.thongTin?.thiDuKien?.nhan, `thongTin#${sid}`);
+    }
+    assert(soEm > 0 && soKhoa > 0, `không có em / không có chữ mang khoá (em ${soEm}, khoá ${soKhoa})`);
+    assert(thieu.size === 0, `khoá chưa có bản Anh: ${[...thieu].slice(0, 6).join(' · ')}`);
+    assert(sot.size === 0, `${sot.size} chữ còn tiếng Việt ở EN: ${[...sot].slice(0, 6).join(' · ')}`);
+  });
+
+  check('EN-HOSO · kem / ghepChu: câu Việt giữ nguyên chữ, khoá lồng dịch đủ; chữ máy chủ không khoá dịch theo mẫu, tên người giữ nguyên', () => {
+    const k = i18n.kem('Xác nhận PA {pa} · {kn}', { pa: 'Ôn bài', kn: 'Writing' });
+    assert(k.chu === 'Xác nhận PA Ôn bài · Writing', `câu Việt: ${k.chu}`);
+    assert(i18n.dichSang('en', k.khoa!, k.bien) === 'Confirm PA Ôn bài · Writing', String(i18n.dichSang('en', k.khoa!, k.bien)));
+    const ds = i18n.kem('{dau} và {cuoi}', { dau: 'Writing', cuoi: 'Speaking' });
+    const ht = i18n.kem('đang hỗ trợ {ds}', { ds });
+    const ghep = i18n.ghepChu('{dau}: {hoTro}', { dau: i18n.kem('{dau} SOS {sos} tạm thời', { dau: 'MT1', sos: 2 }), hoTro: ht });
+    assert(ghep.chu === 'MT1 SOS 2 tạm thời: đang hỗ trợ Writing và Speaking', ghep.chu);
+    assert(i18n.dichSang('en', ghep.khoa!, ghep.bien) === 'MT1 SOS 2 provisional: supporting Writing and Speaking', String(i18n.dichSang('en', ghep.khoa!, ghep.bien)));
+    const m = i18n.dichMau('en', 'Xử lý vi phạm · hạn 16/09 · quá hạn 3 ngày');
+    assert(m === 'Handle incident · due 16/09 · 3 days overdue', m);
+    assert(i18n.dichMau('en', 'Nguyễn Văn A') === 'Nguyễn Văn A', 'tên người không dịch');
+    assert(i18n.dichMau('vi', 'quá hạn 3 ngày') === 'quá hạn 3 ngày', 'VI giữ nguyên');
+  });
 }
 
 /**
@@ -191,12 +264,23 @@ const FILE_DA_DICH = [
   'web/src/modules/platform/ProfilePage.tsx',
   ...['web/src/ui', 'web/src/lib'].flatMap((d) => fs.readdirSync(path.join(GOC_REPO, d)).filter((f) => /\.tsx?$/.test(f) && f !== 'chu.ts').map((f) => `${d}/${f}`)),
   ...['oNgay', 'chonNgay', 'loiForm', 'hienThiNgay', 'trangThai', 'dieuHuong', 'khac', 'quayLai'].map((f) => `shared/domain/${f}.ts`),
+  /* Đợt c — Học viên & Lớp, hồ sơ lớp, hồ sơ HV (xem). Shared chạy ở máy chủ (`hoSoHocVien`, `hanhTrinh`, `cuoiKhoa`…) cố ý dựng câu Việt + khoá — kiểm ở E-HOSO. */
+  ...['StudentsPage', 'StudentDetailPage', 'DauHoSo', 'HanhTrinh', 'ChuongLop', 'CacLoTrinh', 'NganCase', 'NganTongKet', 'KetLuanKhoa', 'KetQuaThiThatPanel',
+    'ClassRoster', 'BangHocVienLop', 'MissingBadge'].map((f) => `web/src/modules/students/${f}.tsx`),
+  ...['ClassOverviewPage', 'DauTrangLop', 'TabHocVienLop', 'BangDiemLopThuong', 'BangCanHoTro', 'ClassIssueBoard', 'CanhBaoYThuc', 'PhanTichLopTab',
+    'TabTongKetLop', 'DaiChuyenLop', 'BangGopYTuan', 'BangKqdrLopFt', 'thaoTacDongHocVien'].map((f) => `web/src/modules/classes/${f}.tsx`),
 ];
 
 /** Chuỗi so khớp dữ liệu (không hiện ra) — giữ Việt có chủ đích. */
 const CHO_PHEP: { file: string; text: RegExp }[] = [
   { file: 'web/src/modules/platform/WelcomePage.tsx', text: /^(Hoàn tất|Nguyễn Khánh Vy|Trần Ngọc Hà)$/ },   // chữ in ra của lệnh seed; tên tài khoản demo (dữ liệu)
   { file: 'web/src/ui/NutNgonNgu.tsx', text: /^(Tiếng Việt|Ngôn ngữ \/ Language)$/ },                          // nút ghi bằng chính tiếng của nó
+  /* Đợt c: so với chữ GỐC máy chủ gửi (tiếng Việt) — không hiện ra. */
+  { file: 'web/src/modules/classes/BangCanHoTro.tsx', text: /^(Xác nhận Case|Ghi nhận xét|Xác nhận PA)$/ },
+  { file: 'web/src/modules/students/BangHocVienLop.tsx', text: /^Thi thật$/ },
+  { file: 'web/src/modules/students/CacLoTrinh.tsx', text: /^(Học lại|Kết thúc|Chuyển lớp)$/ },
+  { file: 'web/src/modules/students/KetQuaThiThatPanel.tsx', text: /^(Đạt Target|Chưa đạt Target|Chờ kết quả thi thật)$/ },
+  { file: 'web/src/modules/students/NganCase.tsx', text: /^(Xác nhận Case|Ghi nhận xét|Xác nhận PA|Kết quả cuối)$/ },
 ];
 
 /**

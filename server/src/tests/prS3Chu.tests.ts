@@ -160,7 +160,7 @@ export async function runPrS3ChuTests(t: YThucTestKit) {
     const wl = docNguon('shared/domain/worklist.ts');
     for (const chu of ["'Chưa bắt đầu'", "'Đang xử lý'", "'Tạm ngưng'", "'Dừng hẳn'", "done: 'Xong'"]) assert(wl.includes(chu), chu);
     assert(/\.\.\.TASK_PROGRESS_LABEL/.test(docNguon('web/src/modules/worklist/MgmtTasksPage.tsx')), 'MgmtTasksPage dùng TASK_PROGRESS_LABEL');
-    assert(/inactive: 'Tạm dừng học'/.test(docNguon('shared/domain/students.ts')) && /chuTamDung/.test(docNguon('shared/domain/students.ts')), 'students.ts');
+    assert(/inactive: t\('Tạm dừng học'\)/.test(docNguon('shared/domain/students.ts')) && /chuTamDung/.test(docNguon('shared/domain/students.ts')), 'students.ts');
     assert(!/NHAN_TRANG_THAI_O/.test(docNguon('shared/domain/hoSoHocVien.ts')), 'bản sao NHAN_TRANG_THAI_O đã gộp');
     assert(/CHUA_CO_HAN/.test(docNguon('shared/domain/display.ts')) && /CHUA_CO_HAN/.test(docNguon('shared/domain/hoSoHocVien.ts')) && /CHUA_CO_HAN/.test(docNguon('web/src/modules/cases/TheKyNang.tsx')), 'so khớp "Chưa có hạn" theo hằng, không theo chuỗi');
   });

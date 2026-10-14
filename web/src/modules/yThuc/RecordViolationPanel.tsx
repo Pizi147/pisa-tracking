@@ -377,7 +377,7 @@ function ChonHocVien({ ds, chon, onChange, loi, lf, loiList, rieng, onRieng }: {
               <div className="flex items-center gap-2 text-sm">
                 <span className="min-w-0 flex-1 truncate text-slate-200">{ds.find((s) => s.id === id)?.name}</span>
                 {rieng[id] === undefined && <button type="button" className="link appearance-none border-0 bg-transparent p-0" onClick={() => onRieng({ ...rieng, [id]: '' })}>{t('+ Mô tả riêng')}</button>}
-                <button type="button" className="appearance-none border-0 bg-transparent p-0 text-slate-500 hover:text-bad max-sm:grid max-sm:min-h-[44px] max-sm:min-w-[44px] max-sm:place-items-center" aria-label={t('Bỏ {name}', { name: ds.find((s) => s.id === id)?.name })} onClick={() => bo(id)}>✕</button>
+                <button type="button" className="appearance-none border-0 bg-transparent p-0 text-slate-500 hover:text-bad max-sm:grid max-sm:min-h-[44px] max-sm:min-w-[44px] max-sm:place-items-center" aria-label={t('Bỏ {name}', { name: String(ds.find((s) => s.id === id)?.name) })} onClick={() => bo(id)}>✕</button>
               </div>
               {rieng[id] !== undefined && (
                 <div className="mt-1.5 space-y-1">

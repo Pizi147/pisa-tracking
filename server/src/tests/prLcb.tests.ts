@@ -422,9 +422,9 @@ export async function runPrLcbTests(t: YThucTestKit) {
     assert(/open=\{viec === 'chuyen-tiep' && !thuong\}/.test(ov), 'lớp FT: TransitionPanel');
     assert(!coTep('modules/classes/PanelCuoiKhoa.tsx') && !coTep('modules/classes/PanelKyVong.tsx') && !coTep('modules/classes/LoTrinhTiepCaLopPanel.tsx'), 'panel cũ đã gỡ');
     const mn = fs.readFileSync(new URL('../../../../shared/domain/hocVienLop.ts', import.meta.url), 'utf8');
-    assert((mn.match(/'Lộ trình tiếp theo', 'Lộ trình'/g) ?? []).length === 1 && !mn.includes("'Kỳ vọng đầu ra'"), '⋯ lớp thường đúng một mục, bỏ Kỳ vọng đầu ra');
-    assert(mn.includes("m('chuyen-tiep', 'Chuyển tiếp lớp', 'Lộ trình', !i.thuong && i.coTheChuyenNhieuEm)"), 'FT giữ Chuyển tiếp lớp');
-    assert(web('modules/classes/DaiChuyenLop.tsx').includes('nhan="Lộ trình tiếp theo"'), 'thanh nhắc Lộ trình tiếp theo');
+    assert((mn.match(/'Lộ trình tiếp theo'\), 'Lộ trình'/g) ?? []).length === 1 && !mn.includes("'Kỳ vọng đầu ra'"), '⋯ lớp thường đúng một mục, bỏ Kỳ vọng đầu ra');
+    assert(mn.includes("m('chuyen-tiep', t('Chuyển tiếp lớp'), 'Lộ trình', !i.thuong && i.coTheChuyenNhieuEm)"), 'FT giữ Chuyển tiếp lớp');
+    assert(web('modules/classes/DaiChuyenLop.tsx').includes("nhan={t('Lộ trình tiếp theo')}"), 'thanh nhắc Lộ trình tiếp theo');
     assert(web('modules/classes/ClassProgressPanel.tsx').includes('>Lộ trình tiếp theo</button>'), 'Lịch Test');
     const pn = web('modules/classes/BangLoTrinhTiep.tsx');
     for (const chu of ['<OTuan', 'mocLoTrinh(', 'Lưu nháp', 'Chốt', 'Chọn lộ trình', 'Chưa chốt', 'Kết quả đầu ra', 'Còn bàn giao']) assert(pn.includes(chu), `BangLoTrinhTiep thiếu: ${chu}`);
