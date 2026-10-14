@@ -109,7 +109,7 @@ export function BangSos({ data, cot, dam, dienThoai, ds, onMo }: {
   }).filter((g) => g.lop.length);
   /* Tự mở ≤ 5 lớp (mockup 3 v2 §1); nhiều hơn thì gập sẵn, bấm đầu nhóm để mở. */
   const soLop = nhom.reduce((s, g) => s + g.lop.length, 0);
-  const mo = (id: number) => (soLop <= 5) !== gap.has(id);
+  const mo = (id: number) => (soLop <= 5 || data.rows.length <= 40) !== gap.has(id);
   const doi = (id: number) => setGap((cu) => { const s = new Set(cu); if (s.has(id)) s.delete(id); else s.add(id); return s; });
 
   const dauLop = (em: DongSos[]) => {

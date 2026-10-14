@@ -132,7 +132,7 @@ export function PanelMotEm({ studentId, caseMo, onClose, onDoi }: {
                           <p className="m-0 text-xs text-slate-400">Việc tiếp: <span className="text-slate-200">{c.viecTiep.chu}</span>
                             {c.viecTiep.quaHan && <span className="font-semibold text-late"> · ⚠ quá hạn</span>}</p>
                         )}
-                        <dl className="m-0 grid grid-cols-[6.5rem_minmax(0,1fr)] gap-x-3 gap-y-1 text-[13px]">
+                        <dl className="m-0 grid grid-cols-[6.5rem_minmax(0,1fr)] sm:grid-cols-[8.5rem_minmax(0,1fr)] gap-x-3 gap-y-1 text-[13px]">
                           <dt className="text-slate-500">Nguyên nhân</dt>
                           <dd className="m-0 text-slate-300">{c.nguyenNhan ?? 'chưa xác nhận'}{c.nhanXet && <span className="block text-slate-400">“{c.nhanXet}”</span>}</dd>
                           <dt className="text-slate-500">Phương án</dt>

@@ -60,7 +60,8 @@ export function BangCanLam({ viec, coNguoi, coPhuHuynh, dienThoai, ds }: {
     const dsEm = [...em.values()].sort((a, b) => Number(b[0].studentId === null) - Number(a[0].studentId === null) || soSanh(a[0], b[0]));
     return { k, code: ds[0].classCode ?? 'Không gắn lớp', classId: ds[0].classId, em: dsEm, tre: ds.filter((v) => v.quaHan).length, cho: ds.filter((v) => v.kieu === 'cho-duyet').length };
   }).sort((a, b) => Number(b.tre > 0) - Number(a.tre > 0) || a.code.localeCompare(b.code, 'vi'));
-  const mo = (k: string) => (nhom.length <= 5) !== gap.has(k);
+  /* Tự mở khi ít (≤ 5 lớp hoặc ≤ 40 việc — đang lọc thường rơi vào đây); nhiều hơn thì gập, bấm đầu lớp để mở. */
+  const mo = (k: string) => (nhom.length <= 5 || viec.length <= 40) !== gap.has(k);
   const doi = (k: string) => setGap((cu) => { const s = new Set(cu); if (s.has(k)) s.delete(k); else s.add(k); return s; });
   const dauLop = (g: (typeof nhom)[number]) => (
     <span className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-1">
@@ -68,7 +69,7 @@ export function BangCanLam({ viec, coNguoi, coPhuHuynh, dienThoai, ds }: {
         : <span className="font-extrabold text-slate-100">{g.code}</span>}
       {g.tre > 0 && <Nhan tone="late">⚠ {g.tre} quá hạn</Nhan>}
       {g.cho > 0 && <Nhan tone="wait">{g.cho} chờ duyệt</Nhan>}
-      <Nhan tone="muted">{g.em.filter((e) => e[0].studentId !== null).length} em</Nhan>
+      {g.em.some((e) => e[0].studentId !== null) && <Nhan tone="muted">{g.em.filter((e) => e[0].studentId !== null).length} em</Nhan>}
     </span>
   );
   const tenEm = (v: ViecCanLam) => (v.studentId === null
@@ -100,7 +101,7 @@ export function BangCanLam({ viec, coNguoi, coPhuHuynh, dienThoai, ds }: {
                   <div key={v.key} className="mt-1.5 flex items-start gap-2">
                     <span className="min-w-0 flex-1 space-y-0.5">
                       <ChipViec v={v} />
-                      <span className="block text-xs text-slate-500">{coNguoi && <>{v.nguoi ?? 'Tôi'} · </>}<OHan v={v} /></span>
+                      {(coNguoi || v.han) && <span className="block text-xs text-slate-500">{coNguoi && <>{v.nguoi ?? 'Tôi'} · </>}<OHan v={v} /></span>}
                     </span>
                     {nut(v)}
                   </div>

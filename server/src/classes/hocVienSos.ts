@@ -8,7 +8,7 @@
  */
 import { db, theoLo } from '../db.ts';
 import {
-  PERMISSIONS, mondayOfDate, nhomXuLyCase, outcomeLabelFor, tuDauKhoang, vaiXemHocVien, chuanHoaMaLop,
+  PERMISSIONS, mondayOfDate, nhomXuLyCase, tenPaGon, outcomeLabelFor, tuDauKhoang, vaiXemHocVien, chuanHoaMaLop,
   type LienHe, type NhomXuLy, type PhamVi,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -60,7 +60,7 @@ function tomTatCase(cases: readonly MappedCase[]): Map<number, CaseTomTat> {
     const daChay = x.pas.some((p) => !p.choXacNhan && !p.choDuyet);
     out.set(c.id, {
       id: c.id, topic: c.topic, kyNang: c.topicLabel ?? c.categoryLabel, nguyenNhan: c.primaryLabel, nhanXet: nhanXet.get(c.id) ?? null,
-      pa: x.pas.map((p) => ({ id: p.id, ten: p.ten, nguoi: p.nguoi, choXacNhan: p.choXacNhan, xong: p.xong })),
+      pa: x.pas.map((p) => ({ id: p.id, ten: tenPaGon(p.ten), nguoi: p.nguoi, choXacNhan: p.choXacNhan, xong: p.xong })),
       ketQua: c.lastOutcome ? outcomeLabelFor(c.lastOutcome) : null, ketQuaNgay: c.lastOutcomeOn,
       nhom: nhomXuLyCase(x.trangThai.k, daChay), trangThai: x.trangThai.chu,
       viecTiep: x.viecTiep ? { chu: x.viecTiep.chu, han: x.viecTiep.han, loaiHan: x.viecTiep.loaiHan, quaHan: !!x.viecTiep.han && x.viecTiep.han < homNay } : null,

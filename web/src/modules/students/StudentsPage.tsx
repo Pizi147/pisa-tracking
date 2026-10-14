@@ -189,7 +189,7 @@ function TrangTheoLop({ admin }: { admin: boolean }) {
     else if (lamTaiCho(it)) setViecMo(it);
     else navigate(it.href);
   };
-  const viecTatCa: ViecCanLam[] = [
+  const viecCongViec: ViecCanLam[] = [
     ...(work.data?.dong ?? []).flatMap((x) => (x.con?.length ? x.con : [x]))
       .filter((it) => it.classId !== null && lopTrang.has(it.classId) && trongLoc(it.classId))
       .map((it): ViecCanLam => ({
@@ -200,7 +200,12 @@ function TrangTheoLop({ admin }: { admin: boolean }) {
         han: it.due, loaiHan: LOAI_HAN_CUA_VIEC[it.group] ?? null, quaHan: it.urgency === 'overdue', kieu: it.urgency === 'overdue' ? 'qua-han' : null,
         mo: () => moViec(it),
       })),
-    /* Chờ duyệt (QL: hộp Chờ duyệt lọc lớp; người khác: Yêu cầu của tôi) · Thiếu thông tin (Sửa thông tin tại chỗ) — hai chip cũ thành lọc phụ, không bỏ (P14). */
+  ];
+  /*
+   * Chờ duyệt (QL: hộp Chờ duyệt lọc lớp; người khác: Yêu cầu của tôi) · Thiếu thông tin (Sửa thông tin tại chỗ) — hai chip cũ thành lọc phụ, không bỏ (P14).
+   * QL: là việc của QL nên nằm luôn trong Cần làm (mockup 3 v2 §4); GV / Admin: không phải việc của mình — chỉ hiện khi bấm lọc phụ, không vào số Cần làm.
+   */
+  const viecPhu: ViecCanLam[] = [
     ...((data?.hocVien ?? []).filter((h) => trongLoc(h.classId)).flatMap((h): ViecCanLam[] => {
       const lop = lopTrang.get(h.classId);
       const chung = { studentId: h.id, ten: h.ten, ma: h.ma, classId: h.classId, classCode: lop?.code ?? null, han: null, loaiHan: null, quaHan: false, nguoi: '—' };
@@ -214,11 +219,12 @@ function TrangTheoLop({ admin }: { admin: boolean }) {
       ];
     })),
   ];
+  const viecTatCa = laQl ? [...viecCongViec, ...viecPhu] : viecCongViec;
   const emCua = (ds: readonly ViecCanLam[]) => new Set(ds.flatMap((v) => (v.studentId !== null ? [v.studentId] : []))).size;
-  const theoLocPhu = (k: LocPhuCanLam) => viecTatCa.filter((v) => (k === 'qua-han' ? v.quaHan : k === 'cho-duyet' ? v.kieu === 'cho-duyet' : v.kieu === 'thieu-tt'));
+  const theoLocPhu = (k: LocPhuCanLam) => [...viecCongViec, ...viecPhu].filter((v) => (k === 'qua-han' ? v.quaHan : k === 'cho-duyet' ? v.kieu === 'cho-duyet' : v.kieu === 'thieu-tt'));
   const viecHien = locPhu ? theoLocPhu(locPhu) : viecTatCa;
   /* Lọc phụ của Cần làm: Quá hạn thường trực; Chờ duyệt · Thiếu thông tin khi có em (chip cũ không mất — P14; Admin không có thẻ chờ duyệt). */
-  const locPhuCo = (['qua-han', 'cho-duyet', 'thieu_tt'] as const).filter((k) => k === 'qua-han' || k === locPhu || theoLocPhu(k).length > 0);
+  const locPhuCo = (['qua-han', 'cho-duyet', 'thieu_tt'] as const).filter((k) => !(admin && k === 'cho-duyet') && (k === 'qua-han' || k === locPhu || theoLocPhu(k).length > 0));
   const nhanLocPhu: Record<LocPhuCanLam, string> = { 'qua-han': 'Quá hạn', 'cho-duyet': 'Chờ duyệt', thieu_tt: 'Thiếu thông tin' };
   const demGoc: Record<GocHocVien, number | undefined> = {
     'tat-ca': data ? dem['tat-ca'] : undefined,
