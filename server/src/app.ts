@@ -5,7 +5,6 @@ import type { NextFunction, Request, Response } from 'express';
 import { attachPrincipal, DA_VAO_API } from './auth.ts';
 import { api } from './routes/index.ts';
 import { HttpError, loi } from './util.ts';
-import { dichSang } from '../../shared/i18n/index.ts';
 import { taoSuKhoe } from './platform/suKhoe.ts';
 import { HAN_HAM_NETLIFY_MS, LOG_CHAM_MS, chayVoiHan } from './platform/hanGio.ts';
 import { chayTrongRequest, demHienTai, topLog, type Dem } from './platform/nguCanhRequest.ts';
@@ -41,7 +40,7 @@ export function createApp() {
   const luong = express.Router();
   luong.use(attachPrincipal);
   luong.use('/api', api);
-  luong.use('/api', (_req, _res, next) => next(loi(404, 'loi.khongCoEndpoint')));
+  luong.use('/api', (_req, _res, next) => next(loi(404, 'Không tìm thấy endpoint.')));
   app.use(luong);
 
   app.use(thuLaiKhiMatKetNoi(luong));
@@ -135,24 +134,25 @@ export function traLoiLoi(err: unknown, req: Request, res: Response, _next: Next
   }
   const e = (err ?? {}) as { type?: unknown; code?: unknown };
   if (e.type === 'entity.parse.failed') {
-    res.status(400).json({ error: dichSang('vi', 'loi.duLieuHong'), khoa: 'loi.duLieuHong' });
+    res.status(400).json({ error: 'Dữ liệu gửi lên không đọc được. Tải lại trang rồi thử lại.' });
     return;
   }
   if (e.type === 'entity.too.large') {
-    res.status(413).json({ error: dichSang('vi', 'loi.quaLon'), khoa: 'loi.quaLon' });
+    res.status(413).json({ error: 'Dữ liệu gửi lên quá lớn.' });
     return;
   }
   const message = err instanceof Error ? err.message : String(err);
   if (/SQLITE_CONSTRAINT|constraint failed/i.test(message) || (typeof e.code === 'string' && e.code.startsWith('SQLITE_CONSTRAINT'))) {
     console.warn('[api] 409', req.method, req.path, message);
-    res.status(409).json({ error: dichSang('vi', 'loi.trung'), khoa: 'loi.trung' });
+    res.status(409).json({ error: 'Dữ liệu bị trùng hoặc vi phạm ràng buộc.' });
     return;
   }
   const ma = crypto.randomBytes(4).toString('hex');
   console.error(`[api] mã ${ma}`, req.method, req.path, err);
   res.status(500).json({
-    error: dichSang('vi', 'loi.coLoi', { ma }),
-    khoa: 'loi.coLoi', bien: { ma },
+    error: `Có lỗi · mã ${ma}. Thử lại sau ít phút; nếu vẫn lỗi, báo Quản trị hệ thống kèm mã này.`,
+    /* PR-EN: câu có biến → khoá + biến để web tiếng Anh dịch (cùng chữ ở shared/i18n/en/a.ts). */
+    khoa: 'Có lỗi · mã {ma}. Thử lại sau ít phút; nếu vẫn lỗi, báo Quản trị hệ thống kèm mã này.', bien: { ma },
     details: { ma },
   });
 }

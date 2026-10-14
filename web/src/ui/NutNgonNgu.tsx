@@ -28,7 +28,7 @@ export function NutNgonNgu({ kieu = 'nut', daDangNhap = true }: { kieu?: 'nut' |
   if (kieu === 'menu') {
     return (
       <div className="flex min-h-[44px] items-center justify-between gap-3 px-1">
-        <span className="text-sm text-slate-300" id="nhan-ngon-ngu">{t('nn.ngonNgu')}</span>
+        <span className="text-sm text-slate-300" id="nhan-ngon-ngu">{t('Ngôn ngữ')}</span>
         <div role="group" aria-labelledby="nhan-ngon-ngu" className="inline-flex overflow-hidden rounded-lg border" style={{ borderColor: 'var(--line-strong)' }}>
           {nut('vi', 'VI', 'min-h-[44px] min-w-[64px] px-4 text-[12.5px]', 'Tiếng Việt')}
           {nut('en', 'EN', 'min-h-[44px] min-w-[64px] px-4 text-[12.5px]', 'English')}
@@ -37,7 +37,7 @@ export function NutNgonNgu({ kieu = 'nut', daDangNhap = true }: { kieu?: 'nut' |
     );
   }
   return (
-    <div role="group" aria-label={t('nn.ngonNgu')} className="inline-flex shrink-0 overflow-hidden rounded-[.4rem] border" style={{ borderColor: 'var(--line-strong)', background: 'var(--surface-2)' }}>
+    <div role="group" aria-label={t('Ngôn ngữ')} className="inline-flex shrink-0 overflow-hidden rounded-[.4rem] border" style={{ borderColor: 'var(--line-strong)', background: 'var(--surface-2)' }}>
       {nut('vi', 'VI', 'min-h-[30px] px-2 text-[11.5px] tracking-wide', 'Tiếng Việt')}
       <span aria-hidden className="w-px" style={{ background: 'var(--line-strong)' }} />
       {nut('en', 'EN', 'min-h-[30px] px-2 text-[11.5px] tracking-wide', 'English')}

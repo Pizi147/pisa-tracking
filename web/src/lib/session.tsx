@@ -80,7 +80,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
        * Đã có phiên → giữ nguyên, chỉ báo mất kết nối. Chưa có phiên (lần tải đầu) → màn chào kèm lỗi để biết đường xử lý
        * (máy chủ chưa chạy / chưa seed), như trước.
        */
-      const loi = e instanceof Error ? e.message : t('loi.khongGoiDuocMayChu');
+      const loi = e instanceof Error ? e.message : t('Không gọi được máy chủ.');
       setSession((cu) => cu?.authenticated ? { ...cu, loiKetNoi: loi } : { authenticated: false, demoDate: '', scenario: 'normal', loiKetNoi: loi });
     } finally {
       setLoading(false);

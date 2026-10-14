@@ -2,14 +2,14 @@
 import { dichSang, type Bien, type Khoa } from '../../shared/i18n/index.ts';
 
 export class HttpError extends Error {
-  /** PR-EN: khoá từ điển của câu (web tiếng Anh dịch theo khoá); không có khoá → web hiện nguyên câu Việt. */
+  /** PR-EN: câu Việt có `{biến}` (= khoá từ điển) + giá trị biến — web tiếng Anh dịch theo khoá. Câu không biến không cần: web dịch theo chính câu. */
   khoa?: Khoa;
   bien?: Bien;
   constructor(public status: number, message: string, public details?: unknown) {
     super(message);
   }
 }
-/** PR-EN: lỗi có khoá — câu Việt lấy từ từ điển (`shared/i18n`), gửi kèm `khoa` + `bien` để web dịch. */
+/** PR-EN: lỗi có biến — câu Việt = `khoa` thay `{biến}`; gửi kèm `khoa` + `bien` để web dịch (khoá phải có bản Anh, tsc kiểm). */
 export function loi(status: number, khoa: Khoa, bien?: Bien, details?: unknown): HttpError {
   const e = new HttpError(status, dichSang('vi', khoa, bien), details);
   e.khoa = khoa;

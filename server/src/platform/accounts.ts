@@ -508,7 +508,7 @@ export function updateProfile(p: Principal, input: {
   const u = conn.prepare('SELECT * FROM users WHERE id = ?').get(p.userId) as any;
   return tx(() => {
     if (input.ngonNgu !== undefined) {
-      if (!laNgonNgu(input.ngonNgu)) throw loi(400, 'loi.ngonNguKhongHopLe');
+      if (!laNgonNgu(input.ngonNgu)) throw badRequest('Ngôn ngữ không hợp lệ.');
       conn.prepare('UPDATE users SET ngon_ngu = ? WHERE id = ?').run(input.ngonNgu, p.userId);
     }
     if (input.fullName !== undefined) {

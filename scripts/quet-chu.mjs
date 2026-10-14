@@ -43,7 +43,11 @@ function ngucCanh(node) {
   for (let n = node, p = n.parent; p; n = p, p = p.parent) {
     if (ts.isImportDeclaration(p) || ts.isExportDeclaration(p) || ts.isExternalModuleReference(p) || ts.isTypeNode(p)) return null;
     if (ts.isCallExpression(p) || ts.isNewExpression(p)) {
-      if (p.arguments?.includes(n)) { const v = p.expression.getText(); return v.startsWith('console.') ? null : { vo: v.slice(0, 40) }; }
+      if (p.arguments?.includes(n)) {
+        const v = p.expression.getText();
+        if (/^(t|dich|loi)$/.test(v) && p.arguments[0] === n) return null;   // PR-EN: khoá từ điển (chữ Việt có bản Anh)
+        return v.startsWith('console.') ? null : { vo: v.slice(0, 40) };
+      }
     } else if (ts.isPropertyAssignment(p) && p.initializer === n) {
       const k = p.name.getText().replace(/^['"]|['"]$/g, '');
       if (KHOA_BO.has(k)) return null;

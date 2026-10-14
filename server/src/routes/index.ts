@@ -136,7 +136,7 @@ api.use('/demo', (req, res, next) => {
   if (!laBanChinh()) return next();
   const choQua = req.path === '/session' && (req.method === 'GET' || req.method === 'DELETE');
   if (choQua) return next();
-  next(loi(404, 'loi.khongCoEndpoint'));
+  next(loi(404, 'Không tìm thấy endpoint.'));
 });
 
 api.get('/demo/accounts', wrap(() => {
