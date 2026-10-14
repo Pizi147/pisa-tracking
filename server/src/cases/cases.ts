@@ -439,8 +439,10 @@ export function caseAccess(caseId: number) {
  */
 export function coTheXacNhanCase(p: Principal, caseId: number): boolean {
   const c = loadCase(caseId);
-  return can(p, PERMISSIONS.SOS_EDIT, sosEditCtx(c)) || (!!c.current_class_id && isCoreTeacherOf(p, c.current_class_id));
+  return can(p, PERMISSIONS.SOS_EDIT, sosEditCtx(c)) || laGvcnLopDangHoc(p, c.current_class_id);
 }
+/** Vế GVCN của luật trên — không đọc DB (danh sách Công việc / bảng kỹ năng đã có lớp đang học của từng dòng). */
+export const laGvcnLopDangHoc = (p: Principal, lopDangHoc: number | null | undefined) => !!lopDangHoc && isCoreTeacherOf(p, lopDangHoc);
 
 // ---------------------------------------------------------------- giáo viên báo vấn đề
 
@@ -2791,8 +2793,7 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
             skill: c.topic ?? undefined,
           }),
           /* OV-12c: nút "Xác nhận Case" — cùng luật `coTheXacNhanCase` (sửa được Case hoặc GVCN lớp đang học), không thêm câu SQL mỗi Case. */
-          coTheXacNhanCase: can(p, PERMISSIONS.SOS_EDIT, { classId: lopDangHoc, studentId, skill: c.topic ?? undefined })
-            || (!!lopDangHoc && isCoreTeacherOf(p, lopDangHoc)),
+          coTheXacNhanCase: can(p, PERMISSIONS.SOS_EDIT, { classId: lopDangHoc, studentId, skill: c.topic ?? undefined }) || laGvcnLopDangHoc(p, lopDangHoc),
           /*
            * HOÀN THÀNH CASE NGAY TRÊN THẺ (PR-D). Khối `CasePanel` nhúng bên dưới thẻ đã bị
            * gỡ, nên thẻ tự nói: người xem có chốt được không, và còn gì đang chặn. Lấy đúng

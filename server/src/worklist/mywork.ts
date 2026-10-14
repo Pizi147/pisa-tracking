@@ -25,7 +25,7 @@ import { lopKyVong } from '../normal/kyVong.ts';
 import { phanCongDangHieuLuc } from './scoreDebt.ts';
 import { nguoiGiuKetQua } from '../cases/giuKetQua.ts';
 import { dienMocQuyChe } from '../cases/sosAuto.ts';
-import { coTheXacNhanCase } from '../cases/cases.ts';
+import { laGvcnLopDangHoc } from '../cases/cases.ts';
 import { sweepExpiredMoves } from '../fasttrack/absence.ts';
 import { quetYeuCau } from '../duyet/yeuCau.ts';
 import { mtLichSuChuaNhap } from '../cham/canCham.ts';
@@ -787,7 +787,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
    */
   const cotCase = `sc.id, sc.topic, sc.summary, sc.origin_kind, sc.sos_level, sc.urgency, sc.owner_user_id, sc.attempt_id, sc.kck,
               COALESCE(sc.student_id, a.student_id) AS eff_student_id,
-              COALESCE(a.class_id, cur.class_id) AS eff_class_id,
+              COALESCE(a.class_id, cur.class_id) AS eff_class_id, cur.class_id AS lop_dang_hoc,
               COALESCE(ac.branch_id, cc.branch_id) AS eff_branch_id,
               COALESCE(ac.code, cc.code) AS class_code,
               s.full_name, a.attempt_no, a.kind AS attempt_kind, sc.han_xac_nhan AS due`;
@@ -818,9 +818,9 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   if (tatCa) napChu([...causeCandidates, ...xacNhanPa].map((r) => r.owner_user_id));
   const dongCase = (c: any, loai: 'cause' | 'ghi_nhan_xet' | 'xac_nhan_pa') => {
     if (f.branchId && c.eff_branch_id !== f.branchId) return;
-    /* OV-12c (đặc tả 7.2): "Xác nhận Case" Progress — GVCN lớp đang học làm được dù không dạy môn (`coTheXacNhanCase`, cùng máy chủ + nút). */
+    /* OV-12c (đặc tả 7.2): "Xác nhận Case" Progress — GVCN lớp đang học làm được dù không dạy môn (cùng luật `coTheXacNhanCase`, không thêm câu SQL mỗi dòng). */
     const lamDuoc = (x: Principal) => can(x, PERMISSIONS.SOS_EDIT, { classId: c.eff_class_id, studentId: c.eff_student_id, skill: c.topic ?? undefined })
-      || (loai === 'cause' && coTheXacNhanCase(x, c.id));
+      || (loai === 'cause' && laGvcnLopDangHoc(x, c.lop_dang_hoc));
     if (!lamDuoc(p)) return;
     const u = urgencyOf(c.due ?? null, today);
     const mine = c.owner_user_id === p.userId;
