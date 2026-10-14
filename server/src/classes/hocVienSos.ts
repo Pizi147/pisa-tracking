@@ -8,7 +8,7 @@
  */
 import { db, theoLo } from '../db.ts';
 import {
-  PERMISSIONS, mondayOfDate, nhomXuLyCase, tenPaGon, outcomeLabelFor, tuDauKhoang, vaiXemHocVien, chuanHoaMaLop,
+  NHOM_THEO_COT, PERMISSIONS, mondayOfDate, tenPaGon, outcomeLabelFor, tuDauKhoang, vaiXemHocVien, chuanHoaMaLop,
   type LienHe, type NhomXuLy, type PhamVi,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -17,6 +17,7 @@ import { can, classScopeSql, scopeFor, type Principal } from '../permissions.ts'
 import { luotTrongKhoang, phanLoaiCacLuot } from '../phanTich/tongHop.ts';
 import { listCases, type MappedCase } from '../cases/cases.ts';
 import { chiTietCaseMo } from '../cases/caseLop.ts';
+import { xuLyCaseMany } from '../cases/sosState.ts';
 import { phamViTrang } from './hocVienLop.ts';
 import { standingFor } from '../students/standing.ts';
 
@@ -54,15 +55,15 @@ function tomTatCase(cases: readonly MappedCase[]): Map<number, CaseTomTat> {
     }
   });
   const homNay = demoToday();
+  const xl = xuLyCaseMany(cases.map((c) => c.id), homNay);   // OV-12d: cùng nhóm với Tổng hợp / Tổng quan
   for (const c of cases) {
     const x = ct.get(c.id);
     if (!x) continue;
-    const daChay = x.pas.some((p) => !p.choXacNhan && !p.choDuyet);
     out.set(c.id, {
       id: c.id, topic: c.topic, kyNang: c.topicLabel ?? c.categoryLabel, nguyenNhan: c.primaryLabel, nhanXet: nhanXet.get(c.id) ?? null,
       pa: x.pas.map((p) => ({ id: p.id, ten: tenPaGon(p.ten), nguoi: p.nguoi, choXacNhan: p.choXacNhan, xong: p.xong })),
       ketQua: c.lastOutcome ? outcomeLabelFor(c.lastOutcome) : null, ketQuaNgay: c.lastOutcomeOn,
-      nhom: nhomXuLyCase(x.trangThai.k, daChay), trangThai: x.trangThai.chu,
+      nhom: NHOM_THEO_COT[xl.get(c.id)?.cot ?? 'choDuyet'], trangThai: x.trangThai.chu,
       viecTiep: x.viecTiep ? { chu: x.viecTiep.chu, han: x.viecTiep.han, loaiHan: x.viecTiep.loaiHan, quaHan: !!x.viecTiep.han && x.viecTiep.han < homNay } : null,
       attemptId: c.attemptId, attemptNo: c.attemptNo, done: c.status === 'done',
     });

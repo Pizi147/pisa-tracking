@@ -10,8 +10,9 @@ import { MenuDong, type MucMenu } from '../../ui/MenuDong.tsx';
 import { HangCon, HangNhom } from '../../ui/HangNhom.tsx';
 import { DINH_TRAI, SoO as SoLieuO } from './dungChung.tsx';
 import { NganXuatMt } from '../test/NganXuatMt.tsx';
+import { t } from '@shared/i18n/index.ts';
 import {
-  CHUONG_TRINH_LABEL, KHOANG_LABEL, KHOANG_MAC_DINH, THEO_DONG, THEO_DONG_COT_DAU, THEO_DONG_DANH_TU, THEO_DONG_LABEL,
+  CHUONG_TRINH_LABEL, GOI_Y_XU_LY, KHOANG_LABEL, KHOANG_MAC_DINH, THEO_DONG, THEO_DONG_COT_DAU, THEO_DONG_DANH_TU, THEO_DONG_LABEL,
   NHAN_NHOM_CON, addDaysIso, bangXuatTongHop, cotSoLieu, cotTheoDuLieu, cotTongHopFor, mauOKetQua, mondayOfDate, ngay, nhomCotNhanNgan, oKhongApDung,
   type ChuongTrinh, type CotTongHop, type DongTongHop, type Khoang, type MauOKetQua, type NhomCot, type TheoDong, type TongHopKetQua,
 } from '@shared/domain/index.ts';
@@ -32,7 +33,7 @@ function luuCotHien(s: Set<NhomCot>) {
 }
 
 /** Cột cần chú ý — chỉ đổi màu chữ (G-4: không badge). Thiếu điểm xám đậm (PR-HK2: thay cột Tạm thời cũ). */
-const MAU_COT: Partial<Record<string, string>> = { choNguyenNhan: 'text-soon', chuaDu: 'text-muted' };
+const MAU_COT: Partial<Record<string, string>> = { chuaDu: 'text-muted' };
 
 /**
  * MÀU Ô KẾT QUẢ TEST (N-1b, Q23; PR-HK2 Q1): số Đạt / SOS 1–3 là BADGE VUÔNG (`CHIP_VUONG`, dáng chip SOS: chữ + nền nhạt + viền) khi có số —
@@ -114,8 +115,8 @@ export function TongHopTestSos({ branchId, ct, tg, classId }: {
     else nhomChay.push({ khoa: k, nhan: c.nhomCon && laThuong ? NHAN_NHOM_CON[c.nhomCon] : nhomCotNhanNgan(c.nhom, ct), cols: [c] });
   }
   const donCot = (k: string) => k.startsWith('don:');
-  /** Bề rộng cột (px, bảng cố định bề ngang): cột ghép "HV - Case" 96 · cột Xử lý khác 80 · Kết quả 68 · kỹ năng 60. */
-  const rongCot = (c: CotTongHop) => (c.gop ? 96 : c.nhom === 'xu-ly' ? 80 : c.nhom === 'ket-qua' ? 68 : 60);
+  /** Bề rộng cột (px, bảng cố định bề ngang): nhóm Xử lý 96 (OV-12d: ba cột, "Đang xử lý" một dòng) · Kết quả 68 · kỹ năng 60. */
+  const rongCot = (c: CotTongHop) => (c.nhom === 'xu-ly' ? 96 : c.nhom === 'ket-qua' ? 68 : 60);
 
   const toggleCotHien = (nhom: NhomCot) => {
     const next = new Set(cotHien);
@@ -169,8 +170,8 @@ export function TongHopTestSos({ branchId, ct, tg, classId }: {
     const v = row.o[col.khoa] ?? 0;
     const mau = mauOKetQua(col.khoa, v);
     if (v <= 0) return soBam(row, col);
-    /* PR-SOS (K1-20): Chờ nguyên nhân kèm "⚠ n" quá hạn (PR-HK2: ⚠ đỏ cam, chữ đầy đủ ở title). */
-    const quaHan = col.khoa === 'choNguyenNhan' ? row.o.choNguyenNhanQuaHan ?? 0 : 0;
+    /* OV-12d: Chờ duyệt kèm "⚠ n" quá hạn (PR-HK2: ⚠ đỏ cam, chữ đầy đủ ở title). */
+    const quaHan = col.khoa === 'choDuyet' ? row.o.choDuyetQuaHan ?? 0 : 0;
     if (!mau) return <span className={MAU_COT[col.khoa] ?? ''}>{soBam(row, col)}{quaHan > 0 && <span className="ml-1 font-bold text-late" title={`${quaHan} quá hạn`}>⚠{quaHan}<span className="sr-only"> quá hạn</span></span>}</span>;
     return <span className={`${CHIP_VUONG} min-w-[28px] justify-center ${MAU_O[mau]}`}>{soBam(row, col)}</span>;
   };
@@ -263,6 +264,8 @@ export function TongHopTestSos({ branchId, ct, tg, classId }: {
                     : (
                       <th key={g.khoa + i} colSpan={g.cols.length} className={`th text-center ${i > 0 ? 'border-l' : ''}`} style={{ borderColor: 'var(--line-strong)' }}>
                         {g.nhan}
+                        {/* OV-12d: MỘT ⓘ chung cho nhóm Xử lý (mockup 2 phần 6) thay chú giải từng cột. */}
+                        {g.khoa === 'xu-ly' && <span className="ml-1 cursor-help normal-case tracking-normal text-slate-500" tabIndex={0} title={GOI_Y_XU_LY} aria-label={`${t('Cách tính nhóm Xử lý')}: ${GOI_Y_XU_LY}`}>ⓘ</span>}
                       </th>
                     )))}
                 </tr>

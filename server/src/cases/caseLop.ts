@@ -8,11 +8,12 @@
  */
 import { db } from '../db.ts';
 import {
-  INTERVENTION_KIND_LABEL, SYSTEM_CLOSE_REASON_LABEL, URGENCY_LABEL, mocChuPa, hanThemPa, tenCaseSos, tenPaViecTiep, trangThaiCaseV4, viecTiepCuaCase,
+  INTERVENTION_KIND_LABEL, PERMISSIONS, SYSTEM_CLOSE_REASON_LABEL, vaiXemHocVien, URGENCY_LABEL, mocChuPa, hanThemPa, tenCaseSos, tenPaViecTiep, trangThaiCaseV4, viecTiepCuaCase,
   type InterventionKind, type ViecTiepCase,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
-import type { MappedCase } from './cases.ts';
+import { can, type Principal } from '../permissions.ts';
+import { listCases, type MappedCase } from './cases.ts';
 import { sosCaseStateMany } from './sosState.ts';
 
 export type PaCase = {
@@ -117,4 +118,20 @@ export function chiTietCaseMo(cases: readonly MappedCase[]): Map<number, CaseChi
     });
   }
   return out;
+}
+
+/**
+ * OV-12d: khối "Case & phương án" ở hồ sơ MT — Case sinh từ lượt (`sc.attempt_id`) + Case trượt lại ở lượt này (mốc `repeat`, `lapTu` = MT của lượt
+ * gốc). Quyền xem như hồ sơ HV / Cần hỗ trợ: `ATTEMPT_VIEW` của lớp + em (GV Speaking chấm chéo xem lượt để chấm nhưng không thấy Case) và Case qua
+ * `listCases` (đã lọc phạm vi); Admin (văn phòng) không có khối như tab Cần hỗ trợ. `null` = không có khối. Số câu SQL cố định (`chiTietCaseMo`).
+ */
+export function caseCuaLuot(p: Principal, a: { id: number; class_id: number | null; student_id: number }): (CaseChiTiet & { lapTu: number | null })[] | null {
+  if (vaiXemHocVien(p.roleKeys) === 'admin' || !can(p, PERMISSIONS.ATTEMPT_VIEW, { classId: a.class_id, studentId: a.student_id })) return null;
+  const lap = new Set((db().prepare(`SELECT case_id FROM case_milestones WHERE attempt_id = ? AND kind = 'repeat'`).all(a.id) as any[]).map((r) => r.case_id as number));
+  const ds = listCases(p, { studentId: a.student_id }).rows.filter((c) => c.attemptId === a.id || lap.has(c.id));
+  const ct = chiTietCaseMo(ds);
+  return ds.flatMap((c) => {
+    const x = ct.get(c.id);
+    return x ? [{ ...x, lapTu: c.attemptId !== a.id ? c.attemptNo : null }] : [];
+  });
 }

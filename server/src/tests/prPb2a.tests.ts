@@ -398,9 +398,9 @@ export async function runPrPb2aTests(t: YThucTestKit) {
 
   check('Pb2-a (4) · khung FT: cột KHÔNG đổi; lớp thường không chữ SOS, không cột kỹ năng', () => {
     const ft = d.cotTongHopFor('ft').map((c: any) => c.khoa).filter((k: string) => !k.startsWith('kn:'));
-    assert(ft.join() === 'luot,dat,sos1,sos2,sos3,chuaDu,hvCase,choNguyenNhan,choDuyet,dangLam,xongHuy', ft.join());
+    assert(ft.join() === 'luot,dat,sos1,sos2,sos3,chuaDu,hvCase,choDuyet,dangLam', ft.join());
     const tc = d.cotTongHopFor('thuong');
-    assert(tc.map((c: any) => c.khoa).join() === 'luot,gk-dat,gk-1,gk-2,ck-duoi50,ck-50,ck-60,ck-dat,cp-dat,cp-1,cp-2,chuaDu,mini-dat,mini-truot,hvCase,choNguyenNhan,choDuyet,dangLam,xongHuy',
+    assert(tc.map((c: any) => c.khoa).join() === 'luot,gk-dat,gk-1,gk-2,ck-duoi50,ck-50,ck-60,ck-dat,cp-dat,cp-1,cp-2,chuaDu,mini-dat,mini-truot,hvCase,choDuyet,dangLam',
       tc.map((c: any) => c.khoa).join());
     assert(!tc.some((c: any) => /SOS/.test(c.nhan('thuong') + c.goiY)), 'không chữ SOS');
   });

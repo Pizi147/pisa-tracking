@@ -1,5 +1,5 @@
 import { THAM_SO_TOI_DA, db, theoLo } from '../db.ts';
-import { CASE_DISMISS_REASON_LABEL, type CaseDismissReason } from '../../../shared/domain/index.ts';
+import { CASE_DISMISS_REASON_LABEL, cotXuLy, hanThemPa, trangThaiCaseV4, type CaseDismissReason, type CotXuLy } from '../../../shared/domain/index.ts';
 
 /**
  * TRẠNG THÁI CỦA CASE TỪ SOS — chỉ ĐỌC, không import mô-đun nghiệp vụ nào (rulebook v3, đặc tả §3.2 và §8).
@@ -76,7 +76,7 @@ export type SosCaseState = {
   /**
    * `Chờ xác nhận Case` (S04, S4-2): Case từ SOS đang mở mà chưa có nguyên nhân — OV-12c: CHỈ Case không phải MT (Progress Test lớp thường,
    * Case nhẹ KCK lớp thường). PR-SOS: không tính khi đang có thẻ "Không cần theo dõi" chờ Quản lý duyệt (T23 — việc đã chuyển sang Quản lý).
-   * Chỉ số `case-cho-xac-dinh-nguyen-nhan` đếm đúng tập này.
+   * Báo QL (`awaitingCauseCaseIds`) đếm đúng tập này; ô Tổng quan "Case chờ duyệt" nay theo `xuLyCaseMany` (OV-12d).
    */
   awaitingCause: boolean;
   /** Hạn Xác nhận nguyên nhân / Xác nhận PA — `sos_cases.han_xac_nhan` (`hanXacNhan`: 5 ngày, Gấp / SOS 3: 3). Chỉ có với Case từ SOS. */
@@ -152,5 +152,39 @@ export function awaitingCauseCaseIds(caseIds: number[]): number[] {
       )
       .all(...chunk) as any[]).map((r) => r.id as number));
   }
+  return out;
+}
+
+/**
+ * OV-12d: nhóm Xử lý (Chờ duyệt · Đang xử lý · xong / huỷ) — MỘT luật cho cột Tổng hợp và ô Tổng quan "Case chờ duyệt" / "quá hạn". `XU_LY_COT_SQL` là
+ * các cột cần (bí danh `sc` = `sos_cases`) để nơi đã có câu SELECT riêng (Tổng hợp) ghép vào câu của mình, không thêm câu; `xuLyCuaDong` tính từ một dòng.
+ * Trạng thái theo `trangThaiCaseV4` (cùng đầu vào `sosCaseStateMany`) + PA đang theo dõi (`cotXuLy`). `quaHan` (chỉ khi Chờ duyệt) = việc tiếp có hạn đã
+ * qua: hạn Xác nhận Case / Ghi nhận xét / Xác nhận PA (`han_xac_nhan`), hoặc hạn Thêm PA (`hanThemPa`) khi Case chưa có PA nào.
+ */
+export const XU_LY_COT_SQL = `sc.id, sc.status, sc.han_xac_nhan, sc.dismiss_reason_code, sc.system_close_reason, sc.detected_at, sc.created_at, sc.urgency, sc.sos_level, sc.kck,
+  ${LA_CASE_SOS('sc')} AS from_sos, ${LA_CASE_MT('sc')} AS la_mt,
+  EXISTS (SELECT 1 FROM case_issues ci WHERE ci.case_id = sc.id AND ci.role = 'primary') AS has_cause,
+  EXISTS (SELECT 1 FROM case_interventions iv WHERE iv.case_id = sc.id AND ${UNCONFIRMED_PRESET('iv')} AND iv.status = 'planned' AND iv.kind != 'bo_tro') AS pa_cho,
+  EXISTS (SELECT 1 FROM case_interventions iv WHERE iv.case_id = sc.id AND iv.status != 'cancelled') AS co_pa,
+  EXISTS (SELECT 1 FROM case_interventions iv WHERE iv.case_id = sc.id AND iv.status IN ('planned', 'started') AND ${NOT_UNCONFIRMED_PRESET('iv')}
+    AND COALESCE(iv.approval_state, 'approved') = 'approved') AS pa_theo_doi,
+  ${CO_THE_KHONG_THEO_DOI('sc')} AS co_the`;
+
+export function xuLyCuaDong(r: any, homNay: string): { cot: CotXuLy; quaHan: boolean } {
+  const tt = trangThaiCaseV4({
+    status: r.status, fromSos: !!r.from_sos, hasCause: !!r.has_cause, laMt: !!r.la_mt, dismissed: !!r.dismiss_reason_code, systemClosed: !!r.system_close_reason,
+    choDuyetKhongTheoDoi: !!r.co_the && r.status !== 'done', coPaChoXacNhan: !!r.pa_cho, hanXacNhan: r.han_xac_nhan ?? null,
+  }, homNay);
+  const cot = cotXuLy(tt.k, !!r.pa_theo_doi);
+  const hanPa = tt.k === 'dang-lam' && !r.co_pa ? hanThemPa(r) : null;
+  return { cot, quaHan: cot === 'choDuyet' && (tt.t === 'qua-han' || (!!hanPa && hanPa < homNay)) };
+}
+
+/** `xuLyCuaDong` cho NHIỀU Case — một câu mỗi lô (`theoLo`). */
+export function xuLyCaseMany(caseIds: readonly number[], homNay: string): Map<number, { cot: CotXuLy; quaHan: boolean }> {
+  const out = new Map<number, { cot: CotXuLy; quaHan: boolean }>();
+  theoLo(caseIds, (lo, ph) => {
+    for (const r of db().prepare(`SELECT ${XU_LY_COT_SQL} FROM sos_cases sc WHERE sc.id IN (${ph})`).all(...lo) as any[]) out.set(r.id as number, xuLyCuaDong(r, homNay));
+  });
   return out;
 }

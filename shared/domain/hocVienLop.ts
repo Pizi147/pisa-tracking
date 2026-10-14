@@ -8,6 +8,7 @@ import { PROGRAMME_TEMPLATES, programmeOf, type ProgrammeCode, skillShort, tenMo
 import { deadlineView } from './display.ts';
 import { goiYCuoiKhoa } from './cuoiKhoa.ts';
 import type { TrangThaiCaseV4, ViecTiepCase } from './sosV4.ts';
+import type { CotXuLy } from './phanTich.ts';
 import type { NhanYThucEm } from './yThuc.ts';
 import { tuanKhoa, tuanLich } from './hienThiNgay.ts';
 import { CHU_CHUYEN_LOP } from './chuyenLop.ts';
@@ -120,13 +121,11 @@ export function duongHocVienLop(params: { get(k: string): string | null }, o: { 
   return `/hoc-vien-lop?${s.toString()}`;
 }
 
-/** Nhóm xử lý của một Case — cùng ba chữ với bảng Tổng hợp (chủ SP 14/10): Chờ duyệt (chưa có PA chạy, PA chờ xác nhận, "Không cần theo dõi" chờ QL) · Đang xử lý (có PA đã chạy) · Xong. */
+/** Nhóm xử lý của một Case — cùng ba chữ với bảng Tổng hợp (chủ SP 14/10). */
 export type NhomXuLy = 'cho-duyet' | 'dang-xu-ly' | 'xong';
 export const NHAN_NHOM_XU_LY = { 'cho-duyet': 'Chờ duyệt', 'dang-xu-ly': 'Đang xử lý', xong: 'Xong' } as const satisfies Record<NhomXuLy, string>;
-export function nhomXuLyCase(k: TrangThaiCaseV4, coPaDaChay: boolean): NhomXuLy {
-  if (k === 'xong' || k === 'huy-khong-theo-doi' || k === 'he-thong-dong' || k === 'rut-sua-diem') return 'xong';
-  return k === 'dang-lam' && coPaDaChay ? 'dang-xu-ly' : 'cho-duyet';
-}
+/** OV-12d: nhóm của Case theo cột Tổng hợp (`cotXuLy` / `xuLyCuaDong`) — một luật cho Tổng hợp, Tổng quan, panel một em. */
+export const NHOM_THEO_COT: Record<CotXuLy, NhomXuLy> = { choDuyet: 'cho-duyet', dangLam: 'dang-xu-ly', xongHuy: 'xong' };
 
 /** Chip `qua-han` không nằm thường trực trên hàng chip — chỉ hiện (đang bấm) khi người dùng tới từ badge. */
 export function chipHienLoc(k: LocHocVien, dangLoc: LocHocVien | null): boolean {
