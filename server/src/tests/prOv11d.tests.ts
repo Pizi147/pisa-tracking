@@ -97,7 +97,7 @@ export async function runPrOv11dTests(t: YThucTestKit) {
   /* Em lộ trình FT đã đóng mà còn ghi danh (demo UB FT 401) — cùng câu chỉ đọc của kiem-truoc. */
   const dongCon = buocTiep.emDongConGhiDanh(conn) as any[];
   check('OV11d-2 · HV-6: câu đếm chỉ đọc (kiem-truoc) thấy em lộ trình FT đã đóng mà còn ghi danh', () => {
-    assert(dongCon.length > 0 && dongCon.every((r) => r.cycle_status !== 'active'), JSON.stringify(dongCon));
+    assert(dongCon.length > 0 && dongCon.every((r) => ['completed', 'abandoned'].includes(r.cycle_status)), JSON.stringify(dongCon));
     assert(/^SELECT /.test(buocTiep.SQL_DONG_CON_GHI_DANH.trim()) && !/\b(UPDATE|INSERT|DELETE)\b/i.test(buocTiep.SQL_DONG_CON_GHI_DANH), 'câu kiểm phải chỉ đọc');
   });
 
@@ -110,6 +110,7 @@ export async function runPrOv11dTests(t: YThucTestKit) {
     if (!buocTiep.trangThaiBuocTiep(QLX, cid)) conn.prepare('UPDATE learning_cycles SET thi_that_khong_thi = 1 WHERE id = ?').run(cid);
     const lop0 = one(`SELECT class_id FROM enrollments WHERE student_id = ? AND status = 'active'`, sid).class_id;
     const soLtActive = () => one(`SELECT COUNT(*) n FROM learning_cycles WHERE student_id = ? AND status = 'active'`, sid).n;
+    const lt0 = soLtActive();
     /* lỗi giữa chừng (lớp mới không hợp lệ) → cả giao dịch quay lui: em vẫn đang học */
     const e1 = loi(() => buocTiep.chonBuocTiep(QLX, cid, { chon: 'hoc_tiep', lopMoiId: 999999 }));
     xoaNho();
@@ -121,7 +122,7 @@ export async function runPrOv11dTests(t: YThucTestKit) {
     buocTiep.boChonBuocTiep(QLX, cid);
     xoaNho();
     const s = one('SELECT status, archived_at FROM students WHERE id = ?', sid);
-    assert(s.status === 'active' && !s.archived_at && one(`SELECT status FROM enrollments WHERE student_id = ? AND class_id = ?`, sid, lop0).status === 'active' && soLtActive() === 0,
+    assert(s.status === 'active' && !s.archived_at && one(`SELECT status FROM enrollments WHERE student_id = ? AND class_id = ?`, sid, lop0).status === 'active' && soLtActive() === lt0,
       `Hoàn tác phải trả em về đang học như trước: ${JSON.stringify({ em: r, ...s })} · lộ trình chạy ${soLtActive()}`);
     buocTiep.chonBuocTiep(QLX, cid, { chon: 'ket_thuc' });
     xoaNho();

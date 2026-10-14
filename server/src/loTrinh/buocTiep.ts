@@ -150,7 +150,7 @@ export function boChonBuocTiep(p: Principal, cycleId: number) {
  */
 export const SQL_DONG_CON_GHI_DANH = `SELECT s.id, s.student_code, s.full_name, c.code AS lop, cy.id AS cycle_id, cy.route, cy.status AS cycle_status
   FROM students s
-  JOIN learning_cycles cy ON cy.student_id = s.id AND cy.route IS NOT NULL AND cy.status != 'active'
+  JOIN learning_cycles cy ON cy.student_id = s.id AND cy.route IS NOT NULL AND cy.status IN ('completed', 'abandoned')
    AND cy.seq = (SELECT MAX(x.seq) FROM learning_cycles x WHERE x.student_id = s.id)
   JOIN enrollments e ON e.id = (SELECT MAX(e2.id) FROM enrollments e2 WHERE e2.student_id = s.id AND e2.status IN ('active', 'paused'))
   JOIN classes c ON c.id = e.class_id

@@ -818,7 +818,8 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
     } : null);
     /* OV-6b2: lớp liên tục không có Cuối khoá. */
     const dang = !dangHoc.is_fast_track && !laLienTuc(dangHoc) && isRatioClass(dangHoc.class_id) ? cuoiKhoaTheoHocVien(dangHoc.class_id, [studentId]).get(studentId) ?? null : null;
-    if (dang && dang.scored > 0) return kem(dangHoc, dang, false);   // bài Final Test của lớp đang học đã có điểm
+    /* bài Final Test của lớp đang học đã có điểm — hoặc em đã chốt Lên FT từ lớp này (OV-11d: dòng KQĐR của lớp đang học, dù Final chưa điểm) */
+    if (dang && (dang.scored > 0 || emLenFtTu(studentId, dangHoc.class_id))) return kem(dangHoc, dang, false);
     const cu = ds.find((r) => r.status === 'transferred');
     const x = cu && isRatioClass(cu.class_id) ? cuoiKhoaTheoHocVien(cu.class_id, [studentId], { daRoi: true }).get(studentId) ?? null : null;
     return x && x.scored > 0 ? kem(cu, x, true) : kem(dangHoc, dang, false);
