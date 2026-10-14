@@ -8,7 +8,10 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
+import { createRequire } from 'node:module';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+
+const require_ts = () => createRequire(import.meta.url)('typescript');
 
 export async function runPrEnTests(t: any) {
   const { check, checkAsync, assert, conn, P } = t;
@@ -145,6 +148,35 @@ export async function runPrEnTests(t: any) {
     const con = ra.filter((r) => viet(r.text) && !CHO_PHEP.some((c) => c.file === r.file && c.text.test(r.text)));
     assert(con.length === 0, `${con.length} chữ Việt còn sót: ` + con.slice(0, 8).map((r) => `${r.file}:${r.line} "${r.text}"`).join(' · '));
   });
+
+  /* ---------------------------------------------------------------- Đợt d: Case – PA, Ghi vi phạm, Ý thức phần GV */
+  await checkAsync('EN-NGUON · file đã dịch (đợt d — Case, Ý thức) không còn chữ Việt hiện ra ngoài từ điển', async () => {
+    const { quetFile } = await import(pathToFileURL(path.join(GOC_REPO, 'scripts/quet-chu.mjs')).href);
+    const ra: any[] = [];
+    for (const f of FILE_DA_DICH_D) quetFile(path.join(GOC_REPO, f), f, 'en', ra);
+    const viet = (x: string) => /[àáảãạăằắẳẵặâầấẩẫậèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵđ]/i.test(x.replace(/\{[^}]*\}/g, ''));
+    const con = ra.filter((r) => viet(r.text) && !CHO_PHEP_D.some((c) => c.file === r.file && c.text.test(r.text)));
+    assert(con.length === 0, `${con.length} chữ Việt còn sót: ` + con.slice(0, 8).map((r) => `${r.file}:${r.line} "${r.text}"`).join(' · '));
+  });
+
+  check('EN-LOI · đợt d: câu lỗi máy chủ của Case / SOS / vi phạm / phối hợp / tệp đều có bản Anh; câu có biến đi qua loi()', () => {
+    const ts = require_ts();
+    const thieu: string[] = [];
+    for (const f of LOI_D) {
+      const src = fs.readFileSync(path.join(GOC_REPO, f), 'utf8');
+      const sf = ts.createSourceFile(f, src, ts.ScriptTarget.Latest, true);
+      (function duyet(n: any) {
+        if ((ts.isCallExpression(n) || ts.isNewExpression(n)) && /^(badRequest|forbidden|notFound|conflict|HttpError)$/.test(n.expression.getText())) {
+          const m = n.arguments?.[n.expression.getText() === 'HttpError' ? 1 : 0];
+          const dong = sf.getLineAndCharacterOfPosition(n.getStart()).line + 1;
+          if (m && ts.isTemplateExpression(m)) thieu.push(`${f}:${dong} câu có biến chưa qua loi(): ${m.getText().slice(0, 60)}`);
+          else if (m && (ts.isStringLiteral(m) || ts.isNoSubstitutionTemplateLiteral(m)) && !(m.text in EN)) thieu.push(`${f}:${dong} "${m.text}"`);
+        }
+        ts.forEachChild(n, duyet);
+      })(sf);
+    }
+    assert(thieu.length === 0, `${thieu.length} câu: ` + thieu.slice(0, 8).join(' · '));
+  });
 }
 
 /**
@@ -166,3 +198,19 @@ const CHO_PHEP: { file: string; text: RegExp }[] = [
   { file: 'web/src/modules/platform/WelcomePage.tsx', text: /^(Hoàn tất|Nguyễn Khánh Vy|Trần Ngọc Hà)$/ },   // chữ in ra của lệnh seed; tên tài khoản demo (dữ liệu)
   { file: 'web/src/ui/NutNgonNgu.tsx', text: /^(Tiếng Việt|Ngôn ngữ \/ Language)$/ },                          // nút ghi bằng chính tiếng của nó
 ];
+
+/**
+ * Đợt d (PR-EN-d, 14/10): Case – PA (ngăn Case, tạo Case, thao tác Case / PA, Xác nhận Case / PA, Ghi nhận xét — OV-12c), Ghi vi phạm, Ý thức phần GV.
+ * Không vào: `cases/CapNhatTuan.tsx`, `cases/TheKyNang.tsx` (Ghi kết quả PA, thẻ kỹ năng — đợt b dịch).
+ */
+const FILE_DA_DICH_D = [
+  ...['CaseBoardPage', 'CasePanel', 'ChiTietKyNang', 'DongXinYKien', 'FormPa', 'MenuXoaPa', 'NeedsEvaluation', 'QuickReport', 'SkillBoard', 'ThaoTacCase']
+    .map((f) => `web/src/modules/cases/${f}.tsx`),
+  ...fs.readdirSync(path.join(GOC_REPO, 'web/src/modules/yThuc')).filter((f) => /\.tsx?$/.test(f)).map((f) => `web/src/modules/yThuc/${f}`),
+  'web/src/modules/students/NganCase.tsx',
+  ...['cases', 'sosV4', 'sos', 'nguoiThucHien', 'yThuc', 'yThucGon'].map((f) => `shared/domain/${f}.ts`),
+];
+const CHO_PHEP_D: { file: string; text: RegExp }[] = [];
+/** Câu lỗi máy chủ GV gặp trên đường Case / Ý thức (đợt d). */
+const LOI_D = ['cases/cases', 'cases/boTro', 'cases/nguoiThucHien', 'cases/sosAuto', 'yThuc/violations', 'yThuc/phoiHop', 'platform/attachments']
+  .map((f) => `server/src/${f}.ts`);
