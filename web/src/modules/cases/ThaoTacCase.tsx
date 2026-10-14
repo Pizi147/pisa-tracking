@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, type ReactNode } from 'react';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { Khoi, KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
@@ -7,6 +7,7 @@ import { ChonNgayGan } from '../../ui/ChonNgay.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { OKhac } from '../../ui/OKhac.tsx';
 import { NutChon } from '../../ui/ui.tsx';
+import { BoiCanh, CanLam, TrangThaiLuu } from '../../ui/KhuonViec.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import {
   CASE_OUTCOMES, CASE_OUTCOME_LABEL, HAN_DUYET_NGAY,
@@ -36,12 +37,16 @@ type ChungPanel = {
 
 /**
  * THÊM PHƯƠNG ÁN (mục 8.2) — PR-PA (§8): một form PA (`FormPa`): Loại · Nội dung · Số buổi · Người dạy / Người thực hiện (không bắt buộc)
- * · Ngày bắt đầu. PA đã làm trước đây là liên kết phụ cuối form (K3-18).
+ * · Ngày bắt đầu. PA đã làm trước đây là liên kết phụ cuối form (K3-18). OV-12e (mockup v3 §6): khuôn panel v3 — đầu "Thêm PA" + chip hạn /
+ * em ↗ · lớp · ngữ cảnh (nơi gọi truyền `dau`), MỘT khối Cần làm (form + nút chính "Thêm PA" / "Gửi QL duyệt"), Bối cảnh ≤ 3 dòng, chân trạng thái lưu;
+ * Bắt đầu = ô ngày gõ được + nút lịch (`ONgay`), mặc định hôm nay.
  */
-export function ThemPaPanel({ caseId, studentId, coPaBatBuoc, hocVien, lop, quayLai, onClose, onSaved }: ChungPanel & {
+export function ThemPaPanel({ caseId, studentId, coPaBatBuoc, hocVien, lop, quayLai, onClose, onSaved, dau, boiCanh }: ChungPanel & {
   caseId: number; studentId?: number | null;
   /** Case có PA theo quy chế đang chạy → PA này là hỗ trợ thêm. */
   coPaBatBuoc?: boolean;
+  /** OV-12e: đầu panel v3 (`dauViec`) + Bối cảnh (Nguyên nhân · Kết quả gần nhất). */
+  dau?: { han?: ReactNode; dong2: ReactNode[] }; boiCanh?: [string, ReactNode][];
 }) {
   const toast = useToast();
   const { homNay } = useNgayNghiepVu();
@@ -52,6 +57,7 @@ export function ThemPaPanel({ caseId, studentId, coPaBatBuoc, hocVien, lop, quay
   const [startedDate, setStartedDate] = useState(homNay);
   const lf = useLoiForm();
   const [busy, setBusy] = useState(false);
+  const [loiLuu, setLoiLuu] = useState<string | null>(null);
   /* PR-GVa (F01 = D13): một khoá gửi cho một lần mở panel — thử lại sau lỗi mạng không ghi PA thứ hai. */
   const khoa = useRef(moiKhoaGui('pa'));
   /* Nhóm Đề xuất luôn phải có Quản lý trả lời. */
@@ -66,6 +72,7 @@ export function ThemPaPanel({ caseId, studentId, coPaBatBuoc, hocVien, lop, quay
     lf.bam();
     if (loi.length > 0) return;
     setBusy(true);
+    setLoiLuu(null);
     try {
       await api.post(`/cases/${caseId}/interventions`, {
         ...paPayload(v), status,
@@ -77,41 +84,49 @@ export function ThemPaPanel({ caseId, studentId, coPaBatBuoc, hocVien, lop, quay
       invalidate('/cases'); invalidate('/students'); invalidate('/tong-quan'); invalidate('/my-work');   // OV-11c (CV-2): việc Thêm PA hết ở Công việc
       toast.push('ok', deXuat ? 'Đã gửi Quản lý duyệt' : 'Đã ghi lại');
       onSaved();
-    } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
+    } catch (e: any) { setLoiLuu(e.message); } finally { setBusy(false); }
   };
 
+  const nut = (
+    <button type="button" className="btn btn-primary min-h-[40px] px-4 font-bold" disabled={busy} onClick={luu}>
+      {busy ? 'Đang lưu…' : deXuat ? 'Gửi QL duyệt' : 'Thêm PA'}
+    </button>
+  );
+  const daSua = !!(v.description.trim() || status === 'completed');
   return (
-    <KhungPanel tieuDe="Thêm PA" hocVien={hocVien} lop={lop} quayLai={quayLai} onDong={onClose}
+    <KhungPanel tieuDe="Thêm PA" hocVien={hocVien} lop={lop} quayLai={quayLai} onDong={onClose} dau={dau}
       chan={{
-        conThieu: lf.conThieu(loi),
-        chinh: (
-          <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={luu}>
-            {deXuat ? 'Gửi Quản lý duyệt' : 'Thêm PA'}
-          </button>
-        ),
+        v3: true, chinh: nut, daSua, conThieu: lf.conThieu(loi),
+        dongTren: busy || loiLuu ? <TrangThaiLuu tt={busy ? 'dang' : 'loi'} loi={loiLuu} onThuLai={() => void luu()} /> : undefined,
       }}>
-      {coPaBatBuoc && <p className="m-0 pt-3 text-xs text-slate-400">PA theo quy chế vẫn chạy — PA này là hỗ trợ thêm.</p>}
-      <FormPa v={v} dat={(p) => setV((x) => ({ ...x, ...p }))} lf={lf} loi={loi} chonLoai studentId={studentId}
-        luat={deXuat
-          ? `Đây là một ĐỀ XUẤT nên Quản lý phải trả lời trong ${HAN_DUYET_NGAY} ngày, tính cả hôm gửi. Trong lúc chờ thì chưa ghi kết quả được.`
-          : 'Chọn một mục trong "Cần Quản lý duyệt" tức là đang xin ý kiến Quản lý.'}
-        ngay={status === 'completed' ? (
-          <Truong nhan="Ngày đã làm" batBuoc loi={lf.loiCua(loi, 'ngay-lam')}>
-            <ChonNgayGan value={completedDate} onChange={setCompletedDate} soNgay={30} chuaChon="Chọn ngày" ariaLabel="Ngày đã làm"
-              id={lf.oId('ngay-lam')} onBlur={lf.roi('ngay-lam')} invalid={!!lf.loiCua(loi, 'ngay-lam')} />
-          </Truong>
-        ) : (
-          <Truong nhan="Ngày bắt đầu">
-            <ChonNgayGan value={startedDate} onChange={setStartedDate} soNgay={14} chuaChon="Mặc định: hôm nay" />
-          </Truong>
-        )}
-        cuoi={(
-          /* K3-18: PA đã làm trước đây là trường hợp hiếm — liên kết phụ, không phải công tắc đầu form. */
-          <button type="button" className="link appearance-none border-0 bg-transparent p-0 text-left text-xs"
-            aria-pressed={status === 'completed'} onClick={() => setStatus(status === 'completed' ? 'started' : 'completed')}>
-            {status === 'completed' ? 'Ghi PA đang theo dõi (bỏ chế độ đã làm trước đây)' : 'Ghi một PA đã làm trước đây'}
-          </button>
-        )} />
+      <div className="flex flex-col gap-5 pt-4">
+        <CanLam>
+          {coPaBatBuoc && <p className="m-0 text-xs text-slate-300">PA theo quy chế vẫn chạy — PA này là hỗ trợ thêm.</p>}
+          <FormPa phang v={v} dat={(p) => setV((x) => ({ ...x, ...p }))} lf={lf} loi={loi} chonLoai studentId={studentId}
+            luat={deXuat
+              ? `Đây là một ĐỀ XUẤT nên Quản lý phải trả lời trong ${HAN_DUYET_NGAY} ngày, tính cả hôm gửi. Trong lúc chờ thì chưa ghi kết quả được.`
+              : 'Chọn một mục trong "Cần Quản lý duyệt" tức là đang xin ý kiến Quản lý.'}
+            ngay={status === 'completed' ? (
+              <Truong nhan="Ngày đã làm" batBuoc loi={lf.loiCua(loi, 'ngay-lam')}>
+                <ChonNgayGan value={completedDate} onChange={setCompletedDate} soNgay={30} chuaChon="Chọn ngày" ariaLabel="Ngày đã làm"
+                  id={lf.oId('ngay-lam')} onBlur={lf.roi('ngay-lam')} invalid={!!lf.loiCua(loi, 'ngay-lam')} />
+              </Truong>
+            ) : (
+              <Truong nhan="Bắt đầu" batBuoc>
+                <ONgay kieu="ngay" value={startedDate} onChange={setStartedDate} />
+              </Truong>
+            )}
+            cuoi={(
+              /* K3-18: PA đã làm trước đây là trường hợp hiếm — liên kết phụ, không phải công tắc đầu form. */
+              <button type="button" className="link appearance-none border-0 bg-transparent p-0 text-left text-xs"
+                aria-pressed={status === 'completed'} onClick={() => setStatus(status === 'completed' ? 'started' : 'completed')}>
+                {status === 'completed' ? 'Ghi PA đang theo dõi (bỏ chế độ đã làm trước đây)' : 'Ghi một PA đã làm trước đây'}
+              </button>
+            )} />
+          <div className="flex flex-wrap items-center gap-1.5 pt-0.5 max-sm:hidden">{nut}</div>
+        </CanLam>
+        {boiCanh && <BoiCanh dong={boiCanh} />}
+      </div>
     </KhungPanel>
   );
 }

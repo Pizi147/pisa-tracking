@@ -68,7 +68,7 @@ export function PanelViec({ it, onDong, onDaLam, onTiep }: {
     case 'ban_giao':
       return <BanGiaoPanel key={it.key} classId={it.classId!} mon={it.key.startsWith('ban_giao_mon:') ? it.key.split(':')[2] ?? null : null} onClose={onDong} onDone={doi} />;
     case 'yt_xu_ly':
-      return <XacNhanXuLyPanel key={it.key} studentId={it.studentId} onClose={onDong} onDone={doi} />;
+      return <XacNhanXuLyPanel key={it.key} studentId={it.studentId} lop={lop} onClose={onDong} onDone={doi} />;
     case 'yt_thuc_hien':
       return <DaThucHienPanel key={it.key} measureId={soCuaKhoa(it.key)} onClose={onDong} onDone={doi} />;
     case 'khai_bac':

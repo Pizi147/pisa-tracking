@@ -64,12 +64,13 @@ export function DauDuoi() {
 }
 
 const THU = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
-/** OV-12c — MỘT chip hạn ở đầu panel làm việc v3: quá hạn nền cam + ⚠ + số ngày · hạn hôm nay vàng · còn lại viền xám. Màu theo `deadlineView`. */
+/** MỘT chip hạn ở đầu panel làm việc v3 (OV-12c) — 3 mức (OV-12e, chủ SP 14/10 tối): quá hạn nền cam + ⚠ + số ngày · còn ≤ 3 ngày vàng · xa hơn
+ *  viền xám; luôn có chữ, không chỉ màu. Ngưỡng ở MỘT chỗ: `deadlineView` (`ganHan`). */
 export function ChipHan({ loai, han }: { loai: DeadlineKind; han: string | null }) {
   const { homNay } = useNgayNghiepVu();
   if (!han) return null;
   const v = deadlineView({ kind: loai, due: han, today: homNay });
-  const lop = v.tone === 'overdue' ? 'border-late-line bg-late-bg text-late' : v.homNay ? 'border-soon-line bg-soon-bg text-soon' : 'border-[color:var(--line-strong)] text-slate-200';
+  const lop = v.tone === 'overdue' ? 'border-late-line bg-late-bg text-late' : v.ganHan ? 'border-soon-line bg-soon-bg text-soon' : 'border-[color:var(--line-strong)] text-slate-200';
   return (
     <span title={v.text} className={`inline-flex h-6 shrink-0 items-center gap-1 whitespace-nowrap rounded-full border px-2.5 text-[12.5px] font-bold tabular-nums ${lop}`}>
       {v.tone === 'overdue' ? <><span aria-hidden>⚠</span>{t('Quá hạn {n} ngày', { n: v.daysOverdue ?? 0 })}</> : v.homNay ? t('Hạn hôm nay')

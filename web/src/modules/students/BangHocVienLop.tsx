@@ -89,7 +89,7 @@ export function BangHocVienLop({ lop, chiHien, sapXep, onDoi, soCot, the = false
     return l && l.can > l.co ? <span className="tabular-nums text-slate-100">{l.can - l.co}</span> : <span className="text-slate-600">—</span>;
   };
   const menuDong = (s: DongRoster) => tt.mucCua({
-    id: s.id, ten: s.fullName, dangHoc: s.status === 'active', nhapDiem: nhapDiemCua(lop.id, thuong, s.timeline), status: s.status,
+    id: s.id, ten: s.fullName, dangHoc: s.status === 'active', nhapDiem: nhapDiemCua(lop.id, thuong, s.timeline), status: s.status, xuLyYThuc: !!s.canhBaoYThuc,
   });
   const rows = useMemo(() => sapXepHocVien(
     (data ?? [])

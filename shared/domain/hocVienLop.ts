@@ -319,9 +319,9 @@ export function nhomGiaoVienBoMon(
 // ---------------------------------------------------------------- menu ⋯ dòng học viên (§3.7, §4, Q1)
 
 /* PR-YT4 (K2-30 phần chữ): bỏ mục `Hồ sơ` (tên em đã là liên kết); "+ Ghi vi phạm" (T31 — "Ghi nhận" chỉ nghĩa đã xem). */
-export type MucMenuDong = 'vi-pham' | 'case' | 'nhap-diem' | 'sua-thong-tin' | 'lo-trinh-tiep' | 'chuyen-lop' | 'de-xuat-chuyen-lop';
+export type MucMenuDong = 'vi-pham' | 'xu-ly-y-thuc' | 'case' | 'nhap-diem' | 'sua-thong-tin' | 'lo-trinh-tiep' | 'chuyen-lop' | 'de-xuat-chuyen-lop';
 export const MUC_MENU_DONG_NHAN: Record<MucMenuDong, string> = {
-  'vi-pham': '+ Ghi vi phạm', case: '+ Case', 'nhap-diem': 'Nhập điểm', 'sua-thong-tin': 'Sửa thông tin',
+  'vi-pham': '+ Ghi vi phạm', 'xu-ly-y-thuc': 'Xác nhận xử lý', case: '+ Case', 'nhap-diem': 'Nhập điểm', 'sua-thong-tin': 'Sửa thông tin',
   'lo-trinh-tiep': 'Lộ trình tiếp theo', 'chuyen-lop': 'Chuyển lớp…', 'de-xuat-chuyen-lop': 'Đề xuất chuyển lớp…',
 };
 /** Việc HIẾM của dòng (K2-30): kẻ vạch trước mục hiếm đầu tiên — tách khỏi việc hằng ngày (Ghi vi phạm · Case · Nhập điểm). */
@@ -337,10 +337,13 @@ export function mucMenuDongHocVien(i: {
   coTheNhapDiem: boolean; coTheSuaHocVien: boolean; coTheChuyenLop: boolean;
   /** PR-CT (Q30-1): GVCN thấy "Đề xuất chuyển lớp…" thay cho "Chuyển lớp…" (chỉ Quản lý ra lệnh). */
   coTheDeXuatChuyenLop?: boolean;
+  /** OV-12e (mockup v3 §8): em đang cần xử lý Ý thức + người xem ghi được vi phạm → "Xác nhận xử lý" mở panel ngay trên trang. */
+  coTheXuLyYThuc?: boolean;
 }, bat: { loTrinhTiepTheo: boolean; chuyenLop: boolean } = MENU_DONG_CHO_PR_LT): MucMenuDong[] {
   const out: MucMenuDong[] = [];
   if (!i.dangHoc) return out;
   if (i.coTheGhiViPham) out.push('vi-pham');
+  if (i.coTheXuLyYThuc) out.push('xu-ly-y-thuc');
   if (i.coTheBaoCase) out.push('case');
   if (i.coTheNhapDiem) out.push('nhap-diem');
   /* PR-OV2b: Sửa thông tin một em ngay tại dòng (panel như ⋯ hồ sơ HV). */

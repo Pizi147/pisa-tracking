@@ -152,7 +152,7 @@ export function ClassRoster({ classId, maLop, quyen, onDoi, onAddStudents, chon 
                   <span className="mt-1 block"><KetLuan row={s} cotMocTrong={!h && !dv} /></span>
                 </>
               )}
-              hanhDong={<MenuDong muc={tt.mucCua({ id: s.id, ten: s.fullName, dangHoc: s.status === 'active', nhapDiem: nhapDiemCua(classId, false, s.timeline), status: s.status })} />}
+              hanhDong={<MenuDong muc={tt.mucCua({ id: s.id, ten: s.fullName, dangHoc: s.status === 'active', nhapDiem: nhapDiemCua(classId, false, s.timeline), status: s.status, xuLyYThuc: !!s.canhBaoYThuc })} />}
               dong={[
                 { nhan: 'Target', noiDung: <TargetText band={s.cycle?.target} kck={s.cycle?.khongCamKet} /> },
                 { nhan: 'Dự kiến thi', noiDung: <ExamPlanText plan={s.examPlan} /> },
@@ -296,7 +296,7 @@ export function ClassRoster({ classId, maLop, quyen, onDoi, onAddStudents, chon 
 
                   <td className="td">{quyen.theoVai ? (s.lienHe ? <OPhuHuynh l={s.lienHe} /> : '—') : <FollowCell row={s} classId={classId} />}</td>
                   <td className="td text-center">
-                    <MenuDong muc={tt.mucCua({ id: s.id, ten: s.fullName, dangHoc: s.status === 'active', nhapDiem: nhapDiemCua(classId, false, s.timeline), status: s.status })} />
+                    <MenuDong muc={tt.mucCua({ id: s.id, ten: s.fullName, dangHoc: s.status === 'active', nhapDiem: nhapDiemCua(classId, false, s.timeline), status: s.status, xuLyYThuc: !!s.canhBaoYThuc })} />
                   </td>
                 </tr>
               );

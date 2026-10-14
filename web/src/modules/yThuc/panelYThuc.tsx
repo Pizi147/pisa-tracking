@@ -56,7 +56,7 @@ export function usePanelYThuc({ onDone, roster, maLop }: {
         onDelete={(id) => { dong(); setDeleteId(id); }}
       />
       {panel?.loai === 'xu-ly' && (
-        <XacNhanXuLyPanel studentId={panel.studentId} cheDo={panel.cheDo} onClose={dong} onDone={onDone}
+        <XacNhanXuLyPanel studentId={panel.studentId} cheDo={panel.cheDo} lop={maLop} onClose={dong} onDone={onDone}
           onKhai={(sid) => mo({ loai: 'khai', studentId: sid })} />
       )}
       {panel?.loai === 'khai' && <KhaiBacPanel studentId={panel.studentId} sua={panel.sua} onClose={dong} onDone={onDone} />}

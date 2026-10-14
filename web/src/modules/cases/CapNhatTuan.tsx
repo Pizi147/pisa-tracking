@@ -1,32 +1,32 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { api, invalidate } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
-import { Hang2, Khoi, KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
+import { Hang2, KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
-import { QuaHan } from '../../ui/Nhan.tsx';
+import { ChipHan } from '../../ui/Nhan.tsx';
+import { BoiCanh, CanLam, NutChu, TrangThaiLuu, dauViec } from '../../ui/KhuonViec.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
-import { ErrorState, NutChon, Skeleton } from '../../ui/ui.tsx';
+import { BoLocDoan, ErrorState, NutChon, Skeleton } from '../../ui/ui.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { FormPa, KhoaNho, VachBuoi } from './FormPa.tsx';
 import {
   FOLLOWUP_OUTCOMES, INTERVENTION_KIND_LABEL,
-  GOI_Y_KET_QUA_PA, NUT_LUU_KET_QUA, PLAN_DECISION_HINT, PLAN_DECISION_NGAN, PLAN_DECISION_NGHIA, quyetDinhChoPa,
-  decisionBlockedReason, decisionNeedsReason, deadlineView, interventionKindsFor, nhanTuanGhiKetQua, outcomeLabelFor,
+  GOI_Y_KET_QUA_PA, NUT_LUU_KET_QUA, PLAN_DECISION_NGAN, nhomQuyetDinh, quyetDinhChoPa,
+  decisionBlockedReason, decisionNeedsReason, interventionKindsFor, nhanTuanGhiKetQua, outcomeLabelFor,
   type NguoiChon, type PlanDecision, dsLoi, type LuatTruong,
   canBuoiTutor, coNguoiDay, coSoBuoi, coSoBuoiKy, demSauKetQua, kiemSoBuoiTuan, soBuoiTu, type BuoiTutor, giaTriCuaPa, loiFormPa, loiKetQuaTuan, nguoiCuaPa, paMoi, paPayload, tachKhac, thanKetQuaTuan, thanSuaPa,
   type GiaTriPa,
 } from '@shared/domain/index.ts';
 
 /**
- * KẾT QUẢ CỦA MỘT PA — MỘT PANEL (PR-UX3, N-4, mockup 15 §4–§5; nguồn §8). Thay `CapNhatTuanForm` (form trải trong trang + hộp
- * thoại đè lên ngăn Case): từ Hồ sơ HV, Việc cần làm, Hành trình đều mở NGĂN CASE ở view này.
- *
- * Hai khối: 1 · Kết quả tuần W4 SEP / ghi bù nhiều tuần (4 nút + "Chưa đủ dữ liệu" là nút chữ; khối đếm buổi — PR-PA mockup pa-dong-bo §7:
- * Số buổi tuần này + Người dạy tuần này (thay ô Người phụ trách cũ) + vạch "Đã dạy 3/10 → sau khi lưu 5/10"; Vấn đề còn tồn / Ghi chú —
- * PR-LUI-a2) · 2 · Quyết định (danh sách dọc 5 dòng, khối con mở NGAY DƯỚI dòng được chọn). Luật giữ nguyên (máy chủ vẫn kiểm lại); chỉ đổi CÁCH HIỆN: nút Lưu không mờ, bấm mới
- * hiện "Còn thiếu: Tiến triển · Lý do điều chỉnh" (Q4) — trước khi bấm không có lỗi nào.
+ * GHI KẾT QUẢ CỦA MỘT PA — khuôn panel v3 (OV-12e, mockup `mockup-ov12-panel-v3-2026-10-14.html` §5): đầu "Ghi kết quả W1–W2 SEP" + chip hạn / em ↗ ·
+ * lớp · PA; MỘT khối Cần làm: Tiến triển (2 tuần) * (5 mức) · Nhận xét * (Tutor: n dòng Tutor · Nhận xét buổi, không ô chung) · Số buổi kỳ này +
+ * Người dạy (+ vạch "Đã dạy 3/10 → sau khi lưu 5/10") · Quyết định 3 nút Giữ nguyên (mặc định) · Điều chỉnh · Kết thúc PA — "Thay PA", "Xin hỗ trợ QL"
+ * mở BÊN TRONG Điều chỉnh (`nhomQuyetDinh`, chủ SP 14/10 tối) · Ngày ghi · một nút chính; Bối cảnh ≤ 3 dòng; chân trạng thái lưu. Bỏ ô
+ * "Vấn đề còn tồn / Ghi chú" — chữ cũ không xoá: sửa lần ghi cũ gửi lại nguyên giá trị, lịch sử vẫn đọc. Luật giữ nguyên (máy chủ kiểm lại); nút chính
+ * luôn bấm được, bấm khi thiếu mới hiện lỗi dưới ô + "Còn thiếu n ô" ở chân.
  */
 
 export type PaCanCapNhat = {
@@ -80,13 +80,10 @@ const DA_LUU: Record<PlanDecision, string> = {
   ask_manager: 'Đã gửi Quản lý — PA vẫn chạy',
 };
 
-/** Nghĩa ngắn (≤ 1 dòng) của dòng quyết định bị chặn — bản đủ ở `title`. */
-function ngiaBiChan(outcome: string): string {
-  return !outcome ? 'Chọn kết quả trước' : outcome === 'insufficient' ? 'Cần có kết quả để so' : 'Không hợp với kết quả này';
-}
-
-export function GhiKetQuaPanel({ pa, sua, hocVien, lop, quayLai, onClose, onSaved, onThemPa }: {
+export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, quayLai, onClose, onSaved, onThemPa }: {
   pa: PaCanCapNhat; hocVien?: string | null; lop?: string | null;
+  /** OV-12e: đầu panel v3 — em (link hồ sơ) · ngữ cảnh ("Tăng cường bài tập · L"); Bối cảnh ≤ 3 dòng (Nguyên nhân · Kết quả kỳ trước). */
+  em?: { id: number; ten: string } | null; ngCanh?: string | null; boiCanh?: [string, ReactNode][];
   /** OV-7b: sửa lần ghi gần nhất — form điền sẵn, lưu qua `POST /followups/:id/sua`. */
   sua?: SuaKetQua;
   /** PA theo quy chế cần thêm hỗ trợ → mở Thêm PA (T63, K3-12). */
@@ -100,8 +97,12 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, quayLai, onClose, onSave
   const [dau] = useState(() => giaTriDau(pa, sua, homNay));
   const [outcome, setOutcome] = useState(g?.outcome ?? '');
   const [progress, setProgress] = useState(g?.note ?? '');
-  const [remaining, setRemaining] = useState(g?.remainingIssue ?? '');
-  const [decision, setDecision] = useState<PlanDecision | ''>(g?.decision ?? '');
+  /* Chủ SP 14/10 tối: bỏ ô "Vấn đề còn tồn / Ghi chú" — lần ghi cũ có chữ thì sửa vẫn gửi lại nguyên giá trị (không mất dữ liệu). */
+  const remaining = g?.remainingIssue ?? '';
+  /* Mockup v3 §5: Giữ nguyên là mặc định (lần cuối PA quy chế không có Quyết định). */
+  const [decision, setDecision] = useState<PlanDecision | ''>(g?.decision ?? (pa.lanCuoi ? '' : 'keep'));
+  const [chanQd, setChanQd] = useState<string | null>(null);
+  const [loiLuu, setLoiLuu] = useState<string | null>(null);
   const [reason, setReason] = useState(g?.decisionNote ?? '');
   const [on, setOn] = useState(g?.observedOn ?? homNay);
   const [endOn, setEndOn] = useState(g?.completedOn ?? homNay);
@@ -138,6 +139,7 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, quayLai, onClose, onSave
   const pickOutcome = (o: string) => {
     if (khoaLuaChon) return;
     setOutcome(o);
+    setChanQd(null);
     if (decision && decisionBlockedReason(o, decision)) setDecision('');
   };
   /* PR-SOS: lần CUỐI của PA theo quy chế — không khối Quyết định; "Chưa đủ dữ liệu" được, kèm Lý do (K3-13). */
@@ -148,15 +150,21 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, quayLai, onClose, onSave
   const [mtNgay, setMtNgay] = useState(dau.mtNgay);
   /* T63, K3-12: PA theo quy chế chỉ có Giữ nguyên / Điều chỉnh / Xin hỗ trợ — Thay và Kết thúc ẨN (không mờ). */
   const dsQuyetDinh = quyetDinhChoPa({ preset: !!pa.batBuoc }, lanCuoi);
+  /* Ba nút trên cùng; Điều chỉnh = Sửa PA này · Thay PA · Xin hỗ trợ QL (cái nào PA được phép) — chức năng giữ đủ. */
+  const { tren: dsTren, dieuChinh: dsDc } = nhomQuyetDinh(dsQuyetDinh);
+  const trongDc = dsDc.includes(decision as PlanDecision);
   const needReason = !!decision && decisionNeedsReason(decision);
   const daDay = pa.daDay ?? 0;
+  /* Chủ SP 14/10 tối: PA Tutor có buổi — nhận xét nằm ở từng buổi, không ô Nhận xét chung; máy chủ nhận nhận xét các buổi ghép lại làm ghi chú. */
+  const nhanXetTheoBuoi = coBuoi && soDong > 0;
+  const ghepBuoi = Array.from({ length: soDong }, (_, i) => (buoi[i]?.nhanXet ?? '').trim()).filter(Boolean).map((x, i) => `Buổi ${i + 1}: ${x}`).join(' · ');
   const dem = coDem ? demSauKetQua(daDay, pa.soBuoi!, tuan) : null;
   const thanDc = thanSuaPa(dc, gocDc, { moi: '', cu: null });
 
   /* Ô lỗi (YC-12.5.2): lý do dưới ô, chân chỉ đếm "n ô cần sửa ↑". Luật giữ như bản cũ. */
   const LUAT: LuatTruong[] = [
-    { khoa: 'ket-qua', nhan: 'Kết quả', chon: true },
-    { khoa: 'tien-trien', nhan: 'Tiến triển', toiThieu: 8 },
+    { khoa: 'ket-qua', nhan: 'Tiến triển (2 tuần)', chon: true },
+    ...(nhanXetTheoBuoi ? [] : [{ khoa: 'tien-trien', nhan: 'Nhận xét', toiThieu: 8 }]),
     ...(lanCuoi ? [] : [{ khoa: 'quyet-dinh', nhan: 'Quyết định', chon: true }]),
     ...(lanCuoi && outcome === 'insufficient' ? [{ khoa: 'ly-do', nhan: 'Lý do chưa đủ dữ liệu', toiThieu: 1 }] : []),
     ...(needReason ? [{ khoa: 'ly-do', nhan: decision === 'adjust' ? 'Lý do điều chỉnh' : 'Lý do thay', toiThieu: 1 }] : []),
@@ -174,6 +182,9 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, quayLai, onClose, onSave
     if (!buoi[i]?.tutor.trim()) loi.push({ khoa: `buoi-${i}-tutor`, nhan: `Tên tutor buổi ${i + 1}`, lyDo: 'Chưa điền' });
     if (!buoi[i]?.nhanXet.trim()) loi.push({ khoa: `buoi-${i}-nx`, nhan: `Nhận xét buổi ${i + 1}`, lyDo: 'Chưa điền' });
   }
+  if (nhanXetTheoBuoi && !loi.some((l) => l.khoa.startsWith('buoi-')) && ghepBuoi.replace(/^Buổi \d+: /, '').length < 8) {
+    loi.push({ khoa: 'buoi-0-nx', nhan: 'Nhận xét buổi 1', lyDo: 'Ghi rõ hơn — ít nhất 8 ký tự' });
+  }
   if (decision === 'adjust') {
     /* Số buổi mới ≥ đã dạy SAU tuần này (máy chủ kiểm cùng luật). */
     loi.push(...loiFormPa(dc, { goc: gocDc, daDay: dem?.da ?? daDay, tienTo: 'dc-' }));
@@ -187,9 +198,10 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, quayLai, onClose, onSave
     lf.bam();
     if (thieu.length > 0 || (!decision && !lanCuoi)) return;
     setBusy(true);
+    setLoiLuu(null);
     try {
       const body: Record<string, unknown> = {
-        decision: lanCuoi ? undefined : decision, outcome, note: progress, observedOn: on || undefined,
+        decision: lanCuoi ? undefined : decision, outcome, note: nhanXetTheoBuoi ? ghepBuoi : progress, observedOn: on || undefined,
         remainingIssue: remaining.trim() || undefined,
         /* Lý do chỉ gửi khi có ô lý do thật — ô "Ghi chú" riêng đã gộp vào "Vấn đề còn tồn / Ghi chú" (PR-LUI-a2). */
         decisionNote: (needReason || decision === 'ask_manager' || (lanCuoi && outcome === 'insufficient')) ? reason.trim() || undefined : undefined,
@@ -209,33 +221,32 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, quayLai, onClose, onSave
       toast.push('ok', sua ? 'Đã sửa kết quả' : lanCuoi ? 'Đã lưu kết quả cuối — PA theo quy chế kết thúc' : DA_LUU[decision as PlanDecision]);
       onSaved();
     } catch (e: any) {
-      toast.push('error', e?.message ?? 'Không lưu được');
+      /* Chân v3: lỗi một dòng + Thử lại; chữ đã gõ giữ nguyên. */
+      setLoiLuu(e?.message ?? 'Không lưu được');
     } finally { setBusy(false); }
   };
 
-  /* Sửa: hạn của lần đã ghi không còn là việc phải làm — không hiện. */
-  const hanGhi = pa.actionDue && !sua ? deadlineView({ kind: 'cap-nhat-pa', due: pa.actionDue, today: homNay }) : null;
-  /* K3-17: tiêu đề khối nói TUẦN đang ghi ('Kết quả tuần W4 SEP'); trễ nhiều tuần thì nói khoảng + số tuần ghi bù. */
+  /* K3-17 → OV-12a: kỳ đang ghi ("Kết quả W3–W4 SEP"); trễ nhiều kỳ thì khoảng + "(ghi bù n kỳ)". Tên việc ở đầu panel: "Ghi kết quả W3–W4 SEP". */
   const tuanGhi = nhanTuanGhiKetQua(pa.actionDue ?? null, homNay).tieuDe;
   const tenLoai = INTERVENTION_KIND_LABEL[pa.kind as keyof typeof INTERVENTION_KIND_LABEL] ?? pa.kind;
   /* PR-PA (§7): PA có Số buổi → "Học Tutor · 10 buổi"; còn lại giữ nội dung PA. */
   const tenPa = coDem ? `${tenLoai} · ${pa.soBuoi} buổi` : pa.description || tenLoai;
 
-  /* Khối đếm (mockup §7): hai ô cùng hàng khi PA có Số buổi; PA không Số buổi chỉ có Người dạy tuần này (không bắt buộc). */
+  /* Khối đếm (mockup §7): hai ô cùng hàng khi PA có Số buổi; PA không Số buổi chỉ có Người dạy (không bắt buộc). */
   const oBuoi = coO && (
     <Truong nhan="Số buổi kỳ này" batBuoc loi={loiCua('so-buoi-tuan')}>
       <input className="field w-24 tabular-nums" inputMode="numeric" maxLength={2} {...o('so-buoi-tuan')} value={tuan} onChange={(e) => setTuan(e.target.value)} />
     </Truong>
   );
-  /* PR-CT2: không bắt buộc ở mọi trường hợp (cùng `loiKetQuaTuan` và máy chủ). */
+  /* PR-CT2: không bắt buộc ở mọi trường hợp (cùng `loiKetQuaTuan` và máy chủ). OV-12e: bỏ chữ "tuần" (kết quả ghi theo kỳ hai tuần). */
   const oNguoi = coNguoiDay(pa.kind) && (
-    <Truong nhan="Người dạy tuần này" tuyChon as="div" loi={loiCua('nguoi-day')}>
+    <Truong nhan="Người dạy" as="div" loi={loiCua('nguoi-day')}>
       <ChonNguoi nhom="nhan_vien" value={nguoiDay} onChange={setNguoiDay} choTrong="Để trống" placeholder="Chưa chọn · gõ tên để tìm"
-        ariaLabel="Người dạy tuần này" id={lf.oId('nguoi-day')} onBlur={lf.roi('nguoi-day')} invalid={!!loiCua('nguoi-day')} />
+        ariaLabel="Người dạy" id={lf.oId('nguoi-day')} onBlur={lf.roi('nguoi-day')} invalid={!!loiCua('nguoi-day')} />
     </Truong>
   );
 
-  /* Khối con mở NGAY DƯỚI dòng quyết định được chọn (thụt 12px, vạch trái). */
+  /* Khối con mở NGAY DƯỚI Quyết định (thụt, vạch trái): Điều chỉnh (Sửa PA này · Thay PA · Xin hỗ trợ QL) / Kết thúc PA. */
   const khoiCon = (d: PlanDecision) => {
     if (d === 'adjust') {
       return (
@@ -259,12 +270,9 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, quayLai, onClose, onSave
     }
     if (d === 'ask_manager') {
       return (
-        <div className="space-y-2">
-          <Truong nhan="Cần Quản lý giúp gì" batBuoc loi={loiCua('ly-do')}>
-            <textarea className="field w-full" {...o('ly-do')} rows={2} value={reason} onChange={(e) => setReason(e.target.value)} />
-          </Truong>
-          <p className="m-0 text-xs text-slate-500">Gửi Quản lý · trả lời trong 5 ngày · xem ở Yêu cầu của tôi</p>
-        </div>
+        <Truong nhan="Cần Quản lý giúp gì" batBuoc loi={loiCua('ly-do')}>
+          <textarea className="field w-full" {...o('ly-do')} rows={2} value={reason} onChange={(e) => setReason(e.target.value)} />
+        </Truong>
       );
     }
     if (d === 'end') {
@@ -272,161 +280,145 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, quayLai, onClose, onSave
     }
     return null;
   };
+  /* Quyết định bị chặn theo kết quả (vd "Chưa đủ dữ liệu" thì chưa Kết thúc) — bấm thì nói lý do ngay dưới, không chọn. */
+  const chanCua = (x: PlanDecision) => (khoaLuaChon && decision !== x ? sua!.chan : outcome ? decisionBlockedReason(outcome, x) : null);
+  const chonQd = (d: PlanDecision) => {
+    if (d === 'adjust') {
+      if (trongDc) return;
+      const dau = dsDc.find((x) => !chanCua(x));
+      if (dau) { setDecision(dau); setChanQd(null); } else setChanQd(chanCua(dsDc[0]));
+      return;
+    }
+    const ly = chanCua(d);
+    if (ly) { setChanQd(ly); return; }
+    setDecision(d); setChanQd(null);
+  };
+
+  const nhanNut = busy ? 'Đang lưu…' : sua ? 'Lưu' : lanCuoi ? 'Lưu kết quả cuối' : NUT_LUU_KET_QUA[decision || 'keep'];
+  const nut = <button type="button" className="btn btn-primary min-h-[40px] px-4 font-bold" disabled={busy} onClick={luu}>{nhanNut}</button>;
+  const daSua = !!(outcome || progress.trim() || buoi.some((b) => b.tutor.trim() || b.nhanXet.trim()) || (decision && decision !== 'keep'));
+  const tieuDe = sua ? (lanCuoi ? 'Sửa kết quả cuối' : 'Sửa kết quả') : lanCuoi ? 'Ghi kết quả cuối' : `Ghi ${tuanGhi.charAt(0).toLowerCase()}${tuanGhi.slice(1)}`;
 
   return (
-    <KhungPanel tieuDe={sua ? (lanCuoi ? 'Sửa kết quả cuối' : 'Sửa kết quả') : lanCuoi ? 'Kết quả cuối' : 'Kết quả'} hocVien={hocVien} lop={lop} quayLai={quayLai} onDong={onClose}
-      ngCanh={(
-        <span className="flex items-center gap-1.5 max-sm:flex-col max-sm:items-start max-sm:gap-0.5">
-          <span className="truncate max-sm:whitespace-normal max-sm:break-words" title={tenPa}>{tenPa}{pa.cycleNo && pa.cycleNo > 1 ? ` · Đợt ${pa.cycleNo}` : ''}</span>
-          {hanGhi && (
-            <span className="flex items-center gap-1.5">
-              <span className="whitespace-nowrap text-slate-500"><span className="max-sm:hidden">· </span>{hanGhi.han}</span>
-              {hanGhi.tone === 'overdue' && <QuaHan ngay={hanGhi.daysOverdue} />}
-            </span>
-          )}
-        </span>
-      )}
+    <KhungPanel tieuDe={tieuDe} hocVien={hocVien} lop={lop} quayLai={quayLai} onDong={onClose}
+      /* Sửa: hạn của lần đã ghi không còn là việc phải làm — không chip hạn. */
+      dau={dauViec({ han: !sua && pa.actionDue ? <ChipHan loai="cap-nhat-pa" han={pa.actionDue} /> : null, em: em ?? null, lop, ngCanh: ngCanh ?? tenPa })}
       chan={{
-        conThieu: lf.conThieu(loi),
-        chinh: (
-          <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={luu}>
-            {busy ? 'Đang lưu…' : sua ? 'Lưu' : lanCuoi ? 'Lưu kết quả cuối' : NUT_LUU_KET_QUA[decision || 'keep']}
-          </button>
-        ),
+        v3: true, chinh: nut, daSua, conThieu: lf.conThieu(loi),
+        dongTren: busy || loiLuu || daSua ? <TrangThaiLuu tt={busy ? 'dang' : loiLuu ? 'loi' : 'nhap'} loi={loiLuu} onThuLai={() => void luu()} /> : undefined,
       }}>
-      {sua?.chan && (
-        <p className="m-0 mt-3 flex items-start gap-1.5 text-[12.5px] text-slate-300">
-          <span className="mt-0.5 text-slate-400"><KhoaNho /></span><span>{sua.chan}</span>
-        </p>
-      )}
-      <Khoi tieuDe={lanCuoi ? tuanGhi : `1 · ${tuanGhi}`}>
-        {lanCuoi && !sua && (
-          <p className="m-0 text-xs text-slate-300">
-            Tuần này chạm mốc quy chế{pa.mocChu ? ` (${pa.mocChu})` : ''} — lưu là PA kết thúc.
+      <div className="flex flex-col gap-5 pt-4">
+        {sua?.chan && (
+          <p className="m-0 flex items-start gap-1.5 text-[12.5px] text-slate-300">
+            <span className="mt-0.5 text-slate-400"><KhoaNho /></span><span>{sua.chan}</span>
           </p>
         )}
-        <div>
-          {/* PR-LUI-a2: 2 cột ở mọi cỡ (panel ≤ 560 px), chữ cho xuống dòng, bỏ dấu ✓ ↗ – ↓ — không cắt / lệch. Sửa chung NutChon là PR-KHUNG. */}
-          <div {...o('ket-qua')} tabIndex={-1} className="grid grid-cols-2 gap-2 outline-none" role="group" aria-label={tuanGhi}>
-            {FOLLOWUP_OUTCOMES.filter((o) => o !== 'insufficient').map((o) => (
-              <NutChon key={o} chon={outcome === o} disabled={khoaLuaChon && outcome !== o} onClick={() => pickOutcome(o)} className="justify-center text-sm">
-                {outcomeLabelFor(o)}
-              </NutChon>
-            ))}
+        <CanLam>
+          {lanCuoi && !sua && (
+            <p className="m-0 text-[13px] text-slate-300">Kỳ này chạm mốc quy chế{pa.mocChu ? ` (${pa.mocChu})` : ''} — lưu là PA kết thúc.</p>
+          )}
+          <div>
+            <span id={`tt-${pa.id}`} className="mb-1.5 block text-[13px] font-semibold text-slate-300">Tiến triển (2 tuần)<span aria-hidden className="text-bad"> *</span></span>
+            {/* 5 mức một hàng chip (xuống dòng khi hẹp); "Chưa đủ dữ liệu" là mức thứ năm. */}
+            <div {...o('ket-qua')} tabIndex={-1} className="flex flex-wrap gap-1.5 outline-none" role="group" aria-labelledby={`tt-${pa.id}`}>
+              {FOLLOWUP_OUTCOMES.map((x) => (
+                <NutChon key={x} nho chon={outcome === x} disabled={khoaLuaChon && outcome !== x} onClick={() => pickOutcome(x)} className="rounded-full px-3">
+                  {outcomeLabelFor(x)}
+                </NutChon>
+              ))}
+            </div>
+            {loiCua('ket-qua') && <span className="mt-1 block text-xs text-late">{loiCua('ket-qua')}</span>}
           </div>
-          <p className="m-0 mt-1.5 flex flex-wrap items-center gap-1.5 text-xs text-slate-500">
-            Chưa có bài để so?
-            <NutChon nho chon={outcome === 'insufficient'} disabled={khoaLuaChon && outcome !== 'insufficient'} onClick={() => pickOutcome('insufficient')}>
-              {outcomeLabelFor('insufficient')}
-            </NutChon>
-          </p>
-          {loiCua('ket-qua') && <span className="mt-1 block text-xs text-late">{loiCua('ket-qua')}</span>}
-        </div>
-        <Truong nhan="Tiến triển" batBuoc loi={loiCua('tien-trien')} dem={{ co: progress.trim().length, can: 8 }}>
-          <textarea className="field w-full" {...o('tien-trien')} rows={2} value={progress} onChange={(e) => setProgress(e.target.value)}
-            placeholder={GOI_Y_KET_QUA_PA} />
-        </Truong>
-        {(coO || coNguoiDay(pa.kind)) && (
-          <div className="flex flex-col gap-2.5 rounded-lg border px-3 py-2.5" style={{ borderColor: 'var(--line)', background: 'var(--surface-2)' }}>
-            {coO && coNguoiDay(pa.kind) ? <Hang2>{oBuoi}{oNguoi}</Hang2> : <>{oBuoi}{oNguoi}</>}
-            {dem && (
-              <div className="flex flex-wrap items-center gap-2.5 text-[13px] text-slate-300">
-                <VachBuoi da={dem.da} tong={dem.tong} tt={dem.tt} />
-                {/* Đuôi "· còn n" đi cùng "sau khi lưu x/y" (không rớt dòng một mình ở 375). */}
-                <span>Đã dạy <b className="font-semibold text-slate-100 tabular-nums">{dem.truoc}/{dem.tong}</b> → <span className="whitespace-nowrap">sau khi lưu <b className="font-semibold text-slate-100 tabular-nums">{dem.da}/{dem.tong}</b>{' '}
-                  {dem.tt === 'du' ? <span className="font-semibold text-ok">· đủ buổi</span>
-                    : dem.tt === 'vuot' ? <span className="font-semibold text-late">· vượt {dem.vuot} buổi</span>
-                    : <span>· còn <b className="font-semibold text-slate-100 tabular-nums">{dem.con}</b></span>}</span></span>
-              </div>
-            )}
-            {soDong > 0 && (
-              <ol className="m-0 list-none space-y-2.5 border-t p-0 pt-2.5" style={{ borderColor: 'var(--line)' }} aria-label="Các buổi tutor">
-                {Array.from({ length: soDong }, (_, i) => (
-                  <li key={i}>
-                    <Hang2>
-                      <Truong nhan={`Tên tutor · buổi ${i + 1}`} batBuoc loi={loiCua(`buoi-${i}-tutor`)}>
-                        <input className="field w-full" maxLength={100} {...o(`buoi-${i}-tutor`)} value={buoi[i]?.tutor ?? ''}
-                          onChange={(e) => datBuoi(i, { tutor: e.target.value })} placeholder="Gõ tên tutor" />
-                      </Truong>
-                      <Truong nhan={`Nhận xét buổi ${i + 1}`} batBuoc loi={loiCua(`buoi-${i}-nx`)}>
-                        <input className="field w-full" maxLength={1000} {...o(`buoi-${i}-nx`)} value={buoi[i]?.nhanXet ?? ''}
-                          onChange={(e) => datBuoi(i, { nhanXet: e.target.value })} placeholder="Ví dụ: luyện số đếm, còn nhầm 15 và 50" />
-                      </Truong>
-                    </Hang2>
-                  </li>
-                ))}
-              </ol>
-            )}
-            {/* Đủ buổi: chỉ gợi ý — không tự kết thúc; PA không có "Kết thúc PA" (quy chế, Kết quả cuối) thì không gợi ý. */}
-            {dem?.tt === 'du' && !lanCuoi && dsQuyetDinh.includes('end') && <span className="text-xs text-slate-500">Xong PA thì chọn Kết thúc PA ở mục 2.</span>}
-            {!coDem && coSoBuoi(pa.kind) && <span className="text-xs text-slate-500">PA chưa có Số buổi — thêm ở ⋯ › Sửa PA nếu muốn đếm.</span>}
-          </div>
-        )}
-        <Truong nhan="Vấn đề còn tồn / Ghi chú" tuyChon>
-          <input className="field w-full" maxLength={300} value={remaining} onChange={(e) => setRemaining(e.target.value)}
-            placeholder="Ví dụ: còn sai dạng T/F/NG" />
-        </Truong>
-      </Khoi>
-
-      {coMiniTest && (
-        <Khoi tieuDe="Mini Test">
-          <Hang2>
-            <Truong nhan="Mini Test (%)" batBuoc loi={loiCua('mt-ty-le')} phu="Đạt từ 70%">
-              <input className="field w-full tabular-nums" inputMode="decimal" {...o('mt-ty-le')} value={mtTyLe} onChange={(e) => setMtTyLe(e.target.value)} placeholder="Ví dụ: 72" />
+          {!nhanXetTheoBuoi && (
+            <Truong nhan="Nhận xét" batBuoc loi={loiCua('tien-trien')} dem={{ co: progress.trim().length, can: 8 }}>
+              <textarea className="field w-full" {...o('tien-trien')} rows={2} value={progress} onChange={(e) => setProgress(e.target.value)}
+                placeholder={GOI_Y_KET_QUA_PA} />
             </Truong>
-            <Truong nhan="Ngày làm Mini Test" batBuoc loi={loiCua('mt-ngay')}>
-              <ONgay kieu="ngay" value={mtNgay} onChange={setMtNgay} toiDa={homNay} />
+          )}
+          {(coO || coNguoiDay(pa.kind)) && (
+            <div className="flex flex-col gap-2.5">
+              {coO && coNguoiDay(pa.kind) ? <Hang2>{oBuoi}{oNguoi}</Hang2> : <>{oBuoi}{oNguoi}</>}
+              {dem && (
+                <div className="flex flex-wrap items-center gap-2.5 text-[13px] text-slate-300">
+                  <VachBuoi da={dem.da} tong={dem.tong} tt={dem.tt} />
+                  {/* Đuôi "· còn n" đi cùng "sau khi lưu x/y" (không rớt dòng một mình ở 375). */}
+                  <span>Đã dạy <b className="font-semibold text-slate-100 tabular-nums">{dem.truoc}/{dem.tong}</b> → <span className="whitespace-nowrap">sau khi lưu <b className="font-semibold text-slate-100 tabular-nums">{dem.da}/{dem.tong}</b>{' '}
+                    {dem.tt === 'du' ? <span className="font-semibold text-ok">· đủ buổi</span>
+                      : dem.tt === 'vuot' ? <span className="font-semibold text-late">· vượt {dem.vuot} buổi</span>
+                      : <span>· còn <b className="font-semibold text-slate-100 tabular-nums">{dem.con}</b></span>}</span></span>
+                </div>
+              )}
+              {soDong > 0 && (
+                <ol className="m-0 list-none space-y-3 p-0" aria-label="Các buổi tutor">
+                  {Array.from({ length: soDong }, (_, i) => (
+                    <li key={i} className="border-t border-dashed pt-3" style={{ borderColor: 'var(--line-strong)' }}>
+                      <span className="mb-1.5 block text-[13px] font-bold text-slate-200">Buổi {i + 1}</span>
+                      <Hang2>
+                        <Truong nhan="Tutor" batBuoc loi={loiCua(`buoi-${i}-tutor`)}>
+                          <input className="field w-full" maxLength={100} {...o(`buoi-${i}-tutor`)} value={buoi[i]?.tutor ?? ''}
+                            onChange={(e) => datBuoi(i, { tutor: e.target.value })} placeholder="Gõ tên tutor" />
+                        </Truong>
+                        <Truong nhan="Nhận xét buổi" batBuoc loi={loiCua(`buoi-${i}-nx`)}>
+                          <input className="field w-full" maxLength={1000} {...o(`buoi-${i}-nx`)} value={buoi[i]?.nhanXet ?? ''}
+                            onChange={(e) => datBuoi(i, { nhanXet: e.target.value })} placeholder="Ví dụ: luyện số đếm, còn nhầm 15 và 50" />
+                        </Truong>
+                      </Hang2>
+                    </li>
+                  ))}
+                </ol>
+              )}
+              {!coDem && coSoBuoi(pa.kind) && <span className="text-xs text-slate-400">PA chưa có Số buổi — thêm ở ⋯ › Sửa PA nếu muốn đếm.</span>}
+            </div>
+          )}
+          {coMiniTest && (
+            <Hang2>
+              <Truong nhan="Mini Test (%)" batBuoc loi={loiCua('mt-ty-le')} phu="Đạt từ 70%">
+                <input className="field w-full tabular-nums" inputMode="decimal" {...o('mt-ty-le')} value={mtTyLe} onChange={(e) => setMtTyLe(e.target.value)} placeholder="Ví dụ: 72" />
+              </Truong>
+              <Truong nhan="Ngày làm Mini Test" batBuoc loi={loiCua('mt-ngay')}>
+                <ONgay kieu="ngay" value={mtNgay} onChange={setMtNgay} toiDa={homNay} />
+              </Truong>
+            </Hang2>
+          )}
+          {lanCuoi && outcome === 'insufficient' && (
+            <Truong nhan="Lý do chưa đủ dữ liệu" batBuoc loi={loiCua('ly-do')}>
+              <input className="field w-full" {...o('ly-do')} value={reason} onChange={(e) => setReason(e.target.value)}
+                placeholder="Ví dụ: Em nghỉ ốm cả tuần cuối, chưa có bài để so" />
             </Truong>
-          </Hang2>
-        </Khoi>
-      )}
-      {lanCuoi && outcome === 'insufficient' && (
-        <Khoi tieuDe="Lý do">
-          <Truong nhan="Lý do chưa đủ dữ liệu" batBuoc loi={loiCua('ly-do')}>
-            <input className="field w-full" {...o('ly-do')} value={reason} onChange={(e) => setReason(e.target.value)}
-              placeholder="Ví dụ: Em nghỉ ốm cả tuần cuối, chưa có bài để so" />
-          </Truong>
-        </Khoi>
-      )}
-      {!lanCuoi && (
-      <Khoi tieuDe="2 · Quyết định"
-        luat="Điều chỉnh: cùng PA, sửa nội dung, số buổi hoặc người — bản cũ giữ trong lịch sử. Thay PA: khép PA này và mở PA mới. Kết thúc PA: Case chỉ hoàn thành được khi mọi PA đã khép.">
-        {pa.batBuoc && (
-          <p className="m-0 flex flex-wrap items-center gap-1.5 text-xs text-slate-400">
-            PA theo quy chế — không thay, không kết thúc sớm. Cần thêm hỗ trợ?
-            {onThemPa && <button type="button" className="btn btn-sm" onClick={onThemPa}>+ Thêm PA</button>}
-          </p>
-        )}
-        <div {...o('quyet-dinh')} tabIndex={-1} role="radiogroup" aria-label="Quyết định" className="space-y-1.5 outline-none">
-          {dsQuyetDinh.map((d) => {
-            const chan = khoaLuaChon && decision !== d ? sua!.chan : outcome ? decisionBlockedReason(outcome, d) : 'Chọn kết quả trước.';
-            const chon = decision === d;
-            return (
-              <div key={d}>
-                <button type="button" role="radio" aria-checked={chon} disabled={!!chan} title={chan ?? PLAN_DECISION_HINT[d]}
-                  onClick={() => setDecision(d)}
-                  className={`flex w-full items-start gap-2.5 rounded-md border px-2.5 py-2 text-left disabled:cursor-not-allowed disabled:opacity-45 ${
-                    chon ? 'border-[color:var(--accent)] bg-[color:var(--accent-soft)]' : 'border-[color:var(--line)] hover:border-[color:var(--line-strong)]'}`}
-                  style={{ background: chon ? undefined : 'transparent' }}>
-                  <span aria-hidden className={`mt-[3px] inline-block h-3 w-3 shrink-0 rounded-full border ${chon ? 'border-[color:var(--accent)] bg-[color:var(--accent)]' : 'border-slate-500'}`} />
-                  <span className="min-w-0">
-                    <span className="block text-sm font-semibold text-slate-100">{PLAN_DECISION_NGAN[d]}</span>
-                    <span className="block text-xs text-slate-500">{chan ? (khoaLuaChon ? 'Chỉ sửa được chữ' : ngiaBiChan(outcome)) : PLAN_DECISION_NGHIA[d]}</span>
-                  </span>
-                </button>
-                {chon && khoiCon(d) && (
-                  <div className="ml-3 mt-2 border-l-2 pl-3" style={{ borderColor: 'var(--accent-line)' }}>{khoiCon(d)}</div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-        {loiCua('quyet-dinh') && <span className="block text-xs text-late">{loiCua('quyet-dinh')}</span>}
-      </Khoi>
-      )}
-
-      <div className="mt-3.5">
-        <Truong nhan="Ngày ghi"><ONgay kieu="ngay" value={on} onChange={setOn} toiDa={homNay} disabled={khoaLuaChon} /></Truong>
+          )}
+          {!lanCuoi && (
+            <div {...o('quyet-dinh')} tabIndex={-1} className="flex flex-col gap-2 outline-none">
+              <span className="block text-[13px] font-semibold text-slate-300">Quyết định</span>
+              <BoLocDoan ariaLabel="Quyết định" value={(trongDc ? 'adjust' : decision || '') as PlanDecision}
+                muc={dsTren.map((d) => ({ key: d, nhan: PLAN_DECISION_NGAN[d] }))} onChange={chonQd} />
+              {chanQd && <p className="m-0 text-xs text-late" role="alert">{chanQd}</p>}
+              {pa.batBuoc && (
+                <p className="m-0 flex flex-wrap items-center gap-x-1.5 text-xs text-slate-400">
+                  PA theo quy chế — không thay, không kết thúc sớm.
+                  {onThemPa && <NutChu onClick={onThemPa}>+ Thêm PA</NutChu>}
+                </p>
+              )}
+              {decision && decision !== 'keep' && (trongDc ? dsDc.length > 1 || khoiCon(decision as PlanDecision) : khoiCon(decision as PlanDecision)) && (
+                <div className="ml-1 space-y-3 border-l-2 pl-3" style={{ borderColor: 'var(--accent-line)' }}>
+                  {trongDc && dsDc.length > 1 && (
+                    <div className="flex flex-wrap gap-1.5" role="group" aria-label="Cách điều chỉnh">
+                      {dsDc.map((x) => (
+                        <NutChon key={x} nho chon={decision === x} disabled={!!chanCua(x)} title={chanCua(x) ?? undefined} onClick={() => { setDecision(x); setChanQd(null); }}>
+                          {x === 'adjust' ? 'Sửa PA này' : PLAN_DECISION_NGAN[x]}
+                        </NutChon>
+                      ))}
+                    </div>
+                  )}
+                  {khoiCon(decision as PlanDecision)}
+                </div>
+              )}
+              {loiCua('quyet-dinh') && <span className="block text-xs text-late">{loiCua('quyet-dinh')}</span>}
+            </div>
+          )}
+          <Truong nhan="Ngày ghi"><ONgay kieu="ngay" value={on} onChange={setOn} toiDa={homNay} disabled={khoaLuaChon} /></Truong>
+          <div className="flex flex-wrap items-center gap-1.5 pt-0.5 max-sm:hidden">{nut}</div>
+        </CanLam>
+        <BoiCanh dong={boiCanh ?? [['Phương án', [tenPa, pa.performer, pa.mocChu].filter(Boolean).join(' · ')]]} />
       </div>
     </KhungPanel>
   );
