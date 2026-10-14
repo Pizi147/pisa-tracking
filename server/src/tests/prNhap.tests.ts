@@ -88,7 +88,7 @@ export async function runPrNhapTests(t: YThucTestKit) {
     assert(g.cotBoQua.join() === 'Ghi chú', JSON.stringify(g.cotBoQua));
   });
 
-  check('NHAP (3) · xem trước FT: ngày không có thật, thiếu ngày sinh (email không bắt buộc), dự kiến thi tháng, lộ trình theo lớp', () => {
+  check('NHAP (3) · xem trước FT: ngày không có thật, thiếu ngày sinh / email không lỗi (OV-11g Q3), dự kiến thi tháng, lộ trình theo lớp', () => {
     const pv = intake.previewIntake(P.admin, { classId: ft, rows: [
       { fullName: 'A', dob: '31/02/2010', email: 'a@b.vn' },
       { fullName: 'B' },
@@ -98,7 +98,7 @@ export async function runPrNhapTests(t: YThucTestKit) {
     ] });
     const [a, b, c, dd, e] = pv.rows;
     assert(a.issues.some((i: any) => i.field === 'dob' && i.muc === 'loi' && i.message === 'Ngày không có thật'), JSON.stringify(a.issues));
-    assert(b.issues.some((i: any) => i.field === 'dob' && i.muc === 'loi') && !b.issues.some((i: any) => i.field === 'email'), JSON.stringify(b.issues));   // PR-OV2c: thiếu email không còn lỗi, ngày sinh vẫn lỗi
+    assert(!b.issues.some((i: any) => i.muc === 'loi'), JSON.stringify(b.issues));   // OV-11g (Q3): ngày sinh, email không bắt buộc
     assert(c.examDate === '2027-05' && !c.issues.some((i: any) => i.muc === 'loi'), JSON.stringify(c));
     assert(dd.issues.some((i: any) => i.field === 'route' && i.muc === 'luu_y' && /LT1/.test(i.message)), JSON.stringify(dd.issues));
     assert(e.issues.some((i: any) => i.field === 'examDate' && i.muc === 'loi'), 'tháng 13 phải lỗi');
@@ -122,7 +122,7 @@ export async function runPrNhapTests(t: YThucTestKit) {
   check('NHAP (3) · ghi: email, ngày thi (ngày → tháng + tuần), lộ trình theo lớp, hangDaThem', () => {
     const r = intake.commitIntake(P.admin, { classId: ft, idempotencyKey: 'nhap-3-ghi', rows: [
       { fullName: 'Nhập Có Email', dob: '2010-01-01', email: 'X@Y.vn', examDate: '15/01/2027', route: 'LT2' },
-      { fullName: 'Nhập Thiếu Email' },
+      { fullName: 'Nhập Thiếu Email', dob: '31/02/2010' },   // OV-11g: thiếu ngày sinh / email đã thêm được — dòng lỗi giờ là ngày sinh sai
     ] });
     assert(r.added === 1 && JSON.stringify(r.hangDaThem) === '[1]', JSON.stringify(r));
     const s = conn.prepare("SELECT id, email FROM students WHERE full_name = 'Nhập Có Email'").get() as any;
@@ -177,12 +177,11 @@ export async function runPrNhapTests(t: YThucTestKit) {
     assert(cy().sw === '2026-10-05', String(cy().sw));
   });
 
-  check('NHAP (4) · H6: thiếu email KHÔNG bật "Thiếu thông tin"', () => {
-    const thieu = missingForStudent({
-      cycle: { start_period_id: 1, exam_month: '2027-01', target_score: 6.5, baseline: true },
-      student: { dob: '2010-05-12' }, isFastTrack: true,
-    } as any);
-    assert(thieu.length === 0, JSON.stringify(thieu));
+  check('NHAP (4) · H6 → OV-11g (Q3 chủ SP 14/10): thiếu email BẬT "Thiếu thông tin"; đủ ngày sinh + email thì không', () => {
+    const cycle = { start_period_id: 1, exam_month: '2027-01', target_score: 6.5, baseline: true };
+    const thieu = missingForStudent({ cycle, student: { dob: '2010-05-12', email: null }, isFastTrack: true } as any);
+    assert(thieu.map((m: any) => m.key).join() === 'email', JSON.stringify(thieu));
+    assert(missingForStudent({ cycle, student: { dob: '2010-05-12', email: 'a@b.vn' }, isFastTrack: true } as any).length === 0, 'đủ vẫn báo thiếu');
   });
 
   const luotCua = (ten: string) => conn.prepare(`SELECT a.attempt_no, a.lich_su FROM assessment_attempts a

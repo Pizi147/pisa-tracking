@@ -277,6 +277,19 @@ export function badgeLop(c: {
   return { hien: all.slice(0, 2), an: all.slice(2) };
 }
 
+/**
+ * Badge lớp theo vai (OV-10b, OV-11g HL-8) — Học viên & Lớp và đầu hồ sơ lớp cùng hàm. TVV / CX: chỉ badge thông tin (chặng · thiếu GV · thiếu thông tin).
+ * Admin: bỏ badge việc của QL / GV (quá hạn việc, chờ duyệt, chốt lộ trình / xếp lớp) — Admin không làm các việc đó. QL / GV giữ đủ.
+ */
+export function badgeHienTheoVai(vai: VaiXemHocVien | null, key: BadgeLop['key']): boolean {
+  if (vai === 'tvv' || vai === 'cx') return key === 'chang' || key === 'thieu-gv' || key === 'thieu-tt';
+  if (vai === 'admin') return key !== 'qua-han' && key !== 'cho-duyet' && key !== 'xep-lop';
+  return true;
+}
+/** Chip lọc việc của QL / GV (Cần làm, Quá hạn, Chờ duyệt) — Admin, TVV, CX không có (HL-8; TVV / CX dùng trang riêng). */
+export const chipViecTheoVai = (vai: VaiXemHocVien | null, k: LocHocVien): boolean =>
+  vai === null || (k !== 'can-lam' && k !== 'qua-han' && k !== 'cho-duyet');
+
 // ---------------------------------------------------------------- dòng GV bộ môn (06c §1)
 
 export type NhomGiaoVien = { id: number | null; ten: string; kyNang: string[]; nhan: string; title: string };

@@ -171,12 +171,12 @@ export function runSeed() {
       const info = conn
         .prepare(
           `INSERT INTO classes (code, branch_id, kind, programme_code, route, is_fast_track, start_date,
-                                start_period_id, status, note, created_at)
-           VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
+                                start_period_id, status, finished_at, note, created_at)
+           VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
         )
         .run(c.code, branchId.get(c.branch)!, c.kind, programme, c.route, c.isFastTrack ? 1 : 0,
              c.startDate, ensurePeriod(c.startDate).id,
-             c.status === 'ended' ? 'ended' : 'active', c.note ?? null, NOW);
+             c.status, c.finishedAt ?? null, c.note ?? null, NOW);
       const id = Number(info.lastInsertRowid);
       classId.set(c.code, id);
       classBranch.set(c.code, c.branch);

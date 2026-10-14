@@ -176,7 +176,8 @@ export function transitionPlan(p: Principal, classId: number) {
           ORDER BY c.code`,
       )
       .all(classId, ...(ft ? [cls.branch_id] : []), ...optionCodes) as any[])
-      .sort((a, b) => soSanhLop({ code: a.code }, { code: b.code }))
+      /* HL-12: lớp cùng chi nhánh lên đầu ô Lớp (QL một chi nhánh khỏi chọn nhầm lớp chi nhánh khác). */
+      .sort((a, b) => Number(b.branch_id === cls.branch_id) - Number(a.branch_id === cls.branch_id) || soSanhLop({ code: a.code }, { code: b.code }))
     : [];
   const candidateProgress = classProgressMany(candidateRows.map((c) => c.id));
   const candidates = candidateRows

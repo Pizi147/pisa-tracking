@@ -114,11 +114,11 @@ export async function runPrDonBTests(t: YThucTestKit) {
     students.archiveStudent(P.admin, em.id);
     assert(get('SELECT archived_at a FROM students WHERE id = ?', em.id).a, 'hoàn tác → trở lại Lưu trữ');
   });
-  check('Dọn-b (13d) · Kết thúc lớp còn em: lớp FT nói "chuyển lớp từng em hoặc chuyển nhiều em" (không "chuyển tiếp lớp"); lớp thường nói "Quyết định chuyển lớp cho cả lớp"; quyết định chờ → "Sắp chuyển · từ W…"', () => {
+  check('Dọn-b (13d) · Kết thúc lớp còn em: lớp FT nói "chuyển lớp từng em hoặc chuyển nhiều em" (không "chuyển tiếp lớp"); lớp thường nói "Còn n em chưa chốt Lộ trình tiếp theo" (OV-11g); quyết định chờ → "Sắp chuyển · từ W…"', () => {
     const ft = xkt.xemXoaKetThuc(P.admin, classId('MB FT 101'));
     assert(/chuyển lớp từng em hoặc chuyển nhiều em/.test(ft.lyDoChanKetThuc ?? '') && !/chuyển tiếp lớp/.test(ft.lyDoChanKetThuc), ft.lyDoChanKetThuc);
     const th = xkt.xemXoaKetThuc(P.admin, classId('MB FOU 12'));
-    assert(/Quyết định chuyển lớp cho cả lớp/.test(th.lyDoChanKetThuc ?? ''), th.lyDoChanKetThuc);
+    assert(/^Còn \d+ em (chưa chốt Lộ trình tiếp theo|chờ tới tuần chuyển lớp)\.$/.test(th.lyDoChanKetThuc ?? ''), th.lyDoChanKetThuc);   // OV-11g CA2-4
     const cho = get(`SELECT lop_nguon_id id FROM lenh_chuyen_lop WHERE trang_thai = 'cho' ORDER BY id LIMIT 1`);
     assert(cho, 'seed thiếu quyết định chuyển lớp đang chờ');
     const c = xkt.xemXoaKetThuc(P.admin, cho.id);

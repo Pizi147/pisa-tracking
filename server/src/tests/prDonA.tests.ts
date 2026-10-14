@@ -803,6 +803,6 @@ export async function runPrDonATests(t: YThucTestKit) {
     }
     const b = d.badgeLop({ vai: 'ql', needsPlacement: false, canXepLop: 0, soChuaLoTrinhTiep: 3, missingSkills: [], soBaiChoCham: 0, needScoresTitle: null, phase: 'running', missingCount: 0 });
     const x = [...b.hien, ...b.an].find((y: any) => y.key === 'xep-lop');
-    assert(x?.nhan === '3 HV chưa có quyết định chuyển lớp' && x.title === 'Quản lý quyết định ở Lộ trình tiếp theo', JSON.stringify(x));
+    assert(x?.nhan === '3 HV chưa chốt lộ trình' &&   /* OV-11g CA2-4: một tên */ x.title === 'Quản lý quyết định ở Lộ trình tiếp theo', JSON.stringify(x));
   });
 }

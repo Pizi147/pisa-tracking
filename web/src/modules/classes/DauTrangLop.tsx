@@ -13,7 +13,7 @@ import { TenGiaoVien } from './TenGiaoVien.tsx';
 import { DaiLopChuyen } from './DaiChuyenLop.tsx';
 import type { TinhTrangXoaKetThuc } from './XoaKetThucLopPanel.tsx';
 import {
-  DUONG_TAB_TEST, ROUTE_NAME, TAB_HO_SO_LOP_NHAN, trangCha, type TabHoSoLop, badgeLop, vaiXemHocVien, khungCua, duongLichTest, laVaiQuanLy, needScoresText, menuHoSoLop, nhomGiaoVienBoMon, tuanKhoa, type ViecMenuLop, tuanLich, type BadgeLop, type DaiLop, type NhomGiaoVien, type WorkScope,
+  DUONG_TAB_TEST, ROUTE_NAME, TAB_HO_SO_LOP_NHAN, trangCha, type TabHoSoLop, badgeLop, badgeHienTheoVai, vaiXemHocVien, khungCua, duongLichTest, laVaiQuanLy, needScoresText, menuHoSoLop, nhomGiaoVienBoMon, tuanKhoa, type ViecMenuLop, tuanLich, type BadgeLop, type DaiLop, type NhomGiaoVien, type WorkScope,
 } from '@shared/domain/index.ts';
 
 /** `GET /classes/:id/overview` (server/src/classes/classes.ts → classOverview). */
@@ -96,12 +96,10 @@ export function DauTrangLop({ data, onViec, onBanGiao }: {
   /* PR-S5F-a (mockup 20): lớp đã có dải "Lộ trình tiếp theo" (OV-3b) thì bỏ chip "n HV cần xếp lớp tiếp" — hai chỗ nói cùng một việc. */
   const boXep = (ds: BadgeLop[]) => (data.dai?.loTrinh ? ds.filter((x) => x.key !== 'xep-lop') : ds);
   /*
-   * OV-10b: badge "n bài chờ chấm" dẫn vào Test — vai không có Test không thấy. TVV / CX: chỉ badge thông tin (chặng · thiếu GV · thiếu thông tin),
-   * không badge việc của GV / QL (quá hạn việc, chờ duyệt, xếp lớp).
+   * OV-10b: badge "n bài chờ chấm" dẫn vào Test — vai không có Test không thấy. TVV / CX / Admin: `badgeHienTheoVai` (HL-8).
    */
   const vai = vaiXemHocVien(session?.roles);
-  const boCham = (ds: BadgeLop[]) => ds.filter((x) => (x.key !== 'cham' || !!session?.nav?.test)
-    && ((vai !== 'tvv' && vai !== 'cx') || x.key === 'chang' || x.key === 'thieu-gv' || x.key === 'thieu-tt'));
+  const boCham = (ds: BadgeLop[]) => ds.filter((x) => (x.key !== 'cham' || !!session?.nav?.test) && badgeHienTheoVai(vai, x.key));
   const b0 = { hien: boCham(boXep(bGoc.hien)), an: boCham(boXep(bGoc.an)) };
   /* DH: nhãn chặng chỉ là chữ — không vào menu "+n" (mục bấm không làm gì); nếu bị ẩn thì hiện thẳng ở hàng. */
   const b = { hien: [...b0.hien, ...b0.an.filter((x) => x.key === 'chang')], an: b0.an.filter((x) => x.key !== 'chang') };
@@ -155,7 +153,8 @@ export function DauTrangLop({ data, onViec, onBanGiao }: {
           return { ids: r.rows.filter((c) => khungCua(c.scoringMode) === (thuong ? 'thuong' : 'ft')).map((c) => c.id), nhan: thuong ? 'Lớp thường' : 'Fast Track' };
         }} />
       {data.status === 'finished' && (
-        <DaiChiXem>Lớp đã kết thúc{data.finishedAt ? ` ${tuanLich(data.finishedAt, homNay)}` : ''} — chỉ xem</DaiChiXem>
+        /* HL-10 (Q4): Quản lý của lớp vẫn sửa điểm (máy chủ `kiemLopKetThuc`) — "chỉ xem" chỉ cho người khác. */
+        <DaiChiXem>Lớp đã kết thúc{data.finishedAt ? ` ${tuanLich(data.finishedAt, homNay)}` : ''}{data.viewer.coTheMoLaiLop ? '' : ' — chỉ xem'}</DaiChiXem>
       )}
       <div className="flex flex-wrap items-end gap-2">
         <div className="min-w-0">
@@ -196,14 +195,14 @@ export function DauTrangLop({ data, onViec, onBanGiao }: {
         </div>
       )}
 
-      <DaiLopChuyen dai={data.dai} homNay={homNay} onChuyenTiep={() => onViec('chuyen-tiep')} onBanGiao={onBanGiao} />
+      <DaiLopChuyen dai={data.dai} homNay={homNay} onChuyenTiep={() => onViec('chuyen-tiep')} onBanGiao={onBanGiao} anLoTrinh={sp.get('che-do') === 'lo-trinh'} />
     </header>
   );
 }
 
 /**
  * GV BỘ MÔN MỘT DÒNG KHÔNG XUỐNG HÀNG (06c §1): "L · R Trần Ngọc Hà   W1 Lê Minh Khoa …". Điện thoại hiện 2 nhóm, máy tính 5 nhóm,
- * còn lại "+k" — bấm ra đủ danh sách ngay bên dưới (không popover trong vùng `overflow-hidden`). Lớp CSS là chuỗi tĩnh.
+ * còn lại "+k" — bấm ra đủ danh sách ngay bên dưới (không popover trong vùng cắt `overflow-x-clip`). Lớp CSS là chuỗi tĩnh.
  */
 function DongGiaoVienBoMon({ nhom }: { nhom: NhomGiaoVien[] }) {
   const [du, setDu] = useState(false);
@@ -217,10 +216,11 @@ function DongGiaoVienBoMon({ nhom }: { nhom: NhomGiaoVien[] }) {
   );
   return (
     <div className="text-xs">
-      <div className="flex items-center gap-3.5 overflow-hidden whitespace-nowrap">
+      {/* HL-18: cắt chiều ngang thôi (`overflow-x-clip`) — vùng chạm 44 px của tên GV / "+k" ở 375 không bị cắt theo chiều dọc. */}
+      <div className="flex items-center gap-3.5 overflow-x-clip whitespace-nowrap">
         {nhom.map((g, i) => mot(g, i, false))}
         {nhom.length > 2 && (
-          <button type="button" className="link border-0 bg-transparent p-0 text-xs sm:hidden" onClick={() => setDu((v) => !v)}>
+          <button type="button" aria-expanded={du} className="link relative border-0 bg-transparent p-0 text-xs sm:hidden after:absolute after:-inset-x-3 after:-inset-y-3.5 after:content-['']" onClick={() => setDu((v) => !v)}>
             +{nhom.length - 2}
           </button>
         )}

@@ -8,7 +8,7 @@ import {
 import { demoToday } from '../demoConfig.ts';
 import { phanCongDangHieuLuc } from '../worklist/scoreDebt.ts';
 import { badRequest, chuTuDo, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
-import { dotHoanTat, dotHoanTatMany, quyenSuaSauHoanTat } from './hoanTat.ts';
+import { chanVangLopKetThuc, dotHoanTat, dotHoanTatMany, kiemLopKetThuc, laLopKetThuc, quyenSuaSauHoanTat } from './hoanTat.ts';
 import {
   can, classScopeSql, defaultWorkScope, editableSkills, isCoreTeacherOf, moveableSkills, mySkills, require_, requireXemLuotCham, scopeFor, scopeXemLuotCham, scoreEditPath, type LuotQuyen,
   type Principal,
@@ -1766,6 +1766,7 @@ export function refreshOutcome(p: Principal, attemptId: number, thiLai = false) 
   if (result.chot && (fresh.kck_at_attempt ?? null) === null) {
     conn.prepare('UPDATE assessment_attempts SET kck_at_attempt = ? WHERE id = ?').run(kckCuaLuot(fresh) ? 1 : 0, attemptId);
   }
+  if (laLopKetThuc(fresh.class_id)) return;   // OV-11g (Q4): lớp đã kết thúc — chỉ điểm + nhật ký, không tín hiệu / Case
   raiseSignalsForResult(p, { ...fresh, status: nextStatus }, result);
 
   /*
@@ -1815,6 +1816,9 @@ export function saveScore(
   const hv = conn.prepare('SELECT status, archived_at FROM students WHERE id = ?').get(a.student_id) as any;
   const khoa = ngungHocCua(hv?.status, hv?.archived_at)?.khoa;
   if (khoa) throw badRequest(khoa);
+  /* OV-11g (HL-10): lớp đã kết thúc — GV 403 trước mọi việc ghi; Quản lý đi đường `override` (dưới). */
+  const lopKetThuc = kiemLopKetThuc(p, a.class_id);
+  if (patch.noShow !== undefined) chanVangLopKetThuc(p, a.class_id);   // lớp đã kết thúc: không ghi / gỡ "-", kể cả QL
   /*
    * T23 (PR-MTa, thay K4-20): MT cũ nhận "-" = em không dự thi kỹ năng đó (`no_show_cu`) — không tính lần vắng, không tự dời,
    * không Case / thẻ / chuông; ô không còn đếm "còn trống". OV-1b: "-" nhập bù sau tuần thi cũng vậy (nhánh "-" bên dưới).
@@ -1853,6 +1857,7 @@ export function saveScore(
     require_(p, PERMISSIONS.SCORE_EDIT, { classId: a.class_id, studentId: a.student_id, skill },
       'Bạn chỉ nhập được điểm của kỹ năng mình được phân công.');
   }
+  if (lopKetThuc) path = 'override';
   const assessed = assessedSkillOf(skill);
   const scheduleRow = ensureSkillRows(attemptId).find((r) => r.skill === assessed)!;
   if (!scheduleRow.required) {
@@ -2205,17 +2210,22 @@ export function classScoreSheet(
   return {
     classId, classCode: cls.code, branchName: cls.branch_name,
     period: period ? { id: period.id, code: period.code, weekStart: period.week_start, weekEnd: period.week_end } : null,
-    editableSkills: editableSkills(p, classId, ENTRY_SKILLS),
+    editableSkills: cls.status === 'finished' && !quyenSuaSauHoanTat(p, classId) ? [] : editableSkills(p, classId, ENTRY_SKILLS),
     rows: (() => {
       const bundle = loadBundle(attempts.map((a) => a.id));
       /* R11: một câu hỏi cho cả bảng (`dotHoanTatMany`) — không hỏi lẻ từng dòng. */
       const hoanTatOf = dotHoanTatMany(attempts.map((a) => a.id), today);
+      /* OV-11g (HL-10, Q4): lớp đã kết thúc — như bài đã hoàn tất (Quản lý sửa qua hộp lý do); GV chỉ đọc, cùng luật `kiemLopKetThuc` của `saveScore`. */
+      const ketThuc = cls.status === 'finished';
+      const gvKetThuc = ketThuc && !quyenSuaSauHoanTat(p, classId);
       return attempts.map((a) => {
       const scores = bundle.scores.get(a.id) ?? [];
       const skips = bundle.skips.get(a.id) ?? [];
-      const hoanTat = hoanTatOf.get(a.id) ?? { hoanTat: false, chuNhatCuoi: null };
+      const ht = hoanTatOf.get(a.id) ?? { hoanTat: false, chuNhatCuoi: null };
+      const hoanTat = ketThuc ? { hoanTat: true, chuNhatCuoi: ht.chuNhatCuoi ?? cls.finished_at ?? null } : ht;
       const ngung = ngungHocCua(a.student_status, a.student_archived_at);
-      const cells = skillCells(p, a, scores, skips, today, bundle.skillRows.get(a.id), hoanTat);
+      const cells0 = skillCells(p, a, scores, skips, today, bundle.skillRows.get(a.id), hoanTat);
+      const cells = gvKetThuc ? cells0.map((c) => ({ ...c, canEdit: false, lyDoKhoa: 'Lớp đã kết thúc', daChot: c.daChot && { ...c.daChot, goDuoc: false, hanGo: null } })) : cells0;
       return {
         attemptId: a.id,
         studentId: a.student_id,

@@ -14,7 +14,7 @@ import { OTuan } from './TransitionPanel.tsx';
 import { BanGiaoPanel } from './BanGiaoPanel.tsx';
 import { nhapDiemCua, type QuyenDong } from './thaoTacDongHocVien.tsx';
 import {
-  NORMAL_LADDER, REGULAR_SKILLS, RATIO_PASS_THRESHOLD, canLopDich, ghepMucTieu, hienMucTieu, tachMucTieu, coPhieu, khopLocLoTrinh, maHocLai, mocLoTrinh, nhomLoTrinh, tenMonNgan, tuanLich,
+  NORMAL_LADDER, REGULAR_SKILLS, addDaysIso, RATIO_PASS_THRESHOLD, canLopDich, ghepMucTieu, hienMucTieu, tachMucTieu, coPhieu, khopLocLoTrinh, maHocLai, mocLoTrinh, nhomLoTrinh, tenMonNgan, tuanLich,
   type HuongLenh, type LocLoTrinh, type MucTieuLenh, type NhomLoTrinh, type ProgrammeCode, type RegularSkill,
 } from '@shared/domain/index.ts';
 
@@ -155,7 +155,7 @@ export function BangLoTrinhTiep({ classId, quyen, onDoi, emMo, onDaMoEm }: {
     const duoi = tyLe !== null && tyLe < (t?.nguong ?? RATIO_PASS_THRESHOLD);   // OV-6b1: ngưỡng của lớp
     const chu = tyLe !== null ? (
       <span className={`tabular-nums ${duoi ? 'font-semibold text-late' : 'text-slate-100'}`}>{duoi && <DauDuoi />}{Math.round(tyLe * 100)}%</span>
-    ) : co.length ? <span className="text-xs tabular-nums text-slate-400">{co.length}/{o.length} môn</span> : null;
+    ) : co.length ? <span className="text-xs tabular-nums text-slate-400">{co.length}/{o.length} môn có điểm</span> : null;
     const nhap = quyen.coTheNhapDiem && t ? nhapDiemCua(classId, true, [t]) : null;
     if (nhap) return <Link to={nhap.den} className="link inline-flex min-h-[44px] items-center whitespace-nowrap sm:min-h-0" title={nhap.nhan}>{chu ?? (kind === 'final' ? 'Nhập Final' : 'Nhập Progress')}</Link>;
     return chu ?? <span className="text-slate-600">—</span>;
@@ -367,7 +367,9 @@ function HopLoTrinh({ classId, kh, em, ke, onDong, onXong }: {
   const goc = ltCua(em);
   const [huong, setHuong] = useState<HuongLenh | ''>(goc?.huong ?? '');
   const [lop, setLop] = useState<number | ''>(goc?.lopDichId ?? '');
-  const [tuan, setTuan] = useState(goc?.tuan ?? '');
+  /* HL-12: điền sẵn tuần sau tuần Final (mặc định hiển nhiên) khi tuần đó còn trong ô chọn. */
+  const tuanSauFinal = kh.tuanCuoiKhoa ? addDaysIso(kh.tuanCuoiKhoa, 7) : null;
+  const [tuan, setTuan] = useState(goc?.tuan ?? (tuanSauFinal && kh.tuanChon.includes(tuanSauFinal) ? tuanSauFinal : ''));
   /* OV-9: Target số + ô tích KCK riêng (dấu của em giữ khi chưa có quyết định). */
   const tgGoc = goc?.mucTieu != null ? tachMucTieu(goc.mucTieu) : { target: em.target, kck: em.kck };
   const [target, setTarget] = useState(tgGoc.target == null ? '' : String(tgGoc.target));

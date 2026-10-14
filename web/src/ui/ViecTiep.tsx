@@ -19,13 +19,16 @@ export function ViecTiep({ v, den, onBam }: { v: ViecTiepTheo; den?: string | nu
     <span className="block max-w-full text-xs text-slate-200 sm:line-clamp-2" title={v.title}>
       {v.quaHanNgay !== null && <><span className="whitespace-nowrap"><QuaHan ngay={v.quaHanNgay} /></span>{' '}</>}
       <span className="break-words">
-        {onBam ? <button type="button" className="link cursor-pointer border-0 bg-transparent p-0 text-left text-xs" onClick={onBam}>{v.viec}</button>
-          : den ? <Link to={den} className="link">{v.viec}</Link> : v.viec}
+        {onBam ? <button type="button" className="link cursor-pointer border-0 bg-transparent p-0 text-left text-xs" onClick={onBam}>{giuMaTuan(v.viec)}</button>
+          : den ? <Link to={den} className="link">{giuMaTuan(v.viec)}</Link> : giuMaTuan(v.viec)}
       </span>
       {v.quaHanNgay === null && v.han ? <span className="whitespace-nowrap text-slate-500">&nbsp;· {v.han}</span> : null}
     </span>
   );
 }
+
+/** CA2-8: mã tuần "W2 SEP" là một khối đọc — dấu cách không ngắt (U+00A0), không gãy "W2 / SEP". */
+const giuMaTuan = (chu: string) => chu.replace(/\b(W\d) ([A-Z]{3})\b/g, '$1\u00a0$2');
 
 /** Tối đa 2 việc, phần còn lại gom "+n việc" (tooltip liệt kê). */
 export function DanhSachViecTiep({ viec, den }: { viec: readonly ViecTiepTheo[]; den?: (v: ViecTiepTheo) => string | null }) {

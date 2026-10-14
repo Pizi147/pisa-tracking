@@ -83,7 +83,7 @@ function TrangThaiEm({ d, thieu }: { d: DongVai; thieu: boolean }) {
     <>
       {d.status === 'inactive' && <Nhan tone="soon">Tạm dừng{d.tamDungTu ? ` · từ ${ngay(d.tamDungTu, homNay)}` : ''}</Nhan>}
       {d.status === 'finished' && <Nhan tone="done">Đã kết thúc học</Nhan>}
-      {thieu && <Nhan tone="muted">Thiếu thông tin</Nhan>}
+      {thieu && <span className="text-xs text-slate-400">Thiếu thông tin</span>}   {/* CA2-7: một kiểu với "Thiếu n" của QL — chữ mờ, không chip */}
     </>
   );
 }

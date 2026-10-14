@@ -16,7 +16,7 @@ import { ensurePeriod, ensurePeriods, mondayOf, skillScoreDeadline } from '../pl
 import { kckCuaLuot, regularSkillViews, weekStartOf } from '../fasttrack/attempts.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
 import { checkSkillWeekMove, ensureSkillRows, kiemDaToiTuanThi, loadSkillRows, setSkillWeek } from '../fasttrack/skillSchedule.ts';
-import { dotHoanTat, dotHoanTatMany, quyenSuaSauHoanTat } from '../fasttrack/hoanTat.ts';
+import { chanVangLopKetThuc, dotHoanTat, dotHoanTatMany, kiemLopKetThuc, laLopKetThuc, quyenSuaSauHoanTat } from '../fasttrack/hoanTat.ts';
 import { canRequest, duocGoDau } from '../fasttrack/absence.ts';
 import { classProgress, classProgressMany, lichMtCua } from '../classes/schedule.ts';
 import { baoLenCuoiKhoaDoiQuaHan, capNhatCuoiKhoaSauChuyen, dongBoCheTaiFinal } from './cuoiKhoa.ts';
@@ -603,6 +603,8 @@ export function saveRegularScore(
   if (!prog.skills.includes(skill)) {
     throw badRequest(`Lớp ${prog.name} không có kỹ năng ${tenMon(prog.code, skill)}.`);
   }
+  /* OV-11g (HL-10): lớp đã kết thúc — GV 403 trước mọi việc ghi (điểm, "-", nhận xét); Quản lý đi đường `override`. */
+  const lopKetThuc = kiemLopKetThuc(p, a.class_id);
   /* Dấu "-" đi đường riêng vì nó KHÔNG phải một điểm: nó là một lần dời lịch (C08). */
   if (patch.noShow !== undefined) {
     if (patch.score !== undefined || patch.total !== undefined) {
@@ -632,6 +634,7 @@ export function saveRegularScore(
     require_(p, PERMISSIONS.SCORE_EDIT, { classId: a.class_id, studentId: a.student_id, skill },
       'Bạn chỉ nhập được điểm của kỹ năng mình được phân công.');
   }
+  if (lopKetThuc) path = 'override';
 
   /* OV-4b: chỉ nhận xét — cùng quyền nhập điểm môn đó (đã kiểm ở trên), cùng luật ≤ 1000 ký tự với Mock; một lệnh một việc. */
   if (patch.nhanXet !== undefined) {
@@ -674,6 +677,8 @@ export function saveRegularScore(
    */
   /* T7 + T22 (PR-MTa): đổi giá trị hay xoá điểm đã có → lý do tuỳ chọn. */
 
+  /* OV-11g (rà PR #379): QL SỬA điểm đã có ở lớp đã kết thúc phải ghi lý do (RB-5) — nhập lần đầu (Final về muộn, Q30-4) không phải sửa. */
+  if (lopKetThuc && (existing?.raw_score ?? null) !== null && !String(patch.lyDo ?? '').trim()) throw badRequest('Lớp đã kết thúc — ghi lý do sửa điểm.');
   /* PR-Pb2-b (Q13): cùng luật FT — ngày nghiệp vụ lần đầu ô có điểm, sửa sau giữ nguyên, xoá điểm về NULL. */
   const nhapDau = (score ?? null) !== null ? existing?.nhap_dau_ngay ?? today : null;
   return tx(() => {
@@ -747,6 +752,7 @@ export function reportRegularNoShow(
   const prog = a.class_id ? programmeOfClass(a.class_id) : null;
   if (!prog || prog.scoringMode !== 'ratio') throw badRequest('Lượt này không thuộc lớp thường.');
   if (!prog.skills.includes(skill)) throw badRequest(`Lớp ${prog.name} không có kỹ năng ${tenMon(prog.code, skill)}.`);
+  chanVangLopKetThuc(p, a.class_id);
 
   /*
    * Ghi dấu là việc của NGƯỜI CHẤM môn đó (hoặc người nhập bù) — cùng cửa với nhập điểm.
@@ -944,24 +950,31 @@ export function refreshRegularOutcome(p: Principal, attemptId: number) {
     conn.prepare('UPDATE assessment_attempts SET status = ?, updated_at = ? WHERE id = ?').run(next, nowIso(), attemptId);
   }
   /*
-   * RB-8: môn vừa được sửa thành ĐẠT → rút tín hiệu và xử lý Case dựng trên con số sai — CÙNG hàm với Fast Track. Đặt TRƯỚC lối thoát
-   * `sosLevel === null`: sửa một môn lên đạt khi ba môn kia chưa có điểm thì chưa kết luận được mức, nhưng căn cứ của tín hiệu đã mất.
+   * OV-11g (Q4, rà #379): lớp đã kết thúc — sửa điểm không tự tạo / rút Case, tín hiệu, Báo PH ở lớp đã đóng. GIỮ hệ quả Final ở lộ trình MỚI
+   * bên dưới (Q30-4: lớp tự đóng khi cả lớp đã chuyển, điểm Final về muộn vẫn sinh bổ trợ / Mini Test ở lớp đích).
    */
-  reconcileCorrectedSignals(p, {
-    attemptId, passingSkills: r.skills.filter((x) => x.outcome === 'pass').map((x) => x.skill), passText: 'đạt',
-    /* PR-S4F #3: môn nay TRỐNG (xoá điểm có lý do) — tín hiệu dựng trên điểm đó hết căn cứ, như nhánh FT (`reconcileCorrectedScores`). */
-    clearedSkills: r.skills.filter((x) => x.outcome === 'missing').map((x) => x.skill),
-  });
-  /*
-   * PR-LT2a (K5-01, Q11): CUỐI KHOÁ KHÔNG SINH tín hiệu hay Case mới — kết luận Cuối khoá (% hướng) là việc của PR-LT2b. Pre FOU không có Giữa khoá (PF2).
-   * GIỮA KHOÁ: môn trượt TỰ TẠO Case + PA Bổ trợ (N1) — không tín hiệu "Tạo Case / Bỏ qua", không nhãn SOS (T58).
-   * Case Giữa khoá còn mở mà môn đó ĐẠT ở lượt sau (Cuối khoá) thì vẫn ghi mốc "Đã đạt" (giữ phép kiểm S4F); không đổi mức, không mở Case.
-   */
-  // Case mở ngay khi kết luận được, không chờ đủ điểm.
-  if (r.sosLevel !== null) taoCaseGiuaKhoa(p, a, r);
-  /* OV-6b2: Checkpoint đủ điểm → em có Checkpoint kế tiếp (chưa đạt chỉ chip SOS — `taoCaseGiuaKhoa` chỉ nhận Giữa khoá FOU/BE/ELE). */
-  if (a.kind === 'checkpoint' && r.complete && a.class_id) sinhCheckpointKeTiep([a.class_id], demoToday(), p.userId, [a.cycle_id]);
-  if (a.kind === 'progress') dongBoBaoPh(a, monBaoPh(a.id, r.skills.filter((x) => x.outcome === 'fail').map((x) => x.skill)));   // PR-UXF-b (R5-4): theo Case, bỏ môn "Không cần theo dõi"
+  const ketThuc = laLopKetThuc(a.class_id);
+  if (!ketThuc) {
+    /*
+     * RB-8: môn vừa được sửa thành ĐẠT → rút tín hiệu và xử lý Case dựng trên con số sai — CÙNG hàm với Fast Track. Đặt TRƯỚC lối thoát
+     * `sosLevel === null`: sửa một môn lên đạt khi ba môn kia chưa có điểm thì chưa kết luận được mức, nhưng căn cứ của tín hiệu đã mất.
+     */
+    reconcileCorrectedSignals(p, {
+      attemptId, passingSkills: r.skills.filter((x) => x.outcome === 'pass').map((x) => x.skill), passText: 'đạt',
+      /* PR-S4F #3: môn nay TRỐNG (xoá điểm có lý do) — tín hiệu dựng trên điểm đó hết căn cứ, như nhánh FT (`reconcileCorrectedScores`). */
+      clearedSkills: r.skills.filter((x) => x.outcome === 'missing').map((x) => x.skill),
+    });
+    /*
+     * PR-LT2a (K5-01, Q11): CUỐI KHOÁ KHÔNG SINH tín hiệu hay Case mới — kết luận Cuối khoá (% hướng) là việc của PR-LT2b. Pre FOU không có Giữa khoá (PF2).
+     * GIỮA KHOÁ: môn trượt TỰ TẠO Case + PA Bổ trợ (N1) — không tín hiệu "Tạo Case / Bỏ qua", không nhãn SOS (T58).
+     * Case Giữa khoá còn mở mà môn đó ĐẠT ở lượt sau (Cuối khoá) thì vẫn ghi mốc "Đã đạt" (giữ phép kiểm S4F); không đổi mức, không mở Case.
+     */
+    // Case mở ngay khi kết luận được, không chờ đủ điểm.
+    if (r.sosLevel !== null) taoCaseGiuaKhoa(p, a, r);
+    /* OV-6b2: Checkpoint đủ điểm → em có Checkpoint kế tiếp (chưa đạt chỉ chip SOS — `taoCaseGiuaKhoa` chỉ nhận Giữa khoá FOU/BE/ELE). */
+    if (a.kind === 'checkpoint' && r.complete && a.class_id) sinhCheckpointKeTiep([a.class_id], demoToday(), p.userId, [a.cycle_id]);
+    if (a.kind === 'progress') dongBoBaoPh(a, monBaoPh(a.id, r.skills.filter((x) => x.outcome === 'fail').map((x) => x.skill)));   // PR-UXF-b (R5-4): theo Case, bỏ môn "Không cần theo dõi"
+  }
   /*
    * PR-LT2b (Q30-4): Cuối khoá ĐỦ điểm mà em đã chuyển đi → luật Cuối khoá áp ở lộ trình mới. Không sinh tín hiệu / Case ở lớp cũ (T70).
    * PR-CT2 (§8): em CÒN học lớp đó → đồng bộ bổ trợ Final theo điểm + quyết định đang chờ (sinh sớm / huỷ phần chưa ai đụng).
@@ -1138,12 +1151,14 @@ export function regularSheet(p: Principal, classId: number, kind?: string, today
       });
   };
 
-  const editable = editableSkills(p, classId, prog.skills);
-  /* Quyền sửa ô tính MỘT lần cho mỗi môn — cùng cửa với `saveRegularScore`, không hỏi lại theo từng dòng. */
-  const canEditSkill = new Map(prog.skills.map((k) => [k, scoreEditPath(p, classId, k) !== null]));
   /* R11: một câu hỏi cho cả bảng (`dotHoanTatMany`) — không hỏi lẻ từng dòng. */
   const hoanTatOf = dotHoanTatMany(attempts.map((a) => a.id), today);
   const suaSauHoanTat = quyenSuaSauHoanTat(p, classId);
+  /* OV-11g (HL-10, Q4): lớp đã kết thúc — mọi bài như đã hoàn tất: Quản lý sửa qua hộp lý do, GV chỉ đọc (cùng `kiemLopKetThuc`). */
+  const ketThuc = cls.status === 'finished';
+  const editable = ketThuc && !suaSauHoanTat ? [] : editableSkills(p, classId, prog.skills);
+  /* Quyền sửa ô tính MỘT lần cho mỗi môn — cùng cửa với `saveRegularScore`, không hỏi lại theo từng dòng. */
+  const canEditSkill = new Map(prog.skills.map((k) => [k, ketThuc ? suaSauHoanTat : scoreEditPath(p, classId, k) !== null]));
   /* Lịch và hạn chấm RIÊNG từng môn — một bài có thể trải hai ba tuần (mục 10.1). */
   const skillRows = loadSkillRows(attempts.map((a) => a.id));
   /* Mã tuần mà dấu "-" đã dời môn đi (C08) — đọc gộp một lần cho cả bảng. */
@@ -1190,7 +1205,8 @@ export function regularSheet(p: Principal, classId: number, kind?: string, today
       const dl = pending.length
         ? pending.map((x) => x.v!.deadline!).sort().slice(-1)[0]
         : null;
-      const hoanTat = hoanTatOf.get(a.id) ?? { hoanTat: false, chuNhatCuoi: null };
+      const ht = hoanTatOf.get(a.id) ?? { hoanTat: false, chuNhatCuoi: null };
+      const hoanTat = ketThuc ? { hoanTat: true, chuNhatCuoi: ht.chuNhatCuoi ?? cls.finished_at ?? null } : ht;
       return {
         attemptId: a.id,
         deadline: dl,

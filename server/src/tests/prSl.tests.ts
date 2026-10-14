@@ -49,12 +49,12 @@ export async function runPrSlTests(t: YThucTestKit) {
     assert(/<ChonTuan[^>]*ariaLabel="Bắt đầu theo dõi"/.test(q) && !/<ONgay kieu="ngay"[^>]*setDetectedAt/.test(q), 'Bắt đầu theo dõi phải là bộ chọn tuần');
   });
 
-  check('SL-6 · I3 Thêm học viên: ô dán không monospace, nút Đọc dưới ô dán, cột Overall / ngày sinh đủ rộng, lời nhắc hai dòng', () => {
+  check('SL-6 · I3 Thêm học viên: ô dán không monospace, nút Đọc dưới ô dán, cột Overall / ngày sinh đủ rộng; OV-11g CA2-10: lời nhắc vào ⓘ cột', () => {
     const s = doc('web/src/modules/students/IntakePanel.tsx');
     assert(!/font-mono/.test(s), 'ô dán còn font-mono');
     assert(s.indexOf('<textarea') < s.lastIndexOf('Đọc nội dung đã dán') && !s.includes('sm:grid-cols-3'), 'nút Đọc phải nằm dưới ô dán');
-    assert(/dob: 116, email: 190, baselineScore: 72/.test(s), 'bề rộng cột');
-    assert(s.includes('Em đã có hồ sơ thì dùng Chuyển lớp, không tạo mới.</p>') && !s.includes('(không tính SOS). · Em'), 'lời nhắc hai dòng');
+    assert(/dob: 170, email: 190, baselineScore: 72/.test(s), 'bề rộng cột (ô Ngày sinh = ONgay có nút lịch)');
+    assert(s.includes("fullName: 'Em đã có hồ sơ thì dùng Chuyển lớp, không tạo mới.'") && !s.includes('</p>\n          </div>\n        </div>\n      </div>\n    </KhungPanel>'), 'lời nhắc ở ⓘ cột Họ tên, không câu dưới lưới');
   });
 
   check('SL-7 · I4: GvCham, hộp 4 tiêu chí, Nhận xét, Xoá vi phạm dùng KhungPanel; StudentDetailPage hết import Modal', () => {

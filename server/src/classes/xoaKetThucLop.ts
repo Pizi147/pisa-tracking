@@ -15,6 +15,7 @@ import { demoToday } from '../demoConfig.ts';
 import { badRequest, chuTuDo, notFound } from '../util.ts';
 import { require_, type Principal } from '../permissions.ts';
 import { writeAudit } from '../platform/audit.ts';
+import { emChuaCoLenh } from './lenhChuyen.ts';
 
 const CHI_QL_LOP = 'Chỉ Quản lý của lớp này hoặc Quản trị hệ thống mới kết thúc hoặc mở lại được lớp.';
 
@@ -63,9 +64,14 @@ export function tinhTrangLop(classId: number) {
   return { soTungGhiDanh, soDangHoc, soSapNhan, gan, coDuLieu: soTungGhiDanh > 0 || gan.length > 0, conTreo: treo.length ? `Còn treo: ${treo.join(' · ')}` : null };
 }
 
-/** Câu chặn Kết thúc lớp khi còn em đang học — nói đúng việc phải làm theo loại lớp (K2-35): FT chuyển từng em, lớp thường ra MỘT quyết định cho cả lớp. */
-function lyDoConEm(c: { is_fast_track: number }, soDangHoc: number): string {
-  return `Còn ${soDangHoc} học viên đang học — ${c.is_fast_track ? 'chuyển lớp từng em hoặc chuyển nhiều em' : `${CHU_CHUYEN_LOP.quyetDinh} cho cả lớp`} trước.`;
+/**
+ * Câu chặn Kết thúc lớp khi còn em đang học — nói đúng việc phải làm theo loại lớp (K2-35): FT chuyển từng em; lớp thường (CA2-4) đếm em chưa chốt
+ * Lộ trình tiếp theo cùng hàm badge "n HV chưa chốt lộ trình" (`emChuaCoLenh`), đã chốt hết thì chỉ còn chờ tới tuần chuyển.
+ */
+function lyDoConEm(c: { id: number; is_fast_track: number }, soDangHoc: number): string {
+  if (c.is_fast_track) return `Còn ${soDangHoc} học viên đang học — chuyển lớp từng em hoặc chuyển nhiều em trước.`;
+  const chuaChot = emChuaCoLenh([c.id]).get(c.id)?.length ?? 0;
+  return chuaChot > 0 ? `Còn ${chuaChot} em chưa chốt Lộ trình tiếp theo.` : `Còn ${soDangHoc} em chờ tới tuần chuyển lớp.`;
 }
 
 const lyDoSapNhan = (n: number) => `Còn ${n} quyết định chuyển lớp ĐẾN lớp này — huỷ hoặc đổi lớp đến trước.`;

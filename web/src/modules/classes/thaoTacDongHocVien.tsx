@@ -3,10 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { QuickReport } from '../cases/QuickReport.tsx';
 import { RecordViolationPanel } from '../yThuc/RecordViolationPanel.tsx';
 import { ChuyenLopPanel } from '../students/ChuyenLopPanel.tsx';
-import { SuaThongTinMotEm } from '../students/StudentManagePanel.tsx';
+import { StudentManagePanel, SuaThongTinMotEm } from '../students/StudentManagePanel.tsx';
+import { api, invalidate } from '../../lib/api.ts';
+import { useToast } from '../../ui/Toast.tsx';
 import type { MucMenu } from '../../ui/MenuDong.tsx';
 import {
-  khoaBai, nhanBai, MUC_MENU_DONG_HIEM, MUC_MENU_DONG_NHAN, duongHoSoHocVien, duongLoTrinhLop, mucDongTheoVai, mucMenuDongHocVien, type ViecQuanLy, type ViecTiepTheo,
+  DUONG_TAB_TEST, khoaBai, nhanBai, vietMaLuot, type MaLuot, MUC_MENU_DONG_HIEM, MUC_MENU_DONG_NHAN, duongHoSoHocVien, duongLoTrinhLop, mucDongTheoVai, mucMenuDongHocVien, type ViecQuanLy, type ViecTiepTheo,
 } from '@shared/domain/index.ts';
 
 /**
@@ -31,9 +33,14 @@ export function nhapDiemCua(
 ): DongChoMenu['nhapDiem'] {
   const t = timeline.find((x) => x.myPending.length > 0);
   if (!t) return null;
+  /* HL-3: mọi "Nhập điểm" của lớp mở Điểm theo lớp (như nút đầu hồ sơ lớp), đúng lượt; route cũ `/nhap-diem`, `/bang-diem-thuong` vẫn chạy. */
+  const ma: MaLuot | null = laLopThuong
+    ? t.kind === 'checkpoint' ? (t.attemptNo ? { loai: 'cp', so: t.attemptNo } : null)
+      : t.kind === 'progress' || t.kind === 'final' || t.kind === 'mt0' ? { loai: 'thuong', kind: t.kind } : null
+    : t.kind === 'mock' && t.attemptNo ? { loai: 'mt', so: t.attemptNo } : null;
   return {
     nhan: `Nhập điểm ${t.kind === 'checkpoint' ? nhanBai(khoaBai(t.kind, t.attemptNo)) : t.kindLabel}`,   // OV-6b2: "Checkpoint 2"
-    den: laLopThuong ? `/bang-diem-thuong/${classId}?kind=${encodeURIComponent(khoaBai(t.kind, t.attemptNo))}` : `/nhap-diem/${classId}`,
+    den: `${DUONG_TAB_TEST['diem-lop']}?lop=${classId}${ma ? `&luot=${encodeURIComponent(vietMaLuot(ma))}` : ''}`,
   };
 }
 
@@ -64,11 +71,27 @@ export function useThaoTacDongHocVien({ laLopThuong, quyen, onDone, maLop, class
   maLop?: string | null;
 }): { mucCua: (d: DongChoMenu) => MucMenu[]; panels: ReactNode } {
   const navigate = useNavigate();
+  const toast = useToast();
   const [mo, setMo] = useState<{
-    viec: 'case' | 'vi-pham' | 'sua-thong-tin' | 'chuyen-lop' | 'de-xuat-chuyen-lop'; id: number; ten: string; quanLy?: ViecQuanLy; lop?: string | null;
+    viec: 'case' | 'vi-pham' | 'sua-thong-tin' | 'chuyen-lop' | 'de-xuat-chuyen-lop' | 'hoc-lai'; id: number; ten: string; quanLy?: ViecQuanLy; lop?: string | null;
   } | null>(null);
+  const daDoi = (id: number) => { invalidate('/hoc-vien-lop'); invalidate(`/students/${id}`); onDone(); };
+  /* OV-11g (Q11, Q12): Lưu trữ một chạm + Hoàn tác (bỏ lưu trữ) — như Lưu trữ / Bỏ lưu trữ ở trang Lưu trữ. */
+  const luuTru = async (d: DongChoMenu) => {
+    try {
+      await api.post(`/students/${d.id}/archive`, {});
+      daDoi(d.id);
+      toast.hoanTac(`Đã lưu trữ ${d.ten}`, async () => {
+        try { await api.post(`/students/${d.id}/unarchive`, {}); daDoi(d.id); } catch (e: any) { toast.push('error', e.message); }
+      }, { key: `luu-tru:${d.id}` });
+    } catch (e: any) { toast.push('error', e.message); }
+  };
 
-  const mucCua = (d: DongChoMenu): MucMenu[] => quyen.theoVai ? [
+  const mucCua = (d: DongChoMenu): MucMenu[] => d.status === 'finished' && !quyen.theoVai && quyen.coTheChuyenTiep ? [
+    /* OV-11g (HL-19): em Kết thúc học chưa Lưu trữ (dòng mờ cuối lớp) — việc của Quản lý (máy chủ kiểm `cycle.edit`). */
+    { key: 'luu-tru', nhan: 'Lưu trữ', onChon: () => { void luuTru(d); } },
+    { key: 'hoc-lai', nhan: 'Học lại', onChon: () => setMo({ viec: 'hoc-lai', id: d.id, ten: d.ten }) },
+  ] : quyen.theoVai ? [
     ...mucDongTheoVai({
       suaThongTin: d.suaThongTin ?? !!quyen.coTheSuaThongTin, suaThem: d.suaThem ?? !!quyen.coTheSuaThem,
       ft: d.ft ?? !laLopThuong, status: d.status ?? (d.dangHoc ? 'active' : 'finished'),
@@ -100,6 +123,10 @@ export function useThaoTacDongHocVien({ laLopThuong, quyen, onDone, maLop, class
         studentId={mo?.id ?? 0} studentName={mo?.ten} lop={maLop} onDone={xong} />
       <ChuyenLopPanel open={mo?.viec === 'chuyen-lop' || mo?.viec === 'de-xuat-chuyen-lop'} cheDo={mo?.viec === 'de-xuat-chuyen-lop' ? 'de-xuat' : 'lenh'} onClose={() => setMo(null)}
         studentId={mo?.id ?? 0} studentName={mo?.ten} lop={maLop} onDone={xong} />
+      {mo?.viec === 'hoc-lai' && (
+        <StudentManagePanel viec="hoc-lai" onClose={() => setMo(null)} student={{ id: mo.id, name: mo.ten, classId: null }}
+          lop={maLop} cycle={null} attempts={[]} onDone={() => daDoi(mo.id)} quyen={{ canEdit: false }} />
+      )}
       {mo?.viec === 'sua-thong-tin' && <SuaThongTinMotEm viec={mo.quanLy} studentId={mo.id} studentName={mo.ten} lop={mo.lop ?? maLop} onClose={() => setMo(null)} onDone={xong} />}
     </>
   );

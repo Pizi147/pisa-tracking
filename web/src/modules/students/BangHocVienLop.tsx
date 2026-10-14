@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { Empty, ExamPlanText, Level, Skeleton, TargetText } from '../../ui/ui.tsx';
 import { ChipDuoiKck } from '../../ui/KetQuaDot.tsx';
-import { QuaHan } from '../../ui/Nhan.tsx';
+import { Nhan, QuaHan } from '../../ui/Nhan.tsx';
 import { DanhSachViecTiep } from '../../ui/ViecTiep.tsx';
 import { MenuDong } from '../../ui/MenuDong.tsx';
 import { HangCon } from '../../ui/HangNhom.tsx';
@@ -71,7 +71,8 @@ export function BangHocVienLop({ lop, chiHien, sapXep, onDoi, soCot, the = false
 }) {
   const { homNay } = useNgayNghiepVu();
   const thuong = lop.scoringMode === 'ratio';
-  const { data, loading, error, reload } = useApi<DongRoster[]>(`/classes/${lop.id}/roster`, [lop.id]);
+  /* OV-11g (HL-19): kèm em Kết thúc học chưa Lưu trữ của lớp cuối — dòng mờ cuối lớp, ⋯ Lưu trữ · Học lại. */
+  const { data, loading, error, reload } = useApi<DongRoster[]>(`/classes/${lop.id}/roster?kemKetThuc=1`, [lop.id]);
   const tt = useThaoTacDongHocVien({ laLopThuong: thuong, quyen: admin ? { ...lop.viewer, theoVai: true } : lop.viewer, maLop: lop.code, classId: lop.id, onDone: () => { reload(); onDoi(); } });
   /** Admin: lượt đã tới tuần thi gần nhất (không tính lượt huỷ) + số ô còn trống của lượt đó. */
   const luotGanNhat = (s: DongRoster) => {
@@ -99,7 +100,7 @@ export function BangHocVienLop({ lop, chiHien, sapXep, onDoi, soCot, the = false
         canhBao: !!s.canhBaoYThuc, sosLevel: s.standing?.sosLevel ?? null, soCaseMo: s.openCases,
       })),
     sapXep,
-  ), [data, chiHien, sapXep]);
+  ).sort((a, b) => Number(a.status === 'finished') - Number(b.status === 'finished')), [data, chiHien, sapXep]);
   useEffect(() => { onThuTu?.(lop.id, rows.map((s) => s.id)); }, [rows]); // eslint-disable-line react-hooks/exhaustive-deps
   /* Q6/B8: việc chung của lớp lên hàng "Cả lớp", không lặp ở từng em. */
   const { chung, conLai } = useMemo(() => tachViecChung(rows.map((s) => ({ id: s.id, viec: s.viecTiepTheo }))), [rows]);
@@ -148,7 +149,7 @@ export function BangHocVienLop({ lop, chiHien, sapXep, onDoi, soCot, the = false
                 <span className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5">
                   <Link className="link font-semibold" to={`/hoc-vien/${s.id}`} state={{ ds }}>{s.fullName}</Link>
                   <span className="text-[11px] tabular-nums text-slate-500">{maHocVienNgan(s.studentCode)}</span>
-                  <MissingBadge items={s.missing} gon />
+                  {s.status === 'finished' ? <Nhan tone="done">Đã kết thúc học</Nhan> : <MissingBadge items={s.missing} gon />}
                   <CanhBaoYThuc cb={s.canhBaoYThuc} />
                 </span>
               )}
@@ -194,7 +195,7 @@ export function BangHocVienLop({ lop, chiHien, sapXep, onDoi, soCot, the = false
               <span className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5">
                 <Link className="link max-w-full truncate font-semibold" title={s.fullName} to={`/hoc-vien/${s.id}`} state={{ ds }}>{s.fullName}</Link>
                 <span className="shrink-0 text-[11px] tabular-nums text-slate-500">{maHocVienNgan(s.studentCode)}</span>
-                <MissingBadge items={s.missing} gon />
+                {s.status === 'finished' ? <Nhan tone="done">Đã kết thúc học</Nhan> : <MissingBadge items={s.missing} gon />}
                 <CanhBaoYThuc cb={s.canhBaoYThuc} />
               </span>
             </td>

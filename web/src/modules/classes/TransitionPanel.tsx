@@ -227,10 +227,6 @@ function NoiDung({ classId, onClose, onDone }: { classId: number; onClose: () =>
                 {nhomChan.map(([k, n]) => <span key={k}>{k} <b className="text-slate-100">{n}</b></span>)}
                 <span>Chưa quyết <b className="text-slate-100">{chua}</b></span>
               </div>
-              <p className="m-0">
-                {/* R-C5: câu "Tới hết tuần kết thúc lớp … Báo QL" là luật lớp thường — panel này chỉ còn lớp FT. */}
-                Gửi phần đã quyết trước, quyết nốt sau.
-              </p>
             </div>
           ) : undefined,
           phu: data?.canEdit ? <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={() => setTaoLop(true)}>+ Mở lớp mới</button> : undefined,
@@ -263,9 +259,6 @@ function NoiDung({ classId, onClose, onDone }: { classId: number; onClose: () =>
                   {(data.tuanChon as string[]).map((t) => <NutChon key={t} chon={tuanCh === t} onClick={() => setTuanChung(t)}>{tuanLich(t, homNay)}</NutChon>)}
                 </div>
               </div>
-              <p className="m-0 min-w-0 flex-1 text-xs text-slate-400">
-                Chỉ chọn từ tuần sau trở đi; web chuyển em vào Thứ Hai của tuần đó. Em có thể có tuần riêng.
-              </p>
             </div>
 
             {data.canEdit && (

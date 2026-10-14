@@ -8,7 +8,7 @@
 import { db } from '../db.ts';
 import { dotDaHoanTat, mondayOfDate, PERMISSIONS } from '../../../shared/domain/index.ts';
 import { can, isCoreTeacherOf, type Principal } from '../permissions.ts';
-import { addDays } from '../util.ts';
+import { addDays, badRequest, forbidden } from '../util.ts';
 import { loadSkillRows, scoringModeOf } from './skillSchedule.ts';
 
 export type HoanTatInfo = { hoanTat: boolean; chuNhatCuoi: string | null };
@@ -115,3 +115,22 @@ export function quyenSuaSauHoanTat(p: Principal, classId: number, lichSu = false
     /* T22 (PR-MTa, rà #212): MT cũ — GVCN lớp đó sửa / xoá được cả sau khi khoá 7 ngày. */
     || (lichSu && isCoreTeacherOf(p, classId));
 }
+
+/**
+ * OV-11g (HL-10, Q4): lớp ĐÃ KẾT THÚC — chỉ Quản lý (người sửa được sau hoàn tất) ghi điểm / "-" / nhận xét, đi đường `override` (nhật ký như
+ * sửa điểm thường); GV chỉ xem → 403. Trả `true` khi lớp đã kết thúc (nơi gọi ép đường `override`).
+ */
+export function kiemLopKetThuc(p: Principal, classId: number | null): boolean {
+  if (!classId || (db().prepare('SELECT status FROM classes WHERE id = ?').get(classId) as any)?.status !== 'finished') return false;
+  if (!quyenSuaSauHoanTat(p, classId)) throw forbidden('Lớp đã kết thúc — chỉ Quản lý sửa được điểm.');
+  return true;
+}
+
+/** OV-11g (rà PR #379): lớp đã kết thúc không ghi / gỡ vắng ("-", Báo vắng, xin dời) — kể cả QL: không còn tuần học để dời bài vào. GV 403 trước. */
+export function chanVangLopKetThuc(p: Principal, classId: number | null): void {
+  if (kiemLopKetThuc(p, classId)) throw badRequest('Lớp đã kết thúc — không ghi vắng ("-"). Nhập điểm hoặc để trống.');
+}
+
+/** Lớp đã kết thúc → sửa điểm chỉ lưu điểm + nhật ký: không tự tạo / rút Case, tín hiệu, bổ trợ (rà PR #379, Q4). */
+export const laLopKetThuc = (classId: number | null): boolean =>
+  !!classId && (db().prepare('SELECT status FROM classes WHERE id = ?').get(classId) as any)?.status === 'finished';

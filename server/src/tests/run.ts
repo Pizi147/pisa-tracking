@@ -4055,7 +4055,7 @@ check('Badge "Thiếu thông tin" gom mọi thứ còn thiếu vào MỘT nhãn'
   /* Lớp Normal KHÔNG bị nhắc tháng thi — các em đó chưa thi IELTS. */
   const normal = schedule.missingForStudent({
     cycle: { start_period_id: null, exam_month: null, target_score: null },
-    student: { dob: null }, isFastTrack: false,
+    student: { dob: null, email: null }, isFastTrack: false,
   });
   assert(normal.some((m) => m.key === 'start_week'), 'Thiếu tuần bắt đầu mà không nhắc');
   assert(!normal.some((m) => m.key === 'exam_month'), 'Lớp Normal bị nhắc tháng thi IELTS');
@@ -4063,7 +4063,7 @@ check('Badge "Thiếu thông tin" gom mọi thứ còn thiếu vào MỘT nhãn'
 
   const ft = schedule.missingForStudent({
     cycle: { start_period_id: null, exam_month: null, target_score: null },
-    student: { dob: null }, isFastTrack: true,
+    student: { dob: null, email: null }, isFastTrack: true,
   });
   assert(ft.some((m) => m.key === 'exam_month') && ft.some((m) => m.key === 'target'),
     'Lớp FT phải bị nhắc cả tháng thi lẫn Target');
@@ -4072,7 +4072,7 @@ check('Badge "Thiếu thông tin" gom mọi thứ còn thiếu vào MỘT nhãn'
   /* Khai đủ thì badge biến mất hẳn, không để lại một nhãn rỗng. */
   const full = schedule.missingForStudent({
     cycle: { start_period_id: 1, exam_month: '2026-11', target_score: 6.5 },
-    student: { dob: '2008-01-01' }, isFastTrack: true,
+    student: { dob: '2008-01-01', email: 'an@gmail.com' }, isFastTrack: true,
   });
   assert(full.length === 0, `Khai đủ rồi mà vẫn báo thiếu: ${full.map((m) => m.label).join(', ')}`);
 });
@@ -9326,10 +9326,14 @@ await runPrOv11iTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P,
 // ==================================================================== PR-OV11d (hồ sơ HV · Case: không kẹt sau Tạm dừng / Lưu trữ / Bước tiếp; nút hiện = máy chủ cho)
 const { runPrOv11dTests } = await import('./prOv11d.tests.ts');
 await runPrOv11dTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
-// ==================================================================== PR-OV12a (hạn ghi kết quả PA hai tuần · QL xoá lớp trống / nhiều HV · TVV Bước tiếp sau thi)
+============================================================ PR-OV12a (hạn ghi kết quả PA hai tuần · QL xoá lớp trống / nhiều HV · TVV Bước tiếp sau thi)
 const { runPrOv12aTests } = await import('./prOv12a.tests.ts');
 await runPrOv12aTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
-console.log(`\n${'='.repeat(60)}`);
+=======
+// ==================================================================== PR-OV11g (Học viên & Lớp · hồ sơ lớp: Thiếu thông tin, em Kết thúc học, lớp đã kết thúc)
+const { runPrOv11gTests } = await import('./prOv11g.tests.ts');
+await runPrOv11gTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`
   : `${passed} đạt, ${failures.length} KHÔNG ĐẠT:\n` + failures.map((f) => '  - ' + f).join('\n'));

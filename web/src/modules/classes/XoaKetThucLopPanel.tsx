@@ -67,7 +67,11 @@ export function XoaLopPanel({ classId, classCode, onClose }: { classId: number; 
  * ⋮ HỒ SƠ LỚP › KẾT THÚC LỚP (PR-UX3, chỉ Quản trị hệ thống) — cho lớp đã có dữ liệu. Còn học viên đang học thì CHẶN và chỉ dẫn; không còn
  * ai thì lớp thành "Đã kết thúc" và vào khu Lưu trữ (chỉ xem).
  */
-export function KetThucLopPanel({ classId, classCode, onClose, onDone }: { classId: number; classCode: string; onClose: () => void; onDone: () => void }) {
+export function KetThucLopPanel({ classId, classCode, onClose, onDone, diTiep }: {
+  classId: number; classCode: string; onClose: () => void; onDone: () => void;
+  /** CA2-12: còn em đang học → nút đi tiếp ("Chuyển tiếp lớp" FT / "Lộ trình tiếp theo" lớp thường); nơi gọi đóng panel này rồi mở việc kia. */
+  diTiep?: { nhan: string; onChon: () => void };
+}) {
   const toast = useToast();
   const tt = useApi<TinhTrangXoaKetThuc>(`/classes/${classId}/xoa-ket-thuc`, [classId]);
   const [busy, setBusy] = useState(false);
@@ -95,6 +99,9 @@ export function KetThucLopPanel({ classId, classCode, onClose, onDone }: { class
               Lớp <strong>{tt.data.ma}</strong> · {tt.data.chiNhanh} sẽ chuyển sang <strong>Đã kết thúc</strong> và vào khu Lưu trữ. Hồ sơ chỉ còn xem; dữ liệu giữ nguyên.
             </p>
             {chan && <p className="m-0 text-xs text-late">{chan}</p>}
+            {chan && diTiep && tt.data.soDangHoc > 0 && (
+              <button type="button" className="btn btn-sm mt-2 min-h-[44px] sm:min-h-0" onClick={diTiep.onChon}>{diTiep.nhan}</button>
+            )}
             {tt.data.conTreo && <p className="m-0 mt-1 text-xs text-slate-400">{tt.data.conTreo} — không chặn kết thúc lớp.</p>}
           </Khoi>
         )}

@@ -44,6 +44,8 @@ export type TrangHocVienLop = {
   hocVien: { id: number; classId: number; loc: LocHocVien[]; khung: 'ft' | 'thuong' }[];
   /** Người xem có tạo được lớp MỚI ở chi nhánh nào không — không gắn với lớp đã tồn tại nào (điểm a rà soát cuối). */
   coTheTaoLop: boolean;
+  /** HL-14: "+ Học viên" đầu trang — có lớp trong phạm vi thêm được học viên, KHÔNG phụ thuộc ô tìm (tìm không ra em là lúc cần thêm). */
+  coTheThemHocVien: boolean;
   /** Số ở mục ⋯ "Lưu trữ" đầu trang (PR-LT, Q16) — cùng phạm vi, cùng hàm với `/hoc-vien-lop/luu-tru` (khớp G-10 theo cấu tạo). */
   demLuuTru: { lop: number; hv: number };
 };
@@ -107,6 +109,10 @@ export function danhSachHocVienLop(
   const phamVi = { coThe, dangDung, chiNhanh };
   const dl = danhSachLuuTru(p, {});
   const demLuuTru = { lop: dl.lop.length, hv: dl.hocVien.length };
+  /* Đang tìm: hỏi theo mọi lớp trong phạm vi (không lọc tìm); không tìm thì đọc cờ của các hàng (dưới). */
+  const themTheoPhamVi = (f.q ?? '').trim()
+    ? (lopTrongPhamVi(p, chiNhanh ?? undefined) ?? []).some((c) => can(p, PERMISSIONS.STUDENT_EDIT, { classId: c.id }))
+    : null;
 
   const base = listClassSummaries(p, {
     branchId: chiNhanh ?? undefined,
@@ -114,11 +120,11 @@ export function danhSachHocVienLop(
     /* Phạm vi quyết luôn badge chấm bài: "Lớp tôi dạy" đếm phần mình phải chấm (Q12 — thay cặp nút Tôi / Tất cả). */
     scope: dangDung === 'toi' ? 'mine' : 'managed',
   });
-  if (base.scopeEmpty) return { rows: [], scopeEmpty: true, phamVi, dem: demRong(), hocVien: [], coTheTaoLop, demLuuTru };
+  if (base.scopeEmpty) return { rows: [], scopeEmpty: true, phamVi, dem: demRong(), hocVien: [], coTheTaoLop, coTheThemHocVien: false, demLuuTru };
   const lopToi = new Set(phanCong.map((a) => a.classId));
   const lops = dangDung === 'toi' ? base.rows.filter((r) => lopToi.has(r.id))
     : dangDung === 'cua-toi' ? base.rows.filter((r) => lopCuaToi.has(r.id)) : base.rows;
-  if (!lops.length) return { rows: [], scopeEmpty: false, phamVi, dem: demRong(), hocVien: [], coTheTaoLop, demLuuTru };
+  if (!lops.length) return { rows: [], scopeEmpty: false, phamVi, dem: demRong(), hocVien: [], coTheTaoLop, coTheThemHocVien: !!themTheoPhamVi, demLuuTru };
 
   const ids = lops.map((r) => r.id);
   const ph = ids.map(() => '?').join(',');
@@ -137,7 +143,7 @@ export function danhSachHocVienLop(
    * câu SQL enrollment→class riêng (như hàm dựng riêng cũ ở `dongHocVien.ts` từng làm).
    */
   const hv = conn.prepare(
-    `SELECT e.class_id, s.id, s.full_name, s.normalized_name, s.student_code, s.dob, s.status,
+    `SELECT e.class_id, s.id, s.full_name, s.normalized_name, s.student_code, s.dob, s.email, s.status,
             cy.id AS cycle_id, cy.start_period_id, cy.exam_month, cy.target_score, cy.khong_cam_ket, cy.baseline_attempt_id, cy.baseline_score,
             cy.route, cy.exam_period_id, c.lich_mt AS lop_lich_mt, c.route AS lop_route,
             (SELECT COUNT(*) FROM assessment_attempts a WHERE a.cycle_id = cy.id AND a.status = 'planned' AND a.kind != 'mt0') AS so_luot_ke_hoach,   /* PR-MT0: MT0 không đếm */
@@ -250,7 +256,7 @@ export function danhSachHocVienLop(
         ? { start_period_id: h.start_period_id, exam_month: h.exam_month, target_score: h.target_score, khong_cam_ket: h.khong_cam_ket,
             baseline: h.baseline_attempt_id !== null || h.baseline_score !== null }
         : null,
-      student: { dob: h.dob },
+      student: { dob: h.dob, email: h.email },
       isFastTrack: !!laFt.get(h.class_id),
       hasNextMilestone: h.status !== 'active' ? undefined
         : laFt.get(h.class_id)
@@ -260,8 +266,21 @@ export function danhSachHocVienLop(
     if (thieu.length) loc.push('thieu_tt');
     return { id: h.id as number, classId: h.class_id as number, loc, khung: ft ? 'ft' as const : 'thuong' as const };
   });
+  /*
+   * OV-11g (HL-19, Q11): em Kết thúc học chưa Lưu trữ — hiện mờ ở lớp CUỐI (cùng điều kiện `classRoster(…, kemKetThuc)`), chỉ trong "Tất cả":
+   * không vào chip việc. "Tất cả" của QL = của CX cùng chi nhánh (`chipHocVien` lấy mọi em chưa lưu trữ).
+   */
+  const cuaToi = dangDung === 'cua-toi';
+  for (const h of (conn.prepare(
+    `SELECT e.class_id, s.id, s.full_name, s.normalized_name, s.student_code FROM enrollments e JOIN students s ON s.id = e.student_id
+      WHERE e.class_id IN (${ph}) AND e.status = 'completed' AND s.status = 'finished' AND s.archived_at IS NULL
+        AND e.id = (SELECT MAX(x.id) FROM enrollments x WHERE x.student_id = s.id)${cuaToi ? ' AND s.consultant_user_id = ?' : ''}`,
+  ).all(...ids, ...(cuaToi ? [p.userId] : [])) as any[]).filter(khop)) {
+    hocVien.push({ id: h.id as number, classId: h.class_id as number, loc: ['tat-ca'], khung: laFt.get(h.class_id) ? 'ft' : 'thuong' });
+  }
 
-  return { rows, scopeEmpty: false, phamVi, dem: demLoc(hocVien, 'tat-ca'), hocVien, coTheTaoLop, demLuuTru };
+  const coTheThemHocVien = themTheoPhamVi ?? rows.some((r) => r.viewer.coTheSuaHocVien);
+  return { rows, scopeEmpty: false, phamVi, dem: demLoc(hocVien, 'tat-ca'), hocVien, coTheTaoLop, coTheThemHocVien, demLuuTru };
 }
 
 /** PR-QU (B): chi nhánh đang hoạt động mà người này tạo lớp được (`class.create` phủ chi nhánh đó). */

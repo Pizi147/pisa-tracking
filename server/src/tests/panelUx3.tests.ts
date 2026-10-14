@@ -487,7 +487,7 @@ export async function runPanelUx3Tests(t: YThucTestKit) {
   check('UX3 (11) · Kết thúc lớp còn HV đang học → 400 kèm số HV; không còn ai → finished + finished_at hôm nay + vào Lưu trữ + audit', () => {
     const l = taoLopTrong();
     themHocVien(l.id, 'active');
-    t.assertThrows(() => xoaKetThuc.ketThucLop(t.P.admin, l.id), /Còn 1 học viên đang học/, 'còn HV');
+    t.assertThrows(() => xoaKetThuc.ketThucLop(t.P.admin, l.id), /Còn 1 (học viên đang học|em chưa chốt Lộ trình tiếp theo)/, 'còn HV');   // OV-11g CA2-4: lớp thường nói chưa chốt lộ trình
     assert((conn.prepare('SELECT status FROM classes WHERE id = ?').get(l.id) as any).status === 'active', 'lớp bị đóng dù còn HV');
     conn.prepare(`UPDATE enrollments SET status = 'transferred' WHERE class_id = ?`).run(l.id);
     const kq = xoaKetThuc.ketThucLop(t.P.admin, l.id);

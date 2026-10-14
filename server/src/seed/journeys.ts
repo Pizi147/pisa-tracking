@@ -229,7 +229,9 @@ export type ClassSeed = {
   isFastTrack: boolean;
   /** Thứ Hai của tuần khai giảng. */
   startDate: string;
-  status: 'active' | 'ended';
+  status: 'active' | 'finished';
+  /** OV-11g (HL-1): lớp đã kết thúc — ngày cuối khoá (Chủ nhật tuần học cuối), ghi vào `classes.finished_at` như Kết thúc lớp thật. */
+  finishedAt?: string;
   /** Phân công: kỹ năng → mã giáo viên. GVCN ghi riêng. */
   teachers: Record<string, string>;
   core?: string;
@@ -247,13 +249,13 @@ export const CLASSES: ClassSeed[] = [
   /* ------------------------------------------------------------------ Monbay */
   {
     code: 'MB FOU 03', branch: 'MB', kind: 'FOU', route: null, isFastTrack: false,
-    startDate: '2025-12-01', status: 'ended',
+    startDate: '2025-12-01', status: 'finished', finishedAt: '2026-01-25',
     teachers: { listening: 'T_HA', reading: 'T_HA', writing: 'T_KHOA', speaking: 'T_TRANG' },
     core: 'T_HA', note: 'Lớp đã kết thúc — giữ lại để tra lịch sử.',
   },
   {
     code: 'MB BE 08', branch: 'MB', kind: 'BE', route: null, isFastTrack: false,
-    startDate: '2026-02-16', status: 'ended',
+    startDate: '2026-02-16', status: 'finished', finishedAt: '2026-04-26',
     teachers: { listening: 'T_HA', reading: 'T_KHOA', writing: 'T_KHOA', speaking: 'T_TRANG' },
     core: 'T_KHOA', note: 'Lớp đã kết thúc — giữ lại để tra lịch sử.',
   },
