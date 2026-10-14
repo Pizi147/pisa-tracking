@@ -620,7 +620,7 @@ export function boKetQuaChoMiniTest<T extends { kind: string; nhom_bo_tro: strin
   const cho = new Set((db().prepare(`SELECT DISTINCT nhom_bo_tro FROM mini_test WHERE ty_le IS NULL AND nhom_bo_tro IN (${nhom.map(() => '?').join(',')})`)
     .all(...nhom) as any[]).map((r) => r.nhom_bo_tro as string));
   return (r) => !!r.nhom_bo_tro && cho.has(r.nhom_bo_tro)
-    && laLanGhiCuoi({ preset: true, followupDue: r.followup_due ?? null, actionDue: r.action_due ?? null }, today);
+    && laLanGhiCuoi({ preset: true, followupDue: r.followup_due ?? null, actionDue: r.action_due ?? null, mienPhi: r.kind === 'bo_tro_mien_phi' }, today);
 }
 
 /** Kiểm đầu vào Mini Test: 0–100 (lưu 0–1), ngày ≤ hôm nay và không trước `ngày dự kiến − 14`. */

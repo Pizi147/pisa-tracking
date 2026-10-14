@@ -1,7 +1,7 @@
 import { db, tx } from '../db.ts';
 import {
   CASE_DISMISS_REASONS, CASE_DISMISS_REASON_LABEL, CONFIRM_EDIT_REASON, URGENCY_LEVELS, academicSupportFor, caseTopicLabel, coNguoiDay, issueBranchOf, tenMonNgan,
-  hanXacNhan, issuesForTopic, kiemGhiRoKhac, laKhac, mocQuyChe, ngay, reasonNeedsText, tenCaseSos, hanKe, hanKyGhiKetQua,
+  hanXacNhan, issuesForTopic, kiemGhiRoKhac, laKhac, mocQuyChe, ngay, reasonNeedsText, tenCaseSos, hanKyGhiKetQua,
   type AcademicSupportPreset, type CaseDismissReason, type MilestoneKind, nhanBaiThuong } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addDays, badRequest, notFound, nowIso } from '../util.ts';
@@ -342,11 +342,10 @@ export function datLaiHanCase(studentId: number, homNay: string) {
     .all(studentId) as any[]) {
     conn.prepare('UPDATE sos_cases SET han_xac_nhan = ?, updated_at = ? WHERE id = ?').run(hanXacNhan(homNay, { sosLevel: c.sos_level, urgency: c.urgency }), nowIso(), c.id);
   }
-  /* OV-12a: hạn ghi kết quả = hạn kỳ đầu tiên sau hôm nay theo lịch kỳ của TỪNG PA (ngày bắt đầu). */
-  for (const r of conn.prepare(`SELECT id, COALESCE(started_date, cycle_started_on) AS bat_dau FROM case_interventions WHERE status = 'started' AND action_due IS NOT NULL
-      AND COALESCE(approval_state, '') != 'pending' AND case_id IN (SELECT id FROM sos_cases WHERE student_id = ? AND status != 'done')`).all(studentId) as any[]) {
-    conn.prepare('UPDATE case_interventions SET action_due = ?, updated_at = ? WHERE id = ?').run(hanKe(r.bat_dau ?? homNay, null, homNay), nowIso(), r.id);
-  }
+  /* OV-12a: quay lại học = hạn kỳ 1 tính từ ngày quay lại (đủ hai tuần, không phải Thứ Ba hôm sau). */
+  conn.prepare(`UPDATE case_interventions SET action_due = ?, updated_at = ? WHERE status = 'started' AND action_due IS NOT NULL
+      AND COALESCE(approval_state, '') != 'pending' AND case_id IN (SELECT id FROM sos_cases WHERE student_id = ? AND status != 'done')`)
+    .run(hanKyGhiKetQua(homNay), nowIso(), studentId);
 }
 /** Lượt MT đã sinh PA quy chế này: mốc `opened`/`repeat` mới nhất của Case tạo không muộn hơn PA. */
 function luotSinhPa(iv: any): any | null {

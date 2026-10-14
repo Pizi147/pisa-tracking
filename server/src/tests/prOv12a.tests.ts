@@ -24,6 +24,7 @@ export async function runPrOv12aTests(t: any) {
   const { loadPrincipal } = await import('../permissions.ts');
   const { getConfig, setConfig } = await import('../demoConfig.ts');
   const { xoaNho } = await import('../platform/nguCanhRequest.ts');
+  const { chenPa } = await import('../cases/taoPa.ts');
   console.log('\nPR-OV12a · hạn ghi kết quả PA hai tuần (hết Thứ Ba) · QL xoá lớp trống / nhiều HV · TVV Bước tiếp sau thi');
 
   const get = (sql: string, ...a: unknown[]) => conn.prepare(sql).get(...a) as any;
@@ -168,6 +169,7 @@ export async function runPrOv12aTests(t: any) {
     const kq = hangLoat.chay(QL, { viec: 'xoa', studentIds: [a, cp], xacNhan: 'Xóa' });
     assert(kq.ok.join() === String(a) && kq.failed.length === 1 && kq.failed[0].studentId === cp && kq.failed[0].message === 'Ngoài phạm vi của bạn.', JSON.stringify(kq));
     assert(!get('SELECT 1 x FROM students WHERE id = ?', a) && get('SELECT 1 x FROM students WHERE id = ?', cp), 'xoá sai em');
+    assert(maLoi(() => hangLoat.chay(QL, { viec: 'xoa', studentIds: [a], xacNhan: 'XOÁ' })) === 404, 'xoá lại em đã xoá → 404');
     assert(profile.studentProfile(QL, b).viewer.coTheXoa === true && profile.studentProfile(P.cpManager, cp).viewer.coTheXoa === true
       && profile.studentProfile(P.coreTeacher, b).viewer.coTheXoa === false, 'cờ Xoá hồ sơ: QL / QL của em; GV không');
   }));
@@ -216,12 +218,37 @@ export async function runPrOv12aTests(t: any) {
     buocTiep.boChonBuocTiep(TVV, a.cy);
     assert(hs(a.sid).status === 'finished', 'bỏ Học tiếp');
   }));
+  check('OV12a-7 · bổ trợ miễn phí: ghi trước ngày Mini Test = Kết quả thường (không đòi Mini Test), hạn giữ 29/09; từ ngày Mini Test = Kết quả cuối + Mini Test', () => thu(() => {
+    ngay('2026-09-14');
+    const sid = em();
+    const cy = get('SELECT id FROM learning_cycles WHERE student_id = ?', sid).id;
+    const now = new Date().toISOString();
+    const cid = Number(conn.prepare(`INSERT INTO sos_cases (student_id, cycle_id, topic, category, origin_kind, status, title, detected_at, created_at)
+      VALUES (?,?,?,?, 'chuyen_cap', 'in_progress', ?, ?, ?)`).run(sid, cy, 'listening', 'listening', 'Final Test · listening', '2026-09-14', now).lastInsertRowid);
+    const nhom = `ov12a:mt:${sid}`;
+    const [iv] = chenPa(conn, [{ caseId: cid, kind: 'bo_tro_mien_phi', description: 'Bổ trợ miễn phí 2 tuần', status: 'started', preset: true,
+      confirmedAt: now, confirmedBy: GV.userId, performerUserId: GV.userId, nhomBoTro: nhom, mocQuyChe: 'mini_test',
+      followupDue: '2026-09-27', actionDue: d.hanKyGhiKetQua('2026-09-14'), cycleStartedOn: '2026-09-14', startedDate: '2026-09-14' }]);
+    conn.prepare(`INSERT INTO mini_test (student_id, cycle_id, tu_attempt_id, nhom_bo_tro, so_buoi, ngay_du_kien, han) VALUES (?,?,?,?, 4, ?, ?)`)
+      .run(sid, cy, get('SELECT MIN(id) id FROM assessment_attempts').id, nhom, '2026-09-27', '2026-09-29');
+    assert(!d.laLanGhiCuoi({ preset: true, followupDue: '2026-09-27', actionDue: '2026-09-29', mienPhi: true }, '2026-09-26')
+      && d.laLanGhiCuoi({ preset: true, followupDue: '2026-09-27', actionDue: '2026-09-29', mienPhi: true }, '2026-09-27')
+      && d.laLanGhiCuoi({ preset: true, followupDue: '2026-09-27', actionDue: '2026-09-29' }, '2026-09-14'), 'laLanGhiCuoi: miễn phí theo ngày Mini Test, PA quy chế SOS giữ luật cũ');
+    cases.updateResult(GV, iv, { decision: 'keep', outcome: 'partial', note: 'Em làm đủ bài tuần đầu', observedOn: '2026-09-14' });
+    const pa = get('SELECT status, action_due FROM case_interventions WHERE id = ?', iv);
+    assert(pa.status === 'started' && pa.action_due === '2026-09-29', `ghi giữa chừng: ${JSON.stringify(pa)}`);
+    ngay('2026-09-27');
+    assert(maLoi(() => cases.updateResult(GV, iv, { decision: 'keep', outcome: 'partial', note: 'Em làm đủ bài tuần hai', observedOn: '2026-09-27' })) === 400,
+      'từ ngày Mini Test là Kết quả cuối — phải nhập Mini Test');
+  }));
   check('OV12a-6b · TVV vẫn 403 với Học lại thẳng, Học tiếp sang lớp chi nhánh khác, Case, PA học thuật; xem lớp Học lại chỉ chi nhánh mình', () => thu(() => {
     const a = emCoKetQua(taoLopFt());
     assert(maLoi(() => students.hocLai(TVV, a.sid, {})) === 403, 'Học lại thẳng');
     const CP = get(`SELECT id FROM branches WHERE code = 'CP'`).id as number;
     const lopCp = intake.createClass(P.admin, { code: 'CP-OV12A-FT', branchId: CP, kind: 'FT', isFastTrack: true, route: 'LT2', startDate: t.TODAY }).id as number;
     assert(maLoi(() => buocTiep.chonBuocTiep(TVV, a.cy, { chon: 'hoc_tiep', lopMoiId: lopCp })) === 403, 'TVV Học tiếp sang lớp chi nhánh khác');
+    const dsTvv = students.lopChoHocLai(TVV, a.sid).lop as any[];
+    assert(dsTvv.length > 0 && dsTvv.every((l) => l.chiNhanhId === MB) && students.lopChoHocLai(QL, a.sid).lop.some((l: any) => l.id === lopCp), 'TVV chỉ thấy lớp chi nhánh mình; QL thấy cả lớp CP');
     assert(maLoi(() => students.lopChoHocLai(TVV_CP, a.sid)) === 403 && maLoi(() => students.lopChoHocLai(CX, a.sid)) === 403, 'lớp Học lại ngoài quyền');
     ngay('2026-09-17');
     const sid = em();

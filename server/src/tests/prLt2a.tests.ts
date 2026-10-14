@@ -312,7 +312,7 @@ export async function runPrLt2aTests(t: YThucTestKit) {
     assert(!(effectiveness.planOutcomes({ studentIds: [em.id] }) as any[]).some((r) => r.id === pP.id), 'PA không theo dõi không vào hiệu quả');
     conn.prepare('UPDATE case_interventions SET action_due = ? WHERE id = ?').run(d.addDaysIso(TODAY, -5), paBt(cGv.id).id);
     sosAuto.datLaiHanCase(em.id, TODAY);
-    assert(paBt(cGv.id).action_due === d.hanKe(paBt(cGv.id).started_date ?? paBt(cGv.id).cycle_started_on, null, TODAY), `Quay lại học: action_due = ${paBt(cGv.id).action_due}`);
+    assert(paBt(cGv.id).action_due === d.hanKyGhiKetQua(TODAY), `Quay lại học: action_due = ${paBt(cGv.id).action_due}`);
   });
 
   // ------------------------------------------------------------------ khối 7 · Việc cần làm + Phối hợp + thông báo (Task 7)

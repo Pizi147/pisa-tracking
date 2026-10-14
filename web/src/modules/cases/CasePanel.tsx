@@ -375,7 +375,7 @@ function TheKhoiPa({ iv, data, homNay, ngan, onViec }: {
           )}
           {nutKetQua && (
             <button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" onClick={() => onViec({ loai: 'ghi-ket-qua', paId: iv.id })}
-              title={`Kết quả tuần, tiến triển, và quyết định ${iv.preset ? 'Giữ nguyên / Điều chỉnh / Xin ý kiến' : 'Giữ nguyên / Điều chỉnh / Thay / Kết thúc'}`}>
+              title={`Kết quả kỳ, tiến triển, và quyết định ${iv.preset ? 'Giữ nguyên / Điều chỉnh / Xin ý kiến' : 'Giữ nguyên / Điều chỉnh / Thay / Kết thúc'}`}>
               {iv.lanCuoi ? 'Kết quả cuối' : 'Kết quả'}
             </button>
           )}

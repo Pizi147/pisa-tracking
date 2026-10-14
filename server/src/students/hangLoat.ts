@@ -4,7 +4,7 @@ import {
   type DongXemTruoc, type KetQuaHangLoat, type ViecHangLoat, type XemTruocHangLoat,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
-import { HttpError, badRequest, chuTuDo, forbidden } from '../util.ts';
+import { HttpError, badRequest, chuTuDo, forbidden, notFound } from '../util.ts';
 import { can, napTruocPhamVi, type Principal } from '../permissions.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { chanGiaoDichNeuSapHetGio } from '../platform/hanGio.ts';
@@ -145,11 +145,13 @@ export function chay(p: Principal, input: {
   if (viec === 'hoc-lai' && lopMoiId !== null && (db().prepare('SELECT is_fast_track FROM classes WHERE id = ?').get(lopMoiId) as any)?.is_fast_track) throw badRequest('Học lại sang lớp Fast Track cần Target — làm từng học viên.');
   napTruocPhamVi(ids);
   const em = docEm(ids);
+  /* OV-12a: Xoá lại em đã bị xoá → 404 nói đúng lý do (không phải 403). */
+  if (viec === 'xoa' && ids.every((id) => !em.has(id))) throw notFound('Học viên đã bị xoá.');
   /* Không học viên nào trong phạm vi người gọi → 403 cả lô (GVCN gọi thẳng API). */
   if (!ids.some((id) => em.has(id) && coQuyenViec(p, viec, id))) throw forbidden(CHI_QL);
 
   const kq: KetQuaHangLoat = { ok: [], failed: [] };
-  const lyDoCua = (id: number): string | null => { const e = em.get(id); return e ? lyDoBo(p, viec, e) : 'Không tìm thấy học viên.'; };
+  const lyDoCua = (id: number): string | null => { const e = em.get(id); return e ? lyDoBo(p, viec, e) : viec === 'xoa' ? 'Học viên đã bị xoá.' : 'Không tìm thấy học viên.'; };
   const lamDuoc: number[] = [];
   for (const id of ids) { const bo = lyDoCua(id); if (bo) kq.failed.push({ studentId: id, message: bo }); else lamDuoc.push(id); }
 

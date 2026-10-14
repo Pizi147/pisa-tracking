@@ -442,8 +442,7 @@ export async function runPrSosTests(t: YThucTestKit) {
     assert(!get(`SELECT 1 FROM yeu_cau_duyet WHERE loai = 'bao_len_nguyen_nhan' AND doi_tuong_id = ? AND trang_thai = 'cho'`, c.id), 'em Tạm dừng bị Báo QL');
     studentsSvc.setStudentStatus(P.admin, st.id, 'active', TODAY, 'Quay lại học');
     assert(get('SELECT han_xac_nhan h FROM sos_cases WHERE id = ?', c.id).h === d.hanXacNhan(TODAY), 'hạn xác nhận chưa tính lại');
-    const ivSau = get('SELECT action_due h, COALESCE(started_date, cycle_started_on) b FROM case_interventions WHERE id = ?', iv.id);
-    assert(ivSau.h === d.hanKe(ivSau.b, null, TODAY), 'hạn ghi kết quả chưa tính lại');
+    assert(get('SELECT action_due h FROM case_interventions WHERE id = ?', iv.id).h === d.hanKyGhiKetQua(TODAY), 'hạn ghi kết quả chưa tính lại');
   });
   check('SOS (7) · Hiệu quả PA: PA huỷ không theo dõi, PA chờ xác nhận, PA hệ thống đóng không vào N; cột Xử lý Tổng hợp theo trạng thái v4 (K1-20, K1-23, K5-55)', () => {
     const { st } = mt2W2('T7c');

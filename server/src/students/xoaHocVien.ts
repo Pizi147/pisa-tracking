@@ -189,7 +189,7 @@ function docEm(sid: number): Em {
             EXISTS (SELECT 1 FROM enrollments e WHERE e.student_id = s.id AND e.status = 'active') AS lop_dang_hoc
        FROM students s WHERE s.id = ?1`,
   ).get(sid) as Em | undefined;
-  if (!s) throw notFound('Không tìm thấy học viên');
+  if (!s) throw notFound('Học viên đã bị xoá hoặc không tồn tại.');
   return s;
 }
 
@@ -202,8 +202,8 @@ function demMat(sid: number): { soDong: Record<string, number>; congViec: number
 
 /** GET /students/:id/xoa — bảng "những gì sẽ mất" cho panel (2 câu). Quản lý / Quản trị của em. */
 export function xemXoaHocVien(p: Principal, studentId: number): XemXoaHocVien {
+  const s = docEm(studentId);   // OV-12a: em đã bị xoá → 404 trước (quyền theo phạm vi em cần em còn tồn tại)
   require_(p, PERMISSIONS.CYCLE_EDIT, { studentId }, CHI_QL);
-  const s = docEm(studentId);
   const { soDong, congViec } = demMat(studentId);
   return {
     id: s.id, ma: s.student_code, ten: s.full_name, lop: s.lop ?? null,
@@ -215,8 +215,8 @@ export function xemXoaHocVien(p: Principal, studentId: number): XemXoaHocVien {
 
 /** POST /students/:id/xoa { maXacNhan } — xoá vĩnh viễn. Phải gõ lại đúng mã học viên. */
 export function xoaHocVien(p: Principal, studentId: number, input: { maXacNhan?: unknown }): { ok: true; ma: string; soDong: Record<string, number> } {
+  const s = docEm(studentId);   // OV-12a: em đã bị xoá → 404 trước
   require_(p, PERMISSIONS.CYCLE_EDIT, { studentId }, CHI_QL);
-  const s = docEm(studentId);
   if (String(input.maXacNhan ?? '').trim() !== s.student_code) throw badRequest('Gõ lại đúng mã học viên để xác nhận xoá.');
   const khoaTep: string[] = [];
   const soDong = tx(() => {

@@ -633,13 +633,18 @@ export function lopChoHocLai(p: Principal, studentId: number) {
   const dongBoi = conHoc ? [] : (nk && nk.loTrinhDong.length
     ? conn.prepare(`SELECT * FROM learning_cycles WHERE student_id = ? AND status = 'abandoned' AND id IN (${nk.loTrinhDong.map(() => '?').join(',')}) ORDER BY seq DESC`).all(studentId, ...nk.loTrinhDong)
     : nk ? [] : conn.prepare(`SELECT * FROM learning_cycles WHERE student_id = ? AND status = 'abandoned' ORDER BY seq DESC LIMIT 1`).all(studentId)) as any[];
+  /* OV-12a: TVV (không `cycle.edit`) chỉ thấy lớp chi nhánh của vai TVV — cùng phạm vi `chonBuocTiep` cho Học tiếp. */
+  const ds = danhSachLopDich(enr?.class_id ?? -1, true);
+  const cnTvv = can(p, PERMISSIONS.CYCLE_EDIT, { studentId }) ? null
+    : new Set(p.grants.filter((g) => g.roleKey === 'consultant').map((g) => g.branchId));
+  const dsLop = cnTvv ? { ...ds, lop: ds.lop.filter((l) => cnTvv.has(null) || cnTvv.has(l.chiNhanhId)) } : ds;
   return {
     conHoc,
     lopCu: enr ? { id: enr.class_id as number, code: enr.code as string, daKetThuc: enr.class_status === 'finished', ft: !!enr.is_fast_track } : null,
     /** `chayTiep`: lộ trình bị Kết thúc học đóng chạy tiếp; không có (đã đóng bằng Kết luận) thì Học lại về lớp cũ mở lộ trình MỚI — tên là của lộ trình đó. */
     /* `target`: Target của lộ trình gần nhất ("6.5 KCK" / 'KCK' = có dấu KCK, '' = chưa có) — Học lại FT → FT máy chủ GIỮ Target này, web điền sẵn chứ không bắt nhập lại. */
     loTrinh: { chayTiep: dongBoi.length > 0, ten: tenLoTrinh(dongBoi[0]) ?? tenLoTrinh(enr), target: targetCu(studentId, dongBoi[0]) },
-    ...danhSachLopDich(enr?.class_id ?? -1, true),
+    ...dsLop,
   };
 }
 

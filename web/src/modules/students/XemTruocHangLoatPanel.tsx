@@ -51,6 +51,8 @@ export function XemTruocHangLoatPanel({ viec, ids, maLop, onClose, onDone }: {
   const idsLam = (xem?.rows ?? []).filter((r) => !r.lyDoBo).map((r) => r.studentId);
   const ten = (sid: number) => xem?.rows.find((r) => r.studentId === sid)?.ten ?? `#${sid}`;
   const dangThu = chuaLuu.length > 0;
+  /* OV-12a: Xoá nói "xoá", không nói "lưu". */
+  const chuKetQua = (ok: number, loi: number) => (viec === 'xoa' ? `Đã xoá ${ok} em · ${loi} em chưa xoá` : `Đã lưu ${ok} học viên · ${loi} học viên chưa lưu`);
 
   const chay = async () => {
     lf.bam();
@@ -66,7 +68,7 @@ export function XemTruocHangLoatPanel({ viec, ids, maLop, onClose, onDone }: {
     setDaLuu(tatCa);
     if (kq.failed.length) {
       setChuaLuu(kq.failed);
-      toast.push('error', `Đã lưu ${tatCa.length} học viên · ${kq.failed.length} học viên chưa lưu`);
+      toast.push('error', chuKetQua(tatCa.length, kq.failed.length));
       return;
     }
     if (viec === 'xoa') { toast.push('ok', `Đã xoá ${tatCa.length} học viên`); onDone(); onClose(); return; }
@@ -85,7 +87,7 @@ export function XemTruocHangLoatPanel({ viec, ids, maLop, onClose, onDone }: {
       chan={{
         daSua: !!lyDo.trim() || !!ngayHl || !!goXoa.trim(),
         conThieu: lf.conThieu(loi),
-        dongTren: dangThu ? <p role="alert" className="m-0 px-4 pt-2 text-xs text-late tabular-nums">Đã lưu {daLuu.length} học viên · {chuaLuu.length} học viên chưa lưu</p> : undefined,
+        dongTren: dangThu ? <p role="alert" className="m-0 px-4 pt-2 text-xs text-late tabular-nums">{chuKetQua(daLuu.length, chuaLuu.length)}</p> : undefined,
         chinh: (
           <button type="button" className={`btn ${viec === 'xoa' ? 'btn-danger' : 'btn-primary'} min-h-[44px] sm:min-h-0`} onClick={chay}
             disabled={busy || !xem || (!dangThu && !idsLam.length) || (viec === 'xoa' && !khopXacNhanXoa(goXoa))}>
@@ -147,7 +149,7 @@ export function XemTruocHangLoatPanel({ viec, ids, maLop, onClose, onDone }: {
             )}
           </Khoi>
           {dangThu && (
-            <Khoi tieuDe={`Chưa lưu · ${chuaLuu.length}`}>
+            <Khoi tieuDe={`${viec === 'xoa' ? 'Chưa xoá' : 'Chưa lưu'} · ${chuaLuu.length}`}>
               <ul className="m-0 list-none space-y-1 p-0">
                 {chuaLuu.map((c) => <li key={c.studentId} className="text-sm text-slate-200">{ten(c.studentId)}<span className="block text-xs text-late">{c.message}</span></li>)}
               </ul>

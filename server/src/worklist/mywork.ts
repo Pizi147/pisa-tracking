@@ -582,7 +582,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     const mine = iv.owner_id === p.userId;
     reviewedCases.add(iv.case_id);
     /* PR-SOS (T22, M-17): PA theo quy chế chạm mốc → "Ghi kết quả cuối" (PA thường không có mốc — Q28-4). */
-    const tuanCuoi = laLanGhiCuoi({ preset: iv.preset === 1, followupDue: iv.followup_due ?? null, actionDue: iv.action_due ?? null }, today);
+    const tuanCuoi = laLanGhiCuoi({ preset: iv.preset === 1, followupDue: iv.followup_due ?? null, actionDue: iv.action_due ?? null, mienPhi: iv.kind === 'bo_tro_mien_phi' }, today);
     const tenPa = (iv.description ?? '').trim() || INTERVENTION_KIND_LABEL[iv.kind as InterventionKind] || 'PA học thuật';
     items.push({
       key: `action:${iv.id}`, group: 'ghi_ket_qua_pa', urgency: u, paId: iv.id,

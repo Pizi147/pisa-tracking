@@ -1074,7 +1074,8 @@ export function respondToPlan(p: Principal, interventionId: number, input: {
      * số "quá hạn" sau đó chỉ ra một người sai.
      */
     const approvedOn = demoToday();
-    const startDue = input.decision === 'approved' ? hanKyGhiKetQua(approvedOn) : null;
+    /* OV-12a: cùng lịch kỳ từ ngày bắt đầu PA (ngày bắt đầu = ngày duyệt nếu chưa có) — hạn đầu = hạn kỳ đầu tiên ≥ ngày duyệt. */
+    const startDue = input.decision === 'approved' ? hanKyGhiKetQua(iv.started_date ?? approvedOn, addDays(approvedOn, -1)) : null;
     conn
       .prepare(
         `UPDATE case_interventions
@@ -1764,7 +1765,7 @@ export function caseDetail(p: Principal, caseId: number) {
       mocChu: iv.preset === 1
         ? mocChuPa({ span: iv.moc_quy_che ?? null, followupDue: iv.followup_due ?? null, mtKe: mtKeCua(iv), daXacNhan: !!iv.confirmed_at }, demoToday())
         : null,
-      lanCuoi: iv.status === 'started' && laLanGhiCuoi({ preset: iv.preset === 1, followupDue: iv.followup_due ?? null, actionDue: iv.action_due ?? null }, demoToday()),
+      lanCuoi: iv.status === 'started' && laLanGhiCuoi({ preset: iv.preset === 1, followupDue: iv.followup_due ?? null, actionDue: iv.action_due ?? null, mienPhi: iv.kind === 'bo_tro_mien_phi' }, demoToday()),
       approvalState: iv.approval_state as string | null,
       approvalDue: iv.approval_due as string | null,
       approvalNote: iv.approval_note as string | null,
@@ -1933,7 +1934,7 @@ export function caseDetail(p: Principal, caseId: number) {
         /* PR-LT2a: PA Bổ trợ nói "Bổ trợ" (mô tả dài `Bổ trợ 2 buổi/tuần · …` nằm ở hàng PA) — việc tiếp đọc `Ghi kết quả PA Bổ trợ`. */
         id: i.id, ten: tenPaViecTiep(i.kind, i.description),
         batBuoc: i.batBuoc, choXacNhan: i.awaitingConfirmation, xong: i.status === 'completed', actionDue: i.actionDue,
-        followupDue: i.followupDue, choDuyet: i.approvalState === 'pending',
+        followupDue: i.followupDue, choDuyet: i.approvalState === 'pending', mienPhi: i.kind === 'bo_tro_mien_phi',
       }));
       const hanLapPa = hanThemPa(c)   /* OV-11c (HV-14): cùng hàm với Công việc, kể cả Case hệ thống mở */;
       return { trangThaiV4: trangThaiCaseV4(v4, demoToday()), viecTiep: viecTiepCuaCase(v4, pas, demoToday(), hanLapPa) };
@@ -2852,7 +2853,7 @@ function caseCardOf(p: Principal, caseId: number, c: any, soBangChung: Map<numbe
       choXacNhan: iv.kind !== 'bo_tro' && iv.preset === 1 && !iv.confirmed_at && iv.status === 'planned',
       chuaChay: iv.kind === 'bo_tro' && iv.preset === 1 && !iv.confirmed_at && iv.status === 'planned',
       mocChu: iv.preset === 1 ? mocChuPa({ span: iv.moc_quy_che ?? null, followupDue: iv.followup_due ?? null, mtKe: mtKe(iv), daXacNhan: !!iv.confirmed_at }, today) : null,
-      lanCuoi: iv.status === 'started' && laLanGhiCuoi({ preset: iv.preset === 1, followupDue: iv.followup_due ?? null, actionDue: iv.action_due ?? null }, today),
+      lanCuoi: iv.status === 'started' && laLanGhiCuoi({ preset: iv.preset === 1, followupDue: iv.followup_due ?? null, actionDue: iv.action_due ?? null, mienPhi: iv.kind === 'bo_tro_mien_phi' }, today),
       performer: iv.performer_user_name ?? iv.performer_name ?? null,
       /** PR-PA (§8): Số buổi + Đã dạy (tổng Số buổi tuần này, từ `follows` đã nạp) — dòng phụ "3/10 buổi" ở bảng kỹ năng. */
       soBuoi: (iv.so_buoi ?? null) as number | null,
@@ -2929,7 +2930,7 @@ function caseCardOf(p: Principal, caseId: number, c: any, soBangChung: Map<numbe
   const viecTiep = viecTiepCuaCase(v4, plans.map((pl) => ({
     lopCu: laPaLopCu(ivs.find((iv) => iv.id === pl.id)),
     id: pl.id, ten: tenPaViecTiep(pl.kind, pl.name), batBuoc: pl.batBuoc, choXacNhan: pl.choXacNhan, xong: pl.status === 'completed',
-    actionDue: pl.actionDue, followupDue: pl.followupDue, choDuyet: pl.pendingApproval,
+    actionDue: pl.actionDue, followupDue: pl.followupDue, choDuyet: pl.pendingApproval, mienPhi: pl.kind === 'bo_tro_mien_phi',
   })), today, hanThemPa(c))   // OV-11c (HV-14);
   /* Lượt đánh giá mà Case này đã đi qua — "MT2 · 17/08" ở chân thẻ (lớp thường: "Giữa khoá"/"Cuối khoá" thay MT{n}). */
   const attempts = (conn
@@ -3091,6 +3092,15 @@ export function normalizeMetrics(input: unknown): TeacherMetric[] | null {
  * Hạn cũ và việc cập nhật trễ được GIỮ NGUYÊN trong lịch sử. Mở chu kỳ mới không xoá dấu
  * vết chu kỳ cũ đã quá hạn; che quá hạn đi thì con số "bao nhiêu việc trễ" mất nghĩa.
  */
+/**
+ * OV-12a: hạn kế sau một lần ghi Kết quả — `hanKe` theo lịch kỳ từ ngày bắt đầu PA. Bổ trợ miễn phí ghi trước ngày Mini Test (chưa phải lần cuối):
+ * GIỮ hạn hiện tại — PA khép ở Mini Test, hạn kỳ đầu thường sau ngày đó. Một hàm cho dòng chính và dòng chép của nhóm.
+ */
+function hanKeSauGhi(iv: any, ngayGhi: string): string {
+  if (iv.kind === 'bo_tro_mien_phi' && iv.action_due) return iv.action_due;
+  return hanKe(iv.started_date ?? iv.cycle_started_on ?? ngayGhi, iv.action_due ?? null, ngayGhi);
+}
+
 export function updateResult(p: Principal, interventionId: number, input: {
   /** 'monitor' = tiếp tục theo dõi (mặc định) · 'end' = kết thúc phương án. */
   mode?: string;
@@ -3193,7 +3203,7 @@ export function updateResult(p: Principal, interventionId: number, input: {
    * cuối": bỏ qua quyết định, PA khép `het_moc` — không tự đóng im lặng.
    */
   const batBuoc = iv.preset === 1;
-  const lanCuoi = laLanGhiCuoi({ preset: batBuoc, followupDue: iv.followup_due ?? null, actionDue: iv.action_due ?? null }, observedOn);
+  const lanCuoi = laLanGhiCuoi({ preset: batBuoc, followupDue: iv.followup_due ?? null, actionDue: iv.action_due ?? null, mienPhi: iv.kind === 'bo_tro_mien_phi' }, observedOn);
   if (batBuoc && !lanCuoi) {
     const cam = input.decision !== undefined
       ? !quyetDinhChoPa({ preset: true }, false).includes(input.decision as PlanDecision)
@@ -3318,7 +3328,7 @@ export function updateResult(p: Principal, interventionId: number, input: {
        * PR-DUYET (T64, K3-11): "Xin hỗ trợ QL" lưu y như Giữ nguyên — PA KHÔNG dừng, không mất mốc (T22) — rồi gửi câu hỏi
        * thành thẻ Xin ý kiến (ngay dưới). Trước đây PA dừng hẳn chờ Quản lý.
        */
-      const nextDue = hanKe(iv.started_date ?? iv.cycle_started_on ?? observedOn, iv.action_due ?? null, observedOn);
+      const nextDue = hanKeSauGhi(iv, observedOn);
       conn
         .prepare(
           `UPDATE case_interventions
@@ -3377,7 +3387,7 @@ export function updateResult(p: Principal, interventionId: number, input: {
     dongBoTrangThaiCase(iv.case_id);
     /* PR-LT2a (M-03): PA bổ trợ chung — chép kết quả sang các dòng khác của nhóm. */
     chepKetQuaNhom(conn, iv, followupId, {
-      nextStep, observedOn, completedOn, lanCuoi, nextDue: hanKe(iv.started_date ?? iv.cycle_started_on ?? observedOn, iv.action_due ?? null, observedOn),
+      nextStep, observedOn, completedOn, lanCuoi, nextDue: hanKeSauGhi(iv, observedOn),
       apDungDieuChinh: (sib, fid) => apDungDieuChinh(sib, adjustPatch!, { followupId: fid, actorUserId: p.userId, reason: decisionNote!, on: observedOn }),
     });
     if (mtDong && mtGhi) ghiMiniTestTrongTx(conn, p, mtDong, mtGhi, input.outcome);   // PR-LT2b: sau khi cả nhóm đã khép · OV-11c: Case theo mức GV chọn
