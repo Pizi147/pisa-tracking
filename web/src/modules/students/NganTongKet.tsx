@@ -11,6 +11,7 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { toneHuong } from './CacLoTrinh.tsx';
 import { KetQuaThiThatPanel } from './KetQuaThiThatPanel.tsx';
 import { HocLaiPanel } from './StudentManagePanel.tsx';
+import { dich, t } from '@shared/i18n/index.ts';
 
 type KyNang = { k: string; nhan: string; diem: number | null; tong: number | null; dat: boolean | null };
 type Luot = {
@@ -33,8 +34,8 @@ type TongKet = {
 
 const b1 = (v: number | null | undefined) => (v === null || v === undefined ? '—' : v.toFixed(1));
 const NGAN_KN: Record<string, string> = { listening: 'L', reading: 'R', writing: 'W', speaking: 'S' };
-const chuKqdr = (k: { dat: boolean; nguyenNhan: string | null; mon: string[] }) => (k.dat ? 'Đạt'
-  : ['Không đạt', k.nguyenNhan === 'hoc_sinh' ? 'Học viên' : k.nguyenNhan === 'trung_tam' ? 'Trung tâm' : null, k.mon.map((m) => NGAN_KN[m] ?? m).join(' ') || null].filter(Boolean).join(' · '));
+const chuKqdr = (k: { dat: boolean; nguyenNhan: string | null; mon: string[] }) => (k.dat ? t('Đạt')
+  : [t('Không đạt'), k.nguyenNhan === 'hoc_sinh' ? t('Học viên') : k.nguyenNhan === 'trung_tam' ? t('Trung tâm') : null, k.mon.map((m) => NGAN_KN[m] ?? m).join(' ') || null].filter(Boolean).join(' · '));
 const DAI: Record<string, { nhan: string; tone: ToneNhan }> = {
   dat: { nhan: '≥ 70%', tone: 'ok' }, '60_69': { nhan: '60–69%', tone: 'soon' }, '50_59': { nhan: '50–59%', tone: 'soon' }, duoi_50: { nhan: '< 50%', tone: 'late' },
 };
@@ -61,19 +62,19 @@ const Lon = ({ children, em }: { children: ReactNode; em?: string }) => (
 function nhanLuot(l: Luot, ft: boolean): { tone: ToneNhan; chu: string; phu?: string } | null {
   if (l.trangThai === 'cancelled') return null;
   if (ft) {
-    if (l.ketQua === 'dat') return { tone: 'ok', chu: 'Đạt' };
-    if (l.ketQua === 'chua_dat') return { tone: 'soon', chu: `SOS ${l.sos} · ${l.kyNang.filter((k) => k.dat === false && k.k.length > 2 && !k.k.endsWith('1') && !k.k.endsWith('2')).map((k) => k.nhan).join(', ')}` };
+    if (l.ketQua === 'dat') return { tone: 'ok', chu: t('Đạt') };
+    if (l.ketQua === 'chua_dat') return { tone: 'soon', chu: `SOS ${l.sos} · ${l.kyNang.filter((k) => k.dat === false && k.k.length > 2 && !k.k.endsWith('1') && !k.k.endsWith('2')).map((k) => dich(k.nhan)).join(', ')}` };
     return null;
   }
   const dat = l.kyNang.filter((k) => k.dat === true).length;
   if (l.kind === 'final' && l.tyLe !== null) return { tone: dat === l.kyNang.length ? 'ok' : 'soon', chu: `${Math.round(l.tyLe * 100)}%` };
   if (!l.kyNang.some((k) => k.diem !== null)) return null;
-  const hong = l.kyNang.filter((k) => k.dat === false).map((k) => k.nhan);
-  return { tone: hong.length ? 'soon' : 'ok', chu: `${dat}/${l.kyNang.length} môn đạt`, phu: hong.length ? `Không đạt: ${hong.join(', ')}` : undefined };
+  const hong = l.kyNang.filter((k) => k.dat === false).map((k) => dich(k.nhan));
+  return { tone: hong.length ? 'soon' : 'ok', chu: t('{a}/{b} môn đạt', { a: dat, b: l.kyNang.length }), phu: hong.length ? t('Không đạt: {ds}', { ds: hong.join(', ') }) : undefined };
 }
 
 function BangLuot({ luot, ft }: { luot: Luot[]; ft: boolean }) {
-  const tag = (l: Luot) => (l.trangThai === 'cancelled' ? 'đã huỷ' : l.huyPhan ? 'huỷ phần' : null);
+  const tag = (l: Luot) => (l.trangThai === 'cancelled' ? t('đã huỷ') : l.huyPhan ? t('huỷ phần') : null);
   const diemFt = (l: Luot, k: string) => l.kyNang.find((x) => x.k === k)?.diem ?? null;
   return (
     <>
@@ -82,9 +83,9 @@ function BangLuot({ luot, ft }: { luot: Luot[]; ft: boolean }) {
         <table className="w-full min-w-[560px] text-[13px]">
           <thead>
             <tr className="text-left text-[11.5px] text-slate-400" style={{ background: 'var(--surface-2)' }}>
-              <th className="px-3 py-2 font-semibold">{ft ? 'MT' : 'Bài'}</th><th className="px-3 py-2 font-semibold">Lớp</th><th className="px-3 py-2 font-semibold">Tuần</th>
-              {ft ? ['L', 'R', 'W', 'S', 'OVR', 'Kỳ vọng'].map((h) => <th key={h} className="px-3 py-2 text-right font-semibold">{h}</th>) : <th className="px-3 py-2 font-semibold">Điểm từng phần</th>}
-              <th className="px-3 py-2 font-semibold">Kết quả</th>
+              <th className="px-3 py-2 font-semibold">{ft ? 'MT' : t('Bài')}</th><th className="px-3 py-2 font-semibold">{t('Lớp')}</th><th className="px-3 py-2 font-semibold">{t('Tuần')}</th>
+              {ft ? ['L', 'R', 'W', 'S', 'OVR', t('Kỳ vọng')].map((h) => <th key={h} className="px-3 py-2 text-right font-semibold">{h}</th>) : <th className="px-3 py-2 font-semibold">{t('Điểm từng phần')}</th>}
+              <th className="px-3 py-2 font-semibold">{t('Kết quả')}</th>
             </tr>
           </thead>
           <tbody>
@@ -92,7 +93,7 @@ function BangLuot({ luot, ft }: { luot: Luot[]; ft: boolean }) {
               const huy = l.trangThai === 'cancelled'; const nl = nhanLuot(l, ft);
               return (
                 <tr key={`${l.attemptNo}-${l.kind}`} className={`h-11 border-t ${huy ? 'opacity-70' : ''}`} style={{ borderColor: 'var(--line)' }}>
-                  <td className="whitespace-nowrap px-3 font-bold text-slate-100">{l.nhan}{tag(l) && <span className="ml-1.5 text-xs font-normal text-late">{tag(l)}</span>}</td>
+                  <td className="whitespace-nowrap px-3 font-bold text-slate-100">{dich(l.nhan)}{tag(l) && <span className="ml-1.5 text-xs font-normal text-late">{tag(l)}</span>}</td>
                   <td className="px-3 text-slate-300">{l.lop ?? '—'}</td>
                   <td className="whitespace-nowrap px-3 tabular-nums text-slate-300">{l.tuan ?? '—'}</td>
                   {ft ? (
@@ -104,7 +105,7 @@ function BangLuot({ luot, ft }: { luot: Luot[]; ft: boolean }) {
                   ) : (
                     <td className="px-3">{huy ? <span className="text-slate-600">—</span> : l.kyNang.map((k) => (
                       <span key={k.k} className={`mr-1 inline-flex rounded px-1.5 text-[11.5px] font-semibold tabular-nums ${k.dat === false ? 'bg-soon-bg text-soon' : k.dat ? 'bg-ok-bg text-ok' : 'bg-muted-bg text-slate-500'}`}>
-                        {k.nhan} {k.diem ?? '—'}{k.tong ? `/${k.tong}` : ''}
+                        {dich(k.nhan)} {k.diem ?? '—'}{k.tong ? `/${k.tong}` : ''}
                       </span>
                     ))}</td>
                   )}
@@ -123,20 +124,20 @@ function BangLuot({ luot, ft }: { luot: Luot[]; ft: boolean }) {
             <li key={`${l.attemptNo}-${l.kind}`} className={`border-t px-3 py-2.5 first:border-t-0 ${huy ? 'opacity-70' : ''}`} style={{ borderColor: 'var(--line)' }}>
               <div className="flex items-start justify-between gap-2">
                 <div>
-                  <b className="text-slate-100">{l.nhan}</b>{tag(l) && <span className="ml-1.5 text-xs text-late">{tag(l)}</span>}
+                  <b className="text-slate-100">{dich(l.nhan)}</b>{tag(l) && <span className="ml-1.5 text-xs text-late">{tag(l)}</span>}
                   <div className="text-xs text-slate-500">{l.tuan ?? '—'} · {l.lop ?? '—'}</div>
                 </div>
                 {nl && <Nhan tone={nl.tone}>{nl.chu}</Nhan>}
               </div>
               {!huy && (ft
                 ? <dl className="m-0 mt-1.5 grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-[12.5px]">
-                    <dt className="text-slate-500">Điểm</dt><dd className="m-0 tabular-nums">L {b1(diemFt(l, 'listening'))} · R {b1(diemFt(l, 'reading'))} · W {b1(diemFt(l, 'writing'))} · S {b1(diemFt(l, 'speaking'))}</dd>
+                    <dt className="text-slate-500">{t('Điểm')}</dt><dd className="m-0 tabular-nums">L {b1(diemFt(l, 'listening'))} · R {b1(diemFt(l, 'reading'))} · W {b1(diemFt(l, 'writing'))} · S {b1(diemFt(l, 'speaking'))}</dd>
                     <dt className="text-slate-500">Overall</dt><dd className="m-0 tabular-nums">{b1(l.overall)}</dd>
-                    <dt className="text-slate-500">Kỳ vọng</dt><dd className="m-0 tabular-nums">{b1(l.kyVong)}</dd>
+                    <dt className="text-slate-500">{t('Kỳ vọng')}</dt><dd className="m-0 tabular-nums">{b1(l.kyVong)}</dd>
                   </dl>
                 : <div className="mt-1.5">{l.kyNang.map((k) => (
                     <span key={k.k} className={`mr-1 inline-flex rounded px-1.5 text-[11.5px] font-semibold tabular-nums ${k.dat === false ? 'bg-soon-bg text-soon' : k.dat ? 'bg-ok-bg text-ok' : 'bg-muted-bg text-slate-500'}`}>
-                      {k.nhan} {k.diem ?? '—'}{k.tong ? `/${k.tong}` : ''}
+                      {dich(k.nhan)} {k.diem ?? '—'}{k.tong ? `/${k.tong}` : ''}
                     </span>))}</div>)}
             </li>
           );
@@ -168,13 +169,13 @@ function MucBuocTiep({ bt, cycleId, hocVien, ketQua, onDoi, onMo }: {
     try {
       await api.post(`/cycles/${cycleId}/buoc-tiep`, { chon: 'ket_thuc' });
       for (const k of LAM_MOI) invalidate(k);
-      const chu = `Đã chọn Kết thúc — ${hocVien.ten} vào Lưu trữ`;
+      const chu = t('Đã chọn Kết thúc — {ten} vào Lưu trữ', { ten: hocVien.ten });
       if (doi) toast.push('ok', chu);
       else {
         toast.hoanTac(chu, async () => {
           try { await api.del(`/cycles/${cycleId}/buoc-tiep`); } catch (e: any) { toast.push('error', e.message); return; }
           for (const k of LAM_MOI) invalidate(k);
-          toast.push('ok', 'Đã hoàn tác');
+          toast.push('ok', t('Đã hoàn tác'));
           onDoi();
         }, { key: `buoc-tiep:${cycleId}` });
       }
@@ -185,30 +186,30 @@ function MucBuocTiep({ bt, cycleId, hocVien, ketQua, onDoi, onMo }: {
   return (
     <section aria-labelledby={`buoc-tiep-${cycleId}`} className="rounded-[10px] border px-3 py-2.5" style={{ background: 'var(--surface-2)', borderColor: 'var(--line)' }}>
       <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
-        <h3 id={`buoc-tiep-${cycleId}`} className="m-0 text-xs font-normal text-slate-500">Bước tiếp</h3>
-        {bt.goiY && (!bt.chon || sua) && <span className="text-xs text-slate-400">Gợi ý: <b className="font-semibold text-slate-200">{NHAN_SAU_THI[bt.goiY]}</b> · {ketQua}</span>}
+        <h3 id={`buoc-tiep-${cycleId}`} className="m-0 text-xs font-normal text-slate-500">{t('Bước tiếp')}</h3>
+        {bt.goiY && (!bt.chon || sua) && <span className="text-xs text-slate-400">{t('Gợi ý:')} <b className="font-semibold text-slate-200">{NHAN_SAU_THI[bt.goiY]}</b> · {ketQua}</span>}
       </div>
       {bt.chon && !sua ? (
         <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
-          <span className="text-sm text-slate-200">Đã chọn: <b className="font-semibold text-slate-100">{NHAN_SAU_THI[bt.chon]}</b>
+          <span className="text-sm text-slate-200">{t('Đã chọn:')} <b className="font-semibold text-slate-100">{NHAN_SAU_THI[bt.chon]}</b>
             <span className="text-slate-400">{bt.luc ? ` · ${ngay(bt.luc, homNay)}` : ''}{bt.boi ? ` · ${bt.boi}` : ''}</span></span>
-          {bt.coTheChon && <button type="button" className="btn btn-ghost btn-sm min-h-[44px] sm:min-h-0" onClick={() => setSua(true)}>Sửa</button>}
+          {bt.coTheChon && <button type="button" className="btn btn-ghost btn-sm min-h-[44px] sm:min-h-0" onClick={() => setSua(true)}>{t('Sửa')}</button>}
         </div>
       ) : bt.coTheChon ? (
         <>
-          {sua && <p className="m-0 mt-1 text-[12.5px] text-slate-400">Đổi lựa chọn: lựa chọn cũ được hoàn tác trước (lớp / lộ trình mới chưa có điểm thì gỡ).</p>}
-          <div role="group" aria-label="Chọn bước tiếp" className="mt-2 flex flex-wrap gap-1.5">
+          {sua && <p className="m-0 mt-1 text-[12.5px] text-slate-400">{t('Đổi lựa chọn: lựa chọn cũ được hoàn tác trước (lớp / lộ trình mới chưa có điểm thì gỡ).')}</p>}
+          <div role="group" aria-label={t('Chọn bước tiếp')} className="mt-2 flex flex-wrap gap-1.5">
             {LUA_CHON_SAU_THI.map((k) => (
               <button key={k} type="button" disabled={busy || k === bt.chon} onClick={() => bam(k)}
                 className="btn btn-sm min-h-[44px] max-sm:flex-1 sm:min-h-0">
-                {NHAN_SAU_THI[k]}{k === bt.chon ? ' · đang chọn' : ''}
+                {NHAN_SAU_THI[k]}{k === bt.chon ? ` · ${t('đang chọn')}` : ''}
               </button>
             ))}
-            {sua && <button type="button" className="btn btn-ghost btn-sm min-h-[44px] sm:min-h-0" onClick={() => setSua(false)}>Giữ nguyên</button>}
+            {sua && <button type="button" className="btn btn-ghost btn-sm min-h-[44px] sm:min-h-0" onClick={() => setSua(false)}>{t('Giữ nguyên')}</button>}
           </div>
         </>
       ) : (
-        <p className="m-0 mt-1 text-sm text-slate-400">Chờ QL hoặc TVV chọn: Kết thúc · Học tiếp lộ trình mới · Học lại.</p>
+        <p className="m-0 mt-1 text-sm text-slate-400">{t('Chờ QL hoặc TVV chọn: Kết thúc · Học tiếp lộ trình mới · Học lại.')}</p>
       )}
     </section>
   );
@@ -223,12 +224,12 @@ export function NganTongKet({ cycleId, onClose, onDoi }: { cycleId: number; onCl
   const { data, loading, error, reload } = useApi<TongKet>(`/lo-trinh/${cycleId}/tong-ket`, [cycleId]);
   /* OV-11d (HV-9): Nhập kết quả / Học tiếp / Học lại THAY nội dung ngăn (dòng "← Tổng kết", như `NganCase`) — không panel chồng. */
   const [view, setView] = useState<{ loai: 'nhap' } | { loai: 'hoc'; chon: 'hoc_tiep' | 'hoc_lai'; doi: boolean } | null>(null);
-  const chuongTrinh = data ? (data.loai === 'ft' ? 'Fast Track' : data.ten) : null;
+  const chuongTrinh = data ? (data.loai === 'ft' ? 'Fast Track' : dich(data.ten)) : null;
   const ft = data?.loai === 'ft';
   const kq = data?.ketQua;
   const veTongKet = () => setView(null);
   const daDoi = () => { setView(null); reload(); onDoi?.(); };
-  const quayLai = { nhan: 'Tổng kết', onClick: veTongKet };
+  const quayLai = { nhan: t('Tổng kết'), onClick: veTongKet };
   if (data && view?.loai === 'nhap') {
     return <KetQuaThiThatPanel cycleId={cycleId} studentName={data.hocVien.ten} lop={data.lop} quayLai={quayLai} onClose={veTongKet} onDone={daDoi} />;
   }
@@ -242,9 +243,9 @@ export function NganTongKet({ cycleId, onClose, onDoi }: { cycleId: number; onCl
   const ketLuanCu = kq?.loai === 'ft' && kq.ovr === null && !kq.khongThi && !kq.khongCoThi && (kq.ketLuan === 'reached' || kq.ketLuan === 'not_reached') ? kq.nhan : null;
   return (
     <>
-      <KhungPanel tieuDe="Tổng kết lộ trình" hocVien={data ? `${data.hocVien.ten} · ${chuongTrinh}` : null} rong="rong" onDong={onClose}
-        chan={{ huy: null, phu: data ? <Link className="btn btn-ghost min-h-[44px] sm:min-h-0" to={duongHoSoHocVien(data.hocVien.id, { loTrinh: cycleId })}>Mở hồ sơ</Link> : undefined,
-          chinh: <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={onClose}>Đóng</button> }}>
+      <KhungPanel tieuDe={t('Tổng kết lộ trình')} hocVien={data ? `${data.hocVien.ten} · ${chuongTrinh}` : null} rong="rong" onDong={onClose}
+        chan={{ huy: null, phu: data ? <Link className="btn btn-ghost min-h-[44px] sm:min-h-0" to={duongHoSoHocVien(data.hocVien.id, { loTrinh: cycleId })}>{t('Mở hồ sơ')}</Link> : undefined,
+          chinh: <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={onClose}>{t('Đóng')}</button> }}>
         {error && <ErrorState message={error.message} hint={error.hint} onRetry={reload} />}
         {loading && !data && <Skeleton rows={6} />}
         {data && kq && (
@@ -252,25 +253,25 @@ export function NganTongKet({ cycleId, onClose, onDoi }: { cycleId: number; onCl
             <div className={`grid gap-1.5 ${ft ? 'sm:grid-cols-[1fr_18px_1.5fr_18px_1fr]' : 'sm:grid-cols-[1.5fr_18px_1fr]'}`}>
               {kq.loai === 'ft' ? (
                 <>
-                  <O nho="Đích">
+                  <O nho={t('Đích')}>
                     <Lon em="Target">{data.khongCamKet ? hienTargetKck(data.dich.target !== null ? b1(data.dich.target) : null, true) : b1(data.dich.target)}</Lon>
-                    {data.dich.thiDuKien && <div className="mt-0.5 text-xs tabular-nums text-slate-400">Thi {data.dich.thiDuKien}</div>}
+                    {data.dich.thiDuKien && <div className="mt-0.5 text-xs tabular-nums text-slate-400">{t('Thi {ngay}', { ngay: dich(data.dich.thiDuKien) })}</div>}
                   </O>
                   {MUI}
                   {kq.ovr !== null ? (
-                    <O nho={`Thi thật${kq.ngay ? ` · ${ngay(kq.ngay, homNay)}` : ''}`}>
+                    <O nho={`${t('Thi thật')}${kq.ngay ? ` · ${ngay(kq.ngay, homNay)}` : ''}`}>
                       <Lon em="OVR">{b1(kq.ovr)}</Lon>
                       <div className="mt-0.5 text-xs tabular-nums text-slate-400">L {b1(kq.l)} · R {b1(kq.r)} · W {b1(kq.w)} · S {b1(kq.s)}</div>
-                      {kq.nhan && <div className="mt-1.5"><Nhan tone={kq.ketLuan === 'reached' ? 'ok' : kq.ketLuan === 'not_reached' ? 'late' : 'muted'}>{kq.nhan}</Nhan></div>}
+                      {kq.nhan && <div className="mt-1.5"><Nhan tone={kq.ketLuan === 'reached' ? 'ok' : kq.ketLuan === 'not_reached' ? 'late' : 'muted'}>{dich(kq.nhan)}</Nhan></div>}
                     </O>
                   ) : kq.khongCoThi ? (
-                    <O nho="Thi thật" cho><div className="text-sm font-semibold text-slate-500">—</div></O>
+                    <O nho={t('Thi thật')} cho><div className="text-sm font-semibold text-slate-500">—</div></O>
                   ) : ketLuanCu ? (
-                    <O nho="Thi thật"><div className="text-sm font-semibold leading-snug text-slate-200">Kết luận cũ: {ketLuanCu}</div></O>
+                    <O nho={t('Thi thật')}><div className="text-sm font-semibold leading-snug text-slate-200">{t('Kết luận cũ: {kl}', { kl: dich(ketLuanCu) })}</div></O>
                   ) : (
-                    <O nho="Thi thật" cho>
-                      <div className="text-sm font-semibold leading-snug text-slate-400">{kq.khongThi ? 'Không thi' : 'Chờ kết quả thi thật'}</div>
-                      {kq.coTheNhap && <div className="mt-2"><button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setView({ loai: 'nhap' })}>Nhập kết quả</button></div>}
+                    <O nho={t('Thi thật')} cho>
+                      <div className="text-sm font-semibold leading-snug text-slate-400">{kq.khongThi ? t('Không thi') : t('Chờ kết quả thi thật')}</div>
+                      {kq.coTheNhap && <div className="mt-2"><button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setView({ loai: 'nhap' })}>{t('Nhập kết quả')}</button></div>}
                     </O>
                   )}
                   {MUI}
@@ -278,32 +279,32 @@ export function NganTongKet({ cycleId, onClose, onDoi }: { cycleId: number; onCl
               ) : (
                 <>
                   {kq.tyLe === null
-                    ? <O nho="Final Test" cho><div className="text-sm font-semibold text-slate-400">Chưa có điểm</div></O>
+                    ? <O nho="Final Test" cho><div className="text-sm font-semibold text-slate-400">{t('Chưa có điểm')}</div></O>
                     : <O nho="Final Test"><Lon>{Math.round(kq.tyLe * 100)}%</Lon>{kq.dai && DAI[kq.dai] && <div className="mt-1.5"><Nhan tone={DAI[kq.dai].tone}>{DAI[kq.dai].nhan}</Nhan></div>}</O>}
                   {MUI}
                 </>
               )}
-              <O nho="Hướng tiếp">
-                <div className="mt-1">{data.buocTiep && !data.buocTiep.chon ? <span className="text-sm text-slate-400">Chờ chọn bước tiếp</span>
-                  : data.huongTiep.nhan ? <Nhan tone={toneHuong(data.huongTiep.nhan)}>{data.huongTiep.nhan}</Nhan> : <span className="text-slate-600">—</span>}</div>
+              <O nho={t('Hướng tiếp')}>
+                <div className="mt-1">{data.buocTiep && !data.buocTiep.chon ? <span className="text-sm text-slate-400">{t('Chờ chọn bước tiếp')}</span>
+                  : data.huongTiep.nhan ? <Nhan tone={toneHuong(data.huongTiep.nhan)}>{dich(data.huongTiep.nhan)}</Nhan> : <span className="text-slate-600">—</span>}</div>
               </O>
             </div>
 
             {data.buocTiep && (
               <MucBuocTiep bt={data.buocTiep} cycleId={cycleId} hocVien={data.hocVien} onDoi={() => { reload(); onDoi?.(); }}
                 onMo={(chon, doi) => setView({ loai: 'hoc', chon, doi })}
-                ketQua={kq.loai === 'ft' ? (kq.khongThi ? 'Không thi' : ketLuanCu ? 'theo kết luận cũ' : kq.nhan || (kq.ovr !== null ? `OVR ${b1(kq.ovr)}` : 'Có kết quả')) : ''} />
+                ketQua={kq.loai === 'ft' ? (kq.khongThi ? t('Không thi') : ketLuanCu ? t('theo kết luận cũ') : (kq.nhan && dich(kq.nhan)) || (kq.ovr !== null ? `OVR ${b1(kq.ovr)}` : t('Có kết quả'))) : ''} />
             )}
 
             <div className="flex flex-wrap gap-x-3.5 gap-y-1 text-[12.5px] text-slate-400">
-              {[['Lớp', data.lop], ['GVCN', data.gvcn], ['Đầu vào', data.dauVao !== null ? b1(data.dauVao) : null], ...(ft ? [] : [['Target', data.khongCamKet ? hienTargetKck(data.target !== null ? b1(data.target) : null, true) : data.target !== null ? b1(data.target) : null]]), ['Thời gian', data.thoiGian],
-                ...(kq.loai === 'thuong' && kq.kqdr ? [['Kết quả đầu ra', chuKqdr(kq.kqdr)]] : [])]
+              {[[t('Lớp'), data.lop], [t('GVCN'), data.gvcn], [t('Đầu vào'), data.dauVao !== null ? b1(data.dauVao) : null], ...(ft ? [] : [['Target', data.khongCamKet ? hienTargetKck(data.target !== null ? b1(data.target) : null, true) : data.target !== null ? b1(data.target) : null]]), [t('Thời gian'), dich(data.thoiGian)],
+                ...(kq.loai === 'thuong' && kq.kqdr ? [[t('Kết quả đầu ra'), chuKqdr(kq.kqdr)]] : [])]
                 .filter(([, v]) => v).map(([k, v]) => <span key={k as string}>{k} <b className="font-semibold text-slate-200">{v}</b></span>)}
             </div>
 
-            <p className="m-0 text-xs font-bold text-slate-400">{ft ? 'Mock Test' : 'Kết quả Test'}{data.luot.length > 0 && <span className="ml-1 font-normal tabular-nums text-slate-500">{data.luot.length}</span>}</p>
+            <p className="m-0 text-xs font-bold text-slate-400">{ft ? 'Mock Test' : t('Kết quả Test')}{data.luot.length > 0 && <span className="ml-1 font-normal tabular-nums text-slate-500">{data.luot.length}</span>}</p>
             {data.luot.length === 0
-              ? <div className="rounded-[10px] border py-8 text-center font-semibold text-slate-300" style={{ borderColor: 'var(--line)' }}>Chưa có lượt Test nào</div>
+              ? <div className="rounded-[10px] border py-8 text-center font-semibold text-slate-300" style={{ borderColor: 'var(--line)' }}>{t('Chưa có lượt Test nào')}</div>
               : <BangLuot luot={data.luot} ft={!!ft} />}
           </div>
         )}

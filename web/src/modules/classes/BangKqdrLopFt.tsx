@@ -6,6 +6,7 @@ import { DauDuoi, Nhan } from '../../ui/Nhan.tsx';
 import { TheDong, useDienThoai } from '../../ui/TheDong.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { REGULAR_SKILLS, duongCase, tuanLich, type RegularSkill } from '@shared/domain/index.ts';
+import { t } from '@shared/i18n/index.ts';
 
 /** `GET /classes/:id/ket-qua-dau-ra` (server/src/normal/kyVong.ts → kqdrLopFt). Chỉ giá trị QL đã chốt. */
 type Em = {
@@ -29,7 +30,7 @@ export function BangKqdrLopFt({ classId }: { classId: number }) {
   const dt = useDienThoai();
   if (error) return <ErrorState message={error.message} hint={error.hint} onRetry={reload} />;
   if (loading && !data) return <Skeleton rows={5} />;
-  if (!data?.bang.length) return <div className="card"><Empty title="Không còn đợt nào trong 4 tuần" hint="Tra Kết quả đầu ra ở Hồ sơ học viên › Hành trình." /></div>;
+  if (!data?.bang.length) return <div className="card"><Empty title={t('Không còn đợt nào trong 4 tuần')} hint={t('Tra Kết quả đầu ra ở Hồ sơ học viên › Hành trình.')} /></div>;
   const tuan = (d: string) => <span className="tabular-nums">{tuanLich(d, homNay)}</span>;
 
   const oMt0 = (e: Em) => {
@@ -45,29 +46,29 @@ export function BangKqdrLopFt({ classId }: { classId: number }) {
   };
   const oKq = (e: Em) => {
     const k = e.kqdr;
-    if (!k) return <Nhan tone="muted" title="Quản lý chưa chốt Kết quả đầu ra">Chưa chốt</Nhan>;
-    if (k.dat) return <Nhan tone="ok">Đạt</Nhan>;
-    return <Nhan tone="bad">{`Không đạt · ${k.nguyenNhan === 'hoc_sinh' ? 'Học viên' : 'Trung tâm'}${k.mon.length ? ` · ${k.mon.map((m) => NGAN[m] ?? m).join(' ')}` : ''}`}</Nhan>;
+    if (!k) return <Nhan tone="muted" title={t('Quản lý chưa chốt Kết quả đầu ra')}>{t('Chưa chốt')}</Nhan>;
+    if (k.dat) return <Nhan tone="ok">{t('Đạt')}</Nhan>;
+    return <Nhan tone="bad">{`${t('Không đạt')} · ${k.nguyenNhan === 'hoc_sinh' ? t('Học viên') : t('Trung tâm')}${k.mon.length ? ` · ${k.mon.map((m) => NGAN[m] ?? m).join(' ')}` : ''}`}</Nhan>;
   };
   const oCase = (e: Em) => (e.case.length ? (
     <span className="flex flex-col items-start gap-0.5">
       {e.case.map((c) => (
         <Link key={c.id} className="link" to={duongCase(e.id, c.id)}>
-          {`Case ${NGAN[c.mon] ?? c.mon}${e.kqdr?.nguyenNhan === 'trung_tam' ? ' · Tutor 10 buổi' : ''}`}
+          {`Case ${NGAN[c.mon] ?? c.mon}${e.kqdr?.nguyenNhan === 'trung_tam' ? ` · ${t('Tutor 10 buổi')}` : ''}`}
         </Link>
       ))}
     </span>
   ) : <span className="text-slate-500">—</span>);
   const oBanGiao = (e: Em) => (e.banGiao
     ? <span className="whitespace-pre-line break-words text-[12.5px] text-slate-300">{e.banGiao}</span>
-    : <span className="text-xs text-slate-500">Chưa bàn giao</span>);
+    : <span className="text-xs text-slate-500">{t('Chưa bàn giao')}</span>);
   const oFinal = (e: Em) => (e.final === null ? <span className="text-slate-500">—</span>
     : <Nhan tone={e.finalDat ? 'ok' : 'soon'}>{`${Math.round(e.final * 100)}%`}</Nhan>);
   const tenEm = (e: Em) => <Link className="link font-semibold" to={`/hoc-vien/${e.id}`}>{e.ten}</Link>;
   const dongDot = (d: Bang['dot'][number]) => (
     <span className="flex flex-wrap items-baseline gap-x-2 text-xs text-slate-400">
-      <b className="font-semibold text-slate-200">Đợt {tuan(d.vao)}</b>
-      <span>{!dt && <>vào lớp {tuan(d.vao)} · </>}hiện tới hết {tuan(d.hienToi)}</span>
+      <b className="font-semibold text-slate-200">{t('Đợt')} {tuan(d.vao)}</b>
+      <span>{!dt && <>{t('vào lớp')} {tuan(d.vao)} · </>}{t('hiện tới hết')} {tuan(d.hienToi)}</span>
     </span>
   );
 
@@ -76,7 +77,7 @@ export function BangKqdrLopFt({ classId }: { classId: number }) {
       {data.bang.map((b) => (
         <section key={b.ct} className="card overflow-hidden">
           <h3 className="m-0 flex flex-wrap items-baseline gap-x-1.5 px-3 py-2.5 text-sm font-semibold text-slate-100">
-            Kết quả đầu ra {b.ct}
+            {t('Kết quả đầu ra {ct}', { ct: b.ct })}
             {!dt && <span className="text-xs font-normal text-slate-500">· {b.lop.map((l) => l.code).join(', ')}</span>}
           </h3>
           {dt ? b.dot.map((d) => (
@@ -86,8 +87,8 @@ export function BangKqdrLopFt({ classId }: { classId: number }) {
                 <TheDong key={e.id} dau={<span className="flex flex-wrap items-baseline gap-x-1">{tenEm(e)}<span className="text-xs text-slate-400">· {e.lopCu.code}</span></span>}
                   dong={[
                     { nhan: 'MT0', noiDung: oMt0(e) },
-                    { nhan: 'Kết quả', noiDung: oKq(e) },
-                    e.case.length ? { nhan: 'Hỗ trợ', noiDung: oCase(e) } : { nhan: 'Bàn giao', noiDung: oBanGiao(e) },
+                    { nhan: t('Kết quả'), noiDung: oKq(e) },
+                    e.case.length ? { nhan: t('Hỗ trợ'), noiDung: oCase(e) } : { nhan: t('Bàn giao'), noiDung: oBanGiao(e) },
                   ]} />
               ))}
             </div>
@@ -99,8 +100,8 @@ export function BangKqdrLopFt({ classId }: { classId: number }) {
                 </colgroup>
                 <thead>
                   <tr>
-                    <th className="th">Học viên</th><th className="th">Lớp cũ</th><th className="th">Final</th><th className="th">MT0 · L R W S · Overall</th>
-                    <th className="th">Kết quả đầu ra</th><th className="th">Hỗ trợ</th><th className="th">Bàn giao từ GV cũ</th>
+                    <th className="th">{t('Học viên')}</th><th className="th">{t('Lớp cũ')}</th><th className="th">Final</th><th className="th">MT0 · L R W S · Overall</th>
+                    <th className="th">{t('Kết quả đầu ra')}</th><th className="th">{t('Hỗ trợ')}</th><th className="th">{t('Bàn giao từ GV cũ')}</th>
                   </tr>
                 </thead>
                 <tbody>

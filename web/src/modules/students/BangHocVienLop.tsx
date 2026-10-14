@@ -19,6 +19,7 @@ import {
   chuSapToi, duongDotTest, ketQuaGanNhat, khoaLopThuong, maHocVienNgan, sapXepHocVien, tachViecChung, tuanLich,
   type KetQuaVao, type SapXep, type ViecTiepTheo,
 } from '@shared/domain/index.ts';
+import { dich, t } from '@shared/i18n/index.ts';
 
 /** Các trường của một dòng `GET /classes/:id/roster` mà bảng này đọc. */
 export type DongRoster = {
@@ -81,7 +82,7 @@ export function BangHocVienLop({ lop, chiHien, sapXep, onDoi, soCot, the = false
   };
   const oLuot = (s: DongRoster) => {
     const l = luotGanNhat(s);
-    return l ? <><span className="block tabular-nums text-slate-200">{l.nhan}</span><span className="block text-xs tabular-nums text-slate-500">{l.co}/{l.can} ô có điểm</span></>
+    return l ? <><span className="block tabular-nums text-slate-200">{l.nhan}</span><span className="block text-xs tabular-nums text-slate-500">{t('{co}/{can} ô có điểm', { co: l.co, can: l.can })}</span></>
       : <span className="text-slate-600">—</span>;
   };
   const oTrong = (s: DongRoster) => {
@@ -113,9 +114,9 @@ export function BangHocVienLop({ lop, chiHien, sapXep, onDoi, soCot, the = false
       conLuotChuaXep: st?.nhanLuotChuaXep ?? null, duKienThi: s.examPlan ?? null, homNay, khung: thuong ? 'thuong' : 'ft',
     });
     const title = st?.nextAttemptLabel
-      ? `${st.nextAttemptLabel}${st.nextWeekStart ? ` · tuần thi ${tuanLich(st.nextWeekStart, homNay)}` : ''}${st.nextKyVong != null ? ` · kỳ vọng ${fmtBand(st.nextKyVong)}` : ''}`
-      : chu ?? undefined;
-    return { chu, title, thiThat: !!chu?.startsWith('Thi thật') };
+      ? [st.nextAttemptLabel, st.nextWeekStart && t('tuần thi {tuan}', { tuan: tuanLich(st.nextWeekStart, homNay) }), st.nextKyVong != null && t('kỳ vọng {kv}', { kv: fmtBand(st.nextKyVong) })].filter(Boolean).join(' · ')
+      : chu ? dich(chu) : undefined;
+    return { chu: chu && dich(chu), title, thiThat: !!chu?.startsWith(t('Thi thật')) };   // chuSapToi đã theo tiếng của trang (EN-b) — so cùng tiếng
   };
   const khoaCua = (s: DongRoster) => thuong
     ? khoaLopThuong({ maChuongTrinh: lop.programmeCode, tuanHienTai: lop.currentWeek, tongTuan: lop.totalWeeks,
@@ -126,13 +127,13 @@ export function BangHocVienLop({ lop, chiHien, sapXep, onDoi, soCot, the = false
   if (error) {
     return trong(
       <div className="px-4 py-3 text-xs text-bad">
-        {error.message} <button type="button" className="btn btn-sm ml-2" onClick={reload}>Thử lại</button>
+        {error.message} <button type="button" className="btn btn-sm ml-2" onClick={reload}>{t('Thử lại')}</button>
       </div>,
     );
   }
   if (loading || !data) return trong(<div className="p-3"><Skeleton rows={3} /></div>);
   if (!rows.length) {
-    return trong(<Empty title={chiHien ? 'Không có học viên nào khớp bộ lọc trong lớp này' : 'Lớp chưa có học viên'} />);
+    return trong(<Empty title={chiHien ? t('Không có học viên nào khớp bộ lọc trong lớp này') : t('Lớp chưa có học viên')} />);
   }
 
   if (the) {
@@ -149,24 +150,24 @@ export function BangHocVienLop({ lop, chiHien, sapXep, onDoi, soCot, the = false
                 <span className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5">
                   <Link className="link font-semibold" to={`/hoc-vien/${s.id}`} state={{ ds }}>{s.fullName}</Link>
                   <span className="text-[11px] tabular-nums text-slate-500">{maHocVienNgan(s.studentCode)}</span>
-                  {s.status === 'finished' ? <Nhan tone="done">Đã kết thúc học</Nhan> : <MissingBadge items={s.missing} gon />}
+                  {s.status === 'finished' ? <Nhan tone="done">{t('Đã kết thúc học')}</Nhan> : <MissingBadge items={s.missing} gon />}
                   <CanhBaoYThuc cb={s.canhBaoYThuc} />
                 </span>
               )}
               hanhDong={<MenuDong muc={menuDong(s)} />}
               dong={admin ? [
-                { nhan: 'Lượt MT', noiDung: oLuot(s) },
-                { nhan: 'Ô chưa nhập', noiDung: oTrong(s) },
+                { nhan: t('Lượt MT'), noiDung: oLuot(s) },
+                { nhan: t('Ô chưa nhập'), noiDung: oTrong(s) },
               ] : [
-                { nhan: 'Kết quả', noiDung: <KetQuaOHocVien k={k} standing={s.standing} thuong={thuong} /> },
-                { nhan: thuong ? 'Khoá' : 'Target', noiDung: thuong
+                { nhan: t('Kết quả'), noiDung: <KetQuaOHocVien k={k} standing={s.standing} thuong={thuong} /> },
+                { nhan: thuong ? t('Khoá') : 'Target', noiDung: thuong
                   ? <>{khoa?.chinh}{khoa?.phu && <span className="block text-xs text-slate-500">{khoa.phu}</span>}</>
                   : <TargetText band={s.cycle?.target} kck={s.cycle?.khongCamKet} /> },
-                { nhan: 'Dự kiến thi', noiDung: <ExamPlanText plan={s.examPlan} /> },
-                { nhan: 'Sắp tới', noiDung: sapToi.chu ? <span title={sapToi.title} className={sapToi.thiThat ? 'text-slate-400' : ''}>{sapToi.chu}</span> : <span className="text-slate-600">—</span> },
+                { nhan: t('Dự kiến thi'), noiDung: <ExamPlanText plan={s.examPlan} /> },
+                { nhan: t('Sắp tới'), noiDung: sapToi.chu ? <span title={sapToi.title} className={sapToi.thiThat ? 'text-slate-400' : ''}>{sapToi.chu}</span> : <span className="text-slate-600">—</span> },
                 { nhan: 'Case', noiDung: s.openCases || <span className="text-slate-600">—</span> },
-                { nhan: 'Việc tiếp', noiDung: (
-                  <DanhSachViecTiep viec={conLai.get(s.id) ?? []}
+                { nhan: t('Việc tiếp'), noiDung: (
+                  <DanhSachViecTiep viec={(conLai.get(s.id) ?? []).map(dichViec)}
                     den={(v) => duongViecTiep(v, { studentId: s.id, classId: lop.id, laLopThuong: thuong, timeline: s.timeline })} />
                 ) },
               ]} />
@@ -195,7 +196,7 @@ export function BangHocVienLop({ lop, chiHien, sapXep, onDoi, soCot, the = false
               <span className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5">
                 <Link className="link max-w-full truncate font-semibold" title={s.fullName} to={`/hoc-vien/${s.id}`} state={{ ds }}>{s.fullName}</Link>
                 <span className="shrink-0 text-[11px] tabular-nums text-slate-500">{maHocVienNgan(s.studentCode)}</span>
-                {s.status === 'finished' ? <Nhan tone="done">Đã kết thúc học</Nhan> : <MissingBadge items={s.missing} gon />}
+                {s.status === 'finished' ? <Nhan tone="done">{t('Đã kết thúc học')}</Nhan> : <MissingBadge items={s.missing} gon />}
                 <CanhBaoYThuc cb={s.canhBaoYThuc} />
               </span>
             </td>
@@ -219,11 +220,11 @@ export function BangHocVienLop({ lop, chiHien, sapXep, onDoi, soCot, the = false
               {sapToi.chu ?? <span className="text-slate-600">—</span>}
             </td>
             <td className="td text-right tabular-nums"
-              title={s.handoverCases ? `${s.handoverCases} Case bàn giao từ lớp trước` : undefined}>
+              title={s.handoverCases ? t('{n} Case bàn giao từ lớp trước', { n: s.handoverCases }) : undefined}>
               {s.openCases || <span className="text-slate-600">—</span>}
             </td>
             <td className="td">
-              <DanhSachViecTiep viec={conLai.get(s.id) ?? []}
+              <DanhSachViecTiep viec={(conLai.get(s.id) ?? []).map(dichViec)}
                 den={(v) => duongViecTiep(v, { studentId: s.id, classId: lop.id, laLopThuong: thuong, timeline: s.timeline })} />
             </td>
             </>)}
@@ -242,12 +243,12 @@ export function KetQuaOHocVien({ k, standing, thuong }: { k: ReturnType<typeof k
     <>
       <span className="flex flex-wrap items-center gap-x-1.5">
         <span className="text-sm font-bold tabular-nums text-slate-100">{k.chinh}</span>
-        {k.lech && <span className={`text-xs font-semibold tabular-nums ${k.kckDuoi ? 'text-slate-400' : 'text-bad'}`} title={`Dưới kỳ vọng ${k.lech.replace('−', '')}`}>{k.lech}</span>}
-        {k.dat && <span className="text-[11px] text-slate-400" title={thuong ? 'Đạt mọi môn' : 'Đạt kỳ vọng'}>✓</span>}
+        {k.lech && <span className={`text-xs font-semibold tabular-nums ${k.kckDuoi ? 'text-slate-400' : 'text-bad'}`} title={t('Dưới kỳ vọng {n}', { n: k.lech.replace('−', '') })}>{k.lech}</span>}
+        {k.dat && <span className="text-[11px] text-slate-400" title={thuong ? t('Đạt mọi môn') : t('Đạt kỳ vọng')}>✓</span>}
         {k.kckDuoi && <ChipDuoiKck />}
         {k.sos && (
           <Level tone={sosTone(standing?.sosLevel ?? null)} dut={k.sosTamThoi}
-            title={k.sosTamThoi ? 'Tạm thời: chưa đủ điểm các môn' : undefined}>{k.sos}{k.sosTamThoi ? ' tạm thời' : ''}</Level>
+            title={k.sosTamThoi ? t('Tạm thời: chưa đủ điểm các môn') : undefined}>{k.sos}{k.sosTamThoi ? ` ${t('tạm thời')}` : ''}</Level>
         )}
       </span>
       {k.dong1 && <span className="block text-[12px] leading-4 text-slate-500"><DongCham chu={k.dong1} lienKet={standing?.attemptId && standing.attemptLabel ? { nhan: standing.attemptLabel, den: duongDotTest({ id: standing.attemptId, kind: standing.attemptKind, classId: standing.attemptClassId }) } : undefined} /></span>}
@@ -255,6 +256,9 @@ export function KetQuaOHocVien({ k, standing, thuong }: { k: ReturnType<typeof k
     </>
   );
 }
+
+/** PR-EN-c: việc tiếp theo máy chủ dựng (chữ Việt) → tiếng của trang. */
+export const dichViec = (v: ViecTiepTheo): ViecTiepTheo => ({ ...v, viec: dich(v.viec), han: v.han && dich(v.han), title: dich(v.title) });
 
 /** PR-S4F #11: dòng "a · b · c" chỉ xuống dòng Ở DẤU "·" (không bẻ "…có / điểm", không để "W ·" đứng riêng ở 375 px). */
 /** PR-UXF-b (G5): `lienKet` biến tên lượt ở đầu dòng 1 ("MT3") thành link tới đợt (`duongDotTest`). */
@@ -267,12 +271,12 @@ function ViecChungLop({ chung, den }: { chung: { viec: ViecTiepTheo; soEm: numbe
   const v = chung.viec;
   return (
     <>
-      <span className="text-slate-500">Cả lớp: </span>
+      <span className="text-slate-500">{t('Cả lớp:')} </span>
       <span className="text-slate-200">
-        {den ? <Link to={den} className="link">{v.viec}</Link> : v.viec}
-        {v.quaHanNgay !== null ? <> <QuaHan ngay={v.quaHanNgay} /></> : v.han ? <span className="text-slate-500"> · {v.han}</span> : null}
+        {den ? <Link to={den} className="link">{dich(v.viec)}</Link> : dich(v.viec)}
+        {v.quaHanNgay !== null ? <> <QuaHan ngay={v.quaHanNgay} /></> : v.han ? <span className="text-slate-500"> · {dich(v.han)}</span> : null}
       </span>
-      <span className="text-slate-500"> · {chung.soEm} em{den ? ' →' : ''}</span>
+      <span className="text-slate-500"> · {t('{n} em', { n: chung.soEm })}{den ? ' →' : ''}</span>
     </>
   );
 }

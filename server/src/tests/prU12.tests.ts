@@ -50,6 +50,6 @@ export async function runPrU12Tests(t: YThucTestKit) {
     assert(/a\.status === 'cancelled'\) return <span className="text-muted">—<\/span>/.test(ketQua), 'lượt đã huỷ → "—"');
     assert(/khongChiaMon \?|!khongChiaMon \?/.test(ketQua), 'Pre FOU giữ nhánh riêng (%)');
     assert(/a\.scored < a\.required/.test(ketQua), 'KetQuaThuongO chưa có nhánh chưa đủ môn');
-    assert(ketQua.includes('Chờ {a.required - a.scored} môn'), 'thiếu chữ "Chờ n môn"');
+    assert(ketQua.includes("t('Chờ {n} môn', { n: a.required - a.scored })"), 'thiếu chữ "Chờ n môn"');
   });
 }

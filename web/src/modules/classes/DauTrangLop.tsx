@@ -15,6 +15,7 @@ import type { TinhTrangXoaKetThuc } from './XoaKetThucLopPanel.tsx';
 import {
   DUONG_TAB_TEST, ROUTE_NAME, TAB_HO_SO_LOP_NHAN, trangCha, type TabHoSoLop, badgeLop, badgeHienTheoVai, vaiXemHocVien, khungCua, duongLichTest, laVaiQuanLy, needScoresText, menuHoSoLop, nhomGiaoVienBoMon, tuanKhoa, type ViecMenuLop, tuanLich, type BadgeLop, type DaiLop, type NhomGiaoVien, type WorkScope,
 } from '@shared/domain/index.ts';
+import { dich, t } from '@shared/i18n/index.ts';
 
 /** `GET /classes/:id/overview` (server/src/classes/classes.ts → classOverview). */
 export type HoSoLop = {
@@ -129,52 +130,52 @@ export function DauTrangLop({ data, onViec, onBanGiao }: {
   });
   const menu: MucMenu[] = mucLop.flatMap((m, i) => {
     const truoc = mucLop[i - 1];
-    const dau = m.nhom && m.nhom !== truoc?.nhom ? [{ key: `nhom-${m.nhom}`, nhan: m.nhom, tieuDe: true, keTruoc: false, onChon: () => undefined }] : [];
+    const dau = m.nhom && m.nhom !== truoc?.nhom ? [{ key: `nhom-${m.nhom}`, nhan: t(m.nhom), tieuDe: true, keTruoc: false, onChon: () => undefined }] : [];
     return [...dau, { key: m.key, nhan: m.nhan, keTruoc: !m.nhom && !!truoc?.nhom, nguyHiem: m.key === 'xoa-lop', onChon: () => onViec(m.key) }];
   });
   const tuan = thuong && s?.currentWeek && s.currentWeek >= 1
-    ? s.totalWeeks ? tuanKhoa(Math.min(s.currentWeek, s.totalWeeks), s.totalWeeks) : data.lienTuc ? `tuần ${s.currentWeek}` : null : null;   // OV-6b2: liên tục không "/tổng"
+    ? s.totalWeeks ? tuanKhoa(Math.min(s.currentWeek, s.totalWeeks), s.totalWeeks) : data.lienTuc ? t('tuần {n}', { n: s.currentWeek }) : null : null;   // OV-6b2: liên tục không "/tổng"
   /* K2-13: giữ ký hiệu LT1 · LT2 · RF, tên đủ ở tooltip. */
   const thongTin = [
     data.branchName,
     data.route ? <abbr key="lt" title={ROUTE_NAME[data.route as keyof typeof ROUTE_NAME] ?? data.route} className="no-underline">{data.route}</abbr> : null,
-    `${s?.studentCount ?? 0} học viên`, tuan,
-    data.startDate ? `khai giảng ${tuanLich(data.startDate, homNay)}` : null,   // mã tuần (CLAUDE.md 30/09, mockup 20)
+    t('{n} học viên', { n: s?.studentCount ?? 0 }), tuan,
+    data.startDate ? t('khai giảng {tuan}', { tuan: tuanLich(data.startDate, homNay) }) : null,   // mã tuần (CLAUDE.md 30/09, mockup 20)
   ].filter(Boolean);
 
   return (
     <header className="card space-y-2 p-3 sm:p-4">
       {/* PR-DH (Q-0310-4): Quay lại + Lớp trước/sau theo danh sách vừa mở; mở thẳng bằng link thì theo các lớp cùng khung ở Học viên & Lớp. */}
-      <ThanhTruocSau loai="lop" id={data.id} cha={trangCha('lop')} ten={`Hồ sơ lớp ${data.code}`}
+      <ThanhTruocSau loai="lop" id={data.id} cha={trangCha('lop')} ten={t('Hồ sơ lớp {lop}', { lop: data.code })}
         chiTiet={CHE_DO_NHAN[sp.get('che-do') as CheDoHocVien] ?? TAB_HO_SO_LOP_NHAN[sp.get('tab') as TabHoSoLop]}
         duong={(cid) => `/hoc-vien/lop/${cid}${sp.get('tab') ? `?tab=${sp.get('tab')}` : ''}`}
         dsDuPhong={async () => {
           const r = await api.get<{ rows: { id: number; scoringMode: string | null }[] }>('/hoc-vien-lop/ids');   // PR-TD2-b: không tải cả trang
-          return { ids: r.rows.filter((c) => khungCua(c.scoringMode) === (thuong ? 'thuong' : 'ft')).map((c) => c.id), nhan: thuong ? 'Lớp thường' : 'Fast Track' };
+          return { ids: r.rows.filter((c) => khungCua(c.scoringMode) === (thuong ? 'thuong' : 'ft')).map((c) => c.id), nhan: thuong ? t('Lớp thường') : 'Fast Track' };
         }} />
       {data.status === 'finished' && (
         /* HL-10 (Q4): Quản lý của lớp vẫn sửa điểm (máy chủ `kiemLopKetThuc`) — "chỉ xem" chỉ cho người khác. */
-        <DaiChiXem>Lớp đã kết thúc{data.finishedAt ? ` ${tuanLich(data.finishedAt, homNay)}` : ''}{data.viewer.coTheMoLaiLop ? '' : ' — chỉ xem'}</DaiChiXem>
+        <DaiChiXem>{t('Lớp đã kết thúc')}{data.finishedAt ? ` ${tuanLich(data.finishedAt, homNay)}` : ''}{data.viewer.coTheMoLaiLop ? '' : ` — ${t('chỉ xem')}`}</DaiChiXem>
       )}
       <div className="flex flex-wrap items-end gap-2">
         <div className="min-w-0">
-          <div className="text-xs text-slate-500">Hồ sơ lớp</div>
-          <h1 className="m-0 text-lg font-semibold text-slate-100">{data.code} · {data.programme?.name ?? data.kind}</h1>
+          <div className="text-xs text-slate-500">{t('Hồ sơ lớp')}</div>
+          <h1 className="m-0 text-lg font-semibold text-slate-100">{data.code} · {dich(data.programme?.name ?? data.kind)}</h1>
         </div>
         <div className="flex-1" />
         <div className="flex flex-wrap items-center gap-1.5 max-sm:w-full">
-          {data.viewer.canEnterScores && <Link className="btn btn-sm no-underline max-sm:min-h-[44px] max-sm:flex-1" to={nhapDiem}>Nhập điểm</Link>}
+          {data.viewer.canEnterScores && <Link className="btn btn-sm no-underline max-sm:min-h-[44px] max-sm:flex-1" to={nhapDiem}>{t('Nhập điểm')}</Link>}
           {data.viewer.canReportCase && <button type="button" className="btn btn-sm max-sm:min-h-[44px] max-sm:flex-1" onClick={() => onViec('case')}>+ Case</button>}
-          <MenuDong muc={menu} nhan="Thao tác khác" />
+          <MenuDong muc={menu} nhan={t('Thao tác khác')} />
         </div>
       </div>
 
       <div className="flex flex-wrap items-center gap-2 text-xs text-slate-400">
         <span>{thongTin.map((x, i) => <Fragment key={i}>{i > 0 && ' · '}{x}</Fragment>)}</span>
-        {data.cuoiKhoa && <span className="tabular-nums text-slate-300">Final Test: {data.cuoiKhoa.du}/{data.cuoiKhoa.tong} em có đủ điểm{data.cuoiKhoa.canQl ? ` · ${data.cuoiKhoa.canQl} em Quản lý cân nhắc` : ''}</span>}
+        {data.cuoiKhoa && <span className="tabular-nums text-slate-300">{t('Final Test: {du}/{tong} em có đủ điểm', { du: data.cuoiKhoa.du, tong: data.cuoiKhoa.tong })}{data.cuoiKhoa.canQl ? ` · ${t('{n} em Quản lý cân nhắc', { n: data.cuoiKhoa.canQl })}` : ''}</span>}
         <span className="whitespace-nowrap rounded-md border px-2 py-0.5 text-slate-300" style={{ borderColor: 'var(--line)' }}>
-          <abbr title="Giáo viên chủ nhiệm" className="no-underline">GVCN</abbr>{' '}
-          {gvcn ? <TenGiaoVien id={gvcn.id} ten={gvcn.name} /> : <span className="text-amber-200">Chưa có GVCN</span>}
+          <abbr title={t('Giáo viên chủ nhiệm')} className="no-underline">{t('GVCN')}</abbr>{' '}
+          {gvcn ? <TenGiaoVien id={gvcn.id} ten={gvcn.name} /> : <span className="text-amber-200">{t('Chưa có GVCN')}</span>}
         </span>
       </div>
 
@@ -189,7 +190,7 @@ export function DauTrangLop({ data, onViec, onBanGiao }: {
               : <Nhan key={x.key} tone={toneNhanTuBadge(x.tone)} title={x.title}>{x.nhan}</Nhan>;
           })}
           {b.an.length > 0 && (
-            <MenuDong kieu="chip" bieuTuong={`+${b.an.length}`} nhan={`${b.an.length} việc khác của lớp`}
+            <MenuDong kieu="chip" bieuTuong={`+${b.an.length}`} nhan={t('{n} việc khác của lớp', { n: b.an.length })}
               muc={b.an.map((x) => { const bam = bamBadge(x); return { key: x.key, nhan: x.nhan, tieuDe: !bam, onChon: bam ?? (() => undefined) }; })} />
           )}
         </div>

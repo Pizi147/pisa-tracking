@@ -14,7 +14,7 @@
  * Đặc tả: `thiet-ke/HE_GIAO_DIEN.md` §4–§7.
  */
 import { MONTH_CODE, mondayOfDate, owningMonthOf, tuanKetQuaCuaHan, weekNumberInMonthOf } from './week.ts';
-import { dich, t } from '../i18n/index.ts';
+import { t } from '../i18n/index.ts';
 
 const DAY_MS = 86_400_000;
 const dayNumber = (iso: string) => Date.parse(`${iso.slice(0, 10)}T00:00:00Z`) / DAY_MS;
@@ -95,9 +95,9 @@ export function rateView(n: number, N: number): RateView {
 
 export function rateText(n: number, N: number, label?: string): string {
   const v = rateView(n, N);
-  if (v.kind === 'no-data') return 'Chưa có dữ liệu';
-  if (v.kind === 'invalid') return 'Số liệu không hợp lệ';
-  return `${v.n}/${v.N}${label ? ` ${label}` : ''} (${v.percent}%)${v.smallSample ? ' · mẫu nhỏ' : ''}`;
+  if (v.kind === 'no-data') return t('Chưa có dữ liệu');
+  if (v.kind === 'invalid') return t('Số liệu không hợp lệ');
+  return `${v.n}/${v.N}${label ? ` ${label}` : ''} (${v.percent}%)${v.smallSample ? t(' · mẫu nhỏ') : ''}`;
 }
 
 // ====================================================================== <KetQuaDot>
@@ -193,16 +193,16 @@ export function attemptProgressView(i: AttemptProgressInput): AttemptProgressVie
       /* Số tạm KHÔNG được nói như số cuối: mới chấm một phần, mức SOS còn có thể đổi khi đủ điểm. PR-N1 A2: chữ "tạm thời"
          nằm NGAY trong câu (không chỉ tooltip) + màu của mức SOS với viền nét đứt ở `KetQuaDot`. */
       const tam = { tamThoi: true, title: t('Tạm thời: {scored}/{required} {donVi} có điểm', { scored, required, donVi }) };
-      if (ratio) return { ...incomplete(t('{x}/{scored} {donVi} đạt · tạm thời', { x: scored - sos, scored, donVi }), 'danger'), ...tam };
+      if (ratio) return { ...incomplete(t('{dat}/{scored} {donVi} đạt · tạm thời', { dat: scored - sos, scored, donVi }), 'danger'), ...tam };
       return { ...incomplete(t('SOS {sos} tạm thời · {scored}/{required} {donVi}', { sos, scored, required, donVi }), 'danger'), ...tam };
     }
     if (sos === 0) {
       return incomplete(ratio
-        ? t('{scored}/{scored2} {donVi} đạt · còn {x} {donVi2}', { scored, scored2: scored, donVi, x: required - scored, donVi2: donVi })
-        : t('Các {donVi} đã chấm đều đạt · còn thiếu {x}', { donVi, x: required - scored }), 'muted');
+        ? t('{scored}/{scored} {donVi} đạt · còn {con} {donVi}', { scored, con: required - scored, donVi })
+        : t('Các {donVi} đã chấm đều đạt · còn thiếu {con}', { donVi, con: required - scored }), 'muted');
     }
     return incomplete(ratio
-      ? t('{scored}/{scored2} {donVi} đạt · còn {x} {donVi2}', { scored, scored2: scored, donVi, x: required - scored, donVi2: donVi })
+      ? t('{scored}/{scored} {donVi} đạt · còn {con} {donVi}', { scored, con: required - scored, donVi })
       : t('{scored}/{required} {donVi} có điểm', { scored, required, donVi }), 'muted');
   }
 
@@ -212,24 +212,24 @@ export function attemptProgressView(i: AttemptProgressInput): AttemptProgressVie
     return {
       /* PR-N1 A4: "x/y môn đạt" — không nhãn đỏ nào mở đầu bằng "Đạt" ("0/4 môn đạt · SOS 3"). */
       /* PR-LT2a (T58): lớp thường không có chữ SOS — chỉ `x/y môn đạt`. */
-      text: ratio ? t('{x}/{required} {donVi} đạt', { x: required - soChuaDatThat, required, donVi }) : t('Đã đủ điểm · SOS {sos}', { sos }),
+      text: ratio ? t('{dat}/{required} {donVi} đạt', { dat: required - soChuaDatThat, required, donVi }) : t('Đã đủ điểm · SOS {sos}', { sos }),
       tone: 'danger', overall: 'not-passed', overallText: ratio ? t('Chưa đạt') : t('Dưới kỳ vọng'), passBadge: false,
     };
   }
   if (passed === true) {
     return {
-      text: ratio ? t('{required}/{required2} {donVi} đạt', { required, required2: required, donVi }) : t('Đã đủ điểm · Đạt kỳ vọng'),
+      text: ratio ? t('{dat}/{required} {donVi} đạt', { dat: required, required, donVi }) : t('Đã đủ điểm · Đạt kỳ vọng'),
       tone: 'info', overall: 'passed', overallText: ratio ? t('Đạt') : t('Đạt kỳ vọng'), passBadge: true,
     };
   }
   if (passed === false) {
     return {
-      text: ratio ? t('Chưa đạt {required}/{required2} {donVi}', { required, required2: required, donVi }) : t('Đã đủ điểm · Overall dưới kỳ vọng'),
+      text: ratio ? t('Chưa đạt {required}/{required} {donVi}', { required, donVi }) : t('Đã đủ điểm · Overall dưới kỳ vọng'),
       tone: 'danger', overall: 'not-passed', overallText: ratio ? t('Chưa đạt') : t('Dưới kỳ vọng'), passBadge: false,
     };
   }
   return {
-    text: ratio ? t('{required}/{required2} {donVi} đã chấm', { required, required2: required, donVi }) : t('Đã đủ điểm · chưa có kỳ vọng để so'),
+    text: ratio ? t('{required}/{required} {donVi} đã chấm', { required, donVi }) : t('Đã đủ điểm · chưa có kỳ vọng để so'),
     tone: 'muted', overall: 'no-expectation',
     overallText: t('Chưa có kỳ vọng'), passBadge: false,
   };
@@ -265,20 +265,21 @@ export type DeadlineKind = (typeof DEADLINE_KINDS)[number];
 /** D-046: một chữ cho việc lập PA; nơi so khớp (việc học viên, ngăn Case) dùng hằng này, không so chuỗi hiển thị. */
 export const CHU_THEM_PA = 'Thêm PA';
 
-const DEADLINE_VIEC: Record<DeadlineKind, { viec: string; tien: 'hạn' | 'hạn hết T3' | 'hạn hết CN' | 'dự kiến kết thúc' }> = {
+/** PR-EN-c: `tien` là chữ tiền tố đã dịch ("hạn" → "due"). */
+const DEADLINE_VIEC: Record<DeadlineKind, { viec: string; tien: string }> = {
   /* PR-NEN Q16: giữ khoá `xac-minh-sos`, chữ đổi theo thuật ngữ chốt (như N1 Q4). */
-  'xac-minh-sos': { viec: 'Xác nhận', tien: 'hạn' },   // OV-12c: Xác nhận Case (Progress) · Xác nhận PA · Ghi nhận xét (MT cũ)
-  'lap-pa': { viec: CHU_THEM_PA, tien: 'hạn' },
-  'cap-nhat-pa': { viec: 'Kết quả PA', tien: 'hạn hết T3' },
-  'nhap-diem': { viec: 'Nhập điểm', tien: 'hạn' },
-  'du-kien-ket-thuc': { viec: 'Dự kiến kết thúc', tien: 'dự kiến kết thúc' },
+  'xac-minh-sos': { viec: t('Xác nhận'), tien: t('hạn') },   // OV-12c: Xác nhận Case (Progress) · Xác nhận PA · Ghi nhận xét (MT cũ)
+  'lap-pa': { viec: t('Thêm PA'), tien: t('hạn') },
+  'cap-nhat-pa': { viec: t('Kết quả PA'), tien: t('hạn hết T3') },
+  'nhap-diem': { viec: t('Nhập điểm'), tien: t('hạn') },
+  'du-kien-ket-thuc': { viec: t('Dự kiến kết thúc'), tien: t('dự kiến kết thúc') },
   /* PR-Ra Q9: quá hạn tính theo hạn HIỆN TẠI — hạn gốc/lý do dời hiện ở dòng phụ riêng (`dongHanDaDoi`), không qua `originalDue` ở đây. */
-  'viec-van-hanh': { viec: 'Việc', tien: 'hạn' },
-  duyet: { viec: 'Duyệt', tien: 'hạn' },
-  'xu-ly-vi-pham': { viec: 'Xử lý vi phạm', tien: 'hạn' },
-  'mini-test': { viec: 'Mini Test', tien: 'hạn' },
-  'phoi-hop': { viec: 'Xác nhận meeting CX', tien: 'hạn' },
-  'chot-len-ft': { viec: 'Chốt lộ trình', tien: 'hạn hết CN' },
+  'viec-van-hanh': { viec: t('Việc'), tien: t('hạn') },
+  duyet: { viec: t('Duyệt'), tien: t('hạn') },
+  'xu-ly-vi-pham': { viec: t('Xử lý vi phạm'), tien: t('hạn') },
+  'mini-test': { viec: 'Mini Test', tien: t('hạn') },
+  'phoi-hop': { viec: t('Xác nhận meeting CX'), tien: t('hạn') },
+  'chot-len-ft': { viec: t('Chốt lộ trình'), tien: t('hạn hết CN') },
 };
 
 /** "quá hạn 15 ngày" · gọn: "15 ngày" · không biết số ngày: "quá hạn". */
@@ -351,11 +352,11 @@ export function kyGhiKetQua(han: string, homNay: string): string {
  */
 export function nhanTuanGhiKetQua(actionDue: string | null, homNay: string): { tieuDe: string; soKy: number } {
   if (!validIso(actionDue)) return { tieuDe: t('Kết quả kỳ này'), soKy: 1 };
-  if (homNay < congNgay(actionDue, -15)) return { tieuDe: t('Kết quả {x}', { x: kyGhiKetQua(congNgay(actionDue, -14), homNay) }), soKy: 1 };
+  if (homNay < congNgay(actionDue, -15)) return { tieuDe: t('Kết quả {ky}', { ky: kyGhiKetQua(congNgay(actionDue, -14), homNay) }), soKy: 1 };
   const soKy = homNay < actionDue ? 1 : Math.floor(daysBetween(actionDue, homNay) / 14) + 1;
-  if (soKy === 1) return { tieuDe: t('Kết quả {x}', { x: kyGhiKetQua(actionDue, homNay) }), soKy };
+  if (soKy === 1) return { tieuDe: t('Kết quả {ky}', { ky: kyGhiKetQua(actionDue, homNay) }), soKy };
   const dau = tuanKetQuaCuaHan(actionDue);
-  return { tieuDe: t('Kết quả {x} (ghi bù {soKy} kỳ)', { x: khoangTuan(dau, congNgay(dau, 14 * soKy - 7), homNay), soKy }), soKy };
+  return { tieuDe: t('Kết quả {ky} (ghi bù {soKy} kỳ)', { ky: khoangTuan(dau, congNgay(dau, 14 * soKy - 7), homNay), soKy }), soKy };
 }
 
 /**
@@ -363,23 +364,21 @@ export function nhanTuanGhiKetQua(actionDue: string | null, homNay: string): { t
  * Quá hạn đếm số ngày từ hạn GỐC cho mọi loại, kể cả `cap-nhat-pa` (mockup 17 #1, #21).
  */
 /** C-004: một chữ cho "việc không đặt hạn"; nơi so khớp (hồ sơ HV, thẻ kỹ năng) dùng hằng này, không so chuỗi hiển thị. */
-export const CHUA_CO_HAN = 'Chưa có hạn';
+export const CHUA_CO_HAN = t('Chưa có hạn');
 
 export function deadlineView(i: DeadlineInput): DeadlineView {
-  /* PR-EN: hằng (`CHU_THEM_PA`, `CHUA_CO_HAN`) giữ chữ Việt để so khớp với máy chủ — chỉ chữ trả ra màn được dịch. */
-  const viec = dich(DEADLINE_VIEC[i.kind].viec);
-  const tien = t(DEADLINE_VIEC[i.kind].tien);
+  const { viec, tien } = DEADLINE_VIEC[i.kind];   // bảng đã dịch theo tiếng của trang (EN-c)
   if (!validIso(i.due)) {
     return {
-      text: `${viec} · ${t(CHUA_CO_HAN)}`, tone: 'neutral', daysOverdue: null, title: null,
-      viec, han: t(CHUA_CO_HAN), homNay: false, quaHan: null, hen: null, con: null,
+      text: `${viec} · ${CHUA_CO_HAN}`, tone: 'neutral', daysOverdue: null, title: null,
+      viec, han: CHUA_CO_HAN, homNay: false, quaHan: null, hen: null, con: null,
     };
   }
   /* C-khác (Dọn-b 14a): hạn có giờ (ISO UTC) đổi sang NGÀY giờ Việt Nam trước khi so — 18:30Z ngày 21 là 01:30 ngày 22 ở VN. */
   const ngayVn = (s: string) => ngayTheoGioVN(s)!;   // đã qua validIso
   const han = `${tien} ${shortDate(ngayVn(i.due), i.today)}`;
   /* OV-12a: hạn Thứ Ba là hạn của KỲ hai tuần trước nó — "Ghi kết quả W3–W4 SEP · hạn hết T3 29/09". */
-  const viecHien = i.kind === 'cap-nhat-pa' ? t('Kết quả {x}', { x: kyGhiKetQua(i.due, i.today) }) : viec;
+  const viecHien = i.kind === 'cap-nhat-pa' ? t('Kết quả {ky}', { ky: kyGhiKetQua(i.due, i.today) }) : viec;
   const base = ngayVn(validIso(i.originalDue) ? i.originalDue : i.due);
   const duKien = i.kind === 'du-kien-ket-thuc';
   let daysOverdue: number | null = null;

@@ -50,7 +50,7 @@ export function BangGopYTuan({ classId, maLop, laFt, tuan, onTuan }: {
   if (!data || !roster.data) return <Skeleton rows={4} />;
   const rows = roster.data.filter((s) => !s.archived);
   if (!rows.length) return <Empty title={t('Lớp chưa có học viên')} />;
-  const ds: NguCanhDs = { loai: 'hoc-vien', ids: rows.map((s) => s.id), nhan: maLop ? t('Lớp {maLop}', { maLop }) : t('Lớp') };
+  const ds: NguCanhDs = { loai: 'hoc-vien', ids: rows.map((s) => s.id), nhan: maLop ? t('Lớp {lop}', { lop: maLop }) : t('Lớp') };
   const xem = data.tuan[0];
   const tuanCu = data.tuan[1];
   const oCua = (sid: number, skill: string, w: string) => data.o.find((x) => x.studentId === sid && x.skill === skill && x.tuan === w) ?? null;
@@ -105,14 +105,14 @@ export function BangGopYTuan({ classId, maLop, laFt, tuan, onTuan }: {
   const thanh = (dem = true) => (
     <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
       <span className="inline-flex items-center gap-1" role="group" aria-label={t('Chọn tuần')}>
-        <button type="button" className="btn btn-ghost min-h-[44px] min-w-[44px] justify-center sm:min-h-0" aria-label={t('Tuần trước: {x}', { x: data.tuan[1]?.code ?? '' })}
+        <button type="button" className="btn btn-ghost min-h-[44px] min-w-[44px] justify-center sm:min-h-0" aria-label={t('Tuần trước: {tuan}', { tuan: data.tuan[1]?.code ?? '' })}
           onClick={() => doiTuan(data.truoc)}>‹</button>
         <b className="min-w-[4.5rem] text-center text-sm font-semibold tabular-nums text-slate-100">{xem.code}</b>
         <button type="button" className="btn btn-ghost min-h-[44px] min-w-[44px] justify-center sm:min-h-0" aria-label={t('Tuần sau')} disabled={!data.sau}
           onClick={() => data.sau && doiTuan(data.sau)}>›</button>
       </span>
       {dem && <span className="text-[13px] text-slate-400">
-        {soCo ? <>{t('Có góp ý:')}{' '}<b className="font-semibold tabular-nums text-slate-200">{t('{a}/{b} em', { a: soCo, b: rows.length })}</b></> : t('Chưa có góp ý {code}', { code: xem.code })}
+        {soCo ? <>{t('Có góp ý:')} <b className="font-semibold tabular-nums text-slate-200">{t('{a}/{b} em', { a: soCo, b: rows.length })}</b></> : t('Chưa có góp ý {tuan}', { tuan: xem.code })}
       </span>}
     </div>
   );
@@ -123,10 +123,10 @@ export function BangGopYTuan({ classId, maLop, laFt, tuan, onTuan }: {
       <div className="space-y-2">
         {thanh(false)}
         <div className="surface-2 flex flex-wrap items-center gap-3 rounded-lg px-4 py-3 text-sm text-slate-300">
-          <span>{t('Chưa có góp ý {code}', { code: xem.code })}</span>
+          <span>{t('Chưa có góp ý {tuan}', { tuan: xem.code })}</span>
           {data.ganNhat && (
             <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => doiTuan(data.ganNhat!.weekStart)}>
-              Xem {data.ganNhat.code} · {data.ganNhat.soEm} em
+              {t('Xem {tuan} · {n} em', { tuan: data.ganNhat.code, n: data.ganNhat.soEm })}
             </button>
           )}
         </div>
@@ -136,7 +136,7 @@ export function BangGopYTuan({ classId, maLop, laFt, tuan, onTuan }: {
 
   const nutMo = (s: Em) => (
     <button type="button" className="btn btn-ghost btn-sm min-h-[44px] min-w-[44px] justify-center px-1 sm:min-h-0 sm:min-w-0" aria-expanded={mo.has(s.id)}
-      aria-label={mo.has(s.id) ? t('Thu 4 tuần gần nhất của {fullName}', { fullName: s.fullName }) : t('Mở 4 tuần gần nhất của {fullName}', { fullName: s.fullName })} onClick={() => doiMo(s.id)}>{mo.has(s.id) ? '▾' : '▸'}</button>
+      aria-label={mo.has(s.id) ? t('Thu 4 tuần gần nhất của {ten}', { ten: s.fullName }) : t('Mở 4 tuần gần nhất của {ten}', { ten: s.fullName })} onClick={() => doiMo(s.id)}>{mo.has(s.id) ? '▾' : '▸'}</button>
   );
 
   if (dienThoai) {
@@ -148,7 +148,7 @@ export function BangGopYTuan({ classId, maLop, laFt, tuan, onTuan }: {
             <TheDong key={s.id} className={s.status !== 'active' ? 'row-muted' : ''}
               dau={<>{ten(s)}{chip(s)}</>}
               dong={[
-                ...data.cot.map((c) => ({ nhan: c.nhan, noiDung: o(s, c) })),
+                ...data.cot.map((c) => ({ nhan: dich(c.nhan), noiDung: o(s, c) })),
                 ...(mo.has(s.id) ? tuanMo(s.id).map(({ w, o: dsO }) => ({
                   nhan: w.code,
                   noiDung: <span className="block space-y-1">{data.cot.map((c, i) => <span key={c.skill} className="block"><b className="font-semibold text-slate-400">{dich(c.nhan)}</b> <ODoc o={dsO[i]} dayDu /></span>)}</span>,
