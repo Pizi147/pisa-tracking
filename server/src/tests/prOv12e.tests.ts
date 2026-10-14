@@ -16,6 +16,11 @@ export async function runPrOv12eTests(t: YThucTestKit) {
   const cases: any = await import('../cases/cases.ts');
   const { loadPrincipal } = await import('../permissions.ts');
   const { xoaNho } = await import('../platform/nguCanhRequest.ts');
+  const fs: any = await import('node:fs');
+  const path: any = await import('node:path');
+  const { fileURLToPath }: any = await import('node:url');
+  const GOC = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
+  const doc = (f: string): string => fs.readFileSync(path.join(GOC, f), 'utf8');
   console.log('\nPR-OV12e · hệ panel v3 · chip hạn 3 mức · Quyết định 3 nút · panel số liệu mở rộng dòng');
 
   const thu = <T>(fn: () => T): T => {
@@ -51,6 +56,22 @@ export async function runPrOv12eTests(t: YThucTestKit) {
     }
     const cuoi = dm.nhomQuyetDinh(dm.quyetDinhChoPa({ preset: true }, true));
     assert(cuoi.tren.length === 0 && cuoi.dieuChinh.length === 0, 'lần cuối không có Quyết định');
+  });
+
+  check('OV12e-2c · không mất chữ đang gõ: "← Danh sách / ← tên em / ← Case" (nút quayLai của KhungPanel) hỏi trước khi panel đang sửa dở (chan.daSua); Hoàn thành Case báo daSua', () => {
+    const kp = doc('web/src/ui/KhungPanel.tsx');
+    assert(/const veLai = \(\) => \{\s*if \(daSua && !window\.confirm\(/.test(kp) && /onClick=\{veLai\}>← \{quayLai\.nhan\}/.test(kp), 'quayLai chưa qua veLai');
+    assert(/tieuDe="Hoàn thành Case"[\s\S]{0,200}daSua:/.test(doc('web/src/modules/cases/ThaoTacCase.tsx')), 'Hoàn thành Case thiếu daSua');
+  });
+
+  check('OV12e-1b · ngưỡng hạn một chỗ: panel số liệu, Ngăn Case chỉ đọc, thẻ Chờ duyệt, bảng kỹ năng, thẻ kỹ năng, Han không tự so ngày / chỉ "hôm nay" mới vàng', () => {
+    for (const f of ['web/src/ui/SoLieu.tsx', 'web/src/modules/students/NganCase.tsx']) {
+      assert(!/\.slice\(0, 10\) < homNay|\.han < homNay|86_400_000/.test(doc(f)), `${f} còn tự tính quá hạn`);
+    }
+    assert(/hanV!\.ganHan \? 'text-soon'/.test(doc('web/src/modules/duyet/TheYeuCau.tsx')), 'TheYeuCau');
+    assert(/v\.ganHan \? <span className="font-semibold text-soon">/.test(doc('web/src/modules/cases/SkillBoard.tsx')), 'SkillBoard');
+    assert(/han\.ganHan \? 'font-semibold text-soon'/.test(doc('web/src/modules/cases/TheKyNang.tsx')), 'TheKyNang');
+    assert(/v\.ganHan && !v\.homNay/.test(doc('web/src/ui/Han.tsx')), 'Han');
   });
 
   check('OV12e-2b · ⋯ cạnh tên em: "Xác nhận xử lý" ngay sau Ghi vi phạm khi em cần xử lý Ý thức, không có thì không hiện', () => {
@@ -114,6 +135,31 @@ export async function runPrOv12eTests(t: YThucTestKit) {
     const xong = metrics.rowsFor('case', [paCho.case_id], 'case-mo', P.mbManager)[0];
     assert(!xong.han && !xong.viec, `Case xong: han ${xong.han} · việc ${JSON.stringify(xong.viec)}`);
   }));
+
+  check('OV12e-4b · cờ "làm được" của dòng Ghi kết quả = `ghiDuoc` của Ngăn Case (rà #395: u9 PA 15, u7 PA 10 thấy nút mà 403; GVCN với PA bổ trợ 55, 61, 62, 69–72 không thấy)', () => {
+    const pas = all(`SELECT iv.id, iv.case_id FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id
+      WHERE iv.status IN ('planned', 'started') AND iv.action_due IS NOT NULL AND sc.status != 'done' AND sc.student_id IS NOT NULL ORDER BY iv.id`);
+    assert(pas.length > 5, 'bộ demo thiếu PA đang chạy');
+    const vai = [P.mbManager, P.coreTeacher, P.subjectTeacher, loadPrincipal(7), loadPrincipal(9), P.lrTeacher, P.sTeacher, P.normalCoreTeacher];
+    let soSo = 0;
+    const lech: string[] = [];
+    for (const p of vai) {
+      const ghi = (caseId: number, paId: number) => {
+        try { return !!cases.caseDetail(p, caseId).interventions.find((x: any) => x.id === paId)?.ghiDuoc; } catch (e: any) { if (e?.status === 403) return false; throw e; }
+      };
+      for (const d of metrics.rowsFor('phuong-an', pas.map((r) => r.id), 'pa-can-cap-nhat', p)) {
+        if (d.viec?.loai !== 'ghi-ket-qua') continue;
+        soSo++;
+        if (d.viec.lam !== ghi(d.viec.caseId, d.viec.paId)) lech.push(`u${p.userId} PA ${d.viec.paId}: dòng ${d.viec.lam}`);
+      }
+      for (const d of metrics.rowsFor('case', [...new Set(pas.map((r) => r.case_id))], 'case-mo', p)) {
+        if (d.viec?.loai !== 'ghi-ket-qua') continue;
+        soSo++;
+        if (d.viec.lam !== ghi(d.viec.caseId, d.viec.paId)) lech.push(`u${p.userId} Case ${d.id} PA ${d.viec.paId}: dòng ${d.viec.lam}`);
+      }
+    }
+    assert(soSo > 20 && !lech.length, `${soSo} dòng so · lệch: ${lech.slice(0, 12).join(' · ')}`);
+  });
 
   check('OV12e-5 · thao tác đúng vai: Xác nhận PA bằng GV môn khác → 403, QL → được; dòng bài mang Nhập điểm (lớp · lượt · kỹ năng)', () => thu(() => {
     assert(paCho, 'bộ demo thiếu Case MT có PA quy chế chờ xác nhận');

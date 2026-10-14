@@ -209,7 +209,7 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
           {cho ? (
             tang1 && (
               <div className="tabular-nums">
-                <div className={`text-sm font-bold ${hanV!.tone === 'overdue' ? 'text-late' : hanV!.homNay ? 'text-soon' : 'text-slate-100'}`}>{tang1}</div>
+                <div className={`text-sm font-bold ${hanV!.tone === 'overdue' ? 'text-late' : hanV!.ganHan ? 'text-soon' : 'text-slate-100'}`}>{tang1}</div>
                 <div className="text-[12px] text-slate-400">{hanV!.han}</div>
               </div>
             )

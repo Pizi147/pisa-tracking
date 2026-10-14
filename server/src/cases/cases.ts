@@ -3878,6 +3878,19 @@ const quyenPaTheoVaiTro = (p: Principal, iv: any, c: any) => laBoTro(iv)
   ? quyenBoTro(p, { ...iv, ctx: { classId: c.class_id ?? null, studentId: c.eff_student_id ?? null, topic: c.topic ?? null } }) || laNguoiGiuMiniTestCuaPa(p, iv)
   : can(p, PERMISSIONS.SOS_EDIT, sosEditCtx(c));
 
+/**
+ * OV-12e: `ghiDuoc` của NHIỀU PA một lần (dòng panel số liệu) — CÙNG luật `caseDetail` (người giữ việc || `quyenPaTheoVaiTro`), ngữ cảnh lấy từ cột
+ * đã JOIN (`class_id` = lớp hiện tại của em trước, lớp của lượt sau — như `loadCase`). Người giữ việc theo lô.
+ * shortcut: PA bổ trợ miễn phí (`mt:`) mà người xem không có quyền theo vai hỏi thêm `laNguoiGiuMiniTestCuaPa` từng PA (hiếm: chỉ GVBM giữ Mini Test) — gom lô nếu đo thấy chậm.
+ */
+export function ghiDuocPaMany(p: Principal, rows: readonly {
+  id: number; kind: string; performer_user_id: number | null; case_id: number; nhom_bo_tro: string | null;
+  topic: string | null; class_id: number | null; eff_student_id: number | null; owner_user_id: number | null;
+}[]): Map<number, boolean> {
+  const giu = nguoiGiuKetQua(rows.map((r) => ({ id: r.id, topic: r.topic, nhomBoTro: r.nhom_bo_tro, classId: r.class_id, ownerUserId: r.owner_user_id })), demoToday());
+  return new Map(rows.map((r) => [r.id, giu.get(r.id) === p.userId || quyenPaTheoVaiTro(p, r, r)]));
+}
+
 /** PR-PA: quyền ghi Kết quả / Sửa PA của MỘT PA — một chỗ. Người giữ việc (§8) luôn ghi được, dù không qua quyền theo vai trò. */
 function kiemQuyenPa(p: Principal, iv: any, c: any, msg = 'Bạn không có quyền cập nhật kết quả của Case này.') {
   if (quyenPaTheoVaiTro(p, iv, c) || giuCuaCase(c, [iv]).get(iv.id) === p.userId) return;

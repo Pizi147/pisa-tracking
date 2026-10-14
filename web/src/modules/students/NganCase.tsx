@@ -8,7 +8,7 @@ import { useLoiForm } from '../../ui/loiForm.tsx';
 import { Nhan } from '../../ui/Nhan.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { caseStatusLabel } from '../../lib/format.ts';
-import { INTERVENTION_KIND_LABEL, chuPhuHuynh, nhanQuaHan, outcomeLabelFor, tuanLich } from '@shared/domain/index.ts';
+import { INTERVENTION_KIND_LABEL, chuPhuHuynh, deadlineView, nhanQuaHan, type DeadlineKind, outcomeLabelFor, tuanLich } from '@shared/domain/index.ts';
 import { useSession } from '../../lib/session.tsx';
 import { ThanCase, tenNganCase, type CaseDetail, type ViewCase } from '../cases/CasePanel.tsx';
 import { GhiKetQuaPanel, SuaKetQuaPanel } from '../cases/CapNhatTuan.tsx';
@@ -104,13 +104,13 @@ export function NganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose
     const iv = (data.interventions ?? []).find((x: any) => x.id === view.paId);
     if (iv) {
       const truoc = (data.followups ?? []).find((f: any) => f.interventionId === iv.id && f.outcome);
-      const tenLoai = INTERVENTION_KIND_LABEL[iv.kind as keyof typeof INTERVENTION_KIND_LABEL] ?? iv.kind;
+      const tenLoai = dich(INTERVENTION_KIND_LABEL[iv.kind as keyof typeof INTERVENTION_KIND_LABEL] ?? iv.kind);
       return (
         <GhiKetQuaPanel key={iv.id} {...chung} onSaved={xong} onThemPa={() => setView({ loai: 'them-pa' })}
           em={em} ngCanh={[tenLoai, data.categoryLabel].filter(Boolean).join(' · ')}
           boiCanh={[
             [t('Phương án'), [iv.description || tenLoai, iv.performer, iv.mocChu].filter(Boolean).join(' · ')],
-            [t('Kết quả kỳ trước'), truoc ? <><b className="font-semibold text-slate-300">{outcomeLabelFor(truoc.outcome)}</b> · {tuanLich(truoc.observedOn, homNay)}</> : null],
+            [t('Kết quả kỳ trước'), truoc ? <><b className="font-semibold text-slate-300">{dich(outcomeLabelFor(truoc.outcome))}</b> · {tuanLich(truoc.observedOn, homNay)}</> : null],
             nguyenNhan,
           ]}
           pa={{
@@ -178,7 +178,7 @@ export function NganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose
   const vw = data.viewer;
   if (!vw.canEdit && !vw.canApprove && !vw.canClose && !vw.coTheXacNhanCase && !vw.coTheMoLai && !vw.coTheSua) {
     const vt = data.viecTiep ?? null;
-    const tre = vt?.han && vt.han < homNay ? Math.round((Date.parse(homNay) - Date.parse(vt.han.slice(0, 10))) / 86_400_000) : 0;
+    const hv3 = vt?.han ? deadlineView({ kind: (vt.loaiHan ?? 'xac-minh-sos') as DeadlineKind, due: vt.han, today: homNay }) : null;   // ngưỡng một chỗ
     const paChay = (data.interventions ?? []).find((x: any) => x.status === 'planned' || x.status === 'started');
     const ph = data.student?.phuHuynh ?? null;
     const laTvvCx = vai.includes('consultant') || vai.includes('cx');
@@ -188,12 +188,13 @@ export function NganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose
           <p className="m-0 text-sm leading-relaxed text-slate-200">
             <b className="font-bold">{data.trangThaiV4?.chu ?? caseStatusLabel(data.status)}</b>
             {vt && vt.chu !== data.trangThaiV4?.chu && <> · {vt.chu}</>}
-            {vt?.han && (tre > 0 ? <span className="font-semibold text-late"> · ⚠ {nhanQuaHan(tre)}</span> : <> · {t('hạn {ngay}', { ngay: ngan(vt.han) })}</>)}
+            {vt?.han && hv3 && (hv3.tone === 'overdue' ? <span className="font-semibold text-late"> · ⚠ {nhanQuaHan(hv3.daysOverdue)}</span>
+              : <span className={hv3.ganHan ? 'font-semibold text-soon' : undefined}> · {t('hạn {ngay}', { ngay: ngan(vt.han) })}</span>)}
           </p>
           <BoiCanh
             dong={[
               nguyenNhan,
-              [t('Phương án'), paChay ? [INTERVENTION_KIND_LABEL[paChay.kind as keyof typeof INTERVENTION_KIND_LABEL] ?? paChay.kind, paChay.performer, paChay.mocChu].filter(Boolean).join(' · ') : null],
+              [t('Phương án'), paChay ? [dich(INTERVENTION_KIND_LABEL[paChay.kind as keyof typeof INTERVENTION_KIND_LABEL] ?? paChay.kind), paChay.performer, paChay.mocChu].filter(Boolean).join(' · ') : null],
               [t('Kết quả gần nhất'), ketQuaGanNhat(data)],
             ]}
             them={<ThanCase data={data} onViec={setView} />} />

@@ -113,7 +113,7 @@ function KhoiCase({ c, onMoCase }: { c: CaseCard; onMoCase: (caseId: number, o?:
               {/* OV-11d (CA2-9): chữ hạn cùng luật bảng máy tính (`DongHan`): quá hạn ⚠ · hôm nay · hạn hết dd/mm. */}
               {han?.quaHan ? <span className="inline-flex items-center gap-1 font-semibold text-bad"> · <IconCanhBao />{han.quaHan}</span>
                 : han?.homNay ? <span className="font-semibold text-soon"> · hôm nay</span>
-                : han && han.han !== CHUA_CO_HAN && <span className="text-slate-400"> · {han.han}</span>}
+                : han && han.han !== CHUA_CO_HAN && <span className={han.ganHan ? 'font-semibold text-soon' : 'text-slate-400'}> · {han.han}</span>}
             </>}
           </span>
           {viecMo && (viecMo.viec === 'ghi-ket-qua' ? !!c.plans.find((p) => p.id === viecMo.paId)?.ghiDuoc : v.chu === 'Xác nhận Case' ? c.coTheXacNhanCase : c.canEdit)

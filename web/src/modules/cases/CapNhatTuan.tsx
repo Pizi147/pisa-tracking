@@ -272,9 +272,12 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
     }
     if (d === 'ask_manager') {
       return (
-        <Truong nhan={t('Cần Quản lý giúp gì')} batBuoc loi={loiCua('ly-do')}>
-          <textarea className="field w-full" {...o('ly-do')} rows={2} value={reason} onChange={(e) => setReason(e.target.value)} />
-        </Truong>
+        <div className="space-y-2">
+          <Truong nhan={t('Cần Quản lý giúp gì')} batBuoc loi={loiCua('ly-do')}>
+            <textarea className="field w-full" {...o('ly-do')} rows={2} value={reason} onChange={(e) => setReason(e.target.value)} />
+          </Truong>
+          <p className="m-0 text-xs text-slate-400">{t('Gửi Quản lý · trả lời trong 5 ngày · xem ở Yêu cầu của tôi')}</p>
+        </div>
       );
     }
     if (d === 'end') {

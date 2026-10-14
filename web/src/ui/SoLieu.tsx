@@ -1,6 +1,6 @@
 import { Suspense, lazy, useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { INTERVENTION_KIND_LABEL, METRIC_UNIT_LABEL, metricById, nhanQuaHan, thamSoCt, type ChiSo, type ChuongTrinh, type DeadlineKind } from '@shared/domain/index.ts';
+import { INTERVENTION_KIND_LABEL, METRIC_UNIT_LABEL, deadlineView, metricById, nhanQuaHan, thamSoCt, type ChiSo, type ChuongTrinh, type DeadlineKind } from '@shared/domain/index.ts';
 import { useApi } from '../lib/useApi.ts';
 import { api, invalidate, type ApiError } from '../lib/api.ts';
 import { useSession } from '../lib/session.tsx';
@@ -61,18 +61,12 @@ function CachTinh({ cs }: { cs: ChiSo }) {
   );
 }
 
-/** Người giữ việc · hạn của một dòng panel — 12 px (Q31-4); quá hạn nói bằng chữ. `chiHan`: chỉ phần hạn, nối trong câu tình trạng. */
-function DongNguoiHan({ nguoi, han, chiHan }: { nguoi: string | null; han: string | null; chiHan?: boolean }) {
+/** Hạn trong câu tình trạng của dòng: quá hạn "⚠ quá hạn n ngày" · còn ≤ 3 ngày vàng · xa hơn thường — ngưỡng từ `deadlineView` (một chỗ). */
+function HanDong({ han, loai }: { han: string; loai?: DeadlineKind | null }) {
   const { homNay, ngan } = useNgayNghiepVu();
-  const tre = han && han.slice(0, 10) < homNay ? Math.round((Date.parse(homNay) - Date.parse(han.slice(0, 10))) / 86_400_000) : 0;
-  const phanHan = han && (tre > 0 ? <span className="font-semibold text-late">⚠ {nhanQuaHan(tre)}</span> : <>{t('hạn {ngay}', { ngay: ngan(han) })}</>);
-  if (chiHan) return <span className="tabular-nums">{phanHan}</span>;
-  return (
-    <span className="mt-0.5 block text-xs tabular-nums text-slate-400">
-      {nguoi ?? t('chưa có người phụ trách')}
-      {han && <> · {phanHan}</>}
-    </span>
-  );
+  const v = deadlineView({ kind: loai ?? 'viec-van-hanh', due: han, today: homNay });
+  return v.tone === 'overdue' ? <span className="font-semibold tabular-nums text-late">⚠ {nhanQuaHan(v.daysOverdue)}</span>
+    : <span className={`tabular-nums ${v.ganHan ? 'font-semibold text-soon' : ''}`}>{t('hạn {ngay}', { ngay: ngan(han) })}</span>;
 }
 
 /* Việc dài của dòng (Ngăn Case, Nhập điểm, Vận hành) chỉ tải khi bấm — trang có ô số không kéo cả cây panel làm việc vào lần tải đầu. */
@@ -107,7 +101,7 @@ export function NganDanhSach({ tieuDe, dv, data, loading, error, reload, onDong,
   }, [lam, mo]);
 
   const hanCua = (r: DongSoLieu) => r.viec ? r.viec.han : r.han ?? null;
-  const tre = (r: DongSoLieu) => { const h = hanCua(r); return !!h && h.slice(0, 10) < homNay; };
+  const tre = (r: DongSoLieu) => { const h = hanCua(r); return !!h && deadlineView({ kind: r.viec?.loaiHan ?? 'viec-van-hanh', due: h, today: homNay }).tone === 'overdue'; };
   const goc = data?.rows ?? [];
   const xep = [...goc.filter(tre), ...goc.filter((r) => !tre(r))];   // quá hạn lên đầu, giữ thứ tự máy chủ trong từng nhóm
   const hien: (DongSoLieu & { xong?: string })[] = [...xep];
@@ -193,7 +187,7 @@ export function NganDanhSach({ tieuDe, dv, data, loading, error, reload, onDong,
               /* Không làm được: câu tình trạng (chữ, không khối màu, không nút). */
               <p className="m-0 text-sm leading-relaxed text-slate-200">
                 {[r.tinhTrang ? dich(r.tinhTrang) : r.sub, r.nguoi].filter(Boolean).join(' · ')}
-                {hanCua(r) && <> · <DongNguoiHan nguoi={null} han={hanCua(r)} chiHan /></>}
+                {hanCua(r) && <> · <HanDong han={hanCua(r)!} loai={r.viec?.loaiHan} /></>}
               </p>
             )}
             <Link to={r.href} onClick={onDong} className="link w-fit text-[13px] font-semibold max-sm:inline-flex max-sm:min-h-[44px] max-sm:items-center">

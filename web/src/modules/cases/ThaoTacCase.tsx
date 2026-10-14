@@ -90,7 +90,7 @@ export function ThemPaPanel({ caseId, studentId, coPaBatBuoc, hocVien, lop, quay
 
   const nut = (
     <button type="button" className="btn btn-primary min-h-[40px] px-4 font-bold" disabled={busy} onClick={luu}>
-      {busy ? t('Đang lưu…') : deXuat ? 'Gửi Quản lý duyệt' : t('Thêm PA')}
+      {busy ? t('Đang lưu…') : deXuat ? t('Gửi Quản lý duyệt') : t('Thêm PA')}
     </button>
   );
   const daSua = !!(v.description.trim() || status === 'completed');
@@ -266,6 +266,7 @@ export function HoanThanhCasePanel({ caseId, category, categoryLabel, ratio, paG
   return (
     <KhungPanel tieuDe="Hoàn thành Case" hocVien={hocVien} lop={lop} quayLai={quayLai} onDong={onClose}
       chan={{
+        daSua: !!note.trim() || Object.keys(metrics).length > 0,   // "← …" hỏi trước khi bỏ chữ đang gõ (rà #395)
         conThieu: lf.conThieu(loi),
         chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={luu}>Hoàn thành Case</button>,
       }}>

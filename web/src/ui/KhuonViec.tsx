@@ -63,7 +63,7 @@ export function dauViec({ han, em, lop, ngCanh }: {
 }
 
 /**
- * CHÂN v3 — trạng thái lưu MỘT dòng, chữ + ký hiệu (không chỉ màu): Chưa lưu (Huỷ sửa) · Đang lưu… · ⚠ Chưa lưu được (Thử lại). Chữ đã gõ giữ nguyên
+ * CHÂN v3 — trạng thái lưu MỘT dòng, chữ + ký hiệu (không chỉ màu): Chưa lưu (Huỷ sửa) · Đang lưu… · ⚠ Không lưu được (Thử lại). Chữ đã gõ giữ nguyên
  * khi lỗi. "Còn thiếu n ô" do `KhungPanel chan.conThieu` vẽ.
  */
 export function TrangThaiLuu({ tt, loi, onHuy, onThuLai }: { tt: 'nhap' | 'dang' | 'loi' | null; loi?: string | null; onHuy?: () => void; onThuLai?: () => void }) {

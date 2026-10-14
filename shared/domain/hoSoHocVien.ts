@@ -371,7 +371,7 @@ export function chuKetQuaPa(nhan: string | null, ngay: string | null, homNay: st
  */
 export function viecTiepHang(cases: readonly {
   status: string; viecTiep?: { chu: string; loaiHan: DeadlineKind | null; han: string | null } | null; nguoiLam?: { id: number | null; ten: string | null } | null;
-}[], homNay: string): { viec: string; han: string | null; quaHan: string | null; homNay: boolean; nguoi: string | null; title: string } | null {
+}[], homNay: string): { viec: string; han: string | null; quaHan: string | null; homNay: boolean; ganHan: boolean; nguoi: string | null; title: string } | null {
   const c = cases.filter((x) => x.status !== 'done' && x.viecTiep)
     .sort((a, b) => (a.viecTiep!.han ?? '9999').localeCompare(b.viecTiep!.han ?? '9999'))[0];
   if (!c) return null;
@@ -379,7 +379,7 @@ export function viecTiepHang(cases: readonly {
   const d = v.loaiHan && v.han ? deadlineView({ kind: v.loaiHan, due: v.han, today: homNay }) : null;
   const nguoi = c.nguoiLam?.ten ?? null;
   return {
-    viec: v.chu, han: d && d.han !== CHUA_CO_HAN ? d.han : null, quaHan: d?.quaHan ?? null, homNay: !!d?.homNay, nguoi,
+    viec: v.chu, han: d && d.han !== CHUA_CO_HAN ? d.han : null, quaHan: d?.quaHan ?? null, homNay: !!d?.homNay, ganHan: !!d?.ganHan, nguoi,
     title: [d && d.han !== CHUA_CO_HAN ? d.text : v.chu, nguoi].filter(Boolean).join(' · '),
   };
 }

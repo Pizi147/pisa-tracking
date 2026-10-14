@@ -229,7 +229,7 @@ export async function runPrDonBTests(t: YThucTestKit) {
     assert(sotBac.length === 0, sotBac.join(', '));
     for (const f of ['web/src/modules/yThuc/StudentYThucSection.tsx', 'web/src/modules/yThuc/ClassYThucCard.tsx']) assert(/<ThangYThuc[\s\S]{0,400}onXuLy=/.test(doc(f)), f);
     /* OV-12e (mockup panel v3 §8, chủ SP 14/10): trong panel "Đề xuất QL duyệt" là nút chữ ngay sau nút chính Xác nhận xử lý (khối Cần làm). */
-    assert(/cheDo === 'xu-ly' && d\.canManage[\s\S]{0,300}Đề xuất QL duyệt<\/NutChu>/.test(doc('web/src/modules/yThuc/XacNhanXuLyPanel.tsx')), 'panel: Đề xuất là nút chữ sau nút chính');
+    assert(/cheDo === 'xu-ly' && d\.canManage[\s\S]{0,300}Đề xuất QL duyệt('\)\})?<\/NutChu>/.test(doc('web/src/modules/yThuc/XacNhanXuLyPanel.tsx')), 'panel: Đề xuất là nút chữ sau nút chính');
   });
 
   // ------------------------------------------------------------------ khối A · mã cũ Dọn-a / S3 để lại
