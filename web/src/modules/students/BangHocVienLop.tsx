@@ -59,7 +59,9 @@ export type LopChoBang = {
  * chữ ở ≥ 2 em thành MỘT hàng "Cả lớp" đầu lớp. `chiHien` = id học viên còn lại sau chip lọc / ô tìm (máy chủ tính); `null` = mọi em đang học.
  * Nằm ở: Học viên & Lớp (menu trái) → mở một lớp. Điện thoại (< 640 px, D2): `the` = mỗi em một `TheDong` thay vì `<tr>` (cùng dữ liệu, cùng thứ tự cột).
  */
-export function BangHocVienLop({ lop, chiHien, sapXep, onDoi, soCot, the = false, ds, onThuTu, admin = false }: {
+export function BangHocVienLop({ lop, chiHien, sapXep, onDoi, soCot, the = false, ds, onThuTu, admin = false, onMoCase }: {
+  /** OV-12f: việc Case ở cột Việc tiếp theo mở Panel một em tại trang (không rời Học viên & Lớp). */
+  onMoCase?: (studentId: number, caseId: number) => void;
   lop: LopChoBang; chiHien: Set<number> | null; sapXep: SapXep; onDoi: () => void;
   /** OV-10b (mockup vai mục 6): Admin — Học viên · Lượt MT gần nhất · Ô chưa nhập · ⋯ (Sửa thông tin · Mở hồ sơ). */
   admin?: boolean;
@@ -168,7 +170,8 @@ export function BangHocVienLop({ lop, chiHien, sapXep, onDoi, soCot, the = false
                 { nhan: 'Case', noiDung: s.openCases || <span className="text-slate-600">—</span> },
                 { nhan: t('Việc tiếp'), noiDung: (
                   <DanhSachViecTiep viec={(conLai.get(s.id) ?? []).map(dichViec)}
-                    den={(v) => duongViecTiep(v, { studentId: s.id, classId: lop.id, laLopThuong: thuong, timeline: s.timeline })} />
+                    den={(v) => duongViecTiep(v, { studentId: s.id, classId: lop.id, laLopThuong: thuong, timeline: s.timeline })}
+                    onBam={onMoCase ? (v) => (v.dich?.loai === 'case' ? () => onMoCase(s.id, (v.dich as { caseId: number }).caseId) : null) : undefined} />
                 ) },
               ]} />
           );
@@ -225,7 +228,8 @@ export function BangHocVienLop({ lop, chiHien, sapXep, onDoi, soCot, the = false
             </td>
             <td className="td">
               <DanhSachViecTiep viec={(conLai.get(s.id) ?? []).map(dichViec)}
-                den={(v) => duongViecTiep(v, { studentId: s.id, classId: lop.id, laLopThuong: thuong, timeline: s.timeline })} />
+                den={(v) => duongViecTiep(v, { studentId: s.id, classId: lop.id, laLopThuong: thuong, timeline: s.timeline })}
+                onBam={onMoCase ? (v) => (v.dich?.loai === 'case' ? () => onMoCase(s.id, (v.dich as { caseId: number }).caseId) : null) : undefined} />
             </td>
             </>)}
             <td className="td text-center"><MenuDong muc={menuDong(s)} /></td>
