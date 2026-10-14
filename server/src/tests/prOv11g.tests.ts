@@ -142,7 +142,7 @@ export async function runPrOv11gTests(t: YThucTestKit) {
     assert(loi(() => attempts.saveScore(loadPrincipal(gvL), m.id, 'listening', { rawScore: 30 }))?.status === 403, 'GV FT ghi điểm lớp kết thúc phải 403');
   }));
 
-  check('OV11g-3b · rà #379: lớp đã kết thúc — Báo vắng / "-" bị chặn (GV 403, QL 400, cả FT lẫn lớp thường); QL sửa điểm thiếu lý do 400; có lý do → lưu, KHÔNG tự tạo Case / tín hiệu', () => thu(() => {
+  check('OV11g-3b · rà #379: lớp đã kết thúc — Báo vắng / "-" bị chặn (GV 403, QL 400, cả FT lẫn lớp thường); có lý do → lưu, KHÔNG tự tạo Case / tín hiệu; sửa ô đã có điểm thiếu lý do 400', () => thu(() => {
     /* (1)(3) FT: Báo vắng + "-" — GVCN 403, QL 400; không ghi gì. */
     const k = one(`SELECT a.id, k.skill FROM assessment_attempts a JOIN attempt_skills k ON k.attempt_id = a.id JOIN report_periods rp ON rp.id = k.planned_period_id
         WHERE a.class_id = ? AND a.kind = 'mock' AND a.status != 'cancelled' AND a.lich_su = 0 AND k.required = 1 AND k.sit_status = 'scheduled'
@@ -163,13 +163,14 @@ export async function runPrOv11gTests(t: YThucTestKit) {
       ORDER BY a.id LIMIT 1`, FOU12, TODAY);
     assert(!!g, 'không có bài Giữa khoá để thử');
     assert(loi(() => regular.saveRegularScore(QL, g.id, 'listening', { noShow: true }))?.status === 400, 'QL "-" lớp thường kết thúc phải 400');
-    assert(loi(() => regular.saveRegularScore(QL, g.id, 'listening', { score: 3, total: 40 }))?.status === 400, 'thiếu lý do phải 400');
     const dem = () => [one('SELECT COUNT(*) n FROM sos_cases WHERE student_id = ?', g.student_id).n,
       one('SELECT COUNT(*) n FROM case_signals WHERE student_id = ?', g.student_id).n].join('/');
     const truoc = dem();
     regular.saveRegularScore(QL, g.id, 'listening', { score: 3, total: 40, lyDo: 'Nhập sai, sửa lại' });
     assert(one(`SELECT raw_score FROM assessment_scores WHERE attempt_id = ? AND skill = 'listening'`, g.id).raw_score === 3, 'QL có lý do không lưu được');
     assert(dem() === truoc, `tự tạo Case / tín hiệu ở lớp đã kết thúc: ${truoc} → ${dem()}`);
+    /* (4) Sửa ô đã có điểm thiếu lý do → 400 (nhập lần đầu — Final về muộn, Q30-4 — không đòi). */
+    assert(loi(() => regular.saveRegularScore(QL, g.id, 'listening', { score: 4, total: 40 }))?.status === 400, 'sửa điểm thiếu lý do phải 400');
   }));
 
   check('OV11g-4 · HL-4: đầu hồ sơ lớp thường "Final Test a/b em có đủ điểm" = duDiem / coLich của khối điểm (danhSachLuot)', () => thu(() => {

@@ -116,7 +116,7 @@ export async function runPrPaTests(t: YThucTestKit) {
   });
 
   check('PA1d · bổ trợ Giữa khoá (BE Progress Test trượt W): PA bo_tro cùng dạng, người dạy là tài khoản', () => {
-    const cid = classId('MB BE 08');
+    const cid = classId('MB BE 04');
     intake.commitIntake(P.admin, { classId: cid, rows: [{ fullName: 'PA BE GK', email: 'hv@demo.test', dob: '2010-01-01' }], idempotencyKey: 'pa-be-gk' });
     regular.planRegularTests(P.admin, cid);
     const sid = get('SELECT id FROM students WHERE full_name = ?', 'PA BE GK').id;
