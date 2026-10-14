@@ -4366,8 +4366,8 @@ check('Mọi chương trình Normal dùng ĐÚNG bốn môn L/R/W/S', () => {
 
 check('Thiếu điểm KHÔNG được suy thành đạt, và nói rõ còn thiếu môn nào', () => {
   const a = conn
-    .prepare(`SELECT a.id, a.class_id FROM assessment_attempts a JOIN classes c ON c.id = a.class_id AND c.status = 'active'   /* OV-11g: lớp đã kết thúc chỉ QL sửa */
-               WHERE a.kind != 'mock' LIMIT 1`)
+    .prepare(`SELECT a.id, a.class_id FROM assessment_attempts a
+               WHERE a.kind != 'mock' AND a.class_id IS NOT NULL LIMIT 1`)
     .get() as any;
   const prog = regular.programmeOfClass(a.class_id)!;
   // Xoá hết điểm rồi nhập đúng MỘT môn: phải là "chưa đủ dữ liệu", không phải "đạt".

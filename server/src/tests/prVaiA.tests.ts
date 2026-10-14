@@ -7,6 +7,7 @@ import type { YThucTestKit } from './yThuc.tests.ts';
 export async function runPrVaiATests(t: YThucTestKit) {
   const { check, assert, assertThrows, conn, P, classId } = t;
   const d: any = await import('../../../shared/domain/index.ts');
+  const { CO_THE_KHONG_THEO_DOI, LA_CASE_SOS } = await import('../cases/sosState.ts');
   const metricsSvc: any = await import('../worklist/metrics.ts');
   const { nguoiGiuKetQua } = await import('../cases/giuKetQua.ts');
   const { demoToday } = await import('../demoConfig.ts');
@@ -576,7 +577,9 @@ export async function runPrVaiATests(t: YThucTestKit) {
 
   check('VAI-a (10b) · thongBaoCua: Case đã có nguyên nhân / thẻ không còn chờ → con_viec 0 (cùng câu, một SQL); chưa đọc trước; ≤ 50', () => {
     const u = P.lrTeacher.userId;
-    const caseCho = (conn.prepare(`SELECT sc.id FROM sos_cases sc WHERE sc.status != 'done' AND NOT EXISTS
+    /* OV-11g: cùng điều kiện `con_viec` (Case SOS, không chờ "Không cần theo dõi") — Case Giữa khoá tự tạo / chờ bỏ theo dõi không phải "chờ nguyên nhân". */
+    const caseCho = (conn.prepare(`SELECT sc.id FROM sos_cases sc LEFT JOIN learning_cycles cy ON cy.id = sc.cycle_id WHERE sc.status != 'done'
+      AND ${LA_CASE_SOS('sc')} AND NOT ${CO_THE_KHONG_THEO_DOI('sc')} AND NOT EXISTS
       (SELECT 1 FROM case_issues ci WHERE ci.case_id = sc.id AND ci.role = 'primary') LIMIT 1`).get() as any)?.id;
     const caseXong = (conn.prepare(`SELECT sc.id FROM sos_cases sc WHERE EXISTS (SELECT 1 FROM case_issues ci WHERE ci.case_id = sc.id AND ci.role = 'primary') LIMIT 1`).get() as any)?.id;
     assert(caseCho && caseXong, 'bộ demo phải có Case chờ nguyên nhân và Case đã có nguyên nhân');
