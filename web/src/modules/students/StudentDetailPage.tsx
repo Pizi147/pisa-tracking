@@ -409,7 +409,7 @@ export default function StudentDetailPage() {
         viec={viecQuanLy ?? (p.viec === 'thi-that' && cy?.route ? 'outcome' : null)} onClose={() => { setViecQuanLy(null); if (p.viec === 'thi-that') xoaThamSo('viec'); }} lop={data.currentClass?.code}
         student={thongTinEmCua(data)} quyen={data.viewer} lopHoc={data.lopHoc ?? null}
         cycle={cy} attempts={data.attempts} onDone={reload} soViPhamMo={data.dauHoSo?.soViPhamMo}
-        onDeXuatSua={() => setViecQuanLy('de-xuat-sua')}
+        onDeXuatSua={data.viewer.coTheDeXuatSua ? () => setViecQuanLy('de-xuat-sua') : undefined}
       />
     </div>
   );

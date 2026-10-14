@@ -122,7 +122,7 @@ export async function runPrOv11dTests(t: YThucTestKit) {
     xoaNho();
     const s = one('SELECT status, archived_at FROM students WHERE id = ?', sid);
     assert(s.status === 'active' && !s.archived_at && one(`SELECT status FROM enrollments WHERE student_id = ? AND class_id = ?`, sid, lop0).status === 'active' && soLtActive() === 0,
-      `Hoàn tác phải trả em về đang học như trước: ${JSON.stringify(s)} · lộ trình chạy ${soLtActive()}`);
+      `Hoàn tác phải trả em về đang học như trước: ${JSON.stringify({ em: r, ...s })} · lộ trình chạy ${soLtActive()}`);
     buocTiep.chonBuocTiep(QLX, cid, { chon: 'ket_thuc' });
     xoaNho();
     assert(one('SELECT status FROM students WHERE id = ?', sid).status === 'finished', 'Kết thúc');
@@ -187,7 +187,7 @@ export async function runPrOv11dTests(t: YThucTestKit) {
       VALUES (?, ?, ?, 'fast_track', 'cuoi-khoa', ?, ?, ?, 'cho', ?)`).run(em.id, em.class_id, dich, TODAY, ql.userId, TODAY, TODAY);
     xoaNho();
     const ck = profile.studentProfile(ql, em.id).cuoiKhoa;
-    assert(ck?.lenFt === true && d.chuHopKetLuan({ ct: ck.ct, ...ck }).kyVong, `em đã chốt Lên FT phải có dòng KQĐR: ${JSON.stringify(ck && { lenFt: ck.lenFt, scored: ck.scored })}`);
+    assert(ck?.lenFt === true && d.chuHopKetLuan({ ct: ck.ct, ...ck }).kyVong, `em đã chốt Lên FT phải có dòng KQĐR: ${JSON.stringify(ck && { em: em.id, lop: ck.lop, daChuyen: ck.daChuyen, lenFt: ck.lenFt, scored: ck.scored })}`);
   }));
 
   check('OV11d-6 · HV-13: hạn bàn giao — panel Chuyển lớp (hanBanGiaoLenh từ dữ liệu xem trước) = hạn lưu trên lệnh = thanh "Việc của tôi"', () => thu(() => {
