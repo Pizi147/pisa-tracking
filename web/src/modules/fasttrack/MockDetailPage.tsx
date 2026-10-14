@@ -19,17 +19,17 @@ import { HopHuyMt, type HeQuaHuy } from './HopHuyMt.tsx';
 import { HopKyNang } from '../test/keHoach/HopKyNang.tsx';
 import { DongThoiGianLuot } from './DongThoiGianLuot.tsx';
 import {
-  DeadlinePill, KHOA_HOAN_TAT_HINT, lockedByNoShow, useSaveScore, type Cell, type SavePatch,
+  DeadlinePill, KHOA_HOAN_TAT_HINT, coDiemChinhThuc, lockedByNoShow, useSaveScore, type Cell, type SavePatch,
 } from './ScoreEntry.tsx';
 import { DaiODiemLon, type LichKn } from './ODiemLon.tsx';
 import { nguCanhChiTiet } from './HopNhapDiem.tsx';
-import { ONhanXet } from './NhanXet.tsx';
+import { NhomTaiCho, NhomTinh, ONhanXet } from './NhanXet.tsx';
 import { NutGvCham, gvChamPayload, gvChamThanhChon } from '../cham/GvCham.tsx';
 import {
   attemptHref, attemptStatusLabel, fmtBand, fmtDate, progressLabel, skillLabel,
 } from '../../lib/format.ts';
 import {
-  ATTEMPT_KIND_SHORT, maHocVienNgan, CHU_THAO_TAC, chipSosMt0, mondayOfDate, nhanLuot, thaoTacKyNang, trangThaiTT, tuanLich,
+  ATTEMPT_KIND_SHORT, canNhomNguyenNhan, maHocVienNgan, CHU_THAO_TAC, chipSosMt0, mondayOfDate, nhanLuot, thaoTacKyNang, trangThaiTT, tuanLich,
   type AssessedSkill, type AttemptKind, type LoiTruong, type TheYeuCauDto, type ThaoTac,
   docKnMock, KY_NANG_KE_HOACH, type KyNangKH, khongDuThiTuO, oKyNangTuLich, type KetQuaHuy, type OMtVao, trangCha,
 } from '@shared/domain/index.ts';
@@ -422,21 +422,33 @@ function knHop(d: Detail): KnO {
  * "Nhận xét Writing" có HAI phần Task 1 · Task 2 (hai task có thể hai GV — K4-31), mỗi phần ghi người nhập điểm của bài đó;
  * "Nhận xét Speaking" kèm GV chấm (đổi là lưu ngay). Người sửa được bài đó (`cell.canEdit`) gõ tại chỗ, lưu khi rời ô; người
  * khác đọc chữ thường, phần rỗng thì ẩn. Cả khối rỗng mà không ai sửa được → không vẽ.
+ * OV-12b (mockup ov12-1 §4): ô MT có điểm → "*", xoá / dưới 10 ký tự không lưu; ô dưới kỳ vọng → chip "Nhóm nguyên nhân *" ngay dưới
+ * nhận xét (bấm là lưu, chip cuối không bỏ được); người không sửa được thấy chip tĩnh.
  */
 function KhoiNhanXet({ cells, save }: { cells: Cell[]; save: (skill: string, patch: SavePatch) => Promise<boolean> }) {
   const o = (k: string) => cells.find((c) => c.skill === k);
   const sua = (c: Cell | undefined): boolean => !!c && c.canEdit && !lockedByNoShow(c);
   const phu = (c: Cell) => (c.enteredByName ? `Người nhập điểm: ${c.enteredByName}` : null);
+  const batBuoc = (c: Cell) => !!c.batBuocNhanXet && coDiemChinhThuc(c);
+  const canNhom = (c: Cell) => batBuoc(c) && canNhomNguyenNhan(c.band, c.kyVong ?? null);
   const phan = (c: Cell | undefined, nhan: string) => {
     if (!c) return null;
-    if (sua(c)) return <ONhanXet key={c.skill} nhan={nhan} phu={phu(c)} giaTri={c.nhanXet ?? null} onLuu={(v) => save(c.skill, { nhanXet: v })} />;
-    if (!c.nhanXet) return null;
+    if (sua(c)) {
+      return (
+        <div key={c.skill} className="min-w-0 space-y-2.5">
+          <ONhanXet nhan={nhan} phu={phu(c)} giaTri={c.nhanXet ?? null} batBuoc={batBuoc(c)} onLuu={(v) => save(c.skill, { nhanXet: v })} />
+          {canNhom(c) && <NhomTaiCho skill={c.skill} giaTri={c.nhomNguyenNhan ?? []} onLuu={(v) => save(c.skill, { nhomNguyenNhan: v })} />}
+        </div>
+      );
+    }
+    if (!c.nhanXet && !c.nhomNguyenNhan?.length) return null;
     return (
       <div key={c.skill} className="min-w-0">
         <div className="flex items-baseline gap-2 text-xs text-slate-400">
           <span className="shrink-0 whitespace-nowrap font-medium text-slate-300">{nhan}</span>{phu(c) && <span className="truncate text-slate-500">{phu(c)}</span>}
         </div>
-        <p className="m-0 mt-1 whitespace-pre-wrap break-words text-sm leading-relaxed text-slate-200">{c.nhanXet}</p>
+        {!!c.nhomNguyenNhan?.length && <div className="mt-1.5"><NhomTinh value={c.nhomNguyenNhan} /></div>}
+        {c.nhanXet && <p className="m-0 mt-1 whitespace-pre-wrap break-words text-sm leading-relaxed text-slate-200">{c.nhanXet}</p>}
       </div>
     );
   };

@@ -14,6 +14,7 @@ export async function runPrPb2bTests(t: YThucTestKit) {
   const { fileURLToPath } = await import('node:url');
   const { default: SqliteDb } = await import('libsql');
   const { migratePrPb2b } = await import('../migrate/prPb2b.ts');
+  const { migratePrOv12b } = await import('../migrate/prOv12b.ts');
   const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
   const SCHEMA = fs.readFileSync(path.join(REPO, 'server/src/schema.sql'), 'utf8').replace(/\r\n/g, '\n');
   const cot = (db: any, bang: string) => (db.prepare(`PRAGMA table_info(${bang})`).all() as any[]).map((c) => `${c.name}:${c.type}:${c.notnull}:${c.pk}`);
@@ -21,8 +22,10 @@ export async function runPrPb2bTests(t: YThucTestKit) {
   const truoc = () => {
     const cat = SCHEMA
       .replace(/\n  -- PR-Pb2-b \(Q13\)[^\n]*\n  nhap_dau_ngay TEXT,/, '')
+      /* OV-12b: cột thêm SAU Pb2-b — cắt luôn, (1b) chạy lại đúng thứ tự migrate (Pb2-b rồi OV-12b). */
+      .replace(/\n  -- OV-12b [^\n]*\n  --[^\n]*\n  nhom_nguyen_nhan TEXT,/, '')
       .replace(/,\n  -- PR-Pb2-b \(Q14\)[\s\S]*?phan_hoi_ngay TEXT\n\);/, '\n);');
-    if (/nhap_dau_ngay|han_xu_ly|phan_hoi_ngay/.test(cat)) throw new Error('schema.sql đổi khuôn — sửa bộ cắt của phép kiểm Pb2b (1)');
+    if (/nhap_dau_ngay|han_xu_ly|phan_hoi_ngay|nhom_nguyen_nhan/.test(cat)) throw new Error('schema.sql đổi khuôn — sửa bộ cắt của phép kiểm Pb2b (1)');
     const m = new SqliteDb(':memory:');
     m.exec(cat);
     return m;
@@ -38,6 +41,7 @@ export async function runPrPb2bTests(t: YThucTestKit) {
   check('Pb2b (1b) · DB migrate có cột GIỐNG HỆT DB dựng từ schema.sql (tên, kiểu, NOT NULL, thứ tự)', () => {
     const m = truoc();
     migratePrPb2b(m, []);
+    migratePrOv12b(m, []);
     const moi = new SqliteDb(':memory:');
     moi.exec(SCHEMA);
     for (const b of ['assessment_scores', 'violations']) {
