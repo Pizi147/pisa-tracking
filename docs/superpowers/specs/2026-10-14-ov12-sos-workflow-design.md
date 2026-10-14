@@ -64,7 +64,9 @@ Mockup: `thiet-ke/mockup-ov12-{1..4}-*-2026-10-14.html` (mục 4). **Chưa duy�
 | File | Nội dung |
 |---|---|
 | `thiet-ke/mockup-ov12-1-hop-cham-ho-so-mt-2026-10-14.html` | Hộp chấm MT (nhận xét bắt buộc, chip nhóm khi dưới kỳ vọng, W1/W2 riêng, Vắng), ô "thiếu nhận xét", hồ sơ MT khối Case & phương án, việc "Ghi nhận xét", hồ sơ HV Case không còn Xác nhận nguyên nhân |
-| `thiet-ke/mockup-ov12-2-panel-so-lieu-tong-hop-2026-10-14.html` | Số → danh sách → mở rộng dòng → thao tác theo vai (Case, bài, HV, PA); Tổng hợp nhóm Xử lý 3 cột |
+| `thiet-ke/mockup-ov12-2-panel-so-lieu-tong-hop-2026-10-14.html` | Số → danh sách → mở rộng dòng → thao tác theo vai (Case, bài, HV, PA); Tổng hợp nhóm Xử lý 3 cột — **thay bởi v2 cho phần panel** |
+| `thiet-ke/mockup-ov12-2-panel-lam-viec-v2-2026-10-14.html` | **v2 (14/10 chiều)**: khuôn panel làm việc chung + Xác nhận PA, Xác nhận Case Progress, Ghi kết quả (từng em, Tutor từng buổi), Thêm PA, meeting CX, Ý thức, panel số liệu — không Nhắc |
+| `thiet-ke/mockup-ov12-3-hoc-vien-lop-ba-goc-v2-2026-10-14.html` | **v2**: thêm Panel một em (Case + PA + Ghi kết quả), lớp thường trong Đang SOS, không Nhắc |
 | `thiet-ke/mockup-ov12-3-hoc-vien-lop-ba-goc-2026-10-14.html` | Ba góc nhìn × QL, GVCN, GVBM, TVV, CX, Admin; SOS theo tuần |
 | `thiet-ke/mockup-ov12-4-gop-y-hang-tuan-2026-10-14.html` | Góp ý hàng tuần cạnh Điểm (2 phương án vị trí), quyền ghi / đọc, theo dõi nhiều tuần |
 
@@ -90,8 +92,20 @@ Thứ tự với PR-EN / PR-SOTAY: PR-EN đổi chữ mọi màn → chạy **sa
 - Tổng hợp: HV - Case = Chờ duyệt + Đang xử lý + xong/huỷ (bấm số thấy đủ).
 - Học viên & Lớp "Đang SOS" tuần W2 SEP = số lượt MT thi W2 SEP có SOS ở Tổng hợp cùng tuần.
 
-## 7. Chờ chủ SP chốt (đợt hỏi 2 — khi xem mockup)
-1. P10: Progress lớp thường giữ bước xác nhận nguyên nhân (vì nhận xét không bắt buộc ở lớp thường)?
-2. P13: ai ghi Góp ý hàng tuần; vị trí (cách xem riêng hay cạnh bảng Điểm) — mockup 4.
-3. "Đang SOS" khi chọn Lớp thường: rỗng (lớp thường không có SOS) hay hiện Case Giữa khoá?
-4. Góc thứ ba của CX (không có việc): "Cần chú ý" thay "Cần làm"?
+## 7. Chủ SP trả lời 14/10 chiều (ghi đè mục 2 / P1–P14 nơi khác nhau)
+1. **MT bắt buộc nhận xét ở MỌI nơi nhập điểm MT, thiếu thì KHÔNG lưu** (bỏ P2 "dán Excel lưu điểm thiếu nhận xét"); **chỉ miễn MT cũ / MT lịch sử nhập bù** (nhập điểm thôi). Nhận xét ≥ 10 ký tự; nhóm nguyên nhân khi dưới kỳ vọng, chip có số (1 = chính); W1 / W2 xét từng task; "Khác" không cần ô Ghi rõ.
+2. **Progress Test lớp thường:** vẫn tạo Case, **ghi nhãn SOS** (theo số môn trượt: 1 → SOS 1, 2 → SOS 2, ≥ 3 → SOS 3 — bỏ T58 "lớp thường không SOS"), **không ép PA mặc định** (bỏ PA bổ trợ tự gắn — sửa Rulebook §20.6 / PR-CT2 ở OV-12c); **MỘT bước "Xác nhận Case" hạn 5 ngày cố định**: nhóm nguyên nhân + mô tả ngắn + phương án trong cùng một panel (thay P10). Người làm: người phụ trách Case như nay (GV dạy môn), GVCN / QL làm được; mốc PA mặc định "Đến Final Test". Bổ trợ miễn phí sau Final **giữ**.
+3. **Case SOS MT** lưu như bình thường; em đạt lại (hết SOS) → Case **xoá hẳn** nếu chưa có PA được xác nhận (thay P9); GV muốn thì + Case tay.
+4. **PA Tutor:** ghi kết quả bắt buộc theo "Số buổi kỳ này" n → n dòng [Tên tutor * · Nhận xét buổi *]; nhận xét từng buổi thay ô "Tiến triển", **giữ mức kết quả**. Danh sách tutor + nhận xét tutor: làm sau.
+5. **Ghi kết quả PA từng em riêng** — PA gộp được (nhóm bổ trợ), kết quả không gom; vẫn mở panel tại chỗ.
+6. **Bỏ mọi "Nhắc"** của QL / QT / Admin ở mọi trang; giữ số đếm, danh sách quá hạn, thẻ Báo QL.
+7. **Phối hợp SOS:** việc meeting CX / GĐCN phải xác nhận trong **5 ngày**; xác nhận: Ngày · Người · **Ghi chú bắt buộc (≥ 10 ký tự)** · Đính tệp / ảnh không bắt buộc.
+8. **Panel làm việc tại chỗ đồng bộ toàn web** (Công việc, Tổng quan, panel số liệu, Học viên & Lớp, hồ sơ, Ý thức / vi phạm — chuẩn: ⋯ cạnh tên em ở Học viên & Lớp mở panel ngay); bỏ hẳn Xác nhận nguyên nhân MT ở Công việc. Mockup 2 làm lại (impeccable): `mockup-ov12-2-panel-lam-viec-v2-2026-10-14.html` — khuôn chung 4 phần (đầu 2 dòng · khối Cần làm duy nhất có màu · Thông tin gập · chân trạng thái lưu), áp cho mọi panel việc có hạn.
+9. **Học viên & Lớp:** bấm "Mở" ở mọi góc nhìn → MỘT panel một em (Case gập được + PA + việc đang cần, Ghi kết quả ngay trong panel) — `mockup-ov12-3-hoc-vien-lop-ba-goc-v2-2026-10-14.html`; lớp thường có trong Đang SOS; góc thứ ba của CX = "Cần chú ý".
+10. **Góp ý hàng tuần:** phương án A (cách xem cạnh "Tổng hợp"), người ghi theo đề xuất (GV dạy kỹ năng + GVCN + QL; TVV / CX / Admin đọc).
+11. Còn lại theo đề xuất (P1–P14, mockup).
+
+### Thứ tự mới (chủ SP chạy mỗi PR một session cloud, không tự merge — planning rà, chủ SP merge)
+Đêm 14/10 (deploy lần 2 sáng 15/10 cho GV nước ngoài): **OV-12b** (nhận xét MT bắt buộc) ∥ **OV-12h** (bỏ Nhắc · ghi kết quả từng em · Tutor từng buổi · meeting CX 5 ngày) ∥ **EN-a** (nền tiếng Anh)
+→ **OV-12c** (Case MT từ nhận xét · Progress "Xác nhận Case" · xoá Case khi đạt · migrate) ∥ **EN-b** (Công việc / Test / nhập điểm tiếng Anh; chờ OV-12b + OV-12h vào main).
+Sau: OV-12d (Tổng hợp + hồ sơ MT Case) · OV-12e (panel làm việc v2 toàn web) · OV-12f (ba góc nhìn + panel một em) · OV-12g (Góp ý hàng tuần) · EN-c · EN-d → PR-SOTAY.
