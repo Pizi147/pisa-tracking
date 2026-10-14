@@ -57,14 +57,14 @@ import { migratePrOv12h } from './migrate/prOv12h.ts';
  * Nâng cấp database ĐANG CÓ lên schema mới, không xoá dữ liệu. PR-SO (DEP-gỡ): nhánh nâng cấp từ mô hình `mock_attempts` (trước overhaul)
  * đã gỡ — DB cũ đã xoá, DB nào cũng dựng từ `schema.sql` (seed / `init-ban-chinh`).
  */
-export function migrate(): { applied: string[]; skipped: string[] } {
+export function migrate(loiSauBuoc?: number): { applied: string[]; skipped: string[] } {
   const applied: string[] = [];
   const skipped: string[] = [];
   if (!isInitialised()) return { applied, skipped: ['Database chưa có bảng nào — chạy `npm run seed`.'] };
   if (!db().prepare("SELECT name FROM sqlite_master WHERE type='table' AND name = 'assessment_attempts'").get()) {
     return { applied, skipped: ['Không tìm thấy dữ liệu để nâng cấp.'] };
   }
-  return migrateCaseEngine(applied, skipped);
+  return migrateCaseEngine(applied, skipped, loiSauBuoc);
 }
 
 /**
@@ -82,7 +82,7 @@ export function migrate(): { applied: string[]; skipped: string[] } {
  * bắt đầu hỗ trợ học thuật, nên chuyển thành trạng thái "đang thực hiện", không tự nhận là
  * đã xong. Thiếu người thực hiện thì để trống chứ không lấy người nhập làm người làm.
  */
-function migrateCaseEngine(applied: string[], skipped: string[]) {
+function migrateCaseEngine(applied: string[], skipped: string[], loiSauBuoc?: number) {
   const conn = db();
   const cols = (t: string) => (conn.prepare(`PRAGMA table_info(${t})`).all() as any[]).map((c) => c.name);
   const has = (table: string) =>
@@ -93,9 +93,22 @@ function migrateCaseEngine(applied: string[], skipped: string[]) {
 
   if (!has('sos_cases')) return { applied, skipped };
 
+  /*
+   * MỖI BƯỚC MỘT GIAO DỊCH NGẮN (14/10: một giao dịch 10–20 phút bị Turso đóng kết nối giữa chừng, thử lại cả khối thì đứt mãi).
+   * Bước nào cũng chạy lặp được: đứt ở bước k → bước trước đó đã chốt, run.ts mở kết nối mới chạy lại, các bước đó thành no-op.
+   * `case_engine_migrated_at` chỉ ghi khi mọi bước đã chốt. `loiSauBuoc`: phép kiểm giả lập đứt ngay sau bước thứ k.
+   */
+  let soBuoc = 0;
+  const buoc = (fn: () => void) => {
+    conn.transaction(fn)();
+    /* Bước đã chốt → mới xoá tệp bằng chứng của những vi phạm bị xoá (PR-T). Bước lỗi thì không tới đây, tệp còn nguyên. */
+    flushDeferredFileRemovals();
+    if (++soBuoc === loiSauBuoc) throw new Error(`Giả lập đứt kết nối sau bước ${soBuoc}`);
+  };
+  /* Lỗi giữa chừng: không bật lại ở đây — run.ts đóng kết nối, kết nối mới mặc định bật. */
   conn.pragma('foreign_keys = OFF');
-  conn.transaction(() => {
-    /* PR-OV11e: cột KCK theo lượt — TRƯỚC mọi bước tính kết quả lượt (`kckCuaLuot` đọc cột này). Chỉ thêm cột. */ themCotPrOv11e(conn, applied);
+    /* PR-OV11e: cột KCK theo lượt — TRƯỚC mọi bước tính kết quả lượt (`kckCuaLuot` đọc cột này). Chỉ thêm cột. */ buoc(() => themCotPrOv11e(conn, applied));
+    buoc(() => {
     // 1. Cột mới trên các bảng đang có.
     for (const [col, decl] of [
       ['student_id', 'INTEGER REFERENCES students(id)'],
@@ -239,94 +252,92 @@ function migrateCaseEngine(applied: string[], skipped: string[]) {
     ] as const) addCol('case_interventions', c, d);
     conn.exec(`CREATE INDEX IF NOT EXISTS idx_intervention_approval
                  ON case_interventions(approval_state) WHERE approval_state = 'pending'`);
+    });
 
-    migrateSchedulingFields(conn, applied);
-    migratePermissions(conn, applied);
-    migrateAccounts(conn, applied);
-    migrateWeekOnlySchedule(conn, applied);
-    migrateNormalFourSkills(conn, applied);
-    migrateMgmtTasks(conn, applied);
-    migrateDropBranchAdmin(conn, applied);
-    migrateNormalPassThreshold(conn, applied);
-    migrateSkillSchedule(conn, applied); 
-    migrateNoShowMarks(conn, applied);
-    migrateAttachments(conn, applied);
-    migrateYThuc(conn, applied);
-    migrateMoveRequests(conn, applied);
-    migrateEntryBands(conn, applied);
-    migrateReportHistory(conn, applied);
+    buoc(() => migrateSchedulingFields(conn, applied));
+    buoc(() => migratePermissions(conn, applied));
+    buoc(() => migrateAccounts(conn, applied));
+    buoc(() => migrateWeekOnlySchedule(conn, applied));
+    buoc(() => migrateNormalFourSkills(conn, applied));
+    buoc(() => migrateMgmtTasks(conn, applied));
+    buoc(() => migrateDropBranchAdmin(conn, applied));
+    buoc(() => migrateNormalPassThreshold(conn, applied));
+    buoc(() => migrateSkillSchedule(conn, applied)); 
+    buoc(() => migrateNoShowMarks(conn, applied));
+    buoc(() => migrateAttachments(conn, applied));
+    buoc(() => migrateYThuc(conn, applied));
+    buoc(() => migrateMoveRequests(conn, applied));
+    buoc(() => migrateEntryBands(conn, applied));
+    buoc(() => migrateReportHistory(conn, applied));
     /* CUỐI CÙNG: sau khi mọi bước thời Case Ý thức ở trên đã chạy xong, chuyển dữ liệu của mô hình đó sang mô hình mới. */
-    migrateLegacyDisciplineCases(conn, applied);
+    buoc(() => migrateLegacyDisciplineCases(conn, applied));
     /* Sau cùng của các bước cấu trúc: rulebook v3 (PR-T) thêm cột/bảng trên những bảng mà các bước trên đã dựng đủ. */
-    migrateSosV3(conn, applied);
-    /* PR-OV9 (ngay sau rulebook v3, TRƯỚC mọi bước dùng `LA_CASE_SOS`): cột sos_cases.kck — Case nhẹ của em KCK (chỉ thêm cột). */ migratePrOv9(conn, applied);
-    migrateDeleteInvalidViolations(conn, applied);
+    buoc(() => migrateSosV3(conn, applied));
+    /* PR-OV9 (ngay sau rulebook v3, TRƯỚC mọi bước dùng `LA_CASE_SOS`): cột sos_cases.kck — Case nhẹ của em KCK (chỉ thêm cột). */ buoc(() => migratePrOv9(conn, applied));
+    buoc(() => migrateDeleteInvalidViolations(conn, applied));
     /* PR-S1: hai cột của luật máy chủ (S16/S17, S11). */
-    migrateLuatMayChu(conn, applied);
+    buoc(() => migrateLuatMayChu(conn, applied));
     /* PR-AN: bảng giới hạn số lần thử (AN-1). */
-    migrateAuthAttempts(conn, applied);
+    buoc(() => migrateAuthAttempts(conn, applied));
     /* PR-S2: lịch sử điều chỉnh PA học thuật + hai cột cập nhật tuần rút gọn. */
-    migrateDieuChinhPa(conn, applied);
+    buoc(() => migrateDieuChinhPa(conn, applied));
     /* PR-Ra: người cần hỗ trợ khi Tạm ngưng, lý do dời hạn, nháp/nộp báo cáo, nối báo cáo ↔ việc. */
-    migrateCongViec(conn, applied);
+    buoc(() => migrateCongViec(conn, applied));
     /* PR-LT: Lộ trình tiếp theo, end_kind, khu Lưu trữ. */
-    migrateLenLop(conn, applied);
+    buoc(() => migrateLenLop(conn, applied));
     /* PR-XOA: cột users.deleted_at (xoá mềm tài khoản) + đưa em đã thôi học vào Lưu trữ (một lần). */
-    migrateXoaDuLieu(conn, applied);
-    /* PR-N1: hạn ghi kết quả PA hết Thứ Hai (R-PA5). */ migratePrN1(conn, applied);
+    buoc(() => migrateXoaDuLieu(conn, applied));
+    /* PR-N1: hạn ghi kết quả PA hết Thứ Hai (R-PA5). */ buoc(() => migratePrN1(conn, applied));
     /* PR-LOP: số tuần lớp, RF, Pre FOU, đổi tên lớp (T2, T78). */
-    migratePrLop(conn, applied);
-    /* OV-6b1 (ngay sau PR-LOP, TRƯỚC mọi bước có thể xếp lịch MT): tuần MT lộ trình + ngưỡng đạt vào cấu hình, bản chụp cho mọi lớp cũ. */ migratePrOv6b1(conn, applied);
-    /* OV-6b2 (ngay sau OV-6b1, TRƯỚC mọi bước gọi mã nghiệp vụ đọc `classes.moc_lap`): cột Checkpoint mỗi n tuần + chèn PET, KET. */ migratePrOv6b2(conn, applied);
+    buoc(() => migratePrLop(conn, applied));
+    /* OV-6b1 (ngay sau PR-LOP, TRƯỚC mọi bước có thể xếp lịch MT): tuần MT lộ trình + ngưỡng đạt vào cấu hình, bản chụp cho mọi lớp cũ. */ buoc(() => migratePrOv6b1(conn, applied));
+    /* OV-6b2 (ngay sau OV-6b1, TRƯỚC mọi bước gọi mã nghiệp vụ đọc `classes.moc_lap`): cột Checkpoint mỗi n tuần + chèn PET, KET. */ buoc(() => migratePrOv6b2(conn, applied));
     /* PR-DUYET: hộp Chờ duyệt (bảng yeu_cau_duyet + thẻ từ hai luồng cũ), tasks.assignee_name, notifications.duong. */
-    migratePrDuyet(conn, applied);
-    /* PR-MT: cột lich_su (MT lịch sử, T34). */ migratePrMt(conn, applied);
+    buoc(() => migratePrDuyet(conn, applied));
+    /* PR-MT: cột lich_su (MT lịch sử, T34). */ buoc(() => migratePrMt(conn, applied));
     /* PR-NHAP: email học viên + ngày thi dự kiến (T8, T9). */
-    migratePrNhap(conn, applied);
-    /* PR-KCK: Target "không cam kết" (Q29-1). */ migratePrKck(conn, applied);
-    /* PR-SOS: hạn xác nhận Case SOS + loại mốc PA quy chế (Q28-3). */ migratePrSos(conn, applied);
+    buoc(() => migratePrNhap(conn, applied));
+    /* PR-KCK: Target "không cam kết" (Q29-1). */ buoc(() => migratePrKck(conn, applied));
+    /* PR-SOS: hạn xác nhận Case SOS + loại mốc PA quy chế (Q28-3). */ buoc(() => migratePrSos(conn, applied));
     /* PR-YT4: Ý thức v4 — ghi nhận vi phạm, ngày QL quyết, bảng khai bậc (chỉ cấu trúc). */
-    migratePrYt4(conn, applied);
-    /* PR-HSM: nhận xét W/S + GV chấm Speaking (T39). */ migratePrHsm(conn, applied);
-    /* PR-LT2a: nhóm PA bổ trợ Giữa khoá + hạn nộp kế hoạch (M-03, M-05) — chỉ cấu trúc. */ migratePrLt2a(conn, applied);
-    /* PR-LT2b: Mini Test + kỳ vọng đầu ra (Cuối khoá lớp thường). */ migratePrLt2b(conn, applied);
-    /* PR-CT: lệnh chuyển lớp + bàn giao (chỉ cấu trúc). Thứ tự thật: PR-CT rồi mới PR-Pb2-b (PR-Dọn: bỏ câu "luôn đứng cuối" đã sai). */ migratePrCt(conn, applied);
-    /* PR-Pb2-b: ngày nhập đầu ô điểm + hạn xử lý chốt, ngày phản hồi vi phạm (chỉ cấu trúc). */ migratePrPb2b(conn, applied);
-    /* PR-DEPLOY (0b-3): lớp + chương trình gốc của Case (chỉ cấu trúc; chép cho Case có sẵn chỉ khi vừa thêm cột). */ migratePrDeploy(conn, applied);
-    /* PR-QU: `case.close` cho vai Giáo viên, một lần (`class.create` mới đã đi qua `migratePermissions`). */ migratePrQu(conn, applied);
-    /* PR-GVa: khoá gửi mỗi lần mở form cho việc, PA, lần xem lại (chỉ thêm). */ migratePrGva(conn, applied);
-    /* PR-PHH: bản chụp 4 nội dung Báo phụ huynh lúc xác nhận (chỉ thêm cột, không điền ngược). */ migratePrPhh(conn, applied);
-    /* PR-K26: gộp hướng `chua_ro` + `xep_sau` → `chua_quyet` (đổi dữ liệu, chạy lặp được). */ migratePrK26(conn, applied);
-    /* PR-MTa: cờ `attempt_skills.huy_vang` + bảng `ket_qua_huy` (chỉ cấu trúc, không điền ngược). */ migratePrMta(conn, applied);
-    /* PR-LUI-a1: cột violations.ten (chỉ thêm cột, dòng cũ tự tách khi đọc). */ migratePrLuiA1(conn, applied);
-    /* PR-LUI-a2: Người phụ trách của lần ghi kết quả PA (chỉ thêm cột). */ migratePrLuiA2(conn, applied);
-    /* PR-TK: bản chụp lộ trình lúc đóng + cột thi thật + điền ngược (chỉ thêm, chạy lặp được). */ migratePrTk(conn, applied);
-    /* PR-LCb (TRƯỚC PR-LC — phán quyết R-B1): cột lo_trinh_tiep_theo.huong_gvcn + điền bù từ Hướng GVCN trước khi PR-LC đồng bộ Hướng theo lệnh. */ migratePrLcb(conn, applied);
-    /* PR-LC: quyết định Cuối khoá đang chờ → Lộ trình tiếp theo + MT0 theo quyết định (đổi dữ liệu, chạy lặp được). */ migratePrLc(conn, applied);
-    /* PR-PA (§8): Số buổi PA / Kết quả + nhật ký Sửa PA (chỉ thêm cột) + điền bù Bổ trợ miễn phí, Tutor kỳ vọng. */ migratePrPa(conn, applied);
-    /* PR-CT2 (SAU PR-PA): A điền bù Số buổi tuần này cho Kết quả cũ PA Tutor kỳ vọng (một lần, khoá demo_config) · B chạy PA bổ trợ còn chờ kế hoạch + đóng thẻ kế hoạch · C sinh bổ trợ Final cho lệnh lên đang chờ đã đủ điểm. */ migratePrCt2(conn, applied);
-    /* PR-OV2a: vai Admin / TVV / CX + students.consultant_user_id + demo_sessions.goc_nhin (chỉ thêm, chạy lặp được). */ migratePrOv2(conn, applied);
-    /* PR-OV8b (SAU PR-OV2a — cần vai TVV / CX): quyền hẹp `student.edit_more` cho TVV, CX (một lần, khoá demo_config). */ migratePrOv8b(conn, applied);
-    /* OV-3b: bảng nháp lộ trình + cột đề xuất Kết quả đầu ra + ban_giao_mon.lam_lai; vừa tạo bảng thì chép Hướng GVCN chưa có quyết định thành nháp. */ migratePrOv3b(conn, applied);
-    /* PR-OV1b: dấu "-" cũ theo luật mới — nhập bù / MT cũ = Không dự thi, "-" trong tuần chưa chốt = vắng chốt ngay (đổi dữ liệu, chạy lặp được). */ migratePrOv1b(conn, applied);
-    /* PR-OV4a: ket_qua_huy.loai (doi_vuot | huy_luot) + dong_json — Huỷ cả lượt giữ điểm ẩn, Khôi phục lượt (chỉ thêm cột). */ migratePrOv4(conn, applied);
-    /* PR-OV1c: Case SOS MT theo luật chốt — lượt chưa chốt đóng Case chưa ai đụng ("Chờ chốt SOS"), Overall đạt xoá SOS (đổi dữ liệu, chạy lặp được). */ migratePrOv1c(conn, applied);
-    /* OV-8a: Bước tiếp sau thi thật — bốn cột ở learning_cycles (chỉ thêm, chạy lặp được). */ migratePrOv8a(conn, applied);
-    /* OV-10b: liên hệ học viên — SĐT em, phụ huynh (chỉ thêm cột, chạy lặp được). */ migratePrOv10b(conn, applied);
-    /* PR-OV11e (SAU prOv1b / prOv1c): lượt MT đã chốt chụp dấu KCK hiện tại — kết luận giữ như màn đang hiện (đổi dữ liệu, chạy lặp được). */ migratePrOv11e(conn, applied);
-    /* PR-OV12a: hạn ghi kết quả PA → lịch kỳ hai tuần, hết Thứ Ba, không sớm hơn hạn cũ (đổi dữ liệu, chạy lặp được). */ migratePrOv12a(conn, applied);
-    /* PR-EN: ngôn ngữ theo tài khoản — users.ngon_ngu (chỉ thêm cột, chạy lặp được). */ migratePrEn(conn, applied);
-    /* PR-OV12b: assessment_scores.nhom_nguyen_nhan — nhóm nguyên nhân của ô MT dưới kỳ vọng (chỉ thêm cột, chạy lặp được). */ migratePrOv12b(conn, applied);
-    /* PR-OV12c (SAU PR-OV12b — cần cột nhom_nguyen_nhan): Case MT chờ nguyên nhân → nguyên nhân từ nhận xét / việc Ghi nhận xét, thẻ Báo lên nguyên nhân đóng, nhãn SOS Progress (đổi dữ liệu, chạy lặp được). */ migratePrOv12c(conn, applied);
-    /* PR-OV12h: bảng case_followup_buoi — Kết quả PA Tutor theo buổi (chỉ thêm bảng, chạy lặp được). */ migratePrOv12h(conn, applied);
-    /* PR-OV12g: bảng Góp ý hàng tuần (chỉ cấu trúc, chạy lặp được). */ migratePrOv12g(conn, applied);
+    buoc(() => migratePrYt4(conn, applied));
+    /* PR-HSM: nhận xét W/S + GV chấm Speaking (T39). */ buoc(() => migratePrHsm(conn, applied));
+    /* PR-LT2a: nhóm PA bổ trợ Giữa khoá + hạn nộp kế hoạch (M-03, M-05) — chỉ cấu trúc. */ buoc(() => migratePrLt2a(conn, applied));
+    /* PR-LT2b: Mini Test + kỳ vọng đầu ra (Cuối khoá lớp thường). */ buoc(() => migratePrLt2b(conn, applied));
+    /* PR-CT: lệnh chuyển lớp + bàn giao (chỉ cấu trúc). Thứ tự thật: PR-CT rồi mới PR-Pb2-b (PR-Dọn: bỏ câu "luôn đứng cuối" đã sai). */ buoc(() => migratePrCt(conn, applied));
+    /* PR-Pb2-b: ngày nhập đầu ô điểm + hạn xử lý chốt, ngày phản hồi vi phạm (chỉ cấu trúc). */ buoc(() => migratePrPb2b(conn, applied));
+    /* PR-DEPLOY (0b-3): lớp + chương trình gốc của Case (chỉ cấu trúc; chép cho Case có sẵn chỉ khi vừa thêm cột). */ buoc(() => migratePrDeploy(conn, applied));
+    /* PR-QU: `case.close` cho vai Giáo viên, một lần (`class.create` mới đã đi qua `migratePermissions`). */ buoc(() => migratePrQu(conn, applied));
+    /* PR-GVa: khoá gửi mỗi lần mở form cho việc, PA, lần xem lại (chỉ thêm). */ buoc(() => migratePrGva(conn, applied));
+    /* PR-PHH: bản chụp 4 nội dung Báo phụ huynh lúc xác nhận (chỉ thêm cột, không điền ngược). */ buoc(() => migratePrPhh(conn, applied));
+    /* PR-K26: gộp hướng `chua_ro` + `xep_sau` → `chua_quyet` (đổi dữ liệu, chạy lặp được). */ buoc(() => migratePrK26(conn, applied));
+    /* PR-MTa: cờ `attempt_skills.huy_vang` + bảng `ket_qua_huy` (chỉ cấu trúc, không điền ngược). */ buoc(() => migratePrMta(conn, applied));
+    /* PR-LUI-a1: cột violations.ten (chỉ thêm cột, dòng cũ tự tách khi đọc). */ buoc(() => migratePrLuiA1(conn, applied));
+    /* PR-LUI-a2: Người phụ trách của lần ghi kết quả PA (chỉ thêm cột). */ buoc(() => migratePrLuiA2(conn, applied));
+    /* PR-TK: bản chụp lộ trình lúc đóng + cột thi thật + điền ngược (chỉ thêm, chạy lặp được). */ buoc(() => migratePrTk(conn, applied));
+    /* PR-LCb (TRƯỚC PR-LC — phán quyết R-B1): cột lo_trinh_tiep_theo.huong_gvcn + điền bù từ Hướng GVCN trước khi PR-LC đồng bộ Hướng theo lệnh. */ buoc(() => migratePrLcb(conn, applied));
+    /* PR-LC: quyết định Cuối khoá đang chờ → Lộ trình tiếp theo + MT0 theo quyết định (đổi dữ liệu, chạy lặp được). */ buoc(() => migratePrLc(conn, applied));
+    /* PR-PA (§8): Số buổi PA / Kết quả + nhật ký Sửa PA (chỉ thêm cột) + điền bù Bổ trợ miễn phí, Tutor kỳ vọng. */ buoc(() => migratePrPa(conn, applied));
+    /* PR-CT2 (SAU PR-PA): A điền bù Số buổi tuần này cho Kết quả cũ PA Tutor kỳ vọng (một lần, khoá demo_config) · B chạy PA bổ trợ còn chờ kế hoạch + đóng thẻ kế hoạch · C sinh bổ trợ Final cho lệnh lên đang chờ đã đủ điểm. */ buoc(() => migratePrCt2(conn, applied));
+    /* PR-OV2a: vai Admin / TVV / CX + students.consultant_user_id + demo_sessions.goc_nhin (chỉ thêm, chạy lặp được). */ buoc(() => migratePrOv2(conn, applied));
+    /* PR-OV8b (SAU PR-OV2a — cần vai TVV / CX): quyền hẹp `student.edit_more` cho TVV, CX (một lần, khoá demo_config). */ buoc(() => migratePrOv8b(conn, applied));
+    /* OV-3b: bảng nháp lộ trình + cột đề xuất Kết quả đầu ra + ban_giao_mon.lam_lai; vừa tạo bảng thì chép Hướng GVCN chưa có quyết định thành nháp. */ buoc(() => migratePrOv3b(conn, applied));
+    /* PR-OV1b: dấu "-" cũ theo luật mới — nhập bù / MT cũ = Không dự thi, "-" trong tuần chưa chốt = vắng chốt ngay (đổi dữ liệu, chạy lặp được). */ buoc(() => migratePrOv1b(conn, applied));
+    /* PR-OV4a: ket_qua_huy.loai (doi_vuot | huy_luot) + dong_json — Huỷ cả lượt giữ điểm ẩn, Khôi phục lượt (chỉ thêm cột). */ buoc(() => migratePrOv4(conn, applied));
+    /* PR-OV1c: Case SOS MT theo luật chốt — lượt chưa chốt đóng Case chưa ai đụng ("Chờ chốt SOS"), Overall đạt xoá SOS (đổi dữ liệu, chạy lặp được). */ buoc(() => migratePrOv1c(conn, applied));
+    /* OV-8a: Bước tiếp sau thi thật — bốn cột ở learning_cycles (chỉ thêm, chạy lặp được). */ buoc(() => migratePrOv8a(conn, applied));
+    /* OV-10b: liên hệ học viên — SĐT em, phụ huynh (chỉ thêm cột, chạy lặp được). */ buoc(() => migratePrOv10b(conn, applied));
+    /* PR-OV11e (SAU prOv1b / prOv1c): lượt MT đã chốt chụp dấu KCK hiện tại — kết luận giữ như màn đang hiện (đổi dữ liệu, chạy lặp được). */ buoc(() => migratePrOv11e(conn, applied));
+    /* PR-OV12a: hạn ghi kết quả PA → lịch kỳ hai tuần, hết Thứ Ba, không sớm hơn hạn cũ (đổi dữ liệu, chạy lặp được). */ buoc(() => migratePrOv12a(conn, applied));
+    /* PR-EN: ngôn ngữ theo tài khoản — users.ngon_ngu (chỉ thêm cột, chạy lặp được). */ buoc(() => migratePrEn(conn, applied));
+    /* PR-OV12b: assessment_scores.nhom_nguyen_nhan — nhóm nguyên nhân của ô MT dưới kỳ vọng (chỉ thêm cột, chạy lặp được). */ buoc(() => migratePrOv12b(conn, applied));
+    /* PR-OV12c (SAU PR-OV12b — cần cột nhom_nguyen_nhan): Case MT chờ nguyên nhân → nguyên nhân từ nhận xét / việc Ghi nhận xét, thẻ Báo lên nguyên nhân đóng, nhãn SOS Progress (đổi dữ liệu, chạy lặp được). */ buoc(() => migratePrOv12c(conn, applied));
+    /* PR-OV12h: bảng case_followup_buoi — Kết quả PA Tutor theo buổi (chỉ thêm bảng, chạy lặp được). */ buoc(() => migratePrOv12h(conn, applied));
+    /* PR-OV12g: bảng Góp ý hàng tuần (chỉ cấu trúc, chạy lặp được). */ buoc(() => migratePrOv12g(conn, applied));
 
     conn.prepare("INSERT OR REPLACE INTO demo_config (key, value, updated_at) VALUES ('case_engine_migrated_at', ?, ?)")
       .run(nowIso(), nowIso());
-  })();
   conn.pragma('foreign_keys = ON');
-  /* Giao dịch đã chốt → mới xoá tệp bằng chứng của những vi phạm bị xoá (PR-T). Lỗi giữa chừng thì tới đây không bao giờ chạy tới, tệp còn nguyên. */
-  flushDeferredFileRemovals();
 
   if (!applied.length) skipped.push('Mô hình case học vụ đã có sẵn, không cần nâng cấp.');
   return { applied, skipped };
