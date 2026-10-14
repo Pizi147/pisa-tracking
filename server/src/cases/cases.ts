@@ -1691,7 +1691,7 @@ export function caseDetail(p: Principal, caseId: number) {
   dienMocQuyChe({ caseIds: [caseId] });   // PR-SOS K3-14: mốc quy chế còn trống — có lịch rồi thì điền
 
   const student = conn
-    .prepare('SELECT id, student_code, full_name, status FROM students WHERE id = ?')
+    .prepare('SELECT id, student_code, full_name, status, parent_name, parent_relation, parent_phone FROM students WHERE id = ?')
     .get(c.eff_student_id) as any;
   const cycle = c.eff_cycle_id
     ? conn.prepare('SELECT id, seq, route, target_score, exam_month, exam_period_id, programme_code FROM learning_cycles WHERE id = ?')
@@ -1879,7 +1879,11 @@ export function caseDetail(p: Principal, caseId: number) {
     tamDungTu: tamDungTuCua(student),
     id: c.id,
     originKind: c.origin_kind,
-    student: student ? { id: student.id, code: student.student_code, name: student.full_name, status: student.status } : null,
+    student: student ? {
+      id: student.id, code: student.student_code, name: student.full_name, status: student.status,
+      /** OV-12e: Phụ huynh ở Ngăn Case chỉ đọc của TVV / CX (cùng liên hệ đầu hồ sơ — mọi vai xem hồ sơ đã thấy, OV-10b). */
+      phuHuynh: { parentName: student.parent_name ?? null, parentRelation: student.parent_relation ?? null, parentPhone: student.parent_phone ?? null },
+    } : null,
     cycle,
     classId: c.class_id,
     attemptId: c.attempt_id, attemptNo: c.attempt_no ?? null,

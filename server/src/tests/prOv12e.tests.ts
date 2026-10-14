@@ -98,6 +98,9 @@ export async function runPrOv12eTests(t: YThucTestKit) {
     assert(dQl.viec?.loai === 'xac-nhan-pa' && dQl.viec.paId === paCho.id && dQl.viec.lam === true, `QL: ${JSON.stringify(dQl.viec)}`);
     assert(dQl.viec.pa && typeof dQl.viec.pa.description === 'string', 'Xác nhận PA ngay trong dòng cần nội dung PA');
     assert(dQl.em?.id === paCho.student_id && typeof dQl.lop === 'string', `đầu dòng em · lớp: ${JSON.stringify([dQl.em, dQl.lop])}`);
+    /* Ngăn Case chỉ đọc (TVV / CX) có dòng Phụ huynh — cùng liên hệ đầu hồ sơ. */
+    const ph = cases.caseDetail(P.mbManager, paCho.case_id).student?.phuHuynh;
+    assert(ph && 'parentName' in ph && 'parentPhone' in ph, `phuHuynh: ${JSON.stringify(ph)}`);
     const pa = metrics.rowsFor('phuong-an', [paCho.id], 'pa-can-cap-nhat', P.mbManager)[0];
     assert(pa.viec?.loai === 'xac-nhan-pa' && pa.viec.caseId === paCho.case_id, `dòng PA: ${JSON.stringify(pa.viec)}`);
     const khac = gvMonKhac(paCho.class_id, paCho.topic);

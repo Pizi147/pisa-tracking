@@ -8,13 +8,14 @@ import { useLoiForm } from '../../ui/loiForm.tsx';
 import { Nhan } from '../../ui/Nhan.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { caseStatusLabel } from '../../lib/format.ts';
-import { INTERVENTION_KIND_LABEL, outcomeLabelFor, tuanLich } from '@shared/domain/index.ts';
+import { INTERVENTION_KIND_LABEL, chuPhuHuynh, nhanQuaHan, outcomeLabelFor, tuanLich } from '@shared/domain/index.ts';
+import { useSession } from '../../lib/session.tsx';
 import { ThanCase, tenNganCase, type CaseDetail, type ViewCase } from '../cases/CasePanel.tsx';
 import { GhiKetQuaPanel, SuaKetQuaPanel } from '../cases/CapNhatTuan.tsx';
 import { HoanThanhCasePanel, SuaCasePanel, SuaPaPanel, ThemPaPanel } from '../cases/ThaoTacCase.tsx';
 import { DongNguyenNhan, GhiNhanXetPanel, XacNhanCasePanel, XacNhanPaPanel, ketQuaGanNhat, type PaQuyChe } from '../yThuc/CaseSosControls.tsx';
 import { ChipHan } from '../../ui/Nhan.tsx';
-import { dauViec } from '../../ui/KhuonViec.tsx';
+import { BoiCanh, dauViec } from '../../ui/KhuonViec.tsx';
 import { TheYeuCau } from '../duyet/TheYeuCau.tsx';
 import { NhanTamDung } from '../cases/SkillBoard.tsx';
 import { KhoaNho } from '../cases/FormPa.tsx';
@@ -42,6 +43,7 @@ export function NganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose
   veNguon?: { nhan: string; onClick: () => void };
 }) {
   const { homNay, ngan } = useNgayNghiepVu();
+  const vai = useSession().session?.roles ?? [];
   const { data, error, reload } = useApi<CaseDetail>(`/cases/${caseId}`);
   const [view, setView] = useState<ViewCase>(() => viecBanDau ?? tuViec(viec, paId) ?? { loai: 'case' });
   /* Bấm "Hoàn thành Case" khi còn bị chặn: chân nói câu chặn (không phải ô nhập nên không đếm "n ô cần sửa"). */
@@ -166,6 +168,44 @@ export function NganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose
       <HoanThanhCasePanel {...chung} caseId={caseId} category={data.category} categoryLabel={data.categoryLabel} ratio={!!data.ratio}
         paGanNhat={(() => { const f = (data.followups ?? []).find((x: any) => x.outcome); return f ? outcomeLabelFor(f.outcome) : null; })()}
         onSaved={xong} />
+    );
+  }
+
+  /*
+   * ─────────────── CHỈ ĐỌC GỌN (OV-12e, mockup v3 §1 bảng vai, §3–§6): người xem không làm được gì ở Case (TVV, CX, GV môn khác) — MỘT câu tình trạng
+   * + Bối cảnh 3 dòng (+ Phụ huynh · Gọi cho TVV / CX); toàn bộ thân Case (PA, lịch sử, bằng chứng) ở "Xem thêm", không mất thông tin.
+   */
+  const vw = data.viewer;
+  if (!vw.canEdit && !vw.canApprove && !vw.canClose && !vw.coTheXacNhanCase && !vw.coTheMoLai && !vw.coTheSua) {
+    const vt = data.viecTiep ?? null;
+    const tre = vt?.han && vt.han < homNay ? Math.round((Date.parse(homNay) - Date.parse(vt.han.slice(0, 10))) / 86_400_000) : 0;
+    const paChay = (data.interventions ?? []).find((x: any) => x.status === 'planned' || x.status === 'started');
+    const ph = data.student?.phuHuynh ?? null;
+    const laTvvCx = vai.includes('consultant') || vai.includes('cx');
+    return (
+      <KhungPanel tieuDe={ten} hocVien={hv} lop={lop} onDong={onClose} quayLai={veNguon} dau={dauViec({ em, lop })}>
+        <div ref={boxRef} className="flex flex-col gap-5 pt-4">
+          <p className="m-0 text-sm leading-relaxed text-slate-200">
+            <b className="font-bold">{data.trangThaiV4?.chu ?? caseStatusLabel(data.status)}</b>
+            {vt && vt.chu !== data.trangThaiV4?.chu && <> · {vt.chu}</>}
+            {vt?.han && (tre > 0 ? <span className="font-semibold text-late"> · ⚠ {nhanQuaHan(tre)}</span> : <> · {t('hạn {ngay}', { ngay: ngan(vt.han) })}</>)}
+          </p>
+          <BoiCanh
+            dong={[
+              nguyenNhan,
+              [t('Phương án'), paChay ? [INTERVENTION_KIND_LABEL[paChay.kind as keyof typeof INTERVENTION_KIND_LABEL] ?? paChay.kind, paChay.performer, paChay.mocChu].filter(Boolean).join(' · ') : null],
+              [t('Kết quả gần nhất'), ketQuaGanNhat(data)],
+            ]}
+            them={<ThanCase data={data} onViec={setView} />} />
+          {laTvvCx && ph && (chuPhuHuynh(ph) || ph.parentPhone) && (
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-[10px] border px-3 py-2.5 text-sm text-slate-200" style={{ borderColor: 'var(--line)' }}>
+              <span className="w-full text-[13px] text-slate-500">{t('Phụ huynh')}</span>
+              <span className="min-w-0 flex-1">{[chuPhuHuynh(ph), ph.parentPhone].filter(Boolean).join(' · ')}</span>
+              {ph.parentPhone && <a className="btn min-h-[44px] sm:min-h-[36px]" href={`tel:${ph.parentPhone.replace(/\s+/g, '')}`}>{t('Gọi')}</a>}
+            </div>
+          )}
+        </div>
+      </KhungPanel>
     );
   }
 

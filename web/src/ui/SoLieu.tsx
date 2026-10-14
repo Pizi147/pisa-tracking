@@ -6,7 +6,7 @@ import { api, invalidate, type ApiError } from '../lib/api.ts';
 import { useSession } from '../lib/session.tsx';
 import { KhungPanel } from './KhungPanel.tsx';
 import { CanLam, NutChu } from './KhuonViec.tsx';
-import { ChipHan } from './Nhan.tsx';
+import { ChipHan, ChipSoQuaHan } from './Nhan.tsx';
 import { Empty, ErrorState, Skeleton } from './ui.tsx';
 import { useNgayNghiepVu } from './ngayNghiepVu.ts';
 import { dich, t } from '@shared/i18n/index.ts';
@@ -78,8 +78,6 @@ function DongNguoiHan({ nguoi, han, chiHan }: { nguoi: string | null; han: strin
 /* Việc dài của dòng (Ngăn Case, Nhập điểm, Vận hành) chỉ tải khi bấm — trang có ô số không kéo cả cây panel làm việc vào lần tải đầu. */
 const LamDongSoLieu = lazy(() => import('../modules/worklist/LamDongSoLieu.tsx').then((m) => ({ default: m.LamDongSoLieu })));
 
-/** Chip "⚠ n quá hạn" ở đầu panel số liệu — cùng màu chip hạn quá hạn (`ChipHan`). */
-const CHIP_TRE = 'inline-flex h-6 shrink-0 items-center gap-1 whitespace-nowrap rounded-full border border-late-line bg-late-bg px-2.5 text-[12.5px] font-bold tabular-nums text-late';
 
 /**
  * PANEL DANH SÁCH CỦA MỘT CON SỐ — hệ panel v3 (OV-12e, P12, mockup v3 §10). Đầu: tên số liệu + "⚠ n quá hạn" / "n Case · quá hạn lên đầu".
@@ -210,7 +208,7 @@ export function NganDanhSach({ tieuDe, dv, data, loading, error, reload, onDong,
   return (
     <KhungPanel tieuDe={tieuDe} onDong={onDong}
       dau={{
-        han: soTre ? <span className={CHIP_TRE}><span aria-hidden>⚠</span>{t('{n} quá hạn', { n: soTre })}</span> : null,
+        han: soTre ? <ChipSoQuaHan n={soTre} /> : null,
         dong2: [data && dv ? `${data.n} ${dv}` : null, soTre ? t('quá hạn lên đầu') : null],
       }}
       chan={vuaXong ? { v3: true, dongTren: <span className="font-semibold text-ok">✓ {vuaXong}</span> } : undefined}>

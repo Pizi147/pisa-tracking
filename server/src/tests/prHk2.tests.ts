@@ -402,12 +402,10 @@ export async function runPrHk2Tests(t: YThucTestKit) {
 
   check('C34 · CapNhatTuan: tên PA < 640 px xuống dòng, hạn + ⚠ xuống dòng dưới; KhungPanel ngCanh max-sm:whitespace-normal, giữ pb-2', () => {
     const s = doc('web/src/modules/cases/CapNhatTuan.tsx');
-    const i = s.indexOf('title={tenPa}');
-    assert(i >= 0, 'không thấy tên PA');
-    const ten = s.slice(s.lastIndexOf('<span', i), i);
-    assert(/max-sm:whitespace-normal/.test(ten) && /max-sm:break-words/.test(ten), `tên PA: ${ten}`);
-    const ngoai = s.slice(s.lastIndexOf('<span', s.lastIndexOf('<span', i) - 1), s.lastIndexOf('<span', i));
-    assert(/max-sm:flex-col/.test(ngoai), `khối ngữ cảnh < 640 px phải xếp cột (hạn xuống dòng dưới): ${ngoai}`);
+    /* OV-12e (mockup panel v3 §5): tên PA ở dòng 2 đầu panel (`dauViec` ngữ cảnh), hạn là chip ở dòng 1 — dòng 2 xuống dòng tự nhiên (flex-wrap, không cắt). */
+    assert(/dau=\{dauViec\(\{[^}]*ChipHan loai="cap-nhat-pa"[\s\S]{0,120}ngCanh: ngCanh \?\? tenPa/.test(s), 'không thấy tên PA ở đầu panel v3');
+    const kpDau = doc('web/src/ui/KhungPanel.tsx');
+    assert(/<p className="m-0 flex flex-wrap items-baseline/.test(kpDau) && !/dau\.dong2[\s\S]{0,200}truncate/.test(kpDau), 'dòng 2 đầu panel v3 phải xuống dòng, không cắt');
     const kp = /\{ngCanh && <div className="([^"]*)"/.exec(doc('web/src/ui/KhungPanel.tsx'));
     assert(kp && /max-sm:whitespace-normal/.test(kp[1]) && /(^|\s)pb-2(\s|$)/.test(kp[1]), `KhungPanel ngCanh: ${kp?.[1]}`);
   });

@@ -40,4 +40,6 @@ export const EN_OV12E = {
   'Nguyên nhân': 'Cause',
   'Kết quả kỳ trước': 'Previous result',
   'Kết quả gần nhất': 'Latest result',
+  'Phụ huynh': 'Parent',
+  'Gọi': 'Call',
 } satisfies Record<string, Dich>;

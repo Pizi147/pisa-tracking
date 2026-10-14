@@ -57,7 +57,7 @@ export type CaseDetail = {
   viecTiep?: { chu: string; loaiHan: string | null; han: string | null; paId?: number } | null;
   yeuCauCase?: any;
   topic?: string | null;
-  student: { id: number; code: string; name: string; status: string } | null;
+  student: { id: number; code: string; name: string; status: string; phuHuynh?: { parentName: string | null; parentRelation: string | null; parentPhone: string | null } } | null;
   cycle: { id: number; seq: number; route: string | null; target_score: number | null } | null;
   classId: number | null; attemptId: number | null; attemptNo: number | null;
   sosLevel: number | null; urgency: string | null;
