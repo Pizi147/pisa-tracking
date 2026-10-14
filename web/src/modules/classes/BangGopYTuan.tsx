@@ -96,7 +96,7 @@ export function BangGopYTuan({ classId, maLop, laFt, tuan, onTuan }: {
   const ten = (s: Em) => (
     <span className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5">
       <Link className="link font-semibold" to={`/hoc-vien/${s.id}`} state={{ ds }}>{s.fullName}</Link>
-      <span className="shrink-0 text-[11px] tabular-nums text-slate-500">{maHocVienNgan(s.studentCode)}</span>
+      <span className="shrink-0 text-[11.5px] tabular-nums text-slate-500">{maHocVienNgan(s.studentCode)}</span>
     </span>
   );
   const chip = (s: Em) => (laFt && s.sosLevel !== undefined ? <span className="mt-1 block"><KetLuan row={s as RosterRow} cotMocTrong={false} /></span> : null);
