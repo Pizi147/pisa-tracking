@@ -97,6 +97,8 @@ export function chonBuocTiep(p: Principal, cycleId: number, input: ChonBuocTiepV
   if (!coMuc(c0) || !c0.co_kq) throw badRequest('Lộ trình chưa có kết quả thi thật — nhập kết quả (hoặc Không thi) trước khi chọn bước tiếp.');
   const lopMoiId = input.lopMoiId ? Number(input.lopMoiId) : null;
   if (chon === 'hoc_tiep' && !lopMoiId) throw badRequest('Học tiếp lộ trình mới: chọn lớp.');
+  /* OV-12a: TVV chỉ xếp sang lớp thuộc chi nhánh của mình (quyền tạm `nguoiLam` theo chi nhánh TVV); QL giữ luật cũ (Q3: không đòi quyền lớp mới). */
+  if (lopMoiId && q !== p && !can(q, PERMISSIONS.CLASS_EDIT, { classId: lopMoiId })) throw forbidden('Lớp chuyển đến nằm ngoài chi nhánh của bạn.');
   const conn = db();
   const homNay = demoToday();
   return tx(() => {

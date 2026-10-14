@@ -216,9 +216,12 @@ export async function runPrOv12aTests(t: any) {
     buocTiep.boChonBuocTiep(TVV, a.cy);
     assert(hs(a.sid).status === 'finished', 'bỏ Học tiếp');
   }));
-  check('OV12a-6b · TVV vẫn 403 với Học lại thẳng, Case, PA học thuật; xem lớp Học lại chỉ chi nhánh mình', () => thu(() => {
+  check('OV12a-6b · TVV vẫn 403 với Học lại thẳng, Học tiếp sang lớp chi nhánh khác, Case, PA học thuật; xem lớp Học lại chỉ chi nhánh mình', () => thu(() => {
     const a = emCoKetQua(taoLopFt());
     assert(maLoi(() => students.hocLai(TVV, a.sid, {})) === 403, 'Học lại thẳng');
+    const CP = get(`SELECT id FROM branches WHERE code = 'CP'`).id as number;
+    const lopCp = intake.createClass(P.admin, { code: 'CP-OV12A-FT', branchId: CP, kind: 'FT', isFastTrack: true, route: 'LT2', startDate: t.TODAY }).id as number;
+    assert(maLoi(() => buocTiep.chonBuocTiep(TVV, a.cy, { chon: 'hoc_tiep', lopMoiId: lopCp })) === 403, 'TVV Học tiếp sang lớp chi nhánh khác');
     assert(maLoi(() => students.lopChoHocLai(TVV_CP, a.sid)) === 403 && maLoi(() => students.lopChoHocLai(CX, a.sid)) === 403, 'lớp Học lại ngoài quyền');
     ngay('2026-09-17');
     const sid = em();

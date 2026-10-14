@@ -263,8 +263,8 @@ export async function runPrLt2aTests(t: YThucTestKit) {
 
   check('LT2a (5) · FOU nhóm 2 PA chạy: GVCN ghi kết quả dòng G+V → dòng P có followup GIỐNG HỆT + cùng hạn; GV không liên quan → 403; quyết định chỉ Giữ nguyên · Điều chỉnh · Xin hỗ trợ QL', () => {
     const { cGv, cP, ha } = dungFouChay('LT2a FOU KQ');
-    /* MB FOU 12 đang ở tuần Cuối khoá (mốc < hạn T2 kế) — đẩy mốc xa để lần ghi này là kết quả tuần, không phải "kết quả cuối". */
-    conn.prepare('UPDATE case_interventions SET followup_due = ? WHERE nhom_bo_tro = ?').run(d.addDaysIso(TODAY, 28), paBt(cGv.id).nhom_bo_tro);
+    /* MB FOU 12 đang ở tuần Cuối khoá (mốc < hạn kế) — đẩy mốc xa (OV-12a: qua hai kỳ hai tuần) để hai lần ghi này là kết quả thường, không phải "kết quả cuối". */
+    conn.prepare('UPDATE case_interventions SET followup_due = ? WHERE nhom_bo_tro = ?').run(d.addDaysIso(TODAY, 42), paBt(cGv.id).nhom_bo_tro);
     const ivGv = paBt(cGv.id), ivP = paBt(cP.id);
     assert(ivGv.status === 'started' && ivP.status === 'started' && ivGv.action_due === ivP.action_due, 'hai PA chạy cùng hạn');
     assert(maLoi(() => cases.updateResult(P.w2Teacher, ivGv.id, KQ)) === 403, 'GV không liên quan ghi kết quả → 403');

@@ -3131,11 +3131,13 @@ check('Dữ liệu mẫu có đủ bốn mức độ ưu tiên, không phải m�
     )
     .all() as any[];
   const t = demoToday();
+  /* OV-12a: hạn ghi kết quả rơi Thứ Ba, ngày demo là Thứ Hai — mức "sát hạn" = hạn ngày mai. */
+  const ganNhat = addDays(t, 1);
   const late = open.filter((r) => r.action_due < t).length;
-  const today = open.filter((r) => r.action_due === t).length;
-  const soon = open.filter((r) => r.action_due > t).length;
+  const today = open.filter((r) => r.action_due >= t && r.action_due <= ganNhat).length;
+  const soon = open.filter((r) => r.action_due > ganNhat).length;
   assert(late > 0 && today > 0 && soon > 0,
-    `Hẹn xem lại phải có cả ba mức (quá hạn ${late}, hôm nay ${today}, còn hạn ${soon}) — `
+    `Hẹn xem lại phải có cả ba mức (quá hạn ${late}, hôm nay / ngày mai ${today}, còn hạn ${soon}) — `
     + 'neo hết vào ngày thi thì màn việc chỉ toàn một màu đỏ và không nhìn ra khác biệt');
 
   const untouched = conn
