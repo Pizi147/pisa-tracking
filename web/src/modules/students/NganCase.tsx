@@ -27,13 +27,15 @@ export type { ViewCase };
  * Có `paId` (view `case`) thì sau khi tải xong dò `[data-pa-id="{paId}"]` (giao kèo với Hành trình) để cuộn tới và viền sáng 2 giây.
  * Có `viec` thì mở thẳng view đó; `viecBanDau` là bản đầy đủ khi nơi gọi đã có `ViewCase`.
  */
-export function NganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose, onChanged }: {
+export function NganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose, onChanged, veNguon }: {
   caseId: number; paId?: number | null;
   /** `tra-loi` cũ trên URL (trước PR-DUYET) → mở Ngăn Case thường: trả lời đề xuất nay là thẻ ngay dưới PA. */
   viec?: 'ghi-ket-qua' | 'them-pa' | 'hoan-thanh' | 'tra-loi' | 'xac-nhan' | 'xac-nhan-pa';
   viecBanDau?: ViewCase;
   hocVien?: string | null; lop?: string | null;
   onClose: () => void; onChanged?: () => void;
+  /** OV-12f: mở từ Panel một em — "← {tên em}" thay "← Case …", làm xong về đúng panel em (không panel lồng panel). */
+  veNguon?: { nhan: string; onClick: () => void };
 }) {
   const { homNay, ngan } = useNgayNghiepVu();
   const { data, error, reload } = useApi<CaseDetail>(`/cases/${caseId}`);
@@ -52,7 +54,9 @@ export function NganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose
     tuDong.current = false;
     if (data.trangThaiV4?.k === 'cho-nguyen-nhan' && data.viewer.canEdit) setView({ loai: 'xac-nhan' });
   }, [data]);
-  const xong = () => { reload(); onChanged?.(); veCase(); };
+  /* Làm xong một việc: về nơi mở (panel em) nếu có, không thì về thân Case. */
+  const veSau = () => (veNguon ? veNguon.onClick() : veCase());
+  const xong = () => { reload(); onChanged?.(); veSau(); };
 
   /* Cuộn tới PA (chỉ ở view Case) + viền sáng 2 giây. Thân đã render cùng lượt với `data`, nên không cần đợi. */
   useEffect(() => {
@@ -83,7 +87,7 @@ export function NganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose
 
   const ten = tenNganCase(data);
   const hv = hocVien ?? data.student?.name ?? null;
-  const chung = { hocVien: hv, lop, quayLai: { nhan: ten, onClick: veCase }, onClose };
+  const chung = { hocVien: hv, lop, quayLai: veNguon ?? { nhan: ten, onClick: veCase }, onClose };
 
   if (view.loai === 'ghi-ket-qua') {
     const iv = (data.interventions ?? []).find((x: any) => x.id === view.paId);
@@ -108,7 +112,7 @@ export function NganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose
     return (
       <XacNhanCasePanel {...chung} caseId={caseId} topic={data.topic ?? data.category} kyNang={data.categoryLabel ?? data.category ?? 'Kỹ năng'}
         ct={data.chuongTrinh ?? null} tenSos={data.tenSos ?? null} paQuyChe={paCho} boTro={data.boTro ?? null}
-        onXong={() => { reload(); onChanged?.(); setView(paCho[0] ? { loai: 'xac-nhan-pa', paId: paCho[0].id } : { loai: 'case' }); }} />
+        onXong={() => { reload(); onChanged?.(); if (paCho[0]) setView({ loai: 'xac-nhan-pa', paId: paCho[0].id }); else veSau(); }} />
     );
   }
   if (view.loai === 'xac-nhan-pa') {
@@ -117,7 +121,7 @@ export function NganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose
       const tiep = paCho.find((x) => x.id !== pa.id);
       return (
         <XacNhanPaPanel key={pa.id} {...chung} pa={pa} studentId={data.student?.id}
-          onXong={() => { reload(); onChanged?.(); setView(tiep ? { loai: 'xac-nhan-pa', paId: tiep.id } : { loai: 'case' }); }} />
+          onXong={() => { reload(); onChanged?.(); if (tiep) setView({ loai: 'xac-nhan-pa', paId: tiep.id }); else veSau(); }} />
       );
     }
   }
@@ -192,7 +196,7 @@ export function NganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose
   /* Điều kiện hoàn thành (PA quy chế chưa khép) một dòng có ổ khoá: "Hoàn thành được sau khi PA theo quy chế kết thúc · **mốc**". */
   const dk = canDong && ht?.an && ht.dong ? /^(.*?) \((.*)\)$/.exec(ht.dong) : null;
   return (
-    <KhungPanel tieuDe={ten} hocVien={hv} lop={lop} onDong={onClose}
+    <KhungPanel tieuDe={ten} hocVien={hv} lop={lop} onDong={onClose} quayLai={veNguon}
       chan={{
         huy: { nhan: 'Đóng', onClick: onClose },
         phu: data.viewer.canEdit && canDong && !(data.sos?.awaitingCause || data.sos?.choDuyetKhongTheoDoi)

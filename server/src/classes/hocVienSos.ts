@@ -30,7 +30,7 @@ export type CaseTomTat = {
   /** Kết quả PA gần nhất (tình trạng tới hôm nay) — chữ 5 mức + ngày ghi. */
   ketQua: string | null; ketQuaNgay: string | null;
   nhom: NhomXuLy; trangThai: string;
-  viecTiep: { chu: string; han: string | null; quaHan: boolean } | null;
+  viecTiep: { chu: string; han: string | null; loaiHan: string | null; quaHan: boolean } | null;
   /** Lượt sinh / lặp Case — panel ghép Case với lượt SOS ("MT2"). */
   attemptId: number | null; attemptNo: number | null; done: boolean;
 };
@@ -63,7 +63,7 @@ function tomTatCase(cases: readonly MappedCase[]): Map<number, CaseTomTat> {
       pa: x.pas.map((p) => ({ id: p.id, ten: p.ten, nguoi: p.nguoi, choXacNhan: p.choXacNhan, xong: p.xong })),
       ketQua: c.lastOutcome ? outcomeLabelFor(c.lastOutcome) : null, ketQuaNgay: c.lastOutcomeOn,
       nhom: nhomXuLyCase(x.trangThai.k, daChay), trangThai: x.trangThai.chu,
-      viecTiep: x.viecTiep ? { chu: x.viecTiep.chu, han: x.viecTiep.han, quaHan: !!x.viecTiep.han && x.viecTiep.han < homNay } : null,
+      viecTiep: x.viecTiep ? { chu: x.viecTiep.chu, han: x.viecTiep.han, loaiHan: x.viecTiep.loaiHan, quaHan: !!x.viecTiep.han && x.viecTiep.han < homNay } : null,
       attemptId: c.attemptId, attemptNo: c.attemptNo, done: c.status === 'done',
     });
   }
