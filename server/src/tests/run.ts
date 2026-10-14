@@ -9326,14 +9326,13 @@ await runPrOv11iTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P,
 // ==================================================================== PR-OV11d (hồ sơ HV · Case: không kẹt sau Tạm dừng / Lưu trữ / Bước tiếp; nút hiện = máy chủ cho)
 const { runPrOv11dTests } = await import('./prOv11d.tests.ts');
 await runPrOv11dTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
-============================================================ PR-OV12a (hạn ghi kết quả PA hai tuần · QL xoá lớp trống / nhiều HV · TVV Bước tiếp sau thi)
-const { runPrOv12aTests } = await import('./prOv12a.tests.ts');
-await runPrOv12aTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
-=======
 // ==================================================================== PR-OV11g (Học viên & Lớp · hồ sơ lớp: Thiếu thông tin, em Kết thúc học, lớp đã kết thúc)
 const { runPrOv11gTests } = await import('./prOv11g.tests.ts');
 await runPrOv11gTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
-// console.log(`\n${'='.repeat(60)}`);
+// ==================================================================== PR-OV12a (hạn ghi kết quả PA hai tuần · QL xoá lớp trống / nhiều HV · TVV Bước tiếp sau thi)
+const { runPrOv12aTests } = await import('./prOv12a.tests.ts');
+await runPrOv12aTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`
   : `${passed} đạt, ${failures.length} KHÔNG ĐẠT:\n` + failures.map((f) => '  - ' + f).join('\n'));
