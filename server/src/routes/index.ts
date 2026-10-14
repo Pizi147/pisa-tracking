@@ -1210,14 +1210,15 @@ api.post('/y-thuc/xu-ly/:id/da-thuc-hien', requireAuth, wrap((req) => {
  */
 api.get('/metrics/:id', requireAuth, wrap((req) => {
   maybeSimulateReadError();
-  const r = metricSet(principalOf(req), String(req.params.id), {
+  const p = principalOf(req);
+  const r = metricSet(p, String(req.params.id), {
     branchId: qInt(req, 'branchId'), skill: qStr(req, 'skill') ?? null,
     from: qStr(req, 'from') ?? null, to: qStr(req, 'to') ?? null, kind: qStr(req, 'kind') ?? null,
     program: ctTuyChon(qStr(req, 'ct')),   // PR-Pb2-a: vắng = gộp; chỉ số Ý thức / Phối hợp bỏ qua khung trong metricSet
     classId: qInt(req, 'classId'),
     ctLop: qStr(req, 'ctLop') ?? null,
   });
-  return metricResponse(r, qStr(req, 'rows') === '1');
+  return metricResponse(r, qStr(req, 'rows') === '1', p);
 }));
 
 api.get('/classes/:id/overview', requireAuth, wrap((req) => {

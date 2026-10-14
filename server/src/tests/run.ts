@@ -9355,6 +9355,9 @@ await runPrOv12hTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P,
 // ==================================================================== PR-OV12g (Góp ý hàng tuần ở hồ sơ lớp: ghi / sửa / xoá · quyền · 4 tuần · migrate)
 const { runPrOv12gTests } = await import('./prOv12g.tests.ts');
 await runPrOv12gTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== PR-OV12e (hệ panel v3 · chip hạn 3 mức · Quyết định 3 nút · panel số liệu mở rộng dòng)
+const { runPrOv12eTests } = await import('./prOv12e.tests.ts');
+await runPrOv12eTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`

@@ -273,7 +273,7 @@ export function oHoSoGv(p: Principal, gvId: number, q: ThamSoO): { n: number; ti
   }
   if (cot === 'case-mo' || cot === 'case-qua-han') {
     const ds = caseMoCuaGv(p, gvId, branchIds, ct).filter((c) => cot === 'case-mo' || c.quaHan);
-    return ket(rowsFor('case', ds.map((c) => c.id)), (n) => `${n} Case ${cot === 'case-mo' ? 'đang phụ trách' : 'có việc tiếp quá hạn'}`);
+    return ket(rowsFor('case', ds.map((c) => c.id), undefined, p), (n) => `${n} Case ${cot === 'case-mo' ? 'đang phụ trách' : 'có việc tiếp quá hạn'}`);
   }
 
   const lop = lopCuaGv(gvId, homNay, branchIds, ct);
@@ -290,7 +290,7 @@ export function oHoSoGv(p: Principal, gvId: number, q: ThamSoO): { n: number; ti
   if (cot === 'chua-nhap' || cot === 'qua-han') {
     const o = noDiemCuaGv(p, gvId, homNay, chonLop).filter((d) => cot === 'chua-nhap' || d.overdue);
     /* PR-UXF-a Q7: mỗi dòng một BÀI (`baiId`) — CÙNG dựng dòng với ô "bài chưa nhập điểm quá hạn" ở Tổng quan (`rowsFor('bai')`). */
-    return ket(rowsFor('bai', o.map((d) => baiId(d.attemptId, d.skill))), (n) => `${n} bài ${cot === 'chua-nhap' ? 'chưa nhập' : 'quá hạn nhập'}`);
+    return ket(rowsFor('bai', o.map((d) => baiId(d.attemptId, d.skill)), undefined, p), (n) => `${n} bài ${cot === 'chua-nhap' ? 'chưa nhập' : 'quá hạn nhập'}`);
   }
 
   // cot === 'ket-qua': ô đạt/tổng của một lớp ở một mốc
