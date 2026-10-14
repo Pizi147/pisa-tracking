@@ -10,10 +10,10 @@ import { t } from '@shared/i18n/index.ts';
  *   BoiCanh   ≤ 3 dòng nhãn – giá trị (Nguyên nhân · Phương án · Kết quả gần nhất); "Xem thêm" mở ngay dưới, không chuyển trang.
  * Đầu panel 2 dòng = `KhungPanel dau`. Chân = `KhungPanel chan` (dòng trạng thái + nút chính dính đáy ở 375).
  */
-export function CanLam({ children }: { children: ReactNode }) {
+export function CanLam({ children, trongDong }: { children: ReactNode; /** OV-12e: trong dòng mở rộng (nền dòng đã accent-soft) → nền surface. */ trongDong?: boolean }) {
   return (
     <div className="flex flex-col gap-3.5 rounded-[4px_10px_10px_4px] py-4 pl-[19px] pr-4 max-sm:py-3.5 max-sm:pl-[15px] max-sm:pr-3"
-      style={{ background: 'var(--accent-soft)', boxShadow: 'inset 3px 0 0 var(--accent)' }}>
+      style={{ background: trongDong ? 'var(--surface)' : 'var(--accent-soft)', boxShadow: 'inset 3px 0 0 var(--accent)' }}>
       {children}
     </div>
   );

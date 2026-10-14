@@ -1,9 +1,7 @@
 import { useState, type ReactNode } from 'react';
 import { useApi } from '../../lib/useApi.ts';
-import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { SoLieuO } from '../../ui/SoLieuO.tsx';
-import { DongDanhSach, type DongSoLieu } from '../../ui/SoLieu.tsx';
-import { Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
+import { NganDanhSach, type DongSoLieu } from '../../ui/SoLieu.tsx';
 import { KHOANG_MAC_DINH, type ChuongTrinh, type Khoang } from '@shared/domain/index.ts';
 
 /**
@@ -47,16 +45,7 @@ export function NutMoDanhSach({ nguon, tieuDe, children, className = '' }: { ngu
         className={`appearance-none bg-transparent border-0 p-0 max-sm:py-3 max-sm:-my-3 max-sm:px-3 max-sm:-mx-3 cursor-pointer underline decoration-dotted underline-offset-4 hover:text-white ${className}`}>
         {children}
       </button>
-      {mo && (
-        <KhungPanel tieuDe={data?.tieuDe ?? tieuDe} onDong={() => setMo(false)} ngCanh="Đúng những mục tạo nên con số vừa bấm">
-          <div className="pt-3">
-            {error ? <ErrorState message={error.message} hint={error.hint} onRetry={reload} />
-              : loading || !data ? <Skeleton rows={5} />
-              : !data.rows.length ? <Empty title="Không có mục nào" />
-              : <DongDanhSach rows={data.rows} onPick={() => setMo(false)} />}
-          </div>
-        </KhungPanel>
-      )}
+      {mo && <NganDanhSach tieuDe={data?.tieuDe ?? tieuDe} data={data} loading={loading} error={error} reload={reload} onDong={() => setMo(false)} />}
     </>
   );
 }

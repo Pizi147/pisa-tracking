@@ -1,9 +1,7 @@
 import { useState } from 'react';
 import { metricById } from '@shared/domain/index.ts';
 import { useApi } from '../lib/useApi.ts';
-import { KhungPanel } from './KhungPanel.tsx';
-import { Empty, ErrorState, Skeleton } from './ui.tsx';
-import { DanhSachSoLieu, DongDanhSach, type DongSoLieu, type PhamViSoLieu } from './SoLieu.tsx';
+import { DanhSachSoLieu, NganDanhSach, type DongSoLieu, type PhamViSoLieu } from './SoLieu.tsx';
 import { t } from '@shared/i18n/index.ts';
 
 /**
@@ -40,14 +38,6 @@ export function SoLieuO(props: Props) {
 function DanhSachNguon({ nguon, tieuDe, open, onClose }: { nguon: string; tieuDe: string; open: boolean; onClose: () => void }) {
   const { data, loading, error, reload } = useApi<{ n: number; tieuDe: string; rows: DongSoLieu[] }>(open ? nguon : null, [nguon, open]);
   if (!open) return null;
-  return (
-    <KhungPanel tieuDe={data?.tieuDe ?? tieuDe} onDong={onClose} ngCanh={t('Đúng những mục tạo nên con số vừa bấm')}>
-      <div className="pt-3">
-        {error ? <ErrorState message={error.message} hint={error.hint} onRetry={reload} />
-          : loading || !data ? <Skeleton rows={5} />
-          : !data.rows.length ? <Empty title={t('Không có mục nào')} />
-          : <DongDanhSach rows={data.rows} onPick={onClose} />}
-      </div>
-    </KhungPanel>
-  );
+  /* OV-12e: cùng panel mở rộng dòng với ô số trong sổ (`NganDanhSach`). */
+  return <NganDanhSach tieuDe={data?.tieuDe ?? tieuDe} data={data} loading={loading} error={error} reload={reload} onDong={onClose} />;
 }

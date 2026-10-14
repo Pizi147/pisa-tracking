@@ -5,4 +5,13 @@ export const EN_OV12E = {
   'Chưa lưu được': 'Not saved',
   'Huỷ sửa': 'Discard changes',
   'Chưa lưu': 'Unsaved',
+  'Danh sách': 'List',
+  'Đã xác nhận': 'Confirmed',
+  'Đã xác nhận PA · {ten}': 'Plan confirmed · {ten}',
+  'Xác nhận PA': 'Confirm plan',
+  'Sửa PA': 'Edit plan',
+  'Xem hồ sơ': 'View profile',
+  'Mở trang': 'Open page',
+  '{n} quá hạn': '{n} overdue',
+  'quá hạn lên đầu': 'overdue first',
 } satisfies Record<string, Dich>;
