@@ -14,6 +14,7 @@ import { PhoiHopSosSection, type CoordTurn } from './PhoiHopSosSection.tsx';
 import { NhanViPham } from './NhanViPham.tsx';
 import { ThangYThuc } from './ThangYThuc.tsx';
 import { DUONG_LAM_MOI_Y_THUC, type YThucHocVien } from './kieu.ts';
+import { dich, t } from '@shared/i18n/index.ts';
 
 type Loc = 'tat-ca' | 'can' | 'cho' | 'xong';
 const MO_VP = new Set(['moi', 'can_xu_ly', 'qua_han']);
@@ -66,7 +67,7 @@ export function StudentYThucSection({ studentId, onGoAcademic, thuong = false }:
     try {
       await api.post(`/students/${studentId}/y-thuc/ghi-nhan`, { violationIds: ids });
       DUONG_LAM_MOI_Y_THUC.forEach((x) => invalidate(x));
-      toast.push('ok', `Đã ghi nhận ${ids.length} vi phạm`);
+      toast.push('ok', t('Đã ghi nhận {length} vi phạm', { length: ids.length }));
       reload();
     } catch (e: any) { toast.push('error', e.message); }
   };
@@ -75,7 +76,7 @@ export function StudentYThucSection({ studentId, onGoAcademic, thuong = false }:
     try {
       await api.post(`/students/${studentId}/y-thuc/bo-ghi-nhan`, { violationIds: [id] });
       DUONG_LAM_MOI_Y_THUC.forEach((x) => invalidate(x));
-      toast.push('ok', 'Đã bỏ ghi nhận');
+      toast.push('ok', t('Đã bỏ ghi nhận'));
       reload();
     } catch (e: any) { toast.push('error', e.message); }
   };
@@ -98,21 +99,21 @@ export function StudentYThucSection({ studentId, onGoAcademic, thuong = false }:
 
   const muc: DongThoiGianMuc[] = d.dongThoiGian.filter(hopLoc).map((x) => x.loai === 'xu-ly' ? {
     key: `x${x.id}`, ngay: x.ngay, vach: true,
-    cot2: <span className="text-[11px] font-bold uppercase tracking-[.04em] text-slate-400">Xử lý</span>,
-    tieuDe: <span className="font-bold">{x.nhan}</span>,
-    dongPhu: [`${x.soViPham} vi phạm`, x.nguoi, x.soTep ? `${x.soTep} tệp` : null, x.status !== 'done' ? x.statusLabel : null].filter(Boolean).join(' · '),
-    cuoi: <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => mo({ loai: 'xem', id: x.id })}>Xem</button>,
+    cot2: <span className="text-[11px] font-bold uppercase tracking-[.04em] text-slate-400">{t('Xử lý')}</span>,
+    tieuDe: <span className="font-bold">{dich(x.nhan)}</span>,
+    dongPhu: [t('{soViPham} vi phạm', { soViPham: x.soViPham }), x.nguoi, x.soTep ? t('{soTep} tệp', { soTep: x.soTep }) : null, x.status !== 'done' ? x.statusLabel : null].filter(Boolean).join(' · '),
+    cuoi: <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => mo({ loai: 'xem', id: x.id })}>{t('Xem')}</button>,
   } : {
     key: `v${x.id}`, ngay: x.ngay,
-    cot2: <span className="text-[11px] text-slate-400">Vi phạm</span>,
+    cot2: <span className="text-[11px] text-slate-400">{t('Vi phạm')}</span>,
     tieuDe: x.viPham,
-    dongPhu: [x.nhom, x.mon, x.nguoiGhi ? `${x.nguoiGhi} ghi` : null].filter(Boolean).join(' · '),
+    dongPhu: [dich(x.nhom), x.mon && dich(x.mon), x.nguoiGhi ? t('{ten} ghi', { ten: x.nguoiGhi }) : null].filter(Boolean).join(' · '),
     cuoi: (
       <span className="flex flex-wrap items-center justify-end gap-1.5">
-        <NhanViPham t={x.trangThai} nhan={x.nhanTrangThai} />
+        <NhanViPham t={x.trangThai} nhan={dich(x.nhanTrangThai)} />
         {coGhiNhan(x.id) && <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => void ghiNhan([x.id])}
-          title="Đã xem, không cần xử lý">Ghi nhận</button>}
-        {d.canManage && x.trangThai === 'da_ghi_nhan' && <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => void boGhiNhan(x.id)}>Bỏ ghi nhận</button>}
+          title={t('Đã xem, không cần xử lý')}>{t('Ghi nhận')}</button>}
+        {d.canManage && x.trangThai === 'da_ghi_nhan' && <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => void boGhiNhan(x.id)}>{t('Bỏ ghi nhận')}</button>}
       </span>
     ),
     mo: moViPhamId === x.id,
@@ -124,11 +125,11 @@ export function StudentYThucSection({ studentId, onGoAcademic, thuong = false }:
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-2">
-        <h2 className="m-0 flex-1 text-sm font-semibold text-slate-200">Ý thức & Phối hợp</h2>
-        {d.canRecord && <button type="button" className="btn btn-sm btn-primary" onClick={() => mo({ loai: 'ghi', studentId, studentName: d.ten })}>+ Ghi vi phạm</button>}
+        <h2 className="m-0 flex-1 text-sm font-semibold text-slate-200">{t('Ý thức & Phối hợp')}</h2>
+        {d.canRecord && <button type="button" className="btn btn-sm btn-primary" onClick={() => mo({ loai: 'ghi', studentId, studentName: d.ten })}>{t('+ Ghi vi phạm')}</button>}
       </div>
-      <HangTab cap="con" ariaLabel="Ý thức & Phối hợp của học viên" value={sub} onChange={setSub}
-        tabs={[{ key: 'vi-pham', label: 'Vi phạm & xử lý', so: soCan }, { key: 'phoi-hop', label: thuong ? 'Phối hợp' : 'Phối hợp SOS', so: coord.data?.pendingCount ?? 0 }]} />
+      <HangTab cap="con" ariaLabel={t('Ý thức & Phối hợp của học viên')} value={sub} onChange={setSub}
+        tabs={[{ key: 'vi-pham', label: t('Vi phạm & xử lý'), so: soCan }, { key: 'phoi-hop', label: thuong ? t('Phối hợp') : t('Phối hợp SOS'), so: coord.data?.pendingCount ?? 0 }]} />
 
       {sub === 'vi-pham' && (
         <>
@@ -141,30 +142,29 @@ export function StudentYThucSection({ studentId, onGoAcademic, thuong = false }:
             onDeXuat={d.canManage ? () => mo({ loai: 'xu-ly', studentId, cheDo: 'de-xuat' }) : undefined} />
           {d.canSuaKhai && d.khai && (
             <p className="m-0 text-xs text-slate-500">
-              Đã xác nhận cấp bậc vi phạm{d.khai.bac > 0 ? ` (bậc ${d.khai.bac})` : ''} ngày {ngay(d.khai.luc, homNay)}.{' '}
-              <button type="button" className="link inline-flex items-center appearance-none border-0 bg-transparent p-0 min-h-[44px] sm:min-h-0" onClick={() => mo({ loai: 'khai', studentId, sua: true })}>Sửa cấp bậc</button>
+              {t('Đã xác nhận cấp bậc vi phạm{x} ngày {ngay}.', { x: d.khai.bac > 0 ? t(' (bậc {bac})', { bac: d.khai.bac }) : '', ngay: ngay(d.khai.luc, homNay) })}
+              <button type="button" className="link inline-flex items-center appearance-none border-0 bg-transparent p-0 min-h-[44px] sm:min-h-0" onClick={() => mo({ loai: 'khai', studentId, sua: true })}>{t('Sửa cấp bậc')}</button>
             </p>
           )}
 
           <div className="flex flex-wrap items-center gap-2">
-            <BoLocDoan ariaLabel="Lọc dòng thời gian" value={loc} onChange={setLoc}
-              muc={[{ key: 'tat-ca', nhan: 'Tất cả' }, { key: 'can', nhan: 'Cần xử lý', so: soCan || null }, { key: 'cho', nhan: 'Chờ duyệt' }, { key: 'xong', nhan: 'Đã xử lý' }]} />
-            <select className="field ml-auto w-auto py-1 text-xs" aria-label="Nhóm vi phạm" value={nhomVp} onChange={(e) => setNhomVp(e.target.value)}>
-              <option value="">Mọi nhóm</option>
+            <BoLocDoan ariaLabel={t('Lọc dòng thời gian')} value={loc} onChange={setLoc}
+              muc={[{ key: 'tat-ca', nhan: t('Tất cả') }, { key: 'can', nhan: t('Cần xử lý'), so: soCan || null }, { key: 'cho', nhan: t('Chờ duyệt') }, { key: 'xong', nhan: t('Đã xử lý') }]} />
+            <select className="field ml-auto w-auto py-1 text-xs" aria-label={t('Nhóm vi phạm')} value={nhomVp} onChange={(e) => setNhomVp(e.target.value)}>
+              <option value="">{t('Mọi nhóm')}</option>
               {VIOLATION_CATEGORIES.map((c) => <option key={c} value={c}>{VIOLATION_CATEGORY_LABEL[c as ViolationCategory]}</option>)}
             </select>
           </div>
 
           <DongThoiGian bien="day-du" muc={muc}
-            rong={<Empty title={loc === 'tat-ca' && !nhomVp ? 'Chưa có vi phạm nào' : 'Không có dòng nào khớp bộ lọc'} />} />
+            rong={<Empty title={loc === 'tat-ca' && !nhomVp ? t('Chưa có vi phạm nào') : t('Không có dòng nào khớp bộ lọc')} />} />
 
           <p className="m-0 flex flex-wrap items-center gap-x-2 text-[11.5px] text-slate-500">
             <span>
-              {phamVi === 'chuoi' ? (d.chuoi.nhan === 'lớp thường' ? 'Các khoá lớp thường này' : `Lộ trình ${d.chuoi.nhan}`) : 'Cả lịch sử'}:
-              {' '}{d.demCuoi.tong} vi phạm{d.demCuoi.theoNhom.length ? ` · ${d.demCuoi.theoNhom.map((x) => `${x.so} ${x.nhom}`).join(' · ')}` : ''}
+              {t('{x}: {tong} vi phạm{x2}', { x: phamVi === 'chuoi' ? (d.chuoi.nhan === 'lớp thường' ? t('Các khoá lớp thường này') : t('Lộ trình {nhan}', { nhan: d.chuoi.nhan })) : t('Cả lịch sử'), tong: d.demCuoi.tong, x2: d.demCuoi.theoNhom.length ? ` · ${d.demCuoi.theoNhom.map((x) => `${x.so} ${dich(x.nhom)}`).join(' · ')}` : '' })}
             </span>
             <button type="button" className="link inline-flex items-center appearance-none border-0 bg-transparent p-0 min-h-[44px] sm:min-h-0" onClick={() => setPhamVi((v) => (v === 'chuoi' ? 'tat-ca' : 'chuoi'))}>
-              {phamVi === 'chuoi' ? 'Xem cả lịch sử' : 'Chỉ chuỗi hiện tại'}
+              {phamVi === 'chuoi' ? t('Xem cả lịch sử') : t('Chỉ chuỗi hiện tại')}
             </button>
           </p>
         </>
@@ -194,21 +194,21 @@ function ThanhViec({ d, homNay, onDaThucHien, onGhiNhan }: {
   let hanh: ReactNode = null;
   if (d.nhom === 'qua_han' && d.soBatBuoc > 0) {
     tone = 'border-late-line bg-late-bg text-late';
-    cau = <>{d.soBatBuoc} vi phạm bắt buộc xử lý · quá hạn {d.quaHanNgay ?? ''} ngày{d.daBaoQl ? ' · đã báo QL' : ''}</>;
+    cau = <>{t('{soBatBuoc} vi phạm bắt buộc xử lý · quá hạn {x} ngày{x2}', { soBatBuoc: d.soBatBuoc, x: d.quaHanNgay ?? '', x2: d.daBaoQl ? t(' · đã báo QL') : '' })}</>;
   } else if (d.deXuat?.status === 'da_duyet') {
     tone = d.deXuat.quaHan ? 'border-late-line bg-late-bg text-late' : 'border-wait-line bg-wait-bg text-wait';
-    cau = <>Đã duyệt {d.deXuat.nhan}{d.deXuat.han ? ` · ghi "Đã thực hiện" trước ${ngay(d.deXuat.han, homNay)}` : ''}{d.deXuat.quaHan && d.daBaoQl ? ' · đã báo QL' : ''}</>;
-    hanh = nut('Đánh dấu đã thực hiện', () => onDaThucHien(d.deXuat!.id));
+    cau = <>{t('Đã duyệt {nhan}{x}{x2}', { nhan: d.deXuat.nhan, x: d.deXuat.han ? t(' · ghi "Đã thực hiện" trước {ngay}', { ngay: ngay(d.deXuat.han, homNay) }) : '', x2: d.deXuat.quaHan && d.daBaoQl ? t(' · đã báo QL') : '' })}</>;
+    hanh = nut(t('Đánh dấu đã thực hiện'), () => onDaThucHien(d.deXuat!.id));
   } else if (d.soBatBuoc > 0) {
     tone = 'border-soon-line bg-soon-bg text-soon';
-    cau = <>{d.soBatBuoc} vi phạm trong tuần này + tuần trước → bắt buộc xử lý{d.han ? ` · hạn ${ngay(d.han, homNay)}` : ''}</>;
+    cau = <>{t('{soBatBuoc} vi phạm trong tuần này + tuần trước → bắt buộc xử lý{x}', { soBatBuoc: d.soBatBuoc, x: d.han ? t(' · hạn {ngay}', { ngay: ngay(d.han, homNay) }) : '' })}</>;
   } else if (d.deXuat?.status === 'cho_duyet') {
     tone = 'border-wait-line bg-wait-bg text-wait';
-    cau = <>Đề xuất {d.deXuat.nhan} · chờ QL{d.deXuat.han ? ` · hạn ${ngay(d.deXuat.han, homNay)}` : ''}</>;
+    cau = <>{t('Đề xuất {nhan} · chờ QL{x}', { nhan: d.deXuat.nhan, x: d.deXuat.han ? t(' · hạn {ngay}', { ngay: ngay(d.deXuat.han, homNay) }) : '' })}</>;
   } else if (d.soMoi > 0) {
     tone = d.nhom === 'qua_han' ? 'border-late-line bg-late-bg text-late' : 'border-[color:var(--line-strong)] text-slate-300';
-    cau = <>{d.soMoi} vi phạm chưa xem{d.nhom === 'qua_han' ? ` · quá hạn${d.daBaoQl ? ' · đã báo QL' : ''}` : d.hanXem ? ` · hạn ${ngay(d.hanXem, homNay)}` : ''}</>;
-    hanh = d.canManage ? <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={onGhiNhan}>Ghi nhận {d.soMoi}</button> : null;
+    cau = <>{t('{soMoi} vi phạm chưa xem{x}', { soMoi: d.soMoi, x: d.nhom === 'qua_han' ? t(' · quá hạn{x}', { x: d.daBaoQl ? t(' · đã báo QL') : '' }) : d.hanXem ? t(' · hạn {ngay}', { ngay: ngay(d.hanXem, homNay) }) : '' })}</>;
+    hanh = d.canManage ? <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={onGhiNhan}>{t('Ghi nhận {soMoi}', { soMoi: d.soMoi })}</button> : null;
   }
   if (!cau) return null;
   return (

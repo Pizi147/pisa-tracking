@@ -4,9 +4,11 @@
  * Chữ theo `thiet-ke/THUAT_NGU_EN_2026-10-07.md`.
  */
 import { EN_A } from './en/a.ts';
+import { EN_D } from './en/d.ts';
 
-export type Bien = Record<string, string | number>;
+/** null / undefined in ra như chuỗi ghép `${x}` cũ (giữ đúng chữ bản Việt). */
+export type Bien = Record<string, string | number | null | undefined>;
 /** Chữ thường, hoặc hàm khi cần số ít / số nhiều. */
 export type Dich = string | ((b: Bien) => string);
 
-export const EN = { ...EN_A };
+export const EN = { ...EN_A, ...EN_D };

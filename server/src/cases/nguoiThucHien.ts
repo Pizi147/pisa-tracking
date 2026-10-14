@@ -1,4 +1,4 @@
-import { badRequest } from '../util.ts';
+import { badRequest, loi } from '../util.ts';
 import { laNguoiHopLe } from '../platform/timNguoi.ts';
 import type { Principal } from '../permissions.ts';
 import type { NhomNguoi } from '../../../shared/domain/index.ts';
@@ -40,7 +40,7 @@ export function chuanHoaNguoiThucHien(
   }
   const ten = (input.performerName ?? '').trim();
   if (ten) {
-    if (ten.length < 2 || ten.length > 100) throw badRequest(`Tên ${nhan.toLowerCase()} phải từ 2 đến 100 ký tự.`);
+    if (ten.length < 2 || ten.length > 100) throw loi(400, 'Tên {nhan} phải từ 2 đến 100 ký tự.', { nhan: nhan.toLowerCase() });
     return { userId: null, name: ten };
   }
   if (input.performerSelf) return { userId: p.userId, name: null };

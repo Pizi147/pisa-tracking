@@ -9,6 +9,7 @@ import {
   coNguoiDay, coSoBuoi, interventionKindsFor, khacNguoi, kiemGhiRoKhac, nguoiMacDinh, nhanNguoiDay, nhatKyPa,
   type GiaTriPa, type KetQuaNhatKy, type LoiTruong, type PaNhatKy,
 } from '@shared/domain/index.ts';
+import { dich, t } from '@shared/i18n/index.ts';
 
 /**
  * MỘT FORM PA (PR-PA §8, mockup pa-dong-bo mục 3–7) — Thêm PA · Sửa PA · Thay PA · Xác nhận PA · Điều chỉnh dùng chung khối này:
@@ -47,34 +48,34 @@ export function FormPa({ v, dat, lf, loi, chonLoai, quyChe, toiThieu = 8, daDay 
 
   const loai = chonLoai ? (
     <div>
-      <Truong nhan="Loại PA" batBuoc>
+      <Truong nhan={t('Loại PA')} batBuoc>
         <select className="field w-full" value={v.kind} onChange={(e) => doiLoai(e.target.value)}>
-          <optgroup label="Bạn tự làm được">
+          <optgroup label={t('Bạn tự làm được')}>
             {kinds.selfServe.map((k) => <option key={k} value={k}>{tenLoai(k)}</option>)}
           </optgroup>
-          <optgroup label="Cần Quản lý duyệt">
-            {kinds.proposals.map((k) => <option key={k} value={k}>{tenLoai(k)} · cần Quản lý duyệt</option>)}
+          <optgroup label={t('Cần Quản lý duyệt')}>
+            {kinds.proposals.map((k) => <option key={k} value={k}>{t('{tenLoai} · cần Quản lý duyệt', { tenLoai: tenLoai(k) })}</option>)}
           </optgroup>
         </select>
       </Truong>
       {/* PA đề xuất "Khác" (T13): ô Tên đề xuất ngay dưới; máy chủ ghép "{tên} — {mô tả}" (Q9). */}
-      <OKhac hien={v.kind === 'other_proposal'} value={v.ghiRo} onChange={(x) => dat({ ghiRo: x })} nhan="Tên đề xuất" goiY="Ví dụ: Học kèm 1-1 với Tutor"
+      <OKhac hien={v.kind === 'other_proposal'} value={v.ghiRo} onChange={(x) => dat({ ghiRo: x })} nhan={t('Tên đề xuất')} goiY={t('Ví dụ: Học kèm 1-1 với Tutor')}
         id={lf.oId(k('ghi-ro'))} onBlur={lf.roi(k('ghi-ro'))} loi={lf.hien(k('ghi-ro')) ? kiemGhiRoKhac(v.ghiRo) : null} />
     </div>
   ) : phang ? null : (
-    <OKhoa nhan="Loại PA" chu={tenLoai(v.kind)} sau={quyChe ? 'theo quy chế' : undefined}
-      phu={quyChe ? (quyChe.mocChu ? `Kết thúc theo quy chế: ${quyChe.mocChu}` : undefined) : 'Đổi loại: Kết quả › Thay PA'} />
+    <OKhoa nhan={t('Loại PA')} chu={tenLoai(v.kind)} sau={quyChe ? t('theo quy chế') : undefined}
+      phu={quyChe ? (quyChe.mocChu ? t('Kết thúc theo quy chế: {mocChu}', { mocChu: quyChe.mocChu }) : undefined) : t('Đổi loại: Kết quả › Thay PA')} />
   );
 
   const phuongAn = <>
     {loai}
-    <Truong nhan="Nội dung" batBuoc loi={lf.loiCua(loi, k('noi-dung'))} dem={{ co: v.description.trim().length, can: toiThieu }}>
+    <Truong nhan={t('Nội dung')} batBuoc loi={lf.loiCua(loi, k('noi-dung'))} dem={{ co: v.description.trim().length, can: toiThieu }}>
       <textarea className="field w-full" rows={2} maxLength={2000} {...lf.o(loi, k('noi-dung'))} value={v.description}
         onChange={(e) => dat({ description: e.target.value })} placeholder={GOI_Y_MO_TA_PA} />
     </Truong>
     {coSoBuoi(v.kind) && (
-      <Truong nhan="Số buổi" tuyChon loi={lf.loiCua(loi, k('so-buoi'))}
-        phu={daDay > 0 ? `Đã dạy ${daDay} buổi — không nhỏ hơn ${daDay}` : 'Có số buổi thì web đếm sau mỗi lần Kết quả'}>
+      <Truong nhan={t('Số buổi')} tuyChon loi={lf.loiCua(loi, k('so-buoi'))}
+        phu={daDay > 0 ? t('Đã dạy {daDay} buổi — không nhỏ hơn {daDay}', { daDay }) : t('Có số buổi thì web đếm sau mỗi lần Kết quả')}>
         <input className="field w-24 tabular-nums" inputMode="numeric" maxLength={2} {...lf.o(loi, k('so-buoi'))} value={v.soBuoi}
           onChange={(e) => dat({ soBuoi: e.target.value })} placeholder="—" />
       </Truong>
@@ -83,10 +84,10 @@ export function FormPa({ v, dat, lf, loi, chonLoai, quyChe, toiThieu = 8, daDay 
 
   const nguoi = coNguoiDay(v.kind) ? (
     <Truong nhan={nhanNguoi} tuyChon as="div" loi={lf.loiCua(loi, k('nguoi'))}
-      phu={nhanNguoi === 'Người dạy' && !v.nguoi ? 'Chưa biết ai dạy thì để trống — ghi ở Kết quả từng tuần' : undefined}>
+      phu={nhanNguoi === 'Người dạy' && !v.nguoi ? t('Chưa biết ai dạy thì để trống — ghi ở Kết quả từng tuần') : undefined}>
       {/* key: đổi nhãn (Người dạy ↔ Người thực hiện) thì ô vẽ lại đúng trạng thái trống / có tên. */}
       <ChonNguoi key={nhanNguoi} nhom="giao_vien" studentId={studentId} cungChiNhanh={v.kind === 'bo_tro'} value={v.nguoi} onChange={(x) => dat({ nguoi: x })}
-        choTrong="Để trống" placeholder="Chưa chọn · gõ tên để tìm" ariaLabel={nhanNguoi}
+        choTrong={t('Để trống')} placeholder={t('Chưa chọn · gõ tên để tìm')} ariaLabel={nhanNguoi}
         id={lf.oId(k('nguoi'))} onBlur={lf.roi(k('nguoi'))} invalid={!!lf.loiCua(loi, k('nguoi'))} />
     </Truong>
   ) : null;
@@ -95,14 +96,14 @@ export function FormPa({ v, dat, lf, loi, chonLoai, quyChe, toiThieu = 8, daDay 
 
   if (phang) return <div className="space-y-3">{phuongAn}{nguoiVaNgay}{cuoi}</div>;
   return <>
-    <Khoi tieuDe="Phương án" luat={luat}>{phuongAn}</Khoi>
-    {(nguoiVaNgay || cuoi) && <Khoi tieuDe="Người và thời gian">{nguoiVaNgay}{cuoi}</Khoi>}
+    <Khoi tieuDe={t('Phương án')} luat={luat}>{phuongAn}</Khoi>
+    {(nguoiVaNgay || cuoi) && <Khoi tieuDe={t('Người và thời gian')}>{nguoiVaNgay}{cuoi}</Khoi>}
   </>;
 }
 
 /** Ngày bắt đầu KHOÁ (Xác nhận PA; Sửa PA đã có Kết quả): chữ mã tuần · ngày + phụ. Còn đổi được thì nơi gọi dùng `ChonNgayGan`. */
 export function NgayKhoa({ chu, phu }: { chu: string; phu?: string }) {
-  return <OKhoa nhan="Ngày bắt đầu" chu={chu} phu={phu} />;
+  return <OKhoa nhan={t('Ngày bắt đầu')} chu={chu} phu={phu} />;
 }
 
 /**
@@ -154,7 +155,7 @@ export function NhatKyPa({ pa, ketQua }: { pa: PaNhatKy; ketQua: readonly KetQua
   return (
     <ol className="m-0 flex list-none flex-col gap-0.5 p-0 text-xs text-slate-500">
       {nhatKyPa(pa, ketQua, homNay).map((d) => (
-        <li key={d.khoa} className="break-words"><b className="font-semibold text-slate-300 tabular-nums">{d.ngay ? ngan(d.ngay) : '—'} · {d.ai}</b> · {d.chu}</li>
+        <li key={d.khoa} className="break-words"><b className="font-semibold text-slate-300 tabular-nums">{d.ngay ? ngan(d.ngay) : '—'} · {d.ai}</b> · {dich(d.chu)}</li>
       ))}
     </ol>
   );

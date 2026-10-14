@@ -210,7 +210,13 @@ const FILE_DA_DICH_D = [
   'web/src/modules/students/NganCase.tsx',
   ...['cases', 'sosV4', 'sos', 'nguoiThucHien', 'yThuc', 'yThucGon'].map((f) => `shared/domain/${f}.ts`),
 ];
-const CHO_PHEP_D: { file: string; text: RegExp }[] = [];
+/** Chuỗi so khớp dữ liệu máy chủ / hằng ghi vào DB (không hiện ra) — giữ Việt có chủ đích. */
+const CHO_PHEP_D: { file: string; text: RegExp }[] = [
+  ...['cases/CasePanel', 'cases/FormPa', 'cases/SkillBoard'].map((f) => ({ file: `web/src/modules/${f}.tsx`, text: /^Người dạy$/ })),   // so với nhanNguoiDay()
+  ...['KhaiBacPanel', 'StudentYThucSection', 'ThangYThuc', 'XacNhanXuLyPanel'].map((f) => ({ file: `web/src/modules/yThuc/${f}.tsx`, text: /^lớp thường$/ })),   // so với chuoi.nhan máy chủ gửi
+  { file: 'web/src/modules/students/NganCase.tsx', text: /^(Xác nhận Case|Ghi nhận xét|Xác nhận PA|Kết quả cuối)$/ },   // so với viecTiep.chu máy chủ gửi
+  { file: 'shared/domain/cases.ts', text: /^(Không còn hợp lệ do sửa điểm|Bỏ qua|Chỉnh khi xác nhận gợi ý tự động)$/ },   // hằng máy chủ ghi vào DB
+];
 /** Câu lỗi máy chủ GV gặp trên đường Case / Ý thức (đợt d). */
 const LOI_D = ['cases/cases', 'cases/boTro', 'cases/nguoiThucHien', 'cases/sosAuto', 'yThuc/violations', 'yThuc/phoiHop', 'platform/attachments']
   .map((f) => `server/src/${f}.ts`);

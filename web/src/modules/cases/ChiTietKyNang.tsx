@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { SectionNote } from '../../ui/ui.tsx';
+import { t } from '@shared/i18n/index.ts';
 
 /**
  * GHI CHI TIẾT THEO THÀNH PHẦN CỦA KỸ NĂNG (mục 9.3) — luôn TUỲ CHỌN, và chỉ hiện đúng bộ
@@ -27,17 +28,17 @@ export function ComponentsField({ label, components, counts, value, onChange, bu
   if (!open) {
     return (
       <button type="button" className="btn btn-sm btn-ghost" onClick={() => setOpen(true)}>
-        {buttonLabel ?? `+ Ghi chi tiết ${label} (không bắt buộc)`}
+        {buttonLabel ?? t('+ Ghi chi tiết {label} (không bắt buộc)', { label })}
       </button>
     );
   }
   return (
     <div className="surface-2 rounded-lg p-3 space-y-2">
       <div className="flex items-center justify-between gap-2">
-        <span className="label m-0">Chi tiết {label}</span>
+        <span className="label m-0">{t('Chi tiết {label}', { label })}</span>
         <button type="button" className="btn btn-sm btn-ghost"
           onClick={() => { setOpen(false); onChange({}); }}>
-          Bỏ phần này
+          {t('Bỏ phần này')}
         </button>
       </div>
       <div className="space-y-1.5">
@@ -46,12 +47,12 @@ export function ComponentsField({ label, components, counts, value, onChange, bu
             <span className="w-full shrink-0 text-xs text-slate-300 sm:w-52">{c}</span>
             <input className="field max-w-[6rem]" type="number" inputMode="decimal"
               step={counts ? 1 : 0.5} min={0} max={counts ? undefined : 9}
-              placeholder={counts ? 'đạt' : 'band'}
+              placeholder={counts ? t('đạt') : 'band'}
               value={value[c]?.score ?? ''} onChange={(e) => set(c, 'score', e.target.value)} />
             {counts && (
               <>
                 <span className="text-slate-500">/</span>
-                <input className="field max-w-[6rem]" type="number" min={1} placeholder="tổng"
+                <input className="field max-w-[6rem]" type="number" min={1} placeholder={t('tổng')}
                   value={value[c]?.total ?? ''} onChange={(e) => set(c, 'total', e.target.value)} />
               </>
             )}
@@ -59,8 +60,7 @@ export function ComponentsField({ label, components, counts, value, onChange, bu
         ))}
       </div>
       <SectionNote>
-        Chỉ điền phần bạn thật sự đánh giá — để trống phần không xem tới. Đây là quan sát của
-        bạn, không ghi đè điểm Test chính thức và không đổi mức SOS.
+        {t('Chỉ điền phần bạn thật sự đánh giá — để trống phần không xem tới. Đây là quan sát của bạn, không ghi đè điểm Test chính thức và không đổi mức SOS.')}
       </SectionNote>
     </div>
   );
