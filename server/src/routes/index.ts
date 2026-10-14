@@ -58,6 +58,7 @@ import * as kyVongSvc from '../normal/kyVong.ts';
 import * as gopYSvc from '../classes/gopYTuan.ts';
 import * as luatLoTrinhSvc from '../classes/luatLoTrinh.ts';
 import * as hocVienLopSvc from '../classes/hocVienLop.ts';
+import * as hocVienSosSvc from '../classes/hocVienSos.ts';
 import { hocVienTheoVai } from '../classes/hocVienTheoVai.ts';
 import * as luuTruSvc from '../classes/luuTru.ts';
 import * as phanTichLopSvc from '../classes/phanTichLop.ts';
@@ -1260,6 +1261,12 @@ api.post('/classes/bulk', requireAuth, wrap((req) => {
 /** Trang Học viên & Lớp: lớp + số đếm chip + cờ lọc từng học viên — một request cho cả trang (đặc tả §3.6). */
 api.get('/hoc-vien-lop', requireAuth, wrap((req) => {
   maybeSimulateReadError();
+  /* OV-12f: góc "Đang SOS" theo tuần thi (`tuan` = Thứ Hai của tuần · `tat-ca` = 8 tuần) — cùng phạm vi trang, cùng hàm phân loại với Tổng hợp. */
+  if (qStr(req, 'goc') === 'sos') {
+    return hocVienSosSvc.dangSos(principalOf(req), {
+      tuan: qStr(req, 'tuan') ?? null, phamVi: qStr(req, 'phamVi') ?? null, branchId: qInt(req, 'branchId') ?? null, cnNho: qInt(req, 'cnNho') ?? null, q: qStr(req, 'q') ?? null,
+    });
+  }
   return hocVienLopSvc.danhSachHocVienLop(principalOf(req), {
     branchId: qInt(req, 'branchId') ?? null, q: qStr(req, 'q') ?? null, phamVi: qStr(req, 'phamVi') ?? null,
     cnNho: qInt(req, 'cnNho') ?? null,
@@ -1270,6 +1277,9 @@ api.get('/hoc-vien-lop', requireAuth, wrap((req) => {
 api.get('/hoc-vien-lop/ids', requireAuth, wrap((req) => hocVienLopSvc.idsHocVienLop(principalOf(req))));
 /* OV-10b: Học viên & Lớp của TVV / CX — mỗi em một dòng theo việc của vai, chip = `chipHocVien` (cùng ô Tổng quan). */
 api.get('/hoc-vien-lop/theo-vai', requireAuth, wrap((req) => hocVienTheoVai(principalOf(req), { phamVi: qStr(req, 'phamVi'), branchId: qInt(req, 'branchId') })));
+
+/** OV-12f: Panel một em (Học viên & Lớp › Mở) — mọi Case em người xem được thấy, tóm tắt cùng hàm với Đang SOS; ngoài phạm vi 403. */
+api.get('/hoc-vien-lop/em/:id', requireAuth, wrap((req) => hocVienSosSvc.panelMotEm(principalOf(req), pInt(req, 'id'))));
 
 /** Khu Lưu trữ (PR-LT, Q16/Q22): lớp đã kết thúc · học viên đã lưu trữ — ⋯ góc phải trang Học viên & Lớp. */
 api.get('/hoc-vien-lop/luu-tru', requireAuth, wrap((req) => {

@@ -53,7 +53,7 @@ export type TrangHocVienLop = {
 const demRong = (): Record<LocHocVien, number> => demLoc([], 'tat-ca');
 
 /** Phạm vi đang dùng của trang (Lớp tôi dạy · Chi nhánh · Toàn hệ thống) + chi nhánh đang xem — dùng chung cho `/hoc-vien-lop` và `/hoc-vien-lop/ids`. */
-function phamViTrang(p: Principal, f: { branchId?: number | null; phamVi?: string | null; cnNho?: number | null }, today: string) {
+export function phamViTrang(p: Principal, f: { branchId?: number | null; phamVi?: string | null; cnNho?: number | null }, today: string) {
   const conn = db();
   const scope = scopeFor(p, PERMISSIONS.ATTEMPT_VIEW);
   const phanCong = p.assignments.filter((a) => a.effectiveFrom <= today && (!a.effectiveTo || a.effectiveTo >= today));

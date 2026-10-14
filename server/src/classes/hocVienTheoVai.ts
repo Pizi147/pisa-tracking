@@ -13,6 +13,9 @@ import type { Standing } from '../students/standing.ts';
 import { khoangTamDung } from '../students/tamDung.ts';
 import { examPlanOf } from '../fasttrack/cycles.ts';
 import { classProgressMany } from './schedule.ts';
+import { choBuocTiep, hanBuocTiep } from '../loTrinh/buocTiep.ts';
+import { loTrinhChoKetQuaThi } from '../loTrinh/thiThat.ts';
+import { demoToday } from '../demoConfig.ts';
 
 export type DongHocVienVai = {
   id: number; ten: string; ma: string; status: string;
@@ -32,6 +35,11 @@ export type TrangHocVienVai = {
   phamVi: { coThe: SoHocVien['phamVi'][]; dangDung: SoHocVien['phamVi']; chiNhanh: number | null };
   ids: Record<ChipHocVien, number[]>;
   rows: DongHocVienVai[];
+  /**
+   * OV-12f: việc của góc Cần làm (TVV) — Chọn bước tiếp sau thi (lộ trình + hạn, cùng `choBuocTiep` / `viecBuocTiep`) · Kết quả thi thật chưa có
+   * (cùng `loTrinhChoKetQuaThi` của việc GVCN). Thiếu thông tin = `ids.thieu_tt`. Chỉ em trong phạm vi đang xem.
+   */
+  viec: { buocTiep: Record<number, { cycleId: number; han: string }>; ketQuaThi: Record<number, { han: string; thi: string | null }> };
 };
 
 export function hocVienTheoVai(p: Principal, f: { phamVi?: string | null; branchId?: number | null } = {}): TrangHocVienVai {
@@ -87,8 +95,14 @@ export function hocVienTheoVai(p: Principal, f: { phamVi?: string | null; branch
       viewer: { suaThongTin: can(p, PERMISSIONS.STUDENT_EDIT_INFO, { studentId: id }), suaThem: can(p, PERMISSIONS.STUDENT_EDIT_MORE, { studentId: id }) },
     }];
   });
+  const coEm = new Set(ids);
+  const homNay = demoToday();
+  const buocTiep: TrangHocVienVai['viec']['buocTiep'] = {};
+  for (const c of choBuocTiep()) if (coEm.has(c.student_id)) buocTiep[c.student_id] = { cycleId: c.id, han: hanBuocTiep(c, homNay) };
+  const ketQuaThi: TrangHocVienVai['viec']['ketQuaThi'] = {};
+  for (const { c, m } of loTrinhChoKetQuaThi(homNay)) if (coEm.has(c.student_id)) ketQuaThi[c.student_id] = { han: m.han, thi: c.exam_date ?? c.exam_week ?? null };
   return {
     vai, phamVi: { coThe: vai === 'tvv' ? ['cua-toi', 'chi-nhanh'] : ['tat-ca', 'chi-nhanh'], dangDung, chiNhanh },
-    ids: chip.ids, rows,
+    ids: chip.ids, rows, viec: { buocTiep, ketQuaThi },
   };
 }
