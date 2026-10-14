@@ -144,7 +144,7 @@ export function BangSos({ data, cot, dam, dienThoai, ds, onMo }: {
       <div className="space-y-2">
         {nhom.map((g) => (
           <section key={g.k} className="space-y-2" aria-label={g.k === 'ft' ? 'Lớp Fast Track' : 'Lớp thường'}>
-            {nhom.length > 1 && <h2 className="m-0 px-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">{g.k === 'ft' ? 'Fast Track' : 'Lớp thường'}</h2>}
+            {nhom.length > 1 && <h2 className="m-0 px-1 text-[11.5px] font-semibold uppercase tracking-wide text-slate-500">{g.k === 'ft' ? 'Fast Track' : 'Lớp thường'}</h2>}
             {g.lop.map((em) => (
               <div key={em[0].classId} className="card overflow-hidden">
                 <button type="button" aria-expanded={mo(em[0].classId)} onClick={() => doi(em[0].classId)}
