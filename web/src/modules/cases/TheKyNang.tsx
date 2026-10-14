@@ -11,6 +11,7 @@ import {
   DongMt, NhanLoai, NhanTamDung, SCORE_CHIP_ROW, TamDungCtx, TenCase, chuBuoi, chuNguoi, gapText,
   type CaseCard, type MoCase, type Plan, type SkillBoardRow,
 } from './SkillBoard.tsx';
+import { dich, t } from '@shared/i18n/index.ts';
 
 /**
  * BẢNG KỸ NĂNG TRÊN ĐIỆN THOẠI (< 640 px, UX-D3, mockup 24 E) — mỗi kỹ năng MỘT THẺ, Case gấp lên trước (`xepTheKyNang`), kỹ năng đạt thu
@@ -24,7 +25,7 @@ export function TheKyNangDs({ rows, onMoCase }: { rows: SkillBoardRow[]; onMoCas
         ? <TheGon key={row.category} row={row} onMoCase={onMoCase} />
         : <TheKyNang key={row.category} row={row} onMoCase={onMoCase} />))}
       {/* PR-UXF-b (R5-5): Case của lớp trước có tên môn khác — nhóm riêng cuối bảng, không nằm ở thẻ Writing / Speaking của chương trình mới. */}
-      {rows.some((r) => r.tuLopTruoc) && <h3 className="m-0 px-1 pt-2 text-[12px] font-semibold uppercase tracking-wide text-slate-400">Case bàn giao</h3>}
+      {rows.some((r) => r.tuLopTruoc) && <h3 className="m-0 px-1 pt-2 text-[12px] font-semibold uppercase tracking-wide text-slate-400">{t('Case bàn giao')}</h3>}
       {rows.filter((r) => r.tuLopTruoc).map((row) => <TheKyNang key={`${row.category}@truoc`} row={row} onMoCase={onMoCase} />)}
     </div>
   );
@@ -39,7 +40,7 @@ function TheGon({ row, onMoCase }: { row: SkillBoardRow; onMoCase: (caseId: numb
   const [mo, setMo] = useState(false);
   if (mo) return <TheKyNang row={row} onMoCase={onMoCase} onGap={() => setMo(false)} />;
   const diem = row.band === null ? null : row.ratio && row.total ? `${row.score}/${row.total}` : fmtBand(row.band);
-  const phu = row.band === null ? 'chưa có điểm' : row.ratio ? (row.missed === false ? 'đạt' : '') : row.gap !== null ? `${gapText(row.gap)}${row.kck ? ' · KCK' : ''}` : row.kck ? 'KCK' : '';
+  const phu = row.band === null ? t('chưa có điểm') : row.ratio ? (row.missed === false ? t('đạt') : '') : row.gap !== null ? `${gapText(row.gap)}${row.kck ? ' · KCK' : ''}` : row.kck ? 'KCK' : '';
   return (
     <button type="button" aria-expanded={false} onClick={() => setMo(true)}
       className="flex min-h-[44px] w-full items-center gap-2 rounded-[10px] border bg-[color:var(--surface)] px-3 text-left" style={{ borderColor: 'var(--line)' }}>
@@ -65,13 +66,13 @@ function TheKyNang({ row, onMoCase, onGap }: { row: SkillBoardRow; onMoCase: (ca
           </span>
         )}
         {onGap && (
-          <button type="button" aria-label={`Thu gọn ${row.label}`} onClick={onGap} className="inline-flex h-11 w-11 items-center justify-center border-0 bg-transparent text-slate-400">
+          <button type="button" aria-label={t('Thu gọn {label}', { label: row.label })} onClick={onGap} className="inline-flex h-11 w-11 items-center justify-center border-0 bg-transparent text-slate-400">
             <IconGap mo />
           </button>
         )}
       </div>
-      <div className="mt-0.5 text-[12px] text-slate-400">{row.tuLopTruoc ? <>từ {row.tuLopTruoc}</> : <><DongMt row={row} />{!row.ratio && row.gap !== null && <> · {gapText(row.gap)}</>}</>}</div>
-      {mo.length === 0 && <div className="mt-1 text-[12px] text-slate-400">Không có Case mở</div>}
+      <div className="mt-0.5 text-[12px] text-slate-400">{row.tuLopTruoc ? <>{t('từ {tuLopTruoc}', { tuLopTruoc: row.tuLopTruoc })}</> : <><DongMt row={row} />{!row.ratio && row.gap !== null && <> · {gapText(row.gap)}</>}</>}</div>
+      {mo.length === 0 && <div className="mt-1 text-[12px] text-slate-400">{t('Không có Case mở')}</div>}
       {mo.map((c) => <KhoiCase key={c.id} c={c} onMoCase={onMoCase} />)}
     </KhungThe>
   );
@@ -79,7 +80,7 @@ function TheKyNang({ row, onMoCase, onGap }: { row: SkillBoardRow; onMoCase: (ca
 
 /** Nút động từ của việc tiếp (clarify: không "Xác nhận" trơn). */
 const NUT_VIEC: Record<NonNullable<MoCase['viec']>, string> = {
-  'xac-nhan': 'Xác nhận Case', 'xac-nhan-pa': 'Xác nhận PA', 'ghi-ket-qua': 'Kết quả', 'them-pa': 'Thêm PA',
+  'xac-nhan': t('Xác nhận Case'), 'xac-nhan-pa': t('Xác nhận PA'), 'ghi-ket-qua': t('Kết quả'), 'them-pa': t('Thêm PA'),
 };
 
 function KhoiCase({ c, onMoCase }: { c: CaseCard; onMoCase: (caseId: number, o?: MoCase) => void }) {
@@ -99,29 +100,29 @@ function KhoiCase({ c, onMoCase }: { c: CaseCard; onMoCase: (caseId: number, o?:
         <NhanLoai loai="Case" /><span className="min-w-0 truncate max-sm:whitespace-normal max-sm:overflow-visible max-sm:break-words"><TenCase c={c} /></span>
       </div>
       <div className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[12px] text-slate-400">
-        {tamDung && tt.t === 'qua-han' ? <NhanTamDung tu={tamDung} /> : <NhanTrangThai t={tt.t} title={tt.chu} />}
-        <span>{tt.k === 'dang-lam' ? td.text : tt.chu}</span>
+        {tamDung && tt.t === 'qua-han' ? <NhanTamDung tu={tamDung} /> : <NhanTrangThai t={tt.t} title={dich(tt.chu)} />}
+        <span>{tt.k === 'dang-lam' ? td.text : dich(tt.chu)}</span>
       </div>
       {c.plans.filter(dangChay).map((p) => <KhoiPa key={p.id} p={p} c={c} onMoCase={onMoCase} />)}
       {v && (
         <div className="mt-2 flex flex-col gap-1.5">
           <span className="text-[12px] text-slate-200">
             {/* Ghi kết quả: dạng ngắn theo tuần ("Ghi kết quả tuần W4 SEP") — tên PA đã ở khối PA ngay trên. */}
-            {v.loaiHan === 'cap-nhat-pa' && han ? han.viec : v.chu}
+            {v.loaiHan === 'cap-nhat-pa' && han ? han.viec : dich(v.chu)}
             {/* Em Tạm dừng: mọi hạn đang dừng → nhãn vàng thay hạn (cùng luật DongHan ở bảng). */}
             {tamDung && han ? <> <NhanTamDung tu={tamDung} /></> : <>
               {/* OV-11d (CA2-9): chữ hạn cùng luật bảng máy tính (`DongHan`): quá hạn ⚠ · hôm nay · hạn hết dd/mm. */}
               {han?.quaHan ? <span className="inline-flex items-center gap-1 font-semibold text-bad"> · <IconCanhBao />{han.quaHan}</span>
-                : han?.homNay ? <span className="font-semibold text-soon"> · hôm nay</span>
+                : han?.homNay ? <span className="font-semibold text-soon"> {t('· hôm nay')}</span>
                 : han && han.han !== CHUA_CO_HAN && <span className="text-slate-400"> · {han.han}</span>}
             </>}
           </span>
           {viecMo && (viecMo.viec === 'ghi-ket-qua' ? !!c.plans.find((p) => p.id === viecMo.paId)?.ghiDuoc : v.chu === 'Xác nhận Case' ? c.coTheXacNhanCase : c.canEdit)
-            ? <button type="button" className="btn btn-primary min-h-[44px] w-full" onClick={() => onMoCase(c.id, viecMo)}>{v.chu.startsWith('Kết quả cuối') ? 'Kết quả cuối' : v.chu === 'Ghi nhận xét' ? v.chu : NUT_VIEC[viecMo.viec!]}</button>
+            ? <button type="button" className="btn btn-primary min-h-[44px] w-full" onClick={() => onMoCase(c.id, viecMo)}>{v.chu.startsWith('Kết quả cuối') ? t('Kết quả cuối') : v.chu === 'Ghi nhận xét' ? t('Ghi nhận xét') : NUT_VIEC[viecMo.viec!]}</button>
             : (
               <span className="flex items-center justify-between gap-2 text-[12px] text-slate-400">
-                <span className="min-w-0 truncate">{c.nguoiLam?.ten ? `Việc của ${c.nguoiLam.ten}` : 'Việc của người khác'}</span>
-                <button type="button" className="btn min-h-[44px]" onClick={() => onMoCase(c.id)}>Mở Case</button>
+                <span className="min-w-0 truncate">{c.nguoiLam?.ten ? t('Việc của {ten}', { ten: c.nguoiLam.ten }) : t('Việc của người khác')}</span>
+                <button type="button" className="btn min-h-[44px]" onClick={() => onMoCase(c.id)}>{t('Mở Case')}</button>
               </span>
             )}
         </div>

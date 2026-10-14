@@ -251,6 +251,10 @@ const EN_D_WEB = {
   'mới có MT{attemptNo}': 'only MT{attemptNo} so far',
   '+ Case cho {label}': '+ Case for {label}',
   '· {parallelCount} Case song song': '· {parallelCount} parallel cases',
+  /* thẻ kỹ năng < 640 px (TheKyNang) */
+  'Thu gọn {label}': 'Collapse {label}',
+  'Việc của {ten}': 'Task of {ten}',
+  'Việc của người khác': 'Someone else\'s task',
 
   /* Thao tác Case (Thêm PA, Hoàn thành, Sửa / Xoá Case) */
   'Ngày đã làm': 'Date done',

@@ -388,10 +388,10 @@ const CHO_PHEP: { file: string; text: RegExp }[] = [
 
 /**
  * Đợt d (PR-EN-d, 14/10): Case – PA (ngăn Case, tạo Case, thao tác Case / PA, Xác nhận Case / PA, Ghi nhận xét — OV-12c), Ghi vi phạm, Ý thức phần GV.
- * Không vào: `cases/CapNhatTuan.tsx`, `cases/TheKyNang.tsx` (Ghi kết quả PA, thẻ kỹ năng — đợt b dịch).
+ * Không vào: `cases/CapNhatTuan.tsx` (Ghi kết quả PA — đợt b dịch). `cases/TheKyNang.tsx`: phần còn sót sau EN-b dịch ở đợt d.
  */
 const FILE_DA_DICH_D = [
-  ...['CaseBoardPage', 'CasePanel', 'ChiTietKyNang', 'DongXinYKien', 'FormPa', 'MenuXoaPa', 'NeedsEvaluation', 'QuickReport', 'SkillBoard', 'ThaoTacCase']
+  ...['CaseBoardPage', 'CasePanel', 'ChiTietKyNang', 'DongXinYKien', 'FormPa', 'MenuXoaPa', 'NeedsEvaluation', 'QuickReport', 'SkillBoard', 'ThaoTacCase', 'TheKyNang']
     .map((f) => `web/src/modules/cases/${f}.tsx`),
   ...fs.readdirSync(path.join(GOC_REPO, 'web/src/modules/yThuc')).filter((f) => /\.tsx?$/.test(f)).map((f) => `web/src/modules/yThuc/${f}`),
   'web/src/modules/students/NganCase.tsx',
@@ -401,7 +401,8 @@ const FILE_DA_DICH_D = [
 const CHO_PHEP_D: { file: string; text: RegExp }[] = [
   ...['cases/CasePanel', 'cases/FormPa', 'cases/SkillBoard'].map((f) => ({ file: `web/src/modules/${f}.tsx`, text: /^Người dạy$/ })),   // so với nhanNguoiDay()
   ...['KhaiBacPanel', 'StudentYThucSection', 'ThangYThuc', 'XacNhanXuLyPanel'].map((f) => ({ file: `web/src/modules/yThuc/${f}.tsx`, text: /^lớp thường$/ })),   // so với chuoi.nhan máy chủ gửi
-  { file: 'web/src/modules/students/NganCase.tsx', text: /^(Xác nhận Case|Ghi nhận xét|Xác nhận PA|Kết quả cuối)$/ },   // so với viecTiep.chu máy chủ gửi
+  { file: 'web/src/modules/students/NganCase.tsx', text: /^(Xác nhận Case|Ghi nhận xét|Xác nhận PA|Kết quả cuối)$/ },
+  { file: 'web/src/modules/cases/TheKyNang.tsx', text: /^(Xác nhận Case|Ghi nhận xét|Xác nhận PA|Kết quả cuối)$/ },   // so với viecTiep.chu máy chủ gửi   // so với viecTiep.chu máy chủ gửi
   { file: 'shared/domain/cases.ts', text: /^(Không còn hợp lệ do sửa điểm|Bỏ qua|Chỉnh khi xác nhận gợi ý tự động)$/ },   // hằng máy chủ ghi vào DB
 ];
 /** Câu lỗi máy chủ GV gặp trên đường Case / Ý thức (đợt d). */
