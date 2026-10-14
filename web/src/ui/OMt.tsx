@@ -8,7 +8,7 @@ import { oMt, type KieuOMt, type OMtVao } from '@shared/domain/index.ts';
 export function NhanCu() {
   return (
     <span title="MT cũ — nhập bù, không tính hạn"
-      className="inline-flex items-center whitespace-nowrap rounded border border-current px-[3px] align-middle text-[11px] font-bold leading-4 opacity-90">
+      className="inline-flex items-center whitespace-nowrap rounded border border-current px-[3px] align-middle text-[11px] font-bold leading-4 text-dim">
       cũ
     </span>
   );

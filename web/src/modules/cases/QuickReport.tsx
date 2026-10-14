@@ -388,7 +388,7 @@ export function QuickReport({
             /* I2: chưa chọn học viên thì chưa biết chương trình (FT W1/W2, lớp thường W) — không vẽ hàng nút giả. */
             <p className="m-0 text-xs text-slate-400">Chọn học viên trước</p>
           ) : chuDe.loading && !chuDe.data ? (
-            <div className="h-[34px] animate-pulse rounded-md" style={{ background: 'var(--surface-2)' }} />
+            <div className="h-[34px] motion-safe:animate-pulse rounded-md" style={{ background: 'var(--surface-2)' }} />
           ) : (
             <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${Math.max(topics.length, 1)}, minmax(0, 1fr))` }}>
               {topics.map((k) => (

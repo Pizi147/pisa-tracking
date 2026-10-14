@@ -95,6 +95,15 @@ const TEN_TAB_TEST: Record<string, string> = { lich: 'Lịch Test', 'diem-lop': 
 const noi = (...x: (string | null | undefined | false)[]) => x.filter(Boolean).join(' · ') || undefined;
 const nhan = <K extends string>(bang: Record<K, string>, v: string | null, boQua?: K) => (v && v !== boQua && v in bang ? bang[v as K] : null);
 
+/**
+ * OV-11i (P1-3, Q14 — WCAG 2.4.2): tiêu đề tab "{tên màn} · PISA Tracking". Tên trống / không rõ ("Trang trước" của `tenNguon`) → "PISA Tracking".
+ * App đặt theo `tenNguon`; hồ sơ đặt tên riêng qua `useTenTrang` (tên em, mã lớp…).
+ */
+export function tieuDeTab(ten: string | null | undefined): string {
+  const t = (ten ?? '').trim();
+  return t && t !== 'Trang trước' ? `${t} · PISA Tracking` : 'PISA Tracking';
+}
+
 /** Tên một trang theo URL (trang tự đặt tên chi tiết hơn — tuần, tên em — qua `web/src/lib/quayLai.ts › useTenTrang`). */
 export function tenNguon(url: string): TenTrang {
   const { path, q } = tachUrl(url);

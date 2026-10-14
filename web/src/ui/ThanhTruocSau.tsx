@@ -17,8 +17,12 @@ type Cha = TenTrang & { url: string };
  * đã đi qua nhiều hồ sơ thì menu "Các bước" về từng bước. Chưa có nguồn (mở link thẳng / tải lại) → `cha`.
  * `ten` / `chiTiet`: tên của CHÍNH hồ sơ này — hiện ở nút / menu của hồ sơ kế tiếp nếu đi tiếp từ đây.
  */
-export function DuongVe({ cha, ten, chiTiet, children }: { cha: Cha; ten?: string | null; chiTiet?: string | null; children?: ReactNode }) {
-  useTenTrang(ten, chiTiet);
+export function DuongVe({ cha, ten, chiTiet, tieuDe, children }: {
+  cha: Cha; ten?: string | null; chiTiet?: string | null;
+  /** OV-11i: tiêu đề tab (mặc định `ten`). */
+  tieuDe?: string | null; children?: ReactNode;
+}) {
+  useTenTrang(ten, chiTiet, tieuDe);
   const chong = useChongVe();
   const ve = useVe();
   const dich = chong[0] ?? cha;
@@ -78,7 +82,8 @@ export function ThanhTruocSau({ loai, id, duong, dsDuPhong, cha, ten, chiTiet }:
 
   const nut = 'btn btn-sm btn-ghost min-h-[44px] sm:min-h-0 disabled:opacity-40';
   return (
-    <DuongVe cha={cha} ten={ten} chiTiet={chiTiet}>
+    /* OV-11i (P1-3): tab hồ sơ HV ghi tên em, hồ sơ lớp ghi mã lớp — bỏ chữ "Hồ sơ (lớp)" của tên nút Quay lại. */
+    <DuongVe cha={cha} ten={ten} chiTiet={chiTiet} tieuDe={ten?.replace(loai === 'lop' ? /^Hồ sơ lớp / : /^Hồ sơ /, '')}>
       {ben && ds && (
         <span className="ml-auto flex items-center gap-1 text-xs text-slate-400" role="group" aria-label={`Chuyển trong danh sách ${ds.nhan}`}>
           <button type="button" className={nut} disabled={ben.truoc === null} onClick={() => sang(ben.truoc)} aria-label="Trước" title="Trước ( [ )">

@@ -427,8 +427,9 @@ function DongThuong({ row, rowIndex, sheet, laCp, active, tongCot, dien, onReloa
     const tat = thaoTacKyNang(tt, { nhapDiem: s?.canEdit ?? false, quanLy: sheet.canPlan, gvcn: !!sheet.laGvcn, laFt: false, dotHoanTat: !!row.hoanTat,
       huy: can(PERMISSIONS.ATTEMPT_SKIP_SKILL), han: can(PERMISSIONS.DEADLINE_OVERRIDE) });
     const ds = [...(tat.chinh && THAO_TAC_CO_HOP.includes(tat.chinh) ? [tat.chinh] : []), ...tat.menu];
+    /* OV-11i (P3-3): chỉ ẩn chờ rê chuột khi thiết bị rê được — máy tính bảng cảm ứng ≥ 640 px vẫn thấy ⋯. */
     return (
-      <span className="absolute right-0.5 top-0.5 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100">
+      <span className="absolute right-0.5 top-0.5 opacity-100 transition-opacity sm:[@media(hover:hover)]:opacity-0 sm:[@media(hover:hover)]:group-hover:opacity-100 sm:[@media(hover:hover)]:focus-within:opacity-100">
         <MenuDong nhan={`Thao tác · ${tenMon(ct, k)} · ${row.studentName}`} muc={[
           ...ds.map((x) => ({ key: x, nhan: CHU_THAO_TAC[x], onChon: () => setHop({ t: x, k }), nguyHiem: x === 'huy-diem' })),
           { key: 'lich-su', nhan: 'Lịch sử', onChon: () => setLichSu(k), keTruoc: ds.length > 0 },

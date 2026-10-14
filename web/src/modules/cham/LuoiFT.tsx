@@ -331,7 +331,7 @@ function SheetRow({ row, lop, active, cot, tuanDangXem, tuanXem, onReload, gvMac
       )}
       {RAW_SKILLS.map((s) => {
         const cell = cellOf(s);
-        if (!cell) return <td key={s} className="td py-1.5 text-right text-slate-600">—</td>;
+        if (!cell) return <td key={s} className="td py-1.5 text-right text-slate-500">—</td>;   // OV-11i (P3-1): "—" = không có — đọc được (faint)
         if (khacTuan(cell)) return oKhacTuan(s, cell);
         return (
           <td key={s} className={`td py-1.5 relative text-right ${o[s] === 'loi' ? VIEN_LOI : ''}`} data-kn={s}
@@ -353,7 +353,7 @@ function SheetRow({ row, lop, active, cot, tuanDangXem, tuanXem, onReload, gvMac
           );
         }
         const cell = cellOf(s);
-        if (!cell) return <td key={s} className="td py-1.5 text-right text-slate-600">—</td>;
+        if (!cell) return <td key={s} className="td py-1.5 text-right text-slate-500">—</td>;   // OV-11i (P3-1): "—" = không có — đọc được (faint)
         if (khacTuan(cell)) return oKhacTuan(s, cell);
         return (
           <td key={s} className={`td py-1.5 relative text-right ${o[s] === 'loi' ? VIEN_LOI : ''}`} data-kn={s}

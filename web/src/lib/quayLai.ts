@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useSyncExternalStore } from 'react';
 import { useLocation, useNavigate, useNavigationType, useSearchParams } from 'react-router-dom';
-import { buocMoi, docChong, tenNguon, type BuocVe, type KieuDi, type TenTrang } from '@shared/domain/index.ts';
+import { buocMoi, docChong, tenNguon, tieuDeTab, type BuocVe, type KieuDi, type TenTrang } from '@shared/domain/index.ts';
 import { cuonVeViTri } from './cuonOnDinh.ts';
 
 /**
@@ -37,14 +37,29 @@ const tenCua = (url: string): TenTrang => {
   return { ten: dat.ten || goc.ten, ...(dat.chiTiet ?? goc.chiTiet ? { chiTiet: dat.chiTiet ?? goc.chiTiet } : {}) };
 };
 
-/** Trang tự đặt tên hiện trên nút Quay lại khi người dùng đi từ trang này sang hồ sơ (vd Lịch Test: chi tiết "W2 OCT"). */
-export function useTenTrang(ten?: string | null, chiTiet?: string | null) {
+/**
+ * Trang tự đặt tên hiện trên nút Quay lại khi người dùng đi từ trang này sang hồ sơ (vd Lịch Test: chi tiết "W2 OCT").
+ * OV-11i (P1-3): có tên (hồ sơ) thì đặt luôn tiêu đề tab (`tieuDe`, mặc định `ten`) — sau tiêu đề chung của App (`useTieuDeTab`, layout effect).
+ */
+export function useTenTrang(ten?: string | null, chiTiet?: string | null, tieuDe?: string | null) {
   const { pathname } = useLocation();
   useEffect(() => {
     tenDaDat.delete(pathname);
     tenDaDat.set(pathname, { ten: ten || undefined, chiTiet: chiTiet || undefined });
     if (tenDaDat.size > 20) tenDaDat.delete(tenDaDat.keys().next().value!);
-  }, [pathname, ten, chiTiet]);
+    if (tieuDe || ten) document.title = tieuDeTab(tieuDe || ten);
+  }, [pathname, ten, chiTiet, tieuDe]);
+}
+
+/**
+ * OV-11i (P1-3, Q14): tiêu đề tab chung theo trang (`tenNguon`) — gọi MỘT lần ở App. Layout effect chạy trước effect thường của mọi trang,
+ * nên hồ sơ (tên em, mã lớp — `useTenTrang`) đặt đè sau. Chưa đăng nhập → "Đăng nhập".
+ */
+export function useTieuDeTab(daDangNhap: boolean) {
+  const { pathname, search } = useLocation();
+  useLayoutEffect(() => {
+    document.title = tieuDeTab(daDangNhap ? tenNguon(pathname + search).ten : 'Đăng nhập');
+  }, [pathname, search, daDangNhap]);
 }
 
 /** Gọi MỘT lần ở App (sau khi đăng nhập). */
