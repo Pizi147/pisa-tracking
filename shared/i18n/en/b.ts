@@ -794,6 +794,7 @@ const EN_B_WEB = {
   'Xin ý kiến': 'Ask manager',
   'Dời lịch thi lần 2': '2nd test move',
   'Case quá hạn xác nhận nguyên nhân': 'Case overdue for cause confirmation',
+  'Case quá hạn xác nhận': 'Case overdue for confirmation',
   'Không cần theo dõi': 'Stop tracking',
   'Xử lý Ý thức cần duyệt': 'Conduct action to approve',
   'Ý thức quá hạn': 'Conduct overdue',

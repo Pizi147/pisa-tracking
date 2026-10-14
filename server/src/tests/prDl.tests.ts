@@ -124,7 +124,9 @@ export async function runPrDlTests(t: YThucTestKit) {
    * lại có `sosLevel` như trước OV-9. Đặt `kck_at_attempt` NULL cho lượt của lớp (đọc cờ hiện tại như trước) ra đúng băm cũ 184be8d29c1e33ca (đã đo 14/10). */
   /* OV-12h: chỉ lệch id — bỏ các phép kiểm Nhắc chạy trước (congViec PR-Ra dựng em BC, prNv…) và prPa dựng hai Case cùng em thay hai em → id em / lượt
    * tạo sau dời. Đã so JSON hai bảng origin/main ↔ nhánh sau khi bỏ trường id + studentCode (mã theo thứ tự tạo): trùng từng byte. */
-  const ANH_CHUP = { tuan: 'b7faa8f10cf9f613', moi: 'f05f19f123679119' };
+  /* OV-12c: seed SOS v3 nay ghi nhận xét + nhóm nguyên nhân vào ô MT (Case MT lấy nguyên nhân từ nhận xét) — so JSON bản gốc ↔ nhánh: chỉ lệch
+   * `nhanXet` / `nhomNguyenNhan` của ô demo và `thieuNhanXet` hết ở ô đã có nhận xét; không trường nào khác. */
+  const ANH_CHUP = { tuan: 'fcf1a03d887d2464', moi: 'c850392ed18f4991' };
   /* Mã cố ý độc lập với hàm: điều kiện lọc tuần của bản trước refactor, viết lại bằng SQL. */
   const idsTuan = (periodId: number) => (conn.prepare(
     `SELECT a.id FROM assessment_attempts a JOIN students s ON s.id = a.student_id

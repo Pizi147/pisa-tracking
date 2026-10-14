@@ -162,7 +162,7 @@ export function HoTroHocVienTab() {
 
   // ------------------------------------------------------------------ việc đang mở ở panel (URL `viec`)
   /* Thứ tự "việc tiếp": đúng thứ tự đang vẽ; dòng gộp thường đi vào từng em; bỏ việc mở trang và việc đã xong. */
-  const thuTu = useMemo(() => dsNhom.flatMap((g) => g.items.flatMap((x) => (x.con && !x.gopThem ? x.con : [x]))).filter((x) => lamTaiCho(x)), [dsNhom]);
+  const thuTu = useMemo(() => dsNhom.flatMap((g) => g.items.flatMap((x) => (x.con ? x.con : [x]))).filter((x) => lamTaiCho(x)), [dsNhom]);
   /* Địa chỉ (không `viec`) lúc mở panel bằng một bước lịch sử — đóng chỉ lùi khi bộ lọc chưa đổi, không thì mất lựa chọn lọc vừa bấm. */
   const daDay = useRef<string | null>(null);
   const khongViec = (p: URLSearchParams) => { const x = new URLSearchParams(p); x.delete('viec'); return x.toString(); };

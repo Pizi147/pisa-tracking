@@ -159,7 +159,7 @@ export function TongHopVanDeHv(props: PhamViPhanTich) {
                       <td className="text-right tabular-nums"><SoLieuO giaTri={data.chuaPhanLoai.hv} nguon={nguon('chua-phan-loai', 'hv')} tieuDe="Chưa phân nhóm nguyên nhân · học viên" /></td>
                       <td className="text-right tabular-nums"><SoLieuO giaTri={data.chuaPhanLoai.lop} nguon={nguon('chua-phan-loai', 'lop')} tieuDe="Chưa phân nhóm nguyên nhân · lớp" /></td>
                       <td colSpan={3} className="pl-6 text-xs font-normal">
-                        {/* PR-SOS (K1-22): việc của GV nằm ở Công việc — trỏ thẳng nhóm Xác nhận nguyên nhân. */}
+                        {/* PR-SOS (K1-22): việc của GV nằm ở Công việc — trỏ thẳng nhóm Xác nhận Case (OV-12c: Case MT cũ chưa nhận xét ở nhóm Ghi nhận xét). */}
                         {session?.nav?.work && <Link to="/cong-viec?loai=cause" className="underline underline-offset-2">Xem trong Công việc →</Link>}
                       </td>
                     </tr>

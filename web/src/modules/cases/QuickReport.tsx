@@ -405,7 +405,7 @@ export function QuickReport({
                   {topicShort(k)}
                   {chuDe.data?.choNguyenNhan?.[k] && (
                     <span className="ml-1 inline-block h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: 'rgb(var(--soon-rgb))' }}
-                      title="Đang có Case chờ xác nhận nguyên nhân" aria-label="đang có Case chờ xác nhận nguyên nhân" />
+                      title="Đang có Case chờ xác nhận" aria-label="đang có Case chờ xác nhận" />
                   )}
                 </NutChon>
               ))}
@@ -415,11 +415,11 @@ export function QuickReport({
           </div>
         </Truong>
 
-        {/* K3-23: kỹ năng đang có Case chờ xác nhận nguyên nhân — không tạo Case thứ hai; dẫn sang form Xác nhận Case. */}
+        {/* K3-23: kỹ năng đang có Case chờ xác nhận (Progress) — không tạo Case thứ hai; dẫn sang form Xác nhận Case. */}
         {cnn ? (
           <div className="space-y-2">
             <p className="m-0 text-sm text-slate-200">
-              {topicLabel(topic)} đang có Case chờ xác nhận nguyên nhân
+              {topicLabel(topic)} đang có Case chờ xác nhận
               {cnn.mt || cnn.sos ? ` (${[cnn.mt ? (cnn.dot ?? `MT${cnn.mt}`) : null, cnn.sos ? `SOS ${cnn.sos}` : null].filter(Boolean).join(' · ')})` : ''}.
             </p>
             {onMoCase && (

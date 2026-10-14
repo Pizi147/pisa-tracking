@@ -249,15 +249,16 @@ const COT_HV_CASE: CotTongHop = { khoa: 'hvCase', nhom: 'xu-ly', donVi: 'hoc-vie
 const COT_XU_LY: CotTongHop[] = [
   COT_HV_CASE,
   /* PR-SOS (K1-20): bốn cột theo MỘT nhãn trạng thái Case (`trangThaiCaseV4`) — tình trạng hôm nay. */
-  { khoa: 'choNguyenNhan', nhom: 'xu-ly', donVi: 'case', nhan: () => 'Chờ nguyên nhân',
-    goiY: 'Case chưa xác nhận nguyên nhân — trong ngoặc là số đã quá hạn xác nhận.' },
+  /* OV-12c: Case MT có nguyên nhân từ nhận xét ngay khi ra đời — cột này còn Progress chờ Xác nhận Case + Case MT cũ chờ ghi nhận xét. */
+  { khoa: 'choNguyenNhan', nhom: 'xu-ly', donVi: 'case', nhan: () => 'Chờ xác nhận',
+    goiY: 'Case Progress Test chưa Xác nhận Case, hoặc Case Mock Test cũ mà bài chưa có nhận xét — trong ngoặc là số đã quá hạn xác nhận.' },
   { khoa: 'choDuyet', nhom: 'xu-ly', donVi: 'case', nhan: () => 'Chờ duyệt', goiY: 'Case đã gửi "Không cần theo dõi", chờ Quản lý duyệt.' },
   { khoa: 'dangLam', nhom: 'xu-ly', donVi: 'case', nhan: () => 'Đang làm', goiY: 'Case đã có nguyên nhân (kể cả PA theo quy chế còn chờ xác nhận) hoặc Case giáo viên báo, chưa xong.' },
   { khoa: 'xongHuy', nhom: 'xu-ly', donVi: 'case', nhan: () => 'Xong/Huỷ', goiY: 'Case đã hoàn thành, huỷ vì không cần theo dõi, hoặc hệ thống đóng.' },
 ];
 /** Trạng thái Case v4 → cột nhóm Xử lý của bảng Tổng hợp. `choNguyenNhanQuaHan` là số phụ trong ngoặc của cột Chờ nguyên nhân. */
 export const COT_XU_LY_V4: Record<TrangThaiCaseV4, string> = {
-  'cho-nguyen-nhan': 'choNguyenNhan', 'cho-duyet-khong-theo-doi': 'choDuyet', 'cho-xac-nhan-pa': 'dangLam', 'dang-lam': 'dangLam',
+  'cho-nguyen-nhan': 'choNguyenNhan', 'cho-nhan-xet': 'choNguyenNhan', 'cho-duyet-khong-theo-doi': 'choDuyet', 'cho-xac-nhan-pa': 'dangLam', 'dang-lam': 'dangLam',
   xong: 'xongHuy', 'huy-khong-theo-doi': 'xongHuy', 'he-thong-dong': 'xongHuy', 'rut-sua-diem': 'xongHuy',
 };
 

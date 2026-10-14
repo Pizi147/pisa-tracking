@@ -50,7 +50,7 @@ export const LOAI_YC_META: Record<LoaiYeuCau, LoaiYcMeta> = {
   xin_y_kien: { phanLoai: 'hoc-thuat', nhan: t('Xin ý kiến'), kieuNut: 'tra-loi', hanNgay: HAN_DUYET_NGAY, hangLoat: false },
   lich_thi: { phanLoai: 'lich-thi', nhan: t('Dời lịch thi lần 2'), kieuNut: 'duyet-tu-choi', hanNgay: null, hangLoat: true },
   sua_thong_tin: { phanLoai: 'thong-tin-hv', nhan: t('Đề xuất sửa'), kieuNut: 'duyet-tu-choi', hanNgay: HAN_DUYET_NGAY, hangLoat: false },
-  bao_len_nguyen_nhan: { phanLoai: 'bao-len', nhan: t('Case quá hạn xác nhận nguyên nhân'), kieuNut: 'nhac', hanNgay: null, hangLoat: false },
+  bao_len_nguyen_nhan: { phanLoai: 'bao-len', nhan: t('Case quá hạn xác nhận'), kieuNut: 'nhac', hanNgay: null, hangLoat: false },
   /* PR-SOS (S4-5, T23): GVBM xin không theo dõi Case SOS chờ nguyên nhân — Quản lý duyệt trong 5 ngày. */
   khong_theo_doi: { phanLoai: 'hoc-thuat', nhan: t('Không cần theo dõi'), kieuNut: 'duyet-tu-choi', hanNgay: 5, hangLoat: false },
   /* PR-YT4 (V4-9, V4-10): Meeting CX/GĐCN · WL 3 · Đình chỉ · Khác — QL duyệt trong 5 ngày. */

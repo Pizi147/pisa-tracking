@@ -33,3 +33,16 @@ export function luotThu(conn: any, createAttempt: (p: any, input: any) => any, p
 export function chotSan(conn: any, attemptId: number) {
   conn.prepare(`UPDATE attempt_skills SET absence_move_count = MAX(absence_move_count, 1) WHERE attempt_id = ? AND sit_status = 'scheduled'`).run(attemptId);
 }
+
+/**
+ * OV-12c — Case SOS MT lấy nguyên nhân từ NHẬN XÉT + NHÓM của ô (không còn "Xác nhận Case" cho MT). Phép kiểm cũ dựng "Case MT đã có nguyên nhân"
+ * bằng `xacNhanCase` nay ghi nhận xét + nhóm vào đúng ô (lượt Case đang theo × bài) qua `saveScore` — đường người dùng thật (chỉ hai trường).
+ * `moTa` ngắn hơn 10 ký tự được đệm để qua luật OV-12b (phép kiểm cũ không kiểm luật nhận xét).
+ */
+export function nhanXetCaseThu(conn: any, saveScore: (...a: any[]) => any, who: any, caseId: number,
+  o: { primaryCode?: string | null; moTa?: string | null; today?: string; [khac: string]: unknown }) {
+  const c = conn.prepare('SELECT attempt_id, topic FROM sos_cases WHERE id = ?').get(caseId) as any;
+  const nx = String(o.moTa ?? 'Nhận xét của GV cho bài này.').trim();
+  return saveScore(who, c.attempt_id, c.topic, { nhanXet: nx.length >= 10 ? nx : `${nx} — nhận xét GV`, nhomNguyenNhan: o.primaryCode ? [o.primaryCode] : null },
+    ...(o.today ? [o.today] : []));
+}

@@ -32,6 +32,8 @@ export const PA_QUY_CHE_CHUA_GHI = (a = 'iv') => `(${a}.preset = 1 AND ${a}.conf
 /* OV-9: Case nhẹ của em KCK (`kck = 1`) là Case từ SOS dù không có PA quy chế — vẫn chờ xác nhận nguyên nhân (không hạn); có nguyên nhân là đang xử lý. */
 export const LA_CASE_SOS = (sc = 'sc') =>
   `((EXISTS (SELECT 1 FROM case_interventions p_s WHERE p_s.case_id = ${sc}.id AND p_s.preset = 1) OR ${sc}.kck = 1) AND COALESCE(${sc}.origin_kind, '') != 'chuyen_cap')`;   // PR-LT2b: Case Final Test không chờ nguyên nhân
+/** OV-12c: Case theo lượt MOCK TEST (`sc.attempt_id` là lượt `mock`) — nguyên nhân lấy từ nhận xét + nhóm của ô, không có bước Xác nhận Case. */
+export const LA_CASE_MT = (sc = 'sc') => `EXISTS (SELECT 1 FROM assessment_attempts a_mt WHERE a_mt.id = ${sc}.attempt_id AND a_mt.kind = 'mock')`;
 export const CASE_SOS_DANG_XU_LY = (sc = 'sc') => `(EXISTS (SELECT 1 FROM case_issues ci_s WHERE ci_s.case_id = ${sc}.id AND ci_s.role = 'primary')
   AND (${sc}.kck = 1 OR EXISTS (SELECT 1 FROM case_interventions p_x WHERE p_x.case_id = ${sc}.id AND p_x.status != 'cancelled'
                AND (COALESCE(p_x.preset, 0) = 0 OR p_x.confirmed_by IS NOT NULL))))`;
@@ -67,9 +69,14 @@ export type SosCaseState = {
   fromSos: boolean;
   /** Đã có nhóm nguyên nhân (vấn đề chính). */
   hasCause: boolean;
+  /** OV-12c: Case theo lượt Mock Test (`LA_CASE_MT`). */
+  laMt: boolean;
+  /** OV-12c: Case MT cũ (trước luật nhận xét bắt buộc) mà ô chưa có nhận xét — việc "Ghi nhận xét", không Báo QL, không chỉ số "chờ nguyên nhân". */
+  choNhanXet: boolean;
   /**
-   * `Chờ xác nhận nguyên nhân` (S04, S4-2): Case từ SOS đang mở mà chưa có nguyên nhân. PR-SOS: không tính khi đang có thẻ
-   * "Không cần theo dõi" chờ Quản lý duyệt (T23 — việc đã chuyển sang Quản lý). Chỉ số `case-cho-xac-dinh-nguyen-nhan` đếm đúng tập này.
+   * `Chờ xác nhận Case` (S04, S4-2): Case từ SOS đang mở mà chưa có nguyên nhân — OV-12c: CHỈ Case không phải MT (Progress Test lớp thường,
+   * Case nhẹ KCK lớp thường). PR-SOS: không tính khi đang có thẻ "Không cần theo dõi" chờ Quản lý duyệt (T23 — việc đã chuyển sang Quản lý).
+   * Chỉ số `case-cho-xac-dinh-nguyen-nhan` đếm đúng tập này.
    */
   awaitingCause: boolean;
   /** Hạn Xác nhận nguyên nhân / Xác nhận PA — `sos_cases.han_xac_nhan` (`hanXacNhan`: 5 ngày, Gấp / SOS 3: 3). Chỉ có với Case từ SOS. */
@@ -86,7 +93,7 @@ export type SosCaseState = {
 export const CO_THE_KHONG_THEO_DOI = (sc = 'sc') => `EXISTS (SELECT 1 FROM yeu_cau_duyet y_k WHERE y_k.loai = 'khong_theo_doi'
   AND y_k.doi_tuong_loai = 'sos_case' AND y_k.doi_tuong_id = ${sc}.id AND y_k.trang_thai = 'cho')`;
 
-const SOS_STATE_RONG: SosCaseState = { fromSos: false, hasCause: false, awaitingCause: false, dueOn: null, dismissed: null, choDuyetKhongTheoDoi: null, coPaChoXacNhan: false };
+const SOS_STATE_RONG: SosCaseState = { fromSos: false, hasCause: false, laMt: false, choNhanXet: false, awaitingCause: false, dueOn: null, dismissed: null, choDuyetKhongTheoDoi: null, coPaChoXacNhan: false };
 
 /** Trạng thái SOS của NHIỀU Case một lượt (PR-HVL): một câu SELECT cho mỗi lô 400, không hỏi từng Case. Case không tồn tại → trạng thái rỗng. */
 export function sosCaseStateMany(caseIds: readonly number[]): Map<number, SosCaseState> {
@@ -95,7 +102,7 @@ export function sosCaseStateMany(caseIds: readonly number[]): Map<number, SosCas
   for (let i = 0; i < caseIds.length; i += 400) {
     const chunk = caseIds.slice(i, i + 400);
     const rows = conn.prepare(`SELECT sc.id, sc.status, sc.dismiss_reason_code, sc.dismiss_reason_text, sc.han_xac_nhan,
-      ${LA_CASE_SOS('sc')} AS from_sos,
+      ${LA_CASE_SOS('sc')} AS from_sos, ${LA_CASE_MT('sc')} AS la_mt,
       EXISTS (SELECT 1 FROM case_issues WHERE case_id = sc.id AND role = 'primary') AS has_cause,
       EXISTS (SELECT 1 FROM case_interventions iv WHERE iv.case_id = sc.id AND ${UNCONFIRMED_PRESET('iv')} AND iv.status = 'planned' AND iv.kind != 'bo_tro') AS pa_cho,
       (SELECT y.han_duyet FROM yeu_cau_duyet y WHERE y.loai = 'khong_theo_doi' AND y.doi_tuong_loai = 'sos_case' AND y.doi_tuong_id = sc.id
@@ -106,9 +113,12 @@ export function sosCaseStateMany(caseIds: readonly number[]): Map<number, SosCas
       const fromSos = !!c.from_sos;
       const hasCause = !!c.has_cause;
       const coThe = !!c.co_the && c.status !== 'done';
+      const laMt = !!c.la_mt;
+      const cho = fromSos && c.status !== 'done' && !hasCause && !coThe;
       out.set(c.id as number, {
-        fromSos, hasCause,
-        awaitingCause: fromSos && c.status !== 'done' && !hasCause && !coThe,
+        fromSos, hasCause, laMt,
+        choNhanXet: cho && laMt,
+        awaitingCause: cho && !laMt,
         dueOn: fromSos ? c.han_xac_nhan ?? null : null,
         dismissed: c.dismiss_reason_code
           ? { code: c.dismiss_reason_code, label: CASE_DISMISS_REASON_LABEL[c.dismiss_reason_code as CaseDismissReason] ?? c.dismiss_reason_code, text: c.dismiss_reason_text ?? null }
@@ -126,7 +136,7 @@ export function sosCaseState(caseId: number): SosCaseState {
   return sosCaseStateMany([caseId]).get(caseId) ?? { ...SOS_STATE_RONG };
 }
 
-/** Trong tập Case cho trước, những Case đang `Chờ xác nhận nguyên nhân` (một truy vấn cho cả tập, không hỏi từng Case). MỘT định nghĩa. */
+/** Trong tập Case cho trước, những Case đang `Chờ xác nhận Case` (một truy vấn cho cả tập, không hỏi từng Case). MỘT định nghĩa. OV-12c: không Case MT. */
 export function awaitingCauseCaseIds(caseIds: number[]): number[] {
   const out: number[] = [];
   for (let i = 0; i < caseIds.length; i += 400) {
@@ -135,7 +145,7 @@ export function awaitingCauseCaseIds(caseIds: number[]): number[] {
       .prepare(
         `SELECT sc.id FROM sos_cases sc
           WHERE sc.id IN (${chunk.map(() => '?').join(',')}) AND sc.status != 'done'
-            AND ${LA_CASE_SOS('sc')}
+            AND ${LA_CASE_SOS('sc')} AND NOT ${LA_CASE_MT('sc')}
             AND NOT EXISTS (SELECT 1 FROM case_issues ci WHERE ci.case_id = sc.id AND ci.role = 'primary')
             AND NOT ${CO_THE_KHONG_THEO_DOI('sc')}
           ORDER BY sc.id`,

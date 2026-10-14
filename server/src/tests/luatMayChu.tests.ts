@@ -308,7 +308,7 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
   const auditN = (action: string, id: number) =>
     (conn.prepare('SELECT COUNT(*) n FROM audit_logs WHERE action = ? AND entity_id = ?').get(action, id) as any).n as number;
 
-  check('S1→LT2a · Hai môn chưa đạt → hai Case tự tạo, mỗi Case về đúng GV dạy môn đó; tín hiệu là dây nối "linked" (không còn "chờ xác minh"), Case không nhãn SOS', () => {
+  check('S1→LT2a · Hai môn chưa đạt → hai Case tự tạo, mỗi Case về đúng GV dạy môn đó; tín hiệu là dây nối "linked" (không còn "chờ xác minh"), cả hai Case nhãn SOS 2 (OV-12c: số môn trượt)', () => {
     const hv = taoHocVien({ classCode: 'MB FOU 12', weekStart: '2026-09-07' });
     diem(hv.attemptId, 'listening', 10, 40);
     diem(hv.attemptId, 'speaking', 5, 25);
@@ -318,16 +318,16 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
       `Sai người: L→${cl.owner_user_id}, S→${cs.owner_user_id}`);
     const l = tinHieu(hv.attemptId, 'listening'), sp = tinHieu(hv.attemptId, 'speaking');
     assert(l.status === 'linked' && l.case_id === cl.id && sp.status === 'linked' && sp.case_id === cs.id, 'Tín hiệu phải là dây nối tới Case');
-    assert(cl.sos_level === null && cs.sos_level === null, 'Lớp thường không nhãn SOS (T58)');
+    assert(cl.sos_level === 2 && cs.sos_level === 2, `OV-12c: 2 môn trượt → SOS 2 ở cả hai Case (L ${cl.sos_level}, S ${cs.sos_level})`);
   });
 
-  check('S1→LT2a · Case Progress Test mang đủ dữ liệu cho dòng việc: nhóm "Xác nhận nguyên nhân", đúng Case, hạn 3 ngày tính cả hôm nay, đúng người; GV môn khác không thấy', () => {
+  check('S1→LT2a · Case Progress Test mang đủ dữ liệu cho dòng việc: nhóm "Xác nhận Case" (OV-12c), đúng Case, hạn 5 ngày cố định, đúng người; GV môn khác không thấy', () => {
     const hv = taoHocVien({ classCode: 'MB FOU 12', weekStart: '2026-09-07' });
     diem(hv.attemptId, 'listening', 20, 40);
     const c = caseCua(hv.sid, 'listening');
     const dong = (who: any) => ((mywork.myWork(who) as any).items as any[]).find((i) => i.key === `cause:${c.id}`);
     const mine = dong(pGvcnFou);
-    assert(mine && mine.group === 'cause' && mine.caseId === c.id && mine.due === domain.hanXacNhan(TODAY), `Dòng: ${JSON.stringify(mine && { g: mine.group, c: mine.caseId, due: mine.due })}`);
+    assert(mine && mine.group === 'cause' && mine.caseId === c.id && mine.due === domain.hanXacNhan(TODAY, { thuong: true }), `Dòng: ${JSON.stringify(mine && { g: mine.group, c: mine.caseId, due: mine.due })}`);
     assert(!((mywork.myWork(pGvcnFou) as any).items as any[]).some((i) => i.group === 'verify'), 'Không còn nhóm "verify"');
     assert(!dong(pSpeakingFou), 'GV môn khác thấy việc của người khác');
   });
@@ -448,7 +448,7 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
 
   // ================================================================== 9. PR-LT2a — việc cần làm + chỉ số
 
-  console.log('\nPR-LT2a · 9. Một dòng "Xác nhận nguyên nhân" mỗi Case Progress Test; ô "Case chờ nguyên nhân quá hạn" đếm cả lớp thường');
+  console.log('\nPR-LT2a · 9. Một dòng "Xác nhận Case" mỗi Case Progress Test (OV-12c); ô "Case quá hạn xác nhận" đếm lớp thường');
 
   check('S1→LT2a · Việc cần làm của GV môn đó có MỘT dòng cho mỗi Case (không mỗi tín hiệu), kèm môn, hạn; GV khác không thấy', () => {
     const hv = taoHocVien({ classCode: 'MB FOU 12', weekStart: '2026-09-07' });
@@ -457,7 +457,7 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
     const cl = caseCua(hv.sid, 'listening'), cs = caseCua(hv.sid, 'speaking');
     const items = (who: any) => (mywork.myWork(who) as any).items as any[];
     const mine = items(pGvcnFou).filter((i) => i.key === `cause:${cl.id}`);
-    assert(mine.length === 1 && mine[0].group === 'cause' && mine[0].actionLabel === 'Xác nhận nguyên nhân', `Dòng: ${JSON.stringify(mine)}`);
+    assert(mine.length === 1 && mine[0].group === 'cause' && mine[0].actionLabel === 'Xác nhận Case', `Dòng: ${JSON.stringify(mine)}`);
     assert(!items(pGvcnFou).some((i) => i.key === `cause:${cs.id}`), 'GV Listening thấy Case Speaking');
     assert(items(pSpeakingFou).some((i) => i.key === `cause:${cs.id}`), 'GV Speaking không thấy Case của mình');
   });
@@ -474,7 +474,7 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
     assert(ids.includes(oldL.id), 'Case quá hạn phải có trong ô');
     assert(!ids.includes(fresh.id), 'Case còn trong hạn không được đếm');
     assert(!ids.includes(gone.id), 'Case đã đóng không được đếm');
-    assert(domain.metricById('tin-hieu-qua-han') === null && domain.metricById('case-xac-dinh-nguyen-nhan-qua-han')?.ten === 'Case quá hạn xác nhận nguyên nhân', 'Chỉ số tín hiệu đã bỏ, chỉ số Case còn');
+    assert(domain.metricById('tin-hieu-qua-han') === null && domain.metricById('case-xac-dinh-nguyen-nhan-qua-han')?.ten === 'Case quá hạn xác nhận', 'Chỉ số tín hiệu đã bỏ, chỉ số Case còn (OV-12c: tên mới)');
   });
 
   // ================================================================== 10. RB-8
@@ -514,7 +514,7 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
     assert(n === 1, 'Người phụ trách phải được nhắc xem lại đúng một lần');
   });
 
-  check('RB-8 · Không đóng Case vô cớ: Progress Test trượt → Case có việc; Final Test đạt cả bốn môn → Case vẫn mở, không nhãn SOS (mức NULL), có mốc "đã đạt"', () => {
+  check('RB-8 · Không đóng Case vô cớ: Progress Test trượt → Case có việc; Final Test đạt cả bốn môn → Case vẫn mở, giữ nhãn SOS của Progress Test (OV-12c: SOS 1, Final không đổi mức), có mốc "đã đạt"', () => {
     const hv = taoHocVien({ classCode: 'MB FOU 12', weekStart: '2026-08-24' });
     diem(hv.attemptId, 'listening', 10, 40);
     const c = caseTuTinHieu(pGvcnFou, tinHieu(hv.attemptId, 'listening'));
@@ -524,7 +524,7 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
     const fin = themLuot({ sid: hv.sid, cid: hv.cid, cycleId: hv.cycleId, weekStart: '2026-09-07', kind: 'final', no: 2 });
     for (const k of ['listening', 'reading', 'writing', 'speaking']) diem(fin, k, 35, 40);
     const row = conn.prepare('SELECT status, sos_level FROM sos_cases WHERE id = ?').get(c.id) as any;
-    assert(row.status !== 'done' && row.sos_level === null, `Case phải còn mở, không nhãn SOS: ${JSON.stringify(row)}`);
+    assert(row.status !== 'done' && row.sos_level === 1, `Case phải còn mở, giữ SOS 1 của Progress Test: ${JSON.stringify(row)}`);
     const passed = (conn.prepare(`SELECT COUNT(*) n FROM case_milestones WHERE case_id = ? AND kind = 'passed' AND attempt_id = ?`).get(c.id, fin) as any).n;
     assert(passed === 1, 'Thiếu mốc "đã đạt" của Final Test');
   });

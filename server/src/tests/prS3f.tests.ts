@@ -15,7 +15,7 @@ export async function runPrS3fTests(t: YThucTestKit) {
   const intake: any = await import('../classes/intake.ts');
   const sosAuto: any = await import('../cases/sosAuto.ts');
   const keHoach: any = await import('../keHoach/keHoachTest.ts');
-  const { boLichTuTao, luotThu } = await import('./luotThu.ts');
+  const { boLichTuTao, luotThu, nhanXetCaseThu } = await import('./luotThu.ts');
   console.log('\nPR-S3F · Sửa sau rà cuối đợt 3');
 
   const CLASS = t.classId('MB FT 101');
@@ -76,7 +76,7 @@ export async function runPrS3fTests(t: YThucTestKit) {
     const a = mkAttempt(st, 1);
     for (const k of ['listening', 'reading', 'speaking']) enter(a, k, 5);
     const c = caseOf(st.id, 'listening');
-    sosAuto.xacNhanCase(P.admin, c.id, XN);
+    nhanXetCaseThu(conn, attemptsSvc.saveScore, P.admin, c.id, XN);   // OV-12c: nguyên nhân Case MT = nhận xét của bài
     const iv = get('SELECT id FROM case_interventions WHERE case_id = ?', c.id);
     sosAuto.xacNhanPaQuyChe(P.admin, iv.id, { description: 'Tutor Listening hai buổi mỗi tuần, cô Hà chữa bài nghe.' });
     keHoach.huyDiem(P.admin, { attemptId: a.id, skill: 'listening', lyDo: 'Chấm nhầm bài, huỷ điểm' });
@@ -208,7 +208,7 @@ export async function runPrS3fTests(t: YThucTestKit) {
   /* PR-Dọn (Q14): `PUT /cases/:id/issues` + `setIssues` và route `/interventions/:id/complete` đã xoá (web không gọi) — giữ phần hàm còn sống. */
   check('S3F (8) · khép PA quy chế TRƯỚC mốc → 400 (T22) — PR-SO: qua `updateResult` (decision end), `completeIntervention` đã xoá', () => {
     const { c } = mt1L('D8');
-    sosAuto.xacNhanCase(P.admin, c.id, XN);
+    nhanXetCaseThu(conn, attemptsSvc.saveScore, P.admin, c.id, XN);   // OV-12c: nguyên nhân Case MT = nhận xét của bài
     const iv = get('SELECT id FROM case_interventions WHERE case_id = ?', c.id);
     sosAuto.xacNhanPaQuyChe(P.admin, iv.id, { description: 'Tutor Listening hai buổi mỗi tuần, cô Hà chữa bài nghe.' });
     assertThrows(() => cases.updateResult(P.admin, iv.id, { decision: 'end', outcome: 'improved', note: 'Em nghe tốt hơn hẳn sau hai tuần' }), /không kết thúc sớm/, 'khép PA quy chế sớm');
@@ -217,11 +217,11 @@ export async function runPrS3fTests(t: YThucTestKit) {
 
   // ------------------------------------------------------------------ 9–10 · giao diện (đọc mã nguồn — đúng chỗ đã sửa)
   const web = (f: string) => fs.readFileSync(path.join(REPO, 'web/src/modules', f), 'utf8');
-  check('S3F (9) · Panel Xác nhận PA không điền sẵn mô tả máy gán (ô trống, gợi ý mờ), vẫn ≥ 15 ký tự; (10) đầu hồ sơ tách "chờ xác nhận" khỏi "đang theo dõi"', () => {
+  check('S3F (9) · (OV-12c) Panel Xác nhận PA bấm thẳng — gửi nguyên văn nội dung quy chế; "Sửa PA" mở FormPa ≥ 15 ký tự; (10) đầu hồ sơ tách "chờ xác nhận" khỏi "đang theo dõi"', () => {
     const c = web('yThuc/CaseSosControls.tsx');
-    /* PR-PA (§8): Xác nhận PA dùng một form PA (`FormPa`) — Nội dung bắt đầu trống (`paMoi`), gợi ý mờ nằm ở FormPa. */
-    const xn = c.slice(c.indexOf('export function XacNhanPaPanel'), c.indexOf('export function KhongTheoDoiForm'));
-    assert(!/pa\.description/.test(xn) && /\.\.\.paMoi\(pa\.kind\)/.test(xn), 'Xác nhận PA còn điền sẵn mô tả');
+    /* OV-12c (chủ SP 14/10): "Xác nhận PA: bấm thẳng" — thay Q28-5 (ô trống). Bản quy chế = `goc` (mô tả máy gán), sửa thì qua `FormPa`. */
+    const xn = c.slice(c.indexOf('export function XacNhanPaPanel'), c.indexOf('export function GhiNhanXetPanel'));
+    assert(/description: pa\.description/.test(xn) && /paPayload\(sua \? v : goc\)/.test(xn), 'Xác nhận PA không gửi nguyên văn bản quy chế');
     assert(/toiThieu: 15/.test(xn) && /<FormPa/.test(xn) && /placeholder=\{GOI_Y_MO_TA_PA\}/.test(web('cases/FormPa.tsx')), 'mất ràng buộc 15 ký tự / gợi ý');
     /* PR-VAI-b (Task 3): ô "Case đang mở" cũ → ô Học thuật, mỗi Case một dòng — Case có PA chờ xác nhận nói "xác nhận PA", tách khỏi Case đang theo dõi. */
     const o = d.oHocThuat([{ short: 'L', label: 'Listening', category: 'listening', missed: true, cases: [
