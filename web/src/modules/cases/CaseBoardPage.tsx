@@ -4,6 +4,7 @@ import { ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { docThamSoHoSo, duongHoSoHocVien } from '@shared/domain/index.ts';
 import { useChongVe, useVe } from '../../lib/quayLai.ts';
 import { NganCase } from '../students/NganCase.tsx';
+import { t } from '@shared/i18n/index.ts';
 
 /**
  * `/hoc-thuat/Case/:id` — link sâu cũ (thông báo, email, link đã lưu). PR-Pb2-a (Q5) → PR-Dọn: mọi Case đều có học viên, nên chỉ còn
@@ -21,6 +22,6 @@ export function CaseRoutePage() {
   if (rieng) return <NganCase caseId={Number(id)} paId={paId ?? null} viec="ghi-ket-qua" onClose={() => ve(chong[0]?.url ?? '/cong-viec', !chong.length)} />;
   if (ca.data?.student) return <Navigate replace to={duongHoSoHocVien(ca.data.student.id, { caseId: Number(id) })} />;
   if (ca.error) return <ErrorState message={ca.error.message} onRetry={ca.reload} />;
-  if (ca.data) return <ErrorState message="Case này không gắn học viên nào." />;
+  if (ca.data) return <ErrorState message={t('Case này không gắn học viên nào.')} />;
   return <div className="max-w-[900px]"><Skeleton rows={4} /></div>;
 }

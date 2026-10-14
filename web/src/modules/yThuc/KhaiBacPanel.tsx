@@ -9,6 +9,7 @@ import { NutChon } from '../../ui/ui.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { THANG, dsLoi, kindCuaBac, nhanLoaiXuLy } from '@shared/domain/index.ts';
 import { DUONG_LAM_MOI_Y_THUC, type YThucHocVien } from './kieu.ts';
+import { t } from '@shared/i18n/index.ts';
 
 const GHI_CHU_MIN = 3;
 /** Khai tối đa bậc 6 (WL 2) — hết mạch chính; Report 7+ chỉ đi tiếp trên web. */
@@ -37,18 +38,18 @@ export function KhaiBacPanel({ studentId, sua, onClose, onDone }: {
   }, [studentId, sua, d?.khai?.bac]);
 
   if (!studentId) return null;
-  const tieuDe = sua ? 'Sửa cấp bậc vi phạm' : 'Xác nhận cấp bậc vi phạm';
-  if (!d) return <KhungPanel tieuDe={tieuDe} onDong={onClose}><p className="mt-3 text-sm text-slate-400">Đang tải…</p></KhungPanel>;
+  const tieuDe = sua ? t('Sửa cấp bậc vi phạm') : t('Xác nhận cấp bậc vi phạm');
+  if (!d) return <KhungPanel tieuDe={tieuDe} onDong={onClose}><p className="mt-3 text-sm text-slate-400">{t('Đang tải…')}</p></KhungPanel>;
 
   if (daLuu) {
     return (
       <KhungPanel tieuDe={tieuDe} hocVien={d.ten} onDong={onClose}
-        chan={{ huy: null, chinh: <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={onClose}>Đóng</button> }}>
-        <Khoi tieuDe="Đã lưu"><p className="m-0 text-sm text-slate-200">{daLuu}</p></Khoi>
+        chan={{ huy: null, chinh: <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={onClose}>{t('Đóng')}</button> }}>
+        <Khoi tieuDe={t('Đã lưu')}><p className="m-0 text-sm text-slate-200">{daLuu}</p></Khoi>
       </KhungPanel>
     );
   }
-  const loi = dsLoi([{ khoa: 'bac', nhan: 'Bậc', chon: true }, { khoa: 'ghi-chu', nhan: 'Ghi chú', toiThieu: GHI_CHU_MIN }],
+  const loi = dsLoi([{ khoa: 'bac', nhan: t('Bậc'), chon: true }, { khoa: 'ghi-chu', nhan: t('Ghi chú'), toiThieu: GHI_CHU_MIN }],
     { bac: bac || '', 'ghi-chu': ghiChu });
   const luu = async () => {
     lf.bam();
@@ -60,7 +61,7 @@ export function KhaiBacPanel({ studentId, sua, onClose, onDone }: {
       else await api.post(`/students/${studentId}/y-thuc/khai-bac`, body);
       onDone?.();
       DUONG_LAM_MOI_Y_THUC.forEach((x) => invalidate(x));
-      const chu = `Đã xác nhận cấp bậc ${nhanLoaiXuLy(BAC_KHAI[bac - 1])} cho ${d.ten}. Lần xử lý kế tiếp: ${nhanLoaiXuLy(kindCuaBac(bac + 1))}.`;
+      const chu = t('Đã xác nhận cấp bậc {nhanLoaiXuLy} cho {ten}. Lần xử lý kế tiếp: {nhanLoaiXuLy2}.', { nhanLoaiXuLy: nhanLoaiXuLy(BAC_KHAI[bac - 1]), ten: d.ten, nhanLoaiXuLy2: nhanLoaiXuLy(kindCuaBac(bac + 1)) });
       toast.push('ok', chu);
       if (taiCho) setDaLuu(chu); else onClose();
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
@@ -68,27 +69,27 @@ export function KhaiBacPanel({ studentId, sua, onClose, onDone }: {
 
   return (
     <KhungPanel tieuDe={tieuDe} hocVien={d.ten} onDong={onClose}
-      ngCanh={<span className="truncate">Thang {d.chuoi.nhan === 'lớp thường' ? 'lớp thường' : d.chuoi.nhan} · xác nhận một lần, chỉ QL sửa sau</span>}
+      ngCanh={<span className="truncate">{t('Thang {x} · xác nhận một lần, chỉ QL sửa sau', { x: d.chuoi.nhan === 'lớp thường' ? t('lớp thường') : d.chuoi.nhan })}</span>}
       chan={{
         conThieu: lf.conThieu(loi),
-        chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={luu}>{sua ? 'Lưu' : 'Xác nhận'}</button>,
+        chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={luu}>{sua ? t('Lưu') : t('Xác nhận')}</button>,
       }}>
-      <Khoi tieuDe="Bậc cao nhất đã xử lý trước khi dùng web">
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2" role="group" aria-label="Bậc đã xử lý" {...lf.o(loi, 'bac')}>
+      <Khoi tieuDe={t('Bậc cao nhất đã xử lý trước khi dùng web')}>
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2" role="group" aria-label={t('Bậc đã xử lý')} {...lf.o(loi, 'bac')}>
           {BAC_KHAI.map((k, i) => (
             <NutChon key={k} chon={bac === i + 1} onClick={() => setBac(i + 1)}>{nhanLoaiXuLy(k)}</NutChon>
           ))}
         </div>
-        {lf.loiCua(loi, 'bac') && <p className="m-0 text-xs text-late">Chọn bậc cao nhất em đã bị xử lý</p>}
-        {bac > 0 && <p className="m-0 text-xs text-slate-500">Lần xử lý kế tiếp của em: {nhanLoaiXuLy(kindCuaBac(bac + 1))}.</p>}
+        {lf.loiCua(loi, 'bac') && <p className="m-0 text-xs text-late">{t('Chọn bậc cao nhất em đã bị xử lý')}</p>}
+        {bac > 0 && <p className="m-0 text-xs text-slate-500">{t('Lần xử lý kế tiếp của em: {nhanLoaiXuLy}.', { nhanLoaiXuLy: nhanLoaiXuLy(kindCuaBac(bac + 1)) })}</p>}
       </Khoi>
-      <Khoi tieuDe="Chi tiết">
-        <Truong nhan="Tháng xử lý" tuyChon>
-          <ONgay kieu="thang" value={thang} onChange={setThang} toiDa={homNay ? homNay.slice(0, 7) : null} goiY="Chưa chọn" />
+      <Khoi tieuDe={t('Chi tiết')}>
+        <Truong nhan={t('Tháng xử lý')} tuyChon>
+          <ONgay kieu="thang" value={thang} onChange={setThang} toiDa={homNay ? homNay.slice(0, 7) : null} goiY={t('Chưa chọn')} />
         </Truong>
-        <Truong nhan="Ghi chú" batBuoc loi={lf.loiCua(loi, 'ghi-chu')} dem={{ co: ghiChu.trim().length, can: GHI_CHU_MIN }}>
+        <Truong nhan={t('Ghi chú')} batBuoc loi={lf.loiCua(loi, 'ghi-chu')} dem={{ co: ghiChu.trim().length, can: GHI_CHU_MIN }}>
           <textarea className="field w-full" {...lf.o(loi, 'ghi-chu')} rows={2} value={ghiChu} onChange={(e) => setGhiChu(e.target.value)}
-            placeholder="Ví dụ: Report 2 tháng 8, cô Hà gửi PH" />
+            placeholder={t('Ví dụ: Report 2 tháng 8, cô Hà gửi PH')} />
         </Truong>
       </Khoi>
     </KhungPanel>

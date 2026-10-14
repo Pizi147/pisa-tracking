@@ -878,9 +878,9 @@ export async function runPrYt4Tests(t: YThucTestKit) {
   });
   check('YT4 (9) · Tab lớp M6: hai khung + tab "Xử lý · Vi phạm" dưới md; không còn bốn chip, hai chế độ, ô tick, khoảng ngày', () => {
     const s = docW(`${YT}/ClassYThucCard.tsx`);
-    assert(/md:grid-cols-\[minmax\(0,22rem\)_minmax\(0,1fr\)\]/.test(s) && /label: 'Theo xử lý'/.test(s) && /label: 'Theo vi phạm'/.test(s), 'hai khung');
+    assert(/md:grid-cols-\[minmax\(0,22rem\)_minmax\(0,1fr\)\]/.test(s) && /label: t\('Theo xử lý'\)/.test(s) && /label: t\('Theo vi phạm'\)/.test(s), 'hai khung');
     assert(!/BO_LOC_PHU|hopBoLocPhu|tuNgayTheoKhoang|byTime|type="checkbox"|Theo thời gian/.test(s), 'bộ lọc v3');
-    assert(/NHOM_EM\.filter/.test(s) && /params\.get\('mo'\)/.test(s) && /'Phối hợp'/.test(s), 'nhóm em, ?mo, tab Phối hợp');
+    assert(/NHOM_EM\.filter/.test(s) && /params\.get\('mo'\)/.test(s) && /t\('Phối hợp'\)/.test(s), 'nhóm em, ?mo, tab Phối hợp');
   });
   check('YT4 (9) · GVBM (canManage = false) không thấy Ghi nhận / Xác nhận xử lý / Xác nhận cấp bậc trên tab lớp; vẫn có + Ghi vi phạm (canRecord)', () => {
     const s = docW(`${YT}/ClassYThucCard.tsx`);

@@ -46,7 +46,7 @@ export async function runPrSlTests(t: YThucTestKit) {
     assert(!q.includes('DEFAULT_URGENCY') && q.includes("useState('')") && q.includes("khoa: 'muc-do'"), 'mức độ chọn sẵn / không bắt buộc');
     assert(q.includes("'Chọn nhóm'") && !q.includes("'Chọn phân loại'"), 'placeholder Nhóm nguyên nhân');
     assert(!q.includes("['L', 'R', 'W', 'S']"), 'hàng nút giả có W trần');
-    assert(/<ChonTuan[^>]*ariaLabel="Bắt đầu theo dõi"/.test(q) && !/<ONgay kieu="ngay"[^>]*setDetectedAt/.test(q), 'Bắt đầu theo dõi phải là bộ chọn tuần');
+    assert(/<ChonTuan[^>]*ariaLabel=\{t\('Bắt đầu theo dõi'\)\}/.test(q) && !/<ONgay kieu="ngay"[^>]*setDetectedAt/.test(q), 'Bắt đầu theo dõi phải là bộ chọn tuần');
   });
 
   check('SL-6 · I3 Thêm học viên: ô dán không monospace, nút Đọc dưới ô dán, cột Overall / ngày sinh đủ rộng; OV-11g CA2-10: lời nhắc vào ⓘ cột', () => {
@@ -71,7 +71,7 @@ export async function runPrSlTests(t: YThucTestKit) {
 
   check('SL-8 · I6 Ghi vi phạm: chú thích "* = bắt buộc" một dòng, không còn "(bắt buộc)" hiện ở ô; "Xem" không inline-flex cao 44 px', () => {
     const s = doc('web/src/modules/yThuc/RecordViolationPanel.tsx');
-    assert(s.includes('= bắt buộc</>}') && !/>\s*\(bắt buộc\)/.test(s), 'chú thích dấu *');
+    assert(s.includes("{t('= bắt buộc')}</>}") && !/>\s*\(bắt buộc\)/.test(s), 'chú thích dấu *');
     assert(/className="link appearance-none border-0 bg-transparent p-0 align-baseline max-sm:-my-3 max-sm:py-3" aria-expanded=\{xemTrung\}/.test(s), 'nút Xem');
   });
 

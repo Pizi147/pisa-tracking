@@ -11,6 +11,7 @@
  */
 import type { InterventionKind } from './cases.ts';
 import { ngayTheoGioVN } from './display.ts';
+import { t } from '../i18n/index.ts';
 
 export function addDaysIso(date: string, n: number): string {
   const d = new Date(`${date.slice(0, 10)}T00:00:00Z`);
@@ -65,14 +66,14 @@ export type AcademicSupportPreset = AcademicSupportRule & { description: string 
 /** Ô của bảng §4 cho một lượt. `null` khi mức SOS không phải 1–3 (không có gì để điền). MT < 1 là lỗi gọi hàm.
  *  RF (T4): mọi MT dùng hàng "MT3 trở đi" — `route` là lộ trình CỦA LƯỢT (K5-49). */
 export function academicSupportFor(attemptNo: number, sosLevel: number | null | undefined, route?: string | null): AcademicSupportPreset | null {
-  if (!Number.isInteger(attemptNo) || attemptNo < 1) throw new Error(`Số MT không hợp lệ: ${attemptNo}`);
+  if (!Number.isInteger(attemptNo) || attemptNo < 1) throw new Error(t('Số MT không hợp lệ: {attemptNo}', { attemptNo }));
   if (sosLevel !== 1 && sosLevel !== 2 && sosLevel !== 3) return null;
   const hang = route === 'RF' ? Math.max(3, attemptNo) : attemptNo;
   const rule = DEFAULT_ACADEMIC_SUPPORT[Math.min(hang, 5) as 1 | 2 | 3 | 4 | 5][sosLevel];
   const description =
-    rule.span === 'one_month' ? 'Tự học · 1 tháng'
-    : rule.span === 'until_next_mt' ? `Tutor · đến MT${attemptNo + 1}`
-    : 'Tutor · đến lúc thi';
+    rule.span === 'one_month' ? t('Tự học · 1 tháng')
+    : rule.span === 'until_next_mt' ? t('Tutor · đến MT{x}', { x: attemptNo + 1 })
+    : t('Tutor · đến lúc thi');
   return { ...rule, description };
 }
 
@@ -104,13 +105,13 @@ export const COORDINATION_KINDS = [
 ] as const;
 export type CoordinationKind = (typeof COORDINATION_KINDS)[number];
 export const COORDINATION_KIND_LABEL: Record<CoordinationKind, string> = {
-  talk_student: 'Trao đổi ngắn với HV',
-  talk_family: 'Trao đổi với gia đình',
-  gvcn_meeting: 'GVCN meeting với HV',
-  cx_meeting_student: 'CX / GĐCN meeting với HV',
-  cx_meeting_family: 'CX / GĐCN meeting với HV / PH',
-  other: 'Khác',
-  bao_ph_tvv: 'Báo phụ huynh qua TVV',
+  talk_student: t('Trao đổi ngắn với HV'),
+  talk_family: t('Trao đổi với gia đình'),
+  gvcn_meeting: t('GVCN meeting với HV'),
+  cx_meeting_student: t('CX / GĐCN meeting với HV'),
+  cx_meeting_family: t('CX / GĐCN meeting với HV / PH'),
+  other: t('Khác'),
+  bao_ph_tvv: t('Báo phụ huynh qua TVV'),
 };
 
 /**
@@ -128,7 +129,7 @@ export const hanPhoiHop = (kind: string, taoLuc: string | null | undefined): str
 export const COORDINATION_STATUSES = ['pending', 'done', 'removed'] as const;
 export type CoordinationStatus = (typeof COORDINATION_STATUSES)[number];
 export const COORDINATION_STATUS_LABEL: Record<CoordinationStatus, string> = {
-  pending: 'Cần xử lý', done: 'Xong', removed: 'Đã bỏ',
+  pending: t('Cần xử lý'), done: t('Xong'), removed: t('Đã bỏ'),
 };
 
 /** BỐN lý do người dùng chọn nhanh khi bỏ một việc (P06) — chỉ `Khác` hiện ô chữ. */
@@ -137,22 +138,22 @@ export const COORDINATION_USER_REMOVE_REASONS = ['not_needed', 'handled_otherwis
 export const COORDINATION_REMOVE_REASONS = [...COORDINATION_USER_REMOVE_REASONS, 'system_sos_changed', 'system_luot_huy', 'system_ket_qua_huy'] as const;
 export type CoordinationRemoveReason = (typeof COORDINATION_REMOVE_REASONS)[number];
 export const COORDINATION_REMOVE_REASON_LABEL: Record<CoordinationRemoveReason, string> = {
-  not_needed: 'Không cần trong trường hợp này',
-  handled_otherwise: 'Đã xử lý theo cách khác',
-  duplicate_measure: 'Trùng với lần xử lý khác',
-  other: 'Khác',
-  system_sos_changed: 'Điểm được sửa — mức SOS không còn cần việc này',
-  system_luot_huy: 'Lượt Test đã huỷ',
-  system_ket_qua_huy: 'Kết quả MT đã huỷ',
+  not_needed: t('Không cần trong trường hợp này'),
+  handled_otherwise: t('Đã xử lý theo cách khác'),
+  duplicate_measure: t('Trùng với lần xử lý khác'),
+  other: t('Khác'),
+  system_sos_changed: t('Điểm được sửa — mức SOS không còn cần việc này'),
+  system_luot_huy: t('Lượt Test đã huỷ'),
+  system_ket_qua_huy: t('Kết quả MT đã huỷ'),
 };
 
 /** BA lý do chọn nhanh khi GVBM bấm `Không cần theo dõi` (S05). */
 export const CASE_DISMISS_REASONS = ['special_circumstance', 'single_incident', 'other'] as const;
 export type CaseDismissReason = (typeof CASE_DISMISS_REASONS)[number];
 export const CASE_DISMISS_REASON_LABEL: Record<CaseDismissReason, string> = {
-  special_circumstance: 'Học viên có lý do đặc biệt',
-  single_incident: 'Tình huống đơn lẻ',
-  other: 'Khác',
+  special_circumstance: t('Học viên có lý do đặc biệt'),
+  single_incident: t('Tình huống đơn lẻ'),
+  other: t('Khác'),
 };
 
 /** Lý do nào cần ô chữ đi kèm: chỉ `Khác` (P06, S05). Dùng chung cho cả hai nơi — một luật, một hàm. */
@@ -176,7 +177,7 @@ export const DEFAULT_SOS_COORDINATION: Record<1 | 2 | 3 | 4, Record<SosLevelKey,
 
 /** Các việc điền sẵn cho một lượt Mock có SOS. Mức 0 (hoặc không xác định) thì không có việc nào. RF (T4): hàng MT4 cho mọi MT. */
 export function sosCoordinationFor(attemptNo: number, sosLevel: number | null | undefined, route?: string | null): readonly CoordinationKind[] {
-  if (!Number.isInteger(attemptNo) || attemptNo < 1) throw new Error(`Số MT không hợp lệ: ${attemptNo}`);
+  if (!Number.isInteger(attemptNo) || attemptNo < 1) throw new Error(t('Số MT không hợp lệ: {attemptNo}', { attemptNo }));
   if (sosLevel !== 1 && sosLevel !== 2 && sosLevel !== 3) return [];
   const hang = route === 'RF' ? Math.max(4, attemptNo) : attemptNo;
   return DEFAULT_SOS_COORDINATION[Math.min(hang, 4) as 1 | 2 | 3 | 4][sosLevel];

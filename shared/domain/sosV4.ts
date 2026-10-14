@@ -13,12 +13,13 @@ import { CHU_THEM_PA, type DeadlineKind } from './display.ts';
 import type { TrangThai } from './trangThai.ts';
 import { ngay, tuanLich } from './hienThiNgay.ts';
 import { mocChuBoTro } from './lopThuong.ts';
+import { t } from '../i18n/index.ts';
 
 /** Hạn Xác nhận PA (MT) / Xác nhận Case (Progress): 5 ngày ('2026-09-14' → '2026-09-18'); MT Gấp / SOS 3: 3 ngày (→ '2026-09-16'); Progress luôn 5. */
 export const hanXacNhan = (ngay: string, muc: { sosLevel?: number | null; urgency?: string | null; thuong?: boolean } = {}) => hanTheoNgay(ngay, soNgayHanXacNhan(muc));
 
-export const GOI_Y_MO_TA_PA = 'Nêu hướng dẫn và trọng tâm cụ thể; ai sẽ thực hiện / hỗ trợ / Tutor';                       // Q28-1
-export const GOI_Y_KET_QUA_PA = 'Đã cải thiện ở phần nào, như thế nào, kết quả cụ thể';  // Q28-2; PR-LUI-a2: "ai" đã có ô Người phụ trách
+export const GOI_Y_MO_TA_PA = t('Nêu hướng dẫn và trọng tâm cụ thể; ai sẽ thực hiện / hỗ trợ / Tutor');                       // Q28-1
+export const GOI_Y_KET_QUA_PA = t('Đã cải thiện ở phần nào, như thế nào, kết quả cụ thể');  // Q28-2; PR-LUI-a2: "ai" đã có ô Người phụ trách
 
 /** Mốc quy chế tính từ NGÀY XÁC NHẬN PA (§3.1d, K3-46): dùng lại `sosPlanEndDate` với createdOn = ngày xác nhận. */
 export function mocQuyChe(span: AcademicSupportSpan, ctx: { ngayXacNhan: string; nextMtSunday?: string | null; examDate?: string | null }): string | null {
@@ -30,14 +31,14 @@ export function mocQuyChe(span: AcademicSupportSpan, ctx: { ngayXacNhan: string;
  * (mốc tính lúc xác nhận). `mtKe` = số MT kế tiếp của lượt đã sinh PA.
  */
 export function mocChuPa(x: { span: string | null; followupDue: string | null; mtKe: number | null; daXacNhan: boolean }, homNay: string): string {
-  if (x.span === 'mini_test') return x.daXacNhan && x.followupDue ? `đến Mini Test · ${ngay(x.followupDue, homNay)}` : 'đến Mini Test';   // PR-LT2b
+  if (x.span === 'mini_test') return x.daXacNhan && x.followupDue ? t('đến Mini Test · {ngay}', { ngay: ngay(x.followupDue, homNay) }) : t('đến Mini Test');   // PR-LT2b
   /* PR-LT2a: PA bổ trợ. PR-S5F-b: mốc Cuối khoá có từ lúc tạo PA (`taoPaBoTro`) — PA chưa chạy (BE chờ kế hoạch) cũng nói mã tuần. */
-  if (x.span === 'den_cuoi_khoa') return x.daXacNhan || x.followupDue ? mocChuBoTro(x.followupDue, homNay) : 'đến Cuối khoá';
-  const dau = x.span === 'one_month' ? '1 tháng' : x.span === 'until_next_mt' ? (x.mtKe ? `đến MT${x.mtKe}` : 'đến MT kế tiếp')
-    : x.span === 'until_exam' ? 'đến lúc thi' : '';
+  if (x.span === 'den_cuoi_khoa') return x.daXacNhan || x.followupDue ? mocChuBoTro(x.followupDue, homNay) : t('đến Cuối khoá');
+  const dau = x.span === 'one_month' ? t('1 tháng') : x.span === 'until_next_mt' ? (x.mtKe ? t('đến MT{mtKe}', { mtKe: x.mtKe }) : t('đến MT kế tiếp'))
+    : x.span === 'until_exam' ? t('đến lúc thi') : '';
   if (!dau || !x.daXacNhan) return dau;
-  if (x.followupDue) return `${dau} · ${x.span === 'until_next_mt' ? tuanLich(x.followupDue, homNay) : `đến ${x.span === 'until_exam' ? ngay(x.followupDue, homNay) : tuanLich(x.followupDue, homNay)}`}`;   // UXF-b (Q8): ngày chỉ cho ngày thi
-  return `${dau} · ${x.span === 'until_exam' ? 'chưa có ngày thi' : 'chưa có lịch'}`;
+  if (x.followupDue) return `${dau} · ${x.span === 'until_next_mt' ? tuanLich(x.followupDue, homNay) : t('đến {x}', { x: x.span === 'until_exam' ? ngay(x.followupDue, homNay) : tuanLich(x.followupDue, homNay) })}`;   // UXF-b (Q8): ngày chỉ cho ngày thi
+  return `${dau} · ${x.span === 'until_exam' ? t('chưa có ngày thi') : t('chưa có lịch')}`;
 }
 
 /**
@@ -88,16 +89,16 @@ export type CaseV4Input = {
 
 /** MỘT nhãn trạng thái cho một Case (§7.3) — xét từ trên xuống. */
 export function trangThaiCaseV4(c: CaseV4Input, homNay: string): { k: TrangThaiCaseV4; t: TrangThai; chu: string; han: string | null } {
-  if (c.systemClosed) return { k: 'he-thong-dong', t: 'da-huy', chu: c.lyDoHeThong ? `Hệ thống đóng · ${c.lyDoHeThong}` : 'Hệ thống đóng', han: null };
-  if (c.rutSuaDiem) return { k: 'rut-sua-diem', t: 'da-huy', chu: 'Đã rút (sửa điểm)', han: null };
-  if (c.dismissed) return { k: 'huy-khong-theo-doi', t: 'da-huy', chu: 'Đã huỷ · không cần theo dõi', han: null };
-  if (c.status === 'done') return { k: 'xong', t: 'xong', chu: 'Xong', han: null };
-  if (c.choDuyetKhongTheoDoi) return { k: 'cho-duyet-khong-theo-doi', t: 'cho-duyet', chu: 'Chờ Quản lý duyệt · không theo dõi', han: null };
-  const t: TrangThai = c.hanXacNhan && c.hanXacNhan < homNay ? 'qua-han' : 'can-lam';
-  if (c.fromSos && !c.hasCause) return c.laMt ? { k: 'cho-nhan-xet', t, chu: 'Chờ ghi nhận xét', han: c.hanXacNhan }
-    : { k: 'cho-nguyen-nhan', t, chu: 'Chờ xác nhận Case', han: c.hanXacNhan };
-  if (c.fromSos && c.coPaChoXacNhan) return { k: 'cho-xac-nhan-pa', t, chu: 'Chờ xác nhận PA', han: c.hanXacNhan };
-  return { k: 'dang-lam', t: 'dang-lam', chu: 'Đang làm', han: null };
+  if (c.systemClosed) return { k: 'he-thong-dong', t: 'da-huy', chu: c.lyDoHeThong ? t('Hệ thống đóng · {lyDoHeThong}', { lyDoHeThong: c.lyDoHeThong }) : t('Hệ thống đóng'), han: null };
+  if (c.rutSuaDiem) return { k: 'rut-sua-diem', t: 'da-huy', chu: t('Đã rút (sửa điểm)'), han: null };
+  if (c.dismissed) return { k: 'huy-khong-theo-doi', t: 'da-huy', chu: t('Đã huỷ · không cần theo dõi'), han: null };
+  if (c.status === 'done') return { k: 'xong', t: 'xong', chu: t('Xong'), han: null };
+  if (c.choDuyetKhongTheoDoi) return { k: 'cho-duyet-khong-theo-doi', t: 'cho-duyet', chu: t('Chờ Quản lý duyệt · không theo dõi'), han: null };
+  const tt: TrangThai = c.hanXacNhan && c.hanXacNhan < homNay ? 'qua-han' : 'can-lam';
+  if (c.fromSos && !c.hasCause) return c.laMt ? { k: 'cho-nhan-xet', t: tt, chu: t('Chờ ghi nhận xét'), han: c.hanXacNhan }
+    : { k: 'cho-nguyen-nhan', t: tt, chu: t('Chờ xác nhận Case'), han: c.hanXacNhan };
+  if (c.fromSos && c.coPaChoXacNhan) return { k: 'cho-xac-nhan-pa', t: tt, chu: t('Chờ xác nhận PA'), han: c.hanXacNhan };
+  return { k: 'dang-lam', t: 'dang-lam', chu: t('Đang làm'), han: null };
 }
 
 /** J9: bỏ phần mốc máy gán ở đuôi tên PA (`Tutor · đến lúc thi` → `Tutor`); tên người dạy tự viết giữ nguyên. */
@@ -121,21 +122,21 @@ export type ViecTiepCase = { chu: string; loaiHan: DeadlineKind | null; han: str
 export function viecTiepCuaCase(c: CaseV4Input, pas: PaViecTiep[], homNay: string, hanLapPa: string | null = null): ViecTiepCase | null {
   const s = trangThaiCaseV4(c, homNay);
   if (s.k === 'xong' || s.k === 'huy-khong-theo-doi' || s.k === 'he-thong-dong' || s.k === 'rut-sua-diem') return null;
-  if (s.k === 'cho-nguyen-nhan') return { chu: 'Xác nhận Case', loaiHan: 'xac-minh-sos', han: c.hanXacNhan };
-  if (s.k === 'cho-nhan-xet') return { chu: 'Ghi nhận xét', loaiHan: 'xac-minh-sos', han: c.hanXacNhan };
-  if (s.k === 'cho-duyet-khong-theo-doi') return { chu: 'Chờ Quản lý duyệt · không theo dõi', loaiHan: null, han: null };
+  if (s.k === 'cho-nguyen-nhan') return { chu: t('Xác nhận Case'), loaiHan: 'xac-minh-sos', han: c.hanXacNhan };
+  if (s.k === 'cho-nhan-xet') return { chu: t('Ghi nhận xét'), loaiHan: 'xac-minh-sos', han: c.hanXacNhan };
+  if (s.k === 'cho-duyet-khong-theo-doi') return { chu: t('Chờ Quản lý duyệt · không theo dõi'), loaiHan: null, han: null };
   const choXn = pas.find((p) => p.choXacNhan && !p.xong);
-  if (choXn) return { chu: `Xác nhận PA ${tenPaGon(choXn.ten)}`, loaiHan: 'xac-minh-sos', han: c.hanXacNhan, paId: choXn.id };
+  if (choXn) return { chu: t('Xác nhận PA {tenPaGon}', { tenPaGon: tenPaGon(choXn.ten) }), loaiHan: 'xac-minh-sos', han: c.hanXacNhan, paId: choXn.id };
   const chayTatCa = pas.filter((p) => !p.xong && !p.choXacNhan && !p.choDuyet);
   /* PR-S5F-a: có PA ở lớp mới (bổ trợ miễn phí) thì việc tiếp là của PA đó; PA lớp cũ chỉ thành việc tiếp khi không còn PA nào khác, ghi rõ "(lớp cũ)". */
   const chay = chayTatCa.some((p) => !p.lopCu) ? chayTatCa.filter((p) => !p.lopCu) : chayTatCa;
-  const cu = (p: PaViecTiep) => (p.lopCu ? ' (lớp cũ)' : '');
+  const cu = (p: PaViecTiep) => (p.lopCu ? t(' (lớp cũ)') : '');
   const cuoi = chay.find((p) => laLanGhiCuoi({ preset: p.batBuoc, followupDue: p.followupDue, actionDue: p.actionDue, mienPhi: p.mienPhi }, homNay));
-  if (cuoi) return { chu: `Kết quả cuối ${tenPaGon(cuoi.ten)}${cu(cuoi)}`, loaiHan: 'cap-nhat-pa', han: cuoi.actionDue, paId: cuoi.id };
+  if (cuoi) return { chu: t('Kết quả cuối {tenPaGon}{cu}', { tenPaGon: tenPaGon(cuoi.ten), cu: cu(cuoi) }), loaiHan: 'cap-nhat-pa', han: cuoi.actionDue, paId: cuoi.id };
   const ganNhat = [...chay].sort((a, b) => (a.actionDue ?? '9999').localeCompare(b.actionDue ?? '9999'))[0];
-  if (ganNhat) return { chu: `Kết quả PA ${tenPaGon(ganNhat.ten)}${cu(ganNhat)}`, loaiHan: 'cap-nhat-pa', han: ganNhat.actionDue, paId: ganNhat.id };
+  if (ganNhat) return { chu: t('Kết quả PA {tenPaGon}{cu}', { tenPaGon: tenPaGon(ganNhat.ten), cu: cu(ganNhat) }), loaiHan: 'cap-nhat-pa', han: ganNhat.actionDue, paId: ganNhat.id };
   if (!pas.length) return { chu: CHU_THEM_PA, loaiHan: 'lap-pa', han: hanLapPa };
-  if (pas.every((p) => p.xong)) return { chu: 'Hoàn thành Case', loaiHan: null, han: null };
+  if (pas.every((p) => p.xong)) return { chu: t('Hoàn thành Case'), loaiHan: null, han: null };
   return null;   // chỉ còn PA chờ Quản lý duyệt — việc của Quản lý
 }
 
@@ -146,10 +147,10 @@ export function viecTiepCuaCase(c: CaseV4Input, pas: PaViecTiep[], homNay: strin
 export function chanHoanThanh(pas: { batBuoc: boolean; xong: boolean; choDuyet: boolean; followupDue: string | null; mocChu: string }[]): { an: boolean; dong: string | null; ly_do: string[] } {
   const batBuoc = pas.find((p) => p.batBuoc && !p.xong);
   const ly_do: string[] = [];
-  if (!pas.length) ly_do.push('Case chưa có phương án nào — chưa làm gì cho em thì chưa có gì để kết luận.');
+  if (!pas.length) ly_do.push(t('Case chưa có phương án nào — chưa làm gì cho em thì chưa có gì để kết luận.'));
   const choDuyet = pas.filter((p) => p.choDuyet).length;
-  if (choDuyet) ly_do.push(`${choDuyet} phương án đang chờ Quản lý duyệt.`);
+  if (choDuyet) ly_do.push(t('{choDuyet} phương án đang chờ Quản lý duyệt.', { choDuyet }));
   const chay = pas.filter((p) => !p.xong && !p.choDuyet).length;
-  if (chay) ly_do.push(`${chay} phương án chưa cập nhật kết quả cuối cùng.`);
-  return { an: !!batBuoc, dong: batBuoc ? `Hoàn thành được sau khi PA theo quy chế kết thúc (${batBuoc.mocChu})` : null, ly_do };
+  if (chay) ly_do.push(t('{chay} phương án chưa cập nhật kết quả cuối cùng.', { chay }));
+  return { an: !!batBuoc, dong: batBuoc ? t('Hoàn thành được sau khi PA theo quy chế kết thúc ({mocChu})', { mocChu: batBuoc.mocChu }) : null, ly_do };
 }

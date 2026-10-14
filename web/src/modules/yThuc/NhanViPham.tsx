@@ -1,5 +1,6 @@
 import type { TrangThaiVp } from '@shared/domain/index.ts';
 import { CHIP_VUONG } from '../../ui/Nhan.tsx';
+import { t } from '@shared/i18n/index.ts';
 
 /** Dấu tích mảnh 12 px, nét 1.5 — không dùng ký tự ✓ (Inter cỡ nhỏ vẽ thành chấm, memory "bẫy ký tự nhỏ"). */
 export function DauTich({ className = '' }: { className?: string }) {
@@ -36,12 +37,12 @@ const LOP: Record<TrangThaiVp, string> = {
  * "Đã duyệt · chờ thực hiện") · Đã xử lý · {bậc}. `nhan` đến từ máy chủ (một hàm trạng thái) — không tự dựng chữ ở đây.
  * Đã ghi nhận chỉ ghi "Đã ghi nhận" (chủ sản phẩm 02/10 — bỏ "· vẫn tính").
  */
-export function NhanViPham({ t, nhan, title }: { t: TrangThaiVp; nhan: string; title?: string }) {
-  const chu = t === 'da_ghi_nhan' ? 'Đã ghi nhận' : nhan;
+export function NhanViPham({ t: tt, nhan, title }: { t: TrangThaiVp; nhan: string; title?: string }) {
+  const chu = tt === 'da_ghi_nhan' ? t('Đã ghi nhận') : nhan;
   return (
-    <span title={title ?? (t === 'da_ghi_nhan' ? 'GVCN đã xem, không cần xử lý' : undefined)}
-      className={`${CHIP_VUONG} gap-1 ${LOP[t]}`}>
-      {t === 'da_ghi_nhan' && <DauTich />}
+    <span title={title ?? (tt === 'da_ghi_nhan' ? t('GVCN đã xem, không cần xử lý') : undefined)}
+      className={`${CHIP_VUONG} gap-1 ${LOP[tt]}`}>
+      {tt === 'da_ghi_nhan' && <DauTich />}
       {chu}
     </span>
   );

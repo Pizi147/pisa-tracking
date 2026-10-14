@@ -19,7 +19,7 @@ const ANH = process.env.KHUNG_ANH ?? 'thiet-ke/anh/khung';
 const LOC = process.argv[2] ?? '';
 const NN = process.env.KHUNG_NGON_NGU === 'en' ? 'en' : 'vi';
 /** (v) chỉ đo màn đã dịch: kịch bản → vùng đo. Mỗi đợt PR-EN thêm màn của mình (EN-a: đăng nhập, Hồ sơ cá nhân, thanh trên + menu Tài khoản;
- *  EN-b: màn GV Việc + Test; EN-c: Học viên & Lớp, hồ sơ lớp, hồ sơ HV). */
+ *  EN-b: màn GV Việc + Test; EN-c: Học viên & Lớp, hồ sơ lớp, hồ sơ HV; EN-d: Case – PA, Ghi vi phạm, Ý thức). */
 const GOC_V = {
   'dang-nhap': 'body', 'ho-so-ca-nhan': 'body', 'menu-tk': 'header',
   /* EN-b: Tổng quan GV, Công việc, Yêu cầu của tôi, chuông, Lịch Test, Điểm theo lớp, nhập điểm, hộp chấm, hồ sơ Mock, Ghi kết quả PA. */
@@ -27,9 +27,13 @@ const GOC_V = {
   'gv-bang-diem-thuong': '#noi-dung', 'gv-mock': '#noi-dung', 'gv-yeu-cau': '#noi-dung', 'gv-hop-diem': '[role=dialog]', 'gv-ket-qua-pa': '[role=dialog]', 'gv-chuong': 'header',
   /* EN-c: Học viên & Lớp, hồ sơ lớp FT, hồ sơ HV (vai 7). */
   'hvl-gvcn': '#noi-dung', 'lop-ft': '#noi-dung', 'lop-ft-phan-tich': '#noi-dung', 'hv-hoc-thuat': '#noi-dung', 'hv-hanh-trinh': '#noi-dung', 'hvl-gvbm': '#noi-dung', 'hv-gvbm': '#noi-dung',
+  /* EN-d: ngăn Case › Ghi kết quả PA, Tạo Case, Ghi vi phạm; tab Ý thức & Phối hợp của HV / lớp (chỉ khối Ý thức). */
+  'panel-pa': '[role=dialog]', 'panel-tao-case': '[role=dialog]', 'panel-vi-pham': '[role=dialog]',
+  'hv-y-thuc': 'div:has(> [role=tablist][aria-label="Student conduct & SOS"])',
+  'lop-ft-y-thuc': '*:has(> * > [role=tablist][aria-label="Class conduct & SOS"])',
 };
-/** (v) bỏ qua vùng của đợt khác chưa dịch: bảng kỹ năng / Case (`cases/*` — EN-d). */
-const BO_V = { 'hv-hoc-thuat': '#bang-ky-nang', 'hv-gvbm': '#bang-ky-nang', 'lop-ft': '#khoi-diem-lop-bang', 'lop-ft-phan-tich': '#khoi-diem-lop-bang' };   // lưới Điểm theo lớp cuối hồ sơ lớp — đo ở kịch bản gv-diem-lop (EN-b)
+/** (v) bỏ qua vùng của đợt khác: lưới Điểm theo lớp cuối hồ sơ lớp — đo ở kịch bản gv-diem-lop (EN-b). */
+const BO_V = { 'lop-ft': '#khoi-diem-lop-bang', 'lop-ft-phan-tich': '#khoi-diem-lop-bang' };
 /** Chữ dữ liệu (không phải chữ giao diện): mọi giá trị chữ có dấu tiếng Việt trong DB demo. Chỉ nạp khi chạy tiếng Anh. */
 const DU_LIEU = NN === 'en' ? await (async () => {
   const RE = /[àáảãạăằắẳẵặâầấẩẫậèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵđ]/i;
@@ -80,9 +84,9 @@ const KICH_BAN = [
   ['panel-pa', 7, '/hoc-thuat/case/5', async (p) => {
     // 375: Ngăn Case tự mở đè trang — bấm "Ghi kết quả" trong ngăn.
     const ngan = p.locator('[role=dialog]');
-    await ((await ngan.count()) ? ngan : p).getByRole('button', { name: /Kết quả/ }).first().click(); await p.waitForTimeout(500); await p.getByRole('button', { name: /Tiến bộ một phần/ }).first().click().catch(() => {}); }],
+    await ((await ngan.count()) ? ngan : p).getByRole('button', { name: /Kết quả|Result/ }).first().click(); await p.waitForTimeout(500); await p.getByRole('button', { name: /Tiến bộ một phần|Some progress/ }).first().click().catch(() => {}); }],
   ['panel-tao-case', 7, '/hoc-vien/3', nut(/^\+ Case$/)],
-  ['panel-vi-pham', 7, '/hoc-vien/3?tab=y-thuc', async (p) => { await nut(/Ghi vi phạm/)(p); await p.evaluate(() => { const t = document.querySelector('[role=dialog] .overflow-y-auto'); if (t) t.scrollTop = 120; }); await p.waitForTimeout(200); }],
+  ['panel-vi-pham', 7, '/hoc-vien/3?tab=y-thuc', async (p) => { await nut(/Ghi vi phạm|Log incident/)(p); await p.evaluate(() => { const t = document.querySelector('[role=dialog] .overflow-y-auto'); if (t) t.scrollTop = 120; }); await p.waitForTimeout(200); }],
   ['panel-sua-tt', 2, '/hoc-vien/lop/3?tab=hoc-vien', nut(/^Sửa thông tin$/)],
   ['panel-them-hv', 2, '/hoc-vien/lop/3?tab=hoc-vien', nut(/^\+ Học viên$/)],
   // Hộp kỹ năng MT (popover neo cạnh ô, Kế hoạch Test) và thanh dính đáy "Chọn nhiều học viên" (hồ sơ lớp).

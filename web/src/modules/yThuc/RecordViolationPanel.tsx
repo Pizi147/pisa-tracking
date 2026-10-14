@@ -14,6 +14,7 @@ import {
   monViPham, tenMon, cauCanhBaoTrung, chiaLo, dsLoiGhiViPham, type LoiTruong, type ViolationCategory,
 } from '@shared/domain/index.ts';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
+import { dich, t } from '@shared/i18n/index.ts';
 
 /**
  * PANEL `GHI VI PHẠM` (PR-LUI-a1, mockup 06/10) — MỘT bước: nhập, đính bằng chứng, bấm Lưu một lần. Không còn bước "Đã ghi" + Hoàn tác (đã có Sửa / Xoá).
@@ -91,15 +92,15 @@ export function RecordViolationPanel({
 
   const loi: LoiTruong[] = [
     ...dsLoiGhiViPham({ hocVien, dong }),
-    ...(tep.some((m) => m.loi && !m.daGui) ? [{ khoa: 'tep', nhan: 'Tệp', lyDo: 'Bỏ tệp lỗi' }] : []),
+    ...(tep.some((m) => m.loi && !m.daGui) ? [{ khoa: 'tep', nhan: t('Tệp'), lyDo: t('Bỏ tệp lỗi') }] : []),
   ];
 
-  const tenCua = (id: number) => students?.find((s) => s.id === id)?.name ?? (id === studentId ? studentName : undefined) ?? 'học viên';
-  const tenChon = hocVien.length === 1 ? tenCua(hocVien[0]) : hocVien.length > 1 ? `${hocVien.length} học viên` : undefined;
+  const tenCua = (id: number) => students?.find((s) => s.id === id)?.name ?? (id === studentId ? studentName : undefined) ?? t('học viên');
+  const tenChon = hocVien.length === 1 ? tenCua(hocVien[0]) : hocVien.length > 1 ? t('{length} học viên', { length: hocVien.length }) : undefined;
   const nDong = dong.length;
   const tomTat = hocVien.length === 1
-    ? `Đã ghi ${nDong > 1 ? `${nDong} vi phạm` : 'vi phạm'} cho ${tenCua(hocVien[0])}`
-    : `Đã ghi vi phạm cho ${hocVien.length} học viên`;
+    ? t('Đã ghi {x} cho {tenCua}', { x: nDong > 1 ? t('{nDong} vi phạm', { nDong }) : t('vi phạm'), tenCua: tenCua(hocVien[0]) })
+    : t('Đã ghi vi phạm cho {length} học viên', { length: hocVien.length });
 
   const suaDong = (key: number, v: Partial<Dong>) => setDong((ds) => ds.map((d) => (d.key === key ? { ...d, ...v } : d)));
   const themDong = () => setDong((ds) => [...ds, moiDong(Math.max(...ds.map((d) => d.key)) + 1, ds[ds.length - 1].ngay)]);
@@ -144,7 +145,7 @@ export function RecordViolationPanel({
         loiChung = e.message; break;
       }
     }
-    for (const s of con) if (!daXong.includes(s) && !loiMoi[s]) loiMoi[s] = loiChung ?? 'Chưa lưu học viên này.';
+    for (const s of con) if (!daXong.includes(s) && !loiMoi[s]) loiMoi[s] = loiChung ?? t('Chưa lưu học viên này.');
     return { daXong, ids, loi: loiMoi };
   };
 
@@ -157,7 +158,7 @@ export function RecordViolationPanel({
         const d = dong[0];
         await api.patch(`/violations/${violation.id}`, { category: d.nhom, skill: d.mon || null, occurredOn: d.ngay || undefined, ten: d.ten.trim(), description: d.moTa.trim() });
         lamMoiCache();
-        toast.push('ok', 'Đã lưu vi phạm');
+        toast.push('ok', t('Đã lưu vi phạm'));
         onDone?.(); onClose();
         return;
       }
@@ -182,71 +183,71 @@ export function RecordViolationPanel({
 
   if (!open) return null;
 
-  const tieuDe = editing ? 'Sửa vi phạm' : 'Ghi vi phạm';
+  const tieuDe = editing ? t('Sửa vi phạm') : t('Ghi vi phạm');
 
   if (daGhi) {
     return (
       <KhungPanel tieuDe={tieuDe} hocVien={tenChon} lop={lop} onDong={dongPanel}
-        chan={{ huy: { nhan: 'Xong', onClick: dongPanel } }}>
-        <Khoi tieuDe="Đã ghi"><p className="m-0 text-sm text-slate-200">✓ {daGhi.cau}</p></Khoi>
-        <Khoi tieuDe="Bằng chứng"><TepCho value={tep} onChange={setTep} khoa={busy} onThuLai={() => void thuLaiTep()} /></Khoi>
+        chan={{ huy: { nhan: t('Xong'), onClick: dongPanel } }}>
+        <Khoi tieuDe={t('Đã ghi')}><p className="m-0 text-sm text-slate-200">✓ {daGhi.cau}</p></Khoi>
+        <Khoi tieuDe={t('Bằng chứng')}><TepCho value={tep} onChange={setTep} khoa={busy} onThuLai={() => void thuLaiTep()} /></Khoi>
       </KhungPanel>
     );
   }
 
   const chuaLuu = luu ? hocVien.filter((s) => !luu.daXong.includes(s)) : [];
   const khoa = busy || !!luu;
-  const nhan = busy ? (luu?.tien ? `Đang lưu ${luu.tien[0]}/${luu.tien[1]}…` : 'Đang lưu…') : 'Lưu';
+  const nhan = busy ? (luu?.tien ? t('Đang lưu {x}/{x2}…', { x: luu.tien[0], x2: luu.tien[1] }) : t('Đang lưu…')) : t('Lưu');
 
   return (
     /* I6 (PR-SL): một dòng chú thích dấu `*` thay cho "(bắt buộc)" lặp ở từng ô. */
     <KhungPanel tieuDe={tieuDe} hocVien={tenChon} lop={lop} onDong={dongPanel}
-      ngCanh={<><span aria-hidden className="text-bad">*</span> = bắt buộc</>}
+      ngCanh={<><span aria-hidden className="text-bad">*</span> {t('= bắt buộc')}</>}
       chan={{
         /* Sửa: chân trái là `Xoá vi phạm` (viền đỏ). Nơi gọi tự đóng form này và quyết định lúc nào mở lại panel trước đó. */
-        xoa: editing && violation && onDelete ? { nhan: 'Xoá vi phạm', onClick: () => onDelete(violation.id) } : undefined,
+        xoa: editing && violation && onDelete ? { nhan: t('Xoá vi phạm'), onClick: () => onDelete(violation.id) } : undefined,
         daSua: !editing && (dong.some((d) => d.ten || d.moTa || d.nhom) || tep.length > 0),
-        huy: luu ? { nhan: 'Đóng', onClick: dongPanel, disabled: busy } : undefined,
+        huy: luu ? { nhan: t('Đóng'), onClick: dongPanel, disabled: busy } : undefined,
         conThieu: lf.conThieu(loi),
-        phu: luu && !luu.tien ? <span className="text-xs text-slate-400">Đã lưu {luu.daXong.length} học viên · {chuaLuu.length} học viên chưa lưu</span> : undefined,
+        phu: luu && !luu.tien ? <span className="text-xs text-slate-400">{t('Đã lưu {length} học viên · {length2} học viên chưa lưu', { length: luu.daXong.length, length2: chuaLuu.length })}</span> : undefined,
         chinh: luu && !busy
-          ? <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={submit}>Thử lại {chuaLuu.length} học viên</button>
+          ? <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={submit}>{t('Thử lại {length} học viên', { length: chuaLuu.length })}</button>
           : <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={submit}>{nhan}</button>,
       }}>
       {luu && !luu.tien && chuaLuu.length > 0 && (
-        <Khoi tieuDe={`Chưa lưu · ${chuaLuu.length}`}>
+        <Khoi tieuDe={t('Chưa lưu · {length}', { length: chuaLuu.length })}>
           <ul className="m-0 list-none space-y-1.5 p-0 text-sm">
             {chuaLuu.slice(0, 3).map((s) => (
               <li key={s}><span className="text-slate-200">{tenCua(s)}</span><span className="block text-xs text-late">{luu.loi[s]}</span></li>
             ))}
-            {chuaLuu.length > 3 && <li className="text-xs text-slate-400">và {chuaLuu.length - 3} học viên khác</li>}
+            {chuaLuu.length > 3 && <li className="text-xs text-slate-400">{t('và {x} học viên khác', { x: chuaLuu.length - 3 })}</li>}
           </ul>
         </Khoi>
       )}
 
       <fieldset disabled={khoa} className="m-0 min-w-0 space-y-3.5 border-0 p-0">
         {chonNhieu && !luu && (
-          <Khoi tieuDe="Học viên">
+          <Khoi tieuDe={t('Học viên')}>
             <ChonHocVien ds={students!} chon={hocVien} onChange={setHocVien} loi={lf.loiCua(loi, 'hoc-vien')} lf={lf} loiList={loi}
               rieng={moTaRieng} onRieng={setMoTaRieng} />
           </Khoi>
         )}
 
-        <Khoi tieuDe="Vi phạm">
+        <Khoi tieuDe={t('Vi phạm')}>
           {dong.map((d, k) => (
             <DongViPham key={d.key} d={d} k={k} nhieu={nDong > 1} today={today} ct={ct} defaultSkill={defaultSkill} editing={editing}
               sid={hocVien.length === 1 ? hocVien[0] : 0} loi={loi} lf={lf} onSua={(v) => suaDong(d.key, v)}
               onXoa={() => setDong((ds) => ds.filter((x) => x.key !== d.key))} />
           ))}
           {!editing && hocVien.length <= 1 && nDong < VI_PHAM_TOI_DA_DONG && (
-            <button type="button" className="btn btn-sm btn-ghost self-start" onClick={themDong}>+ Thêm vi phạm</button>
+            <button type="button" className="btn btn-sm btn-ghost self-start" onClick={themDong}>{t('+ Thêm vi phạm')}</button>
           )}
         </Khoi>
 
         {!luu && (editing && violation ? (
-          <Khoi tieuDe="Bằng chứng · không bắt buộc"><BangChung ownerType="violation" ownerId={violation.id} canEdit tieuDe="" /></Khoi>
+          <Khoi tieuDe={t('Bằng chứng · không bắt buộc')}><BangChung ownerType="violation" ownerId={violation.id} canEdit tieuDe="" /></Khoi>
         ) : (
-          <Khoi tieuDe="Bằng chứng · không bắt buộc">
+          <Khoi tieuDe={t('Bằng chứng · không bắt buộc')}>
             <div id={lf.oId('tep')} tabIndex={-1}><TepCho value={tep} onChange={setTep} /></div>
           </Khoi>
         ))}
@@ -278,19 +279,19 @@ function DongViPham({ d, k, nhieu, today, ct, defaultSkill, editing, sid, loi, l
     <div className="space-y-3">
       {nhieu && (
         <div className="flex items-center justify-between gap-2">
-          <h4 className="m-0 text-xs font-bold text-slate-200">Vi phạm {n}</h4>
-          <button type="button" className="btn btn-sm btn-ghost" onClick={onXoa}>Xoá dòng</button>
+          <h4 className="m-0 text-xs font-bold text-slate-200">{t('Vi phạm {n}', { n })}</h4>
+          <button type="button" className="btn btn-sm btn-ghost" onClick={onXoa}>{t('Xoá dòng')}</button>
         </div>
       )}
       <Hang2>
-        <Truong nhan="Ngày" batBuoc>
+        <Truong nhan={t('Ngày')} batBuoc>
           <ONgay kieu="ngay" value={d.ngay} onChange={(v) => onSua({ ngay: v })} toiDa={today} />
         </Truong>
         {/* Pre FOU không chia môn → ẩn ô Môn (K5-47). */}
         {dsMon.length > 0 && (
-          <Truong nhan="Môn" phu={!d.daChonMon && defaultSkill ? 'Tự điền môn bạn dạy lớp này' : undefined}>
+          <Truong nhan={t('Môn')} phu={!d.daChonMon && defaultSkill ? t('Tự điền môn bạn dạy lớp này') : undefined}>
             <select className="field w-full" value={displaySkill} onChange={(e) => onSua({ mon: e.target.value, daChonMon: true })}>
-              <option value="">Chưa chọn</option>
+              <option value="">{t('Chưa chọn')}</option>
               {dsMon.map((s) => <option key={s} value={s}>{tenMon(ct, s)}</option>)}
             </select>
           </Truong>
@@ -298,7 +299,7 @@ function DongViPham({ d, k, nhieu, today, ct, defaultSkill, editing, sid, loi, l
       </Hang2>
 
       {/* Năm nhóm: danh sách hai hàng (≤ 4 nút/hàng), nút cao 44px ở điện thoại. */}
-      <Truong nhan="Nhóm" batBuoc as="div" loi={lf.loiCua(loi, `nhom-${n}`)}>
+      <Truong nhan={t('Nhóm')} batBuoc as="div" loi={lf.loiCua(loi, `nhom-${n}`)}>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3" {...lf.o(loi, `nhom-${n}`)}>
           {VIOLATION_CATEGORIES.map((c) => (
             <NutChon key={c} chon={d.nhom === c} className="justify-center" onClick={() => onSua({ nhom: c })}>
@@ -308,23 +309,23 @@ function DongViPham({ d, k, nhieu, today, ct, defaultSkill, editing, sid, loi, l
         </div>
       </Truong>
 
-      <Truong nhan="Vi phạm" batBuoc loi={lf.loiCua(loi, `ten-${n}`)} dem={{ co: d.ten.trim().length, can: VI_PHAM_TEN_TOI_DA }}>
+      <Truong nhan={t('Vi phạm')} batBuoc loi={lf.loiCua(loi, `ten-${n}`)} dem={{ co: d.ten.trim().length, can: VI_PHAM_TEN_TOI_DA }}>
         <input className="field w-full" {...lf.o(loi, `ten-${n}`)} maxLength={VI_PHAM_TEN_TOI_DA} value={d.ten} onChange={(e) => onSua({ ten: e.target.value })}
-          placeholder="Ví dụ: Không nộp BTVN Reading" />
+          placeholder={t('Ví dụ: Không nộp BTVN Reading')} />
       </Truong>
 
-      <Truong nhan="Mô tả" tuyChon>
-        <textarea className="field w-full" rows={2} maxLength={2000} value={d.moTa} onChange={(e) => onSua({ moTa: e.target.value })} placeholder="Chi tiết nếu cần" />
+      <Truong nhan={t('Mô tả')} tuyChon>
+        <textarea className="field w-full" rows={2} maxLength={2000} value={d.moTa} onChange={(e) => onSua({ moTa: e.target.value })} placeholder={t('Chi tiết nếu cần')} />
       </Truong>
 
       {/* K2-6b (Q6): MỘT dòng vàng, không chặn Lưu — "Xem" mở ngay dưới dòng, không mở panel thứ hai. */}
       {cauTrung && (
         <div className="text-xs text-soon">
           <span>{cauTrung}</span>{' · '}
-          <button type="button" className="link appearance-none border-0 bg-transparent p-0 align-baseline max-sm:-my-3 max-sm:py-3" aria-expanded={xemTrung} onClick={() => setXemTrung((v) => !v)}>Xem</button>
+          <button type="button" className="link appearance-none border-0 bg-transparent p-0 align-baseline max-sm:-my-3 max-sm:py-3" aria-expanded={xemTrung} onClick={() => setXemTrung((v) => !v)}>{t('Xem')}</button>
           {xemTrung && (
             <ul className="m-0 mt-1.5 list-none space-y-0.5 p-0 text-xs text-slate-400">
-              {trungRows.map((r) => <li key={r.id}>{r.ten} · {r.reportedByName ?? 'một giáo viên'} · {r.nhanTrangThai}</li>)}
+              {trungRows.map((r) => <li key={r.id}>{r.ten} · {r.reportedByName ?? t('một giáo viên')} · {dich(r.nhanTrangThai)}</li>)}
             </ul>
           )}
         </div>
@@ -348,23 +349,23 @@ function ChonHocVien({ ds, chon, onChange, loi, lf, loiList, rieng, onRieng }: {
   const tatCa = ds.length > 0 && ds.slice(0, TOI_DA_EM_GHI_VI_PHAM).every((s) => chon.includes(s.id));
   const doi = (id: number) => onChange(chon.includes(id) ? chon.filter((x) => x !== id) : chon.length >= TOI_DA_EM_GHI_VI_PHAM ? chon : [...chon, id]);
   const bo = (id: number) => { onChange(chon.filter((x) => x !== id)); const { [id]: _b, ...con } = rieng; onRieng(con); };
-  const nhan = chon.length === 0 ? 'Chọn học viên' : chon.length === 1 ? ds.find((s) => s.id === chon[0])?.name ?? '1 học viên' : `${chon.length} học viên`;
+  const nhan = chon.length === 0 ? t('Chọn học viên') : chon.length === 1 ? ds.find((s) => s.id === chon[0])?.name ?? t('1 học viên') : t('{length} học viên', { length: chon.length });
 
   return (
     /* Rời khỏi khối (bấm chỗ khác) thì danh sách tự gấp lại. */
     <div className="space-y-2" onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setMo(false); }}>
-      <Truong nhan="Học viên" batBuoc as="div" loi={loi}>
+      <Truong nhan={t('Học viên')} batBuoc as="div" loi={loi}>
         <button type="button" className="field flex w-full items-center justify-between gap-2 text-left" aria-expanded={mo} {...lf.o(loiList, 'hoc-vien')} onClick={() => setMo((v) => !v)}>
           <span className={`min-w-0 truncate ${chon.length ? '' : 'text-slate-500'}`}>{nhan}</span>
           <span aria-hidden className="text-slate-400">▾</span>
         </button>
         {mo && (
           <div className="mt-1.5 rounded-lg border p-2" style={{ borderColor: 'var(--line)' }}>
-            <input className="field mb-1.5 w-full" value={tim} onChange={(e) => setTim(e.target.value)} placeholder="Gõ tên…" aria-label="Tìm học viên" />
+            <input className="field mb-1.5 w-full" value={tim} onChange={(e) => setTim(e.target.value)} placeholder={t('Gõ tên…')} aria-label={t('Tìm học viên')} />
             <div className="max-h-56 space-y-0.5 overflow-y-auto">
-              <ONhieu chon={tatCa} onClick={() => onChange(tatCa ? [] : ds.slice(0, TOI_DA_EM_GHI_VI_PHAM).map((s) => s.id))}>Cả lớp · {ds.length}</ONhieu>
+              <ONhieu chon={tatCa} onClick={() => onChange(tatCa ? [] : ds.slice(0, TOI_DA_EM_GHI_VI_PHAM).map((s) => s.id))}>{t('Cả lớp · {length}', { length: ds.length })}</ONhieu>
               {loc.map((s) => <ONhieu key={s.id} chon={chon.includes(s.id)} onClick={() => doi(s.id)}>{s.name}</ONhieu>)}
-              {loc.length === 0 && <p className="m-0 px-2 py-1.5 text-xs text-slate-500">Không có học viên nào khớp</p>}
+              {loc.length === 0 && <p className="m-0 px-2 py-1.5 text-xs text-slate-500">{t('Không có học viên nào khớp')}</p>}
             </div>
           </div>
         )}
@@ -375,15 +376,15 @@ function ChonHocVien({ ds, chon, onChange, loi, lf, loiList, rieng, onRieng }: {
             <li key={id} className="rounded-md border px-2.5 py-1.5" style={{ borderColor: 'var(--line)' }}>
               <div className="flex items-center gap-2 text-sm">
                 <span className="min-w-0 flex-1 truncate text-slate-200">{ds.find((s) => s.id === id)?.name}</span>
-                {rieng[id] === undefined && <button type="button" className="link appearance-none border-0 bg-transparent p-0" onClick={() => onRieng({ ...rieng, [id]: '' })}>+ Mô tả riêng</button>}
-                <button type="button" className="appearance-none border-0 bg-transparent p-0 text-slate-500 hover:text-bad max-sm:grid max-sm:min-h-[44px] max-sm:min-w-[44px] max-sm:place-items-center" aria-label={`Bỏ ${ds.find((s) => s.id === id)?.name}`} onClick={() => bo(id)}>✕</button>
+                {rieng[id] === undefined && <button type="button" className="link appearance-none border-0 bg-transparent p-0" onClick={() => onRieng({ ...rieng, [id]: '' })}>{t('+ Mô tả riêng')}</button>}
+                <button type="button" className="appearance-none border-0 bg-transparent p-0 text-slate-500 hover:text-bad max-sm:grid max-sm:min-h-[44px] max-sm:min-w-[44px] max-sm:place-items-center" aria-label={t('Bỏ {name}', { name: String(ds.find((s) => s.id === id)?.name) })} onClick={() => bo(id)}>✕</button>
               </div>
               {rieng[id] !== undefined && (
                 <div className="mt-1.5 space-y-1">
-                  <Truong nhan="Mô tả riêng" tuyChon>
+                  <Truong nhan={t('Mô tả riêng')} tuyChon>
                     <textarea className="field w-full" rows={2} maxLength={2000} value={rieng[id]} onChange={(e) => onRieng({ ...rieng, [id]: e.target.value })} />
                   </Truong>
-                  <button type="button" className="link appearance-none border-0 bg-transparent p-0 text-xs" onClick={() => { const { [id]: _b, ...con } = rieng; onRieng(con); }}>Bỏ</button>
+                  <button type="button" className="link appearance-none border-0 bg-transparent p-0 text-xs" onClick={() => { const { [id]: _b, ...con } = rieng; onRieng(con); }}>{t('Bỏ')}</button>
                 </div>
               )}
             </li>

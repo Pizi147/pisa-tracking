@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
+import { t } from '@shared/i18n/index.ts';
 
 /**
  * "CẦN BỔ SUNG ĐÁNH GIÁ" — phương án đã kết thúc mà chưa có kết quả xác định (F05).
@@ -22,15 +23,15 @@ export function NeedsEvaluation({ count, url }: { count: number; url: string }) 
     <>
       <button type="button" onClick={() => setOpen(true)}
         className="appearance-none bg-transparent border-0 p-0 cursor-pointer text-xs text-amber-200 underline decoration-dotted underline-offset-4 hover:text-amber-100 text-left">
-        Cần bổ sung đánh giá · {count} phương án đã kết thúc nhưng chưa có kết quả xác định
+        {t('Cần bổ sung đánh giá · {count} phương án đã kết thúc nhưng chưa có kết quả xác định', { count })}
       </button>
       {open && (
-        <KhungPanel tieuDe={`${count} phương án — Cần bổ sung đánh giá`} onDong={() => setOpen(false)}
-          ngCanh="Không tính vào bảng hiệu quả cho tới khi có kết quả xác định">
+        <KhungPanel tieuDe={t('{count} phương án — Cần bổ sung đánh giá', { count })} onDong={() => setOpen(false)}
+          ngCanh={t('Không tính vào bảng hiệu quả cho tới khi có kết quả xác định')}>
           <div className="pt-3">
             {error ? <ErrorState message={error.message} hint={error.hint} onRetry={reload} />
               : loading || !data ? <Skeleton rows={4} />
-              : !data.rows.length ? <Empty title="Không còn phương án nào cần bổ sung" />
+              : !data.rows.length ? <Empty title={t('Không còn phương án nào cần bổ sung')} />
               : (
                 <ul className="list-none p-0 m-0 space-y-1.5">
                   {data.rows.map((r) => (
