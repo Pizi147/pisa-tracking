@@ -182,7 +182,9 @@ export function buildPb2bDemo(ctx: BuildCtx): { gv: number; lop: number } {
       kind, description: `${tieuDe} — luyện riêng 2 buổi/tuần`, status: 'started', startedDate: '2026-09-07', performerUserId: chu,
     }) as any;
     const ivId = (iv?.interventions?.[0]?.id ?? (conn.prepare('SELECT MAX(id) AS id FROM case_interventions WHERE case_id = ?').get(c.id) as any).id) as number;
-    updateResult(admin, ivId, { decision: 'end', outcome, observedOn: '2026-09-11', completedOn: '2026-09-11', note: 'Bài kiểm tra nhỏ cuối đợt làm tốt hơn hẳn.' } as any);
+    updateResult(admin, ivId, { decision: 'end', outcome, observedOn: '2026-09-11', completedOn: '2026-09-11', note: 'Bài kiểm tra nhỏ cuối đợt làm tốt hơn hẳn.',
+      /* OV-12h: mọi PA Tutor ghi Số buổi kỳ này + một dòng mỗi buổi. */
+      ...(kind === 'tutor' ? { soBuoi: 2, buoi: [{ tutor: 'Ms Mai', nhanXet: 'Nghe chép số điện thoại, đúng 8/10' }, { tutor: 'Ms Mai', nhanXet: 'Nghe tên riêng Part 1, còn sót 2 tên' }] } : {}) } as any);
   };
   paGvThem(em[3].id, 'listening', huong, 'tutor', 'Listening: nghe sót số và tên riêng', 'improved');
   paGvThem(em[1].id, 'writing1', duyen, 'extra_homework', 'Writing Task 1: mô tả xu hướng chưa đủ số liệu', 'partial');

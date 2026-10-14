@@ -7,7 +7,7 @@ import {
   SOS_LABEL, URGENCY_LABEL, URGENCY_TONE, caseHeadline, caseTopicLabel, cycleDeadline,
   duongCaseRieng, duongHoSoHocVien, duongLichTest, nhanDotNgan, hanThemPa,
   khungCua, laLanGhiCuoi, tenMon, tenNhomMon, REGULAR_SKILLS, nhanLoaiXuLy, soSanhLop,
-  type Khung, type AttemptKind, type InterventionKind, nhanBaiThuong, chuTyLeXetLai, gopViecTheoLop, khoaCungViec, type ConGop } from '../../../shared/domain/index.ts';
+  type Khung, type AttemptKind, type InterventionKind, nhanBaiThuong, chuTyLeXetLai, gopViecTheoLop, type ConGop } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addDays, forbidden } from '../util.ts';
 import { COT_PRINCIPAL, activeAt, bangLop, can, isCoreTeacherOf, loadPrincipal, napTruocPhamVi, principalTuDong, scopeFor, teachesClass, type Principal } from '../permissions.ts';
@@ -105,8 +105,6 @@ export type WorkItem = {
    * khác nhau, nên số em đi kèm dòng chứ không biến thành sáu dòng riêng.
    */
   count: number | null;
-  /** PR-Ra Q5: chỉ dòng có người phụ trách là TÀI KHOẢN KHÁC người xem, và người xem là QL/QT. */
-  nhac?: { ownerId: number; daNhacLuc: string | null } | null;
   /** PR-GOP: Case sinh từ SOS — ở lớp FT giữ từng dòng; Case GV/QL tự tạo thì gộp theo lớp (chủ sản phẩm 08/10). */
   caseSos?: boolean;
   /** PR-GOP (§5): dòng gộp "Loại việc · lớp · n em" — các việc thật của dòng (khoá, nút, hạn riêng). Chỉ có ở `dong`. */
@@ -316,7 +314,7 @@ function nhanDot(kind: string | null | undefined, no: number | null | undefined,
 }
 
 /**
- * `chiNhom` (PR-NV, NV-2): chỉ dựng các nhóm trong tập — dùng khi Nhắc (`nhacViec.ts`) tra lại MỘT vài dòng của người được nhắc.
+ * `chiNhom` (PR-NV, NV-2): chỉ dựng các nhóm trong tập — Admin (`cham-diem`) chỉ nhóm Chấm điểm.
  * Kết quả = đúng các dòng của `myWork(p)` thuộc nhóm đó (phép kiểm NV-2). Không truyền thì y hệt trước.
  */
 export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi' | 'tat-ca'; chiNhom?: ReadonlySet<WorkGroupKey> } = {}) {
@@ -521,7 +519,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
    * PR-DUYET: đề xuất PA và đề nghị dời lịch lần 2 KHÔNG còn là dòng việc — chúng là thẻ ở hộp Chờ duyệt (một nơi, K1-01/K1-32).
    * Hai lời quét ở đường đọc giữ nguyên: hết hạn duyệt → huỷ phần thi (mục 10.6); chốt "không dự thi" cuối Chủ nhật (PR-G).
    */
-  /* ponytail: Nhắc (`chiNhom`) bỏ hai lời quét ghi này — GET kế tiếp quét; dòng Nhắc tra chỉ cần tồn tại, chưa từng phụ thuộc quét. */
+  /* ponytail: dựng một phần (`chiNhom`) bỏ hai lời quét ghi này — GET đầy đủ kế tiếp quét. */
   if (!f.chiNhom) {
     sweepExpiredMoves();
   }
@@ -912,19 +910,20 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   }
   /*
    * PR-VAI-a (K5-10, Q14): PHỐI HỢP SOS là việc thật — một dòng mỗi lớp GVCN chủ nhiệm còn lượt chưa xong, đếm bằng CHÍNH
-   * `myCoordinationLines` (cùng số với tab Phối hợp của lớp). Không hạn, không tô quá hạn (P10). Thay dòng "nhắc mềm" cũ ở web.
+   * `myCoordinationLines` (cùng số với tab Phối hợp của lớp). Không hạn (P10) — trừ OV-12h: meeting CX / GĐCN hạn 5 ngày từ lúc tạo (`hanPhoiHop`),
+   * dòng lớp mang hạn sớm nhất, quá hạn tô như việc khác.
    */
   for (const l of !co('phoi_hop_sos') ? [] : tatCa ? dongPhoiHopLop([...gvcnLop().keys()]) : myCoordinationLines(p)) {
     if (f.branchId && bangLop().get(l.classId)?.branchId !== f.branchId) continue;
     const gv = tatCa ? gvcnLop().get(l.classId) ?? p.userId : p.userId;
     items.push({
-      key: `phoi_hop_sos:${l.classId}`, group: 'phoi_hop_sos', urgency: 'normal',
+      key: `phoi_hop_sos:${l.classId}`, group: 'phoi_hop_sos', urgency: urgencyOf(l.han, today),   // OV-12h: meeting CX có hạn 5 ngày
       studentId: null, studentName: `Lớp ${l.className}`, classId: l.classId, classCode: l.className,
       attemptId: null, attemptNo: null, caseId: null, level: null, contextLabel: 'Phối hợp SOS', count: l.pendingCount,
       reason: `${l.pendingCount} lượt Phối hợp SOS chưa xong`,
       tieuDe: `Phối hợp SOS · ${l.className} · ${l.pendingCount} lượt`, actionLabel: 'Mở Phối hợp SOS',
       href: `/hoc-vien/lop/${l.classId}?tab=y-thuc&sub=phoi-hop`,
-      ownerId: gv, owner: null, mine: gv === p.userId, due: null, statusLabel: 'Chưa xong',
+      ownerId: gv, owner: null, mine: gv === p.userId, due: l.han, statusLabel: 'Chưa xong',
     });
   }
   /*
@@ -1284,19 +1283,6 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     }
   }
 
-  /*
-   * PR-Ra Q5: nút NHẮC — chỉ QL/QT (xem được người khác), chỉ dòng có người phụ trách là một
-   * TÀI KHOẢN KHÁC người xem. "Một lần/dòng/ngày": đọc lại đã nhắc lúc nào bằng MỘT câu, không
-   * hỏi từng dòng — cùng lý do với khối tên người ở trên.
-   */
-  const nhacToday = xemNguoiKhac ? nhacHomNay(today) : null;
-  if (nhacToday) {
-    for (const it of items) {
-      if (it.ownerId === null || it.ownerId === p.userId) continue;
-      it.nhac = { ownerId: it.ownerId, daNhacLuc: daNhacHomNay(nhacToday, it) };
-    }
-  }
-
   ganKhung(items, lopCua);
 
   const groups = order
@@ -1334,8 +1320,8 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     return 0;
   });
 
-  /* PR-GOP (§5): dòng hiển thị — một lớp × một loại việc; badge và summary đếm DÒNG (X10), `items` giữ từng việc (Nhắc, hồ sơ GV). */
-  const dong = dungDong(flat, p.userId, nhacToday);
+  /* PR-GOP (§5): dòng hiển thị — một lớp × một loại việc; badge và summary đếm DÒNG (X10), `items` giữ từng việc (hồ sơ GV). */
+  const dong = dungDong(flat);
   return {
     summary: demDong(dong),
     items: flat,
@@ -1346,34 +1332,10 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   };
 }
 
-/** Giờ đã nhắc hôm nay theo khoá dòng (`nhac:{khoá}:{ngày}`) — một câu cho cả danh sách. */
-function nhacHomNay(today: string): Map<string, string> {
-  const out = new Map<string, string>();
-  for (const r of db()
-    .prepare(`SELECT dedup_key, created_at FROM notifications WHERE kind = 'nhac_viec' AND dedup_key LIKE ?`)
-    .all(`nhac:%:${today}`) as any[]) {
-    const m = /^nhac:(.+):[^:]+$/.exec(r.dedup_key);
-    if (m) out.set(m[1], r.created_at);
-  }
-  return out;
-}
-
-/** PR-DON: một (nhóm) việc một lần nhắc/ngày — đã nhắc qua khoá riêng hay khoá `gop:` đều tính (cùng `khoaCungViec` của Nhắc). */
-const daNhacHomNay = (nhacToday: Map<string, string>, it: WorkItem): string | null =>
-  khoaCungViec(it as any, it.key).map((k) => nhacToday.get(k)).find(Boolean) ?? null;
-
 export const nhanNhomViec = (g: string) => GROUP_META[g as WorkGroupKey]?.label ?? g;
 
-/** PR-GOP: gộp dòng (hàm chung `gopViecTheoLop`); dòng gộp của người khác có nút Nhắc riêng (một chuông cho cả dòng). */
-function dungDong(items: WorkItem[], nguoiXem: number, nhacToday: Map<string, string> | null): WorkItem[] {
-  const dong = gopViecTheoLop(items, nhanNhomViec) as WorkItem[];
-  if (nhacToday) {
-    for (const d of dong) {
-      if (d.con && d.ownerId !== null && d.ownerId !== nguoiXem) d.nhac = { ownerId: d.ownerId, daNhacLuc: daNhacHomNay(nhacToday, d) };
-    }
-  }
-  return dong;
-}
+/** PR-GOP: gộp dòng (hàm chung `gopViecTheoLop`). OV-12h: bỏ Nhắc trên dòng. */
+const dungDong = (items: WorkItem[]): WorkItem[] => gopViecTheoLop(items, nhanNhomViec) as WorkItem[];
 
 const demDong = (dong: WorkItem[]) => ({
   total: dong.length,
@@ -1415,13 +1377,6 @@ export function viecCuaNguoi(p: Principal, nguoi: number, branchId?: number | nu
       owner: it.ownerId === x.userId ? x.fullName : it.owner,
       mine: false,
     }));
-  const nhacToday = items.length ? nhacHomNay(demoToday()) : null;
-  if (nhacToday) {
-    for (const it of items) {
-      if (it.ownerId === null) continue;
-      it.nhac = { ownerId: it.ownerId, daNhacLuc: daNhacHomNay(nhacToday, it) };
-    }
-  }
   const groupsByKey = new Map<string, any[]>();
   for (const it of items) (groupsByKey.get(it.group) ?? groupsByKey.set(it.group, []).get(it.group)!).push(it);
   const groups = w.groups
@@ -1432,6 +1387,6 @@ export function viecCuaNguoi(p: Principal, nguoi: number, branchId?: number | nu
       overdue: g.items.filter((i: any) => i.urgency === 'overdue').length,
       today: g.items.filter((i: any) => i.urgency === 'today').length,
     }));
-  const dong = dungDong(items, p.userId, nhacToday);
+  const dong = dungDong(items);
   return { summary: { ...demDong(dong), mine: 0 }, items, dong, groups, scopeEmpty: false, xemNguoiKhac: true };
 }

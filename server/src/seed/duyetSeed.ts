@@ -63,7 +63,7 @@ export function buildDuyetDemo(ctx: BuildCtx): { the: number } {
   // (b) GVBM Trang Xin ý kiến QL — PA đang chạy của Case Trang phụ trách
   if (trang) {
     const ds = conn.prepare(
-      `SELECT iv.id FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id
+      `SELECT iv.id, iv.kind, iv.so_buoi FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id
         WHERE sc.owner_user_id = ? AND sc.status != 'done' AND iv.status = 'started' AND COALESCE(iv.approval_state, '') != 'pending'
         ORDER BY iv.id`).all(trang.userId) as any[];
     for (const r of ds) {
@@ -72,6 +72,8 @@ export function buildDuyetDemo(ctx: BuildCtx): { the: number } {
           decision: 'ask_manager', outcome: 'unchanged', observedOn: DEMO_DATE,
           note: 'Em vẫn nghe sót số và tên riêng ở Part 1, dù đã tự học đều.',
           decisionNote: 'Có nên chuyển em sang tutor 1-1 không, hay giữ tự học thêm một tuần?',
+          /* OV-12h: PA Tutor (kể cả không có Số buổi) ghi Số buổi kỳ này + dòng buổi — giữ đúng PA được chọn như trước. */
+          ...(r.kind === 'tutor' && r.so_buoi == null ? { soBuoi: 1, buoi: [{ tutor: 'Mr Long', nhanXet: 'Nghe số và tên riêng Part 1, vẫn sót 3/10' }] } : {}),
         } as any);
         break;
       } catch { /* PA này chưa ghi được (ví dụ chưa tới tuần) — thử PA kế */ }

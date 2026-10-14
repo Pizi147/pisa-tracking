@@ -51,7 +51,7 @@ export function nhomViecCua(loai: string): NhomViec { return NHOM_CUA_LOAI[loai]
 export const LOAI_HAN_CUA_VIEC: Partial<Record<string, DeadlineKind>> = {
   cause: 'xac-minh-sos', ghi_nhan_xet: 'xac-minh-sos', xac_nhan_pa: 'xac-minh-sos', mini_test: 'mini-test', no_plan: 'lap-pa', ghi_ket_qua_pa: 'cap-nhat-pa', score: 'nhap-diem',
   yt_xu_ly: 'xu-ly-vi-pham', yt_xem: 'xu-ly-vi-pham', yt_thuc_hien: 'xu-ly-vi-pham',
-  ban_giao: 'viec-van-hanh', mgmt: 'viec-van-hanh', chot_len_ft: 'chot-len-ft',
+  ban_giao: 'viec-van-hanh', mgmt: 'viec-van-hanh', chot_len_ft: 'chot-len-ft', phoi_hop_sos: 'phoi-hop',
 };
 
 export type ViecGom = { group: string; urgency: 'overdue' | 'today' | 'normal'; due: string | null };
@@ -79,7 +79,7 @@ export function gomNhomViec<T extends ViecGom>(items: T[]): NhomViecXem<T>[] {
 
 // ------------------------------------------------------------------ Cần xử lý (Quản lý)
 export type MaCanXuLy =
-  | 'bai-qua-han-nhap-diem' | 'pa-can-cap-nhat'
+  | 'bai-qua-han-nhap-diem' | 'pa-can-cap-nhat' | 'phoi-hop-qua-han'
   | 'van-hanh-can-quyet-dinh' | 'lop-thieu-gv-mon' | 'hv-ft-xong-mt-cuoi-chua-mt-ke' | 'hv-len-ft-chua-ky-vong'
   | 'lop-chua-chot-len-ft';
 /** Nhãn trạng thái một dòng Cần xử lý (§7.3) — chữ, không chấm màu. */
@@ -99,8 +99,10 @@ export const CAN_XU_LY: readonly {
   quaHan?: true;
   canQuyenDuyet?: true;
 }[] = [
-  { metricId: 'bai-qua-han-nhap-diem', nhan: 'bài quá hạn chưa nhập điểm', nut: 'Xem và nhắc', cuaNguoiXem: false, quaHan: true },
-  { metricId: 'pa-can-cap-nhat', nhan: 'PA chưa có Kết quả', nut: 'Xem và nhắc', cuaNguoiXem: false, quaHan: true },
+  { metricId: 'bai-qua-han-nhap-diem', nhan: 'bài quá hạn chưa nhập điểm', nut: 'Xem', cuaNguoiXem: false, quaHan: true },
+  { metricId: 'pa-can-cap-nhat', nhan: 'PA chưa có Kết quả', nut: 'Xem', cuaNguoiXem: false, quaHan: true },
+  /* OV-12h: meeting CX / GĐCN quá 5 ngày chưa xác nhận — việc GVCN trễ, cùng tập với dòng Phối hợp SOS quá hạn ở Công việc. */
+  { metricId: 'phoi-hop-qua-han', nhan: 'lượt có meeting CX quá hạn xác nhận', nut: 'Xem', cuaNguoiXem: false, quaHan: true },
   /* PR-VAI-a Q8: bốn việc "của Bạn" — mỗi dòng một chỉ số gọi đúng hàm màn khác đang dùng. */
   { metricId: 'van-hanh-can-quyet-dinh', nhan: 'việc Vận hành cần quyết định', nut: 'Mở Vận hành', cuaNguoiXem: true },
   /* PR-LCb: MỘT dòng "lớp cần Chốt lộ trình" (thay "em chưa có quyết định chuyển lớp" + "lớp cần Chốt lên FT") — cùng hàm với việc "Chốt lộ trình · lớp". */

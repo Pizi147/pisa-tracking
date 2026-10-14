@@ -16,6 +16,7 @@ import { duongDiemTheoLuot, type BangTheoLuot } from '../cham/LuoiChamLop.tsx';
 import { LOAI_HAN_CUA_VIEC } from '@shared/domain/index.ts';
 import type { WorkItem } from '../worklist/WorkList.tsx';
 import { NganTongKet } from '../students/NganTongKet.tsx';
+import { PhoiHopSosSection, type CoordTurn } from '../yThuc/PhoiHopSosSection.tsx';
 
 /** Số sau dấu `:` cuối của khoá việc (`yt_thuc_hien:12`, `mgmt:5`). */
 const soCuaKhoa = (k: string) => Number(k.slice(k.lastIndexOf(':') + 1)) || null;
@@ -34,6 +35,7 @@ export function lamTaiCho(it: WorkItem): boolean {
     case 'score': return !!it.luot && it.classId !== null;
     case 'ban_giao': return it.classId !== null;
     case 'yt_xu_ly': case 'khai_bac': return it.studentId !== null;
+    case 'phoi_hop_sos': return it.classId !== null;   // OV-12h: xác nhận meeting CX tại chỗ
     case 'yt_thuc_hien': case 'mgmt': case 'buoc_tiep': return soCuaKhoa(it.key) !== null;
     default: return false;
   }
@@ -75,6 +77,8 @@ export function PanelViec({ it, onDong, onDaLam, onTiep }: {
       return <NganViecVanHanh key={it.key} taskId={soCuaKhoa(it.key)} onClose={onDong} onDone={doi} />;
     case 'buoc_tiep':
       return <NganTongKet key={it.key} cycleId={soCuaKhoa(it.key)!} onClose={onDong} onDoi={doi} />;
+    case 'phoi_hop_sos':
+      return <PanelPhoiHop key={it.key} it={it} onDong={onDong} onDaLam={doi} />;
     default:
       return null;
   }
@@ -123,6 +127,25 @@ function PanelNhapDiem({ it, onDong, onDaLam }: { it: WorkItem; onDong: () => vo
                 : data.thuong ? tach(data.thuong, (d) => <MotKyNang mode="ratio" data={d} kn={kn} onReload={daLuu} anNutTao />) : null}
             </div>
           )}
+    </KhungPanel>
+  );
+}
+
+/** OV-12h: Phối hợp SOS của lớp (lượt chưa xong) tại chỗ — cùng thẻ lượt / form Xác nhận của hồ sơ lớp; meeting CX có hạn 5 ngày. */
+function PanelPhoiHop({ it, onDong, onDaLam }: { it: WorkItem; onDong: () => void; onDaLam: () => void }) {
+  const { data, loading, error, reload } = useApi<{ rows: CoordTurn[] }>(`/classes/${it.classId}/phoi-hop-sos`, [it.classId]);
+  const ngCanh = (
+    <span className="flex flex-wrap items-center gap-x-1.5">
+      <Link className="link" to={`/hoc-vien/lop/${it.classId}?tab=y-thuc&sub=phoi-hop`}>{it.classCode} <span aria-hidden className="text-xs">↗</span></Link>
+      {it.due && <><span aria-hidden>·</span><Han loai="phoi-hop" han={it.due} /></>}
+    </span>
+  );
+  return (
+    <KhungPanel tieuDe={it.tieuDe} ngCanh={ngCanh} onDong={onDong}>
+      <div className="pt-3">
+        {error ? <ErrorState message={error.message} hint={error.hint} onRetry={reload} />
+          : <PhoiHopSosSection turns={data?.rows ?? null} loading={loading} cot1="hocVien" onChanged={() => { reload(); onDaLam(); }} />}
+      </div>
     </KhungPanel>
   );
 }

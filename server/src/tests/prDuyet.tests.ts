@@ -314,8 +314,7 @@ export async function runPrDuyetTests(t: YThucTestKit) {
 
   // ---------------------------------------------------------------- khối 7: Báo QL Case chờ nguyên nhân quá hạn (K1-57) + Nhắc
   const { awaitingCauseCaseIds } = await import('../cases/sosState.ts');
-  const { nhacViec } = await import('../worklist/nhacViec.ts');
-  check('DUYET (7) · Case chờ nguyên nhân quá hạn → MỘT thẻ Báo QL (quét lần hai không thêm); QL "Của tôi" không còn dòng cause, "tat-ca" vẫn có; Nhắc trỏ đúng dòng; có nguyên nhân → tự đóng', () => {
+  check('DUYET (7) · Case chờ nguyên nhân quá hạn → MỘT thẻ Báo QL (quét lần hai không thêm); QL "Của tôi" không còn dòng cause, "tat-ca" vẫn có; có nguyên nhân → tự đóng', () => {
     const ung = conn.prepare(`SELECT sc.id, sc.owner_user_id FROM sos_cases sc
       WHERE sc.status != 'done' AND sc.owner_user_id IS NOT NULL AND sc.owner_user_id != ?
         AND EXISTS (SELECT 1 FROM case_signals g WHERE g.case_id = sc.id AND g.status = 'linked') ORDER BY sc.id`).all(P.admin.userId) as any[];
@@ -337,11 +336,7 @@ export async function runPrDuyetTests(t: YThucTestKit) {
     assert(!khoa(myworkSvc.myWork(P.admin, {})).includes(`cause:${kase.id}`), 'QL "Của tôi" còn dòng cause của GV khác');
     const tatCa = myworkSvc.myWork(P.admin, { nguoi: 'tat-ca' }).items.find((it: any) => it.key === `cause:${kase.id}`);
     assert(tatCa && tatCa.ownerId === kase.owner_user_id, '"tat-ca" mất dòng cause');
-    const r1 = nhacViec(P.admin, { key: `cause:${kase.id}`, ownerId: kase.owner_user_id });
-    const tb = conn.prepare(`SELECT * FROM notifications WHERE user_id = ? AND kind = 'nhac_viec' AND dedup_key LIKE ?`).get(kase.owner_user_id, `nhac:cause:${kase.id}:%`) as any;
-    assert(tb && tb.duong === tatCa.href && tatCa.href.includes(`case=${kase.id}`) && d.duongThongBao(tb) === tatCa.href, JSON.stringify(tb));
-    assert(nhacViec(P.admin, { key: `cause:${kase.id}`, ownerId: kase.owner_user_id }).daNhacLuc === r1.daNhacLuc, 'nhắc lần hai gửi thêm');
-    assert(yc.hopChoDuyet(P.admin, { xem: 'de-biet' }).the.find((x: any) => x.id === the.id)?.duLieu?.daNhacLuc === r1.daNhacLuc, 'thẻ không hiện Đã nhắc');
+    assert(tatCa.href.includes(`case=${kase.id}`), tatCa.href);
     const nn = conn.prepare(`INSERT INTO case_issues (case_id, role, taxonomy_code, created_at) VALUES (?, 'primary', 'student.listening.technique', ?)`)
       .run(kase.id, new Date().toISOString()).lastInsertRowid;
     yc.quetYeuCau(TODAY);

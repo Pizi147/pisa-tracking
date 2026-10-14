@@ -33,7 +33,7 @@ export function kiemSoBuoiPa(v: unknown, daDay = 0): string | null {
   return null;
 }
 
-/** Số buổi tuần này (Kết quả của PA có Số buổi): bắt buộc, số nguyên 0–60 (0 = em nghỉ). → câu lỗi | null. */
+/** Số buổi kỳ này (Kết quả có ô số buổi — `coSoBuoiKy`): bắt buộc, số nguyên 0–60 (0 = em nghỉ). → câu lỗi | null. */
 export function kiemSoBuoiTuan(v: unknown): string | null {
   const n = soBuoiTu(v);
   return n !== null && nguyenTrong(n, 0) ? null : 'Từ 0 đến 60 buổi';
@@ -55,21 +55,43 @@ export function demSauKetQua(daDay: number, tong: number, tuan: string) {
   return { ...sau, truoc: daDay, vuot: Math.max(0, sau.da - tong) };
 }
 
-/** Lỗi khối đếm: Số buổi tuần này (PA có Số buổi, 0–60) · Người dạy tuần này (Tự học không có; PR-CT2: không bắt buộc, chỉ kiểm tên ngoài). */
-export function loiKetQuaTuan(pa: { kind: string; soBuoi?: number | null }, tuan: string, nguoi: NguoiChon | null): LoiTruong[] {
-  const coDem = pa.soBuoi != null;
+/**
+ * Kết quả có ô "Số buổi kỳ này" (0–60, bắt buộc): PA có Số buổi, và OV-12h — MỌI PA Tutor (kể cả không có Số buổi lúc tạo).
+ * `cu`: sửa lần ghi CŨ của Tutor chưa từng có số buổi — giữ như trước (không hỏi).
+ */
+export type PaKetQua = { kind: string; soBuoi?: number | null; cu?: boolean };
+export const coSoBuoiKy = (pa: PaKetQua): boolean => pa.soBuoi != null || (pa.kind === 'tutor' && !pa.cu);
+
+/** Lỗi khối đếm: Số buổi kỳ này (`coSoBuoiKy`, 0–60) · Người dạy tuần này (Tự học không có; PR-CT2: không bắt buộc, chỉ kiểm tên ngoài). */
+export function loiKetQuaTuan(pa: PaKetQua, tuan: string, nguoi: NguoiChon | null): LoiTruong[] {
   const loi: LoiTruong[] = [];
-  const sb = coDem ? kiemSoBuoiTuan(tuan) : null;
-  if (sb) loi.push({ khoa: 'so-buoi-tuan', nhan: 'Số buổi tuần này', lyDo: sb });
+  const sb = coSoBuoiKy(pa) ? kiemSoBuoiTuan(tuan) : null;
+  if (sb) loi.push({ khoa: 'so-buoi-tuan', nhan: 'Số buổi kỳ này', lyDo: sb });
   const ng = coNguoiDay(pa.kind) ? nguoiThieu(nguoi, false) : null;
   if (ng) loi.push({ khoa: 'nguoi-day', nhan: 'Người dạy tuần này', lyDo: ng });
   return loi;
 }
 
-/** Phần thân `POST /interventions/:id/result` của khối đếm: `soBuoi` chỉ khi PA có Số buổi; `nguoiDay` chỉ khi loại có người. */
-export function thanKetQuaTuan(pa: { kind: string; soBuoi?: number | null }, tuan: string, nguoi: NguoiChon | null) {
+/** OV-12h (chủ SP 14/10): một buổi của Kết quả PA Tutor — tên tutor gõ tự do + nhận xét buổi, cả hai bắt buộc. */
+export type BuoiTutor = { tutor: string; nhanXet: string };
+/** MỌI PA Tutor → Kết quả ghi theo buổi (n buổi kỳ này = n dòng; n = 0 không dòng). Chỉ sửa lần ghi cũ chưa có số buổi (`cu`) là không hỏi. */
+export const canBuoiTutor = (pa: PaKetQua): boolean => pa.kind === 'tutor' && !pa.cu;
+/** Đúng `n` dòng, mỗi dòng đủ tên tutor + nhận xét → null; sai → câu lỗi (web và máy chủ cùng gọi). */
+export function kiemBuoiTutor(n: number, buoi: unknown): string | null {
+  if (!Array.isArray(buoi) || buoi.length !== n) return `cần đủ ${n} dòng (mỗi buổi một dòng)`;
+  for (const [i, b] of buoi.entries()) {
+    const tutor = String(b?.tutor ?? '').trim(), nhanXet = String(b?.nhanXet ?? '').trim();
+    if (!tutor) return `buổi ${i + 1} chưa có tên tutor`;
+    if (!nhanXet) return `buổi ${i + 1} chưa có nhận xét`;
+    if (tutor.length > 100 || nhanXet.length > 1000) return `buổi ${i + 1} quá dài (tên ≤ 100, nhận xét ≤ 1000 ký tự)`;
+  }
+  return null;
+}
+
+/** Phần thân `POST /interventions/:id/result` của khối đếm: `soBuoi` khi có ô Số buổi kỳ này (`coSoBuoiKy`); `nguoiDay` chỉ khi loại có người. */
+export function thanKetQuaTuan(pa: PaKetQua, tuan: string, nguoi: NguoiChon | null) {
   return {
-    ...(pa.soBuoi != null ? { soBuoi: soBuoiTu(tuan) } : {}),
+    ...(coSoBuoiKy(pa) ? { soBuoi: soBuoiTu(tuan) } : {}),
     ...(coNguoiDay(pa.kind) ? { nguoiDay: nguoiThanhPayload(nguoi) } : {}),
   };
 }

@@ -1,13 +1,10 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
-import { ApiError, api, invalidate } from '../../lib/api.ts';
-import { ConfirmDialog } from '../../ui/Drawer.tsx';
+import { invalidate } from '../../lib/api.ts';
 import { useSession } from '../../lib/session.tsx';
-import { useToast } from '../../ui/Toast.tsx';
 import { BoLocDoan, Card, Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { BranchFilter, useChiNhanhMacDinh, type Branch } from '../../ui/Filters.tsx';
-import { fmtTime } from '../../lib/format.ts';
 import { NhomViec } from '../worklist/NhomViec.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import type { WorkItem } from '../worklist/WorkList.tsx';
@@ -17,8 +14,8 @@ import { CongTacKhung, khungDaNho, nhoKhung, type KhungLoc } from '../../ui/Cong
 import { KhungTaiCho } from '../../ui/KhungPanel.tsx';
 import { PanelViec, lamTaiCho } from './PanelViec.tsx';
 import {
-  LOC_NHANH_LABEL, NHOM_VIEC, NHOM_VIEC_LABEL, TRAN_HANG_LOAT, demLocNhanh, demNhomChip, demPhamVi, gomNhomViec, khoaGopCua, khopLocNhanh, lapNhacTatCa, nhomViecCua,
-  tomTatKetQuaHangLoat, LOC_NHANH, type LocNhanh, type NhomViec as MaNhomViec,
+  LOC_NHANH_LABEL, NHOM_VIEC, NHOM_VIEC_LABEL, demLocNhanh, demNhomChip, demPhamVi, gomNhomViec, khoaGopCua, khopLocNhanh, nhomViecCua,
+  LOC_NHANH, type LocNhanh, type NhomViec as MaNhomViec,
 } from '@shared/domain/index.ts';
 
 type Work = {
@@ -56,12 +53,11 @@ const phang = (ds: readonly WorkItem[]) => ds.flatMap((x) => [x, ...(x.con ?? []
  */
 export function HoTroHocVienTab() {
   const { session } = useSession();
-  const toast = useToast();
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
   const macDinh = useChiNhanhMacDinh();
   const branchId = params.get('cn') ? Number(params.get('cn')) : macDinh;
-  /* PR-OV2a: Admin (`nav.workChamDiem`) xem + Nhắc việc Chấm điểm của GV như Quản lý, chỉ nhóm đó. */
+  /* PR-OV2a: Admin (`nav.workChamDiem`) xem việc Chấm điểm của GV như Quản lý, chỉ nhóm đó (OV-12h bỏ Nhắc). */
   const chiChamDiem = !!session?.nav?.workChamDiem;
   const laQuanLy = !!session?.nav?.workOps || chiChamDiem;
   const nguoi = laQuanLy ? thamSoNguoi(params.get('nguoi')) : 'toi';
@@ -85,7 +81,7 @@ export function HoTroHocVienTab() {
   /* GV không gửi `nguoi` — `/my-work` không tham số giữ NGUYÊN hành vi cũ (Q3). */
   if (laQuanLy && nguoi !== 'toi') qs.set('nguoi', String(nguoi));
   const url = `/my-work${qs.toString() ? `?${qs}` : ''}`;
-  const { data, loading, error, reload, setData } = useApi<Work>(url, [url]);
+  const { data, loading, error, reload } = useApi<Work>(url, [url]);
   const branches = useApi<Branch[]>('/ref/branches').data;
 
   const { homNay } = useNgayNghiepVu();
@@ -200,87 +196,6 @@ export function HoTroHocVienTab() {
   const keTiep = thuTu.slice(viTri + 1).find((x) => !xong.has(x.key)) ?? null;
   const daLam = (it: WorkItem) => setGiu((m) => new Map(m).set(it.key, it));
 
-  // ------------------------------------------------------------------ Nhắc (QL / Quản trị, Của GV)
-  const [dangNhac, setDangNhac] = useState<Record<string, boolean>>({});
-  /*
-   * OV-11c (TQ-1): việc được nhắc khi bấm Nhắc một dòng — đang lọc hạn thì dòng gộp nhắc đúng các việc con khớp lọc (lọc Quá hạn chỉ nhắc bài quá hạn);
-   * cả dòng khớp lọc thì nhắc khoá dòng (một chuông). Cùng luật cho "Nhắc tất cả".
-   */
-  const viecNhac = (x: WorkItem): WorkItem[] => {
-    if (loc === 'tat-ca' || !x.con) return [x];
-    const khop = x.con.filter((c) => khopLocNhanh(c, loc, homNay));
-    return khop.length === x.con.length ? [x] : khop;
-  };
-  const bamNhac = async (it: WorkItem) => {
-    if (!it.nhac || dangNhac[it.key]) return;
-    setDangNhac((s) => ({ ...s, [it.key]: true }));
-    try {
-      const ds = viecNhac(it);
-      const daNhacLuc = ds.length === 1 && ds[0].key === it.key
-        ? (await api.post<{ daNhacLuc: string }>('/my-work/nhac', { key: it.key, ownerId: it.nhac.ownerId })).daNhacLuc
-        : await (async () => {
-          const r = await api.post<{ ok: { daNhacLuc: string }[]; loi: { loi: string }[] }>('/my-work/nhac-nhieu', { viec: ds.map((c) => ({ key: c.key, ownerId: it.nhac!.ownerId })) });
-          if (!r.ok.length) throw new Error(r.loi[0]?.loi ?? 'Không nhắc được.');
-          return r.ok[0].daNhacLuc;
-        })();
-      setData((prev) => (prev
-        ? { ...prev, dong: prev.dong.map((x) => (x.key === it.key ? { ...x, nhac: { ...x.nhac!, daNhacLuc } } : x)) }
-        : prev) as Work);
-    } catch (e: any) { toast.push('error', e.message); } finally { setDangNhac((s) => ({ ...s, [it.key]: false })); }
-  };
-
-  /*
-   * VIEC-NHO-2: "Nhắc tất cả (n)" — n = việc ĐANG THẤY (mọi bộ lọc) có nút Nhắc, trừ đã nhắc hôm nay và việc vừa nhắc lỗi (bấm lại cũng
-   * lỗi y hệt; 503 "chưa kịp" thì tính lại). Hỏi lại trước khi gửi; máy chủ tự kiểm lại từng dòng, không nhắc lặp.
-   */
-  const [nhacLoi, setNhacLoi] = useState<Set<string>>(new Set());
-  const [hoiNhac, setHoiNhac] = useState(false);
-  useEffect(() => { setNhacLoi(new Set()); }, [url]);
-  const [dangNhacHet, setDangNhacHet] = useState(false);
-  const khoaNhac = (key: string, ownerId: number) => `${ownerId}|${key}`;
-  const nhacNguon = useMemo(() => cuoiItems.flatMap(viecNhac), [cuoiItems, loc, homNay]);   // eslint-disable-line react-hooks/exhaustive-deps
-  const nhacHet = useMemo(
-    () => lapNhacTatCa(nhacNguon.filter((it) => !it.nhac || !nhacLoi.has(khoaNhac(it.key, it.nhac.ownerId)))),
-    [nhacNguon, nhacLoi],
-  );
-  const coNutNhacHet = laQuanLy && nguoi !== 'toi' && nhacHet.tong > 0;
-
-  const nhacTatCa = async () => {
-    setHoiNhac(false);
-    if (dangNhacHet || !nhacHet.gui.length) return;
-    setDangNhacHet(true);
-    type Dong = { key: string; ownerId: number };
-    try {
-      const r = await api.post<{ ok: (Dong & { daNhacLuc: string })[]; loi: (Dong & { loi: string; ma: number })[] }>(
-        '/my-work/nhac-nhieu', { viec: nhacHet.gui.map((it) => ({ key: it.key, ownerId: it.nhac!.ownerId })) });
-      const luc = new Map(r.ok.map((x) => [khoaNhac(x.key, x.ownerId), x.daNhacLuc]));
-      setData((prev) => (prev ? {
-        ...prev,
-        dong: prev.dong.map((x) => {
-          const l = x.nhac ? luc.get(khoaNhac(x.key, x.nhac.ownerId)) ?? x.con?.map((c) => luc.get(khoaNhac(c.key, x.nhac!.ownerId))).find(Boolean) : undefined;
-          return l ? { ...x, nhac: { ...x.nhac!, daNhacLuc: l } } : x;
-        }),
-      } : prev) as Work);
-      setNhacLoi((s) => new Set([...s, ...r.loi.filter((l) => l.ma !== 503).map((l) => khoaNhac(l.key, l.ownerId))]));
-      toast.push(r.loi.length ? 'error' : 'ok', tomTatKetQuaHangLoat('nhac', r.ok.length, r.loi));
-    } catch (e: any) {
-      toast.push('error', e instanceof ApiError ? e.message : 'Mất kết nối giữa chừng — danh sách đã làm mới để thấy việc nào đã nhắc.');
-      reload();
-    } finally { setDangNhacHet(false); }
-  };
-
-  const nutPhu = (it: WorkItem) => {
-    if (it.nhac) {
-      if (it.nhac.daNhacLuc) return <span className="text-xs text-slate-500 whitespace-nowrap">Đã nhắc {fmtTime(it.nhac.daNhacLuc)}</span>;
-      return (
-        <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={dangNhac[it.key]} onClick={(e) => { e.stopPropagation(); bamNhac(it); }}>
-          Nhắc
-        </button>
-      );
-    }
-    return null;
-  };
-
   // ------------------------------------------------------------------ Lọc thêm + dòng phạm vi
   const [locThem, setLocThem] = useState(false);
   const [tenGv, setTenGv] = useState<string | null>(null);
@@ -311,7 +226,7 @@ export function HoTroHocVienTab() {
             /* Mặc định KHÔNG có `nguoi` trên URL là "tất cả" (`thamSoNguoi`) — "Của tôi" phải GHI rõ `nguoi=toi`. Admin không có việc của riêng mình. */
             <BoLocDoan ariaLabel="Việc của ai" value={nguoi === 'toi' ? 'toi' : 'tat-ca'}
               onChange={(k) => setParam('nguoi', k === 'toi' ? 'toi' : null)}
-              muc={[{ key: 'toi', nhan: 'Của tôi' }, { key: 'tat-ca', nhan: 'Của GV (nhắc)', title: 'Việc của giáo viên trong phạm vi — Nhắc ngay trên dòng' }]} />
+              muc={[{ key: 'toi', nhan: 'Của tôi' }, { key: 'tat-ca', nhan: 'Của GV', title: 'Việc của giáo viên trong phạm vi' }]} />
           )}
           <BoLocDoan ariaLabel="Hạn" value={loc} onChange={(k) => setParam('loc', k === 'tat-ca' ? null : k)}
             muc={[...HAN_CHINH, ...(loc === 'den-het-tuan' ? ['den-het-tuan' as const] : [])].map((k) => ({ key: k, nhan: LOC_NHANH_LABEL[k], so: demHan[k] }))} />
@@ -356,15 +271,7 @@ export function HoTroHocVienTab() {
             {coLoc && <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 sm:min-h-0" onClick={xoaLoc}>Xoá lọc</button>}
           </div>
         )}
-        {coNutNhacHet && (
-          <div><button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={dangNhacHet} onClick={() => setHoiNhac(true)}>
-            {dangNhacHet ? 'Đang nhắc…' : nhacHet.tong > TRAN_HANG_LOAT ? `Nhắc ${TRAN_HANG_LOAT} việc đầu` : `Nhắc tất cả (${nhacHet.tong})`}
-          </button></div>
-        )}
       </div>
-      <ConfirmDialog open={hoiNhac} onClose={() => setHoiNhac(false)} onConfirm={() => void nhacTatCa()}
-        title={`Nhắc ${nhacHet.gui.length} việc · ${nhacHet.gv.length} GV?`} confirmLabel={`Nhắc ${nhacHet.gv.length} GV`}
-        body={<DsGvNhac gv={nhacHet.gv} boQua={nhacHet.boQua} />} />
 
       {/* ───────────────────────────────────────────────── danh sách trái · panel phải */}
       <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] lg:items-start lg:gap-3.5 xl:grid-cols-[560px_minmax(0,1fr)]">
@@ -376,7 +283,7 @@ export function HoTroHocVienTab() {
           )}
           {data && !data.scopeEmpty && dsNhom.length > 0 && (
             <Card bodyClass="p-0">
-              <NhomViec nhom={dsNhom} soHien={10} moHet={moHet} onOpen={mo} nutPhu={nutPhu} chon={viec} xong={xong} moTrang={(x) => !lamTaiCho(x)} />
+              <NhomViec nhom={dsNhom} soHien={10} moHet={moHet} onOpen={mo} chon={viec} xong={xong} moTrang={(x) => !lamTaiCho(x)} />
             </Card>
           )}
         </div>
@@ -403,22 +310,5 @@ export function HoTroHocVienTab() {
       */}
       <NganViecVanHanh taskId={moViec} onClose={() => setParam('mo-viec', null)} onDone={() => invalidate('/my-work')} />
     </div>
-  );
-}
-
-/** Thân hộp hỏi lại "Nhắc tất cả" — MỘT mẫu cho Hỗ trợ học viên và Chờ duyệt › Nhắc việc (OV-11c, CV-14). Quá 6 GV: 5 dòng đầu + "và k GV khác". */
-export function DsGvNhac({ gv, boQua }: { gv: readonly { ownerId: number; ten: string; so: number }[]; boQua: number }) {
-  return (
-    <>
-      <ul className="m-0 list-none rounded-lg border p-0 tabular-nums" style={{ borderColor: 'var(--line)' }}>
-        {(gv.length > 6 ? gv.slice(0, 5) : gv).map((g, i) => (
-          <li key={g.ownerId} className={`flex gap-2 px-2.5 py-1.5 ${i ? 'border-t' : ''}`} style={{ borderColor: 'var(--line)' }}>
-            <span className="min-w-0 flex-1 break-words text-slate-200">{g.ten}</span><span className="whitespace-nowrap">{g.so} việc</span>
-          </li>
-        ))}
-        {gv.length > 6 && <li className="border-t px-2.5 py-1.5 text-slate-400" style={{ borderColor: 'var(--line)' }}>và {gv.length - 5} GV khác</li>}
-      </ul>
-      {boQua > 0 && <p className="mb-0 mt-2 text-xs text-slate-400">Bỏ qua {boQua} việc đã nhắc hôm nay.</p>}
-    </>
   );
 }

@@ -49,8 +49,8 @@ export async function runPrGvbTests(t: YThucTestKit) {
     const q = (n: number, ma: number, loi = 'x') => Array.from({ length: n }, () => ({ ma, loi }));
     assert(d.tomTatKetQuaHangLoat('duyet', 7, q(2, 403)) === 'Đã duyệt 7/9 — 2 không có quyền', d.tomTatKetQuaHangLoat('duyet', 7, q(2, 403)));
     assert(d.tomTatKetQuaHangLoat('duyet', 5, []) === 'Đã duyệt 5/5', d.tomTatKetQuaHangLoat('duyet', 5, []));
-    const s = d.tomTatKetQuaHangLoat('nhac', 3, [...q(1, 403), ...q(2, 400, 'Yêu cầu này đã được xử lý.'), ...q(1, 404)]);
-    assert(s === 'Đã nhắc 3/7 — 1 không có quyền, 2 đã có người xử lý, 1 không còn', s);
+    const s = d.tomTatKetQuaHangLoat('tu-choi', 3, [...q(1, 403), ...q(2, 400, 'Yêu cầu này đã được xử lý.'), ...q(1, 404)]);
+    assert(s === 'Đã từ chối 3/7 — 1 không có quyền, 2 đã có người xử lý, 1 không còn', s);
   });
 
   // ---------------------------------------------------------------- GVb-2: một nguồn đếm, tab Để QL biết, duyetNhieu trả mã
@@ -112,25 +112,6 @@ export async function runPrGvbTests(t: YThucTestKit) {
     const tb = (kind: string) => d.duongThongBao({ entity_type: 'yeu_cau_duyet', entity_id: 7, kind } as any);
     assert(tb('bao_len') === '/cong-viec/cho-duyet?xem=de-biet&the=7' && tb('duyet_moi') === '/cong-viec/cho-duyet?the=7'
       && tb('duyet_ket_qua') === '/cong-viec/yeu-cau?the=7', `${tb('bao_len')} · ${tb('duyet_moi')} · ${tb('duyet_ket_qua')}`);
-  });
-
-  // ---------------------------------------------------------------- GVb-3: Nhắc tất cả
-  check('GVb (3) · nhacNhieu: GV → 403; >50 → 400; chỉ thẻ "nhac"; nhắc lần hai trong ngày không tạo thông báo mới', () => {
-    assert(maLoi(() => yc.nhacNhieu(P.coreTeacher, [1])) === 403, 'GV');
-    assert(maLoi(() => yc.nhacNhieu(P.mbManager, Array.from({ length: d.TRAN_HANG_LOAT + 1 }, (_, i) => i + 1))) === 400, 'trần');
-    const biet = yc.hopChoDuyet(P.mbManager, { xem: 'de-biet' }).the
-      .filter((x) => typeof x.duLieu?.ownerId === 'number' && typeof x.duLieu?.viecKey === 'string').slice(0, d.TRAN_HANG_LOAT - 1);
-    assert(biet.length >= 1, 'seed cần ít nhất một thẻ Báo QL có người nhận');
-    const quyet = yc.hopChoDuyet(P.mbManager, { xem: 'cho' }).the[0];
-    const demTb = () => (conn.prepare(`SELECT COUNT(*) AS n FROM notifications WHERE kind = 'nhac_viec'`).get() as any).n as number;
-    const truoc = demTb();
-    const r1 = yc.nhacNhieu(P.mbManager, [...biet.map((x) => x.id), ...(quyet ? [quyet.id] : [])]);
-    const sau1 = demTb();
-    assert(r1.ok.length + r1.loi.length === biet.length + (quyet ? 1 : 0), JSON.stringify(r1));
-    assert(r1.ok.some((x) => x.moi) && sau1 > truoc, `lần một phải gửi ít nhất một nhắc: ${JSON.stringify(r1)}`);
-    if (quyet) assert(r1.loi.some((l) => l.id === quyet.id && l.ma === 400), 'thẻ phải quyết không được nhắc hàng loạt');
-    const r2 = yc.nhacNhieu(P.mbManager, biet.map((x) => x.id));
-    assert(demTb() === sau1 && r2.ok.every((x) => !x.moi), `nhắc lặp trong ngày: ${truoc}→${sau1}→${demTb()}`);
   });
 
   // ---------------------------------------------------------------- GVb-6, 7, 8: chip dải Tổng quan, tone chờ chấm, Bị từ chối

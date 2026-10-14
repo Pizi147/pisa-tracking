@@ -376,7 +376,7 @@ export async function runPrSosTests(t: YThucTestKit) {
     const dto = cases.recordIntervention(P.w2Teacher, c.id, { kind: 'tutor', description: 'Tutor Writing Task 2 hai buổi', status: 'started', performerSelf: true, followupDue: addDays(TODAY, 30) }) as any;
     const tay = dto.interventions.find((x: any) => !x.preset);
     assert(tay.followupDue === null, `PA thường có ngày: ${tay.followupDue}`);
-    cases.updateResult(P.w2Teacher, tay.id, { ...KQ, decision: 'keep' });
+    cases.updateResult(P.w2Teacher, tay.id, { ...KQ, decision: 'keep', soBuoi: 0 });
     assert(get('SELECT followup_due f FROM case_interventions WHERE id = ?', tay.id).f === null, 'Giữ nguyên đặt ngày mặc định');
     const ht = (cases.caseDetail(P.mbManager, c.id) as any).hoanThanh;
     assert(ht.an && /^Hoàn thành được sau khi PA theo quy chế kết thúc \(1 tháng · đến /.test(ht.dong), JSON.stringify(ht));

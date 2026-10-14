@@ -122,7 +122,9 @@ export async function runPrDlTests(t: YThucTestKit) {
    * viec); `tuan` chỉ lệch id (phép kiểm lớp thường chạy trước thêm một em). Đã so JSON từng trường bản cũ ↔ mới. */
   /* OV-11e (Q8, chỉ `moi`): em thử S3F (3) ở MB FT 101 — lượt CHỐT SẴN rồi mới tích KCK — giữ KCK lúc chốt (`kck_at_attempt` = 0), lượt dưới kỳ vọng
    * lại có `sosLevel` như trước OV-9. Đặt `kck_at_attempt` NULL cho lượt của lớp (đọc cờ hiện tại như trước) ra đúng băm cũ 184be8d29c1e33ca (đã đo 14/10). */
-  const ANH_CHUP = { tuan: '42bdce7893ef63f1', moi: 'f7580e81ed878fb5' };
+  /* OV-12h: chỉ lệch id — bỏ các phép kiểm Nhắc chạy trước (congViec PR-Ra dựng em BC, prNv…) và prPa dựng hai Case cùng em thay hai em → id em / lượt
+   * tạo sau dời. Đã so JSON hai bảng origin/main ↔ nhánh sau khi bỏ trường id + studentCode (mã theo thứ tự tạo): trùng từng byte. */
+  const ANH_CHUP = { tuan: 'b7faa8f10cf9f613', moi: 'f05f19f123679119' };
   /* Mã cố ý độc lập với hàm: điều kiện lọc tuần của bản trước refactor, viết lại bằng SQL. */
   const idsTuan = (periodId: number) => (conn.prepare(
     `SELECT a.id FROM assessment_attempts a JOIN students s ON s.id = a.student_id

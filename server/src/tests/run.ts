@@ -2387,7 +2387,7 @@ check('[9.3] Hoàn thành Case: một đường duy nhất, có kết luận và
 
   // Kết thúc PA (tab "Kết thúc") → lúc này mới đóng được.
   cases.updateResult(P.coreTeacher, ivId, {
-    mode: 'end', outcome: 'improved', nextStep: 'complete',
+    mode: 'end', outcome: 'improved', nextStep: 'complete', soBuoi: 0,   // OV-12h: PA Tutor ghi Số buổi kỳ này
     note: 'Em nghe bắt ý tốt hơn hẳn, đã hết buổi tutor cuối',
   });
   assert(cases.closeBlockers(c.id).length === 0, 'Mọi phương án đã khép mà vẫn còn lý do chặn');
@@ -7517,7 +7517,7 @@ check('PR-D · Lịch sử một phương án mang đủ ngày, chu kỳ, ghi ch
   }) as any;
   const ivId = info.interventions.find((i: any) => i.description === 'Học tutor Listening (PR-D lịch sử)').id;
   cases.updateResult(P.coreTeacher, ivId, {
-    mode: 'monitor', outcome: 'partial', observedOn: TODAY,
+    soBuoi: 0, mode: 'monitor', outcome: 'partial', observedOn: TODAY,
     note: 'Nghe bắt ý tốt hơn, còn sai số điện thoại (PR-D)',
   });
   const plan = prdCardOf(P.coreTeacher, prdStudent.id, c.id).plans.find((p: any) => p.id === ivId);
@@ -7537,7 +7537,7 @@ check('PR-D · Cập nhật quá hạn thì lịch sử phương án ghi đúng 
   }) as any;
   const ivId = info.interventions.find((i: any) => i.description === 'Học tutor Listening (PR-D trễ)').id;
   cases.updateResult(P.coreTeacher, ivId, {
-    mode: 'monitor', outcome: 'unchanged', observedOn: TODAY,
+    soBuoi: 0, mode: 'monitor', outcome: 'unchanged', observedOn: TODAY,
     note: 'Cập nhật muộn hơn hạn tuần, ghi lại để so (PR-D)',
   });
   const plan = prdCardOf(P.coreTeacher, prdStudent.id, c.id).plans.find((p: any) => p.id === ivId);
@@ -7553,7 +7553,7 @@ check('PR-D · CASE-05: điểm tự chấm cũ đã lưu vẫn đọc được 
   const ivId = info.interventions.find((i: any) => i.description === 'Học tutor Listening (PR-D điểm cũ)').id;
   // Dữ liệu cũ: một lần cập nhật đã kèm điểm tự chấm (giao diện mới không còn gửi trường này).
   cases.updateResult(P.coreTeacher, ivId, {
-    mode: 'monitor', outcome: 'partial', observedOn: TODAY,
+    soBuoi: 0, mode: 'monitor', outcome: 'partial', observedOn: TODAY,
     note: 'Bản ghi cũ có kèm điểm cô tự chấm (PR-D)',
     metrics: [{ skill: 'listening', score: 6, total: null }],
   });
@@ -7734,7 +7734,7 @@ const branchIdOf = (code: string) => (conn.prepare('SELECT id FROM branches WHER
 check('PR-F · Sổ chỉ số: đúng hai mươi chỉ số (PR-N thêm pa-cho-duyet; PR-J thêm tám chỉ số Ý thức), mỗi chỉ số đủ tám trường (thiếu một trường thì không được lên dashboard)', () => {
   const list = domain.METRICS as readonly any[];
   /* PR-LT2a (N4, Q14): bỏ ba chỉ số của mô hình tín hiệu — tin-hieu-cho-xac-minh, tin-hieu-qua-han, hv-bo-qua-van-can-ho-tro (31 → 28). */
-  assert(list.length === 33, /* OV-11f: +1 (bai-qua-han-chua-phan-cong, TQ-13) · PR-VAI-a: −1 (U3) +1 (lop-thieu-gv-mon) +4 (Q8); PR-MT0: +1 (lop-chua-chot-len-ft); PR-LCb: −1 (hv-chua-co-lenh-chuyen) */ `Phải có hai mươi tám chỉ số (PR-YT4: bien-phap-dang-chuan-bi → bien-phap-cho-duyet, thêm hv-theo-bac; hai của PR-UX4: hv-can-ho-tro-2-lan-chua-case, hv-bo-qua-van-can-ho-tro + hai mươi tám chỉ số cũ: mười hai của PR-F/PR-N + bảy của PR-J còn lại sau khi PR-T bỏ vi-pham-khong-hieu-luc + bốn của PR-T: case-cho-xac-dinh-nguyen-nhan và ba phoi-hop-* + một của PR-S1: tin-hieu-qua-han + ba của PR-Pa: case-xac-dinh-nguyen-nhan-qua-han, bai-qua-han-nhap-diem, case-chua-co-nguoi-phu-trach + một của PR-YT2: vi-pham-theo-nhom), đang có ${list.length}`);
+  assert(list.length === 34, /* OV-12h: +1 (phoi-hop-qua-han) · OV-11f: +1 (bai-qua-han-chua-phan-cong, TQ-13) · PR-VAI-a: −1 (U3) +1 (lop-thieu-gv-mon) +4 (Q8); PR-MT0: +1 (lop-chua-chot-len-ft); PR-LCb: −1 (hv-chua-co-lenh-chuyen) */ `Phải có hai mươi tám chỉ số (PR-YT4: bien-phap-dang-chuan-bi → bien-phap-cho-duyet, thêm hv-theo-bac; hai của PR-UX4: hv-can-ho-tro-2-lan-chua-case, hv-bo-qua-van-can-ho-tro + hai mươi tám chỉ số cũ: mười hai của PR-F/PR-N + bảy của PR-J còn lại sau khi PR-T bỏ vi-pham-khong-hieu-luc + bốn của PR-T: case-cho-xac-dinh-nguyen-nhan và ba phoi-hop-* + một của PR-S1: tin-hieu-qua-han + ba của PR-Pa: case-xac-dinh-nguyen-nhan-qua-han, bai-qua-han-nhap-diem, case-chua-co-nguoi-phu-trach + một của PR-YT2: vi-pham-theo-nhom), đang có ${list.length}`);
   const expected = ['hv-sos-hien-tai', 'hv-duoi-ky-vong-mon', 'hv-co-case-mo', 'case-mo',
     'case-xac-dinh-nguyen-nhan-qua-han', 'bai-qua-han-nhap-diem', 'case-chua-co-nguoi-phu-trach', 'case-cho-xac-dinh-nguyen-nhan',
     'case-thieu-pa', 'pa-can-cap-nhat', 'pa-cho-duyet', 'pa-co-ket-qua', 'ty-le-co-cai-thien', 'dung-han-cap-nhat', 'do-phu-danh-gia',
@@ -7744,7 +7744,8 @@ check('PR-F · Sổ chỉ số: đúng hai mươi chỉ số (PR-N thêm pa-cho-
     'lop-thieu-gv-mon',   // PR-VAI-a: bỏ hv-can-ho-tro-2-lan-chua-case (K1-04), thêm lop-thieu-gv-mon (K1-05)
     'van-hanh-can-quyet-dinh', 'hv-ft-xong-mt-cuoi-chua-mt-ke', 'hv-len-ft-chua-ky-vong',   // PR-VAI-a Q8 (PR-LCb bỏ hv-chua-co-lenh-chuyen)
     'lop-chua-chot-len-ft',   // PR-MT0 → PR-LCb: Chốt lộ trình
-    'bai-qua-han-chua-phan-cong'];   // OV-11f (TQ-13): "m bài chưa có người chấm" bấm được
+    'bai-qua-han-chua-phan-cong',   // OV-11f (TQ-13): "m bài chưa có người chấm" bấm được
+    'phoi-hop-qua-han'];   // OV-12h: meeting CX quá hạn xác nhận
   for (const id of expected) assert(list.some((m) => m.id === id), `Thiếu chỉ số ${id}`);
   assert(new Set(list.map((m) => m.id)).size === list.length, 'Có hai chỉ số trùng mã');
   const fields = ['id', 'ten', 'cauHoi', 'donVi', 'tapDuDieuKien', 'thoiGian', 'khuTrung', 'drilldown'];
@@ -9348,6 +9349,9 @@ await runPrOv12bTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P,
 // ==================================================================== PR-OV12c (Case SOS MT từ nhận xét · Progress "Xác nhận Case" · xoá Case khi em đạt · migrate)
 const { runPrOv12cTests } = await import('./prOv12c.tests.ts');
 await runPrOv12cTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== PR-OV12h (bỏ Nhắc · kết quả PA từng em · Tutor theo buổi · meeting CX hạn 5 ngày)
+const { runPrOv12hTests } = await import('./prOv12h.tests.ts');
+await runPrOv12hTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`

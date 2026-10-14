@@ -91,7 +91,6 @@ import { khungPtGvTuThamSo } from '../../../shared/domain/index.ts';   // PR-Pb2
 import { metricResponse, metricSet, rowsFor } from '../worklist/metrics.ts';
 import { myWork, viecCuaNguoi } from '../worklist/mywork.ts';
 import { bangGvChiNhanh, hoSoGiaoVien, ketQuaHoSoGv, oHoSoGv, viecHoSoGv } from '../giaoVien/hoSo.ts';
-import { nhacViec, nhacViecLo } from '../worklist/nhacViec.ts';
 import { phamViXemViec } from '../worklist/xemViec.ts';
 import { soHocVien } from '../worklist/hvCuaToi.ts';
 import { tongQuanMt } from '../worklist/tongQuanMt.ts';
@@ -480,20 +479,8 @@ api.get('/my-work', requireAuth, wrap((req) => {
   return nheMyWork(myWork(p, { branchId }));
 }));
 
+/* OV-12h (chủ SP 14/10): bỏ hẳn Nhắc — `/my-work/nhac`, `/my-work/nhac-nhieu`, `/yeu-cau/nhac-nhieu`, `/lenh-chuyen/:id/nhac` (404). */
 /* PR-S6F-b (D14): `/my-work/dem` đã bỏ — badge GV đọc `summary.overdue` của chính `/my-work` (web gộp GET đang bay, không tính `myWork` hai lần). */
-
-api.post('/my-work/nhac', requireAuth, wrap((req) => {
-  const key = String(req.body?.key ?? '');
-  const ownerId = toInt(req.body?.ownerId);
-  if (!key || !ownerId) throw badRequest('Thiếu key hoặc ownerId.');
-  return nhacViec(principalOf(req), { key, ownerId });
-}));
-
-/* VIEC-NHO-2: "Nhắc tất cả (n)" ở Của GV — kiểm quyền + từng dòng ở `nhacViecLo` (lõi PR-NV). */
-api.post('/my-work/nhac-nhieu', requireAuth, wrap((req) => {
-  maybeSimulateSaveFailure();
-  return nhacViecLo(principalOf(req), (req.body ?? {}).viec);
-}));
 
 // ============================================================ Mock Test
 
@@ -1599,10 +1586,6 @@ api.put('/lenh-chuyen/:id/ban-giao', requireAuth, wrap((req) => {
   banGiaoSvc.suaBanGiao(principalOf(req), pInt(req, 'id'), String(req.body?.nhanXetChung ?? ''));
   return { ok: true };
 }));
-api.post('/lenh-chuyen/:id/nhac', requireAuth, wrap((req) => {
-  maybeSimulateSaveFailure();
-  return banGiaoSvc.nhacGvbm(principalOf(req), pInt(req, 'id'), String(req.body?.mon ?? ''));
-}));
 
 /**
  * Đổi tuần bắt đầu và mốc kiểm tra của lớp. Quyền: Admin CN và Quản lý CN (mục 7.6).
@@ -1866,11 +1849,6 @@ api.post('/yeu-cau/tu-choi-nhieu', requireAuth, wrap((req) => {
 api.post('/yeu-cau/:id/huy-quyet-dinh', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return yeuCauSvc.huyQuyetDinh(principalOf(req), pInt(req, 'id'));
-}));
-/* PR-GVb (Q-B): Nhắc tất cả — kiểm quyền từng thẻ ở `nhacNhieu`; đặt trước `/yeu-cau/:id/...`. */
-api.post('/yeu-cau/nhac-nhieu', requireAuth, wrap((req) => {
-  maybeSimulateSaveFailure();
-  return yeuCauSvc.nhacNhieu(principalOf(req), (req.body ?? {}).ids);
 }));
 api.post('/yeu-cau/:id/duyet', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();

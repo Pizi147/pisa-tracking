@@ -128,8 +128,8 @@ export function chonHet<T extends ChonDuoc & { trangThai: string }>(ds: readonly
 }
 
 /** Kết quả hàng loạt một câu: "Đã duyệt 7/9 — 2 không có quyền". Lý do gom theo mã (PR-GVb G7). */
-export function tomTatKetQuaHangLoat(viec: 'duyet' | 'nhac' | 'tu-choi', ok: number, loi: readonly { ma: number; loi: string }[]): string {
-  const dong = viec === 'duyet' ? 'duyệt' : viec === 'tu-choi' ? 'từ chối' : 'nhắc';
+export function tomTatKetQuaHangLoat(viec: 'duyet' | 'tu-choi', ok: number, loi: readonly { ma: number; loi: string }[]): string {
+  const dong = viec === 'duyet' ? 'duyệt' : 'từ chối';
   const dau = `Đã ${dong} ${ok}/${ok + loi.length}`;
   if (!loi.length) return dau;
   const nhom: [string, number][] = [
@@ -242,12 +242,6 @@ export function chipChoDuyet(d: DemYeuCau): ChipDem[] {
   if (d.quaHan > 0) kq.push({ key: 'qua-han', nhan: 'Quá hạn', so: d.quaHan, den: '?qua-han=1', quaHan: true });
   return kq;
 }
-
-/** PR-S4F #14: thẻ Báo QL không có người để Nhắc (`duLieu.ownerId` rỗng) — ghi rõ vì sao thay cho nút Nhắc. */
-export const nhanKhongNguoiNhac = (loai: string): string =>
-  loai === 'bao_len_nguyen_nhan' ? 'Case chưa có người phụ trách'
-    : loai === 'bao_len_chua_lenh' ? 'Việc của Quản lý · Chuyển tiếp lớp'   // OV-11c (CV-9): không phải "chưa có GVCN"
-      : 'Lớp chưa có GVCN';
 
 /** Trường của thẻ Đề xuất sửa (PR-DUYET T44) — MỘT bản cho máy chủ (`duyet/deXuatSua.ts`) và web (`DeXuatSuaPanel`). PR-CT: bỏ 'lop' — dùng Đề xuất chuyển lớp. */
 export const TRUONG_DE_XUAT = ['target', 'lo-trinh', 'lich-mt', 'khac'] as const;

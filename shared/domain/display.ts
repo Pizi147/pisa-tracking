@@ -251,6 +251,8 @@ export const DEADLINE_KINDS = [
   'duyet', 'xu-ly-vi-pham', 'mini-test',   // PR-CT2: bỏ 'ke-hoach-bo-tro' (không còn nộp kế hoạch)
   /* PR-MT0 → PR-LCb: việc Quản lý "Chốt lộ trình" (mã giữ tên cũ) — hạn là Chủ nhật trước tuần Cuối khoá. */
   'chot-len-ft',
+  /* OV-12h: meeting CX / GĐCN (Phối hợp SOS) xác nhận trong 5 ngày từ lúc tạo việc. */
+  'phoi-hop',
 ] as const;
 export type DeadlineKind = (typeof DEADLINE_KINDS)[number];
 
@@ -274,6 +276,7 @@ const DEADLINE_VIEC: Record<DeadlineKind, { viec: string; tien: 'hạn' | 'hạn
   duyet: { viec: 'Duyệt', tien: 'hạn' },
   'xu-ly-vi-pham': { viec: 'Xử lý vi phạm', tien: 'hạn' },
   'mini-test': { viec: 'Mini Test', tien: 'hạn' },
+  'phoi-hop': { viec: 'Xác nhận meeting CX', tien: 'hạn' },
   'chot-len-ft': { viec: 'Chốt lộ trình', tien: 'hạn hết CN' },
 };
 

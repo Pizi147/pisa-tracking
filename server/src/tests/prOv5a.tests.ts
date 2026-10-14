@@ -1,7 +1,7 @@
 /**
  * PHÉP KIỂM PR-OV5a — Công việc làm tại chỗ (đặc tả OV mục 4 "Công việc", 6.6; kế hoạch 2026-10-13-pr-ov5a). OV-12c (chủ SP 14/10): panel gom
- * Xác nhận nguyên nhân đã bỏ — khối 1, 1b, 7 kiểm luật mới (Case MT cũ chưa nhận xét → mỗi Case một dòng Ghi nhận xét); khối 2–6 (đọc / xác nhận
- * nhóm, trần câu SQL của panel gom) gỡ cùng tính năng. Còn: badge = số dòng, hồ sơ GV đếm = badge, Nhắc, dữ liệu panel.
+ * Xác nhận nguyên nhân đã bỏ — khối 1, 1b kiểm luật mới (Case MT cũ chưa nhận xét → mỗi Case một dòng Ghi nhận xét); khối 2–6 (đọc / xác nhận
+ * nhóm, trần câu SQL của panel gom) gỡ cùng tính năng; khối 7 (Nhắc) gỡ ở OV-12h. Còn: badge = số dòng, hồ sơ GV đếm = badge, dữ liệu panel.
  * Mỗi phép kiểm dựng ca của nó trong một giao dịch rồi cuộn lại (`thu`).
  */
 import type { YThucTestKit } from './yThuc.tests.ts';
@@ -14,7 +14,6 @@ export async function runPrOv5aTests(t: YThucTestKit) {
   const skillSch: any = await import('../fasttrack/skillSchedule.ts');
   const attempts: any = await import('../fasttrack/attempts.ts');
   const mywork: any = await import('../worklist/mywork.ts');
-  const nv: any = await import('../worklist/nhacViec.ts');
   const hoSo: any = await import('../giaoVien/hoSo.ts');
   const { loadPrincipal } = await import('../permissions.ts');
   const { xoaNho } = await import('../platform/nguCanhRequest.ts');
@@ -107,15 +106,6 @@ export async function runPrOv5aTests(t: YThucTestKit) {
     const c = d.demPhamVi([ds[2], { group: 'score', studentId: 5, count: 1 }], true);
     assert(c.nhom === 2 && c.so === 13 && c.donVi === 'bài cần chấm', JSON.stringify(c));
   });
-
-  check('OV5a-7 · (OV-12c) Nhắc một dòng Ghi nhận xét: QL nhắc một chuông, đường chuông về đúng Case', () => thu(() => {
-    const { A } = bonEm();
-    const r = (mywork.myWork(GV_R).dong as any[]).find((x) => x.key === `ghi_nhan_xet:${A.r}`);
-    const kq = nv.nhacViec(P.mbManager, { key: r.key, ownerId: GV_R.userId });
-    assert(kq.daNhacLuc, 'không nhắc được');
-    const n = one(`SELECT duong FROM notifications WHERE user_id = ? AND kind = 'nhac_viec' AND dedup_key = ?`, GV_R.userId, `nhac:${r.key}:${TODAY}`);
-    assert(n?.duong === r.href, `đường chuông: ${n?.duong}`);
-  }));
 
   check('OV5a-8 · Hồ sơ GV › Việc đang có đếm = badge Công việc (cùng `dong`): GV tự xem, QL xem GV', () => thu(() => {
     bonEm();
