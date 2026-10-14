@@ -42,7 +42,7 @@ export function chuTuDo(v: unknown, ten: string, toiDa: number): string | null {
   if (v === undefined || v === null) return null;
   if (typeof v !== 'string') throw badRequest(`${ten}: giá trị không hợp lệ — cần chữ.`);
   const s = v.trim();
-  if (s.length > toiDa) throw badRequest(`${ten}: Tối đa ${toiDa} ký tự (đang có ${s.length}).`);
+  if (s.length > toiDa) throw loi(400, '{ten}: Tối đa {toiDa} ký tự (đang có {n}).', { ten, toiDa, n: s.length });
   return s || null;
 }
 

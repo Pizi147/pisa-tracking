@@ -9,11 +9,12 @@ import { ngayTheoGioVN } from './display.ts';
 import { ngay, tuanLich } from './hienThiNgay.ts';
 import { ATTEMPT_KIND_SHORT, khoaBai, nhanBai, type AttemptKind } from './normal.ts';
 import { mondayOfDate } from './week.ts';
+import { t } from '../i18n/index.ts';
 
 export type LuaChon = { giaTri: string; nhan: string; phu?: string };
 
 const DAY_MS = 86_400_000;
-const THU = ['Chủ nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
+const THU = [t('Chủ nhật'), t('Thứ Hai'), t('Thứ Ba'), t('Thứ Tư'), t('Thứ Năm'), t('Thứ Sáu'), t('Thứ Bảy')];
 
 function cong(iso: string, n: number): string {
   return new Date(Date.parse(`${iso}T00:00:00Z`) + n * DAY_MS).toISOString().slice(0, 10);
@@ -26,7 +27,7 @@ export function dsNgayGan(homNay: string, soNgay: number): LuaChon[] {
   const out: LuaChon[] = [];
   for (let i = 0; i < soNgay; i++) {
     const d = cong(h, -i);
-    const thu = i === 0 ? 'Hôm nay' : i === 1 ? 'Hôm qua' : THU[new Date(`${d}T00:00:00Z`).getUTCDay()];
+    const thu = i === 0 ? t('Hôm nay') : i === 1 ? t('Hôm qua') : THU[new Date(`${d}T00:00:00Z`).getUTCDay()];
     out.push({ giaTri: d, nhan: `${thu}, ${ngay(d, h)}` });
   }
   return out;
@@ -73,6 +74,6 @@ export function dsThang(homNay: string, soThang: number): LuaChon[] {
  */
 export function nhanDotNgan(kind: string | null | undefined, attemptNo: number | null | undefined): string | null {
   if (kind === 'checkpoint') return nhanBai(khoaBai(kind, attemptNo));   // OV-6b2: "Checkpoint 2"
-  if (kind && kind !== 'mock') return ATTEMPT_KIND_SHORT[kind as AttemptKind] ?? 'Bài kiểm tra';
+  if (kind && kind !== 'mock') return ATTEMPT_KIND_SHORT[kind as AttemptKind] ?? t('Bài kiểm tra');
   return attemptNo ? `MT${attemptNo}` : null;
 }

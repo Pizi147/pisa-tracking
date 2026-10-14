@@ -1,3 +1,4 @@
+import { t } from '../i18n/index.ts';
 /**
  * NGỮ PHÁP TRẠNG THÁI §7.3 — một dòng một nhãn; màu điểm/SOS không mượn.
  * Sáu nhãn dùng chung cho việc, Case, phối hợp: Cần làm · Đang làm · Chờ duyệt · Quá hạn · Xong · Đã huỷ.
@@ -15,18 +16,18 @@ export const TONE_BADGE_TRANG_THAI = TONE_TRANG_THAI;
 
 /** Có chữ ký chỉ mục `string` để chỗ gọi đọc được bằng mã trạng thái thô (mã lạ → `undefined` lúc chạy). */
 export const NHAN_TRANG_THAI: Readonly<Record<TrangThai, string>> & Readonly<Record<string, string>> = {
-  'can-lam': 'Cần làm',
-  'dang-lam': 'Đang làm',
-  'cho-duyet': 'Chờ duyệt',
-  'qua-han': 'Quá hạn',
-  xong: 'Xong',
-  'da-huy': 'Đã huỷ',
+  'can-lam': t('Cần làm'),
+  'dang-lam': t('Đang làm'),
+  'cho-duyet': t('Chờ duyệt'),
+  'qua-han': t('Quá hạn'),
+  xong: t('Xong'),
+  'da-huy': t('Đã huỷ'),
 };
 
 /** Chữ hiện của nhãn; "Quá hạn" kèm số ngày khi biết (`Quá hạn · 2 ngày`). */
-export function chuTrangThai(t: TrangThai, soNgayQuaHan?: number | null): string {
-  if (t === 'qua-han' && soNgayQuaHan && soNgayQuaHan > 0) return `Quá hạn · ${soNgayQuaHan} ngày`;
-  return NHAN_TRANG_THAI[t];
+export function chuTrangThai(tt: TrangThai, soNgayQuaHan?: number | null): string {
+  if (tt === 'qua-han' && soNgayQuaHan && soNgayQuaHan > 0) return t('Quá hạn · {n} ngày', { n: soNgayQuaHan });
+  return NHAN_TRANG_THAI[tt];
 }
 
 /** Trạng thái việc phối hợp SOS (`pending` | `done` | `removed`) → nhãn chung. */

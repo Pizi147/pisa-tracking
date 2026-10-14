@@ -11,6 +11,7 @@ import { skillShort } from '../../lib/format.ts';
 import { buocDanhSach, chuanHoaMaLop, duongThongBao, maHocVienNgan, moDuocThongBao, ngayTheoGioVN, nhanPhamVi, noiDenThongBao, nhomThongBao, thoiGianThongBao } from '@shared/domain/index.ts';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { useToast } from '../../ui/Toast.tsx';
+import { dich, t } from '@shared/i18n/index.ts';
 
 type SearchHit = { id: number; studentCode: string; fullName: string; classCode: string | null };
 
@@ -130,7 +131,7 @@ export function Header() {
         ref={oTim}
         autoFocus={dienThoai}
         className="field"
-        placeholder="Tìm học viên, lớp…"
+        placeholder={t('Tìm học viên, lớp…')}
         value={q}
         onChange={(e) => { setQ(e.target.value); setMoTim(true); }}
         onFocus={() => setMoTim(true)}
@@ -153,12 +154,12 @@ export function Header() {
         aria-activedescendant={coDs && dong >= 0 ? `${idDs}-${dong}` : undefined}
         aria-autocomplete="list"
         autoComplete="off"
-        aria-label="Tìm học viên, lớp trong phạm vi được cấp quyền"
+        aria-label={t('Tìm học viên, lớp trong phạm vi được cấp quyền')}
       />
       {coDs && (
-        <ul id={idDs} role="listbox" aria-label="Kết quả tìm học viên, lớp"
+        <ul id={idDs} role="listbox" aria-label={t('Kết quả tìm học viên, lớp')}
           className={`${lopDs} card overflow-hidden list-none p-0 m-0`}>
-          {hits.length > 0 && <li role="none" aria-hidden className="px-3 pt-2 pb-1 text-[11px] text-slate-500">Học viên</li>}
+          {hits.length > 0 && <li role="none" aria-hidden className="px-3 pt-2 pb-1 text-[11px] text-slate-500">{t('Học viên')}</li>}
           {hits.map((h, i) => (
             <li key={`hv${h.id}`} role="none">
               <button {...nutMuc(i)}>
@@ -168,12 +169,12 @@ export function Header() {
               </button>
             </li>
           ))}
-          {lops.length > 0 && <li role="none" aria-hidden className="px-3 pt-2 pb-1 text-[11px] text-slate-500">Lớp</li>}
+          {lops.length > 0 && <li role="none" aria-hidden className="px-3 pt-2 pb-1 text-[11px] text-slate-500">{t('Lớp')}</li>}
           {lops.map((l, j) => (
             <li key={`lop${l.id}`} role="none">
               <button {...nutMuc(hits.length + j)}>
                 <span className="text-slate-100">{l.code}</span>
-                <span className="text-slate-500 text-xs ml-2 tabular-nums">· {l.student_count} HV</span>
+                <span className="text-slate-500 text-xs ml-2 tabular-nums">· {t('{n} HV', { n: l.student_count })}</span>
               </button>
             </li>
           ))}
@@ -181,7 +182,7 @@ export function Header() {
       )}
       {khongThay && (
         <div role="status" className={`${lopDs} card px-3 py-2 text-[13px] text-slate-400`}>
-          Không tìm thấy học viên hoặc lớp
+          {t('Không tìm thấy học viên hoặc lớp')}
         </div>
       )}
     </>
@@ -191,7 +192,7 @@ export function Header() {
     <div className="flex items-center gap-2 max-sm:gap-0.5 min-w-0" ref={boxRef}>
       {dienThoai ? (
         <>
-          <button ref={nutTim} type="button" className="btn btn-sm min-h-[44px] min-w-[44px] justify-center border-0 bg-transparent" aria-label="Tìm học viên, lớp"
+          <button ref={nutTim} type="button" className="btn btn-sm min-h-[44px] min-w-[44px] justify-center border-0 bg-transparent" aria-label={t('Tìm học viên, lớp')}
             aria-expanded={moTimDt} onClick={() => { setMoTimDt((v) => !v); setOpenMenu(null); }}>
             <svg aria-hidden width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
               <circle cx="7" cy="7" r="4.5" /><path d="m10.5 10.5 3 3" /></svg>
@@ -205,8 +206,8 @@ export function Header() {
       <div className="sm:relative">
         <button ref={nutThongBao} className="btn btn-sm relative max-sm:min-h-[44px] max-sm:min-w-[44px] max-sm:justify-center max-sm:border-0 max-sm:bg-transparent"
           onClick={() => { if (openMenu !== 'notif') notifications.reload(); setOpenMenu(openMenu === 'notif' ? null : 'notif'); setMoTimDt(false); }}
-          aria-label={`Thông báo${unread ? `, ${unread} chưa đọc` : ''}`} aria-expanded={openMenu === 'notif'}>
-          <span className="hidden sm:inline">Thông báo</span>
+          aria-label={t('Thông báo') + (unread ? t(', {n} chưa đọc', { n: unread }) : '')} aria-expanded={openMenu === 'notif'}>
+          <span className="hidden sm:inline">{t('Thông báo')}</span>
           {/* Chuông nét mảnh 20 px thay emoji (luật "dấu nhỏ gọn", 23C). Số chưa đọc đè góc trên phải trên điện thoại. */}
           <svg className="sm:hidden" aria-hidden width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
             <path d="M4 11V7a4 4 0 0 1 8 0v4l1.5 1.5h-11L4 11ZM6.5 14a1.5 1.5 0 0 0 3 0" strokeLinejoin="round" /></svg>
@@ -217,10 +218,10 @@ export function Header() {
            * PR-VAI-a (mockup 23 màn D, T76, UX-D6): hai nhóm Cần làm / Để biết, giờ, dòng "bấm tới đâu", Đọc hết. Máy tính: thả dưới nút.
            * Điện thoại (< 640 px): neo HAI MÉP ngay dưới ĐÁY `<header>` (CSS: header `relative`, khung bọc nút chỉ `sm:relative`), cao tối đa 70 vh, cuộn trong — có DemoBar hay không đều đúng.
            */
-          <div role="dialog" aria-label="Thông báo"
+          <div role="dialog" aria-label={t('Thông báo')}
             className="card absolute inset-x-2 top-full z-40 mt-1 max-h-[70vh] overflow-y-auto shadow-2xl sm:inset-x-auto sm:right-0 sm:max-h-[32rem] sm:w-[min(26rem,calc(100vw-2rem))]">
             <div className="sticky top-0 z-10 flex items-center justify-between gap-2 border-b px-3.5 py-2" style={{ borderColor: 'var(--line)', background: 'var(--surface)' }}>
-              <h2 className="m-0 text-sm font-semibold text-slate-100">Thông báo <span className="font-normal text-slate-500">· <span className="tabular-nums">{unread}</span> chưa đọc</span></h2>
+              <h2 className="m-0 text-sm font-semibold text-slate-100">{t('Thông báo')} <span className="font-normal text-slate-500">· <span className="tabular-nums">{unread}</span> {t('chưa đọc')}</span></h2>
               <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={!unread}
                 onClick={async () => {
                   /* Góc nhìn khác: chỉ đánh dấu những thông báo đang thấy (vai này mở được) — thông báo của vai gốc giữ chưa đọc. */
@@ -233,10 +234,10 @@ export function Header() {
                     else await api.post('/notifications/doc-het');
                     notifications.reload();
                   }
-                  catch (e: any) { toast.push('error', e?.message || 'Chưa đánh dấu đã đọc được — thử lại.'); }
-                }}>Đánh dấu đã đọc</button>
+                  catch (e: any) { toast.push('error', e?.message || t('Chưa đánh dấu đã đọc được — thử lại.')); }
+                }}>{t('Đánh dấu đã đọc')}</button>
             </div>
-            {dsThongBao.length === 0 && <div className="p-4 text-sm text-slate-500">Không có thông báo nào.</div>}
+            {dsThongBao.length === 0 && <div className="p-4 text-sm text-slate-500">{t('Không có thông báo nào.')}</div>}
             {(['can-lam', 'de-biet'] as const).map((nhom) => {
               const ds = dsThongBao.filter((n) => nhomThongBao(n) === nhom);
               if (!ds.length) return null;
@@ -244,7 +245,7 @@ export function Header() {
                 <div key={nhom}>
                   <div className="flex items-baseline gap-2 border-b px-3.5 py-1.5 text-[11.5px] font-bold uppercase tracking-wide text-slate-400"
                     style={{ borderColor: 'var(--line)', background: 'var(--surface-2)' }}>
-                    {nhom === 'can-lam' ? 'Cần làm' : 'Để biết'} <span className="tabular-nums">{ds.length}</span>
+                    {nhom === 'can-lam' ? t('Cần làm') : t('Để biết')} <span className="tabular-nums">{ds.length}</span>
                   </div>
                   {ds.map((n) => {
                     const toi = noiDenThongBao(n);
@@ -253,7 +254,7 @@ export function Header() {
                         className="grid w-full grid-cols-[10px_minmax(0,1fr)_auto] items-start gap-x-2.5 gap-y-0.5 border-b px-3.5 py-2.5 text-left hover:bg-white/5"
                         style={{ borderColor: 'var(--line)' }}
                         onClick={async () => {
-                          if (!moDuoc(n)) { toast.push('error', 'Mở ở vai gốc (đổi Góc nhìn trong menu tài khoản).'); return; }
+                          if (!moDuoc(n)) { toast.push('error', t('Mở ở vai gốc (đổi Góc nhìn trong menu tài khoản).')); return; }
                           await api.post(`/notifications/${n.id}/read`);
                           notifications.reload();
                           /* Mỗi loại thông báo về đúng chỗ làm được việc của nó (R8, Q12) — một quy ước duy nhất. */
@@ -263,7 +264,7 @@ export function Header() {
                         }}>
                         <span aria-hidden className={`mt-1.5 h-1.5 w-1.5 rounded-full ${n.read_at ? '' : 'bg-[color:var(--accent)]'}`} />
                         <span className={`text-[13px] leading-snug text-slate-100 ${n.read_at ? 'font-normal' : 'font-semibold'}`}>
-                          {!n.read_at && <span className="sr-only">Chưa đọc: </span>}{n.title}
+                          {!n.read_at && <span className="sr-only">{t('Chưa đọc: ')}</span>}{n.title}
                         </span>
                         <time className="whitespace-nowrap pt-px text-xs tabular-nums text-slate-500" title={nhan(homNay, n.created_at)}>{thoiGianThongBao(n.created_at, homNay)}</time>
                         {n.body && <span className="col-start-2 text-xs text-slate-400">{n.body}</span>}
@@ -290,7 +291,7 @@ export function Header() {
 
       <div className="relative">
         <button ref={nutTaiKhoan} className="btn btn-sm max-sm:min-h-[44px] max-sm:min-w-[44px] max-sm:justify-center max-sm:border-0 max-sm:bg-transparent" onClick={() => { setOpenMenu(openMenu === 'account' ? null : 'account'); setMoTimDt(false); }}
-          aria-label={`Tài khoản ${hoTen}`} aria-expanded={openMenu === 'account'}>
+          aria-label={t('Tài khoản {ten}', { ten: hoTen })} aria-expanded={openMenu === 'account'}>
           <span aria-hidden className="grid h-[30px] w-[30px] place-items-center rounded-full text-[13px] font-bold sm:hidden"
             style={{ background: 'var(--accent-soft)', color: 'var(--accent)' }}>{chuCaiDau}</span>
           <span className="hidden max-w-[10rem] truncate text-slate-200 sm:inline">{hoTen}</span>
@@ -298,22 +299,22 @@ export function Header() {
         {openMenu === 'account' && (
           <div className="absolute right-0 mt-1 w-[min(20rem,calc(100vw-2rem))] card p-3 z-40 shadow-2xl">
             <div className="text-sm font-medium text-slate-100">{session?.user?.fullName}</div>
-            <div className="text-xs text-slate-500 mb-3">{session?.user?.title}</div>
+            <div className="text-xs text-slate-500 mb-3">{session?.user?.title && dich(session.user.title)}</div>
 
             {/* PR-OV2a (mockup overhaul-3 §2): đổi góc nhìn — chỉ vai tài khoản đang nắm; chọn vai gốc = về làm việc bằng mọi vai. */}
             {session?.gocNhin && (
-              <div role="group" aria-label="Góc nhìn" className="mb-3 space-y-1">
-                <div className="label">Góc nhìn</div>
+              <div role="group" aria-label={t('Góc nhìn')} className="mb-3 space-y-1">
+                <div className="label">{t('Góc nhìn')}</div>
                 {session.gocNhin.coThe.map((v) => {
                   const g = session.gocNhin!;
                   const dangO = (g.dangChon ?? g.vaiGoc) === v.role;
                   return (
                     <button key={v.role} type="button" aria-pressed={dangO}
-                      onClick={() => { setOpenMenu(null); if (!dangO) void doiGocNhin(v.role === g.vaiGoc ? null : v.role).catch((e) => toast.push('error', e instanceof Error ? e.message : 'Không đổi được góc nhìn.')); }}
+                      onClick={() => { setOpenMenu(null); if (!dangO) void doiGocNhin(v.role === g.vaiGoc ? null : v.role).catch((e) => toast.push('error', e instanceof Error ? e.message : t('Không đổi được góc nhìn.'))); }}
                       className={`flex w-full min-h-[40px] max-sm:min-h-[44px] items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-left text-sm ${dangO
                         ? 'border-[color:var(--accent-line)] bg-[color:var(--accent-soft)] text-[color:var(--accent-strong)] font-medium'
                         : 'border-transparent text-slate-200 hover:bg-white/5'}`}>
-                      <span className="shrink-0">{v.nhan}</span>
+                      <span className="shrink-0">{dich(v.nhan)}</span>
                       <span className="min-w-0 truncate text-xs font-normal text-slate-500" title={v.phamVi}>· {v.phamVi}</span>
                     </button>
                   );
@@ -321,7 +322,7 @@ export function Header() {
               </div>
             )}
 
-            <div className="label">Phạm vi được cấp</div>
+            <div className="label">{t('Phạm vi được cấp')}</div>
             <ul className="space-y-1 mb-3 list-none p-0">
               {/* OV-11b (QT-6): quyền cấp riêng có tên ("Cấp riêng: … · Monbay"), không mã "granted"; mọi grant cấp riêng cùng id -1 → key theo chỉ số. */}
               {(session?.grants ?? []).map((g, i) => (
@@ -333,15 +334,15 @@ export function Header() {
 
             {core.length > 0 && (
               <>
-                <div className="label">GVCN</div>
+                <div className="label">{t('GVCN')}</div>
                 <div className="flex flex-wrap gap-1 mb-3">
-                  {core.map((c) => <Info key={c.classId}>GVCN {c.classCode}</Info>)}
+                  {core.map((c) => <Info key={c.classId}>{t('GVCN {lop}', { lop: c.classCode ?? '' })}</Info>)}
                 </div>
               </>
             )}
             {skills.length > 0 && (
               <>
-                <div className="label">Kỹ năng được phân công</div>
+                <div className="label">{t('Kỹ năng được phân công')}</div>
                 <div className="flex flex-wrap gap-1 mb-3">
                   {skills.map((c, i) => (
                     <Info key={i}>{c.classCode} · {c.nhanMon ?? skillShort(c.skill!)}</Info>
@@ -366,18 +367,18 @@ export function Header() {
               */}
               {/* Hồ sơ cá nhân (mục 7.2) — ai cũng có, nên đứng trước lối vào quản trị. */}
               <Link to="/ho-so-ca-nhan" className="btn btn-sm w-full justify-center no-underline"
-                onClick={() => setOpenMenu(null)}>Hồ sơ cá nhân</Link>
+                onClick={() => setOpenMenu(null)}>{t('Hồ sơ cá nhân')}</Link>
               {/* Hồ sơ giáo viên (PR-GV, G-12) — chỉ người có vai Giáo viên; không thuộc bốn khu vực. */}
               {session?.user && session.roles?.includes('teacher') && (
                 <Link to={`/giao-vien/${session.user.id}`} className="btn btn-sm w-full justify-center no-underline"
-                  onClick={() => setOpenMenu(null)}>Hồ sơ giáo viên</Link>
+                  onClick={() => setOpenMenu(null)}>{t('Hồ sơ giáo viên')}</Link>
               )}
               {session?.nav?.admin && (
                 <Link to="/quan-tri" className="btn btn-sm w-full justify-center no-underline"
-                  onClick={() => setOpenMenu(null)}>Quản trị hệ thống</Link>
+                  onClick={() => setOpenMenu(null)}>{t('Quản trị hệ thống')}</Link>
               )}
             </div>
-            <button className="btn btn-sm w-full justify-center" onClick={signOut}>Đăng xuất</button>
+            <button className="btn btn-sm w-full justify-center" onClick={signOut}>{t('Đăng xuất')}</button>
           </div>
         )}
       </div>

@@ -8,6 +8,7 @@ import { ChonKyNang } from './ProfilePage.tsx';
 import { NutNgonNgu } from '../../ui/NutNgonNgu.tsx';
 
 import { ROLES, ROLE_LABEL, type Role } from '@shared/domain/index.ts';
+import { dich, t } from '@shared/i18n/index.ts';
 
 type Account = {
   id: number; code: string; fullName: string; title: string | null;
@@ -26,50 +27,49 @@ function SetupHelp({ serverDown, onRetry }: { serverDown: boolean; onRetry: () =
   return (
     <div className="card p-5 border-amber-300/40">
       <h2 className="text-base font-semibold text-amber-200">
-        {serverDown ? 'Chưa kết nối được máy chủ dữ liệu' : 'Chưa có dữ liệu mẫu trong máy'}
+        {serverDown ? t('Chưa kết nối được máy chủ dữ liệu') : t('Chưa có dữ liệu mẫu trong máy')}
       </h2>
       <p className="text-sm text-slate-300 mt-2 leading-relaxed">
         {serverDown
-          ? 'Giao diện đã chạy nhưng phần máy chủ dữ liệu thì chưa. Thường là do cửa sổ dòng lệnh đã bị đóng hoặc bị dừng.'
-          : 'Ứng dụng đã chạy đúng, chỉ là chưa có tài khoản và dữ liệu mẫu nào để hiển thị. Bạn cần tạo dữ liệu mẫu một lần.'}
+          ? t('Giao diện đã chạy nhưng phần máy chủ dữ liệu thì chưa. Thường là do cửa sổ dòng lệnh đã bị đóng hoặc bị dừng.')
+          : t('Ứng dụng đã chạy đúng, chỉ là chưa có tài khoản và dữ liệu mẫu nào để hiển thị. Bạn cần tạo dữ liệu mẫu một lần.')}
       </p>
 
       <ol className="mt-4 space-y-3 text-sm text-slate-300">
         <li>
-          <span className="text-slate-100 font-medium">1. Mở cửa sổ dòng lệnh đang chạy ứng dụng</span>
+          <span className="text-slate-100 font-medium">{t('1. Mở cửa sổ dòng lệnh đang chạy ứng dụng')}</span>
           <div className="text-slate-400 text-xs mt-0.5">
-            Đó là cửa sổ màu xanh đen bạn đã gõ lệnh lúc nãy. Nếu đã đóng, mở lại theo hướng dẫn ở tệp README.
+            {t('Đó là cửa sổ màu xanh đen bạn đã gõ lệnh lúc nãy. Nếu đã đóng, mở lại theo hướng dẫn ở tệp README.')}
           </div>
         </li>
         <li>
-          <span className="text-slate-100 font-medium">2. Dừng ứng dụng</span>
+          <span className="text-slate-100 font-medium">{t('2. Dừng ứng dụng')}</span>
           <div className="text-slate-400 text-xs mt-0.5">
-            Bấm <kbd className="surface-2 px-1.5 py-0.5 rounded border">Ctrl</kbd> +{' '}
-            <kbd className="surface-2 px-1.5 py-0.5 rounded border">C</kbd> trong cửa sổ đó.
+            {t('Bấm')} <kbd className="surface-2 px-1.5 py-0.5 rounded border">Ctrl</kbd> +{' '}
+            <kbd className="surface-2 px-1.5 py-0.5 rounded border">C</kbd> {t('trong cửa sổ đó.')}
           </div>
         </li>
         <li>
-          <span className="text-slate-100 font-medium">3. Gõ lệnh tạo dữ liệu mẫu, rồi bấm Enter</span>
+          <span className="text-slate-100 font-medium">{t('3. Gõ lệnh tạo dữ liệu mẫu, rồi bấm Enter')}</span>
           <pre className="surface-2 mt-1.5 px-3 py-2 rounded text-sky-200 text-xs">npm run seed</pre>
           <div className="text-slate-400 text-xs mt-1">
-            Đợi tới khi thấy dòng <span className="text-sky-200">Hoàn tất</span> kèm bảng liệt kê số lượng
-            (khoảng 62 học viên, 9 lớp). Nếu hiện chữ đỏ, chụp màn hình lại.
+            {t('Đợi tới khi thấy dòng')} <span className="text-sky-200">Hoàn tất</span> {t('kèm bảng liệt kê số lượng (khoảng 62 học viên, 9 lớp). Nếu hiện chữ đỏ, chụp màn hình lại.')}
           </div>
         </li>
         <li>
-          <span className="text-slate-100 font-medium">4. Chạy lại ứng dụng</span>
+          <span className="text-slate-100 font-medium">{t('4. Chạy lại ứng dụng')}</span>
           <pre className="surface-2 mt-1.5 px-3 py-2 rounded text-sky-200 text-xs">npm run dev</pre>
         </li>
         <li>
-          <span className="text-slate-100 font-medium">5. Quay lại trang này và bấm nút bên dưới</span>
+          <span className="text-slate-100 font-medium">{t('5. Quay lại trang này và bấm nút bên dưới')}</span>
         </li>
       </ol>
 
-      <button className="btn btn-primary mt-4" onClick={onRetry}>Tải lại danh sách tài khoản</button>
+      <button className="btn btn-primary mt-4" onClick={onRetry}>{t('Tải lại danh sách tài khoản')}</button>
 
       <p className="text-xs text-slate-500 mt-3 leading-relaxed">
-        Lưu ý: phải gõ lệnh trong thư mục có tệp <code className="text-slate-400">package.json</code>.
-        Nếu báo lỗi <code className="text-slate-400">ENOENT ... package.json</code> nghĩa là bạn đang đứng sai thư mục.
+        {t('Lưu ý: phải gõ lệnh trong thư mục có tệp')} <code className="text-slate-400">package.json</code>.{' '}
+        {t('Nếu báo lỗi')} <code className="text-slate-400">ENOENT ... package.json</code> {t('nghĩa là bạn đang đứng sai thư mục.')}
       </p>
     </div>
   );
@@ -85,14 +85,14 @@ function BanChinhChuaVaoDuoc({ chuaKhoiTao, onRetry }: { chuaKhoiTao: boolean; o
   return (
     <div className="card p-5 border-amber-300/40">
       <h2 className="text-base font-semibold text-amber-200">
-        {chuaKhoiTao ? 'Hệ thống chưa được khởi tạo' : 'Chưa kết nối được hệ thống dữ liệu'}
+        {chuaKhoiTao ? t('Hệ thống chưa được khởi tạo') : t('Chưa kết nối được hệ thống dữ liệu')}
       </h2>
       <p className="text-sm text-slate-300 mt-2 leading-relaxed">
         {chuaKhoiTao
-          ? 'Chưa có tài khoản nào để đăng nhập. Báo Quản trị hệ thống.'
-          : 'Hệ thống tạm thời không phản hồi. Thử lại sau ít phút; nếu vẫn không vào được, báo Quản trị hệ thống.'}
+          ? t('Chưa có tài khoản nào để đăng nhập. Báo Quản trị hệ thống.')
+          : t('Hệ thống tạm thời không phản hồi. Thử lại sau ít phút; nếu vẫn không vào được, báo Quản trị hệ thống.')}
       </p>
-      <button className="btn btn-primary mt-4" onClick={onRetry}>Thử lại</button>
+      <button className="btn btn-primary mt-4" onClick={onRetry}>{t('Thử lại')}</button>
     </div>
   );
 }
@@ -103,7 +103,7 @@ function BanChinhChuaVaoDuoc({ chuaKhoiTao, onRetry }: { chuaKhoiTao: boolean; o
  */
 function cauLoiDeDoc(x: unknown): string {
   if (x instanceof ApiError && !/^\s*</.test(x.message) && (x.status < 500 || x.details?.ma)) return x.message;
-  return 'Chưa kết nối được hệ thống dữ liệu. Thử lại sau ít phút.';
+  return t('Chưa kết nối được hệ thống dữ liệu. Thử lại sau ít phút.');
 }
 
 /**
@@ -136,9 +136,9 @@ export default function WelcomePage() {
           <div className="w-9 h-9 rounded-lg bg-sky-300/12 border border-sky-300/40 grid place-items-center text-sky-200 font-bold">P</div>
           <div>
             <h1 className="text-xl font-semibold text-slate-100">PISA Tracking</h1>
-            <div className="text-xs text-slate-500">{LA_BAN_CHINH ? 'Hệ thống quản lý học vụ và vận hành' : 'Hệ thống quản lý học vụ và vận hành — bản demo chạy local'}</div>
+            <div className="text-xs text-slate-500">{LA_BAN_CHINH ? t('Hệ thống quản lý học vụ và vận hành') : t('Hệ thống quản lý học vụ và vận hành — bản demo chạy local')}</div>
           </div>
-          {!LA_BAN_CHINH && <div className="ml-auto"><Alert tone="warn">Dữ liệu demo</Alert></div>}
+          {!LA_BAN_CHINH && <div className="ml-auto"><Alert tone="warn">{t('Dữ liệu demo')}</Alert></div>}
         </div>
         {/* PR-EN (chủ SP 07/10): hai nút to ngay trên khung đăng nhập — người không đọc được tiếng Việt vẫn thấy "English". */}
         <div className="mt-4"><NutNgonNgu kieu="to" daDangNhap={false} /></div>
@@ -152,9 +152,9 @@ export default function WelcomePage() {
         ) : (
           <>
             <div className="flex flex-wrap gap-1 mt-4 mb-4 border-b pb-2" style={{ borderColor: 'var(--line)' }}>
-              <Tab active={mode === 'login'} onClick={() => setMode('login')}>Đăng nhập</Tab>
-              <Tab active={mode === 'register'} onClick={() => setMode('register')}>Giáo viên đăng ký</Tab>
-              {!LA_BAN_CHINH && <Tab active={mode === 'demo'} onClick={() => setMode('demo')}>Vào nhanh bằng tài khoản demo</Tab>}
+              <Tab active={mode === 'login'} onClick={() => setMode('login')}>{t('Đăng nhập')}</Tab>
+              <Tab active={mode === 'register'} onClick={() => setMode('register')}>{t('Giáo viên đăng ký')}</Tab>
+              {!LA_BAN_CHINH && <Tab active={mode === 'demo'} onClick={() => setMode('demo')}>{t('Vào nhanh bằng tài khoản demo')}</Tab>}
             </div>
 
             {mode === 'login' && <LoginForm info={info.data ?? null} />}
@@ -198,12 +198,12 @@ function LoginForm({ info }: { info: AuthInfo | null }) {
 
   return (
     <form className="card p-5 space-y-4" onSubmit={submit}>
-      <Field label="Email của trung tâm" required
-        hint={info ? `Phải có đuôi "${info.emailSuffix}", ví dụ dung${info.emailSuffix}.` : undefined}>
+      <Field label={t('Email của trung tâm')} required
+        hint={info ? t('Phải có đuôi "{duoi}", ví dụ dung{duoi}.', { duoi: info.emailSuffix }) : undefined}>
         <input className="field w-full" type="email" autoComplete="username" value={email}
           onChange={(e) => setEmail(e.target.value)} placeholder={info ? `ten${info.emailSuffix}` : 'email'} />
       </Field>
-      <Field label="Mật khẩu" required>
+      <Field label={t('Mật khẩu')} required>
         <input className="field w-full" type="password" autoComplete="current-password" value={password}
           onChange={(e) => setPassword(e.target.value)} />
       </Field>
@@ -211,7 +211,7 @@ function LoginForm({ info }: { info: AuthInfo | null }) {
       {err && <p className="text-sm text-rose-200 m-0">{err}</p>}
 
       <button className="btn btn-primary w-full" disabled={busy || !email || !password}>
-        {busy ? 'Đang vào…' : 'Đăng nhập'}
+        {busy ? t('Đang vào…') : t('Đăng nhập')}
       </button>
 
       {/*
@@ -220,10 +220,10 @@ function LoginForm({ info }: { info: AuthInfo | null }) {
       */}
       {info?.demoAdmin && (
         <SectionNote>
-          Tài khoản <strong>Quản trị hệ thống</strong> mặc định: <code className="text-sky-200">{info.demoAdmin.email}</code>{' '}
-          · mật khẩu <code className="text-sky-200">{info.demoAdmin.password}</code>. Mọi tài khoản mẫu khác
-          dùng chung mật khẩu đó, email theo mẫu <code className="text-slate-300">ten.ho{info.emailSuffix}</code>.
-          Bản demo không gửi email thật và không có luồng quên mật khẩu — quên thì Quản trị hệ thống đặt lại hộ.
+          {t('Tài khoản')} <strong>{t('Quản trị hệ thống')}</strong> {t('mặc định:')} <code className="text-sky-200">{info.demoAdmin.email}</code>{' '}
+          · {t('mật khẩu')} <code className="text-sky-200">{info.demoAdmin.password}</code>. {t('Mọi tài khoản mẫu khác dùng chung mật khẩu đó, email theo mẫu')}{' '}
+          <code className="text-slate-300">ten.ho{info.emailSuffix}</code>.{' '}
+          {t('Bản demo không gửi email thật và không có luồng quên mật khẩu — quên thì Quản trị hệ thống đặt lại hộ.')}
         </SectionNote>
       )}
     </form>
@@ -259,13 +259,11 @@ function RegisterForm({ info, onDone }: { info: AuthInfo | null; onDone: () => v
   if (done) {
     return (
       <div className="card p-5">
-        <h2 className="text-base font-semibold text-slate-100 m-0">Đã gửi đăng ký</h2>
+        <h2 className="text-base font-semibold text-slate-100 m-0">{t('Đã gửi đăng ký')}</h2>
         <p className="text-sm text-slate-300 mt-2 leading-relaxed">
-          Tài khoản của bạn đang <strong>chờ Quản trị hệ thống duyệt</strong>. Sau khi được duyệt bạn đăng nhập
-          bằng chính email và mật khẩu vừa đặt. Trước đó, đăng nhập sẽ báo là đang chờ duyệt — đó là trạng thái
-          bình thường, không phải lỗi.
+          {t('Tài khoản của bạn đang')} <strong>{t('chờ Quản trị hệ thống duyệt')}</strong>. {t('Sau khi được duyệt bạn đăng nhập bằng chính email và mật khẩu vừa đặt. Trước đó, đăng nhập sẽ báo là đang chờ duyệt — đó là trạng thái bình thường, không phải lỗi.')}
         </p>
-        <button className="btn mt-4" onClick={onDone}>Về màn đăng nhập</button>
+        <button className="btn mt-4" onClick={onDone}>{t('Về màn đăng nhập')}</button>
       </div>
     );
   }
@@ -273,21 +271,21 @@ function RegisterForm({ info, onDone }: { info: AuthInfo | null; onDone: () => v
   return (
     <form className="card p-5 space-y-4" onSubmit={submit}>
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Họ và tên" required>
+        <Field label={t('Họ và tên')} required>
           <input className="field w-full" value={form.fullName}
             onChange={(e) => setForm({ ...form, fullName: e.target.value })} />
         </Field>
-        <Field label="Số điện thoại">
+        <Field label={t('Số điện thoại')}>
           <input className="field w-full" value={form.phone}
             onChange={(e) => setForm({ ...form, phone: e.target.value })} />
         </Field>
-        <Field label="Email của trung tâm" required
-          hint={info ? `Chỉ email đuôi "${info.emailSuffix}" mới hợp lệ.` : undefined}>
+        <Field label={t('Email của trung tâm')} required
+          hint={info ? t('Chỉ email đuôi "{duoi}" mới hợp lệ.', { duoi: info.emailSuffix }) : undefined}>
           <input className="field w-full" type="email" value={form.email}
             onChange={(e) => setForm({ ...form, email: e.target.value })}
             placeholder={info ? `ten${info.emailSuffix}` : 'email'} />
         </Field>
-        <Field label="Mật khẩu" required hint="Ít nhất 6 ký tự.">
+        <Field label={t('Mật khẩu')} required hint={t('Ít nhất 6 ký tự.')}>
           <input className="field w-full" type="password" autoComplete="new-password" value={form.password}
             onChange={(e) => setForm({ ...form, password: e.target.value })} />
         </Field>
@@ -297,8 +295,8 @@ function RegisterForm({ info, onDone }: { info: AuthInfo | null; onDone: () => v
         CHI NHÁNH LÀ ĐỀ NGHỊ, KHÔNG PHẢI QUYẾT ĐỊNH. Nói thẳng điều đó ngay ở đây để không ai
         tưởng mình vừa tự cấp cho mình quyền vào năm chi nhánh.
       */}
-      <Field as="div" label="Chi nhánh bạn đang hoạt động" required
-        hint="Đây là đề nghị của bạn — người duyệt sửa lại được trước khi đồng ý.">
+      <Field as="div" label={t('Chi nhánh bạn đang hoạt động')} required
+        hint={t('Đây là đề nghị của bạn — người duyệt sửa lại được trước khi đồng ý.')}>
         <div className="flex flex-wrap gap-1.5">
           {(branches.data ?? []).map((b) => (
             <NutChon key={b.code} nho chon={picked.has(b.code)} onClick={() => toggle(picked, b.code, setPicked)}>
@@ -308,19 +306,19 @@ function RegisterForm({ info, onDone }: { info: AuthInfo | null; onDone: () => v
         </div>
       </Field>
 
-      <Field label="Kỹ năng bạn phụ trách được" hint="Dùng để gợi ý khi phân công lớp. Bỏ trống cũng được.">
+      <Field label={t('Kỹ năng bạn phụ trách được')} hint={t('Dùng để gợi ý khi phân công lớp. Bỏ trống cũng được.')}>
         <ChonKyNang value={skills} onToggle={(s) => toggle(skills, s, setSkills)} />
       </Field>
 
-      <Field label="Ghi chú cho người duyệt">
-        <input className="field w-full" value={form.note} placeholder="Ví dụ: rảnh thứ 3, 5, 7"
+      <Field label={t('Ghi chú cho người duyệt')}>
+        <input className="field w-full" value={form.note} placeholder={t('Ví dụ: rảnh thứ 3, 5, 7')}
           onChange={(e) => setForm({ ...form, note: e.target.value })} />
       </Field>
 
       {err && <p className="text-sm text-rose-200 m-0">{err}</p>}
 
       <button className="btn btn-primary w-full" disabled={busy || !form.fullName || !form.email || !form.password}>
-        {busy ? 'Đang gửi…' : 'Gửi đăng ký'}
+        {busy ? t('Đang gửi…') : t('Gửi đăng ký')}
       </button>
     </form>
   );
@@ -328,8 +326,8 @@ function RegisterForm({ info, onDone }: { info: AuthInfo | null; onDone: () => v
 
 /** Tài khoản xem được kịch bản mới — PR-MT (Task 10): MT lịch sử, lớp RF, dời do vắng lần 2 · PR-YT4 (K1-55): Ý thức v4 · PR-XLMT: xếp lịch MT nhiều lớp. */
 const XEM_DUOC: Record<string, string[]> = {
-  'Nguyễn Khánh Vy': ['Xem được: MT cũ, lớp RF, dời lần 2', 'Chờ duyệt Ý thức + Báo QL', 'Xếp lịch MT nhiều lớp, Cần xếp lại', 'Progress Test lớp thường: thẻ kế hoạch bổ trợ chờ duyệt (MB FOU 15)'],
-  'Trần Ngọc Hà': ['Xem được: MT cũ, lớp RF, dời lần 2', 'Ý thức: em quá hạn, em bắt buộc, xác nhận cấp bậc vi phạm, WL 2', 'Progress Test lớp thường: nộp kế hoạch bổ trợ, Báo phụ huynh qua TVV (MB FOU 15)'],
+  'Nguyễn Khánh Vy': [t('Xem được: MT cũ, lớp RF, dời lần 2'), t('Chờ duyệt Ý thức + Báo QL'), t('Xếp lịch MT nhiều lớp, Cần xếp lại'), t('Progress Test lớp thường: thẻ kế hoạch bổ trợ chờ duyệt (MB FOU 15)')],
+  'Trần Ngọc Hà': [t('Xem được: MT cũ, lớp RF, dời lần 2'), t('Ý thức: em quá hạn, em bắt buộc, xác nhận cấp bậc vi phạm, WL 2'), t('Progress Test lớp thường: nộp kế hoạch bổ trợ, Báo phụ huynh qua TVV (MB FOU 15)')],
 };
 
 function DemoAccounts({ accounts, loading }: { accounts: Account[]; loading: boolean }) {
@@ -339,10 +337,9 @@ function DemoAccounts({ accounts, loading }: { accounts: Account[]; loading: boo
   return (
     <div>
       <p className="text-sm text-slate-400 mb-4 leading-relaxed">
-        Bấm một tài khoản để vào ngay, không cần mật khẩu. Vai: Quản trị · Quản lý · GV · Admin · TVV · CX; QL / Quản trị nắm ≥ 2 vai
-        đổi được góc nhìn. Dữ liệu demo là dữ liệu giả.
+        {t('Bấm một tài khoản để vào ngay, không cần mật khẩu. Vai: Quản trị · Quản lý · GV · Admin · TVV · CX; QL / Quản trị nắm ≥ 2 vai đổi được góc nhìn. Dữ liệu demo là dữ liệu giả.')}
       </p>
-      {loading && <div className="text-slate-400">Đang tải danh sách tài khoản…</div>}
+      {loading && <div className="text-slate-400">{t('Đang tải danh sách tài khoản…')}</div>}
 
       {ROLES.map((role) => {
         const group = accounts.filter((a) => a.grants.some((g) => g.role === role));
@@ -361,10 +358,10 @@ function DemoAccounts({ accounts, loading }: { accounts: Account[]; loading: boo
                   onClick={async () => { setBusy(a.id); await switchAccount(a.id); }}
                 >
                   <div className="font-medium text-slate-100">{a.fullName}</div>
-                  <div className="text-xs text-slate-400 mb-2">{a.title}</div>
+                  <div className="text-xs text-slate-400 mb-2">{a.title && dich(a.title)}</div>
                   <div className="flex flex-wrap gap-1">
-                    {a.grants.map((r, i) => <Info key={i}>{r.roleName} · {r.scope}</Info>)}
-                    {a.assignmentCount > 0 && <Info>{a.assignmentCount} phân công</Info>}
+                    {a.grants.map((r, i) => <Info key={i}>{dich(r.roleName)} · {dich(r.scope)}</Info>)}
+                    {a.assignmentCount > 0 && <Info>{t('{n} phân công', { n: a.assignmentCount })}</Info>}
                   </div>
                   {XEM_DUOC[a.fullName] && (
                     <div className="mt-2 space-y-0.5 text-xs text-slate-500">{XEM_DUOC[a.fullName].map((x) => <div key={x}>{x}</div>)}</div>

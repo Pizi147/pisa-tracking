@@ -11,6 +11,7 @@
  */
 import { ngayTheoGioVN, shortDate } from './display.ts';
 import { MONTH_CODE, mondayOfDate, owningMonthOf, weekNumberInMonthOf } from './week.ts';
+import { t } from '../i18n/index.ts';
 
 export function ngay(d: string | null | undefined, homNay?: string | null): string {
   const s = ngayTheoGioVN(d);
@@ -65,8 +66,8 @@ export function tuanKhoa(n: number, tong: number): string {
  * PR-S6F-b (D17): em đang dừng → "tuần học 14 · đang dừng"; dừng ngay tuần đầu (`tuan` null) → "đang dừng".
  */
 export const chuTuanHoc = (tuan: number | null, tong: number | null, dangDung = false): string => {
-  const so = tuan === null ? null : tong ? `tuần học ${tuan}/${tong}` : `tuần học ${tuan}`;
-  return dangDung ? (so ? `${so} · đang dừng` : 'đang dừng') : so ?? '';
+  const so = tuan === null ? null : tong ? t('tuần học {tuan}/{tong}', { tuan, tong }) : t('tuần học {tuan}', { tuan });
+  return dangDung ? (so ? t('{so} · đang dừng', { so }) : t('đang dừng')) : so ?? '';
 };
 
 /**
