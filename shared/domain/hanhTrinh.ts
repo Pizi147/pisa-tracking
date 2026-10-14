@@ -8,12 +8,13 @@
 import { outcomeLabelFor } from './cases.ts';
 import { tuanHocFt, tuanLich } from './hienThiNgay.ts';
 import { tenMonNgan, nhanBaiThuong, ATTEMPT_KIND_NGAN } from './normal.ts';
-import type { BoTroMienPhi } from './cuoiKhoa.ts';
+import { nhanGoiY, type BoTroMienPhi } from './cuoiKhoa.ts';
 import { RATIO_PASS_THRESHOLD } from './normal.ts';
 import { addDaysIso } from './sos.ts';
 import { ASSESSED_SKILL_LABEL } from './skills.ts';
 import { mondayOfDate, owningMonthOf, weekNumberInMonthOf, MONTH_CODE } from './week.ts';
 import type { TrangThai } from './trangThai.ts';
+import { dich, kem, t, type ChuKhoa } from '../i18n/index.ts';
 
 const DAY_MS = 86_400_000;
 const ngayThu = (iso: string) => Date.parse(`${iso.slice(0, 10)}T00:00:00Z`) / DAY_MS;
@@ -172,10 +173,10 @@ export function nhanKhoiPa(
   },
   homNay?: string,
 ): NhanKhoiPa {
-  const { ten } = pa;
+  const ten = dich(pa.ten);
   /* PR-VAI-b (Q19): khoảng PA nói MÃ TUẦN, không dd/mm. */
   const khoang = pa.tu
-    ? (pa.den ? `${tuanLich(pa.tu, homNay)} → ${tuanLich(pa.den, homNay)}` : `từ ${tuanLich(pa.tu, homNay)}`)
+    ? (pa.den ? `${tuanLich(pa.tu, homNay)} → ${tuanLich(pa.den, homNay)}` : t('từ {tuan}', { tuan: tuanLich(pa.tu, homNay) }))
     : null;
   const ghep = (...phan: (string | null)[]) => phan.filter(Boolean).join(' · ');
   if (pa.status === 'completed') {
@@ -185,15 +186,15 @@ export function nhanKhoiPa(
           : pa.lastOutcome === 'unchanged' || pa.lastOutcome === 'worse' ? { dau: '✗', tone: 'bad' }
             : null;
     if (ketQua) {
-      return { ten, dau: ketQua.dau, tone: ketQua.tone, day: ghep(ten, `${ketQua.dau} ${outcomeLabelFor(pa.lastOutcome!)}`, khoang) };
+      return { ten, dau: ketQua.dau, tone: ketQua.tone, day: ghep(ten, `${ketQua.dau} ${dich(outcomeLabelFor(pa.lastOutcome!))}`, khoang) };
     }
-    return { ten, dau: '■', tone: 'done', day: ghep(ten, '■ Chờ kết quả', khoang) };
+    return { ten, dau: '■', tone: 'done', day: ghep(ten, t('■ Chờ kết quả'), khoang) };
   }
   if (pa.followupOverdue) {
-    const quaHan = `Quá hạn${pa.soNgayQuaHan ? ` · ${pa.soNgayQuaHan} ngày` : ''}`;
-    return { ten, dau: '⚠', tone: 'late', day: ghep(ten, '▶ Đang thực hiện', quaHan, khoang) };
+    const quaHan = pa.soNgayQuaHan ? t('Quá hạn · {n} ngày', { n: pa.soNgayQuaHan }) : t('Quá hạn');
+    return { ten, dau: '⚠', tone: 'late', day: ghep(ten, t('▶ Đang thực hiện'), quaHan, khoang) };
   }
-  return { ten, dau: '▶', tone: 'run', day: ghep(ten, '▶ Đang thực hiện', khoang) };
+  return { ten, dau: '▶', tone: 'run', day: ghep(ten, t('▶ Đang thực hiện'), khoang) };
 }
 
 // ====================================================================== badge hộp kỹ năng (Q6)
@@ -219,21 +220,21 @@ export function trangThaiHop(
   const dung = (chu: string, tone: ToneHop, t: TrangThai): NonNullable<TrangThaiHop> => ({ chu, ngan: chu.split(' · ')[0], tone, t });
   if (i.caseMo.length > 0) {
     const qh = i.caseMo.find((c) => c.quaHan);
-    if (qh) return dung(`Quá hạn · ${qh.quaHan === 'xac-nhan-pa' ? 'chờ xác nhận PA' : 'chờ nguyên nhân'}`, 'danger', 'qua-han');   // web thêm ⚠ (SVG)
-    if (i.caseMo.some((c) => c.choNguyenNhan)) return dung('Cần làm · chờ nguyên nhân', 'warn', 'can-lam');
-    if (i.caseMo.some((c) => c.choDuyet)) return dung('Chờ duyệt', 'warn', 'cho-duyet');
-    if (i.caseMo.some((c) => c.soPa === 0)) return dung('Cần làm · chưa có PA', 'warn', 'can-lam');
+    if (qh) return dung(qh.quaHan === 'xac-nhan-pa' ? t('Quá hạn · chờ xác nhận PA') : t('Quá hạn · chờ nguyên nhân'), 'danger', 'qua-han');   // web thêm ⚠ (SVG)
+    if (i.caseMo.some((c) => c.choNguyenNhan)) return dung(t('Cần làm · chờ nguyên nhân'), 'warn', 'can-lam');
+    if (i.caseMo.some((c) => c.choDuyet)) return dung(t('Chờ duyệt'), 'warn', 'cho-duyet');
+    if (i.caseMo.some((c) => c.soPa === 0)) return dung(t('Cần làm · chưa có PA'), 'warn', 'can-lam');
     const somNhat = i.caseMo.reduce((a, b) => (b.mo < a ? b.mo : a), i.caseMo[0].mo);
-    return dung(`Đang làm · ${soTuanTron(somNhat, homNay)} tuần`, 'warn', 'dang-lam');   // OV-11d (CA2-3): một màu như tab Học thuật
+    return dung(t('Đang làm · {n} tuần', { n: soTuanTron(somNhat, homNay) }), 'warn', 'dang-lam');   // OV-11d (CA2-3): một màu như tab Học thuật
   }
-  if (i.coTungCase && i.huyGanNhat) return dung('Đã huỷ', 'ok', 'da-huy');
-  if (i.coTungCase && i.xongGanNhat) return dung(`Xong ${tuanLich(i.xongGanNhat, homNay)}`, 'ok', 'xong');   // PR-VAI-b (Q19): mã tuần
+  if (i.coTungCase && i.huyGanNhat) return dung(t('Đã huỷ'), 'ok', 'da-huy');
+  if (i.coTungCase && i.xongGanNhat) return dung(t('Xong {tuan}', { tuan: tuanLich(i.xongGanNhat, homNay) }), 'ok', 'xong');   // PR-VAI-b (Q19): mã tuần
   return null;
 }
 /** Dòng phụ của một vấn đề (G-3, ≤ 60 ký tự) — PR-VAI-b (Q19): mã tuần `từ W2 SEP · 1 PA` / `W3 JUL → W2 SEP · 2 PA`. */
 export function dongPhuVanDe(v: { mo: string; dong: string | null; soPa: number }, homNay: string): string {
-  const pa = v.soPa === 0 ? 'chưa có PA' : `${v.soPa} PA`;
-  const s = v.dong ? `${tuanLich(v.mo, homNay)} → ${tuanLich(v.dong, homNay)} · ${pa}` : `từ ${tuanLich(v.mo, homNay)} · ${pa}`;
+  const pa = v.soPa === 0 ? t('chưa có PA') : `${v.soPa} PA`;
+  const s = v.dong ? `${tuanLich(v.mo, homNay)} → ${tuanLich(v.dong, homNay)} · ${pa}` : t('từ {tuan} · {pa}', { tuan: tuanLich(v.mo, homNay), pa });
   return s.slice(0, 60);
 }
 
@@ -242,9 +243,9 @@ export function dongPhuVanDe(v: { mo: string; dong: string | null; soPa: number 
  * Case chờ nguyên nhân → "Chờ nguyên nhân" · Case chưa có PA nào → "Chưa có PA". Có PA đang vẽ được → null (khối PA tự nói).
  */
 export function khoiCho(v: { cho?: 'nguyen-nhan' | null; soPa: number; pa: readonly unknown[] }): string | null {
-  if (v.cho === 'nguyen-nhan') return 'Chờ nguyên nhân';
-  if (v.soPa === 0) return 'Chưa có PA';
-  return v.pa.length ? null : 'Chờ xác nhận PA';
+  if (v.cho === 'nguyen-nhan') return t('Chờ nguyên nhân');
+  if (v.soPa === 0) return t('Chưa có PA');
+  return v.pa.length ? null : t('Chờ xác nhận PA');
 }
 
 /** Hàng Tuần học / Tuần học của trục (Q31-11): FT = tuần học n của em (bỏ tuần Tạm dừng, tuần dừng → null); lớp thường = tuần khoá 1…n. */
@@ -267,10 +268,10 @@ export function soTuanCot(
  * Chữ khoảng Tạm dừng bằng mã tuần — `den` là ngày QUAY LẠI, tuần đó em đã học lại nên chữ dừng ở tuần TRƯỚC (cùng luật `tuanHocFt`):
  * dừng W4 JUL, quay lại W1 AUG → "W4 JUL – W5 JUL"; dừng và quay lại cùng tuần / tuần liền sau → một tuần; chưa quay lại → "từ W4 JUL".
  */
-export function chuKhoangDung(t: { tu: string; den: string | null }, homNay?: string): string {
-  if (!t.den) return `từ ${tuanLich(t.tu, homNay)}`;
-  const cuoi = addDaysIso(mondayOfDate(t.den), -7);
-  return cuoi <= mondayOfDate(t.tu) ? tuanLich(t.tu, homNay) : `${tuanLich(t.tu, homNay)} – ${tuanLich(cuoi, homNay)}`;
+export function chuKhoangDung(k: { tu: string; den: string | null }, homNay?: string): string {
+  if (!k.den) return t('từ {tuan}', { tuan: tuanLich(k.tu, homNay) });
+  const cuoi = addDaysIso(mondayOfDate(k.den), -7);
+  return cuoi <= mondayOfDate(k.tu) ? tuanLich(k.tu, homNay) : `${tuanLich(k.tu, homNay)} – ${tuanLich(cuoi, homNay)}`;
 }
 
 // ====================================================================== chuỗi điểm (Q16; PR-UX5 Q1/Q7/Q8)
@@ -336,9 +337,9 @@ export function chuoiDiem(
     let phan: (string | null)[];
     if (cheDo === 'ratio') {
       const cauDung = d.tong ? ` (${d.gt}/${d.tong})` : '';
-      phan = [nhan, `${chu}${cauDung}`, d.chuaDat ? `Chưa đạt — ngưỡng ${Math.round((d.nguong ?? RATIO_PASS_THRESHOLD) * 100)}%` : 'Đạt'];
+      phan = [nhan, `${chu}${cauDung}`, d.chuaDat ? t('Chưa đạt — ngưỡng {pt}%', { pt: Math.round((d.nguong ?? RATIO_PASS_THRESHOLD) * 100) }) : t('Đạt')];
     } else {
-      const ky = d.kyVong != null ? (d.chuaDat ? `dưới kỳ vọng ${d.kyVong.toFixed(1)}` : `kỳ vọng ${d.kyVong.toFixed(1)}`) : null;
+      const ky = d.kyVong != null ? (d.chuaDat ? t('dưới kỳ vọng {kv}', { kv: d.kyVong.toFixed(1) }) : t('kỳ vọng {kv}', { kv: d.kyVong.toFixed(1) })) : null;
       phan = [nhan, chu, ky];
     }
     const lech = giaTriTruoc === null ? null : lechDiem(giaTriTruoc, gia, cheDo);
@@ -346,7 +347,7 @@ export function chuoiDiem(
     return { chu, xau: d.chuaDat, cho: false, lech, title: phan.filter(Boolean).join(' · '), attemptId: d.attemptId ?? null, kind: d.kind ?? null, classId: d.classId ?? null };
   });
   if (conCho) {
-    moc.push({ chu: '?', xau: false, cho: true, lech: null, title: `${o.dotCho ? nhanDotTest(o.dotCho) : 'Đợt sắp tới'} · chưa chấm` });
+    moc.push({ chu: '?', xau: false, cho: true, lech: null, title: o.dotCho ? t('{dot} · chưa chấm', { dot: nhanDotTest(o.dotCho) }) : t('Đợt sắp tới · chưa chấm') });
   }
   return moc;
 }
@@ -388,7 +389,7 @@ export function nhanGhim(a: {
   /** MH7: Pre FOU không chia môn — ghim là `Cuối · 68%` (đủ điểm mới có `tyLe`), không SOS. */
   khongChiaMon?: boolean; tyLe?: number | null;
   /** PR-LT2b: hướng gợi ý Cuối khoá đủ điểm (`goiYCuoiKhoa`) — ghim `Cuối · 64% → lên + bổ trợ`. */
-  goiY?: { dai: string; nhan: string; nhanNgan: string } | null;
+  goiY?: { dai: string; nhan: string; nhanK?: ChuKhoa; nhanNgan: string } | null;
   /** PR-MT (T34): MT lịch sử — nhãn nhỏ "lịch sử" cạnh "MT2". */
   lichSu?: boolean;
   /** PR-MT0: nhãn máy chủ (`nhanMt0`) — `MT0 · không dùng` thắng mọi chữ tiến độ. */
@@ -397,27 +398,27 @@ export function nhanGhim(a: {
   const ghep = (...phan: (string | null | undefined)[]) => phan.filter(Boolean).join(' · ');
   if (a.cheDo === 'ielts') {
     const so = `MT${a.attemptNo}`;   // bản gọn (điện thoại) không kèm "cũ"
-    const mt = a.lichSu ? `${so} cũ` : so;
+    const mt = a.lichSu ? t('{so} cũ', { so }) : so;
     const tuan = a.tuan ? tuanLich(a.tuan, a.homNay) : null;
-    if (a.kind === 'mt0' && a.nhanNgan && a.nhanNgan !== so) return { chu: a.nhanNgan, gon: so, day: ghep(a.nhanNgan, tuan), mau: 'tam', hai: [so, ''] };
-    if (a.soCoDiem === 0) return { chu: mt, gon: so, day: ghep(mt, tuan, a.lichSu ? 'nhập bù, không tính hạn' : 'chưa có điểm'), mau: 'tam', hai: [so, ''] };
+    if (a.kind === 'mt0' && a.nhanNgan && a.nhanNgan !== so) return { chu: dich(a.nhanNgan), gon: so, day: ghep(dich(a.nhanNgan), tuan), mau: 'tam', hai: [so, ''] };
+    if (a.soCoDiem === 0) return { chu: mt, gon: so, day: ghep(mt, tuan, a.lichSu ? t('nhập bù, không tính hạn') : t('chưa có điểm')), mau: 'tam', hai: [so, ''] };
     if (a.soCoDiem < a.soYeuCau && !a.chot) {
-      return { chu: `${mt} · đang chấm`, gon: so, day: ghep(mt, tuan, `đang chấm ${a.soCoDiem}/${a.soYeuCau} kỹ năng`), mau: 'tam', hai: [so, `${a.soCoDiem}/${a.soYeuCau}`] };
+      return { chu: t('{mt} · đang chấm', { mt }), gon: so, day: ghep(mt, tuan, t('đang chấm {a}/{b} kỹ năng', { a: a.soCoDiem, b: a.soYeuCau })), mau: 'tam', hai: [so, `${a.soCoDiem}/${a.soYeuCau}`] };
     }
     const band = a.overall != null ? a.overall.toFixed(1) : '—';
     const overall = `Overall ${band}`;
     if (a.sosLevel == null) {
-      return { chu: `${mt} · ${band}`, gon: `${so} ${band}`, day: ghep(mt, tuan, overall, 'chưa có kỳ vọng'), mau: 'tam', hai: [so, band] };
+      return { chu: `${mt} · ${band}`, gon: `${so} ${band}`, day: ghep(mt, tuan, overall, t('chưa có kỳ vọng')), mau: 'tam', hai: [so, band] };
     }
     const mau = mauTuSos(a.sosLevel);
     if (a.sosLevel <= 0) {
-      return { chu: `${mt} · ${band} · Đạt`, gon: `${so} ${band}`, day: ghep(mt, tuan, overall, 'Đạt kỳ vọng'), mau, hai: [so, band] };
+      return { chu: t('{mt} · {band} · Đạt', { mt, band }), gon: `${so} ${band}`, day: ghep(mt, tuan, overall, t('Đạt kỳ vọng')), mau, hai: [so, band] };
     }
     const ky = (a.kyNangChuaDat ?? []).map((k) => (ASSESSED_SKILL_LABEL as Record<string, string>)[k] ?? k);
     const sos = `SOS ${a.sosLevel}`;
     return {
       chu: `${mt} · ${band} · ${sos}`, gon: `${so} ${band}`,
-      day: ghep(mt, tuan, overall, ky.length ? `${sos} — ${ky.join(', ')} dưới kỳ vọng` : sos), mau, hai: [so, band],
+      day: ghep(mt, tuan, overall, ky.length ? t('{sos} — {ky} dưới kỳ vọng', { sos, ky: ky.join(', ') }) : sos), mau, hai: [so, band],
     };
   }
   const daiKind = nhanBaiThuong(a.kind);
@@ -427,23 +428,23 @@ export function nhanGhim(a: {
   if (a.khongChiaMon && a.tyLe != null) {
     const pt = `${Math.round(a.tyLe * 100)}%`;
     const dat = (a.sosLevel ?? 1) <= 0;
-    return { chu: `${ngan} · ${pt}${a.goiY ? ` ${a.goiY.nhanNgan}` : ''}`, gon: ngan, day: ghep(dai, `${pt} tổng`, a.goiY?.nhan ?? (dat ? 'Đạt' : 'Chưa đạt')), mau: dat ? 'dat' : 'sos1', hai: [ngan, pt] };
+    return { chu: `${ngan} · ${pt}${a.goiY ? ` ${dich(a.goiY.nhanNgan)}` : ''}`, gon: ngan, day: ghep(dai, t('{pt} tổng', { pt }), (a.goiY ? nhanGoiY(a.goiY) : null) ?? (dat ? t('Đạt') : t('Chưa đạt'))), mau: dat ? 'dat' : 'sos1', hai: [ngan, pt] };
   }
   if (a.soCoDiem < a.soYeuCau) {
-    return { chu: `${ngan} · tạm thời`, gon: ngan, day: ghep(dai, `mới chấm ${a.soCoDiem}/${a.soYeuCau} môn`, 'tạm thời'), mau: 'tam', hai: [ngan, `${a.soCoDiem}/${a.soYeuCau}`] };
+    return { chu: t('{ngan} · tạm thời', { ngan }), gon: ngan, day: ghep(dai, t('mới chấm {a}/{b} môn', { a: a.soCoDiem, b: a.soYeuCau }), t('tạm thời')), mau: 'tam', hai: [ngan, `${a.soCoDiem}/${a.soYeuCau}`] };
   }
   const soDat = a.soDat ?? 0;
   const sos = a.sosLevel ?? (soDat >= a.soYeuCau ? 0 : Math.min(3, a.soYeuCau - soDat));
   const mau = mauTuSos(sos);
-  const datMon = `${soDat}/${a.soYeuCau} môn đạt`;
+  const datMon = t('{a}/{b} môn đạt', { a: soDat, b: a.soYeuCau });
   /* PR-LT2a (T58): lớp thường KHÔNG có chữ SOS — Giữa khoá `2/4 môn đạt`, Cuối khoá `64%` (màu vẫn theo số môn trượt). */
   if (a.kind === 'final' && a.tyLe != null) {
     const pt = `${Math.round(a.tyLe * 100)}%`;
-    return { chu: `${ngan} · ${pt}${a.goiY ? ` ${a.goiY.nhanNgan}` : ''}`, gon: ngan, day: ghep(dai, `${pt} tổng`, a.goiY?.nhan ?? datMon), mau: a.goiY?.dai === 'dat' ? 'dat' : mau, hai: [ngan, pt] };
+    return { chu: `${ngan} · ${pt}${a.goiY ? ` ${dich(a.goiY.nhanNgan)}` : ''}`, gon: ngan, day: ghep(dai, t('{pt} tổng', { pt }), (a.goiY ? nhanGoiY(a.goiY) : null) ?? datMon), mau: a.goiY?.dai === 'dat' ? 'dat' : mau, hai: [ngan, pt] };
   }
   /* Mockup 26 bản 2: ghim CHƯƠNG nói đủ chữ — "Giữa khoá · 3/4 môn" (trục giữ bản ngắn "Giữa · 3/4 môn đạt"). */
-  return { chu: `${ngan} · ${datMon}`, gon: ngan, day: ghep(dai, datMon, sos <= 0 ? 'Đạt' : `${Math.min(sos, 3)} môn trượt`), mau, hai: [ngan, `${soDat}/${a.soYeuCau}`],
-    chuong: `${daiKind} · ${soDat}/${a.soYeuCau} môn` };
+  return { chu: `${ngan} · ${datMon}`, gon: ngan, day: ghep(dai, datMon, sos <= 0 ? t('Đạt') : t('{n} môn trượt', { n: Math.min(sos, 3) })), mau, hai: [ngan, `${soDat}/${a.soYeuCau}`],
+    chuong: t('{dai} · {a}/{b} môn', { dai: daiKind, a: soDat, b: a.soYeuCau }) };
 }
 
 /**
@@ -552,7 +553,8 @@ export type CaseChuong = {
 };
 export type RaChuong = {
   loai: 'len' | 'chuyen' | 'hoc-lai' | 'bao-luu' | 'dung' | 'ket-thuc' | null;
-  chu: string; how: string | null; tu: string | null;
+  /** `khoa` + `bien`: PR-EN-c (máy chủ dựng, web dịch bằng `dichChu`). */
+  chu: string; khoa?: string; bien?: ChuKhoa['bien']; how: string | null; tu: string | null;
   docBanGiao: { lenhId: number; lopNguonId: number } | null;
 };
 export type Chuong<G> = Omit<LopChuong, 'endKind' | 'status' | 'endReason' | 'lenh'> & {
@@ -571,9 +573,13 @@ const RA_THEO_END_KIND: Record<string, RaChuong['loai']> = {
  */
 /** Chân chương "lên lớp" (mockup 26): "Lên FT" · "Lên BE" · kèm bổ trợ miễn phí "Lên FT + bổ trợ S" (tên môn ngắn theo chương trình lớp cũ). */
 export function chuLen(sau: { ft: boolean; ct: string | null } | null, bo: BoTroMienPhi | null, ctCu: string | null): string {
-  const len = `Lên ${sau?.ft ? 'FT' : sau?.ct ?? 'lớp sau'}`;
+  return chuLenK(sau, bo, ctCu).chu;
+}
+/** PR-EN-c: `chuLen` kèm khoá (máy chủ dựng, web dịch). */
+function chuLenK(sau: { ft: boolean; ct: string | null } | null, bo: BoTroMienPhi | null, ctCu: string | null): ChuKhoa {
+  const len = sau?.ft || sau?.ct ? kem('Lên {ct}', { ct: sau.ft ? 'FT' : sau.ct! }) : { chu: 'Lên lớp sau' };
   if (!bo) return len;
-  return `${len} + bổ trợ${bo.theoMon && bo.mon.length ? ` ${bo.mon.map((m) => tenMonNgan(ctCu, m)).join(', ')}` : ''}`;
+  return bo.theoMon && bo.mon.length ? kem('{len} + bổ trợ {mon}', { len, mon: bo.mon.map((m) => tenMonNgan(ctCu, m)).join(', ') }) : kem('{len} + bổ trợ', { len });
 }
 
 export function chiaChuong<G extends { classId: number | null; tuan: string | null; nhanNgan: string; kind?: string; goiY?: unknown }>(i: {
@@ -614,8 +620,8 @@ export function chiaChuong<G extends { classId: number | null; tuan: string | nu
     const loai = l.endKind ? RA_THEO_END_KIND[l.endKind] ?? null : l.status === 'transferred' || sangLopSau ? 'chuyen' : l.status === 'completed' ? 'ket-thuc' : null;
     const ra: RaChuong | null = l.dangHoc ? null : {
       loai,
-      chu: loai === 'len' ? chuLen(sau, boTroCuaChuong(l.classId), l.ct) : sangLopSau ? `Sang ${sau!.code}` : loai === 'chuyen' ? 'Chuyển lớp' : loai === 'hoc-lai' ? 'Học lại'
-        : loai === 'bao-luu' ? 'Tạm dừng học (bảo lưu)' : loai === 'dung' ? 'Dừng học hẳn' : loai === 'ket-thuc' ? 'Kết thúc học' : l.status === 'paused' ? 'Tạm dừng học' : 'Rời lớp',
+      ...(loai === 'len' ? chuLenK(sau, boTroCuaChuong(l.classId), l.ct) : sangLopSau ? kem('Sang {lop}', { lop: sau!.code }) : { chu: loai === 'chuyen' ? 'Chuyển lớp' : loai === 'hoc-lai' ? 'Học lại'
+        : loai === 'bao-luu' ? 'Tạm dừng học (bảo lưu)' : loai === 'dung' ? 'Dừng học hẳn' : loai === 'ket-thuc' ? 'Kết thúc học' : l.status === 'paused' ? 'Tạm dừng học' : 'Rời lớp' }),
       how: l.lenh ? 'Quản lý quyết định' : loai === 'len' ? 'theo Final Test' : l.endReason,
       tu: sau?.tu ?? null,
       docBanGiao: l.lenh?.xacNhan ? { lenhId: l.lenh.id, lopNguonId: l.classId } : null,

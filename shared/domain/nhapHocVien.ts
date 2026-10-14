@@ -4,6 +4,7 @@
  */
 import { docONgay } from './oNgay.ts';
 import { mondayOfDate } from './week.ts';
+import { t } from '../i18n/index.ts';
 
 export type MucVanDe = 'loi' | 'luu_y';
 /** Một vấn đề của một ô. `loi` chặn thêm dòng đó; `luu_y` chỉ để biết. `row` = số dòng trong lưới (0 = cả lô). */
@@ -98,7 +99,7 @@ export function chiaLo<T>(ds: readonly T[], co: number): T[][] {
  * KHÁC ô trống (= chưa có target, vẫn có việc "Điền target"). Dùng chung cho nhập học viên, sửa target, Đề xuất sửa.
  */
 export const KCK = 'KCK';
-export const GIAI_THICH_KCK = 'Không cam kết đầu ra — không tính SOS';
+export const GIAI_THICH_KCK = t('Không cam kết đầu ra — không tính SOS');
 export const laKck = (v: unknown): boolean => {
   const s = String(v ?? '').trim();
   return /^[-–—]$/.test(s) || ['kck', 'khong cam ket'].includes(chuanTieuDe(s));

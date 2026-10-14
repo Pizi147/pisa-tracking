@@ -15,6 +15,7 @@ import {
   ROUTE_NAME, ketQuaGanNhat, locCanHoTro, maHocVienNgan, viecTiepCuaEm,
   type HangKyNang, type KetQuaVao, type ViecTiepCase,
 } from '@shared/domain/index.ts';
+import { dich, t } from '@shared/i18n/index.ts';
 
 type PaCase = { id: number; ten: string; batBuoc: boolean; choXacNhan: boolean; choDuyet: boolean; xong: boolean; nguoi: string | null; mocChu: string | null };
 type CaseCua = {
@@ -78,9 +79,9 @@ export function BangCanHoTro({ classId, maLop, laLopThuong, quyen, onDoi, chuong
     return <ErrorState message={e.message} hint={e.hint} onRetry={() => { trang.reload(); roster.reload(); }} />;
   }
   if (!d || !roster.data) return <Skeleton rows={4} />;
-  if (!d.em.length) return <Empty title="Không có học viên nào đang có Case mở" />;
-  const dong = [`${tong.soEm} em`, `${tong.soCase} Case`,
-    tong.choDuyet > 0 ? `${tong.choDuyet} Case chờ Quản lý duyệt` : null, tong.quaHan > 0 ? `${tong.quaHan} quá hạn` : null].filter(Boolean).join(' · ');
+  if (!d.em.length) return <Empty title={t('Không có học viên nào đang có Case mở')} />;
+  const dong = [t('{n} em', { n: tong.soEm }), `${tong.soCase} Case`,
+    tong.choDuyet > 0 ? t('{n} Case chờ Quản lý duyệt', { n: tong.choDuyet }) : null, tong.quaHan > 0 ? t('{n} quá hạn', { n: tong.quaHan }) : null].filter(Boolean).join(' · ');
   const soEmHoc = roster.data.filter((s) => !s.archived).length;
 
   return (
@@ -89,14 +90,14 @@ export function BangCanHoTro({ classId, maLop, laLopThuong, quyen, onDoi, chuong
         <p className="m-0 text-xs text-slate-400 tabular-nums">{dong}</p>
         {coCongTac && (
           <label className="inline-flex cursor-pointer items-center gap-1.5 text-xs text-slate-300">
-            <input type="checkbox" checked={bat} onChange={(e) => setChiToi(e.target.checked)} />Chỉ kỹ năng tôi dạy
+            <input type="checkbox" checked={bat} onChange={(e) => setChiToi(e.target.checked)} />{t('Chỉ kỹ năng tôi dạy')}
           </label>
         )}
       </div>
 
       <div className={`hidden px-3 text-[11px] font-semibold uppercase tracking-wide text-slate-500 ${CAO_TRAI}`}>
-        <span>Học viên</span>
-        <span className={luoi}><span>Kỹ năng</span><span>Case</span><span>PA đang làm</span>{!chiDoc && <span>Việc tiếp · hạn</span>}</span>
+        <span>{t('Học viên')}</span>
+        <span className={luoi}><span>{t('Kỹ năng')}</span><span>Case</span><span>{t('PA đang làm')}</span>{!chiDoc && <span>{t('Việc tiếp · hạn')}</span>}</span>
       </div>
 
       {em.map((e) => {
@@ -105,7 +106,7 @@ export function BangCanHoTro({ classId, maLop, laLopThuong, quyen, onDoi, chuong
         const hang = e.hang;
         const nQuaHan = e.cases.filter((c) => c.quaHan).length;
         return (
-          <article key={e.id} className={`card overflow-hidden ${CAO_TRAI}`} aria-label={`Cần hỗ trợ: ${e.ten}`}>
+          <article key={e.id} className={`card overflow-hidden ${CAO_TRAI}`} aria-label={t('Cần hỗ trợ: {ten}', { ten: e.ten })}>
             <div className="space-y-1 border-b p-3 md:border-b-0 md:border-r" style={{ borderColor: 'var(--line)' }}>
               <div className="flex items-start gap-1.5">
                 <span className="min-w-0 flex-1">
@@ -123,13 +124,13 @@ export function BangCanHoTro({ classId, maLop, laLopThuong, quyen, onDoi, chuong
                 </p>
               )}
               <p className="m-0 flex flex-wrap items-center gap-1.5 text-xs text-slate-400">
-                {k.sos ? <Level tone={sosTone(r?.standing?.sosLevel ?? null)} dut={k.sosTamThoi}>{k.sos}{k.sosTamThoi ? ' tạm thời' : ''}</Level>
+                {k.sos ? <Level tone={sosTone(r?.standing?.sosLevel ?? null)} dut={k.sosTamThoi}>{k.sos}{k.sosTamThoi ? ` ${t('tạm thời')}` : ''}</Level>
                   : <span className="tabular-nums text-slate-300">{k.chinh}</span>}
                 {k.kckDuoi && <ChipDuoiKck />}
                 {r?.standing?.attemptLabel && <span>{r.standing.attemptLabel}</span>}
               </p>
               <p className="m-0 text-xs tabular-nums text-slate-500">
-                {e.cases.length} Case{nQuaHan > 0 && <> · <span className="font-semibold text-late">{nQuaHan} việc quá hạn</span></>}
+                {e.cases.length} Case{nQuaHan > 0 && <> · <span className="font-semibold text-late">{t('{n} việc quá hạn', { n: nQuaHan })}</span></>}
               </p>
             </div>
 
@@ -158,7 +159,7 @@ export function BangCanHoTro({ classId, maLop, laLopThuong, quyen, onDoi, chuong
                       <div className="px-3 pb-1.5 md:pl-[4.5rem]">
                         <button type="button" className="link cursor-pointer border-0 bg-transparent p-0 text-[11.5px] max-sm:min-h-[44px]"
                           onClick={() => setMoThem((s) => { const n = new Set(s); if (n.has(khoaMo)) n.delete(khoaMo); else n.add(khoaMo); return n; })}>
-                          {hienHet ? 'Thu gọn' : `+${h.them} Case`}
+                          {hienHet ? t('Thu gọn') : `+${h.them} Case`}
                         </button>
                       </div>
                     )}
@@ -169,7 +170,7 @@ export function BangCanHoTro({ classId, maLop, laLopThuong, quyen, onDoi, chuong
           </article>
         );
       })}
-      {soEmHoc > em.length && <p className="m-0 text-xs text-slate-500">{soEmHoc - em.length} học viên không có Case đang mở{bat ? ' ở kỹ năng bạn dạy' : ''}.</p>}
+      {soEmHoc > em.length && <p className="m-0 text-xs text-slate-500">{bat ? t('{n} học viên không có Case đang mở ở kỹ năng bạn dạy.', { n: soEmHoc - em.length }) : t('{n} học viên không có Case đang mở.', { n: soEmHoc - em.length })}</p>}
       {tt.panels}
       {ngan && (
         <NganCase caseId={ngan.caseId} paId={ngan.paId} viec={ngan.viec} hocVien={ngan.em} lop={maLop}
@@ -188,15 +189,17 @@ function DongCase({ h, c, dau, ct, homNay, onMo, the = false, chiDoc = false }: 
 }) {
   const [viec] = viecTiepCuaEm({ nhapDiem: null, cases: [{ caseId: c.id, topic: c.topic, viecTiep: c.viecTiep }], yThuc: null, homNay, chuongTrinh: ct });
   const d = viec?.dich?.loai === 'case' ? viec.dich : null;
-  const loai = !viec ? undefined : viec.viec.startsWith('Xác nhận nguyên nhân') ? 'xac-nhan' as const
-    : viec.viec.startsWith('Xác nhận PA') ? 'xac-nhan-pa' as const : d?.ghiKetQua && d.paId != null ? 'ghi-ket-qua' as const : undefined;
+  /* So trên chữ GỐC của máy chủ (`viecTiep.chu`, tiếng Việt) — `viec.viec` đã theo tiếng của trang. */
+  const goc = c.viecTiep?.chu ?? '';
+  const loai = !viec ? undefined : goc.startsWith('Xác nhận nguyên nhân') ? 'xac-nhan' as const
+    : goc.startsWith('Xác nhận PA') ? 'xac-nhan-pa' as const : d?.ghiKetQua && d.paId != null ? 'ghi-ket-qua' as const : undefined;
   const dangLam = c.pas.filter((p) => !p.xong);
   const cacPa = dangLam.length === 0 ? <span className="text-slate-600">—</span> : dangLam.map((p) => (
     <span key={p.id} className="block" data-pa-id={p.id}>
-      <span className="text-slate-200">{p.batBuoc && <span title="PA theo quy chế" className="mr-1 inline-flex align-middle"><KhoaQuyChe /></span>}{p.ten}</span>
-      {p.choXacNhan ? <span className="text-slate-500"> · Chờ xác nhận</span>
-        : p.choDuyet ? <span className="text-slate-500"> · Chờ Quản lý duyệt</span>
-        : <span className="text-slate-500">{[p.nguoi, p.mocChu].filter(Boolean).map((x) => ` · ${x}`).join('')}</span>}
+      <span className="text-slate-200">{p.batBuoc && <span title={t('PA theo quy chế')} className="mr-1 inline-flex align-middle"><KhoaQuyChe /></span>}{p.ten}</span>
+      {p.choXacNhan ? <span className="text-slate-500"> · {t('Chờ xác nhận')}</span>
+        : p.choDuyet ? <span className="text-slate-500"> · {t('Chờ Quản lý duyệt')}</span>
+        : <span className="text-slate-500">{[p.nguoi, p.mocChu && dich(p.mocChu)].filter(Boolean).map((x) => ` · ${x}`).join('')}</span>}
     </span>
   ));
   const cauViec = viec ? <ViecTiep v={viec} onBam={() => onMo(loai, d?.paId)} /> : <span className="text-slate-600">—</span>;
@@ -208,16 +211,16 @@ function DongCase({ h, c, dau, ct, homNay, onMo, the = false, chiDoc = false }: 
             <span className="text-xs font-semibold text-slate-300" title={h.tenDu}>{h.nhan}</span>{' · '}
             <button type="button" className="link cursor-pointer border-0 bg-transparent p-0 text-left text-xs font-semibold" title={c.tieuDe}
               onClick={() => onMo()}><TenCase c={{ title: c.tieuDe, tenSos: c.tenSos }} /></button>
-            {(c.nguyenNhan || c.moTu) && <span className="block text-[11.5px] text-slate-500">{[c.nguyenNhan, c.moTu].filter(Boolean).join(' · ')}</span>}
+            {(c.nguyenNhan || c.moTu) && <span className="block text-[11.5px] text-slate-500">{[c.nguyenNhan && dich(c.nguyenNhan), c.moTu && dich(c.moTu)].filter(Boolean).join(' · ')}</span>}
           </span>
         )}
         dong={[
-          { nhan: 'Trạng thái', noiDung: (
-            <span className="flex flex-wrap items-center gap-x-1.5"><NhanTrangThai t={c.trangThai.t} title={c.trangThai.chu} />
-              {c.banGiaoTu && <span className="text-slate-500" title="Case bàn giao">từ {c.banGiaoTu}</span>}</span>
+          { nhan: t('Trạng thái'), noiDung: (
+            <span className="flex flex-wrap items-center gap-x-1.5"><NhanTrangThai t={c.trangThai.t} title={dich(c.trangThai.chu)} />
+              {c.banGiaoTu && <span className="text-slate-500" title={t('Case bàn giao')}>{t('từ {lop}', { lop: c.banGiaoTu })}</span>}</span>
           ) },
           { nhan: 'PA', noiDung: <span className="text-[11.5px]">{cacPa}</span> },
-          ...(chiDoc ? [] : [{ nhan: 'Việc tiếp', noiDung: cauViec }]),
+          ...(chiDoc ? [] : [{ nhan: t('Việc tiếp'), noiDung: cauViec }]),
         ]} />
     );
   }
@@ -227,10 +230,10 @@ function DongCase({ h, c, dau, ct, homNay, onMo, the = false, chiDoc = false }: 
       <span className="min-w-0">
         <button type="button" className="link block max-w-full cursor-pointer truncate border-0 bg-transparent p-0 text-left text-xs font-semibold" title={c.tieuDe}
           onClick={() => onMo()}><TenCase c={{ title: c.tieuDe, tenSos: c.tenSos }} /></button>
-        {(c.nguyenNhan || c.moTu) && <span className="block text-[11.5px] text-slate-500">{[c.nguyenNhan, c.moTu].filter(Boolean).join(' · ')}</span>}
+        {(c.nguyenNhan || c.moTu) && <span className="block text-[11.5px] text-slate-500">{[c.nguyenNhan && dich(c.nguyenNhan), c.moTu && dich(c.moTu)].filter(Boolean).join(' · ')}</span>}
         <span className="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-xs text-slate-500">
-          <NhanTrangThai t={c.trangThai.t} title={c.trangThai.chu} />
-          {c.banGiaoTu && <span title="Case bàn giao">từ {c.banGiaoTu}</span>}
+          <NhanTrangThai t={c.trangThai.t} title={dich(c.trangThai.chu)} />
+          {c.banGiaoTu && <span title={t('Case bàn giao')}>{t('từ {lop}', { lop: c.banGiaoTu })}</span>}
         </span>
       </span>
       <span className="min-w-0 text-[11.5px] text-slate-300">{cacPa}</span>

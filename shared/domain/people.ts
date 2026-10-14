@@ -283,7 +283,7 @@ export const WORK_SCOPE_LABEL: Record<WorkScope, string> = {
  * lớp — hai con số khác nhau cho hai câu hỏi khác nhau, nên chữ phải khác. Không bao giờ vừa nói "cả lớp" vừa dẫn tới việc riêng.
  */
 export function needScoresText(scope: WorkScope | null, n: number): string {
-  return scope === 'mine' ? `Cần chấm: ${n} bài` : `Lớp còn ${n} bài chưa nhập điểm`;
+  return scope === 'mine' ? t('Cần chấm: {n} bài', { n }) : t('Lớp còn {n} bài chưa nhập điểm', { n });
 }
 export const WORK_SCOPE_HINT: Record<WorkScope, string> = {
   mine: 'Kỹ năng bạn được phân công dạy.',

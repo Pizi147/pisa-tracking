@@ -11,17 +11,17 @@
  */
 import { ATTEMPT_SKILL_UNITS, CHUA_CO_HAN, deadlineView, type DeadlineKind } from './display.ts';
 import { NHAN_TRANG_THAI } from './trangThai.ts';
-import { chuTamDung } from './students.ts';
 import { ngay, tuanLich } from './hienThiNgay.ts';
 import { VIOLATION_CATEGORIES, VIOLATION_CATEGORY_LABEL, type ViolationCategory } from './yThuc.ts';
 import { moiNhatTruoc, nhanBaiThuong } from './normal.ts';
+import { ghepChu, kem, t, type ChuKhoa } from '../i18n/index.ts';
 
 // ====================================================================== ba tab (D2, A6)
 
 export const HO_SO_TABS = ['hoc-thuat', 'y-thuc', 'hanh-trinh'] as const;
 export type HoSoTab = (typeof HO_SO_TABS)[number];
 export const HO_SO_TAB_LABEL: Record<HoSoTab, string> = {
-  'hoc-thuat': 'Học thuật', 'y-thuc': 'Ý thức & Phối hợp', 'hanh-trinh': 'Hành trình',
+  'hoc-thuat': t('Học thuật'), 'y-thuc': t('Ý thức & Phối hợp'), 'hanh-trinh': t('Hành trình'),
 };
 /** Giá trị lạ, rỗng hay thiếu → 'hoc-thuat' (tab mặc định). Không nhớ bằng localStorage (A6). */
 export function parseHoSoTab(v: string | null | undefined): HoSoTab {
@@ -73,19 +73,19 @@ export function tienDoCase(plans: readonly PhuongAnTomTat[], c: { status: string
 } {
   const tong = plans.length;
   const coKetQua = plans.filter((p) => p.lastOutcome !== null).length;
-  const text = tong === 0 ? 'Chưa có PA'
-    : coKetQua === 0 ? `${tong} PA · chưa có kết quả`
-    : coKetQua === tong ? `${tong} PA · đủ kết quả` : `${tong} PA · ${coKetQua} có kết quả`;
+  const text = tong === 0 ? t('Chưa có PA')
+    : coKetQua === 0 ? t('{tong} PA · chưa có kết quả', { tong })
+    : coKetQua === tong ? t('{tong} PA · đủ kết quả', { tong }) : t('{tong} PA · {n} có kết quả', { tong, n: coKetQua });
   let tiep: { text: string; due: string | null; overdue: boolean } | null = null;
   if (c.status !== 'done') {
     const chay = plans.filter(dangChay);
     const choDuyet = chay.find((p) => p.pendingApproval);
     const coHan = chay.filter((p) => p.actionDue).sort((a, b) => a.actionDue!.localeCompare(b.actionDue!))[0];
     const quaHanRoi = chay.filter((p) => p.actionDue && p.actionOverdue).sort((a, b) => a.actionDue!.localeCompare(b.actionDue!))[0];
-    if (quaHanRoi) tiep = { text: 'Kết quả', due: quaHanRoi.actionDue, overdue: true };
-    else if (choDuyet) tiep = { text: 'Chờ Quản lý trả lời', due: choDuyet.approvalDue, overdue: false };
-    else if (coHan) tiep = { text: 'Kết quả', due: coHan.actionDue, overdue: coHan.actionOverdue };
-    else if (c.followUntil) tiep = { text: 'Kết quả', due: c.followUntil, overdue: c.followOverdue };
+    if (quaHanRoi) tiep = { text: t('Kết quả'), due: quaHanRoi.actionDue, overdue: true };
+    else if (choDuyet) tiep = { text: t('Chờ Quản lý trả lời'), due: choDuyet.approvalDue, overdue: false };
+    else if (coHan) tiep = { text: t('Kết quả'), due: coHan.actionDue, overdue: coHan.actionOverdue };
+    else if (c.followUntil) tiep = { text: t('Kết quả'), due: c.followUntil, overdue: c.followOverdue };
   }
   return { coKetQua, tong, text, tiep };
 }
@@ -94,12 +94,12 @@ export function tienDoCase(plans: readonly PhuongAnTomTat[], c: { status: string
 export function viecTiepPhuongAn(p: PhuongAnTomTat): {
   loai: 'cho-duyet' | 'cho-xac-nhan' | 'ghi-cuoi' | 'ghi-ket-qua' | 'da-xong'; text: string; due: string | null; overdue: boolean;
 } {
-  if (p.pendingApproval) return { loai: 'cho-duyet', text: 'Chờ Quản lý trả lời', due: p.approvalDue, overdue: false };
+  if (p.pendingApproval) return { loai: 'cho-duyet', text: t('Chờ Quản lý trả lời'), due: p.approvalDue, overdue: false };
   /* PR-SOS: PA quy chế chờ xác nhận chưa chạy — việc là Xác nhận PA (hạn ở Case). Tuần chạm mốc → Ghi kết quả cuối. */
-  if (p.choXacNhan) return { loai: 'cho-xac-nhan', text: 'Chờ xác nhận', due: null, overdue: false };
-  if (p.lanCuoi && dangChay(p)) return { loai: 'ghi-cuoi', text: 'Kết quả cuối', due: p.actionDue, overdue: p.actionOverdue };
-  if (dangChay(p)) return { loai: 'ghi-ket-qua', text: 'Kết quả', due: p.actionDue, overdue: p.actionOverdue };
-  return { loai: 'da-xong', text: p.closedReason === 'superseded' ? 'Được thay thế' : 'Đã kết thúc', due: p.completedOn, overdue: false };
+  if (p.choXacNhan) return { loai: 'cho-xac-nhan', text: t('Chờ xác nhận'), due: null, overdue: false };
+  if (p.lanCuoi && dangChay(p)) return { loai: 'ghi-cuoi', text: t('Kết quả cuối'), due: p.actionDue, overdue: p.actionOverdue };
+  if (dangChay(p)) return { loai: 'ghi-ket-qua', text: t('Kết quả'), due: p.actionDue, overdue: p.actionOverdue };
+  return { loai: 'da-xong', text: p.closedReason === 'superseded' ? t('Được thay thế') : t('Đã kết thúc'), due: p.completedOn, overdue: false };
 }
 
 // ====================================================================== ô "Việc cần làm tiếp" (Q7)
@@ -171,10 +171,12 @@ export function ketQuaTestGanNhat(attempts: readonly LuotTomTat[], homNay?: stri
 
 /** Màu một mảnh: đỏ quá hạn · vàng bắt buộc / tạm dừng · cam SOS 2 (`late`) · tím chờ duyệt · xanh dương sắp chuyển (Q6). */
 export type ToneManh = 'danger' | 'warn' | 'sos1' | 'sos2' | 'sos3' | 'wait' | 'accent' | null;
-export type ManhCau = { chu: string; tone: ToneManh };
+/** `khoa` + `bien` (PR-EN-c): câu do máy chủ dựng — web dịch bằng `dichChu`. */
+export type ManhCau = ChuKhoa & { tone: ToneManh };
 
 /** "A" · "A và B" · "A, B và C". */
-export const noiVa = (ds: readonly string[]): string => (ds.length < 2 ? ds.join('') : `${ds.slice(0, -1).join(', ')} và ${ds[ds.length - 1]}`);
+export const noiVa = (ds: readonly string[]): string => noiVaK(ds).chu;
+const noiVaK = (ds: readonly string[]): ChuKhoa => (ds.length < 2 ? { chu: ds.join('') } : kem('{dau} và {cuoi}', { dau: ds.slice(0, -1).join(', '), cuoi: ds[ds.length - 1] }));
 const toneSos = (n: number): ToneManh => (n >= 3 ? 'sos3' : n === 2 ? 'sos2' : 'sos1');
 /** Việc học thuật (mệnh đề 2) — Ý thức, Báo PH, Bàn giao không tính ở đây. */
 const VIEC_HOC_THUAT = new Set(['nguyen-nhan', 'de-ra-pa', 'xac-nhan-pa', 'ghi-ket-qua', 'cho-duyet', 'mini-test']);
@@ -196,7 +198,7 @@ export type DauVaoCau = {
   /** Tên đầy đủ các kỹ năng có Case đang mở. */
   hoTro: string[];
   /** Mọi việc của em (cả của người xem lẫn người khác) — `dauHoSo.viec`. */
-  viec: { loai: string; chu: string; kyNangTen: string | null; quaHanNgay: number | null }[];
+  viec: (ChuKhoa & { loai: string; kyNangTen: string | null; quaHanNgay: number | null })[];
   yThuc: { nhom: string | null; keTiep: string | null; han: string | null; quaHanNgay: number | null; deXuat: string | null } | null;
   homNay: string;
 };
@@ -210,30 +212,40 @@ export type DauVaoCau = {
 export function cauTomTat(i: DauVaoCau): ManhCau[] {
   const d = i.dacBiet;
   const k = i.ketQua;
-  const hoTro = i.hoTro.length ? `đang hỗ trợ ${noiVa(i.hoTro)}` : null;
+  const hoTro = i.hoTro.length ? kem('đang hỗ trợ {ds}', { ds: noiVaK(i.hoTro) }) : null;
 
   const hoc = i.viec.filter((v) => VIEC_HOC_THUAT.has(v.loai));
   const quaHan = hoc.filter((v) => v.quaHanNgay !== null).sort((a, b) => b.quaHanNgay! - a.quaHanNgay!)[0];
   const choDuyet = hoc.find((v) => v.loai === 'cho-duyet');
   const choNn = hoc.find((v) => v.loai === 'nguyen-nhan');
   const kn = (v: { kyNangTen: string | null }) => (v.kyNangTen ? `${v.kyNangTen} ` : '');
+  /* Phần đầu câu việc ("Ghi Mini Test · bổ trợ…" → "Ghi Mini Test"); câu không có " · " giữ khoá của nó. */
+  const dauViec = (v: ChuKhoa): ChuKhoa => (v.chu.includes(' · ') ? { chu: v.chu.split(' · ')[0] } : { chu: v.chu, khoa: v.khoa, bien: v.bien });
   const m2: ManhCau | null = quaHan
     ? {
-      chu: quaHan.loai === 'ghi-ket-qua' ? `PA ${kn(quaHan)}quá hạn Kết quả ${quaHan.quaHanNgay} ngày`
-        : quaHan.loai === 'nguyen-nhan' ? `${kn(quaHan)}quá hạn xác nhận nguyên nhân ${quaHan.quaHanNgay} ngày`
-        : quaHan.loai === 'xac-nhan-pa' ? `${kn(quaHan)}quá hạn xác nhận PA ${quaHan.quaHanNgay} ngày`
-        : `${quaHan.chu.split(' · ')[0]} quá hạn ${quaHan.quaHanNgay} ngày`,
+      ...(quaHan.loai === 'ghi-ket-qua' ? kem('PA {kn}quá hạn Kết quả {n} ngày', { kn: kn(quaHan), n: quaHan.quaHanNgay! })
+        : quaHan.loai === 'nguyen-nhan' ? kem('{kn}quá hạn xác nhận nguyên nhân {n} ngày', { kn: kn(quaHan), n: quaHan.quaHanNgay! })
+        : quaHan.loai === 'xac-nhan-pa' ? kem('{kn}quá hạn xác nhận PA {n} ngày', { kn: kn(quaHan), n: quaHan.quaHanNgay! })
+        : kem('{viec} quá hạn {n} ngày', { viec: dauViec(quaHan), n: quaHan.quaHanNgay! })),
       tone: 'danger',
     }
-    : choDuyet ? { chu: choDuyet.chu, tone: 'wait' }
-    : choNn ? { chu: `${kn(choNn)}chờ xác nhận nguyên nhân`, tone: 'warn' }
+    : choDuyet ? { chu: choDuyet.chu, khoa: choDuyet.khoa, bien: choDuyet.bien, tone: 'wait' }
+    : choNn ? { ...kem('{kn}chờ xác nhận nguyên nhân', { kn: kn(choNn) }), tone: 'warn' }
     : null;
 
   const y = i.yThuc;
   const m3: ManhCau | null = !y ? null
-    : y.nhom === 'qua_han' ? { chu: `Ý thức: ${y.keTiep ? `bắt buộc ${y.keTiep}, ` : ''}quá hạn${y.quaHanNgay ? ` ${y.quaHanNgay} ngày` : ''}`, tone: 'danger' }
-    : y.nhom === 'bat_buoc' ? { chu: `Ý thức: bắt buộc ${y.keTiep ?? 'xử lý'}${y.han ? `, hạn hết ${ngay(y.han, i.homNay)}` : ''}`, tone: 'warn' }
-    : y.nhom === 'cho_duyet' ? { chu: `Ý thức: ${y.deXuat ? `đề xuất ${y.deXuat}` : 'đề xuất'} chờ Quản lý`, tone: 'wait' }
+    : y.nhom === 'qua_han' ? {
+      ...(y.keTiep
+        ? (y.quaHanNgay ? kem('Ý thức: bắt buộc {ke}, quá hạn {n} ngày', { ke: y.keTiep, n: y.quaHanNgay }) : kem('Ý thức: bắt buộc {ke}, quá hạn', { ke: y.keTiep }))
+        : (y.quaHanNgay ? kem('Ý thức: quá hạn {n} ngày', { n: y.quaHanNgay }) : { chu: 'Ý thức: quá hạn' })),
+      tone: 'danger',
+    }
+    : y.nhom === 'bat_buoc' ? {
+      ...(y.han ? kem('Ý thức: bắt buộc {ke}, hạn hết {han}', { ke: y.keTiep ?? 'xử lý', han: ngay(y.han, i.homNay) }) : kem('Ý thức: bắt buộc {ke}', { ke: y.keTiep ?? 'xử lý' })),
+      tone: 'warn',
+    }
+    : y.nhom === 'cho_duyet' ? { ...(y.deXuat ? kem('Ý thức: đề xuất {de} chờ Quản lý', { de: y.deXuat }) : { chu: 'Ý thức: đề xuất chờ Quản lý' }), tone: 'wait' }
     : null;
 
   /* OV-11d (HV-22): nhãn "KCK · không tính SOS" không đẩy mất việc có hạn — đủ 3 mảnh khác thì bỏ nhãn, KCK nói ở mảnh kết quả. */
@@ -241,20 +253,23 @@ export function cauTomTat(i: DauVaoCau): ManhCau[] {
   const m0: ManhCau | null = !d ? null
     : d.loai === 'ket-thuc' ? { chu: 'Đã kết thúc', tone: null }
     : d.loai === 'tam-dung' ? null   // OV-11d (CA2-12): dải Tạm dừng ngay dưới đã nói (ngày, lý do, nút Quay lại học) — câu không lặp
-    : d.loai === 'sap-chuyen' ? { chu: `Sắp chuyển ${d.lop} từ ${tuanLich(d.tuan, i.homNay)}`, tone: 'accent' }
+    : d.loai === 'sap-chuyen' ? { ...kem('Sắp chuyển {lop} từ {tuan}', { lop: d.lop, tuan: tuanLich(d.tuan, i.homNay) }), tone: 'accent' }
     : kckRieng ? { chu: 'KCK · không tính SOS', tone: null } : null;
 
-  const voiHoTro = (dau: string) => (hoTro ? `${dau}: ${hoTro}` : dau);
+  const voiHoTro = (dau: ChuKhoa): ChuKhoa => (hoTro ? ghepChu('{dau}: {hoTro}', { dau, hoTro }) : dau);
   let m1: ManhCau | null = null;
-  if (!k) m1 = hoTro ? { chu: hoTro, tone: null } : null;
+  if (!k) m1 = hoTro ? { ...hoTro, tone: null } : null;
   else if (k.ratio) {
-    const dau = k.phanTram !== null ? `${k.dau} ${k.phanTram}%` : `${k.dau} ${k.soDat}/${k.soMon} môn đạt`;
-    m1 = { chu: k.monTruot.length ? `${dau}: không đạt ${noiVa(k.monTruot)}` : dau, tone: k.monTruot.length ? 'warn' : null };
-  } else if (k.kck && k.kckDuoi) m1 = { chu: voiHoTro(`${k.dau} dưới kỳ vọng${kckRieng ? '' : ' · KCK'}`), tone: null };   // OV-9: không SOS, không màu; mảnh 0 đã nói KCK thì không lặp
-  else if (k.kck && k.sos === null && !k.dat) m1 = { chu: voiHoTro(k.overall !== null ? `${k.dau} OVR ${k.overall.toFixed(1)}` : k.dau), tone: null };   // KCK chưa có Target (không kỳ vọng)
-  else if (k.sos) m1 = { chu: voiHoTro(`${k.dau} SOS ${k.sos}${!(k.chot ?? (k.coDiem === undefined || k.coDiem >= k.soMon)) ? ' tạm thời' : ''}`), tone: toneSos(k.sos) };
-  else if (k.dat) m1 = { chu: voiHoTro(`${k.dau} đạt kỳ vọng`), tone: null };
-  else m1 = { chu: voiHoTro(`${k.dau} chưa đủ điểm`), tone: null };
+    const dau = k.phanTram !== null ? { chu: `${k.dau} ${k.phanTram}%` } : kem('{dau} {dat}/{mon} môn đạt', { dau: k.dau, dat: k.soDat, mon: k.soMon });
+    m1 = { ...(k.monTruot.length ? kem('{dau}: không đạt {ds}', { dau, ds: noiVaK(k.monTruot) }) : dau), tone: k.monTruot.length ? 'warn' : null };
+  } else if (k.kck && k.kckDuoi) m1 = { ...voiHoTro(kem(kckRieng ? '{dau} dưới kỳ vọng' : '{dau} dưới kỳ vọng · KCK', { dau: k.dau })), tone: null };   // OV-9: không SOS, không màu; mảnh 0 đã nói KCK thì không lặp
+  else if (k.kck && k.sos === null && !k.dat) m1 = { ...voiHoTro({ chu: k.overall !== null ? `${k.dau} OVR ${k.overall.toFixed(1)}` : k.dau }), tone: null };   // KCK chưa có Target (không kỳ vọng)
+  else if (k.sos) {
+    const tam = !(k.chot ?? (k.coDiem === undefined || k.coDiem >= k.soMon));
+    m1 = { ...voiHoTro(tam ? kem('{dau} SOS {sos} tạm thời', { dau: k.dau, sos: k.sos }) : { chu: `${k.dau} SOS ${k.sos}` }), tone: toneSos(k.sos) };
+  }
+  else if (k.dat) m1 = { ...voiHoTro(kem('{dau} đạt kỳ vọng', { dau: k.dau })), tone: null };
+  else m1 = { ...voiHoTro(kem('{dau} chưa đủ điểm', { dau: k.dau })), tone: null };
 
   const ds = [m0, m1, m2, m3].filter((x): x is ManhCau => !!x).slice(0, 3);
   if (!m2 && !m3 && !hoTro && ds.length < 3) ds.push({ chu: 'không có việc đang mở', tone: null });
@@ -268,8 +283,8 @@ export function oHocThuat(rows: readonly {
     status: string; trangThaiV4?: { t: string } | null; viecTiep?: { chu: string } | null;
     plans?: readonly { actionOverdue?: boolean }[];
   }[];
-}[], tamDungTu: string | null = null, homNay: string | null = null): { so: number; dong: { kn: string; nhan: string; t: string; viec: string | null; category: string }[]; phu: string | null } {
-  const dong: { kn: string; nhan: string; t: string; viec: string | null; category: string }[] = [];
+}[], tamDungTu: string | null = null, homNay: string | null = null): { so: number; dong: { kn: string; nhan: string; nhanK?: ChuKhoa; t: string; viec: string | null; category: string }[]; phu: string | null } {
+  const dong: { kn: string; nhan: string; nhanK?: ChuKhoa; t: string; viec: string | null; category: string }[] = [];
   let phu: string | null = null;
   for (const r of rows) {
     for (const c of r.cases.filter((x) => x.status !== 'done')) {
@@ -280,7 +295,7 @@ export function oHocThuat(rows: readonly {
         : v === 'Xác nhận nguyên nhân' ? 'nguyên nhân'
         : /^Xác nhận PA/.test(v) ? 'xác nhận PA' : null;
       /* T65 + Q13 (UXF-b): em Tạm dừng — MỌI hạn dừng: "Quá hạn" và "Cần làm" đổi thành nhãn vàng "Tạm dừng từ dd/mm" (chỉ đổi chữ). */
-      if (tamDungTu && (t === 'qua-han' || t === 'can-lam')) dong.push({ kn: r.short ?? r.label, nhan: chuTamDung(ngay(tamDungTu, homNay), true), t: 'tam-dung', viec: null, category: r.category });
+      if (tamDungTu && (t === 'qua-han' || t === 'can-lam')) { const nhanK = kem('Tạm dừng từ {tu}', { tu: ngay(tamDungTu, homNay) }); dong.push({ kn: r.short ?? r.label, nhan: nhanK.chu, nhanK, t: 'tam-dung', viec: null, category: r.category }); }
       else dong.push({ kn: r.short ?? r.label, nhan: NHAN_TRANG_THAI[t] ?? NHAN_TRANG_THAI['dang-lam'], t, viec, category: r.category });
     }
   }
@@ -299,16 +314,17 @@ export function oHocThuat(rows: readonly {
 export function oYThuc(y: {
   bacTen: string | null; nhom: string | null; soBatBuoc: number; keTiep: string | null; han: string | null; quaHanNgay: number | null;
   deXuat: string | null; soMo: number; tamDung: boolean;
-} | null, homNay: string | null = null): { tren: string | null; gt: string; phu: string; tone: 'danger' | 'warn' | 'wait' | null } {
+} | null, homNay: string | null = null): { tren: string | null; gt: string; phu: string; phuK?: ChuKhoa; tone: 'danger' | 'warn' | 'wait' | null } {
   const tren = y?.bacTen ? 'bậc đã xử lý' : null;
   /* UX-G G5: chưa xử lý lần nào VÀ không có vi phạm mở → "Không có vi phạm" (không đọc như cảnh báo), dòng phụ bỏ vì lặp ý. */
   if (!y || (!y.bacTen && !y.soMo && !y.deXuat)) return { tren, gt: 'Không có vi phạm', phu: '', tone: null };
   const gt = y.bacTen ?? 'Chưa xử lý lần nào';
-  const vp = `${y.soBatBuoc} vi phạm / 2 tuần → bắt buộc ${y.keTiep ?? 'xử lý'}`;
-  if (y.nhom === 'qua_han' && !y.tamDung) return { tren, gt, phu: `${vp} · quá hạn${y.quaHanNgay ? ` ${y.quaHanNgay} ngày` : ''}`, tone: 'danger' };
-  if (y.nhom === 'bat_buoc' && !y.tamDung) return { tren, gt, phu: `${vp}${y.han ? ` · hạn hết ${ngay(y.han, homNay)}` : ''}`, tone: 'warn' };
-  if (y.nhom === 'cho_duyet') return { tren, gt, phu: `đề xuất ${y.deXuat ?? 'xử lý'} chờ Quản lý duyệt`, tone: 'wait' };
-  if (y.soMo > 0) return { tren, gt, phu: `${y.soMo} vi phạm mở · ${y.tamDung ? 'hạn đang dừng' : 'chưa bắt buộc'}`, tone: null };
+  const vp = kem('{n} vi phạm / 2 tuần → bắt buộc {ke}', { n: y.soBatBuoc, ke: y.keTiep ?? 'xử lý' });
+  const k = (phuK: ChuKhoa, tone: 'danger' | 'warn' | 'wait' | null) => ({ tren, gt, phu: phuK.chu, phuK, tone });
+  if (y.nhom === 'qua_han' && !y.tamDung) return k(y.quaHanNgay ? kem('{vp} · quá hạn {n} ngày', { vp, n: y.quaHanNgay }) : kem('{vp} · quá hạn', { vp }), 'danger');
+  if (y.nhom === 'bat_buoc' && !y.tamDung) return k(y.han ? kem('{vp} · hạn hết {han}', { vp, han: ngay(y.han, homNay) }) : vp, 'warn');
+  if (y.nhom === 'cho_duyet') return k(kem('đề xuất {de} chờ Quản lý duyệt', { de: y.deXuat ?? 'xử lý' }), 'wait');
+  if (y.soMo > 0) return k(kem(y.tamDung ? '{n} vi phạm mở · hạn đang dừng' : '{n} vi phạm mở · chưa bắt buộc', { n: y.soMo }), null);
   return { tren, gt, phu: 'không có vi phạm mở', tone: null };
 }
 
@@ -319,25 +335,27 @@ export function oSapToi(i: {
   ratio: boolean; kck: boolean; bacKe: string | null; homNay: string;
   /** Em đang Tạm dừng (mockup 24 D1): mốc vẫn giữ, chữ phụ "giữ lịch · Quản lý dời nếu cần". */
   tamDung?: boolean;
-}): { tren: string; gt: string; phu: string | null } {
-  if (i.ketLuan) return { tren: 'lộ trình đã khép', gt: `Kết luận: ${i.ketLuan}`, phu: null };
+}): { tren: string; gt: string; gtK?: ChuKhoa; phu: string | null; phuK?: ChuKhoa } {
+  if (i.ketLuan) { const gtK = kem('Kết luận: {kl}', { kl: i.ketLuan }); return { tren: 'lộ trình đã khép', gt: gtK.chu, gtK, phu: null }; }
   if (i.sauCuoiKhoa) {
-    return { tren: 'sau Final Test', gt: 'Chuyển lớp', phu: `chờ Quản lý quyết định${i.sauCuoiKhoa.tuanKetThuc ? ` · lớp kết thúc ${tuanLich(i.sauCuoiKhoa.tuanKetThuc, i.homNay)}` : ''}` };
+    const phuK = i.sauCuoiKhoa.tuanKetThuc ? kem('chờ Quản lý quyết định · lớp kết thúc {tuan}', { tuan: tuanLich(i.sauCuoiKhoa.tuanKetThuc, i.homNay) }) : { chu: 'chờ Quản lý quyết định' };
+    return { tren: 'sau Final Test', gt: 'Chuyển lớp', phu: phuK.chu, phuK };
   }
   const n = i.next;
   if (!n) return { tren: 'mốc kế tiếp', gt: 'Chưa có mốc', phu: 'chưa xếp lịch Test' };
   const gt = n.tuan ? `${n.dau} · ${tuanLich(n.tuan, i.homNay)}` : n.dau;
   if (i.tamDung) return { tren: 'mốc kế tiếp', gt, phu: 'giữ lịch · Quản lý dời nếu cần' };
-  if (i.ratio) return { tren: 'mốc kế tiếp', gt, phu: `${n.soPhan} môn${n.final && i.bacKe ? ` · xét lên ${i.bacKe}` : ''}` };
-  if (i.kck && n.kyVong === null) return { tren: 'mốc kế tiếp', gt, phu: n.attemptNo > 1 ? `so với MT${n.attemptNo - 1}, không kỳ vọng` : 'không kỳ vọng' };   // OV-9: KCK chưa có Target
-  return { tren: 'mốc kế tiếp', gt, phu: `${n.kyVong !== null ? `kỳ vọng ${n.kyVong.toFixed(1)} · ` : ''}${n.soPhan} phần` };
+  const phu = (phuK: ChuKhoa) => ({ tren: 'mốc kế tiếp', gt, phu: phuK.chu, phuK });
+  if (i.ratio) return phu(n.final && i.bacKe ? kem('{n} môn · xét lên {bac}', { n: n.soPhan, bac: i.bacKe }) : kem('{n} môn', { n: n.soPhan }));
+  if (i.kck && n.kyVong === null) return phu(n.attemptNo > 1 ? kem('so với MT{so}, không kỳ vọng', { so: n.attemptNo - 1 }) : { chu: 'không kỳ vọng' });   // OV-9: KCK chưa có Target
+  return phu(n.kyVong !== null ? kem('kỳ vọng {kv} · {n} phần', { kv: n.kyVong.toFixed(1), n: n.soPhan }) : kem('{n} phần', { n: n.soPhan }));
 }
 
 // ====================================================================== bảng kỹ năng: chữ của hàng PA và cột Việc tiếp (PR-VAI-b Task 6)
 
 /** Khoảng PA nói MÃ TUẦN (Q19, Q30-6): `từ W3 SEP` · `W3 SEP → W1 OCT` (đã xong) — mốc quy chế nối sau (`· đến MT2 · W4 OCT`). */
 export function chuKhoangPa(p: { startedOn: string | null; completedOn: string | null; mocChu?: string | null }, homNay: string): string | null {
-  const dau = p.startedOn ? (p.completedOn ? `${tuanLich(p.startedOn, homNay)} → ${tuanLich(p.completedOn, homNay)}` : `từ ${tuanLich(p.startedOn, homNay)}`) : null;
+  const dau = p.startedOn ? (p.completedOn ? `${tuanLich(p.startedOn, homNay)} → ${tuanLich(p.completedOn, homNay)}` : t('từ {tuan}', { tuan: tuanLich(p.startedOn, homNay) })) : null;
   return [dau, p.mocChu || null].filter(Boolean).join(' · ') || null;
 }
 

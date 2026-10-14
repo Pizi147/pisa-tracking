@@ -103,7 +103,7 @@ export async function runPrDhTests(t: YThucTestKit) {
 
   check('PR-DH (2) · Học viên & Lớp: cả hai nhóm có cột "Dự kiến thi" (ExamPlanText ở bảng và thẻ), 8 cột khớp hàng lớp', () => {
     const sp = doc('web/src/modules/students/StudentsPage.tsx');
-    assert(sp.includes("k === 'ft' ? 'Target' : 'Khoá', 'Dự kiến thi', 'Sắp tới', 'Case', 'Việc tiếp theo', ''"), 'tieuDeCot: Dự kiến thi sau Target/Khoá, không phân nhánh theo nhóm');
+    assert(sp.includes("k === 'ft' ? 'Target' : t('Khoá'), t('Dự kiến thi'), t('Sắp tới'), 'Case', t('Việc tiếp theo'), ''"), 'tieuDeCot: Dự kiến thi sau Target/Khoá, không phân nhánh theo nhóm');
     /* OV-10b: Admin có bảng riêng 1+2+1 (Lượt MT gần nhất · Ô chưa nhập); QL / GV giữ 3+4+1. */
     assert(/colSpan=\{admin \? 2 : 4\}/.test(sp) && /soCot=\{admin \? 4 : 8\}/.test(sp) && (sp.match(/min-w-\[960px\]/g) ?? []).length === 2, 'hàng lớp 3+4+1 cột, bảng min-w 960');
     const bg = doc('web/src/modules/students/BangHocVienLop.tsx');

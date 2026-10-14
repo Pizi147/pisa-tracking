@@ -266,8 +266,8 @@ export async function runPrHk2Tests(t: YThucTestKit) {
 
   check('C19a · Học viên & Lớp: ô tìm "Lọc trong danh sách này…"; "+ Lớp mới" / "+ Học viên" max-sm:hidden và có trong MenuDong "Thao tác trang" (chỉ < 640 px)', () => {
     const s = doc('web/src/modules/students/StudentsPage.tsx');
-    assert(/placeholder="🔍 Lọc trong danh sách này…"/.test(s) && !/Tìm tên, mã học viên hoặc mã lớp/.test(s), 'placeholder ô tìm');
-    assert(/className="btn btn-sm max-sm:hidden"[^]*?>\+ Lớp mới</.test(s) && /className="btn btn-sm btn-primary max-sm:hidden"[^]*?>\+ Học viên</.test(s), 'hai nút ngoài phải max-sm:hidden');
+    assert(/placeholder=\{t\('🔍 Lọc trong danh sách này…'\)\}/.test(s) && !/Tìm tên, mã học viên hoặc mã lớp/.test(s), 'placeholder ô tìm');
+    assert(/className="btn btn-sm max-sm:hidden"[^]*?>\{t\('\+ Lớp mới'\)\}</.test(s) && /className="btn btn-sm btn-primary max-sm:hidden"[^]*?>\{t\('\+ Học viên'\)\}</.test(s), 'hai nút ngoài phải max-sm:hidden');
     const mn = s.slice(s.indexOf('<MenuDong nhan="Thao tác trang"'), s.indexOf('<MenuDong nhan="Thao tác trang"') + 900);
     assert(/dienThoai && data\?\.coTheTaoLop/.test(mn) && /nhan: '\+ Lớp mới'/.test(mn), 'mục "+ Lớp mới" trong menu chỉ khi dienThoai');
     assert(/dienThoai && data\?\.coTheThemHocVien/.test(mn) && /nhan: '\+ Học viên'/.test(mn), 'mục "+ Học viên" trong menu chỉ khi dienThoai');   // OV-11g HL-14: cờ trang
@@ -367,7 +367,7 @@ export async function runPrHk2Tests(t: YThucTestKit) {
     assert(!/\(đã chấm\)/.test(doc('shared/domain/lopThuong.ts')) && !/\(đã chấm\)/.test(doc('shared/domain/chamDiem.ts')), 'còn "(đã chấm)"');
     const kq = d.nhanKetQuaThuong({ kind: 'progress', ct: 'MB', scored: 2, required: 4, failedSkills: ['reading'], tyLeTong: null, khongChiaMon: false });
     assert(kq.chinh === '1/2 môn đạt' && /^Không đạt: /.test(kq.phu), JSON.stringify(kq));
-    const chuaXong = /Chờ \{a\.required - a\.scored\} môn[^]*?<\/>/.exec(doc('web/src/modules/students/StudentDetailPage.tsx'))?.[0] ?? '';
+    const chuaXong = /Chờ \{n\} môn[^]*?<\/>/.exec(doc('web/src/modules/students/StudentDetailPage.tsx'))?.[0] ?? '';
     assert(/text-soon/.test(chuaXong) && !/text-slate-400/.test(chuaXong), 'dòng "Không đạt" của bài chấm dở chưa text-soon');
   });
 

@@ -608,7 +608,7 @@ export async function runPrDlTests(t: YThucTestKit) {
     const dt = doc('web/src/modules/classes/DauTrangLop.tsx');
     assert(!dt.includes("key: 'diem-lop'") && !/'Điểm (MT|Test) cả lớp'/.test(dt), 'mục ⋯ Điểm cả lớp còn sót');
     const ov = doc('web/src/modules/classes/ClassOverviewPage.tsx');
-    for (const chu of ['aria-expanded', 'Điểm Mock Test của lớp', 'còn ${', 'gon', 'duongDiemTheoLuot(', 'data.viewer.coTheXemDiem && <KhoiDiemLop']) assert(ov.includes(chu), `ClassOverviewPage thiếu: ${chu}`);
+    for (const chu of ['aria-expanded', 'Điểm Mock Test của lớp', 'còn {n} ô trống', 'gon', 'duongDiemTheoLuot(', 'data.viewer.coTheXemDiem && <KhoiDiemLop']) assert(ov.includes(chu), `ClassOverviewPage thiếu: ${chu}`);
     assert(/useState\(true\)/.test(ov.slice(ov.indexOf('const [moDiem'), ov.indexOf('const [moDiem') + 60)), 'khối điểm phải mở sẵn');
     assert(/daMo && <DiemTheoLop/.test(ov) && /if \(mo && !daMo\) setDaMo\(true\)/.test(ov) && ov.includes('hidden={!mo}'),
       'thu gọn chỉ ẩn, không gỡ (giữ ô đang gõ)');

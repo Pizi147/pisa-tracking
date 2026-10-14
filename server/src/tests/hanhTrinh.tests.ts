@@ -710,7 +710,7 @@ export async function runHanhTrinhTests(t: YThucTestKit) {
   check('PR-Qb (4) · HanhTrinh.tsx không chứa "dự kiến", SectionNote, weekCodeOf', () => {
     const src = doc('web/src/modules/students/HanhTrinh.tsx');
     /* PR-S6F-b (mockup 26, kế hoạch S6F Task 13): chữ chú giải mục 8 "dự kiến" (ghim viền đứt) được phép — Q4 cấm vẽ ĐUÔI dự kiến trên trục. */
-    assert(!src.replace(": 'dự kiến'],", '').includes('dự kiến'), 'Không vẽ đuôi "dự kiến" (Q4) — chỉ chữ chú giải mục 8');
+    assert(!src.replace("t('dự kiến')],", '').includes('dự kiến'), 'Không vẽ đuôi "dự kiến" (Q4) — chỉ chữ chú giải mục 8');
     assert(!src.includes('SectionNote'), 'Không dùng SectionNote — chú thích một dòng thay thế');
     assert(!src.includes('weekCodeOf'), 'Trục dùng trucTuan/hanhTrinh.ts, không dùng weekCodeOf cũ');
   });

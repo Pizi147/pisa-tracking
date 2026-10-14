@@ -5,6 +5,7 @@ import { Nhan, type ToneNhan } from '../../ui/Nhan.tsx';
 import { Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { NganTongKet } from '../students/NganTongKet.tsx';
 import { toneHuong } from '../students/CacLoTrinh.tsx';
+import { dich, t } from '@shared/i18n/index.ts';
 
 type Dong = {
   studentId: number; ten: string; loTrinhId: number | null; roiSom: boolean; dauVao: number | null; target: number | null; soLuot: number;
@@ -25,21 +26,21 @@ const toneDai = (d: string | null | undefined): ToneNhan => (d === 'dat' ? 'ok' 
 /** Kết quả thi thật của một em FT: máy so OVR với Target lúc đóng (đã tính ở bản chụp). */
 function ketQuaThi(d: Dong): { tone: ToneNhan; chu: string } | null {
   if (d.roiSom || d.huongKhoa === 'chuyen_lop') return null;   // em chuyển lớp (đóng-mở): không đi thi
-  if (d.ketLuan === 'reached') return { tone: 'ok', chu: 'Đạt Target' };
-  if (d.ketLuan === 'not_reached') return { tone: 'late', chu: 'Chưa đạt Target' };
+  if (d.ketLuan === 'reached') return { tone: 'ok', chu: t('Đạt Target') };
+  if (d.ketLuan === 'not_reached') return { tone: 'late', chu: t('Chưa đạt Target') };
   if (d.thiThat?.ovr != null) return null;   // có Overall (kết quả cũ) mà kết luận chưa rõ: không nhãn "Chờ"
-  return { tone: 'muted', chu: d.thiThat?.khongThi ? 'Không thi' : 'Chờ kết quả thi thật' };
+  return { tone: 'muted', chu: d.thiThat?.khongThi ? t('Không thi') : t('Chờ kết quả thi thật') };
 }
-const Huong = ({ d }: { d: Dong }) => (d.huongTiep ? <Nhan tone={toneHuong(d.huongTiep)}>{d.huongTiep}</Nhan> : <span className="text-slate-600">—</span>);
+const Huong = ({ d }: { d: Dong }) => (d.huongTiep ? <Nhan tone={toneHuong(d.huongTiep)}>{dich(d.huongTiep)}</Nhan> : <span className="text-slate-600">—</span>);
 const Gach = <span className="text-slate-600">—</span>;
 
 function Giua({ g }: { g: Dong['giuaKhoa'] }) {
   if (!g) return Gach;
-  return g.huy ? <Nhan tone="done">đã huỷ</Nhan> : <Nhan tone={g.dat === g.tong ? 'ok' : 'soon'}>{`${g.dat}/${g.tong} môn`}</Nhan>;
+  return g.huy ? <Nhan tone="done">{t('đã huỷ')}</Nhan> : <Nhan tone={g.dat === g.tong ? 'ok' : 'soon'}>{t('{a}/{b} môn', { a: g.dat, b: g.tong })}</Nhan>;
 }
 function Cuoi({ c }: { c: Dong['cuoiKhoa'] }) {
   if (!c) return Gach;
-  if (c.huy) return <Nhan tone="done">đã huỷ</Nhan>;
+  if (c.huy) return <Nhan tone="done">{t('đã huỷ')}</Nhan>;
   return c.tyLe === null ? Gach : <Nhan tone={toneDai(c.dai)}>{`${Math.round(c.tyLe * 100)}%`}</Nhan>;
 }
 
@@ -71,17 +72,17 @@ export function TabTongKetLop({ classId }: { classId: number }) {
       <div className="flex flex-wrap gap-2">
         {ft ? (
           <>
-            <So nhan="Học viên" v={data.dai.hocVien} /><So nhan="Đạt Target" v={data.dai.datTarget} tone="ok" />
-            <So nhan="Chưa đạt" v={data.dai.chuaDat} tone="warn" /><So nhan="Chờ kết quả" v={data.dai.choKetQua} />
+            <So nhan={t('Học viên')} v={data.dai.hocVien} /><So nhan={t('Đạt Target')} v={data.dai.datTarget} tone="ok" />
+            <So nhan={t('Chưa đạt')} v={data.dai.chuaDat} tone="warn" /><So nhan={t('Chờ kết quả')} v={data.dai.choKetQua} />
           </>
         ) : (
           <>
-            <So nhan="Học viên" v={data.dai.hocVien} /><So nhan="Lên FT" v={data.dai.lenFt} /><So nhan="Lên lớp" v={data.dai.lenLop} /><So nhan="Học lại" v={data.dai.hocLai} tone="warn" />
+            <So nhan={t('Học viên')} v={data.dai.hocVien} /><So nhan={t('Lên FT')} v={data.dai.lenFt} /><So nhan={t('Lên lớp')} v={data.dai.lenLop} /><So nhan={t('Học lại')} v={data.dai.hocLai} tone="warn" />
           </>
         )}
       </div>
       <section className="card overflow-clip">
-        {moRong && <Empty title="Lớp chưa có học viên nào" />}
+        {moRong && <Empty title={t('Lớp chưa có học viên nào')} />}
         {!moRong && (
           <>
             {/* ≥ sm: bảng (cuộn ngang TRONG khung) */}
@@ -90,14 +91,14 @@ export function TabTongKetLop({ classId }: { classId: number }) {
                 <table className="w-full min-w-[1000px] text-[13px]">
                   <thead>
                     <tr className="text-[11.5px] text-slate-400" style={{ background: 'var(--surface-2)' }}>
-                      <th colSpan={3} /><th colSpan={6} className="border-b px-3 py-1.5 text-center font-semibold" style={{ borderColor: 'var(--line)' }}>MT cuối</th>
-                      <th colSpan={2} className="border-b px-3 py-1.5 text-center font-semibold" style={{ borderColor: 'var(--line)' }}>Thi thật</th><th />
+                      <th colSpan={3} /><th colSpan={6} className="border-b px-3 py-1.5 text-center font-semibold" style={{ borderColor: 'var(--line)' }}>{t('MT cuối')}</th>
+                      <th colSpan={2} className="border-b px-3 py-1.5 text-center font-semibold" style={{ borderColor: 'var(--line)' }}>{t('Thi thật')}</th><th />
                     </tr>
                     <tr className="text-left text-[11.5px] text-slate-400" style={{ background: 'var(--surface-2)' }}>
-                      <th className="px-3 py-2 font-semibold">Học viên</th><th className="px-3 py-2 text-right font-semibold">Đầu vào</th><th className="px-3 py-2 text-right font-semibold">Target</th>
+                      <th className="px-3 py-2 font-semibold">{t('Học viên')}</th><th className="px-3 py-2 text-right font-semibold">{t('Đầu vào')}</th><th className="px-3 py-2 text-right font-semibold">Target</th>
                       <th className="px-3 py-2 font-semibold">MT</th>
                       {['L', 'R', 'W', 'S', 'OVR', 'OVR'].map((h, i) => <th key={i} className="px-3 py-2 text-right font-semibold">{h}</th>)}
-                      <th className="px-3 py-2 font-semibold">Kết quả</th><th className="px-3 py-2 font-semibold">Hướng tiếp</th>
+                      <th className="px-3 py-2 font-semibold">{t('Kết quả')}</th><th className="px-3 py-2 font-semibold">{t('Hướng tiếp')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -108,8 +109,8 @@ export function TabTongKetLop({ classId }: { classId: number }) {
                           <td className="px-3">{ten(d)}</td>
                           <td className="px-3 text-right tabular-nums">{b1(d.dauVao)}</td><td className="px-3 text-right tabular-nums">{b1(d.target)}</td>
                           <td className="whitespace-nowrap px-3 tabular-nums">
-                            {d.luotCuoi ? <>{d.luotCuoi.nhan} <span className="text-slate-500">· {d.soLuot} lượt</span></> : Gach}
-                            {d.luotCuoiHuy && <span className="ml-1.5 text-xs text-late">đã huỷ</span>}
+                            {d.luotCuoi ? <>{dich(d.luotCuoi.nhan)} <span className="text-slate-500">· {t('{n} lượt', { n: d.soLuot })}</span></> : Gach}
+                            {d.luotCuoiHuy && <span className="ml-1.5 text-xs text-late">{t('đã huỷ')}</span>}
                           </td>
                           {[d.luotCuoi?.l, d.luotCuoi?.r, d.luotCuoi?.w, d.luotCuoi?.s, d.luotCuoi?.overall].map((v, i) => <td key={i} className="px-3 text-right tabular-nums">{b1(v)}</td>)}
                           <td className="px-3 text-right font-semibold tabular-nums text-slate-100">{b1(d.thiThat?.ovr)}</td>
@@ -124,7 +125,7 @@ export function TabTongKetLop({ classId }: { classId: number }) {
                 <table className="w-full min-w-[620px] text-[13px]">
                   <thead>
                     <tr className="text-left text-[11.5px] text-slate-400" style={{ background: 'var(--surface-2)' }}>
-                      <th className="px-3 py-2 font-semibold">Học viên</th><th className="px-3 py-2 font-semibold">Progress Test</th><th className="px-3 py-2 font-semibold">Final Test</th><th className="px-3 py-2 font-semibold">Kết luận khoá</th>
+                      <th className="px-3 py-2 font-semibold">{t('Học viên')}</th><th className="px-3 py-2 font-semibold">Progress Test</th><th className="px-3 py-2 font-semibold">Final Test</th><th className="px-3 py-2 font-semibold">{t('Kết luận khoá')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -147,17 +148,17 @@ export function TabTongKetLop({ classId }: { classId: number }) {
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
                         {ten(d)}
-                        {ft && <div className="text-xs text-slate-500">Target <span className="tabular-nums">{b1(d.target)}</span>{d.luotCuoi && <> · {d.luotCuoi.nhan} · {d.soLuot} lượt</>}{d.luotCuoiHuy && <span className="text-late"> · đã huỷ</span>}</div>}
+                        {ft && <div className="text-xs text-slate-500">Target <span className="tabular-nums">{b1(d.target)}</span>{d.luotCuoi && <> · {dich(d.luotCuoi.nhan)} · {t('{n} lượt', { n: d.soLuot })}</>}{d.luotCuoiHuy && <span className="text-late"> · {t('đã huỷ')}</span>}</div>}
                       </div>
                       {ft ? (k ? <Nhan tone={k.tone}>{k.chu}</Nhan> : null) : (d.roiSom ? null : <Huong d={d} />)}
                     </div>
                     <dl className="m-0 mt-1.5 grid grid-cols-[auto_1fr] items-center gap-x-3 gap-y-1 text-[12.5px]">
                       {ft ? (
                         <>
-                          <dt className="text-slate-500">{d.luotCuoi?.nhan ?? 'MT cuối'}</dt>
+                          <dt className="text-slate-500">{d.luotCuoi?.nhan ? dich(d.luotCuoi.nhan) : t('MT cuối')}</dt>
                           <dd className="m-0 tabular-nums">{d.luotCuoi ? `L ${b1(d.luotCuoi.l)} · R ${b1(d.luotCuoi.r)} · W ${b1(d.luotCuoi.w)} · S ${b1(d.luotCuoi.s)} · OVR ${b1(d.luotCuoi.overall)}` : '—'}</dd>
-                          <dt className="text-slate-500">Thi thật</dt><dd className="m-0 tabular-nums">{d.thiThat?.ovr != null ? `OVR ${b1(d.thiThat.ovr)}` : '—'}</dd>
-                          <dt className="text-slate-500">Hướng tiếp</dt><dd className="m-0">{d.roiSom ? '—' : <Huong d={d} />}</dd>
+                          <dt className="text-slate-500">{t('Thi thật')}</dt><dd className="m-0 tabular-nums">{d.thiThat?.ovr != null ? `OVR ${b1(d.thiThat.ovr)}` : '—'}</dd>
+                          <dt className="text-slate-500">{t('Hướng tiếp')}</dt><dd className="m-0">{d.roiSom ? '—' : <Huong d={d} />}</dd>
                         </>
                       ) : (
                         <>

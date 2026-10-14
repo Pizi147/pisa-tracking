@@ -8,6 +8,7 @@ import {
 } from '../../ui/BieuTuong.tsx';
 import { NhanLoai } from '../cases/SkillBoard.tsx';
 import { chuKhoangDung, chuTuanHoc, duongDotTest, nhanGhim, skillShort, tenMonNgan, tuanLich, type MauKetQua, type TonePaChuong } from '@shared/domain/index.ts';
+import { dich, dichChu, t, type Bien } from '@shared/i18n/index.ts';
 
 /**
  * CHƯƠNG THEO LỚP (PR-VAI-b Task 10, mockup 26 bản 2) — khối đầu tab Hành trình, thay bảng Lịch sử lớp và khối "Mốc học tập".
@@ -25,7 +26,7 @@ export type ChuongWeb = {
   enrollmentId: number; classId: number; code: string; ngan: string; nhan: string; ct: string | null; ft: boolean;
   tu: string; den: string | null; dangHoc: boolean; soTuan: number | null; tuanHoc: { tu: number | null; den: number | null; dangDung: boolean } | null; gvcn: string | null;
   tamDung: { tu: string; den: string | null }[]; ghim: Ghim[]; caseDong: CaseDong[];
-  ra: { loai: string | null; chu: string; how: string | null; tu: string | null; docBanGiao: { lenhId: number; lopNguonId: number } | null } | null;
+  ra: { loai: string | null; chu: string; khoa?: string; bien?: Bien; how: string | null; tu: string | null; docBanGiao: { lenhId: number; lopNguonId: number } | null } | null;
 };
 
 const MAU_PIN: Record<MauKetQua, ScoreTone> = { dat: 'emerald', sos1: 'sos1', sos2: 'sos2', sos3: 'sos3', tam: 'tam' };
@@ -42,11 +43,11 @@ const CHIP_SOS: Record<number, string> = { 1: 'bg-sos1-bg text-sos1', 2: 'bg-sos
 /** "[MT1] Reading … [SOS 1]" (tên Case SOS, T21) → chip MT + phần giữa + chip SOS; tên khác giữ nguyên. */
 function TenCaseChuong({ ten }: { ten: string }) {
   const m = /^\[(MT\d+)\] (.*?)(?: \[SOS (\d)\])?$/.exec(ten);
-  if (!m) return <span className="min-w-0">{ten}</span>;
+  if (!m) return <span className="min-w-0">{dich(ten)}</span>;
   return (
     <>
       <span className="rounded border border-[color:var(--line-strong)] px-1 text-[11px] font-semibold leading-4 tabular-nums text-slate-300">{m[1]}</span>
-      <span className="min-w-0">{m[2]}</span>
+      <span className="min-w-0">{dich(m[2])}</span>
       {m[3] && <span className={`rounded px-1 text-[11.5px] font-bold leading-4 tabular-nums ${CHIP_SOS[Number(m[3])] ?? ''}`}>SOS {m[3]}</span>}
     </>
   );
@@ -56,15 +57,15 @@ const khiChuong = (c: ChuongWeb, homNay: string) => {
   const tu = tuanLich(c.tu, homNay);
   const den = c.den ? tuanLich(c.den, homNay) : null;
   const tuan = c.ft
-    ? c.tuanHoc ? (c.tuanHoc.den === null ? chuTuanHoc(c.tuanHoc.tu, null, c.tuanHoc.dangDung) : `tuần học ${c.tuanHoc.tu}–${c.tuanHoc.den}`) : null
-    : c.soTuan ? `${c.soTuan} tuần` : null;
-  return [den ? `${tu} → ${den}` : `từ ${tu}`, tuan].filter(Boolean).join(' · ');
+    ? c.tuanHoc ? (c.tuanHoc.den === null ? chuTuanHoc(c.tuanHoc.tu, null, c.tuanHoc.dangDung) : t('tuần học {a}–{b}', { a: String(c.tuanHoc.tu), b: c.tuanHoc.den })) : null
+    : c.soTuan ? t('{n} tuần', { n: c.soTuan }) : null;
+  return [den ? `${tu} → ${den}` : t('từ {tuan}', { tuan: tu }), tuan].filter(Boolean).join(' · ');
 };
 /** Kỹ năng chưa đạt ở đợt Test mới nhất của chương: FT "dưới kỳ vọng: W2 · S"; lớp thường "không đạt: G+V". */
 const duoiCua = (c: ChuongWeb): string | null => {
   const g = c.ghim.at(-1);
   if (!g?.kyNangChuaDat?.length) return null;
-  return g.cheDo === 'ielts' ? `dưới kỳ vọng: ${g.kyNangChuaDat.map((k) => skillShort(k)).join(' · ')}` : `không đạt: ${g.kyNangChuaDat.map((k) => tenMonNgan(c.ct, k)).join(' · ')}`;
+  return g.cheDo === 'ielts' ? t('dưới kỳ vọng: {ds}', { ds: g.kyNangChuaDat.map((k) => skillShort(k)).join(' · ') }) : t('không đạt: {ds}', { ds: g.kyNangChuaDat.map((k) => tenMonNgan(c.ct, k)).join(' · ') });
 };
 
 /** Q23: > 4 chương cuộn ngang — khi gắn khung, cuộn tới mép phải (chương đang học), như trục tuần. Hàm ở cấp module nên chỉ chạy lúc gắn. */
@@ -77,12 +78,12 @@ export function ChuongLop({ chuong, lapLai, homNay, onChon }: {
   if (!chuong.length) return null;
   const tongTuan = Math.max(1, Math.round((Date.parse(homNay) - Date.parse(chuong[0].tu)) / (7 * 86_400_000)) + 1);
   return (
-    <section aria-label="Chương theo lớp" className="space-y-2.5">
+    <section aria-label={t('Chương theo lớp')} className="space-y-2.5">
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
         <h3 className="m-0 text-[15px] font-semibold text-slate-100">
-          {chuong.length} lớp · từ {tuanLich(chuong[0].tu, homNay)} · {tongTuan} tuần
+          {t('{n} lớp · từ {tuan} · {so} tuần', { n: chuong.length, tuan: tuanLich(chuong[0].tu, homNay), so: tongTuan })}
         </h3>
-        <span className="text-[12px] text-slate-400">{dienThoai ? 'Chương đang học mở sẵn; chương cũ bấm để mở' : 'Mới nhất ở bên phải · cuối mỗi thẻ là cách em sang lớp sau'}</span>
+        <span className="text-[12px] text-slate-400">{dienThoai ? t('Chương đang học mở sẵn; chương cũ bấm để mở') : t('Mới nhất ở bên phải · cuối mỗi thẻ là cách em sang lớp sau')}</span>
       </div>
 
       {dienThoai ? <ChuongDienThoai chuong={chuong} homNay={homNay} onChon={onChon} /> : (
@@ -103,8 +104,8 @@ export function ChuongLop({ chuong, lapLai, homNay, onChon }: {
       {lapLai.map((l) => (
         <p key={l.kyNang} className="m-0 flex items-start gap-2.5 rounded-[10px] px-3 py-[9px] text-[13px] text-slate-200" style={{ background: 'var(--surface-2)' }}>
           <span className="mt-[3px] text-late"><IconCanhBao /></span>
-          <span><b className="font-semibold">Lặp lại qua các lớp:</b> {l.kyNang} có Case ở {l.lop.join(', ').replace(/, ([^,]*)$/, ' và $1')}.{' '}
-            <span className="text-slate-400">Hệ thống tự viết dòng này khi một kỹ năng có Case ở hai lớp trở lên.</span></span>
+          <span><b className="font-semibold">{t('Lặp lại qua các lớp:')}</b> {t('{kn} có Case ở {lop}.', { kn: dich(l.kyNang), lop: l.lop.join(', ').replace(/, ([^,]*)$/, ` ${t('và')} $1`) })}{' '}
+            <span className="text-slate-400">{t('Hệ thống tự viết dòng này khi một kỹ năng có Case ở hai lớp trở lên.')}</span></span>
         </p>
       ))}
     </section>
@@ -116,21 +117,21 @@ function TheChuong({ c, homNay, onChon }: { c: ChuongWeb; homNay: string; onChon
   const navigate = useNavigate();
   const duoi = duoiCua(c);
   return (
-    <article aria-label={`${c.code}${c.dangHoc ? ', đang học' : ''}`} onClick={() => onChon(c)}
+    <article aria-label={`${c.code}${c.dangHoc ? `, ${t('đang học')}` : ''}`} onClick={() => onChon(c)}
       className={`flex h-full min-w-0 cursor-pointer flex-col gap-2.5 rounded-xl border bg-[color:var(--surface)] px-3.5 py-3 ${c.dangHoc ? 'border-[color:var(--accent)] shadow-lg' : ''}`}
       style={c.dangHoc ? undefined : { borderColor: 'var(--line)' }}>
       <div className="flex flex-col gap-0.5">
-        <span className={`text-[11px] font-bold tracking-[.05em] ${c.dangHoc ? 'text-[color:var(--accent)]' : 'text-slate-400'}`}>{c.nhan}</span>
+        <span className={`text-[11px] font-bold tracking-[.05em] ${c.dangHoc ? 'text-[color:var(--accent)]' : 'text-slate-400'}`}>{dich(c.nhan)}</span>
         {/* Bàn phím: mã lớp là nút (cả thẻ bấm được bằng chuột) — Tab tới được mọi chương, không lồng liên kết ghim vào nút. */}
         <button type="button" className="self-start rounded border-0 bg-transparent p-0 text-left text-[16px] font-bold leading-tight text-slate-100"
-          title={`Xem trục tuần ${c.code}`} onClick={(e) => { e.stopPropagation(); onChon(c); }}>{c.code}</button>
+          title={t('Xem trục tuần {lop}', { lop: c.code })} onClick={(e) => { e.stopPropagation(); onChon(c); }}>{c.code}</button>
         <span className="text-[12px] tabular-nums text-slate-400">{khiChuong(c, homNay)}</span>
-        {c.gvcn && <span className="text-[12px] text-slate-400">GVCN {c.gvcn}</span>}
+        {c.gvcn && <span className="text-[12px] text-slate-400">{t('GVCN')} {c.gvcn}</span>}
       </div>
-      {c.tamDung.map((t, k) => (
+      {c.tamDung.map((d, k) => (
         <div key={k} className="flex items-center gap-1.5 rounded-md px-2 py-[3px] text-[12px] text-soon"
           style={{ background: 'repeating-linear-gradient(135deg, rgb(var(--soon-bg-rgb)) 0 5px, transparent 5px 10px)' }}>
-          <IconTamDung />Tạm dừng {chuKhoangDung(t, homNay)}
+          <IconTamDung />{t('Tạm dừng {khoang}', { khoang: chuKhoangDung(d, homNay) })}
         </div>
       ))}
       {c.ghim.length > 0 && (
@@ -156,19 +157,19 @@ function TheChuong({ c, homNay, onChon }: { c: ChuongWeb; homNay: string; onChon
             <div key={x.caseId} className="flex flex-col gap-1">
               <span className="flex flex-wrap items-center gap-1.5 text-[12.5px] font-semibold text-slate-100">
                 <NhanLoai loai="Case" /><TenCaseChuong ten={x.ten} />
-                {x.xongO && <span className="text-[12px] font-medium text-slate-400">xong ở {x.xongO}</span>}
+                {x.xongO && <span className="text-[12px] font-medium text-slate-400">{t('xong ở {dot}', { dot: dich(x.xongO) })}</span>}
               </span>
               {x.pa.length > 0 && (
                 <span className="flex flex-wrap items-center gap-1">
                   {x.pa.map((p) => (
-                    <span key={p.id} title={p.ten}
+                    <span key={p.id} title={dich(p.ten)}
                       className={`${CHIP_VUONG} h-5 min-w-0 max-w-full gap-1 overflow-hidden max-sm:h-auto max-sm:min-h-5 max-sm:py-0.5 max-sm:whitespace-normal ${KHOI_PA[p.tone]}`}>
-                      {DAU_PA[p.tone]}<span className={`truncate max-sm:whitespace-normal max-sm:overflow-visible max-sm:break-words ${p.tone === 'wait' ? '' : 'text-slate-100'}`}>{p.ten}</span>
+                      {DAU_PA[p.tone]}<span className={`truncate max-sm:whitespace-normal max-sm:overflow-visible max-sm:break-words ${p.tone === 'wait' ? '' : 'text-slate-100'}`}>{dich(p.ten)}</span>
                     </span>
                   ))}
                 </span>
               )}
-              {x.diTheoSang && <span className="text-[12px] text-slate-400">Case bàn giao sang {x.diTheoSang}</span>}
+              {x.diTheoSang && <span className="text-[12px] text-slate-400">{t('Case bàn giao sang {lop}', { lop: x.diTheoSang })}</span>}
             </div>
           ))}
         </div>
@@ -178,20 +179,20 @@ function TheChuong({ c, homNay, onChon }: { c: ChuongWeb; homNay: string; onChon
           <>
             <span className="flex items-center gap-1.5 text-[12.5px] font-semibold text-slate-100">
               <span className={c.ra.loai === 'chuyen' ? 'text-[color:var(--accent)]' : 'text-slate-400'}>{c.ra.loai === 'chuyen' ? <IconChuyenLop /> : <IconLen />}</span>
-              {c.ra.chu}
+              {dichChu(c.ra)}
             </span>
-            <span className="text-[11.5px] text-slate-400">{[c.ra.how, c.ra.tu ? `từ ${tuanLich(c.ra.tu, homNay)}` : null].filter(Boolean).join(' · ')}</span>
+            <span className="text-[11.5px] text-slate-400">{[c.ra.how && dich(c.ra.how), c.ra.tu ? t('từ {tuan}', { tuan: tuanLich(c.ra.tu, homNay) }) : null].filter(Boolean).join(' · ')}</span>
             {c.ra.docBanGiao && (
               <button type="button" className="btn btn-sm mt-1 self-start" onClick={(e) => {
                 e.stopPropagation();
                 navigate(`/hoc-vien/lop/${c.ra!.docBanGiao!.lopNguonId}?viec=ban-giao&lenh=${c.ra!.docBanGiao!.lenhId}`);
-              }}>Đọc bàn giao</button>
+              }}>{t('Đọc bàn giao')}</button>
             )}
           </>
         ) : (
           <span className="flex items-center justify-between gap-2">
-            <span className="text-[11.5px] text-slate-400">đang học</span>
-            <button type="button" className="btn btn-sm" onClick={(e) => { e.stopPropagation(); onChon(c); }}>Xem trục tuần</button>
+            <span className="text-[11.5px] text-slate-400">{t('đang học')}</span>
+            <button type="button" className="btn btn-sm" onClick={(e) => { e.stopPropagation(); onChon(c); }}>{t('Xem trục tuần')}</button>
           </span>
         )}
       </div>
@@ -210,12 +211,12 @@ function ChuongDienThoai({ chuong, homNay, onChon }: { chuong: ChuongWeb[]; homN
         const noi = truoc?.ra ? (
           <div className="flex items-center gap-1.5 border-x px-3 py-[3px] text-[11.5px] text-slate-400" style={{ borderColor: 'var(--line)', background: 'var(--bg)' }}>
             {truoc.ra.loai === 'chuyen' ? <IconChuyenLop size={10} /> : <IconLen size={10} />}
-            {truoc.ra.chu.charAt(0).toLowerCase() + truoc.ra.chu.slice(1)}{c.tu ? ` · ${tuanLich(c.tu, homNay)}` : ''}
+            {(() => { const chu = dichChu(truoc.ra); return chu.charAt(0).toLowerCase() + chu.slice(1); })()}{c.tu ? ` · ${tuanLich(c.tu, homNay)}` : ''}
           </div>
         ) : null;
         const tomTat = [c.ghim.at(-1) ? nhanGhim({ ...c.ghim.at(-1)!, homNay }).chu : null,
-          c.caseDong.length ? `Case ${c.caseDong.map((x) => x.kyNang).join(', ')}` : null,
-          c.tamDung.length ? `Tạm dừng ${c.tamDung.length === 1 ? chuKhoangDung(c.tamDung[0], homNay) : `${c.tamDung.length} lần`}` : null].filter(Boolean).join(' · ');
+          c.caseDong.length ? `Case ${c.caseDong.map((x) => dich(x.kyNang)).join(', ')}` : null,
+          c.tamDung.length ? t('Tạm dừng {khoang}', { khoang: c.tamDung.length === 1 ? chuKhoangDung(c.tamDung[0], homNay) : t('{n} lần', { n: c.tamDung.length }) }) : null].filter(Boolean).join(' · ');
         return (
           <Fragment key={c.enrollmentId}>
             {c.dangHoc || mo === c.enrollmentId

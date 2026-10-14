@@ -16,6 +16,7 @@ import type { HoSoLop } from './DauTrangLop.tsx';
 import type { QuyenDong } from './thaoTacDongHocVien.tsx';
 import { PERMISSIONS, vaiXemHocVien, type ViecHangLoat } from '@shared/domain/index.ts';
 import { useSession } from '../../lib/session.tsx';
+import { t } from '@shared/i18n/index.ts';
 
 /**
  * TAB HỌC VIÊN CỦA HỒ SƠ LỚP (đặc tả §3.7): hai chế độ.
@@ -32,7 +33,7 @@ import { useSession } from '../../lib/session.tsx';
 export type CheDoHocVien = 'diem' | 'gop-y' | 'lo-trinh' | 'can-ho-tro' | 'ket-qua' | 'thong-tin';
 /** Tên cách xem — cũng là chi tiết của nút "‹ Hồ sơ lớp …" khi đi từ hồ sơ lớp sang hồ sơ khác (PR-OV5b). */
 export const CHE_DO_NHAN: Record<CheDoHocVien, string> = {
-  diem: 'Tổng hợp', 'gop-y': 'Góp ý hàng tuần', 'lo-trinh': 'Lộ trình tiếp theo', 'can-ho-tro': 'Cần hỗ trợ', 'ket-qua': 'Kết quả đầu ra', 'thong-tin': 'Thông tin lớp',
+  diem: t('Tổng hợp'), 'gop-y': t('Góp ý hàng tuần'), 'lo-trinh': t('Lộ trình tiếp theo'), 'can-ho-tro': t('Cần hỗ trợ'), 'ket-qua': t('Kết quả đầu ra'), 'thong-tin': t('Thông tin lớp'),
 };
 export function TabHocVienLop({ lop, cheDo: cheDoUrl, onCheDo, onDoi, onThemHocVien, onSuaThongTin, emMo = null, onDaMoEm, tuan = null, onTuan }: {
   lop: HoSoLop; cheDo: CheDoHocVien; onCheDo: (m: CheDoHocVien) => void;
@@ -73,20 +74,20 @@ export function TabHocVienLop({ lop, cheDo: cheDoUrl, onCheDo, onDoi, onThemHocV
   return (
     <div className="space-y-2">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <BoLocDoan ariaLabel="Cách xem" value={cheDo} onChange={doiCheDo}
-          muc={cacCheDo.map((k) => ({ key: k, nhan: CHE_DO_NHAN[k], ...(k === 'ket-qua' ? { so: `${soDot} đợt` } : {}) }))} />
+        <BoLocDoan ariaLabel={t('Cách xem')} value={cheDo} onChange={doiCheDo}
+          muc={cacCheDo.map((k) => ({ key: k, nhan: CHE_DO_NHAN[k], ...(k === 'ket-qua' ? { so: t('{n} đợt', { n: soDot }) } : {}) }))} />
         <span className="flex flex-wrap items-center gap-2">
-          {onSuaThongTin && <button type="button" className="btn btn-ghost btn-sm min-h-[44px] sm:min-h-0" onClick={onSuaThongTin}>Sửa thông tin</button>}
+          {onSuaThongTin && <button type="button" className="btn btn-ghost btn-sm min-h-[44px] sm:min-h-0" onClick={onSuaThongTin}>{t('Sửa thông tin')}</button>}
           {coTheChon && (
             <button type="button" aria-pressed={chon.bat} onClick={chon.batTat}
-              className={`btn btn-sm min-h-[44px] sm:min-h-0 ${chon.bat ? 'bg-[color:var(--accent-soft)] text-[color:var(--accent)]' : 'btn-ghost'}`}>Chọn nhiều học viên</button>
+              className={`btn btn-sm min-h-[44px] sm:min-h-0 ${chon.bat ? 'bg-[color:var(--accent-soft)] text-[color:var(--accent)]' : 'btn-ghost'}`}>{t('Chọn nhiều học viên')}</button>
           )}
         </span>
       </div>
       {cheDo === 'thong-tin'
         ? (
           <div className="grid items-start gap-3 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
-            <section className="card px-4 py-1" aria-label="Thông tin lớp"><NoiDungThongTinLop lop={lop} chiDoc onDone={onDoi} /></section>
+            <section className="card px-4 py-1" aria-label={t('Thông tin lớp')}><NoiDungThongTinLop lop={lop} chiDoc onDone={onDoi} /></section>
             {vai === 'tvv' && <EmCuaToiOLop lop={lop} />}
           </div>
         )
@@ -105,7 +106,7 @@ export function TabHocVienLop({ lop, cheDo: cheDoUrl, onCheDo, onDoi, onThemHocV
               onAddStudents={lop.viewer.canAddStudents ? onThemHocVien : undefined} />}
       {coTheChon && (
         <ThanhChonNhieu chon={chon}
-          viec={[{ key: 'luu-tru', nhan: 'Lưu trữ' }, { key: 'ket-thuc', nhan: 'Kết thúc học' }, { key: 'huy-lenh', nhan: 'Huỷ chuyển lớp' }, { key: 'xoa', nhan: 'Xoá' }]}
+          viec={[{ key: 'luu-tru', nhan: t('Lưu trữ') }, { key: 'ket-thuc', nhan: t('Kết thúc học') }, { key: 'huy-lenh', nhan: t('Huỷ chuyển lớp') }, { key: 'xoa', nhan: t('Xoá') }]}
           onViec={(k) => setViecChon({ viec: k as ViecHangLoat, ids: [...chon.chon] })} />
       )}
       {viecChon && (
@@ -126,19 +127,19 @@ function EmCuaToiOLop({ lop }: { lop: HoSoLop }) {
   const em = data.rows.filter((r) => r.lop?.id === lop.id);
   const so = (f: (r: (typeof em)[number]) => boolean) => em.filter(f).length;
   return (
-    <section aria-label="Ở lớp này · học viên của tôi" className="rounded-[10px] bg-[color:var(--surface-2)] px-3 py-2.5 text-[13px] text-slate-200">
-      <h2 className="m-0 mb-1.5 text-[11.5px] font-bold uppercase tracking-[.04em] text-slate-400">Ở lớp này · học viên của tôi</h2>
+    <section aria-label={t('Ở lớp này · học viên của tôi')} className="rounded-[10px] bg-[color:var(--surface-2)] px-3 py-2.5 text-[13px] text-slate-200">
+      <h2 className="m-0 mb-1.5 text-[11.5px] font-bold uppercase tracking-[.04em] text-slate-400">{t('Ở lớp này · học viên của tôi')}</h2>
       {em.length ? (
         <>
           <p className="m-0 flex flex-wrap items-center gap-x-2 gap-y-1">
-            <b className="font-semibold tabular-nums">{em.length} em</b>
+            <b className="font-semibold tabular-nums">{t('{n} em', { n: em.length })}</b>
             <span aria-hidden className="text-slate-500">·</span><Level tone="sos3">SOS</Level><span className="tabular-nums">{so((r) => !!r.chuY?.sos)}</span>
-            <span aria-hidden className="text-slate-500">·</span><Nhan tone="wait">Case mới</Nhan><span className="tabular-nums">{so((r) => !!r.chuY?.caseMoi?.length)}</span>
-            <span aria-hidden className="text-slate-500">·</span><Nhan tone="soon">Tạm dừng</Nhan><span className="tabular-nums">{so((r) => r.status === 'inactive')}</span>
+            <span aria-hidden className="text-slate-500">·</span><Nhan tone="wait">{t('Case mới')}</Nhan><span className="tabular-nums">{so((r) => !!r.chuY?.caseMoi?.length)}</span>
+            <span aria-hidden className="text-slate-500">·</span><Nhan tone="soon">{t('Tạm dừng')}</Nhan><span className="tabular-nums">{so((r) => r.status === 'inactive')}</span>
           </p>
-          <Link to={`/hoc-vien?q=${encodeURIComponent(lop.code)}`} className="link mt-1.5 inline-flex min-h-[44px] items-center sm:min-h-0">Xem từng em ở Học viên & Lớp</Link>
+          <Link to={`/hoc-vien?q=${encodeURIComponent(lop.code)}`} className="link mt-1.5 inline-flex min-h-[44px] items-center sm:min-h-0">{t('Xem từng em ở Học viên & Lớp')}</Link>
         </>
-      ) : <p className="m-0 text-slate-400">Lớp này chưa có học viên nào của bạn.</p>}
+      ) : <p className="m-0 text-slate-400">{t('Lớp này chưa có học viên nào của bạn.')}</p>}
     </section>
   );
 }

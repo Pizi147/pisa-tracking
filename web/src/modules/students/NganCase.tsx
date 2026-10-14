@@ -16,6 +16,7 @@ import { XacNhanCasePanel, XacNhanPaPanel, type PaQuyChe } from '../yThuc/CaseSo
 import { TheYeuCau } from '../duyet/TheYeuCau.tsx';
 import { NhanTamDung } from '../cases/SkillBoard.tsx';
 import { KhoaNho } from '../cases/FormPa.tsx';
+import { dich, t } from '@shared/i18n/index.ts';
 
 export type { ViewCase };
 
@@ -106,7 +107,7 @@ export function NganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose
   const paCho = (data.interventions ?? []).filter((x: any) => x.awaitingConfirmation) as PaQuyChe[];
   if (view.loai === 'xac-nhan') {
     return (
-      <XacNhanCasePanel {...chung} caseId={caseId} topic={data.topic ?? data.category} kyNang={data.categoryLabel ?? data.category ?? 'Kỹ năng'}
+      <XacNhanCasePanel {...chung} caseId={caseId} topic={data.topic ?? data.category} kyNang={data.categoryLabel ?? data.category ?? t('Kỹ năng')}
         ct={data.chuongTrinh ?? null} tenSos={data.tenSos ?? null} paQuyChe={paCho} boTro={data.boTro ?? null}
         onXong={() => { reload(); onChanged?.(); setView(paCho[0] ? { loai: 'xac-nhan-pa', paId: paCho[0].id } : { loai: 'case' }); }} />
     );
@@ -162,30 +163,30 @@ export function NganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose
     try {
       await api.post(`/cases/${caseId}/mo-lai`);
       invalidate('/cases'); invalidate('/my-work'); invalidate('/students');
-      toast.push('ok', 'Đã mở lại Case');
+      toast.push('ok', t('Đã mở lại Case'));
       onChanged?.();
-    } catch (e: any) { toast.push('error', e?.message ?? 'Không mở lại được'); } finally { setMoLaiBusy(false); }
+    } catch (e: any) { toast.push('error', e?.message ?? t('Không mở lại được')); } finally { setMoLaiBusy(false); }
   };
   const nutDau = data.viewer.coTheMoLai
-    ? <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={moLaiBusy} onClick={() => void moLai()}>{moLaiBusy ? 'Đang mở lại…' : 'Mở lại'}</button>
+    ? <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={moLaiBusy} onClick={() => void moLai()}>{moLaiBusy ? t('Đang mở lại…') : t('Mở lại')}</button>
     : canDong && data.viewer.coTheSua
       /* OV-7b: Case từ SOS đã xác nhận nguyên nhân — cùng panel Sửa Case, chữ nói đúng việc ("Sửa xác nhận": nguyên nhân, mô tả). */
-      ? <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setView({ loai: 'sua' })}>{data.sos?.fromSos && data.sos?.hasCause ? 'Sửa xác nhận' : 'Sửa'}</button>
+      ? <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setView({ loai: 'sua' })}>{data.sos?.fromSos && data.sos?.hasCause ? t('Sửa xác nhận') : t('Sửa')}</button>
       /* Rà #229: Case hệ thống đóng — không có Mở lại tay, nói đường mở. */
       : data.status === 'done' && data.systemCloseLabel && data.viewer.canApprove
-        ? <span className="text-xs text-slate-400">Hệ thống đóng — Hoàn tác Kết thúc học để mở</span>
+        ? <span className="text-xs text-slate-400">{t('Hệ thống đóng — Hoàn tác Kết thúc học để mở')}</span>
         : null;
   const nutChinh = (() => {
     if (!data.viewer.canEdit || !canDong) return undefined;
     const nut = (chu: string, lam: () => void, title?: string) => <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" title={title} onClick={lam}>{chu}</button>;
-    if (v?.chu === 'Xác nhận nguyên nhân') return nut('Xác nhận nguyên nhân', () => setView({ loai: 'xac-nhan' }));
-    if (v?.chu.startsWith('Xác nhận PA') && v.paId) return nut('Xác nhận PA', () => setView({ loai: 'xac-nhan-pa', paId: v.paId! }));
-    if (v?.loaiHan === 'cap-nhat-pa' && v.paId) return nut(v.chu.startsWith('Kết quả cuối') ? 'Kết quả cuối' : 'Kết quả', () => setView({ loai: 'ghi-ket-qua', paId: v.paId! }), v.chu);  /* tên PA là chữ người dạy gõ (có thể dài) — chỉ để ở tooltip; nút nào cũng đã có "Kết quả" riêng ở thẻ PA */
+    if (v?.chu === 'Xác nhận nguyên nhân') return nut(t('Xác nhận nguyên nhân'), () => setView({ loai: 'xac-nhan' }));
+    if (v?.chu.startsWith('Xác nhận PA') && v.paId) return nut(t('Xác nhận PA'), () => setView({ loai: 'xac-nhan-pa', paId: v.paId! }));
+    if (v?.loaiHan === 'cap-nhat-pa' && v.paId) return nut(v.chu.startsWith('Kết quả cuối') ? t('Kết quả cuối') : t('Kết quả'), () => setView({ loai: 'ghi-ket-qua', paId: v.paId! }), dich(v.chu));  /* tên PA là chữ người dạy gõ (có thể dài) — chỉ để ở tooltip; nút nào cũng đã có "Kết quả" riêng ở thẻ PA */
     if (ht?.an || !data.viewer.canClose) return undefined;
     return (
       <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0"
         onClick={() => (chanHoanThanh.length > 0 ? lf.bam() : setView({ loai: 'hoan-thanh' }))}>
-        Hoàn thành Case
+        {t('Hoàn thành Case')}
       </button>
     );
   })();
@@ -194,28 +195,28 @@ export function NganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose
   return (
     <KhungPanel tieuDe={ten} hocVien={hv} lop={lop} onDong={onClose}
       chan={{
-        huy: { nhan: 'Đóng', onClick: onClose },
+        huy: { nhan: t('Đóng'), onClick: onClose },
         phu: data.viewer.canEdit && canDong && !(data.sos?.awaitingCause || data.sos?.choDuyetKhongTheoDoi)
-          ? <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={() => setView({ loai: 'them-pa' })}>+ Thêm PA</button>
+          ? <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={() => setView({ loai: 'them-pa' })}>{t('+ Thêm PA')}</button>
           : undefined,
         chinh: nutChinh,
-        conThieu: lf.daBam && chanHoanThanh.length > 0 ? [{ nhan: 'Hoàn thành Case', lyDo: chanHoanThanh[0] }] : undefined,
+        conThieu: lf.daBam && chanHoanThanh.length > 0 ? [{ nhan: t('Hoàn thành Case'), lyDo: dich(chanHoanThanh[0]) }] : undefined,
       }}>
       <div ref={boxRef}>
         {/* PR-PA (§8, mockup pa-dong-bo §9): dải đầu panel — trạng thái MỘT lần (chip) · "mở W2 OCT · X báo" · Sửa / Mở lại cùng hàng. */}
         <div className="-mx-4 flex flex-col gap-1.5 border-b px-4 pb-3 pt-2.5" style={{ borderColor: 'var(--line)', background: 'rgb(var(--phu-rgb) / 0.035)' }}>
           <div className="flex flex-wrap items-center gap-2">
             {data.systemCloseLabel
-              ? <Nhan tone="muted" title={data.systemCloseLabel}>Hệ thống đóng · {data.systemCloseLabel}</Nhan>
+              ? <Nhan tone="muted" title={dich(data.systemCloseLabel)}>{t('Hệ thống đóng · {ly}', { ly: dich(data.systemCloseLabel) })}</Nhan>
               : data.trangThaiV4
                 ? (data.tamDungTu && data.trangThaiV4.t === 'qua-han'
-                  ? <><NhanTamDung tu={data.tamDungTu} /><span className="text-[12.5px] text-slate-300">{data.trangThaiV4.chu}</span></>
-                  : <NhanTrangThai t={data.trangThaiV4.t} chu={data.trangThaiV4.chu} />)
+                  ? <><NhanTamDung tu={data.tamDungTu} /><span className="text-[12.5px] text-slate-300">{dich(data.trangThaiV4.chu)}</span></>
+                  : <NhanTrangThai t={data.trangThaiV4.t} chu={dich(data.trangThaiV4.chu)} />)
                 : <Nhan tone={data.status === 'done' ? 'done' : data.status === 'open' ? 'muted' : 'doing'}>{caseStatusLabel(data.status)}</Nhan>}
             <span className="min-w-0 text-[12.5px] text-slate-400">
-              mở {tuanLich(data.detectedAt, homNay)}{data.reportedBy ? ` · ${data.reportedBy} báo` : ''}
+              {t('mở {tuan}', { tuan: tuanLich(data.detectedAt, homNay) })}{data.reportedBy ? ` · ${t('{ten} báo', { ten: data.reportedBy })}` : ''}
               {/* Hạn báo kết quả cả Case chỉ khi KHÔNG có PA chạy — có PA chạy thì hạn của PA đã nói (B-5, Q2). */}
-              {!data.tamDungTu && canDong && !conPaChay && data.followUntil ? ` · hạn báo kết quả ${ngan(data.followUntil)}` : ''}
+              {!data.tamDungTu && canDong && !conPaChay && data.followUntil ? ` · ${t('hạn báo kết quả {ngay}', { ngay: ngan(data.followUntil) })}` : ''}
             </span>
             <span className="flex-1" />
             {nutDau}
@@ -223,7 +224,7 @@ export function NganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose
           {canDong && ht?.an && ht.dong && (
             <p className="m-0 flex items-center gap-1.5 text-[12.5px] text-slate-300">
               <span className="text-slate-400"><KhoaNho /></span>
-              <span>{dk ? <>{dk[1]} · <b className="font-semibold text-slate-100">{dk[2]}</b></> : ht.dong}</span>
+              <span>{dk ? <>{dich(dk[1])} · <b className="font-semibold text-slate-100">{dk[2]}</b></> : dich(ht.dong)}</span>
             </p>
           )}
         </div>
