@@ -385,7 +385,10 @@ C05 đã giải quyết: không tự tạo PA trao đổi hoặc case Ý thức 
 | Mọi '-' chỉ hẹn chấm, luôn cần GVCN xác minh vắng | Còn '-' cuối Chủ nhật thì chốt không dự thi |
 | SOS có hai PA trao đổi bắt buộc tự sinh | GVCN tự quyết định và lập PA |
 | Ép Ý thức theo dõi hiệu quả/tiến bộ | Ghi nhận việc đã làm và chứng cứ, hoàn thành đợt |
-| Hồ sơ MT có khối hỗ trợ/case | Bỏ khỏi hồ sơ MT; giữ dữ liệu và xử lý ở hồ sơ HV |
+
+**Sửa 14/10 (chủ SP, OV-12d):** bỏ luật cũ "bỏ khối Case khỏi hồ sơ MT". Hồ sơ MT có khối **Case & phương án** giữa Lịch Test và Lịch sử: Case sinh từ
+lượt đó và Case trượt lại ở lượt đó ("lặp từ MTn"), mỗi Case một dòng (kỹ năng · Case, nguyên nhân, trạng thái · PA đang làm · việc tiếp + hạn), bấm mở
+Ngăn Case làm tại chỗ. Quyền xem như hồ sơ HV (GV Speaking chấm chéo, Admin không có khối; TVV / CX chỉ đọc). Lượt không có Case: không có khối.
 
 ### 17.6. Nghiệm thu mới thay các kịch bản mâu thuẫn trước đó
 
@@ -818,7 +821,7 @@ Vai trong hệ thống chỉ có **3**: Quản trị hệ thống · Quản lý 
 ### 20.10 Tổng quan, hồ sơ giáo viên, Phân tích
 
 - **Tổng quan giáo viên:** "Việc của tôi · hôm nay" = việc **quá hạn** + việc có hạn từ hôm nay **đến hết Chủ nhật tuần này**. Badge đỏ cạnh Công việc = số việc quá hạn. Hộp thông báo (chuông) chia **Cần làm / Để biết**, tối đa 50 dòng.
-- **Tổng quan Quản lý:** *Cần xử lý* (có cột **Người giữ việc** và **Hạn**) và dải *Chờ duyệt* luôn gộp hai khung; số liệu theo công tắc **Fast Track · Lớp thường** (mặc định Fast Track). Việc "tự quyết" của QL (Case chờ nguyên nhân quá hạn, vi phạm quá 5 ngày) chỉ nằm ở hộp Chờ duyệt (thẻ Báo lên).
+- **Tổng quan Quản lý:** *Cần xử lý* (có cột **Người giữ việc** và **Hạn**) và dải *Chờ duyệt* luôn gộp hai khung; số liệu theo công tắc **Fast Track · Lớp thường** (mặc định Fast Track). Việc "tự quyết" của QL (Case Progress Test quá hạn Xác nhận Case, vi phạm quá 5 ngày) chỉ nằm ở hộp Chờ duyệt (thẻ Báo lên). Ô số **"Case chờ duyệt"** (phụ "n quá hạn") = cột **Chờ duyệt** của Phân tích › Tổng hợp, cùng luật (OV-12d, 14/10): Case đang mở chưa có PA đang theo dõi — chưa có PA, PA chờ xác nhận / chờ QL duyệt, PA Bổ trợ chưa chạy, PA đã xong hết chưa Hoàn thành Case, "Không cần theo dõi" chờ QL, Case MT cũ chờ ghi nhận xét, Progress chờ Xác nhận Case; quá hạn = qua hạn xác nhận hoặc hạn Thêm PA. Ô đếm cả Case GV báo tay.
 - **Hồ sơ giáo viên:** chỉ-xem, năm khối (Việc đang có · Lớp đang dạy · Kết quả gần nhất · Case đang phụ trách · Yêu cầu đã gửi). GV xem chính mình; QL xem GV có vai giáo viên trong chi nhánh mình; Quản trị tất cả; GV xem đồng nghiệp bị 403. **Không có KPI tháng, không xếp hạng, không hàng tổng; sắp theo tên.** Số trên ô = số dòng khi bấm.
 - **Phân tích › Giáo viên** (chỉ QL/Quản trị): Fast Track và Lớp thường tách; mặc định 4 tuần, tối đa 13 tuần. Cột: Chấm điểm · Ghi kết quả PA · Xử lý vi phạm (chỉ GVCN) · PA hiệu quả · Kết quả theo môn · HV tiến bộ · Đang dạy. Màu chỉ ở ô kết quả (đỏ < 50 %, vàng 50–69 %, xanh ≥ 70 %; dưới 5 mục không màu). Có hàng "Chưa phân công" để tổng khớp. **Đúng hạn** = nhập điểm lần đầu không muộn hơn hạn; **quá hạn** = tuần thi đã hết và qua hạn.
 - **Phân tích khác:** vẫn là tab trong Tổng quan; góc "Danh sách Case" đã bỏ (link cũ chuyển hướng). Hiệu quả PA tách "PA theo quy chế" (không xếp hạng, không "Nên dùng") và "PA do GV thêm"; PA huỷ do "không cần theo dõi" ngoài mẫu số.

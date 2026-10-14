@@ -7,12 +7,13 @@ import { demoToday } from '../demoConfig.ts';
 import { classScopeSql, scopeFor, type Principal, type Scope } from '../permissions.ts';
 import { badRequest, forbidden, HttpError, notFound } from '../util.ts';
 import { listCases } from '../cases/cases.ts';
-import { NOT_UNCONFIRMED_PRESET, sosCaseStateMany } from '../cases/sosState.ts';
+import { NOT_UNCONFIRMED_PRESET, xuLyCaseMany } from '../cases/sosState.ts';
 
-/** Rà #389: tập "Case chờ xác nhận" của Tổng quan = cột "Chờ xác nhận" của Tổng hợp — Progress chờ Xác nhận Case + Case MT cũ chờ ghi nhận xét. Báo QL vẫn chỉ Progress (`awaitingCauseCaseIds`). */
-function choXacNhanCaseIds(ids: number[]): number[] {
-  const st = sosCaseStateMany(ids);
-  return ids.filter((id) => st.get(id)?.awaitingCause || st.get(id)?.choNhanXet);
+/** OV-12d: "Case chờ duyệt" của Tổng quan = cột "Chờ duyệt" của Tổng hợp — MỘT hàm `xuLyCaseMany`; `quaHan` = số ⚠ của cột đó. */
+function choDuyetCaseIds(ids: number[], today: string, chiQuaHan = false): number[] {
+  const xl = xuLyCaseMany(ids, today);
+  const out = ids.filter((id) => xl.get(id)?.cot === 'choDuyet' && (!chiQuaHan || xl.get(id)!.quaHan));
+  return chiQuaHan ? out.sort((a, b) => a - b) : out;   // quá hạn xếp theo id như trước
 }
 import { improvementRate, planOutcomes } from '../cases/effectiveness.ts';
 import { doPhuDanhGia, hvDuoiKyVongMon, hvSosHienTai } from './danhGia.ts';
@@ -503,18 +504,6 @@ function locKhung(id: string, r: MetricResult, program: ChuongTrinh | null): Met
   };
 }
 
-/** Case chờ xác nhận nguyên nhân mà hạn xác nhận (`sos_cases.han_xac_nhan`) đã qua — cùng hạn `mywork.ts` dùng cho dòng `cause`. */
-function causeOverdue(caseIds: number[], today: string): number[] {
-  const out: number[] = [];
-  for (let i = 0; i < caseIds.length; i += 400) {
-    const chunk = caseIds.slice(i, i + 400);
-    out.push(...(db().prepare(
-      `SELECT id FROM sos_cases WHERE id IN (${chunk.map(() => '?').join(',')}) AND han_xac_nhan < ? ORDER BY id`,
-    ).all(...chunk, today) as any[]).map((r) => r.id as number));
-  }
-  return out;
-}
-
 /**
  * BÀI (ô điểm — PR-UXF-a Q7) QUÁ HẠN nhập, trong phạm vi; id = `baiId`. `scoreDebtCells` chỉ lọc theo chi nhánh; ở đây áp đúng luật của `classScopeSql`:
  * giữ ô khi lớp thuộc chi nhánh được cấp HOẶC là lớp mình dạy. Người vừa dạy lớp vừa có quyền chi nhánh không được nới thành
@@ -635,7 +624,7 @@ function metricSetGoc(
       /* Case CHỜ DUYỆT có `state` riêng — không quy chậm cho giáo viên (hợp đồng §2). */
       return done(openCases().filter((c: any) => c.state === 'no_plan').map((c: any) => c.id as number));
     case 'case-xac-dinh-nguyen-nhan-qua-han':
-      return done(causeOverdue(choXacNhanCaseIds(openCases().map((c: any) => c.id as number)), today));
+      return done(choDuyetCaseIds(openCases().map((c: any) => c.id as number), today, true));
     case 'bai-qua-han-nhap-diem': {
       const r = overdueScoreBai(p, scope.branchId, today);
       return done(r.ids, { chiTiet: r.chiTiet });
@@ -648,8 +637,8 @@ function metricSetGoc(
     case 'case-chua-co-nguoi-phu-trach':
       return done(openCases().filter((c: any) => !c.ownerUserId).map((c: any) => c.id as number));
     case 'case-cho-xac-dinh-nguyen-nhan':
-      /* Case TỪ SOS đang mở mà chưa có nguyên nhân, không có thẻ Không cần theo dõi đang chờ (K5-51) — cùng định nghĩa với `caseDetail().sos`. */
-      return done(choXacNhanCaseIds(openCases().map((c: any) => c.id as number)));
+      /* OV-12d: Case đang chờ người chốt (Tổng hợp › Chờ duyệt) — id giữ `case-cho-xac-dinh-nguyen-nhan` (đường, chuông, phép kiểm cũ). */
+      return done(choDuyetCaseIds(openCases().map((c: any) => c.id as number), today));
     case 'pa-can-cap-nhat': {
       const r = overdueUpdatePlans(openCases().map((c: any) => c.id as number), today);
       return done(r.ids, { chiTiet: r.chiTiet });

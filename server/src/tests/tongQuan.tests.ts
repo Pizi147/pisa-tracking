@@ -215,12 +215,12 @@ export async function runTongQuanTests(t: YThucTestKit) {
     assert(ids('case-chua-co-nguoi-phu-trach').every((x) => mo.includes(x)), 'Phải là tập con của Case đang mở');
   });
 
-  check('PR-Pa · Chỉ số case-xac-dinh-nguyen-nhan-qua-han = Case chờ xác nhận nguyên nhân mà hạn xác nhận (PR-SOS: sos_cases.han_xac_nhan) đã qua', () => {
+  await checkAsync('PR-Pa · Chỉ số case-xac-dinh-nguyen-nhan-qua-han = Case chờ duyệt đã quá hạn (OV-12d: cùng `xuLyCaseMany` với ⚠ cột Chờ duyệt Tổng hợp)', async () => {
+    const { xuLyCaseMany } = await import('../cases/sosState.ts');
     const cho = ids('case-cho-xac-dinh-nguyen-nhan');
-    const quaHan = cho.filter((id) => {
-      const r = conn.prepare(`SELECT han_xac_nhan AS due FROM sos_cases WHERE id = ?`).get(id) as any;
-      return r?.due && r.due < TODAY;
-    }).sort((a, b) => a - b);
+    const xl = xuLyCaseMany(cho, TODAY);
+    const quaHan = cho.filter((id) => xl.get(id)?.quaHan).sort((a, b) => a - b);
+    assert(quaHan.length > 0, 'bộ demo phải có Case chờ duyệt quá hạn');
     eq(ids('case-xac-dinh-nguyen-nhan-qua-han'), quaHan, 'Lệch tập');
   });
 

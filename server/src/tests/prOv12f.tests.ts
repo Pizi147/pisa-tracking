@@ -81,9 +81,8 @@ export async function runPrOv12fTests(t: YThucTestKit) {
       const c = sau.rows.flatMap((r: any) => r.cases).find((x: any) => x.id === daXong.id);
       assert(c && c.nhom === 'xong', `Case xong: ${JSON.stringify(c)}`);
     });
-    assert(d.nhomXuLyCase('cho-xac-nhan-pa', true) === 'cho-duyet' && d.nhomXuLyCase('dang-lam', false) === 'cho-duyet'
-      && d.nhomXuLyCase('dang-lam', true) === 'dang-xu-ly' && d.nhomXuLyCase('huy-khong-theo-doi', false) === 'xong'
-      && d.nhomXuLyCase('cho-duyet-khong-theo-doi', true) === 'cho-duyet', 'nhomXuLyCase');
+    /* OV-12d: nhóm = cột Tổng hợp (`cotXuLy`) — một luật. */
+    assert(d.NHOM_THEO_COT.choDuyet === 'cho-duyet' && d.NHOM_THEO_COT.dangLam === 'dang-xu-ly' && d.NHOM_THEO_COT.xongHuy === 'xong', 'NHOM_THEO_COT');
   });
 
   check('OV12f-3 · Quyền đi cùng giao diện: Admin 403 · QL chi nhánh khác không thấy MB · GV chỉ lớp mình dạy · TVV chỉ HV của mình · CX mọi chi nhánh', () => thu(() => {
