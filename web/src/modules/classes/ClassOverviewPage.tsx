@@ -37,7 +37,7 @@ export default function ClassOverviewPage() {
   const { homNay } = useNgayNghiepVu();
   const [params, setParams] = useSearchParams();
   const cheDoUrl = params.get('che-do');
-  const cheDo: CheDoHocVien = cheDoUrl === 'can-ho-tro' || cheDoUrl === 'lo-trinh' || cheDoUrl === 'ket-qua' || cheDoUrl === 'thong-tin' ? cheDoUrl : 'diem';
+  const cheDo: CheDoHocVien = cheDoUrl === 'gop-y' || cheDoUrl === 'can-ho-tro' || cheDoUrl === 'lo-trinh' || cheDoUrl === 'ket-qua' || cheDoUrl === 'thong-tin' ? cheDoUrl : 'diem';
   const periods = usePeriods();
   const [periodId, setPeriodId] = useState<number | null>(null);
   const [viec, setViec] = useState<ViecDauTrang | null>(null);
@@ -131,7 +131,8 @@ export default function ClassOverviewPage() {
 
       {tab === 'tong-ket' && <TabTongKetLop classId={data.id} />}
       {tab === 'hoc-vien' && (
-        <TabHocVienLop lop={data} cheDo={cheDo} onCheDo={(m) => doiThamSo({ 'che-do': m === 'diem' ? null : m, em: null })}
+        <TabHocVienLop lop={data} cheDo={cheDo} onCheDo={(m) => doiThamSo({ 'che-do': m === 'diem' ? null : m, em: null, tuan: null })}
+          tuan={params.get('tuan')} onTuan={(w) => doiThamSo({ tuan: w })}
           emMo={Number(params.get('em')) || null} onDaMoEm={() => doiThamSo({ em: null })}
           onDoi={xong} onThemHocVien={() => setViec('hoc-vien')}
           onSuaThongTin={data.viewer.canAddStudents && (data.summary?.studentCount ?? 0) > 0 ? () => setViec('sua-hoc-vien') : undefined} />

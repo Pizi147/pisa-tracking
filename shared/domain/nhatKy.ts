@@ -50,6 +50,7 @@ const NHAN_NHAT_KY: Record<string, string> = {
   'report.unlock': 'Mở khoá báo cáo', 'report.relock': 'Khoá lại báo cáo',
   'role.permission.grant': 'Cấp quyền cho vai', 'role.permission.revoke': 'Bỏ quyền của vai', 'role.retired': 'Bỏ vai cũ', 'rule.changed': 'Đổi luật',
   'schedule.autoplan': 'Tự xếp lịch Test',
+  'gop_y_tuan.ghi': 'Ghi góp ý hàng tuần', 'gop_y_tuan.xoa': 'Xoá góp ý hàng tuần',
   'score.edit': 'Nhập điểm', 'score.override': 'Sửa điểm', 'score.no_show': 'Báo vắng', 'score.no_show_cleared': 'Bỏ báo vắng',
   'score.nhan_xet': 'Sửa nhận xét',
   'signal.assign': 'Giao xác nhận nguyên nhân', 'signal.dismissed': 'Bỏ qua, không lập Case', 'signal.linked': 'Nối vào Case',

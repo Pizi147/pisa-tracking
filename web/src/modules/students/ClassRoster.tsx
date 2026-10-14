@@ -45,7 +45,7 @@ type HistoryRow = {
   lichSu?: boolean;
 };
 
-type RosterRow = {
+export type RosterRow = {
   missing: { key: string; label: string; who: string }[];
   id: number; studentCode: string; fullName: string; status: string; archived: boolean; moiVao?: boolean;
   /** "Kết thúc vì" (Q18/Q22) — chỉ có ở bảng lớp ĐÃ KẾT THÚC, thay cho nhãn chung "Đã kết thúc". */
@@ -314,7 +314,7 @@ export function ClassRoster({ classId, maLop, quyen, onDoi, onAddStudents, chon 
  *   SOS {n} · tạm thời (vàng) · SOS {n} (vàng) · Đạt kỳ vọng (xám; thêm "· tạm thời" khi mới có một phần điểm)
  *   · Chưa có kết quả (xám) · Dưới kỳ vọng · KCK (trung tính, OV-9) · Không tính SOS (xám, em KCK chưa có Target) · Đã kết thúc (xám).
  */
-function KetLuan({ row, cotMocTrong }: { row: RosterRow; /** CA2-7: cột Mốc đã ghi "chưa có điểm" → không lặp chip "Chưa có kết quả". */ cotMocTrong: boolean }) {
+export function KetLuan({ row, cotMocTrong }: { row: RosterRow; /** CA2-7: cột Mốc đã ghi "chưa có điểm" → không lặp chip "Chưa có kết quả". */ cotMocTrong: boolean }) {
   const xam = `${CHIP_VUONG} border-muted-line bg-muted-bg text-muted`;
   if (row.status !== 'active') return <span className={xam}>{row.ketThucVi ?? 'Đã kết thúc'}</span>;
   if (row.kckDuoi) return <ChipDuoiKck />;
