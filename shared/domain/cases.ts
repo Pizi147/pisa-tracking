@@ -841,8 +841,10 @@ export const SIGNAL_DISMISS_NOTE = 'Bỏ qua';
  * SỐ NGÀY HẠN XÁC NHẬN — MỘT NƠI QUYẾT (chủ sản phẩm 08/10, đặc tả cuối khoá §4): Xác nhận nguyên nhân Case SOS, Xác nhận PA và
  * hạn phải có PA của Case tạo tay = **5 ngày**; Case **Gấp** hoặc **SOS 3** = **3 ngày**. Tính cả ngày đầu (`hanTheoNgay`).
  * Chỉ áp cho hạn sinh từ nay; Case đang mở giữ `sos_cases.han_xac_nhan` đã ghi.
+ * OV-12c (chủ SP 14/10): Xác nhận Case Progress Test lớp thường (`thuong`) = **5 ngày CỐ ĐỊNH**, kể cả SOS 3.
  */
-export function soNgayHanXacNhan(muc: { sosLevel?: number | null; urgency?: string | null }): number {
+export function soNgayHanXacNhan(muc: { sosLevel?: number | null; urgency?: string | null; thuong?: boolean }): number {
+  if (muc.thuong) return 5;
   return muc.urgency === 'urgent' || (muc.sosLevel ?? 0) >= 3 ? 3 : 5;
 }
 

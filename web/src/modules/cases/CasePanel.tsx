@@ -45,6 +45,8 @@ export type CaseDetail = {
   hoanThanh?: { an: boolean; dong: string | null; ly_do: string[] } | null;
   /** PR-SOS: trạng thái Case SOS, tên ba phần, MỘT nhãn + MỘT việc tiếp, thẻ Không cần theo dõi đang chờ. */
   sos?: { fromSos: boolean; hasCause: boolean; awaitingCause: boolean; dueOn: string | null;
+    /** OV-12c: Case MT (nguyên nhân = nhận xét của bài) · Case MT cũ bài chưa nhận xét. */
+    laMt?: boolean; choNhanXet?: boolean;
     choDuyetKhongTheoDoi: { hanDuyet: string | null } | null; coPaChoXacNhan: boolean } | null;
   tenSos?: { mt: number | null; giua: string; sos: number | null; kck?: boolean } | null;
   /** PR-LT2a: khối PA Bổ trợ Giữa khoá (nhóm, môn) — null nếu Case không có PA bổ trợ. */
@@ -86,7 +88,9 @@ export type CaseDetail = {
   /** Các mốc trong vòng đời case. Giao diện xếp MỚI NHẤT LÊN ĐẦU (mục 4.3). */
   milestones: any[];
   issues: any[]; interventions: any[]; followups: any[]; history: any[];
-  viewer: { canEdit: boolean; canClose: boolean; canApprove: boolean;
+  /** OV-12c (P5): Case MT — nguyên nhân theo từng lượt (nhận xét + nhóm của bài lượt đó). */
+  nguyenNhanTheoLuot?: { attemptId: number; luot: string; nhanXet: string | null; nhom: { code: string; label: string }[] }[];
+  viewer: { canEdit: boolean; canClose: boolean; canApprove: boolean; /** OV-12c: Xác nhận Case Progress (GVCN lớp đang học làm được). */ coTheXacNhanCase?: boolean;
     /** PR-LUI-a2: Mở lại (Case đã hoàn thành, QL/QT) · Sửa Case · Xoá Case / câu chặn · Kỹ năng khoá · tên để sửa. */
     coTheMoLai?: boolean; coTheSua?: boolean; coTheXoa?: boolean; chanXoa?: string | null; khoaKyNang?: boolean; tenSua?: string | null };
 };
@@ -95,6 +99,8 @@ export type CaseDetail = {
 export type ViewCase = { loai: 'case' } | { loai: 'ghi-ket-qua'; paId: number } | { loai: 'them-pa' } | { loai: 'hoan-thanh' }
   /* PR-SOS (Q28-3): Xác nhận Case → Xác nhận PA theo quy chế. */
   | { loai: 'xac-nhan' } | { loai: 'xac-nhan-pa'; paId: number }
+  /* OV-12c: Case MT cũ bài chưa nhận xét → Ghi nhận xét (nhận xét + nhóm = nguyên nhân). */
+  | { loai: 'ghi-nhan-xet' }
   /* PR-LUI-a2: Sửa Case (+ Xoá Case ở chân). */
   | { loai: 'sua' }
   /* PR-PA (§8): Sửa PA — cùng form Thêm PA; mở từ ⋯ của dòng PA. */

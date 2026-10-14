@@ -116,15 +116,15 @@ export async function runPrLt2aTests(t: YThucTestKit) {
   const paCua = (caseId: number) => all(`SELECT * FROM case_interventions WHERE case_id = ? AND kind = 'bo_tro' ORDER BY id`, caseId);
   const gvcnFou = P.normalCoreTeacher.userId;
 
-  check('LT2a (3) · FOU Progress Test trượt G+V, P → 2 Case không nhãn SOS, mỗi Case một PA bổ trợ chờ cùng nhóm, người dạy GVCN; chạy lặp không nhân đôi', () => {
+  check('LT2a (3) · FOU Progress Test trượt G+V, P → 2 Case nhãn SOS 2 (OV-12c: số môn trượt), mỗi Case một PA bổ trợ chờ cùng nhóm, người dạy GVCN; chạy lặp không nhân đôi', () => {
     const em = taoEm('LT2a FOU A', 'MB FOU 12');
     nhap(em.pt!, { listening: 18, reading: 18, writing: 11, speaking: 12 });
     let cs = caseCua(em.id);
     assert(cs.length === 2, `phải 2 Case: ${cs.length}`);
-    assert(cs.every((c) => c.sos_level === null && c.origin_kind === 'mock'), 'sos_level phải NULL');
-    assert(cs.every((c) => c.han_xac_nhan === d.hanXacNhan(TODAY)), 'hạn xác nhận 3 ngày tính cả hôm nay');
+    assert(cs.every((c) => c.sos_level === 2 && c.origin_kind === 'mock'), 'OV-12c: sos_level = số môn trượt (2)');
+    assert(cs.every((c) => c.han_xac_nhan === d.hanXacNhan(TODAY, { sosLevel: 3, thuong: true })), 'OV-12c: hạn Xác nhận Case 5 ngày cố định');
     const ten = cs.map((c) => cases.caseTitleOf(c)).sort();
-    assert(ten[0] === '[Progress Test] G+V không đạt' && ten[1] === '[Progress Test] P không đạt' && !ten.some((x) => /SOS|MT/.test(x)), ten.join(' | '));
+    assert(ten[0] === '[Progress Test] G+V không đạt [SOS 2]' && ten[1] === '[Progress Test] P không đạt [SOS 2]' && !ten.some((x) => /MT/.test(x)), ten.join(' | '));
     const pas = cs.flatMap((c) => paCua(c.id));
     assert(pas.length === 2 && pas.every((x) => x.status === 'planned' && x.preset === 1 && x.confirmed_at === null && x.confirmed_by === null), 'PA chờ');
     assert(new Set(pas.map((x) => x.nhom_bo_tro)).size === 1 && pas[0].nhom_bo_tro === `gk:${em.pt}`, 'cùng một nhóm FOU');
@@ -137,7 +137,11 @@ export async function runPrLt2aTests(t: YThucTestKit) {
     const tb = all(`SELECT user_id, title, body, dedup_key FROM notifications WHERE dedup_key IN (?, ?, ?)`, `sos-case:${cs[0].id}`, `sos-case:${cs[1].id}`, `bao-ph:${em.pt}`);
     assert(tb.filter((x) => x.dedup_key === `bao-ph:${em.pt}`).length === 1 && tb.some((x) => x.user_id === gvcnFou && /Báo phụ huynh qua TVV/.test(x.title)), 'GVCN nhận một thông báo Báo PH');
     assert(tb.filter((x) => /^sos-case:/.test(x.dedup_key)).length === 2, 'mỗi Case một thông báo cho GVBM');
-    assert(!tb.some((x) => /SOS/.test(`${x.title} ${x.body}`)), 'không thông báo nào có chữ SOS');
+    /* OV-12c: tên Case mang nhãn SOS theo số môn trượt — thông báo GVBM nói đúng tên Case; Báo PH không nói SOS. */
+    /* Điểm nhập dần: lúc G+V trượt mới 1 môn (SOS 1), P trượt thì 2 môn (SOS 2) — thông báo nói tên Case lúc Case ra đời. */
+    const tbCase = (topic: string) => tb.find((x) => x.dedup_key === `sos-case:${cs.find((c) => c.topic === topic).id}`)?.body ?? '';
+    assert(/G\+V không đạt \[SOS 1\]/.test(tbCase('writing')) && /P không đạt \[SOS 2\]/.test(tbCase('speaking')), `thông báo Case nói tên Case có nhãn SOS: ${tbCase('writing')} | ${tbCase('speaking')}`);
+    assert(!tb.some((x) => x.dedup_key === `bao-ph:${em.pt}` && /SOS/.test(`${x.title} ${x.body}`)), 'Báo PH không có chữ SOS');
   });
 
   check('LT2a (3) · BE Progress Test trượt W, S → 2 PA KHÁC nhóm, người dạy = GVBM từng môn', () => {
@@ -462,7 +466,7 @@ export async function runPrLt2aTests(t: YThucTestKit) {
     assert(nhan('ft') === 'SOS 1|SOS 2|SOS 3', nhan('ft'));
   });
 
-  await checkAsync('LT2a (9) · Quét nguồn web: lưới lớp thường, hồ sơ HV lớp thường không gọi sosLabel; Case lớp thường không có sos_level; Case board/mốc đọc nhãn đợt', async () => {
+  await checkAsync('LT2a (9) · Quét nguồn web: lưới lớp thường, hồ sơ HV lớp thường không gọi sosLabel; Case lớp thường có sos_level = số môn trượt (OV-12c); Case board/mốc đọc nhãn đợt', async () => {
     const fs = await import('node:fs'), path = await import('node:path');
     const doc = (f: string) => fs.readFileSync(path.join(process.cwd(), 'web/src/modules', f), 'utf8');
     assert(!/sosLabel/.test(doc('cham/LuoiThuong.tsx')), 'LuoiThuong không còn sosLabel');
@@ -472,7 +476,7 @@ export async function runPrLt2aTests(t: YThucTestKit) {
     const em = taoEm('LT2a T58', 'MB FOU 12');
     nhap(em.pt!, { listening: 18, reading: 18, writing: 11, speaking: 12 });
     const c = caseTheoMon(em.id, 'writing');
-    assert(get('SELECT sos_level s FROM sos_cases WHERE id = ?', c.id).s === null, 'Case lớp thường: sos_level NULL');
+    assert(get('SELECT sos_level s FROM sos_cases WHERE id = ?', c.id).s === 2, 'Case lớp thường: sos_level = 2 môn trượt');
     const ms: any[] = (cases as any).milestonesOf(c.id);
     assert(ms.length > 0 && ms.filter((m) => m.attemptNo).every((m) => m.dot === 'Progress Test'), JSON.stringify(ms.map((m) => [m.kind, m.dot])));
   });

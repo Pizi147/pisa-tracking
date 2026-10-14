@@ -2031,13 +2031,18 @@ check('Giáo viên chỉ nhập được kỹ năng mình phụ trách, và khô
 check('Case SOS của lớp thường dùng CHUNG hệ thống case với lớp FT', () => {
   const cases = conn
     .prepare(
-      `SELECT sc.sos_level, COUNT(*) n FROM sos_cases sc
+      `SELECT a.kind, sc.status = 'done' AS xong, sc.sos_level, COUNT(*) n FROM sos_cases sc
          JOIN assessment_attempts a ON a.id = sc.attempt_id
-        WHERE a.kind != 'mock' GROUP BY sc.sos_level ORDER BY sc.sos_level`,
+        WHERE a.kind != 'mock' AND sc.kck = 0 GROUP BY 1, 2, 3 ORDER BY 1, 2, 3`,
     )
     .all() as any[];
-  /* PR-LT2a (T58): Case lớp thường KHÔNG có mức SOS (`sos_level` NULL) — vẫn dùng chung bảng `sos_cases`, và dữ liệu mẫu có đủ Case Giữa khoá. */
-  assert(cases.length > 0 && cases.every((c) => c.sos_level === null), `Case lớp thường không được có sos_level: ${JSON.stringify(cases)}`);
+  /*
+   * OV-12c (chủ SP 14/10, thay T58 ở Case): Case Progress Test đang mở mang nhãn SOS theo số môn trượt (1..3); Final Test giữ nguyên (không nhãn).
+   * Vẫn dùng chung bảng `sos_cases`, và dữ liệu mẫu có đủ Case Giữa khoá.
+   */
+  assert(cases.some((c) => c.kind === 'progress' && !c.xong), `Bộ demo thiếu Case Progress Test mở: ${JSON.stringify(cases)}`);
+  assert(cases.filter((c) => c.kind === 'progress' && !c.xong).every((c) => [1, 2, 3].includes(c.sos_level)), `Case Progress Test mở phải có SOS 1..3: ${JSON.stringify(cases)}`);
+  assert(cases.filter((c) => c.kind === 'final').every((c) => c.sos_level === null), `Case Final Test không nhãn SOS: ${JSON.stringify(cases)}`);
   /*
    * MỨC 0 LÀ MỘT MỨC HỢP LỆ, không phải dữ liệu hỏng.
    *
@@ -5720,7 +5725,7 @@ check('[6.2] Tín hiệu KHÔNG được đếm như case đã xác định; PR-
   assert(!('listSignals' in signalsSvc), 'PR-LT2a: hàng "tín hiệu chờ xác minh" đã bỏ khỏi mã');
 });
 
-check('[6.2] Hồ sơ học viên và Việc cần làm không còn tín hiệu chờ xác minh; Case Progress Test tự tạo nằm ở nhóm "Xác nhận nguyên nhân" của đúng GVBM', () => {
+check('[6.2] Hồ sơ học viên và Việc cần làm không còn tín hiệu chờ xác minh; Case Progress Test tự tạo nằm ở nhóm "Xác nhận Case" của đúng GVBM', () => {
   const c = conn
     .prepare(`SELECT sc.* FROM sos_cases sc JOIN assessment_attempts a ON a.id = sc.attempt_id
                WHERE a.kind = 'progress' AND sc.origin_kind = 'mock' AND sc.status = 'open' AND sc.owner_user_id IS NOT NULL
@@ -7657,7 +7662,7 @@ check('PR-E · <KetQuaDot>: đủ điểm nhưng thiếu kỳ vọng thì không
 
 check('PR-E · <Han>: sáu loại hạn có sáu nhãn khác nhau, đúng bảng HE_GIAO_DIEN §4 (việc · mốc, PR-UX0 B-3)', () => {
   const t = (loai: any, han = '2026-09-23') => domain.deadlineView({ kind: loai, due: han, today: '2026-09-14' }).text;
-  assert(t('xac-minh-sos') === 'Xác nhận nguyên nhân · hạn 23/09', `xac-minh-sos: "${t('xac-minh-sos')}"`);
+  assert(t('xac-minh-sos') === 'Xác nhận · hạn 23/09', `xac-minh-sos: "${t('xac-minh-sos')}"`);
   assert(t('lap-pa') === 'Thêm PA · hạn 23/09', `lap-pa: "${t('lap-pa')}"`);
   assert(t('cap-nhat-pa') === 'Kết quả W2–W3 SEP · hạn hết T3 23/09', `cap-nhat-pa: "${t('cap-nhat-pa')}"`);
   /* PR-YT4 (K5-24): `thuc-hien-y-thuc`, `hoan-thanh-y-thuc` bỏ — Ý thức dùng `xu-ly-vi-pham`. */
@@ -9341,6 +9346,9 @@ await runPrEnTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, ad
 // ==================================================================== PR-OV12b (nhận xét MT bắt buộc · nhóm nguyên nhân khi dưới kỳ vọng · Excel cột nhận xét)
 const { runPrOv12bTests } = await import('./prOv12b.tests.ts');
 await runPrOv12bTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== PR-OV12c (Case SOS MT từ nhận xét · Progress "Xác nhận Case" · xoá Case khi em đạt · migrate)
+const { runPrOv12cTests } = await import('./prOv12c.tests.ts');
+await runPrOv12cTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== PR-OV12h (bỏ Nhắc · kết quả PA từng em · Tutor theo buổi · meeting CX hạn 5 ngày)
 const { runPrOv12hTests } = await import('./prOv12h.tests.ts');
 await runPrOv12hTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);

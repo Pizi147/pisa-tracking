@@ -175,10 +175,12 @@ export async function runHanhTrinhTests(t: YThucTestKit) {
     assert(late.tone === 'late' && late.dau === '⚠' && late.day.includes('Quá hạn'), `Quá hạn cập nhật: ${JSON.stringify(late)}`);
   });
 
-  check('PR-Qb (1) → PR-SOS (K3-29) · trangThaiHop: nhãn §7.3 — Cần làm · chờ nguyên nhân / Chờ duyệt / Cần làm · chưa có PA / Đang làm · n tuần / Xong dd/mm / Đã huỷ', () => {
+  check('PR-Qb (1) → PR-SOS (K3-29) · trangThaiHop: nhãn §7.3 — Cần làm · chờ xác nhận Case / chờ ghi nhận xét (OV-12c) / Chờ duyệt / Cần làm · chưa có PA / Đang làm · n tuần / Xong dd/mm / Đã huỷ', () => {
     const homNay = '2026-09-22';
     const choNn = d.trangThaiHop({ caseMo: [{ mo: '2026-08-01', soPa: 1, choNguyenNhan: true }], coTungCase: true, diemCuoiChuaDat: true, xongGanNhat: null }, homNay);
-    assert(choNn?.tone === 'warn' && choNn.chu === 'Cần làm · chờ nguyên nhân', `Chờ nguyên nhân: ${JSON.stringify(choNn)}`);
+    assert(choNn?.tone === 'warn' && choNn.chu === 'Cần làm · chờ xác nhận Case', `Chờ nguyên nhân: ${JSON.stringify(choNn)}`);
+    const choNx = d.trangThaiHop({ caseMo: [{ mo: '2026-08-01', soPa: 1, choNhanXet: true }], coTungCase: true, diemCuoiChuaDat: true, xongGanNhat: null }, homNay);
+    assert(choNx?.tone === 'warn' && choNx.chu === 'Cần làm · chờ ghi nhận xét', `Chờ ghi nhận xét: ${JSON.stringify(choNx)}`);
     const choDuyet = d.trangThaiHop({ caseMo: [{ mo: '2026-08-01', soPa: 1, choDuyet: true }], coTungCase: true, diemCuoiChuaDat: null, xongGanNhat: null }, homNay);
     assert(choDuyet?.chu === 'Chờ duyệt', `Chờ duyệt: ${JSON.stringify(choDuyet)}`);
     const chuaCoPa = d.trangThaiHop({ caseMo: [{ mo: '2026-08-01', soPa: 0 }], coTungCase: true, diemCuoiChuaDat: null, xongGanNhat: null }, homNay);
@@ -187,7 +189,7 @@ export async function runHanhTrinhTests(t: YThucTestKit) {
     /* OV-11d (CA2-3): "Đang làm" một màu như tab Học thuật (chip `dang-lam`) — điểm chưa đạt không đổi màu nhãn Case. */
     assert(canHoTro?.t === 'dang-lam' && canHoTro.chu.startsWith('Đang làm · '), `Đang làm (điểm chưa đạt): ${JSON.stringify(canHoTro)}`);
     const quaHan = d.trangThaiHop({ caseMo: [{ mo: '2026-08-01', soPa: 1, choNguyenNhan: true, quaHan: 'nguyen-nhan' }], coTungCase: true, diemCuoiChuaDat: true, xongGanNhat: null }, homNay);
-    assert(quaHan?.t === 'qua-han' && quaHan.chu === 'Quá hạn · chờ nguyên nhân' && quaHan.tone === 'danger', `Quá hạn: ${JSON.stringify(quaHan)}`);
+    assert(quaHan?.t === 'qua-han' && quaHan.chu === 'Quá hạn · chờ xác nhận Case' && quaHan.tone === 'danger', `Quá hạn: ${JSON.stringify(quaHan)}`);
     const dangTheoDoi = d.trangThaiHop({ caseMo: [{ mo: '2026-08-01', soPa: 2 }], coTungCase: true, diemCuoiChuaDat: false, xongGanNhat: null }, homNay);
     assert(dangTheoDoi?.tone === 'warn' && dangTheoDoi.chu.startsWith('Đang làm · '), `Đang làm: ${JSON.stringify(dangTheoDoi)}`);
     const daOn = d.trangThaiHop({ caseMo: [], coTungCase: true, diemCuoiChuaDat: null, xongGanNhat: '2026-08-30' }, homNay);

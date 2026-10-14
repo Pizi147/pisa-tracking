@@ -286,7 +286,9 @@ export function HoanThanhCasePanel({ caseId, category, categoryLabel, ratio, paG
 /** Phần dữ liệu Ngăn Case mà panel Sửa Case cần (một phần của `CaseDetail`). */
 export type CaseDeSua = {
   id: number; topic?: string | null; chuongTrinh?: string | null; ratio: boolean; urgency: string | null; summary: string | null;
-  issues: { role: string; code: string; observation: string | null }[];
+  issues: { role: string; code: string; label?: string; observation: string | null; byName?: string | null }[];
+  /** OV-12c: Case Mock Test — nguyên nhân do máy lấy từ nhận xét + nhóm của bài (`byName` null) thì sửa ở bài, không ở đây. */
+  sos?: { laMt?: boolean } | null;
   viewer: { khoaKyNang?: boolean; coTheXoa?: boolean; chanXoa?: string | null; tenSua?: string | null };
 };
 
@@ -303,6 +305,7 @@ export function SuaCasePanel({ c, tenCase, soPaChuaLam, hocVien, lop, quayLai, o
   const toast = useToast();
   const ct = c.chuongTrinh ?? null;
   const goc = c.issues.find((i) => i.role === 'primary') ?? null;
+  const nnTuBai = !!c.sos?.laMt && !!goc && goc.byName == null;
   const [topic, setTopic] = useState(c.topic ?? '');
   const [primaryCode, setPrimaryCode] = useState(goc?.code ?? '');
   const [ghiRo, setGhiRo] = useState(goc?.observation ?? '');
@@ -316,7 +319,7 @@ export function SuaCasePanel({ c, tenCase, soPaChuaLam, hocVien, lop, quayLai, o
   const causes = topic ? issuesForTopic(topic, ct) : [];
   const loi = dsLoi([
     { khoa: 'phan-loai', nhan: 'Nhóm nguyên nhân', chon: true },
-    ...(laKhac(primaryCode) ? [{ khoa: 'ghi-ro', nhan: 'Ghi rõ', toiThieu: KHAC_TOI_THIEU }] : []),
+    ...(laKhac(primaryCode) && !nnTuBai ? [{ khoa: 'ghi-ro', nhan: 'Ghi rõ', toiThieu: KHAC_TOI_THIEU }] : []),
     { khoa: 'muc-do', nhan: 'Mức độ', chon: true },
     { khoa: 'ten', nhan: 'Tên Case', toiThieu: 3 },
     { khoa: 'mo-ta', nhan: 'Mô tả', toiThieu: 15 },
@@ -330,7 +333,7 @@ export function SuaCasePanel({ c, tenCase, soPaChuaLam, hocVien, lop, quayLai, o
     setBusy(true);
     try {
       await api.patch(`/cases/${c.id}`, {
-        topic, primaryCode, observation: laKhac(primaryCode) ? ghiRo.trim() : null, urgency, title: title.trim(), summary: summary.trim(),
+        topic, ...(nnTuBai ? {} : { primaryCode, observation: laKhac(primaryCode) ? ghiRo.trim() : null }), urgency, title: title.trim(), summary: summary.trim(),
       });
       invalidate('/cases'); invalidate('/students'); invalidate('/my-work');
       toast.push('ok', 'Đã lưu Case');
@@ -379,6 +382,12 @@ export function SuaCasePanel({ c, tenCase, soPaChuaLam, hocVien, lop, quayLai, o
               </div>
             )}
           </Truong>
+          {nnTuBai ? (
+            <Truong nhan="Nhóm nguyên nhân" as="div">
+              <div className="text-sm text-slate-300">{goc?.label ?? goc?.code}</div>
+              <div className="mt-1 text-xs text-slate-400">Lấy từ nhận xét + nhóm của bài — sửa ở hồ sơ Mock Test.</div>
+            </Truong>
+          ) : (
           <div>
             <Truong nhan="Nhóm nguyên nhân" batBuoc loi={lf.loiCua(loi, 'phan-loai')}>
               <select className="field w-full" {...lf.o(loi, 'phan-loai')} value={primaryCode} onChange={(e) => setPrimaryCode(e.target.value)}
@@ -390,6 +399,7 @@ export function SuaCasePanel({ c, tenCase, soPaChuaLam, hocVien, lop, quayLai, o
             <OKhac hien={laKhac(primaryCode)} value={ghiRo} onChange={setGhiRo} goiY="Ví dụ: Chưa quen dạng bài mới"
               id={lf.oId('ghi-ro')} onBlur={lf.roi('ghi-ro')} loi={lf.hien('ghi-ro') ? kiemGhiRoKhac(ghiRo) : null} />
           </div>
+          )}
           <Truong nhan="Mức độ" batBuoc as="div" loi={lf.loiCua(loi, 'muc-do')}>
             <div className="grid grid-cols-2 gap-2 outline-none sm:w-80" {...lf.o(loi, 'muc-do')} tabIndex={-1}>
               {URGENCY_LEVELS.map((u) => (

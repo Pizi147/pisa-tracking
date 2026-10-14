@@ -20,7 +20,6 @@ import * as accessSvc from '../yThuc/access.ts';
 import * as xuLySvc from '../yThuc/xuLy.ts';
 import * as phoiHopSvc from '../yThuc/phoiHop.ts';
 import * as sosAutoSvc from '../cases/sosAuto.ts';
-import * as xacNhanNhomSvc from '../cases/xacNhanNhom.ts';
 import { bangYThucLop } from '../yThuc/board.ts';
 import { maybeSimulateReadError, maybeSimulateSaveFailure, pInt, qInt, qStr, wrap } from './helpers.ts';
 
@@ -1782,19 +1781,6 @@ api.get('/tong-quan/chi-nhanh/o', requireAuth, wrap((req) => {
   });
 }));
 
-/**
- * OV-5a: XÁC NHẬN NGUYÊN NHÂN CẢ NHÓM (Công việc › panel gom lớp + kỹ năng + lượt). GET đọc nhóm (`?ids=1,2,3`), POST xác nhận các em đã chọn trong
- * MỘT giao dịch (mỗi Case đi đúng `xacNhanCase` + `xacNhanPaQuyChe`). Đứng TRƯỚC `/cases/:id` để không bị bắt nhầm.
- */
-api.get('/cases/xac-nhan-nhom', requireAuth, wrap((req) => {
-  maybeSimulateReadError();
-  return xacNhanNhomSvc.nhomXacNhan(principalOf(req), qStr(req, 'ids'));
-}));
-api.post('/cases/xac-nhan-nhom', requireAuth, wrap((req) => {
-  maybeSimulateSaveFailure();
-  return xacNhanNhomSvc.xacNhanNhom(principalOf(req), (req.body ?? {}) as any);
-}));
-
 api.get('/cases/:id', requireAuth, wrap((req) => caseSvc.caseDetail(principalOf(req), pInt(req, 'id'))));
 
 /** Ghi một tác động. Một Case có nhiều tác động. */
@@ -1804,8 +1790,8 @@ api.post('/cases/:id/interventions', requireAuth, wrap((req) => {
 }));
 
 /**
- * CASE TỪ SOS (SOS v4, PR-SOS): GVBM đúng kỹ năng hoặc Quản lý Xác nhận Case (nguyên nhân) → Xác nhận PA theo quy chế, hoặc gửi
- * "Không cần theo dõi" cho Quản lý duyệt. Quyền kiểm ở máy chủ theo ĐÚNG kỹ năng của Case (C02). Đường cũ `/confirm`, `/replace` đã gỡ.
+ * CASE TỪ SOS (SOS v4, PR-SOS → OV-12c): Progress Test — Xác nhận Case MỘT bước (nhóm + mô tả + PA Bổ trợ); Case MT — nguyên nhân từ nhận xét,
+ * chỉ Xác nhận PA theo quy chế; hoặc gửi "Không cần theo dõi" cho Quản lý duyệt. Quyền kiểm ở máy chủ theo ĐÚNG kỹ năng của Case (C02). Đường cũ `/confirm`, `/replace` đã gỡ.
  */
 api.post('/cases/:id/xac-nhan', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();

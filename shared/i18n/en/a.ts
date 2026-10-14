@@ -426,4 +426,10 @@ export const EN_A = {
 
   /* Tên môn lớp thường (máy chủ gửi) */
   'Tổng hợp': 'Integrated',
+
+  /* OV-12c — khuôn panel làm việc v3 (`ui/KhuonViec.tsx`) */
+  'Quá hạn {n} ngày': (b) => `Overdue ${soNhieu(b.n, 'day', 'days')}`,
+  'Hạn hôm nay': 'Due today',
+  'Hạn {thu} {ngay}': 'Due {thu} {ngay}',
+  'Xem thêm': 'Show more',
 } satisfies Record<string, Dich>;

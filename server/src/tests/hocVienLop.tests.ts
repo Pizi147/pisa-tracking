@@ -305,7 +305,7 @@ export async function runHocVienLopTests(t: YThucTestKit) {
     eq(s.failedSkills, [{ skill: 'writing', score: 12, total: 20 }], 'W 12/20 = 60% < 70%');
     eq([s.overall, s.expectation, s.belowSkills], [null, null, []], 'Lớp thường không có Overall/kỳ vọng');
     // PR-MON (MH2): em lớp FOU — ô W hiện G+V.
-    eq(d.ketQuaGanNhat(s), { chinh: '3/4 môn đạt', lech: null, dat: false, sos: null, dong1: 'Progress Test', dong2: 'Không đạt: G+V' }, 'Chữ cột');
+    eq(d.ketQuaGanNhat(s), { chinh: '3/4 môn đạt', lech: null, dat: false, sos: 'SOS 1', dong1: 'Progress Test', dong2: 'Không đạt: G+V' }, 'Chữ cột (OV-12c: SOS theo số môn trượt)');
   });
 
   // ------------------------------------------------------------------ Task 5 · GET /hoc-vien-lop

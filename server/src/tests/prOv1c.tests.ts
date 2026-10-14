@@ -3,6 +3,7 @@
  * Ca dựng ở lượt MT cuối của em đang học MB FT 101, tuần W1 NOV 2026, kỳ vọng ép về 6.5.
  */
 import type { YThucTestKit } from './yThuc.tests.ts';
+import { nhanXetCaseThu } from './luotThu.ts';
 
 export async function runPrOv1cTests(t: YThucTestKit) {
   const { check, assert, conn, P, classId, TODAY } = t;
@@ -155,7 +156,7 @@ export async function runPrOv1cTests(t: YThucTestKit) {
     assert(r.overall < 6.5 && r.sosLevel === 2, `Overall dưới kỳ vọng giữ SOS: ${JSON.stringify({ o: r.overall, s: r.sosLevel })}`);
   }));
 
-  check('OV1c-4 · xoá SOS: S dời có điểm, Overall ≥ kỳ vọng → Case chưa đụng đóng "Overall đạt"; Case GV đã xác nhận giữ + mốc', () => thu(() => {
+  check('OV1c-4 · xoá SOS: S dời có điểm, Overall ≥ kỳ vọng → Case chưa xác nhận PA XOÁ HẲN (OV-12c); Case đã xác nhận PA giữ + mốc', () => thu(() => {
     for (const xacNhan of [false, true]) {
       const a = luot[0];
       dung(a);
@@ -163,11 +164,16 @@ export async function runPrOv1cTests(t: YThucTestKit) {
       vang(a, 'speaking');
       const c = caseCua(a)[0];
       assert(c && c.status !== 'done', 'phải có Case L sau chốt');
-      if (xacNhan) sosAuto.xacNhanCase(QL, c.id, { primaryCode: dm.issuesForTopic('listening')[0].code, urgency: 'attention', moTa: 'Em sót số liệu ở Part 1 và Part 2.' });
+      /* OV-12c: nguyên nhân Case MT = nhận xét của bài; "đã có người làm" = PA đã được xác nhận (chưa xác nhận PA → em đạt lại thì xoá hẳn). */
+      if (xacNhan) {
+        nhanXetCaseThu(conn, attempts.saveScore, QL, c.id, { primaryCode: dm.issuesForTopic('listening')[0].code, moTa: 'Em sót số liệu ở Part 1 và Part 2.' });
+        const pa = one(`SELECT * FROM case_interventions WHERE case_id = ? AND preset = 1`, c.id);
+        sosAuto.xacNhanPaQuyChe(QL, pa.id, { description: pa.description });
+      }
       diem(a, 'speaking', 7, BU);   // (5 + 7 + 7 + 7) / 4 = 6.5 ≥ 6.5
       const sau = one('SELECT * FROM sos_cases WHERE id = ?', c.id);
       if (!xacNhan) {
-        assert(sau.status === 'done' && sau.system_close_reason === 'overall_dat', `Case chưa đụng: ${sau.status} · ${sau.system_close_reason}`);
+        assert(!sau, `Case chưa xác nhận PA phải bị xoá hẳn (OV-12c): ${JSON.stringify(sau)}`);
         assert(dm.SYSTEM_CLOSE_REASON_LABEL.overall_dat === 'Overall đạt', 'nhãn lý do');
         assert(soViec(a).phoiHop === 0, `Phối hợp còn chờ phải bỏ: ${soViec(a).phoiHop}`);
       } else {
@@ -224,7 +230,7 @@ export async function runPrOv1cTests(t: YThucTestKit) {
     }
     const ca = caseCua(a)[0], cb = caseCua(b)[0];
     assert(ca && cb, 'dựng Case cũ');
-    sosAuto.xacNhanCase(QL, cb.id, { primaryCode: dm.issuesForTopic('listening')[0].code, urgency: 'attention', moTa: 'Em sót số liệu ở Part 1 và Part 2.' });
+    nhanXetCaseThu(conn, attempts.saveScore, QL, cb.id, { primaryCode: dm.issuesForTopic('listening')[0].code, moTa: 'Em sót số liệu ở Part 1 và Part 2.' });   // OV-12c: nguyên nhân = nhận xét
     const truoc = kiemTruocOv1c(conn).filter((d: any) => [a, b].includes(d.attemptId));
     const lam = migratePrOv1c(conn, []).filter((d: any) => [a, b].includes(d.attemptId));
     assert(truoc.length === 1 && lam.length === 1 && truoc[0].caseId === ca.id && lam[0].caseId === ca.id, `kiem-truoc ${JSON.stringify(truoc)} · migrate ${JSON.stringify(lam)}`);

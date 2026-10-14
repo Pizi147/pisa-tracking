@@ -73,12 +73,14 @@ export function ONhanXet({ nhan, phu, giaTri, onLuu, batBuoc = false }: {
 }
 
 /** Hàng chip nhóm nguyên nhân — `value` theo thứ tự chọn; bỏ chip thì các chip sau lên một bậc (chip 1 = nguyên nhân chính). */
-export function ChonNhom({ skill, value, onChange, disabled, nhanId }: {
+export function ChonNhom({ skill, ct = null, value, onChange, disabled, nhanId }: {
   skill: string; value: string[]; onChange: (v: string[]) => void; disabled?: boolean; nhanId?: string;
+  /** OV-12c: chương trình lớp thường (FOU "G+V") — bộ nhóm theo chương trình, như Xác nhận Case. */
+  ct?: string | null;
 }) {
   return (
     <div role="group" aria-labelledby={nhanId} data-chip-nhom className="flex flex-wrap gap-1.5">
-      {issuesForTopic(skill).map((i) => {
+      {issuesForTopic(skill, ct).map((i) => {
         const th = value.indexOf(i.code);
         return (
           <NutChon key={i.code} nho chon={th >= 0} dau={th + 1} disabled={disabled}
