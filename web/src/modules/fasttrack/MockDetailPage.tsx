@@ -31,7 +31,7 @@ import {
 import {
   ATTEMPT_KIND_SHORT, canNhomNguyenNhan, maHocVienNgan, CHU_THAO_TAC, chipSosMt0, mondayOfDate, nhanLuot, thaoTacKyNang, trangThaiTT, tuanLich,
   type AssessedSkill, type AttemptKind, type LoiTruong, type TheYeuCauDto, type ThaoTac,
-  docKnMock, KY_NANG_KE_HOACH, type KyNangKH, khongDuThiTuO, oKyNangTuLich, type KetQuaHuy, type OMtVao, trangCha,
+  docKnMock, hangCanHoTro, vaiXemHocVien, KY_NANG_KE_HOACH, type HangKyNang, type KyNangKH, khongDuThiTuO, oKyNangTuLich, type KetQuaHuy, type OMtVao, trangCha,
 } from '@shared/domain/index.ts';
 import { DuongVe } from '../../ui/ThanhTruocSau.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
@@ -39,6 +39,11 @@ import { ONgay } from '../../ui/ONgay.tsx';
 import { TOOLTIP_TUAN_HOAN_TAT } from '../../ui/chu.ts';
 import { HopKhoiPhucKetQua, HopKhoiPhucMt } from '../test/keHoach/HopKhoiPhucKetQua.tsx';
 import type { KnO } from '../test/keHoach/kieu.ts';
+import { DongCase, LUOI, LUOI_DOC, type CaseCua } from '../classes/BangCanHoTro.tsx';
+import { NganCase } from '../students/NganCase.tsx';
+import { useDienThoai } from '../../ui/TheDong.tsx';
+import { useSession } from '../../lib/session.tsx';
+import { t } from '@shared/i18n/index.ts';
 
 type Detail = {
   id: number;
@@ -72,6 +77,8 @@ type Detail = {
   lichSu: boolean;
   /** T2 (PR-MTa): kết quả đã huỷ do dời vượt, còn khôi phục được. */
   ketQuaHuy?: KetQuaHuy | null;
+  /** OV-12d: Case sinh từ lượt + Case trượt lại ở lượt — null = không có khối (GV chấm chéo, Admin). */
+  caseLuot: CaseCua[] | null;
   viewer: {
     canPlanWeek: boolean; canCancel: boolean; canHandleAbsence: boolean;
     /** PR-XLMT: GVCN của lớp — Báo vắng / Xếp lại bài vắng (`thaoTacKyNang`). */
@@ -339,7 +346,10 @@ export default function MockDetailPage() {
       {/* D. LỊCH KIỂM TRA — MỘT bảng làm việc: lịch, tình trạng, thao tác từng bài (điểm đã ở dải trên). */}
       <SkillWorkTable d={d} onMoDiem={moODiem} onDone={reload} onOpenHistory={openHistory} onDoiLich={(anchor, k) => setHopLich({ anchor, k })} />
 
-      {/* E. LỊCH SỬ THAY ĐỔI — thu gọn cuối trang. Hồ sơ Test không còn khối Case (rule book §17.5). */}
+      {/* D2. CASE & PHƯƠNG ÁN (OV-12d, Rulebook 17.5 sửa 14/10) — lượt có Case mới hiện; làm việc tại chỗ qua Ngăn Case. */}
+      <KhoiCaseLuot d={d} onDoi={reload} />
+
+      {/* E. LỊCH SỬ THAY ĐỔI — thu gọn cuối trang. */}
       <HistoryCard d={d} />
 
       {hopLich && d.classId !== null && (
@@ -385,6 +395,37 @@ function ChonDot({ hienTai, ds, homNay, onChon }: {
       onChange={(e) => { const r = xep.find((x) => x.id === Number(e.target.value)); if (r && r.id !== hienTai) onChon(r); }}>
       {xep.map((r) => <option key={r.id} value={r.id}>{nhan(r)}</option>)}
     </select>
+  );
+}
+
+/**
+ * OV-12d: khối "Case & phương án" — Case của lượt (+ Case trượt lại ở lượt, "lặp từ MTn"), một dòng `DongCase` như tab Cần hỗ trợ: Kỹ năng · Case
+ * (nguyên nhân, trạng thái) · PA đang làm · Việc tiếp + hạn. Bấm tên Case / việc → Ngăn Case tại chỗ, đóng xong tải lại hồ sơ. TVV / CX: chỉ đọc.
+ */
+function KhoiCaseLuot({ d, onDoi }: { d: Detail; onDoi: () => void }) {
+  const { homNay } = useNgayNghiepVu();
+  const chiDoc = !!vaiXemHocVien(useSession().session?.roles);
+  const dienThoai = useDienThoai();
+  const [ngan, setNgan] = useState<{ caseId: number; paId?: number; viec?: 'ghi-ket-qua' | 'xac-nhan' | 'xac-nhan-pa' } | null>(null);
+  if (!d.caseLuot?.length) return null;
+  const hang = hangCanHoTro({ ct: 'FT', cases: d.caseLuot }).filter((h): h is HangKyNang<CaseCua> => h.kind === 'hang' && h.cases.length > 0);
+  const luoi = chiDoc ? LUOI_DOC : LUOI;
+  return (
+    <Card title={t('Case & phương án')} bodyClass="p-0" action={<span className="text-xs tabular-nums text-slate-400">{d.caseLuot.length} Case</span>}>
+      <div className={`hidden px-3 pt-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500 ${luoi}`}>
+        <span>{t('Kỹ năng')}</span><span>Case</span><span>{t('PA đang làm')}</span>{!chiDoc && <span>{t('Việc tiếp · hạn')}</span>}
+      </div>
+      <div className="divide-y" style={{ borderColor: 'var(--line)' }}>
+        {hang.flatMap((h) => h.cases.map((c, i) => (
+          <DongCase key={c.id} h={h} c={c} dau={i === 0} ct="FT" homNay={homNay} the={dienThoai} chiDoc={chiDoc}
+            onMo={(viec, paId) => setNgan({ caseId: c.id, viec, paId })} />
+        )))}
+      </div>
+      {ngan && (
+        <NganCase caseId={ngan.caseId} paId={ngan.paId} viec={ngan.viec} hocVien={d.student.name} lop={d.classCode}
+          onClose={() => { setNgan(null); onDoi(); }} onChanged={onDoi} />
+      )}
+    </Card>
   );
 }
 

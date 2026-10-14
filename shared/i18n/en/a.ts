@@ -432,4 +432,16 @@ export const EN_A = {
   'Hạn hôm nay': 'Due today',
   'Hạn {thu} {ngay}': 'Due {thu} {ngay}',
   'Xem thêm': 'Show more',
+
+  /* OV-12d — Tổng hợp nhóm Xử lý 3 cột · ô Tổng quan "Case chờ duyệt" · hồ sơ MT khối Case & phương án */
+  'Case chờ duyệt': 'Pending cases',
+  'Đang xử lý': 'In progress',
+  'Cách tính nhóm Xử lý': 'How the Handling columns are counted',
+  'HV - Case: học viên có Case - số Case sinh từ các lượt trong dòng (kể cả Case đã xong / huỷ). Chờ duyệt: Case đang chờ người chốt — chưa có PA, PA chờ xác nhận, "Không cần theo dõi" chờ Quản lý, Case Mock Test cũ chờ ghi nhận xét, Case Progress Test chờ Xác nhận Case; ⚠ = quá hạn. Đang xử lý: Case có PA đang theo dõi. Tính theo hôm nay, không phải lúc chấm.':
+    'Students - Cases: students with a case - number of cases from the tests in this row (including closed / cancelled cases). Pending: cases waiting for someone to decide — no PA yet, PA awaiting confirmation, "No follow-up needed" awaiting the manager, older Mock Test case awaiting a comment, Progress Test case awaiting Confirm case; ⚠ = overdue. In progress: cases with a PA being followed. Status as of today, not at marking time.',
+  'Case & phương án': 'Cases & PAs',
+  'Kỹ năng': 'Skill',
+  'PA đang làm': 'Current PA',
+  'Việc tiếp · hạn': 'Next step · due',
+  'lặp từ MT{n}': 'repeat from MT{n}',
 } satisfies Record<string, Dich>;

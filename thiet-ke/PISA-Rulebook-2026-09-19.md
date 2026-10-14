@@ -385,7 +385,10 @@ C05 đã giải quyết: không tự tạo PA trao đổi hoặc case Ý thức 
 | Mọi '-' chỉ hẹn chấm, luôn cần GVCN xác minh vắng | Còn '-' cuối Chủ nhật thì chốt không dự thi |
 | SOS có hai PA trao đổi bắt buộc tự sinh | GVCN tự quyết định và lập PA |
 | Ép Ý thức theo dõi hiệu quả/tiến bộ | Ghi nhận việc đã làm và chứng cứ, hoàn thành đợt |
-| Hồ sơ MT có khối hỗ trợ/case | Bỏ khỏi hồ sơ MT; giữ dữ liệu và xử lý ở hồ sơ HV |
+
+**Sửa 14/10 (chủ SP, OV-12d):** bỏ luật cũ "bỏ khối Case khỏi hồ sơ MT". Hồ sơ MT có khối **Case & phương án** giữa Lịch Test và Lịch sử: Case sinh từ
+lượt đó và Case trượt lại ở lượt đó ("lặp từ MTn"), mỗi Case một dòng (kỹ năng · Case, nguyên nhân, trạng thái · PA đang làm · việc tiếp + hạn), bấm mở
+Ngăn Case làm tại chỗ. Quyền xem như hồ sơ HV (GV Speaking chấm chéo, Admin không có khối; TVV / CX chỉ đọc). Lượt không có Case: không có khối.
 
 ### 17.6. Nghiệm thu mới thay các kịch bản mâu thuẫn trước đó
 

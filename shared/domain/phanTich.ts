@@ -14,6 +14,7 @@ import { mondayOfDate } from './week.ts';
 import { type ChuongTrinh } from './tongQuan.ts';
 import type { TrangThaiCaseV4 } from './sosV4.ts';
 import { khoaBai, nhanBai, nhanBaiThuong } from './normal.ts';
+import { t } from '../i18n/index.ts';
 
 // ------------------------------------------------------------------ góc nhìn (Q1, Q16)
 
@@ -246,21 +247,25 @@ const COT_CASE: CotTongHop = { khoa: 'case', nhom: 'xu-ly', donVi: 'case', nhan:
   goiY: 'Case sinh từ các lượt trong dòng — là tình trạng HÔM NAY của Case, không phải lúc lượt được chấm.' };
 const COT_HV_CASE: CotTongHop = { khoa: 'hvCase', nhom: 'xu-ly', donVi: 'hoc-vien', nhan: () => 'HV - Case', gop: ['hvCoCase', 'case'],
   goiY: 'Số học viên có Case - số Case, sinh từ các lượt trong dòng. Một em nhiều Case vẫn tính một học viên. Là tình trạng HÔM NAY của Case, không phải lúc lượt được chấm.' };
+/** OV-12d: chữ chung của nhóm Xử lý — MỘT ⓘ trên đầu nhóm (web) thay ⓘ từng cột. */
+export const GOI_Y_XU_LY = t('HV - Case: học viên có Case - số Case sinh từ các lượt trong dòng (kể cả Case đã xong / huỷ). Chờ duyệt: Case đang chờ người chốt — chưa có PA, PA chờ xác nhận, "Không cần theo dõi" chờ Quản lý, Case Mock Test cũ chờ ghi nhận xét, Case Progress Test chờ Xác nhận Case; ⚠ = quá hạn. Đang xử lý: Case có PA đang theo dõi. Tính theo hôm nay, không phải lúc chấm.');
 const COT_XU_LY: CotTongHop[] = [
   COT_HV_CASE,
-  /* PR-SOS (K1-20): bốn cột theo MỘT nhãn trạng thái Case (`trangThaiCaseV4`) — tình trạng hôm nay. */
-  /* OV-12c: Case MT có nguyên nhân từ nhận xét ngay khi ra đời — cột này còn Progress chờ Xác nhận Case + Case MT cũ chờ ghi nhận xét. */
-  { khoa: 'choNguyenNhan', nhom: 'xu-ly', donVi: 'case', nhan: () => 'Chờ xác nhận',
-    goiY: 'Case Progress Test chưa Xác nhận Case, hoặc Case Mock Test cũ mà bài chưa có nhận xét — trong ngoặc là số đã quá hạn xác nhận.' },
-  { khoa: 'choDuyet', nhom: 'xu-ly', donVi: 'case', nhan: () => 'Chờ duyệt', goiY: 'Case đã gửi "Không cần theo dõi", chờ Quản lý duyệt.' },
-  { khoa: 'dangLam', nhom: 'xu-ly', donVi: 'case', nhan: () => 'Đang làm', goiY: 'Case đã có nguyên nhân (kể cả PA theo quy chế còn chờ xác nhận) hoặc Case giáo viên báo, chưa xong.' },
-  { khoa: 'xongHuy', nhom: 'xu-ly', donVi: 'case', nhan: () => 'Xong/Huỷ', goiY: 'Case đã hoàn thành, huỷ vì không cần theo dõi, hoặc hệ thống đóng.' },
+  /* OV-12d (chủ SP 14/10): hai cột theo `cotXuLy` — xong / huỷ chỉ nằm trong tổng HV - Case. */
+  { khoa: 'choDuyet', nhom: 'xu-ly', donVi: 'case', nhan: () => t('Chờ duyệt'),
+    goiY: 'Case đang chờ người chốt: chưa có PA, PA chờ xác nhận, "Không cần theo dõi" chờ Quản lý, Case Mock Test cũ chờ ghi nhận xét, Case Progress Test chờ Xác nhận Case — ⚠ là số đã quá hạn.' },
+  { khoa: 'dangLam', nhom: 'xu-ly', donVi: 'case', nhan: () => t('Đang xử lý'), goiY: 'Case có PA đang theo dõi.' },
 ];
-/** Trạng thái Case v4 → cột nhóm Xử lý của bảng Tổng hợp. `choNguyenNhanQuaHan` là số phụ trong ngoặc của cột Chờ nguyên nhân. */
-export const COT_XU_LY_V4: Record<TrangThaiCaseV4, string> = {
-  'cho-nguyen-nhan': 'choNguyenNhan', 'cho-nhan-xet': 'choNguyenNhan', 'cho-duyet-khong-theo-doi': 'choDuyet', 'cho-xac-nhan-pa': 'dangLam', 'dang-lam': 'dangLam',
-  xong: 'xongHuy', 'huy-khong-theo-doi': 'xongHuy', 'he-thong-dong': 'xongHuy', 'rut-sua-diem': 'xongHuy',
-};
+/**
+ * OV-12d: cột nhóm Xử lý của MỘT Case — Tổng hợp (cột) và Tổng quan ("Case chờ duyệt") cùng hàm (`xuLyCaseMany`). `coPaDangTheoDoi`: còn PA chưa
+ * huỷ / chưa xong, đã chạy (không phải PA quy chế chưa xác nhận) và không chờ Quản lý duyệt. Đang làm mà không có PA nào như vậy (chưa có PA, PA chờ
+ * duyệt, PA đã xong hết chờ Hoàn thành Case) = vẫn chờ người chốt.
+ */
+export type CotXuLy = 'choDuyet' | 'dangLam' | 'xongHuy';
+export function cotXuLy(k: TrangThaiCaseV4, coPaDangTheoDoi: boolean): CotXuLy {
+  if (k === 'xong' || k === 'huy-khong-theo-doi' || k === 'he-thong-dong' || k === 'rut-sua-diem') return 'xongHuy';
+  return k === 'dang-lam' && coPaDangTheoDoi ? 'dangLam' : 'choDuyet';
+}
 
 /**
  * Cột kỹ năng "dưới kỳ vọng", sinh từ `kyNangTheoCt` — khoá kỹ thuật `kn:<hạng mục>`, không lộ ra màn (chỉ dùng nội bộ).

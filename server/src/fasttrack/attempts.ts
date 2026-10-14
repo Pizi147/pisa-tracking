@@ -35,6 +35,7 @@ import { currentCycle, cycleById, examPlanOf, luotSoCuaLoTrinh } from './cycles.
 import { closeCasesBySystem, moLaiCaseHeThongDong } from '../cases/systemClose.ts';
 import { banHuyLuotCua, catHuyLuot, ketQuaHuyCua, traBanDoiVuot, traBanHuyLuot, traYeuCauCat, yeuCauChoCua, type BanHuyLuot } from './ketQuaHuy.ts';
 import { chuanHoaNguoiThucHien } from '../cases/nguoiThucHien.ts';
+import { caseCuaLuot } from '../cases/caseLop.ts';
 import { allProgrammes, evaluateRegular, isRatioClass, nguongDatLop, programmeOfClass, refreshRegularOutcome, regularDeadline } from '../normal/regular.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import { lamMoiDiemBanChup } from '../loTrinh/banChup.ts';
@@ -1133,6 +1134,8 @@ export function attemptDetail(p: Principal, attemptId: number) {
     note: a.note,
     /* PR-MT0 (T5): MT0 không có kỳ vọng / mức SOS — chỉ chip `W 4.0 SOS` để nhìn (`mt0.sos`), không Case / PA. */
     result,
+    /** OV-12d: khối "Case & phương án" (thay Rulebook 17.5 cũ) — null = không có khối (chấm chéo, Admin). */
+    caseLuot: caseCuaLuot(p, a),
     mt0: laMt0(a) ? { sos: kyNangSosMt0(result.bands, a.target_at_attempt ?? null) } : null,
     cells,
     skips: (conn

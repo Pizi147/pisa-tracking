@@ -10,6 +10,7 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { sosTone } from '../../lib/format.ts';
 import { KhoaQuyChe, TenCase } from '../cases/SkillBoard.tsx';
 import { NganCase } from '../students/NganCase.tsx';
+import { t } from '@shared/i18n/index.ts';
 import { nhapDiemCua, useThaoTacDongHocVien, type QuyenDong } from './thaoTacDongHocVien.tsx';
 import {
   ROUTE_NAME, ketQuaGanNhat, locCanHoTro, maHocVienNgan, viecTiepCuaEm,
@@ -17,11 +18,13 @@ import {
 } from '@shared/domain/index.ts';
 
 type PaCase = { id: number; ten: string; batBuoc: boolean; choXacNhan: boolean; choDuyet: boolean; xong: boolean; nguoi: string | null; mocChu: string | null };
-type CaseCua = {
+export type CaseCua = {
   id: number; studentId: number; topic: string | null; sosLevel: number | null; tieuDe: string;
   tenSos: { mt: number | null; giua: string; sos: number | null } | null;
   nguyenNhan: string | null; moTu: string; trangThai: { k: string; t: any; chu: string; han: string | null };
   viecTiep: ViecTiepCase | null; quaHan: boolean; pas: PaCase[]; banGiaoTu: string | null;
+  /** OV-12d (hồ sơ MT): Case trượt lại ở lượt đang xem — MT của lượt gốc ("lặp từ MT1"). */
+  lapTu?: number | null;
 };
 /** `GET /classes/:id/can-ho-tro` (server/src/classes/canHoTro.ts). */
 type CanHoTro = {
@@ -37,9 +40,9 @@ type DongRoster = {
 type MoNgan = { caseId: number; paId?: number; viec?: 'ghi-ket-qua' | 'xac-nhan' | 'xac-nhan-pa'; em: string };
 
 /** Lưới bốn cột thẳng nhau giữa mọi khối: Kỹ năng · Case · Phương án đang làm · Việc tiếp + hạn. */
-const LUOI = 'md:grid md:grid-cols-[3.5rem_minmax(0,1.5fr)_minmax(0,1.2fr)_minmax(0,1fr)] md:gap-x-3';
+export const LUOI = 'md:grid md:grid-cols-[3.5rem_minmax(0,1.5fr)_minmax(0,1.2fr)_minmax(0,1fr)] md:gap-x-3';
 /** OV-10b: TVV / CX / Admin chỉ đọc — bỏ cột Việc tiếp (việc của GV / QL). */
-const LUOI_DOC = 'md:grid md:grid-cols-[3.5rem_minmax(0,1.5fr)_minmax(0,1.2fr)] md:gap-x-3';
+export const LUOI_DOC = 'md:grid md:grid-cols-[3.5rem_minmax(0,1.5fr)_minmax(0,1.2fr)] md:gap-x-3';
 const CAO_TRAI = 'md:grid md:grid-cols-[13.5rem_minmax(0,1fr)]';
 
 /**
@@ -179,8 +182,8 @@ export function BangCanHoTro({ classId, maLop, laLopThuong, quyen, onDoi, chuong
   );
 }
 
-/** Một dòng Case trong hàng kỹ năng: Kỹ năng (chỉ dòng đầu) · Case · Phương án đang làm · Việc tiếp + hạn. */
-function DongCase({ h, c, dau, ct, homNay, onMo, the = false, chiDoc = false }: {
+/** Một dòng Case trong hàng kỹ năng: Kỹ năng (chỉ dòng đầu) · Case · Phương án đang làm · Việc tiếp + hạn. OV-12d: dùng lại ở hồ sơ MT. */
+export function DongCase({ h, c, dau, ct, homNay, onMo, the = false, chiDoc = false }: {
   h: HangKyNang<CaseCua>; c: CaseCua; dau: boolean; ct: string | null; homNay: string; chiDoc?: boolean;
   /** Điện thoại (D2): mỗi Case của hàng kỹ năng là một `TheDong` (mockup M4 "trên điện thoại"). */
   the?: boolean;
@@ -200,6 +203,7 @@ function DongCase({ h, c, dau, ct, homNay, onMo, the = false, chiDoc = false }: 
     </span>
   ));
   const cauViec = viec ? <ViecTiep v={viec} onBam={() => onMo(loai, d?.paId)} /> : <span className="text-slate-600">—</span>;
+  const lap = c.lapTu ? <span className="text-slate-400">{t('lặp từ MT{n}', { n: c.lapTu })}</span> : null;
   if (the) {
     return (
       <TheDong
@@ -214,7 +218,7 @@ function DongCase({ h, c, dau, ct, homNay, onMo, the = false, chiDoc = false }: 
         dong={[
           { nhan: 'Trạng thái', noiDung: (
             <span className="flex flex-wrap items-center gap-x-1.5"><NhanTrangThai t={c.trangThai.t} title={c.trangThai.chu} />
-              {c.banGiaoTu && <span className="text-slate-500" title="Case bàn giao">từ {c.banGiaoTu}</span>}</span>
+              {c.banGiaoTu && <span className="text-slate-500" title="Case bàn giao">từ {c.banGiaoTu}</span>}{lap}</span>
           ) },
           { nhan: 'PA', noiDung: <span className="text-[11.5px]">{cacPa}</span> },
           ...(chiDoc ? [] : [{ nhan: 'Việc tiếp', noiDung: cauViec }]),
@@ -230,7 +234,7 @@ function DongCase({ h, c, dau, ct, homNay, onMo, the = false, chiDoc = false }: 
         {(c.nguyenNhan || c.moTu) && <span className="block text-[11.5px] text-slate-500">{[c.nguyenNhan, c.moTu].filter(Boolean).join(' · ')}</span>}
         <span className="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-xs text-slate-500">
           <NhanTrangThai t={c.trangThai.t} title={c.trangThai.chu} />
-          {c.banGiaoTu && <span title="Case bàn giao">từ {c.banGiaoTu}</span>}
+          {c.banGiaoTu && <span title="Case bàn giao">từ {c.banGiaoTu}</span>}{lap}
         </span>
       </span>
       <span className="min-w-0 text-[11.5px] text-slate-300">{cacPa}</span>

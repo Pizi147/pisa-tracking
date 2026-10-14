@@ -102,9 +102,10 @@ export async function runPrOv12cTests(t: YThucTestKit) {
     conn.prepare('UPDATE sos_cases SET han_xac_nhan = ? WHERE id IN (?, ?)').run(t.addDays(TODAY, -2), cs[0].id, cs[1].id);
     yeuCau.quetYeuCau(TODAY);
     assert(!all(`SELECT 1 FROM yeu_cau_duyet WHERE loai = 'bao_len_nguyen_nhan' AND doi_tuong_id IN (?, ?)`, cs[0].id, cs[1].id).length, 'không thẻ Báo lên nguyên nhân');
+    /* OV-12d: ô Tổng quan nay là "Case chờ duyệt" (cùng cột Tổng hợp) — Case MT chờ xác nhận PA thuộc tập, quá hạn xác nhận PA thì có ⚠. */
     for (const id of ['case-cho-xac-dinh-nguyen-nhan', 'case-xac-dinh-nguyen-nhan-qua-han']) {
       const ids = metrics.metricSet(QL, id, {}).ids as number[];
-      assert(!ids.some((x) => cs.some((c) => c.id === x)), `${id} không đếm Case MT đã có nguyên nhân`);
+      assert(cs.every((c) => ids.includes(c.id)), `${id} phải đếm Case MT chờ xác nhận PA`);
     }
     assert(/không phải Progress|nhận xét/i.test((() => { try { sosAuto.xacNhanCase(QL, cL.id, { primaryCode: nL[0], moTa: 'x'.repeat(20) }); return ''; } catch (e: any) { return e.message; } })()),
       'Case MT không còn bước Xác nhận Case');
@@ -282,7 +283,7 @@ export async function runPrOv12cTests(t: YThucTestKit) {
     assert(it && it.group === 'ghi_nhan_xet' && it.tieuDe.startsWith(`Ghi nhận xét Listening · MT${no}`) && it.luot && it.kn === 'listening', `việc: ${JSON.stringify(it && { g: it.group, t: it.tieuDe, l: it.luot, k: it.kn })}`);
     attempts.saveScore(gv, luot, 'listening', { nhanXet: 'Bổ sung: nghe sót số liệu Part 1.', nhomNguyenNhan: [nhom('listening')[0]] }, '2026-12-01', { tuNguoiDung: true });
     assert(cases.caseDetail(QL, cL.id).trangThaiV4.k === 'cho-xac-nhan-pa', 'lưu nhận xét xong → Chờ xác nhận PA');
-    assert(!choXn().includes(cL.id), 'đã có nhận xét: ra khỏi tập chờ xác nhận');
+    assert(choXn().includes(cL.id), 'OV-12d: đã có nhận xét → Chờ xác nhận PA, vẫn trong "Case chờ duyệt"');
     let loi = '';
     try { attempts.saveScore(gv, luot, 'listening', { band: 7 }, '2026-12-01', { tuNguoiDung: true }); } catch (e: any) { loi = e.message; }
     assert(/hoàn tất/.test(loi), `sau hoàn tất GV vẫn không sửa điểm: ${loi}`);

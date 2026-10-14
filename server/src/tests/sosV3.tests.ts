@@ -753,7 +753,7 @@ export async function runSosV3Tests(t: YThucTestKit) {
     assert(!mywork(P.mbManager).some((i: any) => i.key === key(manual.id)) && !mywork(P.admin).some((i: any) => i.key === key(manual.id)), 'Case tạo tay không thuộc nhóm này');
   });
 
-  check('PR-T · Chỉ số `case-cho-xac-dinh-nguyen-nhan`: case từ SOS chưa có nguyên nhân (PR-N1: PA quy chế đã tự chạy, không còn vế xác nhận); có nguyên nhân thì thôi chờ; case tạo tay và case đã đóng không thuộc tập', () => {
+  check('PR-T · Chỉ số `case-cho-xac-dinh-nguyen-nhan` (OV-12d: Case chờ duyệt): case từ SOS chưa có nguyên nhân / PA chưa xác nhận, case tạo tay chưa có PA thuộc tập; case đã đóng không thuộc tập', () => {
     const f = freshSos('IND');
     const bid = get('SELECT branch_id n FROM classes WHERE id = ?', CLASS).n;
     const M = () => metricsSvc.metricSet(P.mbManager, 'case-cho-xac-dinh-nguyen-nhan', { branchId: bid }).ids as number[];
@@ -762,12 +762,13 @@ export async function runSosV3Tests(t: YThucTestKit) {
     assert(M().includes(f.w2.id) && M().includes(f.sp.id), 'Case MT chưa nhận xét phải thuộc tập "chờ xác nhận"');
     assertThrows(() => sosAuto.xacNhanPaQuyChe(w2T, f.w2Plan.id, { description: MO_TA_PA }), /chưa có nhận xét/, 'Xác nhận PA trước nguyên nhân');
     datNguyenNhanThu(f.w2.id, 'student.writing.task');
-    assert(!M().includes(f.w2.id), 'Có nguyên nhân: thôi chờ');
+    /* OV-12d: "Case chờ duyệt" = cột Chờ duyệt của Tổng hợp — có nguyên nhân rồi vẫn chờ (PA quy chế chờ xác nhận). */
+    assert(M().includes(f.w2.id), 'Có nguyên nhân, PA quy chế chưa xác nhận: vẫn chờ duyệt');
     khongTheoDoi(P.mbManager, f.sp.id, { reasonCode: 'single_incident' });
     assert(!M().includes(f.sp.id), 'Case đã đóng không thuộc tập');
     const manual = cases.reportIssue(P.mbManager, { studentId: f.st.id, cycleId: f.st.cycleId, topic: 'reading', primaryCode: 'student.reading.logic',
       title: 'Case tay cho chỉ số', summary: 'Em hay mất tập trung ở phần này của bài, cần theo dõi thêm.' }) as any;
-    assert(!M().includes(manual.id), 'Case tạo tay không thuộc tập');
+    assert(M().includes(manual.id), 'OV-12d: Case tạo tay chưa có PA thuộc tập (chờ người chốt)');
     assertThrows(() => metricsSvc.metricSet(P.cpManager, 'case-cho-xac-dinh-nguyen-nhan', { branchId: bid }), /phạm vi/, 'Quản lý chi nhánh khác hỏi chi nhánh này');
   });
 
