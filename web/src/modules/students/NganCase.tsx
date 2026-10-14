@@ -212,8 +212,8 @@ export function NganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose
               ? <Nhan tone="muted" title={data.systemCloseLabel}>{t('Hệ thống đóng · {systemCloseLabel}', { systemCloseLabel: data.systemCloseLabel })}</Nhan>
               : data.trangThaiV4
                 ? (data.tamDungTu && data.trangThaiV4.t === 'qua-han'
-                  ? <><NhanTamDung tu={data.tamDungTu} /><span className="text-[12.5px] text-slate-300">{data.trangThaiV4.chu}</span></>
-                  : <NhanTrangThai t={data.trangThaiV4.t} chu={data.trangThaiV4.chu} />)
+                  ? <><NhanTamDung tu={data.tamDungTu} /><span className="text-[12.5px] text-slate-300">{dich(data.trangThaiV4.chu)}</span></>
+                  : <NhanTrangThai t={data.trangThaiV4.t} chu={dich(data.trangThaiV4.chu)} />)
                 : <Nhan tone={data.status === 'done' ? 'done' : data.status === 'open' ? 'muted' : 'doing'}>{caseStatusLabel(data.status)}</Nhan>}
             <span className="min-w-0 text-[12.5px] text-slate-400">
               {t('mở {tuanLich}{x}', { tuanLich: tuanLich(data.detectedAt, homNay), x: data.reportedBy ? t(' · {reportedBy} báo', { reportedBy: data.reportedBy }) : '' })}

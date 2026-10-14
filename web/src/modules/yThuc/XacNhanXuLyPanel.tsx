@@ -204,7 +204,7 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', onClose,
           <p className="m-0 text-xs text-slate-500">{t('Bậc tự điền theo thang — không chọn.')}</p>
           {d.chuoi.soXuLy === 0 && !d.khai && d.coTheKhai && onKhai && (
             <p className="m-0 text-[11.5px] text-slate-400">
-              {t('Đã có mức độ vi phạm từ trước?')}
+              {t('Đã có mức độ vi phạm từ trước?')}{' '}
               <button type="button" className="link inline-flex items-center appearance-none border-0 bg-transparent p-0 min-h-[44px] sm:min-h-0" onClick={() => onKhai(d.studentId)}>{t('Xác nhận cấp bậc vi phạm trước')}</button>
             </p>
           )}

@@ -234,12 +234,12 @@ shared `{display,hoSoHocVien,hanhTrinh,hocVienLop,students,cuoiKhoa,tongKetLoTri
 `yThuc/{RecordViolationPanel,NhanViPham,StudentYThucSection,ClassYThucCard,ChiTietViPham,DaThucHienPanel,DeleteViolationConfirm,ThangYThuc,PhoiHopSosSection,XemXuLyPanel,CaseSosControls}.tsx`, `yThuc/kieu.ts`;
 shared `{cases,sosV4,sos,nguoiThucHien,yThuc,yThucGon}.ts`; máy chủ `cases/signals.ts`, lỗi `cases/{cases,boTro,nguoiThucHien,sosAuto}.ts`, `yThuc/{violations,phoiHop}.ts`, `platform/attachments.ts`.
 
-**Task d1**
-- [ ] **Đỏ:** E-NGUON file EN-d; E-LOI mở rộng (khoá lỗi của các file trên — câu GV gặp được).
-- [ ] Shared nhãn kết quả / quyết định / loại PA / nguồn Case / sự kiện Case, `gapText` (`SkillBoard.tsx:650-653`), nhóm vi phạm → `t()`.
-- [ ] Panel Ghi kết quả PA, Tạo Case, Ghi vi phạm đúng mockup mục 6–7: bốn nút kết quả / năm nút nhóm **không cắt ở 375** (đo (d)).
-- [ ] `/impeccable clarify` + `/impeccable adapt` + `/impeccable harden` (lỗi quyền PA, khung ghi vi phạm).
-- [ ] Xanh. do-khung EN 0 lỗi: `panel-pa`, `panel-tao-case`, `panel-vi-pham`, `hv-y-thuc`, `lop-ft-y-thuc`.
+**Task d1** — ✅ 14/10 (session EN-d, chạy song song EN-b/EN-c theo planning 14/10): từ điển `en/d.ts`; chữ máy chủ hiện qua `dich()` (khớp mẫu khi EN-b `dichChu` vào main); lỗi có biến qua `loi()`. Ngăn Case (`students/NganCase.tsx`) vào đợt d theo prompt.
+- [x] **Đỏ:** E-NGUON file EN-d; E-LOI mở rộng (khoá lỗi của các file trên — câu GV gặp được).
+- [x] Shared nhãn kết quả / quyết định / loại PA / nguồn Case / sự kiện Case, `gapText` (`SkillBoard.tsx:650-653`), nhóm vi phạm → `t()`.
+- [x] Panel Ghi kết quả PA, Tạo Case, Ghi vi phạm đúng mockup mục 6–7: bốn nút kết quả / năm nút nhóm **không cắt ở 375** (đo (d)).
+- [x] `/impeccable clarify` + `/impeccable adapt` + `/impeccable harden` (lỗi quyền PA, khung ghi vi phạm).
+- [x] Xanh. do-khung EN 0 lỗi: `panel-pa`, `panel-tao-case`, `panel-vi-pham`, `hv-y-thuc`, `lop-ft-y-thuc`.
 
 **Task d2 — Nghiệm thu cuối (toàn bộ EN)**
 - [ ] `KHUNG_NGON_NGU=en KHUNG_CHUP=1 node scripts/do-khung.mjs` → **0 lỗi (a)–(e)**, 375 + 1440, sáng + tối; ảnh vào `thiet-ke/anh/en/`.
