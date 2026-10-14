@@ -117,6 +117,22 @@ export async function runPrOv12hTests(t: any) {
     cases.updateResult(GV, ivId, vao({ soBuoi: 0, note: 'Kỳ này em nghỉ, chưa học tutor' }));
   }));
 
+  check('OV12h-3c · Tutor KHÔNG có Số buổi lúc tạo: vẫn bắt buộc Số buổi kỳ này + đủ dòng; lần ghi cũ (không số buổi) sửa chữ giữ như trước', () => thu(() => {
+    const { ivId } = caseVaPa(em(), { kind: 'tutor', description: 'Tutor Listening 1-1', performerName: 'Tutor ngoài' });
+    assert(get('SELECT so_buoi FROM case_interventions WHERE id = ?', ivId).so_buoi === null, 'PA phải không có Số buổi');
+    const kq = { decision: 'keep', outcome: 'partial', note: 'Một buổi tutor, đúng thêm 2 câu', observedOn: TODAY };
+    assert(maLoi(() => cases.updateResult(GV, ivId, kq)) === 400, 'không Số buổi kỳ này phải 400');
+    assert(maLoi(() => cases.updateResult(GV, ivId, { ...kq, soBuoi: 1 })) === 400, 'thiếu dòng buổi phải 400');
+    cases.updateResult(GV, ivId, { ...kq, soBuoi: 1, buoi: [{ tutor: 'Ms Lan', nhanXet: 'Luyện số đếm, còn nhầm 15 và 50' }] });
+    const f = get('SELECT id, so_buoi FROM case_followups WHERE intervention_id = ? ORDER BY id DESC LIMIT 1', ivId);
+    assert(f.so_buoi === 1 && get('SELECT COUNT(*) n FROM case_followup_buoi WHERE followup_id = ?', f.id).n === 1, `lần ghi: ${JSON.stringify(f)}`);
+    /* Lần ghi CŨ (trước OV-12h: không số buổi, không dòng) — sửa chữ không hỏi số buổi / dòng. */
+    conn.prepare('UPDATE case_followups SET so_buoi = NULL WHERE id = ?').run(f.id);
+    conn.prepare('DELETE FROM case_followup_buoi WHERE followup_id = ?').run(f.id);
+    cases.suaKetQua(GV, f.id, { ...kq, note: 'Sửa chữ lần ghi cũ, em tiến bộ phần số' });
+    assert(get('SELECT note, so_buoi FROM case_followups WHERE intervention_id = ? ORDER BY id DESC LIMIT 1', ivId).note === 'Sửa chữ lần ghi cũ, em tiến bộ phần số', 'sửa lần ghi cũ phải lưu');
+  }));
+
   check('OV12h-3b · PA không phải Tutor: không đòi dòng buổi', () => thu(() => {
     const { ivId } = caseVaPa(em(), { kind: 'self_study', description: 'Tự học nghe chép', soBuoi: 6 });
     cases.updateResult(GV, ivId, { decision: 'keep', outcome: 'partial', note: 'Tự học đều, đúng thêm 2 câu', observedOn: TODAY, soBuoi: 2 });

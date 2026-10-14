@@ -34,7 +34,7 @@ import { isRatioCycle, nguongDatLop, programmeCodeOfCycle } from '../normal/regu
 import { suggestCaseOwner } from './owner.ts';
 import { caseKhacChuongTrinh, chuongTrinhCuaLop } from './sos.ts';
 import { LA_CASE_SOS, NOT_UNCONFIRMED_PRESET, awaitingCauseCaseIds, dongBoTrangThaiCase, dongBoTrangThaiCaseLo, sosCaseState } from './sosState.ts';
-import { CAU_LUU_TRU, PLAN_DECISIONS, canBuoiTutor, coNguoiDay, decisionToStep, duongDotTest, kiemBuoiTutor, kiemSoBuoiTuan, soBuoiTu, tuanLich, type BuoiTutor, type PlanDecision } from '../../../shared/domain/index.ts';
+import { CAU_LUU_TRU, PLAN_DECISIONS, canBuoiTutor, coNguoiDay, coSoBuoiKy, decisionToStep, duongDotTest, kiemBuoiTutor, kiemSoBuoiTuan, soBuoiTu, tuanLich, type BuoiTutor, type PlanDecision } from '../../../shared/domain/index.ts';
 import { chenPa } from './taoPa.ts';
 import { nguoiGiuKetQua } from './giuKetQua.ts';
 import { apDungDieuChinh, chuanHoaDieuChinh, daDayCua, ghiBanDieuChinh, lichSuDieuChinhCuaCase, nguoiSauSua, soBuoiMoi } from './planRevisions.ts';
@@ -3173,6 +3173,8 @@ export function updateResult(p: Principal, interventionId: number, input: {
   khongTraCase?: boolean;
   /** OV-7b: thẻ Xin ý kiến đang chờ là của CHÍNH lần ghi đang sửa — nơi gọi tự viết lại, không nối "Bổ sung" + chuông lần hai. */
   giuYeuCau?: boolean;
+  /** OV-12h: sửa lần ghi CŨ của Tutor chưa từng có số buổi — không hỏi Số buổi kỳ này / dòng buổi (giữ như trước). */
+  giuCu?: boolean;
 } = {}) {
   const conn = db();
   const iv = conn.prepare('SELECT * FROM case_interventions WHERE id = ?').get(interventionId) as any;
@@ -3275,8 +3277,8 @@ export function updateResult(p: Principal, interventionId: number, input: {
     ? conn.prepare('SELECT * FROM mini_test WHERE nhom_bo_tro = ? AND ty_le IS NULL').get(iv.nhom_bo_tro) as any : null;
   if (mtDong && !input.miniTest) throw badRequest('Kết quả cuối của bổ trợ miễn phí thì nhập Mini Test (% và ngày làm).');
   const mtGhi = mtDong ? kiemMiniTest(mtDong, input.miniTest!) : null;
-  const { remainingIssue, soBuoiTuan, nguoiDay, metrics } = chuKetQuaTuan(p, iv, c, input);
-  const buoi = buoiTutorCua(iv, soBuoiTuan, input.buoi);
+  const { remainingIssue, soBuoiTuan, nguoiDay, metrics } = chuKetQuaTuan(p, iv, c, input, !!opts.giuCu);
+  const buoi = buoiTutorCua(iv, soBuoiTuan, input.buoi, !!opts.giuCu);
   /* Điều chỉnh: chuẩn hoá TRƯỚC giao dịch; sai thì không ghi gì. Số buổi mới ≥ đã dạy SAU tuần này. */
   const adjustPatch = nextStep === 'adjust'
     ? chuanHoaDieuChinh(p, iv, input.adjust, observedOn, daDayCua(interventionId) + (soBuoiTuan ?? 0)) : null;
@@ -3426,14 +3428,14 @@ export function updateResult(p: Principal, interventionId: number, input: {
 function chuKetQuaTuan(p: Principal, iv: any, c: any, input: {
   remainingIssue?: string | null; soBuoi?: unknown; metrics?: unknown; evidenceAttemptId?: number | null;
   nguoiDay?: { performerUserId?: number | null; performerName?: string | null } | null;
-}) {
+}, cu = false) {
   const remainingIssue = String(input.remainingIssue ?? '').trim() || null;
   if (remainingIssue && remainingIssue.length > 300) throw badRequest('Vấn đề còn tồn / Ghi chú tối đa 300 ký tự.');
   /* PR-PA (§8): PA có Số buổi → Số buổi tuần này bắt buộc (0–60). PA không Số buổi: không lưu số.
      PR-CT2: Người dạy tuần này KHÔNG bắt buộc; có thì vẫn kiểm (tài khoản đang làm việc / tên ngoài). */
-  const coDem = iv.so_buoi != null;
+  const coDem = coSoBuoiKy({ kind: iv.kind, soBuoi: iv.so_buoi ?? null, cu });   // OV-12h: mọi PA Tutor có ô này
   const loiTuan = coDem ? kiemSoBuoiTuan(input.soBuoi) : null;
-  if (loiTuan) throw badRequest(`Số buổi tuần này: ${loiTuan}.`);
+  if (loiTuan) throw badRequest(`Số buổi kỳ này: ${loiTuan}.`);
   const soBuoiTuan = coDem ? soBuoiTu(input.soBuoi) : null;
   const nguoiDay = coNguoiDay(iv.kind)
     ? chuanHoaNguoiThucHien(p, input.nguoiDay ?? {}, { nhom: 'nhan_vien', batBuoc: false, nhan: 'Người dạy tuần này' }) : null;
@@ -3445,9 +3447,9 @@ function chuKetQuaTuan(p: Principal, iv: any, c: any, input: {
   return { remainingIssue, soBuoiTuan, nguoiDay, metrics };
 }
 
-/** OV-12h: PA Tutor có Số buổi → bắt buộc đúng `soBuoiTuan` dòng buổi (0 buổi = không dòng); loại khác / Tutor cũ không Số buổi → null (không ghi bảng). */
-function buoiTutorCua(iv: any, soBuoiTuan: number | null, buoi: unknown): BuoiTutor[] | null {
-  if (!canBuoiTutor({ kind: iv.kind, soBuoi: iv.so_buoi ?? null }) || soBuoiTuan === null) return null;
+/** OV-12h: MỌI PA Tutor → bắt buộc đúng `soBuoiTuan` dòng buổi (0 buổi = không dòng); loại khác / sửa lần ghi cũ (`cu`) → null (không ghi bảng). */
+function buoiTutorCua(iv: any, soBuoiTuan: number | null, buoi: unknown, cu = false): BuoiTutor[] | null {
+  if (!canBuoiTutor({ kind: iv.kind, cu }) || soBuoiTuan === null) return null;
   const loi = kiemBuoiTutor(soBuoiTuan, buoi ?? []);
   if (loi) throw badRequest(`Buổi tutor: ${loi}.`);
   return (buoi as any[] ?? []).map((b) => ({ tutor: String(b.tutor).trim(), nhanXet: String(b.nhanXet).trim() }));
@@ -3596,7 +3598,7 @@ export function suaKetQua(p: Principal, followupId: number, input: VaoKetQua) {
     if (x.chanDoi) throw badRequest(x.chanDoi);
     daoKetQua(conn, p, x, khoaTep);
     const truocMax = (conn.prepare('SELECT COALESCE(MAX(id), 0) m FROM case_followups').get() as any).m as number;
-    updateResult(p, iv.id, vao, { khongTraCase: true, giuYeuCau: !!x.the });
+    updateResult(p, iv.id, vao, { khongTraCase: true, giuYeuCau: !!x.the, giuCu: chinh.so_buoi == null });   // OV-12h: lần ghi cũ không số buổi
     const moi = conn.prepare('SELECT * FROM case_followups WHERE intervention_id = ? ORDER BY id DESC LIMIT 1').get(iv.id) as any;
     /* Quản lý sửa hộ: lần ghi vẫn là của người đã ghi (họ còn sửa tiếp được); ai sửa nằm ở nhật ký. */
     if (chinh.observer_user_id !== p.userId) {
@@ -3704,10 +3706,11 @@ function suaChuKetQua(p: Principal, x: NguCanhSua, vao: VaoKetQua): void {
   if (chinh.next_step === 'ask_manager' && !x.the && x.chanDoi && decisionNote !== chinh.decision_note) {
     throw badRequest('Quản lý đã trả lời câu hỏi Xin hỗ trợ — không sửa được câu hỏi.');
   }
-  const t = chuKetQuaTuan(p, iv, x.c, vao);
+  const cu = chinh.so_buoi == null;   // OV-12h: lần ghi cũ (không số buổi) giữ như trước
+  const t = chuKetQuaTuan(p, iv, x.c, vao, cu);
   /* OV-12h: sửa chữ lần ghi Tutor — gửi dòng buổi, hoặc lần ghi đã có dòng, thì kiểm như lúc ghi và thay; lần ghi cũ không gửi thì giữ. */
   const coDong = !!conn.prepare('SELECT 1 FROM case_followup_buoi WHERE followup_id = ? LIMIT 1').get(chinh.id);
-  const buoi = vao.buoi === undefined && !coDong ? null : buoiTutorCua(iv, t.soBuoiTuan, vao.buoi);
+  const buoi = vao.buoi === undefined && !coDong ? null : buoiTutorCua(iv, t.soBuoiTuan, vao.buoi, cu);
   const sau = { ...chinh, note, decision_note: decisionNote, remaining_issue: t.remainingIssue, so_buoi: t.soBuoiTuan,
     phu_trach_user_id: t.nguoiDay?.userId ?? null, phu_trach_ten: t.nguoiDay?.name ?? null };
   const doi = (['note', 'decision_note', 'remaining_issue', 'so_buoi', 'phu_trach_user_id', 'phu_trach_ten'] as const)

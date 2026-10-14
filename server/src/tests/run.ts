@@ -2382,7 +2382,7 @@ check('[9.3] Hoàn thành Case: một đường duy nhất, có kết luận và
 
   // Kết thúc PA (tab "Kết thúc") → lúc này mới đóng được.
   cases.updateResult(P.coreTeacher, ivId, {
-    mode: 'end', outcome: 'improved', nextStep: 'complete',
+    mode: 'end', outcome: 'improved', nextStep: 'complete', soBuoi: 0,   // OV-12h: PA Tutor ghi Số buổi kỳ này
     note: 'Em nghe bắt ý tốt hơn hẳn, đã hết buổi tutor cuối',
   });
   assert(cases.closeBlockers(c.id).length === 0, 'Mọi phương án đã khép mà vẫn còn lý do chặn');
@@ -7512,7 +7512,7 @@ check('PR-D · Lịch sử một phương án mang đủ ngày, chu kỳ, ghi ch
   }) as any;
   const ivId = info.interventions.find((i: any) => i.description === 'Học tutor Listening (PR-D lịch sử)').id;
   cases.updateResult(P.coreTeacher, ivId, {
-    mode: 'monitor', outcome: 'partial', observedOn: TODAY,
+    soBuoi: 0, mode: 'monitor', outcome: 'partial', observedOn: TODAY,
     note: 'Nghe bắt ý tốt hơn, còn sai số điện thoại (PR-D)',
   });
   const plan = prdCardOf(P.coreTeacher, prdStudent.id, c.id).plans.find((p: any) => p.id === ivId);
@@ -7532,7 +7532,7 @@ check('PR-D · Cập nhật quá hạn thì lịch sử phương án ghi đúng 
   }) as any;
   const ivId = info.interventions.find((i: any) => i.description === 'Học tutor Listening (PR-D trễ)').id;
   cases.updateResult(P.coreTeacher, ivId, {
-    mode: 'monitor', outcome: 'unchanged', observedOn: TODAY,
+    soBuoi: 0, mode: 'monitor', outcome: 'unchanged', observedOn: TODAY,
     note: 'Cập nhật muộn hơn hạn tuần, ghi lại để so (PR-D)',
   });
   const plan = prdCardOf(P.coreTeacher, prdStudent.id, c.id).plans.find((p: any) => p.id === ivId);
@@ -7548,7 +7548,7 @@ check('PR-D · CASE-05: điểm tự chấm cũ đã lưu vẫn đọc được 
   const ivId = info.interventions.find((i: any) => i.description === 'Học tutor Listening (PR-D điểm cũ)').id;
   // Dữ liệu cũ: một lần cập nhật đã kèm điểm tự chấm (giao diện mới không còn gửi trường này).
   cases.updateResult(P.coreTeacher, ivId, {
-    mode: 'monitor', outcome: 'partial', observedOn: TODAY,
+    soBuoi: 0, mode: 'monitor', outcome: 'partial', observedOn: TODAY,
     note: 'Bản ghi cũ có kèm điểm cô tự chấm (PR-D)',
     metrics: [{ skill: 'listening', score: 6, total: null }],
   });

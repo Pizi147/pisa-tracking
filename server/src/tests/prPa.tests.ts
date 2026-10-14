@@ -283,7 +283,7 @@ export async function runPrPaTests(t: YThucTestKit) {
   check('PA4 · Kết quả: PA có Số buổi → "Số buổi tuần này" bắt buộc 0–60; Người dạy tuần này không bắt buộc (PR-CT2); đếm 3 + 3 + 2 + 0 = 8/10 qua 4 tuần', () => {
     const { c, iv } = tutor10('KQ');
     const thieu = maLoi(() => cases.updateResult(P.lrTeacher, iv, { ...KQ, nguoiDay: { performerUserId: GV_L } }));
-    assert(thieu.status === 400 && thieu.msg.includes('Số buổi tuần này'), `thiếu số buổi: ${JSON.stringify(thieu)}`);
+    assert(thieu.status === 400 && thieu.msg.includes('Số buổi kỳ này'), `thiếu số buổi: ${JSON.stringify(thieu)}`);
     const vuot = maLoi(() => cases.updateResult(P.lrTeacher, iv, { ...KQ, soBuoi: 61, nguoiDay: { performerUserId: GV_L } }));
     assert(vuot.status === 400 && vuot.msg.includes('Từ 0 đến 60 buổi'), `61: ${JSON.stringify(vuot)}`);
     assert(fuCua(iv).length === 0, 'lỗi mà vẫn ghi');
@@ -617,7 +617,8 @@ export async function runPrPaTests(t: YThucTestKit) {
     const tutor = { kind: 'tutor', soBuoi: 10 };
     const khoa = (pa: any, tuan: string, ng: any) => d.loiKetQuaTuan(pa, tuan, ng).map((l: any) => `${l.khoa}:${l.lyDo}`).join('|');
     assert(khoa(tutor, '2', null) === '' && khoa(tutor, '0', null) === '' && khoa(tutor, '', null) === 'so-buoi-tuan:Từ 0 đến 60 buổi'
-      && khoa(tutor, '1', { kieu: 'ngoai', ten: 'A' }).startsWith('nguoi-day:Gõ tên') && khoa({ kind: 'tutor', soBuoi: null }, '', null) === ''
+      && khoa(tutor, '1', { kieu: 'ngoai', ten: 'A' }).startsWith('nguoi-day:Gõ tên') && khoa({ kind: 'tutor', soBuoi: null }, '', null) === 'so-buoi-tuan:Từ 0 đến 60 buổi'   /* OV-12h: mọi PA Tutor */
+      && khoa({ kind: 'tutor', soBuoi: null, cu: true }, '', null) === ''
       && khoa({ kind: 'self_study', soBuoi: 8 }, '2', null) === '', `loiKetQuaTuan: ${khoa(tutor, '2', null)}`);
     assert(JSON.stringify(d.thanKetQuaTuan(tutor, '0', null)) === '{"soBuoi":0,"nguoiDay":{}}'
       && JSON.stringify(d.thanKetQuaTuan({ kind: 'self_study', soBuoi: 8 }, '2', { kieu: 'tai_khoan', id: 5, ten: 'X' })) === '{"soBuoi":2}'
