@@ -192,8 +192,11 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
         <div className="min-w-0">
           <div className="flex items-start gap-2">
             {chon && (
-              <input type="checkbox" className="mt-1 h-4 w-4 shrink-0 accent-teal-500" checked={chon.checked}
-                onChange={(e) => chon.onChange(e.target.checked)} aria-label={`Chọn: ${yc.tieuDe}`} />
+              /* OV-11i (P2-3): bọc <label> — vùng chạm 44 × 44 ở điện thoại (`after:`, mẫu MenuDong), ô tích giữ 16 px. */
+              <label className="relative mt-1 inline-flex shrink-0 cursor-pointer max-sm:after:absolute max-sm:after:left-1/2 max-sm:after:top-1/2 max-sm:after:h-11 max-sm:after:w-11 max-sm:after:-translate-x-1/2 max-sm:after:-translate-y-1/2 max-sm:after:content-['']">
+                <input type="checkbox" className="h-4 w-4 accent-teal-500" checked={chon.checked}
+                  onChange={(e) => chon.onChange(e.target.checked)} aria-label={`Chọn: ${yc.tieuDe}`} />
+              </label>
             )}
             {!gon && (
               /* PR-HK1 H4: chip nền nhạt, không viền — viền xám làm nhãn trông như nút thao tác. */

@@ -4,7 +4,7 @@ import { useSession } from './lib/session.tsx';
 import { useApi } from './lib/useApi.ts';
 import { DemoBar } from './modules/platform/DemoBar.tsx';
 import { LA_BAN_CHINH } from './lib/banChinh.ts';
-import { useGhiNguon } from './lib/quayLai.ts';
+import { useGhiNguon, useTieuDeTab } from './lib/quayLai.ts';
 import { Header } from './modules/platform/Header.tsx';
 import { Skeleton } from './ui/ui.tsx';
 import { useToast } from './ui/Toast.tsx';
@@ -97,6 +97,7 @@ export default function App() {
   const toast = useToast();
   const location = useLocation();
   useGhiNguon();   // PR-OV5b: nguồn của nút "‹ Quay lại" ở mọi hồ sơ
+  useTieuDeTab(!!session?.authenticated);   // OV-11i (P1-3): tiêu đề tab theo màn
   /* PR-PH / HK2: bấm "Thử lại" ở dải Mất kết nối → nút khoá, chữ "Đang thử…" tới khi tải xong. */
   const [dangThu, setDangThu] = useState(false);
   const thuLai = async () => { setDangThu(true); try { await reload(); } finally { setDangThu(false); } };
@@ -198,8 +199,9 @@ export default function App() {
           <Route path="/hoc-thuat/case/:id" element={<CaseRoutePage />} />
           <Route path="/test/:tab?" element={nav.test ? <TestPage /> : <Navigate to="/" replace />} />
           {/* Một trang lưới cho cả hai loại lớp — máy chủ trả `mode`, trang chọn lưới đúng (đặc tả §3.5, §6). */}
-          <Route path="/nhap-diem/:classId" element={<ChamDiemPage />} />
-          <Route path="/bang-diem-thuong/:classId" element={<ChamDiemPage />} />
+          {/* OV-11i (TE-12): TVV / CX (không `nav.test`) mở thẳng lưới nhập điểm → Tổng quan, như `/test`. */}
+          <Route path="/nhap-diem/:classId" element={nav.test ? <ChamDiemPage /> : <Navigate to="/" replace />} />
+          <Route path="/bang-diem-thuong/:classId" element={nav.test ? <ChamDiemPage /> : <Navigate to="/" replace />} />
           <Route path="/mock-test/:id" element={<MockDetailPage />} />
           <Route path="/cong-viec/:tab?" element={nav.work ? <CongViecPage /> : <Navigate to="/" replace />} />
           {/*

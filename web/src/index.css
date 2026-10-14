@@ -234,12 +234,14 @@
   }
   .field:focus { border-color: var(--accent); }
   .field:disabled { opacity: 0.6; background: var(--o-nhap-tat); }
+  /* OV-11i (P1-2): chữ gợi ý trong ô theo token — sáng 5.8:1, tối 5.7:1 (mặc định Tailwind #9ca3af chỉ 2.5:1 ở sáng). */
+  input::placeholder, textarea::placeholder { color: rgb(var(--text-faint-rgb)); }
   /*
-   * K3 (PR-HK1): vùng bấm trên điện thoại ≥ 40px. Chỉ màn < 640px (= `max-sm:`), desktop giữ mật độ cũ.
+   * K3 (PR-HK1) · OV-11i (P2-1): vùng bấm trên điện thoại ≥ 44px (DESIGN.md, PRODUCT.md). Chỉ màn < 640px (= `max-sm:`), desktop giữ mật độ cũ.
    * Chữ bấm được nằm trong dòng (tên HV, số mở danh sách) nới bằng `max-sm:py-3 max-sm:-my-3` ngay ở chỗ dùng — không đổi bố cục.
    */
   @media not all and (min-width: 640px) {
-    .btn, .field { min-height: 40px; }
+    .btn, .field { min-height: 44px; }
   }
   .label { display: block; font-size: 12px; color: var(--text-dim); margin-bottom: 0.25rem; font-weight: 500; }
 
@@ -254,7 +256,8 @@
   .row-hover:hover { background: var(--accent-soft); }
   /* Học viên đã kết thúc: làm dịu nhưng vẫn phải đọc rõ, không hạ opacity tới mức mất chữ. */
   /* Hàng ĐANG ĐƯỢC CHỌN — sáng hơn hàng chỉ đang bị rê chuột, để biết mình đang xem cái nào. */
-  .row-active { background: var(--accent-soft); box-shadow: inset 2px 0 0 var(--accent); }
+  /* OV-11i (P2-6): chữ phụ (`text-slate-500` = faint) trên nền hàng đang chọn lên mức dim — tối 4.1 → 5.1:1. */
+  .row-active { background: var(--accent-soft); box-shadow: inset 2px 0 0 var(--accent); --text-faint-rgb: var(--text-dim-rgb); }
   .row-muted { color: var(--text-faint); }
   .row-muted .link { color: var(--text-dim); }
 
@@ -305,4 +308,6 @@
 
   .skel { background: linear-gradient(90deg, var(--surface-2) 25%, var(--nut-hover) 50%, var(--surface-2) 75%); background-size: 200% 100%; animation: shimmer 1.4s infinite; border-radius: 0.375rem; }
   @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+  /* OV-11i (P3-4): người dùng giảm chuyển động — khung chờ đứng yên (vẫn thấy là đang tải). */
+  @media (prefers-reduced-motion: reduce) { .skel { animation: none; } }
 }

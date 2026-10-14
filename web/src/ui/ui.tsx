@@ -1,7 +1,9 @@
 import { useId, useState, type MouseEvent, type ReactNode } from 'react';
-import { Link } from 'react-router-dom';
-import { GIAI_THICH_KCK, KCK, chuTrangThai, type TrangThai } from '@shared/domain/index.ts';
+import { Link, useLocation } from 'react-router-dom';
+import { GIAI_THICH_KCK, KCK, chuTrangThai, loaiHoSo, trangCha, type TrangThai } from '@shared/domain/index.ts';
 import { fmtBand } from '../lib/format.ts';
+import { laCauLoi403 } from '../lib/api.ts';
+import { useChongVe, useVe } from '../lib/quayLai.ts';
 import { BaoOTrongNhan, coOTuNhan } from './ONgay.tsx';
 import { useNoiLoi } from './loiForm.tsx';
 import { CHIP_TRON, CHIP_VUONG } from './Nhan.tsx';
@@ -13,7 +15,8 @@ export function Card({ title, action, children, className = '', bodyClass = 'p-4
     <section className={`card ${className}`}>
       {(title || action) && (
         <header className="flex items-center justify-between gap-3 px-4 py-3 border-b" style={{ borderColor: 'var(--line)' }}>
-          <h2 className="text-sm font-semibold text-slate-200">{title}</h2>
+          {/* OV-11i (P2-4): không có tiêu đề thì không vẽ <h2> rỗng (trình đọc màn hình đọc "heading, trống"). */}
+          {title ? <h2 className="text-sm font-semibold text-slate-200">{title}</h2> : <span />}
           {action}
         </header>
       )}
@@ -270,9 +273,21 @@ export function ErrorState({ message, hint, onRetry }: { message: string; hint?:
     <div className="flex flex-col items-center justify-center gap-2 py-10 px-6 text-center">
       <div className="text-bad font-medium">{message}</div>
       {hint && <p className="text-slate-400 text-xs max-w-md">{hint}</p>}
-      {onRetry && <button className="btn btn-sm mt-2" onClick={onRetry}>Thử lại</button>}
+      {/* OV-11i (HL-15 · PT-11 · TQ-16): 403 thử lại vẫn 403 — nút về nguồn / trang cha thay "Thử lại". */}
+      {laCauLoi403(message) ? <NutVeCha /> : onRetry && <button className="btn btn-sm mt-2" onClick={onRetry}>Thử lại</button>}
     </div>
   );
+}
+
+/** Nút về của khung lỗi 403: nguồn đầu của chồng Quay lại (OV-5b), không có thì trang cha của hồ sơ (`trangCha`), còn lại Tổng quan. */
+function NutVeCha() {
+  const { pathname } = useLocation();
+  const chong = useChongVe();
+  const ve = useVe();
+  const hs = loaiHoSo(pathname);
+  const dich = chong[0] ?? (hs ? trangCha(hs) : { url: '/', ten: 'Tổng quan' });
+  if (dich.url === pathname) return null;
+  return <button type="button" className="btn btn-sm mt-2" onClick={() => ve(dich.url, !chong.length)}><span aria-hidden>‹</span> {dich.ten}</button>;
 }
 
 export function Forbidden({ message, hint }: { message?: string; hint?: string }) {

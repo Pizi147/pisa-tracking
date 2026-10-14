@@ -9,6 +9,13 @@ export class ApiError extends Error {
   }
 }
 
+/*
+ * OV-11i (HL-15 · PT-11 · TQ-16): câu lỗi của các lần 403 — khung lỗi (`ErrorState`) chỉ nhận chữ, nhờ đây biết "thử lại vẫn 403" để thay
+ * "Thử lại" bằng nút về, không sửa ~80 nơi gọi. ponytail: nhận theo câu chữ — có câu trùng giữa 403 và lỗi khác thì truyền `status` tới ErrorState.
+ */
+const cauLoi403 = new Set<string>();
+export const laCauLoi403 = (cau: string) => cauLoi403.has(cau);
+
 const cache = new Map<string, unknown>();
 /*
  * PR-CACHE (F01, F04): số lần xoá theo tiền tố ('' = đổi tài khoản, trúng mọi đường). Lời gọi ghi nhớ `theHe(path)` lúc BẮT ĐẦU;
@@ -70,7 +77,9 @@ async function request<T>(method: string, path: string, body?: unknown, isForm =
     try { payload = JSON.parse(text); } catch { payload = { error: text }; }
   }
   if (!res.ok) {
-    throw new ApiError(res.status, payload?.error ?? `Lỗi ${res.status}`, payload?.details);
+    const loi = new ApiError(res.status, payload?.error ?? `Lỗi ${res.status}`, payload?.details);
+    if (loi.status === 403) cauLoi403.add(loi.message);
+    throw loi;
   }
   return payload as T;
 }
