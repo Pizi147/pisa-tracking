@@ -1,16 +1,17 @@
 import { db } from '../db.ts';
-import { CHU_THEM_PA, PERMISSIONS, hanBanGiao, nhanLoaiXuLy, tenMon, tuanLich, type DaiHocVien, nhanBaiThuong } from '../../../shared/domain/index.ts';
+import { CHU_THEM_PA, PERMISSIONS, hanBanGiao, kyGhiKetQua, nhanLoaiXuLy, tenMon, type DaiHocVien, nhanBaiThuong } from '../../../shared/domain/index.ts';
 import { can, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
-import { addDays, diffDays } from '../util.ts';
+import { diffDays } from '../util.ts';
 import type { EmYThuc } from '../yThuc/trangThai.ts';
+import { viecBuocTiep } from '../loTrinh/buocTiep.ts';
 
 export type ViecHocVien = {
   /** Đúng khoá của `myWork` (Q2) — phép kiểm so hai đường theo khoá. Việc "chờ Quản lý duyệt" không có ở Công việc → khoá `cho-duyet:…`. */
   key: string;
   loai: 'nguyen-nhan' | 'de-ra-pa' | 'xac-nhan-pa' | 'ghi-ket-qua' | 'cho-duyet' | 'bao-ph' | 'mini-test' | 'y-thuc' | 'yt-xem' | 'yt-thuc-hien'
-    | 'ban-giao' | 'ban-giao-mon';
-  /** "Ghi kết quả tuần W4 SEP · PA Tăng cường bài tập Writing Task 2" — động từ đầu câu. */
+    | 'ban-giao' | 'ban-giao-mon' | 'buoc-tiep';
+  /** "Kết quả W3–W4 SEP · PA Tăng cường bài tập Writing Task 2" — động từ đầu câu. */
   chu: string;
   kyNang: string | null; caseId: number | null; paId: number | null;
   han: string | null; quaHanNgay: number | null; tone: 'danger' | 'warn' | 'info' | 'wait';
@@ -37,11 +38,19 @@ type Nguon = {
  *   · Báo PH qua TVV, Xử lý vi phạm, Ghi nhận vi phạm mới, Ghi "Đã thực hiện" → GVCN (Báo PH Cuối khoá → Quản lý) · Mini Test → người giữ việc (`nguoiGiuMiniTest`, PR-CT2), không có thì GVCN · Bàn giao → người xem
  *   theo `dai.nut` · "Chờ Quản lý duyệt…" → "Quản lý" (không ai trong số giáo viên, không vào thanh việc).
  * KHÔNG chạy `myWork` (quét cả phạm vi): Case/PA đọc từ `board` đã dựng, Ý thức / Mini Test / dải chuyển lớp do hồ sơ nạp sẵn.
- * Thêm hai câu: Báo PH của em · tên + vai người làm. Em Tạm dừng / đã kết thúc → rỗng (mọi hạn dừng, T65).
+ * Thêm hai câu: Báo PH của em · tên + vai người làm. Em Tạm dừng / đã kết thúc → rỗng (mọi hạn dừng, T65) — trừ "Chọn bước tiếp sau thi" (OV-12a).
  */
 export function viecCuaHocVien(p: Principal, sid: number, board: { rows: any[] }, n: Nguon): { cuaBan: ViecHocVien[]; nguoiKhac: ViecHocVien[] } {
-  if (n.trangThaiEm !== 'active') return { cuaBan: [], nguoiKhac: [] };
   const today = demoToday();
+  /* OV-12a: em đã Kết thúc học có kết quả thi thật — "Chọn bước tiếp sau thi" của người xem; cùng tập + quyền với Công việc (`viecBuocTiep`: QL / TVV của chi nhánh). */
+  if (n.trangThaiEm !== 'active') {
+    const cuaBan: ViecHocVien[] = viecBuocTiep(p, { today, branchId: null, studentId: sid }).map((v) => {
+      const quaHanNgay = v.due < today ? diffDays(today, v.due) : null;
+      return { key: v.key, loai: 'buoc-tiep', chu: 'Chọn bước tiếp sau thi', kyNang: null, caseId: null, paId: null, han: v.due, quaHanNgay,
+        tone: quaHanNgay !== null ? 'danger' : 'info', nguoi: { id: p.userId, ten: p.fullName, vai: null }, cuaBan: true, nut: 'Chọn', mo: { loai: 'duong', href: v.href } };
+    });
+    return { cuaBan, nguoiKhac: [] };
+  }
   const conn = db();
   type Nhap = Omit<ViecHocVien, 'nguoi' | 'cuaBan' | 'quaHanNgay'> & { nguoiId: number | null; vaiChu?: string; cuaBanTheoVai?: boolean };
   const ds: Nhap[] = [];
@@ -80,7 +89,7 @@ export function viecCuaHocVien(p: Principal, sid: number, board: { rows: any[] }
       if (chayDuoc(pl) && !(pl.kind === 'bo_tro' && pl.nhom && minGhi.get(pl.nhom) !== pl.id)) {
         const cuoi = !!pl.lanCuoi;
         ds.push({ key: `action:${pl.id}`, loai: 'ghi-ket-qua',
-          chu: cuoi ? `Kết quả cuối · PA ${pl.name}` : `Kết quả tuần ${tuanLich(addDays(pl.actionDue, -7), today)} · PA ${pl.name}`,
+          chu: cuoi ? `Kết quả cuối · PA ${pl.name}` : `Kết quả ${kyGhiKetQua(pl.actionDue, today)} · PA ${pl.name}`,
           kyNang: r.category, caseId: c.id, paId: pl.id, han: pl.actionDue, tone: 'info', nguoiId: pl.nguoiId ?? null,
           nut: cuoi ? 'Kết quả cuối' : 'Kết quả', mo: { loai: 'case', caseId: c.id, paId: pl.id, viec: 'ghi-ket-qua' } });
       }

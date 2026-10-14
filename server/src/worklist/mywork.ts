@@ -224,7 +224,7 @@ const GROUP_META: Record<WorkGroupKey, { label: string; hint: string }> = {
   },
   ghi_ket_qua_pa: {
     label: 'Kết quả PA',
-    hint: 'Kết quả tuần Thứ Hai → Chủ nhật ghi xong trước hết Thứ Hai tuần sau. Tuần chạm ngày dự kiến kết thúc là Kết quả cuối: kết luận PA.',
+    hint: 'Kết quả PA ghi hai tuần một lần, xong trước hết Thứ Ba sau kỳ (kỳ tính từ ngày bắt đầu PA). Kỳ chạm mốc PA là Kết quả cuối: kết luận PA.',
   },
 
   /* --------------------------------------------- những nghĩa vụ khác, vẫn phải thấy được */
@@ -522,9 +522,9 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     sweepExpiredMoves();
   }
 
-  // ------------------------------------------- 2b. GHI KẾT QUẢ PA HẰNG TUẦN (K5-02, T75, §5.6) — một PA một dòng
+  // ------------------------------------------- 2b. GHI KẾT QUẢ PA (K5-02, T75, §5.6; OV-12a: kỳ hai tuần) — một PA một dòng
   /*
-   * Một nghĩa vụ: kết quả tuần T2→CN ghi xong trước HẾT THỨ HAI tuần sau (`action_due`). Hiện từ Chủ nhật (tuần sắp hết) tới khi
+   * Một nghĩa vụ: kết quả của kỳ hai tuần ghi xong trước HẾT THỨ BA sau kỳ (`action_due`, OV-12a). Hiện từ Chủ nhật (kỳ sắp hết, hạn − 2) tới khi
    * ghi. Mốc PA quy chế (`followup_due`) KHÔNG sinh việc riêng — tuần chạm mốc thành "Ghi kết quả cuối" (PR-SOS). Khoá dòng giữ
    * `action:{id}` để "đã nhắc hôm nay" của nút Nhắc khớp qua các PR (K5-12). QL chỉ thấy dòng của người khác khi đã quá hạn.
    */
@@ -553,7 +553,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
           AND ${NOT_UNCONFIRMED_PRESET('iv')}
           AND ${HV_DANG_HOC_SQL('s')}`,   /* K3-41: em Tạm dừng dừng hạn */
     )
-    .all(addDays(today, 1)) as any[];
+    .all(addDays(today, 2)) as any[];
   napTruocPhamVi(ghiKetQua.map((r) => r.eff_student_id));
   /* PR-PA (§8): người giữ việc — cùng hàm với chỉ số `pa-can-cap-nhat` và quyền ghi; tính một lần cho mọi dòng. */
   const giu = nguoiGiuKetQua(ghiKetQua.map((r) => ({ id: r.id, topic: r.topic ?? null, nhomBoTro: r.nhom_bo_tro ?? null, classId: r.eff_class_id ?? null, ownerUserId: r.owner_user_id ?? null })), today);

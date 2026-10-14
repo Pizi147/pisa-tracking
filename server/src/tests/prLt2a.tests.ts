@@ -184,7 +184,7 @@ export async function runPrLt2aTests(t: YThucTestKit) {
     const khoa = gvOf('MB BE 08', 'writing');
     sosAuto.xacNhanCase(khoa, c.id, XN('writing', 'BE'));
     const pa = paBt(c.id);
-    assert(pa.status === 'started' && pa.confirmed_by === khoa.userId && pa.action_due === d.weeklyUpdateDue(TODAY) && pa.started_date === TODAY, JSON.stringify(pa));
+    assert(pa.status === 'started' && pa.confirmed_by === khoa.userId && pa.action_due === d.hanKyGhiKetQua(TODAY) && pa.started_date === TODAY, JSON.stringify(pa));
     assert(pa.followup_due === boTro.mocCuoiKhoa(em.pt ? get('SELECT cycle_id c FROM assessment_attempts WHERE id = ?', em.pt).c : null, classId('MB BE 08')), 'mốc Final Test');
     assert(chiTiet(khoa, c.id).trangThaiV4.k === 'dang-lam' && get('SELECT status FROM sos_cases WHERE id = ?', c.id).status === 'in_progress', 'Case Đang làm');
     const moc = all('SELECT kind FROM case_milestones WHERE case_id = ?', c.id).map((m) => m.kind);
@@ -312,7 +312,7 @@ export async function runPrLt2aTests(t: YThucTestKit) {
     assert(!(effectiveness.planOutcomes({ studentIds: [em.id] }) as any[]).some((r) => r.id === pP.id), 'PA không theo dõi không vào hiệu quả');
     conn.prepare('UPDATE case_interventions SET action_due = ? WHERE id = ?').run(d.addDaysIso(TODAY, -5), paBt(cGv.id).id);
     sosAuto.datLaiHanCase(em.id, TODAY);
-    assert(paBt(cGv.id).action_due === d.weeklyUpdateDue(TODAY), `Quay lại học: action_due = ${paBt(cGv.id).action_due}`);
+    assert(paBt(cGv.id).action_due === d.hanKe(paBt(cGv.id).started_date ?? paBt(cGv.id).cycle_started_on, null, TODAY), `Quay lại học: action_due = ${paBt(cGv.id).action_due}`);
   });
 
   // ------------------------------------------------------------------ khối 7 · Việc cần làm + Phối hợp + thông báo (Task 7)

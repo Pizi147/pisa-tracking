@@ -14,7 +14,7 @@ import {
   type SystemCloseReason,
   NEXT_STEP_LABEL, isProposalKind, outcomeLabelFor,
   RESCHEDULE_TARGETS, RESCHEDULE_TARGET_LABEL, RESULT_MODES, RESULT_MODE_LABEL,
-  canEndWithOutcome, hanThemPa, stepsForMode, weeklyUpdateDue,
+  canEndWithOutcome, hanThemPa, stepsForMode, hanKe, hanKyGhiKetQua,
   HAN_DUYET_NGAY, hanTheoNgay,
   type NextStep, type RescheduleTarget,
   issueBranchOf, issueLabel, caseTopicLabel, urgencyFromSos,
@@ -949,15 +949,15 @@ export function recordIntervention(p: Principal, caseId: number, input: {
      * HAI MỐC KHÁC NHAU CỦA MỘT PHƯƠNG ÁN (mục 8.3) — trước đây gộp làm một nên không ai
      * phân biệt được "đã đến lúc báo tiến độ" với "đã đến hạn xong việc".
      *
-     *   · HẠN GHI KẾT QUẢ (`action_due`): kết quả tuần T2→CN ghi xong trước hết Thứ Hai tuần sau.
+     *   · HẠN GHI KẾT QUẢ (`action_due`): OV-12a — kỳ hai tuần từ tuần bắt đầu, ghi xong trước hết Thứ Ba sau kỳ (`hanKyGhiKetQua`).
      *   · PR-SOS (Q28-4): KHÔNG còn "dự kiến kết thúc" — PA thường `followup_due` luôn NULL (mốc chỉ có ở PA quy chế).
      *
      * CHỐT 1 + 2 (mục 10.4) CHO PHƯƠNG ÁN NHẬP BÙ: không hạn cập nhật, không hạn kết thúc.
      * Phương án bắt đầu từ một ngày quá khứ xa (ví dụ tháng 7) mà vẫn tính hạn kiểu bình
-     * thường thì `weeklyUpdateDue` ra một hạn đã trôi qua từ lâu — chính là "sinh ~10 dòng
+     * thường thì `hanKyGhiKetQua` ra một hạn đã trôi qua từ lâu — chính là "sinh ~10 dòng
      * quá hạn giả" mà chủ sản phẩm cảnh báo. Việc đã xong rồi thì không còn gì để mà tới hạn.
      */
-    const updateDue = input.backfill ? null : (!cycleStart ? null : weeklyUpdateDue(cycleStart));
+    const updateDue = input.backfill ? null : (!cycleStart ? null : hanKyGhiKetQua(cycleStart));
     const cycleDue = updateDue;
 
     const [id] = chenPa(conn, [{
@@ -1074,7 +1074,7 @@ export function respondToPlan(p: Principal, interventionId: number, input: {
      * số "quá hạn" sau đó chỉ ra một người sai.
      */
     const approvedOn = demoToday();
-    const startDue = input.decision === 'approved' ? weeklyUpdateDue(approvedOn) : null;
+    const startDue = input.decision === 'approved' ? hanKyGhiKetQua(approvedOn) : null;
     conn
       .prepare(
         `UPDATE case_interventions
@@ -3310,21 +3310,20 @@ export function updateResult(p: Principal, interventionId: number, input: {
        * MỞ CHU KỲ MỚI trên CHÍNH phương án này. Không tạo một phương án thứ hai giống hệt:
        * đó vẫn là cùng một việc, chỉ là làm tiếp thêm một vòng nữa.
        *
-       * HẠN GHI KẾT QUẢ chuyển sang hết Thứ Hai tuần sau (mục 8.3, R-PA1). Ghi đúng hôm Thứ Hai
-       * hạn thì hạn mới là hết Thứ Hai tuần sau, không phải chính hôm nay — nếu không, vừa lưu
-       * xong đã thấy báo quá hạn.
+       * HẠN GHI KẾT QUẢ (OV-12a): hạn CỐ ĐỊNH theo lịch kỳ hai tuần của PA (`hanKe`) — ghi sớm / muộn đều khép kỳ đang đòi, ghi bù
+       * khép mọi kỳ đã qua, ghi thêm khi kỳ đang đòi chưa bắt đầu thì giữ hạn. Ghi đúng Thứ Ba hạn → hạn kỳ sau, không phải hôm nay.
        *
        * MỐC giữ nguyên (PR-SOS Q28-4: không còn "dự kiến kết thúc" mặc định — PA thường luôn NULL, PA quy chế giữ mốc quy chế).
        *
        * PR-DUYET (T64, K3-11): "Xin hỗ trợ QL" lưu y như Giữ nguyên — PA KHÔNG dừng, không mất mốc (T22) — rồi gửi câu hỏi
        * thành thẻ Xin ý kiến (ngay dưới). Trước đây PA dừng hẳn chờ Quản lý.
        */
-      const nextDue = weeklyUpdateDue(addDays(observedOn, 1));
+      const nextDue = hanKe(iv.started_date ?? iv.cycle_started_on ?? observedOn, iv.action_due ?? null, observedOn);
       conn
         .prepare(
           `UPDATE case_interventions
               SET status = 'started', cycle_no = ?, cycle_started_on = ?, action_due = ?,
-                  started_date = COALESCE(started_date, ?),
+                  started_date = COALESCE(started_date, cycle_started_on, ?),   -- OV-12a: ngày bắt đầu = gốc lịch kỳ, không lấy ngày ghi
                   performer_user_id = ?, performer_name = ?,
                   updated_at = ?
             WHERE id = ?`,
@@ -3378,7 +3377,7 @@ export function updateResult(p: Principal, interventionId: number, input: {
     dongBoTrangThaiCase(iv.case_id);
     /* PR-LT2a (M-03): PA bổ trợ chung — chép kết quả sang các dòng khác của nhóm. */
     chepKetQuaNhom(conn, iv, followupId, {
-      nextStep, observedOn, completedOn, lanCuoi, nextDue: weeklyUpdateDue(addDays(observedOn, 1)),
+      nextStep, observedOn, completedOn, lanCuoi, nextDue: hanKe(iv.started_date ?? iv.cycle_started_on ?? observedOn, iv.action_due ?? null, observedOn),
       apDungDieuChinh: (sib, fid) => apDungDieuChinh(sib, adjustPatch!, { followupId: fid, actorUserId: p.userId, reason: decisionNote!, on: observedOn }),
     });
     if (mtDong && mtGhi) ghiMiniTestTrongTx(conn, p, mtDong, mtGhi, input.outcome);   // PR-LT2b: sau khi cả nhóm đã khép · OV-11c: Case theo mức GV chọn
@@ -3862,7 +3861,7 @@ export function suaPa(p: Principal, interventionId: number, input: {
       conn.prepare(`UPDATE case_interventions SET description = ?, so_buoi = ?, performer_user_id = ?, performer_name = ?, started_date = ?,
           cycle_started_on = ?, action_due = ?, updated_at = ? WHERE id = ?`)
         .run(m.description, m.soBuoi, m.performerUserId, m.performerName, m.startedDate,
-          doiChuKy ? m.startedDate : row.cycle_started_on ?? null, doiChuKy ? weeklyUpdateDue(m.startedDate!) : row.action_due ?? null, nowIso(), row.id);
+          doiChuKy ? m.startedDate : row.cycle_started_on ?? null, doiChuKy ? hanKyGhiKetQua(m.startedDate!) : row.action_due ?? null, nowIso(), row.id);
       ghiBanDieuChinh({
         iv: row, source: 'sua_pa', reason: 'Sửa PA', on: demoToday(), actorUserId: p.userId, followupId: null,
         after: { ...m, followupDue: row.followup_due ?? null },

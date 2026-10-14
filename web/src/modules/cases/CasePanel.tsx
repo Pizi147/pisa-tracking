@@ -207,7 +207,7 @@ export function ThanCase({ data, onViec }: { data: CaseDetail; onViec: (v: ViewC
       <The tieuDe="Phương án" dem={dsPa.length}
         luat={(
           <>
-            <p className="m-0">Mỗi PA cần Kết quả hằng tuần, trước hết Thứ Hai tuần sau. Case chỉ hoàn thành được khi mọi PA đã khép.</p>
+            <p className="m-0">Mỗi PA cần Kết quả hai tuần một lần, trước hết Thứ Ba sau kỳ. Case chỉ hoàn thành được khi mọi PA đã khép.</p>
             {chiXem && <p className="m-0">Chỉ Quản lý, giáo viên dạy đúng môn của Case, hoặc GVCN (Case Ý thức) mới hoàn thành được Case này. Bạn vẫn ghi được kết quả của từng PA.</p>}
           </>
         )}>

@@ -43,7 +43,7 @@ export function HocVienCuaToi({ branchId = null }: { branchId?: number | null })
       <ODem to={den('tam-dung')} so={d['tam-dung']} nhan="Tạm dừng" phu="đang Tạm dừng học" />
       <ODem to={den('sap-thi')} so={d['sap-thi']} nhan="Sắp thi" phu="thi IELTS trong 6 tuần tới" />
       <ODem to={den('thieu_tt')} so={d.thieu_tt} nhan="Thiếu thông tin" phu="hồ sơ chưa đủ để theo dõi" />
-      {d['cho-buoc-tiep'] > 0 && <ODem to={den('cho-buoc-tiep')} so={d['cho-buoc-tiep']} nhan="Chờ QL chọn bước tiếp" phu="đã có kết quả thi thật" />}
+      {d['cho-buoc-tiep'] > 0 && <ODem to={den('cho-buoc-tiep')} so={d['cho-buoc-tiep']} nhan="Chờ chọn bước tiếp" phu="đã có kết quả thi thật" />}
     </div>
   );
 }

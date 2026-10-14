@@ -620,12 +620,12 @@ export async function runPrDonATests(t: YThucTestKit) {
     assert(/khaiDuoc\(em\)/.test(docNguon('server/src/worklist/mywork.ts')) && /coTheKhai: canManage && khaiDuoc\(em\)/.test(docNguon('server/src/yThuc/xuLy.ts')), 'hai đường không gọi chung khaiDuoc');
   });
 
-  check('Dọn-a (6g) · 8 hạn Thứ Hai liên tiếp: chữ tuần ở Cần xử lý (tuanCuaHanGhiKetQua) = tuần ở tiêu đề form Ghi kết quả (nhanTuanGhiKetQua)', () => {
+  check('Dọn-a (6g) → OV-12a · 8 hạn Thứ Ba liên tiếp: chữ kỳ ở Cần xử lý (tuanCuaHanGhiKetQua) = kỳ ở tiêu đề form Ghi kết quả (nhanTuanGhiKetQua)', () => {
     for (let k = 0; k < 8; k++) {
-      const han = t.addDays('2026-09-07', 7 * k);
+      const han = t.addDays('2026-09-08', 14 * k);
       const a = d.tuanCuaHanGhiKetQua(han, han);
       const b = d.nhanTuanGhiKetQua(han, han).tieuDe.replace(/^Kết quả /, '');
-      assert(a === b && d.tuanKetQuaCuaHan(han) === t.addDays(han, -7), `${han}: "${a}" ≠ "${b}"`);
+      assert(a === `kỳ ${b}` && d.tuanKetQuaCuaHan(han) === t.addDays(han, -15), `${han}: "${a}" ≠ "kỳ ${b}"`);
     }
   });
 

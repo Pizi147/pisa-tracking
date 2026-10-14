@@ -5,7 +5,7 @@ import { LISTENING_BY_RAW, READING_BY_RAW } from '../fasttrack/scoring.ts';
 import { commitIntake } from '../classes/intake.ts';
 import { saveScore } from '../fasttrack/attempts.ts';
 import { baoVang } from '../fasttrack/absence.ts';
-import { issuesForTopic, lichMtGoc, tuanHocCuaMt, weeklyUpdateDue } from '../../../shared/domain/index.ts';
+import { hanKyGhiKetQua, issuesForTopic, lichMtGoc, tuanHocCuaMt } from '../../../shared/domain/index.ts';
 import { guiKhongTheoDoi, xacNhanCase, xacNhanPaQuyChe } from '../cases/sosAuto.ts';
 import { duyetYeuCau, tuChoiYeuCau } from '../duyet/yeuCau.ts';
 import { confirmCoordination } from '../yThuc/phoiHop.ts';
@@ -172,8 +172,8 @@ export function buildSosV3Demo(ctx: BuildCtx): { students: number; cases: number
   const ngocL = caseOf(ngoc.id, 'listening');
   xacNhan(activeTeacher('listening'), ngocL.id, 'listening', 'Em sót số và tên riêng ở Part 1–2.');
   xacNhanPa(activeTeacher('listening'), ngocL.id, 'Tự học Listening: nghe chép Part 1 mỗi ngày, gửi cô Hà thứ Năm.');
-  /* Mốc quy chế Chủ nhật tuần này (20/09) < hạn hết T2 21/09 → lần ghi này là lần cuối. */
-  hanPa(ngocL.id, addDays(DEMO_DATE, -28), weeklyUpdateDue(DEMO_DATE), addDays(DEMO_DATE, 6));
+  /* Mốc quy chế Chủ nhật tuần này (20/09) < hạn hết T3 29/09 (kỳ đang chạy, OV-12a) → lần ghi này là lần cuối. */
+  hanPa(ngocL.id, addDays(DEMO_DATE, -28), hanKyGhiKetQua(addDays(DEMO_DATE, -28), addDays(DEMO_DATE, 6)), addDays(DEMO_DATE, 6));
 
   // ---------------------------------------------------------------- OV-1c: xoá SOS (SOS tạm thời / Overall ≥ kỳ vọng: dùng em demo sẵn có — DEMO.md mục 9)
   /* Đặng Thu Hà — MT1 L 5 R/W 6.5, Speaking vắng dời → chốt, Case Listening; Speaking tuần mới 6.5 → Overall 6.0 ≥ 6.0 → xoá SOS (Case đóng "Overall đạt"). */

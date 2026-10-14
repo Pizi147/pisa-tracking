@@ -1,6 +1,6 @@
 import { THAM_SO_TOI_DA, chenNhieuDong, db, theoLo, tx } from '../db.ts';
 import {
-  NGUONG_KY_VONG, PERMISSIONS, REGULAR_SKILLS, caseDedupKey, categoryOf, goiYKyVong, kyNangLopDich, programmeOf, tenMon, tenMonNgan, weeklyUpdateDue,
+  NGUONG_KY_VONG, PERMISSIONS, REGULAR_SKILLS, caseDedupKey, categoryOf, goiYKyVong, kyNangLopDich, programmeOf, tenMon, tenMonNgan, hanKyGhiKetQua,
   type GoiYKyVong, type RegularSkill,
 } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, chuTuDo, forbidden, notFound, nowIso } from '../util.ts';
@@ -256,7 +256,7 @@ export function taoCaseKyVong(p: Principal, ds: readonly DongCaseKyVong[]): { ta
       pa.push({
         caseId, kind: 'tutor', description: MO_TA_TUTOR, soBuoi: 10, performerUserId: gvCu.get(y.d.ngay)?.get(`${y.d.fromClassId}|${y.mon}`)?.userId ?? null,
         recordedBy: p.userId, status: 'started', startedDate: y.d.ngay, confirmedBy: p.userId, confirmedAt: nowIso(),
-        cycleStartedOn: y.d.ngay, actionDue: weeklyUpdateDue(y.d.ngay),
+        cycleStartedOn: y.d.ngay, actionDue: hanKyGhiKetQua(y.d.ngay),
       });
     }
     moc.push([caseId, 'opened', y.d.ngay, tt ? 'Kỳ vọng đầu ra chưa đạt (Trung tâm) — Tutor 10 buổi' : `Kỳ vọng đầu ra chưa đạt (Học viên) — ${y.d.lyDo ?? ''}`,

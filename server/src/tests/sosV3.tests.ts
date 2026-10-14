@@ -533,7 +533,7 @@ export async function runSosV3Tests(t: YThucTestKit) {
     sosAuto.xacNhanPaQuyChe(w2T, f.w2Plan.id, { description: MO_TA_PA });
     const sau = get('SELECT * FROM case_interventions WHERE id = ?', f.w2Plan.id);
     assert(sau.status === 'started' && sau.started_date === TODAY && sau.cycle_started_on === TODAY && sau.cycle_no === 1
-      && sau.action_due === domain.weeklyUpdateDue(TODAY) && sau.confirmed_by === w2T.userId && !!sau.confirmed_at
+      && sau.action_due === domain.hanKyGhiKetQua(TODAY) && sau.confirmed_by === w2T.userId && !!sau.confirmed_at
       && sau.followup_due === domain.sosPlanEndDate('one_month', { createdOn: TODAY }), `Sau xác nhận: ${JSON.stringify(sau)}`);
     assert(get('SELECT status FROM sos_cases WHERE id = ?', f.w2.id).status === 'in_progress', 'Có nguyên nhân + PA người xác nhận → Đang xử lý');
     assert(count('SELECT COUNT(*) n FROM audit_logs WHERE action = ? AND entity_id = ?', 'case.preset.confirm', iv.id) === 1, 'Có audit xác nhận');

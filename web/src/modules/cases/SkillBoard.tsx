@@ -562,7 +562,7 @@ function HangPA({ p, c, ngan, onMoCase }: {
           <CotPhai
             nut={p.ghiDuoc ? (
               <button type="button" className="btn btn-sm" onClick={() => onMoCase(c.id, { viec: 'ghi-ket-qua', paId: p.id })}
-                title={v.loai === 'ghi-cuoi' ? 'Tuần này chạm mốc quy chế — lưu là PA kết thúc' : 'Kết quả tuần, tiến triển, và quyết định cho PA'}>
+                title={v.loai === 'ghi-cuoi' ? 'Kỳ này chạm mốc quy chế — lưu là PA kết thúc' : 'Kết quả tuần, tiến triển, và quyết định cho PA'}>
                 {v.loai === 'ghi-cuoi' ? 'Kết quả cuối' : 'Kết quả'}
               </button>
             ) : undefined}

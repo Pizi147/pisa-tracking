@@ -5,9 +5,7 @@
  * chương trình đang chọn, 4 nhóm việc của GV, thứ tự dòng Cần xử lý, luật chọn Điểm đáng chú ý.
  * Không có con số nào được tính ở đây — số luôn đến từ `metricSet` (hợp đồng số liệu luật 1).
  */
-import type { DeadlineKind } from './display.ts';
-import { tuanLich } from './hienThiNgay.ts';
-import { tuanKetQuaCuaHan } from './week.ts';
+import { kyGhiKetQua, type DeadlineKind } from './display.ts';
 
 // ------------------------------------------------------------------ chương trình
 /* PR-Pb2-a (Q31-1, T60): chỉ còn hai khung, FT trước. Nút "Cả hai" đã bỏ — khối không theo kỹ năng gộp bằng `null`. */
@@ -135,10 +133,10 @@ export function sapCanXuLy(dem: Partial<Record<MaCanXuLy, number>>, coQuyenDuyet
 }
 
 /**
- * Q25: "tuần W4 SEP" — tuần KẾT QUẢ của hạn ghi kết quả cũ nhất (hạn = hết Thứ Hai tuần sau tuần kết quả). Một chỗ cho dòng Cần xử lý và ô số.
+ * Q25 → OV-12a: "kỳ W3–W4 SEP" — KỲ (hai tuần) của hạn ghi kết quả cũ nhất (hạn = hết Thứ Ba sau kỳ). Một chỗ cho dòng Cần xử lý và ô số.
  */
 export function tuanCuaHanGhiKetQua(han: string, homNay: string): string {
-  return `tuần ${tuanLich(tuanKetQuaCuaHan(han), homNay)}`;
+  return `kỳ ${kyGhiKetQua(han, homNay)}`;
 }
 
 /** Cột Người giữ việc (Q4): "Bạn", hoặc "n giáo viên" + tên sắp theo tên, quá 3 thì "+k". */

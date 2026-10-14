@@ -52,7 +52,7 @@ export const duocDoiKck = (roles: readonly string[] | null | undefined, suaLoTri
 /** OV-10b: ô nhập Liên hệ hiện cho QL, Quản trị, TVV, CX, Admin — GV (GVCN, GVBM) không thấy (máy chủ vẫn nhận theo `student.edit_info`). */
 export const coONhapLienHe = (roles: readonly string[] | null | undefined): boolean => laVaiQuanLy(roles) || vaiXemHocVien(roles) !== null;
 
-/** OV-10b: chip Học viên & Lớp của TVV / CX — số = `chipHocVien` (OV-10c, cùng ô Tổng quan). "Chờ QL chọn bước tiếp" chỉ hiện khi có em. */
+/** OV-10b: chip Học viên & Lớp của TVV / CX — số = `chipHocVien` (OV-10c, cùng ô Tổng quan). "Chờ chọn bước tiếp" chỉ hiện khi có em. */
 export const CHIP_VAI = ['tat-ca', 'can-chu-y', 'tam-dung', 'sap-thi', 'thieu_tt', 'cho-buoc-tiep'] as const;
 export type ChipVai = (typeof CHIP_VAI)[number];
 /** CX mở ở chip `can-chu-y` (không phải 1 000+ em), TVV ở `tat-ca` của HV mình. Nhãn chip ở web (`HocVienTheoVai.tsx`). */
@@ -435,8 +435,8 @@ export function viecTiepCuaEm(i: {
     } else if (v.loaiHan && v.han) {
       const d = deadlineView({ kind: v.loaiHan, due: v.han, today: i.homNay });
       const tone = d.tone === 'overdue' ? 'danger' : v.loaiHan === 'xac-minh-sos' ? 'warn' : 'info';
-      /* PR-S5F-b (mockup 21): ghi kết quả PA nói TUẦN của kết quả (`Ghi kết quả PA W1 · tuần W4 SEP`) — hạn Thứ Hai là của tuần trước nó. */
-      const tuan = v.loaiHan === 'cap-nhat-pa' ? d.viec.replace(/^Kết quả /, '') : null;
+      /* PR-S5F-b → OV-12a: ghi kết quả PA nói KỲ của kết quả (`Ghi kết quả PA W1 · kỳ W3–W4 SEP`) — hạn Thứ Ba là của kỳ hai tuần trước nó. */
+      const tuan = v.loaiHan === 'cap-nhat-pa' ? d.viec.replace(/^Kết quả /, 'kỳ ') : null;
       out.push({ viec: tuan ? `${viec} · ${tuan}` : viec, han: d.han, quaHanNgay: d.daysOverdue, tone, dich, title: `${goc}${tuan ? ` · ${tuan}` : ''} · ${d.han}${d.quaHan ? ` · ${d.quaHan}` : ''}` });
     } else {
       /* Chưa có hạn: Thêm PA (Case tay chưa có PA) vẫn là việc phải làm; "Hoàn thành Case" chỉ nhắc. */

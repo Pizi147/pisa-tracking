@@ -1,6 +1,6 @@
 import { db, theoLo, tx } from '../db.ts';
 import {
-  LO_HANG_LOAT_EM, PERMISSIONS, TOI_DA_HANG_LOAT_EM, VIEC_HANG_LOAT,
+  CHU_XAC_NHAN_XOA, LO_HANG_LOAT_EM, PERMISSIONS, TOI_DA_HANG_LOAT_EM, VIEC_HANG_LOAT, khopXacNhanXoa,
   type DongXemTruoc, type KetQuaHangLoat, type ViecHangLoat, type XemTruocHangLoat,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -10,11 +10,12 @@ import { writeAudit } from '../platform/audit.ts';
 import { chanGiaoDichNeuSapHetGio } from '../platform/hanGio.ts';
 import { huyNhieuLenh, khoiPhucLenh } from '../classes/lenhChuyen.ts';
 import { archiveStudent, hoanTacHocLai, hoanTacKetThuc, hocLai, setStudentStatus, unarchiveStudent } from './students.ts';
+import { matNhieuEm, xoaHocVien } from './xoaHocVien.ts';
 
 /**
  * LÀM NHIỀU HỌC VIÊN MỘT LẦN (PR-LUI-b, chủ sản phẩm 06/10) — Kết thúc học · Lưu trữ · Bỏ lưu trữ · Học lại · Huỷ chuyển lớp · Khôi phục chuyển lớp. CHỈ Quản lý /
  * Quản trị (`cycle.edit` của TỪNG học viên — PR-OV2a: không còn `plan.week`, vai Admin có quyền đó). Không có luật riêng: mỗi học viên đi qua đúng hàm một em (`setStudentStatus`, `archiveStudent`, `unarchiveStudent`,
- * `hocLai`, `huyNhieuLenh`, `khoiPhucLenh`). MỖI HỌC VIÊN MỘT GIAO DỊCH — lỗi một em (ngoài quyền, sai trạng thái, máy chủ sắp hết giờ) không cuộn lại các em đã xong; kết quả
+ * `hocLai`, `huyNhieuLenh`, `khoiPhucLenh`, OV-12a: `xoaHocVien` — mọi trạng thái, gõ XOÁ, web gửi mỗi request một em `LO_XOA_EM`). MỖI HỌC VIÊN MỘT GIAO DỊCH — lỗi một em (ngoài quyền, sai trạng thái, máy chủ sắp hết giờ) không cuộn lại các em đã xong; kết quả
  * trả `ok` + `failed` để web nói "Đã lưu n học viên · m học viên chưa lưu".
  * ponytail: không có "một giao dịch cho cả lô" — cố ý (lỗi giữa chừng phải giữ phần đã lưu); thêm khoá chống gửi trùng nếu cần: các việc đều lặp lại an toàn.
  */
@@ -51,6 +52,7 @@ function lyDoBo(p: Principal, viec: ViecHangLoat, e: Em): string | null {
     case 'khoi-phuc-lenh': return e.lenhHuy ? null : 'Không có quyết định vừa huỷ để khôi phục';
     case 'hoan-tac-ket-thuc': return s.status === 'finished' ? null : 'Không còn ở trạng thái kết thúc học';
     case 'hoan-tac-hoc-lai': return s.status === 'active' ? null : 'Không còn ở trạng thái đang học';
+    case 'xoa': return null;
   }
 }
 
@@ -121,14 +123,17 @@ export function xemTruoc(p: Principal, input: { viec?: unknown; studentIds?: unk
   if (viec === 'huy-lenh') {
     for (const r of duoc) { const h = em.get(r.studentId)!.lenhCho.huong as string; tong.theoHuong[h] = (tong.theoHuong[h] ?? 0) + 1; }
   }
+  /* OV-12a: Xoá — dữ liệu sẽ mất của cả lô, MỘT câu (cùng câu đếm của Xoá một em). */
+  if (viec === 'xoa') return { viec, rows, tong: { ...tong, mat: matNhieuEm(duoc.map((r) => r.studentId)) } };
   return { viec, rows, tong };
 }
 
 /** POST /hang-loat-hoc-vien — làm ≤ `LO_HANG_LOAT_EM` học viên. Trả `ok` (đã làm) và `failed` (em nào, vì sao chưa). */
 export function chay(p: Principal, input: {
-  viec?: unknown; studentIds?: unknown; lyDo?: unknown; date?: unknown; moLaiLop?: unknown; lopMoiId?: unknown;
+  viec?: unknown; studentIds?: unknown; lyDo?: unknown; date?: unknown; moLaiLop?: unknown; lopMoiId?: unknown; xacNhan?: unknown;
 }): KetQuaHangLoat {
   const viec = docViec(input?.viec);
+  if (viec === 'xoa' && !khopXacNhanXoa(input.xacNhan)) throw badRequest(`Gõ ${CHU_XAC_NHAN_XOA} để xác nhận xoá.`);
   const ids = docIds(input?.studentIds, LO_HANG_LOAT_EM);
   const lyDo = chuTuDo(input.lyDo, 'Lý do', 2000);
   const date = typeof input.date === 'string' && input.date ? input.date : undefined;
@@ -158,6 +163,8 @@ export function chay(p: Principal, input: {
     for (const id of lamDuoc) {
       const e = em.get(id)!;
       try {
+        /* Xoá: giao dịch + chặn sắp hết giờ (6 s) + xoá tệp SAU khi chốt nằm trong `xoaHocVien` — không bọc thêm `tx` (tệp không được xoá trước khi lô chốt). */
+        if (viec === 'xoa') { xoaHocVien(p, id, { maXacNhan: e.s.student_code }); kq.ok.push(id); continue; }
         tx(() => {
           chanGiaoDichNeuSapHetGio();   // sắp hết giờ → 503 "chưa lưu" cho em này (và các em sau)
           if (viec === 'ket-thuc') setStudentStatus(p, id, 'finished', date ?? demoToday(), lyDo ?? undefined);

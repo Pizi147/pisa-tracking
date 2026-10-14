@@ -245,7 +245,7 @@ export async function runPrSosTests(t: YThucTestKit) {
     sosAuto.xacNhanPaQuyChe(P.admin, iv.id, { description: MO_TA, performerUserId: P.coreTeacher.userId });
     const sau = get('SELECT * FROM case_interventions WHERE id = ?', iv.id);
     assert(sau.status === 'started' && sau.started_date === TODAY && sau.cycle_started_on === TODAY && sau.cycle_no === 1
-      && sau.action_due === d.weeklyUpdateDue(TODAY) && sau.followup_due === null /* until_next_mt, chưa có lịch MT2 */
+      && sau.action_due === d.hanKyGhiKetQua(TODAY) && sau.followup_due === null /* until_next_mt, chưa có lịch MT2 */
       && sau.confirmed_by === P.admin.userId && sau.performer_user_id === P.coreTeacher.userId && sau.description === MO_TA, JSON.stringify(sau));
     assert(get('SELECT status FROM sos_cases WHERE id = ?', c.id).status === 'in_progress', 'Case in_progress');
     assertThrows(() => sosAuto.xacNhanPaQuyChe(P.admin, iv.id, { description: MO_TA }), /đã được xác nhận rồi/, 'lần hai');
@@ -442,7 +442,8 @@ export async function runPrSosTests(t: YThucTestKit) {
     assert(!get(`SELECT 1 FROM yeu_cau_duyet WHERE loai = 'bao_len_nguyen_nhan' AND doi_tuong_id = ? AND trang_thai = 'cho'`, c.id), 'em Tạm dừng bị Báo QL');
     studentsSvc.setStudentStatus(P.admin, st.id, 'active', TODAY, 'Quay lại học');
     assert(get('SELECT han_xac_nhan h FROM sos_cases WHERE id = ?', c.id).h === d.hanXacNhan(TODAY), 'hạn xác nhận chưa tính lại');
-    assert(get('SELECT action_due h FROM case_interventions WHERE id = ?', iv.id).h === d.weeklyUpdateDue(TODAY), 'hạn ghi kết quả chưa tính lại');
+    const ivSau = get('SELECT action_due h, COALESCE(started_date, cycle_started_on) b FROM case_interventions WHERE id = ?', iv.id);
+    assert(ivSau.h === d.hanKe(ivSau.b, null, TODAY), 'hạn ghi kết quả chưa tính lại');
   });
   check('SOS (7) · Hiệu quả PA: PA huỷ không theo dõi, PA chờ xác nhận, PA hệ thống đóng không vào N; cột Xử lý Tổng hợp theo trạng thái v4 (K1-20, K1-23, K5-55)', () => {
     const { st } = mt2W2('T7c');

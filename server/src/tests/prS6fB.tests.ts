@@ -255,12 +255,12 @@ async function runTask9(t: YThucTestKit, d: any) {
     const iv = Number(conn.prepare(`INSERT INTO case_interventions (case_id, kind, description, status, action_due, cycle_no, created_at) VALUES (?, 'tutor', 'S6F-b PA', 'started', '2026-09-28', 1, ?)`).run(caseId, NOW).lastInsertRowid);
     try {
       const truoc = metricsSvc.metricSet(P.admin, 'dung-han-cap-nhat', {});
-      conn.prepare(`INSERT INTO case_followups (case_id, intervention_id, observed_on, outcome, cycle_no, cycle_due, late, created_at) VALUES (?, ?, '2026-09-07', 'partial', 1, '2026-08-24', 1, ?)`).run(caseId, iv, NOW);
+      conn.prepare(`INSERT INTO case_followups (case_id, intervention_id, observed_on, outcome, cycle_no, cycle_due, late, created_at) VALUES (?, ?, '2026-09-08', 'partial', 1, '2026-08-11', 1, ?)`).run(caseId, iv, NOW);   // OV-12a: kỳ 14 ngày, hạn Thứ Ba
       const r = metricsSvc.metricSet(P.admin, 'dung-han-cap-nhat', {});
       const cua = (r.ids as number[]).filter((id) => !(truoc.ids as number[]).includes(id) && metricsSvc.parseObligation(id).interventionId === iv);
       const dung = cua.filter((id) => (r.numeratorIds as number[]).includes(id)).length;
       assert(cua.length === 3 && dung === 1, `${cua.length} nghĩa vụ, ${dung} đúng`);
-      assert(/ghi bù 3 tuần/.test(d.nhanTuanGhiKetQua('2026-08-24', '2026-09-07').tieuDe), d.nhanTuanGhiKetQua('2026-08-24', '2026-09-07').tieuDe);
+      assert(/ghi bù 3 kỳ/.test(d.nhanTuanGhiKetQua('2026-08-11', '2026-09-08').tieuDe), d.nhanTuanGhiKetQua('2026-08-11', '2026-09-08').tieuDe);
     } finally {
       conn.prepare('DELETE FROM case_followups WHERE intervention_id = ?').run(iv);
       conn.prepare('DELETE FROM case_interventions WHERE id = ?').run(iv);

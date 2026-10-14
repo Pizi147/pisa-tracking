@@ -24,14 +24,14 @@ export async function runSuaLoiNongTests(t: YThucTestKit) {
 
   check('N1 (0) · REPO trỏ đúng gốc worktree (đọc được mã nguồn cho các phép kiểm soi mã)', () => {
     assert(fs.existsSync(path.join(REPO, 'package.json')) && fs.existsSync(path.join(REPO, 'shared/domain/cases.ts')), `REPO = ${REPO}`);
-    assert(/export function weeklyUpdateDue/.test(docSach('shared/domain/cases.ts')), 'docSach không đọc được cases.ts');
+    assert(/export function hanThemPa/.test(docSach('shared/domain/cases.ts')), 'docSach không đọc được cases.ts');
   });
 
-  check('N1 (1) · weeklyUpdateDue: kết quả tuần T2→CN ghi trước hết Thứ Hai tuần sau (R-PA1)', () => {
-    const ca: [string, string][] = [['2026-09-21', '2026-09-28'], ['2026-09-24', '2026-09-28'],
-      ['2026-09-27', '2026-09-28'], ['2026-09-28', '2026-10-05']];
-    for (const [tu, han] of ca) assert(d.weeklyUpdateDue(tu) === han, `${tu} → ${d.weeklyUpdateDue(tu)} (cần ${han})`);
-    assert(new Date('2026-09-28T00:00:00Z').getUTCDay() === 1, '28/09/2026 phải là Thứ Hai');
+  check('N1 (1) → OV-12a · hanKyGhiKetQua: kỳ hai tuần từ tuần bắt đầu, hạn hết Thứ Ba sau kỳ', () => {
+    const ca: [string, string][] = [['2026-09-21', '2026-10-06'], ['2026-09-24', '2026-10-06'],
+      ['2026-09-27', '2026-10-06'], ['2026-09-28', '2026-10-13']];
+    for (const [tu, han] of ca) assert(d.hanKyGhiKetQua(tu) === han, `${tu} → ${d.hanKyGhiKetQua(tu)} (cần ${han})`);
+    assert(new Date('2026-10-06T00:00:00Z').getUTCDay() === 2, '06/10/2026 phải là Thứ Ba');
   });
   check('N1 (1) · planEndDefault giữ Chủ nhật tuần tiếp theo (dự kiến kết thúc không phải hạn)', () => {
     assert(d.planEndDefault('2026-09-16') === '2026-09-27', d.planEndDefault('2026-09-16'));
@@ -42,18 +42,18 @@ export async function runSuaLoiNongTests(t: YThucTestKit) {
     assert(d.planDueDate('2026-09-14', 'urgent') === '2026-09-16' && d.signalVerifyDue('2026-09-14') === '2026-09-16', 'hạn 3 ngày');
     assert(d.HAN_DUYET_NGAY === 5, 'HAN_DUYET_NGAY');
   });
-  check('N1 (1) · deadlineView cap-nhat-pa: "Ghi kết quả tuần W4 SEP · hạn hết T2 28/09" (R-PA3)', () => {
-    const v = d.deadlineView({ kind: 'cap-nhat-pa', due: '2026-09-28', today: '2026-09-24' });
-    assert(v.viec === 'Kết quả tuần W4 SEP' && v.han === 'hạn hết T2 28/09' && v.tone === 'waiting', JSON.stringify(v));
-    assert(d.deadlineView({ kind: 'cap-nhat-pa', due: '2026-09-28', today: '2026-09-28' }).homNay, 'đúng Thứ Hai là hôm nay');
-    assert(d.deadlineView({ kind: 'cap-nhat-pa', due: '2026-09-28', today: '2026-09-30' }).quaHan === 'quá hạn 2 ngày', 'quá hạn');
+  check('N1 (1) → OV-12a · deadlineView cap-nhat-pa: "Kết quả W3–W4 SEP · hạn hết T3 29/09"', () => {
+    const v = d.deadlineView({ kind: 'cap-nhat-pa', due: '2026-09-29', today: '2026-09-24' });
+    assert(v.viec === 'Kết quả W3–W4 SEP' && v.han === 'hạn hết T3 29/09' && v.tone === 'waiting', JSON.stringify(v));
+    assert(d.deadlineView({ kind: 'cap-nhat-pa', due: '2026-09-29', today: '2026-09-29' }).homNay, 'đúng Thứ Ba là hôm nay');
+    assert(d.deadlineView({ kind: 'cap-nhat-pa', due: '2026-09-29', today: '2026-10-01' }).quaHan === 'quá hạn 2 ngày', 'quá hạn');
     assert(!/CN|Chủ nhật/.test(v.text), v.text);
   });
-  check('N1 (1) · nhanTuanGhiKetQua: một tuần / ghi bù nhiều tuần (K3-17)', () => {
-    assert(d.nhanTuanGhiKetQua('2026-09-28', '2026-09-28').tieuDe === 'Kết quả tuần W4 SEP', 'một tuần');
-    const bu = d.nhanTuanGhiKetQua('2026-09-14', '2026-09-29');
-    assert(bu.tieuDe === 'Kết quả W2–W4 SEP (ghi bù 3 tuần)' && bu.soTuan === 3, JSON.stringify(bu));
-    assert(d.nhanTuanGhiKetQua(null, '2026-09-29').tieuDe === 'Kết quả tuần này', 'không hạn');
+  check('N1 (1) → OV-12a · nhanTuanGhiKetQua: một kỳ / ghi bù nhiều kỳ (K3-17)', () => {
+    assert(d.nhanTuanGhiKetQua('2026-09-29', '2026-09-29').tieuDe === 'Kết quả W3–W4 SEP', 'một kỳ');
+    const bu = d.nhanTuanGhiKetQua('2026-09-15', '2026-10-13');
+    assert(bu.tieuDe === 'Kết quả W1 SEP – W2 OCT (ghi bù 3 kỳ)' && bu.soKy === 3, JSON.stringify(bu));
+    assert(d.nhanTuanGhiKetQua(null, '2026-09-29').tieuDe === 'Kết quả kỳ này', 'không hạn');
   });
   check('N1 (1) · chữ luật PA không còn "Chủ nhật" (K3 §4c #3)', () => {
     assert(!/Chủ nhật/.test(d.PLAN_DECISION_HINT.keep) && !/Chủ nhật/.test(d.cycleDeadlineHint()), 'còn Chủ nhật');
@@ -184,7 +184,7 @@ export async function runSuaLoiNongTests(t: YThucTestKit) {
     assert(khop.n === 1, 'PA quy chế chưa có kết quả tuần phải khớp PA_QUY_CHE_CHUA_GHI');
     sosAuto.xacNhanPaQuyChe(t.P.coreTeacher, ivId, { description: 'Tự học Listening 1 tháng, nghe chép mỗi ngày.' });
     const sau = t.conn.prepare('SELECT * FROM case_interventions WHERE id = ?').get(ivId) as any;
-    assert(sau.action_due === d.weeklyUpdateDue(t.TODAY) && sau.cycle_started_on === t.TODAY && sau.cycle_no === 1 && sau.confirmed_by === t.P.coreTeacher.userId, `hạn ${sau.action_due}`);
+    assert(sau.action_due === d.hanKyGhiKetQua(t.TODAY) && sau.cycle_started_on === t.TODAY && sau.cycle_no === 1 && sau.confirmed_by === t.P.coreTeacher.userId, `hạn ${sau.action_due}`);
   });
   check('N1 (5b) · hạn 3 ngày của GVBM chỉ còn "xác định nguyên nhân" (không còn vế xác nhận PA)', () => {
     const { caseId } = taoQuyChe('cho');

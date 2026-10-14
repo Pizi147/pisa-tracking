@@ -868,14 +868,7 @@ export function hanThemPa(c: { detected_at?: string | null; created_at?: string 
   return moc ? planDueDate(String(moc).slice(0, 10), c.urgency ?? urgencyFromSos(c.sos_level ?? null)) : null;
 }
 
-/**
- * HẠN GHI KẾT QUẢ PA HẰNG TUẦN (§5.6 R-PA1, chủ sản phẩm 27/09): kết quả của tuần Thứ Hai → Chủ nhật chứa `fromDate` phải ghi
- * xong trước HẾT THỨ HAI tuần kế tiếp. Máy chủ gọi `weeklyUpdateDue(ngàyGhi + 1)` sau mỗi lần ghi → ghi ngày CN hay T2 đều khép
- * đúng tuần vừa hết, hạn mới là Thứ Hai tuần sau nữa.
- */
-export function weeklyUpdateDue(fromDate: string): string {
-  return addDaysIso(mondayOfIso(fromDate), 7);
-}
+/* OV-12a: hạn ghi kết quả PA (hai tuần một lần, hết Thứ Ba) ở `week.ts` — `hanKyGhiKetQua` / `hanKe` (thay `weeklyUpdateDue`). */
 /** DỰ KIẾN KẾT THÚC mặc định: Chủ nhật tuần tiếp theo (mục 8.3). Không phải hạn (T53 Q1) — không theo hạn Thứ Hai. */
 export function planEndDefault(startDate: string): string {
   return addDaysIso(mondayOfIso(startDate), 13);
@@ -1015,11 +1008,11 @@ export const PLAN_DECISION_LABEL: Record<PlanDecision, string> = {
   ask_manager: 'Xin hỗ trợ từ Quản lý',
 };
 export const PLAN_DECISION_HINT: Record<PlanDecision, string> = {
-  keep: 'Phương án chạy tiếp như cũ. Kết quả tuần sau ghi trước hết Thứ Hai kế tiếp.',
+  keep: 'Phương án chạy tiếp như cũ. Kết quả kỳ sau ghi trước hết Thứ Ba sau kỳ.',
   adjust: 'Cùng phương án, sửa nội dung, số buổi hoặc người. Bản cũ giữ trong lịch sử.',
   replace: 'Khép phương án này (Được thay thế) và mở phương án mới. Đổi loại phương án thì chọn ở đây.',
   end: 'Khép phương án này. Case chỉ hoàn thành được khi mọi phương án đã khép.',
-  ask_manager: 'Kết quả tuần tính như Giữ nguyên và gửi câu hỏi cho Quản lý. PA vẫn chạy.',
+  ask_manager: 'Kết quả tính như Giữ nguyên và gửi câu hỏi cho Quản lý. PA vẫn chạy.',
 };
 
 /** Bản NGẮN cho danh sách dọc trong panel Ghi kết quả (PR-UX3, mockup 15 §4): tên một dòng + `PLAN_DECISION_NGHIA` một dòng nghĩa. */
@@ -1027,7 +1020,7 @@ export const PLAN_DECISION_NGAN: Record<PlanDecision, string> = {
   keep: 'Giữ nguyên', adjust: 'Điều chỉnh', replace: 'Thay PA', end: 'Kết thúc PA', ask_manager: 'Xin hỗ trợ QL',
 };
 export const PLAN_DECISION_NGHIA: Record<PlanDecision, string> = {
-  keep: 'Tiếp tục PA này, hẹn kết quả tuần sau',
+  keep: 'Tiếp tục PA này, hẹn kết quả kỳ sau',
   adjust: 'Cùng PA, sửa nội dung, số buổi hoặc người',
   replace: 'Khép PA này, mở PA khác thay vào',
   end: 'Khép PA này; Case chỉ xong khi mọi PA đã khép',

@@ -1,5 +1,5 @@
 import { api } from '../../lib/api.ts';
-import { LO_HANG_LOAT_EM, VIEC_NGUOC, chiaLo, type KetQuaHangLoat, type ViecHangLoat } from '@shared/domain/index.ts';
+import { LO_HANG_LOAT_EM, LO_XOA_EM, VIEC_NGUOC, chiaLo, type KetQuaHangLoat, type ViecHangLoat } from '@shared/domain/index.ts';
 
 /**
  * GỬI LÀM NHIỀU HỌC VIÊN THEO LÔ (PR-LUI-b) — mỗi lô `LO_HANG_LOAT_EM` một request (10 s của Netlify), gom `ok` / `failed`. Một lô ném lỗi (mất mạng, 503
@@ -7,15 +7,15 @@ import { LO_HANG_LOAT_EM, VIEC_NGUOC, chiaLo, type KetQuaHangLoat, type ViecHang
  * ponytail: lô đang bay mà mất mạng có thể đã ghi xong dù web nhận lỗi — Thử lại gặp học viên "Đã …" thì máy chủ báo lý do ngắn (an toàn, không ghi lại); thêm khoá chống gửi trùng nếu cần nói gọn hơn.
  */
 export async function chayHangLoat(
-  viec: ViecHangLoat, ids: number[], o: { lyDo?: string; date?: string; moLaiLop?: boolean; lopMoiId?: number }, onTienDo?: (xong: number, tong: number) => void,
+  viec: ViecHangLoat, ids: number[], o: { lyDo?: string; date?: string; moLaiLop?: boolean; lopMoiId?: number; xacNhan?: string }, onTienDo?: (xong: number, tong: number) => void,
 ): Promise<KetQuaHangLoat> {
   const kq: KetQuaHangLoat = { ok: [], failed: [] };
-  const lo = chiaLo(ids, LO_HANG_LOAT_EM);
+  const lo = chiaLo(ids, viec === 'xoa' ? LO_XOA_EM : LO_HANG_LOAT_EM);
   for (let i = 0; i < lo.length; i++) {
     onTienDo?.(kq.ok.length + kq.failed.length, ids.length);
     try {
       const r = await api.post<KetQuaHangLoat>('/hang-loat-hoc-vien', {
-        viec, studentIds: lo[i], lyDo: o.lyDo || undefined, date: o.date || undefined, moLaiLop: o.moLaiLop === true, lopMoiId: o.lopMoiId,
+        viec, studentIds: lo[i], lyDo: o.lyDo || undefined, date: o.date || undefined, moLaiLop: o.moLaiLop === true, lopMoiId: o.lopMoiId, xacNhan: o.xacNhan,
       });
       kq.ok.push(...r.ok); kq.failed.push(...r.failed);
     } catch (e: any) {
@@ -30,6 +30,6 @@ export async function chayHangLoat(
  * Hoàn tác = làm việc NGƯỢC cho đúng các học viên đã làm được: Kết thúc học → `hoan-tac-ket-thuc` (mở lại đúng Case / PA đã đóng), Học lại → `hoan-tac-hoc-lai`
  * (gỡ ghi danh / lộ trình mới; có dữ liệu thì máy chủ từ chối kèm câu rõ), lưu trữ ↔ bỏ lưu trữ, huỷ ↔ khôi phục chuyển lớp.
  */
-export async function hoanTacHangLoat(viec: ViecHangLoat, ids: number[]): Promise<KetQuaHangLoat> {
+export async function hoanTacHangLoat(viec: Exclude<ViecHangLoat, 'xoa'>, ids: number[]): Promise<KetQuaHangLoat> {
   return chayHangLoat(VIEC_NGUOC[viec], ids, {});
 }

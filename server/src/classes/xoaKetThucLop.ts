@@ -1,6 +1,6 @@
 /**
- * ⋮ HỒ SƠ LỚP › XOÁ LỚP / KẾT THÚC LỚP / MỞ LẠI LỚP (PR-UX3, chủ sản phẩm chốt 24/09; PR-LUI-b 06/10). XOÁ LỚP chỉ Quản trị hệ thống (`admin.config`);
- * KẾT THÚC LỚP và MỞ LẠI LỚP: Quản lý của lớp (`class.edit`) hoặc Quản trị — Quản lý mở lại nhầm thì kết thúc lại được. Kiểm ở MÁY CHỦ
+ * ⋮ HỒ SƠ LỚP › XOÁ LỚP / KẾT THÚC LỚP / MỞ LẠI LỚP (PR-UX3, chủ sản phẩm chốt 24/09; PR-LUI-b 06/10). Cả ba: Quản lý của lớp (`class.edit`) hoặc Quản trị
+ * (OV-12a, chủ SP 14/10: Quản lý xoá được lớp TRỐNG — trước đây chỉ Quản trị) — Quản lý mở lại nhầm thì kết thúc lại được. Kiểm ở MÁY CHỦ
  * (giáo viên gọi API đều nhận 403, không chỉ bị ẩn nút).
  *
  *   Xoá lớp      chỉ lớp CHƯA có dữ liệu nào: chưa học viên nào từng ghi danh, chưa lượt Test / điểm, chưa vi phạm hay phương án xử lý,
@@ -13,10 +13,9 @@ import { db, tx } from '../db.ts';
 import { CHU_CHUYEN_LOP, PERMISSIONS, tuanLich } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { badRequest, chuTuDo, notFound } from '../util.ts';
-import { can, require_, type Principal } from '../permissions.ts';
+import { require_, type Principal } from '../permissions.ts';
 import { writeAudit } from '../platform/audit.ts';
 
-const CHI_ADMIN = 'Chỉ Quản trị hệ thống mới xoá được lớp.';
 const CHI_QL_LOP = 'Chỉ Quản lý của lớp này hoặc Quản trị hệ thống mới kết thúc hoặc mở lại được lớp.';
 
 /** Bảng có cột `class_id` mà một dòng ở đó nghĩa là "lớp đã có dữ liệu" (`teacher_assignments`, `class_skills` là cấu hình, không tính). */
@@ -71,7 +70,7 @@ function lyDoConEm(c: { is_fast_track: number }, soDangHoc: number): string {
 
 const lyDoSapNhan = (n: number) => `Còn ${n} quyết định chuyển lớp ĐẾN lớp này — huỷ hoặc đổi lớp đến trước.`;
 
-/** GET /classes/:id/xoa-ket-thuc — cho panel biết nên hiện nút nào và vì sao. Quản lý của lớp hoặc Quản trị; `coTheXoa` chỉ Quản trị. */
+/** GET /classes/:id/xoa-ket-thuc — cho panel biết nên hiện nút nào và vì sao. Quản lý của lớp hoặc Quản trị (OV-12a: cả hai xoá được lớp trống). */
 export function xemXoaKetThuc(p: Principal, classId: number) {
   require_(p, PERMISSIONS.CLASS_EDIT, { classId }, CHI_QL_LOP);
   const c = docLop(classId);
@@ -80,17 +79,17 @@ export function xemXoaKetThuc(p: Principal, classId: number) {
   return {
     id: c.id, ma: c.code, chiNhanh: c.branch_name, daKetThuc,
     soDangHoc: t.soDangHoc, soTungGhiDanh: t.soTungGhiDanh, coDuLieu: t.coDuLieu, dangGan: t.gan, conTreo: t.conTreo,
-    /** Xoá: chỉ Quản trị, chỉ lớp trống hẳn. Kết thúc: lớp còn hoạt động và không còn học viên đang học. */
-    coTheXoa: !t.coDuLieu && can(p, PERMISSIONS.ADMIN_CONFIG, { anyScope: true }),
+    /** Xoá: chỉ lớp trống hẳn (đã kiểm `class.edit` ở trên). Kết thúc: lớp còn hoạt động và không còn học viên đang học. */
+    coTheXoa: !t.coDuLieu,
     coTheKetThuc: !daKetThuc && t.soDangHoc === 0 && t.soSapNhan === 0,
     lyDoChanKetThuc: daKetThuc ? 'Lớp đã kết thúc.'
       : t.soDangHoc > 0 ? lyDoConEm(c, t.soDangHoc) : t.soSapNhan > 0 ? lyDoSapNhan(t.soSapNhan) : null,
   };
 }
 
-/** POST /classes/:id/xoa { maLop } — xoá hẳn lớp còn trống. */
+/** POST /classes/:id/xoa { maLop } — xoá hẳn lớp còn trống. Quản lý của lớp hoặc Quản trị (OV-12a). */
 export function xoaLop(p: Principal, classId: number, input: { maLop?: unknown }) {
-  require_(p, PERMISSIONS.ADMIN_CONFIG, { anyScope: true }, CHI_ADMIN);
+  require_(p, PERMISSIONS.CLASS_EDIT, { classId }, 'Chỉ Quản lý của lớp này hoặc Quản trị hệ thống mới xoá được lớp.');
   const c = docLop(classId);
   const t = tinhTrangLop(classId);
   if (t.coDuLieu) throw badRequest('Lớp đã có dữ liệu — dùng Kết thúc lớp.');

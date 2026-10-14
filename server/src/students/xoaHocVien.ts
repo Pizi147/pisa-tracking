@@ -1,5 +1,6 @@
 /**
- * ⋮ HỒ SƠ HV › XOÁ HỌC VIÊN (PR-XOA, đặc tả 2026-09-24 §1) — CHỈ Quản trị hệ thống, kiểm ở MÁY CHỦ bằng `admin.config`.
+ * ⋮ HỒ SƠ HV › XOÁ HỌC VIÊN (PR-XOA, đặc tả 2026-09-24 §1) — Quản lý / Quản trị của em (`cycle.edit` theo phạm vi em, OV-12a chủ SP 14/10; trước đây chỉ
+ * Quản trị), kiểm ở MÁY CHỦ. Chọn nhiều › Xoá (`hangLoat.ts`) đi qua đúng hàm này, mỗi em một request.
  *
  * Xoá HẲN mọi dòng gắn em, trực tiếp và gián tiếp, trong MỘT giao dịch: lỗi ở bất kỳ câu nào → cuộn lại, không dòng nào mất,
  * không tệp nào mất. Tệp trong kho (Netlify Blobs / ổ đĩa) chỉ xoá SAU khi giao dịch chốt (`xoaTepSauGiaoDich`).
@@ -19,7 +20,7 @@ import { writeAudit } from '../platform/audit.ts';
 import { xoaTepSauGiaoDich } from '../platform/attachments.ts';
 import { conLaiMs } from '../platform/hanGio.ts';
 
-const CHI_ADMIN = 'Chỉ Quản trị hệ thống mới xoá được học viên.';
+const CHI_QL = 'Chỉ Quản lý của học viên này hoặc Quản trị hệ thống mới xoá được học viên.';
 
 /** Bao đóng theo FK của `students` (37 bảng, PR-TK +2) — phép kiểm X1 so bằng đúng với đồ thị dựng từ PRAGMA. */
 export const BANG_CUA_HOC_VIEN: readonly string[] = [
@@ -162,6 +163,14 @@ const CONG_VIEC_NOI = `SELECT COUNT(*) FROM (
   UNION SELECT id FROM tasks WHERE source_sos_case_id IN (${C}))`;
 /** MỘT câu đếm cho cả xem trước và `soDong` của audit. */
 const CAU_DEM = `SELECT ${LOAI_MAT.map((l) => `(${l.sql}) AS ${l.khoa}`).join(', ')}, (${CONG_VIEC_NOI}) AS congViec`;
+/** OV-12a: cùng câu cho CẢ TẬP em (Chọn nhiều › Xoá) — `?1` là mảng JSON id, mọi `= ?1` thành `IN (json_each)`: một câu, một tham số (Turso). */
+const CAU_DEM_NHIEU = CAU_DEM.replaceAll('= ?1', 'IN (SELECT value FROM json_each(?1))');
+/** "Những gì sẽ mất" của nhiều em gộp lại — chỉ loại > 0, thứ tự như `LOAI_MAT`. */
+export function matNhieuEm(ids: number[]): { nhan: string; so: number }[] {
+  if (!ids.length) return [];
+  const r = db().prepare(CAU_DEM_NHIEU).get(JSON.stringify(ids)) as Record<string, number>;
+  return LOAI_MAT.map((l) => ({ nhan: l.nhan, so: Number(r[l.khoa] ?? 0) })).filter((x) => x.so > 0);
+}
 
 export type XemXoaHocVien = {
   id: number; ma: string; ten: string; lop: string | null; dangHoc: boolean;
@@ -191,9 +200,9 @@ function demMat(sid: number): { soDong: Record<string, number>; congViec: number
   return { soDong, congViec: Number(r.congViec ?? 0) };
 }
 
-/** GET /students/:id/xoa — bảng "những gì sẽ mất" cho panel (2 câu). Chỉ Quản trị hệ thống. */
+/** GET /students/:id/xoa — bảng "những gì sẽ mất" cho panel (2 câu). Quản lý / Quản trị của em. */
 export function xemXoaHocVien(p: Principal, studentId: number): XemXoaHocVien {
-  require_(p, PERMISSIONS.ADMIN_CONFIG, { anyScope: true }, CHI_ADMIN);
+  require_(p, PERMISSIONS.CYCLE_EDIT, { studentId }, CHI_QL);
   const s = docEm(studentId);
   const { soDong, congViec } = demMat(studentId);
   return {
@@ -206,7 +215,7 @@ export function xemXoaHocVien(p: Principal, studentId: number): XemXoaHocVien {
 
 /** POST /students/:id/xoa { maXacNhan } — xoá vĩnh viễn. Phải gõ lại đúng mã học viên. */
 export function xoaHocVien(p: Principal, studentId: number, input: { maXacNhan?: unknown }): { ok: true; ma: string; soDong: Record<string, number> } {
-  require_(p, PERMISSIONS.ADMIN_CONFIG, { anyScope: true }, CHI_ADMIN);
+  require_(p, PERMISSIONS.CYCLE_EDIT, { studentId }, CHI_QL);
   const s = docEm(studentId);
   if (String(input.maXacNhan ?? '').trim() !== s.student_code) throw badRequest('Gõ lại đúng mã học viên để xác nhận xoá.');
   const khoaTep: string[] = [];

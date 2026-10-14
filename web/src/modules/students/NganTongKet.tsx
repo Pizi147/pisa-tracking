@@ -149,7 +149,7 @@ function BangLuot({ luot, ft }: { luot: Luot[]; ft: boolean }) {
 const LAM_MOI = ['/students', '/classes', '/hoc-vien-lop', '/cases', '/lo-trinh', '/my-work'];
 
 /**
- * MỤC "BƯỚC TIẾP" (OV-8a) — ngay dưới kết quả thi thật. Chỉ Quản lý / Quản trị có nút: Kết thúc (vào Lưu trữ, Hoàn tác trên thông báo) · Học tiếp lộ trình mới ·
+ * MỤC "BƯỚC TIẾP" (OV-8a) — ngay dưới kết quả thi thật. Quản lý / Quản trị / TVV của chi nhánh (OV-12a) có nút: Kết thúc (vào Lưu trữ, Hoàn tác trên thông báo) · Học tiếp lộ trình mới ·
  * Học lại (hai nút sau mở panel Học lại sẵn có). Gợi ý chỉ là chữ. Đã chọn → "Đã chọn: … · ngày · người" + Sửa (đổi = hoàn tác lựa chọn cũ rồi làm cái mới).
  */
 function MucBuocTiep({ bt, cycleId, hocVien, ketQua, onDoi, onMo }: {
@@ -208,7 +208,7 @@ function MucBuocTiep({ bt, cycleId, hocVien, ketQua, onDoi, onMo }: {
           </div>
         </>
       ) : (
-        <p className="m-0 mt-1 text-sm text-slate-400">Chờ Quản lý chọn: Kết thúc · Học tiếp lộ trình mới · Học lại.</p>
+        <p className="m-0 mt-1 text-sm text-slate-400">Chờ QL hoặc TVV chọn: Kết thúc · Học tiếp lộ trình mới · Học lại.</p>
       )}
     </section>
   );

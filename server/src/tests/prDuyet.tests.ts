@@ -202,7 +202,7 @@ export async function runPrDuyetTests(t: YThucTestKit) {
     const the = theCua('de_xuat_pa', ivId);
     yc.duyetYeuCau(P.mbManager, the.id, { ghiChu: 'Đồng ý' });
     const iv = conn.prepare('SELECT status, approval_state, action_due FROM case_interventions WHERE id = ?').get(ivId) as any;
-    assert(iv.status === 'started' && iv.approval_state === 'approved' && iv.action_due === d.weeklyUpdateDue(TODAY), JSON.stringify(iv));
+    assert(iv.status === 'started' && iv.approval_state === 'approved' && iv.action_due === d.hanKyGhiKetQua(TODAY), JSON.stringify(iv));
     assert(theCua('de_xuat_pa', ivId).trang_thai === 'duyet', 'thẻ chưa chốt');
     assert(!!conn.prepare(`SELECT 1 FROM notifications WHERE user_id = ? AND kind = 'duyet_ket_qua' AND entity_id = ?`).get(P.lrTeacher.userId, the.id), 'GV không nhận kết quả');
   });
@@ -233,15 +233,15 @@ export async function runPrDuyetTests(t: YThucTestKit) {
     }) as any;
     return { sid, caseId, ivId: r.interventions[r.interventions.length - 1].id as number };
   };
-  check('DUYET (5) · Xin hỗ trợ QL: PA vẫn Đang làm, hạn tuần sang Thứ Hai như Giữ nguyên, dự kiến kết thúc không đổi; một thẻ Xin ý kiến 5 ngày', () => {
+  check('DUYET (5) · Xin hỗ trợ QL: PA vẫn Đang làm, hạn kỳ sau như Giữ nguyên, dự kiến kết thúc không đổi; một thẻ Xin ý kiến 5 ngày', () => {
     const { ivId } = paChay();
-    const truoc = conn.prepare('SELECT followup_due FROM case_interventions WHERE id = ?').get(ivId) as any;
+    const truoc = conn.prepare('SELECT followup_due, action_due, COALESCE(started_date, cycle_started_on) bat_dau FROM case_interventions WHERE id = ?').get(ivId) as any;
     assert(chuLoi(() => casesSvc.updateResult(P.lrTeacher, ivId, { decision: 'ask_manager', outcome: 'unchanged', note: 'Em vẫn nghe sót số', observedOn: TODAY }))
       .includes('cần Quản lý giúp gì'), 'thiếu câu hỏi vẫn gửi được');
     casesSvc.updateResult(P.lrTeacher, ivId, { decision: 'ask_manager', outcome: 'unchanged', note: 'Em vẫn nghe sót số',
       decisionNote: 'Có nên chuyển sang tutor không?', observedOn: TODAY });
     const iv = conn.prepare('SELECT status, approval_state, action_due, followup_due FROM case_interventions WHERE id = ?').get(ivId) as any;
-    assert(iv.status === 'started' && iv.approval_state == null && iv.action_due === d.weeklyUpdateDue(t.addDays(TODAY, 1))
+    assert(iv.status === 'started' && iv.approval_state == null && iv.action_due === d.hanKe(truoc.bat_dau, truoc.action_due, TODAY)
       && iv.followup_due === truoc.followup_due, JSON.stringify(iv));
     const the = theCua('xin_y_kien', ivId);
     assert(the?.trang_thai === 'cho' && the.ly_do === 'Có nên chuyển sang tutor không?' && the.han_duyet === d.hanDuyetMacDinh('xin_y_kien', TODAY),
