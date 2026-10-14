@@ -7,9 +7,7 @@
  *
  * Giữ từng dòng: Case SOS Fast Track (Xác nhận PA · Thêm PA ở lớp FT — mỗi Case một quyết định riêng), việc không gắn lớp. Khác người
  * giữ việc thì không gộp: mỗi dòng một nút Nhắc cho đúng một người. Thẻ Chờ duyệt không phải dòng việc (hộp riêng).
- *
- * OV-5a (đặc tả OV mục 4, mockup M1 §1): Xác nhận nguyên nhân gom theo LỚP + KỸ NĂNG + LƯỢT (`gopThem`) — cả lớp FT — và một em vẫn là dòng
- * gộp, để khoá dòng không đổi khi panel xác nhận bớt em ("còn 1 em").
+ * OV-12c: bỏ gom Xác nhận nguyên nhân theo kỹ năng + lượt (OV-5a) — Case MT lấy nguyên nhân từ nhận xét (không còn việc đó).
  */
 
 export type ViecGopDuoc = {
@@ -21,8 +19,6 @@ export type ViecGopDuoc = {
   phu?: string | null;
   /** Case sinh từ SOS (`origin_kind = 'mock'`, Case từ kết quả Test) — khác Case GV / QL tự tạo, chuyển cấp, khai bù. */
   caseSos?: boolean;
-  /** OV-5a: phần thêm của khoá gộp (Xác nhận nguyên nhân: `{bài}{số}:{kỹ năng}`). Có thì gộp kể cả một việc; tiêu đề `{loại} · {phu}`. */
-  gopThem?: string | null;
   /** Nhập điểm: số bài (kỹ năng × em) — OV-11c: dòng gộp Nhập điểm một đơn vị "bài". */
   soBai?: number;
 };
@@ -31,16 +27,16 @@ export type ConGop<T> = T & { conTen: string; conPhu: string };
 export type DongGop<T> = T & { con: ConGop<T>[] };
 
 /** Case SOS Fast Track: mỗi Case giữ một dòng (§7 Q1) — chỉ Case sinh từ SOS; Case GV tự tạo gộp như việc khác (chủ sản phẩm 08/10). */
-const GIU_TUNG_DONG_FT = new Set(['xac_nhan_pa', 'no_plan']);
+/* OV-12c: Ghi nhận xét (Case MT cũ) như trước OV-5a — mỗi Case một dòng; Xác nhận Case lớp thường gộp theo lớp, mở từng em. */
+const GIU_TUNG_DONG_FT = new Set(['ghi_nhan_xet', 'xac_nhan_pa', 'no_plan']);
 
-export const khoaDongGop = (group: string, classId: number, ownerId: number | null, them?: string | null) =>
-  `gop:${group}:${classId}:u${ownerId ?? 0}${them ? `:${them}` : ''}`;
+export const khoaDongGop = (group: string, classId: number, ownerId: number | null) => `gop:${group}:${classId}:u${ownerId ?? 0}`;
 /** Nhóm của khoá dòng gộp (`gop:{nhóm}:{lớp}:u{người}`); khoá khác → null. */
 export const nhomCuaKhoaGop = (key: string): string | null => (key.startsWith('gop:') ? key.split(':')[1] ?? null : null);
 
 const gopDuoc = (it: ViecGopDuoc) => it.classId !== null && !(it.khung === 'ft' && it.caseSos && GIU_TUNG_DONG_FT.has(it.group));
 /** Khoá dòng gộp mà việc này thuộc về; việc giữ từng dòng → null. Nhắc dùng để tìm lại việc khi dòng gộp chỉ còn một việc. */
-export const khoaGopCua = (it: ViecGopDuoc): string | null => (gopDuoc(it) ? khoaDongGop(it.group, it.classId!, it.ownerId, it.gopThem) : null);
+export const khoaGopCua = (it: ViecGopDuoc): string | null => (gopDuoc(it) ? khoaDongGop(it.group, it.classId!, it.ownerId) : null);
 /** PR-DON: các khoá cùng chỉ một (nhóm) việc — khoá gửi, khoá dòng, khoá gộp của việc lẻ, khoá từng em của dòng gộp. Nhắc qua khoá nào cũng tính một lần/ngày. */
 export function khoaCungViec(row: (ViecGopDuoc & { con?: readonly { key: string }[] }) | undefined, key: string): string[] {
   if (!row) return [key];
@@ -77,7 +73,7 @@ export function gopViecTheoLop<T extends ViecGopDuoc>(items: readonly T[], nhan:
   for (const it of items) {
     const k = khoaGopCua(it);
     const nhom = k ? theoKhoa.get(k)! : null;
-    if (!k || !nhom || (nhom.length < 2 && !it.gopThem)) { out.push(it); continue; }
+    if (!k || !nhom || nhom.length < 2) { out.push(it); continue; }
     if (daDat.has(k)) continue;
     daDat.add(k);
     const nhanLoai = nhan(it.group);
@@ -101,13 +97,11 @@ export function gopViecTheoLop<T extends ViecGopDuoc>(items: readonly T[], nhan:
       key: k, urgency: dau.urgency, due,
       studentId: null, studentName: `Lớp ${it.classCode ?? ''}`.trim(),
       attemptId: null, attemptNo: null, caseId: null, level: null, nhac: undefined,
-      /* OV-5a: dòng gom theo kỹ năng + lượt — tiêu đề nói kỹ năng; lượt luôn chung (khoá có lượt), hạn ở cột riêng. */
-      tieuDe: it.gopThem ? `${nhanLoai} · ${it.phu ?? ''}` : `${nhanLoai} · ${it.classCode ?? ''} · ${so} ${donVi}`,
-      contextLabel: it.gopThem ? it.contextLabel : quaHan ? `${quaHan} ${donVi} quá hạn` : chung.length === 1 ? chung[0] : null,
+      tieuDe: `${nhanLoai} · ${it.classCode ?? ''} · ${so} ${donVi}`,
+      contextLabel: quaHan ? `${quaHan} ${donVi} quá hạn` : chung.length === 1 ? chung[0] : null,
       count: nhom.length, actionLabel: `${so} ${donVi}`,
       reason: `${so} ${donVi}`,
-      /* OV-5a: dòng gom kỹ năng + lượt làm cả nhóm ở panel Công việc — chuông Nhắc / Tổng quan mở đúng dòng (`viec=` khoá dòng). */
-      href: it.gopThem ? `/cong-viec?viec=${encodeURIComponent(k)}` : href.length === 1 ? href[0] : '/cong-viec?khung=tat-ca',
+      href: href.length === 1 ? href[0] : '/cong-viec?khung=tat-ca',
       con,
     } as unknown as DongGop<T>;
     out.push(dong);

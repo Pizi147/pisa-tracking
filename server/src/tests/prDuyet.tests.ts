@@ -321,6 +321,7 @@ export async function runPrDuyetTests(t: YThucTestKit) {
     const cho = new Set(awaitingCauseCaseIds(ung.map((r) => r.id)));
     const kase = ung.find((r) => cho.has(r.id));
     assert(kase, 'Bộ demo thiếu Case SOS chờ nguyên nhân (seed SOS v3)');
+    const hanGoc = (conn.prepare('SELECT han_xac_nhan h FROM sos_cases WHERE id = ?').get(kase.id) as any).h;
     conn.prepare(`UPDATE sos_cases SET han_xac_nhan = ? WHERE id = ?`).run(t.addDays(TODAY, -2), kase.id);   // PR-SOS: hạn ở han_xac_nhan
     yc.quetYeuCau(TODAY); yc.quetYeuCau(TODAY);
     const dem = () => (conn.prepare(`SELECT COUNT(*) n FROM yeu_cau_duyet WHERE loai = 'bao_len_nguyen_nhan' AND doi_tuong_id = ? AND trang_thai = 'cho'`)
@@ -336,10 +337,13 @@ export async function runPrDuyetTests(t: YThucTestKit) {
     const tatCa = myworkSvc.myWork(P.admin, { nguoi: 'tat-ca' }).items.find((it: any) => it.key === `cause:${kase.id}`);
     assert(tatCa && tatCa.ownerId === kase.owner_user_id, '"tat-ca" mất dòng cause');
     assert(tatCa.href.includes(`case=${kase.id}`), tatCa.href);
-    conn.prepare(`INSERT INTO case_issues (case_id, role, taxonomy_code, created_at) VALUES (?, 'primary', 'student.listening.technique', ?)`)
-      .run(kase.id, new Date().toISOString());
+    const nn = conn.prepare(`INSERT INTO case_issues (case_id, role, taxonomy_code, created_at) VALUES (?, 'primary', 'student.listening.technique', ?)`)
+      .run(kase.id, new Date().toISOString()).lastInsertRowid;
     yc.quetYeuCau(TODAY);
     const sau = conn.prepare('SELECT trang_thai, ly_do_dong FROM yeu_cau_duyet WHERE id = ?').get(the.id) as any;
+    /* OV-12c: Case chờ nguyên nhân nay là Case Progress của bộ demo LT2a (G1–G5) — trả nguyên nhân + hạn để phép kiểm sau đọc đúng demo. */
+    conn.prepare('DELETE FROM case_issues WHERE id = ?').run(nn);
+    conn.prepare('UPDATE sos_cases SET han_xac_nhan = ? WHERE id = ?').run(hanGoc, kase.id);
     assert(sau.trang_thai === 'tu_dong' && sau.ly_do_dong === 'Việc gốc đã xong', JSON.stringify(sau));
   });
 

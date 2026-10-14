@@ -89,7 +89,7 @@ export function chiTietCaseMo(cases: readonly MappedCase[]): Map<number, CaseChi
         ? mocChuPa({ span: iv.moc_quy_che ?? null, followupDue: iv.followup_due ?? null, mtKe: mtKe(iv), daXacNhan: !!iv.confirmed_at }, homNay) : null,
     }));
     const v4 = {
-      status: c.status as 'open' | 'in_progress' | 'done', fromSos: s.fromSos, hasCause: s.hasCause, dismissed: !!s.dismissed, systemClosed: !!g.system_close_reason,
+      status: c.status as 'open' | 'in_progress' | 'done', fromSos: s.fromSos, hasCause: s.hasCause, laMt: s.laMt, dismissed: !!s.dismissed, systemClosed: !!g.system_close_reason,
       choDuyetKhongTheoDoi: !!s.choDuyetKhongTheoDoi, coPaChoXacNhan: s.coPaChoXacNhan, hanXacNhan: s.dueOn,
       lyDoHeThong: g.system_close_reason ? SYSTEM_CLOSE_REASON_LABEL[g.system_close_reason as keyof typeof SYSTEM_CLOSE_REASON_LABEL] ?? null : null,
     };

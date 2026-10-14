@@ -7,7 +7,13 @@ import { demoToday } from '../demoConfig.ts';
 import { classScopeSql, scopeFor, type Principal, type Scope } from '../permissions.ts';
 import { badRequest, forbidden, HttpError, notFound } from '../util.ts';
 import { listCases } from '../cases/cases.ts';
-import { NOT_UNCONFIRMED_PRESET, awaitingCauseCaseIds } from '../cases/sosState.ts';
+import { NOT_UNCONFIRMED_PRESET, sosCaseStateMany } from '../cases/sosState.ts';
+
+/** Rà #389: tập "Case chờ xác nhận" của Tổng quan = cột "Chờ xác nhận" của Tổng hợp — Progress chờ Xác nhận Case + Case MT cũ chờ ghi nhận xét. Báo QL vẫn chỉ Progress (`awaitingCauseCaseIds`). */
+function choXacNhanCaseIds(ids: number[]): number[] {
+  const st = sosCaseStateMany(ids);
+  return ids.filter((id) => st.get(id)?.awaitingCause || st.get(id)?.choNhanXet);
+}
 import { improvementRate, planOutcomes } from '../cases/effectiveness.ts';
 import { doPhuDanhGia, hvDuoiKyVongMon, hvSosHienTai } from './danhGia.ts';
 import { isYThucMetric, yThucMetric, YTHUC_METRIC_IDS } from '../yThuc/thongKe.ts';
@@ -629,7 +635,7 @@ function metricSetGoc(
       /* Case CHỜ DUYỆT có `state` riêng — không quy chậm cho giáo viên (hợp đồng §2). */
       return done(openCases().filter((c: any) => c.state === 'no_plan').map((c: any) => c.id as number));
     case 'case-xac-dinh-nguyen-nhan-qua-han':
-      return done(causeOverdue(awaitingCauseCaseIds(openCases().map((c: any) => c.id as number)), today));
+      return done(causeOverdue(choXacNhanCaseIds(openCases().map((c: any) => c.id as number)), today));
     case 'bai-qua-han-nhap-diem': {
       const r = overdueScoreBai(p, scope.branchId, today);
       return done(r.ids, { chiTiet: r.chiTiet });
@@ -643,7 +649,7 @@ function metricSetGoc(
       return done(openCases().filter((c: any) => !c.ownerUserId).map((c: any) => c.id as number));
     case 'case-cho-xac-dinh-nguyen-nhan':
       /* Case TỪ SOS đang mở mà chưa có nguyên nhân, không có thẻ Không cần theo dõi đang chờ (K5-51) — cùng định nghĩa với `caseDetail().sos`. */
-      return done(awaitingCauseCaseIds(openCases().map((c: any) => c.id as number)));
+      return done(choXacNhanCaseIds(openCases().map((c: any) => c.id as number)));
     case 'pa-can-cap-nhat': {
       const r = overdueUpdatePlans(openCases().map((c: any) => c.id as number), today);
       return done(r.ids, { chiTiet: r.chiTiet });

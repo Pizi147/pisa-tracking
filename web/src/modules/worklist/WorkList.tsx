@@ -24,8 +24,6 @@ export type WorkItem = {
   /** PR-Ra Q5: chỉ dòng có người phụ trách là TÀI KHOẢN KHÁC người xem, và người xem là QL/QT. */
   /** PR-GOP (§5): dòng gộp "Loại việc · lớp · n em" — các việc thật bên trong (mỗi việc giữ nút, hạn riêng). */
   con?: (WorkItem & { conTen: string; conPhu: string })[];
-  /** OV-5a: Xác nhận nguyên nhân gom theo lớp + kỹ năng + lượt (`{bài}{số}:{kỹ năng}`) — cả dòng là MỘT việc ở panel. */
-  gopThem?: string | null;
   /** OV-5a: PA của việc (Kết quả PA, Xác nhận PA, Mini Test) · Nhập điểm: mã lượt (`mt:2`) + kỹ năng — panel Công việc mở đúng chỗ. */
   paId?: number | null; luot?: string; kn?: string; soBai?: number;
   /** OV-11c: id em của việc cả lớp (Nhập điểm theo bài…) — panel Nhập điểm đưa em của việc lên đầu. */
@@ -55,19 +53,14 @@ export function DongViec({ it, onOpen, nutPhu, gon = false, chon = null, xong, m
   conMoTrang?: (it: WorkItem) => boolean;
 }) {
   const [mo, setMo] = useState(false);
-  /* OV-5a: Xác nhận nguyên nhân gom kỹ năng + lượt là MỘT việc (panel gom) — không mở danh sách em. */
-  const gomKn = !!it.gopThem && !!it.con;
-  const con = gomKn ? undefined : it.con;
+  const con = it.con;
   const loaiHan = LOAI_HAN_CUA_VIEC[it.group];
   /* Lớp chỉ hiện khi dòng đang nói về MỘT EM — dòng gom đã lấy chính tên lớp làm tiêu đề phụ. */
   /* PR-LCb: "Chốt lộ trình · lớp" là việc cả lớp (thay "Chuyển tiếp lớp" + "Chốt lên FT"): tiêu đề đã có lớp, chữ việc đã có số em — dòng phụ không nhắc lại. PR-CL: "Xét lại lộ trình · lớp · n em" cũng vậy; PR-KV: "Kỳ vọng đầu ra · lớp · n em". */
   /* PR-GOP: dòng gộp — tiêu đề đã có lớp và số em; dòng phụ chỉ còn chữ chung ("Progress Test" / "1 em quá hạn"). */
   const viecCaLop = it.group === 'chot_len_ft' || it.group === 'xet_lai_lo_trinh' || it.group === 'ky_vong_dau_ra';
   const gomLop = !!con || viecCaLop;
-  /* OV-5a (mockup M1 §1): "CP FT 131 · MT2 · 4 em" — tiêu đề đã có kỹ năng; một em thì gọi tên em. */
-  const dongPhu = gomKn
-    ? [it.classCode, it.contextLabel, it.con!.length === 1 ? it.con![0].studentName : `${it.con!.length} em`].filter(Boolean).join(' · ')
-    : [
+  const dongPhu = [
       gomLop ? null : it.studentName,
       it.classCode && it.studentName !== `Lớp ${it.classCode}` ? it.classCode : null,
       it.contextLabel,

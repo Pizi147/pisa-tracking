@@ -133,7 +133,7 @@ export async function runPrVaiBTests(t: YThucTestKit) {
   const { loadPrincipal } = await import('../permissions.ts');
   const viecCua = (p: any, sid: number) => (studentProfile(p, sid) as any).dauHoSo.viec as { cuaBan: any[]; nguoiKhac: any[] };
   const emLop = (ma: string) => all(`SELECT e.student_id id ${SACH} ORDER BY e.student_id`, classId(ma), seedMax.students).map((r) => r.id as number);
-  const NHOM_HOC_VIEN = new Set(['cause', 'xac_nhan_pa', 'ghi_ket_qua_pa', 'phoi_hop', 'mini_test', 'yt_xu_ly']);
+  const NHOM_HOC_VIEN = new Set(['cause', 'ghi_nhan_xet', 'xac_nhan_pa', 'ghi_ket_qua_pa', 'phoi_hop', 'mini_test', 'yt_xu_ly']);
   const LOAI_HOC_VIEN = new Set(['nguyen-nhan', 'xac-nhan-pa', 'ghi-ket-qua', 'bao-ph', 'mini-test', 'y-thuc']);
 
   check('VAI-b (2) · nguoiLam của Case (Q3): chờ nguyên nhân → người phụ trách; PA chạy chờ ghi kết quả → người thực hiện PA (thiếu thì người phụ trách Case — PR-Dọn Task 6); không ai phụ trách → null; có tên', () => {
@@ -142,7 +142,7 @@ export async function runPrVaiBTests(t: YThucTestKit) {
       for (const r of (skillSupportBoard(P.admin, sid) as any).rows) {
         for (const c of r.cases.filter((x: any) => x.status !== 'done' && x.viecTiep)) {
           const sc = get('SELECT owner_user_id FROM sos_cases WHERE id = ?', c.id);
-          if (c.viecTiep.chu === 'Xác nhận nguyên nhân') {
+          if (c.viecTiep.chu === 'Xác nhận Case' || c.viecTiep.chu === 'Ghi nhận xét') {
             chu++;
             assert((c.nguoiLam?.id ?? null) === (sc.owner_user_id ?? null), `Case ${c.id}: nguoiLam ${JSON.stringify(c.nguoiLam)} ≠ owner ${sc.owner_user_id}`);
             if (!sc.owner_user_id) rong++;
@@ -265,10 +265,10 @@ export async function runPrVaiBTests(t: YThucTestKit) {
     const h = d.oHocThuat([
       { short: 'L', label: 'Listening', category: 'listening', missed: false, cases: [] },
       { short: 'W2', label: 'Writing Task 2', category: 'writing2', missed: true, cases: [c({ viecTiep: { chu: 'Kết quả PA x' }, plans: [{ actionOverdue: true }] }), c({ status: 'done' })] },
-      { short: 'S', label: 'Speaking', category: 'speaking', missed: true, cases: [c({ trangThaiV4: { t: 'can-lam' }, viecTiep: { chu: 'Xác nhận nguyên nhân' } })] },
+      { short: 'S', label: 'Speaking', category: 'speaking', missed: true, cases: [c({ trangThaiV4: { t: 'can-lam' }, viecTiep: { chu: 'Xác nhận Case' } })] },
     ]);
     assert(h.so === 2 && h.dong[0].kn === 'W2' && h.dong[0].nhan === 'Quá hạn' && h.dong[0].viec === 'kết quả'
-      && h.dong[1].kn === 'S' && h.dong[1].nhan === 'Cần làm' && h.dong[1].viec === 'nguyên nhân', JSON.stringify(h));
+      && h.dong[1].kn === 'S' && h.dong[1].nhan === 'Cần làm' && h.dong[1].viec === 'xác nhận Case', JSON.stringify(h));
     assert(d.oHocThuat([{ short: 'L', label: 'L', category: 'listening', missed: false, cases: [] }]).phu === 'mọi kỹ năng đạt', 'không Case');
     /* OV-11d (HV-4, CA2-1): chưa hàng nào có điểm → "chưa có điểm"; có hàng chưa điểm + hàng đạt → "Không có Case mở" (không nói đạt khi chưa thi). */
     assert(d.oHocThuat([{ short: 'L', label: 'L', category: 'listening', missed: null, cases: [] }, { short: 'R', label: 'R', category: 'reading', missed: null, cases: [] }]).phu === 'chưa có điểm', 'chưa điểm');
@@ -592,7 +592,8 @@ export async function runPrVaiBTests(t: YThucTestKit) {
   });
 
   check('VAI-b (11) · khoiCho (R5-2): chờ nguyên nhân / chưa có PA / chờ xác nhận PA / có PA → null (PR-CT2: bỏ "Chờ duyệt kế hoạch")', () => {
-    assert(d.khoiCho({ cho: 'nguyen-nhan', soPa: 0, pa: [] }) === 'Chờ nguyên nhân', 'nguyên nhân');
+    assert(d.khoiCho({ cho: 'nguyen-nhan', soPa: 0, pa: [] }) === 'Chờ xác nhận Case', 'nguyên nhân (OV-12c: Progress)');
+    assert(d.khoiCho({ cho: 'nhan-xet', soPa: 0, pa: [] }) === 'Chờ ghi nhận xét', 'OV-12c: Case MT chưa có nhận xét');
     assert(d.khoiCho({ cho: null, soPa: 0, pa: [] }) === 'Chưa có PA', 'chưa PA');
     assert(d.khoiCho({ soPa: 1, pa: [] }) === 'Chờ xác nhận PA', 'PA chưa vẽ được');
     assert(d.khoiCho({ soPa: 1, pa: [{}] }) === null, 'có khối PA');

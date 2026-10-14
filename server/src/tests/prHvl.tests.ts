@@ -28,8 +28,8 @@ export async function runPrHvlTests(t: YThucTestKit) {
     for (const k of [d.ketQuaGanNhat(ft), thieu, kck]) assert(!/…/.test(JSON.stringify(k)), `Có "…": ${JSON.stringify(k)}`);
   });
 
-  check('PR-HVL (1) · T58 kết quả lớp thường: "n/4 môn đạt" + "Không đạt: G+V"; Final Test đủ điểm "58%"; Pre FOU "64%"; không SOS, không "…"', () => {
-    eq(d.ketQuaGanNhat(thuong()), { chinh: '3/4 môn đạt', lech: null, dat: false, sos: null, dong1: 'Progress Test', dong2: 'Không đạt: G+V' }, 'FOU Progress Test');
+  check('PR-HVL (1) · T58 kết quả lớp thường: "n/4 môn đạt" + "Không đạt: G+V"; Final Test đủ điểm "58%"; Pre FOU "64%"; Progress Test có SOS theo số môn trượt (OV-12c), Final không SOS; không "…"', () => {
+    eq(d.ketQuaGanNhat(thuong()), { chinh: '3/4 môn đạt', lech: null, dat: false, sos: 'SOS 1', dong1: 'Progress Test', dong2: 'Không đạt: G+V' }, 'FOU Progress Test (OV-12c: SOS theo số môn trượt)');
     const be = d.ketQuaGanNhat(thuong({ chuongTrinh: 'BE', attemptLabel: 'Final Test', attemptKind: 'final', tyLeTong: 0.58, failed: 2,
       failedSkills: [{ skill: 'reading', score: 10, total: 20 }, { skill: 'writing', score: 8, total: 20 }] }));
     eq([be.chinh, be.dong1, be.dong2, be.sos], ['58%', 'Final Test → QL cân nhắc', 'Không đạt: R W', null], 'BE Final Test đủ điểm (PR-UXF-a K2-01: hậu tố hướng)');
@@ -38,7 +38,8 @@ export async function runPrHvlTests(t: YThucTestKit) {
     const thieu = d.ketQuaGanNhat(thuong({ attemptLabel: 'Final Test', attemptKind: 'final', scored: 2, failed: 0, sosLevel: null, failedSkills: [] }));
     eq([thieu.chinh, thieu.dong1], ['2/2 môn đạt', 'Final Test · 2/4 môn có điểm'], 'Final Test còn thiếu môn thì chưa có %');
     eq(d.ketQuaGanNhat(thuong({ scored: 0, failed: 0, sosLevel: null, failedSkills: [] })).chinh, '—', 'chưa môn nào có điểm: không "0/0 môn đạt"');
-    for (const k of [d.ketQuaGanNhat(thuong()), be, pre, thieu]) assert(!/SOS|…/.test(JSON.stringify(k)), `Có "SOS"/"…": ${JSON.stringify(k)}`);
+    for (const k of [be, pre, thieu]) assert(!/SOS|…/.test(JSON.stringify(k)), `Có "SOS"/"…": ${JSON.stringify(k)}`);
+    assert(!/…/.test(JSON.stringify(d.ketQuaGanNhat(thuong()))), 'Progress Test: không "…"');
     eq(d.ketQuaGanNhat(null).dong1, 'Chưa có kết quả', 'Chưa có');
   });
 
@@ -181,7 +182,7 @@ export async function runPrHvlTests(t: YThucTestKit) {
     const laSos = (conn.prepare(`SELECT sc.id FROM sos_cases sc WHERE ${sosState.LA_CASE_SOS('sc')} ORDER BY sc.id`).all() as any[]).map((r) => r.id);
     eq(ids.filter((id) => nhieu.get(id).fromSos), laSos, 'fromSos');
     assert(ids.length > 5 && laSos.length > 0, 'Bộ demo phải có Case SOS');
-    eq(sosState.sosCaseState(99999999), { fromSos: false, hasCause: false, awaitingCause: false, dueOn: null, dismissed: null, choDuyetKhongTheoDoi: null, coPaChoXacNhan: false }, 'Case không có');
+    eq(sosState.sosCaseState(99999999), { fromSos: false, hasCause: false, laMt: false, choNhanXet: false, awaitingCause: false, dueOn: null, dismissed: null, choDuyetKhongTheoDoi: null, coPaChoXacNhan: false }, 'Case không có');
   });
 
   check('PR-HVL (2) · chiTietCaseMo: trạng thái v4 + việc tiếp = đúng `caseDetail` (một nguồn luật SOS); PA đủ; tên Case SOS ba phần', () => {
@@ -212,9 +213,9 @@ export async function runPrHvlTests(t: YThucTestKit) {
     assert(it <= 6, `${it} câu cho một lô`);
   });
 
-  check('PR-HVL (2) · roster FT: em Chờ xác nhận nguyên nhân → "Xác nhận nguyên nhân L" (warn, đích Case); em Ý thức bắt buộc → "Xử lý vi phạm"', () => {
+  check('PR-HVL (2) · roster: em Chờ xác nhận Case (Progress — OV-12c) → "Xác nhận Case P" (warn, đích Case); em Ý thức bắt buộc → "Xử lý vi phạm"', () => {
     const cho = sosState.awaitingCauseCaseIds(moTatCa().map((c) => c.id));
-    assert(cho.length > 0, 'Bộ demo phải có Case chờ xác nhận nguyên nhân');
+    assert(cho.length > 0, 'Bộ demo phải có Case chờ xác nhận Case');
     let thay = 0;
     for (const id of cho.slice(0, 6)) {
       const c: any = moTatCa().find((x) => x.id === id);
@@ -223,9 +224,9 @@ export async function runPrHvlTests(t: YThucTestKit) {
       const v = r?.viecTiepTheo.find((x: any) => x.dich?.loai === 'case' && x.dich.caseId === id);
       if (!v) continue;
       thay++;
-      assert(/^Xác nhận nguyên nhân/.test(v.viec) && ['warn', 'danger'].includes(v.tone) && v.dich.ghiKetQua === false, JSON.stringify(v));
+      assert(/^Xác nhận Case /.test(v.viec) && ['warn', 'danger'].includes(v.tone) && v.dich.ghiKetQua === false, JSON.stringify(v));
     }
-    assert(thay > 0, 'Không em nào có việc Xác nhận nguyên nhân ở cột Việc tiếp theo');
+    assert(thay > 0, 'Không em nào có việc Xác nhận Case ở cột Việc tiếp theo');
     let yt = 0;
     for (const lopId of (conn.prepare(`SELECT id FROM classes WHERE status = 'active'`).all() as any[]).map((r) => r.id as number)) {
       for (const [sid] of dongHv.canhBaoTheoHocVien(P.admin, lopId)) {

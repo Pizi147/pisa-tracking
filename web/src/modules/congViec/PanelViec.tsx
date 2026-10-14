@@ -15,7 +15,6 @@ import { MotKyNang } from '../cham/MotKyNang.tsx';
 import { duongDiemTheoLuot, type BangTheoLuot } from '../cham/LuoiChamLop.tsx';
 import { LOAI_HAN_CUA_VIEC } from '@shared/domain/index.ts';
 import type { WorkItem } from '../worklist/WorkList.tsx';
-import { XacNhanNhomPanel } from './XacNhanNhomPanel.tsx';
 import { NganTongKet } from '../students/NganTongKet.tsx';
 import { PhoiHopSosSection, type CoordTurn } from '../yThuc/PhoiHopSosSection.tsx';
 
@@ -23,13 +22,14 @@ import { PhoiHopSosSection, type CoordTurn } from '../yThuc/PhoiHopSosSection.ts
 const soCuaKhoa = (k: string) => Number(k.slice(k.lastIndexOf(':') + 1)) || null;
 
 /**
- * VIỆC NÀO LÀM TẠI CHỖ (OV-5a, mockup M1 §2): Xác nhận nguyên nhân (gom) · Thêm PA / Kết quả PA / Xác nhận PA / Mini Test (Ngăn Case) · Nhập điểm
+ * VIỆC NÀO LÀM TẠI CHỖ (OV-5a, mockup M1 §2; OV-12c): Xác nhận Case (Progress) · Ghi nhận xét (Case MT cũ) · Thêm PA / Kết quả PA / Xác nhận PA /
+ * Mini Test (Ngăn Case, khuôn panel v3 cho Xác nhận Case · Xác nhận PA · Ghi nhận xét) · Nhập điểm
  * (một lớp · một lượt) · Bàn giao · Ý thức (xử lý, đã thực hiện, khai bậc một em) · việc Vận hành. Còn lại (Chốt lộ trình, Kết quả đầu ra, Xét lại
  * lộ trình cần cả bảng lớp; Phối hợp, Thiếu dữ liệu, thi thật…) mở trang như cũ. OV-8a: Chọn bước tiếp sau thi = ngăn Tổng kết lộ trình (mục Bước tiếp).
  */
 export function lamTaiCho(it: WorkItem): boolean {
   switch (it.group) {
-    case 'cause': return !!it.gopThem && !!it.con?.length;
+    case 'cause': case 'ghi_nhan_xet': return it.caseId !== null;
     case 'xac_nhan_pa': case 'ghi_ket_qua_pa': case 'mini_test': return it.caseId !== null && !!it.paId;
     case 'no_plan': return it.caseId !== null;
     case 'score': return !!it.luot && it.classId !== null;
@@ -54,7 +54,9 @@ export function PanelViec({ it, onDong, onDaLam, onTiep }: {
   const doi = () => { invalidate('/my-work'); onDaLam(); };
   switch (it.group) {
     case 'cause':
-      return <XacNhanNhomPanel key={it.key} it={it} onDong={onDong} onDaLuu={onDaLam} onTiep={onTiep} />;
+      return <NganCase key={it.key} caseId={it.caseId!} viec="xac-nhan" hocVien={hv} lop={lop} onClose={onDong} onChanged={onDaLam} />;
+    case 'ghi_nhan_xet':
+      return <NganCase key={it.key} caseId={it.caseId!} viec="ghi-nhan-xet" hocVien={hv} lop={lop} onClose={onDong} onChanged={onDaLam} />;
     case 'xac_nhan_pa':
       return <NganCase key={it.key} caseId={it.caseId!} paId={it.paId} viec="xac-nhan-pa" hocVien={hv} lop={lop} onClose={onDong} onChanged={onDaLam} />;
     case 'ghi_ket_qua_pa': case 'mini_test':

@@ -801,12 +801,6 @@ export const TRAN_GHI_LO = {
   huyCaLuot: 120,
   /** PR-OV4a: Khôi phục lượt (`reopenAttempt` đưa bản cất về: lượt, lịch, điểm, Case / PA / Phối hợp / tín hiệu) — lượt nặng nhất trên dữ liệu cuối run.ts. */
   khoiPhucLuot: 106,   // đo 81 câu (272 lượt) → max(81 + 10, ⌈81 × 1,3⌉)
-  /** OV-5a: POST /cases/xac-nhan-nhom — 3 em Reading MT1 + PA quy chế cùng lúc (một giao dịch; mỗi em đi đúng `xacNhanCase` + `xacNhanPaQuyChe`). */
-  xacNhanNhom3: 123,   // đo 94 câu (1 em 34, +30/em) → max(94 + 10, ⌈94 × 1,3⌉)
-  /** OV-5a: GET /cases/xac-nhan-nhom — panel gom 4 em (một câu chọn + quyền từng Case). */
-  docNhomXacNhan: 36,   // đo 26 câu → max(26 + 10, ⌈26 × 1,3⌉)
-  /** OV-5a: lô tối đa `TOI_DA_EM` em (ước từ đo 1 em và 3 em) — ≤ 200 câu ≈ 7 s ở 35 ms/câu, còn ≥ 2,5 s cho phiên + tx. */
-  xacNhanNhomToiDa: 200,
   /** OV-7b: POST /followups/:id/sua — sửa lần ghi Kết quả PA gần nhất: đảo hệ quả cũ + chạy lại `updateResult` (Kết thúc → Tiếp tục) trong một giao dịch, trả Case. */
   suaKetQua: 95,   // đo 73 câu (~40 là `caseDetail` trả về) → max(73 + 10, ⌈73 × 1,3⌉)
   /** OV-7b: cùng đường, chỉ sửa chữ (giữ lựa chọn) — cập nhật dòng, không đảo. */

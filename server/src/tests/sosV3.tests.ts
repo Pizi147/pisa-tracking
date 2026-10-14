@@ -8,7 +8,7 @@
  * không làm sập cả bộ.
  */
 import { migratePrPhh } from '../migrate/prPhh.ts';
-import { boLichTuTao, luotThu } from './luotThu.ts';
+import { boLichTuTao, luotThu, nhanXetCaseThu } from './luotThu.ts';
 import type { YThucTestKit } from './yThuc.tests.ts';
 
 export async function runSosV3Tests(t: YThucTestKit) {
@@ -323,6 +323,8 @@ export async function runSosV3Tests(t: YThucTestKit) {
     dongBoCaseThu(caseId);
   };
   const caseOf = (sid: number, category: string) => casesOf(sid).find((c) => c.category === category);
+  /* OV-12c: Case MT lấy nguyên nhân từ nhận xét + nhóm của ô — "Xác nhận Case" của phép kiểm cũ nay ghi nhận xét vào ô (đường người dùng). */
+  const nhanXetThu = (who: any, caseId: number, o: { primaryCode?: string | null; moTa?: string | null; [khac: string]: unknown }) => nhanXetCaseThu(conn, attemptsSvc.saveScore, who, caseId, o);
   const plansOf = (caseId: number) => all('SELECT * FROM case_interventions WHERE case_id = ? ORDER BY id', caseId);
   const milestonesOf = (caseId: number) => all('SELECT * FROM case_milestones WHERE case_id = ? ORDER BY id', caseId);
   /** Điểm MT2 của §10 mục 1: Writing chỉ W2 dưới + Speaking dưới → SOS2. */
@@ -378,7 +380,7 @@ export async function runSosV3Tests(t: YThucTestKit) {
     const a = mkAttempt(st, 1); mkAttempt(st, 2, mt2Week);
     enter(P.admin, a, 'listening', 5); enter(P.admin, a, 'reading', 5); enter(P.admin, a, 'speaking', 5);
     const c = caseOf(st.id, 'listening');
-    sosA.xacNhanCase(P.admin, c.id, { primaryCode: domain.issuesForTopic('listening', null)[0].code, urgency: 'attention', moTa: 'Em nghe sót ý ở phần 3 và 4.' });
+    nhanXetThu(P.admin, c.id, { primaryCode: domain.issuesForTopic('listening', null)[0].code, urgency: 'attention', moTa: 'Em nghe sót ý ở phần 3 và 4.' });
     sosA.xacNhanPaQuyChe(P.admin, plansOf(c.id)[0].id, { description: 'Tutor Listening hai buổi mỗi tuần tới MT2.' });
     assert(plansOf(c.id)[0].followup_due === addDays(mt2Week, 6), `${c.category}: ${plansOf(c.id)[0].followup_due}`);
   });
@@ -509,7 +511,7 @@ export async function runSosV3Tests(t: YThucTestKit) {
 
   /** PR-SOS: Xác nhận Case W2 (nguyên nhân) — bước 1 của luồng v4. */
   const W2_CODE = domain.issuesForTopic('writing2', null)[0].code;
-  const xacNhanCaseW2 = (who: any, f: any) => sosAuto.xacNhanCase(who, f.w2.id, { primaryCode: W2_CODE, urgency: 'attention', moTa: 'Em viết lạc đề ở Task 2, lập luận yếu.' });
+  const xacNhanCaseW2 = (who: any, f: any) => nhanXetThu(who, f.w2.id, { primaryCode: W2_CODE, urgency: 'attention', moTa: 'Em viết lạc đề ở Task 2, lập luận yếu.' });
   const MO_TA_PA = 'Tự học · 1 tháng — viết 2 bài Task 2 mỗi tuần, GVBM chữa';
   const ycSvc: any = await import('../duyet/yeuCau.ts');
   /** PR-SOS (S4-5): gửi Không cần theo dõi rồi Quản lý MB duyệt thẻ → Case đóng. Trả chi tiết Case sau duyệt. */
@@ -527,7 +529,8 @@ export async function runSosV3Tests(t: YThucTestKit) {
     assert(iv.needs_approval === 0 && iv.approval_state === null, 'PA quy chế không cần Quản lý duyệt');
     const d = cases.caseDetail(w2T, f.w2.id) as any;
     assert(d.interventions.some((i: any) => i.id === iv.id && i.awaitingConfirmation && i.batBuoc), 'caseDetail trả PA quy chế chờ xác nhận');
-    assertThrows(() => sosAuto.xacNhanPaQuyChe(w2T, f.w2Plan.id, { description: MO_TA_PA }), /Xác nhận nguyên nhân/, 'Xác nhận PA khi chưa có nguyên nhân');
+    /* OV-12c: nguyên nhân Case MT = nhận xét của bài — bài chưa nhận xét (dữ liệu cũ) thì chưa xác nhận PA được. */
+    assertThrows(() => sosAuto.xacNhanPaQuyChe(w2T, f.w2Plan.id, { description: MO_TA_PA }), /chưa có nhận xét/, 'Xác nhận PA khi chưa có nguyên nhân');
     xacNhanCaseW2(w2T, f);
     assert(get('SELECT status FROM sos_cases WHERE id = ?', f.w2.id).status === 'open', 'Q28-5: chưa có PA người xác nhận thì Case vẫn Chưa xử lý');
     sosAuto.xacNhanPaQuyChe(w2T, f.w2Plan.id, { description: MO_TA_PA });
@@ -628,7 +631,7 @@ export async function runSosV3Tests(t: YThucTestKit) {
     conn.prepare('UPDATE case_signals SET raised_on = ? WHERE case_id = ?').run(addDays(TODAY, -10), sp.id);   // case "ra đời" 10 ngày trước
     enter(P.admin, a, 'writing2', 5); enter(P.admin, a, 'writing1', 7);  // SOS2: cùng loại phương án → đồng bộ lại
     assert(plansOf(sp.id)[0].followup_due === null && plansOf(sp.id)[0].moc_quy_che === 'one_month', `Chưa xác nhận thì chưa có mốc: ${plansOf(sp.id)[0].followup_due}`);
-    sosAuto.xacNhanCase(P.mbManager, sp.id, { primaryCode: domain.issuesForTopic('speaking', null)[0].code, urgency: 'attention', moTa: 'Em nói ngắn, thiếu ý mở rộng.' });
+    nhanXetThu(P.mbManager, sp.id, { primaryCode: domain.issuesForTopic('speaking', null)[0].code, urgency: 'attention', moTa: 'Em nói ngắn, thiếu ý mở rộng.' });
     sosAuto.xacNhanPaQuyChe(P.mbManager, plansOf(sp.id)[0].id, { description: 'Tự học Speaking 1 tháng, ghi âm mỗi tuần.' });
     assert(plansOf(sp.id)[0].followup_due === domain.sosPlanEndDate('one_month', { createdOn: TODAY }), `followup_due ${plansOf(sp.id)[0].followup_due}`);
   });
@@ -677,7 +680,7 @@ export async function runSosV3Tests(t: YThucTestKit) {
     khongTheoDoi(w2T, f.w2.id, { reasonCode: 'other', reasonText: 'Em ốm dài ngày, bài này không phản ánh năng lực' });
     assert(get('SELECT dismiss_reason_text FROM sos_cases WHERE id = ?', f.w2.id).dismiss_reason_text.includes('Em ốm'), 'Lưu chữ của `Khác`');
     /* PR-N1 Q23/Q24: PA quy chế CÓ KẾT QUẢ TUẦN là việc thật → không "không cần theo dõi" được nữa (PA quy chế chưa ghi gì thì vẫn đóng được — S05 ở trên). */
-    sosAuto.xacNhanCase(P.mbManager, f.sp.id, { primaryCode: domain.issuesForTopic('speaking', null)[0].code, urgency: 'attention', moTa: 'Em nói ngắn, thiếu ý mở rộng.' });
+    nhanXetThu(P.mbManager, f.sp.id, { primaryCode: domain.issuesForTopic('speaking', null)[0].code, urgency: 'attention', moTa: 'Em nói ngắn, thiếu ý mở rộng.' });
     sosAuto.xacNhanPaQuyChe(P.mbManager, f.spPlan.id, { description: 'Tự học Speaking 1 tháng, ghi âm mỗi tuần.' });
     cases.recordFollowUp(P.mbManager, f.sp.id, { interventionId: f.spPlan.id, outcome: 'partial', note: 'Tuần đầu em đã luyện nói đều hơn' });
     assertThrows(() => sosAuto.guiKhongTheoDoi(P.mbManager, f.sp.id, { reasonCode: 'single_incident' }), /đã xác nhận|đang chạy|chốt kết quả/, 'Đóng case đã có kết quả tuần');
@@ -715,28 +718,29 @@ export async function runSosV3Tests(t: YThucTestKit) {
 
   check('PR-T · S04 Hạn 3 ngày thành DÒNG VIỆC: GVBM phụ trách thấy `Xác định nguyên nhân` ngay khi case ra đời (hạn = hết ngày thứ ba); Quản lý CHỈ thấy khi đã quá hạn; quá hạn có nhãn riêng; có nguyên nhân (PR-N1: không còn vế xác nhận PA) hoặc đóng case thì dòng biến mất', () => {
     const f = freshSos('CAUSE');
-    const key = (id: number) => `cause:${id}`;
+    /* OV-12c: Case MT lấy nguyên nhân từ nhận xét — Case MT cũ (bài chưa nhận xét) là việc "Ghi nhận xét", không còn "Xác nhận nguyên nhân". */
+    const key = (id: number) => `ghi_nhan_xet:${id}`;
     const item = (who: any, id: number) => mywork(who).find((i: any) => i.key === key(id));
     /* PR-DUYET (K1-57): Quản lý thấy dòng quá hạn của GV ở chế độ "Của GV (nhắc)" (`nguoi=tat-ca`); "Của tôi" không còn — thẻ Báo QL thay. */
     const itemQl = (who: any, id: number) => (myworkSvc.myWork(who, { nguoi: 'tat-ca' }).items as any[]).find((i: any) => i.key === key(id));
     const due = domain.hanXacNhan(TODAY);   // PR-SOS: hạn ở `sos_cases.han_xac_nhan`
     const mine = item(w2T, f.w2.id);
-    assert(mine && mine.group === 'cause' && mine.urgency === 'normal' && mine.due === due && mine.mine === true && mine.caseId === f.w2.id
-      && mine.actionLabel === 'Xác nhận nguyên nhân' && mine.statusLabel === 'Chờ xác nhận nguyên nhân' && !('overdueLabel' in mine) && mine.studentId === f.st.id,
+    assert(mine && mine.group === 'ghi_nhan_xet' && mine.urgency === 'normal' && mine.due === due && mine.mine === true && mine.caseId === f.w2.id
+      && mine.actionLabel === 'Ghi nhận xét' && mine.statusLabel === 'Chờ ghi nhận xét' && !('overdueLabel' in mine) && mine.studentId === f.st.id,
     `Dòng của GVBM: ${JSON.stringify(mine)}`);
-    assert(/chưa xác nhận nguyên nhân/.test(mine.reason) && !/PA học thuật|gợi ý/.test(mine.reason), `Lý do chỉ nói thiếu nguyên nhân (K5-07): ${mine.reason}`);
+    assert(/chưa có nhận xét/.test(mine.reason) && !/PA học thuật|gợi ý/.test(mine.reason), `Lý do chỉ nói thiếu nhận xét (nguyên nhân): ${mine.reason}`);
     assert(!item(P.mbManager, f.w2.id) && !item(w1T, f.w2.id), 'Chưa quá hạn thì Quản lý không thấy; GVBM kỹ năng khác không thấy');
     const groups = myworkSvc.myWork(w2T, {}).groups as any[];
-    assert(groups.some((g: any) => g.key === 'cause' && g.label === 'Xác nhận nguyên nhân' && g.items.some((i: any) => i.key === key(f.w2.id))), 'Phải có nhóm `cause` trong danh sách nhóm');
+    assert(groups.some((g: any) => g.key === 'ghi_nhan_xet' && g.label === 'Ghi nhận xét' && g.items.some((i: any) => i.key === key(f.w2.id))), 'Phải có nhóm `ghi_nhan_xet` trong danh sách nhóm');
     /* Quá hạn: hết ngày hạn mới tính (hạn = hôm qua). */
     conn.prepare('UPDATE sos_cases SET han_xac_nhan = ? WHERE id = ?').run(addDays(TODAY, -1), f.w2.id);
     const late = item(w2T, f.w2.id), mgr = itemQl(P.mbManager, f.w2.id);
-    assert(!item(P.mbManager, f.w2.id), 'Quản lý "Của tôi" còn dòng cause quá hạn của GV (K1-57: đã là thẻ Báo QL)');
-    assert(late.urgency === 'overdue' && !/quá hạn/.test(late.reason) && late.tieuDe.startsWith('Xác nhận nguyên nhân'), `Quá hạn của GVBM: ${JSON.stringify(late)}`);
+    assert(!item(P.mbManager, f.w2.id), 'Quản lý "Của tôi" còn dòng Ghi nhận xét quá hạn của GV');
+    assert(late.urgency === 'overdue' && !/quá hạn/.test(late.reason) && late.tieuDe.startsWith('Ghi nhận xét'), `Quá hạn của GVBM: ${JSON.stringify(late)}`);
     assert(mgr && mgr.urgency === 'overdue' && mgr.mine === false && /chưa/.test(mgr.reason), `Quản lý thấy khi quá hạn: ${JSON.stringify(mgr)}`);
     assert(!itemQl(P.cpManager, f.w2.id) && !item(w1T, f.w2.id), 'Quản lý chi nhánh khác và GVBM kỹ năng khác không thấy dù quá hạn');
     assert(myworkSvc.myWork(w2T, {}).summary.overdue >= 1, 'Tính vào tổng số việc quá hạn');
-    /* Có nguyên nhân thì dòng "Xác nhận nguyên nhân" biến mất (việc Xác nhận PA là dòng riêng — PR-SOS Task 7). */
+    /* Có nguyên nhân thì dòng "Ghi nhận xét" biến mất (việc Xác nhận PA là dòng riêng — PR-SOS Task 7). */
     datNguyenNhanThu(f.w2.id, 'student.writing.task');
     assert(!item(w2T, f.w2.id) && !itemQl(P.mbManager, f.w2.id), 'Có nguyên nhân thì dòng biến mất, cả ở phía Quản lý');
     /* Đóng `Không cần theo dõi` cũng làm dòng biến mất; case tạo tay không bao giờ có dòng này. */
@@ -754,11 +758,11 @@ export async function runSosV3Tests(t: YThucTestKit) {
     const bid = get('SELECT branch_id n FROM classes WHERE id = ?', CLASS).n;
     const M = () => metricsSvc.metricSet(P.mbManager, 'case-cho-xac-dinh-nguyen-nhan', { branchId: bid }).ids as number[];
     assert(domain.metricById('case-cho-xac-dinh-nguyen-nhan')?.donVi === 'case', 'Chỉ số phải có trong sổ, đơn vị case');
-    assert(M().includes(f.w2.id) && M().includes(f.sp.id), 'Case mới tự tạo phải nằm trong tập');
-    assertThrows(() => sosAuto.xacNhanPaQuyChe(w2T, f.w2Plan.id, { description: MO_TA_PA }), /Xác nhận nguyên nhân/, 'Xác nhận PA trước nguyên nhân');
-    assert(M().includes(f.w2.id), 'CHƯA có nguyên nhân → vẫn chờ');
+    /* OV-12c (rà #389): cùng tập cột "Chờ xác nhận" của Tổng hợp — Case MT cũ bài chưa nhận xét (việc Ghi nhận xét) thuộc tập; có nhận xét (nguyên nhân) thì thôi. */
+    assert(M().includes(f.w2.id) && M().includes(f.sp.id), 'Case MT chưa nhận xét phải thuộc tập "chờ xác nhận"');
+    assertThrows(() => sosAuto.xacNhanPaQuyChe(w2T, f.w2Plan.id, { description: MO_TA_PA }), /chưa có nhận xét/, 'Xác nhận PA trước nguyên nhân');
     datNguyenNhanThu(f.w2.id, 'student.writing.task');
-    assert(!M().includes(f.w2.id), 'Có nguyên nhân thì thôi chờ');
+    assert(!M().includes(f.w2.id), 'Có nguyên nhân: thôi chờ');
     khongTheoDoi(P.mbManager, f.sp.id, { reasonCode: 'single_incident' });
     assert(!M().includes(f.sp.id), 'Case đã đóng không thuộc tập');
     const manual = cases.reportIssue(P.mbManager, { studentId: f.st.id, cycleId: f.st.cycleId, topic: 'reading', primaryCode: 'student.reading.logic',
@@ -1154,7 +1158,9 @@ export async function runSosV3Tests(t: YThucTestKit) {
     confirmOther: await call(w1T, 'POST', `/cases/${hf.w2.id}/xac-nhan`, { primaryCode: W2_CODE, urgency: 'attention', moTa: 'Em viết lạc đề ở Task 2, lập luận yếu.' }),
     confirmCu: await call(w2T, 'POST', `/interventions/${hf.w2Plan.id}/confirm`, { description: 'Tự học · 1 tháng — viết 2 bài Task 2 mỗi tuần' }),
     replaceCu: await call(w2T, 'POST', `/interventions/${hf.w2Plan.id}/replace`, { kind: 'tutor', description: 'Tutor kèm Writing Task 2 hai buổi mỗi tuần', performerSelf: true }),
-    xacNhanCase: await call(w2T, 'POST', `/cases/${hf.w2.id}/xac-nhan`, { primaryCode: W2_CODE, urgency: 'attention', moTa: 'Em viết lạc đề ở Task 2, lập luận yếu.' }),
+    /* OV-12c: Case MT không còn Xác nhận Case (400) — nguyên nhân = nhận xét + nhóm ghi vào ô (Ghi nhận xét, đường ghi điểm). */
+    xacNhanCaseMt: await call(w2T, 'POST', `/cases/${hf.w2.id}/xac-nhan`, { primaryCode: W2_CODE, urgency: 'attention', moTa: 'Em viết lạc đề ở Task 2, lập luận yếu.' }),
+    xacNhanCase: await call(w2T, 'PUT', `/attempts/${hf.a.id}/scores/writing2`, { nhanXet: 'Em viết lạc đề ở Task 2, lập luận yếu.', nhomNguyenNhan: [W2_CODE] }),
     xacNhanPa: await call(w2T, 'POST', `/interventions/${hf.w2Plan.id}/xac-nhan-pa`, { description: MO_TA_PA }),
     dismissBad: await call(P.mbManager, 'POST', `/cases/${hf.sp.id}/dismiss`, { reasonCode: 'bay-ba' }),
     dismissOk: await call(P.mbManager, 'POST', `/cases/${hf.sp.id}/dismiss`, { reasonCode: 'single_incident' }),
@@ -1181,6 +1187,7 @@ export async function runSosV3Tests(t: YThucTestKit) {
     assert(h.noAuth.status === 401, `Chưa đăng nhập: ${h.noAuth.status}`);
     assert(h.confirmOther.status === 403, `GVBM W1 xác nhận case W2 qua HTTP phải bị 403, được ${h.confirmOther.status}`);
     assert(h.confirmCu.status === 404 && h.replaceCu.status === 404, `Đường cũ: ${h.confirmCu.status} / ${h.replaceCu.status}`);
+    assert(h.xacNhanCaseMt.status === 400 && /nhận xét/.test(h.xacNhanCaseMt.json?.error ?? ''), `Xác nhận Case MT: ${h.xacNhanCaseMt.status}`);
     assert(h.xacNhanCase.status === 200 && h.xacNhanPa.status === 200, `Xác nhận Case / PA: ${h.xacNhanCase.status} ${JSON.stringify(h.xacNhanCase.json?.error)} / ${h.xacNhanPa.status} ${JSON.stringify(h.xacNhanPa.json?.error)}`);
     assert(get('SELECT status FROM case_interventions WHERE id = ?', hf.w2Plan.id).status === 'started', 'PA quy chế chạy sau Xác nhận PA');
     assert(h.dismissBad.status === 400 && /lý do/.test(h.dismissBad.json?.error ?? ''), `Lý do lạ: ${h.dismissBad.status} ${h.dismissBad.json?.error}`);
@@ -1242,7 +1249,8 @@ export async function runSosV3DemoTests(t: YThucTestKit) {
       assert(cs.map((c) => c.category).sort().join() === 'speaking,writing2' && cs.every((c) => c.origin_kind === 'mock' && sosState.sosCaseState(c.id).fromSos), 'Hai case tự tạo từ SOS');
       const sp = cs.find((c) => c.category === 'speaking'), w2 = cs.find((c) => c.category === 'writing2');
       assert(!sosState.sosCaseState(sp.id).awaitingCause && sosState.sosCaseState(sp.id).hasCause, 'Speaking đã có nguyên nhân → thôi chờ');
-      assert(sosState.sosCaseState(w2.id).awaitingCause && sosState.sosCaseState(w2.id).dueOn, 'W2 còn chờ xác định nguyên nhân, có hạn 3 ngày');
+      /* OV-12c: bài W2 của demo chưa nhận xét (dữ liệu trước luật) → Case MT cũ "Chờ ghi nhận xét", có hạn. */
+      assert(sosState.sosCaseState(w2.id).choNhanXet && sosState.sosCaseState(w2.id).dueOn, 'W2 còn chờ ghi nhận xét (nguyên nhân), có hạn');
       const co = coord0(sid);
       assert(co.length === 3 && co.every((r) => r.attempt_no === 2) && co.filter((r) => r.status === 'done').length === 1 && co.filter((r) => r.status === 'pending').length === 2, `Phối hợp: ${co.map((r) => r.kind + ':' + r.status)}`);
       assert(rows0('SELECT COUNT(*) n FROM violations WHERE student_id = ?', sid)[0].n >= 2, 'Cùng em có vi phạm Ý thức');
@@ -1254,7 +1262,9 @@ export async function runSosV3DemoTests(t: YThucTestKit) {
       assert(cs.length === 3 && cs.every((c) => c.sos_level === 3), `Ba case SOS3: ${cs.map((c) => c.category + ':' + c.sos_level)}`);
       const sp = cs.find((c) => c.category === 'speaking');
       assert(sp.status === 'done' && sp.dismiss_reason_code === 'single_incident' && sp.outcome === null, 'Case Speaking đóng vì không cần theo dõi');
-      assert(sosState.sosCaseState(cs.find((c) => c.category === 'listening').id).awaitingCause, 'Case còn lại chờ xác định nguyên nhân');
+      /* OV-12c: nguyên nhân từ nhận xét của bài → Case còn lại chờ xác nhận PA. */
+      const l = sosState.sosCaseState(cs.find((c) => c.category === 'listening').id);
+      assert(l.hasCause && l.coPaChoXacNhan && !l.awaitingCause, 'Case còn lại có nguyên nhân từ nhận xét, chờ xác nhận PA');
       assert(rows0("SELECT 1 FROM case_interventions WHERE case_id IN (SELECT id FROM sos_cases WHERE student_id = ?) AND preset = 1 AND description = 'Tutor · đến MT2'", sid).length === 3, 'Phương án điền sẵn Tutor · đến MT2 cho cả ba case');
       const co = coord0(sid);
       assert(co.map((r) => r.kind).join() === 'talk_student,talk_family,gvcn_meeting' && co.filter((r) => r.status === 'done').length === 2, `Phối hợp: ${co.map((r) => r.kind + ':' + r.status)}`);

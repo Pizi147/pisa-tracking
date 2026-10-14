@@ -989,7 +989,8 @@ export function refreshRegularOutcome(p: Principal, attemptId: number) {
 /**
  * GIỮA KHOÁ LỚP THƯỜNG → CASE TỰ TẠO + PA BỔ TRỢ (PR-LT2a N1, M-03, Q-F). Chạy lặp được: tín hiệu đã nối vào một Case (kể cả Case nay đã đóng vì
  * "Không cần theo dõi") thì KHÔNG tạo lại; Case đang mở cùng môn thì thêm mốc "Trượt lại" + nối tín hiệu. Tín hiệu luôn `silent` — chỉ là dây nối
- * S08 (sửa điểm lên đạt thì rút Case chưa ai làm) và Không cần theo dõi. `sos_level` của Case và mốc luôn NULL (T58).
+ * S08 (sửa điểm lên đạt thì rút Case chưa ai làm) và Không cần theo dõi. OV-12c (chủ SP 14/10, bỏ T58 ở Case): `sos_level` của Case = mức SOS
+ * theo số môn trượt của lượt (1 → SOS 1, 2 → SOS 2, ≥ 3 → SOS 3, `r.sosLevel`) — điểm nhập dần thì Case của lượt đi theo mức mới nhất. Em KCK: NULL.
  */
 function taoCaseGiuaKhoa(p: Principal, a: any, r: RegularResult) {
   const conn = db();
@@ -1020,6 +1021,7 @@ function taoCaseGiuaKhoa(p: Principal, a: any, r: RegularResult) {
   /* Chỉ bài GIỮA KHOÁ của lớp có Giữa khoá (FOU · BE · ELE — Pre FOU không có, PF2) mới tự tạo Case / ghi mốc "Trượt lại". */
   if (a.kind !== 'progress' || !boTroGiuaKhoa(a.class_id ? programmeOfClass(a.class_id)?.code : null)) return;
   if (r.sosLevel === 0 || !failing.length) return;
+  const muc = kckCuaLuot(a) ? null : r.sosLevel;   // OV-12c: nhãn SOS theo số môn trượt
 
   for (const skill of failing) {
     const category = categoryOf(skill);
@@ -1032,7 +1034,7 @@ function taoCaseGiuaKhoa(p: Principal, a: any, r: RegularResult) {
     if (existing) {
       if (signal.status === 'linked' && signal.case_id === existing.id) continue;   // chạy lặp: lượt này đã ghi vào Case
       addMilestone({
-        caseId: existing.id, kind: 'repeat', attemptId: a.id, attemptNo: a.attempt_no, sosLevel: null,
+        caseId: existing.id, kind: 'repeat', attemptId: a.id, attemptNo: a.attempt_no, sosLevel: muc,
         occurredOn: detectedAt, createdBy: p.userId,
         note: r.skills.find((x) => x.skill === skill)?.label ?? tenMon(null, skill),   // tên môn theo chương trình (FOU G+V)
         dedupKey: `mt:${a.id}:${existing.id}:repeat`,
@@ -1045,11 +1047,14 @@ function taoCaseGiuaKhoa(p: Principal, a: any, r: RegularResult) {
       }
     } else if (!(signal.status === 'linked' && signal.case_id != null)) {
       open.push(taoCaseTuDong(p, {
-        attempt: a, category, skill, sosLevel: null, detectedAt, band: null, expectation: null, signalId: signal.id, pa: 'bo_tro',
+        attempt: a, category, skill, sosLevel: muc, detectedAt, band: null, expectation: null, signalId: signal.id, pa: 'bo_tro',
         kck: kckCuaLuot(a),   // OV-9: em KCK — Case nhẹ, không PA Bổ trợ, không hạn
       }));
     }
   }
+  /* OV-12c: mọi Case đang theo lượt này mang mức SOS mới nhất của lượt (môn nhập sau trượt thêm → SOS tăng). */
+  conn.prepare(`UPDATE sos_cases SET sos_level = ?, updated_at = ? WHERE attempt_id = ? AND status != 'done' AND kck = 0 AND sos_level IS NOT ?`)
+    .run(muc, nowIso(), a.id, muc);
 }
 
 // ---------------------------------------------------------------- bảng điểm lớp

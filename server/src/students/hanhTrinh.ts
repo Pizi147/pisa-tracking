@@ -223,7 +223,7 @@ export function hanhTrinhHocVien(p: Principal, studentId: number, giaiDoanMuon: 
   const quaHanCua = (c: any): 'nguyen-nhan' | 'xac-nhan-pa' | null => {
     const st = stMo.get(c.id);
     if (!st || dangDung) return null;
-    const v4 = trangThaiCaseV4({ status: c.status, fromSos: st.fromSos, hasCause: st.hasCause, dismissed: !!st.dismissed, systemClosed: !!c.system_close_reason,
+    const v4 = trangThaiCaseV4({ status: c.status, fromSos: st.fromSos, hasCause: st.hasCause, laMt: st.laMt, dismissed: !!st.dismissed, systemClosed: !!c.system_close_reason,
       choDuyetKhongTheoDoi: !!st.choDuyetKhongTheoDoi, coPaChoXacNhan: st.coPaChoXacNhan, hanXacNhan: st.dueOn }, homNay);
     return v4.t !== 'qua-han' ? null : v4.k === 'cho-xac-nhan-pa' ? 'xac-nhan-pa' : 'nguyen-nhan';
   };
@@ -293,19 +293,19 @@ export function hanhTrinhHocVien(p: Principal, studentId: number, giaiDoanMuon: 
         cho: (iv.approval_state ?? '') === 'pending' ? 'duyet' as const : null,
       }));
       return {
-        caseId: c.id, ten: tenCaseCua(c), sos: ratio ? null : c.sos_level ?? null, attemptNo: c.attempt_no ?? null,
+        caseId: c.id, ten: tenCaseCua(c), sos: c.sos_level ?? null, attemptNo: c.attempt_no ?? null,   // OV-12c: Progress cũng có nhãn SOS
         mo: c.detected_at, dong: c.status === 'done' ? (c.closed_at ?? c.outcome_at ?? null) : null,
         soPa: ivs.length, pa,
         /* Cột tên hàng PA: "2 phương án · {người}" (mockup 26 bản 1) — người ghi PA mới nhất. */
         nguoi: (ivs.at(-1)?.performer_user_name ?? ivs.at(-1)?.performer_name ?? null) as string | null,
         /* Q18: Case chờ nguyên nhân — khối chờ (viền đứt tím) với chữ đúng. PR-CT2: PA Bổ trợ chạy ngay khi có nguyên nhân. */
-        cho: c.status !== 'done' && choNguyenNhan.has(c.id) ? 'nguyen-nhan' as const : null,
+        cho: c.status === 'done' ? null : choNguyenNhan.has(c.id) ? 'nguyen-nhan' as const : stMo.get(c.id)?.choNhanXet ? 'nhan-xet' as const : null,
       };
     });
     return {
       kyNang, nhan: ratio ? tenMon(ct, kyNang) : CASE_CATEGORY_LABEL[kyNang], nhanNgan: tenMonNgan(ratio ? ct : null, kyNang), cheDo: ratio ? ('ratio' as const) : ('ielts' as const),
       diem, conCho, dotCho: dotCho as DotRef | null,
-      caseMo: openCases.map((c) => ({ mo: c.detected_at, soPa: (ivByCase.get(c.id) ?? []).length, choNguyenNhan: choNguyenNhan.has(c.id), choDuyet: !!c.co_the_ktd, quaHan: quaHanCua(c) })),
+      caseMo: openCases.map((c) => ({ mo: c.detected_at, soPa: (ivByCase.get(c.id) ?? []).length, choNguyenNhan: choNguyenNhan.has(c.id), choNhanXet: !!stMo.get(c.id)?.choNhanXet, choDuyet: !!c.co_the_ktd, quaHan: quaHanCua(c) })),
       coTungCase: casesOfSkill.length > 0, diemCuoiChuaDat: diem.length ? diem[diem.length - 1].chuaDat : null,
       xongGanNhat: !openCases.length && doneCases.length
         ? doneCases.reduce((mx: string | null, c) => { const d = c.closed_at ?? c.outcome_at ?? c.detected_at; return d && (!mx || d > mx) ? d : mx; }, null as string | null)

@@ -6,11 +6,20 @@ import { commitIntake } from '../classes/intake.ts';
 import { saveScore } from '../fasttrack/attempts.ts';
 import { baoVang } from '../fasttrack/absence.ts';
 import { hanKyGhiKetQua, issuesForTopic, lichMtGoc, tuanHocCuaMt } from '../../../shared/domain/index.ts';
-import { guiKhongTheoDoi, xacNhanCase, xacNhanPaQuyChe } from '../cases/sosAuto.ts';
+import { guiKhongTheoDoi, xacNhanPaQuyChe } from '../cases/sosAuto.ts';
 import { duyetYeuCau, tuChoiYeuCau } from '../duyet/yeuCau.ts';
 import { confirmCoordination } from '../yThuc/phoiHop.ts';
 import type { BuildCtx } from './build.ts';
 import { DEMO_DATE } from './journeys.ts';
+
+/** OV-12b/c: nhận xét mẫu của bài MT demo (≥ 10 ký tự) — cũng là nguyên nhân Case SOS khi bài dưới kỳ vọng. */
+const NHAN_XET_DEMO: Record<string, string> = {
+  listening: 'Em sót số và tên riêng ở Part 1–2, mất ý Section 3.',
+  reading: 'Em sai dạng Matching Headings, bỏ trống câu cuối passage 3.',
+  writing1: 'Task 1 thiếu câu tổng quan, so sánh số liệu chưa chính xác.',
+  writing2: 'Task 2 lập luận mỏng, ví dụ chung chung, sai thì động từ.',
+  speaking: 'Em nói ngắn, ngập ngừng ở Part 2, phát âm cuối từ chưa rõ.',
+};
 
 /**
  * BỘ DEMO RULEBOOK v3 — SOS TỰ TẠO CASE · PHỐI HỢP SOS (PR-T T8, thiet-ke/SOS_VA_PHOI_HOP_V3.md §9). Chỉ cho máy dev: bản chính dùng dữ liệu rỗng.
@@ -19,14 +28,14 @@ import { DEMO_DATE } from './journeys.ts';
  * engine tự tạo case, PA theo quy chế (CHỜ XÁC NHẬN — PR-SOS Q28-3) và việc phối hợp; sau đó GVBM/GVCN/Quản lý thao tác bằng đúng hàm của họ.
  * Nhờ vậy demo không thể lệch luật: nó là kết quả của luật, không phải bản sao viết tay của luật. Chỉ lùi ngày bằng SQL khi cần mốc quá hạn.
  *
- * D7 (PR-SOS) — Case SOS ở MB FT 101 đủ các trạng thái v4:
- *   (1) chờ nguyên nhân, còn hạn       Vũ Ngọc Lan · Listening
- *   (2) chờ nguyên nhân QUÁ HẠN → Báo lên   Đỗ Minh Khôi · Writing Task 2 (hạn lùi ở `duyetSeed.ts`)
+ * D7 (PR-SOS → OV-12c: nguyên nhân Case MT = nhận xét + nhóm của ô — mọi ô demo có nhận xét, trừ (2)) — Case SOS ở MB FT 101 đủ các trạng thái:
+ *   (1) chờ xác nhận PA, còn hạn       Vũ Ngọc Lan · Listening
+ *   (2) Case MT CŨ bài chưa nhận xét, QUÁ HẠN → việc "Ghi nhận xét"   Đỗ Minh Khôi · Writing Task 2 (hạn lùi ở `duyetSeed.ts`)
  *   (3) Chờ Quản lý duyệt · không theo dõi   Vũ Ngọc Lan · Reading
  *   (4) Quản lý TỪ CHỐI → hạn mới 3 ngày    Trịnh Gia Bảo · Listening
  *   (5) Đã huỷ · không cần theo dõi          Vũ Ngọc Lan · Speaking
  *   (6) đang chạy, PA quy chế đã xác nhận    Đỗ Minh Khôi · Speaking
- *   (7) đã xác nhận Case, PA còn chờ xác nhận   Bùi Thảo Vy · Speaking
+ *   (7) PA còn chờ xác nhận   Bùi Thảo Vy · Speaking
  * D8 — hạn PA: Khôi · Speaking hạn hết T2 ĐÚNG ngày demo · Lý Minh Châu · Reading quá hạn 1 tuần · Hoàng Bảo Ngọc · Listening ở TUẦN MỐC
  * (Ghi kết quả cuối).
  * OV-1c — Case chỉ sinh khi lượt CHỐT: Khôi, Lan, Vy đủ 4 kỹ năng · Bảo, Ngọc chốt nhờ Speaking "Không dự thi" · Châu chốt nhờ Speaking vắng
@@ -68,10 +77,13 @@ export function buildSosV3Demo(ctx: BuildCtx): { students: number; cases: number
     conn.prepare('UPDATE assessment_attempts SET lich_su = 0 WHERE id = ?').run(a.id);
     return a;
   };
-  const score = (a: any, skill: string, band: number) => saveScore(admin, a.id, skill,
-    skill === 'listening' ? { rawScore: LISTENING_BY_RAW.indexOf(band) }
-    : skill === 'reading' ? { rawScore: READING_BY_RAW.indexOf(band) }
-    : { criteria: [band, band, band, band] });
+  /* OV-12b/c: bài MT có nhận xét + nhóm nguyên nhân (máy chỉ giữ nhóm khi band dưới kỳ vọng) — nguyên nhân Case lấy từ đây. `nx: false` = dữ liệu trước luật. */
+  const score = (a: any, skill: string, band: number, nx = true) => saveScore(admin, a.id, skill, {
+    ...(skill === 'listening' ? { rawScore: LISTENING_BY_RAW.indexOf(band) }
+      : skill === 'reading' ? { rawScore: READING_BY_RAW.indexOf(band) }
+      : { criteria: [band, band, band, band] }),
+    ...(nx ? { nhanXet: NHAN_XET_DEMO[skill], nhomNguyenNhan: [issuesForTopic(skill)[0].code] } : {}),
+  });
   /** OV-1c: kỹ năng còn thiếu = "Không dự thi" ("-" nhập sau tuần thi) → lượt chốt. */
   const khongDuThi = (a: any, skill: string) => saveScore(admin, a.id, skill, { noShow: true });
   /** OV-1c: GVCN báo vắng TRONG tuần thi (thứ Tư) → máy dời tuần sau → lượt chốt. */
@@ -86,9 +98,6 @@ export function buildSosV3Demo(ctx: BuildCtx): { students: number; cases: number
     WHERE r.key = 'manager' AND u.full_name = 'Nguyễn Khánh Vy' LIMIT 1`).get() as any;
   const quanLy = qlRow ? loadPrincipal(qlRow.id) : admin;
   const theKtd = (caseId: number) => (conn.prepare(`SELECT id FROM yeu_cau_duyet WHERE loai = 'khong_theo_doi' AND doi_tuong_id = ? AND trang_thai = 'cho'`).get(caseId) as any).id as number;
-  /** Xác nhận Case (nguyên nhân đầu danh mục của kỹ năng, mức Bình thường). */
-  const xacNhan = (who: Principal, caseId: number, topic: string, moTa: string) =>
-    xacNhanCase(who, caseId, { primaryCode: issuesForTopic(topic)[0].code, urgency: 'attention', moTa });
   /** Xác nhận PA theo quy chế đầu tiên còn chờ của Case. */
   const xacNhanPa = (who: Principal, caseId: number, moTa: string) => {
     const iv = conn.prepare(`SELECT id FROM case_interventions WHERE case_id = ? AND preset = 1 AND confirmed_at IS NULL AND status = 'planned' ORDER BY id LIMIT 1`).get(caseId) as any;
@@ -102,10 +111,9 @@ export function buildSosV3Demo(ctx: BuildCtx): { students: number; cases: number
   // ---------------------------------------------------------------- Đỗ Minh Khôi — MT2 · SOS2
   const khoi = addStudent('Đỗ Minh Khôi', 2, 2);
   const khoiA = attempt(khoi);
-  score(khoiA, 'writing1', 7); score(khoiA, 'writing2', 5.5); score(khoiA, 'speaking', 5);        // kỳ vọng MT2 6.5: W2 và Speaking dưới
+  score(khoiA, 'writing1', 7); score(khoiA, 'writing2', 5.5, false); score(khoiA, 'speaking', 5);   // kỳ vọng MT2 6.5: W2 và Speaking dưới; W2 chưa nhận xét — D7 (2)
   score(khoiA, 'listening', 6.5); score(khoiA, 'reading', 6.5);                                    // OV-1c: đủ 4 kỹ năng → chốt (Overall 6.0)
-  const khoiSp = caseOf(khoi.id, 'speaking');
-  xacNhan(activeTeacher('speaking'), khoiSp.id, 'speaking', 'Em nói ngắn, ngập ngừng ở Part 2, thiếu ý mở rộng.');   // D7 (6)
+  const khoiSp = caseOf(khoi.id, 'speaking');   // D7 (6)
   xacNhanPa(activeTeacher('speaking'), khoiSp.id, 'Tự học Speaking: ghi âm Part 2 mỗi ngày, GVBM nghe và chữa thứ Sáu.');
   hanPa(khoiSp.id, addDays(DEMO_DATE, -14), addDays(DEMO_DATE, 1));   // D8 → OV-12a: hạn hết T3 NGÀY MAI (kỳ 31/08–13/09)
   confirmCoordination(gvcn, actionOf(khoiA.id, 'talk_student').id, { performedOn: addDays(DEMO_DATE, -1), note: 'Đã gặp em sau buổi học, em hứa luyện nói mỗi ngày.' });
@@ -141,8 +149,7 @@ export function buildSosV3Demo(ctx: BuildCtx): { students: number; cases: number
   const vyA = attempt(vy);
   for (const k of ['listening', 'reading', 'writing1', 'writing2']) score(vyA, k, 7);
   score(vyA, 'speaking', 5);                                                                       // kỳ vọng MT3 7.0: chỉ Speaking dưới → SOS1 (Overall 6.5)
-  const vySp = caseOf(vy.id, 'speaking');
-  xacNhan(activeTeacher('speaking'), vySp.id, 'speaking', 'Em phát âm cuối từ chưa rõ, mất điểm Pronunciation.');   // D7 (7): PA còn chờ xác nhận
+  caseOf(vy.id, 'speaking');   // D7 (7): PA còn chờ xác nhận
   for (const kind of ['talk_student', 'talk_family']) confirmCoordination(gvcn, actionOf(vyA.id, kind).id, { performedOn: addDays(DEMO_DATE, -1) });
 
   // ---------------------------------------------------------------- D7 (4): Trịnh Gia Bảo — MT1 · Listening, Quản lý từ chối "không theo dõi"
@@ -160,7 +167,6 @@ export function buildSosV3Demo(ctx: BuildCtx): { students: number; cases: number
   score(chauA, 'reading', 5.5); score(chauA, 'listening', 6.5); score(chauA, 'writing1', 6.5); score(chauA, 'writing2', 6.5);
   vangDoi(chauA, chau, 'speaking');                                                                // OV-1c: chốt nhờ Speaking vắng dời tuần
   const chauR = caseOf(chau.id, 'reading');
-  xacNhan(activeTeacher('reading'), chauR.id, 'reading', 'Em sai dạng Matching Headings ở cả ba passage.');
   xacNhanPa(activeTeacher('reading'), chauR.id, 'Tự học Reading: hai bài Matching Headings mỗi tuần, cô Hà chữa.');
   hanPa(chauR.id, addDays(DEMO_DATE, -20), addDays(DEMO_DATE, -6));   // quá hạn ~1 tuần — OV-12a: hạn hết T3 08/09 (kỳ 24/08–06/09)
 
@@ -170,7 +176,6 @@ export function buildSosV3Demo(ctx: BuildCtx): { students: number; cases: number
   score(ngocA, 'listening', 5.5); score(ngocA, 'reading', 6); score(ngocA, 'writing1', 6); score(ngocA, 'writing2', 6);
   khongDuThi(ngocA, 'speaking');                                                                   // OV-1c: chốt nhờ "Không dự thi"
   const ngocL = caseOf(ngoc.id, 'listening');
-  xacNhan(activeTeacher('listening'), ngocL.id, 'listening', 'Em sót số và tên riêng ở Part 1–2.');
   xacNhanPa(activeTeacher('listening'), ngocL.id, 'Tự học Listening: nghe chép Part 1 mỗi ngày, gửi cô Hà thứ Năm.');
   /* Mốc quy chế Chủ nhật tuần này (20/09) < hạn hết T3 29/09 (kỳ đang chạy, OV-12a) → lần ghi này là lần cuối. */
   hanPa(ngocL.id, addDays(DEMO_DATE, -28), hanKyGhiKetQua(addDays(DEMO_DATE, -28), addDays(DEMO_DATE, 6)), addDays(DEMO_DATE, 6));

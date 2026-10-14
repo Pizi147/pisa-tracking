@@ -127,9 +127,10 @@ export async function runPrS4fTests(t: YThucTestKit) {
     const caseC = moCaseR(c, c.pt);
     /* Case còn PA/căn cứ khác không quan trọng ở đây — lượt Cuối khoá khác lượt nguồn. */
     if (c.ft) {
+      const mucTruoc = get('SELECT sos_level FROM sos_cases WHERE id = ?', caseC).sos_level;   // OV-12c: nhãn SOS theo số môn trượt của Progress Test
       nhap(c.ft, false);
       assert(mocDat(caseC).some((m: any) => m.dedup_key === `mt:${c.ft}:${caseC}:passed`), `lượt sau đạt phải có mốc: ${JSON.stringify(mocDat(caseC))}`);
-      assert(get('SELECT sos_level FROM sos_cases WHERE id = ?', caseC).sos_level === null, 'Case Progress Test không nhãn SOS — lượt sau đạt không đổi mức');
+      assert(mucTruoc >= 1 && get('SELECT sos_level FROM sos_cases WHERE id = ?', caseC).sos_level === mucTruoc, 'Case Progress Test: nhãn SOS của Progress Test — lượt sau đạt không đổi mức');
     } else {
       assert(false, 'dữ liệu: em mới không có bài Final Test');
     }
@@ -205,7 +206,7 @@ export async function runPrS4fTests(t: YThucTestKit) {
   const sosAuto: any = await import('../cases/sosAuto.ts');
   const standing: any = await import('../students/standing.ts');
   const xm: any = await import('../phanTich/xuatMt.ts');
-  const { boLichTuTao, luotThu } = await import('./luotThu.ts');
+  const { boLichTuTao, luotThu, nhanXetCaseThu } = await import('./luotThu.ts');
   const maLoi = (fn: () => unknown): number | string => { try { fn(); return 'không ném'; } catch (e: any) { return e?.status ?? String(e?.message ?? e); } };
   const FT = classId('MB FT 101');
   const emFt = (ten: string) => {
@@ -225,7 +226,7 @@ export async function runPrS4fTests(t: YThucTestKit) {
     for (const k of ['listening', 'reading', 'speaking']) nhapBand(e.aid, k, 5);
     const c = get(`SELECT id FROM sos_cases WHERE student_id = ? AND category = 'listening'`, e.sid);
     assert(c, 'chưa có Case L tự tạo');
-    sosAuto.xacNhanCase(P.admin, c.id, { primaryCode: d.issuesForTopic('listening', null)[0].code, urgency: 'attention', moTa: 'Em nghe sót số và tên riêng ở Part 1–2.' });
+    nhanXetCaseThu(conn, attemptsSvc.saveScore, P.admin, c.id, { primaryCode: d.issuesForTopic('listening', null)[0].code, urgency: 'attention', moTa: 'Em nghe sót số và tên riêng ở Part 1–2.' });
     const iv = get('SELECT id FROM case_interventions WHERE case_id = ? AND preset = 1', c.id);
     await voiMayChu(async (goi) => {
       for (const body of [{}, { description: '' }, { description: '   ' }, { description: null }]) {
