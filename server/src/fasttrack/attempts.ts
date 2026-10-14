@@ -1750,9 +1750,9 @@ export function refreshOutcome(p: Principal, attemptId: number, thiLai = false) 
   const rows = scoresOf(attemptId);
   const skips = skipsOf(attemptId);
   let result = resultOf(fresh, rows, skips);
-  /* OV-11e (Q8): dấu KCK chỉ nằm trên lượt ĐANG chốt. Hết chốt (huỷ điểm, khôi phục, đưa lại kỹ năng) → xoá dấu, lượt theo cờ hiện tại của
-     lộ trình (tính lại kết quả); chốt lần đầu / chốt lại → chụp cờ lúc đó. `chot` không phụ thuộc KCK. */
-  if (!result.chot && (fresh.kck_at_attempt ?? null) !== null) {
+  /* OV-11e (Q8, planning 14/10): như `target_at_attempt` — dấu KCK chụp lúc chốt GIỮ khi lượt còn điểm (huỷ / sửa một điểm không đổi kết luận
+     lượt cũ); chỉ xoá khi lượt không còn điểm nào (lượt theo cờ hiện tại, tính lại kết quả). `chot` không phụ thuộc KCK. */
+  if (!result.chot && (fresh.kck_at_attempt ?? null) !== null && !rows.some((r) => r.band != null || r.raw_score != null)) {
     conn.prepare('UPDATE assessment_attempts SET kck_at_attempt = NULL WHERE id = ?').run(attemptId);
     fresh.kck_at_attempt = null;
     result = resultOf(fresh, rows, skips);

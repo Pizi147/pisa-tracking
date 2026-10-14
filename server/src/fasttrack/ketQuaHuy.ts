@@ -134,14 +134,21 @@ export function yeuCauChoCua(caseIds: number[], paIds: number[]): number[] {
  * đã duyệt / từ chối giữ nguyên. Gọi trong tx của `reopenAttempt`, SAU khi mở lại Case / PA. Trả số thẻ trả về.
  */
 export function traYeuCauCat(ids: readonly number[]): number {
+  const conn = db();
   let n = 0;
   for (const id of ids) {
-    n += db().prepare(
+    /* Đã có thẻ "cho" khác cùng loại + đối tượng (`ux_ycd_dang_cho`) thì bỏ qua — không lỗi giữa Khôi phục. */
+    const doi = conn.prepare(
       `UPDATE yeu_cau_duyet SET trang_thai = 'cho', nguoi_duyet = NULL, ly_do_dong = NULL, tu_duyet = 0, xu_ly_luc = NULL
         WHERE id = ? AND trang_thai = 'tu_dong'
           AND ((doi_tuong_loai = 'sos_case' AND EXISTS (SELECT 1 FROM sos_cases sc WHERE sc.id = doi_tuong_id AND sc.status != 'done'))
-            OR (doi_tuong_loai = 'intervention' AND EXISTS (SELECT 1 FROM case_interventions iv WHERE iv.id = doi_tuong_id AND iv.status IN ('planned', 'started'))))`,
+            OR (doi_tuong_loai = 'intervention' AND EXISTS (SELECT 1 FROM case_interventions iv WHERE iv.id = doi_tuong_id AND iv.status IN ('planned', 'started'))))
+          AND NOT EXISTS (SELECT 1 FROM yeu_cau_duyet y2 WHERE y2.trang_thai = 'cho' AND y2.loai = yeu_cau_duyet.loai
+            AND y2.doi_tuong_loai = yeu_cau_duyet.doi_tuong_loai AND y2.doi_tuong_id = yeu_cau_duyet.doi_tuong_id)`,
     ).run(id).changes as number;
+    /* Chuông "Tự đóng" của thẻ vừa trả về không còn đúng — bỏ (thẻ lại chờ như trước khi huỷ lượt). */
+    if (doi) conn.prepare('DELETE FROM notifications WHERE dedup_key = ?').run(`duyet_ket_qua:${id}`);
+    n += doi;
   }
   return n;
 }

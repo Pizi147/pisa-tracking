@@ -45,7 +45,7 @@ export function DongThoiGianLuot({ history, scoreHistory, ct = null, gioiHan = 5
   const { homNay } = useNgayNghiepVu();
   /* OV-11e (TE-12): mã tuần lưu kèm năm ("W4 SEP 2026") — cùng năm thì bỏ năm như mọi chỗ khác (G-6). */
   const gia = (v: string) => { const t2 = docTuanLich(v, homNay); return t2 ? tuanLich(t2, homNay) : SIT[v] ?? v; };
-  const mon =(k: string | null) => (k && /^(listening|reading|writing|writing1|writing2|speaking|tong_hop)$/.test(k) ? tenMon(ct, k) : null);
+  const mon = (k: string | null) => (k && /^(listening|reading|writing|writing1|writing2|speaking|tong_hop)$/.test(k) ? tenMon(ct, k) : null);
   const dong = [
     ...history.map((h) => {
       const n = NHAN_VIEC[h.action] ?? { chu: h.action, loai: 'lich' as Loai };

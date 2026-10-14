@@ -121,7 +121,7 @@ const kyNangLabelOf = (mode: CheDo, kyNang: string[], ct: string | null) =>
   (mode === 'ratio' && kyNang.length >= 4 ? `${kyNang.length} môn` : kyNang.map((k) => tenMonNgan(ct, k)).join(', '));
 
 /**
- * Một dòng nhắc "MT lịch sử chưa nhập" của một lớp (K2-32). OV-11e (TE-8): mở Điểm theo lớp đúng lượt + "Chỉ ô còn trống" — số em = số hàng ở
+ * Một dòng nhắc "MT lịch sử chưa nhập" của một lớp (K2-32). OV-11e (TE-8): mở Điểm theo lớp đúng lượt + "Chỉ ô còn trống · MT cũ" — số em = số hàng ở
  * nơi nó mở; nhiều lượt thì `luot` liệt kê "MT1 · 3 em · MT2 · 2 em", mỗi lượt một đường; `href` = lượt đầu.
  */
 export type NhacLichSu = {
@@ -162,7 +162,7 @@ export function mtLichSuChuaNhap(p: Principal, o: { classIds?: number[] | null; 
   }
   return [...theoLop].map(([classId, l]) => {
     const luot = [...l.luot].sort((a, b) => a[0] - b[0])
-      .map(([so, em]) => ({ so, soEm: em.size, href: `/test/diem-lop?lop=${classId}&luot=mt:${so}&trong=1` }));
+      .map(([so, em]) => ({ so, soEm: em.size, href: `/test/diem-lop?lop=${classId}&luot=mt:${so}&trong=cu` }));
     return { classId, classCode: l.classCode, soEm: l.em.size, emIds: [...l.em], href: luot[0].href, luot };
   }).sort((a, b) => soSanhLop({ code: a.classCode }, { code: b.classCode }));   // PR-UXF-a U1
 }

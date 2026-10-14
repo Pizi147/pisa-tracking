@@ -106,7 +106,7 @@ const dongCua = (b: Buoi, sau: (d: any) => string): DongDoiOv1b[] =>
   b.dau.map((d) => ({ attemptId: b.attemptId, o: d.skill as string, ...b.ten, truoc: truocCua(b, d), sau: sau(d) }));
 
 /** LỆNH CHỈ ĐỌC `kiem-truoc-ov1b`: danh sách ô migrate sẽ đổi — không ghi câu nào. */
-export function kiemTruocOv1b(conn: any, today: string = demoToday()): DongDoiOv1b[] {
+export function kiemTruocOv1b(conn: any): DongDoiOv1b[] {
   return lapKeHoach(conn).flatMap((b) => dongCua(b, () => sauDuKien(b)));
 }
 

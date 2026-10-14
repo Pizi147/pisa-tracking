@@ -13,7 +13,7 @@ import { NOT_UNCONFIRMED_PRESET } from '../cases/sosState.ts';
 import { closeCasesBySystem, moLaiCaseHeThongDong, type ChupCaseDong } from '../cases/systemClose.ts';
 import { datLaiHanCase } from '../cases/sosAuto.ts';
 import { chotHanXuLy } from '../yThuc/trangThai.ts';
-import { entryBandsOf, scoresOf, skipsOf } from '../fasttrack/attempts.ts';
+import { entryBandsOf, kckCuaLuot, scoresOf, skipsOf } from '../fasttrack/attempts.ts';
 import { evaluateAttempt, roundToHalf } from '../fasttrack/scoring.ts';
 import { currentCycle, cyclesOf, docDuKienThi, docTarget, examPlanOf } from '../fasttrack/cycles.ts';
 import { isRatioCycle } from '../normal/regular.ts';
@@ -120,7 +120,7 @@ export function latestResult(studentId: number) {
   const homNay = demoToday();
   for (const a of attempts) {
     if (!luotSinhViecRow(a, homNay)) continue;   // M-14: MT lịch sử ngoài 4 tuần không phải "kết quả gần nhất"
-    const r = evaluateAttempt(a.target_at_attempt, a.attempt_no, entryBandsOf(scoresOf(a.id)), skipsOf(a.id), a.route, [], !!a.khong_cam_ket);
+    const r = evaluateAttempt(a.target_at_attempt, a.attempt_no, entryBandsOf(scoresOf(a.id)), skipsOf(a.id), a.route, [], kckCuaLuot(a));   // OV-11e (Q8)
     if (r.evaluable) {
       return {
         attemptId: a.id, attemptNo: a.attempt_no, route: a.route, cycleSeq: a.cycle_seq,

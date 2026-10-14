@@ -239,7 +239,7 @@ export async function runPrOv1bTests(t: YThucTestKit) {
   check('OV1b-8 · migrate prOv1b dọn đúng 4 ca, in từng ô đổi; chạy lần hai không đổi gì; kiem-truoc-ov1b in đúng danh sách mà không ghi', () => thu(() => {
     const ca = dungCaCu();
     const n0 = one('SELECT total_changes() n').n;
-    const truoc = kiemTruocOv1b(conn, BU);
+    const truoc = kiemTruocOv1b(conn);
     assert(one('SELECT total_changes() n').n === n0, 'kiem-truoc-ov1b đã ghi DB');
     const applied: string[] = [];
     const doi = migratePrOv1b(conn, applied, BU);
@@ -272,7 +272,7 @@ export async function runPrOv1bTests(t: YThucTestKit) {
     xoaNho();
     const anh = (a: number) => JSON.stringify([ky(a, 'listening'), dau(a, 'listening')]);
     const truocAnh = new Map([nay, sau, qua].map((a) => [a, anh(a)] as const));
-    const truoc = kiemTruocOv1b(conn, BU);
+    const truoc = kiemTruocOv1b(conn);
     const applied: string[] = [];
     const doi = migratePrOv1b(conn, applied, BU);
     /* Giữ nguyên từng cột: tuần thi lại, lần vắng 1, "-" đã chốt chưa là Không dự thi — kết quả không phụ thuộc ngày chạy. */
@@ -286,11 +286,9 @@ export async function runPrOv1bTests(t: YThucTestKit) {
       assert(dongCua(truoc, a)?.sau === `giữ lịch thi lại ${ma}`, `kiem-truoc ${a}: ${JSON.stringify(dongCua(truoc, a))}`);
       assert(applied.some((l) => l.includes(`giữ lịch thi lại ${ma}`)), `báo cáo thiếu dòng giữ ${ma}: ${applied.join(' | ')}`);
     }
-    /* Chạy "trước" và "sau" tuần thi lại (hôm nay khác) → cùng danh sách giữ. */
-    for (const ngay of ['2026-11-01', '2026-12-01']) {
-      const ds = kiemTruocOv1b(conn, ngay);
-      for (const a of [nay, sau, qua]) assert(dongCua(ds, a)?.sau.startsWith('giữ lịch thi lại'), `hôm nay ${ngay}: ${JSON.stringify(dongCua(ds, a))}`);
-    }
+    /* `kiemTruocOv1b` không nhận ngày (OV-11e) — danh sách giữ không theo ngày chạy. */
+    const ds = kiemTruocOv1b(conn);
+    for (const a of [nay, sau, qua]) assert(dongCua(ds, a)?.sau.startsWith('giữ lịch thi lại'), JSON.stringify(dongCua(ds, a)));
     /* Cùng danh sách ô (cột "sau" của buổi C có sẵn trong seed ở bản chỉ đọc ghi luật — khác bản thật, đã nêu ở đầu prOv1b.ts). */
     const khoa = (ds: any[]) => ds.map((d) => `${d.attemptId}:${d.o}`).sort().join(',');
     assert(khoa(truoc) === khoa(doi), `kiem-truoc ≠ migrate:\n${khoa(truoc)}\n${khoa(doi)}`);

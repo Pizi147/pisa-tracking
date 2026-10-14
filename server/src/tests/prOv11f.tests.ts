@@ -79,6 +79,8 @@ export async function runPrOv11fTests(t: YThucTestKit) {
     const sid = r0.ids[0];
     assert(sid, 'demo phải có em FT dưới kỳ vọng');
     conn.prepare(`UPDATE learning_cycles SET khong_cam_ket = 1 WHERE student_id = ? AND status = 'active'`).run(sid);
+    /* OV-11e (Q8): KCK theo lượt — lượt đã chốt giữ dấu lúc chốt; em KCK ngay lúc chốt thì dấu trên lượt cũng là KCK. */
+    conn.prepare(`UPDATE assessment_attempts SET kck_at_attempt = 1 WHERE student_id = ? AND kck_at_attempt IS NOT NULL`).run(sid);
     xoaNho();
     const r1 = metrics.metricSet(P.mbManager, 'hv-duoi-ky-vong-mon', { program: 'ft' });
     assert(!r1.ids.includes(sid) && !r1.denominatorIds.includes(sid), 'em KCK còn trong Dưới kỳ vọng');

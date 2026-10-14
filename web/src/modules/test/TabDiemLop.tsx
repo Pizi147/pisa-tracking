@@ -111,7 +111,8 @@ export function TabDiemLop() {
       </div>
       {/* `key`: đổi lớp thì lượt và trạng thái lưu bắt đầu lại từ lượt mở sẵn của lớp mới. `?luot=` (PR-OV1a, vd `thuong:mt0`): lượt mở
           đầu khi vào từ link ngoài — sai / không có thì lượt mặc định. */}
-      <DiemTheoLop key={chon.classId} classId={chon.classId} luotBanDau={sp.get('luot') ?? undefined} chiOTrongBanDau={sp.get('trong') === '1'}
+      <DiemTheoLop key={chon.classId} classId={chon.classId} luotBanDau={sp.get('luot') ?? undefined}
+        locBanDau={sp.get('trong') === 'cu' ? 'cu' : sp.get('trong') === '1' ? 'trong' : undefined}
         congRoi={cong} onDaLuu={daLuu}
         onLuot={(ma, nhan) => {
           setNhanLuot(nhan);

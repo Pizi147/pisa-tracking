@@ -41,10 +41,10 @@ export type CongRoi = { roi: (lam: () => void) => void; giu: (e: MouseEvent) => 
 /** Mã đích "ra ngoài bảng" trong luồng hỏi đổi lượt — không bao giờ trùng mã lượt (`docMaLuot`). */
 const DICH_NGOAI = 'ngoai';
 
-export function DiemTheoLop({ classId, luotBanDau, chiOTrongBanDau = false, gon = false, congRoi, onDaLuu, onLuot }: {
+export function DiemTheoLop({ classId, luotBanDau, locBanDau, gon = false, congRoi, onDaLuu, onLuot }: {
   classId: number; luotBanDau?: string; gon?: boolean; congRoi?: MutableRefObject<CongRoi | null>;
-  /** OV-11e (TE-8): vào từ link "MT cũ chưa nhập" (`?trong=1`) — bật sẵn "Chỉ ô còn trống". */
-  chiOTrongBanDau?: boolean;
+  /** OV-11e (TE-8): vào từ link (`?trong=`) — `trong` bật sẵn "Chỉ ô còn trống"; `cu` ("MT cũ chưa nhập") lọc thêm hàng MT cũ ở lượt mở đầu. */
+  locBanDau?: 'trong' | 'cu';
   /** Vừa lưu một ô (Test › Điểm theo lớp: gộp tải lại số ô trống của danh sách lớp). */
   onDaLuu?: () => void;
   /** PR-OV5b: lượt đang xem đổi — Test › Điểm theo lớp ghi `?luot=` để Quay lại từ hồ sơ về đúng lượt. */
@@ -61,7 +61,10 @@ export function DiemTheoLop({ classId, luotBanDau, chiOTrongBanDau = false, gon 
   const nhanLuot = dsLuot.find((l) => l.ma === luot)?.nhan;
   useEffect(() => { if (luot && nhanLuot) onLuot?.(luot, nhanLuot); }, [luot, nhanLuot]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const [chiOTrong, setChiOTrong] = useState(() => chiOTrongBanDau || docChiOTrong());
+  const [chiOTrong, setChiOTrong] = useState(() => !!locBanDau || docChiOTrong());
+  const [chiCu, setChiCu] = useState(locBanDau === 'cu');
+  /* "MT cũ" chỉ áp ở lượt của link; bỏ tích ô thì về như thường. */
+  const locCu = chiOTrong && chiCu && luot === luotBanDau;
 
   /* Mỗi dòng của lưới báo: còn ô đang gửi không, mấy ô hỏng/gõ sai (`useTrangThaiLuuO`). */
   const [luu, setLuu] = useState<Record<string, { dang: boolean; loi: number }>>({});
@@ -129,14 +132,15 @@ export function DiemTheoLop({ classId, luotBanDau, chiOTrongBanDau = false, gon 
   const chiAttempt = useMemo(() => {
     if (!chiOTrong || !b) return null;
     const ids = b.ft
-      ? b.ft.rows.filter((r) => r.cells.some(oTrongLuotFt)).map((r) => r.attemptId)
+      ? b.ft.rows.filter((r) => r.cells.some(oTrongLuotFt) && (!locCu || r.lichSu)).map((r) => r.attemptId)
       : (b.thuong?.rows ?? []).filter(hangThuongConTrong).map((r) => r.attemptId);
     return new Set(ids);
-  }, [chiOTrong, b]);
-  const hangMo = useMemo<HangMo[]>(() => (b?.chuaCoLich ?? []).map((h) => ({
+  }, [chiOTrong, locCu, b]);
+  /* "MT cũ" chỉ hàng MT cũ — em chưa có lịch lượt này không phải việc nhập bù. */
+  const hangMo = useMemo<HangMo[]>(() => (locCu ? [] : b?.chuaCoLich ?? []).map((h) => ({
     studentId: h.studentId, ten: h.fullName, ma: maHocVienNgan(h.studentCode),
     chu: <>Chưa có lịch {b!.luot.nhan} — <Link className="link" to={duongHoSoHocVien(h.studentId, { mo: 'lo-trinh' })}>xếp ở panel Lộ trình</Link></>,
-  })), [b]);
+  })), [b, locCu]);
 
   const phimTab = (e: KeyboardEvent<HTMLDivElement>) => {
     const toi = e.key === 'ArrowLeft' ? truoc : e.key === 'ArrowRight' ? sau : null;
@@ -208,8 +212,8 @@ export function DiemTheoLop({ classId, luotBanDau, chiOTrongBanDau = false, gon 
 
         <label className="inline-flex items-center gap-2 text-sm self-start min-h-[44px] sm:min-h-0 cursor-pointer">
           <input type="checkbox" checked={chiOTrong}
-            onChange={(e) => { setChiOTrong(e.target.checked); ghiChiOTrong(e.target.checked); }} />
-          Chỉ ô còn trống
+            onChange={(e) => { setChiOTrong(e.target.checked); ghiChiOTrong(e.target.checked); if (!e.target.checked) setChiCu(false); }} />
+          {locCu ? 'Chỉ ô còn trống · MT cũ' : 'Chỉ ô còn trống'}
         </label>
 
         {dangXem?.lichSu && (
