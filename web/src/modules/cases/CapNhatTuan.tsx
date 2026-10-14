@@ -15,7 +15,7 @@ import {
   GOI_Y_KET_QUA_PA, NUT_LUU_KET_QUA, PLAN_DECISION_HINT, PLAN_DECISION_NGAN, PLAN_DECISION_NGHIA, quyetDinhChoPa,
   decisionBlockedReason, decisionNeedsReason, deadlineView, interventionKindsFor, nhanTuanGhiKetQua, outcomeLabelFor,
   type NguoiChon, type PlanDecision, dsLoi, type LuatTruong,
-  coNguoiDay, coSoBuoi, demSauKetQua, giaTriCuaPa, loiFormPa, loiKetQuaTuan, nguoiCuaPa, paMoi, paPayload, tachKhac, thanKetQuaTuan, thanSuaPa,
+  canBuoiTutor, coNguoiDay, coSoBuoi, demSauKetQua, kiemSoBuoiTuan, soBuoiTu, type BuoiTutor, giaTriCuaPa, loiFormPa, loiKetQuaTuan, nguoiCuaPa, paMoi, paPayload, tachKhac, thanKetQuaTuan, thanSuaPa,
   type GiaTriPa,
 } from '@shared/domain/index.ts';
 
@@ -49,6 +49,8 @@ export type SuaKetQua = {
   giaTri: {
     outcome: string; note: string; remainingIssue: string; decision: PlanDecision | null; decisionNote: string; observedOn: string;
     completedOn: string | null; soBuoi: number | null; nguoiDay: { userId: number | null; ten: string } | null;
+    /** OV-12h: dòng buổi Tutor đã ghi (lần ghi cũ: []). */
+    buoi?: BuoiTutor[];
     miniTest: { tyLe: number; ngay: string } | null;
     adjust: { description: string | null; soBuoi: number | null; performerUserId: number | null; performer: string | null } | null;
     newPlan: { kind: string; description: string | null; soBuoi: number | null; performerUserId: number | null; performer: string | null } | null;
@@ -109,6 +111,19 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, quayLai, onClose, onSave
   /* PR-PA (§8): khối đếm — Số buổi tuần này (PA có Số buổi; mặc định 1) · Người dạy tuần này (điền sẵn người của PA; lưu ở cột phụ trách cũ). */
   const coDem = pa.soBuoi != null;
   const [tuan, setTuan] = useState(dau.tuan);
+  /*
+   * OV-12h (chủ SP 14/10): PA Tutor — Số buổi n → n dòng [Tên tutor · Nhận xét buổi], bắt buộc. Mảng giữ cả dòng vượt n: giảm rồi tăng số buổi không mất
+   * chữ đã gõ; chỉ gửi n dòng đầu.
+   */
+  const coBuoi = canBuoiTutor(pa);
+  const [buoi, setBuoi] = useState<BuoiTutor[]>(g?.buoi ?? []);
+  const soDong = coBuoi && !kiemSoBuoiTuan(tuan) ? soBuoiTu(tuan)! : 0;
+  const datBuoi = (i: number, p: Partial<BuoiTutor>) => setBuoi((ds) => {
+    const moi = [...ds];
+    while (moi.length <= i) moi.push({ tutor: '', nhanXet: '' });
+    moi[i] = { ...moi[i], ...p };
+    return moi;
+  });
   const [nguoiDay, setNguoiDay] = useState<NguoiChon | null>(dau.nguoiDay);
   /* Thay PA: PA mới dùng một form PA (PR-PA §8) — không có Ngày bắt đầu (PA mới chạy từ Ngày ghi). */
   const [paThay, setPaThay] = useState<GiaTriPa>(dau.thay);
@@ -152,6 +167,10 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, quayLai, onClose, onSave
     if (!mtNgay) loi.push({ khoa: 'mt-ngay', nhan: 'Ngày làm', lyDo: 'Chọn ngày làm Mini Test' });
   }
   loi.push(...loiKetQuaTuan(pa, tuan, nguoiDay));
+  for (let i = 0; i < soDong; i += 1) {
+    if (!buoi[i]?.tutor.trim()) loi.push({ khoa: `buoi-${i}-tutor`, nhan: `Tên tutor buổi ${i + 1}`, lyDo: 'Chưa điền' });
+    if (!buoi[i]?.nhanXet.trim()) loi.push({ khoa: `buoi-${i}-nx`, nhan: `Nhận xét buổi ${i + 1}`, lyDo: 'Chưa điền' });
+  }
   if (decision === 'adjust') {
     /* Số buổi mới ≥ đã dạy SAU tuần này (máy chủ kiểm cùng luật). */
     loi.push(...loiFormPa(dc, { goc: gocDc, daDay: dem?.da ?? daDay, tienTo: 'dc-' }));
@@ -172,6 +191,7 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, quayLai, onClose, onSave
         /* Lý do chỉ gửi khi có ô lý do thật — ô "Ghi chú" riêng đã gộp vào "Vấn đề còn tồn / Ghi chú" (PR-LUI-a2). */
         decisionNote: (needReason || decision === 'ask_manager' || (lanCuoi && outcome === 'insufficient')) ? reason.trim() || undefined : undefined,
         ...thanKetQuaTuan(pa, tuan, nguoiDay),
+        ...(coBuoi ? { buoi: Array.from({ length: soDong }, (_, i) => ({ tutor: buoi[i].tutor.trim(), nhanXet: buoi[i].nhanXet.trim() })) } : {}),
       };
       if (decision === 'end') body.completedOn = endOn || undefined;
       /* OV-7b: sửa mà giữ lựa chọn + không đổi Điều chỉnh / PA thay / Mini Test → không gửi ba khối đó: máy chủ chỉ sửa chữ, không đảo gì. */
@@ -315,6 +335,24 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, quayLai, onClose, onSave
                     : dem.tt === 'vuot' ? <span className="font-semibold text-late">· vượt {dem.vuot} buổi</span>
                     : <span>· còn <b className="font-semibold text-slate-100 tabular-nums">{dem.con}</b></span>}</span></span>
               </div>
+            )}
+            {soDong > 0 && (
+              <ol className="m-0 list-none space-y-2.5 border-t p-0 pt-2.5" style={{ borderColor: 'var(--line)' }} aria-label="Các buổi tutor">
+                {Array.from({ length: soDong }, (_, i) => (
+                  <li key={i}>
+                    <Hang2>
+                      <Truong nhan={`Tên tutor · buổi ${i + 1}`} batBuoc loi={loiCua(`buoi-${i}-tutor`)}>
+                        <input className="field w-full" maxLength={100} {...o(`buoi-${i}-tutor`)} value={buoi[i]?.tutor ?? ''}
+                          onChange={(e) => datBuoi(i, { tutor: e.target.value })} placeholder="Gõ tên tutor" />
+                      </Truong>
+                      <Truong nhan={`Nhận xét buổi ${i + 1}`} batBuoc loi={loiCua(`buoi-${i}-nx`)}>
+                        <input className="field w-full" maxLength={1000} {...o(`buoi-${i}-nx`)} value={buoi[i]?.nhanXet ?? ''}
+                          onChange={(e) => datBuoi(i, { nhanXet: e.target.value })} placeholder="Ví dụ: luyện số đếm, còn nhầm 15 và 50" />
+                      </Truong>
+                    </Hang2>
+                  </li>
+                ))}
+              </ol>
             )}
             {/* Đủ buổi: chỉ gợi ý — không tự kết thúc; PA không có "Kết thúc PA" (quy chế, Kết quả cuối) thì không gợi ý. */}
             {dem?.tt === 'du' && !lanCuoi && dsQuyetDinh.includes('end') && <span className="text-xs text-slate-500">Xong PA thì chọn Kết thúc PA ở mục 2.</span>}

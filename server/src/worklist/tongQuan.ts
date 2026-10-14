@@ -117,6 +117,13 @@ export function tongQuanQuanLy(p: Principal, f: { branchId?: number | null }) {
           han: ngay.length ? { chu: a === b ? `quá hạn ${a} ngày` : `quá hạn ${a}–${b} ngày`, quaHan: true as const } : chuaCoHan,
           den: `/cong-viec?nhom=cham-diem&loc=qua-han&khung=tat-ca${cn}` };
       }
+      if (x.metricId === 'phoi-hop-qua-han') {
+        const ngay = ct.flatMap((c) => c.han).map((h) => soNgay(h, today)).filter((n) => n > 0);
+        const a = Math.min(...ngay), b = Math.max(...ngay);
+        return { ...x, phu: tachTheoLop(r.unit, r.ids), nguoi,
+          han: ngay.length ? { chu: a === b ? `quá hạn ${a} ngày` : `quá hạn ${a}–${b} ngày`, quaHan: true as const } : chuaCoHan,
+          den: `/cong-viec?loai=phoi_hop_sos&loc=qua-han&khung=tat-ca${cn}` };
+      }
       /* pa-can-cap-nhat: "PA chưa ghi kết quả tuần W4 SEP" — tuần của hạn cũ nhất (Q25); dòng phụ theo khung. */
       const lop = lopCuaTap(r.unit, r.ids);
       const soFt = r.ids.filter((id) => lop.get(id)?.isFt === true).length;

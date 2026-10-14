@@ -7729,7 +7729,7 @@ const branchIdOf = (code: string) => (conn.prepare('SELECT id FROM branches WHER
 check('PR-F · Sổ chỉ số: đúng hai mươi chỉ số (PR-N thêm pa-cho-duyet; PR-J thêm tám chỉ số Ý thức), mỗi chỉ số đủ tám trường (thiếu một trường thì không được lên dashboard)', () => {
   const list = domain.METRICS as readonly any[];
   /* PR-LT2a (N4, Q14): bỏ ba chỉ số của mô hình tín hiệu — tin-hieu-cho-xac-minh, tin-hieu-qua-han, hv-bo-qua-van-can-ho-tro (31 → 28). */
-  assert(list.length === 33, /* OV-11f: +1 (bai-qua-han-chua-phan-cong, TQ-13) · PR-VAI-a: −1 (U3) +1 (lop-thieu-gv-mon) +4 (Q8); PR-MT0: +1 (lop-chua-chot-len-ft); PR-LCb: −1 (hv-chua-co-lenh-chuyen) */ `Phải có hai mươi tám chỉ số (PR-YT4: bien-phap-dang-chuan-bi → bien-phap-cho-duyet, thêm hv-theo-bac; hai của PR-UX4: hv-can-ho-tro-2-lan-chua-case, hv-bo-qua-van-can-ho-tro + hai mươi tám chỉ số cũ: mười hai của PR-F/PR-N + bảy của PR-J còn lại sau khi PR-T bỏ vi-pham-khong-hieu-luc + bốn của PR-T: case-cho-xac-dinh-nguyen-nhan và ba phoi-hop-* + một của PR-S1: tin-hieu-qua-han + ba của PR-Pa: case-xac-dinh-nguyen-nhan-qua-han, bai-qua-han-nhap-diem, case-chua-co-nguoi-phu-trach + một của PR-YT2: vi-pham-theo-nhom), đang có ${list.length}`);
+  assert(list.length === 34, /* OV-12h: +1 (phoi-hop-qua-han) · OV-11f: +1 (bai-qua-han-chua-phan-cong, TQ-13) · PR-VAI-a: −1 (U3) +1 (lop-thieu-gv-mon) +4 (Q8); PR-MT0: +1 (lop-chua-chot-len-ft); PR-LCb: −1 (hv-chua-co-lenh-chuyen) */ `Phải có hai mươi tám chỉ số (PR-YT4: bien-phap-dang-chuan-bi → bien-phap-cho-duyet, thêm hv-theo-bac; hai của PR-UX4: hv-can-ho-tro-2-lan-chua-case, hv-bo-qua-van-can-ho-tro + hai mươi tám chỉ số cũ: mười hai của PR-F/PR-N + bảy của PR-J còn lại sau khi PR-T bỏ vi-pham-khong-hieu-luc + bốn của PR-T: case-cho-xac-dinh-nguyen-nhan và ba phoi-hop-* + một của PR-S1: tin-hieu-qua-han + ba của PR-Pa: case-xac-dinh-nguyen-nhan-qua-han, bai-qua-han-nhap-diem, case-chua-co-nguoi-phu-trach + một của PR-YT2: vi-pham-theo-nhom), đang có ${list.length}`);
   const expected = ['hv-sos-hien-tai', 'hv-duoi-ky-vong-mon', 'hv-co-case-mo', 'case-mo',
     'case-xac-dinh-nguyen-nhan-qua-han', 'bai-qua-han-nhap-diem', 'case-chua-co-nguoi-phu-trach', 'case-cho-xac-dinh-nguyen-nhan',
     'case-thieu-pa', 'pa-can-cap-nhat', 'pa-cho-duyet', 'pa-co-ket-qua', 'ty-le-co-cai-thien', 'dung-han-cap-nhat', 'do-phu-danh-gia',
@@ -7739,7 +7739,8 @@ check('PR-F · Sổ chỉ số: đúng hai mươi chỉ số (PR-N thêm pa-cho-
     'lop-thieu-gv-mon',   // PR-VAI-a: bỏ hv-can-ho-tro-2-lan-chua-case (K1-04), thêm lop-thieu-gv-mon (K1-05)
     'van-hanh-can-quyet-dinh', 'hv-ft-xong-mt-cuoi-chua-mt-ke', 'hv-len-ft-chua-ky-vong',   // PR-VAI-a Q8 (PR-LCb bỏ hv-chua-co-lenh-chuyen)
     'lop-chua-chot-len-ft',   // PR-MT0 → PR-LCb: Chốt lộ trình
-    'bai-qua-han-chua-phan-cong'];   // OV-11f (TQ-13): "m bài chưa có người chấm" bấm được
+    'bai-qua-han-chua-phan-cong',   // OV-11f (TQ-13): "m bài chưa có người chấm" bấm được
+    'phoi-hop-qua-han'];   // OV-12h: meeting CX quá hạn xác nhận
   for (const id of expected) assert(list.some((m) => m.id === id), `Thiếu chỉ số ${id}`);
   assert(new Set(list.map((m) => m.id)).size === list.length, 'Có hai chỉ số trùng mã');
   const fields = ['id', 'ten', 'cauHoi', 'donVi', 'tapDuDieuKien', 'thoiGian', 'khuTrung', 'drilldown'];
@@ -9334,6 +9335,9 @@ await runPrOv11gTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P,
 // ==================================================================== PR-OV12a (hạn ghi kết quả PA hai tuần · QL xoá lớp trống / nhiều HV · TVV Bước tiếp sau thi)
 const { runPrOv12aTests } = await import('./prOv12a.tests.ts');
 await runPrOv12aTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== PR-OV12h (bỏ Nhắc · kết quả PA từng em · Tutor theo buổi · meeting CX hạn 5 ngày)
+const { runPrOv12hTests } = await import('./prOv12h.tests.ts');
+await runPrOv12hTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`

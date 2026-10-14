@@ -105,13 +105,18 @@ export function chayPaBoTro(conn: any, nhom: string, nguoiNop: number | null, ho
   return dong.length;
 }
 
-/** Các dòng KHÁC cùng nhóm bổ trợ đang chạy, Case chưa đóng — Kết quả / Điều chỉnh / Sửa PA (PR-PA) áp cả nhóm. */
-export function anhEmNhom(conn: any, iv: { id: number; nhom_bo_tro: string | null }): any[] {
+/**
+ * Các dòng KHÁC cùng nhóm bổ trợ đang chạy, Case chưa đóng — Kết quả / Điều chỉnh / Sửa PA (PR-PA) áp cả nhóm.
+ * OV-12h (chủ SP 14/10): kết quả ghi TỪNG EM — chỉ PA các môn của CÙNG em; em khác mang cùng mã nhóm (lịch chung) không bao giờ nhận bản chép.
+ */
+export function anhEmNhom(conn: any, iv: { id: number; case_id: number; nhom_bo_tro: string | null }): any[] {
   if (!iv.nhom_bo_tro) return [];
   return conn.prepare(
-    `SELECT iv.* FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id
-      WHERE iv.nhom_bo_tro = ? AND iv.kind IN ('bo_tro', 'bo_tro_mien_phi') AND iv.id != ? AND iv.status = 'started' AND sc.status != 'done' ORDER BY iv.id`,
-  ).all(iv.nhom_bo_tro, iv.id) as any[];
+    `SELECT iv.* FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
+      WHERE iv.nhom_bo_tro = ? AND iv.kind IN ('bo_tro', 'bo_tro_mien_phi') AND iv.id != ? AND iv.status = 'started' AND sc.status != 'done'
+        AND COALESCE(sc.student_id, a.student_id) = (SELECT COALESCE(c.student_id, a2.student_id) FROM sos_cases c
+              LEFT JOIN assessment_attempts a2 ON a2.id = c.attempt_id WHERE c.id = ?) ORDER BY iv.id`,
+  ).all(iv.nhom_bo_tro, iv.id, iv.case_id) as any[];
 }
 
 /**

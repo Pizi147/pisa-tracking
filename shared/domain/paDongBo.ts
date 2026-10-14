@@ -66,6 +66,22 @@ export function loiKetQuaTuan(pa: { kind: string; soBuoi?: number | null }, tuan
   return loi;
 }
 
+/** OV-12h (chủ SP 14/10): một buổi của Kết quả PA Tutor — tên tutor gõ tự do + nhận xét buổi, cả hai bắt buộc. */
+export type BuoiTutor = { tutor: string; nhanXet: string };
+/** PA Tutor có Số buổi → Kết quả ghi theo buổi (n buổi kỳ này = n dòng). Tutor không Số buổi (dữ liệu cũ) không hỏi. */
+export const canBuoiTutor = (pa: { kind: string; soBuoi?: number | null }): boolean => pa.kind === 'tutor' && pa.soBuoi != null;
+/** Đúng `n` dòng, mỗi dòng đủ tên tutor + nhận xét → null; sai → câu lỗi (web và máy chủ cùng gọi). */
+export function kiemBuoiTutor(n: number, buoi: unknown): string | null {
+  if (!Array.isArray(buoi) || buoi.length !== n) return `cần đủ ${n} dòng (mỗi buổi một dòng)`;
+  for (const [i, b] of buoi.entries()) {
+    const tutor = String(b?.tutor ?? '').trim(), nhanXet = String(b?.nhanXet ?? '').trim();
+    if (!tutor) return `buổi ${i + 1} chưa có tên tutor`;
+    if (!nhanXet) return `buổi ${i + 1} chưa có nhận xét`;
+    if (tutor.length > 100 || nhanXet.length > 1000) return `buổi ${i + 1} quá dài (tên ≤ 100, nhận xét ≤ 1000 ký tự)`;
+  }
+  return null;
+}
+
 /** Phần thân `POST /interventions/:id/result` của khối đếm: `soBuoi` chỉ khi PA có Số buổi; `nguoiDay` chỉ khi loại có người. */
 export function thanKetQuaTuan(pa: { kind: string; soBuoi?: number | null }, tuan: string, nguoi: NguoiChon | null) {
   return {

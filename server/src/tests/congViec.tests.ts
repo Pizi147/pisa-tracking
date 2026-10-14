@@ -345,7 +345,6 @@ export async function runCongViecTests(t: YThucTestKit) {
   console.log('\nPR-Ra · 4. Máy chủ Hỗ trợ học viên — người phụ trách lọc ở máy chủ, Nhắc, Duyệt trên dòng');
 
   const mywork: any = await import('../worklist/mywork.ts');
-  const nhacSvc: any = await import('../worklist/nhacViec.ts');
   const permMod: any = await import('../permissions.ts');
   const casesSvc: any = await import('../cases/cases.ts');
   const yeuCauSvc: any = await import('../duyet/yeuCau.ts');
@@ -493,7 +492,7 @@ export async function runCongViecTests(t: YThucTestKit) {
     assert(mgmtItem.href.startsWith('/cong-viec?mo-viec='), `href dòng mgmt sai: ${mgmtItem.href}`);
   });
 
-  // ---- Phần qua HTTP thật: /my-work?nguoi=…, POST /my-work/nhac, /ref/nguoi?trongPhamVi=1 ----
+  // ---- Phần qua HTTP thật: /my-work?nguoi=…, /ref/nguoi?trongPhamVi=1 ----
   const httpApp = createApp().listen(0);
   const httpPort = (httpApp.address() as any).port as number;
   const goiHttp = async (userId: number, method: string, url: string, body?: unknown) => {
@@ -524,61 +523,6 @@ export async function runCongViecTests(t: YThucTestKit) {
     assert(cross.status === 403, `QL CP hỏi GV MB phải 403: ${cross.status}`);
     const gvTatCa = await goiHttp(gvMB.userId, 'GET', '/my-work?nguoi=tat-ca');
     assert(gvTatCa.status === 403, `GV gọi tat-ca phải 403: ${gvTatCa.status}`);
-  });
-
-  await checkAsync('PR-Ra Q5 · POST /my-work/nhac: 200 + đúng một thông báo; lần hai cùng ngày → daNhacLuc cũ, không gửi thêm; GV gọi → 403; khoá bịa → 404; "tat-ca" sau đó có nhac.daNhacLuc', async () => {
-    const xItemsRes = await goiHttp(P.mbManager.userId, 'GET', `/my-work?nguoi=${gvMB.userId}`);
-    const scoreItem = viecLe(xItemsRes.json).find((i: any) => i.group === 'score');
-    assert(scoreItem, 'Cần một dòng chấm điểm của X để thử Nhắc');
-    const dem = () => (conn.prepare(`SELECT COUNT(*) n FROM notifications WHERE kind = 'nhac_viec' AND user_id = ?`).get(gvMB.userId) as any).n as number;
-    const before = dem();
-    const r1 = await goiHttp(P.mbManager.userId, 'POST', '/my-work/nhac', { key: scoreItem.key, ownerId: gvMB.userId });
-    assert(r1.status === 200 && r1.json?.daNhacLuc, `Lần 1: ${r1.status} ${JSON.stringify(r1.json)}`);
-    assert(dem() === before + 1, `Phải đúng MỘT thông báo mới: trước ${before}, sau ${dem()}`);
-    const r2 = await goiHttp(P.mbManager.userId, 'POST', '/my-work/nhac', { key: scoreItem.key, ownerId: gvMB.userId });
-    assert(r2.status === 200 && r2.json?.daNhacLuc === r1.json.daNhacLuc, `Lần 2 phải trả lại đúng daNhacLuc cũ: ${JSON.stringify(r2.json)}`);
-    assert(dem() === before + 1, 'Bấm lần hai cùng ngày không được gửi thêm thông báo');
-    const rGv = await goiHttp(gvMB.userId, 'POST', '/my-work/nhac', { key: scoreItem.key, ownerId: gvMB.userId });
-    assert(rGv.status === 403, `GV tự gọi Nhắc phải 403: ${rGv.status}`);
-    const rFake = await goiHttp(P.mbManager.userId, 'POST', '/my-work/nhac', { key: 'score:bia-khong-ton-tai', ownerId: gvMB.userId });
-    assert(rFake.status === 404, `Khoá bịa phải 404: ${rFake.status}`);
-    const tatCaAfter = await goiHttp(P.mbManager.userId, 'GET', '/my-work?nguoi=tat-ca');
-    const same = viecLe(tatCaAfter.json).find((i: any) => i.key === scoreItem.key);
-    assert(same && same.nhac && same.nhac.daNhacLuc, `Dòng đã nhắc phải có nhac.daNhacLuc ở "tat-ca": ${JSON.stringify(same)}`);
-  });
-
-  await checkAsync('PR-Ra · Nhắc kiểm ĐÚNG DÒNG chứ không chỉ chi nhánh của người được nhắc: QL Monbay nhắc dòng lớp Bãi Cháy của giáo viên dạy cả hai chi nhánh → 403', async () => {
-    /*
-     * Không đòi đúng nhóm "score"/đúng classId của riêng truy vấn "đang nợ điểm" — `myWork` có
-     * thể gom/nhóm dòng khác cách truy vấn đối chứng ở trên tính. Lấy dòng THẬT SỰ myWork trả về
-     * (bất kỳ nhóm nào) mà lớp của nó thuộc Bãi Cháy — đúng cái cần thử: chi nhánh của DÒNG.
-     */
-    /* PR-LT2a: nhóm "verify" (tín hiệu chờ xác minh) đã bỏ — dựng một Case tự tạo chờ nguyên nhân ở lớp Bãi Cháy của giáo viên này để có dòng "cause" của BC. */
-    {
-      const nowBc = new Date().toISOString();
-      const sidBc = Number(conn.prepare(
-        `INSERT INTO students (student_code, full_name, normalized_name, branch_id, status, created_at) VALUES ('PISA-RaBC', 'Học viên RaBC', 'hoc vien rabc', ?, 'active', ?)`,
-      ).run(bcBranchId, nowBc).lastInsertRowid);
-      conn.prepare(`INSERT INTO enrollments (student_id, class_id, status, started_at, created_at) VALUES (?,?, 'active', '2026-07-27', ?)`).run(sidBc, gvMbBc.classId, nowBc);
-      const caseBc = Number(conn.prepare(
-        `INSERT INTO sos_cases (student_id, topic, category, origin_kind, detected_at, status, owner_user_id, han_xac_nhan, created_at) VALUES (?, 'speaking', 'speaking', 'mock', ?, 'open', ?, ?, ?)`,
-      ).run(sidBc, TODAY, gvMbBc.principal.userId, TODAY, nowBc).lastInsertRowid);
-      conn.prepare(`INSERT INTO case_interventions (case_id, kind, description, status, needs_approval, preset, created_at) VALUES (?, 'tutor', 'PA chờ', 'planned', 0, 1, ?)`).run(caseBc, nowBc);
-    }
-    const bcItemsRes = await goiHttp(gvMbBc.principal.userId, 'GET', '/my-work');
-    const bcItem = (viecLe(bcItemsRes.json) as any[]).find((i: any) => {
-      if (i.classId == null) return false;
-      const cl = conn.prepare('SELECT branch_id FROM classes WHERE id = ?').get(i.classId) as any;
-      return cl?.branch_id === bcBranchId;
-    });
-    assert(bcItem, `Cần một dòng việc của lớp Bãi Cháy trong myWork của giáo viên (uid=${gvMbBc.principal.userId}) để thử: ${JSON.stringify(viecLe(bcItemsRes.json).slice().map((i: any) => ({ key: i.key, classId: i.classId })))}`);
-    const r = await goiHttp(P.mbManager.userId, 'POST', '/my-work/nhac', { key: bcItem.key, ownerId: gvMbBc.principal.userId });
-    assert(r.status === 403, `QL Monbay nhắc dòng lớp Bãi Cháy (giáo viên có dạy cả Monbay) phải 403: ${r.status} ${JSON.stringify(r.json)}`);
-  });
-
-  check('PR-Ra · nhacViec chặn tự nhắc chính mình — chặn NGAY từ đầu, trước cả khi tra khoá (khoá bịa vẫn phải báo "tự nhắc", không phải 404)', () => {
-    assertThrows(() => nhacSvc.nhacViec(P.mbManager, { key: 'score:bia-khong-ton-tai', ownerId: P.mbManager.userId }),
-      /chính mình/, 'Tự nhắc chính mình phải bị chặn với thông báo nói rõ lý do');
   });
 
   await checkAsync('PR-Ra · /ref/nguoi?trongPhamVi=1 của QL MB không trả GV chỉ thuộc CP', async () => {

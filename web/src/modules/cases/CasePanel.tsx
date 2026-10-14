@@ -522,6 +522,14 @@ function buildLichSu(data: CaseDetail, ngan: (d: string | null | undefined) => s
           )}
           {f.note && <span className="block text-slate-300">{f.note}</span>}
           {f.nguoiDay && <span className="block text-xs text-slate-400">Người dạy: {f.nguoiDay}</span>}
+          {/* OV-12h: Kết quả PA Tutor theo buổi. */}
+          {f.buoi?.length > 0 && (
+            <ol className="m-0 mt-0.5 list-none space-y-0.5 p-0 text-xs text-slate-400" aria-label="Các buổi tutor">
+              {f.buoi.map((b: { tutor: string; nhanXet: string }, i: number) => (
+                <li key={i} className="break-words">Buổi {i + 1} · {b.tutor}: <span className="text-slate-300">{b.nhanXet}</span></li>
+              ))}
+            </ol>
+          )}
           {f.remainingIssue && <span className="block text-xs text-slate-400">Còn tồn / Ghi chú: {f.remainingIssue}</span>}
           {f.decisionNote && (
             <span className="block text-xs text-slate-400">{f.nextStep === 'adjust' || f.nextStep === 'propose' ? 'Lý do' : 'Ghi chú'}: {f.decisionNote}</span>

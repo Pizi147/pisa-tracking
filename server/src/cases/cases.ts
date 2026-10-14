@@ -34,7 +34,7 @@ import { isRatioCycle, nguongDatLop, programmeCodeOfCycle } from '../normal/regu
 import { suggestCaseOwner } from './owner.ts';
 import { caseKhacChuongTrinh, chuongTrinhCuaLop } from './sos.ts';
 import { LA_CASE_SOS, NOT_UNCONFIRMED_PRESET, awaitingCauseCaseIds, dongBoTrangThaiCase, dongBoTrangThaiCaseLo, sosCaseState } from './sosState.ts';
-import { CAU_LUU_TRU, PLAN_DECISIONS, coNguoiDay, decisionToStep, duongDotTest, kiemSoBuoiTuan, soBuoiTu, tuanLich, type PlanDecision } from '../../../shared/domain/index.ts';
+import { CAU_LUU_TRU, PLAN_DECISIONS, canBuoiTutor, coNguoiDay, decisionToStep, duongDotTest, kiemBuoiTutor, kiemSoBuoiTuan, soBuoiTu, tuanLich, type BuoiTutor, type PlanDecision } from '../../../shared/domain/index.ts';
 import { chenPa } from './taoPa.ts';
 import { nguoiGiuKetQua } from './giuKetQua.ts';
 import { apDungDieuChinh, chuanHoaDieuChinh, daDayCua, ghiBanDieuChinh, lichSuDieuChinhCuaCase, nguoiSauSua, soBuoiMoi } from './planRevisions.ts';
@@ -1794,6 +1794,12 @@ export function caseDetail(p: Principal, caseId: number) {
   const khopPa = (f: any) => !f.next_step || paKhopLanGhi(f.next_step, paCua.get(f.intervention_id));
   const moiNhat = new Map<string | null, number>();
   for (const f of dongFu) moiNhat.set(khoaSua(f), Math.max(moiNhat.get(khoaSua(f)) ?? 0, f.id));
+  /* OV-12h: dòng buổi Tutor của mọi lần ghi của Case — một câu. */
+  const buoiCua = new Map<number, BuoiTutor[]>();
+  for (const b of conn.prepare(`SELECT b.followup_id, b.tutor_ten, b.nhan_xet FROM case_followup_buoi b JOIN case_followups f ON f.id = b.followup_id
+      WHERE f.case_id = ? ORDER BY b.followup_id, b.buoi_so`).all(caseId) as any[]) {
+    buoiCua.set(b.followup_id, [...(buoiCua.get(b.followup_id) ?? []), { tutor: b.tutor_ten, nhanXet: b.nhan_xet }]);
+  }
   const followups = dongFu.map((f) => ({
       id: f.id, interventionId: f.intervention_id, observedOn: f.observed_on,
       observerName: f.observer_name ?? null, outcome: f.outcome, note: f.note,
@@ -1808,6 +1814,8 @@ export function caseDetail(p: Principal, caseId: number) {
       /* PR-PA (§8): Người dạy tuần này (cột cũ `phu_trach_*` — PR-LUI-a2) + Số buổi tuần này. Dòng cũ null. */
       nguoiDay: (f.phu_trach_account ?? f.phu_trach_ten ?? null) as string | null,
       soBuoi: (f.so_buoi ?? null) as number | null,
+      /** OV-12h: buổi Tutor (tên · nhận xét), theo thứ tự buổi; lần ghi cũ / loại khác: []. */
+      buoi: buoiCua.get(f.id) ?? [],
       suaDuoc: c.status !== 'done' && (f.observer_user_id === p.userId || quanLyCase)
         && khoaSua(f) !== null && moiNhat.get(khoaSua(f)) === f.id && khopPa(f),
     }));
@@ -3158,6 +3166,8 @@ export function updateResult(p: Principal, interventionId: number, input: {
   nguoiDay?: { performerUserId?: number | null; performerName?: string | null } | null;
   /** PR-PA (§8): Số buổi tuần này — bắt buộc khi PA có Số buổi, số nguyên 0–60 (0 = em nghỉ). */
   soBuoi?: unknown;
+  /** OV-12h: PA Tutor có Số buổi — đúng `soBuoi` dòng [Tên tutor · Nhận xét buổi] (`kiemBuoiTutor`). */
+  buoi?: unknown;
 }, opts: {
   /** OV-7b (`suaKetQua`): nơi gọi tự trả Case — bỏ `caseDetail` trong giao dịch. */
   khongTraCase?: boolean;
@@ -3266,6 +3276,7 @@ export function updateResult(p: Principal, interventionId: number, input: {
   if (mtDong && !input.miniTest) throw badRequest('Kết quả cuối của bổ trợ miễn phí thì nhập Mini Test (% và ngày làm).');
   const mtGhi = mtDong ? kiemMiniTest(mtDong, input.miniTest!) : null;
   const { remainingIssue, soBuoiTuan, nguoiDay, metrics } = chuKetQuaTuan(p, iv, c, input);
+  const buoi = buoiTutorCua(iv, soBuoiTuan, input.buoi);
   /* Điều chỉnh: chuẩn hoá TRƯỚC giao dịch; sai thì không ghi gì. Số buổi mới ≥ đã dạy SAU tuần này. */
   const adjustPatch = nextStep === 'adjust'
     ? chuanHoaDieuChinh(p, iv, input.adjust, observedOn, daDayCua(interventionId) + (soBuoiTuan ?? 0)) : null;
@@ -3289,6 +3300,7 @@ export function updateResult(p: Principal, interventionId: number, input: {
            nextStep, cycleNo, cycleDue, late, metrics ? JSON.stringify(metrics) : null,
            remainingIssue, decisionNote, nowIso(), nguoiDay?.userId ?? null, nguoiDay?.name ?? null, soBuoiTuan);
     const followupId = Number(fInfo.lastInsertRowid);
+    ghiBuoiTutor(conn, followupId, buoi);
 
     /*
      * PR-Form: CHỈ CHUẨN HOÁ VÀ GHI ĐÈ KHI BODY THẬT SỰ GỬI MỘT TRONG BA TRƯỜNG NGƯỜI THỰC HIỆN. Trước đây
@@ -3431,6 +3443,20 @@ function chuKetQuaTuan(p: Principal, iv: any, c: any, input: {
     if (!a || a.student_id !== c.eff_student_id) throw badRequest('Bằng chứng không thuộc học viên này.');
   }
   return { remainingIssue, soBuoiTuan, nguoiDay, metrics };
+}
+
+/** OV-12h: PA Tutor có Số buổi → bắt buộc đúng `soBuoiTuan` dòng buổi (0 buổi = không dòng); loại khác / Tutor cũ không Số buổi → null (không ghi bảng). */
+function buoiTutorCua(iv: any, soBuoiTuan: number | null, buoi: unknown): BuoiTutor[] | null {
+  if (!canBuoiTutor({ kind: iv.kind, soBuoi: iv.so_buoi ?? null }) || soBuoiTuan === null) return null;
+  const loi = kiemBuoiTutor(soBuoiTuan, buoi ?? []);
+  if (loi) throw badRequest(`Buổi tutor: ${loi}.`);
+  return (buoi as any[] ?? []).map((b) => ({ tutor: String(b.tutor).trim(), nhanXet: String(b.nhanXet).trim() }));
+}
+/** Ghi (thay) các dòng buổi của một lần ghi Kết quả — trong giao dịch của nơi gọi. `null` = không đụng. */
+function ghiBuoiTutor(conn: any, followupId: number, buoi: BuoiTutor[] | null): void {
+  if (!buoi) return;
+  conn.prepare('DELETE FROM case_followup_buoi WHERE followup_id = ?').run(followupId);
+  buoi.forEach((b, i) => conn.prepare('INSERT INTO case_followup_buoi (followup_id, buoi_so, tutor_ten, nhan_xet) VALUES (?,?,?,?)').run(followupId, i + 1, b.tutor, b.nhanXet));
 }
 
 /** Dòng chi tiết Hành trình của một lần ghi Kết quả (ghi lần đầu và Sửa chữ dùng chung). */
@@ -3679,11 +3705,15 @@ function suaChuKetQua(p: Principal, x: NguCanhSua, vao: VaoKetQua): void {
     throw badRequest('Quản lý đã trả lời câu hỏi Xin hỗ trợ — không sửa được câu hỏi.');
   }
   const t = chuKetQuaTuan(p, iv, x.c, vao);
+  /* OV-12h: sửa chữ lần ghi Tutor — gửi dòng buổi, hoặc lần ghi đã có dòng, thì kiểm như lúc ghi và thay; lần ghi cũ không gửi thì giữ. */
+  const coDong = !!conn.prepare('SELECT 1 FROM case_followup_buoi WHERE followup_id = ? LIMIT 1').get(chinh.id);
+  const buoi = vao.buoi === undefined && !coDong ? null : buoiTutorCua(iv, t.soBuoiTuan, vao.buoi);
   const sau = { ...chinh, note, decision_note: decisionNote, remaining_issue: t.remainingIssue, so_buoi: t.soBuoiTuan,
     phu_trach_user_id: t.nguoiDay?.userId ?? null, phu_trach_ten: t.nguoiDay?.name ?? null };
   const doi = (['note', 'decision_note', 'remaining_issue', 'so_buoi', 'phu_trach_user_id', 'phu_trach_ten'] as const)
-    .some((k) => (sau[k] ?? null) !== (chinh[k] ?? null)) || vao.metrics !== undefined || vao.evidenceAttemptId !== undefined;
+    .some((k) => (sau[k] ?? null) !== (chinh[k] ?? null)) || vao.metrics !== undefined || vao.evidenceAttemptId !== undefined || buoi !== null;
   if (!doi) return;
+  ghiBuoiTutor(conn, chinh.id, buoi);
   const ids = x.dong.map((r) => r.id as number);
   const ph = ids.map(() => '?').join(',');
   conn.prepare(`UPDATE case_followups SET note = ?, decision_note = ?, remaining_issue = ?, so_buoi = ?, phu_trach_user_id = ?, phu_trach_ten = ?,
@@ -3737,6 +3767,9 @@ export function moSuaKetQua(p: Principal, followupId: number) {
       outcome: f.outcome as string, note: (f.note ?? '') as string, remainingIssue: (f.remaining_issue ?? '') as string, decision: x.quyetDinh,
       decisionNote: (f.decision_note ?? '') as string, observedOn: f.observed_on as string,
       completedOn: (x.quyetDinh === 'end' ? iv.completed_date : null) as string | null, soBuoi: (f.so_buoi ?? null) as number | null,
+      /* OV-12h: dòng buổi Tutor đã ghi (lần ghi cũ: []). */
+      buoi: (conn.prepare('SELECT tutor_ten, nhan_xet FROM case_followup_buoi WHERE followup_id = ? ORDER BY buoi_so').all(f.id) as any[])
+        .map((b) => ({ tutor: b.tutor_ten as string, nhanXet: b.nhan_xet as string })),
       nguoiDay: f.phu_trach_user_id ? { userId: f.phu_trach_user_id as number, ten: ten(f.phu_trach_user_id) ?? `#${f.phu_trach_user_id}` }
         : f.phu_trach_ten ? { userId: null, ten: f.phu_trach_ten as string } : null,
       miniTest: x.mt ? { tyLe: Math.round(x.mt.ty_le * 1000) / 10, ngay: x.mt.ngay_lam as string } : null,

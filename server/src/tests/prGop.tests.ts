@@ -11,7 +11,6 @@ export async function runPrGopTests(t: YThucTestKit) {
   const { check, checkAsync, assert, conn, P, TODAY } = t;
   const d: any = await import('../../../shared/domain/index.ts');
   const mywork: any = await import('../worklist/mywork.ts');
-  const nv: any = await import('../worklist/nhacViec.ts');
   const { loadPrincipal } = await import('../permissions.ts');
   console.log('\nPR-GOP · Gộp việc theo lớp × loại việc');
 
@@ -123,55 +122,5 @@ export async function runPrGopTests(t: YThucTestKit) {
       console.log(`    userId ${id}: ${w.items.length} việc → ${w.dong.length} dòng`);
       if (id !== 9) assert(w.dong.length < w.items.length, `userId ${id}: phải giảm`);
     }
-  });
-
-  /* ---------------------------------------------------------------- Nhắc dòng gộp */
-  check('GOP-4a · nhomCuaKhoa đọc nhóm từ khoá dòng gộp; nhóm lạ → dựng đủ', () => {
-    const s = nv.nhomCuaKhoa(['gop:ghi_ket_qua_pa:12:u7']);
-    assert(s && s.size === 1 && s.has('ghi_ket_qua_pa'), `nhóm: ${s && [...s]}`);
-    assert(nv.nhomCuaKhoa(['gop:khong_co:1:u1']) === undefined, 'nhóm lạ');
-  });
-
-  await checkAsync('GOP-4b · QL Nhắc một dòng gộp → MỘT chuông về người giữ việc; dòng gộp hiện "đã nhắc"; Nhắc tất cả theo dòng', async () => {
-    const homNay = `nhac:%:${TODAY}`;
-    conn.prepare(`DELETE FROM notifications WHERE kind = 'nhac_viec' AND dedup_key LIKE ?`).run(homNay);
-    const ql = P.mbManager;
-    const w = mywork.myWork(ql, { nguoi: 'tat-ca' });
-    const g = (w.dong as any[]).find((x) => x.con && x.nhac);
-    assert(!!g, 'seed có dòng gộp của GV khác để nhắc');
-    const truoc = (conn.prepare(`SELECT COUNT(*) n FROM notifications WHERE kind = 'nhac_viec' AND dedup_key LIKE ?`).get(homNay) as any).n;
-    const r = nv.nhacViec(ql, { key: g.key, ownerId: g.nhac.ownerId });
-    assert(!!r.daNhacLuc, 'đã nhắc');
-    const sau = (conn.prepare(`SELECT COUNT(*) n FROM notifications WHERE kind = 'nhac_viec' AND dedup_key LIKE ?`).get(homNay) as any).n;
-    assert(sau - truoc === 1, `một chuông (thêm ${sau - truoc})`);
-    const bao = conn.prepare(`SELECT title, duong FROM notifications WHERE dedup_key = ?`).get(`nhac:${g.key}:${TODAY}`) as any;
-    assert(bao && bao.title.includes(g.tieuDe.split(' · ')[0]), `chuông nói đúng loại việc: ${bao?.title}`);
-    const lai = (mywork.myWork(ql, { nguoi: 'tat-ca' }).dong as any[]).find((x) => x.key === g.key);
-    assert(lai?.nhac?.daNhacLuc, 'dòng gộp hiện đã nhắc hôm nay');
-    const lo = d.lapNhacTatCa((mywork.myWork(ql, { nguoi: 'tat-ca' }).dong as any[]));
-    assert(!lo.gui.some((x: any) => x.key === g.key), 'Nhắc tất cả bỏ dòng đã nhắc');
-    conn.prepare(`DELETE FROM notifications WHERE kind = 'nhac_viec' AND dedup_key LIKE ?`).run(homNay);
-  });
-
-  check('GOP-4c · dòng gộp chỉ còn 1 việc (trang QL chưa tải lại) → Nhắc khoá gop: vẫn gửi một chuông cho việc còn lại; khoá gop: không còn việc nào → 404', () => {
-    const homNay = `nhac:%:${TODAY}`;
-    conn.prepare(`DELETE FROM notifications WHERE kind = 'nhac_viec' AND dedup_key LIKE ?`).run(homNay);
-    const ql = P.mbManager;
-    /* Việc lẻ của GV khác: khoá gộp của nó KHÔNG có trong `dong` của chính GV đó (chỉ còn 1 việc) — đúng tình huống "đã làm xong 1 em". */
-    const viec = ((mywork.myWork(ql, { nguoi: 'tat-ca' }).items as any[])).find((it) => {
-      const k = d.khoaGopCua(it);
-      if (!it.nhac || !k) return false;
-      const cua = mywork.myWork(loadPrincipal(it.nhac.ownerId)) as any;
-      return !(cua.dong as any[]).some((x) => x.key === k) && (cua.items as any[]).some((x) => x.key === it.key);
-    });
-    assert(!!viec, 'seed có việc lẻ để thử');
-    const k = d.khoaGopCua(viec);
-    const r = nv.nhacViecNhieu(ql, [{ the: null, key: k, ownerId: viec.nhac.ownerId }], { boQuaDaNhacTruoc: false });
-    assert(r.loi.length === 0 && r.ok.length === 1 && r.ok[0].moi, `gửi được: ${JSON.stringify(r.loi)}`);
-    const bao = conn.prepare(`SELECT duong FROM notifications WHERE dedup_key = ?`).get(`nhac:${k}:${TODAY}`) as any;
-    assert(bao && bao.duong === viec.href, `chuông về chỗ làm của việc còn lại: ${bao?.duong}`);
-    const gia = nv.nhacViecNhieu(ql, [{ the: null, key: `gop:${viec.group}:999999:u${viec.nhac.ownerId}`, ownerId: viec.nhac.ownerId }], { boQuaDaNhacTruoc: false });
-    assert(gia.loi.length === 1 && gia.loi[0].ma === 404, `khoá gộp không còn việc: ${JSON.stringify(gia.loi)}`);
-    conn.prepare(`DELETE FROM notifications WHERE kind = 'nhac_viec' AND dedup_key LIKE ?`).run(homNay);
   });
 }

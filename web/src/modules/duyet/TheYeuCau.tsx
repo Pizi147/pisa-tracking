@@ -1,7 +1,6 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { ApiError, api, invalidate } from '../../lib/api.ts';
-import { fmtTime } from '../../lib/format.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { NhanTrangThai, NutChon } from '../../ui/ui.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
@@ -9,7 +8,7 @@ import { OKhac } from '../../ui/OKhac.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { useSession } from '../../lib/session.tsx';
 import {
-  CASE_DISMISS_REASONS, CASE_DISMISS_REASON_LABEL, LOAI_NGUOI_XIN_SUA, deadlineView, kiemGhiRoKhac, laVaiQuanLy, nhanKhongNguoiNhac, nhanTrangThaiYc, reasonNeedsText,
+  CASE_DISMISS_REASONS, CASE_DISMISS_REASON_LABEL, LOAI_NGUOI_XIN_SUA, deadlineView, kiemGhiRoKhac, laVaiQuanLy, nhanTrangThaiYc, reasonNeedsText,
   type TheYeuCauDto, type TruongDeXuat,
 } from '@shared/domain/index.ts';
 import { ChuyenLopPanel } from '../students/ChuyenLopPanel.tsx';
@@ -27,7 +26,7 @@ import { DeXuatSuaPanel } from './DeXuatSuaPanel.tsx';
  */
 type O = { loai: 'tu-choi' | 'tra-loi' | 'ghi-chu' | 'tuan' | 'sua' | 'sua-tra-loi' | 'rut' } | null;
 
-export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemPa, daNhacNgoai }: {
+export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemPa }: {
   yc: TheYeuCauDto;
   /** Sau khi thẻ đã được quyết (hoặc phát hiện đã bị người khác xử lý) — nơi gọi làm mới danh sách. */
   onXong: (id: number) => void;
@@ -39,8 +38,6 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
   chon?: { checked: boolean; onChange: (v: boolean) => void } | null;
   /** Viền nhấn 2 giây khi mở từ `?the=`. */
   nhanManh?: boolean;
-  /** PR-GVb (Q-B): giờ vừa nhắc qua "Nhắc tất cả" ở hộp — thẻ hiện "Đã nhắc HH:mm" không cần tải lại. */
-  daNhacNgoai?: string;
   /** Xin ý kiến: "+ Thêm PA cho em" mở Thêm PA của Ngăn Case. */
   onThemPa?: (caseId: number) => void;
 }) {
@@ -54,7 +51,6 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
   const [loiMay, setLoiMay] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [moHet, setMoHet] = useState(false);
-  const [daNhac, setDaNhac] = useState<string | null>((yc.duLieu?.daNhacLuc as string | null) ?? null);
   /* PR-CT: Duyệt thẻ Đề xuất chuyển lớp = mở panel ra lệnh điền sẵn (Quản lý sửa lớp, tuần rồi `Duyệt và quyết định`). */
   const [moChuyenLop, setMoChuyenLop] = useState(false);
   const nutMo = useRef<HTMLButtonElement | null>(null);
@@ -144,18 +140,6 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
     if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); dongO(); }
     if (e.key === 'Enter' && !e.shiftKey && o?.loai !== 'tuan' && (e.target as HTMLElement).tagName !== 'BUTTON') { e.preventDefault(); guiO(); }
   };
-  /* PR-NV: nhắc theo THẺ (cùng đường "Nhắc tất cả") — thẻ Mini Test / Cuối khoá không có dòng Công việc nên đường theo khoá việc ra 404. */
-  const nhac = async () => {
-    if (busy || typeof yc.duLieu?.ownerId !== 'number') return;
-    setBusy(true);
-    try {
-      const r = await api.post<{ ok: { id: number; daNhacLuc: string }[]; loi: { id: number; loi: string }[] }>('/yeu-cau/nhac-nhieu', { ids: [yc.id] });
-      if (r.loi.length || !r.ok.length) { toast.push('error', r.loi[0]?.loi ?? 'Chưa nhắc được. Thử lại sau.'); return; }
-      setDaNhac(r.ok[0].daNhacLuc);
-      toast.push('ok', `Đã nhắc ${yc.duLieu?.tenGv ?? 'giáo viên'}`);
-    } catch (e: any) { toast.push('error', e instanceof ApiError ? e.message : 'Mất kết nối, chưa nhắc được. Thử lại sau.'); } finally { setBusy(false); }
-  };
-
   /* PR-LUI-a2: Huỷ quyết định bấm nhầm (Đề xuất PA quyết hôm nay, PA chưa ghi kết quả) — thẻ về Chờ duyệt, PA về như lúc gửi. */
   const huy = async () => {
     if (busy) return;
@@ -279,17 +263,6 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
                   </button>
                 )}
               </>}
-              {/* PR-S4F #14: không có người nhận (lớp chưa có GVCN / Case chưa có người phụ trách) — không vẽ nút Nhắc bấm không ra gì. */}
-              {coNut && yc.kieuNut === 'nhac' && typeof yc.duLieu?.ownerId !== 'number' && (
-                <span className="self-center whitespace-nowrap text-[12px] text-late">{nhanKhongNguoiNhac(yc.loai)}</span>
-              )}
-              {coNut && yc.kieuNut === 'nhac' && typeof yc.duLieu?.ownerId === 'number' && (
-                daNhac ?? daNhacNgoai
-                  ? <span className="self-center whitespace-nowrap text-[12px] text-slate-400">Đã nhắc {fmtTime((daNhac ?? daNhacNgoai)!)}</span>
-                  : <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={busy} onClick={nhac}>
-                    Nhắc {typeof yc.duLieu?.tenGv === 'string' ? yc.duLieu.tenGv : 'GV'}
-                  </button>
-              )}
               {!gon && yc.mo && <Link to={yc.mo} className="btn btn-sm btn-ghost min-h-[44px] sm:min-h-0">Mở</Link>}
             </div>
           )}
