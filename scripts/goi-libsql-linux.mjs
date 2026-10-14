@@ -39,7 +39,9 @@ const tam = fs.mkdtempSync(path.join(os.tmpdir(), 'libsql-linux-'));
 try {
   /* `npm pack` tải đúng tệp .tgz từ registry npm. Tên gói và số bản lấy từ package.json của libsql, không từ người dùng. */
   const ra = execSync(`npm pack ${GOI}@${banCan} --pack-destination "${tam}" --json`, { stdio: ['ignore', 'pipe', 'inherit'], encoding: 'utf8' });
-  const thongTin = JSON.parse(ra.slice(ra.indexOf('[')))[0];
+  /* `npm pack --json`: npm ≤ 10 trả mảng [{…}], npm 11 trả object { "<tên>": {…} } — nhận cả hai (bỏ chữ thừa trước JSON nếu có). */
+  const dau = [ra.indexOf('['), ra.indexOf('{')].filter((i) => i >= 0);
+  const thongTin = Object.values(JSON.parse(ra.slice(Math.min(...dau))))[0];
   const tgz = fs.readdirSync(tam).find((f) => f.endsWith('.tgz'));
   if (!tgz) throw new Error('npm pack không tạo ra tệp .tgz');
   const duLieu = fs.readFileSync(path.join(tam, tgz));
