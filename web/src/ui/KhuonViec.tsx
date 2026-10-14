@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react';
-import { t } from '@shared/i18n/index.ts';
+import { dich, t } from '@shared/i18n/index.ts';
 
 /**
  * KHUÔN PANEL LÀM VIỆC v3 (OV-12c, mockup `thiet-ke/mockup-ov12-panel-v3-2026-10-14.html` §1) — phần dùng chung đặt trong `KhungPanel`:
@@ -46,5 +46,5 @@ export function BoiCanh({ dong, them }: { dong: [string, ReactNode][]; them?: Re
 
 /** Nhóm nguyên nhân có số thứ tự (1 = chính): "1 Kỹ năng làm bài · 2 Quản lý thời gian". */
 export function NhomCoSo({ ds }: { ds: { code: string; label: string }[] }) {
-  return <>{ds.map((x, i) => <span key={x.code}>{i > 0 && ' · '}<b className="font-semibold text-slate-300">{i + 1}</b> {x.label}</span>)}</>;
+  return <>{ds.map((x, i) => <span key={x.code}>{i > 0 && ' · '}<b className="font-semibold text-slate-300">{i + 1}</b> {dich(x.label)}</span>)}</>;
 }
