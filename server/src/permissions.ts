@@ -1,4 +1,4 @@
-import { db } from './db.ts';
+import { db, theoLo } from './db.ts';
 import { C02_GVCN_XU_LY_CASE_TRAI_MON, PERMISSIONS, type WorkScope } from '../../shared/domain/index.ts';
 import { demoToday } from './demoConfig.ts';
 import { forbidden } from './util.ts';
@@ -218,7 +218,7 @@ function lopDangHocTu(rows: { class_id: number; status: string }[]): number[] {
  *     ∪ `students.branch_id`), không có ghi danh `active` nào thì lùi về chi nhánh MỌI ghi danh
  *     ∪ `students.branch_id` — đúng luật mới của `branchesOfStudent` (planning 23/09).
  * Mỗi id trong lô ĐỀU được `datNho` (kể cả em không có ghi danh nào → mảng rỗng `[]`), để lần gọi
- * `classesOfStudent`/`branchesOfStudent` sau đó (cùng request) không hỏi DB nữa dù kết quả rỗng. Theo lô 400 id một
+ * `classesOfStudent`/`branchesOfStudent` sau đó (cùng request) không hỏi DB nữa dù kết quả rỗng. Theo lô 900 id một
  * lần hỏi (giới hạn tham số của một câu `IN`); bỏ id rỗng/trùng/đã có trong bộ nhớ trước khi hỏi.
  */
 export function napTruocPhamVi(studentIds: readonly (number | null | undefined)[]): void {
@@ -238,16 +238,17 @@ export function napTruocPhamVi(studentIds: readonly (number | null | undefined)[
   const coActive = new Set<number>();
   for (const id of idsCanNap) { lopCua.set(id, []); lopDangHoc.set(id, []); cnDangHoc.set(id, new Set()); cnMoiGhiDanh.set(id, new Set()); }
 
-  for (let i = 0; i < idsCanNap.length; i += 400) {
-    const lo = idsCanNap.slice(i, i + 400);
-    const cho = lo.map(() => '?').join(',');
+  theoLo(idsCanNap, (lo, cho) => {   // TD4: lô 900 tham số (trần Turso) — trước 400
+    /* TD4: ghi danh + `students.branch_id` MỘT câu (trước hai câu mỗi lô) — em không ghi danh nào vẫn ra một dòng (`trang_thai` NULL). */
     for (const r of db()
       .prepare(
-        `SELECT e.student_id AS sid, e.class_id AS cid, e.status AS trang_thai, c.branch_id AS bid
-           FROM enrollments e LEFT JOIN classes c ON c.id = e.class_id
-          WHERE e.student_id IN (${cho})`,
+        `SELECT s.id AS sid, s.branch_id AS sbid, e.class_id AS cid, e.status AS trang_thai, c.branch_id AS bid
+           FROM students s LEFT JOIN enrollments e ON e.student_id = s.id LEFT JOIN classes c ON c.id = e.class_id
+          WHERE s.id IN (${cho})`,
       )
       .all(...lo) as any[]) {
+      if (r.sbid != null) { cnMoiGhiDanh.get(r.sid)!.add(r.sbid); cnDangHoc.get(r.sid)!.add(r.sbid); }
+      if (r.trang_thai == null) continue;
       lopCua.get(r.sid)!.push(r.cid);
       if (r.trang_thai === 'active') coActive.add(r.sid);
       if (r.trang_thai === 'active' || r.trang_thai === 'paused') lopDangHoc.get(r.sid)!.push({ class_id: r.cid, status: r.trang_thai });   // cùng luật `classesOfStudentDangHoc`
@@ -256,13 +257,7 @@ export function napTruocPhamVi(studentIds: readonly (number | null | undefined)[
         if (r.trang_thai === 'active') cnDangHoc.get(r.sid)!.add(r.bid);
       }
     }
-    for (const r of db()
-      .prepare(`SELECT id, branch_id AS bid FROM students WHERE id IN (${cho}) AND branch_id IS NOT NULL`)
-      .all(...lo) as any[]) {
-      cnMoiGhiDanh.get(r.id)!.add(r.bid);
-      cnDangHoc.get(r.id)!.add(r.bid);
-    }
-  }
+  });
 
   for (const id of idsCanNap) {
     datNho('hv-lop:' + id, lopCua.get(id)!);

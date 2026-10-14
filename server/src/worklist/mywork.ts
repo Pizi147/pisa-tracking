@@ -344,15 +344,20 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     return classId ? lopMap.get(classId) ?? null : null;
   };
   const ctCua = (classId: number | null | undefined) => lopCua(classId)?.ct ?? null;
-  /* PR-UXF-a T65: em Tạm dừng không sinh việc nhập điểm. */
-  const attempts = !co('score', 'missing_data') ? [] : listAttempts(p, { branchId: f.branchId ?? undefined, chiDangHoc: true }).rows
-    .filter((a: any) => a.status !== 'cancelled');
   /*
    * PR-Ra: "Tất cả trong phạm vi" (Q1) — chỉ người xem được người khác (Quản lý/Quản trị) mới
    * có chế độ này; GV luôn chỉ thấy việc của mình dù có gửi `nguoi=tat-ca` lên (chặn ở route).
    */
   const xemNguoiKhac = xemViec !== null;
   const tatCa = f.nguoi === 'tat-ca' && xemNguoiKhac;
+  /* PR-UXF-a T65: em Tạm dừng không sinh việc nhập điểm. */
+  /*
+   * TD4: Công việc chỉ đọc lượt CÓ THỂ còn ô cần chấm (`chiConO`) + lượt chưa xếp tuần (Chốt tuần MT) — trước đọc mọi lượt trong phạm vi.
+   * "Tất cả" đọc MỘT lần ở phạm vi quản lý: `myPendingDetail` (việc của mình) không phụ thuộc `scope`, `pendingDetail` (việc GV khác) theo nó.
+   */
+  const attempts = !co('score', 'missing_data') ? [] : listAttempts(p, {
+    branchId: f.branchId ?? undefined, chiDangHoc: true, chiConO: true, kemChuaTuan: true, ...(tatCa && co('score') ? { scope: 'managed' as const } : {}),
+  }).rows.filter((a: any) => a.status !== 'cancelled');
   /*
    * OV-11c (CV-8, Q6): "Của GV" có cả việc của GVCN (Phối hợp SOS, Điền Target, Nhập điểm MT cũ) — như "Của một GV" (`viecCuaNguoi`). GVCN đang hiệu lực
    * của mỗi lớp trong phạm vi Quản lý, MỘT câu (nạp lười, chỉ khi cần).
@@ -495,13 +500,11 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
 
   /* PR-Ra Q1: "Tất cả trong phạm vi" cộng thêm bài chưa chấm của GIÁO VIÊN KHÁC trong phạm vi. */
   if (tatCa && co('score')) {
-    const managedAttempts = listAttempts(p, { branchId: f.branchId ?? undefined, scope: 'managed', chiDangHoc: true }).rows
-      .filter((a: any) => a.status !== 'cancelled');
-    const classIds = [...new Set(managedAttempts.map((a: any) => a.classId).filter((x: any): x is number => x !== null))];
+    const classIds = [...new Set(attempts.map((a: any) => a.classId).filter((x: any): x is number => x !== null))];
     /* Người phụ trách môn — PR-Dọn (Q13): CÙNG luật với Nợ điểm và Lịch Test (`phanCongDangHieuLuc`). */
     const ownerOf = new Map([...phanCongDangHieuLuc(classIds, today)].map(([k, v]) => [k, v.userId]));
     const khacDongs: BaiChuaCham[] = [];
-    for (const a of managedAttempts as any[]) {
+    for (const a of attempts as any[]) {
       for (const c of (a.pendingDetail ?? []) as any[]) {
         /* T18: Speaking Mock không có người phụ trách — không bị bỏ vì "đã có ở phần của mình" (GVBM S không có nó ở đó). */
         const ownerId = a.classId && !laChamCheo(a.kind, c.skill) ? (ownerOf.get(`${a.classId}|${c.skill}`) ?? null) : null;

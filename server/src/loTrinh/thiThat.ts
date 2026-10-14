@@ -107,7 +107,9 @@ export function loTrinhChoKetQuaThi(today: string): { c: any; m: NonNullable<Ret
      /* Kết quả CŨ (chỉ Overall / kết luận chọn tay) là đã có kết quả. */
      AND c.outcome_score IS NULL AND COALESCE(c.outcome, 'unknown') = 'unknown'
      /* Đóng vì CHUYỂN LỚP (đóng-mở): em không đi thi — không nhắc. */
-     AND NOT EXISTS (SELECT 1 FROM ban_chup_lo_trinh b WHERE b.cycle_id = c.id AND b.ly_do = 'chuyen_lop' AND b.lan = (SELECT MAX(lan) FROM ban_chup_lo_trinh WHERE cycle_id = c.id))`).all() as any[];
+     AND NOT EXISTS (SELECT 1 FROM ban_chup_lo_trinh b WHERE b.cycle_id = c.id AND b.ly_do = 'chuyen_lop' AND b.lan = (SELECT MAX(lan) FROM ban_chup_lo_trinh WHERE cycle_id = c.id))
+     /* TD4: tập cha của "đã qua mốc nhắc" — mốc = thứ Hai sau ngày thi (mocNhacThiThat) > ngày thi ≥ cận dưới này; lọc JS giữ nguyên. */
+     AND COALESCE(c.exam_date, ep.week_start, CASE WHEN c.exam_month GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]' THEN c.exam_month || '-01' END, c.ended_at) <= ?`).all(today) as any[];
   const moc = ds.map((c) => ({ c, m: mocNhacThiThat({ thangThi: c.exam_month, tuanThi: c.exam_week, ngayThi: c.exam_date, ngayDong: c.ended_at }) })).filter((x) => x.m && x.m.tu <= today);
   return moc as any;
 }

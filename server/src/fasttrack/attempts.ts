@@ -612,6 +612,8 @@ export type AttemptFilters = {
   phamViCham?: boolean;
   /** TD3-a: chỉ lượt CÓ THỂ còn ô cần chấm (`CON_O_SQL`) — tập cha của `conBaiCanCham`; nơi gọi vẫn lọc JS như cũ. */
   chiConO?: boolean;
+  /** TD4: cùng `chiConO`, giữ thêm lượt chưa xếp tuần (`planned`, không tuần) — việc "Chốt tuần MT" của Công việc. */
+  kemChuaTuan?: boolean;
 };
 
 /*
@@ -684,7 +686,10 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
   if (f.studentId) { where.push('a.student_id = ?'); params.push(f.studentId); }
   if (f.status) { where.push('a.status = ?'); params.push(f.status); }
   const today = demoToday();
-  if (f.chiConO) { where.push(CON_O_SQL); params.push(today, today, today, today); }
+  if (f.chiConO) {
+    where.push(f.kemChuaTuan ? `(${CON_O_SQL} OR (a.planned_period_id IS NULL AND a.status = 'planned'))` : CON_O_SQL);
+    params.push(today, today, today, today);
+  }
   // Tuần kết quả LUÔN là tuần kế hoạch của lượt, kể cả khi các kỹ năng mock lệch tuần.
   if (f.periodId) { where.push('a.planned_period_id = ?'); params.push(f.periodId); }
   if (f.q) {
