@@ -1,4 +1,5 @@
 /** HỌC VIÊN — trạng thái, lộ trình học và các mốc hành trình. */
+import { t } from '../i18n/index.ts';
 
 // ---------------------------------------------------------------- Học viên
 
@@ -6,10 +7,10 @@
 export const STUDENT_STATUSES = ['active', 'inactive', 'finished'] as const;
 export type StudentStatus = (typeof STUDENT_STATUSES)[number];
 /** "Tạm dừng học từ 12/10" (chỗ rộng) · "Tạm dừng từ 12/10" (chip hẹp). */
-export const chuTamDung = (tu: string, hep = false) => `${hep ? 'Tạm dừng' : 'Tạm dừng học'} từ ${tu}`;
+export const chuTamDung = (tu: string, hep = false) => (hep ? t('Tạm dừng từ {tu}', { tu }) : t('Tạm dừng học từ {tu}', { tu }));
 
 export const STUDENT_STATUS_LABEL: Record<StudentStatus, string> = {
-  active: 'Đang học', inactive: 'Tạm dừng học', finished: 'Đã kết thúc',
+  active: t('Đang học'), inactive: t('Tạm dừng học'), finished: t('Đã kết thúc'),
 };
 
 /**
@@ -43,7 +44,7 @@ export function transferReasonText(code: unknown, note?: unknown): string | null
  */
 export const ROUTES = ['LT1', 'LT2', 'RF'] as const;
 export type Route = (typeof ROUTES)[number];
-export const ROUTE_NAME: Record<Route, string> = { LT1: 'Lộ trình 1', LT2: 'Lộ trình 2', RF: 'Refire' };
+export const ROUTE_NAME: Record<Route, string> = { LT1: t('Lộ trình 1'), LT2: t('Lộ trình 2'), RF: 'Refire' };
 
 export const CYCLE_STATUSES = ['active', 'completed', 'abandoned'] as const;
 export type CycleStatus = (typeof CYCLE_STATUSES)[number];

@@ -20,7 +20,7 @@ import {
   type BadgeLop, type GocHocVien, type LocHocVien, type LocPhuCanLam, type NguCanhDs, type PhamVi, type SapXep, type WorkScope, vaiXemHocVien,
 } from '@shared/domain/index.ts';
 import { HocVienTheoVai } from './HocVienTheoVai.tsx';
-import { t } from '@shared/i18n/index.ts';
+import { dich, t } from '@shared/i18n/index.ts';
 import { BangSos, type TrangSos } from './BangSos.tsx';
 import { BangCanLam, type ViecCanLam } from './BangCanLam.tsx';
 import { PanelMotEm } from './PanelMotEm.tsx';
@@ -62,8 +62,8 @@ type TrangHocVienLop = {
 
 /** "Lưu trữ · {n} lớp · {m} HV" — bỏ phần số 0, cả hai 0 thì chỉ "Lưu trữ" (§3.6, G-12). */
 function nhanLuuTru(dem: { lop: number; hv: number }): string {
-  const phan = [dem.lop > 0 ? `${dem.lop} lớp` : null, dem.hv > 0 ? `${dem.hv} HV` : null].filter(Boolean);
-  return phan.length ? `Lưu trữ · ${phan.join(' · ')}` : 'Lưu trữ';
+  const phan = [dem.lop > 0 ? t('{n} lớp', { n: dem.lop }) : null, dem.hv > 0 ? t('{n} HV', { n: dem.hv }) : null].filter(Boolean);
+  return phan.length ? `${t('Lưu trữ')} · ${phan.join(' · ')}` : t('Lưu trữ');
 }
 
 /**
@@ -239,8 +239,8 @@ function TrangTheoLop({ admin }: { admin: boolean }) {
     .map((k) => ({ k, lop: lopHien.filter((c) => khungCua(c.scoringMode) === k) })).filter((g) => g.lop.length > 0);
   /* PR-DH (04/10): cột Dự kiến thi cho CẢ hai nhóm (lớp thường cũng có Target + Dự kiến thi sau PR-NT). */
   /* OV-10b (mockup vai mục 6): Admin — Học viên · Lượt MT gần nhất · Ô chưa nhập · ⋯ (không Case / Việc tiếp theo). */
-  const tieuDeCot = (k: 'ft' | 'thuong') => admin ? ['Học viên', 'Lượt MT gần nhất', 'Ô chưa nhập', '']
-    : ['Học viên', 'Kết quả gần nhất', k === 'ft' ? 'Target' : 'Khoá', 'Dự kiến thi', 'Sắp tới', 'Case', 'Việc tiếp theo', ''];
+  const tieuDeCot = (k: 'ft' | 'thuong') => admin ? [t('Học viên'), t('Lượt MT gần nhất'), t('Ô chưa nhập'), '']
+    : [t('Học viên'), t('Kết quả gần nhất'), k === 'ft' ? 'Target' : t('Khoá'), t('Dự kiến thi'), t('Sắp tới'), 'Case', t('Việc tiếp theo'), ''];
   const openIds = lopMoSan({
     thamSoOpen: openRaw === null ? null : openRaw === '-' ? []
       : openRaw.split(',').map(Number).filter((n) => Number.isFinite(n) && n > 0),
@@ -255,13 +255,13 @@ function TrangTheoLop({ admin }: { admin: boolean }) {
   const lopDangLoc = chiLop ? (data?.rows ?? []).find((c) => c.id === chiLop) : null;
   const pv = data?.phamVi;
   /* Danh sách học viên = các lớp đang MỞ, theo thứ tự trên màn (Fast Track trước); danh sách lớp = các lớp cùng nhóm khung. */
-  const dsHocVien: NguCanhDs = { loai: 'hoc-vien', nhan: 'Học viên & Lớp', ids: nhomLop.flatMap((g) => g.lop).filter((c) => openIds.includes(c.id)).flatMap((c) => thuTu.get(c.id) ?? []) };
-  const dsLopCua = (g: { lop: LopTrenTrang[] }): NguCanhDs => ({ loai: 'lop', nhan: 'Lớp', ids: g.lop.map((c) => c.id) });
+  const dsHocVien: NguCanhDs = { loai: 'hoc-vien', nhan: t('Học viên & Lớp'), ids: nhomLop.flatMap((g) => g.lop).filter((c) => openIds.includes(c.id)).flatMap((c) => thuTu.get(c.id) ?? []) };
+  const dsLopCua = (g: { lop: LopTrenTrang[] }): NguCanhDs => ({ loai: 'lop', nhan: t('Lớp'), ids: g.lop.map((c) => c.id) });
 
   return (
     <div className="page space-y-3">
       <div className="flex flex-wrap items-center gap-2">
-        <h1 className="text-lg font-semibold text-slate-100 m-0">Học viên & Lớp</h1>
+        <h1 className="text-lg font-semibold text-slate-100 m-0">{t('Học viên & Lớp')}</h1>
         {/* K1 (PR-HK1): nút và ⋯ đi cùng một khối — màn hẹp thì cả khối xuống dòng, ⋯ không rơi xuống dòng riêng. */}
         <div className="ml-auto flex items-center gap-2">
           {/*
@@ -270,14 +270,14 @@ function TrangTheoLop({ admin }: { admin: boolean }) {
             * chắc chắn ra 403 (`hasAssignment` đòi `ctx.classId`/`ctx.branchId` cụ thể). Dùng đúng cờ máy chủ đã tính theo
             * TỪNG lớp/chi nhánh thay vào đó.
             */}
-          {data?.coTheTaoLop && <button type="button" className="btn btn-sm max-sm:hidden" onClick={() => setTaoLop(true)}>+ Lớp mới</button>}
+          {data?.coTheTaoLop && <button type="button" className="btn btn-sm max-sm:hidden" onClick={() => setTaoLop(true)}>{t('+ Lớp mới')}</button>}
           {data?.coTheThemHocVien && (
-            <button type="button" className="btn btn-sm btn-primary max-sm:hidden" onClick={() => setThem(null)}>+ Học viên</button>
+            <button type="button" className="btn btn-sm btn-primary max-sm:hidden" onClick={() => setThem(null)}>{t('+ Học viên')}</button>
           )}
           {/* Điện thoại (< 640 px, K1/DH): hai nút tạo vào ⋯ — đầu trang chỉ còn một nút 44 px. */}
-          <MenuDong nhan="Thao tác trang" muc={[
-            ...(dienThoai && data?.coTheTaoLop ? [{ key: 'lop-moi', nhan: '+ Lớp mới', onChon: () => setTaoLop(true) }] : []),
-            ...(dienThoai && data?.coTheThemHocVien ? [{ key: 'hoc-vien-moi', nhan: '+ Học viên', onChon: () => setThem(null) }] : []),
+          <MenuDong nhan={t('Thao tác trang')} muc={[
+            ...(dienThoai && data?.coTheTaoLop ? [{ key: 'lop-moi', nhan: t('+ Lớp mới'), onChon: () => setTaoLop(true) }] : []),
+            ...(dienThoai && data?.coTheThemHocVien ? [{ key: 'hoc-vien-moi', nhan: t('+ Học viên'), onChon: () => setThem(null) }] : []),
             { key: 'luu-tru', nhan: nhanLuuTru(data?.demLuuTru ?? { lop: 0, hv: 0 }), keTruoc: dienThoai && !!data?.coTheTaoLop, onChon: () => navigate('/hoc-vien/luu-tru') },
           ]} />
         </div>
@@ -290,16 +290,16 @@ function TrangTheoLop({ admin }: { admin: boolean }) {
         */}
       <div className="space-y-2 pb-1">
         <div className="flex flex-wrap items-center gap-2">
-          <input className="field w-full sm:w-80" aria-label="Tìm" placeholder="🔍 Lọc trong danh sách này…"
+          <input className="field w-full sm:w-80" aria-label={t('Tìm')} placeholder={t('🔍 Lọc trong danh sách này…')}
             value={draftQ} onChange={(e) => setDraftQ(e.target.value)} />
           {pv && pv.coThe.length > 1 && (
-            <select className={SELECT_GON} aria-label="Phạm vi" value={pv.dangDung}
+            <select className={SELECT_GON} aria-label={t('Phạm vi')} value={pv.dangDung}
               onChange={(e) => setParam({ phamVi: e.target.value, cn: null, branchId: null, open: null })}>
-              {pv.coThe.map((v) => <option key={v} value={v}>Phạm vi: {PHAM_VI_NHAN[v]}</option>)}
+              {pv.coThe.map((v) => <option key={v} value={v}>{t('Phạm vi: {pv}', { pv: PHAM_VI_NHAN[v] })}</option>)}
             </select>
           )}
           {pv?.dangDung === 'chi-nhanh' && (branches.data?.length ?? 0) > 1 && (
-            <select className={SELECT_GON} aria-label="Chi nhánh" value={pv.chiNhanh ?? ''}
+            <select className={SELECT_GON} aria-label={t('Chi nhánh')} value={pv.chiNhanh ?? ''}
               onChange={(e) => { nhoChiNhanh(session?.user?.id, Number(e.target.value)); setParam({ phamVi: 'chi-nhanh', cn: e.target.value, branchId: null, open: null }); }}>
               {(branches.data ?? []).map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
             </select>
@@ -315,8 +315,8 @@ function TrangTheoLop({ admin }: { admin: boolean }) {
                 key: k, nhan: k === 'tat-ca' ? t('Tất cả') : k === 'sos' ? t('Đang SOS') : t('Cần làm'), so: demGoc[k],
               }))} />
             {chiLop && (
-              <button type="button" className="btn btn-sm shrink-0 sm:h-8" title="Bỏ lọc lớp" onClick={() => setParam({ classId: null })}>
-                Lớp {lopDangLoc?.code ?? chiLop} ✕
+              <button type="button" className="btn btn-sm shrink-0 sm:h-8" title={t('Bỏ lọc lớp')} onClick={() => setParam({ classId: null })}>
+                {t('Lớp {lop} ✕', { lop: lopDangLoc?.code ?? chiLop! })}
               </button>
             )}
             {goc === 'can-lam' && (
@@ -340,10 +340,10 @@ function TrangTheoLop({ admin }: { admin: boolean }) {
               onChange={(k) => setParam({ khung: k === 'tat-ca' ? null : k, open: null })} />
             {/* Xếp: Tất cả theo lựa chọn; Đang SOS theo tuần rồi tên, Cần làm theo hạn (mockup 3 v2 §1) — không cần ô chọn. */}
             {goc === 'tat-ca' && (
-              <select className={SELECT_GON} aria-label="Cách xếp" value={sapXep}
+              <select className={SELECT_GON} aria-label={t('Cách xếp')} value={sapXep}
                 onChange={(e) => setParam({ sx: e.target.value === 'chu-y' ? 'chu-y' : null })}>
-                <option value="ten">Xếp: Tên A→Z</option>
-                <option value="chu-y">Xếp: Cần chú ý trước</option>
+                <option value="ten">{t('Xếp: Tên A→Z')}</option>
+                <option value="chu-y">{t('Xếp: Cần chú ý trước')}</option>
               </select>
             )}
           </div>
@@ -355,11 +355,11 @@ function TrangTheoLop({ admin }: { admin: boolean }) {
       {goc === 'tat-ca' && data && (lopHien.length === 0 ? (
         <Card>
           <Empty
-            title={data.scopeEmpty ? 'Bạn chưa được cấp phạm vi nào' : 'Không có lớp hay học viên nào khớp'}
+            title={data.scopeEmpty ? t('Bạn chưa được cấp phạm vi nào') : t('Không có lớp hay học viên nào khớp')}
             hint={data.scopeEmpty
-              ? 'Tài khoản này chưa có vai trò kèm chi nhánh hoặc phân công lớp nào.'
-              : 'Bỏ bớt từ khoá, đổi chip lọc hoặc đổi phạm vi.'}
-            action={q.trim() ? <button type="button" className="btn btn-sm" onClick={() => { setDraftQ(''); setParam({ q: null }); }}>Xoá tìm</button> : undefined} />
+              ? t('Tài khoản này chưa có vai trò kèm chi nhánh hoặc phân công lớp nào.')
+              : t('Bỏ bớt từ khoá, đổi chip lọc hoặc đổi phạm vi.')}
+            action={q.trim() ? <button type="button" className="btn btn-sm" onClick={() => { setDraftQ(''); setParam({ q: null }); }}>{t('Xoá tìm')}</button> : undefined} />
         </Card>
       ) : (
         /*
@@ -373,8 +373,8 @@ function TrangTheoLop({ admin }: { admin: boolean }) {
         <div className="space-y-3">
           {/* Điện thoại (< 640 px, D2): mỗi lớp một thẻ gập, mỗi em một thẻ con — không bảng, không cuộn ngang. */}
           {dienThoai && nhomLop.map((g) => (
-            <section key={g.k} className="space-y-2" aria-label={g.k === 'ft' ? 'Lớp Fast Track' : 'Lớp thường'}>
-              {nhomLop.length > 1 && <h2 className="m-0 px-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">{g.k === 'ft' ? 'Fast Track' : 'Lớp thường'}</h2>}
+            <section key={g.k} className="space-y-2" aria-label={g.k === 'ft' ? t('Lớp Fast Track') : t('Lớp thường')}>
+              {nhomLop.length > 1 && <h2 className="m-0 px-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">{g.k === 'ft' ? 'Fast Track' : t('Lớp thường')}</h2>}
               {g.lop.map((c) => (
                 <HopLop key={c.id} the admin={admin} lop={c} mo={openIds.includes(c.id)} onDoiMo={() => doiMo(c.id)} dsHocVien={dsHocVien} dsLop={dsLopCua(g)} onThuTu={baoThuTu}
                   chiHien={dangLoc ? (idsTheoLop.get(c.id) ?? new Set()) : null} sapXep={sapXep} onMoCase={moCase}
@@ -383,17 +383,17 @@ function TrangTheoLop({ admin }: { admin: boolean }) {
             </section>
           ))}
           {!dienThoai && nhomLop.map((g) => (
-            <section key={g.k} className="card overflow-x-auto md:overflow-visible" aria-label={g.k === 'ft' ? 'Lớp Fast Track' : 'Lớp thường'}>
+            <section key={g.k} className="card overflow-x-auto md:overflow-visible" aria-label={g.k === 'ft' ? t('Lớp Fast Track') : t('Lớp thường')}>
               <div className="md:sticky md:-top-5 md:z-10" aria-hidden>
                 <table className="w-full min-w-[960px] table-fixed text-sm">
                   <CotBangLop admin={admin} />
-                  <thead><tr>{tieuDeCot(g.k).map((t, i) => <th key={i} className={`th ${i === (admin ? 2 : 5) ? 'text-right' : ''}`}>{t}</th>)}</tr></thead>
+                  <thead><tr>{tieuDeCot(g.k).map((x, i) => <th key={i} className={`th ${i === (admin ? 2 : 5) ? 'text-right' : ''}`}>{x}</th>)}</tr></thead>
                 </table>
               </div>
               {g.lop.map((c) => (
-                <table key={c.id} className="w-full min-w-[960px] table-fixed text-sm" aria-label={`Lớp ${c.code}`}>
+                <table key={c.id} className="w-full min-w-[960px] table-fixed text-sm" aria-label={t('Lớp {lop}', { lop: c.code })}>
                   <CotBangLop admin={admin} />
-                  <thead className="sr-only"><tr>{tieuDeCot(g.k).map((t, i) => <th key={i}>{t || 'Thao tác'}</th>)}</tr></thead>
+                  <thead className="sr-only"><tr>{tieuDeCot(g.k).map((x, i) => <th key={i}>{x || t('Thao tác')}</th>)}</tr></thead>
                   <HopLop admin={admin} lop={c} mo={openIds.includes(c.id)} onDoiMo={() => doiMo(c.id)} dsHocVien={dsHocVien} dsLop={dsLopCua(g)} onThuTu={baoThuTu}
                     chiHien={dangLoc ? (idsTheoLop.get(c.id) ?? new Set()) : null} sapXep={sapXep} onMoCase={moCase}
                     onThemHocVien={() => setThem({ id: c.id, code: c.code })} onDoi={trang.reload} />
@@ -490,7 +490,7 @@ function HopLop({ lop, mo, onDoiMo, chiHien, sapXep, onThemHocVien, onDoi, dsHoc
   const { session } = useSession();
   const thuong = lop.scoringMode === 'ratio';
   /** Dòng phụ hàng lớp: `Fast Track · LT1 · 18 HV` — lớp thường không có lộ trình nên bỏ khúc giữa (mockup 21 mục 5). */
-  const chuLop = [lop.programmeName ?? '—', !thuong && lop.route ? lop.route : null, `${lop.studentCount} HV`].filter(Boolean).join(' · ');
+  const chuLop = [lop.programmeName ? dich(lop.programmeName) : '—', !thuong && lop.route ? lop.route : null, t('{n} HV', { n: lop.studentCount })].filter(Boolean).join(' · ');
   const bGoc = badgeLop({
     vai: laVaiQuanLy(session?.roles) ? 'ql' : 'gv', needsPlacement: lop.needsPlacement, canXepLop: lop.canXepLop, missingSkills: lop.missingSkills,
     soBaiChoCham: lop.needScores,
@@ -510,16 +510,16 @@ function HopLop({ lop, mo, onDoiMo, chiHien, sapXep, onThemHocVien, onDoi, dsHoc
       : x.key === 'qua-han' ? `/hoc-vien?view=qua-han&classId=${lop.id}`
       : null;
   const mucLop: MucMenu[] = [
-    { key: 'ho-so', nhan: 'Hồ sơ lớp', onChon: () => navigate(`/hoc-vien/lop/${lop.id}`, { state: { ds: dsLop } }) },
+    { key: 'ho-so', nhan: t('Hồ sơ lớp'), onChon: () => navigate(`/hoc-vien/lop/${lop.id}`, { state: { ds: dsLop } }) },
     ...(lop.viewer.coTheNhapDiem
-      ? [{ key: 'nhap-diem', nhan: 'Nhập điểm', onChon: () => navigate(`${DUONG_TAB_TEST['diem-lop']}?lop=${lop.id}`) }]   // HL-3: như nút đầu hồ sơ lớp
+      ? [{ key: 'nhap-diem', nhan: t('Nhập điểm'), onChon: () => navigate(`${DUONG_TAB_TEST['diem-lop']}?lop=${lop.id}`) }]   // HL-3: như nút đầu hồ sơ lớp
       : []),
-    ...(lop.viewer.coTheSuaHocVien ? [{ key: 'them', nhan: '+ Học viên', onChon: onThemHocVien }] : []),
+    ...(lop.viewer.coTheSuaHocVien ? [{ key: 'them', nhan: t('+ Học viên'), onChon: onThemHocVien }] : []),
   ];
 
   const menuBadgeAn = b.an.length > 0 && (
     /* B4: "+n" bấm được — mỗi mục là một badge còn ẩn, bấm đi đúng đích (không có đích riêng thì mở Hồ sơ lớp, nơi số đó hiện). */
-    <MenuDong kieu="chip" bieuTuong={`+${b.an.length}`} nhan={`${b.an.length} việc khác của lớp ${lop.code}`}
+    <MenuDong kieu="chip" bieuTuong={`+${b.an.length}`} nhan={t('{n} việc khác của lớp {lop}', { n: b.an.length, lop: lop.code })}
       muc={b.an.map((x) => ({ key: x.key, nhan: x.nhan, onChon: () => navigate(denBadge(x) ?? `/hoc-vien/lop/${lop.id}`) }))} />
   );
   const cacBadge = b.hien.map((x) => {
@@ -531,7 +531,7 @@ function HopLop({ lop, mo, onDoiMo, chiHien, sapXep, onThemHocVien, onDoi, dsHoc
 
   if (the) {
     return (
-      <div className="card overflow-hidden" aria-label={`Lớp ${lop.code}`}>
+      <div className="card overflow-hidden" aria-label={t('Lớp {lop}', { lop: lop.code })}>
         <div className="flex items-start gap-2 p-3">
           <button type="button" aria-expanded={mo} onClick={onDoiMo}
             className="flex min-h-[44px] min-w-0 flex-1 cursor-pointer items-start gap-2 border-0 bg-transparent p-0 text-left">
@@ -541,11 +541,11 @@ function HopLop({ lop, mo, onDoiMo, chiHien, sapXep, onThemHocVien, onDoi, dsHoc
             <span className="min-w-0">
               <span className="block font-extrabold text-slate-100">{lop.code}</span>
               <span className="block text-xs text-slate-400">
-                {chuLop}{lop.gvcn && <> · GVCN {lop.gvcn.name}</>}
+                {chuLop}{lop.gvcn && <> · {t('GVCN')} {lop.gvcn.name}</>}
               </span>
             </span>
           </button>
-          <MenuDong muc={mucLop} nhan="Thao tác khác" />
+          <MenuDong muc={mucLop} nhan={t('Thao tác khác')} />
         </div>
         {(cacBadge.length > 0 || menuBadgeAn) && <div className="flex flex-wrap items-center gap-1.5 px-3 pb-2">{cacBadge}{menuBadgeAn}</div>}
         {mo && <BangHocVienLop the admin={admin} lop={lop} chiHien={chiHien} sapXep={sapXep} onDoi={onDoi} soCot={1} ds={dsHocVien} onThuTu={onThuTu} onMoCase={onMoCase} />}
@@ -555,23 +555,23 @@ function HopLop({ lop, mo, onDoiMo, chiHien, sapXep, onThemHocVien, onDoi, dsHoc
 
   return (
     <tbody>
-      <HangNhom mo={mo} onMo={onDoiMo} nhan={`lớp ${lop.code}`} soCotDau={admin ? 1 : 3} className={mo ? 'hang-lon-dinh' : ''}
+      <HangNhom mo={mo} onMo={onDoiMo} nhan={t('lớp {lop}', { lop: lop.code })} soCotDau={admin ? 1 : 3} className={mo ? 'hang-lon-dinh' : ''}
         tieuDe={
           <span className="flex min-w-0 items-baseline gap-2">
             <Link to={`/hoc-vien/lop/${lop.id}`} state={{ ds: dsLop }} className="shrink-0 font-extrabold text-slate-100 underline decoration-dotted underline-offset-4">
               {lop.code}
             </Link>
             <span className="min-w-0 truncate text-xs font-normal text-slate-400"
-              title={`${chuLop}${lop.gvcn ? ` · GVCN ${lop.gvcn.name}` : ''}`}>
+              title={`${chuLop}${lop.gvcn ? ` · ${t('GVCN')} ${lop.gvcn.name}` : ''}`}>
               {chuLop}
-              {lop.gvcn && <> · <abbr title="Giáo viên chủ nhiệm" className="no-underline">GVCN</abbr> <TenGiaoVien id={lop.gvcn.id} ten={lop.gvcn.name} /></>}
+              {lop.gvcn && <> · <abbr title={t('Giáo viên chủ nhiệm')} className="no-underline">{t('GVCN')}</abbr> <TenGiaoVien id={lop.gvcn.id} ten={lop.gvcn.name} /></>}
             </span>
           </span>
         }>
         <td className="px-3" colSpan={admin ? 2 : 4}>
           <span className="flex items-center justify-end gap-1.5">{cacBadge}{menuBadgeAn}</span>
         </td>
-        <td className="px-2 text-center"><MenuDong muc={mucLop} nhan="Thao tác khác" /></td>
+        <td className="px-2 text-center"><MenuDong muc={mucLop} nhan={t('Thao tác khác')} /></td>
       </HangNhom>
       {mo && <BangHocVienLop admin={admin} lop={lop} chiHien={chiHien} sapXep={sapXep} onDoi={onDoi} soCot={admin ? 4 : 8} ds={dsHocVien} onThuTu={onThuTu} onMoCase={onMoCase} />}
     </tbody>

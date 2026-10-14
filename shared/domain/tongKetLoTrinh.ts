@@ -5,6 +5,7 @@
 import { addDaysIso } from './sos.ts';
 import { tuanLich } from './hienThiNgay.ts';
 import { mondayOfDate } from './week.ts';
+import { t } from '../i18n/index.ts';
 
 export const LY_DO_DONG = ['lo_trinh_moi', 'chuyen_lop', 'len_lop', 'hoc_lai', 'sang_ft', 'ket_thuc', 'sua_tay', 'khong_ro'] as const;
 export type LyDoDong = (typeof LY_DO_DONG)[number];
@@ -32,7 +33,7 @@ export function huongTiep(lyDo: LyDoDong, routeMoi: string | null): HuongTiepTk 
 /** OV-8a: BƯỚC TIẾP SAU THI — Quản lý chọn sau khi lộ trình FT có kết quả thi thật. */
 export const LUA_CHON_SAU_THI = ['ket_thuc', 'hoc_tiep', 'hoc_lai'] as const;
 export type LuaChonSauThi = (typeof LUA_CHON_SAU_THI)[number];
-export const NHAN_SAU_THI: Record<LuaChonSauThi, string> = { ket_thuc: 'Kết thúc', hoc_tiep: 'Học tiếp lộ trình mới', hoc_lai: 'Học lại' };
+export const NHAN_SAU_THI: Record<LuaChonSauThi, string> = { ket_thuc: t('Kết thúc'), hoc_tiep: t('Học tiếp lộ trình mới'), hoc_lai: t('Học lại') };
 /** Gợi ý (chỉ chữ, QL vẫn chọn): Đạt Target → Kết thúc; chưa đạt / Không thi → Học lại; không có Target → không gợi ý. */
 export function goiYSauThi(o: { khongThi: boolean; ketLuan: string | null }): LuaChonSauThi | null {
   if (o.khongThi || o.ketLuan === 'not_reached') return 'hoc_lai';

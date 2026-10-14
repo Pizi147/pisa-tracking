@@ -9,6 +9,7 @@ import { useLoiForm } from '../../ui/loiForm.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { REGULAR_SKILLS, chuHopKetLuan, dsLoi, duongLoTrinhLop, ngay, tenMon, tenMonNgan, type GoiYCuoiKhoa } from '@shared/domain/index.ts';
+import { dich, t } from '@shared/i18n/index.ts';
 
 /** `studentProfile().cuoiKhoa` — cùng hình với `EmCuoiKhoa` của máy chủ. */
 export type CuoiKhoaEm = {
@@ -46,15 +47,15 @@ export function KetLuanKhoa({ studentId, studentName, lop, classId, ct, cuoiKhoa
   const danhDauDat = async () => {
     try {
       await api.put(`/students/${studentId}/ket-luan-ft`, { dat: true });
-      invalidate('/students'); toast.push('ok', 'Đã chốt: đạt Kết quả đầu ra'); onDoi();
+      invalidate('/students'); toast.push('ok', t('Đã chốt: đạt Kết quả đầu ra')); onDoi();
     } catch (e: any) { toast.push('error', e.message); }
   };
   return (
-    <section id="ket-luan-khoa" aria-label="Kết luận khoá" className="rounded-lg border p-3 space-y-1.5" style={{ borderColor: 'var(--line)' }}>
+    <section id="ket-luan-khoa" aria-label={t('Kết luận khoá')} className="rounded-lg border p-3 space-y-1.5" style={{ borderColor: 'var(--line)' }}>
       <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
         <span className="text-lg font-bold tabular-nums text-slate-100">{h.chinh}</span>
         {h.phu && <span className="text-xs tabular-nums text-slate-400">{h.phu}</span>}
-        {cuoiKhoa.daChuyen && cuoiKhoa.lop && <span className="text-xs text-slate-500">lớp {cuoiKhoa.lop} (đã chuyển)</span>}
+        {cuoiKhoa.daChuyen && cuoiKhoa.lop && <span className="text-xs text-slate-500">{t('lớp {lop} (đã chuyển)', { lop: cuoiKhoa.lop })}</span>}
       </div>
       {/* Nhãn hướng gợi ý có thể dài ("Lên ELE + bổ trợ miễn phí …"): chip được xuống dòng thay vì đẩy trang tràn ngang ở 375 px (PR-UXD). */}
       {h.nhan && <div className="[&>span]:max-w-full [&>span]:whitespace-normal [&>span]:rounded-xl"><Level tone={TONE[h.tone]}>{h.nhan}</Level></div>}
@@ -64,15 +65,15 @@ export function KetLuanKhoa({ studentId, studentName, lop, classId, ct, cuoiKhoa
           <span className={`tabular-nums ${h.kyVong.daDanhDau ? 'text-slate-100' : 'text-slate-500'}`}>{h.kyVong.trangThai}</span>
           {coTheKetLuan && (
             <span className="flex gap-1.5">
-              <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={danhDauDat}>Đạt</button>
-              <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setMoKhongDat(true)}>Không đạt</button>
+              <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={danhDauDat}>{t('Đạt')}</button>
+              <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setMoKhongDat(true)}>{t('Không đạt')}</button>
             </span>
           )}
         </div>
       )}
       {!cuoiKhoa.daChuyen && classId && (
         <div>
-          <Link className="btn btn-sm min-h-[44px] sm:min-h-0" to={duongLoTrinhLop(classId, studentId)}>Lộ trình tiếp theo</Link>
+          <Link className="btn btn-sm min-h-[44px] sm:min-h-0" to={duongLoTrinhLop(classId, studentId)}>{t('Lộ trình tiếp theo')}</Link>
         </div>
       )}
       {moKhongDat && (
@@ -95,10 +96,10 @@ function PanelKhongDat({ studentId, studentName, lop, ct, monTruot, ban, onDong,
   const [ghiChu, setGhiChu] = useState(ban?.ghiChu ?? '');
   const [busy, setBusy] = useState(false);
   const loi = dsLoi([
-    { khoa: 'nguyen-nhan', nhan: 'Nguyên nhân', chon: true },
-    ...(nn === 'hoc_sinh' ? [{ khoa: 'ghi-chu', nhan: 'Lý do' }] : []),
+    { khoa: 'nguyen-nhan', nhan: t('Nguyên nhân'), chon: true },
+    ...(nn === 'hoc_sinh' ? [{ khoa: 'ghi-chu', nhan: t('Lý do') }] : []),
   ], { 'nguyen-nhan': nn, 'ghi-chu': ghiChu });
-  if (nn !== '' && mon.length === 0) loi.push({ khoa: 'mon', nhan: 'Kỹ năng', lyDo: 'Chọn ít nhất một kỹ năng chưa đạt' });
+  if (nn !== '' && mon.length === 0) loi.push({ khoa: 'mon', nhan: t('Kỹ năng'), lyDo: t('Chọn ít nhất một kỹ năng chưa đạt') });
   const luu = async () => {
     lf.bam();
     if (loi.length) return;
@@ -108,27 +109,27 @@ function PanelKhongDat({ studentId, studentName, lop, ct, monTruot, ban, onDong,
         dat: false, nguyenNhan: nn, mon, ...(nn === 'hoc_sinh' ? { ghiChu: ghiChu.trim() } : {}),
       });
       invalidate('/students'); invalidate('/cases'); invalidate('/my-work');
-      toast.push('ok', r?.taoCaseTutor ? `Đã ghi — tạo ${r.taoCaseTutor} Case` : 'Đã ghi Kết quả đầu ra');
-      if (r?.luuY) toast.push('info', r.luuY);
+      toast.push('ok', r?.taoCaseTutor ? t('Đã ghi — tạo {n} Case', { n: r.taoCaseTutor }) : t('Đã ghi Kết quả đầu ra'));
+      if (r?.luuY) toast.push('info', dich(r.luuY));
       onXong();
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
   };
   return (
-    <KhungPanel tieuDe="Không đạt Kết quả đầu ra" hocVien={studentName} lop={lop} onDong={onDong}
-      chan={{ conThieu: lf.conThieu(loi), chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={luu}>Lưu</button> }}>
-      <Khoi tieuDe="Nguyên nhân">
-        <div {...lf.o(loi, 'nguyen-nhan')} tabIndex={-1} role="radiogroup" aria-label="Nguyên nhân" className="grid grid-cols-2 gap-2 outline-none">
-          <NutChon chon={nn === 'trung_tam'} onClick={() => setNn('trung_tam')} className="justify-center">Trung tâm</NutChon>
-          <NutChon chon={nn === 'hoc_sinh'} onClick={() => setNn('hoc_sinh')} className="justify-center">Học viên</NutChon>
+    <KhungPanel tieuDe={t('Không đạt Kết quả đầu ra')} hocVien={studentName} lop={lop} onDong={onDong}
+      chan={{ conThieu: lf.conThieu(loi), chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={luu}>{t('Lưu')}</button> }}>
+      <Khoi tieuDe={t('Nguyên nhân')}>
+        <div {...lf.o(loi, 'nguyen-nhan')} tabIndex={-1} role="radiogroup" aria-label={t('Nguyên nhân')} className="grid grid-cols-2 gap-2 outline-none">
+          <NutChon chon={nn === 'trung_tam'} onClick={() => setNn('trung_tam')} className="justify-center">{t('Trung tâm')}</NutChon>
+          <NutChon chon={nn === 'hoc_sinh'} onClick={() => setNn('hoc_sinh')} className="justify-center">{t('Học viên')}</NutChon>
         </div>
         {lf.loiCua(loi, 'nguyen-nhan') && <span className="mt-1 block text-xs text-late">{lf.loiCua(loi, 'nguyen-nhan')}</span>}
         <p className="m-0 mt-1 text-xs text-slate-500">
-          {nn === 'trung_tam' ? 'Sau khi em sang Fast Track: mỗi kỹ năng một Case + PA Tutor 10 buổi.'
-            : nn === 'hoc_sinh' ? 'Sau khi em sang Fast Track: 1 Case, chưa có PA.' : 'Trung tâm chưa dạy đủ hay học viên chưa theo kịp?'}
+          {nn === 'trung_tam' ? t('Sau khi em sang Fast Track: mỗi kỹ năng một Case + PA Tutor 10 buổi.')
+            : nn === 'hoc_sinh' ? t('Sau khi em sang Fast Track: 1 Case, chưa có PA.') : t('Trung tâm chưa dạy đủ hay học viên chưa theo kịp?')}
         </p>
       </Khoi>
       {nn !== '' && (
-        <Khoi tieuDe="Kỹ năng chưa đạt">
+        <Khoi tieuDe={t('Kỹ năng chưa đạt')}>
           <div {...lf.o(loi, 'mon')} tabIndex={-1} className="flex flex-wrap gap-2 outline-none">
             {REGULAR_SKILLS.map((k) => (
               <NutChon key={k} chon={mon.includes(k)} onClick={() => setMon((m) => (m.includes(k) ? m.filter((x) => x !== k) : [...m, k]))} title={tenMon(ct, k)}>
@@ -140,10 +141,10 @@ function PanelKhongDat({ studentId, studentName, lop, ct, monTruot, ban, onDong,
         </Khoi>
       )}
       {nn === 'hoc_sinh' && (
-        <Khoi tieuDe="Lý do">
-          <Truong nhan="Lý do" batBuoc loi={lf.loiCua(loi, 'ghi-chu')}>
+        <Khoi tieuDe={t('Lý do')}>
+          <Truong nhan={t('Lý do')} batBuoc loi={lf.loiCua(loi, 'ghi-chu')}>
             <textarea className="field w-full" rows={3} {...lf.o(loi, 'ghi-chu')} value={ghiChu} maxLength={500} onChange={(e) => setGhiChu(e.target.value)}
-              placeholder="Ví dụ: Nghỉ 5 buổi trước Final Test" />
+              placeholder={t('Ví dụ: Nghỉ 5 buổi trước Final Test')} />
           </Truong>
         </Khoi>
       )}
@@ -165,7 +166,7 @@ export function MiniTestO({ mt, onGhi }: { mt: MiniTestEm; onGhi: (caseId: numbe
         <Han loai="mini-test" han={mt.han} />
         {/* PR-S5F-a: chỉ từ ngày buổi cuối — trước đó form Ghi kết quả chưa phải lần cuối nên không có ô Mini Test. */}
         {mt.coTheGhi && mt.caseId && mt.paId && !!homNay && homNay >= mt.ngayDuKien && (
-          <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => onGhi(mt.caseId!, mt.paId!)}>Ghi Mini Test</button>
+          <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => onGhi(mt.caseId!, mt.paId!)}>{t('Ghi Mini Test')}</button>
         )}
       </div>
     );
@@ -182,14 +183,14 @@ function MiniTestDaGhi({ mt }: { mt: MiniTestEm & { tyLe: number } }) {
   const [busy, setBusy] = useState(false);
   const dat = mt.tyLe >= 0.7;
   const pt = sua ? Number(sua.pt.replace(',', '.')) : NaN;
-  const loiPt = sua && (sua.pt.trim() === '' || !Number.isFinite(pt) || pt < 0 || pt > 100) ? 'Nhập % từ 0 đến 100' : null;
+  const loiPt = sua && (sua.pt.trim() === '' || !Number.isFinite(pt) || pt < 0 || pt > 100) ? t('Nhập % từ 0 đến 100') : null;
   const luu = async () => {
     if (!sua || loiPt || !sua.ngay) return;
     setBusy(true); setLoi(null);
     try {
       await api.put(`/mini-test/${mt.id}`, { tyLe: pt, ngay: sua.ngay });
       invalidate('/students'); invalidate('/cases'); invalidate('/yeu-cau'); invalidate('/my-work');
-      toast.push('ok', `Đã lưu Mini Test ${Math.round(pt)}%`);
+      toast.push('ok', t('Đã lưu Mini Test {pt}%', { pt: Math.round(pt) }));
       setSua(null);
     } catch (e: any) { setLoi(e.message); } finally { setBusy(false); }
   };
@@ -199,10 +200,10 @@ function MiniTestDaGhi({ mt }: { mt: MiniTestEm & { tyLe: number } }) {
         <span className="font-semibold text-slate-100">Mini Test</span>
         <span className="font-bold tabular-nums text-slate-100">{Math.round(mt.tyLe * 100)}%</span>
         <span className="text-xs tabular-nums text-slate-400">{mt.ngayLam ? ngay(mt.ngayLam, homNay) : ''}</span>
-        <Level tone={dat ? 'ok' : 'warn'}>{dat ? 'Đạt' : 'Chưa đạt — đã báo QL'}</Level>
+        <Level tone={dat ? 'ok' : 'warn'}>{dat ? t('Đạt') : t('Chưa đạt — đã báo QL')}</Level>
         {mt.coTheSua && !sua && (
           <button type="button" className="btn btn-sm ml-auto min-h-[44px] sm:min-h-0"
-            onClick={() => { setLoi(null); setSua({ pt: String(Math.round(mt.tyLe * 100)), ngay: mt.ngayLam ?? homNay }); }}>Sửa</button>
+            onClick={() => { setLoi(null); setSua({ pt: String(Math.round(mt.tyLe * 100)), ngay: mt.ngayLam ?? homNay }); }}>{t('Sửa')}</button>
         )}
       </div>
       {sua && (
@@ -210,12 +211,12 @@ function MiniTestDaGhi({ mt }: { mt: MiniTestEm & { tyLe: number } }) {
           <Truong nhan="Mini Test (%)" batBuoc loi={loiPt}>
             <input className="field w-24 tabular-nums" inputMode="decimal" autoFocus aria-invalid={!!loiPt} value={sua.pt} onChange={(e) => setSua({ ...sua, pt: e.target.value })} />
           </Truong>
-          <Truong nhan="Ngày làm" batBuoc>
+          <Truong nhan={t('Ngày làm')} batBuoc>
             <span className="block w-[11.5rem]"><ONgay kieu="ngay" value={sua.ngay} onChange={(v) => setSua({ ...sua, ngay: v })} toiDa={homNay || null} /></span>
           </Truong>
           <div className="flex gap-1.5 pb-0.5">
-            <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => setSua(null)}>Đóng</button>
-            <button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" disabled={busy || !!loiPt || !sua.ngay} onClick={() => void luu()}>{busy ? 'Đang lưu…' : 'Lưu'}</button>
+            <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => setSua(null)}>{t('Đóng')}</button>
+            <button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" disabled={busy || !!loiPt || !sua.ngay} onClick={() => void luu()}>{busy ? t('Đang lưu…') : t('Lưu')}</button>
           </div>
           {loi && <p role="alert" className="m-0 w-full text-xs text-late">{loi}</p>}
         </div>
