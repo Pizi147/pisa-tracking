@@ -67,9 +67,9 @@ export const METRICS: readonly ChiSo[] = [
   /* Ba chỉ số của khối Cần xử lý (PR-Pa, đặc tả §3.2) — mỗi dòng của khối là một chỉ số, để bấm vào ra đúng tập. */
   {
     id: 'case-xac-dinh-nguyen-nhan-qua-han', ten: 'Case quá hạn xác nhận',
-    cauHoi: 'Bao nhiêu Case Progress Test lớp thường đã quá hạn mà GV chưa Xác nhận Case?',
+    cauHoi: 'Bao nhiêu Case tự tạo đã quá hạn mà GV chưa Xác nhận Case (Progress Test) / chưa ghi nhận xét bài (Mock Test cũ)?',
     donVi: 'case',
-    tapDuDieuKien: 'Trong tập "Case chờ xác nhận": Case mà hạn xác nhận (5 ngày, tính cả ngày Case ra đời) đã qua. Hết ngày hạn mới tính quá hạn. Case Mock Test không thuộc tập — nguyên nhân lấy từ nhận xét của bài (OV-12c).',
+    tapDuDieuKien: 'Trong tập "Case chờ xác nhận": Case mà hạn xác nhận (5 ngày, tính cả ngày Case ra đời) đã qua. Hết ngày hạn mới tính quá hạn. Cùng tập với cột "Chờ xác nhận" của Tổng hợp (OV-12c).',
     thoiGian: 'hien-trang', khuTrung: 'Mỗi Case chỉ đếm 1 lần', drilldown: '/metrics/case-xac-dinh-nguyen-nhan-qua-han',
   },
   {
@@ -95,9 +95,9 @@ export const METRICS: readonly ChiSo[] = [
   },
   {
     id: 'case-cho-xac-dinh-nguyen-nhan', ten: 'Case chờ xác nhận',
-    cauHoi: 'Bao nhiêu Case Progress Test lớp thường đang chờ GV Xác nhận Case?',
+    cauHoi: 'Bao nhiêu Case tự tạo đang chờ GV Xác nhận Case (Progress Test) hoặc ghi nhận xét bài (Mock Test cũ chưa nhận xét)?',
     donVi: 'case',
-    tapDuDieuKien: 'Case HỌC THUẬT do Progress Test lớp thường tự tạo, đang mở, mà chưa Xác nhận Case (chưa có nhóm nguyên nhân chính) và không có yêu cầu "Không cần theo dõi" đang chờ Quản lý duyệt (SOS v4, K5-51). Case Mock Test không thuộc tập — nguyên nhân lấy từ nhận xét của bài (OV-12c). Case tạo tay và Case đã đóng (kể cả `Không cần theo dõi`) không thuộc tập.',
+    tapDuDieuKien: 'Case HỌC THUẬT tự tạo, đang mở, chưa có nhóm nguyên nhân chính — Progress Test chờ Xác nhận Case; Mock Test cũ mà bài chưa có nhận xét (nguyên nhân Case MT = nhận xét, OV-12c) — và không có yêu cầu "Không cần theo dõi" đang chờ Quản lý duyệt (SOS v4, K5-51). Cùng tập với cột "Chờ xác nhận" của Tổng hợp. Case tạo tay và Case đã đóng (kể cả `Không cần theo dõi`) không thuộc tập.',
     thoiGian: 'hien-trang', khuTrung: 'Mỗi Case chỉ đếm 1 lần', drilldown: '/metrics/case-cho-xac-dinh-nguyen-nhan',
   },
   {

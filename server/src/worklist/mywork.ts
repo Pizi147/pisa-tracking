@@ -25,6 +25,7 @@ import { lopKyVong } from '../normal/kyVong.ts';
 import { phanCongDangHieuLuc } from './scoreDebt.ts';
 import { nguoiGiuKetQua } from '../cases/giuKetQua.ts';
 import { dienMocQuyChe } from '../cases/sosAuto.ts';
+import { coTheXacNhanCase } from '../cases/cases.ts';
 import { sweepExpiredMoves } from '../fasttrack/absence.ts';
 import { quetYeuCau } from '../duyet/yeuCau.ts';
 import { mtLichSuChuaNhap } from '../cham/canCham.ts';
@@ -817,7 +818,10 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   if (tatCa) napChu([...causeCandidates, ...xacNhanPa].map((r) => r.owner_user_id));
   const dongCase = (c: any, loai: 'cause' | 'ghi_nhan_xet' | 'xac_nhan_pa') => {
     if (f.branchId && c.eff_branch_id !== f.branchId) return;
-    if (!can(p, PERMISSIONS.SOS_EDIT, { classId: c.eff_class_id, studentId: c.eff_student_id, skill: c.topic ?? undefined })) return;
+    /* OV-12c (đặc tả 7.2): "Xác nhận Case" Progress — GVCN lớp đang học làm được dù không dạy môn (`coTheXacNhanCase`, cùng máy chủ + nút). */
+    const lamDuoc = (x: Principal) => can(x, PERMISSIONS.SOS_EDIT, { classId: c.eff_class_id, studentId: c.eff_student_id, skill: c.topic ?? undefined })
+      || (loai === 'cause' && coTheXacNhanCase(x, c.id));
+    if (!lamDuoc(p)) return;
     const u = urgencyOf(c.due ?? null, today);
     const mine = c.owner_user_id === p.userId;
     /*
@@ -828,7 +832,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     if (!mine && !cuaGv) return;
     /* OV-11c (CV-8): chủ Case không còn quyền làm (C02: GVCN không dạy môn đó) — việc không của họ (họ không thấy, Nhắc 404): "Của GV" để trống người giữ. */
     const chu_ = c.owner_user_id ?? null;
-    const chuLamDuoc = mine || chu_ === null || (() => { const x = nguoiCoQuyen.get(chu_); return !!x && can(x, PERMISSIONS.SOS_EDIT, { classId: c.eff_class_id, studentId: c.eff_student_id, skill: c.topic ?? undefined }); })();
+    const chuLamDuoc = mine || chu_ === null || (() => { const x = nguoiCoQuyen.get(chu_); return !!x && lamDuoc(x); })();
     const laThuong = lopCua(c.eff_class_id)?.mode === 'ratio';
     /* T58/MH2: lớp thường nói tên môn ngắn (G+V, P) và "chưa đạt" — không "dưới kỳ vọng". */
     /* OV-11c (CV-17a): tên môn ĐỦ ở mọi khung ("Listening", "Grammar + Vocabulary") — cùng tên với "Thêm PA học thuật …". */

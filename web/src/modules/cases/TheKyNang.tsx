@@ -116,7 +116,7 @@ function KhoiCase({ c, onMoCase }: { c: CaseCard; onMoCase: (caseId: number, o?:
                 : han && han.han !== CHUA_CO_HAN && <span className="text-slate-400"> · {han.han}</span>}
             </>}
           </span>
-          {viecMo && (viecMo.viec === 'ghi-ket-qua' ? !!c.plans.find((p) => p.id === viecMo.paId)?.ghiDuoc : c.canEdit)
+          {viecMo && (viecMo.viec === 'ghi-ket-qua' ? !!c.plans.find((p) => p.id === viecMo.paId)?.ghiDuoc : v.chu === 'Xác nhận Case' ? c.coTheXacNhanCase : c.canEdit)
             ? <button type="button" className="btn btn-primary min-h-[44px] w-full" onClick={() => onMoCase(c.id, viecMo)}>{v.chu.startsWith('Kết quả cuối') ? 'Kết quả cuối' : v.chu === 'Ghi nhận xét' ? v.chu : NUT_VIEC[viecMo.viec!]}</button>
             : (
               <span className="flex items-center justify-between gap-2 text-[12px] text-slate-400">

@@ -4,13 +4,13 @@ import {
   hanXacNhan, issuesForTopic, kiemGhiRoKhac, laKhac, mocQuyChe, ngay, reasonNeedsText, tenCaseSos, hanKyGhiKetQua,
   type AcademicSupportPreset, type CaseDismissReason, type MilestoneKind, nhanBaiThuong } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
-import { addDays, badRequest, notFound, nowIso } from '../util.ts';
+import { addDays, badRequest, forbidden, notFound, nowIso } from '../util.ts';
 import type { Principal } from '../permissions.ts';
 import { addJourney, notify, writeAudit } from '../platform/audit.ts';
 import { suggestCaseOwner } from './owner.ts';
 import { examPlanOf } from '../fasttrack/cycles.ts';
 import { routeCuaLuot } from '../fasttrack/attempts.ts';
-import { addIssues, caseAccess, caseDetail, caseTitleOf, suaPa } from './cases.ts';
+import { addIssues, caseAccess, caseDetail, caseTitleOf, coTheXacNhanCase, suaPa } from './cases.ts';
 import { chenPa } from './taoPa.ts';
 import { followUntilAfter } from './sos.ts';
 import { mondayOf } from '../platform/week.ts';
@@ -226,7 +226,7 @@ export function xacNhanCase(p: Principal, caseId: number, input: {
   const conn = db();
   const c = conn.prepare('SELECT * FROM sos_cases WHERE id = ?').get(caseId) as any;
   if (!c) throw notFound('Không tìm thấy Case');
-  if (!o.daKiemQuyen) caseAccess(caseId).requireEdit(p, EDIT_MESSAGE);
+  if (!o.daKiemQuyen && !coTheXacNhanCase(p, caseId)) throw forbidden(EDIT_MESSAGE);   // GV dạy môn · QL · GVCN lớp đang học (đặc tả 7.2)
   const st = sosCaseState(caseId);
   if (!st.fromSos) throw badRequest('Chỉ Case tự tạo từ kết quả Test mới có bước Xác nhận Case.');
   if (c.status === 'done') throw badRequest('Case này đã đóng rồi.');

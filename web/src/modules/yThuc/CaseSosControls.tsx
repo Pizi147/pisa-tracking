@@ -146,7 +146,8 @@ export function XacNhanCasePanel({ data, onXong, ...chung }: ChungPanel & { data
               {!sua ? (
                 <p className="m-0 flex flex-wrap items-baseline gap-x-2 text-sm text-slate-200">
                   <span>{pa.description}{pa.performer ? ` · ${pa.performer}` : ''}{pa.mocChu ? ` · ${pa.mocChu}` : ''}</span>
-                  <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 text-[13px] font-semibold sm:min-h-0" onClick={() => setSua(true)}>Sửa</button>
+                  {/* Rà #389: chỉ người sửa được PA (`ghiDuoc` = luật Sửa PA) — FOU PA chung do GVCN dạy, GVBM không sửa (không để cả lần xác nhận bị từ chối). */}
+                  {pa.ghiDuoc && <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 text-[13px] font-semibold sm:min-h-0" onClick={() => setSua(true)}>Sửa</button>}
                 </p>
               ) : (
                 <FormPa phang v={v} dat={(p) => setV((x) => (x ? { ...x, ...p } : x))} lf={lf} loi={loi} studentId={data.student?.id} quyChe={{ mocChu: pa.mocChu ?? null }}

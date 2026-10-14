@@ -91,6 +91,8 @@ type CaseCard = {
   issueCode: string | null; issueLabel: string | null;
   summary: string | null;
   canEdit: boolean;
+  /** OV-12c: nút "Xác nhận Case" Progress — GVCN lớp đang học làm được dù không dạy môn (cùng luật máy chủ). */
+  coTheXacNhanCase?: boolean;
   /** Người xem chốt được Case không, và còn gì đang chặn — thẻ tự nói, không phải mở khối thứ hai. */
   canClose: boolean; closeBlockers: string[];
   plans: Plan[];
@@ -441,12 +443,12 @@ function HangCase({ c, ngan, onChanged, onMoCase }: {
           {daXong && c.outcomeLabel && <span className="mt-0.5 block text-[12px] text-slate-500">Kết luận: {c.outcomeLabel}</span>}
         </td>
         <td className="td">
-          {choNguyenNhan && c.canEdit ? (
+          {choNguyenNhan && (tt.k === 'cho-nguyen-nhan' ? c.coTheXacNhanCase : c.canEdit) ? (
             khoiSos === null ? (
               <CotPhai nut={(
                 <>
                   <button type="button" className="btn btn-sm btn-primary" onClick={() => onMoCase(c.id, { viec: 'xac-nhan' })}>{tt.k === 'cho-nhan-xet' ? 'Ghi nhận xét' : 'Xác nhận Case'}</button>
-                  <button type="button" className="btn btn-sm btn-ghost" onClick={() => setKhoiSos('khong-theo-doi')}>Không cần theo dõi…</button>
+                  {c.canEdit && <button type="button" className="btn btn-sm btn-ghost" onClick={() => setKhoiSos('khong-theo-doi')}>Không cần theo dõi…</button>}
                 </>
               )} />
             ) : null

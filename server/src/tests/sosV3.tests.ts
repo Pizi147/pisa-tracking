@@ -758,11 +758,11 @@ export async function runSosV3Tests(t: YThucTestKit) {
     const bid = get('SELECT branch_id n FROM classes WHERE id = ?', CLASS).n;
     const M = () => metricsSvc.metricSet(P.mbManager, 'case-cho-xac-dinh-nguyen-nhan', { branchId: bid }).ids as number[];
     assert(domain.metricById('case-cho-xac-dinh-nguyen-nhan')?.donVi === 'case', 'Chỉ số phải có trong sổ, đơn vị case');
-    /* OV-12c: Case MT không thuộc tập — nguyên nhân lấy từ nhận xét; Case MT cũ chưa nhận xét là việc Ghi nhận xét (Progress: phép kiểm S1→LT2a). */
-    assert(!M().includes(f.w2.id) && !M().includes(f.sp.id), 'Case MT không thuộc tập "chờ xác nhận"');
+    /* OV-12c (rà #389): cùng tập cột "Chờ xác nhận" của Tổng hợp — Case MT cũ bài chưa nhận xét (việc Ghi nhận xét) thuộc tập; có nhận xét (nguyên nhân) thì thôi. */
+    assert(M().includes(f.w2.id) && M().includes(f.sp.id), 'Case MT chưa nhận xét phải thuộc tập "chờ xác nhận"');
     assertThrows(() => sosAuto.xacNhanPaQuyChe(w2T, f.w2Plan.id, { description: MO_TA_PA }), /chưa có nhận xét/, 'Xác nhận PA trước nguyên nhân');
     datNguyenNhanThu(f.w2.id, 'student.writing.task');
-    assert(!M().includes(f.w2.id), 'Có nguyên nhân: vẫn không thuộc tập');
+    assert(!M().includes(f.w2.id), 'Có nguyên nhân: thôi chờ');
     khongTheoDoi(P.mbManager, f.sp.id, { reasonCode: 'single_incident' });
     assert(!M().includes(f.sp.id), 'Case đã đóng không thuộc tập');
     const manual = cases.reportIssue(P.mbManager, { studentId: f.st.id, cycleId: f.st.cycleId, topic: 'reading', primaryCode: 'student.reading.logic',

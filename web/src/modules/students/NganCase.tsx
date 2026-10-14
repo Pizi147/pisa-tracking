@@ -52,7 +52,7 @@ export function NganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose
     if (!tuDong.current || !data) return;
     tuDong.current = false;
     if (data.trangThaiV4?.k === 'cho-nhan-xet' && data.viewer.canEdit) setView({ loai: 'ghi-nhan-xet' });
-    else if (data.trangThaiV4?.k === 'cho-nguyen-nhan' && data.viewer.canEdit) setView({ loai: 'xac-nhan' });
+    else if (data.trangThaiV4?.k === 'cho-nguyen-nhan' && data.viewer.coTheXacNhanCase) setView({ loai: 'xac-nhan' });
   }, [data]);
   const xong = () => { reload(); onChanged?.(); veCase(); };
 
@@ -177,9 +177,9 @@ export function NganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose
         ? <span className="text-xs text-slate-400">Hệ thống đóng — Hoàn tác Kết thúc học để mở</span>
         : null;
   const nutChinh = (() => {
-    if (!data.viewer.canEdit || !canDong) return undefined;
     const nut = (chu: string, lam: () => void, title?: string) => <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" title={title} onClick={lam}>{chu}</button>;
-    if (v?.chu === 'Xác nhận Case') return nut('Xác nhận Case', () => setView({ loai: 'xac-nhan' }));
+    if (v?.chu === 'Xác nhận Case') return data.viewer.coTheXacNhanCase && canDong ? nut('Xác nhận Case', () => setView({ loai: 'xac-nhan' })) : undefined;
+    if (!data.viewer.canEdit || !canDong) return undefined;
     if (v?.chu === 'Ghi nhận xét') return nut('Ghi nhận xét', () => setView({ loai: 'ghi-nhan-xet' }));
     if (v?.chu.startsWith('Xác nhận PA') && v.paId) return nut('Xác nhận PA', () => setView({ loai: 'xac-nhan-pa', paId: v.paId! }));
     if (v?.loaiHan === 'cap-nhat-pa' && v.paId) return nut(v.chu.startsWith('Kết quả cuối') ? 'Kết quả cuối' : 'Kết quả', () => setView({ loai: 'ghi-ket-qua', paId: v.paId! }), v.chu);  /* tên PA là chữ người dạy gõ (có thể dài) — chỉ để ở tooltip; nút nào cũng đã có "Kết quả" riêng ở thẻ PA */

@@ -22,7 +22,7 @@ import {
   type CaseOutcome, type FollowUpOutcome, type InterventionKind,
 } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, chuTuDo, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
-import { can, napTruocPhamVi, require_, scopeFor, type Principal } from '../permissions.ts';
+import { can, isCoreTeacherOf, napTruocPhamVi, require_, scopeFor, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
 import { nho, trongBoNho } from '../platform/nguCanhRequest.ts';
 import { addJourney, notify, quanLyCuaChiNhanh, writeAudit } from '../platform/audit.ts';
@@ -431,6 +431,15 @@ export function caseAccess(caseId: number) {
     reportedBy: (c.reported_by ?? null) as number | null,
     topic: (c.topic ?? null) as string | null,
   };
+}
+
+/**
+ * OV-12c (đặc tả 7.2, rà #389): ai làm được "Xác nhận Case" Progress — người sửa được Case (GV dạy môn, QL) HOẶC GVCN lớp em đang học,
+ * kể cả khi GVCN không dạy môn đó. Người phụ trách Case không đổi. Một hàm cho máy chủ (`xacNhanCase`), Công việc (`cause`) và cờ nút.
+ */
+export function coTheXacNhanCase(p: Principal, caseId: number): boolean {
+  const c = loadCase(caseId);
+  return can(p, PERMISSIONS.SOS_EDIT, sosEditCtx(c)) || (!!c.current_class_id && isCoreTeacherOf(p, c.current_class_id));
 }
 
 // ---------------------------------------------------------------- giáo viên báo vấn đề
@@ -1991,6 +2000,8 @@ export function caseDetail(p: Principal, caseId: number) {
     hoanThanh,
     viewer: {
       canEdit: can(p, PERMISSIONS.SOS_EDIT, sosEditCtx(c)),
+      /** OV-12c: nút / panel "Xác nhận Case" Progress (GVCN lớp đang học làm được dù không dạy môn). */
+      coTheXacNhanCase: sosSt.fromSos && !sosSt.laMt && !sosSt.hasCause && coTheXacNhanCase(p, caseId),
       canClose: canCloseCase(p, c),
       canApprove: quanLyCase,
       /* PR-LUI-a2: Mở lại (Case đã hoàn thành) · Sửa · Xoá Case (QL/QT, Case báo tay chưa có PA ghi kết quả) · Kỹ năng khoá khi đã có PA. */
@@ -2779,6 +2790,9 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
             classId: lopDangHoc, studentId,
             skill: c.topic ?? undefined,
           }),
+          /* OV-12c: nút "Xác nhận Case" — cùng luật `coTheXacNhanCase` (sửa được Case hoặc GVCN lớp đang học), không thêm câu SQL mỗi Case. */
+          coTheXacNhanCase: can(p, PERMISSIONS.SOS_EDIT, { classId: lopDangHoc, studentId, skill: c.topic ?? undefined })
+            || (!!lopDangHoc && isCoreTeacherOf(p, lopDangHoc)),
           /*
            * HOÀN THÀNH CASE NGAY TRÊN THẺ (PR-D). Khối `CasePanel` nhúng bên dưới thẻ đã bị
            * gỡ, nên thẻ tự nói: người xem có chốt được không, và còn gì đang chặn. Lấy đúng

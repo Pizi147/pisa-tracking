@@ -90,7 +90,7 @@ export type CaseDetail = {
   issues: any[]; interventions: any[]; followups: any[]; history: any[];
   /** OV-12c (P5): Case MT — nguyên nhân theo từng lượt (nhận xét + nhóm của bài lượt đó). */
   nguyenNhanTheoLuot?: { attemptId: number; luot: string; nhanXet: string | null; nhom: { code: string; label: string }[] }[];
-  viewer: { canEdit: boolean; canClose: boolean; canApprove: boolean;
+  viewer: { canEdit: boolean; canClose: boolean; canApprove: boolean; /** OV-12c: Xác nhận Case Progress (GVCN lớp đang học làm được). */ coTheXacNhanCase?: boolean;
     /** PR-LUI-a2: Mở lại (Case đã hoàn thành, QL/QT) · Sửa Case · Xoá Case / câu chặn · Kỹ năng khoá · tên để sửa. */
     coTheMoLai?: boolean; coTheSua?: boolean; coTheXoa?: boolean; chanXoa?: string | null; khoaKyNang?: boolean; tenSua?: string | null };
 };

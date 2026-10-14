@@ -104,7 +104,7 @@ export async function runPrOv12cTests(t: YThucTestKit) {
     assert(!all(`SELECT 1 FROM yeu_cau_duyet WHERE loai = 'bao_len_nguyen_nhan' AND doi_tuong_id IN (?, ?)`, cs[0].id, cs[1].id).length, 'không thẻ Báo lên nguyên nhân');
     for (const id of ['case-cho-xac-dinh-nguyen-nhan', 'case-xac-dinh-nguyen-nhan-qua-han']) {
       const ids = metrics.metricSet(QL, id, {}).ids as number[];
-      assert(!ids.some((x) => cs.some((c) => c.id === x)), `${id} không đếm Case MT`);
+      assert(!ids.some((x) => cs.some((c) => c.id === x)), `${id} không đếm Case MT đã có nguyên nhân`);
     }
     assert(/không phải Progress|nhận xét/i.test((() => { try { sosAuto.xacNhanCase(QL, cL.id, { primaryCode: nL[0], moTa: 'x'.repeat(20) }); return ''; } catch (e: any) { return e.message; } })()),
       'Case MT không còn bước Xác nhận Case');
@@ -225,6 +225,40 @@ export async function runPrOv12cTests(t: YThucTestKit) {
     assert(one('SELECT summary FROM sos_cases WHERE id = ?', c.id).summary === 'Viết thiếu ý, sai thì động từ ở đoạn 2.', 'mô tả');
   }));
 
+  /* Rà #389 (đặc tả 7.2): GVCN làm được dù KHÔNG dạy môn đó — MB FOU 12: GVCN dạy L + R, Writing do GVBM khác dạy. */
+  check('OV12c-7b · GVCN không dạy môn: Xác nhận Case Progress được (máy chủ + cờ nút); GVBM môn khác vẫn 403; Case về GVCN (không ai dạy môn) có dòng ở Công việc', () => thu(() => {
+    const lopF = classId('MB FOU 12');
+    const gvcn = loadPrincipal(one(`SELECT user_id u FROM teacher_assignments WHERE class_id = ? AND is_core = 1 AND status = 'active'`, lopF).u);
+    const gvW = one(`SELECT user_id u FROM teacher_assignments WHERE class_id = ? AND skill = 'writing' AND status = 'active'`, lopF).u;
+    assert(gvW !== gvcn.userId, 'phép kiểm cần GVCN KHÔNG dạy Writing');
+    const ctF = one('SELECT programme_code ct FROM classes WHERE id = ?', lopF).ct;
+    const maW = [dm.issuesForTopic('writing', ctF).find((i: any) => !dm.laKhac(i.code)).code];
+    const em = taoEmThuong('OV12c FOU GVCN', 'MB FOU 12');
+    nhapThuong(em.pt, { listening: 18, reading: 18, writing: 10, speaking: 18 });
+    const c = one(`SELECT * FROM sos_cases WHERE student_id = ? AND topic = 'writing'`, em.id);
+    assert(c.owner_user_id === gvW, `Case về GVBM Writing: ${c.owner_user_id}`);
+    assert(cases.caseDetail(gvcn, c.id).viewer.coTheXacNhanCase === true, 'cờ nút Xác nhận Case của GVCN');
+    /* Rà #389 (2): FOU PA Bổ trợ chung do GVCN dạy — GVBM Writing không sửa được PA (UI ẩn "Sửa" theo `ghiDuoc` = luật Sửa PA), GVCN sửa được. */
+    const bt = (p: any) => cases.caseDetail(p, c.id).interventions.find((x: any) => x.kind === 'bo_tro');
+    assert(bt(loadPrincipal(gvW)).ghiDuoc === false && bt(gvcn).ghiDuoc === true, `ghiDuoc PA chung: GVBM ${bt(loadPrincipal(gvW)).ghiDuoc} · GVCN ${bt(gvcn).ghiDuoc}`);
+    const gvS = loadPrincipal(one(`SELECT user_id u FROM teacher_assignments WHERE class_id = ? AND skill = 'speaking' AND status = 'active'`, lopF).u);
+    assert(cases.caseDetail(gvS, c.id).viewer.coTheXacNhanCase === false, 'GVBM Speaking không có nút');
+    let loiS: any = null;
+    try { sosAuto.xacNhanCase(gvS, c.id, { nhom: maW, moTa: 'Viết thiếu ý, sai thì động từ ở đoạn 2.' }); } catch (e) { loiS = e; }
+    assert(loiS?.status === 403, `GVBM Speaking: ${loiS?.status}`);
+    sosAuto.xacNhanCase(gvcn, c.id, { nhom: maW, moTa: 'Viết thiếu ý, sai thì động từ ở đoạn 2.' });
+    assert(issues(c.id)[0]?.role === 'primary', 'GVCN xác nhận được');
+    /* Không ai dạy Speaking → Case về GVCN; GVCN không có SOS_EDIT môn đó nhưng vẫn có dòng "Xác nhận Case" của mình. */
+    conn.prepare(`UPDATE teacher_assignments SET status = 'inactive' WHERE class_id = ? AND skill = 'speaking'`).run(lopF);
+    xoaNho();
+    const em2 = taoEmThuong('OV12c FOU GVCN 2', 'MB FOU 12');
+    nhapThuong(em2.pt, { listening: 18, reading: 18, writing: 18, speaking: 8 });
+    const c2 = one(`SELECT * FROM sos_cases WHERE student_id = ? AND topic = 'speaking'`, em2.id);
+    assert(c2.owner_user_id === gvcn.userId, `Case về GVCN: ${c2.owner_user_id}`);
+    const dong = mywork.myWork(loadPrincipal(gvcn.userId)).items.find((it: any) => it.key === `cause:${c2.id}`);
+    assert(dong && dong.mine, 'GVCN thiếu dòng Xác nhận Case ở Công việc');
+  }));
+
   check('OV12c-8 · Case MT cũ ô chưa nhận xét → "Chờ ghi nhận xét" + việc "Ghi nhận xét {kỹ năng} · MT{n}"; GV ghi sau hoàn tất được, Case tự sang Chờ xác nhận PA', () => thu(() => {
     dung(luot);
     chotSos2(luot);
@@ -235,12 +269,20 @@ export async function runPrOv12cTests(t: YThucTestKit) {
     xoaNho();
     const ct = cases.caseDetail(QL, cL.id);
     assert(ct.trangThaiV4.k === 'cho-nhan-xet' && ct.trangThaiV4.chu === 'Chờ ghi nhận xét', `trạng thái: ${JSON.stringify(ct.trangThaiV4)}`);
+    /* Rà #389 (3): Tổng quan "Case chờ xác nhận" cùng tập cột "Chờ xác nhận" của Tổng hợp (gộp Chờ ghi nhận xét); Báo QL vẫn chỉ Progress. */
+    const choXn = () => metrics.metricSet(QL, 'case-cho-xac-dinh-nguyen-nhan', {}).ids as number[];
+    assert(choXn().includes(cL.id), 'Tổng quan thiếu Case MT chờ ghi nhận xét');
+    conn.prepare('UPDATE sos_cases SET han_xac_nhan = ? WHERE id = ?').run(t.addDays(TODAY, -2), cL.id);
+    assert((metrics.metricSet(QL, 'case-xac-dinh-nguyen-nhan-qua-han', {}).ids as number[]).includes(cL.id), 'Tổng quan thiếu Case MT quá hạn ghi nhận xét');
+    yeuCau.quetYeuCau(TODAY);
+    assert(!all(`SELECT 1 FROM yeu_cau_duyet WHERE loai = 'bao_len_nguyen_nhan' AND doi_tuong_id = ?`, cL.id).length, 'Báo QL chỉ cho Progress');
     const no = one('SELECT attempt_no n FROM assessment_attempts WHERE id = ?', luot).n;
     const gv = P.lrTeacher;
     const it = mywork.myWork(gv, {}).items.find((x: any) => x.caseId === cL.id);
     assert(it && it.group === 'ghi_nhan_xet' && it.tieuDe.startsWith(`Ghi nhận xét Listening · MT${no}`) && it.luot && it.kn === 'listening', `việc: ${JSON.stringify(it && { g: it.group, t: it.tieuDe, l: it.luot, k: it.kn })}`);
     attempts.saveScore(gv, luot, 'listening', { nhanXet: 'Bổ sung: nghe sót số liệu Part 1.', nhomNguyenNhan: [nhom('listening')[0]] }, '2026-12-01', { tuNguoiDung: true });
     assert(cases.caseDetail(QL, cL.id).trangThaiV4.k === 'cho-xac-nhan-pa', 'lưu nhận xét xong → Chờ xác nhận PA');
+    assert(!choXn().includes(cL.id), 'đã có nhận xét: ra khỏi tập chờ xác nhận');
     let loi = '';
     try { attempts.saveScore(gv, luot, 'listening', { band: 7 }, '2026-12-01', { tuNguoiDung: true }); } catch (e: any) { loi = e.message; }
     assert(/hoàn tất/.test(loi), `sau hoàn tất GV vẫn không sửa điểm: ${loi}`);
