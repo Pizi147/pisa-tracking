@@ -83,7 +83,7 @@ export async function runPrOv12eTests(t: YThucTestKit) {
      FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
      WHERE iv.preset = 1 AND iv.confirmed_at IS NULL AND iv.status = 'planned' AND iv.kind != 'bo_tro' AND sc.status != 'done'
        AND sc.student_id IS NOT NULL AND sc.topic IN ('listening', 'reading', 'speaking') ORDER BY iv.id LIMIT 40`)
-    .find((r) => cases.caseDetail(P.mbManager, r.case_id).trangThaiV4?.k === 'cho-xac-nhan-pa');
+    .find((r) => { try { return cases.caseDetail(P.mbManager, r.case_id).trangThaiV4?.k === 'cho-xac-nhan-pa'; } catch { return false; } });   // chỉ Case QL MB xem được
   /** GV chỉ dạy MÔN KHÁC ở lớp của Case (không GVCN). */
   const gvMonKhac = (lop: number, topic: string) => {
     const r = one(`SELECT ta.user_id u FROM teacher_assignments ta WHERE ta.class_id = ? AND ta.status = 'active' AND ta.skill IS NOT NULL AND ta.skill != ?

@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
+import { Suspense, lazy, useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { INTERVENTION_KIND_LABEL, METRIC_UNIT_LABEL, metricById, nhanQuaHan, thamSoCt, type ChiSo, type ChuongTrinh, type DeadlineKind } from '@shared/domain/index.ts';
 import { useApi } from '../lib/useApi.ts';
@@ -9,7 +9,6 @@ import { CanLam, NutChu } from './KhuonViec.tsx';
 import { ChipHan } from './Nhan.tsx';
 import { Empty, ErrorState, Skeleton } from './ui.tsx';
 import { useNgayNghiepVu } from './ngayNghiepVu.ts';
-import { LamDongSoLieu } from '../modules/worklist/LamDongSoLieu.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 
 const THOI_GIAN_NHAN: Record<ChiSo['thoiGian'], string> = {
@@ -76,6 +75,9 @@ function DongNguoiHan({ nguoi, han, chiHan }: { nguoi: string | null; han: strin
   );
 }
 
+/* Việc dài của dòng (Ngăn Case, Nhập điểm, Vận hành) chỉ tải khi bấm — trang có ô số không kéo cả cây panel làm việc vào lần tải đầu. */
+const LamDongSoLieu = lazy(() => import('../modules/worklist/LamDongSoLieu.tsx').then((m) => ({ default: m.LamDongSoLieu })));
+
 /** Chip "⚠ n quá hạn" ở đầu panel số liệu — cùng màu chip hạn quá hạn (`ChipHan`). */
 const CHIP_TRE = 'inline-flex h-6 shrink-0 items-center gap-1 whitespace-nowrap rounded-full border border-late-line bg-late-bg px-2.5 text-[12.5px] font-bold tabular-nums text-late';
 
@@ -130,12 +132,16 @@ export function NganDanhSach({ tieuDe, dv, data, loading, error, reload, onDong,
       setVuaXong(t('Đã xác nhận PA · {ten}', { ten: r.em?.ten ?? r.title }));
       const i = hien.findIndex((x) => x.id === r.id);
       setMo(hien.slice(i + 1).find((x) => x.viec?.lam && !x.xong)?.id ?? null);   // dòng kế của bạn tự mở
-    } catch (e: any) { setLoiDong({ id: r.id, loi: e?.message ?? t('Chưa lưu được') }); } finally { setBusy(null); }
+    } catch (e: any) { setLoiDong({ id: r.id, loi: e?.message ?? t('Không lưu được') }); } finally { setBusy(null); }
   };
 
   if (lam) {
-    return <LamDongSoLieu dong={lam} onDong={onDong} onVe={() => { setMo(lam.id); setLam(null); }}
-      onDaLam={() => { daLam(lam, t('Đã lưu')); setVuaXong(`${dich(lam.viec?.chu ?? '')} · ${lam.em?.ten ?? lam.title}`); }} />;
+    return (
+      <Suspense fallback={<KhungPanel tieuDe={tieuDe} onDong={onDong}><div className="pt-3"><Skeleton rows={6} /></div></KhungPanel>}>
+        <LamDongSoLieu dong={lam} onDong={onDong} onVe={() => { setMo(lam.id); setLam(null); }}
+          onDaLam={() => { daLam(lam, t('Đã lưu')); setVuaXong(`${dich(lam.viec?.chu ?? '')} · ${lam.em?.ten ?? lam.title}`); }} />
+      </Suspense>
+    );
   }
 
   const veDong = (r: DongSoLieu & { xong?: string }) => {

@@ -160,7 +160,7 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', lop, onC
   if (daLuu?.loai === 'nhap') {
     const soTep = nhap.data?.soTep ?? 0;
     const nutGui = <button type="button" className="btn btn-primary min-h-[40px] px-4 font-bold" disabled={busy}
-      onClick={() => { lf.bam(); if (soTep > 0) void gui(); }}>{t('Gửi QL duyệt')}</button>;
+      onClick={() => { lf.bam(); if (soTep > 0) void gui(); }}>Gửi Quản lý duyệt · trả lời trong 5 ngày</button>;
     return (
       <KhungPanel tieuDe="Đề xuất QL duyệt" hocVien={d.ten} onDong={dong} dau={dau(false)}
         chan={{ v3: true, chinh: nutGui, conThieu: soTep === 0 && lf.daBam ? [{ nhan: 'Bằng chứng', lyDo: 'Cần đính kèm tệp hoặc liên kết' }] : undefined }}>
@@ -284,7 +284,7 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', lop, onC
             <span className="max-sm:hidden">{nutChinh}</span>
             {/* Chủ sản phẩm 02/10 → mockup v3 §8: "Đề xuất QL duyệt" là nút chữ đứng sau nút chính. */}
             {cheDo === 'xu-ly' && d.canManage && (
-              <NutChu disabled={busy} onClick={() => { setCheDo('de-xuat'); lf.datLai(); }}>Đề xuất QL duyệt</NutChu>
+              <NutChu disabled={busy} title="Cần xử lý nặng hơn: Meeting CX/GĐCN, WL 3, Đình chỉ…" onClick={() => { setCheDo('de-xuat'); lf.datLai(); }}>Đề xuất QL duyệt</NutChu>
             )}
             {cheDo === 'de-xuat' && <NutChu onClick={() => { setCheDo('xu-ly'); lf.datLai(); }}>← Quay lại Xác nhận xử lý</NutChu>}
           </div>

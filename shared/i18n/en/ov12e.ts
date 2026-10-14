@@ -2,7 +2,6 @@
 import type { Dich } from '../en.ts';
 
 export const EN_OV12E = {
-  'Chưa lưu được': 'Not saved',
   'Huỷ sửa': 'Discard changes',
   'Chưa lưu': 'Unsaved',
   'Danh sách': 'List',
@@ -27,7 +26,6 @@ export const EN_OV12E = {
   'Ghi kết quả cuối': 'Record final result',
   'Phương án': 'Plan',
   'Bắt đầu': 'Start',
-  'Gửi QL duyệt': 'Send to manager',
   'Thêm PA': 'Add plan',
   'Ý thức': 'Conduct',
   'Bậc xử lý': 'Response level',

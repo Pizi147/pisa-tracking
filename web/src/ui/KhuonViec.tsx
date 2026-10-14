@@ -74,7 +74,7 @@ export function TrangThaiLuu({ tt, loi, onHuy, onThuLai }: { tt: 'nhap' | 'dang'
   return (
     <>
       {tt === 'loi'
-        ? <span role="alert" className="font-semibold text-bad">⚠ {t('Chưa lưu được')}{loi ? ` — ${loi}` : ''}</span>
+        ? <span role="alert" className="font-semibold text-bad">⚠ {t('Không lưu được')}{loi ? ` — ${loi}` : ''}</span>
         : <span className={tt === 'nhap' ? 'inline-flex items-center gap-1.5 text-slate-300' : ''}>
             {tt === 'nhap' && <span aria-hidden className="inline-block h-2 w-2 rounded-full bg-soon" />}{tt === 'dang' ? t('Đang lưu…') : t('Chưa lưu')}
           </span>}
@@ -86,9 +86,9 @@ export function TrangThaiLuu({ tt, loi, onHuy, onThuLai }: { tt: 'nhap' | 'dang'
 }
 
 /** Nút chữ (nút phụ v3) — đứng sau nút chính trong khối Cần làm; một nút chính duy nhất nổi. */
-export function NutChu({ children, onClick, mo, disabled }: { children: ReactNode; onClick: () => void; mo?: boolean; disabled?: boolean }) {
+export function NutChu({ children, onClick, mo, disabled, title }: { children: ReactNode; onClick: () => void; mo?: boolean; disabled?: boolean; title?: string }) {
   return (
-    <button type="button" disabled={disabled} onClick={onClick}
+    <button type="button" disabled={disabled} onClick={onClick} title={title}
       className={`btn btn-ghost min-h-[44px] font-semibold sm:min-h-[40px] ${mo ? 'text-slate-400' : 'text-[color:var(--accent)]'}`}>{children}</button>
   );
 }

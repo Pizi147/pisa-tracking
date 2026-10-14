@@ -40,7 +40,7 @@ type ChungPanel = {
  * THÊM PHƯƠNG ÁN (mục 8.2) — PR-PA (§8): một form PA (`FormPa`): Loại · Nội dung · Số buổi · Người dạy / Người thực hiện (không bắt buộc)
  * · Ngày bắt đầu. PA đã làm trước đây là liên kết phụ cuối form (K3-18). OV-12e (mockup v3 §6): khuôn panel v3 — đầu "Thêm PA" + chip hạn /
  * em ↗ · lớp · ngữ cảnh (nơi gọi truyền `dau`), MỘT khối Cần làm (form + nút chính "Thêm PA" / "Gửi QL duyệt"), Bối cảnh ≤ 3 dòng, chân trạng thái lưu;
- * Bắt đầu = ô ngày gõ được + nút lịch (`ONgay`), mặc định hôm nay.
+ * Bắt đầu = ô ngày gõ được + nút lịch (`ChonNgayGan` = `ONgay`, không sau hôm nay), mặc định hôm nay.
  */
 export function ThemPaPanel({ caseId, studentId, coPaBatBuoc, hocVien, lop, quayLai, onClose, onSaved, dau, boiCanh }: ChungPanel & {
   caseId: number; studentId?: number | null;
@@ -90,7 +90,7 @@ export function ThemPaPanel({ caseId, studentId, coPaBatBuoc, hocVien, lop, quay
 
   const nut = (
     <button type="button" className="btn btn-primary min-h-[40px] px-4 font-bold" disabled={busy} onClick={luu}>
-      {busy ? t('Đang lưu…') : deXuat ? t('Gửi QL duyệt') : t('Thêm PA')}
+      {busy ? t('Đang lưu…') : deXuat ? 'Gửi Quản lý duyệt' : t('Thêm PA')}
     </button>
   );
   const daSua = !!(v.description.trim() || status === 'completed');
@@ -114,7 +114,7 @@ export function ThemPaPanel({ caseId, studentId, coPaBatBuoc, hocVien, lop, quay
               </Truong>
             ) : (
               <Truong nhan={t('Bắt đầu')} batBuoc>
-                <ONgay kieu="ngay" value={startedDate} onChange={setStartedDate} />
+                <ChonNgayGan value={startedDate} onChange={setStartedDate} ariaLabel={t('Bắt đầu')} />
               </Truong>
             )}
             cuoi={(
