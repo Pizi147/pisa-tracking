@@ -33,8 +33,8 @@ if (fs.existsSync(DB_PATH) && hasLegacyDisciplineModel(db())) {
   }
 }
 
-/* Turso qua mạng có lúc đóng kết nối giữa chừng (`Hrana(Http("connection closed…"))`). migrate() chạy lặp được (lần hai là no-op;
- * phần đang dở nằm trong giao dịch nên bị cuộn lại) → mở kết nối mới và chạy lại, tối đa LAN_THU lần. Lỗi khác ném ngay. */
+/* Turso qua mạng có lúc đóng kết nối giữa chừng (`Hrana(Http("connection closed…"))`). migrate() chạy lặp được (mỗi bước một giao dịch ngắn:
+ * bước đã chốt thành no-op, bước đang dở bị cuộn lại) → mở kết nối mới và chạy lại, tối đa LAN_THU lần. Lỗi khác ném ngay. */
 const LAN_THU = 6;
 function migrateCoThuLai(): ReturnType<typeof migrate> {
   for (let lan = 1; ; lan++) {
