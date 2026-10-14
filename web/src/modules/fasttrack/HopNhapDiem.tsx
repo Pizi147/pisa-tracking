@@ -118,7 +118,12 @@ const KIEU_O = {
 /** OV-12b: chữ thiếu ngay dưới ô (nút giữ cỡ cũ — hàng lưới không cao thêm). */
 function ChuThieu({ cell }: { cell: Cell }) {
   if (!cell.thieuNhanXet) return null;
-  return <span className="block text-right text-xs font-semibold leading-tight text-soon">{CHU_O_THIEU[cell.thieuNhanXet]}</span>;
+  /* "thiếu nhận xét" vừa cột 104 px một dòng; "thiếu nhóm nguyên nhân" dài hơn → xuống dòng. */
+  return (
+    <span className={`block text-right text-xs font-semibold leading-tight text-soon ${cell.thieuNhanXet === 'chon-nhom' ? '' : 'whitespace-nowrap'}`}>
+      {CHU_O_THIEU[cell.thieuNhanXet]}
+    </span>
+  );
 }
 
 /**
