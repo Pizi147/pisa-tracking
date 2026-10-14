@@ -2,7 +2,7 @@ import { db } from '../db.ts';
 /** dd/mm — hạn cụ thể trên dòng panel. */
 const ngayNgan = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
-import { ATTEMPT_KIND_SHORT, addDaysIso, chuViecChotLoTrinh, daiDienNhomBoTro, baiId, duongCase, duongDotTest, nhanLoaiXuLy, nhanTuanGhiKetQua, PERMISSIONS, VIOLATION_CATEGORY_LABEL, tachTenMoTa, metricById, tachBaiId, tenMon, tenMonNgan, tuanLich, type AttemptKind, type ChiSo, type ChuongTrinh } from '../../../shared/domain/index.ts';
+import { ATTEMPT_KIND_SHORT, addDaysIso, khoaBai, nhanBai,chuViecChotLoTrinh, daiDienNhomBoTro, baiId, duongCase, duongDotTest, nhanLoaiXuLy, nhanTuanGhiKetQua, PERMISSIONS, VIOLATION_CATEGORY_LABEL, tachTenMoTa, metricById, tachBaiId, tenMon, tenMonNgan, tuanLich, type AttemptKind, type ChiSo, type ChuongTrinh } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { classScopeSql, scopeFor, type Principal, type Scope } from '../permissions.ts';
 import { badRequest, forbidden, HttpError, notFound } from '../util.ts';
@@ -161,7 +161,8 @@ export function rowsFor(unit: ChiSo['donVi'], ids: number[], metricId?: string):
            LEFT JOIN classes c ON c.id = a.class_id LEFT JOIN report_periods pr ON pr.id = a.planned_period_id
           WHERE a.id IN (${ph})`,
       ).all(...chunk) as any[]) {
-        const name = r.kind === 'mock' ? `MT${r.attempt_no}` : r.kind === 'final' ? 'Bài Final Test' : 'Bài Progress Test';
+        const name = r.kind === 'mock' ? `MT${r.attempt_no}` : r.kind === 'checkpoint' ? nhanBai(khoaBai(r.kind, r.attempt_no))   // OV-11h: "Checkpoint 1"
+          : r.kind === 'final' ? 'Bài Final Test' : 'Bài Progress Test';
         byId.set(r.id, {
           id: r.id, title: `${name} · ${r.full_name}`,
           sub: [r.student_code, r.class_code, r.period_code].filter(Boolean).join(' · '),

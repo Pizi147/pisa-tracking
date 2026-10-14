@@ -70,7 +70,8 @@ export function PhanTich() {
     if (branchId || branchCount !== 1) return;
     const only = branches.data?.length === 1 ? branches.data[0] : null;
     if (!only) return;
-    const next = new URLSearchParams(params);
+    /* OV-11h (PT-12): đọc URL MỚI NHẤT — cùng lượt vẽ, Tổng hợp vừa ghi `mo-hang` (mở sẵn hàng đầu); `params` của lượt vẽ trước sẽ đè mất nó. */
+    const next = new URLSearchParams(window.location.search);
     next.set('cn', String(only.id));
     setParams(next, { replace: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -101,7 +102,8 @@ export function PhanTich() {
   };
 
   /* Ô lớp (Q6) — P14 (PR-YT2): máy chủ Ý thức nay đã nhận tham số lớp, nên bật lại ở góc nhìn Ý thức. */
-  const classesApi = useApi<any[]>(`/ref/classes${branchId ? `?branchId=${branchId}` : ''}`, [branchId]);
+  /* OV-11h (PT-10): `tg` → thêm lớp đã kết thúc có lượt trong khoảng (nhóm "Đã kết thúc"). */
+  const classesApi = useApi<any[]>(`/ref/classes?tg=${tg}${branchId ? `&branchId=${branchId}` : ''}`, [branchId, tg]);
   /* Ý thức gộp hai khung (Q2) → ô Lớp liệt kê mọi lớp; góc nhìn khác chỉ lớp của khung đang chọn. */
   const laYThuc = goc === 'y-thuc';
   const classes = (classesApi.data ?? []).filter((c) => laYThuc || (c.scoring_mode === 'ratio') === (ct === 'thuong'));
@@ -138,7 +140,12 @@ export function PhanTich() {
           </select>}
           <select className="field w-40 text-xs" value={classId ?? ''} onChange={(e) => setClassId(e.target.value)} aria-label="Lớp">
             <option value="">Mọi lớp</option>
-            {classes.map((c) => <option key={c.id} value={c.id}>{c.code}</option>)}
+            {classes.filter((c) => !c.ket_thuc).map((c) => <option key={c.id} value={c.id}>{c.code}</option>)}
+            {classes.some((c) => c.ket_thuc) && (
+              <optgroup label="Đã kết thúc">
+                {classes.filter((c) => c.ket_thuc).map((c) => <option key={c.id} value={c.id}>{c.code}</option>)}
+              </optgroup>
+            )}
           </select>
         </div>)}
       </div>

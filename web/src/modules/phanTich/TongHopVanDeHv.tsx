@@ -152,12 +152,12 @@ export function TongHopVanDeHv(props: PhamViPhanTich) {
                   {data.chuaPhanLoai.case > 0 && (
                     <tr className="bg-soon-bg text-soon font-bold" style={{ boxShadow: 'inset 3px 0 0 rgb(var(--soon-rgb))' }}>
                       <td className="px-3 py-2 sticky-col" style={{ background: 'rgb(var(--soon-bg-rgb))' }}
-                        title="Case chờ xác nhận nguyên nhân — chưa vào được bảng này và Hiệu quả PA">
-                        <SoLieuO giaTri={data.chuaPhanLoai.case} nguon={nguon('chua-phan-loai', 'case')} tieuDe="Case chờ xác nhận nguyên nhân" /> Case chờ xác nhận nguyên nhân
+                        title="Case chưa phân nhóm nguyên nhân — chưa vào được bảng này và Hiệu quả PA">
+                        <SoLieuO giaTri={data.chuaPhanLoai.case} nguon={nguon('chua-phan-loai', 'case')} tieuDe="Case chưa phân nhóm nguyên nhân" /> Case chưa phân nhóm nguyên nhân
                         {data.chuaPhanLoai.quaHan > 0 && <span className="font-normal"> ({data.chuaPhanLoai.quaHan} quá hạn)</span>}
                       </td>
-                      <td className="text-right tabular-nums"><SoLieuO giaTri={data.chuaPhanLoai.hv} nguon={nguon('chua-phan-loai', 'hv')} tieuDe="Chưa phân loại · học viên" /></td>
-                      <td className="text-right tabular-nums"><SoLieuO giaTri={data.chuaPhanLoai.lop} nguon={nguon('chua-phan-loai', 'lop')} tieuDe="Chưa phân loại · lớp" /></td>
+                      <td className="text-right tabular-nums"><SoLieuO giaTri={data.chuaPhanLoai.hv} nguon={nguon('chua-phan-loai', 'hv')} tieuDe="Chưa phân nhóm nguyên nhân · học viên" /></td>
+                      <td className="text-right tabular-nums"><SoLieuO giaTri={data.chuaPhanLoai.lop} nguon={nguon('chua-phan-loai', 'lop')} tieuDe="Chưa phân nhóm nguyên nhân · lớp" /></td>
                       <td colSpan={3} className="pl-6 text-xs font-normal">
                         {/* PR-SOS (K1-22): việc của GV nằm ở Công việc — trỏ thẳng nhóm Xác nhận nguyên nhân. */}
                         {session?.nav?.work && <Link to="/cong-viec?loai=cause" className="underline underline-offset-2">Xem trong Công việc →</Link>}

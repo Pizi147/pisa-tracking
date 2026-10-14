@@ -282,7 +282,7 @@ export async function runPrPb2bTests(t: YThucTestKit) {
   check('Pb2b (3e) · ketQuaHoSoGv lớp thường: khoá dòng ∈ listening/reading/writing/speaking (Pre FOU tong_hop) — web xếp đúng 4 cột cố định', () => {
     for (const gv of all(`SELECT DISTINCT ta.user_id FROM teacher_assignments ta JOIN classes c ON c.id = ta.class_id WHERE c.is_fast_track = 0 AND ta.status = 'active' LIMIT 6`)) {
       for (const k of hoSo.ketQuaHoSoGv(P.admin, gv.user_id).ketQua.filter((x: any) => x.khung === 'thuong')) {
-        assert(k.o.every((o: any) => ['listening', 'reading', 'writing', 'speaking', 'tong_hop'].includes(o.dong)), `${k.ma}: ${k.o.map((o: any) => o.dong)}`);
+        assert(k.o.every((o: any) => ['listening', 'reading', 'writing', 'speaking', 'tong_hop', 'listening_speaking', 'reading_writing'].includes(o.dong)), `${k.ma}: ${k.o.map((o: any) => o.dong)}`);
       }
     }
   });
@@ -437,7 +437,7 @@ export async function runPrPb2bTests(t: YThucTestKit) {
   });
   check('Pb2b (4j) · Lớp thường: không PA hiệu quả, không HV tiến bộ; Kết quả đúng 4 khoá; FOU người P chỉ có cột S (P); sắp theo tên; GV không phân công trong khung → không hàng', () => {
     const b = pt.phanTichGiaoVien(P.mbManager, { ct: 'thuong', thang: '2026-09' });
-    assert(b.hang.length > 0 && b.hang.every((h: any) => h.paHieuQua === undefined && h.tienBo === undefined && Object.keys(h.ketQua).join() === 'listening,reading,writing,speaking'), 'khoá cột');
+    assert(b.hang.length > 0 && b.hang.every((h: any) => h.paHieuQua === undefined && h.tienBo === undefined && Object.keys(h.ketQua).join() === 'listening,reading,writing,speaking,listening_speaking,reading_writing'), 'khoá cột');   // OV-11h: + L+S · R+W (web chỉ hiện khi có)
     assert(b.hang.every((h: any, i: number) => i === 0 || b.hang[i - 1].ten.localeCompare(h.ten, 'vi') <= 0), 'sắp theo tên');
     const ft = pt.phanTichGiaoVien(P.mbManager, { ct: 'ft', thang: '2026-09' });
     const chiThuong = b.hang.filter((h: any) => !ft.hang.some((x: any) => x.id === h.id));

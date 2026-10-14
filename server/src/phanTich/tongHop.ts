@@ -1,7 +1,7 @@
 import { db } from '../db.ts';
 import {
-  COT_XU_LY_V4, LEGACY_REGULAR_SKILL_MAP, METRIC_UNIT_LABEL, NGUONG_MINI_TEST, NHAN_NHOM_CON, PERMISSIONS, daiCuoiKhoa, isNoPlanCase, khoaDot, trangThaiCaseV4,
-  nhanDot, thuTuDot, tuDauKhoang, type ChuongTrinh, type CotTongHop, type DongTongHop, type TheoDong, type TongHopKetQua,
+  COT_XU_LY_V4, LEGACY_REGULAR_SKILL_MAP, nhanDonVi, NGUONG_MINI_TEST, NHAN_NHOM_CON, PERMISSIONS, daiCuoiKhoa, isNoPlanCase, khoaDot, trangThaiCaseV4,
+  nhanDot, soSanhLop, thuTuDot, tuDauKhoang, type ChuongTrinh, type CotTongHop, type DongTongHop, type TheoDong, type TongHopKetQua,
 } from '../../../shared/domain/index.ts';
 import { cotSoLieu, cotTongHopFor } from '../../../shared/domain/phanTich.ts';
 import { ngay, tuanLich } from '../../../shared/domain/hienThiNgay.ts';
@@ -48,7 +48,8 @@ export function phanLoaiBaiThuong(kind: string, ev: { complete: boolean; skills:
   if (!ev.complete) return 'chuaDu';
   if (kind === 'final') return ev.tyLeTong == null ? 'chuaDu' : DAI_COT[daiCuoiKhoa(ev.tyLeTong, ev.nguong)];
   const truot = Object.values(ev.skills).filter((s) => s.under).length;
-  return truot === 0 ? 'gk-dat' : truot === 1 ? 'gk-1' : 'gk-2';
+  const nhom = kind === 'checkpoint' ? 'cp' : 'gk';   // OV-11h (PT-1): Checkpoint PET / KET nhóm riêng, không dưới Progress Test
+  return truot === 0 ? `${nhom}-dat` : truot === 1 ? `${nhom}-1` : `${nhom}-2`;
 }
 
 export type TrangThaiXuLy = 'dangXuLy' | 'thieuPa' | null;
@@ -89,9 +90,9 @@ function cmpKey(a: readonly unknown[], b: readonly unknown[]): number {
   return 0;
 }
 
-type CoDot = { giua: boolean; cuoi: boolean };
+type CoDot = { giua: boolean; cuoi: boolean; checkpoint: boolean };
 type DongRaw = { khoa: string; nhan: string; phu?: string; tuanNay?: boolean; tap: Tap; sortKey: readonly unknown[]; con: Map<string, DongRaw>; coDot: CoDot };
-const coDotMoi = (): CoDot => ({ giua: false, cuoi: false });
+const coDotMoi = (): CoDot => ({ giua: false, cuoi: false, checkpoint: false });
 
 export type FilterTongHop = { branchId?: number | null; ct: ChuongTrinh; soTuan: number; classId?: number | null; theo: TheoDong };
 
@@ -197,7 +198,7 @@ function tinh(p: Principal, f: FilterTongHop) {
   const cuoiDaDem: number[] = [];   // bài Final Test đã vào bảng → Mini Test gắn đúng dòng của nó
   for (const a of attempts) {
     const { cha, con } = dongOf(a);
-    if (laThuong) for (const x of [cha.coDot, con.coDot, tongCoDot]) { if (a.kind === 'final') x.cuoi = true; else x.giua = true; }
+    if (laThuong) for (const x of [cha.coDot, con.coDot, tongCoDot]) { if (a.kind === 'final') x.cuoi = true; else if (a.kind === 'checkpoint') x.checkpoint = true; else x.giua = true; }
     if (!scored.has(a.id) || luotKck(a)) continue;   // Q29-1: em KCK ngoài mẫu số
 
     const ev = evaluateAttemptRow(a, bundle, programmes);
@@ -287,6 +288,26 @@ function tinh(p: Principal, f: FilterTongHop) {
 const soCuaTap = (tap: Tap, cols: readonly string[]): Record<string, number> =>
   Object.fromEntries(cols.map((k) => [k, tap.get(k)?.size ?? 0]));
 
+/**
+ * OV-11h (PT-10): lớp ĐÃ KẾT THÚC có lượt (không huỷ) trong khoảng `soTuan` tuần — ô Lớp của Phân tích, nhóm "Đã kết thúc" (bảng "Theo lớp" đã có hàng
+ * của chúng). Cùng phạm vi `ATTEMPT_VIEW` và cùng cột như `/ref/classes`; `ket_thuc: true` để web xếp nhóm.
+ */
+export function lopKetThucCoLuot(p: Principal, soTuan: number, branchId: number | null): any[] {
+  const scope = scopeFor(p, PERMISSIONS.ATTEMPT_VIEW);
+  if (scope.none) return [];
+  const today = demoToday();
+  const rows = db().prepare(
+    `SELECT c.id, c.code, c.kind, c.route, c.branch_id, c.start_date, c.programme_code, pg.name AS programme_name, pg.scoring_mode
+       FROM classes c LEFT JOIN programmes pg ON pg.code = c.programme_code
+      WHERE c.status IN ('finished', 'ended') AND EXISTS (SELECT 1 FROM assessment_attempts a JOIN report_periods rp ON rp.id = a.planned_period_id
+             WHERE a.class_id = c.id AND a.status != 'cancelled' AND rp.week_start >= ? AND rp.week_start <= ?)`,
+  ).all(tuDauKhoang(today, Math.min(Math.max(soTuan, 1), 52)), mondayOf(today)) as any[];
+  return rows
+    .filter((c) => (scope.all || scope.branchIds.includes(c.branch_id) || scope.classIds.includes(c.id)) && (!branchId || c.branch_id === branchId))
+    .sort((a, b) => soSanhLop({ code: a.code, branchId: a.branch_id }, { code: b.code, branchId: b.branch_id }))
+    .map((c) => ({ ...c, ket_thuc: true }));
+}
+
 export function tongHop(p: Principal, f: FilterTongHop): TongHopKetQua {
   const r = tinh(p, f);
   /* PR-SOS: `choNguyenNhanQuaHan` đi kèm (số trong ngoặc của cột Chờ nguyên nhân), không phải cột riêng. */
@@ -318,7 +339,7 @@ export function oTongHop(p: Principal, f: FilterTongHop & { khoa: string; cot: s
   const ids = [...(tap.get(f.cot) ?? new Set<number>())].sort((a, b) => a - b);
   return {
     n: ids.length,
-    tieuDe: `${ids.length} ${METRIC_UNIT_LABEL[cotDef.donVi]} — ${cotDef.nhomCon ? `${NHAN_NHOM_CON[cotDef.nhomCon]} · ` : ''}${cotDef.nhan(f.ct)} · ${nhanDong}`,
+    tieuDe: `${ids.length} ${nhanDonVi(cotDef.donVi, f.ct)} — ${cotDef.nhomCon ? `${NHAN_NHOM_CON[cotDef.nhomCon]} · ` : ''}${cotDef.nhan(f.ct)} · ${nhanDong}`,
     rows: rowsFor(cotDef.donVi, ids),
   };
 }

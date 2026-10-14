@@ -337,19 +337,21 @@ function KhoiKetQua({ data, kq }: { data: HoSo; kq: { data: { ketQua: KetQuaLop[
                   </tr></thead>
                   <tbody>
                     {thuong.map((k) => {
-                      /* Q24: lớp không chia môn (Pre FOU) — MỘT ô kéo cả bốn cột, ô duy nhất còn chữ "Tổng hợp". */
-                      const tongHop = k.o.length === 1 && !COT_THUONG.some((c) => c.k === k.o[0].dong) ? k.o[0] : null;
+                      /* Q24 + OV-11h: lớp có môn riêng (Pre FOU "Tổng hợp", PET / KET "L+S · R+W") — các môn đó chia đều bốn cột, mỗi ô ghi tên môn. */
+                      const monRieng = k.o.length && k.o.every((x) => !COT_THUONG.some((c) => c.k === x.dong)) ? k.o : null;
+                      const rong = monRieng ? Math.max(1, Math.floor(4 / monRieng.length)) : 0;
                       return (
                         <tr key={k.classId}>
                           <td className="td"><Link to={`/hoc-vien/lop/${k.classId}`} className="link">{k.ma}</Link>
                             <div className="text-xs text-slate-500">{k.moc ? k.moc.nhan : 'Chưa có điểm'}</div></td>
                           {!k.o.length ? <td className="td text-slate-500" colSpan={4}>Chưa có điểm</td>
-                            : tongHop ? (
-                              <td colSpan={4} className={`td text-center tabular-nums ${tongHop.cuaMinh ? MON_CUA_MINH : ''} ${thap(tongHop) ? 'bg-bad-bg' : ''}`}>
-                                <span className="block text-xs leading-4 text-slate-400">{tongHop.nhan}</span>
-                                <OKq id={id} k={k} o={tongHop} />
+                            : monRieng ? monRieng.map((o, i) => (
+                              <td key={o.dong} colSpan={i === 0 ? 4 - rong * (monRieng.length - 1) : rong}
+                                className={`td text-center tabular-nums ${o.cuaMinh ? MON_CUA_MINH : ''} ${thap(o) ? 'bg-bad-bg' : ''}`}>
+                                <span className="block text-xs leading-4 text-slate-400">{o.nhan}</span>
+                                <OKq id={id} k={k} o={o} />
                               </td>
-                            )
+                            ))
                             : COT_THUONG.map((c) => {
                               const o = k.o.find((x) => x.dong === c.k);
                               return (

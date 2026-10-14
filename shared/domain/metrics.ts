@@ -287,10 +287,14 @@ export const METRICS: readonly ChiSo[] = [
  * tuyệt đối không cộng vào nhau, nên mỗi con số PHẢI đi kèm đơn vị của nó.
  */
 export const METRIC_UNIT_LABEL: Record<ChiSo['donVi'], string> = {
-  'hoc-vien': 'học viên', case: 'case', 'phuong-an': 'PA học thuật', bai: 'bài', 'bai-thi': 'bài thi',
-  'dot-test': 'đợt Test', 'nghia-vu': 'nghĩa vụ',
+  'hoc-vien': 'học viên', case: 'Case', 'phuong-an': 'PA học thuật', bai: 'bài', 'bai-thi': 'bài thi',
+  'dot-test': 'lượt MT', 'nghia-vu': 'nghĩa vụ',
   'vi-pham': 'vi phạm', 'bien-phap': 'lần xử lý', 'luot-sos': 'lượt', lop: 'lớp', 'viec-van-hanh': 'việc Vận hành',
 };
+
+/** OV-11h (PT-8): một lượt / bài ở Phân tích — "lượt MT" (Fast Track), "bài" (lớp thường); đơn vị khác như `METRIC_UNIT_LABEL`. */
+export const nhanDonVi = (donVi: ChiSo['donVi'], ct?: 'ft' | 'thuong' | null): string =>
+  (donVi === 'dot-test' && ct === 'thuong' ? 'bài' : METRIC_UNIT_LABEL[donVi]);
 
 /** Tra một chỉ số theo mã; mã lạ trả null (không đoán). */
 export function metricById(id: string): ChiSo | null {
