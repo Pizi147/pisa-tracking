@@ -276,11 +276,11 @@ export async function runPrDeployTests(t: YThucTestKit) {
     return f;
   };
   /** `migrate()` qua NHÁNH TURSO (URL `file:` — như bản chính, Q3) trong tiến trình con → danh sách bước đã làm. */
-  const migrateTurso = (f: string): string[] => {
-    const r = cp.spawnSync(process.execPath, ['--input-type=module', '-e', `const m = await import(${JSON.stringify(migrateLibJs)}); console.log('@@' + JSON.stringify(m.migrate().applied));`], {
+  const migrateTurso = (f: string, loiSauBuoc?: number): string[] => {
+    const r = cp.spawnSync(process.execPath, ['--input-type=module', '-e', `const m = await import(${JSON.stringify(migrateLibJs)}); console.log('@@' + JSON.stringify(m.migrate(${loiSauBuoc ?? ''}).applied));`], {
       env: { ...process.env, TURSO_DATABASE_URL: urlFile(f), TURSO_AUTH_TOKEN: 'x', BAN_CHINH: '', PISA_DB: '' }, encoding: 'utf8', timeout: 300_000,
     });
-    if (r.status !== 0) throw new Error(`migrate lỗi (${r.status}): ${String(r.stderr).slice(-400)}`);
+    if (r.status !== 0) throw new Error(`migrate lỗi (${r.status}): ${String(r.stderr).slice(-2000)}`);
     return JSON.parse(String(r.stdout).split('@@').pop()!.trim());
   };
   /** Ảnh chụp: mọi đối tượng sqlite_master + cột từng bảng + MỌI dòng MỌI bảng (theo rowid). Bỏ đúng dòng `case_engine_migrated_at` (Q4). */
@@ -359,6 +359,28 @@ export async function runPrDeployTests(t: YThucTestKit) {
     assert(!l.length, `migrate đổi dữ liệu do mã hiện hành ghi (applied ${JSON.stringify(a).slice(0, 300)}): ${l.slice(0, 4).join(' ‖ ')}`);
     assert(a.length === 0, `migrate còn việc trên DB mới: ${JSON.stringify(a)}`);
   });
+  check('DEPLOY-2g · mỗi bước migrate một giao dịch: bộ demo thiếu 3 bước cuối (EN, OV12h, OV12g) → đứt sau bước 66 (EN) rồi chạy lại = chạy một mạch; lần hai không đổi', () => {
+    const goc = pathMod.join(thuMuc, 'seed.sqlite');
+    const thieu = (ten: string) => {
+      const f = pathMod.join(thuMuc, ten);
+      fs.copyFileSync(goc, f);
+      const c = new Database(f);
+      try { c.exec('ALTER TABLE users DROP COLUMN ngon_ngu; DROP TABLE gop_y_tuan; DROP TABLE case_followup_buoi;'); } finally { c.close(); }
+      return f;
+    };
+    const a = thieu('mot-mach.sqlite'), b = thieu('dut-giua.sqlite');
+    const da = migrateTurso(a);
+    assert(da.length === 3, `một mạch phải làm đúng 3 bước: ${JSON.stringify(da)}`);
+    let loi = '';
+    try { migrateTurso(b, 66); } catch (e: any) { loi = String(e.message); }
+    assert(loi.includes('Giả lập đứt kết nối sau bước 66'), `không đứt đúng bước 66: ${loi.slice(-200)}`);
+    const db2 = migrateTurso(b);
+    assert(db2.length === 2 && db2.every((x) => /OV12[gh]/.test(x)), `chạy lại phải chỉ làm OV12h + OV12g (EN đã chốt): ${JSON.stringify(db2)}`);
+    const l = lech(chup(a), chup(b));
+    assert(!l.length, `đứt giữa rồi chạy lại ≠ một mạch: ${l.slice(0, 3).join(' ‖ ')}`);
+    const truoc = chup(b);
+    assert(migrateTurso(b).length === 0 && !lech(truoc, chup(b)).length, 'lần hai còn đổi');
+  });
   check('DEPLOY-2c · schema.sql = migrate, TOÀN BỘ: DB dựng từ schema.sql (init) → migrate → mọi bảng, cột (PRAGMA table_info), chỉ mục, trigger không đổi', () => {
     const f = dbInit();
     const lay = (x: Record<string, string>) => Object.fromEntries(Object.entries(x).filter(([k]) => k === 'master' || k.startsWith('cot:')));
@@ -417,7 +439,7 @@ export async function runPrDeployTests(t: YThucTestKit) {
     const r = cp.spawnSync(process.execPath, ['--input-type=module', '-e', `const m = await import(${JSON.stringify(js)}); const k = await m.chotVangDinhKy({ ngay: '2026-10-05' }); console.log('@@' + JSON.stringify(k));`], {
       env: { ...process.env, TURSO_DATABASE_URL: urlFile(f), TURSO_AUTH_TOKEN: 'x', BAN_CHINH: '1', PISA_DB: '' }, encoding: 'utf8', timeout: 120_000,
     });
-    assert(r.status === 0, `cron lỗi: ${String(r.stderr).slice(-400)}`);
+    assert(r.status === 0, `cron lỗi: ${String(r.stderr).slice(-2000)}`);
     const k = JSON.parse(String(r.stdout).split('@@').pop()!.trim());
     assert(k.daChuyen === 0 && k.boQua === null, JSON.stringify(k));
   });
