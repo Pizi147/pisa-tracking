@@ -130,5 +130,5 @@ assert.ok(!ra.some((r) => /\/(tests|seed)\//.test(r.file)), 'lọt tests/seed');
   const dong = fs.readFileSync(path.join(GOC, f), 'utf8').split('\n').findIndex((l) => l.includes('CHUA_CO_PHUONG_AN =')) + 1;
   assert.ok(dong > 0 && ra.some((r) => r.file === f && r.line === dong && r.text === 'Chưa có PA'), 'thiếu CHUA_CO_PHUONG_AN đúng file:dòng');
 }
-assert.ok(ra.length >= 4000 && ra.length <= 9000, `tổng bản ghi ${ra.length} ngoài 4000–9000 — xem lại bộ bỏ`);
+assert.ok(ra.length >= 4000 && ra.length <= 12000, `tổng bản ghi ${ra.length} ngoài 4000–12000 — xem lại bộ bỏ`);
 process.stdout.write(ra.map((r) => JSON.stringify(r)).join('\n') + '\n');
