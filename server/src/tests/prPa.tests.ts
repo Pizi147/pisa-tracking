@@ -6,7 +6,10 @@ import type { YThucTestKit } from './yThuc.tests.ts';
 export async function runPrPaTests(t: YThucTestKit) {
   const { check, assert, conn, P, TODAY, classId } = t;
   const d: any = await import('../../../shared/domain/index.ts');
-  const cases: any = await import('../cases/cases.ts');
+  const casesGoc: any = await import('../cases/cases.ts');
+  /* OV-12h: Kết quả PA Tutor có Số buổi bắt buộc n dòng buổi — các ca cũ (đếm buổi, người dạy) tự kèm n dòng mẫu khi không gửi; luật dòng buổi ở prOv12h. */
+  const buoiMau = (n: unknown) => Array.from({ length: Number(n) || 0 }, (_, i) => ({ tutor: 'Tutor thử', nhanXet: `Buổi ${i + 1} em làm đủ bài` }));
+  const cases: any = { ...casesGoc, updateResult: (p: any, id: number, x: any, o?: any) => casesGoc.updateResult(p, id, x?.buoi === undefined ? { ...x, buoi: buoiMau(x?.soBuoi) } : x, o) };
   const taoPa: any = await import('../cases/taoPa.ts');
   const intake: any = await import('../classes/intake.ts');
   const regular: any = await import('../normal/regular.ts');
@@ -63,6 +66,16 @@ export async function runPrPaTests(t: YThucTestKit) {
       summary: 'Case dựng cho phép kiểm PR-PA.', idempotencyKey: `pa-case-${ten}`, parallel: true,
     }) as any;
     return c.id as number;
+  };
+  /* OV-12h: nhóm bổ trợ chép kết quả CHỈ giữa các môn của cùng em — hai Case (Listening, Reading) của một em. */
+  const haiCaseCungEm = (ten: string): number[] => {
+    const c1 = caseThu(ten);
+    const sid = get('SELECT student_id FROM sos_cases WHERE id = ?', c1).student_id;
+    const c2 = cases.reportIssue(P.admin, {
+      title: `PA thử ${ten} R`, primaryCode: d.issuesForTopic('reading')[0].code, studentId: sid, topic: 'reading',
+      summary: 'Case dựng cho phép kiểm PR-PA.', idempotencyKey: `pa-case-${ten}-r`, parallel: true,
+    }) as any;
+    return [c1, c2.id as number];
   };
 
   check('PA1a · chenPa: chèn theo lô trả id đúng thứ tự; số buổi NULL với loại không có số buổi; Tự học bỏ người; ngoài 1–60 / cả tài khoản lẫn tên → 400', () => {
@@ -270,7 +283,7 @@ export async function runPrPaTests(t: YThucTestKit) {
   check('PA4 · Kết quả: PA có Số buổi → "Số buổi tuần này" bắt buộc 0–60; Người dạy tuần này không bắt buộc (PR-CT2); đếm 3 + 3 + 2 + 0 = 8/10 qua 4 tuần', () => {
     const { c, iv } = tutor10('KQ');
     const thieu = maLoi(() => cases.updateResult(P.lrTeacher, iv, { ...KQ, nguoiDay: { performerUserId: GV_L } }));
-    assert(thieu.status === 400 && thieu.msg.includes('Số buổi tuần này'), `thiếu số buổi: ${JSON.stringify(thieu)}`);
+    assert(thieu.status === 400 && thieu.msg.includes('Số buổi kỳ này'), `thiếu số buổi: ${JSON.stringify(thieu)}`);
     const vuot = maLoi(() => cases.updateResult(P.lrTeacher, iv, { ...KQ, soBuoi: 61, nguoiDay: { performerUserId: GV_L } }));
     assert(vuot.status === 400 && vuot.msg.includes('Từ 0 đến 60 buổi'), `61: ${JSON.stringify(vuot)}`);
     assert(fuCua(iv).length === 0, 'lỗi mà vẫn ghi');
@@ -364,7 +377,7 @@ export async function runPrPaTests(t: YThucTestKit) {
 
   check('PA7 · Bổ trợ nhóm: Kết quả chép Số buổi + Người dạy tuần này sang dòng anh em; Điều chỉnh Số buổi áp cả nhóm', () => {
     const NHOM = 'mt:pa7';
-    const ids: number[] = taoPa.chenPa(conn, [caseThu('NHOM1'), caseThu('NHOM2')].map((caseId) => ({
+    const ids: number[] = taoPa.chenPa(conn, haiCaseCungEm('NHOM1').map((caseId) => ({
       caseId, kind: 'bo_tro_mien_phi', description: 'Bổ trợ miễn phí nhóm thử', status: 'started', soBuoi: 6, nhomBoTro: NHOM,
       startedDate: TODAY, cycleStartedOn: TODAY, actionDue: d.hanKyGhiKetQua(TODAY),
     })));
@@ -412,7 +425,7 @@ export async function runPrPaTests(t: YThucTestKit) {
 
   check('PA10 · Sửa PA bổ trợ nhóm: áp mọi dòng đang chạy của nhóm, mỗi dòng một nhật ký; Số buổi kiểm theo đã dạy của TỪNG dòng', () => {
     const NHOM = 'mt:pa10';
-    const ids: number[] = taoPa.chenPa(conn, [caseThu('N10A'), caseThu('N10B')].map((caseId) => ({
+    const ids: number[] = taoPa.chenPa(conn, haiCaseCungEm('N10A').map((caseId) => ({
       caseId, kind: 'bo_tro_mien_phi', description: 'Bổ trợ miễn phí nhóm thử', status: 'started', soBuoi: 6, nhomBoTro: NHOM,
       startedDate: TODAY, cycleStartedOn: TODAY, actionDue: d.hanKyGhiKetQua(TODAY),
     })));
@@ -604,7 +617,8 @@ export async function runPrPaTests(t: YThucTestKit) {
     const tutor = { kind: 'tutor', soBuoi: 10 };
     const khoa = (pa: any, tuan: string, ng: any) => d.loiKetQuaTuan(pa, tuan, ng).map((l: any) => `${l.khoa}:${l.lyDo}`).join('|');
     assert(khoa(tutor, '2', null) === '' && khoa(tutor, '0', null) === '' && khoa(tutor, '', null) === 'so-buoi-tuan:Từ 0 đến 60 buổi'
-      && khoa(tutor, '1', { kieu: 'ngoai', ten: 'A' }).startsWith('nguoi-day:Gõ tên') && khoa({ kind: 'tutor', soBuoi: null }, '', null) === ''
+      && khoa(tutor, '1', { kieu: 'ngoai', ten: 'A' }).startsWith('nguoi-day:Gõ tên') && khoa({ kind: 'tutor', soBuoi: null }, '', null) === 'so-buoi-tuan:Từ 0 đến 60 buổi'   /* OV-12h: mọi PA Tutor */
+      && khoa({ kind: 'tutor', soBuoi: null, cu: true }, '', null) === ''
       && khoa({ kind: 'self_study', soBuoi: 8 }, '2', null) === '', `loiKetQuaTuan: ${khoa(tutor, '2', null)}`);
     assert(JSON.stringify(d.thanKetQuaTuan(tutor, '0', null)) === '{"soBuoi":0,"nguoiDay":{}}'
       && JSON.stringify(d.thanKetQuaTuan({ kind: 'self_study', soBuoi: 8 }, '2', { kieu: 'tai_khoan', id: 5, ten: 'X' })) === '{"soBuoi":2}'

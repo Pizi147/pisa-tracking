@@ -357,28 +357,6 @@ export function suaBanGiao(p: Principal, lenhId: number, nhanXetChung: string): 
   });
 }
 
-/** GVCN nhắc GVBM của một môn (dedup mỗi ngày một lần). */
-export function nhacGvbm(p: Principal, lenhId: number, mon: string): { soNguoi: number } {
-  const l = docLenhPhieu(lenhId);
-  if (!coPhieu(l.huong) || l.trang_thai === 'huy') throw badRequest('Quyết định chuyển lớp này không có phiếu cần nhắc.');
-  const q = quyenBanGiao(p, l, undefined, { ct: l.ct });
-  if (!q.xacNhan) throw forbidden('Chỉ GVCN lớp nguồn nhắc được GVBM.');
-  if (!boMonCt(l.ct).includes(mon)) throw badRequest('Môn này không có ở lớp nguồn.');
-  const nguoi = db().prepare(
-    `SELECT DISTINCT user_id, skill FROM teacher_assignments WHERE class_id = ? AND status = 'active' AND skill IS NOT NULL`,
-  ).all(l.lop_nguon_id) as any[];
-  const dich = nguoi.filter((r) => kyNangPhuTrach(l.ct, mon).includes(r.skill));
-  const homNay = demoToday();
-  for (const r of dich) {
-    notify({
-      userId: r.user_id, kind: 'nhac_ban_giao', title: `Nhắc bàn giao môn ${tenMonNgan(l.ct, mon)} · ${l.nguon_code}`,
-      body: `Hạn hết ${(l.han_gvbm ?? '').slice(8, 10)}/${(l.han_gvbm ?? '').slice(5, 7)}`,
-      entityType: 'class', entityId: l.lop_nguon_id, dedupKey: `nhac_ban_giao:${lenhId}:${mon}:${homNay}`, duong: `/hoc-vien/lop/${l.lop_nguon_id}?viec=ban-giao&mon=${mon}`,
-    });
-  }
-  return { soNguoi: dich.length };
-}
-
 // ==================================================================== VIỆC (Công việc › Vận hành) — gộp theo lớp, đọc theo lô
 
 export type ViecBanGiao =

@@ -349,7 +349,7 @@ export async function runFormTests(t: YThucTestKit) {
       assertThrows(
         () => cases.updateResult(P.lrTeacher, iv.id, {
           decision: 'adjust', decisionNote: 'Đổi người thực hiện sang Quản lý — phải bị từ chối',
-          outcome: 'partial', note: 'Đang có tiến bộ, tiếp tục theo dõi thêm.',
+          outcome: 'partial', note: 'Đang có tiến bộ, tiếp tục theo dõi thêm.', soBuoi: 0,
           adjust: { performerUserId: P.mbManager.userId },
         }),
         /giáo viên đang làm việc/,
@@ -358,7 +358,7 @@ export async function runFormTests(t: YThucTestKit) {
 
       cases.updateResult(P.lrTeacher, iv.id, {
         decision: 'adjust', decisionNote: 'Đổi người thực hiện sang GV Writing 1',
-        outcome: 'partial', note: 'Đang có tiến bộ, tiếp tục theo dõi thêm.',
+        outcome: 'partial', note: 'Đang có tiến bộ, tiếp tục theo dõi thêm.', soBuoi: 0,
         adjust: { performerUserId: P.w1Teacher.userId },
       });
       const revs = revRows(iv.id);

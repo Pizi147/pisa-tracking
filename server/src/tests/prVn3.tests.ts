@@ -11,7 +11,6 @@ export async function runPrVn3Tests(t: YThucTestKit) {
   const week: any = await import('../platform/week.ts');
   const { loadPrincipal } = await import('../permissions.ts');
   const { myWork } = await import('../worklist/mywork.ts');
-  const { nhacViec } = await import('../worklist/nhacViec.ts');
   const { createApp } = await import('../app.ts');
   const { createSession } = await import('../auth.ts');
   const skillSch: any = await import('../fasttrack/skillSchedule.ts');
@@ -96,7 +95,7 @@ export async function runPrVn3Tests(t: YThucTestKit) {
     assert(dongLichSu(`mt:${e.a}`).length === 0, 'không được ghi giữ bổ trợ');
   });
 
-  check('VN3-2 · Case chưa có PA, lớp FT chưa phân công GVBM, chủ Case = GVCN dự phòng: việc "Thêm PA" tới người thêm được PA; Quản trị Nhắc → 200, thông báo tới người đó', () => {
+  check('VN3-2 · Case chưa có PA, lớp FT chưa phân công GVBM, chủ Case = GVCN dự phòng: việc "Thêm PA" tới người thêm được PA', () => {
     const ft = (intake.createClass(P.admin, {
       code: `MB-VN3F${++seq}`, branchId: MB, kind: 'FT', isFastTrack: true, route: 'LT1',
       startDate: d.mondayOfDate(TODAY), startPeriodId: week.ensurePeriod(d.mondayOfDate(TODAY)).id,
@@ -118,10 +117,6 @@ export async function runPrVn3Tests(t: YThucTestKit) {
     const viecQt = thay(P.admin, true);
     assert(viecQt && viecQt.ownerId !== GV[3] && viecQt.ownerId !== null, `người làm phải khác GVCN dự phòng: ${JSON.stringify(viecQt?.ownerId)}`);
     assert(thay(loadPrincipal(viecQt.ownerId)), 'người được giao không thấy việc của chính mình');
-    const dem = () => (get(`SELECT COUNT(*) n FROM notifications WHERE kind = 'nhac_viec' AND user_id = ?`, viecQt.ownerId) as any).n as number;
-    const truoc = dem();
-    const r = nhacViec(P.admin, { key: khoa, ownerId: viecQt.ownerId });
-    assert(!!r.daNhacLuc && dem() === truoc + 1, `Nhắc: ${JSON.stringify(r)} · thông báo ${truoc} → ${dem()}`);
   });
 
   await t.checkAsync('VN3-4 · /my-work không còn items, groups; dong + summary trùng byte với myWork()', async () => {

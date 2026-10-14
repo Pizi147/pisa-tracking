@@ -35,7 +35,7 @@ export async function runPrCt2Tests(t: YThucTestKit) {
       kind: 'tutor', description: 'Tutor nghe chép 10 buổi', soBuoi: 10, status: 'started', startedDate: t.addDays(TODAY, -7),
     }) as any;
     const iv = Math.max(...dto.interventions.map((x: any) => x.id));
-    cases.updateResult(P.lrTeacher, iv, { ...KQ, ...d.thanKetQuaTuan({ kind: 'tutor', soBuoi: 10 }, '2', null) });
+    cases.updateResult(P.lrTeacher, iv, { ...KQ, ...d.thanKetQuaTuan({ kind: 'tutor', soBuoi: 10 }, '2', null), buoi: [{ tutor: 'Ms Lan', nhanXet: 'Buổi 1 ổn' }, { tutor: 'Ms Lan', nhanXet: 'Buổi 2 ổn' }] });   // OV-12h: 2 buổi = 2 dòng
     const f = all('SELECT * FROM case_followups WHERE intervention_id = ?', iv);
     assert(f.length === 1 && f[0].so_buoi === 2 && f[0].phu_trach_user_id === null && f[0].phu_trach_ten === null, JSON.stringify(f));
     const khoa = (tuan: string, ng: any) => d.loiKetQuaTuan({ kind: 'tutor', soBuoi: 10 }, tuan, ng).map((l: any) => l.khoa).join();

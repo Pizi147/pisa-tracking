@@ -313,11 +313,4 @@ export async function runPrS4fTests(t: YThucTestKit) {
     const vt = docWeb('ui/ViecTiep.tsx');
     assert(vt.includes('block max-w-full') && vt.includes('<span className="break-words">') && vt.includes("<QuaHan ngay={v.quaHanNgay} /></span>{' '}"), 'ViecTiep: chữ việc chạy liền không cắt, quá hạn luôn đủ một cụm (dấu cách thường sau cụm hạn, không &nbsp;: rà #235)');   // PR-DH 04/10 J8 line-clamp-2 → PR-KHUNG G3 không cắt
   });
-
-  check('S4F (14) · thẻ Báo QL không có người nhận: ẩn Nhắc, ghi "Lớp chưa có GVCN" / "Case chưa có người phụ trách"', () => {
-    assert(d.nhanKhongNguoiNhac('bao_len_y_thuc') === 'Lớp chưa có GVCN' && d.nhanKhongNguoiNhac('bao_len_nguyen_nhan') === 'Case chưa có người phụ trách', 'nhãn');
-    const tyc = docWeb('modules/duyet/TheYeuCau.tsx');
-    assert(tyc.includes("typeof yc.duLieu?.ownerId !== 'number'") && tyc.includes('{nhanKhongNguoiNhac(yc.loai)}'), 'nhãn thay nút');
-    assert(tyc.includes("yc.kieuNut === 'nhac' && typeof yc.duLieu?.ownerId === 'number' && ("), 'nút Nhắc chỉ khi có ownerId');
-  });
 }

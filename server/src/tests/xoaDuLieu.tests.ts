@@ -277,6 +277,7 @@ export async function runXoaDuLieuTests(t: YThucTestKit) {
     const c1 = ins(`INSERT INTO sos_cases (student_id, attempt_id, cycle_id, created_at) VALUES (?,?,?,?)`, sid, a1, y1, now);
     const i1 = ins(`INSERT INTO case_interventions (case_id, kind, created_at) VALUES (?, 'lesson', ?)`, c1, now);
     const f1 = ins(`INSERT INTO case_followups (case_id, intervention_id, evidence_attempt_id, observed_on, created_at) VALUES (?,?,?,?,?)`, c1, i1, a1, TODAY, now);
+    ins(`INSERT INTO case_followup_buoi (followup_id, buoi_so, tutor_ten, nhan_xet) VALUES (?, 1, 'Ms Lan', 'Luyện số đếm')`, f1);   // OV-12h
     ins(`INSERT INTO case_intervention_revisions (intervention_id, case_id, followup_id, source, reason, effective_on, created_at)
          VALUES (?,?,?, 'followup', 'Đổi PA', ?, ?)`, i1, c1, f1, TODAY, now);
     ins(`INSERT INTO case_issues (case_id, taxonomy_code, created_at) VALUES (?, 'R-01', ?)`, c1, now);
@@ -322,20 +323,20 @@ export async function runXoaDuLieuTests(t: YThucTestKit) {
     return { sid, ma, ten, y1, y2, a1, a2, c1, i1, f1, g1, v1, m1, x1, r1, task, tep };
   }
 
-  check('PR-XOA X1 · Bao đóng theo PRAGMA foreign_key_list BẰNG ĐÚNG BANG_CUA_HOC_VIEN (38 bảng — OV-3b thêm lo_trinh_nhap, PR-YT4 thêm y_thuc_khai_bac, PR-LT2b thêm mini_test, PR-CT thêm lenh_chuyen_lop, ban_giao_mon, PR-MTa thêm ket_qua_huy, PR-TK thêm ban_chup_lo_trinh, ban_chup_luot)', () => {
+  check('PR-XOA X1 · Bao đóng theo PRAGMA foreign_key_list BẰNG ĐÚNG BANG_CUA_HOC_VIEN (39 bảng — OV-12h thêm case_followup_buoi, OV-3b thêm lo_trinh_nhap, PR-YT4 thêm y_thuc_khai_bac, PR-LT2b thêm mini_test, PR-CT thêm lenh_chuyen_lop, ban_giao_mon, PR-MTa thêm ket_qua_huy, PR-TK thêm ban_chup_lo_trinh, ban_chup_luot)', () => {
     const tap = baoDongLuocDo();
     const coDinh = new Set(xoaHV.BANG_CUA_HOC_VIEN);
     const thieu = [...tap].filter((b) => !coDinh.has(b));
     const thua = [...coDinh].filter((b) => !tap.has(b));
     assert(!thieu.length, thieu.map((b) => `Bảng ${b} trỏ tới học viên mà xoaHocVien chưa xoá`).join('; '));
     assert(!thua.length, `BANG_CUA_HOC_VIEN có bảng không trỏ tới học viên: ${thua.join(', ')}`);
-    assert(tap.size === 38, `Bao đóng đổi cỡ (${tap.size}) — cập nhật bảng tham chiếu của kế hoạch`);
+    assert(tap.size === 39, `Bao đóng đổi cỡ (${tap.size}) — cập nhật bảng tham chiếu của kế hoạch`);
   });
 
   check('PR-XOA X2 · Mỗi cạnh FK vào bao đóng có câu trong CAU_XOA_HOC_VIEN (DELETE theo cột, hoặc UPDATE … = NULL cho CANH_NULL); đủ owner_type tệp', () => {
     const tap = baoDongLuocDo();
     const vao = CANH.filter((c) => tap.has(c.toi));
-    assert(vao.length === 67, `Số cạnh vào bao đóng đổi (${vao.length})`);   // OV-3b: +1 (lo_trinh_nhap.student_id); PR-MTa: +2 (ket_qua_huy.attempt_id, vuot_boi_attempt_id); PR-TK: +3 (ban_chup_lo_trinh.cycle_id, .student_id, ban_chup_luot.ban_chup_id)
+    assert(vao.length === 68, `Số cạnh vào bao đóng đổi (${vao.length})`);   // OV-12h: +1 (case_followup_buoi.followup_id); OV-3b: +1 (lo_trinh_nhap.student_id); PR-MTa: +2 (ket_qua_huy.attempt_id, vuot_boi_attempt_id); PR-TK: +3 (ban_chup_lo_trinh.cycle_id, .student_id, ban_chup_luot.ban_chup_id)
     const sot: string[] = [];
     for (const c of vao) {
       const ok = laCanhNull(c)
@@ -401,7 +402,7 @@ export async function runXoaDuLieuTests(t: YThucTestKit) {
     assert(maLoi(() => xoaHV.xoaHocVien(P.admin, 99_999_999, { maXacNhan: 'x' })) === 404, 'id lạ xoá phải 404');
   });
 
-  check('PR-XOA X10 · Số câu SQL: xoá ≤ 49 (OV-3b thêm 1 câu xoá nháp; PR-CT thêm 2 câu; PR-TK thêm 2 câu xoá bản chụp; PR-LUI-a1 thêm 1 câu kiểm tệp dùng chung) và KHÔNG đổi theo số lượt Test (2 lượt vs 7 lượt); xem trước ≤ 3', () => {
+  check('PR-XOA X10 · Số câu SQL: xoá ≤ 50 (OV-12h thêm 1 câu xoá buổi Tutor; OV-3b thêm 1 câu xoá nháp; PR-CT thêm 2 câu; PR-TK thêm 2 câu xoá bản chụp; PR-LUI-a1 thêm 1 câu kiểm tệp dùng chung) và KHÔNG đổi theo số lượt Test (2 lượt vs 7 lượt); xem trước ≤ 3', () => {
     const it = taoHocVienDuDuLieu();
     const nhieu = taoHocVienDuDuLieu({ soLuotThem: 5 });
     const xemIt = demTruyVan(() => { xoaHV.xemXoaHocVien(P.admin, it.sid); });
@@ -411,7 +412,7 @@ export async function runXoaDuLieuTests(t: YThucTestKit) {
     try {
       const nIt = demTruyVan(() => { xoaHV.xoaHocVien(P.admin, it.sid, { maXacNhan: it.ma }); });
       const nNhieu = demTruyVan(() => { xoaHV.xoaHocVien(P.admin, nhieu.sid, { maXacNhan: nhieu.ma }); });
-      assert(nIt <= 49, `xoá tốn ${nIt} câu (> 49)`);
+      assert(nIt <= 50, `xoá tốn ${nIt} câu (> 50)`);
       assert(nNhieu === nIt, `số câu đổi theo số lượt: ${nIt} → ${nNhieu}`);
     } finally { khoTepMod.datKhoTepChoKiemThu(null); tepDaXoa.length = 0; }
   });

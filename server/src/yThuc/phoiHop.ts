@@ -1,7 +1,7 @@
 import { db, theoLo, tx } from '../db.ts';
 import {
   COORDINATION_KINDS, COORDINATION_KIND_LABEL, COORDINATION_REMOVE_REASON_LABEL, COORDINATION_STATUS_LABEL,
-  CHUONG_TRINH_KHONG_CHIA_MON, COORDINATION_USER_REMOVE_REASONS, SIGNAL_WITHDRAW_SCORE_FIXED, coordinationSummary, moTaBoTro, ngayTheoGioVN, nhanDot, nhanKetQuaThuong, noiDungBaoPh, tenMon, tenMonNgan, kiemGhiRoKhac, reasonNeedsText, sosCoordinationFor,
+  CHUONG_TRINH_KHONG_CHIA_MON, COORDINATION_USER_REMOVE_REASONS, GHI_CHU_MEETING_TOI_THIEU, hanPhoiHop, laMeetingCx, SIGNAL_WITHDRAW_SCORE_FIXED, coordinationSummary, moTaBoTro, ngayTheoGioVN, nhanDot, nhanKetQuaThuong, noiDungBaoPh, tenMon, tenMonNgan, kiemGhiRoKhac, reasonNeedsText, sosCoordinationFor,
   type CoordinationKind, type CoordinationRemoveReason, type CoordinationStatus,
 } from '../../../shared/domain/index.ts';
 import { napTruocPhamVi, type Principal } from '../permissions.ts';
@@ -194,6 +194,8 @@ export type CoordinationAction = {
   performedOn: string | null; performedBy: number | null; performerName: string | null; note: string | null;
   removeReasonCode: string | null; removeReasonLabel: string | null; removeReasonText: string | null; removedAt: string | null;
   attachmentCount: number;
+  /** OV-12h: hạn xác nhận (meeting CX / GĐCN: ngày tạo + 5) · quá hạn khi còn Cần xử lý và hôm nay > hạn. Việc khác: null · false. */
+  han: string | null; quaHan: boolean;
   /** PR-LT2a (N3): 4 nội dung Báo phụ huynh qua TVV (chỉ việc `bao_ph_tvv`) — kết quả · môn khó khăn · nguyên nhân · phương án + khả năng học lại. */
   noiDung: string[] | null;
   /** PR-PHH: true khi việc `bao_ph_tvv` đã xong mà chưa lưu bản chụp (xác nhận trước PR này) — `noiDung` là nội dung HIỆN TẠI, không phải nội dung đã báo. */
@@ -217,6 +219,7 @@ export type CoordinationTurn = {
 };
 
 function shapeAction(r: any, attachments: Map<number, number>): CoordinationAction {
+  const han = hanPhoiHop(r.kind, r.created_at);
   return {
     id: r.id, kind: r.kind, kindLabel: COORDINATION_KIND_LABEL[r.kind as CoordinationKind] ?? r.kind,
     customName: r.custom_name ?? null,
@@ -227,6 +230,7 @@ function shapeAction(r: any, attachments: Map<number, number>): CoordinationActi
     removeReasonLabel: r.remove_reason_code ? COORDINATION_REMOVE_REASON_LABEL[r.remove_reason_code as CoordinationRemoveReason] ?? r.remove_reason_code : null,
     removeReasonText: r.remove_reason_text ?? null, removedAt: r.removed_at ?? null,
     attachmentCount: attachments.get(r.id) ?? 0,
+    han, quaHan: r.status === 'pending' && han !== null && han < demoToday(),
     noiDung: null, noiDungLaHienTai: false,
   };
 }
@@ -354,7 +358,8 @@ export function myCoordinationLines(p: Principal) {
 
 /** OV-11c (CV-8): cùng dòng Phối hợp SOS cho một tập lớp bất kỳ — "Của GV" của Quản lý dựng dòng của mọi GVCN trong phạm vi, cùng luật đếm. */
 export function dongPhoiHopLop(classIds: number[]) {
-  const lines: Array<{ classId: number; className: string; pendingCount: number; text: string }> = [];
+  /* OV-12h: `han` = hạn sớm nhất của việc meeting CX còn Cần xử lý trong các lượt chưa xong của lớp (null = không có việc có hạn). */
+  const lines: Array<{ classId: number; className: string; pendingCount: number; text: string; han: string | null }> = [];
   if (!classIds.length) return lines;
   /* MỘT lượt đọc cho MỌI lớp mình chủ nhiệm (số câu không tăng theo số lớp — PR-LT2a thêm hai lớp demo làm lộ N+1 theo lớp), rồi chia lại theo lớp em đang học.
      Cùng luật đếm với `coordinationOfClass`: lượt chưa hoàn thành. Lớp mình chủ nhiệm nên không cần `requireViewClass`. */
@@ -366,25 +371,32 @@ export function dongPhoiHopLop(classIds: number[]) {
    * thái các việc, lượt đã huỷ không còn là SOS Event — một câu.
    */
   const rows = conn.prepare(
-    `SELECT x.attempt_id, x.status, e.class_id AS lop_dang_hoc FROM sos_coordination_actions x
+    `SELECT x.attempt_id, x.status, x.kind, x.created_at, e.class_id AS lop_dang_hoc FROM sos_coordination_actions x
        JOIN enrollments e ON e.student_id = x.student_id AND e.class_id IN (${ph}) AND e.status = 'active'
        JOIN assessment_attempts a ON a.id = x.attempt_id AND a.status != 'cancelled'
                                  AND COALESCE(a.kind, 'mock') = 'mock'   -- PR-S6F-a Q11: chỉ lượt Mock FT; lớp thường có việc phoi_hop riêng
       ORDER BY x.attempt_id, x.id`,
   ).all(...classIds) as any[];
-  const luot = new Map<number, { lop: number; trangThai: string[] }>();
+  const luot = new Map<number, { lop: number; trangThai: string[]; han: string[] }>();
   for (const r of rows) {
-    const l = luot.get(r.attempt_id) ?? luot.set(r.attempt_id, { lop: r.lop_dang_hoc, trangThai: [] }).get(r.attempt_id)!;
+    const l = luot.get(r.attempt_id) ?? luot.set(r.attempt_id, { lop: r.lop_dang_hoc, trangThai: [], han: [] }).get(r.attempt_id)!;
     l.trangThai.push(r.status);
+    const h = r.status === 'pending' ? hanPhoiHop(r.kind, r.created_at) : null;
+    if (h) l.han.push(h);
   }
   const dem = new Map<number, number>();
-  for (const l of luot.values()) if (!coordinationSummary(l.trangThai).complete) dem.set(l.lop, (dem.get(l.lop) ?? 0) + 1);
+  const hanLop = new Map<number, string>();
+  for (const l of luot.values()) {
+    if (coordinationSummary(l.trangThai).complete) continue;
+    dem.set(l.lop, (dem.get(l.lop) ?? 0) + 1);
+    for (const h of l.han) if (!hanLop.has(l.lop) || h < hanLop.get(l.lop)!) hanLop.set(l.lop, h);
+  }
   const ma = new Map((conn.prepare(`SELECT id, code FROM classes WHERE id IN (${ph})`).all(...classIds) as any[]).map((c) => [c.id as number, c.code as string]));
   for (const classId of classIds) {
     const pendingCount = dem.get(classId) ?? 0;
     if (pendingCount > 0 && ma.has(classId)) {
       const code = ma.get(classId)!;
-      lines.push({ classId, className: code, pendingCount, text: `Lớp ${code} — ${pendingCount} lượt Phối hợp SOS cần xử lý` });
+      lines.push({ classId, className: code, pendingCount, text: `Lớp ${code} — ${pendingCount} lượt Phối hợp SOS cần xử lý`, han: hanLop.get(classId) ?? null });
     }
   }
   return lines;
@@ -468,6 +480,7 @@ export function confirmCoordination(p: Principal, id: number, input: { performed
   if (input.performedOn > demoToday()) throw badRequest('Ngày thực hiện không được ở tương lai.');
   const who = capText(input.performerName, 100, 'Tên người thực hiện');
   const note = capText(input.note, 1000, 'Ghi chú');
+  if (laMeetingCx(r.kind) && note.length < GHI_CHU_MEETING_TOI_THIEU) throw badRequest(`Meeting CX / GĐCN: ghi chú nói rõ kết quả buổi gặp, ít nhất ${GHI_CHU_MEETING_TOI_THIEU} ký tự.`);
   tx(() => {
     /* PR-PHH: bản chụp 4 nội dung bằng CHÍNH `turnsOf` đang dùng để hiển thị, tính như sau khi xong (ngày thực hiện) — trước UPDATE, cùng giao dịch. */
     const chup = r.kind === 'bao_ph_tvv'
@@ -546,7 +559,7 @@ export function moLaiCoordination(p: Principal, id: number): CoordinationAction 
 
 // ---------------------------------------------------------------- chỉ số (đặc tả §8)
 
-export const PHOI_HOP_METRIC_IDS = ['phoi-hop-luot-sos', 'phoi-hop-dang-xu-ly', 'phoi-hop-hoan-thanh'] as const;
+export const PHOI_HOP_METRIC_IDS = ['phoi-hop-luot-sos', 'phoi-hop-dang-xu-ly', 'phoi-hop-hoan-thanh', 'phoi-hop-qua-han'] as const;
 export const isPhoiHopMetric = (id: string): boolean => (PHOI_HOP_METRIC_IDS as readonly string[]).includes(id);
 
 /**
@@ -563,13 +576,43 @@ export const isPhoiHopMetric = (id: string): boolean => (PHOI_HOP_METRIC_IDS as 
  * và một câu SQL trạng thái chạy MỖI LƯỢT — Turso mỗi câu một vòng mạng): nạp điểm bằng `loadBundle` một lần, đọc trạng
  * thái phối hợp bằng một câu theo lô 400.
  */
+/**
+ * OV-12h: `phoi-hop-qua-han` — lượt có việc meeting CX / GĐCN còn Cần xử lý đã qua hạn 5 ngày (`hanPhoiHop`), HIỆN TRẠNG (không theo kỳ). Cùng tập với
+ * dòng Phối hợp SOS quá hạn ở Công việc: lớp em ĐANG học, người giữ việc = GVCN lớp đó. Hai câu.
+ */
+function meetingQuaHan(branchIds: number[] | null, classId: number | null) {
+  const b = branchSql('c.branch_id', branchIds), cl = classSql('e.class_id', classId);
+  const homNay = demoToday();
+  const rows = (db().prepare(
+    `SELECT x.attempt_id, x.kind, x.created_at, e.class_id FROM sos_coordination_actions x
+       JOIN assessment_attempts a ON a.id = x.attempt_id AND a.status != 'cancelled' AND COALESCE(a.kind, 'mock') = 'mock'
+       JOIN enrollments e ON e.student_id = x.student_id AND e.status = 'active' JOIN classes c ON c.id = e.class_id
+      WHERE x.status = 'pending' AND x.kind IN ('cx_meeting_student', 'cx_meeting_family') AND ${b.sql} AND ${cl.sql} ORDER BY x.attempt_id`,
+  ).all(...b.args, ...cl.args) as any[]).map((r) => ({ ...r, han: hanPhoiHop(r.kind, r.created_at) })).filter((r) => r.han && r.han < homNay);
+  const lop = [...new Set(rows.map((r) => r.class_id as number))];
+  const gvcn = new Map<number, number[]>();
+  theoLo(lop, (lo, ph) => {
+    for (const t of db().prepare(`SELECT DISTINCT class_id, user_id FROM teacher_assignments WHERE class_id IN (${ph}) AND is_core = 1 AND status = 'active'`).all(...lo) as any[]) {
+      gvcn.set(t.class_id, [...(gvcn.get(t.class_id) ?? []), t.user_id]);
+    }
+  });
+  const chiTiet = new Map<number, { nguoi: number[]; han: string[] }>();
+  for (const r of rows) {
+    const c = chiTiet.get(r.attempt_id) ?? { nguoi: gvcn.get(r.class_id) ?? [], han: [] };
+    c.han.push(r.han);
+    chiTiet.set(r.attempt_id, c);
+  }
+  return { none: false, ids: [...chiTiet.keys()], chiTiet };
+}
+
 export function phoiHopMetric(
   p: Principal, id: string,
   f: { branchId?: number | null; from?: string | null; to?: string | null; kind?: string | null; classId?: number | null } = {},
-): { none: boolean; ids: number[]; byKind?: { sos1: number[]; sos2: number[]; sos3: number[] } } {
+): { none: boolean; ids: number[]; byKind?: { sos1: number[]; sos2: number[]; sos3: number[] }; chiTiet?: Map<number, { nguoi: number[]; han: string[] }> } {
   const scope = statScope(p, f.branchId ?? null);
   if (scope.none) return { none: true, ids: [] };
   if (f.classId) checkClassInScope(f.classId, scope.branchIds);
+  if (id === 'phoi-hop-qua-han') return meetingQuaHan(scope.branchIds, f.classId ?? null);
   const b = branchSql('c.branch_id', scope.branchIds), cl = classSql('a.class_id', f.classId);
   const period = `${f.from ? ' AND rp.week_start >= ?' : ''}${f.to ? ' AND rp.week_start <= ?' : ''}`;
   const args = [...b.args, ...cl.args, ...(f.from ? [f.from] : []), ...(f.to ? [f.to] : [])];

@@ -14,7 +14,6 @@ export async function runPrOv5aTests(t: YThucTestKit) {
   const skillSch: any = await import('../fasttrack/skillSchedule.ts');
   const attempts: any = await import('../fasttrack/attempts.ts');
   const mywork: any = await import('../worklist/mywork.ts');
-  const nv: any = await import('../worklist/nhacViec.ts');
   const hoSo: any = await import('../giaoVien/hoSo.ts');
   const nhom: any = await import('../cases/xacNhanNhom.ts');
   const { loadPrincipal } = await import('../permissions.ts');
@@ -200,15 +199,6 @@ export async function runPrOv5aTests(t: YThucTestKit) {
     assert(ba <= TRAN_GHI_LO.xacNhanNhom3, `ghi ${ba} > ${TRAN_GHI_LO.xacNhanNhom3}`);
     assert(toiDa <= TRAN_GHI_LO.xacNhanNhomToiDa, `lô ${nhom.TOI_DA_EM} em ≈ ${toiDa} > ${TRAN_GHI_LO.xacNhanNhomToiDa}`);
     assert(loi(() => nhom.xacNhanNhom(GV_R, { caseIds: Array.from({ length: nhom.TOI_DA_EM + 1 }, (_, i) => i + 1), primaryCode: MA_NN, moTa: MO_TA }))?.status === 400, 'quá trần em không 400');
-  }));
-
-  check('OV5a-7 · Nhắc dòng gộp Xác nhận nguyên nhân: QL nhắc một chuông, đường chuông về đúng dòng ở Công việc', () => thu(() => {
-    const { A } = bonEm();
-    const r = dongR(mywork.myWork(GV_R), A.r);
-    const kq = nv.nhacViec(P.mbManager, { key: r.key, ownerId: GV_R.userId });
-    assert(kq.daNhacLuc, 'không nhắc được');
-    const n = one(`SELECT duong FROM notifications WHERE user_id = ? AND kind = 'nhac_viec' AND dedup_key = ?`, GV_R.userId, `nhac:${r.key}:${TODAY}`);
-    assert(n?.duong === r.href, `đường chuông: ${n?.duong}`);
   }));
 
   check('OV5a-8 · Hồ sơ GV › Việc đang có đếm = badge Công việc (cùng `dong`): GV tự xem, QL xem GV', () => thu(() => {

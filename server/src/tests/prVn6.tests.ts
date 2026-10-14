@@ -7,7 +7,6 @@ export async function runPrVn6Tests(t: YThucTestKit) {
   const ht: any = await import('../fasttrack/hoanTat.ts');
   const week: any = await import('../platform/week.ts');
   const mywork: any = await import('../worklist/mywork.ts');
-  const nv: any = await import('../worklist/nhacViec.ts');
   const { loadPrincipal } = await import('../permissions.ts');
   const { xoaNho } = await import('../platform/nguCanhRequest.ts');
   console.log('\nPR-VN6 · MT0 hoàn tất + nhắc một chuông');
@@ -43,25 +42,4 @@ export async function runPrVn6Tests(t: YThucTestKit) {
     att.saveScore(P.admin, aid, 'writing1', { band: 6, lyDo: 'Chấm lại' }, TODAY);
     assert(get(`SELECT band FROM assessment_scores WHERE attempt_id = ? AND skill = 'writing1'`, aid).band === 6, 'QL sửa có lý do');
   }));
-
-  check('VN6-3 · F05: nhắc dòng gộp và một em của nó trong cùng lô ([nhóm, con] và [con, nhóm]) → một chuông', () => {
-    const ql = P.mbManager;
-    const homNay = `nhac:%:${TODAY}`;
-    const xoaNhac = () => conn.prepare(`DELETE FROM notifications WHERE kind = 'nhac_viec' AND dedup_key LIKE ?`).run(homNay);
-    const demNhac = () => get(`SELECT COUNT(*) n FROM notifications WHERE kind = 'nhac_viec' AND dedup_key LIKE ?`, homNay).n as number;
-    let nhom: any = null, ai = 0;
-    for (const u of new Set((mywork.myWork(ql, { nguoi: 'tat-ca' }).items as any[]).map((it) => it.nhac?.ownerId).filter(Boolean))) {
-      nhom = ((mywork.myWork(loadPrincipal(u as number)) as any).dong as any[]).find((x) => x.con?.length >= 2);
-      if (nhom) { ai = u as number; break; }
-    }
-    assert(!!nhom, 'seed có dòng gộp ≥ 2 em');
-    for (const lo of [[nhom.key, nhom.con[0].key], [nhom.con[0].key, nhom.key]]) {
-      xoaNhac();
-      const kq = nv.nhacViecLo(ql, lo.map((key) => ({ key, ownerId: ai })));
-      assert(kq.loi.length === 0 && kq.ok.length === 2, JSON.stringify(kq));
-      assert(demNhac() === 1, `${lo.join(' → ')}: ${demNhac()} chuông`);
-      assert(kq.ok.filter((x: any) => x.moi).length === 1, `moi: ${JSON.stringify(kq.ok)}`);
-    }
-    xoaNhac();
-  });
 }

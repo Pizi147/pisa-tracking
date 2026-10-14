@@ -1226,6 +1226,19 @@ CREATE UNIQUE INDEX ux_case_followups_khoa_gui ON case_followups(observer_user_i
 CREATE INDEX idx_followup_case ON case_followups(case_id);
 
 /*
+ * OV-12h (chủ SP 14/10): KẾT QUẢ PA TUTOR THEO BUỔI — lần ghi Kết quả PA Tutor có "Số buổi kỳ này" n thì có đúng n dòng (buổi 1…n): tên tutor (gõ tự do,
+ * danh sách tutor làm sau) + nhận xét buổi, cả hai bắt buộc. Chỉ lần ghi từ OV-12h; Kết quả cũ không có dòng. Xoá lần ghi → xoá theo (CASCADE).
+ */
+CREATE TABLE case_followup_buoi (
+  id INTEGER PRIMARY KEY,
+  followup_id INTEGER NOT NULL REFERENCES case_followups(id) ON DELETE CASCADE,
+  buoi_so INTEGER NOT NULL,
+  tutor_ten TEXT NOT NULL,
+  nhan_xet TEXT NOT NULL,
+  UNIQUE (followup_id, buoi_so)
+);
+
+/*
  * LỊCH SỬ ĐIỀU CHỈNH PHƯƠNG ÁN HỌC THUẬT (PR-S2 · S2 · rulebook §18.2 điểm 2 · nguồn §7).
  *
  * Mỗi dòng là MỘT lần sửa nội dung một PA: bản cũ, bản mới, ngày, ai, vì sao. Sửa nội dung không còn ghi đè mất dấu.

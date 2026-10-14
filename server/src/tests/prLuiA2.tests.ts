@@ -49,7 +49,7 @@ export async function runPrLuiA2Tests(t: YThucTestKit) {
   };
   const deXuat = (caseId: number) => themPa(caseId, { kind: 'extra_support', description: 'Học kèm 1-1 với Tutor 2 buổi/tuần', status: 'planned', startedDate: undefined });
   const ketQua = (ivId: number, o: Record<string, unknown> = {}) =>
-    cases.updateResult(P.lrTeacher, ivId, { decision: 'keep', outcome: 'partial', note: 'Đúng 15/20 câu điền số tuần này', ...o });
+    cases.updateResult(P.lrTeacher, ivId, { decision: 'keep', outcome: 'partial', note: 'Đúng 15/20 câu điền số tuần này', soBuoi: 0, ...o });   // OV-12h: PA Tutor luôn có Số buổi kỳ này (0 = không dòng); loại khác bỏ qua
   /* PR-PA (§8): Người phụ trách → Người dạy tuần này (body `nguoiDay`); Tự học không có ô người → PA Tutor (không Số buổi: không bắt người). */
   const TUTOR = { kind: 'tutor', description: 'Tutor Listening — nghe chép hai buổi mỗi tuần' };
   const dongCase = (caseId: number, ivId: number) => {

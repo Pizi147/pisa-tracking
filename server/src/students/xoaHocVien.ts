@@ -30,7 +30,7 @@ export const BANG_CUA_HOC_VIEN: readonly string[] = [
   'sos_case_history', 'case_signals', 'task_students', 'task_case_links',
   'violations', 'violation_history', 'discipline_measures', 'measure_violations', 'sos_coordination_actions',
   'yeu_cau_duyet', 'y_thuc_khai_bac', 'mini_test', 'lenh_chuyen_lop', 'ban_giao_mon', 'ket_qua_huy',
-  'ban_chup_lo_trinh', 'ban_chup_luot',
+  'ban_chup_lo_trinh', 'ban_chup_luot', 'case_followup_buoi',
 ];
 
 /** Dòng của NGƯỜI KHÁC trỏ vào dữ liệu của em (Q5) — đặt NULL, không xoá. Cả ba cột cho phép NULL. */
@@ -92,6 +92,7 @@ export const CAU_XOA_HOC_VIEN: readonly { bang: string; sql: string }[] = [
   { bang: 'task_case_links', sql: `DELETE FROM task_case_links WHERE case_id IN (${C})` },
   { bang: 'task_students', sql: `DELETE FROM task_students WHERE student_id = ?1 OR case_id IN (${C}) OR intervention_id IN (${I})` },
   { bang: 'case_intervention_revisions', sql: `DELETE FROM case_intervention_revisions WHERE case_id IN (${C}) OR intervention_id IN (${I}) OR followup_id IN (${F})` },
+  { bang: 'case_followup_buoi', sql: `DELETE FROM case_followup_buoi WHERE followup_id IN (${F})` },   // OV-12h (CASCADE cũng xoá — ghi rõ cho phép kiểm bao đóng)
   { bang: 'case_followups', sql: `DELETE FROM case_followups WHERE id IN (${F})` },
   /*
    * `superseded_by` trỏ PA cùng Case — cùng câu nên FK (kiểm cuối câu) vẫn đúng. PA của Case KHÁC lỡ trỏ vào PA của em (dữ liệu lỗi) thì
