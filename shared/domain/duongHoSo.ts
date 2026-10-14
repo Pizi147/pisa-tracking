@@ -10,6 +10,7 @@
 import type { HoSoTab } from './hoSoHocVien.ts';
 import type { NavQuyen } from './dieuHuong.ts';
 import { duongThe } from './yeuCauDuyet.ts';
+import { t } from '../i18n/index.ts';
 
 export type ThamSoHoSo = {
   tab?: HoSoTab;
@@ -157,19 +158,19 @@ export function noiDenThongBao(n: ThongBaoRow): string | null {
   if (!den) return null;
   const [path, q = ''] = den.split('?');
   const p = new URLSearchParams(q);
-  const hv = n.ten_hv ?? 'học viên';
-  if (/^\/hoc-vien\/lop\/\d+/.test(path)) return `${n.lop ? `Lớp ${n.lop}` : 'Lớp'}${p.get('tab') === 'y-thuc' ? ' › Ý thức' : ''}`;
+  const hv = n.ten_hv ?? t('học viên');
+  if (/^\/hoc-vien\/lop\/\d+/.test(path)) return `${n.lop ? t('Lớp {lop}', { lop: n.lop }) : t('Lớp')}${p.get('tab') === 'y-thuc' ? t(' › Ý thức') : ''}`;
   if (/^\/hoc-vien\/\d+/.test(path)) {
-    if (p.get('case')) return `Hồ sơ ${hv} › Case${n.mon ? ` ${n.mon}` : ''}`;
-    if (p.get('tab') === 'y-thuc') return `Hồ sơ ${hv} › Ý thức`;
-    return `Hồ sơ ${hv}`;
+    if (p.get('case')) return t('Hồ sơ {hv} › Case{x}', { hv, x: n.mon ? ` ${n.mon}` : '' });
+    if (p.get('tab') === 'y-thuc') return t('Hồ sơ {hv} › Ý thức', { hv });
+    return t('Hồ sơ {hv}', { hv });
   }
-  if (path.startsWith('/cong-viec/yeu-cau')) return 'Công việc › Yêu cầu của tôi';
-  if (path.startsWith('/cong-viec/cho-duyet')) return 'Công việc › Chờ duyệt';
-  if (path.startsWith('/cong-viec')) return 'Công việc';
-  if (path.startsWith('/mock-test/')) return `Test › Lượt thi${n.ten_hv ? ` của ${n.ten_hv}` : ''}`;
-  if (path.startsWith('/test')) return 'Test › Lịch Test / Chấm Test';
-  if (path.startsWith('/quan-tri')) return 'Quản trị › Tài khoản';
+  if (path.startsWith('/cong-viec/yeu-cau')) return t('Công việc › Yêu cầu của tôi');
+  if (path.startsWith('/cong-viec/cho-duyet')) return t('Công việc › Chờ duyệt');
+  if (path.startsWith('/cong-viec')) return t('Công việc');
+  if (path.startsWith('/mock-test/')) return t('Test › Lượt thi{x}', { x: n.ten_hv ? t(' của {ten_hv}', { ten_hv: n.ten_hv }) : '' });
+  if (path.startsWith('/test')) return t('Test › Lịch Test / Chấm Test');
+  if (path.startsWith('/quan-tri')) return t('Quản trị › Tài khoản');
   return null;
 }
 

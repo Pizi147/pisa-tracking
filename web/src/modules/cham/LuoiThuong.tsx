@@ -25,6 +25,7 @@ import { NganLichSuBai } from './NganLichSuBai.tsx';
 import { DauLuu, DauO, VIEN_LOI } from './LuoiFT.tsx';
 import { DongThi } from './DongThi.tsx';
 import { NutNhanXet } from '../fasttrack/HopNhapDiem.tsx';
+import { dich, t } from '@shared/i18n/index.ts';
 
 type SkillResult = {
   skill: string; label: string;
@@ -100,15 +101,15 @@ export function oThuong(r: Row, k: string, homNay: string) {
   const trong = canEdit && diem === null && s?.progress !== 'upcoming'
     && s?.progress !== 'cancelled' && s?.progress !== 'absent' && !s?.khongDuThi;
   const dung = diem === null && (s?.progress === 'absent' || s?.progress === 'cancelled');
-  const chuDung = !dung ? null : s!.progress === 'absent' ? 'Đã vắng · chờ xếp lại' : 'Đã huỷ phần thi';
+  const chuDung = !dung ? null : s!.progress === 'absent' ? t('Đã vắng · chờ xếp lại') : t('Đã huỷ phần thi');
   /* Quá hạn chấm của CHÍNH môn này (hạn riêng từng môn, mục 10.5), ngày dạng dd/mm. */
-  const quaHan = diem === null && s?.overdue && s.deadline ? `Quá hạn ${ngay(s.deadline, homNay)}` : null;
+  const quaHan = diem === null && s?.overdue && s.deadline ? t('Quá hạn {ngay}', { ngay: ngay(s.deadline, homNay) }) : null;
   const cell = {
     diem, tong: kq?.total ?? null,
     dau: !!s?.noShow,
     khongDuThi: !!s?.khongDuThi,
     goDau: !!s?.goDau,
-    tuanDoiTu: s?.noShow ? (s.movedFromStart ? tuanLich(s.movedFromStart, homNay) : 'tuần cũ') : null,
+    tuanDoiTu: s?.noShow ? (s.movedFromStart ? tuanLich(s.movedFromStart, homNay) : t('tuần cũ')) : null,
     tuanHienTai: s?.weekStart ? tuanLich(s.weekStart, homNay) : null,
     chuaToiTuan: s?.progress === 'upcoming',
     tiLe: kq?.ratio ?? null, ketQua: kq?.outcome,
@@ -253,11 +254,11 @@ export function useLuuThuong(attemptId: number, onReload: () => void, ct: string
       thongBaoVang(toast, `${attemptId}:${skill}`, tenMonNgan(ct, skill), tenHv,   // K4: gõ "-" và nút Vắng cùng một thông báo
         r.khongDuThi ? { kq: 'khong-du-thi' } : r.moved ? { kq: 'doi', tuanMoi: r.tuanMoi } : null);
     } else if (r && r.moved) {
-      toast.push('ok', `Đã bỏ vắng ${tenMonNgan(ct, skill)}${tenHv ? ` · ${tenHv}` : ''} · về ${r.tuanMoi ?? 'tuần cũ'}`);
+      toast.push('ok', t('Đã bỏ vắng {tenMonNgan}{x} · về {x2}', { tenMonNgan: tenMonNgan(ct, skill), x: tenHv ? ` · ${tenHv}` : '', x2: r.tuanMoi ?? t('tuần cũ') }));
     } else if (r && r.giuLich) {
-      toast.push('ok', `Đã bỏ vắng ${tenMonNgan(ct, skill)}${tenHv ? ` · ${tenHv}` : ''} · giữ ${r.tuanMoi ?? 'tuần mới'}`);   // PR-BV: tuần mới đã có điểm
+      toast.push('ok', t('Đã bỏ vắng {tenMonNgan}{x} · giữ {x2}', { tenMonNgan: tenMonNgan(ct, skill), x: tenHv ? ` · ${tenHv}` : '', x2: r.tuanMoi ?? t('tuần mới') }));   // PR-BV: tuần mới đã có điểm
     } else if (r) {
-      toast.push('ok', `Đã bỏ vắng ${tenMonNgan(ct, skill)}${tenHv ? ` · ${tenHv}` : ''}`);   // OV-11a: gỡ Không dự thi — tuần không đổi
+      toast.push('ok', t('Đã bỏ vắng {tenMonNgan}{x}', { tenMonNgan: tenMonNgan(ct, skill), x: tenHv ? ` · ${tenHv}` : '' }));   // OV-11a: gỡ Không dự thi — tuần không đổi
     }
     return r !== null;
   };
@@ -304,8 +305,8 @@ export function LuoiThuong({ data, onReload, kn = null, hv = null, tuanDangXem =
     try {
       const r = await api.post<{ created: number; students: number }>(`/regular/classes/${data.class.id}/plan`, {});
       toast.push(r.created > 0 ? 'ok' : 'info',
-        r.created > 0 ? `Đã tạo ${r.created} bài kiểm tra cho ${r.students} học viên.`
-                      : 'Mọi học viên đều đã có đủ bài kiểm tra.');
+        r.created > 0 ? t('Đã tạo {created} bài kiểm tra cho {students} học viên.', { created: r.created, students: r.students })
+                      : t('Mọi học viên đều đã có đủ bài kiểm tra.'));
       /* `invalidate('/classes')` tự tải lại lưới (đường `/classes/:id/cham`) — không gọi `onReload`, vì đó là tín hiệu "vừa lưu điểm". */
       invalidate('/regular'); invalidate('/classes');
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
@@ -313,17 +314,17 @@ export function LuoiThuong({ data, onReload, kn = null, hv = null, tuanDangXem =
   /* OV-6b2: lớp liên tục (chương trình không có mốc cố định) — Checkpoint tự sinh, không nút tạo bài. */
   const nutTao = data.canPlan && !anNutTao && data.programme.checkpoints.length > 0 && (
     <button className="btn btn-sm" onClick={plan} disabled={busy}>
-      {busy ? 'Đang tạo…' : 'Tạo bài kiểm tra theo chương trình'}
+      {busy ? t('Đang tạo…') : t('Tạo bài kiểm tra theo chương trình')}
     </button>
   );
 
   if (data.rows.length === 0) {
     return (
       <Empty
-        title="Lớp này chưa có bài kiểm tra nào"
+        title={t('Lớp này chưa có bài kiểm tra nào')}
         hint={anNutTao ? undefined : data.canPlan
-          ? 'Bấm "Tạo bài kiểm tra theo chương trình" để sinh bài Progress Test và Final Test theo đúng mốc tuần học.'
-          : 'Quản lý cần tạo kế hoạch kiểm tra cho lớp này.'}
+          ? t('Bấm "Tạo bài kiểm tra theo chương trình" để sinh bài Progress Test và Final Test theo đúng mốc tuần học.')
+          : t('Quản lý cần tạo kế hoạch kiểm tra cho lớp này.')}
         action={nutTao || undefined}
       />
     );
@@ -351,7 +352,7 @@ export function LuoiThuong({ data, onReload, kn = null, hv = null, tuanDangXem =
           </colgroup>
           <thead>
             <tr>
-              <th className="th sticky-col align-bottom" title="Cột này đứng yên khi cuộn ngang.">Học viên</th>
+              <th className="th sticky-col align-bottom" title={t('Cột này đứng yên khi cuộn ngang.')}>{t('Học viên')}</th>
               {skills.map((k) => {
                 const n = soTong(k);
                 return (
@@ -360,17 +361,17 @@ export function LuoiThuong({ data, onReload, kn = null, hv = null, tuanDangXem =
                       <span title={tenMon(data.programme.code, k)}>{tenMonNgan(data.programme.code, k)}</span>
                       {cotSuaDuoc(k) && (
                         <span className="flex flex-wrap items-center justify-end gap-1 normal-case tracking-normal font-normal">
-                          <span className="text-xs text-slate-500">tổng</span>
+                          <span className="text-xs text-slate-500">{t('tổng')}</span>
                           <input className="field w-11 px-1 py-0.5 text-center text-[12px] tabular-nums"
                             inputMode="numeric" value={chuTong(k)} placeholder="—"
-                            title="Tổng số câu của đề cả lớp làm — ô còn trống tổng lấy sẵn số này; bấm Điền cả cột để điền luôn."
-                            aria-label={`Tổng số câu chung của cột ${tenMon(data.programme.code, k)}`}
+                            title={t('Tổng số câu của đề cả lớp làm — ô còn trống tổng lấy sẵn số này; bấm Điền cả cột để điền luôn.')}
+                            aria-label={t('Tổng số câu chung của cột {tenMon}', { tenMon: tenMon(data.programme.code, k) })}
                             onChange={(e) => setTongGo((t) => ({ ...t, [k]: e.target.value }))} />
                           <button type="button" className="btn btn-sm btn-ghost px-1.5 py-0 text-xs" disabled={n === null}
-                            title="Điền tổng này vào mọi ô còn trống tổng của cột. Ô đã có tổng giữ nguyên."
-                            aria-label={`Điền tổng ${n ?? ''} xuống cột ${tenMon(data.programme.code, k)}`}
+                            title={t('Điền tổng này vào mọi ô còn trống tổng của cột. Ô đã có tổng giữ nguyên.')}
+                            aria-label={t('Điền tổng {x} xuống cột {tenMon}', { x: n ?? '', tenMon: tenMon(data.programme.code, k) })}
                             onClick={() => n !== null && setDien((d) => ({ ...d, [k]: { gt: n, lan: (d[k]?.lan ?? 0) + 1 } }))}>
-                            Điền cả cột
+                            {t('Điền cả cột')}
                           </button>
                         </span>
                       )}
@@ -378,9 +379,9 @@ export function LuoiThuong({ data, onReload, kn = null, hv = null, tuanDangXem =
                   </th>
                 );
               })}
-              {laCp && <th className="th text-right align-bottom" title="Tổng điểm các môn / tổng số câu — khi đủ mọi môn.">% tổng</th>}
+              {laCp && <th className="th text-right align-bottom" title={t('Tổng điểm các môn / tổng số câu — khi đủ mọi môn.')}>{t('% tổng')}</th>}
               <th className="th align-bottom"
-                title="Đạt từ 70% trở lên. Thiếu điểm khác chưa đạt: môn chưa chấm không bị tính là chưa đạt.">Kết quả</th>
+                title={t('Đạt từ 70% trở lên. Thiếu điểm khác chưa đạt: môn chưa chấm không bị tính là chưa đạt.')}>{t('Kết quả')}</th>
             </tr>
           </thead>
           <tbody>
@@ -430,9 +431,9 @@ function DongThuong({ row, rowIndex, sheet, laCp, active, tongCot, dien, onReloa
     /* OV-11i (P3-3): chỉ ẩn chờ rê chuột khi thiết bị rê được — máy tính bảng cảm ứng ≥ 640 px vẫn thấy ⋯. */
     return (
       <span className="absolute right-0.5 top-0.5 opacity-100 transition-opacity sm:[@media(hover:hover)]:opacity-0 sm:[@media(hover:hover)]:group-hover:opacity-100 sm:[@media(hover:hover)]:focus-within:opacity-100">
-        <MenuDong nhan={`Thao tác · ${tenMon(ct, k)} · ${row.studentName}`} muc={[
+        <MenuDong nhan={t('Thao tác · {tenMon} · {studentName}', { tenMon: tenMon(ct, k), studentName: row.studentName })} muc={[
           ...ds.map((x) => ({ key: x, nhan: CHU_THAO_TAC[x], onChon: () => setHop({ t: x, k }), nguyHiem: x === 'huy-diem' })),
-          { key: 'lich-su', nhan: 'Lịch sử', onChon: () => setLichSu(k), keTruoc: ds.length > 0 },
+          { key: 'lich-su', nhan: t('Lịch sử'), onChon: () => setLichSu(k), keTruoc: ds.length > 0 },
         ]} />
       </span>
     );
@@ -455,8 +456,8 @@ function DongThuong({ row, rowIndex, sheet, laCp, active, tongCot, dien, onReloa
           <Link className="link block max-sm:break-words max-sm:py-3 max-sm:-my-3 sm:truncate" to={`/hoc-vien/${row.studentId}`} title={row.studentName}>{row.studentName}</Link>
           {row.hoanTat && (
             <div className="mt-0.5">
-              <Info title={`Hết Chủ nhật ${ngay(row.chuNhatCuoi)}. Chỉ Quản lý sửa được điểm — nhờ Quản lý hiệu chỉnh.`}>
-                Đã hoàn tất
+              <Info title={t('Hết Chủ nhật {ngay}. Chỉ Quản lý sửa được điểm — nhờ Quản lý hiệu chỉnh.', { ngay: ngay(row.chuNhatCuoi) })}>
+                {t('Đã hoàn tất')}
               </Info>
             </div>
           )}
@@ -478,7 +479,7 @@ function DongThuong({ row, rowIndex, sheet, laCp, active, tongCot, dien, onReloa
         if (tuanDangXem && s?.weekStart && s.weekStart !== tuanDangXem && cell.diem === null && !s.noShow) {
           return (
             <td key={k} className="td group relative py-1.5 text-right text-slate-500" data-kn={k}
-              title={`${tenMon(sheet.programme.code, k)}: thi tuần ${tuanLich(s.weekStart, homNay)}`}>
+              title={t('{tenMon}: thi tuần {tuanLich}', { tenMon: tenMon(sheet.programme.code, k), tuanLich: tuanLich(s.weekStart, homNay) })}>
               {tuanLich(s.weekStart, homNay)}
               {menuO(k)}
             </td>
@@ -525,7 +526,7 @@ function DongThuong({ row, rowIndex, sheet, laCp, active, tongCot, dien, onReloa
             </div>
             {quaHan && (
               <div className="text-xs text-slate-400 leading-none mt-0.5"
-                title={`${tenMon(sheet.programme.code, k)}: hạn chấm ${ngay(s!.deadline, homNay)} đã qua`}>{quaHan}</div>
+                title={t('{tenMon}: hạn chấm {ngay} đã qua', { tenMon: tenMon(sheet.programme.code, k), ngay: ngay(s!.deadline, homNay) })}>{quaHan}</div>
             )}
             {menuO(k)}
           </td>
@@ -576,16 +577,16 @@ function KetQua({ row, sheet }: { row: Row; sheet: ThuongSheet }) {
   const doiDau = [...doi.entries()][0];
   const phu: { chu: string; tone: string; title: string } | null = doiDau
     ? {
-      chu: `${doiDau[1].map(ngan).join(', ')} dời sang ${doiDau[0]}`, tone: 'text-slate-400',
-      title: `${doiDau[1].map(du).join(', ')}: em không làm bài, môn đã dời sang ${doiDau[0]}.`,
+      chu: t('{x} dời sang {x2}', { x: doiDau[1].map(ngan).join(', '), x2: doiDau[0] }), tone: 'text-slate-400',
+      title: t('{x}: em không làm bài, môn đã dời sang {x2}.', { x: doiDau[1].map(du).join(', '), x2: doiDau[0] }),
     }
-    : kdt.length ? { chu: `${kdt.map(ngan).join(', ')} không dự thi`, tone: 'text-slate-400', title: `${kdt.map(du).join(', ')}: Không dự thi.` }
+    : kdt.length ? { chu: t('{x} không dự thi', { x: kdt.map(ngan).join(', ') }), tone: 'text-slate-400', title: t('{x}: Không dự thi.', { x: kdt.map(du).join(', ') }) }
     : row.goiY
       ? { chu: row.goiY.nhanNgan, tone: 'text-slate-500', title: `${row.goiY.nhan}${kq.phu ? ` — ${kq.phu}` : ''}` }
     : kq.phu && !row.chip
       ? {
-        chu: `${kq.phu}${row.overdue ? ' · quá hạn' : ''}`, tone: row.overdue ? 'text-rose-300' : 'text-slate-500',
-        title: `${kq.phu}${row.overdue ? ' — có môn đã quá hạn chấm' : ''}`,
+        chu: `${kq.phu}${row.overdue ? t(' · quá hạn') : ''}`, tone: row.overdue ? 'text-rose-300' : 'text-slate-500',
+        title: `${kq.phu}${row.overdue ? t(' — có môn đã quá hạn chấm') : ''}`,
       }
       : null;
 
@@ -595,7 +596,7 @@ function KetQua({ row, sheet }: { row: Row; sheet: ThuongSheet }) {
     : truot ? (r.sosLevel ? sosTone(r.sosLevel) : 'sos3') : r.complete ? 'ok' : 'muted';
   const chinh = row.chip
     /* OV-6b2: Checkpoint đủ điểm — chip "Đạt" / "SOS · L+S" (chưa đạt chỉ chip, không Case). Chữ nói kết quả, màu chỉ đi kèm. */
-    ? <Level tone={row.chip.dat ? 'ok' : 'sos1'} title={chiTiet}>{row.chip.chu}</Level>
+    ? <Level tone={row.chip.dat ? 'ok' : 'sos1'} title={chiTiet}>{dich(row.chip.chu)}</Level>
     : r.scored === 0
     ? <span className="text-xs text-slate-500">{kq.chinh}</span>
     : (
@@ -611,7 +612,7 @@ function KetQua({ row, sheet }: { row: Row; sheet: ThuongSheet }) {
   const nhanCase = dauCase && (
     <Status
       kind={dauCase.status === 'done' ? 'done' : dauCase.status === 'open' ? 'idle' : 'doing'}
-      title={cases.map((c) => `Case ${du(c.skill)} · ${caseStatusLabel(c.status)}`).join('\n')}>
+      title={cases.map((c) => `Case ${du(c.skill)} · ${dich(caseStatusLabel(c.status))}`).join('\n')}>
       Case {sheet.programme.skills.filter((k) => cases.some((c) => c.skill === k)).map(ngan).join(', ')}
     </Status>
   );
@@ -623,7 +624,7 @@ function KetQua({ row, sheet }: { row: Row; sheet: ThuongSheet }) {
         {nhanCase}
       </div>
       {/* OV-11e (CA3-11): dòng phụ xuống dòng, không cắt. */}
-      {phu && <span className={`text-xs leading-tight max-w-full [overflow-wrap:anywhere] ${phu.tone}`} title={phu.title}>{phu.chu}</span>}
+      {phu && <span className={`text-xs leading-tight max-w-full [overflow-wrap:anywhere] ${phu.tone}`} title={phu.title}>{dich(phu.chu)}</span>}
     </div>
   );
 }

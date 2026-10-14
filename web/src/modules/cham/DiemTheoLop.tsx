@@ -23,6 +23,7 @@ import {
 } from './LuoiChamLop.tsx';
 import type { HangMo } from './LuoiFT.tsx';
 import { DongThiContext } from './DongThi.tsx';
+import { dich, t } from '@shared/i18n/index.ts';
 
 const KHOA_CHI_O_TRONG = 'pisa.diem-theo-lop.chi-o-trong';
 function docChiOTrong(): boolean {
@@ -139,7 +140,7 @@ export function DiemTheoLop({ classId, luotBanDau, locBanDau, gon = false, congR
   /* "MT cũ" chỉ hàng MT cũ — em chưa có lịch lượt này không phải việc nhập bù. */
   const hangMo = useMemo<HangMo[]>(() => (locCu ? [] : b?.chuaCoLich ?? []).map((h) => ({
     studentId: h.studentId, ten: h.fullName, ma: maHocVienNgan(h.studentCode),
-    chu: <>Chưa có lịch {b!.luot.nhan} — <Link className="link" to={duongHoSoHocVien(h.studentId, { mo: 'lo-trinh' })}>xếp ở panel Lộ trình</Link></>,
+    chu: <>{t('Chưa có lịch {nhan} —', { nhan: b!.luot.nhan })}{' '}<Link className="link" to={duongHoSoHocVien(h.studentId, { mo: 'lo-trinh' })}>{t('xếp ở panel Lộ trình')}</Link></>,
   })), [b, locCu]);
 
   const phimTab = (e: KeyboardEvent<HTMLDivElement>) => {
@@ -153,7 +154,7 @@ export function DiemTheoLop({ classId, luotBanDau, locBanDau, gon = false, congR
   if (ds.error && !ds.data) noiDung = <ErrorState message={ds.error.message} hint={ds.error.hint} onRetry={ds.reload} />;
   else if (ds.loading || !ds.data) noiDung = <Skeleton rows={6} />;
   else if (!dsLuot.length) {
-    noiDung = <Empty title="Lớp chưa có lượt Test nào. Xếp lịch ở Kế hoạch Test." />;
+    noiDung = <Empty title={t('Lớp chưa có lượt Test nào. Xếp lịch ở Kế hoạch Test.')} />;
   } else {
     noiDung = (
       <div className="flex flex-col gap-3">
@@ -171,7 +172,7 @@ export function DiemTheoLop({ classId, luotBanDau, locBanDau, gon = false, congR
           </div>
         ) : (
           <div className="flex items-start gap-2" onMouseDown={giuHopLyDo}>
-            <div role="tablist" aria-label="Lượt Test" className="flex flex-wrap gap-1.5 flex-1 min-w-0" onKeyDown={phimTab}>
+            <div role="tablist" aria-label={t('Lượt Test')} className="flex flex-wrap gap-1.5 flex-1 min-w-0" onKeyDown={phimTab}>
               {dsLuot.map((l) => {
                 const on = l.ma === luot;
                 return (
@@ -181,7 +182,7 @@ export function DiemTheoLop({ classId, luotBanDau, locBanDau, gon = false, congR
                       on ? 'bg-[color:var(--accent-soft)] border-[color:var(--accent-line)]'
                         : 'border-[color:var(--line-strong)] hover:bg-[color:var(--surface-2)]'}`}>
                     <span className={`font-semibold text-sm ${on ? 'text-[color:var(--accent-strong)]' : 'text-slate-200'}`}>
-                      {l.nhan}{l.lichSu ? ' · cũ' : ''}
+                      {dich(l.nhan)}{l.lichSu ? t(' · cũ') : ''}
                     </span>
                     {/* Tab chọn: --text-dim trên --accent-soft (tối 5,07:1 · sáng 6,75:1); --text-faint chỉ 4,10:1 ở tối. */}
                     <span className={`text-[11.5px] tabular-nums ${on ? 'text-slate-400' : 'text-slate-500'}`}>{dongPhuLuot(l)}</span>
@@ -198,27 +199,27 @@ export function DiemTheoLop({ classId, luotBanDau, locBanDau, gon = false, congR
           <div role="alert" onMouseDown={giuHopLyDo} className="surface-2 rounded-md px-3 py-2 text-sm flex flex-wrap items-center gap-2">
             {h.hoi && dangLuu ? (
               <>
-                <span className="flex-1 min-w-0">Còn ô đang lưu. Đợi lưu xong rồi chuyển?</span>
+                <span className="flex-1 min-w-0">{t('Còn ô đang lưu. Đợi lưu xong rồi chuyển?')}</span>
                 <button type="button" className="btn btn-sm btn-primary" disabled={h.cho} onClick={() => setH({ ...h, cho: true })}>
-                  {h.cho ? 'Đang lưu…' : 'Đợi rồi chuyển'}
+                  {h.cho ? t('Đang lưu…') : t('Đợi rồi chuyển')}
                 </button>
               </>
             ) : (
               <span className="flex-1 min-w-0 text-bad">{cauChanDoiLuot(soLoi, soHopLyDo, doiLop ? 'lop' : 'luot')}</span>
             )}
-            <button type="button" className="btn btn-sm" onClick={() => setH(HOI_DOI_LUOT_RONG)}>Ở lại</button>
+            <button type="button" className="btn btn-sm" onClick={() => setH(HOI_DOI_LUOT_RONG)}>{t('Ở lại')}</button>
           </div>
         )}
 
         <label className="inline-flex items-center gap-2 text-sm self-start min-h-[44px] sm:min-h-0 cursor-pointer">
           <input type="checkbox" checked={chiOTrong}
             onChange={(e) => { setChiOTrong(e.target.checked); ghiChiOTrong(e.target.checked); if (!e.target.checked) setChiCu(false); }} />
-          {locCu ? 'Chỉ ô còn trống · MT cũ' : 'Chỉ ô còn trống'}
+          {locCu ? t('Chỉ ô còn trống · MT cũ') : t('Chỉ ô còn trống')}
         </label>
 
         {dangXem?.lichSu && (
           <div className="surface-2 rounded-md px-3 py-2 text-sm text-slate-300">
-            {dangXem.nhan} là MT cũ: nhập bù điểm; "-" là em không dự thi.
+            {t('{nhan} là MT cũ: nhập bù điểm; "-" là em không dự thi.', { nhan: dangXem.nhan })}
           </div>
         )}
 
@@ -227,7 +228,7 @@ export function DiemTheoLop({ classId, luotBanDau, locBanDau, gon = false, congR
           {bang.error && !b ? <ErrorState message={bang.error.message} hint={bang.error.hint} onRetry={bang.reload} />
             : !b ? <Skeleton rows={6} />
               : chiAttempt && chiAttempt.size === 0 && !hangMo.length
-                ? <Empty title="Lượt này không còn ô trống." hint='Bỏ chọn "Chỉ ô còn trống" để xem cả bảng.' />
+                ? <Empty title={t('Lượt này không còn ô trống.')} hint={t('Bỏ chọn "Chỉ ô còn trống" để xem cả bảng.')} />
                 : (
                   <div className="rounded-lg border overflow-clip" style={{ borderColor: 'var(--line)' }}>
                     <BaoDangLuuContext.Provider value={baoLuu}>
@@ -251,7 +252,7 @@ function LoiTaiLai({ message, onRetry }: { message: string; onRetry: () => void 
   return (
     <div className="flex flex-wrap items-center gap-2 text-xs text-bad">
       <span className="min-w-0">{message}</span>
-      <button type="button" className="btn btn-sm" onClick={onRetry}>Thử lại</button>
+      <button type="button" className="btn btn-sm" onClick={onRetry}>{t('Thử lại')}</button>
     </div>
   );
 }
@@ -260,11 +261,11 @@ function LoiTaiLai({ message, onRetry }: { message: string; onRetry: () => void 
 function NutBen({ luot, huong, onChon, chiMuiTen = false }: {
   luot: TomTatLuot | null; huong: 'truoc' | 'sau'; onChon: (ma: string) => void; chiMuiTen?: boolean;
 }) {
-  const ten = huong === 'truoc' ? 'Lượt trước' : 'Lượt sau';
-  const chu = chiMuiTen || !luot ? (huong === 'truoc' ? '‹' : '›') : huong === 'truoc' ? `‹ ${luot.nhan}` : `${luot.nhan} ›`;
+  const ten = huong === 'truoc' ? t('Lượt trước') : t('Lượt sau');
+  const chu = chiMuiTen || !luot ? (huong === 'truoc' ? '‹' : '›') : huong === 'truoc' ? `‹ ${dich(luot.nhan)}` : `${luot.nhan} ›`;
   return (
     <button type="button" className={`btn btn-ghost min-h-[44px] min-w-[44px] justify-center ${!luot && !chiMuiTen ? 'invisible' : ''}`}
-      disabled={!luot} aria-label={luot ? `${ten}: ${luot.nhan}` : ten} onClick={() => luot && onChon(luot.ma)}>
+      disabled={!luot} aria-label={luot ? `${ten}: ${dich(luot.nhan)}` : ten} onClick={() => luot && onChon(luot.ma)}>
       {chu}
     </button>
   );

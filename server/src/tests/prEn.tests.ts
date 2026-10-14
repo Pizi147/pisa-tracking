@@ -5,6 +5,9 @@
  *           migrate prEn chạy lặp được.
  *   E-LOI   lỗi có khoá: `loi()` → JSON { error: <vi>, khoa, bien }; 500 có khoá chung.coLoi + bien.ma; mọi khoá dùng trong server có trong từ điển.
  *   E-NGUON file đã dịch của đợt không còn chữ Việt hiện ra ngoài từ điển (AST, dùng lại scripts/quet-chu.mjs).
+ *   E-MAU   (đợt b) chữ máy chủ ghép sẵn dịch theo MẪU của từ điển (`dichMau` / `dich`): đúng câu, đúng từng đoạn " · ", không khớp nhầm cả câu ghép.
+ *   E-VIEC  (đợt b) dòng việc `/my-work` + Lớp tôi dạy của GVCN / GVBM dịch hết — chỉ còn tên, mã lớp, chữ người gõ (giá trị có trong DB).
+ *   E-TB    (đợt b) thông báo `/notifications` của GV dịch hết theo cùng luật (thông báo đã lưu cũng dịch — không cần cột khoá).
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -136,8 +139,92 @@ export async function runPrEnTests(t: any) {
     assert(thieu.length === 0, thieu.join(' · '));
   });
 
+  /* ---------------------------------------------------------------- E-MAU, E-VIEC, E-TB (đợt b) */
+  check('EN-MAU · chữ máy chủ dịch theo mẫu: đúng câu, từng đoạn " · ", biến dịch đệ quy; chưa có mẫu → giữ chữ Việt; không khớp nhầm cả câu', () => {
+    const d = (s: string) => i18n.dichMau('en', s) as string;
+    const mau: [string, string][] = [
+      ['Nhập điểm Listening, Reading', 'Enter scores Listening, Reading'],
+      ['Ghi nhận vi phạm mới · MB FT 101 · 3 em', 'Review new incidents · MB FT 101 · 3 students'],
+      ['Ghi Mini Test · Vương Bảo Ngọc', 'Record Mini Test · Vương Bảo Ngọc'],
+      ['Case mới sau MT2: [MT2] Reading không đạt [SOS 1] · hạn 18/09', 'New case after MT2: [MT2] Reading not passed [SOS 1] · due 18/09'],
+      ['Số câu đúng (35) không thể lớn hơn tổng (30).', 'Correct answers (35) cannot exceed the total (30).'],
+      ['Đề xuất sửa lộ trình · Nguyễn Minh An', 'Change request pathway · Nguyễn Minh An'],
+      ['Chữ chưa có bản Anh · Nguyễn Minh An', 'Chữ chưa có bản Anh · Nguyễn Minh An'],
+      ['Nguyễn Minh An', 'Nguyễn Minh An'],
+      /* "{size} lớp" (phần chữ ngắn) chỉ nhận số / mã — chữ người gõ kết thúc bằng "của lớp" không bị dịch bừa. */
+      ['Bị từ chối: Tuần sau trùng lịch Final của lớp', 'Declined: Tuần sau trùng lịch Final của lớp'],
+      ['3 em', '3 students'],
+      ['Em ốm, gia đình báo sáng cùng ngày', 'Em ốm, gia đình báo sáng cùng ngày'],
+      ['Ghi nhận từ buổi học tuần trước', 'Ghi nhận từ buổi học tuần trước'],
+      ['Ghi nhận 14/10 09:30', 'Recorded 14/10 09:30'],
+      ['Bỏ bước duyệt kế hoạch', 'Bỏ bước duyệt kế hoạch'],
+      ['Thêm PA học thuật Tổng hợp', 'Add PA Integrated'],
+    ];
+    const sai = mau.filter(([v, e]) => d(v) !== e).map(([v, e]) => `"${v}" → "${d(v)}" (cần "${e}")`);
+    assert(sai.length === 0, sai.join(' · '));
+  });
+
+  /**
+   * Chữ còn dấu Việt sau khi dịch, bỏ đoạn là DỮ LIỆU: tên người / lớp / chi nhánh, chữ người gõ (tiêu đề Case, mô tả, ghi chú, lý do…) — giá trị
+   * của các cột tên / chữ tự do trong DB. Không lấy bảng `notifications` (chính chữ cần kiểm) và cột nhãn hệ thống (không che chữ chưa dịch).
+   */
+  const duLieu = (() => {
+    const ra = new Set<string>();
+    const COT = /full_name|^name$|^code$|title|description|note|ly_do|lyDo|reason|summary|ghi_chu|nhan_xet|mo_ta|tra_loi|noi_dung|performer|^ten/;
+    for (const { name } of conn.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name <> 'notifications'").all() as any[]) {
+      const cot = (conn.prepare('SELECT name FROM pragma_table_info(?)').all(name) as any[]).map((c) => c.name as string).filter((c) => COT.test(c));
+      if (!cot.length) continue;
+      for (const r of conn.prepare(`SELECT ${cot.map((c) => `"${c}"`).join(',')} FROM "${name}"`).all() as any[]) {
+        for (const v of Object.values(r)) if (typeof v === 'string' && /[^\x00-\x7f]/.test(v)) ra.add(v.trim());
+      }
+    }
+    return ra;
+  })();
+  const VIET = /[àáảãạăằắẳẵặâầấẩẫậèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵđ]/i;
+  const conViet = (s: string) => {
+    let x = i18n.dichMau('en', s) as string;
+    for (const v of [...duLieu].filter((v) => x.includes(v)).sort((a, b) => b.length - a.length)) x = x.split(v).join('');
+    return VIET.test(x) ? x : null;
+  };
+  const gom = (o: unknown, khoa: Set<string>, ra: string[]) => {
+    if (Array.isArray(o)) o.forEach((x) => gom(x, khoa, ra));
+    else if (o && typeof o === 'object') for (const [k, v] of Object.entries(o)) { if (typeof v === 'string' && khoa.has(k)) ra.push(v); else gom(v, khoa, ra); }
+  };
+  const TRUONG_VIEC = new Set(['toiDay', 'tuanHoc', 'tieuDe', 'actionLabel', 'reason', 'statusLabel', 'contextLabel', 'conTen', 'conPhu', 'phu', 'label', 'hint', 'text', 'chu', 'nhan']);
+
+  await checkAsync('EN-VIEC · /my-work + Lớp tôi dạy của GVCN và GVBM: mọi chữ dịch hết (trừ dữ liệu)', async () => {
+    await voiMay(async (goi) => {
+      const sot: string[] = [];
+      for (const ai of [GV, GV2]) {
+        for (const url of ['/my-work', '/tong-quan/lop-toi-day?ct=ft', '/tong-quan/lop-toi-day?ct=thuong']) {
+          const r = await goi(ai, url);
+          assert(r.status === 200, `${url} → ${r.status}`);
+          const chu: string[] = []; gom(await r.json(), TRUONG_VIEC, chu);
+          for (const c of chu) { const x = conViet(c); if (x) sot.push(`${ai} ${url}: "${c}" → "${x}"`); }
+        }
+      }
+      assert(sot.length === 0, `${sot.length} chữ chưa dịch: ` + [...new Set(sot)].slice(0, 12).join(' · '));
+    });
+  });
+
+  await checkAsync('EN-TB · /notifications của GVCN và GVBM: tiêu đề + nội dung dịch hết (trừ dữ liệu), kể cả thông báo đã lưu', async () => {
+    await voiMay(async (goi) => {
+      const sot: string[] = [];
+      let n = 0;
+      for (const ai of [GV, GV2]) {
+        const r = await goi(ai, '/notifications');
+        assert(r.status === 200, `/notifications → ${r.status}`);
+        const chu: string[] = []; gom(await r.json(), new Set(['title', 'body']), chu);
+        n += chu.length;
+        for (const c of chu) { const x = conViet(c); if (x) sot.push(`"${c}" → "${x}"`); }
+      }
+      assert(n > 0, 'GV có thông báo để kiểm');
+      assert(sot.length === 0, `${sot.length} chữ chưa dịch: ` + [...new Set(sot)].slice(0, 12).join(' · '));
+    });
+  });
+
   /* ---------------------------------------------------------------- E-NGUON */
-  await checkAsync('EN-NGUON · file đã dịch (đợt a, c) không còn chữ Việt hiện ra ngoài từ điển', async () => {
+  await checkAsync('EN-NGUON · file đã dịch (đợt a, b, c) không còn chữ Việt hiện ra ngoài từ điển', async () => {
     const goc = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
     const { quetFile } = await import(pathToFileURL(path.join(goc, 'scripts/quet-chu.mjs')).href);
     const ra: any[] = [];
@@ -232,6 +319,17 @@ const FILE_DA_DICH = [
   'web/src/modules/platform/ProfilePage.tsx',
   ...['web/src/ui', 'web/src/lib'].flatMap((d) => fs.readdirSync(path.join(GOC_REPO, d)).filter((f) => /\.tsx?$/.test(f) && f !== 'chu.ts').map((f) => `${d}/${f}`)),
   ...['oNgay', 'chonNgay', 'loiForm', 'hienThiNgay', 'trangThai', 'dieuHuong', 'khac', 'quayLai'].map((f) => `shared/domain/${f}.ts`),
+  /* Đợt b — Tổng quan GV, Công việc, Yêu cầu của tôi, Lịch Test, Điểm theo lớp, nhập điểm, hộp chấm MT, hồ sơ Mock, Ghi kết quả PA. */
+  ...['OverviewPage', 'ViecCuaToi', 'WorkList', 'NhomViec', 'LopToiDay'].map((f) => `web/src/modules/worklist/${f}.tsx`),
+  ...['ChonPhuTrach', 'CongViecPage', 'HoTroHocVienTab', 'PanelViec'].map((f) => `web/src/modules/congViec/${f}.tsx`),
+  ...['YeuCauCuaToi', 'TheYeuCau', 'DeXuatSuaPanel'].map((f) => `web/src/modules/duyet/${f}.tsx`),
+  ...['TestPage', 'LichTestTab', 'TabDiemLop'].map((f) => `web/src/modules/test/${f}.tsx`),
+  ...fs.readdirSync(path.join(GOC_REPO, 'web/src/modules/test/lichTest')).map((f) => `web/src/modules/test/lichTest/${f}`),
+  ...fs.readdirSync(path.join(GOC_REPO, 'web/src/modules/cham')).map((f) => `web/src/modules/cham/${f}`),
+  ...fs.readdirSync(path.join(GOC_REPO, 'web/src/modules/fasttrack')).map((f) => `web/src/modules/fasttrack/${f}`),
+  'web/src/modules/cases/CapNhatTuan.tsx', 'shared/domain/gopYTuan.ts',
+  ...['worklist', 'congViec', 'tongQuan', 'sapToi', 'yeuCauDuyet', 'chamDiem', 'fasttrack', 'lopThuong', 'oMt', 'lichMt', 'diemTheoLuot', 'normal',
+    'thaoTacMt', 'mt0', 'nhanXet', 'vang', 'paDongBo'].map((f) => `shared/domain/${f}.ts`),
   /* Đợt c — Học viên & Lớp, hồ sơ lớp, hồ sơ HV (xem). Shared chạy ở máy chủ (`hoSoHocVien`, `hanhTrinh`, `cuoiKhoa`…) cố ý dựng câu Việt + khoá — kiểm ở E-HOSO. */
   ...['StudentsPage', 'StudentDetailPage', 'DauHoSo', 'HanhTrinh', 'ChuongLop', 'CacLoTrinh', 'NganCase', 'NganTongKet', 'KetLuanKhoa', 'KetQuaThiThatPanel',
     'ClassRoster', 'BangHocVienLop', 'MissingBadge'].map((f) => `web/src/modules/students/${f}.tsx`),
@@ -243,9 +341,14 @@ const FILE_DA_DICH = [
 const CHO_PHEP: { file: string; text: RegExp }[] = [
   { file: 'web/src/modules/platform/WelcomePage.tsx', text: /^(Hoàn tất|Nguyễn Khánh Vy|Trần Ngọc Hà)$/ },   // chữ in ra của lệnh seed; tên tài khoản demo (dữ liệu)
   { file: 'web/src/ui/NutNgonNgu.tsx', text: /^(Tiếng Việt|Ngôn ngữ \/ Language)$/ },                          // nút ghi bằng chính tiếng của nó
+  /* Đợt b: giá trị so khớp với chữ máy chủ gửi (không hiện ra; chỗ hiện bọc dich()). */
+  { file: 'web/src/modules/fasttrack/DongThoiGianLuot.tsx', text: /^Trống$/ },
+  { file: 'web/src/modules/fasttrack/MockDetailPage.tsx', text: /^(đã huỷ phần thi|đã có điểm|đã thi)$/ },
+  { file: 'shared/domain/paDongBo.ts', text: /^(Người dạy|Người thực hiện)$/ },
+  { file: 'web/src/modules/worklist/WorkList.tsx', text: /^Lớp \{/ },
+  { file: 'web/src/modules/cases/CapNhatTuan.tsx', text: /^Buổi \{…\}: \{x\}$/ },   // ghi chú gửi máy chủ, lưu vào nhật ký (giữ Việt) — OV-12f
   /* Đợt c: so với chữ GỐC máy chủ gửi (tiếng Việt) — không hiện ra. */
   { file: 'web/src/modules/classes/BangCanHoTro.tsx', text: /^(Xác nhận Case|Ghi nhận xét|Xác nhận PA)$/ },
-  { file: 'web/src/modules/students/BangHocVienLop.tsx', text: /^Thi thật$/ },
   { file: 'web/src/modules/students/CacLoTrinh.tsx', text: /^(Học lại|Kết thúc|Chuyển lớp)$/ },
   { file: 'web/src/modules/students/KetQuaThiThatPanel.tsx', text: /^(Đạt Target|Chưa đạt Target|Chờ kết quả thi thật)$/ },
   { file: 'web/src/modules/students/NganCase.tsx', text: /^(Xác nhận Case|Ghi nhận xét|Xác nhận PA|Kết quả cuối)$/ },

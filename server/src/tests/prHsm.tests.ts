@@ -200,7 +200,7 @@ export async function runPrHsmTests(t: YThucTestKit) {
     assert(/Vắng/.test(nut) && /thongBaoVang\(/.test(se) && !/hoanTac\(/.test(se), 'nút Vắng / thông báo ngắn, không Hoàn tác (PR-HK2 Q4 = B)');
     /* OV-4b: hộp nhập điểm (thay hộp tiêu chí) có nhận xét ≤ 1000 + Enter lưu. */
     assert(/maxLength=\{NHAN_XET_TOI_DA\}/.test(hop) && /Nhận xét/.test(hop) && /key !== 'Enter'/.test(hop), 'hộp nhập điểm thiếu nhận xét / Enter');
-    assert(/progress === 'lich_su'\) return <Info pending>Nhập bù, không tính hạn<\/Info>/.test(se), 'mất nhánh Nhập bù (PR-MT)');
+    assert(/progress === 'lich_su'\) return <Info pending>\{t\('Nhập bù, không tính hạn'\)\}<\/Info>/.test(se), 'mất nhánh Nhập bù (PR-MT)');
     const gv = docSach('web/src/modules/cham/GvCham.tsx');
     assert(gv.includes('pisa:gv-cham:') && /try \{/.test(gv), 'GvCham thiếu khoá nhớ / try');
   });

@@ -5,6 +5,7 @@ import { Han } from '../../../ui/Han.tsx';
 import { chuOChuaLuu, tenMon, tenMonNgan, tuanLich } from '@shared/domain/index.ts';
 import { TONE_NHAN_LOP, khoaHang, type LopLichTest, type PhanCuaBan } from './kieu.ts';
 import { LuoiNhung } from './LuoiNhung.tsx';
+import { dich, t } from '@shared/i18n/index.ts';
 
 /**
  * OV-1b (3.5, mockup overhaul-1 §4): GV thấy "phần của bạn" tách với phần GV khác — "Quá hạn" đỏ chỉ khi ô của chính mình (`quaHan`).
@@ -17,16 +18,16 @@ export function OPhan({ phan, ct, quaHan }: { phan: PhanCuaBan; ct: string | nul
   return (
     <span className="flex flex-col gap-0.5 text-[12.5px] font-normal leading-tight">
       {toi && (toi.con === 0
-        ? <span className="font-semibold text-ok" title={du(toi.kyNang)}>✓ {mon(toi.kyNang)} của bạn xong</span>
+        ? <span className="font-semibold text-ok" title={du(toi.kyNang)}>✓ {mon(toi.kyNang)}{' '}{t('của bạn xong')}</span>
         : (
           <span className="flex flex-wrap items-center gap-1.5">
-            {quaHan && <Nhan tone="late">Quá hạn</Nhan>}
-            <span className="font-semibold text-slate-200" title={du(toi.kyNang)}>{mon(toi.kyNang)} của bạn: còn {toi.con} bài</span>
+            {quaHan && <Nhan tone="late">{t('Quá hạn')}</Nhan>}
+            <span className="font-semibold text-slate-200" title={du(toi.kyNang)}>{mon(toi.kyNang)}{' '}{t('của bạn: còn {con} bài', { con: toi.con })}</span>
           </span>
         ))}
       {khac && (
         <span className="text-slate-500" title={du(khac.kyNang)}>
-          {mon(khac.kyNang)}: GV khác{khac.quaHanNgay !== null && <> · <b className="font-semibold text-late">⚠ quá hạn {khac.quaHanNgay} ngày</b></>}
+          {mon(khac.kyNang)}{t(': GV khác')}{khac.quaHanNgay !== null && <> · <b className="font-semibold text-late">{t('⚠ quá hạn {quaHanNgay} ngày', { quaHanNgay: khac.quaHanNgay })}</b></>}
         </span>
       )}
     </span>
@@ -38,19 +39,19 @@ export function OPhan({ phan, ct, quaHan }: { phan: PhanCuaBan; ct: string | nul
  * "n ô chưa lưu" (đỏ) — việc gấp hơn "của ai", và nhãn máy chủ tính trên điểm ĐÃ lưu nên không nói được điều này.
  */
 function NhanLop({ l, chuaLuu = 0 }: { l: LopLichTest; chuaLuu?: number }) {
-  if (chuaLuu > 0) return <Nhan tone="bad" title="Ô viền đỏ chưa lưu được — bấm Lưu lại ở ô đó.">{chuOChuaLuu(chuaLuu)}</Nhan>;
+  if (chuaLuu > 0) return <Nhan tone="bad" title={t('Ô viền đỏ chưa lưu được — bấm Lưu lại ở ô đó.')}>{chuOChuaLuu(chuaLuu)}</Nhan>;
   return (
     <>
       {l.phan && (l.phan.toi || l.phan.khac) ? <OPhan phan={l.phan} ct={l.chuongTrinh} quaHan={l.quaHan} /> : (
         <Nhan tone={TONE_NHAN_LOP[l.nhan.loai]}>
-          {l.nhan.chu}
+          {dich(l.nhan.chu)}
           {l.nhan.loai === 'da-cham' && <span className="ml-1 font-normal" aria-hidden>✓</span>}
         </Nhan>
       )}
       {/* PR-MT (YC-13.1): bài vắng tuần này đang chờ Quản lý duyệt dời lần 2 — dòng nhạt, không phải việc chấm. */}
       {l.choDuyetDoi > 0 && (
-        <span className="block whitespace-nowrap text-xs text-wait" title="Đề nghị dời do vắng (từ lần 2) đang chờ Quản lý trả lời">
-          {l.choDuyetDoi > 1 ? `${l.choDuyetDoi} bài ` : ''}vắng · chờ Quản lý duyệt dời
+        <span className="block whitespace-nowrap text-xs text-wait" title={t('Đề nghị dời do vắng (từ lần 2) đang chờ Quản lý trả lời')}>
+          {l.choDuyetDoi > 1 ? t('{choDuyetDoi} bài ', { choDuyetDoi: l.choDuyetDoi }) : ''}{t('vắng · chờ Quản lý duyệt dời')}
         </span>
       )}
     </>
@@ -66,7 +67,7 @@ function KyNang({ l }: { l: LopLichTest }) {
         const ten = tenMon(l.chuongTrinh, k);
         return (
           <span key={k} className={co ? 'text-slate-200' : 'text-slate-500'}
-            title={co ? ten : `${ten} — không thi tuần này`}>
+            title={co ? ten : t('{ten} — không thi tuần này', { ten })}>
             {tenMonNgan(l.chuongTrinh, k)}
           </span>
         );
@@ -79,8 +80,8 @@ function KyNang({ l }: { l: LopLichTest }) {
 const THUONG = { fontWeight: 400 } as const;
 
 const TienDo = ({ l, nhat }: { l: LopLichTest; nhat: boolean }) => (
-  <span className={`tabular-nums ${nhat ? 'text-slate-500' : 'text-slate-200'}`} title={`Đã chấm ${l.daCham} trong ${l.tong} bài`}>
-    {l.daCham}/{l.tong} <span className="text-xs font-normal text-slate-500">bài</span>
+  <span className={`tabular-nums ${nhat ? 'text-slate-500' : 'text-slate-200'}`} title={t('Đã chấm {daCham} trong {tong} bài', { daCham: l.daCham, tong: l.tong })}>
+    {l.daCham}/{l.tong} <span className="text-xs font-normal text-slate-500">{t('bài')}</span>
   </span>
 );
 
@@ -95,7 +96,7 @@ function HanHang({ l, kieuQuaHan }: { l: LopLichTest; kieuQuaHan?: 'badge' }) {
   return (
     <span className="inline-flex flex-wrap items-center gap-x-1.5">
       <Han loai="nhap-diem" han={l.han} boTinHieu />
-      {l.quaHan && <Nhan tone="late">Quá hạn</Nhan>}
+      {l.quaHan && <Nhan tone="late">{t('Quá hạn')}</Nhan>}
     </span>
   );
 }
@@ -137,14 +138,14 @@ export function HangLop({ lop, moCua, onMo, coChiNhanh, hep, homNay, tuanChinh, 
       {!hep && (
         <thead>
           <tr>
-            <th className="th">Lớp</th>
-            <th className="th">Đợt</th>
-            <th className="th" title="Môn thi tuần này — môn mờ là không thi tuần này">Kỹ năng</th>
-            {coChiNhanh && <th className="th">Chi nhánh</th>}
-            <th className="th" title="Số bài đã chấm / số bài">Tiến độ</th>
-            <th className="th">Hạn chấm</th>
-            <th className="th"><span className="sr-only">Trạng thái</span></th>
-            <th className="th"><span className="sr-only">Mở lưới đầy đủ</span></th>
+            <th className="th">{t('Lớp')}</th>
+            <th className="th">{t('Đợt')}</th>
+            <th className="th" title={t('Môn thi tuần này — môn mờ là không thi tuần này')}>{t('Kỹ năng')}</th>
+            {coChiNhanh && <th className="th">{t('Chi nhánh')}</th>}
+            <th className="th" title={t('Số bài đã chấm / số bài')}>{t('Tiến độ')}</th>
+            <th className="th">{t('Hạn chấm')}</th>
+            <th className="th"><span className="sr-only">{t('Trạng thái')}</span></th>
+            <th className="th"><span className="sr-only">{t('Mở lưới đầy đủ')}</span></th>
           </tr>
         </thead>
       )}
@@ -155,7 +156,7 @@ export function HangLop({ lop, moCua, onMo, coChiNhanh, hep, homNay, tuanChinh, 
         const chuMa = nhat ? 'font-semibold text-slate-500' : '';
         return (
           <tbody key={k}>
-            <HangNhom mo={mo} onMo={() => onMo(l)} nhan={`lớp ${l.classCode}`}
+            <HangNhom mo={mo} onMo={() => onMo(l)} nhan={t('lớp {classCode}', { classCode: l.classCode })}
               tieuDe={hep ? (
                 <span className="block min-w-0 py-1">
                   <span className={`block truncate ${chuMa}`}>
@@ -177,7 +178,7 @@ export function HangLop({ lop, moCua, onMo, coChiNhanh, hep, homNay, tuanChinh, 
                   <td className="px-3 whitespace-nowrap" style={THUONG}><HanHang l={l} kieuQuaHan={kieuQuaHan} /></td>
                   <td className="px-3"><NhanLop l={l} chuaLuu={chuaLuu[k]} /></td>
                   <td className="px-1 text-center">
-                    <Link to={l.hrefDayDu} title="Mở lưới đầy đủ" aria-label={`Mở lưới đầy đủ lớp ${l.classCode}`}
+                    <Link to={l.hrefDayDu} title={t('Mở lưới đầy đủ')} aria-label={t('Mở lưới đầy đủ lớp {classCode}', { classCode: l.classCode })}
                       className="inline-flex h-8 w-8 items-center justify-center font-normal text-slate-400 no-underline hover:text-slate-100">↗</Link>
                   </td>
                 </>

@@ -6,14 +6,15 @@ import { Khoi, KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { NutChon, TargetText } from '../../ui/ui.tsx';
 import { chuTargetKck, dsLoi, tachKck, type LuatTruong, type TruongDeXuat } from '@shared/domain/index.ts';
+import { dich, t } from '@shared/i18n/index.ts';
 
 /**
  * ĐỀ XUẤT SỬA THÔNG TIN HV (PR-DUYET, T44) — GV của lớp gửi, Quản lý duyệt ở Công việc › Chờ duyệt.
  * Target và lộ trình phải qua đây (PR-CT: chuyển lớp có Đề xuất chuyển lớp… riêng, GVCN không còn tự chuyển). Mở từ ⋮ hồ sơ HV hoặc liên kết "Đề xuất sửa" ở panel Lộ trình.
  */
 const TRUONG: { key: TruongDeXuat; nhan: string }[] = [
-  { key: 'target', nhan: 'Target' }, { key: 'lo-trinh', nhan: 'Lộ trình' },
-  { key: 'khac', nhan: 'Thông tin khác' },
+  { key: 'target', nhan: 'Target' }, { key: 'lo-trinh', nhan: t('Lộ trình') },
+  { key: 'khac', nhan: t('Thông tin khác') },
 ];
 
 export function DeXuatSuaPanel({ studentId, studentName, lop, truongDau, hienTai, sua, onClose, onDone }: {
@@ -39,13 +40,13 @@ export function DeXuatSuaPanel({ studentId, studentName, lop, truongDau, hienTai
   const routes = useApi<{ code: string; name: string }[]>(truong === 'lo-trinh' ? '/ref/routes' : null, [truong]);
 
   const luat: LuatTruong[] = [
-    { khoa: 'truong', nhan: 'Thông tin cần sửa', chon: true },
-    truong === 'lo-trinh' ? { khoa: 'moi', nhan: 'Lộ trình mới', chon: true } : { khoa: 'moi', nhan: 'Giá trị mới', toiThieu: truong === 'target' ? 1 : 2 },
-    { khoa: 'ly-do', nhan: 'Lý do', toiThieu: 1 },   // T7 (PR-MTa): bắt buộc, không tối thiểu ký tự
+    { khoa: 'truong', nhan: t('Thông tin cần sửa'), chon: true },
+    truong === 'lo-trinh' ? { khoa: 'moi', nhan: t('Lộ trình mới'), chon: true } : { khoa: 'moi', nhan: t('Giá trị mới'), toiThieu: truong === 'target' ? 1 : 2 },
+    { khoa: 'ly-do', nhan: t('Lý do'), toiThieu: 1 },   // T7 (PR-MTa): bắt buộc, không tối thiểu ký tự
   ];
   const loi = [
     ...dsLoi(luat, { truong, moi: moiGui, 'ly-do': lyDo }),
-    ...(truong === 'target' && moi !== '' && !hopLeTarget(moi) ? [{ khoa: 'moi', nhan: 'Target mới', lyDo: 'Band từ 0 đến 9, bước 0.5' }] : []),
+    ...(truong === 'target' && moi !== '' && !hopLeTarget(moi) ? [{ khoa: 'moi', nhan: t('Target mới'), lyDo: t('Band từ 0 đến 9, bước 0.5') }] : []),
   ];
 
   const gui = async () => {
@@ -57,38 +58,38 @@ export function DeXuatSuaPanel({ studentId, studentName, lop, truongDau, hienTai
       if (sua) await api.put(`/yeu-cau/${sua.id}`, than);
       else await api.post(`/students/${studentId}/de-xuat-sua`, than);
       invalidate('/yeu-cau');
-      toast.push('ok', sua ? 'Đã lưu đề xuất' : 'Đã gửi — xem ở Công việc › Yêu cầu của tôi');
+      toast.push('ok', sua ? t('Đã lưu đề xuất') : t('Đã gửi — xem ở Công việc › Yêu cầu của tôi'));
       onDone?.();
       onClose();
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
   };
 
   return (
-    <KhungPanel tieuDe={sua ? 'Sửa đề xuất' : 'Đề xuất sửa thông tin'} hocVien={studentName} lop={lop} onDong={onClose}
+    <KhungPanel tieuDe={sua ? t('Sửa đề xuất') : t('Đề xuất sửa thông tin')} hocVien={studentName} lop={lop} onDong={onClose}
       chan={{
         conThieu: lf.conThieu(loi),
         chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={gui} disabled={busy}>
-          {busy ? 'Đang lưu…' : sua ? 'Lưu' : 'Gửi Quản lý'}
+          {busy ? t('Đang lưu…') : sua ? t('Lưu') : t('Gửi Quản lý')}
         </button>,
       }}>
-      <Khoi tieuDe="Đề xuất sửa" luat="Target và lộ trình do Quản lý sửa. Quản lý duyệt trong 5 ngày; kết quả báo ở chuông và Yêu cầu của tôi.">
-        <Truong nhan="Thông tin cần sửa" batBuoc loi={lf.loiCua(loi, 'truong')}>
+      <Khoi tieuDe={t('Đề xuất sửa')} luat={t('Target và lộ trình do Quản lý sửa. Quản lý duyệt trong 5 ngày; kết quả báo ở chuông và Yêu cầu của tôi.')}>
+        <Truong nhan={t('Thông tin cần sửa')} batBuoc loi={lf.loiCua(loi, 'truong')}>
           <div className="flex flex-wrap gap-1.5" {...lf.o(loi, 'truong')}>
             {TRUONG.map((x) => (
-              <NutChon key={x.key} nho chon={truong === x.key} disabled={!!sua && sua.truong !== x.key} onClick={() => { setTruong(x.key); setMoi(''); }}>{x.nhan}</NutChon>
+              <NutChon key={x.key} nho chon={truong === x.key} disabled={!!sua && sua.truong !== x.key} onClick={() => { setTruong(x.key); setMoi(''); }}>{dich(x.nhan)}</NutChon>
             ))}
           </div>
         </Truong>
         {truong && (
-          <Truong nhan={truong === 'target' ? 'Target mới' : truong === 'lo-trinh' ? 'Lộ trình mới' : 'Giá trị mới'} batBuoc loi={lf.loiCua(loi, 'moi')}
+          <Truong nhan={truong === 'target' ? t('Target mới') : truong === 'lo-trinh' ? t('Lộ trình mới') : t('Giá trị mới')} batBuoc loi={lf.loiCua(loi, 'moi')}
             as={truong === 'target' ? 'div' : undefined}>
             {truong === 'target' ? (
               <div className="flex flex-wrap items-center gap-2">
-                <input className="field w-24 tabular-nums" aria-label="Target mới" type="number" inputMode="decimal" step="0.5" min={0} max={9}
+                <input className="field w-24 tabular-nums" aria-label={t('Target mới')} type="number" inputMode="decimal" step="0.5" min={0} max={9}
                   {...lf.o(loi, 'moi')} value={moi} onChange={(e) => setMoi(e.target.value)} />
                 {kck && <span className="text-sm text-slate-300">KCK</span>}
                 {(hienTai?.target != null || hienTai?.khongCamKet) && (
-                  <span className="text-xs text-slate-400 tabular-nums">đang là <TargetText band={hienTai.target} kck={hienTai.khongCamKet} /></span>
+                  <span className="text-xs text-slate-400 tabular-nums">{t('đang là')}{' '}<TargetText band={hienTai.target} kck={hienTai.khongCamKet} /></span>
                 )}
               </div>
             ) : truong === 'lo-trinh' ? (
@@ -96,17 +97,17 @@ export function DeXuatSuaPanel({ studentId, studentName, lop, truongDau, hienTai
                 {(routes.data ?? []).filter((r) => r.code !== hienTai?.route).map((r) => (
                   <NutChon key={r.code} nho chon={moi === r.code} onClick={() => setMoi(r.code)} title={r.name}>{r.code}</NutChon>
                 ))}
-                {hienTai?.route && <span className="self-center text-xs text-slate-400">đang là {hienTai.route}</span>}
+                {hienTai?.route && <span className="self-center text-xs text-slate-400">{t('đang là {route}', { route: hienTai.route })}</span>}
               </div>
             ) : (
               <input className="field w-full" maxLength={200} {...lf.o(loi, 'moi')} value={moi} onChange={(e) => setMoi(e.target.value)}
-                placeholder="Ghi rõ cần sửa gì" />
+                placeholder={t('Ghi rõ cần sửa gì')} />
             )}
           </Truong>
         )}
-        <Truong nhan="Lý do" batBuoc loi={lf.loiCua(loi, 'ly-do')}>
+        <Truong nhan={t('Lý do')} batBuoc loi={lf.loiCua(loi, 'ly-do')}>
           <textarea className="field w-full" rows={3} {...lf.o(loi, 'ly-do')} value={lyDo} onChange={(e) => setLyDo(e.target.value)}
-            placeholder="Ví dụ: PH đăng ký thi 12/2026, cần 7.0 để nộp hồ sơ" />
+            placeholder={t('Ví dụ: PH đăng ký thi 12/2026, cần 7.0 để nộp hồ sơ')} />
         </Truong>
       </Khoi>
     </KhungPanel>

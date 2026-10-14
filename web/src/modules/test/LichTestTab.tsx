@@ -20,6 +20,7 @@ import { KhoiNo } from './lichTest/KhoiNo.tsx';
 import { HangLop } from './lichTest/HangLop.tsx';
 import { dangMo, docMo, ghiMo } from './lichTest/moLop.ts';
 import { NganXuatMt } from './NganXuatMt.tsx';
+import { t } from '@shared/i18n/index.ts';
 
 type Loai = 'ft' | 'thuong';
 /* PR-MT0: MT0 chấm band nhưng ở lớp thường → khung Lớp thường (cùng luật `khungDong` máy chủ). */
@@ -188,7 +189,7 @@ export function LichTestTab() {
     if (!moKhoi[k]) { setMoKhoi((m) => ({ ...m, [k]: true })); return; }
     const khoa = k === 'k1' ? (dongMo ? [`no:${dongMo.d.key}`] : []) : (k === 'k2' ? k2Tab : lopTab).map(khoaHang);
     const n = khoa.reduce((s, x) => s + (chuaLuu[x] ?? 0), 0);
-    if (n > 0 && !window.confirm(`Còn ${chuOChuaLuu(n)}. Thu khối này thì mất các giá trị đó — vẫn thu?`)) return;
+    if (n > 0 && !window.confirm(t('Còn {chuOChuaLuu}. Thu khối này thì mất các giá trị đó — vẫn thu?', { chuOChuaLuu: chuOChuaLuu(n) }))) return;
     setMoKhoi((m) => ({ ...m, [k]: false }));
   };
 
@@ -209,12 +210,12 @@ export function LichTestTab() {
 
   if (error) return <ErrorState message={error.message} hint={error.hint} onRetry={reload} />;
   if (!data) return <Skeleton rows={6} />;
-  if (data.scopeEmpty) return <div className="card"><Empty title="Bạn chưa được cấp phạm vi nào" /></div>;
+  if (data.scopeEmpty) return <div className="card"><Empty title={t('Bạn chưa được cấp phạm vi nào')} /></div>;
 
-  const maTuan = data.tuan ? tuanLich(data.tuan.weekStart, homNay) : 'Tuần này';
-  const tenTuan = data.laTuanNay ? 'Tuần này' : maTuan;
+  const maTuan = data.tuan ? tuanLich(data.tuan.weekStart, homNay) : t('Tuần này');
+  const tenTuan = data.laTuanNay ? t('Tuần này') : maTuan;
   const trong = data.lop.length === 0 && data.no.length === 0 && !(data.chamTuanNay ?? []).length && !dongMo;
-  const soLop = (ds: LopLichTest[]) => `${new Set(ds.map((l) => l.classId)).size} lớp`;
+  const soLop = (ds: LopLichTest[]) => t('{size} lớp', { size: new Set(ds.map((l) => l.classId)).size });
   /* OV-11e (TE-7): badge khối của người có phân công = phần của họ (cùng số dải số). */
   const conBai = (ds: LopLichTest[]) => ds.reduce((n, l) => n + (l.phan ? l.conBaiCuaToi : l.conBai), 0);
   /* Tuần chính của khối (hàng của tuần khác ghi Đợt kèm mã tuần): khối 2 = tuần trước, khối 3 = tuần đang xem. */
@@ -237,38 +238,36 @@ export function LichTestTab() {
   /* Khối "Test chấm tuần này": hạn chấm mặc định = thứ Tư tuần này (xám trước · vàng đúng hôm đó · đỏ từ thứ Năm). */
   const hanT4 = homNay ? addDaysIso(mondayOfDate(homNay), 2) : null;
   const chipHan = hanT4 && homNay && (
-    homNay < hanT4 ? <Nhan tone="muted">hạn T4 {ngay(hanT4, homNay)}</Nhan>
-      : homNay === hanT4 ? <Nhan tone="soon">hạn hôm nay</Nhan>
-        : <Nhan tone="late">Quá hạn · T4 {ngay(hanT4, homNay)}</Nhan>
+    homNay < hanT4 ? <Nhan tone="muted">{t('hạn T4')}{' '}{ngay(hanT4, homNay)}</Nhan>
+      : homNay === hanT4 ? <Nhan tone="soon">{t('hạn hôm nay')}</Nhan>
+        : <Nhan tone="late">{t('Quá hạn · T4')}{' '}{ngay(hanT4, homNay)}</Nhan>
   );
   const phuK2 = <> · {tuanLich(addDaysIso(tuanXem, -7), homNay)} {chipHan}</>;
 
   /* Các phần của hàng lọc — máy tính xếp một hàng, điện thoại gom vào khối "Lọc". */
   const tuanPicker = (
-    <WeekPicker periodId={periodParam ?? data.tuan?.id ?? null} label="Tuần"
+    <WeekPicker periodId={periodParam ?? data.tuan?.id ?? null} label={t('Tuần')}
       onPeriod={(id) => datThamSo({ periodId: id ? String(id) : null })} />
   );
   const congTacKhung = loai && (
-    <CongTacKhung trang="lich-test" value={loai} dem={dem} donVi={dienThoai ? '' : 'lớp'}
+    <CongTacKhung trang="lich-test" value={loai} dem={dem} donVi={dienThoai ? '' : t('lớp')}
       onChange={(k) => datThamSo({ loai: k === 'tat-ca' ? null : k })} />
   );
   const nutLuatLuoi = loai === 'thuong' && (
     <span className="inline-flex min-h-[44px] items-center sm:min-h-[32px]">
-      <NutLuat label="Luật lưới lớp thường">
+      <NutLuat label={t('Luật lưới lớp thường')}>
         <span className="block">
-          Mỗi ô hai số: số câu đúng / tổng số câu{monThangDiem.length ? ` (${monThangDiem.join(', ')} chấm theo thang điểm thì điểm đạt / tổng
-          điểm)` : ''}. Ô tổng đầu cột + nút ↓ điền nhanh cả cột; em làm đề khác thì sửa riêng ô đó — viền vàng khi
-          khác tổng của cột.
+          {t('Mỗi ô hai số: số câu đúng / tổng số câu')}{monThangDiem.length ? t(' ({x} chấm theo thang điểm thì điểm đạt / tổng\n          điểm)', { x: monThangDiem.join(', ') }) : ''}{t('. Ô tổng đầu cột + nút ↓ điền nhanh cả cột; em làm đề khác thì sửa riêng ô đó — viền vàng khi khác tổng của cột.')}
         </span>
-        <span className="block">Dưới 70% là chưa đạt (tô đỏ nhẹ). Thiếu điểm khác chưa đạt.</span>
-        <span className="block">Gõ "-" khi em vắng: môn đó tự dời sang tuần sau, môn khác không đổi.</span>
+        <span className="block">{t('Dưới 70% là chưa đạt (tô đỏ nhẹ). Thiếu điểm khác chưa đạt.')}</span>
+        <span className="block">{t('Gõ "-" khi em vắng: môn đó tự dời sang tuần sau, môn khác không đổi.')}</span>
       </NutLuat>
     </span>
   );
   const nhomPhamVi = data.coPhamViRong && (
-    <div className="inline-flex overflow-hidden rounded-md border" role="group" aria-label="Lớp"
+    <div className="inline-flex overflow-hidden rounded-md border" role="group" aria-label={t('Lớp')}
       style={{ borderColor: 'var(--line-strong)' }}>
-      {([['cua-toi', 'Lớp tôi dạy'], ['tat-ca', 'Tất cả']] as const).map(([k, nhan]) => (
+      {([['cua-toi', t('Lớp tôi dạy')], ['tat-ca', t('Tất cả')]] as const).map(([k, nhan]) => (
         <button key={k} type="button" aria-pressed={data.phamVi === k}
           onClick={() => datThamSo({ phamVi: k })}
           className={`min-h-[44px] px-3 text-xs font-semibold sm:min-h-[36px] ${data.phamVi === k
@@ -279,7 +278,7 @@ export function LichTestTab() {
     </div>
   );
   const nutXuat = session?.nav?.xuatMt && (
-    <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setMoXuat(true)}>Xuất Excel</button>
+    <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setMoXuat(true)}>{t('Xuất Excel')}</button>
   );
   const locChiNhanh = <BranchFilter branchId={branchId} onBranch={(id) => datThamSo({ cn: id ? String(id) : null, branchId: null })} />;
   /* Số lựa chọn đang KHÁC mặc định: chi nhánh đã chọn, phạm vi "Tất cả" (máy chủ mặc định 'cua-toi' khi GV có lớp). */
@@ -297,7 +296,7 @@ export function LichTestTab() {
             {coGiTrongLoc && (
               <button ref={nutLoc} type="button" className="btn btn-sm min-h-[44px] shrink-0" aria-expanded={moLoc}
                 onClick={() => setMoLoc((v) => !v)}>
-                Lọc{soLoc ? ` · ${soLoc}` : ''} <IconGap mo={moLoc} />
+                {t('Lọc')}{soLoc ? ` · ${soLoc}` : ''} <IconGap mo={moLoc} />
               </button>
             )}
           </div>
@@ -324,17 +323,17 @@ export function LichTestTab() {
       )}
       {urlClassId && (
         <div>
-          <button type="button" onClick={() => datThamSo({ classId: null, kn: null })} title="Bỏ lọc lớp"
+          <button type="button" onClick={() => datThamSo({ classId: null, kn: null })} title={t('Bỏ lọc lớp')}
             className="nut-loc nut-loc-dang">
-            Đang lọc: lớp {data.lopDangLoc?.code ?? `#${urlClassId}`} <span aria-hidden>✕</span>
+            {t('Đang lọc: lớp')}{' '}{data.lopDangLoc?.code ?? `#${urlClassId}`} <span aria-hidden>✕</span>
           </button>
         </div>
       )}
 
       {trong ? (
         <div className="card">
-          <Empty title={`${maTuan} không có Test nào`}
-            hint={session?.nav?.testPlan ? 'Đổi tuần ở trên, hoặc mở Kế hoạch Test để xếp lịch.' : 'Đổi tuần ở trên để xem tuần khác.'} />
+          <Empty title={t('{maTuan} không có Test nào', { maTuan })}
+            hint={session?.nav?.testPlan ? t('Đổi tuần ở trên, hoặc mở Kế hoạch Test để xếp lịch.') : t('Đổi tuần ở trên để xem tuần khác.')} />
         </div>
       ) : (
         <>
@@ -344,12 +343,12 @@ export function LichTestTab() {
             onMoDong={(d, viTri) => {
               /* Dòng đang mở còn ô chưa lưu: đóng nó là mất giá trị đã gõ — hỏi trước. */
               const n = dongMo ? chuaLuu[`no:${dongMo.d.key}`] ?? 0 : 0;
-              if (n > 0 && !window.confirm(`Lớp ${dongMo!.d.classCode} còn ${chuOChuaLuu(n)}. Đóng lưới thì mất các giá trị đó — vẫn đóng?`)) return;
+              if (n > 0 && !window.confirm(t('Lớp {classCode} còn {chuOChuaLuu}. Đóng lưới thì mất các giá trị đó — vẫn đóng?', { classCode: dongMo!.d.classCode, chuOChuaLuu: chuOChuaLuu(n) }))) return;
               setDongMo(d ? { d, viTri, conTro: true } : null);
             }}
             hep={hep} homNay={homNay} onDaLuu={baoDaLuu} knUrl={dongMo?.d.classId === urlClassId ? urlKn : null} />
-          {data.laTuanNay && khoiLop('lich-test-k2', 'k2', 'Test chấm tuần này', k2Tab, phuK2)}
-          {khoiLop('lich-test-k3', 'k3', data.laTuanNay ? 'Lịch Test tuần này' : `Lịch Test ${maTuan}`, lopTab, data.laTuanNay ? <> · {maTuan}</> : undefined)}
+          {data.laTuanNay && khoiLop('lich-test-k2', 'k2', t('Test chấm tuần này'), k2Tab, phuK2)}
+          {khoiLop('lich-test-k3', 'k3', data.laTuanNay ? t('Lịch Test tuần này') : t('Lịch Test {maTuan}', { maTuan }), lopTab, data.laTuanNay ? <> · {maTuan}</> : undefined)}
         </>
       )}
       {moXuat && data.tuan && (
@@ -362,11 +361,11 @@ export function LichTestTab() {
           {/* OV-11e (TE-8): mỗi lượt một link → Điểm theo lớp đúng lượt, "Chỉ ô còn trống"; số em = số hàng ở đó. */}
           {data.nhacLichSu.map((n) => (
             <p key={n.classId} className="m-0 text-[12.5px] text-slate-500 tabular-nums">
-              MT cũ chưa nhập · {n.classCode}
+              {t('MT cũ chưa nhập · {classCode}', { classCode: n.classCode })}
               {n.luot.map((x) => (
                 <Fragment key={x.so}>
                   {' · '}
-                  <Link to={x.href} className="link inline-flex min-h-[44px] items-center sm:min-h-0" aria-label={`Nhập MT${x.so} cũ lớp ${n.classCode}`}>
+                  <Link to={x.href} className="link inline-flex min-h-[44px] items-center sm:min-h-0" aria-label={t('Nhập MT{so} cũ lớp {classCode}', { so: x.so, classCode: n.classCode })}>
                     MT{x.so} · {x.soEm} em
                   </Link>
                 </Fragment>

@@ -8,6 +8,7 @@ import { KHAC_TOI_THIEU } from './khac.ts';
 import { INTERVENTION_KIND_LABEL } from './cases.ts';
 import { kyGhiKetQua, ngayTheoGioVN } from './display.ts';
 import { tuanLich } from './hienThiNgay.ts';
+import { t } from '../i18n/index.ts';
 
 export const LOAI_CO_SO_BUOI = ['tutor', 'self_study', 'bo_tro', 'bo_tro_mien_phi'] as const;
 const LOAI_NGUOI_DAY = new Set(['tutor', 'bo_tro', 'bo_tro_mien_phi']);
@@ -28,15 +29,15 @@ const nguyenTrong = (n: number, tu: number) => Number.isInteger(n) && n >= tu &&
 export function kiemSoBuoiPa(v: unknown, daDay = 0): string | null {
   const n = soBuoiTu(v);
   if (n === null) return null;
-  if (!nguyenTrong(n, 1)) return 'Từ 1 đến 60 buổi, hoặc để trống';
-  if (n < daDay) return `Đã dạy ${daDay} buổi — Số buổi từ ${daDay} trở lên, hoặc để trống`;
+  if (!nguyenTrong(n, 1)) return t('Từ 1 đến 60 buổi, hoặc để trống');
+  if (n < daDay) return t('Đã dạy {daDay} buổi — Số buổi từ {daDay2} trở lên, hoặc để trống', { daDay, daDay2: daDay });
   return null;
 }
 
 /** Số buổi kỳ này (Kết quả có ô số buổi — `coSoBuoiKy`): bắt buộc, số nguyên 0–60 (0 = em nghỉ). → câu lỗi | null. */
 export function kiemSoBuoiTuan(v: unknown): string | null {
   const n = soBuoiTu(v);
-  return n !== null && nguyenTrong(n, 0) ? null : 'Từ 0 đến 60 buổi';
+  return n !== null && nguyenTrong(n, 0) ? null : t('Từ 0 đến 60 buổi');
 }
 
 /** Đếm buổi: đã dạy / tổng · còn · chưa đủ | đủ | vượt (đủ / vượt chỉ gợi ý "Kết thúc PA"). */
@@ -66,9 +67,9 @@ export const coSoBuoiKy = (pa: PaKetQua): boolean => pa.soBuoi != null || (pa.ki
 export function loiKetQuaTuan(pa: PaKetQua, tuan: string, nguoi: NguoiChon | null): LoiTruong[] {
   const loi: LoiTruong[] = [];
   const sb = coSoBuoiKy(pa) ? kiemSoBuoiTuan(tuan) : null;
-  if (sb) loi.push({ khoa: 'so-buoi-tuan', nhan: 'Số buổi kỳ này', lyDo: sb });
+  if (sb) loi.push({ khoa: 'so-buoi-tuan', nhan: t('Số buổi kỳ này'), lyDo: sb });
   const ng = coNguoiDay(pa.kind) ? nguoiThieu(nguoi, false) : null;
-  if (ng) loi.push({ khoa: 'nguoi-day', nhan: 'Người dạy tuần này', lyDo: ng });
+  if (ng) loi.push({ khoa: 'nguoi-day', nhan: t('Người dạy tuần này'), lyDo: ng });
   return loi;
 }
 
@@ -78,12 +79,12 @@ export type BuoiTutor = { tutor: string; nhanXet: string };
 export const canBuoiTutor = (pa: PaKetQua): boolean => pa.kind === 'tutor' && !pa.cu;
 /** Đúng `n` dòng, mỗi dòng đủ tên tutor + nhận xét → null; sai → câu lỗi (web và máy chủ cùng gọi). */
 export function kiemBuoiTutor(n: number, buoi: unknown): string | null {
-  if (!Array.isArray(buoi) || buoi.length !== n) return `cần đủ ${n} dòng (mỗi buổi một dòng)`;
+  if (!Array.isArray(buoi) || buoi.length !== n) return t('cần đủ {n} dòng (mỗi buổi một dòng)', { n });
   for (const [i, b] of buoi.entries()) {
     const tutor = String(b?.tutor ?? '').trim(), nhanXet = String(b?.nhanXet ?? '').trim();
-    if (!tutor) return `buổi ${i + 1} chưa có tên tutor`;
-    if (!nhanXet) return `buổi ${i + 1} chưa có nhận xét`;
-    if (tutor.length > 100 || nhanXet.length > 1000) return `buổi ${i + 1} quá dài (tên ≤ 100, nhận xét ≤ 1000 ký tự)`;
+    if (!tutor) return t('buổi {x} chưa có tên tutor', { x: i + 1 });
+    if (!nhanXet) return t('buổi {x} chưa có nhận xét', { x: i + 1 });
+    if (tutor.length > 100 || nhanXet.length > 1000) return t('buổi {x} quá dài (tên ≤ 100, nhận xét ≤ 1000 ký tự)', { x: i + 1 });
   }
   return null;
 }
@@ -123,16 +124,16 @@ export function khacNguoi(a: NguoiChon | null, b: NguoiChon | null): boolean {
 /** Lỗi của form PA. `tienTo`: khoá ô riêng khi form nằm trong panel khác (Thay PA trong Kết quả: 'moi-'). `goc` (Sửa PA): ô KHÔNG đổi thì không kiểm — PA vượt buổi (Số buổi < đã dạy), mô tả cũ ngắn vẫn sửa được ô khác. */
 export function loiFormPa(v: GiaTriPa, o: { toiThieu?: number; daDay?: number; goc?: GiaTriPa; tienTo?: string } = {}): LoiTruong[] {
   const { goc } = o;
-  const t = o.tienTo ?? '';
+  const tien = o.tienTo ?? '';
   const doi = (k: 'description' | 'soBuoi') => !goc || v[k].trim() !== goc[k].trim();
   const loi = dsLoi([
-    ...(v.kind === 'other_proposal' && !goc ? [{ khoa: `${t}ghi-ro`, nhan: 'Tên đề xuất', toiThieu: KHAC_TOI_THIEU }] : []),
-    ...(doi('description') ? [{ khoa: `${t}noi-dung`, nhan: 'Nội dung', toiThieu: o.toiThieu ?? 8 }] : []),
-  ], { [`${t}ghi-ro`]: v.ghiRo, [`${t}noi-dung`]: v.description });
+    ...(v.kind === 'other_proposal' && !goc ? [{ khoa: `${tien}ghi-ro`, nhan: t('Tên đề xuất'), toiThieu: KHAC_TOI_THIEU }] : []),
+    ...(doi('description') ? [{ khoa: `${tien}noi-dung`, nhan: t('Nội dung'), toiThieu: o.toiThieu ?? 8 }] : []),
+  ], { [`${tien}ghi-ro`]: v.ghiRo, [`${tien}noi-dung`]: v.description });
   const sb = coSoBuoi(v.kind) && doi('soBuoi') ? kiemSoBuoiPa(v.soBuoi, o.daDay ?? 0) : null;
-  if (sb) loi.push({ khoa: `${t}so-buoi`, nhan: 'Số buổi', lyDo: sb });
+  if (sb) loi.push({ khoa: `${tien}so-buoi`, nhan: t('Số buổi'), lyDo: sb });
   const ng = coNguoiDay(v.kind) ? nguoiThieu(v.nguoi, false) : null;
-  if (ng) loi.push({ khoa: `${t}nguoi`, nhan: nhanNguoiDay(v.kind), lyDo: ng });
+  if (ng) loi.push({ khoa: `${tien}nguoi`, nhan: nhanNguoiDay(v.kind), lyDo: ng });
   return loi;
 }
 
@@ -176,7 +177,7 @@ export type KetQuaNhatKy = {
 /** Một dòng: `ngay` ISO, `ai` (đậm cùng ngày), `chu` phần sau. */
 export type DongNhatKyPa = { khoa: string; ngay: string; ai: string; chu: string };
 
-const NGUON_SUA_PA: Record<string, string> = { adjust: 'Điều chỉnh', confirm_edit: 'Sửa khi xác nhận PA', sua_pa: 'Sửa PA' };
+const NGUON_SUA_PA: Record<string, string> = { adjust: t('Điều chỉnh'), confirm_edit: t('Sửa khi xác nhận PA'), sua_pa: t('Sửa PA') };
 
 /**
  * NHẬT KÝ PA (mockup pa-dong-bo §6), mới nhất lên trên: dòng Tạo (giá trị LÚC TẠO = bản cũ của lần sửa đầu) · mỗi lần Kết quả
@@ -185,35 +186,35 @@ const NGUON_SUA_PA: Record<string, string> = { adjust: 'Điều chỉnh', confir
 export function nhatKyPa(pa: PaNhatKy, ketQua: readonly KetQuaNhatKy[], homNay: string): DongNhatKyPa[] {
   const revs = pa.revisions ?? [];
   const nhanNguoi = nhanNguoiDay(pa.kind);
-  const tuan = (d: string | null | undefined) => (d ? tuanLich(d, homNay) : 'chưa đặt');
+  const tuan = (d: string | null | undefined) => (d ? tuanLich(d, homNay) : t('chưa đặt'));
   const dau = revs[0]?.before ?? { performer: pa.performer, soBuoi: pa.soBuoi ?? null };
   const nguoiTao = !coNguoiDay(pa.kind) ? null
-    : nhanNguoi === 'Người dạy' ? (dau.performer ? `dạy ${dau.performer}` : 'người dạy trống') : dau.performer ? `thực hiện ${dau.performer}` : null;
+    : nhanNguoi === 'Người dạy' ? (dau.performer ? t('dạy {performer}', { performer: dau.performer }) : t('người dạy trống')) : dau.performer ? t('thực hiện {performer}', { performer: dau.performer }) : null;
   const dong: (DongNhatKyPa & { hang: number; id: number })[] = [{
     khoa: `tao-${pa.id}`, ngay: ngayTheoGioVN(pa.createdAt) ?? pa.startedDate ?? '', ai: pa.nguonTao || !pa.recordedBy ? 'Web' : pa.recordedBy,
-    chu: [`Tạo "${INTERVENTION_KIND_LABEL[pa.kind as keyof typeof INTERVENTION_KIND_LABEL] ?? pa.kind}"`,
-      dau.soBuoi != null ? `${dau.soBuoi} buổi` : null, nguoiTao].filter(Boolean).join(' · '),
+    chu: [t('Tạo "{x}"', { x: INTERVENTION_KIND_LABEL[pa.kind as keyof typeof INTERVENTION_KIND_LABEL] ?? pa.kind }),
+      dau.soBuoi != null ? t('{soBuoi} buổi', { soBuoi: dau.soBuoi }) : null, nguoiTao].filter(Boolean).join(' · '),
     hang: 0, id: pa.id,
   }];
   for (const f of ketQua) {
     if (f.interventionId !== pa.id) continue;
     dong.push({
       khoa: `kq-${f.id}`, ngay: f.observedOn, ai: f.observerName ?? '—',
-      chu: [`Kết quả ${f.cycleDue ? kyGhiKetQua(f.cycleDue, homNay) : tuan(f.observedOn)}`, f.soBuoi != null ? `dạy ${f.soBuoi} buổi` : null,
-        f.nguoiDay && f.nguoiDay !== f.observerName ? `người dạy ${f.nguoiDay}` : null].filter(Boolean).join(' · '),
+      chu: [t('Kết quả {x}', { x: f.cycleDue ? kyGhiKetQua(f.cycleDue, homNay) : tuan(f.observedOn) }), f.soBuoi != null ? t('dạy {soBuoi} buổi', { soBuoi: f.soBuoi }) : null,
+        f.nguoiDay && f.nguoiDay !== f.observerName ? t('người dạy {nguoiDay}', { nguoiDay: f.nguoiDay }) : null].filter(Boolean).join(' · '),
       hang: 1, id: f.id,
     });
   }
   for (const r of revs) {
     const a = r.before; const b = r.after;
     const doi = [
-      (a.soBuoi ?? null) !== (b.soBuoi ?? null) ? `Số buổi ${a.soBuoi ?? 'trống'} → ${b.soBuoi ?? 'trống'}` : null,
-      a.description !== b.description ? 'Nội dung đổi' : null,
-      a.performer !== b.performer ? `${nhanNguoi} ${a.performer ?? 'trống'} → ${b.performer ?? 'trống'}` : null,
-      (a.startedDate ?? null) !== (b.startedDate ?? null) ? `Bắt đầu ${tuan(a.startedDate)} → ${tuan(b.startedDate)}` : null,
-      r.source !== 'sua_pa' && r.reason ? `Lý do: ${r.reason}` : null,
+      (a.soBuoi ?? null) !== (b.soBuoi ?? null) ? t('Số buổi {x} → {x2}', { x: a.soBuoi ?? t('trống'), x2: b.soBuoi ?? t('trống') }) : null,
+      a.description !== b.description ? t('Nội dung đổi') : null,
+      a.performer !== b.performer ? `${nhanNguoi} ${a.performer ?? t('trống')} → ${b.performer ?? t('trống')}` : null,
+      (a.startedDate ?? null) !== (b.startedDate ?? null) ? t('Bắt đầu {tuan} → {tuan2}', { tuan: tuan(a.startedDate), tuan2: tuan(b.startedDate) }) : null,
+      r.source !== 'sua_pa' && r.reason ? t('Lý do: {reason}', { reason: r.reason }) : null,
     ];
-    dong.push({ khoa: `sua-${r.id}`, ngay: r.on, ai: r.by ?? 'Web', chu: [NGUON_SUA_PA[r.source] ?? 'Điều chỉnh', ...doi].filter(Boolean).join(' · '), hang: 2, id: r.id });
+    dong.push({ khoa: `sua-${r.id}`, ngay: r.on, ai: r.by ?? 'Web', chu: [NGUON_SUA_PA[r.source] ?? t('Điều chỉnh'), ...doi].filter(Boolean).join(' · '), hang: 2, id: r.id });
   }
   /* Cùng ngày: Tạo trước Kết quả trước lần sửa (Điều chỉnh ghi cùng lúc Kết quả). */
   dong.sort((x, y) => (x.ngay !== y.ngay ? (x.ngay < y.ngay ? 1 : -1) : x.hang !== y.hang ? y.hang - x.hang : y.id - x.id));

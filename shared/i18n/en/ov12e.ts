@@ -42,4 +42,5 @@ export const EN_OV12E = {
   'Kết quả gần nhất': 'Latest result',
   'Phụ huynh': 'Parent',
   'Gọi': 'Call',
+  'Ghi {viec}': 'Record {viec}',
 } satisfies Record<string, Dich>;

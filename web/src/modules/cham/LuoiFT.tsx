@@ -11,6 +11,7 @@ import {
 import { ENTRY_SKILLS, chipSosMt0, chuOChuaLuu, dotGvCham, duongDotTest, maHocVienNgan, ngay, nhanLuot, tuanLich, type AssessedSkill, type NguoiChon, type TrangThaiLuuO } from '@shared/domain/index.ts';
 import { DongThi } from './DongThi.tsx';
 import { GOI_Y_COT_MT, NutGvCham, useGvChamCot } from './GvCham.tsx';
+import { dich, t } from '@shared/i18n/index.ts';
 
 /** Dữ liệu lưới FT — chính là `cham.ft` (`classScoreSheet` ở máy chủ). */
 export type FtSheet = {
@@ -87,7 +88,7 @@ const COT_HV = 176, COT_MT = 56, COT_TT = 146, COT_HAN = 140, COT_KN = 104, COT_
 const COT_OVR = 84, COT_KQ_OV = COT_KQ - 12;
 /* PR-HSM: cột W tổng chỉ đọc (K4-26, Q12) · cột S nới cho nút "GV chấm: {tên}" dưới tiêu đề (K4-24). */
 const COT_W = 56, COT_S = 130;   // PR-HSM: +W, S rộng hơn → Hạn 200→140, Kết quả 176→150 để bảng đủ cột vẫn vừa 1400 px
-const W_HINT = 'Band Writing = (Task 1 + Task 2 × 2) / 3, khi đủ hai task.';
+const W_HINT = t('Band Writing = (Task 1 + Task 2 × 2) / 3, khi đủ hai task.');
 
 /**
  * LƯỚI CHẤM LỚP FAST TRACK — phần bảng của màn nhập điểm cả lớp trong một tuần (dời nguyên từ `ScoreSheetPage`).
@@ -128,8 +129,8 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
 
   if (data.rows.length === 0 && hangMo.length === 0) {
     return (
-      <Empty title="Không có lượt Mock nào của lớp này trong tuần đã chọn"
-        hint="Đổi tuần ở trên, hoặc quay lại Test để chọn lớp khác." />
+      <Empty title={t('Không có lượt Mock nào của lớp này trong tuần đã chọn')}
+        hint={t('Đổi tuần ở trên, hoặc quay lại Test để chọn lớp khác.')} />
     );
   }
   const rows = data.rows.filter((r) => !chiConHuy(r, tuanDangXem));
@@ -153,33 +154,33 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
   return (
     <>
     {/* FIX-DTL (chủ sản phẩm 07/10): GV chấm S ở hàng trên bảng — đầu cột S chỉ "S (band)", thẳng hàng các cột khác. */}
-    {suaS && dot && <div className="flex justify-end px-3 pb-1"><NutGvCham nhan="GV chấm S" value={gvCot} onChange={setGvCot} goiY={data.period ? undefined : GOI_Y_COT_MT} /></div>}
+    {suaS && dot && <div className="flex justify-end px-3 pb-1"><NutGvCham nhan={t('GV chấm S')} value={gvCot} onChange={setGvCot} goiY={data.period ? undefined : GOI_Y_COT_MT} /></div>}
     <div className={gon ? 'table-scroll bang-dinh bang-dinh-1440' : 'overflow-x-auto'}>
       <table className="w-full text-sm tabular-nums" style={{ tableLayout: 'fixed', minWidth: RONG }}>
         <colgroup>{COT.map((w, i) => <col key={i} style={{ width: w }} />)}</colgroup>
         <thead>
           <tr>
-            <Th className="sticky-col" hint="Cột này đứng yên khi cuộn ngang, để không lạc mất đang nhập cho em nào.">Học viên</Th>
-            {cot.mt && <Th hint="Số thứ tự lượt Mock Test (MT) trong lộ trình của em.">MT</Th>}
-            {cot.trangThai && <Th hint="Lượt đã chấm xong, đang chờ, hay đã huỷ.">Trạng thái</Th>}
-            {cot.han && <Th hint="Hạn chấm tính riêng cho từng môn, từ tuần thi của chính môn đó: hết thứ Tư của tuần kế tiếp. Quản lý đặt được hạn riêng.">Hạn chấm</Th>}
+            <Th className="sticky-col" hint={t('Cột này đứng yên khi cuộn ngang, để không lạc mất đang nhập cho em nào.')}>{t('Học viên')}</Th>
+            {cot.mt && <Th hint={t('Số thứ tự lượt Mock Test (MT) trong lộ trình của em.')}>MT</Th>}
+            {cot.trangThai && <Th hint={t('Lượt đã chấm xong, đang chờ, hay đã huỷ.')}>{t('Trạng thái')}</Th>}
+            {cot.han && <Th hint={t('Hạn chấm tính riêng cho từng môn, từ tuần thi của chính môn đó: hết thứ Tư của tuần kế tiếp. Quản lý đặt được hạn riêng.')}>{t('Hạn chấm')}</Th>}
             {RAW_SKILLS.map((s) => (
-              <Th key={s} align="right" className={toCot(s)} hint={`${skillLabel(s)} — bấm ô để nhập số câu đúng (0–40), máy tự quy ra band.`}>
-                {skillShort(s)} <span className="normal-case text-slate-500">{cot.kyVong ? '(số câu)' : '(band)'}</span>
+              <Th key={s} align="right" className={toCot(s)} hint={t('{skillLabel} — bấm ô để nhập số câu đúng (0–40), máy tự quy ra band.', { skillLabel: skillLabel(s) })}>
+                {skillShort(s)} <span className="normal-case text-slate-500">{cot.kyVong ? t('(số câu)') : '(band)'}</span>
               </Th>
             ))}
             {W_SKILLS.map((s) => (
-              <Th key={s} align="right" className={toCot(s)} hint={`${skillLabel(s)} — bấm ô để chấm bốn tiêu chí, ra band.`}>
+              <Th key={s} align="right" className={toCot(s)} hint={t('{skillLabel} — bấm ô để chấm bốn tiêu chí, ra band.', { skillLabel: skillLabel(s) })}>
                 {skillShort(s)}
               </Th>
             ))}
             <Th align="right" className={toCot('writing')} hint={W_HINT}>W</Th>
-            <Th align="right" className={toCot('speaking')} hint={`${skillLabel('speaking')} — bấm ô để chấm bốn tiêu chí, ra band.`}>
+            <Th align="right" className={toCot('speaking')} hint={t('{skillLabel} — bấm ô để chấm bốn tiêu chí, ra band.', { skillLabel: skillLabel('speaking') })}>
               {skillShort('speaking')}
             </Th>
-            {cot.kyVong && <Th align="right" hint="Mức mong đợi của chính lượt này, tính theo Target tại thời điểm đó.">Kỳ vọng</Th>}
-            <Th align="right" hint="Band tổng, chỉ có khi đã đủ điểm mọi kỹ năng bắt buộc.">Overall</Th>
-            <Th hint="Số kỹ năng dưới kỳ vọng của lượt này — đó chính là mức SOS.">Kết quả</Th>
+            {cot.kyVong && <Th align="right" hint={t('Mức mong đợi của chính lượt này, tính theo Target tại thời điểm đó.')}>{t('Kỳ vọng')}</Th>}
+            <Th align="right" hint={t('Band tổng, chỉ có khi đã đủ điểm mọi kỹ năng bắt buộc.')}>Overall</Th>
+            <Th hint={t('Số kỹ năng dưới kỳ vọng của lượt này — đó chính là mức SOS.')}>{t('Kết quả')}</Th>
           </tr>
         </thead>
         <tbody>
@@ -230,7 +231,7 @@ function DeadlineSummary({ cells }: { cells: Cell[] }) {
   const noShows = cells.filter((c) => c.required && c.noShow);
   const dongDau = noShows.length ? (
     <span className="text-xs text-slate-400 leading-tight truncate max-w-full"
-      title={noShows.map((c) => `${skillShort(c.skill)}: ${c.noShow!.text}`).join('\n')}>
+      title={noShows.map((c) => `${skillShort(c.skill)}: ${dich(c.noShow!.text)}`).join('\n')}>
       {noShows.map((c) => skillShort(c.skill)).join(', ')}: {noShows[0].noShow!.text}
     </span>
   ) : null;
@@ -252,7 +253,7 @@ function DeadlineSummary({ cells }: { cells: Cell[] }) {
       <DeadlinePill cell={soonest} />
       {dongDau ?? (weeks.size > 1 && (
         <span className="max-w-full truncate text-xs text-slate-400" title={skillLabel(soonest.skill)}>
-          {skillShort(soonest.skill)} · đợt này thi {weeks.size} tuần
+          {skillShort(soonest.skill)}{' '}{t('· đợt này thi {size} tuần', { size: weeks.size })}
         </span>
       ))}
     </div>
@@ -285,8 +286,8 @@ function SheetRow({ row, lop, active, cot, tuanDangXem, tuanXem, onReload, gvMac
   const khacTuan = (cell: Cell) => khacTuanFt(cell, tuanDangXem) && !nutTuanGoc(cell);
   const oKhacTuan = (s: string, cell: Cell) => (
     <td key={s} className="td py-1.5 text-right text-slate-500" data-kn={s}
-      title={cell.daChot?.doiSang ? `${skillLabel(s)}: vắng, đã dời sang ${cell.daChot.doiSang}` : `${skillLabel(s)}: thi tuần ${tuanLich(cell.weekStart)}`}>
-      {cell.daChot?.doiSang ? `Đã dời sang ${cell.daChot.doiSang}` : tuanLich(cell.weekStart)}
+      title={cell.daChot?.doiSang ? t('{skillLabel}: vắng, đã dời sang {doiSang}', { skillLabel: skillLabel(s), doiSang: cell.daChot.doiSang }) : t('{skillLabel}: thi tuần {tuanLich}', { skillLabel: skillLabel(s), tuanLich: tuanLich(cell.weekStart) })}>
+      {cell.daChot?.doiSang ? t('Đã dời sang {doiSang}', { doiSang: cell.daChot.doiSang }) : tuanLich(cell.weekStart)}
     </td>
   );
 
@@ -297,7 +298,7 @@ function SheetRow({ row, lop, active, cot, tuanDangXem, tuanXem, onReload, gvMac
           <Link className="link block break-words max-sm:py-3 max-sm:-my-3" to={duongDotTest({ id: row.attemptId })} title={row.studentName}>{row.studentName}</Link>
           {row.hoanTat && (
             <div className="mt-0.5">
-              <Info title={`Hết Chủ nhật ${ngay(row.chuNhatCuoi)}. ${KHOA_HOAN_TAT_HINT}`}>Đã hoàn tất</Info>
+              <Info title={t('Hết Chủ nhật {ngay}. {x}', { ngay: ngay(row.chuNhatCuoi), x: KHOA_HOAN_TAT_HINT })}>{t('Đã hoàn tất')}</Info>
             </div>
           )}
         </div>
@@ -310,7 +311,7 @@ function SheetRow({ row, lop, active, cot, tuanDangXem, tuanXem, onReload, gvMac
         <DongThi tienTo={`MT${row.attemptNo}`} muc={row.cells.filter((c) => c.required && c.progress !== 'cancelled')
           .map((c) => ({ nhan: c.skill.startsWith('writing') ? 'W' : skillShort(c.skill), weekStart: c.weekStart ?? null }))} />
       </td>
-      {cot.mt && <td className="td py-1.5 whitespace-nowrap" title={`Mock Test lượt ${row.attemptNo}`}>MT{row.attemptNo}</td>}
+      {cot.mt && <td className="td py-1.5 whitespace-nowrap" title={t('Mock Test lượt {attemptNo}', { attemptNo: row.attemptNo })}>MT{row.attemptNo}</td>}
       {cot.trangThai && (
         <td className="td py-1.5 whitespace-nowrap text-xs text-slate-400">
           <Status kind={row.status === 'done' ? 'done' : row.status === 'cancelled' || huyHet ? 'idle' : 'doing'}>
@@ -374,23 +375,23 @@ function SheetRow({ row, lop, active, cot, tuanDangXem, tuanXem, onReload, gvMac
             <>
               {row.result.kckDuoi ? <ChipDuoiKck />
                 : row.result.chot && row.result.sosLevel !== null && <Level tone={sosTone(row.result.sosLevel)}>{sosLabel(row.result.sosLevel)}</Level>}
-              <Level tone="muted" title={row.cells[0]?.lyDoKhoa}>{row.ngungHoc}</Level>
+              <Level tone="muted" title={row.cells[0]?.lyDoKhoa && dich(row.cells[0].lyDoKhoa)}>{dich(row.ngungHoc)}</Level>
             </>
           ) : row.mt0Sos && row.result.scoredRequired > 0 ? (
             /* PR-MT0: chỉ chip SOS hiển thị; đủ điểm mà không SOS → `MT0 ✓` (chủ sản phẩm Q3). */
             row.mt0Sos.length ? row.mt0Sos.map((x) => <Level key={x.skill} tone="danger">{chipSosMt0(x)}</Level>)
               : row.result.complete ? <Level tone="ok">MT0 ✓</Level>
-              : <Level tone="muted">{`Chờ ${row.result.required.length - row.result.scoredRequired} kỹ năng`}</Level>
+              : <Level tone="muted">{t('Chờ {x} kỹ năng', { x: row.result.required.length - row.result.scoredRequired })}</Level>
           ) : (
             /* OV-1c: lượt CHỐT (đủ điểm, hoặc kỹ năng thiếu đã dời / huỷ / Không dự thi) mới có mức SOS — cờ của máy chủ, không suy từ số ô.
                Chưa chốt mà đã có SOS → chip "SOS tạm · a/4" vàng viền đứt (mockup 11/10). */
             row.result.kckDuoi ? <ChipDuoiKck />   /* OV-9: em KCK dưới kỳ vọng — chip trung tính, không SOS */
               : row.result.chot && row.result.sosLevel !== null ? <Level tone={sosTone(row.result.sosLevel)}>{sosLabel(row.result.sosLevel)}</Level>
               : row.result.provisional && (row.result.sosLevel ?? 0) > 0
-                ? <Level tone="warn" dut title={`SOS tạm thời: mới có ${row.result.scoredRequired}/${row.result.required.length} kỹ năng`}>
-                  SOS tạm · {row.result.scoredRequired}/{row.result.required.length}</Level>
-                : tuanChuaToi ? <Level tone="muted" title="Chưa tới tuần thi">{tuanLich(tuanChuaToi)}</Level>
-                : <Level tone="muted">{`Chờ ${row.result.required.length - row.result.scoredRequired} kỹ năng`}</Level>
+                ? <Level tone="warn" dut title={t('SOS tạm thời: mới có {scoredRequired}/{length} kỹ năng', { scoredRequired: row.result.scoredRequired, length: row.result.required.length })}>
+                  {t('SOS tạm · {scoredRequired}/{length}', { scoredRequired: row.result.scoredRequired, length: row.result.required.length })}</Level>
+                : tuanChuaToi ? <Level tone="muted" title={t('Chưa tới tuần thi')}>{tuanLich(tuanChuaToi)}</Level>
+                : <Level tone="muted">{t('Chờ {x} kỹ năng', { x: row.result.required.length - row.result.scoredRequired })}</Level>
           )}
           {row.result.scopeNote && (
             <span className="text-xs text-slate-500 truncate max-w-full" title={row.result.scopeDetail ?? row.result.scopeNote}>
@@ -414,20 +415,20 @@ export function DauLuu({ status, error, onRetry, soLoi = 0, lon = false }: {
   if (soLoi > 0 || status === 'error') {
     return (
       <span className="inline-flex items-center gap-1 whitespace-nowrap font-semibold text-bad" role="alert"
-        title={error ? `Không lưu được: ${error}` : 'Không lưu được'}>
+        title={error ? t('Không lưu được: {error}', { error }) : t('Không lưu được')}>
         {chuOChuaLuu(Math.max(soLoi, 1))}
         {/* Điện thoại: dòng chỉ một kỹ năng, nút "Lưu lại" 44px nằm ngay ở ô — không lặp hai nút sát nhau. */}
         {onRetry && !lon && (
           <button type="button" onClick={onRetry}
             className="appearance-none border-0 bg-transparent p-0 font-semibold text-bad underline">
-            Lưu lại
+            {t('Lưu lại')}
           </button>
         )}
       </span>
     );
   }
-  if (status === 'saving') return <span className="text-xs text-slate-400">Đang lưu…</span>;
-  if (status === 'saved') return <span className="text-[11px] text-ok" title="Đã lưu">✓</span>;
+  if (status === 'saving') return <span className="text-xs text-slate-400">{t('Đang lưu…')}</span>;
+  if (status === 'saved') return <span className="text-[11px] text-ok" title={t('Đã lưu')}>✓</span>;
   return null;
 }
 
@@ -445,13 +446,13 @@ export function DauO({ tt, loi, onLuuLai, lon = false }: {
   const cho = lon ? 'inline-flex items-center' : 'absolute bottom-0.5 right-1 leading-none';
   if (tt === 'loi') {
     return (
-      <button type="button" onClick={onLuuLai} title={`Không lưu được${loi ? `: ${loi}` : ''}. Bấm để lưu lại.`}
+      <button type="button" onClick={onLuuLai} title={t('Không lưu được{x}. Bấm để lưu lại.', { x: loi ? `: ${loi}` : '' })}
         className={`${cho} appearance-none border-0 bg-transparent p-0 text-xs font-semibold text-bad underline ${lon ? 'min-h-[44px] px-1 text-xs' : ''}`}>
-        Lưu lại
+        {t('Lưu lại')}
       </button>
     );
   }
-  if (tt === 'dang-luu') return <span className={`${cho} text-[11px] text-slate-500`} title="Đang lưu">…</span>;
-  if (tt === 'da-luu') return <span className={`${cho} text-[11px] text-ok`} title="Đã lưu">✓</span>;
+  if (tt === 'dang-luu') return <span className={`${cho} text-[11px] text-slate-500`} title={t('Đang lưu')}>…</span>;
+  if (tt === 'da-luu') return <span className={`${cho} text-[11px] text-ok`} title={t('Đã lưu')}>✓</span>;
   return null;
 }

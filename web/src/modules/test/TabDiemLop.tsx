@@ -6,11 +6,12 @@ import { CongTacKhung, khungDaNho } from '../../ui/CongTacKhung.tsx';
 import { BranchFilter, useChiNhanhMacDinh } from '../../ui/Filters.tsx';
 import { DiemTheoLop, type CongRoi } from '../cham/DiemTheoLop.tsx';
 import { useChongVe, useTenTrang, useVe } from '../../lib/quayLai.ts';
+import { t } from '@shared/i18n/index.ts';
 
 /** `GET /diem-theo-lop/lop` (`lopCuaToi`, server/src/cham/diemTheoLuot.ts). */
 type LopCuaToi = { classId: number; classCode: string; mode: 'ielts_band' | 'ratio'; branchId: number; oTrong: number };
 
-const conTrong = (l: LopCuaToi) => (l.oTrong ? `${l.oTrong} trống` : 'đủ');
+const conTrong = (l: LopCuaToi) => (l.oTrong ? t('{oTrong} trống', { oTrong: l.oTrong }) : t('đủ'));
 
 /**
  * TEST › ĐIỂM THEO LỚP (PR-DL, mockup `mockup-diem-theo-lop-2026-10-04.html` #v-test). Trái: lớp người xem được xem (GV lớp mình dạy,
@@ -35,7 +36,7 @@ export function TabDiemLop() {
 
   if (error && !data) return <ErrorState message={error.message} hint={error.hint} onRetry={reload} />;
   if (loading || !data) return <Skeleton rows={6} />;
-  if (!data.length) return <div className="card"><Empty title="Chưa có lớp nào trong phạm vi của bạn." /></div>;
+  if (!data.length) return <div className="card"><Empty title={t('Chưa có lớp nào trong phạm vi của bạn.')} /></div>;
 
   const cnUrl = sp.get('cn');
   const branchId = cnUrl ? Number(cnUrl) : macDinh;
@@ -80,7 +81,7 @@ export function TabDiemLop() {
       {veLop && (
         <div className="-mb-2 md:col-span-2" onMouseDown={giu}>
           <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-[32px]" onClick={() => (cong.current ? cong.current.roi(() => ve(veLop.url)) : ve(veLop.url))}>
-            <span aria-hidden>‹</span> Hồ sơ lớp {chon.classCode}
+            <span aria-hidden>‹</span>{' '}{t('Hồ sơ lớp {classCode}', { classCode: chon.classCode })}
           </button>
         </div>
       )}
@@ -91,11 +92,11 @@ export function TabDiemLop() {
           onChange={(k) => { if (k !== 'tat-ca') doiLoc((q) => q.set('loai', k)); }} />
         <BranchFilter branchId={branchId} onBranch={(id) => doiLoc((q) => { if (id) q.set('cn', String(id)); else q.delete('cn'); })} />
       </div>
-      <select className="field md:hidden" aria-label="Chọn lớp" value={chon.classId} onMouseDown={giu} onChange={(e) => chonLop(Number(e.target.value))}>
+      <select className="field md:hidden" aria-label={t('Chọn lớp')} value={chon.classId} onMouseDown={giu} onChange={(e) => chonLop(Number(e.target.value))}>
         {ds.map((l) => <option key={l.classId} value={l.classId}>{l.classCode} · {conTrong(l)}</option>)}
       </select>
-      <nav className="card hidden flex-col gap-1 p-2 md:flex" aria-label="Danh sách lớp" onMouseDown={giu}>
-        <div className="px-2.5 py-1 text-xs text-slate-500">Lớp · còn ô trống</div>
+      <nav className="card hidden flex-col gap-1 p-2 md:flex" aria-label={t('Danh sách lớp')} onMouseDown={giu}>
+        <div className="px-2.5 py-1 text-xs text-slate-500">{t('Lớp · còn ô trống')}</div>
         {ds.map((l) => {
           const on = l.classId === chon.classId;
           return (

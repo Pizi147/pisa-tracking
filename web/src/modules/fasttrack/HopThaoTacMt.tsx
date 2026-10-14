@@ -12,6 +12,7 @@ import {
   CAU_TUAN_DA_QUA, CHU_THAO_TAC, canLyDo, cauDaGhiVang, kiemLyDoThaoTac, kiemTuanXep, luatVangThuong, mondayOfDate, ngay, sauTuanThi, tenMon, tuanLich,
   type LoiTruong, type ThaoTac,
 } from '@shared/domain/index.ts';
+import { t } from '@shared/i18n/index.ts';
 
 /** Thao tác một kỹ năng mở bằng hộp này — Nhập/Sửa điểm làm tại chỗ, Xếp lại bài vắng / Trả lời đề nghị có hộp riêng. */
 export const THAO_TAC_CO_HOP: readonly ThaoTac[] = ['dat-lich', 'xep-lai', 'doi-lich', 'doi-han', 'bo-ky-nang', 'dua-lai', 'bao-vang', 'huy-diem', 'khoi-phuc', 'khong-mock-lai'];
@@ -28,22 +29,22 @@ function vangSeRa(laThuong: boolean, weekStart: string | null, homNay: string): 
 }
 
 /** Một câu nói hệ quả của thao tác — người bấm biết trước điều gì xảy ra (T38, clarify). */
-function cauHeQua(t: ThaoTac, mon: string, laThuong: boolean, vang: ReturnType<typeof vangSeRa> = null): string {
-  switch (t) {
-    case 'dat-lich': return `Đặt tuần thi cho ${mon}; các kỹ năng khác giữ nguyên.`;
-    case 'xep-lai': return `Đặt tuần thi mới cho bài vắng ${mon}. Tính là một lần dời do vắng.`;
-    case 'doi-lich': return `Chỉ ${mon} đổi tuần thi; các kỹ năng khác giữ nguyên. Không tính là một lần dời do vắng.`;
-    case 'doi-han': return `Hạn chấm mới chỉ áp cho ${mon}; hết ngày hạn mới tính quá hạn.`;
-    case 'bo-ky-nang': return `${mon} bỏ khỏi đợt này, không tính vào kết quả đợt. "Đưa lại vào đợt" để thi lại.`;
-    case 'dua-lai': return `${mon} trở lại danh sách thi của đợt này. Tuần cũ còn hợp lệ thì giữ, không thì về Chưa xếp lịch.`;
+function cauHeQua(tt: ThaoTac, mon: string, laThuong: boolean, vang: ReturnType<typeof vangSeRa> = null): string {
+  switch (tt) {
+    case 'dat-lich': return t('Đặt tuần thi cho {mon}; các kỹ năng khác giữ nguyên.', { mon });
+    case 'xep-lai': return t('Đặt tuần thi mới cho bài vắng {mon}. Tính là một lần dời do vắng.', { mon });
+    case 'doi-lich': return t('Chỉ {mon} đổi tuần thi; các kỹ năng khác giữ nguyên. Không tính là một lần dời do vắng.', { mon });
+    case 'doi-han': return t('Hạn chấm mới chỉ áp cho {mon}; hết ngày hạn mới tính quá hạn.', { mon });
+    case 'bo-ky-nang': return t('{mon} bỏ khỏi đợt này, không tính vào kết quả đợt. "Đưa lại vào đợt" để thi lại.', { mon });
+    case 'dua-lai': return t('{mon} trở lại danh sách thi của đợt này. Tuần cũ còn hợp lệ thì giữ, không thì về Chưa xếp lịch.', { mon });
     case 'bao-vang': return vang?.khongDuThi
-      ? `Tuần thi đã qua: ghi Không dự thi cho ${mon} — không dời, không tính lần vắng.`
+      ? t('Tuần thi đã qua: ghi Không dự thi cho {mon} — không dời, không tính lần vắng.', { mon })
       : laThuong
-        ? `Ghi "-" cho ${mon}: môn này dời sang ${vang?.tuanMoi ?? 'tuần sau'} ngay.`
-        : `Ghi "-" cho ${mon} và chốt ngay. Lần vắng đầu máy tự dời sang tuần kế tiếp; lần 2 huỷ phần thi này.`;
-    case 'huy-diem': return 'Ô điểm trở về trống. Điểm cũ vẫn nằm trong Lịch sử cùng lý do.';
-    case 'khong-mock-lai': return `${mon} đã huỷ vì vắng 2 lần sẽ không thi lại; đợt tính trên các kỹ năng còn lại.`;
-    case 'khoi-phuc': return `Mở lại phần thi ${mon} đã huỷ và đặt tuần thi mới trong cùng một lần.`;
+        ? t('Ghi "-" cho {mon}: môn này dời sang {x} ngay.', { mon, x: vang?.tuanMoi ?? t('tuần sau') })
+        : t('Ghi "-" cho {mon} và chốt ngay. Lần vắng đầu máy tự dời sang tuần kế tiếp; lần 2 huỷ phần thi này.', { mon });
+    case 'huy-diem': return t('Ô điểm trở về trống. Điểm cũ vẫn nằm trong Lịch sử cùng lý do.');
+    case 'khong-mock-lai': return t('{mon} đã huỷ vì vắng 2 lần sẽ không thi lại; đợt tính trên các kỹ năng còn lại.', { mon });
+    case 'khoi-phuc': return t('Mở lại phần thi {mon} đã huỷ và đặt tuần thi mới trong cùng một lần.', { mon });
     default: return '';
   }
 }
@@ -82,48 +83,48 @@ export function HopThaoTacMt({ thaoTac, attemptId, skill, ct, laThuong, quanLy, 
   /** PR-MTGON: Huỷ kỹ năng đã có điểm → máy chủ 409; hỏi "Xoá điểm và huỷ kỹ năng?", lần bấm sau gửi `xoaDiem`. */
   const [xoaDiem, setXoaDiem] = useState(false);
   if (!thaoTac) return null;
-  const t = thaoTac;
-  const vang = t === 'bao-vang' ? vangSeRa(laThuong, row.weekStart, homNay) : null;
-  const ten = vang?.khongDuThi ? 'Không dự thi' : CHU_THAO_TAC[t];
+  const tt = thaoTac;
+  const vang = tt === 'bao-vang' ? vangSeRa(laThuong, row.weekStart, homNay) : null;
+  const ten = vang?.khongDuThi ? t('Không dự thi') : CHU_THAO_TAC[tt];
   const mon = tenMon(ct, skill);
-  const batBuoc = canLyDo(t);
-  const coTuan = t === 'dat-lich' || t === 'xep-lai' || t === 'doi-lich' || t === 'khoi-phuc';
+  const batBuoc = canLyDo(tt);
+  const coTuan = tt === 'dat-lich' || tt === 'xep-lai' || tt === 'doi-lich' || tt === 'khoi-phuc';
   /* K2-33: GVCN dời / xếp lại lượt có sẵn không vào tuần đã qua — tuần sớm nhất là tuần này. Quản lý được (T4): chỉ hiện chip vàng.
      PR-MTa T21: Khôi phục (chỉ Quản lý) cũng chọn được tuần đã qua — em đã thi thật. */
-  const tuanNay = homNay && !quanLy && t !== 'khoi-phuc' ? mondayOfDate(homNay) : null;
-  const quaTuan = quanLy && coTuan && t !== 'khoi-phuc' && !!tuan && tuan.periodId !== row.periodId && !!homNay
+  const tuanNay = homNay && !quanLy && tt !== 'khoi-phuc' ? mondayOfDate(homNay) : null;
+  const quaTuan = quanLy && coTuan && tt !== 'khoi-phuc' && !!tuan && tuan.periodId !== row.periodId && !!homNay
     && kiemTuanXep({ ketThuc: [addDaysStr(tuan.weekStart.slice(0, 10), 6)], homNay, quanLy: true }).quaTuan;
-  const chonW = t === 'huy-diem' && !laThuong && oCoDiem.length > 1;
+  const chonW = tt === 'huy-diem' && !laThuong && oCoDiem.length > 1;
 
   const loi: LoiTruong[] = [
-    ...(kiemLyDoThaoTac(t, lyDo) ? [{ khoa: 'ly-do', nhan: 'Lý do', lyDo: 'Chưa điền' }] : []),
-    ...(coTuan && (!tuan || (t === 'doi-lich' && tuan.periodId === row.periodId)) ? [{ khoa: 'tuan', nhan: 'Tuần thi mới', lyDo: 'Chọn tuần khác tuần hiện tại' }]
-      : coTuan && tuanNay && tuan!.weekStart < tuanNay ? [{ khoa: 'tuan', nhan: 'Tuần thi mới', lyDo: 'Tuần đã qua — chọn từ tuần này trở đi' }] : []),
-    ...(t === 'doi-han' && !han ? [{ khoa: 'han', nhan: 'Hạn chấm mới', lyDo: 'Chưa chọn' }] : []),
-    ...(chonW && !o.length ? [{ khoa: 'o', nhan: 'Ô cần huỷ', lyDo: 'Chưa chọn' }] : []),
+    ...(kiemLyDoThaoTac(tt, lyDo) ? [{ khoa: 'ly-do', nhan: t('Lý do'), lyDo: t('Chưa điền') }] : []),
+    ...(coTuan && (!tuan || (tt === 'doi-lich' && tuan.periodId === row.periodId)) ? [{ khoa: 'tuan', nhan: t('Tuần thi mới'), lyDo: t('Chọn tuần khác tuần hiện tại') }]
+      : coTuan && tuanNay && tuan!.weekStart < tuanNay ? [{ khoa: 'tuan', nhan: t('Tuần thi mới'), lyDo: t('Tuần đã qua — chọn từ tuần này trở đi') }] : []),
+    ...(tt === 'doi-han' && !han ? [{ khoa: 'han', nhan: t('Hạn chấm mới'), lyDo: t('Chưa chọn') }] : []),
+    ...(chonW && !o.length ? [{ khoa: 'o', nhan: t('Ô cần huỷ'), lyDo: t('Chưa chọn') }] : []),
   ];
   const lyDoGui = lyDo.trim() || undefined;
 
   const goi = async (force: boolean): Promise<string> => {
     const goc = `/attempts/${attemptId}/skills/${skill}`;
-    switch (t) {
+    switch (tt) {
       case 'dat-lich':
       case 'xep-lai':
       case 'doi-lich':
         await api.post(`${goc}/week`, { periodId: tuan!.periodId, reason: lyDoGui ?? null, force });
-        return `${t === 'doi-lich' ? 'Đã dời lịch thi' : 'Đã lên lịch thi'} ${mon} ${t === 'doi-lich' ? 'sang' : 'vào'} ${tuanLich(tuan!.weekStart, homNay)}`;
+        return `${tt === 'doi-lich' ? t('Đã dời lịch thi') : t('Đã lên lịch thi')} ${mon} ${tt === 'doi-lich' ? t('sang') : t('vào')} ${tuanLich(tuan!.weekStart, homNay)}`;
       case 'khoi-phuc':
         await api.post(`${goc}/restore`, { periodId: tuan!.periodId, reason: lyDoGui ?? null });
-        return `Đã khôi phục ${mon} và đặt ${tuanLich(tuan!.weekStart, homNay)}`;
+        return t('Đã khôi phục {mon} và đặt {tuanLich}', { mon, tuanLich: tuanLich(tuan!.weekStart, homNay) });
       case 'doi-han':
         await api.post(`${goc}/deadline`, { deadline: han, reason: lyDoGui ?? null });
-        return `Đã dời hạn chấm ${mon} tới ${ngay(han)}`;
+        return t('Đã dời hạn chấm {mon} tới {ngay}', { mon, ngay: ngay(han) });
       case 'bo-ky-nang':
         await api.post(`${goc}/skip`, { skipped: true, reason: lyDoGui, xoaDiem });
-        return `Đã huỷ ${mon}`;
+        return t('Đã huỷ {mon}', { mon });
       case 'dua-lai':
         await api.post(`${goc}/skip`, { skipped: false });
-        return `${mon} đã đưa lại vào đợt`;
+        return t('{mon} đã đưa lại vào đợt', { mon });
       case 'bao-vang': {
         /* OV-11a (CA3-1): một câu thông báo cho mọi cổng ghi vắng — nói đúng hậu quả máy chủ trả (`cauDaGhiVang`). */
         if (laThuong) {
@@ -138,7 +139,7 @@ export function HopThaoTacMt({ thaoTac, attemptId, skill, ct, laThuong, quanLy, 
       }
       case 'khong-mock-lai':
         await api.post(`${goc}/khong-mock-lai`, { lyDo: lyDoGui ?? null });
-        return `${mon}: không mock lại`;
+        return t('{mon}: không mock lại', { mon });
       case 'huy-diem': {
         if (laThuong) {
           await api.put(`/regular/attempts/${attemptId}/scores/${skill}`, { score: null, total: null, lyDo: lyDoGui });
@@ -146,7 +147,7 @@ export function HopThaoTacMt({ thaoTac, attemptId, skill, ct, laThuong, quanLy, 
           /* Một yêu cầu, một giao dịch ở máy chủ — W1 + W2 không bao giờ còn nửa điểm (rà #126). */
           await api.post(`${goc}/huy-diem`, { o: chonW ? o : oCoDiem.length ? oCoDiem : undefined, lyDo: lyDoGui });
         }
-        return `Đã huỷ điểm ${mon}`;
+        return t('Đã huỷ điểm {mon}', { mon });
       }
       default: return '';
     }
@@ -164,12 +165,12 @@ export function HopThaoTacMt({ thaoTac, attemptId, skill, ct, laThuong, quanLy, 
       onDone(); dong();
     } catch (e: any) {
       /* T15: cảnh báo (hai đợt quá gần) cần người xác nhận lại — lần bấm sau gửi `force`. */
-      if ((t === 'doi-lich' || t === 'dat-lich' || t === 'xep-lai') && /Xác nhận lại/.test(e.message)) setCanhBao(e.message);
-      else if (t === 'bo-ky-nang' && e instanceof ApiError && e.status === 409) setXoaDiem(true);
+      if ((tt === 'doi-lich' || tt === 'dat-lich' || tt === 'xep-lai') && /Xác nhận lại/.test(e.message)) setCanhBao(e.message);
+      else if (tt === 'bo-ky-nang' && e instanceof ApiError && e.status === 409) setXoaDiem(true);
       else setLoiMay(e.message);
     } finally { setBusy(false); }
   };
-  const nguyHiem = t === 'bo-ky-nang' || t === 'huy-diem' || t === 'khong-mock-lai';
+  const nguyHiem = tt === 'bo-ky-nang' || tt === 'huy-diem' || tt === 'khong-mock-lai';
   /* Luật S3: chưa sửa ô nào → "Đóng"; đã sửa → "Huỷ thay đổi". */
   const daSua = lyDo !== '' || han !== '' || (coTuan && (tuan?.periodId ?? null) !== row.periodId)
     || (chonW && o.join() !== (oMacDinh ?? oCoDiem).join());
@@ -181,29 +182,29 @@ export function HopThaoTacMt({ thaoTac, attemptId, skill, ct, laThuong, quanLy, 
         dongTren: loiMay ? <p className="m-0 px-4 pt-2 text-xs font-semibold text-bad" role="alert">{loiMay}</p> : undefined,
         chinh: (
           <button type="button" className={`btn min-h-[44px] sm:min-h-0 ${nguyHiem ? 'btn-danger' : 'btn-primary'}`} disabled={busy} onClick={() => void luu()}>
-            {busy ? 'Đang lưu…' : canhBao ? 'Vẫn dời vào tuần này' : xoaDiem ? 'Xoá điểm và huỷ kỹ năng' : ten}
+            {busy ? t('Đang lưu…') : canhBao ? t('Vẫn dời vào tuần này') : xoaDiem ? t('Xoá điểm và huỷ kỹ năng') : ten}
           </button>
         ),
       }}>
       <div className="space-y-3 pt-3">
-        <p className="m-0 text-sm text-slate-300">{cauHeQua(t, mon, laThuong, vang)}</p>
+        <p className="m-0 text-sm text-slate-300">{cauHeQua(tt, mon, laThuong, vang)}</p>
         {coTuan && (
-          <Truong nhan="Tuần thi mới" batBuoc as="div" loi={lf.loiCua(loi, 'tuan')}>
+          <Truong nhan={t('Tuần thi mới')} batBuoc as="div" loi={lf.loiCua(loi, 'tuan')}>
             <div {...lf.o(loi, 'tuan')}>
               <TuanNho d={{ periodId: tuan?.periodId ?? null, weekStart: tuan?.weekStart ?? null }} goc={row.weekStart} toiThieu={tuanNay}
                 onTuan={(x) => { setTuan(x); setCanhBao(null); }} />
             </div>
-            {t === 'doi-lich' && row.weekStart && <span className="mt-1 block text-xs text-slate-500">Đang thi {tuanLich(row.weekStart)}</span>}
+            {tt === 'doi-lich' && row.weekStart && <span className="mt-1 block text-xs text-slate-500">{t('Đang thi')}{' '}{tuanLich(row.weekStart)}</span>}
           </Truong>
         )}
-        {t === 'doi-han' && (
-          <Truong nhan="Hạn chấm mới" batBuoc loi={lf.loiCua(loi, 'han')}>
+        {tt === 'doi-han' && (
+          <Truong nhan={t('Hạn chấm mới')} batBuoc loi={lf.loiCua(loi, 'han')}>
             <ONgay kieu="ngay" value={han} onChange={setHan} id={lf.oId('han')} onBlur={lf.roi('han')} invalid={!!lf.loiCua(loi, 'han')} />
-            {row.deadline && <span className="mt-1 block text-xs text-slate-500">Hạn đang áp dụng {ngay(row.deadline)}</span>}
+            {row.deadline && <span className="mt-1 block text-xs text-slate-500">{t('Hạn đang áp dụng')}{' '}{ngay(row.deadline)}</span>}
           </Truong>
         )}
         {chonW && (
-          <Truong nhan="Ô cần huỷ" batBuoc as="div" loi={lf.loiCua(loi, 'o')}>
+          <Truong nhan={t('Ô cần huỷ')} batBuoc as="div" loi={lf.loiCua(loi, 'o')}>
             <div className="flex gap-4" {...lf.o(loi, 'o')}>
               {oCoDiem.map((e) => (
                 <label key={e} className="flex min-h-[44px] items-center gap-2 text-sm text-slate-200 sm:min-h-0">
@@ -214,17 +215,17 @@ export function HopThaoTacMt({ thaoTac, attemptId, skill, ct, laThuong, quanLy, 
             </div>
           </Truong>
         )}
-        {t !== 'dua-lai' && (
-          <Truong nhan="Lý do" batBuoc={batBuoc} tuyChon={!batBuoc} loi={lf.loiCua(loi, 'ly-do')}>
+        {tt !== 'dua-lai' && (
+          <Truong nhan={t('Lý do')} batBuoc={batBuoc} tuyChon={!batBuoc} loi={lf.loiCua(loi, 'ly-do')}>
             <textarea className="field w-full" rows={2} maxLength={300} {...lf.o(loi, 'ly-do')} value={lyDo} onChange={(e) => setLyDo(e.target.value)}
-              placeholder={t === 'bao-vang' || t === 'khong-mock-lai' ? 'Ví dụ: em ốm, phụ huynh đã báo' : t === 'huy-diem' ? 'Ví dụ: nhập nhầm bài của em khác' : 'Ví dụ: trùng lịch phòng thi'} />
+              placeholder={tt === 'bao-vang' || tt === 'khong-mock-lai' ? t('Ví dụ: em ốm, phụ huynh đã báo') : tt === 'huy-diem' ? t('Ví dụ: nhập nhầm bài của em khác') : t('Ví dụ: trùng lịch phòng thi')} />
           </Truong>
         )}
         {canhBao && <p className="m-0 text-xs text-amber-200" role="status">{canhBao}</p>}
-        {xoaDiem && <p className="m-0 text-xs text-amber-200" role="status">{mon} đã có điểm. Xoá điểm và huỷ kỹ năng?</p>}
+        {xoaDiem && <p className="m-0 text-xs text-amber-200" role="status">{t('{mon} đã có điểm. Xoá điểm và huỷ kỹ năng?', { mon })}</p>}
         {quaTuan && (
           <div className="flex flex-wrap gap-1.5">
-            <Nhan tone="soon" title={CAU_TUAN_DA_QUA}>Tuần đã qua</Nhan>
+            <Nhan tone="soon" title={CAU_TUAN_DA_QUA}>{t('Tuần đã qua')}</Nhan>
           </div>
         )}
       </div>

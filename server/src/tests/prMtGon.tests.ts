@@ -225,7 +225,7 @@ export async function runPrMtGonTests(t: YThucTestKit) {
   check('MTG-3e · web: "Huỷ MT{n}" một câu xác nhận; mọi kỹ năng huỷ → "Đưa lại cả 4 kỹ năng", ẩn "Dời lịch thi cả đợt"', () => {
     const s = nguon('web/src/modules/fasttrack/MockDetailPage.tsx') + nguon('web/src/modules/fasttrack/HopThaoTacMt.tsx') + nguon('web/src/modules/fasttrack/HopHuyMt.tsx');   // PR-HOP1: hộp Huỷ MT tách file
     /* PR-OV4a (mockup §5): hộp nêu hệ quả từng dòng, điểm ẩn + Khôi phục được; thoát hộp "Đóng". */
-    assert(/Khôi phục được: lịch, điểm và Case trở lại như trước\./.test(s) && /closeLabel="Đóng"/.test(nguon('web/src/modules/fasttrack/HopHuyMt.tsx')), 'câu xác nhận');
+    assert(/Khôi phục được: lịch, điểm và Case trở lại như trước\./.test(s) && /closeLabel=(?:"Đóng"|\{t\('Đóng'\)\})/.test(nguon('web/src/modules/fasttrack/HopHuyMt.tsx')), 'câu xác nhận');
     assert(/Đưa lại cả 4 kỹ năng/.test(s) && /dua-lai-ca-luot/.test(s), 'Đưa lại cả 4 kỹ năng');
     assert(!/Huỷ phần còn lại/.test(s) && !/Huỷ cả lượt/.test(s), 'chữ cũ');
   });
