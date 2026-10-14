@@ -315,7 +315,7 @@ function CotCase({ row }: { row: Row }) {
         <span className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-slate-400">
           {tamDung && tt.t === 'qua-han' ? <NhanTamDung tu={tamDung} /> : <NhanTrangThai t={tt.t} />}
           <span>{tt.k === 'huy-khong-theo-doi' ? t('Không theo dõi (Quản lý duyệt {ngan})', { ngan: ngan(c.closedOn) })
-            : tt.k === 'dang-lam' ? tienDoCase(c.plans, c).text : tt.k === 'xong' ? (c.outcomeLabel ?? '') : tt.chu}</span>
+            : tt.k === 'dang-lam' ? tienDoCase(c.plans, c).text : tt.k === 'xong' ? dich(c.outcomeLabel ?? '') : dich(tt.chu)}</span>
           {row.parallelCount > 1 && <span>{t('· {parallelCount} Case song song', { parallelCount: row.parallelCount })}</span>}
         </span>
       </span>
