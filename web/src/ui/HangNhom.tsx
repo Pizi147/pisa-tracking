@@ -1,5 +1,6 @@
 import type { MouseEvent, ReactNode } from 'react';
 import { CHIP_TRON } from './Nhan.tsx';
+import { t } from '@shared/i18n/index.ts';
 
 /**
  * HÀNG LỚN / HÀNG CON (PR-UX0, N-2 — mockup 17 phương án A). Kiểu dáng nằm ở `index.css` (`.hang-lon`, `.hang-con`,
@@ -9,7 +10,7 @@ import { CHIP_TRON } from './Nhan.tsx';
 
 /** Nút mũi tên 16px: aria-expanded, tooltip "Mở"/"Thu gọn". */
 export function MuiTenMo({ mo, onMo, nhan }: { mo: boolean; onMo: () => void; nhan: string }) {
-  const chu = mo ? 'Thu gọn' : 'Mở';
+  const chu = mo ? t('Thu gọn') : t('Mở');
   return (
     <button type="button" title={chu} aria-label={`${chu} ${nhan}`} aria-expanded={mo}
       onClick={(e) => { e.stopPropagation(); onMo(); }}

@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { oMt, type KieuOMt, type OMtVao } from '@shared/domain/index.ts';
+import { t } from '@shared/i18n/index.ts';
 
 /**
  * NHÃN "cũ" cạnh số đợt (T1: "MT cũ" — nhập bù, không tính hạn): viền mảnh cùng màu chữ, KHÔNG màu nghĩa, KHÔNG ⚠ (MT cũ không phải
@@ -7,9 +8,9 @@ import { oMt, type KieuOMt, type OMtVao } from '@shared/domain/index.ts';
  */
 export function NhanCu() {
   return (
-    <span title="MT cũ — nhập bù, không tính hạn"
+    <span title={t('MT cũ — nhập bù, không tính hạn')}
       className="inline-flex items-center whitespace-nowrap rounded border border-current px-[3px] align-middle text-[11px] font-bold leading-4 text-dim">
-      cũ
+      {t('cũ')}
     </span>
   );
 }
@@ -44,7 +45,7 @@ export function OMt({ v, homNay, ct = null, chon, chuChon, ghiChu, onClick, href
   /** PR-OV4a: số MT chỉ có lượt đã huỷ — `MT2 · Đã huỷ` (chữ, không chỉ màu), viền đứt, số gạch ngang. */
   huy?: boolean;
 }) {
-  const r = huy ? { ...oMt(v, homNay, ct), tuan: null, viec: 'Đã huỷ', doc: `MT${v.so}, đã huỷ`, title: `MT${v.so} đã huỷ` } : oMt(v, homNay, ct);
+  const r = huy ? { ...oMt(v, homNay, ct), tuan: null, viec: t('Đã huỷ'), doc: t('MT{so}, đã huỷ', { so: v.so }), title: t('MT{so} đã huỷ', { so: v.so }) } : oMt(v, homNay, ct);
   const phan = chon && chuChon !== undefined ? [chuChon] : [r.tuan, r.viec].filter(Boolean);
   const tuongTac = !!(onClick || href);
   const cls = `relative inline-flex h-5 items-center gap-1 whitespace-nowrap rounded-md border px-1.5 text-[11.5px] font-semibold leading-[18px] no-underline ${
@@ -58,7 +59,7 @@ export function OMt({ v, homNay, ct = null, chon, chuChon, ghiChu, onClick, href
       {(chon || (!huy && r.kieu === 'xong')) && <span aria-hidden>✓</span>}
     </>
   );
-  const doc = [chon && chuChon !== undefined ? `MT${v.so}, ${chuChon}` : r.doc, v.cu ? 'MT cũ' : null, v.khongDung ? 'không dùng' : null, chon ? 'đang chọn' : null].filter(Boolean).join(', ');
+  const doc = [chon && chuChon !== undefined ? `MT${v.so}, ${chuChon}` : r.doc, v.cu ? t('MT cũ') : null, v.khongDung ? t('không dùng') : null, chon ? t('đang chọn') : null].filter(Boolean).join(', ');
   const tip = ghiChu ? `${r.title}\n${ghiChu}` : r.title;
   if (href) return <Link id={id} to={href} className={cls} title={tip} aria-label={doc}>{ruot}</Link>;
   if (onClick) return <button id={id} type="button" className={cls} title={tip} aria-label={doc} onClick={(e) => onClick(e.currentTarget)}>{ruot}</button>;

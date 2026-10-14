@@ -4,6 +4,7 @@ import { Info } from './ui.tsx';
 import { BaoOTrongNhan } from './ONgay.tsx';
 import { buocDanhSach, chotChuGo, locNguoiChon, skillShort, type NguoiChon } from '@shared/domain/index.ts';
 import { useSession } from '../lib/session.tsx';
+import { t } from '@shared/i18n/index.ts';
 
 export type Person = { id: number; name: string; title: string | null; role: string | null; branches: string[] };
 
@@ -36,7 +37,7 @@ function usePeopleSearch(term: string) {
  * Một trung tâm có hàng chục tài khoản và nhiều người trùng tên, nên mỗi dòng kèm vai trò
  * và chi nhánh; một danh sách chỉ có tên là một danh sách chọn nhầm người.
  */
-export function PersonPicker({ value, valueName, onChange, disabled, placeholder = 'Gõ tên để tìm…' }: {
+export function PersonPicker({ value, valueName, onChange, disabled, placeholder = t('Gõ tên để tìm…') }: {
   value: number | null; valueName?: string | null;
   onChange: (id: number | null, person: Person | null) => void;
   disabled?: boolean; placeholder?: string;
@@ -59,8 +60,8 @@ export function PersonPicker({ value, valueName, onChange, disabled, placeholder
         <span className="text-slate-100 truncate">{valueName ?? `#${value}`}</span>
         {!disabled && (
           <span className="flex gap-1 shrink-0">
-            <button className="btn btn-sm" onClick={() => { setTerm(''); setOpen(true); }}>Đổi</button>
-            <button className="btn btn-sm" onClick={() => onChange(null, null)}>Bỏ</button>
+            <button className="btn btn-sm" onClick={() => { setTerm(''); setOpen(true); }}>{t('Đổi')}</button>
+            <button className="btn btn-sm" onClick={() => onChange(null, null)}>{t('Bỏ')}</button>
           </span>
         )}
       </div>
@@ -78,8 +79,8 @@ export function PersonPicker({ value, valueName, onChange, disabled, placeholder
           className="absolute z-30 mt-1 w-[min(24rem,calc(100vw-2rem))] max-h-64 overflow-y-auto surface-2 rounded-lg border shadow-xl"
           style={{ borderColor: 'var(--line-strong)' }}
         >
-          {loading && <div className="px-3 py-2 text-xs text-slate-500">Đang tìm…</div>}
-          {!loading && rows.length === 0 && <div className="px-3 py-2 text-xs text-slate-500">Không tìm thấy ai khớp.</div>}
+          {loading && <div className="px-3 py-2 text-xs text-slate-500">{t('Đang tìm…')}</div>}
+          {!loading && rows.length === 0 && <div className="px-3 py-2 text-xs text-slate-500">{t('Không tìm thấy ai khớp.')}</div>}
           {rows.map((p) => (
             <button
               key={p.id}
@@ -112,7 +113,7 @@ export function FollowerPicker({ value, onChange, autoNames = [], disabled }: {
     <div className="space-y-1.5">
       <div className="flex flex-wrap gap-1">
         {autoNames.map((n) => (
-          <Info key={`auto-${n}`} title="Quản lý chi nhánh — hệ thống tự thêm">{n} · tự động</Info>
+          <Info key={`auto-${n}`} title={t('Quản lý chi nhánh — hệ thống tự thêm')}>{n} · {t('tự động')}</Info>
         ))}
         {value.map((p) => (
           <span key={p.id} className="inline-flex items-center gap-1">
@@ -121,19 +122,19 @@ export function FollowerPicker({ value, onChange, autoNames = [], disabled }: {
               <button
                 className="text-slate-500 hover:text-slate-200 text-xs"
                 onClick={() => onChange(value.filter((x) => x.id !== p.id))}
-                aria-label={`Bỏ ${p.name} khỏi người theo dõi`}
+                aria-label={t('Bỏ {ten} khỏi người theo dõi', { ten: p.name })}
               >✕</button>
             )}
           </span>
         ))}
         {value.length === 0 && autoNames.length === 0 && (
-          <span className="text-xs text-slate-500">Chưa có ai theo dõi thêm</span>
+          <span className="text-xs text-slate-500">{t('Chưa có ai theo dõi thêm')}</span>
         )}
       </div>
       {!disabled && (
         <PersonPicker
           value={null}
-          placeholder="Thêm người theo dõi…"
+          placeholder={t('Thêm người theo dõi…')}
           onChange={(_, p) => { if (p && !chosen.has(p.id)) onChange([...value, p]); }}
         />
       )}
@@ -173,8 +174,8 @@ function useNguoiSearch(
 
 /** `dạy L · R lớp này` · hoặc `vai · chi nhánh` cho một dòng kết quả tìm. */
 function nguoiContextOf(r: NguoiKetQua): string {
-  if (r.cungLop && r.monDay.length) return `dạy ${r.monDay.map(skillShort).join(' · ')} lớp này`;
-  return [r.role, r.branches.join('/')].filter(Boolean).join(' · ') || (r.cungLop ? 'dạy lớp này' : '—');
+  if (r.cungLop && r.monDay.length) return t('dạy {mon} lớp này', { mon: r.monDay.map(skillShort).join(' · ') });
+  return [r.role, r.branches.join('/')].filter(Boolean).join(' · ') || (r.cungLop ? t('dạy lớp này') : '—');
 }
 
 /** Một người trong danh sách của ô: tên + dòng phụ (vai · chi nhánh, "3 lớp — dạy được L", mã học viên…). */
@@ -300,16 +301,16 @@ export function ChonNguoi({
     if (coChuThayThe) setEditing(false);
   };
 
-  const nguoiLabel = nhom === 'giao_vien' ? 'giáo viên' : 'người';
+  const nguoiLabel = nhom === 'giao_vien' ? t('giáo viên') : t('người');
 
   /* Chỉ xem mà trống: hiện "Chưa chọn", không hiện ô gõ khoá có chữ gợi ý. */
   if (!editing || (disabled && !value)) {
     let chinh: string; let phu: string;
-    if (value?.kieu === 'toi') { chinh = 'Tôi'; phu = session?.user?.fullName ?? ''; }
+    if (value?.kieu === 'toi') { chinh = t('Tôi'); phu = session?.user?.fullName ?? ''; }
     else if (value?.kieu === 'tai_khoan') { chinh = value.ten; phu = value.phu ?? ''; }
-    else if (value?.kieu === 'ngoai') { chinh = value.ten; phu = 'ngoài hệ thống'; }
-    else if (khongDoi !== undefined) { chinh = `Không đổi · hiện: ${khongDoi}`; phu = ''; }
-    else { chinh = macDinhTrong ?? (disabled ? 'Chưa chọn' : '—'); phu = ''; }
+    else if (value?.kieu === 'ngoai') { chinh = value.ten; phu = t('ngoài hệ thống'); }
+    else if (khongDoi !== undefined) { chinh = t('Không đổi · hiện: {gt}', { gt: khongDoi }); phu = ''; }
+    else { chinh = macDinhTrong ?? (disabled ? t('Chưa chọn') : '—'); phu = ''; }
 
     return (
       /* Cùng chiều cao ô gõ (lưới Tạo nhiều lớp): nút Đổi -my-1 nằm gọn trong dòng chữ; vùng bấm điện thoại = cả ô (bấm đâu cũng mở). */
@@ -320,8 +321,8 @@ export function ChonNguoi({
           {phu && <span className="text-slate-500 text-xs"> · {phu}</span>}
         </span>
         {/* Nhãn ô trỏ vào nút này (htmlFor) — aria-label giữ chữ "Đổi" trong tên đọc, không thành tên ô trơn. */}
-        {!disabled && <button id={oId} type="button" className="btn btn-sm -my-1 h-7 shrink-0 !py-0 max-sm:min-h-0" aria-label={ariaLabel ? `Đổi · ${ariaLabel}` : undefined}
-          onClick={(e) => { e.stopPropagation(); setEditing(true); }}>Đổi</button>}
+        {!disabled && <button id={oId} type="button" className="btn btn-sm -my-1 h-7 shrink-0 !py-0 max-sm:min-h-0" aria-label={ariaLabel ? t('Đổi · {o}', { o: ariaLabel }) : undefined}
+          onClick={(e) => { e.stopPropagation(); setEditing(true); }}>{t('Đổi')}</button>}
       </div>
     );
   }
@@ -329,9 +330,9 @@ export function ChonNguoi({
   const activeId = activeIndex >= 0 && activeIndex < options.length ? `${uid}-opt-${activeIndex}` : undefined;
   /* Dòng trạng thái nằm dưới danh sách người, TRÊN dòng "Dùng tên ngoài hệ thống" (mockup 22 §4). */
   const trangThai = loading
-    ? <div className="px-3 py-2 text-xs text-slate-500">Đang tìm…</div>
+    ? <div className="px-3 py-2 text-xs text-slate-500">{t('Đang tìm…')}</div>
     : term.trim() && rows.length === 0
-      ? <div className="px-3 py-2 text-xs text-slate-500">{khongKhop ? khongKhop(term.trim()) : `Không tìm thấy ${nguoiLabel} khớp «${term.trim()}»`}</div>
+      ? <div className="px-3 py-2 text-xs text-slate-500">{khongKhop ? khongKhop(term.trim()) : t('Không tìm thấy {ai} khớp «{chu}»', { ai: nguoiLabel, chu: term.trim() })}</div>
       : null;
 
   return (
@@ -349,11 +350,11 @@ export function ChonNguoi({
         aria-expanded={open}
         aria-controls={`${uid}-listbox`}
         aria-activedescendant={activeId}
-        aria-label={ariaLabel ?? 'Chọn người'}
+        aria-label={ariaLabel ?? t('Chọn người')}
         autoComplete="off"
         value={term}
         disabled={disabled}
-        placeholder={placeholder ?? (nhom === 'giao_vien' ? 'Gõ tên giáo viên…' : 'Gõ tên…')}
+        placeholder={placeholder ?? (nhom === 'giao_vien' ? t('Gõ tên giáo viên…') : t('Gõ tên…'))}
         onFocus={() => setOpen(true)}
         onChange={(e) => { setTerm(e.target.value); setOpen(true); setActiveIndex(-1); }}
         onKeyDown={(e) => {
@@ -396,7 +397,7 @@ export function ChonNguoi({
                 {opt.kind === 'trong' && <div className="text-sm text-slate-400">{choTrong}</div>}
                 {opt.kind === 'toi' && (
                   <>
-                    <div className="text-sm text-slate-100">Tôi</div>
+                    <div className="text-sm text-slate-100">{t('Tôi')}</div>
                     {session?.user?.fullName && <div className="text-xs text-slate-500">{session.user.fullName}</div>}
                   </>
                 )}
@@ -407,8 +408,8 @@ export function ChonNguoi({
                   </>
                 )}
                 {opt.kind === 'ngoai' && (tat(opt)
-                  ? <div className="text-sm text-slate-500">Dùng tên ngoài hệ thống: gõ tên ở ô trên</div>
-                  : <div className="text-sm text-slate-100">Dùng tên ngoài hệ thống: «{opt.text}»</div>)}
+                  ? <div className="text-sm text-slate-500">{t('Dùng tên ngoài hệ thống: gõ tên ở ô trên')}</div>
+                  : <div className="text-sm text-slate-100">{t('Dùng tên ngoài hệ thống: «{ten}»', { ten: opt.text })}</div>)}
               </button>
             </Fragment>
           ))}

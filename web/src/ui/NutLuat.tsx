@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
+import { t } from '@shared/i18n/index.ts';
 
 /**
  * ⓘ LUẬT — hộp nổi nhỏ neo dưới nút, thay cho một khối chữ giải thích dưới bảng (G-5).
  * Rc1 dựng đầu tiên cho lưới chấm (`ChamDiemPage`); tách ra đây để Kế hoạch Test dùng lại.
  * Esc hoặc bấm ra ngoài thì đóng.
  */
-export function NutLuat({ children, label = 'Luật' }: { children: ReactNode; label?: string }) {
+export function NutLuat({ children, label = t('Luật') }: { children: ReactNode; label?: string }) {
   const [mo, setMo] = useState(false);
   const hop = useRef<HTMLSpanElement>(null);
   useEffect(() => {

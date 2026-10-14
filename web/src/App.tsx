@@ -11,6 +11,7 @@ import { useToast } from './ui/Toast.tsx';
 import { CHIP_TRON } from './ui/Nhan.tsx';
 import WelcomePage from './modules/platform/WelcomePage.tsx';
 import { NAV_RONG, duongMoi, khuVucCuaDuong, khuVucHienThi, type DemYeuCau, type KhuVuc, type KhuVucMuc } from '@shared/domain/index.ts';
+import { t } from '@shared/i18n/index.ts';
 
 /* Tách gói theo trang (PR-TOCDO): trang nào mở mới tải; sau khi mở xong, nạp ngầm các trang còn lại để chuyển trang không phải chờ. */
 const OverviewPage = lazy(() => import('./modules/worklist/OverviewPage.tsx'));
@@ -114,8 +115,8 @@ export default function App() {
    */
   const viecGv = useApi<{ summary: { overdue: number } }>(session?.authenticated && !session.nav?.workApprove && session.nav?.workSupport ? '/my-work' : null, []).data;
   const gv = viecGv ? { quaHan: viecGv.summary?.overdue ?? 0 } : null;
-  const so: SoBadge = dem?.cho ? { n: dem.cho, quaHan: !!dem.quaHan, sr: `${dem.cho} thẻ cần duyệt${dem.quaHan ? `, ${dem.quaHan} quá hạn` : ''}` }
-    : gv?.quaHan ? { n: gv.quaHan, quaHan: true, sr: `${gv.quaHan} việc quá hạn` } : null;
+  const so: SoBadge = dem?.cho ? { n: dem.cho, quaHan: !!dem.quaHan, sr: t('{n} thẻ cần duyệt', { n: dem.cho }) + (dem.quaHan ? t(', {n} quá hạn', { n: dem.quaHan }) : '') }
+    : gv?.quaHan ? { n: gv.quaHan, quaHan: true, sr: t('{n} việc quá hạn', { n: gv.quaHan }) } : null;
 
   const daDangNhap = !!session?.authenticated;
   useEffect(() => {
@@ -140,14 +141,14 @@ export default function App() {
   return (
     <div className="h-full flex flex-col">
       <a href="#noi-dung" onClick={(e) => { e.preventDefault(); document.getElementById('noi-dung')?.focus(); }}
-        className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[110] btn btn-sm">Bỏ qua tới nội dung</a>
+        className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[110] btn btn-sm">{t('Bỏ qua tới nội dung')}</a>
       {!banChinh && <DemoBar />}
       {/* PR-PH: mất kết nối khi tải lại phiên KHÔNG phải đăng xuất — giữ nguyên màn, chỉ báo và cho thử lại. */}
       {session.loiKetNoi && (
         <div role="status" className="shrink-0 flex flex-wrap items-center gap-x-3 gap-y-1 border-b px-3 sm:px-4 py-2 text-xs"
           style={{ borderColor: 'rgb(var(--soon-line-rgb))', background: 'rgb(var(--soon-bg-rgb))', color: 'rgb(var(--soon-rgb))' }}>
-          <span>Mất kết nối tới máy chủ — dữ liệu trên màn có thể chưa mới. Bạn vẫn đang đăng nhập.</span>
-          <button type="button" className="btn btn-sm" disabled={dangThu} onClick={() => { void thuLai(); }}>{dangThu ? 'Đang thử…' : 'Thử lại'}</button>
+          <span>{t('Mất kết nối tới máy chủ — dữ liệu trên màn có thể chưa mới. Bạn vẫn đang đăng nhập.')}</span>
+          <button type="button" className="btn btn-sm" disabled={dangThu} onClick={() => { void thuLai(); }}>{dangThu ? t('Đang thử…') : t('Thử lại')}</button>
         </div>
       )}
       <header className="relative shrink-0 border-b bg-[color:var(--surface)]" style={{ borderColor: 'var(--line)' }}>
@@ -159,10 +160,10 @@ export default function App() {
               style={{ background: 'var(--accent-soft)', borderColor: 'var(--accent-line)', color: 'var(--accent)' }}>P</div>
             <div className="leading-tight hidden sm:block">
               <div className="text-sm font-semibold text-slate-100">PISA Tracking</div>
-              {!banChinh && <div className="text-xs text-slate-500">Bản demo nội bộ</div>}
+              {!banChinh && <div className="text-xs text-slate-500">{t('Bản demo nội bộ')}</div>}
             </div>
           </div>
-          <nav aria-label="Điều hướng chính" className="hidden md:flex items-center gap-1 min-w-0 overflow-x-auto">
+          <nav aria-label={t('Điều hướng chính')} className="hidden md:flex items-center gap-1 min-w-0 overflow-x-auto">
             {items.map((m) => <NavItem key={m.key} muc={m} active={dangO === m.key} so={so} />)}
           </nav>
           <div className="flex-1 min-w-0" />
@@ -176,11 +177,11 @@ export default function App() {
         return (
           <div role="status" className="shrink-0 flex items-center gap-x-2.5 gap-y-1 border-b px-4 sm:px-5 py-1.5 text-[12.5px] text-slate-300 min-w-0"
             style={{ borderColor: 'rgb(var(--wait-line-rgb))', background: 'rgb(var(--wait-bg-rgb))' }}>
-            <b className="shrink-0 font-semibold" style={{ color: 'rgb(var(--wait-rgb))' }}>Góc nhìn: {vai?.nhan ?? gocNhin.dangChon}</b>
+            <b className="shrink-0 font-semibold" style={{ color: 'rgb(var(--wait-rgb))' }}>{t('Góc nhìn: {vai}', { vai: vai?.nhan ?? gocNhin.dangChon })}</b>
             {vai?.phamVi && <span className="hidden sm:inline min-w-0 truncate" title={vai.phamVi}>· {vai.phamVi}</span>}
             <span className="flex-1" />
             <button type="button" className="shrink-0 min-h-[32px] max-sm:min-h-[44px] border-0 bg-transparent p-0 text-[12.5px] cursor-pointer text-[color:var(--accent)] hover:underline"
-              onClick={() => { doiGocNhin(null).catch((e) => toast.push('error', e instanceof Error ? e.message : 'Không đổi được góc nhìn.')); }}>Về {goc?.nhan ?? 'vai gốc'}</button>
+              onClick={() => { doiGocNhin(null).catch((e) => toast.push('error', e instanceof Error ? e.message : t('Không đổi được góc nhìn.'))); }}>{t('Về {vai}', { vai: goc?.nhan ?? t('vai gốc') })}</button>
           </div>
         );
       })()}
@@ -222,7 +223,7 @@ export default function App() {
 
       {/* Điện thoại: thanh dưới 4 nút (G-11). z-30 — dưới menu tài khoản/thông báo ở đầu trang (z-40), Drawer/Modal (z-50),
           menu ⋯ của dòng (z-[60]) và Toast (z-[100]). */}
-      <nav aria-label="Điều hướng chính" className="md:hidden fixed bottom-0 inset-x-0 z-30 flex border-t bg-[color:var(--surface)]"
+      <nav aria-label={t('Điều hướng chính')} className="md:hidden fixed bottom-0 inset-x-0 z-30 flex border-t bg-[color:var(--surface)]"
         style={{ borderColor: 'var(--line)', paddingBottom: 'env(safe-area-inset-bottom)' }}>
         {items.map((m) => <NutDay key={m.key} muc={m} active={dangO === m.key} so={so} />)}
       </nav>

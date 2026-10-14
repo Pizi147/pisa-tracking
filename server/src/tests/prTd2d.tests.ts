@@ -37,7 +37,7 @@ export async function runPrTd2dTests(t: YThucTestKit) {
       id: a.id, classId: a.class_id, skill: a.skill, isCore: a.is_core === 1, effectiveFrom: a.effective_from, effectiveTo: a.effective_to,
     }));
     return {
-      userId: user.id, code: user.code, fullName: user.full_name, title: user.title, grants,
+      userId: user.id, code: user.code, fullName: user.full_name, title: user.title, ngonNgu: user.ngon_ngu ?? null, grants,
       roleKeys: [...new Set(grants.map((g) => g.roleKey).filter((k) => k !== 'granted'))], assignments,
     };
   };

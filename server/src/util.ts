@@ -1,9 +1,20 @@
 /** Tiện ích ngày tháng, chuỗi và lỗi HTTP dùng chung cho toàn bộ server. */
+import { dichSang, type Bien, type Khoa } from '../../shared/i18n/index.ts';
 
 export class HttpError extends Error {
+  /** PR-EN: câu Việt có `{biến}` (= khoá từ điển) + giá trị biến — web tiếng Anh dịch theo khoá. Câu không biến không cần: web dịch theo chính câu. */
+  khoa?: Khoa;
+  bien?: Bien;
   constructor(public status: number, message: string, public details?: unknown) {
     super(message);
   }
+}
+/** PR-EN: lỗi có biến — câu Việt = `khoa` thay `{biến}`; gửi kèm `khoa` + `bien` để web dịch (khoá phải có bản Anh, tsc kiểm). */
+export function loi(status: number, khoa: Khoa, bien?: Bien, details?: unknown): HttpError {
+  const e = new HttpError(status, dichSang('vi', khoa, bien), details);
+  e.khoa = khoa;
+  e.bien = bien;
+  return e;
 }
 export const badRequest = (m: string, d?: unknown) => new HttpError(400, m, d);
 export const forbidden = (m: string, d?: unknown) => new HttpError(403, m, d);
@@ -31,7 +42,7 @@ export function chuTuDo(v: unknown, ten: string, toiDa: number): string | null {
   if (v === undefined || v === null) return null;
   if (typeof v !== 'string') throw badRequest(`${ten}: giá trị không hợp lệ — cần chữ.`);
   const s = v.trim();
-  if (s.length > toiDa) throw badRequest(`${ten}: Tối đa ${toiDa} ký tự (đang có ${s.length}).`);
+  if (s.length > toiDa) throw loi(400, '{ten}: Tối đa {toiDa} ký tự (đang có {n}).', { ten, toiDa, n: s.length });
   return s || null;
 }
 

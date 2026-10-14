@@ -5,6 +5,7 @@ import {
   duongDotTest, tenMon, tenMonNgan,
   type SkillProgress, type SosLevel, type StudentStatus,
 } from '@shared/domain/index.ts';
+import { t } from '@shared/i18n/index.ts';
 
 /*
  * Tên kỹ năng KHÔNG theo chương trình (FT hoặc không rõ lớp) — lớp mỏng trên `tenMon(null, …)` (MH2: một nguồn). Chỗ nào biết
@@ -18,11 +19,11 @@ export const attemptStatusLabel = (s: string) => ATTEMPT_STATUS_LABEL[s as keyof
 export const progressLabel = (s: string) => SKILL_PROGRESS_LABEL[s as SkillProgress] ?? s;
 export const studentStatusLabel = (s: string) => STUDENT_STATUS_LABEL[s as StudentStatus] ?? s;
 export const caseStatusLabel = (s: string) => CASE_STATUS_LABEL[s as keyof typeof CASE_STATUS_LABEL] ?? s;
-export const unitStatusLabel = (s: string | null) => (s === null ? 'Chưa báo cáo' : UNIT_STATUS_LABEL[s as keyof typeof UNIT_STATUS_LABEL] ?? s);
+export const unitStatusLabel = (s: string | null) => (s === null ? t('Chưa báo cáo') : UNIT_STATUS_LABEL[s as keyof typeof UNIT_STATUS_LABEL] ?? s);
 export const taskProgressLabel = (s: string) => TASK_PROGRESS_LABEL[s as keyof typeof TASK_PROGRESS_LABEL] ?? s;
 export const taskTypeLabel = (s: string) => TASK_TYPE_LABEL[s as keyof typeof TASK_TYPE_LABEL] ?? s;
 export const dueLabel = (s: string) => DUE_LABEL[s as keyof typeof DUE_LABEL] ?? s;
-export const sosLabel = (l: number | null) => (l === null ? 'Chưa đủ điểm' : SOS_LABEL[l as SosLevel] ?? `SOS ${l}`);
+export const sosLabel = (l: number | null) => (l === null ? t('Chưa đủ điểm') : SOS_LABEL[l as SosLevel] ?? `SOS ${l}`);
 
 export function fmtDate(d?: string | null): string {
   if (!d) return '—';
@@ -45,7 +46,7 @@ export function fmtTime(d?: string | null): string {
   return `${String(dt.getHours()).padStart(2, '0')}:${String(dt.getMinutes()).padStart(2, '0')}`;
 }
 
-const TEN_THU = ['Chủ nhật', 'thứ Hai', 'thứ Ba', 'thứ Tư', 'thứ Năm', 'thứ Sáu', 'thứ Bảy'];
+const TEN_THU = [t('Chủ nhật'), t('thứ Hai'), t('thứ Ba'), t('thứ Tư'), t('thứ Năm'), t('thứ Sáu'), t('thứ Bảy')];
 /** Tên thứ trong tuần từ một ngày ISO — đọc ĐÚNG ngày đưa vào, không viết cứng một thứ cố định (G-6). */
 export function fmtThu(d?: string | null): string {
   if (!d) return '';

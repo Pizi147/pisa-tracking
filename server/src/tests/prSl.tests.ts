@@ -16,7 +16,7 @@ export async function runPrSlTests(t: YThucTestKit) {
 
   check('SL-4 · I1: KhungPanel mặc định "Đóng" / "Huỷ thay đổi" theo chan.daSua; Tạo Case, Thêm HV, Từ chối inline theo luật S3', () => {
     const k = doc('web/src/ui/KhungPanel.tsx');
-    assert(/daSua\?: boolean/.test(k) && k.includes("chan.daSua ? 'Huỷ thay đổi' : 'Đóng'"), 'KhungPanel chưa có chan.daSua');
+    assert(/daSua\?: boolean/.test(k) && k.includes("chan.daSua ? t('Huỷ thay đổi') : t('Đóng')"), 'KhungPanel chưa có chan.daSua');
     assert(/chan=\{\{\s*daSua,/.test(doc('web/src/modules/cases/QuickReport.tsx')), 'Tạo Case chưa truyền daSua');
     assert(/daSua: !!pasteText\.trim\(\)/.test(doc('web/src/modules/students/IntakePanel.tsx')), 'Thêm HV chưa truyền daSua');
     assert(doc('web/src/modules/duyet/TheYeuCau.tsx').includes("chu.trim() ? 'Huỷ thay đổi' : 'Đóng'"), 'Từ chối inline');

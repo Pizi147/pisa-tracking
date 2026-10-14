@@ -172,7 +172,7 @@ export async function runPrSangTests(t: YThucTestKit) {
     const dauApp = html.indexOf('src="/web/src/main.tsx"');
     assert(html.indexOf(d.CHE_DO_KHOA) < dauApp, 'script chế độ phải chạy TRƯỚC script ứng dụng');
     const header = fs.readFileSync(path.join(REPO, 'web/src/modules/platform/Header.tsx'), 'utf8');
-    const [a, b, c] = [header.indexOf('aria-label="Thông báo"'), header.indexOf('<CongTacGiaoDien'), header.indexOf('ref={nutTaiKhoan}')];
+    const [a, b, c] = [header.indexOf("aria-label={t('Thông báo')}"), header.indexOf('<CongTacGiaoDien'), header.indexOf('ref={nutTaiKhoan}')];
     assert(a >= 0 && b > a && c > b, 'Header.tsx: <CongTacGiaoDien /> phải nằm giữa nút Thông báo và nút tài khoản');
   });
 }

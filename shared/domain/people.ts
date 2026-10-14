@@ -1,3 +1,4 @@
+import { t } from '../i18n/index.ts';
 /** CON NGƯỜI — vai trò, quyền và bộ lọc học viên theo vai. */
 
 // ---------------------------------------------------------------- Quyền
@@ -17,8 +18,8 @@
 export const ROLES = ['system_admin', 'manager', 'teacher', 'office_admin', 'consultant', 'cx'] as const;
 export type Role = (typeof ROLES)[number];
 export const ROLE_LABEL: Record<Role, string> = {
-  system_admin: 'Quản trị hệ thống', manager: 'Quản lý', teacher: 'Giáo viên',
-  office_admin: 'Admin', consultant: 'Tư vấn viên', cx: 'CX',
+  system_admin: t('Quản trị hệ thống'), manager: t('Quản lý'), teacher: t('Giáo viên'),
+  office_admin: 'Admin', consultant: t('Tư vấn viên'), cx: 'CX',
 };
 /** PR-OV2a: câu 403 khi Admin / TVV / CX gửi trường ngoài "thông tin HV". */
 export const CHI_SUA_THONG_TIN = 'Bạn chỉ sửa được thông tin học viên: họ tên, ngày sinh, email, TVV, liên hệ, dự kiến thi, điểm đầu vào.';
@@ -208,9 +209,9 @@ export const PERMISSION_LABEL: Record<string, string> = {
  * `permissions.ts` gộp vào `grants`) → "Cấp riêng: {tên quyền} · {phạm vi}"; vai → "{vai} · {phạm vi}".
  */
 export function nhanPhamVi(g: { role: string; permissions: readonly string[]; branchName: string | null }): string {
-  const phamVi = g.branchName ?? 'Toàn hệ thống';
+  const phamVi = g.branchName ?? t('Toàn hệ thống');
   if (g.role !== 'granted') return `${roleLabel(g.role)} · ${phamVi}`;
-  return `Cấp riêng: ${g.permissions.map((k) => PERMISSION_LABEL[k] ?? k).join(', ')} · ${phamVi}`;
+  return t('Cấp riêng: {quyen} · {phamVi}', { quyen: g.permissions.map((k) => PERMISSION_LABEL[k] ?? k).join(', '), phamVi });
 }
 
 /** Sự kiện hành trình học viên. Bộ lọc chỉ có 3 lựa chọn, xem JOURNEY_FILTERS. */

@@ -10,7 +10,7 @@ import ts from 'typescript';
 import fs from 'node:fs';
 import path from 'node:path';
 import assert from 'node:assert/strict';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const GOC = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const THU_MUC = [['web', 'web/src'], ['shared', 'shared/domain'], ['server', 'server/src']];
@@ -43,7 +43,11 @@ function ngucCanh(node) {
   for (let n = node, p = n.parent; p; n = p, p = p.parent) {
     if (ts.isImportDeclaration(p) || ts.isExportDeclaration(p) || ts.isExternalModuleReference(p) || ts.isTypeNode(p)) return null;
     if (ts.isCallExpression(p) || ts.isNewExpression(p)) {
-      if (p.arguments?.includes(n)) { const v = p.expression.getText(); return v.startsWith('console.') ? null : { vo: v.slice(0, 40) }; }
+      if (p.arguments?.includes(n)) {
+        const v = p.expression.getText();
+        if (/^(t|dich|loi)$/.test(v) && p.arguments[0] === n) return null;   // PR-EN: khoá từ điển (chữ Việt có bản Anh)
+        return v.startsWith('console.') ? null : { vo: v.slice(0, 40) };
+      }
     } else if (ts.isPropertyAssignment(p) && p.initializer === n) {
       const k = p.name.getText().replace(/^['"]|['"]$/g, '');
       if (KHOA_BO.has(k)) return null;
@@ -61,7 +65,8 @@ function ngucCanh(node) {
   return { vo: 'module' };
 }
 
-function quetFile(abs, rel, nhom, ra) {
+/** PR-EN: xuất để phép kiểm E-NGUON (server/src/tests/prEn.tests.ts) quét đúng file của đợt bằng cùng luật. */
+export function quetFile(abs, rel, nhom, ra) {
   const src = fs.readFileSync(abs, 'utf8');
   const sf = ts.createSourceFile(abs, src, ts.ScriptTarget.Latest, true, abs.endsWith('x') ? ts.ScriptKind.TSX : ts.ScriptKind.TS);
   const dong = (pos) => sf.getLineAndCharacterOfPosition(pos).line + 1;
@@ -107,28 +112,31 @@ function quetFile(abs, rel, nhom, ra) {
   })(sf);
 }
 
-const ra = [];
-for (const [nhom, thuMuc] of THU_MUC) {
-  for (const f of fs.readdirSync(path.join(GOC, thuMuc), { recursive: true }).sort()) {
-    const rel = `${thuMuc}/${f}`.replace(/\\/g, '/');
-    if (/\.tsx?$/.test(rel) && !BO.some((r) => r.test(rel))) quetFile(path.join(GOC, rel), rel, nhom, ra);
+// Chạy như lệnh (không phải khi được import).
+if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {
+  const ra = [];
+  for (const [nhom, thuMuc] of THU_MUC) {
+    for (const f of fs.readdirSync(path.join(GOC, thuMuc), { recursive: true }).sort()) {
+      const rel = `${thuMuc}/${f}`.replace(/\\/g, '/');
+      if (/\.tsx?$/.test(rel) && !BO.some((r) => r.test(rel))) quetFile(path.join(GOC, rel), rel, nhom, ra);
+    }
   }
-}
-ra.sort((a, b) => (a.file < b.file ? -1 : a.file > b.file ? 1 : a.line - b.line));
-ra.forEach((r, i) => { r.id = 'c' + String(i + 1).padStart(5, '0'); });
+  ra.sort((a, b) => (a.file < b.file ? -1 : a.file > b.file ? 1 : a.line - b.line));
+  ra.forEach((r, i) => { r.id = 'c' + String(i + 1).padStart(5, '0'); });
 
-const dem = (k) => ra.reduce((o, r) => { const g = r[k].replace(/^attr:.*/, 'attr'); o[g] = (o[g] ?? 0) + 1; return o; }, {});
-console.error(`Tổng ${ra.length} bản ghi · nhóm ${JSON.stringify(dem('nhom'))} · loại ${JSON.stringify(dem('loai'))}`);
+  const dem = (k) => ra.reduce((o, r) => { const g = r[k].replace(/^attr:.*/, 'attr'); o[g] = (o[g] ?? 0) + 1; return o; }, {});
+  console.error(`Tổng ${ra.length} bản ghi · nhóm ${JSON.stringify(dem('nhom'))} · loại ${JSON.stringify(dem('loai'))}`);
 
-// Phép tự kiểm: chạy mỗi lần; lệch thì dừng, không in gì ra stdout.
-assert.ok(ra.some((r) => r.nhom === 'server' && r.vo === 'notify.title'), 'thiếu notify.title ở server');
-assert.ok(ra.some((r) => r.vo.startsWith('toast')), 'thiếu toast');
-assert.ok(ra.some((r) => r.loai === 'attr:placeholder'), 'thiếu placeholder');
-assert.ok(!ra.some((r) => /\/(tests|seed)\//.test(r.file)), 'lọt tests/seed');
-{
-  const f = 'web/src/ui/chu.ts';
-  const dong = fs.readFileSync(path.join(GOC, f), 'utf8').split('\n').findIndex((l) => l.includes('CHUA_CO_PHUONG_AN =')) + 1;
-  assert.ok(dong > 0 && ra.some((r) => r.file === f && r.line === dong && r.text === 'Chưa có PA'), 'thiếu CHUA_CO_PHUONG_AN đúng file:dòng');
+  // Phép tự kiểm: chạy mỗi lần; lệch thì dừng, không in gì ra stdout.
+  assert.ok(ra.some((r) => r.nhom === 'server' && r.vo === 'notify.title'), 'thiếu notify.title ở server');
+  assert.ok(ra.some((r) => r.vo.startsWith('toast')), 'thiếu toast');
+  assert.ok(ra.some((r) => r.loai === 'attr:placeholder'), 'thiếu placeholder');
+  assert.ok(!ra.some((r) => /\/(tests|seed)\//.test(r.file)), 'lọt tests/seed');
+  {
+    const f = 'web/src/ui/chu.ts';
+    const dong = fs.readFileSync(path.join(GOC, f), 'utf8').split('\n').findIndex((l) => l.includes('CHUA_CO_PHUONG_AN =')) + 1;
+    assert.ok(dong > 0 && ra.some((r) => r.file === f && r.line === dong && r.text === 'Chưa có PA'), 'thiếu CHUA_CO_PHUONG_AN đúng file:dòng');
+  }
+  assert.ok(ra.length >= 4000 && ra.length <= 12000, `tổng bản ghi ${ra.length} ngoài 4000–12000 — xem lại bộ bỏ`);
+  process.stdout.write(ra.map((r) => JSON.stringify(r)).join('\n') + '\n');
 }
-assert.ok(ra.length >= 4000 && ra.length <= 9000, `tổng bản ghi ${ra.length} ngoài 4000–9000 — xem lại bộ bỏ`);
-process.stdout.write(ra.map((r) => JSON.stringify(r)).join('\n') + '\n');

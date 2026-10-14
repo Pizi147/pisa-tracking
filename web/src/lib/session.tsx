@@ -2,7 +2,9 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 import { useNavigate } from 'react-router-dom';
 import { api, invalidateAll } from './api.ts';
 import { datNguoiDungKhung } from '../ui/CongTacKhung.tsx';
+import { dongBoNgonNgu } from './ngonNgu.ts';
 import type { NavQuyen } from '@shared/domain/index.ts';
+import { t } from '@shared/i18n/index.ts';
 
 export type Grant = {
   id: number; role: string; roleName: string;
@@ -18,6 +20,8 @@ export type Assignment = {
 export type Session = {
   authenticated: boolean;
   user?: { id: number; code: string; fullName: string; title: string | null };
+  /** PR-EN: ngôn ngữ của tài khoản ('vi' | 'en'; null = chưa chọn). */
+  ngonNgu?: string | null;
   roles?: string[];
   roleLabels?: string[];
   grants?: Grant[];
@@ -76,7 +80,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
        * Đã có phiên → giữ nguyên, chỉ báo mất kết nối. Chưa có phiên (lần tải đầu) → màn chào kèm lỗi để biết đường xử lý
        * (máy chủ chưa chạy / chưa seed), như trước.
        */
-      const loi = e instanceof Error ? e.message : 'Không gọi được máy chủ.';
+      const loi = e instanceof Error ? e.message : t('Không gọi được máy chủ.');
       setSession((cu) => cu?.authenticated ? { ...cu, loiKetNoi: loi } : { authenticated: false, demoDate: '', scenario: 'normal', loiKetNoi: loi });
     } finally {
       setLoading(false);
@@ -84,6 +88,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => { void reload(); }, [reload]);
+  /* PR-EN: mỗi lần vào một tài khoản — đồng bộ ngôn ngữ máy ↔ tài khoản (có thể tải lại trang một lần). */
+  const uid = session?.authenticated ? session.user?.id : undefined;
+  useEffect(() => { if (uid) dongBoNgonNgu(session?.ngonNgu); }, [uid]);   // eslint-disable-line react-hooks/exhaustive-deps
   /* Q7: khung đã nhớ (CongTacKhung) theo người — đặt trước khi trang con đọc. */
   datNguoiDungKhung(session?.user?.id ?? null, session?.gocNhin?.dangChon ?? null);
 

@@ -1,4 +1,5 @@
 import { BoLocDoan } from './ui.tsx';
+import { t } from '@shared/i18n/index.ts';
 
 /**
  * CÔNG TẮC HAI KHUNG (MH4, K4-05, Q3, Q8) — `Fast Track · Lớp thường` (Test) hoặc `Tất cả · Fast Track · Lớp thường` (Công việc).
@@ -44,21 +45,21 @@ export function CongTacKhung({ trang, value, onChange, dem, donVi = '', coTatCa 
   if (kieu === 'chon') {
     const chu = (ten: string, k: KhungLoc) => (dem?.[k] != null ? `${ten} · ${dem[k]}${donVi ? ` ${donVi}` : ''}` : ten);
     return (
-      <select className="field h-8 w-auto !py-0 text-xs max-sm:min-h-[44px] max-sm:w-full" aria-label="Loại lớp" value={value}
+      <select className="field h-8 w-auto !py-0 text-xs max-sm:min-h-[44px] max-sm:w-full" aria-label={t('Loại lớp')} value={value}
         onChange={(e) => { const k = e.target.value as KhungLoc; nhoKhung(trang, k); onChange(k); }}>
-        {coTatCa && <option value="tat-ca">Loại lớp: {chu('Tất cả', 'tat-ca')}</option>}
-        <option value="ft">Loại lớp: {chu('Fast Track', 'ft')}</option>
-        <option value="thuong">Loại lớp: {chu('Lớp thường', 'thuong')}</option>
+        {coTatCa && <option value="tat-ca">{t('Loại lớp: {loai}', { loai: chu(t('Tất cả'), 'tat-ca') })}</option>}
+        <option value="ft">{t('Loại lớp: {loai}', { loai: chu('Fast Track', 'ft') })}</option>
+        <option value="thuong">{t('Loại lớp: {loai}', { loai: chu(t('Lớp thường'), 'thuong') })}</option>
       </select>
     );
   }
   return (
-    <BoLocDoan<KhungLoc> ariaLabel="Khung lớp" value={value}
+    <BoLocDoan<KhungLoc> ariaLabel={t('Khung lớp')} value={value}
       onChange={(k) => { nhoKhung(trang, k); onChange(k); }}
       muc={[
-        ...(coTatCa ? [{ key: 'tat-ca' as const, nhan: 'Tất cả', so: donVi ? null : dem?.['tat-ca'] ?? null }] : []),
+        ...(coTatCa ? [{ key: 'tat-ca' as const, nhan: t('Tất cả'), so: donVi ? null : dem?.['tat-ca'] ?? null }] : []),
         { key: 'ft', nhan: nhan('Fast Track', 'ft'), so: donVi ? null : dem?.ft ?? null },
-        { key: 'thuong', nhan: nhan('Lớp thường', 'thuong'), so: donVi ? null : dem?.thuong ?? null },
+        { key: 'thuong', nhan: nhan(t('Lớp thường'), 'thuong'), so: donVi ? null : dem?.thuong ?? null },
       ]} />
   );
 }

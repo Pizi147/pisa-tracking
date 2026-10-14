@@ -5,6 +5,10 @@ import {
   type KieuONgay, type LuatONgay,
 } from '@shared/domain/index.ts';
 import { useGiuFocus } from './giuFocus.ts';
+import { t } from '@shared/i18n/index.ts';
+
+/** Nhãn ô tháng (trong vòng lặp có biến `t` riêng). */
+const THANG_NAM = (thang: string, nam: number) => t('Tháng {thang}/{nam}', { thang, nam });
 
 /**
  * LỊCH TỰ VẼ (T11, YC-9, HE §9) — lõi lịch chung của `ONgay` và `WeekPicker`. Không ô lịch trình duyệt, không đọc đồng hồ
@@ -130,7 +134,7 @@ export function LichNho({ kieu, value, homNay, luat, neo, onChon, onDong, goNgay
 
   const goiY = goiYGanDay(kieu, homNay, luat);
   const chiThang = `${xem.nam}-${p2(xem.thang)}`;
-  const tieuDe = laThang ? 'Chọn tháng' : kieu === 'tuan' ? 'Chọn tuần' : 'Chọn ngày';
+  const tieuDe = laThang ? t('Chọn tháng') : kieu === 'tuan' ? t('Chọn tuần') : t('Chọn ngày');
   const tuanDangChon = kieu === 'tuan' && value && NGAY.test(value) ? mondayOfDate(value) : null;
 
   const thanNgay = () => {
@@ -139,7 +143,7 @@ export function LichNho({ kieu, value, homNay, luat, neo, onChon, onDong, goNgay
     /* Ô nhận Tab: `tro` nếu nằm trong lưới đang xem, không thì ngày 1 của tháng. */
     const oTab = hang.flat().includes(tro) ? tro : `${chiThang}-01`;
     return (
-      <div role="group" aria-label={`Tháng ${xem.thang}/${xem.nam}`}>
+      <div role="group" aria-label={t('Tháng {thang}/{nam}', { thang: xem.thang, nam: xem.nam })}>
         <div className="grid grid-cols-7 gap-0.5 mb-1 text-[11px] font-semibold text-slate-500" aria-hidden>
           {THU.map((t) => <span key={t} className="text-center">{t}</span>)}
         </div>
@@ -154,7 +158,7 @@ export function LichNho({ kieu, value, homNay, luat, neo, onChon, onDong, goNgay
                 return (
                   <button key={d} type="button" data-o={d} tabIndex={d === oTab ? 0 : -1}
                     aria-disabled={tat || undefined} aria-pressed={dangChon} aria-current={homNayO ? 'date' : undefined}
-                    aria-label={`${hienONgay(d, 'ngay')}${homNayO ? ' · hôm nay' : ''}`}
+                    aria-label={`${hienONgay(d, 'ngay')}${homNayO ? ` · ${t('hôm nay')}` : ''}`}
                     className={[
                       'min-h-[44px] sm:min-h-[32px] rounded text-center text-[12.5px] tabular-nums',
                       trongThang(d) ? 'text-slate-200' : 'text-slate-500',
@@ -178,14 +182,14 @@ export function LichNho({ kieu, value, homNay, luat, neo, onChon, onDong, goNgay
     const troTrongNam = tro.slice(0, 4) === String(xem.nam);
     const oTab = troTrongNam ? Number(tro.slice(5, 7)) : 1;
     return (
-      <div role="group" aria-label={`Năm ${xem.nam}`} className="grid grid-cols-4 gap-1">
+      <div role="group" aria-label={t('Năm {nam}', { nam: xem.nam })} className="grid grid-cols-4 gap-1">
         {Array.from({ length: 12 }, (_, i) => i + 1).map((t) => {
           const gt = `${xem.nam}-${p2(t)}`;
           const tat = ngoaiLuat(gt);
           const dangChon = value === gt;
           return (
             <button key={t} type="button" data-o={`${gt}-01`} tabIndex={t === oTab ? 0 : -1}
-              aria-disabled={tat || undefined} aria-pressed={dangChon} aria-label={`Tháng ${p2(t)}/${xem.nam}`}
+              aria-disabled={tat || undefined} aria-pressed={dangChon} aria-label={THANG_NAM(p2(t), xem.nam)}
               className={[
                 'min-h-[44px] sm:min-h-[34px] rounded-md border text-[12.5px] tabular-nums',
                 dangChon ? 'bg-ink-800 border-teal-600 text-slate-100 font-semibold' : 'text-slate-200',
@@ -213,10 +217,10 @@ export function LichNho({ kieu, value, homNay, luat, neo, onChon, onDong, goNgay
     >
       {goNgay && (
         <div className="mb-2">
-          <label className="label" htmlFor={idGo}>Gõ tuần hoặc ngày</label>
+          <label className="label" htmlFor={idGo}>{t('Gõ tuần hoặc ngày')}</label>
           <input
             id={idGo} className="field tabular-nums" autoCapitalize="characters" autoComplete="off"
-            placeholder="W4 SEP hoặc 28/09" value={text} aria-invalid={!!loiGo || undefined}
+            placeholder={t('W4 SEP hoặc 28/09')} value={text} aria-invalid={!!loiGo || undefined}
             onChange={(e) => { setText(e.target.value); setLoiGo(null); }}
             onKeyDown={(e) => {
               if (e.key !== 'Enter') return;
@@ -230,17 +234,17 @@ export function LichNho({ kieu, value, homNay, luat, neo, onChon, onDong, goNgay
       )}
 
       <div className="mb-2 flex items-center justify-between gap-2">
-        <button type="button" className={NUT_DAU} onClick={() => doiThangXem(-1)} aria-label={laThang ? 'Năm trước' : 'Tháng trước'}><MuiTen lui /></button>
+        <button type="button" className={NUT_DAU} onClick={() => doiThangXem(-1)} aria-label={laThang ? t('Năm trước') : t('Tháng trước')}><MuiTen lui /></button>
         <span className="text-[12.5px] font-semibold tabular-nums text-slate-200" aria-live="polite">
-          {laThang ? xem.nam : `Tháng ${xem.thang}/${xem.nam}`}
+          {laThang ? xem.nam : t('Tháng {thang}/{nam}', { thang: xem.thang, nam: xem.nam })}
         </span>
-        <button type="button" className={NUT_DAU} onClick={() => doiThangXem(1)} aria-label={laThang ? 'Năm sau' : 'Tháng sau'}><MuiTen /></button>
+        <button type="button" className={NUT_DAU} onClick={() => doiThangXem(1)} aria-label={laThang ? t('Năm sau') : t('Tháng sau')}><MuiTen /></button>
       </div>
 
       {laThang ? thanThang() : thanNgay()}
 
       <div className="mt-2 flex flex-wrap items-center gap-1 border-t pt-2" style={{ borderColor: 'var(--line)' }}>
-        <span className="mb-0.5 w-full text-xs font-semibold text-slate-500">Gần đây</span>
+        <span className="mb-0.5 w-full text-xs font-semibold text-slate-500">{t('Gần đây')}</span>
         {goiY.map((x) => (
           <button key={x.giaTri} type="button" className="btn btn-sm min-h-[44px] tabular-nums sm:min-h-0"
             aria-label={x.phu ? `${x.nhan} · ${x.phu}` : undefined} aria-pressed={value === x.giaTri}
@@ -248,7 +252,7 @@ export function LichNho({ kieu, value, homNay, luat, neo, onChon, onDong, goNgay
         ))}
         {kieu === 'ngay-hoac-thang' && !ngoaiLuat(chiThang) && (
           <button type="button" className="btn btn-sm min-h-[44px] tabular-nums sm:min-h-0" aria-pressed={value === chiThang}
-            onClick={() => onChon(chiThang)}>Chỉ tháng {p2(xem.thang)}/{xem.nam}</button>
+            onClick={() => onChon(chiThang)}>{t('Chỉ tháng {thang}/{nam}', { thang: p2(xem.thang), nam: xem.nam })}</button>
         )}
       </div>
     </div>,

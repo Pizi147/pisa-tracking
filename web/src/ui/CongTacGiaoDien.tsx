@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { CHE_DO_KHOA, docCheDo } from '@shared/domain/index.ts';
+import { t } from '@shared/i18n/index.ts';
 
 /** Chế độ sáng/tối hiện tại + hàm đặt (lưu theo máy). Mỗi chỗ vẽ công tắc tự đọc `<html data-theme>` lúc mở nên không lệch nhau. */
 function useCheDo() {
@@ -24,9 +25,9 @@ export function CongTacGiaoDien({ kieu = 'nut' }: { kieu?: 'nut' | 'menu' }) {
   if (kieu === 'menu') {
     return (
       <div className="flex min-h-[44px] items-center justify-between gap-3 px-1">
-        <span className="text-sm text-slate-300" id="nhan-giao-dien">Giao diện</span>
+        <span className="text-sm text-slate-300" id="nhan-giao-dien">{t('Giao diện')}</span>
         <div role="group" aria-labelledby="nhan-giao-dien" className="inline-flex overflow-hidden rounded-lg border" style={{ borderColor: 'var(--line-strong)' }}>
-          {([[false, 'Tối'], [true, 'Sáng']] as const).map(([la, ten]) => (
+          {([[false, t('Tối')], [true, t('Sáng')]] as const).map(([la, ten]) => (
             <button key={ten} type="button" aria-pressed={sang === la} onClick={() => dat(la)}
               className={`min-h-[44px] min-w-[64px] border-0 px-4 text-[12.5px] ${sang === la ? 'bg-[color:var(--accent-soft)] font-semibold text-[color:var(--accent)]' : 'bg-transparent text-slate-300'}`}>{ten}</button>
           ))}
@@ -34,7 +35,7 @@ export function CongTacGiaoDien({ kieu = 'nut' }: { kieu?: 'nut' | 'menu' }) {
       </div>
     );
   }
-  const nhan = sang ? 'Chuyển sang giao diện tối' : 'Chuyển sang giao diện sáng';
+  const nhan = sang ? t('Chuyển sang giao diện tối') : t('Chuyển sang giao diện sáng');
   return (
     <button type="button" className="btn btn-sm justify-center" onClick={() => dat(!sang)}
       aria-label={nhan} title={nhan} aria-pressed={sang}>

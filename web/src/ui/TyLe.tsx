@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { rateView } from '@shared/domain/index.ts';
 import { Info } from './ui.tsx';
+import { t } from '@shared/i18n/index.ts';
 
 /**
  * PHẦN TRĂM KHÔNG BAO GIỜ ĐỨNG MỘT MÌNH (HE_GIAO_DIEN §6, rule book §11).
@@ -22,8 +23,8 @@ export function TyLe({ n, N, nhan, soN }: {
   soN?: ReactNode;
 }) {
   const v = rateView(n, N);
-  if (v.kind === 'no-data') return <span className="text-xs text-slate-500">Chưa có dữ liệu</span>;
-  if (v.kind === 'invalid') return <span className="text-xs text-bad">Số liệu không hợp lệ</span>;
+  if (v.kind === 'no-data') return <span className="text-xs text-slate-500">{t('Chưa có dữ liệu')}</span>;
+  if (v.kind === 'invalid') return <span className="text-xs text-bad">{t('Số liệu không hợp lệ')}</span>;
   return (
     <span className="inline-flex flex-wrap items-baseline gap-x-1.5 tabular-nums">
       <span>
@@ -31,7 +32,7 @@ export function TyLe({ n, N, nhan, soN }: {
         {nhan && <span className="text-slate-300"> {nhan}</span>}
         <span className="text-slate-400"> ({v.percent}%)</span>
       </span>
-      {v.smallSample && <Info title="Ít hơn 5 mẫu — chưa đủ để so sánh">mẫu nhỏ</Info>}
+      {v.smallSample && <Info title={t('Ít hơn 5 mẫu — chưa đủ để so sánh')}>{t('mẫu nhỏ')}</Info>}
     </span>
   );
 }

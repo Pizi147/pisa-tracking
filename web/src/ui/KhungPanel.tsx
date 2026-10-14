@@ -5,11 +5,15 @@ import { NutLuat } from './NutLuat.tsx';
 import { DongCanSua, useNoiLoi, type MucThieu } from './loiForm.tsx';
 import { useGiuFocus } from './giuFocus.ts';
 import { BaoOTrongNhan, coOTuNhan } from './ONgay.tsx';
+import { t } from '@shared/i18n/index.ts';
 
 /** Kho dùng chung toàn web: mở panel này thì panel đang mở phải đóng (G-8, N-4). */
 export const khoPanelChung = taoKhoPanel();
 /** Panel đang mở, mở sau ở cuối — Esc chỉ đóng panel cuối (panel vẽ qua portal nên không còn lồng nhau trong DOM). */
 const nganPanel: string[] = [];
+/** PR-EN: panel đang sửa dở (`chan.daSua`) — đổi ngôn ngữ (tải lại trang) hỏi trước khi bỏ chữ đang gõ. */
+const panelDangSua = new Set<string>();
+export const coPanelDangSua = () => panelDangSua.size > 0;
 
 /**
  * OV-5a: PANEL TẠI CHỖ — cột phải trang Công việc (mockup M1 §1). Panel nằm ngay trong context này vẽ trong luồng trang (thẻ dính, cao tối đa
@@ -79,6 +83,13 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong = 'hep', tabs, ngCanh, q
     return () => { document.removeEventListener('keydown', onKey); nganPanel.splice(nganPanel.indexOf(id), 1); };
   }, [id, taiCho]);
 
+  const daSua = !!chan?.daSua;
+  useEffect(() => {
+    if (!daSua) return undefined;
+    panelDangSua.add(id);
+    return () => { panelDangSua.delete(id); };
+  }, [id, daSua]);
+
   const ngu = [hocVien, lop].filter(Boolean).join(' · ');
   const huy = chan?.huy === null ? null : chan?.huy ?? { onClick: onDong };
   useGiuFocus(khung, !taiCho);
@@ -92,7 +103,7 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong = 'hep', tabs, ngCanh, q
           {ngu && <span className="min-w-0 flex-1 truncate text-xs text-slate-400" title={ngu}>{ngu}</span>}
           {!ngu && <span className="flex-1" />}
           {/* Tại chỗ trên điện thoại: "‹ Công việc" của nơi gọi thay ✕. */}
-          <button type="button" className={`btn btn-sm btn-ghost min-h-[44px] min-w-[44px] justify-center sm:min-h-[32px] sm:min-w-[32px] ${taiCho ? 'max-lg:hidden' : ''}`} onClick={onDong} aria-label="Đóng">✕</button>
+          <button type="button" className={`btn btn-sm btn-ghost min-h-[44px] min-w-[44px] justify-center sm:min-h-[32px] sm:min-w-[32px] ${taiCho ? 'max-lg:hidden' : ''}`} onClick={onDong} aria-label={t('Đóng')}>✕</button>
         </header>
         {quayLai && (
           <div className="shrink-0 border-b px-4 py-1.5 text-xs" style={{ borderColor: 'var(--line)' }}>
@@ -108,8 +119,8 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong = 'hep', tabs, ngCanh, q
             {chan.conThieu?.length ? <DongCanSua muc={chan.conThieu} /> : null}
             {chan.dongTren}
             <div className="flex flex-wrap items-center gap-2 px-4 py-2.5">
-              {huy && <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={huy.onClick} disabled={huy.disabled}>{huy.nhan ?? (chan.daSua ? 'Huỷ thay đổi' : 'Đóng')}</button>}
-              {chan.xoa && <button type="button" className="btn btn-danger min-h-[44px] sm:min-h-0" onClick={chan.xoa.onClick}>{chan.xoa.nhan ?? 'Xoá'}</button>}
+              {huy && <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={huy.onClick} disabled={huy.disabled}>{huy.nhan ?? (chan.daSua ? t('Huỷ thay đổi') : t('Đóng'))}</button>}
+              {chan.xoa && <button type="button" className="btn btn-danger min-h-[44px] sm:min-h-0" onClick={chan.xoa.onClick}>{chan.xoa.nhan ?? t('Xoá')}</button>}
               <span className="flex-1" />
               {chan.phu}
               {chan.chinh}
@@ -168,8 +179,8 @@ export function Truong({ nhan, batBuoc, tuyChon, phu, loi, dem, as = 'label', ch
   const nhom = Vo === 'div' && !idO ? { role: 'group', 'aria-labelledby': idNhan } : {};
   const chu = <>
     <span className="min-w-0 flex-1">
-      {nhan}{batBuoc && <><span aria-hidden className="text-bad"> *</span><span className="sr-only"> (bắt buộc)</span></>}
-      {tuyChon && <span className="font-normal text-slate-500"> (không bắt buộc)</span>}
+      {nhan}{batBuoc && <><span aria-hidden className="text-bad"> *</span><span className="sr-only"> {t('(bắt buộc)')}</span></>}
+      {tuyChon && <span className="font-normal text-slate-500"> {t('(không bắt buộc)')}</span>}
     </span>
     {dem && dem.co < dem.can && <span className="text-xs font-normal tabular-nums text-slate-500">{dem.co}/{dem.can}</span>}
   </>;

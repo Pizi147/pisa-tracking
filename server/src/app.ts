@@ -4,7 +4,7 @@ import cookieParser from 'cookie-parser';
 import type { NextFunction, Request, Response } from 'express';
 import { attachPrincipal, DA_VAO_API } from './auth.ts';
 import { api } from './routes/index.ts';
-import { HttpError } from './util.ts';
+import { HttpError, loi } from './util.ts';
 import { taoSuKhoe } from './platform/suKhoe.ts';
 import { HAN_HAM_NETLIFY_MS, LOG_CHAM_MS, chayVoiHan } from './platform/hanGio.ts';
 import { chayTrongRequest, demHienTai, topLog, type Dem } from './platform/nguCanhRequest.ts';
@@ -40,9 +40,7 @@ export function createApp() {
   const luong = express.Router();
   luong.use(attachPrincipal);
   luong.use('/api', api);
-  luong.use('/api', (_req, res) => {
-    res.status(404).json({ error: 'Không tìm thấy endpoint.' });
-  });
+  luong.use('/api', (_req, _res, next) => next(loi(404, 'Không tìm thấy endpoint.')));
   app.use(luong);
 
   app.use(thuLaiKhiMatKetNoi(luong));
@@ -131,7 +129,7 @@ export function thuLaiKhiMatKetNoi(luong: (req: Request, res: Response, next: Ne
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function traLoiLoi(err: unknown, req: Request, res: Response, _next: NextFunction): void {
   if (err instanceof HttpError) {
-    res.status(err.status).json({ error: err.message, details: err.details ?? undefined });
+    res.status(err.status).json({ error: err.message, khoa: err.khoa, bien: err.bien, details: err.details ?? undefined });
     return;
   }
   const e = (err ?? {}) as { type?: unknown; code?: unknown };
@@ -153,6 +151,8 @@ export function traLoiLoi(err: unknown, req: Request, res: Response, _next: Next
   console.error(`[api] mã ${ma}`, req.method, req.path, err);
   res.status(500).json({
     error: `Có lỗi · mã ${ma}. Thử lại sau ít phút; nếu vẫn lỗi, báo Quản trị hệ thống kèm mã này.`,
+    /* PR-EN: câu có biến → khoá + biến để web tiếng Anh dịch (cùng chữ ở shared/i18n/en/a.ts). */
+    khoa: 'Có lỗi · mã {ma}. Thử lại sau ít phút; nếu vẫn lỗi, báo Quản trị hệ thống kèm mã này.', bien: { ma },
     details: { ma },
   });
 }

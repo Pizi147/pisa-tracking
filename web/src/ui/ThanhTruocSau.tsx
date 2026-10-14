@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { docNguCanhDs, keBen, type NguCanhDs, type TenTrang } from '@shared/domain/index.ts';
 import { useChongVe, useTenTrang, useVe } from '../lib/quayLai.ts';
 import { Menu } from './Menu.tsx';
+import { t } from '@shared/i18n/index.ts';
 
 const khoaLuu = (loai: NguCanhDs['loai']) => `pisa.ds.${loai}`;
 const luu = (ds: NguCanhDs) => { try { sessionStorage.setItem(khoaLuu(ds.loai), JSON.stringify(ds)); } catch { /* chế độ riêng tư: tải lại thì mất danh sách, dùng danh sách dự phòng */ } };
@@ -29,12 +30,12 @@ export function DuongVe({ cha, ten, chiTiet, tieuDe, children }: {
   return (
     <div className="mb-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px]">
       <button type="button" className="btn btn-sm min-h-[44px] max-w-full sm:min-h-[32px]" onClick={() => ve(dich.url, !chong.length)}
-        title={`Về ${dich.ten}${dich.chiTiet ? ` · ${dich.chiTiet}` : ''}`}>
+        title={t('Về {vai}', { vai: dich.ten }) + (dich.chiTiet ? ` · ${dich.chiTiet}` : '')}>
         <span aria-hidden>‹</span><span className="min-w-0 truncate">{dich.ten}</span>
       </button>
       {dich.chiTiet && <span className="min-w-0 truncate text-slate-500">{dich.chiTiet}</span>}
       {chong.length > 1 && (
-        <Menu label={`Các bước (${chong.length})`} align="left" className="btn btn-sm btn-ghost min-h-[44px] sm:min-h-[32px]"
+        <Menu label={t('Các bước ({n})', { n: chong.length })} align="left" className="btn btn-sm btn-ghost min-h-[44px] sm:min-h-[32px]"
           items={chong.map((b) => ({ label: `‹ ${b.ten}`, hint: b.chiTiet, onClick: () => ve(b.url) }))} />
       )}
       {children}
@@ -85,13 +86,13 @@ export function ThanhTruocSau({ loai, id, duong, dsDuPhong, cha, ten, chiTiet }:
     /* OV-11i (P1-3): tab hồ sơ HV ghi tên em, hồ sơ lớp ghi mã lớp — bỏ chữ "Hồ sơ (lớp)" của tên nút Quay lại. */
     <DuongVe cha={cha} ten={ten} chiTiet={chiTiet} tieuDe={ten?.replace(loai === 'lop' ? /^Hồ sơ lớp / : /^Hồ sơ /, '')}>
       {ben && ds && (
-        <span className="ml-auto flex items-center gap-1 text-xs text-slate-400" role="group" aria-label={`Chuyển trong danh sách ${ds.nhan}`}>
-          <button type="button" className={nut} disabled={ben.truoc === null} onClick={() => sang(ben.truoc)} aria-label="Trước" title="Trước ( [ )">
-            ‹<span className="max-sm:sr-only"> Trước</span>
+        <span className="ml-auto flex items-center gap-1 text-xs text-slate-400" role="group" aria-label={t('Chuyển trong danh sách {ds}', { ds: ds.nhan })}>
+          <button type="button" className={nut} disabled={ben.truoc === null} onClick={() => sang(ben.truoc)} aria-label={t('Trước')} title={t('Trước ( [ )')}>
+            ‹<span className="max-sm:sr-only"> {t('Trước')}</span>
           </button>
           <span className="tabular-nums" title={ds.nhan}><b className="font-semibold text-slate-200">{ben.viTri}/{ben.tong}</b><span className="max-sm:sr-only"> · {ds.nhan}</span></span>
           <button type="button" className={nut} disabled={ben.sau === null} onClick={() => sang(ben.sau)} aria-label="Sau" title="Sau ( ] )">
-            <span className="max-sm:sr-only">Sau </span>›
+            <span className="max-sm:sr-only">{t('Sau')} </span>›
           </button>
         </span>
       )}

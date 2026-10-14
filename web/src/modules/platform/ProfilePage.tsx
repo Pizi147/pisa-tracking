@@ -3,10 +3,11 @@ import { useApi } from '../../lib/useApi.ts';
 import { api } from '../../lib/api.ts';
 import { useSession } from '../../lib/session.tsx';
 import { useToast } from '../../ui/Toast.tsx';
-import { Card, ErrorState, Field, Info, NutChon, SectionNote, Skeleton } from '../../ui/ui.tsx';
+import { Card, ChuDam, ErrorState, Field, Info, NutChon, SectionNote, Skeleton } from '../../ui/ui.tsx';
 import { skillLabel, skillShort } from '../../lib/format.ts';
 import { ENTRY_SKILLS, nhanPhamVi } from '@shared/domain/index.ts';
 import { LA_BAN_CHINH } from '../../lib/banChinh.ts';
+import { dich, t } from '@shared/i18n/index.ts';
 
 type Profile = {
   id: number; code: string; fullName: string; email: string | null; phone: string | null;
@@ -36,7 +37,7 @@ export function ChonKyNang({ value, onToggle, disabled }: {
 }) {
   const co = (k: string) => ('has' in value ? value.has(k) : value.includes(k));
   return (
-    <div className="flex flex-wrap gap-1.5" role="group" aria-label="Kỹ năng phụ trách được">
+    <div className="flex flex-wrap gap-1.5" role="group" aria-label={t('Kỹ năng phụ trách được')}>
       {ENTRY_SKILLS.map((k) => (
         <NutChon key={k} nho chon={co(k)} disabled={disabled} title={skillLabel(k)} onClick={() => onToggle(k)}
           className="min-w-[52px] justify-center">
@@ -83,7 +84,7 @@ export default function ProfilePage() {
         skills: [...d.skills],
         extraEmails: d.extraEmails.split(/[,;\s]+/).map((x) => x.trim()).filter(Boolean),
       });
-      toast.push('ok', 'Đã lưu hồ sơ');
+      toast.push('ok', t('Đã lưu hồ sơ'));
       setDraft(null); reload(); reloadSession();
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
   };
@@ -97,7 +98,7 @@ export default function ProfilePage() {
     setBusy(true);
     try {
       await api.patch('/me/profile', { currentPassword: pw.current, newPassword: pw.next });
-      toast.push('ok', 'Đã đổi mật khẩu');
+      toast.push('ok', t('Đã đổi mật khẩu'));
       setPw({ current: '', next: '', confirm: '' });
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
   };
@@ -105,74 +106,73 @@ export default function ProfilePage() {
   return (
     <div className="page space-y-4 max-w-3xl">
       <div>
-        <h1 className="text-lg font-semibold text-slate-100 m-0">Hồ sơ cá nhân</h1>
+        <h1 className="text-lg font-semibold text-slate-100 m-0">{t('Hồ sơ cá nhân')}</h1>
         <p className="text-xs text-slate-500 mt-0.5 mb-0">
-          {data.fullName} · {data.code}{data.title ? ` · ${data.title}` : ''}
+          {data.fullName} · {data.code}{data.title ? ` · ${dich(data.title)}` : ''}
         </p>
       </div>
 
-      <Card title="Thông tin liên hệ">
+      <Card title={t('Thông tin liên hệ')}>
         <div className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Họ và tên" required>
+            <Field label={t('Họ và tên')} required>
               <input className="field w-full" value={d.fullName} onChange={(e) => set({ fullName: e.target.value })} />
             </Field>
-            <Field label="Số điện thoại">
+            <Field label={t('Số điện thoại')}>
               <input className="field w-full" value={d.phone} onChange={(e) => set({ phone: e.target.value })} />
             </Field>
           </div>
 
-          <Field label="Email đăng nhập"
-            hint="Đổi email đăng nhập là đổi danh tính tài khoản — việc đó của Quản trị hệ thống.">
+          <Field label={t('Email đăng nhập')}
+            hint={t('Đổi email đăng nhập là đổi danh tính tài khoản — việc đó của Quản trị hệ thống.')}>
             <input className="field w-full" value={data.email ?? ''} disabled />
           </Field>
 
-          <Field label="Email khác"
-            hint="Cách nhau bằng dấu phẩy. Email phụ chỉ để liên lạc, không đăng nhập được.">
+          <Field label={t('Email khác')}
+            hint={t('Cách nhau bằng dấu phẩy. Email phụ chỉ để liên lạc, không đăng nhập được.')}>
             <input className="field w-full" value={d.extraEmails}
               placeholder="vidu@gmail.com, congviec@pisa.edu.vn"
               onChange={(e) => set({ extraEmails: e.target.value })} />
           </Field>
 
           {nguoiDay && (
-            <Field label="Kỹ năng bạn phụ trách được"
-              hint="Đây là NĂNG LỰC, dùng để gợi ý khi phân công — không phải quyền nhập điểm.">
+            <Field label={t('Kỹ năng bạn phụ trách được')}
+              hint={t('Đây là NĂNG LỰC, dùng để gợi ý khi phân công — không phải quyền nhập điểm.')}>
               <ChonKyNang value={d.skills} onToggle={toggleSkill} />
             </Field>
           )}
           {/* K1-54: Lưu ở CHÂN thẻ — sau khi đã đọc hết các ô, không lẫn với tiêu đề. */}
           <div className="flex justify-end border-t pt-3" style={{ borderColor: 'var(--line)' }}>
-            <button className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy || !draft} onClick={save}>Lưu</button>
+            <button className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy || !draft} onClick={save}>{t('Lưu')}</button>
           </div>
         </div>
       </Card>
 
-      <Card title="Vai trò và phạm vi">
+      <Card title={t('Vai trò và phạm vi')}>
         <div className="flex flex-wrap gap-1.5 [&>span]:whitespace-normal">
           {(session?.grants ?? []).map((g, i) => <Info key={i}>{nhanPhamVi(g)}</Info>)}
         </div>
         <SectionNote>
-          Vai trò và chi nhánh do <strong>Quản trị hệ thống</strong> cấp — không tự sửa được ở đây, vì tự cấp cho
-          mình thì bước duyệt thành vô nghĩa.
+          <ChuDam chu={t('Vai trò và chi nhánh do <b>Quản trị hệ thống</b> cấp — không tự sửa được ở đây, vì tự cấp cho mình thì bước duyệt thành vô nghĩa.')} />
         </SectionNote>
       </Card>
 
-      <Card title="Đổi mật khẩu"
+      <Card title={t('Đổi mật khẩu')}
         action={
           <button className="btn btn-sm" disabled={busy || !duMk} onClick={changePassword}>
-            Đổi mật khẩu
+            {t('Đổi mật khẩu')}
           </button>
         }>
         <div className="grid gap-4 sm:grid-cols-3">
-          <Field label="Mật khẩu hiện tại" required>
+          <Field label={t('Mật khẩu hiện tại')} required>
             <input className="field w-full" type="password" autoComplete="current-password"
               value={pw.current} onChange={(e) => setPw({ ...pw, current: e.target.value })} />
           </Field>
-          <Field label="Mật khẩu mới" required hint="Ít nhất 6 ký tự.">
+          <Field label={t('Mật khẩu mới')} required hint={t('Ít nhất 6 ký tự.')}>
             <input className="field w-full" type="password" autoComplete="new-password"
               value={pw.next} onChange={(e) => setPw({ ...pw, next: e.target.value })} />
           </Field>
-          <Field label="Nhập lại mật khẩu mới" required loi={lechMk ? 'Hai ô chưa khớp' : null}>
+          <Field label={t('Nhập lại mật khẩu mới')} required loi={lechMk ? t('Hai ô chưa khớp') : null}>
             <input className="field w-full" type="password" autoComplete="new-password"
               value={pw.confirm} onChange={(e) => setPw({ ...pw, confirm: e.target.value })} />
           </Field>
@@ -180,8 +180,7 @@ export default function ProfilePage() {
         {/* CA1-7: câu "Bản demo…" chỉ ở bản demo. */}
         {!(LA_BAN_CHINH || session?.banChinh) && (
           <SectionNote>
-            Bản demo không gửi email thật nên <strong>không có luồng quên mật khẩu</strong>. Quên thì nhờ Quản trị
-            hệ thống đặt lại hộ.
+            <ChuDam chu={t('Bản demo không gửi email thật nên <b>không có luồng quên mật khẩu</b>. Quên thì nhờ Quản trị hệ thống đặt lại hộ.')} />
           </SectionNote>
         )}
       </Card>

@@ -8,7 +8,7 @@ import {
   type Role, type TheoDong, type WorkScope,
 } from '../../../shared/domain/index.ts';
 import { demoToday, getConfig, scenarioMode, setConfig } from '../demoConfig.ts';
-import { HttpError, badRequest, chuTuDo, forbidden, isIsoDate, notFound, toInt } from '../util.ts';
+import { HttpError, badRequest, chuTuDo, forbidden, isIsoDate, loi, notFound, toInt } from '../util.ts';
 import { SESSION_COOKIE, createSession, datGocNhin, destroySession, principalOf, requireAuth } from '../auth.ts';
 import { can, loadPrincipal, permissionSummary, require_, scopeFor, type Principal } from '../permissions.ts';
 import { writeAudit } from '../platform/audit.ts';
@@ -136,7 +136,7 @@ api.use('/demo', (req, res, next) => {
   if (!laBanChinh()) return next();
   const choQua = req.path === '/session' && (req.method === 'GET' || req.method === 'DELETE');
   if (choQua) return next();
-  res.status(404).json({ error: 'Không tìm thấy endpoint.' });
+  next(loi(404, 'Không tìm thấy endpoint.'));
 });
 
 api.get('/demo/accounts', wrap(() => {
@@ -177,6 +177,8 @@ api.get('/demo/session', wrap((req) => {
   return {
     authenticated: true,
     user: { id: p.userId, code: p.code, fullName: p.fullName, title: p.title },
+    /* PR-EN: ngôn ngữ của tài khoản (null = chưa chọn) — web đồng bộ với máy (`web/src/lib/session.tsx`). */
+    ngonNgu: p.ngonNgu ?? null,
     roles: p.roleKeys,
     roleLabels: p.roleKeys.map((r) => ROLE_LABEL[r as Role] ?? r),
     grants: permissionSummary(p),

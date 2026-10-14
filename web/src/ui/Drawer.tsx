@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, type ReactNode } from 'react';
 import { useGiuFocus } from './giuFocus.ts';
+import { t } from '@shared/i18n/index.ts';
 
 export function Modal({ open, onClose, title, children, footer, width = 'max-w-lg', z = 'z-50' }: {
   open: boolean; onClose: () => void; title: ReactNode; children: ReactNode; footer?: ReactNode; width?: string;
@@ -30,7 +31,7 @@ function KhungModal({ onClose, title, children, footer, width, z }: {
       <div ref={khung} tabIndex={-1} className={`relative w-full ${width} card shadow-2xl max-h-[88vh] flex flex-col -outline-offset-2`}>
         <header className="flex items-center justify-between px-5 py-3 border-b" style={{ borderColor: 'var(--line)' }}>
           <h2 id={idTen} className="text-sm font-semibold text-slate-100">{title}</h2>
-          <button className="btn btn-sm btn-ghost min-h-[44px] min-w-[44px] justify-center sm:min-h-0 sm:min-w-0" onClick={onClose} aria-label="Đóng">✕</button>
+          <button className="btn btn-sm btn-ghost min-h-[44px] min-w-[44px] justify-center sm:min-h-0 sm:min-w-0" onClick={onClose} aria-label={t('Đóng')}>✕</button>
         </header>
         <div className="p-5 overflow-y-auto">{children}</div>
         {footer && <footer className="px-5 py-3 border-t flex justify-end gap-2" style={{ borderColor: 'var(--line)' }}>{footer}</footer>}
@@ -40,7 +41,7 @@ function KhungModal({ onClose, title, children, footer, width, z }: {
 }
 
 /** Xác nhận rõ ràng cho thao tác không dùng autosave (chuyển lớp, cảnh báo, import, đổi quyền). */
-export function ConfirmDialog({ open, onClose, onConfirm, title, body, confirmLabel = 'Xác nhận', danger, busy, closeLabel = 'Đóng', z, confirmDisabled, confirmTitle }: {
+export function ConfirmDialog({ open, onClose, onConfirm, title, body, confirmLabel = t('Xác nhận'), danger, busy, closeLabel = t('Đóng'), z, confirmDisabled, confirmTitle }: {
   open: boolean; onClose: () => void; onConfirm: () => void; title: string;
   body: ReactNode; confirmLabel?: string; danger?: boolean; busy?: boolean;
   closeLabel?: string; z?: string;
@@ -55,7 +56,7 @@ export function ConfirmDialog({ open, onClose, onConfirm, title, body, confirmLa
         <>
           <button className="btn min-h-[44px] sm:min-h-0" onClick={onClose} disabled={busy}>{closeLabel}</button>
           <button className={`btn min-h-[44px] sm:min-h-0 ${danger ? 'btn-danger' : 'btn-primary'}`} onClick={onConfirm} disabled={busy || confirmDisabled} title={confirmDisabled ? confirmTitle : undefined}>
-            {busy ? 'Đang xử lý…' : confirmLabel}
+            {busy ? t('Đang xử lý…') : confirmLabel}
           </button>
         </>
       }>

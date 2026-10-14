@@ -5,6 +5,7 @@
  * có quyền thì bỏ hẳn, không hiện ô khoá. Quyền thật vẫn do API chặn.
  */
 import { laLoaiBoQuen } from './phanTich.ts';
+import { t } from '../i18n/index.ts';
 
 export type KhuVuc = 'tong-quan' | 'hoc-vien' | 'test' | 'cong-viec';
 export type TabTest = 'lich' | 'diem-lop' | 'ke-hoach';
@@ -39,10 +40,10 @@ export const NAV_RONG: NavQuyen = {
 export type KhuVucMuc = { key: KhuVuc; to: string; label: string; labelNgan: string };
 
 export const KHU_VUC: readonly KhuVucMuc[] = [
-  { key: 'tong-quan', to: '/', label: 'Tổng quan', labelNgan: 'Tổng quan' },
-  { key: 'hoc-vien', to: '/hoc-vien', label: 'Học viên & Lớp', labelNgan: 'Học viên' },
-  { key: 'test', to: '/test', label: 'Test', labelNgan: 'Test' },
-  { key: 'cong-viec', to: '/cong-viec', label: 'Công việc', labelNgan: 'Công việc' },
+  { key: 'tong-quan', to: '/', label: t('Tổng quan'), labelNgan: t('Tổng quan') },
+  { key: 'hoc-vien', to: '/hoc-vien', label: t('Học viên & Lớp'), labelNgan: t('Học viên') },
+  { key: 'test', to: '/test', label: t('Test'), labelNgan: t('Test') },
+  { key: 'cong-viec', to: '/cong-viec', label: t('Công việc'), labelNgan: t('Công việc') },
 ];
 
 const HIEN: Record<KhuVuc, (n: NavQuyen) => boolean> = {
@@ -74,7 +75,7 @@ export function khuVucCuaDuong(pathname: string): KhuVuc | null {
 
 /** PR-DL (G4): "Điểm theo lớp" giữa Lịch Test và Kế hoạch Test, hiện theo `testGrade`. */
 const TAB_TEST: readonly TabTest[] = ['lich', 'diem-lop', 'ke-hoach'];
-export const TAB_TEST_LABEL: Record<TabTest, string> = { lich: 'Lịch Test / Chấm Test', 'diem-lop': 'Điểm theo lớp', 'ke-hoach': 'Kế hoạch Test' };
+export const TAB_TEST_LABEL: Record<TabTest, string> = { lich: t('Lịch Test / Chấm Test'), 'diem-lop': t('Điểm theo lớp'), 'ke-hoach': t('Kế hoạch Test') };
 export const DUONG_TAB_TEST: Record<TabTest, string> = { lich: '/test/lich', 'diem-lop': '/test/diem-lop', 'ke-hoach': '/test/ke-hoach' };
 /** PR-UX1 Q16: Cần chấm gộp vào Lịch Test — ai chấm được (`testGrade`) hay xếp được lịch (`testSchedule`) đều thấy. */
 const HIEN_TEST: Record<TabTest, (n: NavQuyen) => boolean> = {
@@ -112,10 +113,10 @@ export function duongLichTest(o: { classId?: number | null; periodId?: number | 
 const TAB_CONG_VIEC: readonly TabCongViec[] = ['cho-duyet', 'ho-tro', 'yeu-cau', 'van-hanh', 'bao-cao'];
 /** PR-DUYET (K1-29) đổi thành "Việc học viên"; PR-S3 (A-012, chủ sản phẩm 01/10) trả về "Hỗ trợ học viên". */
 export const TAB_CONG_VIEC_LABEL: Record<TabCongViec, string> = {
-  'cho-duyet': 'Chờ duyệt', 'ho-tro': 'Hỗ trợ học viên', 'yeu-cau': 'Yêu cầu của tôi', 'van-hanh': 'Vận hành', 'bao-cao': 'Báo cáo đơn vị',
+  'cho-duyet': t('Chờ duyệt'), 'ho-tro': t('Hỗ trợ học viên'), 'yeu-cau': t('Yêu cầu của tôi'), 'van-hanh': t('Vận hành'), 'bao-cao': t('Báo cáo đơn vị'),
 };
 /** OV-10a: Admin (`workChamDiem`) chỉ có nhóm Chấm điểm + Nhắc — tab đầu ghi "Chấm điểm", không "Hỗ trợ học viên". */
-export const nhanTabCongViec = (k: TabCongViec, nav: NavQuyen): string => (k === 'ho-tro' && nav.workChamDiem ? 'Chấm điểm' : TAB_CONG_VIEC_LABEL[k]);
+export const nhanTabCongViec = (k: TabCongViec, nav: NavQuyen): string => (k === 'ho-tro' && nav.workChamDiem ? t('Chấm điểm') : TAB_CONG_VIEC_LABEL[k]);
 export const DUONG_TAB_CONG_VIEC: Record<TabCongViec, string> = {
   'cho-duyet': '/cong-viec/cho-duyet', 'ho-tro': '/cong-viec', 'yeu-cau': '/cong-viec/yeu-cau',
   'van-hanh': '/cong-viec/van-hanh', 'bao-cao': '/cong-viec/bao-cao',
@@ -138,7 +139,7 @@ export function tabCongViecTuDuong(seg: string | undefined): TabCongViec | null 
 // ---------------------------------------------------------------- Tổng quan
 
 /** PR-VAI-a (K1-10, Q10): tab đầu đổi tên "Việc hôm nay" — không lặp chữ "Tổng quan" của menu. */
-export const TAB_TONG_QUAN_LABEL: Record<TabTongQuan, string> = { 'tong-quan': 'Việc hôm nay', 'phan-tich': 'Phân tích' };
+export const TAB_TONG_QUAN_LABEL: Record<TabTongQuan, string> = { 'tong-quan': t('Việc hôm nay'), 'phan-tich': t('Phân tích') };
 
 // ---------------------------------------------------------------- Đường dẫn cũ
 

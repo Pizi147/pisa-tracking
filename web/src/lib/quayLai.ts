@@ -2,6 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useSyncExternalStore }
 import { useLocation, useNavigate, useNavigationType, useSearchParams } from 'react-router-dom';
 import { buocMoi, docChong, tenNguon, tieuDeTab, type BuocVe, type KieuDi, type TenTrang } from '@shared/domain/index.ts';
 import { cuonVeViTri } from './cuonOnDinh.ts';
+import { t } from '@shared/i18n/index.ts';
 
 /**
  * QUAY LẠI ĐÚNG NƠI BẮT ĐẦU (PR-OV5b) — một cơ chế cho mọi trang. `useGhiNguon` (gọi một lần ở App) nghe mọi lần chuyển trang và
@@ -58,7 +59,7 @@ export function useTenTrang(ten?: string | null, chiTiet?: string | null, tieuDe
 export function useTieuDeTab(daDangNhap: boolean) {
   const { pathname, search } = useLocation();
   useLayoutEffect(() => {
-    document.title = tieuDeTab(daDangNhap ? tenNguon(pathname + search).ten : 'Đăng nhập');
+    document.title = tieuDeTab(daDangNhap ? tenNguon(pathname + search).ten : t('Đăng nhập'));
   }, [pathname, search, daDangNhap]);
 }
 

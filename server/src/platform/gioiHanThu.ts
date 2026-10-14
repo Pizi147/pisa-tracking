@@ -2,7 +2,8 @@ import crypto from 'node:crypto';
 import type { Request } from 'express';
 import { db } from '../db.ts';
 import { laBanChinh } from '../moiTruong.ts';
-import { HttpError } from '../util.ts';
+import { HttpError, loi } from '../util.ts';
+import { dichSang, type Khoa } from '../../../shared/i18n/index.ts';
 
 /**
  * GIỚI HẠN SỐ LẦN THỬ — AN-1 (quyết định 4.11, 22/09/2026: giữ `/auth/register`, tài khoản phải QTHT duyệt, thêm giới hạn).
@@ -22,10 +23,12 @@ export const GIOI_HAN: Record<LoaiThu, { soLan: number; phut: number }> = {
 };
 export const GIU_DONG_GIO = 24;
 
-export const cauKhoaDangNhap = (phut: number) => `Đăng nhập sai quá nhiều lần. Thử lại sau ${phut} phút.`;
+/* PR-EN: câu có biến mang khoá (`khoa`) để web tiếng Anh dịch — `chanNeuBiKhoa` gửi kèm. */
+const coKhoa = (khoa: Khoa) => Object.assign((phut: number) => dichSang('vi', khoa, { phut }), { khoa });
+export const cauKhoaDangNhap = coKhoa('Đăng nhập sai quá nhiều lần. Thử lại sau {phut} phút.');
 /** PR-Z2c: khoá theo IP nói rõ là cả MẠNG bị khoá — người gõ đúng mật khẩu biết không phải lỗi của mình. */
-export const cauKhoaDangNhapIp = (phut: number) => `Có quá nhiều lần đăng nhập sai từ mạng này. Thử lại sau ${phut} phút.`;
-export const cauKhoaDangKy = (phut: number) => `Đã gửi quá nhiều đăng ký trong một giờ. Thử lại sau ${phut} phút.`;
+export const cauKhoaDangNhapIp = coKhoa('Có quá nhiều lần đăng nhập sai từ mạng này. Thử lại sau {phut} phút.');
+export const cauKhoaDangKy = coKhoa('Đã gửi quá nhiều đăng ký trong một giờ. Thử lại sau {phut} phút.');
 
 /** Mã băm cố định của một email (đã chuẩn hoá) hoặc một IP. Không đảo ngược được; cùng đầu vào cho cùng mã. */
 export function bam(giaTri: string): string {
@@ -79,7 +82,7 @@ export function xoaLanThu(loai: LoaiThu, giaTri: string): void {
 }
 
 /** Đang bị khoá → ném 429 với câu `cau(số phút)`. Lần thử lúc đang khoá KHÔNG được ghi (khoá không tự kéo dài). */
-export function chanNeuBiKhoa(loai: LoaiThu, giaTri: string, cau: (phut: number) => string, bayGio: number = Date.now()): void {
+export function chanNeuBiKhoa(loai: LoaiThu, giaTri: string, cau: ((phut: number) => string) & { khoa?: Khoa }, bayGio: number = Date.now()): void {
   const p = phutConKhoa(loai, giaTri, bayGio);
-  if (p !== null) throw new HttpError(429, cau(p));
+  if (p !== null) throw cau.khoa ? loi(429, cau.khoa, { phut: p }) : new HttpError(429, cau(p));
 }

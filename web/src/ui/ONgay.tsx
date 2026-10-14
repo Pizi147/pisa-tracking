@@ -2,6 +2,7 @@ import { Children, createContext, isValidElement, useContext, useEffect, useId, 
 import { canDongBoONgay, chotONgay, hienONgay, phuONgay, type KieuONgay, type LuatONgay } from '@shared/domain/index.ts';
 import { useNgayNghiepVu } from './ngayNghiepVu.ts';
 import { LichNho } from './LichNho.tsx';
+import { t } from '@shared/i18n/index.ts';
 
 /**
  * Ô NGÀY THỐNG NHẤT (T11, YC-9, HE §9) — một ô cho mọi ngày/tuần/tháng: gõ `dd/mm/yyyy` (tháng `mm/yyyy`) hoặc bấm biểu tượng
@@ -68,12 +69,12 @@ export function ONgay({ kieu, value, onChange, toiThieu, toiDa, moc, catHomNay, 
       <span className="flex min-w-0 items-stretch gap-1.5">
         <input id={idO} className={`field min-w-0 flex-1 tabular-nums${gon && (invalid || loi) ? ' border-late' : ''}`}
           title={gon ? [phu, loi].filter(Boolean).join(' · ') || undefined : undefined} inputMode={kieu === 'tuan' ? 'text' : 'numeric'} autoComplete="off" value={text} disabled={disabled}
-          placeholder={goiY ?? (kieu === 'thang' ? 'mm/yyyy' : kieu === 'tuan' ? 'W4 SEP hoặc dd/mm' : 'dd/mm/yyyy')} aria-label={ariaLabel} aria-invalid={invalid || !!loi || undefined}
+          placeholder={goiY ?? (kieu === 'thang' ? 'mm/yyyy' : kieu === 'tuan' ? t('W4 SEP hoặc dd/mm') : 'dd/mm/yyyy')} aria-label={ariaLabel} aria-invalid={invalid || !!loi || undefined}
           aria-describedby={gon ? moTa : [phu && `${idO}-phu`, loi && `${idO}-loi`].filter(Boolean).join(' ') || undefined}
           onChange={(e) => setText(e.target.value)} onBlur={() => { chot(); onBlur?.(); }}
           onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); chot(); } else if (e.key === 'ArrowDown' && e.altKey) { e.preventDefault(); setMo(true); } }} />
         <button ref={nut} type="button" className="btn flex-none min-h-[44px] min-w-[44px] justify-center px-0 sm:min-h-0 sm:min-w-[36px]"
-          aria-label={kieu === 'thang' ? 'Mở lịch tháng' : 'Mở lịch'} aria-haspopup="dialog" aria-expanded={mo} disabled={disabled}
+          aria-label={kieu === 'thang' ? t('Mở lịch tháng') : t('Mở lịch')} aria-haspopup="dialog" aria-expanded={mo} disabled={disabled}
           onClick={() => setMo((v) => !v)}><BieuTuongLich /></button>
       </span>
       {phu && !gon && <span id={`${idO}-phu`} className="mt-1 block truncate text-[11.5px] tabular-nums text-slate-400">{phu}</span>}

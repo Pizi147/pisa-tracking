@@ -5,6 +5,7 @@
 import { cuoiTuan, dsNgayGan, dsThang, dsTuan, type LuaChon } from './chonNgay.ts';
 import { docTuanLich, ngay, tuanLich } from './hienThiNgay.ts';
 import { MONTH_CODE, mondayOfDate } from './week.ts';
+import { t } from '../i18n/index.ts';
 
 export const KIEU_O_NGAY = ['ngay', 'tuan', 'thang', 'ngay-hoac-thang'] as const;
 export type KieuONgay = (typeof KIEU_O_NGAY)[number];
@@ -34,9 +35,9 @@ export function chotTuan(iso: string, homNay: string, luat: LuatONgay): string {
 export function loiKhoangNgay(iso: string, homNay: string, luat: LuatONgay = {}, kieu?: KieuONgay): string | null {
   const la = iso.length === 7;                                   // giá trị là tháng thì so theo tháng
   const cat = (x: string) => (la ? x.slice(0, 7) : x);
-  const chu = (x: string) => (la ? `tháng ${thangHien(x)}` : kieu === 'tuan' ? tuanLich(x, homNay) : x === homNay ? 'hôm nay' : ngay(x, homNay));
-  if (luat.toiDa && iso > cat(luat.toiDa)) return `Không được sau ${chu(luat.toiDa)}`;
-  if (luat.toiThieu && iso < cat(luat.toiThieu)) return `Không được trước ${chu(luat.toiThieu)}`;
+  const chu = (x: string) => (la ? t('tháng {thang}', { thang: thangHien(x) }) : kieu === 'tuan' ? tuanLich(x, homNay) : x === homNay ? t('hôm nay') : ngay(x, homNay));
+  if (luat.toiDa && iso > cat(luat.toiDa)) return t('Không được sau {moc}', { moc: chu(luat.toiDa) });
+  if (luat.toiThieu && iso < cat(luat.toiThieu)) return t('Không được trước {moc}', { moc: chu(luat.toiThieu) });
   return null;
 }
 
@@ -50,18 +51,18 @@ export function docONgay(text: string, kieu: KieuONgay, homNay: string, luat: Lu
     return loi ? { iso: null, loi } : { iso, loi: null };
   }
   const phan = s.split(/[/.\-\s]+/).filter(Boolean);
-  const mauLoi = kieu === 'thang' ? 'Gõ dạng mm/yyyy' : kieu === 'tuan' ? 'Gõ mã tuần như W4 SEP, hoặc một ngày trong tuần' : 'Gõ dạng dd/mm/yyyy';
+  const mauLoi = kieu === 'thang' ? t('Gõ dạng mm/yyyy') : kieu === 'tuan' ? t('Gõ mã tuần như W4 SEP, hoặc một ngày trong tuần') : t('Gõ dạng dd/mm/yyyy');
   if (phan.length < 2 || phan.length > 3 || phan.some((x) => !/^\d{1,4}$/.test(x))) return { iso: null, loi: mauLoi };
   let iso: string | null;
   if (kieu === 'thang' || (kieu === 'ngay-hoac-thang' && phan.length === 2 && phan[1].length === 4)) {
     const [m, y] = phan.length === 3 ? [phan[1], phan[2]] : [phan[0], phan[1]];
-    if (y.length !== 4 || +m < 1 || +m > 12) return { iso: null, loi: 'Gõ dạng mm/yyyy' };
+    if (y.length !== 4 || +m < 1 || +m > 12) return { iso: null, loi: t('Gõ dạng mm/yyyy') };
     iso = `${y}-${p2(m)}`;
   } else {
     const y = phan[2] ?? homNay.slice(0, 4);
-    if (y.length !== 4) return { iso: null, loi: 'Năm cần đủ 4 số, ví dụ 28/09/2026' };
+    if (y.length !== 4) return { iso: null, loi: t('Năm cần đủ 4 số, ví dụ 28/09/2026') };
     iso = hop(+y, +phan[1], +phan[0]);
-    if (!iso) return { iso: null, loi: 'Ngày không có thật' };
+    if (!iso) return { iso: null, loi: t('Ngày không có thật') };
     if (kieu === 'tuan') iso = chotTuan(iso, homNay, luat);
   }
   const loi = loiKhoangNgay(iso, homNay, luat, kieu);
@@ -106,9 +107,9 @@ export function phuONgay(iso: string | null | undefined, kieu: KieuONgay, homNay
 }
 
 
-const THU = ['Chủ nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
-const NHAN_TUAN = ['Tuần này', 'Tuần trước', '2 tuần trước'];
-const NHAN_TUAN_TOI = ['Tuần này', 'Tuần sau', '2 tuần sau'];
+const THU = [t('Chủ nhật'), t('Thứ Hai'), t('Thứ Ba'), t('Thứ Tư'), t('Thứ Năm'), t('Thứ Sáu'), t('Thứ Bảy')];
+const NHAN_TUAN = [t('Tuần này'), t('Tuần trước'), t('2 tuần trước')];
+const NHAN_TUAN_TOI = [t('Tuần này'), t('Tuần sau'), t('2 tuần sau')];
 
 /**
  * "Gần đây" dưới ô ngày — vài lựa chọn bấm một lần, đã lọc qua luật từng chỗ (`loiKhoangNgay`).
@@ -142,7 +143,7 @@ export function goiYGanDay(kieu: KieuONgay, homNay: string, luat: LuatONgay = {}
     } else {
       ds = dsThang(homNay, 3);
     }
-    return loc(ds.map((x) => (x.giaTri === thangNay ? { ...x, nhan: 'Tháng này' } : x)));
+    return loc(ds.map((x) => (x.giaTri === thangNay ? { ...x, nhan: t('Tháng này') } : x)));
   }
   // 'ngay' và 'ngay-hoac-thang': gợi ý theo ngày
   const lui = loc(dsNgayGan(homNay, 5));
@@ -150,7 +151,7 @@ export function goiYGanDay(kieu: KieuONgay, homNay: string, luat: LuatONgay = {}
   const toi: LuaChon[] = [];
   for (let i = 0; i < 5; i++) {
     const d = cong(homNay, i);
-    const thu = i === 0 ? 'Hôm nay' : THU[new Date(`${d}T00:00:00Z`).getUTCDay()];
+    const thu = i === 0 ? t('Hôm nay') : THU[new Date(`${d}T00:00:00Z`).getUTCDay()];
     toi.push({ giaTri: d, nhan: `${thu}, ${ngay(d, homNay)}` });
   }
   return loc(toi);

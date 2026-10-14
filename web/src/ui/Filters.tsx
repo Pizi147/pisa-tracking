@@ -9,6 +9,7 @@ import { useSearchParams } from 'react-router-dom';
 import { chiNhanhMacDinh, coDichLienKet, mondayOfDate, ngay, tuanLich } from '@shared/domain/index.ts';
 import { LichNho } from './LichNho.tsx';
 import { hauToGocNhin } from './CongTacKhung.tsx';
+import { t } from '@shared/i18n/index.ts';
 
 export type Period = { id: number; code: string; weekStart: string; weekEnd: string; range: string };
 export type Branch = { id: number; code: string; name: string };
@@ -79,7 +80,7 @@ export function resolveWeek(weekStart: string): Promise<{ id: number }> {
  * chục tuần (sổ §13.8). `LichNho` vẽ qua PORTAL, `position: fixed`, tự lo vị trí, bấm ngoài và Esc (chỉ đóng lịch). Mã tuần HIỆN RA dạng `W3 SEP` qua `tuanLich` (G-6 — chỉ thêm năm khi khác năm), không có
  * hàm tính tuần thứ hai ở đây.
  */
-export function WeekPicker({ periodId, onPeriod, label = 'Tuần', scope, clearable, toiThieu }: {
+export function WeekPicker({ periodId, onPeriod, label = t('Tuần'), scope, clearable, toiThieu }: {
   periodId: number | null; onPeriod: (id: number | null) => void;
   label?: string | null;
   /** 'planning' mở cửa sổ tuần XA về tương lai — xếp lịch MT là việc của tương lai. */
@@ -146,7 +147,7 @@ export function WeekPicker({ periodId, onPeriod, label = 'Tuần', scope, cleara
       onPeriod(r.id);
       setOpen(false);
     } catch (e: any) {
-      toast.push('error', e.message ?? 'Không đổi được tuần — thử lại.');
+      toast.push('error', e.message ?? t('Không đổi được tuần — thử lại.'));
     } finally {
       setBusy(false);
     }
@@ -165,8 +166,8 @@ export function WeekPicker({ periodId, onPeriod, label = 'Tuần', scope, cleara
         <div className="flex flex-1 basis-[17rem] min-w-0 items-stretch gap-2">
           <button
             type="button" className="btn flex-none h-11 px-3" disabled={busy || (!!toiThieu && !!shown && shown.weekStart <= toiThieu)}
-            onClick={() => goAdjacent(-1)} aria-label={shown ? `Tuần trước · ${tuanLich(addDaysStr(shown.weekStart, -7), today)}` : 'Tuần trước'}
-            title={shown ? `Tuần trước · ${tuanLich(addDaysStr(shown.weekStart, -7), today)}` : 'Tuần trước'}
+            onClick={() => goAdjacent(-1)} aria-label={shown ? t('Tuần trước · {tuan}', { tuan: tuanLich(addDaysStr(shown.weekStart, -7), today) }) : t('Tuần trước')}
+            title={shown ? t('Tuần trước · {tuan}', { tuan: tuanLich(addDaysStr(shown.weekStart, -7), today) }) : t('Tuần trước')}
           >‹</button>
           <button
             ref={field} type="button"
@@ -180,20 +181,20 @@ export function WeekPicker({ periodId, onPeriod, label = 'Tuần', scope, cleara
                 <span className="text-slate-500 text-xs shrink-0">{ngay(shown.weekStart, today)} – {ngay(addDaysStr(shown.weekStart, 6), today)}</span>
               </>
             ) : (
-              <span className="text-slate-500">{clearable ? 'Chưa xác định' : 'Đang tải…'}</span>
+              <span className="text-slate-500">{clearable ? t('Chưa xác định') : t('Đang tải…')}</span>
             )}
           </button>
           <button
             type="button" className="btn flex-none h-11 px-3" disabled={busy}
-            onClick={() => goAdjacent(1)} aria-label={shown ? `Tuần sau · ${tuanLich(addDaysStr(shown.weekStart, 7), today)}` : 'Tuần sau'}
-            title={shown ? `Tuần sau · ${tuanLich(addDaysStr(shown.weekStart, 7), today)}` : 'Tuần sau'}
+            onClick={() => goAdjacent(1)} aria-label={shown ? t('Tuần sau · {tuan}', { tuan: tuanLich(addDaysStr(shown.weekStart, 7), today) }) : t('Tuần sau')}
+            title={shown ? t('Tuần sau · {tuan}', { tuan: tuanLich(addDaysStr(shown.weekStart, 7), today) }) : t('Tuần sau')}
           >›</button>
         </div>
         <button type="button" className="btn flex-none h-11" disabled={busy} onClick={() => void pick(todayWeekStart)}>
-          Tuần này
+          {t('Tuần này')}
         </button>
         {clearable && shown && (
-          <button type="button" className="btn btn-ghost flex-none h-11" onClick={() => onPeriod(null)}>Bỏ chọn</button>
+          <button type="button" className="btn btn-ghost flex-none h-11" onClick={() => onPeriod(null)}>{t('Bỏ chọn')}</button>
         )}
       </div>
 
@@ -246,10 +247,10 @@ export function BranchFilter({ branchId, onBranch }: {
   if ((branches.data?.length ?? 0) <= 1 || branchCount <= 1) return null;
   return (
     <label className="block">
-      <span className="label">Chi nhánh</span>
+      <span className="label">{t('Chi nhánh')}</span>
       <select className="field w-44" value={branchId ?? ''}
         onChange={(e) => { const id = e.target.value ? Number(e.target.value) : null; nhoChiNhanh(session?.user?.id, id); onBranch(id); }}>
-        <option value="">Tất cả chi nhánh</option>
+        <option value="">{t('Tất cả chi nhánh')}</option>
         {(branches.data ?? []).map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
       </select>
     </label>
@@ -274,9 +275,9 @@ export function WeekBranchFilter({ periodId, onPeriod, branchId, onBranch, child
       <WeekPicker periodId={periodId} onPeriod={(id) => id && onPeriod(id)} />
       {showBranch && (
         <label className="block">
-          <span className="label">Chi nhánh</span>
+          <span className="label">{t('Chi nhánh')}</span>
           <select className="field w-44" value={branchId ?? ''} onChange={(e) => onBranch!(e.target.value ? Number(e.target.value) : null)}>
-            <option value="">Tất cả chi nhánh</option>
+            <option value="">{t('Tất cả chi nhánh')}</option>
             {(branches.data ?? []).map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
           </select>
         </label>

@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import { ApiError, api } from '../lib/api.ts';
 import { ATTACHMENT_EXTENSIONS, ATTACHMENT_MAX_BYTES, LO_GHI_VI_PHAM, chiaLo, laLienKet, tenAnhDan } from '@shared/domain/index.ts';
+import { t } from '@shared/i18n/index.ts';
 
 /**
  * TỆP CHỜ TRONG FORM (PR-LUI-a1) — bằng chứng chọn NGAY khi ghi (Ghi vi phạm, Tạo Case), chưa tải lên: tệp chỉ đi khi bấm Lưu,
@@ -27,8 +28,8 @@ export const fmtSize = (n: number) => (n < 1024 * 1024 ? `${Math.max(1, Math.rou
 /** Lỗi chọn tệp xảy ra ở máy người dùng (cùng luật `BangChung`): loại tệp, 4 MB. */
 function loiChonTep(file: File): string | undefined {
   const ext = file.name.includes('.') ? file.name.split('.').pop()!.toLowerCase() : '';
-  if (!ATTACHMENT_EXTENSIONS.includes(ext)) return `Không nhận loại tệp này. Chỉ nhận: ${ATTACHMENT_EXTENSIONS.join(', ')}.`;
-  if (file.size > ATTACHMENT_MAX_BYTES) return 'Tệp quá lớn: tối đa 4 MB.';
+  if (!ATTACHMENT_EXTENSIONS.includes(ext)) return t('Không nhận loại tệp này. Chỉ nhận: {ds}.', { ds: ATTACHMENT_EXTENSIONS.join(', ') });
+  if (file.size > ATTACHMENT_MAX_BYTES) return t('Tệp quá lớn: tối đa 4 MB.');
   return undefined;
 }
 
@@ -60,7 +61,7 @@ export function TepCho({ value, onChange, khoa, onThuLai }: {
 
   const luuLink = () => {
     const u = url.trim();
-    if (!laLienKet(u)) { setLoiLink('Cần địa chỉ đầy đủ, bắt đầu bằng http:// hoặc https://'); return; }
+    if (!laLienKet(u)) { setLoiLink(t('Cần địa chỉ đầy đủ, bắt đầu bằng http:// hoặc https://')); return; }
     onChange([...value, { key: (seq.current += 1), kind: 'link', url: u, ten: ten.trim() }]);
     setUrl(''); setTen(''); setLinkOpen(false); setLoiLink(null);
   };
@@ -77,7 +78,7 @@ export function TepCho({ value, onChange, khoa, onThuLai }: {
 
   return (
     <div
-      className="rounded-lg border border-dashed px-2.5 py-2" tabIndex={0} aria-label="Bằng chứng — dán ảnh, kéo thả tệp" data-tep-cho
+      className="rounded-lg border border-dashed px-2.5 py-2" tabIndex={0} aria-label={t('Bằng chứng — dán ảnh, kéo thả tệp')} data-tep-cho
       style={{ borderColor: keo ? 'var(--line-strong)' : 'var(--line)' }}
       onPaste={onPaste}
       onDragOver={(e) => { if (khoa) return; e.preventDefault(); setKeo(true); }}
@@ -92,11 +93,11 @@ export function TepCho({ value, onChange, khoa, onThuLai }: {
                 <span aria-hidden>{m.kind === 'file' ? '📎' : '🔗'}</span>
                 <span className="min-w-0 break-all">{tenHienThi(m)}</span>
                 <span className="text-slate-500">{m.kind === 'file' ? fmtSize(m.file.size) : tenMien(m.url)}</span>
-                {m.xong && <span className="text-ok">Đã tải</span>}
+                {m.xong && <span className="text-ok">{t('Đã tải')}</span>}
                 {m.loi && <span className="text-bad" role="alert">{m.loi}</span>}
-                {m.loi && m.daGui && onThuLai && <button type="button" className="btn btn-sm btn-ghost" onClick={onThuLai}>Thử lại</button>}
+                {m.loi && m.daGui && onThuLai && <button type="button" className="btn btn-sm btn-ghost" onClick={onThuLai}>{t('Thử lại')}</button>}
                 {!khoa && !m.xong && (
-                  <button type="button" className="appearance-none cursor-pointer border-0 bg-transparent p-0 text-slate-500 hover:text-bad max-sm:grid max-sm:min-h-[44px] max-sm:min-w-[44px] max-sm:place-items-center" aria-label={`Bỏ ${tenHienThi(m)}`} onClick={() => bo(m.key)}>✕</button>
+                  <button type="button" className="appearance-none cursor-pointer border-0 bg-transparent p-0 text-slate-500 hover:text-bad max-sm:grid max-sm:min-h-[44px] max-sm:min-w-[44px] max-sm:place-items-center" aria-label={t('Bỏ {ten}', { ten: tenHienThi(m) })} onClick={() => bo(m.key)}>✕</button>
                 )}
               </span>
             </li>
@@ -106,25 +107,25 @@ export function TepCho({ value, onChange, khoa, onThuLai }: {
 
       {!khoa && (
         <div className={`flex flex-wrap items-center gap-1.5${value.length ? ' mt-2' : ''}`}>
-          <button type="button" className="btn btn-sm btn-ghost" onClick={() => fileRef.current?.click()}>+ Đính kèm tệp</button>
-          <button type="button" className="btn btn-sm btn-ghost" aria-expanded={linkOpen} onClick={() => setLinkOpen((o) => !o)}>+ Thêm liên kết</button>
-          <input ref={fileRef} type="file" accept={ACCEPT} multiple className="hidden" aria-label="Bằng chứng — chọn tệp" onChange={(e) => them(e.target.files)} />
+          <button type="button" className="btn btn-sm btn-ghost" onClick={() => fileRef.current?.click()}>{t('+ Đính kèm tệp')}</button>
+          <button type="button" className="btn btn-sm btn-ghost" aria-expanded={linkOpen} onClick={() => setLinkOpen((o) => !o)}>{t('+ Thêm liên kết')}</button>
+          <input ref={fileRef} type="file" accept={ACCEPT} multiple className="hidden" aria-label={t('{o} — chọn tệp', { o: t('Bằng chứng') })} onChange={(e) => them(e.target.files)} />
         </div>
       )}
 
       {!khoa && linkOpen && (
         <div className="mt-2 grid items-end gap-1.5 sm:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_auto]">
           <label className="block">
-            <span className="block text-xs text-slate-500">Địa chỉ liên kết</span>
+            <span className="block text-xs text-slate-500">{t('Địa chỉ liên kết')}</span>
             <input className="field" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://…" inputMode="url" />
           </label>
           <label className="block">
-            <span className="block text-xs text-slate-500">Tên hiển thị (không bắt buộc)</span>
-            <input className="field" value={ten} onChange={(e) => setTen(e.target.value)} placeholder="Ví dụ: Nhóm lớp" />
+            <span className="block text-xs text-slate-500">{t('Tên hiển thị (không bắt buộc)')}</span>
+            <input className="field" value={ten} onChange={(e) => setTen(e.target.value)} placeholder={t('Ví dụ: Nhóm lớp')} />
           </label>
           <span className="flex gap-1.5">
-            <button type="button" className="btn btn-sm btn-primary" disabled={!url.trim()} onClick={luuLink}>Thêm</button>
-            <button type="button" className="btn btn-sm" onClick={() => { setLinkOpen(false); setLoiLink(null); }}>Đóng</button>
+            <button type="button" className="btn btn-sm btn-primary" disabled={!url.trim()} onClick={luuLink}>{t('Thêm')}</button>
+            <button type="button" className="btn btn-sm" onClick={() => { setLinkOpen(false); setLoiLink(null); }}>{t('Đóng')}</button>
           </span>
           {loiLink && <p className="m-0 text-xs text-bad sm:col-span-3" role="alert">{loiLink}</p>}
         </div>
@@ -161,7 +162,7 @@ export async function taiTepCho(ds: TepChoMuc[], o: { ownerType: string; ownerId
       for (const lo of chiaLo(con, LO_GHI_VI_PHAM)) await api.post('/attachments/chep', { tuId, ownerType: o.ownerType, ownerIds: lo });
       ra.push({ ...m, xong: true, daGui: undefined, loi: undefined, tuId });
     } catch (e) {
-      ra.push({ ...m, daGui: true, tuId, loi: e instanceof ApiError ? e.message : 'Không tải được tệp — kiểm tra kết nối rồi thử lại.' });
+      ra.push({ ...m, daGui: true, tuId, loi: e instanceof ApiError ? e.message : t('Không tải được tệp — kiểm tra kết nối rồi thử lại.') });
     }
   }
   return ra;

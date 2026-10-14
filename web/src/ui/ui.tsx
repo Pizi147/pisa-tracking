@@ -7,6 +7,7 @@ import { useChongVe, useVe } from '../lib/quayLai.ts';
 import { BaoOTrongNhan, coOTuNhan } from './ONgay.tsx';
 import { useNoiLoi } from './loiForm.tsx';
 import { CHIP_TRON, CHIP_VUONG } from './Nhan.tsx';
+import { t } from '@shared/i18n/index.ts';
 
 export function Card({ title, action, children, className = '', bodyClass = 'p-4' }: {
   title?: ReactNode; action?: ReactNode; children: ReactNode; className?: string; bodyClass?: string;
@@ -214,7 +215,7 @@ export function Status({ kind, children, title }: {
 export function Alert({ tone = 'danger', children, title, quaHan }: {
   tone?: 'danger' | 'warn'; children: ReactNode; title?: string; quaHan?: boolean;
 }) {
-  const coDau = quaHan ?? (typeof children === 'string' && /^quá hạn/i.test(children));
+  const coDau = quaHan ?? (typeof children === 'string' && /^(quá hạn|overdue|\d+ days? overdue)/i.test(children));
   return (
     <span title={title}
       className={`${CHIP_VUONG} gap-1 ${
@@ -274,7 +275,7 @@ export function ErrorState({ message, hint, onRetry }: { message: string; hint?:
       <div className="text-bad font-medium">{message}</div>
       {hint && <p className="text-slate-400 text-xs max-w-md">{hint}</p>}
       {/* OV-11i (HL-15 · PT-11 · TQ-16): 403 thử lại vẫn 403 — nút về nguồn / trang cha thay "Thử lại". */}
-      {laCauLoi403(message) ? <NutVeCha /> : onRetry && <button className="btn btn-sm mt-2" onClick={onRetry}>Thử lại</button>}
+      {laCauLoi403(message) ? <NutVeCha /> : onRetry && <button className="btn btn-sm mt-2" onClick={onRetry}>{t('Thử lại')}</button>}
     </div>
   );
 }
@@ -285,7 +286,7 @@ function NutVeCha() {
   const chong = useChongVe();
   const ve = useVe();
   const hs = loaiHoSo(pathname);
-  const dich = chong[0] ?? (hs ? trangCha(hs) : { url: '/', ten: 'Tổng quan' });
+  const dich = chong[0] ?? (hs ? trangCha(hs) : { url: '/', ten: t('Tổng quan') });
   if (dich.url === pathname) return null;
   return <button type="button" className="btn btn-sm mt-2" onClick={() => ve(dich.url, !chong.length)}><span aria-hidden>‹</span> {dich.ten}</button>;
 }
@@ -293,15 +294,15 @@ function NutVeCha() {
 export function Forbidden({ message, hint }: { message?: string; hint?: string }) {
   return (
     <div className="card p-6 text-center">
-      <div className="text-soon font-medium">{message ?? 'Bạn không có quyền xem nội dung này'}</div>
-      <p className="text-slate-400 text-xs mt-1 max-w-lg mx-auto">{hint ?? 'Quyền được xác định theo vai trò, phạm vi và phân công của tài khoản đang dùng.'}</p>
+      <div className="text-soon font-medium">{message ?? t('Bạn không có quyền xem nội dung này')}</div>
+      <p className="text-slate-400 text-xs mt-1 max-w-lg mx-auto">{hint ?? t('Quyền được xác định theo vai trò, phạm vi và phân công của tài khoản đang dùng.')}</p>
     </div>
   );
 }
 
 export function Skeleton({ rows = 5, className = '' }: { rows?: number; className?: string }) {
   return (
-    <div className={`space-y-2 ${className}`} aria-busy="true" aria-label="Đang tải">
+    <div className={`space-y-2 ${className}`} aria-busy="true" aria-label={t('Đang tải')}>
       {Array.from({ length: rows }).map((_, i) => (
         <div key={i} className="skel h-8 w-full" style={{ opacity: 1 - i * 0.08 }} />
       ))}
@@ -319,7 +320,7 @@ export function KpiTile({ label, value, tone = 'neutral', to, sub }: {
         tone === 'danger' ? 'text-bad' : tone === 'warn' ? 'text-soon' : tone === 'ok' ? 'text-doing' : 'text-slate-100'
       }`}>{value}</div>
       {sub && <div className="text-xs text-slate-500 mt-1">{sub}</div>}
-      {to && <div className="text-xs text-doing mt-2">Xem danh sách →</div>}
+      {to && <div className="text-xs text-doing mt-2">{t('Xem danh sách →')}</div>}
     </div>
   );
   return to ? <Link to={to} className="block h-full no-underline">{inner}</Link> : inner;
@@ -343,7 +344,7 @@ export function Field({ label, children, hint, required, loi, as = 'label' }: {
   const idNhan = useId();
   const troO = Wrap === 'div' ? idO : null;
   const nhom = Wrap === 'div' && !idO ? { role: 'group', 'aria-labelledby': idNhan } : {};
-  const chu = <>{label}{required && <><span aria-hidden className="text-bad"> *</span><span className="sr-only"> (bắt buộc)</span></>}</>;
+  const chu = <>{label}{required && <><span aria-hidden className="text-bad"> *</span><span className="sr-only"> {t('(bắt buộc)')}</span></>}</>;
   const noi = useNoiLoi(loi);
   return (
     <BaoOTrongNhan.Provider value={setIdO}>
@@ -365,6 +366,11 @@ export function Field({ label, children, hint, required, loi, as = 'label' }: {
  * "chưa hoàn thành Case được vì còn ba việc" — và một danh sách nằm trong thẻ đoạn văn là
  * HTML sai, trình duyệt sẽ tự tách thẻ ra và làm hỏng đúng cái khung viền bên trái này.
  */
+/** PR-EN: câu đã dịch có đoạn `<b>…</b>` (thứ tự chữ đậm khác nhau giữa hai tiếng) → chữ thường + `<strong>`. Chỉ nhận `<b>`, không HTML khác. */
+export function ChuDam({ chu }: { chu: string }) {
+  return <>{chu.split(/<b>(.*?)<\/b>/).map((x, i) => (i % 2 ? <strong key={i}>{x}</strong> : x))}</>;
+}
+
 export function SectionNote({ children }: { children: ReactNode }) {
   return (
     <div className="text-xs text-slate-500 leading-relaxed border-l-2 border-slate-700 pl-2">{children}</div>
@@ -377,8 +383,8 @@ export function DaiChiXem({ children }: { children: ReactNode }) {
 }
 
 export function DataCell({ value, state, suffix }: { value: ReactNode; state?: string; suffix?: string }) {
-  if (state === 'not_applicable') return <span className="text-slate-500 text-xs italic">Không áp dụng</span>;
-  if (value === null || value === undefined) return <span className="text-slate-500 text-xs">Chưa có dữ liệu</span>;
+  if (state === 'not_applicable') return <span className="text-slate-500 text-xs italic">{t('Không áp dụng')}</span>;
+  if (value === null || value === undefined) return <span className="text-slate-500 text-xs">{t('Chưa có dữ liệu')}</span>;
   return <span className="tabular-nums">{value}{suffix}</span>;
 }
 
@@ -442,8 +448,8 @@ export function BandCell({ cell, target }: {
   const delta = cell.prev === null ? null : Math.round((cell.now - cell.prev) * 10) / 10;
   return (
     <span className="inline-flex items-baseline gap-1 whitespace-nowrap"
-      title={cell.prev === null ? 'Lượt đầu tiên, chưa có gì để so'
-        : `Lượt trước ${cell.prev} → lượt này ${cell.now}`}>
+      title={cell.prev === null ? t('Lượt đầu tiên, chưa có gì để so')
+        : t('Lượt trước {truoc} → lượt này {nay}', { truoc: cell.prev, nay: cell.now })}>
       <span className={`tabular-nums ${tone}`}>{cell.now}</span>
       {delta !== null && delta !== 0 && (
         <span className={`text-[11px] ${cell.dir > 0 ? 'text-ok' : 'text-bad'}`}>
@@ -493,10 +499,10 @@ export function ExamPlanText({ plan }: { plan?: { confidence: string; label: str
     và một cảnh báo xuất hiện ở mọi hàng thì không còn là cảnh báo.
   */
   if (!plan || plan.confidence === 'none') {
-    return <span className="text-slate-600" title="Chưa có kế hoạch thi IELTS">—</span>;
+    return <span className="text-slate-600" title={t('Chưa có kế hoạch thi IELTS')}>—</span>;
   }
   if (plan.confidence === 'month') {
-    return <span className="text-slate-300" title="Chưa chốt tuần thi nên chưa đếm ngược">{plan.label}</span>;
+    return <span className="text-slate-300" title={t('Chưa chốt tuần thi nên chưa đếm ngược')}>{plan.label}</span>;
   }
   return <span className="text-slate-100 font-medium">{plan.label}</span>;
 }
