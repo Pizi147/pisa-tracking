@@ -186,7 +186,7 @@ export async function runPrS3ChuTests(t: YThucTestKit) {
     assert(/CHU_THEM_PA/.test(docNguon('server/src/students/viecHocVien.ts')) && /CHU_THEM_PA/.test(docNguon('web/src/modules/cases/QuickReport.tsx')) && /CHU_THEM_PA/.test(docNguon('shared/domain/sosV4.ts')), 'hằng CHU_THEM_PA');
     assert(/huy\.nhan \?\? \(chan\.daSua \? t\('Huỷ thay đổi'\) : t\('Đóng'\)\)/.test(docNguon('web/src/ui/KhungPanel.tsx')), 'KhungPanel');   // PR-SL I1: chưa sửa → "Đóng"
     assert(/closeLabel = t\('Đóng'\)/.test(docNguon('web/src/ui/Drawer.tsx')), 'ConfirmDialog');   // PR-LM: nút trái đặt được ("Quay lại"), mặc định vẫn "Đóng"
-    assert(/nhan = 'Thao tác khác'/.test(docNguon('web/src/ui/MenuDong.tsx')), 'MenuDong');
+    assert(/nhan = t\('Thao tác khác'\)/.test(docNguon('web/src/ui/MenuDong.tsx')), 'MenuDong');
   });
   // ------------------------------------------------------------------ Task 5 · tiêu đề cột & số liệu (nhóm E)
   khongCon('S3 (5) · Số liệu: một số một tên (Học viên có SOS, Case chưa có PA, Tỷ lệ đủ dữ liệu, Bài quá hạn chưa nhập điểm, Cần chấm, Test sắp tới, Người phụ trách, Trạng thái, Tổng, Nguyên nhân phổ biến, Chấm đúng hạn, Kỹ năng phụ trách được)', [
