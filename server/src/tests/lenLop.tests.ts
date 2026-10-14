@@ -146,9 +146,9 @@ export async function runLenLopTests(t: YThucTestKit) {
   check('PR-LT (1) · khoaLopThuong: ưu tiên tiếp theo › nhắc › kết thúc khoá', () => {
     const base = { maChuongTrinh: 'FOU', tuanHienTai: 8, tongTuan: 8, tuanKetThuc: '2026-09-21', homNay: '2026-09-14' };
     /* PR-DH 04/10: D1 — em chưa có quyết định chuyển lớp luôn có cờ (khớp số badge), kể cả khi đã ghi lộ trình tiếp theo. */
-    assert(d.khoaLopThuong({ ...base, tiepTheo: 'BE', nhacLoTrinh: true }).phu === 'tiếp theo: BE · chưa có quyết định chuyển lớp', 'Có tiếp theo thì đứng đầu, cờ đi kèm');
+    assert(d.khoaLopThuong({ ...base, tiepTheo: 'BE', nhacLoTrinh: true }).phu === 'tiếp theo: BE · chưa chốt lộ trình', 'Có tiếp theo thì đứng đầu, cờ đi kèm');
     assert(d.khoaLopThuong({ ...base, tiepTheo: 'BE', nhacLoTrinh: false }).phu === 'tiếp theo: BE', 'Có tiếp theo, đã có quyết định → chỉ lộ trình');
-    assert(d.khoaLopThuong({ ...base, tiepTheo: null, nhacLoTrinh: true }).phu === 'chưa có quyết định chuyển lớp', 'Không tiếp theo, có nhắc (PR-Dọn Câu 2 = B)');
+    assert(d.khoaLopThuong({ ...base, tiepTheo: null, nhacLoTrinh: true }).phu === 'chưa chốt lộ trình', 'Không tiếp theo, có nhắc (PR-Dọn Câu 2 = B)');
     assert(d.khoaLopThuong({ ...base, tiepTheo: null, nhacLoTrinh: false }).phu === 'kết thúc W4 SEP', 'Không tiếp theo, không nhắc → kết thúc khoá');
   });
 
@@ -162,7 +162,7 @@ export async function runLenLopTests(t: YThucTestKit) {
     assert(het.an[0].nhan === '3 HV cần xếp lớp tiếp' && /hết khoá/.test(het.an[0].title ?? ''), 'Hết khoá: số em cần xếp lớp');
     const chua = d.badgeLop({ ...goc, needsPlacement: false, canXepLop: 0 });
     /* PR-Dọn (Câu 2 = B): lớp chưa hết khoá → em chưa có quyết định chuyển lớp (cùng tập dòng Cần xử lý). */
-    assert(chua.an[0].nhan === '5 HV chưa có quyết định chuyển lớp' && /Lộ trình tiếp theo/.test(chua.an[0].title ?? '') && chua.an[0].tone === 'warn', JSON.stringify(chua.an[0]));
+    assert(chua.an[0].nhan === '5 HV chưa chốt lộ trình' && /Lộ trình tiếp theo/.test(chua.an[0].title ?? '') && chua.an[0].tone === 'warn', JSON.stringify(chua.an[0]));
   });
 
   // ==================================================================== trongHaiTuanCuoi

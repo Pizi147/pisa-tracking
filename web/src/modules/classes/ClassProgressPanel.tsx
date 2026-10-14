@@ -145,7 +145,7 @@ export function PhanLichTest({ classId, tieuDe, suaDuoc, onDone, onChuyenTiep }:
         <div className="space-y-4">
           <p className="m-0 text-xs text-slate-400">{data.label ?? 'Chưa tính được tiến độ'}</p>
           <Field as="div" label="Tuần khai giảng" required={laLopThuong} loi={lf.loiCua(loi, 'khai-giang')}
-            hint={laLopThuong ? `Tuần này là tuần học 1 của lớp. ${MOC_KIEM_TRA_NORMAL}` : 'Tuần bắt đầu mặc định khi thêm học viên vào lớp.'}>
+            hint={laLopThuong ? `Tuần khai giảng = tuần học 1. ${MOC_KIEM_TRA_NORMAL}` : 'Tuần bắt đầu mặc định khi thêm học viên vào lớp.'}>
             <div {...lf.o(loi, 'khai-giang')}>
               <WeekPicker periodId={startPeriodId} label={null} scope="planning"
                 onPeriod={(id) => { setTouched(true); setStartPeriodId(id); }} />

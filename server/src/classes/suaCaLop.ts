@@ -1,6 +1,6 @@
 import { db, theoLo, tx } from '../db.ts';
 import {
-  CO_DIEM_SQL, chuTargetKck, PERMISSIONS, TOI_DA_LUU_SUA_CA_LOP, cauMtSeDoi, coONhapLienHe, cotLuoiNhap, NHAN_LIEN_HE, TRUONG_LIEN_HE, type VanDeNhap,
+  CO_DIEM_SQL, chuTargetKck, PERMISSIONS, TOI_DA_LUU_SUA_CA_LOP, cauMtSeDoi, coONhapLienHe, cotLuoiNhap, NHAN_LIEN_HE, type VanDeNhap,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { chanGiaoDichNeuSapHetGio } from '../platform/hanGio.ts';
@@ -32,7 +32,6 @@ export const TOI_DA_DONG_SUA_CA_LOP = 60;
 export const CHI_QL_DOI_TARGET = 'Chỉ Quản lý đổi được Target.';
 const HO_SO = ['fullName', 'dob', 'email', 'consultantUserId', 'phone', 'parentName', 'parentRelation', 'parentPhone'] as const;
 const LO_TRINH = ['startWeek', 'examDate', 'target', 'baseline'] as const;
-const LIEN_HE = new Set<string>(TRUONG_LIEN_HE);
 const NHAN: Record<string, string> = { fullName: 'Họ tên', dob: 'Ngày sinh', email: 'Email', consultantUserId: 'TVV', startWeek: 'Tuần bắt đầu', examDate: 'Dự kiến thi', target: 'Target', baseline: 'Điểm đầu vào', ...NHAN_LIEN_HE };
 
 /**
@@ -142,10 +141,7 @@ function kiemLo(p: Principal, classId: number, input: DauVao) {
     for (const k of Object.keys(hoSo)) thu(k, () => chuanHoaSuaHoSo({ [k]: hoSo[k] }));
     /* OV-8b: TVV cùng chi nhánh (lớp đang học = chi nhánh của em) — báo ở xem trước, cùng câu với hồ sơ. */
     if (hoSo.consultantUserId != null && Number(hoSo.consultantUserId) !== s.consultant_user_id) thu('consultantUserId', () => kiemTvvCungChiNhanh(Number(hoSo.consultantUserId), cls.branch_id));
-    /* PR-OV2b: CHỈ dòng có sửa phải đủ ngày sinh (em cũ thiếu mà không đụng tới thì không chặn); email không bắt buộc (PR-OV2c). Ô gửi trống đã báo ở trên. */
-    if ([...HO_SO, ...LO_TRINH].some((k) => !LIEN_HE.has(k) && r[k] !== undefined)) {   // OV-10b: chỉ sửa liên hệ thì không đòi ngày sinh
-      if (r.dob === undefined && !s.dob) issues.push({ row: i + 1, field: 'dob', message: 'Bắt buộc — em chưa có, điền khi sửa dòng này.', muc: 'loi' });
-    }
+    /* Q3 (chủ SP 14/10): ngày sinh, email không bắt buộc — thiếu thì vào "Thiếu thông tin" (`missingForStudent`), TVV bổ sung sau. */
     if (LO_TRINH.some((k) => r[k] !== undefined) && !c) issues.push({ row: i + 1, field: 'studentId', message: 'Học viên chưa có lộ trình.', muc: 'loi' });
     let tuanMoi: string | undefined;
     if (c && r.startWeek !== undefined) tuanMoi = thu('startWeek', () => docTuanBatDau(c, r.startWeek));

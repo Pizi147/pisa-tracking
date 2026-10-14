@@ -270,7 +270,7 @@ export async function runPrHk2Tests(t: YThucTestKit) {
     assert(/className="btn btn-sm max-sm:hidden"[^]*?>\+ Lớp mới</.test(s) && /className="btn btn-sm btn-primary max-sm:hidden"[^]*?>\+ Học viên</.test(s), 'hai nút ngoài phải max-sm:hidden');
     const mn = s.slice(s.indexOf('<MenuDong nhan="Thao tác trang"'), s.indexOf('<MenuDong nhan="Thao tác trang"') + 900);
     assert(/dienThoai && data\?\.coTheTaoLop/.test(mn) && /nhan: '\+ Lớp mới'/.test(mn), 'mục "+ Lớp mới" trong menu chỉ khi dienThoai');
-    assert(/dienThoai && \(data\?\.rows[^)]*\)\.some\(\(r\) => r\.viewer\.coTheSuaHocVien\)/.test(mn) && /nhan: '\+ Học viên'/.test(mn), 'mục "+ Học viên" trong menu chỉ khi dienThoai');
+    assert(/dienThoai && data\?\.coTheThemHocVien/.test(mn) && /nhan: '\+ Học viên'/.test(mn), 'mục "+ Học viên" trong menu chỉ khi dienThoai');   // OV-11g HL-14: cờ trang
     assert(/keTruoc/.test(mn), 'Lưu trữ cách một đường kẻ khi có mục thêm');
   });
 
@@ -432,7 +432,7 @@ export async function runPrHk2Tests(t: YThucTestKit) {
     const v = than(doc('web/src/ui/ViecTiep.tsx'), 'ViecTiep');
     const ngoai = /<span className="([^"]*)" title=\{v\.title\}>/.exec(v);
     assert(ngoai && /(^|\s)sm:line-clamp-2(\s|$)/.test(ngoai[1]) && !/(^|\s)line-clamp-2(\s|$)/.test(ngoai[1]), `khối ngoài: ${ngoai?.[1]}`);
-    const qh = v.indexOf('<QuaHan'), viec = v.indexOf('{v.viec}'), han = v.indexOf('{v.han}');
+    const qh = v.indexOf('<QuaHan'), viec = v.indexOf('{giuMaTuan(v.viec)}'), han = v.indexOf('{v.han}');   // OV-11g CA2-8: mã tuần không ngắt
     assert(qh >= 0 && qh < viec, '⚠ quá hạn phải đứng trước chữ việc');
     assert(han > viec, 'hạn thường giữ sau chữ việc');
     assert(!/shrink-0/.test(v), 'cụm hạn còn shrink-0');

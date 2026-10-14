@@ -28,17 +28,17 @@ const dongTrong = (r: Row) => Object.values(r).every((v) => !String(v ?? '').tri
 /* Bề rộng cột theo M2 (px). Cột Tình trạng do panel vẽ, không nằm trong `cotLuoiNhap`. */
 const RONG: Partial<Record<CotNhap, number>> = {
   /* I3 (PR-SL): "Overall" và chữ mẫu "dd/mm/yyyy" không bị cắt. */
-  fullName: 170, dob: 116, email: 190, baselineScore: 72, entryListening: 48, entryReading: 48, entryWriting: 48,
+  fullName: 170, dob: 170, email: 190, baselineScore: 72, entryListening: 48, entryReading: 48, entryWriting: 48,
   entrySpeaking: 48, target: 80, examDate: 104, daThiToiMt: 104, startWeek: 172,   // OV-9: Target 80 cho "6.5 KCK"
 };
 const GOI_Y_COT: Partial<Record<CotNhap, string>> = {
-  dob: 'Gõ dd/mm/yyyy.',
+  fullName: 'Em đã có hồ sơ thì dùng Chuyển lớp, không tạo mới.',
   baselineScore: 'Con số trên phiếu điểm chính thức. Nhập độc lập với bốn môn — không phải trung bình cộng.',
   entryWriting: 'Writing TỔNG trên phiếu điểm — không chia W1/W2.',
   target: `Band 0–9, bước 0,5. Em không cam kết đầu ra: thêm KCK (ví dụ 6.5 KCK; chưa có Target thì gõ KCK) — vẫn có kỳ vọng MT, không tính SOS. Bỏ trống = chưa có Target. Lớp thường: chỉ để theo dõi.`,
   examDate: 'Gõ dd/mm/yyyy nếu đã biết ngày, mm/yyyy nếu mới biết tháng.',
   daThiToiMt: 'Em cũ đã thi tới MT mấy ngoài web — web tạo sẵn các lượt đó là MT cũ để nhập điểm bù. Bỏ trống = em mới.',
-  startWeek: 'Theo tuần chọn ở đầu panel; đổi riêng từng dòng được.',
+  startWeek: 'Theo tuần chọn ở đầu panel; đổi riêng từng dòng được. Em vào muộn: cột Trạng thái báo trước MT nào sẽ là MT cũ.',
 };
 
 /** Mũi tên nhỏ vẽ SVG (▸/▾ của Inter ở cỡ chữ nhỏ chỉ còn như một dấu chấm). */
@@ -150,12 +150,8 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
   const denDongCanSua = () =>
     document.querySelector('[data-needs-fix="true"]')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
-  const goiYTuan = !cls ? null
-    : !macDinh ? 'Lớp chưa có ngày khai giảng — chọn tuần bắt đầu cho cả lô.'
-    : startWeek ? 'Đổi ở đây thì mọi dòng chưa sửa tay đổi theo.'
-    : !cls.start_date ? 'Lớp chưa có ngày khai giảng nên mặc định tuần này. Đổi ở đây thì mọi dòng chưa sửa tay đổi theo.'
-    : lopThuong ? 'Lấy sẵn tuần khai giảng của lớp. Đổi ở đây thì mọi dòng chưa sửa tay đổi theo.'
-    : 'Lấy sẵn tuần khai giảng của lớp. Em vào muộn thì đổi tuần — cột Trạng thái báo trước MT nào sẽ là MT cũ.';
+  /* CA2-10: bỏ câu giải thích dưới ô — chỉ giữ chỗ người nhập phải tự chọn. */
+  const goiYTuan = cls && !macDinh ? 'Lớp chưa có ngày khai giảng.' : null;
 
   const hoSoLop = classId ? `/hoc-vien/lop/${classId}` : null;
 
@@ -183,7 +179,7 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
       <div className="space-y-4 pt-3">
         {/* LỚP VÀ TUẦN BẮT ĐẦU — hai quyết định của CẢ LÔ, đặt ở trên cùng: lớp quyết định lưới có những cột nào. */}
         <div className="surface-2 rounded-lg p-3 grid gap-3 sm:grid-cols-2">
-          <Field label="Thêm vào lớp" required hint="Cột “Lớp” và “Lộ trình” trong file dán sẽ bị bỏ qua — theo lớp chọn ở đây." loi={lf.loiCua(loiLo, 'lop')}>
+          <Field label="Thêm vào lớp" required loi={lf.loiCua(loiLo, 'lop')}>
             <select className="field w-full" {...lf.o(loiLo, 'lop')} value={classId ?? ''}
               onChange={(e) => { setClassId(Number(e.target.value) || null); setStartWeek(''); setKetQua(null); setPreview(null); setDaDan(null); }}>
               <option value="">Chọn lớp…</option>
@@ -195,11 +191,6 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
           <Field label="Tuần bắt đầu học (mặc định cho mọi dòng)" hint={goiYTuan ?? undefined}>
             <ONgay kieu="tuan" value={tuanChung} onChange={(v) => { setStartWeek(v); setPreview(null); }} />
           </Field>
-          {!classId && (
-            <p className="text-xs text-amber-200 m-0 sm:col-span-2">
-              Chọn lớp trước thì lưới bên dưới mới biết phải hỏi những cột nào.
-            </p>
-          )}
         </div>
 
         {/* I3: ô dán phông thường, nút "Đọc nội dung đã dán" nằm DƯỚI ô dán. */}
@@ -210,9 +201,7 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
               className="field text-xs"
               rows={3}
               disabled={!classId}
-              placeholder={classId
-                ? 'Dán từ Excel, có hoặc không có dòng tiêu đề. Không có tiêu đề thì web đọc theo mẫu Excel chung (thứ tự cột Fast Track).'
-                : 'Chọn lớp trước'}
+              placeholder={classId ? 'Dán từ Excel' : 'Chọn lớp trước'}
               value={pasteText}
               onChange={(e) => setPasteText(e.target.value)}
               onPaste={(e) => {
@@ -304,6 +293,10 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
                             {c.key === 'startWeek' && (!giaTriTuan || ISO_NGAY.test(giaTriTuan)) ? (
                               <ONgay gon kieu="tuan" value={giaTriTuan} ariaLabel={nhan} invalid={loiO}
                                 onChange={(v) => setCell(i, 'startWeek', v === tuanChung ? '' : v)} />
+                            ) : c.key === 'dob' && (!r.dob || ISO_NGAY.test(String(r.dob))) ? (
+                              /* Quyết định 06/10: ô ngày = gõ + nút lịch (như Sửa cả lớp). Chữ dán chưa phải ISO giữ ô gõ thường — máy chủ đọc. */
+                              <ONgay gon kieu="ngay" value={String(r.dob ?? '')} ariaLabel={nhan} invalid={loiO}
+                                toiDa={homNay} onChange={(v) => setCell(i, 'dob', v)} />
                             ) : (
                               <input
                                 className={`field${c.so ? ' text-right tabular-nums' : ''}${vien}`}
@@ -362,11 +355,6 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
           <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => doiLuoi((rs) => [...rs, {}])}>
             + Thêm dòng
           </button>
-          {/* I3: lời nhắc tách hai dòng ngắn. */}
-          <div className="text-xs text-slate-400">
-            <p className="m-0">Ô trống hoặc “-” = chưa có, không phải 0. Riêng Target: thêm KCK = không cam kết (6.5 KCK), “-” = KCK chưa có Target.</p>
-            <p className="m-0">Em đã có hồ sơ thì dùng Chuyển lớp, không tạo mới.</p>
-          </div>
         </div>
       </div>
     </KhungPanel>

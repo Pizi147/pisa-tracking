@@ -141,14 +141,14 @@ export async function runPrLt2aTests(t: YThucTestKit) {
   });
 
   check('LT2a (3) · BE Progress Test trượt W, S → 2 PA KHÁC nhóm, người dạy = GVBM từng môn', () => {
-    const em = taoEm('LT2a BE A', 'MB BE 08');
+    const em = taoEm('LT2a BE A', 'MB BE 04');
     nhap(em.pt!, { listening: 18, reading: 18, writing: 10, speaking: 10 });
     const pas = caseCua(em.id).flatMap((c) => paCua(c.id));
     assert(pas.length === 2 && new Set(pas.map((x) => x.nhom_bo_tro)).size === 2, 'hai nhóm');
     assert(pas.every((x) => /^gk:\d+:(writing|speaking)$/.test(x.nhom_bo_tro) && x.description.includes('1 buổi/tuần')), pas.map((x) => x.nhom_bo_tro).join());
     const dayW = pas.find((x) => x.nhom_bo_tro.endsWith('writing'))!.performer_user_id, dayS = pas.find((x) => x.nhom_bo_tro.endsWith('speaking'))!.performer_user_id;
     const gv = (lop: string, skill: string) => get(`SELECT ta.user_id u FROM teacher_assignments ta JOIN classes c ON c.id = ta.class_id WHERE c.code = ? AND ta.skill = ? AND ta.status = 'active'`, lop, skill).u;
-    assert(dayW === gv('MB BE 08', 'writing') && dayS === gv('MB BE 08', 'speaking'), `người dạy ${dayW}/${dayS}`);
+    assert(dayW === gv('MB BE 04', 'writing') && dayS === gv('MB BE 04', 'speaking'), `người dạy ${dayW}/${dayS}`);
   });
 
   check('LT2a (3) · Final Test trượt → 0 tín hiệu, 0 Case (cả FOU và Pre FOU); Progress Test sửa lên đạt → Case tự huỷ + PA huỷ, hết môn trượt → Báo PH removed', () => {
@@ -178,14 +178,14 @@ export async function runPrLt2aTests(t: YThucTestKit) {
   const chiTiet = (who: any, caseId: number) => cases.caseDetail(who, caseId) as any;
 
   check('LT2a (4) · BE: GVBM W Xác nhận Case (không kế hoạch) → PA chạy ngay (hạn T2 tuần sau, mốc Final Test, người xác nhận), Case Đang làm; không thẻ kế hoạch', () => {
-    const em = taoEm('LT2a BE KH', 'MB BE 08');
+    const em = taoEm('LT2a BE KH', 'MB BE 04');
     nhap(em.pt!, { listening: 18, reading: 18, writing: 10, speaking: 18 });
     const c = caseTheoMon(em.id, 'writing');
-    const khoa = gvOf('MB BE 08', 'writing');
+    const khoa = gvOf('MB BE 04', 'writing');
     sosAuto.xacNhanCase(khoa, c.id, XN('writing', 'BE'));
     const pa = paBt(c.id);
     assert(pa.status === 'started' && pa.confirmed_by === khoa.userId && pa.action_due === d.weeklyUpdateDue(TODAY) && pa.started_date === TODAY, JSON.stringify(pa));
-    assert(pa.followup_due === boTro.mocCuoiKhoa(em.pt ? get('SELECT cycle_id c FROM assessment_attempts WHERE id = ?', em.pt).c : null, classId('MB BE 08')), 'mốc Final Test');
+    assert(pa.followup_due === boTro.mocCuoiKhoa(em.pt ? get('SELECT cycle_id c FROM assessment_attempts WHERE id = ?', em.pt).c : null, classId('MB BE 04')), 'mốc Final Test');
     assert(chiTiet(khoa, c.id).trangThaiV4.k === 'dang-lam' && get('SELECT status FROM sos_cases WHERE id = ?', c.id).status === 'in_progress', 'Case Đang làm');
     const moc = all('SELECT kind FROM case_milestones WHERE case_id = ?', c.id).map((m) => m.kind);
     assert(moc.includes('xac_nhan_case') && !moc.includes('nop_ke_hoach'), moc.join());
@@ -207,10 +207,10 @@ export async function runPrLt2aTests(t: YThucTestKit) {
   });
 
   check('LT2a (4) · Thẻ ke_hoach_bo_tro cũ (đọc lịch sử): Quản lý duyệt hoặc từ chối → 409, thẻ giữ nguyên', () => {
-    const em = taoEm('LT2a BE TC', 'MB BE 08');
+    const em = taoEm('LT2a BE TC', 'MB BE 04');
     nhap(em.pt!, { listening: 18, reading: 18, writing: 10, speaking: 18 });
     const c = caseTheoMon(em.id, 'writing');
-    const id = yc.taoYeuCau(conn, { loai: 'ke_hoach_bo_tro', doiTuongLoai: 'nhom_bo_tro', doiTuongId: paBt(c.id).id, hocVienId: em.id, nguoiXin: gvOf('MB BE 08', 'writing').userId,
+    const id = yc.taoYeuCau(conn, { loai: 'ke_hoach_bo_tro', doiTuongLoai: 'nhom_bo_tro', doiTuongId: paBt(c.id).id, hocVienId: em.id, nguoiXin: gvOf('MB BE 04', 'writing').userId,
       lyDo: 'Kế hoạch cũ', duLieu: { nhom: paBt(c.id).nhom_bo_tro, noiDungYeu: 'a', keHoach: 'b' } });
     assert(maLoi(() => yc.duyetYeuCau(P.mbManager, id)) === 409, 'duyệt thẻ cũ phải 409');
     assert(maLoi(() => yc.tuChoiYeuCau(P.mbManager, id, 'Không còn bước này.')) === 409, 'từ chối thẻ cũ phải 409');
@@ -218,7 +218,7 @@ export async function runPrLt2aTests(t: YThucTestKit) {
   });
 
   await checkAsync('LT2a (4) · HTTP: POST /cases/:id/xac-nhan không kế hoạch → 200 (BE W và S); POST /bo-tro/:id/ke-hoach → 404', async () => {
-    const em = taoEm('LT2a HTTP', 'MB BE 08');
+    const em = taoEm('LT2a HTTP', 'MB BE 04');
     nhap(em.pt!, { listening: 18, reading: 18, writing: 10, speaking: 10 });
     const cW = caseTheoMon(em.id, 'writing'), cS = caseTheoMon(em.id, 'speaking');
     const may = createApp().listen(0);
@@ -229,7 +229,7 @@ export async function runPrLt2aTests(t: YThucTestKit) {
       return fetch(`http://127.0.0.1:${cong}/api${url}`, { method: 'POST', headers: { 'content-type': 'application/json', cookie: ck }, body: JSON.stringify(body) });
     };
     try {
-      const khoa = gvOf('MB BE 08', 'writing'), trang = gvOf('MB BE 08', 'speaking');
+      const khoa = gvOf('MB BE 04', 'writing'), trang = gvOf('MB BE 04', 'speaking');
       const r1 = await goi(khoa.userId, `/cases/${cW.id}/xac-nhan`, XN('writing', 'BE'));
       assert(r1.status === 200, `xác nhận W: ${r1.status} ${await r1.text()}`);
       const r2 = await goi(trang.userId, `/cases/${cS.id}/xac-nhan`, XN('speaking', 'BE'));

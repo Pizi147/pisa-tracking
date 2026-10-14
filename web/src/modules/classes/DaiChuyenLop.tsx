@@ -19,8 +19,10 @@ function Dai({ nhan, do: doHan, children, nut }: { nhan: string; do?: boolean; c
 }
 
 /** Hồ sơ lớp, dải ngay dưới đầu trang: A (nguồn — Kết thúc khoá / Bàn giao) và H (đích — Sắp nhận). */
-export function DaiLopChuyen({ dai, homNay, onChuyenTiep, onBanGiao }: {
+export function DaiLopChuyen({ dai, homNay, onChuyenTiep, onBanGiao, anLoTrinh = false }: {
   dai: DaiLop | null; homNay: string | null;
+  /** CA2-6: đang ở cách xem "Lộ trình tiếp theo" thì không nhắc lại dải mở chính chỗ đó. */
+  anLoTrinh?: boolean;
   onChuyenTiep: () => void;
   /** Mở panel Bàn giao: `lop` = lớp NGUỒN (mặc định lớp đang xem), `mon` = mở bảng GVBM của môn đó. */
   onBanGiao: (o: { lop?: number; mon?: string }) => void;
@@ -37,10 +39,11 @@ export function DaiLopChuyen({ dai, homNay, onChuyenTiep, onBanGiao }: {
           <b className="tabular-nums text-slate-100">{dai.chuaChuyenDuoc.n} em</b> · {dai.chuaChuyenDuoc.loi.replace(/\.$/, '')} · chọn tuần hoặc lớp chuyển đến mới, hoặc huỷ quyết định
         </Dai>
       )}
-      {lt && (
+      {lt && !anLoTrinh && (
+        /* HL-5 · CA2-6: hạn chốt bằng `<Han>` (quá hạn có ⚠ + chữ, không chỉ màu) như dải Bàn giao. */
         <Dai nhan="Lộ trình tiếp theo" do={lt.do}
-          nut={<button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" onClick={onChuyenTiep}>Mở</button>}>
-          {lt.hanChot ? <>chốt trước hết <span className="tabular-nums">{tuanLich(lt.hanChot, h)}</span> · </> : ''}<b className="tabular-nums text-slate-100">{lt.daChot}/{lt.tong} em</b>
+          nut={<button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" onClick={onChuyenTiep}>{v.coTheRaLenh ? 'Chốt lộ trình' : 'Xem'}</button>}>
+          <b className="tabular-nums text-slate-100">{lt.daChot}/{lt.tong} em</b> đã chốt{lt.hanChot && <> · <Han loai="viec-van-hanh" han={lt.hanChot} /></>}
         </Dai>
       )}
       {dai.banGiao && (v.laGvcn || v.xacNhanDuoc) && (

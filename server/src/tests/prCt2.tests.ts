@@ -121,8 +121,8 @@ export async function runPrCt2Tests(t: YThucTestKit) {
   const XN = (topic: string, ct: string) => ({ primaryCode: d.issuesForTopic(topic, ct)[0].code, urgency: 'attention', moTa: 'Em mất điểm ở phần này, thiếu nền tảng cơ bản.' });
 
   check('CT2-3 · BE trượt S → Xác nhận Case (không kế hoạch) → PA chạy ngay, hạn T2 tuần sau; không thẻ kế hoạch; Công việc không có nhóm đó; việc tiếp Kết quả', () => {
-    const sid = emTruot('CT2 BE S', 'MB BE 08', { speaking: 10 });
-    const c = caseMon(sid, 'speaking'), gv = gvOf('MB BE 08', 'speaking');
+    const sid = emTruot('CT2 BE S', 'MB BE 04', { speaking: 10 });
+    const c = caseMon(sid, 'speaking'), gv = gvOf('MB BE 04', 'speaking');
     sosAuto.xacNhanCase(gv, c.id, XN('speaking', 'BE'));
     const pa = paBt(c.id);
     assert(pa.status === 'started' && pa.action_due === d.weeklyUpdateDue(TODAY) && pa.started_date === TODAY && pa.confirmed_by === gv.userId, JSON.stringify(pa));
@@ -161,9 +161,9 @@ export async function runPrCt2Tests(t: YThucTestKit) {
     /* Dựng trạng thái CŨ: Case đã có nguyên nhân, PA bổ trợ còn planned (đường cũ chờ kế hoạch). */
     const veCu = (caseId: number) => conn.prepare(`UPDATE case_interventions SET status = 'planned', started_date = NULL, cycle_started_on = NULL, action_due = NULL,
       confirmed_at = NULL, confirmed_by = NULL WHERE case_id = ? AND kind = 'bo_tro'`).run(caseId);
-    const s1 = emTruot('CT2 MIG A', 'MB FOU 12', { writing: 11 }), s2 = emTruot('CT2 MIG B', 'MB BE 08', { writing: 10 });
+    const s1 = emTruot('CT2 MIG A', 'MB FOU 12', { writing: 11 }), s2 = emTruot('CT2 MIG B', 'MB BE 04', { writing: 10 });
     const c1 = caseMon(s1, 'writing'), c2 = caseMon(s2, 'writing');
-    const khoaFou = gvOf('MB FOU 12', 'writing'), khoaBe = gvOf('MB BE 08', 'writing');
+    const khoaFou = gvOf('MB FOU 12', 'writing'), khoaBe = gvOf('MB BE 04', 'writing');
     sosAuto.xacNhanCase(khoaFou, c1.id, XN('writing', 'FOU'));
     sosAuto.xacNhanCase(khoaBe, c2.id, XN('writing', 'BE'));
     veCu(c1.id); veCu(c2.id);

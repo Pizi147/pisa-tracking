@@ -23,7 +23,7 @@ type DuLieu = { lop: { id: number; code: string }; lopThuong: boolean; coTheSuaT
 type XemTruoc = { rows: { studentId: number; issues: VanDeNhap[] }[]; canhBaoMt: { studentId: number; cau: string }[] };
 
 const COT: { key: Cot; nhan: string; rong: number; so?: boolean }[] = [
-  { key: 'fullName', nhan: 'Họ và tên', rong: 210 }, { key: 'dob', nhan: 'Ngày sinh *', rong: 190 },
+  { key: 'fullName', nhan: 'Họ và tên', rong: 210 }, { key: 'dob', nhan: 'Ngày sinh', rong: 190 },
   { key: 'email', nhan: 'Email', rong: 250 }, { key: 'consultantUserId', nhan: 'TVV', rong: 210 },
   { key: 'phone', nhan: NHAN_LIEN_HE.phone, rong: 150 }, { key: 'parentName', nhan: NHAN_LIEN_HE.parentName, rong: 190 },
   { key: 'parentRelation', nhan: NHAN_LIEN_HE.parentRelation, rong: 110 }, { key: 'parentPhone', nhan: NHAN_LIEN_HE.parentPhone, rong: 150 },
@@ -50,7 +50,7 @@ const chuan = (k: Cot, v: string) => {
 
 /**
  * PR-SL (Q-0310-3): SỬA THÔNG TIN CẢ LỚP trên một panel — lưới giống Thêm học viên, KHÔNG dán Excel. Một hàng một em đang học (A→Z),
- * tám ô: Họ tên · Ngày sinh * · Email · TVV (chọn người, PR-OV2b) · Tuần bắt đầu · Dự kiến thi · Target · Điểm đầu vào (lớp thường không có điểm đầu vào — `lopThuong`).
+ * tám ô: Họ tên · Ngày sinh · Email · TVV (chọn người, PR-OV2b) · Tuần bắt đầu · Dự kiến thi · Target · Điểm đầu vào (lớp thường không có điểm đầu vào — `lopThuong`).
  * Ô đã đổi tô nhấn + chấm, mỗi ô có Hoàn tác về giá trị gốc. Xem trước tự động (400 ms) → lỗi đỏ dưới ô, cảnh báo MT dời vàng cuối hàng.
  * Một nút Lưu, gửi THEO LÔ `LO_LUU_SUA_CA_LOP` em (mỗi lô một request, một giao dịch, một khoá chống gửi trùng — 10 s của Netlify).
  * Lô lỗi thì dừng: chân panel "Đã lưu n em · m em chưa lưu"; em đã lưu thôi tô nhấn, em chưa lưu giữ nguyên để bấm Lưu lại.
@@ -216,8 +216,7 @@ export function SuaCaLopPanel({ classId, onClose, onDone }: { classId: number; o
                         {cot.map((c) => {
                           const v = sua[r.studentId]?.[c.key] ?? nen(r, c.key);
                           const daSuaO = doi[c.key] !== undefined;
-                          /* PR-OV2b: dòng có sửa mà em cũ thiếu ngày sinh → lỗi ở đúng ô đó dù ô chưa đụng tới (email không bắt buộc — PR-OV2c). */
-                          const loi = daSuaO || (c.key === 'dob' && Object.keys(doi).length)
+                          const loi = daSuaO
                             ? vanDe(r.studentId, c.key).find((i) => i.muc === 'loi')?.message ?? null : null;
                           const khoaO = (O_LO_TRINH.has(c.key) && !r.coLoTrinh) || (c.key === 'target' && !d.coTheSuaTarget);
                           const nhan = `${c.nhan} · ${r.fullName}`;
