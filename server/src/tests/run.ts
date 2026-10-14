@@ -4719,7 +4719,7 @@ check('Ma trận tình huống vòng 5 có đủ những ô đã chốt ở mụ
   one('lộ trình đã chốt TUẦN thi', 'SELECT COUNT(*) n FROM learning_cycles WHERE exam_period_id IS NOT NULL');
 });
 
-check('[8.3] Phương án bắt đầu 14/09/2026: ghi kết quả trước hết T2 21/09, kết thúc 27/09', () => {
+check('[8.3] → OV-12a · Phương án bắt đầu 14/09/2026: ghi kết quả trước hết T3 29/09 (kỳ hai tuần), kết thúc 27/09', () => {
   /*
    * Ô kiểm tra BẢNG HẠN MỤC 8.3, viết thẳng vào dữ liệu mẫu và đối chiếu được bằng mắt trên
    * màn hình. Ví dụ của chính đề bài: bắt đầu thứ Bảy 19/9 → cập nhật 20/9, kết thúc 27/9.
@@ -4748,8 +4748,8 @@ check('[8.3] Phương án bắt đầu 14/09/2026: ghi kết quả trước hế
     )
     .get() as any | undefined;
   assert(row, 'Dữ liệu demo không có case nào mở đúng ngày demo để đối chiếu bằng mắt');
-  assert(row!.action_due === '2026-09-21',
-    `Hạn ghi kết quả trong dữ liệu mẫu là ${row!.action_due}, phải là 2026-09-21 (hết Thứ Hai, R-PA1)`);
+  assert(row!.action_due === '2026-09-29',
+    `Hạn ghi kết quả trong dữ liệu mẫu là ${row!.action_due}, phải là 2026-09-29 (hết Thứ Ba sau kỳ hai tuần, OV-12a)`);
   /* PR-SOS (Q28-4): PA thường không còn "dự kiến kết thúc" — `planEndDefault` vẫn là hàm thuần, dữ liệu mẫu không ghi. */
   assert(row!.followup_due === null,
     `PA thường trong dữ liệu mẫu còn ngày dự kiến kết thúc ${row!.followup_due} (Q28-4: phải NULL)`);
@@ -7690,9 +7690,9 @@ check('PR-E · <Han>: "Dự kiến kết thúc" KHÔNG phải hạn — không b
   assert(!/quá hạn/.test(v.text), `Ngày dự kiến bị ghi là quá hạn: "${v.text}"`);
 });
 
-check('PR-E · <Han>: cập nhật phương án cũng đếm số ngày quá hạn từ mốc Thứ Hai (đổi nghĩa PR-UX0, mockup 17 #1; PR-N1 R-PA3)', () => {
-  const v = domain.deadlineView({ kind: 'cap-nhat-pa', due: '2026-09-07', today: '2026-09-14' });
-  assert(v.tone === 'overdue' && v.daysOverdue === 7 && v.quaHan === 'quá hạn 7 ngày' && v.han === 'hạn hết T2 07/09',
+check('PR-E · <Han>: cập nhật phương án cũng đếm số ngày quá hạn từ mốc hạn (Thứ Ba, OV-12a; đổi nghĩa PR-UX0, mockup 17 #1; PR-N1 R-PA3)', () => {
+  const v = domain.deadlineView({ kind: 'cap-nhat-pa', due: '2026-09-08', today: '2026-09-15' });
+  assert(v.tone === 'overdue' && v.daysOverdue === 7 && v.quaHan === 'quá hạn 7 ngày' && v.han === 'hạn hết T3 08/09',
     `Phải báo quá hạn 7 ngày: "${v.text}" (${v.daysOverdue}, ${v.han})`);
 });
 

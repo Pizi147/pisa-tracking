@@ -109,13 +109,13 @@ export async function runSuaLoiNongTests(t: YThucTestKit) {
     assert(the?.trang_thai === 'tu_dong' && /Case đã đóng|không còn chờ/.test(the.ly_do_dong), JSON.stringify(the));
     t.assertThrows(() => casesSvc.respondToPlan(t.P.mbManager, ivId, { decision: 'approved' }), /đã huỷ/, 'duyệt được PA đã huỷ');
   });
-  check('N1 (2) · K3-18: đề xuất PA có hạn duyệt 5 ngày tính cả hôm gửi; duyệt xong hạn tuần là Thứ Hai', () => {
+  check('N1 (2) · K3-18: đề xuất PA có hạn duyệt 5 ngày tính cả hôm gửi; duyệt xong hạn ghi kết quả là Thứ Ba (OV-12a)', () => {
     const { ivId } = taoPa('duyet', { needsApproval: true, status: 'planned', kind: 'tutor' });
     const iv = t.conn.prepare('SELECT approval_due FROM case_interventions WHERE id = ?').get(ivId) as any;
     assert(iv.approval_due === t.addDays(t.TODAY, 4), `approval_due ${iv.approval_due}`);
     casesSvc.respondToPlan(t.P.mbManager, ivId, { decision: 'approved' });
     const sau = t.conn.prepare('SELECT action_due FROM case_interventions WHERE id = ?').get(ivId) as any;
-    assert(new Date(`${sau.action_due}T00:00:00Z`).getUTCDay() === 1, `hạn sau duyệt ${sau.action_due} không phải Thứ Hai`);
+    assert(new Date(`${sau.action_due}T00:00:00Z`).getUTCDay() === 2, `hạn sau duyệt ${sau.action_due} không phải Thứ Ba`);
   });
   check('N1 (2) · K3-02: ô "Việc cần làm tiếp" lấy hạn tuần, không lấy dự kiến kết thúc', () => {
     const src = docSach('server/src/students/profile.ts');

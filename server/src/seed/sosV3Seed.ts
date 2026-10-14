@@ -107,7 +107,7 @@ export function buildSosV3Demo(ctx: BuildCtx): { students: number; cases: number
   const khoiSp = caseOf(khoi.id, 'speaking');
   xacNhan(activeTeacher('speaking'), khoiSp.id, 'speaking', 'Em nói ngắn, ngập ngừng ở Part 2, thiếu ý mở rộng.');   // D7 (6)
   xacNhanPa(activeTeacher('speaking'), khoiSp.id, 'Tự học Speaking: ghi âm Part 2 mỗi ngày, GVBM nghe và chữa thứ Sáu.');
-  hanPa(khoiSp.id, addDays(DEMO_DATE, -7), DEMO_DATE);   // D8: hạn hết T2 ĐÚNG ngày demo
+  hanPa(khoiSp.id, addDays(DEMO_DATE, -14), addDays(DEMO_DATE, 1));   // D8 → OV-12a: hạn hết T3 NGÀY MAI (kỳ 31/08–13/09)
   confirmCoordination(gvcn, actionOf(khoiA.id, 'talk_student').id, { performedOn: addDays(DEMO_DATE, -1), note: 'Đã gặp em sau buổi học, em hứa luyện nói mỗi ngày.' });
   /*
    * Vi phạm Ý thức của cùng em: ghi thẳng xuống bảng với mốc thời gian theo NGÀY DEMO (như `yThucSeed.ts`) — `recordViolation` đóng dấu giờ thật của máy.
@@ -162,7 +162,7 @@ export function buildSosV3Demo(ctx: BuildCtx): { students: number; cases: number
   const chauR = caseOf(chau.id, 'reading');
   xacNhan(activeTeacher('reading'), chauR.id, 'reading', 'Em sai dạng Matching Headings ở cả ba passage.');
   xacNhanPa(activeTeacher('reading'), chauR.id, 'Tự học Reading: hai bài Matching Headings mỗi tuần, cô Hà chữa.');
-  hanPa(chauR.id, addDays(DEMO_DATE, -16), addDays(DEMO_DATE, -7));   // quá hạn 1 tuần — PR-Dọn (10a): hạn rơi Thứ Hai (07/09)
+  hanPa(chauR.id, addDays(DEMO_DATE, -20), addDays(DEMO_DATE, -6));   // quá hạn ~1 tuần — OV-12a: hạn hết T3 08/09 (kỳ 24/08–06/09)
 
   // ---------------------------------------------------------------- D8: Hoàng Bảo Ngọc — MT1 · Listening, PA quy chế ở TUẦN MỐC (Ghi kết quả cuối)
   const ngoc = addStudent('Hoàng Bảo Ngọc', 1, 5);

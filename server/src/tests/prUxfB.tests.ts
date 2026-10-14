@@ -279,13 +279,13 @@ export async function runPrUxfBTests(t: YThucTestKit) {
   });
 
   // ------------------------------------------------------------------ Task 8 · chữ nhỏ: lý do nhiều dòng (VN01), "hạn hết T2" (VN28)
-  check('UXF-b (8) · VN28: ô Việc tiếp theo giữ đủ tiền tố "hạn" — PA hạn Thứ Hai 14/09 → "hạn hết T2 14/09"; boTienTo đã xoá', () => {
+  check('UXF-b (8) · VN28: ô Việc tiếp theo giữ đủ tiền tố "hạn" — PA hạn 14/09 → "hạn hết T3 14/09" (OV-12a); boTienTo đã xoá', () => {
     const v = d.viecTiepCuaEm({
       nhapDiem: null,
       cases: [{ caseId: 2, topic: 'listening', viecTiep: { chu: 'Kết quả PA Nghe podcast', loaiHan: 'cap-nhat-pa', han: '2026-09-14', paId: 9 } }],
       yThuc: null, homNay: '2026-09-14',
     });
-    assert(v[0]?.han === 'hạn hết T2 14/09', JSON.stringify(v[0]));
+    assert(v[0]?.han === 'hạn hết T3 14/09', JSON.stringify(v[0]));   // OV-12a: hạn hết Thứ Ba
     assert(!/boTienTo/.test(doc('shared/domain/hocVienLop.ts')), 'boTienTo còn');
   });
   check('UXF-b (8) · VN01: lý do thẻ Chờ duyệt vẽ từng dòng của yc.dong với whitespace-pre-line (xuống dòng "Bổ sung dd/mm: …")', () => {

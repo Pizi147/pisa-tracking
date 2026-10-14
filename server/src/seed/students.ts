@@ -1740,8 +1740,8 @@ export const STUDENTS: StudentSeed[] = [
           plans: [
             {
               kind: 'meeting_cx', description: 'Gặp phụ huynh bàn hướng học lại Foundation hoặc học chậm hơn',
-              performer: 'T_KIEN', cycleStart: '2026-08-31', status: 'planned',
-              actionDue: '2026-09-08',   // PR-Dọn (10a) → OV-12a: hạn rơi Thứ Ba — vẫn quá hạn như cũ
+              performer: 'T_KIEN', cycleStart: '2026-08-25', status: 'planned',
+              actionDue: '2026-09-08',   // PR-Dọn (10a) → OV-12a: hạn kỳ đầu hết Thứ Ba 08/09 — vẫn quá hạn như cũ
             },
           ],
         },

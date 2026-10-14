@@ -79,7 +79,7 @@ export async function runPrHvlTests(t: YThucTestKit) {
   const HN = '2026-09-16';
   const viecCase = (caseId: number, topic: string | null, viecTiep: any) => ({ caseId, topic, viecTiep });
 
-  check('PR-HVL (1) · K2-04 viecTiepCuaEm: Xác nhận nguyên nhân / Xác nhận PA / Ghi kết quả (hạn hết T2) / Xử lý vi phạm / Nhập điểm, có đích bấm được', () => {
+  check('PR-HVL (1) · K2-04 viecTiepCuaEm: Xác nhận nguyên nhân / Xác nhận PA / Ghi kết quả (hạn hết T3) / Xử lý vi phạm / Nhập điểm, có đích bấm được', () => {
     const v = d.viecTiepCuaEm({
       nhapDiem: { kyNang: ['listening', 'reading'], dot: 'Progress Test', quaHan: false },
       cases: [
@@ -101,7 +101,7 @@ export async function runPrHvlTests(t: YThucTestKit) {
     eq([pa.viec, pa.tone, pa.quaHanNgay, pa.dich.paId], ['Xác nhận PA R', 'danger', 2, 90], 'Xác nhận PA quá hạn');
     assert(!/True|Ôn lại/.test(pa.viec) && /Ôn lại/.test(pa.title), `Tên PA dài phải bỏ khỏi viec, còn ở title: ${JSON.stringify(pa)}`);
     const gk = theoViec(/^Kết quả PA/);
-    eq([gk.viec, gk.han, gk.tone, gk.dich.ghiKetQua], ['Kết quả PA S · tuần W3 SEP', 'hạn hết T2 21/09', 'info', true], 'Kết quả');
+    eq([gk.viec, gk.han, gk.tone, gk.dich.ghiKetQua], ['Kết quả PA S · kỳ W2–W3 SEP', 'hạn hết T3 21/09', 'info', true], 'Kết quả');
     const cuoi = theoViec(/^Kết quả cuối/);
     eq([cuoi.viec, cuoi.tone, cuoi.quaHanNgay], ['Kết quả cuối W1 · tuần W2 SEP', 'danger', 2], 'Kết quả cuối');
     assert(/hạn hết T2 14\/09 · quá hạn 2 ngày/.test(cuoi.title), cuoi.title);
@@ -385,7 +385,7 @@ export async function runPrHvlTests(t: YThucTestKit) {
     assert(!canHoTro.canHoTroLop(P.coreTeacher, LOP_FT).laGvbmThuan && !canHoTro.canHoTroLop(P.admin, LOP_FT).laGvbmThuan, 'GVCN/Quản trị không phải GVBM thuần');
   });
 
-  check('PR-HVL (5) · can-ho-tro lớp FOU: bộ môn L R W S, hàng G+V và P theo chương trình; việc "Ghi kết quả" của FT nói "hạn hết T2"', () => {
+  check('PR-HVL (5) · can-ho-tro lớp FOU: bộ môn L R W S, hàng G+V và P theo chương trình; việc "Ghi kết quả" của FT nói "hạn hết T3" (OV-12a)', () => {
     const fou = canHoTro.canHoTroLop(P.admin, LOP_FOU);
     eq([fou.ct, fou.boMon], ['FOU', ['listening', 'reading', 'writing', 'speaking']], 'FOU');
     const hang = d.hangCanHoTro({ ct: fou.ct, cases: [] });
@@ -395,7 +395,7 @@ export async function runPrHvlTests(t: YThucTestKit) {
     assert(ghi.length > 0, 'Bộ demo phải có Case đang chờ ghi kết quả');
     for (const v of ghi) {
       const [x] = d.viecTiepCuaEm({ nhapDiem: null, cases: [{ caseId: 1, topic: 'reading', viecTiep: v }], yThuc: null, homNay: TODAY });
-      assert(/^hạn hết T2 \d\d\/\d\d$/.test(x.han ?? ''), `Hạn Ghi kết quả: ${x.han}`);
+      assert(/^hạn hết T3 \d\d\/\d\d$/.test(x.han ?? ''), `Hạn Ghi kết quả: ${x.han}`);
     }
   });
 

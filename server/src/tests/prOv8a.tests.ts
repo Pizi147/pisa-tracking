@@ -149,13 +149,13 @@ export async function runPrOv8aTests(t: YThucTestKit) {
     assert(tom(a) === truoc, 'không ghi dở');
   }));
 
-  await checkAsync('OV8a-6 · GVCN / TVV / GVBM gọi chọn bước tiếp → 403; lộ trình chưa có kết quả → 400', () => thu(() => {
+  await checkAsync('OV8a-6 · GVCN / TVV chi nhánh khác / GVBM gọi chọn bước tiếp → 403 (OV-12a: TVV cùng chi nhánh chọn được — OV12a-6); lộ trình chưa có kết quả → 400', () => thu(() => {
     const lop = taoLop();
     const gvcn = ganGvcn(lop, P.normalCoreTeacher.userId);
     const a = emDaKetThuc(lop);
     assert(maLoi(() => chon(QL, a.cy, { chon: 'ket_thuc' })) === 400, 'chưa có kết quả → 400');
     thiThatSvc.datKetQuaThiThat(gvcn, a.cy, NHAP4);
-    const tvvId = get(`SELECT ur.user_id id FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE r.key = 'consultant' AND ur.status = 'active' ORDER BY ur.branch_id = ? DESC, ur.user_id LIMIT 1`, MB)?.id;
+    const tvvId = get(`SELECT ur.user_id id FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE r.key = 'consultant' AND ur.status = 'active' AND ur.branch_id != ? ORDER BY ur.user_id LIMIT 1`, MB)?.id;
     const ai = [gvcn, P.normalSubjectTeacher, ...(tvvId ? [loadPrincipal(tvvId)] : [])];
     for (const pr of ai) {
       assert(maLoi(() => chon(pr, a.cy, { chon: 'ket_thuc' })) === 403, `vai ${pr.userId} phải 403`);

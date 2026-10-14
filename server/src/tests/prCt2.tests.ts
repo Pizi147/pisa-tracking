@@ -21,6 +21,8 @@ export async function runPrCt2Tests(t: YThucTestKit) {
 
   const get = (sql: string, ...a: unknown[]) => conn.prepare(sql).get(...a) as any;
   const all = (sql: string, ...a: unknown[]) => conn.prepare(sql).all(...a) as any[];
+  /** OV-12a: bổ trợ miễn phí — ngày Mini Test thường TRƯỚC hạn kỳ đầu (lần ghi nào cũng là "Kết quả cuối" + Mini Test); phép kiểm cần một Kết quả giữa chừng → hạn = ngày Mini Test. */
+  const giuaChung = (ivId: number) => conn.prepare('UPDATE case_interventions SET action_due = followup_due WHERE id = ?').run(ivId);
   const KQ = { decision: 'keep', outcome: 'partial', note: 'Em nghe chép đều hơn tuần trước' };
 
   check('CT2-0 · Kết quả PA Tutor 10 buổi: 2 buổi không người dạy → lưu, phu_trach_* NULL; loiKetQuaTuan không lỗi nguoi-day; tên ngoài 1 ký tự vẫn lỗi', () => {
@@ -353,6 +355,7 @@ export async function runPrCt2Tests(t: YThucTestKit) {
     assert(hanh.length === 1 && hanh[0].title.includes(d.ngay(mts(f.sid)[0].han, TODAY)), `Hành trình sau ra lại: ${JSON.stringify(hanh)}`);
     /* Đã có Kết quả → huỷ quyết định không huỷ gì. */
     const iv = lai[0];
+    giuaChung(iv.id);   // OV-12a: hạn kỳ hai tuần sau ngày Mini Test → mọi lần ghi là lần cuối; dựng Kết quả giữa chừng
     cases.updateResult(loadPrincipal(iv.performer_user_id), iv.id, { ...KQ, ...d.thanKetQuaTuan({ kind: 'bo_tro_mien_phi', soBuoi: 4 }, '1', null) });
     lenh.huyLenh(P.mbManager, lenhCua(f.sid).id, 'Đổi ý');
     assert(paMt(f.a).length === 2 && mts(f.sid).length === 1, `đã có Kết quả mà vẫn huỷ: ${chuKy(paMt(f.a))} · ${mts(f.sid).length}`);
@@ -493,6 +496,7 @@ export async function runPrCt2Tests(t: YThucTestKit) {
     ra(g.nguon, g.sid, 'len_lop', g.dich);
     nhap(g.a, { listening: 18, reading: 18, writing: 10, speaking: 9 });
     const iv = paMt(g.a)[0];
+    giuaChung(iv.id);   // OV-12a: hạn kỳ hai tuần sau ngày Mini Test → mọi lần ghi là lần cuối; dựng Kết quả giữa chừng
     cases.updateResult(loadPrincipal(iv.performer_user_id), iv.id, { ...KQ, ...d.thanKetQuaTuan({ kind: 'bo_tro_mien_phi', soBuoi: 4 }, '1', null) });
     huy(g.a);
     assert(mts(g.sid).length === 1 && paMt(g.a).length === 2, `đã có Kết quả mà vẫn huỷ: ${mts(g.sid).length} · ${chuKy(paMt(g.a))}`);
@@ -506,6 +510,7 @@ export async function runPrCt2Tests(t: YThucTestKit) {
       nhap(f.a, { listening: 18, reading: 18, writing: 10, speaking: 9 });
       const iv = paMt(f.a)[0];
       assert(iv && mts(f.sid).length === 1, `${ma}: phải sinh sớm`);
+      giuaChung(iv.id);   // OV-12a: hạn kỳ hai tuần sau ngày Mini Test → mọi lần ghi là lần cuối; dựng Kết quả giữa chừng
       cases.updateResult(loadPrincipal(iv.performer_user_id ?? P.admin.userId), iv.id, { ...KQ, ...d.thanKetQuaTuan({ kind: 'bo_tro_mien_phi', soBuoi: iv.so_buoi }, '1', null) });
       lenh.suaLenh(P.mbManager, lenhCua(f.sid).id, { huong: 'fast_track', toClassId: lop('FT', 1, true), mucTieu: 6 });
       assert(mts(f.sid).length === 1, `${ma}: đã có Kết quả mà đổi quyết định đã huỷ`);
@@ -522,6 +527,7 @@ export async function runPrCt2Tests(t: YThucTestKit) {
     ra(f.nguon, f.sid, 'len_lop', f.dich);
     nhap(f.a, { listening: 18, reading: 18, writing: 10, speaking: 9 });
     const iv = paMt(f.a)[0];
+    giuaChung(iv.id);   // OV-12a: hạn kỳ hai tuần sau ngày Mini Test → mọi lần ghi là lần cuối; dựng Kết quả giữa chừng
     cases.updateResult(loadPrincipal(iv.performer_user_id ?? P.admin.userId), iv.id, { ...KQ, ...d.thanKetQuaTuan({ kind: 'bo_tro_mien_phi', soBuoi: iv.so_buoi }, '1', null) });
     lenh.suaLenh(P.mbManager, lenhCua(f.sid).id, { huong: 'fast_track', toClassId: lop('FT', 1, true), mucTieu: 6 });
     chay(f.sid);

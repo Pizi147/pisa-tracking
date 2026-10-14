@@ -138,13 +138,13 @@ export async function runPrS5fbTests(t: YThucTestKit) {
   });
 
   // ------------------------------------------------------------------ 9 · Hồ sơ GV
-  check('S5F-b (9) · Hồ sơ GV: QL mở hồ sơ người không có vai giáo viên → 404; Việc tiếp "Ghi kết quả PA … · tuần W.." + hạn, không "mở dd/mm"; GV demo có user_skills', () => {
+  check('S5F-b (9) · Hồ sơ GV: QL mở hồ sơ người không có vai giáo viên → 404; Việc tiếp "Ghi kết quả PA … · kỳ W..–W.." + hạn, không "mở dd/mm"; GV demo có user_skills', () => {
     const qlKhac = get(`SELECT ur.user_id u FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE r.key = 'manager' AND ur.status = 'active' AND ur.user_id != ?
       AND NOT EXISTS (SELECT 1 FROM user_roles x JOIN roles y ON y.id = x.role_id WHERE x.user_id = ur.user_id AND y.key = 'teacher' AND x.status = 'active') LIMIT 1`, P.mbManager.userId).u;
     assert(maLoi(() => phamViHoSoGv(P.admin, qlKhac)) === 404, 'QT mở hồ sơ GV của một Quản lý thuần → 404');
     assert(maLoi(() => phamViHoSoGv(P.mbManager, P.normalCoreTeacher.userId)) === 200, 'QL MB mở hồ sơ GVCN MB được');
     const v = d.viecTiepCuaEm({ nhapDiem: null, cases: [{ caseId: 1, topic: 'reading', viecTiep: { chu: 'Kết quả PA Tutor', loaiHan: 'cap-nhat-pa', han: '2026-09-28' } }], yThuc: null, homNay: '2026-09-24', chuongTrinh: null })[0];
-    assert(/^Kết quả PA R · tuần W4 SEP$/.test(v.viec) && !!v.han, JSON.stringify(v));
+    assert(/^Kết quả PA R · kỳ W3–W4 SEP$/.test(v.viec) && !!v.han, JSON.stringify(v));   // OV-12a: kỳ hai tuần
     const ds = chiTietCaseMo((cases.listCases(P.mbManager, { ownerUserId: P.normalCoreTeacher.userId }).rows as any[]).filter((c) => c.state !== 'done'));
     assert([...ds.values()].every((c: any) => !/mở \d/.test(c.moTu)), 'không còn "mở dd/mm"');
     assert(get('SELECT COUNT(*) n FROM user_skills WHERE user_id = ?', P.normalCoreTeacher.userId).n > 0, 'GV demo có "Phụ trách được"');

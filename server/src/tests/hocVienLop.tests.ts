@@ -208,11 +208,11 @@ export async function runHocVienLopTests(t: YThucTestKit) {
       homNay: '2026-09-14',
     });
     eq(v.map((x: any) => [x.viec, x.han, x.quaHanNgay, x.tone, x.title]), [
-      /* PR-S5F-b (mockup 21): việc ghi kết quả PA nói tuần của kết quả. */
-      ['Kết quả PA L · tuần W1 SEP', 'hạn hết T2 13/09', 1, 'danger', 'Kết quả PA Nghe podcast · Listening · tuần W1 SEP · hạn hết T2 13/09 · quá hạn 1 ngày'],
+      /* PR-S5F-b (mockup 21) → OV-12a: việc ghi kết quả PA nói KỲ (hai tuần) của kết quả. */
+      ['Kết quả PA L · kỳ W4 AUG – W1 SEP', 'hạn hết T3 13/09', 1, 'danger', 'Kết quả PA Nghe podcast · Listening · kỳ W4 AUG – W1 SEP · hạn hết T3 13/09 · quá hạn 1 ngày'],
       ['Nhập điểm L, W · Progress Test', null, null, 'warn', 'Nhập điểm L, W · Progress Test'],
       ['Thêm PA W2', null, null, 'warn', 'Thêm PA · Writing Task 2'],
-      ['Kết quả PA R · tuần W2 SEP', 'hạn hết T2 20/09', null, 'info', 'Kết quả PA Đọc báo · Reading · tuần W2 SEP · hạn hết T2 20/09'],
+      ['Kết quả PA R · kỳ W1–W2 SEP', 'hạn hết T3 20/09', null, 'info', 'Kết quả PA Đọc báo · Reading · kỳ W1–W2 SEP · hạn hết T3 20/09'],
     ], 'Thứ tự và chữ (Case không việc bị bỏ)');
     /* Ý kiểm cũ "Case nói trước" (chonCaseChinh) nay là thứ tự hàng của `hangCanHoTro` — kiểm ở prHvl.tests.ts (T19). */
   });

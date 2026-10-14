@@ -107,7 +107,7 @@ export async function runPanelUx3Tests(t: YThucTestKit) {
     const dp = v.find((x: any) => /^Thêm PA/.test(x.viec));
     assert(dp && dp.viec === 'Thêm PA W2' && dp.quaHanNgay === null, JSON.stringify(dp));
     const gk = v.find((x: any) => /^Kết quả/.test(x.viec));
-    assert(gk && gk.viec === 'Kết quả PA L · tuần W1 SEP' && gk.han === 'hạn hết T2 13/09' && gk.quaHanNgay === 3 && gk.tone === 'danger'
+    assert(gk && gk.viec === 'Kết quả PA L · kỳ W4 AUG – W1 SEP' && gk.han === 'hạn hết T3 13/09' && gk.quaHanNgay === 3 && gk.tone === 'danger'
       && gk.title === 'Kết quả PA Nghe podcast · Listening · tuần W1 SEP · hạn hết T2 13/09 · quá hạn 3 ngày', JSON.stringify(gk));
     assert(!/Cập nhật|Xác định nguyên nhân/.test(JSON.stringify(v)), JSON.stringify(v));
   });
@@ -330,7 +330,7 @@ export async function runPanelUx3Tests(t: YThucTestKit) {
       homNay: '2026-09-16',
     });
     assert(v.map((x: any) => x.tone).join() === 'danger,warn,info', v.map((x: any) => x.tone).join());
-    assert(v.length === 3 && v[0].viec === 'Kết quả PA R · tuần W1 SEP' && v[0].quaHanNgay === 6, JSON.stringify(v));
+    assert(v.length === 3 && v[0].viec === 'Kết quả PA R · kỳ W4 AUG – W1 SEP' && v[0].quaHanNgay === 6, JSON.stringify(v));
   });
 
   check('UX3 (1) · tienDoCase: PA đã xong không tính là việc tiếp; Case đã xong không có việc tiếp', () => {
