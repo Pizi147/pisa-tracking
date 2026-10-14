@@ -346,6 +346,7 @@ const CHO_PHEP: { file: string; text: RegExp }[] = [
   { file: 'web/src/modules/fasttrack/MockDetailPage.tsx', text: /^(đã huỷ phần thi|đã có điểm|đã thi)$/ },
   { file: 'shared/domain/paDongBo.ts', text: /^(Người dạy|Người thực hiện)$/ },
   { file: 'web/src/modules/worklist/WorkList.tsx', text: /^Lớp \{/ },
+  { file: 'web/src/modules/cases/CapNhatTuan.tsx', text: /^Buổi \{…\}: \{x\}$/ },   // ghi chú gửi máy chủ, lưu vào nhật ký (giữ Việt) — OV-12f
   /* Đợt c: so với chữ GỐC máy chủ gửi (tiếng Việt) — không hiện ra. */
   { file: 'web/src/modules/classes/BangCanHoTro.tsx', text: /^(Xác nhận Case|Ghi nhận xét|Xác nhận PA)$/ },
   { file: 'web/src/modules/students/CacLoTrinh.tsx', text: /^(Học lại|Kết thúc|Chuyển lớp)$/ },
