@@ -156,7 +156,7 @@ export type KetQuaVao = {
 };
 /**
  * Cột Kết quả gần nhất (T18, K2-01, E7): tầng 1 `chinh` (+ `lech` FT) + tối đa HAI dòng chữ 12 px, không "…" (đủ chữ, không cắt).
- * `sos` chỉ có ở Fast Track (T58: lớp thường không SOS ở cột này).
+ * `sos`: Fast Track theo lượt MT; OV-12c (chủ SP 14/10, bỏ T58 ở Học viên & Lớp): Progress Test lớp thường theo số môn trượt (1 → SOS 1 … ≥ 3 → SOS 3).
  */
 export type KetQuaHien = {
   chinh: string;                 // "6.0" · "58%" · "3/4 môn đạt" · "—"
@@ -177,7 +177,7 @@ export function ketQuaGanNhat(k: KetQuaVao | null): KetQuaHien {
   if (!k || !k.attemptLabel) return { chinh: '—', lech: null, dat: false, sos: null, dong1: t('Chưa có kết quả'), dong2: null };
   const ct = k.chuongTrinh ?? null;
   if (k.mode === 'ratio') {
-    /* T58: lớp thường KHÔNG có SOS ở cột này. Cuối khoá (hoặc Pre FOU) đủ điểm → % tổng; còn lại "n/N môn đạt". */
+    /* Cuối khoá (hoặc Pre FOU) đủ điểm → % tổng; còn lại "n/N môn đạt". OV-12c: Progress Test có môn trượt → chip SOS theo số môn trượt. */
     const thieuDiem = k.scored < k.required;
     const chinh = (k.attemptKind === 'final' || k.khongChiaMon) && k.tyLeTong != null ? `${Math.round(k.tyLeTong * 100)}%`
       : k.khongChiaMon || k.scored === 0 ? '—' : t('{a}/{b} môn đạt', { a: k.scored - (k.failed ?? 0), b: thieuDiem ? k.scored : k.required });
@@ -187,7 +187,7 @@ export function ketQuaGanNhat(k: KetQuaVao | null): KetQuaHien {
     const huong = k.attemptKind === 'final' && !thieuDiem && k.tyLeTong != null
       ? goiYCuoiKhoa({ ct, tyLe: k.tyLeTong, monTruot: k.failedSkills.map((f) => f.skill), nguong: k.nguong })?.nhanNgan ?? null : null;
     return {
-      chinh, lech: null, dat, sos: null,
+      chinh, lech: null, dat, sos: k.attemptKind === 'progress' && !k.khongChiaMon && (k.sosLevel ?? 0) > 0 ? `SOS ${k.sosLevel}` : null,
       dong1: huong ? `${k.attemptLabel} ${dichChuoi(huong)}` : k.khongChiaMon || !thieuDiem ? k.attemptLabel : t('{lan} · {a}/{b} môn có điểm', { lan: k.attemptLabel, a: k.scored, b: k.required }),
       dong2: k.khongChiaMon || !k.failedSkills.length ? null : t('Không đạt: {ds}', { ds: k.failedSkills.map((f) => tenMonNgan(ct, f.skill)).join(' ') }),
     };

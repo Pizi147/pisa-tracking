@@ -268,7 +268,7 @@ export const CHU_THEM_PA = 'Thêm PA';
 /** PR-EN-c: `tien` là chữ tiền tố đã dịch ("hạn" → "due"). */
 const DEADLINE_VIEC: Record<DeadlineKind, { viec: string; tien: string }> = {
   /* PR-NEN Q16: giữ khoá `xac-minh-sos`, chữ đổi theo thuật ngữ chốt (như N1 Q4). */
-  'xac-minh-sos': { viec: t('Xác nhận nguyên nhân'), tien: t('hạn') },
+  'xac-minh-sos': { viec: t('Xác nhận'), tien: t('hạn') },   // OV-12c: Xác nhận Case (Progress) · Xác nhận PA · Ghi nhận xét (MT cũ)
   'lap-pa': { viec: t('Thêm PA'), tien: t('hạn') },
   'cap-nhat-pa': { viec: t('Kết quả PA'), tien: t('hạn hết T3') },
   'nhap-diem': { viec: t('Nhập điểm'), tien: t('hạn') },

@@ -244,9 +244,9 @@ const CHO_PHEP: { file: string; text: RegExp }[] = [
   { file: 'web/src/modules/platform/WelcomePage.tsx', text: /^(Hoàn tất|Nguyễn Khánh Vy|Trần Ngọc Hà)$/ },   // chữ in ra của lệnh seed; tên tài khoản demo (dữ liệu)
   { file: 'web/src/ui/NutNgonNgu.tsx', text: /^(Tiếng Việt|Ngôn ngữ \/ Language)$/ },                          // nút ghi bằng chính tiếng của nó
   /* Đợt c: so với chữ GỐC máy chủ gửi (tiếng Việt) — không hiện ra. */
-  { file: 'web/src/modules/classes/BangCanHoTro.tsx', text: /^(Xác nhận nguyên nhân|Xác nhận PA)$/ },
+  { file: 'web/src/modules/classes/BangCanHoTro.tsx', text: /^(Xác nhận Case|Ghi nhận xét|Xác nhận PA)$/ },
   { file: 'web/src/modules/students/BangHocVienLop.tsx', text: /^Thi thật$/ },
   { file: 'web/src/modules/students/CacLoTrinh.tsx', text: /^(Học lại|Kết thúc|Chuyển lớp)$/ },
   { file: 'web/src/modules/students/KetQuaThiThatPanel.tsx', text: /^(Đạt Target|Chưa đạt Target|Chờ kết quả thi thật)$/ },
-  { file: 'web/src/modules/students/NganCase.tsx', text: /^(Xác nhận nguyên nhân|Xác nhận PA|Kết quả cuối)$/ },
+  { file: 'web/src/modules/students/NganCase.tsx', text: /^(Xác nhận Case|Ghi nhận xét|Xác nhận PA|Kết quả cuối)$/ },
 ];

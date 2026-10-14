@@ -31,6 +31,7 @@ import { buNgayPb2b, buildPb2bDemo } from './pb2bSeed.ts';
 import { dienNguocBanChup } from '../migrate/prTk.ts';
 import { migratePrOv1c } from '../migrate/prOv1c.ts';
 import { migratePrOv11e } from '../migrate/prOv11e.ts';
+import { migratePrOv12c } from '../migrate/prOv12c.ts';
 import { migratePrOv12a } from '../migrate/prOv12a.ts';
 
 const NOW = nowIso();
@@ -297,6 +298,8 @@ export function runSeed() {
     migratePrOv11e(conn, []);
     /* OV-12a: PA dựng bằng SQL thẳng với hạn kiểu cũ (Thứ Hai hằng tuần) → lịch kỳ hai tuần, hết Thứ Ba (cùng hàm với migrate; seed → migrate không đổi gì). */
     migratePrOv12a(conn, []);
+    /* OV-12c: Case dựng bằng SQL thẳng theo luật cũ → nguyên nhân MT từ nhận xét, nhãn SOS Progress (cùng hàm với migrate). */
+    migratePrOv12c(conn, []);
 
     return {
       'Chi nhánh': BRANCHES.length,

@@ -156,7 +156,7 @@ function TrangThaiPanel({ studentId, studentName, lop, onClose, onDone, status, 
   const bang = useApi<{ rows: { cases: { status: string; trangThaiV4?: { k: string }; plans: { status: string }[] }[] }[] }>(
     status !== 'finished' ? `/students/${studentId}/skill-board` : null);
   const caseMo = (bang.data?.rows ?? []).flatMap((r) => r.cases).filter((c) => c.status !== 'done');
-  const soCho = caseMo.filter((c) => c.trangThaiV4?.k === 'cho-nguyen-nhan' || c.trangThaiV4?.k === 'cho-xac-nhan-pa').length;
+  const soCho = caseMo.filter((c) => c.trangThaiV4?.k === 'cho-nguyen-nhan' || c.trangThaiV4?.k === 'cho-nhan-xet' || c.trangThaiV4?.k === 'cho-xac-nhan-pa').length;
   const soPa = caseMo.flatMap((c) => c.plans).filter((pl) => pl.status === 'started').length;
   const heQuaCase = soCho + soPa > 0
     ? `${soCho} Case chờ xác nhận · ${soPa} PA đang chạy — ${status === 'inactive' ? 'tạm dừng hạn; Quay lại thì hạn tính lại từ ngày quay lại' : 'hạn tính lại từ ngày quay lại'}.`

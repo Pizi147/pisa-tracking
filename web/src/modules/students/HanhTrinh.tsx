@@ -39,7 +39,7 @@ type Pa = {
 };
 type VanDe = {
   caseId: number; ten: string; sos: number | null; attemptNo: number | null; mo: string; dong: string | null; soPa: number; pa: Pa[];
-  cho?: 'nguyen-nhan' | null; nguoi?: string | null;
+  cho?: 'nguyen-nhan' | 'nhan-xet' | null; nguoi?: string | null;
 };
 type Hop = {
   kyNang: CaseCategory; nhan: string; cheDo: 'ielts' | 'ratio';

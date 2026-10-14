@@ -647,7 +647,7 @@ function RatioAttempts({ attempts, dotId, homNay, onOpen, ct = null }: {
 }
 
 /**
- * PR-LT2a (T58): kết quả một lượt lớp thường — `2/4 môn đạt` + `Không đạt: L R` (Giữa khoá), `64%` (Cuối khoá); không có chữ SOS.
+ * PR-LT2a: kết quả một lượt lớp thường — `2/4 môn đạt · SOS 2` + `Không đạt: L R` (Progress Test; OV-12c: nhãn SOS theo số môn trượt), `64%` (Cuối khoá).
  * PR-U12: nói MỘT lần — chưa đủ môn thì `Chờ n môn` (như `KetQuaDot` "Chờ n kỹ năng"), không kèm "mới x/y môn" hay "(đã chấm)";
  * lượt đã huỷ mà chưa đủ môn không còn chờ gì → `—` (nhãn `đã huỷ` cạnh tên bài đã nói lý do). Pre FOU (không chia môn) giữ `%`.
  */
@@ -670,7 +670,7 @@ function KetQuaThuongO({ a, ct }: { a: any; ct: string | null }) {
   }
   return (
     <>
-      <Level tone={a.sosLevel === null ? (kq.dat ? 'ok' : 'muted') : sosTone(a.sosLevel)}>{dich(kq.chinh)}</Level>
+      <Level tone={a.sosLevel === null ? (kq.dat ? 'ok' : 'muted') : sosTone(a.sosLevel)}>{dich(kq.chinh)}{a.kind !== 'final' && !khongChiaMon && a.sosLevel > 0 ? ` · SOS ${a.sosLevel}` : ''}</Level>
       {kq.phu && <div className="text-xs text-slate-400">{dich(kq.phu)}</div>}
     </>
   );

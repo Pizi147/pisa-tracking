@@ -224,13 +224,13 @@ export function cauTomTat(i: DauVaoCau): ManhCau[] {
   const m2: ManhCau | null = quaHan
     ? {
       ...(quaHan.loai === 'ghi-ket-qua' ? kem('PA {kn}quá hạn Kết quả {n} ngày', { kn: kn(quaHan), n: quaHan.quaHanNgay! })
-        : quaHan.loai === 'nguyen-nhan' ? kem('{kn}quá hạn xác nhận nguyên nhân {n} ngày', { kn: kn(quaHan), n: quaHan.quaHanNgay! })
+        : quaHan.loai === 'nguyen-nhan' ? kem(quaHan.chu.startsWith('Ghi nhận xét') ? '{kn}quá hạn ghi nhận xét {n} ngày' : '{kn}quá hạn xác nhận Case {n} ngày', { kn: kn(quaHan), n: quaHan.quaHanNgay! })
         : quaHan.loai === 'xac-nhan-pa' ? kem('{kn}quá hạn xác nhận PA {n} ngày', { kn: kn(quaHan), n: quaHan.quaHanNgay! })
         : kem('{viec} quá hạn {n} ngày', { viec: dauViec(quaHan), n: quaHan.quaHanNgay! })),
       tone: 'danger',
     }
     : choDuyet ? { chu: choDuyet.chu, khoa: choDuyet.khoa, bien: choDuyet.bien, tone: 'wait' }
-    : choNn ? { ...kem('{kn}chờ xác nhận nguyên nhân', { kn: kn(choNn) }), tone: 'warn' }
+    : choNn ? { ...kem(choNn.chu.startsWith('Ghi nhận xét') ? '{kn}chờ ghi nhận xét' : '{kn}chờ xác nhận Case', { kn: kn(choNn) }), tone: 'warn' }
     : null;
 
   const y = i.yThuc;
@@ -292,7 +292,7 @@ export function oHocThuat(rows: readonly {
       const t = quaHanGhi ? 'qua-han' : c.trangThaiV4?.t ?? 'dang-lam';
       const v = c.viecTiep?.chu ?? '';
       const viec = quaHanGhi || /^Kết quả/.test(v) ? 'kết quả'
-        : v === 'Xác nhận nguyên nhân' ? 'nguyên nhân'
+        : v === 'Xác nhận Case' ? 'xác nhận Case' : v === 'Ghi nhận xét' ? 'ghi nhận xét'
         : /^Xác nhận PA/.test(v) ? 'xác nhận PA' : null;
       /* T65 + Q13 (UXF-b): em Tạm dừng — MỌI hạn dừng: "Quá hạn" và "Cần làm" đổi thành nhãn vàng "Tạm dừng từ dd/mm" (chỉ đổi chữ). */
       if (tamDungTu && (t === 'qua-han' || t === 'can-lam')) { const nhanK = kem('Tạm dừng từ {tu}', { tu: ngay(tamDungTu, homNay) }); dong.push({ kn: r.short ?? r.label, nhan: nhanK.chu, nhanK, t: 'tam-dung', viec: null, category: r.category }); }

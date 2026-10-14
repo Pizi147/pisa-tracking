@@ -234,7 +234,7 @@ function tinh(p: Principal, f: FilterTongHop) {
       .prepare(
         `SELECT a.id AS attempt_id, sc.id AS case_id, sc.student_id, sc.status, sc.han_xac_nhan,
                 sc.dismiss_reason_code, sc.system_close_reason,
-                ${LA_CASE_SOS('sc')} AS from_sos,
+                ${LA_CASE_SOS('sc')} AS from_sos, a.kind = 'mock' AS la_mt,
                 EXISTS (SELECT 1 FROM case_issues ci WHERE ci.case_id = sc.id AND ci.role = 'primary') AS has_cause,
                 EXISTS (SELECT 1 FROM case_interventions iv WHERE iv.case_id = sc.id AND ${UNCONFIRMED_PRESET('iv')} AND iv.status = 'planned' AND iv.kind != 'bo_tro') AS pa_cho,
                 ${CO_THE_KHONG_THEO_DOI('sc')} AS co_the
@@ -247,7 +247,7 @@ function tinh(p: Principal, f: FilterTongHop) {
       const cha = hangMap.get(dong.cha)!, con = cha.con.get(dong.con)!;
       /* PR-SOS (K1-20): nhóm Xử lý theo MỘT nhãn trạng thái Case (`trangThaiCaseV4`) — tình trạng HÔM NAY (Q18). */
       const tt = trangThaiCaseV4({
-        status: r.status, fromSos: !!r.from_sos, hasCause: !!r.has_cause, dismissed: !!r.dismiss_reason_code, systemClosed: !!r.system_close_reason,
+        status: r.status, fromSos: !!r.from_sos, hasCause: !!r.has_cause, laMt: !!r.la_mt, dismissed: !!r.dismiss_reason_code, systemClosed: !!r.system_close_reason,
         choDuyetKhongTheoDoi: !!r.co_the && r.status !== 'done', coPaChoXacNhan: !!r.pa_cho, hanXacNhan: r.han_xac_nhan ?? null,
       }, today);
       const cot = COT_XU_LY_V4[tt.k];
@@ -255,7 +255,7 @@ function tinh(p: Principal, f: FilterTongHop) {
         them(tap, 'case', r.case_id);
         if (r.student_id) them(tap, 'hvCoCase', r.student_id);
         them(tap, cot, r.case_id);
-        if (tt.k === 'cho-nguyen-nhan' && tt.t === 'qua-han') them(tap, 'choNguyenNhanQuaHan', r.case_id);
+        if ((tt.k === 'cho-nguyen-nhan' || tt.k === 'cho-nhan-xet') && tt.t === 'qua-han') them(tap, 'choNguyenNhanQuaHan', r.case_id);
       }
     }
   }

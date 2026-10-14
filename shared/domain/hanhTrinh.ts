@@ -212,7 +212,7 @@ const soTuanTron = (tu: string, den: string): number => Math.max(0, Math.ceil((n
  */
 export function trangThaiHop(
   i: {
-    caseMo: { mo: string; soPa: number; choNguyenNhan?: boolean; choDuyet?: boolean; /** OV-11d: quá hạn xác nhận (cùng `trangThaiCaseV4`). */ quaHan?: 'nguyen-nhan' | 'xac-nhan-pa' | null }[]; coTungCase: boolean;
+    caseMo: { mo: string; soPa: number; choNguyenNhan?: boolean; /** OV-12c: Case MT cũ, bài chưa nhận xét. */ choNhanXet?: boolean; choDuyet?: boolean; /** OV-11d: quá hạn xác nhận (cùng `trangThaiCaseV4`). */ quaHan?: 'nguyen-nhan' | 'xac-nhan-pa' | null }[]; coTungCase: boolean;
     diemCuoiChuaDat: boolean | null; xongGanNhat: string | null; huyGanNhat?: boolean;
   },
   homNay: string,
@@ -220,8 +220,9 @@ export function trangThaiHop(
   const dung = (chu: string, tone: ToneHop, t: TrangThai): NonNullable<TrangThaiHop> => ({ chu, ngan: chu.split(' · ')[0], tone, t });
   if (i.caseMo.length > 0) {
     const qh = i.caseMo.find((c) => c.quaHan);
-    if (qh) return dung(qh.quaHan === 'xac-nhan-pa' ? t('Quá hạn · chờ xác nhận PA') : t('Quá hạn · chờ nguyên nhân'), 'danger', 'qua-han');   // web thêm ⚠ (SVG)
-    if (i.caseMo.some((c) => c.choNguyenNhan)) return dung(t('Cần làm · chờ nguyên nhân'), 'warn', 'can-lam');
+    if (qh) return dung(qh.quaHan === 'xac-nhan-pa' ? t('Quá hạn · chờ xác nhận PA') : qh.choNhanXet ? t('Quá hạn · chờ ghi nhận xét') : t('Quá hạn · chờ xác nhận Case'), 'danger', 'qua-han');   // web thêm ⚠ (SVG)
+    if (i.caseMo.some((c) => c.choNguyenNhan)) return dung(t('Cần làm · chờ xác nhận Case'), 'warn', 'can-lam');
+    if (i.caseMo.some((c) => c.choNhanXet)) return dung(t('Cần làm · chờ ghi nhận xét'), 'warn', 'can-lam');
     if (i.caseMo.some((c) => c.choDuyet)) return dung(t('Chờ duyệt'), 'warn', 'cho-duyet');
     if (i.caseMo.some((c) => c.soPa === 0)) return dung(t('Cần làm · chưa có PA'), 'warn', 'can-lam');
     const somNhat = i.caseMo.reduce((a, b) => (b.mo < a ? b.mo : a), i.caseMo[0].mo);
@@ -240,10 +241,12 @@ export function dongPhuVanDe(v: { mo: string; dong: string | null; soPa: number 
 
 /**
  * KHỐI "CHỜ" trên hàng PA của một Case (Q18, sửa R5-2) — một kiểu khối viền đứt tím, chữ nói rõ chờ gì:
- * Case chờ nguyên nhân → "Chờ nguyên nhân" · Case chưa có PA nào → "Chưa có PA". Có PA đang vẽ được → null (khối PA tự nói).
+ * Case Progress chờ Xác nhận Case → "Chờ xác nhận Case" · Case MT cũ bài chưa nhận xét → "Chờ ghi nhận xét" (OV-12c) · Case chưa có PA nào →
+ * "Chưa có PA". Có PA đang vẽ được → null (khối PA tự nói).
  */
-export function khoiCho(v: { cho?: 'nguyen-nhan' | null; soPa: number; pa: readonly unknown[] }): string | null {
-  if (v.cho === 'nguyen-nhan') return t('Chờ nguyên nhân');
+export function khoiCho(v: { cho?: 'nguyen-nhan' | 'nhan-xet' | null; soPa: number; pa: readonly unknown[] }): string | null {
+  if (v.cho === 'nguyen-nhan') return t('Chờ xác nhận Case');
+  if (v.cho === 'nhan-xet') return t('Chờ ghi nhận xét');
   if (v.soPa === 0) return t('Chưa có PA');
   return v.pa.length ? null : t('Chờ xác nhận PA');
 }

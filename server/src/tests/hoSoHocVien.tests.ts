@@ -132,7 +132,7 @@ export async function runHoSoHocVienTests(t: YThucTestKit) {
       for (const x of tatCa) {
         assert((x.quaHanNgay !== null) === (x.han !== null && x.han < t.TODAY), `HV ${student_id}: quaHanNgay phải = (hạn < hôm nay ${t.TODAY}): ${JSON.stringify(x)}`);
         if (x.loai !== 'cho-duyet') {
-          assert(/^(Xác nhận nguyên nhân|Thêm PA|Xác nhận PA|Kết quả|Nộp kế hoạch bổ trợ|Báo phụ huynh|Ghi Mini Test|Xác nhận xử lý|Ghi nhận|Ghi "Đã thực hiện"|Bàn giao) /.test(x.chu), `HV ${student_id}: câu phải bắt đầu bằng động từ: "${x.chu}"`);
+          assert(/^(Xác nhận Case|Thêm PA|Xác nhận PA|Kết quả|Nộp kế hoạch bổ trợ|Báo phụ huynh|Ghi Mini Test|Xác nhận xử lý|Ghi nhận|Ghi "Đã thực hiện"|Bàn giao) /.test(x.chu), `HV ${student_id}: câu phải bắt đầu bằng động từ: "${x.chu}"`);
         }
         /* Mục 3 (chủ sản phẩm 22/09): tên kỹ năng ĐẦY ĐỦ, không viết tắt L / R / W1 / W2 / S. */
         assert(!/ (L|R|W|W1|W2|S)$/.test(x.chu), `HV ${student_id}: câu phải dùng tên đầy đủ của kỹ năng: "${x.chu}"`);
@@ -145,7 +145,7 @@ export async function runHoSoHocVienTests(t: YThucTestKit) {
     assert(coViec > 0, 'Phải có ít nhất một học viên có việc ở đầu hồ sơ');
   });
 
-  await t.checkAsync('PR-HV · Q7 (mục 1) → PR-SOS → VAI-b: Case từ SOS chờ xác nhận nguyên nhân → đầu hồ sơ có việc "Xác nhận nguyên nhân {kỹ năng}", hạn = hạn xác nhận', async () => {
+  await t.checkAsync('PR-HV · Q7 (mục 1) → PR-SOS → VAI-b: Case từ SOS chờ nguyên nhân → đầu hồ sơ có việc "Xác nhận Case {kỹ năng}" (Progress) / "Ghi nhận xét {kỹ năng}" (MT cũ chưa nhận xét — OV-12c), hạn = hạn xác nhận', async () => {
     const profile: any = await import('../students/profile.ts');
     const casesMod: any = await import('../cases/cases.ts');
     const max = t.seedMax.sos_cases ?? Number.MAX_SAFE_INTEGER;
@@ -153,14 +153,15 @@ export async function runHoSoHocVienTests(t: YThucTestKit) {
     let n = 0;
     for (const { student_id, cycle_id } of pairs) {
       const rows = (casesMod.skillSupportBoard(t.P.admin, student_id, cycle_id) as any).rows as any[];
-      const cho = rows.flatMap((r) => r.cases.filter((c: any) => c.status !== 'done' && c.sos?.awaitingCause).map((c: any) => ({ r, c })));
+      const cho = rows.flatMap((r) => r.cases.filter((c: any) => c.status !== 'done' && (c.sos?.awaitingCause || c.sos?.choNhanXet)).map((c: any) => ({ r, c })));
       const v = profile.studentProfile(t.P.admin, student_id, cycle_id).dauHoSo.viec;
       const tatCa = [...v.cuaBan, ...v.nguoiKhac];
       for (const { r, c } of cho) {
         n++;
-        const x = tatCa.find((y: any) => y.key === `cause:${c.id}`);
+        const [khoa, chu] = c.sos.choNhanXet ? ['ghi_nhan_xet', 'Ghi nhận xét'] : ['cause', 'Xác nhận Case'];
+        const x = tatCa.find((y: any) => y.key === `${khoa}:${c.id}`);
         assert(x, `HV ${student_id}: có case chờ xác định nguyên nhân mà đầu hồ sơ không có việc`);
-        assert(x.chu === `Xác nhận nguyên nhân ${r.label}` && x.han === (c.sos.dueOn ?? null), `HV ${student_id}: mong "Xác nhận nguyên nhân ${r.label}" hạn ${c.sos.dueOn}, được ${JSON.stringify(x)}`);
+        assert(x.chu === `${chu} ${r.label}` && x.han === (c.sos.dueOn ?? null), `HV ${student_id}: mong "${chu} ${r.label}" hạn ${c.sos.dueOn}, được ${JSON.stringify(x)}`);
       }
       /* PR-N1 S4-1: PA quy chế tự chạy — không còn việc "Xác nhận PA gợi ý". */
       assert(!tatCa.some((x: any) => /Xác nhận PA gợi ý/.test(x.chu)), `HV ${student_id}: còn "Xác nhận PA gợi ý"`);

@@ -8,6 +8,7 @@
  *   B. Lượt ĐÃ CHỐT mà Overall ≥ kỳ vọng (mức 0, còn kỹ năng dưới) → xoá SOS như lúc chạy (`xoaSosOverallDat`): chưa ai đụng → đóng "Overall đạt";
  *      đã có người làm → giữ + mốc "Overall đã đạt" (in khi mốc chưa có).
  *
+ * OV-12c: giữ luật OV-1c nguyên bản (`CASE_CHUA_DUNG_OV1C`, đóng chứ không xoá) — chạy lại trên DB đã dọn không đổi gì.
  * In từng Case: em · mã · lớp · lượt · Case · việc. `kiemTruocOv1c` = CÙNG danh sách mà KHÔNG ghi gì (lệnh `kiem-truoc-ov1c`).
  */
 import { CASE_CATEGORY_LABEL, SYSTEM_CLOSE_REASON_LABEL, type CaseCategory } from '../../../shared/domain/index.ts';
@@ -16,7 +17,7 @@ import { nowIso } from '../util.ts';
 import { entryBandsOf, resultOf, scoresOf } from '../fasttrack/attempts.ts';
 import { failingEntrySkills } from '../fasttrack/scoring.ts';
 import { scoringModeOf } from '../fasttrack/skillSchedule.ts';
-import { CASE_CHUA_DUNG, caseXoaSos, xoaSosOverallDat } from '../cases/sos.ts';
+import { CASE_CHUA_DUNG_OV1C, caseXoaSos, xoaSosOverallDat } from '../cases/sos.ts';
 import { isFastTrackMock } from '../cases/sosAuto.ts';
 import { closeCasesBySystem } from '../cases/systemClose.ts';
 import { syncSosCoordination } from '../yThuc/phoiHop.ts';
@@ -42,7 +43,7 @@ function lapKeHoach(conn: any): KeHoach[] {
     if (!isFastTrackMock(a, scoringModeOf(a))) continue;
     const result = resultOf(a);
     if (!result.chot) {
-      const dong = (conn.prepare(`SELECT sc.id FROM sos_cases sc WHERE sc.student_id = ? AND ${CASE_CHUA_DUNG('sc', '?')} ORDER BY sc.id`)
+      const dong = (conn.prepare(`SELECT sc.id FROM sos_cases sc WHERE sc.student_id = ? AND ${CASE_CHUA_DUNG_OV1C('sc', '?')} ORDER BY sc.id`)
         .all(a.student_id, a.id) as any[]).map((r) => r.id as number);
       if (dong.length) ra.push({ a, loai: 'A', dong, giu: [], failing: [], result });
       continue;
@@ -50,7 +51,7 @@ function lapKeHoach(conn: any): KeHoach[] {
     if (result.sosLevel !== 0) continue;
     const failing = failingEntrySkills(result.expectation, entryBandsOf(scoresOf(a.id)), result.skipped) as string[];
     if (!failing.length) continue;
-    const { dong, giu } = caseXoaSos(a.id, failing);
+    const { dong, giu } = caseXoaSos(a.id, failing, CASE_CHUA_DUNG_OV1C);
     const giuMoi = giu.filter((id) => !conn.prepare('SELECT 1 FROM case_milestones WHERE dedup_key = ?').get(`mt:${a.id}:${id}:overall_dat`));
     if (dong.length || giuMoi.length) ra.push({ a, loai: 'B', dong, giu: giuMoi, failing, result });
   }
@@ -78,7 +79,7 @@ export function migratePrOv1c(conn: any, applied: string[], today: string = demo
   for (const k of lapKeHoach(conn)) {
     ra.push(...dongCua(conn, k));   // tên Case đọc TRƯỚC khi đóng
     if (k.loai === 'B') {
-      xoaSosOverallDat(null, k.a, k.result, k.failing);
+      xoaSosOverallDat(null, k.a, k.result, k.failing, true);
       syncSosCoordination(k.a, 0);
       continue;
     }

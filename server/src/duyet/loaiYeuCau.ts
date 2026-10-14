@@ -298,10 +298,11 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
       };
     },
   },
-  /* ------------------------------------------------------------ PR-DUYET · Báo QL: Case chờ nguyên nhân quá hạn (K1-57, T77) */
+  /* ------------------------------------------------------------ PR-DUYET · Báo QL: Case chờ Xác nhận Case quá hạn (K1-57, T77) */
   {
     loai: 'bao_len_nguyen_nhan',
-    /* PR-SOS: hạn ở `sos_cases.han_xac_nhan`; "chờ nguyên nhân" (đã loại thẻ Không cần theo dõi đang chờ) là của `awaitingCauseCaseIds`. */
+    /* PR-SOS: hạn ở `sos_cases.han_xac_nhan`; "chờ" (đã loại thẻ Không cần theo dõi đang chờ) là của `awaitingCauseCaseIds` — OV-12c: chỉ Progress
+       lớp thường (Case MT lấy nguyên nhân từ nhận xét, không còn thẻ này; thẻ cũ đóng ở migrate prOv12c "Đổi luật"). */
     quet: (conn, homNay) => {
       const ung = conn.prepare(
         `SELECT sc.id, sc.owner_user_id, COALESCE(sc.student_id, a.student_id) AS sid, a.class_id, sc.han_xac_nhan AS han
@@ -337,7 +338,7 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
     moTa: (yc, ngu) => {
       const x = ngu.them.get(yc.id);
       return {
-        tieuDe: `Case quá hạn xác nhận nguyên nhân${x?.topic ? ` · ${caseTopicLabel(x.topic)}` : ''}`,
+        tieuDe: `Case quá hạn xác nhận${x?.topic ? ` · ${caseTopicLabel(x.topic)}` : ''}`,
         phu: x?.ten_gv ? `GVBM ${x.ten_gv}` : null,
         dong: [],
         mo: yc.hoc_vien_id ? duongHoSoHocVien(yc.hoc_vien_id, { caseId: yc.doi_tuong_id }) : undefined,
