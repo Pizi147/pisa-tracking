@@ -1,7 +1,8 @@
 import crypto from 'node:crypto';
 import { db, tx } from '../db.ts';
 import { ENTRY_SKILLS, PERMISSIONS, duocCapRieng, lyDoCamCapRieng, roleLabel } from '../../../shared/domain/index.ts';
-import { badRequest, chuTuDo, conflict, forbidden, notFound, nowIso, padCode } from '../util.ts';
+import { badRequest, chuTuDo, conflict, forbidden, loi, notFound, nowIso, padCode } from '../util.ts';
+import { laNgonNgu } from '../../../shared/i18n/index.ts';
 import { can, require_, type Principal } from '../permissions.ts';
 import { notify, writeAudit } from './audit.ts';
 
@@ -501,11 +502,15 @@ export function myProfile(p: Principal) {
  */
 export function updateProfile(p: Principal, input: {
   fullName?: string; phone?: string | null; skills?: string[]; extraEmails?: string[];
-  currentPassword?: string; newPassword?: string;
+  currentPassword?: string; newPassword?: string; ngonNgu?: unknown;
 }) {
   const conn = db();
   const u = conn.prepare('SELECT * FROM users WHERE id = ?').get(p.userId) as any;
   return tx(() => {
+    if (input.ngonNgu !== undefined) {
+      if (!laNgonNgu(input.ngonNgu)) throw loi(400, 'loi.ngonNguKhongHopLe');
+      conn.prepare('UPDATE users SET ngon_ngu = ? WHERE id = ?').run(input.ngonNgu, p.userId);
+    }
     if (input.fullName !== undefined) {
       const name = chuTuDo(input.fullName, 'Họ tên', 100);   // PR-Dọn (quét #23)
       if (!name) throw badRequest('Họ tên không được để trống.');

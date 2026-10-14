@@ -7,6 +7,8 @@
     <title>PISA Tracking</title>
     <!-- Chế độ giao diện (PR-SANG, T15): đặt TRƯỚC khi vẽ để không nháy tối → sáng. Khoá = CHE_DO_KHOA (shared/domain/mauNghia.ts). -->
     <script>try{if(localStorage.getItem('pisa-giao-dien')==='light')document.documentElement.dataset.theme='light'}catch(e){}</script>
+    <!-- Ngôn ngữ (PR-EN): đặt <html lang> TRƯỚC khi nạp mã — hằng nhãn đọc nó lúc nạp. Khoá = NGON_NGU_KHOA (shared/i18n/index.ts). -->
+    <script>try{if(localStorage.getItem('pisa-ngon-ngu')==='en')document.documentElement.lang='en'}catch(e){}</script>
   </head>
   <body>
     <div id="root"></div>

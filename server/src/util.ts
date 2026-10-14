@@ -1,9 +1,20 @@
 /** Tiện ích ngày tháng, chuỗi và lỗi HTTP dùng chung cho toàn bộ server. */
+import { dichSang, type Bien, type Khoa } from '../../shared/i18n/index.ts';
 
 export class HttpError extends Error {
+  /** PR-EN: khoá từ điển của câu (web tiếng Anh dịch theo khoá); không có khoá → web hiện nguyên câu Việt. */
+  khoa?: Khoa;
+  bien?: Bien;
   constructor(public status: number, message: string, public details?: unknown) {
     super(message);
   }
+}
+/** PR-EN: lỗi có khoá — câu Việt lấy từ từ điển (`shared/i18n`), gửi kèm `khoa` + `bien` để web dịch. */
+export function loi(status: number, khoa: Khoa, bien?: Bien, details?: unknown): HttpError {
+  const e = new HttpError(status, dichSang('vi', khoa, bien), details);
+  e.khoa = khoa;
+  e.bien = bien;
+  return e;
 }
 export const badRequest = (m: string, d?: unknown) => new HttpError(400, m, d);
 export const forbidden = (m: string, d?: unknown) => new HttpError(403, m, d);

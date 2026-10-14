@@ -1,6 +1,9 @@
 /** Lớp gọi API + cache theo tài khoản. Đổi tài khoản là xoá sạch cache cũ. */
+import { NGON_NGU, dichKhoa, t } from '@shared/i18n/index.ts';
 
 export class ApiError extends Error {
+  /** PR-EN: khoá từ điển máy chủ gửi kèm câu lỗi (không có = câu chưa mã hoá). */
+  khoa?: string;
   constructor(public status: number, message: string, public details?: any) {
     super(message);
   }
@@ -68,7 +71,7 @@ async function request<T>(method: string, path: string, body?: unknown, isForm =
     });
   } catch (e) {
     /* Mất mạng / máy chủ không trả lời: trình duyệt ném TypeError "Failed to fetch" — người dùng cần câu tiếng Việt, không phải câu của trình duyệt. */
-    if (e instanceof TypeError) throw new ApiError(0, 'Mất kết nối máy chủ — kiểm tra mạng rồi thử lại.');
+    if (e instanceof TypeError) throw new ApiError(0, t('loi.matKetNoi'));
     throw e;
   }
   const text = await res.text();
@@ -77,7 +80,11 @@ async function request<T>(method: string, path: string, body?: unknown, isForm =
     try { payload = JSON.parse(text); } catch { payload = { error: text }; }
   }
   if (!res.ok) {
-    const loi = new ApiError(res.status, payload?.error ?? `Lỗi ${res.status}`, payload?.details);
+    /* PR-EN: trang tiếng Anh + máy chủ gửi khoá có trong từ điển → câu tiếng Anh; còn lại câu Việt máy chủ gửi (không vỡ). Mọi chỗ in
+       `e.message` tự đúng tiếng, không phải sửa từng nơi gọi. */
+    const cau = (NGON_NGU === 'en' && dichKhoa(payload?.khoa, payload?.bien)) || payload?.error || t('loi.http', { status: res.status });
+    const loi = new ApiError(res.status, cau, payload?.details);
+    loi.khoa = payload?.khoa;
     if (loi.status === 403) cauLoi403.add(loi.message);
     throw loi;
   }

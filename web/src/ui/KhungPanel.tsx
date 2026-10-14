@@ -10,6 +10,9 @@ import { BaoOTrongNhan, coOTuNhan } from './ONgay.tsx';
 export const khoPanelChung = taoKhoPanel();
 /** Panel đang mở, mở sau ở cuối — Esc chỉ đóng panel cuối (panel vẽ qua portal nên không còn lồng nhau trong DOM). */
 const nganPanel: string[] = [];
+/** PR-EN: panel đang sửa dở (`chan.daSua`) — đổi ngôn ngữ (tải lại trang) hỏi trước khi bỏ chữ đang gõ. */
+const panelDangSua = new Set<string>();
+export const coPanelDangSua = () => panelDangSua.size > 0;
 
 /**
  * OV-5a: PANEL TẠI CHỖ — cột phải trang Công việc (mockup M1 §1). Panel nằm ngay trong context này vẽ trong luồng trang (thẻ dính, cao tối đa
@@ -78,6 +81,13 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong = 'hep', tabs, ngCanh, q
     document.addEventListener('keydown', onKey);
     return () => { document.removeEventListener('keydown', onKey); nganPanel.splice(nganPanel.indexOf(id), 1); };
   }, [id, taiCho]);
+
+  const daSua = !!chan?.daSua;
+  useEffect(() => {
+    if (!daSua) return undefined;
+    panelDangSua.add(id);
+    return () => { panelDangSua.delete(id); };
+  }, [id, daSua]);
 
   const ngu = [hocVien, lop].filter(Boolean).join(' · ');
   const huy = chan?.huy === null ? null : chan?.huy ?? { onClick: onDong };
