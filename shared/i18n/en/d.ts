@@ -707,12 +707,16 @@ const EN_D_SHARED = {
   ' (lớp cũ)': ' (old class)',
   'Kết quả cuối {tenPaGon}{cu}': 'Final result {tenPaGon}{cu}',
   'Kết quả PA {tenPaGon}{cu}': 'PA result {tenPaGon}{cu}',
+  /* mẫu cho chữ máy chủ ghép sẵn (`dich` khớp mẫu — khoá có hai biến liền nhau không khớp được) */
+  'Kết quả PA {ten}': 'PA result {ten}',
+  'Kết quả cuối {ten}': 'Final result {ten}',
   'Case chưa có phương án nào — chưa làm gì cho em thì chưa có gì để kết luận.': 'The case has no PA — nothing done yet, so nothing to conclude.',
   '{choDuyet} phương án đang chờ Quản lý duyệt.': (b) => `${so(b.choDuyet, 'PA', 'PAs')} awaiting manager approval.`,
   '{chay} phương án chưa cập nhật kết quả cuối cùng.': (b) => `${so(b.chay, 'PA has', 'PAs have')} no final result yet.`,
   'Hoàn thành được sau khi PA theo quy chế kết thúc ({mocChu})': 'Can close after the rule-based PA ends ({mocChu})',
   'Số MT không hợp lệ: {attemptNo}': 'Invalid MT number: {attemptNo}',
   'Tự học · 1 tháng': 'Self-study · 1 month',
+  'Tự học': 'Self-study',   // tên gọn PA SOS tự sinh (tenPaGon của "Tự học · 1 tháng")
   'Tutor · đến MT{x}': 'Tutor · to MT{x}',
   'Tutor · đến lúc thi': 'Tutor · until the exam',
   'Trao đổi ngắn với HV': 'Quick talk with student',

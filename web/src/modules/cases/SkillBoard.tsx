@@ -273,8 +273,8 @@ function SkillRows({ row, open, onToggle, onReport, onChanged, onMoCase }: {
         <td className="px-3 font-normal"><CotCase row={row} /></td>
         <td className="px-3 font-normal">
           {buoc ? (
-            <span className="block min-w-0 font-normal" title={buoc.title}>
-              <span className="block truncate text-[12px] text-slate-100">{buoc.viec}</span>
+            <span className="block min-w-0 font-normal" title={dich(buoc.title)}>
+              <span className="block truncate text-[12px] text-slate-100">{dich(buoc.viec)}</span>
               <DongHan v={buoc} />
             </span>
           ) : <span className="text-xs text-faint" title={t('Không có việc tiếp')}>—</span>}

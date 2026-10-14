@@ -30,7 +30,8 @@ const GOC_V = {
   'lop-ft-y-thuc': '*:has(> * > [role=tablist][aria-label="Class conduct & SOS"])',
 };
 /** (v) bỏ qua vùng của đợt khác chưa dịch. */
-const BO_V = { 'lop-ft': '#khoi-diem-lop-bang', 'lop-ft-phan-tich': '#khoi-diem-lop-bang' };   // lưới Điểm theo lớp cuối hồ sơ lớp — EN-b
+const BO_V = { 'lop-ft': '#khoi-diem-lop-bang', 'lop-ft-phan-tich': '#khoi-diem-lop-bang',   // lưới Điểm theo lớp cuối hồ sơ lớp — EN-b
+  'hv-hoc-thuat': '#bang-ky-nang .flex-col.p-2\\.5', 'hv-gvbm': '#bang-ky-nang .flex-col.p-2\\.5' };   // thẻ kỹ năng < 640 px (TheKyNang) — EN-b; bảng 1440 đã dịch (EN-d)
 /** Chữ dữ liệu (không phải chữ giao diện): mọi giá trị chữ có dấu tiếng Việt trong DB demo. Chỉ nạp khi chạy tiếng Anh. */
 const DU_LIEU = NN === 'en' ? await (async () => {
   const RE = /[àáảãạăằắẳẵặâầấẩẫậèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵđ]/i;
