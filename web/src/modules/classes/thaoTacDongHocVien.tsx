@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { QuickReport } from '../cases/QuickReport.tsx';
 import { RecordViolationPanel } from '../yThuc/RecordViolationPanel.tsx';
 import { ChuyenLopPanel } from '../students/ChuyenLopPanel.tsx';
+import { XacNhanXuLyPanel } from '../yThuc/XacNhanXuLyPanel.tsx';
 import { StudentManagePanel, SuaThongTinMotEm } from '../students/StudentManagePanel.tsx';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
@@ -26,6 +27,8 @@ export type DongChoMenu = {
   id: number; ten: string; dangHoc: boolean; nhapDiem: { nhan: string; den: string } | null; status?: string; ft?: boolean;
   /** Danh sách nhiều lớp (Học viên & Lớp TVV / CX): lớp và quyền của chính dòng — không gửi thì theo bảng. */
   maLop?: string | null; suaThongTin?: boolean; suaThem?: boolean;
+  /** OV-12e: em đang cần xử lý Ý thức (cờ `canhBaoYThuc` của dòng) — ⋯ có "Xác nhận xử lý". */
+  xuLyYThuc?: boolean;
 };
 
 /** "Nhập điểm MT3" / "Nhập điểm Giữa khoá" khi em còn kỹ năng người xem phải chấm; không có thì không có mục (g3-072). */
@@ -74,7 +77,7 @@ export function useThaoTacDongHocVien({ laLopThuong, quyen, onDone, maLop, class
   const navigate = useNavigate();
   const toast = useToast();
   const [mo, setMo] = useState<{
-    viec: 'case' | 'vi-pham' | 'sua-thong-tin' | 'chuyen-lop' | 'de-xuat-chuyen-lop' | 'hoc-lai'; id: number; ten: string; quanLy?: ViecQuanLy; lop?: string | null;
+    viec: 'case' | 'vi-pham' | 'xu-ly-y-thuc' | 'sua-thong-tin' | 'chuyen-lop' | 'de-xuat-chuyen-lop' | 'hoc-lai'; id: number; ten: string; quanLy?: ViecQuanLy; lop?: string | null;
   } | null>(null);
   const daDoi = (id: number) => { invalidate('/hoc-vien-lop'); invalidate(`/students/${id}`); onDone(); };
   /* OV-11g (Q11, Q12): Lưu trữ một chạm + Hoàn tác (bỏ lưu trữ) — như Lưu trữ / Bỏ lưu trữ ở trang Lưu trữ. */
@@ -100,7 +103,7 @@ export function useThaoTacDongHocVien({ laLopThuong, quyen, onDone, maLop, class
     { key: 'ho-so', nhan: t('Mở hồ sơ'), keTruoc: true, onChon: () => navigate(duongHoSoHocVien(d.id)) },
   ] : mucMenuDongHocVien({
     laLopThuong, dangHoc: d.dangHoc,
-    coTheGhiViPham: quyen.coTheGhiViPham, coTheBaoCase: quyen.coTheBaoCase,
+    coTheGhiViPham: quyen.coTheGhiViPham, coTheBaoCase: quyen.coTheBaoCase, coTheXuLyYThuc: quyen.coTheGhiViPham && !!d.xuLyYThuc,
     coTheNhapDiem: quyen.coTheNhapDiem && d.nhapDiem !== null,
     coTheSuaHocVien: quyen.coTheSuaHocVien, coTheChuyenLop: !!quyen.coTheChuyenTiep, coTheDeXuatChuyenLop: quyen.coTheSuaHocVien && !quyen.coTheChuyenTiep,
   }).filter((k) => k !== 'lo-trinh-tiep' || !!classId).map((k, i, ds) => ({
@@ -122,6 +125,8 @@ export function useThaoTacDongHocVien({ laLopThuong, quyen, onDone, maLop, class
         studentId={mo?.id ?? 0} studentName={mo?.ten} lop={maLop} onDone={xong} />
       <RecordViolationPanel open={mo?.viec === 'vi-pham'} onClose={() => setMo(null)}
         studentId={mo?.id ?? 0} studentName={mo?.ten} lop={maLop} onDone={xong} />
+      {/* OV-12e (mockup v3 §8): ⋯ → Xác nhận xử lý mở panel ngay trên trang; ✕ / Esc về đúng dòng. */}
+      {mo?.viec === 'xu-ly-y-thuc' && <XacNhanXuLyPanel studentId={mo.id} lop={maLop} onClose={() => setMo(null)} onDone={onDone} />}
       <ChuyenLopPanel open={mo?.viec === 'chuyen-lop' || mo?.viec === 'de-xuat-chuyen-lop'} cheDo={mo?.viec === 'de-xuat-chuyen-lop' ? 'de-xuat' : 'lenh'} onClose={() => setMo(null)}
         studentId={mo?.id ?? 0} studentName={mo?.ten} lop={maLop} onDone={xong} />
       {mo?.viec === 'hoc-lai' && (

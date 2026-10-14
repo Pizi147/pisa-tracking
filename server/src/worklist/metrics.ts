@@ -1,13 +1,15 @@
 import { db } from '../db.ts';
+import { t } from '../../../shared/i18n/index.ts';
 /** dd/mm — hạn cụ thể trên dòng panel. */
 const ngayNgan = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
-import { ATTEMPT_KIND_SHORT, addDaysIso, khoaBai, nhanBai,chuViecChotLoTrinh, daiDienNhomBoTro, baiId, duongCase, duongDotTest, nhanLoaiXuLy, nhanTuanGhiKetQua, PERMISSIONS, VIOLATION_CATEGORY_LABEL, tachTenMoTa, metricById, tachBaiId, tenMon, tenMonNgan, tuanLich, type AttemptKind, type ChiSo, type ChuongTrinh } from '../../../shared/domain/index.ts';
+import { ATTEMPT_KIND_SHORT, addDaysIso, khoaBai, nhanBai,chuViecChotLoTrinh, daiDienNhomBoTro, baiId, duongCase, duongDotTest, nhanLoaiXuLy, nhanTuanGhiKetQua, PERMISSIONS, VIOLATION_CATEGORY_LABEL, tachTenMoTa, metricById, tachBaiId, tenMon, tenMonNgan, tuanLich, vietMaLuot, CHU_THEM_PA, type AttemptKind, type DeadlineKind, type ChiSo, type ChuongTrinh } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
-import { classScopeSql, scopeFor, type Principal, type Scope } from '../permissions.ts';
+import { can, classScopeSql, isCoreTeacherOf, scopeFor, type Principal, type Scope } from '../permissions.ts';
 import { badRequest, forbidden, HttpError, notFound } from '../util.ts';
-import { listCases } from '../cases/cases.ts';
-import { NOT_UNCONFIRMED_PRESET, xuLyCaseMany } from '../cases/sosState.ts';
+import { ghiDuocPaMany, listCases, type MappedCase } from '../cases/cases.ts';
+import { chiTietCaseMo } from '../cases/caseLop.ts';
+import { NOT_UNCONFIRMED_PRESET, sosCaseStateMany, xuLyCaseMany } from '../cases/sosState.ts';
 
 /** OV-12d: "Case chờ duyệt" của Tổng quan = cột "Chờ duyệt" của Tổng hợp — MỘT hàm `xuLyCaseMany`; `quaHan` = số ⚠ của cột đó. */
 function choDuyetCaseIds(ids: number[], today: string, chiQuaHan = false): number[] {
@@ -77,18 +79,83 @@ export type MetricResult = {
 
 const EMPTY_NOTE = 'Không có dữ liệu trong phạm vi';
 
+/**
+ * OV-12e (P12): VIỆC CỦA MỘT DÒNG panel số liệu — bấm dòng mở rộng tại chỗ: việc ngắn (Xác nhận PA) làm ngay trong dòng, việc dài thay nội dung panel.
+ * `lam` = người xem làm được (người giữ việc, QL làm thay) — chỉ để vẽ khối Cần làm hay câu tình trạng; máy chủ vẫn kiểm quyền khi lưu (403).
+ */
+export type ViecDong = {
+  chu: string;
+  loai: 'xac-nhan' | 'ghi-nhan-xet' | 'xac-nhan-pa' | 'ghi-ket-qua' | 'them-pa' | 'hoan-thanh' | 'nhap-diem' | 'van-hanh';
+  loaiHan: DeadlineKind | null; han: string | null; lam: boolean;
+  caseId?: number; paId?: number;
+  /** Xác nhận PA ngay trong dòng: đúng PA cần chốt. */
+  pa?: { kind: string; description: string | null; performer: string | null; performerUserId: number | null; soBuoi: number | null; mocChu: string | null };
+  /** Nhập điểm: lớp · lượt (`mt:2`) · kỹ năng · em. */
+  classId?: number; luot?: string; kn?: string; studentId?: number;
+};
+
 /** Một dòng của panel danh sách: đủ để người đọc nhận ra bản ghi và bấm sang đúng chỗ. */
 export type MetricRow = {
   id: number; title: string; sub: string; href: string;
   /** PR-VAI-a (Q26): dòng Case/PA — người phụ trách/thực hiện và hạn (xác nhận nguyên nhân / ghi kết quả), 12 px ở panel. */
   nguoi?: string | null; han?: string | null;
+  /** OV-12e: đầu dòng v3 — em (link hồ sơ) · lớp · ngữ cảnh; việc của dòng (null = không còn việc, ví dụ Case đã xong). */
+  em?: { id: number; ten: string } | null; lop?: string | null; ngCanh?: string | null; nguoiId?: number | null;
+  viec?: ViecDong | null;
+  /** Câu tình trạng khi không có việc để làm (Chờ Quản lý duyệt · không theo dõi…). */
+  tinhTrang?: string | null;
 };
+
+/** Ngữ cảnh quyền sửa một Case (cùng `sosEditCtx` ở cases.ts): lớp hiện tại của em trước, lớp của lượt sau. */
+const ctxCase = (r: { lop_id: number | null; sid: number | null; topic: string | null }) =>
+  ({ classId: r.lop_id ?? undefined, studentId: r.sid ?? undefined, skill: r.topic === 'tong_hop' ? undefined : r.topic ?? undefined });
+
+/**
+ * VIỆC TIẾP của các Case theo lô — CÙNG luật `chiTietCaseMo` (trạng thái v4 + `viecTiepCuaCase`), không hỏi DB từng Case. `p` có thì tính `lam`.
+ * Trả theo id Case: việc (null = Case xong / huỷ) + câu trạng thái.
+ */
+function viecCuaCase(rows: any[], p: Principal | undefined): Map<number, { viec: ViecDong | null; tinhTrang: string | null }> {
+  const gia = rows.map((r) => ({
+    id: r.id, studentId: r.sid, status: r.status, detectedAt: r.detected_at, urgency: r.urgency, sosLevel: r.sos_level, kck: !!r.kck,
+    originKind: r.origin_kind, classKind: 'normal', attemptNo: r.attempt_no ?? null, topic: r.topic, category: r.category, categoryLabel: null,
+    topicLabel: null, title: r.title ?? '', primaryLabel: null, homeClassId: null, classId: r.lop_id, classCode: r.lop,
+  })) as unknown as MappedCase[];
+  const ct = chiTietCaseMo(gia);
+  /* Ghi kết quả: CÙNG luật `ghiDuoc` của Ngăn Case (người giữ việc || quyền theo vai), theo lô — không tự viết luật thứ hai. */
+  const ghiDuoc = p ? ghiDuocPaMany(p, rows.flatMap((r) => [...(r.pas?.entries() ?? [])].map(([id, pa]: [number, any]) => ({
+    id, kind: pa.kind, performer_user_id: pa.performerUserId, case_id: r.id, nhom_bo_tro: pa.nhomBoTro,
+    topic: r.topic ?? null, class_id: r.lop_id ?? null, eff_student_id: r.sid ?? null, owner_user_id: r.owner_user_id ?? null,
+  })))) : new Map<number, boolean>();
+  const out = new Map<number, { viec: ViecDong | null; tinhTrang: string | null }>();
+  for (const r of rows) {
+    const c = ct.get(r.id);
+    const v = c?.viecTiep ?? null;
+    const loai: ViecDong['loai'] | null = !v ? null : v.chu === 'Xác nhận Case' ? 'xac-nhan' : v.chu === 'Ghi nhận xét' ? 'ghi-nhan-xet'
+      : v.chu.startsWith('Xác nhận PA') ? 'xac-nhan-pa' : v.loaiHan === 'cap-nhat-pa' ? 'ghi-ket-qua' : v.chu === CHU_THEM_PA ? 'them-pa'
+        : v.chu === 'Hoàn thành Case' ? 'hoan-thanh' : null;
+    if (!v || !loai) { out.set(r.id, { viec: null, tinhTrang: v?.chu ?? c?.trangThai.chu ?? null }); continue; }
+    const sua = !!p && can(p, PERMISSIONS.SOS_EDIT, ctxCase(r));
+    const pa = v.paId ? r.pas?.get(v.paId) : null;
+    out.set(r.id, {
+      tinhTrang: c!.trangThai.chu,
+      viec: {
+        chu: loai === 'ghi-ket-qua' ? (v.chu.startsWith('Kết quả cuối') ? t('Ghi kết quả cuối') : t('Ghi kết quả')) : loai === 'xac-nhan-pa' ? t('Xác nhận PA') : v.chu,
+        loai, loaiHan: v.loaiHan, han: v.han, caseId: r.id, paId: v.paId,
+        /* Cùng cờ máy chủ: Ghi kết quả = `ghiDuoc`; Xác nhận PA = SOS_EDIT; Xác nhận Case Progress = SOS_EDIT hoặc GVCN lớp em đang học (`coTheXacNhanCase`). */
+        lam: loai === 'ghi-ket-qua' ? !!v.paId && !!ghiDuoc.get(v.paId)
+          : sua || (!!p && loai === 'xac-nhan' && !!r.lop_id && isCoreTeacherOf(p, r.lop_id)),
+        ...(loai === 'xac-nhan-pa' && pa ? { pa: { ...pa, mocChu: c!.pas.find((x) => x.id === v.paId)?.mocChu ?? null } } : {}),
+      },
+    });
+  }
+  return out;
+}
 
 /**
  * DỰNG DÒNG CHO MỘT TẬP ID — chỉ "tô màu" tập đã có (tên, lớp, đường dẫn), KHÔNG lọc thêm gì.
  * Tập ID đã qua quyền ở `metricSet`; hàm này không nhận phạm vi nên không thể mở rộng hay thu hẹp nó.
  */
-export function rowsFor(unit: ChiSo['donVi'], ids: number[], metricId?: string): MetricRow[] {
+export function rowsFor(unit: ChiSo['donVi'], ids: number[], metricId?: string, p?: Principal): MetricRow[] {
   const conn = db();
   const byId = new Map<number, MetricRow>();
   const chunks = <T>(list: T[]) => Array.from({ length: Math.ceil(list.length / 400) }, (_, i) => list.slice(i * 400, i * 400 + 400));
@@ -104,34 +171,89 @@ export function rowsFor(unit: ChiSo['donVi'], ids: number[], metricId?: string):
         byId.set(r.id, { id: r.id, title: r.full_name, sub: [r.student_code, r.class_code].filter(Boolean).join(' · '), href: `/hoc-vien/${r.id}` });
       }
     } else if (unit === 'case') {
-      for (const r of conn.prepare(
-        `SELECT sc.id, sc.title, COALESCE(sc.category, sc.topic) AS mon, cy.programme_code AS ct, s.id AS sid, s.full_name, s.student_code, sc.status,
-                sc.han_xac_nhan, u.full_name AS nguoi
+      const ds = conn.prepare(
+        `SELECT sc.id, sc.title, COALESCE(sc.category, sc.topic) AS mon, sc.category, sc.topic, cy.programme_code AS ct, s.id AS sid, s.full_name, s.student_code,
+                sc.status, sc.detected_at, sc.urgency, sc.sos_level, sc.kck, sc.origin_kind, a.attempt_no, u.full_name AS nguoi, sc.owner_user_id,
+                COALESCE(cur.class_id, a.class_id) AS lop_id, lc.code AS lop
            FROM sos_cases sc LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
            LEFT JOIN learning_cycles cy ON cy.id = sc.cycle_id
            LEFT JOIN students s ON s.id = COALESCE(sc.student_id, a.student_id)
            LEFT JOIN users u ON u.id = sc.owner_user_id
+           LEFT JOIN enrollments cur ON cur.id = (SELECT e.id FROM enrollments e WHERE e.student_id = s.id AND e.status = 'active' ORDER BY e.id DESC LIMIT 1)
+           LEFT JOIN classes lc ON lc.id = COALESCE(cur.class_id, a.class_id)
           WHERE sc.id IN (${ph})`,
+      ).all(...chunk) as any[];
+      /* PA cần chốt (Xác nhận PA ngay trong dòng) + người dạy PA — một câu cho cả lô. */
+      const paTheoCase = new Map<number, Map<number, any>>();
+      for (const iv of conn.prepare(
+        `SELECT iv.id, iv.case_id, iv.kind, iv.description, iv.so_buoi, iv.performer_user_id, iv.nhom_bo_tro, COALESCE(pu.full_name, NULLIF(iv.performer_name, '')) AS performer
+           FROM case_interventions iv LEFT JOIN users pu ON pu.id = iv.performer_user_id WHERE iv.case_id IN (${ph}) AND iv.status != 'cancelled'`,
       ).all(...chunk) as any[]) {
+        if (!paTheoCase.has(iv.case_id)) paTheoCase.set(iv.case_id, new Map());
+        paTheoCase.get(iv.case_id)!.set(iv.id, { kind: iv.kind, description: iv.description ?? null, performer: iv.performer ?? null,
+          performerUserId: iv.performer_user_id ?? null, soBuoi: iv.so_buoi ?? null, nhomBoTro: iv.nhom_bo_tro ?? null });
+      }
+      const viec = viecCuaCase(ds.filter((r) => r.sid != null).map((r) => ({ ...r, pas: paTheoCase.get(r.id) })), p);
+      for (const r of ds) {
         /* MH2: tên môn theo chương trình của lộ trình (FOU "G+V"), không chữ thô "listening". K1-06 (Q26): mở hồ sơ HV ở Ngăn Case. */
+        const v = viec.get(r.id);
+        const ten = r.title ?? (r.mon ? tenMon(r.ct ?? null, r.mon) : `Case ${r.id}`);
         byId.set(r.id, {
-          id: r.id, title: r.title ?? (r.mon ? tenMon(r.ct ?? null, r.mon) : `Case ${r.id}`), sub: [r.full_name, r.student_code].filter(Boolean).join(' · '),
-          href: duongCase(r.sid, r.id), nguoi: r.nguoi ?? null, han: r.han_xac_nhan ?? null,
+          id: r.id, title: ten, sub: [r.full_name, r.student_code].filter(Boolean).join(' · '),
+          /* OV-12e (đặc tả mục 1, nghi lỗi): hạn = hạn của VIỆC TIẾP — Case xong / không còn việc thì không còn hạn (trước: luôn `han_xac_nhan`). */
+          href: duongCase(r.sid, r.id), nguoi: r.nguoi ?? null, han: v?.viec?.han ?? null, nguoiId: r.owner_user_id ?? null,
+          em: r.sid ? { id: r.sid, ten: r.full_name } : null, lop: r.lop ?? null, ngCanh: ten,
+          viec: v?.viec ?? null, tinhTrang: v?.tinhTrang ?? null,
         });
       }
     } else if (unit === 'phuong-an') {
-      for (const r of conn.prepare(
+      const ds = conn.prepare(
         `SELECT iv.id, iv.case_id, COALESCE(NULLIF(iv.description, ''), iv.kind) AS title, s.id AS sid, s.full_name, s.student_code, iv.action_due,
-                COALESCE(pu.full_name, NULLIF(iv.performer_name, ''), ou.full_name) AS nguoi
+                iv.status AS pa_status, iv.approval_state, iv.performer_user_id, iv.kind, iv.nhom_bo_tro, sc.owner_user_id,
+                COALESCE(pu.full_name, NULLIF(iv.performer_name, ''), ou.full_name) AS nguoi, COALESCE(iv.performer_user_id, sc.owner_user_id) AS nguoi_id,
+                sc.title AS case_title, sc.status, sc.detected_at, sc.urgency, sc.sos_level, sc.kck, sc.origin_kind, sc.topic, sc.category, a.attempt_no,
+                COALESCE(cur.class_id, a.class_id) AS lop_id, lc.code AS lop
            FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id
+           LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
            LEFT JOIN students s ON s.id = sc.student_id
            LEFT JOIN users pu ON pu.id = iv.performer_user_id
            LEFT JOIN users ou ON ou.id = sc.owner_user_id
+           LEFT JOIN enrollments cur ON cur.id = (SELECT e.id FROM enrollments e WHERE e.student_id = s.id AND e.status = 'active' ORDER BY e.id DESC LIMIT 1)
+           LEFT JOIN classes lc ON lc.id = COALESCE(cur.class_id, a.class_id)
           WHERE iv.id IN (${ph})`,
-      ).all(...chunk) as any[]) {
+      ).all(...chunk) as any[];
+      /* Việc của PA = việc tiếp của Case khi nó trỏ đúng PA này (Xác nhận PA · Ghi kết quả); PA khác đang chạy có hạn → Ghi kết quả của chính PA. */
+      const caseRows = [...new Map(ds.filter((r) => r.sid != null).map((r) => [r.case_id, { ...r, id: r.case_id, title: r.case_title }])).values()];
+      const paTheoCase = new Map<number, Map<number, any>>();
+      if (caseRows.length) {
+        const phc = caseRows.map(() => '?').join(',');
+        for (const iv of conn.prepare(
+          `SELECT iv.id, iv.case_id, iv.kind, iv.description, iv.so_buoi, iv.performer_user_id, iv.nhom_bo_tro, COALESCE(pu.full_name, NULLIF(iv.performer_name, '')) AS performer
+             FROM case_interventions iv LEFT JOIN users pu ON pu.id = iv.performer_user_id WHERE iv.case_id IN (${phc}) AND iv.status != 'cancelled'`,
+        ).all(...caseRows.map((r) => r.id)) as any[]) {
+          if (!paTheoCase.has(iv.case_id)) paTheoCase.set(iv.case_id, new Map());
+          paTheoCase.get(iv.case_id)!.set(iv.id, { kind: iv.kind, description: iv.description ?? null, performer: iv.performer ?? null,
+            performerUserId: iv.performer_user_id ?? null, soBuoi: iv.so_buoi ?? null, nhomBoTro: iv.nhom_bo_tro ?? null });
+        }
+      }
+      const vc = viecCuaCase(caseRows.map((r) => ({ ...r, pas: paTheoCase.get(r.id) })), p);
+      const ghiDuoc = p ? ghiDuocPaMany(p, ds.filter((r) => r.sid != null).map((r) => ({
+        id: r.id, kind: r.kind, performer_user_id: r.performer_user_id ?? null, case_id: r.case_id, nhom_bo_tro: r.nhom_bo_tro ?? null,
+        topic: r.topic ?? null, class_id: r.lop_id ?? null, eff_student_id: r.sid, owner_user_id: r.owner_user_id ?? null,
+      }))) : new Map<number, boolean>();
+      for (const r of ds) {
+        const cv = vc.get(r.case_id);
+        const chay = r.pa_status !== 'completed' && r.pa_status !== 'cancelled' && r.approval_state !== 'pending';
+        const viec: ViecDong | null = cv?.viec && cv.viec.paId === r.id ? cv.viec
+          : chay && r.action_due && r.sid ? {
+            chu: t('Ghi kết quả'), loai: 'ghi-ket-qua', loaiHan: 'cap-nhat-pa', han: r.action_due, caseId: r.case_id, paId: r.id,
+            lam: !!ghiDuoc.get(r.id),   // cùng `ghiDuoc` của Ngăn Case
+          } : null;
         byId.set(r.id, {
           id: r.id, title: r.title, sub: [r.full_name, r.student_code].filter(Boolean).join(' · '),
-          href: duongCase(r.sid, r.case_id), nguoi: r.nguoi ?? null, han: r.action_due ?? null,
+          href: duongCase(r.sid, r.case_id), nguoi: r.nguoi ?? null, han: viec?.han ?? r.action_due ?? null, nguoiId: r.nguoi_id ?? null,
+          em: r.sid ? { id: r.sid, ten: r.full_name } : null, lop: r.lop ?? null, ngCanh: r.title,
+          viec, tinhTrang: viec ? null : r.approval_state === 'pending' ? t('Chờ Quản lý duyệt') : r.pa_status === 'completed' ? t('PA đã kết thúc') : cv?.tinhTrang ?? null,
         });
       }
     } else if (unit === 'bai') {
@@ -140,7 +262,7 @@ export function rowsFor(unit: ChiSo['donVi'], ids: number[], metricId?: string):
       const at = [...new Set(tach.map((x) => x.attemptId))];
       const pa = at.map(() => '?').join(',');
       const luot = new Map((conn.prepare(
-        `SELECT a.id, a.kind, a.attempt_no, a.class_id, c.programme_code, c.code AS class_code, s.full_name, s.student_code, pr.week_start
+        `SELECT a.id, a.kind, a.attempt_no, a.class_id, a.student_id, c.programme_code, c.code AS class_code, s.full_name, s.student_code, pr.week_start
            FROM assessment_attempts a JOIN students s ON s.id = a.student_id
            LEFT JOIN classes c ON c.id = a.class_id LEFT JOIN report_periods pr ON pr.id = a.planned_period_id
           WHERE a.id IN (${pa})`,
@@ -158,6 +280,14 @@ export function rowsFor(unit: ChiSo['donVi'], ids: number[], metricId?: string):
           id: x.id, title: `${ten} · ${r.full_name} · ${tenMonNgan(r.programme_code ?? null, x.skill)}`,
           sub: [r.student_code, r.class_code, tuan ? tuanLich(tuan, homNay) : null].filter(Boolean).join(' · '),
           href: duongDotTest({ id: r.id, kind: r.kind, classId: r.class_id }, x.skill),   // PR-UXF-b: có kỹ năng → hồ sơ Mock cuộn tới đúng ô (lớp thường bỏ kn)
+          em: { id: r.student_id, ten: r.full_name }, lop: r.class_code ?? null, ngCanh: `${ten} · ${tenMonNgan(r.programme_code ?? null, x.skill)}`,
+          /* OV-12e: Nhập điểm tại chỗ — cùng bảng một lớp · một lượt · một kỹ năng của Công việc (`PanelNhapDiem`). */
+          viec: r.class_id ? {
+            chu: t('Nhập điểm'), loai: 'nhap-diem', loaiHan: 'nhap-diem', han: null, classId: r.class_id, kn: x.skill, studentId: r.student_id,
+            luot: vietMaLuot(r.kind === 'mock' ? { loai: 'mt', so: r.attempt_no } : r.kind === 'checkpoint' ? { loai: 'cp', so: r.attempt_no }
+              : { loai: 'thuong', kind: r.kind }),
+            lam: !!p && can(p, PERMISSIONS.SCORE_EDIT, { classId: r.class_id, skill: x.skill }),
+          } : null,
         });
       }
     } else if (unit === 'dot-test' || unit === 'bai-thi') {
@@ -223,7 +353,11 @@ export function rowsFor(unit: ChiSo['donVi'], ids: number[], metricId?: string):
       for (const r of conn.prepare(
         `SELECT t.id, t.title, t.due_date, b.name AS branch_name FROM tasks t LEFT JOIN branches b ON b.id = t.branch_id WHERE t.id IN (${ph})`,
       ).all(...chunk) as any[]) {
-        byId.set(r.id, { id: r.id, title: r.title, sub: [r.branch_name ?? 'Toàn hệ thống', r.due_date ? `hạn ${String(r.due_date).slice(8, 10)}/${String(r.due_date).slice(5, 7)}` : null].filter(Boolean).join(' · '), href: `/cong-viec?mo-viec=${r.id}` });
+        byId.set(r.id, {
+          id: r.id, title: r.title, sub: [r.branch_name ?? 'Toàn hệ thống', r.due_date ? `hạn ${String(r.due_date).slice(8, 10)}/${String(r.due_date).slice(5, 7)}` : null].filter(Boolean).join(' · '), href: `/cong-viec?mo-viec=${r.id}`,
+          /* OV-12e: việc Vận hành mở đúng ngăn Vận hành tại chỗ (chỉ số này chỉ Quản lý thấy; máy chủ kiểm lại khi lưu). */
+          viec: { chu: t('Xử lý'), loai: 'van-hanh', loaiHan: 'viec-van-hanh', han: r.due_date ?? null, lam: !!p },
+        });
       }
     } else if (unit === 'lop') {
       /* PR-VAI-a: dòng lớp thiếu GV môn mở hồ sơ lớp với panel Sửa phân công mở sẵn. */
@@ -255,7 +389,7 @@ export function rowsFor(unit: ChiSo['donVi'], ids: number[], metricId?: string):
  * thông với tập lớn. Chỉ khi xin `rows=1` (mở panel danh sách) mới kèm `ids` và các dòng; lúc đó cả ba — số, tập ID và
  * dòng — vẫn sinh ra từ CÙNG một `MetricResult`, nên không thể lệch nhau.
  */
-export function metricResponse(r: MetricResult, withRows: boolean) {
+export function metricResponse(r: MetricResult, withRows: boolean, p?: Principal) {
   const lean = {
     id: r.id, unit: r.unit, n: r.n,
     numerator: r.numeratorIds ? r.numeratorIds.length : null,
@@ -268,7 +402,7 @@ export function metricResponse(r: MetricResult, withRows: boolean) {
   if (!withRows) return lean;
   return {
     ...lean, ids: r.ids, numeratorIds: r.numeratorIds, denominatorIds: r.denominatorIds, splitIds: r.splits, byKindIds: r.byKind,
-    rows: rowsFor(r.unit, r.ids, r.id).map((x) => (r.dongPhu?.has(x.id) ? { ...x, sub: r.dongPhu.get(x.id)! } : x)),
+    rows: rowsFor(r.unit, r.ids, r.id, p).map((x) => (r.dongPhu?.has(x.id) ? { ...x, sub: r.dongPhu.get(x.id)! } : x)),
   };
 }
 

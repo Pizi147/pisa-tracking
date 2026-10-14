@@ -274,8 +274,10 @@ export function TasksBoard() {
 }
 
 /** Chi tiết một công việc: hạn + lịch sử dời hạn, việc con, lịch sử cập nhật, Case làm căn cứ. */
-export function NganViecVanHanh({ taskId, onClose, onDone }: {
+export function NganViecVanHanh({ taskId, onClose, onDone, quayLai }: {
   taskId: number | null; onClose: () => void; onDone: () => void;
+  /** OV-12e: mở từ panel số liệu — "← Danh sách". */
+  quayLai?: { nhan: string; onClick: () => void };
 }) {
   const { homNay } = useNgayNghiepVu();
   const { data, loading, reload } = useApi<any>(taskId ? `/mgmt-tasks/${taskId}` : null, [taskId]);
@@ -285,7 +287,7 @@ export function NganViecVanHanh({ taskId, onClose, onDone }: {
 
   if (taskId === null) return null;
   return (
-    <KhungPanel tieuDe={data?.title ?? 'Công việc'} rong="rong" onDong={onClose}
+    <KhungPanel tieuDe={data?.title ?? 'Công việc'} rong="rong" onDong={onClose} quayLai={quayLai}
       ngCanh={data ? TASK_GROUP_LABEL[data.group as keyof typeof TASK_GROUP_LABEL] || undefined : undefined}>
       {loading && <div className="pt-3"><Skeleton rows={6} /></div>}
       {data && (

@@ -13,6 +13,7 @@ import { ONgay } from '../../ui/ONgay.tsx';
 import { OKhac } from '../../ui/OKhac.tsx';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import { Hang2, Truong } from '../../ui/KhungPanel.tsx';
+import { CanLam, NutChu } from '../../ui/KhuonViec.tsx';
 import { Han } from '../../ui/Han.tsx';
 import { t } from '@shared/i18n/index.ts';
 
@@ -238,13 +239,16 @@ function ConfirmCoordinationForm({ a, onClose, onChanged }: {
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
   };
 
+  /* OV-12e (mockup v3 §7): form xác nhận là khối Cần làm (khối duy nhất có màu) — đối tượng · Ngày * · Người * · Ghi chú * · Tệp · MỘT nút chính. */
+  const meeting = laMeetingCx(a.kind);
   return (
-    <div className="mt-2 rounded-lg p-2.5 space-y-2" style={{ background: 'var(--surface-2)' }}>
+    <div className="mb-2 mt-1"><CanLam>
+      {meeting && <span className="text-[15px] font-bold text-slate-100">{a.kind === 'cx_meeting_family' ? t('CX / GĐCN gặp HV và PH') : t('CX / GĐCN gặp HV')}</span>}
       <Hang2>
-        <Truong nhan={t('Ngày thực hiện')} batBuoc>
+        <Truong nhan={meeting ? t('Ngày') : t('Ngày thực hiện')} batBuoc>
           <span className="block w-[11.5rem]"><ONgay kieu="ngay" value={performedOn} onChange={setPerformedOn} toiDa={today} /></span>
         </Truong>
-        <Truong nhan={t('Người thực hiện')} as="div" loi={loiNguoi}>
+        <Truong nhan={meeting ? t('Người') : t('Người thực hiện')} batBuoc={meeting} as="div" loi={loiNguoi}>
           <ChonNguoi nhom="nhan_vien" value={nguoi} onChange={setNguoi} />
         </Truong>
       </Hang2>
@@ -257,12 +261,17 @@ function ConfirmCoordinationForm({ a, onClose, onChanged }: {
         <textarea className="field w-full" rows={2} placeholder={t('Ghi chú (tuỳ chọn)')} value={note}
           onChange={(e) => setNote(e.target.value)} />
       )}
-      <BangChung ownerType="sos_coordination_action" ownerId={actionId} canEdit tieuDe="" />
-      <div className="flex gap-1.5">
-        <button type="button" className="btn btn-sm" onClick={onClose} disabled={busy}>{t('Đóng')}</button>
-        <button type="button" className="btn btn-sm btn-primary" disabled={busy || !performedOn || !!loiNguoi} title={loiNguoi ?? undefined} onClick={save}>{t('Lưu')}</button>
+      <div>
+        {meeting && <span className="mb-1 block text-[13px] font-semibold text-slate-300">{t('Tệp')}</span>}
+        <BangChung ownerType="sos_coordination_action" ownerId={actionId} canEdit tieuDe="" />
       </div>
-    </div>
+      <div className="flex flex-wrap items-center gap-1.5">
+        <button type="button" className="btn btn-primary min-h-[44px] px-4 font-bold sm:min-h-[40px]" disabled={busy || !performedOn || !!loiNguoi} title={loiNguoi ?? undefined} onClick={save}>
+          {busy ? t('Đang lưu…') : meeting && a.status !== 'done' ? t('Xác nhận meeting') : t('Lưu')}
+        </button>
+        <NutChu mo onClick={onClose} disabled={busy}>{t('Đóng')}</NutChu>
+      </div>
+    </CanLam></div>
   );
 }
 

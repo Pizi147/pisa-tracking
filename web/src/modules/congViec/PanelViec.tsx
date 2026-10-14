@@ -4,7 +4,8 @@ import { useApi } from '../../lib/useApi.ts';
 import { invalidate } from '../../lib/api.ts';
 import { ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
-import { Han } from '../../ui/Han.tsx';
+import { ChipHan } from '../../ui/Nhan.tsx';
+import { dauViec } from '../../ui/KhuonViec.tsx';
 import { NganCase } from '../students/NganCase.tsx';
 import { BanGiaoPanel } from '../classes/BanGiaoPanel.tsx';
 import { XacNhanXuLyPanel } from '../yThuc/XacNhanXuLyPanel.tsx';
@@ -69,7 +70,7 @@ export function PanelViec({ it, onDong, onDaLam, onTiep }: {
     case 'ban_giao':
       return <BanGiaoPanel key={it.key} classId={it.classId!} mon={it.key.startsWith('ban_giao_mon:') ? it.key.split(':')[2] ?? null : null} onClose={onDong} onDone={doi} />;
     case 'yt_xu_ly':
-      return <XacNhanXuLyPanel key={it.key} studentId={it.studentId} onClose={onDong} onDone={doi} />;
+      return <XacNhanXuLyPanel key={it.key} studentId={it.studentId} lop={lop} onClose={onDong} onDone={doi} />;
     case 'yt_thuc_hien':
       return <DaThucHienPanel key={it.key} measureId={soCuaKhoa(it.key)} onClose={onDong} onDone={doi} />;
     case 'khai_bac':
@@ -89,7 +90,12 @@ export function PanelViec({ it, onDong, onDaLam, onTiep }: {
  * NHẬP ĐIỂM TẠI CHỖ (mockup M1 §2): bảng điểm của lớp · lượt (`/classes/:id/diem-theo-luot/:luot`, cùng nguồn Điểm theo lớp), dạng MỘT KỸ NĂNG
  * MỘT LÚC (`MotKyNang`, chọn sẵn kỹ năng của việc) — ô FT mở hộp nhập điểm (Lưu · em tiếp ›), lớp thường ô gõ thẳng. Không đường ghi mới.
  */
-function PanelNhapDiem({ it, onDong, onDaLam }: { it: WorkItem; onDong: () => void; onDaLam: () => void }) {
+export function PanelNhapDiem({ it, onDong, onDaLam, quayLai }: {
+  it: Pick<WorkItem, 'classId' | 'luot' | 'kn' | 'studentId' | 'emIds' | 'tieuDe' | 'classCode' | 'contextLabel' | 'due'>;
+  onDong: () => void; onDaLam: () => void;
+  /** OV-12e: mở từ panel số liệu — "← Danh sách". */
+  quayLai?: { nhan: string; onClick: () => void };
+}) {
   const { data, error, reload } = useApi<BangTheoLuot>(duongDiemTheoLuot(it.classId!, it.luot!), [it.classId, it.luot]);
   const daLuu = () => { reload(); onDaLam(); };
   /* OV-11c (CV-6): em của việc lên đầu; phần còn lại của lớp gập "Cả lớp (n)". Kỹ năng giữ như lúc mở (`kn` ban đầu). */
@@ -109,16 +115,17 @@ function PanelNhapDiem({ it, onDong, onDaLam }: { it: WorkItem; onDong: () => vo
       </>
     );
   };
-  const ngCanh = (
-    <span className="flex flex-wrap items-center gap-x-1.5">
+  /* OV-12e: đầu panel v3 — tên việc + chip hạn / lớp · lượt ↗ (xem Điểm theo lớp, tách khỏi ô nhập). */
+  const dau = dauViec({
+    han: it.due ? <ChipHan loai={LOAI_HAN_CUA_VIEC.score ?? 'nhap-diem'} han={it.due} /> : null,
+    lop: it.classCode, ngCanh: (
       <Link className="link" to={`/test/diem-lop?lop=${it.classId}&luot=${encodeURIComponent(it.luot!)}`}>
-        {it.classCode} · {dich(it.contextLabel ?? "")} <span aria-hidden className="text-xs">↗</span>
+        {dich(it.contextLabel ?? '')} <span aria-hidden className="text-xs">↗</span>
       </Link>
-      {it.due && <><span aria-hidden>·</span><Han loai={LOAI_HAN_CUA_VIEC.score ?? 'nhap-diem'} han={it.due} /></>}
-    </span>
-  );
+    ),
+  });
   return (
-    <KhungPanel tieuDe={dich(it.tieuDe)} ngCanh={ngCanh} onDong={onDong}>
+    <KhungPanel tieuDe={dich(it.tieuDe)} dau={dau} quayLai={quayLai} onDong={onDong}>
       {error ? <ErrorState message={error.message} hint={error.hint} onRetry={reload} />
         : !data ? <div className="pt-3"><Skeleton rows={6} /></div>
           : (
@@ -135,14 +142,12 @@ function PanelNhapDiem({ it, onDong, onDaLam }: { it: WorkItem; onDong: () => vo
 /** OV-12h: Phối hợp SOS của lớp (lượt chưa xong) tại chỗ — cùng thẻ lượt / form Xác nhận của hồ sơ lớp; meeting CX có hạn 5 ngày. */
 function PanelPhoiHop({ it, onDong, onDaLam }: { it: WorkItem; onDong: () => void; onDaLam: () => void }) {
   const { data, loading, error, reload } = useApi<{ rows: CoordTurn[] }>(`/classes/${it.classId}/phoi-hop-sos`, [it.classId]);
-  const ngCanh = (
-    <span className="flex flex-wrap items-center gap-x-1.5">
-      <Link className="link" to={`/hoc-vien/lop/${it.classId}?tab=y-thuc&sub=phoi-hop`}>{it.classCode} <span aria-hidden className="text-xs">↗</span></Link>
-      {it.due && <><span aria-hidden>·</span><Han loai="phoi-hop" han={it.due} /></>}
-    </span>
-  );
+  const dau = dauViec({
+    han: it.due ? <ChipHan loai="phoi-hop" han={it.due} /> : null,
+    ngCanh: <Link className="link" to={`/hoc-vien/lop/${it.classId}?tab=y-thuc&sub=phoi-hop`}>{it.classCode} <span aria-hidden className="text-xs">↗</span></Link>,
+  });
   return (
-    <KhungPanel tieuDe={dich(it.tieuDe)} ngCanh={ngCanh} onDong={onDong}>
+    <KhungPanel tieuDe={dich(it.tieuDe)} dau={dau} onDong={onDong}>
       <div className="pt-3">
         {error ? <ErrorState message={error.message} hint={error.hint} onRetry={reload} />
           : <PhoiHopSosSection turns={data?.rows ?? null} loading={loading} cot1="hocVien" onChanged={() => { reload(); onDaLam(); }} />}

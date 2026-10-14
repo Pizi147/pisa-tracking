@@ -317,6 +317,8 @@ export type DeadlineView = {
   han: string;
   /** Đúng ngày hạn, chưa quá (không bao giờ true với `du-kien-ket-thuc`). */
   homNay: boolean;
+  /** OV-12e (chủ SP 14/10 tối): còn ≤ `HAN_GAN_NGAY` ngày, chưa quá (gồm hôm nay) — chip hạn vàng; MỘT ngưỡng cho mọi nơi. */
+  ganHan: boolean;
   /** "quá hạn 15 ngày" — nối ngay sau mốc, không nền, không khung. */
   quaHan: string | null;
   /** "hẹn xử lý 30/09". */
@@ -363,6 +365,9 @@ export function nhanTuanGhiKetQua(actionDue: string | null, homNay: string): { t
  * LUẬT HIỆN HẠN (PR-UX0, B-3): việc · mốc · quá hạn/hôm nay · hẹn — mỗi thông tin nói MỘT lần.
  * Quá hạn đếm số ngày từ hạn GỐC cho mọi loại, kể cả `cap-nhat-pa` (mockup 17 #1, #21).
  */
+/** OV-12e: chip hạn 3 mức — quá hạn cam ⚠ · còn ≤ 3 ngày vàng · xa hơn viền xám (chủ SP 14/10 tối). */
+export const HAN_GAN_NGAY = 3;
+
 /** C-004: một chữ cho "việc không đặt hạn"; nơi so khớp (hồ sơ HV, thẻ kỹ năng) dùng hằng này, không so chuỗi hiển thị. */
 export const CHUA_CO_HAN = t('Chưa có hạn');
 
@@ -371,7 +376,7 @@ export function deadlineView(i: DeadlineInput): DeadlineView {
   if (!validIso(i.due)) {
     return {
       text: `${viec} · ${CHUA_CO_HAN}`, tone: 'neutral', daysOverdue: null, title: null,
-      viec, han: CHUA_CO_HAN, homNay: false, quaHan: null, hen: null, con: null,
+      viec, han: CHUA_CO_HAN, homNay: false, ganHan: false, quaHan: null, hen: null, con: null,
     };
   }
   /* C-khác (Dọn-b 14a): hạn có giờ (ISO UTC) đổi sang NGÀY giờ Việt Nam trước khi so — 18:30Z ngày 21 là 01:30 ngày 22 ở VN. */
@@ -392,6 +397,7 @@ export function deadlineView(i: DeadlineInput): DeadlineView {
     quaHan = nhanQuaHan(daysOverdue);
   }
   const homNay = !duKien && i.today === base;
+  const ganHan = !duKien && tone !== 'overdue' && daysBetween(i.today, base) <= HAN_GAN_NGAY;
   const hen = validIso(i.reschedule) ? t('hẹn xử lý {ngay}', { ngay: shortDate(i.reschedule, i.today) }) : null;
   const con = i.kind === 'duyet' && !quaHan ? t('còn {n} ngày', { n: daysBetween(i.today, base) + 1 }) : null;
   const text = duKien
@@ -400,7 +406,7 @@ export function deadlineView(i: DeadlineInput): DeadlineView {
 
   const moved = validIso(i.originalDue) && ngayVn(i.originalDue) !== ngayVn(i.due);
   return {
-    text, tone, daysOverdue, quaHan, homNay, hen, con, viec: viecHien, han,
+    text, tone, daysOverdue, quaHan, homNay, ganHan, hen, con, viec: viecHien, han,
     title: moved ? t('Hạn gốc {ngay}', { ngay: shortDate(ngayVn(i.originalDue as string), i.today) }) : null,
   };
 }

@@ -57,6 +57,16 @@ export function quyetDinhChoPa(pa: { preset: boolean }, lanCuoi: boolean): PlanD
   return pa.preset ? ['keep', 'adjust', 'ask_manager'] : [...PLAN_DECISIONS];
 }
 
+/**
+ * OV-12e (chủ SP 14/10 tối): form kết quả hiện 3 nút Giữ nguyên · Điều chỉnh · Kết thúc PA; "Thay PA" và "Xin hỗ trợ QL" mở BÊN TRONG Điều chỉnh
+ * (cùng "Sửa PA này" = `adjust`). Chỉ đổi cách bày — tập lựa chọn vẫn là `quyetDinhChoPa`, máy chủ không đổi.
+ */
+export function nhomQuyetDinh(ds: readonly PlanDecision[]): { tren: PlanDecision[]; dieuChinh: PlanDecision[] } {
+  const dieuChinh = (['adjust', 'replace', 'ask_manager'] as const).filter((x) => ds.includes(x));
+  const tren = (['keep', 'adjust', 'end'] as const).filter((x) => (x === 'adjust' ? dieuChinh.length > 0 : ds.includes(x)));
+  return { tren, dieuChinh };
+}
+
 /** Tên Case SOS ở chỗ chỉ có chữ (thông báo, hành trình, Việc): `[MT1] Reading không đạt [SOS 3]` (T21). */
 export function tenCaseSos(x: { mt: number | null; giua: string; sos: number | null; kck?: boolean | number | null }): string {
   /* OV-9: Case nhẹ của em KCK — không mức SOS, đuôi [KCK]. */

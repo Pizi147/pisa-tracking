@@ -54,7 +54,8 @@ export function Han({ loai, han, hanGoc, hen, tienTo, ghiChu, coViec, haiDong, b
   return (
     <span title={title} className="text-xs tabular-nums text-slate-500">
       {[tienTo, coViec && loai !== 'du-kien-ket-thuc' ? v.viec : null].filter(Boolean).map((x) => `${x} · `).join('')}
-      {v.han}
+      {/* OV-12e: còn ≤ 3 ngày (chưa tới hôm nay) — chữ hạn vàng, cùng ngưỡng chip hạn (`deadlineView.ganHan`). */}
+      {v.ganHan && !v.homNay && !boTinHieu ? <span className="font-semibold text-soon">{v.han}</span> : v.han}
       {coTinHieu && (haiDong ? <span className="block">{tinHieu}</span> : <> {tinHieu}</>)}
       {v.hen && <> · {v.hen}</>}
       {ghiChu && <> · {ghiChu}</>}

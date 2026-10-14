@@ -2,9 +2,11 @@ import { useEffect, useMemo, useState } from 'react';
 import { api, ApiError, invalidate } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { useToast } from '../../ui/Toast.tsx';
-import { Hang2, Khoi, KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
+import { Hang2, KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
-import { ChonNgayGan } from '../../ui/ChonNgay.tsx';
+import { ONgay } from '../../ui/ONgay.tsx';
+import { ChipHan } from '../../ui/Nhan.tsx';
+import { BoiCanh, CanLam, NutChu, TrangThaiLuu, dauViec } from '../../ui/KhuonViec.tsx';
 import { BangChung } from '../../ui/BangChung.tsx';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import { OKhac } from '../../ui/OKhac.tsx';
@@ -30,9 +32,13 @@ const LOAI_DE_XUAT = ['wl_3', 'meeting_cx', 'suspension', 'other'] as const;
  * "Cũ hơn" gập), ngày ≤ hôm nay, người thực hiện (nhận tên ngoài), mô tả bắt buộc. Lưu xong ở lại panel để đính kèm tệp (tuỳ chọn).
  * Đề xuất: loại · vi phạm · mô tả → `Tiếp: đính kèm bằng chứng` tạo NHÁP (chủ của tệp) → bằng chứng BẮT BUỘC → `Gửi QL duyệt`.
  * Đóng panel khi nháp chưa gửi thì xoá nháp (Q10). Bậc kế cần QL (WL 3) hoặc hết thang → mở thẳng chế độ Đề xuất.
+ * OV-12e (mockup v3 §8): khuôn panel v3 — đầu "Xác nhận xử lý" + chip hạn / em ↗ · lớp · Ý thức; MỘT khối Cần làm (Bậc xử lý tự điền · vi phạm đưa vào
+ * · Ngày * (ô ngày gõ được) · Người * · Mô tả * · nút chính; "Đề xuất QL duyệt" là nút chữ); Bối cảnh: Lần trước · Bậc tiếp theo; chân trạng thái lưu.
  */
-export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', onClose, onDone, onKhai }: {
+export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', lop, onClose, onDone, onKhai }: {
   studentId: number | null; cheDo?: 'xu-ly' | 'de-xuat';
+  /** Mã lớp ở dòng 2 đầu panel (nơi gọi biết). */
+  lop?: string | null;
   onClose: () => void; onDone?: () => void;
   /** Mở panel Xác nhận cấp bậc vi phạm (Q7): chuỗi chưa có lần xử lý nào và em chưa từng xác nhận. */
   onKhai?: (studentId: number) => void;
@@ -49,6 +55,7 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', onClose,
   const [loai, setLoai] = useState<string>('');
   const [tenKhac, setTenKhac] = useState('');
   const [busy, setBusy] = useState(false);
+  const [loiLuu, setLoiLuu] = useState<string | null>(null);
   /** Sau khi lưu: lần xử lý vừa tạo (bước đính kèm tệp tuỳ chọn) hoặc NHÁP đề xuất (bước bằng chứng bắt buộc). */
   const [daLuu, setDaLuu] = useState<{ id: number; loai: 'xu-ly' | 'nhap'; nhan: string } | null>(null);
   const lf = useLoiForm();
@@ -65,6 +72,7 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', onClose,
   if (!studentId) return null;
   const tieuDe = cheDo === 'de-xuat' ? t('Đề xuất QL duyệt') : t('Xác nhận xử lý');
   if (!d) return <KhungPanel tieuDe={tieuDe} onDong={onClose}><p className="mt-3 text-sm text-slate-400">{t('Đang tải…')}</p></KhungPanel>;
+  const dau = (han: boolean) => dauViec({ han: han ? <ChipHan loai="xu-ly-vi-pham" han={d.han} /> : null, em: { id: d.studentId, ten: d.ten }, lop, ngCanh: t('Ý thức') });
 
   const theoId = new Map(d.viPham.map((v) => [v.id, v]));
   const tick = d.macDinh.tick.map((id) => theoId.get(id)).filter((v): v is ViPhamV4 => !!v);
@@ -91,6 +99,7 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', onClose,
     lf.bam();
     if (loi.length || loiNguoi) return;
     setBusy(true);
+    setLoiLuu(null);
     try {
       const m = await api.post<XuLyView>(`/students/${studentId}/y-thuc/xu-ly`, {
         violationIds: [...chon], performedOn: ngayTh, ...nguoiThanhPayload(nguoi), note: moTa.trim(), idempotencyKey, bacDaThay: d.bac,
@@ -103,7 +112,7 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', onClose,
       if (e instanceof ApiError && e.status === 409) {
         toast.push('error', t('Bậc vừa đổi — đã mở lại với bậc mới.'));
         reload();
-      } else toast.push('error', e.message);
+      } else setLoiLuu(e.message);
     } finally { setBusy(false); }
   };
 
@@ -132,40 +141,48 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', onClose,
 
   /* ---------------------------------------------------------------- bước 2: đã lưu */
   if (daLuu?.loai === 'xu-ly') {
+    /* Mockup v3 §7–§8: Cần làm thành khối "Đã xác nhận" (vẫn đính thêm tệp được), nút chính "Xong". */
+    const xong = <button type="button" className="btn btn-primary min-h-[40px] px-4 font-bold" onClick={dong}>{t('Xong')}</button>;
     return (
-      <KhungPanel tieuDe={t('Xác nhận xử lý')} hocVien={d.ten} onDong={dong}
-        chan={{ huy: { nhan: t('Đóng'), onClick: dong }, chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={dong}>{t('Xong')}</button> }}>
-        <Khoi tieuDe={t('Đã lưu')}>
-          <p className="m-0 text-sm text-slate-200">{t('Đã xử lý {nhan} cho {ten} · {size} vi phạm.', { nhan: daLuu.nhan, ten: d.ten, size: chon.size })}</p>
-        </Khoi>
-        <Khoi tieuDe={t('Tệp hoặc liên kết · không bắt buộc')}>
-          <BangChung ownerType="discipline_measure" ownerId={daLuu.id} canEdit tieuDe="" />
-        </Khoi>
+      <KhungPanel tieuDe={t('Xác nhận xử lý')} hocVien={d.ten} onDong={dong} dau={dau(false)}
+        chan={{ v3: true, chinh: xong, dongTren: <span className="font-semibold text-ok">✓ {t('Đã lưu')}</span> }}>
+        <div className="flex flex-col gap-5 pt-4">
+          <div className="flex flex-col gap-2 rounded-[10px] border px-4 py-3.5" style={{ background: 'var(--surface-2)', borderColor: 'var(--line)' }}>
+            <span className="text-sm font-bold text-ok">✓ {t('Đã xác nhận')}</span>
+            <p className="m-0 text-sm text-slate-200">{dich(daLuu.nhan)} · {t('{n} vi phạm', { n: chon.size })} · {ngay(ngayTh, homNay)}</p>
+            <BangChung ownerType="discipline_measure" ownerId={daLuu.id} canEdit tieuDe="" />
+          </div>
+          <div className="max-sm:hidden">{xong}</div>
+        </div>
       </KhungPanel>
     );
   }
   if (daLuu?.loai === 'nhap') {
     const soTep = nhap.data?.soTep ?? 0;
+    const nutGui = <button type="button" className="btn btn-primary min-h-[40px] px-4 font-bold" disabled={busy}
+      onClick={() => { lf.bam(); if (soTep > 0) void gui(); }}>{t('Gửi Quản lý duyệt · trả lời trong 5 ngày')}</button>;
     return (
-      <KhungPanel tieuDe={t('Đề xuất QL duyệt')} hocVien={d.ten} onDong={dong}
-        ngCanh={<span className="truncate">{t('{nhan} · {size} vi phạm', { nhan: daLuu.nhan, size: chon.size })}</span>}
-        chan={{
-          huy: { nhan: t('Huỷ đề xuất'), onClick: dong },
-          conThieu: soTep === 0 && lf.daBam ? [{ nhan: t('Bằng chứng'), lyDo: t('Cần đính kèm tệp hoặc liên kết') }] : undefined,
-          chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy}
-            onClick={() => { lf.bam(); if (soTep > 0) void gui(); }}>{t('Gửi Quản lý duyệt · trả lời trong 5 ngày')}</button>,
-        }}>
-        <Khoi tieuDe={t('Bằng chứng · bắt buộc')}>
-          <p className="m-0 text-xs text-slate-400">{t('Biên bản, thư, ảnh chụp… — QL xem bằng chứng trước khi duyệt.')}</p>
-          <BangChung ownerType="discipline_measure" ownerId={daLuu.id} canEdit tieuDe="" onChanged={nhap.reload} />
-        </Khoi>
+      <KhungPanel tieuDe={t('Đề xuất QL duyệt')} hocVien={d.ten} onDong={dong} dau={dau(false)}
+        chan={{ v3: true, chinh: nutGui, conThieu: soTep === 0 && lf.daBam ? [{ nhan: t('Bằng chứng'), lyDo: t('Cần đính kèm tệp hoặc liên kết') }] : undefined }}>
+        <div className="flex flex-col gap-5 pt-4">
+          <CanLam>
+            <p className="m-0 text-sm font-bold text-slate-100">{dich(daLuu.nhan)} · {t('{n} vi phạm', { n: chon.size })}</p>
+            <div>
+              <span className="mb-1 block text-[13px] font-semibold text-slate-300">{t('Bằng chứng')}<span aria-hidden className="text-bad"> *</span></span>
+              <BangChung ownerType="discipline_measure" ownerId={daLuu.id} canEdit tieuDe="" onChanged={nhap.reload} />
+            </div>
+            <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+              <span className="max-sm:hidden">{nutGui}</span>
+              <NutChu mo onClick={() => void dong()}>{t('Huỷ đề xuất')}</NutChu>
+            </div>
+          </CanLam>
+        </div>
       </KhungPanel>
     );
   }
 
   /* ---------------------------------------------------------------- bước 1 */
   const bacKe = d.keTiep;
-  const loaiDuoc = LOAI_DE_XUAT;
   const dongVp = (v: ViPhamV4) => (
     <li key={v.id}>
       {/* Cả dòng là nhãn của ô tick — bấm vào chữ cũng chọn (vùng chạm ≥ 44px trên điện thoại). */}
@@ -182,93 +199,101 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', onClose,
     </li>
   );
 
+  /* Bối cảnh ≤ 3 dòng (mockup v3 §8): lần xử lý trước · bậc sau bậc này. */
+  const truoc = d.dongThoiGian.filter((x): x is Extract<typeof x, { loai: 'xu-ly' }> => x.loai === 'xu-ly').sort((a, b) => b.ngay.localeCompare(a.ngay))[0];
+  const iNay = d.dongThang.findIndex((x) => x.trangThai === 'lan-nay');
+  const bacSau = iNay >= 0 ? d.dongThang[iNay + 1]?.nhan ?? null : null;
+  const nutChinh = cheDo === 'xu-ly'
+    ? <button type="button" className="btn btn-primary min-h-[40px] px-4 font-bold" disabled={busy} onClick={luuXuLy}>{busy ? t('Đang lưu…') : t('Xác nhận xử lý')}</button>
+    : <button type="button" className="btn btn-primary min-h-[40px] px-4 font-bold" disabled={busy} onClick={taoNhap}>{t('Tiếp: đính kèm bằng chứng')}</button>;
+  const nhanO = (chu: string, batBuoc = false) => <span className="mb-1.5 block text-[13px] font-semibold text-slate-300">{chu}{batBuoc && <span aria-hidden className="text-bad"> *</span>}</span>;
   return (
-    <KhungPanel tieuDe={tieuDe} hocVien={d.ten} onDong={onClose}
+    <KhungPanel tieuDe={tieuDe} hocVien={d.ten} onDong={onClose} dau={dau(cheDo === 'xu-ly')}
       chan={{
+        v3: true, chinh: nutChinh, daSua: !!moTa.trim(),
         conThieu: lf.conThieu(loi) ?? (lf.daBam && loiNguoi ? [{ nhan: t('Người thực hiện'), lyDo: loiNguoi }] : undefined),
-        /* Chủ sản phẩm 02/10: Đề xuất QL duyệt là nút cùng cỡ cạnh Xác nhận xử lý, không phải dòng chữ nhỏ. */
-        phu: cheDo === 'xu-ly' && d.canManage
-          ? <button type="button" className="btn min-h-[44px] sm:min-h-0" disabled={busy} title={t('Cần xử lý nặng hơn: Meeting CX/GĐCN, WL 3, Đình chỉ…')}
-              onClick={() => { setCheDo('de-xuat'); lf.datLai(); }}>{t('Đề xuất QL duyệt')}</button>
-          : undefined,
-        chinh: cheDo === 'xu-ly'
-          ? <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={luuXuLy}>{t('Xác nhận xử lý')}</button>
-          : <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={taoNhap}>{t('Tiếp: đính kèm bằng chứng')}</button>,
+        dongTren: busy || loiLuu ? <TrangThaiLuu tt={busy ? 'dang' : 'loi'} loi={loiLuu} onThuLai={() => void luuXuLy()} /> : undefined,
       }}>
-      {cheDo === 'xu-ly' && bacKe ? (
-        <Khoi tieuDe={t('Bậc xử lý')}>
-          <p className="m-0 text-sm text-slate-200">
-            <b className="font-bold">{dich(bacKe.nhan)}</b>
-            <span className="text-slate-400"> {t('· lần xử lý thứ {x} trong {x2}', { x: d.chuoi.soXuLy + 1, x2: d.chuoi.nhan === 'lớp thường' ? t('các khoá lớp thường') : t('lộ trình {nhan}', { nhan: d.chuoi.nhan }) })}</span>
-          </p>
-          <p className="m-0 text-xs text-slate-500">{t('Bậc tự điền theo thang — không chọn.')}</p>
-          {d.chuoi.soXuLy === 0 && !d.khai && d.coTheKhai && onKhai && (
-            <p className="m-0 text-[11.5px] text-slate-400">
-              {t('Đã có mức độ vi phạm từ trước?')}{' '}
-              <button type="button" className="link inline-flex items-center appearance-none border-0 bg-transparent p-0 min-h-[44px] sm:min-h-0" onClick={() => onKhai(d.studentId)}>{t('Xác nhận cấp bậc vi phạm trước')}</button>
-            </p>
+      <div className="flex flex-col gap-5 pt-4">
+        <CanLam>
+          {cheDo === 'xu-ly' && bacKe ? (
+            <div>
+              {nhanO(t('Bậc xử lý'))}
+              <p className="m-0 text-[15px] font-bold text-slate-100">{dich(bacKe.nhan)}</p>
+              {d.chuoi.soXuLy === 0 && !d.khai && d.coTheKhai && onKhai && (
+                <p className="m-0 mt-1 text-xs text-slate-300">
+                  {t('Đã có mức độ vi phạm từ trước?')}{' '}
+                  <button type="button" className="link inline-flex min-h-[44px] items-center appearance-none border-0 bg-transparent p-0 sm:min-h-0" onClick={() => onKhai(d.studentId)}>{t('Xác nhận cấp bậc vi phạm trước')}</button>
+                </p>
+              )}
+            </div>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {nhanO(t('Loại cần QL duyệt'), true)}
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2" id={lf.oId('loai')}>
+                {LOAI_DE_XUAT.map((k) => (
+                  <NutChon key={k} chon={loai === k} onClick={() => setLoai(k)}>
+                    {dich(MEASURE_KIND_LABEL[k])}
+                  </NutChon>
+                ))}
+              </div>
+              {lf.loiCua(loi, 'loai') && <p className="m-0 text-xs text-late">{lf.loiCua(loi, 'loai')}</p>}
+              <OKhac hien={loai === 'other'} value={tenKhac} onChange={setTenKhac} goiY={t('Ví dụ: Gặp phụ huynh tại trung tâm')}
+                id={lf.oId('ghi-ro')} onBlur={lf.roi('ghi-ro')} loi={lf.hien('ghi-ro') ? kiemGhiRoKhac(tenKhac) : null} />
+              {bacKe && <p className="m-0 text-xs text-slate-300">{t('Duyệt đề xuất ngoài thang không đổi bậc — bậc kế vẫn là {bac}.', { bac: dich(bacKe.nhan) })}</p>}
+            </div>
           )}
-        </Khoi>
-      ) : (
-        <Khoi tieuDe={t('Loại cần QL duyệt')}>
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2" id={lf.oId('loai')}>
-            {loaiDuoc.map((k) => (
-              <NutChon key={k} chon={loai === k} onClick={() => setLoai(k)}>
-                {MEASURE_KIND_LABEL[k]}
-              </NutChon>
-            ))}
-          </div>
-          {lf.loiCua(loi, 'loai') && <p className="m-0 text-xs text-late">{lf.loiCua(loi, 'loai')}</p>}
-          <OKhac hien={loai === 'other'} value={tenKhac} onChange={setTenKhac} goiY={t('Ví dụ: Gặp phụ huynh tại trung tâm')}
-            id={lf.oId('ghi-ro')} onBlur={lf.roi('ghi-ro')} loi={lf.hien('ghi-ro') ? kiemGhiRoKhac(tenKhac) : null} />
-          {bacKe && (
-            <p className="m-0 text-xs text-slate-500">{t('Duyệt đề xuất ngoài thang không đổi bậc — bậc kế vẫn là {nhan}.', { nhan: bacKe.nhan })}</p>
-          )}
-          <button type="button" className="link appearance-none border-0 bg-transparent p-0 min-h-[44px] sm:min-h-0 text-left text-xs" onClick={() => { setCheDo('xu-ly'); lf.datLai(); }}>
-            {t('← Quay lại Xác nhận xử lý')}
-          </button>
-        </Khoi>
-      )}
 
-      <Khoi tieuDe={t('Vi phạm đưa vào · {size}', { size: chon.size })}>
-        {tick.length + cuHon.length === 0 ? (
-          <p className="m-0 text-sm text-slate-400">{t('Em không còn vi phạm nào chưa xử lý.')}</p>
-        ) : (
-          <div id={lf.oId('vi-pham')} tabIndex={-1}>
-            <ul className="m-0 list-none divide-y p-0" style={{ borderColor: 'var(--line)' }}>{tick.map(dongVp)}</ul>
-            {cuHon.length > 0 && (
-              <>
-                <button type="button" className="mt-1 inline-flex items-center gap-1 appearance-none border-0 bg-transparent p-0 min-h-[44px] sm:min-h-0 text-xs text-slate-400 hover:text-slate-200"
-                  aria-expanded={moCu} onClick={() => setMoCu((x) => !x)}>
-                  {t('Cũ hơn · Đã ghi nhận ({length})', { length: cuHon.length })} <MuiTenGap mo={moCu} />
-                </button>
-                {moCu && <ul className="m-0 list-none divide-y p-0" style={{ borderColor: 'var(--line)' }}>{cuHon.map(dongVp)}</ul>}
-              </>
+          <div>
+            {nhanO(t('Vi phạm đưa vào · {n}', { n: chon.size }))}
+            {tick.length + cuHon.length === 0 ? (
+              <p className="m-0 text-sm text-slate-300">{t('Em không còn vi phạm nào chưa xử lý.')}</p>
+            ) : (
+              <div id={lf.oId('vi-pham')} tabIndex={-1}>
+                <ul className="m-0 list-none divide-y p-0" style={{ borderColor: 'var(--line)' }}>{tick.map(dongVp)}</ul>
+                {cuHon.length > 0 && (
+                  <>
+                    <button type="button" className="mt-1 inline-flex min-h-[44px] items-center gap-1 appearance-none border-0 bg-transparent p-0 text-xs text-slate-300 hover:text-slate-100 sm:min-h-0"
+                      aria-expanded={moCu} onClick={() => setMoCu((x) => !x)}>
+                      {t('Cũ hơn · Đã ghi nhận ({n})', { n: cuHon.length })} <MuiTenGap mo={moCu} />
+                    </button>
+                    {moCu && <ul className="m-0 list-none divide-y p-0" style={{ borderColor: 'var(--line)' }}>{cuHon.map(dongVp)}</ul>}
+                  </>
+                )}
+                {lf.loiCua(loi, 'vi-pham') && <p className="m-0 mt-1 text-xs text-late">{t('Chọn ít nhất một vi phạm.')}</p>}
+              </div>
             )}
-            {lf.loiCua(loi, 'vi-pham') && <p className="m-0 mt-1 text-xs text-late">{t('Chọn ít nhất một vi phạm.')}</p>}
           </div>
-        )}
-      </Khoi>
 
-      <Khoi tieuDe={cheDo === 'xu-ly' ? t('Đã thực hiện') : t('Lý do đề xuất')}>
-        {cheDo === 'xu-ly' && (
-          <Hang2>
-            <Truong nhan={t('Ngày thực hiện')} batBuoc>
-              <ChonNgayGan value={ngayTh} onChange={setNgayTh} soNgay={30} />
-            </Truong>
-            <Truong nhan={t('Người thực hiện')} batBuoc as="div" loi={lf.daBam ? loiNguoi : null}>
-              <ChonNguoi nhom="nhan_vien" value={nguoi} onChange={setNguoi} studentId={studentId} />
-            </Truong>
-          </Hang2>
-        )}
-        <Truong nhan={t('Mô tả')} batBuoc loi={lf.loiCua(loi, 'mo-ta')} dem={{ co: moTa.trim().length, can: MO_TA_MIN }}>
-          <textarea className="field w-full" {...lf.o(loi, 'mo-ta')} rows={3} value={moTa} onChange={(e) => setMoTa(e.target.value)}
-            placeholder={cheDo === 'xu-ly' ? t('Ví dụ: Đã gửi Report cho PH qua Zalo')
-              : t('Ví dụ: Vi phạm lần 4 sau WL 2, đã báo PH')} />
-        </Truong>
-        {cheDo === 'xu-ly' && <p className="m-0 text-xs text-slate-500">{t('Tệp hoặc liên kết (không bắt buộc) đính kèm sau khi lưu.')}</p>}
-      </Khoi>
-
+          {cheDo === 'xu-ly' && (
+            <Hang2>
+              <Truong nhan={t('Ngày')} batBuoc>
+                <ONgay kieu="ngay" value={ngayTh} onChange={setNgayTh} toiDa={homNay} />
+              </Truong>
+              <Truong nhan={t('Người')} batBuoc as="div" loi={lf.daBam ? loiNguoi : null}>
+                <ChonNguoi nhom="nhan_vien" value={nguoi} onChange={setNguoi} studentId={studentId} />
+              </Truong>
+            </Hang2>
+          )}
+          <Truong nhan={cheDo === 'xu-ly' ? t('Mô tả') : t('Lý do đề xuất')} batBuoc loi={lf.loiCua(loi, 'mo-ta')} dem={{ co: moTa.trim().length, can: MO_TA_MIN }}>
+            <textarea className="field w-full" {...lf.o(loi, 'mo-ta')} rows={3} value={moTa} onChange={(e) => setMoTa(e.target.value)}
+              placeholder={cheDo === 'xu-ly' ? t('Ví dụ: Đã gửi Report cho PH qua Zalo')
+                : t('Ví dụ: Vi phạm lần 4 sau WL 2, đã báo PH')} />
+          </Truong>
+          <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+            <span className="max-sm:hidden">{nutChinh}</span>
+            {/* Chủ sản phẩm 02/10 → mockup v3 §8: "Đề xuất QL duyệt" là nút chữ đứng sau nút chính. */}
+            {cheDo === 'xu-ly' && d.canManage && (
+              <NutChu disabled={busy} title={t('Cần xử lý nặng hơn: Meeting CX/GĐCN, WL 3, Đình chỉ…')} onClick={() => { setCheDo('de-xuat'); lf.datLai(); }}>{t('Đề xuất QL duyệt')}</NutChu>
+            )}
+            {cheDo === 'de-xuat' && <NutChu onClick={() => { setCheDo('xu-ly'); lf.datLai(); }}>{t('← Quay lại Xác nhận xử lý')}</NutChu>}
+          </div>
+        </CanLam>
+        <BoiCanh dong={[
+          [t('Lần trước'), truoc ? [dich(truoc.nhan), ngay(truoc.ngay, homNay), truoc.nguoi].filter(Boolean).join(' · ') : null],
+          [t('Bậc tiếp theo'), cheDo === 'xu-ly' && bacSau ? dich(bacSau) : null],
+        ]} />
+      </div>
     </KhungPanel>
   );
 }

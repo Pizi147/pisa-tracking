@@ -1,11 +1,15 @@
-import { useId, useState, type ReactNode } from 'react';
+import { Suspense, lazy, useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { METRIC_UNIT_LABEL, metricById, nhanQuaHan, thamSoCt, type ChiSo, type ChuongTrinh } from '@shared/domain/index.ts';
+import { INTERVENTION_KIND_LABEL, METRIC_UNIT_LABEL, deadlineView, metricById, nhanQuaHan, thamSoCt, type ChiSo, type ChuongTrinh, type DeadlineKind } from '@shared/domain/index.ts';
 import { useApi } from '../lib/useApi.ts';
+import { api, invalidate, type ApiError } from '../lib/api.ts';
+import { useSession } from '../lib/session.tsx';
 import { KhungPanel } from './KhungPanel.tsx';
+import { CanLam, NutChu } from './KhuonViec.tsx';
+import { ChipHan, ChipSoQuaHan } from './Nhan.tsx';
 import { Empty, ErrorState, Skeleton } from './ui.tsx';
 import { useNgayNghiepVu } from './ngayNghiepVu.ts';
-import { t } from '@shared/i18n/index.ts';
+import { dich, t } from '@shared/i18n/index.ts';
 
 const THOI_GIAN_NHAN: Record<ChiSo['thoiGian'], string> = {
   'hien-trang': t('Hiện trạng — tính tại ngày dữ liệu'),
@@ -14,8 +18,21 @@ const THOI_GIAN_NHAN: Record<ChiSo['thoiGian'], string> = {
 };
 
 export type PhamViSoLieu = { branchId?: number | null; chuongTrinh?: ChuongTrinh | null };
-/** PR-VAI-a (Q26): dòng Case/PA có người phụ trách + hạn — panel ghi "người · quá hạn n ngày". */
-export type DongSoLieu = { id: number; title: string; sub: string; href: string; nguoi?: string | null; han?: string | null };
+/** OV-12e (P12): việc của một dòng — máy chủ `ViecDong` (`server/src/worklist/metrics.ts`). `lam` = người xem làm được; máy chủ vẫn kiểm quyền khi lưu. */
+export type ViecDongSoLieu = {
+  chu: string;
+  loai: 'xac-nhan' | 'ghi-nhan-xet' | 'xac-nhan-pa' | 'ghi-ket-qua' | 'them-pa' | 'hoan-thanh' | 'nhap-diem' | 'van-hanh';
+  loaiHan: DeadlineKind | null; han: string | null; lam: boolean;
+  caseId?: number; paId?: number;
+  pa?: { kind: string; description: string | null; performer: string | null; performerUserId: number | null; soBuoi: number | null; mocChu: string | null };
+  classId?: number; luot?: string; kn?: string; studentId?: number;
+};
+/** PR-VAI-a (Q26): dòng Case/PA có người phụ trách + hạn — panel ghi "người · quá hạn n ngày". OV-12e: đầu dòng v3 + việc của dòng. */
+export type DongSoLieu = {
+  id: number; title: string; sub: string; href: string; nguoi?: string | null; han?: string | null;
+  em?: { id: number; ten: string } | null; lop?: string | null; ngCanh?: string | null; nguoiId?: number | null;
+  viec?: ViecDongSoLieu | null; tinhTrang?: string | null;
+};
 
 type Drill = {
   id: string; unit: ChiSo['donVi']; n: number; numerator: number | null;
@@ -44,36 +61,166 @@ function CachTinh({ cs }: { cs: ChiSo }) {
   );
 }
 
-/** Người giữ việc · hạn của một dòng panel — 12 px (Q31-4); quá hạn nói bằng chữ. */
-function DongNguoiHan({ nguoi, han }: { nguoi: string | null; han: string | null }) {
+/** Hạn trong câu tình trạng của dòng: quá hạn "⚠ quá hạn n ngày" · còn ≤ 3 ngày vàng · xa hơn thường — ngưỡng từ `deadlineView` (một chỗ). */
+function HanDong({ han, loai }: { han: string; loai?: DeadlineKind | null }) {
   const { homNay, ngan } = useNgayNghiepVu();
-  const tre = han && han.slice(0, 10) < homNay ? Math.round((Date.parse(homNay) - Date.parse(han.slice(0, 10))) / 86_400_000) : 0;
+  const v = deadlineView({ kind: loai ?? 'viec-van-hanh', due: han, today: homNay });
+  return v.tone === 'overdue' ? <span className="font-semibold tabular-nums text-late">⚠ {nhanQuaHan(v.daysOverdue)}</span>
+    : <span className={`tabular-nums ${v.ganHan ? 'font-semibold text-soon' : ''}`}>{t('hạn {ngay}', { ngay: ngan(han) })}</span>;
+}
+
+/* Việc dài của dòng (Ngăn Case, Nhập điểm, Vận hành) chỉ tải khi bấm — trang có ô số không kéo cả cây panel làm việc vào lần tải đầu. */
+const LamDongSoLieu = lazy(() => import('../modules/worklist/LamDongSoLieu.tsx').then((m) => ({ default: m.LamDongSoLieu })));
+
+
+/**
+ * PANEL DANH SÁCH CỦA MỘT CON SỐ — hệ panel v3 (OV-12e, P12, mockup v3 §10). Đầu: tên số liệu + "⚠ n quá hạn" / "n Case · quá hạn lên đầu".
+ * Mỗi dòng = đầu thu gọn (việc + chip hạn / em · lớp · ngữ cảnh · người làm nếu không phải bạn). Bấm dòng → MỞ RỘNG TẠI CHỖ: người làm được thấy
+ * khối Cần làm (Xác nhận PA làm ngay trong dòng; việc dài → THAY nội dung panel bằng panel làm việc sẵn có, "← Danh sách" về đúng dòng);
+ * người khác thấy câu tình trạng. Link "Xem hồ sơ ↗" tách khỏi nút làm. Số ở đầu = số dòng (cùng tập máy chủ trả; dòng vừa xong mà máy chủ không còn
+ * trả vẫn giữ chỗ cũ với "✓", không đếm). "Cách tính" ở cuối danh sách.
+ */
+export function NganDanhSach({ tieuDe, dv, data, loading, error, reload, onDong, cachTinh, trong }: {
+  tieuDe: string; dv?: string | null;
+  data: { n: number; rows: DongSoLieu[] } | null; loading: boolean; error: ApiError | null; reload: () => void; onDong: () => void;
+  cachTinh?: ReactNode; trong?: string;
+}) {
+  const { homNay } = useNgayNghiepVu();
+  const toi = useSession().session?.user?.id ?? null;
+  const [mo, setMo] = useState<number | null>(null);
+  const [lam, setLam] = useState<DongSoLieu | null>(null);
+  const [giu, setGiu] = useState<Map<number, { dong: DongSoLieu; i: number; chu: string }>>(() => new Map());
+  const [busy, setBusy] = useState<number | null>(null);
+  const [loiDong, setLoiDong] = useState<{ id: number; loi: string } | null>(null);
+  const [vuaXong, setVuaXong] = useState<string | null>(null);
+  const ds = useRef<HTMLUListElement>(null);
+  /* Về từ việc dài: cuộn tới đúng dòng vừa làm. */
+  useEffect(() => {
+    if (lam || mo === null) return;
+    ds.current?.querySelector(`[data-dong="${mo}"]`)?.scrollIntoView({ block: 'nearest' });
+  }, [lam, mo]);
+
+  const hanCua = (r: DongSoLieu) => r.viec ? r.viec.han : r.han ?? null;
+  const tre = (r: DongSoLieu) => { const h = hanCua(r); return !!h && deadlineView({ kind: r.viec?.loaiHan ?? 'viec-van-hanh', due: h, today: homNay }).tone === 'overdue'; };
+  const goc = data?.rows ?? [];
+  const xep = [...goc.filter(tre), ...goc.filter((r) => !tre(r))];   // quá hạn lên đầu, giữ thứ tự máy chủ trong từng nhóm
+  const hien: (DongSoLieu & { xong?: string })[] = [...xep];
+  for (const [id, g] of giu) if (!xep.some((r) => r.id === id)) hien.splice(Math.min(g.i, hien.length), 0, { ...g.dong, xong: g.chu });
+  const soTre = xep.filter(tre).length;
+
+  const daLam = (r: DongSoLieu, chu: string) => {
+    const i = hien.findIndex((x) => x.id === r.id);
+    setGiu((m) => new Map(m).set(r.id, { dong: r, i, chu }));
+    invalidate('/metrics'); invalidate('/tong-quan'); invalidate('/my-work'); invalidate('/cases');
+    reload();
+  };
+  const xacNhanPa = async (r: DongSoLieu) => {
+    const v = r.viec!;
+    setBusy(r.id); setLoiDong(null);
+    try {
+      /* Cùng đường "Xác nhận PA" bấm thẳng của Ngăn Case: gửi nội dung quy chế nguyên văn, người / số buổi giữ như máy gán. */
+      await api.post(`/interventions/${v.paId}/xac-nhan-pa`, { description: v.pa?.description ?? '' });
+      daLam(r, t('Đã xác nhận'));
+      setVuaXong(t('Đã xác nhận PA · {ten}', { ten: r.em?.ten ?? r.title }));
+      const i = hien.findIndex((x) => x.id === r.id);
+      setMo(hien.slice(i + 1).find((x) => x.viec?.lam && !x.xong)?.id ?? null);   // dòng kế của bạn tự mở
+    } catch (e: any) { setLoiDong({ id: r.id, loi: e?.message ?? t('Không lưu được') }); } finally { setBusy(null); }
+  };
+
+  if (lam) {
+    return (
+      <Suspense fallback={<KhungPanel tieuDe={tieuDe} onDong={onDong}><div className="pt-3"><Skeleton rows={6} /></div></KhungPanel>}>
+        <LamDongSoLieu dong={lam} onDong={onDong} onVe={() => { setMo(lam.id); setLam(null); }}
+          onDaLam={() => { daLam(lam, t('Đã lưu')); setVuaXong(`${dich(lam.viec?.chu ?? '')} · ${lam.em?.ten ?? lam.title}`); }} />
+      </Suspense>
+    );
+  }
+
+  const veDong = (r: DongSoLieu & { xong?: string }) => {
+    const v = r.viec ?? null;
+    const moRong = mo === r.id && !r.xong;
+    const dong2 = r.em || r.lop || r.ngCanh
+      ? [r.em?.ten, r.lop, r.ngCanh, r.nguoi && r.nguoiId !== toi && !v?.lam ? r.nguoi : null]
+      : [r.sub];
+    const nen = moRong ? { background: 'var(--accent-soft)' } : undefined;
+    return (
+      <li key={r.id} data-dong={r.id} className="border-t first:border-t-0" style={{ borderColor: 'var(--line)' }}>
+        <button type="button" aria-expanded={r.xong ? undefined : moRong} disabled={!!r.xong} onClick={() => setMo(moRong ? null : r.id)} style={nen}
+          className="flex min-h-[44px] w-full appearance-none flex-col gap-0.5 border-0 bg-transparent px-4 py-2.5 text-left hover:bg-[color:var(--accent-soft)] disabled:hover:bg-transparent">
+          <span className="flex w-full items-center gap-2.5">
+            <span className={`min-w-0 flex-1 text-sm font-bold ${r.xong ? 'text-slate-300' : 'text-slate-100'}`}>{v ? dich(v.chu) : r.title}</span>
+            {r.xong ? <span className="text-[12.5px] font-bold text-ok">✓ {r.xong}</span>
+              : v?.loaiHan && v.han ? <ChipHan loai={v.loaiHan} han={v.han} /> : null}
+          </span>
+          {dong2.some(Boolean) && (
+            <span className="text-[13px] leading-snug text-slate-400">
+              {dong2.filter(Boolean).map((x, i) => <span key={i}>{i > 0 && <span aria-hidden className="mx-1.5 text-slate-500">·</span>}{i === 0 && r.em ? <b className="font-bold text-slate-200">{x}</b> : x}</span>)}
+            </span>
+          )}
+        </button>
+        {moRong && (
+          <div className="flex flex-col gap-3 px-4 pb-4 pt-1" style={nen}>
+            {v?.lam ? (
+              <CanLam trongDong>
+                {v.loai === 'xac-nhan-pa' && v.pa ? (
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[15px] font-bold text-slate-100">{dich(INTERVENTION_KIND_LABEL[v.pa.kind as keyof typeof INTERVENTION_KIND_LABEL] ?? v.pa.kind)}</span>
+                    {v.pa.description && <span className="text-sm text-slate-200">{v.pa.description}</span>}
+                    <span className="text-[13px] text-slate-400">{[v.pa.performer, v.pa.mocChu].filter(Boolean).join(' · ')}</span>
+                  </div>
+                ) : r.title && r.title !== r.ngCanh ? <span className="text-sm text-slate-200">{r.title}</span> : null}
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {v.loai === 'xac-nhan-pa' && v.pa ? (
+                    <>
+                      <button type="button" className="btn btn-primary min-h-[44px] px-4 font-bold max-sm:w-full sm:min-h-[40px]" disabled={busy === r.id} onClick={() => void xacNhanPa(r)}>
+                        {busy === r.id ? t('Đang lưu…') : t('Xác nhận PA')}
+                      </button>
+                      <NutChu onClick={() => setLam(r)}>{t('Sửa PA')}</NutChu>
+                    </>
+                  ) : (
+                    <button type="button" className="btn btn-primary min-h-[44px] px-4 font-bold max-sm:w-full sm:min-h-[40px]" onClick={() => setLam(r)}>{dich(v.chu)}</button>
+                  )}
+                </div>
+                {loiDong?.id === r.id && <p role="alert" className="m-0 text-xs font-semibold text-bad">⚠ {loiDong.loi}</p>}
+              </CanLam>
+            ) : (
+              /* Không làm được: câu tình trạng (chữ, không khối màu, không nút). */
+              <p className="m-0 text-sm leading-relaxed text-slate-200">
+                {[r.tinhTrang ? dich(r.tinhTrang) : r.sub, r.nguoi].filter(Boolean).join(' · ')}
+                {hanCua(r) && <> · <HanDong han={hanCua(r)!} loai={r.viec?.loaiHan} /></>}
+              </p>
+            )}
+            <Link to={r.href} onClick={onDong} className="link w-fit text-[13px] font-semibold max-sm:inline-flex max-sm:min-h-[44px] max-sm:items-center">
+              {v ? t('Xem hồ sơ') : t('Mở trang')} <span aria-hidden>↗</span>
+            </Link>
+          </div>
+        )}
+      </li>
+    );
+  };
+
   return (
-    <span className="mt-0.5 block text-xs tabular-nums text-slate-400">
-      {nguoi ?? t('chưa có người phụ trách')}
-      {han && (tre > 0 ? <span className="font-semibold text-late"> · {nhanQuaHan(tre)}</span> : <> · {t('hạn {ngay}', { ngay: ngan(han) })}</>)}
-    </span>
+    <KhungPanel tieuDe={tieuDe} onDong={onDong}
+      dau={{
+        han: soTre ? <ChipSoQuaHan n={soTre} /> : null,
+        dong2: [data && dv ? `${data.n} ${dv}` : null, soTre ? t('quá hạn lên đầu') : null],
+      }}
+      chan={vuaXong ? { v3: true, dongTren: <span className="font-semibold text-ok">✓ {vuaXong}</span> } : undefined}>
+      {error ? <div className="pt-3"><ErrorState message={error.message} hint={error.hint} onRetry={reload} /></div>
+        : loading || !data ? <div className="pt-3"><Skeleton rows={5} /></div>
+        : !hien.length ? <Empty title={trong ?? t('Không có mục nào')} />
+        : <ul ref={ds} className="-mx-4 m-0 list-none p-0">{hien.map(veDong)}</ul>}
+      {cachTinh && (
+        <details className="mt-4 border-t pt-3" style={{ borderColor: 'var(--line)' }}>
+          <summary className="min-h-[44px] cursor-pointer text-[13px] font-semibold text-[color:var(--accent)] sm:min-h-0">{t('Cách tính')}</summary>
+          <div className="mt-2">{cachTinh}</div>
+        </details>
+      )}
+    </KhungPanel>
   );
 }
 
-export function DongDanhSach({ rows, onPick }: { rows: DongSoLieu[]; onPick?: () => void }) {
-  return (
-    <ul className="list-none p-0 m-0 space-y-1.5">
-      {rows.map((r) => (
-        <li key={r.id}>
-          <Link to={r.href} onClick={onPick} className="block rounded-lg border px-3 py-2 no-underline hover:brightness-125"
-            style={{ borderColor: 'var(--line)' }}>
-            <span className="block text-sm text-slate-100">{r.title}</span>
-            {r.sub && <span className="block text-xs text-slate-500 mt-0.5">{r.sub}</span>}
-            {(r.nguoi || r.han) && <DongNguoiHan nguoi={r.nguoi ?? null} han={r.han ?? null} />}
-          </Link>
-        </li>
-      ))}
-    </ul>
-  );
-}
-
-/** Panel "{n} {đơn vị} — {tên}": đúng tập ID sinh ra con số (cùng hàm, cùng quyền, cùng bộ lọc). */
+/** Panel "{tên}" · "{n} {đơn vị}": đúng tập ID sinh ra con số (cùng hàm, cùng quyền, cùng bộ lọc) — OV-12e: dòng mở rộng tại chỗ (`NganDanhSach`). */
 export function DanhSachSoLieu({ id, giaTri, phamVi, extra, open, onClose, ten }: {
   id: string; giaTri: number; phamVi?: PhamViSoLieu; extra?: Record<string, string>; open: boolean; onClose: () => void;
   /** OV-11f (TQ-11): tên ở ô / dòng vừa bấm — panel nói đúng chữ người dùng vừa đọc (một khái niệm một tên). Không có → tên trong sổ. */
@@ -85,15 +232,9 @@ export function DanhSachSoLieu({ id, giaTri, phamVi, extra, open, onClose, ten }
   if (!cs || !open) return null;
   const dv = METRIC_UNIT_LABEL[cs.donVi];
   return (
-    <KhungPanel tieuDe={`${data ? data.n : giaTri} ${dv} — ${ten ?? cs.ten}`} onDong={onClose}
-      ngCanh={t('Đúng những mục tạo nên con số vừa bấm')}>
-      <div className="mb-3 pt-3"><CachTinh cs={cs} /></div>
-      {error ? <ErrorState message={error.message} hint={error.hint} onRetry={reload} />
-        : loading || !data ? <Skeleton rows={5} />
-        : data.empty ? <Empty title={t('Không có dữ liệu trong phạm vi')} />
-        : !data.rows?.length ? <Empty title={t('Không có {dv} nào trong tập này', { dv })} />
-        : <DongDanhSach rows={data.rows} onPick={onClose} />}
-    </KhungPanel>
+    <NganDanhSach tieuDe={ten ?? cs.ten} dv={dv} onDong={onClose} cachTinh={<CachTinh cs={cs} />}
+      data={data ? { n: data.n, rows: data.rows ?? [] } : null} loading={loading} error={error} reload={reload}
+      trong={data?.empty ? t('Không có dữ liệu trong phạm vi') : t('Không có {dv} nào trong tập này', { dv })} />
   );
 }
 

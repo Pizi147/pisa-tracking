@@ -239,6 +239,7 @@ function DongHan({ v }: { v: NonNullable<ReturnType<typeof viecTiepHang>> }) {
     <span className="block truncate text-[12px] font-normal tabular-nums text-slate-400">
       {v.quaHan ? <span className="inline-flex items-center gap-1 font-semibold text-bad"><IconCanhBao />{v.quaHan}</span>
         : v.homNay ? <span className="font-semibold text-soon">{t('hôm nay')}</span>
+        : v.ganHan ? <span className="font-semibold text-soon">{v.han}</span>   /* OV-12e: còn ≤ 3 ngày vàng — ngưỡng `deadlineView` */
         : v.han}
       {v.nguoi && <>{v.han || v.quaHan ? ' · ' : ''}{v.nguoi}</>}
     </span>

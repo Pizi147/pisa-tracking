@@ -46,7 +46,7 @@ export type PaQuyChe = {
 };
 
 /** Đầu panel v3 cho việc của một Case: chip hạn (chỉ người làm) · em ↗ (xem hồ sơ, tách khỏi nút làm) · lớp · ngữ cảnh ("MT2 · Reading"). */
-function dauCase(data: CaseDetail, lop: string | null | undefined, ngCanh: string, lam: boolean) {
+export function dauCase(data: CaseDetail, lop: string | null | undefined, ngCanh: string, lam: boolean) {
   const st = data.student;
   return {
     han: lam ? <ChipHan loai="xac-minh-sos" han={data.sos?.dueOn ?? data.trangThaiV4?.han ?? null} /> : null,
@@ -57,14 +57,14 @@ function dauCase(data: CaseDetail, lop: string | null | undefined, ngCanh: strin
   };
 }
 /** Nguyên nhân Case (chính trước) + nhận xét: "1 Kỹ năng làm bài · 2 Quản lý thời gian — "…"". */
-function DongNguyenNhan({ issues }: { issues: any[] }) {
+export function DongNguyenNhan({ issues }: { issues: any[] }) {
   const ds = [...issues].sort((a, b) => (a.role === 'primary' ? -1 : 0) - (b.role === 'primary' ? -1 : 0));
   if (!ds.length) return null;
   const nx = ds[0]?.observation;
   return <><NhomCoSo ds={ds.map((x) => ({ code: x.code, label: x.label }))} />{nx ? <> — “{nx}”</> : null}</>;
 }
 /** Kết quả gần nhất của Case MT: mốc mở / trượt lại mới nhất có band — "MT2 · R 5.0 · kỳ vọng 5.5". */
-function ketQuaGanNhat(data: CaseDetail): string | null {
+export function ketQuaGanNhat(data: CaseDetail): string | null {
   const m = [...(data.milestones ?? [])].reverse().find((x: any) => (x.kind === 'opened' || x.kind === 'repeat') && x.band != null);
   if (!m) return null;
   return `MT${m.attemptNo} · ${skillShort(data.topic ?? '')} ${Number(m.band).toFixed(1)}${m.expectation != null ? t(' · kỳ vọng {toFixed}', { toFixed: Number(m.expectation).toFixed(1) }) : ''}`;

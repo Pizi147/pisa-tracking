@@ -147,5 +147,5 @@ export function oBangChiNhanh(p: Principal, f: { branchId?: number | null; ct: C
   if (!tap) throw badRequest('Không tìm thấy hàng này trong bảng — có thể bộ lọc vừa đổi.');
   const ids = [...tap[cot]].sort((a, b) => a - b);
   const unit = COT_BANG_DON_VI[cot];
-  return { n: ids.length, unit, tieuDe: `${ids.length} ${METRIC_UNIT_LABEL[unit]} — ${NHAN_COT[cot]} · ${noi}`, rows: rowsFor(unit, ids) };
+  return { n: ids.length, unit, tieuDe: `${ids.length} ${METRIC_UNIT_LABEL[unit]} — ${NHAN_COT[cot]} · ${noi}`, rows: rowsFor(unit, ids, undefined, p) };
 }

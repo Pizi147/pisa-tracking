@@ -96,6 +96,11 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong = 'hep', tabs, ngCanh, q
     return () => { panelDangSua.delete(id); };
   }, [id, daSua]);
 
+  /* OV-12e (rà #395): "← Danh sách / ← tên em / ← Case" bỏ panel đang gõ — đang sửa dở thì hỏi trước (cùng cách hỏi khi đổi ngôn ngữ), không mất chữ âm thầm. */
+  const veLai = () => {
+    if (daSua && !window.confirm(t('Đang sửa dở — quay lại sẽ mất phần chưa lưu. Vẫn quay lại?'))) return;
+    quayLai?.onClick();
+  };
   const ngu = [hocVien, lop].filter(Boolean).join(' · ');
   const huy = chan?.huy === null ? null : chan?.huy ?? { onClick: onDong };
   useGiuFocus(khung, !taiCho);
@@ -126,7 +131,7 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong = 'hep', tabs, ngCanh, q
         )}
         {quayLai && (
           <div className="shrink-0 border-b px-4 py-1.5 text-xs" style={{ borderColor: 'var(--line)' }}>
-            <button type="button" className="link appearance-none border-0 bg-transparent p-0" onClick={quayLai.onClick}>← {quayLai.nhan}</button>
+            <button type="button" className="link appearance-none border-0 bg-transparent p-0" onClick={veLai}>← {quayLai.nhan}</button>
           </div>
         )}
         {tabs && <div className="shrink-0 border-b px-4" style={{ borderColor: 'var(--line)' }}>{tabs}</div>}

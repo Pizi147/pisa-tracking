@@ -106,7 +106,7 @@ export function BangDiemLopThuong({ classId, maLop, quyen, onDoi, chuongTrinh = 
                 {s.ketThucVi && <span className="mt-0.5 block text-xs text-slate-400">{dich(s.ketThucVi)}</span>}
               </>
             )}
-            hanhDong={<MenuDong muc={tt.mucCua({ id: s.id, ten: s.fullName, dangHoc: s.status === 'active', nhapDiem: nhapDiemCua(classId, true, s.timeline), status: s.status })} />}
+            hanhDong={<MenuDong muc={tt.mucCua({ id: s.id, ten: s.fullName, dangHoc: s.status === 'active', nhapDiem: nhapDiemCua(classId, true, s.timeline), status: s.status, xuLyYThuc: !!s.canhBaoYThuc })} />}
             dong={(lienTuc ? [] : [
               { nhan: 'Target', noiDung: <TargetText band={s.cycle?.target} kck={s.cycle?.khongCamKet} /> },
             ]).concat(BAI.map((b) => {
@@ -196,7 +196,7 @@ export function BangDiemLopThuong({ classId, maLop, quyen, onDoi, chuongTrinh = 
               {!lienTuc && <td className="td"><OLoTrinh lt={s.loTrinhChot ?? null} homNay={homNay} /></td>}
               {quyen.theoVai && <td className="td">{s.lienHe ? <OPhuHuynh l={s.lienHe} /> : '—'}</td>}
               <td className="td text-center">
-                <MenuDong muc={tt.mucCua({ id: s.id, ten: s.fullName, dangHoc: s.status === 'active', nhapDiem: nhapDiemCua(classId, true, s.timeline), status: s.status })} />
+                <MenuDong muc={tt.mucCua({ id: s.id, ten: s.fullName, dangHoc: s.status === 'active', nhapDiem: nhapDiemCua(classId, true, s.timeline), status: s.status, xuLyYThuc: !!s.canhBaoYThuc })} />
               </td>
             </tr>
           ))}

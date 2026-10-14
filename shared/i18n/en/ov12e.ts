@@ -1,0 +1,32 @@
+/** OV-12e — chữ MỚI của hệ panel v3 (chân trạng thái lưu, panel số liệu mở rộng dòng, Quyết định 3 nút). Khoá = chữ Việt trên web. */
+import type { Dich } from '../en.ts';
+
+export const EN_OV12E = {
+  'Danh sách': 'List',
+  'Đã xác nhận': 'Confirmed',
+  'Đã xác nhận PA · {ten}': 'PA confirmed · {ten}',
+  'Xem hồ sơ': 'View profile',
+  'Mở trang': 'Open page',
+  'quá hạn lên đầu': 'overdue first',
+  'Người dạy': 'Teacher',
+  'Kỳ này chạm mốc quy chế{moc} — lưu là PA kết thúc.': 'This period reaches the required milestone{moc} — saving ends the PA.',
+  'Buổi {n}': 'Session {n}',
+  'Tutor': 'Tutor name',
+  'Nhận xét buổi': 'Session comment',
+  'Ghi kết quả cuối': 'Record final result',
+  'Bắt đầu': 'Start',
+  'Người': 'By',
+  'Lần trước': 'Last time',
+  'Bậc tiếp theo': 'Next level',
+  'CX / GĐCN gặp HV và PH': 'CX / BD meets student and parent',
+  'Xác nhận meeting': 'Confirm meeting',
+  'CX / GĐCN gặp HV': 'CX / BD meets student',
+  'Kết quả kỳ trước': 'Previous result',
+  'Ghi {viec}': 'Record {viec}',
+  'Đang sửa dở — quay lại sẽ mất phần chưa lưu. Vẫn quay lại?': 'You have unsaved changes — going back loses them. Go back anyway?',
+  'PA đã kết thúc': 'PA ended',
+  'Cũ hơn · Đã ghi nhận ({n})': 'Older · Acknowledged ({n})',
+  'Duyệt đề xuất ngoài thang không đổi bậc — bậc kế vẫn là {bac}.': 'Approving an off-scale proposal does not change the level — next level stays {bac}.',
+  'Vi phạm đưa vào · {n}': 'Incidents included · {n}',
+  '{n} vi phạm': '{n} incidents',
+} satisfies Record<string, Dich>;

@@ -132,7 +132,7 @@ export function HanViec({ x, homNay, chiQuaHan }: { x: Viec; homNay: string | nu
       </span>
     );
   }
-  return <span className="whitespace-nowrap text-[12px] tabular-nums text-slate-400" title={v.text}>{v.han}{v.homNay ? ` · ${t('hôm nay')}` : ''}</span>;
+  return <span className={`whitespace-nowrap text-[12px] tabular-nums ${v.ganHan ? 'font-semibold text-soon' : 'text-slate-400'}`} title={v.text}>{v.han}{v.homNay ? ` · ${t('hôm nay')}` : ''}</span>;
 }
 
 /** "Ghi kết quả tuần W4 SEP · PA …" → phần động từ đậm, phần sau thường (mockup 24 A). */

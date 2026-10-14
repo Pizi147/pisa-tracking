@@ -5,8 +5,8 @@ import { invalidate } from '../../lib/api.ts';
 import { useSession } from '../../lib/session.tsx';
 import { ErrorState, Level, Skeleton } from '../../ui/ui.tsx';
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
-import { Nhan } from '../../ui/Nhan.tsx';
-import { Han } from '../../ui/Han.tsx';
+import { ChipHan, Nhan } from '../../ui/Nhan.tsx';
+import { BoiCanh, CanLam } from '../../ui/KhuonViec.tsx';
 import { skillShort, sosTone } from '../../lib/format.ts';
 import type { WorkItem } from '../worklist/WorkList.tsx';
 import { NganCase } from './NganCase.tsx';
@@ -75,17 +75,21 @@ export function PanelMotEm({ studentId, caseMo, onClose, onDoi }: {
     if (dangMo(c)) { s.delete(c.id); s.add(-c.id); } else { s.add(c.id); s.delete(-c.id); }
     return s;
   });
-  const nganCanh = data && (
-    <span className="flex flex-wrap items-center gap-x-1.5 gap-y-1">
-      <Link className="link inline-flex min-h-[44px] items-center sm:min-h-0" to={`/hoc-vien/${studentId}`}>{t('Hồ sơ')} <span aria-hidden className="text-xs">↗</span></Link>
-      {lop && <><span aria-hidden>·</span><span>{lop}</span></>}
-      {data.luot?.nhan && <><span aria-hidden>·</span><span>{data.luot.nhan}</span></>}
-      {!!data.luot?.sosLevel && <Level tone={sosTone(data.luot.sosLevel)}>SOS {data.luot.sosLevel}</Level>}
-    </span>
-  );
+  /* OV-12e — đầu panel v3 chung (mockup v3 §9): tên em · chip hạn = việc gấp nhất của người xem / Hồ sơ ↗ · lớp · lượt · SOS. */
+  const gapNhat = (work.data?.dong ?? []).flatMap((x) => (x.con?.length ? x.con : [x]))
+    .filter((x) => x.studentId === studentId && VIEC_CUA_NHOM[x.group] && x.due && LOAI_HAN_CUA_VIEC[x.group])
+    .sort((a, b) => a.due!.localeCompare(b.due!))[0];
+  const dau = {
+    han: gapNhat ? <ChipHan loai={LOAI_HAN_CUA_VIEC[gapNhat.group]!} han={gapNhat.due} /> : null,
+    dong2: data ? [
+      <Link className="link inline-flex min-h-[44px] items-center sm:min-h-0" to={`/hoc-vien/${studentId}`}>{t('Hồ sơ')} <span aria-hidden className="text-xs">↗</span></Link>,
+      lop, data.luot?.nhan ?? null,
+      data.luot?.sosLevel ? <Level tone={sosTone(data.luot.sosLevel)}>SOS {data.luot.sosLevel}</Level> : null,
+    ] : [],
+  };
 
   return (
-    <KhungPanel tieuDe={ten} ngCanh={nganCanh} onDong={onClose} chan={{ huy: { nhan: t('Đóng'), onClick: onClose } }}>
+    <KhungPanel tieuDe={ten} dau={dau} onDong={onClose} chan={{ huy: { nhan: t('Đóng'), onClick: onClose } }}>
       {error ? <ErrorState message={error.message} hint={error.hint} onRetry={reload} />
         : !data ? <div className="pt-3"><Skeleton rows={6} /></div>
           : (
@@ -116,35 +120,33 @@ export function PanelMotEm({ studentId, caseMo, onClose, onDoi }: {
                     {m && (
                       <div className="space-y-2.5 border-t px-3 pb-3 pt-2.5" style={{ borderColor: 'var(--line)' }}>
                         {viec.map((v) => (
-                          /* Khối Cần làm — khối DUY NHẤT có màu (panel v3 §1): tên việc + chip hạn, một nút chính = động từ việc. */
-                          <div key={v.key} className="flex flex-wrap items-center gap-2 rounded-[4px_10px_10px_4px] border-l-[3px] px-3 py-2.5"
-                            style={{ borderColor: 'var(--accent)', background: 'var(--accent-soft)' }}>
-                            <span className="min-w-0 flex-1">
-                              <span className="block text-sm font-bold text-slate-100">{v.tieuDe}</span>
-                              <span className="block text-xs text-slate-400">
-                                {v.owner ? `${v.owner} · ` : ''}{v.due && LOAI_HAN_CUA_VIEC[v.group] ? <Han loai={LOAI_HAN_CUA_VIEC[v.group]!} han={v.due} /> : null}
+                          /* Khối Cần làm chung (`CanLam`, panel v3 §1): tên việc + chip hạn (`ChipHan`, 3 mức), một nút chính = động từ việc. */
+                          <CanLam key={v.key}>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="min-w-0 flex-1">
+                                <span className="block text-sm font-bold text-slate-100">{v.tieuDe}</span>
+                                {v.owner && <span className="block text-xs text-slate-400">{v.owner}</span>}
                               </span>
-                            </span>
-                            <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-[36px]"
-                              onClick={() => setView({ caseId: c.id, viec: VIEC_CUA_NHOM[v.group], paId: v.paId ?? null })}>
-                              {NUT_CUA_NHOM[v.group] ?? t('Mở')}
-                            </button>
-                          </div>
+                              {v.due && LOAI_HAN_CUA_VIEC[v.group] && <ChipHan loai={LOAI_HAN_CUA_VIEC[v.group]!} han={v.due} />}
+                              <button type="button" className="btn btn-primary min-h-[44px] max-sm:w-full sm:min-h-[36px]"
+                                onClick={() => setView({ caseId: c.id, viec: VIEC_CUA_NHOM[v.group], paId: v.paId ?? null })}>
+                                {NUT_CUA_NHOM[v.group] ?? t('Mở')}
+                              </button>
+                            </div>
+                          </CanLam>
                         ))}
                         {!viec.length && c.viecTiep && (
                           <p className="m-0 text-xs text-slate-400">{t('Việc tiếp')}: <span className="text-slate-200">{c.viecTiep.chu}</span>
                             {c.viecTiep.quaHan && <span className="font-semibold text-late"> · ⚠ {t('quá hạn')}</span>}</p>
                         )}
-                        <dl className="m-0 grid grid-cols-[6.5rem_minmax(0,1fr)] sm:grid-cols-[8.5rem_minmax(0,1fr)] gap-x-3 gap-y-1 text-[13px]">
-                          <dt className="text-slate-500">{t('Nguyên nhân')}</dt>
-                          <dd className="m-0 text-slate-300">{c.nguyenNhan ?? t('chưa xác nhận')}{c.nhanXet && <span className="block text-slate-400">“{c.nhanXet}”</span>}</dd>
-                          <dt className="text-slate-500">{t('Phương án')}</dt>
-                          <dd className="m-0 text-slate-300">{c.pa.length ? c.pa.map((p) => (
+                        {/* Bối cảnh chung (`BoiCanh`, ≤ 3 dòng). */}
+                        <BoiCanh dong={[
+                          [t('Nguyên nhân'), <>{c.nguyenNhan ?? t('chưa xác nhận')}{c.nhanXet && <span className="block text-slate-400">“{c.nhanXet}”</span>}</>],
+                          [t('Phương án'), c.pa.length ? c.pa.map((p) => (
                             <span key={p.id} className="block">{p.ten}{p.nguoi ? ` · ${p.nguoi}` : ''}{p.choXacNhan ? ` · ${t('chờ xác nhận')}` : p.xong ? ` · ${t('đã khép')}` : ''}</span>
-                          )) : t('Chưa có PA')}</dd>
-                          <dt className="text-slate-500">{t('Kết quả gần nhất')}</dt>
-                          <dd className="m-0 text-slate-300">{c.ketQua ?? t('Chưa có kết quả')}</dd>
-                        </dl>
+                          )) : t('Chưa có PA')],
+                          [t('Kết quả gần nhất'), c.ketQua ?? t('Chưa có kết quả')],
+                        ]} />
                         <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 text-xs sm:min-h-0" onClick={() => setView({ caseId: c.id })}>{t('Xem thêm ›')}</button>
                       </div>
                     )}
