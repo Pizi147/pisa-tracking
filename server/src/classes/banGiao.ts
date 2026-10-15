@@ -218,7 +218,8 @@ export function phieuBanGiao(p: Principal, f: { lopNguonId?: number; lenhId?: nu
   const monGhi = q.doNguon ? monDs.filter((m) => q.laGvcn || q.qlThay || kyNangPhuTrach(ct, m.ma).some((k) => q.kyNang.has(k))).map((m) => m.ma) : [];
   /* OV-7a: phiếu đã xác nhận — người ghi được (GVCN / GVBM đúng môn) sửa tới ngày thi hành lệnh; Quản lý lớp nguồn sửa mọi lúc. */
   const ql = coTheRaLenh(p, lopId);
-  for (const e of ds) e.suaDuoc = !!e.xacNhan && e.trangThaiLenh !== 'huy' && (ql || ((q.xacNhan || monGhi.length > 0) && homNay <= e.tuan));
+  /* OV-13h (chủ SP 15/10): không còn khoá theo ngày chuyển lớp — GVBM / GVCN lớp nguồn sửa mọi lúc. */
+  for (const e of ds) e.suaDuoc = !!e.xacNhan && e.trangThaiLenh !== 'huy' && (ql || q.xacNhan || monGhi.length > 0);
   return {
     lop: { id: nguon.id, code: nguon.code, ct, ft: !!nguon.is_fast_track, mon: monDs },
     homNay,
@@ -244,21 +245,13 @@ function docLenhPhieu(id: number): any {
   return l;
 }
 
-/**
- * OV-7a (chủ SP 13/10): phiếu ĐÃ XÁC NHẬN vẫn sửa được tới NGÀY THI HÀNH lệnh (`tuan_bat_dau`); qua ngày đó chỉ Quản lý lớp nguồn sửa.
- * Việc / thẻ "báo lên bàn giao" không mở lại — phiếu vẫn là đã xác nhận.
- */
-function kiemSuaSauXacNhan(p: Principal, l: { tuan_bat_dau: string; lop_nguon_id: number }) {
-  if (demoToday() > l.tuan_bat_dau && !coTheRaLenh(p, l.lop_nguon_id)) throw badRequest('Đã qua ngày chuyển lớp — chỉ Quản lý sửa được bàn giao.');
-}
-
 /** Môn chưa có câu bàn giao (tên ngắn) — ghi vào bản chụp lúc xác nhận / sửa. */
 function chuaBanGiaoCua(lenhId: number, ct: string | null): string[] {
   const da = new Set((db().prepare('SELECT mon FROM ban_giao_mon WHERE lenh_id = ? AND lam_lai = 0').all(lenhId) as any[]).map((r) => r.mon as string));
   return boMonCt(ct).filter((m) => !da.has(m)).map((m) => tenMonNgan(ct, m));
 }
 
-/** Một dòng môn (UPSERT). GVBM đúng môn ghi; GVCN (hoặc Quản lý khi thay được) điền thay → `dien_thay`. OV-7a: sau xác nhận vẫn sửa được (`kiemSuaSauXacNhan`). */
+/** Một dòng môn (UPSERT). GVBM đúng môn ghi; GVCN (hoặc Quản lý khi thay được) điền thay → `dien_thay`. OV-7a / OV-13h: sau xác nhận vẫn sửa được, cả sau ngày chuyển lớp (chủ SP 15/10). */
 export function ghiMon(p: Principal, lenhId: number, mon: string, noiDung: string): void {
   const l = docLenhPhieu(lenhId);
   const q = quyenBanGiao(p, l, mon, { ct: l.ct });
@@ -266,7 +259,6 @@ export function ghiMon(p: Principal, lenhId: number, mon: string, noiDung: strin
   if (!q.ghiMon && !qlSua) throw forbidden('Bạn chỉ ghi được bàn giao cho môn mình được phân công (GVCN điền thay được).');
   if (l.trang_thai === 'huy') throw badRequest('Quyết định chuyển lớp đã huỷ — không ghi bàn giao được.');
   if (!coPhieu(l.huong)) throw badRequest('Quyết định Dừng học hẳn không có phiếu bàn giao.');
-  if (l.xac_nhan_luc) kiemSuaSauXacNhan(p, l);
   if (!boMonCt(l.ct).includes(mon)) throw badRequest('Môn này không có ở lớp nguồn.');
   const text = String(noiDung ?? '').trim();
   if (!text) throw badRequest('Viết một câu bàn giao.');
@@ -331,7 +323,7 @@ function baoBanGiao(p: Principal, l: any, nx: string) {
 }
 
 /**
- * OV-7a: SỬA phiếu đã xác nhận — GVCN lớp nguồn (hoặc Quản lý xác nhận thay) tới ngày thi hành lệnh, Quản lý lớp nguồn mọi lúc. Lưu lại = nhận xét chung
+ * OV-7a: SỬA phiếu đã xác nhận — GVCN lớp nguồn (hoặc Quản lý xác nhận thay), mọi lúc (OV-13h, chủ SP 15/10 — bỏ khoá ngày chuyển lớp). Lưu lại = nhận xét chung
  * mới + chụp lại phần tự điền; người / lúc xác nhận đầu giữ. Hành trình: sự kiện cũ đổi khoá (giữ làm lịch sử) rồi ghi sự kiện mới.
  */
 export function suaBanGiao(p: Principal, lenhId: number, nhanXetChung: string): void {
@@ -340,7 +332,6 @@ export function suaBanGiao(p: Principal, lenhId: number, nhanXetChung: string): 
   if (!l.xac_nhan_luc) throw badRequest('Phiếu chưa xác nhận — viết nhận xét chung rồi Xác nhận bàn giao.');
   const q = quyenBanGiao(p, l, undefined, { ct: l.ct });
   if (!q.xacNhan && !coTheRaLenh(p, l.lop_nguon_id)) throw forbidden('Chỉ GVCN lớp nguồn hoặc Quản lý sửa được nhận xét chung của bàn giao.');
-  kiemSuaSauXacNhan(p, l);
   const nx = String(nhanXetChung ?? '').trim();
   if (nx.length < NHAN_XET_TOI_THIEU) throw badRequest(`Nhận xét chung cần ít nhất ${NHAN_XET_TOI_THIEU} ký tự.`);
   tx(() => {

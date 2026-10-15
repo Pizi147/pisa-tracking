@@ -887,16 +887,26 @@ check('TD3-b-2 · QL ×3: /classes/{lopFT}/overview ≤ 50 % (5 829), /hoc-vien-
  * TD4-a: Công việc trên dữ liệu ×3 — JSON đầy đủ (`items`, `dong`, `groups`, `summary`) TRÙNG ảnh chụp chụp bằng mã TRƯỚC TD4 (main 35517670), mọi vai
  * và mọi góc nhìn. Lọc sớm lượt ở `listAttempts` không được đổi một việc nào. Đổi đầu ra Công việc CÓ CHỦ Ý (hoặc seed / phép kiểm phía trên đổi
  * dữ liệu) thì lệch: chụp lại băm bằng mã trước thay đổi đó (phép in băm đang ra), không sửa cho khớp.
+ * 15/10 (OV-13b, chụp lại trên bản gộp OV-13c/d/h): GVCN / GVCN_THUONG toi, QL / QT tat-ca, QT tat-ca cn, QL gvcn — đổi có chủ ý: thêm trường
+ * `ghiNhanh` của Kết quả PA (ghi nhanh trên dòng) và `pa.soBuoi` của Xác nhận PA cùng lúc (ô Số buổi Tutor, mockup §9); băm bỏ hai trường đó
+ * trùng ảnh của main a4f9c00, đã kiểm.
  * 15/10: chụp lại 'QT toi' / 'QT tat-ca' sau khi Case của Task2(e) thôi lấy giờ thật (hạn Thêm PA của nó trôi theo ngày chạy → băm QT đổi mỗi ngày).
+ * 15/10 gộp OV-13a + OV-13c: chụp lại 'QL tat-ca' / 'QT tat-ca' / 'QT tat-ca cn' trên bản gộp — hai thay đổi có chủ ý ở dưới cộng lại (id Case đổi chỗ + gom tuần).
  * 15/10 OV-13a: chụp lại 'QL tat-ca' / 'QT tat-ca' / 'QT tat-ca cn' — Case tạm (Q2) đổi thứ tự sinh Case trong seed → id Case 34↔35 (HV 46) đổi chỗ;
  *   so JSON với main: khác CHỈ ở id Case, nội dung việc không đổi.
+ * 15/10 OV-13c: chụp lại 7 băm — đổi CÓ CHỦ Ý: Nhập điểm gom theo tuần thi (khoá `|p{tuần}|`, dòng phụ có mã tuần), việc Case SOS FT + Nhập điểm
+ * thêm `tuanThi` / `sos` / `pa` / `periodId` / `kind`. Đã so JSON mã trước (main 0359276) ↔ sau trên bộ demo, 5 vai × Của tôi / Tất cả: việc khác
+ * TRÙNG hoàn toàn (trừ trường mới), tổng số bài Nhập điểm không đổi.
+ * 15/10 OV-13g: thêm 'GVS toi' (GV Speaking MB FT 101 — chấm chéo). Đầu ra đổi CÓ CHỦ Ý chỉ ở GV dạy Speaking FT: thêm dòng "Speaking chấm chéo".
+ *   Đã so JSON mã trước (main a4f9c00) ↔ sau trên bộ demo, mọi tài khoản × Của tôi / Tất cả + QL xem GV 7/9/10: chỉ GV 9, 19 lệch; bỏ việc `|cc` thì
+ *   `items` + `dong` TRÙNG hoàn toàn. Số câu /my-work (×1): GV 9 58 → 58, GV 19 55 → 56. 10 băm cũ không đổi.
  */
 await checkAsync('TD4-a (×3) · Công việc trùng JSON ảnh chụp trước TD4 — 6 vai × Của tôi / Tất cả / Của một GV / lọc chi nhánh', async () => {
   const { myWork, viecCuaNguoi } = await import('../worklist/mywork.ts');
   const ANH: Record<string, string> = {
-    'QL toi': '6671f11bb8e4d60c', 'QT toi': 'ad9ea8d503e7b56c', 'GVCN toi': 'bd18425dee5c6c07', 'GVBM toi': '130c23c92f42a1de',
-    'GVCN_THUONG toi': 'bd18425dee5c6c07', 'ADMIN toi': '4ed1fc3fa34653f2', 'QL tat-ca': '0d6c37f49f2b3874', 'QT tat-ca': 'f2b0420bf80472b2',
-    'QT tat-ca cn': '9250408a07d32c9e', 'QL gvcn': 'e38f0811a97c27fd',
+    'QL toi': '6671f11bb8e4d60c', 'QT toi': 'ad9ea8d503e7b56c', 'GVCN toi': '23e0323bdaca7cd2', 'GVBM toi': 'dd8afd71bacf9864',
+    'GVCN_THUONG toi': '23e0323bdaca7cd2', 'ADMIN toi': '4ed1fc3fa34653f2', 'QL tat-ca': 'c2b665b3111bb1d4', 'QT tat-ca': '881bf524635eb7bb',
+    'QT tat-ca cn': 'a662f0555f264971', 'QL gvcn': 'ad7335342536a58b', 'GVS toi': '8f69930b10779f34',
   };
   const p = (v: Vai) => loadPrincipal(USER[v]);
   const goc: [string, () => unknown][] = [
@@ -904,6 +914,7 @@ await checkAsync('TD4-a (×3) · Công việc trùng JSON ảnh chụp trước 
     ...(['QL', 'QT'] as const).map((v) => [`${v} tat-ca`, () => myWork(p(v), { nguoi: 'tat-ca' })] as [string, () => unknown]),
     ['QT tat-ca cn', () => myWork(p('QT'), { nguoi: 'tat-ca', branchId: CN })],
     ['QL gvcn', () => viecCuaNguoi(p('QL'), USER.GVCN)],
+    ['GVS toi', () => myWork(loadPrincipal((conn.prepare(`SELECT user_id AS id FROM teacher_assignments WHERE class_id = ? AND skill = 'speaking' AND status = 'active' ORDER BY id LIMIT 1`).get(LOP_FT) as any).id))],
   ];
   const sai: string[] = [];
   for (const [ten, fn] of goc) {
@@ -1185,6 +1196,21 @@ await checkAsync(`PR-CT2 · Ra lệnh cả lớp thường 10 em Final đủ đi
   console.log(`      (đo: 10 em, sinh ${sinh.n} câu · huỷ ${huy.n} câu)`);
   assert(sinh.n <= TRAN_GHI_LO.raLenhSinhBoTro, `sinh ${sinh.n} câu > trần ${TRAN_GHI_LO.raLenhSinhBoTro}`);
   assert(huy.n <= TRAN_GHI_LO.doiLenhHuyBoTro, `huỷ ${huy.n} câu > trần ${TRAN_GHI_LO.doiLenhHuyBoTro}`);
+});
+
+/* OV-13c (rà #412): Xác nhận PA cùng lúc — web gửi lô ≤ 3 PA mỗi lời gọi (Netlify 10 s); khoá ≤ 45 câu SQL / PA trên dữ liệu ×3. */
+await checkAsync('OV-13c · POST /interventions/xac-nhan-pa-lo (×3): lô 3 PA ≤ 45 câu SQL / PA', async () => {
+  const { myWork } = await import('../worklist/mywork.ts');
+  const p = PRINCIPAL_CUA.get(USER.QL) ?? loadPrincipal(USER.QL);
+  const ids = [...new Set((chayTrongRequest('GET', () => myWork(p, { nguoi: 'tat-ca' })).items as any[]).filter((x) => x.group === 'xac_nhan_pa').map((x) => x.paId as number))].slice(0, 3);
+  assert(ids.length > 0, 'không có PA chờ xác nhận để đo');
+  const truoc = soCauSql();
+  const { status, json } = await callHttp('QL', 'POST', '/interventions/xac-nhan-pa-lo',
+    { chung: { soBuoi: 4, description: 'Hai buổi mỗi tuần, chữa đề bấm giờ, GV gửi nhận xét.' }, ds: ids.map((id) => ({ id })) });
+  const cau = soCauSql() - truoc;
+  console.log(`      (đo ×3: ${ids.length} PA → ${cau} câu, ${(cau / ids.length).toFixed(1)} câu / PA · ok ${json?.ok?.length} · lỗi ${json?.loi?.length})`);
+  assert(status === 200 && json.ok.length === ids.length, `kết quả: ${status} ${JSON.stringify(json)}`);
+  assert(cau <= 45 * ids.length, `${cau} câu cho ${ids.length} PA (> 45 / PA)`);
 });
 
 check('PR-DEPLOY (3b) · Giới hạn Turso trên mọi (đường × vai) sau nhân dữ liệu ×3 + mọi đường ghi lô: mỗi câu ≤ 900 tham số, ≤ 20 vế UNION, 0 tham số đặt tên', () => {

@@ -192,8 +192,9 @@ export async function runPrS6fATests(t: YThucTestKit) {
   const eV = emMoi('MB FT 101');
   boLichTuTao(conn, eV.cy);
   const aV = voiNgay(tuanW1, () => luotThu(conn, svc.createAttempt, P.admin, { studentId: eV.sid, cycleId: eV.cy, classId: MB_FT, no: 5, periodId: week.ensurePeriod(tuanW1).id }));
-  const viecL = (aid: number) => (mw.myWork(gvL()).groups as any[]).flatMap((g) => g.items)
-    .find((it: any) => it.group === 'score' && it.attemptId === aid);
+  /* OV-13c: việc Nhập điểm gom theo (lớp, tuần thi) — tìm việc chứa em của lượt. */
+  const viecL = (sid: number) => (mw.myWork(gvL()).groups as any[]).flatMap((g) => g.items).flatMap((it: any) => it.con ?? [it])
+    .find((it: any) => it.group === 'score' && (it.studentId === sid || it.emIds?.includes(sid)));
 
   check('S6F-a (3a) · quaHanNhapDiem giữ kết quả 6 ca cũ; mocTreNhapDiem = max(hạn, Chủ nhật tuần thi)', () => {
     const ca: [string | null, string | null, string, boolean][] = [
@@ -205,7 +206,7 @@ export async function runPrS6fATests(t: YThucTestKit) {
     assert(week.mocTreNhapDiem?.('2026-09-13', '2026-09-16') === '2026-09-20' && week.mocTreNhapDiem('2026-09-22', '2026-09-14') === '2026-09-22', 'mocTreNhapDiem');
   });
   check('S6F-a (3b) · tuần thi CHƯA hết, hạn đè đã qua: việc "Nhập điểm L" của GV không "Quá hạn", không vào summary.overdue; cột Việc tiếp theo không đỏ', () => {
-    const it = viecL(aW.id);
+    const it = viecL(eW.sid);
     assert(it && it.urgency !== 'overdue', `việc: ${JSON.stringify(it && { urgency: it.urgency, due: it.due })}`);
     const nd = dhv.nhapDiemTheoEm(gvL(), [MB_FT], TODAY, () => MB_FT).get(eW.sid);
     assert(nd && !nd.quaHan, `nhapDiemTheoEm: ${JSON.stringify(nd)}`);
@@ -222,7 +223,7 @@ export async function runPrS6fATests(t: YThucTestKit) {
     assert(R && !R.dung && R.tre === 1 && R.han === '2026-09-13', `R: ${JSON.stringify(R)}`);
   });
   check('S6F-a (3d) · tuần thi ĐÃ hết, qua hạn: cả bốn đường quá hạn (Việc, Việc tiếp theo, Nợ điểm, bảng GV)', () => {
-    const it = viecL(aV.id);
+    const it = viecL(eV.sid);
     assert(it?.urgency === 'overdue', `việc: ${JSON.stringify(it && { urgency: it.urgency, due: it.due })}`);
     const nd = dhv.nhapDiemTheoEm(gvL(), [MB_FT], TODAY, () => MB_FT).get(eV.sid);
     assert(nd?.quaHan && d.viecTiepCuaEm({ nhapDiem: nd, cases: [], yThuc: null, homNay: TODAY })[0].tone === 'danger', `nhapDiemTheoEm: ${JSON.stringify(nd)}`);
@@ -233,12 +234,14 @@ export async function runPrS6fATests(t: YThucTestKit) {
   /* PR-Dọn (Q9): Việc nhập điểm dùng CÙNG luật Nợ điểm (bỏ lớp đã kết thúc) — phép kiểm không còn tự lọc "lớp đang hoạt động". */
   check('S6F-a (3e) · HAI ĐƯỜNG: (lớp, đợt) của việc nhập điểm "Quá hạn" của GV = (lớp, đợt) có ô Nợ điểm quá hạn của GV (mọi lớp)', () => {
     const g = gvL();
-    const viec = new Set((mw.myWork(g).groups as any[]).flatMap((x) => x.items)
-      .filter((it: any) => it.group === 'score' && it.mine && it.urgency === 'overdue').map((it: any) => `${it.classId}|${it.attemptNo}|${it.contextLabel}`));
+    /* OV-13c: một việc = (lớp, tuần thi), dòng phụ "MT1, MT3 W1 SEP" — so theo (lớp, bài). */
+    const viec = new Set((mw.myWork(g).groups as any[]).flatMap((x) => x.items).flatMap((it: any) => it.con ?? [it])
+      .filter((it: any) => it.group === 'score' && it.mine && it.urgency === 'overdue')
+      .flatMap((it: any) => String(it.contextLabel).replace(/ W\d [A-Z]{3}( \d{4})?$/, '').split(', ').map((l) => `${it.classId}|${l}`)));
     const luot = new Map((conn.prepare(`SELECT id, class_id, attempt_no, kind FROM assessment_attempts`).all() as any[]).map((a) => [a.id, a]));
     const no = new Set((debt.scoreDebtCells(P.admin, TODAY, null) as any[]).filter((x) => x.overdue && x.userId === g.userId).map((x) => {
       const a = luot.get(x.attemptId);
-      return `${a.class_id}|${a.attempt_no}|${a.kind && a.kind !== 'mock' ? d.ATTEMPT_KIND_SHORT[a.kind] : `MT${a.attempt_no}`}`;
+      return `${a.class_id}|${a.kind && a.kind !== 'mock' ? d.ATTEMPT_KIND_SHORT[a.kind] : `MT${a.attempt_no}`}`;
     }));
     const lech = [...viec].filter((k) => !no.has(k)).concat([...no].filter((k) => !viec.has(k)));
     assert(no.size > 0 && lech.length === 0, `Việc ${viec.size} · Nợ ${no.size} · lệch: ${lech.join(' ; ')}`);

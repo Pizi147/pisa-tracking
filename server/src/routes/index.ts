@@ -18,8 +18,10 @@ import * as timNguoiSvc from '../platform/timNguoi.ts';
 import * as violationSvc from '../yThuc/violations.ts';
 import * as accessSvc from '../yThuc/access.ts';
 import * as xuLySvc from '../yThuc/xuLy.ts';
+import * as loYThucSvc from '../yThuc/lo.ts';
 import * as phoiHopSvc from '../yThuc/phoiHop.ts';
 import * as sosAutoSvc from '../cases/sosAuto.ts';
+import * as doiPaSvc from '../cases/doiPa.ts';
 import { bangYThucLop } from '../yThuc/board.ts';
 import { maybeSimulateReadError, maybeSimulateSaveFailure, pInt, qInt, qStr, wrap } from './helpers.ts';
 
@@ -73,7 +75,7 @@ import * as lichSuSuaSvc from '../students/lichSuSua.ts';
 import * as meetingSvc from '../worklist/meeting.ts';
 import {
   PERIOD_WINDOW_PLANNING_FORWARD_WEEKS,
-  ensurePeriod, listPeriods, periodById, periodWindow, reportEditWindow, setPeriodUnlocked,
+  ensurePeriod, listPeriods, periodById, periodWindow, reportEditWindow,
 } from '../platform/week.ts';
 import * as keHoachSvc from '../keHoach/keHoachTest.ts';
 import { signalsFor } from '../worklist/signals.ts';
@@ -1067,6 +1069,24 @@ api.get('/classes/:id/y-thuc', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   return bangYThucLop(principalOf(req), pInt(req, 'id'));
 }));
+/** OV-13d: chọn nhiều ở tab Ý thức lớp — mọi em đang học + em nào làm được hành động nào (lý do khi không). */
+api.get('/classes/:id/y-thuc/lo', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return loYThucSvc.loYThucLop(principalOf(req), pInt(req, 'id'));
+}));
+/** OV-13d: ba hành động theo lô — mỗi em một giao dịch, kết quả từng em (`em[].ok` / `loi`). */
+api.post('/classes/:id/y-thuc/lo/xu-ly', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return loYThucSvc.loXuLy(principalOf(req), pInt(req, 'id'), yThucBody(req));
+}));
+api.post('/classes/:id/y-thuc/lo/ghi-nhan', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return loYThucSvc.loGhiNhan(principalOf(req), pInt(req, 'id'), yThucBody(req));
+}));
+api.post('/classes/:id/y-thuc/lo/cap-bac', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return loYThucSvc.loCapBac(principalOf(req), pInt(req, 'id'), yThucBody(req));
+}));
 /** YT-6 "Theo thời gian" — HV ĐANG HỌC ở lớp, MỌI trạng thái (khác ba khu vực của `/classes/:id/y-thuc`, đi theo học viên). */
 api.get('/classes/:id/violations', requireAuth, wrap((req) => {
   maybeSimulateReadError();
@@ -1478,8 +1498,9 @@ api.put('/cycles/:id/outcome', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   /* PR-TK (TK-K): thân mới { ngayThi, l, r, w, s, khongThi, ghiChu } = kết quả thi thật (máy tính OVR + Đạt / Chưa đạt). Thân cũ { outcome, score, note } giữ nguyên hành vi. */
   const body = (req.body ?? {}) as Record<string, any>;
-  studentSvc.chanLuuTru(principalOf(req), pInt(req, 'id'));   // OV-11d (HV-3)
+  /* OV-13h (chủ SP 15/10): kết quả thi thật nhập được cả khi em đã Lưu trữ — ngoại lệ duy nhất của hồ sơ Lưu trữ (`chanLuuTru` sau nhánh này). */
   if (['ngayThi', 'l', 'r', 'w', 's', 'khongThi', 'ghiChu'].some((k) => k in body)) return thiThatSvc.datKetQuaThiThat(principalOf(req), pInt(req, 'id'), body);
+  studentSvc.chanLuuTru(principalOf(req), pInt(req, 'id'));   // OV-11d (HV-3)
   return cycleSvc.setOutcome(principalOf(req), pInt(req, 'id'), body as any);
 }));
 
@@ -1805,6 +1826,16 @@ api.post('/interventions/:id/xac-nhan-pa', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return sosAutoSvc.xacNhanPaQuyChe(principalOf(req), pInt(req, 'id'), (req.body ?? {}) as any);
 }));
+/* OV-13b: Đề xuất PA khác cho PA mặc định — thẻ "Đề xuất PA" (QL duyệt); rút = `POST /yeu-cau/:id/rut`. */
+api.post('/interventions/:id/de-xuat-doi-pa', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return doiPaSvc.deXuatDoiPa(principalOf(req), pInt(req, 'id'), (req.body ?? {}) as any);
+}));
+/** OV-13c: Xác nhận PA cùng lúc (dòng gộp Công việc) — mỗi PA một giao dịch, PA lỗi báo riêng. */
+api.post('/interventions/xac-nhan-pa-lo', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return sosAutoSvc.xacNhanPaNhieu(principalOf(req), req.body);
+}));
 api.post('/cases/:id/dismiss', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return sosAutoSvc.guiKhongTheoDoi(principalOf(req), pInt(req, 'id'), (req.body ?? {}) as any);
@@ -1924,6 +1955,11 @@ api.get('/followups/:id/sua', requireAuth, wrap((req) => {
 api.post('/followups/:id/sua', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return caseSvc.suaKetQua(principalOf(req), pInt(req, 'id'), req.body ?? {});
+}));
+/** OV-13b: Hoàn tác lần ghi kết quả vừa lưu (cùng quyền Sửa). */
+api.post('/followups/:id/hoan-tac', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return caseSvc.hoanTacKetQua(principalOf(req), pInt(req, 'id'));
 }));
 /** OV-7b: sửa "Xem lại sau hỗ trợ" lần mới nhất (kết quả quan sát, ghi chú, ngày) — người đã ghi + Quản lý. */
 api.patch('/followups/:id', requireAuth, wrap((req) => {
@@ -2254,27 +2290,7 @@ api.get('/meeting/board', requireAuth, wrap((req) => {
   };
 }));
 
-/**
- * Quản trị hệ thống mở lại một tuần báo cáo đã khoá.
- * Đây là ngoại lệ, nên chỉ một vai trò được làm và có ghi nhật ký.
- */
-api.post('/meeting/periods/:periodId/unlock', requireAuth, wrap((req) => {
-  const p = principalOf(req);
-  require_(p, PERMISSIONS.ADMIN_CONFIG, { anyScope: true },
-    'Chỉ Quản trị hệ thống mới mở lại được tuần báo cáo đã khoá.');
-  const periodId = pInt(req, 'periodId');
-  const on = req.body?.unlocked !== false;
-  setPeriodUnlocked(periodId, on, p.userId);
-  writeAudit({
-    actorUserId: p.userId, action: on ? 'report.unlock' : 'report.relock',
-    entityType: 'report_period', entityId: periodId,
-    entityLabel: periodById(periodId)?.code ?? String(periodId),
-    after: { unlocked: on },
-  });
-  const period = periodById(periodId);
-  return period ? reportEditWindow(period) : { open: false };
-}));
-
+/* OV-13h (chủ SP 15/10): bỏ đường Quản trị mở lại tuần báo cáo — quá hạn vẫn nộp được, gắn nhãn "nộp muộn" (`reportEditWindow`). */
 api.put('/meeting/units/:unitId/reports/:categoryKey', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   const periodId = toInt(req.body?.periodId) ?? ensurePeriod(demoToday()).id;

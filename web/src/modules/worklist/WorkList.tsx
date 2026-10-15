@@ -2,7 +2,7 @@ import { type ReactNode, useState } from 'react';
 import { Level, NhanTrangThai } from '../../ui/ui.tsx';
 import { Han } from '../../ui/Han.tsx';
 import { toneTheoNhan } from '../../lib/format.ts';
-import { CHAM_CHEO, LOAI_HAN_CUA_VIEC } from '@shared/domain/index.ts';
+import { CHAM_CHEO, LOAI_HAN_CUA_VIEC, laViecChamCheo } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 
 export type WorkItem = {
@@ -27,8 +27,13 @@ export type WorkItem = {
   con?: (WorkItem & { conTen: string; conPhu: string })[];
   /** OV-5a: PA của việc (Kết quả PA, Xác nhận PA, Mini Test) · Nhập điểm: mã lượt (`mt:2`) + kỹ năng — panel Công việc mở đúng chỗ. */
   paId?: number | null; luot?: string; kn?: string; soBai?: number;
+  /** OV-13b: Kết quả PA ghi nhanh được ngay dưới dòng (máy chủ `ghiNhanhDuoc`). */
+  ghiNhanh?: boolean;
   /** OV-11c: id em của việc cả lớp (Nhập điểm theo bài…) — panel Nhập điểm đưa em của việc lên đầu. */
   emIds?: number[];
+  /** OV-13c: tuần thi (thứ Hai) · mức SOS · Nhập điểm: tuần + loại bài (lưới Lịch Test) · Xác nhận PA: PA đang chờ. */
+  tuanThi?: string | null; sos?: number | null; periodId?: number | null; kind?: string | null; phu?: string | null;
+  pa?: { kind: string; moTa: string | null; nguoiId: number | null; nguoi: string | null; soBuoi?: number | null };
 };
 export type WorkGroup = { key: string; label: string; hint: string; items: WorkItem[]; overdue: number; today: number };
 
@@ -40,7 +45,10 @@ export type WorkGroup = { key: string; label: string; hint: string; items: WorkI
  * quá hạn nối ngay sau bằng chữ "⚠ quá hạn n ngày" (B-3, B-5). Thẻ ngoài là `div` để nút phụ
  * đứng cạnh phần bấm-mở mà không lồng `button` trong `button`. Loại việc chưa có loại hạn thì hạn là ngày trơn.
  */
-export function DongViec({ it, onOpen, nutPhu, gon = false, chon = null, xong, moTrang = false, conMoTrang }: {
+/** OV-13d: loại việc Ý thức mà dòng gộp theo lớp mở panel lô (`LoYThucPanel`) — `PanelViec` đọc cùng tập này. */
+export const VIEC_LO_Y_THUC: ReadonlySet<string> = new Set(['yt_xu_ly', 'yt_xem']);
+
+export function DongViec({ it, onOpen, nutPhu, gon = false, chon = null, xong, moTrang = false, conMoTrang, moRong, moCaDong }: {
   it: WorkItem; onOpen: (it: WorkItem) => void;
   /** Nút phụ đứng cạnh nút chính (PR-Ra: Nhắc/Duyệt). */
   nutPhu?: ReactNode;
@@ -52,6 +60,10 @@ export function DongViec({ it, onOpen, nutPhu, gon = false, chon = null, xong, m
   moTrang?: boolean;
   /** OV-11c (CV-17c): em trong dòng gộp mở trang khác cũng có dấu ↗. */
   conMoTrang?: (it: WorkItem) => boolean;
+  /** OV-13b: phần mở ngay dưới dòng / dưới em của dòng gộp (ghi nhanh Kết quả PA). */
+  moRong?: (it: WorkItem) => ReactNode;
+  /** OV-13c: dòng gộp làm CẢ DÒNG một lần (Xác nhận PA cùng lúc, Nhập điểm theo tuần) — bấm mở panel, không mở danh sách em. */
+  moCaDong?: (it: WorkItem) => boolean;
 }) {
   const [mo, setMo] = useState(false);
   const con = it.con;
@@ -71,8 +83,9 @@ export function DongViec({ it, onOpen, nutPhu, gon = false, chon = null, xong, m
   /* Q31-4 (D9): người phụ trách 12 px — tách khỏi phần ngữ cảnh 11 px của dòng phụ. */
   /* OV-11c (TQ-4): chấm chéo (T18) không phải "chưa ai phụ trách" — cùng tên với Tổng quan. */
   const nguoi = it.owner ?? (it.ownerId === null && !it.mine && !viecCaLop ? (dich(it.statusLabel) === CHAM_CHEO ? CHAM_CHEO : t('chưa ai phụ trách')) : null);
-  /* PR-GOP (mockup phần 4): bấm tiêu đề hay nút "n em ▾" đều mở / đóng danh sách em; có em quá hạn → nền đỏ nhạt cả dòng. */
-  const bam = () => (con ? setMo(!mo) : onOpen(it));
+  /* PR-GOP (mockup phần 4): bấm tiêu đề hay nút "n em ▾" đều mở / đóng danh sách em; có em quá hạn → nền đỏ nhạt cả dòng.
+     OV-13d: ở Công việc (`gon`) dòng gộp Ý thức mở thẳng panel lô; OV-13c: `moCaDong` (Xác nhận PA cùng lúc) cũng mở thẳng panel. */
+  const bam = () => (con && !moCaDong?.(it) && !(gon && VIEC_LO_Y_THUC.has(it.group)) ? setMo(!mo) : onOpen(it));
   const maDs = `con-${it.key}`;
   const daXong = !!xong?.has(it.key);
   const dangChon = chon === it.key;
@@ -101,7 +114,8 @@ export function DongViec({ it, onOpen, nutPhu, gon = false, chon = null, xong, m
       </button>
       <span className={`col-start-2 text-xs sm:col-start-auto [&>span]:text-xs ${gon ? 'flex flex-wrap items-center gap-2 sm:justify-end sm:text-right' : ''}`}>
         {/* Hotfix 15/10: dòng đã xong (gạch) không còn hạn / "⚠ quá hạn". */}
-        {daXong ? null : it.due ? <Han loai={loaiHan ?? 'viec-van-hanh'} han={it.due} haiDong /> : <span className="text-slate-500">{t('Chưa có hạn')}</span>}
+        {/* OV-13g: Speaking chấm chéo không có hạn (T18) — không ghi "Chưa có hạn" (mockup OV-13 §3b). */}
+        {daXong ? null : it.due ? <Han loai={loaiHan ?? 'viec-van-hanh'} han={it.due} haiDong /> : laViecChamCheo(it) ? null : <span className="text-slate-500">{t('Chưa có hạn')}</span>}
         {gon && nutPhu && <span onClick={(e) => e.stopPropagation()}>{nutPhu}</span>}
       </span>
       {!gon && <span className="col-start-2 flex items-center gap-2 sm:col-start-auto sm:justify-end">
@@ -121,9 +135,11 @@ export function DongViec({ it, onOpen, nutPhu, gon = false, chon = null, xong, m
       {con && mo && (
         <ul id={maDs} className="col-span-full m-0 mb-0.5 mt-1 list-none divide-y rounded-lg border p-0 sm:col-start-2 sm:col-end-[-1]"
           style={{ borderColor: 'var(--line)', background: 'var(--surface)' }} onClick={(e) => e.stopPropagation()}>
-          {con.map((c) => <li key={c.key}><DongCon it={c} loaiHan={loaiHan} onOpen={onOpen} gon={gon} chon={chon === c.key} xong={!!xong?.has(c.key)} moTrang={!!conMoTrang?.(c)} /></li>)}
+          {con.map((c) => <li key={c.key}><DongCon it={c} loaiHan={loaiHan} onOpen={onOpen} gon={gon} chon={chon === c.key} xong={!!xong?.has(c.key)} moTrang={!!conMoTrang?.(c)} />
+            {moRong?.(c) && <div className="px-2.5 pb-2.5">{moRong(c)}</div>}</li>)}
         </ul>
       )}
+      {!con && moRong?.(it) && <div className="col-span-full sm:col-start-2" onClick={(e) => e.stopPropagation()}>{moRong(it)}</div>}
     </div>
   );
 }
@@ -146,7 +162,7 @@ function DongCon({ it, loaiHan, onOpen, gon, chon, xong, moTrang = false }: {
           {it.conPhu && <small className="block break-words text-[11.5px] font-normal text-slate-500">{dich(it.conPhu)}</small>}
         </span>
         <span className="text-xs [&>span]:text-xs">
-          {xong ? null : it.due ? <Han loai={loaiHan ?? 'viec-van-hanh'} han={it.due} haiDong /> : <span className="text-slate-500">{t('Chưa có hạn')}</span>}
+          {xong ? null : it.due ? <Han loai={loaiHan ?? 'viec-van-hanh'} han={it.due} haiDong /> : laViecChamCheo(it) ? null : <span className="text-slate-500">{t('Chưa có hạn')}</span>}
         </span>
       </button>
     );
@@ -158,7 +174,7 @@ function DongCon({ it, loaiHan, onOpen, gon, chon, xong, moTrang = false }: {
         {it.conPhu && <small className="block break-words text-[11.5px] font-normal text-slate-500">{dich(it.conPhu)}</small>}
       </button>
       <span className="col-start-1 text-xs sm:col-start-auto [&>span]:text-xs">
-        {it.due ? <Han loai={loaiHan ?? 'viec-van-hanh'} han={it.due} haiDong /> : <span className="text-slate-500">{t('Chưa có hạn')}</span>}
+        {it.due ? <Han loai={loaiHan ?? 'viec-van-hanh'} han={it.due} haiDong /> : laViecChamCheo(it) ? null : <span className="text-slate-500">{t('Chưa có hạn')}</span>}
       </span>
       <span className="col-start-2 row-span-2 row-start-1 flex justify-end sm:col-start-auto sm:row-span-1 sm:row-start-auto">
         <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-[32px]" onClick={() => onOpen(it)}>{dich(it.actionLabel)}</button>

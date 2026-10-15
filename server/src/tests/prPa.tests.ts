@@ -2,6 +2,7 @@
  * PR-PA (§8, X1) — PA đồng bộ một mẫu. Task 1: migrate `so_buoi` + cột nhật ký, luật thuần `paDongBo`, MỘT hàm tạo PA (`chenPa`) cho mọi đường.
  */
 import type { YThucTestKit } from './yThuc.tests.ts';
+import { duXacNhan } from './luotThu.ts';
 
 export async function runPrPaTests(t: YThucTestKit) {
   const { check, assert, conn, P, TODAY, classId } = t;
@@ -396,13 +397,13 @@ export async function runPrPaTests(t: YThucTestKit) {
       { caseId: c, kind: 'self_study', description: 'Tự học theo quy chế', status: 'planned', preset: true, mocQuyChe: 'one_month' },
     ]);
     const MO_TA = 'Tutor Listening hai buổi mỗi tuần, cô Hà chữa bài nghe.';
-    const sai = maLoi(() => sosAuto.xacNhanPaQuyChe(P.lrTeacher, tut, { description: MO_TA, soBuoi: 61 }));
+    const sai = maLoi(() => sosAuto.xacNhanPaQuyChe(P.lrTeacher, tut, duXacNhan(conn, tut, { description: MO_TA, soBuoi: 61 })));
     assert(sai.status === 400 && sai.msg.includes('Từ 1 đến 60 buổi'), `61: ${JSON.stringify(sai)}`);
-    sosAuto.xacNhanPaQuyChe(P.lrTeacher, tut, { description: MO_TA, soBuoi: 8, performerSelf: true });
+    sosAuto.xacNhanPaQuyChe(P.lrTeacher, tut, duXacNhan(conn, tut, { description: MO_TA, soBuoi: 8, performerSelf: true }));
     const r = get('SELECT * FROM case_interventions WHERE id = ?', tut);
     assert(r.so_buoi === 8 && r.status === 'started' && r.performer_user_id === GV_L, JSON.stringify(r));
     assert(revCua(tut).length === 1 && revCua(tut)[0].new_so_buoi === 8, 'nhật ký xác nhận có số buổi');
-    sosAuto.xacNhanPaQuyChe(P.lrTeacher, tu, { description: 'Tự học Listening, nghe chép mỗi ngày 15 phút.', performerUserId: GV_L });
+    sosAuto.xacNhanPaQuyChe(P.lrTeacher, tu, duXacNhan(conn, tu, { description: 'Tự học Listening, nghe chép mỗi ngày 15 phút.', performerUserId: GV_L }));
     const s = get('SELECT * FROM case_interventions WHERE id = ?', tu);
     assert(s.performer_user_id === null && s.performer_name === null && s.status === 'started', `Tự học xác nhận: ${JSON.stringify(s)}`);
     const sid = get('SELECT student_id FROM sos_cases WHERE id = ?', c).student_id;
@@ -568,17 +569,17 @@ export async function runPrPaTests(t: YThucTestKit) {
     assert(pl.soBuoi === 10 && !('performerSelf' in pl), 'Tự học: có Số buổi, không người');
     assert(d.paPayload({ ...tutor, kind: 'teaching_adjust' }).soBuoi === null, 'loại không Số buổi → null');
   });
-  check('PA15 · Xác nhận PA: gửi khoá người = đặt lại (cả ba trống → xoá người); không gửi khoá nào → giữ người máy gán', () => {
+  check('PA15 · Xác nhận PA: gửi khoá người = đặt lại (cả ba trống → chặn, OV-13b: Tutor bắt Người dạy); không gửi khoá nào → giữ người máy gán', () => {
     const c = caseThu('XN2');
     const [a, b] = taoPa.chenPa(conn, ['A', 'B'].map((x) => ({
       caseId: c, kind: 'tutor', description: `Tutor theo quy chế ${x}`, status: 'planned', preset: true, mocQuyChe: 'one_month', performerName: 'Cô cũ đã nghỉ',
     })));
     const MO_TA = 'Tutor Listening hai buổi mỗi tuần, chữa bài nghe Section 3.';
-    sosAuto.xacNhanPaQuyChe(P.lrTeacher, a, { description: MO_TA, performerSelf: false, performerUserId: null, performerName: null });
-    sosAuto.xacNhanPaQuyChe(P.lrTeacher, b, { description: MO_TA });
+    const loiA = maLoi(() => sosAuto.xacNhanPaQuyChe(P.lrTeacher, a, { description: MO_TA, soBuoi: 4, performerSelf: false, performerUserId: null, performerName: null }));
+    sosAuto.xacNhanPaQuyChe(P.lrTeacher, b, duXacNhan(conn, b, { description: MO_TA }));
     const ra = get('SELECT performer_user_id u, performer_name n, status FROM case_interventions WHERE id = ?', a);
     const rb = get('SELECT performer_user_id u, performer_name n FROM case_interventions WHERE id = ?', b);
-    assert(ra.u === null && ra.n === null && ra.status === 'started', `xoá người: ${JSON.stringify(ra)}`);
+    assert(/Chọn người dạy/.test(loiA.msg) && ra.n === 'Cô cũ đã nghỉ' && ra.status === 'planned', `xoá người bị chặn: ${loiA.msg} ${JSON.stringify(ra)}`);
     assert(rb.u === null && rb.n === 'Cô cũ đã nghỉ', `giữ người: ${JSON.stringify(rb)}`);
   });
 

@@ -14,6 +14,7 @@ import {
   type TruongDeXuat,
 } from '../../../shared/domain/index.ts';
 import { caseTitleOf, huyQuyetDinhPa, respondToPlan } from '../cases/cases.ts';
+import { apDungDoiPa, doiPaHuyDuoc, duLieuDoiPa, rutDoiPa, tenLoaiPa } from '../cases/doiPa.ts';
 import { apDungKhongTheoDoi, rutKhongTheoDoi, suaKhongTheoDoi, tuChoiKhongTheoDoi } from '../cases/sosAuto.ts';
 import { chuTheDoiLan2, decideAbsenceMove } from '../fasttrack/absence.ts';
 import { attemptHref } from '../fasttrack/attempts.ts';
@@ -86,7 +87,9 @@ export type DinhNghiaLoai = {
   khiSua?: (p: Principal, yc: YeuCauRow, vao: Record<string, unknown>) => { lyDo: string; duLieu: Record<string, unknown>; bangChung?: number[] };
   khiRut?: (p: Principal, yc: YeuCauRow, khoaTep: string[]) => void;
   /** Điều kiện SQL "đối tượng không còn ý nghĩa" trên bí danh `y` (một biểu thức, không tham số) + lý do hiện trên thẻ. */
-  chet?: { sql: string; lyDo: string };
+  chet?: { sql: string; lyDo: string;
+    /** OV-13b: sau khi thẻ tự đóng — đảo bảng nguồn (thẻ đổi PA trả PA gốc). Trong giao dịch của `quetYeuCau`. */
+    sau?: (yc: YeuCauRow) => void };
   /** Báo QL: tạo thẻ mới (ON CONFLICT DO NOTHING) + trả số thẻ tạo. Gọi trong `quetYeuCau`; không có gì để tạo thì không mở tx. */
   quet?: (conn: any, homNay: string) => number;
   /** Nạp phần riêng của loại cho MỘT lô thẻ (một câu) → `ngu.them.get(yc.id)`. */
@@ -126,29 +129,55 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
   /* ------------------------------------------------------------ PR-DUYET · Đề xuất PA (T43) */
   {
     loai: 'de_xuat_pa',
-    khiDuyet: (p, yc, v) => { respondToPlan(p, yc.doi_tuong_id, { decision: 'approved', note: v.ghiChu }, { khongTraCase: true }); },
-    khiTuChoi: (p, yc, lyDo) => { respondToPlan(p, yc.doi_tuong_id, { decision: 'declined', note: lyDo }, { khongTraCase: true }); },
-    khiHuy: (p, yc) => { huyQuyetDinhPa(p, yc.doi_tuong_id); },
+    /* OV-13b: thẻ "Đề xuất PA khác" (`du_lieu.thayPaId`) — cùng đường duyệt, rồi hệ quả lên PA gốc (`apDungDoiPa`). */
+    khiDuyet: (p, yc, v) => { respondToPlan(p, yc.doi_tuong_id, { decision: 'approved', note: v.ghiChu }, { khongTraCase: true }); apDungDoiPa(yc, 'duyet'); },
+    khiTuChoi: (p, yc, lyDo) => { respondToPlan(p, yc.doi_tuong_id, { decision: 'declined', note: lyDo }, { khongTraCase: true }); apDungDoiPa(yc, 'tra'); },
+    khiHuy: (p, yc) => {
+      if (duLieuDoiPa(yc) && !doiPaHuyDuoc(db(), [yc.id]).has(yc.id)) throw badRequest('PA gốc đã thay đổi sau quyết định (đã xác nhận, đã ghi kết quả hoặc đã có đề xuất mới) — không huỷ quyết định được.');
+      huyQuyetDinhPa(p, yc.doi_tuong_id); apDungDoiPa(yc, 'huy');
+    },
+    khiRut: (_p, yc) => { rutDoiPa(yc); },
     huyDuoc: (conn, ds) => {
       const ids = ds.map((y) => y.doi_tuong_id);
       if (!ids.length) return new Set();
       const duoc = new Set((conn.prepare(`SELECT iv.id FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id
           WHERE iv.id IN (${ids.map(() => '?').join(',')}) AND sc.status != 'done' AND iv.approval_state IN ('approved', 'declined')
             AND NOT EXISTS (SELECT 1 FROM case_followups f WHERE f.intervention_id = iv.id)`).all(...ids) as any[]).map((r) => r.id as number));
-      return new Set(ds.filter((y) => duoc.has(y.doi_tuong_id)).map((y) => y.id));
+      const doi = doiPaHuyDuoc(conn, ds.map((y) => y.id));   // OV-13b: thẻ đổi PA mà PA gốc đã đổi sau quyết định → không huỷ
+      return new Set(ds.filter((y) => duoc.has(y.doi_tuong_id) && doi.has(y.id)).map((y) => y.id));
     },
     /* K5-58, Q2: MỘT câu cho mọi đường huỷ PA / đóng Case — kể cả đường của PR sau. */
     chet: {
       sql: `NOT EXISTS (SELECT 1 FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id
              WHERE iv.id = y.doi_tuong_id AND iv.status != 'cancelled' AND sc.status != 'done' AND iv.approval_state = 'pending')`,
       lyDo: 'Case đã đóng hoặc PA không còn chờ duyệt',
+      sau: (yc) => apDungDoiPa(yc, 'tra'),
     },
     nap: (conn, ds) => napTheoDoiTuong(conn, ds,
-      `SELECT iv.id, iv.kind, iv.case_id, sc.topic, a.attempt_no, a.kind AS attempt_kind
+      `SELECT iv.id, iv.kind, iv.case_id, iv.description, sc.topic, a.attempt_no, a.kind AS attempt_kind, COALESCE(u.full_name, iv.performer_name) AS nguoi_day
          FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
+         LEFT JOIN users u ON u.id = iv.performer_user_id
         WHERE iv.id IN (?)`),
     moTa: (yc, ngu) => {
       const x = ngu.them.get(yc.id);
+      const doi = duLieuDoiPa(yc);
+      if (doi) {
+        /* OV-13b (mockup §8–§9): "Đổi PA · Writing Task 1" — PA gốc → PA mới · người dạy, nội dung, lý do, "Nếu duyệt: …". */
+        const goc = tenLoaiPa(doi.goc.kind);
+        const moi = x ? tenLoaiPa(x.kind) : 'PA mới';
+        return {
+          tieuDe: `${doi.goc.chay ? 'Đổi PA' : 'PA khác'}${x?.topic ? ` · ${caseTopicLabel(x.topic)}` : ''}`,
+          phu: x ? nhanDotNgan(x.attempt_kind, x.attempt_no) : null,
+          dong: [
+            `${goc}${doi.goc.chay ? '' : ' (quy chế, chưa chạy)'} → ${[moi, x?.nguoi_day].filter(Boolean).join(' · ')}`,
+            ...(x?.description ? [`“${x.description}”`] : []),
+            `${nguoiXin(yc, ngu)} · Lý do: “${doi.lyDo}”`,
+            ...(x ? [] : ['PA đã xoá']),
+          ],
+          neuDuyet: doi.goc.chay ? `${goc} kết thúc (Đổi PA) · ${moi} chạy từ ngày duyệt` : `${moi} chạy từ ngày duyệt · ${goc} bỏ (Đổi PA)`,
+          mo: yc.hoc_vien_id && x ? duongHoSoHocVien(yc.hoc_vien_id, { caseId: x.case_id }) : x ? undefined : '',
+        };
+      }
       const moTa = yc.ly_do || (x ? INTERVENTION_KIND_LABEL[x.kind as InterventionKind] ?? 'PA học thuật' : 'PA học thuật');
       return {
         tieuDe: `Đề xuất PA${x?.topic ? ` · ${caseTopicLabel(x.topic)}` : ''}`,

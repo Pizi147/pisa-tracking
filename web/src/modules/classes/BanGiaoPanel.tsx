@@ -223,7 +223,6 @@ function MasterDetail({ dto, lenhId, onClose, onDone, reload }: Chung) {
             {em.xacNhan && (
               <p className="m-0 text-xs text-slate-400">
                 Xác nhận bởi {em.xacNhan.boi ?? 'GVCN'}{em.xacNhan.thay ? ' (Quản lý xác nhận thay)' : ''} · {ngay(em.xacNhan.luc, homNay)}
-                {!em.suaDuoc && (ghi || dto.nguoiXem.monGhi.length > 0) && ' · đã qua ngày chuyển lớp, chỉ Quản lý sửa'}
               </p>
             )}
             {!ghi && !em.xacNhan && dto.nguoiXem.xemTuNguon && <p className="m-0 text-xs text-slate-400">Chỉ GVCN lớp cũ xác nhận. Quản lý xác nhận thay khi lớp chưa có GVCN hoặc quá hạn 3 ngày.</p>}
@@ -281,7 +280,7 @@ function BangGvbm({ dto, mon, lenhId, onClose, onDone, reload }: Chung & { mon: 
         </div>
         {dto.ds.map((e) => {
           const cu = e.mon.find((x) => x.ma === mon)?.noiDung ?? '';
-          const khoa = !!e.xacNhan && !e.suaDuoc;   // OV-7a: đã xác nhận vẫn sửa được tới ngày chuyển lớp
+          const khoa = !!e.xacNhan && !e.suaDuoc;   // OV-13h: đã xác nhận vẫn sửa được, cả sau ngày chuyển lớp (khoá chỉ khi lệnh huỷ / không quyền)
           return (
             <div key={e.lenhId} role="row" className="grid gap-x-3 gap-y-1 px-3 py-2.5 text-sm sm:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)_minmax(0,2fr)]">
               <span role="cell" className="min-w-0 truncate text-slate-100" title={e.ten}>{e.ten}
@@ -294,7 +293,6 @@ function BangGvbm({ dto, mon, lenhId, onClose, onDone, reload }: Chung & { mon: 
                   onBlur={() => void ghi(e)} />
                 {loi[e.lenhId] && <span role="alert" className="mt-0.5 block text-xs text-late">{loi[e.lenhId]}</span>}
                 {!loi[e.lenhId] && luu[e.lenhId] && <span className="mt-0.5 block text-xs text-ok">Đã lưu</span>}
-                {khoa && <span className="mt-0.5 block text-xs text-slate-500">Đã qua ngày chuyển lớp — chỉ Quản lý sửa</span>}
                 {!khoa && oMon(e)?.lamLai && !luu[e.lenhId] && (
                   <span className="mt-1 flex flex-wrap items-center gap-2 text-xs">
                     <Nhan tone="soon">Cần làm lại</Nhan><span className="text-slate-400">Quản lý đổi lộ trình — sửa hoặc giữ câu cũ</span>

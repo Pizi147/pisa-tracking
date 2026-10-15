@@ -99,7 +99,7 @@ export function viecTiepPhuongAn(p: PhuongAnTomTat): {
   if (p.choXacNhan) return { loai: 'cho-xac-nhan', text: t('Chờ xác nhận'), due: null, overdue: false };
   if (p.lanCuoi && dangChay(p)) return { loai: 'ghi-cuoi', text: t('Kết quả cuối'), due: p.actionDue, overdue: p.actionOverdue };
   if (dangChay(p)) return { loai: 'ghi-ket-qua', text: t('Kết quả'), due: p.actionDue, overdue: p.actionOverdue };
-  return { loai: 'da-xong', text: p.closedReason === 'superseded' ? t('Được thay thế') : t('Đã kết thúc'), due: p.completedOn, overdue: false };
+  return { loai: 'da-xong', text: p.closedReason === 'superseded' ? t('Được thay thế') : p.closedReason === 'doi_pa' ? t('Đã kết thúc · Đổi PA') : t('Đã kết thúc'), due: p.completedOn, overdue: false };
 }
 
 // ====================================================================== ô "Việc cần làm tiếp" (Q7)

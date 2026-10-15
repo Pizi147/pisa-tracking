@@ -6,7 +6,7 @@ import path from 'node:path';
 import fs from 'node:fs';
 import os from 'node:os';
 import { fileURLToPath } from 'node:url';
-import { boLichTuTao, chotSan } from './luotThu.ts';
+import { boLichTuTao, chotSan, duXacNhan } from './luotThu.ts';
 
 /*
  * Dọn rác thư mục tạm của các lần `npm run check` trước (tiền tố `z2-`, xem server/src/tests/banChinh.tests.ts):
@@ -1667,7 +1667,7 @@ check('Tạo lớp: mã phải bắt đầu bằng mã chi nhánh và không tr�
 // ==================================================================== 13
 
 console.log('\n13. Thao tác hàng loạt và việc theo thời điểm');
-check('Báo cáo tuần: mở hai ngày cuối tuần, bù đến hết thứ Tư tuần sau, rồi khoá hẳn', () => {
+check('Báo cáo tuần: mở hai ngày cuối tuần, hạn hết thứ Tư tuần sau, quá hạn vẫn nộp (nộp muộn — OV-13h)', () => {
   const cur = conn.prepare('SELECT * FROM report_periods WHERE week_start <= ? AND week_end >= ?')
     .get(demoToday(), demoToday()) as any;
   assert(!week.reportEditWindow(cur, cur.week_start).open, 'Đầu tuần vẫn mở cho nhập báo cáo');
@@ -1678,9 +1678,9 @@ check('Báo cáo tuần: mở hai ngày cuối tuần, bù đến hết thứ T�
   const wed = addDays(cur.week_end, 3);
   assert(week.reportEditWindow(cur, wed).open, `Thứ Tư tuần sau (${wed}) vẫn phải nhập bù được`);
   const thu = addDays(cur.week_end, 4);
-  const closed = week.reportEditWindow(cur, thu);
-  assert(!closed.open && closed.locked, `Từ thứ Năm (${thu}) phải khoá hẳn`);
-  assert(/Quản trị hệ thống/.test(closed.reason ?? ''), 'Phải nói rõ ai mở lại được');
+  assert(!week.reportEditWindow(cur, wed).late, 'Thứ Tư tuần sau chưa muộn');
+  const tre = week.reportEditWindow(cur, thu);
+  assert(tre.open && tre.late, `Từ thứ Năm (${thu}) vẫn mở, đánh dấu nộp muộn`);
 
   // Tuần tương lai vẫn không nhập được.
   const future = conn.prepare('SELECT * FROM report_periods WHERE week_start > ? ORDER BY week_start DESC LIMIT 1')
@@ -1694,28 +1694,17 @@ check('Báo cáo tuần: mở hai ngày cuối tuần, bù đến hết thứ T�
     );
   }
 });
-check('PR-Ra Q13 · Tuần đã khoá: LƯU NHÁP vẫn chạy được; NỘP thì chặn — chỉ Quản trị hệ thống mở lại mới nộp được', () => {
+check('PR-Ra Q13 / OV-13h · Tuần đã quá hạn: nháp và nộp đều được, lần nộp gắn "nộp muộn"', () => {
   const old = conn
     .prepare('SELECT * FROM report_periods WHERE week_end < ? ORDER BY week_end DESC LIMIT 1')
     .get(addDays(demoToday(), -7)) as any;
   assert(old, 'Dữ liệu mẫu thiếu một tuần đã qua hẳn');
   const unit = conn.prepare(`SELECT * FROM reporting_units WHERE kind='branch' LIMIT 1`).get() as any;
-
-  assert(week.reportEditWindow(old).locked, 'Tuần cũ phải đang khoá');
-  /* Q13: nháp được cho MỌI tuần đã bắt đầu, kể cả khi cửa sổ đóng hẳn — chỉ NỘP mới bị chặn. */
+  assert(week.reportEditWindow(old).late, 'Tuần cũ phải là quá hạn');
   const draft = meeting.saveUnitReport(P.admin, unit.id, old.id, 'teachers', { status: 'ok' }) as any;
-  assert(draft.submitted_at === null, 'Lưu nháp ở tuần đã khoá không được tự thành đã nộp');
-  assertThrows(() => meeting.saveUnitReport(P.admin, unit.id, old.id, 'teachers', { status: 'ok', nop: true }),
-    /quá hạn|Quản trị hệ thống/, 'Nộp báo cáo tuần đã khoá');
-
-  week.setPeriodUnlocked(old.id, true, P.admin.userId);
-  const opened = week.reportEditWindow(old);
-  assert(opened.open && opened.unlocked, 'Mở lại rồi mà vẫn không nộp được');
-  const submitted = meeting.saveUnitReport(P.admin, unit.id, old.id, 'teachers', { status: 'ok', nop: true }) as any;   // giờ phải nộp được
-  assert(submitted.submitted_at, 'Quản trị hệ thống mở lại rồi mà nộp vẫn không ghi submitted_at');
-
-  week.setPeriodUnlocked(old.id, false, P.admin.userId);
-  assert(!week.reportEditWindow(old).open, 'Khoá lại rồi mà vẫn ghi được');
+  assert(draft.submitted_at === null, 'Lưu nháp không được tự thành đã nộp');
+  const submitted = meeting.saveUnitReport(P.admin, unit.id, old.id, 'teachers', { status: 'ok', nop: true }) as any;
+  assert(submitted.submitted_at, 'Quá hạn vẫn phải nộp được');
 });
 check('Ô chọn tuần là cửa sổ trượt, không phải toàn bộ lịch sử', () => {
   const now = week.periodWindow(null);
@@ -3727,7 +3716,7 @@ check('Case đã đóng mà MT sau trượt lại → MỞ CASE MỚI nối vào
       if (!conn.prepare("SELECT 1 FROM case_issues WHERE case_id = ? AND role = 'primary'").get(c.id)) {
         sosAutoSvc.xacNhanCase(mgr, c.id, { primaryCode: domain.issuesForTopic(c.topic ?? 'reading', null)[0].code, urgency: 'attention', moTa: 'Em đọc chậm, hết giờ ở passage 3.' });
       }
-      sosAutoSvc.xacNhanPaQuyChe(mgr, iv.id, { description: 'Tutor kèm Reading hai buổi mỗi tuần, cô Hà chữa bài.' });
+      sosAutoSvc.xacNhanPaQuyChe(mgr, iv.id, duXacNhan(conn, iv.id, { description: 'Tutor kèm Reading hai buổi mỗi tuần, cô Hà chữa bài.' }));
     }
     /* PR-S3F #8 (T22): PA quy chế không khép sớm — phép kiểm này chỉ cần "PA đã xong" để chốt Case (PR-SO: `completeIntervention` đã xoá). */
     conn.prepare(`UPDATE case_interventions SET status = 'completed', completed_date = ?, updated_at = ? WHERE id = ?`).run(demoToday(), new Date().toISOString(), iv.id);
@@ -9370,6 +9359,9 @@ await runPrOv12eTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P,
 // ==================================================================== HOTFIX 15/10 (nhận xét sau hoàn tất qua HTTP · Sửa Case MT không Mô tả)
 const { runPrHfTests } = await import('./prHf.tests.ts');
 await runPrHfTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== OV-13b (Đề xuất PA khác · Xác nhận PA Nội dung + Bắt đầu · ghi nhanh · Hoàn tác)
+const { runPrOv13bTests } = await import('./prOv13b.tests.ts');
+await runPrOv13bTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== HD-a (Hướng dẫn trên web: mục theo màn · Chỉ cho tôi trỏ data-hd có thật · nhớ dải Mới dùng)
 const { runPrHdTests } = await import('./prHd.tests.ts');
 await runPrHdTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
@@ -9382,6 +9374,18 @@ await runPrOv13iTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P,
 // ==================================================================== OV-13j (Lịch sử sửa thông tin học viên: đường ghi có audit theo trường · API · quyền · phân trang)
 const { runPrOv13jTests } = await import('./prOv13j.tests.ts');
 await runPrOv13jTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== OV-13d (Ý thức nhiều em cùng lúc: lô xử lý · Ghi nhận · Xác nhận cấp bậc có bậc 0)
+const { runPrOv13dTests } = await import('./prOv13d.tests.ts');
+await runPrOv13dTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== OV-13h (gỡ chặn cứng người đúng nhiệm vụ — qua HTTP; chạy cuối: không bọc giao dịch)
+const { runPrOv13hTests } = await import('./prOv13h.tests.ts');
+await runPrOv13hTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== OV-13c (gom Công việc theo tuần + lớp + mức SOS · Xác nhận PA cùng lúc · Nhập điểm theo tuần thi)
+const { runPrOv13cTests } = await import('./prOv13c.tests.ts');
+await runPrOv13cTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== OV-13g (Speaking chấm chéo trong Công việc của GV Speaking — một dòng gộp, không quá hạn)
+const { runPrOv13gTests } = await import('./prOv13g.tests.ts');
+await runPrOv13gTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`

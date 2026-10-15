@@ -2,22 +2,22 @@ import { phamViXemViec } from './xemViec.ts';
 import { db, theoLo } from '../db.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import {
-  ATTEMPT_KIND_SHORT, CHAM_CHEO, chuViecChotLoTrinh, daiDienNhomBoTro, laChamCheo,
+  ATTEMPT_KIND_SHORT, CHAM_CHEO, VIEC_CHAM_CHEO, chuViecChotLoTrinh, daiDienNhomBoTro, khoiCham, laChamCheo, laViecChamCheo, mondayOfDate,
   INTERVENTION_KIND_LABEL, PERMISSIONS,
   SOS_LABEL, URGENCY_LABEL, URGENCY_TONE, caseHeadline, caseTopicLabel, cycleDeadline,
   duongCaseRieng, duongHoSoHocVien, duongLichTest, nhanDotNgan, hanThemPa,
-  khungCua, laLanGhiCuoi, tenMon, tenNhomMon, REGULAR_SKILLS, nhanLoaiXuLy, soSanhLop,
-  type Khung, type AttemptKind, type InterventionKind, nhanBaiThuong, chuTyLeXetLai, gopViecTheoLop, type ConGop } from '../../../shared/domain/index.ts';
+  khungCua, laLanGhiCuoi, ghiNhanhDuoc, tenMon, tenNhomMon, REGULAR_SKILLS, nhanLoaiXuLy, soSanhLop,
+  type Khung, type AttemptKind, type InterventionKind, nhanBaiThuong, chuTyLeXetLai, gopViecTheoLop, tuanLich, type ConGop } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addDays, forbidden } from '../util.ts';
-import { COT_PRINCIPAL, activeAt, bangLop, can, isCoreTeacherOf, loadPrincipal, napTruocPhamVi, principalTuDong, scopeFor, teachesClass, type Principal } from '../permissions.ts';
+import { COT_PRINCIPAL, activeAt, bangLop, can, isCoreTeacherOf, loadPrincipal, lopFtChoGvSpeaking, napTruocPhamVi, principalTuDong, scopeFor, teachesClass, type Principal } from '../permissions.ts';
 import { phamViHoSoGv } from '../giaoVien/phamVi.ts';
 import { allProgrammes } from '../normal/regular.ts';
 import { attemptHref, listAttempts } from '../fasttrack/attempts.ts';
 import { viecBanGiao } from '../classes/banGiao.ts';
 import { lopChoChotLoTrinh } from '../classes/lenhChuyen.ts';
 import { canSeeBoard, myMgmtTasks } from './mgmttasks.ts';
-import { CO_THE_KHONG_THEO_DOI, LA_CASE_SOS, NOT_UNCONFIRMED_PRESET, UNCONFIRMED_PRESET, sosCaseStateMany } from '../cases/sosState.ts';
+import { CHO_DOI_PA, CO_THE_KHONG_THEO_DOI, LA_CASE_SOS, NOT_UNCONFIRMED_PRESET, UNCONFIRMED_PRESET, sosCaseStateMany } from '../cases/sosState.ts';
 import { quyenBoTro } from '../cases/boTro.ts';
 import { boKetQuaChoMiniTest, emXetLaiLoTrinh, nguoiGiuMiniTest, tyLeTongLo } from '../normal/cuoiKhoa.ts';
 import { dongPhoiHopLop, myCoordinationLines } from '../yThuc/phoiHop.ts';
@@ -112,6 +112,8 @@ export type WorkItem = {
   con?: ConGop<WorkItem>[];
   /** OV-5a (panel Công việc): PA của việc — Kết quả PA, Xác nhận PA, Ghi Mini Test mở đúng PA trong Ngăn Case. */
   paId?: number | null;
+  /** OV-13b: Kết quả PA ghi nhanh được ngay dưới dòng (`ghiNhanhDuoc`). */
+  ghiNhanh?: boolean;
   /** OV-5a: Nhập điểm mở panel một lớp · một lượt (`mt:2`, `thuong:progress`) · kỹ năng đầu tiên của dòng. */
   luot?: string;
   kn?: string;
@@ -119,6 +121,12 @@ export type WorkItem = {
   soBai?: number;
   /** OV-11c (CV-1): id các em của việc cả lớp (`studentId` null) — dòng phạm vi đếm em KHÁC NHAU, không cộng dồn `count`. */
   emIds?: number[];
+  /** OV-13c (Q4): thứ Hai tuần thi của lượt (Case SOS FT · Nhập điểm) · mức SOS 1/2/3 của Case — khoá dòng gộp (`gopViec.ts`). */
+  tuanThi?: string | null; sos?: number | null;
+  /** OV-13c: Nhập điểm — tuần thi (lưới Lịch Test `LuoiNhung`) + loại bài. */
+  periodId?: number | null; kind?: string | null;
+  /** OV-13c: Xác nhận PA — loại PA, nội dung máy gán, người dạy đã có (người chung không đè). */
+  pa?: { kind: string; moTa: string | null; nguoiId: number | null; nguoi: string | null; soBuoi: number | null };
 };
 
 /**
@@ -355,8 +363,14 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
    * TD4: Công việc chỉ đọc lượt CÓ THỂ còn ô cần chấm (`chiConO`) + lượt chưa xếp tuần (Chốt tuần MT) — trước đọc mọi lượt trong phạm vi.
    * "Tất cả" đọc MỘT lần ở phạm vi quản lý: `myPendingDetail` (việc của mình) không phụ thuộc `scope`, `pendingDetail` (việc GV khác) theo nó.
    */
+  /*
+   * OV-13g (Q7): GV Speaking chấm S Mock chéo lớp FT cùng chi nhánh (`lopFtChoGvSpeaking`) — đọc các lớp đó trong CÙNG lần `listAttempts`
+   * (`phamViCham`, như Lịch Test), không thêm lô. `managed` để `pendingDetail` có ô S Mock (không là việc của ai — T18).
+   */
+  const lopCheo = new Set<number>(!tatCa && co('score') ? lopFtChoGvSpeaking(p, today) : []);
   const attempts = !co('score', 'missing_data') ? [] : listAttempts(p, {
-    branchId: f.branchId ?? undefined, chiDangHoc: true, chiConO: true, kemChuaTuan: true, ...(tatCa && co('score') ? { scope: 'managed' as const } : {}),
+    branchId: f.branchId ?? undefined, chiDangHoc: true, chiConO: true, kemChuaTuan: true,
+    ...((tatCa && co('score')) || lopCheo.size ? { scope: 'managed' as const } : {}), ...(lopCheo.size ? { phamViCham: true } : {}),
   }).rows.filter((a: any) => a.status !== 'cancelled');
   /*
    * OV-11c (CV-8, Q6): "Của GV" có cả việc của GVCN (Phối hợp SOS, Điền Target, Nhập điểm MT cũ) — như "Của một GV" (`viecCuaNguoi`). GVCN đang hiệu lực
@@ -395,11 +409,13 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     students: Map<number, string>; due: string | null; href: string; attemptId: number; ownerId: number | null;
     /** PR-S6F-a Q6: có ô quá hạn theo cờ ô (`quaHanNhapDiem`) — không so hạn trơn. */
     quaHan: boolean;
+    /** OV-13c: tuần thi của môn (lưới Lịch Test). */
+    periodId: number | null; weekStart: string | null;
   };
   type BaiChuaCham = {
     classId: number | null; classCode: string | null; attemptNo: number | null; kind: string | null;
     attemptId: number; studentId: number; studentName: string;
-    skill: string; deadline: string | null; ownerId: number | null; overdue: boolean; periodId: number | null;
+    skill: string; deadline: string | null; ownerId: number | null; overdue: boolean; periodId: number | null; weekStart: string | null;
   };
   /*
    * PR-Ra Q1: tách phần gom thành một hàm dùng chung cho "việc của mình" (ownerId luôn là
@@ -426,7 +442,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
           /* PR-LT3: không kèm tuần — Lịch Test ở tuần hiện tại có đủ ba khối (bài tuần trước ở khối 2, quá hạn ở khối 1); kèm tuần thi
              thì màn mở chế độ "tuần khác" (không có khối 2). */
           href: d.classId ? duongLichTest({ classId: d.classId, kn: d.skill }) : attemptHref({ id: d.attemptId, kind: d.kind, classId: d.classId }),
-          attemptId: d.attemptId, ownerId: d.ownerId, quaHan: false,
+          attemptId: d.attemptId, ownerId: d.ownerId, quaHan: false, periodId: d.periodId, weekStart: d.weekStart,
         };
         buckets.set(k, b);
       }
@@ -435,23 +451,25 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       if (d.deadline && (!b.due || d.deadline < b.due)) b.due = d.deadline;
     }
     /*
-     * MỘT LỚP · MỘT BÀI · NHIỀU KỸ NĂNG · CÙNG NGƯỜI PHỤ TRÁCH vẫn nên là MỘT dòng nếu cùng
-     * hạn — người nhập mở đúng một bảng điểm và gõ cả hai cột. Khác người phụ trách thì KHÔNG
-     * gộp, dù cùng lớp cùng hạn — mỗi dòng chỉ một nút Nhắc cho đúng một người.
+     * MỘT LỚP · MỘT TUẦN THI · CÙNG NGƯỜI PHỤ TRÁCH = MỘT dòng (OV-13c, Q4: gom theo tuần thi như lưới Lịch Test, không theo lượt) —
+     * người nhập mở lưới điểm của tuần đó và gõ mọi cột, mọi lượt. Khác người phụ trách thì KHÔNG gộp. Môn chưa có tuần giữ khoá lượt + hạn cũ.
      */
     const byTest = new Map<string, ScoreBucket[]>();
     for (const b of buckets.values()) {
-      const k = `${b.classId ?? 0}|${b.kind ?? 'mock'}|${b.attemptNo ?? 0}|${b.due ?? ''}${b.quaHan ? '|q' : ''}|u${b.ownerId ?? 0}${laChamCheo(b.kind, b.skill) ? '|cc' : ''}`;
+      const lich = b.periodId ? `p${b.periodId}` : `${b.attemptNo ?? 0}|${b.due ?? ''}${b.quaHan ? '|q' : ''}`;
+      const k = `${b.classId ?? 0}|${b.kind ?? 'mock'}|${lich}|u${b.ownerId ?? 0}${laChamCheo(b.kind, b.skill) ? '|cc' : ''}`;
       (byTest.get(k) ?? byTest.set(k, []).get(k)!).push(b);
     }
     const out: WorkItem[] = [];
     for (const [k, list] of byTest) {
       const first = list[0];
-      const skills = list.map((b) => b.skillLabel).join(', ');
+      const skills = [...new Set(list.map((b) => b.skillLabel))].join(', ');
+      const due = list.map((b) => b.due).filter((x): x is string => !!x).sort()[0] ?? null;
+      const luotCua = [...new Set(list.map((b) => b.testLabel))].sort().join(', ');
       const students = new Map<number, string>();
       for (const b of list) for (const [sid, name] of b.students) students.set(sid, name);
       /* PR-S6F-a Q6: nhập điểm quá hạn ⇔ có ô `overdue` (tuần thi đã hết và qua hạn) — cùng cờ với Nợ điểm, Lịch Test, bảng GV. */
-      const u: WorkUrgency = list.some((b) => b.quaHan) ? 'overdue' : first.due === today ? 'today' : 'normal';
+      const u: WorkUrgency = list.some((b) => b.quaHan) ? 'overdue' : due === today ? 'today' : 'normal';
       /*
        * ĐÚNG MỘT EM thì gọi tên em, không nói "Lớp X" — người đọc đi tìm một cái tên, và
        * "cả lớp" cho một học viên là một câu nói vòng vo.
@@ -469,7 +487,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
         studentName: where, emIds: only ? undefined : [...students.keys()],
         classId: first.classId, classCode: first.classCode,
         attemptId: first.attemptId, attemptNo: first.attemptNo, caseId: null, level: null,
-        contextLabel: first.testLabel,
+        contextLabel: first.weekStart ? `${luotCua} ${tuanLich(first.weekStart)}` : luotCua,
         count: students.size,
         reason: skills,
         tieuDe: `Nhập điểm ${skills}`, phu: skills,
@@ -479,7 +497,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
         luot: first.kind === 'checkpoint' ? `cp:${first.attemptNo}` : first.kind && first.kind !== 'mock' ? `thuong:${first.kind}` : `mt:${first.attemptNo}`, kn: first.skill,
         soBai: list.reduce((n, b) => n + b.students.size, 0),   // OV-5a: "bài cần chấm" = kỹ năng × em
         ownerId: first.ownerId, owner: null, mine: first.ownerId === p.userId,
-        due: first.due,
+        due, tuanThi: first.weekStart, periodId: first.periodId, kind: first.kind ?? 'mock',
         statusLabel: laChamCheo(first.kind, first.skill) ? CHAM_CHEO : first.ownerId === null ? 'Chưa phân công giáo viên' : 'Chưa nhập điểm',
       });
     }
@@ -492,11 +510,38 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       minhDongs.push({
         classId: a.classId ?? null, classCode: a.classCode ?? null, attemptNo: a.attemptNo ?? null,
         kind: a.kind ?? null, attemptId: a.id, studentId: a.studentId, studentName: a.studentName,
-        skill: c.skill, deadline: c.deadline, ownerId: p.userId, overdue: !!c.overdue, periodId: c.periodId ?? null,
+        skill: c.skill, deadline: c.deadline, ownerId: p.userId, overdue: !!c.overdue, periodId: c.periodId ?? null, weekStart: c.weekStart ?? null,
       });
     }
   }
   items.push(...gomBaiChuaCham(minhDongs));
+
+  /*
+   * OV-13g (Q7, mockup OV-13 §3b): "Speaking chấm chéo" — bài S Mock tuần trước + mọi bài còn tồn (khối 1 + 2 của `khoiCham`, như Lịch Test) ở lớp FT
+   * cùng chi nhánh. Có số, KHÔNG hạn / quá hạn (T18: không là nợ của ai). Người giữ dòng = người xem (để gom theo tuần, khoá `|cc` riêng); mọi
+   * bài vào tuần trước (tuần chấm) để thành MỘT dòng — bài cũ hơn ghi "còn tồn từ {tuần}". Không đổi luật ai chấm.
+   */
+  if (lopCheo.size) {
+    const tuanHomNay = mondayOfDate(today), tuanTruoc = addDays(tuanHomNay, -7);
+    const ccDongs: BaiChuaCham[] = [];
+    for (const a of attempts as any[]) {
+      if (!lopCheo.has(a.classId)) continue;
+      for (const c of (a.pendingDetail ?? []) as any[]) {
+        if (!laChamCheo(a.kind, c.skill) || !c.weekStart || khoiCham({ tuanThi: c.weekStart, tuanHomNay, quaHan: !!c.overdue }) === 'lich') continue;
+        ccDongs.push({
+          classId: a.classId, classCode: a.classCode ?? null, attemptNo: a.attemptNo ?? null,
+          kind: a.kind ?? null, attemptId: a.id, studentId: a.studentId, studentName: a.studentName,
+          /* `periodId` null: gom theo lớp × LƯỢT (không theo tuần) — mỗi con mở đúng một panel nhập điểm một lượt. */
+          skill: c.skill, deadline: null, ownerId: p.userId, overdue: false, periodId: null, weekStart: c.weekStart,
+        });
+      }
+    }
+    for (const it of gomBaiChuaCham(ccDongs)) {
+      const cu = it.tuanThi && it.tuanThi < tuanTruoc ? it.tuanThi : null;
+      const luot = nhanDot(it.kind, it.attemptNo);
+      items.push({ ...it, tieuDe: `${VIEC_CHAM_CHEO} · ${luot}`, phu: luot, contextLabel: cu ? `còn tồn từ ${tuanLich(cu)}` : null, tuanThi: tuanTruoc });
+    }
+  }
 
   /* PR-Ra Q1: "Tất cả trong phạm vi" cộng thêm bài chưa chấm của GIÁO VIÊN KHÁC trong phạm vi. */
   if (tatCa && co('score')) {
@@ -512,7 +557,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
         khacDongs.push({
           classId: a.classId ?? null, classCode: a.classCode ?? null, attemptNo: a.attemptNo ?? null,
           kind: a.kind ?? null, attemptId: a.id, studentId: a.studentId, studentName: a.studentName,
-          skill: c.skill, deadline: c.deadline, ownerId, overdue: !!c.overdue, periodId: c.periodId ?? null,
+          skill: c.skill, deadline: c.deadline, ownerId, overdue: !!c.overdue, periodId: c.periodId ?? null, weekStart: c.weekStart ?? null,
         });
       }
     }
@@ -537,7 +582,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   const reviewedCases = new Set<number>();
   const ghiKetQua = !co('ghi_ket_qua_pa', 'no_plan') ? [] : conn   // `reviewedCases` của 2b loại Case khỏi `no_plan`
     .prepare(
-      `SELECT iv.id, iv.case_id, iv.kind, iv.description, iv.action_due, iv.followup_due, iv.preset, iv.nhom_bo_tro,
+      `SELECT iv.id, iv.case_id, iv.kind, iv.description, iv.action_due, iv.followup_due, iv.preset, iv.nhom_bo_tro, iv.so_buoi,
               iv.performer_user_id, iv.performer_name, sc.owner_user_id,
               sc.topic, sc.sos_level, sc.urgency, sc.summary, sc.origin_kind, sc.attempt_id,
               COALESCE(sc.student_id, a.student_id) AS eff_student_id,
@@ -610,6 +655,8 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       ownerId: iv.owner_id ?? null,
       owner: iv.owner_id ? null : ((iv.performer_name ?? '').trim() || null),
       mine, due: iv.action_due, statusLabel: 'Chờ kết quả',
+      /* OV-13b: Công việc mở ghi nhanh ngay dưới dòng (cùng luật với Case / panel một em). */
+      ghiNhanh: ghiNhanhDuoc({ kind: iv.kind, soBuoi: iv.so_buoi ?? null, lanCuoi: tuanCuoi }),
     });
   }
 
@@ -793,12 +840,13 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
               COALESCE(a.class_id, cur.class_id) AS eff_class_id, cur.class_id AS lop_dang_hoc,
               COALESCE(ac.branch_id, cc.branch_id) AS eff_branch_id,
               COALESCE(ac.code, cc.code) AS class_code,
-              s.full_name, a.attempt_no, a.kind AS attempt_kind, sc.han_xac_nhan AS due`;
+              s.full_name, a.attempt_no, a.kind AS attempt_kind, sc.han_xac_nhan AS due, rp.week_start AS tuan_thi`;
   const noiCase = `LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
          LEFT JOIN students s ON s.id = COALESCE(sc.student_id, a.student_id)
          LEFT JOIN enrollments cur ON cur.student_id = s.id AND cur.status = 'active'
          LEFT JOIN classes ac ON ac.id = a.class_id
-         LEFT JOIN classes cc ON cc.id = cur.class_id`;
+         LEFT JOIN classes cc ON cc.id = cur.class_id
+         LEFT JOIN report_periods rp ON rp.id = a.planned_period_id`;
   const causeCandidates = !co('cause', 'ghi_nhan_xet') ? [] : conn
     .prepare(
       `SELECT ${cotCase} FROM sos_cases sc ${noiCase}
@@ -811,8 +859,10 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   const stCho = sosCaseStateMany(causeCandidates.map((c) => c.id as number));
   const xacNhanPa = !co('xac_nhan_pa') ? [] : conn
     .prepare(
-      `SELECT ${cotCase}, iv.id AS iv_id FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id ${noiCase}
-        WHERE ${UNCONFIRMED_PRESET('iv')} AND iv.status = 'planned' AND iv.kind != 'bo_tro' AND sc.status != 'done' AND ${HV_DANG_HOC_SQL('s')}   /* PA bổ trợ chờ kế hoạch, không chờ "Xác nhận PA" (M8) */
+      `SELECT ${cotCase}, iv.id AS iv_id, iv.kind AS iv_kind, iv.description AS iv_mo_ta, iv.performer_user_id AS iv_nguoi_id, iv.so_buoi AS iv_so_buoi,
+              COALESCE(pu.full_name, iv.performer_name) AS iv_nguoi
+         FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id ${noiCase} LEFT JOIN users pu ON pu.id = iv.performer_user_id
+        WHERE ${UNCONFIRMED_PRESET('iv')} AND iv.status = 'planned' AND iv.kind != 'bo_tro' AND NOT ${CHO_DOI_PA('iv')} AND sc.status != 'done' AND ${HV_DANG_HOC_SQL('s')}   /* PA bổ trợ chờ kế hoạch, không chờ "Xác nhận PA" (M8) */
           AND EXISTS (SELECT 1 FROM case_issues ci WHERE ci.case_id = sc.id AND ci.role = 'primary')
           AND NOT ${CO_THE_KHONG_THEO_DOI('sc')}   /* OV-12c: Không cần theo dõi mở ở bước này — thẻ đang chờ thì việc ở Quản lý */`,
     )
@@ -867,6 +917,9 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       ownerId: chuLamDuoc ? chu_ : null, owner: null, mine,
       due: c.due ?? null, statusLabel: chu.tt,
       caseSos: true,   // LA_CASE_SOS / PA quy chế — luôn là Case sinh từ SOS
+      /* OV-13c (Q4): dòng gộp theo tuần thi + mức SOS; Xác nhận PA cùng lúc cần loại PA, nội dung máy gán, người dạy đã có. */
+      tuanThi: c.tuan_thi ?? null, sos: c.sos_level ?? null,
+      ...(loai === 'xac_nhan_pa' ? { pa: { kind: c.iv_kind, moTa: c.iv_mo_ta ?? null, nguoiId: c.iv_nguoi_id ?? null, nguoi: c.iv_nguoi ?? null, soBuoi: c.iv_so_buoi ?? null } } : {}),
       /* OV-12c: Ghi nhận xét mở hộp chấm tại chỗ — bảng điểm một lớp · một lượt · đúng bài của Case (cùng panel Nhập điểm). */
       ...(loai === 'ghi_nhan_xet' ? { luot: `mt:${c.attempt_no}`, kn: c.topic ?? undefined } : {}),
     });
@@ -1161,8 +1214,8 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
         classId: lopId, classCode: ds[0].code, attemptId: null, attemptNo: null, caseId: null, level: null, contextLabel: 'Ý thức', count: ds.length, emIds: ds.map((e) => e.id as number),
         reason: `${ds.length} em mới vào web chưa xác nhận cấp bậc vi phạm đã có trước đó`,
         tieuDe: `Xác nhận cấp bậc vi phạm HV cũ · ${ds[0].code} · ${ds.length} em`, actionLabel: 'Xác nhận cấp bậc',
-        /* Đường đã có: tab Ý thức của lớp, chọn sẵn em đầu tiên và mở panel Khai bậc (`mo=khai`). */
-        href: `/hoc-vien/lop/${lopId}?tab=y-thuc&hv=${ds[0].id}&mo=khai`,
+        /* Một em: tab Ý thức của lớp, chọn sẵn em, mở panel Khai bậc (`mo=khai`). OV-13d: nhiều em → panel Xác nhận cấp bậc theo lô (`mo=cap-bac`). */
+        href: ds.length === 1 ? `/hoc-vien/lop/${lopId}?tab=y-thuc&hv=${ds[0].id}&mo=khai` : `/hoc-vien/lop/${lopId}?tab=y-thuc&mo=cap-bac&em=${ds.map((e) => e.id).join(',')}`,
         ownerId: p.userId, owner: null, mine: true, due: null, statusLabel: 'Chưa xác nhận cấp bậc',
       });
     }
@@ -1376,7 +1429,9 @@ export function viecCuaNguoi(p: Principal, nguoi: number, branchId?: number | nu
    * OV-11c (PT-7): việc Vận hành giao cho GV (không gắn lớp) được tính — người xem đã qua `phamViHoSoGv` (GV thuộc chi nhánh mình); hồ sơ GV và
    * "Của một GV" cùng số. Dòng khác: theo phạm vi lớp / em của người xem.
    */
+  /* OV-13g: Speaking chấm chéo không là việc của GV (T18) — không vào "Của một GV" / hồ sơ GV. */
   const items = w.items
+    .filter((it: any) => !laViecChamCheo(it))
     .filter((it: any) => (it.group === 'mgmt' && it.classId === null && it.studentId === null)
       || ((it.classId !== null || it.studentId !== null) && can(p, PERMISSIONS.ATTEMPT_VIEW, { classId: it.classId, studentId: it.studentId })))
     .map((it: any) => ({

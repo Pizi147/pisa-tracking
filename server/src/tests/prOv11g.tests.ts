@@ -113,17 +113,21 @@ export async function runPrOv11gTests(t: YThucTestKit) {
     assert(!trangQl().hocVien.some((x: any) => x.id === em), 'đã lưu trữ vẫn hiện');
   }));
 
-  check('OV11g-3 · Q4: lớp đã kết thúc — GV ghi điểm 403 (lớp thường + FT, kể cả nhận xét), QL 200 + nhật ký; bảng điểm GV chỉ đọc, QL sửa được', () => thu(() => {
+  /* OV-13h (chủ SP 15/10): GV đúng môn vẫn NHẬP ô chưa có điểm — chỉ ô đã có điểm khoá với GV (qua HTTP: prOv13h). */
+  check('OV11g-3 · Q4: lớp đã kết thúc — GV sửa ô đã có điểm 403 (lớp thường + FT; nhận xét ghi được — rà #410), QL 200 + nhật ký; bảng điểm GV chỉ mở ô trống, QL sửa được', () => thu(() => {
     const a = one(`SELECT a.id, a.class_id FROM assessment_attempts a WHERE a.class_id = ? AND a.kind IN ('progress', 'final') AND a.status != 'cancelled'
         AND EXISTS (SELECT 1 FROM attempt_skills k JOIN report_periods rp ON rp.id = k.planned_period_id WHERE k.attempt_id = a.id AND k.skill = 'listening' AND rp.week_start <= ?)
       ORDER BY a.id LIMIT 1`, FOU12, TODAY);
     assert(!!a, 'không có bài lớp thường để thử');
     const gv = one(`SELECT user_id FROM teacher_assignments WHERE class_id = ? AND skill = 'listening' AND status = 'active'`, FOU12).user_id;
     run(`UPDATE classes SET status = 'finished', finished_at = ? WHERE id = ?`, TODAY, FOU12);
+    run(`UPDATE assessment_scores SET raw_score = 18, raw_total = 40 WHERE attempt_id = ? AND skill = 'listening'`, a.id);   // ô đã có điểm
+    if (!one(`SELECT 1 x FROM assessment_scores WHERE attempt_id = ? AND skill = 'listening'`, a.id)) run(`INSERT INTO assessment_scores (attempt_id, skill, raw_score, raw_total) VALUES (?, 'listening', 18, 40)`, a.id);
     xoaNho();
     const pGv = loadPrincipal(gv);
     assert(loi(() => regular.saveRegularScore(pGv, a.id, 'listening', { score: 20, total: 40 }))?.status === 403, 'GV ghi điểm lớp kết thúc phải 403');
-    assert(loi(() => regular.saveRegularScore(pGv, a.id, 'listening', { nhanXet: 'x' }))?.status === 403, 'GV ghi nhận xét lớp kết thúc phải 403');
+    /* Rà #410 (OV-13h): nhận xét không phải điểm — GV đúng môn ghi được cả ở lớp đã kết thúc. */
+    regular.saveRegularScore(pGv, a.id, 'listening', { nhanXet: 'x' });
     const nk = () => one(`SELECT COUNT(*) n FROM audit_logs WHERE action = 'regular.score.override' AND actor_user_id = ?`, QL.userId).n;
     const truoc = nk();
     regular.saveRegularScore(QL, a.id, 'listening', { score: 21, total: 40, lyDo: 'Sửa sau kết thúc lớp' });
@@ -132,18 +136,22 @@ export async function runPrOv11gTests(t: YThucTestKit) {
     const bangGv = diemLuot.bangTheoLuot(pGv, FOU12, 'thuong:final');
     const bangQl = diemLuot.bangTheoLuot(QL, FOU12, 'thuong:final');
     const oSua = (b: any) => b.thuong.rows.some((r: any) => r.skillSchedule.some((k: any) => k.canEdit));
-    assert(!oSua(bangGv) && !bangGv.thuong.editableSkills.length, 'GV còn ô sửa được ở lớp kết thúc');
+    const oCoDiemSua = (b: any) => b.thuong.rows.some((r: any) => r.skillSchedule.some((k: any) => k.canEdit && k.progress === 'scored'));
+    assert(!oCoDiemSua(bangGv), 'GV còn sửa được ô đã có điểm ở lớp kết thúc');
     assert(oSua(bangQl), 'QL không còn ô sửa được');
     /* FT: cùng luật ở `saveScore`. */
     const m = one(`SELECT a.id FROM assessment_attempts a WHERE a.class_id = ? AND a.kind = 'mock' AND a.status != 'cancelled' ORDER BY a.attempt_no LIMIT 1`, FT101);
     const gvL = one(`SELECT user_id FROM teacher_assignments WHERE class_id = ? AND skill = 'listening' AND status = 'active'`, FT101).user_id;
     run(`UPDATE classes SET status = 'finished', finished_at = ? WHERE id = ?`, TODAY, FT101);
     xoaNho();
-    assert(loi(() => attempts.saveScore(loadPrincipal(gvL), m.id, 'listening', { rawScore: 30 }))?.status === 403, 'GV FT ghi điểm lớp kết thúc phải 403');
+    run(`UPDATE assessment_scores SET raw_score = 25, band = 6 WHERE attempt_id = ? AND skill = 'listening'`, m.id);
+    if (!one(`SELECT 1 x FROM assessment_scores WHERE attempt_id = ? AND skill = 'listening'`, m.id)) run(`INSERT INTO assessment_scores (attempt_id, skill, raw_score, band) VALUES (?, 'listening', 25, 6)`, m.id);
+    xoaNho();
+    assert(loi(() => attempts.saveScore(loadPrincipal(gvL), m.id, 'listening', { rawScore: 30 }))?.status === 403, 'GV FT sửa điểm lớp kết thúc phải 403');
   }));
 
-  check('OV11g-3b · rà #379: lớp đã kết thúc — Báo vắng / "-" bị chặn (GV 403, QL 400, cả FT lẫn lớp thường); có lý do → lưu, KHÔNG tự tạo Case / tín hiệu; sửa ô đã có điểm thiếu lý do 400', () => thu(() => {
-    /* (1)(3) FT: Báo vắng + "-" — GVCN 403, QL 400; không ghi gì. */
+  check('OV11g-3b · rà #379: lớp đã kết thúc — Báo vắng / "-" bị chặn (mọi vai 400 cùng câu — rà #410, cả FT lẫn lớp thường); có lý do → lưu, KHÔNG tự tạo Case / tín hiệu; sửa ô đã có điểm thiếu lý do 400', () => thu(() => {
+    /* (1)(3) FT: Báo vắng + "-" — GVCN và QL 400 cùng câu "không ghi vắng" (rà #410); không ghi gì. */
     const k = one(`SELECT a.id, k.skill FROM assessment_attempts a JOIN attempt_skills k ON k.attempt_id = a.id JOIN report_periods rp ON rp.id = k.planned_period_id
         WHERE a.class_id = ? AND a.kind = 'mock' AND a.status != 'cancelled' AND a.lich_su = 0 AND k.required = 1 AND k.sit_status = 'scheduled'
           AND k.skill IN ('listening', 'reading') AND rp.week_start <= ?
@@ -153,7 +161,7 @@ export async function runPrOv11gTests(t: YThucTestKit) {
     const gvcn = loadPrincipal(one(`SELECT user_id FROM teacher_assignments WHERE class_id = ? AND is_core = 1 AND status = 'active' ORDER BY id LIMIT 1`, FT101).user_id);
     run(`UPDATE classes SET status = 'finished', finished_at = ? WHERE id IN (?, ?)`, TODAY, FT101, FOU12);
     xoaNho();
-    assert(loi(() => absence.baoVang(gvcn, k.id, k.skill, 'ốm', TODAY))?.status === 403, 'GVCN Báo vắng lớp kết thúc phải 403');
+    assert(loi(() => absence.baoVang(gvcn, k.id, k.skill, 'ốm', TODAY))?.status === 400, 'GVCN Báo vắng lớp kết thúc phải 400 (không ghi vắng)');
     assert(loi(() => absence.baoVang(QL, k.id, k.skill, 'ốm', TODAY))?.status === 400, 'QL Báo vắng lớp kết thúc phải 400');
     assert(loi(() => attempts.saveScore(QL, k.id, k.skill, { noShow: true }, TODAY))?.status === 400, 'QL "-" FT lớp kết thúc phải 400');
     assert(!one('SELECT 1 FROM assessment_scores WHERE attempt_id = ? AND skill = ?', k.id, k.skill), 'đã ghi vắng dù bị chặn');

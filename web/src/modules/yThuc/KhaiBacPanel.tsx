@@ -7,13 +7,14 @@ import { useLoiForm } from '../../ui/loiForm.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { NutChon } from '../../ui/ui.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
-import { THANG, dsLoi, kindCuaBac, nhanLoaiXuLy } from '@shared/domain/index.ts';
+import { BAC_0_NHAN, THANG, dsLoi, kindCuaBac, nhanLoaiXuLy } from '@shared/domain/index.ts';
 import { DUONG_LAM_MOI_Y_THUC, type YThucHocVien } from './kieu.ts';
 import { t } from '@shared/i18n/index.ts';
 
 const GHI_CHU_MIN = 3;
-/** Khai tối đa bậc 6 (WL 2) — hết mạch chính; Report 7+ chỉ đi tiếp trên web. */
-const BAC_KHAI = THANG;
+/** Khai tối đa bậc 6 (WL 2) — hết mạch chính; Report 7+ chỉ đi tiếp trên web. OV-13d: bậc 0 "Chưa có xử lý vi phạm" đứng đầu (Sửa giữ được bậc 0). */
+const BAC_KHAI = [BAC_0_NHAN, ...THANG.map((k) => nhanLoaiXuLy(k))];
+const tenBac = (b: number) => BAC_KHAI[b] ?? '';
 
 /**
  * KHAI BẬC — "em đã bị xử lý trước khi dùng web" (H5, T27). Một lần cho mỗi chuỗi thang, chỉ khi chuỗi chưa có lần xử lý nào trên web.
@@ -25,7 +26,7 @@ export function KhaiBacPanel({ studentId, sua, onClose, onDone }: {
   const toast = useToast();
   const { homNay } = useNgayNghiepVu();
   const { data: d } = useApi<YThucHocVien>(studentId ? `/students/${studentId}/y-thuc` : null, [studentId]);
-  const [bac, setBac] = useState(0);
+  const [bac, setBac] = useState<number | null>(null);
   const [thang, setThang] = useState('');
   const [ghiChu, setGhiChu] = useState('');
   const lf = useLoiForm();
@@ -34,7 +35,7 @@ export function KhaiBacPanel({ studentId, sua, onClose, onDone }: {
   const taiCho = useContext(KhungTaiCho);
   const [daLuu, setDaLuu] = useState<string | null>(null);
   useEffect(() => {
-    setBac(sua && d?.khai ? d.khai.bac : 0); setThang(sua && d?.khai?.thang ? d.khai.thang : ''); setGhiChu(sua && d?.khai ? d.khai.ghiChu : ''); lf.datLai();
+    setBac(sua && d?.khai ? d.khai.bac : null); setThang(sua && d?.khai?.thang ? d.khai.thang : ''); setGhiChu(sua && d?.khai ? d.khai.ghiChu : ''); lf.datLai();
   }, [studentId, sua, d?.khai?.bac]);
 
   if (!studentId) return null;
@@ -50,10 +51,10 @@ export function KhaiBacPanel({ studentId, sua, onClose, onDone }: {
     );
   }
   const loi = dsLoi([{ khoa: 'bac', nhan: t('Bậc'), chon: true }, { khoa: 'ghi-chu', nhan: t('Ghi chú'), toiThieu: GHI_CHU_MIN }],
-    { bac: bac || '', 'ghi-chu': ghiChu });
+    { bac: bac === null ? '' : 'co', 'ghi-chu': ghiChu });
   const luu = async () => {
     lf.bam();
-    if (loi.length) return;
+    if (loi.length || bac === null) return;
     setBusy(true);
     try {
       const body = { bac, thang: thang || undefined, ghiChu: ghiChu.trim() };
@@ -61,7 +62,7 @@ export function KhaiBacPanel({ studentId, sua, onClose, onDone }: {
       else await api.post(`/students/${studentId}/y-thuc/khai-bac`, body);
       onDone?.();
       DUONG_LAM_MOI_Y_THUC.forEach((x) => invalidate(x));
-      const chu = t('Đã xác nhận cấp bậc {nhanLoaiXuLy} cho {ten}. Lần xử lý kế tiếp: {nhanLoaiXuLy2}.', { nhanLoaiXuLy: nhanLoaiXuLy(BAC_KHAI[bac - 1]), ten: d.ten, nhanLoaiXuLy2: nhanLoaiXuLy(kindCuaBac(bac + 1)) });
+      const chu = t('Đã xác nhận cấp bậc {nhanLoaiXuLy} cho {ten}. Lần xử lý kế tiếp: {nhanLoaiXuLy2}.', { nhanLoaiXuLy: tenBac(bac), ten: d.ten, nhanLoaiXuLy2: nhanLoaiXuLy(kindCuaBac(bac + 1)) });
       toast.push('ok', chu);
       if (taiCho) setDaLuu(chu); else onClose();
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
@@ -76,12 +77,12 @@ export function KhaiBacPanel({ studentId, sua, onClose, onDone }: {
       }}>
       <Khoi tieuDe={t('Bậc cao nhất đã xử lý trước khi dùng web')}>
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2" role="group" aria-label={t('Bậc đã xử lý')} {...lf.o(loi, 'bac')}>
-          {BAC_KHAI.map((k, i) => (
-            <NutChon key={k} chon={bac === i + 1} onClick={() => setBac(i + 1)}>{nhanLoaiXuLy(k)}</NutChon>
+          {BAC_KHAI.map((nhan, i) => (
+            <NutChon key={i} chon={bac === i} onClick={() => setBac(i)}>{nhan}</NutChon>
           ))}
         </div>
         {lf.loiCua(loi, 'bac') && <p className="m-0 text-xs text-late">{t('Chọn bậc cao nhất em đã bị xử lý')}</p>}
-        {bac > 0 && <p className="m-0 text-xs text-slate-500">{t('Lần xử lý kế tiếp của em: {nhanLoaiXuLy}.', { nhanLoaiXuLy: nhanLoaiXuLy(kindCuaBac(bac + 1)) })}</p>}
+        {bac !== null && <p className="m-0 text-xs text-slate-500">{t('Lần xử lý kế tiếp của em: {nhanLoaiXuLy}.', { nhanLoaiXuLy: nhanLoaiXuLy(kindCuaBac(bac + 1)) })}</p>}
       </Khoi>
       <Khoi tieuDe={t('Chi tiết')}>
         <Truong nhan={t('Tháng xử lý')} tuyChon>

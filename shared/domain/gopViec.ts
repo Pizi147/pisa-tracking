@@ -8,7 +8,11 @@
  * Giữ từng dòng: Case SOS Fast Track (Xác nhận PA · Thêm PA ở lớp FT — mỗi Case một quyết định riêng), việc không gắn lớp. Khác người
  * giữ việc thì không gộp: mỗi dòng một nút Nhắc cho đúng một người. Thẻ Chờ duyệt không phải dòng việc (hộp riêng).
  * OV-12c: bỏ gom Xác nhận nguyên nhân theo kỹ năng + lượt (OV-5a) — Case MT lấy nguyên nhân từ nhận xét (không còn việc đó).
+ * OV-13c (chủ SP 15/10, Q4): Case SOS FT — Xác nhận PA, Ghi nhận xét — gộp theo lớp + TUẦN THI + MỨC SOS (không cần cùng MT); Thêm PA vẫn từng
+ * dòng. Nhập điểm gộp theo TUẦN THI qua mọi lớp của cùng người giữ việc (lưới Lịch Test) — mỗi em con là một lớp của tuần đó.
  */
+import { tuanLich } from './hienThiNgay.ts';
+
 
 export type ViecGopDuoc = {
   key: string; group: string; urgency: 'overdue' | 'today' | 'normal'; due: string | null;
@@ -21,6 +25,8 @@ export type ViecGopDuoc = {
   caseSos?: boolean;
   /** Nhập điểm: số bài (kỹ năng × em) — OV-11c: dòng gộp Nhập điểm một đơn vị "bài". */
   soBai?: number;
+  /** OV-13c: thứ Hai tuần thi (Case SOS FT, Nhập điểm) · mức SOS 1/2/3 của Case. */
+  tuanThi?: string | null; sos?: number | null;
 };
 /** Một em (một việc) trong dòng gộp: `conTen` đậm, `conPhu` mờ — mockup phần 4 ("Lý Minh Châu" / "Reading · MT2"). */
 export type ConGop<T> = T & { conTen: string; conPhu: string };
@@ -28,15 +34,31 @@ export type DongGop<T> = T & { con: ConGop<T>[] };
 
 /** Case SOS Fast Track: mỗi Case giữ một dòng (§7 Q1) — chỉ Case sinh từ SOS; Case GV tự tạo gộp như việc khác (chủ sản phẩm 08/10). */
 /* OV-12c: Ghi nhận xét (Case MT cũ) như trước OV-5a — mỗi Case một dòng; Xác nhận Case lớp thường gộp theo lớp, mở từng em. */
-const GIU_TUNG_DONG_FT = new Set(['ghi_nhan_xet', 'xac_nhan_pa', 'no_plan']);
+const GIU_TUNG_DONG_FT = new Set(['no_plan']);
+/** OV-13c (Q4): Case SOS FT gộp theo lớp + tuần thi + mức SOS. */
+const GOP_TUAN_SOS = new Set(['ghi_nhan_xet', 'xac_nhan_pa']);
+/** Khoá Nhập điểm Speaking chấm chéo (T18, `mywork.ts`) — việc lẻ `…|cc`, dòng gộp theo tuần cũng `…|cc`. */
+export const laViecChamCheo = (it: { key: string }): boolean => it.key.endsWith('|cc');
+/** OV-13g (Q7): tên dòng chấm chéo của GV Speaking ở Công việc › Chấm điểm. */
+export const VIEC_CHAM_CHEO = 'Speaking chấm chéo';
 
 export const khoaDongGop = (group: string, classId: number, ownerId: number | null) => `gop:${group}:${classId}:u${ownerId ?? 0}`;
 /** Nhóm của khoá dòng gộp (`gop:{nhóm}:{lớp}:u{người}`); khoá khác → null. */
 export const nhomCuaKhoaGop = (key: string): string | null => (key.startsWith('gop:') ? key.split(':')[1] ?? null : null);
 
 const gopDuoc = (it: ViecGopDuoc) => it.classId !== null && !(it.khung === 'ft' && it.caseSos && GIU_TUNG_DONG_FT.has(it.group));
-/** Khoá dòng gộp mà việc này thuộc về; việc giữ từng dòng → null. Nhắc dùng để tìm lại việc khi dòng gộp chỉ còn một việc. */
-export const khoaGopCua = (it: ViecGopDuoc): string | null => (gopDuoc(it) ? khoaDongGop(it.group, it.classId!, it.ownerId) : null);
+/**
+ * Dòng Nhập điểm gộp theo tuần thi qua nhiều lớp (OV-13c). OV-13g: chấm chéo của GV Speaking (người giữ việc = người xem) cũng gom theo tuần,
+ * khoá thêm `|cc` để không lẫn Nhập điểm của chính GV; chấm chéo không người giữ (QL "Tất cả", u0) giữ gom theo lớp như cũ.
+ */
+const theoTuanThi = (it: ViecGopDuoc) => it.group === 'score' && !!it.tuanThi && (!laViecChamCheo(it) || it.ownerId !== null);
+/** Khoá dòng gộp mà việc này thuộc về; việc giữ từng dòng → null. Giao diện dùng để giữ việc vừa xong trong dòng gộp của nó. */
+export function khoaGopCua(it: ViecGopDuoc): string | null {
+  if (!gopDuoc(it)) return null;
+  if (theoTuanThi(it)) return `gop:score:t${it.tuanThi}:u${it.ownerId ?? 0}:${it.khung ?? ''}${laViecChamCheo(it) ? '|cc' : ''}`;
+  const k = khoaDongGop(it.group, it.classId!, it.ownerId);
+  return it.khung === 'ft' && it.caseSos && GOP_TUAN_SOS.has(it.group) ? `${k}:t${it.tuanThi ?? ''}:s${it.sos ?? 0}` : k;
+}
 /** PR-DON: các khoá cùng chỉ một (nhóm) việc — khoá gửi, khoá dòng, khoá gộp của việc lẻ, khoá từng em của dòng gộp. Nhắc qua khoá nào cũng tính một lần/ngày. */
 export function khoaCungViec(row: (ViecGopDuoc & { con?: readonly { key: string }[] }) | undefined, key: string): string[] {
   if (!row) return [key];
@@ -76,7 +98,7 @@ export function gopViecTheoLop<T extends ViecGopDuoc>(items: readonly T[], nhan:
     if (!k || !nhom || nhom.length < 2) { out.push(it); continue; }
     if (daDat.has(k)) continue;
     daDat.add(k);
-    const nhanLoai = nhan(it.group);
+    const nhanLoai = laViecChamCheo(it) && theoTuanThi(it) ? VIEC_CHAM_CHEO : nhan(it.group);   // dòng u0 theo lớp của QL có thể lẫn môn chưa phân công
     const con = [...nhom].sort(sapViec).map((x) => conCua(x));
     const dau = con[0];
     /*
@@ -88,21 +110,33 @@ export function gopViecTheoLop<T extends ViecGopDuoc>(items: readonly T[], nhan:
     const donVi = laBai ? 'bài' : theoEm ? 'em' : 'việc';
     const dem = (ds: readonly T[]) => (laBai ? ds.reduce((n, x) => n + (x.soBai ?? x.count ?? 1), 0) : theoEm ? new Set(ds.map((x) => x.studentId)).size : ds.length);
     const so = dem(nhom);
+    /* Plan mục 4: một em hai việc (hai PA) — "1 em · 2 việc", không mất số việc. */
+    const chuSo = theoEm && nhom.length > so ? `${so} em · ${nhom.length} việc` : `${so} ${donVi}`;
     const quaHan = dem(nhom.filter((x) => x.urgency === 'overdue'));
     const due = nhom.map((x) => x.due).filter((x): x is string => !!x).sort()[0] ?? null;
     const chung = [...new Set(nhom.map((x) => x.contextLabel))];
     const href = [...new Set(nhom.map((x) => x.href))];
+    const chuQuaHan = quaHan ? `${quaHan} ${donVi} quá hạn` : null;
+    /* OV-13c: dòng tuần thi (Nhập điểm nhiều lớp) · dòng Case SOS (lượt · tuần · mức SOS). */
+    const tuan = theoTuanThi(it) ? tuanLich(it.tuanThi) : null;
+    const lop = [...new Set(nhom.map((x) => x.classId))];
+    const sos = it.khung === 'ft' && it.caseSos && GOP_TUAN_SOS.has(it.group) ? it : null;
     const dong = {
       ...it,
       key: k, urgency: dau.urgency, due,
-      studentId: null, studentName: `Lớp ${it.classCode ?? ''}`.trim(),
+      studentId: null, studentName: tuan ?? `Lớp ${it.classCode ?? ''}`.trim(),
+      ...(tuan && lop.length > 1 ? { classId: null, classCode: null } : {}),
       attemptId: null, attemptNo: null, caseId: null, level: null, nhac: undefined,
-      tieuDe: `${nhanLoai} · ${it.classCode ?? ''} · ${so} ${donVi}`,
-      contextLabel: quaHan ? `${quaHan} ${donVi} quá hạn` : chung.length === 1 ? chung[0] : null,
-      count: nhom.length, actionLabel: `${so} ${donVi}`,
-      reason: `${so} ${donVi}`,
+      tieuDe: `${nhanLoai} · ${tuan ?? it.classCode ?? ''} · ${chuSo}`,
+      contextLabel: tuan
+        ? [chuQuaHan, lop.length > 1 ? `${lop.length} lớp` : it.classCode].filter(Boolean).join(' · ')
+        : sos
+          ? [chuQuaHan ?? chung.filter(Boolean).sort().join(', '), sos.tuanThi ? tuanLich(sos.tuanThi) : null, sos.sos ? `SOS ${sos.sos}` : null].filter(Boolean).join(' · ')
+          : chuQuaHan ?? (chung.length === 1 ? chung[0] : null),
+      count: nhom.length, actionLabel: chuSo,
+      reason: chuSo,
       href: href.length === 1 ? href[0] : '/cong-viec?khung=tat-ca',
-      con,
+      con: tuan ? con.map((c) => ({ ...c, conTen: [c.classCode, c.conTen].filter(Boolean).join(' · ') })) : con,
     } as unknown as DongGop<T>;
     out.push(dong);
   }

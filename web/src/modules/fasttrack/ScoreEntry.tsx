@@ -18,6 +18,8 @@ export type Cell = {
   skill: EntrySkill;
   /** OV-1d: em đã Lưu trữ — câu "vì sao chỉ đọc" của máy chủ (chỉ lưới chấm FT gửi). */
   lyDoKhoa?: string;
+  /** Rà #410: ô không nhận "-" (lớp đã kết thúc) — câu máy chủ; vắng mặt / null = gõ "-" được. */
+  khongVang?: string | null;
   assessedSkill: string;
   /** false khi Quản lý đã chốt trước là đợt này không yêu cầu kỹ năng đó. */
   required: boolean;
@@ -53,10 +55,10 @@ export type Cell = {
   } | null;
   /**
    * PR-BV: dấu "-" ĐÃ CHỐT còn trên ô — ô hiện "-" (kèm `→ W3 SEP` khi đã dời) tới khi có điểm. Xoá "-" (tẩy ô + Lưu) = hết vắng,
-   * máy chủ trả lịch như trước khi gõ. `goDuoc` = người xem gỡ được lúc này (QL mọi lúc; GV chấm / GVCN đến hết thứ Tư sau tuần gốc).
+   * máy chủ trả lịch như trước khi gõ. `goDuoc` = người xem gỡ được lúc này (QL, GV chấm, GVCN — mọi lúc từ OV-13h).
    */
   daChot?: {
-    doiSang: string | null; hanGo: string | null; goDuoc: boolean;
+    doiSang: string | null; goDuoc: boolean;
     /** OV-11a: mã tuần có "-" (tuần gốc) — hộp tuần thi bù ghi "vắng lần 1 · dời từ W2 SEP". */
     tuTuan?: string;
     /** OV-4b: lần vắng · lúc ghi "-" · người ghi (hộp ô Vắng). */
@@ -119,8 +121,7 @@ export const VANG_HINT = t('Đã xác nhận vắng — Quản lý xếp lại b
 export const bandBanDau = (cell: Cell) => (cell.band !== null && cell.criteria.every((v) => v === null) ? fmtBand(cell.band) : '');
 
 /** Vì sao ô này chỉ đọc — MỘT câu cho ô số câu và ô tiêu chí. */
-export const lyDoChiDoc = (cell: Cell) => cell.lyDoKhoa ?? (cell.daChot?.hanGo && !cell.daChot.goDuoc ? t('Quá hạn gỡ "-" — nhờ Quản lý.')   // PR-BV
-  : cell.sitStatus === 'absent' ? VANG_HINT
+export const lyDoChiDoc = (cell: Cell) => cell.lyDoKhoa ?? (cell.sitStatus === 'absent' ? VANG_HINT
   : lockedByNoShow(cell) ? t('Đã chốt — cần Quản lý hiệu chỉnh')
   : cell.khoa ? KHOA_HOAN_TAT_HINT : t('Bạn không được phân công kỹ năng này'));
 
@@ -500,6 +501,8 @@ export function ODiemThuong({
     khoa?: boolean;
     /** PR-BV: người xem gỡ được dấu "-" lúc này · `oTuanCu` = đang xem đúng tuần có dấu (tuần mới có thể đã có điểm). */
     goDau?: boolean; oTuanCu?: boolean;
+    /** Rà #410: ô không nhận "-" (lớp đã kết thúc) — câu máy chủ. */
+    khongVang?: string | null;
   };
   tongCot: number | null;
   canEdit: boolean;
@@ -598,6 +601,12 @@ export function ODiemThuong({
         daBaoChuaToi.current = true;
         setDirty(false); goDiem.current = false; setCanhBao(null);
         toast.push('error', `${tenMon}: ${chuaToiCau}`);
+        return;
+      }
+      /* Rà #410: lớp đã kết thúc — không gửi "-", ô về như cũ, báo đúng câu máy chủ (như "chưa tới tuần"). */
+      if (cell.khongVang) {
+        setDirty(false); goDiem.current = false; setCanhBao(null);
+        toast.push('error', `${tenMon}: ${dich(cell.khongVang)}`);
         return;
       }
       setCanhBao(null);

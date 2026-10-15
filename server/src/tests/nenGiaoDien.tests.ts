@@ -122,7 +122,7 @@ export async function runNenGiaoDienTests(t: YThucTestKit) {
 
   check('UX0 · N-3: badge hộp lớp là danh từ + số, câu cũ vào tooltip', () => {
     const goc = { vai: 'gv' as const, needsPlacement: true, canXepLop: 4, soChuaLoTrinhTiep: 5, missingSkills: ['writing'], soBaiChoCham: 9,
-      needScoresTitle: 'Lớp còn 9 bài chưa nhập điểm', phase: 'final_week', missingCount: 2, soChoDuyet: 2, soEmQuaHan: 3 };
+      needScoresTitle: 'Lớp còn 9 bài chưa nhập điểm', phase: 'final_week', missingCount: 2, soChoDuyet: 2, soViecQuaHan: 3 };
     const b = d.badgeLop(goc);
     const tatCa = [...b.hien, ...b.an];
     assert(tatCa.length === 7, `Bộ đủ phải có 7 badge, đang ${tatCa.length}`);

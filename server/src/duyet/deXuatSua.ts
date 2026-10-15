@@ -33,7 +33,10 @@ export function hienTaiCua(conn: any, studentId: number) {
  * việc của họ, TVV / CX sửa thẳng). Một hàm cho máy chủ (`guiDeXuatSua`) và nút ở hồ sơ (`viewer.coTheDeXuatSua`).
  */
 export function laGvLopDangHoc(p: Principal, studentId: number): boolean {
-  const lop = activeClassOf(studentId);
+  /* OV-13h: em Tạm dừng giữ lớp ở ghi danh `paused` — GV lớp đó vẫn gửi đề xuất sửa. */
+  const lop = activeClassOf(studentId) ?? (db().prepare(
+    `SELECT e.class_id FROM enrollments e JOIN students s ON s.id = e.student_id WHERE e.student_id = ? AND e.status = 'paused' AND s.status = 'inactive' ORDER BY e.id DESC LIMIT 1`,
+  ).get(studentId) as any)?.class_id ?? null;
   return lop != null && hasAssignment(p, { classId: lop }, 'any');
 }
 
@@ -42,7 +45,8 @@ export function guiDeXuatSua(p: Principal, studentId: number, body: { truong?: u
   const hv = conn.prepare('SELECT id, full_name, status, archived_at FROM students WHERE id = ?').get(studentId) as any;
   if (!hv) throw notFound('Không tìm thấy học viên');
   if (!laGvLopDangHoc(p, studentId)) throw forbidden('Chỉ giáo viên của lớp em đang học mới gửi được đề xuất sửa.');
-  if (hv.status !== 'active' || hv.archived_at) throw badRequest('Học viên không còn đang học — không gửi đề xuất sửa được.');
+  /* OV-13h (chủ SP 15/10): em Tạm dừng (`inactive`) vẫn nhận đề xuất sửa; Kết thúc học / Lưu trữ thì không. */
+  if ((hv.status !== 'active' && hv.status !== 'inactive') || hv.archived_at) throw badRequest('Học viên không còn đang học — không gửi đề xuất sửa được.');
   if (body.truong === 'lop') throw badRequest('Dùng Đề xuất chuyển lớp.');   // PR-CT (Q30-1)
   const truong = body.truong as TruongDeXuat;
   if (truong === 'lich-mt') throw badRequest('Lịch Test do Quản lý xử lý — không gửi đề xuất.');   // luật 09/10; thẻ cũ vẫn hiện để đóng

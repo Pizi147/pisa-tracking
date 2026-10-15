@@ -27,7 +27,7 @@ function docLop(classId: number): Lop {
 /** Cột của lớp (FT L R W S; lớp thường theo môn chương trình) + GV phân công + người xem ghi được không — một nguồn cho đọc và ghi. */
 function cotCua(p: Principal, c: Lop, today: string): CotGopY[] {
   const quanLy = can(p, PERMISSIONS.CLASS_EDIT, { classId: c.id });
-  const laGv = p.roleKeys.includes('teacher') && c.status !== 'finished';
+  const laGv = p.roleKeys.includes('teacher');   // OV-13h (chủ SP 15/10): lớp đã kết thúc GV / GVCN vẫn ghi góp ý
   const gvcn = laGv && isCoreTeacherOf(p, c.id, today);
   const cuaToi = laGv ? p.assignments.filter((a) => a.classId === c.id && activeAt(a, today)).map((a) => a.skill) : [];
   const day = (k: string, s: string | null) => s === k || (k === 'writing' && (s === 'writing1' || s === 'writing2'));

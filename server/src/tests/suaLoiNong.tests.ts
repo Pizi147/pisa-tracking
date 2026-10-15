@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { YThucTestKit } from './yThuc.tests.ts';
+import { duXacNhan } from './luotThu.ts';
 
 /* Chạy từ `dist-server/server/src/tests/` → lên 3 cấp là `dist-server/`, thêm một cấp là gốc repo. */
 const REPO = path.join(path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..'), '..');
@@ -182,7 +183,7 @@ export async function runSuaLoiNongTests(t: YThucTestKit) {
     assert(iv.status === 'planned' && iv.preset === 1 && iv.confirmed_at === null && iv.confirmed_by === null && iv.action_due === null, JSON.stringify(iv));
     const khop = t.conn.prepare(`SELECT COUNT(*) n FROM case_interventions iv WHERE iv.id = ? AND ${sosState.PA_QUY_CHE_CHUA_GHI('iv')}`).get(ivId) as any;
     assert(khop.n === 1, 'PA quy chế chưa có kết quả tuần phải khớp PA_QUY_CHE_CHUA_GHI');
-    sosAuto.xacNhanPaQuyChe(t.P.coreTeacher, ivId, { description: 'Tự học Listening 1 tháng, nghe chép mỗi ngày.' });
+    sosAuto.xacNhanPaQuyChe(t.P.coreTeacher, ivId, duXacNhan(t.conn, ivId, { description: 'Tự học Listening 1 tháng, nghe chép mỗi ngày.' }));
     const sau = t.conn.prepare('SELECT * FROM case_interventions WHERE id = ?').get(ivId) as any;
     assert(sau.action_due === d.hanKyGhiKetQua(t.TODAY) && sau.cycle_started_on === t.TODAY && sau.cycle_no === 1 && sau.confirmed_by === t.P.coreTeacher.userId, `hạn ${sau.action_due}`);
   });
@@ -206,7 +207,7 @@ export async function runSuaLoiNongTests(t: YThucTestKit) {
     t.conn.prepare('DELETE FROM case_sources WHERE case_id = ?').run(caseId);
     t.conn.prepare('DELETE FROM case_milestones WHERE case_id = ?').run(caseId);
     assert(sigSvc.caseHasIndependentBasis(caseId, null) === false, 'PA máy gán chưa ghi gì bị coi là căn cứ');
-    sosAuto.xacNhanPaQuyChe(t.P.coreTeacher, ivId, { description: 'Tự học Listening 1 tháng, nghe chép mỗi ngày.' });   // PR-SOS: PA chạy khi xác nhận
+    sosAuto.xacNhanPaQuyChe(t.P.coreTeacher, ivId, duXacNhan(t.conn, ivId, { description: 'Tự học Listening 1 tháng, nghe chép mỗi ngày.' }));   // PR-SOS: PA chạy khi xác nhận
     casesSvc.recordFollowUp(t.P.coreTeacher, caseId, { interventionId: ivId, outcome: 'partial', note: 'Tuần đầu em nghe chép đều hơn' });
     assert(sigSvc.caseHasIndependentBasis(caseId, null) === true, 'PA quy chế có kết quả tuần phải là căn cứ');
     const khop = t.conn.prepare(`SELECT COUNT(*) n FROM case_interventions iv WHERE iv.id = ? AND ${sosState.PA_QUY_CHE_CHUA_GHI('iv')}`).get(ivId) as any;

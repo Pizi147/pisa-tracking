@@ -14,7 +14,7 @@ import {
 import { demoToday } from '../demoConfig.ts';
 import { can, type Principal } from '../permissions.ts';
 import { listCases, type MappedCase } from './cases.ts';
-import { sosCaseStateMany } from './sosState.ts';
+import { choDoiPa, sosCaseStateMany } from './sosState.ts';
 import { mtCuoiCuaLoTrinh } from './sosAuto.ts';
 
 export type PaCase = {
@@ -64,7 +64,7 @@ export function chiTietCaseMo(cases: readonly MappedCase[]): Map<number, CaseChi
     for (const r of conn.prepare(`SELECT id, title, system_close_reason, cycle_id FROM sos_cases WHERE id IN (${ph})`).all(...chunk) as any[]) goc.set(r.id, r);
     for (const [k, v] of gom(conn.prepare(
       `SELECT iv.case_id, iv.id, iv.kind, iv.description, iv.status, iv.preset, iv.confirmed_at, iv.approval_state, iv.action_due, iv.followup_due,
-              iv.moc_quy_che, iv.created_at, iv.performer_name, u.full_name AS performer_account
+              iv.moc_quy_che, iv.created_at, iv.performer_name, iv.superseded_by, iv.closed_reason, u.full_name AS performer_account
          FROM case_interventions iv LEFT JOIN users u ON u.id = iv.performer_user_id
         WHERE iv.case_id IN (${ph}) AND iv.status != 'cancelled' ORDER BY iv.case_id, iv.id`).all(...chunk) as any[])) paTheoCase.set(k, v);
     for (const [k, v] of gom(conn.prepare(
@@ -85,7 +85,7 @@ export function chiTietCaseMo(cases: readonly MappedCase[]): Map<number, CaseChi
     };
     const pas: PaCase[] = cua(paTheoCase, c.id).map((iv) => ({
       id: iv.id, ten: (iv.description ?? '').trim() || (INTERVENTION_KIND_LABEL[iv.kind as InterventionKind] ?? iv.kind), loai: iv.kind,
-      batBuoc: iv.preset === 1, choXacNhan: iv.kind !== 'bo_tro' && iv.preset === 1 && !iv.confirmed_at && iv.status === 'planned',
+      batBuoc: iv.preset === 1, choXacNhan: iv.kind !== 'bo_tro' && iv.preset === 1 && !iv.confirmed_at && iv.status === 'planned' && !choDoiPa(iv),
       choDuyet: iv.approval_state === 'pending', xong: iv.status === 'completed',
       nguoi: iv.performer_account ?? iv.performer_name ?? null,
       mocChu: iv.preset === 1
@@ -93,7 +93,7 @@ export function chiTietCaseMo(cases: readonly MappedCase[]): Map<number, CaseChi
     }));
     const v4 = {
       status: c.status as 'open' | 'in_progress' | 'done', fromSos: s.fromSos, hasCause: s.hasCause, laMt: s.laMt, dismissed: !!s.dismissed, systemClosed: !!g.system_close_reason,
-      choDuyetKhongTheoDoi: !!s.choDuyetKhongTheoDoi, coPaChoXacNhan: s.coPaChoXacNhan, hanXacNhan: s.dueOn, tam: s.tam,
+      choDuyetKhongTheoDoi: !!s.choDuyetKhongTheoDoi, coPaChoXacNhan: s.coPaChoXacNhan, choDoiPa: s.choDoiPa, hanXacNhan: s.dueOn, tam: s.tam,
       lyDoHeThong: g.system_close_reason ? SYSTEM_CLOSE_REASON_LABEL[g.system_close_reason as keyof typeof SYSTEM_CLOSE_REASON_LABEL] ?? null : null,
     };
     const hanLapPa = hanThemPa({ detected_at: c.detectedAt, urgency: c.urgency, sos_level: c.sosLevel, kck: c.kck });   // OV-11c (HV-14): cùng hàm với Công việc

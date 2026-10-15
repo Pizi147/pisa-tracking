@@ -33,7 +33,8 @@ import { activeClassOf } from '../yThuc/access.ts';
 import { isRatioCycle, nguongDatLop, programmeCodeOfCycle } from '../normal/regular.ts';
 import { suggestCaseOwner } from './owner.ts';
 import { caseKhacChuongTrinh, chuongTrinhCuaLop } from './sos.ts';
-import { CASE_THAT, LA_CASE_SOS, NOT_UNCONFIRMED_PRESET, awaitingCauseCaseIds, dongBoTrangThaiCase, dongBoTrangThaiCaseLo, sosCaseState } from './sosState.ts';
+import { duLieuDoiPa, ghiDoiPa, kiemTruocDoiPa, rutDoiPa, type VaoDoiPa } from './doiPa.ts';
+import { CASE_THAT, LA_CASE_SOS, choDoiPa, NOT_UNCONFIRMED_PRESET, awaitingCauseCaseIds, dongBoTrangThaiCase, dongBoTrangThaiCaseLo, sosCaseState } from './sosState.ts';
 import { CAU_LUU_TRU, PLAN_DECISIONS, canBuoiTutor, coNguoiDay, coSoBuoiKy, decisionToStep, duongDotTest, kiemBuoiTutor, kiemSoBuoiTuan, soBuoiTu, tuanLich, type BuoiTutor, type PlanDecision } from '../../../shared/domain/index.ts';
 import { chenPa } from './taoPa.ts';
 import { nguoiGiuKetQua, type DongGiuKetQua } from './giuKetQua.ts';
@@ -274,15 +275,15 @@ export function setFollowUntil(p: Principal, caseId: number, date: string | null
 }
 
 /**
- * MỞ LẠI CASE ĐÃ HOÀN THÀNH (PR-LUI-a2, chủ sản phẩm 06/10) — Quản lý / Quản trị, và (OV-7b) người đã hoàn thành Case nếu còn quyền hoàn thành
- * (`coTheMoLaiCase`); một bấm, không lý do. Kết luận cũ ở lại trong mốc
+ * MỞ LẠI CASE ĐÃ HOÀN THÀNH (PR-LUI-a2, chủ sản phẩm 06/10) — Quản lý / Quản trị, và (OV-13h, chủ SP 15/10) mọi người có quyền hoàn thành Case
+ * đó (`coTheMoLaiCase`); một bấm, không lý do. Kết luận cũ ở lại trong mốc
  * `closed` + nhật ký; PA đã khép KHÔNG sống lại. Khoá chống trùng đã nhả cho Case mới cùng hạng mục → chặn (mở Case mới đó). Case hệ thống đóng
  * (em kết thúc học…) đi đường riêng của nó (`moLaiCaseHeThongDong`).
  */
 export function moLaiCase(p: Principal, caseId: number) {
   const conn = db();
   const c = loadCase(caseId);
-  if (!coTheMoLaiCase(p, c)) throw forbidden('Chỉ Quản lý hoặc người đã hoàn thành Case mở lại được.');
+  if (!coTheMoLaiCase(p, c)) throw forbidden('Chỉ Quản lý hoặc người hoàn thành được Case này mở lại được.');
   if (c.status !== 'done') throw badRequest('Case này chưa hoàn thành.');
   const chan = chanMoLai(c);
   if (chan) throw badRequest(chan.loi);
@@ -316,10 +317,9 @@ export function moLaiCase(p: Principal, caseId: number) {
   });
 }
 
-/** OV-7b: ai mở lại được — Quản lý trong phạm vi, hoặc người đã hoàn thành Case (ai lưu được thì sửa được) khi vẫn còn quyền hoàn thành. */
+/** OV-13h (chủ SP 15/10): ai mở lại được — Quản lý trong phạm vi, hoặc ai hoàn thành được Case này (`canCloseCase`), không chỉ người đã đóng. */
 function coTheMoLaiCase(p: Principal, c: any): boolean {
-  return can(p, PERMISSIONS.CASE_APPROVE, { classId: c.class_id, studentId: c.eff_student_id })
-    || (c.closed_by != null && c.closed_by === p.userId && canCloseCase(p, c));
+  return can(p, PERMISSIONS.CASE_APPROVE, { classId: c.class_id, studentId: c.eff_student_id }) || canCloseCase(p, c);
 }
 /** Khoá chống trùng của Case nếu được mở lại (null = Case song song / không khoá). */
 function chanMoLaiKhoa(c: any): string | null {
@@ -374,7 +374,7 @@ function baoQuanLyCaseDong(p: Principal, caseId: number, c: { class_id?: number 
   }
 }
 
-function loadCase(caseId: number) {
+export function loadCase(caseId: number) {
   const c = db()
     .prepare(
       `SELECT sc.*,
@@ -836,11 +836,15 @@ export function recordIntervention(p: Principal, caseId: number, input: {
   idempotencyKey?: string | null;
   /** PR-PA (§8): Số buổi — chỉ Tutor / Tự học; trống được; số nguyên 1–60. */
   soBuoi?: unknown;
-}) {
+  /** OV-13b: "Đề xuất PA khác" — PA mới chờ duyệt thay PA mặc định `thayPaId` (`doiPa.ts` kiểm trước, kể cả quyền). */
+  doiPa?: { thayPaId: number; lyDo: string; goc: { kind: string; chay: boolean }; followupId?: number | null };
+}, opts: { daKiemQuyen?: boolean; khongTraCase?: boolean } = {}) {
   const conn = db();
   const c = loadCase(caseId);
-  require_(p, PERMISSIONS.SOS_EDIT, sosEditCtx(c),
-    'Bạn không có quyền ghi nhận hỗ trợ cho Case này.');
+  if (!opts.daKiemQuyen) {
+    require_(p, PERMISSIONS.SOS_EDIT, sosEditCtx(c),
+      'Bạn không có quyền ghi nhận hỗ trợ cho Case này.');
+  }
   if (c.tam) throw badRequest('Case tạm — lượt Mock Test chưa chốt SOS. Lượt chốt rồi mới thêm PA.');   // OV-13a (Q2)
   /* PR-S3F #2: thẻ "Không cần theo dõi" đang chờ Quản lý duyệt → chưa thêm PA (duyệt xong PA mới thêm sẽ bị huỷ oan). */
   if (sosCaseState(caseId).choDuyetKhongTheoDoi) {
@@ -990,8 +994,10 @@ export function recordIntervention(p: Principal, caseId: number, input: {
       taoYeuCau(conn, {
         loai: 'de_xuat_pa', doiTuongLoai: 'intervention', doiTuongId: id,
         hocVienId: c.eff_student_id, lopId: c.class_id ?? null, nguoiXin: p.userId,
-        lyDo: description || null, hanDuyet: approvalDue,
+        lyDo: description || null, hanDuyet: approvalDue, duLieu: input.doiPa,
       });
+      /* OV-13b: PA gốc trỏ PA mới tới khi Quản lý trả lời (`CHO_DOI_PA`) — chưa khép. */
+      if (input.doiPa) conn.prepare('UPDATE case_interventions SET superseded_by = ?, updated_at = ? WHERE id = ?').run(id, nowIso(), input.doiPa.thayPaId);
     }
 
     // Có tác động thì Case chuyển sang đang xử lý — trừ khi đã đóng; Case từ SOS theo luật Q28-5.
@@ -1006,7 +1012,7 @@ export function recordIntervention(p: Principal, caseId: number, input: {
     });
     writeAudit({ actorUserId: p.userId, action: 'case.intervention', entityType: 'case_intervention',
       entityId: id, entityLabel: `Case ${caseId} · ${input.kind}`, after: { status } });
-    return caseDetail(p, caseId);
+    return opts.khongTraCase ? null : caseDetail(p, caseId);
   });
   try { return taoMoi(); }
   catch (e) {
@@ -1347,6 +1353,12 @@ export function ketThucPaQuyChe(p: Principal, interventionId: number, input: { l
   const today = demoToday();
   const ten = (iv.description ?? '').trim() || (INTERVENTION_KIND_LABEL[iv.kind as InterventionKind] ?? iv.kind);
   return tx(() => {
+    /* OV-13b: PA gốc đang chờ đổi PA → thẻ tự đóng + PA mới huỷ, gỡ con trỏ (Duyệt / Huỷ / Từ chối sau đó không còn đụng PA đã kết thúc). */
+    for (const y of conn.prepare(`SELECT * FROM yeu_cau_duyet WHERE loai = 'de_xuat_pa' AND trang_thai = 'cho' AND json_extract(du_lieu, '$.thayPaId') = ?`)
+      .all(interventionId) as any[]) {
+      chotYeuCau(conn, { loai: 'de_xuat_pa', doiTuongLoai: 'intervention', doiTuongId: y.doi_tuong_id }, 'tu_dong', { nguoiDuyet: p.userId, lyDo: 'PA gốc đã kết thúc' });
+      rutDoiPa(y);
+    }
     conn.prepare(`UPDATE case_interventions SET status = 'completed', completed_date = ?, closed_reason = 'ket_thuc_som', updated_at = ? WHERE id = ?`)
       .run(today, nowIso(), interventionId);
     conn.prepare(`INSERT INTO case_milestones (case_id, kind, occurred_on, note, created_by, created_at) VALUES (?, 'ket_thuc_pa', ?, ?, ?, ?)`)
@@ -1780,6 +1792,16 @@ export function caseDetail(p: Principal, caseId: number) {
   /* PR-PA (§8): Đã dạy của mọi PA trong Case — một câu. */
   const daDayTheoPa = new Map((conn.prepare('SELECT intervention_id i, COALESCE(SUM(so_buoi), 0) n FROM case_followups WHERE case_id = ? GROUP BY intervention_id')
     .all(caseId) as any[]).map((r) => [r.i as number, Number(r.n)]));
+  /* OV-13b: thẻ "Đề xuất PA khác" mới nhất của mỗi PA gốc (đối tượng thẻ = PA mới, cùng Case) — một câu. */
+  const doiPaCua = new Map<number, any>();
+  const paMoiDoi = new Set<number>();
+  for (const y of conn.prepare(`SELECT y.*, iv.kind AS kind_moi FROM yeu_cau_duyet y JOIN case_interventions iv ON iv.id = y.doi_tuong_id
+      WHERE y.loai = 'de_xuat_pa' AND y.doi_tuong_loai = 'intervention' AND iv.case_id = ? AND json_extract(y.du_lieu, '$.thayPaId') IS NOT NULL
+      ORDER BY y.id DESC`).all(caseId) as any[]) {
+    const d = duLieuDoiPa(y)!;
+    paMoiDoi.add(y.doi_tuong_id);
+    if (!doiPaCua.has(d.thayPaId)) doiPaCua.set(d.thayPaId, y);
+  }
 
   const interventions = (conn
     .prepare(
@@ -1843,7 +1865,7 @@ export function caseDetail(p: Principal, caseId: number) {
       preset: iv.preset === 1,
       confirmedAt: (iv.confirmed_at ?? null) as string | null,
       /* PR-LT2a → PR-CT2: PA Bổ trợ KHÔNG có bước Xác nhận PA — chờ Xác nhận Case (`chuaChay`), không phải "Chờ xác nhận". */
-      awaitingConfirmation: iv.kind !== 'bo_tro' && iv.preset === 1 && !iv.confirmed_at && iv.status === 'planned',
+      awaitingConfirmation: iv.kind !== 'bo_tro' && iv.preset === 1 && !iv.confirmed_at && iv.status === 'planned' && !choDoiPa(iv),
       chuaChay: iv.kind === 'bo_tro' && iv.preset === 1 && !iv.confirmed_at && iv.status === 'planned',
       /** PR-SOS (T22, T63): PA bắt buộc — không thay, không kết thúc sớm; `mocChu` chữ mốc; `lanCuoi` = lần ghi tới là "Ghi kết quả cuối". */
       batBuoc: iv.preset === 1,
@@ -1861,6 +1883,17 @@ export function caseDetail(p: Principal, caseId: number) {
       revisions: revs.get(iv.id) ?? [],
       /** PR-DUYET: thẻ ĐANG CHỜ mới nhất của PA (Đề xuất PA / Xin ý kiến) — Ngăn Case nhúng `TheYeuCau` khi người xem duyệt được. */
       yeuCau: theCuaPa.find((y) => y.doiTuongId === iv.id && y.trangThai === 'cho') ?? null,
+      /** OV-13b: đề xuất đổi PA mới nhất của PA gốc này — "chờ" (Rút được bởi người gửi) / "tu_choi" (kèm lý do; "Đề xuất lại"). */
+      doiPa: (() => {
+        const y = doiPaCua.get(iv.id);
+        if (!y || (y.trang_thai !== 'cho' && y.trang_thai !== 'tu_choi')) return null;
+        if (y.trang_thai === 'tu_choi' && iv.confirmed_at && iv.confirmed_at > (y.xu_ly_luc ?? '')) return null;   // đã xác nhận PA gốc sau khi bị từ chối
+        return { yeuCauId: y.id as number, trangThai: y.trang_thai as 'cho' | 'tu_choi', paMoiId: y.doi_tuong_id as number, loaiMoi: y.kind_moi as string,
+          guiLuc: y.tao_luc as string, hanDuyet: (y.han_duyet ?? null) as string | null, lyDoTuChoi: (y.ly_do_tu_choi ?? null) as string | null,
+          lyDo: duLieuDoiPa(y)!.lyDo, laNguoiGui: y.nguoi_xin === p.userId };
+      })(),
+      /** OV-13b: PA mới của một đề xuất đổi PA — dòng PA gốc đã nói nó; danh sách PA ẩn khi còn chờ / bị từ chối. */
+      laPaDoi: paMoiDoi.has(iv.id),
       /** PR-DUYET (T64): lần Xin ý kiến mới nhất của PA (chờ hoặc đã trả lời) — dòng tím dưới PA. */
       xinYKien: theCuaPa.find((y) => y.doiTuongId === iv.id && y.loai === 'xin_y_kien' && y.trangThai !== 'tu_dong') ?? null,
     }));
@@ -2024,7 +2057,7 @@ export function caseDetail(p: Principal, caseId: number) {
       const st = sosSt;
       const v4 = {
         status: c.status, fromSos: st.fromSos, hasCause: st.hasCause, laMt: st.laMt, dismissed: !!st.dismissed, systemClosed: !!c.system_close_reason,
-        choDuyetKhongTheoDoi: !!st.choDuyetKhongTheoDoi, coPaChoXacNhan: st.coPaChoXacNhan, hanXacNhan: st.dueOn, tam: st.tam,
+        choDuyetKhongTheoDoi: !!st.choDuyetKhongTheoDoi, coPaChoXacNhan: st.coPaChoXacNhan, choDoiPa: st.choDoiPa, hanXacNhan: st.dueOn, tam: st.tam,
         lyDoHeThong: c.system_close_reason ? SYSTEM_CLOSE_REASON_LABEL[c.system_close_reason as keyof typeof SYSTEM_CLOSE_REASON_LABEL] ?? null : null,
         rutSuaDiem: laRutSuaDiem(c),
       };
@@ -2963,7 +2996,7 @@ function caseCardOf(p: Principal, caseId: number, c: any, soBangChung: Map<numbe
       confirmedAt: iv.confirmed_at ?? null,
       /* PR-SOS: PA bắt buộc · Chờ xác nhận · chữ mốc · lần ghi tới là "Ghi kết quả cuối" (HangPA, T22, K3-14). */
       batBuoc: iv.preset === 1,
-      choXacNhan: iv.kind !== 'bo_tro' && iv.preset === 1 && !iv.confirmed_at && iv.status === 'planned',
+      choXacNhan: iv.kind !== 'bo_tro' && iv.preset === 1 && !iv.confirmed_at && iv.status === 'planned' && !choDoiPa(iv),
       chuaChay: iv.kind === 'bo_tro' && iv.preset === 1 && !iv.confirmed_at && iv.status === 'planned',
       mocChu: iv.preset === 1 ? mocChuPa({ span: iv.moc_quy_che ?? null, followupDue: iv.followup_due ?? null, mtKe: mtKe(iv), daXacNhan: !!iv.confirmed_at, mtCuoi: iv.moc_quy_che === 'until_exam' ? mtCuoiNho(c.cycle_id) : null }, today) : null,
       lanCuoi: iv.status === 'started' && laLanGhiCuoi({ preset: iv.preset === 1, followupDue: iv.followup_due ?? null, actionDue: iv.action_due ?? null, mienPhi: iv.kind === 'bo_tro_mien_phi' }, today),
@@ -3036,7 +3069,7 @@ function caseCardOf(p: Principal, caseId: number, c: any, soBangChung: Map<numbe
   const sos = sosCaseState(caseId);
   const v4 = {
     status: c.status, fromSos: sos.fromSos, hasCause: sos.hasCause, laMt: sos.laMt, dismissed: !!sos.dismissed, systemClosed: !!c.system_close_reason,
-    choDuyetKhongTheoDoi: !!sos.choDuyetKhongTheoDoi, coPaChoXacNhan: sos.coPaChoXacNhan, hanXacNhan: sos.dueOn, tam: sos.tam,
+    choDuyetKhongTheoDoi: !!sos.choDuyetKhongTheoDoi, coPaChoXacNhan: sos.coPaChoXacNhan, choDoiPa: sos.choDoiPa, hanXacNhan: sos.dueOn, tam: sos.tam,
     lyDoHeThong: c.system_close_reason ? SYSTEM_CLOSE_REASON_LABEL[c.system_close_reason as keyof typeof SYSTEM_CLOSE_REASON_LABEL] ?? null : null,
     rutSuaDiem: laRutSuaDiem(c),
   };
@@ -3275,6 +3308,8 @@ export function updateResult(p: Principal, interventionId: number, input: {
   soBuoi?: unknown;
   /** OV-12h: PA Tutor có Số buổi — đúng `soBuoi` dòng [Tên tutor · Nhận xét buổi] (`kiemBuoiTutor`). */
   buoi?: unknown;
+  /** OV-13b: "Lưu kết quả · gửi QL duyệt" — kết quả kỳ lưu như Giữ nguyên + Đề xuất PA khác cho PA mặc định đang chạy (`doiPa.ts`). */
+  deXuatPa?: VaoDoiPa | null;
 }, opts: {
   /** OV-7b (`suaKetQua`): nơi gọi tự trả Case — bỏ `caseDetail` trong giao dịch. */
   khongTraCase?: boolean;
@@ -3389,6 +3424,12 @@ export function updateResult(p: Principal, interventionId: number, input: {
   /* Điều chỉnh: chuẩn hoá TRƯỚC giao dịch; sai thì không ghi gì. Số buổi mới ≥ đã dạy SAU tuần này. */
   const adjustPatch = nextStep === 'adjust'
     ? chuanHoaDieuChinh(p, iv, input.adjust, observedOn, daDayCua(interventionId) + (soBuoiTuan ?? 0)) : null;
+  if (input.deXuatPa) {
+    /* Câu nói đúng vì sao: lần ghi cuối thì PA khép (không còn gì để đổi); còn lại chỉ đi cùng Giữ nguyên. */
+    if (lanCuoi) throw badRequest('Đây là lần ghi kết quả cuối — PA kết thúc, không đề xuất PA khác.');
+    if (nextStep !== 'continue') throw badRequest('Đề xuất PA khác chỉ đi cùng quyết định Giữ nguyên — PA hiện tại chạy tới khi Quản lý duyệt.');
+    kiemTruocDoiPa(p, iv, input.deXuatPa);
+  }
 
   return tx(() => {
     const cycleNo = iv.cycle_no ?? 1;
@@ -3495,6 +3536,7 @@ export function updateResult(p: Principal, interventionId: number, input: {
         )
         .run(completedOn ?? observedOn, created, nowIso(), interventionId);
     }
+    if (input.deXuatPa) ghiDoiPa(p, interventionId, input.deXuatPa, followupId);
     if (nextStep === 'ask_manager') {
       const doiTuong = { loai: 'xin_y_kien' as const, doiTuongLoai: 'intervention', doiTuongId: interventionId };
       /* Lần 1 còn chờ (một thẻ chờ cho mỗi PA): KHÔNG ném lỗi — kết quả tuần đã lưu; câu hỏi mới nối vào thẻ đang chờ + báo lại QL. */
@@ -3737,6 +3779,35 @@ export function suaKetQua(p: Principal, followupId: number, input: VaoKetQua) {
 }
 
 /**
+ * HOÀN TÁC LẦN GHI KẾT QUẢ VỪA LƯU (OV-13b: "✓ Đã lưu · Hoàn tác" ở dòng ghi nhanh / panel) — cùng quyền + chặn như Sửa (`nguCanhSuaKetQua`): đảo hệ quả
+ * (`daoKetQua`), bỏ thẻ Xin hỗ trợ của chính lần này, rút đề xuất đổi PA gửi cùng lần này. Không cần lý do; nhật ký `case.result.undo`.
+ */
+export function hoanTacKetQua(p: Principal, followupId: number) {
+  const conn = db();
+  const khoaTep: string[] = [];
+  const caseId = tx(() => {
+    /* OV-13b: lần ghi kèm đề xuất đổi PA mà QL đã duyệt — PA mới đang chạy, PA gốc đã khép: không đảo được (nói trước câu chặn chung). */
+    if (conn.prepare(`SELECT 1 FROM yeu_cau_duyet WHERE loai = 'de_xuat_pa' AND trang_thai = 'duyet' AND json_extract(du_lieu, '$.followupId') = ?`).get(followupId)) {
+      throw badRequest('QL đã duyệt đổi PA — không hoàn tác được.');
+    }
+    const x = nguCanhSuaKetQua(p, followupId);
+    if (x.chanDoi) throw badRequest(x.chanDoi);
+    if (x.the) chotYeuCau(conn, { loai: 'xin_y_kien', doiTuongLoai: 'intervention', doiTuongId: x.iv.id }, 'tu_dong', { nguoiDuyet: p.userId, lyDo: 'Giáo viên hoàn tác kết quả' });
+    for (const y of conn.prepare(`SELECT * FROM yeu_cau_duyet WHERE loai = 'de_xuat_pa' AND trang_thai = 'cho' AND json_extract(du_lieu, '$.followupId') = ?`)
+      .all(x.chinh.id) as any[]) {
+      chotYeuCau(conn, { loai: 'de_xuat_pa', doiTuongLoai: 'intervention', doiTuongId: y.doi_tuong_id }, 'tu_dong', { nguoiDuyet: p.userId, lyDo: 'Giáo viên hoàn tác kết quả' });
+      rutDoiPa(y);
+    }
+    daoKetQua(conn, p, x, khoaTep);
+    writeAudit({ actorUserId: p.userId, action: 'case.result.undo', entityType: 'case_intervention', entityId: x.iv.id,
+      entityLabel: x.iv.description ?? x.iv.kind, before: anhLanGhi(x.chinh), after: null });
+    return x.f.case_id as number;
+  });
+  xoaTepSauGiaoDich(khoaTep);
+  return caseDetail(p, caseId);
+}
+
+/**
  * ĐẢO hệ quả của một lần ghi Kết quả (dòng chính + dòng chép nhóm) — TRONG giao dịch của `suaKetQua`, sau khi `nguCanhSuaKetQua` đã kiểm. Theo mẫu Huỷ
  * quyết định PA: Điều chỉnh (nội dung PA về bản trước, bỏ dòng lịch sử) · Thay PA (xoá PA mới chưa chạy + thẻ của nó) · Mini Test về "chưa ghi" (Case do
  * nó đóng mở lại) · PA về trạng thái ngay trước lần ghi (đợt, hạn) · bỏ dòng kết quả + mốc Hành trình · trạng thái Case. Thẻ Xin hỗ trợ: nơi gọi xử lý.
@@ -3965,7 +4036,7 @@ export function ghiDuocPaMany(p: Principal, rows: readonly {
 }
 
 /** PR-PA: quyền ghi Kết quả / Sửa PA của MỘT PA — một chỗ. Người giữ việc (§8) luôn ghi được, dù không qua quyền theo vai trò. */
-function kiemQuyenPa(p: Principal, iv: any, c: any, msg = 'Bạn không có quyền cập nhật kết quả của Case này.') {
+export function kiemQuyenPa(p: Principal, iv: any, c: any, msg = 'Bạn không có quyền cập nhật kết quả của Case này.') {
   if (quyenPaTheoVaiTro(p, iv, c) || giuCuaCase(c, [iv]).get(iv.id) === p.userId) return;
   if (laBoTro(iv)) throw forbidden(msg);
   require_(p, PERMISSIONS.SOS_EDIT, sosEditCtx(c), msg);   // ném kèm gợi ý quyền

@@ -1,5 +1,6 @@
 /** PHÉP KIỂM PR-S4F — sửa sau rà cuối đợt 4 (mỗi mục một phép kiểm tái hiện đúng tình huống rà; quyền: gọi API bằng vai sai → 403). */
 import type { YThucTestKit } from './yThuc.tests.ts';
+import { duXacNhan } from './luotThu.ts';
 
 export async function runPrS4fTests(t: YThucTestKit) {
   const { check, checkAsync, assert, conn, P, classId } = t;
@@ -234,7 +235,7 @@ export async function runPrS4fTests(t: YThucTestKit) {
         assert(r.status === 400, `${JSON.stringify(body)}: ${r.status}`);
       }
       assert(get('SELECT confirmed_at FROM case_interventions WHERE id = ?', iv.id).confirmed_at === null, 'PA không được xác nhận khi thiếu mô tả');
-      const ok = await goi(P.admin.userId, `/interventions/${iv.id}/xac-nhan-pa`, { method: 'POST', body: JSON.stringify({ description: 'Tutor Listening hai buổi mỗi tuần, cô Hà chữa bài nghe.' }) });
+      const ok = await goi(P.admin.userId, `/interventions/${iv.id}/xac-nhan-pa`, { method: 'POST', body: JSON.stringify(duXacNhan(conn, iv.id, { description: 'Tutor Listening hai buổi mỗi tuần, cô Hà chữa bài nghe.' })) });
       assert(ok.status === 200, `có mô tả: ${ok.status}`);
     });
   });
