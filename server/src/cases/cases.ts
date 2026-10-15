@@ -1354,6 +1354,12 @@ export function ketThucPaQuyChe(p: Principal, interventionId: number, input: { l
   const today = demoToday();
   const ten = (iv.description ?? '').trim() || (INTERVENTION_KIND_LABEL[iv.kind as InterventionKind] ?? iv.kind);
   return tx(() => {
+    /* OV-13b: PA gốc đang chờ đổi PA → thẻ tự đóng + PA mới huỷ, gỡ con trỏ (Duyệt / Huỷ / Từ chối sau đó không còn đụng PA đã kết thúc). */
+    for (const y of conn.prepare(`SELECT * FROM yeu_cau_duyet WHERE loai = 'de_xuat_pa' AND trang_thai = 'cho' AND json_extract(du_lieu, '$.thayPaId') = ?`)
+      .all(interventionId) as any[]) {
+      chotYeuCau(conn, { loai: 'de_xuat_pa', doiTuongLoai: 'intervention', doiTuongId: y.doi_tuong_id }, 'tu_dong', { nguoiDuyet: p.userId, lyDo: 'PA gốc đã kết thúc' });
+      rutDoiPa(y);
+    }
     conn.prepare(`UPDATE case_interventions SET status = 'completed', completed_date = ?, closed_reason = 'ket_thuc_som', updated_at = ? WHERE id = ?`)
       .run(today, nowIso(), interventionId);
     conn.prepare(`INSERT INTO case_milestones (case_id, kind, occurred_on, note, created_by, created_at) VALUES (?, 'ket_thuc_pa', ?, ?, ?, ?)`)

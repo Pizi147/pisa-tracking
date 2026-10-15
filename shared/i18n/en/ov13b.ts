@@ -69,4 +69,5 @@ export const EN_OV13B = {
   "Đây là lần ghi kết quả cuối — PA kết thúc, không đề xuất PA khác.": "This is the final result \u2014 the PA ends, no other PA can be proposed.",
   "Đề xuất PA khác chỉ đi cùng quyết định Giữ nguyên — PA hiện tại chạy tới khi Quản lý duyệt.": "Proposing another PA only goes with Keep \u2014 the current PA runs until the manager approves.",
   "QL đã duyệt đổi PA — không hoàn tác được.": "The manager approved the PA change \u2014 cannot undo.",
+  "PA gốc đã kết thúc": "The original PA has ended",
 } satisfies Record<string, Dich>;

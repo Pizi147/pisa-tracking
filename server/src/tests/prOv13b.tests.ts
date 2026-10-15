@@ -268,6 +268,26 @@ export async function runPrOv13bTests(t: YThucTestKit) {
     assert(one('SELECT superseded_by FROM case_interventions WHERE id = ?', g2.id).superseded_by === null, 'PA gốc thôi trỏ PA mới');
   }));
 
+  check('OV13b-14 · Kết thúc PA khi đang chờ đổi PA → thẻ tự đóng "PA gốc đã kết thúc", PA mới huỷ, gốc thôi trỏ, báo người đề xuất; Duyệt / Từ chối / Huỷ sau đó 400', () => thu(() => {
+    const { goc } = dungCase();
+    sosAuto.xacNhanPaQuyChe(GV, goc.id, du(goc));
+    doiPa.deXuatDoiPa(GV, goc.id, deXuat(one('SELECT * FROM case_interventions WHERE id = ?', goc.id)));
+    const the = theCho(goc.id);
+    cases.ketThucPaQuyChe(QL, goc.id, { lyDo: 'Em chuyển lớp, dừng PA theo quy chế.' });
+    const y = one('SELECT trang_thai, ly_do_dong, nguoi_duyet FROM yeu_cau_duyet WHERE id = ?', the.id);
+    assert(y.trang_thai === 'tu_dong' && y.ly_do_dong === 'PA gốc đã kết thúc' && y.nguoi_duyet === QL.userId, `thẻ: ${JSON.stringify(y)}`);
+    const g = one('SELECT status, closed_reason, superseded_by FROM case_interventions WHERE id = ?', goc.id);
+    assert(g.status === 'completed' && g.closed_reason === 'ket_thuc_som' && g.superseded_by === null, `PA gốc: ${JSON.stringify(g)}`);
+    assert(one('SELECT status FROM case_interventions WHERE id = ?', the.doi_tuong_id).status === 'cancelled', 'PA mới huỷ');
+    assert(one(`SELECT COUNT(*) n FROM notifications WHERE user_id = ? AND entity_type = 'yeu_cau_duyet' AND entity_id = ?`, GV.userId, the.id).n === 1, 'báo người đề xuất');
+    for (const [ten, fn] of [['duyệt', () => yeuCau.duyetYeuCau(QL, the.id, {})], ['từ chối', () => yeuCau.tuChoiYeuCau(QL, the.id, 'Không hợp lý lắm cho em.')],
+      ['huỷ', () => yeuCau.huyQuyetDinh(QL, the.id)]] as [string, () => unknown][]) {
+      assert(loi(fn)?.status === 400, `${ten} sau khi thẻ tự đóng phải 400: ${loi(fn)?.message}`);
+    }
+    const g2 = one('SELECT status, closed_reason, superseded_by FROM case_interventions WHERE id = ?', goc.id);
+    assert(g2.status === 'completed' && g2.closed_reason === 'ket_thuc_som' && g2.superseded_by === null, `PA gốc vẫn Kết thúc: ${JSON.stringify(g2)}`);
+  }));
+
   check(`OV13b-8 · trần câu SQL: đề xuất đổi PA ≤ ${TRAN_GHI_LO.deXuatDoiPa}; hoàn tác kết quả ≤ ${TRAN_GHI_LO.hoanTacKetQua}`, () => thu(() => {
     const { goc } = dungCase();
     const doCau = (fn: () => unknown) => { xoaNho(); const s0 = soCauSql(); fn(); return soCauSql() - s0; };
