@@ -278,7 +278,7 @@ export function HoTroHocVienTab() {
 
       {/* ───────────────────────────────────────────────── danh sách trái · panel phải */}
       <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] lg:items-start lg:gap-3.5 xl:grid-cols-[560px_minmax(0,1fr)]">
-        <div className={anTrenDienThoai} data-hd="cv-danh-sach">
+        <div className={anTrenDienThoai}>
           {loading && !data && <Card><Skeleton rows={8} /></Card>}
           {data && data.scopeEmpty && <Card><Empty title={t('Bạn chưa được cấp phạm vi nào')} /></Card>}
           {data && !data.scopeEmpty && dsNhom.length === 0 && (

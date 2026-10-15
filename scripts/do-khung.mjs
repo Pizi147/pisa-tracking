@@ -327,7 +327,7 @@ if (!LOC || 'hd-chi'.includes(LOC)) {
         const chu = p.locator('[data-chi-cho-toi] [role=status]');
         await chu.waitFor({ timeout: 10000 });
         const kq = await p.evaluate((x) => {
-          const el = [...document.querySelectorAll(`[data-hd="${x}"]`)].find((e) => { const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0; });
+          const el = [...document.querySelectorAll([x].flat().map((h) => `[data-hd="${h}"]`).join(','))].find((e) => { const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0; });
           if (!el) return 'không thấy phần tử';
           const r = el.getBoundingClientRect();
           const phu = document.querySelector('[data-chi-cho-toi]');

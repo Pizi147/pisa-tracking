@@ -54,7 +54,7 @@ export function ViecCuaToi() {
   if (dienThoai) {
     const { ds, soXemHet } = baViecDau(tatCa, homNay);
     return (
-      <section className="card" aria-labelledby="viec-hom-nay" data-hd="tq-viec-cua-toi">
+      <section className="card" aria-labelledby="viec-hom-nay" data-hd="tq-hom-nay">
         <header className="flex flex-wrap items-center justify-between gap-2 border-b px-3.5 py-2.5" style={{ borderColor: 'var(--line)' }}>
           <h2 id="viec-hom-nay" className="m-0 text-sm font-semibold text-slate-200">{t('Hôm nay')}</h2>
           {data && tong}

@@ -83,7 +83,7 @@ export async function runPrHdTests(t: any) {
     for (const [vai, h] of Object.entries(hd.HUONG_DAN) as [string, any][]) {
       for (const m of hd.moiMuc(h)) {
         if (!m.chi) continue;
-        if (!co.has(m.chi.hd)) loi.push(`${vai} ${m.id}: data-hd="${m.chi.hd}" không có trong web/src`);
+        for (const x of [m.chi.hd].flat()) if (!co.has(x)) loi.push(`${vai} ${m.id}: data-hd="${x}" không có trong web/src`);
         if (m.chi.duong && !hd.manCuaDuong(h, m.chi.duong)) loi.push(`${vai} ${m.id}: trang ${m.chi.duong} không có mục`);
       }
     }

@@ -37,7 +37,7 @@ export function KhoanhPhanTu() {
     setKhung(null); setKhongThay(false);
     let lan = 0;
     const id = window.setInterval(() => {
-      const x = [...document.querySelectorAll(`[data-hd="${chi.hd}"]`)].find(thay);
+      const x = [...document.querySelectorAll([chi.hd].flat().map((h) => `[data-hd="${h}"]`).join(','))].find(thay);
       if (x) {
         window.clearInterval(id);
         el.current = x;

@@ -6,8 +6,9 @@ import type { Khoa } from '../i18n/index.ts';
 
 export type VaiHd = 'gv' | 'ql' | 'qt' | 'tvv' | 'cx' | 'admin';
 
-/** "Chỉ cho tôi": khoanh phần tử `data-hd="{hd}"` + một dòng chú thích; `duong` = trang mở trước nếu đang ở trang khác. */
-export type ChiChoToi = { hd: string; duong?: string; chu: Khoa };
+/** "Chỉ cho tôi": khoanh phần tử `data-hd="{hd}"` đang hiện + một dòng chú thích; `duong` = trang mở trước nếu đang ở trang khác.
+ *  Nhiều `hd` = cùng một chỗ nhưng máy tính / điện thoại là hai phần tử khác nhau (phép HD-CHI đòi đủ cả hai). */
+export type ChiChoToi = { hd: string | readonly string[]; duong?: string; chu: Khoa };
 /** Một mục: tên + "khi nào" + 1–4 bước (+ Chỉ cho tôi). */
 export type MucHd = { id: string; ten: Khoa; khi?: Khoa; buoc: Khoa[]; chi?: ChiChoToi };
 /** Một màn của "Theo màn": khớp đường dẫn theo tiền tố dài nhất (`'/'` chỉ khớp đúng `/`). */
