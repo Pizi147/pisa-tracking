@@ -1,4 +1,5 @@
 import { db } from '../db.ts';
+import { CASE_THAT } from '../cases/sosState.ts';
 import { demoToday } from '../demoConfig.ts';
 import {
   ASSESSED_SKILLS, CHUONG_TRINH_KHONG_CHIA_MON, PROGRAMME_TEMPLATES, REGULAR_SKILLS, SOS_LABEL, DUOI_KY_VONG_KCK, boMonLich, mocKeTiep, LUOT_HUY_HET_SQL, kyNangXongThieu, moiNhatTruoc, nhanBaiThuong } from '../../../shared/domain/index.ts';
@@ -206,8 +207,8 @@ export function standingFor(studentIds: number[]): Map<number, Standing> {
   /* Case đang mở, đếm riêng phần mang từ lộ trình trước sang. */
   for (const r of conn
     .prepare(
-      `SELECT student_id, cycle_id FROM sos_cases
-        WHERE student_id IN (${ph}) AND status != 'done'`,
+      `SELECT student_id, cycle_id FROM sos_cases sc
+        WHERE student_id IN (${ph}) AND status != 'done' AND ${CASE_THAT('sc')}`,
     )
     .all(...studentIds) as any[]) {
     const s = out.get(r.student_id);

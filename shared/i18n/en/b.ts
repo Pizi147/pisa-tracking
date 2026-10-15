@@ -717,7 +717,7 @@ const EN_B_WEB = {
   'Ví dụ: Em nghỉ ốm cả tuần cuối, chưa có bài để so': 'E.g. Off sick the whole last week, nothing to compare',
   '2 · Quyết định': '2 · Decision',
   'Điều chỉnh: cùng PA, sửa nội dung, số buổi hoặc người — bản cũ giữ trong lịch sử. Thay PA: khép PA này và mở PA mới. Kết thúc PA: Case chỉ hoàn thành được khi mọi PA đã khép.': 'Adjust: same PA, change content, sessions or person — the old version stays in history. Replace PA: close this PA and open a new one. End PA: a case can only close once every PA is closed.',
-  'PA theo quy chế — không thay, không kết thúc sớm. Cần thêm hỗ trợ?': 'Rule-based PA — cannot be replaced or ended early. Need more support?',
+  'PA theo quy chế — không thay; GVCN / QL kết thúc sớm ở ⋯. Cần thêm hỗ trợ?': 'Rule-based PA — cannot be replaced; the homeroom teacher / manager can end it early via ⋯. Need more support?',
   'Chọn kết quả trước.': 'Pick a result first.',
   'Chỉ sửa được chữ': 'Text only',
   'Ngày ghi': 'Recorded on',

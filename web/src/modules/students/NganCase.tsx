@@ -251,7 +251,7 @@ export function NganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose
     if (v?.chu === 'Ghi nhận xét') return nut(t('Ghi nhận xét'), () => setView({ loai: 'ghi-nhan-xet' }));
     if (v?.chu.startsWith('Xác nhận PA') && v.paId) return nut(t('Xác nhận PA'), () => setView({ loai: 'xac-nhan-pa', paId: v.paId! }));
     if (v?.loaiHan === 'cap-nhat-pa' && v.paId) return nut(v.chu.startsWith('Kết quả cuối') ? t('Kết quả cuối') : t('Kết quả'), () => setView({ loai: 'ghi-ket-qua', paId: v.paId! }), dich(v.chu));  /* tên PA là chữ người dạy gõ (có thể dài) — chỉ để ở tooltip; nút nào cũng đã có "Kết quả" riêng ở thẻ PA */
-    if (ht?.an || !data.viewer.canClose) return undefined;
+    if (ht?.an || !data.viewer.canClose || data.sos?.tam) return undefined;   // OV-13a: Case tạm — chờ chốt SOS, chưa là việc
     return (
       <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0"
         onClick={() => (chanHoanThanh.length > 0 ? lf.bam() : setView({ loai: 'hoan-thanh' }))}>
@@ -266,7 +266,7 @@ export function NganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose
       dau={dauViec({ em, lop })}
       chan={{
         huy: { nhan: t('Đóng'), onClick: onClose },
-        phu: data.viewer.canEdit && canDong && !(data.sos?.awaitingCause || data.sos?.choNhanXet || data.sos?.choDuyetKhongTheoDoi)
+        phu: data.viewer.canEdit && canDong && !(data.sos?.awaitingCause || data.sos?.choNhanXet || data.sos?.choDuyetKhongTheoDoi || data.sos?.tam)   // OV-13a: Case tạm chưa thêm PA
           ? <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={() => setView({ loai: 'them-pa' })}>{t('+ Thêm PA')}</button>
           : undefined,
         chinh: nutChinh,
@@ -286,7 +286,7 @@ export function NganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose
             <span className="min-w-0 text-[12.5px] text-slate-400">
               {t('mở {tuan}', { tuan: tuanLich(data.detectedAt, homNay) })}{data.reportedBy ? ` · ${t('{ten} báo', { ten: data.reportedBy })}` : ''}
               {/* Hạn báo kết quả cả Case chỉ khi KHÔNG có PA chạy — có PA chạy thì hạn của PA đã nói (B-5, Q2). */}
-              {!data.tamDungTu && canDong && !conPaChay && data.followUntil ? ` · ${t('hạn báo kết quả {ngay}', { ngay: ngan(data.followUntil) })}` : ''}
+              {!data.tamDungTu && canDong && !conPaChay && data.followUntil && !data.sos?.tam ? ` · ${t('hạn báo kết quả {ngay}', { ngay: ngan(data.followUntil) })}` : ''}
             </span>
             <span className="flex-1" />
             {nutDau}

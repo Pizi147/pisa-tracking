@@ -9359,6 +9359,12 @@ await runPrOv12eTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P,
 // ==================================================================== HOTFIX 15/10 (nhận xét sau hoàn tất qua HTTP · Sửa Case MT không Mô tả)
 const { runPrHfTests } = await import('./prHf.tests.ts');
 await runPrHfTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== PR-OV13a (Case tạm · PA quy chế hết kẹt A/B/C · migrate prOv13a)
+const { runPrOv13aTests } = await import('./prOv13a.tests.ts');
+await runPrOv13aTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== OV-13i (TVV / CX sửa thông tin cả lớp, kể cả Target)
+const { runPrOv13iTests } = await import('./prOv13i.tests.ts');
+await runPrOv13iTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== OV-13h (gỡ chặn cứng người đúng nhiệm vụ — qua HTTP; chạy cuối: không bọc giao dịch)
 const { runPrOv13hTests } = await import('./prOv13h.tests.ts');
 await runPrOv13hTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
