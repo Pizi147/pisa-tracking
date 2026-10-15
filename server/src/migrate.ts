@@ -44,7 +44,6 @@ import { migratePrOv4 } from './migrate/prOv4.ts';
 import { migratePrOv6b1 } from './migrate/prOv6b1.ts';
 import { migratePrOv6b2 } from './migrate/prOv6b2.ts';
 import { migratePrOv8a } from './migrate/prOv8a.ts';
-import { migratePrOv1c } from './migrate/prOv1c.ts';
 import { migratePrOv11e, themCotPrOv11e } from './migrate/prOv11e.ts';
 import { migratePrOv12a } from './migrate/prOv12a.ts';
 import { migratePrOv12g } from './migrate/prOv12g.ts';
@@ -52,6 +51,7 @@ import { migratePrEn } from './migrate/prEn.ts';
 import { migratePrOv12b } from './migrate/prOv12b.ts';
 import { migratePrOv12c } from './migrate/prOv12c.ts';
 import { migratePrOv12h } from './migrate/prOv12h.ts';
+import { cacBuocPrOv13a, khoaPrOv1c, themCotPrOv13a } from './migrate/prOv13a.ts';
 import { migratePrOv13e } from './migrate/prOv13e.ts';
 
 /**
@@ -109,6 +109,7 @@ function migrateCaseEngine(applied: string[], skipped: string[], loiSauBuoc?: nu
   /* Lỗi giữa chừng: không bật lại ở đây — run.ts đóng kết nối, kết nối mới mặc định bật. */
   conn.pragma('foreign_keys = OFF');
     /* PR-OV11e: cột KCK theo lượt — TRƯỚC mọi bước tính kết quả lượt (`kckCuaLuot` đọc cột này). Chỉ thêm cột. */ buoc(() => themCotPrOv11e(conn, applied));
+    /* PR-OV13a: cột sos_cases.tam (Case tạm) — TRƯỚC mọi bước có thể chạy luật Case (đọc / ghi cột này). Chỉ thêm cột. */ buoc(() => themCotPrOv13a(conn, applied));
     buoc(() => {
     // 1. Cột mới trên các bảng đang có.
     for (const [col, decl] of [
@@ -325,7 +326,7 @@ function migrateCaseEngine(applied: string[], skipped: string[], loiSauBuoc?: nu
     /* OV-3b: bảng nháp lộ trình + cột đề xuất Kết quả đầu ra + ban_giao_mon.lam_lai; vừa tạo bảng thì chép Hướng GVCN chưa có quyết định thành nháp. */ buoc(() => migratePrOv3b(conn, applied));
     /* PR-OV1b: dấu "-" cũ theo luật mới — nhập bù / MT cũ = Không dự thi, "-" trong tuần chưa chốt = vắng chốt ngay (đổi dữ liệu, chạy lặp được). */ buoc(() => migratePrOv1b(conn, applied));
     /* PR-OV4a: ket_qua_huy.loai (doi_vuot | huy_luot) + dong_json — Huỷ cả lượt giữ điểm ẩn, Khôi phục lượt (chỉ thêm cột). */ buoc(() => migratePrOv4(conn, applied));
-    /* PR-OV1c: Case SOS MT theo luật chốt — lượt chưa chốt đóng Case chưa ai đụng ("Chờ chốt SOS"), Overall đạt xoá SOS (đổi dữ liệu, chạy lặp được). */ buoc(() => migratePrOv1c(conn, applied));
+    /* PR-OV1c: Case SOS MT theo luật chốt — lượt chưa chốt đóng Case chưa ai đụng ("Chờ chốt SOS"), Overall đạt xoá SOS (đổi dữ liệu). OV-13a (d): không chạy nữa — chỉ ghi khoá. */ buoc(() => khoaPrOv1c(conn, applied));
     /* OV-8a: Bước tiếp sau thi thật — bốn cột ở learning_cycles (chỉ thêm, chạy lặp được). */ buoc(() => migratePrOv8a(conn, applied));
     /* OV-10b: liên hệ học viên — SĐT em, phụ huynh (chỉ thêm cột, chạy lặp được). */ buoc(() => migratePrOv10b(conn, applied));
     /* PR-OV11e (SAU prOv1b / prOv1c): lượt MT đã chốt chụp dấu KCK hiện tại — kết luận giữ như màn đang hiện (đổi dữ liệu, chạy lặp được). */ buoc(() => migratePrOv11e(conn, applied));
@@ -335,6 +336,8 @@ function migrateCaseEngine(applied: string[], skipped: string[], loiSauBuoc?: nu
     /* PR-OV12c (SAU PR-OV12b — cần cột nhom_nguyen_nhan): Case MT chờ nguyên nhân → nguyên nhân từ nhận xét / việc Ghi nhận xét, thẻ Báo lên nguyên nhân đóng, nhãn SOS Progress (đổi dữ liệu, chạy lặp được). */ buoc(() => migratePrOv12c(conn, applied));
     /* PR-OV12h: bảng case_followup_buoi — Kết quả PA Tutor theo buổi (chỉ thêm bảng, chạy lặp được). */ buoc(() => migratePrOv12h(conn, applied));
     /* PR-OV12g: bảng Góp ý hàng tuần (chỉ cấu trúc, chạy lặp được). */ buoc(() => migratePrOv12g(conn, applied));
+    /* PR-OV13a (SAU prOv1c / prOv12c): xoá Case "Chờ chốt SOS" cũ chưa ai đụng · PA quy chế kỹ năng đã đạt → Kết quả cuối · "đến lúc thi" → mốc MT cuối ·
+       Case tạm cho lượt chưa chốt (đổi dữ liệu, chạy lặp được) — mỗi phần một giao dịch. */ for (const b of cacBuocPrOv13a(conn, applied)) buoc(b);
     /* OV-13e: users.requested_role — vai đề nghị khi tự đăng ký (chỉ thêm cột, chạy lặp được). */ buoc(() => migratePrOv13e(conn, applied));
 
     conn.prepare("INSERT OR REPLACE INTO demo_config (key, value, updated_at) VALUES ('case_engine_migrated_at', ?, ?)")

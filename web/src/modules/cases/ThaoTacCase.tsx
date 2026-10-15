@@ -314,7 +314,7 @@ export type CaseDeSua = {
 };
 
 /**
- * SỬA CASE: Kỹ năng (khoá khi Case đã có PA) · Nhóm nguyên nhân · Mức độ · Tên Case · Mô tả. Chân trái `Xoá Case` (Quản lý / Quản trị, Case báo tay chưa có PA
+ * SỬA CASE: Kỹ năng (khoá khi Case đã có PA) · Nhóm nguyên nhân · Mức độ · Tên Case · Mô tả (Case MT không có — OV-13a Q1). Chân trái `Xoá Case` (Quản lý / Quản trị, Case báo tay chưa có PA
  * ghi kết quả) → hỏi một dòng. Còn PA có kết quả: nút Xoá Case khoá + câu hướng dẫn. Luật nội dung kiểm ở máy chủ (`kiemNoiDungCase`).
  */
 export function SuaCasePanel({ c, tenCase, soPaChuaLam, hocVien, lop, quayLai, onClose, onSaved, onDeleted }: ChungPanel & {
@@ -327,6 +327,8 @@ export function SuaCasePanel({ c, tenCase, soPaChuaLam, hocVien, lop, quayLai, o
   const ct = c.chuongTrinh ?? null;
   const goc = c.issues.find((i) => i.role === 'primary') ?? null;
   const nnTuBai = !!c.sos?.laMt && !!goc && goc.byName == null;
+  /* OV-13a (Q1): Case Mock Test không có ô Mô tả — mô tả là nhận xét của bài (cả Case MT cũ GV đã tự chọn nhóm). */
+  const coMoTa = !c.sos?.laMt;
   const [topic, setTopic] = useState(c.topic ?? '');
   const [primaryCode, setPrimaryCode] = useState(goc?.code ?? '');
   const [ghiRo, setGhiRo] = useState(goc?.observation ?? '');
@@ -343,8 +345,7 @@ export function SuaCasePanel({ c, tenCase, soPaChuaLam, hocVien, lop, quayLai, o
     ...(laKhac(primaryCode) && !nnTuBai ? [{ khoa: 'ghi-ro', nhan: t('Ghi rõ'), toiThieu: KHAC_TOI_THIEU }] : []),
     { khoa: 'muc-do', nhan: t('Mức độ'), chon: true },
     { khoa: 'ten', nhan: t('Tên Case'), toiThieu: 3 },
-    /* Hotfix 15/10 (L2): Case MT nguyên nhân từ bài — nhận xét của bài thay Mô tả. */
-    ...(nnTuBai ? [] : [{ khoa: 'mo-ta', nhan: t('Mô tả'), toiThieu: 15 }]),
+    ...(coMoTa ? [{ khoa: 'mo-ta', nhan: t('Mô tả'), toiThieu: 15 }] : []),
   ], { 'phan-loai': primaryCode, 'ghi-ro': ghiRo, 'muc-do': urgency, ten: title, 'mo-ta': summary });
   const daSua = topic !== (c.topic ?? '') || primaryCode !== (goc?.code ?? '') || ghiRo !== (goc?.observation ?? '')
     || urgency !== (c.urgency ?? '') || title !== (c.viewer.tenSua ?? '') || summary !== (c.summary ?? '');
@@ -355,7 +356,7 @@ export function SuaCasePanel({ c, tenCase, soPaChuaLam, hocVien, lop, quayLai, o
     setBusy(true);
     try {
       await api.patch(`/cases/${c.id}`, {
-        topic, ...(nnTuBai ? {} : { primaryCode, observation: laKhac(primaryCode) ? ghiRo.trim() : null }), urgency, title: title.trim(), ...(nnTuBai ? {} : { summary: summary.trim() }),
+        topic, ...(nnTuBai ? {} : { primaryCode, observation: laKhac(primaryCode) ? ghiRo.trim() : null }), urgency, title: title.trim(), ...(coMoTa ? { summary: summary.trim() } : {}),
       });
       invalidate('/cases'); invalidate('/students'); invalidate('/my-work');
       toast.push('ok', t('Đã lưu Case'));
@@ -436,7 +437,7 @@ export function SuaCasePanel({ c, tenCase, soPaChuaLam, hocVien, lop, quayLai, o
           <Truong nhan={t('Tên Case')} batBuoc loi={lf.loiCua(loi, 'ten')}>
             <input className="field w-full" {...lf.o(loi, 'ten')} maxLength={80} value={title} onChange={(e) => setTitle(e.target.value)} />
           </Truong>
-          {!nnTuBai && (
+          {coMoTa && (
             <Truong nhan={t('Mô tả')} batBuoc loi={lf.loiCua(loi, 'mo-ta')} dem={{ co: summary.trim().length, can: 15 }}>
               <textarea className="field w-full" {...lf.o(loi, 'mo-ta')} rows={3} maxLength={2000} value={summary} onChange={(e) => setSummary(e.target.value)} />
             </Truong>

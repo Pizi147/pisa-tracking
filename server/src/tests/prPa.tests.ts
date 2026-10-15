@@ -644,7 +644,7 @@ export async function runPrPaTests(t: YThucTestKit) {
     const chay = { kind: 'tutor', status: 'started', preset: false, confirmedAt: null, approvalState: null, ghiDuoc: true };
     const xem = { canApprove: false, caseXong: false };
     const n = (o: Record<string, unknown>, x: Record<string, unknown> = {}) => d.nutDongPa({ ...chay, ...o }, { ...xem, ...x });
-    assert(JSON.stringify(n({})) === '{"ketQua":true,"sua":true,"xoa":false}', JSON.stringify(n({})));
+    assert(JSON.stringify(n({})) === '{"ketQua":true,"sua":true,"xoa":false,"ketThuc":false}', JSON.stringify(n({})));
     assert(!n({ ghiDuoc: false }).sua && !n({ ghiDuoc: false }).ketQua, 'không ghi được → không Sửa PA / Kết quả');
     for (const o of [{ status: 'completed' }, { status: 'cancelled' }, { approvalState: 'pending' }, { preset: true, confirmedAt: null, status: 'planned' }])
       assert(!n(o).sua && !n(o).ketQua, `PA chưa chạy / đã khép: ${JSON.stringify(o)}`);

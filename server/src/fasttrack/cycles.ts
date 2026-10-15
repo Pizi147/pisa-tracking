@@ -8,7 +8,7 @@ import {
 import { demoToday } from '../demoConfig.ts';
 import { closeCasesBySystem } from '../cases/systemClose.ts';
 import { badRequest, chuTuDo, forbidden, isIsoDate, kiemKieuO, notFound, nowIso } from '../util.ts';
-import { can as coQuyen, require_, type Principal } from '../permissions.ts';
+import { can as coQuyen, require_, type Ctx, type Principal } from '../permissions.ts';
 import { addJourney, writeAudit } from '../platform/audit.ts';
 import { ensurePeriod, mondayOf, periodById } from '../platform/week.ts';
 import { apLichMacDinh } from '../classes/schedule.ts';
@@ -515,6 +515,9 @@ export function targetRevisions(cycleId: number) {
  * đi, và mỗi lần đổi phải có LÝ DO — nếu không, vài tháng sau không ai còn biết vì sao
  * Target của em này lại khác trong hồ sơ.
  */
+/** OV-8b / OV-13i: ai đổi được Target — QL (`cycle.edit`) hoặc TVV / CX (`student.edit_more`) đúng phạm vi. Một luật cho Sửa một HV, Sửa cả lớp, cờ panel. */
+export const duocDoiTarget = (p: Principal, ctx: Ctx) => coQuyen(p, PERMISSIONS.CYCLE_EDIT, ctx) || coQuyen(p, PERMISSIONS.STUDENT_EDIT_MORE, ctx);
+
 export function reviseTarget(p: Principal, cycleId: number, input: {
   /** Số, `null`/'' (chưa có), "6.5 KCK" hoặc KCK / '-' / "không cam kết" (Q29-1, OV-9: KCK là dấu riêng). */
   newTarget: number | string | null; effectiveFrom?: string; reason?: string | null;
@@ -523,7 +526,7 @@ export function reviseTarget(p: Principal, cycleId: number, input: {
   if (!c) throw notFound('Không tìm thấy lộ trình');
   /* `daDuyet`: chỉ quyết định chuyển lớp lúc thi hành truyền — lệnh đã được kiểm quyền lúc ra (như `applyTransition`). */
   /* OV-8b: TVV / CX (`student.edit_more`) sửa thẳng như QL — cùng đường, cùng lý do bắt buộc, cùng nhật ký. */
-  if (!o?.daDuyet && !coQuyen(p, PERMISSIONS.STUDENT_EDIT_MORE, { studentId: c.student_id })) require_(p, PERMISSIONS.CYCLE_EDIT, { studentId: c.student_id }, CHI_QL_SUA);
+  if (!o?.daDuyet && !duocDoiTarget(p, { studentId: c.student_id })) require_(p, PERMISSIONS.CYCLE_EDIT, { studentId: c.student_id }, CHI_QL_SUA);
   /* OV-6b2: lộ trình của chương trình liên tục (PET, KET…) không có Target. */
   if (!c.route && programmeByCode(c.programme_code)?.lapMoiTuan) throw badRequest(CAU_LIEN_TUC.target);
   const { target, kck } = docTarget(input.newTarget);

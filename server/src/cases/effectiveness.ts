@@ -1,5 +1,5 @@
 import { db, theoLo } from '../db.ts';
-import { NOT_UNCONFIRMED_PRESET } from './sosState.ts';
+import { CASE_THAT, NOT_UNCONFIRMED_PRESET } from './sosState.ts';
 import { NGUONG_MINI_TEST } from '../../../shared/domain/cuoiKhoa.ts';
 import {
   CASE_CATEGORY_SHORT, INTERVENTION_KIND_LABEL,
@@ -449,7 +449,7 @@ export function issueBoard(scope: Scope, category: string) {
         `SELECT sc.id, sc.student_id, sc.status, sc.category, sc.topic, sc.disposition, sc.outcome,
                 (SELECT COUNT(*) FROM case_interventions i WHERE i.case_id = sc.id) AS iv_all
            FROM sos_cases sc
-          WHERE sc.student_id IN (${ph})`,
+          WHERE sc.student_id IN (${ph}) AND ${CASE_THAT('sc')}`,
       )
       .all(...lo) as any[]);
   });

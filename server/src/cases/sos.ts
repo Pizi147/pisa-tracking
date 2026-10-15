@@ -11,10 +11,12 @@ import { type Principal } from '../permissions.ts';
 import { addJourney, notify, writeAudit } from '../platform/audit.ts';
 import { caseDongDoXoaSql, raiseSignal, labelOf } from './signals.ts';
 import { failingEntrySkills, type AttemptResult, type EntryBands } from '../fasttrack/scoring.ts';
-import { weekStartOf } from '../fasttrack/attempts.ts';
+import { resultOf, weekStartOf } from '../fasttrack/attempts.ts';
+import { laLopKetThuc } from '../fasttrack/hoanTat.ts';
+import { nho } from '../platform/nguCanhRequest.ts';
 import { scoringModeOf } from '../fasttrack/skillSchedule.ts';
-import { announceAutoCase, createPresetPlan, isFastTrackMock, resyncUnconfirmedPresets } from './sosAuto.ts';
-import { CO_THE_KHONG_THEO_DOI, PA_QUY_CHE_CHUA_GHI, UNCONFIRMED_PRESET, sosCaseState } from './sosState.ts';
+import { announceAutoCase, createPresetPlan, isFastTrackMock, paSangKetQuaCuoi, resyncUnconfirmedPresets } from './sosAuto.ts';
+import { CO_THE_KHONG_THEO_DOI, PA_QUY_CHE_CHUA_GHI, UNCONFIRMED_PRESET, dongBoTrangThaiCase, sosCaseState } from './sosState.ts';
 import { closeCasesBySystem } from './systemClose.ts';
 import { xoaCaseHeThong } from './cases.ts';
 import { syncSosCoordination } from '../yThuc/phoiHop.ts';
@@ -321,14 +323,12 @@ export function addMilestone(input: {
 export function raiseSignalsForResult(p: Principal, attempt: any, result: AttemptResult) {
   /* OV-9: em KCK dưới kỳ vọng không có mức SOS (`sosLevel` null) nhưng vẫn mở Case nhẹ — `kck` đi suốt hàm. */
   const kck = result.kckDuoi;
-  if (result.sosLevel === null && !kck) return null;
+  if (result.sosLevel === null && !kck) {
+    /* OV-13a: lượt không còn điểm dưới kỳ vọng nào để xét (xoá hết điểm) — Case tạm của lượt xoá theo. */
+    if (isFastTrackMock(attempt, scoringModeOf(attempt))) xoaCaseTamThua(p.userId, attempt.id, keHoachCaseTam(attempt, []).xoa);
+    return null;
+  }
   if (laMt0(attempt)) return null;   // MT0: SOS chỉ hiển thị (T5) — không tín hiệu / Case / PA / Phối hợp / thông báo
-  /*
-   * OV-1c (đặc tả 3.2): Mock FT CHƯA CHỐT = "SOS tạm thời" — không tín hiệu, Case, PA, Phối hợp, hạn, chuông. Lần xét đầu tiên lượt chốt
-   * (cùng giao dịch với thao tác làm lượt chốt) mới chạy phần dưới → hạn xác nhận tính từ ngày chốt. Hết chốt (Bỏ vắng, khôi phục phần
-   * thi) không gỡ gì đã sinh; chốt lại đi qua đúng nhánh "tín hiệu đã nối" nên không Case trùng.
-   */
-  if (!result.chot && isFastTrackMock(attempt, scoringModeOf(attempt))) return null;
   const conn = db();
   /*
    * PR-S3F #3 → OV-9: lộ trình HIỆN TẠI của em có dấu KCK (`kckCuaLuot` trong `resultOf`) thì lượt — kể cả lượt đã có điểm một phần — không sinh
@@ -361,6 +361,17 @@ export function raiseSignalsForResult(p: Principal, attempt: any, result: Attemp
   const detectedAt = lichSu ? demoToday() : weekStartOf(attempt) ?? demoToday();
 
   /*
+   * OV-1c → OV-13a (chủ SP 15/10, Q2): Mock FT CHƯA CHỐT = "SOS tạm thời" — không tín hiệu chờ, PA, Phối hợp, hạn, chuông; ô dưới kỳ vọng có điểm +
+   * nhận xét thì có CASE TẠM ("Chờ chốt SOS", hiện + sửa được). Lần xét đầu tiên lượt chốt (cùng giao dịch với thao tác làm lượt chốt) chạy phần dưới:
+   * Case tạm thành Case thật (hạn xác nhận từ ngày chốt) hoặc xoá hẳn (Overall đạt / kỹ năng hết dưới). Hết chốt (Bỏ vắng, khôi phục phần thi) không
+   * gỡ gì đã sinh; chốt lại đi qua nhánh "tín hiệu đã nối" nên không Case trùng.
+   */
+  if (isFastTrackMock(attempt, scoringModeOf(attempt))) {
+    if (!result.chot) { dongBoCaseTam(p.userId, attempt, result, failing, entry, detectedAt); return null; }
+    xoaCaseTamThua(p.userId, attempt.id, keHoachCaseTam(attempt, failing).xoa);
+  }
+
+  /*
    * PHỐI HỢP SOS (rulebook v3, P01–P03) — CHỈ Mock Test FT. Đồng bộ TRƯỚC các lối thoát sớm bên dưới: SOS hết (mức 0) cũng phải tự bỏ những việc
    * điền sẵn chưa làm (P03). Điểm sửa qua sửa lại thì việc theo mức SOS thật; việc đã xong không bao giờ bị xoá.
    */
@@ -390,6 +401,7 @@ export function raiseSignalsForResult(p: Principal, attempt: any, result: Attemp
       occurredOn: detectedAt, createdBy: p.userId,
       dedupKey: `mt:${attempt.id}:${c.id}:passed`,
     });
+    paSangKetQuaCuoi([c.id], detectedAt, p.userId);   // OV-13a (A): kỹ năng đạt ở lượt sau → PA quy chế sang "Kết quả cuối"
     if (c.sos_level !== 0) {
       conn.prepare('UPDATE sos_cases SET sos_level = 0, updated_at = ? WHERE id = ?').run(nowIso(), c.id);
       recordChange(c.id, 'sos_level', String(c.sos_level), '0', p.userId);
@@ -437,6 +449,8 @@ export function raiseSignalsForResult(p: Principal, attempt: any, result: Attemp
      * (bị thu hồi rồi trượt lại — `raiseSignal` xoá `case_id`), hoặc ở MỘT LƯỢT SAU (tín hiệu của lượt đó là dòng khác).
      */
     const alreadyLinked = signal.status === 'linked' && signal.case_id != null;
+    /* OV-13a: Case tạm của chính lượt này → lượt vừa chốt dưới kỳ vọng: thành Case thật ("Chờ xác nhận PA", hạn từ hôm nay). */
+    if (open?.tam && autoCases) { chotCaseTam(p.userId, open, attempt, result.sosLevel, kck); open.tam = 0; }
     if (!open && autoCases && !alreadyLinked) {
       open = taoCaseTuDong(p, {
         attempt, category, skill, sosLevel: result.sosLevel, detectedAt, band, expectation: result.expectation, signalId: signal.id, kck,
@@ -579,6 +593,11 @@ export function xoaSosOverallDat(actor: number | null, attempt: any, result: Att
     if (luatOv1c) closeCasesBySystem({ actorUserId: actor, studentId: attempt.student_id, reason: 'overall_dat', on, caseIds: dong });
     else for (const id of dong) xoaCaseHeThong(conn, id, actor, `${SYSTEM_CLOSE_REASON_LABEL.overall_dat} — em đạt lại, Case chưa có PA được xác nhận`);
   }
+  if (!luatOv1c && giu.length) {
+    paSangKetQuaCuoi(giu, on, actor);   // OV-13a (A): Overall đạt mà Case đã có PA → PA quy chế sang "Kết quả cuối" → Hoàn thành được
+    /* Case tạm "giữ" chỉ vì có tệp → đóng (không thành việc). */
+    for (const r of conn.prepare(`SELECT id FROM sos_cases WHERE tam = 1 AND id IN (${giu.map(() => '?').join(',')})`).all(...giu) as any[]) dongCaseTamCoTep(actor, r.id);
+  }
   for (const id of giu) {
     addMilestone({
       caseId: id, kind: 'overall_dat', attemptId: attempt.id, attemptNo: attempt.attempt_no, band: result.overall, expectation: result.expectation,
@@ -611,6 +630,8 @@ export function taoCaseTuDong(p: Principal, x: {
   pa?: 'quy_che' | 'bo_tro';
   /** OV-9: em KCK — Case NHẸ: không PA (quy chế / bổ trợ), không hạn xác nhận; GV vẫn xác nhận nguyên nhân (không hạn), tự thêm PA nếu cần. */
   kck?: boolean;
+  /** OV-13a (Q2): Case TẠM của lượt chưa chốt — chỉ Case + nguyên nhân từ ô; không hạn / PA / chuông / hành trình (lúc chốt: `chotCaseTam`). */
+  tam?: boolean;
 }): any {
   const conn = db();
   const { attempt } = x;
@@ -620,6 +641,18 @@ export function taoCaseTuDong(p: Principal, x: {
   if (up.kind === 'reopened') {
     conn.prepare(`UPDATE case_signals SET status = 'linked', case_id = ?, resolved_at = ?, resolution_note = ?, updated_at = ? WHERE id = ?`)
       .run(up.id, nowIso(), 'Nhập lại điểm sau khi xoá — mở lại Case cũ.', nowIso(), x.signalId);
+    return conn.prepare('SELECT * FROM sos_cases WHERE id = ?').get(up.id);
+  }
+  if (x.tam) {
+    conn.prepare('UPDATE sos_cases SET tam = 1, han_xac_nhan = NULL, kck = ?, updated_at = ? WHERE id = ?').run(x.kck ? 1 : 0, nowIso(), up.id);
+    addMilestone({
+      caseId: up.id, kind: 'opened', attemptId: attempt.id, attemptNo: attempt.attempt_no, band: x.band, expectation: x.expectation, sosLevel: x.sosLevel,
+      occurredOn: x.detectedAt, note: 'Case tạm — chờ chốt SOS (lượt chưa đủ điểm)', createdBy: p.userId, dedupKey: `mt:${attempt.id}:${up.id}:opened`,
+    });
+    dongBoNguyenNhanMt({ caseIds: [up.id] });
+    conn.prepare(`UPDATE case_signals SET status = 'linked', case_id = ?, resolved_by = NULL, resolved_at = ?, resolution_note = ?, updated_at = ? WHERE id = ?`)
+      .run(up.id, nowIso(), 'Case tạm — lượt Mock Test chưa chốt SOS: không hạn, không PA.', nowIso(), x.signalId);
+    writeAudit({ actorUserId: p.userId, action: 'case.tam', entityType: 'sos_case', entityId: up.id, entityLabel: x.skill, after: { attemptId: attempt.id, sosLevel: x.sosLevel } });
     return conn.prepare('SELECT * FROM sos_cases WHERE id = ?').get(up.id);
   }
   const han = x.kck ? null : hanXacNhan(demoToday(), { sosLevel: x.sosLevel, thuong: boTro });   // OV-12c: Progress 5 ngày cố định
@@ -655,6 +688,114 @@ export function taoCaseTuDong(p: Principal, x: {
     detectedOn: x.detectedAt, hanXacNhan: han, actorUserId: p.userId, kck: x.kck,
   });
   return open;
+}
+
+// ---------------------------------------------------------------- OV-13a (chủ SP 15/10, Q2): Case tạm khi lượt chưa chốt
+
+/**
+ * KẾ HOẠCH CASE TẠM của một lượt Mock FT — CHỈ ĐỌC (lệnh `kiem-truoc-ov13a` dùng chung). `tao` = kỹ năng dưới kỳ vọng mà ô có điểm + nhận xét, chưa có Case
+ * đang mở cùng hạng mục, tín hiệu chưa nối Case nào (vd Case đã "Không cần theo dõi"). `xoa` = Case tạm của lượt mà kỹ năng không còn thế (đạt, xoá điểm,
+ * bỏ nhận xét) — lượt chưa chốt; lượt đã chốt cũng dọn đúng tập này (Case tạm còn lại thành Case thật ở `chotCaseTam`).
+ */
+export function keHoachCaseTam(attempt: { id: number; student_id: number; cycle_id?: number | null }, failing: readonly string[]): { tao: string[]; xoa: number[] } {
+  const conn = db();
+  const coNx = new Set((conn.prepare(`SELECT skill FROM assessment_scores WHERE attempt_id = ? AND TRIM(COALESCE(comment, '')) != ''
+      AND (band IS NOT NULL OR raw_score IS NOT NULL)`).all(attempt.id) as any[]).map((r) => r.skill as string));
+  const muon = failing.filter((s) => coNx.has(s) && !!categoryOf(s));
+  /* `kiem-truoc-ov13a` chạy trên DB CHƯA migrate (chưa có cột `tam`) → chưa có Case tạm nào để xoá. */
+  const coCot = nho('co_cot_tam', () => !!conn.prepare(`SELECT 1 FROM pragma_table_info('sos_cases') WHERE name = 'tam'`).get());
+  const xoa = !coCot ? [] : (conn.prepare(`SELECT id, topic FROM sos_cases WHERE attempt_id = ? AND tam = 1 AND status != 'done'`).all(attempt.id) as any[])
+    .filter((c) => !muon.includes(c.topic)).map((c) => c.id as number);
+  const mo = new Set((conn.prepare(`SELECT id, category FROM sos_cases WHERE student_id = ? AND COALESCE(cycle_id, 0) = ? AND status != 'done'`)
+    .all(attempt.student_id, attempt.cycle_id ?? 0) as any[]).filter((c) => !xoa.includes(c.id)).map((c) => c.category as string));
+  const noi = new Set((conn.prepare(`SELECT skill FROM case_signals WHERE attempt_id = ? AND status = 'linked' AND case_id IS NOT NULL`).all(attempt.id) as any[])
+    .map((r) => r.skill as string));
+  return { tao: muon.filter((s) => !mo.has(categoryOf(s) as string) && !noi.has(s)), xoa };
+}
+
+/** Case tạm có tệp mà hết lý do tồn tại: KHÔNG xoá (giữ bằng chứng) — đóng lại, nhả khoá, không thành việc. */
+function dongCaseTamCoTep(actor: number | null, id: number) {
+  db().prepare(`UPDATE sos_cases SET tam = 0, status = 'done', closed_at = ?, dedup_key = NULL, outcome_note = ?, updated_at = ? WHERE id = ?`)
+    .run(demoToday(), 'Case tạm — không còn dưới kỳ vọng khi chốt SOS; giữ vì có tệp.', nowIso(), id);
+  recordChange(id, 'status', 'open', 'done', actor);
+}
+
+/** Xoá hẳn Case tạm (thu hồi tín hiệu, gỡ mốc "Tái diễn" đã ghi vào Case cũ). Case tạm có tệp → đóng, không xoá (`dongCaseTamCoTep`). */
+function xoaCaseTamThua(actor: number | null, attemptId: number, ids: readonly number[]) {
+  const conn = db();
+  for (const id of ids) {
+    if (conn.prepare(`SELECT 1 FROM attachments WHERE owner_type = 'sos_case' AND owner_id = ?`).get(id)) {
+      conn.prepare(`UPDATE case_signals SET status = 'withdrawn', withdrawn_reason = ?, updated_at = ? WHERE attempt_id = ? AND case_id = ? AND status = 'linked'`)
+        .run('Case tạm — kỹ năng không còn dưới kỳ vọng trước khi lượt chốt', nowIso(), attemptId, id);
+      dongCaseTamCoTep(actor, id);
+      continue;
+    }
+    conn.prepare(`UPDATE case_signals SET status = 'withdrawn', withdrawn_reason = ?, updated_at = ? WHERE attempt_id = ? AND case_id = ? AND status = 'linked'`)
+      .run('Case tạm — kỹ năng không còn dưới kỳ vọng trước khi lượt chốt', nowIso(), attemptId, id);
+    conn.prepare(`DELETE FROM case_milestones WHERE kind = 'recurrence' AND attempt_id = ? AND case_id = (SELECT previous_case_id FROM sos_cases WHERE id = ?)`)
+      .run(attemptId, id);
+    xoaCaseHeThong(conn, id, actor, 'Case tạm — kỹ năng không còn dưới kỳ vọng / chưa có nhận xét trước khi lượt chốt', 'case.xoa_tam');
+  }
+}
+
+/** Đồng bộ Case tạm của lượt chưa chốt (gọi từ `raiseSignalsForResult`): xoá Case tạm thừa, sinh Case tạm còn thiếu. Trả số Case tạm vừa sinh. */
+function dongBoCaseTam(actor: number | null, attempt: any, result: AttemptResult, failing: readonly string[], entry: EntryBands, detectedAt: string): string[] {
+  const k = keHoachCaseTam(attempt, failing);
+  xoaCaseTamThua(actor, attempt.id, k.xoa);
+  for (const skill of k.tao) {
+    const category = categoryOf(skill) as CaseCategory;
+    const band = entry[skill as EntrySkill] ?? null;
+    const signal = raiseSignal({
+      actorUserId: actor, studentId: attempt.student_id, cycleId: attempt.cycle_id ?? null, attemptId: attempt.id, classId: attempt.class_id ?? null,
+      skill, category, band, expectation: result.expectation, sosLevel: result.sosLevel, detectedOn: detectedAt, silent: true,
+    });
+    taoCaseTuDong({ userId: actor } as Principal, {
+      attempt, category, skill, sosLevel: result.sosLevel, detectedAt, band, expectation: result.expectation, signalId: signal.id, kck: result.kckDuoi, tam: true,
+    });
+  }
+  return k.tao.map((s) => `${attempt.id}:${s}`);
+}
+
+/** Lượt có thuộc luật Case tạm không (Mock FT, chưa chốt, không MT0, MT cũ trong cửa sổ, lớp chưa kết thúc) + dữ liệu cần — CHỈ ĐỌC. */
+function luotCaseTam(attemptId: number): { attempt: any; result: AttemptResult; failing: string[]; entry: EntryBands; detectedAt: string } | null {
+  const conn = db();
+  const attempt = conn.prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(attemptId) as any;
+  if (!attempt || attempt.status === 'cancelled' || laMt0(attempt) || !isFastTrackMock(attempt, scoringModeOf(attempt)) || laLopKetThuc(attempt.class_id)) return null;
+  const result = resultOf(attempt);
+  if (result.chot || (result.sosLevel === null && !result.kckDuoi)) return null;
+  if (attempt.lich_su) {
+    const tuanKetThuc = attempt.planned_period_id ? (conn.prepare('SELECT week_end FROM report_periods WHERE id = ?').get(attempt.planned_period_id) as any)?.week_end ?? null : null;
+    if (!luotSinhViec({ lich_su: 1, tuanKetThuc, created_at: ngayTaoLuot(attempt.created_at) })) return null;
+  }
+  const entry: EntryBands = {};
+  for (const r of conn.prepare('SELECT skill, band FROM assessment_scores WHERE attempt_id = ?').all(attempt.id) as any[]) entry[r.skill as EntrySkill] = r.band;
+  const failing = failingEntrySkills(result.expectation, entry, result.skipped) as string[];
+  return { attempt, result, failing, entry, detectedAt: attempt.lich_su ? demoToday() : weekStartOf(attempt) ?? demoToday() };
+}
+/** Migrate `prOv13a` (e) / `kiem-truoc-ov13a`: Case tạm còn thiếu của một lượt (`ghi` = sinh luôn). Trả khoá `lượt:kỹ năng`. */
+export function caseTamCuaLuot(attemptId: number, ghi: boolean): string[] {
+  const l = luotCaseTam(attemptId);
+  if (!l) return [];
+  if (!ghi) return keHoachCaseTam(l.attempt, l.failing).tao.map((s) => `${attemptId}:${s}`);
+  return dongBoCaseTam(null, l.attempt, l.result, l.failing, l.entry, l.detectedAt);
+}
+
+/**
+ * Lượt CHỐT dưới kỳ vọng: Case tạm thành Case thật — hết tạm, hạn xác nhận từ HÔM NAY (`hanXacNhan`, theo mức SOS + mức gấp đã sửa), PA quy chế chờ
+ * xác nhận (KCK: không), hành trình + nhật ký "Tạo Case từ SOS" như Case mới. Chuông SOS của lượt do nơi gọi gửi (`notifyTeachers`).
+ */
+function chotCaseTam(actor: number | null, c: any, attempt: any, sosLevel: number | null, kck: boolean) {
+  const conn = db();
+  const han = kck ? null : hanXacNhan(demoToday(), { sosLevel, urgency: c.urgency });
+  conn.prepare('UPDATE sos_cases SET tam = 0, kck = ?, han_xac_nhan = ?, sos_level = ?, updated_at = ? WHERE id = ?').run(kck ? 1 : 0, han, sosLevel, nowIso(), c.id);
+  recordChange(c.id, 'tam', '1', '0', actor);
+  if (!kck) createPresetPlan({ caseId: c.id, attempt, category: c.category, sosLevel });
+  dongBoNguyenNhanMt({ caseIds: [c.id] });
+  dongBoTrangThaiCase(c.id);   // có PA quy chế chờ xác nhận → "Chưa xử lý" (Q28-5), như Case mới
+  announceAutoCase({
+    caseId: c.id, studentId: attempt.student_id, cycleId: attempt.cycle_id ?? null, skillLabel: labelOf({ skill: c.topic }),
+    attemptNo: attempt.attempt_no, sosLevel, ownerUserId: c.owner_user_id ?? null, detectedOn: c.detected_at ?? demoToday(), hanXacNhan: han, actorUserId: actor, kck,
+  });
 }
 
 /**

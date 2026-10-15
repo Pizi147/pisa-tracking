@@ -72,6 +72,8 @@ export function napDuLieuNen(conn: any, now: string): { roleId: Map<string, numb
   conn.prepare('INSERT INTO demo_config (key, value, updated_at) VALUES (?,?,?)').run('pr_qu_case_close_gv_at', now, now);
   /* PR-CT2: DB mới không có Kết quả Tutor kỳ vọng kiểu cũ — khoá trước để migrate không điền Số buổi tuần này cho dòng mới. */
   conn.prepare('INSERT INTO demo_config (key, value, updated_at) VALUES (?,?,?)').run('pr_ct2_dien_buoi', now, now);
+  /* PR-OV13a (d): DB mới không có Case "Chờ chốt SOS" kiểu cũ — khoá trước để migrate không chạy `prOv1c` (chỉ chạy một lần trên DB cũ). */
+  conn.prepare('INSERT INTO demo_config (key, value, updated_at) VALUES (?,?,?)').run('pr_ov1c_da_chay', now, now);
   /* DẤU DB MỚI (DEP-2): database dựng bằng mã hiện hành (init / seed) không có dữ liệu kiểu cũ — các bước CHUYỂN DỮ LIỆU CŨ của migrate bỏ qua. */
   conn.prepare('INSERT INTO demo_config (key, value, updated_at) VALUES (?,?,?)').run('khoi_tao_moi_at', now, now);
   return { roleId, permId };

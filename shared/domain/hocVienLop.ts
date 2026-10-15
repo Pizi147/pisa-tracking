@@ -635,11 +635,13 @@ export function menuHoSoLop(i: {
   lienTuc?: boolean;
   canEditProgress: boolean; canAssign: boolean; canAssignSubject: boolean; canAddStudents: boolean; coTheChuyenTiep: boolean;
   coTheChuyenNhieuEm: boolean; coTheXuatExcel: boolean; coTheMoLaiLop: boolean; coTheXoa: boolean; coTheKetThuc: boolean;
+  /** OV-13i: cờ máy chủ `viewer.coTheSuaCaLop` (GVCN / QL / TVV / CX đúng phạm vi); không truyền → theo `canAddStudents`. */
+  coTheSuaCaLop?: boolean;
 }): MucMenuLop[] {
   const m = (key: ViecMenuLop, nhan: string, nhom: MucMenuLop['nhom'], co: boolean): MucMenuLop[] => (co ? [{ key, nhan, nhom }] : []);
   return [
     ...m('thong-tin', t('Thông tin lớp'), 'Lớp', i.canEditProgress || i.canAssign || i.canAssignSubject),
-    ...m('sua-hoc-vien', t('Sửa thông tin học viên'), 'Lớp', i.canAddStudents && i.soHocVien > 0),
+    ...m('sua-hoc-vien', t('Sửa thông tin học viên'), 'Lớp', (i.coTheSuaCaLop ?? i.canAddStudents) && i.soHocVien > 0),
     ...m('hoc-vien', t('+ Học viên'), 'Lớp', i.canAddStudents),
     ...m('lo-trinh-ca-lop', t('Lộ trình tiếp theo'), 'Lộ trình', i.thuong && !i.lienTuc && (i.coTheChuyenTiep || i.canAddStudents)),
     ...m('chuyen-tiep', t('Chuyển tiếp lớp'), 'Lộ trình', !i.thuong && i.coTheChuyenNhieuEm),

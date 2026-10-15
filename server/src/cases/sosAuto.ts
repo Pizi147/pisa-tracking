@@ -1,7 +1,7 @@
-import { db, tx } from '../db.ts';
+import { db, theoLo, tx } from '../db.ts';
 import {
   CASE_DISMISS_REASONS, CASE_DISMISS_REASON_LABEL, CONFIRM_EDIT_REASON, URGENCY_LEVELS, academicSupportFor, caseTopicLabel, coNguoiDay, issueBranchOf, tenMonNgan,
-  hanXacNhan, issuesForTopic, kiemGhiRoKhac, laKhac, mocQuyChe, ngay, reasonNeedsText, tenCaseSos, hanKyGhiKetQua,
+  hanXacNhan, issuesForTopic, kiemGhiRoKhac, laKhac, mocQuyChe, ngay, reasonNeedsText, tenCaseSos, hanKyGhiKetQua, MOC_DAT_KY_VONG,
   type AcademicSupportPreset, type CaseDismissReason, type MilestoneKind, nhanBaiThuong } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addDays, badRequest, loi, forbidden, notFound, nowIso } from '../util.ts';
@@ -19,6 +19,7 @@ import { dongBoBaoPhCuaBai } from '../yThuc/phoiHop.ts';
 import { LA_CASE_MT, PA_QUY_CHE_CHUA_GHI, UNCONFIRMED_PRESET, dongBoTrangThaiCase, sosCaseState } from './sosState.ts';
 import { ghiBanDieuChinh, nguoiSauSua, soBuoiMoi } from './planRevisions.ts';
 import { chayPaBoTro, mocCuoiKhoa } from './boTro.ts';
+import { nho } from '../platform/nguCanhRequest.ts';
 
 export { UNCONFIRMED_PRESET, NOT_UNCONFIRMED_PRESET, PA_QUY_CHE_CHUA_GHI } from './sosState.ts';
 
@@ -275,24 +276,59 @@ export function xacNhanCase(p: Principal, caseId: number, input: {
 }
 
 /**
- * ĐIỀN MỐC QUY CHẾ CÒN TRỐNG (K3-14, Q2): PA quy chế đang chạy `đến MT{n+1}` / `đến lúc thi` mà lúc xác nhận chưa có lịch / ngày thi thì
- * `followup_due` NULL — PA vẫn chạy. Gọi ở ĐƯỜNG ĐỌC (`caseDetail`, `skillSupportBoard`), không cron: có lịch rồi thì lần đọc sau tự điền.
- * Một câu chọn cho cả tập; chỉ dòng tìm được mốc mới ghi (ít dòng). `theo`: tập Case, hoặc mọi Case của một học viên.
+ * OV-13a (B): MT CUỐI của mỗi lộ trình — lượt Mock chưa huỷ có số MT lớn nhất mà đã xếp tuần; `chuNhat` = hết Chủ nhật tuần đó. Một câu mỗi lô.
+ * "Đến lúc thi" chưa có ngày thi lấy mốc này (có ngày thi thì theo ngày thi — `mocThi`).
  */
-export function dienMocQuyChe(theo: { caseIds?: number[]; studentId?: number }) {
+export function mtCuoiCuaLoTrinh(cycleIds: readonly (number | null | undefined)[]): Map<number, { so: number; chuNhat: string }> {
+  const out = new Map<number, { so: number; chuNhat: string }>();
+  theoLo([...new Set(cycleIds.filter((x): x is number => typeof x === 'number'))], (lo, ph) => {
+    for (const r of db().prepare(`SELECT a.cycle_id, a.attempt_no, p.week_start FROM assessment_attempts a JOIN report_periods p ON p.id = a.planned_period_id
+        WHERE a.cycle_id IN (${ph}) AND a.kind = 'mock' AND a.status != 'cancelled'
+          AND a.attempt_no = (SELECT MAX(b.attempt_no) FROM assessment_attempts b WHERE b.cycle_id = a.cycle_id AND b.kind = 'mock'
+            AND b.status != 'cancelled' AND b.planned_period_id IS NOT NULL)`).all(...lo) as any[]) {
+      out.set(r.cycle_id, { so: r.attempt_no, chuNhat: addDays(mondayOf(r.week_start), 6) });
+    }
+  });
+  return out;
+}
+/** `mtCuoiCuaLoTrinh` cho MỘT lộ trình, nhớ theo yêu cầu (nhiều Case / PA cùng lộ trình chỉ một câu) — chữ mốc PA (`mocChuPa`). */
+export const mtCuoiNho = (cycleId: number | null | undefined): { so: number; chuNhat: string } | null =>
+  cycleId ? nho(`mt_cuoi:${cycleId}`, () => mtCuoiCuaLoTrinh([cycleId]).get(cycleId) ?? null) : null;
+/** OV-13a (B, rà #406): mốc theo MT cuối KHÔNG sớm hơn ngày xác nhận PA + 4 tuần (PA sinh ngay ở MT cuối không kết thúc ngay). */
+export const MOC_MT_CUOI_TOI_THIEU_NGAY = 28;
+export const mocTheoMtCuoi = (chuNhatMtCuoi: string | null | undefined, ngayXacNhan: string): string | null => {
+  if (!chuNhatMtCuoi) return null;
+  const sauNhat = addDays(ngayXacNhan, MOC_MT_CUOI_TOI_THIEU_NGAY);
+  return chuNhatMtCuoi > sauNhat ? chuNhatMtCuoi : sauNhat;
+};
+/** Mốc "đến lúc thi" của một lộ trình: ngày thi (`examDateOf`), chưa có thì MT cuối (OV-13a B, ≥ xác nhận + 4 tuần), không có cả hai thì trống. */
+export function mocThi(cycleId: number | null | undefined, ngayXacNhan: string): string | null {
+  return examDateOf(cycleId) ?? (cycleId ? mocTheoMtCuoi(mtCuoiCuaLoTrinh([cycleId]).get(cycleId)?.chuNhat, ngayXacNhan) : null);
+}
+
+/**
+ * ĐIỀN MỐC QUY CHẾ (K3-14, Q2): PA quy chế đang chạy `đến MT{n+1}` mà lúc xác nhận chưa có lịch thì `followup_due` NULL — PA vẫn chạy; có lịch
+ * rồi thì lần đọc sau tự điền. OV-13a (B): `đến lúc thi` LUÔN theo mốc hiện tại = ngày thi, chưa có thì MT cuối của lộ trình — có ngày thi sau /
+ * dời MT cuối thì mốc đi theo. Gọi ở ĐƯỜNG ĐỌC (`caseDetail`, `skillSupportBoard`, Công việc) và migrate `prOv13a`, không cron.
+ * `keHoachMocQuyChe` CHỈ ĐỌC (lệnh `kiem-truoc-ov13a`); `dienMocQuyChe` ghi đúng các dòng đó. `theo`: tập Case, mọi Case của một em, hoặc mọi PA (`tatCa`).
+ */
+export function keHoachMocQuyChe(theo: { caseIds?: readonly number[]; studentId?: number; tatCa?: boolean }): { id: number; moc: string; span: string }[] {
   const conn = db();
-  const dk = `iv.preset = 1 AND iv.status = 'started' AND iv.followup_due IS NULL AND iv.moc_quy_che IN ('until_next_mt', 'until_exam')`;
+  const dk = `iv.preset = 1 AND iv.status = 'started' AND ((iv.followup_due IS NULL AND iv.moc_quy_che = 'until_next_mt') OR iv.moc_quy_che = 'until_exam')`;
   /*
    * PR-S3F #4: ngày thi (JOIN lộ trình + tuần thi) và tuần của MT kế tiếp lấy NGAY trong câu chọn chính — trước đây mỗi dòng thêm 3 câu
    * (`luotSinhPa`, `followUntilAfter`, `examDateOf`) nên Công việc QL với 30 PA "đến lúc thi" chưa có ngày thi tốn 63 → 147 câu. `src` = lượt
    * sinh PA (cùng luật `luotSinhPa`); `tuan_mt_ke` = tuần của lượt kế tiếp chưa huỷ THEO attempt_no (chỉ PA quy chế FT;
-   * `followUntilAfter` xếp theo `soThuTuLuot` cho lớp thường — ở FT hai luật trùng nhau).
+   * `followUntilAfter` xếp theo `soThuTuLuot` cho lớp thường — ở FT hai luật trùng nhau). OV-13a: `tuan_mt_cuoi` cùng luật `mtCuoiCuaLoTrinh`.
    */
   const chon = `SELECT iv.*, sc.cycle_id AS case_cycle_id, cy.exam_period_id, cy.exam_month, cy.exam_date,
          ep.code AS exam_week_code, ep.week_start AS exam_week_start,
          (SELECT p.week_start FROM assessment_attempts nx LEFT JOIN report_periods p ON p.id = nx.planned_period_id
            WHERE nx.cycle_id = src.cycle_id AND nx.attempt_no > src.attempt_no AND nx.status != 'cancelled'
-           ORDER BY nx.attempt_no LIMIT 1) AS tuan_mt_ke
+           ORDER BY nx.attempt_no LIMIT 1) AS tuan_mt_ke,
+         (SELECT p.week_start FROM assessment_attempts l JOIN report_periods p ON p.id = l.planned_period_id
+           WHERE l.cycle_id = sc.cycle_id AND l.kind = 'mock' AND l.status != 'cancelled'
+           ORDER BY l.attempt_no DESC LIMIT 1) AS tuan_mt_cuoi
        FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id
        LEFT JOIN learning_cycles cy ON cy.id = sc.cycle_id
        LEFT JOIN report_periods ep ON ep.id = cy.exam_period_id
@@ -300,22 +336,28 @@ export function dienMocQuyChe(theo: { caseIds?: number[]; studentId?: number }) 
            WHERE m.case_id = iv.case_id AND m.kind IN ('opened', 'repeat') AND m.created_at <= iv.created_at
            ORDER BY m.created_at DESC, m.id DESC LIMIT 1)`;
   const rows: any[] = [];
+  if (theo.tatCa) rows.push(...conn.prepare(`${chon} WHERE sc.status != 'done' AND ${dk}`).all() as any[]);
   if (theo.studentId != null) {
     rows.push(...conn.prepare(`${chon} WHERE sc.student_id = ? AND sc.status != 'done' AND ${dk}`).all(theo.studentId) as any[]);
   }
-  const ids = theo.caseIds ?? [];
-  for (let i = 0; i < ids.length; i += 400) {
-    const lo = ids.slice(i, i + 400);
-    rows.push(...conn.prepare(`${chon} WHERE iv.case_id IN (${lo.map(() => '?').join(',')}) AND ${dk}`).all(...lo) as any[]);
-  }
+  theoLo([...(theo.caseIds ?? [])], (lo, ph) => { rows.push(...conn.prepare(`${chon} WHERE iv.case_id IN (${ph}) AND ${dk}`).all(...lo) as any[]); });
+  const ra: { id: number; moc: string; span: string }[] = [];
   for (const iv of rows) {
     const moc = mocQuyChe(iv.moc_quy_che, {
       ngayXacNhan: iv.cycle_started_on ?? iv.started_date ?? demoToday(),
       nextMtSunday: iv.moc_quy_che === 'until_next_mt' && iv.tuan_mt_ke ? addDays(mondayOf(iv.tuan_mt_ke), 6) : null,
-      examDate: examDateTu(iv),
+      examDate: examDateTu(iv) ?? mocTheoMtCuoi(iv.tuan_mt_cuoi ? addDays(mondayOf(iv.tuan_mt_cuoi), 6) : null, iv.started_date ?? iv.cycle_started_on ?? demoToday()),
     });
-    if (moc) conn.prepare('UPDATE case_interventions SET followup_due = ?, updated_at = ? WHERE id = ? AND followup_due IS NULL').run(moc, nowIso(), iv.id);
+    if (moc && moc !== iv.followup_due && !ra.some((r) => r.id === iv.id)) ra.push({ id: iv.id, moc, span: iv.moc_quy_che });
   }
+  return ra;
+}
+
+export function dienMocQuyChe(theo: { caseIds?: readonly number[]; studentId?: number; tatCa?: boolean }): number[] {
+  const conn = db();
+  const doi = keHoachMocQuyChe(theo);
+  for (const r of doi) conn.prepare('UPDATE case_interventions SET followup_due = ?, updated_at = ? WHERE id = ?').run(r.moc, nowIso(), r.id);
+  const ids = theo.caseIds ?? [];
   /* PR-LT2a: PA Bổ trợ đang chạy mà lúc chạy chưa có lịch Cuối khoá — có lịch rồi thì lần đọc sau tự điền (mốc = hết CN tuần Cuối khoá). */
   const dkBt = `iv.kind = 'bo_tro' AND iv.status = 'started' AND iv.followup_due IS NULL AND iv.moc_quy_che = 'den_cuoi_khoa' AND sc.status != 'done'`;
   const chonBt = `SELECT iv.id, sc.cycle_id, (SELECT a.class_id FROM assessment_attempts a WHERE a.id = sc.attempt_id) AS class_id FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id`;
@@ -329,6 +371,7 @@ export function dienMocQuyChe(theo: { caseIds?: number[]; studentId?: number }) 
     const moc = mocCuoiKhoa(r.cycle_id ?? null, r.class_id ?? null);
     if (moc) conn.prepare('UPDATE case_interventions SET followup_due = ?, updated_at = ? WHERE id = ? AND followup_due IS NULL').run(moc, nowIso(), r.id);
   }
+  return doi.map((r) => r.id);
 }
 /**
  * CHUYỂN LỚP FT → FT CÙNG CHƯƠNG TRÌNH (K3-44, Q13): PA theo quy chế chưa khép của Case đang mở đổi người thực hiện sang GVBM đúng kỹ năng
@@ -377,6 +420,29 @@ function luotSinhPa(iv: any): any | null {
 }
 
 /**
+ * OV-13a (A, chủ SP 15/10): KỸ NĂNG ĐÃ ĐẠT kỳ vọng (lượt MT sau — mốc `passed`; hoặc Overall đạt — mốc `overall_dat`) → PA quy chế ĐANG CHẠY của Case sang
+ * "Kết quả cuối": mốc `dat_ky_vong`, `followup_due` = ngày đạt (không muộn hơn hôm nay / mốc cũ) nên lần ghi tới là lần cuối (`laLanGhiCuoi`), hạn ghi
+ * như kỳ thường (`action_due` giữ). Ghi xong PA khép → Case Hoàn thành được. PA chờ xác nhận / Bổ trợ không đụng. Một dòng lịch sử mỗi PA. Trả id PA đã đổi.
+ */
+export function paSangKetQuaCuoi(caseIds: readonly number[], ngayDat: string, actor: number | null, chiPa?: readonly number[]): number[] {
+  const conn = db();
+  const moc = ngayDat < demoToday() ? ngayDat : demoToday();
+  const doi: number[] = [];
+  theoLo([...new Set(caseIds)], (lo, ph) => {
+    for (const iv of conn.prepare(`SELECT id, case_id, moc_quy_che FROM case_interventions WHERE case_id IN (${ph}) AND preset = 1 AND status = 'started'
+        AND confirmed_at IS NOT NULL AND moc_quy_che IN ('one_month', 'until_next_mt', 'until_exam')`).all(...lo) as any[]) {
+      if (chiPa && !chiPa.includes(iv.id)) continue;
+      conn.prepare(`UPDATE case_interventions SET moc_quy_che = ?, followup_due = CASE WHEN followup_due IS NOT NULL AND followup_due < ? THEN followup_due ELSE ? END,
+          updated_at = ? WHERE id = ?`).run(MOC_DAT_KY_VONG, moc, moc, nowIso(), iv.id);
+      conn.prepare(`INSERT INTO sos_case_history (case_id, field, old_value, new_value, actor_user_id, created_at) VALUES (?, 'pa_moc', ?, ?, ?, ?)`)
+        .run(iv.case_id, iv.moc_quy_che, MOC_DAT_KY_VONG, actor, nowIso());
+      doi.push(iv.id);
+    }
+  });
+  return doi;
+}
+
+/**
  * XÁC NHẬN PA THEO QUY CHẾ (Q28-3, §3.1d Planning tự quyết, K3-46): PA chờ xác nhận → đang chạy TỪ HÔM NAY. Mốc quy chế tính từ ngày
  * xác nhận (`mocQuyChe`); chưa có lịch / ngày thi thì để trống, điền sau (`dienMocQuyChe`). Đổi người thực hiện được; loại PA thì không.
  * Chỉ hàm này đặt `confirmed_at` + `confirmed_by` (người).
@@ -412,7 +478,7 @@ export function xacNhanPaQuyChe(p: Principal, interventionId: number, input: {
   const today = demoToday();
   const luot = luotSinhPa(iv);
   const moc = iv.moc_quy_che
-    ? mocQuyChe(iv.moc_quy_che, { ngayXacNhan: today, nextMtSunday: luot ? followUntilAfter(luot) : null, examDate: examDateOf(iv.case_cycle_id) })
+    ? mocQuyChe(iv.moc_quy_che, { ngayXacNhan: today, nextMtSunday: luot ? followUntilAfter(luot) : null, examDate: mocThi(iv.case_cycle_id, today) })   // OV-13a (B)
     : null;
   return tx(() => {
     conn.prepare(`UPDATE case_interventions SET description = ?, performer_user_id = ?, performer_name = ?, so_buoi = ?, status = 'started', started_date = ?,
