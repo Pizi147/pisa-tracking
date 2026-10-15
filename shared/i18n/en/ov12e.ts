@@ -48,4 +48,8 @@ export const EN_OV12E = {
   'Lý do tối đa 500 ký tự.': 'Reason: 500 characters at most.',
   'Case tạm — lượt Mock Test chưa chốt SOS. Lượt chốt rồi mới thêm PA.': 'Provisional case — the Mock Test round has not been finalised for SOS. Add a PA once the round is final.',
   'PA theo quy chế — không thay, không kết thúc sớm. GVCN / Quản lý: "Kết thúc PA" ở menu ⋯ của PA, kèm lý do.': 'Rule-based PA — cannot be replaced or ended early. Homeroom teacher / manager: "End PA" in the PA\'s ⋯ menu, with a reason.',
+  /* OV-13i: Sửa thông tin cả lớp — TVV / CX đổi Target, không sửa Tuần bắt đầu. */
+  'Chỉ Quản lý, TVV hoặc CX đổi Target': 'Only a Manager, Counsellor or CX can change the Target',
+  'Chỉ Quản lý hoặc GVCN sửa Tuần bắt đầu': 'Only a Manager or Core teacher can change the start week',
+  'Chỉ Quản lý, TVV hoặc CX đổi được Target.': 'Only a Manager, Counsellor or CX can change the Target.',
 } satisfies Record<string, Dich>;
