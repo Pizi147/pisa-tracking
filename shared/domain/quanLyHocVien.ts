@@ -3,7 +3,7 @@
  * và mở THẲNG panel của mục được chọn. Ẩn một mục không phải là chặn nó: máy chủ vẫn kiểm quyền.
  */
 export type ViecQuanLy = 'info' | 'lo-trinh-tiep' | 'lo-trinh' | 'chuyen-lop' | 'outcome' | 'tam-dung-thoi-hoc' | 'quay-lai' | 'hoc-lai' | 'luu-tru' | 'bo-luu-tru'
-  | 'xoa-hoc-vien' | 'de-xuat-sua' | 'de-xuat-chuyen-lop';
+  | 'xoa-hoc-vien' | 'de-xuat-sua' | 'de-xuat-chuyen-lop' | 'lich-su-sua';
 
 export const NHAN_VIEC_QUAN_LY: Record<ViecQuanLy, string> = {
   info: 'Sửa thông tin',
@@ -19,6 +19,7 @@ export const NHAN_VIEC_QUAN_LY: Record<ViecQuanLy, string> = {
   'bo-luu-tru': 'Bỏ lưu trữ',
   'xoa-hoc-vien': 'Xoá học viên',
   'de-xuat-sua': 'Đề xuất sửa thông tin…',
+  'lich-su-sua': 'Lịch sử sửa',
 };
 
 /** OV-11d (HV-3, Q4): hồ sơ đã Lưu trữ khoá — máy chủ trả câu này (400) ở mọi đường sửa hồ sơ / lộ trình / thi thật / Case. */
@@ -81,6 +82,8 @@ export function mucQuanLyHocVien({ canEdit, suaThongTin, suaThem, lopHoc, cycle,
   if (quyen?.quayLai && status === 'inactive') sau.push('quay-lai');
   if (quyen?.hocLai) sau.push('hoc-lai');
   if (quyen?.boLuuTru) sau.push('bo-luu-tru');
+  /* OV-13j: ai sửa được thông tin em thì xem được lịch sử sửa (cả khi hồ sơ đã Lưu trữ — chỉ xem). */
+  if (canEdit || suaThongTin) sau.push('lich-su-sua');
   if (coTheXoa) sau.push('xoa-hoc-vien');
   /* OV-11d (HV-22): em đang Tạm dừng — mục chỉ còn Thôi học, gọi đúng tên. */
   const thoiHoc = (key: ViecQuanLy) => key === 'tam-dung-thoi-hoc' && !cacTabTrangThai(quyen, status).includes('tam-dung');

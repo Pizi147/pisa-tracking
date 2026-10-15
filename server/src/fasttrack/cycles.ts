@@ -408,7 +408,7 @@ export function setBaseline(p: Principal, cycleId: number, input: {
       `UPDATE learning_cycles SET baseline_attempt_id=NULL, baseline_score=NULL,
               baseline_source=NULL, baseline_note=NULL WHERE id=?`).run(cycleId);
     writeAudit({ actorUserId: p.userId, action: 'cycle.baseline.clear', entityType: 'learning_cycle',
-      entityId: cycleId, before: c });
+      entityId: cycleId, before: c, after: cycleById(cycleId) });
     return cycleById(cycleId);
   }
 
@@ -431,7 +431,7 @@ export function setBaseline(p: Principal, cycleId: number, input: {
     `UPDATE learning_cycles SET baseline_attempt_id=?, baseline_score=?, baseline_source=?, baseline_note=? WHERE id=?`)
     .run(attemptId, attemptId ? null : score, input.source, input.note ?? null, cycleId);
   writeAudit({ actorUserId: p.userId, action: 'cycle.baseline.set', entityType: 'learning_cycle',
-    entityId: cycleId, before: c, after: input });
+    entityId: cycleId, before: c, after: { ...cycleById(cycleId), nhap: input } });
   return cycleById(cycleId);
 }
 

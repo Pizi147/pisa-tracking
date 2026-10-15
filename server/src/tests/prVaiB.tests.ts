@@ -380,7 +380,7 @@ export async function runPrVaiBTests(t: YThucTestKit) {
       if (i.canEdit) ds.push('info'); if (q?.ghiLoTrinhTiep) ds.push('lo-trinh-tiep'); if (i.canEdit && i.cycle && !ratio) ds.push('lo-trinh');
       if (i.deXuatSua && hoc && !i.canEdit) ds.push('de-xuat-sua'); /* OV-11d (HV-15): GVCN đề xuất Target ở Sửa thông tin */ if (q?.chuyenLop) ds.push('chuyen-lop'); if (q?.deXuatChuyenLop && hoc) ds.push('de-xuat-chuyen-lop');
       if (i.canEdit && i.cycle && !ratio) ds.push('outcome'); if ((q?.tamDung && hoc) || (q?.ketThuc && i.status !== 'finished')) ds.push('tam-dung-thoi-hoc'); if (q?.quayLai && !hoc && i.status === 'inactive') ds.push('quay-lai');
-      if (q?.luuTru) ds.push('luu-tru'); if (q?.boLuuTru) ds.push('bo-luu-tru'); if (i.coTheXoa) ds.push('xoa-hoc-vien');
+      if (q?.luuTru) ds.push('luu-tru'); if (q?.boLuuTru) ds.push('bo-luu-tru'); if (i.canEdit || i.suaThongTin) ds.push('lich-su-sua'); /* OV-13j */ if (i.coTheXoa) ds.push('xoa-hoc-vien');
       return ds;
     };
     const ql = { ghiLoTrinhTiep: false, chuyenLop: true, tamDung: true, quayLai: true, ketThuc: true, luuTru: false, boLuuTru: false };
