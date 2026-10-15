@@ -1,0 +1,22 @@
+/** OV-13j — Lịch sử sửa thông tin học viên (panel, tên trường và nguồn máy chủ gửi). Khoá = chữ Việt trên web. */
+export const EN_OV13J = {
+  'Lịch sử sửa': 'Edit history',
+  'Thông tin': 'Info',
+  'Target / lộ trình': 'Target / pathway',
+  'Lọc lịch sử sửa': 'Filter edit history',
+  'Chưa có lần sửa nào': 'No edits yet',
+  'SĐT': 'Phone',
+  'Quan hệ': 'Relation',
+  'SĐT phụ huynh': 'Parent phone',
+  'Đầu vào L': 'Entry L',
+  'Đầu vào R': 'Entry R',
+  'Đầu vào W': 'Entry W',
+  'Đầu vào S': 'Entry S',
+  'Có': 'Yes',
+  'Hoàn tác Học lại': 'Undo rejoin',
+  'Hoàn tác Kết thúc học': 'Undo finish',
+  'Hoàn tác Tạm dừng': 'Undo pause',
+  'Mở lộ trình': 'Open pathway',
+  'Sửa cả lớp {lop}': 'Whole-class edit {lop}',
+  'Thêm học viên · {lop}': 'Add students · {lop}',
+};
