@@ -519,7 +519,7 @@ textarea.field{display:block;width:100%;min-height:64px;padding:9px 10px;font:14
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="lich" viewBox="0 0 16 16"><rect x="2" y="3" width="12" height="11" rx="2" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M2 6.5h12M5 1.5v3M11 1.5v3" stroke="currentColor" stroke-width="1.4"/></symbol><symbol id="chuong" viewBox="0 0 16 16"><path d="M4 11V7a4 4 0 0 1 8 0v4l1.2 1.5H2.8Z M6.5 14h3" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></symbol><symbol id="kinh" viewBox="0 0 16 16"><circle cx="7" cy="7" r="4.5" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="m10.5 10.5 3.5 3.5" stroke="currentColor" stroke-width="1.4"/></symbol></svg>
 <div class="top">
   <b>Mockup · OV-13 · 15/10</b>
-  <span class="toc"><a href="#s1">1 Ghi kết quả gọn</a>·<a href="#s2">2 Case gọn</a>·<a href="#s3">3 Gom Công việc</a>·<a href="#s4">4 Ý thức nhiều em</a>·<a href="#s5">5 Hướng dẫn</a>·<a href="#s6">6 Email</a>·<a href="#s7">7 PA Tutor</a>·<a href="#s8">8 Đề xuất đổi PA</a>·<a href="#cho">Đã chốt</a></span>
+  <span class="toc"><a href="#s1">1 Ghi kết quả gọn</a>·<a href="#s2">2 Case gọn</a>·<a href="#s3">3 Gom Công việc</a>·<a href="#s4">4 Ý thức nhiều em</a>·<a href="#s5">5 Hướng dẫn</a>·<a href="#s6">6 Email</a>·<a href="#s7">7 PA Tutor</a>·<a href="#s8">8 Đề xuất đổi PA</a>·<a href="#s9">9 Xác nhận PA</a>·<a href="#cho">Đã chốt</a></span>
   <span class="sp"></span>
   <button class="btn btn-sm" aria-pressed="true" onclick="doi('dark',this)">Tối</button>
   <button class="btn btn-sm" aria-pressed="false" onclick="doi('light',this)">Sáng</button>
@@ -543,6 +543,7 @@ textarea.field{display:block;width:100%;min-height:64px;padding:9px 10px;font:14
     <li>Bấm dòng "Ghi kết quả {kỳ}" → mở ngay dưới dòng: <b>Tiến triển (2 tuần) *</b> · <b>Nhận xét *</b> · <b>Lưu</b>. Không ô Quyết định: mặc định <b>Giữ nguyên</b>.</li>
     <li>Link nhỏ <b>Điều chỉnh / Kết thúc…</b> → panel lớn (form v3 §5, chữ đã gõ mang theo). PA Tutor → panel lớn luôn (Số buổi + Tutor từng buổi).</li>
     <li>Lưu xong: dòng gập thành "✓ Đã lưu · hạn kế …" + Hoàn tác 10 giây; dòng việc kế của bạn tự mở.</li>
+    <li>Ghi nhanh trên dòng chỉ cho Ghi kết quả PA thường. Dòng <b>Xác nhận PA</b> luôn mở panel <a class="lk" href="#s9">mục 9</a>.</li>
   </ul>
   <div class="row2">
     <div class="win w1440">
@@ -654,6 +655,7 @@ textarea.field{display:block;width:100%;min-height:64px;padding:9px 10px;font:14
     <li><b>Vấn đề</b>: nhóm nguyên nhân có số (<b>1</b> = chính) + nhận xét của bài MT. Case MT không ô Mô tả; Sửa Case MT chỉ Mức độ + Tên.</li>
     <li><b>PA đang chạy một dòng</b>. Nút Ghi kết quả chỉ nổi khi tới kỳ (khối Cần làm). Lịch sử PA, Nhật ký gập, mở tại chỗ.</li>
     <li>PA chưa có người dạy: <b>"Chưa chọn người dạy · Chọn"</b> ngay trên dòng → ô chọn mở tại dòng, lưu ngay.</li>
+    <li>Case "Chờ xác nhận PA": nút <b>Xác nhận PA</b> trên dòng mở panel <a class="lk" href="#s9">mục 9</a> (ghi hướng dẫn / Đề xuất PA khác), không xác nhận một chạm.</li>
   </ul>
   <div class="row2">
     <div class="win w1440">
@@ -662,10 +664,11 @@ textarea.field{display:block;width:100%;min-height:64px;padding:9px 10px;font:14
         <div class="nen">
           <span class="tde">Lý Minh Châu</span>
           <div class="tabs"><span class="on">Học thuật</span><span>Ý thức &amp; Phối hợp</span><span>Hành trình</span></div>
-          <span class="nhan-khoi">Case · <span class="so">4</span></span>
+          <span class="nhan-khoi">Case · <span class="so">5</span></span>
           <div class="cases" style="max-width:720px">
             <div class="ca" style="border-color:var(--accent-line);background:var(--accent-soft)"><i class="v phai mui"></i><span class="tn">R · MT3</span><span class="n">1 Kỹ năng làm bài · 2 Quản lý thời gian</span><span class="chip doing">Đang xử lý</span></div>
             <div class="ca tam"><i class="v phai mui"></i><span class="tn">W1 · MT4</span><span class="n">Đáp ứng yêu cầu đề</span><span class="chip soon">Chờ chốt SOS</span></div>
+            <div class="ca"><i class="v phai mui"></i><span class="tn">S · MT3</span><span class="n">1 Trôi chảy / mạch lạc</span><span class="chip wait">Chờ xác nhận PA</span><button class="btn btn-sm" style="border-color:var(--accent);color:var(--accent)">Xác nhận PA</button></div>
             <div class="ca"><i class="v phai mui"></i><span class="tn">L · MT2</span><span class="n">Tâm lý và độ tập trung</span><span class="chip ok">Hoàn thành</span></div>
             <div class="ca huy"><i class="v phai mui"></i><span class="tn">R · MT3</span><span class="n">Hệ thống đóng · trùng Case</span><span class="chip xam">Đã huỷ</span></div>
           </div>
@@ -773,7 +776,7 @@ textarea.field{display:block;width:100%;min-height:64px;padding:9px 10px;font:14
   <span class="where">Công việc · vai GVBM đúng kỹ năng (QL làm thay) · gom theo việc + lớp + tuần thi + mức SOS</span>
   <ul class="note">
     <li>Một dòng gộp thay 5 dòng: <b>Xác nhận PA · 5 em</b> / CP FT 139 · MT3 W2 OCT · SOS 3. Bấm → panel <b>Xác nhận PA cùng lúc</b>.</li>
-    <li>Em <b>tick sẵn</b>, bỏ tick được. Ngày bắt đầu + Người dạy <b>dùng chung</b>; "Sửa riêng" mở ngay dưới em đó. Nút chính đếm theo số em đang tick.</li>
+    <li>Em <b>tick sẵn</b>, bỏ tick được. Ngày bắt đầu + Người dạy + <b>Nội dung / hướng dẫn *</b> <b>dùng chung</b> (em đã có người dạy riêng giữ nguyên); mỗi em có <b>Đề xuất PA khác…</b> trong "Sửa riêng" (gửi QL như mục 9, em đó ra khỏi lô); "Sửa riêng" mở ngay dưới em đó. Nút chính đếm theo số em đang tick.</li>
     <li>Kết quả lô: em xong gập ✓, em lỗi giữ lại kèm lý do + Thử lại; dòng gộp còn "1 em".</li>
   </ul>
   <div class="row2">
@@ -805,20 +808,21 @@ textarea.field{display:block;width:100%;min-height:64px;padding:9px 10px;font:14
                 <div class="f"><span class="lb">Bắt đầu<span class="bb">*</span></span><span class="field ngay"><span class="so">19/10/2026</span><span class="lich" aria-label="Chọn ngày"><svg class="ic"><use href="#lich"/></svg></span></span></div>
                 <div class="f"><span class="lb">Người dạy<span class="bb">*</span></span><span class="field">Lê Minh Khoa<i class="v"></i></span></div>
               </div>
+              <div class="f"><span class="lb">Nội dung / hướng dẫn<span class="bb">*</span> <span class="nho">· chung</span></span><textarea class="field" aria-label="Nội dung / hướng dẫn chung" style="min-height:48px">2 buổi Tutor / tuần: đọc hiểu đoạn dài, TFNG, bấm giờ; Tutor gửi nhận xét sau mỗi buổi.</textarea></div>
               <div class="f"><span class="lb">Học viên · <span class="so">4/5</span></span>
                 <div class="lo">
                   <div class="lo-r"><span class="cb on">✓</span><span class="tn">Phạm Quỳnh Chi</span><button class="btn btn-chu">Sửa riêng</button><span class="n">1 Kỹ năng làm bài · R <span class="so">4.5</span></span></div>
                   <div class="lo-r"><span class="cb on">✓</span><span class="tn">Ngô Bảo Châu</span><button class="btn btn-chu">Xong</button><span class="n">1 Từ vựng / ngữ pháp · R <span class="so">4.0</span></span>
-                    <div class="rieng"><div class="f2"><div class="f"><span class="lb">Bắt đầu</span><span class="field ngay"><span class="so">21/10/2026</span><span class="lich"><svg class="ic"><use href="#lich"/></svg></span></span></div><div class="f"><span class="lb">Người dạy</span><span class="field">Phạm Thu Trang<i class="v"></i></span></div></div></div>
+                    <div class="rieng"><div class="f2"><div class="f"><span class="lb">Bắt đầu</span><span class="field ngay"><span class="so">21/10/2026</span><span class="lich"><svg class="ic"><use href="#lich"/></svg></span></span></div><div class="f"><span class="lb">Người dạy</span><span class="field">Phạm Thu Trang<i class="v"></i></span></div></div><div class="f"><span class="lb">Nội dung riêng</span><textarea class="field" aria-label="Nội dung riêng" style="min-height:44px">Ưu tiên từ vựng chủ đề Environment, 20 từ / buổi.</textarea></div><button class="btn btn-chu" style="align-self:flex-start;padding-left:0">Đề xuất PA khác cho em này…</button></div>
                   </div>
                   <div class="lo-r"><span class="cb on">✓</span><span class="tn">Đinh Gia Huy</span><button class="btn btn-chu">Sửa riêng</button><span class="n">1 Quản lý thời gian · R <span class="so">4.5</span></span></div>
                   <div class="lo-r"><span class="cb on">✓</span><span class="tn">Trịnh Bảo Ngọc</span><button class="btn btn-chu">Sửa riêng</button><span class="n">1 Kỹ năng làm bài · 2 Tư duy logic · R <span class="so">4.0</span></span></div>
-                  <div class="lo-r bo"><span class="cb"></span><span class="tn">Hoàng Gia Bảo</span><button class="btn btn-chu">Sửa riêng</button><span class="n">bỏ tick · còn ở dòng gộp</span></div>
+                  <div class="lo-r bo"><span class="cb"></span><span class="tn">Hoàng Gia Bảo</span><button class="btn btn-chu">Sửa riêng</button><span class="n">bỏ tick · <span class="chip wait">Chờ duyệt PA khác</span></span></div>
                 </div>
               </div>
               <div class="lam"><button class="btn btn-primary btn-lg">Xác nhận PA · 4 em</button></div>
             </div>
-            <div class="bc"><dl><dt>Ngô Bảo Châu</dt><dd>sửa riêng: <b>21/10</b> · Phạm Thu Trang</dd></dl></div>
+            <div class="bc"><dl><dt>Ngô Bảo Châu</dt><dd>sửa riêng: <b>21/10</b> · Phạm Thu Trang · nội dung riêng</dd><dt>Hoàng Gia Bảo</dt><dd>đã gửi Đề xuất PA khác → ra khỏi lô</dd></dl></div>
           </div>
           <div class="pc"><span class="tl nhap"><i class="cham"></i>Chưa lưu</span></div>
         </div>
@@ -1381,8 +1385,9 @@ textarea.field{display:block;width:100%;min-height:64px;padding:9px 10px;font:14
                 <div class="f loi"><span class="lb">Tutor<span class="bb">*</span></span><span class="field" style="color:var(--faint)">Chọn tutor<i class="v"></i></span><span class="loi-c">Chọn tutor</span></div>
                 <div class="f"><span class="lb">Số buổi / 2 tuần<span class="bb">*</span></span><span class="stp"><i>−</i><span>2</span><i>+</i></span></div>
               </div>
+              <div class="f"><span class="lb">Nội dung / hướng dẫn<span class="bb">*</span></span><textarea class="field" aria-label="Nội dung / hướng dẫn" style="min-height:48px">Nghe Section 2–3 có số liệu, chép chính tả 10 câu / buổi; Tutor báo lỗi sai sau buổi.</textarea></div>
               <div class="f"><span class="lb">Bắt đầu<span class="bb">*</span></span><span class="field ngay" style="max-width:240px"><span class="so">19/10/2026</span><span class="lich" aria-label="Chọn ngày"><svg class="ic"><use href="#lich"/></svg></span></span></div>
-              <div class="lam"><button class="btn btn-primary btn-lg">Xác nhận PA</button><button class="btn btn-chu">Sửa PA</button></div>
+              <div class="lam"><button class="btn btn-primary btn-lg">Xác nhận PA</button><button class="btn btn-chu">Đề xuất PA khác…</button></div>
             </div>
             <div class="bc"><dl><dt>Nguyên nhân</dt><dd><b>1</b> Kỹ năng làm bài · "Nghe sót số liệu Section 2."</dd><dt>Kết quả gần nhất</dt><dd>MT3 · L <span class="so">4.5</span> · kỳ vọng <span class="so">6.0</span></dd></dl></div>
           </div>
@@ -1550,6 +1555,159 @@ textarea.field{display:block;width:100%;min-height:64px;padding:9px 10px;font:14
   </ul>
 </section>
 
+<!-- ============================================================ 9 XÁC NHẬN PA MỘT EM -->
+<section class="sec" id="s9">
+  <h2>9 · Xác nhận PA (một em) — luôn mở panel: ghi hướng dẫn, hoặc Đề xuất PA khác</h2>
+  <span class="where">Công việc · Case (mục 2) · panel một em · Chờ duyệt QL · vai GVBM đúng kỹ năng (QL làm thay) · chủ SP 15/10</span>
+  <ul class="note">
+    <li>Bấm "Xác nhận PA" ở bất kỳ đâu → <b>mở panel này</b>, không xác nhận một chạm. PA quy chế điền sẵn <b>loại + mốc</b>.</li>
+    <li>Ô cần điền: <b>Nội dung / hướng dẫn *</b> (gợi ý trong ô: "Nêu hướng dẫn và trọng tâm cụ thể; ai sẽ thực hiện / hỗ trợ / Tutor") · <b>Người dạy *</b> · <b>Số buổi / 2 tuần *</b> (chỉ Tutor, Bổ trợ) · <b>Bắt đầu *</b>. Nút chính <b>Xác nhận PA</b>.</li>
+    <li>Nút chữ <b>Đề xuất PA khác…</b> → phần đổi PA (như mục 8) mở ngay trong khối Cần làm → <b>Gửi Quản lý duyệt</b>. Khuyến nghị: PA gốc <b>chờ, chưa chạy</b>; Case "Chờ duyệt đổi PA". QL duyệt → PA mới chạy từ ngày duyệt; từ chối → panel Xác nhận PA gốc mở lại kèm lý do.</li>
+  </ul>
+  <div class="row2">
+    <div class="win w1440">
+      <div class="app"><b>PISA Tracking</b><span>Tổng quan</span><span>Học viên &amp; Lớp</span><span>Test</span><span class="on">Công việc <span class="dem">7</span></span><span class="sp"></span><span class="nut-tron">?</span><span class="nut-tron"><svg class="ic"><use href="#chuong"/></svg></span><span>Trần Ngọc Hà · Giáo viên</span></div>
+      <div class="stage" style="min-height:780px">
+        <div class="nen">
+          <div class="tabs"><span class="on">Của tôi · <span class="so">7</span></span></div>
+          <div class="card ds" style="max-width:640px">
+            <div class="nhom-h">Case học thuật · <span class="so">3</span></div>
+            <div class="dg on"><div class="dg-1"><span class="dg-v">Xác nhận PA</span><span class="han soon">Hạn T6 <span class="so">16/10</span></span></div><div class="dg-2"><b>Kiều Thu Trang</b><span>CP FT 139</span><span>MT3 · Reading · SOS 1</span></div></div>
+            <div class="dg"><div class="dg-1"><span class="dg-v">Xác nhận PA · <span class="so">5</span> em</span><span class="han soon">Hạn T6 <span class="so">16/10</span></span></div><div class="dg-2"><b>CP FT 139</b><span>MT3 W2 OCT</span><span>SOS 3</span><span>R</span></div></div>
+            <div class="dg"><div class="dg-1"><span class="dg-v">Ghi kết quả W2–W3 OCT</span><span class="han">Hạn T3 <span class="so">20/10</span></span></div><div class="dg-2"><b>Lý Minh Châu</b><span>CP FT 139</span><span>Xếp tự học · R</span></div></div>
+          </div>
+        </div>
+        <div class="pn">
+          <div class="pd">
+            <div class="pd-1"><span class="pd-viec">Xác nhận PA</span><span class="han soon">Hạn T6 <span class="so">16/10</span></span><span class="x" aria-label="Đóng">✕</span></div>
+            <div class="pd-2"><a class="pd-em" href="#">Kiều Thu Trang<span class="ra">↗</span></a><span>CP FT 139</span><span>MT3 · Reading · SOS 1</span></div>
+          </div>
+          <div class="pt">
+            <div class="cl">
+              <div class="dt"><span class="dt-a">Xếp tự học</span><span class="dt-c">quy chế SOS 1 · đến MT4</span></div>
+              <div class="f"><span class="lb">Nội dung / hướng dẫn<span class="bb">*</span></span><textarea class="field" aria-label="Nội dung / hướng dẫn">Mỗi tuần 2 đề TFNG + Matching headings, bấm giờ 20 phút; nộp ảnh bài vào nhóm lớp T3, T6. Trần Ngọc Hà chữa và ghi lỗi sai.</textarea></div>
+              <div class="f2">
+                <div class="f"><span class="lb">Người dạy<span class="bb">*</span></span><span class="field">Trần Ngọc Hà (bạn)<i class="v"></i></span></div>
+                <div class="f"><span class="lb">Bắt đầu<span class="bb">*</span></span><span class="field ngay"><span class="so">19/10/2026</span><span class="lich" aria-label="Chọn ngày"><svg class="ic"><use href="#lich"/></svg></span></span></div>
+              </div>
+              <div class="lam"><button class="btn btn-primary btn-lg">Xác nhận PA</button><button class="btn btn-chu">Đề xuất PA khác…</button></div>
+            </div>
+            <div class="bc"><dl><dt>Nguyên nhân</dt><dd><b>1</b> Kỹ năng làm bài · <b>2</b> Quản lý thời gian · "Bỏ trống 6 câu cuối Passage 3."</dd><dt>Kết quả gần nhất</dt><dd>MT3 · R <span class="so">5.0</span> · kỳ vọng <span class="so">5.5</span></dd></dl></div>
+          </div>
+          <div class="pc"><span class="tl nhap"><i class="cham"></i>Chưa lưu</span><span class="sp"></span><span class="lk">Huỷ sửa</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="win w375">
+      <div class="pn">
+        <div class="lui">‹ Công việc</div>
+        <div class="pd">
+          <div class="pd-1"><span class="pd-viec">Xác nhận PA</span><span class="han soon">Hạn T6 <span class="so">16/10</span></span></div>
+          <div class="pd-2"><a class="pd-em" href="#">Kiều Thu Trang<span class="ra">↗</span></a><span>MT3 · Reading</span></div>
+        </div>
+        <div class="pt">
+          <div class="cl">
+            <div class="dt"><span class="dt-a">Xếp tự học</span><span class="dt-c">quy chế SOS 1 · đến MT4</span></div>
+            <div class="f loi"><span class="lb">Nội dung / hướng dẫn<span class="bb">*</span></span><textarea class="field" aria-label="Nội dung / hướng dẫn" aria-invalid="true" placeholder="Nêu hướng dẫn và trọng tâm cụ thể; ai sẽ thực hiện / hỗ trợ / Tutor"></textarea><span class="loi-c">Ghi nội dung / hướng dẫn</span></div>
+            <div class="f"><span class="lb">Người dạy<span class="bb">*</span></span><span class="field">Trần Ngọc Hà (bạn)<i class="v"></i></span></div>
+            <div class="f"><span class="lb">Bắt đầu<span class="bb">*</span></span><span class="field ngay"><span class="so">19/10/2026</span><span class="lich"><svg class="ic"><use href="#lich"/></svg></span></span></div>
+            <button class="btn btn-chu" style="align-self:flex-start;padding-left:0">Đề xuất PA khác…</button>
+          </div>
+          <div class="bc"><dl><dt>Nguyên nhân</dt><dd><b>1</b> Kỹ năng làm bài · <b>2</b> Quản lý thời gian</dd></dl></div>
+        </div>
+        <div class="day">
+          <div class="hang"><span class="tl thieu">⚠ Còn thiếu 1 ô</span><span class="sp"></span><span class="lk">Tới ô ↑</span></div>
+          <button class="btn btn-primary">Xác nhận PA</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <ul class="note"><li>375: bấm Xác nhận PA khi ô Nội dung trống — viền đỏ + lý do, chân "⚠ Còn thiếu 1 ô". PA Tutor: thêm <b>Số buổi / 2 tuần *</b>, "Người dạy" là <b>Tutor *</b> (mục 7).</li></ul>
+
+  <span class="nhan-khoi">Đề xuất PA khác… — mở trong khối Cần làm</span>
+  <div class="row2">
+    <div class="pn doc" style="width:520px;flex:none">
+      <div class="pd"><div class="pd-1"><span class="pd-viec">Xác nhận PA</span><span class="han soon">Hạn T6 <span class="so">16/10</span></span><span class="x">✕</span></div><div class="pd-2"><a class="pd-em" href="#">Kiều Thu Trang<span class="ra">↗</span></a><span>CP FT 139</span><span>MT3 · Reading · SOS 1</span></div></div>
+      <div class="pt">
+        <div class="cl">
+          <div class="cl-dau"><span class="cl-v">Đề xuất PA khác</span><button class="btn btn-chu">‹ Xác nhận PA gốc</button></div>
+          <div class="f"><span class="lb">PA mới<span class="bb">*</span></span>
+            <span class="nhom-ten">Thay cho Xếp tự học (quy chế)</span>
+            <div class="nhom"><span class="nc">Học Tutor</span><span class="nc">Điều chỉnh cách dạy</span><span class="nc on"><span class="tk">✓</span>Tăng cường bài tập</span></div>
+          </div>
+          <div class="f"><span class="lb">Nội dung / hướng dẫn<span class="bb">*</span></span><textarea class="field" aria-label="Nội dung PA mới" style="min-height:48px">3 bài Reading / tuần trên lớp, GV kèm 15 phút cuối buổi.</textarea></div>
+          <div class="f2">
+            <div class="f"><span class="lb">Người dạy<span class="bb">*</span></span><span class="field">Trần Ngọc Hà (bạn)<i class="v"></i></span></div>
+            <div class="f"><span class="lb">Bắt đầu</span><span class="m" style="padding-top:10px">ngày QL duyệt</span></div>
+          </div>
+          <div class="f"><span class="lb">Lý do<span class="bb">*</span></span><textarea class="field" aria-label="Lý do" style="min-height:48px">Em không tự học ở nhà được, cần GV kèm trên lớp.</textarea></div>
+          <div class="lam"><button class="btn btn-primary btn-lg">Gửi Quản lý duyệt</button></div>
+        </div>
+        <div class="bc"><dl><dt>Nếu gửi</dt><dd>Xếp tự học chờ, chưa chạy · Case "Chờ duyệt đổi PA"</dd></dl></div>
+      </div>
+      <div class="pc"><span class="tl"><i class="quay"></i>Đang gửi…</span></div>
+    </div>
+    <div class="win w375">
+      <div class="pn">
+        <div class="lui">‹ Công việc</div>
+        <div class="pd">
+          <div class="pd-1"><span class="pd-viec">Xác nhận PA</span></div>
+          <div class="pd-2"><a class="pd-em" href="#">Kiều Thu Trang<span class="ra">↗</span></a><span>MT3 · Reading</span></div>
+        </div>
+        <div class="pt">
+          <div class="xong"><span class="h">✓ Đã gửi Quản lý duyệt</span><span class="m" style="font-size:13px">Tăng cường bài tập thay Xếp tự học · Case "Chờ duyệt đổi PA" · QL hạn T3 <span class="so">20/10</span></span></div>
+          <div class="pa-r"><span class="tn">Xếp tự học</span><span class="chip wait">Chờ duyệt đổi PA</span><span class="dot">chưa chạy</span><span class="lk">Rút</span></div>
+        </div>
+        <div class="sp"></div>
+        <div class="day">
+          <div class="hang"><span class="tl da">✓ Đã gửi <span class="so">10:44</span></span><span class="sp"></span><span class="lk">Hoàn tác</span></div>
+          <button class="btn btn-primary">Việc tiếp ›</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <ul class="note"><li>Trái: đang gửi (khoá nút). Phải 375: đã gửi đề xuất — Việc tiếp ›, Hoàn tác 10 giây (= rút đề xuất). Việc "Xác nhận PA" rời danh sách GV; QL có thẻ "Đề xuất PA" ở Chờ duyệt (mục 8).</li></ul>
+
+  <span class="nhan-khoi">Trạng thái khác</span>
+  <div class="cards">
+    <div><div class="cap"><b>QL từ chối</b> — việc Xác nhận PA gốc quay lại, kèm lý do</div>
+      <div class="pn doc" style="width:520px">
+        <div class="pd"><div class="pd-1"><span class="pd-viec">Xác nhận PA</span><span class="han soon">Hạn T2 <span class="so">19/10</span></span><span class="x">✕</span></div><div class="pd-2"><a class="pd-em" href="#">Kiều Thu Trang<span class="ra">↗</span></a><span>CP FT 139</span><span>MT3 · Reading</span></div></div>
+        <div class="pt">
+          <div class="cl">
+            <p class="tinh"><b style="color:var(--late)">QL từ chối PA khác</b> · "Giữ Xếp tự học tới MT4, GV kiểm bài T6."</p>
+            <div class="dt"><span class="dt-a">Xếp tự học</span><span class="dt-c">quy chế SOS 1 · đến MT4</span></div>
+            <div class="f"><span class="lb">Nội dung / hướng dẫn<span class="bb">*</span></span><textarea class="field" aria-label="Nội dung / hướng dẫn" style="min-height:48px">Mỗi tuần 2 đề TFNG, nộp T3, T6; GV kiểm bài T6.</textarea></div>
+            <div class="lam"><button class="btn btn-primary btn-lg">Xác nhận PA</button><button class="btn btn-chu">Đề xuất PA khác…</button></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div><div class="cap"><b>Đã xác nhận</b> — ở lại panel, Việc tiếp ›</div>
+      <div class="pn doc" style="width:420px">
+        <div class="pt" style="padding:14px 16px">
+          <div class="xong"><span class="h">✓ Đã xác nhận PA</span><span class="m" style="font-size:13px">Xếp tự học · từ <span class="so">W4 OCT</span> · hạn kết quả T3 <span class="so">03/11</span></span></div>
+          <div class="lam"><button class="btn btn-primary btn-lg">Việc tiếp ›</button><span class="m">Xác nhận PA · 5 em</span></div>
+        </div>
+        <div class="pc"><span class="tl da">✓ Đã lưu <span class="so">10:44</span></span><span class="sp"></span><span class="lk">Hoàn tác</span></div>
+      </div>
+    </div>
+    <div><div class="cap"><b>QL · Chờ duyệt</b> — cùng thẻ "Đề xuất PA" mục 8</div>
+      <div class="the" style="width:520px">
+        <div>
+          <div class="tt"><span class="chip loai">Đề xuất PA</span><p><b>PA khác · Reading</b><span> · Kiều Thu Trang · CP FT 139</span></p></div>
+          <div class="ds2">
+            <span><b>Xếp tự học</b> (quy chế, chưa chạy) → <b>Tăng cường bài tập</b> · Trần Ngọc Hà</span>
+            <span>Lý do: "Em không tự học ở nhà được, cần GV kèm trên lớp."</span>
+            <span class="m">Nếu duyệt: Tăng cường bài tập chạy từ ngày duyệt · Xếp tự học bỏ (Đổi PA)</span>
+          </div>
+        </div>
+        <div class="ph2"><span class="han soon">Hạn T3 <span class="so">20/10</span></span><div class="lam"><button class="btn btn-chu">Từ chối…</button><button class="btn btn-primary">Duyệt</button></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- ============================================================ ĐÃ CHỐT -->
 <section class="sec" id="cho">
   <h2>Chủ SP đã chốt 15/10</h2>
@@ -1557,6 +1715,7 @@ textarea.field{display:block;width:100%;min-height:64px;padding:9px 10px;font:14
   <div class="q"><b>Câu 2 · Chưa tới kỳ: nút "Cập nhật trước hạn".</b><span class="kn2">Bấm được, không nổi, không chip hạn (mục 1).</span></div>
   <div class="q"><b>Câu 3 · Người dạy chung không đè.</b><span class="kn2">Ô chung chỉ điền em còn trống; em đã có người dạy giữ nguyên, sửa bằng "Sửa riêng" (mục 3a).</span></div>
   <div class="q"><b>Câu 4 · Ô Email giữ * + chữ "Thiếu".</b><span class="kn2">Vẫn lưu được các ô khác khi trống; việc "Thiếu email" còn tới khi điền (mục 6).</span></div>
+  <div class="q"><b>Câu 5 · Xác nhận PA luôn mở panel + "Đề xuất PA khác…" (chủ SP 15/10).</b><span class="kn2"><b>Khuyến nghị, chờ chủ SP xem:</b> khi gửi đề xuất, PA gốc <b>chờ, chưa chạy</b>; Case "Chờ duyệt đổi PA". QL duyệt → PA mới chạy từ ngày duyệt; từ chối → việc Xác nhận PA gốc quay lại kèm lý do (mục 9).</span></div>
 </section>
 
 </div>
