@@ -126,5 +126,6 @@ export function tenNguon(url: string): TenTrang {
   if (p === '/hoc-vien/luu-tru') return { ten: t('Lưu trữ') };
   if (p === '/quan-tri') return { ten: t('Quản trị') };
   if (p === '/ho-so-ca-nhan') return { ten: t('Hồ sơ cá nhân') };
+  if (p === '/huong-dan') return { ten: t('Hướng dẫn') };   // HD-a
   return { ten: TRANG_TRUOC };
 }

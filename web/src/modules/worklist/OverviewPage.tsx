@@ -10,6 +10,7 @@ import { DaiChoDuyet, DiemDangChuY, KhoiCanXuLy } from './KhoiCanXuLy.tsx';
 import { ViecCuaToi, YeuCauCuaToi } from './ViecCuaToi.tsx';
 import { LopToiDay } from './LopToiDay.tsx';
 import { HocVienCuaToi } from './HocVienCuaToi.tsx';
+import { DaiMoiDung } from '../huongDan/DaiMoiDung.tsx';
 import { MockTestAdmin } from './MockTestAdmin.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { HangTab } from '../../ui/HangTab.tsx';
@@ -61,6 +62,7 @@ export default function OverviewPage({ tab: tabProp = 'tong-quan' }: { tab?: Tab
             {tab === 'board' && <BranchFilter branchId={branchId} onBranch={setBranchId} />}
           </div>
         ) : <h1 className="m-0 text-lg font-semibold text-slate-100">{t('Học viên của tôi')}</h1>}
+        {tab === 'work' && <DaiMoiDung />}
         {tab === 'board' ? <PhanTich /> : <HocVienCuaToi />}
       </div>
     );
@@ -78,6 +80,7 @@ export default function OverviewPage({ tab: tabProp = 'tong-quan' }: { tab?: Tab
           <h1 className="m-0 text-lg font-semibold text-slate-100">{ten ? t('Chào {ten}', { ten }) : t('Tổng quan')}</h1>
           <span className="text-xs text-slate-500">{t('Tuần')}{' '}<b className="font-semibold tabular-nums text-slate-300">{tuanLich(homNay, homNay)}</b>{' '}{t('· hôm nay')}{' '}{ngan(homNay)}</span>
         </div>
+        <DaiMoiDung />
         <div className="grid items-start gap-3 lg:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)]">
           <ViecCuaToi />
           <YeuCauCuaToi />
@@ -115,6 +118,7 @@ export default function OverviewPage({ tab: tabProp = 'tong-quan' }: { tab?: Tab
       )}
       {tab === 'work' && vai !== 'admin' && (
         <>
+          <DaiMoiDung />
           {/* ─────────────── tầng 1: việc chờ Quản lý quyết + việc đang trễ (gộp hai khung) */}
           {session?.nav?.workApprove && <DaiChoDuyet branchId={branchId} />}
           {/* PR-OV2a: Cần xử lý là việc — CX (không có Công việc) chỉ xem Số liệu. */}

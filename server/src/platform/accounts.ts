@@ -509,7 +509,7 @@ export function myProfile(p: Principal) {
  */
 export function updateProfile(p: Principal, input: {
   fullName?: string; phone?: string | null; skills?: string[]; extraEmails?: string[];
-  currentPassword?: string; newPassword?: string; ngonNgu?: unknown;
+  currentPassword?: string; newPassword?: string; ngonNgu?: unknown; daXemHuongDan?: unknown;
 }) {
   const conn = db();
   const u = conn.prepare('SELECT * FROM users WHERE id = ?').get(p.userId) as any;
@@ -517,6 +517,11 @@ export function updateProfile(p: Principal, input: {
     if (input.ngonNgu !== undefined) {
       if (!laNgonNgu(input.ngonNgu)) throw badRequest('Ngôn ngữ không hợp lệ.');
       conn.prepare('UPDATE users SET ngon_ngu = ? WHERE id = ?').run(input.ngonNgu, p.userId);
+    }
+    /* HD-a: chỉ ghi "đã xem" (không có đường bỏ — dải đã ẩn thì vẫn mở Hướng dẫn qua nút "?"). */
+    if (input.daXemHuongDan !== undefined) {
+      if (input.daXemHuongDan !== true) throw badRequest('Trạng thái Hướng dẫn không hợp lệ.');
+      conn.prepare('UPDATE users SET da_xem_huong_dan = 1 WHERE id = ?').run(p.userId);
     }
     if (input.fullName !== undefined) {
       const name = chuTuDo(input.fullName, 'Họ tên', 100);   // PR-Dọn (quét #23)
