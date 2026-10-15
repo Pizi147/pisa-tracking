@@ -35,4 +35,8 @@ export const EN_OV12E = {
   'Bỏ nội dung đang gõ?': 'Discard what you typed?',
   'Hệ thống đóng — Case mới tạo khi chốt lượt': 'Closed by system — a new Case is created when the round is finalised',
   'Hệ thống đóng — Overall đã đạt': 'Closed by system — Overall met',
+  /* OV-13i: Sửa thông tin cả lớp — TVV / CX đổi Target, không sửa Tuần bắt đầu. */
+  'Chỉ Quản lý, TVV hoặc CX đổi Target': 'Only a Manager, Counsellor or CX can change the Target',
+  'Chỉ Quản lý hoặc GVCN sửa Tuần bắt đầu': 'Only a Manager or Core teacher can change the start week',
+  'Chỉ Quản lý, TVV hoặc CX đổi được Target.': 'Only a Manager, Counsellor or CX can change the Target.',
 } satisfies Record<string, Dich>;

@@ -136,7 +136,7 @@ export default function ClassOverviewPage() {
           tuan={params.get('tuan')} onTuan={(w) => doiThamSo({ tuan: w })}
           emMo={Number(params.get('em')) || null} onDaMoEm={() => doiThamSo({ em: null })}
           onDoi={xong} onThemHocVien={() => setViec('hoc-vien')}
-          onSuaThongTin={data.viewer.canAddStudents && (data.summary?.studentCount ?? 0) > 0 ? () => setViec('sua-hoc-vien') : undefined} />
+          onSuaThongTin={data.viewer.coTheSuaCaLop && (data.summary?.studentCount ?? 0) > 0 ? () => setViec('sua-hoc-vien') : undefined} />
       )}
       {tab === 'y-thuc' && <ClassYThucCard classId={data.id} thuong={thuong} />}
       {tab === 'phan-tich' && <PhanTichLopTab classId={data.id} />}
