@@ -169,13 +169,13 @@ function NoiDung({ classId, onClose, onDone }: { classId: number; onClose: () =>
   const emNgay = canGui.filter((r) => laChuyenNgay(r.d.tuan || tuanCh, homNay));
   const soNgay = emNgay.length;
   /* OV-13m (rà #418): bài dở đi theo em chỉ khi CÙNG chương trình; đổi chương trình → điểm đã có ở lại khoá cũ. */
-  const cungCt = (r: typeof canGui[number]) => { const l = dichCua(r.d); return !!l && l.ft === (data?.cheDo === 'ft') && l.programmeCode === data?.from.programmeCode; };
+  const cungCt = (r: typeof canGui[number]) => { const l = dichCua(r.d); return !!l && l.ft === !!data?.from.route && l.programmeCode === data?.from.programmeCode; };
 
   const gui = async () => {
     setBusy(true);
     try {
       /* OV-13l: chuyển ngay chạy trong lời gọi — gửi từng lô ≤ LO_CHUYEN_NGAY em, cộng dồn kết quả. */
-      const r = await guiTheoLo(`/classes/${classId}/transition`, tuanCh, soNgay ? (data?.cheDo === 'thuong' ? LO_CHUYEN_NGAY_THUONG : LO_CHUYEN_NGAY) : canGui.length, setTienDo,
+      const r = await guiTheoLo(`/classes/${classId}/transition`, tuanCh, soNgay ? (data?.from.route ? LO_CHUYEN_NGAY : LO_CHUYEN_NGAY_THUONG) : canGui.length, setTienDo,
         canGui.map((x) => ({
           studentId: x.s.id, huong: HUONG_CUA[x.d.kieu as Kieu], toClassId: typeof x.d.toClassId === 'number' ? x.d.toClassId : undefined,
           tuan: x.d.tuan || undefined, mucTieu: mucTieuCua(x.d) ?? undefined, ngayThi: x.d.ngayThi || undefined, lyDo: x.d.lyDo || undefined,

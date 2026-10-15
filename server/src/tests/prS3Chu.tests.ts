@@ -155,7 +155,9 @@ export async function runPrS3ChuTests(t: YThucTestKit) {
     ['Đã kết thúc, chưa ghi kết quả', /Đã kết thúc, chưa ghi kết quả|PA đã xong,? chưa ghi kết quả/],
   ], [['web/src/modules/cases/QuickReport.tsx', 'Đã xong từ trước'], ['web/src/modules/platform/AccountsAdmin.tsx', 'Không duyệt'],
     ['shared/domain/students.ts', "completed: 'Đã hoàn thành'"], ['server/src/seed/seed.ts', 'Đã hoàn thành'],
-    ['web/src/modules/platform/DemoBar.tsx', ''], ['web/src/modules/platform/WelcomePage.tsx', ''], ['server/src/migrate', '']]);
+    ['web/src/modules/platform/DemoBar.tsx', ''], ['web/src/modules/platform/WelcomePage.tsx', ''], ['server/src/migrate', ''],
+    /* OV-13m: mockup bước tiếp chủ SP duyệt 15/10 — lộ trình có kết quả thi = "Đã xong" (một hằng `CHU_DA_XONG`). */
+    ['shared/domain/tongKetLoTrinh.ts', "t('Đã xong')"], ['shared/i18n/en/ov13m.ts', 'Đã xong']]);
   check('S3 (3) · Q1: trạng thái Vận hành một map (Chưa bắt đầu · Đang xử lý · Tạm ngưng · Dừng hẳn · Xong); MgmtTasksPage lấy từ TASK_PROGRESS_LABEL; HV "Tạm dừng học"', () => {
     const wl = docNguon('shared/domain/worklist.ts');
     for (const chu of ["'Chưa bắt đầu'", "'Đang xử lý'", "'Tạm ngưng'", "'Dừng hẳn'", "done: 'Xong'"]) assert(wl.includes(chu), chu);

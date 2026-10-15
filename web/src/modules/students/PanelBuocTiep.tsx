@@ -6,7 +6,8 @@ import { ChipHan } from '../../ui/Nhan.tsx';
 import { CanLam, KhoiDaLuu, NutChu, TrangThaiLuu, dauViec, type DaLuuPanel } from '../../ui/KhuonViec.tsx';
 import { ErrorState, NutChon, Skeleton } from '../../ui/ui.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
-import { LUA_CHON_SAU_THI, NHAN_SAU_THI, ngay, thuNgay, tuanChonDuoc, tuanLich, type LuaChonSauThi } from '@shared/domain/index.ts';
+import { useLoiForm } from '../../ui/loiForm.tsx';
+import { CHU_DA_XONG, LUA_CHON_SAU_THI, NHAN_SAU_THI, ngay, thuNgay, tuanChonDuoc, tuanLich, type LuaChonSauThi } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 
 /** `GET /cycles/:id/buoc-tiep` (máy chủ `trangThaiBuocTiep`). */
@@ -49,6 +50,7 @@ export function PanelBuocTiep({ cycleId, hocVien, lop, quayLai, chonSan, onSuaKe
   const [tt, setTt] = useState<'dang' | 'loi' | null>(null);
   const [loi, setLoi] = useState<string | null>(null);
   const [daLuu, setDaLuu] = useState<{ x: DaLuuPanel; luc: string } | null>(null);
+  const lf = useLoiForm();
   const moLop = !!bt?.coTheChon && chon === 'lo_trinh_moi' && lopKhac;
   const dsLop = useApi<{ lop: LopDich[] }>(moLop ? `/students/${bt!.studentId}/hoc-lai/lop-dich` : null, [moLop, bt?.studentId]);
 
@@ -56,7 +58,7 @@ export function PanelBuocTiep({ cycleId, hocVien, lop, quayLai, chonSan, onSuaKe
   const em = hocVien ?? (bt ? { id: bt.studentId, ten: '' } : null);
   const dau = dauViec({
     han: bt && !bt.chon && bt.coTheChon ? <ChipHan loai="viec-van-hanh" han={bt.han} /> : null,
-    em: em?.ten ? em : null, lop: lop ?? bt?.lopNay?.code ?? null, ngCanh: t('Đã xong'),
+    em: em?.ten ? em : null, lop: lop ?? bt?.lopNay?.code ?? null, ngCanh: CHU_DA_XONG,
   });
   if (error) return <KhungPanel tieuDe={tieuDe} dau={dau} quayLai={quayLai} onDong={onClose}><ErrorState message={error.message} hint={error.hint} onRetry={reload} /></KhungPanel>;
   if (!bt) return <KhungPanel tieuDe={tieuDe} dau={dau} quayLai={quayLai} onDong={onClose}><div className="pt-3"><Skeleton rows={4} /></div></KhungPanel>;
@@ -74,7 +76,11 @@ export function PanelBuocTiep({ cycleId, hocVien, lop, quayLai, chonSan, onSuaKe
         : hen ? [lopKhac ? t('Hẹn chuyển sang {lop} từ {tuan} · GV lớp cũ làm phiếu bàn giao', { lop: lopDich, tuan }) : t('Hẹn bắt đầu {tuan} ở {lop} · em chờ tới {ngay}', { tuan, lop: lopDich, ngay: thuNgay(hen, hn) }),
           t('Huỷ hẹn được tới lúc đó')]
           : [lopKhac ? t('Chuyển sang {lop} ngay · không hoàn tác', { lop: lopDich }) : t('Mở lộ trình mới ở {lop}', { lop: lopDich }), t('{tuan} = tuần 1 · lịch MT tự xếp theo tuần học', { tuan })];
-  const thieu = !chon || (chon === 'lo_trinh_moi' && lopKhac && !lopMoiId);
+  const loiO = [
+    ...(!chon ? [{ khoa: 'chon', nhan: t('Bước tiếp'), lyDo: t('Chọn một bước') }] : []),
+    ...(chon === 'lo_trinh_moi' && lopKhac && !lopMoiId ? [{ khoa: 'lop', nhan: t('Lớp khác'), lyDo: t('Chọn lớp') }] : []),
+  ];
+  const thieu = loiO.length > 0;
 
   const gui = async (fn: () => Promise<unknown>, x: DaLuuPanel) => {
     setTt('dang'); setLoi(null);
@@ -85,6 +91,7 @@ export function PanelBuocTiep({ cycleId, hocVien, lop, quayLai, chonSan, onSuaKe
   };
   const boChon = () => api.del(`/cycles/${cycleId}/buoc-tiep`).then(() => { lamMoi(); reload(); onDone?.(); });
   const luu = () => {
+    lf.bam();
     if (thieu || !chon) return;
     const than = chon === 'lo_trinh_moi' ? { chon, batDau, ...(lopKhac ? { lopMoiId } : {}), ...(tgMoi ? { mucTieu: tgMoi } : {}) } : { chon };
     const ten = em?.ten ?? '';
@@ -140,15 +147,15 @@ export function PanelBuocTiep({ cycleId, hocVien, lop, quayLai, chonSan, onSuaKe
     );
   }
 
-  const nut = <button type="button" className="btn btn-primary btn-lg min-h-[44px] sm:min-h-0" onClick={luu} disabled={thieu || tt === 'dang'}>{nutChinh}</button>;
+  const nut = <button type="button" className="btn btn-primary btn-lg min-h-[44px] sm:min-h-0" onClick={luu} disabled={tt === 'dang'}>{nutChinh}</button>;
   return (
     <KhungPanel tieuDe={tieuDe} dau={dau} quayLai={quayLai} onDong={onClose}
-      chan={{ v3: true, daSua: !!chon && !chonSan, chinh: nut, dongTren: <TrangThaiLuu tt={tt ?? (chon ? 'nhap' : null)} loi={loi} onThuLai={luu} /> }}>
+      chan={{ v3: true, daSua: !!chon && !chonSan, chinh: nut, conThieu: lf.conThieu(loiO), dongTren: <TrangThaiLuu tt={tt ?? (chon ? 'nhap' : null)} loi={loi} onThuLai={luu} /> }}>
       {dongKetQua}
       <div className="pt-3">
         <CanLam>
           <Truong nhan={t('Bước tiếp')} batBuoc as="div">
-            <div role="group" aria-label={t('Bước tiếp')} className="flex flex-wrap gap-1.5">
+            <div role="group" aria-label={t('Bước tiếp')} {...lf.o(loiO, 'chon')} tabIndex={-1} className="flex flex-wrap gap-1.5 outline-none">
               {LUA_CHON_SAU_THI.map((k) => <NutChon key={k} chon={chon === k} className="max-sm:flex-1" onClick={() => setChon(k)}>{NHAN_SAU_THI[k]}</NutChon>)}
             </div>
           </Truong>
@@ -160,7 +167,7 @@ export function PanelBuocTiep({ cycleId, hocVien, lop, quayLai, chonSan, onSuaKe
                   <NutChon chon={lopKhac} onClick={() => setLopKhac(true)}>{t('Lớp khác')}</NutChon>
                 </div>
                 {lopKhac && (
-                  <select className="field mt-2 w-full" aria-label={t('Lớp khác')} value={lopMoiId} onChange={(e) => setLopMoiId(e.target.value ? Number(e.target.value) : '')}>
+                  <select className="field mt-2 w-full" aria-label={t('Lớp khác')} {...lf.o(loiO, 'lop')} value={lopMoiId} onChange={(e) => setLopMoiId(e.target.value ? Number(e.target.value) : '')}>
                     <option value="">{dsLop.data ? t('Chọn lớp') : t('Đang tải…')}</option>
                     {dsLop.data?.lop.map((l) => <option key={l.id} value={l.id}>{[l.code, l.ft ? `FT ${l.route ?? ''}`.trim() : l.tenChuongTrinh, l.siSo != null ? t('{n} em', { n: l.siSo }) : null].filter(Boolean).join(' · ')}</option>)}
                   </select>

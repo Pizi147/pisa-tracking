@@ -12,6 +12,7 @@ import { CacLoTrinh } from './CacLoTrinh.tsx';
 import { NganTongKet } from './NganTongKet.tsx';
 import { PanelBuocTiep } from './PanelBuocTiep.tsx';
 import { Nhan } from '../../ui/Nhan.tsx';
+import { CHU_DA_XONG } from '@shared/domain/index.ts';
 import { BonO, CauTomTat, DaiChoDuyet, DaiTamDung, DangXuLy, DongLienHe, DongThongTin, ThanhViec, type Viec } from './DauHoSo.tsx';
 import { useSession } from '../../lib/session.tsx';
 import { NganCase } from './NganCase.tsx';
@@ -223,7 +224,7 @@ export default function StudentDetailPage() {
                 <MissingBadge items={data.missing} />
                 {data.status !== 'active' && <Info>{studentStatusLabel(data.status)}</Info>}
                 {data.archivedAt && <Info>{t('Đã lưu trữ')}</Info>}
-                {bt && (!bt.chon || bt.hen) && <Nhan tone="ok">{t('Đã xong')}</Nhan>}
+                {bt && (!bt.chon || bt.hen) && <Nhan tone="ok">{CHU_DA_XONG}</Nhan>}
               </h1>
               <DongThongTin tt={data.dauHoSo.thongTin} />
               <DongLienHe l={data.lienHe} email={data.email} dob={data.dob} tvv={data.tvv?.ten ?? data.consultantName} />

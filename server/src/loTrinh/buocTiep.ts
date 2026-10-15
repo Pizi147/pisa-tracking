@@ -82,7 +82,7 @@ const CHI_QL = 'Chỉ Quản lý hoặc TVV của chi nhánh chọn được bư
 const LY_DO_MOI = 'Lộ trình mới sau thi';
 
 /**
- * Người LÀM các hàm một em bên dưới (Kết thúc học, Lưu trữ, Học lại, Tạm dừng, Chuyển lớp và hoàn tác — vốn đòi `cycle.edit` / `class.edit` / `student.edit`). Quản lý: chính họ.
+ * Ai thực hiện các hàm một em bên dưới (Kết thúc học, Lưu trữ, Học lại, Tạm dừng, Chuyển lớp và hoàn tác — vốn đòi `cycle.edit` / `class.edit` / `student.edit`). Quản lý: chính họ.
  * TVV (đã qua `coQuyenBuocTiep`): cấp TẠM đúng các quyền đó, phạm vi chi nhánh của vai TVV, CHỈ trong lần gọi Bước tiếp này — TVV không có đường Học lại / chuyển lớp / xếp lớp /
  * Case chung (các đường đó vẫn kiểm quyền thật của người gọi). Nhật ký ghi đúng người bấm.
  */
@@ -257,8 +257,8 @@ export function boChonBuocTiep(p: Principal, cycleId: number) {
 }
 
 /**
- * HẸN BẮT ĐẦU tới tuần (OV-13m) — cron Thứ Hai + quét khi đọc (gọi ở cuối `thiHanhLenhDenHan`). Một câu rẻ khi không có gì đến hạn; mỗi lộ trình một giao dịch, đọc lại
- * trong giao dịch (chạy hai lần liền → lần hai không làm gì). Ngày bắt đầu = đúng Thứ Hai đã hẹn (tuần đó là tuần 1), kể cả khi quét muộn. Người làm = người đã chọn.
+ * HẸN BẮT ĐẦU tới tuần (OV-13m) — cron Thứ Hai (`chotVangDinhKy`) + quét khi đọc (`quetLenhDenHan`). Một câu rẻ khi không có gì đến hạn; mỗi lộ trình một giao dịch, đọc lại
+ * trong giao dịch (chạy hai lần liền → lần hai không làm gì). Ngày bắt đầu = đúng Thứ Hai đã hẹn (tuần đó là tuần 1), kể cả khi quét muộn. Thực hiện dưới tên người đã chọn.
  */
 export function batDauHenDenHan(homNay = demoToday()): number {
   const ds = db().prepare(`SELECT id FROM learning_cycles WHERE buoc_tiep = 'lo_trinh_moi' AND buoc_tiep_hen IS NOT NULL AND buoc_tiep_hen <= ? ORDER BY buoc_tiep_hen, id LIMIT 20`)
@@ -330,12 +330,13 @@ export function viecBuocTiep(p: Principal, f: { today: string; branchId: number 
     if (!coQuyenBuocTiep(p, c.student_id)) continue;
     const han = hanBuocTiep(c, f.today);
     const kq = daXongCua({ ...c, bc_ket_luan: c.ket_luan });
+    const ketQua = nhanDaXong({ khongThi: !!c.thi_that_khong_thi, ovr: c.outcome_score ?? null, ketLuan: c.ket_luan ?? c.outcome ?? null }, true);
     const thi = c.thi_that_ngay ? `đã thi ${thuNgay(c.thi_that_ngay, f.today)}` : null;
     out.push({
       key: `buoc_tiep:${c.id}`, group: 'buoc_tiep', urgency: f.today > han ? 'overdue' : 'normal',
       studentId: c.student_id, studentName: c.ten, classId: c.class_id ?? null, classCode: c.class_code ?? null,
       attemptId: null, attemptNo: null, caseId: null, level: null, contextLabel: kq, count: null,
-      reason: [c.class_code ?? null, thi, kq.replace(/^Đã xong · /, '')].filter(Boolean).join(' · '),
+      reason: [c.class_code ?? null, thi, ketQua].filter(Boolean).join(' · '),
       tieuDe: 'Chọn bước tiếp', phu: null, actionLabel: 'Chọn',
       href: duongHoSoHocVien(c.student_id, { buocTiep: c.id }), ownerId: null, owner: null, mine: true,
       due: han, statusLabel: `hạn ${tuanLich(han, f.today)}`,

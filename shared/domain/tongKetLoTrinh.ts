@@ -41,11 +41,13 @@ export const NHAN_SAU_THI: Record<LuaChonSauThi, string> = {
   lo_trinh_moi: t('Lộ trình mới'), tam_dung: t('Tạm dừng'), ket_thuc: t('Thôi học'), hoc_tiep: t('Học tiếp lộ trình mới'), hoc_lai: t('Học lại'),
 };
 /** "Đã xong · OVR 6.5 · Đạt Target" — MỘT hàm nhãn cho Các lộ trình, đầu hồ sơ, panel Bước tiếp và dòng Công việc (OV-13m). */
-export function nhanDaXong(k: { khongThi: boolean; ovr: number | null; ketLuan: string | null }): string {
-  if (k.khongThi) return t('Đã xong · Không thi');
+/* Mockup bước tiếp chủ SP duyệt 15/10 dùng đúng chữ "Đã xong" cho lộ trình có kết quả thi (khác trạng thái việc "Xong" của S3) — chỉ ở file này. */
+export const CHU_DA_XONG = t('Đã xong');
+/** `ngan`: bỏ "Đã xong · " (dòng Công việc đã có tên việc "Chọn bước tiếp"). */
+export function nhanDaXong(k: { khongThi: boolean; ovr: number | null; ketLuan: string | null }, ngan = false): string {
   const kl = k.ketLuan === 'reached' ? t('Đạt Target') : k.ketLuan === 'not_reached' ? t('Chưa đạt Target') : null;
-  if (k.ovr === null) return kl ? t('Đã xong · {kl}', { kl }) : t('Đã xong');
-  return kl ? t('Đã xong · OVR {ovr} · {kl}', { ovr: k.ovr.toFixed(1), kl }) : t('Đã xong · OVR {ovr}', { ovr: k.ovr.toFixed(1) });
+  const ds = k.khongThi ? [t('Không thi')] : [k.ovr !== null ? `OVR ${k.ovr.toFixed(1)}` : null, kl].filter((x): x is string => !!x);
+  return (ngan ? ds : [CHU_DA_XONG, ...ds]).join(' · ');
 }
 /** Gợi ý (chỉ chữ, QL vẫn chọn): Đạt Target → Kết thúc; chưa đạt / Không thi → Học lại; không có Target → không gợi ý. */
 export function goiYSauThi(o: { khongThi: boolean; ketLuan: string | null }): LuaChonSauThi | null {

@@ -584,7 +584,6 @@ export function thiHanhLenhDenHan(homNay = demoToday()): KetQuaThiHanh {
       ghiLoiNhom(g, e, homNay);   // UPDATE loi ngoài tx đã cuộn lại
     }
   }
-  kq.daChuyen += batDauHenDenHan(homNay);   // OV-13m: Lộ trình mới sau thi "Hẹn bắt đầu" tới tuần — cùng cron / quét khi đọc
   return kq;
 }
 
@@ -616,6 +615,8 @@ function thiHanhMotNhom(g: { lop_nguon_id: number; tuan_bat_dau: string; boi_can
 /** Quét khi đọc: một lần mỗi request GET (`nho`) — thêm 1 câu khi không có gì đến hạn. Lỗi thi hành không làm hỏng trang đang đọc. */
 export function quetLenhDenHan(homNay = demoToday()): void {
   nho(`thi-hanh-lenh:${homNay}`, () => { try { thiHanhLenhDenHan(homNay); } catch (e) { console.error('[chuyen-lop] quét khi đọc', e); } return true; });
+  /* OV-13m: Lộ trình mới sau thi "Hẹn bắt đầu" tới tuần — cùng lượt quét (lỗi đã bắt trong hàm). */
+  nho(`bat-dau-hen:${homNay}`, () => { batDauHenDenHan(homNay); return true; });
 }
 
 const inHang = (ids: readonly number[]) => ids.map(() => '?').join(',');
