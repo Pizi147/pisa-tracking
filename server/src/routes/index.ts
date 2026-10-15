@@ -1802,6 +1802,11 @@ api.post('/interventions/:id/xac-nhan-pa', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return sosAutoSvc.xacNhanPaQuyChe(principalOf(req), pInt(req, 'id'), (req.body ?? {}) as any);
 }));
+/** OV-13c: Xác nhận PA cùng lúc (dòng gộp Công việc) — mỗi PA một giao dịch, PA lỗi báo riêng. */
+api.post('/interventions/xac-nhan-pa-lo', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return sosAutoSvc.xacNhanPaNhieu(principalOf(req), req.body);
+}));
 api.post('/cases/:id/dismiss', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return sosAutoSvc.guiKhongTheoDoi(principalOf(req), pInt(req, 'id'), (req.body ?? {}) as any);

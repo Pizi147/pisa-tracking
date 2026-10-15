@@ -58,9 +58,10 @@ export async function runPrGopTests(t: YThucTestKit) {
     assert(khacNguoi.length === 2, 'khác người: hai dòng');
     const khongLop = d.gopViecTheoLop([v({ key: 'a', classId: null, group: 'mgmt' }), v({ key: 'b', classId: null, group: 'mgmt', studentId: 2 })], nhan);
     assert(khongLop.length === 2, 'không lớp: hai dòng');
+    /* OV-13c: Ghi nhận xét, Xác nhận PA (Case SOS FT) gộp theo tuần thi + mức SOS — khác mức SOS vẫn tách (prOv13c); Thêm PA giữ từng dòng. */
     for (const group of ['ghi_nhan_xet', 'xac_nhan_pa', 'no_plan']) {
-      const ft = d.gopViecTheoLop([v({ key: 'a', group, khung: 'ft', caseSos: true }), v({ key: 'b', group, khung: 'ft', caseSos: true, studentId: 2 })], nhan);
-      assert(ft.length === 2, `${group} FT Case SOS: giữ từng dòng`);
+      const ft = d.gopViecTheoLop([v({ key: 'a', group, khung: 'ft', caseSos: true, sos: 1 }), v({ key: 'b', group, khung: 'ft', caseSos: true, studentId: 2, sos: 2 })], nhan);
+      assert(ft.length === 2, `${group} FT Case SOS khác mức SOS: giữ từng dòng`);
     }
     /* Chủ sản phẩm 08/10: Case GV tự tạo (Bình thường / Gấp) ở lớp FT gộp theo lớp như việc khác. */
     const tay = d.gopViecTheoLop([v({ key: 'a', group: 'no_plan', khung: 'ft', caseSos: false }), v({ key: 'b', group: 'no_plan', khung: 'ft', caseSos: false, studentId: 2 })], nhan);

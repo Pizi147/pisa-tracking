@@ -803,7 +803,7 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
         myPendingDetail: mineSkills
           .map((k) => ({ skill: k, v: pendingOf(k) }))
           .filter((x) => !!x.v)
-          .map((x) => ({ skill: x.skill, deadline: x.v!.deadline, weekCode: x.v!.periodCode, periodId: x.v!.periodId ?? null, overdue: !!x.v!.overdue })),
+          .map((x) => ({ skill: x.skill, deadline: x.v!.deadline, weekCode: x.v!.periodCode, periodId: x.v!.periodId ?? null, weekStart: x.v!.weekStart ?? null, overdue: !!x.v!.overdue })),
         /* Tập bài cần chấm THEO PHẠM VI ĐANG XEM — cùng hàm với badge ở danh sách lớp. */
         pendingSkills: pending,
         /* Hạn và tuần của CHÍNH các môn còn nợ theo phạm vi đang xem — Cần chấm cần hạn của cả dòng, không chỉ phần của tôi. */
@@ -887,7 +887,7 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
       /* Bài đã báo "-" không còn là việc phải chấm — cùng luật với `pendingSkillsOf`, không hai luật đếm. */
       myPendingDetail: cells
         .filter((c) => c.mine && c.band === null && awaitingScore(c.progress) && !c.noShow)
-        .map((c) => ({ skill: c.skill, deadline: c.deadline, weekCode: c.periodCode, periodId: c.periodId ?? null, overdue: !!c.overdue })),
+        .map((c) => ({ skill: c.skill, deadline: c.deadline, weekCode: c.periodCode, periodId: c.periodId ?? null, weekStart: c.weekStart ?? null, overdue: !!c.overdue })),
       /* Tập bài cần chấm THEO PHẠM VI ĐANG XEM — cùng hàm với badge ở danh sách lớp. */
       pendingSkills: pending,
       /* Hạn và tuần của CHÍNH các môn còn nợ theo phạm vi đang xem — cùng ý như nhánh lớp thường. */

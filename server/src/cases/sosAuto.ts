@@ -4,7 +4,7 @@ import {
   hanXacNhan, issuesForTopic, kiemGhiRoKhac, laKhac, mocQuyChe, ngay, reasonNeedsText, tenCaseSos, hanKyGhiKetQua,
   type AcademicSupportPreset, type CaseDismissReason, type MilestoneKind, nhanBaiThuong } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
-import { addDays, badRequest, loi, forbidden, notFound, nowIso } from '../util.ts';
+import { addDays, badRequest, diffDays, isIsoDate, loi, forbidden, notFound, nowIso } from '../util.ts';
 import type { Principal } from '../permissions.ts';
 import { addJourney, notify, writeAudit } from '../platform/audit.ts';
 import { suggestCaseOwner } from './owner.ts';
@@ -385,6 +385,8 @@ export function xacNhanPaQuyChe(p: Principal, interventionId: number, input: {
   performerSelf?: boolean; performerUserId?: number | null; performerName?: string | null; description?: string | null;
   /** PR-PA (§8): Số buổi — cùng luật Thêm PA (loại có Số buổi, 1–60; không gửi = giữ). */
   soBuoi?: unknown;
+  /** OV-13c: ngày bắt đầu (YYYY-MM-DD, ±30 ngày quanh hôm nay); không gửi = hôm nay như cũ. Mốc quy chế, hạn kết quả tính từ ngày này. */
+  batDau?: unknown;
 }, o: XacNhanTrongLo = {}) {
   const conn = db();
   const iv = conn.prepare(`SELECT iv.*, sc.status AS case_status, sc.cycle_id AS case_cycle_id FROM case_interventions iv
@@ -410,14 +412,15 @@ export function xacNhanPaQuyChe(p: Principal, interventionId: number, input: {
   const { performerUserId, performerName } = nguoiSauSua(p, iv, input);
   const soBuoi = soBuoiMoi(iv, input.soBuoi, 0);
   const today = demoToday();
+  const batDau = batDauHopLe(input.batDau, today);
   const luot = luotSinhPa(iv);
   const moc = iv.moc_quy_che
-    ? mocQuyChe(iv.moc_quy_che, { ngayXacNhan: today, nextMtSunday: luot ? followUntilAfter(luot) : null, examDate: examDateOf(iv.case_cycle_id) })
+    ? mocQuyChe(iv.moc_quy_che, { ngayXacNhan: batDau, nextMtSunday: luot ? followUntilAfter(luot) : null, examDate: examDateOf(iv.case_cycle_id) })
     : null;
   return tx(() => {
     conn.prepare(`UPDATE case_interventions SET description = ?, performer_user_id = ?, performer_name = ?, so_buoi = ?, status = 'started', started_date = ?,
         cycle_no = 1, cycle_started_on = ?, action_due = ?, followup_due = ?, confirmed_by = ?, confirmed_at = ?, updated_at = ? WHERE id = ?`)
-      .run(description, performerUserId, performerName, soBuoi, today, today, hanKyGhiKetQua(today), moc, p.userId, nowIso(), nowIso(), interventionId);
+      .run(description, performerUserId, performerName, soBuoi, batDau, batDau, hanKyGhiKetQua(batDau), moc, p.userId, nowIso(), nowIso(), interventionId);
     /* Sửa bản máy gán lúc xác nhận thì giữ bản gợi ý trong lịch sử (PR-S2 S2, Q7). */
     if (description !== iv.description || performerUserId !== (iv.performer_user_id ?? null) || performerName !== (iv.performer_name ?? null)
         || soBuoi !== (iv.so_buoi ?? null)) {
@@ -441,6 +444,56 @@ export function xacNhanPaQuyChe(p: Principal, interventionId: number, input: {
     return o.chiGhi ? null : caseDetail(p, iv.case_id);
   });
 }
+/** OV-13c: ngày bắt đầu PA khi xác nhận — không gửi = hôm nay; ngoài ±30 ngày quanh hôm nay hoặc sai dạng → 400. */
+function batDauHopLe(v: unknown, homNay: string): string {
+  if (v === undefined || v === null || v === '') return homNay;
+  if (!isIsoDate(v)) throw badRequest('Ngày bắt đầu không hợp lệ.');
+  if (Math.abs(diffDays(v, homNay)) > 30) throw badRequest('Ngày bắt đầu phải trong khoảng 30 ngày quanh hôm nay.');
+  return v;
+}
+
+type ThanXacNhanPa = Parameters<typeof xacNhanPaQuyChe>[2];
+const KHOA_NGUOI = ['performerSelf', 'performerUserId', 'performerName'] as const;
+export const TRAN_XAC_NHAN_PA_LO = 50;
+
+/**
+ * XÁC NHẬN PA CÙNG LÚC (OV-13c, mockup OV-13 §3a): `chung` (Nội dung *, ngày bắt đầu, người dạy) áp cho mọi PA trong `ds`; mỗi phần tử
+ * `{ id, ...riêng }` thắng `chung`. Người dạy chung KHÔNG đè PA đã có người (chỉ điền PA còn trống); người riêng thì đặt lại.
+ * Mỗi PA một giao dịch qua đúng `xacNhanPaQuyChe` (quyền, luật, nhật ký như một em): PA lỗi báo riêng kèm mã HTTP, PA khác vẫn xong
+ * (mẫu Duyệt hàng loạt `duyetNhieu`).
+ */
+export function xacNhanPaNhieu(p: Principal, body: unknown): { ok: number[]; loi: { id: number; loi: string; ma: number }[] } {
+  const b = (body ?? {}) as { chung?: ThanXacNhanPa; ds?: unknown };
+  const chung = b.chung && typeof b.chung === 'object' ? b.chung : {};
+  if (!Array.isArray(b.ds) || !b.ds.length || b.ds.length > TRAN_XAC_NHAN_PA_LO) throw badRequest(`Chọn từ 1 đến ${TRAN_XAC_NHAN_PA_LO} PA để xác nhận.`);
+  const ok: number[] = [];
+  const loi: { id: number; loi: string; ma: number }[] = [];
+  const ds = new Map<number, ThanXacNhanPa>();
+  for (const x of b.ds as any[]) {
+    const id = x && typeof x === 'object' ? x.id : x;
+    if (!(Number.isInteger(id) && id > 0)) { loi.push({ id, loi: 'Mã PA không hợp lệ.', ma: 400 }); continue; }
+    if (!ds.has(id)) ds.set(id, x && typeof x === 'object' ? x : {});
+  }
+  if (!ds.size) return { ok, loi };
+  /* Một câu cho cả lô: PA nào đã có người dạy (không đè bằng người chung). */
+  const ids = [...ds.keys()];
+  const coNguoi = new Set((db().prepare(`SELECT id FROM case_interventions WHERE id IN (${ids.map(() => '?').join(',')})
+      AND (performer_user_id IS NOT NULL OR COALESCE(TRIM(performer_name), '') != '')`).all(...ids) as any[]).map((r) => r.id as number));
+  const nguoiChung = KHOA_NGUOI.some((k) => k in chung) ? Object.fromEntries(KHOA_NGUOI.filter((k) => k in chung).map((k) => [k, (chung as any)[k]])) : null;
+  for (const [id, rieng] of ds) {
+    const { id: _bo, ...r } = rieng as any;
+    const coNguoiRieng = KHOA_NGUOI.some((k) => k in r);
+    const than: ThanXacNhanPa = {
+      description: typeof r.description === 'string' && r.description.trim() ? r.description : chung.description,
+      batDau: r.batDau ?? chung.batDau,
+      ...(r.soBuoi !== undefined ? { soBuoi: r.soBuoi } : chung.soBuoi !== undefined ? { soBuoi: chung.soBuoi } : {}),
+      ...(coNguoiRieng ? Object.fromEntries(KHOA_NGUOI.filter((k) => k in r).map((k) => [k, r[k]])) : nguoiChung && !coNguoi.has(id) ? nguoiChung : {}),
+    };
+    try { xacNhanPaQuyChe(p, id, than, { chiGhi: true }); ok.push(id); } catch (e: any) { loi.push({ id, loi: e?.message ?? 'Không xác nhận được.', ma: e?.status ?? 500 }); }
+  }
+  return { ok, loi };
+}
+
 /**
  * `KHÔNG CẦN THEO DÕI` (S4-5…S4-7, T23, YC-12.4): GVBM đúng kỹ năng (C02) hoặc Quản lý trong phạm vi GỬI Quản lý duyệt một thẻ `khong_theo_doi`
  * kèm lý do chọn nhanh. Case CHƯA đóng: hàng Case "Chờ Quản lý duyệt · không theo dõi", việc Xác nhận nguyên nhân rời Việc của GVBM và không
