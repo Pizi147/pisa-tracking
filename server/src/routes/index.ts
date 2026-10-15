@@ -74,7 +74,7 @@ import * as lichSuSuaSvc from '../students/lichSuSua.ts';
 import * as meetingSvc from '../worklist/meeting.ts';
 import {
   PERIOD_WINDOW_PLANNING_FORWARD_WEEKS,
-  ensurePeriod, listPeriods, periodById, periodWindow, reportEditWindow, setPeriodUnlocked,
+  ensurePeriod, listPeriods, periodById, periodWindow, reportEditWindow,
 } from '../platform/week.ts';
 import * as keHoachSvc from '../keHoach/keHoachTest.ts';
 import { signalsFor } from '../worklist/signals.ts';
@@ -1495,8 +1495,9 @@ api.put('/cycles/:id/outcome', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   /* PR-TK (TK-K): thân mới { ngayThi, l, r, w, s, khongThi, ghiChu } = kết quả thi thật (máy tính OVR + Đạt / Chưa đạt). Thân cũ { outcome, score, note } giữ nguyên hành vi. */
   const body = (req.body ?? {}) as Record<string, any>;
-  studentSvc.chanLuuTru(principalOf(req), pInt(req, 'id'));   // OV-11d (HV-3)
+  /* OV-13h (chủ SP 15/10): kết quả thi thật nhập được cả khi em đã Lưu trữ — ngoại lệ duy nhất của hồ sơ Lưu trữ (`chanLuuTru` sau nhánh này). */
   if (['ngayThi', 'l', 'r', 'w', 's', 'khongThi', 'ghiChu'].some((k) => k in body)) return thiThatSvc.datKetQuaThiThat(principalOf(req), pInt(req, 'id'), body);
+  studentSvc.chanLuuTru(principalOf(req), pInt(req, 'id'));   // OV-11d (HV-3)
   return cycleSvc.setOutcome(principalOf(req), pInt(req, 'id'), body as any);
 }));
 
@@ -2271,27 +2272,7 @@ api.get('/meeting/board', requireAuth, wrap((req) => {
   };
 }));
 
-/**
- * Quản trị hệ thống mở lại một tuần báo cáo đã khoá.
- * Đây là ngoại lệ, nên chỉ một vai trò được làm và có ghi nhật ký.
- */
-api.post('/meeting/periods/:periodId/unlock', requireAuth, wrap((req) => {
-  const p = principalOf(req);
-  require_(p, PERMISSIONS.ADMIN_CONFIG, { anyScope: true },
-    'Chỉ Quản trị hệ thống mới mở lại được tuần báo cáo đã khoá.');
-  const periodId = pInt(req, 'periodId');
-  const on = req.body?.unlocked !== false;
-  setPeriodUnlocked(periodId, on, p.userId);
-  writeAudit({
-    actorUserId: p.userId, action: on ? 'report.unlock' : 'report.relock',
-    entityType: 'report_period', entityId: periodId,
-    entityLabel: periodById(periodId)?.code ?? String(periodId),
-    after: { unlocked: on },
-  });
-  const period = periodById(periodId);
-  return period ? reportEditWindow(period) : { open: false };
-}));
-
+/* OV-13h (chủ SP 15/10): bỏ đường Quản trị mở lại tuần báo cáo — quá hạn vẫn nộp được, gắn nhãn "nộp muộn" (`reportEditWindow`). */
 api.put('/meeting/units/:unitId/reports/:categoryKey', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   const periodId = toInt(req.body?.periodId) ?? ensurePeriod(demoToday()).id;

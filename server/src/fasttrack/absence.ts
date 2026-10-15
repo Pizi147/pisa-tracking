@@ -202,7 +202,7 @@ export function requestAbsenceMove(p: Principal, attemptId: number, skills: stri
   if (!canRequest(p, attempt)) {
     throw forbidden('Chỉ giáo viên chủ nhiệm của lớp và Quản lý mới xử lý được việc vắng thi.');
   }
-  chanVangLopKetThuc(p, attempt.class_id);
+  chanVangLopKetThuc(attempt.class_id);
   if (attempt.status === 'cancelled') throw badRequest('Đợt này đã huỷ.');
   const list = [...new Set(skills)];
   if (!list.length) throw badRequest('Chưa chọn kỹ năng nào.');
@@ -823,7 +823,6 @@ export function settleGroup(
 
 // ================================================================ xoá "-" = hết vắng (PR-BV, chủ sản phẩm 06/10 bản 2)
 
-export const CAU_QUA_HAN_GO = 'Quá hạn chấm — nhờ Quản lý.';
 /** Dòng lịch sử lịch là QUYẾT ĐỊNH của người về lịch / trạng thái thi (khi `actor_user_id` có người). */
 const QUYET_DINH_LICH = [
   'skill_week_set', 'skill_week_moved_absence', 'skill_week_restored', 'skill_part_restored', 'skill_part_cancelled', 'skill_appointment_cancelled',
@@ -848,23 +847,20 @@ export function sauLanChot(conn: any, attemptId: number, assessed: string): { da
 
 /**
  * AI GỠ ĐƯỢC DẤU "-" (Mock đã chốt + lớp thường). `null` = được; chuỗi = câu lỗi 403.
- * Quản lý / Quản trị (xếp lịch được lớp) mọi lúc. Người được nhập ô đó hoặc GVCN lớp: đến hết thứ Tư sau TUẦN THI GỐC (tuần có "-", G4).
- * OV-1b (3.3): `boVang` — bài đã DỜI vì vắng, ô ở tuần mới chưa có điểm → "Bỏ vắng" không chặn theo hạn tuần cũ. `daHuyPhan` — vắng lần 2
- * đã huỷ phần thi → chỉ Quản lý ("Khôi phục phần thi").
+ * Quản lý / Quản trị (xếp lịch được lớp), người được nhập ô đó, GVCN lớp: MỌI LÚC (OV-13h, chủ SP 15/10 — bỏ hạn thứ Tư sau tuần gốc).
+ * `daHuyPhan` — vắng lần 2 đã huỷ phần thi → chỉ Quản lý ("Khôi phục phần thi").
  */
 export function duocGoDau(p: Principal, o: {
-  classId: number; skill: string; mode: 'band' | 'ratio'; tuanGocStart: string; today: string;
+  classId: number; skill: string; today: string;
   /** Quyền nhập ô đó đã tính sẵn ở nơi gọi (bảng nhiều ô) — bỏ trống thì hỏi `scoreEditPath`. */
   duocNhap?: boolean;
-  boVang?: boolean; daHuyPhan?: boolean;
+  daHuyPhan?: boolean;
 }): string | null {
   if (can(p, PERMISSIONS.PLAN_WEEK, { classId: o.classId })) return null;
   if (!(o.duocNhap ?? scoreEditPath(p, o.classId, o.skill) !== null) && !isCoreTeacherOf(p, o.classId, o.today)) {
     return teachesClass(p, o.classId, o.today) ? 'Chỉ GV chấm kỹ năng này, GVCN hoặc Quản lý gỡ được dấu "-".' : 'Bạn không có quyền với lớp này.';
   }
-  if (o.daHuyPhan) return 'Đã huỷ phần thi (vắng 2 lần) — Quản lý khôi phục phần thi.';
-  if (o.boVang) return null;
-  return o.today > skillScoreDeadline(o.mode, o.tuanGocStart) ? CAU_QUA_HAN_GO : null;
+  return o.daHuyPhan ? 'Đã huỷ phần thi (vắng 2 lần) — Quản lý khôi phục phần thi.' : null;
 }
 
 /** Dấu "-" ĐÃ CHỐT của một ô Mock (không phải MT cũ) — dòng điểm, hoặc null. */
@@ -888,8 +884,7 @@ export function goVangDaChot(p: Principal, attemptId: number, skill: string, dau
   const assessed = assessedSkillOf(skill);
   const hien = ensureSkillRows(attemptId).find((r) => r.skill === assessed)!;
   const loi = duocGoDau(p, {
-    classId: a.class_id, skill, mode: scoringModeOf(a), tuanGocStart: dau.goc_start, today,
-    boVang: hien.planned_period_id !== dau.no_show_period_id, daHuyPhan: hien.sit_status === 'cancelled',
+    classId: a.class_id, skill, today, daHuyPhan: hien.sit_status === 'cancelled',
   });
   if (loi) throw forbidden(loi);
   const entry = entrySkillsOf(assessed);
@@ -960,7 +955,7 @@ export function baoVang(p: Principal, attemptId: number, skill: string, lyDo: st
   const conn = db();
   const a = loadAttempt(attemptId);
   if (!canRequest(p, a)) throw forbidden('Chỉ giáo viên chủ nhiệm của lớp và Quản lý báo vắng được.');
-  chanVangLopKetThuc(p, a.class_id);
+  chanVangLopKetThuc(a.class_id);
   if (a.kind !== 'mock') throw badRequest('Bài lớp thường báo vắng ở bảng điểm lớp thường.');
   if (a.status === 'cancelled') throw badRequest('Đợt này đã huỷ.');
   if (a.lich_su) throw badRequest('MT cũ không vào luồng vắng — nhập bù điểm, không dời lịch.');

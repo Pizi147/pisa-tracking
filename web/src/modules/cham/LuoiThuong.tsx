@@ -46,6 +46,10 @@ type SkillSchedule = {
   khongDuThi?: boolean;
   /** R11: đợt đã hoàn tất — khoá với người không có `PLAN_WEEK`/`SCORE_OVERRIDE`. */
   khoa?: boolean;
+  /** OV-13h (rà #410): nút Nhận xét — GV đúng môn ghi được cả khi ô đã khoá điểm. */
+  nhanXetDuoc?: boolean;
+  /** Rà #410: ô không nhận "-" (lớp đã kết thúc) — câu máy chủ. */
+  khongVang?: string | null;
 };
 type Row = {
   /** Khoá bài (`khoaBai`): `progress` / `final`; OV-6b2 Checkpoint kèm số (`checkpoint:2`). */
@@ -114,6 +118,7 @@ export function oThuong(r: Row, k: string, homNay: string) {
     chuaToiTuan: s?.progress === 'upcoming',
     tiLe: kq?.ratio ?? null, ketQua: kq?.outcome,
     khoa: s?.khoa,
+    khongVang: s?.khongVang ?? null,
   };
   return { s, kq, canEdit, trong, dung, chuDung, quaHan, cell };
 }
@@ -498,7 +503,7 @@ function DongThuong({ row, rowIndex, sheet, laCp, active, tongCot, dien, onReloa
             data-trong={trong ? '1' : undefined} data-luu={o[k]}>
             <DauO tt={o[k]} loi={loi[k]} onLuuLai={() => luuLai(k)} />
             <div className="flex items-start justify-end gap-1">
-            {canEdit && s && (
+            {(s?.nhanXetDuoc ?? canEdit) && s && (
               <NutNhanXet tenMon={tenMon(sheet.programme.code, k)} giaTri={s.nhanXet ?? null}
                 phu={[row.studentName, sheet.class.code, s.weekStart ? tuanLich(s.weekStart, homNay) : null].filter(Boolean).join(' · ')}
                 onLuu={(v) => nhanXet(k, v)} />

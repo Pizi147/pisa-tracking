@@ -354,7 +354,7 @@ function DongThuongMot({ row, k, sheet, tongCot, active, onReload, inputRef, onK
             onSave={(p, o) => luu(k, p, o)} onDau={(bat) => dau(k, bat)} onLoiNhap={(x) => loiNhap(k, x)}
             inputRef={inputRef} onKeyDown={onKeyDown} />
         )}
-        {s && canEdit && !dung && (
+        {s && (s.nhanXetDuoc ?? canEdit) && !dung && (
           <NutNhanXet lon tenMon={tenMonO} giaTri={s.nhanXet ?? null}
             phu={[row.studentName, sheet.class.code, s.weekStart ? tuanLich(s.weekStart) : null].filter(Boolean).join(' · ')}
             onLuu={(v) => nhanXet(k, v)} />
