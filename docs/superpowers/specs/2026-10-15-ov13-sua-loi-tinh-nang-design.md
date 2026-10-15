@@ -4,6 +4,16 @@ Nguồn: tin chủ SP 15/10 sáng (10 mục + "ghi kết quả mãn kiếp" + h�
 (#399): (1) điều tra Case / MT, (2) phạm vi tính năng 4–8, (3) rà toàn bộ panel OV-12 c–f + EN + TD4 theo 8 vai, VI + EN, 1440 + 375.
 Ký hiệu: **[chốt]** = chủ SP đã trả lời · **[chờ]** = planning khuyến nghị, chờ chủ SP · **[lỗi]** = lỗi mã, sửa không đổi luật.
 
+## 0. Chủ SP chốt 15/10 (thắng mọi chỗ ghi [chờ] bên dưới)
+- Q1 Case MT bỏ ô Mô tả · Q2 Case tạm khi lượt chưa chốt (+ xoá Case `cho_chot_sos` cũ) · Q3 Xác nhận PA giữ GVBM đúng kỹ năng, QL làm thay ·
+  Q4 gom theo tuần + lớp + mức SOS 1/2/3, Xác nhận PA cùng lúc tick sẵn · Q6 tự chọn vai GV/QL/TVV/CX/Admin, chi nhánh bắt buộc trừ CX ·
+  Q7 Speaking chấm chéo có số, không đỏ · Hướng dẫn trên web phần 2 ok.
+- **Q5:** xử lý vi phạm ở mức lớp, mô tả chung sửa riêng được; chip bậc 0 tên **"Chưa có xử lý vi phạm"**.
+- **Q8 (đổi khuyến nghị):** Excel **bỏ hẳn cột Mã**. Email học viên **BẮT BUỘC** và **không trùng** giữa các học viên (planning hiểu "các câu còn lại
+  ok" gồm cả câu không trùng); thêm HV để trống email vẫn được, nhưng em thiếu email là việc phải làm ("Thiếu email" — Cần làm / Thiếu thông
+  tin) tới khi điền; sửa / thêm email sau. Email trùng → máy chủ chặn kèm tên em đang dùng. Cần migrate? chỉ ràng buộc ở mã (không UNIQUE DB
+  vì dữ liệu cũ có thể trùng) + lệnh chỉ đọc đếm em trống / trùng email trên bản chính trước khi làm.
+
 ## 1. Lỗi đã tìm gốc
 
 | # | Chủ SP báo | Gốc (đã tái hiện trừ khi ghi khác) | Sửa | PR |
