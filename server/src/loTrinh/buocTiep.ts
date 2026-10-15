@@ -1,80 +1,131 @@
 /**
- * BƯỚC TIẾP SAU THI THẬT (OV-8a, chủ SP 13/10) — lộ trình FT đã đóng có kết quả thi thật (đủ 4 kỹ năng / Không thi / kết quả cũ) → Quản lý chọn
- * (OV-12a, chủ SP 14/10: cả TVV của chi nhánh — `coQuyenBuocTiep`; CX / GV / Admin không):
- *  · Kết thúc — em vào Lưu trữ (em còn học thì Kết thúc học trước). · Học tiếp lộ trình mới — `hocLai` sang lớp mới (LT1 → LT2…).
- *  · Học lại — `hocLai` về lớp cũ / lớp khác; về lớp cũ thì lộ trình đã thi đóng hẳn (`completed`) để Học lại mở lộ trình MỚI ("thi xong là kết thúc lộ trình đó").
- * Mỗi lựa chọn MỘT giao dịch; đổi lựa chọn = hoàn tác đúng lựa chọn cũ (dữ liệu hoàn tác ở `buoc_tiep_json`) rồi làm cái mới. Luật Học lại / Kết thúc học không đổi.
- * "Hướng tiếp" của bản chụp mới nhất theo lựa chọn (một nguồn cho Tổng kết, Các lộ trình, Tổng kết lớp); hoàn tác trả lại hướng lúc đóng.
- * Việc QL "Chọn bước tiếp sau thi" (nhóm Vận hành): em đã Kết thúc học, chưa Lưu trữ, lộ trình mới nhất là lộ trình này, chưa chọn; hạn = ngày có kết quả + 7, đỏ không chặn.
+ * BƯỚC TIẾP SAU THI THẬT (OV-8a; OV-13m, chủ SP 15/10). Lộ trình FT có kết quả thi thật (đủ 4 kỹ năng / Không thi / kết quả cũ) = "Đã xong" — kể cả khi em còn
+ * ghi danh (lộ trình còn mở). QL + TVV chi nhánh (`coQuyenBuocTiep`) chọn; lộ trình đóng thật khi chọn:
+ *  · Thôi học (`ket_thuc`) — Kết thúc học + Lưu trữ. · Tạm dừng (`tam_dung`) — đóng lộ trình + Tạm dừng em; sau này "Quay lại học" = chọn Lộ trình mới.
+ *  · Lộ trình mới (`lo_trinh_moi`) — Lớp này: `hocLai` về lớp cũ (Kết thúc học + Học lại một giao dịch, lộ trình MỚI); Lớp khác, em đang học: đúng đường
+ *    Chuyển lớp (`raLenh`, OV-13l: "Ngay bây giờ" chuyển ngay, tuần sau = lệnh chờ + phiếu bàn giao), `apDungMotDong` đóng-mở vì lộ trình đã xong.
+ *    Bắt đầu một Thứ Hai sau (không qua lệnh) = "Hẹn bắt đầu" (`buoc_tiep_hen`), tới tuần đó tự bắt đầu (`batDauHenDenHan`, cùng cron / quét khi đọc).
+ *  · `hoc_tiep` / `hoc_lai` (OV-8a) — chỉ dữ liệu / API cũ.
+ * Mỗi lựa chọn MỘT giao dịch; đổi lựa chọn = hoàn tác đúng lựa chọn cũ (`buoc_tiep_json`) rồi làm cái mới. Target giữ (Sửa = `mucTieu`).
+ * Việc "Chọn bước tiếp" (QL / TVV): lộ trình FT mới nhất có kết quả, chưa chọn, em chưa Lưu trữ; hạn = ngày có kết quả + 7, đỏ không chặn.
  */
 import { db, tx } from '../db.ts';
-import { LUA_CHON_SAU_THI, NHAN_SAU_THI, PERMISSIONS, duongHoSoHocVien, goiYSauThi, huongTiep, tuanLich, type LuaChonSauThi } from '../../../shared/domain/index.ts';
+import {
+  LOI_TUAN_BAT_DAU, LUA_CHON_SAU_THI, LUA_CHON_SAU_THI_CU, NHAN_SAU_THI, PERMISSIONS, chuTargetKck, duongHoSoHocVien, goiYSauThi, huongTiep, nhanDaXong, thuNgay, tuanHopLe, tuanLich,
+  type LuaChonSauThi,
+} from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { HttpError, addDays, badRequest, conflict, forbidden, notFound, nowIso } from '../util.ts';
-import { can, type Principal } from '../permissions.ts';
+import { can, loadPrincipal, napTruocPhamVi, type Principal } from '../permissions.ts';
 import { addJourney, writeAudit } from '../platform/audit.ts';
-import { archiveStudent, coQuyenBuocTiep, hoanTacHocLai, hoanTacKetThuc, hocLai, setStudentStatus, unarchiveStudent } from '../students/students.ts';
+import { archiveStudent, coQuyenBuocTiep, hoanTacHocLai, hoanTacKetThuc, hoanTacTamDung, hocLai, setStudentStatus, unarchiveStudent } from '../students/students.ts';
+import { huyLenh, raLenh } from '../classes/lenhChuyen.ts';
+import { ghiBanChup } from './banChup.ts';
 
 /** Lộ trình FT có kết quả thi thật (cùng nghĩa `!canChoThiThat`): đủ 4 kỹ năng, "Không thi", hoặc kết quả CŨ (Overall / kết luận chọn tay). */
 const CO_KET_QUA = `(c.thi_that_khong_thi = 1 OR (c.thi_that_l IS NOT NULL AND c.thi_that_r IS NOT NULL AND c.thi_that_w IS NOT NULL AND c.thi_that_s IS NOT NULL)
   OR c.outcome_score IS NOT NULL OR COALESCE(c.outcome, 'unknown') != 'unknown')`;
+/** Cùng nghĩa `CO_KET_QUA` trên một dòng `learning_cycles` đã nạp — hồ sơ hỏi trước khi chạy câu Bước tiếp (trần câu SQL của `GET /students/:id`). */
+export const coKetQuaThi = (c: any): boolean => !!c && (!!c.thi_that_khong_thi || [c.thi_that_l, c.thi_that_r, c.thi_that_w, c.thi_that_s].every((x) => x !== null && x !== undefined)
+  || (c.outcome_score ?? null) !== null || (!!c.outcome && c.outcome !== 'unknown'));
 const BAN_CHUP_CUOI = 'b.cycle_id = c.id AND b.lan = (SELECT MAX(lan) FROM ban_chup_lo_trinh WHERE cycle_id = c.id)';
 /** Ngày có kết quả (nghiệp vụ): mốc Hành trình "Kết quả thi thật" mới nhất; em kết thúc học SAU đó thì tính từ ngày đóng. */
 const NGAY_CO_KQ = `MAX(COALESCE((SELECT MAX(j.event_date) FROM journey_events j WHERE j.cycle_id = c.id AND j.event_type = 'cycle_outcome'), ''), COALESCE(c.ended_at, ''))`;
+/** Ghi danh đang giữ của em (đang học / tạm dừng) — lớp "Lớp này" và lớp nguồn của Chuyển lớp. */
+const GHI_DANH = `(SELECT e.id FROM enrollments e WHERE e.student_id = c.student_id AND e.status IN ('active', 'paused') ORDER BY e.id DESC LIMIT 1)`;
 
 function docLoTrinh(cycleId: number) {
   return db().prepare(
-    `SELECT c.*, ${CO_KET_QUA} AS co_kq, b.ly_do AS bc_ly_do, b.ket_luan AS bc_ket_luan, b.class_id AS bc_class_id,
-            (SELECT MAX(seq) FROM learning_cycles x WHERE x.student_id = c.student_id) AS seq_cuoi, u.full_name AS boi_ten
-       FROM learning_cycles c LEFT JOIN ban_chup_lo_trinh b ON ${BAN_CHUP_CUOI} LEFT JOIN users u ON u.id = c.buoc_tiep_boi WHERE c.id = ?`,
+    `SELECT c.*, ${CO_KET_QUA} AS co_kq, b.ly_do AS bc_ly_do, b.ket_luan AS bc_ket_luan, b.class_id AS bc_class_id, b.class_code AS bc_class_code, ${NGAY_CO_KQ} AS ngay_kq,
+            (SELECT MAX(seq) FROM learning_cycles x WHERE x.student_id = c.student_id) AS seq_cuoi, u.full_name AS boi_ten,
+            s.status AS em_status, s.archived_at AS em_archived, e.class_id AS lop_id, e.status AS ghi_danh, l.code AS lop_code
+       FROM learning_cycles c JOIN students s ON s.id = c.student_id LEFT JOIN ban_chup_lo_trinh b ON ${BAN_CHUP_CUOI} LEFT JOIN users u ON u.id = c.buoc_tiep_boi
+       LEFT JOIN enrollments e ON e.id = ${GHI_DANH} LEFT JOIN classes l ON l.id = e.class_id WHERE c.id = ?`,
   ).get(cycleId) as any;
 }
-/** Lộ trình có mục Bước tiếp: FT, đã đóng, không đóng vì chuyển lớp (em không đi thi), có kết quả — hoặc đã chọn (kết quả bị xoá sau vẫn hiện lựa chọn). */
-const coMuc = (c: any) => !!c && !!c.route && c.status !== 'active' && c.bc_ly_do !== 'chuyen_lop' && (!!c.co_kq || !!c.buoc_tiep);
+/** Lộ trình có mục Bước tiếp: FT, không đóng vì chuyển lớp (em không đi thi), có kết quả — hoặc đã chọn (kết quả bị xoá sau vẫn hiện lựa chọn). OV-13m: cả khi còn mở. */
+const coMuc = (c: any) => !!c && !!c.route && (c.status === 'active' || c.bc_ly_do !== 'chuyen_lop') && (!!c.co_kq || !!c.buoc_tiep);
+const ketLuanCua = (c: any): string | null => (c.status !== 'active' ? c.bc_ket_luan : null) ?? c.outcome ?? null;
+const daXongCua = (c: any) => nhanDaXong({ khongThi: !!c.thi_that_khong_thi, ovr: c.outcome_score ?? null, ketLuan: ketLuanCua(c) });
 
-export type TrangThaiBuocTiep = { chon: LuaChonSauThi | null; luc: string | null; boi: string | null; goiY: LuaChonSauThi | null; coTheChon: boolean };
+export type TrangThaiBuocTiep = {
+  chon: LuaChonSauThi | null; luc: string | null; boi: string | null; goiY: LuaChonSauThi | null; coTheChon: boolean;
+  /** OV-13m: "Đã xong · OVR 6.5 · Đạt Target" · hạn chọn (ngày có kết quả + 7) · Thứ Hai hẹn bắt đầu + lớp hẹn · lớp đang giữ ("Lớp này") · Target giữ. */
+  daXong: string; han: string; hen: string | null; henLop: string | null; lopNay: { id: number; code: string } | null; target: string; ngayThi: string | null;
+  studentId: number; cycleId: number;
+  /** 'reached' · 'not_reached' · null — màu nhãn "Đã xong" (không so chữ). */
+  ketLuan: string | null;
+};
 
-/** Mục "Bước tiếp" của ngăn Tổng kết — null khi lộ trình không có mục. `coTheChon` = `coQuyenBuocTiep` (QL / TVV của chi nhánh), máy chủ kiểm lại khi chọn. */
+/** Mục "Bước tiếp" (ngăn Tổng kết, panel Bước tiếp, Các lộ trình) — null khi lộ trình không có mục. `coTheChon` = `coQuyenBuocTiep`, máy chủ kiểm lại khi chọn. */
 export function trangThaiBuocTiep(p: Principal, cycleId: number): TrangThaiBuocTiep | null {
   const c = docLoTrinh(cycleId);
   if (!coMuc(c)) return null;
+  const g = JSON.parse(c.buoc_tiep_json ?? '{}') as GhiBuocTiep;
   return {
     chon: (c.buoc_tiep ?? null) as LuaChonSauThi | null, luc: c.buoc_tiep_luc ?? null, boi: c.boi_ten ?? null,
-    goiY: goiYSauThi({ khongThi: !!c.thi_that_khong_thi, ketLuan: c.bc_ket_luan ?? c.outcome ?? null }),
+    goiY: goiYSauThi({ khongThi: !!c.thi_that_khong_thi, ketLuan: ketLuanCua(c) }),
     coTheChon: coQuyenBuocTiep(p, c.student_id),
+    daXong: daXongCua(c), han: hanBuocTiep(c, demoToday()), hen: c.buoc_tiep_hen ?? null, henLop: c.buoc_tiep_hen ? g.lopMoiCode ?? c.lop_code ?? null : null,
+    lopNay: c.lop_id ? { id: c.lop_id, code: c.lop_code } : c.bc_class_id ? { id: c.bc_class_id, code: c.bc_class_code } : null,
+    target: chuTargetKck(c.target_score ?? null, !!c.khong_cam_ket), ngayThi: c.thi_that_ngay ?? null, studentId: c.student_id, cycleId: c.id, ketLuan: c.thi_that_khong_thi ? null : ketLuanCua(c),
   };
 }
 
-export type ChonBuocTiepVao = { chon?: unknown; lopMoiId?: unknown; mucTieu?: number | string | null; thangThi?: string | null; date?: string; lyDo?: unknown; moLaiLop?: boolean };
+export type ChonBuocTiepVao = {
+  chon?: unknown; lopMoiId?: unknown; mucTieu?: number | string | null; thangThi?: string | null; date?: string; lyDo?: unknown; moLaiLop?: boolean;
+  /** OV-13m (Lộ trình mới): 'ngay' / trống = Ngay bây giờ (tuần này là tuần 1), hoặc Thứ Hai từ tuần sau = Hẹn bắt đầu. */
+  batDau?: unknown;
+};
 
 const CHI_QL = 'Chỉ Quản lý hoặc TVV của chi nhánh chọn được bước tiếp sau thi.';
+const LY_DO_MOI = 'Lộ trình mới sau thi';
 
 /**
- * Người LÀM các hàm một em bên dưới (Kết thúc học, Lưu trữ, Học lại và hoàn tác — vốn đòi `cycle.edit` / `class.edit` / `student.edit`). Quản lý: chính họ. TVV (đã qua
- * `coQuyenBuocTiep`): cấp TẠM đúng các quyền đó, phạm vi chi nhánh của vai TVV, CHỈ trong lần gọi Bước tiếp này — TVV không có đường Học lại / chuyển lớp / xếp lớp / Case chung
- * (các đường đó vẫn kiểm quyền thật của người gọi). Nhật ký ghi đúng người bấm.
+ * Người LÀM các hàm một em bên dưới (Kết thúc học, Lưu trữ, Học lại, Tạm dừng, Chuyển lớp và hoàn tác — vốn đòi `cycle.edit` / `class.edit` / `student.edit`). Quản lý: chính họ.
+ * TVV (đã qua `coQuyenBuocTiep`): cấp TẠM đúng các quyền đó, phạm vi chi nhánh của vai TVV, CHỈ trong lần gọi Bước tiếp này — TVV không có đường Học lại / chuyển lớp / xếp lớp /
+ * Case chung (các đường đó vẫn kiểm quyền thật của người gọi). Nhật ký ghi đúng người bấm.
  */
 function nguoiLam(p: Principal, studentId: number): Principal {
   if (can(p, PERMISSIONS.CYCLE_EDIT, { studentId })) return p;
-  const g = p.grants.find((x) => x.roleKey === 'consultant' && can({ ...p, grants: [x] }, PERMISSIONS.STUDENT_EDIT_MORE, { studentId }))!;
+  const g = p.grants.find((x) => x.roleKey === 'consultant' && can({ ...p, grants: [x] }, PERMISSIONS.STUDENT_EDIT_MORE, { studentId }));
+  if (!g) throw forbidden(CHI_QL);
   const quyen = new Set<string>([PERMISSIONS.CYCLE_EDIT, PERMISSIONS.CLASS_EDIT, PERMISSIONS.STUDENT_EDIT, PERMISSIONS.STUDENT_EDIT_MORE]);
   return { ...p, grants: [...p.grants, { ...g, id: -1, roleKey: 'buoc_tiep', roleName: 'Bước tiếp sau thi', permissions: quyen }] };
 }
-type GhiBuocTiep = { ketThucHoc?: boolean; luuTru?: boolean; dongHan?: boolean; huongCu?: string | null };
+type GhiBuocTiep = {
+  ketThucHoc?: boolean; luuTru?: boolean; dongHan?: boolean; huongCu?: string | null;
+  /** OV-13m: Tạm dừng — lộ trình đóng lần này · em Tạm dừng lần này. */
+  dongLoTrinh?: boolean; tamDung?: boolean;
+  /** OV-13m: Lộ trình mới — lệnh Chuyển lớp (lớp khác) · hẹn chưa bắt đầu (lớp + Target để bắt đầu) · từ Tạm dừng (Quay lại học; hoàn tác = Tạm dừng lại). */
+  lenhId?: number; lopMoiId?: number | null; lopMoiCode?: string | null; mucTieu?: number | string | null; tuTamDung?: boolean;
+};
 /** Bản chụp mới nhất của lộ trình (hai tham số: cycle_id, cycle_id). */
 const BAN_CHUP_MOI = 'cycle_id = ? AND lan = (SELECT MAX(lan) FROM ban_chup_lo_trinh WHERE cycle_id = ?)';
 
-/** Hoàn tác đúng lựa chọn đang có (trong giao dịch của nơi gọi). Vướng (Học lại đã có điểm / em đã đổi trạng thái) → 409 nói rõ. */
+/** Hoàn tác đúng lựa chọn đang có (trong giao dịch của nơi gọi). Vướng (Học lại đã có điểm / em đã đổi trạng thái / đã chuyển lớp) → 409 nói rõ. */
 function hoanTac(p: Principal, c: any) {
   const g = JSON.parse(c.buoc_tiep_json ?? '{}') as GhiBuocTiep;
+  const conn = db();
   try {
     if (c.buoc_tiep === 'ket_thuc') {
       if (g.ketThucHoc) hoanTacKetThuc(p, c.student_id);
       else if (g.luuTru) unarchiveStudent(p, c.student_id);
-    } else {
+    } else if (c.buoc_tiep === 'tam_dung') {
+      if (g.tamDung) hoanTacTamDung(p, c.student_id);
+      if (g.dongLoTrinh) conn.prepare(`UPDATE learning_cycles SET status = 'active', ended_at = NULL WHERE id = ? AND status = 'completed'`).run(c.id);
+    } else if (c.buoc_tiep === 'lo_trinh_moi' && g.lenhId) {
+      const l = conn.prepare('SELECT trang_thai FROM lenh_chuyen_lop WHERE id = ?').get(g.lenhId) as any;
+      if (l?.trang_thai === 'da_chuyen') throw conflict('Em đã chuyển sang lớp mới (chuyển lớp không hoàn tác).');
+      if (l?.trang_thai === 'cho') huyLenh(p, g.lenhId, 'Hoàn tác bước tiếp sau thi');
+    } else if (!(c.buoc_tiep === 'lo_trinh_moi' && c.buoc_tiep_hen)) {   // hẹn chưa bắt đầu: chưa đổi gì để gỡ
       hoanTacHocLai(p, c.student_id);
-      if (g.dongHan) db().prepare(`UPDATE learning_cycles SET status = 'abandoned' WHERE id = ? AND status = 'completed'`).run(c.id);
+      if (g.dongHan) conn.prepare(`UPDATE learning_cycles SET status = 'abandoned' WHERE id = ? AND status = 'completed'`).run(c.id);
       if (g.ketThucHoc) hoanTacKetThuc(p, c.student_id);   // OV-11d: em còn ghi danh lúc chọn → trả về đang học như trước
+    }
+    /* Lộ trình mới chọn lúc em Tạm dừng (Quay lại học) → hoàn tác = Tạm dừng lại, lựa chọn về "Tạm dừng". */
+    if (g.tuTamDung && (conn.prepare('SELECT status FROM students WHERE id = ?').get(c.student_id) as any)?.status === 'active') {
+      setStudentStatus(p, c.student_id, 'inactive', demoToday(), 'Hoàn tác Lộ trình mới');
     }
   } catch (e) {
     if (e instanceof HttpError && e.status === 409) {
@@ -82,8 +133,34 @@ function hoanTac(p: Principal, c: any) {
     }
     throw e;
   }
-  if (g.huongCu !== undefined) db().prepare(`UPDATE ban_chup_lo_trinh SET huong_tiep = ? WHERE ${BAN_CHUP_MOI}`).run(g.huongCu, c.id, c.id);
-  db().prepare('UPDATE learning_cycles SET buoc_tiep = NULL, buoc_tiep_luc = NULL, buoc_tiep_boi = NULL, buoc_tiep_json = NULL WHERE id = ?').run(c.id);
+  if (g.huongCu !== undefined) conn.prepare(`UPDATE ban_chup_lo_trinh SET huong_tiep = ? WHERE ${BAN_CHUP_MOI}`).run(g.huongCu, c.id, c.id);
+  conn.prepare('UPDATE learning_cycles SET buoc_tiep = ?, buoc_tiep_luc = ?, buoc_tiep_boi = ?, buoc_tiep_json = ?, buoc_tiep_hen = NULL WHERE id = ?')
+    .run(g.tuTamDung ? 'tam_dung' : null, g.tuTamDung ? c.buoc_tiep_luc : null, g.tuTamDung ? c.buoc_tiep_boi : null, g.tuTamDung ? JSON.stringify({}) : null, c.id);
+}
+
+/**
+ * Bắt đầu Lộ trình mới bằng `hocLai` (Lớp này, hoặc Lớp khác khi em không còn ghi danh đang học): Kết thúc học (nếu còn học) + Học lại cùng giao dịch, lộ trình MỚI
+ * bắt đầu `date` (tuần đó là tuần 1). Target giữ; `mucTieu` (Sửa) → Target của lộ trình mới.
+ */
+function batDauBangHocLai(q: Principal, c: any, o: { date: string; lopMoiId: number | null; mucTieu?: number | string | null; moLaiLop?: boolean; lyDo?: unknown; thangThi?: string | null }, ghi: GhiBuocTiep) {
+  const conn = db();
+  if ((conn.prepare('SELECT status FROM students WHERE id = ?').get(c.student_id) as any).status !== 'finished') {
+    setStudentStatus(q, c.student_id, 'finished', o.date, LY_DO_MOI);
+    ghi.ketThucHoc = true;
+  }
+  /* Về lớp cũ: lộ trình đã thi KHÔNG chạy tiếp → đóng hẳn trước, `hocLai` thấy không còn lộ trình để chạy tiếp thì mở lộ trình mới ở lớp cũ. */
+  if (!o.lopMoiId) ghi.dongHan = conn.prepare(`UPDATE learning_cycles SET status = 'completed' WHERE id = ? AND status = 'abandoned'`).run(c.id).changes > 0;
+  hocLai(q, c.student_id, { date: o.date, lyDo: o.lyDo ?? LY_DO_MOI, moLaiLop: o.moLaiLop === true, lopMoiId: o.lopMoiId, mucTieu: o.mucTieu ?? null, thangThi: o.thangThi ?? null });
+}
+
+/** "Hướng tiếp" của bản chụp mới nhất theo lựa chọn (một nguồn cho Tổng kết, Các lộ trình, Tổng kết lớp); nhớ hướng cũ để hoàn tác. Chưa có bản chụp (hẹn chưa bắt đầu) → không làm gì. */
+function datHuong(cycleId: number, chon: LuaChonSauThi, lopMoi: { route: string | null } | null, ghi: GhiBuocTiep) {
+  const conn = db();
+  const bc = conn.prepare(`SELECT huong_tiep FROM ban_chup_lo_trinh WHERE ${BAN_CHUP_MOI}`).get(cycleId, cycleId) as any;
+  if (!bc) return;
+  ghi.huongCu = bc.huong_tiep ?? null;
+  const huong = chon === 'hoc_tiep' || chon === 'lo_trinh_moi' ? (lopMoi ? huongTiep('lo_trinh_moi', lopMoi.route) : 'lo_trinh_moi') : chon;
+  conn.prepare(`UPDATE ban_chup_lo_trinh SET huong_tiep = ? WHERE ${BAN_CHUP_MOI}`).run(huong, cycleId, cycleId);
 }
 
 /** POST /cycles/:id/buoc-tiep — chọn (hoặc đổi) bước tiếp. Một giao dịch: hoàn tác lựa chọn cũ → làm cái mới → ghi lựa chọn + mốc Hành trình + nhật ký. */
@@ -93,7 +170,7 @@ export function chonBuocTiep(p: Principal, cycleId: number, input: ChonBuocTiepV
   if (!coQuyenBuocTiep(p, c0.student_id)) throw forbidden(CHI_QL);
   const q = nguoiLam(p, c0.student_id);
   const chon = input.chon as LuaChonSauThi;
-  if (!(LUA_CHON_SAU_THI as readonly unknown[]).includes(chon)) throw badRequest('Bước tiếp không hợp lệ.');
+  if (![...LUA_CHON_SAU_THI, ...LUA_CHON_SAU_THI_CU].includes(chon)) throw badRequest('Bước tiếp không hợp lệ.');
   if (!coMuc(c0) || !c0.co_kq) throw badRequest('Lộ trình chưa có kết quả thi thật — nhập kết quả (hoặc Không thi) trước khi chọn bước tiếp.');
   const lopMoiId = input.lopMoiId ? Number(input.lopMoiId) : null;
   if (chon === 'hoc_tiep' && !lopMoiId) throw badRequest('Học tiếp lộ trình mới: chọn lớp.');
@@ -101,49 +178,66 @@ export function chonBuocTiep(p: Principal, cycleId: number, input: ChonBuocTiepV
   if (lopMoiId && q !== p && !can(q, PERMISSIONS.CLASS_EDIT, { classId: lopMoiId })) throw forbidden('Lớp chuyển đến nằm ngoài chi nhánh của bạn.');
   const conn = db();
   const homNay = demoToday();
+  const batDau = chon !== 'lo_trinh_moi' || input.batDau === undefined || input.batDau === null || input.batDau === '' || input.batDau === 'ngay' ? homNay : String(input.batDau);
+  if (!tuanHopLe(batDau, homNay)) throw badRequest(LOI_TUAN_BAT_DAU);
+  const hen = batDau !== homNay ? batDau : null;
   return tx(() => {
     /* Đọc lại TRONG giao dịch: hai người bấm cùng lúc thì người sau hoàn tác đúng lựa chọn người trước vừa ghi. */
     const cu = docLoTrinh(cycleId);
-    if (cu.buoc_tiep) hoanTac(q, cu);
+    const ghi: GhiBuocTiep = {};
+    /* OV-13m: em Tạm dừng sau thi → Lộ trình mới = Quay lại học (hạn tính lại từ hôm nay), không gỡ Tạm dừng; hoàn tác thì Tạm dừng lại. */
+    if (cu.buoc_tiep === 'tam_dung' && chon === 'lo_trinh_moi') {
+      if (cu.em_status === 'inactive') setStudentStatus(q, cu.student_id, 'active', homNay, 'Quay lại học');
+      ghi.tuTamDung = true;
+    } else if (cu.buoc_tiep) hoanTac(q, cu);
     const c = docLoTrinh(cycleId);
     if (c.seq !== c.seq_cuoi) throw badRequest('Em đã có lộ trình sau lộ trình này — bước tiếp chọn ở lộ trình mới nhất.');
-    const s = conn.prepare('SELECT status, archived_at FROM students WHERE id = ?').get(c.student_id) as any;
-    const ghi: GhiBuocTiep = {};
+    if (chon === 'tam_dung' && c.em_status === 'finished') throw badRequest('Em đã Kết thúc học — chọn Lộ trình mới hoặc Thôi học.');
+    /* Ghi lựa chọn TRƯỚC khi làm: "Ngay bây giờ" ở lớp khác chuyển ngay trong cùng giao dịch, `apDungMotDong` đọc lựa chọn này để đóng lộ trình đã xong, mở lộ trình mới. */
+    conn.prepare('UPDATE learning_cycles SET buoc_tiep = ?, buoc_tiep_luc = ?, buoc_tiep_boi = ?, buoc_tiep_hen = ? WHERE id = ?').run(chon, homNay, p.userId, hen, cycleId);
     if (chon === 'ket_thuc') {
-      if (s.status !== 'finished') { setStudentStatus(q, c.student_id, 'finished', homNay, 'Kết thúc sau thi'); ghi.ketThucHoc = true; }
+      if (c.em_status !== 'finished') { setStudentStatus(q, c.student_id, 'finished', homNay, 'Kết thúc sau thi'); ghi.ketThucHoc = true; }
       if (!(conn.prepare('SELECT archived_at FROM students WHERE id = ?').get(c.student_id) as any).archived_at) { archiveStudent(q, c.student_id); ghi.luuTru = true; }
-    } else {
-      /* OV-11d (HV-6): em còn ghi danh (lộ trình đã đóng — dữ liệu cũ / Kết luận lộ trình) → Kết thúc học rồi Học lại, cùng giao dịch (như nhánh Kết thúc). */
-      if (s.status !== 'finished') {
-        setStudentStatus(q, c.student_id, 'finished', typeof input.date === 'string' && input.date ? input.date : homNay, 'Kết thúc sau thi');
-        ghi.ketThucHoc = true;
+    } else if (chon === 'tam_dung') {
+      if (c.status === 'active') {
+        conn.prepare(`UPDATE learning_cycles SET status = 'completed', ended_at = ? WHERE id = ?`).run(homNay, cycleId);
+        ghiBanChup(conn, [cycleId], { lyDo: 'tam_dung', ngay: homNay });
+        ghi.dongLoTrinh = true;
       }
-      /* Về lớp cũ: lộ trình đã thi KHÔNG chạy tiếp → đóng hẳn trước, `hocLai` thấy không còn lộ trình để chạy tiếp thì mở lộ trình mới ở lớp cũ. */
-      if (!lopMoiId) ghi.dongHan = conn.prepare(`UPDATE learning_cycles SET status = 'completed' WHERE id = ? AND status = 'abandoned'`).run(cycleId).changes > 0;
-      hocLai(q, c.student_id, { date: input.date, lyDo: input.lyDo, moLaiLop: input.moLaiLop === true, lopMoiId, mucTieu: input.mucTieu ?? null, thangThi: input.thangThi ?? null });
+      if (c.em_status === 'active') { setStudentStatus(q, c.student_id, 'inactive', homNay, 'Tạm dừng sau thi'); ghi.tamDung = true; }
+    } else if (chon === 'lo_trinh_moi' && lopMoiId && c.ghi_danh === 'active' && (conn.prepare('SELECT status FROM students WHERE id = ?').get(c.student_id) as any).status === 'active') {
+      /* Lớp khác, em đang học: đúng đường Chuyển lớp (OV-13l) — cùng luật lớp đích, phiếu bàn giao, hạn ≥ 7 ngày; "Ngay bây giờ" = chuyển ngay. */
+      const r = raLenh(q, {
+        lopNguonId: c.lop_id, boiCanh: 'giua-khoa', tuanChung: null,
+        dongs: [{ studentId: c.student_id, huong: 'chuyen_lop', toClassId: lopMoiId, tuan: batDau, lyDo: LY_DO_MOI, mucTieu: (input.mucTieu ?? null) as any }],
+      });
+      if (r.failed.length) throw badRequest(r.failed[0].message);
+      ghi.lenhId = (conn.prepare('SELECT id FROM lenh_chuyen_lop WHERE student_id = ? ORDER BY id DESC LIMIT 1').get(c.student_id) as any).id;
+    } else if (chon === 'lo_trinh_moi' && hen) {
+      /* Hẹn bắt đầu: chưa đổi gì — tới Thứ Hai đó `batDauHenDenHan` bắt đầu bằng đúng đường "Ngay bây giờ". */
+      Object.assign(ghi, { lopMoiId, mucTieu: input.mucTieu ?? null });
+    } else if (chon === 'lo_trinh_moi' || chon === 'hoc_tiep' || chon === 'hoc_lai') {
+      batDauBangHocLai(q, c, { date: chon === 'lo_trinh_moi' ? homNay : typeof input.date === 'string' && input.date ? input.date : homNay, lopMoiId,
+        mucTieu: input.mucTieu ?? null, moLaiLop: input.moLaiLop, lyDo: chon === 'lo_trinh_moi' ? undefined : input.lyDo, thangThi: input.thangThi }, ghi);
     }
     const lopMoi = lopMoiId ? conn.prepare('SELECT code, route FROM classes WHERE id = ?').get(lopMoiId) as any : null;
+    if (lopMoi) ghi.lopMoiCode = lopMoi.code;
     const lop = lopMoi?.code ?? null;
-    const bc = conn.prepare(`SELECT huong_tiep FROM ban_chup_lo_trinh WHERE ${BAN_CHUP_MOI}`).get(cycleId, cycleId) as any;
-    if (bc) {
-      ghi.huongCu = bc.huong_tiep ?? null;
-      const huong = chon === 'hoc_tiep' ? huongTiep('lo_trinh_moi', lopMoi?.route ?? null) : chon;
-      conn.prepare(`UPDATE ban_chup_lo_trinh SET huong_tiep = ? WHERE ${BAN_CHUP_MOI}`).run(huong, cycleId, cycleId);
-    }
-    conn.prepare('UPDATE learning_cycles SET buoc_tiep = ?, buoc_tiep_luc = ?, buoc_tiep_boi = ?, buoc_tiep_json = ? WHERE id = ?')
-      .run(chon, homNay, p.userId, JSON.stringify(ghi), cycleId);
+    datHuong(cycleId, chon, lopMoi, ghi);
+    conn.prepare('UPDATE learning_cycles SET buoc_tiep_json = ? WHERE id = ?').run(JSON.stringify(ghi), cycleId);
     addJourney({
       studentId: c.student_id, cycleId, eventType: 'buoc_tiep', eventDate: homNay, title: `Sau thi: ${NHAN_SAU_THI[chon]}`,
-      detail: [lop ? `lớp ${lop}` : null, cu.buoc_tiep ? `đổi từ ${NHAN_SAU_THI[cu.buoc_tiep as LuaChonSauThi]}` : null].filter(Boolean).join(' · ') || null,
+      detail: [lop ? `lớp ${lop}` : null, hen ? `hẹn bắt đầu ${tuanLich(hen, homNay)}` : null, cu.buoc_tiep ? `đổi từ ${NHAN_SAU_THI[cu.buoc_tiep as LuaChonSauThi]}` : null].filter(Boolean).join(' · ') || null,
       refTable: 'learning_cycles', refId: cycleId, createdBy: p.userId, dedupKey: `buoc_tiep:${cycleId}:${nowIso()}`,
     });
+    /* OV-13j: nhật ký theo trường (Lịch sử sửa đọc `buoc_tiep` / `buoc_tiep_hen`). */
     writeAudit({ actorUserId: p.userId, action: 'cycle.buoc_tiep', entityType: 'learning_cycle', entityId: cycleId,
-      before: { chon: cu.buoc_tiep ?? null }, after: { chon, lopMoiId, ...ghi } });
+      before: { buocTiep: cu.buoc_tiep ?? null, buocTiepHen: cu.buoc_tiep_hen ?? null }, after: { buocTiep: chon, buocTiepHen: hen, lopMoiId, ...ghi } });
     return trangThaiBuocTiep(p, cycleId);
   });
 }
 
-/** DELETE /cycles/:id/buoc-tiep — Hoàn tác lựa chọn (về "chờ chọn"). */
+/** DELETE /cycles/:id/buoc-tiep — Hoàn tác lựa chọn / Huỷ hẹn (về "chờ chọn"; Lộ trình mới chọn lúc Tạm dừng → về Tạm dừng). */
 export function boChonBuocTiep(p: Principal, cycleId: number) {
   const c = docLoTrinh(cycleId);
   if (!c) throw notFound('Không tìm thấy lộ trình');
@@ -152,12 +246,42 @@ export function boChonBuocTiep(p: Principal, cycleId: number) {
   return tx(() => {
     hoanTac(nguoiLam(p, c.student_id), c);
     addJourney({
-      studentId: c.student_id, cycleId, eventType: 'buoc_tiep', eventDate: demoToday(), title: `Sau thi: hoàn tác ${NHAN_SAU_THI[c.buoc_tiep as LuaChonSauThi]}`,
+      studentId: c.student_id, cycleId, eventType: 'buoc_tiep', eventDate: demoToday(), title: `Sau thi: ${c.buoc_tiep_hen ? 'huỷ hẹn' : 'hoàn tác'} ${NHAN_SAU_THI[c.buoc_tiep as LuaChonSauThi]}`,
       refTable: 'learning_cycles', refId: cycleId, createdBy: p.userId, dedupKey: `buoc_tiep:${cycleId}:${nowIso()}`,
     });
-    writeAudit({ actorUserId: p.userId, action: 'cycle.buoc_tiep', entityType: 'learning_cycle', entityId: cycleId, before: { chon: c.buoc_tiep }, after: { chon: null } });
+    const sau = db().prepare('SELECT buoc_tiep FROM learning_cycles WHERE id = ?').get(cycleId) as any;
+    writeAudit({ actorUserId: p.userId, action: 'cycle.buoc_tiep', entityType: 'learning_cycle', entityId: cycleId,
+      before: { buocTiep: c.buoc_tiep, buocTiepHen: c.buoc_tiep_hen ?? null }, after: { buocTiep: sau?.buoc_tiep ?? null, buocTiepHen: null } });
     return trangThaiBuocTiep(p, cycleId);
   });
+}
+
+/**
+ * HẸN BẮT ĐẦU tới tuần (OV-13m) — cron Thứ Hai + quét khi đọc (gọi ở cuối `thiHanhLenhDenHan`). Một câu rẻ khi không có gì đến hạn; mỗi lộ trình một giao dịch, đọc lại
+ * trong giao dịch (chạy hai lần liền → lần hai không làm gì). Ngày bắt đầu = đúng Thứ Hai đã hẹn (tuần đó là tuần 1), kể cả khi quét muộn. Người làm = người đã chọn.
+ */
+export function batDauHenDenHan(homNay = demoToday()): number {
+  const ds = db().prepare(`SELECT id FROM learning_cycles WHERE buoc_tiep = 'lo_trinh_moi' AND buoc_tiep_hen IS NOT NULL AND buoc_tiep_hen <= ? ORDER BY buoc_tiep_hen, id LIMIT 20`)
+    .all(homNay) as any[];   // shortcut: 20 em / lượt quét, lượt sau làm tiếp
+  let n = 0;
+  for (const { id } of ds) {
+    try {
+      tx(() => {
+        const c = docLoTrinh(id);
+        if (!c || c.buoc_tiep !== 'lo_trinh_moi' || !c.buoc_tiep_hen || c.buoc_tiep_hen > homNay) return;
+        const g = JSON.parse(c.buoc_tiep_json ?? '{}') as GhiBuocTiep;
+        if (!g.lenhId) {
+          batDauBangHocLai(nguoiLam(loadPrincipal(c.buoc_tiep_boi), c.student_id), c, { date: c.buoc_tiep_hen, lopMoiId: g.lopMoiId ?? null, mucTieu: g.mucTieu ?? null }, g);
+          datHuong(id, 'lo_trinh_moi', g.lopMoiId ? db().prepare('SELECT route FROM classes WHERE id = ?').get(g.lopMoiId) as any : null, g);
+          n++;
+        }
+        db().prepare('UPDATE learning_cycles SET buoc_tiep_hen = NULL, buoc_tiep_json = ? WHERE id = ?').run(JSON.stringify(g), id);
+      });
+    } catch (e) {
+      console.error('[buoc-tiep] hẹn bắt đầu', id, (e as Error)?.message ?? e);   // lượt quét / cron sau thử lại
+    }
+  }
+  return n;
 }
 
 /**
@@ -174,41 +298,46 @@ export const SQL_DONG_CON_GHI_DANH = `SELECT s.id, s.student_code, s.full_name, 
  ORDER BY c.code, s.full_name`;
 export const emDongConGhiDanh = (conn: any): any[] => conn.prepare(SQL_DONG_CON_GHI_DANH).all() as any[];
 
-// ------------------------------------------------------------------ việc QL "Chọn bước tiếp sau thi"
-/** Lộ trình chờ chọn bước tiếp (chưa lọc quyền) — một nguồn cho việc QL / TVV (`viecBuocTiep`) và ô "Chờ chọn bước tiếp" ở Tổng quan TVV / CX (OV-10c). */
-/** Hạn chọn bước tiếp = ngày có kết quả thi + 7 — việc Công việc và góc Cần làm của TVV (OV-12f) cùng hàm. */
+// ------------------------------------------------------------------ việc QL / TVV "Chọn bước tiếp"
+/** Hạn chọn bước tiếp = ngày có kết quả thi + 7 — việc Công việc, góc Cần làm của TVV (OV-12f) và panel Bước tiếp cùng hàm. */
 export const hanBuocTiep = (c: { ngay_kq: unknown }, today: string): string => addDays(String(c.ngay_kq).slice(0, 10) || today, 7);
 
-export function choBuocTiep(): any[] {
-  return db().prepare(
-    `SELECT c.id, c.student_id, s.full_name AS ten, c.thi_that_khong_thi, c.outcome, b.ket_luan, b.class_id, b.class_code, b.branch_id, ${NGAY_CO_KQ} AS ngay_kq
-       FROM learning_cycles c JOIN students s ON s.id = c.student_id JOIN ban_chup_lo_trinh b ON ${BAN_CHUP_CUOI}
-      WHERE c.route IS NOT NULL AND c.status != 'active' AND c.buoc_tiep IS NULL AND s.status = 'finished' AND s.archived_at IS NULL
-        AND b.ly_do != 'chuyen_lop' AND ${CO_KET_QUA}
-        AND c.seq = (SELECT MAX(seq) FROM learning_cycles x WHERE x.student_id = c.student_id)`,
-  ).all() as any[];
+/**
+ * Lộ trình chờ chọn bước tiếp (chưa lọc quyền) — một nguồn cho việc QL / TVV (`viecBuocTiep`), ô "Chờ chọn bước tiếp" (OV-10c) và đếm trước deploy (`SQL_CHO_BUOC_TIEP`).
+ * OV-13m: sinh NGAY khi có kết quả, cả khi em còn ghi danh (lộ trình còn mở); lộ trình đã đóng thì không đóng vì chuyển lớp. Lớp = lớp cuối (bản chụp) hoặc lớp đang giữ.
+ */
+export const SQL_CHO_BUOC_TIEP = `SELECT c.id, c.student_id, s.full_name AS ten, c.thi_that_khong_thi, c.thi_that_ngay, c.outcome, c.outcome_score, c.status, b.ket_luan,
+       COALESCE(b.class_id, e.class_id) AS class_id, COALESCE(b.class_code, l.code) AS class_code, COALESCE(b.branch_id, l.branch_id) AS branch_id, ${NGAY_CO_KQ} AS ngay_kq
+  FROM learning_cycles c JOIN students s ON s.id = c.student_id LEFT JOIN ban_chup_lo_trinh b ON ${BAN_CHUP_CUOI}
+  LEFT JOIN enrollments e ON e.id = ${GHI_DANH} LEFT JOIN classes l ON l.id = e.class_id
+ WHERE c.route IS NOT NULL AND c.buoc_tiep IS NULL AND s.archived_at IS NULL
+   AND (c.status = 'active' OR COALESCE(b.ly_do, '') != 'chuyen_lop') AND ${CO_KET_QUA}
+   AND c.seq = (SELECT MAX(seq) FROM learning_cycles x WHERE x.student_id = c.student_id)`;
+export function choBuocTiep(studentId?: number): any[] {
+  return (studentId ? db().prepare(`${SQL_CHO_BUOC_TIEP} AND c.student_id = ?`).all(studentId) : db().prepare(SQL_CHO_BUOC_TIEP).all()) as any[];
 }
 
 /**
  * Một dòng mỗi lộ trình chờ chọn. Ai thấy: người chọn được (`coQuyenBuocTiep` — Quản lý / Quản trị / TVV của chi nhánh), là việc của chính họ. Một câu cho cả tập;
- * quyền hỏi theo em (tập nhỏ: em đã kết thúc, chưa Lưu trữ, có kết quả). Lớp = lớp cuối trong bản chụp (gộp dòng theo lớp như việc khác).
+ * quyền hỏi theo em (tập nhỏ: em có kết quả, chưa chọn). Dòng: "Chọn bước tiếp" · em · lớp · "đã thi T7 10/10 · OVR 6.5 · Đạt Target" (mockup OV-13 bước tiếp §3).
  */
 export function viecBuocTiep(p: Principal, f: { today: string; branchId: number | null; studentId?: number }): any[] {
-  const ds = choBuocTiep();
+  const ds = choBuocTiep(f.studentId);
+  napTruocPhamVi(ds.map((c) => c.student_id));   // quyền theo em (`coQuyenBuocTiep`) đọc phạm vi một câu cho cả tập — không N+1
   const out: any[] = [];
   for (const c of ds) {
     if ((f.branchId && c.branch_id && c.branch_id !== f.branchId) || (f.studentId && c.student_id !== f.studentId)) continue;
     if (!coQuyenBuocTiep(p, c.student_id)) continue;
     const han = hanBuocTiep(c, f.today);
-    const goiY = goiYSauThi({ khongThi: !!c.thi_that_khong_thi, ketLuan: c.ket_luan ?? c.outcome ?? null });
-    const kq = c.thi_that_khong_thi ? 'Không thi' : c.ket_luan === 'reached' ? 'Đạt Target' : c.ket_luan === 'not_reached' ? 'Chưa đạt Target' : 'Có kết quả thi';
+    const kq = daXongCua({ ...c, bc_ket_luan: c.ket_luan });
+    const thi = c.thi_that_ngay ? `đã thi ${thuNgay(c.thi_that_ngay, f.today)}` : null;
     out.push({
       key: `buoc_tiep:${c.id}`, group: 'buoc_tiep', urgency: f.today > han ? 'overdue' : 'normal',
       studentId: c.student_id, studentName: c.ten, classId: c.class_id ?? null, classCode: c.class_code ?? null,
       attemptId: null, attemptNo: null, caseId: null, level: null, contextLabel: kq, count: null,
-      reason: [c.class_code ?? null, kq, goiY ? `gợi ý ${NHAN_SAU_THI[goiY]}` : null].filter(Boolean).join(' · '),
-      tieuDe: `Chọn bước tiếp sau thi · ${c.ten}`, phu: goiY ? `Gợi ý: ${NHAN_SAU_THI[goiY]}` : null, actionLabel: 'Chọn',
-      href: duongHoSoHocVien(c.student_id, { tongKet: c.id }), ownerId: null, owner: null, mine: true,
+      reason: [c.class_code ?? null, thi, kq.replace(/^Đã xong · /, '')].filter(Boolean).join(' · '),
+      tieuDe: 'Chọn bước tiếp', phu: null, actionLabel: 'Chọn',
+      href: duongHoSoHocVien(c.student_id, { buocTiep: c.id }), ownerId: null, owner: null, mine: true,
       due: han, statusLabel: `hạn ${tuanLich(han, f.today)}`,
     });
   }

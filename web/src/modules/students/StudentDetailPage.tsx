@@ -10,6 +10,8 @@ import { KetLuanKhoa, MiniTestO } from './KetLuanKhoa.tsx';
 import { HanhTrinh } from './HanhTrinh.tsx';
 import { CacLoTrinh } from './CacLoTrinh.tsx';
 import { NganTongKet } from './NganTongKet.tsx';
+import { PanelBuocTiep } from './PanelBuocTiep.tsx';
+import { Nhan } from '../../ui/Nhan.tsx';
 import { BonO, CauTomTat, DaiChoDuyet, DaiTamDung, DangXuLy, DongLienHe, DongThongTin, ThanhViec, type Viec } from './DauHoSo.tsx';
 import { useSession } from '../../lib/session.tsx';
 import { NganCase } from './NganCase.tsx';
@@ -74,6 +76,7 @@ export default function StudentDetailPage() {
   const q = p.loTrinh ? `?cycleId=${p.loTrinh}` : p.dot != null ? `?attemptId=${p.dot}` : '';
   const { data, loading, error, reload } = useApi<Profile>(id ? `/students/${id}${q}` : null, [p.loTrinh, p.dot]);
   const [viecQuanLy, setViecQuanLy] = useState<ViecQuanLy | null>(null);
+  const [quayLaiBt, setQuayLaiBt] = useState(false);   // OV-13m: Quay lại học sau Tạm dừng sau thi = panel Bước tiếp mở sẵn Lộ trình mới
   const luuTru = useLuuTru(reload);
   const dienThoai = useDienThoai();
   /* OV-10b (mockup vai mục 3): TVV / CX / Admin — nút việc của vai hiện thẳng (không ⋯), khối Đang xử lý. QL / GV không đổi. */
@@ -155,6 +158,10 @@ export default function StudentDetailPage() {
   /* PR-TK: `?tong-ket=<cycleId>` mở ngăn Tổng kết lộ trình (Lưu trữ, hồ sơ lớp, link chia sẻ); `?viec=thi-that` (việc nhắc GVCN) mở ngăn Kết quả thi thật. */
   const xoaThamSo = (...ks: string[]) => { const next = new URLSearchParams(params); ks.forEach((k) => next.delete(k)); setParams(next, { replace: true }); };
   const moTongKet = (cid: number) => { const next = new URLSearchParams(params); next.set('tong-ket', String(cid)); setParams(next, { replace: true }); };
+  /* OV-13m: `?buoc-tiep=<cycleId>` mở panel Bước tiếp (việc Chọn bước tiếp, Các lộ trình, Quay lại học sau Tạm dừng sau thi). */
+  const moBuocTiep = (cid: number) => { const next = new URLSearchParams(params); next.set('buoc-tiep', String(cid)); setParams(next, { replace: true }); };
+  const bt = data.buocTiep as { chon: string | null; hen: string | null; coTheChon: boolean; cycleId: number } | null;
+  const tamDungSauThi = bt?.chon === 'tam_dung' && bt.coTheChon;
   const dongNgan = () => {
     setOpenCase(null);
     if (p.caseId != null) {
@@ -216,6 +223,7 @@ export default function StudentDetailPage() {
                 <MissingBadge items={data.missing} />
                 {data.status !== 'active' && <Info>{studentStatusLabel(data.status)}</Info>}
                 {data.archivedAt && <Info>{t('Đã lưu trữ')}</Info>}
+                {bt && (!bt.chon || bt.hen) && <Nhan tone="ok">{t('Đã xong')}</Nhan>}
               </h1>
               <DongThongTin tt={data.dauHoSo.thongTin} />
               <DongLienHe l={data.lienHe} email={data.email} dob={data.dob} tvv={data.tvv?.ten ?? data.consultantName} />
@@ -253,7 +261,8 @@ export default function StudentDetailPage() {
 
       {/* PR-VAI-b (T65, mockup 24 D1): dải vàng Tạm dừng — đọc TRƯỚC bốn ô vì nó đổi nghĩa mọi con số bên dưới. */}
       <DaiTamDung tamDung={data.dauHoSo.thongTin.tamDung}
-        onQuayLai={data.lopHoc?.quyen?.quayLai && data.status === 'inactive' ? () => setViecQuanLy('quay-lai') : undefined} />
+        onQuayLai={data.status !== 'inactive' ? undefined : tamDungSauThi ? () => setQuayLaiBt(true)
+          : data.lopHoc?.quyen?.quayLai ? () => setViecQuanLy('quay-lai') : undefined} />
 
       {/* PR-CT (mockup 20 — E): dải Sắp chuyển / Đã chuyển ngay dưới dòng thông tin đầu trang; nút theo vai do máy chủ quyết. */}
       <DaiHocVienChuyen dai={data.dai ?? null} homNay={homNay}
@@ -365,7 +374,7 @@ export default function StudentDetailPage() {
         </Card>
       )}
 
-      {tab === 'hanh-trinh' && <CacLoTrinh studentId={data.id} onTongKet={moTongKet} onHocThuat={() => setTab('hoc-thuat')} />}
+      {tab === 'hanh-trinh' && <CacLoTrinh studentId={data.id} onTongKet={moTongKet} onBuocTiep={moBuocTiep} onHocThuat={() => setTab('hoc-thuat')} />}
 
       {tab === 'hanh-trinh' && (
         <Card title={t('Hành trình học tập')} bodyClass="p-4 space-y-4">
@@ -405,6 +414,11 @@ export default function StudentDetailPage() {
       )}
 
       {p.tongKet != null && <NganTongKet cycleId={p.tongKet} onClose={() => xoaThamSo('tong-ket')} onDoi={reload} />}
+      {(p.buocTiep != null || quayLaiBt) && (
+        <PanelBuocTiep cycleId={p.buocTiep ?? bt!.cycleId} hocVien={{ id: data.id, ten: data.fullName }} lop={lopTruocSau?.code ?? null}
+          chonSan={quayLaiBt ? 'lo_trinh_moi' : undefined} onDone={reload}
+          onClose={() => { setQuayLaiBt(false); if (p.buocTiep != null) xoaThamSo('buoc-tiep'); }} />
+      )}
 
       <StudentManagePanel
         viec={viecQuanLy ?? (p.viec === 'thi-that' && cy?.route ? 'outcome' : null)} onClose={() => { setViecQuanLy(null); if (p.viec === 'thi-that') xoaThamSo('viec'); }} lop={data.currentClass?.code}

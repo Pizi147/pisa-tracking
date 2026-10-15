@@ -19,6 +19,7 @@ import { coTheRaLenh } from './quyenChuyenLop.ts';
 import { classProgressMany, mocKetKhoa } from './schedule.ts';
 import { cuoiKhoaTheoHocVien, dongBoCheTaiFinal } from '../normal/cuoiKhoa.ts';
 import { dongBoTuLenh } from './loTrinhTiep.ts';
+import { batDauHenDenHan } from '../loTrinh/buocTiep.ts';
 
 /**
  * LỆNH CHUYỂN LỚP do QUẢN LÝ quyết (PR-CT, §3.1f Q30-1): em nào · lớp chuyển đến nào · tuần bắt đầu (Thứ Hai, từ tuần sau trở đi — hoặc
@@ -349,6 +350,9 @@ function huyMotLenh(p: Principal, l: any, why: string): void {
     `UPDATE lenh_chuyen_lop SET trang_thai = 'huy', huy_boi = ?, huy_luc = ?, ly_do_huy = ?, sua_luc = ? WHERE id = ? AND trang_thai = 'cho'`,
   ).run(p.userId, nowIso(), why, nowIso(), l.id);
   if (!r.changes) throw conflict('Quyết định chuyển lớp vừa được thi hành hoặc đã huỷ.');
+  /* OV-13m: lệnh của Bước tiếp "Lộ trình mới · Lớp khác" bị huỷ (ở đâu cũng vậy) → lộ trình về "Chọn bước tiếp", không kẹt ở lựa chọn không còn lệnh. */
+  conn.prepare(`UPDATE learning_cycles SET buoc_tiep = NULL, buoc_tiep_luc = NULL, buoc_tiep_boi = NULL, buoc_tiep_json = NULL, buoc_tiep_hen = NULL
+    WHERE student_id = ? AND buoc_tiep = 'lo_trinh_moi' AND json_extract(buoc_tiep_json, '$.lenhId') = ?`).run(l.student_id, l.id);
   if (l.boi_canh === 'cuoi-khoa') dongBoCheTaiFinal(p, l.lop_nguon_id, [l.student_id]);   // PR-CT2 (§8): không còn quyết định → huỷ bổ trợ Final chưa ai đụng
   const hv = conn.prepare('SELECT full_name FROM students WHERE id = ?').get(l.student_id) as any;
   writeAudit({ actorUserId: p.userId, action: 'lenh_chuyen.huy', entityType: 'student', entityId: l.student_id, entityLabel: hv?.full_name ?? null, before: { huong: l.huong, tuan: l.tuan_bat_dau }, after: { lyDo: why } });
@@ -580,6 +584,7 @@ export function thiHanhLenhDenHan(homNay = demoToday()): KetQuaThiHanh {
       ghiLoiNhom(g, e, homNay);   // UPDATE loi ngoài tx đã cuộn lại
     }
   }
+  kq.daChuyen += batDauHenDenHan(homNay);   // OV-13m: Lộ trình mới sau thi "Hẹn bắt đầu" tới tuần — cùng cron / quét khi đọc
   return kq;
 }
 

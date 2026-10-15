@@ -213,10 +213,10 @@ const GROUP_META: Record<WorkGroupKey, { label: string; hint: string }> = {
     label: 'Cập nhật kết quả thi thật',
     hint: 'Em Fast Track đã qua kỳ thi — nhập điểm L, R, W, S em báo về hoặc chọn Không thi. Hạn 4 tuần kể từ thứ Hai sau kỳ thi.',
   },
-  /* OV-8a: hạn = ngày có kết quả + 7, đỏ không chặn. */
+  /* OV-8a → OV-13m: hạn = ngày có kết quả + 7, đỏ không chặn; sinh ngay khi có kết quả (cả em còn học). */
   buoc_tiep: {
-    label: 'Chọn bước tiếp sau thi',
-    hint: 'Em Fast Track đã có kết quả thi thật — chọn Kết thúc (vào Lưu trữ), Học tiếp lộ trình mới hoặc Học lại. Hạn 7 ngày kể từ ngày có kết quả.',
+    label: 'Chọn bước tiếp',
+    hint: 'Em Fast Track đã có kết quả thi thật — chọn Lộ trình mới, Tạm dừng hoặc Thôi học. Hạn 7 ngày kể từ ngày có kết quả.',
   },
   /* PR-LT2b (M-05, T47): Mini Test sau bổ trợ miễn phí — hạn = ngày buổi cuối + 2. */
   mini_test: {

@@ -890,6 +890,7 @@ check('TD3-b-2 · QL ×3: /classes/{lopFT}/overview ≤ 50 % (5 829), /hoc-vien-
  * 15/10 (OV-13b, chụp lại trên bản gộp OV-13c/d/h): GVCN / GVCN_THUONG toi, QL / QT tat-ca, QT tat-ca cn, QL gvcn — đổi có chủ ý: thêm trường
  * `ghiNhanh` của Kết quả PA (ghi nhanh trên dòng) và `pa.soBuoi` của Xác nhận PA cùng lúc (ô Số buổi Tutor, mockup §9); băm bỏ hai trường đó
  * trùng ảnh của main a4f9c00, đã kiểm.
+ * 15/10 OV-13m: chụp lại 'QT toi' / 'QT tat-ca' — dòng "Chọn bước tiếp" (2 lộ trình UB FT 401 của seed) đổi tiêu đề / chữ / đường mở panel Bước tiếp (có chủ ý).
  * 15/10: chụp lại 'QT toi' / 'QT tat-ca' sau khi Case của Task2(e) thôi lấy giờ thật (hạn Thêm PA của nó trôi theo ngày chạy → băm QT đổi mỗi ngày).
  * 15/10 gộp OV-13a + OV-13c: chụp lại 'QL tat-ca' / 'QT tat-ca' / 'QT tat-ca cn' trên bản gộp — hai thay đổi có chủ ý ở dưới cộng lại (id Case đổi chỗ + gom tuần).
  * 15/10 OV-13a: chụp lại 'QL tat-ca' / 'QT tat-ca' / 'QT tat-ca cn' — Case tạm (Q2) đổi thứ tự sinh Case trong seed → id Case 34↔35 (HV 46) đổi chỗ;
@@ -907,8 +908,8 @@ check('TD3-b-2 · QL ×3: /classes/{lopFT}/overview ≤ 50 % (5 829), /hoc-vien-
 await checkAsync('TD4-a (×3) · Công việc trùng JSON ảnh chụp trước TD4 — 6 vai × Của tôi / Tất cả / Của một GV / lọc chi nhánh', async () => {
   const { myWork, viecCuaNguoi } = await import('../worklist/mywork.ts');
   const ANH: Record<string, string> = {
-    'QL toi': 'a2af135210c7847a', 'QT toi': '96f59dddc6993057', 'GVCN toi': 'bc790b0e23fcb6a9', 'GVBM toi': '00dd012ac4781e7f',
-    'GVCN_THUONG toi': 'bc790b0e23fcb6a9', 'ADMIN toi': '4ed1fc3fa34653f2', 'QL tat-ca': 'e5b633576a232483', 'QT tat-ca': 'bc9c951ec2383b7b',
+    'QL toi': 'a2af135210c7847a', 'QT toi': '048872dea84531c4', 'GVCN toi': 'bc790b0e23fcb6a9', 'GVBM toi': '00dd012ac4781e7f',
+    'GVCN_THUONG toi': 'bc790b0e23fcb6a9', 'ADMIN toi': '4ed1fc3fa34653f2', 'QL tat-ca': 'e5b633576a232483', 'QT tat-ca': '32d6805adbf60538',
     'QT tat-ca cn': '21249962817a099f', 'QL gvcn': 'd4041db926199caf', 'GVS toi': '0ffdb55b50d814c0',
   };
   const p = (v: Vai) => loadPrincipal(USER[v]);

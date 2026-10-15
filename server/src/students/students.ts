@@ -456,7 +456,8 @@ export function hocLai(p: Principal, studentId: number, o: {
       if (!conn.prepare(`SELECT 1 FROM learning_cycles WHERE student_id = ? AND status = 'active'`).get(studentId)) {
         const lopCu = conn.prepare('SELECT * FROM classes WHERE id = ?').get(enr.class_id) as any;
         const gan = conn.prepare('SELECT * FROM learning_cycles WHERE student_id = ? ORDER BY seq DESC LIMIT 1').get(studentId) as any;
-        moi.loTrinhId = cycleId = moLoTrinhMoi(p, { sid: studentId, ngay: date, toClass: lopCu, tuLop, denLop: tuLop, cuCycle: gan ?? null }).moiId;
+        /* OV-13m: Target gửi kèm (Bước tiếp "Target · Sửa") → lộ trình mới mang Target đó; không gửi → giữ Target cũ như trước. */
+        moi.loTrinhId = cycleId = moLoTrinhMoi(p, { sid: studentId, ngay: date, toClass: lopCu, tuLop, denLop: tuLop, cuCycle: gan ?? null, target: tg?.target ?? null, kck: !!tg?.kck }).moiId;
       }
     }
     datLaiHanCase(studentId, date);

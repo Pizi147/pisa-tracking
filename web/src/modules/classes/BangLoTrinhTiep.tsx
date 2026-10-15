@@ -15,7 +15,7 @@ import { t } from '@shared/i18n/index.ts';
 import { BanGiaoPanel } from './BanGiaoPanel.tsx';
 import { nhapDiemCua, type QuyenDong } from './thaoTacDongHocVien.tsx';
 import {
-  NORMAL_LADDER, REGULAR_SKILLS, addDaysIso, RATIO_PASS_THRESHOLD, canLopDich, ghepMucTieu, hienMucTieu, tachMucTieu, coPhieu, khopLocLoTrinh, laChuyenNgay, LO_CHUYEN_NGAY, maHocLai, mocLoTrinh, nhomLoTrinh, tenMonNgan, tuanLich,
+  NORMAL_LADDER, REGULAR_SKILLS, addDaysIso, RATIO_PASS_THRESHOLD, canLopDich, ghepMucTieu, hienMucTieu, tachMucTieu, coPhieu, khopLocLoTrinh, laChuyenNgay, LO_CHUYEN_NGAY_THUONG, maHocLai, mocLoTrinh, nhomLoTrinh, tenMonNgan, tuanLich,
   type HuongLenh, type LocLoTrinh, type MucTieuLenh, type NhomLoTrinh, type ProgrammeCode, type RegularSkill,
 } from '@shared/domain/index.ts';
 
@@ -266,8 +266,8 @@ export function BangLoTrinhTiep({ classId, quyen, onDoi, emMo, onDaMoEm }: {
     try {
       const dongs = ids.map((studentId) => ({ studentId, huong: lo.huong, toClassId: lo.lop || null, tuan: lo.tuan || null }));
       const r: { ok: number[]; failed: { studentId: number; message: string }[] } = chotLuon
-        /* OV-13l: chuyển ngay chạy trong lời gọi — lô ≤ LO_CHUYEN_NGAY em, chân hiện "Đang chuyển… n/m em". */
-        ? await guiTheoLo(`/classes/${classId}/transition`, null, laChuyenNgay(lo.tuan, h) ? LO_CHUYEN_NGAY : dongs.length, setTienDo, dongs)
+        /* OV-13l → OV-13m: chuyển ngay chạy trong lời gọi — lớp thường Cuối khoá một em một lời gọi, chân hiện "Đang chuyển… n/m em". */
+        ? await guiTheoLo(`/classes/${classId}/transition`, null, laChuyenNgay(lo.tuan, h) ? LO_CHUYEN_NGAY_THUONG : dongs.length, setTienDo, dongs)
         : await api.put(`/classes/${classId}/lo-trinh-nhap`, { items: dongs });
       setLoiDong(Object.fromEntries(r.failed.map((f) => [f.studentId, f.message])));
       setChon(new Set(r.failed.map((f) => f.studentId)));

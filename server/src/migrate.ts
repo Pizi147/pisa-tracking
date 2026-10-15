@@ -47,6 +47,7 @@ import { migratePrOv8a } from './migrate/prOv8a.ts';
 import { migratePrOv11e, themCotPrOv11e } from './migrate/prOv11e.ts';
 import { migratePrOv12a } from './migrate/prOv12a.ts';
 import { migratePrOv13l } from './migrate/prOv13l.ts';
+import { migratePrOv13m } from './migrate/prOv13m.ts';
 import { migratePrOv12g } from './migrate/prOv12g.ts';
 import { migratePrEn } from './migrate/prEn.ts';
 import { migratePrOv12b } from './migrate/prOv12b.ts';
@@ -341,6 +342,7 @@ function migrateCaseEngine(applied: string[], skipped: string[], loiSauBuoc?: nu
        Case tạm cho lượt chưa chốt (đổi dữ liệu, chạy lặp được) — mỗi phần một giao dịch. */ for (const b of cacBuocPrOv13a(conn, applied)) buoc(b);
     /* OV-13e: users.requested_role — vai đề nghị khi tự đăng ký (chỉ thêm cột, chạy lặp được). */ buoc(() => migratePrOv13e(conn, applied));
     /* OV-13l: hạn bàn giao lệnh đang chờ chưa xác nhận = muộn hơn của (ra lệnh + 7 ngày) và hạn cũ, GVBM = GVCN (đổi dữ liệu, chạy lặp được). */ buoc(() => migratePrOv13l(conn, applied));
+    /* OV-13m: learning_cycles.buoc_tiep_hen — Hẹn bắt đầu lộ trình mới sau thi (chỉ thêm cột, chạy lặp được). */ buoc(() => migratePrOv13m(conn, applied));
 
     conn.prepare("INSERT OR REPLACE INTO demo_config (key, value, updated_at) VALUES ('case_engine_migrated_at', ?, ?)")
       .run(nowIso(), nowIso());

@@ -7,33 +7,46 @@ import { tuanLich } from './hienThiNgay.ts';
 import { mondayOfDate } from './week.ts';
 import { t } from '../i18n/index.ts';
 
-export const LY_DO_DONG = ['lo_trinh_moi', 'chuyen_lop', 'len_lop', 'hoc_lai', 'sang_ft', 'ket_thuc', 'sua_tay', 'khong_ro'] as const;
+export const LY_DO_DONG = ['lo_trinh_moi', 'chuyen_lop', 'len_lop', 'hoc_lai', 'sang_ft', 'ket_thuc', 'tam_dung', 'sua_tay', 'khong_ro'] as const;
 export type LyDoDong = (typeof LY_DO_DONG)[number];
 export const LY_DO_DONG_NHAN: Record<LyDoDong, string> = {
   lo_trinh_moi: 'Lộ trình mới', chuyen_lop: 'Chuyển lớp', len_lop: 'Lên lớp', hoc_lai: 'Học lại', sang_ft: 'Lên FT',
-  ket_thuc: 'Kết thúc học', sua_tay: 'Sửa tay', khong_ro: '—',
+  ket_thuc: 'Kết thúc học', tam_dung: 'Tạm dừng', sua_tay: 'Sửa tay', khong_ro: '—',
 };
 /** Tên có hậu tố TK: `HUONG_TIEP` đã là danh sách hướng của K26 (`lenLop.ts`). */
-export const HUONG_TIEP_TK = ['hoc_lai', 'len_lt2', 'ket_thuc', 'len_ft', 'len_lop', 'chuyen_lop', 'lo_trinh_moi', 'khong_ro'] as const;
+export const HUONG_TIEP_TK = ['hoc_lai', 'len_lt2', 'ket_thuc', 'len_ft', 'len_lop', 'chuyen_lop', 'lo_trinh_moi', 'tam_dung', 'khong_ro'] as const;
 export type HuongTiepTk = (typeof HUONG_TIEP_TK)[number];
 export const HUONG_TIEP_TK_NHAN: Record<HuongTiepTk, string> = {
   hoc_lai: 'Học lại', len_lt2: 'Lên LT2', ket_thuc: 'Kết thúc', len_ft: 'Lên FT', len_lop: 'Lên lớp',
-  chuyen_lop: 'Chuyển lớp', lo_trinh_moi: 'Lộ trình mới', khong_ro: '—',
+  chuyen_lop: 'Chuyển lớp', lo_trinh_moi: 'Lộ trình mới', tam_dung: 'Tạm dừng', khong_ro: '—',
 };
 
 export function huongTiep(lyDo: LyDoDong, routeMoi: string | null): HuongTiepTk {
   switch (lyDo) {
     case 'lo_trinh_moi': return routeMoi === 'LT2' ? 'len_lt2' : 'lo_trinh_moi';
     case 'sang_ft': return 'len_ft';
-    case 'ket_thuc': case 'hoc_lai': case 'len_lop': case 'chuyen_lop': return lyDo;
+    case 'ket_thuc': case 'hoc_lai': case 'len_lop': case 'chuyen_lop': case 'tam_dung': return lyDo;
     default: return 'khong_ro';
   }
 }
 
-/** OV-8a: BƯỚC TIẾP SAU THI — Quản lý chọn sau khi lộ trình FT có kết quả thi thật. */
-export const LUA_CHON_SAU_THI = ['ket_thuc', 'hoc_tiep', 'hoc_lai'] as const;
-export type LuaChonSauThi = (typeof LUA_CHON_SAU_THI)[number];
-export const NHAN_SAU_THI: Record<LuaChonSauThi, string> = { ket_thuc: t('Kết thúc'), hoc_tiep: t('Học tiếp lộ trình mới'), hoc_lai: t('Học lại') };
+/**
+ * BƯỚC TIẾP SAU THI — OV-13m (chủ SP 15/10): ba lựa chọn Lộ trình mới · Tạm dừng · Thôi học (`ket_thuc` = Kết thúc học + Lưu trữ, giữ khoá cũ).
+ * `hoc_tiep` / `hoc_lai` (OV-8a) còn trong dữ liệu cũ + API cũ — đọc, hoàn tác được, web không bày nữa.
+ */
+export const LUA_CHON_SAU_THI = ['lo_trinh_moi', 'tam_dung', 'ket_thuc'] as const;
+export const LUA_CHON_SAU_THI_CU = ['hoc_tiep', 'hoc_lai'] as const;
+export type LuaChonSauThi = (typeof LUA_CHON_SAU_THI)[number] | (typeof LUA_CHON_SAU_THI_CU)[number];
+export const NHAN_SAU_THI: Record<LuaChonSauThi, string> = {
+  lo_trinh_moi: t('Lộ trình mới'), tam_dung: t('Tạm dừng'), ket_thuc: t('Thôi học'), hoc_tiep: t('Học tiếp lộ trình mới'), hoc_lai: t('Học lại'),
+};
+/** "Đã xong · OVR 6.5 · Đạt Target" — MỘT hàm nhãn cho Các lộ trình, đầu hồ sơ, panel Bước tiếp và dòng Công việc (OV-13m). */
+export function nhanDaXong(k: { khongThi: boolean; ovr: number | null; ketLuan: string | null }): string {
+  if (k.khongThi) return t('Đã xong · Không thi');
+  const kl = k.ketLuan === 'reached' ? t('Đạt Target') : k.ketLuan === 'not_reached' ? t('Chưa đạt Target') : null;
+  if (k.ovr === null) return kl ? t('Đã xong · {kl}', { kl }) : t('Đã xong');
+  return kl ? t('Đã xong · OVR {ovr} · {kl}', { ovr: k.ovr.toFixed(1), kl }) : t('Đã xong · OVR {ovr}', { ovr: k.ovr.toFixed(1) });
+}
 /** Gợi ý (chỉ chữ, QL vẫn chọn): Đạt Target → Kết thúc; chưa đạt / Không thi → Học lại; không có Target → không gợi ý. */
 export function goiYSauThi(o: { khongThi: boolean; ketLuan: string | null }): LuaChonSauThi | null {
   if (o.khongThi || o.ketLuan === 'not_reached') return 'hoc_lai';

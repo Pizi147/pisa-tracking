@@ -30,6 +30,8 @@ export type ThamSoHoSo = {
   mo?: 'lo-trinh';
   /** PR-TK: mở sẵn ngăn "Tổng kết lộ trình" của lộ trình này (`?tong-ket=<cycleId>`). */
   tongKet?: number;
+  /** OV-13m: mở sẵn panel "Bước tiếp" sau thi của lộ trình này (`?buoc-tiep=<cycleId>`) — việc Chọn bước tiếp, Các lộ trình. */
+  buocTiep?: number;
 };
 
 const KY_NANG_HOP_LE = ['listening', 'reading', 'writing', 'writing1', 'writing2', 'speaking'];
@@ -55,6 +57,7 @@ export function duongHoSoHocVien(studentId: number, o: ThamSoHoSo = {}): string 
   if (o.muc) q.set('muc', o.muc);
   if (o.mo) q.set('mo', o.mo);
   if (o.tongKet) q.set('tong-ket', String(o.tongKet));
+  if (o.buocTiep) q.set('buoc-tiep', String(o.buocTiep));
   const s = q.toString();
   return `/hoc-vien/${studentId}${s ? `?${s}` : ''}`;
 }
@@ -121,6 +124,8 @@ export function docThamSoHoSo(get: (k: string) => string | null): ThamSoHoSo {
   if (get('mo') === 'lo-trinh') o.mo = 'lo-trinh';
   const tongKet = soNguyenDuong(get('tong-ket'));
   if (tongKet !== undefined) o.tongKet = tongKet;
+  const buocTiep = soNguyenDuong(get('buoc-tiep'));
+  if (buocTiep !== undefined) o.buocTiep = buocTiep;
   return o;
 }
 
