@@ -438,7 +438,7 @@ export function applyTransition(p: Principal, input: TransitionInput, o?: { daDu
       });
     }
 
-    dongLopNeuHet([from.id], input.effectiveDate);
+    dongLopNeuHet([from.id], input.effectiveDate, !!o?.daDuyet);   // OV-13l: thi hành quyết định → từ tuần Final
     const classSau = conn.prepare('SELECT status FROM classes WHERE id = ?').get(from.id) as any;
 
     const theoHuong: Record<string, number> = {};

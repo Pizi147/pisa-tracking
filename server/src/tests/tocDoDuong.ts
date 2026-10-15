@@ -807,7 +807,7 @@ export const TRAN_GHI_LO = {
   /** PR-VN4: Huỷ cả lượt (`huyLuot`) lượt nặng nhất trên dữ liệu cuối run.ts — trước 223–341 câu (bản chính 329): Huỷ điểm từng ô qua `saveScore`. */
   huyCaLuot: 120,
   /** PR-OV4a: Khôi phục lượt (`reopenAttempt` đưa bản cất về: lượt, lịch, điểm, Case / PA / Phối hợp / tín hiệu) — lượt nặng nhất trên dữ liệu cuối run.ts. */
-  khoiPhucLuot: 106,   // đo 81 câu (272 lượt) → max(81 + 10, ⌈81 × 1,3⌉)
+  khoiPhucLuot: 154,   // OV-13l: đo 118 câu (273 lượt; lượt nặng nhất đưa về 12 Case — em chuyển FT → FT giữ lộ trình) → max(118 + 10, ⌈118 × 1,3⌉); trước 81 → 106
   /** OV-7b: POST /followups/:id/sua — sửa lần ghi Kết quả PA gần nhất: đảo hệ quả cũ + chạy lại `updateResult` (Kết thúc → Tiếp tục) trong một giao dịch, trả Case. */
   suaKetQua: 95,   // đo 73 câu (~40 là `caseDetail` trả về) → max(73 + 10, ⌈73 × 1,3⌉)
   /** OV-7b: cùng đường, chỉ sửa chữ (giữ lựa chọn) — cập nhật dòng, không đảo. */

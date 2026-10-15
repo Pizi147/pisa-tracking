@@ -423,7 +423,7 @@ export async function runPrDuyetTests(t: YThucTestKit) {
       assert(!dto.dong.some((x: string) => x.includes('tự huỷ')), JSON.stringify(dto.dong));
     }
   });
-  check('DUYET (R7) · GVCN chuyển lớp FT → FT: PR-CT (Q30-1) đổi kỳ vọng thành 403 (chỉ Quản lý quyết định); QL gửi mucTieu thì nhận', () => {
+  check('DUYET (R7) · GVCN chuyển lớp FT → FT: PR-CT (Q30-1) đổi kỳ vọng thành 403 (chỉ Quản lý quyết định); OV-13l: lộ trình giữ nên Target giữ', () => {
     const chuyen = (who: any, muc: number) => {
       const { sid } = hvMoi();
       conn.prepare('UPDATE learning_cycles SET target_score = 6.5 WHERE student_id = ?').run(sid);
@@ -432,8 +432,9 @@ export async function runPrDuyetTests(t: YThucTestKit) {
       return (conn.prepare(`SELECT target_score FROM learning_cycles WHERE student_id = ? AND status = 'active'`).get(sid) as any).target_score;
     };
     assert(maLoi(() => chuyen(P.coreTeacher, 8.5)) === 403, 'GVCN không còn tự chuyển lớp — phải 403');
+    /* OV-13l: FT → FT (kể cả khác lộ trình) GIỮ lộ trình đang chạy → Target giữ; đổi Target đi đường Sửa Target. */
     const ql = chuyen(P.mbManager, 8);
-    assert(ql === 8, `QL → ${ql}`);
+    assert(ql === 6.5, `QL → ${ql}`);
   });
 }
 

@@ -250,7 +250,7 @@ export function chuyenCaseSangLoTrinh(actorUserId: number | null, studentId: num
     conn.prepare(
       `INSERT INTO case_milestones (case_id, kind, occurred_on, note, created_by, created_at, dedup_key)
        VALUES (?, 'route_changed', ?, ?, ?, ?, ?) ON CONFLICT(dedup_key) DO NOTHING`)
-      .run(c.id, on, `Sang lộ trình ${route ?? 'mới'}`, actorUserId, nowIso(), `lo-trinh:${c.id}:${denCycleId}`);
+      .run(c.id, on, `Sang lộ trình ${route ?? 'mới'}`, actorUserId, nowIso(), `lo-trinh:${c.id}:${denCycleId}:${route ?? ''}:${on}`);   // OV-13l: LT1 → LT2 → LT1 cùng ngày vẫn đủ mốc
   }
   return ds.length;
 }

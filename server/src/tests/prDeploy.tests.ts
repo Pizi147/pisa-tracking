@@ -180,7 +180,10 @@ export async function runPrDeployTests(t: YThucTestKit) {
     const cot = all('PRAGMA table_info(sos_cases)').map((c) => c.name);
     assert(cot.includes('goc_class_id') && cot.includes('goc_programme_code'), 'thiếu cột');
     const lech = all(`SELECT sc.id FROM sos_cases sc JOIN assessment_attempts a ON a.id = sc.attempt_id JOIN classes c ON c.id = a.class_id
-      WHERE sc.goc_class_id IS NOT a.class_id OR sc.goc_programme_code IS NOT c.programme_code LIMIT 5`);
+      WHERE (sc.goc_class_id IS NOT a.class_id OR sc.goc_programme_code IS NOT c.programme_code)
+        /* OV-13l: lượt chưa xong đi theo em sang lớp mới (lộ trình giữ) — lớp gốc của Case vẫn là lớp lúc mở (không đổi khi chuyển lớp). */
+        AND NOT EXISTS (SELECT 1 FROM enrollments e WHERE e.student_id = sc.student_id AND e.class_id = sc.goc_class_id AND e.status = 'transferred')
+      LIMIT 5`);
     assert(lech.length === 0, `Case lệch lớp gốc: ${lech.map((r) => r.id)}`);
     assert(get('SELECT COUNT(*) n FROM sos_cases WHERE goc_class_id IS NULL').n === 0, 'Case không có lớp gốc (kể cả Case tay / giao việc)');
   });
