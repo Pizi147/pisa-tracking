@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { duongHoSoHocVien } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
@@ -96,4 +96,51 @@ export function NutChu({ children, onClick, mo, disabled, title }: { children: R
 /** Nhóm nguyên nhân có số thứ tự (1 = chính): "1 Kỹ năng làm bài · 2 Quản lý thời gian". */
 export function NhomCoSo({ ds }: { ds: { code: string; label: string }[] }) {
   return <>{ds.map((x, i) => <span key={x.code}>{i > 0 && ' · '}<b className="font-semibold text-slate-300">{i + 1}</b> {dich(x.label)}</span>)}</>;
+}
+
+/** OV-13b: kết quả một lần lưu ở panel làm việc — câu chính, dòng phụ, Hoàn tác (nếu có đường đảo). */
+export type DaLuuPanel = { chu: string; phu?: string | null; hoanTac?: () => Promise<void> };
+
+/**
+ * SAU KHI LƯU Ở PANEL (OV-13b, mockup OV-13 §1 "Sau khi lưu", §7, §9) — ở lại panel, không nhảy sang Case đầy đủ: khối "✓ Đã lưu · …" + nút chính
+ * "Việc tiếp ›" (việc kế của danh sách) / về nơi mở / Đóng. Chân: "✓ Đã lưu HH:MM · Hoàn tác" (10 giây, chỉ khi có đường đảo). Toast không dùng — chân đã nói.
+ */
+export function KhoiDaLuu({ x, luc, nutChinh, phu, onHoanTac }: {
+  x: DaLuuPanel; luc: string; nutChinh: ReactNode; phu?: ReactNode;
+  /** Hoàn tác xong — nơi gọi đưa panel về form (chữ cũ giữ). */
+  onHoanTac?: () => void;
+}) {
+  return (
+    <div className="flex flex-col gap-4 pt-4">
+      <div className="flex flex-col gap-1 rounded-[4px_10px_10px_4px] bg-ok-bg py-3.5 pl-[19px] pr-4" style={{ boxShadow: 'inset 3px 0 0 var(--ok)' }} role="status">
+        <b className="text-[15px] font-bold text-ok">✓ {x.chu}</b>
+        {x.phu && <span className="text-[13px] text-slate-300">{x.phu}</span>}
+      </div>
+      <div className="flex flex-wrap items-center gap-2 [&>button:first-child]:max-sm:w-full [&>button:first-child]:max-sm:justify-center">{nutChinh}{phu}</div>
+      <ChanDaLuu luc={luc} hoanTac={x.hoanTac} onHoanTac={onHoanTac} />
+    </div>
+  );
+}
+
+function ChanDaLuu({ luc, hoanTac, onHoanTac }: { luc: string; hoanTac?: () => Promise<void>; onHoanTac?: () => void }) {
+  const [con, setCon] = useState(!!hoanTac);
+  const [busy, setBusy] = useState(false);
+  const [loi, setLoi] = useState<string | null>(null);
+  useEffect(() => {
+    if (!con) return undefined;
+    const h = setTimeout(() => setCon(false), 10_000);   // mockup OV-13 §1: Hoàn tác 10 giây
+    return () => clearTimeout(h);
+  }, [con]);
+  const bam = async () => {
+    setBusy(true); setLoi(null);
+    try { await hoanTac!(); onHoanTac?.(); } catch (e: any) { setLoi(e?.message ?? t('Không lưu được')); } finally { setBusy(false); }
+  };
+  return (
+    <p className="m-0 flex min-h-6 flex-wrap items-center gap-2 border-t pt-2.5 text-[13px] text-slate-400" style={{ borderColor: 'var(--line)' }}>
+      <span className="font-semibold text-ok">✓ {t('Đã lưu')} <span className="tabular-nums">{luc}</span></span>
+      <span className="flex-1" />
+      {loi && <span role="alert" className="text-bad">⚠ {loi}</span>}
+      {con && <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 font-semibold sm:min-h-0" disabled={busy} onClick={() => void bam()}>{busy ? t('Đang lưu…') : t('Hoàn tác')}</button>}
+    </p>
+  );
 }

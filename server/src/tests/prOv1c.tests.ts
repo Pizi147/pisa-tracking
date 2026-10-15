@@ -4,6 +4,7 @@
  */
 import type { YThucTestKit } from './yThuc.tests.ts';
 import { nhanXetCaseThu } from './luotThu.ts';
+import { duXacNhan } from './luotThu.ts';
 
 export async function runPrOv1cTests(t: YThucTestKit) {
   const { check, assert, conn, P, classId, TODAY } = t;
@@ -168,7 +169,7 @@ export async function runPrOv1cTests(t: YThucTestKit) {
       if (xacNhan) {
         nhanXetCaseThu(conn, attempts.saveScore, QL, c.id, { primaryCode: dm.issuesForTopic('listening')[0].code, moTa: 'Em sót số liệu ở Part 1 và Part 2.' });
         const pa = one(`SELECT * FROM case_interventions WHERE case_id = ? AND preset = 1`, c.id);
-        sosAuto.xacNhanPaQuyChe(QL, pa.id, { description: pa.description });
+        sosAuto.xacNhanPaQuyChe(QL, pa.id, duXacNhan(conn, pa.id, { description: pa.description }));
       }
       diem(a, 'speaking', 7, BU);   // (5 + 7 + 7 + 7) / 4 = 6.5 ≥ 6.5
       const sau = one('SELECT * FROM sos_cases WHERE id = ?', c.id);

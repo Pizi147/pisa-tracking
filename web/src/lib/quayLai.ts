@@ -117,6 +117,20 @@ export function useThamSoUrl(ten: string, macDinh: string): [string, (v: string 
   return [sp.get(ten) ?? macDinh, dat];
 }
 
+/**
+ * OV-13b (đặc tả OV-13 §1): panel số liệu đang mở ghi lên URL (`?so-lieu=<khoá>`) — "Xem hồ sơ ↗" rồi "‹ Tổng quan" mở lại đúng panel (chồng nguồn
+ * giữ URL). `khoa` = mã chỉ số (+ bộ lọc phụ) của nơi gọi.
+ */
+export function useMoSoLieu(khoa: string): [boolean, (mo: boolean) => void] {
+  const [sp, setSp] = useSearchParams();
+  return [sp.get('so-lieu') === khoa, (mo) => setSp((q) => {
+    const n = new URLSearchParams(q);
+    if (mo) n.set('so-lieu', khoa);
+    else if (n.get('so-lieu') === khoa) { n.delete('so-lieu'); n.delete('dong'); }   // đóng panel = bỏ cả dòng đang mở
+    return n;
+  }, { replace: true })];
+}
+
 /** Tập hàng đang mở ghi lên URL (`?mo=a,b`); `setMo` nhận giá trị hoặc hàm như `useState`. */
 export function useTapUrl(ten: string): [Set<string>, (v: Set<string> | ((s: Set<string>) => Set<string>)) => void] {
   const [chu, datChu] = useThamSoUrl(ten, '');

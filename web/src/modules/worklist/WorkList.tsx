@@ -27,11 +27,13 @@ export type WorkItem = {
   con?: (WorkItem & { conTen: string; conPhu: string })[];
   /** OV-5a: PA của việc (Kết quả PA, Xác nhận PA, Mini Test) · Nhập điểm: mã lượt (`mt:2`) + kỹ năng — panel Công việc mở đúng chỗ. */
   paId?: number | null; luot?: string; kn?: string; soBai?: number;
+  /** OV-13b: Kết quả PA ghi nhanh được ngay dưới dòng (máy chủ `ghiNhanhDuoc`). */
+  ghiNhanh?: boolean;
   /** OV-11c: id em của việc cả lớp (Nhập điểm theo bài…) — panel Nhập điểm đưa em của việc lên đầu. */
   emIds?: number[];
   /** OV-13c: tuần thi (thứ Hai) · mức SOS · Nhập điểm: tuần + loại bài (lưới Lịch Test) · Xác nhận PA: PA đang chờ. */
   tuanThi?: string | null; sos?: number | null; periodId?: number | null; kind?: string | null; phu?: string | null;
-  pa?: { kind: string; moTa: string | null; nguoiId: number | null; nguoi: string | null };
+  pa?: { kind: string; moTa: string | null; nguoiId: number | null; nguoi: string | null; soBuoi?: number | null };
 };
 export type WorkGroup = { key: string; label: string; hint: string; items: WorkItem[]; overdue: number; today: number };
 
@@ -46,7 +48,7 @@ export type WorkGroup = { key: string; label: string; hint: string; items: WorkI
 /** OV-13d: loại việc Ý thức mà dòng gộp theo lớp mở panel lô (`LoYThucPanel`) — `PanelViec` đọc cùng tập này. */
 export const VIEC_LO_Y_THUC: ReadonlySet<string> = new Set(['yt_xu_ly', 'yt_xem']);
 
-export function DongViec({ it, onOpen, nutPhu, gon = false, chon = null, xong, moTrang = false, conMoTrang, moCaDong }: {
+export function DongViec({ it, onOpen, nutPhu, gon = false, chon = null, xong, moTrang = false, conMoTrang, moRong, moCaDong }: {
   it: WorkItem; onOpen: (it: WorkItem) => void;
   /** Nút phụ đứng cạnh nút chính (PR-Ra: Nhắc/Duyệt). */
   nutPhu?: ReactNode;
@@ -58,6 +60,8 @@ export function DongViec({ it, onOpen, nutPhu, gon = false, chon = null, xong, m
   moTrang?: boolean;
   /** OV-11c (CV-17c): em trong dòng gộp mở trang khác cũng có dấu ↗. */
   conMoTrang?: (it: WorkItem) => boolean;
+  /** OV-13b: phần mở ngay dưới dòng / dưới em của dòng gộp (ghi nhanh Kết quả PA). */
+  moRong?: (it: WorkItem) => ReactNode;
   /** OV-13c: dòng gộp làm CẢ DÒNG một lần (Xác nhận PA cùng lúc, Nhập điểm theo tuần) — bấm mở panel, không mở danh sách em. */
   moCaDong?: (it: WorkItem) => boolean;
 }) {
@@ -130,9 +134,11 @@ export function DongViec({ it, onOpen, nutPhu, gon = false, chon = null, xong, m
       {con && mo && (
         <ul id={maDs} className="col-span-full m-0 mb-0.5 mt-1 list-none divide-y rounded-lg border p-0 sm:col-start-2 sm:col-end-[-1]"
           style={{ borderColor: 'var(--line)', background: 'var(--surface)' }} onClick={(e) => e.stopPropagation()}>
-          {con.map((c) => <li key={c.key}><DongCon it={c} loaiHan={loaiHan} onOpen={onOpen} gon={gon} chon={chon === c.key} xong={!!xong?.has(c.key)} moTrang={!!conMoTrang?.(c)} /></li>)}
+          {con.map((c) => <li key={c.key}><DongCon it={c} loaiHan={loaiHan} onOpen={onOpen} gon={gon} chon={chon === c.key} xong={!!xong?.has(c.key)} moTrang={!!conMoTrang?.(c)} />
+            {moRong?.(c) && <div className="px-2.5 pb-2.5">{moRong(c)}</div>}</li>)}
         </ul>
       )}
+      {!con && moRong?.(it) && <div className="col-span-full sm:col-start-2" onClick={(e) => e.stopPropagation()}>{moRong(it)}</div>}
     </div>
   );
 }

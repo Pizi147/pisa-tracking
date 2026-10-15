@@ -5,6 +5,7 @@
  * Mỗi ca dựng trong một giao dịch rồi cuộn lại (`thu`).
  */
 import type { YThucTestKit } from './yThuc.tests.ts';
+import { duXacNhan } from './luotThu.ts';
 
 export async function runPrOv12cTests(t: YThucTestKit) {
   const { check, assert, conn, P, classId, TODAY } = t;
@@ -148,11 +149,11 @@ export async function runPrOv12cTests(t: YThucTestKit) {
     sosAuto.guiKhongTheoDoi(QL, c1.id, { reasonCode: dm.CASE_DISMISS_REASONS[0] });
     const pa1 = one(`SELECT * FROM case_interventions WHERE case_id = ? AND preset = 1`, c1.id);
     let loi = '';
-    try { sosAuto.xacNhanPaQuyChe(QL, pa1.id, { description: pa1.description }); } catch (e: any) { loi = e.message; }
+    try { sosAuto.xacNhanPaQuyChe(QL, pa1.id, duXacNhan(conn, pa1.id, { description: pa1.description })); } catch (e: any) { loi = e.message; }
     assert(/Không cần theo dõi/.test(loi), `phải chặn khi thẻ đang chờ: ${loi}`);
     assert(cases.caseDetail(QL, c1.id).trangThaiV4.k === 'cho-duyet-khong-theo-doi', 'trạng thái chờ QL duyệt');
     const pa2 = one(`SELECT * FROM case_interventions WHERE case_id = ? AND preset = 1`, c2.id);
-    sosAuto.xacNhanPaQuyChe(QL, pa2.id, { description: pa2.description });
+    sosAuto.xacNhanPaQuyChe(QL, pa2.id, duXacNhan(conn, pa2.id, { description: pa2.description }));
     assert(one('SELECT status, confirmed_by FROM case_interventions WHERE id = ?', pa2.id).status === 'started', 'PA chạy');
   }));
 
@@ -165,7 +166,7 @@ export async function runPrOv12cTests(t: YThucTestKit) {
       const c = caseCua(luot)[0];
       assert(c && c.status !== 'done', 'phải có Case L sau chốt');
       const pa = one(`SELECT * FROM case_interventions WHERE case_id = ? AND preset = 1`, c.id);
-      if (ca === 'xac-nhan') sosAuto.xacNhanPaQuyChe(QL, pa.id, { description: pa.description });
+      if (ca === 'xac-nhan') sosAuto.xacNhanPaQuyChe(QL, pa.id, duXacNhan(conn, pa.id, { description: pa.description }));
       /* GV đính bằng chứng vào PA quy chế chưa xác nhận — xoá Case sẽ mất tệp, nên giữ. */
       if (ca === 'tep') conn.prepare(`INSERT INTO attachments (owner_type, owner_id, kind, url, display_name, uploaded_by, created_at)
         VALUES ('case_intervention', ?, 'link', 'https://vd.test/a', 'Ảnh bài', ?, ?)`).run(pa.id, QL.userId, new Date().toISOString());

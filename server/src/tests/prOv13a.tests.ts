@@ -9,6 +9,7 @@
  * Mỗi ca dựng trong một giao dịch rồi cuộn lại (`thu`) — cùng cách dựng lượt sạch như prOv12c.
  */
 import type { YThucTestKit } from './yThuc.tests.ts';
+import { duXacNhan } from './luotThu.ts';
 
 export async function runPrOv13aTests(t: YThucTestKit) {
   const { check, assert, conn, P, classId, TODAY } = t;
@@ -95,7 +96,7 @@ export async function runPrOv13aTests(t: YThucTestKit) {
   };
   const xacNhanPa = (caseId: number, who = QL) => {
     const pa = paCua(caseId).find((x) => x.preset === 1 && x.status === 'planned')!;
-    sosAuto.xacNhanPaQuyChe(who, pa.id, { description: 'Theo đề cương, GV kiểm tra hằng tuần và ghi chú tiến bộ.' });
+    sosAuto.xacNhanPaQuyChe(who, pa.id, duXacNhan(conn, pa.id, { description: 'Theo đề cương, GV kiểm tra hằng tuần và ghi chú tiến bộ.' }));
     xoaNho();
     return one('SELECT * FROM case_interventions WHERE id = ?', pa.id);
   };

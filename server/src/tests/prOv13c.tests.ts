@@ -94,7 +94,7 @@ export async function runPrOv13cTests(t: YThucTestKit) {
     const batDau = addDays(TODAY, 3);
     const moTa = 'Hai buổi Tutor mỗi tuần, chữa đề Reading bấm giờ, Tutor gửi nhận xét.';
     const kq = sosAuto.xacNhanPaNhieu(P.mbManager, {
-      chung: { description: moTa, batDau, performerUserId: P.sTeacher.userId },
+      chung: { soBuoi: 4, description: moTa, batDau, performerUserId: P.sTeacher.userId },
       ds: [{ id: a.id }, { id: b.id }, { id: 99999999 }, { id: 'x' }],
     });
     assert(JSON.stringify(kq.ok) === JSON.stringify([a.id, b.id]), `xong: ${JSON.stringify(kq)}`);
@@ -113,11 +113,11 @@ export async function runPrOv13cTests(t: YThucTestKit) {
     assert(khongL && coL, `cần PA Listening và PA kỹ năng khác: ${JSON.stringify(cho)}`);
     assertThrows(() => sosAuto.xacNhanPaQuyChe(P.mbManager, coL.id, { description: 'Nội dung đủ dài để xác nhận PA.', batDau: addDays(TODAY, 60) }), /tối đa 30 ngày/, 'ngày bắt đầu quá xa');
     assertThrows(() => sosAuto.xacNhanPaQuyChe(P.mbManager, coL.id, { description: 'Nội dung đủ dài để xác nhận PA.', batDau: addDays(TODAY, -8) }), /lùi tối đa 7 ngày/, 'lùi quá 7 ngày');
-    const gv = sosAuto.xacNhanPaNhieu(P.lrTeacher, { chung: { description: 'Nội dung chung đủ dài để xác nhận PA.' }, ds: [{ id: coL.id }, { id: khongL.id }] });
+    const gv = sosAuto.xacNhanPaNhieu(P.lrTeacher, { chung: { soBuoi: 4, description: 'Nội dung chung đủ dài để xác nhận PA.' }, ds: [{ id: coL.id }, { id: khongL.id }] });
     assert(gv.ok.includes(coL.id) && gv.loi.some((l: any) => l.id === khongL.id && l.ma === 403), `quyền từng PA: ${JSON.stringify(gv)}`);
     const con = cho.filter((x) => x.id !== coL.id).slice(0, 2);
     if (con.length === 2) {
-      const ql = sosAuto.xacNhanPaNhieu(P.mbManager, { chung: { description: 'Nội dung chung đủ dài để xác nhận PA.' },
+      const ql = sosAuto.xacNhanPaNhieu(P.mbManager, { chung: { soBuoi: 4, description: 'Nội dung chung đủ dài để xác nhận PA.' },
         ds: [{ id: con[0].id, description: 'Nội dung riêng của em này, đủ mười lăm ký tự.' }, { id: con[1].id, description: 'ngắn' }] });
       assert(ql.ok.length === 1 && ql.ok[0] === con[0].id && ql.loi[0]?.id === con[1].id && ql.loi[0].ma === 400, `PA lỗi giữ lại: ${JSON.stringify(ql)}`);
       assert(all('SELECT description FROM case_interventions WHERE id = ?', con[0].id)[0].description === 'Nội dung riêng của em này, đủ mười lăm ký tự.', 'nội dung riêng thắng');
@@ -130,7 +130,7 @@ export async function runPrOv13cTests(t: YThucTestKit) {
   check('OV13c-7 · (rà #412) gửi lại sau mạng chập: PA đã xác nhận → ✓ không lỗi; lùi 7 ngày: hạn kỳ Ghi kết quả đầu tiên không trước hôm nay', () => thu(() => {
     const [a] = choPa();
     assert(a, 'cần một PA chờ xác nhận');
-    const than = { chung: { description: 'Hai buổi mỗi tuần, chữa đề bấm giờ, GV gửi nhận xét.', batDau: addDays(TODAY, -7) }, ds: [{ id: a.id }] };
+    const than = { chung: { soBuoi: 4, description: 'Hai buổi mỗi tuần, chữa đề bấm giờ, GV gửi nhận xét.', batDau: addDays(TODAY, -7) }, ds: [{ id: a.id }] };
     const lan1 = sosAuto.xacNhanPaNhieu(P.mbManager, than);
     const lan2 = sosAuto.xacNhanPaNhieu(P.mbManager, than);
     assert(lan1.ok[0] === a.id && lan2.ok[0] === a.id && !lan2.loi.length, `gửi lại: ${JSON.stringify(lan2)}`);
@@ -142,7 +142,7 @@ export async function runPrOv13cTests(t: YThucTestKit) {
     const { chayVoiHan } = hanGio;
     const ds = choPa().slice(0, 2);
     assert(ds.length === 2, 'cần hai PA chờ xác nhận');
-    const kq = chayVoiHan(Date.now() + 3_000, () => sosAuto.xacNhanPaNhieu(P.mbManager, { chung: { description: 'Nội dung chung đủ dài để xác nhận PA.' }, ds: ds.map((x) => ({ id: x.id })) }));
+    const kq = chayVoiHan(Date.now() + 3_000, () => sosAuto.xacNhanPaNhieu(P.mbManager, { chung: { soBuoi: 4, description: 'Nội dung chung đủ dài để xác nhận PA.' }, ds: ds.map((x) => ({ id: x.id })) }));
     assert(!kq.ok.length && !kq.loi.length && JSON.stringify(kq.chuaLam) === JSON.stringify(ds.map((x) => x.id)), JSON.stringify(kq));
     assert(all(`SELECT 1 FROM case_interventions WHERE id IN (?, ?) AND confirmed_at IS NOT NULL`, ds[0].id, ds[1].id).length === 0, 'PA chưa làm bị ghi');
   }));
