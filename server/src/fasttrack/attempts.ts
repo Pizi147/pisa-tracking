@@ -513,7 +513,8 @@ export function skillCells(
         ? { userId: row.examiner_user_id ?? null, ten: tenGvCham({ examinerUserName: row.examiner_user_name, examinerName: row.examiner_name }) ?? '' }
         : null,
       /* OV-13k: nhận xét GV phụ trách Speaking (riêng, dưới nhận xét người chấm) — hộp chấm, hồ sơ MT đọc. */
-      nhanXetPhuTrach: row?.nhan_xet_phu_trach ? { chu: row.nhan_xet_phu_trach, ten: row.nhan_xet_phu_trach_by_name ?? null } : null,
+      /* Chỉ gắn khi có — ô không có nhận xét phụ trách giữ nguyên JSON cũ (ảnh chụp bảng điểm, Công việc). */
+      ...(row?.nhan_xet_phu_trach ? { nhanXetPhuTrach: { chu: row.nhan_xet_phu_trach, ten: row.nhan_xet_phu_trach_by_name ?? null } } : {}),
     };
   });
 }
