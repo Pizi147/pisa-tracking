@@ -9374,6 +9374,9 @@ await runPrOv13dTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P,
 // ==================================================================== OV-13h (gỡ chặn cứng người đúng nhiệm vụ — qua HTTP; chạy cuối: không bọc giao dịch)
 const { runPrOv13hTests } = await import('./prOv13h.tests.ts');
 await runPrOv13hTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== OV-13c (gom Công việc theo tuần + lớp + mức SOS · Xác nhận PA cùng lúc · Nhập điểm theo tuần thi)
+const { runPrOv13cTests } = await import('./prOv13c.tests.ts');
+await runPrOv13cTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`
