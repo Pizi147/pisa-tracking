@@ -1161,8 +1161,8 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
         classId: lopId, classCode: ds[0].code, attemptId: null, attemptNo: null, caseId: null, level: null, contextLabel: 'Ý thức', count: ds.length, emIds: ds.map((e) => e.id as number),
         reason: `${ds.length} em mới vào web chưa xác nhận cấp bậc vi phạm đã có trước đó`,
         tieuDe: `Xác nhận cấp bậc vi phạm HV cũ · ${ds[0].code} · ${ds.length} em`, actionLabel: 'Xác nhận cấp bậc',
-        /* Đường đã có: tab Ý thức của lớp, chọn sẵn em đầu tiên và mở panel Khai bậc (`mo=khai`). */
-        href: `/hoc-vien/lop/${lopId}?tab=y-thuc&hv=${ds[0].id}&mo=khai`,
+        /* Một em: tab Ý thức của lớp, chọn sẵn em, mở panel Khai bậc (`mo=khai`). OV-13d: nhiều em → panel Xác nhận cấp bậc theo lô (`mo=cap-bac`). */
+        href: ds.length === 1 ? `/hoc-vien/lop/${lopId}?tab=y-thuc&hv=${ds[0].id}&mo=khai` : `/hoc-vien/lop/${lopId}?tab=y-thuc&mo=cap-bac`,
         ownerId: p.userId, owner: null, mine: true, due: null, statusLabel: 'Chưa xác nhận cấp bậc',
       });
     }

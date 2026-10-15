@@ -63,7 +63,7 @@ function viPhamChon(em: EmYThuc, ids: unknown): number[] {
   return list;
 }
 
-function nguoiThucHien(p: Principal, v: { performerUserId?: unknown; performerName?: unknown }): { by: number | null; ten: string | null } {
+export function nguoiThucHien(p: Principal, v: { performerUserId?: unknown; performerName?: unknown }): { by: number | null; ten: string | null } {
   const ten = String(v.performerName ?? '').trim().slice(0, 120) || null;
   const id = v.performerUserId == null || v.performerUserId === '' ? null : Number(v.performerUserId);
   if (id) {
@@ -73,13 +73,13 @@ function nguoiThucHien(p: Principal, v: { performerUserId?: unknown; performerNa
   return ten ? { by: null, ten } : { by: p.userId, ten: null };
 }
 
-function ngayThucHien(v: unknown): string {
+export function ngayThucHien(v: unknown): string {
   if (!isIsoDate(v)) throw badRequest('Chọn ngày thực hiện.');
   if (v > demoToday()) throw badRequest('Ngày thực hiện không được ở tương lai.');
   return v;
 }
 
-function moTa(v: unknown): string {
+export function moTa(v: unknown): string {
   const s = String(v ?? '').trim();
   if (s.length < MO_TA_MIN) throw badRequest(`Mô tả cần ít nhất ${MO_TA_MIN} ký tự — đã làm gì, với ai.`);
   return s.slice(0, 2000);
@@ -236,8 +236,9 @@ export function suaKhaiBac(p: Principal, studentId: number, v: { bac?: unknown; 
 
 function kiemKhai(v: { bac?: unknown; thang?: unknown; ghiChu?: unknown }) {
   const bac = Number(v.bac);
-  /* Khai tối đa bậc 6 (WL 2) — hết mạch chính. ponytail: em đã qua Report 7+ trước khi dùng web thì khai WL 2, tăng dần trên web. */
-  if (!Number.isInteger(bac) || bac < 1 || bac > THANG.length) throw badRequest('Chọn bậc đã xử lý: Report 1 … WL 2.');
+  /* Khai tối đa bậc 6 (WL 2) — hết mạch chính. ponytail: em đã qua Report 7+ trước khi dùng web thì khai WL 2, tăng dần trên web.
+     OV-13d (Q5): bậc 0 = "Chưa có xử lý vi phạm" — xác nhận em chưa từng bị xử lý (thoát việc khai bậc, lần kế vẫn Report 1). */
+  if (!Number.isInteger(bac) || bac < 0 || bac > THANG.length) throw badRequest('Chọn bậc đã xử lý: Chưa có xử lý vi phạm, Report 1 … WL 2.');
   const thangStr = String(v.thang ?? '').trim();
   if (thangStr && !/^\d{4}-(0[1-9]|1[0-2])$/.test(thangStr)) throw badRequest('Tháng xử lý không hợp lệ.');
   const ghiChu = String(v.ghiChu ?? '').trim();

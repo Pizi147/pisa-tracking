@@ -18,6 +18,7 @@ import * as timNguoiSvc from '../platform/timNguoi.ts';
 import * as violationSvc from '../yThuc/violations.ts';
 import * as accessSvc from '../yThuc/access.ts';
 import * as xuLySvc from '../yThuc/xuLy.ts';
+import * as loYThucSvc from '../yThuc/lo.ts';
 import * as phoiHopSvc from '../yThuc/phoiHop.ts';
 import * as sosAutoSvc from '../cases/sosAuto.ts';
 import { bangYThucLop } from '../yThuc/board.ts';
@@ -1063,6 +1064,24 @@ api.get('/students/:id/y-thuc', requireAuth, wrap((req) => {
 api.get('/classes/:id/y-thuc', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   return bangYThucLop(principalOf(req), pInt(req, 'id'));
+}));
+/** OV-13d: chọn nhiều ở tab Ý thức lớp — mọi em đang học + em nào làm được hành động nào (lý do khi không). */
+api.get('/classes/:id/y-thuc/lo', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return loYThucSvc.loYThucLop(principalOf(req), pInt(req, 'id'));
+}));
+/** OV-13d: ba hành động theo lô — mỗi em một giao dịch, kết quả từng em (`em[].ok` / `loi`). */
+api.post('/classes/:id/y-thuc/lo/xu-ly', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return loYThucSvc.loXuLy(principalOf(req), pInt(req, 'id'), yThucBody(req));
+}));
+api.post('/classes/:id/y-thuc/lo/ghi-nhan', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return loYThucSvc.loGhiNhan(principalOf(req), pInt(req, 'id'), yThucBody(req));
+}));
+api.post('/classes/:id/y-thuc/lo/cap-bac', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return loYThucSvc.loCapBac(principalOf(req), pInt(req, 'id'), yThucBody(req));
 }));
 /** YT-6 "Theo thời gian" — HV ĐANG HỌC ở lớp, MỌI trạng thái (khác ba khu vực của `/classes/:id/y-thuc`, đi theo học viên). */
 api.get('/classes/:id/violations', requireAuth, wrap((req) => {
