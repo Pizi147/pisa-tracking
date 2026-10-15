@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect, useId, useRef, useState, type ReactNode } from 'react';
+import { Suspense, useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { INTERVENTION_KIND_LABEL, METRIC_UNIT_LABEL, deadlineView, metricById, nhanQuaHan, thamSoCt, type ChiSo, type ChuongTrinh, type DeadlineKind } from '@shared/domain/index.ts';
 import { useApi } from '../lib/useApi.ts';
@@ -11,6 +11,7 @@ import { ChipHan, ChipSoQuaHan } from './Nhan.tsx';
 import { Empty, ErrorState, Skeleton } from './ui.tsx';
 import { useNgayNghiepVu } from './ngayNghiepVu.ts';
 import { dich, t } from '@shared/i18n/index.ts';
+import { lazyTai } from '../lib/taiLaiManh.ts';
 
 const THOI_GIAN_NHAN: Record<ChiSo['thoiGian'], string> = {
   'hien-trang': t('Hiện trạng — tính tại ngày dữ liệu'),
@@ -71,7 +72,7 @@ function HanDong({ han, loai }: { han: string; loai?: DeadlineKind | null }) {
 }
 
 /* Việc dài của dòng (Ngăn Case, Nhập điểm, Vận hành) chỉ tải khi bấm — trang có ô số không kéo cả cây panel làm việc vào lần tải đầu. */
-const LamDongSoLieu = lazy(() => import('../modules/worklist/LamDongSoLieu.tsx').then((m) => ({ default: m.LamDongSoLieu })));
+const LamDongSoLieu = lazyTai(() => import('../modules/worklist/LamDongSoLieu.tsx').then((m) => ({ default: m.LamDongSoLieu })));
 
 
 /**

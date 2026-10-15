@@ -12,7 +12,7 @@ export async function runPrOv1bTests(t: YThucTestKit) {
   const week: any = await import('../platform/week.ts');
   const dm: any = await import('../../../shared/domain/index.ts');
   const { kiemOLop } = await import('../ops/kiemOLop.ts');
-  const { migratePrOv1b, kiemTruocOv1b } = await import('../migrate/prOv1b.ts');
+  const { migratePrOv1b, kiemTruocOv1b, khoaPrOv1b, KHOA_PR_OV1B } = await import('../migrate/prOv1b.ts');
   const { xoaNho } = await import('../platform/nguCanhRequest.ts');
   console.log('\nPR-OV1b · dấu "-" = Vắng, Không dự thi, Bỏ vắng, dòng lớp phần của bạn, migrate 4 ca thật');
 
@@ -306,5 +306,22 @@ export async function runPrOv1bTests(t: YThucTestKit) {
     const ds = kiemOLop(conn, 'MB FT 101') as any[];
     const tru = ds.filter((d) => d.tru).map((d) => d.tru).join(' | ');
     assert(tru && !/undefined/.test(tru) && /skill_week_moved_absence/.test(tru), `lịch sử: ${tru.slice(0, 300)}`);
+  }));
+  check('HOTFIX-3 · bước migrate prOv1b chỉ ghi khoá: ca trộn ("-" cũ nhập bù W1 + "-" mới tuần thi lại W2, lần 2 huỷ phần thi) chạy 2 lần → không đổi gì', () => thu(() => {
+    const a = luot[0];
+    dung(a);
+    ghiDau(a, 'writing1', W, { late: 1, settled: '2026-11-11T03:00:00.000Z' });
+    ghiDau(a, 'writing2', W1, { late: 0, settled: '2026-11-11T03:00:00.000Z' });
+    conn.prepare(`UPDATE attempt_skills SET planned_period_id = ?, sit_status = 'cancelled', huy_vang = 1, absence_move_count = 2 WHERE attempt_id = ? AND skill = 'writing'`).run(W1, a);
+    xoaNho();
+    const anh = () => JSON.stringify([ky(a, 'writing'), dau(a, 'writing1'), dau(a, 'writing2')]);
+    const truoc = anh();
+    conn.prepare('DELETE FROM demo_config WHERE key = ?').run(KHOA_PR_OV1B);   // DB cũ chưa khoá
+    khoaPrOv1b(conn, []);
+    khoaPrOv1b(conn, []);
+    assert(anh() === truoc, `ca trộn đã đổi:
+${truoc}
+${anh()}`);
+    assert(!!one('SELECT 1 x FROM demo_config WHERE key = ?', KHOA_PR_OV1B), 'phải ghi khoá');
   }));
 }
