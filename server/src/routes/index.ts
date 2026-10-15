@@ -2472,7 +2472,7 @@ api.post('/auth/register', wrap((req) => {
   const r = accountSvc.register({
     email: String(b.email ?? ''), password: String(b.password ?? ''), fullName: String(b.fullName ?? ''),
     phone: b.phone ?? null, branches: Array.isArray(b.branches) ? b.branches : [],
-    note: b.note ?? null, skills: Array.isArray(b.skills) ? b.skills : [],
+    note: b.note ?? null, skills: Array.isArray(b.skills) ? b.skills : [], role: b.role,
   });
   return { ...r, pending: true };
 }));

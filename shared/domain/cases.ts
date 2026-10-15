@@ -1117,6 +1117,6 @@ export const CASE_STATUS_TONE: Record<CaseStatus, 'danger' | 'warn' | 'ok'> = {
  * nên cũng không nằm ở "chưa ai ghi sẽ làm gì". Chỉ số `case-thieu-pa`, cột "Thiếu phương án" của bảng "Việc cần lưu ý"
  * và của bảng phân tích theo kỹ năng đều gọi hàm này — trước PR-N bảng phân tích tự định nghĩa lại và lệch ở hai khe trên.
  */
-export function isNoPlanCase(c: { status: string; disposition?: string | null; interventionCount: number }): boolean {
-  return c.status !== 'done' && !c.disposition && c.interventionCount === 0;
+export function isNoPlanCase(c: { status: string; disposition?: string | null; interventionCount: number; tam?: boolean | number | null }): boolean {
+  return c.status !== 'done' && !c.disposition && c.interventionCount === 0 && !c.tam;   // OV-13a: Case tạm (chờ chốt SOS) chưa là "Thiếu PA"
 }

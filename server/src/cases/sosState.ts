@@ -14,6 +14,12 @@ import { CASE_DISMISS_REASON_LABEL, cotXuLy, hanThemPa, trangThaiCaseV4, type Ca
  * MỘT nơi định nghĩa cho hai lời hứa: phương án đó KHÔNG vào hiệu quả (`cases/effectiveness.ts`) và KHÔNG sinh nghĩa vụ cập nhật tuần
  * hay xem lại kết quả (`worklist/*`). Mỗi truy vấn tự viết một kiểu là cách một trong hai lời hứa bị vỡ âm thầm.
  */
+/**
+ * OV-13a (rà #406): CASE THẬT = không phải Case tạm (`tam = 0`). Case tạm (lượt Mock FT chưa chốt) chỉ hiện ở hồ sơ HV / Ngăn Case / panel một em —
+ * KHÔNG vào bất kỳ số đếm nào (Case mở, Đang làm, Thiếu PA, Tổng hợp, Tổng quan, Học viên & Lớp, hồ sơ lớp / GV, Danh sách Case). MỘT điều kiện cho mọi câu đếm.
+ */
+export const CASE_THAT = (sc = 'sc') => `${sc}.tam = 0`;
+
 export const UNCONFIRMED_PRESET = (alias = 'iv') => `(${alias}.preset = 1 AND ${alias}.confirmed_at IS NULL)`;
 export const NOT_UNCONFIRMED_PRESET = (alias = 'iv') => `NOT ${UNCONFIRMED_PRESET(alias)}`;
 

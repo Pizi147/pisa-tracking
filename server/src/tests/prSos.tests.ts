@@ -394,7 +394,9 @@ export async function runPrSosTests(t: YThucTestKit) {
     const mtCuoi = sosAuto.mtCuoiCuaLoTrinh([st.cycleId]).get(st.cycleId);
     assert(mtCuoi, 'lộ trình thử phải có MT cuối đã xếp tuần');
     const pa = (cases.caseDetail(P.w2Teacher, c.id) as any).interventions.find((x: any) => x.id === iv.id);
-    assert(pa.status === 'started' && pa.followupDue === mtCuoi.chuNhat && pa.mocChu === `đến MT${mtCuoi.so} · ${d.tuanLich(mtCuoi.chuNhat, TODAY)}`, JSON.stringify(pa));
+    const moc = sosAuto.mocTheoMtCuoi(mtCuoi.chuNhat, TODAY);   // rà #406: không sớm hơn xác nhận + 4 tuần
+    assert(pa.status === 'started' && pa.followupDue === moc
+      && (moc === mtCuoi.chuNhat ? pa.mocChu === `đến MT${mtCuoi.so} · ${d.tuanLich(mtCuoi.chuNhat, TODAY)}` : /^đến lúc thi · /.test(pa.mocChu)), JSON.stringify(pa));
     assert(!(myworkSvc.myWork(P.mbManager, {}).items as any[]).some((x: any) => x.key === `moc:${iv.id}`), 'không còn việc Nhập ngày thi');
     const tuanThi = weekSvc.mondayOf(addDays(TODAY, 70));
     conn.prepare('UPDATE learning_cycles SET exam_period_id = ? WHERE id = ?').run(weekSvc.ensurePeriod(tuanThi).id, st.cycleId);

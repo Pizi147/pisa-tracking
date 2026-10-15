@@ -5,7 +5,7 @@
  *  · A: kỹ năng đạt ở lượt MT sau / Overall đạt khi đã có PA → PA quy chế sang "Kết quả cuối" → ghi xong → Hoàn thành Case.
  *  · B: "đến lúc thi" chưa có ngày thi → mốc = MT cuối của lộ trình ("đến MT3 · W1 NOV"); có ngày thi → theo ngày thi.
  *  · C: GVCN / QL "Kết thúc PA" quy chế đang chạy, lý do ≥ 10 ký tự, mốc nhật ký ghi lý do + người; GV khác → 403.
- *  · migrate prOv13a (a)(b)(c)(e) chạy lặp không đổi, `kiemTruocOv13a` = số migrate đổi; (d) prOv1c chỉ chạy một lần.
+ *  · migrate prOv13a (a)(b)(c)(e) chạy lặp không đổi, `kiemTruocOv13a` = số migrate đổi; (d) prOv1c không chạy nữa (chỉ ghi khoá).
  * Mỗi ca dựng trong một giao dịch rồi cuộn lại (`thu`) — cùng cách dựng lượt sạch như prOv12c.
  */
 import type { YThucTestKit } from './yThuc.tests.ts';
@@ -25,6 +25,9 @@ export async function runPrOv13aTests(t: YThucTestKit) {
   const m13: any = await import('../migrate/prOv13a.ts');
   const ov1c: any = await import('../migrate/prOv1c.ts');
   const { xoaNho } = await import('../platform/nguCanhRequest.ts');
+  const { getConfig, setConfig } = await import('../demoConfig.ts');
+  const { createApp } = await import('../app.ts');
+  const { checkAsync } = t as any;
   console.log('\nPR-OV13a · Case tạm · PA quy chế hết kẹt (A · B · C) · migrate prOv13a');
 
   const thu = <T>(fn: () => T): T => {
@@ -217,6 +220,13 @@ export async function runPrOv13aTests(t: YThucTestKit) {
     let chu = cases.caseDetail(QL, cL.id).interventions.find((x: any) => x.id === pa.id).mocChu as string;
     assert(chu === `đến MT${a.attempt_no} · ${dm.tuanLich('2026-11-08', TODAY)}`, `chữ mốc: ${chu}`);
     assert(!mywork.myWork(QL, { nguoi: 'tat-ca' }).items.some((it: any) => it.key === `moc:${pa.id}`), 'không còn việc "Nhập dự kiến thi"');
+    /* Rà #406 (3): MT cuối sớm hơn ngày xác nhận + 4 tuần (PA sinh ngay ở MT cuối) → mốc = xác nhận + 4 tuần, không kết thúc ngay. */
+    conn.prepare('UPDATE assessment_attempts SET planned_period_id = ? WHERE id = ?').run(week.ensurePeriod('2026-09-07').id, luot);
+    xoaNho();
+    cases.caseDetail(QL, cL.id);
+    const sau4 = one('SELECT followup_due f FROM case_interventions WHERE id = ?', pa.id).f;
+    assert(sau4 === t.addDays(pa.started_date, 28), `mốc ≥ xác nhận + 4 tuần: ${sau4} (xác nhận ${pa.started_date})`);
+    assert(!cases.caseDetail(QL, cL.id).interventions.find((x: any) => x.id === pa.id).lanCuoi, 'chưa phải lần ghi cuối');
     conn.prepare('UPDATE learning_cycles SET exam_date = ? WHERE id = (SELECT cycle_id FROM sos_cases WHERE id = ?)').run('2026-12-20', cL.id);
     xoaNho();
     chu = cases.caseDetail(QL, cL.id).interventions.find((x: any) => x.id === pa.id).mocChu as string;
@@ -286,10 +296,10 @@ export async function runPrOv13aTests(t: YThucTestKit) {
     assert(JSON.stringify(so(m13.kiemTruocOv13a(conn))) === JSON.stringify({ a: 0, b: 0, c: 0, e: 0 }), 'kiểm trước sau migrate = 0');
   }));
 
-  check('OV13a-10 · (d) prOv1c chỉ chạy một lần (khoá demo_config) — lần sau không đóng Case nào', () => thu(() => {
+  check('OV13a-10 · (d) prOv1c không chạy nữa: bước migrate chỉ ghi khoá demo_config, không đóng Case nào (kể cả lần đầu)', () => thu(() => {
     const { kiemTruocOv1c } = ov1c;
     conn.prepare('DELETE FROM demo_config WHERE key = ?').run(m13.KHOA_PR_OV1C);
-    m13.chayPrOv1cMotLan(conn, []);
+    m13.khoaPrOv1c(conn, []);
     assert(!!one('SELECT 1 x FROM demo_config WHERE key = ?', m13.KHOA_PR_OV1C), 'lần đầu ghi khoá');
     /* Case theo luật CŨ (sinh từ điểm đầu, chưa nguyên nhân, lượt chưa chốt) — đúng loại prOv1c đóng nếu còn chạy. */
     dung(luot);
@@ -299,7 +309,65 @@ export async function runPrOv13aTests(t: YThucTestKit) {
     conn.prepare('DELETE FROM case_issues WHERE case_id = ?').run(c.id);
     xoaNho();
     assert(kiemTruocOv1c(conn).some((d: any) => d.caseId === c.id), 'Case dựng phải thuộc loại prOv1c đóng');
-    m13.chayPrOv1cMotLan(conn, []);
-    assert(one('SELECT status FROM sos_cases WHERE id = ?', c.id).status !== 'done', 'lần sau prOv1c không chạy — Case giữ');
+    conn.prepare('DELETE FROM demo_config WHERE key = ?').run(m13.KHOA_PR_OV1C);   // DB cũ chưa khoá: bước vẫn chỉ ghi khoá
+    m13.khoaPrOv1c(conn, []);
+    assert(one('SELECT status FROM sos_cases WHERE id = ?', c.id).status !== 'done', 'prOv1c không chạy — Case giữ');
   }));
+
+  check('OV13a-12 · rà #406 (1): kiem-truoc-ov13a CHỈ ĐỌC chạy được trên DB CHƯA migrate (chưa có cột sos_cases.tam)', () => thu(() => {
+    dung(luot);
+    diem(luot, 'listening', 5);
+    for (const c of caseEm(luot)) cases.xoaCaseHeThong(conn, c.id, null, 'phép kiểm');
+    conn.prepare(`UPDATE case_signals SET status = 'withdrawn' WHERE attempt_id = ?`).run(luot);
+    conn.exec('ALTER TABLE sos_cases DROP COLUMN tam');
+    xoaNho();
+    const r = loiCua(() => m13.kiemTruocOv13a(conn));
+    assert(r === null, `kiem-truoc sập trên DB cũ: ${r?.message}`);
+    assert(m13.kiemTruocOv13a(conn).caseTam.includes(`${luot}:listening`), '(e) vẫn đếm Case tạm sẽ sinh');
+  }));
+
+  /* Rà #406 (2): Case tạm KHÔNG vào bất kỳ số đếm nào — cùng DB, cùng điểm, có / không Case tạm → mọi trang số liệu trả JSON giống hệt.
+     Qua HTTP như bản chính (không bọc giao dịch: mỗi request tự xong) — dựng rồi dọn ở cuối. */
+  await checkAsync('OV13a-11 · Case tạm không vào số đếm: Tổng quan, metrics, Tổng hợp, Học viên & Lớp, hồ sơ lớp, Danh sách Case, hồ sơ GV, Công việc — có / không Case tạm như nhau', async () => {
+    const cu = getConfig('demo_date');
+    const may = createApp().listen(0);
+    const cong = (may.address() as any).port as number;
+    const phien = new Map<number, string>();
+    const goi = async (userId: number, url: string) => {
+      if (!phien.has(userId)) {
+        const r = await fetch(`http://127.0.0.1:${cong}/api/demo/session`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ userId }) });
+        phien.set(userId, (r.headers.get('set-cookie') ?? '').split(';')[0]);
+      }
+      const r = await fetch(`http://127.0.0.1:${cong}/api${url}`, { headers: { cookie: phien.get(userId)! } });
+      return `${r.status} ${await r.text()}`;
+    };
+    const gv = GVCN.userId;
+    const DS: [number, string][] = [
+      ...['/metrics/case-mo', '/metrics/hv-co-case-mo', '/metrics/case-thieu-pa', '/metrics/case-cho-xac-dinh-nguyen-nhan', '/metrics/case-chua-co-nguoi-phu-trach',
+        '/tong-quan/quan-ly', '/tong-quan/chi-nhanh', '/tong-quan/chi-nhanh/o?cot=caseMo&khoa=tong', '/phan-tich/tong-hop?ct=ft', '/phan-tich/van-de-hv',
+        '/hoc-vien-lop', '/hoc-vien-lop?goc=sos', `/classes/${lop}/overview`, `/classes/${lop}/can-ho-tro`, `/cases?classId=${lop}`, '/cases',
+        `/giao-vien/${gv}`, `/giao-vien/${gv}/o?cot=case-mo`, '/giao-vien', '/my-work?nguoi=tat-ca'].map((u) => [QL.userId, u] as [number, string]),
+      ...['/my-work', '/tong-quan/lop-toi-day?ct=ft', '/hoc-vien-lop', `/classes/${lop}/overview`].map((u) => [gv, u] as [number, string]),
+    ];
+    const chup = async () => { xoaNho(); const out: string[] = []; for (const [u, url] of DS) out.push(await goi(u, url)); return out; };
+    try {
+      setConfig('demo_date', TRONG); xoaNho();
+      dung(luot);
+      diem(luot, 'listening', 5); diem(luot, 'speaking', 5.5);
+      const tam = caseEm(luot).filter((c) => c.tam === 1);
+      assert(tam.length === 2, `phải có 2 Case tạm: ${tam.length}`);
+      await chup();   // lần đọc đầu có thể quét / điền (thẻ Chờ duyệt, mốc) — so từ lần đọc thứ hai
+      const co = await chup();
+      /* Cùng điểm, bỏ Case tạm (như chưa từng sinh). */
+      for (const c of tam) cases.xoaCaseHeThong(conn, c.id, null, 'phép kiểm');
+      conn.prepare(`UPDATE case_signals SET status = 'withdrawn' WHERE attempt_id = ?`).run(luot);
+      const khong = await chup();
+      const lech = DS.filter((_, i) => co[i] !== khong[i]).map(([u, url]) => `${u === gv ? 'GVCN' : 'QL'} ${url}`);
+      const khacDau = (x: string, y: string) => { let i = 0; while (i < x.length && x[i] === y[i]) i++; return `${x.slice(Math.max(0, i - 120), i + 80)} ⇒ ${y.slice(Math.max(0, i - 120), i + 80)}`; };
+      assert(!lech.length, `số đổi khi có Case tạm: ${lech.join(' · ')} — ${DS.map((_, i) => i).filter((i) => co[i] !== khong[i]).map((i) => khacDau(co[i], khong[i])).join(' ‖ ')}`);
+      assert(co.every((x) => x.startsWith('200 ')), `mọi trang 200: ${DS.filter((_, i) => !co[i].startsWith('200 ')).map(([, u]) => u).join(', ')}`);
+    } finally {
+      may.close(); dung(luot); setConfig('demo_date', cu); xoaNho();
+    }
+  });
 }

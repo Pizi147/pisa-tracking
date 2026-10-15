@@ -838,15 +838,16 @@ Chỉ chuông trong ứng dụng, không email/Zalo. Chia "Cần làm" (trỏ t�
 ### 20.16 Sửa 15/10 (chủ SP, OV-13a) — Case tạm · PA quy chế hết kẹt — thay "PA quy chế không kết thúc sớm" và luật OV-1c "chưa chốt thì không Case"
 
 - **Case tạm (Q2):** lượt Mock Test FT **chưa chốt**, ô dưới kỳ vọng đã có điểm + nhận xét (+ nhóm) → sinh ngay Case **tạm**: hiện ở hồ sơ HV / hồ sơ MT, sửa được
-  (tên, mức độ; nguyên nhân = nhận xét của bài), nhãn **"Chờ chốt SOS"**; **chưa** có hạn, PA, việc, chuông, Phối hợp; không vào Công việc, ô "Case chờ duyệt" của
-  Tổng quan, cột Chờ duyệt của Tổng hợp, Học viên & Lớp (đếm là Case, không đếm là việc). Ô thành đạt / xoá điểm / bỏ nhận xét trước khi chốt → Case tạm **xoá hẳn**.
+  (tên, mức độ; nguyên nhân = nhận xét của bài), nhãn **"Chờ chốt SOS"**; **chưa** có hạn, PA, việc, chuông, Phối hợp. Case tạm **chỉ hiện ở hồ sơ HV,
+  Ngăn Case và panel một em** — **không vào bất kỳ số đếm nào** (Case mở, Đang làm, Thiếu PA, Chờ duyệt, Tổng hợp, Tổng quan, Học viên & Lớp, hồ sơ lớp,
+  hồ sơ GV, Danh sách Case, Công việc) — sửa 15/10 sau rà #406. Ô thành đạt / xoá điểm / bỏ nhận xét trước khi chốt → Case tạm **xoá hẳn**.
   **Lượt chốt:** Overall ≥ kỳ vọng và Case chưa có PA được xác nhận → xoá hẳn (như "em đạt lại"); còn lại → **cùng Case** thành "Chờ xác nhận PA" như nay (PA quy
   chế + hạn xác nhận tính từ ngày chốt, chuông SOS). Không còn Case "Hệ thống đóng · Chờ chốt SOS" mới; Case loại đó cũ mà chưa ai đụng được xoá hẳn khi deploy.
 - **PA quy chế hết kẹt (A + B + C):**
   - **A.** Kỹ năng của Case **đạt kỳ vọng ở lượt MT sau** (hoặc lượt chốt có Overall đạt khi Case đã có PA) → PA quy chế đang chạy tự sang **"Ghi kết quả cuối"**
     (việc Ghi kết quả đổi nhãn, hạn như kỳ thường; chữ mốc "đã đạt kỳ vọng · W2 NOV"); ghi xong → PA kết thúc → Case **Hoàn thành được** (không chỉ ghi mốc).
-  - **B.** "Đến lúc thi" mà **chưa có ngày thi** → mốc = **MT cuối của lộ trình** (lượt Mock đã xếp tuần có số lớn nhất); chữ PA "đến MT6 · W4 NOV". Có ngày thi
-    (hoặc dời MT cuối) sau → mốc đi theo.
+  - **B.** "Đến lúc thi" mà **chưa có ngày thi** → mốc = **MT cuối của lộ trình** (lượt Mock đã xếp tuần có số lớn nhất), **không sớm hơn ngày xác nhận PA
+    + 4 tuần** (PA sinh ngay ở MT cuối không kết thúc ngay); chữ PA "đến MT6 · W4 NOV". Có ngày thi (hoặc dời MT cuối) sau → mốc đi theo.
   - **C.** **GVCN lớp em đang học / Quản lý** có **"Kết thúc PA"** (menu ⋯ của PA) cho PA quy chế **đang chạy**, **lý do bắt buộc ≥ 10 ký tự**; mốc nhật ký Case
     ghi lý do + người. GVBM không kết thúc sớm (vẫn Ghi kết quả / Kết quả cuối); máy chủ kiểm quyền (GV khác → 403).
 - **Case MT bỏ ô Mô tả (Q1):** mô tả = nhận xét của bài; Sửa Case MT chỉ còn Mức độ + Tên.

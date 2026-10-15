@@ -1,6 +1,6 @@
 import crypto from 'node:crypto';
 import { db, tx } from '../db.ts';
-import { ENTRY_SKILLS, PERMISSIONS, duocCapRieng, lyDoCamCapRieng, roleLabel } from '../../../shared/domain/index.ts';
+import { ENTRY_SKILLS, PERMISSIONS, duocCapRieng, lyDoCamCapRieng, roleLabel, ROLE_LABEL, VAI_DANG_KY } from '../../../shared/domain/index.ts';
 import { badRequest, chuTuDo, conflict, forbidden, loi, notFound, nowIso, padCode } from '../util.ts';
 import { laNgonNgu } from '../../../shared/i18n/index.ts';
 import { can, require_, type Principal } from '../permissions.ts';
@@ -126,7 +126,7 @@ function nextUserCode(conn: any): string {
  */
 export function register(input: {
   email: string; password: string; fullName: string; phone?: string | null;
-  branches?: string[]; note?: string | null; skills?: string[];
+  branches?: string[]; note?: string | null; skills?: string[]; role?: unknown;
 }): { userId: number } {
   const conn = db();
   const email = checkEmail(input.email);
@@ -137,26 +137,31 @@ export function register(input: {
   const phone = chuTuDo(input.phone, 'Điện thoại', 20);
   const note = chuTuDo(input.note, 'Ghi chú', 500);
 
+  /* OV-13e: vai chỉ là ĐỀ NGHỊ (lưu `requested_role`, cấp khi duyệt); danh sách trắng — Quản trị / vai lạ → 400. Form cũ không gửi vai = GV. */
+  const role = input.role ?? 'teacher';
+  if (!(VAI_DANG_KY as readonly unknown[]).includes(role)) throw badRequest('Vai đăng ký không hợp lệ.');
+  const vai = role as (typeof VAI_DANG_KY)[number];
+
   const daCo = conn.prepare('SELECT approval_state FROM users WHERE email = ?').get(email) as any;
   if (daCo?.approval_state === 'declined') throw badRequest('Email này đã đăng ký và không được duyệt — liên hệ Quản trị.');   // OV-11b QT-4
   if (daCo) throw badRequest('Email này đã có tài khoản. Đăng nhập, hoặc nhờ Quản trị hệ thống đặt lại mật khẩu.');
   const codes = (input.branches ?? []).map((c) => String(c).trim().toUpperCase()).filter(Boolean);
   const known = new Set((conn.prepare('SELECT code FROM branches').all() as any[]).map((b) => b.code));
   for (const c of codes) if (!known.has(c)) throw badRequest(`Không có chi nhánh mã "${c}".`);
-  if (!codes.length) throw badRequest('Chọn ít nhất một chi nhánh bạn đang hoạt động.');
+  if (!codes.length && vai !== 'cx') throw badRequest('Chọn ít nhất một chi nhánh bạn đang hoạt động.');
 
   return tx(() => {
     const { hash, salt } = hashPassword(password);
     const info = conn
       .prepare(
         `INSERT INTO users (code, full_name, email, title, phone, password_hash, password_salt,
-                            approval_state, requested_branches, requested_note, status, created_at)
-         VALUES (?,?,?,?,?,?,?, 'pending', ?,?, 'active', ?)`,
+                            approval_state, requested_role, requested_branches, requested_note, status, created_at)
+         VALUES (?,?,?,?,?,?,?, 'pending', ?,?,?, 'active', ?)`,
       )
-      .run(nextUserCode(conn), fullName, email, 'Giáo viên', phone, hash, salt,
-           JSON.stringify(codes), note, nowIso());
+      .run(nextUserCode(conn), fullName, email, ROLE_LABEL[vai], phone, hash, salt,
+           vai, JSON.stringify(codes), note, nowIso());
     const userId = Number(info.lastInsertRowid);
-    setSkills(conn, userId, input.skills ?? []);
+    if (vai === 'teacher') setSkills(conn, userId, input.skills ?? []);
     /* PR-DUYET (K1-41): Quản trị biết có đăng ký mới ngay ở chuông — bấm về Quản trị › Tài khoản. */
     for (const a of conn.prepare(
       `SELECT DISTINCT ur.user_id AS id FROM user_roles ur JOIN roles r ON r.id = ur.role_id JOIN users u ON u.id = ur.user_id
@@ -191,11 +196,11 @@ export function pendingQueue(p: Principal) {
   const conn = db();
   return (conn
     .prepare(
-      `SELECT id, code, full_name, email, phone, requested_branches, requested_note, created_at
+      `SELECT id, code, full_name, email, phone, requested_role, requested_branches, requested_note, created_at
          FROM users WHERE approval_state = 'pending' ORDER BY created_at`,
     )
     .all() as any[]).map((u) => ({
-      id: u.id, code: u.code, fullName: u.full_name, email: u.email, phone: u.phone,
+      id: u.id, code: u.code, fullName: u.full_name, email: u.email, phone: u.phone, requestedRole: u.requested_role as string | null,
       branches: JSON.parse(u.requested_branches ?? '[]') as string[],
       note: u.requested_note, createdAt: u.created_at,
       skills: (conn.prepare('SELECT skill FROM user_skills WHERE user_id = ?').all(u.id) as any[]).map((r) => r.skill),
@@ -214,16 +219,18 @@ export function approve(p: Principal, userId: number, o: {
   const conn = db();
   const user = conn.prepare("SELECT * FROM users WHERE id = ? AND approval_state IN ('pending', 'declined') AND status = 'active'").get(userId) as any;
   if (!user) throw notFound('Không tìm thấy đăng ký nào đang chờ duyệt.');
-  const [{ role, branches: codes }] = chuanVai([{ role: o.role ?? 'teacher', branches: o.branches ?? JSON.parse(user.requested_branches ?? '[]') }]);
+  const [{ role, branches: codes }] = chuanVai([{ role: o.role ?? user.requested_role ?? 'teacher', branches: o.branches ?? JSON.parse(user.requested_branches ?? '[]') }]);
 
   return tx(() => {
     grantRole(conn, userId, role, codes);
     conn
       .prepare(
         `UPDATE users SET approval_state = 'approved', approved_by = ?, approved_at = ?,
-                          requested_branches = ?, decline_reason = NULL WHERE id = ?`,
+                          requested_branches = ?, decline_reason = NULL,
+                          title = CASE WHEN title IS ? THEN ? ELSE title END WHERE id = ?`,
       )
-      .run(p.userId, nowIso(), JSON.stringify(codes), userId);
+      /* OV-13e: QT đổi vai lúc duyệt → chức danh theo vai được cấp (chỉ khi chức danh vẫn là chữ đăng ký tự ghi). */
+      .run(p.userId, nowIso(), JSON.stringify(codes), user.requested_role ? roleLabel(user.requested_role) : null, roleLabel(role), userId);
     writeAudit({
       actorUserId: p.userId, action: 'user_approved', entityType: 'users', entityId: userId,
       entityLabel: user.full_name, after: { note: `Vai ${role} · ${codes.join(', ')}` },
@@ -621,6 +628,8 @@ export function listAccounts(p: Principal) {
     declineReason: u.approval_state === 'declined' ? u.decline_reason : null,
     /** Chi nhánh người đăng ký tự khai — hộp "Duyệt lại" chọn sẵn. */
     requestedBranches: u.approval_state === 'declined' ? JSON.parse(u.requested_branches ?? '[]') as string[] : [],
+    /** OV-13e: vai đề nghị — hộp "Duyệt lại" chọn sẵn. */
+    requestedRole: u.approval_state === 'declined' ? u.requested_role as string | null : null,
     /** PR-XOA: tài khoản xoá mềm (`status = 'deleted'`) — màn quản trị để ở nút lọc "Đã xoá". */
     deletedAt: u.deleted_at ?? null,
     hasPassword: !!u.password_hash,

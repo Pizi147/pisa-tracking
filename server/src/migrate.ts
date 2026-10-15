@@ -51,7 +51,8 @@ import { migratePrEn } from './migrate/prEn.ts';
 import { migratePrOv12b } from './migrate/prOv12b.ts';
 import { migratePrOv12c } from './migrate/prOv12c.ts';
 import { migratePrOv12h } from './migrate/prOv12h.ts';
-import { cacBuocPrOv13a, chayPrOv1cMotLan, themCotPrOv13a } from './migrate/prOv13a.ts';
+import { cacBuocPrOv13a, khoaPrOv1c, themCotPrOv13a } from './migrate/prOv13a.ts';
+import { migratePrOv13e } from './migrate/prOv13e.ts';
 
 /**
  * Nâng cấp database ĐANG CÓ lên schema mới, không xoá dữ liệu. PR-SO (DEP-gỡ): nhánh nâng cấp từ mô hình `mock_attempts` (trước overhaul)
@@ -325,7 +326,7 @@ function migrateCaseEngine(applied: string[], skipped: string[], loiSauBuoc?: nu
     /* OV-3b: bảng nháp lộ trình + cột đề xuất Kết quả đầu ra + ban_giao_mon.lam_lai; vừa tạo bảng thì chép Hướng GVCN chưa có quyết định thành nháp. */ buoc(() => migratePrOv3b(conn, applied));
     /* PR-OV1b: dấu "-" cũ theo luật mới — nhập bù / MT cũ = Không dự thi, "-" trong tuần chưa chốt = vắng chốt ngay (đổi dữ liệu, chạy lặp được). */ buoc(() => migratePrOv1b(conn, applied));
     /* PR-OV4a: ket_qua_huy.loai (doi_vuot | huy_luot) + dong_json — Huỷ cả lượt giữ điểm ẩn, Khôi phục lượt (chỉ thêm cột). */ buoc(() => migratePrOv4(conn, applied));
-    /* PR-OV1c: Case SOS MT theo luật chốt — lượt chưa chốt đóng Case chưa ai đụng ("Chờ chốt SOS"), Overall đạt xoá SOS (đổi dữ liệu). OV-13a (d): chạy MỘT lần rồi khoá. */ buoc(() => chayPrOv1cMotLan(conn, applied));
+    /* PR-OV1c: Case SOS MT theo luật chốt — lượt chưa chốt đóng Case chưa ai đụng ("Chờ chốt SOS"), Overall đạt xoá SOS (đổi dữ liệu). OV-13a (d): không chạy nữa — chỉ ghi khoá. */ buoc(() => khoaPrOv1c(conn, applied));
     /* OV-8a: Bước tiếp sau thi thật — bốn cột ở learning_cycles (chỉ thêm, chạy lặp được). */ buoc(() => migratePrOv8a(conn, applied));
     /* OV-10b: liên hệ học viên — SĐT em, phụ huynh (chỉ thêm cột, chạy lặp được). */ buoc(() => migratePrOv10b(conn, applied));
     /* PR-OV11e (SAU prOv1b / prOv1c): lượt MT đã chốt chụp dấu KCK hiện tại — kết luận giữ như màn đang hiện (đổi dữ liệu, chạy lặp được). */ buoc(() => migratePrOv11e(conn, applied));
@@ -337,6 +338,7 @@ function migrateCaseEngine(applied: string[], skipped: string[], loiSauBuoc?: nu
     /* PR-OV12g: bảng Góp ý hàng tuần (chỉ cấu trúc, chạy lặp được). */ buoc(() => migratePrOv12g(conn, applied));
     /* PR-OV13a (SAU prOv1c / prOv12c): xoá Case "Chờ chốt SOS" cũ chưa ai đụng · PA quy chế kỹ năng đã đạt → Kết quả cuối · "đến lúc thi" → mốc MT cuối ·
        Case tạm cho lượt chưa chốt (đổi dữ liệu, chạy lặp được) — mỗi phần một giao dịch. */ for (const b of cacBuocPrOv13a(conn, applied)) buoc(b);
+    /* OV-13e: users.requested_role — vai đề nghị khi tự đăng ký (chỉ thêm cột, chạy lặp được). */ buoc(() => migratePrOv13e(conn, applied));
 
     conn.prepare("INSERT OR REPLACE INTO demo_config (key, value, updated_at) VALUES ('case_engine_migrated_at', ?, ?)")
       .run(nowIso(), nowIso());

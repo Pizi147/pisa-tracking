@@ -26,13 +26,15 @@ type Account = {
   /** PR-XOA: tài khoản xoá mềm (`status = 'deleted'`). */
   deletedAt: string | null;
   /** OV-11b (QT-4): `approvalState = 'declined'` — lý do + chi nhánh tự khai (hộp Duyệt lại). */
-  declineReason: string | null; requestedBranches: string[];
+  declineReason: string | null; requestedBranches: string[]; requestedRole: string | null;
   roles: RoleGrant[]; skills: string[]; extraEmails: string[];
   extra: { permission: string; name: string; branchCode: string | null }[];
 };
 type Pending = {
   id: number; code: string; fullName: string; email: string; phone: string | null;
   branches: string[]; note: string | null; createdAt: string; skills: string[];
+  /** OV-13e: vai người đăng ký đề nghị — hộp duyệt chọn sẵn, Quản trị đổi được. */
+  requestedRole: string | null;
 };
 
 /**
@@ -222,7 +224,8 @@ export function AccountsAdmin() {
           <ul className="m-0 list-none p-0 pt-1">
             <PendingRow duyetLai branches={branches.data ?? []}
               user={{ id: duyetLai.id, code: duyetLai.code, fullName: duyetLai.fullName, email: duyetLai.email ?? '', phone: duyetLai.phone,
-                branches: duyetLai.requestedBranches, note: duyetLai.declineReason ? `Không duyệt: ${duyetLai.declineReason}` : null, createdAt: '', skills: duyetLai.skills }}
+                branches: duyetLai.requestedBranches, note: duyetLai.declineReason ? `Không duyệt: ${duyetLai.declineReason}` : null, createdAt: '', skills: duyetLai.skills,
+                requestedRole: duyetLai.requestedRole }}
               onDone={(msg) => { setDuyetLai(null); reload(); toast.push('ok', msg); }} />
           </ul>
         </KhungPanel>
@@ -303,7 +306,7 @@ function PendingRow({ user, branches, onDone, duyetLai }: {
 }) {
   const toast = useToast();
   const [picked, setPicked] = useState<Set<string>>(new Set(user.branches));
-  const [role, setRole] = useState('teacher');
+  const [role, setRole] = useState(user.requestedRole ?? 'teacher');
   const [busy, setBusy] = useState(false);
   const [declining, setDeclining] = useState(false);
   const [reason, setReason] = useState('');

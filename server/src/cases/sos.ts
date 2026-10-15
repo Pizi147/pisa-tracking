@@ -13,6 +13,7 @@ import { caseDongDoXoaSql, raiseSignal, labelOf } from './signals.ts';
 import { failingEntrySkills, type AttemptResult, type EntryBands } from '../fasttrack/scoring.ts';
 import { resultOf, weekStartOf } from '../fasttrack/attempts.ts';
 import { laLopKetThuc } from '../fasttrack/hoanTat.ts';
+import { nho } from '../platform/nguCanhRequest.ts';
 import { scoringModeOf } from '../fasttrack/skillSchedule.ts';
 import { announceAutoCase, createPresetPlan, isFastTrackMock, paSangKetQuaCuoi, resyncUnconfirmedPresets } from './sosAuto.ts';
 import { CO_THE_KHONG_THEO_DOI, PA_QUY_CHE_CHUA_GHI, UNCONFIRMED_PRESET, dongBoTrangThaiCase, sosCaseState } from './sosState.ts';
@@ -701,7 +702,9 @@ export function keHoachCaseTam(attempt: { id: number; student_id: number; cycle_
   const coNx = new Set((conn.prepare(`SELECT skill FROM assessment_scores WHERE attempt_id = ? AND TRIM(COALESCE(comment, '')) != ''
       AND (band IS NOT NULL OR raw_score IS NOT NULL)`).all(attempt.id) as any[]).map((r) => r.skill as string));
   const muon = failing.filter((s) => coNx.has(s) && !!categoryOf(s));
-  const xoa = (conn.prepare(`SELECT id, topic FROM sos_cases WHERE attempt_id = ? AND tam = 1 AND status != 'done'`).all(attempt.id) as any[])
+  /* `kiem-truoc-ov13a` chạy trên DB CHƯA migrate (chưa có cột `tam`) → chưa có Case tạm nào để xoá. */
+  const coCot = nho('co_cot_tam', () => !!conn.prepare(`SELECT 1 FROM pragma_table_info('sos_cases') WHERE name = 'tam'`).get());
+  const xoa = !coCot ? [] : (conn.prepare(`SELECT id, topic FROM sos_cases WHERE attempt_id = ? AND tam = 1 AND status != 'done'`).all(attempt.id) as any[])
     .filter((c) => !muon.includes(c.topic)).map((c) => c.id as number);
   const mo = new Set((conn.prepare(`SELECT id, category FROM sos_cases WHERE student_id = ? AND COALESCE(cycle_id, 0) = ? AND status != 'done'`)
     .all(attempt.student_id, attempt.cycle_id ?? 0) as any[]).filter((c) => !xoa.includes(c.id)).map((c) => c.category as string));

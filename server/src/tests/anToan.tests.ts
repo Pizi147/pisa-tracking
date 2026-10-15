@@ -258,11 +258,14 @@ export async function runAnToanTests(t: AnToanTestKit) {
   console.log('\nPR-AN · 4. Đăng ký tự do nhưng phải Quản trị hệ thống duyệt (4.11)');
   const auth: any = await import('../auth.ts');
 
-  await checkAsync('AN-6 · Đăng ký qua HTTP: tài khoản ở trạng thái chờ duyệt, KHÔNG có vai nào; trường lạ (role, approval_state, status) bị bỏ qua', async () => {
+  await checkAsync('AN-6 · Đăng ký qua HTTP: tài khoản ở trạng thái chờ duyệt, KHÔNG có vai nào; trường lạ (roles, approval_state, status) bị bỏ qua; vai system_admin → 400 (OV-13e)', async () => {
     const email = `an6.moi${accounts.EMAIL_SUFFIX}`;
+    const qt = await goi('POST', '/auth/register', { ip: '203.0.113.41', body: {
+      email, password: 'matkhau123', fullName: 'AN6 Mới', branches: ['MB'], role: 'system_admin' } });
+    assert(qt.status === 400 && !conn.prepare('SELECT 1 FROM users WHERE email = ?').get(email), `Vai system_admin: ${qt.status}`);
     const r = await goi('POST', '/auth/register', { ip: '203.0.113.41', body: {
       email, password: 'matkhau123', fullName: 'AN6 Mới', branches: ['MB'],
-      role: 'system_admin', roles: [{ role: 'system_admin', branches: [] }], approval_state: 'approved', approvalState: 'approved', status: 'active',
+      role: 'manager', roles: [{ role: 'system_admin', branches: [] }], approval_state: 'approved', approvalState: 'approved', status: 'active',
     } });
     assert(r.status === 200 && r.json?.pending === true, `Đăng ký: ${r.status} ${JSON.stringify(r.json)}`);
     const u = conn.prepare('SELECT id, approval_state FROM users WHERE email = ?').get(email) as any;

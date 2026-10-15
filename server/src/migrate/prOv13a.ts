@@ -6,7 +6,7 @@
  *   (c) PA quy chế ĐANG CHẠY của Case mà kỹ năng đã đạt sau khi PA ra đời (mốc `passed` / `overall_dat`) → "Kết quả cuối" (luật A, `paSangKetQuaCuoi`).
  *   (b) PA quy chế "đến lúc thi" đang chạy chưa có ngày thi → mốc MT cuối của lộ trình (luật B, `dienMocQuyChe`) — sau (c).
  *   (e) Lượt Mock FT chưa chốt có ô dưới kỳ vọng có điểm + nhận xét mà chưa có Case → Case tạm (luật Q2) — sau (a): Case vừa xoá nhường chỗ.
- *   (d) `migratePrOv1c` chỉ chạy MỘT lần nữa rồi khoá (`demo_config`) — deploy sau không còn đóng Case mới.
+ *   (d) `migratePrOv1c` KHÔNG chạy nữa (rà #406): chỉ ghi khoá `pr_ov1c_da_chay` — (a) + (e) đã thay việc của nó, kiểm trước = migrate.
  *
  * `kiemTruocOv13a` = CÙNG danh sách mà KHÔNG ghi gì (lệnh `kiem-truoc-ov13a`). In từng Case xoá (em · mã · Case).
  */
@@ -15,7 +15,6 @@ import { nowIso } from '../util.ts';
 import { xoaCaseHeThong } from '../cases/cases.ts';
 import { caseTamCuaLuot } from '../cases/sos.ts';
 import { keHoachMocQuyChe, paSangKetQuaCuoi } from '../cases/sosAuto.ts';
-import { migratePrOv1c } from './prOv1c.ts';
 
 export const KHOA_PR_OV1C = 'pr_ov1c_da_chay';
 
@@ -112,9 +111,8 @@ export function cacBuocPrOv13a(conn: any, applied: string[]): (() => void)[] {
   return [() => buocA(conn, ra, true), () => buocC(conn, ra, true), () => buocB(conn, ra, true), () => { buocE(conn, ra, true); inRa(ra, applied); }];
 }
 
-/** (d) `migratePrOv1c` chạy MỘT lần (khoá `demo_config`) — trước đây chạy mọi lần migrate, đóng cả Case mới ở deploy sau (L6). */
-export function chayPrOv1cMotLan(conn: any, applied: string[]) {
+/** (d) `migratePrOv1c` không chạy nữa (trước đây chạy mọi lần migrate, đóng cả Case mới ở deploy sau — L6): chỉ ghi khoá, không đổi dữ liệu. */
+export function khoaPrOv1c(conn: any, _applied: string[]) {
   if (conn.prepare('SELECT 1 FROM demo_config WHERE key = ?').get(KHOA_PR_OV1C)) return;
-  migratePrOv1c(conn, applied);
   conn.prepare('INSERT OR REPLACE INTO demo_config (key, value, updated_at) VALUES (?,?,?)').run(KHOA_PR_OV1C, nowIso(), nowIso());
 }

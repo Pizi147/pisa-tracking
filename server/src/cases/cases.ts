@@ -33,7 +33,7 @@ import { activeClassOf } from '../yThuc/access.ts';
 import { isRatioCycle, nguongDatLop, programmeCodeOfCycle } from '../normal/regular.ts';
 import { suggestCaseOwner } from './owner.ts';
 import { caseKhacChuongTrinh, chuongTrinhCuaLop } from './sos.ts';
-import { LA_CASE_SOS, NOT_UNCONFIRMED_PRESET, awaitingCauseCaseIds, dongBoTrangThaiCase, dongBoTrangThaiCaseLo, sosCaseState } from './sosState.ts';
+import { CASE_THAT, LA_CASE_SOS, NOT_UNCONFIRMED_PRESET, awaitingCauseCaseIds, dongBoTrangThaiCase, dongBoTrangThaiCaseLo, sosCaseState } from './sosState.ts';
 import { CAU_LUU_TRU, PLAN_DECISIONS, canBuoiTutor, coNguoiDay, coSoBuoiKy, decisionToStep, duongDotTest, kiemBuoiTutor, kiemSoBuoiTuan, soBuoiTu, tuanLich, type BuoiTutor, type PlanDecision } from '../../../shared/domain/index.ts';
 import { chenPa } from './taoPa.ts';
 import { nguoiGiuKetQua, type DongGiuKetQua } from './giuKetQua.ts';
@@ -2095,6 +2095,8 @@ export type CaseFilters = {
    * không ai nhìn một danh sách ngắn rồi tưởng lịch sử đã mất.
    */
   cycleId?: number | null;
+  /** OV-13a: kèm Case tạm — CHỈ panel một em (hồ sơ HV đọc đường riêng). Mặc định không: Case tạm không vào danh sách / số đếm nào (`CASE_THAT`). */
+  kemTam?: boolean;
 };
 
 /**
@@ -2158,7 +2160,7 @@ export type MappedCase = {
  */
 function khoaDsCase(userId: number, f: CaseFilters): string {
   const fSql: Record<string, unknown> = {};
-  for (const k of ['studentId', 'classId', 'branchId', 'status', 'cycleId', 'origin', 'ownerUserId', 'noOwner'] as const) {
+  for (const k of ['studentId', 'classId', 'branchId', 'status', 'cycleId', 'origin', 'ownerUserId', 'noOwner', 'kemTam'] as const) {
     const v = f[k];
     if (v !== null && v !== undefined && v !== false) fSql[k] = v;
   }
@@ -2206,6 +2208,7 @@ function caseTrongPhamVi(p: Principal, f: CaseFilters): MappedCase[] {
   /* Lọc theo NGƯỜI PHỤ TRÁCH — để bảng giáo viên đếm đúng trách nhiệm của từng người. */
   if (f.ownerUserId) { where.push('sc.owner_user_id = ?'); params.push(f.ownerUserId); }
   if (f.noOwner) where.push('sc.owner_user_id IS NULL');
+  if (!f.kemTam) where.push(CASE_THAT('sc'));
 
   const rows = conn
     .prepare(
@@ -2389,8 +2392,7 @@ function caseTrongPhamVi(p: Principal, f: CaseFilters): MappedCase[] {
        * biết làm gì trước, ba trạng thái để biết bức tranh chung đang ở đâu.
        */
       state: (r.status === 'done' ? 'done'
-        : r.tam ? 'chua_xu_ly'   // OV-13a: Case tạm chờ chốt SOS — chưa là "thiếu PA"
-        : isNoPlanCase({ status: r.status, disposition: r.disposition, interventionCount: r.intervention_count as number }) ? 'no_plan'
+        : isNoPlanCase({ status: r.status, disposition: r.disposition, interventionCount: r.intervention_count as number, tam: !!r.tam }) ? 'no_plan'
         : r.tu_sos && r.status === 'open' ? 'chua_xu_ly'
         : 'working') as CaseState,
     }));

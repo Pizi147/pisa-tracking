@@ -294,9 +294,16 @@ export function mtCuoiCuaLoTrinh(cycleIds: readonly (number | null | undefined)[
 /** `mtCuoiCuaLoTrinh` cho MỘT lộ trình, nhớ theo yêu cầu (nhiều Case / PA cùng lộ trình chỉ một câu) — chữ mốc PA (`mocChuPa`). */
 export const mtCuoiNho = (cycleId: number | null | undefined): { so: number; chuNhat: string } | null =>
   cycleId ? nho(`mt_cuoi:${cycleId}`, () => mtCuoiCuaLoTrinh([cycleId]).get(cycleId) ?? null) : null;
-/** Mốc "đến lúc thi" của một lộ trình: ngày thi (`examDateOf`), chưa có thì MT cuối (OV-13a B), không có cả hai thì trống. */
-export function mocThi(cycleId: number | null | undefined): string | null {
-  return examDateOf(cycleId) ?? (cycleId ? mtCuoiCuaLoTrinh([cycleId]).get(cycleId)?.chuNhat ?? null : null);
+/** OV-13a (B, rà #406): mốc theo MT cuối KHÔNG sớm hơn ngày xác nhận PA + 4 tuần (PA sinh ngay ở MT cuối không kết thúc ngay). */
+export const MOC_MT_CUOI_TOI_THIEU_NGAY = 28;
+export const mocTheoMtCuoi = (chuNhatMtCuoi: string | null | undefined, ngayXacNhan: string): string | null => {
+  if (!chuNhatMtCuoi) return null;
+  const sauNhat = addDays(ngayXacNhan, MOC_MT_CUOI_TOI_THIEU_NGAY);
+  return chuNhatMtCuoi > sauNhat ? chuNhatMtCuoi : sauNhat;
+};
+/** Mốc "đến lúc thi" của một lộ trình: ngày thi (`examDateOf`), chưa có thì MT cuối (OV-13a B, ≥ xác nhận + 4 tuần), không có cả hai thì trống. */
+export function mocThi(cycleId: number | null | undefined, ngayXacNhan: string): string | null {
+  return examDateOf(cycleId) ?? (cycleId ? mocTheoMtCuoi(mtCuoiCuaLoTrinh([cycleId]).get(cycleId)?.chuNhat, ngayXacNhan) : null);
 }
 
 /**
@@ -339,7 +346,7 @@ export function keHoachMocQuyChe(theo: { caseIds?: readonly number[]; studentId?
     const moc = mocQuyChe(iv.moc_quy_che, {
       ngayXacNhan: iv.cycle_started_on ?? iv.started_date ?? demoToday(),
       nextMtSunday: iv.moc_quy_che === 'until_next_mt' && iv.tuan_mt_ke ? addDays(mondayOf(iv.tuan_mt_ke), 6) : null,
-      examDate: examDateTu(iv) ?? (iv.tuan_mt_cuoi ? addDays(mondayOf(iv.tuan_mt_cuoi), 6) : null),
+      examDate: examDateTu(iv) ?? mocTheoMtCuoi(iv.tuan_mt_cuoi ? addDays(mondayOf(iv.tuan_mt_cuoi), 6) : null, iv.started_date ?? iv.cycle_started_on ?? demoToday()),
     });
     if (moc && moc !== iv.followup_due && !ra.some((r) => r.id === iv.id)) ra.push({ id: iv.id, moc, span: iv.moc_quy_che });
   }
@@ -471,7 +478,7 @@ export function xacNhanPaQuyChe(p: Principal, interventionId: number, input: {
   const today = demoToday();
   const luot = luotSinhPa(iv);
   const moc = iv.moc_quy_che
-    ? mocQuyChe(iv.moc_quy_che, { ngayXacNhan: today, nextMtSunday: luot ? followUntilAfter(luot) : null, examDate: mocThi(iv.case_cycle_id) })   // OV-13a (B)
+    ? mocQuyChe(iv.moc_quy_che, { ngayXacNhan: today, nextMtSunday: luot ? followUntilAfter(luot) : null, examDate: mocThi(iv.case_cycle_id, today) })   // OV-13a (B)
     : null;
   return tx(() => {
     conn.prepare(`UPDATE case_interventions SET description = ?, performer_user_id = ?, performer_name = ?, so_buoi = ?, status = 'started', started_date = ?,
