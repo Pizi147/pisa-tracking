@@ -50,7 +50,6 @@ export const EN_OV13B = {
   "Đề xuất PA khác…": "Propose another PA…",
   "Đề xuất lại": "Propose again",
   "‹ Xác nhận PA gốc": "‹ Confirm original PA",
-  "Ngày bắt đầu không hợp lệ — chọn trong khoảng 2 tuần trước tới 30 ngày tới.": "Invalid start date — choose between 2 weeks ago and 30 days ahead.",
   "Bạn chỉ đề xuất đổi PA của kỹ năng mình được phân công (hoặc là Quản lý trong phạm vi).": "You can only propose a PA change for your assigned skill (or as a manager in scope).",
   "Bạn không có quyền đề xuất đổi PA này.": "You cannot propose a change to this PA.",
   "Case đã đóng — không đề xuất đổi PA được.": "Case is closed — cannot propose a PA change.",
@@ -70,4 +69,6 @@ export const EN_OV13B = {
   "Đề xuất PA khác chỉ đi cùng quyết định Giữ nguyên — PA hiện tại chạy tới khi Quản lý duyệt.": "Proposing another PA only goes with Keep \u2014 the current PA runs until the manager approves.",
   "QL đã duyệt đổi PA — không hoàn tác được.": "The manager approved the PA change \u2014 cannot undo.",
   "PA gốc đã kết thúc": "The original PA has ended",
+  "Số buổi / 2 tuần": "Sessions / 2 weeks",
+  "Em đã có số buổi giữ nguyên": "Students who already have sessions keep them",
 } satisfies Record<string, Dich>;

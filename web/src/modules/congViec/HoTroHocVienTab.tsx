@@ -12,7 +12,7 @@ import { NganViecVanHanh } from '../worklist/MgmtTasksPage.tsx';
 import { ChonPhuTrach, type NguoiPhuTrach } from './ChonPhuTrach.tsx';
 import { CongTacKhung, khungDaNho, nhoKhung, type KhungLoc } from '../../ui/CongTacKhung.tsx';
 import { KhungTaiCho, coPanelDangSua } from '../../ui/KhungPanel.tsx';
-import { PanelViec, lamTaiCho } from './PanelViec.tsx';
+import { PanelViec, lamTaiCho, moCaDong } from './PanelViec.tsx';
 import { DongDaLuu, GhiNhanh, type DaLuuNhanh } from '../cases/GhiNhanh.tsx';
 import {
   LOC_NHANH_LABEL, NHOM_VIEC, NHOM_VIEC_LABEL, demLocNhanh, demNhomChip, demPhamVi, gomNhomViec, khoaGopCua, khopLocNhanh, nhomViecCua,
@@ -154,7 +154,8 @@ export function HoTroHocVienTab() {
       thuTuCu.current = { khoa: khoaLoc, vt: new Map(ds.flatMap((g) => g.items).map((x, i) => [x.key, i])) };
       return ds;
     }
-    const vt = (x: WorkItem) => cu.vt.get(x.key) ?? Number.MAX_SAFE_INTEGER;
+    /* Plan mục 4: em cuối của dòng gộp vừa xong (dòng tan thành việc lẻ, hoặc biến mất) đứng ở chỗ của dòng gộp cũ, không rơi xuống cuối nhóm. */
+    const vt = (x: WorkItem) => cu.vt.get(x.key) ?? cu.vt.get(khoaGopCua(x as any) ?? '') ?? Number.MAX_SAFE_INTEGER;
     return ds.map((g) => ({ ...g, items: [...g.items].sort((a, b) => vt(a) - vt(b)) }));
   }, [hienThi, cuoiItems, khung, loai, loc, nhom, homNay, chon, khoaLoc]);   // eslint-disable-line react-hooks/exhaustive-deps
   const phamVi = useMemo(() => demPhamVi(cuoiItems, nhom === 'cham-diem' || chiChamDiem, { loc, homNay }), [cuoiItems, nhom, chiChamDiem, loc, homNay]);
@@ -163,7 +164,7 @@ export function HoTroHocVienTab() {
 
   // ------------------------------------------------------------------ việc đang mở ở panel (URL `viec`)
   /* Thứ tự "việc tiếp": đúng thứ tự đang vẽ; dòng gộp thường đi vào từng em; bỏ việc mở trang và việc đã xong. */
-  const thuTu = useMemo(() => dsNhom.flatMap((g) => g.items.flatMap((x) => (x.con ? x.con : [x]))).filter((x) => lamTaiCho(x)), [dsNhom]);
+  const thuTu = useMemo(() => dsNhom.flatMap((g) => g.items.flatMap((x) => (x.con && !moCaDong(x) ? x.con : [x]))).filter((x) => lamTaiCho(x)), [dsNhom]);
   /* Địa chỉ (không `viec`) lúc mở panel bằng một bước lịch sử — đóng chỉ lùi khi bộ lọc chưa đổi, không thì mất lựa chọn lọc vừa bấm. */
   const daDay = useRef<string | null>(null);
   const khongViec = (p: URLSearchParams) => { const x = new URLSearchParams(p); x.delete('viec'); return x.toString(); };
@@ -307,7 +308,7 @@ export function HoTroHocVienTab() {
           )}
           {data && !data.scopeEmpty && dsNhom.length > 0 && (
             <Card bodyClass="p-0">
-              <NhomViec nhom={dsNhom} soHien={10} moHet={moHet} onOpen={(x) => { if (x.key === viec || boDuocChu()) mo(x); }} chon={viec} xong={xong} moTrang={(x) => !lamTaiCho(x)} moRong={moRong} />
+              <NhomViec nhom={dsNhom} soHien={10} moHet={moHet} onOpen={(x) => { if (x.key === viec || boDuocChu()) mo(x); }} chon={viec} xong={xong} moTrang={(x) => !lamTaiCho(x)} moRong={moRong} moCaDong={moCaDong} />
             </Card>
           )}
         </div>
@@ -319,7 +320,8 @@ export function HoTroHocVienTab() {
               {/* eslint-disable-next-line jsx-a11y/no-autofocus */}
               <button type="button" autoFocus className="link flex min-h-[44px] items-center gap-1.5 appearance-none border-0 bg-transparent p-0 text-[13px] lg:hidden" onClick={() => { if (boDuocChu()) dong(); }}>{t('‹ Công việc')}</button>
               <KhungTaiCho.Provider value>
-                <PanelViec key={chon.key} it={chon} onDong={dong} onDaLam={() => daLam(chon)} onTiep={keTiep ? () => mo(keTiep) : null} />
+                <PanelViec key={chon.key} it={chon} onDong={dong} onDaLam={() => daLam(chon)} onTiep={keTiep ? () => mo(keTiep) : null}
+                  onMo={(x) => { if (boDuocChu()) mo(x); }} />
               </KhungTaiCho.Provider>
             </>
           ) : data && !data.scopeEmpty && dsNhom.length > 0 ? (

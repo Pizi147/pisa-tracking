@@ -342,7 +342,8 @@ export async function runPrBvTests(t: YThucTestKit) {
 
   /* OV-1b (3.3) đổi khung gỡ: bài ĐÃ DỜI vì vắng → "Bỏ vắng" không theo hạn tuần cũ (GV đúng kỹ năng / GVCN / QL); bài chưa dời (vắng chờ QL)
      vẫn hết thứ Tư sau tuần gốc như PR-BV. */
-  check('BV V7 · khung gỡ: đã dời → GV chấm L / GVCN Bỏ vắng được cả sau hạn tuần cũ; vắng chờ QL → hết thứ Tư sau tuần gốc, thứ Năm 403; GV kỹ năng khác 403; QL 3 tuần sau được', () => {
+  /* OV-13h (chủ SP 15/10): bỏ hạn gỡ — vắng chờ QL cũng gỡ được mọi lúc bởi GV chấm L / GVCN. */
+  check('BV V7 · khung gỡ: đã dời → GV chấm L / GVCN Bỏ vắng được cả sau hạn tuần cũ; vắng chờ QL → GV chấm L / GVCN gỡ cả sau thứ Tư (OV-13h); GV kỹ năng khác 403; QL 3 tuần sau được', () => {
     const a = vangL(-1);
     assert(loiCua(() => go(gvKhac, a.m1, 'listening', han(-1))).status === 403, 'GV kỹ năng khác');
     go(gvL, a.m1, 'listening', t.addDays(han(-1), 1));
@@ -350,12 +351,12 @@ export async function runPrBvTests(t: YThucTestKit) {
     const b = vangL(-1);
     go(GVCN, b.m1, 'listening', t.addDays(han(-1), 1));
     assert(kyNang(b.m1, 'listening').absence_move_count === 0, 'GVCN Bỏ vắng');
-    const c = vangCho(-3);
     for (const who of [gvL, GVCN]) {
-      const e = loiCua(() => go(who, c.m1, 'listening', t.addDays(han(-3), 1)));
-      assert(e.status === 403 && e.message === 'Quá hạn chấm — nhờ Quản lý.', `${e.status} ${e.message}`);
+      const c = vangCho(-3);
+      go(who, c.m1, 'listening', t.addDays(han(-3), 1));
+      assert(kyNang(c.m1, 'listening').sit_status === 'scheduled', 'GV / GVCN gỡ sau thứ Tư');
     }
-    assert(kyNang(c.m1, 'listening').sit_status === 'absent' && dau(c.m1, 'listening').no_show_settled_at, 'bị đổi khi 403');
+    const c = vangCho(-3);
     go(QL, c.m1, 'listening', t.addDays(han(-3), 21));
     assert(kyNang(c.m1, 'listening').sit_status === 'scheduled', 'QL 3 tuần sau');
   });
@@ -416,10 +417,11 @@ export async function runPrBvTests(t: YThucTestKit) {
     const o = (who: any, today: string) => attemptsSvc.skillCells(who, luot(a.m1), attemptsSvc.scoresOf(a.m1), attemptsSvc.skipsOf(a.m1), today,
       skillSch.ensureSkillRows(a.m1)).find((c: any) => c.skill === 'listening');
     const ql = o(QL, han(-1));
-    assert(ql.daChot && ql.daChot.doiSang === d.tuanLich(tuan(0).weekStart, han(-1)) && ql.daChot.goDuoc === true && ql.daChot.hanGo === null, JSON.stringify(ql.daChot));
-    assert(o(gvL, han(-1)).daChot.goDuoc === true && o(gvL, han(-1)).daChot.hanGo === null, 'GV trong khung');
-    assert(o(gvL, t.addDays(han(-1), 1)).daChot.goDuoc === true && o(gvL, t.addDays(han(-1), 1)).daChot.hanGo === null, 'GV sau hạn tuần cũ vẫn Bỏ vắng được');
-    assert(o(gvKhac, han(-1)).daChot.goDuoc === false && o(gvKhac, han(-1)).daChot.hanGo === null, 'GV kỹ năng khác');
+    /* OV-13h: không còn hạn gỡ — ô không mang `hanGo`. */
+    assert(ql.daChot && ql.daChot.doiSang === d.tuanLich(tuan(0).weekStart, han(-1)) && ql.daChot.goDuoc === true && !('hanGo' in ql.daChot), JSON.stringify(ql.daChot));
+    assert(o(gvL, han(-1)).daChot.goDuoc === true, 'GV trong khung');
+    assert(o(gvL, t.addDays(han(-1), 1)).daChot.goDuoc === true, 'GV sau hạn tuần cũ vẫn Bỏ vắng được');
+    assert(o(gvKhac, han(-1)).daChot.goDuoc === false, 'GV kỹ năng khác');
     assert(ql.noShow === null, 'ô đã dời vẫn là việc nhập điểm ở tuần mới (không phải "-")');
   });
 
@@ -514,15 +516,12 @@ export async function runPrBvTests(t: YThucTestKit) {
     assert(r.giuLich === true && r.tuanMoi === d.tuanLich(tuanMoi, tuanMoi), JSON.stringify(r));
   });
 
-  check('BV L3 · khung gỡ lớp thường: GV chấm Nghe / GVCN đến hết thứ Tư sau tuần gốc → được, sau → 403; QL mọi lúc', () => {
+  check('BV L3 · khung gỡ lớp thường: GV chấm Nghe / GVCN gỡ cả sau thứ Tư sau tuần gốc (OV-13h); QL mọi lúc', () => {
     for (const who of [gvNghe, P.normalCoreTeacher]) {
       const b = baiThuong(0);
       vangThuong(P.admin, b.aid, true);
-      const e = loiCua(() => vangThuong(who, b.aid, false, t.addDays(han(0), 1)));
-      assert(e.status === 403 && e.message === 'Quá hạn chấm — nhờ Quản lý.', `${e.status} ${e.message}`);
-      assert(dau(b.aid, 'listening').no_show_period_id === tuan(0).id, 'bị đổi khi 403');
-      vangThuong(who, b.aid, false, han(0));
-      assert(kyNang(b.aid, 'listening').planned_period_id === tuan(0).id, 'trong khung');
+      vangThuong(who, b.aid, false, t.addDays(han(0), 1));
+      assert(dau(b.aid, 'listening').no_show_period_id === null && kyNang(b.aid, 'listening').planned_period_id === tuan(0).id, 'sau thứ Tư vẫn gỡ được');
     }
     const c = baiThuong(0);
     vangThuong(P.admin, c.aid, true);

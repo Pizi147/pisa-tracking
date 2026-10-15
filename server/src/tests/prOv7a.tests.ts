@@ -94,13 +94,14 @@ export async function runPrOv7aTests(t: YThucTestKit) {
     assert(em.suaDuoc === true && em.xacNhan, 'phiếu: GVCN sửa được trước ngày thi hành');
   }));
 
-  await checkAsync('OV7a-1b · Bàn giao: sau ngày thi hành lệnh GVCN / GVBM → 400 câu rõ, Quản lý sửa được; phiếu nói đúng ai sửa được', () => thu(() => {
+  /* OV-13h (chủ SP 15/10, đổi quyết định 13/10): sau ngày thi hành GVCN / GVBM lớp nguồn vẫn sửa. */
+  await checkAsync('OV7a-1b · Bàn giao: sau ngày thi hành lệnh GVCN / GVBM vẫn sửa (OV-13h), Quản lý sửa được; phiếu nói đúng ai sửa được', () => thu(() => {
     const x = dungBanGiao();
     bg.xacNhanBanGiao(x.gvcnBg, x.l.id, 'Em chăm, ngại nói trước lớp. Mẹ theo sát.');
     conn.prepare('UPDATE lenh_chuyen_lop SET tuan_bat_dau = ? WHERE id = ?').run(addDays(TODAY, -7), x.l.id);   // đã qua ngày thi hành
-    assertThrows(() => bg.suaBanGiao(x.gvcnBg, x.l.id, 'Sửa sau khi lệnh đã thi hành.'), /ngày chuyển lớp.*Quản lý/, 'GVCN sau ngày thi hành');
-    assertThrows(() => bg.ghiMon(x.gvbmL, x.l.id, 'listening', 'Ghi sau ngày thi hành'), /ngày chuyển lớp.*Quản lý/, 'GVBM sau ngày thi hành');
-    assert(bg.phieuBanGiao(x.gvcnBg, { lopNguonId: x.nguon }).ds[0].suaDuoc === false, 'phiếu GVCN: hết sửa');
+    bg.suaBanGiao(x.gvcnBg, x.l.id, 'Sửa sau khi lệnh đã thi hành.');
+    bg.ghiMon(x.gvbmL, x.l.id, 'listening', 'Ghi sau ngày thi hành');
+    assert(bg.phieuBanGiao(x.gvcnBg, { lopNguonId: x.nguon }).ds[0].suaDuoc === true, 'phiếu GVCN: vẫn sửa được');
     const ql = bg.phieuBanGiao(P.mbManager, { lopNguonId: x.nguon });
     assert(ql.ds[0].suaDuoc === true && ql.nguoiXem.ql === true, 'phiếu QL: sửa được');
     bg.suaBanGiao(P.mbManager, x.l.id, 'Quản lý sửa nhận xét sau ngày thi hành.');

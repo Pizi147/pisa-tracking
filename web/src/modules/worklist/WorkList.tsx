@@ -31,6 +31,9 @@ export type WorkItem = {
   ghiNhanh?: boolean;
   /** OV-11c: id em của việc cả lớp (Nhập điểm theo bài…) — panel Nhập điểm đưa em của việc lên đầu. */
   emIds?: number[];
+  /** OV-13c: tuần thi (thứ Hai) · mức SOS · Nhập điểm: tuần + loại bài (lưới Lịch Test) · Xác nhận PA: PA đang chờ. */
+  tuanThi?: string | null; sos?: number | null; periodId?: number | null; kind?: string | null; phu?: string | null;
+  pa?: { kind: string; moTa: string | null; nguoiId: number | null; nguoi: string | null; soBuoi?: number | null };
 };
 export type WorkGroup = { key: string; label: string; hint: string; items: WorkItem[]; overdue: number; today: number };
 
@@ -45,7 +48,7 @@ export type WorkGroup = { key: string; label: string; hint: string; items: WorkI
 /** OV-13d: loại việc Ý thức mà dòng gộp theo lớp mở panel lô (`LoYThucPanel`) — `PanelViec` đọc cùng tập này. */
 export const VIEC_LO_Y_THUC: ReadonlySet<string> = new Set(['yt_xu_ly', 'yt_xem']);
 
-export function DongViec({ it, onOpen, nutPhu, gon = false, chon = null, xong, moTrang = false, conMoTrang, moRong }: {
+export function DongViec({ it, onOpen, nutPhu, gon = false, chon = null, xong, moTrang = false, conMoTrang, moRong, moCaDong }: {
   it: WorkItem; onOpen: (it: WorkItem) => void;
   /** Nút phụ đứng cạnh nút chính (PR-Ra: Nhắc/Duyệt). */
   nutPhu?: ReactNode;
@@ -59,6 +62,8 @@ export function DongViec({ it, onOpen, nutPhu, gon = false, chon = null, xong, m
   conMoTrang?: (it: WorkItem) => boolean;
   /** OV-13b: phần mở ngay dưới dòng / dưới em của dòng gộp (ghi nhanh Kết quả PA). */
   moRong?: (it: WorkItem) => ReactNode;
+  /** OV-13c: dòng gộp làm CẢ DÒNG một lần (Xác nhận PA cùng lúc, Nhập điểm theo tuần) — bấm mở panel, không mở danh sách em. */
+  moCaDong?: (it: WorkItem) => boolean;
 }) {
   const [mo, setMo] = useState(false);
   const con = it.con;
@@ -79,8 +84,8 @@ export function DongViec({ it, onOpen, nutPhu, gon = false, chon = null, xong, m
   /* OV-11c (TQ-4): chấm chéo (T18) không phải "chưa ai phụ trách" — cùng tên với Tổng quan. */
   const nguoi = it.owner ?? (it.ownerId === null && !it.mine && !viecCaLop ? (dich(it.statusLabel) === CHAM_CHEO ? CHAM_CHEO : t('chưa ai phụ trách')) : null);
   /* PR-GOP (mockup phần 4): bấm tiêu đề hay nút "n em ▾" đều mở / đóng danh sách em; có em quá hạn → nền đỏ nhạt cả dòng.
-     OV-13d: ở Công việc (`gon`) dòng gộp Ý thức mở thẳng panel lô (làm nhiều em cùng lúc) thay vì bung danh sách. */
-  const bam = () => (con && !(gon && VIEC_LO_Y_THUC.has(it.group)) ? setMo(!mo) : onOpen(it));
+     OV-13d: ở Công việc (`gon`) dòng gộp Ý thức mở thẳng panel lô; OV-13c: `moCaDong` (Xác nhận PA cùng lúc) cũng mở thẳng panel. */
+  const bam = () => (con && !moCaDong?.(it) && !(gon && VIEC_LO_Y_THUC.has(it.group)) ? setMo(!mo) : onOpen(it));
   const maDs = `con-${it.key}`;
   const daXong = !!xong?.has(it.key);
   const dangChon = chon === it.key;

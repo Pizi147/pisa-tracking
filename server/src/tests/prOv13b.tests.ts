@@ -167,10 +167,10 @@ export async function runPrOv13bTests(t: YThucTestKit) {
   check('OV13b-6 · Xác nhận PA bắt Nội dung; "Bắt đầu" — ngày tương lai đặt lịch kỳ từ ngày đó, ngoài khoảng → 400', () => thu(() => {
     const { goc } = dungCase();
     assert(loi(() => sosAuto.xacNhanPaQuyChe(GV, goc.id, du(goc, { description: '' })))?.status === 400, 'thiếu Nội dung → 400');
-    assert(loi(() => sosAuto.xacNhanPaQuyChe(GV, goc.id, du(goc, { startedDate: '19/10/2026' })))?.status === 400, 'ngày sai dạng → 400');
-    assert(loi(() => sosAuto.xacNhanPaQuyChe(GV, goc.id, du(goc, { startedDate: t.addDays(TODAY, 60) })))?.status === 400, 'quá xa → 400');
+    assert(loi(() => sosAuto.xacNhanPaQuyChe(GV, goc.id, du(goc, { batDau: '19/10/2026' })))?.status === 400, 'ngày sai dạng → 400');
+    assert(loi(() => sosAuto.xacNhanPaQuyChe(GV, goc.id, du(goc, { batDau: t.addDays(TODAY, 60) })))?.status === 400, 'quá xa → 400');
     const bd = t.addDays(TODAY, 5);
-    sosAuto.xacNhanPaQuyChe(GV, goc.id, du(goc, { startedDate: bd }));
+    sosAuto.xacNhanPaQuyChe(GV, goc.id, du(goc, { batDau: bd }));
     const g = one('SELECT * FROM case_interventions WHERE id = ?', goc.id);
     assert(g.started_date === bd && g.cycle_started_on === bd && g.action_due === dm.hanKyGhiKetQua(bd), `lịch kỳ từ ${bd}: ${g.started_date} ${g.action_due}`);
   }));
