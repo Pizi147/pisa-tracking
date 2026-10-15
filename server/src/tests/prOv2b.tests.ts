@@ -209,7 +209,7 @@ export async function runPrOv2bTests(t: YThucTestKit) {
     /* Đang tạm dừng: còn Thôi học → vẫn một mục (panel mở tab Thôi học); Quay lại học xếp sau. */
     const dung = dm.mucQuanLyHocVien({ canEdit: true, lopHoc: { quyen: q }, cycle: null, status: 'inactive' }).map((x: any) => x.key);
     assert(dung.includes('tam-dung-thoi-hoc') && dung.indexOf('quay-lai') > dung.indexOf('tam-dung-thoi-hoc'), `tạm dừng: ${dung.join()}`);
-    assert(dm.mucQuanLyHocVien({ canEdit: false, suaThongTin: true, lopHoc: null, cycle: null, status: 'active' }).map((x: any) => x.key).join() === 'info', 'Admin/TVV/CX: chỉ Sửa thông tin');
+    assert(dm.mucQuanLyHocVien({ canEdit: false, suaThongTin: true, lopHoc: null, cycle: null, status: 'active' }).map((x: any) => x.key).join() === 'info,lich-su-sua', 'Admin/TVV/CX: chỉ Sửa thông tin + Lịch sử sửa (OV-13j)');
     assert(dm.cacTabTrangThai({ tamDung: true, ketThuc: true }, 'active').join() === 'tam-dung,thoi-hoc', 'đang học: hai tab');
     assert(dm.cacTabTrangThai({ tamDung: true, ketThuc: true }, 'inactive').join() === 'thoi-hoc', 'đang tạm dừng: chỉ tab Thôi học');
   });
