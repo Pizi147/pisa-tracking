@@ -890,13 +890,15 @@ check('TD3-b-2 · QL ×3: /classes/{lopFT}/overview ≤ 50 % (5 829), /hoc-vien-
  * 15/10 (OV-13b): chụp lại GVCN / GVCN_THUONG toi, QL / QT tat-ca, QT tat-ca cn, QL gvcn — chỉ thêm trường `ghiNhanh` của Kết quả PA (băm bỏ
  * trường đó trùng ảnh cũ, đã kiểm).
  * 15/10: chụp lại 'QT toi' / 'QT tat-ca' sau khi Case của Task2(e) thôi lấy giờ thật (hạn Thêm PA của nó trôi theo ngày chạy → băm QT đổi mỗi ngày).
+ * 15/10 OV-13a: chụp lại 'QL tat-ca' / 'QT tat-ca' / 'QT tat-ca cn' — Case tạm (Q2) đổi thứ tự sinh Case trong seed → id Case 34↔35 (HV 46) đổi chỗ;
+ *   so JSON với main: khác CHỈ ở id Case, nội dung việc không đổi.
  */
 await checkAsync('TD4-a (×3) · Công việc trùng JSON ảnh chụp trước TD4 — 6 vai × Của tôi / Tất cả / Của một GV / lọc chi nhánh', async () => {
   const { myWork, viecCuaNguoi } = await import('../worklist/mywork.ts');
   const ANH: Record<string, string> = {
     'QL toi': '6671f11bb8e4d60c', 'QT toi': 'ad9ea8d503e7b56c', 'GVCN toi': '0551d1590aa59b08', 'GVBM toi': '130c23c92f42a1de',
-    'GVCN_THUONG toi': '0551d1590aa59b08', 'ADMIN toi': '4ed1fc3fa34653f2', 'QL tat-ca': 'ff5336498adf93de', 'QT tat-ca': 'a0d15e16feeedcda',
-    'QT tat-ca cn': 'c8356a936a835556', 'QL gvcn': '995945bf8b304981',
+    'GVCN_THUONG toi': '0551d1590aa59b08', 'ADMIN toi': '4ed1fc3fa34653f2', 'QL tat-ca': 'b3677420cf282c18', 'QT tat-ca': '2d775bd0aa7785c7',
+    'QT tat-ca cn': 'db7c52f3abb08616', 'QL gvcn': '995945bf8b304981',
   };
   const p = (v: Vai) => loadPrincipal(USER[v]);
   const goc: [string, () => unknown][] = [
@@ -1061,9 +1063,14 @@ await checkAsync(`PR-S3F · Công việc QL (nguoi=tat-ca) với 30 PA "đến l
         cycle_started_on, action_due, confirmed_by, confirmed_at, created_at) VALUES (?, 'tutor', 'Tutor · đến lúc thi', 'started', 0, 1, 'until_exam', ?, 1, ?, ?, ?, ?, ?)`)
       .run(c.id, homNay, homNay, addDays(homNay, 7), USER.QT, bayGio, bayGio);
   }
+  /* OV-13a (B): lần đọc đầu điền mốc MT cuối của lộ trình cho PA chưa có ngày thi (ghi một lần) — đo lần đọc sau, như người dùng mở lại. */
+  const dau = await doSql('QL', 'GET', url);
   const r = await doSql('QL', 'GET', url);
-  const moc = (conn.prepare(`SELECT COUNT(*) n FROM case_interventions WHERE preset = 1 AND moc_quy_che = 'until_exam' AND followup_due IS NULL AND status = 'started'`).get() as any).n;
-  assert(r.status === 200 && moc >= 30, `Việc "Nhập ngày thi" phải còn (PA chưa mốc ${moc}): ${r.status}`);
+  const conTrong = (conn.prepare(`SELECT COUNT(*) n FROM case_interventions WHERE preset = 1 AND moc_quy_che = 'until_exam' AND followup_due IS NULL AND status = 'started'`).get() as any).n;
+  const { mtCuoiCuaLoTrinh } = await import('../cases/sosAuto.ts');
+  const coMt = mtCuoiCuaLoTrinh(cs.map((c) => c.cycle_id));
+  const mongTrong = cs.filter((c) => !coMt.has(c.cycle_id)).length;   // lộ trình chưa xếp MT nào: vẫn chưa có mốc → việc "Nhập ngày thi" còn
+  assert(dau.status === 200 && r.status === 200 && conTrong === mongTrong, `PA "đến lúc thi" có MT cuối phải nhận mốc (còn trống ${conTrong}, mong ${mongTrong}): ${r.status}`);
   console.log(`      (đo: ${n0} câu không PA → ${r.n} câu với 30 PA chưa ngày thi)`);
   assert(r.n <= TRAN_GHI_LO.congViec30PaChuaNgayThi, `${r.n} câu > trần ${TRAN_GHI_LO.congViec30PaChuaNgayThi}`);
 });

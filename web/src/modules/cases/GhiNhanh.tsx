@@ -7,7 +7,9 @@ import { FOLLOWUP_OUTCOMES, GOI_Y_KET_QUA_PA, ketQuaNhanh, outcomeLabelFor } fro
 import { dich, t } from '@shared/i18n/index.ts';
 
 /** Chữ đã gõ ở dòng ghi nhanh → panel lớn ("Điều chỉnh / Kết thúc…" mang chữ sang, mockup OV-13 §1). `GhiKetQuaPanel` đọc rồi xoá. */
-export const nhapKetQua = new Map<number, { outcome: string; note: string }>();
+export const nhapKetQua = new Map<number, NhapKetQua>();
+/** Nháp Ghi kết quả: dòng ghi nhanh chỉ có `outcome` + `note`; panel lớn (Hoàn tác) lưu thêm mọi ô khác (`GhiKetQuaPanel`). */
+export type NhapKetQua = { outcome: string; note: string; khac?: Record<string, any> };
 /** Mockup OV-13 §1: "Hoàn tác 10 giây" ở dòng đã lưu. */
 const HOAN_TAC_DONG_MS = 10_000;
 

@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { YThucTestKit } from './yThuc.tests.ts';
+import { duXacNhan } from './luotThu.ts';
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
 
@@ -245,17 +246,17 @@ export async function runPrSosTests(t: YThucTestKit) {
     const { st } = mt1Sos3('T4b');
     const c = caseOf(st.id, 'reading');
     const iv = plansOf(c.id)[0];
-    assertThrows(() => sosAuto.xacNhanPaQuyChe(P.admin, iv.id, { description: MO_TA }), /chưa có nhận xét/, 'chưa nguyên nhân (OV-12c: bài chưa nhận xét)');
+    assertThrows(() => sosAuto.xacNhanPaQuyChe(P.admin, iv.id, duXacNhan(conn, iv.id, { description: MO_TA })), /chưa có nhận xét/, 'chưa nguyên nhân (OV-12c: bài chưa nhận xét)');
     nhanXet(P.admin, c.id, { ...XN, primaryCode: d.issuesForTopic('reading', null)[0].code });
-    assertThrows(() => sosAuto.xacNhanPaQuyChe(P.admin, iv.id, { description: 'ngắn' }), /ít nhất 15/, 'mô tả ngắn');
-    assertThrows(() => sosAuto.xacNhanPaQuyChe(P.w1Teacher, iv.id, { description: MO_TA }), /phân công/, 'GV W1');
-    sosAuto.xacNhanPaQuyChe(P.admin, iv.id, { description: MO_TA, performerUserId: P.coreTeacher.userId });
+    assertThrows(() => sosAuto.xacNhanPaQuyChe(P.admin, iv.id, duXacNhan(conn, iv.id, { description: 'ngắn' })), /ít nhất 15/, 'mô tả ngắn');
+    assertThrows(() => sosAuto.xacNhanPaQuyChe(P.w1Teacher, iv.id, duXacNhan(conn, iv.id, { description: MO_TA })), /phân công/, 'GV W1');
+    sosAuto.xacNhanPaQuyChe(P.admin, iv.id, duXacNhan(conn, iv.id, { description: MO_TA, performerUserId: P.coreTeacher.userId }));
     const sau = get('SELECT * FROM case_interventions WHERE id = ?', iv.id);
     assert(sau.status === 'started' && sau.started_date === TODAY && sau.cycle_started_on === TODAY && sau.cycle_no === 1
       && sau.action_due === d.hanKyGhiKetQua(TODAY) && sau.followup_due === null /* until_next_mt, chưa có lịch MT2 */
       && sau.confirmed_by === P.admin.userId && sau.performer_user_id === P.coreTeacher.userId && sau.description === MO_TA, JSON.stringify(sau));
     assert(get('SELECT status FROM sos_cases WHERE id = ?', c.id).status === 'in_progress', 'Case in_progress');
-    assertThrows(() => sosAuto.xacNhanPaQuyChe(P.admin, iv.id, { description: MO_TA }), /đã được xác nhận rồi/, 'lần hai');
+    assertThrows(() => sosAuto.xacNhanPaQuyChe(P.admin, iv.id, duXacNhan(conn, iv.id, { description: MO_TA })), /đã được xác nhận rồi/, 'lần hai');
     const pa = (cases.caseDetail(P.admin, c.id) as any).interventions.find((x: any) => x.id === iv.id);
     assert(pa.batBuoc && pa.mocChu === 'đến MT2 · chưa có lịch' && pa.lanCuoi === false && !pa.awaitingConfirmation, JSON.stringify(pa));
   });
@@ -284,7 +285,7 @@ export async function runPrSosTests(t: YThucTestKit) {
     assert(!coViec(owner, `ghi_nhan_xet:${c.id}`), 'việc Ghi nhận xét còn sau khi gửi');
     assertThrows(() => sosAuto.guiKhongTheoDoi(owner, c.id, { reasonCode: 'single_incident' }), /đang chờ Quản lý duyệt/, 'gửi lần hai');
     nhanXet(owner, c.id, { ...XN, primaryCode: d.issuesForTopic('writing2', null)[0].code });
-    assertThrows(() => sosAuto.xacNhanPaQuyChe(owner, plansOf(c.id)[0].id, { description: MO_TA }), /chờ Quản lý duyệt/, 'xác nhận PA khi đang chờ thẻ');
+    assertThrows(() => sosAuto.xacNhanPaQuyChe(owner, plansOf(c.id)[0].id, duXacNhan(conn, plansOf(c.id)[0].id, { description: MO_TA })), /chờ Quản lý duyệt/, 'xác nhận PA khi đang chờ thẻ');
     /* OV-12c: Case MT có nguyên nhân (nhận xét) mà PA chưa chạy → vẫn gửi "Không cần theo dõi" được; PA đã chạy → kết thúc bằng Hoàn thành Case. */
     const c2 = caseOf(st.id, 'speaking');
     nhanXet(P.admin, c2.id, { ...XN, primaryCode: d.issuesForTopic('speaking', null)[0].code });
@@ -346,7 +347,7 @@ export async function runPrSosTests(t: YThucTestKit) {
     const c = cvL(st);
     const iv = plansOf(c.id)[0];
     nhanXet(P.w2Teacher, c.id, { primaryCode: W2_CODE, urgency: 'attention', moTa: 'Em viết lạc đề ở Task 2, lập luận yếu.' });
-    sosAuto.xacNhanPaQuyChe(P.w2Teacher, iv.id, { description: 'Tự học Writing Task 2, viết hai bài mỗi tuần.' });
+    sosAuto.xacNhanPaQuyChe(P.w2Teacher, iv.id, duXacNhan(conn, iv.id, { description: 'Tự học Writing Task 2, viết hai bài mỗi tuần.' }));
     return { st, a, c, iv: get('SELECT * FROM case_interventions WHERE id = ?', iv.id) };
   };
   const KQ = { outcome: 'partial', note: 'Em viết đủ ý hơn, còn lỗi mạch lạc.' };
@@ -383,18 +384,21 @@ export async function runPrSosTests(t: YThucTestKit) {
     assertThrows(() => cases.closeCaseOutcome(P.mbManager, c.id, { outcome: 'improved', note: 'Em tiến bộ rõ ở Task 2.' }), /PA theo quy chế kết thúc/, 'Hoàn thành sớm');
     assertThrows(() => cases.closeCaseOutcome(P.mbManager, c.id, { note: 'Em tiến bộ rõ ở Task 2.' }), /Mức độ thành công/, 'thiếu kết quả (K3-19)');
   });
-  check('SOS (6) · until_exam chưa có ngày thi → PA chạy, mốc NULL, "đến lúc thi · chưa có ngày thi", QL có việc Nhập ngày thi; có ngày thi rồi mở Case → mốc tự điền', () => {
+  check('SOS (6) · until_exam chưa có ngày thi → PA chạy, OV-13a (B): mốc = MT cuối của lộ trình ("đến MT{n} · W…"), không việc Nhập ngày thi; có ngày thi rồi mở Case → mốc theo ngày thi', () => {
     const st = makeStudent('T6d'); const a = mkAttempt(st, 3); enter(a, 'writing1', 7); enter(a, 'writing2', 5.5);
     const c = cvL(st);
     const iv = plansOf(c.id)[0];
     assert(iv.moc_quy_che === 'until_exam', iv.moc_quy_che);
     conn.prepare('UPDATE learning_cycles SET exam_period_id = NULL, exam_month = NULL, exam_date = NULL WHERE id = ?').run(st.cycleId);
     nhanXet(P.w2Teacher, c.id, { primaryCode: W2_CODE, urgency: 'attention', moTa: 'Em viết lạc đề ở Task 2, lập luận yếu.' });
-    sosAuto.xacNhanPaQuyChe(P.w2Teacher, iv.id, { description: 'Tutor Writing Task 2 tới lúc thi, hai buổi mỗi tuần.' });
+    sosAuto.xacNhanPaQuyChe(P.w2Teacher, iv.id, duXacNhan(conn, iv.id, { description: 'Tutor Writing Task 2 tới lúc thi, hai buổi mỗi tuần.' }));
+    const mtCuoi = sosAuto.mtCuoiCuaLoTrinh([st.cycleId]).get(st.cycleId);
+    assert(mtCuoi, 'lộ trình thử phải có MT cuối đã xếp tuần');
     const pa = (cases.caseDetail(P.w2Teacher, c.id) as any).interventions.find((x: any) => x.id === iv.id);
-    assert(pa.status === 'started' && pa.followupDue === null && pa.mocChu === 'đến lúc thi · chưa có ngày thi', JSON.stringify(pa));
-    const viec = (myworkSvc.myWork(P.mbManager, {}).items as any[]).find((x: any) => x.key === `moc:${iv.id}`);
-    assert(viec && viec.tieuDe === `Nhập dự kiến thi · ${st.name}`, JSON.stringify(viec));
+    const moc = sosAuto.mocTheoMtCuoi(mtCuoi.chuNhat, TODAY);   // rà #406: không sớm hơn xác nhận + 4 tuần
+    assert(pa.status === 'started' && pa.followupDue === moc
+      && (moc === mtCuoi.chuNhat ? pa.mocChu === `đến MT${mtCuoi.so} · ${d.tuanLich(mtCuoi.chuNhat, TODAY)}` : /^đến lúc thi · /.test(pa.mocChu)), JSON.stringify(pa));
+    assert(!(myworkSvc.myWork(P.mbManager, {}).items as any[]).some((x: any) => x.key === `moc:${iv.id}`), 'không còn việc Nhập ngày thi');
     const tuanThi = weekSvc.mondayOf(addDays(TODAY, 70));
     conn.prepare('UPDATE learning_cycles SET exam_period_id = ? WHERE id = ?').run(weekSvc.ensurePeriod(tuanThi).id, st.cycleId);
     cases.caseDetail(P.w2Teacher, c.id);
@@ -439,7 +443,7 @@ export async function runPrSosTests(t: YThucTestKit) {
     const c = cvL(st); const cS = caseOf(st.id, 'speaking');
     const { iv } = (() => {
       nhanXet(P.admin, cS.id, { primaryCode: d.issuesForTopic('speaking', null)[0].code, urgency: 'attention', moTa: 'Em nói ngắn, thiếu ý mở rộng.' });
-      sosAuto.xacNhanPaQuyChe(P.admin, plansOf(cS.id)[0].id, { description: 'Tự học Speaking, ghi âm mỗi tuần một bài.' });
+      sosAuto.xacNhanPaQuyChe(P.admin, plansOf(cS.id)[0].id, duXacNhan(conn, plansOf(cS.id)[0].id, { description: 'Tự học Speaking, ghi âm mỗi tuần một bài.' }));
       return { iv: plansOf(cS.id)[0] };
     })();
     conn.prepare('UPDATE sos_cases SET han_xac_nhan = ? WHERE id = ?').run(addDays(TODAY, -3), c.id);

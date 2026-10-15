@@ -6,7 +6,7 @@ import path from 'node:path';
 import fs from 'node:fs';
 import os from 'node:os';
 import { fileURLToPath } from 'node:url';
-import { boLichTuTao, chotSan } from './luotThu.ts';
+import { boLichTuTao, chotSan, duXacNhan } from './luotThu.ts';
 
 /*
  * Dọn rác thư mục tạm của các lần `npm run check` trước (tiền tố `z2-`, xem server/src/tests/banChinh.tests.ts):
@@ -3727,7 +3727,7 @@ check('Case đã đóng mà MT sau trượt lại → MỞ CASE MỚI nối vào
       if (!conn.prepare("SELECT 1 FROM case_issues WHERE case_id = ? AND role = 'primary'").get(c.id)) {
         sosAutoSvc.xacNhanCase(mgr, c.id, { primaryCode: domain.issuesForTopic(c.topic ?? 'reading', null)[0].code, urgency: 'attention', moTa: 'Em đọc chậm, hết giờ ở passage 3.' });
       }
-      sosAutoSvc.xacNhanPaQuyChe(mgr, iv.id, { description: 'Tutor kèm Reading hai buổi mỗi tuần, cô Hà chữa bài.' });
+      sosAutoSvc.xacNhanPaQuyChe(mgr, iv.id, duXacNhan(conn, iv.id, { description: 'Tutor kèm Reading hai buổi mỗi tuần, cô Hà chữa bài.' }));
     }
     /* PR-S3F #8 (T22): PA quy chế không khép sớm — phép kiểm này chỉ cần "PA đã xong" để chốt Case (PR-SO: `completeIntervention` đã xoá). */
     conn.prepare(`UPDATE case_interventions SET status = 'completed', completed_date = ?, updated_at = ? WHERE id = ?`).run(demoToday(), new Date().toISOString(), iv.id);
@@ -9373,6 +9373,12 @@ await runPrHfTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, ad
 // ==================================================================== OV-13b (Đề xuất PA khác · Xác nhận PA Nội dung + Bắt đầu · ghi nhanh · Hoàn tác)
 const { runPrOv13bTests } = await import('./prOv13b.tests.ts');
 await runPrOv13bTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== PR-OV13a (Case tạm · PA quy chế hết kẹt A/B/C · migrate prOv13a)
+const { runPrOv13aTests } = await import('./prOv13a.tests.ts');
+await runPrOv13aTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== OV-13i (TVV / CX sửa thông tin cả lớp, kể cả Target)
+const { runPrOv13iTests } = await import('./prOv13i.tests.ts');
+await runPrOv13iTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`

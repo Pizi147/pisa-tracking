@@ -100,8 +100,11 @@ export function buildSosV3Demo(ctx: BuildCtx): { students: number; cases: number
   const theKtd = (caseId: number) => (conn.prepare(`SELECT id FROM yeu_cau_duyet WHERE loai = 'khong_theo_doi' AND doi_tuong_id = ? AND trang_thai = 'cho'`).get(caseId) as any).id as number;
   /** Xác nhận PA theo quy chế đầu tiên còn chờ của Case. */
   const xacNhanPa = (who: Principal, caseId: number, moTa: string) => {
-    const iv = conn.prepare(`SELECT id FROM case_interventions WHERE case_id = ? AND preset = 1 AND confirmed_at IS NULL AND status = 'planned' ORDER BY id LIMIT 1`).get(caseId) as any;
-    xacNhanPaQuyChe(who, iv.id, { description: moTa });
+    const iv = conn.prepare(`SELECT id, kind, so_buoi, performer_user_id, performer_name FROM case_interventions
+      WHERE case_id = ? AND preset = 1 AND confirmed_at IS NULL AND status = 'planned' ORDER BY id LIMIT 1`).get(caseId) as any;
+    /* OV-13b (mockup §9): Người dạy * (loại có người dạy), Số buổi * (Tutor) — PA máy gán chưa có thì người xác nhận dạy, 4 buổi / 2 tuần. */
+    const nguoi = iv.kind !== 'self_study' && !iv.performer_user_id && !iv.performer_name ? { performerSelf: true } : {};
+    xacNhanPaQuyChe(who, iv.id, { description: moTa, ...nguoi, ...(iv.kind === 'tutor' && iv.so_buoi == null ? { soBuoi: 4 } : {}) });
   };
   /** Lùi ngày PA quy chế đang chạy (chỉ để có mốc quá hạn / tuần mốc đúng ngày demo). */
   const hanPa = (caseId: number, batDau: string, han: string, moc?: string) =>

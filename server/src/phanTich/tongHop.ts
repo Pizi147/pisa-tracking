@@ -14,7 +14,7 @@ import { expectationFor, failingEntrySkills } from '../fasttrack/scoring.ts';
 import { allProgrammes, type ProgrammeInfo } from '../normal/regular.ts';
 import { evaluateAttemptRow, luotKck } from '../worklist/danhGia.ts';
 import { rowsFor, type MetricRow } from '../worklist/metrics.ts';
-import { XU_LY_COT_SQL, xuLyCuaDong } from '../cases/sosState.ts';
+import { CASE_THAT, XU_LY_COT_SQL, xuLyCuaDong } from '../cases/sosState.ts';
 
 /**
  * TỔNG HỢP TEST + SOS (P10, §3.3) — góc nhìn mặc định của Phân tích. Đi đúng đường `nguon` như bảng chi nhánh của
@@ -254,7 +254,7 @@ function tinh(p: Principal, f: FilterTongHop) {
     for (const r of conn.prepare(
       `SELECT a.id AS attempt_id, sc.student_id, ${XU_LY_COT_SQL}
          FROM sos_cases sc JOIN assessment_attempts a ON a.id = sc.attempt_id
-        WHERE a.id IN (${chunk.map(() => '?').join(',')}) AND COALESCE(sc.sos_level, 1) > 0`,
+        WHERE a.id IN (${chunk.map(() => '?').join(',')}) AND COALESCE(sc.sos_level, 1) > 0 AND ${CASE_THAT('sc')}`,
     ).all(...chunk) as any[]) {
       const dong = dongCua.get(r.attempt_id);
       if (!dong) continue;

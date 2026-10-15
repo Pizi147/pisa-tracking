@@ -218,7 +218,7 @@ function quetThat(homNay: string) {
   const coChet = DINH_NGHIA_LOAI.filter((d) => d.chet);
   if (coChet.length) {
     const chet = conn.prepare(
-      `SELECT y.id, y.loai, y.doi_tuong_loai, y.doi_tuong_id FROM yeu_cau_duyet y
+      `SELECT y.id, y.loai, y.doi_tuong_loai, y.doi_tuong_id, y.du_lieu FROM yeu_cau_duyet y
         WHERE y.trang_thai = 'cho' AND (${coChet.map((d) => `(y.loai = ? AND (${d.chet!.sql}))`).join(' OR ')})`,
     ).all(...coChet.map((d) => d.loai)) as any[];
     if (chet.length) {
@@ -226,6 +226,7 @@ function quetThat(homNay: string) {
         for (const r of chet) {
           chotYeuCau(conn, { loai: r.loai, doiTuongLoai: r.doi_tuong_loai, doiTuongId: r.doi_tuong_id }, 'tu_dong',
             { lyDo: dinhNghiaCua(r.loai)!.chet!.lyDo });
+          dinhNghiaCua(r.loai)!.chet!.sau?.(r);
         }
       });
     }
@@ -451,6 +452,7 @@ export function traLoiYeuCau(p: Principal, id: number, traLoi: unknown) {
 function theCuaNguoiGui(p: Principal, id: number, rut = false): YeuCauRow {
   const yc = docThe(id);
   if (yc.nguoi_xin !== p.userId) throw forbidden('Chỉ người gửi mới sửa hoặc rút được yêu cầu này.');
+  if (rut && yc.loai === 'de_xuat_pa' && yc.trang_thai === 'duyet') throw badRequest('QL đã duyệt đổi PA — không hoàn tác được.');   // OV-13b: Hoàn tác = Rút
   if (yc.trang_thai !== 'cho') throw badRequest('Yêu cầu này đã được xử lý. Danh sách đã được làm mới.');
   /* OV-13b: loại chỉ Rút được (không Sửa) — có `khiRut` (Đề xuất PA). */
   if (!LOAI_NGUOI_XIN_SUA.includes(yc.loai) && !(rut && dinhNghiaCua(yc.loai)?.khiRut)) throw badRequest('Loại yêu cầu này không sửa hoặc rút được.');

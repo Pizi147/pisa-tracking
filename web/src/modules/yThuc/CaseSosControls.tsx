@@ -184,7 +184,7 @@ export function XacNhanPaPanel({ pa, data, onXong, ...chung }: ChungPanel & { pa
   const [loiLuu, setLoiLuu] = useState<string | null>(null);
   const lf = useLoiForm();
   const loi = cheDo === 'doi' ? doi.loi : [
-    ...loiFormPa(v, { toiThieu: 15 }),
+    ...loiFormPa(v, { toiThieu: 15, batBuoc: true }),
     ...(batDau ? [] : [{ khoa: 'bat-dau', nhan: t('Bắt đầu'), lyDo: t('Chọn ngày bắt đầu') }]),
   ];
   const tenLoai = dich(INTERVENTION_KIND_LABEL[pa.kind as keyof typeof INTERVENTION_KIND_LABEL] ?? t('PA theo quy chế'));
@@ -258,7 +258,7 @@ export function XacNhanPaPanel({ pa, data, onXong, ...chung }: ChungPanel & { pa
                 <span className="text-[15px] font-bold text-slate-100">{tenLoai}</span>
                 <span className="text-[13px] text-slate-400">{[quyChe, pa.mocChu].filter(Boolean).join(' · ')}</span>
               </div>
-              <FormPa phang v={v} dat={(p) => setV((x) => ({ ...x, ...p }))} lf={lf} loi={loi} toiThieu={15} studentId={data.student?.id}
+              <FormPa phang batBuoc v={v} dat={(p) => setV((x) => ({ ...x, ...p }))} lf={lf} loi={loi} toiThieu={15} studentId={data.student?.id}
                 ngay={(
                   <Truong nhan={t('Bắt đầu')} batBuoc loi={lf.loiCua(loi, 'bat-dau')}>
                     <ONgay kieu="ngay" value={batDau} onChange={setBatDau} toiThieu={homNay} ariaLabel={t('Bắt đầu')} id={lf.oId('bat-dau')} />

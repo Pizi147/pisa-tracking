@@ -316,8 +316,8 @@ function CotCase({ row }: { row: Row }) {
       <span className="block min-w-0 font-normal">
         <span className="block truncate text-xs text-slate-200" title={c.title}><TenCase c={c} /></span>
         <span className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-slate-400">
-          {tamDung && tt.t === 'qua-han' ? <NhanTamDung tu={tamDung} /> : <NhanTrangThai t={tt.t} />}
-          <span>{tt.k === 'huy-khong-theo-doi' ? t('Không theo dõi (Quản lý duyệt {ngan})', { ngan: ngan(c.closedOn) })
+          {tamDung && tt.t === 'qua-han' ? <NhanTamDung tu={tamDung} /> : <NhanTrangThai t={tt.t} chu={tt.k === 'tam' ? dich(tt.chu) : undefined} />}
+          <span>{tt.k === 'tam' ? null : tt.k === 'huy-khong-theo-doi' ? t('Không theo dõi (Quản lý duyệt {ngan})', { ngan: ngan(c.closedOn) })
             : tt.k === 'dang-lam' ? tienDoCase(c.plans, c).text : tt.k === 'xong' ? dich(c.outcomeLabel ?? '') : dich(tt.chu)}</span>
           {row.parallelCount > 1 && <span>{t('· {parallelCount} Case song song', { parallelCount: row.parallelCount })}</span>}
         </span>
@@ -436,9 +436,9 @@ function HangCase({ c, ngan, onChanged, onMoCase }: {
         </td>
         <td className="td">
           <span className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
-            {tamDung && tt.t === 'qua-han' ? <NhanTamDung tu={tamDung} /> : <NhanTrangThai t={tt.t} title={dich(tt.chu)} />}
+            {tamDung && tt.t === 'qua-han' ? <NhanTamDung tu={tamDung} /> : <NhanTrangThai t={tt.t} title={dich(tt.chu)} chu={tt.k === 'tam' ? dich(tt.chu) : undefined} />}
             <span className="text-[12px] text-slate-300">
-              {tt.k === 'dang-lam' ? td.text : tt.k === 'xong' ? null : tt.chu}
+              {tt.k === 'dang-lam' ? td.text : tt.k === 'xong' || tt.k === 'tam' ? null : tt.chu}
             </span>
           </span>
           {/* Em Tạm dừng: MỌI hạn dừng (T65, như `DongHan`) — Quá hạn đã thành nhãn Tạm dừng ở trên, hạn chưa tới cũng thay bằng nhãn. */}
@@ -461,7 +461,7 @@ function HangCase({ c, ngan, onChanged, onMoCase }: {
             <CotPhai nut={(
               <>
                 <button type="button" className="btn btn-sm" onClick={() => onMoCase(c.id)}>{t('Mở Case')}</button>
-                {c.canEdit && !daXong && !chanNut && c.plans.length === 0 && (
+                {c.canEdit && !daXong && !chanNut && c.plans.length === 0 && tt.k !== 'tam' && (
                   <button type="button" className="btn btn-sm" onClick={() => onMoCase(c.id, { viec: 'them-pa' })}>{t('+ Thêm PA')}</button>
                 )}
                 {/* OV-12c: Case MT có nguyên nhân sẵn — "Không cần theo dõi" mở ngay ở bước chờ xác nhận PA. */}
@@ -543,7 +543,7 @@ function HangPA({ p, c, ngan, onMoCase }: {
             {ten}
           </button>
           {p.batBuoc && (
-            <span className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap text-[12px] text-slate-400" title={p.kind === 'bo_tro' ? t('PA Bổ trợ bắt buộc đến Cuối khoá — không thay, không kết thúc sớm') : t('PA theo quy chế SOS — không thay, không kết thúc sớm')}>
+            <span className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap text-[12px] text-slate-400" title={p.kind === 'bo_tro' ? t('PA Bổ trợ bắt buộc đến Cuối khoá — không thay, không kết thúc sớm') : t('PA theo quy chế SOS — chỉ GVCN / QL kết thúc sớm (⋯)')}>
               <KhoaQuyChe />{t('theo quy chế')}
             </span>
           )}

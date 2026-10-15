@@ -20,7 +20,7 @@ import { dich, t } from '@shared/i18n/index.ts';
 
 const tenLoai = (k: string) => INTERVENTION_KIND_LABEL[k as keyof typeof INTERVENTION_KIND_LABEL] ?? k;
 
-export function FormPa({ v, dat, lf, loi, chonLoai, quyChe, toiThieu = 8, daDay = 0, ngay, luat, cuoi, phang, studentId, tienTo = '' }: {
+export function FormPa({ v, dat, lf, loi, chonLoai, quyChe, toiThieu = 8, daDay = 0, ngay, luat, cuoi, phang, studentId, tienTo = '', batBuoc = false }: {
   v: GiaTriPa; dat: (p: Partial<GiaTriPa>) => void;
   lf: ReturnType<typeof useLoiForm>; loi: readonly LoiTruong[];
   /** Thêm PA / Thay PA: chọn Loại. Không có = Loại khoá (Sửa PA, Xác nhận PA); `phang` mà không chọn Loại (Điều chỉnh) = không có ô Loại. */
@@ -39,6 +39,8 @@ export function FormPa({ v, dat, lf, loi, chonLoai, quyChe, toiThieu = 8, daDay 
   studentId?: number | null;
   /** Khoá ô lỗi riêng (cùng `tienTo` của `loiFormPa`) khi form nằm trong panel khác — Thay PA trong Kết quả: 'moi-'. */
   tienTo?: string;
+  /** OV-13b (Xác nhận PA): Người dạy * · Tutor Số buổi * (cùng `loiFormPa({ batBuoc })`). */
+  batBuoc?: boolean;
 }) {
   const k = (x: string) => tienTo + x;
   const kinds = interventionKindsFor();
@@ -74,7 +76,7 @@ export function FormPa({ v, dat, lf, loi, chonLoai, quyChe, toiThieu = 8, daDay 
         onChange={(e) => dat({ description: e.target.value })} placeholder={GOI_Y_MO_TA_PA} />
     </Truong>
     {coSoBuoi(v.kind) && (
-      <Truong nhan={t('Số buổi')} tuyChon loi={lf.loiCua(loi, k('so-buoi'))}
+      <Truong nhan={t('Số buổi')} tuyChon={!(batBuoc && v.kind === 'tutor')} batBuoc={batBuoc && v.kind === 'tutor'} loi={lf.loiCua(loi, k('so-buoi'))}
         phu={daDay > 0 ? t('Đã dạy {daDay} buổi — không nhỏ hơn {daDay}', { daDay }) : t('Có số buổi thì web đếm sau mỗi lần Kết quả')}>
         <input className="field w-24 tabular-nums" inputMode="numeric" maxLength={2} {...lf.o(loi, k('so-buoi'))} value={v.soBuoi}
           onChange={(e) => dat({ soBuoi: e.target.value })} placeholder="—" />
@@ -83,8 +85,8 @@ export function FormPa({ v, dat, lf, loi, chonLoai, quyChe, toiThieu = 8, daDay 
   </>;
 
   const nguoi = coNguoiDay(v.kind) ? (
-    <Truong nhan={nhanNguoi} tuyChon as="div" loi={lf.loiCua(loi, k('nguoi'))}
-      phu={nhanNguoi === 'Người dạy' && !v.nguoi ? t('Chưa biết ai dạy thì để trống — ghi ở Kết quả từng tuần') : undefined}>
+    <Truong nhan={nhanNguoi} tuyChon={!batBuoc} batBuoc={batBuoc} as="div" loi={lf.loiCua(loi, k('nguoi'))}
+      phu={!batBuoc && nhanNguoi === 'Người dạy' && !v.nguoi ? t('Chưa biết ai dạy thì để trống — ghi ở Kết quả từng tuần') : undefined}>
       {/* key: đổi nhãn (Người dạy ↔ Người thực hiện) thì ô vẽ lại đúng trạng thái trống / có tên. */}
       <ChonNguoi key={nhanNguoi} nhom="giao_vien" studentId={studentId} cungChiNhanh={v.kind === 'bo_tro'} value={v.nguoi} onChange={(x) => dat({ nguoi: x })}
         choTrong={t('Để trống')} placeholder={t('Chưa chọn · gõ tên để tìm')} ariaLabel={nhanNguoi}

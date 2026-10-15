@@ -14,6 +14,12 @@ import { CASE_DISMISS_REASON_LABEL, cotXuLy, hanThemPa, trangThaiCaseV4, type Ca
  * MỘT nơi định nghĩa cho hai lời hứa: phương án đó KHÔNG vào hiệu quả (`cases/effectiveness.ts`) và KHÔNG sinh nghĩa vụ cập nhật tuần
  * hay xem lại kết quả (`worklist/*`). Mỗi truy vấn tự viết một kiểu là cách một trong hai lời hứa bị vỡ âm thầm.
  */
+/**
+ * OV-13a (rà #406): CASE THẬT = không phải Case tạm (`tam = 0`). Case tạm (lượt Mock FT chưa chốt) chỉ hiện ở hồ sơ HV / Ngăn Case / panel một em —
+ * KHÔNG vào bất kỳ số đếm nào (Case mở, Đang làm, Thiếu PA, Tổng hợp, Tổng quan, Học viên & Lớp, hồ sơ lớp / GV, Danh sách Case). MỘT điều kiện cho mọi câu đếm.
+ */
+export const CASE_THAT = (sc = 'sc') => `${sc}.tam = 0`;
+
 export const UNCONFIRMED_PRESET = (alias = 'iv') => `(${alias}.preset = 1 AND ${alias}.confirmed_at IS NULL)`;
 export const NOT_UNCONFIRMED_PRESET = (alias = 'iv') => `NOT ${UNCONFIRMED_PRESET(alias)}`;
 /** OV-13b: PA gốc đang chờ Quản lý duyệt "Đề xuất PA khác" — `superseded_by` trỏ PA mới chờ duyệt, PA gốc chưa khép (khép khi duyệt). */
@@ -92,13 +98,15 @@ export type SosCaseState = {
   coPaChoXacNhan: boolean;
   /** OV-13b: PA quy chế chưa xác nhận đang chờ duyệt "Đề xuất PA khác" — Case "Chờ duyệt đổi PA". */
   choDoiPa: boolean;
+  /** OV-13a (Q2): Case tạm của lượt Mock FT chưa chốt ("Chờ chốt SOS") — không hạn / việc. */
+  tam: boolean;
 };
 
 /** Điều kiện SQL "case `sc` đang có thẻ Không cần theo dõi chờ duyệt" — MỘT chỗ cho `awaitingCauseCaseIds` và thẻ Báo QL. */
 export const CO_THE_KHONG_THEO_DOI = (sc = 'sc') => `EXISTS (SELECT 1 FROM yeu_cau_duyet y_k WHERE y_k.loai = 'khong_theo_doi'
   AND y_k.doi_tuong_loai = 'sos_case' AND y_k.doi_tuong_id = ${sc}.id AND y_k.trang_thai = 'cho')`;
 
-const SOS_STATE_RONG: SosCaseState = { fromSos: false, hasCause: false, laMt: false, choNhanXet: false, awaitingCause: false, dueOn: null, dismissed: null, choDuyetKhongTheoDoi: null, coPaChoXacNhan: false, choDoiPa: false };
+const SOS_STATE_RONG: SosCaseState = { fromSos: false, hasCause: false, laMt: false, choNhanXet: false, awaitingCause: false, dueOn: null, dismissed: null, choDuyetKhongTheoDoi: null, coPaChoXacNhan: false, choDoiPa: false, tam: false };
 
 /** Trạng thái SOS của NHIỀU Case một lượt (PR-HVL): một câu SELECT cho mỗi lô 400, không hỏi từng Case. Case không tồn tại → trạng thái rỗng. */
 export function sosCaseStateMany(caseIds: readonly number[]): Map<number, SosCaseState> {
@@ -106,7 +114,7 @@ export function sosCaseStateMany(caseIds: readonly number[]): Map<number, SosCas
   const conn = db();
   for (let i = 0; i < caseIds.length; i += 400) {
     const chunk = caseIds.slice(i, i + 400);
-    const rows = conn.prepare(`SELECT sc.id, sc.status, sc.dismiss_reason_code, sc.dismiss_reason_text, sc.han_xac_nhan,
+    const rows = conn.prepare(`SELECT sc.id, sc.status, sc.dismiss_reason_code, sc.dismiss_reason_text, sc.han_xac_nhan, sc.tam,
       ${LA_CASE_SOS('sc')} AS from_sos, ${LA_CASE_MT('sc')} AS la_mt,
       EXISTS (SELECT 1 FROM case_issues WHERE case_id = sc.id AND role = 'primary') AS has_cause,
       EXISTS (SELECT 1 FROM case_interventions iv WHERE iv.case_id = sc.id AND ${UNCONFIRMED_PRESET('iv')} AND iv.status = 'planned' AND iv.kind != 'bo_tro' AND NOT ${CHO_DOI_PA('iv')}) AS pa_cho,
@@ -132,6 +140,7 @@ export function sosCaseStateMany(caseIds: readonly number[]): Map<number, SosCas
         choDuyetKhongTheoDoi: coThe ? { hanDuyet: c.han_the ?? null } : null,
         coPaChoXacNhan: !!c.pa_cho && c.status !== 'done',
         choDoiPa: !!c.doi_cho && c.status !== 'done',
+        tam: !!c.tam && c.status !== 'done',
       });
     }
   }
@@ -168,7 +177,7 @@ export function awaitingCauseCaseIds(caseIds: number[]): number[] {
  * Trạng thái theo `trangThaiCaseV4` (cùng đầu vào `sosCaseStateMany`) + PA đang theo dõi (`cotXuLy`). `quaHan` (chỉ khi Chờ duyệt) = việc tiếp có hạn đã
  * qua: hạn Xác nhận Case / Ghi nhận xét / Xác nhận PA (`han_xac_nhan`), hoặc hạn Thêm PA (`hanThemPa`) khi Case chưa có PA nào.
  */
-export const XU_LY_COT_SQL = `sc.id, sc.status, sc.han_xac_nhan, sc.dismiss_reason_code, sc.system_close_reason, sc.detected_at, sc.created_at, sc.urgency, sc.sos_level, sc.kck,
+export const XU_LY_COT_SQL = `sc.id, sc.status, sc.han_xac_nhan, sc.dismiss_reason_code, sc.system_close_reason, sc.detected_at, sc.created_at, sc.urgency, sc.sos_level, sc.kck, sc.tam,
   ${LA_CASE_SOS('sc')} AS from_sos, ${LA_CASE_MT('sc')} AS la_mt,
   EXISTS (SELECT 1 FROM case_issues ci WHERE ci.case_id = sc.id AND ci.role = 'primary') AS has_cause,
   EXISTS (SELECT 1 FROM case_interventions iv WHERE iv.case_id = sc.id AND ${UNCONFIRMED_PRESET('iv')} AND iv.status = 'planned' AND iv.kind != 'bo_tro' AND NOT ${CHO_DOI_PA('iv')}) AS pa_cho,
@@ -181,8 +190,7 @@ export const XU_LY_COT_SQL = `sc.id, sc.status, sc.han_xac_nhan, sc.dismiss_reas
 export function xuLyCuaDong(r: any, homNay: string): { cot: CotXuLy; quaHan: boolean } {
   const tt = trangThaiCaseV4({
     status: r.status, fromSos: !!r.from_sos, hasCause: !!r.has_cause, laMt: !!r.la_mt, dismissed: !!r.dismiss_reason_code, systemClosed: !!r.system_close_reason,
-    choDuyetKhongTheoDoi: !!r.co_the && r.status !== 'done', coPaChoXacNhan: !!r.pa_cho, hanXacNhan: r.han_xac_nhan ?? null,
-    choDoiPa: !!r.doi_cho,
+    choDuyetKhongTheoDoi: !!r.co_the && r.status !== 'done', coPaChoXacNhan: !!r.pa_cho, hanXacNhan: r.han_xac_nhan ?? null, choDoiPa: !!r.doi_cho, tam: !!r.tam,
   }, homNay);
   const cot = cotXuLy(tt.k, !!r.pa_theo_doi);
   const hanPa = tt.k === 'dang-lam' && !r.co_pa ? hanThemPa(r) : null;

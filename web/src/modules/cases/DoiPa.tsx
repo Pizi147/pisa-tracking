@@ -14,10 +14,10 @@ const tenLoai = (k: string) => dich(INTERVENTION_KIND_LABEL[k as keyof typeof IN
  * ĐỀ XUẤT PA KHÁC (OV-13b, mockup OV-13 §8–§9) — phần form mở NGAY trong khối Cần làm (không panel mới) của Xác nhận PA và Ghi kết quả (Điều chỉnh).
  * PA mới * (loại khác PA gốc) · Nội dung / hướng dẫn * · Người dạy · Số buổi (loại có số buổi) · Lý do * (≥ 10). Gửi: `deXuatPa` / `POST …/de-xuat-doi-pa`.
  */
-export function useDoiPa(gocKind: string) {
+export function useDoiPa(gocKind: string, nhap?: { v: GiaTriPa; lyDo: string }) {
   const dau = LOAI_PA_DOI.find((k) => k !== gocKind)!;
-  const [v, setV] = useState<GiaTriPa>(() => paMoi(dau));
-  const [lyDo, setLyDo] = useState('');
+  const [v, setV] = useState<GiaTriPa>(() => nhap?.v ?? paMoi(dau));
+  const [lyDo, setLyDo] = useState(nhap?.lyDo ?? '');
   const loi: LoiTruong[] = [
     ...loiFormPa(v, { tienTo: 'doi-' }),
     ...(lyDo.trim().length < DOI_PA_TOI_THIEU

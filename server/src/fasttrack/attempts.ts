@@ -1868,21 +1868,11 @@ function reconcileCorrectedScores(p: Principal, attemptId: number, result: Attem
   reconcileCorrectedSignals(p, { attemptId, passingSkills: passing, passText: 'đạt kỳ vọng', clearedSkills: cleared, thiLai });
 }
 
-/** OV-12c: ô MT có điểm còn THIẾU nhận xét / nhóm (MT cũ, nhập bù) — dữ liệu luật OV-12b đòi, kể cả MT lịch sử (nguyên nhân Case cần nó). */
-export function oThieuNhanXet(a: any, row: { band?: number | null; raw_score?: number | null; comment?: string | null; nhom_nguyen_nhan?: string | null } | null | undefined) {
-  if (a.kind !== 'mock' || !row) return null;
-  return thieuNhanXetMt({ batBuoc: true, coDiem: row.band != null || row.raw_score != null, band: row.band ?? null, kyVong: kyVongCuaLuot(a),
-    nhanXet: row.comment, nhom: docNhomNguyenNhan(row.nhom_nguyen_nhan) });
-}
-/** Lệnh chỉ gồm nhận xét / nhóm, và ô đang thiếu một trong hai. */
-function boSungNhanXetDuoc(a: any, skill: string, patch: ScorePatch): boolean {
-  /* Route gửi đủ khoá (giá trị `undefined` khi người dùng không gửi) — chỉ xét khoá có giá trị. */
+/** HOTFIX-2 (chủ SP 15/10): lệnh chỉ gồm nhận xét và / hoặc nhóm nguyên nhân. Route gửi đủ khoá (`undefined` khi không gửi) — chỉ xét khoá có giá trị. */
+function chiNhanXetNhom(patch: ScorePatch): boolean {
   const khoa = Object.keys(patch).filter((k) => (patch as Record<string, unknown>)[k] !== undefined);
-  const chiHai = khoa.length > 0 && khoa.every((k) => k === 'nhanXet' || k === 'nhomNguyenNhan');
-  return chiHai && !!oThieuNhanXet(a, db().prepare('SELECT * FROM assessment_scores WHERE attempt_id = ? AND skill = ?').get(a.id, skill) as any);
+  return khoa.length > 0 && khoa.every((k) => k === 'nhanXet' || k === 'nhomNguyenNhan');
 }
-const kiemNhanXetGt = (v: unknown) => { const r = kiemNhanXet(v); if ('loi' in r) throw badRequest(r.loi); return r.gt; };
-const kiemNhomGt = (v: unknown, skill: string) => { const r = kiemNhomNguyenNhan(v, skill); if ('loi' in r) throw badRequest(r.loi); return r.gt; };
 
 export function saveScore(
   p: Principal, attemptId: number, skill: string, patch: ScorePatch, today: string = demoToday(),
@@ -1898,8 +1888,14 @@ export function saveScore(
   const hv = conn.prepare('SELECT status, archived_at FROM students WHERE id = ?').get(a.student_id) as any;
   const khoa = ngungHocCua(hv?.status, hv?.archived_at)?.khoa;
   if (khoa) throw badRequest(khoa);
+  /*
+   * HOTFIX-2 (chủ SP 15/10: "không chặn cứng người đúng nhiệm vụ dù đã lâu"): lệnh chỉ nhận xét / nhóm — GV đúng kỹ năng (cả GV Speaking
+   * chấm chéo), GVCN, Quản lý sửa MỌI LÚC: sau hoàn tất, cả khi lớp đã kết thúc. Kiểm nhập vẫn đủ (`luuNhanXet`); kèm điểm → luật dưới như cũ.
+   */
+  const nxMoiLuc = chiNhanXetNhom(patch) && !!a.class_id
+    && (!!scoreEditPath(p, a.class_id, skill, { lich_su: a.lich_su ?? 0 }) || isCoreTeacherOf(p, a.class_id));
   /* OV-11g (HL-10): lớp đã kết thúc — GV 403 trước mọi việc ghi; Quản lý đi đường `override` (dưới). */
-  const lopKetThuc = kiemLopKetThuc(p, a.class_id);
+  const lopKetThuc = nxMoiLuc ? laLopKetThuc(a.class_id) : kiemLopKetThuc(p, a.class_id);
   if (patch.noShow !== undefined) chanVangLopKetThuc(p, a.class_id);   // lớp đã kết thúc: không ghi / gỡ "-", kể cả QL
   /*
    * T23 (PR-MTa, thay K4-20): MT cũ nhận "-" = em không dự thi kỹ năng đó (`no_show_cu`) — không tính lần vắng, không tự dời,
@@ -1926,11 +1922,8 @@ export function saveScore(
   }
   const hoanTat = dotHoanTat(attemptId, today);
   let path = a.class_id ? scoreEditPath(p, a.class_id, skill, { lich_su: a.lich_su ?? 0 }) : null;
-  if (hoanTat.hoanTat) {
+  if (hoanTat.hoanTat && !nxMoiLuc) {
     if (!a.class_id || !quyenSuaSauHoanTat(p, a.class_id, !!a.lich_su)) {
-      /* OV-12c: GV đúng kỹ năng vẫn BỔ SUNG nhận xét / nhóm còn thiếu của ô MT đã có điểm (Case MT cũ "Ghi nhận xét") — chỉ hai trường đó, không điểm. */
-      if (path && boSungNhanXetDuoc(a, skill, patch)) return tx(() => luuNhanXet(p, a, skill, patch.nhanXet === undefined ? undefined : kiemNhanXetGt(patch.nhanXet),
-        undefined, patch.nhomNguyenNhan === undefined ? undefined : kiemNhomGt(patch.nhomNguyenNhan, skill), !!o.tuNguoiDung));
       throw forbidden(
         `Đợt này đã hoàn tất (hết Chủ nhật ${ngay(hoanTat.chuNhatCuoi)}). `
         + 'Chỉ Quản lý sửa được điểm — nhờ Quản lý hiệu chỉnh.',
@@ -1938,7 +1931,7 @@ export function saveScore(
     }
     /* GVCN sửa MT cũ của lớp mình (T22) giữ đường `lich_su`; Quản lý / quyền sửa hộ đi `override`. */
     path = quyenSuaSauHoanTat(p, a.class_id) ? 'override' : 'lich_su';
-  } else if (!path) {
+  } else if (!path && !nxMoiLuc) {
     require_(p, PERMISSIONS.SCORE_EDIT, { classId: a.class_id, studentId: a.student_id, skill },
       'Bạn chỉ nhập được điểm của kỹ năng mình được phân công.');
   }

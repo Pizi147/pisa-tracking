@@ -15,6 +15,7 @@ import { demoToday } from '../demoConfig.ts';
 import { can, type Principal } from '../permissions.ts';
 import { listCases, type MappedCase } from './cases.ts';
 import { choDoiPa, sosCaseStateMany } from './sosState.ts';
+import { mtCuoiCuaLoTrinh } from './sosAuto.ts';
 
 export type PaCase = {
   id: number; ten: string; loai: string; batBuoc: boolean; choXacNhan: boolean; choDuyet: boolean; xong: boolean;
@@ -60,7 +61,7 @@ export function chiTietCaseMo(cases: readonly MappedCase[]): Map<number, CaseChi
   for (let i = 0; i < ids.length; i += LO) {
     const chunk = ids.slice(i, i + LO);
     const ph = chunk.map(() => '?').join(',');
-    for (const r of conn.prepare(`SELECT id, title, system_close_reason FROM sos_cases WHERE id IN (${ph})`).all(...chunk) as any[]) goc.set(r.id, r);
+    for (const r of conn.prepare(`SELECT id, title, system_close_reason, cycle_id FROM sos_cases WHERE id IN (${ph})`).all(...chunk) as any[]) goc.set(r.id, r);
     for (const [k, v] of gom(conn.prepare(
       `SELECT iv.case_id, iv.id, iv.kind, iv.description, iv.status, iv.preset, iv.confirmed_at, iv.approval_state, iv.action_due, iv.followup_due,
               iv.moc_quy_che, iv.created_at, iv.performer_name, iv.superseded_by, iv.closed_reason, u.full_name AS performer_account
@@ -71,6 +72,7 @@ export function chiTietCaseMo(cases: readonly MappedCase[]): Map<number, CaseChi
           AND attempt_no IS NOT NULL ORDER BY case_id, created_at DESC, id DESC`).all(...chunk) as any[])) mocTheoCase.set(k, v);
   }
 
+  const mtCuoi = mtCuoiCuaLoTrinh([...goc.values()].filter((g) => cua(paTheoCase, g.id).some((iv) => iv.moc_quy_che === 'until_exam')).map((g) => g.cycle_id));   // OV-13a (B): chữ mốc "đến MT{n}" khi chưa có ngày thi
   for (const c of ds) {
     const s = st.get(c.id);
     const g = goc.get(c.id);
@@ -87,11 +89,11 @@ export function chiTietCaseMo(cases: readonly MappedCase[]): Map<number, CaseChi
       choDuyet: iv.approval_state === 'pending', xong: iv.status === 'completed',
       nguoi: iv.performer_account ?? iv.performer_name ?? null,
       mocChu: iv.preset === 1
-        ? mocChuPa({ span: iv.moc_quy_che ?? null, followupDue: iv.followup_due ?? null, mtKe: mtKe(iv), daXacNhan: !!iv.confirmed_at }, homNay) : null,
+        ? mocChuPa({ span: iv.moc_quy_che ?? null, followupDue: iv.followup_due ?? null, mtKe: mtKe(iv), daXacNhan: !!iv.confirmed_at, mtCuoi: mtCuoi.get(g.cycle_id) ?? null }, homNay) : null,
     }));
     const v4 = {
       status: c.status as 'open' | 'in_progress' | 'done', fromSos: s.fromSos, hasCause: s.hasCause, laMt: s.laMt, dismissed: !!s.dismissed, systemClosed: !!g.system_close_reason,
-      choDuyetKhongTheoDoi: !!s.choDuyetKhongTheoDoi, coPaChoXacNhan: s.coPaChoXacNhan, choDoiPa: s.choDoiPa, hanXacNhan: s.dueOn,
+      choDuyetKhongTheoDoi: !!s.choDuyetKhongTheoDoi, coPaChoXacNhan: s.coPaChoXacNhan, choDoiPa: s.choDoiPa, hanXacNhan: s.dueOn, tam: s.tam,
       lyDoHeThong: g.system_close_reason ? SYSTEM_CLOSE_REASON_LABEL[g.system_close_reason as keyof typeof SYSTEM_CLOSE_REASON_LABEL] ?? null : null,
     };
     const hanLapPa = hanThemPa({ detected_at: c.detectedAt, urgency: c.urgency, sos_level: c.sosLevel, kck: c.kck });   // OV-11c (HV-14): cùng hàm với Công việc

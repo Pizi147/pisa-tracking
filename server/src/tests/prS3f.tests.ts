@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { YThucTestKit } from './yThuc.tests.ts';
+import { duXacNhan } from './luotThu.ts';
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
 
@@ -78,7 +79,7 @@ export async function runPrS3fTests(t: YThucTestKit) {
     const c = caseOf(st.id, 'listening');
     nhanXetCaseThu(conn, attemptsSvc.saveScore, P.admin, c.id, XN);   // OV-12c: nguyên nhân Case MT = nhận xét của bài
     const iv = get('SELECT id FROM case_interventions WHERE case_id = ?', c.id);
-    sosAuto.xacNhanPaQuyChe(P.admin, iv.id, { description: 'Tutor Listening hai buổi mỗi tuần, cô Hà chữa bài nghe.' });
+    sosAuto.xacNhanPaQuyChe(P.admin, iv.id, duXacNhan(conn, iv.id, { description: 'Tutor Listening hai buổi mỗi tuần, cô Hà chữa bài nghe.' }));
     keHoach.huyDiem(P.admin, { attemptId: a.id, skill: 'listening', lyDo: 'Chấm nhầm bài, huỷ điểm' });
     assert(get('SELECT status FROM sos_cases WHERE id = ?', c.id).status !== 'done', 'Case có PA đã chạy không được đóng');
     assert(get('SELECT status FROM case_interventions WHERE id = ?', iv.id).status === 'started', 'PA đã chạy bị đụng');
@@ -210,7 +211,7 @@ export async function runPrS3fTests(t: YThucTestKit) {
     const { c } = mt1L('D8');
     nhanXetCaseThu(conn, attemptsSvc.saveScore, P.admin, c.id, XN);   // OV-12c: nguyên nhân Case MT = nhận xét của bài
     const iv = get('SELECT id FROM case_interventions WHERE case_id = ?', c.id);
-    sosAuto.xacNhanPaQuyChe(P.admin, iv.id, { description: 'Tutor Listening hai buổi mỗi tuần, cô Hà chữa bài nghe.' });
+    sosAuto.xacNhanPaQuyChe(P.admin, iv.id, duXacNhan(conn, iv.id, { description: 'Tutor Listening hai buổi mỗi tuần, cô Hà chữa bài nghe.' }));
     assertThrows(() => cases.updateResult(P.admin, iv.id, { decision: 'end', outcome: 'improved', note: 'Em nghe tốt hơn hẳn sau hai tuần' }), /không kết thúc sớm/, 'khép PA quy chế sớm');
     assert(get('SELECT status FROM case_interventions WHERE id = ?', iv.id).status === 'started', 'PA bị khép');
   });

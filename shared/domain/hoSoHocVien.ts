@@ -280,7 +280,7 @@ export function cauTomTat(i: DauVaoCau): ManhCau[] {
 export function oHocThuat(rows: readonly {
   short: string | null; label: string; category: string; missed: boolean | null;
   cases: readonly {
-    status: string; trangThaiV4?: { t: string } | null; viecTiep?: { chu: string } | null;
+    status: string; trangThaiV4?: { t: string; k?: string; chu?: string } | null; viecTiep?: { chu: string } | null;
     plans?: readonly { actionOverdue?: boolean }[];
   }[];
 }[], tamDungTu: string | null = null, homNay: string | null = null): { so: number; dong: { kn: string; nhan: string; nhanK?: ChuKhoa; t: string; viec: string | null; category: string }[]; phu: string | null } {
@@ -296,6 +296,7 @@ export function oHocThuat(rows: readonly {
         : /^Xác nhận PA/.test(v) ? 'xác nhận PA' : null;
       /* T65 + Q13 (UXF-b): em Tạm dừng — MỌI hạn dừng: "Quá hạn" và "Cần làm" đổi thành nhãn vàng "Tạm dừng từ dd/mm" (chỉ đổi chữ). */
       if (tamDungTu && (t === 'qua-han' || t === 'can-lam')) { const nhanK = kem('Tạm dừng từ {tu}', { tu: ngay(tamDungTu, homNay) }); dong.push({ kn: r.short ?? r.label, nhan: nhanK.chu, nhanK, t: 'tam-dung', viec: null, category: r.category }); }
+      else if (c.trangThaiV4?.k === 'tam') dong.push({ kn: r.short ?? r.label, nhan: c.trangThaiV4.chu ?? '', t, viec: null, category: r.category });   // OV-13a: "Chờ chốt SOS"
       else dong.push({ kn: r.short ?? r.label, nhan: NHAN_TRANG_THAI[t] ?? NHAN_TRANG_THAI['dang-lam'], t, viec, category: r.category });
     }
   }

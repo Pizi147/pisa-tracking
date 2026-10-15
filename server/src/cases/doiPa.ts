@@ -20,7 +20,9 @@ export type VaoDoiPa = {
   kind?: unknown; description?: unknown; lyDo?: unknown; soBuoi?: unknown;
   performerSelf?: boolean; performerUserId?: number | null; performerName?: string | null;
 };
-export type DuLieuDoiPa = { thayPaId: number; lyDo: string; goc: { kind: string; chay: boolean }; followupId?: number | null };
+export type DuLieuDoiPa = { thayPaId: number; lyDo: string; goc: { kind: string; chay: boolean }; followupId?: number | null;
+  /** `updated_at` của PA gốc ngay sau khi QL quyết định (`apDungDoiPa`) — PA gốc đổi sau đó thì không Huỷ quyết định được (`doiPaHuyDuoc`). */
+  gocLuc?: string };
 
 /** Kiểm (không ghi): PA gốc mở, là PA mặc định, chưa có đề xuất chờ; quyền; loại mới; lý do ≥ 10. Trả PA gốc + Case + lý do đã gọn. */
 function kiemDoiPa(p: Principal, goc: any, v: VaoDoiPa) {
@@ -83,7 +85,7 @@ export function duLieuDoiPa(yc: { du_lieu?: string | null }): DuLieuDoiPa | null
  * HỆ QUẢ lên PA gốc sau khi thẻ đổi PA được trả lời — gọi TRONG giao dịch của hộp, SAU `respondToPlan` / huỷ PA mới.
  *   · `duyet`: PA gốc khép "Đổi PA" (ngày duyệt) · `tra`: PA gốc thôi trỏ PA mới (từ chối / rút) · `huy`: Huỷ quyết định trong ngày — PA gốc về chờ.
  */
-export function apDungDoiPa(yc: { du_lieu?: string | null; doi_tuong_id: number }, kieu: 'duyet' | 'tra' | 'huy'): void {
+export function apDungDoiPa(yc: { id: number; du_lieu?: string | null; doi_tuong_id: number }, kieu: 'duyet' | 'tra' | 'huy'): void {
   const d = duLieuDoiPa(yc);
   if (!d) return;
   const conn = db();
@@ -95,16 +97,40 @@ export function apDungDoiPa(yc: { du_lieu?: string | null; doi_tuong_id: number 
   } else if (kieu === 'tra') {
     conn.prepare('UPDATE case_interventions SET superseded_by = NULL, updated_at = ? WHERE id = ? AND superseded_by = ? AND closed_reason IS NULL')
       .run(nowIso(), goc.id, yc.doi_tuong_id);
-  } else {
-    /* PA gốc về đúng như lúc gửi: chưa chạy (quy chế chưa xác nhận) / đang chạy; vẫn trỏ PA mới (thẻ chờ lại). */
+  } else if (goc.closed_reason === 'doi_pa') {
+    /* Huỷ DUYỆT: PA gốc (chưa đổi từ lúc duyệt — đã kiểm) về như lúc gửi: chưa chạy / đang chạy; vẫn trỏ PA mới (thẻ chờ lại). */
     conn.prepare(`UPDATE case_interventions SET status = ?, completed_date = NULL, closed_reason = NULL, superseded_by = ?, updated_at = ? WHERE id = ?`)
       .run(d.goc.chay ? 'started' : 'planned', yc.doi_tuong_id, nowIso(), goc.id);
+  } else {
+    /* Huỷ TỪ CHỐI: PA gốc giữ nguyên trạng thái, chỉ trỏ lại PA mới (chờ duyệt lại). */
+    conn.prepare('UPDATE case_interventions SET superseded_by = ?, updated_at = ? WHERE id = ?').run(yc.doi_tuong_id, nowIso(), goc.id);
   }
   dongBoTrangThaiCase(goc.case_id);
+  if (kieu !== 'huy') {
+    const luc = (conn.prepare(`SELECT ${MOC_GOC('g')} AS m FROM case_interventions g WHERE g.id = ?`).get(goc.id) as any).m;
+    conn.prepare(`UPDATE yeu_cau_duyet SET du_lieu = json_set(du_lieu, '$.gocLuc', ?) WHERE id = ?`).run(luc, yc.id);
+  }
+}
+
+/** Mốc trạng thái PA gốc: đổi khi xác nhận (`confirmed_at`), ghi kết quả (`cycle_no`) hay sửa (`updated_at`) — không dựa riêng giờ (trùng mili-giây). */
+const MOC_GOC = (g: string) => `(${g}.updated_at || '|' || IFNULL(${g}.confirmed_at, '') || '|' || ${g}.cycle_no || '|' || ${g}.status)`;
+
+/**
+ * Thẻ đổi PA (trong `ids`) còn Huỷ quyết định được — MỘT câu: PA gốc chưa đổi từ lúc QL quyết (`MOC_GOC` = `du_lieu.gocLuc`: chưa xác nhận,
+ * chưa ghi kết quả, chưa Sửa PA) và chưa có thẻ đổi PA mới hơn cho PA gốc đó (tránh hai thẻ chờ cho một PA). Thẻ không phải đổi PA: giữ nguyên.
+ */
+export function doiPaHuyDuoc(conn: any, ids: readonly number[]): Set<number> {
+  if (!ids.length) return new Set();
+  return new Set((conn.prepare(`SELECT y.id FROM yeu_cau_duyet y
+      LEFT JOIN case_interventions g ON g.id = json_extract(y.du_lieu, '$.thayPaId')
+     WHERE y.id IN (${ids.map(() => '?').join(',')}) AND (json_extract(y.du_lieu, '$.thayPaId') IS NULL OR (
+       ${MOC_GOC('g')} IS json_extract(y.du_lieu, '$.gocLuc')
+       AND NOT EXISTS (SELECT 1 FROM yeu_cau_duyet y2 WHERE y2.loai = 'de_xuat_pa' AND y2.id > y.id AND json_extract(y2.du_lieu, '$.thayPaId') = g.id)))`)
+    .all(...ids) as any[]).map((r) => r.id as number));
 }
 
 /** Người gửi Rút thẻ đổi PA: PA mới huỷ (chưa từng chạy), PA gốc như trước. Trong giao dịch của `rutYeuCau`. */
-export function rutDoiPa(yc: { du_lieu?: string | null; doi_tuong_id: number }): void {
+export function rutDoiPa(yc: { id: number; du_lieu?: string | null; doi_tuong_id: number }): void {
   const conn = db();
   conn.prepare(`UPDATE case_interventions SET status = 'cancelled', closed_reason = 'dismissed', updated_at = ? WHERE id = ? AND approval_state = 'pending'`)
     .run(nowIso(), yc.doi_tuong_id);

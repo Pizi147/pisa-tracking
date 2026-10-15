@@ -112,14 +112,15 @@ export async function runPrHsmTests(t: YThucTestKit) {
     assert(maLoi(() => svc.saveScore(QL, e1.aid, 'speaking', { gvCham: { performerName: 'L' } }, TODAY)) === 400, 'tên 1 ký tự');
   });
 
-  check('HSM (2d) · quyền = quyền sửa ô: GV không phân công S → 403; hoàn tất: GVBM 403, Quản lý được; MT lịch sử: GVCN ghi nhận xét W2', () => {
+  check('HSM (2d) · quyền = quyền sửa ô: GV không phân công S → 403; hoàn tất: GVBM kèm điểm 403, Quản lý được; MT lịch sử: GVCN ghi nhận xét W2', () => {
     assert(maLoi(() => svc.saveScore(P.w1Teacher, e1.aid, 'speaking', { nhanXet: 'x' }, TODAY)) === 403, 'GV W1 sửa nhận xét S');
     /* Hoàn tất = đủ điểm mọi kỹ năng bắt buộc + hết Chủ nhật tuần thi. */
     svc.saveScore(QL, e1.aid, 'listening', { rawScore: 30 }, TODAY);
     svc.saveScore(QL, e1.aid, 'reading', { rawScore: 30 }, TODAY);
     for (const k of ['writing1', 'writing2']) svc.saveScore(QL, e1.aid, k, { criteria: S4 }, TODAY);
     const sau = addDays(TODAY, 30);
-    assert(maLoi(() => svc.saveScore(P.sTeacher, e1.aid, 'speaking', { nhanXet: 'Muộn' }, sau)) === 403, 'GVBM sau hoàn tất');
+    /* HOTFIX-2 (chủ SP 15/10): chỉ nhận xét thì GV đúng kỹ năng sửa được mọi lúc (prHf HF2-1) — kèm điểm vẫn 403. Không ghi thêm (ảnh chụp DL-2). */
+    assert(maLoi(() => svc.saveScore(P.sTeacher, e1.aid, 'speaking', { criteria: S4, nhanXet: 'Muộn' }, sau)) === 403, 'GVBM sau hoàn tất kèm điểm');
     svc.saveScore(QL, e1.aid, 'speaking', { nhanXet: 'Quản lý sửa sau hoàn tất' }, sau);
     assert(dong(e1.aid, 'speaking').comment === 'Quản lý sửa sau hoàn tất', 'Quản lý sau hoàn tất');
     const e2 = emMoi('Lịch Sử');

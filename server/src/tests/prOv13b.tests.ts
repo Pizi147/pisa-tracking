@@ -72,6 +72,9 @@ export async function runPrOv13bTests(t: YThucTestKit) {
     kind: loaiKhac(goc.kind), description: '3 bài Listening / tuần trên lớp, GV kèm 15 phút cuối buổi.', performerSelf: true,
     lyDo: 'Em không tự học ở nhà được, cần GV kèm trên lớp.', ...o,
   });
+  /** Xác nhận PA đủ ô bắt buộc (OV-13b §9): Nội dung · Người dạy (loại có người) · Số buổi (Tutor). */
+  const du = (goc: any, o: Record<string, unknown> = {}) => ({ description: 'Nghe Section 2–3 có số liệu, chép chính tả 10 câu mỗi buổi.',
+    ...(dm.coNguoiDay(goc.kind) ? { performerSelf: true } : {}), ...(goc.kind === 'tutor' ? { soBuoi: 4 } : {}), ...o });
   const theCho = (gocId: number) => one(`SELECT * FROM yeu_cau_duyet WHERE loai = 'de_xuat_pa' AND trang_thai = 'cho' AND json_extract(du_lieu, '$.thayPaId') = ?`, gocId);
   const viecXn = (p: any, caseId: number) => mywork.myWork(p, { nguoi: 'tat-ca' }).items.filter((it: any) => it.group === 'xac_nhan_pa' && it.caseId === caseId);
   const ivCua = (p: any, caseId: number, id: number) => cases.caseDetail(p, caseId).interventions.find((x: any) => x.id === id);
@@ -140,7 +143,7 @@ export async function runPrOv13bTests(t: YThucTestKit) {
 
   check('OV13b-5 · PA đang chạy: "Lưu kết quả · gửi QL duyệt" một lần — kết quả kỳ lưu, PA gốc vẫn chạy; Hoàn tác bỏ cả hai; duyệt → gốc Đổi PA', () => thu(() => {
     const { caseId, goc } = dungCase();
-    sosAuto.xacNhanPaQuyChe(GV, goc.id, { description: 'Nghe Section 2–3 có số liệu, chép chính tả 10 câu mỗi buổi.' });
+    sosAuto.xacNhanPaQuyChe(GV, goc.id, du(goc));
     const g = one('SELECT * FROM case_interventions WHERE id = ?', goc.id);
     const buoi = dm.coSoBuoiKy({ kind: g.kind, soBuoi: g.so_buoi }) ? { soBuoi: 0 } : {};
     const kq = { ...dm.ketQuaNhanh(dm.coSoBuoiKy({ kind: g.kind, soBuoi: g.so_buoi }) ? 'insufficient' : 'partial', 'TFNG đúng 9/13, tăng 2 câu so với kỳ trước.'), ...buoi };
@@ -163,18 +166,18 @@ export async function runPrOv13bTests(t: YThucTestKit) {
 
   check('OV13b-6 · Xác nhận PA bắt Nội dung; "Bắt đầu" — ngày tương lai đặt lịch kỳ từ ngày đó, ngoài khoảng → 400', () => thu(() => {
     const { goc } = dungCase();
-    assert(loi(() => sosAuto.xacNhanPaQuyChe(GV, goc.id, { description: '' }))?.status === 400, 'thiếu Nội dung → 400');
-    assert(loi(() => sosAuto.xacNhanPaQuyChe(GV, goc.id, { description: 'Mỗi tuần 2 đề TFNG + Matching headings.', startedDate: '19/10/2026' }))?.status === 400, 'ngày sai dạng → 400');
-    assert(loi(() => sosAuto.xacNhanPaQuyChe(GV, goc.id, { description: 'Mỗi tuần 2 đề TFNG + Matching headings.', startedDate: t.addDays(TODAY, 60) }))?.status === 400, 'quá xa → 400');
+    assert(loi(() => sosAuto.xacNhanPaQuyChe(GV, goc.id, du(goc, { description: '' })))?.status === 400, 'thiếu Nội dung → 400');
+    assert(loi(() => sosAuto.xacNhanPaQuyChe(GV, goc.id, du(goc, { startedDate: '19/10/2026' })))?.status === 400, 'ngày sai dạng → 400');
+    assert(loi(() => sosAuto.xacNhanPaQuyChe(GV, goc.id, du(goc, { startedDate: t.addDays(TODAY, 60) })))?.status === 400, 'quá xa → 400');
     const bd = t.addDays(TODAY, 5);
-    sosAuto.xacNhanPaQuyChe(GV, goc.id, { description: 'Mỗi tuần 2 đề TFNG + Matching headings.', startedDate: bd });
+    sosAuto.xacNhanPaQuyChe(GV, goc.id, du(goc, { startedDate: bd }));
     const g = one('SELECT * FROM case_interventions WHERE id = ?', goc.id);
     assert(g.started_date === bd && g.cycle_started_on === bd && g.action_due === dm.hanKyGhiKetQua(bd), `lịch kỳ từ ${bd}: ${g.started_date} ${g.action_due}`);
   }));
 
   check('OV13b-7 · ghi nhanh trên dòng = ghi panel (cùng API, cùng kết quả Giữ nguyên)', () => thu(() => {
     const { goc } = dungCase();
-    sosAuto.xacNhanPaQuyChe(GV, goc.id, { description: 'Nghe Section 2–3 có số liệu, chép chính tả 10 câu mỗi buổi.' });
+    sosAuto.xacNhanPaQuyChe(GV, goc.id, du(goc));
     const g = one('SELECT * FROM case_interventions WHERE id = ?', goc.id);
     const buoi = dm.coSoBuoiKy({ kind: g.kind, soBuoi: g.so_buoi }) ? { soBuoi: 0 } : {};
     const oc = dm.coSoBuoiKy({ kind: g.kind, soBuoi: g.so_buoi }) ? 'insufficient' : 'partial';
@@ -203,12 +206,74 @@ export async function runPrOv13bTests(t: YThucTestKit) {
     }
   });
 
+  check('OV13b-10 · Huỷ quyết định thẻ đổi PA bị chặn khi PA gốc đã đổi sau quyết định (đã xác nhận) hoặc đã có đề xuất mới — không kẹt Case, không hai thẻ chờ', () => thu(() => {
+    const { caseId, goc } = dungCase();
+    doiPa.deXuatDoiPa(GV, goc.id, deXuat(goc));
+    const the1 = theCho(goc.id);
+    yeuCau.tuChoiYeuCau(QL, the1.id, 'Giữ PA quy chế tới MT kế tiếp.');
+    assert(doiPa.doiPaHuyDuoc(conn, [the1.id]).has(the1.id), 'vừa từ chối, PA gốc chưa đổi → Huỷ quyết định được');
+    sosAuto.xacNhanPaQuyChe(GV, goc.id, du(goc));
+    assert(!doiPa.doiPaHuyDuoc(conn, [the1.id]).has(the1.id), 'PA gốc đã xác nhận → không còn Huỷ quyết định');
+    assert(loi(() => yeuCau.huyQuyetDinh(QL, the1.id))?.status === 400, 'Huỷ quyết định → 400');
+    const g = one('SELECT * FROM case_interventions WHERE id = ?', goc.id);
+    assert(g.status === 'started' && g.superseded_by === null && cases.caseDetail(GV, caseId).viecTiep, `PA gốc vẫn chạy, Case có việc: ${g.status}`);
+    /* Đề xuất mới khi thẻ cũ bị từ chối → thẻ cũ không huỷ được (một PA một thẻ chờ). */
+    const { goc: goc2 } = dungCase();
+    doiPa.deXuatDoiPa(GV, goc2.id, deXuat(goc2));
+    const a = theCho(goc2.id);
+    yeuCau.tuChoiYeuCau(QL, a.id, 'Chưa đủ lý do, ghi rõ hơn.');
+    doiPa.deXuatDoiPa(GV, goc2.id, deXuat(goc2, { lyDo: 'Đề xuất lại: em đã đổi lịch, cần GV kèm.' }));
+    assert(loi(() => yeuCau.huyQuyetDinh(QL, a.id))?.status === 400, 'thẻ cũ đã có thẻ mới → 400');
+    assert(all(`SELECT id FROM yeu_cau_duyet WHERE loai = 'de_xuat_pa' AND trang_thai = 'cho' AND json_extract(du_lieu, '$.thayPaId') = ?`, goc2.id).length === 1, 'một thẻ chờ');
+  }));
+
+  check('OV13b-11 · Case "Chờ duyệt đổi PA": việc tiếp "Chờ duyệt đổi PA", không hạn (không phải Kết quả PA của PA gốc chưa chạy)', () => thu(() => {
+    const { caseId, goc } = dungCase();
+    doiPa.deXuatDoiPa(GV, goc.id, deXuat(goc));
+    const ct = cases.caseDetail(QL, caseId);
+    assert(ct.viecTiep?.chu === 'Chờ duyệt đổi PA' && ct.viecTiep.han === null && ct.viecTiep.loaiHan === null, JSON.stringify(ct.viecTiep));
+  }));
+
+  check('OV13b-12 · Xác nhận PA bắt Người dạy (loại có người dạy) và Số buổi (Tutor) — máy chủ', () => thu(() => {
+    const { goc } = dungCase();
+    conn.prepare('UPDATE case_interventions SET kind = ?, performer_user_id = NULL, performer_name = NULL, so_buoi = NULL WHERE id = ?').run('tutor', goc.id);
+    xoaNho();
+    const g = one('SELECT * FROM case_interventions WHERE id = ?', goc.id);
+    assert(loi(() => sosAuto.xacNhanPaQuyChe(GV, g.id, { description: 'Tutor kèm Section 3, 2 buổi một tuần.', soBuoi: 4 }))?.status === 400, 'thiếu người dạy → 400');
+    assert(loi(() => sosAuto.xacNhanPaQuyChe(GV, g.id, { description: 'Tutor kèm Section 3, 2 buổi một tuần.', performerSelf: true }))?.status === 400, 'Tutor thiếu số buổi → 400');
+    sosAuto.xacNhanPaQuyChe(GV, g.id, { description: 'Tutor kèm Section 3, 2 buổi một tuần.', performerSelf: true, soBuoi: 4 });
+    const sau = one('SELECT * FROM case_interventions WHERE id = ?', g.id);
+    assert(sau.status === 'started' && sau.so_buoi === 4 && sau.performer_user_id === GV.userId, 'đủ ô → chạy');
+  }));
+
+  check('OV13b-13 · Hoàn tác lần ghi kèm đề xuất mà QL đã duyệt → 400 "QL đã duyệt đổi PA"; thẻ đổi PA tự đóng (PA mới huỷ) → PA gốc thôi trỏ', () => thu(() => {
+    const { goc } = dungCase();
+    sosAuto.xacNhanPaQuyChe(GV, goc.id, du(goc));
+    const g = one('SELECT * FROM case_interventions WHERE id = ?', goc.id);
+    const kq = { ...dm.ketQuaNhanh(dm.coSoBuoiKy({ kind: g.kind, soBuoi: g.so_buoi }) ? 'insufficient' : 'partial', 'Đúng 9/13 câu TFNG, nhanh hơn.'), ...(dm.coSoBuoiKy({ kind: g.kind, soBuoi: g.so_buoi }) ? { soBuoi: 0 } : {}) };
+    cases.updateResult(GV, goc.id, { ...kq, deXuatPa: deXuat(g) });
+    const the = theCho(goc.id);
+    yeuCau.duyetYeuCau(QL, the.id, {});
+    const fu = one('SELECT id FROM case_followups WHERE intervention_id = ? ORDER BY id DESC LIMIT 1', goc.id);
+    const e = loi(() => cases.hoanTacKetQua(GV, fu.id));
+    assert(e?.status === 400 && /QL đã duyệt đổi PA/.test(e.message), `hoàn tác sau duyệt: ${e?.message}`);
+    assert(/QL đã duyệt đổi PA/.test(loi(() => yeuCau.rutYeuCau(GV, the.id))?.message ?? ''), 'rút sau duyệt nói đúng lý do');
+    /* Thẻ chết: PA mới bị huỷ đường khác → quét đóng thẻ + PA gốc thôi trỏ. */
+    const { goc: g2 } = dungCase();
+    doiPa.deXuatDoiPa(GV, g2.id, deXuat(g2));
+    const t2 = theCho(g2.id);
+    conn.prepare(`UPDATE case_interventions SET status = 'cancelled' WHERE id = ?`).run(t2.doi_tuong_id);
+    yeuCau.quetYeuCau(TODAY);
+    assert(one('SELECT trang_thai FROM yeu_cau_duyet WHERE id = ?', t2.id).trang_thai === 'tu_dong', 'thẻ tự đóng');
+    assert(one('SELECT superseded_by FROM case_interventions WHERE id = ?', g2.id).superseded_by === null, 'PA gốc thôi trỏ PA mới');
+  }));
+
   check(`OV13b-8 · trần câu SQL: đề xuất đổi PA ≤ ${TRAN_GHI_LO.deXuatDoiPa}; hoàn tác kết quả ≤ ${TRAN_GHI_LO.hoanTacKetQua}`, () => thu(() => {
     const { goc } = dungCase();
     const doCau = (fn: () => unknown) => { xoaNho(); const s0 = soCauSql(); fn(); return soCauSql() - s0; };
     const dx = doCau(() => doiPa.deXuatDoiPa(GV, goc.id, deXuat(goc)));
     yeuCau.rutYeuCau(GV, theCho(goc.id).id);
-    sosAuto.xacNhanPaQuyChe(GV, goc.id, { description: 'Nghe Section 2–3 có số liệu, chép chính tả 10 câu mỗi buổi.' });
+    sosAuto.xacNhanPaQuyChe(GV, goc.id, du(goc));
     const g = one('SELECT * FROM case_interventions WHERE id = ?', goc.id);
     cases.updateResult(GV, goc.id, { ...dm.ketQuaNhanh(dm.coSoBuoiKy({ kind: g.kind, soBuoi: g.so_buoi }) ? 'insufficient' : 'partial', 'Đúng 9/13 câu TFNG, nhanh hơn.'), ...(dm.coSoBuoiKy({ kind: g.kind, soBuoi: g.so_buoi }) ? { soBuoi: 0 } : {}) });
     const ht = doCau(() => cases.hoanTacKetQua(GV, one('SELECT id FROM case_followups WHERE intervention_id = ? ORDER BY id DESC LIMIT 1', goc.id).id));

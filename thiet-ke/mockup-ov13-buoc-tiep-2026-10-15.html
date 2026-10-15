@@ -1,0 +1,1011 @@
+<!doctype html>
+<html lang="vi" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mockup Bước tiếp</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap">
+<style>
+/* OV-13 Bước tiếp · 15/10. Token + khuôn panel v3 (bản 3) chép NGUYÊN từ mockup-ov13-2026-10-15.html. */
+/* OV-13 · 15/10. Phần dưới đến "THÊM CHO OV-13" chép NGUYÊN từ mockup-ov12-panel-v3-2026-10-14.html (token + khuôn panel v3). */
+:root{
+  color-scheme:dark;
+  --bg:#0c1220;--surface:#141d2f;--surface-2:#1a2437;--line:rgba(160,178,214,.14);--line-strong:rgba(160,178,214,.26);
+  --accent:#7db3f0;--accent-strong:#a9cdf7;--accent-ink:rgb(11 22 38);--accent-soft:rgba(125,179,240,.14);--accent-line:rgba(125,179,240,.38);
+  --text:#dde5f2;--dim:rgb(147 163 192);--faint:rgb(130 146 174);--c1:rgb(241 245 249);--c2:rgb(226 232 240);--c3:rgb(203 213 225);
+  --ok:rgb(111 220 159);--ok-bg:rgb(18 53 38);--ok-line:rgb(43 112 80);
+  --bad:rgb(255 154 162);--bad-bg:rgb(60 29 36);--bad-line:rgb(136 64 74);
+  --late:rgb(255 145 102);--late-bg:rgb(62 31 19);--late-line:rgb(154 74 42);
+  --soon:rgb(242 196 80);--soon-bg:rgb(53 43 16);--soon-line:rgb(122 98 34);
+  --wait:rgb(196 169 255);--wait-bg:rgb(39 32 67);--wait-line:rgb(87 74 138);
+  --doing:rgb(128 184 255);--done:rgb(169 181 200);
+  --chon-bg:rgb(19 33 45);--chon-vien:rgb(13 148 136);--chon-dau:rgb(94 234 212);
+  --o-nen:#0e1727;--o-vien:#64748b;--o-sua:rgba(125,179,240,.45);--mask:rgba(5,9,18,.62);
+  --sans:'Be Vietnam Pro',system-ui,'Segoe UI',sans-serif;--so:'Inter','Be Vietnam Pro',sans-serif;
+}
+:root[data-theme="light"]{
+  --cl-nen:rgba(29,95,191,.1);
+  color-scheme:light;
+  --bg:#f5f7fa;--surface:#ffffff;--surface-2:#eef1f5;--line:rgba(15,23,42,.12);--line-strong:rgba(15,23,42,.22);
+  --accent:#1d5fbf;--accent-strong:#174e9e;--accent-ink:#fff;--accent-soft:rgba(29,95,191,.08);--accent-line:rgba(29,95,191,.35);
+  --text:#0f172a;--dim:rgb(71 85 105);--faint:rgb(91 102 120);--c1:rgb(15 23 42);--c2:rgb(30 41 59);--c3:rgb(51 65 85);
+  --ok:rgb(21 122 66);--ok-bg:rgb(220 243 229);--ok-line:rgb(143 209 171);
+  --bad:rgb(180 35 35);--bad-bg:rgb(253 226 226);--bad-line:rgb(240 163 163);
+  --late:rgb(180 64 15);--late-bg:rgb(253 230 216);--late-line:rgb(241 174 138);
+  --soon:rgb(138 90 0);--soon-bg:rgb(253 241 207);--soon-line:rgb(230 196 107);
+  --wait:rgb(91 63 184);--wait-bg:rgb(236 230 253);--wait-line:rgb(189 174 240);
+  --doing:rgb(29 95 191);--done:rgb(91 102 120);
+  --chon-bg:rgb(224 242 239);--chon-vien:rgb(15 118 110);--chon-dau:rgb(15 118 110);
+  --o-nen:#fff;--o-vien:#7c8799;--o-sua:rgba(29,95,191,.45);--mask:rgba(15,23,42,.38);
+}
+*{box-sizing:border-box}
+::selection{background:var(--accent-line)}
+body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 var(--sans);-webkit-font-smoothing:antialiased;padding:0 16px 64px}
+.wrap{max-width:1880px;margin:0 auto;display:flex;flex-direction:column;gap:56px}
+h1{font-size:20px;margin:0}h2{font-size:17px;margin:0}p{margin:0}
+a{color:inherit}
+.note{color:var(--dim);font-size:13px;max-width:110ch}.note b{color:var(--text)}
+ul.note,ol.note{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px}
+.top{position:sticky;top:0;z-index:50;display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:var(--bg);padding:10px 0;border-bottom:1px solid var(--line)}
+.top .btn[aria-pressed=true]{border-color:var(--accent);color:var(--accent)}
+.toc{display:flex;gap:6px;flex-wrap:wrap;font-size:12.5px}.toc a{color:var(--accent)}
+.sec{display:flex;flex-direction:column;gap:14px}
+.sec>h2{padding-top:10px;border-top:2px solid var(--line-strong)}
+.where{font-size:12.5px;color:var(--accent);background:var(--accent-soft);border-radius:999px;padding:3px 10px;width:fit-content;max-width:100%}
+.nhan-khoi{font-size:11.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--faint)}
+.row2{display:flex;gap:24px;align-items:flex-start;max-width:100%;overflow-x:auto;padding-bottom:6px}
+.q{border:1px solid var(--soon-line);background:var(--soon-bg);border-radius:10px;padding:10px 14px;font-size:13px;max-width:110ch}.q b{color:var(--soon)}
+.so{font-family:var(--so);font-variant-numeric:tabular-nums}
+.sp{flex:1}
+.m{color:var(--faint);font-size:12px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:.4rem;min-height:36px;padding:0 .85rem;border-radius:.5rem;border:1px solid var(--line-strong);background:var(--surface-2);color:var(--text);font:500 14px var(--sans);white-space:nowrap;cursor:pointer;text-decoration:none}
+.btn-sm{min-height:32px;padding:0 .6rem;font-size:12.5px;border-radius:.4rem}
+.w375 .btn-sm,.w375 .btn{min-height:44px}
+.btn-primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+.btn[disabled],.btn.tat{opacity:.45;cursor:default}
+.v{display:inline-block;width:8px;height:5px;border:solid currentColor;border-width:0 1.5px 1.5px 0;transform:rotate(45deg) translate(-1px,-2px);margin-left:2px;opacity:.8}
+.v.len{transform:rotate(-135deg) translate(-2px,-1px)}
+.v.phai{transform:rotate(-45deg) translate(-1px,-1px)}
+.lk{color:var(--accent)}
+.ra{font-size:11px;color:var(--accent);margin-left:3px;font-weight:600}
+/* khung màn */
+.win{position:relative;border:1px solid var(--line-strong);border-radius:12px;overflow:hidden;background:var(--bg);flex:none}
+.w1440{width:1440px}.w375{width:375px}
+.app{display:flex;align-items:center;gap:18px;height:48px;padding:0 20px;border-bottom:1px solid var(--line);background:var(--surface);font-size:13px;color:var(--dim)}
+.app b{color:var(--c1);font-size:14px}.app .on{color:var(--accent);font-weight:600}
+.app .dem{font-family:var(--so);font-size:11.5px;background:var(--late-bg);color:var(--late);border-radius:999px;padding:0 6px;margin-left:4px}
+.w375 .app{gap:10px;padding:0 14px}
+.tde{font-size:18px;font-weight:800;color:var(--c1)}
+.tabs{display:flex;gap:20px;border-bottom:1px solid var(--line);font-size:13.5px}
+.tabs span{padding:8px 0;white-space:nowrap;color:var(--dim)}
+.tabs span.on{color:var(--c1);font-weight:700;box-shadow:inset 0 -2px 0 var(--accent)}
+.loc{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.seg{display:inline-flex;flex:none;border:1px solid var(--line-strong);border-radius:.5rem;overflow:hidden;max-width:100%}
+.seg button{all:unset;display:inline-flex;align-items:center;gap:4px;min-height:36px;padding:0 12px;font:600 13px var(--sans);color:var(--dim);white-space:nowrap;cursor:pointer}
+.w375 .seg button{min-height:44px;padding:0 10px}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed=true]{background:var(--chon-bg);color:var(--c1);box-shadow:inset 0 0 0 1px var(--chon-vien)}
+.seg .n{font-family:var(--so);font-weight:500;color:var(--faint)}
+.field{display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:0 10px;border-radius:.5rem;background:var(--o-nen);border:1px solid var(--o-vien);color:var(--text);font-size:14px;white-space:nowrap;min-width:0}
+.w375 .field{min-height:44px}
+.field .v{margin-left:auto}
+textarea.field{display:block;width:100%;min-height:64px;padding:9px 10px;font:14px/1.45 var(--sans);white-space:normal;resize:none;color:var(--c2)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px}
+.chip{display:inline-flex;align-items:center;height:20px;padding:0 7px;border-radius:999px;font-size:11.5px;font-weight:700;white-space:nowrap}
+.chip.ok{background:var(--ok-bg);color:var(--ok)}
+.chip.bad{background:var(--bad-bg);color:var(--bad)}
+.chip.late{background:var(--late-bg);color:var(--late)}
+.chip.soon{background:var(--soon-bg);color:var(--soon)}
+.chip.wait{background:var(--wait-bg);color:var(--wait)}
+.chip.doing{background:var(--accent-soft);color:var(--doing)}
+.chip.xam{background:var(--surface-2);color:var(--dim)}
+.cb{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:4px;border:1.5px solid var(--o-vien);font-size:12px;line-height:1;color:var(--accent-ink);flex:none}
+.cb.on{background:var(--accent);border-color:var(--accent)}
+.w375 .cb{width:22px;height:22px}
+.bang-map{border-collapse:collapse;font-size:13px;max-width:1200px}
+.bang-map th,.bang-map td{border:1px solid var(--line);padding:7px 10px;text-align:left;vertical-align:top}
+.bang-map th{font-size:11.5px;color:var(--faint);text-transform:uppercase;letter-spacing:.04em}
+.bang-map td b{color:var(--c1)}
+.bang-map td.c{text-align:center}
+.co{color:var(--ok);font-weight:700}.khong{color:var(--faint)}
+.cards{display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start}
+.cap{font-size:12.5px;color:var(--faint);margin-bottom:6px;max-width:520px}
+.cap b{color:var(--c2)}
+.ic{width:16px;height:16px;flex:none}
+
+/* ================= HỆ PANEL v3 ================= */
+/* nền trang sau panel (1440) */
+.stage{display:grid;grid-template-columns:minmax(0,1fr) 520px;min-height:720px}
+.nen{padding:16px 20px;display:flex;flex-direction:column;gap:12px;min-width:0}
+/* panel */
+.pn{display:flex;flex-direction:column;background:var(--surface);border-left:1px solid var(--line-strong);min-width:0}
+.pn.doc{border:1px solid var(--line-strong);border-radius:12px;overflow:hidden}
+.w375 .pn{border-left:0;min-height:764px}
+.lui{display:flex;align-items:center;gap:6px;min-height:44px;padding:0 16px;font-size:14px;color:var(--accent);border-bottom:1px solid var(--line);background:var(--surface)}
+/* 1 · ĐẦU — giống hệt ở mọi panel */
+.pd{padding:18px 20px 14px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:6px}
+.pd-1{display:flex;align-items:flex-start;gap:10px;flex-wrap:wrap}
+.pd-viec{flex:1 1 auto;min-width:0;font-size:17px;font-weight:800;line-height:24px;color:var(--c1)}
+.pd-2,.dg-2{display:flex;flex-wrap:wrap;align-items:baseline;font-size:14px;color:var(--dim);line-height:1.4}
+.pd-2>*+*::before,.dg-2>*+*::before{content:"·";margin:0 7px;color:var(--faint);font-weight:400}
+.pd-em,.pd-2 b,.dg-2 b{font-weight:700;color:var(--c1);text-decoration:none}
+.w375 .pd-em{display:inline-flex;align-items:center;min-height:44px;margin:-12px 0}
+.w375 .day .lk{display:inline-flex;align-items:center;min-height:44px;padding:0 4px;margin:-10px 0}
+.pd-em:hover{text-decoration:underline;text-decoration-color:var(--accent-line);text-underline-offset:3px}
+.x{display:inline-grid;place-items:center;width:32px;height:32px;margin:-4px -8px -4px 0;border-radius:8px;color:var(--dim);font-size:16px;flex:none}
+.han{display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 9px;border-radius:999px;font-size:12.5px;font-weight:700;white-space:nowrap;border:1px solid var(--line-strong);color:var(--c2);flex:none}
+.han.late{background:var(--late-bg);border-color:var(--late-line);color:var(--late)}
+.han.soon{background:var(--soon-bg);border-color:var(--soon-line);color:var(--soon)}
+.han .so{font-family:var(--so)}
+/* thân */
+.pt{padding:18px 20px 20px;display:flex;flex-direction:column;gap:20px;flex:1}
+.w375 .pd,.w375 .pt{padding-left:16px;padding-right:16px}
+/* 2 · CẦN LÀM */
+.cl{display:flex;flex-direction:column;gap:14px;padding:16px 16px 16px 19px;border-radius:4px 10px 10px 4px;background:var(--cl-nen,var(--accent-soft));box-shadow:inset 3px 0 0 var(--accent)}
+.w375 .cl{padding:14px 12px 14px 15px}
+.cl .m,.cl .nhom-ten,.dg-mo .bc dt{color:var(--dim)}
+.cl-dau{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.cl-v{flex:1;min-width:0;font-size:15px;font-weight:800;color:var(--c1)}
+.dt{display:flex;flex-direction:column;gap:4px}
+.dt-a{font-size:15px;font-weight:700;color:var(--c1)}
+.dt-b{font-size:14px;color:var(--c2)}
+.dt-c{font-size:13px;color:var(--dim)}
+.f{display:flex;flex-direction:column;gap:6px;min-width:0}
+.f>.field{width:100%}
+.lb{font-size:13px;font-weight:600;color:var(--c3)}
+.lb .bb{color:var(--bad);margin-left:2px}
+.lb .nho{font-weight:500;color:var(--faint)}
+.f2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px}
+.w375 .f2{grid-template-columns:minmax(0,1fr)}
+.gt{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-height:40px;padding:6px 0;font-size:14px;color:var(--c2)}
+.gt b{color:var(--c1)}
+.lam{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding-top:2px}
+.btn-lg{min-height:40px;padding:0 1.1rem;font-size:14px;font-weight:700}
+.btn-chu{background:transparent;border-color:transparent;color:var(--accent);font-weight:600;padding:0 .7rem}
+.w375 .lam .btn-lg{width:100%}
+/* chip chọn (nhóm nguyên nhân, mức, loại PA) */
+.nhom{display:flex;gap:6px;flex-wrap:wrap}
+.nc{display:inline-flex;align-items:center;gap:6px;min-height:34px;padding:0 12px;border-radius:999px;border:1px solid var(--line-strong);background:var(--surface-2);font:500 13px var(--sans);color:var(--c2);cursor:pointer;white-space:nowrap}
+.w375 .nc{min-height:44px;padding:0 13px}
+.nc.on{background:var(--chon-bg);border-color:var(--chon-vien);color:var(--c1);font-weight:600}
+.nc .th{display:inline-grid;place-items:center;width:20px;height:20px;margin-left:-5px;border-radius:50%;background:var(--chon-dau);color:var(--bg);font:700 11.5px var(--so)}
+.nc .tk{color:var(--chon-dau);font-weight:800}
+.nhom-ten{font-size:12px;font-weight:600;color:var(--faint);margin-top:2px}
+/* bước số */
+.stp{display:inline-flex;align-items:center;height:40px;width:fit-content;border:1px solid var(--o-vien);border-radius:.5rem;background:var(--o-nen)}
+.stp i{display:inline-grid;place-items:center;width:40px;height:100%;color:var(--accent);font:600 18px var(--sans);font-style:normal;cursor:pointer}
+.stp span{min-width:36px;text-align:center;font:700 15px var(--so);color:var(--c1);border-left:1px solid var(--line);border-right:1px solid var(--line);line-height:38px}
+.w375 .stp{height:46px}.w375 .stp i{width:44px}.w375 .stp span{line-height:42px}
+/* ô ngày ONgay */
+.ngay{justify-content:space-between}
+.ngay .lich{display:inline-grid;place-items:center;width:32px;height:32px;margin-right:-6px;border-radius:6px;color:var(--accent)}
+/* buổi Tutor */
+.buoi{display:grid;grid-template-columns:62px minmax(0,1fr) minmax(0,1.5fr);gap:10px;align-items:start;padding-top:12px;border-top:1px dashed var(--line-strong)}
+.buoi .sb{font-size:13px;font-weight:700;color:var(--c2);padding-top:30px}
+.w375 .buoi{grid-template-columns:minmax(0,1fr);gap:8px}
+.w375 .buoi .sb{padding-top:0}
+/* lỗi tại ô */
+.f.loi .field{border-color:var(--bad);box-shadow:0 0 0 3px color-mix(in srgb,var(--bad) 18%,transparent)}
+.loi-c{font-size:12.5px;color:var(--bad);font-weight:600}
+/* 3 · BỐI CẢNH */
+.bc{display:flex;flex-direction:column;gap:6px}
+.bc dl{display:grid;grid-template-columns:132px minmax(0,1fr);gap:8px 12px;margin:0;font-size:13px}
+.w375 .bc dl{grid-template-columns:minmax(0,1fr);gap:2px}
+.w375 .bc dd{margin-bottom:6px}
+.bc dt{color:var(--faint)}
+.bc dd{margin:0;color:var(--dim)}
+.bc dd b{color:var(--c3);font-weight:600}
+.xt{display:inline-flex;align-items:center;gap:6px;min-height:32px;width:fit-content;padding:0;border:0;background:none;font:600 13px var(--sans);color:var(--accent);cursor:pointer}
+.w375 .xt{min-height:44px}
+.duoi{color:var(--bad);font-weight:600}
+/* 4 · CHÂN — trạng thái lưu, ẩn khi chưa sửa */
+.pc{display:flex;align-items:center;gap:8px;min-height:44px;padding:8px 20px;border-top:1px solid var(--line);font-size:13px;color:var(--dim)}
+.pc .lk,.day .lk{font-weight:600;cursor:pointer}
+.tl{display:inline-flex;align-items:center;gap:6px}
+.tl.da{color:var(--ok)}.tl.loi{color:var(--bad);font-weight:600}.tl.thieu{color:var(--late);font-weight:600}.tl.nhap{color:var(--c3)}
+.cham{width:8px;height:8px;border-radius:50%;background:var(--soon)}
+.quay{width:13px;height:13px;border-radius:50%;border:2px solid var(--line-strong);border-top-color:var(--accent);animation:q 1s linear infinite}
+@keyframes q{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.quay{animation:none}}
+/* 375: thanh đáy dính — trạng thái + nút chính rộng hết khung */
+.day{position:sticky;bottom:0;display:flex;flex-direction:column;gap:8px;padding:10px 16px 14px;border-top:1px solid var(--line-strong);background:var(--surface)}
+.day .hang{display:flex;align-items:center;gap:8px;min-height:24px;font-size:13px;color:var(--dim)}
+.day .btn-primary{width:100%;min-height:48px;font-size:15px;font-weight:700}
+/* CHỈ ĐỌC */
+.tinh{font-size:14px;line-height:1.5;color:var(--c2)}
+.tinh b{font-weight:700}
+.tinh .doing{color:var(--doing)}.tinh .wait{color:var(--wait)}.tinh .late{color:var(--late)}.tinh .ok{color:var(--ok)}
+.ph{display:flex;align-items:center;gap:6px 12px;flex-wrap:wrap;padding:10px 12px;border:1px solid var(--line);border-radius:10px;font-size:14px;color:var(--c2)}
+.ph .l{font-size:13px;color:var(--faint);width:100%}
+.ph .t{flex:1;min-width:0}
+.ph .btn{min-height:36px}
+.w375 .ph .btn{min-height:44px}
+/* đã xong (Cần làm sau khi lưu) */
+.xong{display:flex;flex-direction:column;gap:6px;padding:14px 16px;border-radius:10px;background:var(--surface-2);border:1px solid var(--line)}
+.xong .h{font-size:14px;font-weight:700;color:var(--ok)}
+/* dòng thu gọn (danh sách Công việc, panel số liệu): cùng giải phẫu với đầu */
+.ds{display:flex;flex-direction:column}
+.nhom-h{display:flex;align-items:center;gap:8px;padding:9px 16px;font-size:12.5px;font-weight:800;color:var(--c3);background:color-mix(in srgb,var(--surface-2) 60%,transparent);border-top:1px solid var(--line)}
+.nhom-h:first-child{border-top:0}
+.nhom-h.qh{color:var(--late)}
+.dg{display:flex;flex-direction:column;gap:3px;padding:11px 16px;border-top:1px solid var(--line);cursor:pointer}
+.dg-1{display:flex;align-items:center;gap:10px}
+.dg-v{flex:1;min-width:0;font-size:14px;font-weight:700;color:var(--c1)}
+.dg-2{font-size:13px}
+.dg-2 .giu{color:var(--c3)}
+.dg.on{background:var(--accent-soft);box-shadow:inset 0 0 0 1px var(--accent-line)}
+.dg-mo{display:flex;flex-direction:column;gap:14px;padding:4px 16px 16px;background:var(--accent-soft);box-shadow:inset 1px 0 0 var(--accent-line),inset -1px 0 0 var(--accent-line),inset 0 -1px 0 var(--accent-line)}
+.dg-mo .cl{background:var(--surface)}
+.dg.da .dg-v{color:var(--c3)}
+.dg .xg{font-size:12.5px;font-weight:700;color:var(--ok)}
+/* panel một em: dòng Case */
+.ca{display:flex;align-items:center;gap:10px;min-height:44px;padding:8px 12px;border:1px solid var(--line);border-radius:10px;font-size:13px;color:var(--dim);cursor:pointer}
+.ca .mui{flex:none;color:var(--faint)}
+.ca .tn{font-weight:700;color:var(--c1);white-space:nowrap}
+.ca .n{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ca .m{white-space:nowrap}
+.ca .viec{font-weight:700;color:var(--accent);white-space:nowrap}
+.ca.mo{border-color:var(--accent-line);border-bottom-left-radius:0;border-bottom-right-radius:0;border-bottom-color:transparent}
+.ca.mo+.cl{margin-top:-14px;border-radius:0 0 10px 10px;box-shadow:inset 3px 0 0 var(--accent),inset -1px 0 0 var(--accent-line),inset 0 -1px 0 var(--accent-line)}
+.w375 .ca{flex-wrap:wrap;gap:4px 8px}
+.w375 .ca .n{flex-basis:100%;order:3;white-space:normal}
+.cases{display:flex;flex-direction:column;gap:8px}
+/* em trong nhóm bổ trợ */
+.em-r{display:flex;align-items:center;gap:10px;min-height:44px;padding:8px 12px;border:1px solid var(--line);border-radius:10px;font-size:13px;color:var(--dim)}
+.em-r .tn{font-size:14px;font-weight:700;color:var(--c1)}
+.em-r .n{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.em-r .btn-chu{min-height:32px}
+.ems{display:flex;flex-direction:column;gap:8px}
+.ems .cl{margin-top:-2px}
+/* hộp chấm MT (popover neo ô) */
+.hop{position:absolute;width:420px;background:var(--surface);border:1px solid var(--line-strong);border-radius:12px;box-shadow:0 18px 44px rgba(0,0,0,.4);z-index:5;display:flex;flex-direction:column}
+.hop .pd{padding:14px 16px 12px}
+.hop .pt{padding:14px 16px 16px;gap:14px}
+.hop .pc{padding:8px 16px}
+.hop::before{content:"";position:absolute;left:-7px;top:62px;width:12px;height:12px;background:var(--surface);border-left:1px solid var(--line-strong);border-bottom:1px solid var(--line-strong);transform:rotate(45deg)}
+.diem{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.o-nhap{display:inline-flex;align-items:center;justify-content:center;min-height:40px;min-width:64px;padding:0 10px;border-radius:.5rem;border:1px solid var(--accent);box-shadow:0 0 0 3px var(--accent-soft);background:var(--o-nen);font:600 16px var(--so);color:var(--c1)}
+.w375 .o-nhap{min-height:44px}
+.band{font-size:14px;color:var(--c3)}
+.band b{font:800 20px var(--so);color:var(--c1);margin-left:4px}
+.kv{font-size:13px;color:var(--dim)}
+.sheet{position:absolute;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--line-strong);border-radius:16px 16px 0 0;box-shadow:0 -18px 40px rgba(0,0,0,.35);display:flex;flex-direction:column}
+.mask{position:absolute;inset:0;background:var(--mask)}
+.grip{width:40px;height:4px;border-radius:2px;background:var(--line-strong);margin:8px auto 0}
+/* lưới điểm (nền hộp chấm) */
+.luoi{width:100%;border-collapse:collapse}
+.luoi th{font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--faint);padding:8px 10px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+.luoi td{padding:8px 10px;border-bottom:1px solid var(--line);font-size:13px;vertical-align:middle}
+.od{display:inline-flex;align-items:baseline;gap:6px;min-width:84px;min-height:34px;padding:6px 9px;border-radius:.375rem;border:1px solid var(--o-sua);background:var(--o-nen);font-family:var(--so);font-size:13.5px;color:var(--c1);white-space:nowrap}
+.od small{font-size:11.5px;color:var(--faint)}
+.od.mo{box-shadow:0 0 0 3px var(--accent-soft);border-color:var(--accent)}
+.od .thieu{font-family:var(--sans);font-size:11.5px;color:var(--late);font-weight:600}
+.ten{font-weight:600;color:var(--c1)}
+.lh{display:flex;flex-direction:column;gap:1px}
+.lh .p{font-size:12px;color:var(--faint)}
+/* bảng nền Học viên & Lớp */
+.t{width:100%;border-collapse:collapse}
+.t th{text-align:left;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--faint);padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+.t td{padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:middle;font-size:13px;color:var(--c2)}
+.t tr.on td{background:var(--accent-soft)}
+.t tr.lop td{background:color-mix(in srgb,var(--surface-2) 60%,transparent);font-weight:800;color:var(--c1);font-size:12.5px}
+.dots{display:inline-grid;place-items:center;width:28px;height:28px;border-radius:8px;color:var(--dim);font-weight:700;margin-left:6px}
+.dots.on{background:var(--accent-soft);color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent-line)}
+.kn{display:inline-flex;align-items:center;height:20px;padding:0 6px;border-radius:.375rem;border:1px solid var(--line-strong);font-size:11.5px;font-weight:700;color:var(--c2)}
+/* ô số Tổng quan */
+.tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.tile{display:flex;flex-direction:column;gap:2px;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+.tile .s{font:700 24px var(--so);color:var(--c1)}
+.tile .n1{font-size:13px;color:var(--c2);font-weight:600}
+.tile .n2{font-size:12px;color:var(--faint)}
+.tile.on{border-color:var(--accent-line);background:var(--accent-soft)}
+/* trang Hệ thống */
+.giai{display:grid;grid-template-columns:560px minmax(0,1fr);gap:36px;align-items:start}
+.giai .mau{position:relative;padding-left:38px}
+.gp{position:absolute;left:0;display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--accent);color:var(--accent-ink);font:800 12.5px var(--so)}
+.gp-ds{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:16px;font-size:13.5px;color:var(--c3);max-width:80ch}
+.gp-ds li{display:grid;grid-template-columns:28px minmax(0,1fr);gap:10px}
+.gp-ds li .gp{position:static}
+.gp-ds b{color:var(--c1)}
+.gp-ds code{font-family:var(--so);font-size:12.5px;color:var(--accent-strong)}
+.mau-dau{display:flex;flex-direction:column;gap:10px}
+.mau-dau .pn{border:1px solid var(--line-strong);border-radius:12px;overflow:hidden;width:520px}
+.mau-dau .pd{border-bottom:0}
+.chan-ds{display:grid;grid-template-columns:repeat(3,minmax(0,360px));gap:12px}
+.chan-ds .pc{border:1px solid var(--line-strong);border-radius:10px;background:var(--surface)}
+.critique{border:1px solid var(--line-strong);border-radius:12px;padding:14px 18px;background:var(--surface);display:flex;flex-direction:column;gap:8px;max-width:1200px}
+.critique ol{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;font-size:13.5px;color:var(--c3)}
+.critique b{color:var(--c1)}
+
+/* ================= THÊM CHO OV-13 (chỉ thêm, không đổi token) ================= */
+/* thanh app: nút ? + Thông báo */
+.app .nut-tron{display:inline-grid;place-items:center;min-width:32px;height:32px;padding:0 8px;border-radius:8px;border:1px solid var(--line-strong);color:var(--c2);font-weight:700;font-size:13px}
+.app .nut-tron.on{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
+.w375 .app .nut-tron{min-width:44px;height:44px}
+/* dòng Công việc: nút làm trong dòng, trạng thái lưu một dòng trong dòng mở */
+.dg-1 .btn-sm{min-height:30px}
+.w375 .dg-1 .btn-sm{min-height:44px}
+.tt-dong{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13px;color:var(--dim);min-height:24px}
+.tt-dong .lk{font-weight:600;cursor:pointer}
+.w375 .tt-dong .lk{display:inline-flex;align-items:center;min-height:44px}
+.lam .sp{flex:1}
+.w375 .dg-mo .lam .btn-primary{width:100%;min-height:48px}
+.dg-2 .xam{color:var(--faint)}
+.dg-2 .ok{color:var(--ok);font-weight:700}
+.dg.tat .dg-v{color:var(--c3)}
+/* Case gọn */
+.vd{display:flex;flex-direction:column;gap:8px}
+.vd .nhom .nc{cursor:default;min-height:30px}
+.w375 .vd .nhom .nc{min-height:34px}
+.trich{font-size:14px;line-height:1.5;color:var(--c2)}
+.trich::before{content:"“";color:var(--faint)}.trich::after{content:"”";color:var(--faint)}
+.pa-r{display:flex;align-items:baseline;gap:4px 10px;flex-wrap:wrap;padding:10px 12px;border:1px solid var(--line);border-radius:10px;font-size:13.5px;color:var(--dim)}
+.pa-r .tn{font-size:14px;font-weight:700;color:var(--c1)}
+.pa-r .tn+*::before{content:none}
+.pa-r .dot::before{content:"·";margin-right:10px;color:var(--faint)}
+.w375 .pa-r .dot{flex-basis:100%}.w375 .pa-r .dot::before{content:none}
+.pa-r .lk{font-weight:700;cursor:pointer}
+.w375 .pa-r .lk{display:inline-flex;align-items:center;min-height:44px;margin:-10px 0}
+.pa-r .canh{color:var(--late);font-weight:600}
+.gap-ds{display:flex;flex-direction:column;gap:2px}
+.ca.huy{opacity:.5}
+.ca.huy .tn,.ca.huy .n{text-decoration:line-through;text-decoration-color:var(--faint)}
+.ca.tam{border-style:dashed}
+/* lô em (Xác nhận PA cùng lúc, Ý thức chọn nhiều) */
+.lo{display:flex;flex-direction:column;gap:0;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--surface)}
+.lo-r{display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:4px 10px;align-items:center;padding:10px 12px;border-top:1px solid var(--line);font-size:13px;color:var(--dim)}
+.lo-r:first-child{border-top:0}
+.lo-r .tn{font-size:14px;font-weight:700;color:var(--c1)}
+.lo-r .n{grid-column:2/4;min-width:0}
+.w375 .lo-r .n{grid-column:2/4}
+.lo-r.bo .tn,.lo-r.bo .n{color:var(--faint)}
+.lo-r.bo .tn{font-weight:600}
+.lo-r.loi{background:var(--bad-bg)}
+.lo-r.loi .n{color:var(--bad);font-weight:600}
+.lo-r.xong .tn{color:var(--c3)}
+.lo-r .rieng{grid-column:2/4;display:flex;flex-direction:column;gap:10px;padding:10px 0 2px}
+.lo-r .btn-chu{min-height:30px;padding:0 .4rem}
+.w375 .lo-r .btn-chu{min-height:44px}
+.mui-ten{color:var(--accent-strong);font-weight:700}
+.loai{font-size:12.5px;color:var(--faint)}
+.loai b{color:var(--c3);font-weight:600}
+/* thanh dính đáy khi chọn nhiều */
+.bar{position:sticky;bottom:0;display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 16px;border-top:1px solid var(--line-strong);background:var(--surface);box-shadow:0 -10px 24px rgba(0,0,0,.28);font-size:13.5px;color:var(--c2)}
+.bar b{color:var(--c1)}
+.w375 .bar{padding:10px 12px 14px}
+.w375 .bar .btn{flex:1 1 calc(50% - 8px)}
+.w375 .bar .btn-primary{flex-basis:100%;min-height:48px;font-size:15px}
+/* Ý thức khung trái */
+.yt{display:grid;grid-template-columns:360px minmax(0,1fr);min-height:560px}
+.yt-trai{border-right:1px solid var(--line)}
+.yt-h{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line);font-size:12.5px;color:var(--dim)}
+.yt-nh{padding:12px 12px 6px;font-size:11.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);border-bottom:1px solid var(--line)}
+.yt-em{display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:2px 10px;align-items:start;padding:10px 12px;border-bottom:1px solid var(--line);min-height:44px}
+.yt-em .tn{font-size:14px;font-weight:600;color:var(--c1)}
+.yt-em .p{grid-column:2/3;font-size:12px;color:var(--dim)}
+.yt-em .p b{color:var(--c2);font-weight:600}
+.yt-em .h{grid-row:1/3;grid-column:3;font-size:12.5px;color:var(--faint);white-space:nowrap;text-align:right}
+.yt-em .h.qh{color:var(--late);font-weight:700}
+.yt-em.chon{background:var(--accent-soft)}
+.yt-em .cb{margin-top:2px}
+.yt-phai{padding:14px 16px;display:flex;flex-direction:column;gap:8px}
+.vp{display:flex;gap:10px;align-items:baseline;padding:8px 0;border-bottom:1px solid var(--line);font-size:13px;color:var(--c2)}
+.vp .m{min-width:44px}
+/* bảng em × bậc */
+.bac{display:flex;flex-direction:column}
+.bac-r{display:grid;grid-template-columns:170px minmax(0,1fr);gap:8px 14px;align-items:start;padding:12px 0;border-top:1px solid var(--line)}
+.bac-r:first-child{border-top:0;padding-top:2px}
+.bac-r .tn{font-size:14px;font-weight:700;color:var(--c1);padding-top:6px}
+.bac-r .tn small{display:block;font-size:12px;font-weight:500;color:var(--faint)}
+.w375 .bac-r{grid-template-columns:minmax(0,1fr)}
+.w375 .bac-r .tn{padding-top:0}
+.bac .nc{min-height:30px;padding:0 10px;font-size:12.5px}
+.w375 .bac .nc{min-height:44px}
+.nc.khoa{opacity:.45;cursor:default}
+/* Hướng dẫn */
+.hd{display:grid;grid-template-columns:232px minmax(0,1fr);gap:28px;padding:20px 24px;align-items:start}
+.hd-nav{display:flex;flex-direction:column;gap:2px;position:sticky;top:0}
+.hd-nav a{display:flex;align-items:center;min-height:36px;padding:0 10px;border-radius:8px;text-decoration:none;color:var(--dim);font-size:13.5px}
+.hd-nav a.on{background:var(--chon-bg);color:var(--c1);font-weight:700;box-shadow:inset 0 0 0 1px var(--chon-vien)}
+.hd-nav .n{margin-left:auto;font-family:var(--so);font-size:12px;color:var(--faint)}
+.hd-noi{display:flex;flex-direction:column;gap:16px;max-width:760px}
+.hd-dau{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.buoc{display:flex;flex-direction:column;gap:10px;padding:14px 16px;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+.buoc-h{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.buoc-h .tn{flex:1;min-width:0;font-size:15px;font-weight:700;color:var(--c1)}
+.buoc-h .m{white-space:nowrap}
+.buoc ol{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:4px;font-size:13.5px;color:var(--c2);line-height:1.5}
+.buoc ol b{color:var(--c1);font-weight:600}
+.buoc .lk{font-weight:600}
+.buoc.gap .buoc-h .v{margin-left:4px}
+.nut-chi{display:inline-flex;align-items:center;gap:6px;min-height:32px;padding:0 .7rem;border-radius:.4rem;border:1px solid var(--accent-line);background:transparent;color:var(--accent);font:600 12.5px var(--sans);white-space:nowrap;cursor:pointer}
+.w375 .nut-chi{min-height:44px}
+.w375 .hd{grid-template-columns:minmax(0,1fr);padding:14px 14px 20px;gap:14px}
+.hd-tab{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none}
+.hd-tab .nl{min-height:44px}
+/* ô tìm */
+.tim{display:flex;align-items:center;gap:8px;min-width:0}
+.tim .field{flex:1;color:var(--faint)}
+/* Chỉ cho tôi: nền tối + khoanh + một dòng */
+.spot{position:absolute;border-radius:10px;box-shadow:0 0 0 3px var(--accent),0 0 0 9999px var(--mask);pointer-events:none;z-index:8}
+.spot-c{position:absolute;z-index:9;display:flex;align-items:center;gap:10px;max-width:340px;padding:10px 12px;border-radius:10px;background:var(--surface);border:1px solid var(--accent-line);box-shadow:0 12px 30px rgba(0,0,0,.35);font-size:13.5px;color:var(--c1)}
+.spot-c .m{white-space:nowrap}
+/* dải Mới dùng */
+.dai{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:10px 14px;border:1px solid var(--accent-line);border-radius:12px;background:var(--surface);font-size:14px;color:var(--c2)}
+.dai b{color:var(--c1)}
+.dai .btn-chu{min-height:32px}
+.w375 .dai .btn{flex:1}
+/* Học viên & Lớp (chép từ mockup-ov12-3 … v2) */
+.trang{padding:16px 20px 20px;display:flex;flex-direction:column;gap:12px}
+.w375 .trang{padding:12px 14px 16px}
+.trang>*{min-width:0;max-width:100%}
+.vach{width:1px;height:24px;background:var(--line-strong);margin:0 2px}
+.nl{display:inline-flex;align-items:center;gap:6px;min-height:32px;padding:0 12px;border-radius:999px;border:1px solid var(--line-strong);background:transparent;color:var(--dim);font:600 12.5px var(--sans);white-space:nowrap}
+.nl .n{font-family:var(--so);font-weight:500;color:var(--faint)}
+.nl[aria-pressed=true]{background:var(--chon-bg);border-color:var(--chon-vien);color:var(--c1)}
+.nl[aria-pressed=true] .n{color:var(--c3)}
+.loc-phu{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.w375 .loc-phu{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;max-width:100%}
+.w375 .nl{min-height:44px}
+.bl{width:100%;border-collapse:collapse;table-layout:fixed}
+.bl th{text-align:left;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--faint);padding:8px;border-bottom:1px solid var(--line);white-space:nowrap;overflow:hidden}
+.bl td{padding:9px 8px;border-bottom:1px solid var(--line);vertical-align:top;font-size:13px}
+.bl tr.lop td{padding:8px 12px;background:color-mix(in srgb,var(--surface-2) 70%,transparent);box-shadow:inset 3px 0 0 var(--accent);vertical-align:middle}
+.bl tr.trong-em td:not([rowspan]){border-bottom:1px dashed var(--line)}
+.bl tr.on td{background:var(--accent-soft)}
+.lop-r{display:flex;align-items:center;gap:8px;min-width:0}
+.lop-r .ma{font-weight:800;color:var(--c1);white-space:nowrap}
+.lop-r .p{font-size:12px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lh{display:flex;flex-direction:column;gap:2px;min-width:0}
+.lh .p{font-size:12px;color:var(--faint)}
+.cv-chip{display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:.375rem;border:1px solid var(--line-strong);background:var(--surface-2);font-size:12px;font-weight:700;color:var(--c1);white-space:nowrap}
+.cv-chip.tt2{border-style:dashed;color:var(--c3);background:transparent}
+.viec{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-width:0}
+.viec .ct{font-size:12.5px;color:var(--c3)}
+.giu{font-size:12.5px;color:var(--c2)}
+.giu small{display:block;font-size:11.5px;color:var(--faint)}
+.hn{font-size:12.5px;color:var(--faint);white-space:nowrap}
+.lop-the{background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.lop-the .dau{display:flex;align-items:flex-start;gap:8px;padding:10px 12px;min-height:44px}
+.lop-the .dau .ma{font-weight:800;color:var(--c1)}
+.lop-the .dau .p{display:block;font-size:12px;color:var(--dim)}
+.the3{border-top:1px solid var(--line);padding:10px 12px;display:flex;flex-direction:column;gap:7px}
+.the3 .r1{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.the3 .r1 .ten{flex:1;min-width:0}
+.vl3{display:flex;flex-direction:column;gap:6px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:color-mix(in srgb,var(--surface-2) 50%,transparent)}
+.vl3 .h{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.vl3 .btn{width:100%}
+.f.trung .field{border-color:var(--bad);box-shadow:0 0 0 3px color-mix(in srgb,var(--bad) 18%,transparent)}
+.f .thieu-o{border-style:dashed;border-color:var(--late-line)}
+.nhan-thieu{font-size:12px;font-weight:700;color:var(--late);margin-left:6px}
+/* ===== OV-13 · tăng tương phản (chủ SP 15/10): cùng bảng màu, chỉ đậm hơn nền / viền / chữ ===== */
+.cl{background:color-mix(in srgb,var(--accent) 15%,var(--surface));box-shadow:inset 4px 0 0 var(--accent),inset 0 0 0 1px var(--accent-line)}
+:root[data-theme="light"] .cl{background:color-mix(in srgb,var(--accent) 9%,var(--surface))}
+.cl .lb{color:var(--c1)}
+.cl-v,.dt-a{color:var(--c1)}
+.dg-mo .cl{background:color-mix(in srgb,var(--accent) 15%,var(--surface))}
+.btn-primary{font-weight:700;box-shadow:inset 0 0 0 1px var(--accent-strong),0 2px 8px color-mix(in srgb,var(--accent) 30%,transparent)}
+:root[data-theme="light"] .btn-primary{box-shadow:0 2px 6px color-mix(in srgb,var(--accent) 30%,transparent)}
+.btn-primary.tat{box-shadow:none}
+.han{font-weight:800;border-color:var(--o-vien);color:var(--c1)}
+.han.late{border-width:1.5px;border-color:var(--late)}
+.han.soon{border-width:1.5px;border-color:var(--soon)}
+.chip{box-shadow:inset 0 0 0 1px var(--line-strong)}
+.chip.ok{box-shadow:inset 0 0 0 1px var(--ok-line)}.chip.bad{box-shadow:inset 0 0 0 1px var(--bad-line)}
+.chip.late{box-shadow:inset 0 0 0 1px var(--late-line)}.chip.soon{box-shadow:inset 0 0 0 1px var(--soon-line)}
+.chip.wait{box-shadow:inset 0 0 0 1px var(--wait-line)}.chip.doing{box-shadow:inset 0 0 0 1px var(--accent-line)}
+.nc.on{border-width:1.5px}
+.dg.on{box-shadow:inset 0 0 0 1.5px var(--accent)}
+.tl.da{font-weight:700}
+/* thẻ Chờ duyệt "Đề xuất PA" (chép từ mockup-duong-lui-case-duyet-y-thuc-2026-10-06.html) */
+.the{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:12px 14px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px 16px}
+.the .tt{display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap}
+.the .tt p{margin:0;font-size:14px;line-height:1.4}
+.the .tt p b{font-weight:700;color:var(--c1)}
+.the .tt p span{color:var(--dim)}
+.the .ds2{font-size:13px;color:var(--c3);display:flex;flex-direction:column;gap:3px;margin-top:6px}
+.the .ds2 b{color:var(--c1);font-weight:600}
+.the .ph2{display:flex;flex-direction:column;gap:6px;align-items:flex-end;text-align:right}
+.the .ph2 .lam{justify-content:flex-end}
+.the.on{border-color:var(--accent-line);box-shadow:inset 0 0 0 1px var(--accent-line)}
+.w375 .the{grid-template-columns:minmax(0,1fr)}
+.w375 .the .ph2{align-items:stretch;text-align:left}
+.w375 .the .ph2 .btn{flex:1}
+.chip.loai{background:var(--surface-2);color:var(--c2)}
+/* câu hỏi cuối */
+.q .kn2{display:block;margin-top:4px;color:var(--c2)}
+/* ================= THÊM CHO MOCKUP BƯỚC TIẾP (chỉ thêm, không đổi token) ================= */
+/* ô chọn tuần mở (cùng một ô cho Bước tiếp và Chuyển lớp) */
+.dd{display:flex;flex-direction:column;margin-top:-2px;border:1px solid var(--line-strong);border-radius:.5rem;background:var(--surface);box-shadow:0 12px 28px rgba(0,0,0,.32);overflow:hidden}
+.dd-o{display:flex;align-items:center;gap:10px;min-height:38px;padding:0 12px;font-size:14px;color:var(--c2);border-top:1px solid var(--line)}
+.dd-o:first-child{border-top:0}
+.dd-o .m{margin-left:auto}
+.dd-o.on{background:var(--chon-bg);color:var(--c1);font-weight:600;box-shadow:inset 3px 0 0 var(--chon-vien)}
+.dd-o .tk{color:var(--chon-dau);font-weight:800;width:12px}
+.w375 .dd-o{min-height:44px}
+/* khối "Khi lưu / Khi chuyển, web sẽ" */
+.kc{display:flex;flex-direction:column;gap:4px;padding:10px 12px;border:1px solid var(--line-strong);border-radius:10px;font-size:13px;color:var(--c3)}
+.kc .h{font-size:12.5px;font-weight:700;color:var(--c2)}
+.kc ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:2px}
+.kc b{color:var(--c1);font-weight:600}
+.kc.canh{border:1.5px solid var(--soon);background:var(--soon-bg)}
+.kc.canh .h{color:var(--soon)}
+/* hồ sơ HV: đầu hồ sơ + Các lộ trình */
+.hs{display:flex;flex-direction:column;gap:10px}
+.hs-1{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.hs-2{display:flex;flex-wrap:wrap;align-items:baseline;font-size:13.5px;color:var(--dim)}
+.hs-2>*+*::before{content:"·";margin:0 7px;color:var(--faint)}
+.hs-2 b{color:var(--c1);font-weight:700}
+.vb{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 12px;border-radius:10px;background:color-mix(in srgb,var(--accent) 15%,var(--surface));box-shadow:inset 4px 0 0 var(--accent),inset 0 0 0 1px var(--accent-line);font-size:14px;color:var(--c2)}
+:root[data-theme="light"] .vb{background:color-mix(in srgb,var(--accent) 9%,var(--surface))}
+.vb b{color:var(--c1)}
+.vb.doc{background:var(--surface-2);box-shadow:inset 0 0 0 1px var(--line-strong)}
+.vb.cho{background:var(--wait-bg);box-shadow:inset 4px 0 0 var(--wait),inset 0 0 0 1px var(--wait-line)}
+.w375 .vb .btn{flex:1 1 100%}
+.lt-h{display:flex;align-items:center;gap:8px;padding:10px 16px;border-bottom:1px solid var(--line);font-size:13.5px;font-weight:700;color:var(--c1)}
+.lt-h .so{color:var(--faint);font-size:12px}
+.t td .lk{font-weight:600;white-space:nowrap}
+.lt-the{display:flex;flex-direction:column;gap:6px;padding:10px 12px;border-top:1px solid var(--line);font-size:13px;color:var(--dim)}
+.lt-the:first-of-type{border-top:0}
+.lt-the .r{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.lt-the .tn{font-weight:700;color:var(--c1);font-size:14px}
+.lt-the .lk{display:inline-flex;align-items:center;min-height:44px;font-weight:600}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="lich" viewBox="0 0 16 16"><rect x="2" y="3" width="12" height="11" rx="2" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M2 6.5h12M5 1.5v3M11 1.5v3" stroke="currentColor" stroke-width="1.4"/></symbol><symbol id="chuong" viewBox="0 0 16 16"><path d="M4 11V7a4 4 0 0 1 8 0v4l1.2 1.5H2.8Z M6.5 14h3" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></symbol><symbol id="kinh" viewBox="0 0 16 16"><circle cx="7" cy="7" r="4.5" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="m10.5 10.5 3.5 3.5" stroke="currentColor" stroke-width="1.4"/></symbol></svg>
+<div class="top">
+  <b>Mockup · OV-13 · Bước tiếp sau thi · 15/10</b>
+  <span class="toc"><a href="#s1">1 Kết quả thi thật → Bước tiếp</a>·<a href="#s2">2 Hồ sơ HV</a>·<a href="#s3">3 Công việc</a>·<a href="#s4">4 Chuyển lớp ngay</a>·<a href="#cho">Chờ chủ SP chốt</a></span>
+  <span class="sp"></span>
+  <button class="btn btn-sm" aria-pressed="true" onclick="doi('dark',this)">Tối</button>
+  <button class="btn btn-sm" aria-pressed="false" onclick="doi('light',this)">Sáng</button>
+</div>
+<div class="wrap">
+
+<section class="sec" style="margin-top:20px">
+  <h1>OV-13 — Bước tiếp sau thi thật · Chuyển lớp "Ngay hôm nay"</h1>
+  <ul class="note">
+    <li><b>Hiện trạng (planning đã rà):</b> lưu kết quả thi thật không đóng lộ trình; Bước tiếp chỉ hiện khi lộ trình đã đóng / em đã Kết thúc học; ô tuần chuyển lớp chỉ từ tuần sau.</li>
+    <li><b>Chủ SP chốt 15/10:</b> có kết quả thi thật → lộ trình <b>Đã xong</b> + Bước tiếp (Thôi học · Tạm dừng · Lộ trình mới); Chuyển lớp thêm <b>Ngay hôm nay</b>; hạn bàn giao mọi lệnh = muộn hơn của (ngày ra lệnh + 7 ngày) và mốc cũ.</li>
+    <li>Khuôn panel v3 (bản 3) giữ nguyên: đầu 2 dòng · MỘT khối Cần làm + một nút chính · Bối cảnh ≤ 3 dòng · chân trạng thái lưu. Một ô chọn tuần dùng chung cho Bước tiếp và Chuyển lớp (lựa chọn đầu = "ngay").</li>
+    <li>Hôm nay T5 <span class="so">15/10</span> = <span class="so">W3 OCT</span>. Em mẫu: <b>Đỗ Minh Khang</b> · CP FT 139 · FT LT2 · Target <span class="so">6.5</span> · thi thật T7 <span class="so">10/10</span>.</li>
+  </ul>
+</section>
+
+<!-- ============================================================ 1 KẾT QUẢ THI THẬT → BƯỚC TIẾP -->
+<section class="sec" id="s1">
+  <h2>1 · Kết quả thi thật → Bước tiếp (đổi tại chỗ trong panel)</h2>
+  <span class="where">Hồ sơ HV › Tổng kết › Kết quả thi thật · vai QL / TVV (GVCN nhập kết quả, xem mục 2) · chủ SP 15/10</span>
+  <ul class="note">
+    <li>Lưu kết quả xong: panel <b>không đóng</b>, đầu đổi thành <b>Bước tiếp</b> (hạn +7 ngày); kết quả thu thành một dòng "✓ Đã lưu" có <b>Sửa</b>. Lộ trình FT LT2 = <b>Đã xong</b>.</li>
+    <li>Ba lựa chọn, chưa chọn sẵn. Nút chính đổi chữ theo lựa chọn; khối "Khi lưu, web sẽ" nói đúng việc sẽ xảy ra.</li>
+    <li>Đóng panel (✕) = để sau: việc "Chọn bước tiếp" vẫn ở Công việc tới khi chọn.</li>
+  </ul>
+  <div class="row2">
+    <div class="win w1440">
+      <div class="app"><b>PISA Tracking</b><span>Tổng quan</span><span class="on">Học viên &amp; Lớp</span><span>Test</span><span>Công việc <span class="dem">2</span></span><span class="sp"></span><span class="nut-tron">?</span><span class="nut-tron"><svg class="ic"><use href="#chuong"/></svg></span><span>Lê Thu Hằng · Quản lý</span></div>
+      <div class="stage" style="min-height:780px">
+        <div class="nen">
+          <div class="hs">
+            <div class="hs-1"><span class="tde">Đỗ Minh Khang</span><span class="chip ok">Đã xong</span></div>
+            <div class="hs-2"><b>CP FT 139</b><span>FT LT2</span><span>Target <span class="so">6.5</span></span><span>GVCN Trần Ngọc Hà</span></div>
+          </div>
+          <div class="tabs"><span>Học thuật</span><span class="on">Hành trình</span><span>Ý thức</span><span>Thông tin</span></div>
+          <div class="card">
+            <div class="lt-h">Tổng kết lộ trình · FT LT2</div>
+            <table class="t"><thead><tr><th>Kỹ năng</th><th>Đầu vào</th><th>MT3</th><th>Thi thật</th></tr></thead>
+              <tbody>
+                <tr><td>Listening</td><td class="so">5.5</td><td class="so">6.5</td><td class="so"><b>7.0</b></td></tr>
+                <tr><td>Reading</td><td class="so">5.0</td><td class="so">6.0</td><td class="so"><b>6.5</b></td></tr>
+                <tr><td>Writing</td><td class="so">5.0</td><td class="so">5.5</td><td class="so"><b>6.0</b></td></tr>
+                <tr><td>Speaking</td><td class="so">5.5</td><td class="so">6.0</td><td class="so"><b>6.5</b></td></tr>
+                <tr><td><b>Overall</b></td><td class="so">5.5</td><td class="so">6.0</td><td class="so"><b>6.5</b> <span class="chip ok">Đạt Target</span></td></tr>
+              </tbody></table>
+          </div>
+        </div>
+        <div class="pn">
+          <div class="pd">
+            <div class="pd-1"><span class="pd-viec">Bước tiếp</span><span class="han">Hạn T4 <span class="so">21/10</span></span><span class="x" aria-label="Đóng">✕</span></div>
+            <div class="pd-2"><a class="pd-em" href="#">Đỗ Minh Khang<span class="ra">↗</span></a><span>CP FT 139</span><span>FT LT2 · Đã xong</span></div>
+          </div>
+          <div class="pt">
+            <div class="pa-r"><span class="tn" style="color:var(--ok)">✓ Đã lưu kết quả thi thật</span><span class="dot">OVR <b class="so">6.5</b> · Đạt Target</span><span class="sp"></span><span class="lk">Sửa</span></div>
+            <div class="cl">
+              <div class="f"><span class="lb">Bước tiếp<span class="bb">*</span></span>
+                <div class="nhom"><span class="nc">Lộ trình mới</span><span class="nc">Tạm dừng</span><span class="nc">Thôi học</span></div>
+              </div>
+              <div class="lam"><button class="btn btn-primary btn-lg tat" disabled>Lưu bước tiếp</button><span class="m">Chọn một bước</span></div>
+            </div>
+            <div class="bc"><dl><dt>Thi thật</dt><dd>T7 <span class="so">10/10</span> · L <span class="so">7.0</span> · R <span class="so">6.5</span> · W <span class="so">6.0</span> · S <span class="so">6.5</span></dd><dt>Lộ trình</dt><dd>FT LT2 · <span class="so">W2 JUN – W2 OCT</span> · Đã xong</dd></dl></div>
+          </div>
+          <div class="pc"><span class="tl da">✓ Đã lưu kết quả <span class="so">09:12</span></span></div>
+        </div>
+      </div>
+    </div>
+    <div class="win w375">
+      <div class="pn">
+        <div class="lui">‹ Tổng kết</div>
+        <div class="pd">
+          <div class="pd-1"><span class="pd-viec">Bước tiếp</span><span class="han">Hạn T4 <span class="so">21/10</span></span></div>
+          <div class="pd-2"><a class="pd-em" href="#">Đỗ Minh Khang<span class="ra">↗</span></a><span>FT LT2 · Đã xong</span></div>
+        </div>
+        <div class="pt">
+          <div class="pa-r"><span class="tn" style="color:var(--ok)">✓ OVR <span class="so">6.5</span> · Đạt Target</span><span class="sp"></span><span class="lk">Sửa</span></div>
+          <div class="cl">
+            <div class="f"><span class="lb">Bước tiếp<span class="bb">*</span></span>
+              <div class="nhom"><span class="nc on"><span class="tk">✓</span>Lộ trình mới</span><span class="nc">Tạm dừng</span><span class="nc">Thôi học</span></div>
+            </div>
+            <div class="f"><span class="lb">Lớp</span>
+              <div class="seg" style="width:100%"><button aria-pressed="false" style="flex:1;justify-content:center">Lớp này</button><button aria-pressed="true" style="flex:1;justify-content:center">Lớp khác</button></div>
+              <span class="field">CP FT 142 <span class="m">FT LT1 · CP · 9 em</span><i class="v"></i></span>
+            </div>
+            <div class="f"><span class="lb">Bắt đầu</span>
+              <span class="field" style="border-color:var(--accent)"><span class="so">W4 OCT</span><span class="m">T2 19/10</span><i class="v len"></i></span>
+              <div class="dd">
+                <span class="dd-o"><span class="tk"></span>Ngay bây giờ<span class="m so">W3 OCT</span></span>
+                <span class="dd-o on"><span class="tk">✓</span><span class="so">W4 OCT</span><span class="m so">T2 19/10</span></span>
+                <span class="dd-o"><span class="tk"></span><span class="so">W5 OCT</span><span class="m so">T2 26/10</span></span>
+                <span class="dd-o"><span class="tk"></span><span class="so">W1 NOV</span><span class="m so">T2 02/11</span></span>
+              </div>
+            </div>
+            <div class="gt">Target <b class="so">6.5</b> <span class="m">giữ</span><span class="lk" style="font-weight:600">Sửa</span></div>
+          </div>
+          <div class="kc"><span class="h">Khi lưu, web sẽ</span><ul><li>Hẹn bắt đầu <b>W4 OCT</b> ở CP FT 142 · em chờ tới T2 <span class="so">19/10</span></li><li>Huỷ hẹn được tới lúc đó</li></ul></div>
+        </div>
+        <div class="day">
+          <div class="hang"><span class="tl nhap"><i class="cham"></i>Chưa lưu</span></div>
+          <button class="btn btn-primary">Hẹn bắt đầu W4 OCT</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <ul class="note"><li>1440: vừa lưu kết quả, chưa chọn. 375: chọn <b>Lộ trình mới · Lớp khác</b> + tuần hẹn (ô tuần đang mở). "Ngay bây giờ" → tuần này là tuần 1 (<span class="so">W3 OCT</span>), nút đổi thành <b>Bắt đầu lộ trình mới</b>.</li></ul>
+
+  <span class="nhan-khoi">Trạng thái khác</span>
+  <div class="cards">
+    <div><div class="cap"><b>Trước khi lưu</b> — Kết quả thi thật (form giữ như hiện có; ngày thi = ONgay)</div>
+      <div class="pn doc" style="width:480px">
+        <div class="pd"><div class="pd-1"><span class="pd-viec">Kết quả thi thật</span><span class="x">✕</span></div><div class="pd-2"><a class="pd-em" href="#">Đỗ Minh Khang<span class="ra">↗</span></a><span>FT LT2</span><span>Target <span class="so">6.5</span></span></div></div>
+        <div class="pt">
+          <div class="cl">
+            <div class="f"><span class="lb">Ngày thi<span class="bb">*</span></span><span class="field ngay"><span class="so">10/10/2026</span><span class="lich" aria-label="Chọn ngày"><svg class="ic"><use href="#lich"/></svg></span></span></div>
+            <div class="diem"><span class="band">L<b>7.0</b></span><span class="band">R<b>6.5</b></span><span class="band">W<b>6.0</b></span><span class="band">S<b>6.5</b></span><span class="kv">OVR tự tính <b class="so" style="color:var(--c1)">6.5</b> · <span style="color:var(--ok);font-weight:700">Đạt Target</span></span></div>
+            <div class="lam"><button class="btn btn-primary btn-lg">Lưu</button></div>
+          </div>
+        </div>
+        <div class="pc"><span class="tl nhap"><i class="cham"></i>Chưa lưu</span></div>
+      </div>
+    </div>
+    <div><div class="cap"><b>Tạm dừng</b> đã chọn</div>
+      <div class="pn doc" style="width:480px">
+        <div class="pd"><div class="pd-1"><span class="pd-viec">Bước tiếp</span><span class="han">Hạn T4 <span class="so">21/10</span></span><span class="x">✕</span></div><div class="pd-2"><a class="pd-em" href="#">Đỗ Minh Khang<span class="ra">↗</span></a><span>FT LT2 · Đã xong</span></div></div>
+        <div class="pt">
+          <div class="cl">
+            <div class="nhom"><span class="nc">Lộ trình mới</span><span class="nc on"><span class="tk">✓</span>Tạm dừng</span><span class="nc">Thôi học</span></div>
+            <div class="kc"><span class="h">Khi lưu, web sẽ</span><ul><li>Đóng FT LT2 · em <b>Tạm dừng</b>, mọi hạn dừng</li><li>Sau này: hồ sơ › <b>Quay lại học</b> mở Lộ trình mới</li></ul></div>
+            <div class="lam"><button class="btn btn-primary btn-lg">Tạm dừng</button></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div><div class="cap"><b>Thôi học</b> đã chọn</div>
+      <div class="pn doc" style="width:480px">
+        <div class="pd"><div class="pd-1"><span class="pd-viec">Bước tiếp</span><span class="han">Hạn T4 <span class="so">21/10</span></span><span class="x">✕</span></div><div class="pd-2"><a class="pd-em" href="#">Đỗ Minh Khang<span class="ra">↗</span></a><span>FT LT2 · Đã xong</span></div></div>
+        <div class="pt">
+          <div class="cl">
+            <div class="nhom"><span class="nc">Lộ trình mới</span><span class="nc">Tạm dừng</span><span class="nc on"><span class="tk">✓</span>Thôi học</span></div>
+            <div class="kc"><span class="h">Khi lưu, web sẽ</span><ul><li><b>Kết thúc học</b> · em vào <b>Lưu trữ</b></li><li>Hoàn tác được ngay sau khi lưu</li></ul></div>
+            <div class="lam"><button class="btn btn-primary btn-lg">Thôi học</button></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div><div class="cap"><b>Lộ trình mới · Lớp này · Ngay bây giờ</b> — đang lưu</div>
+      <div class="pn doc" style="width:480px">
+        <div class="pd"><div class="pd-1"><span class="pd-viec">Bước tiếp</span><span class="han">Hạn T4 <span class="so">21/10</span></span><span class="x">✕</span></div><div class="pd-2"><a class="pd-em" href="#">Đỗ Minh Khang<span class="ra">↗</span></a><span>FT LT2 · Đã xong</span></div></div>
+        <div class="pt">
+          <div class="cl">
+            <div class="nhom"><span class="nc on"><span class="tk">✓</span>Lộ trình mới</span><span class="nc">Tạm dừng</span><span class="nc">Thôi học</span></div>
+            <div class="f2">
+              <div class="f"><span class="lb">Lớp</span><div class="seg"><button aria-pressed="true">Lớp này</button><button aria-pressed="false">Lớp khác</button></div></div>
+              <div class="f"><span class="lb">Bắt đầu</span><span class="field">Ngay bây giờ <span class="m so">W3 OCT</span><i class="v"></i></span></div>
+            </div>
+            <div class="kc"><span class="h">Khi lưu, web sẽ</span><ul><li>Mở lộ trình mới ở CP FT 139 · <b>W3 OCT = tuần 1</b></li><li>Lịch MT1/2/3 tự xếp theo tuần học</li></ul></div>
+            <div class="lam"><button class="btn btn-primary btn-lg tat" disabled>Bắt đầu lộ trình mới</button></div>
+          </div>
+        </div>
+        <div class="pc"><span class="tl"><i class="quay"></i>Đang lưu…</span></div>
+      </div>
+    </div>
+    <div><div class="cap"><b>Đã xong</b> — ở lại panel; Hoàn tác (trừ khi đã có điểm ở lộ trình mới)</div>
+      <div class="pn doc" style="width:420px">
+        <div class="pt" style="padding:14px 16px">
+          <div class="xong"><span class="h">✓ Đã hẹn Lộ trình mới</span><span class="m" style="font-size:13px">CP FT 142 · bắt đầu <span class="so">W4 OCT</span> · Target <span class="so">6.5</span></span></div>
+          <div class="lam"><button class="btn btn-primary btn-lg">Việc tiếp ›</button><span class="m">hoặc ✕ về hồ sơ</span></div>
+        </div>
+        <div class="pc"><span class="tl da">✓ Đã lưu <span class="so">09:14</span></span><span class="sp"></span><span class="lk">Hoàn tác</span></div>
+      </div>
+    </div>
+    <div><div class="cap"><b>Lỗi</b> — giữ nguyên lựa chọn, thử lại</div>
+      <div class="pn doc" style="width:480px">
+        <div class="pd"><div class="pd-1"><span class="pd-viec">Bước tiếp</span><span class="han">Hạn T4 <span class="so">21/10</span></span><span class="x">✕</span></div><div class="pd-2"><a class="pd-em" href="#">Đỗ Minh Khang<span class="ra">↗</span></a><span>FT LT2 · Đã xong</span></div></div>
+        <div class="pt">
+          <div class="cl">
+            <div class="nhom"><span class="nc">Lộ trình mới</span><span class="nc on"><span class="tk">✓</span>Tạm dừng</span><span class="nc">Thôi học</span></div>
+            <div class="lam"><button class="btn btn-primary btn-lg">Tạm dừng</button></div>
+          </div>
+        </div>
+        <div class="pc"><span class="tl loi">⚠ Không lưu được — mất mạng</span><span class="sp"></span><span class="lk">Thử lại</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ 2 HỒ SƠ HV -->
+<section class="sec" id="s2">
+  <h2>2 · Hồ sơ HV — "Đã xong · OVR 6.5 · Đạt Target" + Chọn bước tiếp</h2>
+  <span class="where">Hồ sơ HV › đầu hồ sơ (thanh việc của người xem) + Hành trình › Các lộ trình · chủ SP 15/10</span>
+  <ul class="note">
+    <li>Đầu hồ sơ: một dòng việc. QL / TVV có nút <b>Chọn bước tiếp ›</b> (mở panel mục 1). GVCN chỉ thấy dòng "Chờ QL / TVV chọn bước tiếp", không nút.</li>
+    <li>Các lộ trình: cột Kết quả hiện <b>Đã xong · OVR 6.5 · Đạt Target</b> + link cùng việc. Sau khi chọn: Hẹn bắt đầu / Tạm dừng / Lộ trình mới.</li>
+  </ul>
+  <div class="row2">
+    <div class="win w1440">
+      <div class="app"><b>PISA Tracking</b><span>Tổng quan</span><span class="on">Học viên &amp; Lớp</span><span>Test</span><span>Công việc <span class="dem">2</span></span><span class="sp"></span><span class="nut-tron">?</span><span class="nut-tron"><svg class="ic"><use href="#chuong"/></svg></span><span>Lê Thu Hằng · Quản lý</span></div>
+      <div class="trang" style="max-width:1100px">
+        <div class="hs">
+          <div class="hs-1"><span class="tde">Đỗ Minh Khang</span><span class="chip ok">Đã xong</span><span class="sp"></span><button class="btn btn-sm">⋮</button></div>
+          <div class="hs-2"><b>CP FT 139</b><span>FT LT2</span><span>Target <span class="so">6.5</span></span><span>GVCN Trần Ngọc Hà</span></div>
+          <div class="vb"><span><b>Đã xong · OVR <span class="so">6.5</span> · Đạt Target</b></span><span class="m">thi T7 <span class="so">10/10</span></span><span class="sp"></span><span class="han">Hạn T4 <span class="so">21/10</span></span><button class="btn btn-primary">Chọn bước tiếp ›</button></div>
+        </div>
+        <div class="tabs"><span>Học thuật</span><span class="on">Hành trình</span><span>Ý thức</span><span>Thông tin</span></div>
+        <div class="card">
+          <div class="lt-h">Các lộ trình <span class="so">2</span></div>
+          <table class="t">
+            <thead><tr><th>Lộ trình</th><th>Lớp</th><th>Thời gian</th><th>Kết quả</th><th></th></tr></thead>
+            <tbody>
+              <tr class="on"><td><b style="color:var(--c1)">FT LT2</b></td><td>CP FT 139</td><td class="so">W2 JUN – W2 OCT</td><td><span class="chip ok">Đã xong · OVR 6.5 · Đạt Target</span> <span class="lk">Chọn bước tiếp ›</span></td><td style="text-align:right"><button class="btn btn-sm">Tổng kết</button></td></tr>
+              <tr><td><b style="color:var(--c1)">FT LT1</b></td><td>CP FT 121</td><td class="so">W1 FEB – W4 MAY</td><td><span class="chip xam">OVR 5.5 · Chưa đạt</span> <span class="chip doing">Lộ trình mới</span></td><td style="text-align:right"><button class="btn btn-sm">Tổng kết</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="win w375">
+      <div class="app"><b>PISA</b><span class="sp"></span><span class="nut-tron">?</span><span class="nut-tron"><svg class="ic"><use href="#chuong"/></svg></span></div>
+      <div class="trang">
+        <div class="hs">
+          <div class="hs-1"><span class="tde">Đỗ Minh Khang</span><span class="chip ok">Đã xong</span></div>
+          <div class="hs-2"><b>CP FT 139</b><span>Target <span class="so">6.5</span></span></div>
+          <div class="vb"><span><b>Đã xong · OVR <span class="so">6.5</span> · Đạt Target</b></span><span class="han">Hạn T4 <span class="so">21/10</span></span><button class="btn btn-primary">Chọn bước tiếp ›</button></div>
+        </div>
+        <div class="tabs"><span>Học thuật</span><span class="on">Hành trình</span><span>Ý thức</span></div>
+        <div class="card">
+          <div class="lt-h">Các lộ trình <span class="so">2</span></div>
+          <div class="lt-the"><div class="r"><span class="tn">FT LT2</span><span class="sp"></span><button class="btn btn-sm">Tổng kết</button></div><span>CP FT 139 · <span class="so">W2 JUN – W2 OCT</span></span><div class="r"><span class="chip ok">Đã xong · OVR 6.5 · Đạt Target</span><span class="lk">Chọn bước tiếp ›</span></div></div>
+          <div class="lt-the"><div class="r"><span class="tn">FT LT1</span><span class="sp"></span><button class="btn btn-sm">Tổng kết</button></div><span>CP FT 121 · <span class="so">W1 FEB – W4 MAY</span></span><div class="r"><span class="chip xam">OVR 5.5 · Chưa đạt</span><span class="chip doing">Lộ trình mới</span></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <span class="nhan-khoi">Trạng thái khác — dòng việc đầu hồ sơ + ô Kết quả ở Các lộ trình</span>
+  <div class="cards">
+    <div><div class="cap"><b>Hẹn bắt đầu</b> — em chờ; Huỷ hẹn → quay lại "Chọn bước tiếp"</div>
+      <div style="width:560px;display:flex;flex-direction:column;gap:8px">
+        <div class="vb cho"><span><b>Hẹn bắt đầu <span class="so">W4 OCT</span></b> · CP FT 142</span><span class="sp"></span><button class="btn btn-sm">Huỷ hẹn</button></div>
+        <div class="pa-r"><span class="tn">FT LT2</span><span class="chip ok">Đã xong · OVR 6.5 · Đạt Target</span><span class="chip wait">Hẹn bắt đầu W4 OCT</span><span class="lk">Huỷ hẹn</span></div>
+      </div>
+    </div>
+    <div><div class="cap"><b>GVCN</b> — chỉ đọc, không nút</div>
+      <div style="width:560px;display:flex;flex-direction:column;gap:8px">
+        <div class="vb doc"><span><b>Đã xong · OVR <span class="so">6.5</span> · Đạt Target</b></span><span class="sp"></span><span class="m" style="font-size:13px">Chờ QL / TVV chọn bước tiếp</span></div>
+        <div class="pa-r"><span class="tn">FT LT2</span><span class="chip ok">Đã xong · OVR 6.5 · Đạt Target</span><span class="dot">Chờ QL / TVV chọn bước tiếp</span></div>
+      </div>
+    </div>
+    <div><div class="cap"><b>Tạm dừng</b> — QL bấm Quay lại học → panel Bước tiếp mở sẵn Lộ trình mới</div>
+      <div style="width:560px;display:flex;flex-direction:column;gap:8px">
+        <div class="vb doc"><span><b>Tạm dừng</b> từ <span class="so">W3 OCT</span></span><span class="sp"></span><button class="btn btn-sm">Quay lại học</button></div>
+        <div class="pa-r"><span class="tn">FT LT2</span><span class="chip ok">Đã xong · OVR 6.5 · Đạt Target</span><span class="chip xam">Tạm dừng</span></div>
+      </div>
+    </div>
+    <div><div class="cap"><b>Thôi học</b> — Lưu trữ; dòng việc biến mất</div>
+      <div style="width:560px;display:flex;flex-direction:column;gap:8px">
+        <div class="pa-r"><span class="tn">FT LT2</span><span class="chip ok">Đã xong · OVR 6.5 · Đạt Target</span><span class="chip xam">Kết thúc</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ 3 CÔNG VIỆC -->
+<section class="sec" id="s3">
+  <h2>3 · Công việc — "Chọn bước tiếp" mở ngay trên dòng</h2>
+  <span class="where">Công việc · Của tôi · QL / TVV · hạn +7 ngày từ lúc lưu kết quả · chủ SP 15/10</span>
+  <ul class="note">
+    <li>Dòng: <b>Chọn bước tiếp</b> · tên em · lớp · "đã thi T7 10/10 · OVR 6.5 · Đạt Target". Bấm → khối Cần làm như mục 1 mở dưới dòng, không chuyển trang.</li>
+    <li>Lưu xong dòng thành "✓ Hẹn W4 OCT" rồi rời danh sách khi tải lại. Quá hạn: chip đỏ ⚠, không chặn.</li>
+  </ul>
+  <div class="row2">
+    <div class="win w1440">
+      <div class="app"><b>PISA Tracking</b><span>Tổng quan</span><span>Học viên &amp; Lớp</span><span>Test</span><span class="on">Công việc <span class="dem">1</span></span><span class="sp"></span><span class="nut-tron">?</span><span class="nut-tron"><svg class="ic"><use href="#chuong"/></svg></span><span>Lê Thu Hằng · Quản lý</span></div>
+      <div class="nen" style="max-width:820px">
+        <div class="tabs"><span class="on">Của tôi · <span class="so">3</span></span><span>Chi nhánh</span></div>
+        <div class="card ds">
+          <div class="nhom-h">Lộ trình · <span class="so">3</span></div>
+          <div class="dg on"><div class="dg-1"><span class="dg-v">Chọn bước tiếp</span><span class="han">Hạn T4 <span class="so">21/10</span></span></div><div class="dg-2"><b>Đỗ Minh Khang</b><span>CP FT 139</span><span>đã thi T7 <span class="so">10/10</span> · OVR <span class="so">6.5</span> · <span class="ok">Đạt Target</span></span></div></div>
+          <div class="dg-mo">
+            <div class="cl">
+              <div class="nhom"><span class="nc on"><span class="tk">✓</span>Lộ trình mới</span><span class="nc">Tạm dừng</span><span class="nc">Thôi học</span></div>
+              <div class="f2">
+                <div class="f"><span class="lb">Lớp</span><div class="seg"><button aria-pressed="true">Lớp này</button><button aria-pressed="false">Lớp khác</button></div></div>
+                <div class="f"><span class="lb">Bắt đầu</span><span class="field">Ngay bây giờ <span class="m so">W3 OCT</span><i class="v"></i></span></div>
+              </div>
+              <div class="gt">Target <b class="so">6.5</b> <span class="m">giữ</span><span class="lk" style="font-weight:600">Sửa</span></div>
+              <div class="kc"><span class="h">Khi lưu, web sẽ</span><ul><li>Mở lộ trình mới ở CP FT 139 · <b>W3 OCT = tuần 1</b></li></ul></div>
+              <div class="lam"><button class="btn btn-primary btn-lg">Bắt đầu lộ trình mới</button><span class="sp"></span><span class="lk" style="font-weight:600">Mở panel ›</span></div>
+            </div>
+          </div>
+          <div class="dg"><div class="dg-1"><span class="dg-v">Chọn bước tiếp</span><span class="han late">⚠ Quá hạn · T2 <span class="so">12/10</span></span></div><div class="dg-2"><b>Phan Bảo Ngọc</b><span>CP FT 131</span><span>đã thi CN <span class="so">27/09</span> · OVR <span class="so">5.5</span> · <span class="xam">Chưa đạt</span></span></div></div>
+          <div class="dg da"><div class="dg-1"><span class="dg-v">Chọn bước tiếp</span><span class="xg">✓ Tạm dừng</span></div><div class="dg-2"><b>Vũ Gia Huy</b><span>CP FT 139</span><span class="xam">vừa lưu <span class="so">09:02</span></span></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="win w375">
+      <div class="app"><b>PISA</b><span class="sp"></span><span class="nut-tron">?</span><span class="nut-tron"><svg class="ic"><use href="#chuong"/></svg></span></div>
+      <div class="trang">
+        <div class="tabs"><span class="on">Của tôi · <span class="so">3</span></span><span>Chi nhánh</span></div>
+        <div class="card ds">
+          <div class="nhom-h">Lộ trình · <span class="so">3</span></div>
+          <div class="dg on"><div class="dg-1"><span class="dg-v">Chọn bước tiếp</span><span class="han">Hạn T4 <span class="so">21/10</span></span></div><div class="dg-2"><b>Đỗ Minh Khang</b><span>đã thi <span class="so">10/10</span> · OVR <span class="so">6.5</span></span></div></div>
+          <div class="dg-mo">
+            <div class="cl">
+              <div class="nhom"><span class="nc">Lộ trình mới</span><span class="nc">Tạm dừng</span><span class="nc on"><span class="tk">✓</span>Thôi học</span></div>
+              <div class="kc"><span class="h">Khi lưu, web sẽ</span><ul><li><b>Kết thúc học</b> · em vào <b>Lưu trữ</b></li></ul></div>
+            </div>
+            <div class="tt-dong"><span class="tl"><i class="quay"></i>Đang lưu…</span></div>
+            <div class="lam"><button class="btn btn-primary tat" disabled>Thôi học</button></div>
+          </div>
+          <div class="dg"><div class="dg-1"><span class="dg-v">Chọn bước tiếp</span><span class="han late">⚠ T2 <span class="so">12/10</span></span></div><div class="dg-2"><b>Phan Bảo Ngọc</b><span>OVR <span class="so">5.5</span> · <span class="xam">Chưa đạt</span></span></div></div>
+          <div class="dg da"><div class="dg-1"><span class="dg-v">Chọn bước tiếp</span><span class="xg">✓ Tạm dừng</span></div><div class="dg-2"><b>Vũ Gia Huy</b><span class="xam">vừa lưu</span></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <ul class="note"><li>1440: Lộ trình mới · Lớp này · Ngay bây giờ. "Mở panel ›" = panel mục 1 (khi cần xem kết quả chi tiết). 375: Thôi học đang lưu. Sau lưu Thôi học: "✓ Thôi học · Hoàn tác" trên dòng.</li></ul>
+</section>
+
+<!-- ============================================================ 4 CHUYỂN LỚP NGAY -->
+<section class="sec" id="s4">
+  <h2>4 · Chuyển lớp — "Ngay hôm nay" + hạn bàn giao 7 ngày</h2>
+  <span class="where">Hồ sơ HV ⋮ Chuyển lớp… · ⋯ dòng em ở hồ sơ lớp · Duyệt đề xuất · vai QL · chủ SP 15/10</span>
+  <ul class="note">
+    <li>Ô <b>Tuần bắt đầu</b> thêm lựa chọn đầu <b>Ngay hôm nay</b>. Chọn nó: khối "Khi chuyển, web sẽ" viền vàng ghi <b>chuyển ngay, không hoàn tác</b>; nút chính đổi thành <b>Chuyển ngay</b>. Không hỏi thêm hộp xác nhận.</li>
+    <li>Điểm từ T2 <span class="so">12/10</span> tới hôm nay ở lại lớp cũ. Lộ trình giữ cách tính tuần như cũ (chuyển thường).</li>
+    <li>Hạn bàn giao mọi lệnh = muộn hơn của (ngày ra lệnh + 7 ngày) và mốc cũ — hiện ở dòng Bàn giao.</li>
+  </ul>
+  <div class="row2">
+    <div class="win w1440">
+      <div class="app"><b>PISA Tracking</b><span>Tổng quan</span><span class="on">Học viên &amp; Lớp</span><span>Test</span><span>Công việc <span class="dem">1</span></span><span class="sp"></span><span class="nut-tron">?</span><span class="nut-tron"><svg class="ic"><use href="#chuong"/></svg></span><span>Lê Thu Hằng · Quản lý</span></div>
+      <div class="stage" style="min-height:760px">
+        <div class="nen">
+          <div class="hs">
+            <div class="hs-1"><span class="tde">Ngô Thảo Vy</span><span class="chip doing">Đang học</span><span class="sp"></span><span class="dots on">⋮</span></div>
+            <div class="hs-2"><b>CP FT 139</b><span>FT LT1 · tuần học thứ <span class="so">7</span></span><span>Target <span class="so">6.0</span></span></div>
+          </div>
+          <div class="tabs"><span class="on">Học thuật</span><span>Hành trình</span><span>Ý thức</span><span>Thông tin</span></div>
+          <div class="card" style="padding:14px 16px;color:var(--faint);font-size:13px">Kết quả Test, Case… (giữ như hiện có)</div>
+        </div>
+        <div class="pn">
+          <div class="pd">
+            <div class="pd-1"><span class="pd-viec">Chuyển lớp</span><span class="x" aria-label="Đóng">✕</span></div>
+            <div class="pd-2"><a class="pd-em" href="#">Ngô Thảo Vy<span class="ra">↗</span></a><span>CP FT 139</span><span>FT LT1 · tuần <span class="so">7</span></span></div>
+          </div>
+          <div class="pt">
+            <div class="cl">
+              <div class="f"><span class="lb">Lớp chuyển đến<span class="bb">*</span></span><span class="field">CP FT 142 <span class="m">FT LT1 · CP · 9 em</span><i class="v"></i></span></div>
+              <div class="f"><span class="lb">Tuần bắt đầu<span class="bb">*</span></span><span class="field">Ngay hôm nay <span class="m so">T5 15/10</span><i class="v"></i></span></div>
+              <div class="f"><span class="lb">Lý do<span class="bb">*</span></span><textarea class="field" aria-label="Lý do" style="min-height:48px">Phụ huynh xin chuyển sang lớp tối, em đi học thêm buổi chiều.</textarea></div>
+              <div class="kc canh"><span class="h">⚠ Khi chuyển, web sẽ — chuyển ngay, không hoàn tác</span><ul>
+                <li>Em sang <b>CP FT 142</b> ngay khi lưu</li>
+                <li>Điểm T2 <span class="so">12/10</span> – hôm nay ở lại CP FT 139</li>
+                <li>Lộ trình FT LT1 giữ, tuần học tính như cũ</li>
+                <li>Bàn giao: hạn T4 <span class="so">21/10</span> · GVCN CP FT 142 nhận "Sắp nhận"</li>
+              </ul></div>
+              <div class="lam"><button class="btn btn-primary btn-lg">Chuyển ngay</button></div>
+            </div>
+          </div>
+          <div class="pc"><span class="tl nhap"><i class="cham"></i>Chưa lưu</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="win w375">
+      <div class="pn">
+        <div class="lui">‹ Hồ sơ</div>
+        <div class="pd">
+          <div class="pd-1"><span class="pd-viec">Chuyển lớp</span></div>
+          <div class="pd-2"><a class="pd-em" href="#">Ngô Thảo Vy<span class="ra">↗</span></a><span>CP FT 139</span></div>
+        </div>
+        <div class="pt">
+          <div class="cl">
+            <div class="f"><span class="lb">Lớp chuyển đến<span class="bb">*</span></span><span class="field">CP FT 142 <span class="m">9 em</span><i class="v"></i></span></div>
+            <div class="f"><span class="lb">Tuần bắt đầu<span class="bb">*</span></span>
+              <span class="field" style="border-color:var(--accent)"><span class="so">W4 OCT</span><span class="m so">T2 19/10</span><i class="v len"></i></span>
+              <div class="dd">
+                <span class="dd-o"><span class="tk"></span>Ngay hôm nay<span class="m so">T5 15/10</span></span>
+                <span class="dd-o on"><span class="tk">✓</span><span class="so">W4 OCT</span><span class="m so">T2 19/10</span></span>
+                <span class="dd-o"><span class="tk"></span><span class="so">W5 OCT</span><span class="m so">T2 26/10</span></span>
+                <span class="dd-o"><span class="tk"></span><span class="so">W1 NOV</span><span class="m so">T2 02/11</span></span>
+              </div>
+            </div>
+            <div class="f"><span class="lb">Lý do<span class="bb">*</span></span><textarea class="field" aria-label="Lý do" style="min-height:48px">Phụ huynh xin chuyển sang lớp tối.</textarea></div>
+          </div>
+          <div class="kc"><span class="h">Khi chuyển, web sẽ</span><ul>
+            <li>T2 <span class="so">19/10</span> tự chuyển sang CP FT 142</li>
+            <li>Bàn giao: hạn T4 <span class="so">21/10</span></li>
+          </ul></div>
+        </div>
+        <div class="day">
+          <div class="hang"><span class="tl nhap"><i class="cham"></i>Chưa lưu</span></div>
+          <button class="btn btn-primary">Lưu</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <ul class="note"><li>1440: Ngay hôm nay. 375: ô tuần đang mở, chọn tuần sau (lệnh chờ như cũ, sửa / huỷ được tới T2). Hạn bàn giao: ra lệnh <span class="so">15/10</span> + 7 ngày = T4 <span class="so">21/10</span>; lệnh W1 NOV → mốc cũ muộn hơn → hạn theo mốc cũ.</li></ul>
+
+  <span class="nhan-khoi">Trạng thái khác</span>
+  <div class="cards">
+    <div><div class="cap"><b>Đang chuyển</b> — khoá nút</div>
+      <div class="pn doc" style="width:480px">
+        <div class="pd"><div class="pd-1"><span class="pd-viec">Chuyển lớp</span><span class="x">✕</span></div><div class="pd-2"><a class="pd-em" href="#">Ngô Thảo Vy<span class="ra">↗</span></a><span>CP FT 139 → CP FT 142</span></div></div>
+        <div class="pt"><div class="cl"><div class="kc canh"><span class="h">⚠ Chuyển ngay, không hoàn tác</span></div><div class="lam"><button class="btn btn-primary btn-lg tat" disabled>Chuyển ngay</button></div></div></div>
+        <div class="pc"><span class="tl"><i class="quay"></i>Đang chuyển…</span></div>
+      </div>
+    </div>
+    <div><div class="cap"><b>Đã chuyển</b> — không Hoàn tác</div>
+      <div class="pn doc" style="width:420px">
+        <div class="pt" style="padding:14px 16px">
+          <div class="xong"><span class="h">✓ Đã chuyển sang CP FT 142</span><span class="m" style="font-size:13px">từ hôm nay T5 <span class="so">15/10</span> · bàn giao hạn T4 <span class="so">21/10</span></span></div>
+          <div class="lam"><button class="btn btn-primary btn-lg">Đóng</button><span class="lk" style="font-weight:600">Hồ sơ CP FT 142 ›</span></div>
+        </div>
+        <div class="pc"><span class="tl da">✓ Đã chuyển <span class="so">10:21</span></span></div>
+      </div>
+    </div>
+    <div><div class="cap"><b>Đã lưu lệnh tuần sau</b> — như cũ, có Hoàn tác</div>
+      <div class="pn doc" style="width:420px">
+        <div class="pt" style="padding:14px 16px">
+          <div class="xong"><span class="h">✓ Đã lưu quyết định chuyển lớp</span><span class="m" style="font-size:13px">CP FT 142 · từ <span class="so">W4 OCT</span> · bàn giao hạn T4 <span class="so">21/10</span></span></div>
+        </div>
+        <div class="pc"><span class="tl da">✓ Đã lưu <span class="so">10:21</span></span><span class="sp"></span><span class="lk">Hoàn tác</span></div>
+      </div>
+    </div>
+    <div><div class="cap"><b>Lỗi</b> — giữ chữ đã gõ</div>
+      <div class="pn doc" style="width:480px">
+        <div class="pd"><div class="pd-1"><span class="pd-viec">Chuyển lớp</span><span class="x">✕</span></div><div class="pd-2"><a class="pd-em" href="#">Ngô Thảo Vy<span class="ra">↗</span></a><span>CP FT 139</span></div></div>
+        <div class="pt"><div class="cl"><div class="f"><span class="lb">Tuần bắt đầu<span class="bb">*</span></span><span class="field">Ngay hôm nay <span class="m so">T5 15/10</span><i class="v"></i></span></div><div class="lam"><button class="btn btn-primary btn-lg">Chuyển ngay</button></div></div></div>
+        <div class="pc"><span class="tl loi">⚠ Không lưu được — chưa chuyển</span><span class="sp"></span><span class="lk">Thử lại</span></div>
+      </div>
+    </div>
+    <div><div class="cap"><b>Dòng bàn giao</b> (hồ sơ lớp cũ · Công việc GV)</div>
+      <div class="card ds" style="width:480px">
+        <div class="dg"><div class="dg-1"><span class="dg-v">Bàn giao · Ngô Thảo Vy</span><span class="han soon">Hạn T4 <span class="so">21/10</span></span></div><div class="dg-2"><b>CP FT 139 → CP FT 142</b><span>đã chuyển T5 <span class="so">15/10</span></span></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ CHỜ CHỐT -->
+<section class="sec" id="cho">
+  <h2>Chờ chủ SP chốt</h2>
+  <div class="q"><b>Câu 1 · Lộ trình mới ở "Lớp khác" có phiếu bàn giao không?</b><span class="kn2"><b>Khuyến nghị:</b> có, đi đúng đường Chuyển lớp (cùng khối "Khi lưu", cùng hạn = muộn hơn của ra lệnh + 7 ngày và mốc cũ) — GV lớp mới cần biết em. "Ngay bây giờ" + Lớp khác = chuyển ngay, không hoàn tác như mục 4.</span></div>
+  <div class="q"><b>Câu 2 · Target của lộ trình mới.</b><span class="kn2"><b>Khuyến nghị:</b> giữ Target cũ, hiện một dòng "Target 6.5 · giữ · Sửa" (QL / TVV sửa được tại chỗ); không bắt nhập lại. Em đã đạt Target thì TVV thường nâng — dòng Sửa đủ dùng.</span></div>
+  <div class="q"><b>Câu 3 · Chuyển "Ngay hôm nay": bài Test tuần này chưa thi đi theo lớp nào?</b><span class="kn2"><b>Khuyến nghị:</b> bài chưa thi, chưa điểm theo lịch lớp mới từ hôm nay; bài đã có điểm ở lại lớp cũ (khớp "điểm T2 → hôm nay ở lớp cũ").</span></div>
+</section>
+
+</div>
+<script>
+function doi(t,b){document.documentElement.dataset.theme=t;document.querySelectorAll('.top .btn').forEach(x=>x.setAttribute('aria-pressed',x===b?'true':'false'))}
+</script>
+</body>
+</html>

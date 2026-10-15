@@ -1,3 +1,4 @@
+import { coNguoiDay } from '../../../shared/domain/paDongBo.ts';
 /**
  * PR-MT — dữ liệu thử cho phép kiểm CŨ dựng lượt MT bằng tay (sosV3, PR-N …).
  *
@@ -45,4 +46,18 @@ export function nhanXetCaseThu(conn: any, saveScore: (...a: any[]) => any, who: 
   const nx = String(o.moTa ?? 'Nhận xét của GV cho bài này.').trim();
   return saveScore(who, c.attempt_id, c.topic, { nhanXet: nx.length >= 10 ? nx : `${nx} — nhận xét GV`, nhomNguyenNhan: o.primaryCode ? [o.primaryCode] : null },
     ...(o.today ? [o.today] : []));
+}
+
+/**
+ * OV-13b (mockup OV-13 §9): Xác nhận PA bắt Người dạy (loại có người dạy) và Số buổi (Tutor). Phép kiểm cũ chỉ gửi mô tả → điền phần còn thiếu
+ * (người ngoài "GV thử", 4 buổi) khi PA chưa có; gửi sẵn khoá nào thì giữ khoá đó.
+ */
+export function duXacNhan<T extends Record<string, any>>(conn: any, ivId: number, input: T): T {
+  const iv = conn.prepare('SELECT kind, so_buoi, performer_user_id, performer_name FROM case_interventions WHERE id = ?').get(ivId) as any;
+  if (!iv) return input;
+  const them: Record<string, any> = {};
+  const guiNguoi = 'performerSelf' in input || 'performerUserId' in input || 'performerName' in input;
+  if (coNguoiDay(iv.kind) && !guiNguoi && !iv.performer_user_id && !iv.performer_name) them.performerName = 'GV thử';
+  if (iv.kind === 'tutor' && iv.so_buoi == null && input.soBuoi === undefined) them.soBuoi = 4;
+  return { ...input, ...them };
 }
