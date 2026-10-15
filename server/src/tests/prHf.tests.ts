@@ -94,4 +94,51 @@ export async function runPrHfTests(t: YThucTestKit) {
     const sau = one('SELECT urgency, title, summary FROM sos_cases WHERE id = ?', c.id);
     assert(sau.urgency === 'urgent' && sau.title === 'Nghe sót số liệu' && sau.summary == null, `đã lưu: ${JSON.stringify(sau)}`);
   }));
+  /* HOTFIX-2 (chủ SP 15/10): lệnh chỉ nhận xét / nhóm — GV đúng kỹ năng, GVCN, QL sửa MỌI LÚC (ô đã có nhận xét; lớp đã kết thúc). */
+  const { sosCaseState } = await import('../cases/sosState.ts');
+  const { can, isCoreTeacherOf, PERMISSIONS } = await import('../permissions.ts') as any;
+  const mb = classId('MB FT 101');
+  const khacKyNang = [P.w1Teacher, P.w2Teacher, P.sTeacher].find((x: any) => !can(x, PERMISSIONS.SCORE_EDIT, { classId: mb, skill: 'listening' }) && !isCoreTeacherOf(x, mb))!;
+  const nx = (url: string) => one(`SELECT comment FROM assessment_scores WHERE attempt_id = ? AND skill = ?`, luot, url).comment;
+
+  await checkAsync('HF2-1 · đợt đã hoàn tất, ô ĐÃ có nhận xét: GV kỹ năng / GV Speaking / GVCN sửa → 200; GV khác kỹ năng → 403; kèm điểm → 403', () => voiMayChu('2026-12-01', async (goi) => {
+    const sua = (u: number, s: string, body: unknown) => goi(u, `/attempts/${luot}/scores/${s}`, put(body));
+    const a = await sua(P.lrTeacher.userId, 'listening', { nhanXet: 'Sửa lại: nghe sót số liệu Part 1 và 2.' });
+    assert(a.status === 200 && nx('listening') === 'Sửa lại: nghe sót số liệu Part 1 và 2.', `GV L: ${a.status} ${await a.text()}`);
+    const b = await sua(P.sTeacher.userId, 'speaking', { nhanXet: 'Sửa lại: trả lời ngắn, thiếu ý mở rộng.', nhomNguyenNhan: [nhom('speaking')[0]] });
+    assert(b.status === 200, `GV S: ${b.status} ${await b.text()}`);
+    const c = await sua(P.coreTeacher.userId, 'listening', { nhanXet: 'GVCN: em cần luyện nghe số liệu.' });
+    assert(c.status === 200, `GVCN: ${c.status} ${await c.text()}`);
+    const d = await sua(khacKyNang.userId, 'listening', { nhanXet: 'GV khác kỹ năng sửa nhận xét L.' });
+    assert(d.status === 403, `GV khác kỹ năng phải 403: ${d.status}`);
+    const e = await sua(P.lrTeacher.userId, 'listening', { band: 7, nhanXet: 'Sửa lại: nghe sót số liệu Part 1 và 2.' });
+    assert(e.status === 403, `kèm điểm phải 403: ${e.status}`);
+    const f = await sua(P.lrTeacher.userId, 'listening', { nhanXet: 'ngắn' });
+    assert(f.status === 400, `nhận xét < 10 ký tự phải 400: ${f.status}`);
+  }));
+
+  await checkAsync('HF2-2 · lớp đã kết thúc: GV kỹ năng sửa nhận xét → 200; kèm điểm → 403', () => voiMayChu(TRONG, async (goi) => {
+    const cu = one('SELECT status FROM classes WHERE id = ?', mb).status;
+    conn.prepare(`UPDATE classes SET status = 'finished' WHERE id = ?`).run(mb); xoaNho();
+    try {
+      const a = await goi(P.lrTeacher.userId, `/attempts/${luot}/scores/listening`, put({ nhanXet: 'Lớp đã kết thúc: bổ sung nhận xét L.' }));
+      assert(a.status === 200 && nx('listening') === 'Lớp đã kết thúc: bổ sung nhận xét L.', `lớp kết thúc: ${a.status} ${await a.text()}`);
+      const b = await goi(P.lrTeacher.userId, `/attempts/${luot}/scores/listening`, put({ band: 7 }));
+      assert(b.status === 403, `kèm điểm phải 403: ${b.status}`);
+    } finally { conn.prepare('UPDATE classes SET status = ? WHERE id = ?').run(cu, mb); xoaNho(); }
+  }));
+
+  await checkAsync('HF2-3 · Case "chờ ghi nhận xét" (ô đã có nhận xét) → GV Lưu → Chờ xác nhận PA; nhật ký người + cũ → mới', () => voiMayChu('2026-12-01', async (goi) => {
+    const c = caseL();
+    conn.prepare('DELETE FROM case_issues WHERE case_id = ?').run(c.id); xoaNho();
+    assert(sosCaseState(c.id).choNhanXet, 'Case phải đang chờ ghi nhận xét');
+    const cu = nx('listening');
+    const r = await goi(P.lrTeacher.userId, `/attempts/${luot}/scores/listening`, put({ nhanXet: 'Ghi nhận xét: nghe sót số liệu, chép sai chính tả.' }));
+    assert(r.status === 200, `ghi nhận xét: ${r.status} ${await r.text()}`);
+    const st = sosCaseState(c.id);
+    assert(!st.choNhanXet && st.hasCause && st.coPaChoXacNhan, `Case phải sang Chờ xác nhận PA: ${JSON.stringify(st)}`);
+    const log = one(`SELECT * FROM audit_logs WHERE action = 'score.nhan_xet' AND entity_id = ? ORDER BY id DESC LIMIT 1`, luot);
+    assert(log && log.actor_user_id === P.lrTeacher.userId && JSON.parse(log.before_json).comment === cu
+      && JSON.parse(log.after_json).comment === 'Ghi nhận xét: nghe sót số liệu, chép sai chính tả.', `nhật ký: ${JSON.stringify(log)}`);
+  }));
 }
