@@ -15,7 +15,7 @@ import {
   componentsAreCounts, componentsFor, interventionKindsFor, isProposalKind,
   dsLoi, kiemGhiRoKhac, KHAC_TOI_THIEU, moiKhoaGui, tuanLich,
   giaTriCuaPa, loiFormPa, paMoi, paPayload, thanSuaPa, type GiaTriPa, type KetQuaNhatKy,
-  URGENCY_LEVELS, URGENCY_LABEL, caseTopicsFor, issuesForTopic, laKhac, tenMon, tenMonNgan,
+  URGENCY_LEVELS, URGENCY_LABEL, duongDotTest, caseTopicsFor, issuesForTopic, laKhac, tenMon, tenMonNgan,
 } from '@shared/domain/index.ts';
 import { ComponentsField, componentsPayload } from './ChiTietKyNang.tsx';
 import { FormPa, NgayKhoa, NhatKyPa } from './FormPa.tsx';
@@ -409,7 +409,7 @@ export function SuaCasePanel({ c, tenCase, soPaChuaLam, hocVien, lop, quayLai, o
               <div className="text-sm text-slate-300"><DongNguyenNhan issues={c.issues} /></div>
               <div className="mt-1 text-xs text-slate-400">
                 {c.attemptId
-                  ? <Link className="link" to={`/mock-test/${c.attemptId}`}>{t('Lấy từ nhận xét + nhóm của bài — sửa ở hồ sơ Mock Test.')}</Link>
+                  ? <Link className="link" to={duongDotTest({ id: c.attemptId, kind: 'mock' }, c.topic)}>{t('Lấy từ nhận xét + nhóm của bài — sửa ở hồ sơ Mock Test.')}</Link>
                   : t('Lấy từ nhận xét + nhóm của bài — sửa ở hồ sơ Mock Test.')}
               </div>
             </Truong>
