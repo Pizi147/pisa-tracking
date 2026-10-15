@@ -20,5 +20,9 @@ export const EN_OV13C = {
   'Trống = nội dung chung': 'Empty = shared content',
   'Đề xuất PA khác cho em này…': 'Propose another PA for this student…',
   'Nhập điểm · {tuan}': 'Enter scores · {tuan}',
+  'Chọn từ 1 đến {n} PA để xác nhận.': 'Select 1 to {n} PAs to confirm.',
+  'Ngày bắt đầu phải trong khoảng 30 ngày quanh hôm nay.': 'Start date must be within 30 days of today.',
+  'Mã PA không hợp lệ.': 'Invalid PA id.',
+  'Không xác nhận được.': 'Could not confirm.',
   '{n} lớp': (b) => `${b.n} ${Number(b.n) === 1 ? 'class' : 'classes'}`,
 } satisfies Record<string, Dich>;

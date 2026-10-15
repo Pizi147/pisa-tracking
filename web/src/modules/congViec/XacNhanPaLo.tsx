@@ -7,8 +7,9 @@ import { ONgay } from '../../ui/ONgay.tsx';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { useToast } from '../../ui/Toast.tsx';
+import { useLoiForm } from '../../ui/loiForm.tsx';
 import {
-  GOI_Y_MO_TA_PA, INTERVENTION_KIND_LABEL, LOAI_HAN_CUA_VIEC, addDaysIso, coNguoiDay, datLaiNguoi, type NguoiChon,
+  GOI_Y_MO_TA_PA, INTERVENTION_KIND_LABEL, LOAI_HAN_CUA_VIEC, addDaysIso, coNguoiDay, datLaiNguoi, type LoiTruong, type NguoiChon,
 } from '@shared/domain/index.ts';
 import type { WorkItem } from '../worklist/WorkList.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
@@ -38,9 +39,9 @@ export function XacNhanPaLo({ it, onDong, onDaLam, onMo, onTiep }: {
   const [nguoi, setNguoi] = useState<NguoiChon | null>(null);
   const [rieng, setRieng] = useState<Record<string, Rieng>>({});
   const [xong, setXong] = useState<ReadonlySet<string>>(new Set());
-  const [loi, setLoi] = useState<Record<string, string>>({});
+  const [loiMay, setLoiMay] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
-  const [daBam, setDaBam] = useState(false);
+  const lf = useLoiForm();
 
   const conLai = ds.filter((x) => !xong.has(x.key));
   const chon = conLai.filter((x) => tick.has(x.key));
@@ -49,20 +50,20 @@ export function XacNhanPaLo({ it, onDong, onDaLam, onMo, onTiep }: {
   const datRieng = (k: string, p: Partial<Rieng>) => setRieng((m) => ({ ...m, [k]: { ...riengCua(k), ...p } }));
   /* Nội dung chung bắt buộc trừ khi mọi em đang tick đã có nội dung riêng đủ dài. */
   const canChung = chon.some((x) => riengCua(x.key).moTa.trim().length < TOI_THIEU);
-  const loiChung = daBam && canChung && moTa.trim().length < TOI_THIEU
-    ? (moTa.trim() ? t('Nội dung cần ít nhất {n} ký tự', { n: TOI_THIEU }) : t('Ghi nội dung / hướng dẫn')) : null;
-  const loiRieng = (x: Em) => {
-    const m = riengCua(x.key).moTa.trim();
-    return daBam && tick.has(x.key) && m && m.length < TOI_THIEU ? t('Nội dung cần ít nhất {n} ký tự', { n: TOI_THIEU }) : null;
-  };
+  const ngan = t('Nội dung cần ít nhất {n} ký tự', { n: TOI_THIEU });
+  const oRieng = (x: Em) => `noi-dung-${x.paId}`;
+  const loi: LoiTruong[] = [
+    ...(canChung && moTa.trim().length < TOI_THIEU ? [{ khoa: 'noi-dung', nhan: t('Nội dung / hướng dẫn'), lyDo: moTa.trim() ? ngan : t('Ghi nội dung / hướng dẫn') }] : []),
+    ...chon.filter((x) => { const m = riengCua(x.key).moTa.trim(); return m && m.length < TOI_THIEU; }).map((x) => ({ khoa: oRieng(x), nhan: x.studentName, lyDo: ngan })),
+  ];
   const daSua = !!moTa.trim() || !!batDau || !!nguoi || Object.values(rieng).some((r) => r.moTa.trim() || r.batDau || r.nguoi);
   const loai = [...new Set(ds.map((x) => x.pa?.kind).filter((k): k is string => !!k))];
   const tenLoai = loai.map((k) => INTERVENTION_KIND_LABEL[k as keyof typeof INTERVENTION_KIND_LABEL] ?? k).join(' · ');
   const coNguoi = ds.some((x) => coNguoiDay(x.pa?.kind ?? 'self_study'));
 
   const gui = async () => {
-    setDaBam(true);
-    if (!chon.length || (canChung && moTa.trim().length < TOI_THIEU) || chon.some((x) => loiRieng(x) || (riengCua(x.key).moTa.trim() && riengCua(x.key).moTa.trim().length < TOI_THIEU))) return;
+    lf.bam();
+    if (!chon.length || loi.length) return;
     setBusy(true);
     try {
       const kq = await api.post<{ ok: number[]; loi: { id: number; loi: string }[] }>('/interventions/xac-nhan-pa-lo', {
@@ -78,11 +79,11 @@ export function XacNhanPaLo({ it, onDong, onDaLam, onMo, onTiep }: {
         onDaLam();
         for (const d of ['/cases', '/students', '/tong-quan', '/my-work']) invalidate(d);
       }
-      setLoi(Object.fromEntries(kq.loi.map((l) => [theoPa.get(l.id) ?? String(l.id), l.loi])));
+      setLoiMay(Object.fromEntries(kq.loi.map((l) => [theoPa.get(l.id) ?? String(l.id), l.loi])));
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
   };
 
-  const coLoi = conLai.some((x) => loi[x.key]);
+  const coLoi = conLai.some((x) => loiMay[x.key]);
   const nut = conLai.length ? (
     <button type="button" className="btn btn-primary min-h-[40px] px-4 font-bold" disabled={busy || !chon.length} onClick={() => void gui()}>
       {busy ? t('Đang lưu…') : coLoi ? t('Thử lại · {n} em', { n: chon.length }) : t('Xác nhận PA · {n} em', { n: chon.length })}
@@ -93,10 +94,10 @@ export function XacNhanPaLo({ it, onDong, onDaLam, onMo, onTiep }: {
     lop: it.classCode, ngCanh: dich(it.contextLabel ?? ''),
   });
   /* Em lỗi lên đầu (mockup 375: lỗi một em không mất phần đã xác nhận). */
-  const thuTu = [...conLai].sort((a, b) => Number(!loi[a.key]) - Number(!loi[b.key]));
+  const thuTu = [...conLai].sort((a, b) => Number(!loiMay[a.key]) - Number(!loiMay[b.key]));
   return (
     <KhungPanel tieuDe={t('Xác nhận PA cùng lúc')} dau={dau} onDong={onDong}
-      chan={{ v3: true, chinh: nut, daSua: daSua && !!conLai.length, dongTren: conLai.length && (busy || daSua) ? <TrangThaiLuu tt={busy ? 'dang' : 'nhap'} /> : undefined }}>
+      chan={{ v3: true, chinh: nut, daSua: daSua && !!conLai.length, conThieu: lf.conThieu(loi), dongTren: conLai.length && (busy || daSua) ? <TrangThaiLuu tt={busy ? 'dang' : 'nhap'} /> : undefined }}>
       <div className="flex flex-col gap-5 pt-4">
         {xong.size > 0 && (
           <div role="status" className="flex flex-col gap-1">
@@ -108,8 +109,8 @@ export function XacNhanPaLo({ it, onDong, onDaLam, onMo, onTiep }: {
         {conLai.length > 0 && (
           <CanLam>
             {tenLoai && <span className="text-[15px] font-bold text-slate-100">{dich(tenLoai)}{it.sos ? <span className="ml-2 text-[13px] font-normal text-slate-400">{t('quy chế SOS {sos}', { sos: it.sos })}</span> : null}</span>}
-            <Truong nhan={t('Nội dung / hướng dẫn')} batBuoc={canChung} loi={loiChung} dem={{ co: moTa.trim().length, can: TOI_THIEU }}>
-              <textarea className="field w-full" rows={2} maxLength={2000} value={moTa} disabled={busy} aria-invalid={!!loiChung}
+            <Truong nhan={t('Nội dung / hướng dẫn')} batBuoc={canChung} loi={lf.loiCua(loi, 'noi-dung')} dem={{ co: moTa.trim().length, can: TOI_THIEU }}>
+              <textarea className="field w-full" rows={2} maxLength={2000} value={moTa} disabled={busy} {...lf.o(loi, 'noi-dung')}
                 onChange={(e) => setMoTa(e.target.value)} placeholder={GOI_Y_MO_TA_PA} />
             </Truong>
             <div className="grid gap-3 sm:grid-cols-2">
@@ -143,7 +144,7 @@ export function XacNhanPaLo({ it, onDong, onDaLam, onMo, onTiep }: {
                         <button type="button" className="btn btn-ghost min-h-[44px] font-semibold text-[color:var(--accent)] sm:min-h-[32px]" aria-expanded={r.mo}
                           onClick={() => datRieng(x.key, { mo: !r.mo })}>{r.mo ? t('Xong') : t('Sửa riêng')}</button>
                       </div>
-                      {loi[x.key] && <p role="alert" className="m-0 mt-1 text-xs text-bad">⚠ {dich(loi[x.key])}</p>}
+                      {loiMay[x.key] && <p role="alert" className="m-0 mt-1 text-xs text-bad">⚠ {dich(loiMay[x.key])}</p>}
                       {r.mo && (
                         <div className="mt-2 flex flex-col gap-3 border-l-2 pl-3" style={{ borderColor: 'var(--line-strong)' }}>
                           <div className="grid gap-3 sm:grid-cols-2">
@@ -158,8 +159,8 @@ export function XacNhanPaLo({ it, onDong, onDaLam, onMo, onTiep }: {
                               </Truong>
                             )}
                           </div>
-                          <Truong nhan={t('Nội dung riêng')} tuyChon loi={loiRieng(x)}>
-                            <textarea className="field w-full" rows={2} maxLength={2000} value={r.moTa} disabled={busy}
+                          <Truong nhan={t('Nội dung riêng')} tuyChon loi={lf.loiCua(loi, oRieng(x))}>
+                            <textarea className="field w-full" rows={2} maxLength={2000} value={r.moTa} disabled={busy} {...lf.o(loi, oRieng(x))}
                               onChange={(e) => datRieng(x.key, { moTa: e.target.value })} placeholder={t('Trống = nội dung chung')} />
                           </Truong>
                           {onMo && (

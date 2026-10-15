@@ -67,8 +67,11 @@ export async function runPrOv5aTests(t: YThucTestKit) {
     const { A, B, C, D } = bonEm();
     const w = mywork.myWork(GV_R);
     assert(!(w.items as any[]).some((x) => x.group === 'cause' && [A.r, B.r, C.r, D.r].includes(x.caseId)), 'còn việc Xác nhận nguyên nhân cho Case MT');
+    /* OV-13c (Q4): Case SOS FT cùng lớp + tuần thi + mức SOS gộp một dòng — mỗi Case vẫn là một việc con "Ghi nhận xét {kỹ năng} · MT1". */
     for (const x of [A, B, C, D]) {
-      const it = (w.dong as any[]).find((y) => y.key === `ghi_nhan_xet:${x.r}`);
+      const cha = (w.dong as any[]).find((y) => y.con?.some((c: any) => c.key === `ghi_nhan_xet:${x.r}`));
+      assert(!cha || cha.key.startsWith('gop:ghi_nhan_xet:'), `dòng gộp sai khoá: ${cha?.key}`);
+      const it = cha ? cha.con.find((c: any) => c.key === `ghi_nhan_xet:${x.r}`) : (w.dong as any[]).find((y) => y.key === `ghi_nhan_xet:${x.r}`);
       assert(it && !it.con && it.group === 'ghi_nhan_xet' && it.tieuDe === `Ghi nhận xét Reading · MT1 · ${x.ten}` && it.luot === 'mt:1' && it.kn === 'reading',
         `dòng ${x.ten}: ${JSON.stringify(it && { k: it.key, t: it.tieuDe, l: it.luot, kn: it.kn, con: !!it.con })}`);
     }

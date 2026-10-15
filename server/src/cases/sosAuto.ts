@@ -465,16 +465,16 @@ export const TRAN_XAC_NHAN_PA_LO = 50;
 export function xacNhanPaNhieu(p: Principal, body: unknown): { ok: number[]; loi: { id: number; loi: string; ma: number }[] } {
   const b = (body ?? {}) as { chung?: ThanXacNhanPa; ds?: unknown };
   const chung = b.chung && typeof b.chung === 'object' ? b.chung : {};
-  if (!Array.isArray(b.ds) || !b.ds.length || b.ds.length > TRAN_XAC_NHAN_PA_LO) throw badRequest(`Chọn từ 1 đến ${TRAN_XAC_NHAN_PA_LO} PA để xác nhận.`);
+  if (!Array.isArray(b.ds) || !b.ds.length || b.ds.length > TRAN_XAC_NHAN_PA_LO) throw loi(400, 'Chọn từ 1 đến {n} PA để xác nhận.', { n: TRAN_XAC_NHAN_PA_LO });
   const ok: number[] = [];
-  const loi: { id: number; loi: string; ma: number }[] = [];
+  const hong: { id: number; loi: string; ma: number }[] = [];
   const ds = new Map<number, ThanXacNhanPa>();
   for (const x of b.ds as any[]) {
     const id = x && typeof x === 'object' ? x.id : x;
-    if (!(Number.isInteger(id) && id > 0)) { loi.push({ id, loi: 'Mã PA không hợp lệ.', ma: 400 }); continue; }
+    if (!(Number.isInteger(id) && id > 0)) { hong.push({ id, loi: 'Mã PA không hợp lệ.', ma: 400 }); continue; }
     if (!ds.has(id)) ds.set(id, x && typeof x === 'object' ? x : {});
   }
-  if (!ds.size) return { ok, loi };
+  if (!ds.size) return { ok, loi: hong };
   /* Một câu cho cả lô: PA nào đã có người dạy (không đè bằng người chung). */
   const ids = [...ds.keys()];
   const coNguoi = new Set((db().prepare(`SELECT id FROM case_interventions WHERE id IN (${ids.map(() => '?').join(',')})
@@ -489,9 +489,9 @@ export function xacNhanPaNhieu(p: Principal, body: unknown): { ok: number[]; loi
       ...(r.soBuoi !== undefined ? { soBuoi: r.soBuoi } : chung.soBuoi !== undefined ? { soBuoi: chung.soBuoi } : {}),
       ...(coNguoiRieng ? Object.fromEntries(KHOA_NGUOI.filter((k) => k in r).map((k) => [k, r[k]])) : nguoiChung && !coNguoi.has(id) ? nguoiChung : {}),
     };
-    try { xacNhanPaQuyChe(p, id, than, { chiGhi: true }); ok.push(id); } catch (e: any) { loi.push({ id, loi: e?.message ?? 'Không xác nhận được.', ma: e?.status ?? 500 }); }
+    try { xacNhanPaQuyChe(p, id, than, { chiGhi: true }); ok.push(id); } catch (e: any) { hong.push({ id, loi: e?.message ?? 'Không xác nhận được.', ma: e?.status ?? 500 }); }
   }
-  return { ok, loi };
+  return { ok, loi: hong };
 }
 
 /**
