@@ -55,6 +55,7 @@ import { migratePrOv12h } from './migrate/prOv12h.ts';
 import { cacBuocPrOv13a, khoaPrOv1c, themCotPrOv13a } from './migrate/prOv13a.ts';
 import { migratePrOv13e } from './migrate/prOv13e.ts';
 import { migratePrHd } from './migrate/prHd.ts';
+import { migratePrOv13k } from './migrate/prOv13k.ts';
 
 /**
  * Nâng cấp database ĐANG CÓ lên schema mới, không xoá dữ liệu. PR-SO (DEP-gỡ): nhánh nâng cấp từ mô hình `mock_attempts` (trước overhaul)
@@ -112,6 +113,7 @@ function migrateCaseEngine(applied: string[], skipped: string[], loiSauBuoc?: nu
   conn.pragma('foreign_keys = OFF');
     /* PR-OV11e: cột KCK theo lượt — TRƯỚC mọi bước tính kết quả lượt (`kckCuaLuot` đọc cột này). Chỉ thêm cột. */ buoc(() => themCotPrOv11e(conn, applied));
     /* PR-OV13a: cột sos_cases.tam (Case tạm) — TRƯỚC mọi bước có thể chạy luật Case (đọc / ghi cột này). Chỉ thêm cột. */ buoc(() => themCotPrOv13a(conn, applied));
+    /* OV-13k: cột nhận xét GV phụ trách Speaking (assessment_scores) — TRƯỚC mọi bước đọc điểm (`scoresOf` / `diemCuaLuot` JOIN các cột này). Chỉ thêm cột. */ buoc(() => migratePrOv13k(conn, applied));
     buoc(() => {
     // 1. Cột mới trên các bảng đang có.
     for (const [col, decl] of [

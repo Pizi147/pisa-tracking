@@ -394,6 +394,13 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, gvMacDi
             aria-required={batBuoc && coDiemSau ? true : undefined} onChange={(e) => setNx(e.target.value)} />
         </label>
       )}
+      {/* OV-13k: nhận xét riêng của GV phụ trách Speaking lớp — chỉ đọc ở hộp chấm (GV phụ trách ghi ở hồ sơ MT). */}
+      {laS && cell.nhanXetPhuTrach && (
+        <div className="text-[13px]">
+          <span className="block text-xs font-medium text-slate-300">{t('Nhận xét GV phụ trách')}{cell.nhanXetPhuTrach.ten ? ` · ${cell.nhanXetPhuTrach.ten}` : ''}</span>
+          <p className="m-0 mt-1 whitespace-pre-wrap break-words text-slate-200">{cell.nhanXetPhuTrach.chu}</p>
+        </div>
+      )}
       {canNhom && nhapDuoc && (
         <div ref={nhomRef}>
           <span id="hop-nhom-nn" className="mb-1.5 block text-xs font-medium text-slate-300">{t('Nhóm nguyên nhân')}<span aria-hidden className="text-bad"> *</span></span>

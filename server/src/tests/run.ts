@@ -9389,6 +9389,9 @@ await runPrOv13gTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P,
 // ==================================================================== OV-13l (Chuyển lớp "Ngay hôm nay" · hạn bàn giao 7 ngày · điểm đi theo lộ trình)
 const { runPrOv13lTests } = await import('./prOv13l.tests.ts');
 await runPrOv13lTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== OV-13k (Speaking chấm chéo — GV phụ trách được báo, nhận xét riêng, sửa nhóm, chốt Case; qua HTTP)
+const { runPrOv13kTests } = await import('./prOv13k.tests.ts');
+await runPrOv13kTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`
