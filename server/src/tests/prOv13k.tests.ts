@@ -35,8 +35,18 @@ export async function runPrOv13kTests(t: YThucTestKit) {
   const FT101 = classId('MB FT 101');
   const MB = one(`SELECT branch_id FROM classes WHERE id = ?`, FT101).branch_id as number;
   const { phanCongDangHieuLuc } = await import('../worklist/scoreDebt.ts');
-  const gvPT = phanCongDangHieuLuc([FT101], TODAY).get(`${FT101}|speaking`)?.userId as number;
-  assert(gvPT, 'MB FT 101 phải có GV phụ trách Speaking');
+  let gvPT = phanCongDangHieuLuc([FT101], TODAY).get(`${FT101}|speaking`)?.userId as number;
+  /* Cuối run.ts: phép kiểm trước có thể đã kết thúc phân công Speaking của MB FT 101 → phân công tạm GV Speaking khác của chi nhánh (gỡ ở cuối). */
+  let pcTam: number | null = null;
+  if (!gvPT) {
+    const mau = one(`SELECT ta.user_id FROM teacher_assignments ta JOIN classes c ON c.id = ta.class_id
+        WHERE ta.skill = 'speaking' AND ta.status = 'active' AND c.branch_id = ? AND ta.effective_to IS NULL ORDER BY ta.id LIMIT 1`, MB);
+    assert(mau, 'dữ liệu demo: chi nhánh MB phải có GV Speaking');
+    pcTam = Number(run(`INSERT INTO teacher_assignments (user_id, class_id, skill, is_core, effective_from, status, created_at)
+        VALUES (?, ?, 'speaking', 0, '2000-01-01', 'active', ?)`, mau.user_id, FT101, new Date().toISOString()).lastInsertRowid);
+    xoaNho();
+    gvPT = mau.user_id as number;
+  }
   /** Người chấm chéo: GV Speaking lớp FT khác cùng chi nhánh — chấm được S của MB FT 101 nhưng không phụ trách nó, không GVCN. */
   const gvCheo = all(`SELECT DISTINCT ta.user_id FROM teacher_assignments ta JOIN classes c ON c.id = ta.class_id
       WHERE ta.skill = 'speaking' AND ta.status = 'active' AND c.branch_id = ? AND ta.user_id != ?
@@ -213,4 +223,6 @@ export async function runPrOv13kTests(t: YThucTestKit) {
       }
     } finally { conn.exec('ROLLBACK'); xoaNho(); }
   });
+
+  if (pcTam) { run('DELETE FROM teacher_assignments WHERE id = ?', pcTam); xoaNho(); }
 }
