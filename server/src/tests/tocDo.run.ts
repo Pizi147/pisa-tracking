@@ -900,6 +900,9 @@ check('TD3-b-2 · QL ×3: /classes/{lopFT}/overview ≤ 50 % (5 829), /hoc-vien-
  * 15/10 OV-13g: thêm 'GVS toi' (GV Speaking MB FT 101 — chấm chéo). Đầu ra đổi CÓ CHỦ Ý chỉ ở GV dạy Speaking FT: thêm dòng "Speaking chấm chéo".
  *   Đã so JSON mã trước (main a4f9c00) ↔ sau trên bộ demo, mọi tài khoản × Của tôi / Tất cả + QL xem GV 7/9/10: chỉ GV 9, 19 lệch; bỏ việc `|cc` thì
  *   `items` + `dong` TRÙNG hoàn toàn. Số câu /my-work (×1): GV 9 58 → 58, GV 19 55 → 56. 10 băm cũ không đổi.
+ * 15/10 gộp OV-13l với main (13b / 13c): chụp lại 9 băm trên bản gộp — ba đổi có chủ ý cộng lại.
+ * 15/10 OV-13l: chụp lại mọi vai trừ ADMIN — đổi đầu ra CÓ CHỦ Ý: hạn bàn giao ≥ 7 ngày (GVBM = GVCN), seed D16 (LT1 → RF) giữ lộ trình,
+ *   seed kịch bản 6 (MB FOU 23) ra lệnh 9 ngày trước để vẫn "Bàn giao quá hạn".
  * 15/10 OV-13k: chụp lại 'QL tat-ca' / 'QT tat-ca' / 'QT tat-ca cn' / 'GVS toi' — đổi CÓ CHỦ Ý: (1) nhóm mới "Xem nhận xét Speaking" (bộ demo có 3 bài
  *   S Mock người khác GV phụ trách chấm có nhận xét → 3 việc của GV 9); (2) rà #419: "còn tồn từ" của dòng Speaking chấm chéo = tuần cũ nhất của
  *   (lớp, lượt) — GV S: MT1 "W1 SEP" → "W1 JUL", MT2 thêm "W2 AUG". Đã so JSON mã trước (main 022b7f3) ↔ sau trên bộ demo: bỏ việc `xem_nx_s`
@@ -908,9 +911,9 @@ check('TD3-b-2 · QL ×3: /classes/{lopFT}/overview ≤ 50 % (5 829), /hoc-vien-
 await checkAsync('TD4-a (×3) · Công việc trùng JSON ảnh chụp trước TD4 — 6 vai × Của tôi / Tất cả / Của một GV / lọc chi nhánh', async () => {
   const { myWork, viecCuaNguoi } = await import('../worklist/mywork.ts');
   const ANH: Record<string, string> = {
-    'QL toi': '6671f11bb8e4d60c', 'QT toi': 'ad9ea8d503e7b56c', 'GVCN toi': '23e0323bdaca7cd2', 'GVBM toi': 'dd8afd71bacf9864',
-    'GVCN_THUONG toi': '23e0323bdaca7cd2', 'ADMIN toi': '4ed1fc3fa34653f2', 'QL tat-ca': '872617711ddb1eef', 'QT tat-ca': '29b940cd9b5dd537',
-    'QT tat-ca cn': '19ddc2339f2d2692', 'QL gvcn': 'ad7335342536a58b', 'GVS toi': 'ccf17523925ee501',
+    'QL toi': 'a2af135210c7847a', 'QT toi': '96f59dddc6993057', 'GVCN toi': 'bc790b0e23fcb6a9', 'GVBM toi': '00dd012ac4781e7f',
+    'GVCN_THUONG toi': 'bc790b0e23fcb6a9', 'ADMIN toi': '4ed1fc3fa34653f2', 'QL tat-ca': 'e5b633576a232483', 'QT tat-ca': 'bc9c951ec2383b7b',
+    'QT tat-ca cn': '21249962817a099f', 'QL gvcn': 'd4041db926199caf', 'GVS toi': '0ffdb55b50d814c0',
   };
   const p = (v: Vai) => loadPrincipal(USER[v]);
   const goc: [string, () => unknown][] = [

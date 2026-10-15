@@ -126,7 +126,7 @@ export async function runPrDlTests(t: YThucTestKit) {
    * tạo sau dời. Đã so JSON hai bảng origin/main ↔ nhánh sau khi bỏ trường id + studentCode (mã theo thứ tự tạo): trùng từng byte. */
   /* OV-12c: seed SOS v3 nay ghi nhận xét + nhóm nguyên nhân vào ô MT (Case MT lấy nguyên nhân từ nhận xét) — so JSON bản gốc ↔ nhánh: chỉ lệch
    * `nhanXet` / `nhomNguyenNhan` của ô demo và `thieuNhanXet` hết ở ô đã có nhận xét; không trường nào khác. */
-  const ANH_CHUP = { tuan: 'fcf1a03d887d2464', moi: 'c850392ed18f4991' };
+  const ANH_CHUP = { tuan: 'dd1f8ca12f163866', moi: 'b75ec2ebdf1efd5b' };   // OV-13l: em chuyển FT → FT giữ lộ trình — lượt chưa thi đi theo em, bảng lớp cũ đổi
   /* Mã cố ý độc lập với hàm: điều kiện lọc tuần của bản trước refactor, viết lại bằng SQL. */
   const idsTuan = (periodId: number) => (conn.prepare(
     `SELECT a.id FROM assessment_attempts a JOIN students s ON s.id = a.student_id

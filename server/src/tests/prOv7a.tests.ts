@@ -338,7 +338,7 @@ export async function runPrOv7aTests(t: YThucTestKit) {
     const du = JSON.parse(theCua(id).du_lieu);
     assert(du.tuan === TUAN[1] && theCua(id).ly_do === 'Em theo không kịp, PH đồng ý', theCua(id).du_lieu);
     assert(maLoi(() => yc.suaYeuCau(gvcn, id, { toClassId: classId('MB FT 101'), tuan: null, lyDo: 'Chuyển vào chính lớp đang học' })) === 400, 'lớp chuyển đến không hợp lệ');
-    assert(maLoi(() => yc.suaYeuCau(gvcn, id, { tuan: TODAY, lyDo: 'Tuần hiện tại' })) === 400, 'tuần không hợp lệ');
+    assert(maLoi(() => yc.suaYeuCau(gvcn, id, { tuan: addDays(TODAY, -7), lyDo: 'Tuần đã qua' })) === 400, 'tuần không hợp lệ');   // OV-13l: hôm nay = "Ngay hôm nay" hợp lệ
     yc.rutYeuCau(gvcn, id);
     assert(theCua(id).trang_thai === 'tu_dong', 'rút');
     lenh.guiDeXuatChuyenLop(gvcn, sid, { lyDo: 'Gửi lại sau khi rút' });

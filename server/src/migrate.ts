@@ -46,6 +46,7 @@ import { migratePrOv6b2 } from './migrate/prOv6b2.ts';
 import { migratePrOv8a } from './migrate/prOv8a.ts';
 import { migratePrOv11e, themCotPrOv11e } from './migrate/prOv11e.ts';
 import { migratePrOv12a } from './migrate/prOv12a.ts';
+import { migratePrOv13l } from './migrate/prOv13l.ts';
 import { migratePrOv12g } from './migrate/prOv12g.ts';
 import { migratePrEn } from './migrate/prEn.ts';
 import { migratePrOv12b } from './migrate/prOv12b.ts';
@@ -111,6 +112,7 @@ function migrateCaseEngine(applied: string[], skipped: string[], loiSauBuoc?: nu
   conn.pragma('foreign_keys = OFF');
     /* PR-OV11e: cột KCK theo lượt — TRƯỚC mọi bước tính kết quả lượt (`kckCuaLuot` đọc cột này). Chỉ thêm cột. */ buoc(() => themCotPrOv11e(conn, applied));
     /* PR-OV13a: cột sos_cases.tam (Case tạm) — TRƯỚC mọi bước có thể chạy luật Case (đọc / ghi cột này). Chỉ thêm cột. */ buoc(() => themCotPrOv13a(conn, applied));
+    /* OV-13k: cột nhận xét GV phụ trách Speaking (assessment_scores) — TRƯỚC mọi bước đọc điểm (`scoresOf` / `diemCuaLuot` JOIN các cột này). Chỉ thêm cột. */ buoc(() => migratePrOv13k(conn, applied));
     buoc(() => {
     // 1. Cột mới trên các bảng đang có.
     for (const [col, decl] of [
@@ -340,7 +342,7 @@ function migrateCaseEngine(applied: string[], skipped: string[], loiSauBuoc?: nu
     /* PR-OV13a (SAU prOv1c / prOv12c): xoá Case "Chờ chốt SOS" cũ chưa ai đụng · PA quy chế kỹ năng đã đạt → Kết quả cuối · "đến lúc thi" → mốc MT cuối ·
        Case tạm cho lượt chưa chốt (đổi dữ liệu, chạy lặp được) — mỗi phần một giao dịch. */ for (const b of cacBuocPrOv13a(conn, applied)) buoc(b);
     /* OV-13e: users.requested_role — vai đề nghị khi tự đăng ký (chỉ thêm cột, chạy lặp được). */ buoc(() => migratePrOv13e(conn, applied));
-    /* OV-13k: assessment_scores — nhận xét GV phụ trách Speaking + cờ chờ xem (chỉ thêm cột, chạy lặp được). */ buoc(() => migratePrOv13k(conn, applied));
+    /* OV-13l: hạn bàn giao lệnh đang chờ chưa xác nhận = muộn hơn của (ra lệnh + 7 ngày) và hạn cũ, GVBM = GVCN (đổi dữ liệu, chạy lặp được). */ buoc(() => migratePrOv13l(conn, applied));
 
     conn.prepare("INSERT OR REPLACE INTO demo_config (key, value, updated_at) VALUES ('case_engine_migrated_at', ?, ?)")
       .run(nowIso(), nowIso());

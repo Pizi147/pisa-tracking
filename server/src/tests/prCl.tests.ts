@@ -341,14 +341,14 @@ export async function runPrClTests(t: YThucTestKit) {
     const k = (o: any) => d.dongKhiChuyen({ ...goc, ...o });
     const ca: [any, string[], boolean][] = [
       [{ dichFt: true, routeDich: 'LT1', mt0: { tuXep: 'W4 SEP' }, target: { giaTri: 6, nguon: 'gvcn' }, soCase: 2, dongCase: 'ft' },
-        ['Đóng lộ trình FOU, mở lộ trình FT LT1', 'MT0 làm đầu vào, tự xếp W4 SEP', 'Target 6.0 (GVCN ghi)', '2 Case đang mở tự đóng “Lên FT”'], false],
-      [{ dichFt: true, routeDich: 'LT2', mt0: { tuXep: null }, target: { giaTri: 'KCK', nguon: 'khoa' } }, ['Đóng lộ trình FOU, mở lộ trình FT LT2', 'MT0 làm đầu vào', 'Target — · KCK (khoá)'], false],   // OV-9: KCK chưa có Target → "— · KCK"
-      [{ dichFt: true, routeDich: 'LT1' }, ['Đóng lộ trình FOU, mở lộ trình FT LT1'], false],
+        ['Đóng lộ trình FOU, mở lộ trình FT LT1', 'MT0 làm đầu vào, tự xếp W4 SEP', 'Target 6.0 (GVCN ghi)', 'Điểm đã có ở lại khoá cũ (xem ở hồ sơ)', '2 Case đang mở tự đóng “Lên FT”'], false],
+      [{ dichFt: true, routeDich: 'LT2', mt0: { tuXep: null }, target: { giaTri: 'KCK', nguon: 'khoa' } }, ['Đóng lộ trình FOU, mở lộ trình FT LT2', 'MT0 làm đầu vào', 'Target — · KCK (khoá)', 'Điểm đã có ở lại khoá cũ (xem ở hồ sơ)'], false],   // OV-9: KCK chưa có Target → "— · KCK"
+      [{ dichFt: true, routeDich: 'LT1' }, ['Đóng lộ trình FOU, mở lộ trình FT LT1', 'Điểm đã có ở lại khoá cũ (xem ở hồ sơ)'], false],
       [{ nguonFt: true, dichFt: true, khoa: 'giu', routeNguon: 'LT1', routeDich: 'LT1', soCase: 1, goiYNhan: 'Trần Ngọc Hà' },
         ['Giữ lộ trình FT LT1', 'MT chưa thi chuyển sang lớp mới', '1 Case đang mở đi theo em, người nhận gợi ý: Trần Ngọc Hà'], false],
       [{ nguonFt: true, dichFt: true, routeNguon: 'LT1', routeDich: 'LT2', doiChiNhanh: true },
-        ['Đóng lộ trình cũ và mở lộ trình mới theo lớp chuyển đến', 'Bài chưa làm ở lại lớp cũ', 'Quản lý chi nhánh mới và GVCN lớp mới được báo “Sắp nhận”'], false],
-      [{}, ['Đóng lộ trình cũ và mở lộ trình mới theo lớp chuyển đến', 'Bài chưa làm ở lại lớp cũ'], false],
+        ['Đóng lộ trình cũ và mở lộ trình mới theo lớp chuyển đến', 'Bài chưa làm ở lại lớp cũ', 'Điểm đã có ở lại khoá cũ (xem ở hồ sơ)', 'Quản lý chi nhánh mới và GVCN lớp mới được báo “Sắp nhận”'], false],
+      [{}, ['Đóng lộ trình cũ và mở lộ trình mới theo lớp chuyển đến', 'Bài chưa làm ở lại lớp cũ', 'Điểm đã có ở lại khoá cũ (xem ở hồ sơ)'], false],
       [{ khoa: 'giu' }, ['Giữ khoá FOU', 'Bài chưa làm chuyển sang lớp mới'], false],
       [{ nguonFt: true, routeNguon: 'LT1', soCase: 3, dongCase: 'normal', veThuong: { mt0: { coDiem: true, kyNang: ['L', 'R'] }, mockHuy: ['MT1', 'MT2'], giuDiem: ['MT0 L', 'MT0 R'] } },
         ['Đóng lộ trình FT LT1', 'MT0 → “MT0 · không dùng”', 'Huỷ 2 bài Mock chưa có điểm (MT1, MT2)', 'Giữ điểm đã có (MT0 L, R)', '3 Case FT tự đóng'], true],

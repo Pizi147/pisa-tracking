@@ -1905,6 +1905,8 @@ function baoPhuTrachS(p: Principal, a: any, comment: string | null, cu: string |
     body: [r?.code, `chấm bởi ${p.fullName}`].filter(Boolean).join(' · '),
     entityType: 'assessment_attempt', entityId: a.id, dedupKey: `nxs:${a.id}`, duong: attemptHref({ id: a.id, kind: a.kind, classId: a.class_id }),
   });
+  /* Việc quay lại (người chấm sửa nhận xét) → chuông chưa đọc lại, lên đầu (`notify` chỉ cập nhật chữ khi trùng khoá). */
+  conn.prepare('UPDATE notifications SET read_at = NULL, created_at = ? WHERE user_id = ? AND dedup_key = ?').run(nowIso(), gv, `nxs:${a.id}`);
 }
 
 /**
@@ -1935,14 +1937,18 @@ export function luuNhanXetPhuTrach(p: Principal, attemptId: number, body: { nhan
     if (nhomGui !== undefined && !nhomGui.length && canNhomNguyenNhan(band, kyVongCuaLuot(a))) throw badRequest(LOI_THIEU_NHAN_XET['chon-nhom']);
     const chu = coNx ? (nx && 'gt' in nx ? nx.gt : null) : cu.nhan_xet_phu_trach ?? null;
     const nhom = nhomVaLuatNhanXet(a, { band, coDiem: true, comment: cu.comment ?? null, nhomGui, nhomCu: cu.nhom_nguyen_nhan, luat: false });
-    const luc = nowIso();
-    conn.prepare(`UPDATE assessment_scores SET nhan_xet_phu_trach = ?, nhan_xet_phu_trach_by = ?, nhan_xet_phu_trach_at = ?, cho_phu_trach_xem = 0,
-                         nhom_nguyen_nhan = ? WHERE id = ?`).run(chu, p.userId, luc, nhom, cu.id);
-    writeAudit({
-      actorUserId: p.userId, action: 'score.nhan_xet_phu_trach', entityType: 'assessment_attempt', entityId: attemptId, entityLabel: 'speaking',
-      before: { nhanXetPhuTrach: cu.nhan_xet_phu_trach ?? null, nhom: cu.nhom_nguyen_nhan ?? null },
-      after: { nhanXetPhuTrach: chu, nhom },
-    });
+    /* Lưu mà không đổi gì (GV phụ trách chỉ "đã xem") → hết việc; người / lúc lưu và nhật ký giữ như cũ. */
+    const doi = chu !== (cu.nhan_xet_phu_trach ?? null) || nhom !== (cu.nhom_nguyen_nhan ?? null);
+    conn.prepare(`UPDATE assessment_scores SET nhan_xet_phu_trach = ?, nhom_nguyen_nhan = ?, cho_phu_trach_xem = 0,
+                         nhan_xet_phu_trach_by = ?, nhan_xet_phu_trach_at = ? WHERE id = ?`)
+      .run(chu, nhom, doi ? p.userId : cu.nhan_xet_phu_trach_by ?? null, doi ? nowIso() : cu.nhan_xet_phu_trach_at ?? null, cu.id);
+    if (doi) {
+      writeAudit({
+        actorUserId: p.userId, action: 'score.nhan_xet_phu_trach', entityType: 'assessment_attempt', entityId: attemptId, entityLabel: 'speaking',
+        before: { nhanXetPhuTrach: cu.nhan_xet_phu_trach ?? null, nhom: cu.nhom_nguyen_nhan ?? null },
+        after: { nhanXetPhuTrach: chu, nhom },
+      });
+    }
     dongBoNguyenNhanMt({ attemptId, skill: 'speaking' });
     return { score: conn.prepare(`SELECT * FROM assessment_scores WHERE id = ?`).get(cu.id) };
   });

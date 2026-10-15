@@ -9,6 +9,8 @@
  *  6 · migrate hai lần không đổi · 7 · "còn tồn từ" = tuần cũ nhất của (lớp, lượt)
  */
 import Database from 'libsql';
+import { createRequire } from 'node:module';
+const require = createRequire(import.meta.url);
 import type { YThucTestKit } from './yThuc.tests.ts';
 
 export async function runPrOv13kTests(t: YThucTestKit) {
@@ -77,18 +79,24 @@ export async function runPrOv13kTests(t: YThucTestKit) {
 
   /* Em mới ở MB FT 101, lượt Mock mọi kỹ năng ở tuần trước (mẫu prOv13h `emFt`), kỳ vọng 6.5. */
   const W = addDays(dm.mondayOfDate(TODAY), -7);
-  const emMoi = (n: number) => {
-    const sid = intake.commitIntake(P.admin, { classId: FT101, rows: [{ fullName: `OV13k Em ${n}`, target: 7, email: `ov13k${n}@demo.test`, dob: '2010-01-01' }],
-      idempotencyKey: `ov13k-${n}` }).studentIds[0] as number;
-    const aid = all(`SELECT id FROM assessment_attempts WHERE student_id = ? AND kind = 'mock' ORDER BY attempt_no`, sid).map((r) => r.id as number).pop()!;
-    const Wp = week.ensurePeriod(W).id as number;
+  /** Xếp mọi kỹ năng của lượt `aid` vào tuần `w`, kỳ vọng 6.5. */
+  const xepLuot = (aid: number, w: string) => {
+    const Wp = week.ensurePeriod(w).id as number;
     skillSchedule.ensureSkillRows(aid);
     const a = one('SELECT * FROM assessment_attempts WHERE id = ?', aid);
     run(`UPDATE attempt_skills SET planned_period_id = ?, sit_status = 'scheduled', required = 1 WHERE attempt_id = ?`, Wp, aid);
     run(`UPDATE assessment_attempts SET status = 'planned', lich_su = 0, planned_period_id = ?, target_at_attempt = ? WHERE id = ?`,
       Wp, 6.5 + dm.expectationDelta(a.attempt_no, attempts.routeCuaLuot(a)), aid);
     xoaNho();
-    return { sid, aid };
+  };
+  /** Em mới ở MB FT 101; `aids` = các lượt Mock theo thứ tự; lượt cuối xếp tuần trước (mẫu prOv13h `emFt`). */
+  const emMoi = (n: number) => {
+    const sid = intake.commitIntake(P.admin, { classId: FT101, rows: [{ fullName: `OV13k Em ${n}`, target: 7, email: `ov13k${n}@demo.test`, dob: '2010-01-01' }],
+      idempotencyKey: `ov13k-${n}` }).studentIds[0] as number;
+    const aids = all(`SELECT id FROM assessment_attempts WHERE student_id = ? AND kind = 'mock' ORDER BY attempt_no`, sid).map((r) => r.id as number);
+    const aid = aids.at(-1)!;
+    xepLuot(aid, W);
+    return { sid, aid, aids };
   };
   const { sid, aid } = emMoi(1);
   const mt = `MT${one('SELECT attempt_no FROM assessment_attempts WHERE id = ?', aid).attempt_no}`;
@@ -96,6 +104,7 @@ export async function runPrOv13kTests(t: YThucTestKit) {
   const NX = 'Part 2 dừng sau 1 phút, ít từ nối; phát âm đuôi -ed chưa rõ.';
   const o = () => one(`SELECT * FROM assessment_scores WHERE attempt_id = ? AND skill = 'speaking'`, aid);
   const viec = (u: number) => (mywork.myWork(loadPrincipal(u)).items as any[]).filter((x) => x.group === 'xem_nx_s' && x.attemptId === aid);
+  const nk2 = (id: number) => one(`SELECT COUNT(*) n FROM audit_logs WHERE action = 'score.nhan_xet_phu_trach' AND entity_id = ?`, id).n as number;
   const nk = (u: number) => one(`SELECT COUNT(*) n FROM audit_logs WHERE action = 'score.nhan_xet_phu_trach' AND actor_user_id = ? AND entity_id = ?`, u, aid).n as number;
 
   await checkAsync('OV13k-1 · người chấm chéo lưu ô S có nhận xét → GV phụ trách S: thông báo + việc "Xem nhận xét Speaking · {em} · MT{n}" (không hạn, không đỏ); người chấm không có việc', () => voiMayChu(async (goi) => {
@@ -191,6 +200,72 @@ export async function runPrOv13kTests(t: YThucTestKit) {
     xoaNho();
     assert(!(mywork.myWork(loadPrincipal(gvPT)).items as any[]).some((v) => v.group === 'xem_nx_s' && v.attemptId === x.aid)
       && !one(`SELECT COUNT(*) n FROM notifications WHERE dedup_key = ?`, `nxs:${x.aid}`).n, 'không được sinh việc khi người chấm là GV phụ trách');
+  }));
+
+  check('OV13k-10 · migrate ĐẦY ĐỦ trên DB đang có (bản sao DB demo, bỏ 4 cột OV-13k): xanh, đủ cột, lần hai không áp lại OV-13k', () => {
+    const fs = require('node:fs') as typeof import('node:fs'), os = require('node:os') as typeof import('node:os');
+    const pathMod = require('node:path') as typeof import('node:path'), cp = require('node:child_process') as typeof import('node:child_process');
+    const dir = fs.mkdtempSync(pathMod.join(os.tmpdir(), 'z2-ov13k-'));
+    try {
+      const f = pathMod.join(dir, 'cu.sqlite');
+      conn.exec(`VACUUM INTO '${f.replace(/'/g, "''")}'`);
+      /* DB "trước OV-13k": dựng lại assessment_scores từ chính câu CREATE đang có, bỏ 4 cột (DROP COLUMN không được với cột có REFERENCES). */
+      const c = new Database(f);
+      const BON = ['nhan_xet_phu_trach', 'nhan_xet_phu_trach_by', 'nhan_xet_phu_trach_at', 'cho_phu_trach_xem'];
+      const sql = (c.prepare(`SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'assessment_scores'`).get() as any).sql as string;
+      const cu = sql.split('\n').filter((d) => !BON.some((k) => new RegExp(`^\\s*${k}\\s`).test(d)) && !/^\s*-- OV-13k|^\s*-- `cho_phu_trach_xem`/.test(d)).join('\n')
+        .replace(/CREATE TABLE "?assessment_scores"?/, 'CREATE TABLE assessment_scores_cu');
+      const giu = (c.prepare('PRAGMA table_info(assessment_scores)').all() as any[]).map((x) => x.name as string).filter((k) => !BON.includes(k)).join(', ');
+      c.exec(`PRAGMA foreign_keys = OFF; PRAGMA legacy_alter_table = ON; ${cu};
+        INSERT INTO assessment_scores_cu (${giu}) SELECT ${giu} FROM assessment_scores; DROP TABLE assessment_scores;
+        ALTER TABLE assessment_scores_cu RENAME TO assessment_scores; CREATE INDEX IF NOT EXISTS idx_score_attempt ON assessment_scores(attempt_id);`);
+      assert(!(c.prepare('PRAGMA table_info(assessment_scores)').all() as any[]).some((x) => BON.includes(x.name)), 'chưa bỏ được 4 cột');
+      c.close();
+      const lib = require('node:url').pathToFileURL(pathMod.join(process.cwd(), 'dist-server/server/src/migrate.js')).href;
+      const goi = () => cp.spawnSync(process.execPath, ['--input-type=module', '-e', `const m = await import(${JSON.stringify(lib)}); console.log('APPLIED' + JSON.stringify(m.migrate().applied));`],
+        { env: { ...process.env, TURSO_DATABASE_URL: '', TURSO_AUTH_TOKEN: '', BAN_CHINH: '', PISA_DB: f }, encoding: 'utf8', timeout: 120_000 });
+      const doc = (r: any): string[] => { assert(r.status === 0, `migrate lỗi: ${String(r.stderr).slice(-400)}`); return JSON.parse(String(r.stdout).split('APPLIED').pop()!); };
+      const a1 = doc(goi());
+      const c2 = new Database(f);
+      const cot = (c2.prepare('PRAGMA table_info(assessment_scores)').all() as any[]).map((x) => x.name);
+      c2.close();
+      assert(BON.every((k) => cot.includes(k)) && a1.some((x) => x.startsWith('OV-13k')), `lần 1: ${JSON.stringify(a1)} · ${cot}`);
+      const a2 = doc(goi());
+      assert(!a2.some((x) => x.startsWith('OV-13k')), `lần 2 áp lại OV-13k: ${JSON.stringify(a2)}`);
+    } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+  });
+
+  await checkAsync('OV13k-11 · MT trượt lại: PA của lượt trước đã xác nhận → lượt sau chấm chéo có nhận xét VẪN có việc; việc quay lại → chuông chưa đọc; lưu không đổi gì → không nhật ký', () => voiMayChu(async (goi) => {
+    const x = emMoi(3);
+    const [m1, m2] = x.aids;
+    for (const id of x.aids.slice(2)) xepLuot(id, addDays(W, 14));   // lượt sau nữa ra khỏi tuần này
+    xepLuot(m1, addDays(W, -14)); xepLuot(m2, W);
+    const chot = async (luot: number) => {
+      await ma(await goi(gvCheo, `/attempts/${luot}/scores/speaking`, put({ criteria: [5, 5, 5, 5], nhanXet: NX, nhomNguyenNhan: [n1], gvCham: { performerSelf: true } })), 200, 'chấm chéo S');
+      for (const k of ['listening', 'reading', 'writing1', 'writing2']) {
+        await ma(await goi(QL.userId, `/attempts/${luot}/scores/${k}`, put({ ...(k === 'listening' || k === 'reading' ? { band: 6.5 } : { criteria: [6.5, 6.5, 6.5, 6.5] }), nhanXet: 'Làm bài ổn định, đúng yêu cầu.' })), 200, `QL ${k}`);
+      }
+      xoaNho();
+    };
+    await chot(m1);
+    const iv = one(`SELECT iv.id FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id WHERE sc.student_id = ? AND sc.topic = 'speaking'
+        AND iv.preset IS NOT NULL AND iv.confirmed_at IS NULL AND iv.status = 'planned' AND iv.kind != 'bo_tro'`, x.sid);
+    assert(iv, 'MT trước phải có PA quy chế chờ xác nhận');
+    await ma(await goi(gvPT, `/interventions/${iv.id}/xac-nhan-pa`, post({ description: 'Luyện Part 2 hai buổi mỗi tuần, GV phụ trách kèm.', performerSelf: true, soBuoi: 2 })), 200, 'Xác nhận PA lượt trước');
+    xoaNho();
+    const viec2 = () => (mywork.myWork(loadPrincipal(gvPT)).items as any[]).filter((v) => v.group === 'xem_nx_s' && v.attemptId === m2);
+    await chot(m2);
+    assert(one(`SELECT COUNT(*) n FROM case_milestones m JOIN sos_cases sc ON sc.id = m.case_id WHERE m.attempt_id = ? AND sc.topic = 'speaking'`, m2).n > 0, 'lượt sau phải có mốc Case Speaking');
+    assert(viec2().length === 1, `lượt sau phải còn việc Xem nhận xét (PA cũ của lượt trước không tính): ${JSON.stringify(viec2())}`);
+    /* Chuông: đọc rồi, người chấm sửa nhận xét → chưa đọc lại. */
+    run(`UPDATE notifications SET read_at = ? WHERE user_id = ? AND dedup_key = ?`, '2026-01-01T00:00:00Z', gvPT, `nxs:${m2}`);
+    await ma(await goi(gvCheo, `/attempts/${m2}/scores/speaking`, put({ nhanXet: `${NX} Cần mở rộng ý.` })), 200, 'người chấm sửa nhận xét');
+    assert(one(`SELECT read_at FROM notifications WHERE user_id = ? AND dedup_key = ?`, gvPT, `nxs:${m2}`).read_at === null, 'chuông phải chưa đọc lại khi việc quay lại');
+    /* Lưu không đổi gì → hết việc, không nhật ký. */
+    const truoc = nk2(m2);
+    await ma(await goi(gvPT, `/attempts/${m2}/scores/speaking/phu-trach`, put({ nhanXetPhuTrach: null })), 200, 'lưu không đổi');
+    xoaNho();
+    assert(nk2(m2) === truoc && !viec2().length, `không đổi gì: nhật ký ${truoc} → ${nk2(m2)}, việc ${viec2().length}`);
   }));
 
   check('OV13k-6 · migrate chỉ thêm cột, chạy hai lần không đổi (DB mới + DB đã có cột)', () => {

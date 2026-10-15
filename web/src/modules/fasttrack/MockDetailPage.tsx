@@ -201,7 +201,11 @@ export default function MockDetailPage() {
       invalidate('/my-work'); invalidate('/cases'); invalidate('/students');
       reload();
       return true;
-    } catch { return false; }
+    } catch (e: any) {
+      /* Câu lỗi của máy chủ (như `useSaveScore`); ô giữ chữ đang gõ + "Chưa lưu — thử lại". */
+      toast.push('error', `${t('Nhận xét GV phụ trách')}: ${e?.message ?? t('Không lưu được')}`);
+      return false;
+    }
   };
 
   const openHistory = () => document.getElementById('lich-su')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -520,8 +524,9 @@ function KhoiNhanXet({ cells, save, phuTrach }: {
   const ptXem = !!phuTrach && !!s && coDiemChinhThuc(s) && (s.gvCham?.userId ?? null) !== toi;
   const nxS = phan(s, t('Nhận xét'), ptXem ? (v) => phuTrach!({ nhomNguyenNhan: v }) : undefined);
   const pt = s?.nhanXetPhuTrach ?? null;
-  const nxPt = !s ? null : phuTrach && coDiemChinhThuc(s) ? (
-    <ONhanXet nhan={t('Nhận xét GV phụ trách')} phu={pt?.ten ?? null} giaTri={pt?.chu ?? null} onLuu={(v) => phuTrach({ nhanXetPhuTrach: v })} />
+  /* GV phụ trách TỰ chấm: nhận xét của họ là nhận xét người chấm — không có ô thứ hai. */
+  const nxPt = !s ? null : ptXem ? (
+    <ONhanXet nhan={t('Nhận xét GV phụ trách')} phu={pt?.ten ?? null} giaTri={pt?.chu ?? null} onLuu={(v) => phuTrach!({ nhanXetPhuTrach: v })} />
   ) : pt ? (
     <div className="min-w-0">
       <div className="flex items-baseline gap-2 text-xs text-slate-400">

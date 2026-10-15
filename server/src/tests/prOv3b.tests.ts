@@ -69,16 +69,17 @@ export async function runPrOv3bTests(t: YThucTestKit) {
   const nhapCua = (sid: number) => get(`SELECT * FROM lo_trinh_nhap WHERE student_id = ?`, sid);
   const emPlan = (p: any, lop: number, sid: number) => (tr.transitionPlan(p, lop).students as any[]).find((s) => s.id === sid);
 
-  check('OV3b-1 · hạn: Final tuần 10 → nhắc từ thứ Hai tuần 8, chốt hết tuần 8, bàn giao hết tuần 10 (≥ 2 ngày sau chốt); FT 5 ngày; giữa khoá 2/3 ngày', () => {
+  check('OV3b-1 · hạn: Final tuần 10 → nhắc từ thứ Hai tuần 8, chốt hết tuần 8, bàn giao hết tuần 10; OV-13l: mọi lệnh ≥ ra lệnh + 7 ngày, GVBM = GVCN', () => {
     const final = '2026-11-16';   // thứ Hai tuần 10
     const m = d.mocLoTrinh(final);
     assert(m.nhacTu === '2026-11-02' && m.hanChot === '2026-11-08' && m.hanBanGiao === '2026-11-22', JSON.stringify(m));
     const h = (ngay: string, o: any = {}) => d.hanBanGiaoLenh({ nguonFt: false, boiCanh: 'cuoi-khoa', tuanFinal: final, ngay, ...o });
     assert(JSON.stringify(h('2026-11-05')) === JSON.stringify({ gvbm: '2026-11-22', gvcn: '2026-11-22' }), JSON.stringify(h('2026-11-05')));
-    assert(JSON.stringify(h('2026-11-22')) === JSON.stringify({ gvbm: '2026-11-24', gvcn: '2026-11-24' }), `chốt CN tuần 10 → thứ Ba tuần 11: ${JSON.stringify(h('2026-11-22'))}`);
-    assert(JSON.stringify(h('2026-09-14', { nguonFt: true, boiCanh: 'giua-khoa' })) === JSON.stringify({ gvbm: '2026-09-18', gvcn: '2026-09-18' }), 'FT 5 ngày');
-    assert(JSON.stringify(h('2026-09-14', { boiCanh: 'giua-khoa' })) === JSON.stringify({ gvbm: '2026-09-15', gvcn: '2026-09-16' }), 'giữa khoá 2/3');
-    assert(JSON.stringify(h('2026-09-14', { tuanFinal: null })) === JSON.stringify({ gvbm: '2026-09-15', gvcn: '2026-09-16' }), 'không có tuần Final → 2/3');
+    assert(JSON.stringify(h('2026-11-22')) === JSON.stringify({ gvbm: '2026-11-28', gvcn: '2026-11-28' }), `chốt CN tuần 10 → + 7 ngày: ${JSON.stringify(h('2026-11-22'))}`);
+    const bay = JSON.stringify({ gvbm: '2026-09-20', gvcn: '2026-09-20' });
+    assert(JSON.stringify(h('2026-09-14', { nguonFt: true, boiCanh: 'giua-khoa' })) === bay, 'FT 7 ngày');
+    assert(JSON.stringify(h('2026-09-14', { boiCanh: 'giua-khoa' })) === bay, 'giữa khoá 7 ngày');
+    assert(JSON.stringify(h('2026-09-14', { tuanFinal: null })) === bay, 'không có tuần Final → 7 ngày');
     assert(d.hanChotLenFt === undefined, 'hanChotLenFt cũ còn');
   });
 
@@ -172,15 +173,15 @@ export async function runPrOv3bTests(t: YThucTestKit) {
     assert(get(`SELECT lam_lai FROM ban_giao_mon WHERE lenh_id = ? AND mon = 'writing'`, l.id).lam_lai === 0, 'ghi lại không xoá dấu làm lại');
   });
 
-  check('OV3b-7 · hạn bàn giao: lệnh từ lớp FT 5 ngày (GVBM = GVCN); giữa khoá lớp thường 2/3 ngày', () => thu(() => {
+  check('OV3b-7 · hạn bàn giao (OV-13l): lệnh từ lớp FT và giữa khoá lớp thường đều 7 ngày, GVBM = GVCN', () => thu(() => {
     const ft2 = lopMoi('FT', true, 3), em = hocVien(ft2, null);
     lenh.raLenh(QL, { lopNguonId: ft2, boiCanh: 'giua-khoa', tuanChung: null, dongs: [{ studentId: em, huong: 'chuyen_lop', toClassId: ft, tuan: THU_HAI, lyDo: 'gộp lớp' }] });
     const l = lenhCho(em);
-    assert(l.han_gvbm === t.addDays(TODAY, 4) && l.han_gvcn === t.addDays(TODAY, 4), `FT ${l.han_gvbm}/${l.han_gvcn}`);
+    assert(l.han_gvbm === t.addDays(TODAY, 6) && l.han_gvcn === t.addDays(TODAY, 6), `FT ${l.han_gvbm}/${l.han_gvcn}`);
     const be2 = lopMoi('BE', false, 3);
     lenh.raLenh(QL, { lopNguonId: be, boiCanh: 'giua-khoa', tuanChung: null, dongs: [{ studentId: D, huong: 'chuyen_lop', toClassId: be2, tuan: THU_HAI, lyDo: 'đổi ca' }] });
     const g = lenhCho(D);
-    assert(g.han_gvbm === t.addDays(TODAY, 1) && g.han_gvcn === t.addDays(TODAY, 2), `giữa khoá ${g.han_gvbm}/${g.han_gvcn}`);
+    assert(g.han_gvbm === t.addDays(TODAY, 6) && g.han_gvcn === t.addDays(TODAY, 6), `giữa khoá ${g.han_gvbm}/${g.han_gvcn}`);
   }));
 
   check('OV3b-8 · Kết quả đầu ra: FOU > 3.5; GVCN đề xuất không tạo Case; GVBM 403; chưa 3/4 → Chờ MT0; QL chốt Không đạt · Trung tâm → Case + Tutor 10 buổi', () => {

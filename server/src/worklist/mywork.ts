@@ -951,20 +951,27 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
    * Quản lý ở "Tất cả" thấy dòng của GV trong phạm vi.
    */
   /* Chỉ người có phân công Speaking (của mình) hoặc "Tất cả" mới có dòng — vai khác không tốn câu SQL nào. */
-  if (co('xem_nx_s') && (tatCa || p.assignments.some((x) => x.skill === 'speaking' && activeAt(x, today)))) {
+  const lopS = [...new Set(p.assignments.filter((x) => x.skill === 'speaking' && activeAt(x, today)).map((x) => x.classId))];
+  if (co('xem_nx_s') && (tatCa || lopS.length)) {
+    /* "Của tôi": chỉ lớp mình có phân công Speaking (người giữ việc vẫn xét `phanCongDangHieuLuc` dưới); chi nhánh lọc trong SQL. */
+    const loc = [
+      ...(tatCa ? [] : [`a.class_id IN (${lopS.map(() => '?').join(',')})`]),
+      ...(f.branchId ? ['c.branch_id = ?'] : []),
+    ];
     const ds = conn.prepare(
       `SELECT a.id AS attempt_id, a.attempt_no, a.kind, a.class_id, c.code AS class_code, c.branch_id, a.student_id, st.full_name
          FROM assessment_scores s JOIN assessment_attempts a ON a.id = s.attempt_id AND a.kind = 'mock' AND a.status != 'cancelled'
          JOIN students st ON st.id = a.student_id AND ${HV_DANG_HOC_SQL('st')}
          JOIN classes c ON c.id = a.class_id
-        WHERE s.skill = 'speaking' AND s.cho_phu_trach_xem = 1
-          AND NOT EXISTS (SELECT 1 FROM sos_cases sc JOIN case_interventions iv ON iv.case_id = sc.id
-                           WHERE sc.attempt_id = a.id AND sc.topic = 'speaking' AND iv.confirmed_at IS NOT NULL)`,
-    ).all() as any[];
+        WHERE s.skill = 'speaking' AND s.cho_phu_trach_xem = 1${loc.map((x) => ` AND ${x}`).join('')}
+          /* Hết khi PA của CHÍNH lượt này đã xác nhận: PA xác nhận sau mốc mở / trượt lại của lượt (Case giữ qua MT2+, PA cũ của MT1 không tính). */
+          AND NOT EXISTS (SELECT 1 FROM case_milestones m JOIN sos_cases sc ON sc.id = m.case_id AND sc.topic = 'speaking'
+                            JOIN case_interventions iv ON iv.case_id = sc.id
+                           WHERE m.attempt_id = a.id AND m.kind IN ('opened', 'repeat') AND iv.confirmed_at >= m.created_at)`,
+    ).all(...(tatCa ? [] : lopS), ...(f.branchId ? [f.branchId] : [])) as any[];
     const gvS = ds.length ? phanCongDangHieuLuc([...new Set(ds.map((r) => r.class_id as number))], today) : new Map();
     if (tatCa) napTruocPhamVi(ds.map((r) => r.student_id));   // quyền theo em một lần cho cả danh sách (không N+1)
     for (const r of ds) {
-      if (f.branchId && r.branch_id !== f.branchId) continue;
       const chu_ = gvS.get(`${r.class_id}|speaking`)?.userId ?? null;
       const mine = chu_ === p.userId;
       if (!mine && !(tatCa && can(p, PERMISSIONS.CASE_APPROVE, { classId: r.class_id, studentId: r.student_id }))) continue;
