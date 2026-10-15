@@ -785,20 +785,18 @@ export async function runCongViecTests(t: YThucTestKit) {
     assert(hist.kind === 'nop', `Lịch sử của lần nộp phải ghi kind='nop': ${JSON.stringify(hist)}`);
   });
 
-  check('PR-Ra Q13 · Sửa ô đã nộp: trong cửa sổ → thành nháp; ngoài cửa sổ → 400 (không được "rút" báo cáo)', () => {
+  check('PR-Ra Q13 · Sửa ô đã nộp → thành nháp (OV-13h: cả tuần quá hạn)', () => {
     const cat = 'teachers';
     meetingSvc.saveUnitReport(P.mbManager, mbUnit.id, prevPeriodId, cat, { status: 'ok', nop: true });   // đảm bảo đã nộp
     const back = meetingSvc.saveUnitReport(P.mbManager, mbUnit.id, prevPeriodId, cat, { status: 'watch' });   // sửa, không nộp lại
     assert(back.submitted_at === null, 'Sửa ô đã nộp trong cửa sổ phải thành nháp (submitted_at NULL)');
 
-    /* Một tuần đã khoá hẳn: unlock tạm để nộp, khoá lại, rồi thử sửa (không nộp lại) → 400. */
+    /* OV-13h: tuần quá hạn không còn khoá — sửa ô đã nộp cũng thành nháp như trong hạn. */
     const old = conn.prepare(`SELECT * FROM report_periods WHERE week_end < ? ORDER BY week_end DESC LIMIT 1`).get(addDaysStr(TODAY, -10)) as any;
-    assert(old, 'Cần một tuần đã khoá hẳn để đối chứng');
-    week.setPeriodUnlocked(old.id, true, P.admin.userId);
+    assert(old, 'Cần một tuần đã quá hạn để đối chứng');
     meetingSvc.saveUnitReport(P.admin, mbUnit.id, old.id, 'curriculum', { status: 'ok', nop: true });
-    week.setPeriodUnlocked(old.id, false, P.admin.userId);
-    assertThrows(() => meetingSvc.saveUnitReport(P.admin, mbUnit.id, old.id, 'curriculum', { status: 'watch' }),
-      /đã nộp và tuần đã khoá/i, 'Sửa ô đã nộp ngoài cửa sổ phải 400');
+    const sua = meetingSvc.saveUnitReport(P.admin, mbUnit.id, old.id, 'curriculum', { status: 'watch' }) as any;
+    assert(sua.submitted_at === null, 'Sửa ô đã nộp ở tuần quá hạn phải thành nháp');
   });
 
   check('PR-Ra · Tuần tương lai vẫn từ chối cả nháp lẫn nộp (giữ luật cũ)', () => {

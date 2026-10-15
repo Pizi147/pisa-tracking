@@ -748,7 +748,7 @@ const EN_D_LOI = {
   'Không ghi được ngày hoàn thành ở tương lai.': 'The close date cannot be in the future.',
   'Phần đánh giá chi tiết chỉ ghi cho đúng kỹ năng của Case này.': 'Detailed scores can only be for this case\'s skill.',
   'Hạn theo dõi không hợp lệ.': 'Invalid follow-up date.',
-  'Chỉ Quản lý hoặc người đã hoàn thành Case mở lại được.': 'Only a manager or whoever closed the case can reopen it.',
+  'Chỉ Quản lý hoặc người hoàn thành được Case này mở lại được.': 'Only a manager or someone who can close this case can reopen it.',
   'Case này chưa hoàn thành.': 'This case is not closed.',
   'Không tìm thấy Case': 'Case not found',
   'Không tìm thấy học viên': 'Student not found',
@@ -923,6 +923,11 @@ const EN_D_LOI = {
   'Loại bản ghi "{ownerType}" không hợp lệ.': 'Invalid record type "{ownerType}".',
   'Loại bản ghi "{ownerType}" chưa hỗ trợ đính kèm.': 'Record type "{ownerType}" does not support attachments.',
   'Chọn từ 1 đến {n} bản ghi mỗi lần.': 'Pick 1 to {n} records at a time.',
+  /* OV-13h: báo cáo tuần quá hạn vẫn nộp. */
+  'Quá hạn (hết {thu} {ngay}) — vẫn nộp được, ghi "nộp muộn".': 'Past due (end of {thu} {ngay}) — you can still submit; it is marked "late".',
+  'nộp muộn': 'late',
+  'Chưa tới ngày nộp — vẫn lưu nháp được.': 'Not open for submission yet — you can still save a draft.',
+  'Quá hạn — ghi "nộp muộn".': 'Past due — marked "late".',
 } satisfies Record<string, Dich>;
 
 export const EN_D = { ...EN_D_WEB, ...EN_D_SHARED, ...EN_D_LOI };

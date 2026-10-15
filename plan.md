@@ -380,6 +380,7 @@ Nhật ký chi tiết tới 04/10 ở `git show 575e898d:plan.md` (mục 14) và
 
 | Ngày | PR / nhánh · model | Kết quả |
 |---|---|---|
+| 15/10/2026 | OV-13h (Opus 5.5) · `claude/ov-13h-go-chan-cung-r2bjsj` | Gỡ chặn cứng (chủ SP 15/10): GV nhập ô trống sau hoàn tất / lớp kết thúc; gỡ "-" mọi lúc; ai hoàn thành được Case mở lại được; bàn giao sửa sau ngày chuyển; báo cáo tuần quá hạn = "nộp muộn" (bỏ QT mở lại); góp ý lớp kết thúc; thi thật em Lưu trữ, đề xuất sửa em Tạm dừng. Rulebook §20.1b. Kiểm HTTP `prOv13h` |
 | 15/10/2026 | OV-13e · `claude/ov13e-account-role-selection-l1z2cp` | Đăng ký chọn vai GV · QL · TVV · CX · Admin (cột `users.requested_role`, migrate chỉ thêm; system_admin / vai lạ → 400; chưa duyệt không có vai); hộp duyệt điền sẵn vai đề nghị. |
 | 15/10/2026 | HOTFIX (Opus 5.5) · `claude/hotfix-deploy-15-10-tnph4w` | L1 GV ghi nhận xét bài đợt hoàn tất (route gửi khoá `undefined`); L2 Case MT hiện nhóm + nhận xét, Sửa Case MT không đòi Mô tả; L3 Case huỷ mờ + xếp cuối; L4 ErrorBoundary (chưa tái hiện); L5 hỏi trước khi đóng panel đang sửa; L9 chữ; Công việc dòng xong ẩn hạn |
 | 15/10/2026 | TD4 (Opus 5.5) · `claude/td4-my-work` | Công việc nhanh hơn, cùng kết quả (JSON trùng ảnh chụp mọi vai): `listAttempts` chỉ lượt còn ô chấm + chưa xếp tuần, "Tất cả" đọc một lần; bỏ N+1 cách chấm theo lớp; nạp phạm vi một câu/lô 900; ×3 dòng −60…73 %, câu 66–78 → 63–71; không migrate (`tocDo` TD4-a/b) |

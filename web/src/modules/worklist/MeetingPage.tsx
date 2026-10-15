@@ -8,6 +8,7 @@ import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { CHIP_TRON } from '../../ui/Nhan.tsx';
 import { WeekPicker, nhoChiNhanh, resolveWeek, useChiNhanhMacDinh, usePeriodWindow } from '../../ui/Filters.tsx';
 import { useSession } from '../../lib/session.tsx';
+import { t } from '@shared/i18n/index.ts';
 import { SignalList } from './SignalList.tsx';
 import { ManagerTaskList } from './ManagerTasks.tsx';
 import { BangChung } from '../../ui/BangChung.tsx';
@@ -22,6 +23,8 @@ type Cell = {
   reporterName: string | null; updatedAt: string | null; reportedOn: string | null; reportId: number | null;
   /** Trạng thái MỘT ô — máy chủ trả chuỗi (`trangThaiO`); chỉ hàng đơn vị mới là đối tượng có nhãn (PR-UXF-a sửa: trước đọc `.ma` nên "nháp" không bao giờ hiện). */
   trangThai: TrangThaiO['ma']; submittedAt: string | null; submittedBy: string | null;
+  /** OV-13h: nộp sau hạn (hết thứ Tư tuần sau). */
+  nopMuon: boolean;
   taskGroup: string | null; linkedTasks: LinkedTask[]; evidenceCount: number;
   worstStatus: string | null; weeksReported: number | null; weeksTotal: number | null;
   history: { status: string | null; note: string | null; at: string; actor: string | null; kind: string | null }[];
@@ -35,8 +38,8 @@ type Board = {
   units: Unit[];
   totals: { total: number; ok: number; watch: number; problem: number; notReported: number; daNop: number; nhap: number; chua: number };
   scope: { kind: 'week' | 'month'; month: string | null; weeks: string[]; editable: boolean };
-  /** Báo cáo tuần chỉ được cập nhật trong hai ngày cuối tuần đó. Máy chủ mới là nơi chặn thật. */
-  editWindow: { open: boolean; reason: string | null; opensOn: string; closesOn: string; locked: boolean; unlocked: boolean } | null;
+  /** Báo cáo tuần mở từ hai ngày cuối tuần đó; quá hạn (`late`) vẫn nộp được — ghi "nộp muộn" (OV-13h). Máy chủ mới là nơi chặn thật. */
+  editWindow: { open: boolean; reason: string | null; opensOn: string; closesOn: string; late: boolean } | null;
 };
 
 const COT_GIUA: { key: string; label: string }[] = [
@@ -169,20 +172,13 @@ export function MeetingBoard() {
           Đang đọc cả tháng <strong>{board.data.scope.month ? hienONgay(board.data.scope.month, 'thang') : ''}</strong> ({board.data.scope.weeks.join(' · ')}) — chỉ để đọc, ô hiện lần báo cáo gần nhất kèm tình trạng nặng nhất đã xuất hiện.
         </p>
       ) : ew && (
-        /*
-         * BA TRẠNG THÁI khác nhau, không phải hai: "chưa mở" (tuần chưa tới hai ngày cuối, hoặc
-         * chưa bắt đầu) và "đã khoá" (quá hạn bù, cần Quản trị hệ thống) đều có `open === false`
-         * nhưng khác hẳn về mức độ — gộp chung một câu đỏ "Đã khoá" cho cả "chưa mở" là báo động
-         * giả. Phân biệt bằng `ew.locked` (chỉ true ở ca thật sự khoá — xem `reportEditWindow`).
-         */
-        <p className="text-xs m-0" style={{ color: ew.open || !ew.locked ? 'var(--text-dim)' : 'var(--danger)' }}>
-          {ew.open
-            ? (ew.locked
-                ? 'Đã khoá nhưng Quản trị hệ thống đã mở lại để bổ sung.'
-                : `Nộp từ ${fmtThu(ew.opensOn)} ${fmtDate(ew.opensOn)} đến hết ${fmtThu(ew.closesOn)} ${fmtDate(ew.closesOn)}.`)
-            : ew.locked
-              ? <>Đã khoá · chỉ Quản trị hệ thống mở lại được. {ew.reason}</>
-              : `Chưa mở — mở từ ${fmtThu(ew.opensOn)} ${fmtDate(ew.opensOn)}.`}
+        /* Ba trạng thái: chưa mở · trong hạn · quá hạn (OV-13h: vẫn nộp được, lần nộp ghi "nộp muộn" — không còn khoá / Quản trị mở lại). */
+        <p className="text-xs m-0" style={{ color: 'var(--text-dim)' }}>
+          {!ew.open
+            ? `Chưa mở — mở từ ${fmtThu(ew.opensOn)} ${fmtDate(ew.opensOn)}.`
+            : ew.late
+              ? t('Quá hạn (hết {thu} {ngay}) — vẫn nộp được, ghi "nộp muộn".', { thu: fmtThu(ew.closesOn), ngay: fmtDate(ew.closesOn) })
+              : `Nộp từ ${fmtThu(ew.opensOn)} ${fmtDate(ew.opensOn)} đến hết ${fmtThu(ew.closesOn)} ${fmtDate(ew.closesOn)}.`}
         </p>
       )}
 
@@ -303,6 +299,7 @@ function OTaBang({ cell, thTutor }: { cell: Cell; thTutor?: string }) {
       {thTutor && <span className="text-slate-500">{thTutor}: </span>}
       <Outcome tone={unitTone(cell.status)}>{unitStatusLabel(cell.status)}</Outcome>
       {nhat && <span className="text-xs text-slate-500 ml-1">nháp</span>}
+      {!nhat && cell.nopMuon && <span className="text-xs text-slate-500 ml-1">{t('nộp muộn')}</span>}
       {cell.worstStatus && cell.worstStatus !== cell.status && (
         <span className="text-xs text-slate-500"> (từng {unitStatusLabel(cell.worstStatus).toLowerCase()})</span>
       )}
@@ -331,9 +328,6 @@ function NganBaoCao({ unit, cell, periodId, editable, editWindow, onClose, onSav
   }, [cell?.key, unit?.unitId]);
 
   const daNop = cell?.trangThai === 'da-nop';
-  /* Khớp đúng luật chặn của máy chủ (`saveUnitReport`: `before?.submitted_at && !window.open` → 400) —
-     ô đã nộp mà tuần đã khoá thì Lưu nháp cũng bị chặn, không riêng gì Nộp. */
-  const nhapBiChan = daNop && !(editWindow?.open ?? true);
   const chiDoc = !editable || !(unit?.canEdit ?? false);
   const key = cell?.key ?? null;
 
@@ -351,7 +345,7 @@ function NganBaoCao({ unit, cell, periodId, editable, editWindow, onClose, onSav
   if (!unit || !cell) return null;
   return (
     <KhungPanel tieuDe={`${unit.unitName} · ${cell.label}`} onDong={onClose}
-      ngCanh={cell.submittedAt ? `đã nộp ${fmtDateTime(cell.submittedAt)}${cell.submittedBy ? ` · ${cell.submittedBy}` : ''}`
+      ngCanh={cell.submittedAt ? `đã nộp ${fmtDateTime(cell.submittedAt)}${cell.submittedBy ? ` · ${cell.submittedBy}` : ''}${cell.nopMuon ? ` · ${t('nộp muộn')}` : ''}`
         : cell.updatedAt ? `nháp lưu ${fmtDateTime(cell.updatedAt)}` : undefined}>
         <div className="space-y-4 pt-3">
           {chiDoc && <Info>Chỉ đọc — {editable ? 'bạn không có quyền sửa đơn vị này' : 'kỳ tháng chỉ để đọc'}.</Info>}
@@ -422,15 +416,14 @@ function NganBaoCao({ unit, cell, periodId, editable, editWindow, onClose, onSav
 
           {!chiDoc && (
             <div className="flex items-center gap-2 pt-2 border-t" style={{ borderColor: 'var(--line)' }}>
-              <button className="btn btn-sm" disabled={busy !== null || nhapBiChan}
-                title={nhapBiChan ? 'Báo cáo này đã nộp và tuần đã khoá — chỉ Quản trị hệ thống mở lại được.' : undefined}
-                onClick={() => luu(false)}>
+              <button className="btn btn-sm" disabled={busy !== null} onClick={() => luu(false)}>
                 {busy === 'nhap' ? 'Đang lưu…' : 'Lưu nháp'}
               </button>
               <button className="btn btn-primary btn-sm" disabled={busy !== null || !status || !(editWindow?.open ?? true)} onClick={() => luu(true)}>
                 {busy === 'nop' ? 'Đang nộp…' : daNop ? 'Nộp lại' : 'Nộp'}
               </button>
-              {!(editWindow?.open ?? true) && <span className="text-xs text-slate-500">Cửa sổ nộp đã đóng — vẫn lưu nháp được.</span>}
+              {!(editWindow?.open ?? true) && <span className="text-xs text-slate-500">{t('Chưa tới ngày nộp — vẫn lưu nháp được.')}</span>}
+              {editWindow?.open && editWindow.late && status && <span className="text-xs text-slate-500">{t('Quá hạn — ghi "nộp muộn".')}</span>}
               {(editWindow?.open ?? true) && !status && <span className="text-xs text-slate-500">Chọn mức trước khi nộp.</span>}
             </div>
           )}

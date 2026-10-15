@@ -274,15 +274,15 @@ export function setFollowUntil(p: Principal, caseId: number, date: string | null
 }
 
 /**
- * MỞ LẠI CASE ĐÃ HOÀN THÀNH (PR-LUI-a2, chủ sản phẩm 06/10) — Quản lý / Quản trị, và (OV-7b) người đã hoàn thành Case nếu còn quyền hoàn thành
- * (`coTheMoLaiCase`); một bấm, không lý do. Kết luận cũ ở lại trong mốc
+ * MỞ LẠI CASE ĐÃ HOÀN THÀNH (PR-LUI-a2, chủ sản phẩm 06/10) — Quản lý / Quản trị, và (OV-13h, chủ SP 15/10) mọi người có quyền hoàn thành Case
+ * đó (`coTheMoLaiCase`); một bấm, không lý do. Kết luận cũ ở lại trong mốc
  * `closed` + nhật ký; PA đã khép KHÔNG sống lại. Khoá chống trùng đã nhả cho Case mới cùng hạng mục → chặn (mở Case mới đó). Case hệ thống đóng
  * (em kết thúc học…) đi đường riêng của nó (`moLaiCaseHeThongDong`).
  */
 export function moLaiCase(p: Principal, caseId: number) {
   const conn = db();
   const c = loadCase(caseId);
-  if (!coTheMoLaiCase(p, c)) throw forbidden('Chỉ Quản lý hoặc người đã hoàn thành Case mở lại được.');
+  if (!coTheMoLaiCase(p, c)) throw forbidden('Chỉ Quản lý hoặc người hoàn thành được Case này mở lại được.');
   if (c.status !== 'done') throw badRequest('Case này chưa hoàn thành.');
   const chan = chanMoLai(c);
   if (chan) throw badRequest(chan.loi);
@@ -316,10 +316,9 @@ export function moLaiCase(p: Principal, caseId: number) {
   });
 }
 
-/** OV-7b: ai mở lại được — Quản lý trong phạm vi, hoặc người đã hoàn thành Case (ai lưu được thì sửa được) khi vẫn còn quyền hoàn thành. */
+/** OV-13h (chủ SP 15/10): ai mở lại được — Quản lý trong phạm vi, hoặc ai hoàn thành được Case này (`canCloseCase`), không chỉ người đã đóng. */
 function coTheMoLaiCase(p: Principal, c: any): boolean {
-  return can(p, PERMISSIONS.CASE_APPROVE, { classId: c.class_id, studentId: c.eff_student_id })
-    || (c.closed_by != null && c.closed_by === p.userId && canCloseCase(p, c));
+  return can(p, PERMISSIONS.CASE_APPROVE, { classId: c.class_id, studentId: c.eff_student_id }) || canCloseCase(p, c);
 }
 /** Khoá chống trùng của Case nếu được mở lại (null = Case song song / không khoá). */
 function chanMoLaiKhoa(c: any): string | null {

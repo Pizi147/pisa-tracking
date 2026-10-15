@@ -3,7 +3,7 @@ import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import {
   BRANCH_REPORT_CATEGORIES, ENTRY_SKILLS, PERMISSIONS, chuanKhoaGui, tenMon, tuanLich,
   TASK_PROGRESS, TASK_PROGRESS_LABEL, TASK_TYPES,
-  TUTOR_REPORT_CATEGORIES, UNIT_STATUSES, trangThaiDonVi, trangThaiO, type DueState,
+  TUTOR_REPORT_CATEGORIES, UNIT_STATUSES, ngayTheoGioVN, trangThaiDonVi, trangThaiO, type DueState,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { badRequest, chuTuDo, diffDays, forbidden, isIsoDate, notFound, nowIso, padCode } from '../util.ts';
@@ -11,6 +11,7 @@ import { can, require_, scopeFor, type Principal } from '../permissions.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { ensurePeriod, owningMonth, periodById, reportEditWindow } from '../platform/week.ts';
 import { countAttachments } from '../platform/attachments.ts';
+import { mocNghiepVu } from '../duyet/yeuCau.ts';
 
 export const DUE_SOON_DAYS = 3;
 
@@ -105,7 +106,7 @@ export function meetingBoard(p: Principal, periodId: number, opts: { month?: str
    */
   const allReports = conn
     .prepare(
-      `SELECT ur.* FROM unit_reports ur JOIN report_periods rp ON rp.id = ur.period_id
+      `SELECT ur.*, rp.week_start AS rp_week_start, rp.week_end AS rp_week_end FROM unit_reports ur JOIN report_periods rp ON rp.id = ur.period_id
         WHERE ur.reporting_unit_id IN (${unitIds.map(() => '?').join(',')})
           AND ur.period_id IN (${periodIdsToQuery.map(() => '?').join(',')})
         ORDER BY rp.week_start`,
@@ -202,6 +203,8 @@ export function meetingBoard(p: Principal, periodId: number, opts: { month?: str
         trangThai: trangThaiO({ status: r?.status ?? null, note: r?.note ?? null, submittedAt: r?.submitted_at ?? null }),
         submittedAt: r?.submitted_at ?? null,
         submittedBy: r?.submitted_by ? nameOf.get(r.submitted_by) ?? null : null,
+        /* OV-13h: nộp sau hạn (hết thứ Tư tuần sau) — nhãn "nộp muộn". */
+        nopMuon: !!r?.submitted_at && (ngayTheoGioVN(r.submitted_at) ?? '') > reportEditWindow({ week_start: r.rp_week_start, week_end: r.rp_week_end }).closesOn,
         taskGroup: group,
         /* PR-Ra R6: việc NỐI THẬT qua `unit_report_task_links` — thay gợi ý tự động "cùng nhóm + CN". */
         linkedTasks: r ? linksByReport.get(r.id) ?? [] : [],
@@ -293,12 +296,10 @@ export function saveUnitReport(
     if (demoToday() < period.week_start) {
       throw badRequest(window.reason ?? `Tuần ${tuanLich(period.week_start, demoToday())} chưa bắt đầu — chưa có gì để báo cáo.`);
     }
-    if (before?.submitted_at && !window.open) {
-      throw badRequest('Báo cáo này đã nộp và tuần đã khoá — chỉ Quản trị hệ thống mở lại được.');
-    }
   }
 
-  const submittedAt = patch.nop ? nowIso() : null;
+  /* OV-13h: giờ NGHIỆP VỤ (ngày demo ở bản demo) — nhãn "nộp muộn" so ngày nộp với hạn của tuần. */
+  const submittedAt = patch.nop ? mocNghiepVu() : null;
   const submittedBy = patch.nop ? p.userId : null;
   conn
     .prepare(

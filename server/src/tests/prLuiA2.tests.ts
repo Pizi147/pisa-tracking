@@ -148,13 +148,13 @@ export async function runPrLuiA2Tests(t: YThucTestKit) {
     assert(d.MILESTONE_KIND_LABEL.reopened === 'Mở lại', 'nhãn mốc');
   }));
 
-  check('LUIa2-6 · Mở lại: GVCN/GVBM 403; chưa hoàn thành 400; đã có Case mới cùng hạng mục 400; Case "Không cần theo dõi" mở lại được; không PA → Mới mở', () => thu(() => {
+  check('LUIa2-6 · Mở lại: GV kỹ năng khác 403 (OV-13h: GV hoàn thành được thì mở lại được — LUIa2-7); chưa hoàn thành 400; đã có Case mới cùng hạng mục 400; Case "Không cần theo dõi" mở lại được; không PA → Mới mở', () => thu(() => {
     const sid = moiEm();
     const caseId = taoCase(sid);
     assert(chuLoi(() => cases.moLaiCase(QL, caseId)) === 'Case này chưa hoàn thành.', 'chưa xong');
     const ivId = themPa(caseId);
     dongCase(caseId, ivId);
-    assert(maLoi(() => cases.moLaiCase(P.coreTeacher, caseId)) === 403 && maLoi(() => cases.moLaiCase(P.lrTeacher, caseId)) === 403, 'GV mở lại được');
+    assert(maLoi(() => cases.moLaiCase(P.w1Teacher, caseId)) === 403 && maLoi(() => cases.moLaiCase(P.sTeacher, caseId)) === 403, 'GV kỹ năng khác mở lại được');
     const moi = taoCase(sid);   // Case mới cùng Listening nhận khoá
     assert(moi !== caseId, 'không ra Case mới');
     assert(chuLoi(() => cases.moLaiCase(QL, caseId)) === 'Đã có Case Listening mới — mở Case đó.', chuLoi(() => cases.moLaiCase(QL, caseId)));
@@ -169,12 +169,13 @@ export async function runPrLuiA2Tests(t: YThucTestKit) {
     assert(r.status === 'open' && r.dismiss_reason_code === null, JSON.stringify(r));
   }));
 
-  check('LUIa2-7 · viewer.coTheMoLai: QL true khi đã hoàn thành và mở được; GV false; Case đang mở false', () => thu(() => {
+  check('LUIa2-7 · viewer.coTheMoLai: QL true khi đã hoàn thành và mở được; GV đúng kỹ năng true (OV-13h), GV kỹ năng khác false; Case đang mở false', () => thu(() => {
     const caseId = taoCase(moiEm());
     assert(cases.caseDetail(QL, caseId).viewer.coTheMoLai === false, 'Case mở');
     dongCase(caseId, themPa(caseId));
     assert(cases.caseDetail(QL, caseId).viewer.coTheMoLai === true, 'QL');
-    assert(cases.caseDetail(P.lrTeacher, caseId).viewer.coTheMoLai === false, 'GVBM');
+    assert(cases.caseDetail(P.lrTeacher, caseId).viewer.coTheMoLai === true, 'GVBM đúng kỹ năng (hoàn thành được)');
+    assert(cases.caseDetail(P.w1Teacher, caseId).viewer.coTheMoLai === false, 'GVBM kỹ năng khác');
   }));
 
   // ---------------------------------------------------------------- a2-4 · Từ chối nhiều

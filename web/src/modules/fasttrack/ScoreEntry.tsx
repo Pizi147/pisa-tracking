@@ -53,10 +53,10 @@ export type Cell = {
   } | null;
   /**
    * PR-BV: dấu "-" ĐÃ CHỐT còn trên ô — ô hiện "-" (kèm `→ W3 SEP` khi đã dời) tới khi có điểm. Xoá "-" (tẩy ô + Lưu) = hết vắng,
-   * máy chủ trả lịch như trước khi gõ. `goDuoc` = người xem gỡ được lúc này (QL mọi lúc; GV chấm / GVCN đến hết thứ Tư sau tuần gốc).
+   * máy chủ trả lịch như trước khi gõ. `goDuoc` = người xem gỡ được lúc này (QL, GV chấm, GVCN — mọi lúc từ OV-13h).
    */
   daChot?: {
-    doiSang: string | null; hanGo: string | null; goDuoc: boolean;
+    doiSang: string | null; goDuoc: boolean;
     /** OV-11a: mã tuần có "-" (tuần gốc) — hộp tuần thi bù ghi "vắng lần 1 · dời từ W2 SEP". */
     tuTuan?: string;
     /** OV-4b: lần vắng · lúc ghi "-" · người ghi (hộp ô Vắng). */
@@ -119,8 +119,7 @@ export const VANG_HINT = t('Đã xác nhận vắng — Quản lý xếp lại b
 export const bandBanDau = (cell: Cell) => (cell.band !== null && cell.criteria.every((v) => v === null) ? fmtBand(cell.band) : '');
 
 /** Vì sao ô này chỉ đọc — MỘT câu cho ô số câu và ô tiêu chí. */
-export const lyDoChiDoc = (cell: Cell) => cell.lyDoKhoa ?? (cell.daChot?.hanGo && !cell.daChot.goDuoc ? t('Quá hạn gỡ "-" — nhờ Quản lý.')   // PR-BV
-  : cell.sitStatus === 'absent' ? VANG_HINT
+export const lyDoChiDoc = (cell: Cell) => cell.lyDoKhoa ?? (cell.sitStatus === 'absent' ? VANG_HINT
   : lockedByNoShow(cell) ? t('Đã chốt — cần Quản lý hiệu chỉnh')
   : cell.khoa ? KHOA_HOAN_TAT_HINT : t('Bạn không được phân công kỹ năng này'));
 
