@@ -4,6 +4,7 @@
  */
 import { invalidate } from '../../lib/api.ts';
 import type { NhomEm, TheYeuCauDto, TrangThaiVp } from '@shared/domain/index.ts';
+import type { ChuKhoa } from '@shared/i18n/index.ts';
 
 export type ViPhamV4 = {
   id: number; studentId: number; studentName: string; classCode: string | null; cycleId: number | null;
@@ -71,3 +72,15 @@ export type BangYThucLop = {
 
 /** Làm mới mọi dữ liệu Ý thức sau một thao tác ghi (tab lớp, tab HV, việc, hộp, số liệu). */
 export const DUONG_LAM_MOI_Y_THUC = ['/violations', '/classes', '/students', '/y-thuc', '/my-work', '/yeu-cau', '/tong-quan', '/metrics'] as const;
+
+/** OV-13d: chọn nhiều ở tab Ý thức lớp (`GET /classes/:id/y-thuc/lo`) — khớp `BangLo` / `KqEm` ở `server/src/yThuc/lo.ts`. */
+export type EmLo = {
+  studentId: number; ten: string; nhom: NhomEm | null;
+  bac: number; bacNhan: string | null; keTiep: { nhan: string; bac: number };
+  xuLy: { duoc: boolean; lyDo: ChuKhoa | null; soViPham: number; tomTat: string };
+  ghiNhan: { duoc: boolean; lyDo: ChuKhoa | null; soMoi: number };
+  /** Bậc đã khai (0 = "Chưa có xử lý vi phạm"), null = chưa khai. */
+  capBac: { duoc: boolean; lyDo: ChuKhoa | null; khai: number | null };
+};
+export type BangLo = { classId: number; classCode: string; canManage: boolean; laQl: boolean; em: EmLo[] };
+export type KqEm = { studentId: number; ten: string; ok: boolean; loi?: ChuKhoa; nhan?: string; ids?: number[] };

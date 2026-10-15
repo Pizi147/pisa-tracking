@@ -63,7 +63,7 @@ function viPhamChon(em: EmYThuc, ids: unknown): number[] {
   return list;
 }
 
-function nguoiThucHien(p: Principal, v: { performerUserId?: unknown; performerName?: unknown }): { by: number | null; ten: string | null } {
+export function nguoiThucHien(p: Principal, v: { performerUserId?: unknown; performerName?: unknown }): { by: number | null; ten: string | null } {
   const ten = String(v.performerName ?? '').trim().slice(0, 120) || null;
   const id = v.performerUserId == null || v.performerUserId === '' ? null : Number(v.performerUserId);
   if (id) {
@@ -73,13 +73,13 @@ function nguoiThucHien(p: Principal, v: { performerUserId?: unknown; performerNa
   return ten ? { by: null, ten } : { by: p.userId, ten: null };
 }
 
-function ngayThucHien(v: unknown): string {
+export function ngayThucHien(v: unknown): string {
   if (!isIsoDate(v)) throw badRequest('Chọn ngày thực hiện.');
   if (v > demoToday()) throw badRequest('Ngày thực hiện không được ở tương lai.');
   return v;
 }
 
-function moTa(v: unknown): string {
+export function moTa(v: unknown): string {
   const s = String(v ?? '').trim();
   if (s.length < MO_TA_MIN) throw badRequest(`Mô tả cần ít nhất ${MO_TA_MIN} ký tự — đã làm gì, với ai.`);
   return s.slice(0, 2000);
@@ -103,8 +103,12 @@ export function ghiNhan(p: Principal, studentId: number, violationIds: unknown):
     const t = em.viPham.get(id)!;
     if (t.t === 'can_xu_ly' || t.lyDoQuaHan === 'xu-ly') throw badRequest('Em đang phải xử lý bắt buộc — dùng Xác nhận xử lý.');
   }
-  const homNay = demoToday();
-  const n = tx(() => {
+  return { ok: true, soGhiNhan: luuGhiNhan(p, hv, studentId, ids, demoToday()) };
+}
+
+/** Phần GHI của Ghi nhận (đã kiểm quyền + vi phạm) — OV-13d lô gọi thẳng, khỏi kiểm lặp từng em. Trả số vi phạm vừa ghi nhận. */
+export function luuGhiNhan(p: Principal, hv: { student_code: string }, studentId: number, ids: readonly number[], homNay: string): number {
+  return tx(() => {
     const doi = db().prepare(
       `UPDATE violations SET ghi_nhan_luc = ?, ghi_nhan_boi = ? WHERE student_id = ? AND ghi_nhan_luc IS NULL AND id IN (${ids.map(() => '?').join(',')})`,
     ).run(homNay, p.userId, studentId, ...ids).changes as number;
@@ -114,7 +118,6 @@ export function ghiNhan(p: Principal, studentId: number, violationIds: unknown):
     }
     return doi;
   });
-  return { ok: true, soGhiNhan: n };
 }
 
 /** OV-7a: Bỏ ghi nhận bấm nhầm — xoá `ghi_nhan_luc`, vi phạm về Mới (luật trạng thái tự tính lại). Cùng quyền với Ghi nhận. */
@@ -161,10 +164,20 @@ export function xacNhanXuLy(p: Principal, studentId: number, v: XuLyVao): XuLyVi
   const note = moTa(v.note);
   const performedOn = ngayThucHien(v.performedOn);
   const nguoi = nguoiThucHien(p, v);
+  return xemXuLy(p, luuXuLy(p, hv, studentId, { violationIds: v.violationIds, performedOn, nguoi, note, key, bacDaThay: v.bacDaThay }, demoToday()).id);
+}
 
-  const id = tx(() => {
+/**
+ * Phần GHI của Xác nhận xử lý — nơi gọi đã kiểm quyền, khoá gửi lại, ngày, người, mô tả. OV-13d: lô gọi thẳng (kiểm quyền theo lớp một lần,
+ * không đọc lại lần xử lý vừa ghi) để một em chỉ tốn ~12 câu SQL.
+ */
+export function luuXuLy(p: Principal, hv: { full_name: string; student_code: string }, studentId: number, v: {
+  violationIds: unknown; performedOn: string; nguoi: { by: number | null; ten: string | null }; note: string; key: string | null; bacDaThay?: unknown;
+}, homNay: string): { id: number; kind: string } {
+  const { performedOn, nguoi, note, key } = v;
+  return tx(() => {
     /* Tính lại TRONG giao dịch (BEGIN IMMEDIATE): bậc là của máy chủ, không tin client. */
-    const em = emCua(studentId);
+    const em = trangThaiYThuc([studentId], homNay).get(studentId)!;
     const ids = viPhamChon(em, v.violationIds);
     if (v.bacDaThay !== undefined && v.bacDaThay !== null && Number(v.bacDaThay) !== em.bac) {
       throw conflict('Bậc đã đổi, mở lại panel.', { bac: em.bac });
@@ -178,7 +191,7 @@ export function xacNhanXuLy(p: Principal, studentId: number, v: XuLyVao): XuLyVi
     const mId = Number(info.lastInsertRowid);
     const link = db().prepare('INSERT INTO measure_violations (measure_id, violation_id, added_by, added_at) VALUES (?,?,?,?)');
     for (const vid of ids) { link.run(mId, vid, p.userId, nowIso()); noteMeasureChange(vid, null, mId, p.userId); }
-    ghiPhanHoi(ids);
+    ghiPhanHoi(ids, homNay);
     writeAudit({ actorUserId: p.userId, action: 'discipline.handle', entityType: 'discipline_measure', entityId: mId,
       entityLabel: `${hv.student_code} · ${nhanLoaiXuLy(ke.kind)}`, after: { kind: ke.kind, bac: ke.bac, violations: ids, performedOn } });
     if (BAC_BAO_QL.has(ke.kind)) {
@@ -188,9 +201,8 @@ export function xacNhanXuLy(p: Principal, studentId: number, v: XuLyVao): XuLyVi
           entityType: 'discipline_measure', entityId: mId, dedupKey: `yt-xu-ly:${mId}`, duong: duongHoSoHocVien(studentId, { tab: 'y-thuc' }) });
       }
     }
-    return mId;
+    return { id: mId, kind: ke.kind };
   });
-  return xemXuLy(p, id);
 }
 
 // ---------------------------------------------------------------- Khai bậc trước khi dùng web (H5, T27, Q7, Q8)
@@ -198,15 +210,20 @@ export function xacNhanXuLy(p: Principal, studentId: number, v: XuLyVao): XuLyVi
 export function khaiBac(p: Principal, studentId: number, v: { bac?: unknown; thang?: unknown; ghiChu?: unknown }) {
   const hv = hocVien(studentId);
   requireManageDiscipline(p, studentId, MANAGE_MESSAGE);
-  const { bac, thang, ghiChu } = kiemKhai(v);
+  return luuKhai(p, hv, studentId, kiemKhai(v), demoToday());
+}
+
+/** Phần GHI của Xác nhận cấp bậc (đã kiểm quyền) — OV-13d lô gọi thẳng. Luật chuỗi tính lại TRONG giao dịch. */
+export function luuKhai(p: Principal, hv: { student_code: string }, studentId: number, k: ReturnType<typeof kiemKhai>, homNay: string) {
+  const { bac, thang, ghiChu } = k;
   return tx(() => {
-    const em = emCua(studentId);
+    const em = trangThaiYThuc([studentId], homNay).get(studentId)!;
     if (!em.chuoi.length) throw badRequest('Em chưa có lộ trình — chưa xác nhận cấp bậc vi phạm được.');
     if (em.khai) throw badRequest('Chuỗi này đã xác nhận cấp bậc vi phạm — bấm Sửa để sửa bậc đã khai.');
     if (em.soXuLyChuoi > 0) throw badRequest('Chuỗi này đã có lần xử lý trên web — không xác nhận cấp bậc nữa.');
     db().prepare(
       `INSERT INTO y_thuc_khai_bac (student_id, chuoi_cycle_id, bac, thang, ghi_chu, khai_boi, khai_luc) VALUES (?,?,?,?,?,?,?)`,
-    ).run(studentId, em.chuoi[0], bac, thang, ghiChu, p.userId, demoToday());
+    ).run(studentId, em.chuoi[0], bac, thang, ghiChu, p.userId, homNay);
     writeAudit({ actorUserId: p.userId, action: 'discipline.declare_level', entityType: 'student', entityId: studentId,
       entityLabel: `${hv.student_code} · cấp bậc ${bac}`, after: { bac, thang, ghiChu, chuoi: em.chuoi[0] } });
     return { ok: true as const, bac };
@@ -221,23 +238,29 @@ export function suaKhaiBac(p: Principal, studentId: number, v: { bac?: unknown; 
   const hv = hocVien(studentId);
   const ql = can(p, PERMISSIONS.REQUEST_APPROVE, { studentId });
   if (!ql) requireManageDiscipline(p, studentId, MANAGE_MESSAGE);
-  const { bac, thang, ghiChu } = kiemKhai(v);
+  return luuSuaKhai(p, hv, studentId, kiemKhai(v), ql, demoToday());
+}
+
+/** Phần GHI của Sửa cấp bậc (đã kiểm quyền; `ql` = người sửa là Quản lý trong phạm vi em) — OV-13d lô gọi thẳng. */
+export function luuSuaKhai(p: Principal, hv: { student_code: string }, studentId: number, k: ReturnType<typeof kiemKhai>, ql: boolean, homNay: string) {
+  const { bac, thang, ghiChu } = k;
   return tx(() => {
-    const em = emCua(studentId);
+    const em = trangThaiYThuc([studentId], homNay).get(studentId)!;
     if (!em.khai) throw badRequest('Chuỗi này chưa xác nhận cấp bậc vi phạm.');
     if (!ql && em.soXuLyChuoi > 0) throw badRequest('Chuỗi này đã có lần xử lý trên web — chỉ Quản lý sửa được cấp bậc đã khai.');
     db().prepare(`UPDATE y_thuc_khai_bac SET bac = ?, thang = ?, ghi_chu = ?, sua_boi = ?, sua_luc = ? WHERE student_id = ? AND chuoi_cycle_id = ?`)
-      .run(bac, thang, ghiChu, p.userId, demoToday(), studentId, em.chuoi[0]);
+      .run(bac, thang, ghiChu, p.userId, homNay, studentId, em.chuoi[0]);
     writeAudit({ actorUserId: p.userId, action: 'discipline.declare_level_edit', entityType: 'student', entityId: studentId,
       entityLabel: `${hv.student_code} · sửa cấp bậc`, before: { bac: em.khai.bac }, after: { bac, thang, ghiChu } });
     return { ok: true as const, bac };
   });
 }
 
-function kiemKhai(v: { bac?: unknown; thang?: unknown; ghiChu?: unknown }) {
+export function kiemKhai(v: { bac?: unknown; thang?: unknown; ghiChu?: unknown }) {
   const bac = Number(v.bac);
-  /* Khai tối đa bậc 6 (WL 2) — hết mạch chính. ponytail: em đã qua Report 7+ trước khi dùng web thì khai WL 2, tăng dần trên web. */
-  if (!Number.isInteger(bac) || bac < 1 || bac > THANG.length) throw badRequest('Chọn bậc đã xử lý: Report 1 … WL 2.');
+  /* Khai tối đa bậc 6 (WL 2) — hết mạch chính. ponytail: em đã qua Report 7+ trước khi dùng web thì khai WL 2, tăng dần trên web.
+     OV-13d (Q5): bậc 0 = "Chưa có xử lý vi phạm" — xác nhận em chưa từng bị xử lý (thoát việc khai bậc, lần kế vẫn Report 1). */
+  if (!Number.isInteger(bac) || bac < 0 || bac > THANG.length) throw badRequest('Chọn bậc đã xử lý: Chưa có xử lý vi phạm, Report 1 … WL 2.');
   const thangStr = String(v.thang ?? '').trim();
   if (thangStr && !/^\d{4}-(0[1-9]|1[0-2])$/.test(thangStr)) throw badRequest('Tháng xử lý không hợp lệ.');
   const ghiChu = String(v.ghiChu ?? '').trim();

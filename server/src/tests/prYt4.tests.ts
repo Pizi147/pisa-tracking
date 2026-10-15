@@ -863,9 +863,9 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     assert(/api\.del\(`\/y-thuc\/xu-ly\/\$\{daLuu\.id\}`\)/.test(s) && /Cần đính kèm tệp hoặc liên kết/.test(s), 'xoá nháp + bằng chứng');
     assert(/Cần xử lý nặng hơn/.test(s) && /Xác nhận cấp bậc vi phạm trước/.test(s), 'nút Đề xuất + dòng Xác nhận cấp bậc (Q7)');
   });
-  check('YT4 (8) · Khai bậc: sáu bậc (Report 1 … WL 2), tháng tuỳ chọn, ghi chú ≥ 3; QL sửa bằng PUT', () => {
+  check('YT4 (8) · Khai bậc: bậc 0 "Chưa có xử lý vi phạm" (OV-13d) + sáu bậc (Report 1 … WL 2), tháng tuỳ chọn, ghi chú ≥ 3; QL sửa bằng PUT', () => {
     const s = docW(`${YT}/KhaiBacPanel.tsx`);
-    assert(/BAC_KHAI = THANG;/.test(s) && /GHI_CHU_MIN = 3/.test(s) && /api\.put\(/.test(s) && /kieu="thang"/.test(s), 'khai bậc');
+    assert(/BAC_KHAI = \[BAC_0_NHAN, \.\.\.THANG\./.test(s) && /GHI_CHU_MIN = 3/.test(s) && /api\.put\(/.test(s) && /kieu="thang"/.test(s), 'khai bậc');
   });
   check('YT4 (8) · + Ghi vi phạm (T31): tiêu đề "Ghi vi phạm", KHÔNG chọn sẵn nhóm (K3-35), nhóm bắt buộc chọn', () => {
     const s = docW(`${YT}/RecordViolationPanel.tsx`);
