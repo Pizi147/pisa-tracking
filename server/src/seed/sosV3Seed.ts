@@ -119,7 +119,7 @@ export function buildSosV3Demo(ctx: BuildCtx): { students: number; cases: number
   const khoiSp = caseOf(khoi.id, 'speaking');   // D7 (6)
   xacNhanPa(activeTeacher('speaking'), khoiSp.id, 'Tự học Speaking: ghi âm Part 2 mỗi ngày, GVBM nghe và chữa thứ Sáu.');
   hanPa(khoiSp.id, addDays(DEMO_DATE, -14), addDays(DEMO_DATE, 1));   // D8 → OV-12a: hạn hết T3 NGÀY MAI (kỳ 31/08–13/09)
-  confirmCoordination(gvcn, actionOf(khoiA.id, 'talk_student').id, { performedOn: addDays(DEMO_DATE, -1), note: 'Đã gặp em sau buổi học, em hứa luyện nói mỗi ngày.' });
+  confirmCoordination(gvcn, actionOf(khoiA.id, 'talk_family').id, { performedOn: addDays(DEMO_DATE, -1), note: 'Đã gọi cho mẹ em, gia đình nhắc em luyện nói mỗi ngày.' });   // OV-13n: SOS2 không điền sẵn trao đổi với HV
   /*
    * Vi phạm Ý thức của cùng em: ghi thẳng xuống bảng với mốc thời gian theo NGÀY DEMO (như `yThucSeed.ts`) — `recordViolation` đóng dấu giờ thật của máy.
    * GVCN tự ghi → tự Đã ghi nhận (PR-YT4 Q5).
@@ -144,7 +144,6 @@ export function buildSosV3Demo(ctx: BuildCtx): { students: number; cases: number
   guiKhongTheoDoi(activeTeacher('speaking'), lanSp.id, { reasonCode: 'single_incident' });
   duyetYeuCau(quanLy, theKtd(lanSp.id));
   guiKhongTheoDoi(activeTeacher('reading'), caseOf(lan.id, 'reading').id, { reasonCode: 'other', reasonText: 'Em ốm hai ngày trước buổi thi' });
-  confirmCoordination(gvcn, actionOf(lanA.id, 'talk_student').id, { performedOn: addDays(DEMO_DATE, -4) });
   confirmCoordination(gvcn, actionOf(lanA.id, 'talk_family').id, { performedOn: addDays(DEMO_DATE, -3), note: 'CS gọi cho mẹ em, gia đình nắm tình hình.', performerName: 'CS Thu Hà' });
 
   // ---------------------------------------------------------------- Bùi Thảo Vy — MT3 · SOS1 (lượt hoàn thành)

@@ -134,8 +134,10 @@ export const COORDINATION_STATUS_LABEL: Record<CoordinationStatus, string> = {
 
 /** BỐN lý do người dùng chọn nhanh khi bỏ một việc (P06) — chỉ `Khác` hiện ô chữ. */
 export const COORDINATION_USER_REMOVE_REASONS = ['not_needed', 'handled_otherwise', 'duplicate_measure', 'other'] as const;
-/** Mã chỉ HỆ THỐNG ghi: sửa điểm làm mức SOS đổi (P03) · lượt bị "Huỷ cả lượt" (PR-MT, T67) · kết quả MT huỷ do dời vượt (PR-MTa T2). */
-export const COORDINATION_REMOVE_REASONS = [...COORDINATION_USER_REMOVE_REASONS, 'system_sos_changed', 'system_luot_huy', 'system_ket_qua_huy'] as const;
+/** Mã chỉ HỆ THỐNG ghi: sửa điểm làm mức SOS đổi (P03) · lượt bị "Huỷ cả lượt" (PR-MT, T67) · kết quả MT huỷ do dời vượt (PR-MTa T2) · bảng §5.3 đổi (migrate OV-13n). */
+export const COORDINATION_REMOVE_REASONS = [...COORDINATION_USER_REMOVE_REASONS, 'system_sos_changed', 'system_luot_huy', 'system_ket_qua_huy', 'system_bang_doi'] as const;
+/** Lý do hệ thống mà `syncSosCoordination` được HỒI LẠI khi bảng lại cần việc đó (mức SOS đổi). */
+export const COORDINATION_SYNC_REVIVE_REASONS: readonly string[] = ['system_sos_changed', 'system_bang_doi'];
 export type CoordinationRemoveReason = (typeof COORDINATION_REMOVE_REASONS)[number];
 export const COORDINATION_REMOVE_REASON_LABEL: Record<CoordinationRemoveReason, string> = {
   not_needed: t('Không cần trong trường hợp này'),
@@ -145,6 +147,7 @@ export const COORDINATION_REMOVE_REASON_LABEL: Record<CoordinationRemoveReason, 
   system_sos_changed: t('Điểm được sửa — mức SOS không còn cần việc này'),
   system_luot_huy: t('Lượt Test đã huỷ'),
   system_ket_qua_huy: t('Kết quả MT đã huỷ'),
+  system_bang_doi: t('Luật mới: SOS 2–3 không còn việc này'),
 };
 
 /** BA lý do chọn nhanh khi GVBM bấm `Không cần theo dõi` (S05). */
@@ -162,17 +165,19 @@ export function reasonNeedsText(code: string): boolean {
 }
 
 const HS_GD: readonly CoordinationKind[] = ['talk_student', 'talk_family'];
-const HS_GD_GVCN: readonly CoordinationKind[] = [...HS_GD, 'gvcn_meeting'];
+const GD: readonly CoordinationKind[] = ['talk_family'];
+const GD_GVCN: readonly CoordinationKind[] = [...GD, 'gvcn_meeting'];
 
 /**
  * BẢNG §5.3 — hàng là SỐ MT (MT4 và MT5 trở đi dùng chung hàng 4), cột là mức SOS. Dấu `+` của đặc tả là CỘNG THÊM vào cột bên trái.
+ * Chủ SP 16/10 (OV-13n): SOS2 / SOS3 KHÔNG điền sẵn "Trao đổi ngắn với HV" (GVCN vẫn tự thêm được); SOS1 giữ HV + gia đình.
  * MT3 SOS3 là ngoại lệ DUY NHẤT dùng meeting có phụ huynh.
  */
 export const DEFAULT_SOS_COORDINATION: Record<1 | 2 | 3 | 4, Record<SosLevelKey, readonly CoordinationKind[]>> = {
-  1: { 1: HS_GD, 2: HS_GD, 3: HS_GD_GVCN },
-  2: { 1: HS_GD, 2: HS_GD_GVCN, 3: [...HS_GD_GVCN, 'cx_meeting_student'] },
-  3: { 1: HS_GD, 2: HS_GD_GVCN, 3: [...HS_GD_GVCN, 'cx_meeting_family'] },
-  4: { 1: HS_GD, 2: HS_GD_GVCN, 3: [...HS_GD_GVCN, 'cx_meeting_student'] },
+  1: { 1: HS_GD, 2: GD, 3: GD_GVCN },
+  2: { 1: HS_GD, 2: GD_GVCN, 3: [...GD_GVCN, 'cx_meeting_student'] },
+  3: { 1: HS_GD, 2: GD_GVCN, 3: [...GD_GVCN, 'cx_meeting_family'] },
+  4: { 1: HS_GD, 2: GD_GVCN, 3: [...GD_GVCN, 'cx_meeting_student'] },
 };
 
 /** Các việc điền sẵn cho một lượt Mock có SOS. Mức 0 (hoặc không xác định) thì không có việc nào. RF (T4): hàng MT4 cho mọi MT. */
