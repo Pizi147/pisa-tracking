@@ -1876,7 +1876,9 @@ export function oThieuNhanXet(a: any, row: { band?: number | null; raw_score?: n
 }
 /** Lệnh chỉ gồm nhận xét / nhóm, và ô đang thiếu một trong hai. */
 function boSungNhanXetDuoc(a: any, skill: string, patch: ScorePatch): boolean {
-  const chiHai = Object.keys(patch).every((k) => k === 'nhanXet' || k === 'nhomNguyenNhan') && Object.keys(patch).length > 0;
+  /* Route gửi đủ khoá (giá trị `undefined` khi người dùng không gửi) — chỉ xét khoá có giá trị. */
+  const khoa = Object.keys(patch).filter((k) => (patch as Record<string, unknown>)[k] !== undefined);
+  const chiHai = khoa.length > 0 && khoa.every((k) => k === 'nhanXet' || k === 'nhomNguyenNhan');
   return chiHai && !!oThieuNhanXet(a, db().prepare('SELECT * FROM assessment_scores WHERE attempt_id = ? AND skill = ?').get(a.id, skill) as any);
 }
 const kiemNhanXetGt = (v: unknown) => { const r = kiemNhanXet(v); if ('loi' in r) throw badRequest(r.loi); return r.gt; };

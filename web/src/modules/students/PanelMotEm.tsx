@@ -11,7 +11,7 @@ import { skillShort, sosTone } from '../../lib/format.ts';
 import type { WorkItem } from '../worklist/WorkList.tsx';
 import { NganCase } from './NganCase.tsx';
 import { OPhuHuynh } from './HocVienTheoVai.tsx';
-import type { CaseTomTat } from './BangSos.tsx';
+import { chuChuaNguyenNhan, type CaseTomTat } from './BangSos.tsx';
 import { t } from '@shared/i18n/index.ts';
 import { LOAI_HAN_CUA_VIEC, NHAN_NHOM_XU_LY, vaiXemHocVien, type LienHe } from '@shared/domain/index.ts';
 
@@ -113,7 +113,7 @@ export function PanelMotEm({ studentId, caseMo, onClose, onDoi }: {
                         <path d="M2.5 1 6 4 2.5 7" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                       </svg>
                       <span className="shrink-0 text-sm font-bold text-slate-100">{c.topic ? skillShort(c.topic) : 'Case'}{c.attemptNo ? <span className="font-normal text-slate-400"> · MT{c.attemptNo}</span> : null}</span>
-                      <span className="min-w-0 flex-1 truncate text-[13px] text-slate-300">{c.nguyenNhan ?? t('chưa xác nhận nguyên nhân')}</span>
+                      <span className="min-w-0 flex-1 truncate text-[13px] text-slate-300">{c.nguyenNhan ?? chuChuaNguyenNhan(c, true)}</span>
                       {!m && viec.length > 0 && <span className="shrink-0 text-xs font-semibold text-[color:var(--accent)]">{viec[0].tieuDe}</span>}
                       <Nhan tone={TONE_NHOM[c.nhom]}>{t(NHAN_NHOM_XU_LY[c.nhom])}</Nhan>
                     </button>
@@ -141,7 +141,7 @@ export function PanelMotEm({ studentId, caseMo, onClose, onDoi }: {
                         )}
                         {/* Bối cảnh chung (`BoiCanh`, ≤ 3 dòng). */}
                         <BoiCanh dong={[
-                          [t('Nguyên nhân'), <>{c.nguyenNhan ?? t('chưa xác nhận')}{c.nhanXet && <span className="block text-slate-400">“{c.nhanXet}”</span>}</>],
+                          [t('Nguyên nhân'), <>{c.nguyenNhan ?? chuChuaNguyenNhan(c)}{c.nhanXet && <span className="block text-slate-400">“{c.nhanXet}”</span>}</>],
                           [t('Phương án'), c.pa.length ? c.pa.map((p) => (
                             <span key={p.id} className="block">{p.ten}{p.nguoi ? ` · ${p.nguoi}` : ''}{p.choXacNhan ? ` · ${t('chờ xác nhận')}` : p.xong ? ` · ${t('đã khép')}` : ''}</span>
                           )) : t('Chưa có PA')],

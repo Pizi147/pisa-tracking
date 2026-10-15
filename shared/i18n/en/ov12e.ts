@@ -29,4 +29,10 @@ export const EN_OV12E = {
   'Duyệt đề xuất ngoài thang không đổi bậc — bậc kế vẫn là {bac}.': 'Approving an off-scale proposal does not change the level — next level stays {bac}.',
   'Vi phạm đưa vào · {n}': 'Incidents included · {n}',
   '{n} vi phạm': '{n} incidents',
+  /* Hotfix 15/10 */
+  'Trang gặp lỗi khi hiển thị.': 'This page failed to display.',
+  'Mã lỗi: {ma}': 'Error code: {ma}',
+  'Bỏ nội dung đang gõ?': 'Discard what you typed?',
+  'Hệ thống đóng — Case mới tạo khi chốt lượt': 'Closed by system — a new Case is created when the round is finalised',
+  'Hệ thống đóng — Overall đã đạt': 'Closed by system — Overall met',
 } satisfies Record<string, Dich>;

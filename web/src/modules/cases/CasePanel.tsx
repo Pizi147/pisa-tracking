@@ -20,6 +20,7 @@ import {
 } from '@shared/domain/index.ts';
 import { DongXinYKien } from './DongXinYKien.tsx';
 import { NganCase } from '../students/NganCase.tsx';
+import { DongNguyenNhan } from '../yThuc/CaseSosControls.tsx';
 import { TheYeuCau } from '../duyet/TheYeuCau.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 
@@ -83,7 +84,7 @@ export type CaseDetail = {
   outcome: string | null; outcomeLabel: string | null;
   outcomeNote: string | null; outcomeDecision: string | null; outcomeAt: string | null;
   /** Case bị PR-LT tự đóng khi em chuyển khỏi lớp/khoá (S16/S17) — không phải GV kết luận. */
-  systemCloseLabel: string | null;
+  systemCloseReason?: string | null; systemCloseLabel: string | null;
   /** Mọi phương án đã có kết quả chưa — điều kiện để chốt kết quả chung. */
   canFinish: boolean;
   /** Các mốc trong vòng đời case. Giao diện xếp MỚI NHẤT LÊN ĐẦU (mục 4.3). */
@@ -196,10 +197,8 @@ export function ThanCase({ data, onViec }: { data: CaseDetail; onViec: (v: ViewC
           <dl className="m-0 grid grid-cols-[max-content_1fr] gap-x-3 gap-y-1 text-[12.5px]">
             {(primary || secondary.length > 0) && <>
               <dt className="text-slate-400">{t('Nhóm nguyên nhân')}</dt>
-              <dd className="m-0 flex flex-wrap items-center gap-1.5 text-slate-200">
-                {primary && <span title={primary.observation ?? undefined}>{dich(primary.label)}</span>}
-                {secondary.map((i) => <Nhan key={i.id} tone="muted" title={i.observation ?? undefined}>{i.label}</Nhan>)}
-              </dd>
+              {/* Hotfix 15/10 (L2): đủ nhóm có số thứ tự + nhận xét (Case MT không có Mô tả — nhận xét của bài là nội dung). */}
+              <dd className="m-0 text-slate-200"><DongNguyenNhan issues={[...(primary ? [primary] : []), ...secondary]} /></dd>
             </>}
             {context.length > 0 && <>
               <dt className="text-slate-400">{t('Bối cảnh')}</dt>

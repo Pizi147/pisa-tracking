@@ -100,7 +100,8 @@ export function DongViec({ it, onOpen, nutPhu, gon = false, chon = null, xong, m
         </span>
       </button>
       <span className={`col-start-2 text-xs sm:col-start-auto [&>span]:text-xs ${gon ? 'flex flex-wrap items-center gap-2 sm:justify-end sm:text-right' : ''}`}>
-        {it.due ? <Han loai={loaiHan ?? 'viec-van-hanh'} han={it.due} haiDong /> : <span className="text-slate-500">{t('Chưa có hạn')}</span>}
+        {/* Hotfix 15/10: dòng đã xong (gạch) không còn hạn / "⚠ quá hạn". */}
+        {daXong ? null : it.due ? <Han loai={loaiHan ?? 'viec-van-hanh'} han={it.due} haiDong /> : <span className="text-slate-500">{t('Chưa có hạn')}</span>}
         {gon && nutPhu && <span onClick={(e) => e.stopPropagation()}>{nutPhu}</span>}
       </span>
       {!gon && <span className="col-start-2 flex items-center gap-2 sm:col-start-auto sm:justify-end">
@@ -145,7 +146,7 @@ function DongCon({ it, loaiHan, onOpen, gon, chon, xong, moTrang = false }: {
           {it.conPhu && <small className="block break-words text-[11.5px] font-normal text-slate-500">{dich(it.conPhu)}</small>}
         </span>
         <span className="text-xs [&>span]:text-xs">
-          {it.due ? <Han loai={loaiHan ?? 'viec-van-hanh'} han={it.due} haiDong /> : <span className="text-slate-500">{t('Chưa có hạn')}</span>}
+          {xong ? null : it.due ? <Han loai={loaiHan ?? 'viec-van-hanh'} han={it.due} haiDong /> : <span className="text-slate-500">{t('Chưa có hạn')}</span>}
         </span>
       </button>
     );

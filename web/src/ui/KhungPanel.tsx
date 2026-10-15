@@ -62,6 +62,10 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong = 'hep', tabs, ngCanh, q
   const khung = useRef<HTMLDivElement>(null);
   const dongRef = useRef(onDong);
   dongRef.current = onDong;
+  /* Hotfix 15/10 (L5): ✕ / Esc / bấm nền đi chung một đường — đang sửa dở thì hỏi trước, không mất chữ âm thầm. */
+  const daSuaRef = useRef(false);
+  daSuaRef.current = !!chan?.daSua;
+  const dong = () => { if (!daSuaRef.current || window.confirm(t('Bỏ nội dung đang gõ?'))) dongRef.current(); };
   const taiCho = useContext(KhungTaiCho);
 
   useEffect(() => {
@@ -83,7 +87,7 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong = 'hep', tabs, ngCanh, q
     nganPanel.push(id);
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && !e.defaultPrevented && nganPanel[nganPanel.length - 1] === id
-        && !khung.current?.querySelector('[aria-modal="true"]')) dongRef.current();
+        && !khung.current?.querySelector('[aria-modal="true"]')) dong();
     };
     document.addEventListener('keydown', onKey);
     return () => { document.removeEventListener('keydown', onKey); nganPanel.splice(nganPanel.indexOf(id), 1); };
@@ -114,7 +118,7 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong = 'hep', tabs, ngCanh, q
             <div className="flex items-start gap-2.5">
               <h2 className="m-0 min-w-0 flex-1 text-[17px] font-extrabold leading-6 text-slate-100">{tieuDe}</h2>
               {dau.han}
-              <button type="button" className={`btn btn-sm btn-ghost -my-1 min-h-[44px] min-w-[44px] justify-center sm:min-h-[32px] sm:min-w-[32px] ${taiCho ? 'max-lg:hidden' : ''}`} onClick={onDong} aria-label={t('Đóng')}>✕</button>
+              <button type="button" className={`btn btn-sm btn-ghost -my-1 min-h-[44px] min-w-[44px] justify-center sm:min-h-[32px] sm:min-w-[32px] ${taiCho ? 'max-lg:hidden' : ''}`} onClick={dong} aria-label={t('Đóng')}>✕</button>
             </div>
             <p className="m-0 flex flex-wrap items-baseline text-sm leading-snug text-slate-400">
               {dau.dong2.filter(Boolean).map((x, i) => <span key={i} className="min-w-0">{i > 0 && <span aria-hidden className="mx-1.5 text-slate-500">·</span>}{x}</span>)}
@@ -126,7 +130,7 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong = 'hep', tabs, ngCanh, q
           {ngu && <span className="min-w-0 flex-1 truncate text-xs text-slate-400" title={ngu}>{ngu}</span>}
           {!ngu && <span className="flex-1" />}
           {/* Tại chỗ trên điện thoại: "‹ Công việc" của nơi gọi thay ✕. */}
-          <button type="button" className={`btn btn-sm btn-ghost min-h-[44px] min-w-[44px] justify-center sm:min-h-[32px] sm:min-w-[32px] ${taiCho ? 'max-lg:hidden' : ''}`} onClick={onDong} aria-label={t('Đóng')}>✕</button>
+          <button type="button" className={`btn btn-sm btn-ghost min-h-[44px] min-w-[44px] justify-center sm:min-h-[32px] sm:min-w-[32px] ${taiCho ? 'max-lg:hidden' : ''}`} onClick={dong} aria-label={t('Đóng')}>✕</button>
         </header>
         )}
         {quayLai && (
@@ -164,7 +168,7 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong = 'hep', tabs, ngCanh, q
   );
   if (taiCho) {
     return (
-      <section ref={khung} tabIndex={-1} aria-label={tieuDe} onKeyDown={(e) => { if (e.key === 'Escape' && !e.defaultPrevented && !khung.current?.querySelector('[aria-modal="true"]')) dongRef.current(); }}
+      <section ref={khung} tabIndex={-1} aria-label={tieuDe} onKeyDown={(e) => { if (e.key === 'Escape' && !e.defaultPrevented && !khung.current?.querySelector('[aria-modal="true"]')) dong(); }}
         className={`card flex flex-col -outline-offset-2 lg:max-h-[calc(100dvh-8rem)] ${chan?.v3 ? 'max-sm:overflow-visible sm:overflow-hidden' : 'overflow-hidden'}`}>
         <KhungTaiCho.Provider value={false}>{than}</KhungTaiCho.Provider>
       </section>
@@ -172,7 +176,7 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong = 'hep', tabs, ngCanh, q
   }
   return createPortal(
     <div className={`fixed inset-0 !mt-0 ${z} flex justify-end`} role="dialog" aria-modal="true" aria-label={tieuDe}>
-      <div className="absolute inset-0 bg-black/60" onClick={onDong} />
+      <div className="absolute inset-0 bg-black/60" onClick={dong} />
       <div ref={khung} tabIndex={-1} className={`relative flex h-full w-full flex-col rounded-none border-l shadow-2xl -outline-offset-2 ${rong === 'toan' ? 'max-w-[1440px]' : rong === 'rong' ? 'sm:w-[720px]' : 'sm:w-[560px]'}`}
         style={{ background: 'var(--surface)', borderColor: 'var(--line-strong)' }}>
         {than}
