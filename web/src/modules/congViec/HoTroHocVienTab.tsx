@@ -13,6 +13,7 @@ import { ChonPhuTrach, type NguoiPhuTrach } from './ChonPhuTrach.tsx';
 import { CongTacKhung, khungDaNho, nhoKhung, type KhungLoc } from '../../ui/CongTacKhung.tsx';
 import { KhungTaiCho, coPanelDangSua } from '../../ui/KhungPanel.tsx';
 import { PanelViec, lamTaiCho } from './PanelViec.tsx';
+import { DongDaLuu, GhiNhanh, type DaLuuNhanh } from '../cases/GhiNhanh.tsx';
 import {
   LOC_NHANH_LABEL, NHOM_VIEC, NHOM_VIEC_LABEL, demLocNhanh, demNhomChip, demPhamVi, gomNhomViec, khoaGopCua, khopLocNhanh, nhomViecCua,
   LOC_NHANH, type LocNhanh, type NhomViec as MaNhomViec,
@@ -167,6 +168,13 @@ export function HoTroHocVienTab() {
   const daDay = useRef<string | null>(null);
   const khongViec = (p: URLSearchParams) => { const x = new URLSearchParams(p); x.delete('viec'); return x.toString(); };
   const cuon = useRef(0);
+  /*
+   * OV-13b (mockup OV-13 §1): Kết quả PA ghi nhanh được (`ghiNhanh`) mở NGAY DƯỚI dòng — không panel phải; "Điều chỉnh / Kết thúc…" chuyển việc đó sang
+   * panel lớn (`panelLon`). Lưu xong: dòng gập "✓ Đã lưu · … · Hoàn tác", việc kế tự mở.
+   */
+  const [panelLon, setPanelLon] = useState<ReadonlySet<string>>(new Set());
+  const [daLuuNhanh, setDaLuuNhanh] = useState<ReadonlyMap<string, DaLuuNhanh>>(new Map());
+  const laNhanh = (x: WorkItem) => x.group === 'ghi_ket_qua_pa' && !!x.ghiNhanh && !!x.paId && !panelLon.has(x.key);
   const mo = (it: WorkItem) => {
     if (!lamTaiCho(it)) { navigate(it.href); return; }
     const next = new URLSearchParams(params);
@@ -176,7 +184,7 @@ export function HoTroHocVienTab() {
     else {
       daDay.current = khongViec(params);
       const v = vungCuon();
-      if (v && window.matchMedia(MAN_HEP).matches) { cuon.current = v.scrollTop; v.scrollTo(0, 0); }
+      if (v && window.matchMedia(MAN_HEP).matches && !laNhanh(it)) { cuon.current = v.scrollTop; v.scrollTo(0, 0); }
       setParams(next);
     }
   };
@@ -198,6 +206,18 @@ export function HoTroHocVienTab() {
   const viTri = thuTu.findIndex((x) => x.key === viec);
   const keTiep = thuTu.slice(viTri + 1).find((x) => !xong.has(x.key)) ?? null;
   const daLam = (it: WorkItem) => setGiu((m) => new Map(m).set(it.key, it));
+  const moRong = (x: WorkItem) => {
+    const kq = daLuuNhanh.get(x.key);
+    if (kq) {
+      return <DongDaLuu kq={kq} onHoanTac={() => { setDaLuuNhanh((m) => { const y = new Map(m); y.delete(x.key); return y; }); reload(); mo(x); }} />;
+    }
+    if (x.key !== viec || !laNhanh(x)) return null;
+    return (
+      <GhiNhanh key={x.key} paId={x.paId!} trongDong
+        onDaLuu={(r) => { setDaLuuNhanh((m) => new Map(m).set(x.key, r)); daLam(x); reload(); if (keTiep) mo(keTiep); else setParam('viec', null); }}
+        onMoPanel={() => setPanelLon((s) => new Set(s).add(x.key))} />
+    );
+  };
 
   // ------------------------------------------------------------------ Lọc thêm + dòng phạm vi
   const [locThem, setLocThem] = useState(false);
@@ -219,7 +239,8 @@ export function HoTroHocVienTab() {
     khung === 'ft' ? 'Fast Track' : khung === 'thuong' ? t('Lớp thường') : null].filter(Boolean).join(' · ');
 
   if (error) return <ErrorState message={error.message} hint={error.hint} onRetry={reload} />;
-  const anTrenDienThoai = chon ? 'max-lg:hidden' : '';
+  const nhanhChon = !!chon && laNhanh(chon);
+  const anTrenDienThoai = chon && !nhanhChon ? 'max-lg:hidden' : '';
   return (
     <div className="space-y-3">
       {/* ───────────────────────────────────────────────── lọc hai tầng (mockup M1 §1) */}
@@ -286,13 +307,13 @@ export function HoTroHocVienTab() {
           )}
           {data && !data.scopeEmpty && dsNhom.length > 0 && (
             <Card bodyClass="p-0">
-              <NhomViec nhom={dsNhom} soHien={10} moHet={moHet} onOpen={(x) => { if (x.key === viec || boDuocChu()) mo(x); }} chon={viec} xong={xong} moTrang={(x) => !lamTaiCho(x)} />
+              <NhomViec nhom={dsNhom} soHien={10} moHet={moHet} onOpen={(x) => { if (x.key === viec || boDuocChu()) mo(x); }} chon={viec} xong={xong} moTrang={(x) => !lamTaiCho(x)} moRong={moRong} />
             </Card>
           )}
         </div>
         {/* Cột phải dính khi cuộn danh sách dài (mockup `.pn` sticky). */}
-        <div className={`lg:sticky lg:top-3 ${chon ? 'space-y-2' : 'max-lg:hidden'}`}>
-          {chon ? (
+        <div className={`lg:sticky lg:top-3 ${chon && !nhanhChon ? 'space-y-2' : 'max-lg:hidden'}`}>
+          {chon && !nhanhChon ? (
             <>
               {/* Điện thoại: danh sách vừa ẩn → focus về nút lùi (máy tính nút ẩn, `autoFocus` không có tác dụng). */}
               {/* eslint-disable-next-line jsx-a11y/no-autofocus */}

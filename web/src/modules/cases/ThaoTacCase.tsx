@@ -11,7 +11,7 @@ import { NutChon } from '../../ui/ui.tsx';
 import { BoiCanh, CanLam, TrangThaiLuu } from '../../ui/KhuonViec.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import {
-  CASE_OUTCOMES, CASE_OUTCOME_LABEL, HAN_DUYET_NGAY,
+  CASE_OUTCOMES, INTERVENTION_KIND_LABEL, CASE_OUTCOME_LABEL, HAN_DUYET_NGAY,
   componentsAreCounts, componentsFor, interventionKindsFor, isProposalKind,
   dsLoi, kiemGhiRoKhac, KHAC_TOI_THIEU, moiKhoaGui, tuanLich,
   giaTriCuaPa, loiFormPa, paMoi, paPayload, thanSuaPa, type GiaTriPa, type KetQuaNhatKy,
@@ -21,7 +21,8 @@ import { ComponentsField, componentsPayload } from './ChiTietKyNang.tsx';
 import { FormPa, NgayKhoa, NhatKyPa } from './FormPa.tsx';
 import type { BanDieuChinh } from './CapNhatTuan.tsx';
 import { DongNguyenNhan } from '../yThuc/CaseSosControls.tsx';
-import { t } from '@shared/i18n/index.ts';
+import { dich, t } from '@shared/i18n/index.ts';
+import type { DaLuuPanel } from '../../ui/KhuonViec.tsx';
 
 /**
  * BA THAO TÁC CỦA NGĂN CASE (PR-UX3, N-4): Thêm PA · Hoàn thành Case · Trả lời đề xuất — trước đây là hộp thoại giữa màn đè lên
@@ -33,7 +34,8 @@ import { t } from '@shared/i18n/index.ts';
 type ChungPanel = {
   hocVien?: string | null; lop?: string | null;
   quayLai?: { nhan: string; onClick: () => void };
-  onClose: () => void; onSaved: () => void;
+  /** OV-13b: Thêm PA truyền chữ "✓ Đã lưu · …" cho panel ở lại (`DaLuuPanel`). */
+  onClose: () => void; onSaved: (x?: DaLuuPanel) => void;
 };
 
 // ==================================================================== Thêm PA
@@ -51,7 +53,6 @@ export function ThemPaPanel({ caseId, studentId, coPaBatBuoc, hocVien, lop, quay
   /** OV-12e: đầu panel v3 (`dauViec`) + Bối cảnh (Nguyên nhân · Kết quả gần nhất). */
   dau?: { han?: ReactNode; dong2: ReactNode[] }; boiCanh?: [string, ReactNode][];
 }) {
-  const toast = useToast();
   const { homNay } = useNgayNghiepVu();
   const [v, setV] = useState<GiaTriPa>(() => paMoi(interventionKindsFor().selfServe[0]));
   /* Mặc định ĐANG THEO DÕI: PA vừa lập thì đang chạy, không phải đã xong. */
@@ -85,8 +86,8 @@ export function ThemPaPanel({ caseId, studentId, coPaBatBuoc, hocVien, lop, quay
         idempotencyKey: khoa.current,
       });
       invalidate('/cases'); invalidate('/students'); invalidate('/tong-quan'); invalidate('/my-work');   // OV-11c (CV-2): việc Thêm PA hết ở Công việc
-      toast.push('ok', deXuat ? t('Đã gửi Quản lý duyệt') : t('Đã ghi lại'));
-      onSaved();
+      /* OV-13b: panel ở lại "✓ Đã lưu · Việc tiếp ›" (nơi gọi vẽ) — không toast đè chân. */
+      onSaved({ chu: deXuat ? t('Đã gửi Quản lý duyệt') : t('Đã thêm PA'), phu: [dich(INTERVENTION_KIND_LABEL[v.kind as keyof typeof INTERVENTION_KIND_LABEL] ?? v.kind), v.description.trim()].filter(Boolean).join(' · ') });
     } catch (e: any) { setLoiLuu(e.message); } finally { setBusy(false); }
   };
 

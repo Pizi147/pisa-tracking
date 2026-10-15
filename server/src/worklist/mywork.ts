@@ -6,7 +6,7 @@ import {
   INTERVENTION_KIND_LABEL, PERMISSIONS,
   SOS_LABEL, URGENCY_LABEL, URGENCY_TONE, caseHeadline, caseTopicLabel, cycleDeadline,
   duongCaseRieng, duongHoSoHocVien, duongLichTest, nhanDotNgan, hanThemPa,
-  khungCua, laLanGhiCuoi, tenMon, tenNhomMon, REGULAR_SKILLS, nhanLoaiXuLy, soSanhLop,
+  khungCua, laLanGhiCuoi, ghiNhanhDuoc, tenMon, tenNhomMon, REGULAR_SKILLS, nhanLoaiXuLy, soSanhLop,
   type Khung, type AttemptKind, type InterventionKind, nhanBaiThuong, chuTyLeXetLai, gopViecTheoLop, type ConGop } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addDays, forbidden } from '../util.ts';
@@ -112,6 +112,8 @@ export type WorkItem = {
   con?: ConGop<WorkItem>[];
   /** OV-5a (panel Công việc): PA của việc — Kết quả PA, Xác nhận PA, Ghi Mini Test mở đúng PA trong Ngăn Case. */
   paId?: number | null;
+  /** OV-13b: Kết quả PA ghi nhanh được ngay dưới dòng (`ghiNhanhDuoc`). */
+  ghiNhanh?: boolean;
   /** OV-5a: Nhập điểm mở panel một lớp · một lượt (`mt:2`, `thuong:progress`) · kỹ năng đầu tiên của dòng. */
   luot?: string;
   kn?: string;
@@ -537,7 +539,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   const reviewedCases = new Set<number>();
   const ghiKetQua = !co('ghi_ket_qua_pa', 'no_plan') ? [] : conn   // `reviewedCases` của 2b loại Case khỏi `no_plan`
     .prepare(
-      `SELECT iv.id, iv.case_id, iv.kind, iv.description, iv.action_due, iv.followup_due, iv.preset, iv.nhom_bo_tro,
+      `SELECT iv.id, iv.case_id, iv.kind, iv.description, iv.action_due, iv.followup_due, iv.preset, iv.nhom_bo_tro, iv.so_buoi,
               iv.performer_user_id, iv.performer_name, sc.owner_user_id,
               sc.topic, sc.sos_level, sc.urgency, sc.summary, sc.origin_kind, sc.attempt_id,
               COALESCE(sc.student_id, a.student_id) AS eff_student_id,
@@ -610,6 +612,8 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       ownerId: iv.owner_id ?? null,
       owner: iv.owner_id ? null : ((iv.performer_name ?? '').trim() || null),
       mine, due: iv.action_due, statusLabel: 'Chờ kết quả',
+      /* OV-13b: Công việc mở ghi nhanh ngay dưới dòng (cùng luật với Case / panel một em). */
+      ghiNhanh: ghiNhanhDuoc({ kind: iv.kind, soBuoi: iv.so_buoi ?? null, lanCuoi: tuanCuoi }),
     });
   }
 

@@ -27,6 +27,8 @@ export type WorkItem = {
   con?: (WorkItem & { conTen: string; conPhu: string })[];
   /** OV-5a: PA của việc (Kết quả PA, Xác nhận PA, Mini Test) · Nhập điểm: mã lượt (`mt:2`) + kỹ năng — panel Công việc mở đúng chỗ. */
   paId?: number | null; luot?: string; kn?: string; soBai?: number;
+  /** OV-13b: Kết quả PA ghi nhanh được ngay dưới dòng (máy chủ `ghiNhanhDuoc`). */
+  ghiNhanh?: boolean;
   /** OV-11c: id em của việc cả lớp (Nhập điểm theo bài…) — panel Nhập điểm đưa em của việc lên đầu. */
   emIds?: number[];
 };
@@ -40,7 +42,7 @@ export type WorkGroup = { key: string; label: string; hint: string; items: WorkI
  * quá hạn nối ngay sau bằng chữ "⚠ quá hạn n ngày" (B-3, B-5). Thẻ ngoài là `div` để nút phụ
  * đứng cạnh phần bấm-mở mà không lồng `button` trong `button`. Loại việc chưa có loại hạn thì hạn là ngày trơn.
  */
-export function DongViec({ it, onOpen, nutPhu, gon = false, chon = null, xong, moTrang = false, conMoTrang }: {
+export function DongViec({ it, onOpen, nutPhu, gon = false, chon = null, xong, moTrang = false, conMoTrang, moRong }: {
   it: WorkItem; onOpen: (it: WorkItem) => void;
   /** Nút phụ đứng cạnh nút chính (PR-Ra: Nhắc/Duyệt). */
   nutPhu?: ReactNode;
@@ -52,6 +54,8 @@ export function DongViec({ it, onOpen, nutPhu, gon = false, chon = null, xong, m
   moTrang?: boolean;
   /** OV-11c (CV-17c): em trong dòng gộp mở trang khác cũng có dấu ↗. */
   conMoTrang?: (it: WorkItem) => boolean;
+  /** OV-13b: phần mở ngay dưới dòng / dưới em của dòng gộp (ghi nhanh Kết quả PA). */
+  moRong?: (it: WorkItem) => ReactNode;
 }) {
   const [mo, setMo] = useState(false);
   const con = it.con;
@@ -121,9 +125,11 @@ export function DongViec({ it, onOpen, nutPhu, gon = false, chon = null, xong, m
       {con && mo && (
         <ul id={maDs} className="col-span-full m-0 mb-0.5 mt-1 list-none divide-y rounded-lg border p-0 sm:col-start-2 sm:col-end-[-1]"
           style={{ borderColor: 'var(--line)', background: 'var(--surface)' }} onClick={(e) => e.stopPropagation()}>
-          {con.map((c) => <li key={c.key}><DongCon it={c} loaiHan={loaiHan} onOpen={onOpen} gon={gon} chon={chon === c.key} xong={!!xong?.has(c.key)} moTrang={!!conMoTrang?.(c)} /></li>)}
+          {con.map((c) => <li key={c.key}><DongCon it={c} loaiHan={loaiHan} onOpen={onOpen} gon={gon} chon={chon === c.key} xong={!!xong?.has(c.key)} moTrang={!!conMoTrang?.(c)} />
+            {moRong?.(c) && <div className="px-2.5 pb-2.5">{moRong(c)}</div>}</li>)}
         </ul>
       )}
+      {!con && moRong?.(it) && <div className="col-span-full sm:col-start-2" onClick={(e) => e.stopPropagation()}>{moRong(it)}</div>}
     </div>
   );
 }

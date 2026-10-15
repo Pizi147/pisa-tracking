@@ -8,6 +8,7 @@ import { KHAC_TOI_THIEU } from './khac.ts';
 import { INTERVENTION_KIND_LABEL } from './cases.ts';
 import { kyGhiKetQua, ngayTheoGioVN } from './display.ts';
 import { tuanLich } from './hienThiNgay.ts';
+import { addDaysIso } from './sos.ts';
 import { t } from '../i18n/index.ts';
 
 export const LOAI_CO_SO_BUOI = ['tutor', 'self_study', 'bo_tro', 'bo_tro_mien_phi'] as const;
@@ -62,6 +63,14 @@ export function demSauKetQua(daDay: number, tong: number, tuan: string) {
  */
 export type PaKetQua = { kind: string; soBuoi?: number | null; cu?: boolean };
 export const coSoBuoiKy = (pa: PaKetQua): boolean => pa.soBuoi != null || (pa.kind === 'tutor' && !pa.cu);
+/**
+ * OV-13b (mockup OV-13 §1): GHI NHANH trên dòng (Tiến triển + Nhận xét, Giữ nguyên) — chỉ PA không đếm buổi, không phải lần ghi cuối, không Mini Test.
+ * Còn lại (Tutor n buổi, Số buổi kỳ này, Kết quả cuối, Bổ trợ miễn phí) luôn mở panel. Công việc (máy chủ) và Case / panel một em (web) cùng hàm.
+ */
+export const ghiNhanhDuoc = (pa: { kind: string; soBuoi?: number | null; lanCuoi?: boolean }): boolean =>
+  !pa.lanCuoi && pa.kind !== 'bo_tro_mien_phi' && !coSoBuoiKy({ kind: pa.kind, soBuoi: pa.soBuoi ?? null });
+/** OV-13b: PA tới kỳ ghi kết quả — cùng ngưỡng việc "Ghi kết quả" hiện ở Công việc (`action_due ≤ hôm nay + 2`, mywork 2b). */
+export const toiKyGhi = (actionDue: string | null | undefined, homNay: string): boolean => !!actionDue && actionDue <= addDaysIso(homNay, 2);
 
 /** Lỗi khối đếm: Số buổi kỳ này (`coSoBuoiKy`, 0–60) · Người dạy tuần này (Tự học không có; PR-CT2: không bắt buộc, chỉ kiểm tên ngoài). */
 export function loiKetQuaTuan(pa: PaKetQua, tuan: string, nguoi: NguoiChon | null): LoiTruong[] {
