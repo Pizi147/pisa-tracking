@@ -21,6 +21,8 @@ export const ROLE_LABEL: Record<Role, string> = {
   system_admin: t('Quản trị hệ thống'), manager: t('Quản lý'), teacher: t('Giáo viên'),
   office_admin: 'Admin', consultant: t('Tư vấn viên'), cx: 'CX',
 };
+/** OV-13e: vai tự đăng ký chọn được (thứ tự = chip trên form). KHÔNG có Quản trị hệ thống — vai đó chỉ Quản trị cấp tay. */
+export const VAI_DANG_KY = ['teacher', 'manager', 'consultant', 'cx', 'office_admin'] as const satisfies readonly Role[];
 /** PR-OV2a: câu 403 khi Admin / TVV / CX gửi trường ngoài "thông tin HV". */
 export const CHI_SUA_THONG_TIN = 'Bạn chỉ sửa được thông tin học viên: họ tên, ngày sinh, email, TVV, liên hệ, dự kiến thi, điểm đầu vào.';
 /** Vai đổi được góc nhìn (đặc tả OV mục 2): QL hoặc Quản trị nắm từ hai vai trở lên. */

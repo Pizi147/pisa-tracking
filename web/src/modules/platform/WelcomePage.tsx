@@ -7,7 +7,7 @@ import { Alert, ChuDam, Field, Info, NutChon, SectionNote } from '../../ui/ui.ts
 import { ChonKyNang } from './ProfilePage.tsx';
 import { NutNgonNgu } from '../../ui/NutNgonNgu.tsx';
 
-import { ROLES, ROLE_LABEL, type Role } from '@shared/domain/index.ts';
+import { ROLES, ROLE_LABEL, VAI_DANG_KY, type Role } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 
 type Account = {
@@ -153,7 +153,7 @@ export default function WelcomePage() {
           <>
             <div className="flex flex-wrap gap-1 mt-4 mb-4 border-b pb-2" style={{ borderColor: 'var(--line)' }}>
               <Tab active={mode === 'login'} onClick={() => setMode('login')}>{t('Đăng nhập')}</Tab>
-              <Tab active={mode === 'register'} onClick={() => setMode('register')}>{t('Giáo viên đăng ký')}</Tab>
+              <Tab active={mode === 'register'} onClick={() => setMode('register')}>{t('Đăng ký')}</Tab>
               {!LA_BAN_CHINH && <Tab active={mode === 'demo'} onClick={() => setMode('demo')}>{t('Vào nhanh bằng tài khoản demo')}</Tab>}
             </div>
 
@@ -233,6 +233,7 @@ function LoginForm({ info }: { info: AuthInfo | null }) {
 function RegisterForm({ info, onDone }: { info: AuthInfo | null; onDone: () => void }) {
   const branches = useApi<{ code: string; name: string }[]>('/auth/branches');
   const [form, setForm] = useState({ fullName: '', email: '', password: '', phone: '', note: '' });
+  const [role, setRole] = useState<Role>('teacher');
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const [skills, setSkills] = useState<Set<string>>(new Set());
   const [busy, setBusy] = useState(false);
@@ -250,7 +251,7 @@ function RegisterForm({ info, onDone }: { info: AuthInfo | null; onDone: () => v
     setBusy(true); setErr(null);
     try {
       await api.post('/auth/register', {
-        ...form, branches: [...picked], skills: [...skills],
+        ...form, role, branches: [...picked], skills: role === 'teacher' ? [...skills] : [],
       });
       setDone(true);
     } catch (x: unknown) { setErr(cauLoiDeDoc(x)); } finally { setBusy(false); }
@@ -291,11 +292,20 @@ function RegisterForm({ info, onDone }: { info: AuthInfo | null; onDone: () => v
         </Field>
       </div>
 
+      {/* OV-13e: vai cũng chỉ là đề nghị — Quản trị duyệt (đổi được) mới cấp. Không có Quản trị hệ thống. */}
+      <Field as="div" label={t('Vai trò')} required>
+        <div className="flex flex-wrap gap-1.5">
+          {VAI_DANG_KY.map((r) => (
+            <NutChon key={r} nho chon={role === r} onClick={() => setRole(r)}>{ROLE_LABEL[r]}</NutChon>
+          ))}
+        </div>
+      </Field>
+
       {/*
         CHI NHÁNH LÀ ĐỀ NGHỊ, KHÔNG PHẢI QUYẾT ĐỊNH. Nói thẳng điều đó ngay ở đây để không ai
         tưởng mình vừa tự cấp cho mình quyền vào năm chi nhánh.
       */}
-      <Field as="div" label={t('Chi nhánh bạn đang hoạt động')} required
+      <Field as="div" label={t('Chi nhánh bạn đang hoạt động')} required={role !== 'cx'}
         hint={t('Đây là đề nghị của bạn — người duyệt sửa lại được trước khi đồng ý.')}>
         <div className="flex flex-wrap gap-1.5">
           {(branches.data ?? []).map((b) => (
@@ -306,9 +316,11 @@ function RegisterForm({ info, onDone }: { info: AuthInfo | null; onDone: () => v
         </div>
       </Field>
 
-      <Field label={t('Kỹ năng bạn phụ trách được')} hint={t('Dùng để gợi ý khi phân công lớp. Bỏ trống cũng được.')}>
-        <ChonKyNang value={skills} onToggle={(s) => toggle(skills, s, setSkills)} />
-      </Field>
+      {role === 'teacher' && (
+        <Field label={t('Kỹ năng bạn phụ trách được')} hint={t('Dùng để gợi ý khi phân công lớp. Bỏ trống cũng được.')}>
+          <ChonKyNang value={skills} onToggle={(s) => toggle(skills, s, setSkills)} />
+        </Field>
+      )}
 
       <Field label={t('Ghi chú cho người duyệt')}>
         <input className="field w-full" value={form.note} placeholder={t('Ví dụ: rảnh thứ 3, 5, 7')}
@@ -318,7 +330,7 @@ function RegisterForm({ info, onDone }: { info: AuthInfo | null; onDone: () => v
       {err && <p className="text-sm text-rose-200 m-0">{err}</p>}
 
       <button className="btn btn-primary w-full" disabled={busy || !form.fullName || !form.email || !form.password}>
-        {busy ? t('Đang gửi…') : t('Gửi đăng ký')}
+        {busy ? t('Đang gửi…') : t('Đăng ký')}
       </button>
     </form>
   );

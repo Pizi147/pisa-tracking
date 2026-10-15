@@ -152,6 +152,7 @@ CREATE TABLE users (
   password_salt TEXT,
   approval_state TEXT NOT NULL DEFAULT 'approved',   -- approved | pending | declined
   /* Chi nhánh người đăng ký tự khai; người duyệt sửa được trước khi bấm duyệt. */
+  requested_role TEXT,                                -- OV-13e: vai đề nghị (VAI_DANG_KY); cấp thật khi duyệt
   requested_branches TEXT,                            -- JSON mảng mã chi nhánh
   requested_note TEXT,
   approved_by INTEGER REFERENCES users(id),
