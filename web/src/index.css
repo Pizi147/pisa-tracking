@@ -311,3 +311,10 @@
   /* OV-11i (P3-4): người dùng giảm chuyển động — khung chờ đứng yên (vẫn thấy là đang tải). */
   @media (prefers-reduced-motion: reduce) { .skel { animation: none; } }
 }
+
+/* HD-a — in trang Hướng dẫn (thay sổ tay PDF): giấy trắng chữ đen, chỉ nội dung (thanh trên / dưới đã `print:hidden`). */
+@media print {
+  html, body, #root { height: auto !important; overflow: visible !important; background: Canvas !important; }
+  .hd-in, .hd-in * { color: CanvasText !important; background: transparent !important; box-shadow: none !important; }
+  .hd-in .card { border-color: GrayText !important; }
+}

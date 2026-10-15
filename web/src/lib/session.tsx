@@ -22,6 +22,8 @@ export type Session = {
   user?: { id: number; code: string; fullName: string; title: string | null };
   /** PR-EN: ngôn ngữ của tài khoản ('vi' | 'en'; null = chưa chọn). */
   ngonNgu?: string | null;
+  /** HD-a: đã mở Hướng dẫn / bấm Ẩn dải "Mới dùng PISA?" — nhớ theo tài khoản. */
+  daXemHuongDan?: boolean;
   roles?: string[];
   roleLabels?: string[];
   grants?: Grant[];

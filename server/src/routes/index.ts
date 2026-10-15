@@ -179,6 +179,8 @@ api.get('/demo/session', wrap((req) => {
     user: { id: p.userId, code: p.code, fullName: p.fullName, title: p.title },
     /* PR-EN: ngôn ngữ của tài khoản (null = chưa chọn) — web đồng bộ với máy (`web/src/lib/session.tsx`). */
     ngonNgu: p.ngonNgu ?? null,
+    /* HD-a: dải "Mới dùng PISA?" ở Tổng quan chỉ hiện khi false. */
+    daXemHuongDan: !!p.daXemHuongDan,
     roles: p.roleKeys,
     roleLabels: p.roleKeys.map((r) => ROLE_LABEL[r as Role] ?? r),
     grants: permissionSummary(p),

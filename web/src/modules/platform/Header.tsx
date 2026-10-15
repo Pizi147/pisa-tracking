@@ -6,6 +6,7 @@ import { api } from '../../lib/api.ts';
 import { Info } from '../../ui/ui.tsx';
 import { CongTacGiaoDien } from '../../ui/CongTacGiaoDien.tsx';
 import { NutNgonNgu } from '../../ui/NutNgonNgu.tsx';
+import { NutHuongDan } from '../huongDan/NutHuongDan.tsx';
 import { useDienThoai } from '../../ui/TheDong.tsx';
 import { skillShort } from '../../lib/format.ts';
 import { buocDanhSach, chuanHoaMaLop, duongThongBao, maHocVienNgan, moDuocThongBao, ngayTheoGioVN, nhanPhamVi, noiDenThongBao, nhomThongBao, thoiGianThongBao } from '@shared/domain/index.ts';
@@ -192,7 +193,7 @@ export function Header() {
     <div className="flex items-center gap-2 max-sm:gap-0.5 min-w-0" ref={boxRef}>
       {dienThoai ? (
         <>
-          <button ref={nutTim} type="button" className="btn btn-sm min-h-[44px] min-w-[44px] justify-center border-0 bg-transparent" aria-label={t('Tìm học viên, lớp')}
+          <button ref={nutTim} type="button" data-hd="tim-hv" className="btn btn-sm min-h-[44px] min-w-[44px] justify-center border-0 bg-transparent" aria-label={t('Tìm học viên, lớp')}
             aria-expanded={moTimDt} onClick={() => { setMoTimDt((v) => !v); setOpenMenu(null); }}>
             <svg aria-hidden width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
               <circle cx="7" cy="7" r="4.5" /><path d="m10.5 10.5 3 3" /></svg>
@@ -200,9 +201,11 @@ export function Header() {
           {moTimDt && <div className="card absolute inset-x-2 top-full z-40 mt-1 p-2 shadow-2xl">{oTimVaKetQua}</div>}
         </>
       ) : (
-        <div className="relative w-52 lg:w-64 shrink">{oTimVaKetQua}</div>
+        <div className="relative w-52 lg:w-64 shrink" data-hd="tim-hv">{oTimVaKetQua}</div>
       )}
 
+      {/* HD-a: "?" cạnh Thông báo — panel đúng mục của màn đang đứng. */}
+      <NutHuongDan />
       <div className="sm:relative">
         <button ref={nutThongBao} className="btn btn-sm relative max-sm:min-h-[44px] max-sm:min-w-[44px] max-sm:justify-center max-sm:border-0 max-sm:bg-transparent"
           onClick={() => { if (openMenu !== 'notif') notifications.reload(); setOpenMenu(openMenu === 'notif' ? null : 'notif'); setMoTimDt(false); }}
@@ -368,6 +371,8 @@ export function Header() {
               {/* Hồ sơ cá nhân (mục 7.2) — ai cũng có, nên đứng trước lối vào quản trị. */}
               <Link to="/ho-so-ca-nhan" className="btn btn-sm w-full justify-center no-underline"
                 onClick={() => setOpenMenu(null)}>{t('Hồ sơ cá nhân')}</Link>
+              <Link to="/huong-dan" className="btn btn-sm w-full justify-center no-underline"
+                onClick={() => setOpenMenu(null)}>{t('Hướng dẫn')}</Link>
               {/* Hồ sơ giáo viên (PR-GV, G-12) — chỉ người có vai Giáo viên; không thuộc bốn khu vực. */}
               {session?.user && session.roles?.includes('teacher') && (
                 <Link to={`/giao-vien/${session.user.id}`} className="btn btn-sm w-full justify-center no-underline"

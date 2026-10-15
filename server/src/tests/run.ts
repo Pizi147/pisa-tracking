@@ -9370,6 +9370,9 @@ await runPrOv12eTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P,
 // ==================================================================== HOTFIX 15/10 (nhận xét sau hoàn tất qua HTTP · Sửa Case MT không Mô tả)
 const { runPrHfTests } = await import('./prHf.tests.ts');
 await runPrHfTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== HD-a (Hướng dẫn trên web: mục theo màn · Chỉ cho tôi trỏ data-hd có thật · nhớ dải Mới dùng)
+const { runPrHdTests } = await import('./prHd.tests.ts');
+await runPrHdTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`

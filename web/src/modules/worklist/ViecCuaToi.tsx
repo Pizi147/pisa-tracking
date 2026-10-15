@@ -54,7 +54,7 @@ export function ViecCuaToi() {
   if (dienThoai) {
     const { ds, soXemHet } = baViecDau(tatCa, homNay);
     return (
-      <section className="card" aria-labelledby="viec-hom-nay">
+      <section className="card" aria-labelledby="viec-hom-nay" data-hd="tq-viec-cua-toi">
         <header className="flex flex-wrap items-center justify-between gap-2 border-b px-3.5 py-2.5" style={{ borderColor: 'var(--line)' }}>
           <h2 id="viec-hom-nay" className="m-0 text-sm font-semibold text-slate-200">{t('Hôm nay')}</h2>
           {data && tong}
@@ -90,7 +90,7 @@ export function ViecCuaToi() {
   }
 
   return (
-    <section className="card" aria-labelledby="viec-cua-toi">
+    <section className="card" aria-labelledby="viec-cua-toi" data-hd="tq-viec-cua-toi">
       <header className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-b px-4 py-3" style={{ borderColor: 'var(--line)' }}>
         <h2 id="viec-cua-toi" className="sr-only">{t('Việc hôm nay')}</h2>
         {data && tong}
