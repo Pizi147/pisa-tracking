@@ -6,7 +6,7 @@ import {
 import { demoToday } from '../demoConfig.ts';
 import { badRequest, notFound, nowIso } from '../util.ts';
 import { can, require_, type Principal } from '../permissions.ts';
-import { addJourney, notify, writeAudit } from '../platform/audit.ts';
+import { addJourney, notify, writeAudit, writeAuditLo } from '../platform/audit.ts';
 import { chuyenCaseSangLoTrinh, closeCasesOnProgrammeSwitch, programmeOfCase } from '../cases/systemClose.ts';
 import { banGiaoPaQuyChe, datLaiHanCase } from '../cases/sosAuto.ts';
 import { taoMtMacDinh, taoMtMacDinhLo } from '../fasttrack/mtMacDinh.ts';
@@ -283,6 +283,9 @@ export type DongApDung = {
  * ÁP DỤNG luật lộ trình cho một dòng — dùng chung Chuyển lớp một em (Task 4, một dòng) và
  * Chuyển tiếp lớp cả lớp (Task 5, nhiều dòng). Giả định dòng đã qua kiểm hợp lệ ở nơi gọi.
  */
+/** OV-13j: chuyển lớp sang chi nhánh khác → nhật ký ghi kèm chi nhánh cũ → mới (Lịch sử sửa của em). Cùng chi nhánh → không ghi. */
+const doiCn = (cu: number | null, moi: number | null) => (cu !== moi ? { truoc: { branchId: cu }, sau: { branchId: moi } } : { truoc: {}, sau: {} });
+
 export function apDungMotDong(p: Principal, d: DongApDung): { luat: LuatDoiLop | null; toClassCode: string } {
   const conn = db();
   const enr = lopHienTaiCua(d.sid);
@@ -295,6 +298,7 @@ export function apDungMotDong(p: Principal, d: DongApDung): { luat: LuatDoiLop |
       /* OV-11d: em Tạm dừng (ghi danh `paused` giữ lớp cũ) được xếp lớp mới → đóng lớp giữ, em đang học lại — không để hai ghi danh / quyền GVCN cũ. */
       const giu = (conn.prepare(`SELECT id FROM enrollments WHERE student_id = ? AND status = 'paused'`).all(d.sid) as any[]).map((r) => r.id as number);
       for (const id of giu) conn.prepare(`UPDATE enrollments SET status = 'completed', ended_at = ?, end_reason = ?, end_kind = NULL WHERE id = ?`).run(d.ngay, d.lyDo ?? null, id);
+      const cnCu = (conn.prepare('SELECT branch_id b FROM students WHERE id = ?').get(d.sid) as any)?.b ?? null;
       const quayLai = giu.length > 0 && conn.prepare(`UPDATE students SET status = 'active' WHERE id = ? AND status = 'inactive'`).run(d.sid).changes > 0;
       const insEnr = conn
         .prepare(`INSERT INTO enrollments (student_id, class_id, status, started_at, created_at) VALUES (?,?, 'active', ?, ?)`)
@@ -306,7 +310,8 @@ export function apDungMotDong(p: Principal, d: DongApDung): { luat: LuatDoiLop |
       });
       writeAudit({
         actorUserId: p.userId, action: 'student.transfer', entityType: 'student', entityId: d.sid, entityLabel: toClass.code,
-        before: { classId: null, ...(giu.length ? { ghiDanhGiu: giu } : {}) }, after: { classId: d.toClassId },
+        before: { classId: null, ...(giu.length ? { ghiDanhGiu: giu } : {}), ...doiCn(cnCu, toClass.branch_id).truoc, ...(quayLai ? { status: 'inactive' } : {}) },
+        after: { classId: d.toClassId, ...doiCn(cnCu, toClass.branch_id).sau, ...(quayLai ? { status: 'active' } : {}) },
       });
       /* Hết Tạm dừng (như Quay lại học): mốc resume khép khoảng dừng, hạn Case / Ý thức tính lại từ ngày vào lớp mới. */
       if (quayLai) {
@@ -404,7 +409,8 @@ export function apDungMotDong(p: Principal, d: DongApDung): { luat: LuatDoiLop |
   });
   writeAudit({
     actorUserId: p.userId, action: 'student.transfer', entityType: 'student', entityId: d.sid, entityLabel: toClass.code,
-    before: { classId: enr.class_id, endKind: null }, after: { classId: d.toClassId, endKind: luat.endKind },
+    before: { classId: enr.class_id, endKind: null, ...doiCn(enr.branch_id, toClass.branch_id).truoc },
+    after: { classId: d.toClassId, endKind: luat.endKind, ...doiCn(enr.branch_id, toClass.branch_id).sau },
   });
   thongBaoChuyenVao({
     sid: d.sid, tenHocVien: (conn.prepare('SELECT full_name FROM students WHERE id = ?').get(d.sid) as any).full_name,
@@ -585,7 +591,11 @@ export function apDungCaLop(p: Principal, o: {
     conn.prepare(`INSERT INTO enrollments (student_id, class_id, status, started_at, created_at) VALUES ${rows}`).run(...params);
   }
 
-  // 3) students.branch_id — nhóm theo chi nhánh đích (thường chỉ 1).
+  // 3) students.branch_id — nhóm theo chi nhánh đích (thường chỉ 1). OV-13j: chi nhánh cũ đọc trước (MỘT câu mỗi lô) cho nhật ký từng em.
+  const cnCu = new Map<number, number | null>();
+  theoLo(o.dongs.map((d) => d.sid), (lo, ph) => {
+    for (const r of conn.prepare(`SELECT id, branch_id FROM students WHERE id IN (${ph})`).all(...lo) as any[]) cnCu.set(r.id, r.branch_id);
+  });
   {
     const byBranch = new Map<number, number[]>();
     for (const d of o.dongs) {
@@ -721,6 +731,12 @@ export function apDungCaLop(p: Principal, o: {
       )
       .run(...params);
   }
+  /* OV-13j: mỗi em một dòng nhật ký Chuyển lớp (lớp + chi nhánh nếu đổi) — MỘT câu. */
+  writeAuditLo(o.dongs.map((d) => ({
+    actorUserId: p.userId, action: 'student.transfer', entityType: 'student', entityId: d.sid, entityLabel: d.toClass.code,
+    before: { classId: o.fromClass.id, ...doiCn(cnCu.get(d.sid) ?? null, d.toClass.branchId).truoc },
+    after: { classId: d.toClassId, huong: d.huong, ...doiCn(cnCu.get(d.sid) ?? null, d.toClass.branchId).sau },
+  })));
 }
 
 /**
@@ -757,4 +773,9 @@ export function apDungBaoLuuCaLop(p: Principal, o: { fromClassId: number; ngay: 
        VALUES ${rows}`,
     )
     .run(...params);
+  /* OV-13j: mỗi em một dòng nhật ký Tạm dừng — MỘT câu. Không kèm `ghiDanhDung` nên không mở "Hoàn tác Tạm dừng" cho đường cả lớp. */
+  writeAuditLo(o.dongs.map((d) => ({
+    actorUserId: p.userId, action: 'student.status', entityType: 'student', entityId: d.sid,
+    before: { status: 'active' }, after: { status: 'inactive', date: o.ngay, reason: d.lyDo },
+  })));
 }
