@@ -226,9 +226,11 @@ export function approve(p: Principal, userId: number, o: {
     conn
       .prepare(
         `UPDATE users SET approval_state = 'approved', approved_by = ?, approved_at = ?,
-                          requested_branches = ?, decline_reason = NULL WHERE id = ?`,
+                          requested_branches = ?, decline_reason = NULL,
+                          title = CASE WHEN title IS ? THEN ? ELSE title END WHERE id = ?`,
       )
-      .run(p.userId, nowIso(), JSON.stringify(codes), userId);
+      /* OV-13e: QT đổi vai lúc duyệt → chức danh theo vai được cấp (chỉ khi chức danh vẫn là chữ đăng ký tự ghi). */
+      .run(p.userId, nowIso(), JSON.stringify(codes), user.requested_role ? roleLabel(user.requested_role) : null, roleLabel(role), userId);
     writeAudit({
       actorUserId: p.userId, action: 'user_approved', entityType: 'users', entityId: userId,
       entityLabel: user.full_name, after: { note: `Vai ${role} · ${codes.join(', ')}` },

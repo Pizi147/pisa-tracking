@@ -55,7 +55,8 @@ export async function runPrOv13eTests(t: any) {
     assert(vai(a).join() === 'consultant', `mặc định: ${vai(a)}`);
     const b = dk({ role: 'consultant' });
     accounts.approve(P.admin, b, { role: 'manager', branches: ['MB'] });
-    assert(vai(b).join() === 'manager', `đổi vai: ${vai(b)}`);
+    assert(vai(b).join() === 'manager' && user(b).title === 'Quản lý', `đổi vai: ${vai(b)} · ${user(b).title}`);
+    assert(user(a).title === 'Tư vấn viên', `giữ chức danh: ${user(a).title}`);
     const c = dk({ role: 'office_admin' });
     accounts.decline(P.admin, c, 'Thử');
     assert(accounts.listAccounts(P.admin).find((u: any) => u.id === c)?.requestedRole === 'office_admin', 'Duyệt lại thiếu requestedRole');
