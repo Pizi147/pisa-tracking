@@ -1,7 +1,7 @@
-import { Component, Suspense, lazy, useEffect, useState, type ErrorInfo, type ReactNode } from 'react';
+import { Component, Suspense, useEffect, useState, type ErrorInfo, type ReactNode } from 'react';
 import { Link, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { useSession } from './lib/session.tsx';
-import { useApi } from './lib/useApi.ts';
+import { onLoiTaiLai, thuLaiNen, useApi } from './lib/useApi.ts';
 import { DemoBar } from './modules/platform/DemoBar.tsx';
 import { LA_BAN_CHINH } from './lib/banChinh.ts';
 import { useGhiNguon, useTieuDeTab } from './lib/quayLai.ts';
@@ -12,6 +12,7 @@ import { CHIP_TRON } from './ui/Nhan.tsx';
 import WelcomePage from './modules/platform/WelcomePage.tsx';
 import { NAV_RONG, duongMoi, khuVucCuaDuong, khuVucHienThi, type DemYeuCau, type KhuVuc, type KhuVucMuc } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
+import { lazyTai } from './lib/taiLaiManh.ts';
 
 /**
  * Hotfix 15/10 (L4): lỗi render bất kỳ trong trang → câu lỗi + Tải lại thay vì màn tối; console ghi mã để đối chiếu khi chủ SP gửi ảnh.
@@ -35,19 +36,19 @@ class BatLoiTrang extends Component<{ duong: string; children: ReactNode }, { ma
 }
 
 /* Tách gói theo trang (PR-TOCDO): trang nào mở mới tải; sau khi mở xong, nạp ngầm các trang còn lại để chuyển trang không phải chờ. */
-const OverviewPage = lazy(() => import('./modules/worklist/OverviewPage.tsx'));
-const MockDetailPage = lazy(() => import('./modules/fasttrack/MockDetailPage.tsx'));
-const ChamDiemPage = lazy(() => import('./modules/cham/ChamDiemPage.tsx'));
-const StudentsPage = lazy(() => import('./modules/students/StudentsPage.tsx'));
-const ClassOverviewPage = lazy(() => import('./modules/classes/ClassOverviewPage.tsx'));
-const StudentDetailPage = lazy(() => import('./modules/students/StudentDetailPage.tsx'));
-const LuuTruPage = lazy(() => import('./modules/students/LuuTruPage.tsx'));
-const CaseRoutePage = lazy(() => import('./modules/cases/CaseBoardPage.tsx').then((m) => ({ default: m.CaseRoutePage })));
-const TestPage = lazy(() => import('./modules/test/TestPage.tsx'));
-const CongViecPage = lazy(() => import('./modules/congViec/CongViecPage.tsx'));
-const AdminPage = lazy(() => import('./modules/platform/AdminPage.tsx'));
-const ProfilePage = lazy(() => import('./modules/platform/ProfilePage.tsx'));
-const HoSoGiaoVienPage = lazy(() => import('./modules/giaoVien/HoSoGiaoVienPage.tsx').then((m) => ({ default: m.HoSoGiaoVienPage })));
+const OverviewPage = lazyTai(() => import('./modules/worklist/OverviewPage.tsx'));
+const MockDetailPage = lazyTai(() => import('./modules/fasttrack/MockDetailPage.tsx'));
+const ChamDiemPage = lazyTai(() => import('./modules/cham/ChamDiemPage.tsx'));
+const StudentsPage = lazyTai(() => import('./modules/students/StudentsPage.tsx'));
+const ClassOverviewPage = lazyTai(() => import('./modules/classes/ClassOverviewPage.tsx'));
+const StudentDetailPage = lazyTai(() => import('./modules/students/StudentDetailPage.tsx'));
+const LuuTruPage = lazyTai(() => import('./modules/students/LuuTruPage.tsx'));
+const CaseRoutePage = lazyTai(() => import('./modules/cases/CaseBoardPage.tsx').then((m) => ({ default: m.CaseRoutePage })));
+const TestPage = lazyTai(() => import('./modules/test/TestPage.tsx'));
+const CongViecPage = lazyTai(() => import('./modules/congViec/CongViecPage.tsx'));
+const AdminPage = lazyTai(() => import('./modules/platform/AdminPage.tsx'));
+const ProfilePage = lazyTai(() => import('./modules/platform/ProfilePage.tsx'));
+const HoSoGiaoVienPage = lazyTai(() => import('./modules/giaoVien/HoSoGiaoVienPage.tsx').then((m) => ({ default: m.HoSoGiaoVienPage })));
 const NAP_SAN = [() => import('./modules/worklist/OverviewPage.tsx'), () => import('./modules/fasttrack/MockDetailPage.tsx'), () => import('./modules/cham/ChamDiemPage.tsx'), () => import('./modules/students/StudentsPage.tsx'), () => import('./modules/classes/ClassOverviewPage.tsx'), () => import('./modules/students/StudentDetailPage.tsx'), () => import('./modules/students/LuuTruPage.tsx'), () => import('./modules/cases/CaseBoardPage.tsx'), () => import('./modules/test/TestPage.tsx'), () => import('./modules/congViec/CongViecPage.tsx'), () => import('./modules/platform/AdminPage.tsx'), () => import('./modules/platform/ProfilePage.tsx'), () => import('./modules/giaoVien/HoSoGiaoVienPage.tsx')];
 
 /**
@@ -55,7 +56,7 @@ const NAP_SAN = [() => import('./modules/worklist/OverviewPage.tsx'), () => impo
  * ngay ở chỗ `import()`: bản dựng thật thay `import.meta.env.DEV` bằng `false` nên trang này
  * không lọt vào gói gửi cho người dùng.
  */
-const ThanhPhanDemo = import.meta.env.DEV ? lazy(() => import('./modules/dev/ThanhPhanDemo.tsx')) : null;
+const ThanhPhanDemo = import.meta.env.DEV ? lazyTai(() => import('./modules/dev/ThanhPhanDemo.tsx')) : null;
 
 /**
  * BỐN KHU VỰC (PR-O, spec §3.1, mockup 01 phương án A): Tổng quan · Học viên & Lớp · Test · Công việc.
@@ -120,6 +121,10 @@ export default function App() {
   const location = useLocation();
   useGhiNguon();   // PR-OV5b: nguồn của nút "‹ Quay lại" ở mọi hồ sơ
   useTieuDeTab(!!session?.authenticated);   // OV-11i (P1-3): tiêu đề tab theo màn
+  /* HOTFIX-3: đã có dữ liệu mà tải lại nền lỗi → giữ bảng, báo nhỏ (một toast cho mọi khối). */
+  useEffect(() => onLoiTaiLai(() => toast.push('error', t('Chưa tải lại được'), {
+    key: 'tai-lai-loi', ms: 10_000, hanhDong: { nhan: t('Thử lại'), onBam: thuLaiNen },
+  })), [toast]);
   /* PR-PH / HK2: bấm "Thử lại" ở dải Mất kết nối → nút khoá, chữ "Đang thử…" tới khi tải xong. */
   const [dangThu, setDangThu] = useState(false);
   const thuLai = async () => { setDangThu(true); try { await reload(); } finally { setDangThu(false); } };

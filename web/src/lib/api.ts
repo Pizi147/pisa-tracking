@@ -75,12 +75,13 @@ async function request<T>(method: string, path: string, body?: unknown, isForm =
   const text = await res.text();
   let payload: any = null;
   if (text) {
-    try { payload = JSON.parse(text); } catch { payload = { error: text }; }
+    /* HOTFIX-3: lỗi mà thân không phải JSON (vd 504 HTML của Netlify) → câu "Lỗi {status} — thử lại", không in nguyên HTML. */
+    try { payload = JSON.parse(text); } catch { payload = res.ok ? { error: text } : null; }
   }
   if (!res.ok) {
     /* PR-EN: câu lỗi dịch theo khoá (câu có biến) hoặc theo chính câu Việt; chưa có bản Anh → câu Việt máy chủ gửi (không vỡ).
        Mọi chỗ in `e.message` tự đúng tiếng, không phải sửa từng nơi gọi. */
-    const cau = typeof payload?.khoa === 'string' ? dich(payload.khoa, payload.bien) : typeof payload?.error === 'string' ? dich(payload.error) : t('Lỗi {status}', { status: res.status });
+    const cau = typeof payload?.khoa === 'string' ? dich(payload.khoa, payload.bien) : typeof payload?.error === 'string' ? dich(payload.error) : t('Lỗi {status} — thử lại', { status: res.status });
     const loi = new ApiError(res.status, cau, payload?.details);
     if (loi.status === 403) cauLoi403.add(loi.message);
     throw loi;
