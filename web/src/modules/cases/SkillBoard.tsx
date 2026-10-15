@@ -90,6 +90,8 @@ type CaseCard = {
   carriedOver: boolean; parallel: boolean;
   openedOn: string | null; touchedOn: string | null;
   issueCode: string | null; issueLabel: string | null;
+  /** Hotfix 15/10: nhóm phụ + nhận xét (Case MT: nhận xét của bài) — dòng phụ. */
+  nhomPhu?: string[]; nhanXet?: string | null;
   summary: string | null;
   canEdit: boolean;
   /** OV-12c: nút "Xác nhận Case" Progress — GVCN lớp đang học làm được dù không dạy môn (cùng luật máy chủ). */
@@ -253,9 +255,9 @@ function SkillRows({ row, open, onToggle, onReport, onChanged, onMoCase }: {
 }) {
   const { homNay, ngan } = useNgayNghiepVu();
   const expandable = row.cases.length > 0 || row.band !== null;
-  /* Đang xử lý / mới cập nhật lên trước, đã hoàn thành xuống dưới. */
+  /* Đang xử lý / mới cập nhật lên trước, đã hoàn thành xuống dưới, đã huỷ / hệ thống đóng cuối cùng. */
   const ordered = [...row.cases].sort((a, b) => {
-    const done = (x: CaseCard) => (x.status === 'done' ? 1 : 0);
+    const done = (x: CaseCard) => (x.trangThaiV4.t === 'da-huy' ? 2 : x.status === 'done' ? 1 : 0);
     if (done(a) !== done(b)) return done(a) - done(b);
     return (b.touchedOn ?? '').localeCompare(a.touchedOn ?? '') || b.id - a.id;
   });
@@ -411,14 +413,15 @@ function HangCase({ c, ngan, onChanged, onMoCase }: {
   /* K3-08: Case chờ nguyên nhân chưa có gì để tóm tắt — dòng phụ trống. */
   /* PR-S5F-b: Case rút vì sửa/xoá điểm — không tóm tắt PA ("Chưa có PA" / "n PA …" gây hiểu là chưa làm). */
   const dongPhu = choNguyenNhan ? null : [
-    c.issueLabel, tt.k === 'rut-sua-diem' ? null : td.text,
+    [c.issueLabel, ...(c.nhomPhu ?? [])].filter(Boolean).map((x) => dich(x!)).join(' · '), tt.k === 'rut-sua-diem' ? null : td.text,
     c.carriedOver ? t('từ lộ trình trước') : null,
     c.backfilledOn ? t('nhập bù{x} ghi ngày {ngan}', { x: c.backfilledBy ? ` · ${c.backfilledBy}` : '', ngan: ngan(c.backfilledOn) }) : null,
+    c.nhanXet ? `“${c.nhanXet}”` : null,   // dòng `truncate` tự rút gọn, đủ chữ ở `title`
   ].filter(Boolean).join(' · ');
 
   return (
     <>
-      <HangCon title={c.summary ?? undefined} className="hang-case">
+      <HangCon title={c.summary ?? undefined} className={`hang-case ${tt.t === 'da-huy' ? 'opacity-60' : ''}`}>
         <td className="td" colSpan={2} style={{ boxShadow: `inset 3px 0 0 ${VACH_CASE[tt.t]}` }}>
           <span className="flex min-w-0 items-center gap-1.5">
             <button type="button" aria-expanded={mo} aria-label={`${mo ? t('Thu gọn') : t('Mở')} Case ${c.title}`} title={mo ? t('Thu gọn') : t('Mở')}

@@ -1,4 +1,5 @@
 import { useRef, useState, type ReactNode } from 'react';
+import { Link } from 'react-router-dom';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { Khoi, KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
@@ -19,6 +20,7 @@ import {
 import { ComponentsField, componentsPayload } from './ChiTietKyNang.tsx';
 import { FormPa, NgayKhoa, NhatKyPa } from './FormPa.tsx';
 import type { BanDieuChinh } from './CapNhatTuan.tsx';
+import { DongNguyenNhan } from '../yThuc/CaseSosControls.tsx';
 import { t } from '@shared/i18n/index.ts';
 
 /**
@@ -303,6 +305,8 @@ export function HoanThanhCasePanel({ caseId, category, categoryLabel, ratio, paG
 /** Phần dữ liệu Ngăn Case mà panel Sửa Case cần (một phần của `CaseDetail`). */
 export type CaseDeSua = {
   id: number; topic?: string | null; chuongTrinh?: string | null; ratio: boolean; urgency: string | null; summary: string | null;
+  /** Lượt MT của Case — link "hồ sơ MT" khi nguyên nhân lấy từ bài. */
+  attemptId?: number | null;
   issues: { role: string; code: string; label?: string; observation: string | null; byName?: string | null }[];
   /** OV-12c: Case Mock Test — nguyên nhân do máy lấy từ nhận xét + nhóm của bài (`byName` null) thì sửa ở bài, không ở đây. */
   sos?: { laMt?: boolean } | null;
@@ -339,7 +343,8 @@ export function SuaCasePanel({ c, tenCase, soPaChuaLam, hocVien, lop, quayLai, o
     ...(laKhac(primaryCode) && !nnTuBai ? [{ khoa: 'ghi-ro', nhan: t('Ghi rõ'), toiThieu: KHAC_TOI_THIEU }] : []),
     { khoa: 'muc-do', nhan: t('Mức độ'), chon: true },
     { khoa: 'ten', nhan: t('Tên Case'), toiThieu: 3 },
-    { khoa: 'mo-ta', nhan: t('Mô tả'), toiThieu: 15 },
+    /* Hotfix 15/10 (L2): Case MT nguyên nhân từ bài — nhận xét của bài thay Mô tả. */
+    ...(nnTuBai ? [] : [{ khoa: 'mo-ta', nhan: t('Mô tả'), toiThieu: 15 }]),
   ], { 'phan-loai': primaryCode, 'ghi-ro': ghiRo, 'muc-do': urgency, ten: title, 'mo-ta': summary });
   const daSua = topic !== (c.topic ?? '') || primaryCode !== (goc?.code ?? '') || ghiRo !== (goc?.observation ?? '')
     || urgency !== (c.urgency ?? '') || title !== (c.viewer.tenSua ?? '') || summary !== (c.summary ?? '');
@@ -350,7 +355,7 @@ export function SuaCasePanel({ c, tenCase, soPaChuaLam, hocVien, lop, quayLai, o
     setBusy(true);
     try {
       await api.patch(`/cases/${c.id}`, {
-        topic, ...(nnTuBai ? {} : { primaryCode, observation: laKhac(primaryCode) ? ghiRo.trim() : null }), urgency, title: title.trim(), summary: summary.trim(),
+        topic, ...(nnTuBai ? {} : { primaryCode, observation: laKhac(primaryCode) ? ghiRo.trim() : null }), urgency, title: title.trim(), ...(nnTuBai ? {} : { summary: summary.trim() }),
       });
       invalidate('/cases'); invalidate('/students'); invalidate('/my-work');
       toast.push('ok', t('Đã lưu Case'));
@@ -401,8 +406,12 @@ export function SuaCasePanel({ c, tenCase, soPaChuaLam, hocVien, lop, quayLai, o
           </Truong>
           {nnTuBai ? (
             <Truong nhan={t('Nhóm nguyên nhân')} as="div">
-              <div className="text-sm text-slate-300">{goc?.label ?? goc?.code}</div>
-              <div className="mt-1 text-xs text-slate-400">{t('Lấy từ nhận xét + nhóm của bài — sửa ở hồ sơ Mock Test.')}</div>
+              <div className="text-sm text-slate-300"><DongNguyenNhan issues={c.issues} /></div>
+              <div className="mt-1 text-xs text-slate-400">
+                {c.attemptId
+                  ? <Link className="link" to={`/mock-test/${c.attemptId}`}>{t('Lấy từ nhận xét + nhóm của bài — sửa ở hồ sơ Mock Test.')}</Link>
+                  : t('Lấy từ nhận xét + nhóm của bài — sửa ở hồ sơ Mock Test.')}
+              </div>
             </Truong>
           ) : (
           <div>
@@ -427,9 +436,11 @@ export function SuaCasePanel({ c, tenCase, soPaChuaLam, hocVien, lop, quayLai, o
           <Truong nhan={t('Tên Case')} batBuoc loi={lf.loiCua(loi, 'ten')}>
             <input className="field w-full" {...lf.o(loi, 'ten')} maxLength={80} value={title} onChange={(e) => setTitle(e.target.value)} />
           </Truong>
-          <Truong nhan={t('Mô tả')} batBuoc loi={lf.loiCua(loi, 'mo-ta')} dem={{ co: summary.trim().length, can: 15 }}>
-            <textarea className="field w-full" {...lf.o(loi, 'mo-ta')} rows={3} maxLength={2000} value={summary} onChange={(e) => setSummary(e.target.value)} />
-          </Truong>
+          {!nnTuBai && (
+            <Truong nhan={t('Mô tả')} batBuoc loi={lf.loiCua(loi, 'mo-ta')} dem={{ co: summary.trim().length, can: 15 }}>
+              <textarea className="field w-full" {...lf.o(loi, 'mo-ta')} rows={3} maxLength={2000} value={summary} onChange={(e) => setSummary(e.target.value)} />
+            </Truong>
+          )}
         </Khoi>
       </KhungPanel>
       {hoiXoa && (

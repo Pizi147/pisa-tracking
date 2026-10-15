@@ -11,7 +11,7 @@ import type { WorkItem } from '../worklist/WorkList.tsx';
 import { NganViecVanHanh } from '../worklist/MgmtTasksPage.tsx';
 import { ChonPhuTrach, type NguoiPhuTrach } from './ChonPhuTrach.tsx';
 import { CongTacKhung, khungDaNho, nhoKhung, type KhungLoc } from '../../ui/CongTacKhung.tsx';
-import { KhungTaiCho } from '../../ui/KhungPanel.tsx';
+import { KhungTaiCho, coPanelDangSua } from '../../ui/KhungPanel.tsx';
 import { PanelViec, lamTaiCho } from './PanelViec.tsx';
 import {
   LOC_NHANH_LABEL, NHOM_VIEC, NHOM_VIEC_LABEL, demLocNhanh, demNhomChip, demPhamVi, gomNhomViec, khoaGopCua, khopLocNhanh, nhomViecCua,
@@ -180,6 +180,8 @@ export function HoTroHocVienTab() {
       setParams(next);
     }
   };
+  /* Hotfix 15/10 (L5): đổi dòng / "‹ Công việc" khi panel đang sửa dở → hỏi như ✕ của panel (`KhungPanel`). */
+  const boDuocChu = () => !coPanelDangSua() || window.confirm(t('Bỏ nội dung đang gõ?'));
   const dong = () => {
     const lui = daDay.current !== null && daDay.current === khongViec(params);
     daDay.current = null;
@@ -284,7 +286,7 @@ export function HoTroHocVienTab() {
           )}
           {data && !data.scopeEmpty && dsNhom.length > 0 && (
             <Card bodyClass="p-0">
-              <NhomViec nhom={dsNhom} soHien={10} moHet={moHet} onOpen={mo} chon={viec} xong={xong} moTrang={(x) => !lamTaiCho(x)} />
+              <NhomViec nhom={dsNhom} soHien={10} moHet={moHet} onOpen={(x) => { if (x.key === viec || boDuocChu()) mo(x); }} chon={viec} xong={xong} moTrang={(x) => !lamTaiCho(x)} />
             </Card>
           )}
         </div>
@@ -294,7 +296,7 @@ export function HoTroHocVienTab() {
             <>
               {/* Điện thoại: danh sách vừa ẩn → focus về nút lùi (máy tính nút ẩn, `autoFocus` không có tác dụng). */}
               {/* eslint-disable-next-line jsx-a11y/no-autofocus */}
-              <button type="button" autoFocus className="link flex min-h-[44px] items-center gap-1.5 appearance-none border-0 bg-transparent p-0 text-[13px] lg:hidden" onClick={dong}>{t('‹ Công việc')}</button>
+              <button type="button" autoFocus className="link flex min-h-[44px] items-center gap-1.5 appearance-none border-0 bg-transparent p-0 text-[13px] lg:hidden" onClick={() => { if (boDuocChu()) dong(); }}>{t('‹ Công việc')}</button>
               <KhungTaiCho.Provider value>
                 <PanelViec key={chon.key} it={chon} onDong={dong} onDaLam={() => daLam(chon)} onTiep={keTiep ? () => mo(keTiep) : null} />
               </KhungTaiCho.Provider>

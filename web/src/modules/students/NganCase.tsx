@@ -237,7 +237,12 @@ export function NganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose
       ? <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setView({ loai: 'sua' })}>{data.sos?.fromSos && data.sos?.hasCause && !data.sos?.laMt ? t('Sửa xác nhận') : t('Sửa')}</button>
       /* Rà #229: Case hệ thống đóng — không có Mở lại tay, nói đường mở. */
       : data.status === 'done' && data.systemCloseLabel && data.viewer.canApprove
-        ? <span className="text-xs text-slate-400">{t('Hệ thống đóng — Hoàn tác Kết thúc học để mở')}</span>
+        ? <span className="text-xs text-slate-400">{
+          /* Hotfix 15/10 (L9): "Hoàn tác Kết thúc học" chỉ đúng khi đóng vì kết thúc khoá. */
+          data.systemCloseReason === 'course_ended' ? t('Hệ thống đóng — Hoàn tác Kết thúc học để mở')
+            : data.systemCloseReason === 'cho_chot_sos' ? t('Hệ thống đóng — Case mới tạo khi chốt lượt')
+            : data.systemCloseReason === 'overall_dat' ? t('Hệ thống đóng — Overall đã đạt')
+            : t('Hệ thống đóng · {lyDoHeThong}', { lyDoHeThong: dich(data.systemCloseLabel) })}</span>
         : null;
   const nutChinh = (() => {
     const nut = (chu: string, lam: () => void, title?: string) => <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" title={title} onClick={lam}>{chu}</button>;

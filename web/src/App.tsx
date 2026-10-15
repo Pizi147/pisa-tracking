@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect, useState, type ReactNode } from 'react';
+import { Component, Suspense, lazy, useEffect, useState, type ErrorInfo, type ReactNode } from 'react';
 import { Link, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { useSession } from './lib/session.tsx';
 import { useApi } from './lib/useApi.ts';
@@ -12,6 +12,27 @@ import { CHIP_TRON } from './ui/Nhan.tsx';
 import WelcomePage from './modules/platform/WelcomePage.tsx';
 import { NAV_RONG, duongMoi, khuVucCuaDuong, khuVucHienThi, type DemYeuCau, type KhuVuc, type KhuVucMuc } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
+
+/**
+ * Hotfix 15/10 (L4): lỗi render bất kỳ trong trang → câu lỗi + Tải lại thay vì màn tối; console ghi mã để đối chiếu khi chủ SP gửi ảnh.
+ * Đổi đường dẫn (bấm menu, Quay lại) thì bỏ màn lỗi — không kẹt; không dùng `key` để đổi tab không dựng lại trang.
+ */
+class BatLoiTrang extends Component<{ duong: string; children: ReactNode }, { ma: string | null }> {
+  state = { ma: null as string | null };
+  static getDerivedStateFromError() { return { ma: `E-${Date.now().toString(36).toUpperCase()}` }; }
+  componentDidUpdate(truoc: { duong: string }) { if (this.state.ma && truoc.duong !== this.props.duong) this.setState({ ma: null }); }
+  componentDidCatch(error: Error, info: ErrorInfo) { console.error(`[PISA] lỗi giao diện ${this.state.ma ?? ''}`, error, info.componentStack); }
+  render() {
+    if (!this.state.ma) return this.props.children;
+    return (
+      <div role="alert" className="flex flex-col items-center justify-center gap-2 py-10 px-6 text-center">
+        <div className="text-bad font-medium">{t('Trang gặp lỗi khi hiển thị.')}</div>
+        <p className="m-0 text-slate-400 text-xs">{t('Mã lỗi: {ma}', { ma: this.state.ma })}</p>
+        <button type="button" className="btn btn-sm mt-2 min-h-[44px] sm:min-h-0" onClick={() => window.location.reload()}>{t('Tải lại')}</button>
+      </div>
+    );
+  }
+}
 
 /* Tách gói theo trang (PR-TOCDO): trang nào mở mới tải; sau khi mở xong, nạp ngầm các trang còn lại để chuyển trang không phải chờ. */
 const OverviewPage = lazy(() => import('./modules/worklist/OverviewPage.tsx'));
@@ -187,6 +208,7 @@ export default function App() {
       })()}
 
       <main id="noi-dung" tabIndex={-1} className="relative flex-1 overflow-y-auto p-4 md:p-5 pb-20 md:pb-5 outline-none" key={location.pathname.split('/')[1]}>
+        <BatLoiTrang duong={location.pathname}>
         <Suspense fallback={<div className="p-8 max-w-4xl mx-auto"><Skeleton rows={8} /></div>}>
         <Routes>
           <Route path="/" element={<OverviewPage tab="tong-quan" />} />
@@ -219,6 +241,7 @@ export default function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
         </Suspense>
+        </BatLoiTrang>
       </main>
 
       {/* Điện thoại: thanh dưới 4 nút (G-11). z-30 — dưới menu tài khoản/thông báo ở đầu trang (z-40), Drawer/Modal (z-50),

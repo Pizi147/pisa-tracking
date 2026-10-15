@@ -184,7 +184,7 @@ export function tenGiuaCua(c: { title?: string | null; topic?: string | null; ca
  */
 export function kiemNoiDungCase(topic: string | null, ct: string | null, input: {
   primaryCode?: string | null; observation?: string | null; urgency?: string | null; moTa?: string | null; tenGiua?: string | null;
-}) {
+}, o: { khongDoiMoTa?: boolean } = {}) {
   const primaryCode = String(input.primaryCode ?? '').trim();
   if (!primaryCode) throw badRequest('Chọn nhóm nguyên nhân.');
   if (!issueBranchOf(primaryCode) || !issuesForTopic(topic as string, ct).some((i) => i.code === primaryCode)) {
@@ -198,11 +198,12 @@ export function kiemNoiDungCase(topic: string | null, ct: string | null, input: 
   const urgency = String(input.urgency ?? '');
   if (!(URGENCY_LEVELS as readonly string[]).includes(urgency)) throw badRequest('Chọn mức độ gấp.');
   const moTa = String(input.moTa ?? '').trim();
-  if (moTa.length < 15) throw badRequest('Mô tả cần ít nhất 15 ký tự — sai ở đâu, bài hay buổi nào.');
+  /* Hotfix 15/10 (L2): Case MT nguyên nhân từ ô — nhận xét của bài thay Mô tả, không đòi. */
+  if (moTa.length < 15 && !(o.khongDoiMoTa && !moTa)) throw badRequest('Mô tả cần ít nhất 15 ký tự — sai ở đâu, bài hay buổi nào.');
   if (moTa.length > 2000) throw badRequest('Mô tả tối đa 2000 ký tự.');
   const tenGiua = String(input.tenGiua ?? '').trim();
   if (tenGiua.length < 3 || tenGiua.length > 80) throw badRequest('Tên Case (phần giữa) cần từ 3 đến 80 ký tự.');
-  return { primaryCode, observation, urgency, moTa, tenGiua };
+  return { primaryCode, observation, urgency, moTa: moTa || null, tenGiua };
 }
 
 /**

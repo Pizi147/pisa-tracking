@@ -1209,7 +1209,7 @@ export function suaCase(p: Principal, caseId: number, input: {
     observation: input.observation !== undefined ? input.observation : chinh?.observation ?? null,
     urgency: input.urgency ?? c.urgency ?? DEFAULT_URGENCY,
     moTa: input.summary ?? c.summary, tenGiua: input.title ?? c.title ?? tenGiuaCua(c),
-  });
+  }, { khongDoiMoTa: nnTuO });
   let khoaMoi: string | null = c.dedup_key ?? null;
   if (doiKyNang) {
     if (c.origin_kind === 'mock') throw badRequest('Case từ kết quả Test — không đổi kỹ năng.');
@@ -2864,9 +2864,12 @@ function caseCardOf(p: Principal, caseId: number, c: any, soBangChung: Map<numbe
   const conn = db();
   const today = demoToday();
 
-  const issue = conn
-    .prepare(`SELECT taxonomy_code FROM case_issues WHERE case_id = ? AND role = 'primary' LIMIT 1`)
-    .get(caseId) as any;
+  /* Hotfix 15/10 (L2): nhóm chính + phụ + nhận xét (Case MT: nhận xét của bài) cho dòng phụ ở hồ sơ HV. */
+  const nhomCase = conn
+    .prepare(`SELECT taxonomy_code, role, observation FROM case_issues WHERE case_id = ? AND role IN ('primary', 'secondary')
+               ORDER BY CASE role WHEN 'primary' THEN 0 ELSE 1 END, id`)
+    .all(caseId) as any[];
+  const issue = nhomCase.find((i) => i.role === 'primary');
 
   const ivs = conn
     .prepare(
@@ -3006,6 +3009,8 @@ function caseCardOf(p: Principal, caseId: number, c: any, soBangChung: Map<numbe
     topic: c.topic ?? null,
     issueCode: issue?.taxonomy_code ?? null,
     issueLabel: issue?.taxonomy_code ? issueLabel(issue.taxonomy_code) : null,
+    nhomPhu: nhomCase.filter((i) => i.role === 'secondary').map((i) => issueLabel(i.taxonomy_code)),
+    nhanXet: (issue?.observation ?? null) as string | null,
     summary: c.summary ?? null,
     /* Case tự tạo từ SOS còn chờ GVBM xác định nguyên nhân / xác nhận phương án điền sẵn (§3.2, §7.5 — PR-K). */
     sos,

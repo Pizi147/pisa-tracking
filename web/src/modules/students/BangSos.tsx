@@ -88,7 +88,10 @@ function OSos({ r, toanBo }: { r: DongSos; toanBo: boolean }) {
   );
 }
 
-const chuNguyenNhan = (c: CaseTomTat) => c.nguyenNhan ?? <span className="text-slate-500">{t('chưa xác nhận')}</span>;
+/** Case chưa có nguyên nhân: Case MT cũ chưa nhận xét → "Chờ ghi nhận xét" (máy chủ: `trangThaiCaseV4`), còn lại (Progress) "chưa xác nhận". */
+export const chuChuaNguyenNhan = (c: CaseTomTat, dai = false) =>
+  c.trangThai === 'Chờ ghi nhận xét' ? t('Chờ ghi nhận xét') : dai ? t('chưa xác nhận nguyên nhân') : t('chưa xác nhận');
+const chuNguyenNhan = (c: CaseTomTat) => c.nguyenNhan ?? <span className="text-slate-500">{chuChuaNguyenNhan(c)}</span>;
 const chuPa = (c: CaseTomTat) => (c.pa.length
   ? `${c.pa[0].ten}${c.pa[0].nguoi ? ` · ${c.pa[0].nguoi}` : ''}${c.pa.length > 1 ? ` +${c.pa.length - 1} PA` : ''}`
   : <span className="text-slate-500">{t('Chưa có PA')}</span>);
