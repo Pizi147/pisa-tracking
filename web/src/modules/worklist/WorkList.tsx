@@ -42,6 +42,9 @@ export type WorkGroup = { key: string; label: string; hint: string; items: WorkI
  * quá hạn nối ngay sau bằng chữ "⚠ quá hạn n ngày" (B-3, B-5). Thẻ ngoài là `div` để nút phụ
  * đứng cạnh phần bấm-mở mà không lồng `button` trong `button`. Loại việc chưa có loại hạn thì hạn là ngày trơn.
  */
+/** OV-13d: loại việc Ý thức mà dòng gộp theo lớp mở panel lô (`LoYThucPanel`) — `PanelViec` đọc cùng tập này. */
+export const VIEC_LO_Y_THUC: ReadonlySet<string> = new Set(['yt_xu_ly', 'yt_xem']);
+
 export function DongViec({ it, onOpen, nutPhu, gon = false, chon = null, xong, moTrang = false, conMoTrang, moRong }: {
   it: WorkItem; onOpen: (it: WorkItem) => void;
   /** Nút phụ đứng cạnh nút chính (PR-Ra: Nhắc/Duyệt). */
@@ -75,8 +78,9 @@ export function DongViec({ it, onOpen, nutPhu, gon = false, chon = null, xong, m
   /* Q31-4 (D9): người phụ trách 12 px — tách khỏi phần ngữ cảnh 11 px của dòng phụ. */
   /* OV-11c (TQ-4): chấm chéo (T18) không phải "chưa ai phụ trách" — cùng tên với Tổng quan. */
   const nguoi = it.owner ?? (it.ownerId === null && !it.mine && !viecCaLop ? (dich(it.statusLabel) === CHAM_CHEO ? CHAM_CHEO : t('chưa ai phụ trách')) : null);
-  /* PR-GOP (mockup phần 4): bấm tiêu đề hay nút "n em ▾" đều mở / đóng danh sách em; có em quá hạn → nền đỏ nhạt cả dòng. */
-  const bam = () => (con ? setMo(!mo) : onOpen(it));
+  /* PR-GOP (mockup phần 4): bấm tiêu đề hay nút "n em ▾" đều mở / đóng danh sách em; có em quá hạn → nền đỏ nhạt cả dòng.
+     OV-13d: ở Công việc (`gon`) dòng gộp Ý thức mở thẳng panel lô (làm nhiều em cùng lúc) thay vì bung danh sách. */
+  const bam = () => (con && !(gon && VIEC_LO_Y_THUC.has(it.group)) ? setMo(!mo) : onOpen(it));
   const maDs = `con-${it.key}`;
   const daXong = !!xong?.has(it.key);
   const dangChon = chon === it.key;

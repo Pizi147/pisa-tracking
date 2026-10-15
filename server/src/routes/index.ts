@@ -18,6 +18,7 @@ import * as timNguoiSvc from '../platform/timNguoi.ts';
 import * as violationSvc from '../yThuc/violations.ts';
 import * as accessSvc from '../yThuc/access.ts';
 import * as xuLySvc from '../yThuc/xuLy.ts';
+import * as loYThucSvc from '../yThuc/lo.ts';
 import * as phoiHopSvc from '../yThuc/phoiHop.ts';
 import * as sosAutoSvc from '../cases/sosAuto.ts';
 import * as doiPaSvc from '../cases/doiPa.ts';
@@ -70,6 +71,7 @@ import * as xoaHocVienSvc from '../students/xoaHocVien.ts';
 import * as xoaTaiKhoanSvc from '../platform/xoaTaiKhoan.ts';
 import * as studentSvc from '../students/students.ts';
 import * as hangLoatSvc from '../students/hangLoat.ts';
+import * as lichSuSuaSvc from '../students/lichSuSua.ts';
 import * as meetingSvc from '../worklist/meeting.ts';
 import {
   PERIOD_WINDOW_PLANNING_FORWARD_WEEKS,
@@ -1065,6 +1067,24 @@ api.get('/classes/:id/y-thuc', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   return bangYThucLop(principalOf(req), pInt(req, 'id'));
 }));
+/** OV-13d: chọn nhiều ở tab Ý thức lớp — mọi em đang học + em nào làm được hành động nào (lý do khi không). */
+api.get('/classes/:id/y-thuc/lo', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return loYThucSvc.loYThucLop(principalOf(req), pInt(req, 'id'));
+}));
+/** OV-13d: ba hành động theo lô — mỗi em một giao dịch, kết quả từng em (`em[].ok` / `loi`). */
+api.post('/classes/:id/y-thuc/lo/xu-ly', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return loYThucSvc.loXuLy(principalOf(req), pInt(req, 'id'), yThucBody(req));
+}));
+api.post('/classes/:id/y-thuc/lo/ghi-nhan', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return loYThucSvc.loGhiNhan(principalOf(req), pInt(req, 'id'), yThucBody(req));
+}));
+api.post('/classes/:id/y-thuc/lo/cap-bac', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return loYThucSvc.loCapBac(principalOf(req), pInt(req, 'id'), yThucBody(req));
+}));
 /** YT-6 "Theo thời gian" — HV ĐANG HỌC ở lớp, MỌI trạng thái (khác ba khu vực của `/classes/:id/y-thuc`, đi theo học viên). */
 api.get('/classes/:id/violations', requireAuth, wrap((req) => {
   maybeSimulateReadError();
@@ -2053,6 +2073,10 @@ api.get('/students/:id', requireAuth, wrap((req) => {
   lenhSvc.quetLenhDenHan();
   return profileSvc.studentProfile(principalOf(req), pInt(req, 'id'), qInt(req, 'cycleId'), qInt(req, 'attemptId'));
 }));
+
+/* OV-13j: Lịch sử sửa thông tin học viên (mới nhất trước; `truoc` = con trỏ trang trước trả về). */
+api.get('/students/:id/lich-su-sua', requireAuth, wrap((req) => lichSuSuaSvc.lichSuSua(principalOf(req), pInt(req, 'id'),
+  { loai: qStr(req, 'loai'), truoc: qInt(req, 'truoc') })));
 
 api.patch('/students/:id', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
