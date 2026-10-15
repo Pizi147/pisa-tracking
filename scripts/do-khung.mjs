@@ -9,6 +9,7 @@
 // PR-EN: KHUNG_NGON_NGU=en — chạy cả bộ ở tiếng Anh (tài khoản + máy) và thêm lỗi (v) CHỮ VIỆT CÒN SÓT trên màn GV (vai 7, 9 và màn
 // chưa đăng nhập): bỏ khối [lang=vi] và chữ dữ liệu (mọi giá trị chữ có dấu trong DB demo — tên, mã, ghi chú, thông báo cũ). DB đọc từ
 // PISA_DB (mặc định data/pisa-demo.sqlite). Kịch bản `ngon-ngu` bấm bốn bước nhớ ngôn ngữ (E-NHO).
+// HD-a: kịch bản `hd-chi` bấm mọi "Chỉ cho tôi" của GV (khoanh hiện, phần tử bấm được, Esc tắt).
 import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -299,6 +300,66 @@ if (!LOC || 'ngon-ngu'.includes(LOC)) {
   await ctx.close();
   console.log(`${buoc.length ? '✗' : '✓'} ngon-ngu (E-NHO bốn bước)${buoc.map((l) => `\n    ${l}`).join('')}`);
   tongLoi += buoc.length;
+}
+/*
+ * HD-a (kịch bản `hd-chi`): bấm MỌI "Chỉ cho tôi" của GV (vai 7, 9; 1440 + 375). Việc hằng tuần / Luật và hạn bấm ở trang Hướng dẫn; Theo màn bấm
+ * trong panel "?" của đúng màn. Đạt khi: khoanh hiện (không "Chưa có việc nào ở đây"), phần tử `data-hd` thấy được và bấm được (không bị che), Esc tắt.
+ * Nội dung đọc từ bản dựng máy chủ (`npm run dev` đã `build:server`).
+ */
+if (!LOC || 'hd-chi'.includes(LOC)) {
+  const { HUONG_DAN } = await import(pathToFileURL(path.resolve('dist-server/shared/huongDan/index.js')).href);
+  const hd = HUONG_DAN.gv;
+  const loi = [];
+  for (const [w, h] of [[1440, 900], [375, 812]]) for (const vai of [7, 9]) {
+    const ctx = await trinh.newContext({ viewport: { width: w, height: h } });
+    await ctx.addInitScript((nn) => { try { localStorage.setItem('pisa-ngon-ngu', nn); } catch {} }, NN);
+    const p = await ctx.newPage();
+    p.setDefaultTimeout(8000);
+    await p.request.post(`${BASE}/api/demo/session`, { data: { userId: vai } });
+    await p.request.patch(`${BASE}/api/me/profile`, { data: { ngonNgu: NN } });   // tài khoản cùng tiếng với máy (không tải lại giữa chừng)
+    const thu = async (nhan, mo, vung, id, maHd) => {
+      try {
+        await mo();
+        const muc = p.locator(`${vung} [data-muc="${id}"]`).first();
+        const nut = muc.locator('[aria-expanded]').first();
+        if ((await nut.getAttribute('aria-expanded')) === 'false') await nut.click();
+        await muc.locator('button:not([aria-expanded])').last().click();
+        const chu = p.locator('[data-chi-cho-toi] [role=status]');
+        await chu.waitFor({ timeout: 10000 });
+        const kq = await p.evaluate((x) => {
+          const el = [...document.querySelectorAll([x].flat().map((h) => `[data-hd="${h}"]`).join(','))].find((e) => { const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0; });
+          if (!el) return 'không thấy phần tử';
+          const r = el.getBoundingClientRect();
+          const phu = document.querySelector('[data-chi-cho-toi]');
+          phu.style.display = 'none';
+          const tren = document.elementFromPoint(r.left + Math.min(r.width / 2, 40), r.top + Math.min(r.height / 2, 20));
+          phu.style.display = '';
+          if (r.bottom < 0 || r.top > innerHeight) return 'phần tử ngoài màn';
+          return tren && (el === tren || el.contains(tren)) ? '' : `bị che bởi «${(tren?.textContent ?? '').trim().slice(0, 40)}»`;
+        }, maHd);
+        if (/Chưa có việc nào ở đây|Nothing here yet/.test(await chu.innerText())) loi.push(`${nhan}: chú thích "Chưa có việc"`);
+        else if (kq) loi.push(`${nhan}: ${kq}`);
+        await p.keyboard.press('Escape');
+        if (await p.locator('[data-chi-cho-toi]').count()) loi.push(`${nhan}: Esc không tắt`);
+      } catch (e) { loi.push(`${nhan}: ${e.message.split('\n')[0]}`); }
+    };
+    for (const [phan, ds] of [['viec', hd.viec], ['luat', hd.luat]]) for (const m of ds) if (m.chi) {
+      await thu(`${w}/v${vai} ${m.id}`, () => p.goto(`${BASE}/huong-dan?phan=${phan}`, { waitUntil: 'networkidle' }), '#noi-dung', m.id, m.chi.hd);
+    }
+    /* Theo màn bấm TỪ trang Hướng dẫn (rà #417): "Chỉ cho tôi" phải tự mở trang của màn. */
+    for (const man of hd.man) for (const m of man.muc) if (m.chi) {
+      await thu(`${w}/v${vai} trang-hd ${man.id}›${m.id}`, () => p.goto(`${BASE}/huong-dan?phan=man`, { waitUntil: 'networkidle' }), '#noi-dung', m.id, m.chi.hd);
+    }
+    for (const man of hd.man) for (const m of man.muc) if (m.chi) {
+      await thu(`${w}/v${vai} ${man.id}›${m.id}`, async () => {
+        await p.goto(BASE + man.duong[0], { waitUntil: 'networkidle' });
+        await p.locator('[data-hd="nut-hd"]:visible').first().click();
+      }, '[role=dialog]', m.id, m.chi.hd);
+    }
+    await ctx.close();
+  }
+  console.log(`${loi.length ? '✗' : '✓'} hd-chi (mọi "Chỉ cho tôi" của GV)${loi.map((l) => `\n    ${l}`).join('')}`);
+  tongLoi += loi.length;
 }
 await trinh.close();
 console.log(tongLoi ? `\n${tongLoi} lỗi` : '\nKhông lỗi');

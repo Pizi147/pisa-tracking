@@ -75,12 +75,22 @@ export function useGopTaiLai(reload: () => void): () => void {
   };
 }
 
+/** HOTFIX-3: hook đã có dữ liệu mà tải lại nền lỗi — App hiện toast "Chưa tải lại được · Thử lại"; Thử lại gọi lại mọi khối đang lỗi. */
+const loiNen = new Set<() => void>();
+const ngheLoi = new Set<() => void>();
+export function onLoiTaiLai(f: () => void): () => void { ngheLoi.add(f); return () => { ngheLoi.delete(f); }; }
+export function thuLaiNen() { [...loiNen].forEach((f) => f()); }
+
+/** Lỗi trang cần hiện: chỉ khi CHƯA có dữ liệu — có rồi thì giữ dữ liệu (toast nhỏ thay ErrorState). */
+export const loiCanHien = <T,>(data: T | null, error: ApiError | null): ApiError | null => (data === null ? error : null);
+
 export type ApiState<T> = {
   data: T | null;
   /** true chỉ khi CHƯA có dữ liệu để hiển thị — dùng để bật skeleton. */
   loading: boolean;
   /** true khi đang tải lại nền dù đã có dữ liệu cũ trên màn hình. */
   refreshing: boolean;
+  /** Chỉ khi CHƯA có dữ liệu (HOTFIX-3): đã có mà tải lại lỗi → giữ dữ liệu, toast nhỏ "Chưa tải lại được · Thử lại". */
   error: ApiError | null;
   reload: () => void;
   setData: (updater: T | ((prev: T | null) => T)) => void;
@@ -102,6 +112,9 @@ export function useApi<T>(path: string | null, deps: unknown[] = []): ApiState<T
   const currentPath = useRef<string | null>(null);
 
   const reload = useCallback(() => setTick((t) => t + 1), []);
+  const coDuLieu = useRef(false);
+  coDuLieu.current = data !== null;
+  useEffect(() => () => { loiNen.delete(reload); }, [reload]);
 
   useEffect(
     () => onInvalidate((prefix) => {
@@ -130,6 +143,7 @@ export function useApi<T>(path: string | null, deps: unknown[] = []): ApiState<T
     taiVaNho<T>(path)
       .then((kq) => {
         if (seq !== latest.current || !kq) return;   // bỏ qua phản hồi cũ
+        loiNen.delete(reload);
         setDataState(kq.d);
         setFetching(false);
       })
@@ -137,6 +151,10 @@ export function useApi<T>(path: string | null, deps: unknown[] = []): ApiState<T
         if (seq !== latest.current) return;
         setError(e instanceof ApiError ? e : new ApiError(500, String(e)));
         setFetching(false);
+        if (coDuLieu.current) {
+          loiNen.add(reload);
+          ngheLoi.forEach((f) => f());
+        }
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [path, tick, ...deps]);
@@ -145,5 +163,5 @@ export function useApi<T>(path: string | null, deps: unknown[] = []): ApiState<T
     setDataState((prev) => (typeof updater === 'function' ? updater(prev) : updater));
   }, []);
 
-  return { data, loading: fetching && data === null, refreshing: fetching, error, reload, setData };
+  return { data, loading: fetching && data === null, refreshing: fetching, error: loiCanHien(data, error), reload, setData };
 }

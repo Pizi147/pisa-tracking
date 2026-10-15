@@ -93,7 +93,7 @@ export function DongViec({ it, onOpen, nutPhu, gon = false, chon = null, xong, m
   const nen = dangChon ? 'row-active' : con && it.urgency === 'overdue' ? 'bg-late-bg/60' : 'hover:bg-white/5';
   return (
     /* PR-VAI-a (§7.3, mockup 23 màn A): bốn cột thẳng qua mọi nhóm — nhãn trạng thái · việc · hạn (12 px) · nút. OV-5a `gon`: ba cột, cả dòng bấm. */
-    <div className={`grid grid-cols-[78px_minmax(0,1fr)] gap-x-3 gap-y-1 py-2 pr-3 ${gon
+    <div data-hd="cv-dong" className={`grid grid-cols-[78px_minmax(0,1fr)] gap-x-3 gap-y-1 py-2 pr-3 ${gon
       ? `cursor-pointer sm:grid-cols-[78px_minmax(0,1fr)_auto] sm:items-center ${daXong ? 'opacity-55' : ''}`
       : 'sm:grid-cols-[78px_minmax(0,1fr)_150px_230px] sm:items-center'} ${nen}`}
       title={con ? undefined : dich(it.reason)} onClick={gon ? bam : undefined}>
