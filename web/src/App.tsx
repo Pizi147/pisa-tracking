@@ -10,6 +10,7 @@ import { Skeleton } from './ui/ui.tsx';
 import { useToast } from './ui/Toast.tsx';
 import { CHIP_TRON } from './ui/Nhan.tsx';
 import WelcomePage from './modules/platform/WelcomePage.tsx';
+import { KhoanhPhanTu } from './modules/huongDan/chiChoToi.tsx';
 import { NAV_RONG, duongMoi, khuVucCuaDuong, khuVucHienThi, type DemYeuCau, type KhuVuc, type KhuVucMuc } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
 import { lazyTai } from './lib/taiLaiManh.ts';
@@ -49,7 +50,8 @@ const CongViecPage = lazyTai(() => import('./modules/congViec/CongViecPage.tsx')
 const AdminPage = lazyTai(() => import('./modules/platform/AdminPage.tsx'));
 const ProfilePage = lazyTai(() => import('./modules/platform/ProfilePage.tsx'));
 const HoSoGiaoVienPage = lazyTai(() => import('./modules/giaoVien/HoSoGiaoVienPage.tsx').then((m) => ({ default: m.HoSoGiaoVienPage })));
-const NAP_SAN = [() => import('./modules/worklist/OverviewPage.tsx'), () => import('./modules/fasttrack/MockDetailPage.tsx'), () => import('./modules/cham/ChamDiemPage.tsx'), () => import('./modules/students/StudentsPage.tsx'), () => import('./modules/classes/ClassOverviewPage.tsx'), () => import('./modules/students/StudentDetailPage.tsx'), () => import('./modules/students/LuuTruPage.tsx'), () => import('./modules/cases/CaseBoardPage.tsx'), () => import('./modules/test/TestPage.tsx'), () => import('./modules/congViec/CongViecPage.tsx'), () => import('./modules/platform/AdminPage.tsx'), () => import('./modules/platform/ProfilePage.tsx'), () => import('./modules/giaoVien/HoSoGiaoVienPage.tsx')];
+const HuongDanPage = lazyTai(() => import('./modules/huongDan/HuongDanPage.tsx'));
+const NAP_SAN = [() => import('./modules/worklist/OverviewPage.tsx'), () => import('./modules/fasttrack/MockDetailPage.tsx'), () => import('./modules/cham/ChamDiemPage.tsx'), () => import('./modules/students/StudentsPage.tsx'), () => import('./modules/classes/ClassOverviewPage.tsx'), () => import('./modules/students/StudentDetailPage.tsx'), () => import('./modules/students/LuuTruPage.tsx'), () => import('./modules/cases/CaseBoardPage.tsx'), () => import('./modules/test/TestPage.tsx'), () => import('./modules/congViec/CongViecPage.tsx'), () => import('./modules/platform/AdminPage.tsx'), () => import('./modules/platform/ProfilePage.tsx'), () => import('./modules/giaoVien/HoSoGiaoVienPage.tsx'), () => import('./modules/huongDan/HuongDanPage.tsx')];
 
 /**
  * Trang thử thành phần dùng chung (PR-E Step 9) — CHỈ có khi chạy `npm run dev`. Điều kiện đứng
@@ -81,7 +83,7 @@ function SoCho({ so, className = 'ml-1.5' }: { so: SoBadge; className?: string }
 
 function NavItem({ muc, active, so }: { muc: KhuVucMuc; active: boolean; so: SoBadge }) {
   return (
-    <Link to={muc.to} aria-current={active ? 'page' : undefined}
+    <Link to={muc.to} aria-current={active ? 'page' : undefined} data-hd={`nav-${muc.key}`}
       className={`px-3 py-1.5 rounded-lg text-sm no-underline whitespace-nowrap transition-colors border ${
         active
           ? 'bg-[color:var(--accent-soft)] text-[color:var(--accent-strong)] border-[color:var(--accent-line)]'
@@ -102,7 +104,7 @@ const BIEU_TUONG: Record<KhuVuc, ReactNode> = {
 
 function NutDay({ muc, active, so }: { muc: KhuVucMuc; active: boolean; so: SoBadge }) {
   return (
-    <Link to={muc.to} aria-current={active ? 'page' : undefined} title={muc.label}
+    <Link to={muc.to} aria-current={active ? 'page' : undefined} title={muc.label} data-hd={`nav-${muc.key}`}
       className={`relative flex min-h-[56px] min-w-0 flex-1 flex-col items-center justify-center gap-[3px] text-[11.5px] no-underline ${
         active ? 'text-[color:var(--accent-strong)] font-semibold' : 'text-slate-400'
       }`}>
@@ -168,7 +170,7 @@ export default function App() {
     <div className="h-full flex flex-col">
       <a href="#noi-dung" onClick={(e) => { e.preventDefault(); document.getElementById('noi-dung')?.focus(); }}
         className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[110] btn btn-sm">{t('Bỏ qua tới nội dung')}</a>
-      {!banChinh && <DemoBar />}
+      {!banChinh && <div className="contents print:hidden"><DemoBar /></div>}
       {/* PR-PH: mất kết nối khi tải lại phiên KHÔNG phải đăng xuất — giữ nguyên màn, chỉ báo và cho thử lại. */}
       {session.loiKetNoi && (
         <div role="status" className="shrink-0 flex flex-wrap items-center gap-x-3 gap-y-1 border-b px-3 sm:px-4 py-2 text-xs"
@@ -177,7 +179,7 @@ export default function App() {
           <button type="button" className="btn btn-sm" disabled={dangThu} onClick={() => { void thuLai(); }}>{dangThu ? t('Đang thử…') : t('Thử lại')}</button>
         </div>
       )}
-      <header className="relative shrink-0 border-b bg-[color:var(--surface)]" style={{ borderColor: 'var(--line)' }}>
+      <header className="relative shrink-0 border-b bg-[color:var(--surface)] print:hidden" style={{ borderColor: 'var(--line)' }}>
         {/* D7 (mockup 23C): điện thoại cao 52 px, chữ PISA thay ô "P", nút sát nhau; máy tính giữ nguyên. */}
         <div className="flex items-center gap-3 px-3 sm:px-4 h-14 max-sm:h-[52px] max-sm:gap-0.5 max-sm:pl-4 max-sm:pr-1.5 min-w-0">
           <div className="flex items-center gap-2 shrink-0">
@@ -212,7 +214,7 @@ export default function App() {
         );
       })()}
 
-      <main id="noi-dung" tabIndex={-1} className="relative flex-1 overflow-y-auto p-4 md:p-5 pb-20 md:pb-5 outline-none" key={location.pathname.split('/')[1]}>
+      <main id="noi-dung" tabIndex={-1} className="relative flex-1 overflow-y-auto p-4 md:p-5 pb-20 md:pb-5 outline-none print:overflow-visible print:p-0" key={location.pathname.split('/')[1]}>
         <BatLoiTrang duong={location.pathname}>
         <Suspense fallback={<div className="p-8 max-w-4xl mx-auto"><Skeleton rows={8} /></div>}>
         <Routes>
@@ -239,6 +241,7 @@ export default function App() {
           <Route path="/quan-tri" element={nav.admin ? <AdminPage /> : <Navigate to="/" replace />} />
           <Route path="/ho-so-ca-nhan" element={<ProfilePage />} />
           <Route path="/giao-vien/:id" element={<HoSoGiaoVienPage />} />
+          <Route path="/huong-dan" element={<HuongDanPage />} />
           {ThanhPhanDemo && (
             <Route path="/dev/thanh-phan"
               element={<Suspense fallback={<Skeleton rows={6} />}><ThanhPhanDemo /></Suspense>} />
@@ -251,7 +254,8 @@ export default function App() {
 
       {/* Điện thoại: thanh dưới 4 nút (G-11). z-30 — dưới menu tài khoản/thông báo ở đầu trang (z-40), Drawer/Modal (z-50),
           menu ⋯ của dòng (z-[60]) và Toast (z-[100]). */}
-      <nav aria-label={t('Điều hướng chính')} className="md:hidden fixed bottom-0 inset-x-0 z-30 flex border-t bg-[color:var(--surface)]"
+      <KhoanhPhanTu />
+      <nav aria-label={t('Điều hướng chính')} className="md:hidden fixed bottom-0 inset-x-0 z-30 flex border-t bg-[color:var(--surface)] print:hidden"
         style={{ borderColor: 'var(--line)', paddingBottom: 'env(safe-area-inset-bottom)' }}>
         {items.map((m) => <NutDay key={m.key} muc={m} active={dangO === m.key} so={so} />)}
       </nav>

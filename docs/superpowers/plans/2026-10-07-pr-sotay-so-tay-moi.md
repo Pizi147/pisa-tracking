@@ -1,5 +1,8 @@
 # PR-SOTAY · Sáu sổ tay PDF theo web mới nhất — kế hoạch (07/10/2026)
 
+> **Thay bằng Hướng dẫn trên web (HD)** — chủ SP 15/10 (đặc tả `docs/superpowers/specs/2026-10-15-ov13-sua-loi-tinh-nang-design.md` mục 4). KHÔNG làm
+> kế hoạch này: nội dung nằm ở `shared/huongDan/*.ts` (HD-a: khung + GV; HD-b: các vai khác). Giữ file để tra dàn ý cũ.
+
 > Session code: dùng superpowers:executing-plans (hoặc subagent-driven-development), làm từng Task, tick `- [ ]`.
 > Dàn ý từng file: `docs/so-tay/DAN_Y_2026-10-07.md` (planning tự duyệt 07/10, plan.md mục 3).
 

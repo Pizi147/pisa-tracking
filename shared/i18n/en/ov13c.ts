@@ -14,7 +14,6 @@ export const EN_OV13C = {
   'Nội dung cần ít nhất {n} ký tự': 'Content needs at least {n} characters',
   'Em đã có người dạy giữ nguyên': 'Students who already have a teacher keep theirs',
   'bỏ tick': 'unticked',
-  'Sửa riêng': 'Edit individually',
   'Như ô chung': 'Same as shared field',
   'Nội dung riêng': 'Own content',
   'Trống = nội dung chung': 'Empty = shared content',
