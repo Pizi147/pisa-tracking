@@ -8,25 +8,26 @@ export const HD_GV: HuongDan = {
   viec: [
     {
       id: 'cong-viec', ten: 'Mở Công việc mỗi sáng', khi: 'mỗi ngày',
-      buoc: ['Bấm <b>Công việc</b>. Quá hạn ở đầu, có ⚠.', 'Bấm dòng để làm ngay tại chỗ; dòng gộp nhiều em mở một panel.', 'Xong: dòng ghi "✓ Đã lưu", việc kế tự mở.'],
+      buoc: ['Bấm <b>Công việc</b>. Quá hạn ở đầu, có ⚠.', 'Bấm dòng để làm ngay tại chỗ; dòng gộp nhiều em mở một panel.', 'Lưu xong: "✓ Đã lưu", bấm <b>Việc tiếp ›</b> sang việc kế.'],
       chi: { hd: 'nav-cong-viec', chu: 'Bấm <b>Công việc</b> — mọi việc của bạn ở đây.' },
     },
     {
       id: 'nhap-diem', ten: 'Nhập điểm MT + Speaking chấm chéo', khi: 'sau mỗi tuần thi',
       buoc: ['Mở <b>Test › Lịch Test / Chấm Test</b>: khối "Test chấm tuần này", hạn hết <b>Thứ Tư</b>.', 'Bấm lớp, gõ điểm; mọi ô MT có điểm cần <b>nhận xét</b>, ô dưới kỳ vọng thêm <b>nhóm nguyên nhân</b>.',
-        'Em vắng: gõ <b>-</b>.', 'Speaking chấm chéo: <b>Công việc › Chấm điểm</b> — có số bài chờ, không tính quá hạn.'],
+        'Em vắng: gõ <b>-</b>.', 'Speaking chấm chéo: <b>Công việc</b>, nhóm <b>Chấm điểm</b>, dòng "Speaking chấm chéo" — không tính quá hạn.'],
       chi: { hd: 'lich-test-tuan', duong: '/test/lich', chu: 'Bài tuần trước cần chấm nằm ở khối này.' },
     },
     {
       id: 'xac-nhan-pa', ten: 'Xác nhận PA / Case', khi: 'trong 5 ngày',
-      buoc: ['Em dưới kỳ vọng ở MT → Case + PA theo quy chế; GVBM đúng kỹ năng <b>Xác nhận PA</b> (QL làm thay được).', 'Dòng "Xác nhận PA · n em" gom theo lớp, tuần thi, mức SOS: xác nhận cùng lúc, sửa riêng từng em được.',
-        'Muốn cách khác: <b>Đề xuất PA khác…</b>, QL duyệt.', 'Progress Test lớp thường: <b>Xác nhận Case</b> (nhóm + mô tả + PA Bổ trợ).'],
+      buoc: ['Em dưới kỳ vọng ở MT → Case + PA theo quy chế; GVBM đúng kỹ năng <b>Xác nhận PA</b> (QL làm thay được).', 'Một em: panel <b>Xác nhận PA</b> — ghi nội dung, <b>Bắt đầu</b>, bấm <b>Xác nhận PA</b>.',
+        'Nhiều em cùng lớp, tuần thi, mức SOS: <b>Xác nhận PA cùng lúc</b> — em tick sẵn, <b>Nội dung / hướng dẫn</b> + <b>Bắt đầu</b> + <b>Người dạy</b> ghi một lần, <b>Sửa riêng</b> từng em.',
+        'Muốn cách khác: <b>Đề xuất PA khác…</b> → <b>Gửi Quản lý duyệt</b>; Case "Chờ duyệt đổi PA".'],
       chi: { hd: 'cv-dong', duong: '/cong-viec', chu: 'Mỗi việc một dòng, quá hạn ở đầu — bấm dòng để làm.' },
     },
     {
       id: 'ket-qua-pa', ten: 'Ghi kết quả PA', khi: '2 tuần · hết Thứ Ba',
-      buoc: ['PA đang chạy: ghi mỗi kỳ <b>2 tuần</b>, hạn <b>Thứ Ba</b> sau kỳ.', 'Ngay trên dòng: chọn <b>Tiến triển (2 tuần)</b>, ghi <b>Nhận xét</b>, bấm <b>Lưu</b>.',
-        'Cần đổi cách dạy: <b>Điều chỉnh</b>; tới mốc: <b>Ghi kết quả cuối</b>.'],
+      buoc: ['PA đang chạy: ghi mỗi kỳ <b>2 tuần</b>, hạn <b>Thứ Ba</b> sau kỳ.', 'Ngay trên dòng: chọn <b>Tiến triển (2 tuần)</b>, ghi <b>Nhận xét</b>, bấm <b>Lưu</b> — PA giữ nguyên; <b>Hoàn tác</b> trong 10 giây.',
+        'Cần đổi / dừng PA: <b>Điều chỉnh / Kết thúc…</b> mở panel; tới mốc: <b>Ghi kết quả cuối</b>.'],
       chi: { hd: 'cv-loc-them', duong: '/cong-viec', chu: '<b>Lọc thêm › Nhóm việc › Case học thuật</b> để chỉ xem việc Case, PA.' },
     },
     {
@@ -87,17 +88,14 @@ export const HD_GV: HuongDan = {
     {
       id: 'cong-viec', ten: 'Công việc', duong: ['/cong-viec'],
       muc: [
-        { id: 'cv-tai-cho', ten: 'Làm việc ngay trên dòng', buoc: ['Bấm dòng → ô cần điền mở ngay bên.', '<b>Lưu</b>; dòng gập "✓ Đã lưu", việc kế tự mở.'],
+        { id: 'cv-tai-cho', ten: 'Làm việc ngay trên dòng', buoc: ['Bấm dòng → ô cần điền mở ngay bên.', '<b>Lưu</b>: "✓ Đã lưu"; <b>Việc tiếp ›</b> sang việc kế.'],
           chi: { hd: 'cv-dong', chu: 'Bấm một dòng để làm việc đó.' } },
+        { id: 'cd-cheo', ten: 'Speaking chấm chéo', buoc: ['Nhóm <b>Chấm điểm</b>: bài Speaking lớp khác cùng chi nhánh — tuần trước + bài còn tồn, gom theo tuần thi → lớp.', 'Có số bài chờ, không tính quá hạn.'] },
         { id: 'cv-gop', ten: 'Dòng gộp nhiều em', buoc: ['Dòng "n em" mở danh sách em; làm từng em hoặc cùng lúc.'] },
         { id: 'cv-qua-han', ten: 'Vì sao việc quá hạn', buoc: ['Qua hạn mà chưa Lưu: chip <b>Quá hạn</b> cam + ⚠, nằm đầu danh sách.', 'Lưu xong là hết quá hạn ở mọi nơi.'] },
         { id: 'cv-loc', ten: 'Lọc việc', buoc: ['Chip <b>Quá hạn · Hôm nay · Tuần này · Tất cả</b>; <b>Lọc thêm</b> theo nhóm việc, chương trình.'],
           chi: { hd: 'cv-loc-them', chu: 'Lọc theo nhóm việc ở đây.' } },
       ],
-    },
-    {
-      id: 'cham-diem', ten: 'Chấm điểm', duong: ['/cong-viec/cham-diem'],
-      muc: [{ id: 'cd-cheo', ten: 'Speaking chấm chéo', buoc: ['Bài Speaking của lớp khác cùng chi nhánh: bài tuần trước + bài còn tồn, gom theo tuần thi → lớp.', 'Có số bài chờ, không tính quá hạn.'] }],
     },
     {
       id: 'yeu-cau', ten: 'Yêu cầu của tôi', duong: ['/cong-viec/yeu-cau'],
