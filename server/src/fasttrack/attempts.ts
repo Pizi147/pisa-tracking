@@ -964,7 +964,7 @@ export function scoreHistoryOf(attemptId: number) {
          FROM audit_logs l LEFT JOIN users u ON u.id = l.actor_user_id
          JOIN assessment_attempts a ON a.id = l.entity_id
         WHERE l.entity_type = 'assessment_attempt' AND l.entity_id = ? AND l.created_at >= a.created_at
-          AND l.action IN ('score.edit', 'score.lich_su', 'score.override', 'score.no_show', 'score.no_show_cleared', 'score.nhan_xet',
+          AND l.action IN ('score.edit', 'score.lich_su', 'score.override', 'score.no_show', 'score.no_show_cleared', 'score.nhan_xet', 'score.nhan_xet_phu_trach',
                            'score.huy_vuot', 'score.khoi_phuc', 'regular.no_show', 'regular.no_show_cleared')`,
     )
     .raw(true).all(attemptId) as unknown[][];
@@ -993,14 +993,16 @@ export function scoreHistoryOf(attemptId: number) {
   }>((l) => {
     const before = l.before_json ? JSON.parse(l.before_json) : null;
     const after = l.after_json ? JSON.parse(l.after_json) : null;
-    if (l.action === 'score.nhan_xet') {
-      /* OV-12b: chỉ đổi nhóm nguyên nhân (chip) → dòng ghi nhóm trước → sau. */
-      const doiNx = (before?.comment ?? null) !== (after?.comment ?? null);
+    if (l.action === 'score.nhan_xet' || l.action === 'score.nhan_xet_phu_trach') {
+      /* OV-12b: chỉ đổi nhóm nguyên nhân (chip) → dòng ghi nhóm trước → sau. OV-13k: nhận xét GV phụ trách cùng dạng (khoá `nhanXetPhuTrach`). */
+      const khoa = l.action === 'score.nhan_xet' ? 'comment' : 'nhanXetPhuTrach';
+      const doiNx = (before?.[khoa] ?? null) !== (after?.[khoa] ?? null);
       const nhom = (x: any) => docNhomNguyenNhan(x?.nhom).map(issueLabel).join(', ') || 'Trống';
       if (!doiNx && nhom(before) === nhom(after)) return [];
       return [{
-        id: l.id, kind: 'nhan_xet' as const, skill: l.entity_label as string, skillLabel: tenMon(null, l.entity_label),
-        before: doiNx ? rutGon(before?.comment) : nhom(before), after: doiNx ? rutGon(after?.comment) : nhom(after),
+        id: l.id, kind: 'nhan_xet' as const, skill: l.entity_label as string,
+        skillLabel: `${tenMon(null, l.entity_label)}${khoa === 'comment' ? '' : ' · GV phụ trách'}`,
+        before: doiNx ? rutGon(before?.[khoa]) : nhom(before), after: doiNx ? rutGon(after?.[khoa]) : nhom(after),
         actorName: l.actor_name as string | null, createdAt: l.created_at as string, lyDo: null as string | null,
       }];
     }
