@@ -13,9 +13,10 @@ import { TenGiaoVien } from './TenGiaoVien.tsx';
 import { DaiLopChuyen } from './DaiChuyenLop.tsx';
 import type { TinhTrangXoaKetThuc } from './XoaKetThucLopPanel.tsx';
 import {
-  DUONG_TAB_TEST, ROUTE_NAME, TAB_HO_SO_LOP_NHAN, trangCha, type TabHoSoLop, badgeLop, badgeHienTheoVai, vaiXemHocVien, khungCua, duongLichTest, laVaiQuanLy, needScoresText, menuHoSoLop, nhomGiaoVienBoMon, tuanKhoa, type ViecMenuLop, tuanLich, type BadgeLop, type DaiLop, type NhomGiaoVien, type WorkScope,
+  DUONG_TAB_TEST, demQuaHan, ROUTE_NAME, TAB_HO_SO_LOP_NHAN, trangCha, type TabHoSoLop, badgeLop, badgeHienTheoVai, vaiXemHocVien, khungCua, duongLichTest, laVaiQuanLy, needScoresText, menuHoSoLop, nhomGiaoVienBoMon, tuanKhoa, type ViecMenuLop, tuanLich, type BadgeLop, type DaiLop, type NhomGiaoVien, type WorkScope,
 } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
+import type { WorkItem } from '../worklist/WorkList.tsx';
 
 /** `GET /classes/:id/overview` (server/src/classes/classes.ts → classOverview). */
 export type HoSoLop = {
@@ -85,11 +86,16 @@ export function DauTrangLop({ data, onViec, onBanGiao }: {
   const s = data.summary;
   const gvcn = data.coreTeachers[0] ?? null;
   const nhom = nhomGiaoVienBoMon(data.skills.map((x) => x.skill), data.skillTeachers, data.programme?.code ?? null);
+  /* OV-13b: badge "n việc quá hạn" = cùng danh sách việc với Học viên & Lớp › Cần làm (`/my-work`, `demQuaHan`) — bấm ra đúng số dòng. */
+  const laQl = laVaiQuanLy(session?.roles);
+  const viec = useApi<{ dong: WorkItem[] }>(laQl ? `/my-work?nguoi=tat-ca&branchId=${data.branchId}` : '/my-work', [data.branchId, laQl]);
+  const soViecQuaHan = demQuaHan((viec.data?.dong ?? []).flatMap((x) => (x.con?.length ? x.con : [x]))
+    .map((it) => ({ quaHan: it.urgency === 'overdue', studentId: it.studentId, classId: it.classId })), data.id).viec;
   const bGoc = badgeLop({
     vai: laVaiQuanLy(session?.roles) ? 'ql' : 'gv', needsPlacement: !!s?.needsPlacement, canXepLop: s?.canXepLop ?? 0, missingSkills: s?.missingSkills ?? [],
     soBaiChoCham: s?.needScores ?? 0,
     needScoresTitle: s && s.needScores > 0 ? needScoresText(s.workScope, s.needScores) : null,
-    phase: s?.phase ?? 'running', soChoDuyet: data.soChoDuyet, soEmQuaHan: data.soEmQuaHan,
+    phase: s?.phase ?? 'running', soChoDuyet: data.soChoDuyet, soViecQuaHan,
     missingCount: (s?.missing ?? []).filter((m) => m.key !== 'teachers').length,
     soChuaLoTrinhTiep: s?.soChuaLoTrinhTiep ?? 0,
     chuongTrinh: data.programme?.code ?? null,

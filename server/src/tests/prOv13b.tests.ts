@@ -188,6 +188,21 @@ export async function runPrOv13bTests(t: YThucTestKit) {
       `nhanh ${JSON.stringify(a)} ≠ panel ${JSON.stringify(b)}`);
   }));
 
+  check('OV13b-9 · MỘT hàm đếm quá hạn: badge lớp = số dòng lọc Quá hạn của lớp = đầu nhóm Cần làm (cùng `/my-work`, "n việc")', () => {
+    const ds = mywork.myWork(QL, { nguoi: 'tat-ca' }).dong.flatMap((x: any) => (x.con?.length ? x.con : [x]))
+      .map((it: any) => ({ quaHan: it.urgency === 'overdue', studentId: it.studentId, classId: it.classId }));
+    const lop = [...new Set(ds.filter((v: any) => v.quaHan && v.classId !== null).map((v: any) => v.classId))] as number[];
+    assert(lop.length > 0, 'bộ demo phải có lớp có việc quá hạn');
+    for (const id of lop) {
+      const n = dm.demQuaHan(ds, id);
+      const dong = ds.filter((v: any) => v.classId === id && v.quaHan).length;
+      const badge = dm.badgeLop({ vai: 'ql', needsPlacement: false, canXepLop: 0, missingSkills: [], soBaiChoCham: 0, phase: 'running', missingCount: 0, soViecQuaHan: n.viec });
+      const qh = [...badge.hien, ...badge.an].find((x: any) => x.key === 'qua-han');
+      assert(n.viec === dong && qh?.nhan === `${dong} việc quá hạn`, `lớp ${id}: badge "${qh?.nhan}" ≠ ${dong} dòng`);
+      assert(n.em <= n.viec && n.em === new Set(ds.filter((v: any) => v.classId === id && v.quaHan && v.studentId !== null).map((v: any) => v.studentId)).size, 'số em cùng nguồn');
+    }
+  });
+
   check(`OV13b-8 · trần câu SQL: đề xuất đổi PA ≤ ${TRAN_GHI_LO.deXuatDoiPa}; hoàn tác kết quả ≤ ${TRAN_GHI_LO.hoanTacKetQua}`, () => thu(() => {
     const { goc } = dungCase();
     const doCau = (fn: () => unknown) => { xoaNho(); const s0 = soCauSql(); fn(); return soCauSql() - s0; };

@@ -114,7 +114,7 @@ export async function runPanelUx3Tests(t: YThucTestKit) {
 
   check('UX3 (1) · badgeLop: "{n} bài chờ chấm" (tooltip giữ câu cũ), "{n} HV cần xếp lớp tiếp" (PR-HVL B4: gộp hết khoá + chưa lộ trình)', () => {
     const b = d.badgeLop({ vai: 'gv', needsPlacement: true, canXepLop: 4, missingSkills: [], soBaiChoCham: 9, needScoresTitle: 'Bạn cần chấm: 9 bài',
-      phase: 'running', missingCount: 1, soEmQuaHan: 2 });
+      phase: 'running', missingCount: 1, soViecQuaHan: 2 });
     const tatCa = [...b.hien, ...b.an];
     assert(tatCa.find((x: any) => x.key === 'xep-lop')?.nhan === '4 HV cần xếp lớp tiếp', 'xep-lop');
     const cham = tatCa.find((x: any) => x.key === 'cham');

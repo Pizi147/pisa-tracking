@@ -6,4 +6,7 @@ export const EN_OV13B = {
   'Lý do đổi PA cần ít nhất {n} ký tự.': 'Reason for changing the PA needs at least {n} characters.',
   'Đổi PA': 'PA changed',
   'Đã kết thúc · Đổi PA': 'Ended · PA changed',
+  '{n} việc quá hạn': '{n} overdue tasks',
+  'Việc đã quá hạn (xác nhận, kết quả, xử lý vi phạm)': 'Overdue tasks (confirmations, results, incidents)',
+  '{n} việc': '{n} tasks',
 } satisfies Record<string, Dich>;
