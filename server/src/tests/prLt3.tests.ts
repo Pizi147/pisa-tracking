@@ -161,12 +161,12 @@ export async function runPrLt3Tests(t: YThucTestKit) {
     const a = att.listAttempts(P.sTeacher, { classId: LOP }).rows.find((x: any) => x.id === aid);
     assert(a && !a.pendingSkills.includes('speaking'), `danh sách cần chấm GVBM S đếm ô S: ${JSON.stringify(a?.pendingSkills)}`);
     const viec = (p: any) => (mw.myWork(p).items as any[])
-      .filter((i) => i.group === 'score' && i.classId === LOP && i.attemptNo === 5 && i.mine && /Speaking/.test(i.reason));
+      .filter((i) => i.group === 'score' && i.classId === LOP && /\bMT5\b/.test(i.contextLabel ?? '') && i.mine && /Speaking/.test(i.reason));   // OV-13c: việc gom theo tuần thi
     assert(!viec(P.sTeacher).length && !viec(P.coreTeacher).length, 'Việc cần làm còn dòng "của tôi" cho ô S Mock');
     const c = debt.scoreDebtCells(P.mbManager, TODAY, null).find((x: any) => x.attemptId === aid && x.skill === 'speaking');
     assert(c && c.userId === null && c.chamCheo === true && c.overdue === true, JSON.stringify(c));
     /* Quản lý › "Tất cả trong phạm vi": dòng S Mock ghi "GV chấm chéo", không của ai. */
-    const tc = mw.myWork(P.mbManager, { nguoi: 'tat-ca' }).items.find((i: any) => i.group === 'score' && i.classId === LOP && i.attemptNo === 5
+    const tc = mw.myWork(P.mbManager, { nguoi: 'tat-ca' }).items.find((i: any) => i.group === 'score' && i.classId === LOP && /\bMT5\b/.test(i.contextLabel ?? '')
       && /Speaking/.test(i.reason));
     assert(tc && tc.statusLabel === d.CHAM_CHEO && !tc.mine, `"Tất cả trong phạm vi": ${JSON.stringify(tc && [tc.statusLabel, tc.mine])}`);
   });

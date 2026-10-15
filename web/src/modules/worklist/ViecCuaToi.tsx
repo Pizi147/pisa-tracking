@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { Empty, ErrorState, NhanTrangThai, Skeleton } from '../../ui/ui.tsx';
@@ -6,6 +6,7 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { useDienThoai } from '../../ui/TheDong.tsx';
 import { baViecDau, duongThe, gomNhomViec, trongKhoiHomNay, tuanLich, type DemYeuCau, type TheYeuCauDto } from '@shared/domain/index.ts';
 import { DongViec, type WorkItem } from './WorkList.tsx';
+import { PanelViec, lamTaiCho } from '../congViec/PanelViec.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 
 /**
@@ -41,6 +42,12 @@ export function ViecCuaToi() {
   const quaHan = khoi.filter((it) => it.urgency === 'overdue').length;
   const homNayN = khoi.filter((it) => it.urgency === 'today').length;
   const tuan = tuanLich(homNay, homNay);
+  /* OV-13b (đặc tả OV-13 §1): việc làm tại chỗ (Xác nhận Case, Kết quả PA…) mở `PanelViec` ngay Tổng quan — không chuyển sang hồ sơ HV; việc khác mở trang. */
+  const [mo, setMo] = useState<WorkItem | null>(null);
+  const moViec = (x: WorkItem) => (lamTaiCho(x) ? setMo(x) : navigate(x.href));
+  const thuTu = khoi.flatMap((x) => (x.con?.length ? x.con : [x])).filter(lamTaiCho);
+  const keTiep = mo ? thuTu[thuTu.findIndex((x) => x.key === mo.key) + 1] ?? null : null;
+  const panel = mo && <PanelViec key={mo.key} it={mo} onDong={() => setMo(null)} onDaLam={reload} onTiep={keTiep ? () => setMo(keTiep) : null} />;
   if (error) return <ErrorState message={error.message} hint={error.hint} onRetry={reload} />;
 
   const tong = (
@@ -66,7 +73,7 @@ export function ViecCuaToi() {
         ) : ds.map((it) => {
           const h = hanNgan(it, homNay, ngan);
           return (
-            <button key={it.key} type="button" onClick={() => navigate(it.href)}
+            <button key={it.key} type="button" onClick={() => (it.con?.length ? navigate(it.href) : moViec(it))}
               className="flex min-h-[44px] w-full flex-col gap-1 border-0 border-t bg-transparent px-3.5 py-2.5 text-left first-of-type:border-t-0 hover:bg-white/5"
               style={{ borderColor: 'var(--line)' }}>
               <span className="flex items-center justify-between gap-2">
@@ -85,6 +92,7 @@ export function ViecCuaToi() {
             <Link to="/cong-viec?loc=den-het-tuan&khung=tat-ca" className="btn btn-sm flex min-h-[44px] w-full justify-center no-underline">{t('Xem hết ({soXemHet})', { soXemHet })}</Link>
           </div>
         )}
+        {panel}
       </section>
     );
   }
@@ -108,7 +116,7 @@ export function ViecCuaToi() {
             {g.homNay > 0 && <span className="text-xs font-semibold text-soon">{t('{homNay} hôm nay', { homNay: g.homNay })}</span>}
           </div>
           <ul className="m-0 list-none divide-y p-0 pl-4" style={{ borderColor: 'var(--line)' }}>
-            {g.items.map((it) => <li key={it.key}><DongViec it={it} onOpen={(x) => navigate(x.href)} /></li>)}
+            {g.items.map((it) => <li key={it.key}><DongViec it={it} onOpen={moViec} /></li>)}
           </ul>
         </div>
       ))}
@@ -118,6 +126,7 @@ export function ViecCuaToi() {
           <Link to="/cong-viec?khung=tat-ca" className="link">{t('Tất cả việc ({length}) trong Công việc →', { length: tatCa.length })}</Link>
         </footer>
       )}
+      {panel}
     </section>
   );
 }

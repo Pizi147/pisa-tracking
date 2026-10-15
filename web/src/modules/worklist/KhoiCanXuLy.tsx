@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useThamSoUrl } from '../../lib/quayLai.ts';
 import { Link, useNavigate } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { Card, ErrorState, NhanTrangThai, Skeleton } from '../../ui/ui.tsx';
@@ -26,7 +26,11 @@ type Data = { canXuLy: DongCanXuLy[]; choDuyet?: DemYeuCau };
 export function KhoiCanXuLy({ branchId }: { branchId: number | null }) {
   const { data, loading, error, reload } = useApi<Data>(branchId ? `/tong-quan/quan-ly?branchId=${branchId}` : '/tong-quan/quan-ly', [branchId]);
   const dienThoai = useDienThoai();
-  const [mo, setMo] = useState<{ id: string; n: number; ten: string } | null>(null);
+  /* OV-13b: panel đang mở lên URL (`so-lieu=kcx:{mã}`) — về từ hồ sơ mở lại đúng panel. */
+  const [moChu, datMo] = useThamSoUrl('so-lieu', '');
+  const dongMo = moChu.startsWith('kcx:') ? data?.canXuLy.find((x) => x.metricId === moChu.slice(4)) ?? null : null;
+  const mo = dongMo ? { id: dongMo.metricId, n: dongMo.n, ten: dongMo.nhan || dongMo.truoc || '' } : null;
+  const setMo = (x: { id: string } | null) => datMo(x ? `kcx:${x.id}` : '');
   const phamVi = { branchId };
   if (error) return <ErrorState message={error.message} hint={error.hint} onRetry={reload} />;
 
@@ -52,7 +56,7 @@ export function KhoiCanXuLy({ branchId }: { branchId: number | null }) {
     : <span className={`text-xs tabular-nums ${x.han.quaHan ? 'font-semibold text-late' : 'text-slate-500'}`}>{x.han.quaHan ? <>⚠ {x.han.chu}</> : x.han.chu}</span>);
   const nut = (x: DongCanXuLy) => (x.den
     ? <Link to={x.den} className="btn btn-sm w-full min-h-[44px] justify-center no-underline sm:min-h-[32px]">{x.nut}</Link>
-    : <button type="button" className="btn btn-sm w-full min-h-[44px] justify-center sm:min-h-[32px]" onClick={() => setMo({ id: x.metricId, n: x.n, ten: x.nhan || x.truoc || '' })}>{x.nut}</button>);
+    : <button type="button" className="btn btn-sm w-full min-h-[44px] justify-center sm:min-h-[32px]" onClick={() => setMo({ id: x.metricId })}>{x.nut}</button>);
 
   return (
     <section className="card" aria-labelledby="can-xu-ly">
@@ -144,7 +148,11 @@ const MUC_CHU_Y_LABEL: Record<DiemChuY['muc'], string> = { 'can-chu-y': 'Chưa �
 /** ĐIỂM ĐÁNG CHÚ Ý (tầng 3, theo khung) — route riêng `/tong-quan/diem-chu-y` để đổi công tắc chỉ tải lại khối này. */
 export function DiemDangChuY({ branchId, ct }: { branchId: number | null; ct: ChuongTrinh }) {
   const { data, loading, error, reload } = useApi<DiemChuY[]>(`/tong-quan/diem-chu-y?ct=${ct}${branchId ? `&branchId=${branchId}` : ''}`, [branchId, ct]);
-  const [mo, setMo] = useState<{ id: string; n: number; extra?: Record<string, string> } | null>(null);
+  /* OV-13b: panel đang mở lên URL (`so-lieu=dcy:{loại}`). */
+  const [moChu, datMo] = useThamSoUrl('so-lieu', '');
+  const xMo = moChu.startsWith('dcy:') ? data?.find((x) => x.loai === moChu.slice(4)) ?? null : null;
+  const mo = xMo ? { id: xMo.metricId, n: xMo.soDanhSach, extra: xMo.extra } : null;
+  const setMo = (x: { loai: string } | null) => datMo(x ? `dcy:${x.loai}` : '');
   const phamVi = { branchId, chuongTrinh: ct };
   /* OV-11f (TQ-11): panel "Dưới kỳ vọng" theo khung — lớp thường nói "chưa đạt" như câu vừa đọc. */
   const tenPanel = (id: string) => (id === 'hv-duoi-ky-vong-mon' ? (ct === 'thuong' ? 'Học viên chưa đạt' : 'Học viên dưới kỳ vọng') : undefined);
@@ -162,7 +170,7 @@ export function DiemDangChuY({ branchId, ct }: { branchId: number | null; ct: Ch
                 <span className="min-w-0">
                   <span className="block text-sm text-slate-100">{x.cau}</span>
                   <button type="button" className="link min-h-[44px] text-xs appearance-none bg-transparent border-0 p-0 cursor-pointer sm:min-h-0"
-                    onClick={() => setMo({ id: x.metricId, n: x.soDanhSach, extra: x.extra })}>{x.lienKet}</button>
+                    onClick={() => setMo({ loai: x.loai })}>{x.lienKet}</button>
                 </span>
               </li>
             ))}

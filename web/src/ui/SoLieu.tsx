@@ -2,6 +2,7 @@ import { Suspense, lazy, useEffect, useId, useRef, useState, type ReactNode } fr
 import { Link } from 'react-router-dom';
 import { INTERVENTION_KIND_LABEL, METRIC_UNIT_LABEL, deadlineView, metricById, nhanQuaHan, thamSoCt, type ChiSo, type ChuongTrinh, type DeadlineKind } from '@shared/domain/index.ts';
 import { useApi } from '../lib/useApi.ts';
+import { useMoSoLieu, useThamSoUrl } from '../lib/quayLai.ts';
 import { api, invalidate, type ApiError } from '../lib/api.ts';
 import { useSession } from '../lib/session.tsx';
 import { KhungPanel } from './KhungPanel.tsx';
@@ -87,7 +88,10 @@ export function NganDanhSach({ tieuDe, dv, data, loading, error, reload, onDong,
 }) {
   const { homNay } = useNgayNghiepVu();
   const toi = useSession().session?.user?.id ?? null;
-  const [mo, setMo] = useState<number | null>(null);
+  /* OV-13b: dòng đang mở rộng ghi lên URL (`?dong=`) — về từ hồ sơ (‹ Tổng quan) mở lại đúng dòng. */
+  const [moChu, datMo] = useThamSoUrl('dong', '');
+  const mo = moChu ? Number(moChu) : null;
+  const setMo = (v: number | null) => datMo(v === null ? '' : String(v));
   const [lam, setLam] = useState<DongSoLieu | null>(null);
   const [giu, setGiu] = useState<Map<number, { dong: DongSoLieu; i: number; chu: string }>>(() => new Map());
   const [busy, setBusy] = useState<number | null>(null);
@@ -190,7 +194,7 @@ export function NganDanhSach({ tieuDe, dv, data, loading, error, reload, onDong,
                 {hanCua(r) && <> · <HanDong han={hanCua(r)!} loai={r.viec?.loaiHan} /></>}
               </p>
             )}
-            <Link to={r.href} onClick={onDong} className="link w-fit text-[13px] font-semibold max-sm:inline-flex max-sm:min-h-[44px] max-sm:items-center">
+            <Link to={r.href} className="link w-fit text-[13px] font-semibold max-sm:inline-flex max-sm:min-h-[44px] max-sm:items-center">
               {v ? t('Xem hồ sơ') : t('Mở trang')} <span aria-hidden>↗</span>
             </Link>
           </div>
@@ -261,7 +265,7 @@ export function SoLieu({ id, giaTri, phamVi, rong, className = '', extra, nhan, 
   tone?: 'danger' | 'warn';
 }) {
   const cs = metricById(id);
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useMoSoLieu(`${id}${extra ? `|${new URLSearchParams(extra)}` : ''}`);
   const [howTo, setHowTo] = useState(false);
   const idCachTinh = useId();
   if (!cs) return <span className="text-xs text-bad">{t('Chỉ số không có trong sổ: {id}', { id })}</span>;

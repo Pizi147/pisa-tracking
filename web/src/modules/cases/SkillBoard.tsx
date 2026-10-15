@@ -530,7 +530,7 @@ function HangPA({ p, c, ngan, onMoCase }: {
   const chuaChay = !!p.chuaChay;
   const chung = c.boTro?.chung && c.boTro.mon.length > 1 ? t('PA chung · {x}', { x: c.boTro.mon.map((m) => m.tenMon).join(', ') }) : null;
   const dongPhu = [chuNguoi(p), khoang, chuBuoi(p), chung,
-    p.closedReason === 'superseded' ? t('được thay') : p.revisions.length > 0 ? t('điều chỉnh {length} lần', { length: p.revisions.length }) : null].filter(Boolean).join(' · ');
+    p.closedReason === 'superseded' ? t('được thay') : p.closedReason === 'doi_pa' ? t('Đổi PA') : p.revisions.length > 0 ? t('điều chỉnh {length} lần', { length: p.revisions.length }) : null].filter(Boolean).join(' · ');
   return (
     <HangCon className="hang-pa">
       <td className="td relative" colSpan={2}>

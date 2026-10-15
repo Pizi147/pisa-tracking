@@ -297,7 +297,9 @@ export function badgeLop(c: {
   /** Số bài chờ chấm của lớp (0 = không hiện badge). */
   soBaiChoCham: number; needScoresTitle: string | null;
   phase: string; missingCount: number; soChuaLoTrinhTiep?: number;
-  soChoDuyet?: number; soEmQuaHan?: number;
+  soChoDuyet?: number;
+  /** OV-13b: số VIỆC quá hạn của lớp — `demQuaHan` trên cùng danh sách việc với góc Cần làm (bấm badge = số dòng). */
+  soViecQuaHan?: number;
   /** Mã chương trình lớp — tên ô thiếu GV theo chương trình (FOU "G+V"). */
   chuongTrinh?: string | null;
 }): { hien: BadgeLop[]; an: BadgeLop[] } {
@@ -315,7 +317,7 @@ export function badgeLop(c: {
   if (CHANG_THI.includes(c.phase)) co.chang = { key: 'chang', nhan: dichChuoi(CLASS_PHASE_LABEL[c.phase as ClassPhase]), tone: 'info' };
   if (c.missingCount > 0) co['thieu-tt'] = { key: 'thieu-tt', nhan: t('Thiếu {n} thông tin', { n: c.missingCount }), tone: 'warn' };
   if (c.soChoDuyet) co['cho-duyet'] = { key: 'cho-duyet', nhan: t('{n} chờ duyệt', { n: c.soChoDuyet }), tone: TONE_BADGE_TRANG_THAI['cho-duyet'], title: t('Yêu cầu đang chờ Quản lý duyệt') };
-  if (c.soEmQuaHan) co['qua-han'] = { key: 'qua-han', nhan: t('{n} HV quá hạn việc', { n: c.soEmQuaHan }), tone: 'danger', title: t('Học viên có việc đã quá hạn (xác nhận, kết quả, xử lý vi phạm)') };
+  if (c.soViecQuaHan) co['qua-han'] = { key: 'qua-han', nhan: t('{n} việc quá hạn', { n: c.soViecQuaHan }), tone: 'danger', title: t('Việc đã quá hạn (xác nhận, kết quả, xử lý vi phạm)') };
   const all = THU_TU_BADGE[c.vai].flatMap((k) => (co[k] ? [co[k]!] : []));
   return { hien: all.slice(0, 2), an: all.slice(2) };
 }
@@ -685,4 +687,13 @@ export function tabMacDinhLop(s: string | null | undefined, daKetThuc: boolean):
 }
 export function tabHoSoLop(s: string | null | undefined): TabHoSoLop {
   return (TAB_HO_SO_LOP as readonly string[]).includes(s ?? '') ? (s as TabHoSoLop) : 'hoc-vien';
+}
+
+/**
+ * OV-13b: MỘT hàm đếm quá hạn cho badge lớp ("n việc quá hạn"), lọc Quá hạn ("Quá hạn · n việc") và đầu nhóm lớp của Cần làm — cùng danh sách việc
+ * (`/my-work`, việc có `quaHan`); `classId` = chỉ lớp đó. Trả cả số em để nơi cần nói "n em" dùng cùng nguồn.
+ */
+export function demQuaHan(ds: readonly { quaHan: boolean; studentId: number | null; classId: number | null }[], classId?: number | null): { viec: number; em: number } {
+  const q = ds.filter((v) => v.quaHan && (classId == null || v.classId === classId));
+  return { viec: q.length, em: new Set(q.flatMap((v) => (v.studentId !== null ? [v.studentId] : []))).size };
 }

@@ -58,9 +58,10 @@ export async function runPrGopTests(t: YThucTestKit) {
     assert(khacNguoi.length === 2, 'khác người: hai dòng');
     const khongLop = d.gopViecTheoLop([v({ key: 'a', classId: null, group: 'mgmt' }), v({ key: 'b', classId: null, group: 'mgmt', studentId: 2 })], nhan);
     assert(khongLop.length === 2, 'không lớp: hai dòng');
+    /* OV-13c: Ghi nhận xét, Xác nhận PA (Case SOS FT) gộp theo tuần thi + mức SOS — khác mức SOS vẫn tách (prOv13c); Thêm PA giữ từng dòng. */
     for (const group of ['ghi_nhan_xet', 'xac_nhan_pa', 'no_plan']) {
-      const ft = d.gopViecTheoLop([v({ key: 'a', group, khung: 'ft', caseSos: true }), v({ key: 'b', group, khung: 'ft', caseSos: true, studentId: 2 })], nhan);
-      assert(ft.length === 2, `${group} FT Case SOS: giữ từng dòng`);
+      const ft = d.gopViecTheoLop([v({ key: 'a', group, khung: 'ft', caseSos: true, sos: 1 }), v({ key: 'b', group, khung: 'ft', caseSos: true, studentId: 2, sos: 2 })], nhan);
+      assert(ft.length === 2, `${group} FT Case SOS khác mức SOS: giữ từng dòng`);
     }
     /* Chủ sản phẩm 08/10: Case GV tự tạo (Bình thường / Gấp) ở lớp FT gộp theo lớp như việc khác. */
     const tay = d.gopViecTheoLop([v({ key: 'a', group: 'no_plan', khung: 'ft', caseSos: false }), v({ key: 'b', group: 'no_plan', khung: 'ft', caseSos: false, studentId: 2 })], nhan);
@@ -83,13 +84,13 @@ export async function runPrGopTests(t: YThucTestKit) {
   });
 
   /* OV-11c (CV-17): dòng gom một đơn vị "em" — đếm em KHÁC NHAU (một em hai PA = 1 em; hai việc vẫn ở danh sách con). */
-  check('GOP-1e · hai việc của CÙNG một em (hai PA) → "1 em", danh sách con vẫn hai việc', () => {
+  check('GOP-1e · hai việc của CÙNG một em (hai PA) → "1 em · 2 việc" (OV-13c, plan mục 4), danh sách con vẫn hai việc', () => {
     const ds = [
       v({ key: 'action:1', group: 'ghi_ket_qua_pa', studentId: 5, studentName: 'Ngọc', tieuDe: 'Kết quả PA Writing', phu: 'Writing' }),
       v({ key: 'action:2', group: 'ghi_ket_qua_pa', studentId: 5, studentName: 'Ngọc', tieuDe: 'Kết quả PA Speaking', phu: 'Speaking' }),
     ];
     const [g] = d.gopViecTheoLop(ds, nhan);
-    assert(g.tieuDe === 'Kết quả PA · MB FOU 15 · 1 em' && g.actionLabel === '1 em' && g.con.length === 2, `${g.tieuDe} / ${g.actionLabel}`);
+    assert(g.tieuDe === 'Kết quả PA · MB FOU 15 · 1 em · 2 việc' && g.actionLabel === '1 em · 2 việc' && g.con.length === 2, `${g.tieuDe} / ${g.actionLabel}`);
     assert(g.con[0].conTen === 'Ngọc', 'con vẫn mang tên em');
   });
 

@@ -9,7 +9,7 @@ import { dich, t } from '@shared/i18n/index.ts';
  * nhóm cố định, mỗi nhóm gập/mở, nhóm có việc quá hạn tự mở sẵn. Tổng quan giữ đúng hành vi cũ
  * (`soHien = 5`); Hỗ trợ học viên gọi với `soHien = 10` và có thể ép mở hết khi đang lọc.
  */
-export function NhomViec({ nhom, soHien, moHet, onOpen, nutPhu, chon, xong, moTrang }: {
+export function NhomViec({ nhom, soHien, moHet, onOpen, nutPhu, chon, xong, moTrang, moRong, moCaDong }: {
   nhom: NhomViecXem<WorkItem>[];
   soHien: number;
   /** Ép mở hết mọi nhóm — dùng khi đang lọc nhanh/loại việc, kết quả đã ít thì không cần gập nữa. */
@@ -20,8 +20,12 @@ export function NhomViec({ nhom, soHien, moHet, onOpen, nutPhu, chon, xong, moTr
   chon?: string | null; xong?: ReadonlySet<string>;
   /** OV-5a: việc mở trang khác thay vì panel (dấu ↗). */
   moTrang?: (it: WorkItem) => boolean;
+  /** OV-13c: dòng gộp mở panel cả dòng (`DongViec moCaDong`). */
+  moCaDong?: (it: WorkItem) => boolean;
   /** Nút phụ đứng cạnh nhãn việc, ví dụ Nhắc (Hỗ trợ học viên). Duyệt nằm ở hộp Chờ duyệt (PR-DUYET, K1-32). */
   nutPhu?: (it: WorkItem) => ReactNode;
+  /** OV-13b: phần mở NGAY DƯỚI dòng (ghi nhanh Kết quả PA, dòng "✓ Đã lưu") — `null` = không. */
+  moRong?: (it: WorkItem) => ReactNode;
 }) {
   const [mo, setMo] = useState<Record<string, boolean>>({});
   const [them, setThem] = useState<Record<string, number>>({});
@@ -45,7 +49,7 @@ export function NhomViec({ nhom, soHien, moHet, onOpen, nutPhu, chon, xong, moTr
                 <ul className="list-none m-0 p-0 divide-y" style={{ borderColor: 'var(--line)' }}>
                   {g.items.slice(0, soHienNhom).map((it) => (
                     /* OV-11c: "Của GV" có thể có hai GV cùng một việc Bàn giao môn (W1, W2) — khoá vẽ kèm người giữ việc. */
-                    <li key={`${it.key}|${it.ownerId ?? ''}`}><DongViec gon it={it} onOpen={onOpen} nutPhu={nutPhu?.(it)} chon={chon} xong={xong} moTrang={!it.con && !!moTrang?.(it)} conMoTrang={moTrang} /></li>
+                    <li key={`${it.key}|${it.ownerId ?? ''}`}><DongViec gon it={it} onOpen={onOpen} nutPhu={nutPhu?.(it)} chon={chon} xong={xong} moTrang={!it.con && !!moTrang?.(it)} conMoTrang={moTrang} moRong={moRong} moCaDong={moCaDong} /></li>
                   ))}
                 </ul>
                 {g.items.length > soHienNhom && (

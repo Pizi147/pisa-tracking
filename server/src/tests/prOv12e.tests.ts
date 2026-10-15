@@ -7,6 +7,7 @@
  * Ca ghi dữ liệu chạy trong giao dịch rồi cuộn lại (`thu`).
  */
 import type { YThucTestKit } from './yThuc.tests.ts';
+import { duXacNhan } from './luotThu.ts';
 
 export async function runPrOv12eTests(t: YThucTestKit) {
   const { check, assert, conn, P, TODAY } = t;
@@ -167,9 +168,9 @@ export async function runPrOv12eTests(t: YThucTestKit) {
     assert(khac, 'lớp của Case cần một GV chỉ dạy môn khác');
     const moTa = 'Mỗi tuần 2 đề, tự chấm, nộp GV chữa câu sai.';
     let loi: any = null;
-    try { sosAuto.xacNhanPaQuyChe(khac, paCho.id, { description: moTa }); } catch (e) { loi = e; }
+    try { sosAuto.xacNhanPaQuyChe(khac, paCho.id, duXacNhan(conn, paCho.id, { description: moTa })); } catch (e) { loi = e; }
     assert(loi?.status === 403, `GV môn khác: ${loi?.status} ${loi?.message}`);
-    sosAuto.xacNhanPaQuyChe(P.mbManager, paCho.id, { description: moTa });
+    sosAuto.xacNhanPaQuyChe(P.mbManager, paCho.id, duXacNhan(conn, paCho.id, { description: moTa }));
     assert(one('SELECT confirmed_at FROM case_interventions WHERE id = ?', paCho.id).confirmed_at, 'QL xác nhận được');
     const r = metrics.metricSet(P.mbManager, 'bai-qua-han-nhap-diem', {});
     if (r.ids.length) {

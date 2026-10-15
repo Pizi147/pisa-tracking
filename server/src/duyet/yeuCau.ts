@@ -218,7 +218,7 @@ function quetThat(homNay: string) {
   const coChet = DINH_NGHIA_LOAI.filter((d) => d.chet);
   if (coChet.length) {
     const chet = conn.prepare(
-      `SELECT y.id, y.loai, y.doi_tuong_loai, y.doi_tuong_id FROM yeu_cau_duyet y
+      `SELECT y.id, y.loai, y.doi_tuong_loai, y.doi_tuong_id, y.du_lieu FROM yeu_cau_duyet y
         WHERE y.trang_thai = 'cho' AND (${coChet.map((d) => `(y.loai = ? AND (${d.chet!.sql}))`).join(' OR ')})`,
     ).all(...coChet.map((d) => d.loai)) as any[];
     if (chet.length) {
@@ -226,6 +226,7 @@ function quetThat(homNay: string) {
         for (const r of chet) {
           chotYeuCau(conn, { loai: r.loai, doiTuongLoai: r.doi_tuong_loai, doiTuongId: r.doi_tuong_id }, 'tu_dong',
             { lyDo: dinhNghiaCua(r.loai)!.chet!.lyDo });
+          dinhNghiaCua(r.loai)!.chet!.sau?.(r);
         }
       });
     }
@@ -448,20 +449,22 @@ export function traLoiYeuCau(p: Principal, id: number, traLoi: unknown) {
 // ------------------------------------------------------------------------------------------------ sửa sau khi lưu (OV-7a, chủ SP 13/10)
 
 /** Thẻ còn chờ của CHÍNH người gửi, loại sửa / rút được. QL đã trả lời → 400 như mọi thẻ đã xử lý. */
-function theCuaNguoiGui(p: Principal, id: number): YeuCauRow {
+function theCuaNguoiGui(p: Principal, id: number, rut = false): YeuCauRow {
   const yc = docThe(id);
   if (yc.nguoi_xin !== p.userId) throw forbidden('Chỉ người gửi mới sửa hoặc rút được yêu cầu này.');
+  if (rut && yc.loai === 'de_xuat_pa' && yc.trang_thai === 'duyet') throw badRequest('QL đã duyệt đổi PA — không hoàn tác được.');   // OV-13b: Hoàn tác = Rút
   if (yc.trang_thai !== 'cho') throw badRequest('Yêu cầu này đã được xử lý. Danh sách đã được làm mới.');
-  if (!LOAI_NGUOI_XIN_SUA.includes(yc.loai)) throw badRequest('Loại yêu cầu này không sửa hoặc rút được.');
+  /* OV-13b: loại chỉ Rút được (không Sửa) — có `khiRut` (Đề xuất PA). */
+  if (!LOAI_NGUOI_XIN_SUA.includes(yc.loai) && !(rut && dinhNghiaCua(yc.loai)?.khiRut)) throw badRequest('Loại yêu cầu này không sửa hoặc rút được.');
   return yc;
 }
 
 /** NGƯỜI GỬI RÚT thẻ Quản lý chưa trả lời: thẻ đóng `tu_dong` "Người gửi đã rút" (không chuông — người đóng là người gửi), bảng nguồn đảo qua `khiRut`. */
 export function rutYeuCau(p: Principal, id: number) {
-  theCuaNguoiGui(p, id);
+  theCuaNguoiGui(p, id, true);
   const khoaTep: string[] = [];
   tx(() => {
-    const yc = theCuaNguoiGui(p, id);
+    const yc = theCuaNguoiGui(p, id, true);
     chotYeuCau(db(), doiTuongCua(yc), 'tu_dong', { nguoiDuyet: p.userId, lyDo: LY_DO_RUT });
     dinhNghiaCua(yc.loai)?.khiRut?.(p, yc, khoaTep);
     writeAudit({ actorUserId: p.userId, action: 'request.withdraw', entityType: 'yeu_cau_duyet', entityId: id, entityLabel: metaCua(yc.loai).nhan,

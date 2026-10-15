@@ -6,7 +6,7 @@ import path from 'node:path';
 import fs from 'node:fs';
 import os from 'node:os';
 import { fileURLToPath } from 'node:url';
-import { boLichTuTao, chotSan } from './luotThu.ts';
+import { boLichTuTao, chotSan, duXacNhan } from './luotThu.ts';
 
 /*
  * Dọn rác thư mục tạm của các lần `npm run check` trước (tiền tố `z2-`, xem server/src/tests/banChinh.tests.ts):
@@ -3716,7 +3716,7 @@ check('Case đã đóng mà MT sau trượt lại → MỞ CASE MỚI nối vào
       if (!conn.prepare("SELECT 1 FROM case_issues WHERE case_id = ? AND role = 'primary'").get(c.id)) {
         sosAutoSvc.xacNhanCase(mgr, c.id, { primaryCode: domain.issuesForTopic(c.topic ?? 'reading', null)[0].code, urgency: 'attention', moTa: 'Em đọc chậm, hết giờ ở passage 3.' });
       }
-      sosAutoSvc.xacNhanPaQuyChe(mgr, iv.id, { description: 'Tutor kèm Reading hai buổi mỗi tuần, cô Hà chữa bài.' });
+      sosAutoSvc.xacNhanPaQuyChe(mgr, iv.id, duXacNhan(conn, iv.id, { description: 'Tutor kèm Reading hai buổi mỗi tuần, cô Hà chữa bài.' }));
     }
     /* PR-S3F #8 (T22): PA quy chế không khép sớm — phép kiểm này chỉ cần "PA đã xong" để chốt Case (PR-SO: `completeIntervention` đã xoá). */
     conn.prepare(`UPDATE case_interventions SET status = 'completed', completed_date = ?, updated_at = ? WHERE id = ?`).run(demoToday(), new Date().toISOString(), iv.id);
@@ -9359,6 +9359,9 @@ await runPrOv12eTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P,
 // ==================================================================== HOTFIX 15/10 (nhận xét sau hoàn tất qua HTTP · Sửa Case MT không Mô tả)
 const { runPrHfTests } = await import('./prHf.tests.ts');
 await runPrHfTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== OV-13b (Đề xuất PA khác · Xác nhận PA Nội dung + Bắt đầu · ghi nhanh · Hoàn tác)
+const { runPrOv13bTests } = await import('./prOv13b.tests.ts');
+await runPrOv13bTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== PR-OV13a (Case tạm · PA quy chế hết kẹt A/B/C · migrate prOv13a)
 const { runPrOv13aTests } = await import('./prOv13a.tests.ts');
 await runPrOv13aTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
@@ -9374,6 +9377,9 @@ await runPrOv13dTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P,
 // ==================================================================== OV-13h (gỡ chặn cứng người đúng nhiệm vụ — qua HTTP; chạy cuối: không bọc giao dịch)
 const { runPrOv13hTests } = await import('./prOv13h.tests.ts');
 await runPrOv13hTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== OV-13c (gom Công việc theo tuần + lớp + mức SOS · Xác nhận PA cùng lúc · Nhập điểm theo tuần thi)
+const { runPrOv13cTests } = await import('./prOv13c.tests.ts');
+await runPrOv13cTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== OV-13l (Chuyển lớp "Ngay hôm nay" · hạn bàn giao 7 ngày · điểm đi theo lộ trình)
 const { runPrOv13lTests } = await import('./prOv13l.tests.ts');
 await runPrOv13lTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);

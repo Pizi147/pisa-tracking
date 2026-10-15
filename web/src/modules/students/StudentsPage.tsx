@@ -9,7 +9,7 @@ import { HangNhom } from '../../ui/HangNhom.tsx';
 import { CongTacKhung, khungDaNho, type KhungLoc } from '../../ui/CongTacKhung.tsx';
 import { useDienThoai } from '../../ui/TheDong.tsx';
 import { docChiNhanhDaNho, nhoChiNhanh, type Branch } from '../../ui/Filters.tsx';
-import { coDichLienKet } from '@shared/domain/index.ts';
+import { coDichLienKet, demQuaHan } from '@shared/domain/index.ts';
 import { MenuDong, type MucMenu } from '../../ui/MenuDong.tsx';
 import { IntakePanel } from './IntakePanel.tsx';
 import { ClassCreatePanel } from '../classes/ClassCreatePanel.tsx';
@@ -185,6 +185,9 @@ function TrangTheoLop({ admin }: { admin: boolean }) {
     else if (lamTaiCho(it)) setViecMo(it);
     else navigate(it.href);
   };
+  /* OV-13b: việc của mọi lớp trên trang (chưa lọc khung / lớp) — nguồn badge "n việc quá hạn" (`demQuaHan`). */
+  const viecLop = (work.data?.dong ?? []).flatMap((x) => (x.con?.length ? x.con : [x]))
+    .map((it) => ({ quaHan: it.urgency === 'overdue', studentId: it.studentId, classId: it.classId }));
   const viecCongViec: ViecCanLam[] = [
     ...(work.data?.dong ?? []).flatMap((x) => (x.con?.length ? x.con : [x]))
       .filter((it) => it.classId !== null && lopTrang.has(it.classId) && trongLoc(it.classId))
@@ -324,7 +327,7 @@ function TrangTheoLop({ admin }: { admin: boolean }) {
                 {locPhuCo.map((k) => (
                   <button key={k} type="button" className="nut-loc" aria-pressed={locPhu === k}
                     onClick={() => setParam({ view: 'can-lam', loc: locPhu === k ? null : k, open: null })}>
-                    {nhanLocPhu[k]}<span className="tabular-nums font-medium">{emCua(theoLocPhu(k))}</span>
+                    {nhanLocPhu[k]}<span className="tabular-nums font-medium">{k === 'qua-han' ? t('{n} việc', { n: demQuaHan(theoLocPhu(k)).viec }) : emCua(theoLocPhu(k))}</span>
                   </button>
                 ))}
               </div>
@@ -376,7 +379,7 @@ function TrangTheoLop({ admin }: { admin: boolean }) {
             <section key={g.k} className="space-y-2" aria-label={g.k === 'ft' ? t('Lớp Fast Track') : t('Lớp thường')}>
               {nhomLop.length > 1 && <h2 className="m-0 px-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">{g.k === 'ft' ? 'Fast Track' : t('Lớp thường')}</h2>}
               {g.lop.map((c) => (
-                <HopLop key={c.id} the admin={admin} lop={c} mo={openIds.includes(c.id)} onDoiMo={() => doiMo(c.id)} dsHocVien={dsHocVien} dsLop={dsLopCua(g)} onThuTu={baoThuTu}
+                <HopLop key={c.id} the admin={admin} lop={c} soViecQuaHan={demQuaHan(viecLop, c.id).viec} mo={openIds.includes(c.id)} onDoiMo={() => doiMo(c.id)} dsHocVien={dsHocVien} dsLop={dsLopCua(g)} onThuTu={baoThuTu}
                   chiHien={dangLoc ? (idsTheoLop.get(c.id) ?? new Set()) : null} sapXep={sapXep} onMoCase={moCase}
                   onThemHocVien={() => setThem({ id: c.id, code: c.code })} onDoi={trang.reload} />
               ))}
@@ -394,7 +397,7 @@ function TrangTheoLop({ admin }: { admin: boolean }) {
                 <table key={c.id} className="w-full min-w-[960px] table-fixed text-sm" aria-label={t('Lớp {lop}', { lop: c.code })}>
                   <CotBangLop admin={admin} />
                   <thead className="sr-only"><tr>{tieuDeCot(g.k).map((x, i) => <th key={i}>{x || t('Thao tác')}</th>)}</tr></thead>
-                  <HopLop admin={admin} lop={c} mo={openIds.includes(c.id)} onDoiMo={() => doiMo(c.id)} dsHocVien={dsHocVien} dsLop={dsLopCua(g)} onThuTu={baoThuTu}
+                  <HopLop admin={admin} lop={c} soViecQuaHan={demQuaHan(viecLop, c.id).viec} mo={openIds.includes(c.id)} onDoiMo={() => doiMo(c.id)} dsHocVien={dsHocVien} dsLop={dsLopCua(g)} onThuTu={baoThuTu}
                     chiHien={dangLoc ? (idsTheoLop.get(c.id) ?? new Set()) : null} sapXep={sapXep} onMoCase={moCase}
                     onThemHocVien={() => setThem({ id: c.id, code: c.code })} onDoi={trang.reload} />
                 </table>
@@ -475,8 +478,10 @@ function CotBangLop({ admin }: { admin: boolean }) {
  * HÀNG LỚN của một lớp (đặc tả §3.6; PR-UX0 N-2): ▸ · mã (mở Hồ sơ lớp) · chương trình · n HV · GVCN · tối đa 2 badge (+n) · ⋯.
  * ⋯ của lớp: Hồ sơ lớp · Nhập điểm (Q11, Q6) · + Học viên — chỉ mục người xem làm được.
  */
-function HopLop({ lop, mo, onDoiMo, chiHien, sapXep, onThemHocVien, onDoi, dsHocVien, dsLop, onThuTu, the = false, admin, onMoCase }: {
+function HopLop({ lop, mo, onDoiMo, chiHien, sapXep, onThemHocVien, onDoi, dsHocVien, dsLop, onThuTu, the = false, admin, onMoCase, soViecQuaHan }: {
   onMoCase?: (studentId: number, caseId: number) => void;
+  /** OV-13b: `demQuaHan` trên việc của Cần làm — badge "n việc quá hạn" = số dòng khi bấm. */
+  soViecQuaHan: number;
   /** OV-10b: bảng cột Admin (`BangHocVienLop admin`). */
   admin: boolean;
   lop: LopTrenTrang; mo: boolean; onDoiMo: () => void; chiHien: Set<number> | null; sapXep: SapXep;
@@ -495,7 +500,7 @@ function HopLop({ lop, mo, onDoiMo, chiHien, sapXep, onThemHocVien, onDoi, dsHoc
     vai: laVaiQuanLy(session?.roles) ? 'ql' : 'gv', needsPlacement: lop.needsPlacement, canXepLop: lop.canXepLop, missingSkills: lop.missingSkills,
     soBaiChoCham: lop.needScores,
     needScoresTitle: lop.needScores > 0 ? needScoresText(lop.workScope, lop.needScores) : null,
-    phase: lop.phase, soChoDuyet: lop.soChoDuyet, soEmQuaHan: lop.soEmQuaHan,
+    phase: lop.phase, soChoDuyet: lop.soChoDuyet, soViecQuaHan,
     missingCount: lop.missing.filter((m) => m.key !== 'teachers').length, soChuaLoTrinhTiep: lop.soChuaLoTrinhTiep,
     chuongTrinh: lop.programmeCode,
   });

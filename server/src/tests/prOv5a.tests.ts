@@ -67,8 +67,11 @@ export async function runPrOv5aTests(t: YThucTestKit) {
     const { A, B, C, D } = bonEm();
     const w = mywork.myWork(GV_R);
     assert(!(w.items as any[]).some((x) => x.group === 'cause' && [A.r, B.r, C.r, D.r].includes(x.caseId)), 'còn việc Xác nhận nguyên nhân cho Case MT');
+    /* OV-13c (Q4): Case SOS FT cùng lớp + tuần thi + mức SOS gộp một dòng — mỗi Case vẫn là một việc con "Ghi nhận xét {kỹ năng} · MT1". */
     for (const x of [A, B, C, D]) {
-      const it = (w.dong as any[]).find((y) => y.key === `ghi_nhan_xet:${x.r}`);
+      const cha = (w.dong as any[]).find((y) => y.con?.some((c: any) => c.key === `ghi_nhan_xet:${x.r}`));
+      assert(!cha || cha.key.startsWith('gop:ghi_nhan_xet:'), `dòng gộp sai khoá: ${cha?.key}`);
+      const it = cha ? cha.con.find((c: any) => c.key === `ghi_nhan_xet:${x.r}`) : (w.dong as any[]).find((y) => y.key === `ghi_nhan_xet:${x.r}`);
       assert(it && !it.con && it.group === 'ghi_nhan_xet' && it.tieuDe === `Ghi nhận xét Reading · MT1 · ${x.ten}` && it.luot === 'mt:1' && it.kn === 'reading',
         `dòng ${x.ten}: ${JSON.stringify(it && { k: it.key, t: it.tieuDe, l: it.luot, kn: it.kn, con: !!it.con })}`);
     }
@@ -87,8 +90,8 @@ export async function runPrOv5aTests(t: YThucTestKit) {
     const xn = d.gopViecTheoLop([v({}), v({ key: 'cause:2', studentId: 2 })], nhan);
     assert(xn.length === 1 && xn[0].key === 'gop:cause:10:u9' && xn[0].con.length === 2, `Xác nhận Case lớp thường: ${JSON.stringify(xn.map((x: any) => x.key))}`);
     assert(d.gopViecTheoLop([v({})], nhan)[0].key === 'cause:1', 'một em: dòng như cũ (không còn dòng gom một em)');
-    assert(d.gopViecTheoLop([v({ key: 'ghi_nhan_xet:1', group: 'ghi_nhan_xet', khung: 'ft' }), v({ key: 'ghi_nhan_xet:2', group: 'ghi_nhan_xet', khung: 'ft', studentId: 2 })], nhan).length === 2, 'Ghi nhận xét bị gộp');
-    assert(d.gopViecTheoLop([v({ key: 'xnpa:1', group: 'xac_nhan_pa', khung: 'ft' }), v({ key: 'xnpa:2', group: 'xac_nhan_pa', khung: 'ft', studentId: 2 })], nhan).length === 2, 'Xác nhận PA FT: từng dòng');
+    assert(d.gopViecTheoLop([v({ key: 'ghi_nhan_xet:1', group: 'ghi_nhan_xet', khung: 'ft', sos: 1 }), v({ key: 'ghi_nhan_xet:2', group: 'ghi_nhan_xet', khung: 'ft', studentId: 2, sos: 2 })], nhan).length === 2, 'Ghi nhận xét khác mức SOS bị gộp (OV-13c)');
+    assert(d.gopViecTheoLop([v({ key: 'xnpa:1', group: 'xac_nhan_pa', khung: 'ft', sos: 1 }), v({ key: 'xnpa:2', group: 'xac_nhan_pa', khung: 'ft', studentId: 2, sos: 2 })], nhan).length === 2, 'Xác nhận PA FT khác mức SOS: từng dòng (OV-13c)');
     const g = d.gopViecTheoLop([v({ key: 'action:1', group: 'ghi_ket_qua_pa', caseSos: false }), v({ key: 'action:2', group: 'ghi_ket_qua_pa', caseSos: false, studentId: 2 })], nhan);
     assert(g.length === 1 && g[0].key === 'gop:ghi_ket_qua_pa:10:u9' && g[0].con.length === 2, `việc khác gộp: ${JSON.stringify(g.map((x: any) => x.key))}`);
   });
