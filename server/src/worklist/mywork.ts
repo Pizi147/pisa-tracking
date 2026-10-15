@@ -1162,7 +1162,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
         reason: `${ds.length} em mới vào web chưa xác nhận cấp bậc vi phạm đã có trước đó`,
         tieuDe: `Xác nhận cấp bậc vi phạm HV cũ · ${ds[0].code} · ${ds.length} em`, actionLabel: 'Xác nhận cấp bậc',
         /* Một em: tab Ý thức của lớp, chọn sẵn em, mở panel Khai bậc (`mo=khai`). OV-13d: nhiều em → panel Xác nhận cấp bậc theo lô (`mo=cap-bac`). */
-        href: ds.length === 1 ? `/hoc-vien/lop/${lopId}?tab=y-thuc&hv=${ds[0].id}&mo=khai` : `/hoc-vien/lop/${lopId}?tab=y-thuc&mo=cap-bac`,
+        href: ds.length === 1 ? `/hoc-vien/lop/${lopId}?tab=y-thuc&hv=${ds[0].id}&mo=khai` : `/hoc-vien/lop/${lopId}?tab=y-thuc&mo=cap-bac&em=${ds.map((e) => e.id).join(',')}`,
         ownerId: p.userId, owner: null, mine: true, due: null, statusLabel: 'Chưa xác nhận cấp bậc',
       });
     }

@@ -17,7 +17,7 @@ import { PhoiHopSosSection, type CoordTurn } from './PhoiHopSosSection.tsx';
 import { NhanViPham } from './NhanViPham.tsx';
 import { ThangYThuc } from './ThangYThuc.tsx';
 import { DUONG_LAM_MOI_Y_THUC, type BangLo, type BangYThucLop, type DongEm, type KqEm, type ViPhamV4, type YThucHocVien } from './kieu.ts';
-import { LoYThucPanel, type ViecLo } from './LoYThucPanel.tsx';
+import { CO_LO, LoYThucPanel, guiTheoLo, type ViecLo } from './LoYThucPanel.tsx';
 import { OChon, ThanhChonNhieu, useChonNhieu, type ChonNhieu } from '../students/chonNhieuHocVien.tsx';
 import { NutChu } from '../../ui/KhuonViec.tsx';
 import { dich, dichChu, t } from '@shared/i18n/index.ts';
@@ -77,9 +77,10 @@ export function ClassYThucCard({ classId, thuong = false }: { classId: number; t
     if (hv && moGi === 'khai') mo({ loai: 'khai', studentId: hv });   // PR-VAI-a (K1-15): việc "Xác nhận cấp bậc vi phạm HV cũ"
     const xl = Number(params.get('xl')) || null;
     if (moGi === 'da-thuc-hien' && xl) mo({ loai: 'da-thuc-hien', id: xl });
-    if (moGi === 'cap-bac') setLoMo({ viec: 'cap-bac', ids: null });
+    /* Rà #408 (5): đúng các em của việc "Xác nhận cấp bậc" (em mới vào web) — không phải mọi em chưa xác nhận của lớp. */
+    if (moGi === 'cap-bac') setLoMo({ viec: 'cap-bac', ids: (params.get('em') ?? '').split(',').map(Number).filter((x) => x > 0) });
     if (moGi || params.get('loc')) {
-      const p = new URLSearchParams(params); p.delete('mo'); p.delete('xl'); p.delete('loc');
+      const p = new URLSearchParams(params); p.delete('mo'); p.delete('xl'); p.delete('loc'); p.delete('em');
       setParams(p, { replace: true });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -98,14 +99,17 @@ export function ClassYThucCard({ classId, thuong = false }: { classId: number; t
   /* Ghi nhận là việc ngắn: làm ngay từ thanh, không panel; Hoàn tác = Bỏ ghi nhận đúng các vi phạm vừa ghi nhận. */
   const ghiNhanLo = async () => {
     setBusyLo(true);
+    const tatCa: KqEm[] = [];
     try {
-      const r = await api.post<{ em: KqEm[] }>(`/classes/${classId}/y-thuc/lo/ghi-nhan`, { studentIds: daChon.filter((x) => x.ghiNhan.duoc).map((x) => x.studentId) });
-      setGhiNhanKq(r.em);
-      const loi = r.em.filter((x) => !x.ok);
+      await guiTheoLo(daChon.filter((x) => x.ghiNhan.duoc).map((x) => x.studentId), CO_LO['ghi-nhan'],
+        (lo) => api.post<{ em: KqEm[] }>(`/classes/${classId}/y-thuc/lo/ghi-nhan`, { studentIds: lo }), (em) => { tatCa.push(...em); setGhiNhanKq([...tatCa]); });
+    } catch (e: any) { toast.push('error', e.message); } finally {
+      setBusyLo(false);
+      const loi = tatCa.filter((x) => !x.ok);
       if (loi.length) toast.push('error', loi.map((x) => `${x.ten}: ${x.loi ? dichChu(x.loi) : ''}`).join(' · '));
       DUONG_LAM_MOI_Y_THUC.forEach((x) => invalidate(x));
       lamMoi();
-    } catch (e: any) { toast.push('error', e.message); } finally { setBusyLo(false); }
+    }
   };
   const hoanTacGhiNhan = async () => {
     const ok = (ghiNhanKq ?? []).filter((x) => x.ok && x.ids?.length);

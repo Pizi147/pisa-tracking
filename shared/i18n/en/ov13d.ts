@@ -38,4 +38,8 @@ export const EN_OV13D = {
   'Xác nhận cấp bậc · {n}': 'Confirm level · {n}',
   'Việc cho học viên đã chọn': 'Actions for selected students',
   '{n} đã chọn': '{n} selected',
+  'em đang Tạm dừng': 'student is on hold',
+  'Một lần tối đa {n} em.': 'At most {n} students at a time.',
+  'Chọn bậc đã xử lý: Chưa có xử lý vi phạm, Report 1 … WL 2.': 'Pick the level already actioned: No prior disciplinary action, Report 1 … WL 2.',
+  'Đang lưu… {a}/{b} em': 'Saving… {a}/{b} students',
 } satisfies Record<string, Dich>;

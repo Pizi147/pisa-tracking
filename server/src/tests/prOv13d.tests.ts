@@ -21,6 +21,7 @@ export async function runPrOv13dTests(t: YThucTestKit) {
   const lo: any = await import('../yThuc/lo.ts');
   const mywork: any = await import('../worklist/mywork.ts');
   const attachments: any = await import('../platform/attachments.ts');
+  const studentsSvc: any = await import('../students/students.ts');
   const LOP = 'MB FT 101';
   const cid = classId(LOP);
   const gvcn = P.coreTeacher;
@@ -100,6 +101,8 @@ export async function runPrOv13dTests(t: YThucTestKit) {
     assert(kq(r, huy).ok && kq(r, huy).ids.length === 1 && kq(r, lan).ok && kq(r, lan).ids.length === 2, JSON.stringify(r));
     assert(!kq(r, an).ok && /bắt buộc/.test(kq(r, an).loi.chu), 'em bắt buộc bị loại');
     assert(get('SELECT ghi_nhan_luc FROM violations WHERE id = ?', vHuy[0]).ghi_nhan_luc === TODAY, 'đã ghi nhận');
+    const lai = lo.loGhiNhan(gvcn, cid, { studentIds: [huy, lan] });   // rà #408 (3): mất phản hồi → gửi lại
+    assert(kq(lai, huy).ok && kq(lai, huy).ids.length === 1 && kq(lai, lan).ok, `gửi lại báo đã ghi nhận: ${JSON.stringify(lai)}`);
     xu.boGhiNhan(gvcn, huy, kq(r, huy).ids);
     assert(get('SELECT ghi_nhan_luc FROM violations WHERE id = ?', vHuy[0]).ghi_nhan_luc === null, 'Hoàn tác');
   }));
@@ -127,6 +130,26 @@ export async function runPrOv13dTests(t: YThucTestKit) {
     assert(xu.yThucHocVien(gvcn, moi).keTiep.nhan === 'Report 1', 'bậc 0 → lần kế Report 1');
     assert(!kq(lo.loCapBac(gvcn, cid, { em: [{ studentId: ql, bac: 4 }] }), ql).ok, 'GVCN không sửa em đã xử lý');
     assert(kq(lo.loCapBac(P.mbManager, cid, { em: [{ studentId: ql, bac: 4 }] }), ql).ok && get('SELECT bac FROM y_thuc_khai_bac WHERE student_id = ?', ql).bac === 4, 'QL sửa được');
+    /* rà #408 (4): em Tạm dừng không khai mới (như khaiDuoc) */
+    const td = moiEm();
+    studentsSvc.setStudentStatus(P.admin, td, 'inactive', TODAY, 'Tạm dừng thử cấp bậc lô');
+    const dTd = lo.loYThucLop(gvcn, cid).em.find((x: any) => x.studentId === td);
+    assert(!dTd || (!dTd.capBac.duoc && /Tạm dừng/.test(dTd.capBac.lyDo.chu)), JSON.stringify(dTd));
+    assert(!kq(lo.loCapBac(gvcn, cid, { em: [{ studentId: td, bac: 0 }] }), td).ok, 'em Tạm dừng không lưu');
     assert(maLoi(() => lo.loCapBac(gvcn, cid, { em: [{ studentId: moi, bac: 9 }] })) === 400 || !kq(lo.loCapBac(gvcn, cid, { em: [{ studentId: moi, bac: 9 }] }), moi).ok, 'bậc ngoài 0–6 bị từ chối');
+  }));
+
+  /* Rà planning #408: lô chạy trên Netlify (~7,5 s, Turso ~20–50 ms/câu) — khoá số câu SQL mỗi em để một lời gọi web (≤ 4 em xử lý · ≤ 12 em cấp bậc) vừa giờ. */
+  const { soCauSql } = await import('../platform/nguCanhRequest.ts');
+  const dem = (fn: () => unknown) => { const truoc = soCauSql(); fn(); return soCauSql() - truoc; };
+  await checkAsync('OV13d-6 · Tốc độ: Xác nhận xử lý ≤ 16 câu / em (lô 4 em, mỗi em 3 vi phạm) · Xác nhận cấp bậc ≤ 6 câu / em (lô 12 em)', () => thu(() => {
+    const ems = Array.from({ length: 4 }, () => moiEm());
+    for (const sid of ems) nVp(sid, 3);
+    const nXl = dem(() => { const r = lo.loXuLy(gvcn, cid, { em: ems.map((studentId) => ({ studentId })), performedOn: TODAY, note: MO_TA, idempotencyKey: 'ov13d-6' }); assert(r.em.every((x: any) => x.ok), JSON.stringify(r)); });
+    const moi = Array.from({ length: 12 }, () => moiEm());
+    const nCb = dem(() => { const r = lo.loCapBac(gvcn, cid, { em: moi.map((studentId) => ({ studentId, bac: 0 })) }); assert(r.em.every((x: any) => x.ok), JSON.stringify(r)); });
+    console.log(`      đo: xử lý ${nXl} câu / 4 em = ${(nXl / 4).toFixed(1)} · cấp bậc ${nCb} câu / 12 em = ${(nCb / 12).toFixed(1)}`);
+    assert(nXl / 4 <= 16, `xử lý ${(nXl / 4).toFixed(1)} câu / em`);
+    assert(nCb / 12 <= 6, `cấp bậc ${(nCb / 12).toFixed(1)} câu / em`);
   }));
 }

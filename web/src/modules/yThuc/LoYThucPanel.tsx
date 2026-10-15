@@ -18,6 +18,14 @@ export type ViecLo = 'xu-ly' | 'ghi-nhan' | 'cap-bac';
 const MO_TA_MIN = 10;
 const lamMoi = () => DUONG_LAM_MOI_Y_THUC.forEach((d) => invalidate(d));
 const duocCua = (e: EmLo, viec: ViecLo) => (viec === 'xu-ly' ? e.xuLy : viec === 'ghi-nhan' ? e.ghiNhan : e.capBac);
+/**
+ * Rà #408: một lời gọi phải xong trong ~7,5 s (Netlify) — chia em thành lô nhỏ, gửi lần lượt, tự gửi tiếp (xử lý ~15 câu SQL / em, cấp bậc /
+ * ghi nhận ~6 câu / em). Lời gọi hỏng (mạng, 503) thì dừng; em chưa gửi vẫn còn để Thử lại.
+ */
+export const CO_LO: Record<ViecLo, number> = { 'xu-ly': 4, 'ghi-nhan': 12, 'cap-bac': 12 };
+export async function guiTheoLo(ids: readonly number[], co: number, gui: (lo: number[]) => Promise<{ em: KqEm[] }>, moiLo: (em: KqEm[]) => void) {
+  for (let i = 0; i < ids.length; i += co) moiLo((await gui(ids.slice(i, i + co))).em);
+}
 /** Chip bậc của bảng Xác nhận cấp bậc: bậc 0 "Chưa có xử lý vi phạm" + sáu bậc mạch chính (khai tối đa WL 2). */
 const CHIP_BAC = [BAC_0_NHAN, ...THANG.map((k) => nhanLoaiXuLy(k))];
 
@@ -52,6 +60,7 @@ export function LoYThucPanel({ classId, lop, viec, studentIds, han, onClose, onD
   const [busy, setBusy] = useState(false);
   const [loiLuu, setLoiLuu] = useState<string | null>(null);
   const [kq, setKq] = useState<Map<number, KqEm>>(new Map());
+  const [tienDo, setTienDo] = useState<{ xong: number; tong: number } | null>(null);
   const lf = useLoiForm();
   const idempotencyKey = useMemo(() => `y-thuc-lo:${classId}:${Date.now()}:${Math.random().toString(36).slice(2, 8)}`, [classId]);
 
@@ -70,15 +79,18 @@ export function LoYThucPanel({ classId, lop, viec, studentIds, han, onClose, onD
   if (!ds || !data) return <KhungPanel tieuDe={tieuDe} onDong={onClose}><div className="pt-3"><Skeleton rows={4} /></div></KhungPanel>;
 
   const moiNhat = (e: EmLo) => data.em.find((x) => x.studentId === e.studentId) ?? e;
-  const duoc = ds.filter((e) => duocCua(e, viec).duoc);
-  const khongDua = ds.filter((e) => !duocCua(e, viec).duoc);
   const daXong = (sid: number) => !!kq.get(sid)?.ok;
+  /* Rà #408 (2): em làm được lúc mở VÀ theo dữ liệu mới nhất (người khác vừa xử lý → xuống "Không đưa vào", không tick, không Thử lại mãi). */
+  const duocNay = (e: EmLo) => daXong(e.studentId) || (duocCua(e, viec).duoc && duocCua(moiNhat(e), viec).duoc);
+  const duoc = ds.filter(duocNay);
+  const khongDua = ds.filter((e) => !duocNay(e));
+  const lyDoCua = (e: EmLo) => duocCua(moiNhat(e), viec).lyDo ?? duocCua(e, viec).lyDo;
   const doi = (sid: number) => setTick((s) => { const n = new Set(s); if (n.has(sid)) n.delete(sid); else n.add(sid); return n; });
   /* Cấp bậc: em gửi = em mở khoá đã chọn bậc khác bậc đã khai. */
   const guiCapBac = duoc.filter((e) => !daXong(e.studentId) && bac[e.studentId] !== undefined && bac[e.studentId] !== e.capBac.khai);
   const gui = viec === 'cap-bac' ? guiCapBac.map((e) => e.studentId) : duoc.filter((e) => tick.has(e.studentId) && !daXong(e.studentId)).map((e) => e.studentId);
   const soOk = [...kq.values()].filter((x) => x.ok).length;
-  const soLoi = [...kq.values()].filter((x) => !x.ok).length;
+  const soLoi = duoc.filter((e) => kq.get(e.studentId)?.ok === false).length;
 
   const canChung = viec === 'xu-ly' && gui.some((sid) => !rieng[sid]?.trim());
   const loi = viec === 'xu-ly' ? dsLoi([
@@ -91,18 +103,27 @@ export function LoYThucPanel({ classId, lop, viec, studentIds, han, onClose, onD
     lf.bam();
     if (!gui.length || loi.length || loiNguoi) return;
     setBusy(true); setLoiLuu(null);
+    let coOk = false;
+    let xong = 0;
+    setTienDo({ xong, tong: gui.length });
     try {
       const duong = `/classes/${classId}/y-thuc/lo/${viec}`;
-      const r = await api.post<{ em: KqEm[] }>(duong, viec === 'xu-ly' ? {
-        em: gui.map((sid) => ({ studentId: sid, note: rieng[sid]?.trim() || undefined, bacDaThay: moiNhat(ds.find((e) => e.studentId === sid)!).bac })),
+      await guiTheoLo(gui, CO_LO[viec], (lo) => api.post<{ em: KqEm[] }>(duong, viec === 'xu-ly' ? {
+        em: lo.map((sid) => ({ studentId: sid, note: rieng[sid]?.trim() || undefined, bacDaThay: moiNhat(ds.find((e) => e.studentId === sid)!).bac })),
         performedOn: ngayTh, ...nguoiThanhPayload(nguoi), note: moTa.trim(), idempotencyKey,
-      } : viec === 'ghi-nhan' ? { studentIds: gui } : { em: gui.map((sid) => ({ studentId: sid, bac: bac[sid] })) });
-      setKq((m) => { const n = new Map(m); for (const x of r.em) n.set(x.studentId, x); return n; });
-      if (r.em.some((x) => x.ok)) { onDone?.(); lamMoi(); reload(); }
+      } : viec === 'ghi-nhan' ? { studentIds: lo } : { em: lo.map((sid) => ({ studentId: sid, bac: bac[sid] })) }), (em) => {
+        setKq((m) => { const n = new Map(m); for (const x of em) n.set(x.studentId, x); return n; });
+        coOk ||= em.some((x) => x.ok);
+        xong += em.length;
+        setTienDo({ xong, tong: gui.length });
+      });
       setMoRieng(null);
     } catch (e: any) {
       setLoiLuu(e instanceof ApiError ? dich(e.message) : String(e?.message ?? e));
-    } finally { setBusy(false); }
+    } finally {
+      setBusy(false); setTienDo(null);
+      if (coOk) { onDone?.(); lamMoi(); reload(); }
+    }
   };
 
   /* Ghi nhận bấm nhầm: bỏ ghi nhận đúng các vi phạm vừa ghi nhận của từng em (đường một em sẵn có). */
@@ -126,7 +147,8 @@ export function LoYThucPanel({ classId, lop, viec, studentIds, han, onClose, onD
     <button type="button" className="btn btn-primary min-h-[40px] px-4 font-bold" disabled={busy || (!xongHet && !gui.length)}
       onClick={xongHet ? onClose : () => void luu()}>{busy ? t('Đang lưu…') : nhanNut}</button>
   );
-  const dongTren = busy || loiLuu ? <TrangThaiLuu tt={busy ? 'dang' : 'loi'} loi={loiLuu} onThuLai={() => void luu()} />
+  const dongTren = busy && tienDo ? <span role="status" className="font-semibold text-slate-300">{t('Đang lưu… {a}/{b} em', { a: tienDo.xong, b: tienDo.tong })}</span>
+    : busy || loiLuu ? <TrangThaiLuu tt={busy ? 'dang' : 'loi'} loi={loiLuu} onThuLai={() => void luu()} />
     : soOk || soLoi ? (
       <span role="status" className="flex w-full flex-wrap items-center gap-2">
         {soOk > 0 && <span className="font-semibold text-ok">✓ {viec === 'ghi-nhan'
@@ -178,13 +200,14 @@ export function LoYThucPanel({ classId, lop, viec, studentIds, han, onClose, onD
   /** Bảng Xác nhận cấp bậc: một hàng một em, chip bậc 0 … WL 2; em khoá hiện bậc + lý do. */
   const hangBac = (e: EmLo) => {
     const k = kq.get(e.studentId);
-    const khoa = !e.capBac.duoc || !!k?.ok;
+    const khoa = !duocNay(e) || !!k?.ok;
+    const lyDo = lyDoCua(e);
     const dangChon = khoa ? (k?.ok ? bac[e.studentId] : e.capBac.khai ?? (e.bac > 0 ? e.bac : undefined)) : bac[e.studentId];
     return (
       <li key={e.studentId} className="flex flex-col gap-1.5 py-2.5">
         <span className="text-sm font-semibold text-slate-100">
           {k?.ok && <span aria-hidden className="mr-1 text-ok">✓</span>}{e.ten}
-          {!e.capBac.duoc && e.capBac.lyDo && <small className="ml-2 font-normal text-slate-400">{dichChu(e.capBac.lyDo)}</small>}
+          {!duocNay(e) && lyDo && <small className="ml-2 font-normal text-slate-400">{dichChu(lyDo)}</small>}
         </span>
         <div className="flex flex-wrap gap-1.5" role="group" aria-label={t('Cấp bậc của {ten}', { ten: e.ten })}>
           {CHIP_BAC.map((nhan, i) => (
@@ -240,7 +263,7 @@ export function LoYThucPanel({ classId, lop, viec, studentIds, han, onClose, onD
               {khongDua.map((e) => (
                 <div key={e.studentId} className="contents">
                   <dt className="text-slate-300">{e.ten}</dt>
-                  <dd className="m-0 text-slate-400 max-sm:mb-1.5">{duocCua(e, viec).lyDo ? dichChu(duocCua(e, viec).lyDo!) : ''}</dd>
+                  <dd className="m-0 text-slate-400 max-sm:mb-1.5">{lyDoCua(e) ? dichChu(lyDoCua(e)!) : ''}</dd>
                 </div>
               ))}
             </dl>
