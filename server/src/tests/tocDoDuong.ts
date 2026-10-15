@@ -812,6 +812,10 @@ export const TRAN_GHI_LO = {
   suaKetQuaChu: 76,   // đo 58 câu (gồm kiểm quyền PA) → max(58 + 10, ⌈58 × 1,3⌉)
   /** OV-7b: GET /followups/:id/sua — điền sẵn form Sửa kết quả (PA như trước lần ghi, giá trị cũ, câu chặn). */
   moSuaKetQua: 18,   // đo 8 câu → max(8 + 10, ⌈8 × 1,3⌉)
+  /** OV-13b: POST /interventions/:id/de-xuat-doi-pa — PA mới chờ duyệt + thẻ "Đề xuất PA" + PA gốc trỏ PA mới, trả Case. */
+  deXuatDoiPa: 123,   // đo 94 câu (~40 là `caseDetail` trả về) → max(94 + 10, ⌈94 × 1,3⌉)
+  /** OV-13b: POST /followups/:id/hoan-tac — đảo lần ghi kết quả vừa lưu (như Sửa đảo) + rút đề xuất cùng lần, trả Case. */
+  hoanTacKetQua: 99,   // đo 76 câu → max(76 + 10, ⌈76 × 1,3⌉)
   /** POST /notifications/doc-het — một câu UPDATE (S6F-a 10e) + phiên/quyền. PR-Dọn (9d): trần đặt sau khi đo. */
   docHet: 19,   // đo 9 câu → max(9 + 10, ⌈9 × 1,3⌉)
   /** POST /intake/commit — 35 em lớp FT (lịch MT mặc định, có em "Đã thi tới MT", ngày thi, tuần riêng). Trước PR-TOC 1949, sau 44 (49 sau gộp PR-MON + rà #121: đọc chương trình lớp, đọc lại khoá trong giao dịch). */

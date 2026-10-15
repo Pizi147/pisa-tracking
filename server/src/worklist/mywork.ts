@@ -17,7 +17,7 @@ import { attemptHref, listAttempts } from '../fasttrack/attempts.ts';
 import { viecBanGiao } from '../classes/banGiao.ts';
 import { lopChoChotLoTrinh } from '../classes/lenhChuyen.ts';
 import { canSeeBoard, myMgmtTasks } from './mgmttasks.ts';
-import { CO_THE_KHONG_THEO_DOI, LA_CASE_SOS, NOT_UNCONFIRMED_PRESET, UNCONFIRMED_PRESET, sosCaseStateMany } from '../cases/sosState.ts';
+import { CHO_DOI_PA, CO_THE_KHONG_THEO_DOI, LA_CASE_SOS, NOT_UNCONFIRMED_PRESET, UNCONFIRMED_PRESET, sosCaseStateMany } from '../cases/sosState.ts';
 import { quyenBoTro } from '../cases/boTro.ts';
 import { boKetQuaChoMiniTest, emXetLaiLoTrinh, nguoiGiuMiniTest, tyLeTongLo } from '../normal/cuoiKhoa.ts';
 import { dongPhoiHopLop, myCoordinationLines } from '../yThuc/phoiHop.ts';
@@ -812,7 +812,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   const xacNhanPa = !co('xac_nhan_pa') ? [] : conn
     .prepare(
       `SELECT ${cotCase}, iv.id AS iv_id FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id ${noiCase}
-        WHERE ${UNCONFIRMED_PRESET('iv')} AND iv.status = 'planned' AND iv.kind != 'bo_tro' AND sc.status != 'done' AND ${HV_DANG_HOC_SQL('s')}   /* PA bổ trợ chờ kế hoạch, không chờ "Xác nhận PA" (M8) */
+        WHERE ${UNCONFIRMED_PRESET('iv')} AND iv.status = 'planned' AND iv.kind != 'bo_tro' AND NOT ${CHO_DOI_PA('iv')} AND sc.status != 'done' AND ${HV_DANG_HOC_SQL('s')}   /* PA bổ trợ chờ kế hoạch, không chờ "Xác nhận PA" (M8) */
           AND EXISTS (SELECT 1 FROM case_issues ci WHERE ci.case_id = sc.id AND ci.role = 'primary')
           AND NOT ${CO_THE_KHONG_THEO_DOI('sc')}   /* OV-12c: Không cần theo dõi mở ở bước này — thẻ đang chờ thì việc ở Quản lý */`,
     )

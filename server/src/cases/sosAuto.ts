@@ -16,7 +16,7 @@ import { followUntilAfter } from './sos.ts';
 import { mondayOf } from '../platform/week.ts';
 import { taoYeuCau } from '../duyet/yeuCau.ts';
 import { dongBoBaoPhCuaBai } from '../yThuc/phoiHop.ts';
-import { LA_CASE_MT, PA_QUY_CHE_CHUA_GHI, UNCONFIRMED_PRESET, dongBoTrangThaiCase, sosCaseState } from './sosState.ts';
+import { CHO_DOI_PA, LA_CASE_MT, PA_QUY_CHE_CHUA_GHI, UNCONFIRMED_PRESET, dongBoTrangThaiCase, sosCaseState } from './sosState.ts';
 import { ghiBanDieuChinh, nguoiSauSua, soBuoiMoi } from './planRevisions.ts';
 import { chayPaBoTro, mocCuoiKhoa } from './boTro.ts';
 
@@ -102,7 +102,7 @@ export function resyncUnconfirmedPresets(
       `SELECT iv.id, iv.kind, iv.description, iv.moc_quy_che, iv.performer_user_id, iv.performer_name, sc.category
          FROM case_interventions iv
          JOIN sos_cases sc ON sc.id = iv.case_id
-        WHERE ${PA_QUY_CHE_CHUA_GHI('iv')} AND ${UNCONFIRMED_PRESET('iv')} AND iv.status = 'planned' AND sc.status != 'done'
+        WHERE ${PA_QUY_CHE_CHUA_GHI('iv')} AND ${UNCONFIRMED_PRESET('iv')} AND iv.status = 'planned' AND NOT ${CHO_DOI_PA('iv')} AND sc.status != 'done'
           AND EXISTS (SELECT 1 FROM case_milestones m WHERE m.case_id = sc.id AND m.kind IN ('opened', 'repeat') AND m.attempt_id = ?)`,
     )
     .all(attempt.id) as any[];
@@ -385,6 +385,8 @@ export function xacNhanPaQuyChe(p: Principal, interventionId: number, input: {
   performerSelf?: boolean; performerUserId?: number | null; performerName?: string | null; description?: string | null;
   /** PR-PA (§8): Số buổi — cùng luật Thêm PA (loại có Số buổi, 1–60; không gửi = giữ). */
   soBuoi?: unknown;
+  /** OV-13b (mockup §9 "Bắt đầu *"): ngày PA chạy — không gửi = hôm nay; trong 14 ngày trước … 30 ngày sau. */
+  startedDate?: unknown;
 }, o: XacNhanTrongLo = {}) {
   const conn = db();
   const iv = conn.prepare(`SELECT iv.*, sc.status AS case_status, sc.cycle_id AS case_cycle_id FROM case_interventions iv
@@ -409,7 +411,12 @@ export function xacNhanPaQuyChe(p: Principal, interventionId: number, input: {
   /* PR-PA (§8): như Sửa PA — không gửi khoá người = giữ người máy gán. */
   const { performerUserId, performerName } = nguoiSauSua(p, iv, input);
   const soBuoi = soBuoiMoi(iv, input.soBuoi, 0);
-  const today = demoToday();
+  const homNay = demoToday();
+  if (input.startedDate != null && (typeof input.startedDate !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(input.startedDate)
+      || input.startedDate < addDays(homNay, -14) || input.startedDate > addDays(homNay, 30))) {
+    throw badRequest('Ngày bắt đầu không hợp lệ — chọn trong khoảng 2 tuần trước tới 30 ngày tới.');
+  }
+  const today = (input.startedDate as string | undefined) ?? homNay;
   const luot = luotSinhPa(iv);
   const moc = iv.moc_quy_che
     ? mocQuyChe(iv.moc_quy_che, { ngayXacNhan: today, nextMtSunday: luot ? followUntilAfter(luot) : null, examDate: examDateOf(iv.case_cycle_id) })
@@ -422,7 +429,7 @@ export function xacNhanPaQuyChe(p: Principal, interventionId: number, input: {
     if (description !== iv.description || performerUserId !== (iv.performer_user_id ?? null) || performerName !== (iv.performer_name ?? null)
         || soBuoi !== (iv.so_buoi ?? null)) {
       ghiBanDieuChinh({
-        iv, source: 'confirm_edit', on: today, actorUserId: p.userId, followupId: null, reason: CONFIRM_EDIT_REASON,
+        iv, source: 'confirm_edit', on: homNay, actorUserId: p.userId, followupId: null, reason: CONFIRM_EDIT_REASON,
         /* Mốc quy chế, ngày bắt đầu không phải "điều chỉnh". */
         after: { description, performerUserId, performerName, followupDue: iv.followup_due ?? null, soBuoi, startedDate: iv.started_date ?? null },
       });
@@ -430,7 +437,7 @@ export function xacNhanPaQuyChe(p: Principal, interventionId: number, input: {
     dongBoTrangThaiCase(iv.case_id);
     const c = conn.prepare('SELECT student_id, cycle_id FROM sos_cases WHERE id = ?').get(iv.case_id) as any;
     addJourney({
-      studentId: c.student_id, cycleId: c.cycle_id ?? null, eventType: 'intervention', eventDate: today,
+      studentId: c.student_id, cycleId: c.cycle_id ?? null, eventType: 'intervention', eventDate: homNay,
       title: `Xác nhận PA: ${description.slice(0, 60)}`, detail: null,
       refTable: 'case_interventions', refId: interventionId, createdBy: p.userId, dedupKey: `preset-confirm:${interventionId}`,
     });

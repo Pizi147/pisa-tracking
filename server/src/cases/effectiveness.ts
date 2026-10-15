@@ -267,7 +267,7 @@ function shapePlan(r: any) {
     kind: r.kind as string,
     category: (r.category ?? categoryOf(r.topic)) as string | null,
     /* Bị thay thế VẪN TÍNH nếu có kết quả cuối — lý do dừng là chuyện khác. */
-    supersededBy: r.closed_reason === 'superseded',
+    supersededBy: r.closed_reason === 'superseded' || r.closed_reason === 'doi_pa',   // OV-13b: Đổi PA — khép không kết luận
     outcome: kq.outcome,
     group: outcomeGroup(kq.outcome),
     /** Ngày phương án xảy ra — căn cứ để gán đơn vị (F03). */

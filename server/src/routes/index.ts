@@ -20,6 +20,7 @@ import * as accessSvc from '../yThuc/access.ts';
 import * as xuLySvc from '../yThuc/xuLy.ts';
 import * as phoiHopSvc from '../yThuc/phoiHop.ts';
 import * as sosAutoSvc from '../cases/sosAuto.ts';
+import * as doiPaSvc from '../cases/doiPa.ts';
 import { bangYThucLop } from '../yThuc/board.ts';
 import { maybeSimulateReadError, maybeSimulateSaveFailure, pInt, qInt, qStr, wrap } from './helpers.ts';
 
@@ -1802,6 +1803,11 @@ api.post('/interventions/:id/xac-nhan-pa', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return sosAutoSvc.xacNhanPaQuyChe(principalOf(req), pInt(req, 'id'), (req.body ?? {}) as any);
 }));
+/* OV-13b: Đề xuất PA khác cho PA mặc định — thẻ "Đề xuất PA" (QL duyệt); rút = `POST /yeu-cau/:id/rut`. */
+api.post('/interventions/:id/de-xuat-doi-pa', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return doiPaSvc.deXuatDoiPa(principalOf(req), pInt(req, 'id'), (req.body ?? {}) as any);
+}));
 api.post('/cases/:id/dismiss', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return sosAutoSvc.guiKhongTheoDoi(principalOf(req), pInt(req, 'id'), (req.body ?? {}) as any);
@@ -1921,6 +1927,11 @@ api.get('/followups/:id/sua', requireAuth, wrap((req) => {
 api.post('/followups/:id/sua', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return caseSvc.suaKetQua(principalOf(req), pInt(req, 'id'), req.body ?? {});
+}));
+/** OV-13b: Hoàn tác lần ghi kết quả vừa lưu (cùng quyền Sửa). */
+api.post('/followups/:id/hoan-tac', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return caseSvc.hoanTacKetQua(principalOf(req), pInt(req, 'id'));
 }));
 /** OV-7b: sửa "Xem lại sau hỗ trợ" lần mới nhất (kết quả quan sát, ghi chú, ngày) — người đã ghi + Quản lý. */
 api.patch('/followups/:id', requireAuth, wrap((req) => {

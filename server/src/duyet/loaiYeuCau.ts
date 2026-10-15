@@ -14,6 +14,7 @@ import {
   type TruongDeXuat,
 } from '../../../shared/domain/index.ts';
 import { caseTitleOf, huyQuyetDinhPa, respondToPlan } from '../cases/cases.ts';
+import { apDungDoiPa, duLieuDoiPa, rutDoiPa, tenLoaiPa } from '../cases/doiPa.ts';
 import { apDungKhongTheoDoi, rutKhongTheoDoi, suaKhongTheoDoi, tuChoiKhongTheoDoi } from '../cases/sosAuto.ts';
 import { chuTheDoiLan2, decideAbsenceMove } from '../fasttrack/absence.ts';
 import { attemptHref } from '../fasttrack/attempts.ts';
@@ -126,9 +127,11 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
   /* ------------------------------------------------------------ PR-DUYET · Đề xuất PA (T43) */
   {
     loai: 'de_xuat_pa',
-    khiDuyet: (p, yc, v) => { respondToPlan(p, yc.doi_tuong_id, { decision: 'approved', note: v.ghiChu }, { khongTraCase: true }); },
-    khiTuChoi: (p, yc, lyDo) => { respondToPlan(p, yc.doi_tuong_id, { decision: 'declined', note: lyDo }, { khongTraCase: true }); },
-    khiHuy: (p, yc) => { huyQuyetDinhPa(p, yc.doi_tuong_id); },
+    /* OV-13b: thẻ "Đề xuất PA khác" (`du_lieu.thayPaId`) — cùng đường duyệt, rồi hệ quả lên PA gốc (`apDungDoiPa`). */
+    khiDuyet: (p, yc, v) => { respondToPlan(p, yc.doi_tuong_id, { decision: 'approved', note: v.ghiChu }, { khongTraCase: true }); apDungDoiPa(yc, 'duyet'); },
+    khiTuChoi: (p, yc, lyDo) => { respondToPlan(p, yc.doi_tuong_id, { decision: 'declined', note: lyDo }, { khongTraCase: true }); apDungDoiPa(yc, 'tra'); },
+    khiHuy: (p, yc) => { huyQuyetDinhPa(p, yc.doi_tuong_id); apDungDoiPa(yc, 'huy'); },
+    khiRut: (_p, yc) => { rutDoiPa(yc); },
     huyDuoc: (conn, ds) => {
       const ids = ds.map((y) => y.doi_tuong_id);
       if (!ids.length) return new Set();
@@ -144,11 +147,30 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
       lyDo: 'Case đã đóng hoặc PA không còn chờ duyệt',
     },
     nap: (conn, ds) => napTheoDoiTuong(conn, ds,
-      `SELECT iv.id, iv.kind, iv.case_id, sc.topic, a.attempt_no, a.kind AS attempt_kind
+      `SELECT iv.id, iv.kind, iv.case_id, iv.description, sc.topic, a.attempt_no, a.kind AS attempt_kind, COALESCE(u.full_name, iv.performer_name) AS nguoi_day
          FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
+         LEFT JOIN users u ON u.id = iv.performer_user_id
         WHERE iv.id IN (?)`),
     moTa: (yc, ngu) => {
       const x = ngu.them.get(yc.id);
+      const doi = duLieuDoiPa(yc);
+      if (doi) {
+        /* OV-13b (mockup §8–§9): "Đổi PA · Writing Task 1" — PA gốc → PA mới · người dạy, nội dung, lý do, "Nếu duyệt: …". */
+        const goc = tenLoaiPa(doi.goc.kind);
+        const moi = x ? tenLoaiPa(x.kind) : 'PA mới';
+        return {
+          tieuDe: `${doi.goc.chay ? 'Đổi PA' : 'PA khác'}${x?.topic ? ` · ${caseTopicLabel(x.topic)}` : ''}`,
+          phu: x ? nhanDotNgan(x.attempt_kind, x.attempt_no) : null,
+          dong: [
+            `${goc}${doi.goc.chay ? '' : ' (quy chế, chưa chạy)'} → ${[moi, x?.nguoi_day].filter(Boolean).join(' · ')}`,
+            ...(x?.description ? [`“${x.description}”`] : []),
+            `${nguoiXin(yc, ngu)} · Lý do: “${doi.lyDo}”`,
+            ...(x ? [] : ['PA đã xoá']),
+          ],
+          neuDuyet: doi.goc.chay ? `${goc} kết thúc (Đổi PA) · ${moi} chạy từ ngày duyệt` : `${moi} chạy từ ngày duyệt · ${goc} bỏ (Đổi PA)`,
+          mo: yc.hoc_vien_id && x ? duongHoSoHocVien(yc.hoc_vien_id, { caseId: x.case_id }) : x ? undefined : '',
+        };
+      }
       const moTa = yc.ly_do || (x ? INTERVENTION_KIND_LABEL[x.kind as InterventionKind] ?? 'PA học thuật' : 'PA học thuật');
       return {
         tieuDe: `Đề xuất PA${x?.topic ? ` · ${caseTopicLabel(x.topic)}` : ''}`,

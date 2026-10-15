@@ -74,7 +74,7 @@ export function tenCaseSos(x: { mt: number | null; giua: string; sos: number | n
 }
 
 /** `cho-nguyen-nhan` = Progress chờ "Xác nhận Case"; `cho-nhan-xet` = Case MT cũ mà ô chưa có nhận xét (OV-12c). */
-export type TrangThaiCaseV4 = 'cho-nguyen-nhan' | 'cho-nhan-xet' | 'cho-duyet-khong-theo-doi' | 'cho-xac-nhan-pa' | 'dang-lam' | 'xong' | 'huy-khong-theo-doi' | 'he-thong-dong' | 'rut-sua-diem';
+export type TrangThaiCaseV4 = 'cho-nguyen-nhan' | 'cho-nhan-xet' | 'cho-duyet-khong-theo-doi' | 'cho-xac-nhan-pa' | 'cho-duyet-doi-pa' | 'dang-lam' | 'xong' | 'huy-khong-theo-doi' | 'he-thong-dong' | 'rut-sua-diem';
 
 export type CaseV4Input = {
   status: 'open' | 'in_progress' | 'done'; fromSos: boolean; hasCause: boolean; dismissed: boolean; systemClosed: boolean;
@@ -85,6 +85,8 @@ export type CaseV4Input = {
   rutSuaDiem?: boolean;
   /** OV-12c: Case SOS Mock Test — nguyên nhân lấy từ nhận xét của ô; thiếu = "Chờ ghi nhận xét", không phải "Xác nhận Case". */
   laMt?: boolean;
+  /** OV-13b: PA quy chế chưa xác nhận đã gửi "Đề xuất PA khác" — chờ Quản lý duyệt (PA gốc chưa chạy). */
+  choDoiPa?: boolean;
 };
 
 /** MỘT nhãn trạng thái cho một Case (§7.3) — xét từ trên xuống. */
@@ -98,8 +100,20 @@ export function trangThaiCaseV4(c: CaseV4Input, homNay: string): { k: TrangThaiC
   if (c.fromSos && !c.hasCause) return c.laMt ? { k: 'cho-nhan-xet', t: tt, chu: t('Chờ ghi nhận xét'), han: c.hanXacNhan }
     : { k: 'cho-nguyen-nhan', t: tt, chu: t('Chờ xác nhận Case'), han: c.hanXacNhan };
   if (c.fromSos && c.coPaChoXacNhan) return { k: 'cho-xac-nhan-pa', t: tt, chu: t('Chờ xác nhận PA'), han: c.hanXacNhan };
+  if (c.fromSos && c.choDoiPa) return { k: 'cho-duyet-doi-pa', t: 'cho-duyet', chu: t('Chờ duyệt đổi PA'), han: null };
   return { k: 'dang-lam', t: 'dang-lam', chu: t('Đang làm'), han: null };
 }
+
+/**
+ * ĐỀ XUẤT PA KHÁC (OV-13b, mockup OV-13 §8–§9): PA mặc định (quy chế · Bổ trợ) đổi sang loại khác qua Quản lý duyệt. Loại đổi được = PA hỗ trợ
+ * thường (trừ loại của PA gốc); lý do ≥ `DOI_PA_LY_DO_TOI_THIEU` ký tự.
+ */
+export const LOAI_PA_DOI = ['self_study', 'tutor', 'teaching_adjust', 'extra_homework'] as const;
+export const DOI_PA_LY_DO_TOI_THIEU = 10;
+export const laPaMacDinh = (pa: { preset?: boolean | number | null; kind: string }) => pa.preset === true || pa.preset === 1 || pa.kind === 'bo_tro';
+
+/** OV-13b: GHI NHANH trên dòng (Tiến triển + Nhận xét, Quyết định mặc định Giữ nguyên) — cùng thân `POST /interventions/:id/result` với panel. */
+export const ketQuaNhanh = (outcome: string, note: string) => ({ decision: 'keep' as const, outcome, note: note.trim() });
 
 /** J9: bỏ phần mốc máy gán ở đuôi tên PA (`Tutor · đến lúc thi` → `Tutor`); tên người dạy tự viết giữ nguyên. */
 export const tenPaGon = (ten: string) => ten.replace(/ · (đến lúc thi|đến MT\d+|1 tháng)$/, '');

@@ -9370,6 +9370,9 @@ await runPrOv12eTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P,
 // ==================================================================== HOTFIX 15/10 (nhận xét sau hoàn tất qua HTTP · Sửa Case MT không Mô tả)
 const { runPrHfTests } = await import('./prHf.tests.ts');
 await runPrHfTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== OV-13b (Đề xuất PA khác · Xác nhận PA Nội dung + Bắt đầu · ghi nhanh · Hoàn tác)
+const { runPrOv13bTests } = await import('./prOv13b.tests.ts');
+await runPrOv13bTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`
