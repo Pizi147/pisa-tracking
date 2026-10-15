@@ -131,6 +131,8 @@ export function monViPham(ct: string | null | undefined): readonly string[] {
  * WL 3 và mọi phương án khác chỉ đi bằng đề xuất QL duyệt (`NGOAI_THANG`).
  */
 export const THANG = ['report_1', 'report_2', 'wl_1', 'report_4_meeting', 'report_5', 'wl_2'] as const;
+/** OV-13d (Q5): tên bậc 0 khi Xác nhận cấp bậc — em chưa từng bị xử lý trước khi dùng web. */
+export const BAC_0_NHAN = t('Chưa có xử lý vi phạm');
 /** Bậc đầu tiên sau `THANG` (Report 7). */
 export const BAC_REPORT_TIEP = THANG.length + 1;
 /** Ngoài thang (V4-9): luôn cần QL, KHÔNG đẩy bậc (T28, M-11). WL 3 nằm ở đây từ 02/10. */
