@@ -894,13 +894,16 @@ check('TD3-b-2 · QL ×3: /classes/{lopFT}/overview ≤ 50 % (5 829), /hoc-vien-
  * 15/10 OV-13c: chụp lại 7 băm — đổi CÓ CHỦ Ý: Nhập điểm gom theo tuần thi (khoá `|p{tuần}|`, dòng phụ có mã tuần), việc Case SOS FT + Nhập điểm
  * thêm `tuanThi` / `sos` / `pa` / `periodId` / `kind`. Đã so JSON mã trước (main 0359276) ↔ sau trên bộ demo, 5 vai × Của tôi / Tất cả: việc khác
  * TRÙNG hoàn toàn (trừ trường mới), tổng số bài Nhập điểm không đổi.
+ * 15/10 OV-13g: thêm 'GVS toi' (GV Speaking MB FT 101 — chấm chéo). Đầu ra đổi CÓ CHỦ Ý chỉ ở GV dạy Speaking FT: thêm dòng "Speaking chấm chéo".
+ *   Đã so JSON mã trước (main a4f9c00) ↔ sau trên bộ demo, mọi tài khoản × Của tôi / Tất cả + QL xem GV 7/9/10: chỉ GV 9, 19 lệch; bỏ việc `|cc` thì
+ *   `items` + `dong` TRÙNG hoàn toàn. Số câu /my-work (×1): GV 9 58 → 58, GV 19 55 → 56. 10 băm cũ không đổi.
  */
 await checkAsync('TD4-a (×3) · Công việc trùng JSON ảnh chụp trước TD4 — 6 vai × Của tôi / Tất cả / Của một GV / lọc chi nhánh', async () => {
   const { myWork, viecCuaNguoi } = await import('../worklist/mywork.ts');
   const ANH: Record<string, string> = {
     'QL toi': '6671f11bb8e4d60c', 'QT toi': 'ad9ea8d503e7b56c', 'GVCN toi': '4f51ddef848eaf9e', 'GVBM toi': 'dd8afd71bacf9864',
     'GVCN_THUONG toi': '4f51ddef848eaf9e', 'ADMIN toi': '4ed1fc3fa34653f2', 'QL tat-ca': '053bec8fdb83e4e8', 'QT tat-ca': 'e1649bdac55ac5e9',
-    'QT tat-ca cn': 'c9e67f8750ca82fd', 'QL gvcn': '912708bfcda5b611',
+    'QT tat-ca cn': 'c9e67f8750ca82fd', 'QL gvcn': '912708bfcda5b611', 'GVS toi': 'c3069d14e7e2f2f1',
   };
   const p = (v: Vai) => loadPrincipal(USER[v]);
   const goc: [string, () => unknown][] = [
@@ -908,6 +911,7 @@ await checkAsync('TD4-a (×3) · Công việc trùng JSON ảnh chụp trước 
     ...(['QL', 'QT'] as const).map((v) => [`${v} tat-ca`, () => myWork(p(v), { nguoi: 'tat-ca' })] as [string, () => unknown]),
     ['QT tat-ca cn', () => myWork(p('QT'), { nguoi: 'tat-ca', branchId: CN })],
     ['QL gvcn', () => viecCuaNguoi(p('QL'), USER.GVCN)],
+    ['GVS toi', () => myWork(loadPrincipal((conn.prepare(`SELECT user_id AS id FROM teacher_assignments WHERE class_id = ? AND skill = 'speaking' AND status = 'active' ORDER BY id LIMIT 1`).get(LOP_FT) as any).id))],
   ];
   const sai: string[] = [];
   for (const [ten, fn] of goc) {

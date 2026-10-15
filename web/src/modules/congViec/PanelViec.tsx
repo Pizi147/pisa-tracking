@@ -16,7 +16,7 @@ import { MotKyNang } from '../cham/MotKyNang.tsx';
 import { duongDiemTheoLuot, type BangTheoLuot } from '../cham/LuoiChamLop.tsx';
 import { LuoiNhung } from '../test/lichTest/LuoiNhung.tsx';
 import { XacNhanPaLo } from './XacNhanPaLo.tsx';
-import { LOAI_HAN_CUA_VIEC, duongLichTest, tuanLich } from '@shared/domain/index.ts';
+import { LOAI_HAN_CUA_VIEC, duongLichTest, laViecChamCheo, tuanLich } from '@shared/domain/index.ts';
 import { VIEC_LO_Y_THUC, type WorkItem } from '../worklist/WorkList.tsx';
 import { LoYThucPanel } from '../yThuc/LoYThucPanel.tsx';
 import { NganTongKet } from '../students/NganTongKet.tsx';
@@ -56,7 +56,8 @@ const laLo = (it: WorkItem) => !!it.con?.length && it.classId !== null && VIEC_L
  * OV-13c (mockup OV-13 §3a): dòng gộp làm CẢ DÒNG trong một panel — Xác nhận PA cùng lúc (Case SOS FT cùng lớp + tuần thi + mức SOS) · Nhập điểm theo tuần
  * thi (lưới điểm từng lớp của tuần đó). Bấm dòng mở panel, không mở danh sách em; "việc tiếp" đi qua cả dòng.
  */
-export const moCaDong = (it: WorkItem): boolean => !!it.con?.length
+/* OV-13g: Speaking chấm chéo KHÔNG mở lưới cả tuần — bấm mở danh sách lớp, mỗi lớp "Chấm" → panel nhập điểm S (mockup OV-13 §3b). */
+export const moCaDong = (it: WorkItem): boolean => !!it.con?.length && !laViecChamCheo(it)
   && (it.group === 'xac_nhan_pa' ? it.con.every((c) => !!c.paId) : it.group === 'score' && it.con.every((c) => !!c.periodId && c.classId !== null));
 
 /**
@@ -85,7 +86,7 @@ export function PanelViec({ it, onDong, onDaLam, onTiep, onMo }: {
     case 'no_plan':
       return <NganCase key={it.key} caseId={it.caseId!} viec="them-pa" hocVien={hv} lop={lop} onClose={onDong} onChanged={onDaLam} />;
     case 'score':
-      if (it.con || it.periodId) return <PanelNhapDiemTuan key={it.key} it={it} onDong={onDong} onDaLam={doi} />;
+      if (!laViecChamCheo(it) && (it.con || it.periodId)) return <PanelNhapDiemTuan key={it.key} it={it} onDong={onDong} onDaLam={doi} />;
       return <PanelNhapDiem key={it.key} it={it} onDong={onDong} onDaLam={doi} />;
     case 'ban_giao':
       return <BanGiaoPanel key={it.key} classId={it.classId!} mon={it.key.startsWith('ban_giao_mon:') ? it.key.split(':')[2] ?? null : null} onClose={onDong} onDone={doi} />;
@@ -116,7 +117,7 @@ export function PanelViec({ it, onDong, onDaLam, onTiep, onMo }: {
  * MỘT LÚC (`MotKyNang`, chọn sẵn kỹ năng của việc) — ô FT mở hộp nhập điểm (Lưu · em tiếp ›), lớp thường ô gõ thẳng. Không đường ghi mới.
  */
 export function PanelNhapDiem({ it, onDong, onDaLam, quayLai }: {
-  it: Pick<WorkItem, 'classId' | 'luot' | 'kn' | 'studentId' | 'emIds' | 'tieuDe' | 'classCode' | 'contextLabel' | 'due'>;
+  it: Pick<WorkItem, 'classId' | 'luot' | 'kn' | 'studentId' | 'emIds' | 'tieuDe' | 'classCode' | 'contextLabel' | 'due'> & Partial<Pick<WorkItem, 'key' | 'phu'>>;
   onDong: () => void; onDaLam: () => void;
   /** OV-12e: mở từ panel số liệu — "← Danh sách". */
   quayLai?: { nhan: string; onClick: () => void };
@@ -147,7 +148,7 @@ export function PanelNhapDiem({ it, onDong, onDaLam, quayLai }: {
     han: it.due ? <ChipHan loai={LOAI_HAN_CUA_VIEC.score ?? 'nhap-diem'} han={it.due} /> : null,
     lop: it.classCode, ngCanh: (
       <Link className="link" to={`/test/diem-lop?lop=${it.classId}&luot=${encodeURIComponent(it.luot!)}`}>
-        {dich(it.contextLabel ?? '')} <span aria-hidden className="text-xs">↗</span>
+        {dich((laViecChamCheo({ key: it.key ?? '' }) ? it.phu : it.contextLabel) ?? '')} <span aria-hidden className="text-xs">↗</span>
       </Link>
     ),
   });

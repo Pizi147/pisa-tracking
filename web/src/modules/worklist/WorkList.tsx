@@ -2,7 +2,7 @@ import { type ReactNode, useState } from 'react';
 import { Level, NhanTrangThai } from '../../ui/ui.tsx';
 import { Han } from '../../ui/Han.tsx';
 import { toneTheoNhan } from '../../lib/format.ts';
-import { CHAM_CHEO, LOAI_HAN_CUA_VIEC } from '@shared/domain/index.ts';
+import { CHAM_CHEO, LOAI_HAN_CUA_VIEC, laViecChamCheo } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 
 export type WorkItem = {
@@ -110,7 +110,8 @@ export function DongViec({ it, onOpen, nutPhu, gon = false, chon = null, xong, m
       </button>
       <span className={`col-start-2 text-xs sm:col-start-auto [&>span]:text-xs ${gon ? 'flex flex-wrap items-center gap-2 sm:justify-end sm:text-right' : ''}`}>
         {/* Hotfix 15/10: dòng đã xong (gạch) không còn hạn / "⚠ quá hạn". */}
-        {daXong ? null : it.due ? <Han loai={loaiHan ?? 'viec-van-hanh'} han={it.due} haiDong /> : <span className="text-slate-500">{t('Chưa có hạn')}</span>}
+        {/* OV-13g: Speaking chấm chéo không có hạn (T18) — không ghi "Chưa có hạn" (mockup OV-13 §3b). */}
+        {daXong ? null : it.due ? <Han loai={loaiHan ?? 'viec-van-hanh'} han={it.due} haiDong /> : laViecChamCheo(it) ? null : <span className="text-slate-500">{t('Chưa có hạn')}</span>}
         {gon && nutPhu && <span onClick={(e) => e.stopPropagation()}>{nutPhu}</span>}
       </span>
       {!gon && <span className="col-start-2 flex items-center gap-2 sm:col-start-auto sm:justify-end">
@@ -155,7 +156,7 @@ function DongCon({ it, loaiHan, onOpen, gon, chon, xong, moTrang = false }: {
           {it.conPhu && <small className="block break-words text-[11.5px] font-normal text-slate-500">{dich(it.conPhu)}</small>}
         </span>
         <span className="text-xs [&>span]:text-xs">
-          {xong ? null : it.due ? <Han loai={loaiHan ?? 'viec-van-hanh'} han={it.due} haiDong /> : <span className="text-slate-500">{t('Chưa có hạn')}</span>}
+          {xong ? null : it.due ? <Han loai={loaiHan ?? 'viec-van-hanh'} han={it.due} haiDong /> : laViecChamCheo(it) ? null : <span className="text-slate-500">{t('Chưa có hạn')}</span>}
         </span>
       </button>
     );
@@ -167,7 +168,7 @@ function DongCon({ it, loaiHan, onOpen, gon, chon, xong, moTrang = false }: {
         {it.conPhu && <small className="block break-words text-[11.5px] font-normal text-slate-500">{dich(it.conPhu)}</small>}
       </button>
       <span className="col-start-1 text-xs sm:col-start-auto [&>span]:text-xs">
-        {it.due ? <Han loai={loaiHan ?? 'viec-van-hanh'} han={it.due} haiDong /> : <span className="text-slate-500">{t('Chưa có hạn')}</span>}
+        {it.due ? <Han loai={loaiHan ?? 'viec-van-hanh'} han={it.due} haiDong /> : laViecChamCheo(it) ? null : <span className="text-slate-500">{t('Chưa có hạn')}</span>}
       </span>
       <span className="col-start-2 row-span-2 row-start-1 flex justify-end sm:col-start-auto sm:row-span-1 sm:row-start-auto">
         <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-[32px]" onClick={() => onOpen(it)}>{dich(it.actionLabel)}</button>

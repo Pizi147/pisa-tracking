@@ -2,7 +2,7 @@ import { phamViXemViec } from './xemViec.ts';
 import { db, theoLo } from '../db.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import {
-  ATTEMPT_KIND_SHORT, CHAM_CHEO, chuViecChotLoTrinh, daiDienNhomBoTro, laChamCheo,
+  ATTEMPT_KIND_SHORT, CHAM_CHEO, VIEC_CHAM_CHEO, chuViecChotLoTrinh, daiDienNhomBoTro, khoiCham, laChamCheo, laViecChamCheo, mondayOfDate,
   INTERVENTION_KIND_LABEL, PERMISSIONS,
   SOS_LABEL, URGENCY_LABEL, URGENCY_TONE, caseHeadline, caseTopicLabel, cycleDeadline,
   duongCaseRieng, duongHoSoHocVien, duongLichTest, nhanDotNgan, hanThemPa,
@@ -10,7 +10,7 @@ import {
   type Khung, type AttemptKind, type InterventionKind, nhanBaiThuong, chuTyLeXetLai, gopViecTheoLop, tuanLich, type ConGop } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addDays, forbidden } from '../util.ts';
-import { COT_PRINCIPAL, activeAt, bangLop, can, isCoreTeacherOf, loadPrincipal, napTruocPhamVi, principalTuDong, scopeFor, teachesClass, type Principal } from '../permissions.ts';
+import { COT_PRINCIPAL, activeAt, bangLop, can, isCoreTeacherOf, loadPrincipal, lopFtChoGvSpeaking, napTruocPhamVi, principalTuDong, scopeFor, teachesClass, type Principal } from '../permissions.ts';
 import { phamViHoSoGv } from '../giaoVien/phamVi.ts';
 import { allProgrammes } from '../normal/regular.ts';
 import { attemptHref, listAttempts } from '../fasttrack/attempts.ts';
@@ -361,8 +361,14 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
    * TD4: Công việc chỉ đọc lượt CÓ THỂ còn ô cần chấm (`chiConO`) + lượt chưa xếp tuần (Chốt tuần MT) — trước đọc mọi lượt trong phạm vi.
    * "Tất cả" đọc MỘT lần ở phạm vi quản lý: `myPendingDetail` (việc của mình) không phụ thuộc `scope`, `pendingDetail` (việc GV khác) theo nó.
    */
+  /*
+   * OV-13g (Q7): GV Speaking chấm S Mock chéo lớp FT cùng chi nhánh (`lopFtChoGvSpeaking`) — đọc các lớp đó trong CÙNG lần `listAttempts`
+   * (`phamViCham`, như Lịch Test), không thêm lô. `managed` để `pendingDetail` có ô S Mock (không là việc của ai — T18).
+   */
+  const lopCheo = new Set<number>(!tatCa && co('score') ? lopFtChoGvSpeaking(p, today) : []);
   const attempts = !co('score', 'missing_data') ? [] : listAttempts(p, {
-    branchId: f.branchId ?? undefined, chiDangHoc: true, chiConO: true, kemChuaTuan: true, ...(tatCa && co('score') ? { scope: 'managed' as const } : {}),
+    branchId: f.branchId ?? undefined, chiDangHoc: true, chiConO: true, kemChuaTuan: true,
+    ...((tatCa && co('score')) || lopCheo.size ? { scope: 'managed' as const } : {}), ...(lopCheo.size ? { phamViCham: true } : {}),
   }).rows.filter((a: any) => a.status !== 'cancelled');
   /*
    * OV-11c (CV-8, Q6): "Của GV" có cả việc của GVCN (Phối hợp SOS, Điền Target, Nhập điểm MT cũ) — như "Của một GV" (`viecCuaNguoi`). GVCN đang hiệu lực
@@ -507,6 +513,33 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     }
   }
   items.push(...gomBaiChuaCham(minhDongs));
+
+  /*
+   * OV-13g (Q7, mockup OV-13 §3b): "Speaking chấm chéo" — bài S Mock tuần trước + mọi bài còn tồn (khối 1 + 2 của `khoiCham`, như Lịch Test) ở lớp FT
+   * cùng chi nhánh. Có số, KHÔNG hạn / quá hạn (T18: không là nợ của ai). Người giữ dòng = người xem (để gom theo tuần, khoá `|cc` riêng); mọi
+   * bài vào tuần trước (tuần chấm) để thành MỘT dòng — bài cũ hơn ghi "còn tồn từ {tuần}". Không đổi luật ai chấm.
+   */
+  if (lopCheo.size) {
+    const tuanHomNay = mondayOfDate(today), tuanTruoc = addDays(tuanHomNay, -7);
+    const ccDongs: BaiChuaCham[] = [];
+    for (const a of attempts as any[]) {
+      if (!lopCheo.has(a.classId)) continue;
+      for (const c of (a.pendingDetail ?? []) as any[]) {
+        if (!laChamCheo(a.kind, c.skill) || !c.weekStart || khoiCham({ tuanThi: c.weekStart, tuanHomNay, quaHan: !!c.overdue }) === 'lich') continue;
+        ccDongs.push({
+          classId: a.classId, classCode: a.classCode ?? null, attemptNo: a.attemptNo ?? null,
+          kind: a.kind ?? null, attemptId: a.id, studentId: a.studentId, studentName: a.studentName,
+          /* `periodId` null: gom theo lớp × LƯỢT (không theo tuần) — mỗi con mở đúng một panel nhập điểm một lượt. */
+          skill: c.skill, deadline: null, ownerId: p.userId, overdue: false, periodId: null, weekStart: c.weekStart,
+        });
+      }
+    }
+    for (const it of gomBaiChuaCham(ccDongs)) {
+      const cu = it.tuanThi && it.tuanThi < tuanTruoc ? it.tuanThi : null;
+      const luot = nhanDot(it.kind, it.attemptNo);
+      items.push({ ...it, tieuDe: `${VIEC_CHAM_CHEO} · ${luot}`, phu: luot, contextLabel: cu ? `còn tồn từ ${tuanLich(cu)}` : null, tuanThi: tuanTruoc });
+    }
+  }
 
   /* PR-Ra Q1: "Tất cả trong phạm vi" cộng thêm bài chưa chấm của GIÁO VIÊN KHÁC trong phạm vi. */
   if (tatCa && co('score')) {
@@ -1392,7 +1425,9 @@ export function viecCuaNguoi(p: Principal, nguoi: number, branchId?: number | nu
    * OV-11c (PT-7): việc Vận hành giao cho GV (không gắn lớp) được tính — người xem đã qua `phamViHoSoGv` (GV thuộc chi nhánh mình); hồ sơ GV và
    * "Của một GV" cùng số. Dòng khác: theo phạm vi lớp / em của người xem.
    */
+  /* OV-13g: Speaking chấm chéo không là việc của GV (T18) — không vào "Của một GV" / hồ sơ GV. */
   const items = w.items
+    .filter((it: any) => !laViecChamCheo(it))
     .filter((it: any) => (it.group === 'mgmt' && it.classId === null && it.studentId === null)
       || ((it.classId !== null || it.studentId !== null) && can(p, PERMISSIONS.ATTEMPT_VIEW, { classId: it.classId, studentId: it.studentId })))
     .map((it: any) => ({
