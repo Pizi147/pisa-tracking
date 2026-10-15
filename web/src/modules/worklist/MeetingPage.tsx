@@ -338,7 +338,7 @@ function NganBaoCao({ unit, cell, periodId, editable, editWindow, onClose, onSav
       await api.put(`/meeting/units/${unit.unitId}/reports/${cell.key}`, { periodId, status: status || null, note, nop });
       invalidate('/meeting'); invalidate('/tong-quan'); invalidate('/signals');
       onSaved();
-      toast.push('ok', nop ? 'Đã nộp' : 'Đã lưu nháp');
+      toast.push('ok', nop ? 'Đã nộp' : daNop ? t('Đã lưu') : 'Đã lưu nháp');   // rà #410: sửa bản đã nộp vẫn là đã nộp
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(null); }
   };
 
@@ -406,7 +406,7 @@ function NganBaoCao({ unit, cell, periodId, editable, editWindow, onClose, onSav
               <ul className="list-none p-0 m-0 mt-1 space-y-0.5">
                 {cell.history.map((h, i) => (
                   <li key={i} className="text-xs text-slate-500">
-                    {fmtDate(h.at.slice(0, 10))} · {unitStatusLabel(h.status)}{h.kind ? ` · ${h.kind === 'nop' ? 'nộp' : 'nháp'}` : ''}
+                    {fmtDate(h.at.slice(0, 10))} · {unitStatusLabel(h.status)}{h.kind ? ` · ${h.kind === 'nop' ? 'nộp' : h.kind === 'sua' ? t('sửa') : 'nháp'}` : ''}
                     {h.actor ? ` · ${h.actor}` : ''}
                   </li>
                 ))}
@@ -417,7 +417,7 @@ function NganBaoCao({ unit, cell, periodId, editable, editWindow, onClose, onSav
           {!chiDoc && (
             <div className="flex items-center gap-2 pt-2 border-t" style={{ borderColor: 'var(--line)' }}>
               <button className="btn btn-sm" disabled={busy !== null} onClick={() => luu(false)}>
-                {busy === 'nhap' ? 'Đang lưu…' : 'Lưu nháp'}
+                {busy === 'nhap' ? 'Đang lưu…' : daNop ? t('Lưu') : 'Lưu nháp'}
               </button>
               <button className="btn btn-primary btn-sm" disabled={busy !== null || !status || !(editWindow?.open ?? true)} onClick={() => luu(true)}>
                 {busy === 'nop' ? 'Đang nộp…' : daNop ? 'Nộp lại' : 'Nộp'}

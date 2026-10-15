@@ -16,7 +16,7 @@ import { ensurePeriod, ensurePeriods, mondayOf, skillScoreDeadline } from '../pl
 import { kckCuaLuot, regularSkillViews, weekStartOf } from '../fasttrack/attempts.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
 import { checkSkillWeekMove, ensureSkillRows, kiemDaToiTuanThi, loadSkillRows, setSkillWeek } from '../fasttrack/skillSchedule.ts';
-import { chanVangLopKetThuc, dotHoanTat, dotHoanTatMany, kiemLopKetThuc, laLopKetThuc, oChuaCoDiem, quyenSuaSauHoanTat } from '../fasttrack/hoanTat.ts';
+import { CAU_KHONG_VANG, chanVangLopKetThuc, dotHoanTat, dotHoanTatMany, kiemLopKetThuc, laLopKetThuc, oChuaCoDiem, quyenSuaSauHoanTat } from '../fasttrack/hoanTat.ts';
 import { canRequest, duocGoDau } from '../fasttrack/absence.ts';
 import { classProgress, classProgressMany, lichMtCua } from '../classes/schedule.ts';
 import { baoLenCuoiKhoaDoiQuaHan, capNhatCuoiKhoaSauChuyen, dongBoCheTaiFinal } from './cuoiKhoa.ts';
@@ -603,11 +603,17 @@ export function saveRegularScore(
   if (!prog.skills.includes(skill)) {
     throw badRequest(`Lớp ${prog.name} không có kỹ năng ${tenMon(prog.code, skill)}.`);
   }
-  /* OV-13h (chủ SP 15/10): NHẬP điểm vào ô chưa có điểm — GV đúng môn làm được cả sau hoàn tất / lớp đã kết thúc; sửa / xoá điểm đã có vẫn qua QL. */
-  const oTrong = patch.noShow === undefined && patch.nhanXet === undefined && patch.score !== undefined && patch.score !== null
-    && oChuaCoDiem(conn.prepare('SELECT * FROM assessment_scores WHERE attempt_id = ? AND skill = ?').get(attemptId, skill));
-  /* OV-11g (HL-10): lớp đã kết thúc — GV 403 trước mọi việc ghi (điểm, "-", nhận xét; trừ nhập ô trống); Quản lý đi đường `override`. */
-  const lopKetThuc = kiemLopKetThuc(p, a.class_id, oTrong);
+  /*
+   * OV-13h (chủ SP 15/10): GV đúng môn (kiểm `path` bên dưới) NHẬP điểm vào ô chưa có điểm, hoặc ghi NHẬN XÉT (lệnh chỉ nhận xét — không đổi
+   * điểm, như HOTFIX-2 của FT), cả sau hoàn tất / lớp đã kết thúc; sửa / xoá điểm đã có vẫn qua QL. Chỉ đọc ô khi cần, một lần.
+   */
+  const chiNhanXet = patch.nhanXet !== undefined && patch.score === undefined && patch.total === undefined && patch.noShow === undefined;
+  let gvDuocNho: boolean | undefined;
+  const gvDuoc = () => (gvDuocNho ??= chiNhanXet || (patch.noShow === undefined && patch.nhanXet === undefined && patch.score !== undefined && patch.score !== null
+    && oChuaCoDiem(conn.prepare('SELECT * FROM assessment_scores WHERE attempt_id = ? AND skill = ?').get(attemptId, skill))));
+  if (patch.noShow !== undefined) chanVangLopKetThuc(a.class_id);   // một câu cho mọi vai (rà #410)
+  /* OV-11g (HL-10): lớp đã kết thúc — GV 403 trước mọi việc ghi (trừ `gvDuoc`); Quản lý đi đường `override`. */
+  const lopKetThuc = kiemLopKetThuc(p, a.class_id, gvDuoc);
   /* Dấu "-" đi đường riêng vì nó KHÔNG phải một điểm: nó là một lần dời lịch (C08). */
   if (patch.noShow !== undefined) {
     if (patch.score !== undefined || patch.total !== undefined) {
@@ -627,7 +633,7 @@ export function saveRegularScore(
   let path = a.class_id ? scoreEditPath(p, a.class_id, skill) : null;
   if (hoanTat.hoanTat) {
     if (a.class_id && quyenSuaSauHoanTat(p, a.class_id)) path = 'override';
-    else if (!(path && oTrong)) {   // OV-13h: GV đúng môn nhập ô trống giữ đường `assigned`
+    else if (!(path && gvDuoc())) {   // OV-13h: GV đúng môn nhập ô trống / ghi nhận xét giữ đường `assigned`
       throw forbidden(
         `Đợt này đã hoàn tất (hết Chủ nhật ${ngay(hoanTat.chuNhatCuoi)}). `
         + 'Chỉ Quản lý sửa được điểm — nhờ Quản lý hiệu chỉnh.',
@@ -755,7 +761,7 @@ export function reportRegularNoShow(
   const prog = a.class_id ? programmeOfClass(a.class_id) : null;
   if (!prog || prog.scoringMode !== 'ratio') throw badRequest('Lượt này không thuộc lớp thường.');
   if (!prog.skills.includes(skill)) throw badRequest(`Lớp ${prog.name} không có kỹ năng ${tenMon(prog.code, skill)}.`);
-  chanVangLopKetThuc(p, a.class_id);
+  chanVangLopKetThuc(a.class_id);
 
   /*
    * Ghi dấu là việc của NGƯỜI CHẤM môn đó (hoặc người nhập bù) — cùng cửa với nhập điểm.
@@ -1254,6 +1260,10 @@ export function regularSheet(p: Principal, classId: number, kind?: string, today
               && (!!row?.no_show_period_id || (!!v.weekStart && String(v.weekStart).slice(0, 10) <= mondayOf(today))),
             /* R11: đánh dấu "bài đã hoàn tất" cho MỌI người xem — Quản lý vẫn `khoa && canEdit` (sửa qua hộp lý do). */
             khoa: hoanTat.hoanTat,
+            /** OV-13h (rà #410): nút Nhận xét — GV đúng môn ghi được cả khi ô đã khoá điểm (sau hoàn tất / lớp đã kết thúc), cùng luật `saveRegularScore`. */
+            nhanXetDuoc: hoanTat.hoanTat ? suaSauHoanTat || !!nhapSkill.get(k) : (canEditSkill.get(k) ?? false),
+            /** OV-13h (rà #410): lớp đã kết thúc — ô không nhận "-" (cùng câu `chanVangLopKetThuc`); null = gõ "-" được. */
+            khongVang: ketThuc ? CAU_KHONG_VANG : null,
           };
         }),
         // Quá hạn khi có ÍT NHẤT MỘT môn đã tới hạn mà chưa chấm — không xét theo cả bài.

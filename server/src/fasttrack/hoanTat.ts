@@ -120,11 +120,12 @@ export function quyenSuaSauHoanTat(p: Principal, classId: number, lichSu = false
  * OV-11g (HL-10, Q4): lớp ĐÃ KẾT THÚC — chỉ Quản lý (người sửa được sau hoàn tất) ghi điểm / "-" / nhận xét, đi đường `override` (nhật ký như
  * sửa điểm thường); GV chỉ xem → 403. Trả `true` khi lớp đã kết thúc (nơi gọi ép đường `override`).
  */
-export function kiemLopKetThuc(p: Principal, classId: number | null, oTrong = false): boolean {
-  if (!classId || (db().prepare('SELECT status FROM classes WHERE id = ?').get(classId) as any)?.status !== 'finished') return false;
-  if (quyenSuaSauHoanTat(p, classId)) return true;
-  /* OV-13h (chủ SP 15/10): GV đúng môn vẫn NHẬP vào ô trống — đường thường của họ (nơi gọi kiểm phân công); sửa / xoá điểm đã có vẫn chỉ QL. */
-  if (oTrong) return false;
+export function kiemLopKetThuc(p: Principal, classId: number | null, oTrong: () => boolean = () => false): boolean {
+  if (!laLopKetThuc(classId)) return false;
+  if (quyenSuaSauHoanTat(p, classId!)) return true;
+  /* OV-13h (chủ SP 15/10): GV đúng môn vẫn NHẬP vào ô trống / ghi nhận xét — đường thường của họ (nơi gọi kiểm phân công); sửa / xoá điểm
+   * đã có vẫn chỉ QL. `oTrong` là hàm: chỉ đọc ô khi lớp thật sự đã kết thúc. */
+  if (oTrong()) return false;
   throw forbidden('Lớp đã kết thúc — chỉ Quản lý sửa được điểm.');
 }
 
@@ -135,9 +136,13 @@ export function kiemLopKetThuc(p: Principal, classId: number | null, oTrong = fa
 export const oChuaCoDiem = (r: any): boolean =>
   !r || (r.band == null && r.raw_score == null && [r.c1, r.c2, r.c3, r.c4].every((v) => v == null));
 
-/** OV-11g (rà PR #379): lớp đã kết thúc không ghi / gỡ vắng ("-", Báo vắng, xin dời) — kể cả QL: không còn tuần học để dời bài vào. GV 403 trước. */
-export function chanVangLopKetThuc(p: Principal, classId: number | null): void {
-  if (kiemLopKetThuc(p, classId)) throw badRequest('Lớp đã kết thúc — không ghi vắng ("-"). Nhập điểm hoặc để trống.');
+export const CAU_KHONG_VANG = 'Lớp đã kết thúc — không ghi vắng ("-"). Nhập điểm hoặc để trống.';
+/**
+ * OV-11g (rà PR #379): lớp đã kết thúc không ghi / gỡ vắng ("-", Báo vắng, xin dời) — kể cả QL: không còn tuần học để dời bài vào.
+ * OV-13h (rà #410): mọi vai cùng MỘT câu đúng (trước GV nhận 403 "chỉ Quản lý sửa được điểm"); ô mang cờ `khongVang` để web không gửi "-".
+ */
+export function chanVangLopKetThuc(classId: number | null): void {
+  if (laLopKetThuc(classId)) throw badRequest(CAU_KHONG_VANG);
 }
 
 /** Lớp đã kết thúc → sửa điểm chỉ lưu điểm + nhật ký: không tự tạo / rút Case, tín hiệu, bổ trợ (rà PR #379, Q4). */

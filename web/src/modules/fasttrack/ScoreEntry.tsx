@@ -18,6 +18,8 @@ export type Cell = {
   skill: EntrySkill;
   /** OV-1d: em đã Lưu trữ — câu "vì sao chỉ đọc" của máy chủ (chỉ lưới chấm FT gửi). */
   lyDoKhoa?: string;
+  /** Rà #410: ô không nhận "-" (lớp đã kết thúc) — câu máy chủ; vắng mặt / null = gõ "-" được. */
+  khongVang?: string | null;
   assessedSkill: string;
   /** false khi Quản lý đã chốt trước là đợt này không yêu cầu kỹ năng đó. */
   required: boolean;
@@ -499,6 +501,8 @@ export function ODiemThuong({
     khoa?: boolean;
     /** PR-BV: người xem gỡ được dấu "-" lúc này · `oTuanCu` = đang xem đúng tuần có dấu (tuần mới có thể đã có điểm). */
     goDau?: boolean; oTuanCu?: boolean;
+    /** Rà #410: ô không nhận "-" (lớp đã kết thúc) — câu máy chủ. */
+    khongVang?: string | null;
   };
   tongCot: number | null;
   canEdit: boolean;
@@ -597,6 +601,12 @@ export function ODiemThuong({
         daBaoChuaToi.current = true;
         setDirty(false); goDiem.current = false; setCanhBao(null);
         toast.push('error', `${tenMon}: ${chuaToiCau}`);
+        return;
+      }
+      /* Rà #410: lớp đã kết thúc — không gửi "-", ô về như cũ, báo đúng câu máy chủ (như "chưa tới tuần"). */
+      if (cell.khongVang) {
+        setDirty(false); goDiem.current = false; setCanhBao(null);
+        toast.push('error', `${tenMon}: ${dich(cell.khongVang)}`);
         return;
       }
       setCanhBao(null);

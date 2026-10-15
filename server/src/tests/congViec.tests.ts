@@ -785,18 +785,20 @@ export async function runCongViecTests(t: YThucTestKit) {
     assert(hist.kind === 'nop', `Lịch sử của lần nộp phải ghi kind='nop': ${JSON.stringify(hist)}`);
   });
 
-  check('PR-Ra Q13 · Sửa ô đã nộp → thành nháp (OV-13h: cả tuần quá hạn)', () => {
+  /* Rà #410 (OV-13h): "Lưu" trên ô ĐÃ NỘP = sửa bản đã nộp — giữ người / lúc nộp, lịch sử ghi `sua`; không quay về nháp ngoài ý. */
+  check('PR-Ra Q13 · Sửa ô đã nộp → vẫn đã nộp (giữ lúc nộp), lịch sử "sua" — cả tuần quá hạn', () => {
     const cat = 'teachers';
-    meetingSvc.saveUnitReport(P.mbManager, mbUnit.id, prevPeriodId, cat, { status: 'ok', nop: true });   // đảm bảo đã nộp
-    const back = meetingSvc.saveUnitReport(P.mbManager, mbUnit.id, prevPeriodId, cat, { status: 'watch' });   // sửa, không nộp lại
-    assert(back.submitted_at === null, 'Sửa ô đã nộp trong cửa sổ phải thành nháp (submitted_at NULL)');
-
-    /* OV-13h: tuần quá hạn không còn khoá — sửa ô đã nộp cũng thành nháp như trong hạn. */
+    const nop = meetingSvc.saveUnitReport(P.mbManager, mbUnit.id, prevPeriodId, cat, { status: 'ok', nop: true }) as any;   // đảm bảo đã nộp
+    const sua = meetingSvc.saveUnitReport(P.mbManager, mbUnit.id, prevPeriodId, cat, { status: 'watch' }) as any;   // sửa, không nộp lại
+    assert(sua.status === 'watch' && sua.submitted_at === nop.submitted_at && sua.submitted_by === nop.submitted_by, `sửa bản đã nộp về nháp: ${JSON.stringify(sua)}`);
+    const h = conn.prepare('SELECT kind FROM unit_report_history WHERE reporting_unit_id = ? AND period_id = ? AND category_key = ? ORDER BY id DESC LIMIT 1')
+      .get(mbUnit.id, prevPeriodId, cat) as any;
+    assert(h.kind === 'sua', `lịch sử phải ghi "sua": ${JSON.stringify(h)}`);
     const old = conn.prepare(`SELECT * FROM report_periods WHERE week_end < ? ORDER BY week_end DESC LIMIT 1`).get(addDaysStr(TODAY, -10)) as any;
     assert(old, 'Cần một tuần đã quá hạn để đối chứng');
     meetingSvc.saveUnitReport(P.admin, mbUnit.id, old.id, 'curriculum', { status: 'ok', nop: true });
-    const sua = meetingSvc.saveUnitReport(P.admin, mbUnit.id, old.id, 'curriculum', { status: 'watch' }) as any;
-    assert(sua.submitted_at === null, 'Sửa ô đã nộp ở tuần quá hạn phải thành nháp');
+    const sua2 = meetingSvc.saveUnitReport(P.admin, mbUnit.id, old.id, 'curriculum', { status: 'watch' }) as any;
+    assert(!!sua2.submitted_at, 'Sửa ô đã nộp ở tuần quá hạn vẫn phải là đã nộp');
   });
 
   check('PR-Ra · Tuần tương lai vẫn từ chối cả nháp lẫn nộp (giữ luật cũ)', () => {
@@ -847,9 +849,11 @@ export async function runCongViecTests(t: YThucTestKit) {
      * đã nộp nào, rồi kiểm tín hiệu vẫn phải thấy MB còn thiếu — dù cả ba ô đều CÓ mức (nháp),
      * không phải trống trơn.
      */
+    /* Rà #410 (OV-13h): "Lưu" trên ô đã nộp giữ đã nộp — dựng ba ô NHÁP (có mức, chưa nộp) thẳng bằng dữ liệu. */
     for (const cat of ['teachers', 'students', 'curriculum']) {
-      meetingSvc.saveUnitReport(P.admin, mbUnit.id, prevPeriodId, cat, { status: 'watch' });   // không nop → thành nháp
+      meetingSvc.saveUnitReport(P.admin, mbUnit.id, prevPeriodId, cat, { status: 'watch' });
     }
+    conn.prepare('UPDATE unit_reports SET submitted_at = NULL, submitted_by = NULL WHERE reporting_unit_id = ? AND period_id = ?').run(mbUnit.id, prevPeriodId);
     const rows = signalsSvc.signalsFor(P.admin, { periodId: prevPeriodId }) as any[];
     const due = rows.find((r: any) => r.kind === 'report_due' && r.branchId === mbBranchId);
     assert(due && due.count >= 1, `MB không còn ô nào đã nộp (chỉ còn nháp) — report_due phải vẫn đếm thiếu: ${JSON.stringify(rows.filter((r) => r.kind === 'report_due'))}`);

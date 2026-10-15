@@ -8,7 +8,7 @@ import {
 import { demoToday } from '../demoConfig.ts';
 import { phanCongDangHieuLuc } from '../worklist/scoreDebt.ts';
 import { badRequest, chuTuDo, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
-import { chanVangLopKetThuc, dotHoanTat, dotHoanTatMany, kiemLopKetThuc, laLopKetThuc, oChuaCoDiem, quyenSuaSauHoanTat } from './hoanTat.ts';
+import { CAU_KHONG_VANG, chanVangLopKetThuc, dotHoanTat, dotHoanTatMany, kiemLopKetThuc, laLopKetThuc, oChuaCoDiem, quyenSuaSauHoanTat } from './hoanTat.ts';
 import {
   can, classScopeSql, defaultWorkScope, editableSkills, isCoreTeacherOf, moveableSkills, mySkills, require_, requireXemLuotCham, scopeFor, scopeXemLuotCham, scoreEditPath, type LuotQuyen,
   type Principal,
@@ -1043,7 +1043,9 @@ export function attemptDetail(p: Principal, attemptId: number) {
   const result = resultOf(a, scores, skips, skillRows);
   const today = demoToday();
   /* R11 (Z2c-c, A3): đợt đã hoàn tất thì ô chỉ sửa được bởi Quản lý — thiếu dòng này GVBM thấy nút "Sửa điểm" rồi bị máy chủ chặn. */
-  const cells = skillCells(p, a, scores, skips, today, skillRows, dotHoanTat(attemptId, today));
+  const cells0 = skillCells(p, a, scores, skips, today, skillRows, dotHoanTat(attemptId, today));
+  /* Rà #410: lớp đã kết thúc — ô không nhận "-" (`khongVang`), hộp nhập điểm không gửi. */
+  const cells = laLopKetThuc(a.class_id) ? cells0.map((c) => ({ ...c, khongVang: CAU_KHONG_VANG })) : cells0;
   const mode = scoringModeOf(a);
   const completion = completionWeekOf(skillRows);
   /* FIX-DTL: bài lớp thường bộ môn khác (PREFOU `tong_hop`) không có dòng L/R/W/S — bỏ qua thay vì 500, để màn nhận `kind` rồi chuyển trang. */
@@ -1897,11 +1899,13 @@ export function saveScore(
   const ghiDiem = (patch.rawScore !== undefined && patch.rawScore !== null) || (patch.band !== undefined && patch.band !== null)
     || (Array.isArray(patch.criteria) && patch.criteria.some((v) => v !== null && v !== undefined && (v as unknown) !== ''));
   /* OV-13h (chủ SP 15/10): NHẬP điểm vào ô chưa có điểm (kể cả ô "-") — GV đúng môn làm được cả sau hoàn tất / lớp đã kết thúc; sửa / xoá điểm đã có vẫn qua QL. */
-  const oTrong = ghiDiem && patch.noShow === undefined
-    && oChuaCoDiem(conn.prepare('SELECT * FROM assessment_scores WHERE attempt_id = ? AND skill = ?').get(attemptId, skill));
+  /* Rà #410: chỉ đọc ô khi cần (lớp đã kết thúc / đợt đã hoàn tất), một lần. */
+  let oTrongNho: boolean | undefined;
+  const oTrong = () => (oTrongNho ??= ghiDiem && patch.noShow === undefined
+    && oChuaCoDiem(conn.prepare('SELECT * FROM assessment_scores WHERE attempt_id = ? AND skill = ?').get(attemptId, skill)));
+  if (patch.noShow !== undefined) chanVangLopKetThuc(a.class_id);   // lớp đã kết thúc: không ghi / gỡ "-", kể cả QL — một câu cho mọi vai
   /* OV-11g (HL-10): lớp đã kết thúc — GV 403 trước mọi việc ghi (trừ nhập ô trống); Quản lý đi đường `override` (dưới). */
   const lopKetThuc = kiemLopKetThuc(p, a.class_id, oTrong);
-  if (patch.noShow !== undefined) chanVangLopKetThuc(p, a.class_id);   // lớp đã kết thúc: không ghi / gỡ "-", kể cả QL
   /*
    * T23 (PR-MTa, thay K4-20): MT cũ nhận "-" = em không dự thi kỹ năng đó (`no_show_cu`) — không tính lần vắng, không tự dời,
    * không Case / thẻ / chuông; ô không còn đếm "còn trống". OV-1b: "-" nhập bù sau tuần thi cũng vậy (nhánh "-" bên dưới).
@@ -1931,7 +1935,7 @@ export function saveScore(
     if (a.class_id && quyenSuaSauHoanTat(p, a.class_id, !!a.lich_su)) {
       /* GVCN sửa MT cũ của lớp mình (T22) giữ đường `lich_su`; Quản lý / quyền sửa hộ đi `override`. */
       path = quyenSuaSauHoanTat(p, a.class_id) ? 'override' : 'lich_su';
-    } else if (!(path && oTrong)) {   // OV-13h: GV đúng môn nhập ô trống giữ đường của họ, nhật ký như nhập điểm thường
+    } else if (!(path && oTrong())) {   // OV-13h: GV đúng môn nhập ô trống giữ đường của họ, nhật ký như nhập điểm thường
       /* OV-12c: GV đúng kỹ năng vẫn BỔ SUNG nhận xét / nhóm còn thiếu của ô MT đã có điểm (Case MT cũ "Ghi nhận xét") — chỉ hai trường đó, không điểm. */
       if (path && boSungNhanXetDuoc(a, skill, patch)) return tx(() => luuNhanXet(p, a, skill, patch.nhanXet === undefined ? undefined : kiemNhanXetGt(patch.nhanXet),
         undefined, patch.nhomNguyenNhan === undefined ? undefined : kiemNhomGt(patch.nhomNguyenNhan, skill), !!o.tuNguoiDung));
@@ -2318,7 +2322,9 @@ export function classScoreSheet(
       const ngung = ngungHocCua(a.student_status, a.student_archived_at);
       const cells0 = skillCells(p, a, scores, skips, today, bundle.skillRows.get(a.id), hoanTat);
       /* OV-13h: GV giữ `canEdit` ở ô chưa có điểm (skillCells đã xét `oChuaCoDiem`); ô có điểm khoá, không gỡ "-". */
-      const cells = gvKetThuc ? cells0.map((c) => ({ ...c, ...(c.canEdit ? {} : { lyDoKhoa: 'Lớp đã kết thúc' }), daChot: c.daChot && { ...c.daChot, goDuoc: false } })) : cells0;
+      /* Rà #410: lớp đã kết thúc — mọi ô không nhận "-" (`khongVang`, cùng câu máy chủ), kể cả QL. */
+      const cells = ketThuc ? cells0.map((c) => ({ ...c, khongVang: CAU_KHONG_VANG,
+        ...(gvKetThuc ? { ...(c.canEdit ? {} : { lyDoKhoa: 'Lớp đã kết thúc' }), daChot: c.daChot && { ...c.daChot, goDuoc: false } } : {}) })) : cells0;
       return {
         attemptId: a.id,
         studentId: a.student_id,

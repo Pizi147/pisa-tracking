@@ -692,11 +692,11 @@ Giữ mọi kiểm dữ liệu nhập; mọi thay đổi có nhật ký.
 
 | # | Luật cũ | Luật hiện hành (15/10) | Code |
 |---|---|---|---|
-| 1 | Đợt hoàn tất / lớp đã kết thúc: GV không ghi gì vào ô | GV đúng môn **nhập điểm vào ô trống** (không "-"); sửa / xoá điểm **đã có** vẫn qua QL. Không ghi "-" ở lớp đã kết thúc (giữ) | `ss/fasttrack/attempts.ts` `saveScore` · `ss/normal/regular.ts` `saveRegularScore` · `ss/fasttrack/hoanTat.ts` `kiemLopKetThuc`, `oChuaCoDiem` |
+| 1 | Đợt hoàn tất / lớp đã kết thúc: GV không ghi gì vào ô | GV đúng môn **nhập điểm vào ô trống** (không "-"); sửa / xoá điểm **đã có** vẫn qua QL; **nhận xét** của môn GV đúng môn ghi được cả khi ô đã khoá điểm (lớp thường như FT). Không ghi "-" ở lớp đã kết thúc (giữ) — mọi vai cùng câu "Lớp đã kết thúc — không ghi vắng", ô không nhận "-" | `ss/fasttrack/attempts.ts` `saveScore` · `ss/normal/regular.ts` `saveRegularScore` · `ss/fasttrack/hoanTat.ts` `kiemLopKetThuc`, `oChuaCoDiem` |
 | 2 | Gỡ "-": GV chấm / GVCN đến hết thứ Tư sau tuần có "-" | GV chấm kỹ năng / GVCN gỡ **mọi lúc**; luật `giuLich` (giữ tuần mới) như cũ | `ss/fasttrack/absence.ts` `duocGoDau` |
 | 3 | Mở lại Case: QL hoặc người đã hoàn thành | **Ai có quyền hoàn thành Case** mở lại được; sửa Case / lần ghi KQ PA / lần xem lại vẫn qua bước Mở lại | `ss/cases/cases.ts` `coTheMoLaiCase` |
 | 4 | Bàn giao (13/10): qua ngày chuyển lớp chỉ QL sửa | GVBM / GVCN lớp nguồn sửa câu môn / nhận xét chung **cả sau ngày chuyển lớp** | `ss/classes/banGiao.ts` |
-| 5 | Báo cáo tuần: quá thứ Tư tuần sau khoá, Quản trị mở lại | Quá hạn **vẫn nộp / sửa**, ô gắn nhãn **"nộp muộn"**; bỏ bước Quản trị mở lại | `ss/platform/week.ts` `reportEditWindow` · `ss/worklist/meeting.ts` |
+| 5 | Báo cáo tuần: quá thứ Tư tuần sau khoá, Quản trị mở lại | Quá hạn **vẫn nộp / sửa**, ô gắn nhãn **"nộp muộn"**; bỏ bước Quản trị mở lại. "Lưu" trên báo cáo đã nộp = sửa bản đã nộp (vẫn đã nộp, lịch sử ghi "sửa"), không quay về nháp | `ss/platform/week.ts` `reportEditWindow` · `ss/worklist/meeting.ts` |
 | 6 | Góp ý hàng tuần: lớp đã kết thúc GV không ghi | GV / GVCN **vẫn ghi** ở lớp đã kết thúc | `ss/classes/gopYTuan.ts` |
 | 7 | Hồ sơ Lưu trữ khoá cả thi thật; đề xuất sửa chỉ em đang học | **Nhập kết quả thi thật** cho em Lưu trữ được; **gửi đề xuất sửa** cho em Tạm dừng được (em Lưu trữ / Kết thúc học vẫn chặn) | `ss/loTrinh/thiThat.ts` · `ss/duyet/deXuatSua.ts` |
 

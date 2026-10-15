@@ -244,7 +244,7 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, gvMacDi
   const thieu = nhapDuoc ? thieuNhanXetMt({ batBuoc, coDiem: coDiemSau, band: bandSau, kyVong: kv, nhanXet: nx, nhom }) : null;
   const daGo = doiDiem || doiNx || doiGv || doiNhom || lyDo.trim() !== '';
   const hoiLyDo = coDiemChinhThuc(cell) && doiDiem && !!diem.patch && !('noShow' in diem.patch);
-  const nhanVang = nhapDuoc && !vang && !coDiemChinhThuc(cell) && !chanDau(cell) && !doiDiem;
+  const nhanVang = nhapDuoc && !vang && !coDiemChinhThuc(cell) && !chanDau(cell) && !doiDiem && !cell.khongVang;
   /* Hộp có chữ đã gõ chưa gửi = một ô chưa lưu (bảng điểm theo lượt chặn đổi lượt — như hộp lý do cũ). */
   useBaoHopLyDoMo(busy, daGo);
 
@@ -264,6 +264,8 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, gvMacDi
 
   const luu = (tiep: boolean) => {
     if (dauLai) { setLoi({ cau: t('Đã ghi vắng — muốn gỡ thì bấm Bỏ vắng.'), o: 0 }); return; }
+    /* Rà #410: ô không nhận "-" (lớp đã kết thúc — cờ máy chủ `khongVang`): báo tại hộp, không gửi. */
+    if (cell.khongVang && doiDiem && diem.patch?.noShow === true) { setLoi({ cau: dich(cell.khongVang), o: 0 }); return; }
     if (doiDiem && !diem.patch) { setLoi({ cau: diem.loi ?? LOI_SO_CAU, o: diem.o }); return; }
     /* OV-12b: thiếu → không gửi; con trỏ tới đúng chỗ thiếu (nút Lưu đã tắt, đây là đường Enter / Ctrl+Enter). */
     if (thieu) {

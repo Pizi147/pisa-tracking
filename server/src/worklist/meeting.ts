@@ -298,9 +298,11 @@ export function saveUnitReport(
     }
   }
 
-  /* OV-13h: giờ NGHIỆP VỤ (ngày demo ở bản demo) — nhãn "nộp muộn" so ngày nộp với hạn của tuần. */
-  const submittedAt = patch.nop ? mocNghiepVu() : null;
-  const submittedBy = patch.nop ? p.userId : null;
+  /* OV-13h: giờ NGHIỆP VỤ (ngày demo ở bản demo) — nhãn "nộp muộn" so ngày nộp với hạn của tuần.
+   * Rà #410: "Lưu" trên báo cáo ĐÃ NỘP = sửa bản đã nộp — giữ người / lúc nộp (không quay về nháp); lịch sử ghi `sua`. */
+  const suaBanNop = !patch.nop && !!before?.submitted_at;
+  const submittedAt = patch.nop ? mocNghiepVu() : suaBanNop ? before.submitted_at : null;
+  const submittedBy = patch.nop ? p.userId : suaBanNop ? before.submitted_by : null;
   conn
     .prepare(
       `INSERT INTO unit_reports (reporting_unit_id, period_id, category_key, category_label, status, note,
@@ -332,7 +334,7 @@ export function saveUnitReport(
        VALUES (?,?,?,?,?,?,?,?)`,
     )
     .run(unitId, periodId, categoryKey, after.status ?? null, after.note ?? null, p.userId, nowIso(),
-         patch.nop ? 'nop' : 'nhap');
+         patch.nop ? 'nop' : suaBanNop ? 'sua' : 'nhap');
   writeAudit({ actorUserId: p.userId, action: 'unit_report.save', entityType: 'unit_report',
     entityId: (after as any).id, entityLabel: `${unit.name} · ${cat.label}`, before, after });
   return after;

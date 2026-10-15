@@ -202,7 +202,7 @@ export function requestAbsenceMove(p: Principal, attemptId: number, skills: stri
   if (!canRequest(p, attempt)) {
     throw forbidden('Chỉ giáo viên chủ nhiệm của lớp và Quản lý mới xử lý được việc vắng thi.');
   }
-  chanVangLopKetThuc(p, attempt.class_id);
+  chanVangLopKetThuc(attempt.class_id);
   if (attempt.status === 'cancelled') throw badRequest('Đợt này đã huỷ.');
   const list = [...new Set(skills)];
   if (!list.length) throw badRequest('Chưa chọn kỹ năng nào.');
@@ -955,7 +955,7 @@ export function baoVang(p: Principal, attemptId: number, skill: string, lyDo: st
   const conn = db();
   const a = loadAttempt(attemptId);
   if (!canRequest(p, a)) throw forbidden('Chỉ giáo viên chủ nhiệm của lớp và Quản lý báo vắng được.');
-  chanVangLopKetThuc(p, a.class_id);
+  chanVangLopKetThuc(a.class_id);
   if (a.kind !== 'mock') throw badRequest('Bài lớp thường báo vắng ở bảng điểm lớp thường.');
   if (a.status === 'cancelled') throw badRequest('Đợt này đã huỷ.');
   if (a.lich_su) throw badRequest('MT cũ không vào luồng vắng — nhập bù điểm, không dời lịch.');
