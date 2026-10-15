@@ -1,0 +1,20 @@
+/** OV-13l — Chuyển lớp "Ngay hôm nay" (ô tuần, khối "Khi chuyển", nút, trạng thái Đã chuyển). Khoá = chữ Việt trên web. */
+export const EN_OV13L = {
+  'Ngay hôm nay': 'Today',
+  'Ngay hôm nay · {ngay}': 'Today · {ngay}',
+  'ngay hôm nay': 'today',
+  'Chuyển ngay': 'Move now',
+  'Chuyển ngay · {n} em': 'Move now · {n} students',
+  'Đang chuyển…': 'Moving…',
+  'Khi chuyển, web sẽ — chuyển ngay, không hoàn tác': 'On move, the web will — move now, cannot be undone',
+  'Chuyển ngay, không hoàn tác': 'Moves now, cannot be undone',
+  'Em sang {lop} ngay khi lưu': 'Student joins {lop} on save',
+  'Điểm {tu} – hôm nay ở lại {lop}': 'Scores {tu} – today stay with {lop}',
+  'Đã chuyển sang {lop} từ hôm nay {ngay} · bàn giao hạn {han}': 'Transferred to {lop} from today {ngay} · handover due {han}',
+  'Hồ sơ {lop}': '{lop} profile',
+  'Không lưu được — chưa chuyển': 'Not saved — not moved',
+  'Đã chuyển {n} em': 'Transferred {n} students',
+  'Từ {lop} · {ngay}': 'From {lop} · {ngay}',
+  'Đã nhận {n} em vào lớp {code}': (b: { n?: unknown; code?: unknown }) => `${b.n} ${Number(b.n) === 1 ? 'student' : 'students'} joined class ${b.code}`,
+  'Từ {code} · vào lớp từ hôm nay': 'From {code} · joined today',
+};

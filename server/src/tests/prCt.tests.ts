@@ -29,9 +29,9 @@ export async function runPrCtTests(t: YThucTestKit) {
     assert(!d.tuanHopLe('2026-09-21', HOM_NAY), 'tuần đã qua');
     assert(d.tuanHopLe('2026-10-05', HOM_NAY), 'Thứ Hai tuần sau');
   });
-  check('CT (1c) · hanBanGiao tính cả ngày ra quyết định: 30/09 → GVBM 01/10, GVCN 02/10', () => {
+  check('CT (1c) · hanBanGiao tính cả ngày ra quyết định (OV-13l: 7 ngày, GVBM = GVCN): 30/09 → 06/10', () => {
     const h = d.hanBanGiao('2026-09-30');
-    assert(h.gvbm === '2026-10-01' && h.gvcn === '2026-10-02', JSON.stringify(h));
+    assert(h.gvbm === '2026-10-06' && h.gvcn === '2026-10-06', JSON.stringify(h));
   });
   check('CT (1d) · coPhieu: mọi hướng trừ Dừng học hẳn · canLopDich: trừ Tạm dừng học (bảo lưu) và Dừng học hẳn', () => {
     for (const h of d.HUONG_LENH) {
@@ -45,9 +45,9 @@ export async function runPrCtTests(t: YThucTestKit) {
     assert(d.kiemDongLenh(dong({ lopDichId: null })) === 'Chọn lớp chuyển đến', 'thiếu lớp chuyển đến');
     assert(d.kiemDongLenh(dong({ huong: 'bao_luu', lopDichId: null, lyDo: 'đi xa', ngayXemLai: '2026-11-02' })) === null, 'tạm dừng học (bảo lưu) không cần lớp chuyển đến');
   });
-  check('CT (1f) · kiemDongLenh: tuần hiện tại / trống / không phải Thứ Hai → "Tuần bắt đầu phải từ tuần sau trở đi"', () => {
+  check('CT (1f) · kiemDongLenh: tuần hiện tại / trống / không phải Thứ Hai → "Tuần bắt đầu phải là hôm nay hoặc từ tuần sau trở đi"', () => {
     for (const tuan of ['2026-09-28', '2026-10-06']) {
-      assert(d.kiemDongLenh(dong({ tuan })) === 'Tuần bắt đầu phải từ tuần sau trở đi', `tuần ${tuan}`);
+      assert(d.kiemDongLenh(dong({ tuan })) === d.LOI_TUAN_BAT_DAU, `tuần ${tuan}`);
     }
     assert(d.kiemDongLenh(dong({ tuan: null })) === 'Chọn tuần bắt đầu.', 'OV-11g HL-12: ô trống nói "Chọn tuần bắt đầu."');
   });
@@ -184,6 +184,8 @@ export async function runPrCtTests(t: YThucTestKit) {
   const all = (sql: string, ...a: unknown[]) => conn.prepare(sql).all(...a) as any[];
   const TUAN = d.tuanChonDuoc(TODAY) as string[];   // các Thứ Hai hợp lệ: TUAN[0] = tuần sau
   const mondayNow = d.mondayOfDate(TODAY) as string;
+  /* OV-13l: TODAY (14/09) là Thứ Hai → "Thứ Hai tuần này" = "Ngay hôm nay" (hợp lệ, chuyển ngay). Tuần đã qua dùng Thứ Hai tuần trước. */
+  const tuanQua = t.addDays(mondayNow, -7) as string;
   let seq = 0;
   const week: any = await import('../platform/week.ts');
   const schedule: any = await import('../classes/schedule.ts');
@@ -277,7 +279,7 @@ export async function runPrCtTests(t: YThucTestKit) {
     const lo = hocVien(nguon, 'FOU', false).sid;
     const ngoai = hocVien(fouLai, 'FOU', false).sid;
     const r = lenh.raLenh(P.mbManager, { lopNguonId: nguon, boiCanh: 'cuoi-khoa', tuanChung: null, dongs: [
-      dongCua(em[1], 'len_lop', beDich, { tuan: mondayNow }),
+      dongCua(em[1], 'len_lop', beDich, { tuan: tuanQua }),
       dongCua(em[2], 'len_lop', null),
       dongCua(em[3], 'len_lop', fouLai),
       dongCua(em[5], 'fast_track', ftDich),
@@ -321,7 +323,7 @@ export async function runPrCtTests(t: YThucTestKit) {
     assert(r.ok.length === 1 && lenhCua(em[2]).trang_thai === 'cho', 'sau huỷ ra quyết định mới được (chỉ mục chỉ chặn lệnh "cho")');
     /* tuần bắt đầu đã tới (đặt lại bằng SQL) → sửa mà giữ tuần cũ bị chặn (tuần phải từ tuần sau). PR-S5F-a: huỷ / sửa sang tuần mới được — xem prS5fA. */
     const den = lenhCua(em[3]);
-    conn.prepare('UPDATE lenh_chuyen_lop SET tuan_bat_dau = ? WHERE id = ?').run(mondayNow, den.id);
+    conn.prepare('UPDATE lenh_chuyen_lop SET tuan_bat_dau = ? WHERE id = ?').run(tuanQua, den.id);
     assert(maLoi(() => lenh.suaLenh(P.mbManager, den.id, { lyDo: 'đổi ý' })) === 400, 'sửa sau tuần bắt đầu mà giữ tuần cũ phải 400');
     conn.prepare('UPDATE lenh_chuyen_lop SET tuan_bat_dau = ? WHERE id = ?').run(TUAN[0], den.id);
   });
@@ -330,7 +332,7 @@ export async function runPrCtTests(t: YThucTestKit) {
     lenh.suaLenh(P.mbManager, l.id, { tuan: TUAN[2], huong: 'len_lop', toClassId: beDich });
     const sau = lenhCua(em[3]);
     assert(sau.tuan_bat_dau === TUAN[2] && sau.lop_dich_id === beDich && sau.huong === 'len_lop', JSON.stringify(sau));
-    assert(maLoi(() => lenh.suaLenh(P.mbManager, l.id, { tuan: mondayNow })) === 400, 'sửa sang tuần hiện tại phải 400');
+    assert(maLoi(() => lenh.suaLenh(P.mbManager, l.id, { tuan: tuanQua })) === 400, 'sửa sang tuần đã qua phải 400');
     assert(lenhCua(em[3]).tuan_bat_dau === TUAN[2], 'lỗi thì không đổi gì');
   });
   check('CT (3h) · thông báo "Sắp nhận": MỘT thông báo mỗi lớp chuyển đến cho GVCN lớp chuyển đến; ra quyết định thêm cùng ngày chỉ cập nhật số, không nhân đôi', () => {
@@ -518,16 +520,14 @@ export async function runPrCtTests(t: YThucTestKit) {
     assert(c.status === 'open' && c.owner_user_id === gvW.userId, `Case: ${JSON.stringify(c)}`);
     assert(get(`SELECT status FROM classes WHERE id = ?`, ftA).status === 'active', 'lớp FT rút hết em vẫn không tự kết thúc (Q21)');
   });
-  check('CT (4i) · FT LT → RF: lộ trình MỚI theo lớp chuyển đến (M-20), lượt MT mặc định đánh lại từ MT1', () => {
+  check('CT (4i) · FT LT → RF (OV-13l, chủ SP 15/10): GIỮ lộ trình đang chạy — cùng id, đổi mã RF, lượt MT giữ, sang lớp mới', () => {
     const ftLt = lopMoi({ kind: 'FT', ft: true, route: 'LT1', tuanHienTai: 5 });
     const ftRf = lopMoi({ kind: 'FT', ft: true, route: 'RF', tuanHienTai: 1 });
     const g = hocVien(ftLt, 'FT', true, 6.5);
     ra(P.mbManager, ftLt, 'giua-khoa', [dongCua(g.sid, 'chuyen_lop', ftRf, { lyDo: 'đổi lộ trình' })]);
     assert(chay(THU_HAI).daChuyen === 1, 'chuyển');
     const moi = chuKyHienTai(g.sid);
-    assert(moi.id !== g.cyc && moi.route === 'RF' && moi.target_score === 6.5, JSON.stringify(moi));
-    assert(get(`SELECT status FROM learning_cycles WHERE id = ?`, g.cyc).status === 'completed', 'lộ trình cũ đóng');
-    assert(get(`SELECT MIN(attempt_no) m FROM assessment_attempts WHERE cycle_id = ?`, moi.id).m === 1, 'MT đánh lại từ MT1');
+    assert(moi.id === g.cyc && moi.route === 'RF' && moi.target_score === 6.5, JSON.stringify(moi));
   });
   await checkAsync('CT (4j) · chotVangDinhKy trả daChuyen; lỗi chuyển lớp không làm hỏng lượt quét (OV-1b: không còn chốt "-")', async () => {
     const chot: any = await import('../ops/chotVangDinhKy.ts');
@@ -830,7 +830,7 @@ export async function runPrCtTests(t: YThucTestKit) {
     const v = { toClassId: dichKhac, tuan: TUAN[0], lyDo: 'Phụ huynh xin chuyển sang lớp khác giờ học.' };
     assert(maLoi(() => lenh.guiDeXuatChuyenLop(gBm, e, v)) === 403 && maLoi(() => lenh.guiDeXuatChuyenLop(gKhac, e, v)) === 403, 'GVBM / GVCN lớp khác → 403');
     assert(maLoi(() => lenh.guiDeXuatChuyenLop(gCn, e, { ...v, lyDo: ' ' })) === 400, 'lý do trống');   // PR-MTa T7: bỏ tối thiểu 15 ký tự
-    assert(maLoi(() => lenh.guiDeXuatChuyenLop(gCn, e, { ...v, tuan: mondayNow })) === 400, 'tuần hiện tại');
+    assert(maLoi(() => lenh.guiDeXuatChuyenLop(gCn, e, { ...v, tuan: tuanQua })) === 400, 'tuần đã qua');
     const r = lenh.guiDeXuatChuyenLop(gCn, e, v);
     const the = get('SELECT * FROM yeu_cau_duyet WHERE id = ?', r.id);
     assert(the.loai === 'de_xuat_chuyen_lop' && the.phan_loai === 'thong-tin-hv' && the.han_duyet === d.hanTheoNgay(TODAY, 5) && the.nguoi_xin === gCn.userId, JSON.stringify(the));
@@ -1014,10 +1014,10 @@ export async function runPrCtTests(t: YThucTestKit) {
     const x = get(`SELECT * FROM yeu_cau_duyet WHERE loai = 'de_xuat_chuyen_lop' AND hoc_vien_id = ?`, emCua('Đinh Quốc Bảo CT'));
     assert(x && x.phan_loai === 'thong-tin-hv' && x.nguoi_xin > 0 && x.han_duyet, JSON.stringify(x));
   });
-  check('CT (8e) · kịch bản 6 — MB FOU 23: lệnh ra 4 ngày trước, GVCN chưa xác nhận, hạn GVCN đã qua → thẻ Báo QL "Bàn giao quá hạn"', () => {
+  check('CT (8e) · kịch bản 6 — MB FOU 23: lệnh ra 9 ngày trước (hạn 7 ngày, OV-13l), GVCN chưa xác nhận, hạn GVCN đã qua → thẻ Báo QL "Bàn giao quá hạn"', () => {
     const id = lopMa('MB FOU 23');
     const ls = all(`SELECT * FROM lenh_chuyen_lop WHERE lop_nguon_id = ?`, id);
-    assert(ls.length === 2 && ls.every((l) => l.ngay_ra_lenh === t.addDays(TODAY, -4) && l.han_gvcn === t.addDays(TODAY, -2) && !l.xac_nhan_luc), JSON.stringify(ls.map((l) => [l.ngay_ra_lenh, l.han_gvcn])));
+    assert(ls.length === 2 && ls.every((l) => l.ngay_ra_lenh === t.addDays(TODAY, -9) && l.han_gvcn === t.addDays(TODAY, -3) && !l.xac_nhan_luc), JSON.stringify(ls.map((l) => [l.ngay_ra_lenh, l.han_gvcn])));
     assert(get(`SELECT COUNT(*) n FROM yeu_cau_duyet WHERE loai = 'bao_len_ban_giao' AND doi_tuong_id = ?`, id).n === 1, 'thẻ Báo QL bàn giao');
   });
   check('CT (8f) · lệnh đã chuyển Thứ Hai tuần demo: Nguyễn Phương Thảo ở MB BE 09 từ ngày demo, bàn giao đã xác nhận (4 môn + nhận xét), Hành trình có "Bàn giao"', () => {

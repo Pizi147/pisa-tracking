@@ -22,7 +22,7 @@ import { DEMO_DATE } from './journeys.ts';
  *     (3) và VẪN có lệnh. Thêm 1 em bảo lưu.
  *  4  MB FT 103   tách 2 em sang MB FT 104 (cùng lộ trình LT1) từ tuần sau; một em có Case Reading đang mở (người nhận gợi ý = GV Reading lớp mới).
  *  5  MB FOU 22   GVCN đề xuất chuyển một em → thẻ "Đề xuất chuyển lớp" trong Chờ duyệt.
- *  6  MB FOU 23   2 em, lệnh ra 4 ngày trước, GVCN chưa xác nhận → thẻ Báo lên "Bàn giao quá hạn".
+ *  6  MB FOU 23   2 em, lệnh ra 9 ngày trước (hạn 7 ngày — OV-13l), GVCN chưa xác nhận → thẻ Báo lên "Bàn giao quá hạn".
  *  7  MB FOU 24   1 em ĐÃ chuyển Thứ Hai tuần này sang MB BE 09, bàn giao đã xác nhận → dải "Đã chuyển" + "Đọc bàn giao"; MB BE 09 có em "mới vào".
  */
 export function buildCtDemo(ctx: BuildCtx): { lenh: number; lop: number } {
@@ -131,7 +131,7 @@ export function buildCtDemo(ctx: BuildCtx): { lenh: number; lop: number } {
   const em23 = ['Hồ Diệu Anh CT', 'Vương Thu Hà CT'].map((ten) => hv(fou23, ten, '-'));
   for (const e of em23) cuoiKhoa(fou23, e.id, [18, 17, 18, 17]);
   ra(fou23, 'cuoi-khoa', em23.map((e) => dong(e.id, 'len_lop', be09)));
-  doiNgayRa(em23.map((e) => e.id), addDays(DEMO_DATE, -4));
+  doiNgayRa(em23.map((e) => e.id), addDays(DEMO_DATE, -9));   // OV-13l: hạn 7 ngày → quá hạn 3 ngày
 
   // ---------------------------------------------------------------- 7 · MB FOU 24 — đã chuyển Thứ Hai tuần này, bàn giao đã xác nhận
   const fou24 = lop('MB FOU 24', 'FOU', null, false, '2026-07-06', { listening: 'T_KHOA', reading: 'T_KHOA', writing: 'T_KHOA', speaking: 'T_TRANG' }, 'T_KHOA');

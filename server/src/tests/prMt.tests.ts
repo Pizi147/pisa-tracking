@@ -187,7 +187,10 @@ export async function runPrMtTests(t: YThucTestKit) {
     assert(cy.start_period_id, 'thiếu tuần bắt đầu');
     assert(luotCua(sH1).map((x) => x.no).join() === '1,2,3', JSON.stringify(luotCua(sH1)));
   });
-  check('PR-MT (3) · Chuyển em LT1 → lớp RF: lộ trình mới RF có MT1/MT2, Case đang mở đi theo lộ trình mới, không Case trùng (K5-60)', () => {
+  check('PR-MT (3) · Chuyển em LT1 → lớp RF (OV-13l): GIỮ lộ trình đang chạy (đổi mã RF), Case đang mở giữ, mốc Sang lộ trình, không Case trùng (K5-60)', () => {
+    /* OV-13l: chạy trong giao dịch cuộn lại — em demo không bị chuyển thật cho các phép kiểm sau. */
+    conn.exec('BEGIN IMMEDIATE');
+    try {
     const c = conn.prepare(
       `SELECT sc.id, sc.student_id, sc.category, sc.cycle_id FROM sos_cases sc
          JOIN learning_cycles cy ON cy.id = sc.cycle_id AND cy.status = 'active' AND cy.route = 'LT1'
@@ -199,13 +202,13 @@ export async function runPrMtTests(t: YThucTestKit) {
     assert(c, 'seed thiếu em FT LT1 có Case mở');
     luat.apDungMotDong(P.admin, { sid: c.student_id, toClassId: classId('MB FT RF 12'), ngay: TODAY, boiCanh: 'giua-khoa' });
     const moi = conn.prepare(`SELECT id, route FROM learning_cycles WHERE student_id = ? AND status = 'active'`).get(c.student_id) as any;
-    assert(moi.route === 'RF' && moi.id !== c.cycle_id, JSON.stringify(moi));
-    assert(luotCua(c.student_id).map((x) => x.no).join() === '1,2', JSON.stringify(luotCua(c.student_id)));
-    const sau = conn.prepare('SELECT cycle_id, dedup_key FROM sos_cases WHERE id = ?').get(c.id) as any;
-    assert(sau.cycle_id === moi.id && sau.dedup_key === `a:${c.student_id}:${moi.id}:${c.category}`, JSON.stringify(sau));
+    assert(moi.route === 'RF' && moi.id === c.cycle_id, JSON.stringify(moi));
+    const sau = conn.prepare('SELECT cycle_id FROM sos_cases WHERE id = ?').get(c.id) as any;
+    assert(sau.cycle_id === moi.id, JSON.stringify(sau));
     const trung = conn.prepare(`SELECT COUNT(*) n FROM sos_cases WHERE student_id = ? AND category = ? AND status != 'done'`).get(c.student_id, c.category) as any;
     assert(trung.n === 1, `Case ${c.category} mở: ${trung.n}`);
     assert(conn.prepare(`SELECT 1 FROM case_milestones WHERE case_id = ? AND kind = 'route_changed'`).get(c.id), 'thiếu mốc Sang lộ trình');
+    } finally { conn.exec('ROLLBACK'); }
   });
 
   // ---------------------------------------------------------------- khối 4: kỳ vọng / PA quy chế / Phối hợp theo lộ trình của lượt

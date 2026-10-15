@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { Han } from '../../ui/Han.tsx';
-import { CHU_CHUYEN_LOP, ngay, tuanLich, type DaiHocVien, type DaiLop } from '@shared/domain/index.ts';
+import { CHU_CHUYEN_LOP, mondayOfDate, ngay, thuNgay, tuanLich, type DaiHocVien, type DaiLop } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 
 /**
@@ -106,7 +106,9 @@ export function DaiHocVienChuyen({ dai, homNay, onLam }: {
           </>
         ) : (
           <>
-            {t('Từ {lop} tuần {tuan}', { lop: dai.lopNguon.code, tuan: tuanLich(dai.tuan, h) })}
+            {/* OV-13l: chuyển "Ngay hôm nay" (giữa tuần) → ghi ngày chuyển, không mã tuần. */}
+            {dai.tuan && mondayOfDate(dai.tuan) !== dai.tuan ? t('Từ {lop} · {ngay}', { lop: dai.lopNguon.code, ngay: thuNgay(dai.tuan, h) })
+              : t('Từ {lop} tuần {tuan}', { lop: dai.lopNguon.code, tuan: tuanLich(dai.tuan, h) })}
             {bg?.daXacNhan && <> · {t('bàn giao của {ai}, xác nhận {ngay}', { ai: bg.nguoiXacNhan ?? t('GVCN'), ngay: ngay(bg.ngayXacNhan, h) })}</>}
             {bg && !bg.daXacNhan && <> · {t('GVCN chưa xác nhận bàn giao')}</>}
           </>

@@ -466,7 +466,7 @@ export function luuNhap(p: Principal, classId: number, body: { items?: unknown }
       if (lech) { loi(`${lech}.`); continue; }
     }
     const tuan = it?.tuan || null;
-    if (tuan && !tuanHopLe(tuan, homNay)) { loi('Tuần bắt đầu phải từ tuần sau trở đi.'); continue; }
+    if (tuan && !tuanHopLe(tuan, homNay)) { loi('Tuần bắt đầu phải là hôm nay hoặc từ tuần sau trở đi.'); continue; }
     /* OV-9: "6.5 KCK" = Target + dấu KCK; "KCK" = dấu, chưa có Target. */
     const tg = huong === 'fast_track' && it?.mucTieu !== null && it?.mucTieu !== undefined && it?.mucTieu !== '' ? tachMucTieu(it.mucTieu) : null;
     const kck = !!tg?.kck;

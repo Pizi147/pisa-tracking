@@ -11,7 +11,9 @@ import { NORMAL_LADDER } from './fasttrack.ts';
 import type { Huong } from './lenLop.ts';
 import type { ProgrammeCode } from './normal.ts';
 import { tuanLich } from './hienThiNgay.ts';
+import { shortDate } from './display.ts';
 import { mondayOfDate } from './week.ts';
+import { t } from '../i18n/index.ts';
 import { kyHieuLop } from './tenLop.ts';
 import { hienTargetKck, tachKck } from './nhapHocVien.ts';
 
@@ -45,19 +47,34 @@ const congNgay = (iso: string, n: number) => {
   return d.toISOString().slice(0, 10);
 };
 
-/** Thứ Hai hợp lệ để bắt đầu: > Thứ Hai tuần này (không bao giờ tuần hiện tại, Q5). Trả `n` tuần kế tiếp cho ô chọn — nhãn qua `tuanLich`. */
+/** Thứ Hai hợp lệ để bắt đầu từ tuần sau: > Thứ Hai tuần này (Q5). Trả `n` tuần kế tiếp cho ô chọn — nhãn qua `tuanLich`. "Ngay hôm nay" do ô thêm riêng. */
 export function tuanChonDuoc(homNay: string, n = 6): string[] {
   const dau = mondayOfDate(homNay);
   return Array.from({ length: n }, (_, i) => congNgay(dau, 7 * (i + 1)));
 }
 
+/** OV-13l (chủ SP 15/10): tuần bắt đầu = đúng hôm nay → chuyển ngay khi lưu (không lùi về Thứ Hai, không hoàn tác). */
+export const laChuyenNgay = (tuan: string | null | undefined, homNay: string): boolean => !!tuan && tuan === homNay;
+
+/** Hợp lệ: "Ngay hôm nay" (đúng `homNay`) hoặc Thứ Hai sau tuần này. */
 export function tuanHopLe(tuan: string | null | undefined, homNay: string): boolean {
+  if (laChuyenNgay(tuan, homNay)) return ISO.test(homNay);
   return !!tuan && ISO.test(tuan) && !Number.isNaN(Date.parse(tuan)) && mondayOfDate(tuan) === tuan && tuan > mondayOfDate(homNay);
 }
+export const LOI_TUAN_BAT_DAU = 'Tuần bắt đầu phải là hôm nay hoặc từ tuần sau trở đi';
 
-/** Hạn bàn giao tính cả ngày ra lệnh (T66): GVBM 2 ngày, GVCN 3 ngày. */
+const THU = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+/** "T5 15/10" — thứ + ngày (hạn cụ thể, "Ngay hôm nay"). */
+export const thuNgay = (iso: string, homNay: string): string => `${THU[new Date(`${iso.slice(0, 10)}T00:00:00Z`).getUTCDay()]} ${shortDate(iso, homNay)}`;
+/** Nhãn tuần bắt đầu của lệnh: hôm nay → "Ngay hôm nay · T5 15/10", Thứ Hai → mã tuần. */
+export const nhanTuanBatDau = (tuan: string, homNay: string): string =>
+  (laChuyenNgay(tuan, homNay) ? t('Ngay hôm nay · {ngay}', { ngay: thuNgay(tuan, homNay) }) : tuanLich(tuan, homNay));
+
+/** OV-13l (chủ SP 15/10): hạn bàn giao tối thiểu — 7 ngày tính cả ngày ra lệnh, GVBM = GVCN. */
+export const HAN_BAN_GIAO_NGAY = 7;
 export function hanBanGiao(ngayRaLenh: string): { gvbm: string; gvcn: string } {
-  return { gvbm: hanTheoNgay(ngayRaLenh, 2), gvcn: hanTheoNgay(ngayRaLenh, 3) };
+  const h = hanTheoNgay(ngayRaLenh, HAN_BAN_GIAO_NGAY);
+  return { gvbm: h, gvcn: h };
 }
 
 /**
@@ -65,19 +82,19 @@ export function hanBanGiao(ngayRaLenh: string): { gvbm: string; gvcn: string } {
  * Chủ nhật tuần Final − 2 · GV bàn giao trước hết Chủ nhật tuần Final. Final tuần 10 → nhắc từ tuần 8, chốt hết tuần 8, bàn giao hết tuần 10.
  */
 export function mocLoTrinh(tuanFinal: string): { nhacTu: string; hanChot: string; hanBanGiao: string } {
-  const t = mondayOfDate(tuanFinal.slice(0, 10));
-  return { nhacTu: congNgay(t, -14), hanChot: congNgay(t, -8), hanBanGiao: congNgay(t, 6) };
+  const t2 = mondayOfDate(tuanFinal.slice(0, 10));
+  return { nhacTu: congNgay(t2, -14), hanChot: congNgay(t2, -8), hanBanGiao: congNgay(t2, 6) };
 }
 
 /**
- * Hạn bàn giao của MỘT lệnh, máy chủ + web cùng hàm. Lớp FT: 5 ngày tính cả ngày ra lệnh (GVBM = GVCN). Lớp thường Cuối khoá: hết tuần Final
- * và ít nhất 2 ngày sau ngày chốt (GVBM = GVCN). Còn lại (giữa khoá lớp thường, lớp không có tuần Final): 2 / 3 ngày như cũ.
+ * Hạn bàn giao của MỌI lệnh, máy chủ + web cùng hàm (OV-13l): muộn hơn của (ngày ra lệnh + 7 ngày, tính cả ngày ra lệnh) và mốc cũ; GVBM = GVCN.
+ * Mốc cũ chỉ còn muộn hơn ở lớp thường Cuối khoá (hết tuần Final); FT 5 ngày, giữa khoá 2 / 3 ngày luôn sớm hơn 7 ngày.
  */
 export function hanBanGiaoLenh(o: { nguonFt: boolean; boiCanh: string; tuanFinal: string | null; ngay: string }): { gvbm: string; gvcn: string } {
-  if (o.nguonFt) { const h = hanTheoNgay(o.ngay, 5); return { gvbm: h, gvcn: h }; }
-  if (o.boiCanh !== 'cuoi-khoa' || !o.tuanFinal) return hanBanGiao(o.ngay);
-  const toiThieu = congNgay(o.ngay, 2), cuoi = mocLoTrinh(o.tuanFinal).hanBanGiao;
-  const h = toiThieu > cuoi ? toiThieu : cuoi;
+  const bay = hanBanGiao(o.ngay);
+  if (o.nguonFt || o.boiCanh !== 'cuoi-khoa' || !o.tuanFinal) return bay;
+  const cuoi = mocLoTrinh(o.tuanFinal).hanBanGiao;
+  const h = cuoi > bay.gvcn ? cuoi : bay.gvcn;
   return { gvbm: h, gvcn: h };
 }
 
@@ -165,7 +182,7 @@ export function kiemDongLenh(d: {
   if (!d.huong) return 'Chọn hướng cho em';
   if (canLopDich(d.huong) && !d.lopDichId) return 'Chọn lớp chuyển đến';
   if (!d.tuan) return 'Chọn tuần bắt đầu.';   // HL-12: ô trống khác tuần sai
-  if (!tuanHopLe(d.tuan, d.homNay)) return 'Tuần bắt đầu phải từ tuần sau trở đi';
+  if (!tuanHopLe(d.tuan, d.homNay)) return LOI_TUAN_BAT_DAU;
   const canLyDo = d.khacGoiY || d.huong === 'chuyen_lop' || d.huong === 'bao_luu' || d.huong === 'dung_hoc';
   if (canLyDo && !(d.lyDo ?? '').trim()) return 'Ghi lý do ngắn';   // T7 (PR-MTa): không tối thiểu ký tự
   if (canLopDich(d.huong) && d.lopDichFt && !d.nguonFt && !mucTieuHopLe(d.mucTieu)) return 'Ghi Target (hoặc KCK)';
@@ -204,7 +221,7 @@ export function tomTatLenh(ds: readonly DongTomTatLenh[], homNay: string): strin
     .sort((a, b) => thuTu.indexOf(a[0].huong!) - thuTu.indexOf(b[0].huong!))
     .map((g) => {
       const { huong, lopDich, tuan, ngayXemLai } = g[0];
-      const tu = tuan ? ` từ ${tuanLich(tuan, homNay)}` : '';
+      const tu = !tuan ? '' : laChuyenNgay(tuan, homNay) ? ` ${t('ngay hôm nay')}` : ` từ ${tuanLich(tuan, homNay)}`;
       const ten = g.map((x) => (huong === 'fast_track' && x.mucTieu != null ? `${x.ten}, Target ${x.mucTieu}` : x.ten)).join(', ');
       const phu = g.filter((x) => x.ghiChu).map((x) => ` ${x.ten} ${x.ghiChu}.`).join('');
       const dau = `${g.length} em`;
@@ -431,7 +448,10 @@ export function dongKhiChuyen(x: DuLieuKhiChuyen): { khiChuyen: string[]; canhBa
       dong.push(`Giữ điểm đã có (${[...theoBai].map(([bai, ky]) => `${bai} ${ky.join(', ')}`).join('; ')})`);
     }
   } else if (x.khoa === 'giu') {
-    dong.push(x.nguonFt ? `Giữ lộ trình FT ${x.routeNguon ?? ''}`.trim() : `Giữ khoá ${ct}`);
+    /* OV-13l: FT → FT khác lộ trình vẫn giữ lộ trình đang chạy (chỉ đổi mã lộ trình). */
+    const doiLt = x.nguonFt && !!x.routeNguon && !!x.routeDich && x.routeNguon !== x.routeDich;
+    dong.push(doiLt ? `Giữ lộ trình FT, đổi ${x.routeNguon} → ${x.routeDich}, tuần học tính như cũ`
+      : x.nguonFt ? `Giữ lộ trình FT ${x.routeNguon ?? ''}`.trim() : `Giữ khoá ${ct}`);
     dong.push(x.nguonFt ? 'MT chưa thi chuyển sang lớp mới' : 'Bài chưa làm chuyển sang lớp mới');
   } else {
     dong.push('Đóng lộ trình cũ và mở lộ trình mới theo lớp chuyển đến', 'Bài chưa làm ở lại lớp cũ');

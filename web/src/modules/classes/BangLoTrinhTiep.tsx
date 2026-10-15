@@ -10,11 +10,12 @@ import { DauDuoi } from '../../ui/Nhan.tsx';
 import { TheDong, useDienThoai } from '../../ui/TheDong.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { MuiTen } from '../cases/SkillBoard.tsx';
-import { OTuan } from './TransitionPanel.tsx';
+import { KHOI_VANG, NutHomNay, OTuan } from './TransitionPanel.tsx';
+import { t } from '@shared/i18n/index.ts';
 import { BanGiaoPanel } from './BanGiaoPanel.tsx';
 import { nhapDiemCua, type QuyenDong } from './thaoTacDongHocVien.tsx';
 import {
-  NORMAL_LADDER, REGULAR_SKILLS, addDaysIso, RATIO_PASS_THRESHOLD, canLopDich, ghepMucTieu, hienMucTieu, tachMucTieu, coPhieu, khopLocLoTrinh, maHocLai, mocLoTrinh, nhomLoTrinh, tenMonNgan, tuanLich,
+  NORMAL_LADDER, REGULAR_SKILLS, addDaysIso, RATIO_PASS_THRESHOLD, canLopDich, ghepMucTieu, hienMucTieu, tachMucTieu, coPhieu, khopLocLoTrinh, laChuyenNgay, maHocLai, mocLoTrinh, nhomLoTrinh, tenMonNgan, tuanLich,
   type HuongLenh, type LocLoTrinh, type MucTieuLenh, type NhomLoTrinh, type ProgrammeCode, type RegularSkill,
 } from '@shared/domain/index.ts';
 
@@ -268,7 +269,7 @@ export function BangLoTrinhTiep({ classId, quyen, onDoi, emMo, onDaMoEm }: {
         : await api.put(`/classes/${classId}/lo-trinh-nhap`, { items: dongs });
       setLoiDong(Object.fromEntries(r.failed.map((f) => [f.studentId, f.message])));
       setChon(new Set(r.failed.map((f) => f.studentId)));
-      toast.push(r.failed.length ? 'error' : 'ok', `${chotLuon ? 'Đã chốt' : 'Đã lưu nháp'} ${r.ok.length} em${r.failed.length ? ` · ${r.failed.length} em chưa lưu — xem lý do ở dòng` : ''}`);
+      toast.push(r.failed.length ? 'error' : 'ok', `${chotLuon ? (laChuyenNgay(lo.tuan, h) ? t('Đã chuyển') : 'Đã chốt') : 'Đã lưu nháp'} ${r.ok.length} em${r.failed.length ? ` · ${r.failed.length} em chưa lưu — xem lý do ở dòng` : ''}`);
       xong();
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
   };
@@ -322,11 +323,13 @@ export function BangLoTrinhTiep({ classId, quyen, onDoi, emMo, onDaMoEm }: {
               {lopLo.map((c) => <option key={c.id} value={c.id}>{c.code} · {c.studentCount} HV</option>)}
             </select>
           )}
-          <span className="w-36"><OTuan tuanChon={d.tuanChon} value={lo.tuan} onChange={(v) => setLo({ ...lo, tuan: v })} ariaLabel="Tuần bắt đầu" chuaChon="Tuần…" /></span>
+          <NutHomNay nho homNay={homNay} chon={!!homNay && lo.tuan === homNay} onClick={() => setLo({ ...lo, tuan: homNay ?? '' })} />
+          <span className="w-36"><OTuan tuanChon={d.tuanChon} value={laChuyenNgay(lo.tuan, h) ? '' : lo.tuan} onChange={(v) => setLo({ ...lo, tuan: v })} ariaLabel="Tuần bắt đầu" chuaChon="Tuần…" /></span>
           <span className="flex-1" />
           <button type="button" className="btn btn-sm btn-ghost min-h-[44px] sm:min-h-0" onClick={() => { setChon(new Set()); setLoiDong({}); }} disabled={busy}>Bỏ chọn</button>
           <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => luuLo(false)} disabled={busy}>Lưu nháp</button>
-          <button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" onClick={() => luuLo(true)} disabled={busy}>Chốt {chon.size} em</button>
+          <button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" onClick={() => luuLo(true)} disabled={busy}>
+            {laChuyenNgay(lo.tuan, h) ? t('Chuyển ngay · {n} em', { n: chon.size }) : <>Chốt {chon.size} em</>}</button>
         </div>
       )}
 
@@ -364,6 +367,7 @@ function HopLoTrinh({ classId, kh, em, ke, onDong, onXong }: {
   classId: number; kh: KeHoach; em: Em; ke: ProgrammeCode | null; onDong: () => void; onXong: () => void;
 }) {
   const toast = useToast();
+  const { homNay } = useNgayNghiepVu();
   const goc = ltCua(em);
   const [huong, setHuong] = useState<HuongLenh | ''>(goc?.huong ?? '');
   const [lop, setLop] = useState<number | ''>(goc?.lopDichId ?? '');
@@ -401,8 +405,8 @@ function HopLoTrinh({ classId, kh, em, ke, onDong, onXong }: {
   const chot = () => chay(async () => {
     const r: any = await api.post(`/classes/${classId}/transition`, { tuanChung: null, dongs: [{ studentId: em.id, ...than(), lyDo: ghiChu }] });
     return r.failed[0]?.message ?? null;
-  }, 'Đã chốt');
-  const sua = () => chay(async () => { await api.patch(`/lenh-chuyen/${em.lenh!.id}`, { ...than(), lyDo: ghiChu }); return null; }, 'Đã lưu');
+  }, ngayNay ? t('Đã chuyển') : 'Đã chốt');
+  const sua = () => chay(async () => { await api.patch(`/lenh-chuyen/${em.lenh!.id}`, { ...than(), lyDo: ghiChu }); return null; }, ngayNay ? t('Đã chuyển') : 'Đã lưu');
   const xoaNhap = () => chay(async () => { await api.del(`/classes/${classId}/lo-trinh-nhap/${em.id}`); return null; }, 'Đã xoá nháp');
   const huyLenh = () => chay(async () => {
     if (!huy?.trim()) return 'Ghi lý do huỷ.';
@@ -411,6 +415,8 @@ function HopLoTrinh({ classId, kh, em, ke, onDong, onXong }: {
   }, 'Đã huỷ quyết định');
   const btn = 'btn btn-sm min-h-[44px] sm:min-h-0';
   const final = em.cuoiKhoa?.tyLe;
+  /* OV-13l: "Ngay hôm nay" — Chốt / Lưu chuyển luôn, không hoàn tác (khung vàng, nút "Chuyển ngay"). */
+  const ngayNay = !!homNay && laChuyenNgay(tuan, homNay) && !!huong && huong !== 'dung_hoc';
   /** Lệnh chuyển lớp (bối cảnh giua-khoa): sửa ở Chuyển lớp…, ở đây chỉ xem / huỷ. */
   const giuaKhoa = em.lenh?.huong === 'chuyen_lop';
 
@@ -424,14 +430,14 @@ function HopLoTrinh({ classId, kh, em, ke, onDong, onXong }: {
       <>
         <button type="button" className={`${btn} btn-ghost`} onClick={() => setHuy('')} disabled={busy}>Huỷ quyết định</button>
         <span className="flex-1" />
-        {!giuaKhoa && <button type="button" className={`${btn} btn-primary`} onClick={sua} disabled={busy}>{busy ? 'Đang lưu…' : 'Lưu'}</button>}
+        {!giuaKhoa && <button type="button" className={`${btn} btn-primary`} onClick={sua} disabled={busy}>{busy ? 'Đang lưu…' : ngayNay ? t('Chuyển ngay') : 'Lưu'}</button>}
       </>
     ) : (
       <>
         {em.nhap && <button type="button" className={`${btn} btn-ghost`} onClick={xoaNhap} disabled={busy}>Xoá nháp</button>}
         <span className="flex-1" />
         <button type="button" className={btn} onClick={luuNhap} disabled={busy}>Lưu nháp</button>
-        <button type="button" className={`${btn} btn-primary`} onClick={chot} disabled={busy}>{busy ? 'Đang lưu…' : 'Chốt'}</button>
+        <button type="button" className={`${btn} btn-primary`} onClick={chot} disabled={busy}>{busy ? 'Đang lưu…' : ngayNay ? t('Chuyển ngay') : 'Chốt'}</button>
       </>
     )}>
       <div className="space-y-3">
@@ -461,8 +467,15 @@ function HopLoTrinh({ classId, kh, em, ke, onDong, onXong }: {
               </Truong>
             )}
             {huong && huong !== 'dung_hoc' && (
-              <Truong nhan="Tuần bắt đầu"><OTuan tuanChon={kh.tuanChon} value={tuan} onChange={setTuan} ariaLabel="Tuần bắt đầu" chuaChon="Chọn tuần" /></Truong>
+              <div className="grid grid-cols-[110px_minmax(0,1fr)] items-center gap-2 text-sm max-sm:grid-cols-1">
+                <span className="text-[12px] font-semibold text-slate-300">Tuần bắt đầu</span>
+                <span className="flex flex-wrap items-center gap-1.5">
+                  <NutHomNay nho homNay={homNay} chon={ngayNay} onClick={() => setTuan(homNay ?? '')} />
+                  <span className="w-36"><OTuan tuanChon={kh.tuanChon} value={homNay && laChuyenNgay(tuan, homNay) ? '' : tuan} onChange={setTuan} ariaLabel="Tuần bắt đầu" chuaChon="Chọn tuần" /></span>
+                </span>
+              </div>
             )}
+            {ngayNay && <p role="note" className="m-0 rounded-lg border px-3 py-2 text-[13px] font-semibold text-soon" style={KHOI_VANG}>⚠ {t('Chuyển ngay, không hoàn tác')}</p>}
             {huong === 'fast_track' && (
               /* OV-9: ô Target + ô tích KCK — khung div (không lồng label). */
               <div className="grid grid-cols-[110px_minmax(0,1fr)] items-center gap-2 text-sm max-sm:grid-cols-1">

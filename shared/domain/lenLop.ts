@@ -93,11 +93,9 @@ export type LuatDoiLop = {
   endKind: EndKind;                   // ghi vào enrollments.end_kind của dòng cũ → "Kết thúc vì"
 };
 export function luatDoiLop(tu: LoaiLop, den: LoaiLop, boiCanh: 'giua-khoa' | 'cuoi-khoa'): LuatDoiLop {
-  if (tu.ft && den.ft) {   // K2-17, M-20: khác lộ trình = mở lộ trình mới, Case đi theo em
-    return tu.lt && den.lt && tu.lt !== den.lt
-      ? { khoa: 'dong-mo', dongCase: null, canMucTieu: false, endKind: 'chuyen_lop' }
-      : { khoa: 'giu', dongCase: null, canMucTieu: false, endKind: 'chuyen_lop' };
-  }
+  /* OV-13l (chủ SP 15/10, thay K2-17/M-20): FT → FT luôn GIỮ lộ trình đang chạy — khác lộ trình chỉ đổi mã (LT1 → LT2), điểm / lượt / Case / PA
+     đi theo em, tuần học tính như cũ. Lộ trình mới chỉ mở khi lộ trình đã kết thúc hẳn (Bước tiếp sau thi). */
+  if (tu.ft && den.ft) return { khoa: 'giu', dongCase: null, canMucTieu: false, endKind: 'chuyen_lop' };
   if (tu.ft) return { khoa: 'dong-mo', dongCase: 'normal', canMucTieu: false, endKind: 'chuyen_lop' };   // Q10
   if (den.ft) return { khoa: 'dong-mo', dongCase: 'ft', canMucTieu: true, endKind: 'sang_ft' };          // S17
   if (boiCanh === 'cuoi-khoa') {

@@ -142,9 +142,9 @@ export async function runPrLopTests(t: YThucTestKit) {
     assert(ma.join('|') === [...ma].map((code: string) => ({ code })).sort(d.soSanhLop).map((x: any) => x.code).join('|'), ma.join(' · '));
   });
 
-  check('LOP (7) · luatDoiLop: FT → FT khác lộ trình = mở lộ trình mới, Case đi theo em (K2-17, M-20)', () => {
+  check('LOP (7) · luatDoiLop: FT → FT khác lộ trình = GIỮ lộ trình đang chạy, Case đi theo em (OV-13l thay K2-17, M-20)', () => {
     const r = d.luatDoiLop({ ma: 'FT', ft: true, lt: 'LT1' }, { ma: 'FT', ft: true, lt: 'RF' }, 'giua-khoa');
-    assert(r.khoa === 'dong-mo' && r.dongCase === null && !r.canMucTieu, JSON.stringify(r));
+    assert(r.khoa === 'giu' && r.dongCase === null && !r.canMucTieu, JSON.stringify(r));
     assert(d.luatDoiLop({ ma: 'FT', ft: true, lt: 'LT1' }, { ma: 'FT', ft: true, lt: 'LT1' }, 'giua-khoa').khoa === 'giu', 'cùng lộ trình giữ');
     assert(d.luatDoiLop({ ma: 'FT', ft: true }, { ma: 'FT', ft: true }, 'giua-khoa').khoa === 'giu', 'thiếu lt (dữ liệu cũ) giữ như cũ');
   });

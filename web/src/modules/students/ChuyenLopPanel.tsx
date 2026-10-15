@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { api, invalidate } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { useToast } from '../../ui/Toast.tsx';
@@ -8,10 +9,11 @@ import { ErrorState, NutChon, OKck, Skeleton } from '../../ui/ui.tsx';
 import { ChonNguoi, type NguoiTrongDs } from '../../ui/PeoplePicker.tsx';
 import { useDienThoai } from '../../ui/TheDong.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
-import { OTuan } from '../classes/TransitionPanel.tsx';
+import { KHOI_VANG, NutHomNay, OTuan } from '../classes/TransitionPanel.tsx';
+import { t } from '@shared/i18n/index.ts';
 import {
-  CHU_CHUYEN_LOP, TOI_DA_NHIEU_EM, canHoiTarget, chuTargetKck, tachKck, chonGuiNhieuEm, docOTarget, chuTuanHoc, chuTyLeXetLai, dsLoi, hanBanGiaoLenh, kyHieuLop, ngay, phuLopDich, tomTatChuyenEm,
-  tuanChonDuoc, tuanLich, type LoiTruong, type LuatTruong, type MucTieuLenh,
+  CHU_CHUYEN_LOP, TOI_DA_NHIEU_EM, canHoiTarget, chuTargetKck, tachKck, chonGuiNhieuEm, docOTarget, chuTuanHoc, chuTyLeXetLai, dsLoi, hanBanGiaoLenh, kyHieuLop, laChuyenNgay,
+  mondayOfDate, ngay, nhanTuanBatDau, phuLopDich, thuNgay, tomTatChuyenEm, tuanChonDuoc, tuanLich, type LoiTruong, type LuatTruong, type MucTieuLenh,
 } from '@shared/domain/index.ts';
 
 type LopDich = {
@@ -36,7 +38,7 @@ const dsLopDich = (lop: readonly LopDich[]): NguoiTrongDs[] => lop.map((l) => ({
 const conThieuChu = (daBam: boolean, loi: readonly LoiTruong[]) => (daBam && loi.length
   ? [{ nhan: 'Còn thiếu', lyDo: `${loi.every((l) => l.lyDo.startsWith('Chưa')) ? 'Còn thiếu' : 'Cần sửa'}: ${loi.map((l) => l.nhan).join(', ')}` }] : undefined);
 const loiMayChu = (e: any) => e?.message ?? 'Không lưu được — thử lại.';
-const khoiVang = { borderColor: 'rgb(var(--soon-line-rgb))', background: 'rgb(var(--soon-bg-rgb))' };
+const khoiVang = KHOI_VANG;
 
 /** Ô "Lớp chuyển đến": chưa chọn → gõ tên lớp; đã chọn → "mã · dòng phụ" + ✕ (mockup phần 2, như hàng nhóm của Lộ trình tiếp theo). */
 function OLopDich({ ds, value, onChange, ariaLabel, id, invalid, onBlur, disabled }: {
@@ -76,16 +78,17 @@ function OTarget({ value, onChange, ariaLabel, oProps, disabled }: {
   );
 }
 
-/** "Tuần bắt đầu": 3 mã tuần + "Chọn tuần" → ô tuần (`OTuan`). */
+/** "Tuần bắt đầu": "Ngay hôm nay" (OV-13l) + 3 mã tuần + "Chọn tuần" → ô tuần (`OTuan`). */
 function OTuanBatDau({ tuanChon, tuan, setTuan, homNay, oProps }: {
   tuanChon: string[]; tuan: string; setTuan: (t: string) => void; homNay: string | null; oProps: Record<string, unknown>;
 }) {
   const [khac, setKhac] = useState(false);
   const nut = tuanChon.slice(0, 3);
-  const ngoai = khac || (!!tuan && !nut.includes(tuan));
+  const ngoai = khac || (!!tuan && !nut.includes(tuan) && tuan !== homNay);
   return (
     <>
       <div {...oProps} tabIndex={-1} className="flex flex-wrap gap-1.5 outline-none">
+        <NutHomNay homNay={homNay} chon={!!homNay && tuan === homNay && !khac} onClick={() => { if (homNay) setTuan(homNay); setKhac(false); }} />
         {nut.map((t) => <NutChon key={t} chon={tuan === t && !khac} onClick={() => { setTuan(t); setKhac(false); }}>{tuanLich(t, homNay)}</NutChon>)}
         <NutChon chon={ngoai} onClick={() => setKhac(true)}>Chọn tuần</NutChon>
       </div>
@@ -137,6 +140,8 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone, cheDo,
   const [lyDoHuy, setLyDoHuy] = useState('');
   const lf = useLoiForm();
   const [busy, setBusy] = useState(false);
+  /* OV-13l: "Ngay hôm nay" đã thi hành → panel ở trạng thái "Đã chuyển" (không Hoàn tác). */
+  const [daChuyen, setDaChuyen] = useState<{ lop: { id: number; code: string }; han: string } | null>(null);
   /* Đổi lớp → đường xem trước mới (dữ liệu về null một lúc): phần không theo lớp (đang học, lệnh, tuần) giữ bản đã nạp — không nháy khung. */
   const nenRef = useRef<XemChuyenLopData | null>(null);
   if (xem.data) nenRef.current = xem.data;
@@ -191,6 +196,9 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone, cheDo,
   /* Không hỏi Target → không gửi: máy chủ lấy Target LTT / khoá; sửa lệnh thì giữ Target + Dự kiến thi của lệnh (R-C3). */
   const mucTieuGui = oTarget ? oT.giaTri : undefined;
   const xong = (chu: string) => { xongChuyen(); toast.push('ok', chu); onDone?.(); onClose(); };
+  /* OV-13l: ngày máy chủ (cùng ngày `tuanHopLe` kiểm). Chuyển ngay chỉ ở chế độ Quản lý ra lệnh. */
+  const homNayMay = nen?.today ?? homNay ?? null;
+  const ngayNay = !dx && !!homNayMay && laChuyenNgay(tuan, homNayMay);
 
   const gui = async () => {
     lf.bam();
@@ -206,13 +214,13 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone, cheDo,
         xong('Đã gửi đề xuất — Quản lý sẽ xem trong Chờ duyệt');
       } else if (duyet) {
         await api.post(`/yeu-cau/${duyet.id}/duyet`, { duLieu: { lopDichId: toClassId, tuan, lyDo: lyDo.trim(), mucTieu: mucTieuGui } });
-        xong('Đã duyệt và quyết định chuyển lớp');
+        if (ngayNay && dich) { xongChuyen(); setDaChuyen({ lop: { id: dich.id, code: dich.code }, han: hanGvcn }); } else xong('Đã duyệt và quyết định chuyển lớp');
       } else {
         /* PR-CL (B1, D15): ra mới hoặc sửa lệnh đang chờ — cùng một đường, máy chủ tính bối cảnh + hướng. */
-        await api.post(`/students/${studentId}/transfer`, { toClassId, tuan, lyDo: lyDo.trim(), mucTieu: mucTieuGui });
-        xong('Đã lưu quyết định chuyển lớp');
+        const r = await api.post<{ daChuyen?: number[] }>(`/students/${studentId}/transfer`, { toClassId, tuan, lyDo: lyDo.trim(), mucTieu: mucTieuGui });
+        if (r?.daChuyen?.includes(studentId) && dich) { xongChuyen(); setDaChuyen({ lop: { id: dich.id, code: dich.code }, han: hanGvcn }); } else xong('Đã lưu quyết định chuyển lớp');
       }
-    } catch (e: any) { toast.push('error', loiMayChu(e)); } finally { setBusy(false); }
+    } catch (e: any) { toast.push('error', ngayNay ? `${t('Không lưu được — chưa chuyển')} · ${loiMayChu(e)}` : loiMayChu(e)); } finally { setBusy(false); }
   };
   const huyLenh = async () => {
     if (!lenh || !lyDoHuy.trim()) return;
@@ -220,7 +228,23 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone, cheDo,
     try { await api.post(`/lenh-chuyen/${lenh.id}/huy`, { lyDo: lyDoHuy.trim() }); xong('Đã huỷ quyết định chuyển lớp'); } catch (e: any) { toast.push('error', loiMayChu(e)); } finally { setBusy(false); }
   };
 
-  const nhanChinh = dx ? (duyet ? 'Lưu' : 'Gửi đề xuất') : duyet ? 'Duyệt và quyết định' : lenh ? CHU_CHUYEN_LOP.luu : CHU_CHUYEN_LOP.quyetDinh;
+  const nhanChinh = dx ? (duyet ? 'Lưu' : 'Gửi đề xuất') : ngayNay ? t('Chuyển ngay') : duyet ? 'Duyệt và quyết định' : lenh ? CHU_CHUYEN_LOP.luu : CHU_CHUYEN_LOP.quyetDinh;
+  /* OV-13l: khối "Khi chuyển" của chuyển ngay — em sang lớp mới khi lưu; điểm từ Thứ Hai tới hôm nay ở lại lớp cũ (hôm nay là Thứ Hai thì không có dòng đó). */
+  const dongNgay = ngayNay && dich && dangHoc ? [t('Em sang {lop} ngay khi lưu', { lop: dich.code }),
+    ...(homNayMay && mondayOfDate(homNayMay) !== homNayMay ? [t('Điểm {tu} – hôm nay ở lại {lop}', { tu: thuNgay(mondayOfDate(homNayMay), homNayMay), lop: dangHoc.lop.code })] : [])] : [];
+
+  if (daChuyen) {
+    /* Nơi gọi đóng panel trong `onDone` → chỉ báo xong khi người dùng rời trạng thái "Đã chuyển". */
+    const dong = () => { onDone?.(); onClose(); };
+    return (
+      <KhungPanel tieuDe="Chuyển lớp" hocVien={studentName} lop={dt ? null : lop} onDong={dong}
+        chan={{ huy: { onClick: dong }, chinh: <Link className="btn min-h-[44px] max-sm:flex-1 sm:min-h-0" to={`/hoc-vien/lop/${daChuyen.lop.id}`} onClick={dong}>{t('Hồ sơ {lop}', { lop: daChuyen.lop.code })} ›</Link> }}>
+        <p role="status" className="mb-0 mt-3 text-sm text-ok">
+          ✓ {t('Đã chuyển sang {lop} từ hôm nay {ngay} · bàn giao hạn {han}', { lop: daChuyen.lop.code, ngay: thuNgay(homNayMay ?? '', homNayMay ?? ''), han: thuNgay(daChuyen.han, homNayMay ?? '') })}
+        </p>
+      </KhungPanel>
+    );
+  }
   /* Lỗi nạp lần đầu → cả panel báo lỗi + Thử lại; lỗi xem trước của MỘT lớp → chỉ khối "Khi chuyển" (ô đã nhập giữ nguyên). */
   const loiNap = lopDich.error ?? (dx || nen ? null : xem.error);
 
@@ -230,7 +254,7 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone, cheDo,
         daSua, huy: { onClick: onClose, disabled: busy },
         ...(!dx && lenh && !duyet ? { xoa: { nhan: CHU_CHUYEN_LOP.huy, onClick: () => setDangHuy((v) => !v) } } : {}),
         conThieu: conThieuChu(lf.daBam, loi),
-        chinh: <button type="button" className="btn btn-primary min-h-[44px] max-sm:flex-1 sm:min-h-0" onClick={gui} disabled={busy || !!loiNap || choXem}>{busy ? 'Đang lưu…' : nhanChinh}</button>,
+        chinh: <button type="button" className="btn btn-primary min-h-[44px] max-sm:flex-1 sm:min-h-0" onClick={gui} disabled={busy || !!loiNap || choXem}>{busy ? (ngayNay ? t('Đang chuyển…') : 'Đang lưu…') : nhanChinh}</button>,
         dongTren: !dx && dangHoc ? (
           <p className="m-0 px-4 pt-2 text-xs text-slate-400">GVCN {dangHoc.lop.code} bàn giao, hạn hết {ngay(hanGvcn, homNay)}.</p>
         ) : undefined,
@@ -246,7 +270,7 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone, cheDo,
             </p>
           )}
           {lenh?.loi && !duyet && <p role="alert" className="mb-0 mt-2 text-xs text-late">Chưa chuyển được: {lenh.loi}</p>}
-          {!dx && lenh && !duyet && !lenh.loi && <p className="mb-0 mt-2 text-xs text-slate-400">Em đã có quyết định chuyển lớp bắt đầu {tuanLich(lenh.tuan, homNay)} — sửa hoặc huỷ trước tuần đó.</p>}
+          {!dx && lenh && !duyet && !lenh.loi && <p className="mb-0 mt-2 text-xs text-slate-400">Em đã có quyết định chuyển lớp bắt đầu {nhanTuanBatDau(lenh.tuan, homNayMay ?? '')} — sửa hoặc huỷ trước tuần đó.</p>}
           {!dx && lenh?.loi && !duyet && <p className="mb-0 mt-1 text-xs text-slate-400">Chọn tuần hoặc lớp chuyển đến mới rồi lưu, hoặc huỷ quyết định.</p>}
           {dangHuy && (
             <Khoi tieuDe={CHU_CHUYEN_LOP.huy}>
@@ -288,10 +312,10 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone, cheDo,
               Gửi thành thẻ trong Chờ duyệt của Quản lý (loại Thông tin HV, hạn 5 ngày). Quản lý duyệt = ra quyết định chuyển lớp; Quản lý được sửa lớp và tuần trước khi duyệt.
             </p>
           ) : toClassId && (
-            <Khoi tieuDe="Khi chuyển, web sẽ">
+            <Khoi tieuDe={ngayNay ? `⚠ ${t('Khi chuyển, web sẽ — chuyển ngay, không hoàn tác')}` : 'Khi chuyển, web sẽ'}>
               {!xemLop ? <p className="m-0 text-sm text-slate-400">{xem.error ? xem.error.message : 'Đang xem trước…'}</p> : (
-                <div className={xemLop.canhBao ? 'rounded-lg border p-3' : ''} style={xemLop.canhBao ? khoiVang : undefined} role={xemLop.canhBao ? 'note' : undefined}>
-                  <ul className="m-0 list-disc space-y-1 pl-5 text-sm text-slate-200">{xemLop.khiChuyen.map((c) => <li key={c}>{c}</li>)}</ul>
+                <div className={xemLop.canhBao || ngayNay ? 'rounded-lg border p-3' : ''} style={xemLop.canhBao || ngayNay ? khoiVang : undefined} role={xemLop.canhBao || ngayNay ? 'note' : undefined}>
+                  <ul className="m-0 list-disc space-y-1 pl-5 text-sm text-slate-200">{[...dongNgay, ...xemLop.khiChuyen].map((c) => <li key={c}>{c}</li>)}</ul>
                 </div>
               )}
             </Khoi>
@@ -408,7 +432,7 @@ export function ChuyenLopNhieuEm({ classId, onClose, onDone }: { classId: number
           </p>
         ),
         chinh: <button type="button" className="btn btn-primary min-h-[44px] max-sm:flex-1 sm:min-h-0" onClick={gui} disabled={busy || !canGui.length || choXem}>
-          {busy ? 'Đang lưu…' : `${CHU_CHUYEN_LOP.quyetDinh} · ${canGui.length} em`}</button>,
+          {busy ? 'Đang lưu…' : homNay && laChuyenNgay(tuan, homNay) ? t('Chuyển ngay · {n} em', { n: canGui.length }) : `${CHU_CHUYEN_LOP.quyetDinh} · ${canGui.length} em`}</button>,
       }}>
       <p className="mb-0 mt-3 text-xs text-slate-400">Kết quả không phù hợp lộ trình — xét lại, không bắt buộc đổi.</p>
       {data.em.length > TOI_DA_NHIEU_EM && <p className="mb-0 mt-1 text-xs text-slate-400">Hiện {TOI_DA_NHIEU_EM}/{data.em.length} em — chuyển xong sẽ hiện tiếp.</p>}

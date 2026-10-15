@@ -4,7 +4,7 @@ import {
   type HuongLenh, type LoaiLop, type LuatDoiLop, type MucTieuLenh, type ProgrammeCode,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
-import { badRequest, notFound, nowIso } from '../util.ts';
+import { addDays, badRequest, notFound, nowIso } from '../util.ts';
 import { can, require_, type Principal } from '../permissions.ts';
 import { addJourney, notify, writeAudit, writeAuditLo } from '../platform/audit.ts';
 import { chuyenCaseSangLoTrinh, closeCasesOnProgrammeSwitch, programmeOfCase } from '../cases/systemClose.ts';
@@ -262,9 +262,15 @@ export function moLoTrinhMoi(p: Principal, o: {
       giuThi ? cu?.exam_date ?? null : null, giuThi ? cu?.exam_period_id ?? null : null,
       startPeriodId, o.ngay, nowIso()).lastInsertRowid);
   if (o.denLop.ft) taoMtMacDinh(moiId, { actorUserId: p.userId });   // M1: vào lớp FT / đổi LT ↔ RF = lộ trình mới có lịch MT mặc định
-  else taoBaiThuongMacDinh([moiId], p.userId, o.ngay);               // PR-LT2a M1b: sang lớp thường = tự có bài Progress Test / Final Test
+  else taoBaiThuongMacDinh([moiId], p.userId, ngayVaoBai(o.ngay));   // PR-LT2a M1b: sang lớp thường = tự có bài Progress Test / Final Test
   return { moiId, route };
 }
+
+/**
+ * OV-13l: vào lớp thường GIỮA TUẦN (chuyển "Ngay hôm nay") — bài tự xếp tính từ Thứ Hai tuần sau: mốc của tuần đang dở bỏ (lớp mới có thể đã thi
+ * môn đó đầu tuần — không bắt GV ghi "-" cho em chưa học; QL vẫn xếp tay được). Vào đúng Thứ Hai → như cũ.
+ */
+const ngayVaoBai = (ngay: string): string => (mondayOf(ngay) === ngay ? ngay : addDays(mondayOf(ngay), 7));
 
 export type DongApDung = {
   sid: number;
@@ -351,7 +357,7 @@ export function apDungMotDong(p: Principal, d: DongApDung): { luat: LuatDoiLop |
     if (curCycle) conn.prepare(`UPDATE learning_cycles SET status = 'completed', ended_at = ? WHERE id = ?`).run(d.ngay, curCycle.id);
     /* PR-CL (B4.4, §7 "chuyển từ FT: Target giữ như cũ", Q1): FT → thường giữ Target / KCK của lộ trình FT — chỉ nhánh này (Lưu trữ "Học lại" không đổi). */
     const veThuong = tuLop.ft && !denLop.ft && !!curCycle;
-    const { moiId, route } = moLoTrinhMoi(p, {
+    const { moiId } = moLoTrinhMoi(p, {
       sid: d.sid, ngay: d.ngay, toClass, tuLop, denLop, cuCycle: curCycle, thangThi: d.thangThi,
       target: mucTieu ?? (veThuong ? curCycle.target_score ?? null : null), kck: veThuong && mucTieu == null && !!curCycle.khong_cam_ket,
     });
@@ -364,12 +370,16 @@ export function apDungMotDong(p: Principal, d: DongApDung): { luat: LuatDoiLop |
        PR-MT0: ghi SAU khi MT0 đã sang lộ trình FT (bản chụp khoá cũ không giữ MT0 đã thành đầu vào FT), TRƯỚC khi Case FT→FT đi theo. */
     if (curCycle) ghiBanChup(conn, [curCycle.id], { lyDo: luat.endKind as 'len_lop' | 'hoc_lai' | 'sang_ft' | 'chuyen_lop', ngay: d.ngay, lopId: enr.class_id });
     if (veTh) doiMt0KhiVeThuong(curCycle.id, veTh);
-    if (denLop.ft && tuLop.ft && curCycle) chuyenCaseSangLoTrinh(p.userId, d.sid, curCycle.id, moiId, route, d.ngay);   // K5-60
   }
 
   /* Q12: bài chưa làm CHỈ đi theo em khi GIỮ khoá — đóng khoá thì lượt planned ở lại lớp cũ. MT0 không đi theo (PR-MT0): chưa điểm thì huỷ. */
   if (luat.khoa === 'giu' && curCycle) {
     conn.prepare(`UPDATE assessment_attempts SET class_id = ? WHERE cycle_id = ? AND status = 'planned' AND kind != 'mt0'`).run(d.toClassId, curCycle.id);
+    /* OV-13l: FT → FT khác lộ trình giữ lộ trình đang chạy — chỉ đổi mã theo lớp chuyển đến (lịch MT, tuần học giữ). */
+    if (denLop.ft && denLop.lt && curCycle.route && curCycle.route !== denLop.lt) {
+      conn.prepare('UPDATE learning_cycles SET route = ? WHERE id = ?').run(denLop.lt, curCycle.id);
+      chuyenCaseSangLoTrinh(p.userId, d.sid, curCycle.id, curCycle.id, denLop.lt, d.ngay);   // Case giữ lộ trình, thêm mốc "Sang lộ trình …" (K5-60)
+    }
     if (!tuLop.ft) noiMt0VaoFt(p.userId, [{ sid: d.sid, cuCycleId: curCycle.id, ftCycleId: null, ngay: d.ngay }], 'Chuyển lớp');
   }
 
@@ -685,7 +695,7 @@ export function apDungCaLop(p: Principal, o: {
       const cyc = conn.prepare(
         `SELECT id FROM learning_cycles WHERE student_id IN (${thuongSids.map(() => '?').join(',')}) AND status = 'active' AND route IS NULL`,
       ).all(...thuongSids) as any[];
-      taoBaiThuongMacDinh(cyc.map((c) => c.id as number), p.userId, o.ngay);
+      taoBaiThuongMacDinh(cyc.map((c) => c.id as number), p.userId, ngayVaoBai(o.ngay));
     }
   }
 

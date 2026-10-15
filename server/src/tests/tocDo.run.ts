@@ -890,13 +890,15 @@ check('TD3-b-2 · QL ×3: /classes/{lopFT}/overview ≤ 50 % (5 829), /hoc-vien-
  * 15/10: chụp lại 'QT toi' / 'QT tat-ca' sau khi Case của Task2(e) thôi lấy giờ thật (hạn Thêm PA của nó trôi theo ngày chạy → băm QT đổi mỗi ngày).
  * 15/10 OV-13a: chụp lại 'QL tat-ca' / 'QT tat-ca' / 'QT tat-ca cn' — Case tạm (Q2) đổi thứ tự sinh Case trong seed → id Case 34↔35 (HV 46) đổi chỗ;
  *   so JSON với main: khác CHỈ ở id Case, nội dung việc không đổi.
+ * 15/10 OV-13l: chụp lại mọi vai trừ ADMIN — đổi đầu ra CÓ CHỦ Ý: hạn bàn giao ≥ 7 ngày (GVBM = GVCN), seed D16 (LT1 → RF) giữ lộ trình,
+ *   seed kịch bản 6 (MB FOU 23) ra lệnh 9 ngày trước để vẫn "Bàn giao quá hạn".
  */
 await checkAsync('TD4-a (×3) · Công việc trùng JSON ảnh chụp trước TD4 — 6 vai × Của tôi / Tất cả / Của một GV / lọc chi nhánh', async () => {
   const { myWork, viecCuaNguoi } = await import('../worklist/mywork.ts');
   const ANH: Record<string, string> = {
-    'QL toi': '6671f11bb8e4d60c', 'QT toi': 'ad9ea8d503e7b56c', 'GVCN toi': 'bd18425dee5c6c07', 'GVBM toi': '130c23c92f42a1de',
-    'GVCN_THUONG toi': 'bd18425dee5c6c07', 'ADMIN toi': '4ed1fc3fa34653f2', 'QL tat-ca': '0d6c37f49f2b3874', 'QT tat-ca': 'f2b0420bf80472b2',
-    'QT tat-ca cn': '9250408a07d32c9e', 'QL gvcn': 'e38f0811a97c27fd',
+    'QL toi': 'a2af135210c7847a', 'QT toi': '96f59dddc6993057', 'GVCN toi': '21c74fffedc9334c', 'GVBM toi': 'e25e4a398f3d2f50',
+    'GVCN_THUONG toi': '21c74fffedc9334c', 'ADMIN toi': '4ed1fc3fa34653f2', 'QL tat-ca': 'fce1be86048870a2', 'QT tat-ca': 'bd27e4ce30e2ef42',
+    'QT tat-ca cn': '53ec80fbd85a1a11', 'QL gvcn': '5e526caf6e3a0e21',
   };
   const p = (v: Vai) => loadPrincipal(USER[v]);
   const goc: [string, () => unknown][] = [
