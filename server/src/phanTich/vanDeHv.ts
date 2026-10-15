@@ -1,4 +1,5 @@
 import { db } from '../db.ts';
+import { CASE_THAT } from '../cases/sosState.ts';
 import {
   CASE_CATEGORY_SHORT, ISSUE_TAXONOMY, LOI_CHUNG, NHAN_HO_KY_NANG, categoryOf, hoKyNang, issueBranchOf, issueLabel, khoaDot, nhanDot,
   tuDauKhoang,
@@ -97,7 +98,7 @@ function tinh(p: Principal, f: FilterVanDeHv) {
          LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
          LEFT JOIN users u ON u.id = sc.owner_user_id
         WHERE sc.student_id IN (${marks(chunk.length)}) AND (sc.status != 'done' OR substr(sc.closed_at, 1, 10) >= ?)
-          AND COALESCE(sc.system_close_reason, '') != 'luot_da_huy'`,
+          AND COALESCE(sc.system_close_reason, '') != 'luot_da_huy' AND ${CASE_THAT('sc')}`,
     ).all(...chunk, tuNgay) as any[]) {
       cases.set(r.id, {
         id: r.id, studentId: r.student_id, category: r.category, topic: r.topic, attemptId: r.attempt_id,
@@ -198,7 +199,7 @@ function tinh(p: Principal, f: FilterVanDeHv) {
     for (const r of conn.prepare(
       `SELECT sc.id, sc.student_id, sc.attempt_id, sc.category, sc.topic, ci.taxonomy_code, ci.role
          FROM sos_cases sc JOIN case_issues ci ON ci.case_id = sc.id
-        WHERE sc.attempt_id IN (${marks(chunk.length)}) AND ci.role IN ('primary', 'secondary')`,
+        WHERE sc.attempt_id IN (${marks(chunk.length)}) AND ci.role IN ('primary', 'secondary') AND ${CASE_THAT('sc')}`,
     ).all(...chunk) as any[]) {
       if (!lopCuaHv.has(r.student_id)) continue;
       if (f.chiChinh && r.role !== 'primary') continue;

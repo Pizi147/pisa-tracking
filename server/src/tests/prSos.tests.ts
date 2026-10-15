@@ -383,7 +383,7 @@ export async function runPrSosTests(t: YThucTestKit) {
     assertThrows(() => cases.closeCaseOutcome(P.mbManager, c.id, { outcome: 'improved', note: 'Em tiến bộ rõ ở Task 2.' }), /PA theo quy chế kết thúc/, 'Hoàn thành sớm');
     assertThrows(() => cases.closeCaseOutcome(P.mbManager, c.id, { note: 'Em tiến bộ rõ ở Task 2.' }), /Mức độ thành công/, 'thiếu kết quả (K3-19)');
   });
-  check('SOS (6) · until_exam chưa có ngày thi → PA chạy, mốc NULL, "đến lúc thi · chưa có ngày thi", QL có việc Nhập ngày thi; có ngày thi rồi mở Case → mốc tự điền', () => {
+  check('SOS (6) · until_exam chưa có ngày thi → PA chạy, OV-13a (B): mốc = MT cuối của lộ trình ("đến MT{n} · W…"), không việc Nhập ngày thi; có ngày thi rồi mở Case → mốc theo ngày thi', () => {
     const st = makeStudent('T6d'); const a = mkAttempt(st, 3); enter(a, 'writing1', 7); enter(a, 'writing2', 5.5);
     const c = cvL(st);
     const iv = plansOf(c.id)[0];
@@ -391,10 +391,13 @@ export async function runPrSosTests(t: YThucTestKit) {
     conn.prepare('UPDATE learning_cycles SET exam_period_id = NULL, exam_month = NULL, exam_date = NULL WHERE id = ?').run(st.cycleId);
     nhanXet(P.w2Teacher, c.id, { primaryCode: W2_CODE, urgency: 'attention', moTa: 'Em viết lạc đề ở Task 2, lập luận yếu.' });
     sosAuto.xacNhanPaQuyChe(P.w2Teacher, iv.id, { description: 'Tutor Writing Task 2 tới lúc thi, hai buổi mỗi tuần.' });
+    const mtCuoi = sosAuto.mtCuoiCuaLoTrinh([st.cycleId]).get(st.cycleId);
+    assert(mtCuoi, 'lộ trình thử phải có MT cuối đã xếp tuần');
     const pa = (cases.caseDetail(P.w2Teacher, c.id) as any).interventions.find((x: any) => x.id === iv.id);
-    assert(pa.status === 'started' && pa.followupDue === null && pa.mocChu === 'đến lúc thi · chưa có ngày thi', JSON.stringify(pa));
-    const viec = (myworkSvc.myWork(P.mbManager, {}).items as any[]).find((x: any) => x.key === `moc:${iv.id}`);
-    assert(viec && viec.tieuDe === `Nhập dự kiến thi · ${st.name}`, JSON.stringify(viec));
+    const moc = sosAuto.mocTheoMtCuoi(mtCuoi.chuNhat, TODAY);   // rà #406: không sớm hơn xác nhận + 4 tuần
+    assert(pa.status === 'started' && pa.followupDue === moc
+      && (moc === mtCuoi.chuNhat ? pa.mocChu === `đến MT${mtCuoi.so} · ${d.tuanLich(mtCuoi.chuNhat, TODAY)}` : /^đến lúc thi · /.test(pa.mocChu)), JSON.stringify(pa));
+    assert(!(myworkSvc.myWork(P.mbManager, {}).items as any[]).some((x: any) => x.key === `moc:${iv.id}`), 'không còn việc Nhập ngày thi');
     const tuanThi = weekSvc.mondayOf(addDays(TODAY, 70));
     conn.prepare('UPDATE learning_cycles SET exam_period_id = ? WHERE id = ?').run(weekSvc.ensurePeriod(tuanThi).id, st.cycleId);
     cases.caseDetail(P.w2Teacher, c.id);

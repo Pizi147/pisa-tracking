@@ -235,8 +235,13 @@ export const paDangChay = (pa: PaDong): boolean =>
 /**
  * Nút trên dòng PA: `ketQua` (nút Kết quả) và `sua` (⋯ Sửa PA) cùng luật — người xem ghi được Kết quả của PA (`ghiDuoc`) và PA đang chạy.
  * `xoa` (⋯ Xoá PA): Quản lý / Quản trị, Case chưa xong, không phải PA hệ thống sinh (quy chế, Bổ trợ) — luật PR-LUI-a2 cũ.
+ * `ketThuc` (⋯ Kết thúc PA, OV-13a C): PA theo quy chế SOS đang chạy, người xem là GVCN lớp đang học / Quản lý (`coTheKetThucPa` của máy chủ).
  */
-export function nutDongPa(pa: PaDong, xem: { canApprove: boolean; caseXong: boolean }): { ketQua: boolean; sua: boolean; xoa: boolean } {
+export function nutDongPa(pa: PaDong, xem: { canApprove: boolean; caseXong: boolean; coTheKetThucPa?: boolean }): { ketQua: boolean; sua: boolean; xoa: boolean; ketThuc: boolean } {
   const ghi = !!pa.ghiDuoc && paDangChay(pa);
-  return { ketQua: ghi, sua: ghi, xoa: xem.canApprove && !xem.caseXong && !pa.preset && pa.kind !== 'bo_tro' && pa.kind !== 'bo_tro_mien_phi' };
+  const heThong = !!pa.preset || pa.kind === 'bo_tro' || pa.kind === 'bo_tro_mien_phi';
+  return {
+    ketQua: ghi, sua: ghi, xoa: xem.canApprove && !xem.caseXong && !heThong,
+    ketThuc: !!xem.coTheKetThucPa && !xem.caseXong && !!pa.preset && pa.kind !== 'bo_tro' && pa.kind !== 'bo_tro_mien_phi' && pa.status === 'started' && paDangChay(pa),
+  };
 }

@@ -1,4 +1,5 @@
 import { db, tx } from '../db.ts';
+import { CASE_THAT } from '../cases/sosState.ts';
 import {
   ATTEMPT_KIND_SHORT, ENTRY_SKILLS, PERMISSIONS, awaitingScore, chuanHoaMaLop, soSanhLop, kiemPhanCong, moRongPhanCong, nhanKetThucVi, nhanTiepTheo,
   oPhanCong, pendingSkillsOf, laLienTuc, tenMonNgan, viecTiepCuaEm,
@@ -29,6 +30,7 @@ import { listCases } from '../cases/cases.ts';
 import { emCoBaoPhChuaLam } from '../yThuc/phoiHop.ts';
 import { trongBoNho } from '../platform/nguCanhRequest.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
+import { duocSuaCaLop } from './suaCaLop.ts';
 
 /**
  * Màn Học viên lấy LỚP làm gốc.
@@ -187,7 +189,7 @@ function listClassSummariesThat(p: Principal, f: { branchId?: number; classId?: 
     `SELECT a.class_id, COUNT(*) AS n FROM assessment_attempts a
        JOIN students s ON s.id = a.student_id AND ${HV_DANG_HOC_SQL('s')}
       WHERE a.class_id IN (${ph}) AND a.status != 'cancelled'
-        AND EXISTS (SELECT 1 FROM sos_cases x WHERE x.attempt_id = a.id AND x.status IN ('open', 'in_progress'))
+        AND EXISTS (SELECT 1 FROM sos_cases x WHERE x.attempt_id = a.id AND x.status IN ('open', 'in_progress') AND ${CASE_THAT('x')})
         AND (SELECT MAX(x.sos_level) FROM sos_cases x WHERE x.attempt_id = a.id) > 0
       GROUP BY a.class_id`,
   ).all(...ids) as any[]) openCases.set(r.class_id, r.n);
@@ -412,7 +414,7 @@ export function classRoster(p: Principal, classId: number, q?: string, kemKetThu
     .prepare(
       `SELECT sc.student_id, sc.sos_level, sc.cycle_id, a.attempt_no FROM sos_cases sc
          LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
-        WHERE sc.student_id IN (${ph}) AND sc.status != 'done'`,
+        WHERE sc.student_id IN (${ph}) AND sc.status != 'done' AND ${CASE_THAT('sc')}`,
     )
     .all(...sids) as any[];
   const activeCycle = new Map<number, number | null>(students.map((s) => [s.id, s.cycle_id ?? null]));
@@ -871,7 +873,7 @@ function classOverviewThat(p: Principal, classId: number) {
       canPlanWeek: false, canAddStudents: false, canAssign: false, canAssignSubject: false, canEditProgress: false,
       editableSkills: [] as string[], isCoreTeacher: false,
       canReportCase: false, canRecordViolation: false, canEnterScores: false, coTheChuyenTiep: false,
-      coTheSuaThongTin: false, coTheSuaThem: false,
+      coTheSuaThongTin: false, coTheSuaThem: false, coTheSuaCaLop: false,
     } : {
       canPlanWeek: can(p, PERMISSIONS.PLAN_WEEK, { classId }),
       canAddStudents: can(p, PERMISSIONS.STUDENT_EDIT, { classId }),
@@ -891,6 +893,8 @@ function classOverviewThat(p: Principal, classId: number) {
       /** OV-10b: ⋯ dòng của Admin / TVV / CX — Sửa thông tin (`student.edit_info`), Tạm dừng / Kết quả thi thật (`student.edit_more`). */
       coTheSuaThongTin: can(p, PERMISSIONS.STUDENT_EDIT_INFO, { classId }),
       coTheSuaThem: can(p, PERMISSIONS.STUDENT_EDIT_MORE, { classId }),
+      /** OV-13i: nút / mục ⋯ "Sửa thông tin học viên" (cả lớp) — cùng hàm máy chủ kiểm ở `/classes/:id/sua-ca-lop`. */
+      coTheSuaCaLop: duocSuaCaLop(p, { classId }),
     }),
       /** ⋮ Xoá lớp / Kết thúc lớp — Quản lý của lớp hoặc Quản trị (OV-12a: Quản lý xoá được lớp trống); máy chủ kiểm lại ở từng đường. */
       coTheXoaKetThuc: can(p, PERMISSIONS.CLASS_EDIT, { classId }),

@@ -170,7 +170,7 @@ export function panelMotEm(p: Principal, studentId: number) {
   ).get(studentId) as any;
   if (!s) throw forbidden('Bạn không xem được học viên này.');
   const em = thongTinEm([studentId]).get(studentId)!;
-  const ds = can(p, PERMISSIONS.CASE_VIEW, { studentId }) ? listCases(p, { studentId }).rows : [];
+  const ds = can(p, PERMISSIONS.CASE_VIEW, { studentId }) ? listCases(p, { studentId, kemTam: true }).rows : [];   // OV-13a: panel một em hiện cả Case tạm
   const tt = tomTatCase(ds);
   const cases = [...tt.values()].sort((a, b) => Number(a.done) - Number(b.done) || (b.attemptNo ?? 0) - (a.attemptNo ?? 0) || b.id - a.id);
   const st = standingFor([studentId]).get(studentId);
