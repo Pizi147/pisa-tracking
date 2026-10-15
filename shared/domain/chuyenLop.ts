@@ -61,6 +61,8 @@ export function tuanHopLe(tuan: string | null | undefined, homNay: string): bool
   if (laChuyenNgay(tuan, homNay)) return ISO.test(homNay);
   return !!tuan && ISO.test(tuan) && !Number.isNaN(Date.parse(tuan)) && mondayOfDate(tuan) === tuan && tuan > mondayOfDate(homNay);
 }
+/** OV-13l: web gửi chuyển ngay theo lô nhỏ này (một em ~70–125 câu SQL) — một lời gọi Turso ≲ 250 câu, xa hạn 10 s. */
+export const LO_CHUYEN_NGAY = 2;
 export const LOI_TUAN_BAT_DAU = 'Tuần bắt đầu phải là hôm nay hoặc từ tuần sau trở đi';
 
 const THU = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
@@ -456,6 +458,8 @@ export function dongKhiChuyen(x: DuLieuKhiChuyen): { khiChuyen: string[]; canhBa
   } else {
     dong.push('Đóng lộ trình cũ và mở lộ trình mới theo lớp chuyển đến', 'Bài chưa làm ở lại lớp cũ');
   }
+  /* OV-13l (chủ SP 15/10): đổi chương trình → khoá cũ đóng, điểm ở lại khoá cũ; "điểm đi theo" chỉ khi cùng chương trình (giữ lộ trình). */
+  if (x.khoa !== 'giu' && !(x.nguonFt && !x.dichFt)) dong.push('Điểm đã có ở lại khoá cũ (xem ở hồ sơ)');
   if (x.soCase) {
     dong.push(x.dongCase === 'ft' ? `${x.soCase} Case đang mở tự đóng “Lên FT”`
       : x.dongCase === 'normal' ? `${x.soCase} Case FT tự đóng`

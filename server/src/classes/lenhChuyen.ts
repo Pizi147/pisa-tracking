@@ -7,6 +7,8 @@ import {
 import { HttpError, badRequest, chuTuDo, conflict, forbidden, notFound, nowIso } from '../util.ts';
 import { can, loadPrincipal, require_, type Principal } from '../permissions.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
+import { conLaiMs } from '../platform/hanGio.ts';
+import { mondayOf } from '../platform/week.ts';
 import { reviseTarget } from '../fasttrack/cycles.ts';
 import { demoToday } from '../demoConfig.ts';
 import { notify, writeAudit } from '../platform/audit.ts';
@@ -179,6 +181,19 @@ export function raLenh(p: Principal, v: {
       ]);
     }
 
+    /* OV-13l: "Ngay hôm nay" thi hành trong chính lời gọi này — gần hết giờ (Netlify 10 s) thì em chuyển ngay CHƯA ghi, trả về để web gửi lại. */
+    const con = conLaiMs();
+    if (con !== null && con < CON_TOI_THIEU_CHUYEN_NGAY_MS) {
+      for (let i = hang.length - 1; i >= 0; i--) {
+        if (hang[i][5] !== homNay) continue;
+        const sid = hang[i][0] as number;
+        failed.push({ studentId: sid, message: 'Chưa kịp chuyển — gửi lại' });
+        daSua.delete(sid);
+        if (lamLai.includes(sid)) lamLai.splice(lamLai.indexOf(sid), 1);
+        hang.splice(i, 1);
+      }
+    }
+
     if (hang.length) {
       chenNhieuDong(
         `INSERT INTO lenh_chuyen_lop (student_id, lop_nguon_id, lop_dich_id, huong, boi_canh, tuan_bat_dau, muc_tieu, khong_cam_ket, ngay_thi,
@@ -220,6 +235,9 @@ export function raLenh(p: Principal, v: {
     return { ok: hang.map((h) => h[0] as number), failed, daChuyen };
   });
 }
+
+/** Còn ít hơn chừng này ms của lời gọi thì không bắt đầu chuyển ngay (một em ~70–125 câu SQL; web gửi ≤ 2 em một lần). */
+export const CON_TOI_THIEU_CHUYEN_NGAY_MS = 4_000;
 
 /** Thi hành ngay các lệnh "Ngay hôm nay" vừa lưu của lớp nguồn (trong tx của `raLenh`). Em không chuyển được → ném lỗi (cuộn lại cả lần lưu). */
 function thiHanhNgay(lopNguonId: number, boiCanh: BoiCanhLenh, homNay: string): number[] {
@@ -731,7 +749,7 @@ function thiHanhGiuaKhoa(p: Principal, g: any, con: any[]): { id: number; loi: s
     }
     datKck(p, xong);
     const nguon = conn.prepare('SELECT is_fast_track FROM classes WHERE id = ?').get(g.lop_nguon_id) as any;
-    if (xong.length && !nguon?.is_fast_track) dongLopNeuHet([g.lop_nguon_id], g.tuan_bat_dau);   // Q21: lớp FT không tự kết thúc
+    if (xong.length && !nguon?.is_fast_track) dongLopNeuHet([g.lop_nguon_id], g.tuan_bat_dau, true);   // Q21: lớp FT không tự kết thúc
   }
   return loi;
 }
@@ -860,6 +878,12 @@ export function kiemDeXuatChuyenLop(p: Principal, sid: number, v: { toClassId?: 
   return { hv, enr, lyDo, toClassId, tuan };
 }
 
+/** OV-13l: đề xuất "Ngay hôm nay" (ngày không phải Thứ Hai) mà QL duyệt ngày sau → "Ngay hôm nay" của ngày duyệt, không báo lỗi tuần. */
+function tuanDuyet(tuan: string | null): string | null {
+  const homNay = demoToday();
+  return tuan && tuan < homNay && mondayOf(tuan) !== tuan ? homNay : tuan;
+}
+
 /** `khiDuyet` của thẻ Đề xuất chuyển lớp: `duLieu` là ô của panel D do Quản lý sửa (lớp chuyển đến, tuần, Target…) → RA LỆNH (`tu_yeu_cau_id`). */
 export function apDungDeXuatChuyenLop(p: Principal, yc: { id: number; hoc_vien_id: number | null; ly_do: string | null }, duLieu: unknown): void {
   const d = (duLieu ?? {}) as { lopDichId?: unknown; tuan?: unknown; lyDo?: unknown; mucTieu?: unknown; ngayThi?: unknown };
@@ -883,7 +907,7 @@ export function apDungDeXuatChuyenLop(p: Principal, yc: { id: number; hoc_vien_i
     lopNguonId: enr.class_id, boiCanh, tuanChung: null, tuYeuCauId: yc.id,
     dongs: [{
       studentId: yc.hoc_vien_id, huong, toClassId: lopDich,
-      tuan: typeof d.tuan === 'string' ? d.tuan : null, mucTieu: soHoacKck(d.mucTieu), ngayThi: typeof d.ngayThi === 'string' ? d.ngayThi : null,
+      tuan: tuanDuyet(typeof d.tuan === 'string' ? d.tuan : null), mucTieu: soHoacKck(d.mucTieu), ngayThi: typeof d.ngayThi === 'string' ? d.ngayThi : null,
       lyDo: typeof d.lyDo === 'string' && d.lyDo.trim() ? d.lyDo : yc.ly_do,
     }],
   });

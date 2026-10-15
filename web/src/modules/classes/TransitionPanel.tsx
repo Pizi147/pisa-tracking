@@ -9,7 +9,7 @@ import { Nhan } from '../../ui/Nhan.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { chayHangLoat, hoanTacHangLoat } from '../students/hangLoatEm.ts';
 import {
-  CHU_CHUYEN_LOP, chipSosMt0, chuTuanHoc, ghepMucTieu, tachMucTieu, hanBanGiao, kiemDongLenh, ketQuaGanNhat, laChuyenNgay, maHocVienNgan, ngay, nhanTuanBatDau,
+  CHU_CHUYEN_LOP, chipSosMt0, chuTuanHoc, ghepMucTieu, tachMucTieu, hanBanGiao, kiemDongLenh, ketQuaGanNhat, laChuyenNgay, LO_CHUYEN_NGAY, maHocVienNgan, ngay, nhanTuanBatDau,
   thuNgay, tomTatLenh, tuanLich, type AssessedSkill, type DongTomTatLenh, type HuongLenh, type KetQuaVao, type MucTieuLenh } from '@shared/domain/index.ts';
 import { ClassCreatePanel } from './ClassCreatePanel.tsx';
 import { t } from '@shared/i18n/index.ts';
@@ -59,6 +59,7 @@ function NoiDung({ classId, onClose, onDone }: { classId: number; onClose: () =>
   /* PR-LUI-b: huỷ NHIỀU quyết định một lần (đi qua cùng đường làm nhiều học viên: `huy-lenh`; Hoàn tác = `khoi-phuc-lenh`). */
   const [huyNhieu, setHuyNhieu] = useState<{ lyDo: string } | null>(null);
   const [dangHuy, setDangHuy] = useState(false);
+  const [tienDo, setTienDo] = useState<[number, number] | null>(null);
 
   const homNay: string = data?.today ?? '';
   const tuanCh = tuanChung || data?.tuanChon?.[0] || '';
@@ -170,14 +171,13 @@ function NoiDung({ classId, onClose, onDone }: { classId: number; onClose: () =>
   const gui = async () => {
     setBusy(true);
     try {
-      const r = await api.post<any>(`/classes/${classId}/transition`, {
-        tuanChung: tuanCh,
-        dongs: canGui.map((x) => ({
+      /* OV-13l: chuyển ngay chạy trong lời gọi — gửi từng lô ≤ LO_CHUYEN_NGAY em, cộng dồn kết quả. */
+      const r = await guiTheoLo(`/classes/${classId}/transition`, tuanCh, soNgay ? LO_CHUYEN_NGAY : canGui.length, setTienDo,
+        canGui.map((x) => ({
           studentId: x.s.id, huong: HUONG_CUA[x.d.kieu as Kieu], toClassId: typeof x.d.toClassId === 'number' ? x.d.toClassId : undefined,
           tuan: x.d.tuan || undefined, mucTieu: mucTieuCua(x.d) ?? undefined, ngayThi: x.d.ngayThi || undefined, lyDo: x.d.lyDo || undefined,
           ngayXemLai: x.d.kieu === 'bao-luu' ? x.d.ngayXemLai || undefined : undefined,
-        })),
-      });
+        })));
       invalidate('/classes'); invalidate('/students'); invalidate('/hoc-vien-lop'); invalidate('/my-work'); invalidate('/lenh-chuyen'); invalidate('/yeu-cau');
       if (r.failed.length) {
         setLoiMayChu(Object.fromEntries(r.failed.map((f: any) => [f.studentId, f.message])));
@@ -188,7 +188,7 @@ function NoiDung({ classId, onClose, onDone }: { classId: number; onClose: () =>
         toast.push('ok', r.daChuyen?.length ? t('Đã chuyển {n} em', { n: r.daChuyen.length }) : `Đã gửi quyết định chuyển lớp ${r.ok.length} em`);
         onDone(); dong();
       }
-    } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
+    } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); setTienDo(null); }
   };
 
   const huyLenh = async () => {
@@ -244,7 +244,7 @@ function NoiDung({ classId, onClose, onDone }: { classId: number; onClose: () =>
           huy: { nhan: '‹ Sửa', onClick: () => setBuoc(1), disabled: busy },
           chinh: (
             <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={gui} disabled={busy}>
-              {busy ? (soNgay ? t('Đang chuyển…') : 'Đang gửi…') : soNgay === canGui.length ? t('Chuyển ngay · {n} em', { n: canGui.length }) : `Gửi quyết định chuyển lớp ${canGui.length} em`}
+              {busy ? (tienDo && soNgay ? t('Đang chuyển… {a}/{b} em', { a: tienDo[0], b: tienDo[1] }) : soNgay ? t('Đang chuyển…') : 'Đang gửi…') : soNgay === canGui.length ? t('Chuyển ngay · {n} em', { n: canGui.length }) : `Gửi quyết định chuyển lớp ${canGui.length} em`}
             </button>
           ),
         }}>
@@ -337,6 +337,7 @@ function NoiDung({ classId, onClose, onDone }: { classId: number; onClose: () =>
             {soNgay > 0 && (
               <p role="note" className="m-0 rounded-lg border px-3 py-2 text-sm font-semibold text-soon" style={KHOI_VANG}>
                 ⚠ {t('Chuyển ngay, không hoàn tác')} · <span className="tabular-nums">{soNgay}</span> em
+                <span className="mt-1 block font-normal text-slate-200">{t('Bài Test đang dở đi theo em sang lớp mới; bài đã thi xong ở lại {cu}', { cu: data.from.code })}</span>
               </p>
             )}
             <p className="m-0 text-sm text-slate-300">
@@ -467,6 +468,24 @@ function HangEm({ s, d, tuanCh, homNay, loi, loiMayChu, oId, khoa, chon, onChon,
       )}
     </div>
   );
+}
+
+/**
+ * OV-13l: gửi quyết định chuyển lớp theo lô `lo` em (chuyển ngay chạy trong lời gọi — lô lớn vượt hạn 10 s), cộng dồn ok / failed / daChuyen.
+ * Lô lỗi cả lời gọi → mọi em của lô vào `failed` với chữ lỗi, các lô sau vẫn gửi. `onTienDo([đã gửi, tổng])`.
+ */
+export async function guiTheoLo(url: string, tuanChung: string | null, lo: number, onTienDo: (x: [number, number]) => void,
+  dongs: { studentId: number }[]): Promise<{ ok: number[]; failed: { studentId: number; message: string }[]; daChuyen: number[] }> {
+  const kq = { ok: [] as number[], failed: [] as { studentId: number; message: string }[], daChuyen: [] as number[] };
+  for (let i = 0; i < dongs.length; i += lo) {
+    onTienDo([i, dongs.length]);
+    const phan = dongs.slice(i, i + lo);
+    try {
+      const r = await api.post<any>(url, { tuanChung, dongs: phan });
+      kq.ok.push(...r.ok); kq.failed.push(...r.failed); kq.daChuyen.push(...(r.daChuyen ?? []));
+    } catch (e: any) { kq.failed.push(...phan.map((d) => ({ studentId: d.studentId, message: e.message as string }))); }
+  }
+  return kq;
 }
 
 /** Khung vàng "chuyển ngay, không hoàn tác" / FT → Thường — cùng màu ở mọi panel chuyển lớp. */

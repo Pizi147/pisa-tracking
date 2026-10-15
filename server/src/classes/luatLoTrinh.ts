@@ -4,7 +4,7 @@ import {
   type HuongLenh, type LoaiLop, type LuatDoiLop, type MucTieuLenh, type ProgrammeCode,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
-import { addDays, badRequest, notFound, nowIso } from '../util.ts';
+import { badRequest, notFound, nowIso } from '../util.ts';
 import { can, require_, type Principal } from '../permissions.ts';
 import { addJourney, notify, writeAudit, writeAuditLo } from '../platform/audit.ts';
 import { chuyenCaseSangLoTrinh, closeCasesOnProgrammeSwitch, programmeOfCase } from '../cases/systemClose.ts';
@@ -203,15 +203,18 @@ export function thongBaoChuyenVao(i: {
 
 // ---------------------------------------------------------------- lớp hết khoá (Q16)
 
-/** Lớp thường đã hết khoá và không còn enrollment `active` nào → `finished`. Một câu, dùng cho cả lô. */
-export function dongLopNeuHet(classIds: readonly number[], ngay: string) {
+/**
+ * Lớp thường đã hết khoá và không còn enrollment `active` nào → `finished`. Một câu, dùng cho cả lô. OV-13l: `tuTuanFinal` (chỉ đường thi hành quyết
+ * định chuyển lớp) — từ tuần Final đã đủ, không đợi hết khoá (chuyển cả lớp ở tuần Final không để lớp "đang học" 0 em).
+ */
+export function dongLopNeuHet(classIds: readonly number[], ngay: string, tuTuanFinal = false) {
   const ids = [...new Set(classIds)];
   if (!ids.length) return;
   const conn = db();
   const tienDo = classProgressMany(ids as number[]);
   const xong = ids.filter((id) => {
     const pr = tienDo.get(id);
-    return pr && pr.phase === 'finished';
+    return !!pr && (pr.phase === 'finished' || (tuTuanFinal && mocKetKhoa(pr, ngay).tuCuoiKhoa));
   });
   if (!xong.length) return;
   const ph = xong.map(() => '?').join(',');
@@ -262,15 +265,9 @@ export function moLoTrinhMoi(p: Principal, o: {
       giuThi ? cu?.exam_date ?? null : null, giuThi ? cu?.exam_period_id ?? null : null,
       startPeriodId, o.ngay, nowIso()).lastInsertRowid);
   if (o.denLop.ft) taoMtMacDinh(moiId, { actorUserId: p.userId });   // M1: vào lớp FT / đổi LT ↔ RF = lộ trình mới có lịch MT mặc định
-  else taoBaiThuongMacDinh([moiId], p.userId, ngayVaoBai(o.ngay));   // PR-LT2a M1b: sang lớp thường = tự có bài Progress Test / Final Test
+  else taoBaiThuongMacDinh([moiId], p.userId, o.ngay);               // PR-LT2a M1b: sang lớp thường = tự có bài Progress / Final Test (OV-13l: bài tuần này vẫn có)
   return { moiId, route };
 }
-
-/**
- * OV-13l: vào lớp thường GIỮA TUẦN (chuyển "Ngay hôm nay") — bài tự xếp tính từ Thứ Hai tuần sau: mốc của tuần đang dở bỏ (lớp mới có thể đã thi
- * môn đó đầu tuần — không bắt GV ghi "-" cho em chưa học; QL vẫn xếp tay được). Vào đúng Thứ Hai → như cũ.
- */
-const ngayVaoBai = (ngay: string): string => (mondayOf(ngay) === ngay ? ngay : addDays(mondayOf(ngay), 7));
 
 export type DongApDung = {
   sid: number;
@@ -695,7 +692,7 @@ export function apDungCaLop(p: Principal, o: {
       const cyc = conn.prepare(
         `SELECT id FROM learning_cycles WHERE student_id IN (${thuongSids.map(() => '?').join(',')}) AND status = 'active' AND route IS NULL`,
       ).all(...thuongSids) as any[];
-      taoBaiThuongMacDinh(cyc.map((c) => c.id as number), p.userId, ngayVaoBai(o.ngay));
+      taoBaiThuongMacDinh(cyc.map((c) => c.id as number), p.userId, o.ngay);
     }
   }
 

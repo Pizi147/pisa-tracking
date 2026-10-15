@@ -27,6 +27,8 @@ type XemChuyenLopData = {
   lenh: LenhCho | null; tuanChon: string[]; today: string; tuanFinal?: string | null; boiCanh?: string | null;
   /** PR-CL (B3): null khi chưa chọn lớp. */
   huong: string | null; targetSan: MucTieuLenh | null; khiChuyen: string[]; canhBao: boolean; tuLopThuong: string | null;
+  /** Luật lộ trình của lớp đang chọn — `giu` = cùng chương trình, lộ trình + bài dở đi theo em (OV-13l). */
+  luat?: { khoa: 'giu' | 'dong-mo' } | null;
 };
 
 /** Thẻ Đề xuất chuyển lớp đang được duyệt: panel mở điền sẵn, nút chính `Duyệt và quyết định` (mockup 20 — thẻ Chờ duyệt → D). */
@@ -160,6 +162,8 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone, cheDo,
       setToClassId(l.lopDichId); setTuan(l.tuan >= (xem.data.tuanChon[0] ?? '') ? l.tuan : xem.data.tuanChon[0] ?? ''); setLyDo(l.lyDo ?? '');
       setMucTieu(l.mucTieu == null ? '' : String(l.mucTieu));
     } else if (!duyet?.tuan) setTuan(xem.data.tuanChon[0] ?? '');
+    /* OV-13l: GVCN đề xuất "Ngay hôm nay" của một ngày trước → duyệt hôm nay = "Ngay hôm nay" của ngày duyệt (máy chủ cùng luật `tuanDuyet`). */
+    else if (duyet.tuan < xem.data.today && mondayOfDate(duyet.tuan) !== duyet.tuan) setTuan(xem.data.today);
   }, [xem.data, daDien, duyet]);
 
   /* Luật I1: "Huỷ thay đổi" thay "Đóng" khi đã sửa. Mốc = giá trị sau khi điền sẵn (lệnh đang có / đề xuất cần duyệt) xong. */
@@ -229,9 +233,9 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone, cheDo,
   };
 
   const nhanChinh = dx ? (duyet ? 'Lưu' : 'Gửi đề xuất') : ngayNay ? t('Chuyển ngay') : duyet ? 'Duyệt và quyết định' : lenh ? CHU_CHUYEN_LOP.luu : CHU_CHUYEN_LOP.quyetDinh;
-  /* OV-13l: khối "Khi chuyển" của chuyển ngay — em sang lớp mới khi lưu; điểm từ Thứ Hai tới hôm nay ở lại lớp cũ (hôm nay là Thứ Hai thì không có dòng đó). */
+  /* OV-13l: khối "Khi chuyển" của chuyển ngay — em sang lớp mới khi lưu; cùng chương trình (lộ trình giữ) thì bài Test đang dở (kể cả điểm đã nhập) đi theo em. */
   const dongNgay = ngayNay && dich && dangHoc ? [t('Em sang {lop} ngay khi lưu', { lop: dich.code }),
-    ...(homNayMay && mondayOfDate(homNayMay) !== homNayMay ? [t('Điểm {tu} – hôm nay ở lại {lop}', { tu: thuNgay(mondayOfDate(homNayMay), homNayMay), lop: dangHoc.lop.code })] : [])] : [];
+    ...(xemLop?.luat?.khoa === 'giu' ? [t('Bài Test đang dở đi theo em sang {moi}; bài đã thi xong ở lại {cu}', { moi: dich.code, cu: dangHoc.lop.code })] : [])] : [];
 
   if (daChuyen) {
     /* Nơi gọi đóng panel trong `onDone` → chỉ báo xong khi người dùng rời trạng thái "Đã chuyển". */

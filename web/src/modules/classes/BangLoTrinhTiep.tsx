@@ -10,12 +10,12 @@ import { DauDuoi } from '../../ui/Nhan.tsx';
 import { TheDong, useDienThoai } from '../../ui/TheDong.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { MuiTen } from '../cases/SkillBoard.tsx';
-import { KHOI_VANG, NutHomNay, OTuan } from './TransitionPanel.tsx';
+import { KHOI_VANG, NutHomNay, OTuan, guiTheoLo } from './TransitionPanel.tsx';
 import { t } from '@shared/i18n/index.ts';
 import { BanGiaoPanel } from './BanGiaoPanel.tsx';
 import { nhapDiemCua, type QuyenDong } from './thaoTacDongHocVien.tsx';
 import {
-  NORMAL_LADDER, REGULAR_SKILLS, addDaysIso, RATIO_PASS_THRESHOLD, canLopDich, ghepMucTieu, hienMucTieu, tachMucTieu, coPhieu, khopLocLoTrinh, laChuyenNgay, maHocLai, mocLoTrinh, nhomLoTrinh, tenMonNgan, tuanLich,
+  NORMAL_LADDER, REGULAR_SKILLS, addDaysIso, RATIO_PASS_THRESHOLD, canLopDich, ghepMucTieu, hienMucTieu, tachMucTieu, coPhieu, khopLocLoTrinh, laChuyenNgay, LO_CHUYEN_NGAY, maHocLai, mocLoTrinh, nhomLoTrinh, tenMonNgan, tuanLich,
   type HuongLenh, type LocLoTrinh, type MucTieuLenh, type NhomLoTrinh, type ProgrammeCode, type RegularSkill,
 } from '@shared/domain/index.ts';
 
@@ -86,6 +86,7 @@ export function BangLoTrinhTiep({ classId, quyen, onDoi, emMo, onDaMoEm }: {
   const [loiDong, setLoiDong] = useState<Record<number, string>>({});
   const [lo, setLo] = useState<{ huong: HuongLenh | ''; lop: number | ''; tuan: string }>({ huong: '', lop: '', tuan: '' });
   const [busy, setBusy] = useState(false);
+  const [tienDo, setTienDo] = useState<[number, number] | null>(null);
 
   /* OV-10b: TVV / CX / Admin chỉ đọc lộ trình ĐÃ CHỐT — nháp của Quản lý không hiện. */
   const d = useMemo(() => (kh.data && quyen.theoVai ? { ...kh.data, students: kh.data.students.map((e) => ({ ...e, nhap: null })) } : kh.data), [kh.data, quyen.theoVai]);
@@ -265,13 +266,14 @@ export function BangLoTrinhTiep({ classId, quyen, onDoi, emMo, onDaMoEm }: {
     try {
       const dongs = ids.map((studentId) => ({ studentId, huong: lo.huong, toClassId: lo.lop || null, tuan: lo.tuan || null }));
       const r: { ok: number[]; failed: { studentId: number; message: string }[] } = chotLuon
-        ? await api.post(`/classes/${classId}/transition`, { tuanChung: null, dongs })
+        /* OV-13l: chuyển ngay chạy trong lời gọi — lô ≤ LO_CHUYEN_NGAY em, chân hiện "Đang chuyển… n/m em". */
+        ? await guiTheoLo(`/classes/${classId}/transition`, null, laChuyenNgay(lo.tuan, h) ? LO_CHUYEN_NGAY : dongs.length, setTienDo, dongs)
         : await api.put(`/classes/${classId}/lo-trinh-nhap`, { items: dongs });
       setLoiDong(Object.fromEntries(r.failed.map((f) => [f.studentId, f.message])));
       setChon(new Set(r.failed.map((f) => f.studentId)));
       toast.push(r.failed.length ? 'error' : 'ok', `${chotLuon ? (laChuyenNgay(lo.tuan, h) ? t('Đã chuyển') : 'Đã chốt') : 'Đã lưu nháp'} ${r.ok.length} em${r.failed.length ? ` · ${r.failed.length} em chưa lưu — xem lý do ở dòng` : ''}`);
       xong();
-    } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
+    } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); setTienDo(null); }
   };
   const lopLo = lopTheoHuong(d.candidates, lo.huong, ma, ke);
 
@@ -329,7 +331,7 @@ export function BangLoTrinhTiep({ classId, quyen, onDoi, emMo, onDaMoEm }: {
           <button type="button" className="btn btn-sm btn-ghost min-h-[44px] sm:min-h-0" onClick={() => { setChon(new Set()); setLoiDong({}); }} disabled={busy}>Bỏ chọn</button>
           <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => luuLo(false)} disabled={busy}>Lưu nháp</button>
           <button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" onClick={() => luuLo(true)} disabled={busy}>
-            {laChuyenNgay(lo.tuan, h) ? t('Chuyển ngay · {n} em', { n: chon.size }) : <>Chốt {chon.size} em</>}</button>
+            {tienDo && busy ? t('Đang chuyển… {a}/{b} em', { a: tienDo[0], b: tienDo[1] }) : laChuyenNgay(lo.tuan, h) ? t('Chuyển ngay · {n} em', { n: chon.size }) : <>Chốt {chon.size} em</>}</button>
         </div>
       )}
 
