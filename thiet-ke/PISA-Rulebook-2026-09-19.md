@@ -604,7 +604,7 @@ Nguồn: `thiet-ke/NGUON-Rule-v3-YThuc-PhoiHop-2026-09-21.md`. Đặc tả: `thi
 - **Nhận xét W/S (YC-13.5):** mỗi **bài nhập** W1, W2, S có một nhận xét, **không bắt buộc**, tối đa 1000 ký tự; L/R không có. Nhận xét
   **không phải điểm**: sửa không cần lý do, không đổi "Nhập bởi", không tính lại SOS; nhật ký giữ bản trước/sau. Ghi được cả khi ô
   chưa có điểm, nhưng không với bài vắng / đã huỷ / ngoài phạm vi. Ô **mất hết điểm** (Huỷ điểm, Thi lại, xoá tay) thì nhận xét và GV
-  chấm cũng xoá — nhật ký giữ bản cũ. Quyền sửa nhận xét = quyền sửa chính ô điểm đó (hoàn tất → chỉ Quản lý; MT lịch sử → thêm GVCN).
+  chấm cũng xoá — nhật ký giữ bản cũ. **Quyền sửa nhận xét (chủ SP 15/10, HOTFIX-2):** lệnh chỉ gồm nhận xét và / hoặc nhóm nguyên nhân → GV đúng kỹ năng của ô (kể cả GV Speaking chấm chéo), GVCN, Quản lý sửa được **mọi lúc** — cả sau khi đợt hoàn tất và khi lớp đã kết thúc; kiểm nhập giữ nguyên, nhật ký người + cũ → mới. Kèm điểm thì theo quyền sửa ô điểm (hoàn tất → chỉ Quản lý).
 - **GV chấm Speaking (T39):** tài khoản nhân viên **hoặc** tên người ngoài (2–100 ký tự). Chọn **một lần** ở đầu cột S của lưới, nhớ
   trên máy theo lớp × tuần, áp cho các bài S lưu sau đó; sửa riêng một em trong hộp tiêu chí hoặc ở hồ sơ Mock.
 - **GV Speaking chấm chéo (chủ sản phẩm chốt 30/09):** GV đang được phân công **Speaking** ở một lớp Fast Track nhập được ô **S** Mock của
