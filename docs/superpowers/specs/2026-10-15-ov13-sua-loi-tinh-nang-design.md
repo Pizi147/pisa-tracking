@@ -14,6 +14,23 @@ Ký hiệu: **[chốt]** = chủ SP đã trả lời · **[chờ]** = planning k
   tin) tới khi điền; sửa / thêm email sau. Email trùng → máy chủ chặn kèm tên em đang dùng. Cần migrate? chỉ ràng buộc ở mã (không UNIQUE DB
   vì dữ liệu cũ có thể trùng) + lệnh chỉ đọc đếm em trống / trùng email trên bản chính trước khi làm.
 
+- **Mockup `thiet-ke/mockup-ov13-2026-10-15.html` DUYỆT 15/10** (bản 3, PR #403): panel màu rõ hơn; 5 việc / vai; nút chưa tới kỳ "Cập nhật trước hạn";
+  người dạy chung không đè giá trị riêng; ô Email * + "Thiếu" cam; PA Tutor (mục 7); **Đề xuất PA khác…** (một tên) cho PA mặc định — lúc Xác nhận
+  PA (mục 9: luôn mở panel, Nội dung / hướng dẫn *, Người dạy *, Bắt đầu *) và khi PA đang chạy (mục 8); gửi đề xuất → PA gốc CHỜ (chưa chạy) / đang
+  chạy thì vẫn chạy, Case "Chờ duyệt đổi PA", QL duyệt → PA mới chạy từ ngày duyệt, từ chối → việc cũ quay lại kèm lý do; ghi kết quả kỳ + đề xuất một nút.
+- **Gỡ chặn cứng (chủ SP 15/10, OV-13h + HOTFIX-2):** GV đúng kỹ năng sửa nhận xét / nhóm MT mọi lúc; sau hoàn tất GV nhập ô TRỐNG (sửa / xoá điểm
+  đã có vẫn qua QL); gỡ "-" mọi lúc; ai hoàn thành Case được thì mở lại được; sửa bàn giao sau ngày chuyển lớp (đổi 13/10); báo cáo tuần nộp muộn có nhãn;
+  Góp ý tuần lớp đã kết thúc; thi thật em Lưu trữ; đề xuất sửa em Tạm dừng. Giữ: cấp bậc Ý thức đã xử lý, em Lưu trữ, PA đã kết thúc / QL đã trả lời.
+
+- **Bước tiếp sau thi + Chuyển lớp ngay (mockup `thiet-ke/mockup-ov13-buoc-tiep-2026-10-15.html` DUYỆT 15/10, PR #414):** có kết quả thi thật →
+  lộ trình "Đã xong" + khối Bước tiếp (Lộ trình mới [Lớp này / Lớp khác · Bắt đầu "Ngay bây giờ" hoặc chọn tuần → "Hẹn bắt đầu", Huỷ hẹn] · Tạm dừng ·
+  Thôi học), QL + TVV chọn, GVCN chỉ đọc; lộ trình mới bắt đầu ngay thì tuần này là tuần 1 (CHỈ lộ trình mới sau thi — chuyển lớp thường giữ cách tính
+  tuần); lộ trình mới ở lớp khác có phiếu bàn giao như Chuyển lớp; giữ Target cũ ("Target 6.5 · giữ · Sửa"). Chuyển lớp: ô tuần thêm "Ngay hôm nay"
+  (chuyển ngay, không hoàn tác); hạn bàn giao mọi lệnh = muộn hơn của (ra lệnh + 7 ngày) và mốc cũ.
+  **Điểm khi chuyển (chủ SP 15/10):** chuyển lớp khi lộ trình CHƯA kết thúc → điểm / lượt Test của lộ trình đang chạy ĐI THEO em sang lớp mới (lộ trình
+  tiếp tục); lộ trình đã kết thúc hẳn rồi sang lớp mới → lộ trình mới, điểm cũ ở lại lộ trình cũ. (Kiểm mã chuyển lớp hiện đóng-mở lộ trình thế nào
+  trước khi giao prompt.)
+
 ## 1. Lỗi đã tìm gốc
 
 | # | Chủ SP báo | Gốc (đã tái hiện trừ khi ghi khác) | Sửa | PR |
