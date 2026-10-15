@@ -232,7 +232,7 @@ export async function runPrOv13kTests(t: YThucTestKit) {
       assert(BON.every((k) => cot.includes(k)) && a1.some((x) => x.startsWith('OV-13k')), `lần 1: ${JSON.stringify(a1)} · ${cot}`);
       const a2 = doc(goi());
       assert(!a2.some((x) => x.startsWith('OV-13k')), `lần 2 áp lại OV-13k: ${JSON.stringify(a2)}`);
-    } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+    } finally { try { fs.rmSync(dir, { recursive: true, force: true }); } catch { /* Windows còn giữ file — bỏ qua dọn dẹp */ } }
   });
 
   await checkAsync('OV13k-11 · MT trượt lại: PA của lượt trước đã xác nhận → lượt sau chấm chéo có nhận xét VẪN có việc; việc quay lại → chuông chưa đọc; lưu không đổi gì → không nhật ký', () => voiMayChu(async (goi) => {
