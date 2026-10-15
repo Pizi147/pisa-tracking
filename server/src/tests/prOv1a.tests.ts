@@ -10,6 +10,7 @@ export async function runPrOv1aTests(t: YThucTestKit) {
   const dl: any = await import('../cham/diemTheoLuot.ts');
   const dm: any = await import('../../../shared/domain/index.ts');
   const tongHop: any = await import('../phanTich/tongHop.ts');
+  const { scoreDebtCells } = await import('../worklist/scoreDebt.ts');
   const { kiemDuLieuMt } = await import('../ops/kiemDuLieuMt.ts');
   const { kiemOLop } = await import('../ops/kiemOLop.ts');
   const { xoaNho } = await import('../platform/nguCanhRequest.ts');
@@ -152,5 +153,25 @@ export async function runPrOv1aTests(t: YThucTestKit) {
     assert((conn.prepare('SELECT total_changes() n').get() as any).n === n0, 'kiem-o-lop đã ghi DB');
     const e = loi(() => kiemOLop(conn, 'KHONG CO LOP'));
     assert(e && /Không thấy lớp "KHONG CO LOP"/.test(e.message), `mã lạ: ${e?.message}`);
+  });
+  check('HOTFIX-3 · MT0 lớp thường nhập đủ band → hết việc (listAttempts = Công việc / Lịch Test / Tổng quan, cùng số với Nợ điểm)', () => {
+    thu(() => {
+      const m = taoMt0();
+      /* Dời MT0 về tuần đã qua hạn để việc chắc chắn đang mở trước khi nhập. */
+      const cu = all(`SELECT id FROM report_periods WHERE week_end < ? ORDER BY week_start DESC LIMIT 1`, addDays(t.TODAY, -10))[0].id;
+      conn.prepare('UPDATE attempt_skills SET planned_period_id = ? WHERE attempt_id = ?').run(cu, m.id);
+      conn.prepare('UPDATE assessment_attempts SET planned_period_id = ? WHERE id = ?').run(cu, m.id);
+      xoaNho();
+      const viec = () => attempts.listAttempts(QL, { studentId: em.sid }).rows.find((r: any) => r.id === m.id);
+      const no = () => scoreDebtCells(QL, t.TODAY, null).filter((c: any) => c.attemptId === m.id).length;
+      assert(viec()?.pendingSkills.length > 0 && no() > 0, `trước khi nhập phải còn việc: ${JSON.stringify(viec()?.pendingSkills)} nợ ${no()}`);
+      for (const k of ['listening', 'reading', 'writing1', 'writing2', 'speaking']) {
+        conn.prepare('INSERT INTO assessment_scores (attempt_id, skill, band, nhap_dau_ngay) VALUES (?,?,?,?)').run(m.id, k, 6, t.TODAY);
+      }
+      xoaNho();
+      const v = viec();
+      assert(v.pendingSkills.length === 0 && v.overdueSkills === 0 && v.myPendingSkills.length === 0, `đủ band vẫn là việc: ${JSON.stringify({ p: v.pendingSkills, o: v.overdueSkills })}`);
+      assert(no() === 0, `Nợ điểm còn ${no()}`);
+    });
   });
 }

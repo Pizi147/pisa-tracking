@@ -9362,6 +9362,9 @@ await runPrHfTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, ad
 // ==================================================================== OV-13b (Đề xuất PA khác · Xác nhận PA Nội dung + Bắt đầu · ghi nhanh · Hoàn tác)
 const { runPrOv13bTests } = await import('./prOv13b.tests.ts');
 await runPrOv13bTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== HD-a (Hướng dẫn trên web: mục theo màn · Chỉ cho tôi trỏ data-hd có thật · nhớ dải Mới dùng)
+const { runPrHdTests } = await import('./prHd.tests.ts');
+await runPrHdTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== PR-OV13a (Case tạm · PA quy chế hết kẹt A/B/C · migrate prOv13a)
 const { runPrOv13aTests } = await import('./prOv13a.tests.ts');
 await runPrOv13aTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);

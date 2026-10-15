@@ -43,6 +43,8 @@ export type Principal = {
   vaiGoc?: string[];
   /** PR-EN: ngôn ngữ đã chọn của tài khoản ('vi' | 'en'; null = chưa chọn). Đọc cùng câu phiên — không thêm lượt hỏi. */
   ngonNgu?: string | null;
+  /** HD-a: đã mở Hướng dẫn / bấm Ẩn dải "Mới dùng PISA?" (`users.da_xem_huong_dan`). Đọc cùng câu phiên. */
+  daXemHuongDan?: boolean;
 };
 
 export type Ctx = {
@@ -61,7 +63,7 @@ export type Ctx = {
  * hiệu lực ngay). Ba khối JSON giữ đúng câu cũ (lọc, JOIN, thứ tự): vai (kèm quyền theo vai), quyền cấp riêng, phân công.
  * `json(...)` vì cột con lấy qua truy vấn con mất kiểu JSON — không bọc thì quyền thành chuỗi.
  */
-export const COT_PRINCIPAL = `u.id AS u_id, u.code AS u_code, u.full_name AS u_full_name, u.title AS u_title, u.ngon_ngu AS u_ngon_ngu,
+export const COT_PRINCIPAL = `u.id AS u_id, u.code AS u_code, u.full_name AS u_full_name, u.title AS u_title, u.ngon_ngu AS u_ngon_ngu, u.da_xem_huong_dan AS u_da_xem_hd,
   (SELECT json_group_array(json_array(g.id, g.branch_id, g.role_key, g.role_name, g.branch_name, json(g.perms))) FROM (
      SELECT ur.id, ur.branch_id, r.key AS role_key, r.name_vi AS role_name, b.name AS branch_name,
             (SELECT json_group_array(p.key) FROM role_permissions rp JOIN permissions p ON p.id = rp.permission_id
@@ -119,6 +121,7 @@ export function principalTuDong(row: any): Principal {
     fullName: row.u_full_name,
     title: row.u_title,
     ngonNgu: row.u_ngon_ngu ?? null,
+    daXemHuongDan: row.u_da_xem_hd === 1,
     grants,
     /* `granted` không phải một vai trò — nó chỉ là chỗ chứa quyền cấp riêng. */
     roleKeys: [...new Set(grants.map((g) => g.roleKey).filter((k) => k !== 'granted'))],

@@ -57,7 +57,7 @@ export function LopToiDay() {
   const nhanDuoi = laThuong ? t('Chưa đạt') : t('Dưới kỳ vọng');
 
   return (
-    <section className="card" aria-labelledby="lop-toi-day">
+    <section className="card" aria-labelledby="lop-toi-day" data-hd="tq-lop-toi-day">
       <header className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b px-4 py-3" style={{ borderColor: 'var(--line)' }}>
         <div className="flex flex-wrap items-center gap-3">
           <h2 id="lop-toi-day" className="m-0 text-sm font-semibold text-slate-200">{t('Lớp tôi dạy')}</h2>
