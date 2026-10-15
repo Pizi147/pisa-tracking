@@ -888,6 +888,8 @@ check('TD3-b-2 · QL ×3: /classes/{lopFT}/overview ≤ 50 % (5 829), /hoc-vien-
  * và mọi góc nhìn. Lọc sớm lượt ở `listAttempts` không được đổi một việc nào. Đổi đầu ra Công việc CÓ CHỦ Ý (hoặc seed / phép kiểm phía trên đổi
  * dữ liệu) thì lệch: chụp lại băm bằng mã trước thay đổi đó (phép in băm đang ra), không sửa cho khớp.
  * 15/10: chụp lại 'QT toi' / 'QT tat-ca' sau khi Case của Task2(e) thôi lấy giờ thật (hạn Thêm PA của nó trôi theo ngày chạy → băm QT đổi mỗi ngày).
+ * 15/10 OV-13a: chụp lại 'QL tat-ca' / 'QT tat-ca' / 'QT tat-ca cn' — Case tạm (Q2) đổi thứ tự sinh Case trong seed → id Case 34↔35 (HV 46) đổi chỗ;
+ *   so JSON với main: khác CHỈ ở id Case, nội dung việc không đổi.
  * 15/10 OV-13c: chụp lại 7 băm — đổi CÓ CHỦ Ý: Nhập điểm gom theo tuần thi (khoá `|p{tuần}|`, dòng phụ có mã tuần), việc Case SOS FT + Nhập điểm
  * thêm `tuanThi` / `sos` / `pa` / `periodId` / `kind`. Đã so JSON mã trước (main 0359276) ↔ sau trên bộ demo, 5 vai × Của tôi / Tất cả: việc khác
  * TRÙNG hoàn toàn (trừ trường mới), tổng số bài Nhập điểm không đổi.
@@ -1062,9 +1064,14 @@ await checkAsync(`PR-S3F · Công việc QL (nguoi=tat-ca) với 30 PA "đến l
         cycle_started_on, action_due, confirmed_by, confirmed_at, created_at) VALUES (?, 'tutor', 'Tutor · đến lúc thi', 'started', 0, 1, 'until_exam', ?, 1, ?, ?, ?, ?, ?)`)
       .run(c.id, homNay, homNay, addDays(homNay, 7), USER.QT, bayGio, bayGio);
   }
+  /* OV-13a (B): lần đọc đầu điền mốc MT cuối của lộ trình cho PA chưa có ngày thi (ghi một lần) — đo lần đọc sau, như người dùng mở lại. */
+  const dau = await doSql('QL', 'GET', url);
   const r = await doSql('QL', 'GET', url);
-  const moc = (conn.prepare(`SELECT COUNT(*) n FROM case_interventions WHERE preset = 1 AND moc_quy_che = 'until_exam' AND followup_due IS NULL AND status = 'started'`).get() as any).n;
-  assert(r.status === 200 && moc >= 30, `Việc "Nhập ngày thi" phải còn (PA chưa mốc ${moc}): ${r.status}`);
+  const conTrong = (conn.prepare(`SELECT COUNT(*) n FROM case_interventions WHERE preset = 1 AND moc_quy_che = 'until_exam' AND followup_due IS NULL AND status = 'started'`).get() as any).n;
+  const { mtCuoiCuaLoTrinh } = await import('../cases/sosAuto.ts');
+  const coMt = mtCuoiCuaLoTrinh(cs.map((c) => c.cycle_id));
+  const mongTrong = cs.filter((c) => !coMt.has(c.cycle_id)).length;   // lộ trình chưa xếp MT nào: vẫn chưa có mốc → việc "Nhập ngày thi" còn
+  assert(dau.status === 200 && r.status === 200 && conTrong === mongTrong, `PA "đến lúc thi" có MT cuối phải nhận mốc (còn trống ${conTrong}, mong ${mongTrong}): ${r.status}`);
   console.log(`      (đo: ${n0} câu không PA → ${r.n} câu với 30 PA chưa ngày thi)`);
   assert(r.n <= TRAN_GHI_LO.congViec30PaChuaNgayThi, `${r.n} câu > trần ${TRAN_GHI_LO.congViec30PaChuaNgayThi}`);
 });

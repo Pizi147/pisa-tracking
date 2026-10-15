@@ -8,6 +8,7 @@
  *  · Thiếu thông tin — chính cờ `thieu_tt` của danh sách Học viên & Lớp (`danhSachHocVienLop`), chip đó đã có sẵn.
  * Câu đọc không theo danh sách id (Turso ≤ 900 tham số): Case / Ý thức đọc khoảng 14 ngày rồi lọc theo tập em.
  */
+import { CASE_THAT } from '../cases/sosState.ts';
 import { db } from '../db.ts';
 import { PERMISSIONS, VIOLATION_CATEGORY_LABEL } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -89,7 +90,7 @@ export function chipHocVien(p: Principal, f: { branchId?: number | null; phamVi?
   }
   for (const c of conn.prepare(
     `SELECT COALESCE(sc.student_id, a.student_id) AS sid, sc.category FROM sos_cases sc LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
-      WHERE sc.status != 'done' AND substr(sc.created_at, 1, 10) >= ? ORDER BY sc.id`,
+      WHERE sc.status != 'done' AND ${CASE_THAT('sc')} AND substr(sc.created_at, 1, 10) >= ? ORDER BY sc.id`,
   ).all(tuNgay) as any[]) {
     if (laDangHoc.has(c.sid)) ghi(c.sid, (l) => { l.caseMoi = [...new Set([...(l.caseMoi ?? []), c.category ?? 'tong_hop'])]; });
   }

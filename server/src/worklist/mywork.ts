@@ -701,7 +701,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
          LEFT JOIN enrollments cur ON cur.student_id = s.id AND cur.status = 'active'
          LEFT JOIN classes ac ON ac.id = a.class_id
          LEFT JOIN classes cc ON cc.id = cur.class_id
-        WHERE sc.status != 'done' AND COALESCE(sc.sos_level, 1) > 0 AND sc.kck = 0   /* OV-9: Case nhẹ (KCK) không bắt Thêm PA, không hạn */
+        WHERE sc.status != 'done' AND COALESCE(sc.sos_level, 1) > 0 AND sc.kck = 0 AND sc.tam = 0   /* OV-9: Case nhẹ (KCK) không bắt Thêm PA, không hạn · OV-13a: Case tạm chờ chốt */
           AND sc.disposition IS NULL AND COALESCE(s.status, 'active') = 'active'   /* K3-41: em Tạm dừng dừng hạn */
         GROUP BY sc.id`,
     )
@@ -1112,7 +1112,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
          LEFT JOIN enrollments cur ON cur.student_id = s.id AND cur.status = 'active'
          LEFT JOIN classes ac ON ac.id = a.class_id
          LEFT JOIN classes cc ON cc.id = cur.class_id
-        WHERE sc.status != 'done' AND sc.owner_user_id IS NULL
+        WHERE sc.status != 'done' AND sc.owner_user_id IS NULL AND sc.tam = 0   /* OV-13a: Case tạm chưa là việc */
           AND s.archived_at IS NULL`,
     )
     .all() as any[];
