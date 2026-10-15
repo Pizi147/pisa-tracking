@@ -380,6 +380,7 @@ Nhật ký chi tiết tới 04/10 ở `git show 575e898d:plan.md` (mục 14) và
 
 | Ngày | PR / nhánh · model | Kết quả |
 |---|---|---|
+| 15/10/2026 | OV-13h (Opus 5.5) · `claude/ov-13h-go-chan-cung-r2bjsj` | Gỡ chặn cứng (chủ SP 15/10): GV nhập ô trống sau hoàn tất / lớp kết thúc; gỡ "-" mọi lúc; ai hoàn thành được Case mở lại được; bàn giao sửa sau ngày chuyển; báo cáo tuần quá hạn = "nộp muộn" (bỏ QT mở lại); góp ý lớp kết thúc; thi thật em Lưu trữ, đề xuất sửa em Tạm dừng. Rulebook §20.1b. Kiểm HTTP `prOv13h` |
 | 15/10/2026 | OV-13a (Opus 5.5) · `claude/ov13a-case-pa-rules-rp7zpx` | Case tạm khi lượt chưa chốt (Q2, cột `sos_cases.tam`, không vào số đếm nào); PA quy chế hết kẹt A (đạt → Kết quả cuối) · B (mốc MT cuối ≥ xác nhận + 4 tuần) · C (GVCN/QL Kết thúc PA, lý do ≥ 10); Case MT bỏ ô Mô tả; migrate `prOv13a` + `kiem-truoc-ov13a`, prOv1c không chạy nữa (chỉ khoá) |
 | 15/10/2026 | OV-13j (Opus 5.5) · `claude/student-edit-history-pw3rj2` | Lịch sử sửa thông tin HV: hồ sơ ⋮ › Lịch sử sửa (panel, lọc 4 nhóm, Xem thêm); `GET /students/:id/lich-su-sua`; thêm audit theo trường cho nhập HV, chuyển lớp / tạm dừng cả lớp, nguồn "Sửa cả lớp"; `student.update` chỉ ghi trường đổi. |
 | 15/10/2026 | OV-13c (Opus 5.5) · `claude/ov13c-gom-cong-viec-tuan-lusfml` | Công việc: Case SOS FT (Xác nhận PA, Ghi nhận xét) gộp lớp + tuần thi + mức SOS; Xác nhận PA cùng lúc (lô, mỗi PA một giao dịch, người dạy chung không đè, ngày bắt đầu); Nhập điểm gộp theo tuần thi (lưới Lịch Test nhiều lớp); 3 lỗi nhỏ mục 4 (em cuối rơi xuống cuối, "1 em · 2 việc", tiêu đề panel). |

@@ -16,7 +16,7 @@ import { ensurePeriod, ensurePeriods, mondayOf, skillScoreDeadline } from '../pl
 import { kckCuaLuot, regularSkillViews, weekStartOf } from '../fasttrack/attempts.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
 import { checkSkillWeekMove, ensureSkillRows, kiemDaToiTuanThi, loadSkillRows, setSkillWeek } from '../fasttrack/skillSchedule.ts';
-import { chanVangLopKetThuc, dotHoanTat, dotHoanTatMany, kiemLopKetThuc, laLopKetThuc, quyenSuaSauHoanTat } from '../fasttrack/hoanTat.ts';
+import { CAU_KHONG_VANG, chanVangLopKetThuc, dotHoanTat, dotHoanTatMany, kiemLopKetThuc, laLopKetThuc, oChuaCoDiem, quyenSuaSauHoanTat } from '../fasttrack/hoanTat.ts';
 import { canRequest, duocGoDau } from '../fasttrack/absence.ts';
 import { classProgress, classProgressMany, lichMtCua } from '../classes/schedule.ts';
 import { baoLenCuoiKhoaDoiQuaHan, capNhatCuoiKhoaSauChuyen, dongBoCheTaiFinal } from './cuoiKhoa.ts';
@@ -603,8 +603,17 @@ export function saveRegularScore(
   if (!prog.skills.includes(skill)) {
     throw badRequest(`Lớp ${prog.name} không có kỹ năng ${tenMon(prog.code, skill)}.`);
   }
-  /* OV-11g (HL-10): lớp đã kết thúc — GV 403 trước mọi việc ghi (điểm, "-", nhận xét); Quản lý đi đường `override`. */
-  const lopKetThuc = kiemLopKetThuc(p, a.class_id);
+  /*
+   * OV-13h (chủ SP 15/10): GV đúng môn (kiểm `path` bên dưới) NHẬP điểm vào ô chưa có điểm, hoặc ghi NHẬN XÉT (lệnh chỉ nhận xét — không đổi
+   * điểm, như HOTFIX-2 của FT), cả sau hoàn tất / lớp đã kết thúc; sửa / xoá điểm đã có vẫn qua QL. Chỉ đọc ô khi cần, một lần.
+   */
+  const chiNhanXet = patch.nhanXet !== undefined && patch.score === undefined && patch.total === undefined && patch.noShow === undefined;
+  let gvDuocNho: boolean | undefined;
+  const gvDuoc = () => (gvDuocNho ??= chiNhanXet || (patch.noShow === undefined && patch.nhanXet === undefined && patch.score !== undefined && patch.score !== null
+    && oChuaCoDiem(conn.prepare('SELECT * FROM assessment_scores WHERE attempt_id = ? AND skill = ?').get(attemptId, skill))));
+  if (patch.noShow !== undefined) chanVangLopKetThuc(a.class_id);   // một câu cho mọi vai (rà #410)
+  /* OV-11g (HL-10): lớp đã kết thúc — GV 403 trước mọi việc ghi (trừ `gvDuoc`); Quản lý đi đường `override`. */
+  const lopKetThuc = kiemLopKetThuc(p, a.class_id, gvDuoc);
   /* Dấu "-" đi đường riêng vì nó KHÔNG phải một điểm: nó là một lần dời lịch (C08). */
   if (patch.noShow !== undefined) {
     if (patch.score !== undefined || patch.total !== undefined) {
@@ -623,13 +632,13 @@ export function saveRegularScore(
   const hoanTat = dotHoanTat(attemptId, today);
   let path = a.class_id ? scoreEditPath(p, a.class_id, skill) : null;
   if (hoanTat.hoanTat) {
-    if (!a.class_id || !quyenSuaSauHoanTat(p, a.class_id)) {
+    if (a.class_id && quyenSuaSauHoanTat(p, a.class_id)) path = 'override';
+    else if (!(path && gvDuoc())) {   // OV-13h: GV đúng môn nhập ô trống / ghi nhận xét giữ đường `assigned`
       throw forbidden(
         `Đợt này đã hoàn tất (hết Chủ nhật ${ngay(hoanTat.chuNhatCuoi)}). `
         + 'Chỉ Quản lý sửa được điểm — nhờ Quản lý hiệu chỉnh.',
       );
     }
-    path = 'override';
   } else if (!path) {
     require_(p, PERMISSIONS.SCORE_EDIT, { classId: a.class_id, studentId: a.student_id, skill },
       'Bạn chỉ nhập được điểm của kỹ năng mình được phân công.');
@@ -752,14 +761,14 @@ export function reportRegularNoShow(
   const prog = a.class_id ? programmeOfClass(a.class_id) : null;
   if (!prog || prog.scoringMode !== 'ratio') throw badRequest('Lượt này không thuộc lớp thường.');
   if (!prog.skills.includes(skill)) throw badRequest(`Lớp ${prog.name} không có kỹ năng ${tenMon(prog.code, skill)}.`);
-  chanVangLopKetThuc(p, a.class_id);
+  chanVangLopKetThuc(a.class_id);
 
   /*
    * Ghi dấu là việc của NGƯỜI CHẤM môn đó (hoặc người nhập bù) — cùng cửa với nhập điểm.
    * R11: đợt đã hoàn tất thì chỉ người có `PLAN_WEEK`/`SCORE_OVERRIDE` — trên thực tế môn đang ghi "-" chưa có
    * điểm nên đợt hiếm khi đã hoàn tất, nhưng vẫn kiểm để không có đường vòng qua dấu "-".
    */
-  /* PR-BV: GỠ dấu = hết vắng — quyền / khung chung với Mock (`duocGoDau`: QL mọi lúc; GV chấm môn, GVCN đến hết thứ Tư sau tuần có "-"). */
+  /* PR-BV: GỠ dấu = hết vắng — quyền chung với Mock (`duocGoDau`: QL, GV chấm môn, GVCN — mọi lúc từ OV-13h). */
   const dauCu = bat ? null : conn.prepare(
     `SELECT rp.week_start, s.no_show_cu FROM assessment_scores s JOIN report_periods rp ON rp.id = s.no_show_period_id WHERE s.attempt_id = ? AND s.skill = ?`,
   ).get(attemptId, skill) as any;
@@ -767,7 +776,7 @@ export function reportRegularNoShow(
   let path = scoreEditPath(p, a.class_id, skill);
   /* OV-11a: gỡ "Không dự thi" như FT (`no_show_cu`) — người nhập được môn đó, không theo khung gỡ vắng. */
   if (dauCu && !dauCu.no_show_cu) {
-    const loi = duocGoDau(p, { classId: a.class_id, skill, mode: 'ratio', tuanGocStart: dauCu.week_start, today });
+    const loi = duocGoDau(p, { classId: a.class_id, skill, today });
     if (loi) throw forbidden(loi);
   } else if (hoanTat.hoanTat) {
     if (!quyenSuaSauHoanTat(p, a.class_id)) {
@@ -1161,9 +1170,10 @@ export function regularSheet(p: Principal, classId: number, kind?: string, today
   const suaSauHoanTat = quyenSuaSauHoanTat(p, classId);
   /* OV-11g (HL-10, Q4): lớp đã kết thúc — mọi bài như đã hoàn tất: Quản lý sửa qua hộp lý do, GV chỉ đọc (cùng `kiemLopKetThuc`). */
   const ketThuc = cls.status === 'finished';
-  const editable = ketThuc && !suaSauHoanTat ? [] : editableSkills(p, classId, prog.skills);
+  const editable = editableSkills(p, classId, prog.skills);   // OV-13h: lớp kết thúc — cờ từng ô quyết
   /* Quyền sửa ô tính MỘT lần cho mỗi môn — cùng cửa với `saveRegularScore`, không hỏi lại theo từng dòng. */
-  const canEditSkill = new Map(prog.skills.map((k) => [k, ketThuc ? suaSauHoanTat : scoreEditPath(p, classId, k) !== null]));
+  const nhapSkill = new Map(prog.skills.map((k) => [k, scoreEditPath(p, classId, k) !== null]));
+  const canEditSkill = new Map(prog.skills.map((k) => [k, ketThuc ? suaSauHoanTat : nhapSkill.get(k)!]));
   /* Lịch và hạn chấm RIÊNG từng môn — một bài có thể trải hai ba tuần (mục 10.1). */
   const skillRows = loadSkillRows(attempts.map((a) => a.id));
   /* Mã tuần mà dấu "-" đã dời môn đi (C08) — đọc gộp một lần cho cả bảng. */
@@ -1240,16 +1250,20 @@ export function regularSheet(p: Principal, classId: number, kind?: string, today
             movedFrom: row?.no_show_period_id ? periodCode.get(row.no_show_period_id) ?? null : null,
             /** Thứ Hai của tuần `movedFrom` — để lưới viết "trả lịch về W3 SEP" bằng `tuanLich`. */
             movedFromStart: row?.no_show_period_id ? periodStart.get(row.no_show_period_id) ?? null : null,
-            /** PR-BV: người xem gỡ được dấu "-" lúc này (QL mọi lúc; GV chấm môn / GVCN đến hết thứ Tư sau tuần có "-"). */
-            goDau: !!row?.no_show_period_id && !!periodStart.get(row.no_show_period_id)
-              && duocGoDau(p, { classId, skill: k, mode: 'ratio', tuanGocStart: periodStart.get(row.no_show_period_id)!, today, duocNhap: canEditSkill.get(k) ?? false }) === null,
+            /** PR-BV: người xem gỡ được dấu "-" (QL, GV chấm môn, GVCN — mọi lúc từ OV-13h). */
+            goDau: !!row?.no_show_period_id && duocGoDau(p, { classId, skill: k, today, duocNhap: canEditSkill.get(k) ?? false }) === null,
             /** Người đang xem có nhập được điểm / ghi được "-" ở ô này không (phân công hoặc nhập bù). */
-            canEdit: (hoanTat.hoanTat ? suaSauHoanTat : (canEditSkill.get(k) ?? false))
+            /* OV-13h: sau hoàn tất / lớp kết thúc GV đúng môn vẫn nhập ô trống (cùng `oChuaCoDiem` với `saveRegularScore`). */
+            canEdit: (hoanTat.hoanTat ? suaSauHoanTat || (!!nhapSkill.get(k) && oChuaCoDiem(row)) : (canEditSkill.get(k) ?? false))
               /* T19 (PR-MTa): môn chưa tới tuần thi / chưa xếp tuần → ô khoá như máy chủ, kể cả ô đã có điểm (rà #212); ô mang dấu "-"
                * (đã dời sang tuần sau) vẫn mở để gỡ dấu. */
               && (!!row?.no_show_period_id || (!!v.weekStart && String(v.weekStart).slice(0, 10) <= mondayOf(today))),
             /* R11: đánh dấu "bài đã hoàn tất" cho MỌI người xem — Quản lý vẫn `khoa && canEdit` (sửa qua hộp lý do). */
             khoa: hoanTat.hoanTat,
+            /** OV-13h (rà #410): nút Nhận xét — GV đúng môn ghi được cả khi ô đã khoá điểm (sau hoàn tất / lớp đã kết thúc), cùng luật `saveRegularScore`. */
+            nhanXetDuoc: hoanTat.hoanTat ? suaSauHoanTat || !!nhapSkill.get(k) : (canEditSkill.get(k) ?? false),
+            /** OV-13h (rà #410): lớp đã kết thúc — ô không nhận "-" (cùng câu `chanVangLopKetThuc`); null = gõ "-" được. */
+            khongVang: ketThuc ? CAU_KHONG_VANG : null,
           };
         }),
         // Quá hạn khi có ÍT NHẤT MỘT môn đã tới hạn mà chưa chấm — không xét theo cả bài.
