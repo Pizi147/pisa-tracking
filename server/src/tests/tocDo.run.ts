@@ -1183,6 +1183,21 @@ await checkAsync(`PR-CT2 · Ra lệnh cả lớp thường 10 em Final đủ đi
   assert(huy.n <= TRAN_GHI_LO.doiLenhHuyBoTro, `huỷ ${huy.n} câu > trần ${TRAN_GHI_LO.doiLenhHuyBoTro}`);
 });
 
+/* OV-13c (rà #412): Xác nhận PA cùng lúc — web gửi lô ≤ 3 PA mỗi lời gọi (Netlify 10 s); khoá ≤ 45 câu SQL / PA trên dữ liệu ×3. */
+await checkAsync('OV-13c · POST /interventions/xac-nhan-pa-lo (×3): lô 3 PA ≤ 45 câu SQL / PA', async () => {
+  const { myWork } = await import('../worklist/mywork.ts');
+  const p = PRINCIPAL_CUA.get(USER.QL) ?? loadPrincipal(USER.QL);
+  const ids = [...new Set((chayTrongRequest('GET', () => myWork(p, { nguoi: 'tat-ca' })).items as any[]).filter((x) => x.group === 'xac_nhan_pa').map((x) => x.paId as number))].slice(0, 3);
+  assert(ids.length > 0, 'không có PA chờ xác nhận để đo');
+  const truoc = soCauSql();
+  const { status, json } = await callHttp('QL', 'POST', '/interventions/xac-nhan-pa-lo',
+    { chung: { description: 'Hai buổi mỗi tuần, chữa đề bấm giờ, GV gửi nhận xét.' }, ds: ids.map((id) => ({ id })) });
+  const cau = soCauSql() - truoc;
+  console.log(`      (đo ×3: ${ids.length} PA → ${cau} câu, ${(cau / ids.length).toFixed(1)} câu / PA · ok ${json?.ok?.length} · lỗi ${json?.loi?.length})`);
+  assert(status === 200 && json.ok.length === ids.length, `kết quả: ${status} ${JSON.stringify(json)}`);
+  assert(cau <= 45 * ids.length, `${cau} câu cho ${ids.length} PA (> 45 / PA)`);
+});
+
 check('PR-DEPLOY (3b) · Giới hạn Turso trên mọi (đường × vai) sau nhân dữ liệu ×3 + mọi đường ghi lô: mỗi câu ≤ 900 tham số, ≤ 20 vế UNION, 0 tham số đặt tên', () => {
   doTurso.bat = false;
   const dong = (c: CauDo) => `${c.nhan} · ${c.thamSo} tham số · ${c.ve} vế · ${c.sql}`;

@@ -19,6 +19,8 @@ type Rieng = { mo: boolean; moTa: string; batDau: string; nguoi: NguoiChon | nul
 /** Cùng ngưỡng máy chủ (`xacNhanPaQuyChe`: mô tả ≥ 15 ký tự). */
 const TOI_THIEU = 15;
 const RIENG_TRONG: Rieng = { mo: false, moTa: '', batDau: '', nguoi: null };
+/** Rà #412: ~40 câu SQL / PA, Netlify cắt lời gọi sau 10 s → gửi tuần tự từng lô ≤ 3 PA. */
+const LO = 3;
 
 /**
  * XÁC NHẬN PA CÙNG LÚC (OV-13c, chủ SP 15/10 Q4; mockup OV-13 §3a) — dòng gộp Case SOS FT cùng lớp + tuần thi + mức SOS. Em tick sẵn (bỏ tick được);
@@ -41,6 +43,7 @@ export function XacNhanPaLo({ it, onDong, onDaLam, onMo, onTiep }: {
   const [xong, setXong] = useState<ReadonlySet<string>>(new Set());
   const [loiMay, setLoiMay] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
+  const [tienDo, setTienDo] = useState<{ n: number; m: number } | null>(null);
   const lf = useLoiForm();
 
   const conLai = ds.filter((x) => !xong.has(x.key));
@@ -52,7 +55,10 @@ export function XacNhanPaLo({ it, onDong, onDaLam, onMo, onTiep }: {
   const canChung = chon.some((x) => riengCua(x.key).moTa.trim().length < TOI_THIEU);
   const ngan = t('Nội dung cần ít nhất {n} ký tự', { n: TOI_THIEU });
   const oRieng = (x: Em) => `noi-dung-${x.paId}`;
+  /* Mockup §3a / §9 "Người dạy *": bắt buộc khi còn em đang tick có PA cần người dạy mà chưa có người (của PA, hay riêng). */
+  const canNguoi = !nguoi && chon.some((x) => coNguoiDay(x.pa?.kind ?? 'self_study') && !x.pa?.nguoi && !riengCua(x.key).nguoi);
   const loi: LoiTruong[] = [
+    ...(canNguoi ? [{ khoa: 'nguoi', nhan: t('Người dạy'), lyDo: t('Chọn người dạy') }] : []),
     ...(canChung && moTa.trim().length < TOI_THIEU ? [{ khoa: 'noi-dung', nhan: t('Nội dung / hướng dẫn'), lyDo: moTa.trim() ? ngan : t('Ghi nội dung / hướng dẫn') }] : []),
     ...chon.filter((x) => { const m = riengCua(x.key).moTa.trim(); return m && m.length < TOI_THIEU; }).map((x) => ({ khoa: oRieng(x), nhan: x.studentName, lyDo: ngan })),
   ];
@@ -64,29 +70,48 @@ export function XacNhanPaLo({ it, onDong, onDaLam, onMo, onTiep }: {
   const gui = async () => {
     lf.bam();
     if (!chon.length || loi.length) return;
+    const theoPa = new Map(chon.map((x) => [x.paId, x.key]));
+    const chung = { description: moTa.trim(), batDau: ngay, ...(nguoi ? datLaiNguoi(nguoi) : {}) };
+    const hang = chon.map((x) => {
+      const r = riengCua(x.key);
+      return { id: x.paId as number, ...(r.moTa.trim() ? { description: r.moTa.trim() } : {}), ...(r.batDau ? { batDau: r.batDau } : {}), ...(r.nguoi ? datLaiNguoi(r.nguoi) : {}) };
+    });
+    const m = hang.length;
+    const loiMoi: Record<string, string> = {};
+    let daXong = 0;
     setBusy(true);
+    setTienDo({ n: 0, m });
     try {
-      const kq = await api.post<{ ok: number[]; loi: { id: number; loi: string }[] }>('/interventions/xac-nhan-pa-lo', {
-        chung: { description: moTa.trim(), batDau: ngay, ...(nguoi ? datLaiNguoi(nguoi) : {}) },
-        ds: chon.map((x) => {
-          const r = riengCua(x.key);
-          return { id: x.paId, ...(r.moTa.trim() ? { description: r.moTa.trim() } : {}), ...(r.batDau ? { batDau: r.batDau } : {}), ...(r.nguoi ? datLaiNguoi(r.nguoi) : {}) };
-        }),
-      });
-      const theoPa = new Map(chon.map((x) => [x.paId, x.key]));
-      if (kq.ok.length) {
-        setXong((s) => new Set([...s, ...kq.ok.map((id) => theoPa.get(id)!).filter(Boolean)]));
+      while (hang.length) {
+        const lo = hang.splice(0, LO);
+        const kq = await api.post<{ ok: number[]; loi: { id: number; loi: string }[]; chuaLam?: number[] }>('/interventions/xac-nhan-pa-lo', { chung, ds: lo });
+        for (const l of kq.loi) loiMoi[theoPa.get(l.id) ?? String(l.id)] = l.loi;
+        if (kq.ok.length) {
+          daXong += kq.ok.length;
+          setXong((s) => new Set([...s, ...kq.ok.map((id) => theoPa.get(id)!).filter(Boolean)]));
+        }
+        /* Máy chủ dừng sớm vì gần hết giờ lời gọi: PA chưa làm gửi lại ở lô sau; cả lô chưa làm = máy chủ bận thật → dừng, báo. */
+        const chua = new Set(kq.chuaLam ?? []);
+        if (chua.size === lo.length) throw new Error(t('Máy chủ đang bận, chưa lưu gì. Thử lại sau ít phút.'));
+        hang.unshift(...lo.filter((x) => chua.has(x.id)));
+        setTienDo({ n: m - hang.length, m });
+      }
+    } catch (e: any) { toast.push('error', e.message); } finally {
+      /* Lỗi giữa chừng (mạng chập): em đã xong vẫn ✓, em chưa gửi giữ tick — bấm lại chỉ gửi phần còn lại; PA đã xác nhận máy chủ coi là xong. */
+      setLoiMay(loiMoi);
+      setBusy(false);
+      setTienDo(null);
+      if (daXong) {
         onDaLam();
         for (const d of ['/cases', '/students', '/tong-quan', '/my-work']) invalidate(d);
       }
-      setLoiMay(Object.fromEntries(kq.loi.map((l) => [theoPa.get(l.id) ?? String(l.id), l.loi])));
-    } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
+    }
   };
 
   const coLoi = conLai.some((x) => loiMay[x.key]);
   const nut = conLai.length ? (
     <button type="button" className="btn btn-primary min-h-[40px] px-4 font-bold" disabled={busy || !chon.length} onClick={() => void gui()}>
-      {busy ? t('Đang lưu…') : coLoi ? t('Thử lại · {n} em', { n: chon.length }) : t('Xác nhận PA · {n} em', { n: chon.length })}
+      {busy ? (tienDo ? t('Đang xác nhận {n}/{m} em', tienDo) : t('Đang lưu…')) : coLoi ? t('Thử lại · {n} em', { n: chon.length }) : t('Xác nhận PA · {n} em', { n: chon.length })}
     </button>
   ) : onTiep ? <button type="button" className="btn btn-primary min-h-[40px] px-4 font-bold" onClick={onTiep}>{t('Việc tiếp ›')}</button> : undefined;
   const dau = dauViec({
@@ -118,9 +143,9 @@ export function XacNhanPaLo({ it, onDong, onDaLam, onMo, onTiep }: {
                 <ONgay kieu="ngay" value={ngay} onChange={setBatDau} toiThieu={homNay ? addDaysIso(homNay, -30) : null} toiDa={homNay ? addDaysIso(homNay, 30) : null} disabled={busy} />
               </Truong>
               {coNguoi && (
-                <Truong nhan={t('Người dạy')} as="div" phu={t('Em đã có người dạy giữ nguyên')}>
+                <Truong nhan={t('Người dạy')} as="div" batBuoc={canNguoi || !!lf.loiCua(loi, 'nguoi')} loi={lf.loiCua(loi, 'nguoi')} phu={t('Em đã có người dạy giữ nguyên')}>
                   <ChonNguoi nhom="giao_vien" value={nguoi} onChange={setNguoi} choTrong={t('Để trống')} placeholder={t('Chưa chọn · gõ tên để tìm')}
-                    ariaLabel={t('Người dạy')} disabled={busy} />
+                    ariaLabel={t('Người dạy')} disabled={busy} id={lf.oId('nguoi')} onBlur={lf.roi('nguoi')} invalid={!!lf.loiCua(loi, 'nguoi')} />
                 </Truong>
               )}
             </div>

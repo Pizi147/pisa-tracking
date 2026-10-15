@@ -14,6 +14,7 @@ import { addIssues, caseAccess, caseDetail, caseTitleOf, coTheXacNhanCase, suaPa
 import { chenPa } from './taoPa.ts';
 import { followUntilAfter } from './sos.ts';
 import { mondayOf } from '../platform/week.ts';
+import { conLaiMs } from '../platform/hanGio.ts';
 import { taoYeuCau } from '../duyet/yeuCau.ts';
 import { dongBoBaoPhCuaBai } from '../yThuc/phoiHop.ts';
 import { LA_CASE_MT, PA_QUY_CHE_CHUA_GHI, UNCONFIRMED_PRESET, dongBoTrangThaiCase, sosCaseState } from './sosState.ts';
@@ -385,7 +386,7 @@ export function xacNhanPaQuyChe(p: Principal, interventionId: number, input: {
   performerSelf?: boolean; performerUserId?: number | null; performerName?: string | null; description?: string | null;
   /** PR-PA (§8): Số buổi — cùng luật Thêm PA (loại có Số buổi, 1–60; không gửi = giữ). */
   soBuoi?: unknown;
-  /** OV-13c: ngày bắt đầu (YYYY-MM-DD, ±30 ngày quanh hôm nay); không gửi = hôm nay như cũ. Mốc quy chế, hạn kết quả tính từ ngày này. */
+  /** OV-13c: ngày bắt đầu (YYYY-MM-DD, lùi ≤ 7 ngày, tới ≤ 30 ngày); không gửi = hôm nay như cũ. Mốc quy chế, hạn kết quả tính từ ngày này. */
   batDau?: unknown;
 }, o: XacNhanTrongLo = {}) {
   const conn = db();
@@ -420,7 +421,7 @@ export function xacNhanPaQuyChe(p: Principal, interventionId: number, input: {
   return tx(() => {
     conn.prepare(`UPDATE case_interventions SET description = ?, performer_user_id = ?, performer_name = ?, so_buoi = ?, status = 'started', started_date = ?,
         cycle_no = 1, cycle_started_on = ?, action_due = ?, followup_due = ?, confirmed_by = ?, confirmed_at = ?, updated_at = ? WHERE id = ?`)
-      .run(description, performerUserId, performerName, soBuoi, batDau, batDau, hanKyGhiKetQua(batDau), moc, p.userId, nowIso(), nowIso(), interventionId);
+      .run(description, performerUserId, performerName, soBuoi, batDau, batDau, hanKyGhiKetQua(batDau, today), moc, p.userId, nowIso(), nowIso(), interventionId);
     /* Sửa bản máy gán lúc xác nhận thì giữ bản gợi ý trong lịch sử (PR-S2 S2, Q7). */
     if (description !== iv.description || performerUserId !== (iv.performer_user_id ?? null) || performerName !== (iv.performer_name ?? null)
         || soBuoi !== (iv.so_buoi ?? null)) {
@@ -444,25 +445,31 @@ export function xacNhanPaQuyChe(p: Principal, interventionId: number, input: {
     return o.chiGhi ? null : caseDetail(p, iv.case_id);
   });
 }
-/** OV-13c: ngày bắt đầu PA khi xác nhận — không gửi = hôm nay; ngoài ±30 ngày quanh hôm nay hoặc sai dạng → 400. */
+/**
+ * OV-13c: ngày bắt đầu PA khi xác nhận — không gửi = hôm nay. Lùi tối đa 7 ngày (rà #412: lùi xa thì kỳ Ghi kết quả đầu tiên quá hạn ngay),
+ * tới tối đa 30 ngày; sai dạng / ngoài khoảng → 400. Hạn kỳ đầu còn được kẹp không trước hôm nay (`hanKyGhiKetQua(batDau, homNay)`).
+ */
 function batDauHopLe(v: unknown, homNay: string): string {
   if (v === undefined || v === null || v === '') return homNay;
   if (!isIsoDate(v)) throw badRequest('Ngày bắt đầu không hợp lệ.');
-  if (Math.abs(diffDays(v, homNay)) > 30) throw badRequest('Ngày bắt đầu phải trong khoảng 30 ngày quanh hôm nay.');
+  const d = diffDays(v, homNay);
+  if (d < -7 || d > 30) throw badRequest('Ngày bắt đầu chỉ được lùi tối đa 7 ngày, tới tối đa 30 ngày.');
   return v;
 }
 
 type ThanXacNhanPa = Parameters<typeof xacNhanPaQuyChe>[2];
 const KHOA_NGUOI = ['performerSelf', 'performerUserId', 'performerName'] as const;
 export const TRAN_XAC_NHAN_PA_LO = 50;
+/** Rà #412: ~40 câu / PA — còn dưới 4 s của lời gọi (Netlify 10 s) thì không mở PA tiếp, trả về `chuaLam` để web gửi tiếp. */
+const DUNG_KHI_CON_MS = 4_000;
 
 /**
  * XÁC NHẬN PA CÙNG LÚC (OV-13c, mockup OV-13 §3a): `chung` (Nội dung *, ngày bắt đầu, người dạy) áp cho mọi PA trong `ds`; mỗi phần tử
  * `{ id, ...riêng }` thắng `chung`. Người dạy chung KHÔNG đè PA đã có người (chỉ điền PA còn trống); người riêng thì đặt lại.
  * Mỗi PA một giao dịch qua đúng `xacNhanPaQuyChe` (quyền, luật, nhật ký như một em): PA lỗi báo riêng kèm mã HTTP, PA khác vẫn xong
- * (mẫu Duyệt hàng loạt `duyetNhieu`).
+ * (mẫu Duyệt hàng loạt `duyetNhieu`). PA ĐÃ xác nhận (gửi lại sau mạng chập) tính là xong. Gần hết giờ lời gọi → PA còn lại vào `chuaLam`.
  */
-export function xacNhanPaNhieu(p: Principal, body: unknown): { ok: number[]; loi: { id: number; loi: string; ma: number }[] } {
+export function xacNhanPaNhieu(p: Principal, body: unknown): { ok: number[]; loi: { id: number; loi: string; ma: number }[]; chuaLam: number[] } {
   const b = (body ?? {}) as { chung?: ThanXacNhanPa; ds?: unknown };
   const chung = b.chung && typeof b.chung === 'object' ? b.chung : {};
   if (!Array.isArray(b.ds) || !b.ds.length || b.ds.length > TRAN_XAC_NHAN_PA_LO) throw loi(400, 'Chọn từ 1 đến {n} PA để xác nhận.', { n: TRAN_XAC_NHAN_PA_LO });
@@ -474,24 +481,33 @@ export function xacNhanPaNhieu(p: Principal, body: unknown): { ok: number[]; loi
     if (!(Number.isInteger(id) && id > 0)) { hong.push({ id, loi: 'Mã PA không hợp lệ.', ma: 400 }); continue; }
     if (!ds.has(id)) ds.set(id, x && typeof x === 'object' ? x : {});
   }
-  if (!ds.size) return { ok, loi: hong };
-  /* Một câu cho cả lô: PA nào đã có người dạy (không đè bằng người chung). */
+  const chuaLam: number[] = [];
+  if (!ds.size) return { ok, loi: hong, chuaLam };
+  /* Một câu cho cả lô: PA nào đã có người dạy (không đè bằng người chung) · PA nào đã xác nhận. */
   const ids = [...ds.keys()];
-  const coNguoi = new Set((db().prepare(`SELECT id FROM case_interventions WHERE id IN (${ids.map(() => '?').join(',')})
-      AND (performer_user_id IS NOT NULL OR COALESCE(TRIM(performer_name), '') != '')`).all(...ids) as any[]).map((r) => r.id as number));
+  const hien = new Map((db().prepare(`SELECT id, case_id, confirmed_at, (performer_user_id IS NOT NULL OR COALESCE(TRIM(performer_name), '') != '') AS co_nguoi
+      FROM case_interventions WHERE id IN (${ids.map(() => '?').join(',')})`).all(...ids) as any[]).map((r) => [r.id as number, r]));
   const nguoiChung = KHOA_NGUOI.some((k) => k in chung) ? Object.fromEntries(KHOA_NGUOI.filter((k) => k in chung).map((k) => [k, (chung as any)[k]])) : null;
   for (const [id, rieng] of ds) {
+    const con = conLaiMs();
+    if (con !== null && con < DUNG_KHI_CON_MS) { chuaLam.push(id); continue; }
+    /* Gửi lại sau mạng chập: PA đã xác nhận (bởi lô trước, hoặc người khác) là xong, không phải lỗi. Quyền xem vẫn qua `caseAccess`. */
+    const da = hien.get(id);
+    if (da?.confirmed_at) {
+      try { caseAccess(da.case_id).requireEdit(p, EDIT_MESSAGE); ok.push(id); } catch (e: any) { hong.push({ id, loi: e?.message ?? 'Không xác nhận được.', ma: e?.status ?? 403 }); }
+      continue;
+    }
     const { id: _bo, ...r } = rieng as any;
     const coNguoiRieng = KHOA_NGUOI.some((k) => k in r);
     const than: ThanXacNhanPa = {
       description: typeof r.description === 'string' && r.description.trim() ? r.description : chung.description,
       batDau: r.batDau ?? chung.batDau,
       ...(r.soBuoi !== undefined ? { soBuoi: r.soBuoi } : chung.soBuoi !== undefined ? { soBuoi: chung.soBuoi } : {}),
-      ...(coNguoiRieng ? Object.fromEntries(KHOA_NGUOI.filter((k) => k in r).map((k) => [k, r[k]])) : nguoiChung && !coNguoi.has(id) ? nguoiChung : {}),
+      ...(coNguoiRieng ? Object.fromEntries(KHOA_NGUOI.filter((k) => k in r).map((k) => [k, r[k]])) : nguoiChung && !hien.get(id)?.co_nguoi ? nguoiChung : {}),
     };
     try { xacNhanPaQuyChe(p, id, than, { chiGhi: true }); ok.push(id); } catch (e: any) { hong.push({ id, loi: e?.message ?? 'Không xác nhận được.', ma: e?.status ?? 500 }); }
   }
-  return { ok, loi: hong };
+  return { ok, loi: hong, chuaLam };
 }
 
 /**

@@ -13,6 +13,7 @@ export async function runPrOv13cTests(t: YThucTestKit) {
   const mywork: any = await import('../worklist/mywork.ts');
   const sosAuto: any = await import('../cases/sosAuto.ts');
   const { xoaNho } = await import('../platform/nguCanhRequest.ts');
+  const hanGio: any = await import('../platform/hanGio.ts');
   console.log('\nOV-13c · gom Công việc theo tuần + lớp + mức SOS · Xác nhận PA cùng lúc');
 
   const thu = <T>(fn: () => T): T => {
@@ -110,7 +111,8 @@ export async function runPrOv13cTests(t: YThucTestKit) {
     const khongL = cho.find((x) => x.topic !== 'listening')!;
     const coL = cho.find((x) => x.topic === 'listening')!;
     assert(khongL && coL, `cần PA Listening và PA kỹ năng khác: ${JSON.stringify(cho)}`);
-    assertThrows(() => sosAuto.xacNhanPaQuyChe(P.mbManager, coL.id, { description: 'Nội dung đủ dài để xác nhận PA.', batDau: addDays(TODAY, 60) }), /30 ngày/, 'ngày bắt đầu quá xa');
+    assertThrows(() => sosAuto.xacNhanPaQuyChe(P.mbManager, coL.id, { description: 'Nội dung đủ dài để xác nhận PA.', batDau: addDays(TODAY, 60) }), /tối đa 30 ngày/, 'ngày bắt đầu quá xa');
+    assertThrows(() => sosAuto.xacNhanPaQuyChe(P.mbManager, coL.id, { description: 'Nội dung đủ dài để xác nhận PA.', batDau: addDays(TODAY, -8) }), /lùi tối đa 7 ngày/, 'lùi quá 7 ngày');
     const gv = sosAuto.xacNhanPaNhieu(P.lrTeacher, { chung: { description: 'Nội dung chung đủ dài để xác nhận PA.' }, ds: [{ id: coL.id }, { id: khongL.id }] });
     assert(gv.ok.includes(coL.id) && gv.loi.some((l: any) => l.id === khongL.id && l.ma === 403), `quyền từng PA: ${JSON.stringify(gv)}`);
     const con = cho.filter((x) => x.id !== coL.id).slice(0, 2);
@@ -124,4 +126,25 @@ export async function runPrOv13cTests(t: YThucTestKit) {
     assertThrows(() => sosAuto.xacNhanPaNhieu(P.mbManager, { chung: {}, ds: [] }), /Chọn từ 1/, 'lô rỗng');
     assertThrows(() => sosAuto.xacNhanPaNhieu(P.mbManager, { ds: Array.from({ length: 51 }, (_, i) => ({ id: i + 1 })) }), /Chọn từ 1/, 'quá trần');
   }));
+
+  check('OV13c-7 · (rà #412) gửi lại sau mạng chập: PA đã xác nhận → ✓ không lỗi; lùi 7 ngày: hạn kỳ Ghi kết quả đầu tiên không trước hôm nay', () => thu(() => {
+    const [a] = choPa();
+    assert(a, 'cần một PA chờ xác nhận');
+    const than = { chung: { description: 'Hai buổi mỗi tuần, chữa đề bấm giờ, GV gửi nhận xét.', batDau: addDays(TODAY, -7) }, ds: [{ id: a.id }] };
+    const lan1 = sosAuto.xacNhanPaNhieu(P.mbManager, than);
+    const lan2 = sosAuto.xacNhanPaNhieu(P.mbManager, than);
+    assert(lan1.ok[0] === a.id && lan2.ok[0] === a.id && !lan2.loi.length, `gửi lại: ${JSON.stringify(lan2)}`);
+    const iv = all('SELECT started_date, action_due FROM case_interventions WHERE id = ?', a.id)[0];
+    assert(iv.started_date === addDays(TODAY, -7) && iv.action_due >= TODAY, `hạn kỳ đầu: ${JSON.stringify(iv)}`);
+  }));
+
+  check('OV13c-8 · (rà #412) còn < 4 s của lời gọi → không mở PA tiếp, trả `chuaLam` (web gửi tiếp); không PA nào bị ghi', () => thu(() => {
+    const { chayVoiHan } = hanGio;
+    const ds = choPa().slice(0, 2);
+    assert(ds.length === 2, 'cần hai PA chờ xác nhận');
+    const kq = chayVoiHan(Date.now() + 3_000, () => sosAuto.xacNhanPaNhieu(P.mbManager, { chung: { description: 'Nội dung chung đủ dài để xác nhận PA.' }, ds: ds.map((x) => ({ id: x.id })) }));
+    assert(!kq.ok.length && !kq.loi.length && JSON.stringify(kq.chuaLam) === JSON.stringify(ds.map((x) => x.id)), JSON.stringify(kq));
+    assert(all(`SELECT 1 FROM case_interventions WHERE id IN (?, ?) AND confirmed_at IS NOT NULL`, ds[0].id, ds[1].id).length === 0, 'PA chưa làm bị ghi');
+  }));
+
 }
