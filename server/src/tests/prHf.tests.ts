@@ -96,7 +96,8 @@ export async function runPrHfTests(t: YThucTestKit) {
   }));
   /* HOTFIX-2 (chủ SP 15/10): lệnh chỉ nhận xét / nhóm — GV đúng kỹ năng, GVCN, QL sửa MỌI LÚC (ô đã có nhận xét; lớp đã kết thúc). */
   const { sosCaseState } = await import('../cases/sosState.ts');
-  const { can, isCoreTeacherOf, PERMISSIONS } = await import('../permissions.ts') as any;
+  const { can, isCoreTeacherOf } = await import('../permissions.ts') as any;
+  const { PERMISSIONS } = dm;
   const mb = classId('MB FT 101');
   const khacKyNang = [P.w1Teacher, P.w2Teacher, P.sTeacher].find((x: any) => !can(x, PERMISSIONS.SCORE_EDIT, { classId: mb, skill: 'listening' }) && !isCoreTeacherOf(x, mb))!;
   const nx = (url: string) => one(`SELECT comment FROM assessment_scores WHERE attempt_id = ? AND skill = ?`, luot, url).comment;
