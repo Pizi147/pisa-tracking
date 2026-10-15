@@ -8,7 +8,7 @@ export const HD_GV: HuongDan = {
   viec: [
     {
       id: 'cong-viec', ten: 'Mở Công việc mỗi sáng', khi: 'mỗi ngày',
-      buoc: ['Bấm <b>Công việc</b>. Quá hạn ở đầu, có ⚠.', 'Bấm dòng để làm ngay tại chỗ; dòng gộp nhiều em mở một panel.', 'Lưu xong: "✓ Đã lưu", bấm <b>Việc tiếp ›</b> sang việc kế.'],
+      buoc: ['Bấm <b>Công việc</b>. Quá hạn ở đầu, có ⚠.', 'Bấm dòng để làm ngay tại chỗ; dòng gộp nhiều em mở một panel.', 'Lưu trên dòng: "✓ Đã lưu · … · Hoàn tác" rồi tự sang việc kế; trong panel bấm <b>Việc tiếp ›</b>.'],
       chi: { hd: 'nav-cong-viec', chu: 'Bấm <b>Công việc</b> — mọi việc của bạn ở đây.' },
     },
     {
@@ -19,15 +19,16 @@ export const HD_GV: HuongDan = {
     },
     {
       id: 'xac-nhan-pa', ten: 'Xác nhận PA / Case', khi: 'trong 5 ngày',
-      buoc: ['Em dưới kỳ vọng ở MT → Case + PA theo quy chế; GVBM đúng kỹ năng <b>Xác nhận PA</b> (QL làm thay được).', 'Một em: panel <b>Xác nhận PA</b> — ghi nội dung, <b>Bắt đầu</b>, bấm <b>Xác nhận PA</b>.',
+      buoc: ['Em dưới kỳ vọng ở MT: lượt chưa chốt → Case tạm "Chờ chốt SOS"; lượt chốt → Case + PA theo quy chế, GVBM đúng kỹ năng <b>Xác nhận PA</b> (QL làm thay được).', 'Một em: panel <b>Xác nhận PA</b> — ghi nội dung, <b>Bắt đầu</b>, bấm <b>Xác nhận PA</b>.',
         'Nhiều em cùng lớp, tuần thi, mức SOS: <b>Xác nhận PA cùng lúc</b> — em tick sẵn, <b>Nội dung / hướng dẫn</b> + <b>Bắt đầu</b> + <b>Người dạy</b> ghi một lần, <b>Sửa riêng</b> từng em.',
         'Muốn cách khác: <b>Đề xuất PA khác…</b> → <b>Gửi Quản lý duyệt</b>; Case "Chờ duyệt đổi PA".'],
       chi: { hd: 'cv-dong', duong: '/cong-viec', chu: 'Mỗi việc một dòng, quá hạn ở đầu — bấm dòng để làm.' },
     },
     {
       id: 'ket-qua-pa', ten: 'Ghi kết quả PA', khi: '2 tuần · hết Thứ Ba',
-      buoc: ['PA đang chạy: ghi mỗi kỳ <b>2 tuần</b>, hạn <b>Thứ Ba</b> sau kỳ.', 'Ngay trên dòng: chọn <b>Tiến triển (2 tuần)</b>, ghi <b>Nhận xét</b>, bấm <b>Lưu</b> — PA giữ nguyên; <b>Hoàn tác</b> trong 10 giây.',
-        'Cần đổi / dừng PA: <b>Điều chỉnh / Kết thúc…</b> mở panel; tới mốc: <b>Ghi kết quả cuối</b>.'],
+      buoc: ['PA đang chạy: ghi mỗi kỳ <b>2 tuần</b>, hạn <b>Thứ Ba</b> sau kỳ.', 'PA không đếm buổi: ghi ngay trên dòng — <b>Tiến triển (2 tuần)</b>, <b>Nhận xét</b>, <b>Lưu</b> (PA giữ nguyên, <b>Hoàn tác</b> 10 giây).',
+        'Tutor, PA có số buổi, lần ghi cuối, Bổ trợ miễn phí: luôn mở panel.',
+        'Cần đổi: <b>Điều chỉnh…</b> (PA quy chế) hoặc <b>Điều chỉnh / Kết thúc…</b>; tới mốc: việc "Kết quả cuối · tên PA", nút <b>Kết quả cuối</b>.'],
       chi: { hd: 'cv-loc-them', duong: '/cong-viec', chu: '<b>Lọc thêm › Nhóm việc › Case học thuật</b> để chỉ xem việc Case, PA.' },
     },
     {
@@ -41,9 +42,9 @@ export const HD_GV: HuongDan = {
       id: 'tong-quan', ten: 'Tổng quan', duong: ['/'],
       muc: [
         { id: 'tq-viec', ten: 'Hôm nay', buoc: ['Việc tới hết tuần, quá hạn ở đầu.', 'Bấm một việc để làm ngay; điện thoại: <b>Xem hết</b> mở Công việc.'],
-          chi: { hd: ['tq-viec-cua-toi', 'tq-hom-nay'], chu: 'Việc tới hết tuần — bấm để làm.' } },
+          chi: { hd: ['tq-viec-cua-toi', 'tq-hom-nay'], duong: '/', chu: 'Việc tới hết tuần — bấm để làm.' } },
         { id: 'tq-lop', ten: 'Lớp tôi dạy', buoc: ['Các lớp bạn đang dạy và số bài chờ chấm.', 'Bấm tên lớp mở hồ sơ lớp.'],
-          chi: { hd: 'tq-lop-toi-day', chu: 'Bấm tên lớp để mở hồ sơ lớp.' } },
+          chi: { hd: 'tq-lop-toi-day', duong: '/', chu: 'Bấm tên lớp để mở hồ sơ lớp.' } },
         { id: 'tq-yeu-cau', ten: 'Yêu cầu của tôi', buoc: ['Đề nghị bạn đã gửi QL (dời lịch, đổi PA…) và trạng thái.'] },
       ],
     },
@@ -65,7 +66,7 @@ export const HD_GV: HuongDan = {
     {
       id: 'ho-so-hv', ten: 'Hồ sơ học viên', duong: ['/hoc-vien/'],
       muc: [
-        { id: 'hv-hoc-thuat', ten: 'Học thuật', buoc: ['Bảng kỹ năng: ô điểm bốn màu, Case và PA của em.', 'Bấm Case mở ngăn Case ngay trên trang.'] },
+        { id: 'hv-hoc-thuat', ten: 'Học thuật', buoc: ['Bảng kỹ năng: ô điểm bốn màu, Case và PA của em.', 'Bấm Case mở ngăn Case ngay trên trang.', 'PA chưa tới kỳ: <b>Cập nhật trước hạn</b> trong ngăn Case.'] },
         { id: 'hv-y-thuc', ten: 'Ý thức & Phối hợp', buoc: ['Vi phạm, lần xử lý và Phối hợp SOS của em.'] },
         { id: 'hv-hanh-trinh', ten: 'Hành trình', buoc: ['Mọi lượt Test của em trên một lưới.'] },
       ],
@@ -74,7 +75,7 @@ export const HD_GV: HuongDan = {
       id: 'lich-test', ten: 'Lịch Test', duong: ['/test', '/test/lich'],
       muc: [
         { id: 'lt-ba-khoi', ten: 'Ba khối của Lịch Test', buoc: ['<b>Test quá hạn chấm</b> · <b>Test chấm tuần này</b> (hạn Thứ Tư) · <b>Lịch Test</b> tuần đang xem.', 'Bấm dòng lớp, lưới nhập điểm mở ngay dưới.'],
-          chi: { hd: 'lich-test-tuan', chu: 'Bài tuần trước cần chấm nằm ở khối này.' } },
+          chi: { hd: 'lich-test-tuan', duong: '/test/lich', chu: 'Bài tuần trước cần chấm nằm ở khối này.' } },
       ],
     },
     {
@@ -88,13 +89,13 @@ export const HD_GV: HuongDan = {
     {
       id: 'cong-viec', ten: 'Công việc', duong: ['/cong-viec'],
       muc: [
-        { id: 'cv-tai-cho', ten: 'Làm việc ngay trên dòng', buoc: ['Bấm dòng → ô cần điền mở ngay bên.', '<b>Lưu</b>: "✓ Đã lưu"; <b>Việc tiếp ›</b> sang việc kế.'],
-          chi: { hd: 'cv-dong', chu: 'Bấm một dòng để làm việc đó.' } },
+        { id: 'cv-tai-cho', ten: 'Làm việc ngay trên dòng', buoc: ['Bấm dòng → ô cần điền mở ngay bên.', 'Lưu trên dòng: "✓ Đã lưu · … · Hoàn tác" rồi tự sang việc kế; panel: <b>Việc tiếp ›</b>.'],
+          chi: { hd: 'cv-dong', duong: '/cong-viec', chu: 'Bấm một dòng để làm việc đó.' } },
         { id: 'cd-cheo', ten: 'Speaking chấm chéo', buoc: ['Nhóm <b>Chấm điểm</b>: bài Speaking lớp khác cùng chi nhánh — tuần trước + bài còn tồn, gom theo tuần thi → lớp.', 'Có số bài chờ, không tính quá hạn.'] },
         { id: 'cv-gop', ten: 'Dòng gộp nhiều em', buoc: ['Dòng "n em" mở danh sách em; làm từng em hoặc cùng lúc.'] },
         { id: 'cv-qua-han', ten: 'Vì sao việc quá hạn', buoc: ['Qua hạn mà chưa Lưu: chip <b>Quá hạn</b> cam + ⚠, nằm đầu danh sách.', 'Lưu xong là hết quá hạn ở mọi nơi.'] },
         { id: 'cv-loc', ten: 'Lọc việc', buoc: ['Chip <b>Quá hạn · Hôm nay · Tuần này · Tất cả</b>; <b>Lọc thêm</b> theo nhóm việc, chương trình.'],
-          chi: { hd: 'cv-loc-them', chu: 'Lọc theo nhóm việc ở đây.' } },
+          chi: { hd: 'cv-loc-them', duong: '/cong-viec', chu: 'Lọc theo nhóm việc ở đây.' } },
       ],
     },
     {
@@ -107,7 +108,7 @@ export const HD_GV: HuongDan = {
     },
     {
       id: 'ho-so-gv', ten: 'Hồ sơ giáo viên', duong: ['/giao-vien'],
-      muc: [{ id: 'hsgv-so', ten: 'Số của bạn', buoc: ['Lớp đang dạy, học viên, Case đang phụ trách, việc quá hạn.', 'Bấm một số để xem danh sách.'] }],
+      muc: [{ id: 'hsgv-so', ten: 'Số của bạn', buoc: ['Lớp đang dạy, học viên, Case đang phụ trách, việc quá hạn; bấm số mở Công việc.', 'Khối <b>Kết quả gần nhất của lớp đang dạy</b>.', 'Khối <b>Yêu cầu đã gửi</b>.'] }],
     },
     {
       id: 'huong-dan', ten: 'Hướng dẫn', duong: ['/huong-dan'],
@@ -122,8 +123,11 @@ export const HD_GV: HuongDan = {
       chi: { hd: 'cv-dong', duong: '/cong-viec', chu: 'Mỗi việc có chip hạn ở cuối dòng.' } },
     { id: 'han-vi-pham', ten: 'Hạn Xử lý vi phạm', buoc: ['<b>5 ngày</b> từ ngày ghi nhận, tính cả ngày đầu.', 'Bậc cần QL thì QL duyệt.'] },
     { id: 'han-ql', ten: 'QL trả lời đề xuất', buoc: ['QL trả lời Đề xuất PA / Xin hỗ trợ trong <b>5 ngày</b>, tính cả ngày gửi.'] },
-    { id: 'dau-gach', ten: 'Dấu "-" (vắng)', buoc: ['Trong tuần thi: "-" = vắng, chốt ngay.', 'Nhập bù / MT cũ: "-" = Không dự thi.', 'Gỡ vắng: xoá "-".'] },
-    { id: 'sos-case', ten: 'SOS và Case', buoc: ['Số kỹ năng dưới kỳ vọng ở MT: 1 → SOS 1, 2 → SOS 2, 3–4 → SOS 3.', 'Có nhận xét → Case "Chờ xác nhận PA".', 'Overall đạt mà chưa xác nhận PA → Case tự xoá.'] },
+    { id: 'dau-gach', ten: 'Dấu "-" (vắng)', buoc: ['Trong tuần thi: "-" = vắng, chốt ngay.', 'Nhập bù / MT cũ: "-" = Không dự thi.', 'Gỡ vắng: xoá "-", lúc nào cũng được.'] },
+    { id: 'sos-case', ten: 'SOS và Case', buoc: ['Số kỹ năng dưới kỳ vọng ở MT: 1 → SOS 1, 2 → SOS 2, 3–4 → SOS 3.', 'Lượt chưa chốt: Case tạm "Chờ chốt SOS" — chưa hạn, chưa việc.', 'Lượt chốt → "Chờ xác nhận PA"; Overall đạt mà chưa xác nhận PA → Case tự xoá.'] },
+    { id: 'ket-thuc-pa', ten: 'Kết thúc PA sớm', buoc: ['PA quy chế: GVCN / QL vào <b>⋯ › Kết thúc PA</b>.', 'Lý do bắt buộc, từ <b>10</b> ký tự; nhật ký PA ghi lại.'] },
+    { id: 'ban-giao', ten: 'Bàn giao khi em chuyển lớp', buoc: ['Hạn bàn giao = muộn hơn của (ngày quyết định chuyển lớp + 7 ngày) và mốc cũ.'] },
+    { id: 'sua-diem', ten: 'Sửa điểm sau hoàn tất', buoc: ['Ô còn trống: nhập được cả sau hoàn tất.', 'Sửa hoặc xoá một điểm đã có: qua QL duyệt.', 'Gỡ "-" lúc nào cũng được.'] },
     { id: 'nhan-xet', ten: 'Nhận xét MT', buoc: ['Mọi ô MT có điểm cần nhận xét từ <b>10</b> ký tự (trừ MT0, MT cũ / nhập bù).', 'Ô dưới kỳ vọng thêm <b>nhóm nguyên nhân</b>.', 'Nhận xét + nhóm là nguyên nhân của Case.'] },
     { id: 'gop-y', ten: 'Góp ý hàng tuần', buoc: ['Mỗi ô = một em × một kỹ năng × một tuần; tối đa <b>500</b> ký tự.', 'Chỉ ghi ở kỹ năng mình dạy.'] },
   ],

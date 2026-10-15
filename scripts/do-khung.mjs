@@ -346,6 +346,10 @@ if (!LOC || 'hd-chi'.includes(LOC)) {
     for (const [phan, ds] of [['viec', hd.viec], ['luat', hd.luat]]) for (const m of ds) if (m.chi) {
       await thu(`${w}/v${vai} ${m.id}`, () => p.goto(`${BASE}/huong-dan?phan=${phan}`, { waitUntil: 'networkidle' }), '#noi-dung', m.id, m.chi.hd);
     }
+    /* Theo màn bấm TỪ trang Hướng dẫn (rà #417): "Chỉ cho tôi" phải tự mở trang của màn. */
+    for (const man of hd.man) for (const m of man.muc) if (m.chi) {
+      await thu(`${w}/v${vai} trang-hd ${man.id}›${m.id}`, () => p.goto(`${BASE}/huong-dan?phan=man`, { waitUntil: 'networkidle' }), '#noi-dung', m.id, m.chi.hd);
+    }
     for (const man of hd.man) for (const m of man.muc) if (m.chi) {
       await thu(`${w}/v${vai} ${man.id}›${m.id}`, async () => {
         await p.goto(BASE + man.duong[0], { waitUntil: 'networkidle' });

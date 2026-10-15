@@ -85,6 +85,9 @@ export async function runPrHdTests(t: any) {
         if (!m.chi) continue;
         for (const x of [m.chi.hd].flat()) if (!co.has(x)) loi.push(`${vai} ${m.id}: data-hd="${x}" không có trong web/src`);
         if (m.chi.duong && !hd.manCuaDuong(h, m.chi.duong)) loi.push(`${vai} ${m.id}: trang ${m.chi.duong} không có mục`);
+        /* Bấm từ trang /huong-dan: không có `duong` thì chỉ khoanh được phần tử có ở MỌI màn (thanh điều hướng, ô tìm, nút "?"). */
+        const khapNoi = [m.chi.hd].flat().every((x: string) => x.startsWith('nav-') || x === 'tim-hv' || x === 'nut-hd');
+        if (!m.chi.duong && !khapNoi) loi.push(`${vai} ${m.id}: thiếu duong — bấm từ trang Hướng dẫn sẽ "Chưa có việc nào ở đây"`);
       }
     }
     assert(loi.length === 0, loi.join(' · '));
