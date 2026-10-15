@@ -956,7 +956,9 @@ CREATE TABLE sos_cases (
   goc_class_id INTEGER,
   goc_programme_code TEXT,
   /* PR-OV9: 1 = Case nhẹ của em KCK dưới kỳ vọng — không PA quy chế, không hạn, không Phối hợp / chuông. Không dấu phẩy (DROP COLUMN) */
-  kck INTEGER NOT NULL DEFAULT 0
+  kck INTEGER NOT NULL DEFAULT 0,
+  /* PR-OV13a (Q2): 1 = Case TẠM của lượt Mock FT chưa chốt ("Chờ chốt SOS") — chưa hạn / PA / việc / chuông; lượt chốt thì thành Case thật hoặc xoá. Không dấu phẩy (DROP COLUMN) */
+  tam INTEGER NOT NULL DEFAULT 0
 );
 /*
  * MỘT HỌC VIÊN × MỘT HẠNG MỤC = MỘT CASE.

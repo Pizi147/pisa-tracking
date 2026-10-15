@@ -416,7 +416,7 @@ function boOVaCau(i: {
       monTruot: ratio ? (a.skills ?? []).filter((x: any) => x.outcome === 'fail').map((x: any) => tenMonNgan(ct, x.skill)) : [],
       phanTram: kq.phanTram, coDiem: kq.coDiem, chot: kq.chot,
     } : null,
-    hoTro: board.rows.filter((r) => r.cases.some((c: any) => c.status !== 'done')).map((r) => r.label as string),
+    hoTro: board.rows.filter((r) => r.cases.some((c: any) => c.status !== 'done' && c.trangThaiV4?.k !== 'tam')).map((r) => r.label as string),   // OV-13a: Case tạm chưa là "đang hỗ trợ"
     viec: [...viec.cuaBan, ...viec.nguoiKhac].map((v) => ({ loai: v.loai, chu: v.chu, khoa: v.khoa, bien: v.bien, quaHanNgay: v.quaHanNgay, kyNangTen: v.kyNang ? tenKn.get(v.kyNang) ?? null : null })),
     yThuc: em && !em.tamDung ? { nhom: em.nhom ?? null, keTiep, han: em.han ?? null, quaHanNgay: quaHanYt, deXuat: deXuatCho } : null,
     homNay: today,

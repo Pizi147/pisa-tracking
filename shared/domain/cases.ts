@@ -247,6 +247,8 @@ export const MILESTONE_KINDS = [
   'reopened',
   /* OV-1c: Overall ≥ kỳ vọng sau khi kỹ năng dời có điểm — Case đã có người làm giữ, GV tự đóng. */
   'overall_dat',
+  /* OV-13a (C): GVCN / QL kết thúc sớm PA theo quy chế — ghi chú = lý do, người = người bấm. */
+  'ket_thuc_pa',
 ] as const;
 export type MilestoneKind = (typeof MILESTONE_KINDS)[number];
 export const MILESTONE_KIND_LABEL: Record<MilestoneKind, string> = {
@@ -266,6 +268,7 @@ export const MILESTONE_KIND_LABEL: Record<MilestoneKind, string> = {
   ke_hoach_tu_choi: t('Quản lý từ chối kế hoạch'),
   reopened: t('Mở lại'),
   overall_dat: t('Overall đã đạt'),
+  ket_thuc_pa: t('Kết thúc PA'),
 };
 
 /**

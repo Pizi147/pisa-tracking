@@ -769,7 +769,7 @@ function metricSetGoc(
       return done(r.ids.filter((x) => !r.chiTiet.get(x)?.nguoi.length && !r.chiTiet.get(x)?.chamCheo), { chiTiet: r.chiTiet });
     }
     case 'case-chua-co-nguoi-phu-trach':
-      return done(openCases().filter((c: any) => !c.ownerUserId).map((c: any) => c.id as number));
+      return done(openCases().filter((c: any) => !c.ownerUserId && !c.tam).map((c: any) => c.id as number));   // OV-13a: Case tạm chưa là việc
     case 'case-cho-xac-dinh-nguyen-nhan':
       /* OV-12d: Case đang chờ người chốt (Tổng hợp › Chờ duyệt) — id giữ `case-cho-xac-dinh-nguyen-nhan` (đường, chuông, phép kiểm cũ). */
       return done(choDuyetCaseIds(openCases().map((c: any) => c.id as number), today));

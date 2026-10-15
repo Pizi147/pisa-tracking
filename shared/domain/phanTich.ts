@@ -261,7 +261,7 @@ const COT_XU_LY: CotTongHop[] = [
 export type CotXuLy = 'choDuyet' | 'dangLam' | 'xongHuy';
 export function cotXuLy(k: TrangThaiCaseV4, coPaDangTheoDoi: boolean): CotXuLy {
   if (k === 'xong' || k === 'huy-khong-theo-doi' || k === 'he-thong-dong' || k === 'rut-sua-diem') return 'xongHuy';
-  return k === 'dang-lam' && coPaDangTheoDoi ? 'dangLam' : 'choDuyet';
+  return (k === 'dang-lam' && coPaDangTheoDoi) || k === 'tam' ? 'dangLam' : 'choDuyet';   // OV-13a: Case tạm không là việc Chờ duyệt
 }
 
 /**

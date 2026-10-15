@@ -1056,9 +1056,14 @@ await checkAsync(`PR-S3F · Công việc QL (nguoi=tat-ca) với 30 PA "đến l
         cycle_started_on, action_due, confirmed_by, confirmed_at, created_at) VALUES (?, 'tutor', 'Tutor · đến lúc thi', 'started', 0, 1, 'until_exam', ?, 1, ?, ?, ?, ?, ?)`)
       .run(c.id, homNay, homNay, addDays(homNay, 7), USER.QT, bayGio, bayGio);
   }
+  /* OV-13a (B): lần đọc đầu điền mốc MT cuối của lộ trình cho PA chưa có ngày thi (ghi một lần) — đo lần đọc sau, như người dùng mở lại. */
+  const dau = await doSql('QL', 'GET', url);
   const r = await doSql('QL', 'GET', url);
-  const moc = (conn.prepare(`SELECT COUNT(*) n FROM case_interventions WHERE preset = 1 AND moc_quy_che = 'until_exam' AND followup_due IS NULL AND status = 'started'`).get() as any).n;
-  assert(r.status === 200 && moc >= 30, `Việc "Nhập ngày thi" phải còn (PA chưa mốc ${moc}): ${r.status}`);
+  const conTrong = (conn.prepare(`SELECT COUNT(*) n FROM case_interventions WHERE preset = 1 AND moc_quy_che = 'until_exam' AND followup_due IS NULL AND status = 'started'`).get() as any).n;
+  const { mtCuoiCuaLoTrinh } = await import('../cases/sosAuto.ts');
+  const coMt = mtCuoiCuaLoTrinh(cs.map((c) => c.cycle_id));
+  const mongTrong = cs.filter((c) => !coMt.has(c.cycle_id)).length;   // lộ trình chưa xếp MT nào: vẫn chưa có mốc → việc "Nhập ngày thi" còn
+  assert(dau.status === 200 && r.status === 200 && conTrong === mongTrong, `PA "đến lúc thi" có MT cuối phải nhận mốc (còn trống ${conTrong}, mong ${mongTrong}): ${r.status}`);
   console.log(`      (đo: ${n0} câu không PA → ${r.n} câu với 30 PA chưa ngày thi)`);
   assert(r.n <= TRAN_GHI_LO.congViec30PaChuaNgayThi, `${r.n} câu > trần ${TRAN_GHI_LO.congViec30PaChuaNgayThi}`);
 });
