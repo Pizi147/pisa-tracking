@@ -5,7 +5,7 @@ import { Han } from '../../ui/Han.tsx';
 import { HangCon, HangNhom } from '../../ui/HangNhom.tsx';
 import { OPhuHuynh } from './HocVienTheoVai.tsx';
 import { t } from '@shared/i18n/index.ts';
-import { maHocVienNgan, type DeadlineKind, type LienHe, type NguCanhDs } from '@shared/domain/index.ts';
+import { demQuaHan, maHocVienNgan, type DeadlineKind, type LienHe, type NguCanhDs } from '@shared/domain/index.ts';
 
 /**
  * MỘT VIỆC của góc Cần làm — nguồn là việc của người xem ở Công việc (`/my-work`, cùng số Công việc) + hai lọc phụ của QL (Chờ duyệt, Thiếu thông tin)
@@ -60,7 +60,7 @@ export function BangCanLam({ viec, coNguoi, coPhuHuynh, dienThoai, ds }: {
     for (const v of [...ds].sort(soSanh)) { const kk = v.studentId === null ? `ca-lop:${v.key}` : String(v.studentId); em.set(kk, [...(em.get(kk) ?? []), v]); }
     /* "Cả lớp" đầu lớp, rồi em theo việc gấp nhất của em. */
     const dsEm = [...em.values()].sort((a, b) => Number(b[0].studentId === null) - Number(a[0].studentId === null) || soSanh(a[0], b[0]));
-    return { k, code: ds[0].classCode ?? t('Không gắn lớp'), classId: ds[0].classId, em: dsEm, tre: ds.filter((v) => v.quaHan).length, cho: ds.filter((v) => v.kieu === 'cho-duyet').length };
+    return { k, code: ds[0].classCode ?? t('Không gắn lớp'), classId: ds[0].classId, em: dsEm, tre: demQuaHan(ds).viec, cho: ds.filter((v) => v.kieu === 'cho-duyet').length };
   }).sort((a, b) => Number(b.tre > 0) - Number(a.tre > 0) || a.code.localeCompare(b.code, 'vi'));
   /* Tự mở khi ít (≤ 5 lớp hoặc ≤ 40 việc — đang lọc thường rơi vào đây); nhiều hơn thì gập, bấm đầu lớp để mở. */
   const mo = (k: string) => (nhom.length <= 5 || viec.length <= 40) !== gap.has(k);
@@ -69,7 +69,7 @@ export function BangCanLam({ viec, coNguoi, coPhuHuynh, dienThoai, ds }: {
     <span className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-1">
       {g.classId ? <Link to={`/hoc-vien/lop/${g.classId}`} className="shrink-0 font-extrabold text-slate-100 underline decoration-dotted underline-offset-4">{g.code}</Link>
         : <span className="font-extrabold text-slate-100">{g.code}</span>}
-      {g.tre > 0 && <Nhan tone="late">⚠ {t('{n} quá hạn', { n: g.tre })}</Nhan>}
+      {g.tre > 0 && <Nhan tone="late">⚠ {t('{n} việc quá hạn', { n: g.tre })}</Nhan>}
       {g.cho > 0 && <Nhan tone="wait">{t('{n} chờ duyệt', { n: g.cho })}</Nhan>}
       {g.em.some((e) => e[0].studentId !== null) && <Nhan tone="muted">{t('{n} em', { n: g.em.filter((e) => e[0].studentId !== null).length })}</Nhan>}
     </span>

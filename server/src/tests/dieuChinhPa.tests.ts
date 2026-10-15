@@ -7,6 +7,7 @@
  * (`taoCase`), không đụng học viên của bộ demo.
  */
 import type { YThucTestKit } from './yThuc.tests.ts';
+import { duXacNhan } from './luotThu.ts';
 
 export async function runDieuChinhPaTests(t: YThucTestKit) {
   const { check, assert, assertThrows, conn, TODAY, P, classId, addDays } = t;
@@ -344,9 +345,9 @@ export async function runDieuChinhPaTests(t: YThucTestKit) {
     const a = goiY(taoCase().caseId);
     const b = goiY(taoCase().caseId);
     const c = goiY(taoCase().caseId, 'tutor');   // PR-PA (§8): đổi người chỉ với loại có ô người (Tự học bỏ qua)
-    sosAuto.xacNhanPaQuyChe(P.lrTeacher, a, { description: 'Tự học 1 tháng — nghe chép Section 2 mỗi ngày' });
-    sosAuto.xacNhanPaQuyChe(P.lrTeacher, b, { description: 'Tự học · 1 tháng' });   // PR-S4F #9: nguyên văn = gửi lại đúng chữ máy gán
-    sosAuto.xacNhanPaQuyChe(P.lrTeacher, c, { description: 'Tự học · 1 tháng', performerUserId: P.w1Teacher.userId, followupDue: addDays(TODAY, 40) } as any);
+    sosAuto.xacNhanPaQuyChe(P.lrTeacher, a, duXacNhan(conn, a, { description: 'Tự học 1 tháng — nghe chép Section 2 mỗi ngày' }));
+    sosAuto.xacNhanPaQuyChe(P.lrTeacher, b, duXacNhan(conn, b, { description: 'Tự học · 1 tháng' }));   // PR-S4F #9: nguyên văn = gửi lại đúng chữ máy gán
+    sosAuto.xacNhanPaQuyChe(P.lrTeacher, c, duXacNhan(conn, c, { description: 'Tự học · 1 tháng', performerUserId: P.w1Teacher.userId, followupDue: addDays(TODAY, 40) } as any));
     const ra = revRows(a);
     assert(ra.length === 1 && ra[0].source === 'confirm_edit' && ra[0].followup_id === null
       && ra[0].old_description === 'Tự học · 1 tháng' && ra[0].new_description === 'Tự học 1 tháng — nghe chép Section 2 mỗi ngày'

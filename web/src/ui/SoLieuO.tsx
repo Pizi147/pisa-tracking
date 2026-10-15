@@ -1,5 +1,5 @@
-import { useState } from 'react';
 import { metricById } from '@shared/domain/index.ts';
+import { useMoSoLieu } from '../lib/quayLai.ts';
 import { useApi } from '../lib/useApi.ts';
 import { DanhSachSoLieu, NganDanhSach, type DongSoLieu, type PhamViSoLieu } from './SoLieu.tsx';
 import { t } from '@shared/i18n/index.ts';
@@ -17,7 +17,7 @@ type Props = { giaTri: number; className?: string; /** Chữ hiện trên nút t
 );
 
 export function SoLieuO(props: Props) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useMoSoLieu(props.id !== undefined ? `${props.id}${props.extra ? `|${new URLSearchParams(props.extra)}` : ''}` : `nguon:${props.nguon}`);
   const { giaTri, className = '' } = props;
   // Mã không có trong sổ thì KHÔNG vẽ số (cùng luật với <SoLieu>).
   if (props.id !== undefined && !metricById(props.id)) return <span className="text-xs text-bad">{t('Chỉ số không có trong sổ: {id}', { id: props.id })}</span>;

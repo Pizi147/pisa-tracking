@@ -6,7 +6,7 @@ import {
   INTERVENTION_KIND_LABEL, PERMISSIONS,
   SOS_LABEL, URGENCY_LABEL, URGENCY_TONE, caseHeadline, caseTopicLabel, cycleDeadline,
   duongCaseRieng, duongHoSoHocVien, duongLichTest, nhanDotNgan, hanThemPa,
-  khungCua, laLanGhiCuoi, tenMon, tenNhomMon, REGULAR_SKILLS, nhanLoaiXuLy, soSanhLop,
+  khungCua, laLanGhiCuoi, ghiNhanhDuoc, tenMon, tenNhomMon, REGULAR_SKILLS, nhanLoaiXuLy, soSanhLop,
   type Khung, type AttemptKind, type InterventionKind, nhanBaiThuong, chuTyLeXetLai, gopViecTheoLop, tuanLich, type ConGop } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addDays, forbidden } from '../util.ts';
@@ -17,7 +17,7 @@ import { attemptHref, listAttempts } from '../fasttrack/attempts.ts';
 import { viecBanGiao } from '../classes/banGiao.ts';
 import { lopChoChotLoTrinh } from '../classes/lenhChuyen.ts';
 import { canSeeBoard, myMgmtTasks } from './mgmttasks.ts';
-import { CO_THE_KHONG_THEO_DOI, LA_CASE_SOS, NOT_UNCONFIRMED_PRESET, UNCONFIRMED_PRESET, sosCaseStateMany } from '../cases/sosState.ts';
+import { CHO_DOI_PA, CO_THE_KHONG_THEO_DOI, LA_CASE_SOS, NOT_UNCONFIRMED_PRESET, UNCONFIRMED_PRESET, sosCaseStateMany } from '../cases/sosState.ts';
 import { quyenBoTro } from '../cases/boTro.ts';
 import { boKetQuaChoMiniTest, emXetLaiLoTrinh, nguoiGiuMiniTest, tyLeTongLo } from '../normal/cuoiKhoa.ts';
 import { dongPhoiHopLop, myCoordinationLines } from '../yThuc/phoiHop.ts';
@@ -112,6 +112,8 @@ export type WorkItem = {
   con?: ConGop<WorkItem>[];
   /** OV-5a (panel Công việc): PA của việc — Kết quả PA, Xác nhận PA, Ghi Mini Test mở đúng PA trong Ngăn Case. */
   paId?: number | null;
+  /** OV-13b: Kết quả PA ghi nhanh được ngay dưới dòng (`ghiNhanhDuoc`). */
+  ghiNhanh?: boolean;
   /** OV-5a: Nhập điểm mở panel một lớp · một lượt (`mt:2`, `thuong:progress`) · kỹ năng đầu tiên của dòng. */
   luot?: string;
   kn?: string;
@@ -124,7 +126,7 @@ export type WorkItem = {
   /** OV-13c: Nhập điểm — tuần thi (lưới Lịch Test `LuoiNhung`) + loại bài. */
   periodId?: number | null; kind?: string | null;
   /** OV-13c: Xác nhận PA — loại PA, nội dung máy gán, người dạy đã có (người chung không đè). */
-  pa?: { kind: string; moTa: string | null; nguoiId: number | null; nguoi: string | null };
+  pa?: { kind: string; moTa: string | null; nguoiId: number | null; nguoi: string | null; soBuoi: number | null };
 };
 
 /**
@@ -580,7 +582,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   const reviewedCases = new Set<number>();
   const ghiKetQua = !co('ghi_ket_qua_pa', 'no_plan') ? [] : conn   // `reviewedCases` của 2b loại Case khỏi `no_plan`
     .prepare(
-      `SELECT iv.id, iv.case_id, iv.kind, iv.description, iv.action_due, iv.followup_due, iv.preset, iv.nhom_bo_tro,
+      `SELECT iv.id, iv.case_id, iv.kind, iv.description, iv.action_due, iv.followup_due, iv.preset, iv.nhom_bo_tro, iv.so_buoi,
               iv.performer_user_id, iv.performer_name, sc.owner_user_id,
               sc.topic, sc.sos_level, sc.urgency, sc.summary, sc.origin_kind, sc.attempt_id,
               COALESCE(sc.student_id, a.student_id) AS eff_student_id,
@@ -653,6 +655,8 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       ownerId: iv.owner_id ?? null,
       owner: iv.owner_id ? null : ((iv.performer_name ?? '').trim() || null),
       mine, due: iv.action_due, statusLabel: 'Chờ kết quả',
+      /* OV-13b: Công việc mở ghi nhanh ngay dưới dòng (cùng luật với Case / panel một em). */
+      ghiNhanh: ghiNhanhDuoc({ kind: iv.kind, soBuoi: iv.so_buoi ?? null, lanCuoi: tuanCuoi }),
     });
   }
 
@@ -855,10 +859,10 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   const stCho = sosCaseStateMany(causeCandidates.map((c) => c.id as number));
   const xacNhanPa = !co('xac_nhan_pa') ? [] : conn
     .prepare(
-      `SELECT ${cotCase}, iv.id AS iv_id, iv.kind AS iv_kind, iv.description AS iv_mo_ta, iv.performer_user_id AS iv_nguoi_id,
+      `SELECT ${cotCase}, iv.id AS iv_id, iv.kind AS iv_kind, iv.description AS iv_mo_ta, iv.performer_user_id AS iv_nguoi_id, iv.so_buoi AS iv_so_buoi,
               COALESCE(pu.full_name, iv.performer_name) AS iv_nguoi
          FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id ${noiCase} LEFT JOIN users pu ON pu.id = iv.performer_user_id
-        WHERE ${UNCONFIRMED_PRESET('iv')} AND iv.status = 'planned' AND iv.kind != 'bo_tro' AND sc.status != 'done' AND ${HV_DANG_HOC_SQL('s')}   /* PA bổ trợ chờ kế hoạch, không chờ "Xác nhận PA" (M8) */
+        WHERE ${UNCONFIRMED_PRESET('iv')} AND iv.status = 'planned' AND iv.kind != 'bo_tro' AND NOT ${CHO_DOI_PA('iv')} AND sc.status != 'done' AND ${HV_DANG_HOC_SQL('s')}   /* PA bổ trợ chờ kế hoạch, không chờ "Xác nhận PA" (M8) */
           AND EXISTS (SELECT 1 FROM case_issues ci WHERE ci.case_id = sc.id AND ci.role = 'primary')
           AND NOT ${CO_THE_KHONG_THEO_DOI('sc')}   /* OV-12c: Không cần theo dõi mở ở bước này — thẻ đang chờ thì việc ở Quản lý */`,
     )
@@ -915,7 +919,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       caseSos: true,   // LA_CASE_SOS / PA quy chế — luôn là Case sinh từ SOS
       /* OV-13c (Q4): dòng gộp theo tuần thi + mức SOS; Xác nhận PA cùng lúc cần loại PA, nội dung máy gán, người dạy đã có. */
       tuanThi: c.tuan_thi ?? null, sos: c.sos_level ?? null,
-      ...(loai === 'xac_nhan_pa' ? { pa: { kind: c.iv_kind, moTa: c.iv_mo_ta ?? null, nguoiId: c.iv_nguoi_id ?? null, nguoi: c.iv_nguoi ?? null } } : {}),
+      ...(loai === 'xac_nhan_pa' ? { pa: { kind: c.iv_kind, moTa: c.iv_mo_ta ?? null, nguoiId: c.iv_nguoi_id ?? null, nguoi: c.iv_nguoi ?? null, soBuoi: c.iv_so_buoi ?? null } } : {}),
       /* OV-12c: Ghi nhận xét mở hộp chấm tại chỗ — bảng điểm một lớp · một lượt · đúng bài của Case (cùng panel Nhập điểm). */
       ...(loai === 'ghi_nhan_xet' ? { luot: `mt:${c.attempt_no}`, kn: c.topic ?? undefined } : {}),
     });

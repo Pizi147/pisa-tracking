@@ -10,6 +10,7 @@
 import { migratePrPhh } from '../migrate/prPhh.ts';
 import { boLichTuTao, luotThu, nhanXetCaseThu } from './luotThu.ts';
 import type { YThucTestKit } from './yThuc.tests.ts';
+import { duXacNhan } from './luotThu.ts';
 
 export async function runSosV3Tests(t: YThucTestKit) {
   const { check, assert } = t;
@@ -381,7 +382,7 @@ export async function runSosV3Tests(t: YThucTestKit) {
     enter(P.admin, a, 'listening', 5); enter(P.admin, a, 'reading', 5); enter(P.admin, a, 'speaking', 5);
     const c = caseOf(st.id, 'listening');
     nhanXetThu(P.admin, c.id, { primaryCode: domain.issuesForTopic('listening', null)[0].code, urgency: 'attention', moTa: 'Em nghe sót ý ở phần 3 và 4.' });
-    sosA.xacNhanPaQuyChe(P.admin, plansOf(c.id)[0].id, { description: 'Tutor Listening hai buổi mỗi tuần tới MT2.' });
+    sosA.xacNhanPaQuyChe(P.admin, plansOf(c.id)[0].id, duXacNhan(conn, plansOf(c.id)[0].id, { description: 'Tutor Listening hai buổi mỗi tuần tới MT2.' }));
     assert(plansOf(c.id)[0].followup_due === addDays(mt2Week, 6), `${c.category}: ${plansOf(c.id)[0].followup_due}`);
   });
 
@@ -530,24 +531,24 @@ export async function runSosV3Tests(t: YThucTestKit) {
     const d = cases.caseDetail(w2T, f.w2.id) as any;
     assert(d.interventions.some((i: any) => i.id === iv.id && i.awaitingConfirmation && i.batBuoc), 'caseDetail trả PA quy chế chờ xác nhận');
     /* OV-12c: nguyên nhân Case MT = nhận xét của bài — bài chưa nhận xét (dữ liệu cũ) thì chưa xác nhận PA được. */
-    assertThrows(() => sosAuto.xacNhanPaQuyChe(w2T, f.w2Plan.id, { description: MO_TA_PA }), /chưa có nhận xét/, 'Xác nhận PA khi chưa có nguyên nhân');
+    assertThrows(() => sosAuto.xacNhanPaQuyChe(w2T, f.w2Plan.id, duXacNhan(conn, f.w2Plan.id, { description: MO_TA_PA })), /chưa có nhận xét/, 'Xác nhận PA khi chưa có nguyên nhân');
     xacNhanCaseW2(w2T, f);
     assert(get('SELECT status FROM sos_cases WHERE id = ?', f.w2.id).status === 'open', 'Q28-5: chưa có PA người xác nhận thì Case vẫn Chưa xử lý');
-    sosAuto.xacNhanPaQuyChe(w2T, f.w2Plan.id, { description: MO_TA_PA });
+    sosAuto.xacNhanPaQuyChe(w2T, f.w2Plan.id, duXacNhan(conn, f.w2Plan.id, { description: MO_TA_PA }));
     const sau = get('SELECT * FROM case_interventions WHERE id = ?', f.w2Plan.id);
     assert(sau.status === 'started' && sau.started_date === TODAY && sau.cycle_started_on === TODAY && sau.cycle_no === 1
       && sau.action_due === domain.hanKyGhiKetQua(TODAY) && sau.confirmed_by === w2T.userId && !!sau.confirmed_at
       && sau.followup_due === domain.sosPlanEndDate('one_month', { createdOn: TODAY }), `Sau xác nhận: ${JSON.stringify(sau)}`);
     assert(get('SELECT status FROM sos_cases WHERE id = ?', f.w2.id).status === 'in_progress', 'Có nguyên nhân + PA người xác nhận → Đang xử lý');
     assert(count('SELECT COUNT(*) n FROM audit_logs WHERE action = ? AND entity_id = ?', 'case.preset.confirm', iv.id) === 1, 'Có audit xác nhận');
-    assertThrows(() => sosAuto.xacNhanPaQuyChe(w2T, f.w2Plan.id, { description: MO_TA_PA }), /đã được xác nhận rồi/, 'Xác nhận PA hai lần');
+    assertThrows(() => sosAuto.xacNhanPaQuyChe(w2T, f.w2Plan.id, duXacNhan(conn, f.w2Plan.id, { description: MO_TA_PA })), /đã được xác nhận rồi/, 'Xác nhận PA hai lần');
   });
 
   check('PR-T · S04 "Chỉnh" → PR-SOS: Xác nhận PA kèm mô tả mới — mô tả đổi, bản máy gán giữ trong lịch sử; mô tả < 15 ký tự → 400', () => {
     const f = freshSos('S04b');
     xacNhanCaseW2(w2T, f);
-    assertThrows(() => sosAuto.xacNhanPaQuyChe(w2T, f.w2Plan.id, { description: 'Tự học' }), /ít nhất 15/, 'Mô tả quá ngắn');
-    sosAuto.xacNhanPaQuyChe(w2T, f.w2Plan.id, { description: MO_TA_PA });
+    assertThrows(() => sosAuto.xacNhanPaQuyChe(w2T, f.w2Plan.id, duXacNhan(conn, f.w2Plan.id, { description: 'Tự học' })), /ít nhất 15/, 'Mô tả quá ngắn');
+    sosAuto.xacNhanPaQuyChe(w2T, f.w2Plan.id, duXacNhan(conn, f.w2Plan.id, { description: MO_TA_PA }));
     const iv = get('SELECT * FROM case_interventions WHERE id = ?', f.w2Plan.id);
     assert(iv.description === MO_TA_PA && iv.confirmed_by === w2T.userId, `Sau xác nhận: ${JSON.stringify(iv)}`);
     const rev = get(`SELECT * FROM case_intervention_revisions WHERE intervention_id = ? AND source = 'confirm_edit'`, f.w2Plan.id);
@@ -557,12 +558,12 @@ export async function runSosV3Tests(t: YThucTestKit) {
   check('PR-T · C02 (§10#6) GVBM kỹ năng KHÁC (Writing 1) cố xác nhận Case / PA / gửi không theo dõi case Writing 2 → máy chủ TỪ CHỐI; Quản lý trong phạm vi làm được; Quản lý chi nhánh khác thì không', () => {
     const f = freshSos('C02');
     assertThrows(() => xacNhanCaseW2(w1T, f), /phân công/, 'GVBM W1 xác nhận Case W2');
-    assertThrows(() => sosAuto.xacNhanPaQuyChe(w1T, f.w2Plan.id, { description: MO_TA_PA }), /phân công/, 'GVBM W1 xác nhận PA case W2');
+    assertThrows(() => sosAuto.xacNhanPaQuyChe(w1T, f.w2Plan.id, duXacNhan(conn, f.w2Plan.id, { description: MO_TA_PA })), /phân công/, 'GVBM W1 xác nhận PA case W2');
     assertThrows(() => sosAuto.guiKhongTheoDoi(w1T, f.w2.id, { reasonCode: 'single_incident' }), /phân công/, 'GVBM W1 đóng case W2');
     assertThrows(() => xacNhanCaseW2(P.cpManager, f), /phạm vi|phân công|quyền/, 'Quản lý chi nhánh khác');
     assert(get('SELECT confirmed_by FROM case_interventions WHERE id = ?', f.w2Plan.id).confirmed_by === null, 'Bị từ chối thì không đổi gì');
     xacNhanCaseW2(P.mbManager, f);
-    sosAuto.xacNhanPaQuyChe(P.mbManager, f.w2Plan.id, { description: MO_TA_PA });
+    sosAuto.xacNhanPaQuyChe(P.mbManager, f.w2Plan.id, duXacNhan(conn, f.w2Plan.id, { description: MO_TA_PA }));
     assert(get('SELECT confirmed_by FROM case_interventions WHERE id = ?', f.w2Plan.id).confirmed_by === P.mbManager.userId, 'Quản lý MB xác nhận được');
   });
 
@@ -572,7 +573,7 @@ export async function runSosV3Tests(t: YThucTestKit) {
     xacNhanCaseW2(w2T, f);
     const tay = cases.recordIntervention(w2T, f.w2.id, { kind: 'tutor', description: 'Tutor kèm Writing Task 2 hai buổi mỗi tuần', status: 'started', performerSelf: true }) as any;
     const paTay = tay.interventions.find((i: any) => !i.preset);
-    assertThrows(() => sosAuto.xacNhanPaQuyChe(w2T, paTay.id, { description: MO_TA_PA }), /không phải PA theo quy chế/, 'Xác nhận PA không phải quy chế');
+    assertThrows(() => sosAuto.xacNhanPaQuyChe(w2T, paTay.id, duXacNhan(conn, paTay.id, { description: MO_TA_PA })), /không phải PA theo quy chế/, 'Xác nhận PA không phải quy chế');
     /* PA chưa xong chưa có kết quả: chưa vào hiệu quả. */
     assert(!effectivenessSvc.planOutcomes({ studentIds: [f.st.id] }).some((r: any) => r.id === f.w2Plan.id), 'PA chưa xong không được vào hiệu quả');
   });
@@ -616,7 +617,7 @@ export async function runSosV3Tests(t: YThucTestKit) {
     /* Đóng thường (Chốt kết quả) cũng vậy. */
     const g = freshSos('S05re2');
     const gp = g.w2Plan;
-    xacNhanCaseW2(w2T, g); sosAuto.xacNhanPaQuyChe(w2T, gp.id, { description: MO_TA_PA });   // PR-SOS: PA chạy khi xác nhận
+    xacNhanCaseW2(w2T, g); sosAuto.xacNhanPaQuyChe(w2T, gp.id, duXacNhan(conn, gp.id, { description: MO_TA_PA }));   // PR-SOS: PA chạy khi xác nhận
     xongPaThu(gp.id);
     cases.closeCaseOutcome(P.mbManager, g.w2.id, { outcome: 'improved', note: 'Em đã tiến bộ rõ ở Writing Task 2', decision: 'end' });
     const before2 = JSON.stringify(casesOf(g.st.id).map((c) => [c.id, c.status]));
@@ -632,7 +633,7 @@ export async function runSosV3Tests(t: YThucTestKit) {
     enter(P.admin, a, 'writing2', 5); enter(P.admin, a, 'writing1', 7);  // SOS2: cùng loại phương án → đồng bộ lại
     assert(plansOf(sp.id)[0].followup_due === null && plansOf(sp.id)[0].moc_quy_che === 'one_month', `Chưa xác nhận thì chưa có mốc: ${plansOf(sp.id)[0].followup_due}`);
     nhanXetThu(P.mbManager, sp.id, { primaryCode: domain.issuesForTopic('speaking', null)[0].code, urgency: 'attention', moTa: 'Em nói ngắn, thiếu ý mở rộng.' });
-    sosAuto.xacNhanPaQuyChe(P.mbManager, plansOf(sp.id)[0].id, { description: 'Tự học Speaking 1 tháng, ghi âm mỗi tuần.' });
+    sosAuto.xacNhanPaQuyChe(P.mbManager, plansOf(sp.id)[0].id, duXacNhan(conn, plansOf(sp.id)[0].id, { description: 'Tự học Speaking 1 tháng, ghi âm mỗi tuần.' }));
     assert(plansOf(sp.id)[0].followup_due === domain.sosPlanEndDate('one_month', { createdOn: TODAY }), `followup_due ${plansOf(sp.id)[0].followup_due}`);
   });
 
@@ -651,7 +652,7 @@ export async function runSosV3Tests(t: YThucTestKit) {
 
   check('PR-T · (rà soát) Case đã ĐÓNG rồi sửa điểm nguồn: KHÔNG gửi thông báo "Xem lại Case" (không còn gì để xem lại)', () => {
     const f = freshSos('NOTE');
-    xacNhanCaseW2(w2T, f); sosAuto.xacNhanPaQuyChe(w2T, f.w2Plan.id, { description: MO_TA_PA });   // PR-SOS: PA chạy khi xác nhận
+    xacNhanCaseW2(w2T, f); sosAuto.xacNhanPaQuyChe(w2T, f.w2Plan.id, duXacNhan(conn, f.w2Plan.id, { description: MO_TA_PA }));   // PR-SOS: PA chạy khi xác nhận
     xongPaThu(f.w2Plan.id);
     cases.closeCaseOutcome(P.mbManager, f.w2.id, { outcome: 'improved', note: 'Em đã tiến bộ rõ ở Writing Task 2', decision: 'end' });
     const reviews = () => count("SELECT COUNT(*) n FROM notifications WHERE dedup_key LIKE ?", `case_review:${f.w2.id}:%`);
@@ -681,7 +682,7 @@ export async function runSosV3Tests(t: YThucTestKit) {
     assert(get('SELECT dismiss_reason_text FROM sos_cases WHERE id = ?', f.w2.id).dismiss_reason_text.includes('Em ốm'), 'Lưu chữ của `Khác`');
     /* PR-N1 Q23/Q24: PA quy chế CÓ KẾT QUẢ TUẦN là việc thật → không "không cần theo dõi" được nữa (PA quy chế chưa ghi gì thì vẫn đóng được — S05 ở trên). */
     nhanXetThu(P.mbManager, f.sp.id, { primaryCode: domain.issuesForTopic('speaking', null)[0].code, urgency: 'attention', moTa: 'Em nói ngắn, thiếu ý mở rộng.' });
-    sosAuto.xacNhanPaQuyChe(P.mbManager, f.spPlan.id, { description: 'Tự học Speaking 1 tháng, ghi âm mỗi tuần.' });
+    sosAuto.xacNhanPaQuyChe(P.mbManager, f.spPlan.id, duXacNhan(conn, f.spPlan.id, { description: 'Tự học Speaking 1 tháng, ghi âm mỗi tuần.' }));
     cases.recordFollowUp(P.mbManager, f.sp.id, { interventionId: f.spPlan.id, outcome: 'partial', note: 'Tuần đầu em đã luyện nói đều hơn' });
     assertThrows(() => sosAuto.guiKhongTheoDoi(P.mbManager, f.sp.id, { reasonCode: 'single_incident' }), /đã xác nhận|đang chạy|chốt kết quả/, 'Đóng case đã có kết quả tuần');
     /* Case tạo tay không phải case từ SOS. */
@@ -707,7 +708,7 @@ export async function runSosV3Tests(t: YThucTestKit) {
     assert(board.rows.every((r: any) => r.plans === 0 && r.running === 0), `Bảng vấn đề đếm phương án điền sẵn chưa xác nhận: ${JSON.stringify(board.rows)}`);
     /* PR-SOS (Q28-3): PA chạy khi GVBM xác nhận — Xác nhận Case rồi Xác nhận PA. */
     conn.prepare('UPDATE case_interventions SET followup_due = NULL, action_due = NULL WHERE id = ?').run(f.w2Plan.id);
-    xacNhanCaseW2(w2T, f); sosAuto.xacNhanPaQuyChe(w2T, f.w2Plan.id, { description: MO_TA_PA });
+    xacNhanCaseW2(w2T, f); sosAuto.xacNhanPaQuyChe(w2T, f.w2Plan.id, duXacNhan(conn, f.w2Plan.id, { description: MO_TA_PA }));
     const sauMig = get('SELECT * FROM case_interventions WHERE id = ?', f.w2Plan.id);
     assert(sauMig.status === 'started' && sauMig.confirmed_at, `Sau xác nhận: ${JSON.stringify(sauMig)}`);
     conn.prepare('UPDATE case_interventions SET action_due = ? WHERE id = ?').run(addDays(TODAY, -3), f.w2Plan.id);
@@ -760,7 +761,7 @@ export async function runSosV3Tests(t: YThucTestKit) {
     assert(domain.metricById('case-cho-xac-dinh-nguyen-nhan')?.donVi === 'case', 'Chỉ số phải có trong sổ, đơn vị case');
     /* OV-12c (rà #389): cùng tập cột "Chờ xác nhận" của Tổng hợp — Case MT cũ bài chưa nhận xét (việc Ghi nhận xét) thuộc tập; có nhận xét (nguyên nhân) thì thôi. */
     assert(M().includes(f.w2.id) && M().includes(f.sp.id), 'Case MT chưa nhận xét phải thuộc tập "chờ xác nhận"');
-    assertThrows(() => sosAuto.xacNhanPaQuyChe(w2T, f.w2Plan.id, { description: MO_TA_PA }), /chưa có nhận xét/, 'Xác nhận PA trước nguyên nhân');
+    assertThrows(() => sosAuto.xacNhanPaQuyChe(w2T, f.w2Plan.id, duXacNhan(conn, f.w2Plan.id, { description: MO_TA_PA })), /chưa có nhận xét/, 'Xác nhận PA trước nguyên nhân');
     datNguyenNhanThu(f.w2.id, 'student.writing.task');
     /* OV-12d: "Case chờ duyệt" = cột Chờ duyệt của Tổng hợp — có nguyên nhân rồi vẫn chờ (PA quy chế chờ xác nhận). */
     assert(M().includes(f.w2.id), 'Có nguyên nhân, PA quy chế chưa xác nhận: vẫn chờ duyệt');

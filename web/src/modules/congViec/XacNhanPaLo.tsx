@@ -9,7 +9,7 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import {
-  GOI_Y_MO_TA_PA, INTERVENTION_KIND_LABEL, LOAI_HAN_CUA_VIEC, addDaysIso, coNguoiDay, datLaiNguoi, type LoiTruong, type NguoiChon,
+  GOI_Y_MO_TA_PA, INTERVENTION_KIND_LABEL, LOAI_HAN_CUA_VIEC, addDaysIso, coNguoiDay, datLaiNguoi, kiemSoBuoiPa, soBuoiTu, type LoiTruong, type NguoiChon,
 } from '@shared/domain/index.ts';
 import type { WorkItem } from '../worklist/WorkList.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
@@ -39,6 +39,7 @@ export function XacNhanPaLo({ it, onDong, onDaLam, onMo, onTiep }: {
   const [moTa, setMoTa] = useState('');
   const [batDau, setBatDau] = useState('');
   const [nguoi, setNguoi] = useState<NguoiChon | null>(null);
+  const [soBuoi, setSoBuoi] = useState('');
   const [rieng, setRieng] = useState<Record<string, Rieng>>({});
   const [xong, setXong] = useState<ReadonlySet<string>>(new Set());
   const [loiMay, setLoiMay] = useState<Record<string, string>>({});
@@ -57,15 +58,21 @@ export function XacNhanPaLo({ it, onDong, onDaLam, onMo, onTiep }: {
   const oRieng = (x: Em) => `noi-dung-${x.paId}`;
   /* Mockup §3a / §9 "Người dạy *": bắt buộc khi còn em đang tick có PA cần người dạy mà chưa có người (của PA, hay riêng). */
   const canNguoi = !nguoi && chon.some((x) => coNguoiDay(x.pa?.kind ?? 'self_study') && !x.pa?.nguoi && !riengCua(x.key).nguoi);
+  /* OV-13b (mockup §9 "Số buổi *"): PA Tutor quy chế sinh ra chưa có Số buổi — ô chung điền cho em Tutor còn trống (em đã có giữ nguyên). */
+  const thieuSoBuoi = (x: Em) => x.pa?.kind === 'tutor' && x.pa.soBuoi == null;
+  const canSoBuoi = chon.some(thieuSoBuoi);
+  const loiSoBuoi = canSoBuoi ? (soBuoiTu(soBuoi) === null ? t('Nhập số buổi') : kiemSoBuoiPa(soBuoi)) : null;
   const loi: LoiTruong[] = [
+    ...(loiSoBuoi ? [{ khoa: 'so-buoi', nhan: t('Số buổi / 2 tuần'), lyDo: loiSoBuoi }] : []),
     ...(canNguoi ? [{ khoa: 'nguoi', nhan: t('Người dạy'), lyDo: t('Chọn người dạy') }] : []),
     ...(canChung && moTa.trim().length < TOI_THIEU ? [{ khoa: 'noi-dung', nhan: t('Nội dung / hướng dẫn'), lyDo: moTa.trim() ? ngan : t('Ghi nội dung / hướng dẫn') }] : []),
     ...chon.filter((x) => { const m = riengCua(x.key).moTa.trim(); return m && m.length < TOI_THIEU; }).map((x) => ({ khoa: oRieng(x), nhan: x.studentName, lyDo: ngan })),
   ];
-  const daSua = !!moTa.trim() || !!batDau || !!nguoi || Object.values(rieng).some((r) => r.moTa.trim() || r.batDau || r.nguoi);
+  const daSua = !!moTa.trim() || !!batDau || !!nguoi || !!soBuoi.trim() || Object.values(rieng).some((r) => r.moTa.trim() || r.batDau || r.nguoi);
   const loai = [...new Set(ds.map((x) => x.pa?.kind).filter((k): k is string => !!k))];
   const tenLoai = loai.map((k) => INTERVENTION_KIND_LABEL[k as keyof typeof INTERVENTION_KIND_LABEL] ?? k).join(' · ');
   const coNguoi = ds.some((x) => coNguoiDay(x.pa?.kind ?? 'self_study'));
+  const coSoBuoiTrong = ds.some(thieuSoBuoi);
 
   const gui = async () => {
     lf.bam();
@@ -74,7 +81,7 @@ export function XacNhanPaLo({ it, onDong, onDaLam, onMo, onTiep }: {
     const chung = { description: moTa.trim(), batDau: ngay, ...(nguoi ? datLaiNguoi(nguoi) : {}) };
     const hang = chon.map((x) => {
       const r = riengCua(x.key);
-      return { id: x.paId as number, ...(r.moTa.trim() ? { description: r.moTa.trim() } : {}), ...(r.batDau ? { batDau: r.batDau } : {}), ...(r.nguoi ? datLaiNguoi(r.nguoi) : {}) };
+      return { id: x.paId as number, ...(thieuSoBuoi(x) ? { soBuoi: soBuoiTu(soBuoi) } : {}), ...(r.moTa.trim() ? { description: r.moTa.trim() } : {}), ...(r.batDau ? { batDau: r.batDau } : {}), ...(r.nguoi ? datLaiNguoi(r.nguoi) : {}) };
     });
     const m = hang.length;
     const loiMoi: Record<string, string> = {};
@@ -146,6 +153,12 @@ export function XacNhanPaLo({ it, onDong, onDaLam, onMo, onTiep }: {
                 <Truong nhan={t('Người dạy')} as="div" batBuoc={canNguoi || !!lf.loiCua(loi, 'nguoi')} loi={lf.loiCua(loi, 'nguoi')} phu={t('Em đã có người dạy giữ nguyên')}>
                   <ChonNguoi nhom="giao_vien" value={nguoi} onChange={setNguoi} choTrong={t('Để trống')} placeholder={t('Chưa chọn · gõ tên để tìm')}
                     ariaLabel={t('Người dạy')} disabled={busy} id={lf.oId('nguoi')} onBlur={lf.roi('nguoi')} invalid={!!lf.loiCua(loi, 'nguoi')} />
+                </Truong>
+              )}
+              {coSoBuoiTrong && (
+                <Truong nhan={t('Số buổi / 2 tuần')} batBuoc={canSoBuoi} loi={lf.loiCua(loi, 'so-buoi')} phu={t('Em đã có số buổi giữ nguyên')}>
+                  <input className="field w-24 tabular-nums" inputMode="numeric" maxLength={2} {...lf.o(loi, 'so-buoi')} value={soBuoi} disabled={busy}
+                    onChange={(e) => setSoBuoi(e.target.value)} placeholder="—" />
                 </Truong>
               )}
             </div>

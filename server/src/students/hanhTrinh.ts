@@ -224,7 +224,7 @@ export function hanhTrinhHocVien(p: Principal, studentId: number, giaiDoanMuon: 
     const st = stMo.get(c.id);
     if (!st || dangDung) return null;
     const v4 = trangThaiCaseV4({ status: c.status, fromSos: st.fromSos, hasCause: st.hasCause, laMt: st.laMt, dismissed: !!st.dismissed, systemClosed: !!c.system_close_reason,
-      choDuyetKhongTheoDoi: !!st.choDuyetKhongTheoDoi, coPaChoXacNhan: st.coPaChoXacNhan, hanXacNhan: st.dueOn }, homNay);
+      choDuyetKhongTheoDoi: !!st.choDuyetKhongTheoDoi, coPaChoXacNhan: st.coPaChoXacNhan, choDoiPa: st.choDoiPa, hanXacNhan: st.dueOn }, homNay);
     return v4.t !== 'qua-han' ? null : v4.k === 'cho-xac-nhan-pa' ? 'xac-nhan-pa' : 'nguyen-nhan';
   };
   const tenCaseCua = (c: any): string => {

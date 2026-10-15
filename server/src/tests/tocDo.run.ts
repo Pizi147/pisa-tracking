@@ -887,6 +887,9 @@ check('TD3-b-2 · QL ×3: /classes/{lopFT}/overview ≤ 50 % (5 829), /hoc-vien-
  * TD4-a: Công việc trên dữ liệu ×3 — JSON đầy đủ (`items`, `dong`, `groups`, `summary`) TRÙNG ảnh chụp chụp bằng mã TRƯỚC TD4 (main 35517670), mọi vai
  * và mọi góc nhìn. Lọc sớm lượt ở `listAttempts` không được đổi một việc nào. Đổi đầu ra Công việc CÓ CHỦ Ý (hoặc seed / phép kiểm phía trên đổi
  * dữ liệu) thì lệch: chụp lại băm bằng mã trước thay đổi đó (phép in băm đang ra), không sửa cho khớp.
+ * 15/10 (OV-13b, chụp lại trên bản gộp OV-13c/d/h): GVCN / GVCN_THUONG toi, QL / QT tat-ca, QT tat-ca cn, QL gvcn — đổi có chủ ý: thêm trường
+ * `ghiNhanh` của Kết quả PA (ghi nhanh trên dòng) và `pa.soBuoi` của Xác nhận PA cùng lúc (ô Số buổi Tutor, mockup §9); băm bỏ hai trường đó
+ * trùng ảnh của main a4f9c00, đã kiểm.
  * 15/10: chụp lại 'QT toi' / 'QT tat-ca' sau khi Case của Task2(e) thôi lấy giờ thật (hạn Thêm PA của nó trôi theo ngày chạy → băm QT đổi mỗi ngày).
  * 15/10 gộp OV-13a + OV-13c: chụp lại 'QL tat-ca' / 'QT tat-ca' / 'QT tat-ca cn' trên bản gộp — hai thay đổi có chủ ý ở dưới cộng lại (id Case đổi chỗ + gom tuần).
  * 15/10 OV-13a: chụp lại 'QL tat-ca' / 'QT tat-ca' / 'QT tat-ca cn' — Case tạm (Q2) đổi thứ tự sinh Case trong seed → id Case 34↔35 (HV 46) đổi chỗ;
@@ -901,9 +904,9 @@ check('TD3-b-2 · QL ×3: /classes/{lopFT}/overview ≤ 50 % (5 829), /hoc-vien-
 await checkAsync('TD4-a (×3) · Công việc trùng JSON ảnh chụp trước TD4 — 6 vai × Của tôi / Tất cả / Của một GV / lọc chi nhánh', async () => {
   const { myWork, viecCuaNguoi } = await import('../worklist/mywork.ts');
   const ANH: Record<string, string> = {
-    'QL toi': '6671f11bb8e4d60c', 'QT toi': 'ad9ea8d503e7b56c', 'GVCN toi': '4f51ddef848eaf9e', 'GVBM toi': 'dd8afd71bacf9864',
-    'GVCN_THUONG toi': '4f51ddef848eaf9e', 'ADMIN toi': '4ed1fc3fa34653f2', 'QL tat-ca': '053bec8fdb83e4e8', 'QT tat-ca': 'e1649bdac55ac5e9',
-    'QT tat-ca cn': 'c9e67f8750ca82fd', 'QL gvcn': '912708bfcda5b611', 'GVS toi': 'c3069d14e7e2f2f1',
+    'QL toi': '6671f11bb8e4d60c', 'QT toi': 'ad9ea8d503e7b56c', 'GVCN toi': '23e0323bdaca7cd2', 'GVBM toi': 'dd8afd71bacf9864',
+    'GVCN_THUONG toi': '23e0323bdaca7cd2', 'ADMIN toi': '4ed1fc3fa34653f2', 'QL tat-ca': 'c2b665b3111bb1d4', 'QT tat-ca': '881bf524635eb7bb',
+    'QT tat-ca cn': 'a662f0555f264971', 'QL gvcn': 'ad7335342536a58b', 'GVS toi': '8f69930b10779f34',
   };
   const p = (v: Vai) => loadPrincipal(USER[v]);
   const goc: [string, () => unknown][] = [
@@ -1203,7 +1206,7 @@ await checkAsync('OV-13c · POST /interventions/xac-nhan-pa-lo (×3): lô 3 PA �
   assert(ids.length > 0, 'không có PA chờ xác nhận để đo');
   const truoc = soCauSql();
   const { status, json } = await callHttp('QL', 'POST', '/interventions/xac-nhan-pa-lo',
-    { chung: { description: 'Hai buổi mỗi tuần, chữa đề bấm giờ, GV gửi nhận xét.' }, ds: ids.map((id) => ({ id })) });
+    { chung: { soBuoi: 4, description: 'Hai buổi mỗi tuần, chữa đề bấm giờ, GV gửi nhận xét.' }, ds: ids.map((id) => ({ id })) });
   const cau = soCauSql() - truoc;
   console.log(`      (đo ×3: ${ids.length} PA → ${cau} câu, ${(cau / ids.length).toFixed(1)} câu / PA · ok ${json?.ok?.length} · lỗi ${json?.loi?.length})`);
   assert(status === 200 && json.ok.length === ids.length, `kết quả: ${status} ${JSON.stringify(json)}`);

@@ -17,7 +17,7 @@ import { mondayOf } from '../platform/week.ts';
 import { conLaiMs } from '../platform/hanGio.ts';
 import { taoYeuCau } from '../duyet/yeuCau.ts';
 import { dongBoBaoPhCuaBai } from '../yThuc/phoiHop.ts';
-import { LA_CASE_MT, PA_QUY_CHE_CHUA_GHI, UNCONFIRMED_PRESET, dongBoTrangThaiCase, sosCaseState } from './sosState.ts';
+import { CHO_DOI_PA, LA_CASE_MT, PA_QUY_CHE_CHUA_GHI, UNCONFIRMED_PRESET, dongBoTrangThaiCase, sosCaseState } from './sosState.ts';
 import { ghiBanDieuChinh, nguoiSauSua, soBuoiMoi } from './planRevisions.ts';
 import { chayPaBoTro, mocCuoiKhoa } from './boTro.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
@@ -104,7 +104,7 @@ export function resyncUnconfirmedPresets(
       `SELECT iv.id, iv.kind, iv.description, iv.moc_quy_che, iv.performer_user_id, iv.performer_name, sc.category
          FROM case_interventions iv
          JOIN sos_cases sc ON sc.id = iv.case_id
-        WHERE ${PA_QUY_CHE_CHUA_GHI('iv')} AND ${UNCONFIRMED_PRESET('iv')} AND iv.status = 'planned' AND sc.status != 'done'
+        WHERE ${PA_QUY_CHE_CHUA_GHI('iv')} AND ${UNCONFIRMED_PRESET('iv')} AND iv.status = 'planned' AND NOT ${CHO_DOI_PA('iv')} AND sc.status != 'done'
           AND EXISTS (SELECT 1 FROM case_milestones m WHERE m.case_id = sc.id AND m.kind IN ('opened', 'repeat') AND m.attempt_id = ?)`,
     )
     .all(attempt.id) as any[];
@@ -480,6 +480,9 @@ export function xacNhanPaQuyChe(p: Principal, interventionId: number, input: {
   const soBuoi = soBuoiMoi(iv, input.soBuoi, 0);
   const today = demoToday();
   const batDau = batDauHopLe(input.batDau, today);
+  /* OV-13b (mockup OV-13 §9): Người dạy * với loại có người dạy; Tutor: Số buổi / 2 tuần *. */
+  if (coNguoiDay(iv.kind) && !performerUserId && !performerName) throw badRequest('Chọn người dạy rồi mới xác nhận PA.');
+  if (iv.kind === 'tutor' && soBuoi == null) throw badRequest('PA Tutor cần Số buổi / 2 tuần.');
   const luot = luotSinhPa(iv);
   const moc = iv.moc_quy_che
     ? mocQuyChe(iv.moc_quy_che, { ngayXacNhan: batDau, nextMtSunday: luot ? followUntilAfter(luot) : null, examDate: mocThi(iv.case_cycle_id, batDau) })   // OV-13a (B) + OV-13c: mốc tính từ ngày bắt đầu

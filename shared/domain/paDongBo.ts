@@ -8,6 +8,7 @@ import { KHAC_TOI_THIEU } from './khac.ts';
 import { INTERVENTION_KIND_LABEL } from './cases.ts';
 import { kyGhiKetQua, ngayTheoGioVN } from './display.ts';
 import { tuanLich } from './hienThiNgay.ts';
+import { addDaysIso } from './sos.ts';
 import { t } from '../i18n/index.ts';
 
 export const LOAI_CO_SO_BUOI = ['tutor', 'self_study', 'bo_tro', 'bo_tro_mien_phi'] as const;
@@ -62,6 +63,14 @@ export function demSauKetQua(daDay: number, tong: number, tuan: string) {
  */
 export type PaKetQua = { kind: string; soBuoi?: number | null; cu?: boolean };
 export const coSoBuoiKy = (pa: PaKetQua): boolean => pa.soBuoi != null || (pa.kind === 'tutor' && !pa.cu);
+/**
+ * OV-13b (mockup OV-13 §1): GHI NHANH trên dòng (Tiến triển + Nhận xét, Giữ nguyên) — chỉ PA không đếm buổi, không phải lần ghi cuối, không Mini Test.
+ * Còn lại (Tutor n buổi, Số buổi kỳ này, Kết quả cuối, Bổ trợ miễn phí) luôn mở panel. Công việc (máy chủ) và Case / panel một em (web) cùng hàm.
+ */
+export const ghiNhanhDuoc = (pa: { kind: string; soBuoi?: number | null; lanCuoi?: boolean }): boolean =>
+  !pa.lanCuoi && pa.kind !== 'bo_tro_mien_phi' && !coSoBuoiKy({ kind: pa.kind, soBuoi: pa.soBuoi ?? null });
+/** OV-13b: PA tới kỳ ghi kết quả — cùng ngưỡng việc "Ghi kết quả" hiện ở Công việc (`action_due ≤ hôm nay + 2`, mywork 2b). */
+export const toiKyGhi = (actionDue: string | null | undefined, homNay: string): boolean => !!actionDue && actionDue <= addDaysIso(homNay, 2);
 
 /** Lỗi khối đếm: Số buổi kỳ này (`coSoBuoiKy`, 0–60) · Người dạy tuần này (Tự học không có; PR-CT2: không bắt buộc, chỉ kiểm tên ngoài). */
 export function loiKetQuaTuan(pa: PaKetQua, tuan: string, nguoi: NguoiChon | null): LoiTruong[] {
@@ -122,7 +131,9 @@ export function khacNguoi(a: NguoiChon | null, b: NguoiChon | null): boolean {
 }
 
 /** Lỗi của form PA. `tienTo`: khoá ô riêng khi form nằm trong panel khác (Thay PA trong Kết quả: 'moi-'). `goc` (Sửa PA): ô KHÔNG đổi thì không kiểm — PA vượt buổi (Số buổi < đã dạy), mô tả cũ ngắn vẫn sửa được ô khác. */
-export function loiFormPa(v: GiaTriPa, o: { toiThieu?: number; daDay?: number; goc?: GiaTriPa; tienTo?: string } = {}): LoiTruong[] {
+export function loiFormPa(v: GiaTriPa, o: { toiThieu?: number; daDay?: number; goc?: GiaTriPa; tienTo?: string;
+  /** OV-13b (Xác nhận PA, mockup OV-13 §9): Người dạy * (loại có người dạy) · Tutor: Số buổi / 2 tuần *. Cùng luật `xacNhanPaQuyChe`. */
+  batBuoc?: boolean } = {}): LoiTruong[] {
   const { goc } = o;
   const tien = o.tienTo ?? '';
   const doi = (k: 'description' | 'soBuoi') => !goc || v[k].trim() !== goc[k].trim();
@@ -130,9 +141,10 @@ export function loiFormPa(v: GiaTriPa, o: { toiThieu?: number; daDay?: number; g
     ...(v.kind === 'other_proposal' && !goc ? [{ khoa: `${tien}ghi-ro`, nhan: t('Tên đề xuất'), toiThieu: KHAC_TOI_THIEU }] : []),
     ...(doi('description') ? [{ khoa: `${tien}noi-dung`, nhan: t('Nội dung'), toiThieu: o.toiThieu ?? 8 }] : []),
   ], { [`${tien}ghi-ro`]: v.ghiRo, [`${tien}noi-dung`]: v.description });
-  const sb = coSoBuoi(v.kind) && doi('soBuoi') ? kiemSoBuoiPa(v.soBuoi, o.daDay ?? 0) : null;
+  const sb = coSoBuoi(v.kind) && doi('soBuoi') ? kiemSoBuoiPa(v.soBuoi, o.daDay ?? 0)
+    ?? (o.batBuoc && v.kind === 'tutor' && !v.soBuoi.trim() ? t('Nhập số buổi') : null) : null;
   if (sb) loi.push({ khoa: `${tien}so-buoi`, nhan: t('Số buổi'), lyDo: sb });
-  const ng = coNguoiDay(v.kind) ? nguoiThieu(v.nguoi, false) : null;
+  const ng = coNguoiDay(v.kind) ? nguoiThieu(v.nguoi, !!o.batBuoc) : null;
   if (ng) loi.push({ khoa: `${tien}nguoi`, nhan: nhanNguoiDay(v.kind), lyDo: ng });
   return loi;
 }
