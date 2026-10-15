@@ -4,6 +4,7 @@ import {
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { chanGiaoDichNeuSapHetGio } from '../platform/hanGio.ts';
+import { voiNguon } from '../platform/audit.ts';
 import { can, require_, type Principal } from '../permissions.ts';
 import { HttpError, badRequest, forbidden, kiemKieuO, notFound, nowIso } from '../util.ts';
 import { chuanHoaSuaHoSo, dsTvv, kiemTvvCungChiNhanh, updateStudent } from '../students/students.ts';
@@ -202,7 +203,8 @@ export function luuSuaCaLop(p: Principal, classId: number, input: DauVao & { ide
   const lyDo = typeof input.lyDoTarget === 'string' ? input.lyDoTarget.trim() : '';
   if (dong.some((x) => x.doiTarget) && !lyDo) throw badRequest('Ghi lý do đổi Target.');   // T7 (PR-MTa): không tối thiểu ký tự
 
-  return tx(() => {
+  /* OV-13j: mỗi dòng nhật ký của lô ghi kèm nguồn — Lịch sử sửa của em gộp thành MỘT khối "Sửa cả lớp {mã lớp}". */
+  return voiNguon(`Sửa cả lớp ${cls.code}`, () => tx(() => {
     const vuaGhi = daGhi();
     if (vuaGhi) return JSON.parse(vuaGhi.value);
     let daSua = 0;
@@ -229,5 +231,5 @@ export function luuSuaCaLop(p: Principal, classId: number, input: DauVao & { ide
       conn.prepare('INSERT OR REPLACE INTO demo_config (key, value, updated_at) VALUES (?,?,?)').run(key, JSON.stringify(out), nowIso());
     }
     return out;
-  });
+  }));
 }

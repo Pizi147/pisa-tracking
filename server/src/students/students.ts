@@ -825,7 +825,7 @@ export function updateStudent(p: Principal, studentId: number, patch: any) {
           baseline_listening = ?, baseline_reading = ?, baseline_writing = ?, baseline_speaking = ? WHERE id = ?`)
         .run(dv?.overall ?? null, dv ? 'manual' : null, ...(dv?.bands ?? [null, null, null, null]), c.id);
       writeAudit({ actorUserId: p.userId, action: dv ? 'cycle.baseline.set' : 'cycle.baseline.clear', entityType: 'learning_cycle', entityId: c.id,
-        before: c, after: dv ?? undefined });
+        before: c, after: conn.prepare('SELECT * FROM learning_cycles WHERE id = ?').get(c.id) });   // OV-13j: cùng dạng dòng — Lịch sử sửa so từng cột
     });
   }
   const sets: string[] = []; const params: unknown[] = [];
@@ -837,7 +837,12 @@ export function updateStudent(p: Principal, studentId: number, patch: any) {
   if (!sets.length) return s;
   params.push(studentId);
   conn.prepare(`UPDATE students SET ${sets.join(', ')} WHERE id = ?`).run(...params);
-  writeAudit({ actorUserId: p.userId, action: 'student.update', entityType: 'student', entityId: studentId,
-    entityLabel: s.student_code, before: s, after: conn.prepare('SELECT * FROM students WHERE id = ?').get(studentId) });
-  return conn.prepare('SELECT * FROM students WHERE id = ?').get(studentId);
+  const sau = conn.prepare('SELECT * FROM students WHERE id = ?').get(studentId) as any;
+  /* OV-13j: chỉ ghi trường thực sự đổi; gửi lại nguyên giá trị cũ thì không có dòng nhật ký. */
+  const doi = Object.keys(sau).filter((k) => k !== 'normalized_name' && sau[k] !== s[k]);
+  if (doi.length) {
+    writeAudit({ actorUserId: p.userId, action: 'student.update', entityType: 'student', entityId: studentId, entityLabel: s.student_code,
+      before: Object.fromEntries(doi.map((k) => [k, s[k]])), after: Object.fromEntries(doi.map((k) => [k, sau[k]])) });
+  }
+  return sau;
 }

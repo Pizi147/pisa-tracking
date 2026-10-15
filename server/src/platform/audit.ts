@@ -1,18 +1,35 @@
-import { db } from '../db.ts';
+import { chenNhieuDong, db } from '../db.ts';
 import { nowIso } from '../util.ts';
 
-export function writeAudit(a: {
+/** OV-13j: nguồn của lần ghi (vd "Sửa cả lớp MB FT 101") — `voiNguon` đặt trong lúc chạy `fn` (đồng bộ), `writeAudit` ghi kèm `_nguon` vào `after_json`. */
+let nguonHienTai: string | null = null;
+export function voiNguon<T>(nguon: string, fn: () => T): T {
+  const cu = nguonHienTai;
+  nguonHienTai = nguon;
+  try { return fn(); } finally { nguonHienTai = cu; }
+}
+const kemNguon = (after: unknown, nguon = nguonHienTai) =>
+  nguon ? { ...(after && typeof after === 'object' ? after : {}), _nguon: nguon } : after;
+
+type DongAudit = {
   actorUserId: number | null; action: string; entityType: string;
   entityId?: number | null; entityLabel?: string | null; before?: unknown; after?: unknown;
-}) {
-  db()
-    .prepare(
-      `INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, entity_label, before_json, after_json, created_at)
-       VALUES (?,?,?,?,?,?,?,?)`,
-    )
-    .run(a.actorUserId, a.action, a.entityType, a.entityId ?? null, a.entityLabel ?? null,
-         a.before === undefined ? null : JSON.stringify(a.before),
-         a.after === undefined ? null : JSON.stringify(a.after), nowIso());
+};
+const cotAudit = (a: DongAudit, luc: string) => {
+  const after = kemNguon(a.after);
+  return [a.actorUserId, a.action, a.entityType, a.entityId ?? null, a.entityLabel ?? null,
+    a.before === undefined ? null : JSON.stringify(a.before), after === undefined ? null : JSON.stringify(after), luc];
+};
+const DAU_AUDIT = 'INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, entity_label, before_json, after_json, created_at)';
+
+export function writeAudit(a: DongAudit) {
+  db().prepare(`${DAU_AUDIT} VALUES (?,?,?,?,?,?,?,?)`).run(...cotAudit(a, nowIso()));
+}
+
+/** OV-13j: nhiều dòng audit MỘT câu (ghi theo lô — nhập Excel, chuyển / tạm dừng cả lớp). */
+export function writeAuditLo(ds: DongAudit[]) {
+  const luc = nowIso();
+  chenNhieuDong(DAU_AUDIT, ds.map((a) => cotAudit(a, luc)));
 }
 
 /**

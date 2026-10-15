@@ -69,6 +69,7 @@ import * as xoaHocVienSvc from '../students/xoaHocVien.ts';
 import * as xoaTaiKhoanSvc from '../platform/xoaTaiKhoan.ts';
 import * as studentSvc from '../students/students.ts';
 import * as hangLoatSvc from '../students/hangLoat.ts';
+import * as lichSuSuaSvc from '../students/lichSuSua.ts';
 import * as meetingSvc from '../worklist/meeting.ts';
 import {
   PERIOD_WINDOW_PLANNING_FORWARD_WEEKS,
@@ -2037,6 +2038,10 @@ api.get('/students/:id', requireAuth, wrap((req) => {
   lenhSvc.quetLenhDenHan();
   return profileSvc.studentProfile(principalOf(req), pInt(req, 'id'), qInt(req, 'cycleId'), qInt(req, 'attemptId'));
 }));
+
+/* OV-13j: Lịch sử sửa thông tin học viên (mới nhất trước; `truoc` = con trỏ trang trước trả về). */
+api.get('/students/:id/lich-su-sua', requireAuth, wrap((req) => lichSuSuaSvc.lichSuSua(principalOf(req), pInt(req, 'id'),
+  { loai: qStr(req, 'loai'), truoc: qInt(req, 'truoc') })));
 
 api.patch('/students/:id', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
