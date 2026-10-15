@@ -5,7 +5,7 @@ import type { Principal } from '../permissions.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { caseAccess, caseDetail, kiemQuyenPa, loadCase, recordIntervention } from './cases.ts';
 import { choDoiPa, dongBoTrangThaiCase, sosCaseState } from './sosState.ts';
-import { DOI_PA_LY_DO_TOI_THIEU, INTERVENTION_KIND_LABEL, LOAI_PA_DOI, laPaMacDinh, type InterventionKind } from '../../../shared/domain/index.ts';
+import { DOI_PA_TOI_THIEU, INTERVENTION_KIND_LABEL, LOAI_PA_DOI, laPaMacDinh, type InterventionKind } from '../../../shared/domain/index.ts';
 
 /**
  * ĐỀ XUẤT PA KHÁC (OV-13b, mockup OV-13 §8–§9) — PA mặc định (quy chế chưa / đã xác nhận · Bổ trợ) đổi sang loại khác qua Quản lý duyệt. Dùng lại
@@ -39,7 +39,7 @@ function kiemDoiPa(p: Principal, goc: any, v: VaoDoiPa) {
   if (!(LOAI_PA_DOI as readonly string[]).includes(kind)) throw badRequest('Chọn loại PA mới.');
   if (kind === goc.kind) throw badRequest('PA mới phải khác loại PA hiện tại.');
   const lyDo = typeof v.lyDo === 'string' ? v.lyDo.trim() : '';
-  if (lyDo.length < DOI_PA_LY_DO_TOI_THIEU) throw loi(400, 'Lý do đổi PA cần ít nhất {n} ký tự.', { n: DOI_PA_LY_DO_TOI_THIEU });
+  if (lyDo.length < DOI_PA_TOI_THIEU) throw loi(400, 'Lý do đổi PA cần ít nhất {n} ký tự.', { n: DOI_PA_TOI_THIEU });
   if (lyDo.length > 1000) throw badRequest('Lý do đổi PA tối đa 1000 ký tự.');
   return { c, chuaChay, kind, lyDo };
 }
@@ -50,9 +50,10 @@ export function kiemTruocDoiPa(p: Principal, goc: any, v: VaoDoiPa): void { kiem
 /** Gửi đề xuất — gọi TRONG hoặc NGOÀI giao dịch (lần ghi kết quả + đề xuất một nút gọi trong tx của `updateResult`). Trả id PA mới. */
 export function ghiDoiPa(p: Principal, gocId: number, v: VaoDoiPa, followupId: number | null = null): number {
   const conn = db();
-  const goc = conn.prepare('SELECT * FROM case_interventions WHERE id = ?').get(gocId) as any;
-  const { chuaChay, kind, lyDo } = kiemDoiPa(p, goc, v);
   return tx(() => {
+    /* Đọc + kiểm TRONG giao dịch ghi: hai lần bấm cùng lúc thì lần sau thấy đề xuất của lần trước (`CHO_DOI_PA`) → 400, không hai thẻ. */
+    const goc = conn.prepare('SELECT * FROM case_interventions WHERE id = ?').get(gocId) as any;
+    const { chuaChay, kind, lyDo } = kiemDoiPa(p, goc, v);
     const duLieu: DuLieuDoiPa = { thayPaId: gocId, lyDo, goc: { kind: goc.kind, chay: !chuaChay }, followupId };
     recordIntervention(p, goc.case_id, {
       kind, description: typeof v.description === 'string' ? v.description : null, soBuoi: v.soBuoi,

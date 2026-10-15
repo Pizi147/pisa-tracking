@@ -4,7 +4,7 @@ import { NutChon } from '../../ui/ui.tsx';
 import type { useLoiForm } from '../../ui/loiForm.tsx';
 import { FormPa } from './FormPa.tsx';
 import {
-  DOI_PA_LY_DO_TOI_THIEU, INTERVENTION_KIND_LABEL, LOAI_PA_DOI, loiFormPa, nguoiMacDinh, paMoi, paPayload, type GiaTriPa, type LoiTruong,
+  DOI_PA_TOI_THIEU, INTERVENTION_KIND_LABEL, LOAI_PA_DOI, loiFormPa, nguoiMacDinh, paMoi, paPayload, type GiaTriPa, type LoiTruong,
 } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 
@@ -20,8 +20,8 @@ export function useDoiPa(gocKind: string) {
   const [lyDo, setLyDo] = useState('');
   const loi: LoiTruong[] = [
     ...loiFormPa(v, { tienTo: 'doi-' }),
-    ...(lyDo.trim().length < DOI_PA_LY_DO_TOI_THIEU
-      ? [{ khoa: 'doi-ly-do', nhan: t('Lý do'), lyDo: t('Ít nhất {n} ký tự · {co}/{n}', { n: DOI_PA_LY_DO_TOI_THIEU, co: lyDo.trim().length }) }] : []),
+    ...(lyDo.trim().length < DOI_PA_TOI_THIEU
+      ? [{ khoa: 'doi-ly-do', nhan: t('Lý do'), lyDo: t('Ít nhất {n} ký tự · {co}/{n}', { n: DOI_PA_TOI_THIEU, co: lyDo.trim().length }) }] : []),
   ];
   return {
     gocKind, v, lyDo, loi,
@@ -51,7 +51,7 @@ export function FormDoiPa({ d, lf, studentId, chuNgay }: {
       </div>
       <FormPa phang tienTo="doi-" v={d.v} dat={d.dat} lf={lf} loi={d.loi} studentId={studentId}
         ngay={chuNgay ? <p className="m-0 text-[13px] text-slate-400">{t('Bắt đầu')}: <span className="text-slate-200">{chuNgay}</span></p> : undefined} />
-      <Truong nhan={t('Lý do')} batBuoc loi={lf.loiCua(d.loi, 'doi-ly-do')} dem={{ co: d.lyDo.trim().length, can: DOI_PA_LY_DO_TOI_THIEU }}>
+      <Truong nhan={t('Lý do')} batBuoc loi={lf.loiCua(d.loi, 'doi-ly-do')} dem={{ co: d.lyDo.trim().length, can: DOI_PA_TOI_THIEU }}>
         <textarea className="field w-full" rows={2} maxLength={1000} {...lf.o(d.loi, 'doi-ly-do')} value={d.lyDo} onChange={(e) => d.setLyDo(e.target.value)}
           placeholder={t('Ví dụ: Em không tự học ở nhà được, cần GV kèm trên lớp.')} />
       </Truong>

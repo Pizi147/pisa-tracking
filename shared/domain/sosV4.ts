@@ -106,10 +106,10 @@ export function trangThaiCaseV4(c: CaseV4Input, homNay: string): { k: TrangThaiC
 
 /**
  * ĐỀ XUẤT PA KHÁC (OV-13b, mockup OV-13 §8–§9): PA mặc định (quy chế · Bổ trợ) đổi sang loại khác qua Quản lý duyệt. Loại đổi được = PA hỗ trợ
- * thường (trừ loại của PA gốc); lý do ≥ `DOI_PA_LY_DO_TOI_THIEU` ký tự.
+ * thường (trừ loại của PA gốc); lý do ≥ `DOI_PA_TOI_THIEU` ký tự.
  */
 export const LOAI_PA_DOI = ['self_study', 'tutor', 'teaching_adjust', 'extra_homework'] as const;
-export const DOI_PA_LY_DO_TOI_THIEU = 10;
+export const DOI_PA_TOI_THIEU = 10;
 export const laPaMacDinh = (pa: { preset?: boolean | number | null; kind: string }) => pa.preset === true || pa.preset === 1 || pa.kind === 'bo_tro';
 
 /** OV-13b: GHI NHANH trên dòng (Tiến triển + Nhận xét, Quyết định mặc định Giữ nguyên) — cùng thân `POST /interventions/:id/result` với panel. */

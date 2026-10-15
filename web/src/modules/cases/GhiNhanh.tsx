@@ -68,7 +68,7 @@ export function GhiNhanh({ paId, batBuoc = false, onDaLuu, onMoPanel, trongDong 
           onChange={(e) => setNote(e.target.value)} placeholder={dich(GOI_Y_KET_QUA_PA)} />
         {daBam && thieuNx && <span className="mt-1 block text-xs text-late">{t('Ghi rõ hơn — ít nhất 8 ký tự')}</span>}
       </label>
-      {loi && <p role="alert" className="m-0 text-[13px] font-semibold text-bad">⚠ {t('Chưa lưu được — {loi}', { loi })}</p>}
+      {loi && <p role="alert" className="m-0 text-[13px] font-semibold text-bad">⚠ {t('Không lưu được — {loi}', { loi })}</p>}
       <div className="flex flex-wrap items-center gap-2">
         <button type="button" className="btn btn-primary min-h-[48px] px-5 font-bold max-sm:w-full max-sm:justify-center sm:min-h-[40px]" disabled={busy} onClick={() => void luu()}>
           {busy ? t('Đang lưu…') : loi ? t('Thử lại') : t('Lưu')}

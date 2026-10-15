@@ -887,14 +887,16 @@ check('TD3-b-2 · QL ×3: /classes/{lopFT}/overview ≤ 50 % (5 829), /hoc-vien-
  * TD4-a: Công việc trên dữ liệu ×3 — JSON đầy đủ (`items`, `dong`, `groups`, `summary`) TRÙNG ảnh chụp chụp bằng mã TRƯỚC TD4 (main 35517670), mọi vai
  * và mọi góc nhìn. Lọc sớm lượt ở `listAttempts` không được đổi một việc nào. Đổi đầu ra Công việc CÓ CHỦ Ý (hoặc seed / phép kiểm phía trên đổi
  * dữ liệu) thì lệch: chụp lại băm bằng mã trước thay đổi đó (phép in băm đang ra), không sửa cho khớp.
+ * 15/10 (OV-13b): chụp lại GVCN / GVCN_THUONG toi, QL / QT tat-ca, QT tat-ca cn, QL gvcn — chỉ thêm trường `ghiNhanh` của Kết quả PA (băm bỏ
+ * trường đó trùng ảnh cũ, đã kiểm).
  * 15/10: chụp lại 'QT toi' / 'QT tat-ca' sau khi Case của Task2(e) thôi lấy giờ thật (hạn Thêm PA của nó trôi theo ngày chạy → băm QT đổi mỗi ngày).
  */
 await checkAsync('TD4-a (×3) · Công việc trùng JSON ảnh chụp trước TD4 — 6 vai × Của tôi / Tất cả / Của một GV / lọc chi nhánh', async () => {
   const { myWork, viecCuaNguoi } = await import('../worklist/mywork.ts');
   const ANH: Record<string, string> = {
-    'QL toi': '6671f11bb8e4d60c', 'QT toi': 'ad9ea8d503e7b56c', 'GVCN toi': 'bd18425dee5c6c07', 'GVBM toi': '130c23c92f42a1de',
-    'GVCN_THUONG toi': 'bd18425dee5c6c07', 'ADMIN toi': '4ed1fc3fa34653f2', 'QL tat-ca': 'e227ab66cdea9040', 'QT tat-ca': '28428ebeaae59577',
-    'QT tat-ca cn': 'f10e5aa43b91e140', 'QL gvcn': 'e38f0811a97c27fd',
+    'QL toi': '6671f11bb8e4d60c', 'QT toi': 'ad9ea8d503e7b56c', 'GVCN toi': '0551d1590aa59b08', 'GVBM toi': '130c23c92f42a1de',
+    'GVCN_THUONG toi': '0551d1590aa59b08', 'ADMIN toi': '4ed1fc3fa34653f2', 'QL tat-ca': 'ff5336498adf93de', 'QT tat-ca': 'a0d15e16feeedcda',
+    'QT tat-ca cn': 'c8356a936a835556', 'QL gvcn': '995945bf8b304981',
   };
   const p = (v: Vai) => loadPrincipal(USER[v]);
   const goc: [string, () => unknown][] = [

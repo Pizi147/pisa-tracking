@@ -563,7 +563,7 @@ function DeXuatLai({ iv, studentId, onHuy, onXong }: { iv: any; studentId?: numb
       {loi && <p role="alert" className="m-0 text-[13px] font-semibold text-bad">⚠ {loi}</p>}
       <div className="flex flex-wrap items-center gap-2">
         <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-[36px]" disabled={busy} onClick={() => void gui()}>{busy ? t('Đang gửi…') : t('Gửi Quản lý duyệt')}</button>
-        <NutChu onClick={onHuy}>{t('Huỷ')}</NutChu>
+        <NutChu onClick={onHuy}>{t('Đóng')}</NutChu>
       </div>
     </CanLam>
   );

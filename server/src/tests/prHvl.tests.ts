@@ -60,14 +60,14 @@ export async function runPrHvlTests(t: YThucTestKit) {
   });
 
   check('PR-HVL (1) · B4 badge theo vai: thứ tự GV ≠ Quản lý; gộp xep-lop; qua-han danger, cho-duyet info; bỏ "Case mở"', () => {
-    const goc = { needsPlacement: false, canXepLop: 0, soChuaLoTrinhTiep: 3, missingSkills: [], soBaiChoCham: 2, needScoresTitle: null, phase: 'running', missingCount: 0, soChoDuyet: 1, soEmQuaHan: 4 };
+    const goc = { needsPlacement: false, canXepLop: 0, soChuaLoTrinhTiep: 3, missingSkills: [], soBaiChoCham: 2, needScoresTitle: null, phase: 'running', missingCount: 0, soChoDuyet: 1, soViecQuaHan: 4 };
     const gv = d.badgeLop({ ...goc, vai: 'gv' });
     eq([...gv.hien, ...gv.an].map((x: any) => x.key), ['cham', 'qua-han', 'xep-lop', 'cho-duyet'], 'Thứ tự GV');
     const ql = d.badgeLop({ ...goc, vai: 'ql' });
     eq([...ql.hien, ...ql.an].map((x: any) => x.key), ['cho-duyet', 'xep-lop', 'cham', 'qua-han'], 'Thứ tự Quản lý');
     eq([ql.hien.length, ql.an.length], [2, 2], 'Hiện 2, còn lại "+n"');
     const tat = [...ql.hien, ...ql.an];
-    eq(tat.find((x: any) => x.key === 'qua-han'), { key: 'qua-han', nhan: '4 HV quá hạn việc', tone: 'danger', title: tat.find((x: any) => x.key === 'qua-han').title }, 'qua-han');
+    eq(tat.find((x: any) => x.key === 'qua-han'), { key: 'qua-han', nhan: '4 việc quá hạn', tone: 'danger', title: tat.find((x: any) => x.key === 'qua-han').title }, 'qua-han');
     eq(tat.find((x: any) => x.key === 'cho-duyet').tone, 'wait', 'cho-duyet tone');
     eq(tat.find((x: any) => x.key === 'xep-lop').nhan, '3 HV chưa chốt lộ trình', 'xep-lop khi lớp chưa hết khoá (PR-Dọn Câu 2 = B)');
     const het = d.badgeLop({ ...goc, vai: 'gv', needsPlacement: true, canXepLop: 5 });
@@ -182,7 +182,7 @@ export async function runPrHvlTests(t: YThucTestKit) {
     const laSos = (conn.prepare(`SELECT sc.id FROM sos_cases sc WHERE ${sosState.LA_CASE_SOS('sc')} ORDER BY sc.id`).all() as any[]).map((r) => r.id);
     eq(ids.filter((id) => nhieu.get(id).fromSos), laSos, 'fromSos');
     assert(ids.length > 5 && laSos.length > 0, 'Bộ demo phải có Case SOS');
-    eq(sosState.sosCaseState(99999999), { fromSos: false, hasCause: false, laMt: false, choNhanXet: false, awaitingCause: false, dueOn: null, dismissed: null, choDuyetKhongTheoDoi: null, coPaChoXacNhan: false }, 'Case không có');
+    eq(sosState.sosCaseState(99999999), { fromSos: false, hasCause: false, laMt: false, choNhanXet: false, awaitingCause: false, dueOn: null, dismissed: null, choDuyetKhongTheoDoi: null, coPaChoXacNhan: false, choDoiPa: false }, 'Case không có');
   });
 
   check('PR-HVL (2) · chiTietCaseMo: trạng thái v4 + việc tiếp = đúng `caseDetail` (một nguồn luật SOS); PA đủ; tên Case SOS ba phần', () => {
