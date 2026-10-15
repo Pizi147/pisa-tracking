@@ -46,7 +46,7 @@ export function ThanhChonNhieu({ chon, viec, onViec, dongTren }: {
       {dongTren && <div role="status" className="flex basis-full flex-wrap items-center gap-2 text-sm">{dongTren}</div>}
       <b className="mr-1 text-sm tabular-nums text-slate-100">{t('{n} đã chọn', { n: chon.chon.size })}</b>
       {viec.map((v) => (
-        <button key={v.key} type="button" className={`btn btn-sm min-h-[44px] sm:min-h-0 ${v.chinh ? 'btn-primary' : ''}`} disabled={v.tat}
+        <button key={v.key} type="button" className={v.chinh ? 'btn btn-sm btn-primary min-h-[44px] sm:min-h-0' : 'btn btn-sm min-h-[44px] sm:min-h-0'} disabled={v.tat}
           onClick={() => onViec(v.key)}>{v.nhan}</button>
       ))}
       <span className="flex-1" />

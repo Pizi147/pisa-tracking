@@ -64,7 +64,7 @@ export function LoYThucPanel({ classId, lop, viec, studentIds, han, onClose, onD
     setBac(Object.fromEntries(em.filter((e) => e.capBac.khai !== null).map((e) => [e.studentId, e.capBac.khai!])));
   }, [data, ds, studentIds, viec]);
 
-  const tieuDe = viec === 'xu-ly' ? t('Xác nhận xử lý chung') : viec === 'ghi-nhan' ? t('Ghi nhận vi phạm mới') : t('Xác nhận cấp bậc');
+  const tieuDe = viec === 'xu-ly' ? t('Xác nhận xử lý chung') : viec === 'ghi-nhan' ? t('Ghi nhận') : t('Xác nhận cấp bậc');
   const dau = (n: number) => ({ han: han ? <ChipHan loai="xu-ly-vi-pham" han={han} /> : undefined, dong2: [<b key="n" className="text-slate-100">{t('{n} em', { n })}</b>, lop ?? data?.classCode ?? null, t('Ý thức')] });
   if (error) return <KhungPanel tieuDe={tieuDe} onDong={onClose}><p className="mt-3 text-sm text-bad">{dich(error.message)}</p></KhungPanel>;
   if (!ds || !data) return <KhungPanel tieuDe={tieuDe} onDong={onClose}><div className="pt-3"><Skeleton rows={4} /></div></KhungPanel>;

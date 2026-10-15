@@ -144,9 +144,7 @@ export function ClassYThucCard({ classId, thuong = false }: { classId: number; t
         <div className="p-4"><Empty title={t('Không em nào cần xử lý Ý thức')} hint={t('Vi phạm mới, việc bắt buộc và đề xuất chờ QL sẽ hiện ở đây.')} /></div>
       ) : NHOM_EM.filter((k) => d.nhom[k].length > 0).map((k) => (
         <section key={k} aria-label={NHOM_EM_LABEL[k]}>
-          <h3 className="m-0 border-b px-3 pb-1.5 pt-3 text-[11px] font-extrabold uppercase tracking-[.06em] text-slate-500" style={{ borderColor: 'var(--line)' }}>
-            {NHOM_EM_LABEL[k]} · <span className="tabular-nums">{d.nhom[k].length}</span>
-          </h3>
+          <TieuDeNhom chu={NHOM_EM_LABEL[k]} so={d.nhom[k].length} />
           <ul className="m-0 list-none p-0">
             {d.nhom[k].map((x) => <DongEmO key={x.studentId} x={x} nhom={k} chon={chonHv === x.studentId} homNay={homNay} onChon={() => chon(x.studentId)} chonN={chonN} />)}
           </ul>
@@ -154,9 +152,7 @@ export function ClassYThucCard({ classId, thuong = false }: { classId: number; t
       ))}
       {chonN.bat && chuaKhai.length > 0 && (
         <section aria-label={t('Chưa xác nhận cấp bậc')}>
-          <h3 className="m-0 border-b px-3 pb-1.5 pt-3 text-[11px] font-extrabold uppercase tracking-[.06em] text-slate-500" style={{ borderColor: 'var(--line)' }}>
-            {t('Chưa xác nhận cấp bậc')} · <span className="tabular-nums">{chuaKhai.length}</span>
-          </h3>
+          <TieuDeNhom chu={t('Chưa xác nhận cấp bậc')} so={chuaKhai.length} />
           <ul className="m-0 list-none p-0">
             {chuaKhai.map((x) => (
               <li key={x.studentId} className="flex min-h-[44px] items-center gap-2 border-b pl-3" style={{ borderColor: 'var(--line)' }}>
@@ -312,6 +308,15 @@ export function ClassYThucCard({ classId, thuong = false }: { classId: number; t
 
       {panels}
     </Card>
+  );
+}
+
+/** Tiêu đề một nhóm em ở khung trái ("BẮT BUỘC XỬ LÝ · 3"). */
+function TieuDeNhom({ chu, so }: { chu: string; so: number }) {
+  return (
+    <h3 className="m-0 border-b px-3 pb-1.5 pt-3 text-[11px] font-extrabold uppercase tracking-[.06em] text-slate-500" style={{ borderColor: 'var(--line)' }}>
+      {chu} · <span className="tabular-nums">{so}</span>
+    </h3>
   );
 }
 
