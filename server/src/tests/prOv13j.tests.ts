@@ -10,6 +10,7 @@ export async function runPrOv13jTests(t: YThucTestKit) {
   const { checkAsync, assert, conn, P } = t;
   const accounts: any = await import('../platform/accounts.ts');
   const luatLoTrinh: any = await import('../classes/luatLoTrinh.ts');
+  const students: any = await import('../students/students.ts');
   const { createApp } = await import('../app.ts');
   const { xoaNho } = await import('../platform/nguCanhRequest.ts');
   console.log('\nOV-13j · Lịch sử sửa thông tin học viên');
@@ -78,7 +79,7 @@ export async function runPrOv13jTests(t: YThucTestKit) {
     await checkAsync('OV13j-3 · TVV sửa liên hệ (2 trường) → MỘT khối 2 dòng; TVV gán TVV phụ trách → "TVV: — → tên"', async () => {
       assert((await goi(idTvv, `/students/${a}`, 'PATCH', { phone: '0901 234 567', parentName: 'Phạm Văn Long' })).status === 200, 'patch TVV');
       const d = await moiNhat(a);
-      assert(d.truong.length === 2 && truong(d, 'SĐT')?.moi === '0901234567' && truong(d, 'Phụ huynh')?.moi === 'Phạm Văn Long', JSON.stringify(d.truong));
+      assert(d.truong.length === 2 && truong(d, 'SĐT')?.moi === '0901 234 567' && truong(d, 'Phụ huynh')?.moi === 'Phạm Văn Long', JSON.stringify(d.truong));
       const r = await goi(idTvv, `/students/${a}`, 'PATCH', { consultantUserId: idTvv });
       assert(r.status === 200, `gán TVV ${r.status} ${JSON.stringify(r.json)}`);
       const tv = truong(await moiNhat(a), 'TVV');
@@ -137,6 +138,28 @@ export async function runPrOv13jTests(t: YThucTestKit) {
       assert(truong(d, 'Trạng thái')?.cu === 'Đang học' && truong(d, 'Trạng thái')?.moi !== 'Đang học', JSON.stringify(d.truong));
       conn.prepare(`UPDATE students SET status = 'active' WHERE id = ?`).run(c);
       conn.prepare(`UPDATE enrollments SET status = 'active', end_kind = NULL, end_reason = NULL WHERE student_id = ? AND class_id = ?`).run(c, lop);
+    });
+
+    await checkAsync('OV13j-8c · chuyển lớp sang chi nhánh khác → MỘT khối nguồn "Chuyển lớp": Lớp + Chi nhánh cũ → mới', async () => {
+      const den = one(`SELECT c.id, c.code, b.name cn FROM classes c JOIN branches b ON b.id = c.branch_id
+        WHERE b.code = 'CP' AND c.status = 'active' AND c.is_fast_track = 1 ORDER BY c.id LIMIT 1`);
+      /* Ghi thật (không bọc giao dịch: mỗi lần gọi API tự cuộn giao dịch dở) — em B không dùng ở phép kiểm sau. */
+      students.transferStudent(P.admin, b, den.id, t.TODAY, 'Chuyển chi nhánh', { noNote: true });
+      const d = (await ls(b, '', P.admin.userId)).dong[0];   // em đã sang CP — QL MB không còn xem được (403, đúng luật)
+      assert(d.nguon === 'Chuyển lớp' && truong(d, 'Lớp')?.cu === 'MB FT 101' && truong(d, 'Lớp')?.moi === den.code
+        && truong(d, 'Chi nhánh')?.moi === den.cn && truong(d, 'Chi nhánh')?.cu !== den.cn, JSON.stringify(d));
+    });
+
+    await checkAsync('OV13j-8b · Kết thúc học + Lưu trữ / Bỏ lưu trữ → mỗi việc một khối (Trạng thái, Lưu trữ cũ → mới)', async () => {
+      const truoc = await soKhoi(c);
+      assert((await goi(QL, `/students/${c}/status`, 'POST', { status: 'finished', reason: 'Nghỉ' })).status === 200, 'kết thúc');
+      const r = await goi(QL, `/students/${c}/archive`, 'POST', {});
+      assert(r.status === 200, `lưu trữ ${r.status} ${JSON.stringify(r.json)}`);
+      const ds = (await ls(c, '?loai=trang-thai')).dong;
+      assert(truong(ds[0], 'Lưu trữ')?.cu === null && truong(ds[0], 'Lưu trữ')?.moi, JSON.stringify(ds[0]));
+      assert(ds.some((x) => truong(x, 'Trạng thái')?.moi === 'Đã kết thúc'), JSON.stringify(ds));
+      assert((await goi(QL, `/students/${c}/unarchive`, 'POST', {})).status === 200, 'bỏ lưu trữ');
+      assert(truong(await moiNhat(c), 'Lưu trữ')?.moi === null && await soKhoi(c) >= truoc + 3, 'bỏ lưu trữ một khối');
     });
 
     await checkAsync('OV13j-9 · quyền xem: QL / QT / GVCN / TVV / CX 200 · GVBM 403 · QL chi nhánh khác 403', async () => {

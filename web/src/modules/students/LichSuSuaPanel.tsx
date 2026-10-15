@@ -72,7 +72,7 @@ export function LichSuSuaPanel({ studentId, studentName, lop, onClose }: { stude
                     <li key={x.ten} className="break-words">
                       <span className="text-slate-400">{dich(x.ten)}:</span>{' '}
                       <span className="text-slate-400">{giaTri(x.ten, x.cu)}</span>
-                      <span aria-hidden className="px-1 text-slate-500">→</span>
+                      <span className="px-1 text-slate-500">→</span>
                       <span className="font-medium text-slate-100">{giaTri(x.ten, x.moi)}</span>
                     </li>
                   ))}
