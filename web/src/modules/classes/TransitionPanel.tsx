@@ -9,9 +9,10 @@ import { Nhan } from '../../ui/Nhan.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { chayHangLoat, hoanTacHangLoat } from '../students/hangLoatEm.ts';
 import {
-  CHU_CHUYEN_LOP, chipSosMt0, chuTuanHoc, ghepMucTieu, tachMucTieu, hanBanGiao, kiemDongLenh, ketQuaGanNhat, maHocVienNgan, ngay, tomTatLenh, tuanLich,
-  type AssessedSkill, type DongTomTatLenh, type HuongLenh, type KetQuaVao, type MucTieuLenh } from '@shared/domain/index.ts';
+  CHU_CHUYEN_LOP, chipSosMt0, chuTuanHoc, ghepMucTieu, tachMucTieu, hanBanGiao, kiemDongLenh, ketQuaGanNhat, laChuyenNgay, LO_CHUYEN_NGAY, maHocVienNgan, ngay, nhanTuanBatDau,
+  thuNgay, tomTatLenh, tuanLich, type AssessedSkill, type DongTomTatLenh, type HuongLenh, type KetQuaVao, type MucTieuLenh } from '@shared/domain/index.ts';
 import { ClassCreatePanel } from './ClassCreatePanel.tsx';
+import { t } from '@shared/i18n/index.ts';
 
 /** Cách Quản lý chọn trên hàng (mockup 20 — I). `doi` = Đổi lộ trình: lớp chuyển đến khác lộ trình, vẫn là `chuyen_lop` (Q3). */
 type Kieu = 'bao-luu' | 'dung' | 'chuyen' | 'doi';
@@ -58,6 +59,7 @@ function NoiDung({ classId, onClose, onDone }: { classId: number; onClose: () =>
   /* PR-LUI-b: huỷ NHIỀU quyết định một lần (đi qua cùng đường làm nhiều học viên: `huy-lenh`; Hoàn tác = `khoi-phuc-lenh`). */
   const [huyNhieu, setHuyNhieu] = useState<{ lyDo: string } | null>(null);
   const [dangHuy, setDangHuy] = useState(false);
+  const [tienDo, setTienDo] = useState<[number, number] | null>(null);
 
   const homNay: string = data?.today ?? '';
   const tuanCh = tuanChung || data?.tuanChon?.[0] || '';
@@ -163,18 +165,19 @@ function NoiDung({ classId, onClose, onDone }: { classId: number; onClose: () =>
   }));
   const cau = tomTatLenh(dsTomTat, homNay);
   const han = homNay ? hanBanGiao(homNay) : { gvbm: '', gvcn: '' };   // chưa nạp xong thì chưa có ngày
+  /* OV-13l: em "Ngay hôm nay" chuyển ngay khi gửi, không hoàn tác — bước Xác nhận nói rõ, nút đổi chữ khi cả lô chuyển ngay. */
+  const soNgay = canGui.filter((r) => laChuyenNgay(r.d.tuan || tuanCh, homNay)).length;
 
   const gui = async () => {
     setBusy(true);
     try {
-      const r = await api.post<any>(`/classes/${classId}/transition`, {
-        tuanChung: tuanCh,
-        dongs: canGui.map((x) => ({
+      /* OV-13l: chuyển ngay chạy trong lời gọi — gửi từng lô ≤ LO_CHUYEN_NGAY em, cộng dồn kết quả. */
+      const r = await guiTheoLo(`/classes/${classId}/transition`, tuanCh, soNgay ? LO_CHUYEN_NGAY : canGui.length, setTienDo,
+        canGui.map((x) => ({
           studentId: x.s.id, huong: HUONG_CUA[x.d.kieu as Kieu], toClassId: typeof x.d.toClassId === 'number' ? x.d.toClassId : undefined,
           tuan: x.d.tuan || undefined, mucTieu: mucTieuCua(x.d) ?? undefined, ngayThi: x.d.ngayThi || undefined, lyDo: x.d.lyDo || undefined,
           ngayXemLai: x.d.kieu === 'bao-luu' ? x.d.ngayXemLai || undefined : undefined,
-        })),
-      });
+        })));
       invalidate('/classes'); invalidate('/students'); invalidate('/hoc-vien-lop'); invalidate('/my-work'); invalidate('/lenh-chuyen'); invalidate('/yeu-cau');
       if (r.failed.length) {
         setLoiMayChu(Object.fromEntries(r.failed.map((f: any) => [f.studentId, f.message])));
@@ -182,10 +185,10 @@ function NoiDung({ classId, onClose, onDone }: { classId: number; onClose: () =>
         toast.push('error', `${r.failed.length} em chưa gửi được quyết định — xem lỗi ở từng hàng`);
         if (r.ok.length) reload();
       } else {
-        toast.push('ok', `Đã gửi quyết định chuyển lớp ${r.ok.length} em`);
+        toast.push('ok', r.daChuyen?.length ? t('Đã chuyển {n} em', { n: r.daChuyen.length }) : `Đã gửi quyết định chuyển lớp ${r.ok.length} em`);
         onDone(); dong();
       }
-    } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
+    } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); setTienDo(null); }
   };
 
   const huyLenh = async () => {
@@ -241,7 +244,7 @@ function NoiDung({ classId, onClose, onDone }: { classId: number; onClose: () =>
           huy: { nhan: '‹ Sửa', onClick: () => setBuoc(1), disabled: busy },
           chinh: (
             <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={gui} disabled={busy}>
-              {busy ? 'Đang gửi…' : `Gửi quyết định chuyển lớp ${canGui.length} em`}
+              {busy ? (tienDo && soNgay ? t('Đang chuyển… {a}/{b} em', { a: tienDo[0], b: tienDo[1] }) : soNgay ? t('Đang chuyển…') : 'Đang gửi…') : soNgay === canGui.length ? t('Chuyển ngay · {n} em', { n: canGui.length }) : `Gửi quyết định chuyển lớp ${canGui.length} em`}
             </button>
           ),
         }}>
@@ -256,6 +259,7 @@ function NoiDung({ classId, onClose, onDone }: { classId: number; onClose: () =>
               <div>
                 <span id="tuan-chung" className="mb-1 block text-[11.5px] font-bold text-slate-200">Tuần bắt đầu chung</span>
                 <div role="group" aria-labelledby="tuan-chung" className="flex flex-wrap gap-1.5">
+                  <NutHomNay homNay={homNay} chon={tuanCh === homNay} onClick={() => setTuanChung(homNay)} />
                   {(data.tuanChon as string[]).map((t) => <NutChon key={t} chon={tuanCh === t} onClick={() => setTuanChung(t)}>{tuanLich(t, homNay)}</NutChon>)}
                 </div>
               </div>
@@ -330,6 +334,12 @@ function NoiDung({ classId, onClose, onDone }: { classId: number; onClose: () =>
                 {cau.map((c, i) => <li key={i} className="text-sm text-slate-200">{c}</li>)}
               </ul>
             </div>
+            {soNgay > 0 && (
+              <p role="note" className="m-0 rounded-lg border px-3 py-2 text-sm font-semibold text-soon" style={KHOI_VANG}>
+                ⚠ {t('Chuyển ngay, không hoàn tác')} · <span className="tabular-nums">{soNgay}</span> em
+                <span className="mt-1 block font-normal text-slate-200">{t('Bài Test đang dở đi theo em sang lớp mới; bài đã thi xong ở lại {cu}', { cu: data.from.code })}</span>
+              </p>
+            )}
             <p className="m-0 text-sm text-slate-300">
               Sau khi gửi: {data.gvcn ? `GVCN ${data.gvcn}` : 'GVCN lớp cũ'} có việc <b>Bàn giao {canGui.filter((r) => r.d.kieu !== 'dung').length} em</b> · hạn hết {ngay(han.gvcn, homNay)}.
               {' '}GVBM có việc Bàn giao môn, hạn hết {ngay(han.gvbm, homNay)}. GVCN lớp mới được báo.
@@ -412,12 +422,13 @@ function HangEm({ s, d, tuanCh, homNay, loi, loiMayChu, oId, khoa, chon, onChon,
         <span className={nhan}>Tuần bắt đầu</span>
         {d.kieu ? (
           <span className="block">
-            <span className="tabular-nums text-slate-200">{tuanLich(d.tuan || tuanCh, homNay)}</span>
+            <span className="tabular-nums text-slate-200">{nhanTuanBatDau(d.tuan || tuanCh, homNay)}</span>
             {!tuanRieng && <span className="text-xs text-slate-500"> (chung)</span>}
             {!khoa && !doiTuan && !tuanRieng && <button type="button" className="link ml-2 border-0 bg-transparent p-0 text-xs" onClick={() => setDoiTuan(true)}>Đổi</button>}
             {!khoa && (doiTuan || tuanRieng) && (
               <span className="mt-1 block max-w-[9.5rem]">
-                <OTuan tuanChon={data.tuanChon} value={d.tuan || tuanCh} onChange={(v) => sua({ tuan: v === tuanCh ? '' : v })} ariaLabel={`Tuần bắt đầu của ${s.fullName}`} />
+                <OTuan tuanChon={data.tuanChon} value={d.tuan || (laChuyenNgay(tuanCh, homNay) ? '' : tuanCh)} onChange={(v) => sua({ tuan: v === tuanCh ? '' : v })}
+                  ariaLabel={`Tuần bắt đầu của ${s.fullName}`} chuaChon={laChuyenNgay(tuanCh, homNay) ? t('Ngay hôm nay') : undefined} />
               </span>
             )}
           </span>
@@ -457,6 +468,33 @@ function HangEm({ s, d, tuanCh, homNay, loi, loiMayChu, oId, khoa, chon, onChon,
       )}
     </div>
   );
+}
+
+/**
+ * OV-13l: gửi quyết định chuyển lớp theo lô `lo` em (chuyển ngay chạy trong lời gọi — lô lớn vượt hạn 10 s), cộng dồn ok / failed / daChuyen.
+ * Lô lỗi cả lời gọi → mọi em của lô vào `failed` với chữ lỗi, các lô sau vẫn gửi. `onTienDo([đã gửi, tổng])`.
+ */
+export async function guiTheoLo(url: string, tuanChung: string | null, lo: number, onTienDo: (x: [number, number]) => void,
+  dongs: { studentId: number }[]): Promise<{ ok: number[]; failed: { studentId: number; message: string }[]; daChuyen: number[] }> {
+  const kq = { ok: [] as number[], failed: [] as { studentId: number; message: string }[], daChuyen: [] as number[] };
+  for (let i = 0; i < dongs.length; i += lo) {
+    onTienDo([i, dongs.length]);
+    const phan = dongs.slice(i, i + lo);
+    try {
+      const r = await api.post<any>(url, { tuanChung, dongs: phan });
+      kq.ok.push(...r.ok); kq.failed.push(...r.failed); kq.daChuyen.push(...(r.daChuyen ?? []));
+    } catch (e: any) { kq.failed.push(...phan.map((d) => ({ studentId: d.studentId, message: e.message as string }))); }
+  }
+  return kq;
+}
+
+/** Khung vàng "chuyển ngay, không hoàn tác" / FT → Thường — cùng màu ở mọi panel chuyển lớp. */
+export const KHOI_VANG = { borderColor: 'rgb(var(--soon-line-rgb))', background: 'rgb(var(--soon-bg-rgb))' };
+
+/** OV-13l (mockup bước tiếp mục 4): lựa chọn ĐẦU của ô Tuần bắt đầu — "Ngay hôm nay · T5 15/10" = chuyển ngay khi lưu, không hoàn tác. */
+export function NutHomNay({ homNay, chon, onClick, nho }: { homNay: string | null; chon: boolean; onClick: () => void; nho?: boolean }) {
+  if (!homNay) return null;
+  return <NutChon nho={nho} chon={chon} onClick={onClick}>{t('Ngay hôm nay')} <span className="tabular-nums text-slate-400">{thuNgay(homNay, homNay)}</span></NutChon>;
 }
 
 /** Ô tuần chỉ nhận Thứ Hai từ TUẦN SAU trở đi (Q5) — `tuanChon` do máy chủ trả (`tuanChonDuoc`). `rong`: không chặn trên (tuần xem lại của Tạm dừng học (bảo lưu)). */

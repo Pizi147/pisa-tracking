@@ -203,15 +203,18 @@ export function thongBaoChuyenVao(i: {
 
 // ---------------------------------------------------------------- lớp hết khoá (Q16)
 
-/** Lớp thường đã hết khoá và không còn enrollment `active` nào → `finished`. Một câu, dùng cho cả lô. */
-export function dongLopNeuHet(classIds: readonly number[], ngay: string) {
+/**
+ * Lớp thường đã hết khoá và không còn enrollment `active` nào → `finished`. Một câu, dùng cho cả lô. OV-13l: `tuTuanFinal` (chỉ đường thi hành quyết
+ * định chuyển lớp) — từ tuần Final đã đủ, không đợi hết khoá (chuyển cả lớp ở tuần Final không để lớp "đang học" 0 em).
+ */
+export function dongLopNeuHet(classIds: readonly number[], ngay: string, tuTuanFinal = false) {
   const ids = [...new Set(classIds)];
   if (!ids.length) return;
   const conn = db();
   const tienDo = classProgressMany(ids as number[]);
   const xong = ids.filter((id) => {
     const pr = tienDo.get(id);
-    return pr && pr.phase === 'finished';
+    return !!pr && (pr.phase === 'finished' || (tuTuanFinal && mocKetKhoa(pr, ngay).tuCuoiKhoa));
   });
   if (!xong.length) return;
   const ph = xong.map(() => '?').join(',');
@@ -262,7 +265,7 @@ export function moLoTrinhMoi(p: Principal, o: {
       giuThi ? cu?.exam_date ?? null : null, giuThi ? cu?.exam_period_id ?? null : null,
       startPeriodId, o.ngay, nowIso()).lastInsertRowid);
   if (o.denLop.ft) taoMtMacDinh(moiId, { actorUserId: p.userId });   // M1: vào lớp FT / đổi LT ↔ RF = lộ trình mới có lịch MT mặc định
-  else taoBaiThuongMacDinh([moiId], p.userId, o.ngay);               // PR-LT2a M1b: sang lớp thường = tự có bài Progress Test / Final Test
+  else taoBaiThuongMacDinh([moiId], p.userId, o.ngay);               // PR-LT2a M1b: sang lớp thường = tự có bài Progress / Final Test (OV-13l: bài tuần này vẫn có)
   return { moiId, route };
 }
 
@@ -351,7 +354,7 @@ export function apDungMotDong(p: Principal, d: DongApDung): { luat: LuatDoiLop |
     if (curCycle) conn.prepare(`UPDATE learning_cycles SET status = 'completed', ended_at = ? WHERE id = ?`).run(d.ngay, curCycle.id);
     /* PR-CL (B4.4, §7 "chuyển từ FT: Target giữ như cũ", Q1): FT → thường giữ Target / KCK của lộ trình FT — chỉ nhánh này (Lưu trữ "Học lại" không đổi). */
     const veThuong = tuLop.ft && !denLop.ft && !!curCycle;
-    const { moiId, route } = moLoTrinhMoi(p, {
+    const { moiId } = moLoTrinhMoi(p, {
       sid: d.sid, ngay: d.ngay, toClass, tuLop, denLop, cuCycle: curCycle, thangThi: d.thangThi,
       target: mucTieu ?? (veThuong ? curCycle.target_score ?? null : null), kck: veThuong && mucTieu == null && !!curCycle.khong_cam_ket,
     });
@@ -364,12 +367,16 @@ export function apDungMotDong(p: Principal, d: DongApDung): { luat: LuatDoiLop |
        PR-MT0: ghi SAU khi MT0 đã sang lộ trình FT (bản chụp khoá cũ không giữ MT0 đã thành đầu vào FT), TRƯỚC khi Case FT→FT đi theo. */
     if (curCycle) ghiBanChup(conn, [curCycle.id], { lyDo: luat.endKind as 'len_lop' | 'hoc_lai' | 'sang_ft' | 'chuyen_lop', ngay: d.ngay, lopId: enr.class_id });
     if (veTh) doiMt0KhiVeThuong(curCycle.id, veTh);
-    if (denLop.ft && tuLop.ft && curCycle) chuyenCaseSangLoTrinh(p.userId, d.sid, curCycle.id, moiId, route, d.ngay);   // K5-60
   }
 
   /* Q12: bài chưa làm CHỈ đi theo em khi GIỮ khoá — đóng khoá thì lượt planned ở lại lớp cũ. MT0 không đi theo (PR-MT0): chưa điểm thì huỷ. */
   if (luat.khoa === 'giu' && curCycle) {
     conn.prepare(`UPDATE assessment_attempts SET class_id = ? WHERE cycle_id = ? AND status = 'planned' AND kind != 'mt0'`).run(d.toClassId, curCycle.id);
+    /* OV-13l: FT → FT khác lộ trình giữ lộ trình đang chạy — chỉ đổi mã theo lớp chuyển đến (lịch MT, tuần học giữ). */
+    if (denLop.ft && denLop.lt && curCycle.route && curCycle.route !== denLop.lt) {
+      conn.prepare('UPDATE learning_cycles SET route = ? WHERE id = ?').run(denLop.lt, curCycle.id);
+      chuyenCaseSangLoTrinh(p.userId, d.sid, curCycle.id, curCycle.id, denLop.lt, d.ngay);   // Case giữ lộ trình, thêm mốc "Sang lộ trình …" (K5-60)
+    }
     if (!tuLop.ft) noiMt0VaoFt(p.userId, [{ sid: d.sid, cuCycleId: curCycle.id, ftCycleId: null, ngay: d.ngay }], 'Chuyển lớp');
   }
 
