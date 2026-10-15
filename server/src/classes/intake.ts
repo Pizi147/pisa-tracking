@@ -10,7 +10,7 @@ import { allProgrammes, mocChupVaoLop, programmeByCode, taoBaiThuongMacDinh } fr
 import { activeRouteCodes } from '../platform/sysconfig.ts';
 import { HttpError, addDays, badRequest, isIsoDate, kiemKieuO, normalizeName, notFound, nowIso, padCode } from '../util.ts';
 import { can, require_, type Principal } from '../permissions.ts';
-import { writeAudit } from '../platform/audit.ts';
+import { writeAudit, writeAuditLo } from '../platform/audit.ts';
 import { ensurePeriods, mondayOf, periodById } from '../platform/week.ts';
 import { taoMtMacDinhLo } from '../fasttrack/mtMacDinh.ts';
 import { lichMtCua } from './schedule.ts';
@@ -488,12 +488,7 @@ export function commitIntake(
       const route = cls.route ?? null;
       const examDateOf = (r: (typeof ok)[number]) => (r.examDate?.length === 10 ? r.examDate : null);
       const tuan = ensurePeriods([...ok.map(startWeek), ...ok.map(examDateOf).filter((x): x is string => !!x).map(mondayOf)]);
-      chenNhieuDong(
-        `INSERT INTO learning_cycles (student_id, seq, route, programme_code, target_score, khong_cam_ket, exam_month, exam_date, exam_period_id,
-                                      baseline_score, baseline_source,
-                                      baseline_listening, baseline_reading, baseline_writing, baseline_speaking,
-                                      start_period_id, started_at, status, created_at)`,
-        ok.map((r, i) => {
+      const dongLt = ok.map((r, i) => {
           const ovr = baselineOf(r.baselineScore);
           const bands = [baselineOf(r.entryListening), baselineOf(r.entryReading), baselineOf(r.entryWriting), baselineOf(r.entrySpeaking)];
           const hasEntry = ovr !== null || bands.some((b) => b !== null);
@@ -507,7 +502,21 @@ export function commitIntake(
             examDate, examDate ? tuan.get(mondayOf(examDate))!.id : null,
             ovr, hasEntry ? 'entrance' : null, ...bands,
             tuan.get(startWeek(r))!.id, startWeek(r), 'active', now];
-        }));
+        });
+      chenNhieuDong(
+        `INSERT INTO learning_cycles (student_id, seq, route, programme_code, target_score, khong_cam_ket, exam_month, exam_date, exam_period_id,
+                                      baseline_score, baseline_source,
+                                      baseline_listening, baseline_reading, baseline_writing, baseline_speaking,
+                                      start_period_id, started_at, status, created_at)`, dongLt);
+      /* OV-13j: mỗi em một dòng "Thêm học viên" — Lịch sử sửa thấy giá trị lúc nhập (cũ = trống). */
+      writeAuditLo(ok.map((r, i) => {
+        const [, , , , target_score, khong_cam_ket, exam_month, exam_date, , baseline_score, , baseline_listening, baseline_reading, baseline_writing,
+          baseline_speaking, start_period_id] = dongLt[i];
+        return { actorUserId: p.userId, action: 'student.create', entityType: 'student', entityId: sids[i], entityLabel: ma[i],
+          after: { full_name: r.fullName, dob: r.dob ?? null, email: r.email ?? null, consultant_name: r.consultant ?? null, branch_id: cls.branch_id,
+            class_id: r.classId, target_score, khong_cam_ket, exam_month, exam_date, start_period_id,
+            baseline_score, baseline_listening, baseline_reading, baseline_writing, baseline_speaking, _nguon: `Thêm học viên · ${cls.code}` } };
+      }));
       /* Em mới tạo nên mỗi em đúng một lộ trình. */
       const cycOf = new Map<number, number>();
       theoLo(sids, (lo, ph) => {

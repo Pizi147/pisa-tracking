@@ -17,6 +17,7 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { hoanTacHangLoat } from './hangLoatEm.ts';
 import { ChuyenLopPanel } from './ChuyenLopPanel.tsx';
 import { XoaHocVienPanel } from './XoaHocVienPanel.tsx';
+import { LichSuSuaPanel } from './LichSuSuaPanel.tsx';
 import { DeXuatSuaPanel } from '../duyet/DeXuatSuaPanel.tsx';
 import { laBand } from './StudentPlanPanel.tsx';
 import { KetQuaThiThatPanel } from './KetQuaThiThatPanel.tsx';
@@ -65,6 +66,7 @@ export function StudentManagePanel({ viec, onClose, student, lop, cycle, attempt
     case 'hoc-lai': return <HocLaiPanel {...chung} />;
     case 'outcome': return cycle && <KetQuaThiThatPanel cycleId={cycle.id} studentName={chung.studentName} lop={chung.lop} onClose={chung.onClose} onDone={chung.onDone} />;
     case 'info': return <ThongTinPanel {...chung} student={student} cycle={cycle} attempts={attempts} quyen={quyen} onDeXuatSua={onDeXuatSua} />;
+    case 'lich-su-sua': return <LichSuSuaPanel studentId={student.id} studentName={student.name} lop={lop} onClose={onClose} />;
     case 'xoa-hoc-vien': return <XoaHocVienPanel studentId={student.id} studentName={student.name} lop={lop} onClose={onClose} />;
     case 'de-xuat-sua': return (
       <DeXuatSuaPanel studentId={student.id} studentName={student.name} lop={lop} onClose={onClose}

@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
+import { t } from '@shared/i18n/index.ts';
 
 /** Trạng thái "Chọn nhiều học viên" của MỘT danh sách (hồ sơ lớp, Lưu trữ). `bat` = đang ở chế độ chọn; `chon` = id đã tick. */
 export function useChonNhieu() {
@@ -30,21 +31,26 @@ export function OChonTatCa({ chon, ids }: { chon: ChonNhieu; ids: number[] }) {
   );
 }
 
-/** Thanh thao tác DÍNH ĐÁY: `3 đã chọn` · các việc · `Bỏ chọn`. Chỉ hiện khi đã chọn ít nhất một học viên. */
-export function ThanhChonNhieu({ chon, viec, onViec }: {
-  chon: ChonNhieu; viec: { key: string; nhan: string }[]; onViec: (key: string) => void;
+/**
+ * Thanh thao tác DÍNH ĐÁY: `3 đã chọn` · các việc · `Bỏ chọn`. Chỉ hiện khi đã chọn ít nhất một học viên.
+ * OV-13d: việc có thể là nút chính (`chinh`) hoặc nhạt khi không em nào làm được (`tat`); `dongTren` = một dòng trạng thái (đã lưu · Hoàn tác).
+ */
+export function ThanhChonNhieu({ chon, viec, onViec, dongTren }: {
+  chon: ChonNhieu; viec: { key: string; nhan: string; chinh?: boolean; tat?: boolean }[]; onViec: (key: string) => void; dongTren?: ReactNode;
 }) {
-  if (!chon.bat || chon.chon.size === 0) return null;
+  if (!chon.bat || (chon.chon.size === 0 && !dongTren)) return null;
   return (
-    <div role="toolbar" aria-label="Việc cho học viên đã chọn"
+    <div role="toolbar" aria-label={t('Việc cho học viên đã chọn')}
       className="sticky bottom-0 z-20 -mx-3 flex flex-wrap items-center gap-2 border-t px-3 py-2.5 shadow-xl sm:mx-0 sm:rounded-lg sm:border"
       style={{ background: 'var(--surface)', borderColor: 'var(--line)' }}>
-      <b className="mr-1 text-sm tabular-nums text-slate-100">{chon.chon.size} đã chọn</b>
+      {dongTren && <div role="status" className="flex basis-full flex-wrap items-center gap-2 text-sm">{dongTren}</div>}
+      <b className="mr-1 text-sm tabular-nums text-slate-100">{t('{n} đã chọn', { n: chon.chon.size })}</b>
       {viec.map((v) => (
-        <button key={v.key} type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => onViec(v.key)}>{v.nhan}</button>
+        <button key={v.key} type="button" className={v.chinh ? 'btn btn-sm btn-primary min-h-[44px] sm:min-h-0' : 'btn btn-sm min-h-[44px] sm:min-h-0'} disabled={v.tat}
+          onClick={() => onViec(v.key)}>{v.nhan}</button>
       ))}
       <span className="flex-1" />
-      <button type="button" className="btn btn-sm btn-ghost min-h-[44px] sm:min-h-0" onClick={chon.bo}>Bỏ chọn</button>
+      <button type="button" className="btn btn-sm btn-ghost min-h-[44px] sm:min-h-0" onClick={chon.bo}>{t('Bỏ chọn')}</button>
     </div>
   );
 }
