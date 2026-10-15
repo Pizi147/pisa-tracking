@@ -136,6 +136,7 @@ export async function runPrOv13mTests(t: YThucTestKit) {
       assert(one(`SELECT title FROM journey_events WHERE cycle_id = ? AND event_type = 'buoc_tiep' ORDER BY id DESC LIMIT 1`, x.cy).title === 'Sau thi: Thôi học', 'mốc Hành trình');
       await json(await goi(QL, `/cycles/${x.cy}/buoc-tiep`, { method: 'DELETE' }));
       assert(hs(x.sid).status === 'active' && !hs(x.sid).archived_at && lt(x.cy).status === 'active' && !lt(x.cy).buoc_tiep, JSON.stringify([hs(x.sid), lt(x.cy).status]));
+      assert(!one(`SELECT 1 x FROM ban_chup_lo_trinh WHERE cycle_id = ?`, x.cy), 'hoàn tác Thôi học gỡ bản chụp lúc đóng');
       assert(viecBt(await json(await goi(QL, '/my-work'))).some((i: any) => i.studentId === x.sid), 'việc quay lại');
     });
   });
@@ -186,6 +187,7 @@ export async function runPrOv13mTests(t: YThucTestKit) {
       assert(cau < 150, `${cau} câu SQL`);
       console.log(`      (đo: ${cau} câu một lời gọi)`);
       assert((await goi(QL, `/cycles/${x.cy}/buoc-tiep`, { method: 'DELETE' })).status === 409, 'chuyển ngay không hoàn tác');
+      assert((await json(await goi(QL, `/cycles/${x.cy}/buoc-tiep`))).hoanTacDuoc === false, 'web ẩn Hoàn tác (cờ hoanTacDuoc)');
     });
   });
 
@@ -223,6 +225,89 @@ export async function runPrOv13mTests(t: YThucTestKit) {
       const moi = dangChay(x.sid);
       assert(r.hen === null && moi.length === 1 && moi[0].id !== x.cy && moi[0].started_at === TUAN_SAU && moi[0].target_score === 6.5 && ghiDanh(x.sid) === x.lop, JSON.stringify([r, moi]));
       assert(one('SELECT week_start w FROM report_periods WHERE id = ?', moi[0].start_period_id).w === TUAN_SAU, 'tuần 1 = tuần hẹn');
+    });
+  });
+
+  await checkAsync('M13-12 · rà #422: Target sai (abc · 9,5) → 400 ở hẹn lớp này / lớp khác / ngay; không ghi gì', async () => {
+    await voiMayChu(TODAY, async (goi) => {
+      const x = await coKetQua(goi);
+      const dich = lop('LT1'); gvcn(dich);
+      for (const than of [{ batDau: TUAN_SAU, mucTieu: 'abc' }, { batDau: TUAN_SAU, mucTieu: '9,5' }, { lopMoiId: dich, batDau: 'ngay', mucTieu: 'abc' }, { lopMoiId: dich, batDau: TUAN_SAU, mucTieu: '9,5' }]) {
+        const r = await goi(QL, `/cycles/${x.cy}/buoc-tiep`, post({ chon: 'lo_trinh_moi', ...than }));
+        assert(r.status === 400, `${JSON.stringify(than)} → ${r.status}`);
+      }
+      assert(!lt(x.cy).buoc_tiep && !one('SELECT 1 x FROM lenh_chuyen_lop WHERE student_id = ?', x.sid), 'không ghi lựa chọn / lệnh');
+    });
+  });
+
+  await checkAsync('M13-13 · rà #422: hẹn tới tuần mà không bắt đầu được → ghi MỘT lần, lộ trình về "Chọn bước tiếp" (có việc), không thử lại mãi', async () => {
+    let x: any;
+    await voiMayChu(TODAY, async (goi) => {
+      x = await coKetQua(goi);
+      await json(await goi(QL, `/cycles/${x.cy}/buoc-tiep`, post({ chon: 'lo_trinh_moi', batDau: TUAN_SAU })));
+      conn.prepare(`UPDATE learning_cycles SET buoc_tiep_json = json_set(buoc_tiep_json, '$.mucTieu', 'abc') WHERE id = ?`).run(x.cy);   // dữ liệu hẹn hỏng (đường cũ)
+    });
+    await voiMayChu(TUAN_SAU, async (goi) => {
+      await goi(QL, `/cycles/${x.cy}/buoc-tiep`);
+      xoaNho();
+      const bt = await json(await goi(QL, `/cycles/${x.cy}/buoc-tiep`));
+      const moc = one(`SELECT COUNT(*) n FROM journey_events WHERE cycle_id = ? AND title = 'Sau thi: hẹn bắt đầu không thành'`, x.cy).n;
+      assert(bt.chon === null && bt.hen === null && lt(x.cy).status === 'active' && dangChay(x.sid).length === 1 && moc === 1, JSON.stringify([bt, moc]));
+      assert(viecBt(await json(await goi(QL, '/my-work'))).some((i: any) => i.studentId === x.sid), 'việc Chọn bước tiếp hiện lại');
+      assert(one(`SELECT COUNT(*) n FROM notifications WHERE kind = 'buoc_tiep_loi' AND entity_id = ?`, x.sid).n === 1, 'báo người đã chọn một lần');
+    });
+  });
+
+  await checkAsync('M13-14 · rà #422: Case mở của lộ trình đã xong — Lớp khác ngay / hẹn tới tuần → Case đóng, không bàn giao, GV lớp mới không có việc Case cũ', async () => {
+    const caseMo = (sid: number, cy: number) => Number(conn.prepare(`INSERT INTO sos_cases (student_id, cycle_id, category, topic, origin_kind, status, sos_level, detected_at, created_at) VALUES (?,?, 'listening', 'listening', 'teacher_report', 'open', 1, ?, ?)`)
+      .run(sid, cy, TODAY, NOW).lastInsertRowid);
+    for (const batDau of ['ngay', TUAN_SAU]) {
+      let x: any; let cid = 0; let dich = 0; let gvMoi = 0;
+      await voiMayChu(TODAY, async (goi) => {
+        x = await coKetQua(goi);
+        cid = caseMo(x.sid, x.cy);
+        dich = lop('LT1'); gvMoi = gvcn(dich);
+        await json(await goi(QL, `/cycles/${x.cy}/buoc-tiep`, post({ chon: 'lo_trinh_moi', lopMoiId: dich, batDau })));
+      });
+      await voiMayChu(batDau === 'ngay' ? TODAY : TUAN_SAU, async (goi) => {
+        await goi(QL, `/cycles/${x.cy}/buoc-tiep`);
+        assert(ghiDanh(x.sid) === dich && one('SELECT status FROM sos_cases WHERE id = ?', cid).status === 'done', `${batDau}: ${JSON.stringify(one('SELECT status, owner_user_id FROM sos_cases WHERE id = ?', cid))}`);
+        for (const [u, url] of [[gvMoi, '/my-work'], [QL, '/my-work?nguoi=tat-ca']] as const) {
+          const w = await json(await goi(u, url));
+          assert(!JSON.stringify(w).includes(`"caseId":${cid},`), `${batDau}: người ${u} còn việc Case cũ`);
+        }
+      });
+    }
+  });
+
+  await checkAsync('M13-15 · rà #422: Tạm dừng → Quay lại học (hẹn) → Huỷ hẹn → Hoàn tác → em đang học, lộ trình mở lại', async () => {
+    await voiMayChu(TODAY, async (goi) => {
+      const x = await coKetQua(goi);
+      await json(await goi(QL, `/cycles/${x.cy}/buoc-tiep`, post({ chon: 'tam_dung' })));
+      await json(await goi(QL, `/cycles/${x.cy}/buoc-tiep`, post({ chon: 'lo_trinh_moi', batDau: TUAN_SAU })));
+      const huy = await json(await goi(QL, `/cycles/${x.cy}/buoc-tiep`, { method: 'DELETE' }));
+      assert(huy.chon === 'tam_dung' && hs(x.sid).status === 'inactive', `Huỷ hẹn → về Tạm dừng: ${JSON.stringify([huy.chon, hs(x.sid)])}`);
+      const ht = await json(await goi(QL, `/cycles/${x.cy}/buoc-tiep`, { method: 'DELETE' }));
+      assert(ht.chon === null && hs(x.sid).status === 'active' && lt(x.cy).status === 'active', JSON.stringify([ht.chon, hs(x.sid), lt(x.cy).status]));
+    });
+  });
+
+  await checkAsync('M13-16 · rà #422: lưu lại đúng lựa chọn (bấm đúp) → không làm lại (lệnh giữ, không chuông huỷ; Lớp này ngay lần hai < 30 câu)', async () => {
+    await voiMayChu(TODAY, async (goi) => {
+      const x = await coKetQua(goi);
+      const dich = lop('LT1'); gvcn(dich);
+      const than = post({ chon: 'lo_trinh_moi', lopMoiId: dich, batDau: TUAN_SAU });
+      await json(await goi(QL, `/cycles/${x.cy}/buoc-tiep`, than));
+      const l1 = one('SELECT id FROM lenh_chuyen_lop WHERE student_id = ? ORDER BY id DESC LIMIT 1', x.sid).id;
+      await json(await goi(QL, `/cycles/${x.cy}/buoc-tiep`, post({ chon: 'lo_trinh_moi', lopMoiId: dich, batDau: TUAN_SAU })));
+      assert(one('SELECT COUNT(*) n FROM lenh_chuyen_lop WHERE student_id = ?', x.sid).n === 1 && one('SELECT trang_thai t FROM lenh_chuyen_lop WHERE id = ?', l1).t === 'cho'
+        && !one(`SELECT 1 x FROM notifications WHERE kind = 'huy_lenh' AND entity_id = ?`, x.sid), 'lệnh giữ, không huỷ');
+      const y = await coKetQua(goi);
+      await json(await goi(QL, `/cycles/${y.cy}/buoc-tiep`, post({ chon: 'lo_trinh_moi', batDau: 'ngay' })));
+      const s0 = soCauSql();
+      await json(await goi(QL, `/cycles/${y.cy}/buoc-tiep`, post({ chon: 'lo_trinh_moi', batDau: 'ngay' })));
+      const cau = soCauSql() - s0;
+      assert(cau < 30 && dangChay(y.sid).length === 1 && one('SELECT COUNT(*) n FROM learning_cycles WHERE student_id = ?', y.sid).n === 2, `${cau} câu`);
     });
   });
 

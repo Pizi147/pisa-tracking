@@ -11,7 +11,7 @@ import { conLaiMs } from '../platform/hanGio.ts';
 import { mondayOf } from '../platform/week.ts';
 import { reviseTarget } from '../fasttrack/cycles.ts';
 import { demoToday } from '../demoConfig.ts';
-import { notify, writeAudit } from '../platform/audit.ts';
+import { addJourney, notify, writeAudit } from '../platform/audit.ts';
 import { taoYeuCau } from '../duyet/yeuCau.ts';
 import { applyTransition } from './transition.ts';
 import { apDungMotDong, dongLopNeuHet, huongChuyenMotEm, lopDichHopLe, nguoiNhanGoiY } from './luatLoTrinh.ts';
@@ -351,8 +351,14 @@ function huyMotLenh(p: Principal, l: any, why: string): void {
   ).run(p.userId, nowIso(), why, nowIso(), l.id);
   if (!r.changes) throw conflict('Quyết định chuyển lớp vừa được thi hành hoặc đã huỷ.');
   /* OV-13m: lệnh của Bước tiếp "Lộ trình mới · Lớp khác" bị huỷ (ở đâu cũng vậy) → lộ trình về "Chọn bước tiếp", không kẹt ở lựa chọn không còn lệnh. */
-  conn.prepare(`UPDATE learning_cycles SET buoc_tiep = NULL, buoc_tiep_luc = NULL, buoc_tiep_boi = NULL, buoc_tiep_json = NULL, buoc_tiep_hen = NULL
-    WHERE student_id = ? AND buoc_tiep = 'lo_trinh_moi' AND json_extract(buoc_tiep_json, '$.lenhId') = ?`).run(l.student_id, l.id);
+  const bt = conn.prepare(`SELECT id, buoc_tiep_hen FROM learning_cycles WHERE student_id = ? AND buoc_tiep = 'lo_trinh_moi' AND json_extract(buoc_tiep_json, '$.lenhId') = ?`).get(l.student_id, l.id) as any;
+  if (bt) {
+    conn.prepare('UPDATE learning_cycles SET buoc_tiep = NULL, buoc_tiep_luc = NULL, buoc_tiep_boi = NULL, buoc_tiep_json = NULL, buoc_tiep_hen = NULL WHERE id = ?').run(bt.id);
+    addJourney({ studentId: l.student_id, cycleId: bt.id, eventType: 'buoc_tiep', eventDate: demoToday(), title: 'Sau thi: huỷ hẹn Lộ trình mới', detail: why,
+      refTable: 'learning_cycles', refId: bt.id, createdBy: p.userId, dedupKey: `buoc_tiep:${bt.id}:${nowIso()}` });
+    writeAudit({ actorUserId: p.userId, action: 'cycle.buoc_tiep', entityType: 'learning_cycle', entityId: bt.id,
+      before: { buocTiep: 'lo_trinh_moi', buocTiepHen: bt.buoc_tiep_hen ?? null }, after: { buocTiep: null, buocTiepHen: null, _nguon: 'Huỷ quyết định chuyển lớp' } });
+  }
   if (l.boi_canh === 'cuoi-khoa') dongBoCheTaiFinal(p, l.lop_nguon_id, [l.student_id]);   // PR-CT2 (§8): không còn quyết định → huỷ bổ trợ Final chưa ai đụng
   const hv = conn.prepare('SELECT full_name FROM students WHERE id = ?').get(l.student_id) as any;
   writeAudit({ actorUserId: p.userId, action: 'lenh_chuyen.huy', entityType: 'student', entityId: l.student_id, entityLabel: hv?.full_name ?? null, before: { huong: l.huong, tuan: l.tuan_bat_dau }, after: { lyDo: why } });

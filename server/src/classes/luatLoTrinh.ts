@@ -7,7 +7,7 @@ import { demoToday } from '../demoConfig.ts';
 import { badRequest, notFound, nowIso } from '../util.ts';
 import { can, require_, type Principal } from '../permissions.ts';
 import { addJourney, notify, writeAudit, writeAuditLo } from '../platform/audit.ts';
-import { chuyenCaseSangLoTrinh, closeCasesOnProgrammeSwitch, programmeOfCase } from '../cases/systemClose.ts';
+import { chuyenCaseSangLoTrinh, closeCasesBySystem, closeCasesOnProgrammeSwitch, programmeOfCase } from '../cases/systemClose.ts';
 import { banGiaoPaQuyChe, datLaiHanCase } from '../cases/sosAuto.ts';
 import { taoMtMacDinh, taoMtMacDinhLo } from '../fasttrack/mtMacDinh.ts';
 import { classProgressMany, mocKetKhoa } from './schedule.ts';
@@ -386,6 +386,8 @@ export function apDungMotDong(p: Principal, d: DongApDung): { luat: LuatDoiLop |
   }
 
   if (luat.dongCase) closeCasesOnProgrammeSwitch(p.userId, d.sid, luat.dongCase, d.ngay);
+  /* OV-13m (rà #422): lộ trình đã xong sang lớp khác = như "Lớp này" / Thôi học — Case còn mở của lộ trình cũ hệ thống đóng ("kết thúc khoá"), không bàn giao cho GV lớp mới. */
+  if (sauThi && cuoiCycle) closeCasesBySystem({ actorUserId: p.userId, studentId: d.sid, reason: 'course_ended', on: d.ngay, cycleIds: [cuoiCycle.id] });
   /* PR-LT2b: lên / học lại / sang FT từ lớp thường — Case đi theo + Cuối khoá (bổ trợ miễn phí, Báo PH, Tutor FT). Sau `closeCasesOnProgrammeSwitch`. */
   if (luat.khoa === 'dong-mo' && (luat.endKind === 'len_lop' || luat.endKind === 'hoc_lai' || luat.endKind === 'sang_ft') && !tuLop.ft) {
     sauChuyenCuoiKhoa(p, [{
@@ -394,7 +396,7 @@ export function apDungMotDong(p: Principal, d: DongApDung): { luat: LuatDoiLop |
     }]);
   }
   /* PR-SOS (K3-44): FT → FT cùng chương trình — PA theo quy chế chưa khép sang GVBM đúng kỹ năng lớp mới. */
-  else if (tuLop.ft && denLop.ft) banGiaoPaQuyChe(d.sid, d.toClassId, p.userId);
+  else if (tuLop.ft && denLop.ft && !sauThi) banGiaoPaQuyChe(d.sid, d.toClassId, p.userId);
 
   if (d.nguoiNhan) {
     for (const [caseIdStr, userId] of Object.entries(d.nguoiNhan)) {

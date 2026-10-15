@@ -14,7 +14,7 @@ import { dich, t } from '@shared/i18n/index.ts';
 export type TrangThaiBuocTiep = {
   chon: LuaChonSauThi | null; luc: string | null; boi: string | null; coTheChon: boolean;
   daXong: string; han: string; hen: string | null; henLop: string | null; lopNay: { id: number; code: string } | null; target: string; ngayThi: string | null;
-  studentId: number; cycleId: number; ketLuan: string | null;
+  studentId: number; cycleId: number; ketLuan: string | null; hoanTacDuoc: boolean;
 };
 type LopDich = { id: number; code: string; ft: boolean; route: string | null; tenChuongTrinh: string | null; gvcn: string | null; siSo?: number };
 type Chon = (typeof LUA_CHON_SAU_THI)[number];
@@ -138,9 +138,11 @@ export function PanelBuocTiep({ cycleId, hocVien, lop, quayLai, chonSan, onSuaKe
         {bt.chon && bt.coTheChon && (
           <div className="mt-3 flex flex-wrap items-center gap-2">
             {bt.chon === 'tam_dung' && <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={() => { setDoi(true); setChon('lo_trinh_moi'); }}>{t('Quay lại học')}</button>}
-            <NutChu onClick={() => { setTt('dang'); setLoi(null); boChon().then(() => setTt(null), (e: any) => { setTt('loi'); setLoi(e?.message ?? null); }); }} disabled={tt === 'dang'}>
-              {bt.hen ? t('Huỷ hẹn') : t('Hoàn tác')}
-            </NutChu>
+            {(bt.hen || bt.hoanTacDuoc) && (
+              <NutChu onClick={() => { setTt('dang'); setLoi(null); boChon().then(() => setTt(null), (e: any) => { setTt('loi'); setLoi(e?.message ?? null); }); }} disabled={tt === 'dang'}>
+                {bt.hen ? t('Huỷ hẹn') : t('Hoàn tác')}
+              </NutChu>
+            )}
           </div>
         )}
       </KhungPanel>
