@@ -17,6 +17,10 @@ import { duongDiemTheoLuot, type BangTheoLuot } from '../cham/LuoiChamLop.tsx';
 import { LOAI_HAN_CUA_VIEC } from '@shared/domain/index.ts';
 import type { WorkItem } from '../worklist/WorkList.tsx';
 import { NganTongKet } from '../students/NganTongKet.tsx';
+import { StudentYThucSection } from '../yThuc/StudentYThucSection.tsx';
+import { SuaThongTinMotEm } from '../students/StudentManagePanel.tsx';
+import { ThongTinLopPanel } from '../classes/ThongTinLopPanel.tsx';
+import type { HoSoLop } from '../classes/DauTrangLop.tsx';
 import { PhoiHopSosSection, type CoordTurn } from '../yThuc/PhoiHopSosSection.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 
@@ -39,6 +43,11 @@ export function lamTaiCho(it: WorkItem): boolean {
     case 'yt_xu_ly': case 'khai_bac': return it.studentId !== null;
     case 'phoi_hop_sos': return it.classId !== null;   // OV-12h: xác nhận meeting CX tại chỗ
     case 'yt_thuc_hien': case 'mgmt': case 'buoc_tiep': return soCuaKhoa(it.key) !== null;
+    /* OV-13b (đặc tả OV-13 §1): Ghi nhận vi phạm · Báo phụ huynh qua TVV · Điền Target (Thiếu thông tin) · Chọn người phụ trách — tại chỗ.
+       Thiếu thông tin khác (Chốt tuần MT, Nhập điểm MT cũ, mốc thi) cần cả trang — mở trang như cũ. */
+    case 'yt_xem': case 'phoi_hop': return it.studentId !== null;
+    case 'missing_data': return it.studentId !== null && it.key.startsWith('target:');
+    case 'no_owner': return it.caseId !== null;
     default: return false;
   }
 }
@@ -81,6 +90,20 @@ export function PanelViec({ it, onDong, onDaLam, onTiep }: {
       return <NganTongKet key={it.key} cycleId={soCuaKhoa(it.key)!} onClose={onDong} onDoi={doi} />;
     case 'phoi_hop_sos':
       return <PanelPhoiHop key={it.key} it={it} onDong={onDong} onDaLam={doi} />;
+    case 'yt_xem':
+      return (
+        <KhungPanel key={it.key} tieuDe={dich(it.tieuDe)} dau={dauViec({ han: it.due ? <ChipHan loai={LOAI_HAN_CUA_VIEC.yt_xem ?? 'viec-van-hanh'} han={it.due} /> : null, em: hv ? { id: it.studentId!, ten: hv } : null, lop })} onDong={onDong}>
+          <div className="pt-3"><StudentYThucSection studentId={it.studentId!} /></div>
+        </KhungPanel>
+      );
+    case 'phoi_hop':
+      return <PanelBaoPh key={it.key} it={it} onDong={onDong} onDaLam={doi} />;
+    case 'missing_data':
+      return <SuaThongTinMotEm key={it.key} studentId={it.studentId!} studentName={it.studentName} lop={lop} onClose={onDong} onDone={doi} />;
+    case 'no_owner':
+      return it.href.includes('viec=phan-cong') && it.classId !== null
+        ? <PanelPhanCong key={it.key} classId={it.classId} onDong={onDong} onDaLam={doi} />
+        : <NganCase key={it.key} caseId={it.caseId!} hocVien={hv} lop={lop} onClose={onDong} onChanged={onDaLam} onTiep={onTiep} />;
     default:
       return null;
   }
@@ -137,6 +160,32 @@ export function PanelNhapDiem({ it, onDong, onDaLam, quayLai }: {
           )}
     </KhungPanel>
   );
+}
+
+/** OV-13b: Báo phụ huynh qua TVV của một em tại chỗ — cùng thẻ Phối hợp của hồ sơ em (`/students/:id/phoi-hop-sos`). */
+function PanelBaoPh({ it, onDong, onDaLam }: { it: WorkItem; onDong: () => void; onDaLam: () => void }) {
+  const { data, loading, error, reload } = useApi<{ rows: CoordTurn[] }>(`/students/${it.studentId}/phoi-hop-sos`, [it.studentId]);
+  return (
+    <KhungPanel tieuDe={dich(it.tieuDe)} dau={dauViec({ em: { id: it.studentId!, ten: it.studentName }, lop: it.classCode, ngCanh: it.contextLabel })} onDong={onDong}>
+      <div className="pt-3">
+        {error ? <ErrorState message={error.message} hint={error.hint} onRetry={reload} />
+          : <PhoiHopSosSection turns={data?.rows ?? null} loading={loading} cot1="luot" onChanged={() => { reload(); onDaLam(); }} />}
+      </div>
+    </KhungPanel>
+  );
+}
+
+/** OV-13b: Chọn người phụ trách = Phân công GV môn của lớp (người phụ trách Case đi theo phân công) — panel Thông tin lớp mở sẵn Phân công. */
+function PanelPhanCong({ classId, onDong, onDaLam }: { classId: number; onDong: () => void; onDaLam: () => void }) {
+  const { data, error, reload } = useApi<HoSoLop>(`/classes/${classId}/overview`, [classId]);
+  if (!data) {
+    return (
+      <KhungPanel tieuDe={t('Thông tin lớp')} onDong={onDong}>
+        {error ? <ErrorState message={error.message} hint={error.hint} onRetry={reload} /> : <div className="pt-3"><Skeleton rows={6} /></div>}
+      </KhungPanel>
+    );
+  }
+  return <ThongTinLopPanel lop={data} phan="phan-cong" onClose={onDong} onDone={() => { reload(); onDaLam(); }} />;
 }
 
 /** OV-12h: Phối hợp SOS của lớp (lượt chưa xong) tại chỗ — cùng thẻ lượt / form Xác nhận của hồ sơ lớp; meeting CX có hạn 5 ngày. */
