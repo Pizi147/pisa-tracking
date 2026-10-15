@@ -137,7 +137,8 @@ export const COT_FT_GON = ['Mã', 'Tên', 'Chi nhánh', 'Lớp', 'Lộ trình', 
 export const COT_FT_THEM = ['W1', 'W2', ...tieuChiNganCua('writing1')!.map((t) => `W1 ${t}`), ...tieuChiNganCua('writing2')!.map((t) => `W2 ${t}`),
   ...tieuChiNganCua('speaking')!.map((t) => `S ${t}`), 'Tuần L', 'Tuần R', 'Tuần W', 'Tuần S', 'Người nhập',
   /* OV-12b: nhận xét từng bài (L, R, W1, W2, S) + nhóm nguyên nhân của ô dưới kỳ vọng (`chuNhomNguyenNhan`). */
-  'Nhận xét L', 'Nhận xét R', 'Nhận xét W1', 'Nhận xét W2', 'Nhận xét S', 'Nhóm nguyên nhân', 'GV chấm S'];
+  /* OV-13k: "Nhận xét GV phụ trách S" — nhận xét riêng của GV phụ trách Speaking lớp (bài chấm chéo), ngay sau nhận xét người chấm. */
+  'Nhận xét L', 'Nhận xét R', 'Nhận xét W1', 'Nhận xét W2', 'Nhận xét S', 'Nhận xét GV phụ trách S', 'Nhóm nguyên nhân', 'GV chấm S'];
 
 const KY_HIEU_O = { listening: 'L', reading: 'R', writing1: 'W1', writing2: 'W2', speaking: 'S' } as const;
 type ONhap = keyof typeof KY_HIEU_O;
@@ -159,6 +160,8 @@ export type DongFT = {
   nguoiNhap: string | null;
   /** OV-12b: nhận xét từng bài, nhóm nguyên nhân (`chuNhomNguyenNhan`), GV chấm Speaking (`tenGvCham`) — `null` khi không có. */
   nhanXet: Record<ONhap, string | null>; nhom: string | null; gvChamS: string | null;
+  /** OV-13k: nhận xét GV phụ trách Speaking (`null` khi không có). */
+  nhanXetPhuTrachS: string | null;
 };
 
 /** Hàng 1 = tiêu đề; mọi điểm là số hoặc `null`. */
@@ -171,7 +174,7 @@ export function bangFT(dong: DongFT[], cot: 'gon' | 'day-du'): Cell[][] {
     if (day) {
       hang.push(d.w1, d.w2, ...d.tieuChi.writing1, ...d.tieuChi.writing2, ...d.tieuChi.speaking,
         d.tuanKn.listening, d.tuanKn.reading, d.tuanKn.writing, d.tuanKn.speaking, d.nguoiNhap,
-        d.nhanXet.listening, d.nhanXet.reading, d.nhanXet.writing1, d.nhanXet.writing2, d.nhanXet.speaking, d.nhom, d.gvChamS);
+        d.nhanXet.listening, d.nhanXet.reading, d.nhanXet.writing1, d.nhanXet.writing2, d.nhanXet.speaking, d.nhanXetPhuTrachS, d.nhom, d.gvChamS);
     }
     out.push(hang);
   }

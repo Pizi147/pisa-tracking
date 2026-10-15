@@ -124,6 +124,7 @@ function dongFT(a: any, b: AttemptBundle): { d: DongFT; du: boolean } {
       writing2: nhanXetCua(scores, 'writing2'), speaking: nhanXetCua(scores, 'speaking') },
     nhom: chuNhomNguyenNhan(Object.fromEntries(scores.map((x) => [x.skill, docNhomNguyenNhan(x.nhom_nguyen_nhan)]))),
     gvChamS: tenGvCham({ examinerUserName: gvS?.examiner_user_name, examinerName: gvS?.examiner_name }),
+    nhanXetPhuTrachS: gvS?.nhan_xet_phu_trach ?? null,
   };
   return { d, du: r.complete };
 }

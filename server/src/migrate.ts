@@ -53,6 +53,7 @@ import { migratePrOv12c } from './migrate/prOv12c.ts';
 import { migratePrOv12h } from './migrate/prOv12h.ts';
 import { cacBuocPrOv13a, khoaPrOv1c, themCotPrOv13a } from './migrate/prOv13a.ts';
 import { migratePrOv13e } from './migrate/prOv13e.ts';
+import { migratePrOv13k } from './migrate/prOv13k.ts';
 
 /**
  * Nâng cấp database ĐANG CÓ lên schema mới, không xoá dữ liệu. PR-SO (DEP-gỡ): nhánh nâng cấp từ mô hình `mock_attempts` (trước overhaul)
@@ -339,6 +340,7 @@ function migrateCaseEngine(applied: string[], skipped: string[], loiSauBuoc?: nu
     /* PR-OV13a (SAU prOv1c / prOv12c): xoá Case "Chờ chốt SOS" cũ chưa ai đụng · PA quy chế kỹ năng đã đạt → Kết quả cuối · "đến lúc thi" → mốc MT cuối ·
        Case tạm cho lượt chưa chốt (đổi dữ liệu, chạy lặp được) — mỗi phần một giao dịch. */ for (const b of cacBuocPrOv13a(conn, applied)) buoc(b);
     /* OV-13e: users.requested_role — vai đề nghị khi tự đăng ký (chỉ thêm cột, chạy lặp được). */ buoc(() => migratePrOv13e(conn, applied));
+    /* OV-13k: assessment_scores — nhận xét GV phụ trách Speaking + cờ chờ xem (chỉ thêm cột, chạy lặp được). */ buoc(() => migratePrOv13k(conn, applied));
 
     conn.prepare("INSERT OR REPLACE INTO demo_config (key, value, updated_at) VALUES ('case_engine_migrated_at', ?, ?)")
       .run(nowIso(), nowIso());

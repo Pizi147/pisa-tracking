@@ -50,7 +50,7 @@ export async function runPrXuatTests(t: YThucTestKit) {
     l: 6, r: 6.5, w: null, s: null, overall: null, target: 7, kyVong: 6.5, sos: 2, trangThai: 'Thiếu điểm 2/4 · SOS tạm thời',
     w1: null, w2: null, tieuChi: { writing1: [null, null, null, null], writing2: [null, null, null, null], speaking: [null, null, null, null] },
     tuanKn: { listening: 'W3 SEP 2026', reading: 'W3 SEP 2026', writing: null, speaking: null }, nguoiNhap: 'Trần Ngọc Hà',
-    nhanXet: { listening: null, reading: null, writing1: null, writing2: null, speaking: null }, nhom: null, gvChamS: null, ...o,
+    nhanXet: { listening: null, reading: null, writing1: null, writing2: null, speaking: null }, nhom: null, gvChamS: null, nhanXetPhuTrachS: null, ...o,
   });
 
   check('PR-XUAT (1) · bangFT: 16 cột gọn đúng thứ tự T40; đầy đủ = 16 + COT_FT_THEM, 16 cột đầu không đổi', () => {
@@ -60,7 +60,7 @@ export async function runPrXuatTests(t: YThucTestKit) {
     const day = d.bangFT([dong()], 'day-du');
     assert(day[0].length === 16 + d.COT_FT_THEM.length && day[1].length === day[0].length, `đầy đủ ${day[0].length} cột`);
     assert(day[0].slice(0, 16).join() === gon[0].join() && day[1].slice(0, 16).join() === gon[1].join(), '16 cột đầu giữ vị trí');
-    assert(day[0].includes('W2 TR') && day[0].includes('W1 TA') && day[0].includes('S FC') && day[0].at(-8) === 'Người nhập' && day[0].at(-1) === 'GV chấm S', 'tiêu chí T39, cột nhận xét ở cuối (OV-12b: 5 nhận xét + Nhóm + GV chấm S)');
+    assert(day[0].includes('W2 TR') && day[0].includes('W1 TA') && day[0].includes('S FC') && day[0].at(-9) === 'Người nhập' && day[0].at(-1) === 'GV chấm S', 'tiêu chí T39, cột nhận xét ở cuối (OV-12b: 5 nhận xét + OV-13k Nhận xét GV phụ trách S + Nhóm + GV chấm S)');
   });
 
   check('PR-XUAT (1) · ô thiếu là null (không "—", không ""); điểm là number; KCK → Target "KCK", Kỳ vọng/SOS null', () => {

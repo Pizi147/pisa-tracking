@@ -73,6 +73,8 @@ export type Cell = {
   thieuNhanXet?: ThieuNhanXet | null;
   /** PR-HSM (T39): GV chấm Speaking — tài khoản (`userId`) hoặc người ngoài (`userId: null`). */
   gvCham?: { userId: number | null; ten: string } | null;
+  /** OV-13k: "Nhận xét GV phụ trách" của ô S chấm chéo (lưu riêng, dưới nhận xét người chấm). */
+  nhanXetPhuTrach?: { chu: string; ten: string | null } | null;
 };
 
 export type SavePatch = {

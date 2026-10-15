@@ -1766,14 +1766,20 @@ export function caseDetail(p: Principal, caseId: number) {
       branch: issueBranchOf(i.taxonomy_code), skill: i.skill, observation: i.observation,
       byName: i.by_name ?? null,
     }));
+  /* OV-13k: Case MT Speaking — nguyên nhân = nhận xét người chấm + "Nhận xét GV phụ trách" (đọc sống từ ô, lưu riêng) + nhóm. */
+  const nxPhuTrach = c.topic === 'speaking' && c.attempt_id
+    ? (conn.prepare(`SELECT nhan_xet_phu_trach FROM assessment_scores WHERE attempt_id = ? AND skill = 'speaking'`).get(c.attempt_id) as any)?.nhan_xet_phu_trach ?? null
+    : null;
+  if (nxPhuTrach) { const chinh = issues.find((i) => i.role === 'primary'); if (chinh) (chinh as any).nhanXetPhuTrach = nxPhuTrach; }
   /* OV-12c (P5): Case MT — nguyên nhân theo TỪNG lượt (mốc mở / trượt lại ↔ nhận xét + nhóm của ô lượt đó, đọc sống từ ô): "MT1: … · MT2: …". */
   const nguyenNhanTheoLuot = (conn.prepare(
-    `SELECT a.id AS attempt_id, a.attempt_no, s.comment, s.nhom_nguyen_nhan FROM case_milestones m
+    `SELECT a.id AS attempt_id, a.attempt_no, s.comment, s.nhom_nguyen_nhan, s.nhan_xet_phu_trach FROM case_milestones m
        JOIN assessment_attempts a ON a.id = m.attempt_id AND a.kind = 'mock'
        LEFT JOIN assessment_scores s ON s.attempt_id = a.id AND s.skill = ?
       WHERE m.case_id = ? AND m.kind IN ('opened', 'repeat') GROUP BY a.id ORDER BY MIN(m.id)`,
   ).all(c.topic ?? '', caseId) as any[]).map((r) => ({
     attemptId: r.attempt_id as number, luot: `MT${r.attempt_no}`, nhanXet: (r.comment ?? null) as string | null,
+    nhanXetPhuTrach: (r.nhan_xet_phu_trach ?? null) as string | null,
     nhom: docNhomNguyenNhan(r.nhom_nguyen_nhan).map((code) => ({ code, label: issueLabel(code) })),
   }));
 
