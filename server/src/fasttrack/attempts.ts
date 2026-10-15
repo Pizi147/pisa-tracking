@@ -613,7 +613,7 @@ export type AttemptFilters = {
 
 /*
  * TD3-a: lượt CÓ THỂ còn ô cần chấm — TẬP CHA của `pendingSkills` (lọc JS giữ nguyên phía sau), chỉ để bớt dòng đọc từ Turso.
- * Hai nhánh như `listAttempts`: lớp chấm `ratio` → môn của chương trình, có điểm = `raw_score`; còn lại (FT, MT0 lớp FT, lượt không lớp) →
+ * Hai nhánh như `listAttempts`: lớp chấm `ratio` → môn của chương trình, có điểm = `raw_score`; còn lại (FT, MT0 mọi lớp, lượt không lớp) →
  * 5 ô L R W1 W2 S, có điểm = `band`. Ô còn là ứng viên khi chưa có điểm ("-" vẫn tính chưa có — dời "-" phải còn hiện) và có thể đang chờ
  * điểm (`awaitingScore` của `viewSkill`): dòng lịch của môn `required = 1`, không huỷ / vắng, tuần thi đã tới; thiếu dòng lịch → dự phòng
  * của `skillScheduleOf` (bắt buộc, tuần của lượt). Bốn `?` = hôm nay.
@@ -621,7 +621,7 @@ export type AttemptFilters = {
 const oChoDiem = (mon: string) => `(EXISTS (SELECT 1 FROM attempt_skills k JOIN report_periods kp ON kp.id = k.planned_period_id
       WHERE k.attempt_id = a.id AND k.skill = ${mon} AND k.required = 1 AND k.sit_status NOT IN ('cancelled', 'absent') AND kp.week_start <= ?)
     OR (NOT EXISTS (SELECT 1 FROM attempt_skills k WHERE k.attempt_id = a.id AND k.skill = ${mon}) AND pr.week_start <= ?))`;
-export const CON_O_SQL = `a.status != 'cancelled' AND (CASE WHEN (SELECT pg.scoring_mode FROM programmes pg WHERE pg.code = c.programme_code) = 'ratio'
+export const CON_O_SQL = `a.status != 'cancelled' AND (CASE WHEN a.kind != 'mt0' AND (SELECT pg.scoring_mode FROM programmes pg WHERE pg.code = c.programme_code) = 'ratio'
   THEN EXISTS (SELECT 1 FROM programme_skills ps WHERE ps.programme_code = c.programme_code
     AND NOT EXISTS (SELECT 1 FROM assessment_scores sc WHERE sc.attempt_id = a.id AND sc.skill = ps.skill AND sc.raw_score IS NOT NULL)
     AND ${oChoDiem('ps.skill')})
@@ -730,7 +730,8 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
   let mapped = rows.map((a) => {
     const scores = bundle.scores.get(a.id) ?? [];
     const skips = bundle.skips.get(a.id) ?? [];
-    const regularSkills = skillsOfClass(a.class_id);
+    /* HOTFIX-3: MT0 chấm band dù ở lớp thường (`scoringModeOf`) — không đi nhánh đúng/tổng, nếu không đủ band vẫn là việc "Nhập điểm MT0". */
+    const regularSkills = a.kind === 'mt0' ? null : skillsOfClass(a.class_id);
 
     if (regularSkills) {
       const r = evaluateRegular(regularSkills, scores, null, nguongDatLop(a.class_id));

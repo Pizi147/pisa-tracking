@@ -18,7 +18,8 @@ export const EN_A = {
   'Mất kết nối máy chủ — kiểm tra mạng rồi thử lại.': 'Cannot reach the server — check your network and try again.',
   'Ngôn ngữ không hợp lệ.': 'Invalid language.',
   '{ten}: Tối đa {toiDa} ký tự (đang có {n}).': '{ten}: max {toiDa} characters (now {n}).',
-  'Lỗi {status}': 'Error {status}',
+  'Lỗi {status} — thử lại': 'Error {status} — try again',
+  'Chưa tải lại được': 'Could not refresh',
   'Không gọi được máy chủ.': 'Cannot reach the server.',
 
   /* App — khung chung */

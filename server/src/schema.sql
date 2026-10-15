@@ -161,7 +161,8 @@ CREATE TABLE users (
   status TEXT NOT NULL DEFAULT 'active',              -- active | deleted (PR-XOA: xoá mềm, còn dấu vết)
   deleted_at TEXT,
   created_at TEXT NOT NULL,
-  ngon_ngu TEXT                                       -- PR-EN: 'vi' | 'en'; NULL = chưa chọn (web theo máy)
+  ngon_ngu TEXT,                                      -- PR-EN: 'vi' | 'en'; NULL = chưa chọn (web theo máy)
+  da_xem_huong_dan INTEGER                            -- HD-a: 1 = đã mở Hướng dẫn / bấm Ẩn dải "Mới dùng PISA?"; NULL = chưa
 );
 
 /* Email phụ. Email đăng nhập vẫn nằm ở `users.email` và không lặp lại ở đây. */

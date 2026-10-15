@@ -256,7 +256,7 @@ export function HoTroHocVienTab() {
           <BoLocDoan ariaLabel={t('Hạn')} value={loc} onChange={(k) => setParam('loc', k === 'tat-ca' ? null : k)}
             muc={[...HAN_CHINH, ...(loc === 'den-het-tuan' ? ['den-het-tuan' as const] : [])].map((k) => ({ key: k, nhan: LOC_NHANH_LABEL[k], so: demHan[k] }))} />
           <BranchFilter branchId={branchId} onBranch={(id) => setParam('cn', id ? String(id) : null)} />
-          <button type="button" aria-expanded={locThem} onClick={() => setLocThem((x) => !x)}
+          <button type="button" aria-expanded={locThem} onClick={() => setLocThem((x) => !x)} data-hd="cv-loc-them"
             className={`btn btn-sm min-h-[44px] sm:min-h-[32px] ${soLocThem ? 'border-[color:var(--accent)] text-[color:var(--accent)]' : ''}`}>
             {t('Lọc thêm')}{soLocThem ? ` · ${soLocThem}` : ''}
             <svg aria-hidden viewBox="0 0 8 8" width="8" height="8" className={`transition-transform ${locThem ? '-rotate-90' : 'rotate-90'}`}>

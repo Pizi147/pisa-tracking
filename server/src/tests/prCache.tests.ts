@@ -79,6 +79,14 @@ export async function runPrCacheTests(t: YThucTestKit) {
       tra('/ref/periods', ['moi']);
       await q;
     });
+    await checkAsync('HOTFIX-3 (4, 5) · lỗi thân HTML (504 Netlify) → "Lỗi 504 — thử lại", không in HTML; đã có dữ liệu mà tải lại lỗi → giữ dữ liệu, không ErrorState', async () => {
+      globalThis.fetch = (async () => ({ ok: false, status: 504, text: async () => '<!doctype html><html><body>Gateway Timeout</body></html>' } as Response)) as typeof fetch;
+      let e: any = null;
+      try { await api.api.get('/hotfix3/html'); } catch (x) { e = x; }
+      assert(e?.status === 504 && e.message === 'Lỗi 504 — thử lại', `câu lỗi: ${e?.message}`);
+      assert(ua.loiCanHien({ co: 1 }, e) === null, 'đã có dữ liệu vẫn trả error → trang thay lưới bằng ErrorState');
+      assert(ua.loiCanHien(null, e) === e, 'chưa có dữ liệu phải trả error');
+    });
   } finally {
     globalThis.fetch = goc;
     api.invalidateAll();

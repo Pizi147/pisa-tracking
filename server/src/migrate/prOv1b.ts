@@ -171,3 +171,13 @@ export function migratePrOv1b(conn: any, applied: string[], today: string = demo
   }
   return [...ra, ...giu];
 }
+
+export const KHOA_PR_OV1B = 'pr_ov1b_da_chay';
+/**
+ * HOTFIX-3: `migratePrOv1b` không chạy nữa (trước đây chạy MỌI lần migrate — deploy 15/10 gom nhầm "ca trộn": buổi có "-" cũ nhập bù + "-" mới
+ * trong tuần thi lại bị xếp loại B, "-" mới thành Không dự thi). Như `khoaPrOv1c`: chỉ ghi khoá, không đổi dữ liệu (DB cũ lẫn DB mới).
+ */
+export function khoaPrOv1b(conn: any, _applied: string[]) {
+  if (conn.prepare('SELECT 1 FROM demo_config WHERE key = ?').get(KHOA_PR_OV1B)) return;
+  conn.prepare('INSERT OR REPLACE INTO demo_config (key, value, updated_at) VALUES (?,?,?)').run(KHOA_PR_OV1B, nowIso(), nowIso());
+}
