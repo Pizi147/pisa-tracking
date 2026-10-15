@@ -900,8 +900,8 @@ check('TD3-b-2 · QL ×3: /classes/{lopFT}/overview ≤ 50 % (5 829), /hoc-vien-
  * 15/10 OV-13g: thêm 'GVS toi' (GV Speaking MB FT 101 — chấm chéo). Đầu ra đổi CÓ CHỦ Ý chỉ ở GV dạy Speaking FT: thêm dòng "Speaking chấm chéo".
  *   Đã so JSON mã trước (main a4f9c00) ↔ sau trên bộ demo, mọi tài khoản × Của tôi / Tất cả + QL xem GV 7/9/10: chỉ GV 9, 19 lệch; bỏ việc `|cc` thì
  *   `items` + `dong` TRÙNG hoàn toàn. Số câu /my-work (×1): GV 9 58 → 58, GV 19 55 → 56. 10 băm cũ không đổi.
- * 15/10 OV-13k: chụp lại 'QL tat-ca' / 'QT tat-ca' / 'QT tat-ca cn' / 'GVS toi' — đổi CÓ CHỦ Ý: (1) nhóm mới "Xem nhận xét Speaking" (bộ demo có 4 bài
- *   S Mock người khác GV phụ trách chấm có nhận xét → 4 việc của GV 9); (2) rà #419: "còn tồn từ" của dòng Speaking chấm chéo = tuần cũ nhất của
+ * 15/10 OV-13k: chụp lại 'QL tat-ca' / 'QT tat-ca' / 'QT tat-ca cn' / 'GVS toi' — đổi CÓ CHỦ Ý: (1) nhóm mới "Xem nhận xét Speaking" (bộ demo có 3 bài
+ *   S Mock người khác GV phụ trách chấm có nhận xét → 3 việc của GV 9); (2) rà #419: "còn tồn từ" của dòng Speaking chấm chéo = tuần cũ nhất của
  *   (lớp, lượt) — GV S: MT1 "W1 SEP" → "W1 JUL", MT2 thêm "W2 AUG". Đã so JSON mã trước (main 022b7f3) ↔ sau trên bộ demo: bỏ việc `xem_nx_s`
  *   thì `items` + `dong` TRÙNG hoàn toàn ở QL / QT "Tất cả", QL / GVCN "Của tôi"; GV S lệch đúng hai nhãn trên. 7 băm cũ không đổi.
  */
@@ -909,8 +909,8 @@ await checkAsync('TD4-a (×3) · Công việc trùng JSON ảnh chụp trước 
   const { myWork, viecCuaNguoi } = await import('../worklist/mywork.ts');
   const ANH: Record<string, string> = {
     'QL toi': '6671f11bb8e4d60c', 'QT toi': 'ad9ea8d503e7b56c', 'GVCN toi': '23e0323bdaca7cd2', 'GVBM toi': 'dd8afd71bacf9864',
-    'GVCN_THUONG toi': '23e0323bdaca7cd2', 'ADMIN toi': '4ed1fc3fa34653f2', 'QL tat-ca': '4d1d536b05943385', 'QT tat-ca': 'e6d76f6c7cc14cfd',
-    'QT tat-ca cn': 'e78405c35467eda9', 'QL gvcn': 'ad7335342536a58b', 'GVS toi': '29bd0308665d66c9',
+    'GVCN_THUONG toi': '23e0323bdaca7cd2', 'ADMIN toi': '4ed1fc3fa34653f2', 'QL tat-ca': '872617711ddb1eef', 'QT tat-ca': '29b940cd9b5dd537',
+    'QT tat-ca cn': '19ddc2339f2d2692', 'QL gvcn': 'ad7335342536a58b', 'GVS toi': 'ccf17523925ee501',
   };
   const p = (v: Vai) => loadPrincipal(USER[v]);
   const goc: [string, () => unknown][] = [

@@ -1800,7 +1800,7 @@ function luuNhanXet(
     before: cu ? { comment: cu.comment ?? null, examinerUserId: cu.examiner_user_id ?? null, examinerName: cu.examiner_name ?? null, nhom: cu.nhom_nguyen_nhan ?? null } : null,
     after: { comment, examinerUserId: exUser, examinerName: exName, nhom },
   });
-  if (skill === 'speaking') baoPhuTrachS(p, a, comment, cu?.comment);
+  if (skill === 'speaking') baoPhuTrachS(p, a, comment, cu?.comment, exUser);
   dongBoNguyenNhanMt({ attemptId, skill });   // OV-12c: nhận xét + nhóm của ô = nguyên nhân Case MT (liên kết sống)
   const fresh = conn.prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(attemptId) as any;
   return {
@@ -1893,10 +1893,10 @@ export function quyenPhuTrachS(p: Principal, classId: number | null): boolean {
  * OV-13k (chủ SP 15/10): người chấm chéo (không phải GV phụ trách S) lưu ô S Mock có nhận xét mới → GV phụ trách S của lớp nhận thông báo +
  * việc "Xem nhận xét Speaking" (`cho_phu_trach_xem`), hết khi GV phụ trách lưu (`luuNhanXetPhuTrach`) hoặc PA của Case đã xác nhận.
  */
-function baoPhuTrachS(p: Principal, a: any, comment: string | null, cu: string | null | undefined) {
+function baoPhuTrachS(p: Principal, a: any, comment: string | null, cu: string | null | undefined, nguoiCham: number | null) {
   if (!laChamCheo(a.kind, 'speaking') || !comment?.trim() || comment.trim() === (cu ?? '').trim()) return;
   const gv = gvPhuTrachS(a.class_id);
-  if (!gv || gv === p.userId) return;
+  if (!gv || gv === p.userId || gv === nguoiCham) return;   // GV phụ trách tự chấm (hoặc được ghi là người chấm) — không có gì để xem
   const conn = db();
   conn.prepare(`UPDATE assessment_scores SET cho_phu_trach_xem = 1 WHERE attempt_id = ? AND skill = 'speaking'`).run(a.id);
   const r = conn.prepare(`SELECT s.full_name, c.code FROM students s LEFT JOIN classes c ON c.id = ? WHERE s.id = ?`).get(a.class_id, a.student_id) as any;
@@ -2286,7 +2286,7 @@ export function saveScore(
     if (matHet && skill === 'speaking') {
       conn.prepare(`UPDATE assessment_scores SET nhan_xet_phu_trach = NULL, nhan_xet_phu_trach_by = NULL, nhan_xet_phu_trach_at = NULL, cho_phu_trach_xem = 0
                      WHERE attempt_id = ? AND skill = ?`).run(attemptId, skill);
-    } else if (skill === 'speaking') baoPhuTrachS(p, a, comment, existing?.comment);
+    } else if (skill === 'speaking') baoPhuTrachS(p, a, comment, existing?.comment, exUser);
 
     const after = conn.prepare('SELECT * FROM assessment_scores WHERE attempt_id = ? AND skill = ?').get(attemptId, skill);
     const afterGhi = (patch.lyDo || hoanTat.hoanTat)

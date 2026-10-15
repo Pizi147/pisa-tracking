@@ -77,10 +77,10 @@ export async function runPrOv13kTests(t: YThucTestKit) {
 
   /* Em mới ở MB FT 101, lượt Mock mọi kỹ năng ở tuần trước (mẫu prOv13h `emFt`), kỳ vọng 6.5. */
   const W = addDays(dm.mondayOfDate(TODAY), -7);
-  const sid = intake.commitIntake(P.admin, { classId: FT101, rows: [{ fullName: 'OV13k Em', target: 7, email: 'ov13k@demo.test', dob: '2010-01-01' }],
-    idempotencyKey: 'ov13k-1' }).studentIds[0] as number;
-  const aid = all(`SELECT id FROM assessment_attempts WHERE student_id = ? AND kind = 'mock' ORDER BY attempt_no`, sid).map((r) => r.id as number).pop()!;
-  {
+  const emMoi = (n: number) => {
+    const sid = intake.commitIntake(P.admin, { classId: FT101, rows: [{ fullName: `OV13k Em ${n}`, target: 7, email: `ov13k${n}@demo.test`, dob: '2010-01-01' }],
+      idempotencyKey: `ov13k-${n}` }).studentIds[0] as number;
+    const aid = all(`SELECT id FROM assessment_attempts WHERE student_id = ? AND kind = 'mock' ORDER BY attempt_no`, sid).map((r) => r.id as number).pop()!;
     const Wp = week.ensurePeriod(W).id as number;
     skillSchedule.ensureSkillRows(aid);
     const a = one('SELECT * FROM assessment_attempts WHERE id = ?', aid);
@@ -88,7 +88,9 @@ export async function runPrOv13kTests(t: YThucTestKit) {
     run(`UPDATE assessment_attempts SET status = 'planned', lich_su = 0, planned_period_id = ?, target_at_attempt = ? WHERE id = ?`,
       Wp, 6.5 + dm.expectationDelta(a.attempt_no, attempts.routeCuaLuot(a)), aid);
     xoaNho();
-  }
+    return { sid, aid };
+  };
+  const { sid, aid } = emMoi(1);
   const mt = `MT${one('SELECT attempt_no FROM assessment_attempts WHERE id = ?', aid).attempt_no}`;
   const [n1, n2, n3] = dm.issuesForTopic('speaking').map((i: any) => i.code);
   const NX = 'Part 2 dừng sau 1 phút, ít từ nối; phát âm đuôi -ed chưa rõ.';
@@ -101,7 +103,7 @@ export async function runPrOv13kTests(t: YThucTestKit) {
     await ma(await goi(gvCheo, `/attempts/${aid}/scores/speaking`, put({ criteria: [5, 5, 5, 5], nhanXet: NX, nhomNguyenNhan: [n1], gvCham: { performerSelf: true } })), 200, 'người chấm chéo lưu S');
     xoaNho();
     const v = viec(gvPT);
-    assert(v.length === 1 && v[0].tieuDe === `Xem nhận xét Speaking · OV13k Em · ${mt}` && v[0].urgency === 'normal' && v[0].due === null && v[0].mine, JSON.stringify(v));
+    assert(v.length === 1 && v[0].tieuDe === `Xem nhận xét Speaking · OV13k Em 1 · ${mt}` && v[0].urgency === 'normal' && v[0].due === null && v[0].mine, JSON.stringify(v));
     assert(one(`SELECT COUNT(*) n FROM notifications WHERE user_id = ? AND dedup_key = ?`, gvPT, `nxs:${aid}`).n === 1, 'GV phụ trách chưa có thông báo');
     assert(!viec(gvCheo).length && !one(`SELECT COUNT(*) n FROM notifications WHERE user_id = ? AND dedup_key = ?`, gvCheo, `nxs:${aid}`).n, 'người chấm không nhận việc / thông báo của chính mình');
   }));
@@ -182,6 +184,14 @@ export async function runPrOv13kTests(t: YThucTestKit) {
       assert(n <= TRAN_GHI_LO.nhanXetPhuTrach, `${n} > ${TRAN_GHI_LO.nhanXetPhuTrach}`);
     } finally { conn.exec('ROLLBACK'); xoaNho(); }
   });
+
+  await checkAsync('OV13k-9 · QL nhập hộ, ghi người chấm là GV phụ trách → không sinh việc / thông báo (không có gì để xem)', () => voiMayChu(async (goi) => {
+    const x = emMoi(2);
+    await ma(await goi(QL.userId, `/attempts/${x.aid}/scores/speaking`, put({ criteria: [5, 5, 5, 5], nhanXet: NX, nhomNguyenNhan: [n1], gvCham: { performerUserId: gvPT } })), 200, 'QL nhập hộ');
+    xoaNho();
+    assert(!(mywork.myWork(loadPrincipal(gvPT)).items as any[]).some((v) => v.group === 'xem_nx_s' && v.attemptId === x.aid)
+      && !one(`SELECT COUNT(*) n FROM notifications WHERE dedup_key = ?`, `nxs:${x.aid}`).n, 'không được sinh việc khi người chấm là GV phụ trách');
+  }));
 
   check('OV13k-6 · migrate chỉ thêm cột, chạy hai lần không đổi (DB mới + DB đã có cột)', () => {
     const m = new Database(':memory:');
