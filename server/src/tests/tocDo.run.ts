@@ -888,6 +888,7 @@ check('TD3-b-2 · QL ×3: /classes/{lopFT}/overview ≤ 50 % (5 829), /hoc-vien-
  * và mọi góc nhìn. Lọc sớm lượt ở `listAttempts` không được đổi một việc nào. Đổi đầu ra Công việc CÓ CHỦ Ý (hoặc seed / phép kiểm phía trên đổi
  * dữ liệu) thì lệch: chụp lại băm bằng mã trước thay đổi đó (phép in băm đang ra), không sửa cho khớp.
  * 15/10: chụp lại 'QT toi' / 'QT tat-ca' sau khi Case của Task2(e) thôi lấy giờ thật (hạn Thêm PA của nó trôi theo ngày chạy → băm QT đổi mỗi ngày).
+ * 15/10 gộp OV-13a + OV-13c: chụp lại 'QL tat-ca' / 'QT tat-ca' / 'QT tat-ca cn' trên bản gộp — hai thay đổi có chủ ý ở dưới cộng lại (id Case đổi chỗ + gom tuần).
  * 15/10 OV-13a: chụp lại 'QL tat-ca' / 'QT tat-ca' / 'QT tat-ca cn' — Case tạm (Q2) đổi thứ tự sinh Case trong seed → id Case 34↔35 (HV 46) đổi chỗ;
  *   so JSON với main: khác CHỈ ở id Case, nội dung việc không đổi.
  * 15/10 OV-13c: chụp lại 7 băm — đổi CÓ CHỦ Ý: Nhập điểm gom theo tuần thi (khoá `|p{tuần}|`, dòng phụ có mã tuần), việc Case SOS FT + Nhập điểm
@@ -898,8 +899,8 @@ await checkAsync('TD4-a (×3) · Công việc trùng JSON ảnh chụp trước 
   const { myWork, viecCuaNguoi } = await import('../worklist/mywork.ts');
   const ANH: Record<string, string> = {
     'QL toi': '6671f11bb8e4d60c', 'QT toi': 'ad9ea8d503e7b56c', 'GVCN toi': '4f51ddef848eaf9e', 'GVBM toi': 'dd8afd71bacf9864',
-    'GVCN_THUONG toi': '4f51ddef848eaf9e', 'ADMIN toi': '4ed1fc3fa34653f2', 'QL tat-ca': 'd60e3dc1048bb734', 'QT tat-ca': '273086d4e555e53e',
-    'QT tat-ca cn': '41e45b78d1d94242', 'QL gvcn': '912708bfcda5b611',
+    'GVCN_THUONG toi': '4f51ddef848eaf9e', 'ADMIN toi': '4ed1fc3fa34653f2', 'QL tat-ca': '053bec8fdb83e4e8', 'QT tat-ca': 'e1649bdac55ac5e9',
+    'QT tat-ca cn': 'c9e67f8750ca82fd', 'QL gvcn': '912708bfcda5b611',
   };
   const p = (v: Vai) => loadPrincipal(USER[v]);
   const goc: [string, () => unknown][] = [
