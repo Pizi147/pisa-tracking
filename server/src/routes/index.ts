@@ -1958,6 +1958,11 @@ api.delete('/cases/:id', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return caseSvc.xoaCase(principalOf(req), pInt(req, 'id'));
 }));
+/** OV-13a (C): GVCN / Quản lý kết thúc sớm PA theo quy chế đang chạy — lý do ≥ 10 ký tự; quyền kiểm ở máy chủ (`ketThucPaQuyChe`). */
+api.post('/interventions/:id/ket-thuc', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return caseSvc.ketThucPaQuyChe(principalOf(req), pInt(req, 'id'), (req.body ?? {}) as any);
+}));
 api.delete('/interventions/:id', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return caseSvc.xoaPa(principalOf(req), pInt(req, 'id'));

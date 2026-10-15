@@ -49,6 +49,8 @@ export type CaseDetail = {
   sos?: { fromSos: boolean; hasCause: boolean; awaitingCause: boolean; dueOn: string | null;
     /** OV-12c: Case MT (nguyên nhân = nhận xét của bài) · Case MT cũ bài chưa nhận xét. */
     laMt?: boolean; choNhanXet?: boolean;
+    /** OV-13a (Q2): Case tạm — lượt chưa chốt SOS. */
+    tam?: boolean;
     choDuyetKhongTheoDoi: { hanDuyet: string | null } | null; coPaChoXacNhan: boolean } | null;
   tenSos?: { mt: number | null; giua: string; sos: number | null; kck?: boolean } | null;
   /** PR-LT2a: khối PA Bổ trợ Giữa khoá (nhóm, môn) — null nếu Case không có PA bổ trợ. */
@@ -94,7 +96,9 @@ export type CaseDetail = {
   nguyenNhanTheoLuot?: { attemptId: number; luot: string; nhanXet: string | null; nhom: { code: string; label: string }[] }[];
   viewer: { canEdit: boolean; canClose: boolean; canApprove: boolean; /** OV-12c: Xác nhận Case Progress (GVCN lớp đang học làm được). */ coTheXacNhanCase?: boolean;
     /** PR-LUI-a2: Mở lại (Case đã hoàn thành, QL/QT) · Sửa Case · Xoá Case / câu chặn · Kỹ năng khoá · tên để sửa. */
-    coTheMoLai?: boolean; coTheSua?: boolean; coTheXoa?: boolean; chanXoa?: string | null; khoaKyNang?: boolean; tenSua?: string | null };
+    coTheMoLai?: boolean; coTheSua?: boolean; coTheXoa?: boolean; chanXoa?: string | null; khoaKyNang?: boolean; tenSua?: string | null;
+    /** OV-13a (C): ⋯ "Kết thúc PA" cho PA theo quy chế đang chạy — GVCN lớp đang học · Quản lý. */
+    coTheKetThucPa?: boolean };
 };
 
 /** Nội dung của ngăn Case: một `KhungPanel` đổi nội dung theo view, không chồng panel. */
@@ -148,7 +152,7 @@ export function CasePanel({ caseId }: { caseId: number }) {
       <ThanCase data={data} onViec={setNgan} />
       {data.viewer.canEdit && (
         <div className="flex flex-wrap gap-2">
-          <button type="button" className="btn btn-sm" onClick={() => setNgan({ loai: 'them-pa' })}>{t('+ Thêm PA')}</button>
+          {data.trangThaiV4?.k !== 'tam' && <button type="button" className="btn btn-sm" onClick={() => setNgan({ loai: 'them-pa' })}>{t('+ Thêm PA')}</button>}
           {data.status !== 'done' && data.viewer.canClose && (
             <button type="button" className="btn btn-sm btn-primary" onClick={() => setNgan({ loai: 'hoan-thanh' })}>{t('Hoàn thành Case')}</button>
           )}
@@ -293,7 +297,7 @@ function TheKhoiPa({ iv, data, homNay, ngan, onViec }: {
   const khoang = batDau ? chuKhoangPa({ startedOn: batDau, completedOn: ketThuc }, homNay)?.replace(/^từ /, '') : ketThuc ? t('đến {tuanLich}', { tuanLich: tuanLich(ketThuc, homNay) }) : null;
   /* Người: "Dạy X" (Tutor, Bổ trợ) · "Thực hiện X" (loại khác) · Tự học không có. Không có ô Người theo dõi (§8). */
   const nguoi = iv.performer ? `${iv.performer}${iv.byProxy && iv.recordedBy ? t(' ({recordedBy} nhập hộ)', { recordedBy: iv.recordedBy }) : ''}` : null;
-  const nut = nutDongPa(iv, { canApprove: data.viewer.canApprove, caseXong: data.status === 'done' });
+  const nut = nutDongPa(iv, { canApprove: data.viewer.canApprove, caseXong: data.status === 'done', coTheKetThucPa: data.viewer.coTheKetThucPa });
   const dem = iv.soBuoi != null ? demBuoi(iv.daDay ?? 0, iv.soBuoi) : null;
   const quaHan = hanGhi?.tone === 'overdue';
   /* Chân dòng PA: mỗi phần một cờ, tính một lần; không phần nào thì không vẽ chân. */
@@ -311,7 +315,7 @@ function TheKhoiPa({ iv, data, homNay, ngan, onViec }: {
       <div className="flex flex-wrap items-center gap-1.5">
         <span className="text-sm font-bold text-slate-100">{INTERVENTION_KIND_LABEL[iv.kind as keyof typeof INTERVENTION_KIND_LABEL] ?? iv.kind}</span>
         {/* PR-N1 S4-1: PA theo quy chế SOS do máy gán — dấu nhỏ cạnh tên (khoảng cách lấy từ `gap-1.5` của hàng, nên không thêm `ml-1.5`). */}
-        {iv.preset && <span className="inline-flex items-center gap-1 whitespace-nowrap text-xs text-slate-400" title={iv.kind === 'bo_tro' ? t('PA Bổ trợ bắt buộc đến Cuối khoá — không thay, không kết thúc sớm') : t('PA theo quy chế SOS — không thay, không kết thúc sớm')}><KhoaNho />{t('theo quy chế')}</span>}
+        {iv.preset && <span className="inline-flex items-center gap-1 whitespace-nowrap text-xs text-slate-400" title={iv.kind === 'bo_tro' ? t('PA Bổ trợ bắt buộc đến Cuối khoá — không thay, không kết thúc sớm') : t('PA theo quy chế SOS — chỉ GVCN / QL kết thúc sớm (⋯)')}><KhoaNho />{t('theo quy chế')}</span>}
         {/* Trạng thái CÔNG VIỆC, không phải kết quả (mục 2.2): "Đã xong" chỉ nghĩa việc đã làm xong. */}
         {/* PR-SOS: PA quy chế chưa xác nhận = "Chờ xác nhận" (cùng chữ với hàng PA ở bảng kỹ năng), không phải "Đã lên kế hoạch". */}
         <Nhan tone={toneTrangThaiPa(iv.status)}>{chuaChay ? t('Chưa bắt đầu') : iv.awaitingConfirmation ? t('Chờ xác nhận') : INTERVENTION_STATUS_LABEL[iv.status as keyof typeof INTERVENTION_STATUS_LABEL] ?? iv.status}</Nhan>
@@ -319,7 +323,7 @@ function TheKhoiPa({ iv, data, homNay, ngan, onViec }: {
         {iv.approvalState === 'approved' && <Nhan tone="done">{t('Đã duyệt')}</Nhan>}
         {iv.approvalState === 'declined' && <NhanTrangThai t="can-lam" chu={t('Bị từ chối')} />}
         <span className="flex-1" />
-        <MenuPa iv={iv} ten={tenPA(iv)} xoa={nut.xoa} onSua={nut.sua ? () => onViec({ loai: 'sua-pa', paId: iv.id }) : undefined}
+        <MenuPa iv={iv} ten={tenPA(iv)} xoa={nut.xoa} ketThuc={nut.ketThuc} onSua={nut.sua ? () => onViec({ loai: 'sua-pa', paId: iv.id }) : undefined}
           soKetQua={(data.followups ?? []).filter((f: any) => f.interventionId === iv.id).length} />
       </div>
       {iv.description && <p className="m-0 text-[13.5px] text-slate-300">{iv.description}</p>}
@@ -424,6 +428,8 @@ const MILESTONE_TITLE: Record<string, string> = {
   reopened: t('Mở lại'),
   /* OV-1c: Overall ≥ kỳ vọng sau khi kỹ năng dời có điểm — Case đã có người làm giữ, GV tự đóng. */
   overall_dat: t('Overall đã đạt'),
+  /* OV-13a (C): GVCN / QL kết thúc sớm PA theo quy chế — lý do ở dòng ghi chú. */
+  ket_thuc_pa: t('Kết thúc PA'),
 };
 
 /** OV-7b: sửa "Xem lại sau hỗ trợ" lần mới nhất TẠI CHỖ — kết quả quan sát + ghi chú; Đóng trả về chữ đã lưu, lỗi thì giữ chữ đang gõ. */
@@ -485,7 +491,7 @@ function buildLichSu(data: CaseDetail, ngan: (d: string | null | undefined) => s
     if (m.kind === 'opened') continue;   // ngày mở và người tạo đã ở khối Vấn đề
     out.push({
       key: `m${m.id}`, on: m.occurredOn, dot: m.attemptNo ? (m.dot ?? `MT${m.attemptNo}`) : null, dotHref: m.href ?? null,
-      tieuDe: m.kind === 'reopened' && m.actorName ? `${MILESTONE_TITLE.reopened} · ${m.actorName}` : MILESTONE_TITLE[m.kind] ?? m.kind,
+      tieuDe: (m.kind === 'reopened' || m.kind === 'ket_thuc_pa') && m.actorName ? `${MILESTONE_TITLE[m.kind]} · ${m.actorName}` : MILESTONE_TITLE[m.kind] ?? m.kind,
       badge: (
         <>
           {m.band !== null && m.band !== undefined && (

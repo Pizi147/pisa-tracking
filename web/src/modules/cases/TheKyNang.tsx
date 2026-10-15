@@ -100,8 +100,10 @@ function KhoiCase({ c, onMoCase }: { c: CaseCard; onMoCase: (caseId: number, o?:
         <NhanLoai loai="Case" /><span className="min-w-0 truncate max-sm:whitespace-normal max-sm:overflow-visible max-sm:break-words"><TenCase c={c} /></span>
       </div>
       <div className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[12px] text-slate-400">
-        {tamDung && tt.t === 'qua-han' ? <NhanTamDung tu={tamDung} /> : <NhanTrangThai t={tt.t} title={dich(tt.chu)} />}
-        <span>{tt.k === 'dang-lam' ? td.text : dich(tt.chu)}</span>
+        {tamDung && tt.t === 'qua-han' ? <NhanTamDung tu={tamDung} /> : <NhanTrangThai t={tt.t} title={dich(tt.chu)} chu={tt.k === 'tam' ? dich(tt.chu) : undefined} />}
+        {tt.k !== 'tam' && <span>{tt.k === 'dang-lam' ? td.text : dich(tt.chu)}</span>}
+        {/* OV-13a: Case tạm không có việc tiếp — vẫn mở được để xem / sửa. */}
+        {tt.k === 'tam' && <button type="button" className="btn ml-auto min-h-[44px]" onClick={() => onMoCase(c.id)}>{t('Mở Case')}</button>}
       </div>
       {c.plans.filter(dangChay).map((p) => <KhoiPa key={p.id} p={p} c={c} onMoCase={onMoCase} />)}
       {v && (

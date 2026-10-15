@@ -5,7 +5,9 @@
  * OV-12c (chủ SP 14/10): nguyên nhân Case MT = nhận xét + nhóm của ô (`cases/nguyenNhanO.ts`) → Case đi thẳng "Chờ xác nhận PA"; hạn 5 ngày — Gấp / SOS 3:
  * 3 ngày (tính cả ngày đầu, `soNgayHanXacNhan`): Xác nhận PA (PA chạy từ hôm đó) hoặc Không cần theo dõi (thẻ Chờ duyệt). Case MT cũ mà ô chưa có
  * nhận xét: "Chờ ghi nhận xét". Progress Test lớp thường: MỘT bước "Xác nhận Case" (nhóm + mô tả + PA Bổ trợ), hạn 5 ngày cố định.
- * PA quy chế không thay, không kết thúc sớm; tới mốc → "Ghi kết quả cuối".
+ * PA quy chế: GVBM không thay, không kết thúc sớm; tới mốc → "Ghi kết quả cuối". OV-13a (chủ SP 15/10): kỹ năng đạt ở lượt MT sau / Overall đạt → mốc
+ * `dat_ky_vong` (Kết quả cuối ngay kỳ này) · "đến lúc thi" chưa có ngày thi → mốc MT cuối của lộ trình · GVCN / QL "Kết thúc PA" sớm, lý do ≥ 10 ký tự.
+ * Case tạm (lượt chưa chốt): "Chờ chốt SOS" — không hạn / PA / việc.
  */
 import { hanTheoNgay, PLAN_DECISIONS, soNgayHanXacNhan, type PlanDecision } from './cases.ts';
 import { sosPlanEndDate, type AcademicSupportSpan } from './sos.ts';
@@ -26,17 +28,30 @@ export function mocQuyChe(span: AcademicSupportSpan, ctx: { ngayXacNhan: string;
   return sosPlanEndDate(span, { createdOn: ctx.ngayXacNhan, nextMtSunday: ctx.nextMtSunday, examDate: ctx.examDate });
 }
 
+/** OV-13a (A): loại mốc của PA quy chế khi kỹ năng đã đạt kỳ vọng (lượt MT sau / Overall đạt) — `followup_due` = ngày đạt, lần ghi tới là Kết quả cuối. */
+export const MOC_DAT_KY_VONG = 'dat_ky_vong';
+/** OV-13a (C): lý do "Kết thúc PA" quy chế sớm (GVCN / QL) — tối thiểu ký tự. */
+export const LY_DO_KET_THUC_PA_TOI_THIEU = 10;
+
 /**
  * CHỮ MỐC của PA quy chế: `đến MT2 · W2 OCT` · `1 tháng · đến W3 OCT` · `đến lúc thi · chưa có ngày thi`. PA chưa xác nhận: chỉ phần đầu
  * (mốc tính lúc xác nhận). `mtKe` = số MT kế tiếp của lượt đã sinh PA.
  */
-export function mocChuPa(x: { span: string | null; followupDue: string | null; mtKe: number | null; daXacNhan: boolean }, homNay: string): string {
+export function mocChuPa(x: {
+  span: string | null; followupDue: string | null; mtKe: number | null; daXacNhan: boolean;
+  /** OV-13a (B): MT cuối của lộ trình — "đến lúc thi" chưa có ngày thi lấy mốc này (`đến MT6 · W4 NOV`). */
+  mtCuoi?: { so: number; chuNhat: string } | null;
+}, homNay: string): string {
+  if (x.span === MOC_DAT_KY_VONG) return x.followupDue ? t('đã đạt kỳ vọng · {tuan}', { tuan: tuanLich(x.followupDue, homNay) }) : t('đã đạt kỳ vọng');   // OV-13a (A)
   if (x.span === 'mini_test') return x.daXacNhan && x.followupDue ? t('đến Mini Test · {ngay}', { ngay: ngay(x.followupDue, homNay) }) : t('đến Mini Test');   // PR-LT2b
   /* PR-LT2a: PA bổ trợ. PR-S5F-b: mốc Cuối khoá có từ lúc tạo PA (`taoPaBoTro`) — PA chưa chạy (BE chờ kế hoạch) cũng nói mã tuần. */
   if (x.span === 'den_cuoi_khoa') return x.daXacNhan || x.followupDue ? mocChuBoTro(x.followupDue, homNay) : t('đến Cuối khoá');
   const dau = x.span === 'one_month' ? t('1 tháng') : x.span === 'until_next_mt' ? (x.mtKe ? t('đến MT{mtKe}', { mtKe: x.mtKe }) : t('đến MT kế tiếp'))
     : x.span === 'until_exam' ? t('đến lúc thi') : '';
   if (!dau || !x.daXacNhan) return dau;
+  if (x.span === 'until_exam' && x.followupDue && x.mtCuoi && x.followupDue === x.mtCuoi.chuNhat) {
+    return `${t('đến MT{mtKe}', { mtKe: x.mtCuoi.so })} · ${tuanLich(x.followupDue, homNay)}`;   // OV-13a (B): chưa có ngày thi → MT cuối
+  }
   if (x.followupDue) return `${dau} · ${x.span === 'until_next_mt' ? tuanLich(x.followupDue, homNay) : t('đến {x}', { x: x.span === 'until_exam' ? ngay(x.followupDue, homNay) : tuanLich(x.followupDue, homNay) })}`;   // UXF-b (Q8): ngày chỉ cho ngày thi
   return `${dau} · ${x.span === 'until_exam' ? t('chưa có ngày thi') : t('chưa có lịch')}`;
 }
@@ -74,7 +89,7 @@ export function tenCaseSos(x: { mt: number | null; giua: string; sos: number | n
 }
 
 /** `cho-nguyen-nhan` = Progress chờ "Xác nhận Case"; `cho-nhan-xet` = Case MT cũ mà ô chưa có nhận xét (OV-12c). */
-export type TrangThaiCaseV4 = 'cho-nguyen-nhan' | 'cho-nhan-xet' | 'cho-duyet-khong-theo-doi' | 'cho-xac-nhan-pa' | 'dang-lam' | 'xong' | 'huy-khong-theo-doi' | 'he-thong-dong' | 'rut-sua-diem';
+export type TrangThaiCaseV4 = 'tam' | 'cho-nguyen-nhan' | 'cho-nhan-xet' | 'cho-duyet-khong-theo-doi' | 'cho-xac-nhan-pa' | 'dang-lam' | 'xong' | 'huy-khong-theo-doi' | 'he-thong-dong' | 'rut-sua-diem';
 
 export type CaseV4Input = {
   status: 'open' | 'in_progress' | 'done'; fromSos: boolean; hasCause: boolean; dismissed: boolean; systemClosed: boolean;
@@ -85,6 +100,8 @@ export type CaseV4Input = {
   rutSuaDiem?: boolean;
   /** OV-12c: Case SOS Mock Test — nguyên nhân lấy từ nhận xét của ô; thiếu = "Chờ ghi nhận xét", không phải "Xác nhận Case". */
   laMt?: boolean;
+  /** OV-13a (Q2): Case tạm của lượt Mock FT chưa chốt — "Chờ chốt SOS", không hạn / việc. */
+  tam?: boolean;
 };
 
 /** MỘT nhãn trạng thái cho một Case (§7.3) — xét từ trên xuống. */
@@ -93,6 +110,7 @@ export function trangThaiCaseV4(c: CaseV4Input, homNay: string): { k: TrangThaiC
   if (c.rutSuaDiem) return { k: 'rut-sua-diem', t: 'da-huy', chu: t('Đã rút (sửa điểm)'), han: null };
   if (c.dismissed) return { k: 'huy-khong-theo-doi', t: 'da-huy', chu: t('Đã huỷ · không cần theo dõi'), han: null };
   if (c.status === 'done') return { k: 'xong', t: 'xong', chu: t('Xong'), han: null };
+  if (c.tam) return { k: 'tam', t: 'dang-lam', chu: t('Chờ chốt SOS'), han: null };
   if (c.choDuyetKhongTheoDoi) return { k: 'cho-duyet-khong-theo-doi', t: 'cho-duyet', chu: t('Chờ Quản lý duyệt · không theo dõi'), han: null };
   const tt: TrangThai = c.hanXacNhan && c.hanXacNhan < homNay ? 'qua-han' : 'can-lam';
   if (c.fromSos && !c.hasCause) return c.laMt ? { k: 'cho-nhan-xet', t: tt, chu: t('Chờ ghi nhận xét'), han: c.hanXacNhan }
@@ -121,7 +139,7 @@ export type ViecTiepCase = { chu: string; loaiHan: DeadlineKind | null; han: str
  */
 export function viecTiepCuaCase(c: CaseV4Input, pas: PaViecTiep[], homNay: string, hanLapPa: string | null = null): ViecTiepCase | null {
   const s = trangThaiCaseV4(c, homNay);
-  if (s.k === 'xong' || s.k === 'huy-khong-theo-doi' || s.k === 'he-thong-dong' || s.k === 'rut-sua-diem') return null;
+  if (s.k === 'xong' || s.k === 'huy-khong-theo-doi' || s.k === 'he-thong-dong' || s.k === 'rut-sua-diem' || s.k === 'tam') return null;
   if (s.k === 'cho-nguyen-nhan') return { chu: t('Xác nhận Case'), loaiHan: 'xac-minh-sos', han: c.hanXacNhan };
   if (s.k === 'cho-nhan-xet') return { chu: t('Ghi nhận xét'), loaiHan: 'xac-minh-sos', han: c.hanXacNhan };
   if (s.k === 'cho-duyet-khong-theo-doi') return { chu: t('Chờ Quản lý duyệt · không theo dõi'), loaiHan: null, han: null };

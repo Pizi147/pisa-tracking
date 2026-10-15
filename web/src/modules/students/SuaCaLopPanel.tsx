@@ -9,6 +9,7 @@ import { ONgay } from '../../ui/ONgay.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { KCK, LIEN_HE_TOI_DA, LO_LUU_SUA_CA_LOP, NHAN_LIEN_HE, QUAN_HE_GOI_Y, TRUONG_LIEN_HE, chiaLo, chuTargetKck, chuanOTarget, tachKck, type VanDeNhap } from '@shared/domain/index.ts';
 import { ChonNguoi, type NguoiTrongDs } from '../../ui/PeoplePicker.tsx';
+import { t } from '@shared/i18n/index.ts';
 
 type Cot = 'fullName' | 'dob' | 'email' | 'consultantUserId' | 'phone' | 'parentName' | 'parentRelation' | 'parentPhone' | 'startWeek' | 'examDate' | 'target' | 'baseline';
 type DongGoc = {
@@ -19,7 +20,8 @@ type DongGoc = {
   phone: string | null; parentName: string | null; parentRelation: string | null; parentPhone: string | null;
 };
 /** `nhapLienHe` (OV-10b): cột Liên hệ — QL / Quản trị; GVCN không thấy (chủ SP 13/10). */
-type DuLieu = { lop: { id: number; code: string }; lopThuong: boolean; coTheSuaTarget: boolean; nhapLienHe: boolean; rows: DongGoc[]; tvv: NguoiTrongDs[] };
+/** `chiThongTin` (OV-13i): TVV / CX — cột Tuần bắt đầu khoá (ngoài `CHI_SUA_THONG_TIN`). */
+type DuLieu = { lop: { id: number; code: string }; lopThuong: boolean; coTheSuaTarget: boolean; chiThongTin: boolean; nhapLienHe: boolean; rows: DongGoc[]; tvv: NguoiTrongDs[] };
 type XemTruoc = { rows: { studentId: number; issues: VanDeNhap[] }[]; canhBaoMt: { studentId: number; cau: string }[] };
 
 const COT: { key: Cot; nhan: string; rong: number; so?: boolean }[] = [
@@ -76,6 +78,9 @@ export function SuaCaLopPanel({ classId, onClose, onDone }: { classId: number; o
   const d = du.data;
   const cot = COT.filter((c) => !(d?.lopThuong && c.key === 'baseline') && (d?.nhapLienHe || !(TRUONG_LIEN_HE as readonly string[]).includes(c.key)));
   const goc = useMemo(() => new Map((d?.rows ?? []).map((r) => [r.studentId, r])), [d]);
+  /** Cả cột khoá theo vai — máy chủ kiểm lại (`duocDoiTarget`, `CHI_SUA_THONG_TIN`). */
+  const khoaCot = (k: Cot) => (k === 'target' && !d?.coTheSuaTarget ? t('Chỉ Quản lý, TVV hoặc CX đổi Target')
+    : k === 'startWeek' && d?.chiThongTin ? t('Chỉ Quản lý hoặc GVCN sửa Tuần bắt đầu') : null);
 
   /** Giá trị gốc của ô: đã lưu ở lô trước (lưu dở) thì lấy giá trị đó. */
   const nen = (g: DongGoc, k: Cot) => luuRoi[g.studentId]?.[k] ?? chuGoc(g, k);
@@ -200,7 +205,7 @@ export function SuaCaLopPanel({ classId, onClose, onDone }: { classId: number; o
                     {cot.map((c) => (
                       <Th key={c.key} align={c.so ? 'right' : 'left'}
                         className={c.key === 'fullName' ? 'sticky-col' : ''}
-                        hint={c.key === 'target' && !d.coTheSuaTarget ? 'Chỉ Quản lý đổi Target' : c.key === 'target' ? `Band 0–9, bước 0,5. Em không cam kết đầu ra: thêm ${KCK} (ví dụ 6.5 ${KCK}).` : undefined}>
+                        hint={khoaCot(c.key) ?? (c.key === 'target' ? `Band 0–9, bước 0,5. Em không cam kết đầu ra: thêm ${KCK} (ví dụ 6.5 ${KCK}).` : undefined)}>
                         {c.nhan}
                       </Th>
                     ))}
@@ -218,7 +223,7 @@ export function SuaCaLopPanel({ classId, onClose, onDone }: { classId: number; o
                           const daSuaO = doi[c.key] !== undefined;
                           const loi = daSuaO
                             ? vanDe(r.studentId, c.key).find((i) => i.muc === 'loi')?.message ?? null : null;
-                          const khoaO = (O_LO_TRINH.has(c.key) && !r.coLoTrinh) || (c.key === 'target' && !d.coTheSuaTarget);
+                          const khoaO = (O_LO_TRINH.has(c.key) && !r.coLoTrinh) || !!khoaCot(c.key);
                           const nhan = `${c.nhan} · ${r.fullName}`;
                           const idLoi = `loi-${r.studentId}-${c.key}`;
                           return (
@@ -241,7 +246,7 @@ export function SuaCaLopPanel({ classId, onClose, onDone }: { classId: number; o
                                   ) : (
                                     <input className={`field w-full${c.so ? ' text-right tabular-nums' : ''}${loi ? ' border-late' : ''}`}
                                       value={v} aria-label={nhan} aria-invalid={!!loi || undefined} aria-describedby={loi ? idLoi : undefined}
-                                      disabled={khoaO} title={khoaO ? (c.key === 'target' && !d.coTheSuaTarget ? 'Chỉ Quản lý đổi Target' : 'Em chưa có lộ trình') : undefined}
+                                      disabled={khoaO} title={khoaO ? khoaCot(c.key) ?? 'Em chưa có lộ trình' : undefined}
                                       type={c.key === 'email' ? 'email' : c.key === 'phone' || c.key === 'parentPhone' ? 'tel' : 'text'} autoComplete="off"
                                       inputMode={c.key === 'baseline' ? 'decimal' : c.key === 'email' ? 'email' : c.key === 'phone' || c.key === 'parentPhone' ? 'tel' : undefined}
                                       list={c.key === 'parentRelation' ? 'quan-he-goi-y-lop' : undefined}

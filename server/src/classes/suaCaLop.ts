@@ -1,15 +1,15 @@
 import { db, theoLo, tx } from '../db.ts';
 import {
-  CO_DIEM_SQL, chuTargetKck, PERMISSIONS, TOI_DA_LUU_SUA_CA_LOP, cauMtSeDoi, coONhapLienHe, cotLuoiNhap, NHAN_LIEN_HE, type VanDeNhap,
+  CHI_SUA_THONG_TIN, CO_DIEM_SQL, chuTargetKck, PERMISSIONS, TOI_DA_LUU_SUA_CA_LOP, cauMtSeDoi, coONhapLienHe, cotLuoiNhap, NHAN_LIEN_HE, type VanDeNhap,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { chanGiaoDichNeuSapHetGio } from '../platform/hanGio.ts';
 import { voiNguon } from '../platform/audit.ts';
-import { can, require_, type Principal } from '../permissions.ts';
+import { can, require_, type Ctx, type Principal } from '../permissions.ts';
 import { HttpError, badRequest, forbidden, kiemKieuO, notFound, nowIso } from '../util.ts';
 import { chuanHoaSuaHoSo, dsTvv, kiemTvvCungChiNhanh, updateStudent } from '../students/students.ts';
 import {
-  docDiemXuatPhat, docDuKienThi, docTarget, docTuanBatDau, reviseTarget, setBaseline, updateCycle,
+  docDiemXuatPhat, docDuKienThi, docTarget, docTuanBatDau, duocDoiTarget, reviseTarget, setBaseline, updateCycle,
 } from '../fasttrack/cycles.ts';
 import { donKhoaGuiCu, laLopThuong } from './intake.ts';
 import { lichMtCua } from './schedule.ts';
@@ -30,7 +30,12 @@ type DauVao = { rows: DongSua[]; lyDoTarget?: string };
 
 export const TOI_DA_DONG_SUA_CA_LOP = 60;
 /** Panel này không có nút "Đề xuất sửa" (khác `CHI_QL_SUA` của đường một em) — chỉ nói ai được đổi. */
-export const CHI_QL_DOI_TARGET = 'Chỉ Quản lý đổi được Target.';
+export const CHI_QL_DOI_TARGET = 'Chỉ Quản lý, TVV hoặc CX đổi được Target.';
+/**
+ * OV-13i (chủ SP 15/10): ai mở được panel — GVCN / QL (`student.edit`) hoặc TVV / CX (`student.edit_more`) đúng phạm vi. Một luật cho cờ nút
+ * ở hồ sơ lớp (`coTheSuaCaLop`) và máy chủ. TVV / CX chỉ sửa trường của `CHI_SUA_THONG_TIN` + Target (`duocDoiTarget`); Tuần bắt đầu → 403.
+ */
+export const duocSuaCaLop = (p: Principal, ctx: Ctx) => can(p, PERMISSIONS.STUDENT_EDIT, ctx) || can(p, PERMISSIONS.STUDENT_EDIT_MORE, ctx);
 const HO_SO = ['fullName', 'dob', 'email', 'consultantUserId', 'phone', 'parentName', 'parentRelation', 'parentPhone'] as const;
 const LO_TRINH = ['startWeek', 'examDate', 'target', 'baseline'] as const;
 const NHAN: Record<string, string> = { fullName: 'Họ tên', dob: 'Ngày sinh', email: 'Email', consultantUserId: 'TVV', startWeek: 'Tuần bắt đầu', examDate: 'Dự kiến thi', target: 'Target', baseline: 'Điểm đầu vào', ...NHAN_LIEN_HE };
@@ -59,13 +64,13 @@ function emVaLoTrinh(classId: number, ids: number[] | null) {
 
 /**
  * Dữ liệu panel "Sửa thông tin học viên": mọi em đang học, A→Z, giá trị HIỆN TẠI của bảy ô (Q-0310-3). `coTheSuaTarget` chỉ để panel
- * khoá cột Target (máy chủ vẫn kiểm `cycle.edit` từng em khi lưu).
+ * khoá cột Target (máy chủ vẫn kiểm `duocDoiTarget` từng em khi lưu).
  */
 export function duLieuSuaCaLop(p: Principal, classId: number) {
   const conn = db();
   const cls = conn.prepare('SELECT id, code, programme_code, branch_id FROM classes WHERE id = ?').get(classId) as any;
   if (!cls) throw notFound('Không tìm thấy lớp');
-  require_(p, PERMISSIONS.STUDENT_EDIT, { classId: cls.id }, `Lớp ${cls.code} nằm ngoài phạm vi bạn được cấp quyền.`);
+  if (!duocSuaCaLop(p, { classId: cls.id })) require_(p, PERMISSIONS.STUDENT_EDIT, { classId: cls.id }, `Lớp ${cls.code} nằm ngoài phạm vi bạn được cấp quyền.`);
   const { em, loTrinh } = emVaLoTrinh(cls.id, null);
   const tuan = new Map<number, string>();
   theoLo([...new Set([...loTrinh.values()].map((c) => c.start_period_id).filter((v): v is number => v != null))], (lo, ph) => {
@@ -87,7 +92,9 @@ export function duLieuSuaCaLop(p: Principal, classId: number) {
   }).sort((a, b) => a.fullName.localeCompare(b.fullName, 'vi'));
   return {
     lop: { id: cls.id as number, code: cls.code as string }, lopThuong: laLopThuong(cls.programme_code ?? null),
-    coTheSuaTarget: can(p, PERMISSIONS.CYCLE_EDIT, { classId: cls.id }), rows,
+    coTheSuaTarget: duocDoiTarget(p, { classId: cls.id }), rows,
+    /** OV-13i: TVV / CX (không `student.edit`) — panel khoá cột Tuần bắt đầu (ngoài `CHI_SUA_THONG_TIN`). */
+    chiThongTin: !can(p, PERMISSIONS.STUDENT_EDIT, { classId: cls.id }),
     /** OV-10b: cột Liên hệ — QL / Quản trị; GVCN không thấy ô nhập (chủ SP 13/10). */
     nhapLienHe: coONhapLienHe(p.roleKeys),
     /** PR-OV2b: ô chọn TVV — TVV cùng chi nhánh lớp lên trước. */
@@ -104,7 +111,7 @@ function kiemLo(p: Principal, classId: number, input: DauVao) {
   const conn = db();
   const cls = conn.prepare('SELECT id, code, programme_code, lich_mt, route, branch_id FROM classes WHERE id = ?').get(classId) as any;
   if (!cls) throw notFound('Không tìm thấy lớp');
-  require_(p, PERMISSIONS.STUDENT_EDIT, { classId: cls.id }, `Lớp ${cls.code} nằm ngoài phạm vi bạn được cấp quyền.`);
+  if (!duocSuaCaLop(p, { classId: cls.id })) require_(p, PERMISSIONS.STUDENT_EDIT, { classId: cls.id }, `Lớp ${cls.code} nằm ngoài phạm vi bạn được cấp quyền.`);
   const cot = new Set<string>(cotLuoiNhap(laLopThuong(cls.programme_code ?? null)).map((c) => c.key));
 
   const ids = input.rows.map((r) => Number(r.studentId));
@@ -128,14 +135,18 @@ function kiemLo(p: Principal, classId: number, input: DauVao) {
         return undefined;
       }
     };
-    /* QUYỀN THEO TRƯỜNG, trước mọi lần ghi: hồ sơ + lộ trình (trừ Target) cần `student.edit`; đổi Target THẬT cần `cycle.edit`. */
+    /* QUYỀN THEO TRƯỜNG, trước mọi lần ghi: hồ sơ + lộ trình (trừ Target) cần `student.edit` — OV-13i: hoặc TVV / CX trong `CHI_SUA_THONG_TIN`;
+       đổi Target THẬT cần `duocDoiTarget`. */
     const coSua = [...HO_SO, ...LO_TRINH].some((k) => k !== 'target' && r[k] !== undefined);
-    if (coSua && !can(p, PERMISSIONS.STUDENT_EDIT, { studentId: s.id })) throw forbidden(`Bạn không có quyền sửa học viên ${s.full_name}.`);
+    if (coSua && !can(p, PERMISSIONS.STUDENT_EDIT, { studentId: s.id })) {
+      if (!can(p, PERMISSIONS.STUDENT_EDIT_MORE, { studentId: s.id })) throw forbidden(`Bạn không có quyền sửa học viên ${s.full_name}.`);
+      if (r.startWeek !== undefined) throw forbidden(CHI_SUA_THONG_TIN);
+    }
     let doiTarget = false;
     if (r.target !== undefined) {
       const t = thu('target', () => docTarget(r.target));
       doiTarget = !t || !c || t.target !== (c.target_score ?? null) || t.kck !== !!c.khong_cam_ket;
-      if (doiTarget && !can(p, PERMISSIONS.CYCLE_EDIT, { studentId: s.id })) throw new HttpError(403, CHI_QL_DOI_TARGET);
+      if (doiTarget && !duocDoiTarget(p, { studentId: s.id })) throw new HttpError(403, CHI_QL_DOI_TARGET);
     }
 
     const hoSo = Object.fromEntries(HO_SO.filter((k) => r[k] !== undefined).map((k) => [k, r[k]]));
