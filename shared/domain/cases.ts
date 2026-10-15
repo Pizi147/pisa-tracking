@@ -247,6 +247,8 @@ export const MILESTONE_KINDS = [
   'reopened',
   /* OV-1c: Overall ≥ kỳ vọng sau khi kỹ năng dời có điểm — Case đã có người làm giữ, GV tự đóng. */
   'overall_dat',
+  /* OV-13a (C): GVCN / QL kết thúc sớm PA theo quy chế — ghi chú = lý do, người = người bấm. */
+  'ket_thuc_pa',
 ] as const;
 export type MilestoneKind = (typeof MILESTONE_KINDS)[number];
 export const MILESTONE_KIND_LABEL: Record<MilestoneKind, string> = {
@@ -266,6 +268,7 @@ export const MILESTONE_KIND_LABEL: Record<MilestoneKind, string> = {
   ke_hoach_tu_choi: t('Quản lý từ chối kế hoạch'),
   reopened: t('Mở lại'),
   overall_dat: t('Overall đã đạt'),
+  ket_thuc_pa: t('Kết thúc PA'),
 };
 
 /**
@@ -1114,6 +1117,6 @@ export const CASE_STATUS_TONE: Record<CaseStatus, 'danger' | 'warn' | 'ok'> = {
  * nên cũng không nằm ở "chưa ai ghi sẽ làm gì". Chỉ số `case-thieu-pa`, cột "Thiếu phương án" của bảng "Việc cần lưu ý"
  * và của bảng phân tích theo kỹ năng đều gọi hàm này — trước PR-N bảng phân tích tự định nghĩa lại và lệch ở hai khe trên.
  */
-export function isNoPlanCase(c: { status: string; disposition?: string | null; interventionCount: number }): boolean {
-  return c.status !== 'done' && !c.disposition && c.interventionCount === 0;
+export function isNoPlanCase(c: { status: string; disposition?: string | null; interventionCount: number; tam?: boolean | number | null }): boolean {
+  return c.status !== 'done' && !c.disposition && c.interventionCount === 0 && !c.tam;   // OV-13a: Case tạm (chờ chốt SOS) chưa là "Thiếu PA"
 }

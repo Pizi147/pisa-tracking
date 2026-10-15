@@ -9,7 +9,7 @@ import { demoToday } from '../demoConfig.ts';
 import { badRequest, chuTuDo, conflict, forbidden, isIsoDate, kiemKieuO, normalizeName, notFound, nowIso, padCode } from '../util.ts';
 import { can, classScopeSql, require_, scopeFor, type Principal } from '../permissions.ts';
 import { addJourney, writeAudit } from '../platform/audit.ts';
-import { NOT_UNCONFIRMED_PRESET } from '../cases/sosState.ts';
+import { CASE_THAT, NOT_UNCONFIRMED_PRESET } from '../cases/sosState.ts';
 import { closeCasesBySystem, moLaiCaseHeThongDong, type ChupCaseDong } from '../cases/systemClose.ts';
 import { datLaiHanCase } from '../cases/sosAuto.ts';
 import { chotHanXuLy } from '../yThuc/trangThai.ts';
@@ -82,7 +82,7 @@ export function listStudents(p: Principal, f: { q?: string; branchId?: number; c
     const openCase = conn
       .prepare(
         `SELECT sc.id, sc.sos_level, sc.status FROM sos_cases sc JOIN assessment_attempts a ON a.id = sc.attempt_id
-          WHERE a.student_id = ? AND sc.sos_level > 0 AND sc.status != 'done' ORDER BY sc.id DESC LIMIT 1`,
+          WHERE a.student_id = ? AND sc.sos_level > 0 AND sc.status != 'done' AND ${CASE_THAT('sc')} ORDER BY sc.id DESC LIMIT 1`,
       )
       .get(s.id) as any;
     return {

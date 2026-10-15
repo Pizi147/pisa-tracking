@@ -399,7 +399,7 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
               {chanQd && <p className="m-0 text-xs text-late" role="alert">{chanQd}</p>}
               {pa.batBuoc && (
                 <p className="m-0 flex flex-wrap items-center gap-x-1.5 text-xs text-slate-400">
-                  {t('PA theo quy chế — không thay, không kết thúc sớm. Cần thêm hỗ trợ?')}
+                  {t('PA theo quy chế — không thay; GVCN / QL kết thúc sớm ở ⋯. Cần thêm hỗ trợ?')}
                   {onThemPa && <NutChu onClick={onThemPa}>{t('+ Thêm PA')}</NutChu>}
                 </p>
               )}

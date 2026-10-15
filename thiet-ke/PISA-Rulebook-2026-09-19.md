@@ -695,7 +695,7 @@ Mọi hạn "n ngày" là **n ngày liên tiếp theo lịch, tính cả ngày b
 | Xác nhận nguyên nhân SOS (FT) và Case Giữa khoá lớp thường | 3 ngày kể từ ngày ghi nhận; Xác nhận PA cùng hạn đó | `sd/sosV4.ts:15-17` |
 | Có PA — Case GV tạo tay | Bình thường 5 ngày · Gấp 3 ngày, từ ngày Case được tạo | `sd/cases.ts:827,837` |
 | Ghi kết quả PA hằng tuần | Hết **Thứ Hai** tuần kế | `sd/cases.ts:847` |
-| PA quy chế: ghi kết quả cuối | Khi chạm mốc quy chế: "1 tháng" · "đến MT kế tiếp" · "đến lúc thi" (MT5 trở đi: Tutor đến lúc thi). Quá mốc → hạn hết Thứ Hai. Chưa có lịch mốc → PA chạy tiếp, hiện "chờ lịch" | `sd/sos.ts:54-94` |
+| PA quy chế: ghi kết quả cuối | Khi chạm mốc quy chế: "1 tháng" · "đến MT kế tiếp" · "đến lúc thi" (MT5 trở đi: Tutor đến lúc thi). Quá mốc → hạn hết Thứ Hai. Chưa có lịch mốc → PA chạy tiếp, hiện "chờ lịch". **Sửa 15/10 (OV-13a, §20.16):** kỹ năng đạt ở lượt MT sau / Overall đạt → Kết quả cuối ngay kỳ này; "đến lúc thi" chưa có ngày thi → mốc MT cuối của lộ trình | `sd/sos.ts:54-94` · `ss/cases/sosAuto.ts` `paSangKetQuaCuoi`, `keHoachMocQuyChe` |
 | QL duyệt một thẻ | 5 ngày. ~~Kế hoạch bổ trợ 3 ngày~~ (bỏ từ PR-CT2 — không còn thẻ này); **dời lịch lần 2** hết Chủ nhật tuần gửi; **Báo lên** không hạn. Quá hạn chỉ báo QL + Quản trị, không tự đóng (trừ lịch thi: hết hạn thì huỷ phần thi) | `sd/yeuCauDuyet.ts:40-61` |
 | Chấm Fast Track (và lớp thường từ PR-MTa T19) | Hết **Thứ Tư** tuần kế tiếp tuần thi của chính kỹ năng đó. "Quá hạn" chỉ khi tuần thi đã hết và qua hạn. Hạn riêng: lý do tuỳ chọn (PR-MTa T7) | `ss/platform/week.ts:68-113` |
 | Chấm lớp thường | Hết **Thứ Tư** tuần kế tiếp (PR-MTa T19, trước là Chủ nhật tuần thi) | `ss/platform/week.ts:89-92` |
@@ -834,6 +834,23 @@ Chỉ chuông trong ứng dụng, không email/Zalo. Chia "Cần làm" (trỏ t�
 ### 20.12 Chữ trên màn hình (bảng thuật ngữ 01/10)
 
 Đã chốt: PA viết ngắn, chỗ rộng viết "Phương án" · **Case** luôn hoa · Ý thức: "phương án xử lý" → **lần xử lý** · **Lịch Test** · mục tiêu band → **Target** · QL như PA · nút thoát hộp **Đóng** · "Báo lên" → **Báo QL** · lệnh chuyển lớp → **Xác nhận chuyển lớp**. Các chữ này **chưa lên web** (PR-S3 chưa chạy); sổ tay viết theo chữ đang hiện trên bản chạy, ghi chữ mới trong ngoặc.
+
+### 20.16 Sửa 15/10 (chủ SP, OV-13a) — Case tạm · PA quy chế hết kẹt — thay "PA quy chế không kết thúc sớm" và luật OV-1c "chưa chốt thì không Case"
+
+- **Case tạm (Q2):** lượt Mock Test FT **chưa chốt**, ô dưới kỳ vọng đã có điểm + nhận xét (+ nhóm) → sinh ngay Case **tạm**: hiện ở hồ sơ HV / hồ sơ MT, sửa được
+  (tên, mức độ; nguyên nhân = nhận xét của bài), nhãn **"Chờ chốt SOS"**; **chưa** có hạn, PA, việc, chuông, Phối hợp. Case tạm **chỉ hiện ở hồ sơ HV,
+  Ngăn Case và panel một em** — **không vào bất kỳ số đếm nào** (Case mở, Đang làm, Thiếu PA, Chờ duyệt, Tổng hợp, Tổng quan, Học viên & Lớp, hồ sơ lớp,
+  hồ sơ GV, Danh sách Case, Công việc) — sửa 15/10 sau rà #406. Ô thành đạt / xoá điểm / bỏ nhận xét trước khi chốt → Case tạm **xoá hẳn**.
+  **Lượt chốt:** Overall ≥ kỳ vọng và Case chưa có PA được xác nhận → xoá hẳn (như "em đạt lại"); còn lại → **cùng Case** thành "Chờ xác nhận PA" như nay (PA quy
+  chế + hạn xác nhận tính từ ngày chốt, chuông SOS). Không còn Case "Hệ thống đóng · Chờ chốt SOS" mới; Case loại đó cũ mà chưa ai đụng được xoá hẳn khi deploy.
+- **PA quy chế hết kẹt (A + B + C):**
+  - **A.** Kỹ năng của Case **đạt kỳ vọng ở lượt MT sau** (hoặc lượt chốt có Overall đạt khi Case đã có PA) → PA quy chế đang chạy tự sang **"Ghi kết quả cuối"**
+    (việc Ghi kết quả đổi nhãn, hạn như kỳ thường; chữ mốc "đã đạt kỳ vọng · W2 NOV"); ghi xong → PA kết thúc → Case **Hoàn thành được** (không chỉ ghi mốc).
+  - **B.** "Đến lúc thi" mà **chưa có ngày thi** → mốc = **MT cuối của lộ trình** (lượt Mock đã xếp tuần có số lớn nhất), **không sớm hơn ngày xác nhận PA
+    + 4 tuần** (PA sinh ngay ở MT cuối không kết thúc ngay); chữ PA "đến MT6 · W4 NOV". Có ngày thi (hoặc dời MT cuối) sau → mốc đi theo.
+  - **C.** **GVCN lớp em đang học / Quản lý** có **"Kết thúc PA"** (menu ⋯ của PA) cho PA quy chế **đang chạy**, **lý do bắt buộc ≥ 10 ký tự**; mốc nhật ký Case
+    ghi lý do + người. GVBM không kết thúc sớm (vẫn Ghi kết quả / Kết quả cuối); máy chủ kiểm quyền (GV khác → 403).
+- **Case MT bỏ ô Mô tả (Q1):** mô tả = nhận xét của bài; Sửa Case MT chỉ còn Mức độ + Tên.
 
 ### 20.13 Điểm còn mở — cần chủ sản phẩm chốt
 

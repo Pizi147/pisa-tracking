@@ -1,4 +1,5 @@
 import { db, tx } from '../db.ts';
+import { CASE_THAT } from '../cases/sosState.ts';
 import {
   ATTEMPT_KIND_SHORT, ENTRY_SKILLS, PERMISSIONS, awaitingScore, chuanHoaMaLop, soSanhLop, kiemPhanCong, moRongPhanCong, nhanKetThucVi, nhanTiepTheo,
   oPhanCong, pendingSkillsOf, laLienTuc, tenMonNgan, viecTiepCuaEm,
@@ -187,7 +188,7 @@ function listClassSummariesThat(p: Principal, f: { branchId?: number; classId?: 
     `SELECT a.class_id, COUNT(*) AS n FROM assessment_attempts a
        JOIN students s ON s.id = a.student_id AND ${HV_DANG_HOC_SQL('s')}
       WHERE a.class_id IN (${ph}) AND a.status != 'cancelled'
-        AND EXISTS (SELECT 1 FROM sos_cases x WHERE x.attempt_id = a.id AND x.status IN ('open', 'in_progress'))
+        AND EXISTS (SELECT 1 FROM sos_cases x WHERE x.attempt_id = a.id AND x.status IN ('open', 'in_progress') AND ${CASE_THAT('x')})
         AND (SELECT MAX(x.sos_level) FROM sos_cases x WHERE x.attempt_id = a.id) > 0
       GROUP BY a.class_id`,
   ).all(...ids) as any[]) openCases.set(r.class_id, r.n);
@@ -412,7 +413,7 @@ export function classRoster(p: Principal, classId: number, q?: string, kemKetThu
     .prepare(
       `SELECT sc.student_id, sc.sos_level, sc.cycle_id, a.attempt_no FROM sos_cases sc
          LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
-        WHERE sc.student_id IN (${ph}) AND sc.status != 'done'`,
+        WHERE sc.student_id IN (${ph}) AND sc.status != 'done' AND ${CASE_THAT('sc')}`,
     )
     .all(...sids) as any[];
   const activeCycle = new Map<number, number | null>(students.map((s) => [s.id, s.cycle_id ?? null]));
