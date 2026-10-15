@@ -17,7 +17,8 @@ import { duongDiemTheoLuot, type BangTheoLuot } from '../cham/LuoiChamLop.tsx';
 import { LuoiNhung } from '../test/lichTest/LuoiNhung.tsx';
 import { XacNhanPaLo } from './XacNhanPaLo.tsx';
 import { LOAI_HAN_CUA_VIEC, duongLichTest, tuanLich } from '@shared/domain/index.ts';
-import type { WorkItem } from '../worklist/WorkList.tsx';
+import { VIEC_LO_Y_THUC, type WorkItem } from '../worklist/WorkList.tsx';
+import { LoYThucPanel } from '../yThuc/LoYThucPanel.tsx';
 import { NganTongKet } from '../students/NganTongKet.tsx';
 import { PhoiHopSosSection, type CoordTurn } from '../yThuc/PhoiHopSosSection.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
@@ -39,12 +40,17 @@ export function lamTaiCho(it: WorkItem): boolean {
     case 'no_plan': return it.caseId !== null;
     case 'score': return (!!it.luot || !!it.periodId) && it.classId !== null;
     case 'ban_giao': return it.classId !== null;
-    case 'yt_xu_ly': case 'khai_bac': return it.studentId !== null;
+    case 'yt_xu_ly': return it.studentId !== null || laLo(it);
+    case 'yt_xem': return laLo(it);
+    case 'khai_bac': return it.studentId !== null || it.classId !== null;   // OV-13d: nhiều em → Xác nhận cấp bậc theo lô
     case 'phoi_hop_sos': return it.classId !== null;   // OV-12h: xác nhận meeting CX tại chỗ
     case 'yt_thuc_hien': case 'mgmt': case 'buoc_tiep': return soCuaKhoa(it.key) !== null;
     default: return false;
   }
 }
+
+/** OV-13d: dòng gộp Ý thức theo lớp (Xác nhận xử lý · Ghi nhận) → panel lô của đúng các em trong dòng. */
+const laLo = (it: WorkItem) => !!it.con?.length && it.classId !== null && VIEC_LO_Y_THUC.has(it.group);
 
 /**
  * OV-13c (mockup OV-13 §3a): dòng gộp làm CẢ DÒNG trong một panel — Xác nhận PA cùng lúc (Case SOS FT cùng lớp + tuần thi + mức SOS) · Nhập điểm theo tuần
@@ -83,11 +89,16 @@ export function PanelViec({ it, onDong, onDaLam, onTiep, onMo }: {
       return <PanelNhapDiem key={it.key} it={it} onDong={onDong} onDaLam={doi} />;
     case 'ban_giao':
       return <BanGiaoPanel key={it.key} classId={it.classId!} mon={it.key.startsWith('ban_giao_mon:') ? it.key.split(':')[2] ?? null : null} onClose={onDong} onDone={doi} />;
-    case 'yt_xu_ly':
+    case 'yt_xu_ly': case 'yt_xem':
+      if (laLo(it)) {
+        return <LoYThucPanel key={it.key} classId={it.classId!} lop={lop} viec={it.group === 'yt_xu_ly' ? 'xu-ly' : 'ghi-nhan'}
+          studentIds={it.con!.map((c) => c.studentId!).filter((x) => x !== null)} han={it.due} onClose={onDong} onDone={doi} />;
+      }
       return <XacNhanXuLyPanel key={it.key} studentId={it.studentId} lop={lop} onClose={onDong} onDone={doi} />;
     case 'yt_thuc_hien':
       return <DaThucHienPanel key={it.key} measureId={soCuaKhoa(it.key)} onClose={onDong} onDone={doi} />;
     case 'khai_bac':
+      if (it.studentId === null) return <LoYThucPanel key={it.key} classId={it.classId!} lop={lop} viec="cap-bac" studentIds={it.emIds ?? null} onClose={onDong} onDone={doi} />;
       return <KhaiBacPanel key={it.key} studentId={it.studentId} onClose={onDong} onDone={doi} />;
     case 'mgmt':
       return <NganViecVanHanh key={it.key} taskId={soCuaKhoa(it.key)} onClose={onDong} onDone={doi} />;

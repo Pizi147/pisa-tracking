@@ -9379,6 +9379,9 @@ await runPrOv13iTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P,
 // ==================================================================== OV-13j (Lịch sử sửa thông tin học viên: đường ghi có audit theo trường · API · quyền · phân trang)
 const { runPrOv13jTests } = await import('./prOv13j.tests.ts');
 await runPrOv13jTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== OV-13d (Ý thức nhiều em cùng lúc: lô xử lý · Ghi nhận · Xác nhận cấp bậc có bậc 0)
+const { runPrOv13dTests } = await import('./prOv13d.tests.ts');
+await runPrOv13dTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== OV-13c (gom Công việc theo tuần + lớp + mức SOS · Xác nhận PA cùng lúc · Nhập điểm theo tuần thi)
 const { runPrOv13cTests } = await import('./prOv13c.tests.ts');
 await runPrOv13cTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
