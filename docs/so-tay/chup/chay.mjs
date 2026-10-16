@@ -1,20 +1,25 @@
-// node docs/so-tay/chup/chay.mjs [tiền tố id…]   — chụp lại các ảnh (chạy từ thư mục gốc repo)
+// node docs/so-tay/chup/chay.mjs [vi|en] [tiền tố id…]   — chụp lại ảnh (chạy từ thư mục gốc repo; app cục bộ đang chạy)
 import { moTrinhDuyet, chayMotAnh } from './lib.mjs';
 import { ANH } from './anh.mjs';
 
-const loc = process.argv.slice(2);
-const dsach = ANH.filter((a) => !loc.length || loc.some((t) => a.id.startsWith(t)));
+const args = process.argv.slice(2);
+const langs = args.filter((a) => a === 'vi' || a === 'en');
+const loc = args.filter((a) => a !== 'vi' && a !== 'en');
 const b = await moTrinhDuyet();
-const cache = {};
-const kq = {};
-for (const fig of dsach) {
-  try {
-    const r = await chayMotAnh(b, fig, cache);
-    kq[fig.id] = { thieu: r.thieu };
-    console.log(r.thieu.length ? `⚠ ${fig.id}: thiếu số ${r.thieu.join(',')}` : `✓ ${fig.id}`);
-  } catch (e) {
-    kq[fig.id] = { loi: String(e.message || e).split('\n')[0] };
-    console.log(`✗ ${fig.id}: ${kq[fig.id].loi}`);
+let loi = 0;
+for (const lang of langs.length ? langs : ['vi', 'en']) {
+  const cache = {};
+  for (const fig of ANH.filter((a) => (lang === 'vi' || a.en) && (!loc.length || loc.some((t) => a.id.startsWith(t))))) {
+    try {
+      const r = await chayMotAnh(b, fig, lang, cache);
+      console.log(r.thieu.length ? `⚠ ${lang}/${fig.id}: thiếu số ${r.thieu.join(',')}` : `✓ ${lang}/${fig.id}`);
+      if (r.thieu.length) loi += 1;
+    } catch (e) {
+      loi += 1;
+      console.log(`✗ ${lang}/${fig.id}: ${String(e.message || e).split('\n')[0]}`);
+    }
   }
+  for (const k of Object.keys(cache)) await cache[k].ctx.close();
 }
 await b.close();
+process.exit(loi ? 1 : 0);
