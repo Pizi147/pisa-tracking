@@ -11,6 +11,7 @@ import { HanhTrinh } from './HanhTrinh.tsx';
 import { CacLoTrinh } from './CacLoTrinh.tsx';
 import { NganTongKet } from './NganTongKet.tsx';
 import { PanelBuocTiep } from './PanelBuocTiep.tsx';
+import { HopGiaHan, NhanSauThi } from './HopGiaHan.tsx';
 import { Nhan } from '../../ui/Nhan.tsx';
 import { CHU_DA_XONG } from '@shared/domain/index.ts';
 import { BonO, CauTomTat, DaiChoDuyet, DaiTamDung, DangXuLy, DongLienHe, DongThongTin, ThanhViec, type Viec } from './DauHoSo.tsx';
@@ -77,6 +78,7 @@ export default function StudentDetailPage() {
   const q = p.loTrinh ? `?cycleId=${p.loTrinh}` : p.dot != null ? `?attemptId=${p.dot}` : '';
   const { data, loading, error, reload } = useApi<Profile>(id ? `/students/${id}${q}` : null, [p.loTrinh, p.dot]);
   const [viecQuanLy, setViecQuanLy] = useState<ViecQuanLy | null>(null);
+  const [giaHan, setGiaHan] = useState(false);   // OV-13q
   const [quayLaiBt, setQuayLaiBt] = useState(false);   // OV-13m: Quay lại học sau Tạm dừng sau thi = panel Bước tiếp mở sẵn Lộ trình mới
   const luuTru = useLuuTru(reload);
   const dienThoai = useDienThoai();
@@ -224,7 +226,11 @@ export default function StudentDetailPage() {
                 <MissingBadge items={data.missing} />
                 {data.status !== 'active' && <Info>{studentStatusLabel(data.status)}</Info>}
                 {data.archivedAt && <Info>{t('Đã lưu trữ')}</Info>}
-                {bt && (!bt.chon || bt.hen) && <Nhan tone="ok">{CHU_DA_XONG}</Nhan>}
+                {/* OV-13q: "Đã thi · chờ kết quả · hạn …" / "Đã xong · chờ bước tiếp · hạn …" thay nhãn "Đã xong" khi còn việc sau thi. */}
+                {data.sauThi ? <NhanSauThi s={data.sauThi} /> : bt && (!bt.chon || bt.hen) && <Nhan tone="ok">{CHU_DA_XONG}</Nhan>}
+                {data.sauThi?.coTheGiaHan && !data.lopHoc?.chiXem && (
+                  <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 text-sm font-semibold sm:min-h-0" onClick={() => setGiaHan(true)}>{t('Gia hạn')}</button>
+                )}
               </h1>
               <DongThongTin tt={data.dauHoSo.thongTin} />
               <DongLienHe l={data.lienHe} email={data.email} dob={data.dob} tvv={data.tvv?.ten ?? data.consultantName} />
@@ -414,6 +420,10 @@ export default function StudentDetailPage() {
           onClose={dongNgan} onChanged={reload} />
       )}
 
+      {giaHan && data.sauThi && (
+        <HopGiaHan x={{ cycleId: data.sauThi.cycleId, han: data.sauThi.han, daGiaHan: data.sauThi.daGiaHan }} hocVien={data.fullName} lop={lopTruocSau?.code ?? null}
+          onClose={() => setGiaHan(false)} onDone={reload} />
+      )}
       {p.tongKet != null && <NganTongKet cycleId={p.tongKet} onClose={() => xoaThamSo('tong-ket')} onDoi={reload} />}
       {(p.buocTiep != null || quayLaiBt) && (
         <PanelBuocTiep cycleId={p.buocTiep ?? bt!.cycleId} hocVien={{ id: data.id, ten: data.fullName }} lop={lopTruocSau?.code ?? null}

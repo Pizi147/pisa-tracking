@@ -53,6 +53,7 @@ export const LOAI_HAN_CUA_VIEC: Partial<Record<string, DeadlineKind>> = {
   cause: 'xac-minh-sos', ghi_nhan_xet: 'xac-minh-sos', xac_nhan_pa: 'xac-minh-sos', mini_test: 'mini-test', no_plan: 'lap-pa', ghi_ket_qua_pa: 'cap-nhat-pa', score: 'nhap-diem',
   yt_xu_ly: 'xu-ly-vi-pham', yt_xem: 'xu-ly-vi-pham', yt_thuc_hien: 'xu-ly-vi-pham',
   ban_giao: 'viec-van-hanh', mgmt: 'viec-van-hanh', chot_len_ft: 'chot-len-ft', phoi_hop_sos: 'phoi-hop',
+  thi_that: 'sau-thi', buoc_tiep: 'sau-thi',   // OV-13q
 };
 
 export type ViecGom = { group: string; urgency: 'overdue' | 'today' | 'normal'; due: string | null };

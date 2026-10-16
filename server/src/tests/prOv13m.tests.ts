@@ -92,14 +92,14 @@ export async function runPrOv13mTests(t: YThucTestKit) {
     return { ...e, lop: l, gvcn: g };
   };
 
-  await checkAsync('M13-1 · lưu kết quả (em còn học) → lộ trình "Đã xong", việc Chọn bước tiếp sinh ngay (hạn +7), số Tổng quan TVV = góc Cần làm TVV', async () => {
+  await checkAsync('M13-1 · lưu kết quả (em còn học) → lộ trình "Đã xong", việc Chọn bước tiếp sinh ngay (OV-13q: hạn = ngày thi + 7), số Tổng quan TVV = góc Cần làm TVV', async () => {
     await voiMayChu(TODAY, async (goi) => {
       const x = await coKetQua(goi);
       assert(hs(x.sid).status === 'active' && lt(x.cy).status === 'active', 'lưu kết quả không đóng lộ trình / không đổi trạng thái em');
       const bt = await json(await goi(QL, `/cycles/${x.cy}/buoc-tiep`));
-      assert(bt.daXong === 'Đã xong · OVR 6.5 · Đạt Target' && bt.chon === null && bt.coTheChon && bt.han === addDays(TODAY, 7) && bt.target === '6.5' && bt.lopNay?.id === x.lop, JSON.stringify(bt));
+      assert(bt.daXong === 'Đã xong · OVR 6.5 · Đạt Target' && bt.chon === null && bt.coTheChon && bt.han === addDays(TODAY, 2) && bt.target === '6.5' && bt.lopNay?.id === x.lop, JSON.stringify(bt));
       const v = viecBt(await json(await goi(QL, '/my-work'))).filter((i: any) => i.studentId === x.sid);
-      assert(v.length === 1 && v[0].tieuDe === 'Chọn bước tiếp' && v[0].due === addDays(TODAY, 7) && /OVR 6\.5 · Đạt Target/.test(v[0].reason) && v[0].href.includes(`buoc-tiep=${x.cy}`), JSON.stringify(v));
+      assert(v.length === 1 && v[0].tieuDe === 'Chọn bước tiếp' && v[0].due === addDays(TODAY, 2) && /OVR 6\.5 · Đạt Target/.test(v[0].reason) && v[0].href.includes(`buoc-tiep=${x.cy}`), JSON.stringify(v));
       const dong = (await json(await goi(QL, `/students/${x.sid}/lo-trinh`))) as any[];
       assert(dong[0].buocTiep?.daXong === bt.daXong, JSON.stringify(dong[0]));
       const hoSo = await json(await goi(QL, `/students/${x.sid}`));

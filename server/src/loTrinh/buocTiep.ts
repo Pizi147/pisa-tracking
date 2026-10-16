@@ -7,12 +7,12 @@
  *    Bắt đầu một Thứ Hai sau (không qua lệnh) = "Hẹn bắt đầu" (`buoc_tiep_hen`), tới tuần đó tự bắt đầu (`batDauHenDenHan`, cùng cron / quét khi đọc).
  *  · `hoc_tiep` / `hoc_lai` (OV-8a) — chỉ dữ liệu / API cũ.
  * Mỗi lựa chọn MỘT giao dịch; đổi lựa chọn = hoàn tác đúng lựa chọn cũ (`buoc_tiep_json`) rồi làm cái mới. Target giữ (Sửa = `mucTieu`).
- * Việc "Chọn bước tiếp" (QL / TVV): lộ trình FT mới nhất có kết quả, chưa chọn, em chưa Lưu trữ; hạn = ngày có kết quả + 7, đỏ không chặn.
+ * Việc "Chọn bước tiếp" (QL / TVV): lộ trình FT mới nhất có kết quả, chưa chọn, em chưa Lưu trữ; hạn = hạn sau thi (OV-13q `trangThaiSauThi`), đỏ không chặn.
  */
 import { db, tx } from '../db.ts';
 import {
-  LOI_TUAN_BAT_DAU, LUA_CHON_SAU_THI, ghepMucTieu, LUA_CHON_SAU_THI_CU, NHAN_SAU_THI, PERMISSIONS, chuTargetKck, duongHoSoHocVien, goiYSauThi, huongTiep, nhanDaXong, thuNgay, tuanHopLe, tuanLich,
-  type LuaChonSauThi,
+  LOI_TUAN_BAT_DAU, LUA_CHON_SAU_THI, ghepMucTieu, LUA_CHON_SAU_THI_CU, NHAN_SAU_THI, PERMISSIONS, chuTargetKck, duongHoSoHocVien, goiYSauThi, huongTiep, nhanDaXong, thuNgay, trangThaiSauThi, tuanHopLe, tuanLich,
+  type DongSauThi, type LuaChonSauThi,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { HttpError, addDays, badRequest, conflict, forbidden, notFound, nowIso } from '../util.ts';
@@ -21,6 +21,7 @@ import { archiveStudent, coQuyenBuocTiep, hoanTacHocLai, hoanTacKetThuc, hoanTac
 import { huyLenh, raLenh } from '../classes/lenhChuyen.ts';
 import { ghiBanChup } from './banChup.ts';
 import { docTarget } from '../fasttrack/cycles.ts';
+import { COT_SAU_THI, NGAY_CO_KQ } from './cotSauThi.ts';
 import { addJourney, notify, writeAudit } from '../platform/audit.ts';
 
 /** Lộ trình FT có kết quả thi thật (cùng nghĩa `!canChoThiThat`): đủ 4 kỹ năng, "Không thi", hoặc kết quả CŨ (Overall / kết luận chọn tay). */
@@ -30,18 +31,16 @@ const CO_KET_QUA = `(c.thi_that_khong_thi = 1 OR (c.thi_that_l IS NOT NULL AND c
 export const coKetQuaThi = (c: any): boolean => !!c && (!!c.thi_that_khong_thi || [c.thi_that_l, c.thi_that_r, c.thi_that_w, c.thi_that_s].every((x) => x !== null && x !== undefined)
   || (c.outcome_score ?? null) !== null || (!!c.outcome && c.outcome !== 'unknown'));
 const BAN_CHUP_CUOI = 'b.cycle_id = c.id AND b.lan = (SELECT MAX(lan) FROM ban_chup_lo_trinh WHERE cycle_id = c.id)';
-/** Ngày có kết quả (nghiệp vụ): mốc Hành trình "Kết quả thi thật" mới nhất; em kết thúc học SAU đó thì tính từ ngày đóng. */
-const NGAY_CO_KQ = `MAX(COALESCE((SELECT MAX(j.event_date) FROM journey_events j WHERE j.cycle_id = c.id AND j.event_type = 'cycle_outcome'), ''), COALESCE(c.ended_at, ''))`;
 /** Ghi danh đang giữ của em (đang học / tạm dừng) — lớp "Lớp này" và lớp nguồn của Chuyển lớp. */
 const GHI_DANH = `(SELECT e.id FROM enrollments e WHERE e.student_id = c.student_id AND e.status IN ('active', 'paused') ORDER BY e.id DESC LIMIT 1)`;
 
 function docLoTrinh(cycleId: number) {
   return db().prepare(
-    `SELECT c.*, ${CO_KET_QUA} AS co_kq, b.ly_do AS bc_ly_do, b.ket_luan AS bc_ket_luan, b.class_id AS bc_class_id, b.class_code AS bc_class_code, ${NGAY_CO_KQ} AS ngay_kq,
+    `SELECT c.*, ${CO_KET_QUA} AS co_kq, b.ly_do AS bc_ly_do, b.ket_luan AS bc_ket_luan, b.class_id AS bc_class_id, b.class_code AS bc_class_code, ${NGAY_CO_KQ} AS ngay_kq, ep.week_start AS exam_week,
             (SELECT MAX(seq) FROM learning_cycles x WHERE x.student_id = c.student_id) AS seq_cuoi, u.full_name AS boi_ten,
             s.status AS em_status, s.archived_at AS em_archived, e.class_id AS lop_id, e.status AS ghi_danh, l.code AS lop_code
        FROM learning_cycles c JOIN students s ON s.id = c.student_id LEFT JOIN ban_chup_lo_trinh b ON ${BAN_CHUP_CUOI} LEFT JOIN users u ON u.id = c.buoc_tiep_boi
-       LEFT JOIN enrollments e ON e.id = ${GHI_DANH} LEFT JOIN classes l ON l.id = e.class_id WHERE c.id = ?`,
+       LEFT JOIN report_periods ep ON ep.id = c.exam_period_id LEFT JOIN enrollments e ON e.id = ${GHI_DANH} LEFT JOIN classes l ON l.id = e.class_id WHERE c.id = ?`,
   ).get(cycleId) as any;
 }
 /** Lộ trình có mục Bước tiếp: FT, không đóng vì chuyển lớp (em không đi thi), có kết quả — hoặc đã chọn (kết quả bị xoá sau vẫn hiện lựa chọn). OV-13m: cả khi còn mở. */
@@ -58,6 +57,8 @@ export type TrangThaiBuocTiep = {
   ketLuan: string | null;
   /** false khi lựa chọn không hoàn tác được nữa (Lộ trình mới · Lớp khác đã chuyển lớp) — web ẩn nút. */
   hoanTacDuoc: boolean;
+  /** OV-13q: hạn đã gia hạn (chữ "đã gia hạn") · nút Gia hạn (chưa chọn, người làm được việc — `coTheGiaHanSauThi`). */
+  daGiaHan: boolean; coTheGiaHan: boolean;
 };
 
 /** Mục "Bước tiếp" (ngăn Tổng kết, panel Bước tiếp, Các lộ trình) — null khi lộ trình không có mục. `coTheChon` = `coQuyenBuocTiep`, máy chủ kiểm lại khi chọn. */
@@ -65,10 +66,12 @@ export function trangThaiBuocTiep(p: Principal, cycleId: number): TrangThaiBuocT
   const c = docLoTrinh(cycleId);
   if (!coMuc(c)) return null;
   const g = JSON.parse(c.buoc_tiep_json ?? '{}') as GhiBuocTiep;
+  const coTheChon = coQuyenBuocTiep(p, c.student_id);
   return {
     chon: (c.buoc_tiep ?? null) as LuaChonSauThi | null, luc: c.buoc_tiep_luc ?? null, boi: c.boi_ten ?? null,
     goiY: goiYSauThi({ khongThi: !!c.thi_that_khong_thi, ketLuan: ketLuanCua(c) }),
-    coTheChon: coQuyenBuocTiep(p, c.student_id),
+    coTheChon, daGiaHan: trangThaiSauThi({ ...c, buoc_tiep: null }, demoToday()).daGiaHan,
+    coTheGiaHan: !c.buoc_tiep && coTheChon,   // rà #436: giai đoạn chờ bước tiếp — chỉ người chọn được (`coTheGiaHanSauThi`)
     daXong: daXongCua(c), han: hanBuocTiep(c, demoToday()), hen: c.buoc_tiep_hen ?? null, henLop: c.buoc_tiep_hen ? g.lopMoiCode ?? c.lop_code ?? null : null,
     lopNay: c.lop_id ? { id: c.lop_id, code: c.lop_code } : c.bc_class_id ? { id: c.bc_class_id, code: c.bc_class_code } : null,
     target: chuTargetKck(c.target_score ?? null, !!c.khong_cam_ket), ngayThi: c.thi_that_ngay ?? null, studentId: c.student_id, cycleId: c.id, ketLuan: c.thi_that_khong_thi ? null : ketLuanCua(c),
@@ -339,16 +342,17 @@ export const SQL_DONG_CON_GHI_DANH = `SELECT s.id, s.student_code, s.full_name, 
 export const emDongConGhiDanh = (conn: any): any[] => conn.prepare(SQL_DONG_CON_GHI_DANH).all() as any[];
 
 // ------------------------------------------------------------------ việc QL / TVV "Chọn bước tiếp"
-/** Hạn chọn bước tiếp = ngày có kết quả thi + 7 — việc Công việc, góc Cần làm của TVV (OV-12f) và panel Bước tiếp cùng hàm. */
-export const hanBuocTiep = (c: { ngay_kq: unknown }, today: string): string => addDays(String(c.ngay_kq).slice(0, 10) || today, 7);
+/** OV-13q: hạn chọn bước tiếp = hạn sau thi (ngày thi + 7, gia hạn) hoặc ngày có kết quả nếu muộn hơn (`trangThaiSauThi`) — việc Công việc, góc Cần làm của TVV,
+ * panel Bước tiếp, hồ sơ cùng hàm. Không có ngày nào (dữ liệu cũ) → hôm nay. */
+export const hanBuocTiep = (c: DongSauThi, today: string): string => trangThaiSauThi({ ...c, buoc_tiep: null }, today).han ?? today;
 
 /**
  * Lộ trình chờ chọn bước tiếp (chưa lọc quyền) — một nguồn cho việc QL / TVV (`viecBuocTiep`), ô "Chờ chọn bước tiếp" (OV-10c) và đếm trước deploy (`SQL_CHO_BUOC_TIEP`).
  * OV-13m: sinh NGAY khi có kết quả, cả khi em còn ghi danh (lộ trình còn mở); lộ trình đã đóng thì không đóng vì chuyển lớp. Lớp = lớp cuối (bản chụp) hoặc lớp đang giữ.
  */
-export const SQL_CHO_BUOC_TIEP = `SELECT c.id, c.student_id, s.full_name AS ten, c.thi_that_khong_thi, c.thi_that_ngay, c.outcome, c.outcome_score, c.status, b.ket_luan,
-       COALESCE(b.class_id, e.class_id) AS class_id, COALESCE(b.class_code, l.code) AS class_code, COALESCE(b.branch_id, l.branch_id) AS branch_id, ${NGAY_CO_KQ} AS ngay_kq
-  FROM learning_cycles c JOIN students s ON s.id = c.student_id LEFT JOIN ban_chup_lo_trinh b ON ${BAN_CHUP_CUOI}
+export const SQL_CHO_BUOC_TIEP = `SELECT c.id, c.student_id, s.full_name AS ten, ${COT_SAU_THI}, c.status, b.ket_luan,
+       COALESCE(b.class_id, e.class_id) AS class_id, COALESCE(b.class_code, l.code) AS class_code, COALESCE(b.branch_id, l.branch_id) AS branch_id
+  FROM learning_cycles c JOIN students s ON s.id = c.student_id LEFT JOIN ban_chup_lo_trinh b ON ${BAN_CHUP_CUOI} LEFT JOIN report_periods ep ON ep.id = c.exam_period_id
   LEFT JOIN enrollments e ON e.id = ${GHI_DANH} LEFT JOIN classes l ON l.id = e.class_id
  WHERE c.route IS NOT NULL AND c.buoc_tiep IS NULL AND s.archived_at IS NULL
    AND (c.status = 'active' OR COALESCE(b.ly_do, '') != 'chuyen_lop') AND ${CO_KET_QUA}
@@ -368,14 +372,15 @@ export function viecBuocTiep(p: Principal, f: { today: string; branchId: number 
   for (const c of ds) {
     if ((f.branchId && c.branch_id && c.branch_id !== f.branchId) || (f.studentId && c.student_id !== f.studentId)) continue;
     if (!coQuyenBuocTiep(p, c.student_id)) continue;
-    const han = hanBuocTiep(c, f.today);
+    const st = trangThaiSauThi(c, f.today);
+    const han = st.han ?? f.today;
     const kq = daXongCua({ ...c, bc_ket_luan: c.ket_luan });
     const ketQua = nhanDaXong({ khongThi: !!c.thi_that_khong_thi, ovr: c.outcome_score ?? null, ketLuan: c.ket_luan ?? c.outcome ?? null }, true);
     const thi = c.thi_that_ngay ? `đã thi ${thuNgay(c.thi_that_ngay, f.today)}` : null;
     out.push({
-      key: `buoc_tiep:${c.id}`, group: 'buoc_tiep', urgency: f.today > han ? 'overdue' : 'normal',
+      key: `buoc_tiep:${c.id}`, group: 'buoc_tiep', urgency: f.today > han ? 'overdue' : 'normal', cycleId: c.id, daGiaHan: st.daGiaHan,
       studentId: c.student_id, studentName: c.ten, classId: c.class_id ?? null, classCode: c.class_code ?? null,
-      attemptId: null, attemptNo: null, caseId: null, level: null, contextLabel: kq, count: null,
+      attemptId: null, attemptNo: null, caseId: null, level: null, contextLabel: st.daGiaHan ? `${kq} · đã gia hạn` : kq, count: null,
       reason: [c.class_code ?? null, thi, ketQua].filter(Boolean).join(' · '),
       tieuDe: 'Chọn bước tiếp', phu: null, actionLabel: 'Chọn',
       href: duongHoSoHocVien(c.student_id, { buocTiep: c.id }), ownerId: null, owner: null, mine: true,

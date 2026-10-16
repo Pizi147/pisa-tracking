@@ -12,6 +12,7 @@ import { MONTH_CODE, hienTargetKck, ketQuaThiThat, ngay } from '@shared/domain/i
 import { laBand } from './StudentPlanPanel.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 import { PanelBuocTiep } from './PanelBuocTiep.tsx';
+import { HopGiaHan } from './HopGiaHan.tsx';
 
 const KY_NANG = ['l', 'r', 'w', 's'] as const;
 const fmt = (v: number | null | undefined) => (v === null || v === undefined ? '' : v.toFixed(1));
@@ -36,6 +37,9 @@ export function KetQuaThiThatPanel({ cycleId, studentName, lop, quayLai, onClose
   const toast = useToast();
   const { homNay } = useNgayNghiepVu();
   const { data: c, error, reload } = useApi<any>(`/cycles/${cycleId}`, [cycleId]);
+  /* OV-13q: "Đã thi … · hạn …" + Gia hạn (cùng `trangThaiSauThi` với dòng việc). */
+  const sauThi = useApi<{ giaiDoan: string; ngayThi: string | null; han: string | null; daGiaHan: boolean; coTheGiaHan: boolean }>(`/cycles/${cycleId}/han-sau-thi`, [cycleId]);
+  const [giaHan, setGiaHan] = useState(false);
   const [form, setForm] = useState<{ ngay: string; l: string; r: string; w: string; s: string; khongThi: boolean; ghiChu: string } | null>(null);
   const [busy, setBusy] = useState(false);
   const [goc, setGoc] = useState<string | null>(null);
@@ -55,6 +59,7 @@ export function KetQuaThiThatPanel({ cycleId, studentName, lop, quayLai, onClose
   if (error) return <KhungPanel tieuDe={t('Kết quả thi thật')} hocVien={studentName} lop={lop} quayLai={quayLai} rong={quayLai ? 'rong' : undefined} onDong={onClose}><ErrorState message={error.message} hint={error.hint} onRetry={reload} /></KhungPanel>;
   if (!c || !form) return <KhungPanel tieuDe={t('Kết quả thi thật')} hocVien={studentName} lop={lop} quayLai={quayLai} rong={quayLai ? 'rong' : undefined} onDong={onClose}><Skeleton rows={5} /></KhungPanel>;
 
+  const st = sauThi.data;
   const target: number | null = c.target_score ?? null;   // OV-9: KCK giữ Target — so như máy chủ (`ketQuaThiThat`)
   const so = (s: string) => (s.trim() === '' ? null : Number(s));
   const sai = (s: string) => s.trim() !== '' && !laBand(s);
@@ -92,7 +97,13 @@ export function KetQuaThiThatPanel({ cycleId, studentName, lop, quayLai, onClose
         <div className="flex flex-wrap gap-x-4 gap-y-1 text-[12.5px] text-slate-400">
           <span>Target <b className="tabular-nums text-slate-200">{hienTargetKck(target !== null ? target.toFixed(1) : null, !!c.khong_cam_ket)}</b></span>
           <span>{t('Dự kiến thi')} <b className="tabular-nums text-slate-200">{nhanThi(c, homNay) ?? '—'}</b></span>
+          {st?.giaiDoan === 'da_thi_cho_kq' && st.han && (
+            <span>{t('Hạn sau thi')} <b className="tabular-nums text-slate-200">{ngay(st.han, homNay)}</b>{st.daGiaHan ? ` · ${t('đã gia hạn')}` : ''}
+              {st.coTheGiaHan && <>{' · '}<button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 font-semibold sm:min-h-0" onClick={() => setGiaHan(true)}>{t('Gia hạn')}</button></>}
+            </span>
+          )}
         </div>
+        {giaHan && st && <HopGiaHan x={{ cycleId, han: st.han, daGiaHan: st.daGiaHan }} hocVien={studentName} lop={lop} onClose={() => setGiaHan(false)} onDone={() => { sauThi.reload(); onDone(); }} />}
         <label className="flex min-h-[44px] items-center gap-2 text-[13px] text-slate-300 sm:min-h-0">
           <input type="checkbox" checked={form.khongThi} onChange={(e) => dat('khongThi', e.target.checked)} /> {t('Không thi')}
         </label>

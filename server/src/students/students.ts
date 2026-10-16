@@ -610,14 +610,9 @@ export function hoanTacTamDung(p: Principal, studentId: number) {
   });
 }
 
-/**
- * BƯỚC TIẾP SAU THI THẬT (OV-12a, chủ SP 14/10): Quản lý (`cycle.edit`) HOẶC TVV của chi nhánh em (`student.edit_more` của vai TVV — CX không).
- * Một hàm cho `loTrinh/buocTiep.ts` (chọn / bỏ / việc / nút) và danh sách lớp của panel Học lại mở từ Bước tiếp.
- */
-export function coQuyenBuocTiep(p: Principal, studentId: number): boolean {
-  return can(p, PERMISSIONS.CYCLE_EDIT, { studentId })
-    || can({ ...p, grants: p.grants.filter((g) => g.roleKey === 'consultant') }, PERMISSIONS.STUDENT_EDIT_MORE, { studentId });
-}
+/* OV-13q: `coQuyenBuocTiep` chuyển sang permissions.ts (thiThat.ts dùng — tránh vòng import thiThat → students → buocTiep → thiThat). */
+import { coQuyenBuocTiep } from '../permissions.ts';
+export { coQuyenBuocTiep };
 
 /** GET /students/:id/hoc-lai/lop-dich — lớp cũ + lộ trình sẽ chạy tiếp (hay mở mới) + lớp ĐANG hoạt động để chọn "Sang lớp mới" (panel Học lại). Quản lý / Quản trị của học viên;
  * OV-12a: TVV của chi nhánh cũng đọc được (chỉ đọc — panel Học lại mở từ Bước tiếp sau thi; Học lại thẳng `/hoc-lai` vẫn chỉ Quản lý). */

@@ -254,6 +254,8 @@ export const DEADLINE_KINDS = [
   'chot-len-ft',
   /* OV-12h: meeting CX / GĐCN (Phối hợp SOS) xác nhận trong 5 ngày từ lúc tạo việc. */
   'phoi-hop',
+  /* OV-13q: một "Hạn sau thi" (ngày thi + 7, gia hạn được) cho Cập nhật kết quả thi thật và Chọn bước tiếp. */
+  'sau-thi',
 ] as const;
 export type DeadlineKind = (typeof DEADLINE_KINDS)[number];
 
@@ -280,6 +282,7 @@ const DEADLINE_VIEC: Record<DeadlineKind, { viec: string; tien: string }> = {
   'mini-test': { viec: 'Mini Test', tien: t('hạn') },
   'phoi-hop': { viec: t('Xác nhận meeting CX'), tien: t('hạn') },
   'chot-len-ft': { viec: t('Chốt lộ trình'), tien: t('hạn hết CN') },
+  'sau-thi': { viec: t('Hạn sau thi'), tien: t('hạn') },
 };
 
 /** "quá hạn 15 ngày" · gọn: "15 ngày" · không biết số ngày: "quá hạn". */

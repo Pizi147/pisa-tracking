@@ -4,10 +4,10 @@
  * Mỗi lần lưu: làm mới bản chụp mới nhất (lộ trình đã đóng) + nhật ký. OV-8a: KHÔNG tự Lưu trữ nữa — có kết quả thì Quản lý chọn Bước tiếp (`buocTiep.ts`).
  */
 import { THAM_SO_TOI_DA, db, theoLo, tx } from '../db.ts';
-import { PERMISSIONS, diemThiHopLe, duongHoSoHocVien, mocNhacThiThat, tuanLich } from '../../../shared/domain/index.ts';
+import { PERMISSIONS, canNamGan, diemThiHopLe, docNgayNhap, duongHoSoHocVien, ngay, thuNgay, trangThaiSauThi, tuanLich, type GiaiDoanSauThi, type TrangThaiSauThi } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { badRequest, chuTuDo, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
-import { can, type Principal } from '../permissions.ts';
+import { can, coQuyenBuocTiep, type Principal } from '../permissions.ts';
 import { addJourney, writeAudit } from '../platform/audit.ts';
 import { cycleById, examPlanOf } from '../fasttrack/cycles.ts';
 import { thiThatCuaCycle } from './banChup.ts';
@@ -33,8 +33,19 @@ export function coTheNhapThiThat(p: Principal, c: { id: number; student_id: numb
   /* OV-13h (chủ SP 15/10): em đã Lưu trữ vẫn nhập kết quả thi thật (bỏ chặn OV-11d) — mọi thứ khác của hồ sơ Lưu trữ vẫn khoá. */
   /* OV-8b: TVV / CX (`student.edit_more`) nhập kết quả thi thật của HV chi nhánh mình (CX: mọi chi nhánh). */
   if ([PERMISSIONS.STUDENT_EDIT, PERMISSIONS.CYCLE_EDIT, PERMISSIONS.STUDENT_EDIT_MORE].some((q) => can(p, q, { studentId: c.student_id }))) return true;
-  const lop = lopCuoiCuaLoTrinh(c.id);
+  return laGvcnLopCuoi(p, c.id);
+}
+function laGvcnLopCuoi(p: Principal, cycleId: number): boolean {
+  const lop = lopCuoiCuaLoTrinh(cycleId);
   return !!lop && !!db().prepare(`SELECT 1 FROM teacher_assignments WHERE user_id = ? AND class_id = ? AND is_core = 1 AND status = 'active'`).get(p.userId, lop);
+}
+/**
+ * OV-13q: ai GIA HẠN được — người làm được việc ĐANG MỞ của em (rà #436): "chờ kết quả" → Quản lý / Quản trị / TVV chi nhánh (`coQuyenBuocTiep`) + GVCN lớp cuối;
+ * "chờ bước tiếp" → chỉ người chọn được bước tiếp (QL / QT / TVV). GVBM, Admin, CX: không (CX có `student.edit_more` nhưng chỉ xem việc).
+ */
+export function coTheGiaHanSauThi(p: Principal, c: { id: number; student_id: number }, giaiDoan: GiaiDoanSauThi): boolean {
+  if (giaiDoan === 'cho_buoc_tiep') return coQuyenBuocTiep(p, c.student_id);
+  return giaiDoan === 'da_thi_cho_kq' && (coQuyenBuocTiep(p, c.student_id) || laGvcnLopCuoi(p, c.id));
 }
 
 const docDiem = (v: unknown, nhan: string): number | null => {
@@ -94,28 +105,38 @@ export function datKetQuaThiThat(p: Principal, cycleId: number, input: NhapThiTh
 }
 
 // ------------------------------------------------------------------ việc nhắc "Cập nhật kết quả thi thật"
-/** Lộ trình FT chưa có kết quả thi thật đã qua mốc nhắc — MỘT câu cho việc GVCN / QL (`viecThiThat`) và góc Cần làm của TVV (OV-12f). */
-export function loTrinhChoKetQuaThi(today: string): { c: any; m: NonNullable<ReturnType<typeof mocNhacThiThat>> }[] {
-  const conn = db();
-  const ds = conn.prepare(`SELECT c.id, c.student_id, s.full_name AS ten, c.ended_at, c.exam_month, c.exam_date, ep.week_start AS exam_week,
+/* OV-13q: cột / câu dùng chung ở tệp lá `cotSauThi.ts` (không import gì) — buocTiep.ts dựng SQL lúc nạp module, không vướng vòng import. */
+export { COT_SAU_THI, LO_TRINH_MOI_NHAT, NGAY_CO_KQ, cotSauThi, ngayCoKq } from './cotSauThi.ts';
+import { COT_SAU_THI, LO_TRINH_MOI_NHAT, NGAY_CO_KQ } from './cotSauThi.ts';
+
+/**
+ * Lộ trình FT chưa có kết quả thi thật đã qua ngày thi (`trangThaiSauThi` = "Đã thi · chờ kết quả") — MỘT câu cho việc GVCN / QL (`viecThiThat`),
+ * góc Cần làm của TVV (OV-12f), ô Tổng quan "Đã thi · chờ kết quả" (OV-13q) và migrate `prOv13q`.
+ */
+export const SQL_CHO_KET_QUA_THI = `SELECT c.id, c.student_id, s.full_name AS ten, ${COT_SAU_THI},
       COALESCE((SELECT class_id FROM ban_chup_lo_trinh b WHERE b.cycle_id = c.id AND b.class_id IS NOT NULL ORDER BY lan DESC LIMIT 1),
                (SELECT a.class_id FROM assessment_attempts a WHERE a.cycle_id = c.id AND a.class_id IS NOT NULL AND a.kind != 'mt0' ORDER BY a.id DESC LIMIT 1),
                (SELECT e.class_id FROM enrollments e WHERE e.student_id = c.student_id ORDER BY e.id DESC LIMIT 1)) AS class_id
     FROM learning_cycles c JOIN students s ON s.id = c.student_id LEFT JOIN report_periods ep ON ep.id = c.exam_period_id
    WHERE c.route IS NOT NULL AND c.thi_that_khong_thi = 0 AND (c.thi_that_l IS NULL OR c.thi_that_r IS NULL OR c.thi_that_w IS NULL OR c.thi_that_s IS NULL)
      /* Kết quả CŨ (chỉ Overall / kết luận chọn tay) là đã có kết quả. */
-     AND c.outcome_score IS NULL AND COALESCE(c.outcome, 'unknown') = 'unknown'
+     AND c.outcome_score IS NULL AND COALESCE(c.outcome, 'unknown') = 'unknown' AND ${LO_TRINH_MOI_NHAT}
      /* Đóng vì CHUYỂN LỚP (đóng-mở): em không đi thi — không nhắc. */
      AND NOT EXISTS (SELECT 1 FROM ban_chup_lo_trinh b WHERE b.cycle_id = c.id AND b.ly_do = 'chuyen_lop' AND b.lan = (SELECT MAX(lan) FROM ban_chup_lo_trinh WHERE cycle_id = c.id))
-     /* TD4: tập cha của "đã qua mốc nhắc" — mốc = thứ Hai sau ngày thi (mocNhacThiThat) > ngày thi ≥ cận dưới này; lọc JS giữ nguyên. */
-     AND COALESCE(c.exam_date, ep.week_start, CASE WHEN c.exam_month GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]' THEN c.exam_month || '-01' END, c.ended_at) <= ?`).all(today) as any[];
-  const moc = ds.map((c) => ({ c, m: mocNhacThiThat({ thangThi: c.exam_month, tuanThi: c.exam_week, ngayThi: c.exam_date, ngayDong: c.ended_at }) })).filter((x) => x.m && x.m.tu <= today);
-  return moc as any;
+     /* TD4: tập cha của "đã thi" — ngày thi (trangThaiSauThi) ≥ cận dưới này; lọc JS giữ nguyên. */
+     AND COALESCE(c.thi_that_ngay, c.exam_date, ep.week_start, CASE WHEN c.exam_month GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]' THEN c.exam_month || '-01' END, c.ended_at) < ?`;
+export function loTrinhChoKetQuaThi(today: string): { c: any; s: TrangThaiSauThi }[] {
+  const ds = db().prepare(SQL_CHO_KET_QUA_THI).all(today) as any[];
+  return ds.map((c) => ({ c, s: trangThaiSauThi(c, today) })).filter((x) => x.s.giaiDoan === 'da_thi_cho_kq');
 }
+/** "Đã thi T7 10/10 · hạn 17/10 · đã gia hạn" — dòng phụ việc Công việc (OV-13q). */
+export const chuDaThi = (s: TrangThaiSauThi, today: string): string =>
+  [s.ngayThi ? `Đã thi ${thuNgay(s.ngayThi, today)}` : null, s.han ? `hạn ${ngay(s.han, today)}` : null, s.daGiaHan ? 'đã gia hạn' : null].filter(Boolean).join(' · ');
 
 /**
- * Một dòng việc cho mỗi lộ trình FT chưa có kết quả thi thật (chưa đủ 4 kỹ năng, không "Không thi") mà đã qua mốc nhắc (`mocNhacThiThat`).
- * Ai thấy: GVCN lớp cuối; lớp không có GVCN → Quản lý chi nhánh; Quản lý xem "Tất cả" thấy việc của GV. Quá hạn (mốc + 4 tuần) đỏ, KHÔNG chặn, không tự huỷ.
+ * Một dòng việc cho mỗi lộ trình FT chưa có kết quả thi thật (chưa đủ 4 kỹ năng, không "Không thi") mà đã qua ngày thi
+ * (OV-13q: từ HÔM SAU ngày thi, hạn = hạn sau thi của `trangThaiSauThi`). Ai thấy: GVCN lớp cuối; lớp không có GVCN → Quản lý chi nhánh; Quản lý xem "Tất cả"
+ * thấy việc của GV (TVV: góc Cần làm của Học viên & Lớp; CX chỉ xem). Quá hạn đỏ, KHÔNG chặn, không tự huỷ.
  * Hết việc khi lưu đủ 4 kỹ năng hoặc "Không thi". Một câu cho cả tập + một câu lớp + một câu GVCN (không N+1).
  */
 export function viecThiThat(p: Principal, f: { today: string; tatCa: boolean; branchId: number | null }): any[] {
@@ -131,7 +152,7 @@ export function viecThiThat(p: Principal, f: { today: string; tatCa: boolean; br
     }
   }, THAM_SO_TOI_DA - 1);   // câu GVCN còn một tham số `today` → ≤ 900
   const out: any[] = [];
-  for (const { c, m } of moc) {
+  for (const { c, s } of moc) {
     const l = c.class_id ? lop.get(c.class_id) : null;
     if (f.branchId && l && l.branch_id !== f.branchId) continue;
     const gv = c.class_id ? gvcn.get(c.class_id) ?? [] : [];
@@ -143,13 +164,86 @@ export function viecThiThat(p: Principal, f: { today: string; tatCa: boolean; br
     const ke = examPlanOf({ exam_period_id: null, exam_month: c.exam_month, exam_date: c.exam_date, ...(c.exam_week ? { exam_period_id: 1, exam_week_code: tuanLich(c.exam_week), exam_week_start: c.exam_week } : {}) });
     const thi = ke.confidence === 'none' ? null : ke.label;
     out.push({
-      key: `thi_that:${c.id}`, group: 'thi_that', urgency: f.today > m!.han ? 'overdue' : 'normal',
+      key: `thi_that:${c.id}`, group: 'thi_that', urgency: s.quaHan ? 'overdue' : 'normal', cycleId: c.id, daGiaHan: s.daGiaHan,
       studentId: c.student_id, studentName: c.ten, classId: c.class_id ?? null, classCode: l?.code ?? null,
-      attemptId: null, attemptNo: null, caseId: null, level: null, contextLabel: 'Thi thật', count: null,
+      attemptId: null, attemptNo: null, caseId: null, level: null, contextLabel: chuDaThi(s, f.today), count: null,
       reason: [c.ten, l?.code ?? '—', thi ? `thi ${thi}` : null].filter(Boolean).join(' · '), tieuDe: 'Cập nhật kết quả thi thật', actionLabel: 'Nhập kết quả',
       href: duongHoSoHocVien(c.student_id, { loTrinh: c.id, viec: 'thi-that' }), ownerId: gv[0] ?? null, owner: null, mine,
-      due: m!.han, statusLabel: `hạn ${tuanLich(m!.han, f.today)}`,
+      due: s.han, statusLabel: `hạn ${tuanLich(s.han!, f.today)}`,
     });
   }
   return out;
+}
+
+// ------------------------------------------------------------------ OV-13q: hạn sau thi + Gia hạn
+/** Trạng thái sau thi của MỘT lộ trình (hồ sơ, panel một em, trả lời API gia hạn) — cùng cột, cùng hàm với danh sách. */
+const dongSauThi = (cycleId: number): any =>
+  db().prepare(`SELECT c.id, c.student_id, ${COT_SAU_THI} FROM learning_cycles c LEFT JOIN report_periods ep ON ep.id = c.exam_period_id WHERE c.id = ?`).get(cycleId);
+export function sauThiCuaLoTrinh(cycleId: number, today = demoToday()): (TrangThaiSauThi & { cycleId: number }) | null {
+  const c = dongSauThi(cycleId);
+  return c ? { ...trangThaiSauThi(c, today), cycleId } : null;
+}
+
+/** GET /cycles/:id/han-sau-thi — panel Kết quả thi thật: giai đoạn + hạn + nút Gia hạn. Ai xem được hồ sơ em thì đọc được. */
+export function docHanSauThi(p: Principal, cycleId: number) {
+  const c = cycleById(cycleId);
+  if (!c || !can(p, PERMISSIONS.STUDENT_VIEW, { studentId: c.student_id })) throw notFound('Không tìm thấy lộ trình');
+  const st = sauThiCuaLoTrinh(cycleId)!;
+  return { ...st, coTheGiaHan: coTheGiaHanSauThi(p, c, st.giaiDoan) };
+}
+
+/**
+ * PUT /cycles/:id/han-sau-thi { han, lyDo? } — Gia hạn (nhiều lần được, đếm `han_sau_thi_so_lan`) · `han: null` = Bỏ gia hạn (về hạn gốc).
+ * Không chặn việc nào: hạn mới chỉ đổi chữ hạn / quá hạn. Hạn mới trước hôm nay hoặc không sau hạn gốc → 400 nói lý do.
+ */
+export function datHanSauThi(p: Principal, cycleId: number, input: { han?: unknown; lyDo?: unknown }) {
+  const c = cycleById(cycleId);
+  if (!c) throw notFound('Không tìm thấy lộ trình');
+  const homNay = demoToday();
+  const dong = dongSauThi(cycleId);
+  const st = trangThaiSauThi(dong, homNay);
+  if (st.giaiDoan !== 'da_thi_cho_kq' && st.giaiDoan !== 'cho_buoc_tiep') throw badRequest('Chỉ gia hạn được khi em đã thi và chưa chọn bước tiếp.');
+  if (!coTheGiaHanSauThi(p, c, st.giaiDoan)) {
+    throw forbidden(st.giaiDoan === 'cho_buoc_tiep' ? 'Đã có kết quả — chỉ Quản lý hoặc TVV của chi nhánh gia hạn được.' : 'Chỉ GVCN lớp cuối, Quản lý hoặc TVV của chi nhánh gia hạn được.');
+  }
+  const vao = input.han === null || input.han === undefined || input.han === '' ? null : docNgayNhap(input.han, homNay, canNamGan(homNay));
+  if (vao && !vao.iso) throw badRequest(`Hạn mới: ${vao.loi ?? 'không hợp lệ'}`);   // rà #436: ngày không có thật (31/09) → 400
+  const han = vao?.iso ?? null;
+  const lyDo = han ? chuTuDo(input.lyDo, 'Lý do', 300) : null;
+  if (han) {
+    if (han < homNay) throw badRequest('Hạn mới không được trước hôm nay.');
+    const goc = trangThaiSauThi({ ...dong, han_sau_thi: null }, homNay).han;   // hạn khi không gia hạn (Bước tiếp: gồm ngày có kết quả)
+    if (goc && han <= goc) throw badRequest(`Hạn mới phải sau hạn gốc ${ngay(goc, homNay)}.`);
+  }
+  const cu = c.han_sau_thi ?? null;
+  if (han === cu) return { ...st, cycleId };
+  tx(() => {
+    db().prepare(`UPDATE learning_cycles SET han_sau_thi = ?, han_sau_thi_boi = ?, han_sau_thi_luc = ?, han_sau_thi_ly_do = ?,
+        han_sau_thi_so_lan = han_sau_thi_so_lan + ? WHERE id = ?`).run(han, p.userId, nowIso(), lyDo, han ? 1 : 0, cycleId);
+    addJourney({
+      studentId: c.student_id, cycleId, eventType: 'han_sau_thi', eventDate: homNay, title: han ? 'Gia hạn sau thi' : 'Bỏ gia hạn sau thi',
+      detail: [`${cu ? ngay(cu, homNay) : `hạn gốc ${st.hanGoc ? ngay(st.hanGoc, homNay) : '—'}`} → ${han ? ngay(han, homNay) : 'hạn gốc'}`, lyDo].filter(Boolean).join(' · '),
+      refTable: 'learning_cycles', refId: cycleId, createdBy: p.userId, dedupKey: `han_sau_thi:${cycleId}:${nowIso()}`,
+    });
+    writeAudit({ actorUserId: p.userId, action: 'cycle.han_sau_thi', entityType: 'learning_cycle', entityId: cycleId,
+      before: { hanSauThi: cu }, after: { hanSauThi: han, lyDo } });
+  });
+  return sauThiCuaLoTrinh(cycleId, homNay);
+}
+
+export type SauThiEm = TrangThaiSauThi & { cycleId: number; coTheNhap: boolean; coTheChon: boolean; coTheGiaHan: boolean };
+/**
+ * Lộ trình FT MỚI NHẤT của em đang "Đã thi · chờ kết quả" / "Đã xong · chờ bước tiếp" + nút người xem bấm được — panel một em (Học viên & Lớp) và đầu hồ sơ.
+ * Em Lưu trữ / lộ trình khác giai đoạn → null (cùng lọc với việc Công việc).
+ */
+export function sauThiCuaEm(p: Principal, studentId: number, today = demoToday()): SauThiEm | null {
+  const c = db().prepare(`SELECT c.id, c.student_id, ${COT_SAU_THI} FROM learning_cycles c JOIN students s ON s.id = c.student_id LEFT JOIN report_periods ep ON ep.id = c.exam_period_id
+     WHERE c.student_id = ? AND c.route IS NOT NULL AND ${LO_TRINH_MOI_NHAT}`).get(studentId) as any;
+  if (!c) return null;
+  const st = trangThaiSauThi(c, today);
+  if (st.giaiDoan !== 'da_thi_cho_kq' && st.giaiDoan !== 'cho_buoc_tiep') return null;
+  /* Nút của LUỒNG VIỆC = người nhận việc (GVCN lớp cuối, QL, QT, TVV); CX / Admin chỉ xem (CX vẫn nhập được ở ⋯ hồ sơ như OV-8b). */
+  const coTheGiaHan = coTheGiaHanSauThi(p, c, st.giaiDoan);
+  const nguoiNhan = coQuyenBuocTiep(p, studentId) || laGvcnLopCuoi(p, c.id);
+  return { ...st, cycleId: c.id, coTheNhap: st.giaiDoan === 'da_thi_cho_kq' && nguoiNhan && coTheNhapThiThat(p, c), coTheChon: st.giaiDoan === 'cho_buoc_tiep' && coQuyenBuocTiep(p, studentId), coTheGiaHan };
 }

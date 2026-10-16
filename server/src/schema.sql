@@ -384,6 +384,8 @@ CREATE TABLE learning_cycles (
   buoc_tiep TEXT, buoc_tiep_luc TEXT, buoc_tiep_boi INTEGER, buoc_tiep_json TEXT,
   -- OV-13m: lựa chọn thêm tam_dung | lo_trinh_moi (ket_thuc = Thôi học); Thứ Hai "Hẹn bắt đầu" lộ trình mới (NULL = không hẹn / đã bắt đầu).
   buoc_tiep_hen TEXT,
+  -- OV-13q: hạn sau thi đã gia hạn (NULL = ngày thi + 7), người / lúc / lý do, số lần gia hạn (0 = hệ thống lúc chuyển luật).
+  han_sau_thi TEXT, han_sau_thi_boi INTEGER, han_sau_thi_luc TEXT, han_sau_thi_ly_do TEXT, han_sau_thi_so_lan INTEGER NOT NULL DEFAULT 0,
   UNIQUE (student_id, seq)
 );
 

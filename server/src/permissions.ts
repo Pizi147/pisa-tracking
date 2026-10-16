@@ -638,3 +638,12 @@ export function permissionSummary(p: Principal) {
     permissions: [...g.permissions].sort(),
   }));
 }
+
+/**
+ * BƯỚC TIẾP SAU THI THẬT (OV-12a, chủ SP 14/10): Quản lý (`cycle.edit`) HOẶC TVV của chi nhánh em (`student.edit_more` của vai TVV — CX không).
+ * Một hàm cho `loTrinh/buocTiep.ts` (chọn / bỏ / việc / nút) và danh sách lớp của panel Học lại mở từ Bước tiếp.
+ */
+export function coQuyenBuocTiep(p: Principal, studentId: number): boolean {
+  return can(p, PERMISSIONS.CYCLE_EDIT, { studentId })
+    || can({ ...p, grants: p.grants.filter((g) => g.roleKey === 'consultant') }, PERMISSIONS.STUDENT_EDIT_MORE, { studentId });
+}
