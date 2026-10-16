@@ -32,6 +32,8 @@ const GOC_V = {
   'panel-pa': '[role=dialog]', 'panel-tao-case': '[role=dialog]', 'panel-vi-pham': '[role=dialog]',
   'hv-y-thuc': 'div:has(> [role=tablist][aria-label="Student conduct & SOS"])',
   'lop-ft-y-thuc': '*:has(> * > [role=tablist][aria-label="Class conduct & SOS"])',
+  /* OV-13o: Hồ sơ giáo viên (vai 7 xem chính mình) + menu ⋯ hồ sơ HV. */
+  'gv-ho-so': '#noi-dung', 'hv-menu': '[role=menu]',
 };
 /** (v) bỏ qua vùng của đợt khác: lưới Điểm theo lớp cuối hồ sơ lớp — đo ở kịch bản gv-diem-lop (EN-b). */
 const BO_V = { 'lop-ft': '#khoi-diem-lop-bang', 'lop-ft-phan-tich': '#khoi-diem-lop-bang' };
@@ -77,6 +79,8 @@ const KICH_BAN = [
   ['gv-yeu-cau', 7, '/cong-viec/yeu-cau'],
   ['gv-hop-diem', 7, '/test/diem-lop', async (p) => { await p.locator('#noi-dung button[aria-label$=": Nhập"], #noi-dung button[aria-label$=": Enter"]').first().click(); await p.waitForTimeout(500); }],
   ['gv-ket-qua-pa', 7, '/cong-viec', async (p) => { await p.getByRole('button', { name: /^(Kết quả PA|PA result)/ }).first().click(); await p.waitForTimeout(800); }],
+  ['gv-ho-so', 7, '/giao-vien/7'],
+  ['hv-menu', 7, '/hoc-vien/3', async (p) => { await p.locator('#noi-dung button[aria-haspopup]').first().click(); await p.waitForTimeout(400); }],
   ['gv-chuong', 7, '/', async (p) => { await p.getByRole('button', { name: /^(Thông báo|Notifications)/ }).first().click(); await p.waitForTimeout(500); }],
   // PR-EN: màn chưa đăng nhập (vai 0) và menu Tài khoản mở (điện thoại: hàng Ngôn ngữ ngay trên Giao diện).
   ['dang-nhap', 0, '/'],

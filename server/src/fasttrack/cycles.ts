@@ -7,7 +7,7 @@ import {
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { closeCasesBySystem } from '../cases/systemClose.ts';
-import { badRequest, chuTuDo, forbidden, isIsoDate, kiemKieuO, notFound, nowIso } from '../util.ts';
+import { HttpError, badRequest, chuTuDo, forbidden, isIsoDate, kiemKieuO, notFound, nowIso } from '../util.ts';
 import { can as coQuyen, require_, type Ctx, type Principal } from '../permissions.ts';
 import { addJourney, writeAudit } from '../platform/audit.ts';
 import { ensurePeriod, mondayOf, periodById } from '../platform/week.ts';
@@ -518,6 +518,16 @@ export function targetRevisions(cycleId: number) {
 /** OV-8b / OV-13i: ai đổi được Target — QL (`cycle.edit`) hoặc TVV / CX (`student.edit_more`) đúng phạm vi. Một luật cho Sửa một HV, Sửa cả lớp, cờ panel. */
 export const duocDoiTarget = (p: Principal, ctx: Ctx) => coQuyen(p, PERMISSIONS.CYCLE_EDIT, ctx) || coQuyen(p, PERMISSIONS.STUDENT_EDIT_MORE, ctx);
 
+/**
+ * OV-13o: đổi Target THEO CÁCH NÀY có bị chặn không — một luật cho lúc lưu (`reviseTarget`) và xem trước Sửa cả lớp (báo từng dòng).
+ * Lộ trình chương trình liên tục không có Target (OV-6b2); đổi dấu KCK chỉ QL / Quản trị / TVV (OV-11e Q8 — CX sửa Target số được, KCK thì không).
+ */
+export function loiDoiTarget(p: Principal, c: any, t: { kck: boolean }): HttpError | null {
+  if (!c.route && programmeByCode(c.programme_code)?.lapMoiTuan) return badRequest(CAU_LIEN_TUC.target);
+  if (t.kck !== !!c.khong_cam_ket && !duocDoiKck(p.roleKeys, coQuyen(p, PERMISSIONS.CYCLE_EDIT, { studentId: c.student_id }))) return forbidden(CHI_DOI_KCK);
+  return null;
+}
+
 export function reviseTarget(p: Principal, cycleId: number, input: {
   /** Số, `null`/'' (chưa có), "6.5 KCK" hoặc KCK / '-' / "không cam kết" (Q29-1, OV-9: KCK là dấu riêng). */
   newTarget: number | string | null; effectiveFrom?: string; reason?: string | null;
@@ -531,10 +541,8 @@ export function reviseTarget(p: Principal, cycleId: number, input: {
   if (!c.route && programmeByCode(c.programme_code)?.lapMoiTuan) throw badRequest(CAU_LIEN_TUC.target);
   const { target, kck } = docTarget(input.newTarget);
   if (target === (c.target_score ?? null) && kck === !!c.khong_cam_ket) return { cycle: c, revision: null };
-  /* OV-11e (Q8): đổi dấu KCK chỉ QL / Quản trị / TVV (`duocDoiKck`) — CX sửa Target số được, KCK thì không. */
-  if (!o?.daDuyet && kck !== !!c.khong_cam_ket && !duocDoiKck(p.roleKeys, coQuyen(p, PERMISSIONS.CYCLE_EDIT, { studentId: c.student_id }))) {
-    throw forbidden(CHI_DOI_KCK);
-  }
+  const chan = o?.daDuyet ? null : loiDoiTarget(p, c, { kck });
+  if (chan) throw chan;
   const effectiveFrom = input.effectiveFrom ?? nowIso().slice(0, 10);
   if (!isIsoDate(effectiveFrom)) throw badRequest('Ngày hiệu lực không hợp lệ.');
   const reason = chuTuDo(input.reason, 'Lý do', 2000) ?? '';   // rà Dọn-a P2 (Q4): kiểu + trần, không cắt ngầm

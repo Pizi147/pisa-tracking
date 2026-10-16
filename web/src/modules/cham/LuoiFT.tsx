@@ -1,9 +1,9 @@
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { Empty, Info, Level, Status, Th } from '../../ui/ui.tsx';
 import { NhanCu } from '../../ui/OMt.tsx';
 import { ChipDuoiKck } from '../../ui/KetQuaDot.tsx';
-import { DeadlinePill, KHOA_HOAN_TAT_HINT, suaDuoc, useSaveScore, type Cell } from '../fasttrack/ScoreEntry.tsx';
+import { DeadlinePill, KHOA_HOAN_TAT_HINT, apDiemVuaLuu, suaDuoc, useSaveScore, type Cell } from '../fasttrack/ScoreEntry.tsx';
 import { ODiemMt } from '../fasttrack/HopNhapDiem.tsx';
 import {
   fmtBand, skillLabel, skillShort, sosLabel, sosTone,
@@ -267,8 +267,10 @@ function SheetRow({ row, lop, active, cot, tuanDangXem, tuanXem, onReload, gvMac
   gvMacDinh: NguoiChon | null;
   moS: string | null; onMo: (s: string | null) => void; onTiep: (s: string) => void;
 }) {
-  const { save, status, lastError, retry, o, loi, luuLai, soLoi, coGuiLai } = useSaveScore(row.attemptId, onReload, row.studentName);
-  const cellOf = (skill: string) => row.cells.find((c) => c.skill === skill);
+  const { save, status, lastError, retry, o, loi, luuLai, soLoi, coGuiLai, vuaLuu, xoaVuaLuu } = useSaveScore(row.attemptId, onReload, row.studentName);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- bảng tải lại (dòng mới) thì bỏ điểm tạm
+  useEffect(() => { xoaVuaLuu(); }, [row]);
+  const cellOf = (skill: string) => { const c = row.cells.find((x) => x.skill === skill); return c && apDiemVuaLuu(c, vuaLuu[skill]); };
   /* OV-11e (TE-10): hàng chưa tới tuần thi (mọi ô bắt buộc còn "Chưa đến lịch") ghi mã tuần sớm nhất thay "Chờ n kỹ năng". */
   const can = row.cells.filter((c) => c.required && c.progress !== 'cancelled');
   const tuanChuaToi = can.length > 0 && can.every((c) => c.progress === 'upcoming' && c.weekStart)
