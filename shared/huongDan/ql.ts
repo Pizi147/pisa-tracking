@@ -3,13 +3,12 @@
  * rồi chỉ ghi phần hơn GV (chủ SP: QL quản lý lớp / luật). Nhãn nút đối chiếu màn thật trên main 16/10 (sau OV-13a…n, HOTFIX-3).
  */
 import { HD_GV } from './gv.ts';
-import type { HuongDan, ManHd, MucHd, TuHd } from './kieu.ts';
+import type { HuongDan, ManHd, MucHd } from './kieu.ts';
 
 const manGv = (id: string) => HD_GV.man.find((m) => m.id === id)!;
 /** Màn trùng GV: giữ mục của GV, thêm mục QL. */
-export const themMan = (id: string, ...muc: MucHd[]): ManHd => ({ ...manGv(id), muc: [...manGv(id).muc, ...muc] });
+const themMan = (id: string, ...muc: MucHd[]): ManHd => ({ ...manGv(id), muc: [...manGv(id).muc, ...muc] });
 export const luatGv = (...ids: string[]): MucHd[] => ids.map((id) => HD_GV.luat.find((m) => m.id === id)!);
-export const tuGv = (...ten: string[]): TuHd[] => ten.map((x) => HD_GV.tu.find((m) => m.ten === x)!);
 
 export const HD_QL: HuongDan = {
   viec: [
@@ -47,7 +46,7 @@ export const HD_QL: HuongDan = {
       id: 'ql-lo-trinh', ten: 'Hết khoá / Lộ trình tiếp theo', khi: 'khi lớp sắp hết khoá',
       buoc: ['Lớp thường: Tổng quan › <b>Cần xử lý</b> "n lớp cần Chốt lộ trình" → <b>Lộ trình tiếp theo</b>.',
         'Hồ sơ lớp › <b>Chốt lộ trình</b>: chọn hướng từng em (Lên lớp, Học lại, Lên FT…); lớp cũ có phiếu bàn giao.',
-        'Em FT có kết quả thi thật: <b>Tổng kết lộ trình › Bước tiếp</b> — <b>Kết thúc</b> · <b>Học tiếp lộ trình mới</b> · <b>Học lại</b> (QL hoặc TVV chọn).',
+        'Em FT có kết quả thi thật: <b>Chọn bước tiếp ›</b> — <b>Lộ trình mới</b> · <b>Tạm dừng</b> · <b>Thôi học</b> (QL hoặc TVV chọn).',
         'Một em đổi lớp khi đang học: hồ sơ em › <b>⋯ › Chuyển lớp…</b>.'],
       chi: { hd: 'tq-can-xu-ly', duong: '/', chu: 'Dòng "Chốt lộ trình" nằm trong khối này khi tới hạn.' },
     },
@@ -132,7 +131,7 @@ export const HD_QL: HuongDan = {
     { id: 'ql-chuyen-lop', ten: 'Chuyển lớp + bàn giao', buoc: ['<b>Ngay hôm nay</b>: chuyển ngay, không hoàn tác.', 'Hạn bàn giao = muộn hơn của (ngày quyết định + <b>7 ngày</b>) và mốc cũ.', 'Bàn giao quá hạn không chặn chuyển lớp; QL nhận thẻ Báo QL.'] },
     { id: 'ql-sua-diem', ten: 'Sửa điểm sau hoàn tất', buoc: ['GV vẫn nhập ô trống; sửa hoặc xoá một điểm đã có: chỉ QL.', 'Gỡ "-" lúc nào cũng được.'] },
     { id: 'ql-target', ten: 'Đổi Target', buoc: ['QL, TVV, CX sửa thẳng, ghi <b>Lý do đổi Target</b>.', 'GVCN sửa → thành Đề xuất sửa, QL duyệt rồi mới đổi.', 'Target mới tính từ hôm nay; kỳ vọng các lượt đã thi giữ nguyên.'] },
-    { id: 'ql-buoc-tiep', ten: 'Bước tiếp sau thi', buoc: ['Có kết quả thi thật → việc <b>Chọn bước tiếp sau thi</b>, hạn <b>7 ngày</b>.', 'QL hoặc TVV chọn; GVCN, CX chỉ xem.'] },
+    { id: 'ql-buoc-tiep', ten: 'Bước tiếp sau thi', buoc: ['Có kết quả thi thật → việc <b>Chọn bước tiếp</b>, hạn <b>7 ngày</b>.', 'QL hoặc TVV chọn; GVCN, CX chỉ xem ("Chờ QL / TVV chọn bước tiếp").', 'Lộ trình mới bắt đầu ngay: tuần này là tuần 1; lớp khác thì GV lớp cũ làm phiếu bàn giao.', 'Tạm dừng: đóng lộ trình, mọi hạn dừng; sau này <b>Quay lại học</b> mở Lộ trình mới.'] },
     { id: 'ql-y-thuc-bao', ten: 'Ý thức: QL nhận gì', buoc: ['Cần QL duyệt: WL 3, Meeting CX/GĐCN, Đình chỉ học tạm thời, Khác.', 'Để biết: GVCN xử lý WL 1, Report 4 + Meeting, WL 2.'] },
   ],
   tu: [

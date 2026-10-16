@@ -30,7 +30,7 @@ export const HD_CX: HuongDan = {
     {
       id: 'cx-thi-that', ten: 'Kết quả thi thật', khi: 'sau khi em thi',
       buoc: ['Hồ sơ em › <b>Kết quả thi thật</b>: <b>Ngày thi</b>, điểm L R W S (hoặc <b>Không thi</b>), <b>Lưu</b>.',
-        '<b>Bước tiếp</b> do QL hoặc TVV chọn; bạn xem ở <b>Tổng kết lộ trình</b>.'],
+        '<b>Bước tiếp</b> do QL hoặc TVV chọn; hồ sơ em ghi "Chờ QL / TVV chọn bước tiếp" tới khi có.'],
       chi: { hd: 'hvl-goc', duong: '/hoc-vien', chu: 'Tìm em rồi mở hồ sơ.' },
     },
     {

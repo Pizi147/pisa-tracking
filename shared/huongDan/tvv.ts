@@ -32,7 +32,7 @@ export const MAN_HO_SO_TVV: ManHd[] = [
 export const LUAT_TVV: MucHd[] = [
   { id: 'tvv-luat-target', ten: 'Đổi Target', buoc: ['TVV, CX, QL sửa thẳng; <b>Lý do đổi Target</b> bắt buộc.', 'Target mới tính từ hôm nay; kỳ vọng các lượt đã thi giữ nguyên.'] },
   { id: 'tvv-luat-tam-dung', ten: 'Tạm dừng', buoc: ['Em Tạm dừng: mọi hạn của em dừng, việc ẩn, không quá hạn.', 'Bấm nhầm: <b>Hoàn tác</b> ngay trên thông báo.'] },
-  { id: 'tvv-luat-thi-that', ten: 'Kết quả thi thật', buoc: ['Nhập được cả khi em đã Lưu trữ.', 'Có kết quả → việc <b>Chọn bước tiếp sau thi</b>, hạn <b>7 ngày</b>; QL hoặc TVV chọn.'] },
+  { id: 'tvv-luat-thi-that', ten: 'Kết quả thi thật', buoc: ['Nhập được cả khi em đã Lưu trữ.', 'Có kết quả → việc <b>Chọn bước tiếp</b>, hạn <b>7 ngày</b>; QL hoặc TVV chọn.'] },
   { id: 'tvv-luat-phoi-hop', ten: 'Phối hợp SOS', buoc: ['SOS 1: <b>Trao đổi ngắn với HV</b> + <b>Trao đổi với gia đình</b>.', 'SOS 2–3: <b>Trao đổi với gia đình</b> + <b>GVCN meeting với HV</b> — không còn Trao đổi ngắn với HV (GVCN tự thêm được).', 'SOS 3 thêm <b>CX / GĐCN meeting</b>; GVCN xác nhận, hạn 5 ngày.'] },
   { id: 'tvv-luat-hoc-thuat', ten: 'Học thuật', buoc: ['Điểm, Case, PA, Ý thức: GV và QL ghi; TVV xem.'] },
 ];
@@ -47,16 +47,16 @@ export const HD_TVV: HuongDan = {
     },
     {
       id: 'tvv-can-lam', ten: 'Làm việc ở Cần làm', khi: 'mỗi ngày',
-      buoc: ['<b>Học viên & Lớp</b> › <b>Cần làm</b>: <b>Chọn bước tiếp sau thi</b> · <b>Kết quả thi</b> · <b>Thiếu thông tin</b>.',
+      buoc: ['<b>Học viên & Lớp</b> › <b>Cần làm</b>: <b>Chọn bước tiếp</b> · <b>Kết quả thi</b> · <b>Thiếu thông tin</b>.',
         'Bấm dòng: panel mở ngay trên trang, xong không rời trang.', '<b>Phạm vi</b>: <b>HV của tôi</b> hoặc <b>Chi nhánh</b>.'],
       chi: { hd: 'hvl-goc', duong: '/hoc-vien', chu: 'Bấm <b>Cần làm</b> để xem việc của bạn.' },
     },
     {
       id: 'tvv-thi-that', ten: 'Kết quả thi thật + Bước tiếp', khi: 'sau khi em thi',
       buoc: ['Hồ sơ em › <b>Kết quả thi thật</b>: <b>Ngày thi</b>, điểm L R W S (hoặc <b>Không thi</b>), <b>Lưu</b>.',
-        'Trong <b>7 ngày</b> chọn <b>Bước tiếp</b>: <b>Kết thúc</b> · <b>Học tiếp lộ trình mới</b> · <b>Học lại</b>.',
-        '<b>Học lại</b>: <b>Về lớp cũ</b> hoặc <b>Sang lớp mới</b>; <b>Học tiếp lộ trình mới</b>: chọn lớp mới.'],
-      chi: { hd: 'hvl-goc', duong: '/hoc-vien', chu: '<b>Cần làm</b> có dòng "Chọn bước tiếp sau thi" khi tới lúc.' },
+        'Trong <b>7 ngày</b> bấm <b>Chọn bước tiếp ›</b>: <b>Lộ trình mới</b> · <b>Tạm dừng</b> · <b>Thôi học</b>; nút chính đổi chữ theo lựa chọn.',
+        '<b>Lộ trình mới</b>: <b>Lớp này</b> / <b>Lớp khác</b>; <b>Bắt đầu</b> <b>Ngay bây giờ</b> hoặc hẹn một tuần (<b>Huỷ hẹn</b> được tới lúc đó).'],
+      chi: { hd: 'hvl-goc', duong: '/hoc-vien', chu: '<b>Cần làm</b> có dòng "Chọn bước tiếp" khi tới lúc.' },
     },
     {
       id: 'tvv-sua-tt', ten: 'Sửa thông tin + Target', khi: 'khi có thay đổi',
@@ -97,7 +97,7 @@ export const HD_TVV: HuongDan = {
     { ten: 'Cần chú ý', nghia: 'Em đang SOS, có Case mới hoặc vi phạm Ý thức.' },
     { ten: 'Sắp thi', nghia: 'Em thi IELTS trong 6 tuần tới.' },
     { ten: 'Thiếu thông tin', nghia: 'Hồ sơ chưa đủ để theo dõi; điền đủ là hết.' },
-    { ten: 'Bước tiếp', nghia: 'Hướng sau thi thật: Kết thúc · Học tiếp lộ trình mới · Học lại.' },
+    { ten: 'Bước tiếp', nghia: 'Hướng sau thi thật: Lộ trình mới · Tạm dừng · Thôi học.' },
     { ten: 'Phối hợp SOS', nghia: 'Việc GVCN làm với em, gia đình khi em SOS (trao đổi, meeting).' },
   ],
 };
