@@ -1,14 +1,19 @@
 /**
  * HD-a — Hướng dẫn theo vai + hàm thuần (chọn vai, mục của màn đang đứng, tìm). Giao diện: `web/src/modules/huongDan/`.
- * HD-b thêm QL / QT / TVV / CX / Admin vào `HUONG_DAN` (phép kiểm HD-NAV đòi tài khoản mẫu cho vai mới).
+ * HD-b: đủ 6 vai (phép kiểm HD-NAV đòi tài khoản mẫu cho mỗi vai).
  */
 import { t, type Khoa } from '../i18n/index.ts';
 import { HD_GV } from './gv.ts';
+import { HD_QL } from './ql.ts';
+import { HD_QT } from './qt.ts';
+import { HD_TVV } from './tvv.ts';
+import { HD_CX } from './cx.ts';
+import { HD_ADMIN } from './admin.ts';
 import type { HuongDan, ManHd, MucHd, TuHd, VaiHd } from './kieu.ts';
 
 export type { ChiChoToi, HuongDan, ManHd, MucHd, PhanHd, TuHd, VaiHd } from './kieu.ts';
 
-export const HUONG_DAN: Partial<Record<VaiHd, HuongDan>> = { gv: HD_GV };
+export const HUONG_DAN: Partial<Record<VaiHd, HuongDan>> = { gv: HD_GV, ql: HD_QL, qt: HD_QT, tvv: HD_TVV, cx: HD_CX, admin: HD_ADMIN };
 
 export const TEN_VAI_HD: Record<VaiHd, string> = {
   gv: t('Giáo viên'), ql: t('Quản lý'), qt: t('Quản trị hệ thống'), tvv: t('Tư vấn viên'), cx: 'CX', admin: 'Admin',

@@ -991,7 +991,7 @@ export function scoreHistoryOf(attemptId: number) {
   const rutGon = (s: unknown) => { const t = typeof s === 'string' ? s.trim() : ''; return !t ? 'Trống' : t.length > 80 ? `${t.slice(0, 79)}…` : t; };
   return rows.flatMap<{
     id: number; kind: 'edit' | 'override' | 'no_show' | 'nhan_xet'; skill: string; skillLabel: string;
-    before: string; after: string; actorName: string | null; createdAt: string; lyDo: string | null;
+    before: string; after: string; actorName: string | null; createdAt: string; lyDo: string | null; phan?: 'nhom';
   }>((l) => {
     const before = l.before_json ? JSON.parse(l.before_json) : null;
     const after = l.after_json ? JSON.parse(l.after_json) : null;
@@ -1000,13 +1000,15 @@ export function scoreHistoryOf(attemptId: number) {
       const khoa = l.action === 'score.nhan_xet' ? 'comment' : 'nhanXetPhuTrach';
       const doiNx = (before?.[khoa] ?? null) !== (after?.[khoa] ?? null);
       const nhom = (x: any) => docNhomNguyenNhan(x?.nhom).map(issueLabel).join(', ') || 'Trống';
-      if (!doiNx && nhom(before) === nhom(after)) return [];
-      return [{
+      /* OV-13o: một lần lưu đổi CẢ nhận xét lẫn nhóm → hai dòng (dòng nhóm mang `phan: 'nhom'` — khoá riêng ở web). */
+      const dong = (phan: 'nx' | 'nhom') => ({
         id: l.id, kind: 'nhan_xet' as const, skill: l.entity_label as string,
         skillLabel: `${tenMon(null, l.entity_label)}${khoa === 'comment' ? '' : ' · GV phụ trách'}`,
-        before: doiNx ? rutGon(before?.[khoa]) : nhom(before), after: doiNx ? rutGon(after?.[khoa]) : nhom(after),
+        before: phan === 'nx' ? rutGon(before?.[khoa]) : nhom(before), after: phan === 'nx' ? rutGon(after?.[khoa]) : nhom(after),
         actorName: l.actor_name as string | null, createdAt: l.created_at as string, lyDo: null as string | null,
-      }];
+        ...(phan === 'nhom' ? { phan } : {}),
+      });
+      return [...(doiNx ? [dong('nx')] : []), ...(nhom(before) !== nhom(after) ? [dong('nhom')] : [])];
     }
     /* T2 (PR-MTa): huỷ do dời vượt / khôi phục là `override` (web khỏi thêm loại); lý do nằm ở `after.lyDo`. */
     const vuot = l.action === 'score.huy_vuot', khoiPhuc = l.action === 'score.khoi_phuc';

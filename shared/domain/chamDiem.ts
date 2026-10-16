@@ -43,6 +43,9 @@ export function khoiCham(i: { tuanThi: string; tuanHomNay: string; quaHan: boole
 
 /** T18: Speaking của Mock Test không có GV mặc định — ai dạy Speaking cùng chi nhánh cũng chấm được. MT0 / lớp thường không áp. */
 export const laChamCheo = (kind: string | null | undefined, skill: string): boolean => kind === 'mock' && skill === 'speaking';
+/** OV-13g / OV-13o: bài chấm chéo CẦN CHẤM ngay = tuần thi đã qua (khối 1 + 2 của `khoiCham`, như Lịch Test). Một luật cho Công việc và Tổng quan "Lớp tôi dạy". */
+export const canChamCheo = (chamCheo: boolean, tuanThi: string | null | undefined, tuanHomNay: string, quaHan: boolean): boolean =>
+  chamCheo && !!tuanThi && khoiCham({ tuanThi, tuanHomNay, quaHan }) !== 'lich';
 /** Q3 (chủ sản phẩm 06/10): chữ ở chỗ "người giữ việc" của ô Speaking Mock chưa ai nhập. */
 export const CHAM_CHEO = t('GV chấm chéo');
 

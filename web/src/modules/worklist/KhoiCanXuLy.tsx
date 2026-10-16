@@ -59,7 +59,7 @@ export function KhoiCanXuLy({ branchId }: { branchId: number | null }) {
     : <button type="button" className="btn btn-sm w-full min-h-[44px] justify-center sm:min-h-[32px]" onClick={() => setMo({ id: x.metricId })}>{x.nut}</button>);
 
   return (
-    <section className="card" aria-labelledby="can-xu-ly">
+    <section className="card" aria-labelledby="can-xu-ly" data-hd="tq-can-xu-ly">
       <header className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b px-4 py-3" style={{ borderColor: 'var(--line)' }}>
         <h2 id="can-xu-ly" className="m-0 text-sm font-semibold text-slate-200">
           Cần xử lý {data && <span className="font-normal text-slate-500">· {data.canXuLy.length} việc · quá hạn lên đầu</span>}

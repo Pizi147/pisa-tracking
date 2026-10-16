@@ -110,7 +110,7 @@ export function KeHoachTestTab() {
 
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap items-end gap-x-3 gap-y-2">
+      <div className="flex flex-wrap items-end gap-x-3 gap-y-2" data-hd="kht-loc">
         {/* MH4: công tắc khung đứng ĐẦU hàng lọc (chỉ hiện khi có cả hai khung). */}
         <CongTacKhung trang="ke-hoach-test" value={loai} dem={{ ft: lopFT.length, thuong: lopThuong.length }} donVi="lớp"
           onChange={(k) => { if (k !== 'tat-ca') setLoai(k); }} />

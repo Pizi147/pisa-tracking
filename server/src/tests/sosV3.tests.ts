@@ -268,7 +268,8 @@ export async function runSosV3Tests(t: YThucTestKit) {
     const walk = (dir: string) => {
       for (const e of fsMod.readdirSync(dir, { withFileTypes: true })) {
         const p = pathMod.join(dir, e.name);
-        if (e.isDirectory()) { if (e.name !== 'tests' && e.name !== 'i18n') walk(p); continue; }   // PR-EN-c: từ điển giữ chữ Việt làm khoá ("Xếp: Cần chú ý trước")
+        if (e.isDirectory()) { if (e.name !== 'tests' && e.name !== 'i18n' && e.name !== 'huongDan') walk(p); continue; }   // PR-EN-c: từ điển giữ chữ Việt làm khoá ("Xếp: Cần chú ý trước")
+        /* HD-b: Hướng dẫn trích đúng nhãn ô "Cần chú ý" trên Tổng quan TVV / CX (web/src) — không phải chữ máy chủ dựng. */
         if (!/\.ts$/.test(e.name) || ['migrate.ts', 'summary.ts'].includes(e.name)) continue;
         fsMod.readFileSync(p, 'utf8').split('\n').forEach((line, i) => { if (/Cần chú ý/.test(line)) offenders.push(`${pathMod.relative(REPO, p)}:${i + 1}`); });
       }

@@ -190,6 +190,6 @@ export const EN_HD = {
   'Hạn bàn giao = muộn hơn của (ngày quyết định chuyển lớp + 7 ngày) và mốc cũ.': 'Handover deadline = the later of (class-change decision date + 7 days) and the earlier deadline.',
   'Sửa điểm sau hoàn tất': 'Changing scores after completion',
   'Ô còn trống: nhập được cả sau hoàn tất.': 'Empty cells can still be filled after completion.',
-  'Sửa hoặc xoá một điểm đã có: qua QL duyệt.': 'Changing / deleting an existing score goes through the manager.',
+  'Sửa hoặc xoá một điểm đã có: nhờ QL sửa.': 'Changing / deleting an existing score: ask the manager to do it.',
   'Gỡ "-" lúc nào cũng được.': 'A "-" can be removed any time.',
 };

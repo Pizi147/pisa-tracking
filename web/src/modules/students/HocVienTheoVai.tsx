@@ -260,7 +260,7 @@ export function HocVienTheoVai({ vai }: { vai: 'tvv' | 'cx' }) {
             </select>
           )}
         </div>
-        <div className="flex min-w-0 max-w-full flex-wrap items-center gap-2">
+        <div className="flex min-w-0 max-w-full flex-wrap items-center gap-2" data-hd="hvl-goc">
           <BoLocDoan ariaLabel={t('Góc nhìn')} value={goc} onChange={doiGoc}
             muc={(vai === 'cx' ? (['tat-ca', 'sos', 'can-chu-y'] as const) : (['tat-ca', 'sos', 'can-lam'] as const)).map((k) => ({ key: k, nhan: tenGoc[k], so: demGoc[k] }))} />
           {goc === 'tat-ca' && (

@@ -312,7 +312,7 @@ function TrangTheoLop({ admin }: { admin: boolean }) {
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2 lg:flex-nowrap">
           {/* K1: điện thoại cuộn ngang, mép phải mờ báo còn chip; pr-8 để chip cuối cuộn ra khỏi vùng mờ. Không `pb` (không để lộ thanh cuộn). */}
           {/* OV-12f: thanh góc nhìn (số = số học viên) · vạch · lọc phụ của góc / tuần thi. Đổi góc thì lọc phụ về trống. */}
-          <div className="flex min-w-0 max-w-full flex-wrap items-center gap-2 lg:flex-1">
+          <div className="flex min-w-0 max-w-full flex-wrap items-center gap-2 lg:flex-1" data-hd="hvl-goc">
             <BoLocDoan ariaLabel={t('Góc nhìn')} value={goc} onChange={doiGoc}
               muc={(admin ? (['tat-ca', 'can-lam'] as const) : (['tat-ca', 'sos', 'can-lam'] as const)).map((k) => ({
                 key: k, nhan: k === 'tat-ca' ? t('Tất cả') : k === 'sos' ? t('Đang SOS') : t('Cần làm'), so: demGoc[k],

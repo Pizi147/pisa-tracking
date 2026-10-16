@@ -9,7 +9,7 @@
 // PR-EN: KHUNG_NGON_NGU=en — chạy cả bộ ở tiếng Anh (tài khoản + máy) và thêm lỗi (v) CHỮ VIỆT CÒN SÓT trên màn GV (vai 7, 9 và màn
 // chưa đăng nhập): bỏ khối [lang=vi] và chữ dữ liệu (mọi giá trị chữ có dấu trong DB demo — tên, mã, ghi chú, thông báo cũ). DB đọc từ
 // PISA_DB (mặc định data/pisa-demo.sqlite). Kịch bản `ngon-ngu` bấm bốn bước nhớ ngôn ngữ (E-NHO).
-// HD-a: kịch bản `hd-chi` bấm mọi "Chỉ cho tôi" của GV (khoanh hiện, phần tử bấm được, Esc tắt).
+// HD-a / HD-b: kịch bản `hd-chi` bấm mọi "Chỉ cho tôi" của 6 vai (khoanh hiện, phần tử bấm được, Esc tắt). HD_VAI=ql,tvv chỉ chạy các vai đó.
 import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -32,6 +32,8 @@ const GOC_V = {
   'panel-pa': '[role=dialog]', 'panel-tao-case': '[role=dialog]', 'panel-vi-pham': '[role=dialog]',
   'hv-y-thuc': 'div:has(> [role=tablist][aria-label="Student conduct & SOS"])',
   'lop-ft-y-thuc': '*:has(> * > [role=tablist][aria-label="Class conduct & SOS"])',
+  /* OV-13o: Hồ sơ giáo viên (vai 7 xem chính mình) + menu ⋯ hồ sơ HV. */
+  'gv-ho-so': '#noi-dung', 'hv-menu': '[role=menu]',
 };
 /** (v) bỏ qua vùng của đợt khác: lưới Điểm theo lớp cuối hồ sơ lớp — đo ở kịch bản gv-diem-lop (EN-b). */
 const BO_V = { 'lop-ft': '#khoi-diem-lop-bang', 'lop-ft-phan-tich': '#khoi-diem-lop-bang' };
@@ -77,6 +79,8 @@ const KICH_BAN = [
   ['gv-yeu-cau', 7, '/cong-viec/yeu-cau'],
   ['gv-hop-diem', 7, '/test/diem-lop', async (p) => { await p.locator('#noi-dung button[aria-label$=": Nhập"], #noi-dung button[aria-label$=": Enter"]').first().click(); await p.waitForTimeout(500); }],
   ['gv-ket-qua-pa', 7, '/cong-viec', async (p) => { await p.getByRole('button', { name: /^(Kết quả PA|PA result)/ }).first().click(); await p.waitForTimeout(800); }],
+  ['gv-ho-so', 7, '/giao-vien/7'],
+  ['hv-menu', 7, '/hoc-vien/3', async (p) => { await p.locator('#noi-dung button[aria-haspopup]').first().click(); await p.waitForTimeout(400); }],
   ['gv-chuong', 7, '/', async (p) => { await p.getByRole('button', { name: /^(Thông báo|Notifications)/ }).first().click(); await p.waitForTimeout(500); }],
   // PR-EN: màn chưa đăng nhập (vai 0) và menu Tài khoản mở (điện thoại: hàng Ngôn ngữ ngay trên Giao diện).
   ['dang-nhap', 0, '/'],
@@ -302,15 +306,19 @@ if (!LOC || 'ngon-ngu'.includes(LOC)) {
   tongLoi += buoc.length;
 }
 /*
- * HD-a (kịch bản `hd-chi`): bấm MỌI "Chỉ cho tôi" của GV (vai 7, 9; 1440 + 375). Việc hằng tuần / Luật và hạn bấm ở trang Hướng dẫn; Theo màn bấm
+ * HD-a / HD-b (kịch bản `hd-chi`): bấm MỌI "Chỉ cho tôi" của mỗi vai bằng tài khoản demo của vai đó (GV 7, 9 · QL 2 · Quản trị 1 · TVV 23 · CX 24 ·
+ * Admin 22; 1440 + 375). Việc hằng tuần / Luật và hạn bấm ở trang Hướng dẫn; Theo màn bấm
  * trong panel "?" của đúng màn. Đạt khi: khoanh hiện (không "Chưa có việc nào ở đây"), phần tử `data-hd` thấy được và bấm được (không bị che), Esc tắt.
  * Nội dung đọc từ bản dựng máy chủ (`npm run dev` đã `build:server`).
  */
 if (!LOC || 'hd-chi'.includes(LOC)) {
   const { HUONG_DAN } = await import(pathToFileURL(path.resolve('dist-server/shared/huongDan/index.js')).href);
-  const hd = HUONG_DAN.gv;
+  const TAI_KHOAN = { gv: [7, 9], ql: [2], qt: [1], tvv: [23], cx: [24], admin: [22] };
+  const chon = (process.env.HD_VAI ?? '').split(',').filter(Boolean);
   const loi = [];
-  for (const [w, h] of [[1440, 900], [375, 812]]) for (const vai of [7, 9]) {
+  for (const [vaiHd, ids] of Object.entries(TAI_KHOAN)) for (const [w, h] of [[1440, 900], [375, 812]]) for (const vai of ids) {
+    if (chon.length && !chon.includes(vaiHd)) continue;
+    const hd = HUONG_DAN[vaiHd];
     const ctx = await trinh.newContext({ viewport: { width: w, height: h } });
     await ctx.addInitScript((nn) => { try { localStorage.setItem('pisa-ngon-ngu', nn); } catch {} }, NN);
     const p = await ctx.newPage();
@@ -358,7 +366,7 @@ if (!LOC || 'hd-chi'.includes(LOC)) {
     }
     await ctx.close();
   }
-  console.log(`${loi.length ? '✗' : '✓'} hd-chi (mọi "Chỉ cho tôi" của GV)${loi.map((l) => `\n    ${l}`).join('')}`);
+  console.log(`${loi.length ? '✗' : '✓'} hd-chi (mọi "Chỉ cho tôi" của ${chon.length ? chon.join(', ') : '6 vai'})${loi.map((l) => `\n    ${l}`).join('')}`);
   tongLoi += loi.length;
 }
 await trinh.close();

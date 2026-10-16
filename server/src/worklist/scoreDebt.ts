@@ -21,7 +21,9 @@ export type DebtCell = { attemptId: number; classId: number; skill: string; user
   /** PR-VAI-a (Q24): hạn nhập của ô — cột Hạn "quá hạn a–b ngày" ở Cần xử lý đọc từ chính tập này. */
   han: string | null;
   /** T18 (PR-LT3): Speaking Mock — `userId` null nhưng KHÔNG phải "chưa phân công": không nợ của GVBM S / GVCN, QL vẫn thấy ở chỉ số quá hạn. */
-  chamCheo?: boolean };
+  chamCheo?: boolean;
+  /** OV-13o: tuần thi của ô (chỉ ô chấm chéo) — `canChamCheo` lọc bài đã tới lượt chấm như Công việc. */
+  tuanThi?: string | null };
 
 /** Tiến độ KHÔNG phải nợ điểm: vắng đã xác nhận, huỷ phần thi, ngoài phạm vi, đang chờ Quản lý duyệt dời, MT lịch sử (T34). */
 const NOT_DEBT = new Set(['absent', 'cancelled', 'skipped', 'reschedule_pending', 'lich_su']);
@@ -114,7 +116,7 @@ export function scoreDebtCells(p: Principal, today: string, branchIds: number[] 
         if (!c.required || c.band !== null || c.noShow !== null || !c.weekStart || c.weekStart > today || NOT_DEBT.has(c.progress)) continue;
         const chamCheo = laChamCheo(a.kind, c.skill);
         out.push({ attemptId: a.id, classId: a.class_id, skill: c.skill, userId: chamCheo ? null : teacherOf.get(`${a.class_id}|${c.skill}`) ?? null,
-          overdue: c.overdue, han: c.deadline ?? null, ...(chamCheo ? { chamCheo } : {}) });
+          overdue: c.overdue, han: c.deadline ?? null, ...(chamCheo ? { chamCheo, tuanThi: c.weekStart } : {}) });
       }
     }
   }

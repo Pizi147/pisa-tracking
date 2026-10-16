@@ -131,6 +131,14 @@ export function meetingBoard(p: Principal, periodId: number, opts: { month?: str
       const key = `${h.reporting_unit_id}|${h.category_key}`;
       (histByKey.get(key) ?? histByKey.set(key, []).get(key)!).push(h);
     }
+    /* OV-13o: dòng "nháp" ghi SAU một lần nộp (dữ liệu trước rà #410) là sửa bản đã nộp — không hiện "nháp" (mới → cũ: đi ngược). */
+    for (const ds of histByKey.values()) {
+      let daNop = false;
+      for (let i = ds.length - 1; i >= 0; i -= 1) {
+        if (ds[i].kind === 'nop') daNop = true;
+        else if (daNop && ds[i].kind === 'nhap') ds[i].kind = 'sua';
+      }
+    }
   }
 
   /*

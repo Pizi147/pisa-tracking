@@ -109,7 +109,7 @@ export function AccountsAdmin() {
   return (
     <div className="space-y-4">
       <Card
-        title={<span>Đăng ký chờ duyệt {pending.length > 0 && <span className="text-amber-200 tabular-nums">({pending.length})</span>}</span>}
+        title={<span data-hd="qt-dang-ky">Đăng ký chờ duyệt {pending.length > 0 && <span className="text-amber-200 tabular-nums">({pending.length})</span>}</span>}
         bodyClass="p-0">
         {/* PR-DUYET (K1-52, K5-63): duyệt tài khoản ở đây, ngoài hộp Chờ duyệt — việc của Quản trị. Rỗng thì một dòng xám. */}
         {pending.length === 0 ? (
