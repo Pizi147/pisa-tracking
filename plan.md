@@ -204,6 +204,14 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 - **HOTFIX-3:** `prOv1b` chỉ còn ghi khoá (chạy lặp từng đổi "-" mới thành Không dự thi — em PISA-000140, chủ SP gỡ tay); màn đen 16/10 00:25 = GET tải lại lưới lỗi khi Turso mất kết nối (bản cũ thay lưới bằng ErrorState) → nay giữ lưới + toast; mảnh JS mất sau deploy → tự tải lại một lần.
 - **Deploy kế tiếp** (chủ SP làm): tắt site → `git pull` → sao lưu → chạy chỉ đọc `kiem-truoc-ov13a`, `kiem-truoc-ov13n` (+ `kiem-truoc-ov13m` khi 13m đã merge), gửi số cho planning → `npm run migrate` → `netlify deploy --build --prod` → bật site. Migrate đổi dữ liệu: `prOv13a`, `prOv13l`, `prOv13n`; còn lại chỉ thêm cột.
 - **Việc tiếp:** HD-b (đang chạy) · OV-13o #425 ✅ · **OV-13p** (chủ SP 16/10: TVV / CX được TẠO LỚP — `class.create` theo phạm vi grant, CX toàn hệ thống — và THÊM HV — quyền hẹp mới `student.add` thay `student.edit` ở intake; không mở chuyển lớp / lưu trữ / lộ trình / phân công GV; không bước duyệt) — prompt trong chat planning 16/10.
+- **OV-13q (chủ SP 16/10) — "Đã thi xong · hạn 1 tuần":** hiện rõ ở Công việc, Tổng quan, Học viên & Lớp (dòng + panel một em), hồ sơ HV; có gia hạn; không chặn cứng. Hiện trạng đã rà (16/10): việc `thi_that` hạn = thứ Hai sau ngày thi + 4 tuần (chủ GVCN), `buoc_tiep` hạn = ngày NHẬP kết quả + 7 (QL / TVV) — hai đồng hồ lệch; không có gia hạn; Tổng quan TVV / CX không có em "đã thi, chưa kết quả"; hồ sơ không có việc "Cập nhật kết quả thi thật"; `thi_that` không lọc lộ trình mới nhất / em Lưu trữ. Luật planning chọn (chủ SP sửa nếu khác):
+  1. Ngày thi = `thi_that_ngay` nếu đã nhập, không thì `exam_date`; chỉ tuần → Chủ nhật tuần thi; chỉ tháng → ngày cuối tháng. Từ hôm sau: "Đã thi · chờ kết quả".
+  2. MỘT "Hạn sau thi" = ngày thi + 7 cho CẢ "Cập nhật kết quả thi thật" và "Chọn bước tiếp". Kết quả nhập sau hạn → hạn Bước tiếp = max(hạn, ngày nhập). Sửa kết quả không dời hạn.
+  3. "Gia hạn": hộp nhỏ (Hạn mới — `ONgay`, mặc định +7 · Lý do tuỳ chọn), mẫu "Dời hạn chấm"; người làm được việc (GVCN lớp cuối, TVV, QL, QT) gia hạn được, nhiều lần, có nhật ký + Lịch sử sửa; "Bỏ gia hạn" về hạn gốc.
+  4. Không chặn: sửa ngày thi mọi lúc (hạn tính lại, gia hạn muộn hơn thì giữ); nhập kết quả, chọn bước tiếp không bị chặn bởi ngày / hạn.
+  5. Một hàm trạng thái dùng chung cho mọi nơi; Tổng quan TVV / CX thêm ô "Đã thi · chờ kết quả"; hồ sơ thêm "Cập nhật kết quả thi thật ›".
+  6. Deploy: lộ trình đã thi chưa xong mà hạn mới đã qua → migrate đặt hạn = ngày deploy + 7 (không đỏ hàng loạt), có `kiem-truoc-ov13q`.
+  Không cần mockup: chữ / nhãn / ô số / nút theo mẫu có sẵn (1.3b); session code chụp ảnh đủ nơi. Prompt: chat planning 16/10.
 
 ### Sau deploy (chờ số liệu bản chính)
 - **PR-TD4** (M): chỉ khi log `[cham]` 1–2 ngày sau deploy còn đường > 1,5 s — `/hoc-vien-lop` (`standingFor` nạp từ lượt mới nhất mỗi em, còn 78 % dòng), đường top khác theo log.
