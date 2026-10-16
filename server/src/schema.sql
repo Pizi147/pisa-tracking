@@ -485,6 +485,8 @@ CREATE TABLE journey_events (
   created_at TEXT NOT NULL
 );
 CREATE INDEX idx_journey_student ON journey_events(student_id, event_date);
+/* TD6: ngày có kết quả của một lộ trình (`j.cycle_id = c.id AND j.event_type = …`) — trước đây quét cả nhật ký cho từng lộ trình. */
+CREATE INDEX idx_journey_cycle ON journey_events(cycle_id, event_type);
 CREATE UNIQUE INDEX idx_journey_dedup ON journey_events(dedup_key) WHERE dedup_key IS NOT NULL;
 
 -- ===================== KỲ / TUẦN =====================
@@ -559,6 +561,8 @@ CREATE TABLE assessment_attempts (
 CREATE INDEX idx_attempt_student ON assessment_attempts(student_id);
 CREATE INDEX idx_attempt_period ON assessment_attempts(planned_period_id);
 CREATE INDEX idx_attempt_class ON assessment_attempts(class_id);
+/* TD6: lượt của một em ở một lớp — trước đây duyệt mọi lượt của lớp cho từng em. */
+CREATE INDEX idx_attempt_student_class ON assessment_attempts(student_id, class_id);
 
 CREATE TABLE attempt_schedule_history (
   id INTEGER PRIMARY KEY,
@@ -1887,6 +1891,8 @@ CREATE TABLE yeu_cau_duyet (
 CREATE INDEX ix_ycd_trang_thai ON yeu_cau_duyet (trang_thai, phan_loai);
 CREATE INDEX ix_ycd_doi_tuong ON yeu_cau_duyet (doi_tuong_loai, doi_tuong_id);
 CREATE UNIQUE INDEX ux_ycd_dang_cho ON yeu_cau_duyet (loai, doi_tuong_loai, doi_tuong_id) WHERE trang_thai = 'cho';
+/* TD6: thẻ đang chờ theo (loại, đối tượng) khi câu không nêu `doi_tuong_loai` — chỉ mục trên chỉ dùng được cột `loai`. */
+CREATE INDEX idx_ycd_loai_doi_tuong_cho ON yeu_cau_duyet (loai, doi_tuong_id) WHERE trang_thai = 'cho';
 -- quét quá hạn duyệt tra "đã báo chưa" theo dedup_key (không theo người nhận)
 CREATE INDEX ix_notifications_dedup ON notifications (dedup_key);
 

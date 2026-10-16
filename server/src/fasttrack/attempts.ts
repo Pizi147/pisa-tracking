@@ -180,12 +180,10 @@ export function loadBundle(attemptIds: number[]): AttemptBundle {
     (ph) => `SELECT c.attempt_id, MIN(c.id) AS id,
                 MAX(c.sos_level) AS sos_level,
                 MIN(CASE c.status WHEN 'open' THEN 0 WHEN 'in_progress' THEN 1 ELSE 2 END) AS st,
-                MAX(iv.done_on) AS last_done
+                MAX(COALESCE(iv.completed_date, iv.started_date)) AS last_done
            FROM sos_cases c
-           LEFT JOIN (
-             SELECT case_id, MAX(COALESCE(completed_date, started_date)) AS done_on
-               FROM case_interventions WHERE status != 'cancelled' GROUP BY case_id
-           ) iv ON iv.case_id = c.id
+           /* TD6: nối thẳng theo Case (idx_intervention_case) — bảng con gộp cũ đọc MỌI PA mỗi lần gọi. MIN / MAX không đổi khi dòng Case lặp. */
+           LEFT JOIN case_interventions iv ON iv.case_id = c.id AND iv.status != 'cancelled'
           WHERE c.attempt_id IN (${ph})
           GROUP BY c.attempt_id`))) {
     const status = r.st === 0 ? 'open' : r.st === 1 ? 'in_progress' : 'done';
