@@ -232,6 +232,11 @@ export async function runPrOv13qTests(t: YThucTestKit) {
       const goi = () => cp.spawnSync(process.execPath, ['--input-type=module', '-e', `const m = await import(${JSON.stringify(lib)}); console.log('APPLIED' + JSON.stringify(m.migrate().applied));`],
         { env: { ...process.env, TURSO_DATABASE_URL: '', TURSO_AUTH_TOKEN: '', BAN_CHINH: '', PISA_DB: f }, encoding: 'utf8', timeout: 120_000 });
       const doc = (r: any): string[] => { assert(r.status === 0, `migrate lỗi: ${String(r.stderr).slice(-400)}`); return JSON.parse(String(r.stdout).split('APPLIED').pop()!); };
+      /* Rà #436: chạy ĐÚNG tệp dist như chủ SP (node riêng — module nạp từ chính lệnh, bắt được vòng import): kiểm trước ra số, không lỗi. */
+      const chay = (tep: string) => cp.spawnSync(process.execPath, [pathMod.join(process.cwd(), 'dist-server/server/src', tep)],
+        { env: { ...process.env, TURSO_DATABASE_URL: '', TURSO_AUTH_TOKEN: '', BAN_CHINH: '', PISA_DB: f }, encoding: 'utf8', timeout: 120_000 });
+      const kt = chay('ops/kiemTruocOv13q.js');
+      assert(kt.status === 0 && /\d+ lộ trình đã thi chưa xong/.test(kt.stdout) && !/ReferenceError/.test(kt.stderr), `kiem-truoc-ov13q: ${kt.status} ${String(kt.stderr).slice(-300)}`);
       const a1 = doc(goi());
       const c2 = new Database(f);
       const dong = c2.prepare('SELECT han_sau_thi, han_sau_thi_so_lan, han_sau_thi_ly_do FROM learning_cycles WHERE id = ?').get(qua.cy) as any;
@@ -244,7 +249,46 @@ export async function runPrOv13qTests(t: YThucTestKit) {
       const sau = JSON.stringify(c3.prepare('SELECT id, han_sau_thi, han_sau_thi_luc FROM learning_cycles ORDER BY id').all());
       c3.close();
       assert(!a2.some((x) => x.startsWith('OV-13q')) && sau === truoc, `lần 2 đổi: ${JSON.stringify(a2)}`);
+      const r = chay('migrate/run.js');
+      assert(r.status === 0 && /Không có gì để nâng cấp/.test(r.stdout), `migrate/run.js: ${r.status} ${String(r.stdout).slice(-200)} ${String(r.stderr).slice(-300)}`);
     } finally { try { fs.rmSync(dir, { recursive: true, force: true }); } catch { /* Windows còn giữ file */ } }
+  });
+
+  // ------------------------------------------------------------------ rà #436
+  await checkAsync('Q13-9 · em Kết thúc học (lộ trình bỏ dở) CHƯA có kết quả: không việc, không nhãn, không ô Tổng quan, migrate không đặt hạn; đã có kết quả → vẫn Chọn bước tiếp', async () => {
+    const x = em({ exam_date: addDays(TODAY, -20) });
+    conn.prepare(`UPDATE students SET status = 'finished' WHERE id = ?`).run(x.sid);
+    conn.prepare(`UPDATE learning_cycles SET status = 'abandoned', ended_at = ? WHERE id = ?`).run(addDays(TODAY, -15), x.cy);
+    const y = em({ exam_date: addDays(TODAY, -20) });
+    conn.prepare(`UPDATE students SET status = 'finished' WHERE id = ?`).run(y.sid);
+    conn.prepare(`UPDATE learning_cycles SET status = 'abandoned', ended_at = ?, thi_that_ngay = ?, thi_that_l = 6, thi_that_r = 6, thi_that_w = 6, thi_that_s = 6, outcome = 'not_reached', outcome_score = 6 WHERE id = ?`)
+      .run(addDays(TODAY, -15), addDays(TODAY, -20), y.cy);
+    await voiMayChu(TODAY, async (goi) => {
+      assert((await viec(goi, x.gvcn, 'thi_that', x.sid)).length === 0 && (await viec(goi, QL, 'thi_that', x.sid, '?nguoi=tat-ca')).length === 0, 'em thôi học: không việc');
+      const pm = await json(await goi(x.gvcn, `/hoc-vien-lop/em/${x.sid}`));
+      const hs = await json(await goi(x.gvcn, `/students/${x.sid}`));
+      const cl = await json(await goi(TVV, '/hoc-vien-lop/theo-vai'));
+      assert(pm.sauThi === null && hs.sauThi === null && !cl.ids['da-thi'].includes(x.sid) && !cl.rows.find((h: any) => h.id === x.sid)?.sauThi, 'không nhãn / ô');
+      assert(!m13q.canDatHanOv13q(conn, TODAY).some((c: any) => c.id === x.cy), 'migrate không đặt hạn');
+      assert((await viec(goi, QL, 'buoc_tiep', y.sid)).length === 1 && (await json(await goi(QL, `/hoc-vien-lop/em/${y.sid}`))).sauThi?.giaiDoan === 'cho_buoc_tiep', 'có kết quả → vẫn chờ bước tiếp');
+    });
+  });
+
+  await checkAsync('Q13-10 · gia hạn: ngày không có thật 400; "chờ bước tiếp" chỉ QL / TVV (GVCN 403); hạn = ngày có kết quả (muộn hơn gia hạn) → không ghi "đã gia hạn"', async () => {
+    const x = em({ exam_date: addDays(TODAY, -6) });   // hạn gốc = TODAY + 1
+    await voiMayChu(TODAY, async (goi) => {
+      assert(await ma(await goi(x.gvcn, `/cycles/${x.cy}/han-sau-thi`, put({ han: '2026-09-31' }))) === 400, '31/09 phải 400');
+      await json(await goi(x.gvcn, `/cycles/${x.cy}/han-sau-thi`, put({ han: addDays(TODAY, 3) })));
+    });
+    await voiMayChu(addDays(TODAY, 5), async (goi) => {
+      await json(await goi(x.gvcn, `/cycles/${x.cy}/outcome`, put({ ...KQ, ngayThi: addDays(TODAY, -6) })));   // nhập sau gia hạn
+      const bt = (await viec(goi, QL, 'buoc_tiep', x.sid))[0];
+      assert(bt?.due === addDays(TODAY, 5) && !bt.daGiaHan && !/đã gia hạn/.test(bt.contextLabel), `hạn từ ngày có kết quả: ${JSON.stringify(bt)}`);
+      assert(await ma(await goi(x.gvcn, `/cycles/${x.cy}/han-sau-thi`, put({ han: addDays(TODAY, 9) }))) === 403, 'GVCN chờ bước tiếp 403');
+      const pm = await json(await goi(x.gvcn, `/hoc-vien-lop/em/${x.sid}`));
+      assert(pm.sauThi?.giaiDoan === 'cho_buoc_tiep' && !pm.sauThi.coTheGiaHan, 'GVCN không có nút Gia hạn ở chờ bước tiếp');
+      assert((await json(await goi(QL, `/cycles/${x.cy}/han-sau-thi`, put({ han: addDays(TODAY, 9) })))).daGiaHan, 'QL gia hạn được');
+    });
   });
 
   // ------------------------------------------------------------------ 8 · câu SQL

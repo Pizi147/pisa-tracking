@@ -21,7 +21,7 @@ import { archiveStudent, coQuyenBuocTiep, hoanTacHocLai, hoanTacKetThuc, hoanTac
 import { huyLenh, raLenh } from '../classes/lenhChuyen.ts';
 import { ghiBanChup } from './banChup.ts';
 import { docTarget } from '../fasttrack/cycles.ts';
-import { COT_SAU_THI, NGAY_CO_KQ, coTheGiaHanSauThi } from './thiThat.ts';
+import { COT_SAU_THI, NGAY_CO_KQ } from './cotSauThi.ts';
 import { addJourney, notify, writeAudit } from '../platform/audit.ts';
 
 /** Lộ trình FT có kết quả thi thật (cùng nghĩa `!canChoThiThat`): đủ 4 kỹ năng, "Không thi", hoặc kết quả CŨ (Overall / kết luận chọn tay). */
@@ -71,7 +71,7 @@ export function trangThaiBuocTiep(p: Principal, cycleId: number): TrangThaiBuocT
     chon: (c.buoc_tiep ?? null) as LuaChonSauThi | null, luc: c.buoc_tiep_luc ?? null, boi: c.boi_ten ?? null,
     goiY: goiYSauThi({ khongThi: !!c.thi_that_khong_thi, ketLuan: ketLuanCua(c) }),
     coTheChon, daGiaHan: trangThaiSauThi({ ...c, buoc_tiep: null }, demoToday()).daGiaHan,
-    coTheGiaHan: !c.buoc_tiep && (coTheChon || coTheGiaHanSauThi(p, c)),
+    coTheGiaHan: !c.buoc_tiep && coTheChon,   // rà #436: giai đoạn chờ bước tiếp — chỉ người chọn được (`coTheGiaHanSauThi`)
     daXong: daXongCua(c), han: hanBuocTiep(c, demoToday()), hen: c.buoc_tiep_hen ?? null, henLop: c.buoc_tiep_hen ? g.lopMoiCode ?? c.lop_code ?? null : null,
     lopNay: c.lop_id ? { id: c.lop_id, code: c.lop_code } : c.bc_class_id ? { id: c.bc_class_id, code: c.bc_class_code } : null,
     target: chuTargetKck(c.target_score ?? null, !!c.khong_cam_ket), ngayThi: c.thi_that_ngay ?? null, studentId: c.student_id, cycleId: c.id, ketLuan: c.thi_that_khong_thi ? null : ketLuanCua(c),

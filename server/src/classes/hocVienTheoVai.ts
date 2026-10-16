@@ -68,7 +68,7 @@ export function hocVienTheoVai(p: Principal, f: { phamVi?: string | null; branch
       `SELECT s.id, s.full_name, s.student_code, s.status, s.phone, s.parent_name, s.parent_relation, s.parent_phone, u.full_name AS tvv,
               e.status AS enr_status, c.id AS lop_id, c.code AS lop_code, c.is_fast_track, b.name AS chi_nhanh,
               cy.target_score, cy.khong_cam_ket, cy.exam_period_id, cy.exam_month, cy.exam_date, rp.code AS exam_week_code, rp.week_start AS exam_week_start,
-              cy.id AS cy_id, cy.route AS cy_route, cy.seq AS cy_seq, (SELECT MAX(x.seq) FROM learning_cycles x WHERE x.student_id = s.id) AS seq_cuoi, ${cotSauThi('cy', 'rp')}
+              cy.id AS cy_id, cy.route AS cy_route, cy.seq AS cy_seq, cy.status AS cy_status, (SELECT MAX(x.seq) FROM learning_cycles x WHERE x.student_id = s.id) AS seq_cuoi, ${cotSauThi('cy', 'rp')}
          FROM students s
          LEFT JOIN users u ON u.id = s.consultant_user_id
          LEFT JOIN enrollments e ON e.id = (SELECT x.id FROM enrollments x WHERE x.student_id = s.id ORDER BY x.status IN ('active', 'paused') DESC, x.id DESC LIMIT 1)
@@ -89,7 +89,9 @@ export function hocVienTheoVai(p: Principal, f: { phamVi?: string | null; branch
     const td = s.lop_id != null ? tienDo.get(s.lop_id) : undefined;
     /* Cùng hàm với việc Công việc (lộ trình FT mới nhất; em chưa Lưu trữ đã lọc ở `chipHocVien`). */
     const st = s.cy_route && s.cy_seq === s.seq_cuoi ? trangThaiSauThi(s, homNay) : null;
-    const sauThi = st && (st.giaiDoan === 'da_thi_cho_kq' || st.giaiDoan === 'cho_buoc_tiep') ? { giaiDoan: st.giaiDoan, han: st.han, quaHan: st.quaHan, daGiaHan: st.daGiaHan } : null;
+    /* Cùng luật `LO_TRINH_MOI_NHAT`: em Kết thúc học / lộ trình bỏ dở chưa có kết quả → không "chờ kết quả". */
+    const thoiHoc = st?.giaiDoan === 'da_thi_cho_kq' && (s.status === 'finished' || s.cy_status === 'abandoned');
+    const sauThi = st && !thoiHoc && (st.giaiDoan === 'da_thi_cho_kq' || st.giaiDoan === 'cho_buoc_tiep') ? { giaiDoan: st.giaiDoan, han: st.han, quaHan: st.quaHan, daGiaHan: st.daGiaHan } : null;
     return [{
       id, ten: s.full_name, ma: s.student_code, status: s.status,
       tamDungTu: s.status === 'inactive' ? tamDung[id]?.find((k) => k.den === null)?.tu ?? null : null,

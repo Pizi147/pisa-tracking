@@ -130,7 +130,8 @@ export function trangThaiSauThi(c: DongSauThi, homNay: string): TrangThaiSauThi 
   const nkq = c.ngay_kq ? c.ngay_kq.slice(0, 10) : null;
   if (giaiDoan === 'cho_buoc_tiep' && nkq && (!han || nkq > han)) han = nkq;
   return {
-    giaiDoan, ngayThi, hanGoc, han, daGiaHan, soLanGiaHan: c.han_sau_thi_so_lan ?? 0,
+    /* rà #436: hạn đang dùng đến từ ngày có kết quả (muộn hơn gia hạn) → không ghi "đã gia hạn". */
+    giaiDoan, ngayThi, hanGoc, han, daGiaHan: daGiaHan && han === gh, soLanGiaHan: c.han_sau_thi_so_lan ?? 0,
     quaHan: (giaiDoan === 'da_thi_cho_kq' || giaiDoan === 'cho_buoc_tiep') && !!han && homNay > han,
   };
 }

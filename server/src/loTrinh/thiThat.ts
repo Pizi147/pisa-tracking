@@ -4,14 +4,13 @@
  * Mỗi lần lưu: làm mới bản chụp mới nhất (lộ trình đã đóng) + nhật ký. OV-8a: KHÔNG tự Lưu trữ nữa — có kết quả thì Quản lý chọn Bước tiếp (`buocTiep.ts`).
  */
 import { THAM_SO_TOI_DA, db, theoLo, tx } from '../db.ts';
-import { PERMISSIONS, diemThiHopLe, duongHoSoHocVien, ngay, thuNgay, trangThaiSauThi, tuanLich, type TrangThaiSauThi } from '../../../shared/domain/index.ts';
+import { PERMISSIONS, canNamGan, diemThiHopLe, docNgayNhap, duongHoSoHocVien, ngay, thuNgay, trangThaiSauThi, tuanLich, type GiaiDoanSauThi, type TrangThaiSauThi } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { badRequest, chuTuDo, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
-import { can, type Principal } from '../permissions.ts';
+import { can, coQuyenBuocTiep, type Principal } from '../permissions.ts';
 import { addJourney, writeAudit } from '../platform/audit.ts';
 import { cycleById, examPlanOf } from '../fasttrack/cycles.ts';
 import { thiThatCuaCycle } from './banChup.ts';
-import { coQuyenBuocTiep } from '../students/students.ts';
 
 const DIEM = ['l', 'r', 'w', 's'] as const;
 type Diem = Record<(typeof DIEM)[number], number | null>;
@@ -41,11 +40,12 @@ function laGvcnLopCuoi(p: Principal, cycleId: number): boolean {
   return !!lop && !!db().prepare(`SELECT 1 FROM teacher_assignments WHERE user_id = ? AND class_id = ? AND is_core = 1 AND status = 'active'`).get(p.userId, lop);
 }
 /**
- * OV-13q: ai GIA HẠN được — người làm được việc Cập nhật kết quả hoặc Chọn bước tiếp của em: Quản lý / Quản trị / TVV chi nhánh (`coQuyenBuocTiep`)
- * và GVCN lớp cuối. GVBM, Admin, CX: không (CX có `student.edit_more` nhưng chỉ xem việc).
+ * OV-13q: ai GIA HẠN được — người làm được việc ĐANG MỞ của em (rà #436): "chờ kết quả" → Quản lý / Quản trị / TVV chi nhánh (`coQuyenBuocTiep`) + GVCN lớp cuối;
+ * "chờ bước tiếp" → chỉ người chọn được bước tiếp (QL / QT / TVV). GVBM, Admin, CX: không (CX có `student.edit_more` nhưng chỉ xem việc).
  */
-export function coTheGiaHanSauThi(p: Principal, c: { id: number; student_id: number }): boolean {
-  return coQuyenBuocTiep(p, c.student_id) || laGvcnLopCuoi(p, c.id);
+export function coTheGiaHanSauThi(p: Principal, c: { id: number; student_id: number }, giaiDoan: GiaiDoanSauThi): boolean {
+  if (giaiDoan === 'cho_buoc_tiep') return coQuyenBuocTiep(p, c.student_id);
+  return giaiDoan === 'da_thi_cho_kq' && (coQuyenBuocTiep(p, c.student_id) || laGvcnLopCuoi(p, c.id));
 }
 
 const docDiem = (v: unknown, nhan: string): number | null => {
@@ -105,24 +105,9 @@ export function datKetQuaThiThat(p: Principal, cycleId: number, input: NhapThiTh
 }
 
 // ------------------------------------------------------------------ việc nhắc "Cập nhật kết quả thi thật"
-/**
- * OV-13q: ngày CÓ KẾT QUẢ = mốc Hành trình "Kết quả thi thật" ĐẦU TIÊN của lộ trình — sửa kết quả sau đó không dời hạn Bước tiếp.
- * Lọc theo `student_id` trước để đi chỉ mục `idx_journey_student` (journey_events không có chỉ mục cycle_id).
- * shortcut: lưu dở (thiếu kỹ năng) trước rồi mới đủ cũng tính từ lần lưu dở — cần cột riêng nếu chủ SP báo hạn Bước tiếp sớm.
- */
-export const ngayCoKq = (c = 'c') => `(SELECT MIN(j.event_date) FROM journey_events j WHERE j.student_id = ${c}.student_id AND j.cycle_id = ${c}.id AND j.event_type = 'cycle_outcome')`;
-export const NGAY_CO_KQ = ngayCoKq();
-/**
- * Cột `trangThaiSauThi` đọc — `c` = learning_cycles, `ep` = report_periods của tuần thi dự kiến (`LEFT JOIN report_periods ep ON ep.id = c.exam_period_id`).
- * Ngày có kết quả chỉ đọc khi lộ trình có kết quả mà chưa chọn bước tiếp (danh sách cả chi nhánh không tra Hành trình từng em).
- */
-export const cotSauThi = (c = 'c', ep = 'ep') => `${c}.thi_that_ngay, ${c}.exam_date, ${c}.exam_month, ${ep}.week_start AS exam_week, ${c}.ended_at, ${c}.thi_that_khong_thi,
-  ${c}.thi_that_l, ${c}.thi_that_r, ${c}.thi_that_w, ${c}.thi_that_s, ${c}.outcome, ${c}.outcome_score, ${c}.buoc_tiep, ${c}.han_sau_thi, ${c}.han_sau_thi_so_lan,
-  CASE WHEN ${c}.buoc_tiep IS NULL AND (${c}.thi_that_khong_thi = 1 OR ${c}.thi_that_s IS NOT NULL OR ${c}.outcome_score IS NOT NULL OR COALESCE(${c}.outcome, 'unknown') != 'unknown')
-       THEN ${ngayCoKq(c)} END AS ngay_kq`;
-export const COT_SAU_THI = cotSauThi();
-/** Lộ trình MỚI NHẤT của em chưa Lưu trữ / Thôi học — cùng lọc với việc Chọn bước tiếp. */
-export const LO_TRINH_MOI_NHAT = 'c.seq = (SELECT MAX(x.seq) FROM learning_cycles x WHERE x.student_id = c.student_id) AND s.archived_at IS NULL';
+/* OV-13q: cột / câu dùng chung ở tệp lá `cotSauThi.ts` (không import gì) — buocTiep.ts dựng SQL lúc nạp module, không vướng vòng import. */
+export { COT_SAU_THI, LO_TRINH_MOI_NHAT, NGAY_CO_KQ, cotSauThi, ngayCoKq } from './cotSauThi.ts';
+import { COT_SAU_THI, LO_TRINH_MOI_NHAT, NGAY_CO_KQ } from './cotSauThi.ts';
 
 /**
  * Lộ trình FT chưa có kết quả thi thật đã qua ngày thi (`trangThaiSauThi` = "Đã thi · chờ kết quả") — MỘT câu cho việc GVCN / QL (`viecThiThat`),
@@ -204,8 +189,7 @@ export function docHanSauThi(p: Principal, cycleId: number) {
   const c = cycleById(cycleId);
   if (!c || !can(p, PERMISSIONS.STUDENT_VIEW, { studentId: c.student_id })) throw notFound('Không tìm thấy lộ trình');
   const st = sauThiCuaLoTrinh(cycleId)!;
-  const mo = st.giaiDoan === 'da_thi_cho_kq' || st.giaiDoan === 'cho_buoc_tiep';
-  return { ...st, coTheGiaHan: mo && coTheGiaHanSauThi(p, c) };
+  return { ...st, coTheGiaHan: coTheGiaHanSauThi(p, c, st.giaiDoan) };
 }
 
 /**
@@ -215,15 +199,18 @@ export function docHanSauThi(p: Principal, cycleId: number) {
 export function datHanSauThi(p: Principal, cycleId: number, input: { han?: unknown; lyDo?: unknown }) {
   const c = cycleById(cycleId);
   if (!c) throw notFound('Không tìm thấy lộ trình');
-  if (!coTheGiaHanSauThi(p, c)) throw forbidden('Chỉ GVCN lớp cuối, Quản lý hoặc TVV của chi nhánh gia hạn được.');
   const homNay = demoToday();
   const dong = dongSauThi(cycleId);
   const st = trangThaiSauThi(dong, homNay);
   if (st.giaiDoan !== 'da_thi_cho_kq' && st.giaiDoan !== 'cho_buoc_tiep') throw badRequest('Chỉ gia hạn được khi em đã thi và chưa chọn bước tiếp.');
-  const han = input.han === null || input.han === undefined || input.han === '' ? null : String(input.han).slice(0, 10);
+  if (!coTheGiaHanSauThi(p, c, st.giaiDoan)) {
+    throw forbidden(st.giaiDoan === 'cho_buoc_tiep' ? 'Đã có kết quả — chỉ Quản lý hoặc TVV của chi nhánh gia hạn được.' : 'Chỉ GVCN lớp cuối, Quản lý hoặc TVV của chi nhánh gia hạn được.');
+  }
+  const vao = input.han === null || input.han === undefined || input.han === '' ? null : docNgayNhap(input.han, homNay, canNamGan(homNay));
+  if (vao && !vao.iso) throw badRequest(`Hạn mới: ${vao.loi ?? 'không hợp lệ'}`);   // rà #436: ngày không có thật (31/09) → 400
+  const han = vao?.iso ?? null;
   const lyDo = han ? chuTuDo(input.lyDo, 'Lý do', 300) : null;
   if (han) {
-    if (!isIsoDate(han)) throw badRequest('Hạn mới không hợp lệ.');
     if (han < homNay) throw badRequest('Hạn mới không được trước hôm nay.');
     const goc = trangThaiSauThi({ ...dong, han_sau_thi: null }, homNay).han;   // hạn khi không gia hạn (Bước tiếp: gồm ngày có kết quả)
     if (goc && han <= goc) throw badRequest(`Hạn mới phải sau hạn gốc ${ngay(goc, homNay)}.`);
@@ -256,6 +243,7 @@ export function sauThiCuaEm(p: Principal, studentId: number, today = demoToday()
   const st = trangThaiSauThi(c, today);
   if (st.giaiDoan !== 'da_thi_cho_kq' && st.giaiDoan !== 'cho_buoc_tiep') return null;
   /* Nút của LUỒNG VIỆC = người nhận việc (GVCN lớp cuối, QL, QT, TVV); CX / Admin chỉ xem (CX vẫn nhập được ở ⋯ hồ sơ như OV-8b). */
-  const coTheGiaHan = coTheGiaHanSauThi(p, c);
-  return { ...st, cycleId: c.id, coTheNhap: coTheGiaHan && coTheNhapThiThat(p, c), coTheChon: st.giaiDoan === 'cho_buoc_tiep' && coQuyenBuocTiep(p, studentId), coTheGiaHan };
+  const coTheGiaHan = coTheGiaHanSauThi(p, c, st.giaiDoan);
+  const nguoiNhan = coQuyenBuocTiep(p, studentId) || laGvcnLopCuoi(p, c.id);
+  return { ...st, cycleId: c.id, coTheNhap: st.giaiDoan === 'da_thi_cho_kq' && nguoiNhan && coTheNhapThiThat(p, c), coTheChon: st.giaiDoan === 'cho_buoc_tiep' && coQuyenBuocTiep(p, studentId), coTheGiaHan };
 }
