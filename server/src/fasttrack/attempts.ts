@@ -2377,11 +2377,10 @@ export function classScoreSheet(
    * HÀNG NÀO HIỆN RA ĐỂ CHẤM.
    */
   if (period) {
-    sql += ` AND (
-      a.planned_period_id = ?
-      OR EXISTS (SELECT 1 FROM attempt_skills ask
-                  WHERE ask.attempt_id = a.id AND ask.required = 1
-                    AND ask.planned_period_id = ?)
+    /* TD5: IN (… UNION …) thay OR + EXISTS — hai nhánh đều đi chỉ mục tuần (idx_attempt_period, idx_attempt_skills_period). */
+    sql += ` AND a.id IN (
+      SELECT a2.id FROM assessment_attempts a2 WHERE a2.planned_period_id = ?
+      UNION SELECT ask.attempt_id FROM attempt_skills ask WHERE ask.planned_period_id = ? AND ask.required = 1
     )`;
     params.push(period.id, period.id);
   } else if (chon.theo === 'luot') {

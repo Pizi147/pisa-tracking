@@ -184,14 +184,17 @@ function listClassSummariesThat(p: Principal, f: { branchId?: number; classId?: 
    * TD3-b: số đếm không nạp cả bundle — Case mở (luật huy hiệu của `loadBundle`: mức cao nhất > 0, còn Case chưa xong) đếm bằng SQL;
    * lượt + lịch kỹ năng + điểm chỉ đọc cho lượt `CON_O_SQL` (tập cha của ô cần chấm). Lượt khác không thể có ô cần chấm.
    */
+  /* TD5: một lần duyệt Case của lượt (chỉ mục idx_case_attempt) thay hai subquery tương quan — mức cao nhất tính trên MỌI Case của lượt, như cũ. */
   const openCases = new Map<number, number>();
   for (const r of conn.prepare(
-    `SELECT a.class_id, COUNT(*) AS n FROM assessment_attempts a
-       JOIN students s ON s.id = a.student_id AND ${HV_DANG_HOC_SQL('s')}
-      WHERE a.class_id IN (${ph}) AND a.status != 'cancelled'
-        AND EXISTS (SELECT 1 FROM sos_cases x WHERE x.attempt_id = a.id AND x.status IN ('open', 'in_progress') AND ${CASE_THAT('x')})
-        AND (SELECT MAX(x.sos_level) FROM sos_cases x WHERE x.attempt_id = a.id) > 0
-      GROUP BY a.class_id`,
+    `SELECT class_id, COUNT(*) AS n FROM (
+       SELECT a.class_id FROM assessment_attempts a
+         JOIN students s ON s.id = a.student_id AND ${HV_DANG_HOC_SQL('s')}
+         JOIN sos_cases x ON x.attempt_id = a.id
+        WHERE a.class_id IN (${ph}) AND a.status != 'cancelled'
+        GROUP BY a.id
+       HAVING MAX(x.sos_level) > 0 AND MAX(x.status IN ('open', 'in_progress') AND ${CASE_THAT('x')}) = 1)
+      GROUP BY class_id`,
   ).all(...ids) as any[]) openCases.set(r.class_id, r.n);
   const attempts = conn
     .prepare(
