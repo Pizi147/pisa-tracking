@@ -4,6 +4,7 @@
  * Cuối khoá / MT0 / Target, mã lạ không còn bị hiểu là FT, migrate chạy lặp được.
  */
 import type { YThucTestKit } from './yThuc.tests.ts';
+import { emailThu } from '../seed/emailThu.ts';
 
 export async function runPrOv6b2Tests(t: YThucTestKit) {
   const { check, assert, conn, P, TODAY, addDays, classId } = t;
@@ -39,7 +40,7 @@ export async function runPrOv6b2Tests(t: YThucTestKit) {
     branchId: MB, chuongTrinh: ct, so, startPeriodId: week.ensurePeriod(khaiGiang).id,
   }) as { id: number; code: string };
   const them = (lop: number, ten: string) => {
-    const r = intake.commitIntake(P.admin, { classId: lop, rows: [{ fullName: ten, target: 6.5, startWeek: khaiGiang, email: 'hv@demo.test', dob: '2010-01-01' }] });
+    const r = intake.commitIntake(P.admin, { classId: lop, rows: [{ fullName: ten, target: 6.5, startWeek: khaiGiang, email: emailThu(), dob: '2010-01-01' }] });
     assert(r.added === 1, `thêm ${ten}: ${JSON.stringify(r.failed)}`);
     return r.studentIds[0] as number;
   };

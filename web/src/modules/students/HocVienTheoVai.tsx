@@ -25,7 +25,7 @@ import { PanelMotEm } from './PanelMotEm.tsx';
 import { PanelBuocTiep } from './PanelBuocTiep.tsx';
 import { SuaThongTinMotEm } from './StudentManagePanel.tsx';
 import {
-  PHAM_VI_NHAN, chuPhuHuynh, docChipVai, ketQuaGanNhat, maHocVienNgan, ngay, tenMon,
+  PHAM_VI_NHAN, tachThieuEmail, chuPhuHuynh, docChipVai, ketQuaGanNhat, ngay, tenMon,
   type ChipVai, type ExamPlan, type GiaiDoanSauThi, type KetQuaVao, type LienHe, type NguCanhDs,
 } from '@shared/domain/index.ts';
 import { NhanSauThi } from './HopGiaHan.tsx';
@@ -33,7 +33,7 @@ import { NhanSauThi } from './HopGiaHan.tsx';
 /** `GET /hoc-vien-lop/theo-vai` (server/src/classes/hocVienTheoVai.ts). */
 type LyDoChuY = { sos?: number; caseMoi?: string[]; yThuc?: string; choBuocTiep?: true };
 type DongVai = {
-  id: number; ten: string; ma: string; status: string; tamDungTu: string | null;
+  id: number; ten: string; ma: string; status: string; tamDungTu: string | null; thieu: string[];
   lop: { id: number; code: string; ft: boolean; tuan: number | null; tongTuan: number | null; daRoi: boolean } | null;
   chiNhanh: string | null; tvv: string | null;
   target: number | null; kck: boolean; duKienThi: ExamPlan;
@@ -212,8 +212,8 @@ export function HocVienTheoVai({ vai }: { vai: 'tvv' | 'cx' }) {
         mo: () => setBuocTiep({ cycleId: bt.cycleId, em: { id: d.id, ten: d.ten }, lop: d.lop?.code ?? null }) }] : []),
       ...(kq && d.viewer.suaThem ? [{ ...chung, key: `thi:${d.id}`, viec: t('Kết quả thi'), phu: kq.thi ? t('Thi {ngay} · chưa có kết quả', { ngay: ngay(kq.thi, homNay) }) : t('chưa có kết quả'), han: kq.han,
         quaHan: kq.han < homNay, kieu: kq.han < homNay ? 'qua-han' as const : null, mo: () => setSuaEm({ id: d.id, ten: d.ten, lop: d.lop?.code ?? null, viec: 'outcome' }) }] : []),
-      ...(tap.thieu_tt?.has(d.id) && d.viewer.suaThongTin ? [{ ...chung, key: `thieu:${d.id}`, viec: t('Thiếu thông tin'), phu: null, han: null, quaHan: false, kieu: 'thieu-tt' as const,
-        mo: () => setSuaEm({ id: d.id, ten: d.ten, lop: d.lop?.code ?? null, viec: 'info' }) }] : []),
+      ...(tap.thieu_tt?.has(d.id) && d.viewer.suaThongTin ? tachThieuEmail(d.thieu).map((x) => ({ ...chung, key: `${x.khoa}:${d.id}`, viec: x.viec, phu: x.phu, han: null, quaHan: false,
+        kieu: 'thieu-tt' as const, mo: () => setSuaEm({ id: d.id, ten: d.ten, lop: d.lop?.code ?? null, viec: 'info' }) })) : []),
     ];
   });
   const demGoc: Record<GocVai, number | undefined> = {
@@ -332,7 +332,6 @@ export function HocVienTheoVai({ vai }: { vai: 'tvv' | 'cx' }) {
                   dau={(
                     <span className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1">
                       <Link className="link font-semibold" to={`/hoc-vien/${d.id}`} state={{ ds }}>{d.ten}</Link>
-                      <span className="text-xs tabular-nums text-slate-500">{maHocVienNgan(d.ma)}</span>
                       <TrangThaiEm d={d} thieu={!!tap.thieu_tt?.has(d.id)} />
                     </span>
                   )}
@@ -364,7 +363,6 @@ export function HocVienTheoVai({ vai }: { vai: 'tvv' | 'cx' }) {
                     <td className="td h-14">
                       <span className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5">
                         <Link className="link max-w-full truncate font-semibold" title={d.ten} to={`/hoc-vien/${d.id}`} state={{ ds }}>{d.ten}</Link>
-                        <span className="shrink-0 text-xs tabular-nums text-slate-500">{maHocVienNgan(d.ma)}</span>
                         <TrangThaiEm d={d} thieu={!!tap.thieu_tt?.has(d.id)} />
                       </span>
                     </td>

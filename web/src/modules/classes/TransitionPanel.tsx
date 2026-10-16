@@ -9,7 +9,7 @@ import { Nhan } from '../../ui/Nhan.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { chayHangLoat, hoanTacHangLoat } from '../students/hangLoatEm.ts';
 import {
-  CHU_CHUYEN_LOP, chipSosMt0, chuTuanHoc, ghepMucTieu, tachMucTieu, hanBanGiao, kiemDongLenh, ketQuaGanNhat, laChuyenNgay, LO_CHUYEN_NGAY, LO_CHUYEN_NGAY_THUONG, maHocVienNgan, ngay, nhanTuanBatDau,
+  CHU_CHUYEN_LOP, chipSosMt0, chuTuanHoc, ghepMucTieu, tachMucTieu, hanBanGiao, kiemDongLenh, ketQuaGanNhat, laChuyenNgay, LO_CHUYEN_NGAY, LO_CHUYEN_NGAY_THUONG, ngay, nhanTuanBatDau,
   thuNgay, tomTatLenh, tuanLich, type AssessedSkill, type DongTomTatLenh, type HuongLenh, type KetQuaVao, type MucTieuLenh } from '@shared/domain/index.ts';
 import { ClassCreatePanel } from './ClassCreatePanel.tsx';
 import { t } from '@shared/i18n/index.ts';
@@ -386,7 +386,6 @@ function HangEm({ s, d, tuanCh, homNay, loi, loiMayChu, oId, khoa, chon, onChon,
       </span>
       <span role="cell" className="min-w-0">
         <span className="block truncate text-slate-100" title={s.fullName}>{s.fullName}</span>
-        <span className="block text-[11px] tabular-nums text-slate-500">{maHocVienNgan(s.studentCode)}</span>
         {/* PR-UXF-a (mockup 20 màn I): em FT "LT1 · tuần học 9" — không mẫu số (FT không giới hạn tuần). */}
         {s.tuanHoc && <span className="block text-xs text-slate-500">{[s.route, chuTuanHoc(s.tuanHoc.tuan, s.tuanHoc.tong, s.tuanHoc.dangDung)].filter(Boolean).join(' · ')}</span>}
       </span>

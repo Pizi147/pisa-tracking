@@ -93,7 +93,7 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiCanXepLai = f
               <td className="td sticky-col py-1.5 align-middle">
                 <Link to={duongHoSoHocVien(h.studentId)} className="link block truncate text-slate-100" title={h.ten}>{h.ten}</Link>
                 <div className="text-xs text-slate-500">
-                  {h.ma}{'vaoMuon' in h && h.vaoMuon && <span> · vào muộn</span>}
+                  {'vaoMuon' in h && h.vaoMuon && <span>vào muộn</span>}
                 </div>
               </td>
               {cots.map((c) => {

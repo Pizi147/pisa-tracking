@@ -6,6 +6,7 @@
  *   GVa-4 · F03 + F04 web: giá trị đầu form theo ngữ cảnh lúc mở, khoá nút Giao khi chưa rõ kỳ.
  */
 import type { AnToanTestKit } from './anToan.tests.ts';
+import { emailThu } from '../seed/emailThu.ts';
 
 export async function runPrGvaTests(t: AnToanTestKit) {
   const { check, checkAsync, assert, assertThrows, conn, TODAY, P } = t;
@@ -96,7 +97,7 @@ export async function runPrGvaTests(t: AnToanTestKit) {
   let seq = 0;
   const caseMoi = () => {
     const ten = `GVA HV ${++seq}`;
-    intake.commitIntake(P.admin, { classId: lopMb, rows: [{ fullName: ten, target: 6.5, email: 'hv@demo.test', dob: '2010-01-01' }], idempotencyKey: `gva-hv-${seq}` });
+    intake.commitIntake(P.admin, { classId: lopMb, rows: [{ fullName: ten, target: 6.5, email: emailThu(), dob: '2010-01-01' }], idempotencyKey: `gva-hv-${seq}` });
     const sid = (conn.prepare('SELECT id FROM students WHERE full_name = ?').get(ten) as any).id;
     return caseSvc.reportIssue(P.lrTeacher, { studentId: sid, topic: 'listening', title: 'Case GVa', summary: 'Case dùng cho phép kiểm khoá gửi.',
       primaryCode: d.issuesForTopic('listening')[0].code, idempotencyKey: `gva-case-${seq}` }).id as number;

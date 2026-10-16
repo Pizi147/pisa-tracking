@@ -21,6 +21,7 @@ import { confirmCoordination } from '../yThuc/phoiHop.ts';
 import { issuesForTopic } from '../../../shared/domain/index.ts';
 import type { BuildCtx } from './build.ts';
 import { DEMO_DATE } from './journeys.ts';
+import { emailThu } from './emailThu.ts';
 
 export function buildLt2aDemo(ctx: BuildCtx): { em: number } {
   const { conn } = ctx;
@@ -41,7 +42,7 @@ export function buildLt2aDemo(ctx: BuildCtx): { em: number } {
   });
   /** Thêm em vào lớp, xếp bài Giữa khoá (đã qua tuần → đường Quản lý), nhập điểm /20 theo môn. */
   const dung = (classId: number, ten: string, diem: Record<string, number>) => {
-    commitIntake(admin, { classId, rows: [{ fullName: ten, email: 'hv@demo.test', dob: '2010-01-01' }], idempotencyKey: `lt2a-demo-${ten}` } as any);
+    commitIntake(admin, { classId, rows: [{ fullName: ten, email: emailThu(), dob: '2010-01-01' }], idempotencyKey: `lt2a-demo-${ten}` } as any);
     const sid = (conn.prepare('SELECT id FROM students WHERE full_name = ?').get(ten) as any).id as number;
     planRegularTests(ql, classId, { studentIds: [sid], kinds: ['progress'] });
     const pt = (conn.prepare(`SELECT id FROM assessment_attempts WHERE student_id = ? AND kind = 'progress' ORDER BY id DESC LIMIT 1`).get(sid) as any).id as number;

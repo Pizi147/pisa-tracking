@@ -1,5 +1,6 @@
 /** PHÉP KIỂM PR-Dọn-a — quyền, an toàn, một luật cho một khái niệm, xoá mã chết, tốc độ (kế hoạch 2026-10-01-pr-don-ma-thua-quyen, Task 1–10). */
 import type { YThucTestKit } from './yThuc.tests.ts';
+import { emailThu } from '../seed/emailThu.ts';
 
 export async function runPrDonATests(t: YThucTestKit) {
   const { check, checkAsync, assert, conn, P, TODAY, classId } = t;
@@ -30,7 +31,7 @@ export async function runPrDonATests(t: YThucTestKit) {
   /** Em mới vào lớp `lop` qua đường Thêm HV thật; trả id em + lộ trình đang chạy. */
   const emMoi = (lop: string) => {
     const ten = `DONA HV ${++seq}`;
-    intake.commitIntake(P.admin, { classId: classId(lop), rows: [{ fullName: ten, target: 6.5, email: 'hv@demo.test', dob: '2010-01-01' }], idempotencyKey: `dona-${seq}` });
+    intake.commitIntake(P.admin, { classId: classId(lop), rows: [{ fullName: ten, target: 6.5, email: emailThu(), dob: '2010-01-01' }], idempotencyKey: `dona-${seq}` });
     const st = get('SELECT id FROM students WHERE full_name = ?', ten);
     const cy = get("SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active'", st.id);
     return { sid: st.id as number, cy: cy?.id as number };

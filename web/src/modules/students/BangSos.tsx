@@ -9,7 +9,7 @@ import { skillShort, sosTone } from '../../lib/format.ts';
 import { OPhuHuynh } from './HocVienTheoVai.tsx';
 import { t } from '@shared/i18n/index.ts';
 import {
-  NHAN_NHOM_XU_LY, deadlineView, maHocVienNgan, tuanLich, type DeadlineKind, type LienHe, type NguCanhDs, type NhomXuLy,
+  NHAN_NHOM_XU_LY, deadlineView, tuanLich, type DeadlineKind, type LienHe, type NguCanhDs, type NhomXuLy,
 } from '@shared/domain/index.ts';
 
 /** `GET /hoc-vien-lop?goc=sos` (server/src/classes/hocVienSos.ts → CaseTomTat / DongSos / TrangSos). */
@@ -142,7 +142,6 @@ export function BangSos({ data, cot, dam, dienThoai, ds, onMo }: {
   const tenEm = (r: DongSos, lap: boolean) => (
     <span className="flex min-w-0 flex-wrap items-baseline gap-x-1.5">
       <Link className={`link max-w-full truncate font-semibold ${lap ? 'opacity-60' : ''}`} title={r.ten} to={`/hoc-vien/${r.studentId}`} state={{ ds }}>{r.ten}</Link>
-      {!lap && <span className="shrink-0 text-[11.5px] tabular-nums text-slate-500">{maHocVienNgan(r.ma)}</span>}
     </span>
   );
   const trangThai = (r: DongSos) => { const n = nhomDong(r); return <Nhan tone={TONE_NHOM[n]}>{t(NHAN_NHOM_XU_LY[n])}</Nhan>; };

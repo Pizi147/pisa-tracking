@@ -131,7 +131,7 @@ export function XemTruocHangLoatPanel({ viec, ids, maLop, onClose, onDone }: {
                 <p className="m-0 text-sm text-slate-200">Xoá hẳn hồ sơ và mọi dữ liệu của các em này. <span className="text-soon">Không hoàn tác được.</span></p>
                 <ul className="m-0 list-none space-y-0.5 p-0" aria-label="Học viên sẽ xoá">
                   {xem.rows.filter((r) => !r.lyDoBo).map((r) => (
-                    <li key={r.studentId} className="text-sm text-slate-200">{r.ten}<span className="text-slate-400"> · {r.ma}{r.lop ? ` · ${r.lop}` : ''}</span></li>
+                    <li key={r.studentId} className="text-sm text-slate-200">{r.ten}{r.lop && <span className="text-slate-400"> · {r.lop}</span>}</li>
                   ))}
                 </ul>
                 {(xem.tong.mat ?? []).length > 0 && (

@@ -15,6 +15,7 @@ import { recordViolation } from '../yThuc/violations.ts';
 import { xacNhanXuLy } from '../yThuc/xuLy.ts';
 import { recordIntervention, reportIssue, updateResult } from '../cases/cases.ts';
 import { issuesForTopic } from '../../../shared/domain/index.ts';
+import { emailThu } from './emailThu.ts';
 
 /**
  * PR-Pb2-b (Task 1) — BÙ ba cột ngày nghiệp vụ cho dữ liệu seed dựng thẳng bằng SQL (không qua `saveScore` / `recordViolation` / xử lý).
@@ -106,7 +107,7 @@ export function buildPb2bDemo(ctx: BuildCtx): { gv: number; lop: number } {
     return r.id as number;
   };
   const hv = (classId: number, ten: string, target: number) => {
-    commitIntake(admin, { classId, rows: [{ fullName: ten, target, email: 'hv@demo.test', dob: '2010-01-01' }], idempotencyKey: `pb2b-demo-${ten}` } as any);
+    commitIntake(admin, { classId, rows: [{ fullName: ten, target, email: emailThu(), dob: '2010-01-01' }], idempotencyKey: `pb2b-demo-${ten}` } as any);
     const st = conn.prepare('SELECT id FROM students WHERE full_name = ?').get(ten) as any;
     const cy = conn.prepare(`SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active'`).get(st.id) as any;
     return { id: st.id as number, cycleId: cy?.id as number };

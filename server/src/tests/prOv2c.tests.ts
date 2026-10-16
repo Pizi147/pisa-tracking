@@ -35,10 +35,10 @@ export async function runPrOv2cTests(t: YThucTestKit) {
 
   check('OV2c-0 · dữ liệu thử đủ (lớp FT CP, 2 em, QL)', () => { assert(lop && dsEm.length === 2 && ql, `lop ${lop} em ${dsEm.length} ql ${ql}`); });
 
-  check('OV2c-1 · Thêm HV: cột Email không còn dấu *; OV-11g (Q3): Ngày sinh cũng không *', () => {
+  check('OV2c-1 · Thêm HV: OV-13f (Q8) cột Email có dấu * (trống vẫn lưu — việc Thiếu email); OV-11g (Q3): Ngày sinh không *', () => {
     for (const ft of [false, true]) {
       const cot = dm.cotLuoiNhap(ft);
-      assert(!cot.find((x: any) => x.key === 'email')?.batBuoc, `Email còn bắt buộc (ft=${ft})`);
+      assert(cot.find((x: any) => x.key === 'email')?.batBuoc, `Email thiếu dấu * (ft=${ft})`);
       assert(!cot.find((x: any) => x.key === 'dob')?.batBuoc, `Ngày sinh còn bắt buộc (ft=${ft})`);
     }
   });

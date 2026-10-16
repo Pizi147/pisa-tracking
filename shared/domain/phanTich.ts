@@ -470,9 +470,11 @@ export type HieuQuaPaKetQua = {
   scopeEmpty: boolean;
 };
 
+/** OV-13f (Q8): tiêu đề sheet "HV cần chú ý" của tệp Ý thức — không cột Mã, Email ngay sau tên làm định danh. */
+export const COT_XUAT_HV_CAN_CHU_Y = ['Học viên', 'Email', 'Lớp', 'Trạng thái', 'Bậc hiện tại', 'Bậc kế', 'Vi phạm', 'Chưa xử lý', 'Lần xử lý gần nhất', 'Ngày'] as const;
 /** Ý thức (PR-YT4): "Học viên cần chú ý" + "Lớp nhiều vi phạm". */
 export type DongHvCanChuY = {
-  studentId: number; ten: string; lop: string | null; viPham: number; chuaXuLy: number;
+  studentId: number; ten: string; email: string | null; lop: string | null; viPham: number; chuaXuLy: number;
   bienPhapGanNhat: string | null; ngay: string | null;
   /** G-058: lần xử lý MỚI HƠN lần đã xong gần nhất, còn đang chờ duyệt / bị từ chối — kèm nhãn trạng thái. */
   lanXuLyMoi: { ten: string; nhan: string } | null;

@@ -1,5 +1,6 @@
 /** PHÉP KIỂM PR-VN3 — việc nhỏ dồn lại (sau KV, GOP, CT2, HOP1). Task 1: Sửa PA tính là "đã đụng". */
 import type { YThucTestKit } from './yThuc.tests.ts';
+import { emailThu } from '../seed/emailThu.ts';
 
 export async function runPrVn3Tests(t: YThucTestKit) {
   const { check, assert, conn, P, TODAY, classId } = t;
@@ -144,7 +145,7 @@ export async function runPrVn3Tests(t: YThucTestKit) {
     const LOP = classId('MB FT 101');
     const tuanNay = week.mondayOf(TODAY);
     const tuan = (n: number) => week.ensurePeriod(t.addDays(tuanNay, 7 * n));
-    const r = intake.commitIntake(P.admin, { classId: LOP, rows: [{ fullName: `VN3 Em ${seq++}`, target: 6.5, startWeek: tuanNay, email: 'hv@demo.test', dob: '2010-01-01' }] });
+    const r = intake.commitIntake(P.admin, { classId: LOP, rows: [{ fullName: `VN3 Em ${seq++}`, target: 6.5, startWeek: tuanNay, email: emailThu(), dob: '2010-01-01' }] });
     assert(r.added === 1, JSON.stringify(r.failed));
     const a = (all(`SELECT id FROM assessment_attempts WHERE student_id = ? AND status != 'cancelled' ORDER BY attempt_no`, r.studentIds[0])[1]).id as number;
     skillSch.ensureSkillRows(a);

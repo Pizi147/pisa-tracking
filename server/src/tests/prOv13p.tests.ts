@@ -4,6 +4,7 @@
  * Migrate prOv13p: DB cũ → cấp đúng vai, chạy lần hai không đổi.
  */
 import type { YThucTestKit } from './yThuc.tests.ts';
+import { emailThu } from '../seed/emailThu.ts';
 
 export async function runPrOv13pTests(t: YThucTestKit) {
   const { checkAsync, check, assert, conn, P } = t;
@@ -84,7 +85,7 @@ export async function runPrOv13pTests(t: YThucTestKit) {
   };
   let so = 970;
   const lopMoi = (branchId: number) => ({ branchId, chuongTrinh: 'FT', loTrinh: 'LT1', so: String(++so) });
-  const mot = (ten: string) => ({ rows: [{ fullName: ten, target: 7, email: 'hv@demo.test', dob: '2010-01-01' }] });
+  const mot = (ten: string) => ({ rows: [{ fullName: ten, target: 7, email: emailThu(), dob: '2010-01-01' }] });
 
   try {
     const tv = await vao(idTvv); const cx = await vao(idCx); const ad = await vao(idAdmin);
@@ -126,7 +127,7 @@ export async function runPrOv13pTests(t: YThucTestKit) {
       assert(r.status === 200 && !(r.json.issues ?? []).some((i: any) => i.muc === 'loi'), `TVV xem trước: ${r.status} ${JSON.stringify(r.json?.issues)}`);
       r = await goi('POST', '/intake/commit', tv, { classId: lopTvv, ...mot('OV13p Một'), idempotencyKey: 'ov13p-1' });
       assert(r.status === 200 && dem() === 1, `TVV thêm một em: ${r.status} ${r.json?.error} · ${dem()}`);
-      const lo = { rows: ['OV13p Lô A', 'OV13p Lô B'].map((fullName) => ({ fullName, target: 6.5, email: 'hv@demo.test', dob: '2010-02-02' })) };
+      const lo = { rows: ['OV13p Lô A', 'OV13p Lô B'].map((fullName) => ({ fullName, target: 6.5, email: emailThu(), dob: '2010-02-02' })) };
       r = await goi('POST', '/intake/commit', cx, { classId: lopTvv, ...lo, idempotencyKey: 'ov13p-2' });
       assert(r.status === 200 && dem() === 3, `CX nhập lô: ${r.status} ${r.json?.error} · ${dem()}`);
       r = await goi('POST', '/intake/preview', tv, { classId: lopMb, ...mot('OV13p Ngoài') });

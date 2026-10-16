@@ -13,7 +13,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import {
-  ENTRY_SKILLS, nhanBai, maHocVienNgan, ngay, tenMon, tenMonNgan, tuanLich, type NguoiChon,
+  ENTRY_SKILLS, nhanBai, ngay, tenMon, tenMonNgan, tuanLich, type NguoiChon,
 } from '@shared/domain/index.ts';
 import { dotGvCham, duongDotTest } from '@shared/domain/index.ts';
 import { fmtBand } from '../../lib/format.ts';
@@ -200,7 +200,7 @@ function MotKyNangFt({ data, onReload, kn, hv, hangMo, tuanDangXem }: {
         {hangMo.map((h) => (
           <li key={`mo-${h.studentId}`} data-hv={h.studentId} className="px-3 py-2 min-h-[60px] border-t text-slate-500"
             style={{ borderColor: 'var(--line)' }}>
-            <div className="truncate" title={h.ten}>{h.ten} <span className="text-[11px]">· {h.ma}</span></div>
+            <div className="truncate" title={h.ten}>{h.ten}</div>
             <div className="text-xs text-slate-400">{h.chu}</div>
           </li>
         ))}
@@ -220,11 +220,11 @@ function DongFt({ row, k, nhieuMt, lop, active, onReload, gvMacDinh, mo, onMo, o
   const c0 = oCua(row, k);
   const c = c0 && apDiemVuaLuu(c0, vuaLuu[k]);
   const kv = row.result?.expectation ?? null;
-  const phu = [nhieuMt ? `MT${row.attemptNo}` : null, kv !== null ? t('KV {x}', { x: fmtBand(kv) }) : maHocVienNgan(row.studentCode)]
+  const phu = [nhieuMt ? `MT${row.attemptNo}` : null, kv !== null ? t('KV {x}', { x: fmtBand(kv) }) : null]
     .filter(Boolean).join(' · ');
   return (
     <DongHv studentId={row.studentId} active={active} ten={row.studentName} href={duongDotTest({ id: row.attemptId }, k)}
-      phu={phu} phuTitle={kv !== null ? t('Kỳ vọng (KV) của lượt này: {fmtBand} · {maHocVienNgan}', { fmtBand: fmtBand(kv), maHocVienNgan: maHocVienNgan(row.studentCode) }) : undefined}
+      phu={phu} phuTitle={kv !== null ? t('Kỳ vọng (KV) của lượt này: {fmtBand}', { fmtBand: fmtBand(kv) }) : undefined}
       luu={<>{row.lichSu && <NhanCu />}<DauLuu lon status={status} error={lastError} onRetry={coGuiLai ? retry : undefined} soLoi={soLoi} /></>}
       mo={!!row.ngungHoc}
       nhan={row.ngungHoc ? <Level tone="muted" title={row.cells[0]?.lyDoKhoa && dich(row.cells[0].lyDoKhoa)}>{dich(row.ngungHoc)}</Level> : <NhanHoanTat hoanTat={row.hoanTat} chuNhatCuoi={row.chuNhatCuoi} />}
@@ -325,7 +325,7 @@ function DongThuongMot({ row, k, sheet, tongCot, active, onReload, inputRef, onK
   /*
    * MỘT dòng phụ (G-3): ô mang "-" nói tuần mới (Q17: lớp thường không đếm ngược) → quá hạn chấm → chưa tới tuần thi
    * → kết quả của ô đã có điểm ("Đạt · 82,5%" — trên lưới câu này nằm dưới hai số; ở đây nằm dưới tên để mọi dòng cao
-   * bằng nhau) → mã học viên.
+   * bằng nhau) → trống (OV-13f: không hiện mã HV).
    */
   const ketQua = datPhanTram(cell.ketQua, cell.tiLe);
   const phu = (cell.khongDuThi ? t('Không dự thi') : null)
@@ -333,10 +333,10 @@ function DongThuongMot({ row, k, sheet, tongCot, active, onReload, inputRef, onK
     ?? quaHan
     ?? (cell.chuaToiTuan && cell.tuanHienTai ? `Thi ${cell.tuanHienTai}` : null)
     ?? ketQua
-    ?? maHocVienNgan(row.studentCode);
+    ?? '';
   return (
     <DongHv studentId={row.studentId} active={active} ten={row.studentName} href={`/hoc-vien/${row.studentId}`}
-      phu={phu} phuTitle={`${tenMonO} · ${maHocVienNgan(row.studentCode)}`} phuDo={phu === ketQua && cell.ketQua === 'fail'}
+      phu={phu} phuTitle={tenMonO} phuDo={phu === ketQua && cell.ketQua === 'fail'}
       luu={<DauLuu lon status={status} error={lastError} onRetry={coGuiLai ? retry : undefined} soLoi={soLoi} />}
       nhan={<NhanHoanTat hoanTat={row.hoanTat} chuNhatCuoi={row.chuNhatCuoi} />}
       thi={row.skillSchedule.filter((x) => x.progress !== 'cancelled' && x.progress !== 'skipped')

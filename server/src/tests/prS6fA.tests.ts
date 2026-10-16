@@ -1,5 +1,6 @@
 /** PHÉP KIỂM PR-S6F-a — sửa sau rà đợt 6 lượt 1, phần máy chủ / dữ liệu (kế hoạch 2026-10-01-pr-s6f-sua-sau-ra-dot-6, Task 1–4, 10, 11). */
 import type { YThucTestKit } from './yThuc.tests.ts';
+import { emailThu } from '../seed/emailThu.ts';
 
 export async function runPrS6fATests(t: YThucTestKit) {
   const { check, assert, conn, P, TODAY, classId } = t;
@@ -28,7 +29,7 @@ export async function runPrS6fATests(t: YThucTestKit) {
   let seq = 0;
   const emMoi = (lop: string) => {
     const ten = `S6FA HV ${++seq}`;
-    intake.commitIntake(P.admin, { classId: classId(lop), rows: [{ fullName: ten, target: 6.5, email: 'hv@demo.test', dob: '2010-01-01' }], idempotencyKey: `s6fa-${seq}` });
+    intake.commitIntake(P.admin, { classId: classId(lop), rows: [{ fullName: ten, target: 6.5, email: emailThu(), dob: '2010-01-01' }], idempotencyKey: `s6fa-${seq}` });
     const st = get('SELECT id FROM students WHERE full_name = ?', ten);
     /* Vào lớp từ đầu tháng 8: MT các tuần tháng 9 không bị coi là MT lịch sử (trước ngày vào lớp). */
     conn.prepare("UPDATE enrollments SET started_at = '2026-08-03' WHERE student_id = ?").run(st.id);
@@ -257,7 +258,7 @@ export async function runPrS6fATests(t: YThucTestKit) {
   }) as any).id as number;
   const emVaoLop = (lop: number) => {
     const ten = `S6FA HV ${++seq}`;
-    intake.commitIntake(P.admin, { classId: lop, rows: [{ fullName: ten, target: 6.5, email: 'hv@demo.test', dob: '2010-01-01' }], idempotencyKey: `s6fa-${seq}` });
+    intake.commitIntake(P.admin, { classId: lop, rows: [{ fullName: ten, target: 6.5, email: emailThu(), dob: '2010-01-01' }], idempotencyKey: `s6fa-${seq}` });
     const sid = get('SELECT id FROM students WHERE full_name = ?', ten).id as number;
     conn.prepare("UPDATE enrollments SET started_at = '2026-08-03' WHERE student_id = ?").run(sid);
     return { sid, cy: get("SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active'", sid).id as number };

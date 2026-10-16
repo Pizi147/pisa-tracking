@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { YThucTestKit } from './yThuc.tests.ts';
+import { emailThu } from '../seed/emailThu.ts';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..', '..');
 const nguon = (rel: string) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
@@ -111,7 +112,7 @@ export async function runPrLmMayChu(t: YThucTestKit) {
   let dem = 0;
   /** Em mới ở MB FT 101 có MT1 (T+1), MT2 (T+4), MT3 (T+8), chưa điểm, lịch do Quản lý chốt. */
   const emMoi = () => {
-    const r = intake.commitIntake(P.admin, { classId: LOP, rows: [{ fullName: `PRLM Em ${++dem}`, target: 6.5, startWeek: tuanNay, email: 'hv@demo.test', dob: '2010-01-01' }] });
+    const r = intake.commitIntake(P.admin, { classId: LOP, rows: [{ fullName: `PRLM Em ${++dem}`, target: 6.5, startWeek: tuanNay, email: emailThu(), dob: '2010-01-01' }] });
     assert(r.added === 1, `thêm em: ${JSON.stringify(r.failed)}`);
     const sid = r.studentIds[0] as number;
     const ds = conn.prepare(`SELECT a.id FROM assessment_attempts a WHERE a.student_id = ? AND a.status != 'cancelled' ORDER BY a.attempt_no`).all(sid) as any[];

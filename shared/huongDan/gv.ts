@@ -52,7 +52,7 @@ export const HD_GV: HuongDan = {
       id: 'hoc-vien', ten: 'Học viên & Lớp', duong: ['/hoc-vien'],
       muc: [
         { id: 'hv-tim', ten: 'Tìm em hoặc lớp', buoc: ['Gõ ít nhất 2 chữ ở ô <b>Tìm học viên, lớp…</b> trên thanh trên.', 'Gõ "ft101" ra lớp MB FT 101.'],
-          chi: { hd: 'tim-hv', chu: 'Gõ tên em hoặc mã lớp.' } },
+          chi: { hd: 'tim-hv', chu: 'Gõ tên, email em hoặc mã lớp.' } },
         { id: 'hv-goc', ten: 'Ba góc nhìn', buoc: ['<b>Tất cả</b> · <b>Đang SOS</b> theo tuần thi · <b>Cần làm</b>.', 'Bấm dòng em mở panel một em, không rời trang.'] },
       ],
     },

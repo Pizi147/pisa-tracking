@@ -1,6 +1,6 @@
 import { db, theoLo, tx } from '../db.ts';
 import {
-  CHI_SUA_THONG_TIN, CO_DIEM_SQL, chuTargetKck, PERMISSIONS, TOI_DA_LUU_SUA_CA_LOP, cauMtSeDoi, coONhapLienHe, cotLuoiNhap, NHAN_LIEN_HE, type VanDeNhap,
+  CHI_SUA_THONG_TIN, CO_DIEM_SQL, chuTargetKck, docEmail, PERMISSIONS, TOI_DA_LUU_SUA_CA_LOP, cauMtSeDoi, coONhapLienHe, cotLuoiNhap, NHAN_LIEN_HE, type VanDeNhap,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { chanGiaoDichNeuSapHetGio } from '../platform/hanGio.ts';
@@ -13,6 +13,7 @@ import {
 } from '../fasttrack/cycles.ts';
 import { donKhoaGuiCu, laLopThuong } from './intake.ts';
 import { lichMtCua } from './schedule.ts';
+import { cauEmailTrung, emailDangDung } from '../students/emailHocVien.ts';
 
 /**
  * PR-SL (Q-0310-3): SỬA THÔNG TIN CẢ LỚP — Họ tên, Ngày sinh, Email, Tuần bắt đầu, Dự kiến thi, Target, Điểm đầu vào (OV-10b: + liên hệ). Mỗi dòng chỉ gửi
@@ -168,6 +169,24 @@ function kiemLo(p: Principal, classId: number, input: DauVao) {
     const cuTuan = c?.start_period_id ?? null;
     return { r, s, c, issues, hoSo, doiTarget, tuanMoi, cuTuan };
   });
+
+  /*
+   * OV-13f (Q8): email không trùng — cùng luật `updateStudent` (chỉ dòng ĐỔI email). Báo ở xem trước đúng dòng: trùng em khác (một câu cả lô)
+   * hoặc trùng dòng trước trong lô. Lưu theo lô nhỏ: lô sau gặp email lô trước đã ghi thì `updateStudent` chặn (400) — cả lô cuộn lại.
+   */
+  const doiEmail = dong.flatMap((x, i) => {
+    const e = x.hoSo.email !== undefined ? docEmail(x.hoSo.email).email : null;
+    return e && e !== String(x.s.email ?? '').trim().toLowerCase() ? [{ x, i, e }] : [];
+  });
+  const dungEmail = emailDangDung(doiEmail.map((d) => d.e));
+  const trongLo = new Map<string, string>();
+  for (const { x, i, e } of doiEmail) {
+    const em = dungEmail.get(e);
+    const truoc = trongLo.get(e);
+    if (em && em.id !== x.s.id) x.issues.push({ row: i + 1, field: 'email', message: cauEmailTrung(em), muc: 'loi' });
+    else if (truoc) x.issues.push({ row: i + 1, field: 'email', message: `Email trùng dòng ${truoc}`, muc: 'loi' });
+    else trongLo.set(e, x.s.full_name);
+  }
 
   /* Cảnh báo MT sẽ dời (M6) — cùng câu với panel Thông tin HV (`cauMtSeDoi`). Lượt của mọi lộ trình đổi tuần đọc MỘT câu theo lô. */
   const doiTuan = dong.filter((x) => x.c?.route && x.tuanMoi);

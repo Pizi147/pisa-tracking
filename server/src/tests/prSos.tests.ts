@@ -4,6 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { YThucTestKit } from './yThuc.tests.ts';
 import { duXacNhan } from './luotThu.ts';
+import { emailThu } from '../seed/emailThu.ts';
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
 
@@ -131,7 +132,7 @@ export async function runPrSosTests(t: YThucTestKit) {
   const all = (sql: string, ...a: unknown[]) => conn.prepare(sql).all(...a) as any[];
   const get = (sql: string, ...a: unknown[]) => conn.prepare(sql).get(...a) as any;
   const makeStudent = (name: string): { id: number; cycleId: number; name: string } => {
-    intake.commitIntake(P.admin, { classId: CLASS, rows: [{ fullName: `SOS4 ${name}`, target: 7, email: 'hv@demo.test', dob: '2010-01-01' }], idempotencyKey: `sos4-${name}` });
+    intake.commitIntake(P.admin, { classId: CLASS, rows: [{ fullName: `SOS4 ${name}`, target: 7, email: emailThu(), dob: '2010-01-01' }], idempotencyKey: `sos4-${name}` });
     const st = get('SELECT id FROM students WHERE full_name = ?', `SOS4 ${name}`);
     const cy = get("SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active'", st.id);
     boLichTuTao(conn, cy.id);

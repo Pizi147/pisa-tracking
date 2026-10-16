@@ -139,7 +139,7 @@ export function NganXuatMt({ khung: khungDau, chiNhanh, lop, thoiGianMacDinh, on
     : dangXem ? 'Đang tính…' : '';
   const cotChu = khung === 'ft'
     ? [...COT_FT_GON, ...(cot === 'day-du' ? COT_FT_THEM : [])].join(' · ')
-    : `Mã · Tên · Chi nhánh · Lớp · Bài · Tuần · điểm % từng môn · % tổng · Trạng thái lượt${cot === 'day-du' ? ' · điểm, tổng và tuần từng môn · Người nhập' : ''}`;
+    : `Tên · Email · Chi nhánh · Lớp · Bài · Tuần · điểm % từng môn · % tổng · Trạng thái lượt${cot === 'day-du' ? ' · điểm, tổng và tuần từng môn · Người nhập' : ''}`;
 
   return (
     <KhungPanel tieuDe={'Xuất kết quả Test'} onDong={onDong}

@@ -4,6 +4,7 @@
  */
 import type { YThucTestKit } from './yThuc.tests.ts';
 import { chotSan } from './luotThu.ts';
+import { emailThu } from '../seed/emailThu.ts';
 
 export async function runPrOv4aTests(t: YThucTestKit) {
   const { check, assert, conn, P, TODAY, classId } = t;
@@ -50,7 +51,7 @@ export async function runPrOv4aTests(t: YThucTestKit) {
    * (mốc) với PA Tự học kết quả gần nhất "Chưa đủ dữ liệu" và PA Tutor kết quả "Tiến bộ" — Case này không sinh riêng (đã có kết quả PA).
    */
   const dung = () => {
-    const r = intake.commitIntake(P.admin, { classId: LOP, rows: [{ fullName: `OV4a Em ${++dem}`, target: 6.5, startWeek: tuanNay, email: 'hv@demo.test', dob: '2010-01-01' }] });
+    const r = intake.commitIntake(P.admin, { classId: LOP, rows: [{ fullName: `OV4a Em ${++dem}`, target: 6.5, startWeek: tuanNay, email: emailThu(), dob: '2010-01-01' }] });
     const sid = r.studentIds[0] as number;
     const ds = all(`SELECT id FROM assessment_attempts WHERE student_id = ? AND kind = 'mock' ORDER BY attempt_no`, sid).map((x) => x.id as number);
     [-1, 4, 8].forEach((w, i) => datTuan(ds[i], w));

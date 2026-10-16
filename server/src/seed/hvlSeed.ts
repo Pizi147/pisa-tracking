@@ -10,6 +10,7 @@ import { guiKhongTheoDoi } from '../cases/sosAuto.ts';
 import { issuesForTopic } from '../../../shared/domain/index.ts';
 import type { BuildCtx } from './build.ts';
 import { DEMO_DATE } from './journeys.ts';
+import { emailThu } from './emailThu.ts';
 
 /**
  * BỘ DEMO PR-HVL (planning đặt H1–H4, Q18) — đi qua CHÍNH các hàm nghiệp vụ như `xlmtSeed.ts`, dựng sau ngày demo. Nằm ở: Học viên & Lớp ·
@@ -35,7 +36,7 @@ export function buildHvlDemo(ctx: BuildCtx): { students: number } {
     return r ? loadPrincipal((r as any).id) : admin;
   };
   const them = (classId: number, ten: string, startWeek: string | null, target: number | string = 6.5) => {
-    commitIntake(admin, { classId, rows: [{ fullName: ten, target, ...(startWeek ? { startWeek } : {}), email: 'hv@demo.test', dob: '2010-01-01' }], idempotencyKey: `hvl-demo-${ten}` } as any);
+    commitIntake(admin, { classId, rows: [{ fullName: ten, target, ...(startWeek ? { startWeek } : {}), email: emailThu(), dob: '2010-01-01' }], idempotencyKey: `hvl-demo-${ten}` } as any);
     const st = conn.prepare('SELECT id FROM students WHERE full_name = ?').get(ten) as any;
     const cy = conn.prepare(`SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active'`).get(st.id) as any;
     return { id: st.id as number, cycleId: cy.id as number };

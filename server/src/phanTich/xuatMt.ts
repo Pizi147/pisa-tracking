@@ -107,7 +107,7 @@ function dongFT(a: any, b: AttemptBundle): { d: DongFT; du: boolean } {
   const gvS = scores.find((s) => s.skill === 'speaking');
   const tuanKn = (k: string) => skillRows.find((x) => x.skill === k)?.period_code ?? null;
   const d: DongFT = {
-    ma: a.student_code, ten: a.full_name, chiNhanh: a.branch_name ?? '', lop: a.class_code, loTrinh: ROUTE_NAME[a.route as keyof typeof ROUTE_NAME] ?? a.route ?? '',
+    ten: a.full_name, email: a.email ?? null, chiNhanh: a.branch_name ?? '', lop: a.class_code, loTrinh: ROUTE_NAME[a.route as keyof typeof ROUTE_NAME] ?? a.route ?? '',
     mt: a.attempt_no, tuan: a.tuan_code, tuanBd: a.week_start,
     l: r.bands.listening, r: r.bands.reading, w: r.bands.writing, s: r.bands.speaking, overall: r.overall,
     /* OV-9: KCK giữ Target + kỳ vọng; vẫn không tính SOS. */
@@ -134,7 +134,7 @@ function dongThuong(a: any, b: AttemptBundle, prog: { code: string; skills: stri
   const skillRows = b.skillRows.get(a.id) ?? [];
   const r = evaluateRegular(prog.skills, scores, prog.code, nguongDatLop(a.class_id));
   const d: DongThuong = {
-    ma: a.student_code, ten: a.full_name, chiNhanh: a.branch_name ?? '', lop: a.class_code, bai: nhanDot(a.kind, a.attempt_no), tuan: a.tuan_code, tuanBd: a.week_start,
+    ten: a.full_name, email: a.email ?? null, chiNhanh: a.branch_name ?? '', lop: a.class_code, bai: nhanDot(a.kind, a.attempt_no), tuan: a.tuan_code, tuanBd: a.week_start,
     mon: r.skills.map((m) => ({
       ten: tenMon(prog.code, m.skill), pct: phanTram(m.ratio), diem: m.score, tong: m.total,
       tuan: skillRows.find((x) => x.skill === m.skill)?.period_code ?? null,
@@ -186,7 +186,7 @@ export function duLieuXuatMt(p: Principal, f: BoLocXuatMt, toiDa = XUAT_TOI_DA_L
   const where = dk.map(([sql]) => sql), params = dk.flatMap(([, ps]) => ps);
   const luot = db().prepare(
     `SELECT a.id, a.kind, a.attempt_no, a.lich_su, a.class_id, a.target_at_attempt, a.kck_at_attempt, a.student_id, a.cycle_id,
-            cy.route, cy.khong_cam_ket AS kck, cy.khong_cam_ket AS cy_kck, st.student_code, st.full_name,
+            cy.route, cy.khong_cam_ket AS kck, cy.khong_cam_ket AS cy_kck, st.email, st.full_name,
             c.code AS class_code, c.branch_id, c.programme_code, b.name AS branch_name,
             t.week_start, t.code AS tuan_code
        FROM assessment_attempts a

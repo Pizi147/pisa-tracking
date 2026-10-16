@@ -20,6 +20,8 @@ import { chiNhanhTaoLop } from './hocVienLop.ts';
 
 export type DongHocVienVai = {
   id: number; ten: string; ma: string; status: string;
+  /** OV-13f: ô còn thiếu (`missingForStudent`, trống = đủ) — Cần làm TVV tách "Thiếu email" khỏi "Thiếu thông tin". */
+  thieu: string[];
   /** Ngày bắt đầu Tạm dừng (em đang Tạm dừng). */
   tamDungTu: string | null;
   /** Lớp đang học / đang giữ chỗ (Tạm dừng); em đã kết thúc học → lớp cuối, `daRoi`. null = chưa xếp lớp. */
@@ -93,7 +95,7 @@ export function hocVienTheoVai(p: Principal, f: { phamVi?: string | null; branch
     const thoiHoc = st?.giaiDoan === 'da_thi_cho_kq' && (s.status === 'finished' || s.cy_status === 'abandoned');
     const sauThi = st && !thoiHoc && (st.giaiDoan === 'da_thi_cho_kq' || st.giaiDoan === 'cho_buoc_tiep') ? { giaiDoan: st.giaiDoan, han: st.han, quaHan: st.quaHan, daGiaHan: st.daGiaHan } : null;
     return [{
-      id, ten: s.full_name, ma: s.student_code, status: s.status,
+      id, ten: s.full_name, ma: s.student_code, status: s.status, thieu: chip.thieu.get(id) ?? [],
       tamDungTu: s.status === 'inactive' ? tamDung[id]?.find((k) => k.den === null)?.tu ?? null : null,
       lop: s.lop_id != null ? {
         id: s.lop_id, code: s.lop_code, ft: !!s.is_fast_track, tuan: td?.currentWeek ?? null, tongTuan: td?.totalWeeks ?? null,

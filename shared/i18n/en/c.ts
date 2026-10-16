@@ -109,6 +109,8 @@ export const EN_C = {
   'Chờ Quản lý duyệt {kn}': 'Awaiting manager {kn}',
   'Đang SOS': 'SOS now',
   'Thiếu thông tin': 'Missing info',
+  'Thiếu email': 'Missing email',
+  'Thiếu': 'Missing',
   'Thiếu {n}': '{n} missing',
   'Thiếu {n} thông tin': '{n} details missing',
   'Cần bổ sung sớm:': 'Needed soon:',

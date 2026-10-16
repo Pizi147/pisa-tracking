@@ -6,6 +6,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { YThucTestKit } from './yThuc.tests.ts';
+import { emailThu } from '../seed/emailThu.ts';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..', '..');
 const boChuThich = (src: string) => src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\{\/\*[\s\S]*?\*\/\}/g, '').replace(/(^|[^:\\])\/\/.*$/gm, '$1');
@@ -525,7 +526,7 @@ export async function runPrHk2Tests(t: YThucTestKit) {
     const get = (sql: string, ...a: unknown[]) => conn.prepare(sql).get(...a) as any;
     const lop = classId('MB FT 101');
     const ten = 'HK2 HV C32';
-    intake.commitIntake(P.admin, { classId: lop, rows: [{ fullName: ten, target: 6.5, email: 'hv@demo.test', dob: '2010-01-01' }], idempotencyKey: 'hk2-c32' });
+    intake.commitIntake(P.admin, { classId: lop, rows: [{ fullName: ten, target: 6.5, email: emailThu(), dob: '2010-01-01' }], idempotencyKey: 'hk2-c32' });
     const sid = get('SELECT id FROM students WHERE full_name = ?', ten).id as number;
     conn.prepare(`UPDATE learning_cycles SET status = 'completed', ended_at = ? WHERE student_id = ? AND status = 'active'`).run(TODAY, sid);
     assert(!get(`SELECT 1 AS x FROM learning_cycles WHERE student_id = ? AND status = 'active'`, sid), 'dựng sai: còn lộ trình active');

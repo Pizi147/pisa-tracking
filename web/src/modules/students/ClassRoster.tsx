@@ -15,7 +15,7 @@ import { MoiVao } from '../classes/DaiChuyenLop.tsx';
 import { OChon, OChonTatCa, type ChonNhieu } from './chonNhieuHocVien.tsx';
 import { fmtBand, sosTone } from '../../lib/format.ts';
 import {
-  ENTRY_SKILL_LABEL, GIAI_THICH_KCK, duongHoSoHocVien, maHocVienNgan, skillShort, type EntrySkill, type ExamPlan, type LienHe, type ViecTiepTheo,
+  ENTRY_SKILL_LABEL, GIAI_THICH_KCK, duongHoSoHocVien, skillShort, type EntrySkill, type ExamPlan, type LienHe, type ViecTiepTheo,
 } from '@shared/domain/index.ts';
 import { OPhuHuynh } from './HocVienTheoVai.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
@@ -147,7 +147,6 @@ export function ClassRoster({ classId, maLop, quyen, onDoi, onAddStudents, chon 
                   <span className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5">
                     {chon?.bat && <OChon chon={chon} id={s.id} ten={s.fullName} />}
                     <Link className="link font-semibold" to={`/hoc-vien/${s.id}`} state={{ ds }}>{s.fullName}</Link>{s.moiVao && <MoiVao />}
-                    <span className="text-[11px] tabular-nums text-slate-500">{maHocVienNgan(s.studentCode)}</span>
                     <MissingBadge items={s.missing} gon />
                     <CanhBaoYThuc cb={s.canhBaoYThuc} />
                   </span>
@@ -240,7 +239,6 @@ export function ClassRoster({ classId, maLop, quyen, onDoi, onAddStudents, chon 
                     <span className="flex min-w-0 flex-wrap items-center gap-1.5">
                       {chon?.bat && <OChon chon={chon} id={s.id} ten={s.fullName} />}
                       <Link className="link" to={`/hoc-vien/${s.id}`} state={{ ds }}>{s.fullName}</Link>{s.moiVao && <MoiVao />}
-                      <span className="text-[11px] tabular-nums text-slate-500">{maHocVienNgan(s.studentCode)}</span>
                       <MissingBadge items={s.missing} gon />
                       <CanhBaoYThuc cb={s.canhBaoYThuc} />
                     </span>

@@ -4,6 +4,7 @@
  * Mọi nhóm chạy trong giao dịch cuộn lại (`thu`) — không để lại dữ liệu cho phép kiểm khác.
  */
 import type { YThucTestKit } from './yThuc.tests.ts';
+import { emailThu } from '../seed/emailThu.ts';
 
 export async function runPrOv7aTests(t: YThucTestKit) {
   const { checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId } = t;
@@ -25,7 +26,7 @@ export async function runPrOv7aTests(t: YThucTestKit) {
   const moiEm = (lop = 'MB FT 101'): number => {
     seq += 1;
     const ten = `OV7a ${seq} ${Math.random().toString(36).slice(2, 6)}`;
-    intake.commitIntake(P.admin, { classId: classId(lop), rows: [{ fullName: ten, target: 7, email: 'hv@demo.test', dob: '2010-01-01' }], idempotencyKey: `ov7a-${ten}` } as any);
+    intake.commitIntake(P.admin, { classId: classId(lop), rows: [{ fullName: ten, target: 7, email: emailThu(), dob: '2010-01-01' }], idempotencyKey: `ov7a-${ten}` } as any);
     const st = get('SELECT id FROM students WHERE full_name = ?', ten);
     const cy = get("SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active'", st.id);
     boLichTuTao(conn, cy.id);

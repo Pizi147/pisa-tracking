@@ -1,5 +1,6 @@
 /** PHÉP KIỂM PR-S5F-b — sửa sau rà cuối đợt 5 (Giữa khoá, hồ sơ GV, tốc độ). Mỗi mục một phép kiểm; tốc độ (mục 1, 2) ở `tocDo.run.ts`. */
 import type { YThucTestKit } from './yThuc.tests.ts';
+import { emailThu } from '../seed/emailThu.ts';
 
 export async function runPrS5fbTests(t: YThucTestKit) {
   const { check, assert, conn, P, TODAY, classId } = t;
@@ -32,7 +33,7 @@ export async function runPrS5fbTests(t: YThucTestKit) {
   /** Em MB FOU 12 trượt Giữa khoá G+V và P → hai Case cùng nhóm PA bổ trợ chung; G+V đã xác nhận nguyên nhân. */
   const emFou = (ten: string) => {
     const cid = classId('MB FOU 12');
-    intake.commitIntake(P.admin, { classId: cid, rows: [{ fullName: ten, email: 'hv@demo.test', dob: '2010-01-01' }], idempotencyKey: `s5fb-${ten}` });
+    intake.commitIntake(P.admin, { classId: cid, rows: [{ fullName: ten, email: emailThu(), dob: '2010-01-01' }], idempotencyKey: `s5fb-${ten}` });
     regular.planRegularTests(P.admin, cid);
     const hv = get('SELECT id FROM students WHERE full_name = ?', ten).id as number;
     const pt = get(`SELECT id FROM assessment_attempts WHERE student_id = ? AND kind = 'progress'`, hv).id as number;

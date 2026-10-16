@@ -61,14 +61,16 @@ function tinh(p: Principal, f: FilterYThuc) {
   const siSo = new Map<number, number>();
   const lopCuaHv = new Map<number, string>();
   const tenHv = new Map<number, string>();
+  const emailHv = new Map<number, string | null>();
   for (const r of conn.prepare(
-    `SELECT e.student_id, c.id AS class_id, c.code, s.full_name
+    `SELECT e.student_id, c.id AS class_id, c.code, s.full_name, s.email
        FROM enrollments e JOIN classes c ON c.id = e.class_id JOIN students s ON s.id = e.student_id
       WHERE ${eWhere.join(' AND ')} ORDER BY e.id`,
   ).all(...eArgs) as any[]) {
     siSo.set(r.class_id, (siSo.get(r.class_id) ?? 0) + 1);
     lopCuaHv.set(r.student_id, r.code);
     tenHv.set(r.student_id, r.full_name);
+    emailHv.set(r.student_id, r.email ?? null);
     if (!maLop.has(r.class_id)) maLop.set(r.class_id, r.code);
   }
 
@@ -126,7 +128,7 @@ function tinh(p: Principal, f: FilterYThuc) {
       .sort((a, c) => ngayLan(c).localeCompare(ngayLan(a)))[0] ?? null;
     const lanXuLyMoi = moiHon ? { ten: nhanLoaiXuLy(moiHon.kind, moiHon.customName), nhan: XU_LY_STATUS_LABEL[moiHon.status] } : null;
     hvRows.push({
-      studentId: sid, ten: tenHv.get(sid) ?? `#${sid}`, lop: lopCuaHv.get(sid) ?? null,
+      studentId: sid, ten: tenHv.get(sid) ?? `#${sid}`, email: emailHv.get(sid) ?? null, lop: lopCuaHv.get(sid) ?? null,
       viPham: trongKy.length, chuaXuLy: chua.length,
       bienPhapGanNhat: gan ? nhanLoaiXuLy(gan.kind, gan.customName) : null, ngay: gan?.performedOn ?? null,
       nhom: em.nhom, bac: bacHoacNgoaiThang(em.bac, em.xuLy), lanXuLyMoi,

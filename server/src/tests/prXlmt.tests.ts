@@ -1,5 +1,6 @@
 /** PHÉP KIỂM PR-XLMT — xếp lịch MT nhiều lớp, thao tác MT theo trạng thái (T37, T38). Harness do `run.ts` truyền vào. */
 import type { YThucTestKit } from './yThuc.tests.ts';
+import { emailThu } from '../seed/emailThu.ts';
 
 export async function runPrXlmtTests(t: YThucTestKit) {
   const { check, assert } = t;
@@ -123,7 +124,7 @@ export async function runPrXlmtMayChu(t: YThucTestKit) {
 
   /** Thêm một em vào lớp FT, tuần bắt đầu tuần này → lịch MT mặc định (MT1 tuần học 6…). */
   const them = (lop: string, ten: string) => {
-    const r = intake.commitIntake(P.admin, { classId: classId(lop), rows: [{ fullName: ten, target: 6.5, startWeek: tuanNay, email: 'hv@demo.test', dob: '2010-01-01' }] });
+    const r = intake.commitIntake(P.admin, { classId: classId(lop), rows: [{ fullName: ten, target: 6.5, startWeek: tuanNay, email: emailThu(), dob: '2010-01-01' }] });
     assert(r.added === 1, `thêm ${ten}: ${JSON.stringify(r.failed)}`);
     return r.studentIds[0] as number;
   };

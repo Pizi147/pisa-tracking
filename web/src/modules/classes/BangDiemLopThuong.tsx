@@ -11,7 +11,7 @@ import { CanhBaoYThuc } from './CanhBaoYThuc.tsx';
 import { nhapDiemCua, useThaoTacDongHocVien, type QuyenDong } from './thaoTacDongHocVien.tsx';
 import { OChon, OChonTatCa, type ChonNhieu } from '../students/chonNhieuHocVien.tsx';
 import { MoiVao } from './DaiChuyenLop.tsx';
-import { ATTEMPT_KIND_SHORT, CHUONG_TRINH_KHONG_CHIA_MON, khoaBai, maHocVienNgan, mondayOfDate, nhanBai, tenMon, tenMonNgan, tuanLich, type AttemptKind, type LienHe } from '@shared/domain/index.ts';
+import { ATTEMPT_KIND_SHORT, CHUONG_TRINH_KHONG_CHIA_MON, khoaBai, mondayOfDate, nhanBai, tenMon, tenMonNgan, tuanLich, type AttemptKind, type LienHe } from '@shared/domain/index.ts';
 import { OPhuHuynh } from '../students/HocVienTheoVai.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 
@@ -99,7 +99,6 @@ export function BangDiemLopThuong({ classId, maLop, quyen, onDoi, chuongTrinh = 
                 <span className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5">
                   {chon?.bat && <OChon chon={chon} id={s.id} ten={s.fullName} />}
                   <Link className="link font-semibold" to={`/hoc-vien/${s.id}`} state={{ ds }}>{s.fullName}</Link>{s.moiVao && <MoiVao />}
-                  <span className="text-[11px] tabular-nums text-slate-500">{maHocVienNgan(s.studentCode)}</span>
                   <MissingBadge items={s.missing} gon />
                   <CanhBaoYThuc cb={s.canhBaoYThuc} />
                 </span>
@@ -172,7 +171,6 @@ export function BangDiemLopThuong({ classId, maLop, quyen, onDoi, chuongTrinh = 
                 <span className="flex min-w-0 items-center gap-1.5">
                   {chon?.bat && <OChon chon={chon} id={s.id} ten={s.fullName} />}
                   <Link className="link truncate font-semibold" to={`/hoc-vien/${s.id}`} state={{ ds }}>{s.fullName}</Link>{s.moiVao && <MoiVao />}
-                  <span className="shrink-0 text-[11px] tabular-nums text-slate-500">{maHocVienNgan(s.studentCode)}</span>
                   <MissingBadge items={s.missing} gon />
                   <CanhBaoYThuc cb={s.canhBaoYThuc} />
                 </span>

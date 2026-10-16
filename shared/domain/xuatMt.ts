@@ -131,7 +131,8 @@ export function moTaBoLoc(f: BoLocXuatMt, ten: { chiNhanh: string[]; lop: string
 
 // ------------------------------------------------------------------ bộ cột Fast Track (T40)
 
-export const COT_FT_GON = ['Mã', 'Tên', 'Chi nhánh', 'Lớp', 'Lộ trình', 'MT', 'Tuần', 'L', 'R', 'W', 'S', 'Overall', 'Target',
+/** OV-13f (Q8): bỏ cột Mã — Email ngay sau Tên làm định danh. */
+export const COT_FT_GON = ['Tên', 'Email', 'Chi nhánh', 'Lớp', 'Lộ trình', 'MT', 'Tuần', 'L', 'R', 'W', 'S', 'Overall', 'Target',
   'Kỳ vọng', 'SOS', 'Trạng thái lượt'] as const;                                   // 16 cột — K4-35(c)
 /** T39/K4-25: W1 `TA CC LR GRA`, W2 `TR CC LR GRA` — một nguồn với lưới và hồ sơ Mock (`tieuChiNganCua`, PR-HSM). */
 export const COT_FT_THEM = ['W1', 'W2', ...tieuChiNganCua('writing1')!.map((t) => `W1 ${t}`), ...tieuChiNganCua('writing2')!.map((t) => `W2 ${t}`),
@@ -149,7 +150,7 @@ export function chuNhomNguyenNhan(nhom: Partial<Record<ONhap, readonly string[]>
 }
 
 export type DongFT = {
-  ma: string; ten: string; chiNhanh: string; lop: string; loTrinh: string;
+  ten: string; email: string | null; chiNhanh: string; lop: string; loTrinh: string;
   mt: number; tuan: string; tuanBd: string;
   l: number | null; r: number | null; w: number | null; s: number | null; overall: number | null;
   /** OV-9: "6.5 KCK" / "KCK" = có dấu KCK (Target giữ). */
@@ -169,7 +170,7 @@ export function bangFT(dong: DongFT[], cot: 'gon' | 'day-du'): Cell[][] {
   const day = cot === 'day-du';
   const out: Cell[][] = [day ? [...COT_FT_GON, ...COT_FT_THEM] : [...COT_FT_GON]];
   for (const d of dong) {
-    const hang: Cell[] = [d.ma, d.ten, d.chiNhanh, d.lop, d.loTrinh, `MT${d.mt}`, d.tuan, d.l, d.r, d.w, d.s, d.overall, d.target,
+    const hang: Cell[] = [d.ten, d.email, d.chiNhanh, d.lop, d.loTrinh, `MT${d.mt}`, d.tuan, d.l, d.r, d.w, d.s, d.overall, d.target,
       d.kyVong, d.sos, d.trangThai];
     if (day) {
       hang.push(d.w1, d.w2, ...d.tieuChi.writing1, ...d.tieuChi.writing2, ...d.tieuChi.speaking,
@@ -184,7 +185,7 @@ export function bangFT(dong: DongFT[], cot: 'gon' | 'day-du'): Cell[][] {
 // ------------------------------------------------------------------ khung Lớp thường (T40, T58, MH3)
 
 export type DongThuong = {
-  ma: string; ten: string; chiNhanh: string; lop: string; bai: string; tuan: string; tuanBd: string;
+  ten: string; email: string | null; chiNhanh: string; lop: string; bai: string; tuan: string; tuanBd: string;
   /** Mỗi môn của chương trình: tên đã qua `tenMon(ct, k)`; % = số như `68.5`. */
   mon: { ten: string; pct: number | null; diem: number | null; tong: number | null; tuan: string | null }[];
   tyLeTong: number | null; trangThai: string; nguoiNhap: string | null;
@@ -196,11 +197,11 @@ export type DongThuong = {
 export function bangThuong(dong: DongThuong[], cot: 'gon' | 'day-du'): Cell[][] {
   const day = cot === 'day-du';
   const mon = dong[0]?.mon ?? [];
-  const tieuDe: Cell[] = ['Mã', 'Tên', 'Chi nhánh', 'Lớp', 'Bài', 'Tuần', ...mon.map((m) => `${m.ten} %`), '% tổng', 'Hướng gợi ý', 'Trạng thái lượt'];
+  const tieuDe: Cell[] = ['Tên', 'Email', 'Chi nhánh', 'Lớp', 'Bài', 'Tuần', ...mon.map((m) => `${m.ten} %`), '% tổng', 'Hướng gợi ý', 'Trạng thái lượt'];
   if (day) tieuDe.push(...mon.flatMap((m) => [`${m.ten} điểm`, `${m.ten} tổng`, `Tuần ${m.ten}`]), 'Người nhập');
   const out: Cell[][] = [tieuDe];
   for (const d of dong) {
-    const hang: Cell[] = [d.ma, d.ten, d.chiNhanh, d.lop, d.bai, d.tuan, ...d.mon.map((m) => m.pct), d.tyLeTong, d.huong, d.trangThai];
+    const hang: Cell[] = [d.ten, d.email, d.chiNhanh, d.lop, d.bai, d.tuan, ...d.mon.map((m) => m.pct), d.tyLeTong, d.huong, d.trangThai];
     if (day) hang.push(...d.mon.flatMap((m) => [m.diem, m.tong, m.tuan]), d.nguoiNhap);
     out.push(hang);
   }
@@ -280,11 +281,11 @@ export function tenTepXuatMt(o: { khung: KhungXuat; chiNhanhTen: string[]; lopMa
 const thuTuKhoa = (k: string) => (k === 'giua' ? 1000 : k === 'cuoi' ? 1001 : Number(k.slice(3)));
 
 const so1 = (n: number | null) => (n === null ? '—' : n.toFixed(1));
-/** Một dòng xem trước — `PISA-000001 Nguyễn Minh An · MB FT 101 · MT3 · W3 SEP · L 6.0 · R 6.5 · W — · S — · SOS 2 tạm thời`. */
+/** Một dòng xem trước — `Nguyễn Minh An · MB FT 101 · MT3 · W3 SEP · L 6.0 · R 6.5 · W — · S — · SOS 2 tạm thời`. */
 export function dongXemTruoc(d: DongFT, homNay?: string): string {
   const sos = String(d.target ?? '').endsWith('KCK') ? 'KCK' : d.sos === null ? 'SOS —' : `SOS ${d.sos}${d.trangThai.includes('SOS tạm thời') ? ' tạm thời' : ''}`;
-  return `${d.ma} ${d.ten} · ${d.lop} · MT${d.mt} · ${tuanLich(d.tuanBd, homNay)} · L ${so1(d.l)} · R ${so1(d.r)} · W ${so1(d.w)} · S ${so1(d.s)} · ${sos}`;
+  return `${d.ten} · ${d.lop} · MT${d.mt} · ${tuanLich(d.tuanBd, homNay)} · L ${so1(d.l)} · R ${so1(d.r)} · W ${so1(d.w)} · S ${so1(d.s)} · ${sos}`;
 }
 export function dongXemTruocThuong(d: DongThuong, homNay?: string): string {
-  return `${d.ma} ${d.ten} · ${d.lop} · ${d.bai} · ${tuanLich(d.tuanBd, homNay)} · ${d.mon.map((m) => `${m.ten} ${m.pct === null ? '—' : `${m.pct}%`}`).join(' · ')}`;
+  return `${d.ten} · ${d.lop} · ${d.bai} · ${tuanLich(d.tuanBd, homNay)} · ${d.mon.map((m) => `${m.ten} ${m.pct === null ? '—' : `${m.pct}%`}`).join(' · ')}`;
 }

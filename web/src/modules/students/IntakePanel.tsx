@@ -299,11 +299,11 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
                                 toiDa={homNay} onChange={(v) => setCell(i, 'dob', v)} />
                             ) : (
                               <input
-                                className={`field${c.so ? ' text-right tabular-nums' : ''}${vien}`}
+                                className={`field${c.so ? ' text-right tabular-nums' : ''}${c.key === 'email' ? ' placeholder:font-bold placeholder:text-late' : ''}${vien}`}
                                 value={String(r[c.key] ?? '')}
                                 type={c.key === 'email' ? 'email' : 'text'}
                                 inputMode={c.key === 'target' ? undefined : c.so ? 'decimal' : c.key === 'email' ? 'email' : undefined}
-                                placeholder={c.key === 'dob' ? 'dd/mm/yyyy' : undefined}
+                                placeholder={c.key === 'dob' ? 'dd/mm/yyyy' : c.key === 'email' && !dongTrong(r) ? 'Thiếu' : undefined}
                                 autoComplete="off"
                                 title={title}
                                 aria-invalid={loiO || undefined}

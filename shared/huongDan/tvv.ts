@@ -47,7 +47,7 @@ export const HD_TVV: HuongDan = {
     },
     {
       id: 'tvv-can-lam', ten: 'Làm việc ở Cần làm', khi: 'mỗi ngày',
-      buoc: ['<b>Học viên & Lớp</b> › <b>Cần làm</b>: <b>Chọn bước tiếp</b> · <b>Kết quả thi</b> · <b>Thiếu thông tin</b>.',
+      buoc: ['<b>Học viên & Lớp</b> › <b>Cần làm</b>: <b>Chọn bước tiếp</b> · <b>Kết quả thi</b> · <b>Thiếu email</b> · <b>Thiếu thông tin</b>.',
         'Bấm dòng: panel mở ngay trên trang, xong không rời trang.', '<b>Phạm vi</b>: <b>HV của tôi</b> hoặc <b>Chi nhánh</b>.'],
       chi: { hd: 'hvl-goc', duong: '/hoc-vien', chu: 'Bấm <b>Cần làm</b> để xem việc của bạn.' },
     },

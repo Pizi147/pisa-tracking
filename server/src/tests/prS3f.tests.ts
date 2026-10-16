@@ -4,6 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { YThucTestKit } from './yThuc.tests.ts';
 import { duXacNhan } from './luotThu.ts';
+import { emailThu } from '../seed/emailThu.ts';
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
 
@@ -23,7 +24,7 @@ export async function runPrS3fTests(t: YThucTestKit) {
   const all = (sql: string, ...a: unknown[]) => conn.prepare(sql).all(...a) as any[];
   const get = (sql: string, ...a: unknown[]) => conn.prepare(sql).get(...a) as any;
   const makeStudent = (name: string, target = 7) => {
-    intake.commitIntake(P.admin, { classId: CLASS, rows: [{ fullName: `S3F ${name}`, target, email: 'hv@demo.test', dob: '2010-01-01' }], idempotencyKey: `s3f-${name}` });
+    intake.commitIntake(P.admin, { classId: CLASS, rows: [{ fullName: `S3F ${name}`, target, email: emailThu(), dob: '2010-01-01' }], idempotencyKey: `s3f-${name}` });
     const st = get('SELECT id FROM students WHERE full_name = ?', `S3F ${name}`);
     const cy = get("SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active'", st.id);
     boLichTuTao(conn, cy.id);
@@ -129,7 +130,7 @@ export async function runPrS3fTests(t: YThucTestKit) {
 
   // ------------------------------------------------------------------ 5 · em KCK không hiện "Đạt kỳ vọng"
   check('S3F (5) · Em KCK có điểm: hàng bảng kỹ năng missed = null + kck = true; giao diện chỉ hiện chip Đạt khi missed === false, câu tóm tắt không nói "đạt kỳ vọng"', () => {
-    intake.commitIntake(P.admin, { classId: CLASS, rows: [{ fullName: 'S3F KCK5', target: 'KCK', email: 'hv@demo.test', dob: '2010-01-01' }], idempotencyKey: 's3f-kck5' });
+    intake.commitIntake(P.admin, { classId: CLASS, rows: [{ fullName: 'S3F KCK5', target: 'KCK', email: emailThu(), dob: '2010-01-01' }], idempotencyKey: 's3f-kck5' });
     const st = get('SELECT id FROM students WHERE full_name = ?', 'S3F KCK5');
     const cy = get("SELECT id, khong_cam_ket k FROM learning_cycles WHERE student_id = ? AND status = 'active'", st.id);
     assert(cy.k === 1, 'em phải là KCK');
@@ -156,7 +157,7 @@ export async function runPrS3fTests(t: YThucTestKit) {
   let seqYt = 0;
   const hvYt = (): number => {
     const ten = `S3F YT ${++seqYt}`;
-    intake.commitIntake(P.admin, { classId: CLASS, rows: [{ fullName: ten, target: 7, email: 'hv@demo.test', dob: '2010-01-01' }], idempotencyKey: `s3f-yt-${seqYt}` });
+    intake.commitIntake(P.admin, { classId: CLASS, rows: [{ fullName: ten, target: 7, email: emailThu(), dob: '2010-01-01' }], idempotencyKey: `s3f-yt-${seqYt}` });
     const id = get('SELECT id FROM students WHERE full_name = ?', ten).id as number;
     boLichTuTao(conn, get("SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active'", id).id);
     conn.prepare("UPDATE enrollments SET started_at = '2026-08-03' WHERE student_id = ?").run(id);

@@ -39,6 +39,8 @@ const laTvv = (p: Principal) => p.roleKeys.includes('consultant');
  */
 export function chipHocVien(p: Principal, f: { branchId?: number | null; phamVi?: SoHocVien['phamVi'] } = {}): {
   phamVi: SoHocVien['phamVi']; tong: number; ids: Record<ChipHocVien, number[]>; tatCa: number[]; lyDo: Map<number, LyDoChuY>;
+  /** OV-13f: ô còn thiếu của em có chip `thieu_tt` (nhãn `missingForStudent`) — việc "Thiếu email" tách riêng ở Cần làm TVV. */
+  thieu: Map<number, string[]>;
   /** Kết quả gần nhất của mọi em trong phạm vi (một lần `standingFor`) — cột Kết quả gần nhất của Học viên & Lớp TVV / CX dùng lại. */
   standing: ReturnType<typeof standingFor>;
 } {
@@ -104,11 +106,13 @@ export function chipHocVien(p: Principal, f: { branchId?: number | null; phamVi?
   ids['can-chu-y'] = [...lyDo.keys()];
 
   /* Thiếu thông tin: đúng cờ của danh sách Học viên & Lớp (cùng phạm vi trang đó mở ra). */
+  const thieu = new Map<number, string[]>();
   if (dangHoc.length) {
     const ds = danhSachHocVienLop(p, { phamVi, branchId: phamVi === 'chi-nhanh' ? f.branchId : null });
     ids.thieu_tt = [...new Set(ds.hocVien.filter((h) => h.loc.includes('thieu_tt')).map((h) => h.id))];   // UX-1: em học hai lớp một lần, như chip
+    for (const h of ds.hocVien) if (h.thieu && !thieu.has(h.id)) thieu.set(h.id, h.thieu);
   }
-  return { phamVi, tong: em.size, ids, tatCa: [...em.keys()], lyDo, standing };
+  return { phamVi, tong: em.size, ids, tatCa: [...em.keys()], lyDo, standing, thieu };
 }
 
 export function soHocVien(p: Principal, f: { branchId?: number | null } = {}): SoHocVien {

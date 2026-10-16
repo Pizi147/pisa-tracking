@@ -13,7 +13,7 @@
  * lớp của em không tự kết thúc (Q9).
  */
 import { db, tx } from '../db.ts';
-import { PERMISSIONS } from '../../../shared/domain/index.ts';
+import { CHU_XAC_NHAN_XOA, PERMISSIONS, khopXacNhanXoa } from '../../../shared/domain/index.ts';
 import { HttpError, badRequest, notFound } from '../util.ts';
 import { require_, type Principal } from '../permissions.ts';
 import { writeAudit } from '../platform/audit.ts';
@@ -215,11 +215,12 @@ export function xemXoaHocVien(p: Principal, studentId: number): XemXoaHocVien {
   };
 }
 
-/** POST /students/:id/xoa { maXacNhan } — xoá vĩnh viễn. Phải gõ lại đúng mã học viên. */
+/** POST /students/:id/xoa { maXacNhan } — xoá vĩnh viễn. Gõ XOÁ (OV-13f: mã HV không hiện trên màn — như Xoá nhiều em) hoặc đúng mã học viên. */
 export function xoaHocVien(p: Principal, studentId: number, input: { maXacNhan?: unknown }): { ok: true; ma: string; soDong: Record<string, number> } {
   const s = docEm(studentId);   // OV-12a: em đã bị xoá → 404 trước
   require_(p, PERMISSIONS.CYCLE_EDIT, { studentId }, CHI_QL);
-  if (String(input.maXacNhan ?? '').trim() !== s.student_code) throw badRequest('Gõ lại đúng mã học viên để xác nhận xoá.');
+  const go = String(input.maXacNhan ?? '').trim();
+  if (go !== s.student_code && !khopXacNhanXoa(go)) throw badRequest(`Gõ ${CHU_XAC_NHAN_XOA} để xác nhận xoá.`);
   const khoaTep: string[] = [];
   const soDong = tx(() => {
     const con = conLaiMs();

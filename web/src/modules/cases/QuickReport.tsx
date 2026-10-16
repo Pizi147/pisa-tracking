@@ -18,7 +18,7 @@ import {
   URGENCY_LEVELS, URGENCY_LABEL, issuesForTopic, FOLLOWUP_OUTCOMES, GOI_Y_MO_TA_PA, outcomeLabelFor,
   CASE_OUTCOMES, CASE_OUTCOME_LABEL, CHU_THEM_PA, tenMon, tenMonNgan,
   categoryOf, componentsFor, componentsAreCounts,
-  nguoiThanhPayload, nguoiThieu, tuanLich, type NguoiChon, dsLoi, type LuatTruong, laKhac, kiemGhiRoKhac, KHAC_TOI_THIEU, maHocVienNgan,
+  nguoiThanhPayload, nguoiThieu, tuanLich, type NguoiChon, dsLoi, type LuatTruong, laKhac, kiemGhiRoKhac, KHAC_TOI_THIEU,
 } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
 
@@ -321,7 +321,6 @@ export function QuickReport({
 
   const tieuDe = t('Tạo Case');
   const tenChon = (students ?? []).find((st) => st.id === studentId)?.name ?? studentName;
-  const maChon = (students ?? []).find((st) => st.id === studentId)?.code;
   const nhanTuan = (iso: string) => (iso ? tuanLich(iso, homNay) : '');
   /* Luật S3 (I1): đã gõ / chọn ô nào → nút trái "Huỷ thay đổi". Chọn học viên (trang lớp) không tính là sửa. */
   const daSua = !!(title.trim() || summary.trim() || topic || primaryCode || ghiRo.trim() || detectedAt || urgency || tep.length
@@ -383,8 +382,8 @@ export function QuickReport({
             {/* PR-O-CHON: gõ tên rồi chọn ở danh sách bên dưới, như mọi ô chọn người — chỉ học viên của lớp. */}
             <ChonNguoi id={o('hoc-vien').id} onBlur={o('hoc-vien').onBlur} invalid={!!loiCua('hoc-vien')} nhom="nhan_vien" choToi={false} choNgoai={false}
               ariaLabel={t('Học viên')} placeholder={t('Gõ tên học viên…')}
-              ds={students.map((st) => ({ id: st.id, ten: st.name, phu: st.code ? maHocVienNgan(st.code) : undefined }))}
-              value={studentId ? { kieu: 'tai_khoan', id: studentId, ten: tenChon ?? '…', phu: maChon ? maHocVienNgan(maChon) : undefined } : null}
+              ds={students.map((st) => ({ id: st.id, ten: st.name }))}
+              value={studentId ? { kieu: 'tai_khoan', id: studentId, ten: tenChon ?? '…' } : null}
               onChange={(v) => onPickStudent?.(v?.kieu === 'tai_khoan' ? v.id : 0)} />
           </Truong>
         )}

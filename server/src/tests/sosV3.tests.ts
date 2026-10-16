@@ -11,6 +11,7 @@ import { migratePrPhh } from '../migrate/prPhh.ts';
 import { boLichTuTao, luotThu, nhanXetCaseThu } from './luotThu.ts';
 import type { YThucTestKit } from './yThuc.tests.ts';
 import { duXacNhan } from './luotThu.ts';
+import { emailThu } from '../seed/emailThu.ts';
 
 export async function runSosV3Tests(t: YThucTestKit) {
   const { check, assert } = t;
@@ -294,7 +295,7 @@ export async function runSosV3Tests(t: YThucTestKit) {
 
   /** Học viên MỚI, Target 7.0 (kỳ vọng MT1 6.0 · MT2 6.5 · MT3+ 7.0), riêng cho từng phép kiểm. */
   const makeStudent = (name: string): { id: number; cycleId: number } => {
-    intake.commitIntake(P.admin, { classId: CLASS, rows: [{ fullName: `PT ${name}`, target: 7, email: 'hv@demo.test', dob: '2010-01-01' }], idempotencyKey: `pt-${name}` });
+    intake.commitIntake(P.admin, { classId: CLASS, rows: [{ fullName: `PT ${name}`, target: 7, email: emailThu(), dob: '2010-01-01' }], idempotencyKey: `pt-${name}` });
     const st = get('SELECT id FROM students WHERE full_name = ?', `PT ${name}`);
     const cy = get("SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active'", st.id);
     assert(st && cy, `Không dựng được học viên thử "${name}"`);
@@ -440,7 +441,7 @@ export async function runSosV3Tests(t: YThucTestKit) {
   check('PR-T · Q-V3-1 (§10#8) → PR-LT2a (N1, N4) Lớp NORMAL trượt hai môn ở Progress Test: TỰ TẠO hai Case + PA Bổ trợ (không PA quy chế điền sẵn), KHÔNG Phối hợp SOS (chỉ việc Báo phụ huynh qua TVV), tín hiệu chỉ là dây nối', () => {
     const regular: any = regularSvc;
     const fou = get("SELECT id FROM classes WHERE code = 'MB FOU 12'");
-    intake.commitIntake(P.admin, { classId: fou.id, rows: [{ fullName: 'PT Normal', email: 'hv@demo.test', dob: '2010-01-01' }], idempotencyKey: 'pt-normal' });
+    intake.commitIntake(P.admin, { classId: fou.id, rows: [{ fullName: 'PT Normal', email: emailThu(), dob: '2010-01-01' }], idempotencyKey: 'pt-normal' });
     regular.planRegularTests(P.admin, fou.id);                     // idempotent: chỉ tạo bài còn thiếu cho em mới
     const stu = get("SELECT id FROM students WHERE full_name = 'PT Normal'");
     const attempt = get("SELECT id FROM assessment_attempts WHERE student_id = ? AND kind = 'progress'", stu.id);

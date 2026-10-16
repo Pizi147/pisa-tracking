@@ -14,6 +14,7 @@ import { writeAudit, writeAuditLo } from '../platform/audit.ts';
 import { ensurePeriods, mondayOf, periodById } from '../platform/week.ts';
 import { taoMtMacDinhLo } from '../fasttrack/mtMacDinh.ts';
 import { lichMtCua } from './schedule.ts';
+import { cauEmailTrung, emailDangDung } from '../students/emailHocVien.ts';
 
 /**
  * Thêm học viên hàng loạt.
@@ -84,7 +85,7 @@ export type IntakePreview = {
   rows: (IntakeRow & {
     row: number;
     classId: number | null;
-    duplicates: { id: number; studentCode: string; fullName: string; dob: string | null }[];
+    duplicates: { id: number; studentCode: string; fullName: string; dob: string | null; email: string | null }[];
     issues: RowIssue[];
   })[];
   issues: RowIssue[];
@@ -237,11 +238,15 @@ export function previewIntake(
   const cungTen = new Map<string, any[]>();
   theoLo([...new Set(input.rows.map((r) => normalizeName((r.fullName ?? '').trim())).filter(Boolean))], (lo, ph) => {
     for (const d of conn.prepare(
-      `SELECT id, student_code, full_name, dob, normalized_name FROM students WHERE normalized_name IN (${ph}) ORDER BY id`).all(...lo) as any[]) {
+      `SELECT id, student_code, full_name, dob, email, normalized_name FROM students WHERE normalized_name IN (${ph}) ORDER BY id`).all(...lo) as any[]) {
       if (!cungTen.has(d.normalized_name)) cungTen.set(d.normalized_name, []);
       cungTen.get(d.normalized_name)!.push(d);
     }
   });
+
+  /* OV-13f (Q8): email không trùng — với em đã có (một câu cho cả lô) và với dòng TRƯỚC trong cùng lô (dòng đầu giữ, dòng sau báo lỗi). */
+  const dungEmail = emailDangDung(input.rows.map((r) => docEmail(r.email).email ?? ''));
+  const emailTrongLo = new Map<string, { row: number; ten: string }>();
 
   const rows = input.rows.map((r, i) => {
     const rowNo = i + 1;
@@ -260,6 +265,13 @@ export function previewIntake(
 
     const email = docEmail(r.email);
     if (email.loi) loi('email', email.loi);
+    else if (email.email) {
+      const truoc = emailTrongLo.get(email.email);
+      const em = dungEmail.get(email.email);
+      if (em) loi('email', cauEmailTrung(em));
+      else if (truoc) loi('email', `Email trùng dòng ${truoc.row}${truoc.ten ? ` (${truoc.ten})` : ''}`);
+      else emailTrongLo.set(email.email, { row: rowNo, ten: name });
+    }
 
     /*
      * OVR, BỐN BAND, ĐÃ THI TỚI MT — chỉ Fast Track. Lớp thường có dữ liệu ở đây là do file trộn: bỏ qua có báo (Q4),
@@ -350,7 +362,8 @@ export function previewIntake(
       ? (cungTen.get(normalizeName(name)) ?? []).filter((d) => !dob.iso || d.dob === dob.iso).slice(0, 5)
       : [];
     if (duplicates.length) {
-      luuY('fullName', `Có thể trùng ${duplicates.map((d) => `${d.full_name} (${d.student_code})`).join(', ')}`
+      /* OV-13f: mã HV không hiện trên màn — phân biệt bằng email. */
+      luuY('fullName', `Có thể trùng ${duplicates.map((d) => `${d.full_name} (${d.email ?? 'chưa có email'})`).join(', ')}`
         + ' — em đã có hồ sơ thì dùng Chuyển lớp');
     }
 
@@ -372,7 +385,7 @@ export function previewIntake(
       daThiToiMt,
       startWeek: startWeek ?? undefined,
       consultant: r.consultant,
-      duplicates: duplicates.map((d) => ({ id: d.id, studentCode: d.student_code, fullName: d.full_name, dob: d.dob })),
+      duplicates: duplicates.map((d) => ({ id: d.id, studentCode: d.student_code, fullName: d.full_name, dob: d.dob, email: d.email ?? null })),
       issues: rowIssues,
     };
   });
@@ -444,6 +457,12 @@ export function commitIntake(
       if (blocking.length) { failed.push(...blocking); skipped += 1; continue; }
       if (!r.classId || !r.fullName) { skipped += 1; continue; }
       ok.push(r);
+    }
+    /* OV-13f: kiểm lại email trong giao dịch (đã giữ khoá ghi) — hai lô lưu cùng lúc cùng email thì lô sau bị chặn đúng dòng. */
+    const dungLai = emailDangDung(ok.map((r) => r.email ?? ''));
+    for (let i = ok.length - 1; i >= 0; i -= 1) {
+      const em = ok[i].email ? dungLai.get(ok[i].email!) : undefined;
+      if (em) { failed.push({ row: ok[i].row, field: 'email', message: cauEmailTrung(em), muc: 'loi' }); skipped += 1; ok.splice(i, 1); }
     }
 
     /*

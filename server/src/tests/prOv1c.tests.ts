@@ -5,6 +5,7 @@
 import type { YThucTestKit } from './yThuc.tests.ts';
 import { nhanXetCaseThu } from './luotThu.ts';
 import { duXacNhan } from './luotThu.ts';
+import { emailThu } from '../seed/emailThu.ts';
 
 export async function runPrOv1cTests(t: YThucTestKit) {
   const { check, assert, conn, P, classId, TODAY } = t;
@@ -41,7 +42,7 @@ export async function runPrOv1cTests(t: YThucTestKit) {
   /* Hai em MỚI (không dính dữ liệu các bộ kiểm trước trong `run.ts`): lượt MT cuối tự tạo của mỗi em. */
   const intake: any = await import('../classes/intake.ts');
   const luot = ['OV1c Em A', 'OV1c Em B'].map((ten) => {
-    const r = intake.commitIntake(P.admin, { classId: lop, rows: [{ fullName: ten, target: 7, email: 'hv@demo.test', dob: '2010-01-01' }], idempotencyKey: `ov1c-${ten}` });
+    const r = intake.commitIntake(P.admin, { classId: lop, rows: [{ fullName: ten, target: 7, email: emailThu(), dob: '2010-01-01' }], idempotencyKey: `ov1c-${ten}` });
     const sid = r.studentIds[0] as number;
     return one(`SELECT id FROM assessment_attempts WHERE student_id = ? AND kind = 'mock' ORDER BY attempt_no DESC LIMIT 1`, sid).id as number;
   });

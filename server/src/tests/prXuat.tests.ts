@@ -46,7 +46,7 @@ export async function runPrXuatTests(t: YThucTestKit) {
   });
 
   const dong = (o: Partial<import('../../../shared/domain/xuatMt.ts').DongFT> = {}): import('../../../shared/domain/xuatMt.ts').DongFT => ({
-    ma: 'PISA-000001', ten: 'Nguyễn Minh An', chiNhanh: 'Monbay', lop: 'MB FT 101', loTrinh: 'Lộ trình A', mt: 3, tuan: 'W3 SEP 2026', tuanBd: '2026-09-14',
+    ten: 'Nguyễn Minh An', email: 'an.nguyen@gmail.com', chiNhanh: 'Monbay', lop: 'MB FT 101', loTrinh: 'Lộ trình A', mt: 3, tuan: 'W3 SEP 2026', tuanBd: '2026-09-14',
     l: 6, r: 6.5, w: null, s: null, overall: null, target: 7, kyVong: 6.5, sos: 2, trangThai: 'Thiếu điểm 2/4 · SOS tạm thời',
     w1: null, w2: null, tieuChi: { writing1: [null, null, null, null], writing2: [null, null, null, null], speaking: [null, null, null, null] },
     tuanKn: { listening: 'W3 SEP 2026', reading: 'W3 SEP 2026', writing: null, speaking: null }, nguoiNhap: 'Trần Ngọc Hà',
@@ -55,7 +55,7 @@ export async function runPrXuatTests(t: YThucTestKit) {
 
   check('PR-XUAT (1) · bangFT: 16 cột gọn đúng thứ tự T40; đầy đủ = 16 + COT_FT_THEM, 16 cột đầu không đổi', () => {
     const gon = d.bangFT([dong()], 'gon');
-    assert(gon[0].join('|') === 'Mã|Tên|Chi nhánh|Lớp|Lộ trình|MT|Tuần|L|R|W|S|Overall|Target|Kỳ vọng|SOS|Trạng thái lượt', gon[0].join('|'));
+    assert(gon[0].join('|') === 'Tên|Email|Chi nhánh|Lớp|Lộ trình|MT|Tuần|L|R|W|S|Overall|Target|Kỳ vọng|SOS|Trạng thái lượt', gon[0].join('|'));
     assert(gon[0].length === 16 && gon[1].length === 16 && gon[1][5] === 'MT3', 'gọn 16 cột, MT là chữ MT3');
     const day = d.bangFT([dong()], 'day-du');
     assert(day[0].length === 16 + d.COT_FT_THEM.length && day[1].length === day[0].length, `đầy đủ ${day[0].length} cột`);
@@ -101,7 +101,7 @@ export async function runPrXuatTests(t: YThucTestKit) {
 
   check('PR-XUAT (1) · dongXemTruoc theo mẫu M11; bangBoLoc + moTaBoLoc: đủ mục, lớp thường không nhắc SOS/Overall (T58)', () => {
     const x = d.dongXemTruoc(dong(), '2026-09-29');
-    assert(x === 'PISA-000001 Nguyễn Minh An · MB FT 101 · MT3 · W3 SEP · L 6.0 · R 6.5 · W — · S — · SOS 2 tạm thời', x);
+    assert(x === 'Nguyễn Minh An · MB FT 101 · MT3 · W3 SEP · L 6.0 · R 6.5 · W — · S — · SOS 2 tạm thời', x);
     const f = d.docBoLocXuatMt({ tg: 'tuan', tu: '2026-09-07', den: '2026-09-28', cot: 'day-du' }) as import('../../../shared/domain/xuatMt.ts').BoLocXuatMt;
     const moTa = d.moTaBoLoc(f, { chiNhanh: ['Monbay'], lop: [] });
     const bl = d.bangBoLoc({ khung: 'ft', nguoiXuat: 'Nguyễn Khánh Vy', luc: '2026-09-29T03:05:00.000Z', moTa, soLuot: 312 });
@@ -126,7 +126,7 @@ export async function runPrXuatTests(t: YThucTestKit) {
     const doc = XLSX.read(buf);
     assert(doc.SheetNames.join() === 'Mock Test,Bộ lọc đã dùng', doc.SheetNames.join());
     const ws = doc.Sheets['Mock Test'];
-    assert(ws['B2'].v === 'Nguyễn Minh An' && ws['B2'].t === 's', 'ô tên giữ dấu');
+    assert(ws['A2'].v === 'Nguyễn Minh An' && ws['A2'].t === 's' && ws['B2'].v === 'an.nguyen@gmail.com', 'ô tên giữ dấu, cột 2 là email (OV-13f)');
     assert(ws['H2'].t === 'n' && ws['H2'].v === 6 && ws['I2'].t === 'n', 'điểm L, R là ô số');
     assert(ws['J2'] === undefined && ws['K2'] === undefined && ws['L2'] === undefined, 'W/S/Overall thiếu → không có ô (không phải chuỗi rỗng)');
     assert(doc.Sheets['Bộ lọc đã dùng']['B2'].v === 'Nguyễn Khánh Vy', 'sheet Bộ lọc giữ dấu');

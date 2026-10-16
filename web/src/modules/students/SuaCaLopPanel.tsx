@@ -206,7 +206,7 @@ export function SuaCaLopPanel({ classId, onClose, onDone }: { classId: number; o
                       <Th key={c.key} align={c.so ? 'right' : 'left'}
                         className={c.key === 'fullName' ? 'sticky-col' : ''}
                         hint={khoaCot(c.key) ?? (c.key === 'target' ? `Band 0–9, bước 0,5. Em không cam kết đầu ra: thêm ${KCK} (ví dụ 6.5 ${KCK}).` : undefined)}>
-                        {c.nhan}
+                        {c.nhan}{c.key === 'email' && <span className="text-bad"> *</span>}
                       </Th>
                     ))}
                     <Th>Lưu ý</Th>
@@ -244,7 +244,8 @@ export function SuaCaLopPanel({ classId, onClose, onDone }: { classId: number; o
                                       value={v} ariaLabel={nhan} invalid={!!loi} moTa={loi ? idLoi : undefined} disabled={khoaO}
                                       onChange={(x) => datO(r.studentId, c.key, x)} />
                                   ) : (
-                                    <input className={`field w-full${c.so ? ' text-right tabular-nums' : ''}${loi ? ' border-late' : ''}`}
+                                    <input className={`field w-full${c.so ? ' text-right tabular-nums' : ''}${c.key === 'email' ? ' placeholder:font-bold placeholder:text-late' : ''}${loi ? ' border-late' : ''}`}
+                                      placeholder={c.key === 'email' ? 'Thiếu' : undefined}
                                       value={v} aria-label={nhan} aria-invalid={!!loi || undefined} aria-describedby={loi ? idLoi : undefined}
                                       disabled={khoaO} title={khoaO ? khoaCot(c.key) ?? 'Em chưa có lộ trình' : undefined}
                                       type={c.key === 'email' ? 'email' : c.key === 'phone' || c.key === 'parentPhone' ? 'tel' : 'text'} autoComplete="off"

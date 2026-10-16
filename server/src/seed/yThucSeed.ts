@@ -7,6 +7,7 @@ import { daThucHien, deXuat, guiDeXuat } from '../yThuc/xuLy.ts';
 import { duyetYeuCau, tuChoiYeuCau } from '../duyet/yeuCau.ts';
 import type { BuildCtx } from './build.ts';
 import { DEMO_DATE } from './journeys.ts';
+import { emailThu } from './emailThu.ts';
 
 /**
  * BỘ DEMO Ý THỨC v4 (PR-YT4, đặc tả 27/09 §10 D14 · D15 · H5) — ngày demo 14/09/2026 (Thứ Hai). Xem `DEMO.md` mục "Ý thức".
@@ -372,7 +373,7 @@ export function buildYThuc(ctx: BuildCtx) {
     let sid: number | undefined;
     if (s.moi) {
       if (!ft101) continue;
-      commitIntake(admin, { classId: ft101, rows: [{ fullName: s.moi.ten, target: s.moi.target, startWeek: TUAN_VAO, email: 'hv@demo.test', dob: '2010-01-01' }],
+      commitIntake(admin, { classId: ft101, rows: [{ fullName: s.moi.ten, target: s.moi.target, startWeek: TUAN_VAO, email: emailThu(), dob: '2010-01-01' }],
         idempotencyKey: `ythuc-demo-${s.moi.ten}` } as any);
       sid = (conn.prepare('SELECT id FROM students WHERE full_name = ?').get(s.moi.ten) as any)?.id;
       counts.hocVienMoi += 1;

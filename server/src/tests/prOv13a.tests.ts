@@ -10,6 +10,7 @@
  */
 import type { YThucTestKit } from './yThuc.tests.ts';
 import { duXacNhan } from './luotThu.ts';
+import { emailThu } from '../seed/emailThu.ts';
 
 export async function runPrOv13aTests(t: YThucTestKit) {
   const { check, assert, conn, P, classId, TODAY } = t;
@@ -49,7 +50,7 @@ export async function runPrOv13aTests(t: YThucTestKit) {
   week.ensurePeriod('2026-11-16');
 
   const emMoi = (ten: string) => {
-    const sid = (intake.commitIntake(P.admin, { classId: lop, rows: [{ fullName: ten, target: 7, email: 'hv@demo.test', dob: '2010-01-01' }],
+    const sid = (intake.commitIntake(P.admin, { classId: lop, rows: [{ fullName: ten, target: 7, email: emailThu(), dob: '2010-01-01' }],
       idempotencyKey: `ov13a-${ten}` }).studentIds[0]) as number;
     return all(`SELECT id FROM assessment_attempts WHERE student_id = ? AND kind = 'mock' ORDER BY attempt_no`, sid).map((r) => r.id as number);
   };

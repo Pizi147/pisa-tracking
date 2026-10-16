@@ -16,7 +16,7 @@ import { MissingBadge } from './MissingBadge.tsx';
 import { CanhBaoYThuc } from '../classes/CanhBaoYThuc.tsx';
 import { duongViecTiep, nhapDiemCua, useThaoTacDongHocVien, type QuyenDong } from '../classes/thaoTacDongHocVien.tsx';
 import {
-  chuSapToi, duongDotTest, ketQuaGanNhat, khoaLopThuong, maHocVienNgan, sapXepHocVien, tachViecChung, tuanLich,
+  chuSapToi, duongDotTest, ketQuaGanNhat, khoaLopThuong, sapXepHocVien, tachViecChung, tuanLich,
   type KetQuaVao, type SapXep, type ViecTiepTheo,
 } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
@@ -151,7 +151,6 @@ export function BangHocVienLop({ lop, chiHien, sapXep, onDoi, soCot, the = false
               dau={(
                 <span className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5">
                   <Link className="link font-semibold" to={`/hoc-vien/${s.id}`} state={{ ds }}>{s.fullName}</Link>
-                  <span className="text-[11px] tabular-nums text-slate-500">{maHocVienNgan(s.studentCode)}</span>
                   {s.status === 'finished' ? <Nhan tone="done">{t('Đã kết thúc học')}</Nhan> : <MissingBadge items={s.missing} gon />}
                   <CanhBaoYThuc cb={s.canhBaoYThuc} />
                 </span>
@@ -198,7 +197,6 @@ export function BangHocVienLop({ lop, chiHien, sapXep, onDoi, soCot, the = false
               {/* PR-S4F #11: tên được ưu tiên chỗ — badge xuống dòng khi chật; tên quá dài vẫn cắt nhưng có title. */}
               <span className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5">
                 <Link className="link max-w-full truncate font-semibold" title={s.fullName} to={`/hoc-vien/${s.id}`} state={{ ds }}>{s.fullName}</Link>
-                <span className="shrink-0 text-[11px] tabular-nums text-slate-500">{maHocVienNgan(s.studentCode)}</span>
                 {s.status === 'finished' ? <Nhan tone="done">{t('Đã kết thúc học')}</Nhan> : <MissingBadge items={s.missing} gon />}
                 <CanhBaoYThuc cb={s.canhBaoYThuc} />
               </span>

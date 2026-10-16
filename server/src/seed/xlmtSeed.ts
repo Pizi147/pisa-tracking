@@ -9,6 +9,7 @@ import { setSkillWeek } from '../fasttrack/skillSchedule.ts';
 import { planRegularTests, reportRegularNoShow } from '../normal/regular.ts';
 import type { BuildCtx } from './build.ts';
 import { DEMO_DATE } from './journeys.ts';
+import { emailThu } from './emailThu.ts';
 
 /**
  * BỘ DEMO PR-XLMT (planning đặt X1–X4, Q14) — đi qua CHÍNH các hàm nghiệp vụ như `prMtSeed.ts`, dựng sau ngày demo.
@@ -35,7 +36,7 @@ export function buildXlmtDemo(ctx: BuildCtx): { students: number } {
   };
   const tuan = (n: number) => mondayOf(addDays(DEMO_DATE, 7 * n));
   const them = (classId: number, ten: string, startWeek: string) => {
-    commitIntake(admin, { classId, rows: [{ fullName: ten, target: 6.5, startWeek, email: 'hv@demo.test', dob: '2010-01-01' }], idempotencyKey: `xlmt-demo-${ten}` } as any);
+    commitIntake(admin, { classId, rows: [{ fullName: ten, target: 6.5, startWeek, email: emailThu(), dob: '2010-01-01' }], idempotencyKey: `xlmt-demo-${ten}` } as any);
     const st = conn.prepare('SELECT id FROM students WHERE full_name = ?').get(ten) as any;
     const cy = conn.prepare(`SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active'`).get(st.id) as any;
     return { id: st.id as number, cycleId: cy.id as number };
