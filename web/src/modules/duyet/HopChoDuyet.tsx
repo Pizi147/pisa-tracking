@@ -139,7 +139,7 @@ export function HopChoDuyet() {
   const dem = data?.dem;
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap items-end gap-2">
+      <div className="flex flex-wrap items-end gap-2" data-hd="cd-loc">
         <BoLocDoan ariaLabel="Trạng thái" value={xem} onChange={(k) => {
           const next = new URLSearchParams(params);
           if (k === 'cho') next.delete('xem'); else next.set('xem', k);

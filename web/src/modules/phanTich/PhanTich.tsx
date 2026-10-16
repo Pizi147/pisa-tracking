@@ -117,7 +117,7 @@ export function PhanTich() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         {/* PR-KHUNG G5: khung vuốt bọc ngoài viền, mép phải mờ dưới 640px (cùng mẫu BoLocDoan). */}
-        <div ref={hangGoc} className="relative inline-flex max-w-full overflow-x-auto max-sm:[scrollbar-width:none] max-sm:pr-8 max-sm:[mask-image:linear-gradient(to_right,#000_calc(100%-2rem),transparent)]">
+        <div ref={hangGoc} data-hd="pt-goc" className="relative inline-flex max-w-full overflow-x-auto max-sm:[scrollbar-width:none] max-sm:pr-8 max-sm:[mask-image:linear-gradient(to_right,#000_calc(100%-2rem),transparent)]">
         <div role="radiogroup" aria-label="Góc nhìn" className="inline-flex shrink-0 rounded-lg border"
           style={{ borderColor: 'var(--line)' }}>
           {gocCo.map((k) => (

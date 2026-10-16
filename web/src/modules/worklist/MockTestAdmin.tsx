@@ -28,7 +28,7 @@ export function MockTestAdmin({ branchId }: { branchId: number | null }) {
 
   return (
     <div className="space-y-3">
-      <div className="grid gap-3 grid-cols-2 lg:grid-cols-4" aria-label="Số liệu Mock Test">
+      <div className="grid gap-3 grid-cols-2 lg:grid-cols-4" data-hd="tq-mock-test" aria-label="Số liệu Mock Test">
         <ODem to={`/test/ke-hoach?tuan=${data.tuan}&loai=ft${cn}`} so={data.luotTuanNay.so} nhan="Lượt MT tuần này"
           phu={`${tuanLich(data.tuan, homNay)} · ${data.luotTuanNay.soLop} lớp`} />
         <ODem to={`/cong-viec?nhom=cham-diem&khung=tat-ca${cn}`} so={data.oChuaNhap.so} nhan="Ô điểm chưa nhập"

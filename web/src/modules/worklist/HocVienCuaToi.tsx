@@ -38,7 +38,7 @@ export function HocVienCuaToi({ branchId = null }: { branchId?: number | null })
   const den = (chip: Chip) => `/hoc-vien?phamVi=${data.phamVi}${data.phamVi === 'chi-nhanh' && branchId ? `&cn=${branchId}` : ''}&view=${chip}`;
   const d = data.dem;
   return (
-    <div className="grid gap-3 grid-cols-2 lg:grid-cols-4" aria-label={data.phamVi === 'cua-toi' ? 'Số liệu học viên của tôi' : 'Số liệu học viên'}>
+    <div className="grid gap-3 grid-cols-2 lg:grid-cols-4" data-hd="tq-hv-so" aria-label={data.phamVi === 'cua-toi' ? 'Số liệu học viên của tôi' : 'Số liệu học viên'}>
       <ODem to={den('can-chu-y')} so={d['can-chu-y']} nhan="Cần chú ý" phu="SOS · Case mới · Ý thức" />
       <ODem to={den('tam-dung')} so={d['tam-dung']} nhan="Tạm dừng" phu="đang Tạm dừng học" />
       <ODem to={den('sap-thi')} so={d['sap-thi']} nhan="Sắp thi" phu="thi IELTS trong 6 tuần tới" />
