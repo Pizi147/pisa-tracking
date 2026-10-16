@@ -48,7 +48,6 @@ export const EN_OV13O = {
     'Each cell: students meeting expected for that round / students scored in that skill. W1, W2 each compared with expected.',
   'Mỗi ô: số học viên đạt (từ 70%) / số học viên đã có điểm môn đó. Bốn cột cố định: BE, ELE dùng W và S; FOU dùng G+V ở chỗ W và P ở chỗ S.':
     'Each cell: students passed (70%+) / students scored in that subject. Four fixed columns: BE, ELE use W and S; FOU uses G+V for W and P for S.',
-  'BE, ELE: Writing, Speaking. FOU: Grammar + Vocabulary, Pronunciation.': 'BE, ELE: Writing, Speaking. FOU: Grammar + Vocabulary, Pronunciation.',
   'đạt kỳ vọng / có điểm': 'met expected / scored',
   'đạt / có điểm': 'passed / scored',
   'Case đang phụ trách': 'Cases owned',

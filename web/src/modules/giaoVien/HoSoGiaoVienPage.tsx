@@ -331,7 +331,7 @@ function KhoiKetQua({ data, kq }: { data: HoSo; kq: { data: { ketQua: KetQuaLop[
                   <thead><tr>
                     <Th hint={t('Mỗi ô: số học viên đạt (từ 70%) / số học viên đã có điểm môn đó. Bốn cột cố định: BE, ELE dùng W và S; FOU dùng G+V ở chỗ W và P ở chỗ S.')}>{t('Lớp thường')}</Th>
                     {COT_THUONG.map((c) => (
-                      <Th key={c.k} align="center" hint={c.phu ? t('BE, ELE: Writing, Speaking. FOU: Grammar + Vocabulary, Pronunciation.') : undefined}>
+                      <Th key={c.k} align="center" hint={c.phu ? 'BE, ELE: Writing, Speaking. FOU: Grammar + Vocabulary, Pronunciation.' : undefined}>
                         {c.nhan}{c.phu && <span className="font-medium text-slate-500"> {c.phu}</span>}
                       </Th>
                     ))}

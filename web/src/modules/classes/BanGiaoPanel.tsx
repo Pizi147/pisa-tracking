@@ -205,7 +205,7 @@ function MasterDetail({ dto, lenhId, onClose, onDone, reload }: Chung) {
                             placeholder="Viết một câu…" onChange={(e) => setDienThay({ ...dienThay, chu: e.target.value })}
                             onKeyDown={(e) => { if (e.key === 'Enter') void luuDienThay(); if (e.key === 'Escape') { e.stopPropagation(); setDienThay(null); } }} />
                           <button type="button" className="btn btn-sm btn-primary" disabled={!dienThay.chu.trim()} onClick={luuDienThay}>Lưu</button>
-                          <button type="button" className="btn btn-sm" onClick={() => setDienThay(null)}>Huỷ</button>
+                          <button type="button" className="btn btn-sm" onClick={() => setDienThay(null)}>Đóng</button>
                         </span>
                       )}
                     </div>

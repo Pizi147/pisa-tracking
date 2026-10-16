@@ -52,7 +52,7 @@ export function LichSuSuaPanel({ studentId, studentName, lop, onClose }: { stude
   return (
     <KhungPanel tieuDe={t('Lịch sử sửa')} onDong={onClose} dau={{ dong2: [studentName, lop ?? null] }}>
       <div className="pt-3">
-        <BoLocDoan boc muc={LOC} value={loai} onChange={setLoai} ariaLabel={t('Lọc lịch sử sửa')} />
+        <BoLocDoan muc={LOC} value={loai} onChange={setLoai} ariaLabel={t('Lọc lịch sử sửa')} />
       </div>
       {error ? <div className="pt-3"><ErrorState message={error.message} hint={error.hint} onRetry={reload} /></div>
         : loading && !data ? <div className="pt-3"><Skeleton rows={5} /></div>
