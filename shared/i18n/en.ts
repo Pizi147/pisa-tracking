@@ -21,6 +21,7 @@ import { EN_OV13L } from './en/ov13l.ts';
 import { EN_OV13M } from './en/ov13m.ts';
 import { EN_OV13O } from './en/ov13o.ts';
 import { EN_UX1 } from './en/ux1.ts';
+import { EN_UX2 } from './en/ux2.ts';
 import { EN_OV13Q } from './en/ov13q.ts';
 
 /** Giá trị biến: chữ / số, hoặc một chữ máy chủ dựng có khoá riêng (`ChuKhoa`, lồng được) — PR-EN-c. null / undefined in ra như chuỗi
@@ -31,4 +32,4 @@ export type ChuKhoa = { chu: string; khoa?: string; bien?: Bien };
 /** Chữ thường, hoặc hàm khi cần số ít / số nhiều. */
 export type Dich = string | ((b: Bien) => string);
 
-export const EN = { ...EN_A, ...EN_B, ...EN_C, ...EN_F, ...EN_D, ...EN_OV12E, ...EN_HD, ...EN_HDB, ...EN_OV13B, ...EN_OV13C, ...EN_OV13D, ...EN_OV13G, ...EN_OV13J, ...EN_OV13L, ...EN_OV13K, ...EN_OV13M , ...EN_OV13O, ...EN_UX1, ...EN_OV13Q };
+export const EN = { ...EN_A, ...EN_B, ...EN_C, ...EN_F, ...EN_D, ...EN_OV12E, ...EN_HD, ...EN_HDB, ...EN_OV13B, ...EN_OV13C, ...EN_OV13D, ...EN_OV13G, ...EN_OV13J, ...EN_OV13L, ...EN_OV13K, ...EN_OV13M , ...EN_OV13O, ...EN_UX1, ...EN_UX2, ...EN_OV13Q };

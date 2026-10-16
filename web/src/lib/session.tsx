@@ -43,6 +43,8 @@ export type Session = {
   loiKetNoi?: string;
   /** PR-OV2a: menu Góc nhìn (QL / Quản trị nắm ≥ 2 vai); null = không có. */
   gocNhin?: GocNhin | null;
+  /** UX-2 (5): khung có lớp trong phạm vi người xem — công tắc Fast Track / Lớp thường. */
+  khungPhamVi?: { ft: boolean; thuong: boolean };
 };
 
 export type GocNhin = {
@@ -94,7 +96,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const uid = session?.authenticated ? session.user?.id : undefined;
   useEffect(() => { if (uid) dongBoNgonNgu(session?.ngonNgu); }, [uid]);   // eslint-disable-line react-hooks/exhaustive-deps
   /* Q7: khung đã nhớ (CongTacKhung) theo người — đặt trước khi trang con đọc. */
-  datNguoiDungKhung(session?.user?.id ?? null, session?.gocNhin?.dangChon ?? null);
+  datNguoiDungKhung(session?.user?.id ?? null, session?.gocNhin?.dangChon ?? null, session?.khungPhamVi ?? null);
 
   const switchAccount = useCallback(async (userId: number) => {
     await api.post('/demo/session', { userId });

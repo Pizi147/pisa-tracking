@@ -187,19 +187,19 @@ export const XU_LY_COT_SQL = `sc.id, sc.status, sc.han_xac_nhan, sc.dismiss_reas
     AND COALESCE(iv.approval_state, 'approved') = 'approved') AS pa_theo_doi,
   ${CO_THE_KHONG_THEO_DOI('sc')} AS co_the`;
 
-export function xuLyCuaDong(r: any, homNay: string): { cot: CotXuLy; quaHan: boolean } {
+export function xuLyCuaDong(r: any, homNay: string): { cot: CotXuLy; quaHan: boolean; /** UX-2 (2): hạn của việc tiếp (Thêm PA hoặc `han_xac_nhan`). */ han: string | null } {
   const tt = trangThaiCaseV4({
     status: r.status, fromSos: !!r.from_sos, hasCause: !!r.has_cause, laMt: !!r.la_mt, dismissed: !!r.dismiss_reason_code, systemClosed: !!r.system_close_reason,
     choDuyetKhongTheoDoi: !!r.co_the && r.status !== 'done', coPaChoXacNhan: !!r.pa_cho, hanXacNhan: r.han_xac_nhan ?? null, choDoiPa: !!r.doi_cho, tam: !!r.tam,
   }, homNay);
   const cot = cotXuLy(tt.k, !!r.pa_theo_doi);
   const hanPa = tt.k === 'dang-lam' && !r.co_pa ? hanThemPa(r) : null;
-  return { cot, quaHan: cot === 'choDuyet' && (tt.t === 'qua-han' || (!!hanPa && hanPa < homNay)) };
+  return { cot, quaHan: cot === 'choDuyet' && (tt.t === 'qua-han' || (!!hanPa && hanPa < homNay)), han: hanPa ?? r.han_xac_nhan ?? null };
 }
 
 /** `xuLyCuaDong` cho NHIỀU Case — một câu mỗi lô (`theoLo`). */
-export function xuLyCaseMany(caseIds: readonly number[], homNay: string): Map<number, { cot: CotXuLy; quaHan: boolean }> {
-  const out = new Map<number, { cot: CotXuLy; quaHan: boolean }>();
+export function xuLyCaseMany(caseIds: readonly number[], homNay: string): Map<number, ReturnType<typeof xuLyCuaDong>> {
+  const out = new Map<number, ReturnType<typeof xuLyCuaDong>>();
   theoLo(caseIds, (lo, ph) => {
     for (const r of db().prepare(`SELECT ${XU_LY_COT_SQL} FROM sos_cases sc WHERE sc.id IN (${ph})`).all(...lo) as any[]) out.set(r.id as number, xuLyCuaDong(r, homNay));
   });

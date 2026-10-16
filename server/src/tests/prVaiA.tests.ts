@@ -39,8 +39,8 @@ export async function runPrVaiATests(t: YThucTestKit) {
   check('VAI-a (1b) · Cần xử lý không còn "2 lần Test", "Case thiếu PA", "Case chưa có người"; Q3: việc QL tự quyết chỉ ở hộp Chờ duyệt', () => {
     const ma = d.CAN_XU_LY.map((x: any) => x.metricId);
     for (const bo of ['hv-can-ho-tro-2-lan-chua-case', 'case-thieu-pa', 'case-chua-co-nguoi-phu-trach',
-      'case-xac-dinh-nguyen-nhan-qua-han', 'pa-cho-duyet', 'hv-can-xu-ly']) assert(!ma.includes(bo), `còn dòng ${bo}`);
-    const dem = Object.fromEntries(['case-xac-dinh-nguyen-nhan-qua-han', 'pa-cho-duyet', 'hv-can-xu-ly', 'case-thieu-pa'].map((k) => [k, 9]));
+      'pa-cho-duyet', 'hv-can-xu-ly']) assert(!ma.includes(bo), `còn dòng ${bo}`);   // UX-2 (2): case-xac-dinh-nguyen-nhan-qua-han trở lại
+    const dem = Object.fromEntries(['pa-cho-duyet', 'hv-can-xu-ly', 'case-thieu-pa'].map((k) => [k, 9]));
     eq(d.sapCanXuLy(dem, true), [], 'đếm > 0 vẫn không lên Cần xử lý');
   });
 
@@ -265,7 +265,7 @@ export async function runPrVaiATests(t: YThucTestKit) {
     const tat = Object.fromEntries(d.CAN_XU_LY.map((x: any) => [x.metricId, 2]));
     const r = d.sapCanXuLy(tat, true, { 'van-hanh-can-quyet-dinh': true });
     assert(r.every((x: any) => x.trangThai === 'qua-han' || x.trangThai === 'can-lam'), 'chỉ hai nhãn');
-    eq(r.map((x: any) => x.metricId).slice(0, 4), ['bai-qua-han-nhap-diem', 'pa-can-cap-nhat', 'phoi-hop-qua-han', 'van-hanh-can-quyet-dinh'], 'quá hạn lên đầu: GV trễ trước (OV-12h: + meeting CX), Vận hành quá hạn sau');
+    eq(r.map((x: any) => x.metricId).slice(0, 5), ['bai-qua-han-nhap-diem', 'pa-can-cap-nhat', 'case-xac-dinh-nguyen-nhan-qua-han', 'phoi-hop-qua-han', 'van-hanh-can-quyet-dinh'], 'quá hạn lên đầu: GV trễ trước (OV-12h: + meeting CX; UX-2: + Case quá hạn), Vận hành quá hạn sau');
     const w = (x: any) => (x.trangThai === 'qua-han' ? 0 : 1) * 2 + (x.cuaNguoiXem ? 1 : 0);
     assert(r.every((x: any, i: number) => i === 0 || w(r[i - 1]) <= w(x)), 'thứ tự quá hạn → GV → Bạn');
     eq(d.nguoiGiuViecChu(['Trần Thu Trang', 'Lê Thu Hà', 'Lê Minh Đức', 'An Bình', 'Lê Thu Hà']),

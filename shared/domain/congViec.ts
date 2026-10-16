@@ -308,3 +308,10 @@ export function trangThaiKyGiao(s: { loading: boolean; error: unknown; data: { i
 export function duocGiao(ky: TrangThaiKy, busy: boolean): boolean {
   return ky.loai === 'co' && !busy;
 }
+
+/**
+ * UX-2 (4, chủ SP 16/10): Công việc › Hỗ trợ học viên trên máy tính — chưa mở việc nào thì tự mở việc đầu danh sách (thay khung trống "Chọn một việc").
+ * Một lần mỗi bộ lọc (`daTuMo`): đóng panel không bật lại. Điện thoại (`manHep`) và danh sách 0 việc: không mở.
+ */
+export const viecTuMo = <T extends { key: string }>(ds: readonly T[], o: { manHep: boolean; dangMo: boolean; daTuMo: boolean }): string | null =>
+  (o.manHep || o.dangMo || o.daTuMo ? null : ds[0]?.key ?? null);

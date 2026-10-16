@@ -1,11 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { SoLieuO } from '../../ui/SoLieuO.tsx';
 import { useDienThoai } from '../../ui/TheDong.tsx';
 import { CongTacKhung, khungDaNho } from '../../ui/CongTacKhung.tsx';
-import { khungLopToiDay } from '@shared/domain/index.ts';
+import { GOI_Y_DUOI_KY_VONG, khungLopToiDay } from '@shared/domain/index.ts';
+import { NutLuat } from '../../ui/NutLuat.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 
 /**
@@ -29,8 +30,10 @@ export function LopToiDay() {
   const ct = khung ?? 'ft';
   const { data, loading, error, reload } = useApi<Data>(`/tong-quan/lop-toi-day?ct=${ct}`, [ct]);
   /* Q31-1 + D7: chưa chọn, hoặc khung đã nhớ không có lớp nào của mình → khung mặc định theo lớp mình dạy (chỉ lớp thường → Lớp thường). */
+  /* UX-2 (5): công tắc hiện theo phạm vi — khung người xem VỪA BẤM giữ nguyên dù 0 lớp (ghi "· 0"), không bị ép về khung có lớp. */
+  const daBam = useRef(false);
   useEffect(() => {
-    if (data && khungLopToiDay(khung, data.coFt, data.coThuong) !== ct) setKhung(khungLopToiDay(khung, data.coFt, data.coThuong));
+    if (data && !daBam.current && khungLopToiDay(khung, data.coFt, data.coThuong) !== ct) setKhung(khungLopToiDay(khung, data.coFt, data.coThuong));
   }, [data, khung, ct]);
   if (error) return <ErrorState message={error.message} hint={error.hint} onRetry={reload} />;
   if (data && !data.coFt && !data.coThuong) return null;
@@ -61,7 +64,7 @@ export function LopToiDay() {
       <header className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b px-4 py-3" style={{ borderColor: 'var(--line)' }}>
         <div className="flex flex-wrap items-center gap-3">
           <h2 id="lop-toi-day" className="m-0 text-sm font-semibold text-slate-200">{t('Lớp tôi dạy')}</h2>
-          {data && <CongTacKhung trang="tong-quan" value={ct} dem={{ ft: data.soFt, thuong: data.soThuong }} donVi={t('lớp')} onChange={(k) => setKhung(k === 'thuong' ? 'thuong' : 'ft')} />}
+          {data && <CongTacKhung trang="tong-quan" value={ct} dem={{ ft: data.soFt, thuong: data.soThuong }} donVi={t('lớp')} onChange={(k) => { daBam.current = true; setKhung(k === 'thuong' ? 'thuong' : 'ft'); }} />}
         </div>
         {!dienThoai && <span className="text-xs text-slate-500">{t('Bấm số để xem danh sách em')}</span>}
       </header>
@@ -92,7 +95,7 @@ export function LopToiDay() {
               <tr className="text-left text-[11.5px] font-semibold text-slate-400">
                 <th className="px-4 py-2 font-semibold">{t('Lớp')}</th><th className="px-3 py-2 font-semibold">{t('Tôi dạy')}</th>
                 {laThuong && <th className="px-3 py-2 font-semibold">{t('Tuần học')}</th>}
-                <th className="px-3 py-2 text-right font-semibold">{t('Học viên')}</th><th className="px-3 py-2 text-right font-semibold">{nhanDuoi}</th>
+                <th className="px-3 py-2 text-right font-semibold">{t('Học viên')}</th><th className="px-3 py-2 text-right font-semibold">{nhanDuoi} <NutLuat phai label={nhanDuoi}>{GOI_Y_DUOI_KY_VONG[ct]}</NutLuat></th>
                 {!laThuong && <th className="px-3 py-2 text-right font-semibold">SOS</th>}
                 <th className="px-3 py-2 text-right font-semibold">{t('Case đang mở')}</th><th className="px-3 py-2 text-right font-semibold">{t('Bài chờ chấm')}</th>
                 <th className="px-4 py-2 font-semibold">{t('Test sắp tới')}</th>

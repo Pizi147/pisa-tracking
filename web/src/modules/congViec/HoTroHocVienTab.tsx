@@ -10,14 +10,14 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import type { WorkItem } from '../worklist/WorkList.tsx';
 import { NganViecVanHanh } from '../worklist/MgmtTasksPage.tsx';
 import { ChonPhuTrach, type NguoiPhuTrach } from './ChonPhuTrach.tsx';
-import { CongTacKhung, khungDaNho, nhoKhung, type KhungLoc } from '../../ui/CongTacKhung.tsx';
+import { CongTacKhung, khungDaNho, nhoKhung, phamViCoHaiKhung, type KhungLoc } from '../../ui/CongTacKhung.tsx';
 import { KhungTaiCho, coPanelDangSua } from '../../ui/KhungPanel.tsx';
 import { PanelViec, lamTaiCho, moCaDong } from './PanelViec.tsx';
 import { DongDaLuu, GhiNhanh, type DaLuuNhanh } from '../cases/GhiNhanh.tsx';
 import { HopGiaHan } from '../students/HopGiaHan.tsx';
 import {
   LOC_NHANH_LABEL, NHOM_VIEC, NHOM_VIEC_LABEL, demLocNhanh, demNhomChip, demPhamVi, gomNhomViec, khoaGopCua, khopLocNhanh, nhomViecCua,
-  LOC_NHANH, type LocNhanh, type NhomViec as MaNhomViec,
+  LOC_NHANH, viecTuMo, type LocNhanh, type NhomViec as MaNhomViec,
 } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
 
@@ -100,8 +100,9 @@ export function HoTroHocVienTab() {
     ft: tatCaViec.filter((it) => it.khung === 'ft').length,
     thuong: tatCaViec.filter((it) => it.khung === 'thuong').length,
   }), [tatCaViec]);
-  /* Chỉ một khung có việc thì công tắc ẩn — khi đó không lọc (lựa chọn đã nhớ không được giấu mất việc). */
-  const khung: KhungLoc = demKhung.ft > 0 && demKhung.thuong > 0 ? khungChon : 'tat-ca';
+  /* Phạm vi chỉ một khung (UX-2: theo lớp trong phạm vi, không theo việc đang có) thì công tắc ẩn — khi đó không lọc. */
+  const haiKhung = (demKhung.ft > 0 && demKhung.thuong > 0) || phamViCoHaiKhung();
+  const khung: KhungLoc = haiKhung ? khungChon : 'tat-ca';
 
   /*
    * OV-5a: DÒNG ĐÃ LÀM GIỮ CHỖ — panel báo "đã lưu" thì nhớ bản dòng lúc đó; tải lại mà máy chủ không còn trả việc đó → vẫn vẽ ở chỗ cũ, mờ + gạch
@@ -208,6 +209,17 @@ export function HoTroHocVienTab() {
   const viTri = thuTu.findIndex((x) => x.key === viec);
   const keTiep = thuTu.slice(viTri + 1).find((x) => !xong.has(x.key)) ?? null;
   const daLam = (it: WorkItem) => setGiu((m) => new Map(m).set(it.key, it));
+  /*
+   * UX-2 (4): máy tính — chưa mở việc thì tự mở việc đầu có panel (thay khung trống); `replace`, không thêm bước lịch sử. Một lần mỗi bộ lọc
+   * (`khoaLoc`): đóng panel / lưu xong không tự bật lại. Điện thoại, lọc ra 0 việc: không mở.
+   */
+  const daTuMo = useRef<string | null>(null);
+  useEffect(() => {
+    if (!data || data.scopeEmpty) return;
+    const k = viecTuMo(thuTu.filter((x) => !laNhanh(x)), { manHep: window.matchMedia(MAN_HEP).matches, dangMo: !!viec, daTuMo: daTuMo.current === khoaLoc });
+    daTuMo.current = khoaLoc;
+    if (k) setParam('viec', k);
+  }, [data, khoaLoc]);   // eslint-disable-line react-hooks/exhaustive-deps
   const moRong = (x: WorkItem) => {
     const kq = daLuuNhanh.get(x.key);
     if (kq) {
@@ -268,7 +280,7 @@ export function HoTroHocVienTab() {
         </div>
         {locThem && (
           <div className="card flex max-w-[640px] flex-col gap-2.5 px-3.5 py-3">
-            {demKhung.ft > 0 && demKhung.thuong > 0 && (
+            {haiKhung && (
               <div role="group" aria-label={t('Chương trình')}>
                 <div className="mb-1.5 text-xs font-bold text-slate-300">{t('Chương trình')}</div>
                 <CongTacKhung trang="cong-viec" coTatCa value={khung} dem={{ ft: demKhung.ft, thuong: demKhung.thuong }} onChange={(k) => setParam('khung', k === 'tat-ca' ? null : k)} />

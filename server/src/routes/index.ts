@@ -12,7 +12,7 @@ import { HttpError, badRequest, chuTuDo, forbidden, isIsoDate, loi, notFound, to
 import { SESSION_COOKIE, createSession, datGocNhin, destroySession, principalOf, requireAuth } from '../auth.ts';
 import { can, loadPrincipal, permissionSummary, require_, scopeFor, type Principal } from '../permissions.ts';
 import { writeAudit } from '../platform/audit.ts';
-import { navOf } from '../platform/nav.ts';
+import { khungPhamVi, navOf } from '../platform/nav.ts';
 import * as attachmentSvc from '../platform/attachments.ts';
 import * as timNguoiSvc from '../platform/timNguoi.ts';
 import * as violationSvc from '../yThuc/violations.ts';
@@ -216,6 +216,8 @@ api.get('/demo/session', wrap((req) => {
     chiNhanhGoiY: hocVienLopSvc.goiYChiNhanh(p, demoToday()),
     /* PR-OV2a: menu "Góc nhìn" — chỉ QL / Quản trị nắm ≥ 2 vai; null = không có menu. */
     gocNhin: gocNhinCua(p),
+    /* UX-2 (5): khung có lớp trong phạm vi — công tắc Fast Track / Lớp thường. */
+    khungPhamVi: khungPhamVi(p),
   };
 }));
 
@@ -926,6 +928,15 @@ api.get('/cham/lich-test', requireAuth, wrap((req) => {
   return chamSvc.lichTest(principalOf(req), periodId, qInt(req, 'branchId'), demoToday(), {
     phamVi: pv === 'cua-toi' || pv === 'tat-ca' ? pv : null, classId: qInt(req, 'classId') ?? null,
   });
+}));
+
+/** UX-2 (1): ô "Quá hạn chấm" của Lịch Test — `{ n, lop, khac, tieuDe }` từ `oQuaHanCham`; `?rows=1` thêm danh sách (panel `SoLieuO`, cùng hàm). */
+api.get('/cham/lich-test/qua-han', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  const pv = qStr(req, 'phamVi');
+  return chamSvc.dsQuaHanCham(principalOf(req), {
+    branchId: qInt(req, 'branchId'), phamVi: pv === 'cua-toi' || pv === 'tat-ca' ? pv : null, classId: qInt(req, 'classId') ?? null,
+  }, demoToday(), qStr(req, 'rows') === '1');
 }));
 
 // ============================================================ Lớp (Học viên lấy lớp làm gốc)

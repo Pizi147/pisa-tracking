@@ -356,7 +356,7 @@ export async function runPrDuyetTests(t: YThucTestKit) {
     const r = tongQuanSvc.tongQuanQuanLy(P.mbManager, { branchId: null, ct: 'ft' });
     const dem = yc.demYeuCau(P.mbManager);
     assert(r.choDuyet && r.choDuyet.cho === dem.cho && r.choDuyet.quaHan === dem.quaHan && r.choDuyet.baoLen === dem.baoLen, JSON.stringify(r.choDuyet));
-    assert(!r.canXuLy.some((x: any) => x.metricId === 'pa-cho-duyet' || x.metricId === 'case-xac-dinh-nguyen-nhan-qua-han'), 'còn dòng thẻ');
+    assert(!r.canXuLy.some((x: any) => x.metricId === 'pa-cho-duyet'), 'còn dòng thẻ');   // UX-2 (2): Case chưa chốt PA quá hạn trở lại Cần xử lý
     assert(navOf(P.mbManager).workApprove && !navOf(P.coreTeacher).workApprove && navOf(P.coreTeacher).workRequests, 'cờ workApprove/workRequests');
     for (const ma of ['request.approve', 'request.decline', 'request.answer', 'request.create']) {
       assert(d.nhanHanhDongNhatKy(ma) !== 'Thao tác hệ thống', `thiếu nhãn nhật ký ${ma}`);

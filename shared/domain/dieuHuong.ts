@@ -53,10 +53,13 @@ const HIEN: Record<KhuVuc, (n: NavQuyen) => boolean> = {
   'cong-viec': (n) => n.work,
 };
 
-/** PR-DUYET: người duyệt được vào thẳng Công việc › Chờ duyệt (tab đầu của họ); `/cong-viec` vẫn là Việc học viên (link cũ không gãy). */
-export function khuVucHienThi(nav: NavQuyen): KhuVucMuc[] {
+/**
+ * PR-DUYET: người duyệt vào thẳng Công việc › Chờ duyệt; UX-2 (3, chủ SP 16/10): CHỈ khi đang có thẻ chờ duyệt (`soChoDuyet`, số badge của menu) —
+ * không có thẻ (hoặc chưa đếm xong) thì vào Hỗ trợ học viên. `/cong-viec` vẫn là Việc học viên (link cũ không gãy).
+ */
+export function khuVucHienThi(nav: NavQuyen, soChoDuyet = 0): KhuVucMuc[] {
   return KHU_VUC.filter((k) => HIEN[k.key](nav))
-    .map((k) => (k.key === 'cong-viec' && nav.workApprove ? { ...k, to: DUONG_TAB_CONG_VIEC['cho-duyet'] } : k));
+    .map((k) => (k.key === 'cong-viec' && nav.workApprove && soChoDuyet > 0 ? { ...k, to: DUONG_TAB_CONG_VIEC['cho-duyet'] } : k));
 }
 
 const thuoc = (p: string, goc: string) => p === goc || p.startsWith(`${goc}/`);

@@ -1,6 +1,6 @@
 /**
  * PHÉP KIỂM PR-OV11e — Lịch Test đếm phần của bạn · Điểm theo lớp · huỷ / khôi phục nguyên trạng · KCK theo lượt (đặc tả rà soát 14/10):
- *   (1) TE-7: GV có phân công — dải số / khối 1 chỉ đếm bài của người xem (S Mock chấm chéo không tính); QL như cũ; badge lớp = số trang mở;
+ *   (1) TE-7: GV có phân công — khối 1 (và ô "Quá hạn chấm" ở "Lớp tôi dạy", UX-2) chỉ đếm bài của người xem (S Mock chấm chéo không tính); QL như cũ; badge lớp = số trang mở;
  *       CA3-12: GV Writing thấy W1 / W2 tách người;
  *   (2) TE-8: dòng "MT cũ chưa nhập" mở Điểm theo lớp đúng lượt + Chỉ ô còn trống, số em từng lượt cộng đúng;
  *   (3) TE-10: Điểm theo lớp "trống" không đếm ô chưa tới tuần thi; (4) TE-11: lượt mặc định hoà tuần → lượt nhiều ô trống;
@@ -50,8 +50,17 @@ export async function runPrOv11eTests(t: YThucTestKit) {
     assert(ql.tongQuan.no.bai > 0 && ql.tongQuan.no.bai === ql.no.reduce((n: number, x: any) => n + x.conBai, 0) && ql.no.every((x: any) => x.phan === null),
       `QL khối 1: ${ql.tongQuan.no.bai}`);
     assert(gv.no.length > 0 && gv.no.every((x: any) => x.phan && !x.phan.toi && !x.quaHan), `GV S: khối 1 phải tách phần, không đỏ: ${JSON.stringify(gv.no.map((x: any) => [x.key, x.phan, x.quaHan]))}`);
-    assert(gv.tongQuan.no.bai === 0 && gv.tongQuan.no.lop === 0, `GV S "Quá hạn chấm": ${JSON.stringify(gv.tongQuan.no)}`);
+    assert(gv.tongQuan.no.bai === 0 && gv.tongQuan.no.lop === 0, `GV S khối 1 (phần của mình): ${JSON.stringify(gv.tongQuan.no)}`);
     assert((gv.tongQuan.khac?.no ?? 0) === ql.tongQuan.no.bai, `phần GV khác: ${JSON.stringify(gv.tongQuan.khac)} ≠ ${ql.tongQuan.no.bai}`);
+    /*
+     * UX-2 (1): ô "Quá hạn chấm" của dải số không còn là Σ khối 1 — là `oQuaHanCham` (= Tổng quan "Bài quá hạn", gồm ô tuần trước ở khối 2).
+     * "Tất cả": mọi ô quá hạn trong quyền (không tách phần, như Tổng quan); "Lớp tôi dạy": vẫn phần của mình (TE-7), ô S Mock chấm chéo vào `khac`.
+     */
+    const tatCa = cham.oQuaHanCham(gvS, { classId: FT101, phamVi: 'tat-ca' }, TODAY);
+    const oTatCa = cham.dsQuaHanCham(gvS, { classId: FT101, phamVi: 'tat-ca' }, TODAY, false);
+    assert(oTatCa.n === tatCa.ids.length && oTatCa.khac === 0, `GV S "Quá hạn chấm" (Tất cả): ${JSON.stringify(oTatCa)}`);
+    const cuaToi = cham.dsQuaHanCham(gvS, { classId: FT101, phamVi: 'cua-toi' }, TODAY, false);
+    assert(cuaToi.n === 0 && cuaToi.khac === tatCa.ids.length, `GV S "Quá hạn chấm" (Lớp tôi dạy): ${JSON.stringify(cuaToi)}`);
     /* Badge "n bài chờ chấm" (Học viên & Lớp, phần của mình) = số ở trang nó mở (Lịch Test lọc lớp: còn phải chấm + quá hạn). */
     for (const lop of [FT101, FOU12]) {
       const badge = classes.listClassSummaries(gvS, { classId: lop }).rows.find((c: any) => c.id === lop)?.needScores ?? 0;
