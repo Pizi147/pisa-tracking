@@ -69,6 +69,8 @@ const doTurso = { bat: false, nhan: '(ngoài request)', soCau: 0, nangThamSo: []
  * LEFT JOIN users u`) không được trả lại cùng một `attempt_id` hai lần. `null` = không theo dõi.
  */
 const doLap: { thay: Map<string, Map<number, number>> | null } = { thay: null };
+/** TD5: ghi câu (văn bản + tham số) trong lúc `ghi` khác null — để EXPLAIN QUERY PLAN lại sau. */
+const doQuet: { ghi: { sql: string; args: unknown[] }[] | null } = { ghi: null };
 const CAU_LUOT: [string, RegExp][] = [['lịch kỹ năng', /FROM attempt_skills ask\b/], ['điểm', /FROM assessment_scores s\s+LEFT JOIN users u\b/]];
 {
   const dbProto = Object.getPrototypeOf(conn);
@@ -98,6 +100,7 @@ const CAU_LUOT: [string, RegExp][] = [['lịch kỹ năng', /FROM attempt_skills
         giuTop(doTurso.nangVe, c, 've');
         if (c.datTen && doTurso.datTen.length < 5) doTurso.datTen.push(c);
       }
+      if (doQuet.ghi && this.__sql) doQuet.ghi.push({ sql: this.__sql, args });
       const out = goc.apply(this, args);
       if (doLap.thay && m === 'all' && this.__sql && Array.isArray(out)) {
         for (const [ten, re] of CAU_LUOT) {
@@ -881,6 +884,46 @@ check('TD3-b-2 · QL ×3: /classes/{lopFT}/overview ≤ 50 % (5 829), /hoc-vien-
   const ov = dongSauNhan.get(`QL /classes/${LOP_FT}/overview`) ?? Infinity, hvl = dongSauNhan.get('QL /hoc-vien-lop') ?? Infinity;
   console.log(`      (đo: overview ${ov}, hoc-vien-lop ${hvl} dòng)`);
   assert(ov <= Math.floor(5829 * 0.5) && hvl <= Math.floor(8417 * 0.8), `overview ${ov} / hoc-vien-lop ${hvl}`);
+});
+
+/*
+ * TD5: Turso tính DÒNG ĐỌC (cả dòng quét), `TRAN_DONG` chỉ đếm dòng trả về — nên khoá bằng EXPLAIN QUERY PLAN. Trước TD5 (×3, đếm bước VM qua
+ * Python sqlite3): Case mở của `listClassSummaries` ~181 k bước / lần (SCAN sos_cases cho từng lượt), bảng điểm tuần `classScoreSheet` ~10,9 k.
+ * Mọi câu chạm sos_cases / attempt_skills trong hai đường đó không được SCAN cả bảng; migrate chạy lần hai không làm gì.
+ */
+await checkAsync('TD5 (×3) · Case mở của lớp + bảng điểm tuần: không SCAN sos_cases / attempt_skills; migrate prTd5 chạy lặp được', async () => {
+  const { migratePrTd5 } = await import('../migrate/prTd5.ts');
+  const { listClassSummaries } = await import('../classes/classes.ts');
+  const { classScoreSheet } = await import('../fasttrack/attempts.ts');
+  const lan: string[][] = [[], []];
+  migratePrTd5(conn, lan[0]); migratePrTd5(conn, lan[1]);
+  assert(!lan[0].length && !lan[1].length, `migrate trên DB đã có chỉ mục vẫn báo đổi: ${lan.flat().join(' | ')}`);
+  assert(conn.prepare("SELECT 1 FROM sqlite_master WHERE type = 'index' AND name = 'idx_case_attempt'").get(), 'thiếu idx_case_attempt');
+  const tuan = (conn.prepare('SELECT planned_period_id AS id FROM assessment_attempts WHERE class_id = ? AND planned_period_id IS NOT NULL LIMIT 1').get(LOP_FT) as any).id;
+  const ghi: { sql: string; args: unknown[] }[] = [];
+  doQuet.ghi = ghi;
+  try {
+    for (const vai of MOI_VAI) {
+      const p = PRINCIPAL_CUA.get(USER[vai]) ?? loadPrincipal(USER[vai]);
+      chayTrongRequest('GET', () => listClassSummaries(p, {}));
+      if (vai === 'QL' || vai === 'GVCN') chayTrongRequest('GET', () => classScoreSheet(p, LOP_FT, tuan));
+    }
+  } finally {
+    doQuet.ghi = null;
+  }
+  const quet: string[] = [];
+  const daXet = new Set<string>();
+  for (const { sql, args } of ghi) {
+    if (daXet.has(sql) || !/\b(sos_cases|attempt_skills)\b/.test(sql)) continue;
+    daXet.add(sql);
+    const bang = new Map([...sql.matchAll(/(?:FROM|JOIN)\s+(\w+)\s+(?:AS\s+)?(\w+)/gi)].map((m) => [m[2], m[1]]));
+    for (const r of conn.prepare(`EXPLAIN QUERY PLAN ${sql}`).all(...args) as any[]) {
+      const m = /^SCAN (\w+)/.exec(r.detail);
+      if (m && ['sos_cases', 'attempt_skills'].includes(bang.get(m[1]) ?? m[1])) quet.push(`${r.detail} · ${sql.replace(/\s+/g, ' ').slice(0, 100)}`);
+    }
+  }
+  assert(daXet.size >= 3, `chỉ bắt được ${daXet.size} câu sos_cases / attempt_skills`);
+  assert(!quet.length, `còn quét cả bảng:\n        ${quet.join('\n        ')}`);
 });
 
 /*
