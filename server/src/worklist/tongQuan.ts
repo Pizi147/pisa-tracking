@@ -117,12 +117,13 @@ export function tongQuanQuanLy(p: Principal, f: { branchId?: number | null }) {
           han: ngay.length ? { chu: a === b ? `quá hạn ${a} ngày` : `quá hạn ${a}–${b} ngày`, quaHan: true as const } : chuaCoHan,
           den: `/cong-viec?nhom=cham-diem&loc=qua-han&khung=tat-ca${cn}` };
       }
-      if (x.metricId === 'phoi-hop-qua-han') {
+      /* UX-2 (2): Case chưa chốt PA quá hạn — cùng cách ghi hạn; nút mở danh sách Case của chỉ số (panel, `den` null). */
+      if (x.metricId === 'phoi-hop-qua-han' || x.metricId === 'case-xac-dinh-nguyen-nhan-qua-han') {
         const ngay = ct.flatMap((c) => c.han).map((h) => soNgay(h, today)).filter((n) => n > 0);
         const a = Math.min(...ngay), b = Math.max(...ngay);
         return { ...x, phu: tachTheoLop(r.unit, r.ids), nguoi,
           han: ngay.length ? { chu: a === b ? `quá hạn ${a} ngày` : `quá hạn ${a}–${b} ngày`, quaHan: true as const } : chuaCoHan,
-          den: `/cong-viec?loai=phoi_hop_sos&loc=qua-han&khung=tat-ca${cn}` };
+          den: x.metricId === 'phoi-hop-qua-han' ? `/cong-viec?loai=phoi_hop_sos&loc=qua-han&khung=tat-ca${cn}` : null };
       }
       /* pa-can-cap-nhat: "PA chưa ghi kết quả tuần W4 SEP" — tuần của hạn cũ nhất (Q25); dòng phụ theo khung. */
       const lop = lopCuaTap(r.unit, r.ids);

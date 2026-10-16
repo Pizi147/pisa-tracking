@@ -27,6 +27,8 @@ import { assessedSkillOf, entrySkillsOf } from '../fasttrack/scoring.ts';
 import { allProgrammes, cheDoCua, isRatioClass, programmeOfClass, regularSheet, type CheDo } from '../normal/regular.ts';
 import { quaHanNhapDiem, skillScoreDeadline, weekInfo } from '../platform/week.ts';
 import { addDays } from '../util.ts';
+import { overdueScoreBai, rowsFor } from '../worklist/metrics.ts';
+import { t } from '../../../shared/i18n/index.ts';
 
 export function chamSheet(
   p: Principal, classId: number,
@@ -382,6 +384,38 @@ export function noQuaHan(
     || (Number(y.quaHan) - Number(x.quaHan)) || (x.han ?? '9999').localeCompare(y.han ?? '9999')
     || (x.weekStart ?? '').localeCompare(y.weekStart ?? ''));
   return { dong, hanRieng };
+}
+
+/**
+ * UX-2 (1) "QUÁ HẠN CHẤM" của dải số Lịch Test — CÙNG tập với Tổng quan "Bài quá hạn" (`overdueScoreBai`, chỉ số `bai-qua-han-nhap-diem`):
+ * mọi ô có cờ quá hạn (cả ô thi tuần trước đang nằm ở khối 2), cả hai khung, cùng phạm vi quyền. "Lớp tôi dạy" / lớp đang lọc chỉ khoanh lớp;
+ * người có phân công xem "Lớp tôi dạy" đếm ô của mình, ô GV khác vào `khac` (OV-11e TE-7). Khác khối 1 (`noQuaHan`): khối chia theo tuần thi.
+ */
+export function oQuaHanCham(
+  p: Principal, o: { branchId?: number | null; phamVi?: PhamViLichTest | null; classId?: number | null }, today: string = demoToday(),
+): { ids: number[]; khac: number[]; lop: number } {
+  const coPhanCong = defaultWorkScope(p) === 'mine';
+  const cuaToi = coPhanCong && (o.phamVi ?? 'cua-toi') === 'cua-toi';
+  const lopCuaToi = new Set(p.assignments.filter((a) => activeAt(a, today)).map((a) => a.classId));
+  const r = overdueScoreBai(p, o.branchId ?? null, today);
+  const ids: number[] = [], khac: number[] = [];
+  const lop = new Set<number>();
+  for (const id of r.ids) {
+    const classId = r.lopCua.get(id)!;
+    if ((o.classId && classId !== o.classId) || (cuaToi && !lopCuaToi.has(classId))) continue;
+    if (cuaToi && !r.chiTiet.get(id)?.nguoi.includes(p.userId)) { khac.push(id); continue; }
+    ids.push(id);
+    lop.add(classId);
+  }
+  return { ids, khac, lop: lop.size };
+}
+/**
+ * Ô "Quá hạn chấm" của Lịch Test: số (`n`, `lop`, `khac`) và — khi bấm (`coDong`) — danh sách đúng các ô `oQuaHanCham` đếm (G-10), dòng như panel
+ * chỉ số "Bài quá hạn". Đường riêng (không gộp vào `lichTest`): tập bài quá hạn đọc cả chi nhánh, không làm nặng trang Lịch Test chính (TD2-a / TD3-a).
+ */
+export function dsQuaHanCham(p: Principal, o: Parameters<typeof oQuaHanCham>[1], today: string = demoToday(), coDong = true) {
+  const { ids, khac, lop } = oQuaHanCham(p, o, today);
+  return { n: ids.length, lop, khac: khac.length, tieuDe: t('Quá hạn chấm'), ...(coDong ? { rows: rowsFor('bai', ids, 'bai-qua-han-nhap-diem', p) } : {}) };
 }
 
 // ---------------------------------------------------------------- Lịch Test

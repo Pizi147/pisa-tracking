@@ -161,7 +161,7 @@ export default function App() {
   if (moi) return <Navigate to={moi} replace />;
 
   const nav = session.nav ?? NAV_RONG;
-  const items = khuVucHienThi(nav);
+  const items = khuVucHienThi(nav, dem?.cho ?? 0);
   const dangO = khuVucCuaDuong(location.pathname);
   const banChinh = LA_BAN_CHINH || !!session.banChinh;
   const gocNhin = session.gocNhin;

@@ -39,6 +39,15 @@ export const SCORING_MODE_LABEL: Record<ScoringMode, string> = {
 export const RATIO_PASS_THRESHOLD = 0.7;
 
 /**
+ * UX-2 (6): chú thích ⓘ của cột "Dưới kỳ vọng" (Fast Track) / "Chưa đạt" (lớp thường) — MỘT nguồn cho Tổng quan QL (bảng chi nhánh) và
+ * Lớp tôi dạy; nói rõ hai cột so với mốc khác nhau.
+ */
+export const GOI_Y_DUOI_KY_VONG: Record<'ft' | 'thuong', string> = {
+  ft: t('Fast Track: em có ít nhất một kỹ năng có band dưới kỳ vọng của CHÍNH em ở đợt Test mới nhất hợp lệ (kỳ vọng tính từ Target: MT1 = Target − 1.0, MT2 = Target − 0.5…). Khác "Chưa đạt" của lớp thường: lớp thường so với một ngưỡng chung, không theo Target.'),
+  thuong: t('Lớp thường: em có ít nhất một môn dưới {pct}% số câu đúng ở bài Test mới nhất hợp lệ — ngưỡng chung cho mọi em, không theo Target. Khác "Dưới kỳ vọng" của Fast Track: FT so band với kỳ vọng riêng từng em.', { pct: RATIO_PASS_THRESHOLD * 100 }),
+};
+
+/**
  * NGƯỠNG CŨ, giữ lại để ĐỌC ĐƯỢC LỊCH SỬ chứ không để tính.
  *
  * Owner nâng ngưỡng đạt của lớp thường từ 60% lên 70% sau PR15. Điểm gốc không bị sửa và

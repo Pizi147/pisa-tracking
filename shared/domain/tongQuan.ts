@@ -82,7 +82,7 @@ export function gomNhomViec<T extends ViecGom>(items: T[]): NhomViecXem<T>[] {
 export type MaCanXuLy =
   | 'bai-qua-han-nhap-diem' | 'pa-can-cap-nhat' | 'phoi-hop-qua-han'
   | 'van-hanh-can-quyet-dinh' | 'lop-thieu-gv-mon' | 'hv-ft-xong-mt-cuoi-chua-mt-ke' | 'hv-len-ft-chua-ky-vong'
-  | 'lop-chua-chot-len-ft';
+  | 'lop-chua-chot-len-ft' | 'case-xac-dinh-nguyen-nhan-qua-han';
 /** Nhãn trạng thái một dòng Cần xử lý (§7.3) — chữ, không chấm màu. */
 export type TrangThaiCanXuLy = 'qua-han' | 'can-lam';
 
@@ -102,6 +102,8 @@ export const CAN_XU_LY: readonly {
 }[] = [
   { metricId: 'bai-qua-han-nhap-diem', nhan: t('bài quá hạn chưa nhập điểm'), nut: 'Xem', cuaNguoiXem: false, quaHan: true },
   { metricId: 'pa-can-cap-nhat', nhan: t('PA chưa có Kết quả'), nut: 'Xem', cuaNguoiXem: false, quaHan: true },
+  /* UX-2 (2, chủ SP 16/10): Case quá hạn chốt PA trở lại Cần xử lý (UX-1 đổi tên "Case chưa chốt PA") — việc GV phụ trách Case đang trễ. */
+  { metricId: 'case-xac-dinh-nguyen-nhan-qua-han', nhan: t('Case chưa chốt PA quá hạn'), nut: 'Xem', cuaNguoiXem: false, quaHan: true },
   /* OV-12h: meeting CX / GĐCN quá 5 ngày chưa xác nhận — việc GVCN trễ, cùng tập với dòng Phối hợp SOS quá hạn ở Công việc. */
   { metricId: 'phoi-hop-qua-han', nhan: t('lượt có meeting CX quá hạn xác nhận'), nut: 'Xem', cuaNguoiXem: false, quaHan: true },
   /* PR-VAI-a Q8: bốn việc "của Bạn" — mỗi dòng một chỉ số gọi đúng hàm màn khác đang dùng. */

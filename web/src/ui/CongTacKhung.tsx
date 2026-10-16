@@ -5,7 +5,7 @@ import { t } from '@shared/i18n/index.ts';
  * CÔNG TẮC HAI KHUNG (MH4, K4-05, Q3, Q8) — `Fast Track · Lớp thường` (Test) hoặc `Tất cả · Fast Track · Lớp thường` (Công việc).
  * Một khung một bộ môn: không trộn môn hai khung (MH5). Nhớ theo máy VÀ theo người (localStorage, khoá `.u{userId}` — PR-S6F-b Q7: máy chung,
  * demo đổi vai; bọc try/catch — trang vẫn chạy khi không đọc được); tham số `loai` trên đường dẫn thắng (nơi gọi đọc URL trước `khungDaNho`).
- * Chỉ một khung có dữ liệu → không vẽ gì.
+ * Phạm vi người xem chỉ có một khung → không vẽ gì (UX-2: theo phạm vi, không theo dữ liệu trang; khung rỗng ghi "· 0").
  */
 export type KhungLoc = 'ft' | 'thuong' | 'tat-ca';
 type Trang = 'lich-test' | 'ke-hoach-test' | 'diem-theo-lop' | 'cong-viec' | 'hoc-vien-lop' | 'tong-quan' | 'phan-tich-gv';
@@ -14,7 +14,13 @@ type Trang = 'lich-test' | 'ke-hoach-test' | 'diem-theo-lop' | 'cong-viec' | 'ho
 let nguoiDung: number | null = null;
 /** PR-OV2a: bộ lọc nhớ THEO TỪNG VAI khi đổi góc nhìn — hậu tố `.v{vai}` cho mọi khoá nhớ theo người (khung, chi nhánh, Lịch Test). */
 let hauToVai = '';
-export const datNguoiDungKhung = (id: number | null, gocNhin: string | null = null) => { nguoiDung = id; hauToVai = gocNhin ? `.v${gocNhin}` : ''; };
+/** UX-2 (5): khung có lớp trong phạm vi người xem (phiên) — công tắc hiện theo đây, không theo dữ liệu trang. null = chưa biết (theo `dem`). */
+let khungCuaPhamVi: { ft: boolean; thuong: boolean } | null = null;
+export const datNguoiDungKhung = (id: number | null, gocNhin: string | null = null, khung: { ft: boolean; thuong: boolean } | null = null) => {
+  nguoiDung = id; hauToVai = gocNhin ? `.v${gocNhin}` : ''; khungCuaPhamVi = khung;
+};
+/** Phạm vi người xem có cả hai khung — trang không được ép bỏ khung đang rỗng (công tắc vẫn hiện, ghi "· 0"). */
+export const phamViCoHaiKhung = () => !!khungCuaPhamVi?.ft && !!khungCuaPhamVi.thuong;
 export const hauToGocNhin = () => hauToVai;
 const khoa = (trang: Trang) => `pisa.khung.${trang}${nguoiDung ? `.u${nguoiDung}` : ''}${hauToVai}`;
 const hopLe = (v: unknown): v is KhungLoc => v === 'ft' || v === 'thuong' || v === 'tat-ca';
@@ -39,7 +45,8 @@ export function CongTacKhung({ trang, value, onChange, dem, donVi = '', coTatCa 
   /** `chon` = ô chọn "Loại lớp: …" (Học viên & Lớp, K1 — không có hai chữ "Tất cả" cạnh nhau); mặc định phân đoạn như các trang Test. */
   kieu?: 'doan' | 'chon';
 }) {
-  const coDuLieu = (['ft', 'thuong'] as const).filter((k) => (dem?.[k] ?? 1) > 0);
+  /* UX-2 (5): hiện theo lớp trong phạm vi người xem; chưa biết phạm vi thì theo dữ liệu đang xem như cũ. */
+  const coDuLieu = khungCuaPhamVi ? (['ft', 'thuong'] as const).filter((k) => khungCuaPhamVi![k]) : (['ft', 'thuong'] as const).filter((k) => (dem?.[k] ?? 1) > 0);
   if (coDuLieu.length < 2) return null;
   const nhan = (ten: string, k: KhungLoc) => (dem?.[k] != null && donVi ? `${ten} · ${dem[k]} ${donVi}` : ten);
   if (kieu === 'chon') {

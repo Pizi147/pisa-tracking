@@ -104,14 +104,14 @@ export async function runTongQuanTests(t: YThucTestKit) {
 
   check('PR-Pa · Cần xử lý: bỏ dòng 0, tối đa 10; PR-DUYET bỏ "PA chờ duyệt" + "Case quá hạn xác định nguyên nhân" (thành thẻ); PR-VAI-a bỏ "2 lần Test", "Case thiếu PA", "Case chưa có người" → lớp thiếu GV môn', () => {
     const ma = d.CAN_XU_LY.map((x: any) => x.metricId);
-    for (const bo of ['case-chua-co-nguoi-phu-trach', 'hv-can-ho-tro-2-lan-chua-case', 'case-thieu-pa', 'case-xac-dinh-nguyen-nhan-qua-han', 'pa-cho-duyet', 'hv-can-xu-ly']) {
+    for (const bo of ['case-chua-co-nguoi-phu-trach', 'hv-can-ho-tro-2-lan-chua-case', 'case-thieu-pa', 'pa-cho-duyet', 'hv-can-xu-ly']) {   // UX-2 (2): case-xac-dinh-nguyen-nhan-qua-han trở lại Cần xử lý
       assert(!ma.includes(bo), `Cần xử lý không còn dòng ${bo}`);
     }
     assert(ma.includes('lop-thieu-gv-mon'), 'Có dòng lớp thiếu GV môn (K1-05)');
     assert(d.CAN_XU_LY.every((x: any) => !('denLoc' in x)), 'Không còn cơ chế denLoc');
     const dem = { 'pa-can-cap-nhat': 3, 'lop-thieu-gv-mon': 2, 'pa-cho-duyet': 1, 'case-thieu-pa': 4, 'case-xac-dinh-nguyen-nhan-qua-han': 5, 'hv-can-xu-ly': 6 };
     const co = d.sapCanXuLy(dem, true);
-    eq(co.map((x: any) => x.metricId).sort(), ['lop-thieu-gv-mon', 'pa-can-cap-nhat'], 'Q3: việc QL tự quyết không lặp ở Cần xử lý; dòng 0 bị bỏ');
+    eq(co.map((x: any) => x.metricId).sort(), ['case-xac-dinh-nguyen-nhan-qua-han', 'lop-thieu-gv-mon', 'pa-can-cap-nhat'], 'Q3: việc QL tự quyết không lặp ở Cần xử lý (UX-2: Case quá hạn trở lại); dòng 0 bị bỏ');
     eq(co.find((x: any) => x.metricId === 'lop-thieu-gv-mon').nhan, 'lớp thiếu GV môn', 'Chữ dòng lớp thiếu GV');
     const all = Object.fromEntries(d.CAN_XU_LY.map((x: any) => [x.metricId, 5]));
     assert(d.sapCanXuLy(all, true).length === d.CAN_XU_LY.length && d.CAN_XU_LY.length <= d.CAN_XU_LY_TOI_DA && d.CAN_XU_LY_TOI_DA === 10, 'Đủ dòng, trần 10');

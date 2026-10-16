@@ -643,10 +643,15 @@ function locKhung(id: string, r: MetricResult, program: ChuongTrinh | null): Met
  * giữ ô khi lớp thuộc chi nhánh được cấp HOẶC là lớp mình dạy. Người vừa dạy lớp vừa có quyền chi nhánh không được nới thành
  * cả chi nhánh của lớp mình chỉ dạy.
  */
-function overdueScoreBai(p: Principal, branchId: number | null, today: string): { ids: number[]; chiTiet: NonNullable<MetricResult['chiTiet']> } {
+export function overdueScoreBai(p: Principal, branchId: number | null, today: string): {
+  ids: number[]; chiTiet: NonNullable<MetricResult['chiTiet']>;
+  /** UX-2 (1): lớp của từng bài — Lịch Test "Quá hạn chấm" lọc theo lớp đang xem trên CHÍNH tập này. */
+  lopCua: Map<number, number>;
+} {
   const sc = scopeFor(p, PERMISSIONS.ATTEMPT_VIEW);
   const chiTiet: NonNullable<MetricResult['chiTiet']> = new Map();
-  if (sc.none) return { ids: [], chiTiet };
+  const lopCua = new Map<number, number>();
+  if (sc.none) return { ids: [], chiTiet, lopCua };
   const conn = db();
   let branches: number[] | null = null;
   if (branchId) branches = [branchId];
@@ -665,6 +670,7 @@ function overdueScoreBai(p: Principal, branchId: number | null, today: string): 
   const them = (x: (typeof cells)[number]) => {
     const id = baiId(x.attemptId, x.skill);
     ids.add(id);
+    lopCua.set(id, x.classId);
     const c = chiTiet.get(id) ?? chiTiet.set(id, { nguoi: [], han: [] }).get(id)!;
     if (x.userId !== null && !c.nguoi.includes(x.userId)) c.nguoi.push(x.userId);
     if (x.chamCheo) c.chamCheo = true;
@@ -686,7 +692,7 @@ function overdueScoreBai(p: Principal, branchId: number | null, today: string): 
       if (myClasses.has(x.classId) || myBranches.has(branchOf.get(x.classId) ?? -1)) them(x);
     }
   }
-  return { ids: [...ids].sort((a, b) => a - b), chiTiet };
+  return { ids: [...ids].sort((a, b) => a - b), chiTiet, lopCua };
 }
 
 /**
@@ -757,8 +763,14 @@ function metricSetGoc(
     case 'case-thieu-pa':
       /* Case CHỜ DUYỆT có `state` riêng — không quy chậm cho giáo viên (hợp đồng §2). */
       return done(openCases().filter((c: any) => c.state === 'no_plan').map((c: any) => c.id as number));
-    case 'case-xac-dinh-nguyen-nhan-qua-han':
-      return done(choDuyetCaseIds(openCases().map((c: any) => c.id as number), today, true));
+    case 'case-xac-dinh-nguyen-nhan-qua-han': {
+      const mo = openCases();
+      const ids = choDuyetCaseIds(mo.map((c: any) => c.id as number), today, true);
+      /* UX-2 (2): người giữ việc của dòng Cần xử lý = người phụ trách Case; hạn = hạn việc tiếp đã qua ("quá hạn n ngày"). */
+      const chu = new Map(mo.map((c: any) => [c.id as number, c.ownerUserId as number | null]));
+      const xl = xuLyCaseMany(ids, today);
+      return done(ids, { chiTiet: new Map(ids.map((id) => [id, { nguoi: chu.get(id) ? [chu.get(id)!] : [], han: xl.get(id)?.han ? [xl.get(id)!.han!] : [] }])) });
+    }
     case 'bai-qua-han-nhap-diem': {
       const r = overdueScoreBai(p, scope.branchId, today);
       return done(r.ids, { chiTiet: r.chiTiet });

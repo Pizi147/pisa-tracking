@@ -5,12 +5,15 @@ import { t } from '@shared/i18n/index.ts';
 export type OSo = 'da-cham' | 'con-phai-cham' | 'no';
 
 /**
- * DẢI SỐ của Lịch Test (PR-UX1, G-10; PR-LT3 Q1 còn ba ô) — số nào cũng bấm được và mở đúng khối tạo ra số đó: hai ô đầu → khối 2
- * (tuần hiện tại) hoặc khối 3 (tuần khác), ô ba → khối 1. Ba ô một hàng cả trên điện thoại. Số đã cộng sẵn ở máy chủ từ chính các hàng.
+ * DẢI SỐ của Lịch Test (PR-UX1, G-10; PR-LT3 Q1 còn ba ô) — số nào cũng bấm được và mở đúng TẬP tạo ra số đó: hai ô đầu → khối 2
+ * (tuần hiện tại) hoặc khối 3 (tuần khác); ô ba "Quá hạn chấm" (UX-2) = Tổng quan "Bài quá hạn" (gồm ô tuần trước nằm ở khối 2) → mở
+ * DANH SÁCH các ô đó, không mở một khối. Ba ô một hàng cả trên điện thoại. Số đã cộng sẵn ở máy chủ.
  * OV-11e (TE-7): người có phân công — số là bài của CHÍNH họ; bài GV khác ghi nhạt dưới số ("n bài của GV khác").
  */
-export function DaiSo({ tq, tenTuan, onBam }: {
+export function DaiSo({ tq, tenTuan, onBam, dangTaiNo = false }: {
   tq: TongQuanLich; tenTuan: string; onBam: (o: OSo) => void;
+  /** UX-2 (1): số "Quá hạn chấm" đến từ đường riêng — đang tải thì "…", không hiện tạm một số khác. */
+  dangTaiNo?: boolean;
 }) {
   return (
     <div className="grid grid-cols-3 gap-2" role="group" aria-label={t('Tiến độ chấm điểm')}>
@@ -21,8 +24,8 @@ export function DaiSo({ tq, tenTuan, onBam }: {
         {tq.conPhaiCham} <Don>{t('bài')}</Don>
         {tq.khac.con > 0 && <Khac n={tq.khac.con} />}
       </O>
-      <O onClick={() => onBam('no')} nhan={t('Quá hạn chấm')} mo={tq.no.bai === 0} mau={tq.no.bai > 0 ? 'text-late' : undefined}>
-        {tq.no.bai} <Don>{t('bài')}</Don>
+      <O onClick={() => onBam('no')} nhan={t('Quá hạn chấm')} mo={dangTaiNo || tq.no.bai === 0} mau={!dangTaiNo && tq.no.bai > 0 ? 'text-late' : undefined}>
+        {dangTaiNo ? '…' : tq.no.bai} <Don>{t('bài')}</Don>
         {tq.no.lop > 0 && <Don>{' '}{t('· {lop} lớp', { lop: tq.no.lop })}</Don>}
         {tq.khac.no > 0 && <Khac n={tq.khac.no} />}
       </O>
