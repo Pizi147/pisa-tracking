@@ -103,7 +103,7 @@ export function chipHocVien(p: Principal, f: { branchId?: number | null; phamVi?
   /* Thiếu thông tin: đúng cờ của danh sách Học viên & Lớp (cùng phạm vi trang đó mở ra). */
   if (dangHoc.length) {
     const ds = danhSachHocVienLop(p, { phamVi, branchId: phamVi === 'chi-nhanh' ? f.branchId : null });
-    ids.thieu_tt = ds.hocVien.filter((h) => h.loc.includes('thieu_tt')).map((h) => h.id);
+    ids.thieu_tt = [...new Set(ds.hocVien.filter((h) => h.loc.includes('thieu_tt')).map((h) => h.id))];   // UX-1: em học hai lớp một lần, như chip
   }
   return { phamVi, tong: em.size, ids, tatCa: [...em.keys()], lyDo, standing };
 }
