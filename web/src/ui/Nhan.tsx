@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { deadlineView, nhanQuaHan, shortDate, TONE_TRANG_THAI, type DeadlineKind } from '@shared/domain/index.ts';
+import { deadlineView, nhanQuaHan, shortDate, thuNgan, TONE_TRANG_THAI, type DeadlineKind } from '@shared/domain/index.ts';
 import { useNgayNghiepVu } from './ngayNghiepVu.ts';
 import { t } from '@shared/i18n/index.ts';
 
@@ -63,7 +63,6 @@ export function DauDuoi() {
   );
 }
 
-const THU = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
 const CHIP_HAN = 'inline-flex h-6 shrink-0 items-center gap-1 whitespace-nowrap rounded-full border px-2.5 text-[12.5px] font-bold tabular-nums';
 /** OV-12e: "⚠ n quá hạn" ở đầu panel số liệu — cùng hình chip hạn quá hạn. */
 export function ChipSoQuaHan({ n }: { n: number }) {
@@ -79,7 +78,7 @@ export function ChipHan({ loai, han }: { loai: DeadlineKind; han: string | null 
   return (
     <span title={v.text} className={`${CHIP_HAN} ${lop}`}>
       {v.tone === 'overdue' ? <><span aria-hidden>⚠</span>{t('Quá hạn {n} ngày', { n: v.daysOverdue ?? 0 })}</> : v.homNay ? t('Hạn hôm nay')
-        : t('Hạn {thu} {ngay}', { thu: THU[new Date(`${han.slice(0, 10)}T00:00:00Z`).getUTCDay()], ngay: shortDate(han, homNay) })}
+        : t('Hạn {thu} {ngay}', { thu: thuNgan(han), ngay: shortDate(han, homNay) })}
     </span>
   );
 }

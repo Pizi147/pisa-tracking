@@ -661,7 +661,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
         mine ? null : 'chưa ghi'].filter(Boolean).join(' — '),
       tieuDe: tuanCuoi ? `Kết quả cuối · ${tenPa}` : `Kết quả PA${duoiKyNang(iv.topic, ctCua(iv.eff_class_id))}`,
       phu: tuanCuoi ? `Kết quả cuối · ${tenPa}` : duoiKyNang(iv.topic, ctCua(iv.eff_class_id)).trim(),
-      actionLabel: tuanCuoi ? 'Kết quả cuối' : 'Kết quả',
+      actionLabel: tuanCuoi ? 'Kết quả cuối' : 'Kết quả PA',   // EN-e: một việc một tên — cùng tên nhóm Công việc
       /* PR-PA (§8): người giữ việc không xem được hồ sơ HV (vd. chủ Case, lớp mới chưa phân công môn) → Ngăn Case đứng riêng. */
       href: mine && !can(p, PERMISSIONS.STUDENT_VIEW, { studentId: iv.eff_student_id })
         ? duongCaseRieng(iv.case_id, { paId: iv.id, viec: 'ghi-ket-qua' })

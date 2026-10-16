@@ -39,12 +39,6 @@ export type CoordTurn = {
 };
 
 /**
- * K3-38 (PR-YT4): "CX / GĐCN meeting" của Phối hợp SOS KHÁC Meeting CX/GĐCN của Ý thức (cần QL duyệt) — nhãn ghi rõ "sau Mock" + chữ phụ
- * để GVCN không nhầm hai việc. Chỉ đổi chữ hiển thị, không đổi mã.
- */
-const nhanMeetingSauMock = (k: string) => t('Meeting CX/GĐCN (sau Mock) · {x}', { x: k === 'cx_meeting_family' ? 'HV / PH' : 'HV' });
-
-/**
  * DANH SÁCH `Phối hợp SOS` (§7.2/§7.3, prototype v3 — PR-HV) — dùng chung cho tab lớp (`cot1="hocVien"`: cột 1 là tên
  * học viên) và tab hồ sơ học viên (`cot1="luot"`: cột 1 là `MT2 · SOS 2`). Mỗi lượt một thẻ `TheSos`.
  */
@@ -165,7 +159,7 @@ function ActionRow({ a, canAct, onChanged }: { a: CoordAction; canAct: boolean; 
     <div className="border-t first:border-t-0" style={{ borderColor: 'var(--line)' }}>
       <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 py-2 items-start">
         <span className="min-w-0 break-words">
-          <span className="block text-sm text-slate-200">{laMeetingCx(a.kind) ? nhanMeetingSauMock(a.kind) : a.name}</span>
+          <span className="block text-sm text-slate-200">{laMeetingCx(a.kind) ? COORDINATION_KIND_LABEL[a.kind as CoordinationKind] : a.name}</span>
           {laMeetingCx(a.kind) && <span className="block text-xs text-slate-500 mt-0.5">{t('Việc phối hợp sau Mock — không phải xử lý vi phạm, không cần QL duyệt')}</span>}
           {dongPhu && <span className="block text-xs text-slate-500 mt-0.5">{dongPhu}</span>}
           {/* OV-12h: meeting CX còn Cần xử lý — hạn 5 ngày từ lúc tạo, quá hạn ⚠ (cùng `<Han>` mọi nơi). */}
@@ -345,7 +339,7 @@ function AddCoordinationForm({ attemptId, existing, onClose, onChanged }: {
       <div className="flex flex-wrap gap-1.5">
         {COORDINATION_KINDS.map((k) => (
           <NutChon key={k} nho chon={kind === k} disabled={k !== 'other' && existing.includes(k)} onClick={() => setKind(k)}>
-            {laMeetingCx(k) ? nhanMeetingSauMock(k) : COORDINATION_KIND_LABEL[k as CoordinationKind]}
+            {COORDINATION_KIND_LABEL[k as CoordinationKind]}
           </NutChon>
         ))}
       </div>

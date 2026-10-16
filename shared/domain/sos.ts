@@ -108,8 +108,9 @@ export const COORDINATION_KIND_LABEL: Record<CoordinationKind, string> = {
   talk_student: t('Trao đổi ngắn với HV'),
   talk_family: t('Trao đổi với gia đình'),
   gvcn_meeting: t('GVCN meeting với HV'),
-  cx_meeting_student: t('CX / GĐCN meeting với HV'),
-  cx_meeting_family: t('CX / GĐCN meeting với HV / PH'),
+  /* EN-e: cùng tên ở Công việc (K3-38: "sau Mock" tách khỏi Meeting CX/GĐCN của Ý thức). */
+  cx_meeting_student: t('Meeting CX/GĐCN (sau Mock) · {x}', { x: 'HV' }),
+  cx_meeting_family: t('Meeting CX/GĐCN (sau Mock) · {x}', { x: 'HV / PH' }),
   other: t('Khác'),
   bao_ph_tvv: t('Báo phụ huynh qua TVV'),
 };

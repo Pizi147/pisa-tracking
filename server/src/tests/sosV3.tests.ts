@@ -91,7 +91,7 @@ export async function runSosV3Tests(t: YThucTestKit) {
     assert(JSON.stringify(domain.COORDINATION_KINDS) === JSON.stringify(
       ['talk_student', 'talk_family', 'gvcn_meeting', 'cx_meeting_student', 'cx_meeting_family', 'other', 'bao_ph_tvv']), `Loại sai: ${domain.COORDINATION_KINDS}`);
     assert(JSON.stringify(domain.COORDINATION_KINDS.slice(0, 6).map((k: string) => domain.COORDINATION_KIND_LABEL[k])) === JSON.stringify([
-      'Trao đổi ngắn với HV', 'Trao đổi với gia đình', 'GVCN meeting với HV', 'CX / GĐCN meeting với HV', 'CX / GĐCN meeting với HV / PH', 'Khác']),
+      'Trao đổi ngắn với HV', 'Trao đổi với gia đình', 'GVCN meeting với HV', 'Meeting CX/GĐCN (sau Mock) · HV', 'Meeting CX/GĐCN (sau Mock) · HV / PH', 'Khác']),
     'Nhãn sáu loại sai');
     assert(!domain.COORDINATION_KINDS.some((k: string) => /report|family_report/.test(k)), 'Không dùng Report cho gia đình');
   });
