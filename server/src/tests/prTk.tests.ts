@@ -328,7 +328,7 @@ export async function runPrTkTests(t: YThucTestKit) {
     conn.prepare('UPDATE learning_cycles SET exam_month = ? WHERE id = ?').run(new Date(Date.parse(NGAY) + 40 * 86400000).toISOString().slice(0, 7), a.cy);
     assert(viec(gvcn).length === 0, 'tháng thi còn tương lai → chưa hiện');
     conn.prepare('UPDATE learning_cycles SET exam_month = ? WHERE id = ?').run(thang, a.cy);
-    thiThatSvc.datKetQuaThiThat(gvcn, a.cy, { ...NHAP4, ngayThi: t.addDays(NGAY, -1) });   // OV-13q: thi hôm nay thì mai mới nhắc — ngày thi đã qua
+    thiThatSvc.datKetQuaThiThat(gvcn, a.cy, { ...NHAP4, ngayThi: null });   // OV-13q: thi hôm nay thì mai mới nhắc — không ghi ngày thi thật, ngày thi = tháng dự kiến đã qua
     assert(viec(gvcn).length === 0, 'đủ 4 kỹ năng → mất');
     thiThatSvc.datKetQuaThiThat(gvcn, a.cy, { s: null });
     assert(viec(gvcn).length === 1, 'xoá S → hiện lại');
