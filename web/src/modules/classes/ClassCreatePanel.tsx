@@ -15,7 +15,7 @@ import {
   type LoiPhanCong, type LoiTruong, type NguoiChon, type OPhanCong,
 } from '@shared/domain/index.ts';
 
-type Branch = { id: number; code: string; name: string };
+type Branch = { id: number; code: string; name: string; phanCong?: boolean };
 type Programme = {
   code: string; name: string; weeks: number | null; skills: readonly string[]; checkpoints: readonly { kind: string; studyWeek: number }[];
   /** OV-6b2: liên tục — Checkpoint mỗi n tuần. */
@@ -57,14 +57,16 @@ export function ClassCreatePanel({ onClose, onDone, macDinh, moHoSo }: {
   /* Lưới giữ ở đây: đổi qua lại Một lớp / Nhiều lớp không mất dòng đang soạn. */
   const [luoi, setLuoi] = useState<TrangThaiLuoi | null>(null);
 
-  const teachers = useApi<{ id: number; name: string; classCount: number; skills?: string[] }[]>(
-    branchId ? `/ref/teachers?branchId=${branchId}` : null, [branchId]);
   const lopDaCo = useApi<{ code: string }[]>(branchId ? `/ref/classes?branchId=${branchId}` : null, [branchId]);
 
   /* A2 §2.5: người tạo chỉ có một chi nhánh → chọn sẵn. */
   const dsCn = branches.data ?? [];
   useEffect(() => { if (branchId === null && dsCn.length === 1) setBranchId(dsCn[0].id); }, [branches.data, branchId]); // eslint-disable-line react-hooks/exhaustive-deps
   const branch = dsCn.find((b) => b.id === branchId) ?? null;
+  /* OV-13p: khối Phân công theo cờ máy chủ `phanCong` (`class.assign` ở chi nhánh) — TVV / CX, GV được cấp riêng `class.create` không có. */
+  const ganDuoc = !!branch?.phanCong;
+  const teachers = useApi<{ id: number; name: string; classCount: number; skills?: string[] }[]>(
+    ganDuoc && branchId ? `/ref/teachers?branchId=${branchId}` : null, [branchId, ganDuoc]);
 
   const ct = kieu === 'FT' ? 'FT' : chuongTrinh;
   const lt = kieu === 'FT' ? loTrinh : null;
@@ -78,7 +80,7 @@ export function ClassCreatePanel({ onClose, onDone, macDinh, moHoSo }: {
   useEffect(() => {
     setChon((c) => Object.fromEntries(Object.entries(c).filter(([k]) => khoaO.split('|').includes(k))));
   }, [khoaO]);
-  const slots = slotsTuO(oList, chon);
+  const slots = ganDuoc ? slotsTuO(oList, chon) : [];
 
   const ma = branch && !kiemSoLop(so) ? ghepMaLop(branch.code, ct, lt, so) : null;
   const trung = !!ma && (lopDaCo.data ?? []).some((l) => chuanHoaMaLop(l.code) === chuanHoaMaLop(ma));
@@ -121,8 +123,6 @@ export function ClassCreatePanel({ onClose, onDone, macDinh, moHoSo }: {
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
   };
 
-  /* Không có `class.assign` (GV được cấp riêng `class.create`): máy chủ trả 403 danh sách GV → ẩn phân công, không báo lỗi. */
-  const ganDuoc = teachers.error?.status !== 403;
 
   const nutCheDo = macDinh ? null : (
     <PhanDoan nhan="Số lớp tạo" giaTri={cheDo} muc={[{ v: 'mot', nhan: 'Một lớp' }, { v: 'nhieu', nhan: 'Nhiều lớp' }]}

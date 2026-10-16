@@ -12,7 +12,7 @@ import {
   themDongGiong, type LoiDong, type OPhanCong, type TruongDongTaoLop,
 } from '@shared/domain/index.ts';
 
-type Branch = { id: number; code: string; name: string };
+type Branch = { id: number; code: string; name: string; phanCong?: boolean };
 type Programme = { code: string; skills: readonly string[] };
 type GiaoVien = { id: number; name: string; classCount: number };
 type O = TruongDongTaoLop | 'chung';
@@ -91,7 +91,8 @@ export function LuoiTaoLop({ cheDo, luoi, setLuoi, branches, onClose }: {
   const ds = luoi.dong;
   const cnCua = (d: DongLuoi) => branches.find((b) => b.id === d.branchId);
   const maCn = useTheoChiNhanh<{ code: string }[]>('/ref/classes', ds.map((d) => d.branchId));
-  const gvCn = useTheoChiNhanh<GiaoVien[]>('/ref/teachers', ds.map((d) => d.branchId));
+  /* OV-13p: chỉ hỏi GV ở chi nhánh có `phanCong` (cờ máy chủ, `class.assign`) — TVV / CX không thấy ô phân công. */
+  const gvCn = useTheoChiNhanh<GiaoVien[]>('/ref/teachers', ds.map((d) => (cnCua(d)?.phanCong ? d.branchId : null)));
 
   const kyNang = (ct: string): string[] => {
     if (ct === 'FT') return [...ENTRY_SKILLS];
@@ -167,7 +168,7 @@ export function LuoiTaoLop({ cheDo, luoi, setLuoi, branches, onClose }: {
     const cn = cnCua(d);
     const ma = cn && !kiemSoLop(d.so) ? ghepMaLop(cn.code, d.chuongTrinh, ltCua(d), d.so) : null;
     const oList = oCua(d.chuongTrinh);
-    const coGv = d.branchId !== null && Array.isArray(gvCn[d.branchId]);
+    const coGv = d.branchId !== null && !!cn?.phanCong && Array.isArray(gvCn[d.branchId]);
     const slots = coGv ? slotsTuO(oList, d.chon) : [];
     const loiPc = kiemPhanCong(d.chuongTrinh, kyNang(d.chuongTrinh), slots);
     const loi: LoiO = {};

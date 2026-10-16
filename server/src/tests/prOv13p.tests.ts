@@ -113,6 +113,11 @@ export async function runPrOv13pTests(t: YThucTestKit) {
       assert(r.status === 403, `TVV kèm phân công: ${r.status}`);
       const ref = await goi('GET', '/ref/branches?muc=tao-lop', tv);
       assert(ref.status === 200 && ref.json.map((b: any) => b.id).join() === String(CP), `chi nhánh tạo lớp của TVV: ${JSON.stringify(ref.json)}`);
+      /* Cờ khối Phân công của form "+ Lớp mới": TVV / CX false ở mọi chi nhánh, QL true ở chi nhánh mình. */
+      for (const [ten, ck, mong] of [['TVV', tv, false], ['CX', cx, false], ['QL', ql, true]] as const) {
+        const b = await goi('GET', '/ref/branches?muc=tao-lop', ck);
+        assert(b.status === 200 && b.json.length > 0 && b.json.every((x: any) => x.phanCong === mong), `${ten} phanCong: ${JSON.stringify(b.json)}`);
+      }
     });
 
     await checkAsync('OV13p-3 · thêm HV: TVV / CX một em + lô (xem trước + lưu) vào lớp trong phạm vi 200; TVV lớp ngoài chi nhánh 403; GVBM / Admin 403; GVCN lớp mình, QL, QT vẫn 200', async () => {
