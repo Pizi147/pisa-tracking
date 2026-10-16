@@ -193,7 +193,7 @@ export async function runPrTocTests(t: YThucTestKit) {
   check('TOC rà (3) · khoá idempotency gắn người + lớp: người khác / lớp khác gửi cùng khoá không nhận lại kết quả lô cũ', () => {
     const bcFt = (conn.prepare(`SELECT c.id FROM classes c JOIN branches b ON b.id = c.branch_id
       WHERE b.code = 'BC' AND c.is_fast_track = 1 AND c.status = 'active' ORDER BY c.id LIMIT 1`).get() as any).id;
-    const dong = (ten: string) => [{ fullName: ten, dob: '2010-01-01', email: 'khoa@demo.test' }];
+    const dong = (ten: string) => [{ fullName: ten, dob: '2010-01-01', email: `khoa.${ten.slice(-1).toLowerCase()}@demo.test` }];   // OV-13f: email không trùng
     const a = intake.commitIntake(P.admin, { classId: ft, idempotencyKey: 'toc-ra-3', rows: dong('Khoá A') });
     const a2 = intake.commitIntake(P.admin, { classId: ft, idempotencyKey: 'toc-ra-3', rows: dong('Khoá A') });
     assert(a.added === 1 && JSON.stringify(a2.studentIds) === JSON.stringify(a.studentIds), 'cùng người, cùng lớp: phải trả kết quả cũ');
