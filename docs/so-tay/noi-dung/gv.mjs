@@ -41,7 +41,7 @@ export const GV = {
       loi: [['Gõ 6,5 ở ô L / R', 'Dùng dấu chấm: 6.5 (hoặc gõ số câu đúng).'], ['Lưu không được vì thiếu nhận xét', 'Ghi nhận xét từ 10 ký tự; ô dưới kỳ vọng chọn nhóm nguyên nhân.'], ['Dán cả cột từ Excel', 'Lưới không nhận dán nhiều ô — gõ từng ô (phụ lục J).']],
     },
     {
-      ten: '3. Xác nhận Case / PA', ai: 'GVBM đúng kỹ năng (Quản lý làm thay được); GVCN xác nhận Case lớp thường', han: '<b>5 ngày</b> từ ngày chốt lượt, tính cả ngày đầu; SOS 3 / Gấp: <b>3 ngày</b>',
+      ten: '3. Xác nhận Case / PA', ai: 'GVBM đúng kỹ năng (Quản lý làm thay được); lớp thường sau Progress Test: Xác nhận Case', han: '<b>5 ngày</b> từ ngày chốt lượt, tính cả ngày đầu; SOS 3 / Gấp: <b>3 ngày</b>',
       o: '<kbd>Công việc</kbd> › nhóm <kbd>Case học thuật</kbd>, dòng "Xác nhận PA · kỹ năng · tên em"',
       anh: { id: 'gv-xac-nhan-pa', chu: ['Nội dung PA: hướng dẫn, trọng tâm, ai thực hiện.', '<kbd>Xác nhận PA</kbd> — PA bắt đầu chạy.', '<kbd>Đề xuất PA khác…</kbd> nếu muốn cách khác (Quản lý duyệt).'] },
       buoc: ['Em dưới kỳ vọng ở MT. Lượt chưa chốt: Case <b>tạm</b> "Chờ chốt SOS" — chưa có hạn, chưa có việc. Lượt chốt: Case + PA theo quy chế.', 'Bấm dòng "Xác nhận PA": ghi <b>Nội dung</b>, kiểm <b>Người dạy</b>, <b>Bắt đầu</b>, rồi <kbd>Xác nhận PA</kbd>.', 'Nhiều em cùng lớp, cùng tuần thi, cùng mức SOS: dòng gộp → <kbd>Xác nhận PA cùng lúc</kbd> (phụ lục H).', 'Muốn cách khác: <kbd>Đề xuất PA khác…</kbd> → <kbd>Gửi Quản lý duyệt</kbd>; Case thành "Chờ duyệt đổi PA". Em không cần theo dõi: <kbd>Không cần theo dõi…</kbd>.'],
@@ -92,7 +92,7 @@ export const GV = {
       ['Speaking chấm chéo', 'Không tính quá hạn (có số bài chờ)', 'GV Speaking cùng chi nhánh'],
       ['Nhận xét + nhóm nguyên nhân ô MT', 'Cùng lúc nhập điểm (ô thiếu nhận xét = việc chưa xong)', 'Người chấm'],
       ['Xác nhận PA', '5 ngày từ ngày chốt lượt (SOS 3 / Gấp: 3 ngày)', 'GVBM đúng kỹ năng'],
-      ['Xác nhận Case sau Progress Test (lớp thường)', '5 ngày', 'GV / GVCN'],
+      ['Xác nhận Case sau Progress Test (lớp thường)', '5 ngày', 'GV đúng kỹ năng'],
       ['Ghi kết quả PA', 'Mỗi 2 tuần, hết Thứ Ba sau kỳ', 'Người dạy PA'],
       ['Xử lý vi phạm', '5 ngày từ ngày ghi nhận', 'GVCN'],
       ['Phối hợp SOS', '5 ngày', 'GVCN'],
