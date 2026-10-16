@@ -1,7 +1,8 @@
 import { db } from '../db.ts';
 import { can, type Principal } from '../permissions.ts';
 import { badRequest, forbidden, notFound } from '../util.ts';
-import { nhanHanhDongNhatKy, PERMISSIONS, STUDENT_STATUS_LABEL } from '../../../shared/domain/index.ts';
+import { NHAN_SAU_THI, nhanHanhDongNhatKy, PERMISSIONS, STUDENT_STATUS_LABEL, tuanLich, type LuaChonSauThi } from '../../../shared/domain/index.ts';
+import { demoToday } from '../demoConfig.ts';
 
 /**
  * OV-13j — LỊCH SỬ SỬA THÔNG TIN HỌC VIÊN (chủ SP 15/10): ai sửa gì, cũ → mới. Đọc `audit_logs` của em (entity `student`) và các lộ trình của em
@@ -10,7 +11,7 @@ import { nhanHanhDongNhatKy, PERMISSIONS, STUDENT_STATUS_LABEL } from '../../../
  */
 
 export type LoaiLichSu = 'thong-tin' | 'target' | 'trang-thai';
-type Kieu = 'chu' | 'ngay' | 'thang' | 'band' | 'co' | 'trangThai' | 'nguoi' | 'chiNhanh' | 'tuan' | 'lop';
+type Kieu = 'chu' | 'ngay' | 'thang' | 'band' | 'co' | 'trangThai' | 'nguoi' | 'chiNhanh' | 'tuan' | 'lop' | 'buocTiep' | 'tuanNgay';
 
 /** Trường hiện được: tên cột (camelCase trong nhật ký đổi về snake_case) → [tên hiển thị, nhóm lọc, kiểu giá trị]. Thứ tự = thứ tự hiện. */
 const TRUONG: Record<string, [string, LoaiLichSu, Kieu]> = {
@@ -40,6 +41,9 @@ const TRUONG: Record<string, [string, LoaiLichSu, Kieu]> = {
   start_period_id: ['Tuần bắt đầu', 'target', 'tuan'],
   status: ['Trạng thái', 'trang-thai', 'trangThai'],
   archived_at: ['Lưu trữ', 'trang-thai', 'ngay'],
+  /* OV-13m: Bước tiếp sau thi (`cycle.buoc_tiep`). */
+  buoc_tiep: ['Bước tiếp', 'trang-thai', 'buocTiep'],
+  buoc_tiep_hen: ['Hẹn bắt đầu', 'trang-thai', 'tuanNgay'],
 };
 const THU_TU = Object.keys(TRUONG);
 const BIET_DANH: Record<string, string> = { target: 'target_score', targetScore: 'target_score' };
@@ -47,7 +51,7 @@ const cot = (k: string) => BIET_DANH[k] ?? k.replace(/[A-Z]/g, (c) => `_${c.toLo
 
 /** Việc được đọc. Nhật ký `learning_cycle` của lộ trình (cycle.status…) dùng `status` khác nghĩa — chỉ đọc trường của các việc dưới đây. */
 const HANH_DONG = ['student.create', 'student.update', 'student.status', 'student.rejoin', 'student.rejoin_undo', 'student.finish_undo', 'student.pause_undo',
-  'student.archive', 'student.unarchive', 'student.transfer', 'cycle.create', 'cycle.update', 'cycle.target.revise', 'cycle.baseline.set', 'cycle.baseline.clear'];
+  'student.archive', 'student.unarchive', 'student.transfer', 'cycle.create', 'cycle.update', 'cycle.target.revise', 'cycle.baseline.set', 'cycle.baseline.clear', 'cycle.buoc_tiep'];
 /** Việc tự nói nguồn (chữ của Nhật ký Quản trị); sửa thường thì không ghi nguồn. */
 const CO_NGUON = new Set(['student.rejoin', 'student.rejoin_undo', 'student.finish_undo', 'student.pause_undo', 'student.transfer', 'cycle.create']);
 const BO_QUA_CYCLE = new Set(['status']);   // trạng thái lộ trình ≠ trạng thái học của em
@@ -160,6 +164,8 @@ function hien(c: string, v: unknown, ten: BangTen): string | null {
     case 'thang': return /^\d{4}-\d{2}$/.test(s) ? `${s.slice(5, 7)}/${s.slice(0, 4)}` : s;
     case 'band': return Number.isFinite(Number(v)) ? Number(v).toFixed(1) : s;
     case 'trangThai': return STUDENT_STATUS_LABEL[s as keyof typeof STUDENT_STATUS_LABEL] ?? s;
+    case 'buocTiep': return NHAN_SAU_THI[s as LuaChonSauThi] ?? s;
+    case 'tuanNgay': return tuanLich(s, demoToday());
     case 'nguoi': case 'chiNhanh': case 'tuan': case 'lop': return ten[kieu].get(Number(v)) ?? `#${s}`;
     default: return s;
   }

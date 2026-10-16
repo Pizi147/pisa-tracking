@@ -7,8 +7,8 @@ export async function runPrTkTests(t: YThucTestKit) {
   console.log('\nPR-TK · Tổng kết lộ trình');
 
   // ------------------------------------------------------------------ TK-1 · luật thuần
-  check('TK-1 · nhãn lý do đóng đủ 8 khoá, chữ trùng END_KIND_LABEL', () => {
-    assert(d.LY_DO_DONG.length === 8 && d.LY_DO_DONG.every((k: string) => typeof d.LY_DO_DONG_NHAN[k] === 'string'), 'đủ 8 khoá');
+  check('TK-1 · nhãn lý do đóng đủ 9 khoá (OV-13m: + Tạm dừng sau thi), chữ trùng END_KIND_LABEL', () => {
+    assert(d.LY_DO_DONG.length === 9 && d.LY_DO_DONG.every((k: string) => typeof d.LY_DO_DONG_NHAN[k] === 'string'), 'đủ 9 khoá');
     for (const [lyDo, endKind] of [['len_lop', 'len_lop'], ['hoc_lai', 'hoc_lai'], ['sang_ft', 'sang_ft'], ['chuyen_lop', 'chuyen_lop'], ['ket_thuc', 'ket_thuc']]) {
       assert(d.LY_DO_DONG_NHAN[lyDo] === d.END_KIND_LABEL[endKind], `${lyDo}: ${d.LY_DO_DONG_NHAN[lyDo]} ≠ ${d.END_KIND_LABEL[endKind]}`);
     }

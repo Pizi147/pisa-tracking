@@ -382,6 +382,8 @@ CREATE TABLE learning_cycles (
   thi_that_khong_thi INTEGER NOT NULL DEFAULT 0, thi_that_nhap_boi INTEGER, thi_that_nhap_luc TEXT,
   -- OV-8a: BƯỚC TIẾP SAU THI do QL chọn (ket_thuc | hoc_tiep | hoc_lai), ngày nghiệp vụ, người chọn, dữ liệu hoàn tác (JSON).
   buoc_tiep TEXT, buoc_tiep_luc TEXT, buoc_tiep_boi INTEGER, buoc_tiep_json TEXT,
+  -- OV-13m: lựa chọn thêm tam_dung | lo_trinh_moi (ket_thuc = Thôi học); Thứ Hai "Hẹn bắt đầu" lộ trình mới (NULL = không hẹn / đã bắt đầu).
+  buoc_tiep_hen TEXT,
   UNIQUE (student_id, seq)
 );
 

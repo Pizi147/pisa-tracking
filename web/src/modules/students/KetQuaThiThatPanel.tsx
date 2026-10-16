@@ -11,6 +11,7 @@ import { ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { MONTH_CODE, hienTargetKck, ketQuaThiThat, ngay } from '@shared/domain/index.ts';
 import { laBand } from './StudentPlanPanel.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
+import { PanelBuocTiep } from './PanelBuocTiep.tsx';
 
 const KY_NANG = ['l', 'r', 'w', 's'] as const;
 const fmt = (v: number | null | undefined) => (v === null || v === undefined ? '' : v.toFixed(1));
@@ -38,12 +39,18 @@ export function KetQuaThiThatPanel({ cycleId, studentName, lop, quayLai, onClose
   const [form, setForm] = useState<{ ngay: string; l: string; r: string; w: string; s: string; khongThi: boolean; ghiChu: string } | null>(null);
   const [busy, setBusy] = useState(false);
   const [goc, setGoc] = useState<string | null>(null);
+  /* OV-13m: lưu xong → panel đổi TẠI CHỖ thành "Bước tiếp" (kết quả còn một dòng "✓ … · Sửa"); Sửa → về form, chữ đã lưu giữ nguyên. */
+  const [buocTiep, setBuocTiep] = useState(false);
   const lf = useLoiForm();
 
   /* Nạp giá trị đang lưu MỘT LẦN — tải lại nền không được xoá điều người dùng đang gõ. */
   if (c && !form) {
     const f = { ngay: c.thi_that_ngay ?? '', l: fmt(c.thi_that_l), r: fmt(c.thi_that_r), w: fmt(c.thi_that_w), s: fmt(c.thi_that_s), khongThi: !!c.thi_that_khong_thi, ghiChu: c.outcome_note ?? '' };
     setForm(f); setGoc(JSON.stringify(f));
+  }
+  if (buocTiep) {
+    return <PanelBuocTiep cycleId={cycleId} hocVien={c ? { id: c.student_id, ten: studentName } : null} lop={lop} quayLai={quayLai}
+      onSuaKetQua={() => { setBuocTiep(false); reload(); }} onClose={() => { onDone(); onClose(); }} />;
   }
   if (error) return <KhungPanel tieuDe={t('Kết quả thi thật')} hocVien={studentName} lop={lop} quayLai={quayLai} rong={quayLai ? 'rong' : undefined} onDong={onClose}><ErrorState message={error.message} hint={error.hint} onRetry={reload} /></KhungPanel>;
   if (!c || !form) return <KhungPanel tieuDe={t('Kết quả thi thật')} hocVien={studentName} lop={lop} quayLai={quayLai} rong={quayLai ? 'rong' : undefined} onDong={onClose}><Skeleton rows={5} /></KhungPanel>;
@@ -69,9 +76,12 @@ export function KetQuaThiThatPanel({ cycleId, studentName, lop, quayLai, onClose
       await api.put(`/cycles/${cycleId}/outcome`, form.khongThi
         ? { khongThi: true, ghiChu: form.ghiChu }
         : { khongThi: false, ngayThi: form.ngay || null, ...diem, ghiChu: form.ghiChu });
-      invalidate('/students'); invalidate('/lo-trinh'); invalidate('/classes'); invalidate('/hoc-vien-lop'); invalidate('/work');
-      toast.push('ok', t('Đã lưu'));
-      onDone(); onClose();
+      invalidate('/students'); invalidate('/lo-trinh'); invalidate('/classes'); invalidate('/hoc-vien-lop'); invalidate('/work'); invalidate('/my-work'); invalidate('/cycles');
+      const kqMoi = form.khongThi || KY_NANG.every((k) => form[k].trim() !== '');
+      setGoc(JSON.stringify(form));
+      /* Đủ kết quả (4 kỹ năng hoặc Không thi) → Bước tiếp tại chỗ; chưa đủ → lưu như cũ rồi đóng. */
+      if (kqMoi) setBuocTiep(true);
+      else { toast.push('ok', t('Đã lưu')); onDone(); onClose(); }
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
   };
 

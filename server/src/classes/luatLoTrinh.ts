@@ -7,7 +7,7 @@ import { demoToday } from '../demoConfig.ts';
 import { badRequest, notFound, nowIso } from '../util.ts';
 import { can, require_, type Principal } from '../permissions.ts';
 import { addJourney, notify, writeAudit, writeAuditLo } from '../platform/audit.ts';
-import { chuyenCaseSangLoTrinh, closeCasesOnProgrammeSwitch, programmeOfCase } from '../cases/systemClose.ts';
+import { chuyenCaseSangLoTrinh, closeCasesBySystem, closeCasesOnProgrammeSwitch, programmeOfCase } from '../cases/systemClose.ts';
 import { banGiaoPaQuyChe, datLaiHanCase } from '../cases/sosAuto.ts';
 import { taoMtMacDinh, taoMtMacDinhLo } from '../fasttrack/mtMacDinh.ts';
 import { classProgressMany, mocKetKhoa } from './schedule.ts';
@@ -350,13 +350,18 @@ export function apDungMotDong(p: Principal, d: DongApDung): { luat: LuatDoiLop |
    * GVCN gửi `mucTieu` thẳng qua API lúc FT → FT mở lộ trình mới thì BỎ QUA — giữ target cũ như giao diện.
    */
   const mucTieu = luat.canMucTieu || can(p, PERMISSIONS.CYCLE_EDIT, { studentId: d.sid }) ? d.mucTieu : undefined;
-  if (luat.khoa === 'dong-mo') {
+  /* OV-13m ("Điểm khi chuyển", chủ SP 15/10): lộ trình ĐÃ XONG (có kết quả thi, Bước tiếp = Lộ trình mới) → đóng hẳn, mở lộ trình MỚI ở lớp đích, điểm cũ ở lại;
+     lộ trình chưa xong giữ luật thường (FT → FT chạy tiếp). Em vừa Quay lại học sau Tạm dừng (không còn lộ trình chạy) → cũng mở lộ trình mới. Target của lệnh do QL / TVV
+     đặt lúc chọn Bước tiếp. */
+  const cuoiCycle = curCycle ?? (denLop.ft ? conn.prepare('SELECT * FROM learning_cycles WHERE student_id = ? ORDER BY seq DESC LIMIT 1').get(d.sid) as any : null);
+  const sauThi = !!cuoiCycle && cuoiCycle.buoc_tiep === 'lo_trinh_moi' && (!!curCycle || denLop.ft);
+  if (luat.khoa === 'dong-mo' || sauThi) {
     if (curCycle) conn.prepare(`UPDATE learning_cycles SET status = 'completed', ended_at = ? WHERE id = ?`).run(d.ngay, curCycle.id);
     /* PR-CL (B4.4, §7 "chuyển từ FT: Target giữ như cũ", Q1): FT → thường giữ Target / KCK của lộ trình FT — chỉ nhánh này (Lưu trữ "Học lại" không đổi). */
     const veThuong = tuLop.ft && !denLop.ft && !!curCycle;
     const { moiId } = moLoTrinhMoi(p, {
-      sid: d.sid, ngay: d.ngay, toClass, tuLop, denLop, cuCycle: curCycle, thangThi: d.thangThi,
-      target: mucTieu ?? (veThuong ? curCycle.target_score ?? null : null), kck: veThuong && mucTieu == null && !!curCycle.khong_cam_ket,
+      sid: d.sid, ngay: d.ngay, toClass, tuLop, denLop, cuCycle: curCycle ?? cuoiCycle, thangThi: d.thangThi,
+      target: (sauThi ? d.mucTieu : mucTieu) ?? (veThuong ? curCycle.target_score ?? null : null), kck: veThuong && mucTieu == null && !!curCycle.khong_cam_ket,
     });
     /* PR-MT0 (T5b): từ lớp thường — sang FT thì MT0 thành mốc đầu vào lộ trình mới; hướng khác thì MT0 chưa điểm huỷ. */
     if (!tuLop.ft && curCycle) noiMt0VaoFt(p.userId, [{ sid: d.sid, cuCycleId: curCycle.id, ftCycleId: denLop.ft ? moiId : null, ngay: d.ngay }]);
@@ -365,12 +370,12 @@ export function apDungMotDong(p: Principal, d: DongApDung): { luat: LuatDoiLop |
     if (veTh) huyKhiVeThuong(p.userId, veTh);
     /* PR-TK: bản chụp CÙNG giao dịch, lớp lúc đóng = lớp cũ (ghi danh đã đổi ở trên). Lý do = đúng loại kết thúc ghi danh.
        PR-MT0: ghi SAU khi MT0 đã sang lộ trình FT (bản chụp khoá cũ không giữ MT0 đã thành đầu vào FT), TRƯỚC khi Case FT→FT đi theo. */
-    if (curCycle) ghiBanChup(conn, [curCycle.id], { lyDo: luat.endKind as 'len_lop' | 'hoc_lai' | 'sang_ft' | 'chuyen_lop', ngay: d.ngay, lopId: enr.class_id });
+    if (curCycle) ghiBanChup(conn, [curCycle.id], { lyDo: sauThi ? 'lo_trinh_moi' : luat.endKind as 'len_lop' | 'hoc_lai' | 'sang_ft' | 'chuyen_lop', ngay: d.ngay, lopId: enr.class_id, routeMoi: denLop.lt });
     if (veTh) doiMt0KhiVeThuong(curCycle.id, veTh);
   }
 
   /* Q12: bài chưa làm CHỈ đi theo em khi GIỮ khoá — đóng khoá thì lượt planned ở lại lớp cũ. MT0 không đi theo (PR-MT0): chưa điểm thì huỷ. */
-  if (luat.khoa === 'giu' && curCycle) {
+  if (luat.khoa === 'giu' && curCycle && !sauThi) {
     conn.prepare(`UPDATE assessment_attempts SET class_id = ? WHERE cycle_id = ? AND status = 'planned' AND kind != 'mt0'`).run(d.toClassId, curCycle.id);
     /* OV-13l: FT → FT khác lộ trình giữ lộ trình đang chạy — chỉ đổi mã theo lớp chuyển đến (lịch MT, tuần học giữ). */
     if (denLop.ft && denLop.lt && curCycle.route && curCycle.route !== denLop.lt) {
@@ -381,6 +386,8 @@ export function apDungMotDong(p: Principal, d: DongApDung): { luat: LuatDoiLop |
   }
 
   if (luat.dongCase) closeCasesOnProgrammeSwitch(p.userId, d.sid, luat.dongCase, d.ngay);
+  /* OV-13m (rà #422): lộ trình đã xong sang lớp khác = như "Lớp này" / Thôi học — Case còn mở của lộ trình cũ hệ thống đóng ("kết thúc khoá"), không bàn giao cho GV lớp mới. */
+  if (sauThi && cuoiCycle) closeCasesBySystem({ actorUserId: p.userId, studentId: d.sid, reason: 'course_ended', on: d.ngay, cycleIds: [cuoiCycle.id] });
   /* PR-LT2b: lên / học lại / sang FT từ lớp thường — Case đi theo + Cuối khoá (bổ trợ miễn phí, Báo PH, Tutor FT). Sau `closeCasesOnProgrammeSwitch`. */
   if (luat.khoa === 'dong-mo' && (luat.endKind === 'len_lop' || luat.endKind === 'hoc_lai' || luat.endKind === 'sang_ft') && !tuLop.ft) {
     sauChuyenCuoiKhoa(p, [{
@@ -389,7 +396,7 @@ export function apDungMotDong(p: Principal, d: DongApDung): { luat: LuatDoiLop |
     }]);
   }
   /* PR-SOS (K3-44): FT → FT cùng chương trình — PA theo quy chế chưa khép sang GVBM đúng kỹ năng lớp mới. */
-  else if (tuLop.ft && denLop.ft) banGiaoPaQuyChe(d.sid, d.toClassId, p.userId);
+  else if (tuLop.ft && denLop.ft && !sauThi) banGiaoPaQuyChe(d.sid, d.toClassId, p.userId);
 
   if (d.nguoiNhan) {
     for (const [caseIdStr, userId] of Object.entries(d.nguoiNhan)) {

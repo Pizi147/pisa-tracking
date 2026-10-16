@@ -29,6 +29,7 @@ import { loadSkillRows } from '../fasttrack/skillSchedule.ts';
 import { activeClassOf, canManageDiscipline } from '../yThuc/access.ts';
 import { dongHocVien, khoangTamDung } from './tamDung.ts';
 import { viecCuaHocVien } from './viecHocVien.ts';
+import { coKetQuaThi, trangThaiBuocTiep } from '../loTrinh/buocTiep.ts';
 import { dsTvv } from './students.ts';
 import { laGvLopDangHoc } from '../duyet/deXuatSua.ts';
 import { trangThaiYThuc } from '../yThuc/trangThai.ts';
@@ -793,7 +794,10 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
   /* Luôn dựng (kể cả chưa có lộ trình) — `skillSupportBoard` kiểm quyền theo lớp đang học thật (`activeClassOf`, K2-6e): GV chỉ dạy lớp cũ bị chặn cả hồ sơ. */
   const board = skillSupportBoard(p, studentId, selected?.id ?? null) as { rows: any[]; chuongTrinh: string | null };
   const yThucEm = trangThaiYThuc([studentId], today).get(studentId) ?? null;
+  /* OV-13m: lộ trình FT mới nhất — chỉ chạy câu Bước tiếp khi đã có kết quả thi thật / đã chọn (đa số hồ sơ không tốn thêm câu nào). */
+  const cuoiFt = (() => { const c = [...allCycles].sort((a: any, b: any) => b.seq - a.seq)[0] as any; return c?.route ? c : null; })();
   const viec = viecCuaHocVien(p, studentId, board, {
+    choBuocTiep: !!cuoiFt && !cuoiFt.buoc_tiep && coKetQuaThi(cuoiFt),
     trangThaiEm: s.status, lopId: current?.class_id ?? null, chuongTrinh: board.chuongTrinh, yThuc: yThucEm, miniTest, dai,
   });
   const thongTin = dongThongTin({ keSel: selected ? { cycleId: selected.id, ke: examPlan } : null, startWeekSel: selected ? { cycleId: selected.id, weekStart: startWeekSel?.week_start ?? null } : null, s, current: lopDangGiu, khoa: khoaHienTai, gvcn: gvcnHienTai, dangChay: allCycles.find((c) => c.status === 'active') ?? null /* = nhánh dangHoc của loTrinhTinhTuan (Q11); không có lộ trình chạy thì không có dòng tuần học */, today,
@@ -1053,6 +1057,10 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
     })(),
     /** PR-CT: dải "Sắp chuyển / Đã chuyển" ngay dưới dòng thông tin đầu trang (mockup 20 — E). */
     dai,
+    /** OV-13m: Bước tiếp sau thi của lộ trình FT mới nhất ("Đã xong" ở đầu hồ sơ, Quay lại học sau Tạm dừng) — null khi không có mục. */
+    buocTiep: (() => {
+      return cuoiFt && (coKetQuaThi(cuoiFt) || cuoiFt.buoc_tiep) ? trangThaiBuocTiep(p, cuoiFt.id) : null;
+    })(),
     /** PR-LT2b: % Cuối khoá, hướng gợi ý, kết luận kỳ vọng đầu ra của lớp thường ĐANG học (null với FT / chưa có lớp). */
     /** PR-LT2b (M-05): Mini Test của em (lộ trình mới) + Case/PA để mở form Ghi kết quả cuối. */
     miniTest,

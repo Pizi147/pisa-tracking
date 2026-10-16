@@ -9,7 +9,7 @@ import { Nhan } from '../../ui/Nhan.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { chayHangLoat, hoanTacHangLoat } from '../students/hangLoatEm.ts';
 import {
-  CHU_CHUYEN_LOP, chipSosMt0, chuTuanHoc, ghepMucTieu, tachMucTieu, hanBanGiao, kiemDongLenh, ketQuaGanNhat, laChuyenNgay, LO_CHUYEN_NGAY, maHocVienNgan, ngay, nhanTuanBatDau,
+  CHU_CHUYEN_LOP, chipSosMt0, chuTuanHoc, ghepMucTieu, tachMucTieu, hanBanGiao, kiemDongLenh, ketQuaGanNhat, laChuyenNgay, LO_CHUYEN_NGAY, LO_CHUYEN_NGAY_THUONG, maHocVienNgan, ngay, nhanTuanBatDau,
   thuNgay, tomTatLenh, tuanLich, type AssessedSkill, type DongTomTatLenh, type HuongLenh, type KetQuaVao, type MucTieuLenh } from '@shared/domain/index.ts';
 import { ClassCreatePanel } from './ClassCreatePanel.tsx';
 import { t } from '@shared/i18n/index.ts';
@@ -166,13 +166,16 @@ function NoiDung({ classId, onClose, onDone }: { classId: number; onClose: () =>
   const cau = tomTatLenh(dsTomTat, homNay);
   const han = homNay ? hanBanGiao(homNay) : { gvbm: '', gvcn: '' };   // chưa nạp xong thì chưa có ngày
   /* OV-13l: em "Ngay hôm nay" chuyển ngay khi gửi, không hoàn tác — bước Xác nhận nói rõ, nút đổi chữ khi cả lô chuyển ngay. */
-  const soNgay = canGui.filter((r) => laChuyenNgay(r.d.tuan || tuanCh, homNay)).length;
+  const emNgay = canGui.filter((r) => laChuyenNgay(r.d.tuan || tuanCh, homNay));
+  const soNgay = emNgay.length;
+  /* OV-13m (rà #418): bài dở đi theo em chỉ khi CÙNG chương trình; đổi chương trình → điểm đã có ở lại khoá cũ. */
+  const cungCt = (r: typeof canGui[number]) => { const l = dichCua(r.d); return !!l && l.ft === !!data?.from.route && l.programmeCode === data?.from.programmeCode; };
 
   const gui = async () => {
     setBusy(true);
     try {
       /* OV-13l: chuyển ngay chạy trong lời gọi — gửi từng lô ≤ LO_CHUYEN_NGAY em, cộng dồn kết quả. */
-      const r = await guiTheoLo(`/classes/${classId}/transition`, tuanCh, soNgay ? LO_CHUYEN_NGAY : canGui.length, setTienDo,
+      const r = await guiTheoLo(`/classes/${classId}/transition`, tuanCh, soNgay ? (data?.from.route ? LO_CHUYEN_NGAY : LO_CHUYEN_NGAY_THUONG) : canGui.length, setTienDo,
         canGui.map((x) => ({
           studentId: x.s.id, huong: HUONG_CUA[x.d.kieu as Kieu], toClassId: typeof x.d.toClassId === 'number' ? x.d.toClassId : undefined,
           tuan: x.d.tuan || undefined, mucTieu: mucTieuCua(x.d) ?? undefined, ngayThi: x.d.ngayThi || undefined, lyDo: x.d.lyDo || undefined,
@@ -337,7 +340,8 @@ function NoiDung({ classId, onClose, onDone }: { classId: number; onClose: () =>
             {soNgay > 0 && (
               <p role="note" className="m-0 rounded-lg border px-3 py-2 text-sm font-semibold text-soon" style={KHOI_VANG}>
                 ⚠ {t('Chuyển ngay, không hoàn tác')} · <span className="tabular-nums">{soNgay}</span> em
-                <span className="mt-1 block font-normal text-slate-200">{t('Bài Test đang dở đi theo em sang lớp mới; bài đã thi xong ở lại {cu}', { cu: data.from.code })}</span>
+                {emNgay.some(cungCt) && <span className="mt-1 block font-normal text-slate-200">{t('Bài Test đang dở đi theo em sang lớp mới; bài đã thi xong ở lại {cu}', { cu: data.from.code })}</span>}
+                {emNgay.some((r) => !cungCt(r)) && <span className="mt-1 block font-normal text-slate-200">{t('Điểm đã có ở lại khoá cũ (xem ở hồ sơ)')}</span>}
               </p>
             )}
             <p className="m-0 text-sm text-slate-300">
