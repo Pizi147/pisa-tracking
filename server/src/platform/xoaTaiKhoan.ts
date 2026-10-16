@@ -36,7 +36,7 @@ export const COT_TRO_TAI_KHOAN: readonly { bang: string; cot: string; loai: Loai
   /* dấu vết (66) */
   c('assessment_attempts', 'created_by', DV, 'lượt Test'), c('assessment_attempts', 'deadline_override_by', DV, 'lượt Test'),
   c('assessment_scores', 'entered_by', DV, 'điểm đã nhập'), c('assessment_scores', 'no_show_by', DV, 'điểm đã nhập'),
-  c('assessment_scores', 'examiner_user_id', DV, 'điểm đã nhập'),
+  c('assessment_scores', 'examiner_user_id', DV, 'điểm đã nhập'), c('assessment_scores', 'nhan_xet_phu_trach_by', DV, 'điểm đã nhập'),   // OV-13k
   c('attachments', 'uploaded_by', DV, 'tệp đính kèm'),
   /* PR-OV2a: TVV phụ trách em — dấu vết (xoá mềm), KHÔNG thiết lập: thiết lập bị DELETE theo, sẽ xoá luôn học viên. */
   c('students', 'consultant_user_id', DV, 'học viên phụ trách tư vấn'),

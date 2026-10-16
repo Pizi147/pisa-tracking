@@ -749,6 +749,12 @@ CREATE TABLE assessment_scores (
   -- OV-12b (chủ SP 14/10): nhóm nguyên nhân của ô MT DƯỚI kỳ vọng — JSON mảng mã `ISSUE_TAXONOMY` theo thứ tự chọn (phần tử đầu = chính).
   -- NULL = không cần (đạt / chưa điểm / không phải MT) hoặc dữ liệu trước luật. Xoá điểm hay sửa thành đạt → NULL.
   nhom_nguyen_nhan TEXT,
+  -- OV-13k (chủ SP 15/10): Speaking chấm chéo — nhận xét RIÊNG của GV phụ trách Speaking lớp (không đè `comment` của người chấm) + người / lúc lưu;
+  -- `cho_phu_trach_xem` = 1 khi người chấm chéo vừa lưu nhận xét mà GV phụ trách chưa lưu (việc "Xem nhận xét Speaking"). Ô mất hết điểm → NULL / 0.
+  nhan_xet_phu_trach TEXT,
+  nhan_xet_phu_trach_by INTEGER REFERENCES users(id),
+  nhan_xet_phu_trach_at TEXT,
+  cho_phu_trach_xem INTEGER NOT NULL DEFAULT 0,
   UNIQUE (attempt_id, skill)
 );
 CREATE INDEX idx_score_attempt ON assessment_scores(attempt_id);

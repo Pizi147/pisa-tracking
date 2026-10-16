@@ -62,6 +62,9 @@ export type ScoreRow = {
   nhap_dau_ngay?: string | null;
   /** OV-12b: JSON mảng mã nhóm nguyên nhân (thứ tự chọn) — chỉ ô MT dưới kỳ vọng. */
   nhom_nguyen_nhan?: string | null;
+  /** OV-13k: nhận xét GV phụ trách Speaking (lưu riêng) + người lưu (tên join sẵn) / lúc; cờ chờ GV phụ trách xem. */
+  nhan_xet_phu_trach?: string | null; nhan_xet_phu_trach_by?: number | null; nhan_xet_phu_trach_by_name?: string | null; nhan_xet_phu_trach_at?: string | null;
+  cho_phu_trach_xem?: number;
 };
 
 /** OV-12b: kỳ vọng của lượt cho chip nhóm nguyên nhân (MT0 không kỳ vọng) — cùng `expectationFor` với `resultOf`. */
@@ -72,9 +75,9 @@ export function scoresOf(attemptId: number): ScoreRow[] {
   return nho(`diem:${attemptId}`, () => db()
     .prepare(
       `SELECT s.*, u.full_name AS entered_by_name, g.full_name AS examiner_user_name, ns.week_start AS no_show_week_start,
-              nb.full_name AS no_show_by_name FROM assessment_scores s
+              nb.full_name AS no_show_by_name, pt.full_name AS nhan_xet_phu_trach_by_name FROM assessment_scores s
          LEFT JOIN users u ON u.id = s.entered_by LEFT JOIN users g ON g.id = s.examiner_user_id LEFT JOIN users nb ON nb.id = s.no_show_by
-         LEFT JOIN report_periods ns ON ns.id = s.no_show_period_id WHERE s.attempt_id = ?`,
+         LEFT JOIN users pt ON pt.id = s.nhan_xet_phu_trach_by LEFT JOIN report_periods ns ON ns.id = s.no_show_period_id WHERE s.attempt_id = ?`,
     )
     .all(attemptId) as ScoreRow[]);
 }
@@ -92,9 +95,9 @@ export function diemCuaLuot(attemptIds: number[]): Map<number, ScoreRow[]> {
       for (const r of conn
         .prepare(
           `SELECT s.*, u.full_name AS entered_by_name, g.full_name AS examiner_user_name, ns.week_start AS no_show_week_start,
-                  nb.full_name AS no_show_by_name FROM assessment_scores s
+                  nb.full_name AS no_show_by_name, pt.full_name AS nhan_xet_phu_trach_by_name FROM assessment_scores s
              LEFT JOIN users u ON u.id = s.entered_by LEFT JOIN users g ON g.id = s.examiner_user_id LEFT JOIN users nb ON nb.id = s.no_show_by
-             LEFT JOIN report_periods ns ON ns.id = s.no_show_period_id WHERE s.attempt_id IN (${chunk.map(() => '?').join(',')})`,
+             LEFT JOIN users pt ON pt.id = s.nhan_xet_phu_trach_by LEFT JOIN report_periods ns ON ns.id = s.no_show_period_id WHERE s.attempt_id IN (${chunk.map(() => '?').join(',')})`,
         )
         .all(...chunk) as (ScoreRow & { attempt_id: number })[]) {
         if (!out.has(r.attempt_id)) out.set(r.attempt_id, []);
@@ -509,6 +512,9 @@ export function skillCells(
       gvCham: skill === 'speaking' && row && (row.examiner_user_id || row.examiner_name)
         ? { userId: row.examiner_user_id ?? null, ten: tenGvCham({ examinerUserName: row.examiner_user_name, examinerName: row.examiner_name }) ?? '' }
         : null,
+      /* OV-13k: nhận xét GV phụ trách Speaking (riêng, dưới nhận xét người chấm) — hộp chấm, hồ sơ MT đọc. */
+      /* Chỉ gắn khi có — ô không có nhận xét phụ trách giữ nguyên JSON cũ (ảnh chụp bảng điểm, Công việc). */
+      ...(row?.nhan_xet_phu_trach ? { nhanXetPhuTrach: { chu: row.nhan_xet_phu_trach, ten: row.nhan_xet_phu_trach_by_name ?? null } } : {}),
     };
   });
 }
@@ -960,7 +966,7 @@ export function scoreHistoryOf(attemptId: number) {
          FROM audit_logs l LEFT JOIN users u ON u.id = l.actor_user_id
          JOIN assessment_attempts a ON a.id = l.entity_id
         WHERE l.entity_type = 'assessment_attempt' AND l.entity_id = ? AND l.created_at >= a.created_at
-          AND l.action IN ('score.edit', 'score.lich_su', 'score.override', 'score.no_show', 'score.no_show_cleared', 'score.nhan_xet',
+          AND l.action IN ('score.edit', 'score.lich_su', 'score.override', 'score.no_show', 'score.no_show_cleared', 'score.nhan_xet', 'score.nhan_xet_phu_trach',
                            'score.huy_vuot', 'score.khoi_phuc', 'regular.no_show', 'regular.no_show_cleared')`,
     )
     .raw(true).all(attemptId) as unknown[][];
@@ -989,14 +995,16 @@ export function scoreHistoryOf(attemptId: number) {
   }>((l) => {
     const before = l.before_json ? JSON.parse(l.before_json) : null;
     const after = l.after_json ? JSON.parse(l.after_json) : null;
-    if (l.action === 'score.nhan_xet') {
-      /* OV-12b: chỉ đổi nhóm nguyên nhân (chip) → dòng ghi nhóm trước → sau. */
-      const doiNx = (before?.comment ?? null) !== (after?.comment ?? null);
+    if (l.action === 'score.nhan_xet' || l.action === 'score.nhan_xet_phu_trach') {
+      /* OV-12b: chỉ đổi nhóm nguyên nhân (chip) → dòng ghi nhóm trước → sau. OV-13k: nhận xét GV phụ trách cùng dạng (khoá `nhanXetPhuTrach`). */
+      const khoa = l.action === 'score.nhan_xet' ? 'comment' : 'nhanXetPhuTrach';
+      const doiNx = (before?.[khoa] ?? null) !== (after?.[khoa] ?? null);
       const nhom = (x: any) => docNhomNguyenNhan(x?.nhom).map(issueLabel).join(', ') || 'Trống';
       if (!doiNx && nhom(before) === nhom(after)) return [];
       return [{
-        id: l.id, kind: 'nhan_xet' as const, skill: l.entity_label as string, skillLabel: tenMon(null, l.entity_label),
-        before: doiNx ? rutGon(before?.comment) : nhom(before), after: doiNx ? rutGon(after?.comment) : nhom(after),
+        id: l.id, kind: 'nhan_xet' as const, skill: l.entity_label as string,
+        skillLabel: `${tenMon(null, l.entity_label)}${khoa === 'comment' ? '' : ' · GV phụ trách'}`,
+        before: doiNx ? rutGon(before?.[khoa]) : nhom(before), after: doiNx ? rutGon(after?.[khoa]) : nhom(after),
         actorName: l.actor_name as string | null, createdAt: l.created_at as string, lyDo: null as string | null,
       }];
     }
@@ -1092,6 +1100,8 @@ export function attemptDetail(p: Principal, attemptId: number) {
     student: { id: a.student_id, name: a.full_name, code: a.student_code },
     cycle: { id: a.cycle_id, seq: a.cycle_seq, route: a.route, target: a.target_score, khongCamKet: !!a.khong_cam_ket, examPlan: examPlanOf(a) },
     classId: a.class_id, classCode: a.class_code, branchId: a.branch_id, branchName: a.branch_name,
+    /* OV-13k: người xem ghi được "Nhận xét GV phụ trách" + sửa nhóm ô S chấm chéo (GV phụ trách S, GVCN, QL). */
+    phuTrachS: laChamCheo(a.kind, 'speaking') && quyenPhuTrachS(p, a.class_id),
     attemptNo: a.attempt_no,
     targetAtAttempt: a.target_at_attempt,
     studyWeekHint: a.route ? tuanHocCuaMt(lichMtCua({ lich_mt: a.lop_lich_mt, route: a.lop_route }, a.route), a.attempt_no) : null,   // OV-6b1: theo lịch của lớp
@@ -1403,7 +1413,8 @@ function xoaDiemLuot(p: Principal, a: ReturnType<typeof loadAttempt>, lyDo: stri
   if (thuong) return xoaDiemBaiThuong(p, a, o, lyDo, hoanTat.hoanTat, ct!.code);
   db().prepare(
     `UPDATE assessment_scores SET raw_score = NULL, c1 = NULL, c2 = NULL, c3 = NULL, c4 = NULL, band = NULL, entered_by = NULL, entered_at = NULL,
-            comment = NULL, examiner_user_id = NULL, examiner_name = NULL, nhap_dau_ngay = NULL, nhom_nguyen_nhan = NULL
+            comment = NULL, examiner_user_id = NULL, examiner_name = NULL, nhap_dau_ngay = NULL, nhom_nguyen_nhan = NULL,
+            nhan_xet_phu_trach = NULL, nhan_xet_phu_trach_by = NULL, nhan_xet_phu_trach_at = NULL, cho_phu_trach_xem = 0
       WHERE attempt_id = ? AND (band IS NOT NULL OR raw_score IS NOT NULL)`).run(a.id);
   for (const s of o) {
     const path = hoanTat.hoanTat
@@ -1790,6 +1801,7 @@ function luuNhanXet(
     before: cu ? { comment: cu.comment ?? null, examinerUserId: cu.examiner_user_id ?? null, examinerName: cu.examiner_name ?? null, nhom: cu.nhom_nguyen_nhan ?? null } : null,
     after: { comment, examinerUserId: exUser, examinerName: exName, nhom },
   });
+  if (skill === 'speaking') baoPhuTrachS(p, a, comment, cu?.comment, exUser);
   dongBoNguyenNhanMt({ attemptId, skill });   // OV-12c: nhận xét + nhóm của ô = nguyên nhân Case MT (liên kết sống)
   const fresh = conn.prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(attemptId) as any;
   return {
@@ -1864,6 +1876,83 @@ function reconcileCorrectedScores(p: Principal, attemptId: number, result: Attem
   /* PR-S3F #1: ô nay TRỐNG và không bị bỏ (Huỷ điểm / Thi lại xoá điểm) — tín hiệu dựng trên điểm đó cũng hết căn cứ. */
   const cleared = ENTRY_SKILLS.filter((k) => (entry[k] ?? null) === null && !result.skipped.includes(assessedSkillOf(k))) as string[];
   reconcileCorrectedSignals(p, { attemptId, passingSkills: passing, passText: 'đạt kỳ vọng', clearedSkills: cleared, thiLai });
+}
+
+/** OV-13k: GV phụ trách Speaking của lớp — phân công kỹ năng speaking đang hiệu lực (cùng luật Nợ điểm / Lịch Test). */
+export function gvPhuTrachS(classId: number | null, ngayXet = demoToday()): number | null {
+  return classId ? phanCongDangHieuLuc([classId], ngayXet).get(`${classId}|speaking`)?.userId ?? null : null;
+}
+
+/** OV-13k: ghi "Nhận xét GV phụ trách" / sửa nhóm nguyên nhân ô S chấm chéo — GV phụ trách S của lớp, GVCN, Quản lý (làm thay). */
+export function quyenPhuTrachS(p: Principal, classId: number | null): boolean {
+  if (!classId) return false;
+  return gvPhuTrachS(classId) === p.userId || isCoreTeacherOf(p, classId)
+    || can(p, PERMISSIONS.SCORE_OVERRIDE, { classId }) || can(p, PERMISSIONS.PLAN_WEEK, { classId });
+}
+
+/**
+ * OV-13k (chủ SP 15/10): người chấm chéo (không phải GV phụ trách S) lưu ô S Mock có nhận xét mới → GV phụ trách S của lớp nhận thông báo +
+ * việc "Xem nhận xét Speaking" (`cho_phu_trach_xem`), hết khi GV phụ trách lưu (`luuNhanXetPhuTrach`) hoặc PA của Case đã xác nhận.
+ */
+function baoPhuTrachS(p: Principal, a: any, comment: string | null, cu: string | null | undefined, nguoiCham: number | null) {
+  if (!laChamCheo(a.kind, 'speaking') || !comment?.trim() || comment.trim() === (cu ?? '').trim()) return;
+  const gv = gvPhuTrachS(a.class_id);
+  if (!gv || gv === p.userId || gv === nguoiCham) return;   // GV phụ trách tự chấm (hoặc được ghi là người chấm) — không có gì để xem
+  const conn = db();
+  conn.prepare(`UPDATE assessment_scores SET cho_phu_trach_xem = 1 WHERE attempt_id = ? AND skill = 'speaking'`).run(a.id);
+  const r = conn.prepare(`SELECT s.full_name, c.code FROM students s LEFT JOIN classes c ON c.id = ? WHERE s.id = ?`).get(a.class_id, a.student_id) as any;
+  notify({
+    userId: gv, kind: 'nhan_xet_speaking', title: `Xem nhận xét Speaking · ${r?.full_name ?? ''} · MT${a.attempt_no}`,
+    body: [r?.code, `chấm bởi ${p.fullName}`].filter(Boolean).join(' · '),
+    entityType: 'assessment_attempt', entityId: a.id, dedupKey: `nxs:${a.id}`, duong: attemptHref({ id: a.id, kind: a.kind, classId: a.class_id }),
+  });
+  /* Việc quay lại (người chấm sửa nhận xét) → chuông chưa đọc lại, lên đầu (`notify` chỉ cập nhật chữ khi trùng khoá). */
+  conn.prepare('UPDATE notifications SET read_at = NULL, created_at = ? WHERE user_id = ? AND dedup_key = ?').run(nowIso(), gv, `nxs:${a.id}`);
+}
+
+/**
+ * OV-13k — "NHẬN XÉT GV PHỤ TRÁCH" + NHÓM NGUYÊN NHÂN của ô S Mock chấm chéo. Không đụng điểm, nhận xét người chấm, "Nhập bởi". Nhận xét không bắt
+ * buộc (`null` / rỗng = xoá); nhóm cùng luật ô MT (thứ tự chọn, ≥ 1 khi dưới kỳ vọng). Lưu = GV phụ trách đã xem (`cho_phu_trach_xem` = 0).
+ * Nhật ký `score.nhan_xet_phu_trach`; Case MT nguyên nhân đồng bộ lại (`dongBoNguyenNhanMt`).
+ */
+export function luuNhanXetPhuTrach(p: Principal, attemptId: number, body: { nhanXetPhuTrach?: unknown; nhomNguyenNhan?: unknown }) {
+  const conn = db();
+  const a = loadAttempt(attemptId);
+  if (!laChamCheo(a.kind, 'speaking')) throw badRequest('Chỉ bài Speaking Mock Test (chấm chéo) có nhận xét GV phụ trách.');
+  if (!quyenPhuTrachS(p, a.class_id)) throw forbidden('Chỉ GV phụ trách Speaking của lớp, GVCN hoặc Quản lý ghi được nhận xét GV phụ trách.');
+  if (a.status === 'cancelled') throw badRequest('Lượt này đã huỷ.');
+  const hv = conn.prepare('SELECT status, archived_at FROM students WHERE id = ?').get(a.student_id) as any;
+  const khoa = ngungHocCua(hv?.status, hv?.archived_at)?.khoa;
+  if (khoa) throw badRequest(khoa);
+  const coNx = body.nhanXetPhuTrach !== undefined, coNhom = body.nhomNguyenNhan !== undefined;
+  if (!coNx && !coNhom) throw badRequest('Không có gì để lưu.');
+  const nx = coNx ? kiemNhanXet(body.nhanXetPhuTrach) : null;
+  if (nx && 'loi' in nx) throw badRequest(nx.loi);
+  const nhomKiem = coNhom ? kiemNhomNguyenNhan(body.nhomNguyenNhan, 'speaking') : null;
+  if (nhomKiem && 'loi' in nhomKiem) throw badRequest(nhomKiem.loi);
+  return tx(() => {
+    const cu = conn.prepare(`SELECT * FROM assessment_scores WHERE attempt_id = ? AND skill = 'speaking'`).get(attemptId) as ScoreRow | undefined;
+    if (!cu || ((cu.band ?? null) === null && (cu.raw_score ?? null) === null)) throw badRequest('Bài Speaking này chưa có điểm — chờ người chấm.');
+    const band = cu.band ?? null;
+    const nhomGui = nhomKiem && 'gt' in nhomKiem ? nhomKiem.gt : undefined;
+    if (nhomGui !== undefined && !nhomGui.length && canNhomNguyenNhan(band, kyVongCuaLuot(a))) throw badRequest(LOI_THIEU_NHAN_XET['chon-nhom']);
+    const chu = coNx ? (nx && 'gt' in nx ? nx.gt : null) : cu.nhan_xet_phu_trach ?? null;
+    const nhom = nhomVaLuatNhanXet(a, { band, coDiem: true, comment: cu.comment ?? null, nhomGui, nhomCu: cu.nhom_nguyen_nhan, luat: false });
+    /* Lưu mà không đổi gì (GV phụ trách chỉ "đã xem") → hết việc; người / lúc lưu và nhật ký giữ như cũ. */
+    const doi = chu !== (cu.nhan_xet_phu_trach ?? null) || nhom !== (cu.nhom_nguyen_nhan ?? null);
+    conn.prepare(`UPDATE assessment_scores SET nhan_xet_phu_trach = ?, nhom_nguyen_nhan = ?, cho_phu_trach_xem = 0,
+                         nhan_xet_phu_trach_by = ?, nhan_xet_phu_trach_at = ? WHERE id = ?`)
+      .run(chu, nhom, doi ? p.userId : cu.nhan_xet_phu_trach_by ?? null, doi ? nowIso() : cu.nhan_xet_phu_trach_at ?? null, cu.id);
+    if (doi) {
+      writeAudit({
+        actorUserId: p.userId, action: 'score.nhan_xet_phu_trach', entityType: 'assessment_attempt', entityId: attemptId, entityLabel: 'speaking',
+        before: { nhanXetPhuTrach: cu.nhan_xet_phu_trach ?? null, nhom: cu.nhom_nguyen_nhan ?? null },
+        after: { nhanXetPhuTrach: chu, nhom },
+      });
+    }
+    dongBoNguyenNhanMt({ attemptId, skill: 'speaking' });
+    return { score: conn.prepare(`SELECT * FROM assessment_scores WHERE id = ?`).get(cu.id) };
+  });
 }
 
 /** HOTFIX-2 (chủ SP 15/10): lệnh chỉ gồm nhận xét và / hoặc nhóm nguyên nhân. Route gửi đủ khoá (`undefined` khi không gửi) — chỉ xét khoá có giá trị. */
@@ -2199,6 +2288,12 @@ export function saveScore(
         )
         .run(attemptId, skill);
     }
+
+    /* OV-13k: ô mất hết điểm → nhận xét GV phụ trách hết nghĩa như nhận xét người chấm; có nhận xét mới của người chấm chéo → báo GV phụ trách. */
+    if (matHet && skill === 'speaking') {
+      conn.prepare(`UPDATE assessment_scores SET nhan_xet_phu_trach = NULL, nhan_xet_phu_trach_by = NULL, nhan_xet_phu_trach_at = NULL, cho_phu_trach_xem = 0
+                     WHERE attempt_id = ? AND skill = ?`).run(attemptId, skill);
+    } else if (skill === 'speaking') baoPhuTrachS(p, a, comment, existing?.comment, exUser);
 
     const after = conn.prepare('SELECT * FROM assessment_scores WHERE attempt_id = ? AND skill = ?').get(attemptId, skill);
     const afterGhi = (patch.lyDo || hoanTat.hoanTat)

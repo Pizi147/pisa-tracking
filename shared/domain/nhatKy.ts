@@ -54,6 +54,7 @@ const NHAN_NHAT_KY: Record<string, string> = {
   'gop_y_tuan.ghi': 'Ghi góp ý hàng tuần', 'gop_y_tuan.xoa': 'Xoá góp ý hàng tuần',
   'score.edit': 'Nhập điểm', 'score.override': 'Sửa điểm', 'score.no_show': 'Báo vắng', 'score.no_show_cleared': 'Bỏ báo vắng',
   'score.nhan_xet': 'Sửa nhận xét',
+  'score.nhan_xet_phu_trach': 'Nhận xét GV phụ trách',   // OV-13k
   'signal.assign': 'Giao xác nhận nguyên nhân', 'signal.dismissed': 'Bỏ qua, không lập Case', 'signal.linked': 'Nối vào Case',
   'signal.raised': 'Có Case chờ xác nhận nguyên nhân', 'signal.withdrawn': 'Rút Case chờ xác nhận nguyên nhân', 'signal.withdrawn_batch': 'Rút Case chờ xác nhận nguyên nhân hàng loạt',
   'sos_coordination.add': 'Thêm việc phối hợp SOS', 'sos_coordination.confirm': 'Xác nhận việc phối hợp SOS',

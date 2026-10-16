@@ -38,7 +38,7 @@ export const NHOM_VIEC_LABEL: Record<NhomViec, string> = {
  */
 const NHOM_CUA_LOAI: Record<string, NhomViec> = {
   score: 'cham-diem',
-  cause: 'case-hoc-thuat', ghi_nhan_xet: 'case-hoc-thuat', xac_nhan_pa: 'case-hoc-thuat', phoi_hop: 'case-hoc-thuat', mini_test: 'case-hoc-thuat', no_plan: 'case-hoc-thuat', ghi_ket_qua_pa: 'case-hoc-thuat',
+  cause: 'case-hoc-thuat', ghi_nhan_xet: 'case-hoc-thuat', xac_nhan_pa: 'case-hoc-thuat', xem_nx_s: 'case-hoc-thuat', phoi_hop: 'case-hoc-thuat', mini_test: 'case-hoc-thuat', no_plan: 'case-hoc-thuat', ghi_ket_qua_pa: 'case-hoc-thuat',
   do_plan: 'case-hoc-thuat', no_owner: 'case-hoc-thuat', phoi_hop_sos: 'case-hoc-thuat',
   mgmt: 'van-hanh', missing_data: 'van-hanh', ky_vong_dau_ra: 'van-hanh', thi_that: 'van-hanh', buoc_tiep: 'van-hanh',
   yt_xu_ly: 'y-thuc', yt_xem: 'y-thuc', yt_thuc_hien: 'y-thuc', khai_bac: 'y-thuc',
