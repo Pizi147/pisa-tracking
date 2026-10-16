@@ -25,6 +25,7 @@
     "kiem-truoc-ov1b": "npm run build:server && node dist-server/server/src/ops/kiemTruocOv1b.js",
     "kiem-truoc-ov1c": "npm run build:server && node dist-server/server/src/ops/kiemTruocOv1c.js",
     "kiem-truoc-ov13a": "npm run build:server && node dist-server/server/src/ops/kiemTruocOv13a.js",
+    "kiem-truoc-ov13n": "npm run build:server && node dist-server/server/src/ops/kiemTruocOv13n.js",
     "kiem-truoc-ov13m": "npm run build:server && node dist-server/server/src/ops/kiemTruocOv13m.js",
     "dem-bo-tro-trung": "npm run build:server && node dist-server/server/src/ops/demBoTroTrung.js",
     "kiem-truoc-ov3b": "npm run build:server && node dist-server/server/src/ops/kiemTruocOv3b.js",

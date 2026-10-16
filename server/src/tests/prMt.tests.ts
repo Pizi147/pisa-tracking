@@ -249,7 +249,7 @@ export async function runPrMtTests(t: YThucTestKit) {
       `SELECT ci.description FROM case_interventions ci JOIN sos_cases sc ON sc.id = ci.case_id
         WHERE sc.student_id = ? AND ci.preset = 1`).all(rf2.sid) as any[];
     assert(pa.length === 2 && pa.every((x) => x.description === 'Tutor · đến lúc thi'), JSON.stringify(pa));
-    const ph = (conn.prepare('SELECT kind FROM sos_coordination_actions WHERE attempt_id = ? ORDER BY kind').all(rf2.a.id) as any[]).map((x) => x.kind);
+    const ph = (conn.prepare("SELECT kind FROM sos_coordination_actions WHERE attempt_id = ? AND status != 'removed' ORDER BY kind").all(rf2.a.id) as any[]).map((x) => x.kind);
     assert(JSON.stringify(ph) === JSON.stringify([...d.DEFAULT_SOS_COORDINATION[4][2]].sort()), JSON.stringify(ph));
   });
   check('PR-MT (4) · bảng Case, Phân tích lớp, Tổng hợp Test cùng ra kỳ vọng 6.5 cho em RF (K5-49)', () => {

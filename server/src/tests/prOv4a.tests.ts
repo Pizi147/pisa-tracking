@@ -98,7 +98,7 @@ export async function runPrOv4aTests(t: YThucTestKit) {
     const hq = attempts.heQuaHuyLuot(e.m1);
     assert(hq.lich.soKyNang === 4 && hq.lich.tuan.length === 1 && hq.diem.map((x: any) => x.skill).join() === 'listening,reading', `hệ quả lịch/điểm: ${JSON.stringify(hq)}`);
     assert(hq.caseDong.length === 2 && hq.paDong.map((x: any) => x.id).join() === String(e.paThieu) && hq.paGiu.map((x: any) => x.id).join() === String(e.paTot)
-      && hq.phoiHop === 2 && /tự học Writing Task 2/i.test(hq.paDong[0].ten), `hệ quả Case/PA: ${JSON.stringify(hq)}`);
+      && hq.phoiHop === 1 && /tự học Writing Task 2/i.test(hq.paDong[0].ten), `hệ quả Case/PA: ${JSON.stringify(hq)}`);
     const caseSinh = hq.caseIds as number[];
     attempts.huyLuot(QL, e.m1, { lyDo: 'Em ốm cả tuần' });
     assert(one('SELECT status FROM assessment_attempts WHERE id = ?', e.m1).status === 'cancelled', 'lượt chưa huỷ');
@@ -114,7 +114,7 @@ export async function runPrOv4aTests(t: YThucTestKit) {
     const k = one(`SELECT * FROM ket_qua_huy WHERE attempt_id = ? AND loai = 'huy_luot'`, e.m1);
     const dong = JSON.parse(k.dong_json);
     assert(JSON.parse(k.diem_json).filter((x: any) => x.band != null).length === 2 && k.so_diem === 2 && JSON.parse(k.lich_json).length === 4, `bản cất điểm/lịch: ${k.so_diem}`);
-    assert(dong.case.length === 2 && dong.pa.length === 1 && dong.phoiHop.length === 2 && dong.luot.status !== 'cancelled', `danh sách đóng: ${k.dong_json.slice(0, 300)}`);
+    assert(dong.case.length === 2 && dong.pa.length === 1 && dong.phoiHop.length === 1 && dong.luot.status !== 'cancelled', `danh sách đóng: ${k.dong_json.slice(0, 300)}`);
     assert(!kiemDuLieuMt(conn).some((x) => x.nhom === 3 && x.luotId === e.m1), 'kiem-du-lieu-mt nhóm 3 báo bản cất huỷ lượt cố ý');
     /* Số MT dùng lại được: điểm đã cất nên MT1 không giữ số. */
     assert(attempts.attemptDetail(QL, e.m1).khoiPhuc.ban.length === 1, 'hồ sơ MT thiếu bản khôi phục');
@@ -125,7 +125,7 @@ export async function runPrOv4aTests(t: YThucTestKit) {
     const truoc = chup(e.sid, e.m1);
     attempts.huyLuot(QL, e.m1, { lyDo: '' });
     const r = attempts.reopenAttempt(QL, e.m1);
-    assert(r.soDiem === 2 && r.soCase === 2 && r.soPhoiHop === 2 && !r.chuaXep && r.cau.length === 0, JSON.stringify(r));
+    assert(r.soDiem === 2 && r.soCase === 2 && r.soPhoiHop === 1 && !r.chuaXep && r.cau.length === 0, JSON.stringify(r));
     const l = lech(truoc, chup(e.sid, e.m1));
     assert(!l, `khác trước huỷ — ${l}`);
     assert(one(`SELECT khoi_phuc_luc FROM ket_qua_huy WHERE attempt_id = ? AND loai = 'huy_luot'`, e.m1).khoi_phuc_luc, 'bản cất chưa đánh dấu');

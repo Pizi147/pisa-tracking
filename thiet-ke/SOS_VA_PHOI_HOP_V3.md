@@ -165,12 +165,14 @@ Hiển thị `{số done}/{số việc chưa bị bỏ}`.
 
 | MT | SOS1 | SOS2 | SOS3 |
 |---|---|---|---|
-| MT1 | HS + gia đình | HS + gia đình | HS + gia đình + **GVCN meeting HS** |
-| MT2 | HS + gia đình | + GVCN meeting HS | + **CX/GĐCN meeting HS** |
-| MT3 | HS + gia đình | + GVCN meeting HS | + **CX/GĐCN meeting HS/PH** |
-| MT4, MT5 trở đi | HS + gia đình | + GVCN meeting HS | + **CX/GĐCN meeting HS** |
+| MT1 | HS + gia đình | gia đình | gia đình + **GVCN meeting HS** |
+| MT2 | HS + gia đình | gia đình + GVCN meeting HS | gia đình + GVCN meeting HS + **CX/GĐCN meeting HS** |
+| MT3 | HS + gia đình | gia đình + GVCN meeting HS | gia đình + GVCN meeting HS + **CX/GĐCN meeting HS/PH** |
+| MT4, MT5 trở đi | HS + gia đình | gia đình + GVCN meeting HS | gia đình + GVCN meeting HS + **CX/GĐCN meeting HS** |
 
-`HS` = Trao đổi ngắn với HS · `gia đình` = Trao đổi với gia đình. Dấu `+` = thêm vào cột bên trái.
+`HS` = Trao đổi ngắn với HV · `gia đình` = Trao đổi với gia đình.
+**Chủ SP 16/10 (OV-13n):** SOS2 / SOS3 **không** điền sẵn "Trao đổi ngắn với HV" (GVCN vẫn tự thêm được qua `+ Thêm việc`); SOS1 giữ HV + gia đình.
+Dữ liệu cũ: việc đó còn `pending`, điền sẵn, của lượt đang SOS 2–3 → `removed · system_bang_doi` (migrate `prOv13n`); SOS về 1 thì hồi lại như P03.
 MT3 SOS3 là **ngoại lệ duy nhất** dùng meeting có PH. Hằng số: `shared/domain/sos.ts` → `DEFAULT_SOS_COORDINATION`.
 
 ### 5.4. Luật

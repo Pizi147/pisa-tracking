@@ -47,6 +47,7 @@ import { migratePrOv8a } from './migrate/prOv8a.ts';
 import { migratePrOv11e, themCotPrOv11e } from './migrate/prOv11e.ts';
 import { migratePrOv12a } from './migrate/prOv12a.ts';
 import { migratePrOv13l } from './migrate/prOv13l.ts';
+import { migratePrOv13n } from './migrate/prOv13n.ts';
 import { migratePrOv13m } from './migrate/prOv13m.ts';
 import { migratePrOv12g } from './migrate/prOv12g.ts';
 import { migratePrEn } from './migrate/prEn.ts';
@@ -56,6 +57,7 @@ import { migratePrOv12h } from './migrate/prOv12h.ts';
 import { cacBuocPrOv13a, khoaPrOv1c, themCotPrOv13a } from './migrate/prOv13a.ts';
 import { migratePrOv13e } from './migrate/prOv13e.ts';
 import { migratePrHd } from './migrate/prHd.ts';
+import { migratePrOv13k } from './migrate/prOv13k.ts';
 
 /**
  * Nâng cấp database ĐANG CÓ lên schema mới, không xoá dữ liệu. PR-SO (DEP-gỡ): nhánh nâng cấp từ mô hình `mock_attempts` (trước overhaul)
@@ -113,6 +115,7 @@ function migrateCaseEngine(applied: string[], skipped: string[], loiSauBuoc?: nu
   conn.pragma('foreign_keys = OFF');
     /* PR-OV11e: cột KCK theo lượt — TRƯỚC mọi bước tính kết quả lượt (`kckCuaLuot` đọc cột này). Chỉ thêm cột. */ buoc(() => themCotPrOv11e(conn, applied));
     /* PR-OV13a: cột sos_cases.tam (Case tạm) — TRƯỚC mọi bước có thể chạy luật Case (đọc / ghi cột này). Chỉ thêm cột. */ buoc(() => themCotPrOv13a(conn, applied));
+    /* OV-13k: cột nhận xét GV phụ trách Speaking (assessment_scores) — TRƯỚC mọi bước đọc điểm (`scoresOf` / `diemCuaLuot` JOIN các cột này). Chỉ thêm cột. */ buoc(() => migratePrOv13k(conn, applied));
     buoc(() => {
     // 1. Cột mới trên các bảng đang có.
     for (const [col, decl] of [
@@ -343,6 +346,7 @@ function migrateCaseEngine(applied: string[], skipped: string[], loiSauBuoc?: nu
        Case tạm cho lượt chưa chốt (đổi dữ liệu, chạy lặp được) — mỗi phần một giao dịch. */ for (const b of cacBuocPrOv13a(conn, applied)) buoc(b);
     /* OV-13e: users.requested_role — vai đề nghị khi tự đăng ký (chỉ thêm cột, chạy lặp được). */ buoc(() => migratePrOv13e(conn, applied));
     /* OV-13l: hạn bàn giao lệnh đang chờ chưa xác nhận = muộn hơn của (ra lệnh + 7 ngày) và hạn cũ, GVBM = GVCN (đổi dữ liệu, chạy lặp được). */ buoc(() => migratePrOv13l(conn, applied));
+    /* OV-13n: bảng §5.3 bỏ "Trao đổi ngắn với HV" ở SOS 2–3 — việc điền sẵn chưa làm của lượt SOS 2–3 → bỏ (đổi dữ liệu, chạy lặp được). */ buoc(() => migratePrOv13n(conn, applied));
     /* OV-13m: learning_cycles.buoc_tiep_hen — Hẹn bắt đầu lộ trình mới sau thi (chỉ thêm cột, chạy lặp được). */ buoc(() => migratePrOv13m(conn, applied));
     /* HD-a: users.da_xem_huong_dan — dải "Mới dùng PISA?" nhớ theo tài khoản (chỉ thêm cột, chạy lặp được). */ buoc(() => migratePrHd(conn, applied));
 

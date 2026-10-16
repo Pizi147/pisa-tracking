@@ -52,6 +52,8 @@ type Detail = {
   student: { id: number; name: string; code: string };
   cycle: { id: number; seq: number; route: string | null; target: number | null; khongCamKet?: boolean; examPlan: ExamPlan };
   classId: number | null; classCode: string | null; branchName: string | null;
+  /** OV-13k: người xem ghi được "Nhận xét GV phụ trách" + sửa nhóm ô S chấm chéo (GV phụ trách S, GVCN, QL). */
+  phuTrachS?: boolean;
   attemptNo: number; targetAtAttempt: number | null; studyWeekHint: number | null;
   period: { id: number; code: string; weekStart: string; weekEnd: string; range: string } | null;
   /** Tuần kế hoạch hoàn tất đã đủ căn cứ chưa, và môn nào đang chặn. */
@@ -192,6 +194,20 @@ export default function MockDetailPage() {
   /* Đủ điểm và có kỳ vọng thì mới kết luận đạt; còn lại là "chưa biết" — không phải "đạt". */
   const passed: boolean | null = d.result.evaluable ? d.result.sosLevel === 0 : null;
 
+  /* OV-13k: "Nhận xét GV phụ trách" / nhóm ô S — đường riêng, không đụng điểm hay nhận xét người chấm. */
+  const luuPhuTrach = async (body: { nhanXetPhuTrach?: string | null; nhomNguyenNhan?: string[] }): Promise<boolean> => {
+    try {
+      await api.put(`/attempts/${d.id}/scores/speaking/phu-trach`, body);
+      invalidate('/my-work'); invalidate('/cases'); invalidate('/students');
+      reload();
+      return true;
+    } catch (e: any) {
+      /* Câu lỗi của máy chủ (như `useSaveScore`); ô giữ chữ đang gõ + "Chưa lưu — thử lại". */
+      toast.push('error', `${t('Nhận xét GV phụ trách')}: ${e?.message ?? t('Không lưu được')}`);
+      return false;
+    }
+  };
+
   const openHistory = () => document.getElementById('lich-su')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
   /*
@@ -315,7 +331,7 @@ export default function MockDetailPage() {
       </div>
 
       {/* C. NHẬN XÉT 4 kỹ năng (YC-13.5, OV-4b) — không bắt buộc, không phải điểm. */}
-      <KhoiNhanXet cells={d.cells} save={save} />
+      <KhoiNhanXet cells={d.cells} save={save} phuTrach={d.phuTrachS ? luuPhuTrach : null} />
 
       <details className="rounded-lg border px-3 py-2" style={{ borderColor: 'var(--line)' }}>
         <summary className="cursor-pointer text-sm text-slate-300 max-sm:py-2.5 max-sm:-my-2.5">{t('Thông tin đợt Mock Test')}</summary>
@@ -466,15 +482,21 @@ function knHop(d: Detail): KnO {
  * OV-12b (mockup ov12-1 §4): ô MT có điểm → "*", xoá / dưới 10 ký tự không lưu; ô dưới kỳ vọng → chip "Nhóm nguyên nhân *" ngay dưới
  * nhận xét (bấm là lưu, chip cuối không bỏ được); người không sửa được thấy chip tĩnh.
  */
-function KhoiNhanXet({ cells, save }: { cells: Cell[]; save: (skill: string, patch: SavePatch) => Promise<boolean> }) {
+function KhoiNhanXet({ cells, save, phuTrach }: {
+  cells: Cell[]; save: (skill: string, patch: SavePatch) => Promise<boolean>;
+  /** OV-13k: người xem là GV phụ trách S / GVCN / QL — ghi "Nhận xét GV phụ trách", sửa nhóm ô S (đường riêng). */
+  phuTrach: ((body: { nhanXetPhuTrach?: string | null; nhomNguyenNhan?: string[] }) => Promise<boolean>) | null;
+}) {
+  const toi = useSession().session?.user?.id;
   const o = (k: string) => cells.find((c) => c.skill === k);
   const sua = (c: Cell | undefined): boolean => !!c && c.canEdit && !lockedByNoShow(c);
   const phu = (c: Cell) => (c.enteredByName ? t('Người nhập điểm: {enteredByName}', { enteredByName: c.enteredByName }) : null);
   const batBuoc = (c: Cell) => !!c.batBuocNhanXet && coDiemChinhThuc(c);
   const canNhom = (c: Cell) => batBuoc(c) && canNhomNguyenNhan(c.band, c.kyVong ?? null);
-  const phan = (c: Cell | undefined, nhan: string) => {
+  /** `nhomSua`: chỉ đọc nhận xét người chấm nhưng sửa được nhóm (GV phụ trách S — OV-13k). */
+  const phan = (c: Cell | undefined, nhan: string, nhomSua?: (v: string[]) => Promise<boolean>) => {
     if (!c) return null;
-    if (sua(c)) {
+    if (sua(c) && !nhomSua) {
       return (
         <div key={c.skill} className="min-w-0 space-y-2.5">
           <ONhanXet nhan={nhan} phu={phu(c)} giaTri={c.nhanXet ?? null} batBuoc={batBuoc(c)} onLuu={(v) => save(c.skill, { nhanXet: v })} />
@@ -488,8 +510,9 @@ function KhoiNhanXet({ cells, save }: { cells: Cell[]; save: (skill: string, pat
         <div className="flex items-baseline gap-2 text-xs text-slate-400">
           <span className="shrink-0 whitespace-nowrap font-medium text-slate-300">{nhan}</span>{phu(c) && <span className="truncate text-slate-500">{phu(c)}</span>}
         </div>
-        {!!c.nhomNguyenNhan?.length && <div className="mt-1.5"><NhomTinh value={c.nhomNguyenNhan} /></div>}
+        {nhomSua && canNhom(c) ? null : !!c.nhomNguyenNhan?.length && <div className="mt-1.5"><NhomTinh value={c.nhomNguyenNhan} /></div>}
         {c.nhanXet && <p className="m-0 mt-1 whitespace-pre-wrap break-words text-sm leading-relaxed text-slate-200">{c.nhanXet}</p>}
+        {nhomSua && canNhom(c) && <div className="mt-2.5"><NhomTaiCho skill={c.skill} giaTri={c.nhomNguyenNhan ?? []} onLuu={nhomSua} /></div>}
       </div>
     );
   };
@@ -497,7 +520,21 @@ function KhoiNhanXet({ cells, save }: { cells: Cell[]; save: (skill: string, pat
   const lr = (['listening', 'reading'] as const).map((k) => ({ k, nx: phan(o(k), t('Nhận xét')) })).filter((x) => x.nx);
   const w = [phan(o('writing1'), 'Task 1'), phan(o('writing2'), 'Task 2')].filter(Boolean);
   const s = o('speaking');
-  const nxS = phan(s, t('Nhận xét'));
+  /* OV-13k: GV phụ trách xem bài người khác chấm — nhận xét người chấm chỉ đọc (không đè), nhóm sửa qua đường phụ trách. */
+  const ptXem = !!phuTrach && !!s && coDiemChinhThuc(s) && (s.gvCham?.userId ?? null) !== toi;
+  const nxS = phan(s, t('Nhận xét'), ptXem ? (v) => phuTrach!({ nhomNguyenNhan: v }) : undefined);
+  const pt = s?.nhanXetPhuTrach ?? null;
+  /* GV phụ trách TỰ chấm: nhận xét của họ là nhận xét người chấm — không có ô thứ hai. */
+  const nxPt = !s ? null : ptXem ? (
+    <ONhanXet nhan={t('Nhận xét GV phụ trách')} phu={pt?.ten ?? null} giaTri={pt?.chu ?? null} onLuu={(v) => phuTrach!({ nhanXetPhuTrach: v })} />
+  ) : pt ? (
+    <div className="min-w-0">
+      <div className="flex items-baseline gap-2 text-xs text-slate-400">
+        <span className="shrink-0 whitespace-nowrap font-medium text-slate-300">{t('Nhận xét GV phụ trách')}</span>{pt.ten && <span className="truncate text-slate-500">{pt.ten}</span>}
+      </div>
+      <p className="m-0 mt-1 whitespace-pre-wrap break-words text-sm leading-relaxed text-slate-200">{pt.chu}</p>
+    </div>
+  ) : null;
   const coS = !!s && (sua(s) || !!s.nhanXet || !!s.gvCham);
   if (!lr.length && !w.length && !coS) return null;
   return (
@@ -525,6 +562,7 @@ function KhoiNhanXet({ cells, save }: { cells: Cell[]; save: (skill: string, pat
                 : s.gvCham && <span className="text-xs text-slate-400">{t('GV chấm: {ten}', { ten: s.gvCham.ten })}</span>}
             </div>
             {nxS}
+            {nxPt}
           </section>
         )}
       </div>

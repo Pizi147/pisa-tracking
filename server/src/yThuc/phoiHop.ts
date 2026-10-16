@@ -1,7 +1,7 @@
 import { db, theoLo, tx } from '../db.ts';
 import {
   COORDINATION_KINDS, COORDINATION_KIND_LABEL, COORDINATION_REMOVE_REASON_LABEL, COORDINATION_STATUS_LABEL,
-  CHUONG_TRINH_KHONG_CHIA_MON, COORDINATION_USER_REMOVE_REASONS, GHI_CHU_MEETING_TOI_THIEU, hanPhoiHop, laMeetingCx, SIGNAL_WITHDRAW_SCORE_FIXED, coordinationSummary, moTaBoTro, ngayTheoGioVN, nhanDot, nhanKetQuaThuong, noiDungBaoPh, tenMon, tenMonNgan, kiemGhiRoKhac, reasonNeedsText, sosCoordinationFor,
+  CHUONG_TRINH_KHONG_CHIA_MON, COORDINATION_SYNC_REVIVE_REASONS, COORDINATION_USER_REMOVE_REASONS, GHI_CHU_MEETING_TOI_THIEU, hanPhoiHop, laMeetingCx, SIGNAL_WITHDRAW_SCORE_FIXED, coordinationSummary, moTaBoTro, ngayTheoGioVN, nhanDot, nhanKetQuaThuong, noiDungBaoPh, tenMon, tenMonNgan, kiemGhiRoKhac, reasonNeedsText, sosCoordinationFor,
   type CoordinationKind, type CoordinationRemoveReason, type CoordinationStatus,
 } from '../../../shared/domain/index.ts';
 import { napTruocPhamVi, type Principal } from '../permissions.ts';
@@ -43,7 +43,7 @@ const ACT_MESSAGE = 'Chỉ giáo viên chủ nhiệm của lớp em đang học 
  * Hàm của điểm nhập, nên cho ra cùng kết quả dù gọi bao nhiêu lần (P01):
  *
  *   · việc còn thiếu trong bảng §5.3 → THÊM (P01 lần đầu, P02 khi mức SOS tăng). Khoá duy nhất (lượt, loại, tên) chặn nhân đôi;
- *   · việc bị HỆ THỐNG bỏ trước đó (`system_sos_changed`) mà bảng lại cần → HỒI LẠI `pending` (điểm sửa qua sửa lại thì việc theo mức SOS thật);
+ *   · việc bị HỆ THỐNG bỏ trước đó (`system_sos_changed`, `system_bang_doi` của OV-13n) mà bảng lại cần → HỒI LẠI `pending` (điểm sửa qua sửa lại thì việc theo mức SOS thật);
  *   · việc điền sẵn `pending` mà bảng mới không còn → tự `removed · system_sos_changed` (P03). Việc `done` GIỮ NGUYÊN — việc đã làm thật không bị xoá;
  *     việc GVCN tự thêm (`preset = 0`) và việc GVCN đã tự bỏ không bao giờ bị máy đụng.
  */
@@ -65,7 +65,7 @@ export function syncSosCoordination(attempt: { id: number; student_id: number; a
         )
         .run(attempt.id, attempt.student_id, kind, now);
       added += 1;
-    } else if (row.status === 'removed' && row.remove_reason_code === 'system_sos_changed') {
+    } else if (row.status === 'removed' && COORDINATION_SYNC_REVIVE_REASONS.includes(row.remove_reason_code)) {
       conn
         .prepare(
           `UPDATE sos_coordination_actions SET status = 'pending', remove_reason_code = NULL, remove_reason_text = NULL,

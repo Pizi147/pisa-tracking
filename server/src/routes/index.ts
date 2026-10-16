@@ -875,6 +875,13 @@ api.put('/attempts/:id/scores/:skill', requireAuth, wrap((req) => {
   }, undefined, { tuNguoiDung: true });
 }));
 
+/** OV-13k: "Nhận xét GV phụ trách" + nhóm nguyên nhân ô Speaking Mock chấm chéo — GV phụ trách S của lớp, GVCN, Quản lý; không đụng điểm. */
+api.put('/attempts/:id/scores/speaking/phu-trach', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  const b = req.body ?? {};
+  return attemptSvc.luuNhanXetPhuTrach(principalOf(req), pInt(req, 'id'), { nhanXetPhuTrach: b.nhanXetPhuTrach, nhomNguyenNhan: b.nhomNguyenNhan });
+}));
+
 /**
  * MỘT CỬA CHO BẢNG CHẤM (spec §3.5): máy chủ chọn đúng bảng theo loại lớp, giao diện không phải đoán. Mở
  * `/nhap-diem/:id` của một lớp thường thì đây là chỗ trả về lưới lớp thường.

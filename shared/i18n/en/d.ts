@@ -700,6 +700,7 @@ const EN_D_SHARED = {
   'Trùng với lần xử lý khác': 'Duplicate of another action',
   'Điểm được sửa — mức SOS không còn cần việc này': 'Score edited — SOS level no longer needs this',
   'Lượt Test đã huỷ': 'Test attempt cancelled',
+  'Luật mới: SOS 2–3 không còn việc này': 'New rule: SOS 2–3 no longer includes this task',
   'Học viên có lý do đặc biệt': 'Student has a special reason',
   'Tình huống đơn lẻ': 'One-off case',
   'Chọn người thực hiện.': 'Pick who does it.',

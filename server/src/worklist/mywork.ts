@@ -154,7 +154,9 @@ export type WorkGroupKey =
   /* PR-MT0 (T5b) → PR-LCb: "Chốt lộ trình" — Quản lý xác nhận hướng + lớp chuyển đến cho mọi em lớp thường (khoá giữ tên cũ `chot_len_ft`). */
   | 'chot_len_ft'
   /* PR-CL (B5): "Xét lại lộ trình" — em đã chuyển lớp cuối khoá mà Final không phù hợp lộ trình đã chốt (một việc mỗi lớp nguồn, Quản lý). */
-  | 'xet_lai_lo_trinh';
+  | 'xet_lai_lo_trinh'
+  /* OV-13k: GV phụ trách Speaking xem nhận xét của người chấm chéo (ghi thêm nhận xét / sửa nhóm / Xác nhận PA). */
+  | 'xem_nx_s';
 
 /**
  * Mỗi nhóm có MỘT DÒNG nói rõ nhóm đó nghĩa là gì.
@@ -184,6 +186,11 @@ const GROUP_META: Record<WorkGroupKey, { label: string; hint: string }> = {
   xac_nhan_pa: {
     label: 'Xác nhận PA',
     hint: 'Nguyên nhân đã có từ nhận xét Mock Test — xác nhận PA theo quy chế để PA bắt đầu, hoặc Không cần theo dõi (gửi Quản lý duyệt).',
+  },
+  /* OV-13k (chủ SP 15/10): người chấm chéo đã lưu bài Speaking có nhận xét — GV phụ trách S của lớp xem; không hạn, không đỏ. */
+  xem_nx_s: {
+    label: 'Xem nhận xét Speaking',
+    hint: 'Người chấm chéo đã ghi nhận xét bài Speaking. Ghi thêm nhận xét GV phụ trách nếu cần, sửa nhóm nguyên nhân, Xác nhận PA nếu có Case.',
   },
   /* PR-LT2a (N3, T45): GVCN báo phụ huynh qua TVV — không hạn (M-05). */
   phoi_hop: {
@@ -536,8 +543,15 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
         });
       }
     }
+    /* Rà #419: "còn tồn từ" = tuần thi NHỎ NHẤT của (lớp, lượt) — dòng gộp lấy tuần của bài đầu nhóm, em đầu thi tuần trước thì mất nhãn. */
+    const tuanCuNhat = new Map<string, string>();
+    for (const d of ccDongs) {
+      const k = `${d.classId}|${d.kind}|${d.attemptNo}`, w = tuanCuNhat.get(k);
+      if (d.weekStart && (!w || d.weekStart < w)) tuanCuNhat.set(k, d.weekStart);
+    }
     for (const it of gomBaiChuaCham(ccDongs)) {
-      const cu = it.tuanThi && it.tuanThi < tuanTruoc ? it.tuanThi : null;
+      const w = tuanCuNhat.get(`${it.classId}|${it.kind}|${it.attemptNo}`) ?? null;
+      const cu = w && w < tuanTruoc ? w : null;
       const luot = nhanDot(it.kind, it.attemptNo);
       items.push({ ...it, tieuDe: `${VIEC_CHAM_CHEO} · ${luot}`, phu: luot, contextLabel: cu ? `còn tồn từ ${tuanLich(cu)}` : null, tuanThi: tuanTruoc });
     }
@@ -931,6 +945,50 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   }
   for (const c of xacNhanPa) dongCase(c, 'xac_nhan_pa');
 
+  /*
+   * OV-13k (chủ SP 15/10): XEM NHẬN XÉT SPEAKING — người chấm chéo lưu ô S Mock có nhận xét (`cho_phu_trach_xem`) → việc của GV phụ trách S lớp
+   * (`phanCongDangHieuLuc`). Không hạn / không đỏ (Case có thể chưa sinh); hết khi GV phụ trách lưu hoặc PA của Case bài đó đã xác nhận.
+   * Quản lý ở "Tất cả" thấy dòng của GV trong phạm vi.
+   */
+  /* Chỉ người có phân công Speaking (của mình) hoặc "Tất cả" mới có dòng — vai khác không tốn câu SQL nào. */
+  const lopS = [...new Set(p.assignments.filter((x) => x.skill === 'speaking' && activeAt(x, today)).map((x) => x.classId))];
+  if (co('xem_nx_s') && (tatCa || lopS.length)) {
+    /* "Của tôi": chỉ lớp mình có phân công Speaking (người giữ việc vẫn xét `phanCongDangHieuLuc` dưới); chi nhánh lọc trong SQL. */
+    const loc = [
+      ...(tatCa ? [] : [`a.class_id IN (${lopS.map(() => '?').join(',')})`]),
+      ...(f.branchId ? ['c.branch_id = ?'] : []),
+    ];
+    const ds = conn.prepare(
+      `SELECT a.id AS attempt_id, a.attempt_no, a.kind, a.class_id, c.code AS class_code, c.branch_id, a.student_id, st.full_name
+         FROM assessment_scores s JOIN assessment_attempts a ON a.id = s.attempt_id AND a.kind = 'mock' AND a.status != 'cancelled'
+         JOIN students st ON st.id = a.student_id AND ${HV_DANG_HOC_SQL('st')}
+         JOIN classes c ON c.id = a.class_id
+        WHERE s.skill = 'speaking' AND s.cho_phu_trach_xem = 1${loc.map((x) => ` AND ${x}`).join('')}
+          /* Hết khi PA của CHÍNH lượt này đã xác nhận: PA xác nhận sau mốc mở / trượt lại của lượt (Case giữ qua MT2+, PA cũ của MT1 không tính). */
+          AND NOT EXISTS (SELECT 1 FROM case_milestones m JOIN sos_cases sc ON sc.id = m.case_id AND sc.topic = 'speaking'
+                            JOIN case_interventions iv ON iv.case_id = sc.id
+                           WHERE m.attempt_id = a.id AND m.kind IN ('opened', 'repeat') AND iv.confirmed_at >= m.created_at)`,
+    ).all(...(tatCa ? [] : lopS), ...(f.branchId ? [f.branchId] : [])) as any[];
+    const gvS = ds.length ? phanCongDangHieuLuc([...new Set(ds.map((r) => r.class_id as number))], today) : new Map();
+    if (tatCa) napTruocPhamVi(ds.map((r) => r.student_id));   // quyền theo em một lần cho cả danh sách (không N+1)
+    for (const r of ds) {
+      const chu_ = gvS.get(`${r.class_id}|speaking`)?.userId ?? null;
+      const mine = chu_ === p.userId;
+      if (!mine && !(tatCa && can(p, PERMISSIONS.CASE_APPROVE, { classId: r.class_id, studentId: r.student_id }))) continue;
+      const mt = `MT${r.attempt_no}`;
+      items.push({
+        key: `xem_nx_s:${r.attempt_id}`, group: 'xem_nx_s', urgency: 'normal',
+        studentId: r.student_id, studentName: r.full_name, classId: r.class_id, classCode: r.class_code,
+        attemptId: r.attempt_id, attemptNo: r.attempt_no, caseId: null, level: null,
+        contextLabel: mt, count: null,
+        reason: 'Người chấm chéo đã ghi nhận xét Speaking',
+        tieuDe: `Xem nhận xét Speaking · ${r.full_name} · ${mt}`, phu: 'Speaking',
+        actionLabel: 'Xem nhận xét', href: attemptHref({ id: r.attempt_id, kind: r.kind, classId: r.class_id }),
+        ownerId: chu_, owner: null, mine, due: null, statusLabel: 'Chờ GV phụ trách xem',
+      });
+    }
+  }
+
   // ------------------------------------- 3c. Giữa khoá lớp thường: BÁO PHỤ HUYNH QUA TVV (PR-LT2a; PR-CT2 bỏ nhóm Nộp kế hoạch bổ trợ)
   /* Báo phụ huynh qua TVV: GVCN lớp em ĐANG học (và Quản lý ở "Tất cả trong phạm vi"); KHÔNG hạn (M-05), không tính quá hạn. */
   const baoPh = !co('phoi_hop') ? [] : conn
@@ -1319,7 +1377,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   /* OV-11c (CV-11): QL / Quản trị "Của tôi" = việc mình giữ (hoặc chưa ai giữ mà mình làm được); việc GV giữ chỉ ở "Của GV". */
   if (xemNguoiKhac && !tatCa) for (let i = items.length - 1; i >= 0; i--) if (items[i].ownerId !== null && items[i].ownerId !== p.userId) items.splice(i, 1);
   const order: WorkGroupKey[] = [
-    'cause', 'ghi_nhan_xet', 'xac_nhan_pa', 'phoi_hop', 'phoi_hop_sos', 'mini_test', 'score', 'no_plan', 'ghi_ket_qua_pa', 'yt_xu_ly', 'yt_xem', 'yt_thuc_hien', 'khai_bac',
+    'cause', 'ghi_nhan_xet', 'xac_nhan_pa', 'xem_nx_s', 'phoi_hop', 'phoi_hop_sos', 'mini_test', 'score', 'no_plan', 'ghi_ket_qua_pa', 'yt_xu_ly', 'yt_xem', 'yt_thuc_hien', 'khai_bac',
     'chot_len_ft', 'xet_lai_lo_trinh', 'ky_vong_dau_ra', 'thi_that', 'buoc_tiep', 'ban_giao', 'no_owner', 'mgmt', 'missing_data',
   ];
   const weight = (u: WorkUrgency) => (u === 'overdue' ? 0 : u === 'today' ? 1 : 2);

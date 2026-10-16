@@ -65,7 +65,13 @@ export function DongNguyenNhan({ issues }: { issues: any[] }) {
   const ds = [...issues].sort((a, b) => (a.role === 'primary' ? -1 : 0) - (b.role === 'primary' ? -1 : 0));
   if (!ds.length) return null;
   const nx = ds[0]?.observation;
-  return <><NhomCoSo ds={ds.map((x) => ({ code: x.code, label: x.label }))} />{nx ? <> — “{nx}”</> : null}</>;
+  const pt = ds[0]?.nhanXetPhuTrach;   // OV-13k: Case MT Speaking — nhận xét GV phụ trách (lưu riêng)
+  return (
+    <>
+      <NhomCoSo ds={ds.map((x) => ({ code: x.code, label: x.label }))} />{nx ? <> — “{nx}”</> : null}
+      {pt ? <span className="mt-1 block text-slate-300"><span className="text-slate-400">{t('Nhận xét GV phụ trách')}:</span> “{pt}”</span> : null}
+    </>
+  );
 }
 /** Kết quả gần nhất của Case MT: mốc mở / trượt lại mới nhất có band — "MT2 · R 5.0 · kỳ vọng 5.5". */
 export function ketQuaGanNhat(data: CaseDetail): string | null {
@@ -276,7 +282,7 @@ export function XacNhanPaPanel({ pa, data, onXong, ...chung }: ChungPanel & { pa
           dong={[[t('Nguyên nhân'), <DongNguyenNhan issues={data.issues ?? []} />], [t('Kết quả gần nhất'), ketQuaGanNhat(data)]]}
           them={theoLuot.length > 1 ? (
             <ul className="m-0 list-none space-y-1 p-0">
-              {theoLuot.map((x) => <li key={x.attemptId}><b className="font-semibold text-slate-300">{x.luot}</b>: {x.nhom.map((g) => g.label).join(' · ') || '—'}{x.nhanXet ? ` — “${x.nhanXet}”` : ''}</li>)}
+              {theoLuot.map((x) => <li key={x.attemptId}><b className="font-semibold text-slate-300">{x.luot}</b>: {x.nhom.map((g) => g.label).join(' · ') || '—'}{x.nhanXet ? ` — “${x.nhanXet}”` : ''}{x.nhanXetPhuTrach ? ` · ${t('Nhận xét GV phụ trách')}: “${x.nhanXetPhuTrach}”` : ''}</li>)}
             </ul>
           ) : undefined} />
       </div>
