@@ -571,6 +571,7 @@ export async function runPrTkTests(t: YThucTestKit) {
     conn.prepare(`UPDATE learning_cycles SET status = 'completed', ended_at = ? WHERE id = ?`).run(t.addDays(NGAY, -30), a.cy);
     const v = viecThi(gvcn, a.sid);
     assert(v.length === 1 && !/Chưa xác định/.test(v[0].reason), v[0]?.reason);
+    studentsSvc.setStudentStatus(P.admin, a.sid, 'finished', t.addDays(NGAY, -30), 'Nghỉ');   // em đã nghỉ: chỉ còn lối "GVCN lớp cuối"
     conn.prepare(`UPDATE teacher_assignments SET status = 'ended' WHERE class_id = ? AND user_id = ?`).run(ft, gvcn.userId);
     assert(maLoi(() => thiThatSvc.datKetQuaThiThat(gvcn, a.cy, NHAP4)) === 403, 'GVCN đã hết hiệu lực → 403');
   }));
