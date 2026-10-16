@@ -1,6 +1,7 @@
 /** PHÉP KIỂM PR-KCK (Q29-1) — Target "không cam kết": nhập, không SOS, không việc Điền target, đổi target ↔ KCK, quyền. Harness do `run.ts` truyền vào. */
 import type { YThucTestKit } from './yThuc.tests.ts';
 import { chotSan } from './luotThu.ts';
+import { emailThu } from '../seed/emailThu.ts';
 
 export async function runPrKckTests(t: YThucTestKit) {
   const { check, assert, conn, P } = t;
@@ -28,7 +29,7 @@ export async function runPrKckTests(t: YThucTestKit) {
   const them = (fullName: string, target: unknown) => {
     const tuanThi = d.mondayOfDate(t.addDays(demoToday(), -14));
     const startWeek = t.addDays(tuanThi, -7 * (d.tuanHocCuaMt(d.lichMtGoc('LT1'), 1) - 1));
-    intake.commitIntake(P.admin, { classId: ft, rows: [{ fullName, target, startWeek, email: 'kck@demo.test', dob: '2010-01-01' }], idempotencyKey: `kck-${fullName}` });
+    intake.commitIntake(P.admin, { classId: ft, rows: [{ fullName, target, startWeek, email: emailThu(), dob: '2010-01-01' }], idempotencyKey: `kck-${fullName}` });
     const sid = hv(fullName).id;
     const mt1 = luot(sid)[0];
     conn.prepare('UPDATE assessment_attempts SET lich_su = 0 WHERE id = ?').run(mt1.id);
@@ -57,7 +58,7 @@ export async function runPrKckTests(t: YThucTestKit) {
     const r = intake.parsePaste('Họ và tên\tEmail\tTarget\nA\ta@b.vn\t-\nB\tb@c.vn\tkhông cam kết\nC\tc@d.vn\t6.5');
     assert(r.rows[0].target === 'KCK' && r.rows[1].target === 'KCK' && r.rows[2].target === '6.5', JSON.stringify(r.rows));
     const pv = intake.previewIntake(P.admin, { classId: ft, rows: [
-      { fullName: 'A', dob: '2010-01-01', email: 'a@b.vn', target: 'kck' }, { fullName: 'B', email: 'b@c.vn' },
+      { fullName: 'A', dob: '2010-01-01', email: emailThu(), target: 'kck' }, { fullName: 'B', email: emailThu() },
     ] });
     assert(pv.rows[0].target === 'KCK' && !pv.rows[0].issues.some((i: any) => i.field === 'target'), JSON.stringify(pv.rows[0]));
     assert(pv.rows[1].issues.some((i: any) => i.field === 'target' && i.muc === 'luu_y'), 'ô trống phải còn lưu ý');

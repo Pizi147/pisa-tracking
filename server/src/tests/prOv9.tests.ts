@@ -5,6 +5,7 @@
  */
 import type { YThucTestKit } from './yThuc.tests.ts';
 import { chotSan, nhanXetCaseThu } from './luotThu.ts';
+import { emailThu } from '../seed/emailThu.ts';
 
 export async function runPrOv9Tests(t: YThucTestKit) {
   const { check, assert, conn, P } = t;
@@ -34,7 +35,7 @@ export async function runPrOv9Tests(t: YThucTestKit) {
   const them = (fullName: string, target: unknown) => {
     const tuanThi = d.mondayOfDate(t.addDays(demoToday(), -14));
     const startWeek = t.addDays(tuanThi, -7 * (d.tuanHocCuaMt(d.lichMtGoc('LT1'), 1) - 1));
-    intake.commitIntake(P.admin, { classId: ft, rows: [{ fullName, target, startWeek, email: 'ov9@demo.test', dob: '2010-01-01' }], idempotencyKey: `ov9-${fullName}` });
+    intake.commitIntake(P.admin, { classId: ft, rows: [{ fullName, target, startWeek, email: emailThu(), dob: '2010-01-01' }], idempotencyKey: `ov9-${fullName}` });
     const sid = one('SELECT id FROM students WHERE full_name = ?', fullName).id as number;
     const mt1 = luot(sid)[0];
     conn.prepare('UPDATE assessment_attempts SET lich_su = 0 WHERE id = ?').run(mt1.id);
@@ -69,7 +70,7 @@ export async function runPrOv9Tests(t: YThucTestKit) {
   check('OV9 (1) · dán Excel cột Target "6.5 KCK" / "KCK": lưới giữ chữ, xem trước không lỗi; thêm HV lưu Target 6.5 + KCK, lượt MT có Target', () => {
     const r = intake.parsePaste('Họ và tên\tEmail\tTarget\nA\ta@b.vn\t6.5 KCK\nB\tb@c.vn\tkck\nC\tc@d.vn\t6.5');
     assert(r.rows[0].target === '6.5 KCK' && r.rows[1].target === 'KCK' && r.rows[2].target === '6.5', JSON.stringify(r.rows));
-    const pv = intake.previewIntake(P.admin, { classId: ft, rows: [{ fullName: 'A', dob: '2010-01-01', email: 'a@b.vn', target: '6.5 KCK' }] });
+    const pv = intake.previewIntake(P.admin, { classId: ft, rows: [{ fullName: 'A', dob: '2010-01-01', email: emailThu(), target: '6.5 KCK' }] });
     assert(!pv.rows[0].issues.some((i: any) => i.field === 'target'), JSON.stringify(pv.rows[0].issues));
     const x = them('OV9 Dán Excel', '6.5 KCK');
     const c = cy(x.sid);
@@ -191,7 +192,7 @@ export async function runPrOv9Tests(t: YThucTestKit) {
     const fou = t.classId('MB FOU 15');
     /** Em lớp thường, bài Giữa khoá (tuần đã qua — QL xếp tay như bộ demo LT2a), điểm /20 theo môn. */
     const emThuong = (ten: string, target: string, diem: Record<string, number>) => {
-      intake.commitIntake(P.admin, { classId: fou, rows: [{ fullName: ten, target, email: 'ov9@demo.test', dob: '2010-01-01' }], idempotencyKey: `ov9-${ten}` });
+      intake.commitIntake(P.admin, { classId: fou, rows: [{ fullName: ten, target, email: emailThu(), dob: '2010-01-01' }], idempotencyKey: `ov9-${ten}` });
       const sid = one('SELECT id FROM students WHERE full_name = ?', ten).id as number;
       regular.planRegularTests(P.mbManager, fou, { studentIds: [sid], kinds: ['progress'] });
       const pt = one(`SELECT id FROM assessment_attempts WHERE student_id = ? AND kind = 'progress' ORDER BY id DESC LIMIT 1`, sid).id as number;
