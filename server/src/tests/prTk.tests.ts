@@ -567,7 +567,8 @@ export async function runPrTkTests(t: YThucTestKit) {
     const gvcn = ganGvcn(ft, P.normalCoreTeacher.userId);
     const a = taoHV(ft, 'FT', true, 6.5);
     conn.prepare('UPDATE learning_cycles SET exam_month = NULL, exam_date = NULL, exam_period_id = NULL, started_at = ? WHERE id = ?').run(t.addDays(NGAY, -60), a.cy);
-    studentsSvc.setStudentStatus(P.admin, a.sid, 'finished', t.addDays(NGAY, -30), 'Nghỉ');
+    /* Rà #436 (OV-13q): em Kết thúc học chưa có kết quả không còn nhắc — dùng lộ trình đóng thường (không bỏ dở), em còn học: mốc = ngày đóng. */
+    conn.prepare(`UPDATE learning_cycles SET status = 'completed', ended_at = ? WHERE id = ?`).run(t.addDays(NGAY, -30), a.cy);
     const v = viecThi(gvcn, a.sid);
     assert(v.length === 1 && !/Chưa xác định/.test(v[0].reason), v[0]?.reason);
     conn.prepare(`UPDATE teacher_assignments SET status = 'ended' WHERE class_id = ? AND user_id = ?`).run(ft, gvcn.userId);
