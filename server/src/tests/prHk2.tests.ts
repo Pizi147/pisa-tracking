@@ -338,19 +338,16 @@ export async function runPrHk2Tests(t: YThucTestKit) {
     assert(/title=\{t\('GV chấm Speaking: \{x\} — \{goiY\}', \{ x: ten/.test(doc('web/src/modules/cham/GvCham.tsx')), 'GvCham: title phải ghi tên (phòng khi tên dài)');
   });
 
-  check('C24 · J2 (Q3 = A): mọi chỗ in mã học viên ra màn đi qua maHocVienNgan; Excel giữ mã đầy đủ', () => {
+  check('C24 · OV-13f (Q8, thay J2): không màn nào in mã học viên (giữ ở DB, nhật ký, đường dẫn, tìm kiếm); Excel không cột Mã', () => {
     const CAC_FILE = ['web/src/modules/students/StudentDetailPage.tsx', 'web/src/modules/cham/LuoiFT.tsx', 'web/src/modules/cham/LuoiThuong.tsx', 'web/src/modules/cham/MotKyNang.tsx',
       'web/src/modules/cham/DiemTheoLop.tsx', 'web/src/modules/students/LuuTruPage.tsx', 'web/src/modules/classes/TransitionPanel.tsx', 'web/src/modules/platform/Header.tsx',
-      'web/src/modules/students/ClassRoster.tsx', 'web/src/modules/students/BangHocVienLop.tsx', 'web/src/modules/classes/BangDiemLopThuong.tsx'];
+      'web/src/modules/students/ClassRoster.tsx', 'web/src/modules/students/BangHocVienLop.tsx', 'web/src/modules/classes/BangDiemLopThuong.tsx',
+      'web/src/modules/cases/QuickReport.tsx', 'web/src/modules/fasttrack/MockDetailPage.tsx', 'web/src/modules/students/XoaHocVienPanel.tsx'];
     for (const f of CAC_FILE) {
-      const s = doc(f).replace(/maHocVienNgan\([^()]*\)/g, '');
-      const sai = s.split('\n').map((dong, i) => [dong, i + 1] as const).filter(([dong]) => /\.studentCode\b/.test(dong));
-      assert(sai.length === 0, `${f}: in studentCode thẳng ra màn ở dòng ${sai.map((x) => x[1]).join(', ')}`);
+      const sai = doc(f).split('\n').map((dong, i) => [dong, i + 1] as const).filter(([dong]) => /\.studentCode\b|student\.code\b|maHocVienNgan|\bd\.ma\b/.test(dong));
+      assert(sai.length === 0, `${f}: còn in mã học viên ở dòng ${sai.map((x) => x[1]).join(', ')}`);
     }
-    assert(/maHocVienNgan\(st\.code\)/.test(doc('web/src/modules/cases/QuickReport.tsx')), 'QuickReport: mã trong ô chọn học viên phải qua maHocVienNgan');
-    assert(/maHocVienNgan\(d\.student\.code\)/.test(doc('web/src/modules/fasttrack/MockDetailPage.tsx')), 'MockDetailPage: mã học viên cạnh tên phải qua maHocVienNgan');
-    assert(d.maHocVienNgan('PISA-000048') === '000048', 'maHocVienNgan');
-    assert(!/maHocVienNgan/.test(doc('server/src/phanTich/xuatMt.ts')), 'Excel phải giữ mã đầy đủ (không rút gọn)');
+    assert(!d.COT_FT_GON.includes('Mã') && d.COT_FT_GON[1] === 'Email', 'Excel: không cột Mã, cột 2 Email');
   });
 
   await checkAsync('C20b · J2 (DB): tìm học viên theo "000048" và "PISA-000048" (và chữ thường) cùng ra một em', async () => {
