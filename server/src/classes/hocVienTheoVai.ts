@@ -16,6 +16,7 @@ import { classProgressMany } from './schedule.ts';
 import { choBuocTiep, hanBuocTiep } from '../loTrinh/buocTiep.ts';
 import { loTrinhChoKetQuaThi } from '../loTrinh/thiThat.ts';
 import { demoToday } from '../demoConfig.ts';
+import { chiNhanhTaoLop } from './hocVienLop.ts';
 
 export type DongHocVienVai = {
   id: number; ten: string; ma: string; status: string;
@@ -40,6 +41,8 @@ export type TrangHocVienVai = {
    * (cùng `loTrinhChoKetQuaThi` của việc GVCN). Thiếu thông tin = `ids.thieu_tt`. Chỉ em trong phạm vi đang xem.
    */
   viec: { buocTiep: Record<number, { cycleId: number; han: string }>; ketQuaThi: Record<number, { han: string; thi: string | null }> };
+  /** OV-13p: nút đầu trang "+ Lớp mới" (`class.create` ở ít nhất một chi nhánh) · "+ Học viên" (`student.add` trong phạm vi grant) — máy chủ kiểm lại khi lưu. */
+  coTheTaoLop: boolean; coTheThemHocVien: boolean;
 };
 
 export function hocVienTheoVai(p: Principal, f: { phamVi?: string | null; branchId?: number | null } = {}): TrangHocVienVai {
@@ -105,5 +108,6 @@ export function hocVienTheoVai(p: Principal, f: { phamVi?: string | null; branch
   return {
     vai, phamVi: { coThe: vai === 'tvv' ? ['cua-toi', 'chi-nhanh'] : ['tat-ca', 'chi-nhanh'], dangDung, chiNhanh },
     ids: chip.ids, rows, viec: { buocTiep, ketQuaThi },
+    coTheTaoLop: chiNhanhTaoLop(p).length > 0, coTheThemHocVien: !scopeFor(p, PERMISSIONS.STUDENT_ADD).none,
   };
 }

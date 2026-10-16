@@ -46,6 +46,8 @@ export type HoSoLop = {
   status?: string; finishedAt?: string | null;
   viewer: {
     canPlanWeek: boolean; canAddStudents: boolean; canAssign: boolean; canAssignSubject?: boolean; canEditProgress: boolean;
+    /** OV-13p: `student.edit` ở lớp — `canAddStudents` chỉ là thêm học viên (`student.add`). */
+    coTheSuaHocVien?: boolean;
     editableSkills: string[]; isCoreTeacher: boolean;
     canReportCase: boolean; canRecordViolation: boolean; canEnterScores: boolean;
     /** OV-10b: ⋯ dòng của Admin / TVV / CX (`student.edit_info` · `student.edit_more`). */
@@ -131,7 +133,7 @@ export function DauTrangLop({ data, onViec, onBanGiao }: {
   const mucLop = menuHoSoLop({
     thuong, lienTuc: !!data.lienTuc, chuongTrinh: data.programme?.code ?? null, soHocVien: s?.studentCount ?? 0,
     canEditProgress: data.viewer.canEditProgress, canAssign: data.viewer.canAssign, canAssignSubject: !!data.viewer.canAssignSubject,
-    canAddStudents: data.viewer.canAddStudents, coTheSuaCaLop: !!data.viewer.coTheSuaCaLop, coTheChuyenTiep: data.viewer.coTheChuyenTiep, coTheChuyenNhieuEm: !!data.dai?.viewer.coTheChuyenNhieuEm,
+    canAddStudents: data.viewer.canAddStudents, coTheSuaHocVien: !!data.viewer.coTheSuaHocVien, coTheSuaCaLop: !!data.viewer.coTheSuaCaLop, coTheChuyenTiep: data.viewer.coTheChuyenTiep, coTheChuyenNhieuEm: !!data.dai?.viewer.coTheChuyenNhieuEm,
     /* PR-XUAT (Q8): GVCN của lớp hoặc người xếp lịch (Quản lý) — máy chủ xuất vẫn kiểm lại phạm vi. */
     coTheXuatExcel: !!session?.nav?.xuatMt && (data.viewer.isCoreTeacher || data.viewer.canPlanWeek),
     coTheMoLaiLop: !!data.viewer.coTheMoLaiLop, coTheXoa: !!xk.data?.coTheXoa, coTheKetThuc: !!xk.data && xk.data.coDuLieu && !xk.data.daKetThuc,
