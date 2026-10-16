@@ -32,7 +32,7 @@ const COT_DAY_DU: { key: CotBang; nhan: (ct: ChuongTrinh) => string; goiY: strin
   { key: 'hocVien', nhan: () => 'Học viên', goiY: 'Học viên đang học, không tính em đã kết thúc.' },
   { key: 'duoiKyVong', nhan: (ct) => (ct === 'thuong' ? 'Chưa đạt' : 'Dưới kỳ vọng'),
     goiY: 'Học viên dưới kỳ vọng ít nhất một kỹ năng ở đợt Test mới nhất hợp lệ (lớp thường: chưa đạt ít nhất một môn).' },
-  { key: 'sos', nhan: () => 'SOS', goiY: 'Học viên có SOS ở đợt Test mới nhất hợp lệ, kể cả SOS tạm thời. Overall đạt thì không SOS (dù có kỹ năng dưới kỳ vọng).' },
+  { key: 'sos', nhan: () => 'SOS hiện tại', goiY: 'Học viên có SOS ở lượt Test mới nhất hợp lệ, gồm SOS tạm (lượt chưa chốt). Overall đạt thì không SOS (dù có kỹ năng dưới kỳ vọng).' },
   { key: 'caseMo', nhan: () => 'Case đang mở', goiY: 'Case học thuật chưa kết luận — đếm Case, không đếm học viên.' },
   { key: 'thieuPa', nhan: () => 'Case chưa có PA', goiY: 'Case đã mở nhưng chưa ai ghi sẽ làm gì cho em.' },
   { key: 'duDuLieu', nhan: () => 'Tỷ lệ đủ dữ liệu', goiY: 'Em đã chấm đủ mọi kỹ năng ở đợt đã đến lịch mới nhất / em cần được đánh giá.' },
