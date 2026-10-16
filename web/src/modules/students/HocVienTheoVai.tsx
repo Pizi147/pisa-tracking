@@ -18,7 +18,7 @@ import { BangSos, type TrangSos } from './BangSos.tsx';
 import { BangCanLam, type ViecCanLam } from './BangCanLam.tsx';
 import { ChonTuanSos } from './ChonTuanSos.tsx';
 import { PanelMotEm } from './PanelMotEm.tsx';
-import { NganTongKet } from './NganTongKet.tsx';
+import { PanelBuocTiep } from './PanelBuocTiep.tsx';
 import { SuaThongTinMotEm } from './StudentManagePanel.tsx';
 import {
   PHAM_VI_NHAN, chuPhuHuynh, docChipVai, ketQuaGanNhat, maHocVienNgan, ngay, tenMon,
@@ -146,7 +146,7 @@ export function HocVienTheoVai({ vai }: { vai: 'tvv' | 'cx' }) {
     : `/hoc-vien-lop?goc=sos${phamViUrl ? `&phamVi=chi-nhanh&branchId=${cnTvv}` : cn ? `&branchId=${cn}` : ''}${tuan ? `&tuan=${tuan}` : ''}`;
   const sos = useApi<TrangSos>(duongSos, [duongSos]);
   const [panelEm, setPanelEm] = useState<number | null>(null);
-  const [tongKet, setTongKet] = useState<number | null>(null);
+  const [buocTiep, setBuocTiep] = useState<{ cycleId: number; em: { id: number; ten: string }; lop: string | null } | null>(null);
   const [suaEm, setSuaEm] = useState<{ id: number; ten: string; lop: string | null; viec: 'info' | 'outcome' } | null>(null);
   /* Nhóm đã bấm đảo so với mặc định. Mặc định mở hết; danh sách dài (CX "Tất cả" mọi chi nhánh) thì mặc định gập — không vẽ hàng nghìn dòng một lúc. */
   const [dao, setDao] = useState<Set<number | 'chua-xep'>>(new Set());
@@ -194,8 +194,8 @@ export function HocVienTheoVai({ vai }: { vai: 'tvv' | 'cx' }) {
     const bt = data.viec.buocTiep[d.id];
     const kq = data.viec.ketQuaThi[d.id];
     return [
-      ...(bt ? [{ ...chung, key: `buoc:${d.id}`, viec: t('Chọn bước tiếp sau thi'), phu: null, han: bt.han, quaHan: bt.han < homNay, kieu: bt.han < homNay ? 'qua-han' as const : null,
-        mo: () => setTongKet(bt.cycleId) }] : []),
+      ...(bt ? [{ ...chung, key: `buoc:${d.id}`, viec: t('Chọn bước tiếp'), phu: null, han: bt.han, quaHan: bt.han < homNay, kieu: bt.han < homNay ? 'qua-han' as const : null,
+        mo: () => setBuocTiep({ cycleId: bt.cycleId, em: { id: d.id, ten: d.ten }, lop: d.lop?.code ?? null }) }] : []),
       ...(kq && d.viewer.suaThem ? [{ ...chung, key: `thi:${d.id}`, viec: t('Kết quả thi'), phu: kq.thi ? t('Thi {ngay} · chưa có kết quả', { ngay: ngay(kq.thi, homNay) }) : t('chưa có kết quả'), han: kq.han,
         quaHan: kq.han < homNay, kieu: kq.han < homNay ? 'qua-han' as const : null, mo: () => setSuaEm({ id: d.id, ten: d.ten, lop: d.lop?.code ?? null, viec: 'outcome' }) }] : []),
       ...(tap.thieu_tt?.has(d.id) && d.viewer.suaThongTin ? [{ ...chung, key: `thieu:${d.id}`, viec: t('Thiếu thông tin'), phu: null, han: null, quaHan: false, kieu: 'thieu-tt' as const,
@@ -279,7 +279,7 @@ export function HocVienTheoVai({ vai }: { vai: 'tvv' | 'cx' }) {
         ? <Card><Empty title={t('Không có việc nào')} /></Card>
         : <BangCanLam viec={viecTvv} coNguoi={false} coPhuHuynh dienThoai={dienThoai} ds={ds} />)}
       {panelEm !== null && <PanelMotEm key={panelEm} studentId={panelEm} onClose={() => setPanelEm(null)} />}
-      {tongKet !== null && <NganTongKet cycleId={tongKet} onClose={() => setTongKet(null)} onDoi={trang.reload} />}
+      {buocTiep && <PanelBuocTiep cycleId={buocTiep.cycleId} hocVien={buocTiep.em} lop={buocTiep.lop} onClose={() => setBuocTiep(null)} onDone={trang.reload} />}
       {suaEm && <SuaThongTinMotEm viec={suaEm.viec} studentId={suaEm.id} studentName={suaEm.ten} lop={suaEm.lop} onClose={() => setSuaEm(null)} onDone={() => { setSuaEm(null); trang.reload(); }} />}
       {(goc === 'tat-ca' || goc === 'can-chu-y') && data && (hien.length === 0 ? (
         <Card>

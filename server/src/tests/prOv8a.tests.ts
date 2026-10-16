@@ -70,8 +70,8 @@ export async function runPrOv8aTests(t: YThucTestKit) {
     thiThatSvc.datKetQuaThiThat(gvcn, a.cy, NHAP4);
     assert(hoSo(a.sid).archived_at === null && hoSo(a.sid).status === 'finished', `không tự lưu trữ: ${JSON.stringify(hoSo(a.sid))}`);
     const v = viecBt(QL, a.sid);
-    assert(v.length === 1 && v[0].due === addDays(NGAY, 7) && v[0].tieuDe.startsWith('Chọn bước tiếp sau thi') && v[0].mine && v[0].key === `buoc_tiep:${a.cy}`, JSON.stringify(v));
-    assert(v[0].href.includes(`tong-ket=${a.cy}`) && d.nhomViecCua('buoc_tiep') === 'van-hanh', v[0].href);
+    assert(v.length === 1 && v[0].due === addDays(NGAY, 7) && v[0].tieuDe === 'Chọn bước tiếp' && v[0].mine && v[0].key === `buoc_tiep:${a.cy}`, JSON.stringify(v));
+    assert(v[0].href.includes(`buoc-tiep=${a.cy}`) && d.nhomViecCua('buoc_tiep') === 'van-hanh', v[0].href);   // OV-13m: mở panel Bước tiếp
     assert(viecBt(gvcn, a.sid).length === 0, 'GVCN không có việc');
     const bt = tongKetSvc.tongKetLoTrinh(QL, a.cy).buocTiep;
     assert(bt && bt.chon === null && bt.goiY === 'ket_thuc' && bt.coTheChon === true, JSON.stringify(bt));
@@ -89,7 +89,7 @@ export async function runPrOv8aTests(t: YThucTestKit) {
     chon(QL, a.cy, { chon: 'ket_thuc' });
     assert(hoSo(a.sid).archived_at === NGAY && loTrinh(a.cy).status !== 'active' && loTrinh(a.cy).buoc_tiep === 'ket_thuc', JSON.stringify([hoSo(a.sid), loTrinh(a.cy).buoc_tiep]));
     assert(viecBt(QL, a.sid).length === 0, 'việc hết');
-    assert(get(`SELECT 1 x FROM journey_events WHERE cycle_id = ? AND title = 'Sau thi: Kết thúc'`, a.cy), 'mốc Hành trình');
+    assert(get(`SELECT 1 x FROM journey_events WHERE cycle_id = ? AND title = 'Sau thi: Thôi học'`, a.cy), 'mốc Hành trình');
     const bt = tongKetSvc.tongKetLoTrinh(QL, a.cy).buocTiep;
     assert(bt.chon === 'ket_thuc' && bt.luc === NGAY && bt.boi, JSON.stringify(bt));
     buocTiepSvc.boChonBuocTiep(QL, a.cy);
@@ -179,7 +179,7 @@ export async function runPrOv8aTests(t: YThucTestKit) {
     const cy = Number(conn.prepare(`INSERT INTO learning_cycles (student_id, seq, route, programme_code, target_score, started_at, status, created_at) VALUES (?, 1, 'LT1', 'FT', 6.5, ?, 'active', ?)`)
       .run(sid, NGAY, now).lastInsertRowid);
     thiThatSvc.datKetQuaThiThat(P.admin, cy, NHAP4);
-    assert(viecBt(QL, sid).length === 0, 'lộ trình còn chạy → chưa có việc');
+    assert(viecBt(QL, sid).length === 1, 'OV-13m: lộ trình còn chạy, đã có kết quả → có việc ngay');
     studentsSvc.setStudentStatus(P.admin, sid, 'finished', NGAY, 'Hết khoá');
     assert(hoSo(sid).archived_at === null && viecBt(QL, sid).length === 1, 'Kết thúc học: chờ QL chọn');
     const dong = ((myWork.myWork(QL, {}) as any).dong as any[]).filter((x: any) => x.group === 'buoc_tiep' && x.classId === lop);

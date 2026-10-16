@@ -890,6 +890,7 @@ check('TD3-b-2 · QL ×3: /classes/{lopFT}/overview ≤ 50 % (5 829), /hoc-vien-
  * 15/10 (OV-13b, chụp lại trên bản gộp OV-13c/d/h): GVCN / GVCN_THUONG toi, QL / QT tat-ca, QT tat-ca cn, QL gvcn — đổi có chủ ý: thêm trường
  * `ghiNhanh` của Kết quả PA (ghi nhanh trên dòng) và `pa.soBuoi` của Xác nhận PA cùng lúc (ô Số buổi Tutor, mockup §9); băm bỏ hai trường đó
  * trùng ảnh của main a4f9c00, đã kiểm.
+ * 15/10 OV-13m: chụp lại 'QT toi' / 'QT tat-ca' — dòng "Chọn bước tiếp" (2 lộ trình UB FT 401 của seed) đổi tiêu đề / nhãn dòng gộp / chữ / đường mở panel Bước tiếp (có chủ ý).
  * 15/10: chụp lại 'QT toi' / 'QT tat-ca' sau khi Case của Task2(e) thôi lấy giờ thật (hạn Thêm PA của nó trôi theo ngày chạy → băm QT đổi mỗi ngày).
  * 15/10 gộp OV-13a + OV-13c: chụp lại 'QL tat-ca' / 'QT tat-ca' / 'QT tat-ca cn' trên bản gộp — hai thay đổi có chủ ý ở dưới cộng lại (id Case đổi chỗ + gom tuần).
  * 15/10 OV-13a: chụp lại 'QL tat-ca' / 'QT tat-ca' / 'QT tat-ca cn' — Case tạm (Q2) đổi thứ tự sinh Case trong seed → id Case 34↔35 (HV 46) đổi chỗ;
@@ -903,6 +904,7 @@ check('TD3-b-2 · QL ×3: /classes/{lopFT}/overview ≤ 50 % (5 829), /hoc-vien-
  * 15/10 gộp OV-13l với main (13b / 13c): chụp lại 9 băm trên bản gộp — ba đổi có chủ ý cộng lại.
  * 15/10 OV-13l: chụp lại mọi vai trừ ADMIN — đổi đầu ra CÓ CHỦ Ý: hạn bàn giao ≥ 7 ngày (GVBM = GVCN), seed D16 (LT1 → RF) giữ lộ trình,
  *   seed kịch bản 6 (MB FOU 23) ra lệnh 9 ngày trước để vẫn "Bàn giao quá hạn".
+ * 16/10 gộp OV-13m với main (13k, 13n): chụp lại QT toi / QT tat-ca trên bản gộp (cùng 2 khoá 13m đã đổi có chủ ý).
  * 16/10 gộp OV-13n với main (13k): chụp lại băm trên bản gộp (13n + 13k đều đổi có chủ ý).
  * 16/10 OV-13n: chụp lại 8 băm — đổi CÓ CHỦ Ý: SOS2/3 không điền sẵn "Trao đổi ngắn với HV" (số việc Phối hợp + seed Khôi/Lan đổi việc đã xác nhận).
  * 16/10 OV-13k gộp main 1694175 (OV-13l): chụp lại 4 băm dưới trên bản gộp — đã so JSON main 1694175 ↔ bản gộp trên bộ demo (QL / QT "Tất cả",
@@ -915,8 +917,8 @@ check('TD3-b-2 · QL ×3: /classes/{lopFT}/overview ≤ 50 % (5 829), /hoc-vien-
 await checkAsync('TD4-a (×3) · Công việc trùng JSON ảnh chụp trước TD4 — 6 vai × Của tôi / Tất cả / Của một GV / lọc chi nhánh', async () => {
   const { myWork, viecCuaNguoi } = await import('../worklist/mywork.ts');
   const ANH: Record<string, string> = {
-    'QL toi': 'd1a3dfdc6252cec3', 'QT toi': 'bdb5e2b3b7e0d39b', 'GVCN toi': '20f656de32b154dc', 'GVBM toi': '00dd012ac4781e7f',
-    'GVCN_THUONG toi': '20f656de32b154dc', 'ADMIN toi': '4ed1fc3fa34653f2', 'QL tat-ca': 'd0fdf221a7d1baf3', 'QT tat-ca': 'ca89a1d6ec1b654d',
+    'QL toi': 'd1a3dfdc6252cec3', 'QT toi': '73dfbc55903b6a9e', 'GVCN toi': '20f656de32b154dc', 'GVBM toi': '00dd012ac4781e7f',
+    'GVCN_THUONG toi': '20f656de32b154dc', 'ADMIN toi': '4ed1fc3fa34653f2', 'QL tat-ca': 'd0fdf221a7d1baf3', 'QT tat-ca': '5225d2c3931999eb',
     'QT tat-ca cn': 'f4fb9cc0f9f7c35d', 'QL gvcn': '57ef1bdf575a6924', 'GVS toi': 'f17e10ea233c26df',
   };
   const p = (v: Vai) => loadPrincipal(USER[v]);

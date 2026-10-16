@@ -12,7 +12,7 @@ import { notFound } from '../util.ts';
 import { require_, type Principal } from '../permissions.ts';
 import { tinhLuot, type NguCanhLuot } from './banChup.ts';
 import { coTheNhapThiThat } from './thiThat.ts';
-import { trangThaiBuocTiep } from './buocTiep.ts';
+import { trangThaiBuocTiep, type TrangThaiBuocTiep } from './buocTiep.ts';
 import { nguongDatLop, programmeByCode } from '../normal/regular.ts';
 
 type Tone = 'ok' | 'soon' | 'late' | 'muted';
@@ -60,6 +60,8 @@ function ketQuaSong(c: any, attempts: any[], scores: Map<number, any[]>): KetQua
 export type DongCacLoTrinh = {
   id: number; ten: string; lop: string | null; batDau: string | null; ketThuc: string | null; thoiGian: string; dangHoc: boolean;
   lyDo: LyDoDong | null; ketQua: KetQuaGon | null; huong: string | null;
+  /** OV-13m: lộ trình FT mới nhất có kết quả thi thật — "Đã xong · OVR …" + Chọn bước tiếp / Hẹn bắt đầu / chờ QL · TVV. */
+  buocTiep: TrangThaiBuocTiep | null;
 };
 
 export function cacLoTrinh(p: Principal, studentId: number): DongCacLoTrinh[] {
@@ -82,20 +84,22 @@ export function cacLoTrinh(p: Principal, studentId: number): DongCacLoTrinh[] {
   });
   const lopDang = dangChay.length ? (conn.prepare(
     `SELECT e.class_id, c.code FROM enrollments e JOIN classes c ON c.id = e.class_id WHERE e.student_id = ? AND e.status IN ('active', 'paused') ORDER BY e.id DESC LIMIT 1`).get(studentId) as any) : null;
+  const bt = cycles[0].route ? trangThaiBuocTiep(p, cycles[0].id) : null;   // `cycles` xếp seq giảm: [0] = mới nhất
   return cycles.map((c): DongCacLoTrinh => {
     const b = bc.get(c.id);
+    const buocTiep = c.id === cycles[0].id ? bt : null;
     if (c.status === 'active' || !b) {
       const ct = c.route ? null : programmeByCode(c.programme_code);
       const lopCuaLoTrinh = luot.filter((a) => a.cycle_id === c.id);
       return {
         id: c.id, ten: c.route ? `Fast Track · ${c.route}` : ct?.name ?? 'Lộ trình', lop: lopDang?.code ?? null, batDau: c.started_at, ketThuc: null,
         thoiGian: khoangTuan(c.started_at, null, homNay), dangHoc: c.status === 'active', lyDo: null,
-        ketQua: ketQuaSong(c, lopCuaLoTrinh, diem), huong: null,
+        ketQua: ketQuaSong(c, lopCuaLoTrinh, diem), huong: null, buocTiep,
       };
     }
     return {
       id: c.id, ten: tenLoTrinh(b), lop: b.class_code, batDau: b.bat_dau_ngay, ketThuc: b.dong_ngay, thoiGian: khoangTuan(b.bat_dau_ngay, b.dong_ngay, homNay),
-      dangHoc: false, lyDo: b.ly_do, ketQua: ketQuaBanChup(b), huong: nhanHuong(b.huong_tiep),
+      dangHoc: false, lyDo: b.ly_do, ketQua: ketQuaBanChup(b), huong: nhanHuong(b.huong_tiep), buocTiep,
     };
   });
 }

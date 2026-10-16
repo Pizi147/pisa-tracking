@@ -63,6 +63,8 @@ export function tuanHopLe(tuan: string | null | undefined, homNay: string): bool
 }
 /** OV-13l: web gửi chuyển ngay theo lô nhỏ này (một em ~70–125 câu SQL) — một lời gọi Turso ≲ 250 câu, xa hạn 10 s. */
 export const LO_CHUYEN_NGAY = 2;
+/** OV-13m (rà #418): lớp thường Cuối khoá — một em 139–181 câu (bài Cuối khoá, bổ trợ Final, Lộ trình tiếp theo) → một em một lời gọi (< 150 câu). */
+export const LO_CHUYEN_NGAY_THUONG = 1;
 export const LOI_TUAN_BAT_DAU = 'Tuần bắt đầu phải là hôm nay hoặc từ tuần sau trở đi';
 
 const THU = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];

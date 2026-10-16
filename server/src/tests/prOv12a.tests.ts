@@ -199,7 +199,7 @@ export async function runPrOv12aTests(t: any) {
     const a = emCoKetQua(lop);
     assert(tongKet.tongKetLoTrinh(TVV, a.cy).buocTiep.coTheChon === true && tongKet.tongKetLoTrinh(CX, a.cy).buocTiep.coTheChon === false, 'cờ coTheChon');
     const viec = profile.studentProfile(TVV, a.sid).dauHoSo.viec.cuaBan;
-    assert(viec.some((v: any) => v.loai === 'buoc-tiep' && v.key === `buoc_tiep:${a.cy}` && v.mo?.href?.includes(`tong-ket=${a.cy}`)), JSON.stringify(viec));
+    assert(viec.some((v: any) => v.loai === 'buoc-tiep' && v.key === `buoc_tiep:${a.cy}` && v.mo?.href?.includes(`buoc-tiep=${a.cy}`)), JSON.stringify(viec));   // OV-13m: panel Bước tiếp
     for (const [ten, p] of [['TVV CP', TVV_CP], ['CX', CX], ['GV', P.coreTeacher], ['Admin', ADMIN]] as const) {
       assert(maLoi(() => buocTiep.chonBuocTiep(p, a.cy, { chon: 'ket_thuc' })) === 403, `${ten} chọn phải 403`);
     }
