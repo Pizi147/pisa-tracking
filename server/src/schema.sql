@@ -1021,6 +1021,8 @@ END;
  */
 CREATE INDEX idx_case_student ON sos_cases(student_id, status);
 CREATE INDEX idx_case_cycle ON sos_cases(cycle_id);
+/* TD5: Case của một lượt (huy hiệu Case mở, `EXISTS … x.attempt_id = a.id`) — trước đây quét cả bảng cho mỗi lượt. */
+CREATE INDEX idx_case_attempt ON sos_cases(attempt_id, status, sos_level, tam);
 
 /*
  * VẤN ĐỀ của một case, theo bộ phân loại ba nhóm Học sinh / Giáo viên / Giáo trình.
