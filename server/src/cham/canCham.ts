@@ -27,6 +27,8 @@ import { assessedSkillOf, entrySkillsOf } from '../fasttrack/scoring.ts';
 import { allProgrammes, cheDoCua, isRatioClass, programmeOfClass, regularSheet, type CheDo } from '../normal/regular.ts';
 import { quaHanNhapDiem, skillScoreDeadline, weekInfo } from '../platform/week.ts';
 import { addDays } from '../util.ts';
+import { overdueScoreBai, rowsFor } from '../worklist/metrics.ts';
+import { t } from '../../../shared/i18n/index.ts';
 
 export function chamSheet(
   p: Principal, classId: number,
@@ -384,6 +386,35 @@ export function noQuaHan(
   return { dong, hanRieng };
 }
 
+/**
+ * UX-2 (1) "QUÁ HẠN CHẤM" của dải số Lịch Test — CÙNG tập với Tổng quan "Bài quá hạn" (`overdueScoreBai`, chỉ số `bai-qua-han-nhap-diem`):
+ * mọi ô có cờ quá hạn (cả ô thi tuần trước đang nằm ở khối 2), cả hai khung, cùng phạm vi quyền. "Lớp tôi dạy" / lớp đang lọc chỉ khoanh lớp;
+ * người có phân công xem "Lớp tôi dạy" đếm ô của mình, ô GV khác vào `khac` (OV-11e TE-7). Khác khối 1 (`noQuaHan`): khối chia theo tuần thi.
+ */
+export function oQuaHanCham(
+  p: Principal, o: { branchId?: number | null; phamVi?: PhamViLichTest | null; classId?: number | null }, today: string = demoToday(),
+): { ids: number[]; khac: number[]; lop: number } {
+  const coPhanCong = defaultWorkScope(p) === 'mine';
+  const cuaToi = coPhanCong && (o.phamVi ?? 'cua-toi') === 'cua-toi';
+  const lopCuaToi = new Set(p.assignments.filter((a) => activeAt(a, today)).map((a) => a.classId));
+  const r = overdueScoreBai(p, o.branchId ?? null, today);
+  const ids: number[] = [], khac: number[] = [];
+  const lop = new Set<number>();
+  for (const id of r.ids) {
+    const classId = r.lopCua.get(id)!;
+    if ((o.classId && classId !== o.classId) || (cuaToi && !lopCuaToi.has(classId))) continue;
+    if (cuaToi && !r.chiTiet.get(id)?.nguoi.includes(p.userId)) { khac.push(id); continue; }
+    ids.push(id);
+    lop.add(classId);
+  }
+  return { ids, khac, lop: lop.size };
+}
+/** Danh sách sau số "Quá hạn chấm" — đúng các ô `oQuaHanCham` đếm (G-10), dòng như panel chỉ số "Bài quá hạn". */
+export function dsQuaHanCham(p: Principal, o: Parameters<typeof oQuaHanCham>[1], today: string = demoToday()) {
+  const { ids } = oQuaHanCham(p, o, today);
+  return { n: ids.length, tieuDe: t('Quá hạn chấm'), rows: rowsFor('bai', ids, 'bai-qua-han-nhap-diem', p) };
+}
+
 // ---------------------------------------------------------------- Lịch Test
 
 export type DongLichTest = {
@@ -446,6 +477,8 @@ export type LichTest = {
   tongQuan: TongQuanLich;
   /** MH4, K4-05: cùng dải số tách theo khung (công tắc Fast Track · Lớp thường); cộng hai khung = `tongQuan`. */
   tongQuanKhung: Record<Khung, TongQuanLich>;
+  /** UX-2 (1): số ô "Quá hạn chấm" của dải số — `oQuaHanCham` (= Tổng quan "Bài quá hạn"), cả hai khung; `khac` = ô GV khác (phần của bạn). */
+  quaHanCham: { bai: number; lop: number; khac: number };
   /** KHỐI 1 "Test quá hạn chấm" — theo hôm nay, không theo tuần đang xem (tên trường giữ `no` — D8). */
   no: DongNo[];
   /** KHỐI 2 "Test chấm tuần này" — tuần trước + ô hạn riêng; `null` khi không xem tuần hiện tại. */
@@ -704,7 +737,7 @@ export function lichTest(
   const khong: TongQuanLich = { daCham: 0, tong: 0, conPhaiCham: 0, no: { bai: 0, lop: 0 }, khac: { con: 0, no: 0 } };
   const rong: LichTest = {
     scopeEmpty: scope.none, tuan: null, laTuanNay: false, phamVi, coPhamViRong: false, coPhanCong, lopDangLoc: null,
-    tongQuan: khong, tongQuanKhung: { ft: khong, thuong: khong }, no: [], chamTuanNay: null, lop: [], nhacLichSu: [],
+    tongQuan: khong, tongQuanKhung: { ft: khong, thuong: khong }, quaHanCham: { bai: 0, lop: 0, khac: 0 }, no: [], chamTuanNay: null, lop: [], nhacLichSu: [],
   };
   if (scope.none) return rong;
   const conn = db();
@@ -766,6 +799,7 @@ export function lichTest(
     }
     return { tong, conPhaiCham: con, daCham: tong - con, no: { bai, lop: lopNo.size }, khac: { con: khacCon, no: khacNo } };
   };
+  const qh = oQuaHanCham(p, { branchId, phamVi, classId: o.classId }, today);
   return {
     scopeEmpty: false,
     tuan: { id: tuan.id, weekStart: tuan.week_start, weekEnd: tuan.week_end },
@@ -774,6 +808,7 @@ export function lichTest(
     tongQuan: tq(k23, no.dong),
     tongQuanKhung: Object.fromEntries((['ft', 'thuong'] as const).map((k) => [k,
       tq(k23.filter((x) => khungDong(x) === k), no.dong.filter((x) => khungDong(x) === k))])) as Record<Khung, TongQuanLich>,
+    quaHanCham: { bai: qh.ids.length, lop: qh.lop, khac: qh.khac.length },
     no: no.dong,
     chamTuanNay,
     lop,

@@ -35,7 +35,7 @@ export function SoLieuO(props: Props) {
   );
 }
 
-function DanhSachNguon({ nguon, tieuDe, open, onClose }: { nguon: string; tieuDe: string; open: boolean; onClose: () => void }) {
+export function DanhSachNguon({ nguon, tieuDe, open, onClose }: { nguon: string; tieuDe: string; open: boolean; onClose: () => void }) {
   const { data, loading, error, reload } = useApi<{ n: number; tieuDe: string; rows: DongSoLieu[] }>(open ? nguon : null, [nguon, open]);
   if (!open) return null;
   /* OV-12e: cùng panel mở rộng dòng với ô số trong sổ (`NganDanhSach`). */

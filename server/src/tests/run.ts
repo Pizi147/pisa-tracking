@@ -9404,6 +9404,9 @@ await runPrOv13pTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P,
 // ==================================================================== UX-1 (sửa gấp đánh giá UX 16/10: bảng chi nhánh, đếm HV & Lớp, Case chưa có PA, Lịch Test)
 const { runPrUx1Tests } = await import('./prUx1.tests.ts');
 await runPrUx1Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== UX-2 (tiếp đánh giá UX 16/10: Quá hạn chấm = Bài quá hạn, Case chưa chốt PA quá hạn, menu Công việc, tự mở việc, khung theo phạm vi)
+const { runPrUx2Tests } = await import('./prUx2.tests.ts');
+await runPrUx2Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`

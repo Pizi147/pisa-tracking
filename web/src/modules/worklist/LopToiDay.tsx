@@ -5,7 +5,8 @@ import { ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { SoLieuO } from '../../ui/SoLieuO.tsx';
 import { useDienThoai } from '../../ui/TheDong.tsx';
 import { CongTacKhung, khungDaNho } from '../../ui/CongTacKhung.tsx';
-import { khungLopToiDay } from '@shared/domain/index.ts';
+import { GOI_Y_DUOI_KY_VONG, khungLopToiDay } from '@shared/domain/index.ts';
+import { NutLuat } from '../../ui/NutLuat.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 
 /**
@@ -92,7 +93,7 @@ export function LopToiDay() {
               <tr className="text-left text-[11.5px] font-semibold text-slate-400">
                 <th className="px-4 py-2 font-semibold">{t('Lớp')}</th><th className="px-3 py-2 font-semibold">{t('Tôi dạy')}</th>
                 {laThuong && <th className="px-3 py-2 font-semibold">{t('Tuần học')}</th>}
-                <th className="px-3 py-2 text-right font-semibold">{t('Học viên')}</th><th className="px-3 py-2 text-right font-semibold">{nhanDuoi}</th>
+                <th className="px-3 py-2 text-right font-semibold">{t('Học viên')}</th><th className="px-3 py-2 text-right font-semibold">{nhanDuoi} <NutLuat label={nhanDuoi}>{GOI_Y_DUOI_KY_VONG[ct]}</NutLuat></th>
                 {!laThuong && <th className="px-3 py-2 text-right font-semibold">SOS</th>}
                 <th className="px-3 py-2 text-right font-semibold">{t('Case đang mở')}</th><th className="px-3 py-2 text-right font-semibold">{t('Bài chờ chấm')}</th>
                 <th className="px-4 py-2 font-semibold">{t('Test sắp tới')}</th>

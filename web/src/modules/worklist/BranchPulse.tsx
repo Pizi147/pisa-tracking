@@ -7,7 +7,8 @@ import { BoLocDoan, Card, ErrorState, Skeleton, Th } from '../../ui/ui.tsx';
 import { HangCon, HangNhom } from '../../ui/HangNhom.tsx';
 import { SoLieuO } from '../../ui/SoLieuO.tsx';
 import { DINH_TRAI } from '../phanTich/dungChung.tsx';
-import { thamSoCt, type ChuongTrinh, type CotBang } from '@shared/domain/index.ts';
+import { GOI_Y_DUOI_KY_VONG, thamSoCt, type ChuongTrinh, type CotBang } from '@shared/domain/index.ts';
+import { NutLuat } from '../../ui/NutLuat.tsx';
 import { BangGiaoVienChiNhanh } from '../giaoVien/BangGiaoVienChiNhanh.tsx';
 import { nhoChiNhanh } from '../../ui/Filters.tsx';
 
@@ -98,7 +99,7 @@ export function BranchPulse({ branchId, ct }: { branchId: number | null; ct: Chu
             <colgroup><col style={{ width: '26%' }} />{COT.map((c) => <col key={c.key} style={{ width: `${(74 / COT.length).toFixed(1)}%` }} />)}</colgroup>
             <thead><tr>
               <Th className="sticky-col">{data.cheDo === 'lop' ? 'Lớp' : 'Chi nhánh'}</Th>
-              {COT.map((c) => <Th key={c.key} align="right" hint={c.goiY}>{c.nhan(ct)}</Th>)}
+              {COT.map((c) => <Th key={c.key} align="right" hint={c.key === 'duoiKyVong' ? undefined : c.goiY}>{c.nhan(ct)}{c.key === 'duoiKyVong' && <> <NutLuat label={c.nhan(ct)}>{GOI_Y_DUOI_KY_VONG[ct]}</NutLuat></>}</Th>)}
             </tr></thead>
             <tbody>
               {data.cheDo === 'lop' && hangTong(data.tenChiNhanh ? `Cả ${data.tenChiNhanh}` : 'Cả chi nhánh')}

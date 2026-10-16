@@ -8,7 +8,7 @@ import { Nhan } from '../../ui/Nhan.tsx';
 import { BranchFilter, WeekPicker, useChiNhanhMacDinh } from '../../ui/Filters.tsx';
 import { IconGap } from '../../ui/BieuTuong.tsx';
 import { useDienThoai } from '../../ui/TheDong.tsx';
-import { CongTacKhung, khungDaNho } from '../../ui/CongTacKhung.tsx';
+import { CongTacKhung, khungDaNho, phamViCoHaiKhung } from '../../ui/CongTacKhung.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { KhoiNhom } from '../../ui/HangNhom.tsx';
@@ -20,6 +20,7 @@ import { KhoiNo } from './lichTest/KhoiNo.tsx';
 import { HangLop } from './lichTest/HangLop.tsx';
 import { dangMo, docMo, ghiMo } from './lichTest/moLop.ts';
 import { NganXuatMt } from './NganXuatMt.tsx';
+import { DanhSachNguon } from '../../ui/SoLieuO.tsx';
 import { t } from '@shared/i18n/index.ts';
 
 type Loai = 'ft' | 'thuong';
@@ -30,7 +31,7 @@ const loaiCua = (l: { mode: LopLichTest['mode']; kind?: string | null }): Loai =
  * TEST › LỊCH TEST (PR-UX1, mockup 13 phương án B; PR-LT3 ba khối, mockup lich-test-ba-khoi 06/10) — chấm ngay tại chỗ.
  *
  *   hàng lọc   tuần · "Lớp tôi dạy | Tất cả" (chỉ khi hai tập khác nhau) · chi nhánh · chip "Đang lọc: lớp …"
- *   dải số     Tuần này đã chấm x/y · Còn phải chấm · Quá hạn chấm n · m lớp — bấm được (G-10, Q1)
+ *   dải số     Tuần này đã chấm x/y · Còn phải chấm · Quá hạn chấm n · m lớp — bấm được (G-10, Q1; UX-2: Quá hạn chấm mở danh sách ô)
  *   khối 1     Test quá hạn chấm — theo hôm nay, không đổi khi đổi tuần; bấm Nhập điểm mở lưới ngay dưới dòng (mục con)
  *   khối 2     Test chấm tuần này — chỉ khi xem tuần hiện tại; lớp đã chấm xong thu gọn, chữ nhạt, cuối (Q4)
  *   khối 3     Lịch Test tuần này / Lịch Test W1 OCT (tuần khác: mở sẵn — Q2)
@@ -166,7 +167,8 @@ export function LichTestTab() {
   const loai: Loai | null = useMemo(() => {
     if (!data) return null;
     const co = (k: string | null | undefined): k is Loai => (k === 'ft' || k === 'thuong') && dem[k] > 0;
-    if (co(loaiParam)) return loaiParam;
+    /* UX-2 (5): khung bấm chọn ở công tắc (theo phạm vi) mở được cả khi tuần này khung đó rỗng ("· 0"). */
+    if ((loaiParam === 'ft' || loaiParam === 'thuong') && (dem[loaiParam] > 0 || phamViCoHaiKhung())) return loaiParam;
     const theoLop = tatCaHang.find((l) => l.classId === urlClassId);
     if (theoLop && co(loaiCua(theoLop))) return loaiCua(theoLop);
     const daNho = khungDaNho('lich-test');
@@ -193,10 +195,13 @@ export function LichTestTab() {
     setMoKhoi((m) => ({ ...m, [k]: false }));
   };
 
+  const [moQuaHan, setMoQuaHan] = useState(false);
+  const qsQuaHan = new URLSearchParams([...qs].filter(([k]) => k !== 'periodId'));
   const cuon = (id: string) => requestAnimationFrame(() => document.getElementById(id)?.scrollIntoView({ block: 'start', behavior: 'smooth' }));
   const bamSo = (o: OSo) => {
     if (!data) return;
-    if (o === 'no') { setMoKhoi((m) => ({ ...m, k1: true })); cuon('lich-test-no'); return; }
+    /* UX-2 (1): "Quá hạn chấm" mở DANH SÁCH đúng các ô đã đếm (cả ô tuần trước ở khối 2) — không còn chỉ một khối. */
+    if (o === 'no') { setMoQuaHan(true); return; }
     /* Hai ô đầu: khối 2 ở tuần hiện tại, khối 3 ở tuần khác. "Còn phải chấm" ép mở hàng còn bài (không đụng hàng đã xong — Q4). */
     const k = data.laTuanNay ? 'k2' : 'k3';
     setMoKhoi((m) => ({ ...m, [k]: true }));
@@ -342,7 +347,10 @@ export function LichTestTab() {
         </div>
       ) : (
         <>
-          <DaiSo tq={loai ? data.tongQuanKhung[loai] : data.tongQuan} tenTuan={tenTuan} onBam={bamSo} />
+          {/* UX-2 (1): ô "Quá hạn chấm" lấy `quaHanCham` (= Tổng quan "Bài quá hạn", cả hai khung); hai ô đầu theo khung như cũ. */}
+          <DaiSo tq={((tq) => ({ ...tq, no: { bai: data.quaHanCham.bai, lop: data.quaHanCham.lop }, khac: { ...tq.khac, no: data.quaHanCham.khac } }))(loai ? data.tongQuanKhung[loai] : data.tongQuan)}
+            tenTuan={tenTuan} onBam={bamSo} />
+          <DanhSachNguon nguon={`/cham/lich-test/qua-han?${qsQuaHan}`} tieuDe={t('Quá hạn chấm')} open={moQuaHan} onClose={() => setMoQuaHan(false)} />
           <KhoiNo no={noTab} mo={moKhoi.k1} onMo={() => thuKhoi('k1')}
             dongMo={dongMo && (!loai || loaiCua(dongMo.d) === loai) ? dongMo : null} chuaLuu={chuaLuu} baoChuaLuu={baoChuaLuu}
             onMoDong={(d, viTri) => {

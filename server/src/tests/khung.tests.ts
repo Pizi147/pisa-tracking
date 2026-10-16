@@ -85,8 +85,10 @@ export async function runKhungTests(t: YThucTestKit) {
     assert(Object.values(d.TAB_CONG_VIEC_LABEL).join(',') === 'Chờ duyệt,Hỗ trợ học viên,Yêu cầu của tôi,Vận hành,Báo cáo đơn vị', 'Chữ tab Công việc');
     assert(d.DUONG_TAB_CONG_VIEC['ho-tro'] === '/cong-viec' && d.DUONG_TAB_CONG_VIEC['van-hanh'] === '/cong-viec/van-hanh'
       && d.DUONG_TAB_CONG_VIEC['cho-duyet'] === '/cong-viec/cho-duyet', 'Đường dẫn tab');
-    assert(d.khuVucHienThi(QL).find((k: any) => k.key === 'cong-viec')?.to === '/cong-viec/cho-duyet'
-      && d.khuVucHienThi(GV).find((k: any) => k.key === 'cong-viec')?.to === '/cong-viec', 'Mục Công việc: QL vào thẳng Chờ duyệt');
+    /* UX-2 (3): QL vào Chờ duyệt chỉ khi có thẻ chờ; không có thì Hỗ trợ học viên. */
+    assert(d.khuVucHienThi(QL, 2).find((k: any) => k.key === 'cong-viec')?.to === '/cong-viec/cho-duyet'
+      && d.khuVucHienThi(QL, 0).find((k: any) => k.key === 'cong-viec')?.to === '/cong-viec'
+      && d.khuVucHienThi(GV, 2).find((k: any) => k.key === 'cong-viec')?.to === '/cong-viec', 'Mục Công việc: QL vào Chờ duyệt khi có thẻ');
     assert(Object.values(d.TAB_TONG_QUAN_LABEL).join(',') === 'Việc hôm nay,Phân tích', 'Chữ tab Tổng quan (O3; PR-VAI-a K1-10: \"Việc hôm nay\")');
   });
 

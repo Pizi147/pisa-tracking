@@ -124,6 +124,8 @@ export function tongQuanQuanLy(p: Principal, f: { branchId?: number | null }) {
           han: ngay.length ? { chu: a === b ? `quá hạn ${a} ngày` : `quá hạn ${a}–${b} ngày`, quaHan: true as const } : chuaCoHan,
           den: `/cong-viec?loai=phoi_hop_sos&loc=qua-han&khung=tat-ca${cn}` };
       }
+      /* UX-2 (2): Case chưa chốt PA quá hạn — nút mở danh sách Case của chỉ số (panel), dòng phụ theo lớp. */
+      if (x.metricId === 'case-xac-dinh-nguyen-nhan-qua-han') return { ...x, phu: tachTheoLop(r.unit, r.ids), nguoi, han: { chu: 'quá hạn', quaHan: true as const }, den: null };
       /* pa-can-cap-nhat: "PA chưa ghi kết quả tuần W4 SEP" — tuần của hạn cũ nhất (Q25); dòng phụ theo khung. */
       const lop = lopCuaTap(r.unit, r.ids);
       const soFt = r.ids.filter((id) => lop.get(id)?.isFt === true).length;
