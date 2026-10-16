@@ -47,6 +47,7 @@ import { migratePrOv8a } from './migrate/prOv8a.ts';
 import { migratePrOv11e, themCotPrOv11e } from './migrate/prOv11e.ts';
 import { migratePrOv12a } from './migrate/prOv12a.ts';
 import { migratePrOv13l } from './migrate/prOv13l.ts';
+import { migratePrOv13n } from './migrate/prOv13n.ts';
 import { migratePrOv12g } from './migrate/prOv12g.ts';
 import { migratePrEn } from './migrate/prEn.ts';
 import { migratePrOv12b } from './migrate/prOv12b.ts';
@@ -344,6 +345,7 @@ function migrateCaseEngine(applied: string[], skipped: string[], loiSauBuoc?: nu
        Case tạm cho lượt chưa chốt (đổi dữ liệu, chạy lặp được) — mỗi phần một giao dịch. */ for (const b of cacBuocPrOv13a(conn, applied)) buoc(b);
     /* OV-13e: users.requested_role — vai đề nghị khi tự đăng ký (chỉ thêm cột, chạy lặp được). */ buoc(() => migratePrOv13e(conn, applied));
     /* OV-13l: hạn bàn giao lệnh đang chờ chưa xác nhận = muộn hơn của (ra lệnh + 7 ngày) và hạn cũ, GVBM = GVCN (đổi dữ liệu, chạy lặp được). */ buoc(() => migratePrOv13l(conn, applied));
+    /* OV-13n: bảng §5.3 bỏ "Trao đổi ngắn với HV" ở SOS 2–3 — việc điền sẵn chưa làm của lượt SOS 2–3 → bỏ (đổi dữ liệu, chạy lặp được). */ buoc(() => migratePrOv13n(conn, applied));
     /* HD-a: users.da_xem_huong_dan — dải "Mới dùng PISA?" nhớ theo tài khoản (chỉ thêm cột, chạy lặp được). */ buoc(() => migratePrHd(conn, applied));
 
     conn.prepare("INSERT OR REPLACE INTO demo_config (key, value, updated_at) VALUES ('case_engine_migrated_at', ?, ?)")

@@ -63,17 +63,19 @@ export async function runSosV3Tests(t: YThucTestKit) {
     assert(threw, 'MT0 không tồn tại — phải từ chối');
   });
 
-  check('PR-T · T1 DEFAULT_SOS_COORDINATION đủ 5 MT × 3 mức, đúng bảng §5.3 (dấu + là cộng thêm vào cột bên trái)', () => {
+  check('OV-13n · DEFAULT_SOS_COORDINATION đủ 4 hàng MT × 3 mức (12 ô) theo bảng §5.3 chủ SP 16/10: SOS2/SOS3 không có talk_student, SOS1 giữ HV + gia đình', () => {
     const ks = (mt: number, lv: number) => domain.sosCoordinationFor(mt, lv).join(',');
-    const HSGD = 'talk_student,talk_family';
-    for (const mt of MTS) assert(ks(mt, 1) === HSGD, `MT${mt} SOS1: ${ks(mt, 1)}`);
-    assert(ks(1, 2) === HSGD, `MT1 SOS2 vẫn chỉ HS + gia đình: ${ks(1, 2)}`);
-    assert(ks(1, 3) === `${HSGD},gvcn_meeting`, `MT1 SOS3: ${ks(1, 3)}`);
-    assert(ks(2, 2) === `${HSGD},gvcn_meeting` && ks(2, 3) === `${HSGD},gvcn_meeting,cx_meeting_student`, `MT2: ${ks(2, 2)} | ${ks(2, 3)}`);
-    assert(ks(3, 2) === `${HSGD},gvcn_meeting` && ks(3, 3) === `${HSGD},gvcn_meeting,cx_meeting_family`, `MT3: ${ks(3, 2)} | ${ks(3, 3)}`);
-    for (const mt of [4, 5, 6, 12]) {
-      assert(ks(mt, 2) === `${HSGD},gvcn_meeting` && ks(mt, 3) === `${HSGD},gvcn_meeting,cx_meeting_student`, `MT${mt}: ${ks(mt, 2)} | ${ks(mt, 3)}`);
+    const BANG: Record<number, string[]> = {
+      1: ['talk_student,talk_family', 'talk_family', 'talk_family,gvcn_meeting'],
+      2: ['talk_student,talk_family', 'talk_family,gvcn_meeting', 'talk_family,gvcn_meeting,cx_meeting_student'],
+      3: ['talk_student,talk_family', 'talk_family,gvcn_meeting', 'talk_family,gvcn_meeting,cx_meeting_family'],
+      4: ['talk_student,talk_family', 'talk_family,gvcn_meeting', 'talk_family,gvcn_meeting,cx_meeting_student'],
+    };
+    for (const mt of [1, 2, 3, 4]) for (const lv of [1, 2, 3]) {
+      assert(ks(mt, lv) === BANG[mt][lv - 1], `MT${mt} SOS${lv}: ${ks(mt, lv)}`);
     }
+    for (const mt of [5, 6, 12]) for (const lv of [1, 2, 3]) assert(ks(mt, lv) === BANG[4][lv - 1], `MT${mt} dùng hàng 4: ${ks(mt, lv)}`);
+    assert(domain.COORDINATION_KINDS.includes('talk_student'), '"+ Thêm việc" vẫn có Trao đổi ngắn với HV');
   });
 
   check('PR-T · T1 MT3 SOS3 là dòng DUY NHẤT có cx_meeting_family (meeting có phụ huynh)', () => {
@@ -97,7 +99,7 @@ export async function runSosV3Tests(t: YThucTestKit) {
   check('PR-T · T1 Lý do bỏ việc: bốn lý do chọn nhanh + `system_sos_changed` (chỉ hệ thống dùng); ba lý do đóng case `Không cần theo dõi`', () => {
     assert(JSON.stringify(domain.COORDINATION_USER_REMOVE_REASONS) === JSON.stringify(['not_needed', 'handled_otherwise', 'duplicate_measure', 'other']),
       `Bốn lý do sai: ${domain.COORDINATION_USER_REMOVE_REASONS}`);
-    assert(JSON.stringify(domain.COORDINATION_REMOVE_REASONS) === JSON.stringify(['not_needed', 'handled_otherwise', 'duplicate_measure', 'other', 'system_sos_changed', 'system_luot_huy', 'system_ket_qua_huy']), 'Bảy mã lý do (PR-MT thêm system_luot_huy — huỷ cả lượt, T67; PR-MTa thêm system_ket_qua_huy — kết quả MT huỷ do dời vượt)');
+    assert(JSON.stringify(domain.COORDINATION_REMOVE_REASONS) === JSON.stringify(['not_needed', 'handled_otherwise', 'duplicate_measure', 'other', 'system_sos_changed', 'system_luot_huy', 'system_ket_qua_huy', 'system_bang_doi']), 'Tám mã lý do (PR-MT thêm system_luot_huy — huỷ cả lượt, T67; PR-MTa thêm system_ket_qua_huy — kết quả MT huỷ do dời vượt; OV-13n thêm system_bang_doi — bảng §5.3 đổi)');
     assert(domain.COORDINATION_REMOVE_REASON_LABEL.not_needed === 'Không cần trong trường hợp này'
       && domain.COORDINATION_REMOVE_REASON_LABEL.handled_otherwise === 'Đã xử lý theo cách khác'
       && domain.COORDINATION_REMOVE_REASON_LABEL.duplicate_measure === 'Trùng với lần xử lý khác'
@@ -496,6 +498,8 @@ export async function runSosV3Tests(t: YThucTestKit) {
   const gvcn = P.coreTeacher;      // chủ nhiệm MB FT 101
   const coordOf = (attemptId: number) => all('SELECT * FROM sos_coordination_actions WHERE attempt_id = ? ORDER BY id', attemptId);
   const rowOf = (attemptId: number, kind: string) => coordOf(attemptId).find((r) => r.kind === kind);
+  /** OV-13n: lượt MT2 qua SOS1 rồi SOS2 lúc nhập điểm — dòng talk_student hệ thống đã bỏ nằm lại; vòng "làm hết" chỉ đi qua việc chưa bỏ. */
+  const activeOf = (attemptId: number) => coordOf(attemptId).filter((r) => r.status !== 'removed');
   const effectivenessSvc: any = await import('../cases/effectiveness.ts');
   const myworkSvc: any = await import('../worklist/mywork.ts');
   const metricsSvc: any = await import('../worklist/metrics.ts');
@@ -662,7 +666,7 @@ export async function runSosV3Tests(t: YThucTestKit) {
 
   check('PR-T · (rà soát) Lượt Mock đã HUỶ: không thêm việc phối hợp; không hiện trong danh sách theo lớp / học viên (khớp chỉ số); chữ nhập vào quá dài bị từ chối', () => {
     const f = freshSos('CANCEL');
-    assertThrows(() => phoiHop.confirmCoordination(gvcn, rowOf(f.a.id, 'talk_student').id, { performedOn: TODAY, note: 'x'.repeat(1001) }), /quá dài/, 'Ghi chú quá dài');
+    assertThrows(() => phoiHop.confirmCoordination(gvcn, rowOf(f.a.id, 'talk_family').id, { performedOn: TODAY, note: 'x'.repeat(1001) }), /quá dài/, 'Ghi chú quá dài');
     assertThrows(() => phoiHop.removeCoordination(gvcn, rowOf(f.a.id, 'talk_family').id, { reasonCode: 'other', reasonText: 'y'.repeat(301) }), /quá dài/, 'Lý do quá dài');
     assertThrows(() => phoiHop.addCoordination(gvcn, f.a.id, { kind: 'other', customName: 'z'.repeat(101) }), /quá dài/, 'Tên việc quá dài');
     /* PR-MT (M-12): lượt ĐÃ CÓ ĐIỂM nay không "Huỷ cả lượt" được — dựng đúng dữ liệu CŨ (huỷ trước PR-MT) để thử chỗ đọc. */
@@ -782,11 +786,11 @@ export async function runSosV3Tests(t: YThucTestKit) {
     `SELECT ur.user_id AS id FROM user_roles ur JOIN roles r ON r.id = ur.role_id
       WHERE r.key = 'teacher' AND ur.user_id NOT IN (SELECT user_id FROM teacher_assignments WHERE class_id = ? AND status = 'active')
       ORDER BY ur.user_id LIMIT 1`, CLASS) as any).id);
-  const KINDS_SOS2 = 'talk_student,talk_family,gvcn_meeting';
+  const KINDS_SOS2 = 'talk_family,gvcn_meeting';   // OV-13n: SOS2 không điền sẵn talk_student
 
-  check('PR-T · P01 (§10#1) Lượt Mock FT có SOS lần đầu → việc phối hợp `preset = 1` theo bảng §5.3: MT2 SOS2 = HS + gia đình + GVCN meeting HS, đều `pending`, đúng học viên', () => {
+  check('PR-T · P01 (§10#1) Lượt Mock FT có SOS lần đầu → việc phối hợp `preset = 1` theo bảng §5.3: MT2 SOS2 = gia đình + GVCN meeting HS (OV-13n), đều `pending`, đúng học viên', () => {
     const f = freshSos('P01');
-    const rows = coordOf(f.a.id);
+    const rows = coordOf(f.a.id).filter((r) => r.status !== 'removed');
     assert(rows.map((r) => r.kind).join() === KINDS_SOS2, `Việc: ${rows.map((r) => r.kind)}`);
     assert(rows.every((r) => r.preset === 1 && r.status === 'pending' && r.student_id === f.st.id && r.custom_name === null
       && r.performed_on === null && r.removed_at === null), `Dòng sai: ${JSON.stringify(rows[0])}`);
@@ -797,38 +801,39 @@ export async function runSosV3Tests(t: YThucTestKit) {
     phoiHop.removeCoordination(gvcn, rowOf(f.a.id, 'talk_family').id, { reasonCode: 'handled_otherwise' });
     scoreMt2(f.a); scoreMt2(f.a); enter(P.admin, f.a, 'listening', 7);
     const rows = coordOf(f.a.id);
-    assert(rows.length === 3, `Chạy lặp phải giữ 3 việc, đang ${rows.length}`);
+    assert(rows.length === 3, `Chạy lặp phải giữ 3 dòng (2 điền sẵn + talk_student hệ thống bỏ lúc qua SOS1), đang ${rows.length}`);
     assert(rowOf(f.a.id, 'talk_family').status === 'removed' && rowOf(f.a.id, 'talk_family').remove_reason_code === 'handled_otherwise', 'Việc đã bỏ không được sống lại');
   });
 
   check('PR-T · P02 Mức SOS TĂNG khi nhập thêm điểm → THÊM việc còn thiếu (MT2 SOS3 thêm CX/GĐCN meeting HS); việc đã có — kể cả đã xong — giữ nguyên', () => {
     const f = freshSos('P02');
-    const td = rowOf(f.a.id, 'talk_student');
+    const td = rowOf(f.a.id, 'talk_family');
     phoiHop.confirmCoordination(gvcn, td.id, { performedOn: addDays(TODAY, -1), note: 'Đã gặp em sau buổi học' });
     enter(P.admin, f.a, 'reading', 5);                                   // thêm một kỹ năng trượt → SOS3
-    const rows = coordOf(f.a.id);
+    const rows = coordOf(f.a.id).filter((r) => r.status !== 'removed');
     assert(rows.map((r) => r.kind).join() === `${KINDS_SOS2},cx_meeting_student`, `Sau khi lên SOS3: ${rows.map((r) => r.kind)}`);
-    const again = rowOf(f.a.id, 'talk_student');
+    const again = rowOf(f.a.id, 'talk_family');
     assert(again.id === td.id && again.status === 'done' && again.performed_on === addDays(TODAY, -1) && again.note === 'Đã gặp em sau buổi học', `Việc đã xong bị đổi: ${JSON.stringify(again)}`);
     assert(rowOf(f.a.id, 'cx_meeting_student').status === 'pending' && rowOf(f.a.id, 'cx_meeting_student').preset === 1, 'Việc mới thêm phải pending, điền sẵn');
   });
 
   check('PR-T · P03 (§10#4) Sửa điểm làm SOS2 → SOS1: việc `pending` không còn trong bảng (GVCN meeting) tự `removed · system_sos_changed`; việc `done` GIỮ NGUYÊN; việc còn trong bảng vẫn pending', () => {
     const f = freshSos('P03');
-    phoiHop.confirmCoordination(gvcn, rowOf(f.a.id, 'talk_student').id, { performedOn: TODAY });
+    phoiHop.confirmCoordination(gvcn, rowOf(f.a.id, 'talk_family').id, { performedOn: TODAY });
     enter(P.admin, f.a, 'speaking', 7);                                  // Speaking đạt → chỉ còn W2 trượt → SOS1
     assert(rowOf(f.a.id, 'gvcn_meeting').status === 'removed' && rowOf(f.a.id, 'gvcn_meeting').remove_reason_code === 'system_sos_changed'
       && rowOf(f.a.id, 'gvcn_meeting').removed_at && rowOf(f.a.id, 'gvcn_meeting').removed_by === null, `GVCN meeting: ${JSON.stringify(rowOf(f.a.id, 'gvcn_meeting'))}`);
-    assert(rowOf(f.a.id, 'talk_student').status === 'done', 'Việc đã xong không bị xoá / đổi');
-    assert(rowOf(f.a.id, 'talk_family').status === 'pending', 'Việc còn trong bảng SOS1 vẫn pending');
+    assert(rowOf(f.a.id, 'talk_family').status === 'done', 'Việc đã xong không bị xoá / đổi');
+    assert(rowOf(f.a.id, 'talk_student')?.status === 'pending' && rowOf(f.a.id, 'talk_student').preset === 1, 'OV-13n: SOS2 → 1 thêm lại Trao đổi ngắn với HV');
   });
 
   check('PR-T · P03 SOS hết hẳn: mọi việc điền sẵn `pending` tự bỏ, việc `done` giữ, việc GVCN tự thêm (không phải điền sẵn) KHÔNG bị máy đụng; SOS lên lại thì việc bị bỏ vì hệ thống được HỒI LẠI (việc bị người bỏ thì không)', () => {
     const f = freshSos('P03b');
     phoiHop.confirmCoordination(gvcn, rowOf(f.a.id, 'talk_family').id, { performedOn: TODAY });
     phoiHop.addCoordination(gvcn, f.a.id, { kind: 'cx_meeting_family' });
+    enter(P.admin, f.a, 'speaking', 7);                                  // SOS1 → talk_student điền sẵn (OV-13n) để GVCN bỏ
     phoiHop.removeCoordination(gvcn, rowOf(f.a.id, 'talk_student').id, { reasonCode: 'not_needed' });
-    enter(P.admin, f.a, 'writing2', 7); enter(P.admin, f.a, 'speaking', 7);   // hết SOS
+    enter(P.admin, f.a, 'writing2', 7);                                  // hết SOS
     assert(rowOf(f.a.id, 'gvcn_meeting').remove_reason_code === 'system_sos_changed', 'Việc điền sẵn pending phải tự bỏ');
     assert(rowOf(f.a.id, 'talk_family').status === 'done', 'Việc đã xong giữ nguyên');
     assert(rowOf(f.a.id, 'cx_meeting_family').status === 'pending' && rowOf(f.a.id, 'cx_meeting_family').preset === 0, 'Việc GVCN tự thêm không bị hệ thống bỏ');
@@ -841,9 +846,47 @@ export async function runSosV3Tests(t: YThucTestKit) {
     assert(coordOf(f.a.id).length === 4, `Không nhân đôi: ${coordOf(f.a.id).map((r) => r.kind)}`);
   });
 
+  const migOv13n: any = await import('../migrate/prOv13n.ts');
+  check('OV-13n · P02 SOS1 → 2: Trao đổi ngắn với HV điền sẵn chưa làm tự bỏ (`system_sos_changed`); SOS2 → 1 hồi lại, không nhân đôi', () => {
+    const f = freshSos('N13n-p02');
+    enter(P.admin, f.a, 'speaking', 7);                                  // SOS1
+    assert(rowOf(f.a.id, 'talk_student')?.status === 'pending', 'SOS1 có Trao đổi ngắn với HV');
+    enter(P.admin, f.a, 'speaking', 5);                                  // SOS2
+    assert(rowOf(f.a.id, 'talk_student').status === 'removed' && rowOf(f.a.id, 'talk_student').remove_reason_code === 'system_sos_changed', 'SOS2 tự bỏ');
+    enter(P.admin, f.a, 'speaking', 7);
+    assert(rowOf(f.a.id, 'talk_student').status === 'pending' && coordOf(f.a.id).filter((r) => r.kind === 'talk_student').length === 1, 'SOS1 hồi lại, một dòng');
+  });
+
+  check('OV-13n · migrate prOv13n: bỏ talk_student điền sẵn pending của lượt SOS 2–3 (`system_bang_doi` + nhật ký); giữ việc done, việc GVCN tự thêm, lượt SOS1; kiem-truoc đếm đúng; chạy 2 lần không đổi; SOS về 1 thì hồi', () => {
+    const mig = migOv13n;
+    const datTs = (a: any, preset: number, status: string) => {
+      conn.prepare(`DELETE FROM sos_coordination_actions WHERE attempt_id = ? AND kind = 'talk_student'`).run(a.id);
+      conn.prepare(`INSERT INTO sos_coordination_actions (attempt_id, student_id, kind, preset, status, performed_on, created_at) VALUES (?, ?, 'talk_student', ?, ?, ?, ?)`)
+        .run(a.id, a.student_id, preset, status, status === 'done' ? TODAY : null, TODAY);
+      return rowOf(a.id, 'talk_student').id as number;
+    };
+    const boCu = freshSos('N13n-bo'), xong = freshSos('N13n-xong'), tuThem = freshSos('N13n-tu'), sos1 = freshSos('N13n-s1');
+    enter(P.admin, sos1.a, 'speaking', 7);                               // SOS1: talk_student còn trong bảng
+    const idBo = datTs(boCu.a, 1, 'pending'), idXong = datTs(xong.a, 1, 'done'), idTu = datTs(tuThem.a, 0, 'pending');
+    const truoc = Object.values(mig.kiemTruocOv13n(conn) as Record<string, number>).reduce((x, y) => x + y, 0);
+    const lan1: string[] = []; conn.transaction(() => mig.migratePrOv13n(conn, lan1))();
+    const r = get('SELECT * FROM sos_coordination_actions WHERE id = ?', idBo);
+    assert(r.status === 'removed' && r.remove_reason_code === 'system_bang_doi' && r.removed_by === null && r.removed_at, `Dòng bỏ: ${JSON.stringify(r)}`);
+    assert(domain.COORDINATION_REMOVE_REASON_LABEL.system_bang_doi === 'Luật mới: SOS 2–3 không còn việc này', 'Nhãn lý do');
+    assert(truoc >= 1 && lan1.length === 1 && lan1[0].startsWith(`OV-13n: ${truoc} việc`), `kiem-truoc ${truoc} ≠ migrate: ${lan1}`);
+    assert(get('SELECT status FROM sos_coordination_actions WHERE id = ?', idXong).status === 'done', 'Việc done giữ');
+    assert(get('SELECT status FROM sos_coordination_actions WHERE id = ?', idTu).status === 'pending', 'Việc GVCN tự thêm giữ');
+    assert(rowOf(sos1.a.id, 'talk_student').status === 'pending', 'Lượt SOS1 giữ');
+    assert(count("SELECT COUNT(*) n FROM audit_logs WHERE action = 'sos_coordination.sync' AND entity_id = ? AND after_json LIKE '%system_bang_doi%'", boCu.a.id) === 1, 'Ghi nhật ký');
+    const lan2: string[] = []; conn.transaction(() => mig.migratePrOv13n(conn, lan2))();
+    assert(lan2.length === 0 && Object.keys(mig.kiemTruocOv13n(conn)).length === 0, `Lần 2 vẫn đổi: ${lan2}`);
+    enter(P.admin, boCu.a, 'speaking', 7);                               // SOS về 1 → hồi
+    assert(rowOf(boCu.a.id, 'talk_student').status === 'pending' && rowOf(boCu.a.id, 'talk_student').id === idBo, 'SOS1 hồi lại việc bị luật mới bỏ');
+  });
+
   check('PR-T · P04 Người thao tác: GVCN của lớp em đang học và Quản lý trong phạm vi; GVBM CHỈ XEM (không thêm/xác nhận/bỏ); người ngoài lớp không xem được; Quản lý chi nhánh khác không', () => {
     const f = freshSos('P04');
-    const id = rowOf(f.a.id, 'talk_student').id;
+    const id = rowOf(f.a.id, 'gvcn_meeting').id;
     for (const [who, name] of [[w1T, 'GVBM W1'], [w2T, 'GVBM W2']] as const) {
       assertThrows(() => phoiHop.confirmCoordination(who, id, { performedOn: TODAY }), /chủ nhiệm|Quản lý|quyền/, `${name} xác nhận`);
       assertThrows(() => phoiHop.removeCoordination(who, id, { reasonCode: 'not_needed' }), /chủ nhiệm|Quản lý|quyền/, `${name} bỏ`);
@@ -853,10 +896,10 @@ export async function runSosV3Tests(t: YThucTestKit) {
     assertThrows(() => phoiHop.coordinationOfClass(outsiderT, CLASS), /phạm vi/, 'Người ngoài lớp xem lớp');
     assertThrows(() => phoiHop.coordinationOfStudent(outsiderT, f.st.id), /phạm vi/, 'Người ngoài lớp xem học viên');
     assertThrows(() => phoiHop.confirmCoordination(P.cpManager, id, { performedOn: TODAY }), /phạm vi|quyền|chủ nhiệm/, 'Quản lý chi nhánh khác');
-    assert(rowOf(f.a.id, 'talk_student').status === 'pending', 'Bị từ chối thì không đổi gì');
+    assert(rowOf(f.a.id, 'gvcn_meeting').status === 'pending', 'Bị từ chối thì không đổi gì');
     phoiHop.confirmCoordination(P.mbManager, id, { performedOn: TODAY });
     phoiHop.confirmCoordination(gvcn, rowOf(f.a.id, 'talk_family').id, { performedOn: TODAY });
-    assert(rowOf(f.a.id, 'talk_student').status === 'done' && rowOf(f.a.id, 'talk_family').status === 'done', 'Quản lý và GVCN thao tác được');
+    assert(rowOf(f.a.id, 'gvcn_meeting').status === 'done' && rowOf(f.a.id, 'talk_family').status === 'done', 'Quản lý và GVCN thao tác được');
     assert((phoiHop.coordinationOfStudent(w1T, f.st.id) as any).canAct === false && (phoiHop.coordinationOfStudent(gvcn, f.st.id) as any).canAct === true, 'Cờ canAct cho giao diện ẩn nút');
   });
 
@@ -867,11 +910,11 @@ export async function runSosV3Tests(t: YThucTestKit) {
     add('other', 'Gặp riêng phụ huynh'); add('other', 'Nhờ CS nhắc lịch học');
     assertThrows(() => add('other'), /tên|Ghi rõ/, '`Khác` không tên');
     assertThrows(() => add('other', 'Gặp riêng phụ huynh'), /đã có/, 'Trùng tên');
-    assertThrows(() => add('talk_student'), /đã có/, 'Trùng loại đã điền sẵn');
+    assertThrows(() => add('talk_family'), /đã có/, 'Trùng loại đã điền sẵn');
     assertThrows(() => add('report_gia_dinh'), /loại/, 'Loại lạ (Report cho gia đình không phải việc SOS)');
     assert(coordOf(f.a.id).length === 7, `Ba điền sẵn + bốn thêm = 7, có ${coordOf(f.a.id).length}`);
     assert(coordOf(f.a.id).filter((r) => r.preset === 0).length === 4, 'Việc thêm tay phải `preset = 0`');
-    const done = rowOf(f.a.id, 'talk_student');
+    const done = rowOf(f.a.id, 'talk_family');
     phoiHop.confirmCoordination(gvcn, done.id, { performedOn: TODAY });
     assertThrows(() => phoiHop.removeCoordination(gvcn, done.id, { reasonCode: 'not_needed' }), /cần xử lý|đã xong/, 'Bỏ việc đã xong');
   });
@@ -883,7 +926,8 @@ export async function runSosV3Tests(t: YThucTestKit) {
     assertThrows(() => phoiHop.removeCoordination(gvcn, fam, { reasonCode: 'system_sos_changed' }), /lý do/, 'Lý do của hệ thống');
     assertThrows(() => phoiHop.removeCoordination(gvcn, fam, { reasonCode: 'other' }), /ghi rõ|chữ/i, '`Khác` không chữ');
     assertThrows(() => phoiHop.removeCoordination(gvcn, fam, { reasonCode: 'bay-ba' }), /lý do/, 'Mã lạ');
-    phoiHop.confirmCoordination(gvcn, rowOf(f.a.id, 'talk_student').id, { performedOn: TODAY });
+    phoiHop.addCoordination(gvcn, f.a.id, { kind: 'cx_meeting_student' });   // OV-13n: SOS2 chỉ còn 2 việc điền sẵn — thêm một cho đủ 3
+    phoiHop.confirmCoordination(gvcn, rowOf(f.a.id, 'cx_meeting_student').id, { performedOn: TODAY, note: 'Đã gặp em, thống nhất lịch tự học' });
     assert((phoiHop.coordinationOfStudent(gvcn, f.st.id) as any).rows[0].summary.label === '1/3', 'Trước khi bỏ: 1/3');
     phoiHop.removeCoordination(gvcn, fam, { reasonCode: 'handled_otherwise' });
     const r = get('SELECT * FROM sos_coordination_actions WHERE id = ?', fam);
@@ -897,11 +941,11 @@ export async function runSosV3Tests(t: YThucTestKit) {
 
   check('PR-T · P07 Xác nhận xong: BẮT BUỘC ngày thực hiện, không cho ngày tương lai; ghi chú và tệp tuỳ chọn; tệp đính kèm được (GVCN/QL), GVBM chỉ xem', () => {
     const f = freshSos('P07');
-    const id = rowOf(f.a.id, 'talk_student').id;
+    const id = rowOf(f.a.id, 'talk_family').id;
     assertThrows(() => phoiHop.confirmCoordination(gvcn, id, {}), /ngày thực hiện/, 'Thiếu ngày');
     assertThrows(() => phoiHop.confirmCoordination(gvcn, id, { performedOn: addDays(TODAY, 1) }), /tương lai/, 'Ngày tương lai');
     assertThrows(() => phoiHop.confirmCoordination(gvcn, id, { performedOn: 'hôm qua' }), /không hợp lệ/, 'Ngày sai định dạng');
-    assert(rowOf(f.a.id, 'talk_student').status === 'pending', 'Lỗi thì chưa xong');
+    assert(rowOf(f.a.id, 'talk_family').status === 'pending', 'Lỗi thì chưa xong');
     phoiHop.confirmCoordination(gvcn, id, { performedOn: addDays(TODAY, -2) });               // không ghi chú, không tệp
     const r = get('SELECT * FROM sos_coordination_actions WHERE id = ?', id);
     assert(r.status === 'done' && r.performed_on === addDays(TODAY, -2) && r.performed_by === gvcn.userId && r.note === null, `Sau xác nhận: ${JSON.stringify(r)}`);
@@ -923,10 +967,10 @@ export async function runSosV3Tests(t: YThucTestKit) {
 
   check('PR-T · P08+P10 Phối hợp SOS ĐỘC LẬP với case học thuật (hoàn thành cái này không đóng cái kia, và ngược lại) và KHÔNG có hạn cứng: không cột hạn, không vào việc quá hạn, không vào hiệu quả', () => {
     const f = freshSos('P08');
-    for (const r of coordOf(f.a.id)) phoiHop.confirmCoordination(gvcn, r.id, { performedOn: TODAY });
+    for (const r of activeOf(f.a.id)) phoiHop.confirmCoordination(gvcn, r.id, { performedOn: TODAY });
     assert(get('SELECT status FROM sos_cases WHERE id = ?', f.w2.id).status === 'open' && get('SELECT status FROM sos_cases WHERE id = ?', f.sp.id).status === 'open', 'Hoàn thành phối hợp không đóng case');
     khongTheoDoi(P.mbManager, f.sp.id, { reasonCode: 'single_incident' });
-    assert(coordOf(f.a.id).every((r) => r.status === 'done'), 'Đóng case không đụng phối hợp');
+    assert(activeOf(f.a.id).every((r) => r.status === 'done'), 'Đóng case không đụng phối hợp');
     const cols = (conn.prepare('PRAGMA table_info(sos_coordination_actions)').all() as any[]).map((c) => c.name);
     assert(!cols.some((c: string) => /due|deadline|hạn/.test(c)), `Bảng không được có cột hạn: ${cols}`);
     const g = freshSos('P10');
@@ -940,14 +984,14 @@ export async function runSosV3Tests(t: YThucTestKit) {
     const f = freshSos('P09');
     const list = () => (phoiHop.coordinationOfClass(gvcn, CLASS) as any);
     const mine = () => list().rows.find((r: any) => r.attemptId === f.a.id);
-    assert(mine() && mine().attemptNo === 2 && mine().sosLevel === 2 && mine().summary.label === '0/3' && mine().studentId === f.st.id, `Dòng: ${JSON.stringify(mine())}`);
+    assert(mine() && mine().attemptNo === 2 && mine().sosLevel === 2 && mine().summary.label === '0/2' && mine().studentId === f.st.id, `Dòng: ${JSON.stringify(mine())}`);
     assert(/Speaking/.test(mine().skillLabels.join()) && /Writing/.test(mine().skillLabels.join()), `Kỹ năng trượt: ${mine().skillLabels}`);
     const before = list().pendingCount;
-    for (const r of coordOf(f.a.id)) phoiHop.confirmCoordination(gvcn, r.id, { performedOn: TODAY });
+    for (const r of activeOf(f.a.id)) phoiHop.confirmCoordination(gvcn, r.id, { performedOn: TODAY });
     assert(!mine(), 'Lượt đã hoàn thành phải ẩn mặc định');
     assert(list().pendingCount === before - 1, `Số lượt chưa hoàn thành (nút sub-tab) phải giảm 1: ${before} → ${list().pendingCount}`);
     const withDone = (phoiHop.coordinationOfClass(gvcn, CLASS, { includeDone: true }) as any).rows.find((r: any) => r.attemptId === f.a.id);
-    assert(withDone && withDone.summary.complete && withDone.summary.label === '3/3', `includeDone: ${JSON.stringify(withDone?.summary)}`);
+    assert(withDone && withDone.summary.complete && withDone.summary.label === '2/2', `includeDone: ${JSON.stringify(withDone?.summary)}`);
     const sv = (phoiHop.coordinationOfStudent(gvcn, f.st.id) as any).rows;
     assert(sv.length === 1 && sv[0].actions.length === 3, 'Theo học viên hiện đủ lượt đã xong');
   });
@@ -960,7 +1004,7 @@ export async function runSosV3Tests(t: YThucTestKit) {
     const before = live();
     assert(mine()?.pendingCount === before && mine()?.text === `Lớp ${code} — ${before} lượt Phối hợp SOS cần xử lý`,
       `Dòng trước khi xử lý: ${JSON.stringify(mine())} vs live ${before}`);
-    for (const r of coordOf(f.a.id)) phoiHop.confirmCoordination(gvcn, r.id, { performedOn: TODAY });
+    for (const r of activeOf(f.a.id)) phoiHop.confirmCoordination(gvcn, r.id, { performedOn: TODAY });
     const after = live();
     assert(after === before - 1, `Một lượt vừa xong hết việc: pendingCount phải giảm đúng 1: ${before} → ${after}`);
     assert(mine()?.pendingCount === after, `Dòng Việc cần làm phải khớp số mới: ${JSON.stringify(mine())} vs live ${after}`);
@@ -972,7 +1016,7 @@ export async function runSosV3Tests(t: YThucTestKit) {
     const M = (id: string, who: any = P.mbManager) => metricsSvc.metricSet(who, id, { branchId: bid }) as any;
     for (const id of ['phoi-hop-luot-sos', 'phoi-hop-dang-xu-ly', 'phoi-hop-hoan-thanh']) assert(domain.metricById(id)?.donVi === 'luot-sos', `${id}: đơn vị lượt`);
     assert(M('phoi-hop-luot-sos').ids.includes(f.a.id) && M('phoi-hop-dang-xu-ly').ids.includes(f.a.id) && !M('phoi-hop-hoan-thanh').ids.includes(f.a.id), 'Lượt mới: có SOS, đang xử lý, chưa hoàn thành');
-    for (const r of coordOf(f.a.id)) phoiHop.confirmCoordination(gvcn, r.id, { performedOn: TODAY });
+    for (const r of activeOf(f.a.id)) phoiHop.confirmCoordination(gvcn, r.id, { performedOn: TODAY });
     assert(M('phoi-hop-hoan-thanh').ids.includes(f.a.id) && !M('phoi-hop-dang-xu-ly').ids.includes(f.a.id) && M('phoi-hop-luot-sos').ids.includes(f.a.id), 'Xong hết: hoàn thành, không còn đang xử lý');
     enter(P.admin, f.a, 'writing2', 7); enter(P.admin, f.a, 'speaking', 7);      // hết SOS → không còn là SOS Event
     assert(!M('phoi-hop-luot-sos').ids.includes(f.a.id), 'SOS hết thì lượt không còn là SOS Event');
@@ -1169,8 +1213,8 @@ export async function runSosV3Tests(t: YThucTestKit) {
     listOutsider: await call(outsiderT, 'GET', `/students/${hf.st.id}/phoi-hop-sos`),
     listGvcn: await call(gvcn, 'GET', `/students/${hf.st.id}/phoi-hop-sos`),
     listClassGvbm: await call(w1T, 'GET', `/classes/${CLASS}/phoi-hop-sos`),
-    confirmCoordGvbm: await call(w1T, 'POST', `/phoi-hop-sos/${rowOf(hf.a.id, 'talk_student').id}/confirm`, { performedOn: TODAY }),
-    confirmCoordOk: await call(gvcn, 'POST', `/phoi-hop-sos/${rowOf(hf.a.id, 'talk_student').id}/confirm`, { performedOn: TODAY, note: 'Đã trao đổi' }),
+    confirmCoordGvbm: await call(w1T, 'POST', `/phoi-hop-sos/${rowOf(hf.a.id, 'gvcn_meeting').id}/confirm`, { performedOn: TODAY }),
+    confirmCoordOk: await call(gvcn, 'POST', `/phoi-hop-sos/${rowOf(hf.a.id, 'gvcn_meeting').id}/confirm`, { performedOn: TODAY, note: 'Đã trao đổi' }),
     removeCoordNoReason: await call(gvcn, 'POST', `/phoi-hop-sos/${rowOf(hf.a.id, 'talk_family').id}/remove`, {}),
     removeCoordOk: await call(gvcn, 'POST', `/phoi-hop-sos/${rowOf(hf.a.id, 'talk_family').id}/remove`, { reasonCode: 'handled_otherwise' }),
     addCoord: await call(gvcn, 'POST', `/attempts/${hf.a.id}/phoi-hop-sos`, { kind: 'cx_meeting_student' }),
@@ -1245,7 +1289,7 @@ export async function runSosV3DemoTests(t: YThucTestKit) {
     const coord0 = (sid: number) => rows0('SELECT x.*, a.attempt_no FROM sos_coordination_actions x JOIN assessment_attempts a ON a.id = x.attempt_id WHERE x.student_id = ? ORDER BY x.id', sid);
     const cases0 = (sid: number) => rows0('SELECT * FROM sos_cases WHERE student_id = ? ORDER BY id', sid);
 
-  check('PR-T · T8 DEMO Khôi: MT2 SOS2 (W2 + Speaking) → hai case từ SOS; Speaking đã có nguyên nhân (PA quy chế tự chạy), W2 còn CHỜ xác định nguyên nhân; Phối hợp 1/3 xong; cùng em có vi phạm Ý thức', () => {
+  check('PR-T · T8 DEMO Khôi: MT2 SOS2 (W2 + Speaking) → hai case từ SOS; Speaking đã có nguyên nhân (PA quy chế tự chạy), W2 còn CHỜ xác định nguyên nhân; Phối hợp 1/2 xong (OV-13n: SOS2 không có trao đổi với HV); cùng em có vi phạm Ý thức', () => {
       const sid = demoStudent(KHOI);
       const cs = cases0(sid);
       assert(cs.map((c) => c.category).sort().join() === 'speaking,writing2' && cs.every((c) => c.origin_kind === 'mock' && sosState.sosCaseState(c.id).fromSos), 'Hai case tự tạo từ SOS');
@@ -1254,11 +1298,11 @@ export async function runSosV3DemoTests(t: YThucTestKit) {
       /* OV-12c: bài W2 của demo chưa nhận xét (dữ liệu trước luật) → Case MT cũ "Chờ ghi nhận xét", có hạn. */
       assert(sosState.sosCaseState(w2.id).choNhanXet && sosState.sosCaseState(w2.id).dueOn, 'W2 còn chờ ghi nhận xét (nguyên nhân), có hạn');
       const co = coord0(sid);
-      assert(co.length === 3 && co.every((r) => r.attempt_no === 2) && co.filter((r) => r.status === 'done').length === 1 && co.filter((r) => r.status === 'pending').length === 2, `Phối hợp: ${co.map((r) => r.kind + ':' + r.status)}`);
+      assert(co.length === 2 && co.every((r) => r.attempt_no === 2) && co.filter((r) => r.status === 'done').length === 1 && co.filter((r) => r.status === 'pending').length === 1, `Phối hợp: ${co.map((r) => r.kind + ':' + r.status)}`);
       assert(rows0('SELECT COUNT(*) n FROM violations WHERE student_id = ?', sid)[0].n >= 2, 'Cùng em có vi phạm Ý thức');
     });
 
-  check('PR-T · T8 DEMO Lan: MT1 SOS3 → ba case (Tutor · đến MT2); case Speaking đã đóng `Không cần theo dõi · Tình huống đơn lẻ`; Phối hợp SOS3 (HS + gia đình + GVCN meeting) xong 2/3', () => {
+  check('PR-T · T8 DEMO Lan: MT1 SOS3 → ba case (Tutor · đến MT2); case Speaking đã đóng `Không cần theo dõi · Tình huống đơn lẻ`; Phối hợp SOS3 (gia đình + GVCN meeting, OV-13n) xong 1/2', () => {
       const sid = demoStudent(LAN);
       const cs = cases0(sid);
       assert(cs.length === 3 && cs.every((c) => c.sos_level === 3), `Ba case SOS3: ${cs.map((c) => c.category + ':' + c.sos_level)}`);
@@ -1269,7 +1313,7 @@ export async function runSosV3DemoTests(t: YThucTestKit) {
       assert(l.hasCause && l.coPaChoXacNhan && !l.awaitingCause, 'Case còn lại có nguyên nhân từ nhận xét, chờ xác nhận PA');
       assert(rows0("SELECT 1 FROM case_interventions WHERE case_id IN (SELECT id FROM sos_cases WHERE student_id = ?) AND preset = 1 AND description = 'Tutor · đến MT2'", sid).length === 3, 'Phương án điền sẵn Tutor · đến MT2 cho cả ba case');
       const co = coord0(sid);
-      assert(co.map((r) => r.kind).join() === 'talk_student,talk_family,gvcn_meeting' && co.filter((r) => r.status === 'done').length === 2, `Phối hợp: ${co.map((r) => r.kind + ':' + r.status)}`);
+      assert(co.map((r) => r.kind).join() === 'talk_family,gvcn_meeting' && co.filter((r) => r.status === 'done').length === 1, `Phối hợp: ${co.map((r) => r.kind + ':' + r.status)}`);
     });
 
   check('PR-T · T8 DEMO Vy: MT3 SOS1 → một lượt Phối hợp ĐÃ HOÀN THÀNH (2/2); ba mức SOS khác nhau xuất hiện trong bộ demo; có cả lượt hoàn thành lẫn chưa hoàn thành', () => {
