@@ -31,18 +31,18 @@ export async function runPrUx2Tests(t: YThucTestKit) {
   check('UX2-1 · Lịch Test "Quá hạn chấm" (Tất cả) = Tổng quan "Bài quá hạn", gồm ô tuần trước đã quá hạn; danh sách = đúng các ô', () => thu(() => {
     for (const [ten, p, cn] of [['QL MB', P.mbManager, MB], ['Quản trị', P.admin, null]] as const) {
       const m = metrics.metricSet(p, 'bai-qua-han-nhap-diem', { branchId: cn });
-      const r = cham.lichTest(p, tuanNay, cn, TODAY, { phamVi: 'tat-ca' });
-      assert(r.quaHanCham, `${ten}: lichTest phải trả quaHanCham`);
-      eq(r.quaHanCham.bai, m.n, `${ten}: số ô`);
+      const so = cham.dsQuaHanCham(p, { branchId: cn, phamVi: 'tat-ca' }, TODAY, false);
+      assert(so && !('rows' in so), `${ten}: số không kèm dòng`);
+      eq(so.n, m.n, `${ten}: số ô`);
       const ds = cham.dsQuaHanCham(p, { branchId: cn, phamVi: 'tat-ca' }, TODAY);
       eq(ds.rows.map((x: any) => x.id).sort((a: number, b: number) => a - b), m.ids, `${ten}: danh sách = tập chỉ số`);
-      eq(ds.n, r.quaHanCham.bai, `${ten}: n danh sách`);
     }
     /* Ô thi tuần trước đã quá hạn (khối 2) vẫn vào số "Quá hạn chấm". */
     const tuanTruoc = t.addDays(week.mondayOf(TODAY), -7);
     const o = cham.lichTest(P.mbManager, tuanNay, MB, TODAY, { phamVi: 'tat-ca' });
+    const n = cham.dsQuaHanCham(P.mbManager, { branchId: MB, phamVi: 'tat-ca' }, TODAY, false).n;
     const k2QuaHan = (o.chamTuanNay ?? []).filter((h: any) => h.quaHan && h.weekStart === tuanTruoc).length;
-    if (k2QuaHan) assert(o.quaHanCham.bai > o.tongQuan.no.bai, `khối 2 có ô quá hạn thì "Quá hạn chấm" (${o.quaHanCham.bai}) > khối 1 (${o.tongQuan.no.bai})`);
+    if (k2QuaHan) assert(n > o.tongQuan.no.bai, `khối 2 có ô quá hạn thì "Quá hạn chấm" (${n}) > khối 1 (${o.tongQuan.no.bai})`);
   }));
 
   check('UX2-2 · Cần xử lý: dòng "Case chưa chốt PA quá hạn" (chỉ số case-xac-dinh-nguyen-nhan-qua-han), bấm mở danh sách', () => thu(() => {

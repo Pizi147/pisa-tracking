@@ -195,8 +195,10 @@ export function LichTestTab() {
     setMoKhoi((m) => ({ ...m, [k]: false }));
   };
 
-  const [moQuaHan, setMoQuaHan] = useState(false);
+  /* UX-2 (1): ô "Quá hạn chấm" = Tổng quan "Bài quá hạn" (mọi ô có cờ quá hạn, cả ô tuần trước, cả hai khung) — đường riêng, không theo tuần. */
   const qsQuaHan = new URLSearchParams([...qs].filter(([k]) => k !== 'periodId'));
+  const quaHan = useApi<{ n: number; lop: number; khac: number }>(`/cham/lich-test/qua-han?${qsQuaHan}`).data;
+  const [moQuaHan, setMoQuaHan] = useState(false);
   const cuon = (id: string) => requestAnimationFrame(() => document.getElementById(id)?.scrollIntoView({ block: 'start', behavior: 'smooth' }));
   const bamSo = (o: OSo) => {
     if (!data) return;
@@ -347,10 +349,10 @@ export function LichTestTab() {
         </div>
       ) : (
         <>
-          {/* UX-2 (1): ô "Quá hạn chấm" lấy `quaHanCham` (= Tổng quan "Bài quá hạn", cả hai khung); hai ô đầu theo khung như cũ. */}
-          <DaiSo tq={((tq) => ({ ...tq, no: { bai: data.quaHanCham.bai, lop: data.quaHanCham.lop }, khac: { ...tq.khac, no: data.quaHanCham.khac } }))(loai ? data.tongQuanKhung[loai] : data.tongQuan)}
-            tenTuan={tenTuan} onBam={bamSo} />
-          <DanhSachNguon nguon={`/cham/lich-test/qua-han?${qsQuaHan}`} tieuDe={t('Quá hạn chấm')} open={moQuaHan} onClose={() => setMoQuaHan(false)} />
+          {/* UX-2 (1): ô "Quá hạn chấm" lấy từ `/cham/lich-test/qua-han` (cả hai khung); hai ô đầu theo khung như cũ. */}
+          <DaiSo tq={((tq) => ({ ...tq, no: { bai: quaHan?.n ?? 0, lop: quaHan?.lop ?? 0 }, khac: { ...tq.khac, no: quaHan?.khac ?? 0 } }))(loai ? data.tongQuanKhung[loai] : data.tongQuan)}
+            tenTuan={tenTuan} onBam={bamSo} dangTaiNo={!quaHan} />
+          <DanhSachNguon nguon={`/cham/lich-test/qua-han?${qsQuaHan}&rows=1`} tieuDe={t('Quá hạn chấm')} open={moQuaHan} onClose={() => setMoQuaHan(false)} />
           <KhoiNo no={noTab} mo={moKhoi.k1} onMo={() => thuKhoi('k1')}
             dongMo={dongMo && (!loai || loaiCua(dongMo.d) === loai) ? dongMo : null} chuaLuu={chuaLuu} baoChuaLuu={baoChuaLuu}
             onMoDong={(d, viTri) => {

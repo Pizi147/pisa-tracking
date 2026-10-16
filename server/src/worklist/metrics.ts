@@ -766,9 +766,10 @@ function metricSetGoc(
     case 'case-xac-dinh-nguyen-nhan-qua-han': {
       const mo = openCases();
       const ids = choDuyetCaseIds(mo.map((c: any) => c.id as number), today, true);
-      /* UX-2 (2): người giữ việc của dòng Cần xử lý = người phụ trách Case. */
+      /* UX-2 (2): người giữ việc của dòng Cần xử lý = người phụ trách Case; hạn = hạn việc tiếp đã qua ("quá hạn n ngày"). */
       const chu = new Map(mo.map((c: any) => [c.id as number, c.ownerUserId as number | null]));
-      return done(ids, { chiTiet: new Map(ids.map((id) => [id, { nguoi: chu.get(id) ? [chu.get(id)!] : [], han: [] }])) });
+      const xl = xuLyCaseMany(ids, today);
+      return done(ids, { chiTiet: new Map(ids.map((id) => [id, { nguoi: chu.get(id) ? [chu.get(id)!] : [], han: xl.get(id)?.han ? [xl.get(id)!.han!] : [] }])) });
     }
     case 'bai-qua-han-nhap-diem': {
       const r = overdueScoreBai(p, scope.branchId, today);

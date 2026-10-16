@@ -409,10 +409,13 @@ export function oQuaHanCham(
   }
   return { ids, khac, lop: lop.size };
 }
-/** Danh sách sau số "Quá hạn chấm" — đúng các ô `oQuaHanCham` đếm (G-10), dòng như panel chỉ số "Bài quá hạn". */
-export function dsQuaHanCham(p: Principal, o: Parameters<typeof oQuaHanCham>[1], today: string = demoToday()) {
-  const { ids } = oQuaHanCham(p, o, today);
-  return { n: ids.length, tieuDe: t('Quá hạn chấm'), rows: rowsFor('bai', ids, 'bai-qua-han-nhap-diem', p) };
+/**
+ * Ô "Quá hạn chấm" của Lịch Test: số (`n`, `lop`, `khac`) và — khi bấm (`coDong`) — danh sách đúng các ô `oQuaHanCham` đếm (G-10), dòng như panel
+ * chỉ số "Bài quá hạn". Đường riêng (không gộp vào `lichTest`): tập bài quá hạn đọc cả chi nhánh, không làm nặng trang Lịch Test chính (TD2-a / TD3-a).
+ */
+export function dsQuaHanCham(p: Principal, o: Parameters<typeof oQuaHanCham>[1], today: string = demoToday(), coDong = true) {
+  const { ids, khac, lop } = oQuaHanCham(p, o, today);
+  return { n: ids.length, lop, khac: khac.length, tieuDe: t('Quá hạn chấm'), ...(coDong ? { rows: rowsFor('bai', ids, 'bai-qua-han-nhap-diem', p) } : {}) };
 }
 
 // ---------------------------------------------------------------- Lịch Test
@@ -477,8 +480,6 @@ export type LichTest = {
   tongQuan: TongQuanLich;
   /** MH4, K4-05: cùng dải số tách theo khung (công tắc Fast Track · Lớp thường); cộng hai khung = `tongQuan`. */
   tongQuanKhung: Record<Khung, TongQuanLich>;
-  /** UX-2 (1): số ô "Quá hạn chấm" của dải số — `oQuaHanCham` (= Tổng quan "Bài quá hạn"), cả hai khung; `khac` = ô GV khác (phần của bạn). */
-  quaHanCham: { bai: number; lop: number; khac: number };
   /** KHỐI 1 "Test quá hạn chấm" — theo hôm nay, không theo tuần đang xem (tên trường giữ `no` — D8). */
   no: DongNo[];
   /** KHỐI 2 "Test chấm tuần này" — tuần trước + ô hạn riêng; `null` khi không xem tuần hiện tại. */
@@ -737,7 +738,7 @@ export function lichTest(
   const khong: TongQuanLich = { daCham: 0, tong: 0, conPhaiCham: 0, no: { bai: 0, lop: 0 }, khac: { con: 0, no: 0 } };
   const rong: LichTest = {
     scopeEmpty: scope.none, tuan: null, laTuanNay: false, phamVi, coPhamViRong: false, coPhanCong, lopDangLoc: null,
-    tongQuan: khong, tongQuanKhung: { ft: khong, thuong: khong }, quaHanCham: { bai: 0, lop: 0, khac: 0 }, no: [], chamTuanNay: null, lop: [], nhacLichSu: [],
+    tongQuan: khong, tongQuanKhung: { ft: khong, thuong: khong }, no: [], chamTuanNay: null, lop: [], nhacLichSu: [],
   };
   if (scope.none) return rong;
   const conn = db();
@@ -799,7 +800,6 @@ export function lichTest(
     }
     return { tong, conPhaiCham: con, daCham: tong - con, no: { bai, lop: lopNo.size }, khac: { con: khacCon, no: khacNo } };
   };
-  const qh = oQuaHanCham(p, { branchId, phamVi, classId: o.classId }, today);
   return {
     scopeEmpty: false,
     tuan: { id: tuan.id, weekStart: tuan.week_start, weekEnd: tuan.week_end },
@@ -808,7 +808,6 @@ export function lichTest(
     tongQuan: tq(k23, no.dong),
     tongQuanKhung: Object.fromEntries((['ft', 'thuong'] as const).map((k) => [k,
       tq(k23.filter((x) => khungDong(x) === k), no.dong.filter((x) => khungDong(x) === k))])) as Record<Khung, TongQuanLich>,
-    quaHanCham: { bai: qh.ids.length, lop: qh.lop, khac: qh.khac.length },
     no: no.dong,
     chamTuanNay,
     lop,

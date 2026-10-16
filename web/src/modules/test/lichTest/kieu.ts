@@ -59,8 +59,6 @@ export type LichTest = {
   tongQuan: TongQuanLich;
   /** Cùng dải số tách theo khung (MH4) — công tắc Fast Track · Lớp thường. */
   tongQuanKhung: Record<'ft' | 'thuong', TongQuanLich>;
-  /** UX-2 (1): ô "Quá hạn chấm" của dải số = Tổng quan "Bài quá hạn" (mọi ô có cờ quá hạn, cả hai khung); `khac` = ô GV khác. */
-  quaHanCham: { bai: number; lop: number; khac: number };
   /** Khối 1 "Test quá hạn chấm" — theo hôm nay, không theo tuần đang xem. */
   no: DongNo[];
   /** Khối 2 "Test chấm tuần này" — `null` khi không xem tuần hiện tại. */

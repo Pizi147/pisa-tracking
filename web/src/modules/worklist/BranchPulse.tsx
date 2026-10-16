@@ -99,7 +99,7 @@ export function BranchPulse({ branchId, ct }: { branchId: number | null; ct: Chu
             <colgroup><col style={{ width: '26%' }} />{COT.map((c) => <col key={c.key} style={{ width: `${(74 / COT.length).toFixed(1)}%` }} />)}</colgroup>
             <thead><tr>
               <Th className="sticky-col">{data.cheDo === 'lop' ? 'Lớp' : 'Chi nhánh'}</Th>
-              {COT.map((c) => <Th key={c.key} align="right" hint={c.key === 'duoiKyVong' ? undefined : c.goiY}>{c.nhan(ct)}{c.key === 'duoiKyVong' && <> <NutLuat label={c.nhan(ct)}>{GOI_Y_DUOI_KY_VONG[ct]}</NutLuat></>}</Th>)}
+              {COT.map((c) => <Th key={c.key} align="right" hint={c.key === 'duoiKyVong' ? undefined : c.goiY}>{c.nhan(ct)}{c.key === 'duoiKyVong' && <> <NutLuat phai label={c.nhan(ct)}>{GOI_Y_DUOI_KY_VONG[ct]}</NutLuat></>}</Th>)}
             </tr></thead>
             <tbody>
               {data.cheDo === 'lop' && hangTong(data.tenChiNhanh ? `Cả ${data.tenChiNhanh}` : 'Cả chi nhánh')}

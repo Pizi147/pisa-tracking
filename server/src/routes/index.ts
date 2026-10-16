@@ -930,13 +930,13 @@ api.get('/cham/lich-test', requireAuth, wrap((req) => {
   });
 }));
 
-/** UX-2 (1): danh sách sau số "Quá hạn chấm" của Lịch Test — `{ n, tieuDe, rows }` từ CHÍNH hàm đếm (`oQuaHanCham`), panel `SoLieuO`. */
+/** UX-2 (1): ô "Quá hạn chấm" của Lịch Test — `{ n, lop, khac, tieuDe }` từ `oQuaHanCham`; `?rows=1` thêm danh sách (panel `SoLieuO`, cùng hàm). */
 api.get('/cham/lich-test/qua-han', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   const pv = qStr(req, 'phamVi');
   return chamSvc.dsQuaHanCham(principalOf(req), {
     branchId: qInt(req, 'branchId'), phamVi: pv === 'cua-toi' || pv === 'tat-ca' ? pv : null, classId: qInt(req, 'classId') ?? null,
-  }, demoToday());
+  }, demoToday(), qStr(req, 'rows') === '1');
 }));
 
 // ============================================================ Lớp (Học viên lấy lớp làm gốc)
