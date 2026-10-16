@@ -75,7 +75,7 @@ export type DongDemPhamVi = MucLocNhanh & {
 };
 
 /**
- * DÒNG PHẠM VI Công việc (OV-5a, mockup M1 §1): "n nhóm việc · m học viên" — n = số DÒNG (cùng badge), m = em KHÁC NHAU: em của việc một em + id em
+ * DÒNG PHẠM VI Công việc (OV-5a, mockup M1 §1): "n việc · m học viên" — n = số DÒNG (cùng badge), m = em KHÁC NHAU: em của việc một em + id em
  * của việc cả lớp (`emIds`, OV-11c CV-1 — không cộng dồn `count`). Chỉ xem Chấm điểm: "m bài cần chấm" (một bài = một kỹ năng của một em trong một lượt).
  * OV-11c (TE-4): đang lọc hạn (`loc`) thì dòng gộp chỉ đếm việc con KHỚP lọc — dưới "Quá hạn" chỉ bài quá hạn (= chỉ số Tổng quan).
  */

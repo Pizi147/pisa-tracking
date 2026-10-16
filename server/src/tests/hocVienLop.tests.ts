@@ -330,8 +330,10 @@ export async function runHocVienLopTests(t: YThucTestKit) {
 
   check('PR-Qa · Q4 số đếm chip = số học viên mang cờ đó; khớp hàng đợi Case và mức SOS của máy chủ', () => {
     const r = hvl.danhSachHocVienLop(P.admin, {});
-    eq(r.dem['tat-ca'], r.hocVien.length, 'Tất cả');
-    for (const k of d.LOC_HOC_VIEN) eq(r.dem[k], r.hocVien.filter((h: any) => h.loc.includes(k)).length, `Chip ${k}`);
+    /* UX-1: đếm theo id em, em Kết thúc học (hiện mờ) không vào số. */
+    const soEm = (f: (h: any) => boolean) => new Set(r.hocVien.filter((h: any) => !h.ketThuc && f(h)).map((h: any) => h.id)).size;
+    eq(r.dem['tat-ca'], soEm(() => true), 'Tất cả');
+    for (const k of d.LOC_HOC_VIEN) eq(r.dem[k], soEm((h) => h.loc.includes(k)), `Chip ${k}`);
     /* PR-HVL (K2-03): ba chip Case cũ đã gộp thành "Cần làm" (kiểm chi tiết ở prHvl.tests.ts); "Đang SOS" chỉ Fast Track (T58). */
     const ftIds = r.hocVien.filter((h: any) => h.khung === 'ft').map((h: any) => h.id);
     const sos = [...standingMod.standingFor(ftIds).values()].filter((s: any) => (s.sosLevel ?? 0) > 0).length;

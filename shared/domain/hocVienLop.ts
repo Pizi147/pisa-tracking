@@ -123,7 +123,7 @@ export function duongHocVienLop(params: { get(k: string): string | null }, o: { 
 
 /** Nhóm xử lý của một Case — cùng ba chữ với bảng Tổng hợp (chủ SP 14/10). */
 export type NhomXuLy = 'cho-duyet' | 'dang-xu-ly' | 'xong';
-export const NHAN_NHOM_XU_LY = { 'cho-duyet': 'Chờ duyệt', 'dang-xu-ly': 'Đang xử lý', xong: 'Xong' } as const satisfies Record<NhomXuLy, string>;
+export const NHAN_NHOM_XU_LY = { 'cho-duyet': 'Chưa chốt PA', 'dang-xu-ly': 'Đang xử lý', xong: 'Xong' } as const satisfies Record<NhomXuLy, string>;
 /** OV-12d: nhóm của Case theo cột Tổng hợp (`cotXuLy` / `xuLyCuaDong`) — một luật cho Tổng hợp, Tổng quan, panel một em. */
 export const NHOM_THEO_COT: Record<CotXuLy, NhomXuLy> = { choDuyet: 'cho-duyet', dangLam: 'dang-xu-ly', xongHuy: 'xong' };
 
@@ -132,15 +132,18 @@ export function chipHienLoc(k: LocHocVien, dangLoc: LocHocVien | null): boolean 
   return k !== 'qua-han' || dangLoc === 'qua-han';
 }
 
-/** MỘT hàm đếm chip cho máy chủ (`dem`) và web (đổi công tắc khung): mỗi em mang các cờ `loc`, thuộc khung `ft`/`thuong`. */
-export function demLoc(hocVien: readonly { loc: readonly string[]; khung: 'ft' | 'thuong' }[], khung: 'tat-ca' | 'ft' | 'thuong'): Record<LocHocVien, number> {
-  const dem = Object.fromEntries(LOC_HOC_VIEN.map((k) => [k, 0])) as Record<LocHocVien, number>;
+/**
+ * MỘT hàm đếm chip cho máy chủ (`dem`) và web (đổi công tắc khung): mỗi em mang các cờ `loc`, thuộc khung `ft`/`thuong`.
+ * UX-1: đếm theo id em (em học hai lớp đếm một lần); em Kết thúc học (`ketThuc`) chỉ hiện mờ, không vào số.
+ */
+export function demLoc(hocVien: readonly { id: number; loc: readonly string[]; khung: 'ft' | 'thuong'; ketThuc?: boolean }[], khung: 'tat-ca' | 'ft' | 'thuong'): Record<LocHocVien, number> {
+  const tap = Object.fromEntries(LOC_HOC_VIEN.map((k) => [k, new Set<number>()])) as Record<LocHocVien, Set<number>>;
   for (const h of hocVien) {
-    if (khung !== 'tat-ca' && h.khung !== khung) continue;
-    dem['tat-ca'] += 1;
-    for (const k of LOC_HOC_VIEN) if (k !== 'tat-ca' && h.loc.includes(k)) dem[k] += 1;
+    if (h.ketThuc || (khung !== 'tat-ca' && h.khung !== khung)) continue;
+    tap['tat-ca'].add(h.id);
+    for (const k of LOC_HOC_VIEN) if (k !== 'tat-ca' && h.loc.includes(k)) tap[k].add(h.id);
   }
-  return dem;
+  return Object.fromEntries(LOC_HOC_VIEN.map((k) => [k, tap[k].size])) as Record<LocHocVien, number>;
 }
 
 // ---------------------------------------------------------------- phạm vi (§3.6, Q3)

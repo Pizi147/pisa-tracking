@@ -168,7 +168,8 @@ export async function runPrUxfATests(t: YThucTestKit) {
     const x = r.hocVien.find((h: any) => h.id === X.sid);
     assert(x && x.loc.includes('can-lam') && x.loc.includes('qua-han'), `X: ${JSON.stringify(x)}`);
     const quaHan = r.hocVien.filter((h: any) => h.loc.includes('qua-han'));
-    assert(r.dem['qua-han'] === quaHan.length, `dem ${r.dem['qua-han']} ≠ ${quaHan.length}`);
+    const soEm = new Set(quaHan.map((h: any) => h.id)).size;   // UX-1: chip đếm theo id em
+    assert(r.dem['qua-han'] === soEm, `dem ${r.dem['qua-han']} ≠ ${soEm}`);
     const lop = r.rows.find((l: any) => l.id === LOP);
     const cuaLop = quaHan.filter((h: any) => h.classId === LOP).length;
     assert(lop.soEmQuaHan === cuaLop && classes.classOverview(pL, LOP).soEmQuaHan === cuaLop, `badge ${lop.soEmQuaHan} / hồ sơ ${classes.classOverview(pL, LOP).soEmQuaHan} ≠ ${cuaLop}`);

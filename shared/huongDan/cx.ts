@@ -45,7 +45,7 @@ export const HD_CX: HuongDan = {
       muc: [
         { id: 'cx-tq-o', ten: 'Số liệu học viên', buoc: ['Chọn <b>Chi nhánh</b>; ô <b>Cần chú ý</b> · <b>Tạm dừng</b> · <b>Sắp thi</b> · <b>Thiếu thông tin</b>.', 'Bấm ô mở Học viên & Lớp đúng nhóm em.'],
           chi: { hd: 'tq-hv-so', duong: '/', chu: 'Bấm một ô để xem đúng nhóm em.' } },
-        { id: 'cx-tq-so', ten: 'Số liệu học thuật', buoc: ['Bốn ô: dưới kỳ vọng, Case đang mở, Case chờ duyệt, PA chưa có kết quả.', '<b>Điểm đáng chú ý</b> · <b>Lịch sắp tới</b>.'] },
+        { id: 'cx-tq-so', ten: 'Số liệu học thuật', buoc: ['Bốn ô: dưới kỳ vọng, Case đang mở, Case chưa chốt PA, PA chưa có kết quả.', '<b>Điểm đáng chú ý</b> · <b>Lịch sắp tới</b>.'] },
       ],
     },
     { ...HD_TVV.man.find((m) => m.id === 'phan-tich')!, muc: [{ id: 'cx-pt', ten: 'Góc phân tích', buoc: ['<b>Tổng hợp Test + SOS</b> · <b>Tổng hợp vấn đề HV</b> · <b>Hiệu quả PA</b> · <b>Ý thức</b>.', 'Mọi chi nhánh; bấm số xem danh sách em.'],

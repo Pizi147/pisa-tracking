@@ -8,6 +8,7 @@ import { Nhan, toneNhanTuBadge } from '../../ui/Nhan.tsx';
 import { HangNhom } from '../../ui/HangNhom.tsx';
 import { CongTacKhung, khungDaNho, type KhungLoc } from '../../ui/CongTacKhung.tsx';
 import { useDienThoai } from '../../ui/TheDong.tsx';
+import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { docChiNhanhDaNho, nhoChiNhanh, type Branch } from '../../ui/Filters.tsx';
 import { coDichLienKet, demQuaHan } from '@shared/domain/index.ts';
 import { MenuDong, type MucMenu } from '../../ui/MenuDong.tsx';
@@ -16,7 +17,7 @@ import { ClassCreatePanel } from '../classes/ClassCreatePanel.tsx';
 import { TenGiaoVien } from '../classes/TenGiaoVien.tsx';
 import { BangHocVienLop } from './BangHocVienLop.tsx';
 import {
-  DUONG_TAB_CONG_VIEC, DUONG_TAB_TEST, duongHocVienLop, LOAI_HAN_CUA_VIEC, PHAM_VI_NHAN, badgeHienTheoVai, badgeLop, demLoc, docGoc, docThamSoLoc, duongLichTest, khungCua, laVaiQuanLy, lopMoSan, needScoresText,
+  DUONG_TAB_CONG_VIEC, DUONG_TAB_TEST, duongHocVienLop, LOAI_HAN_CUA_VIEC, PHAM_VI_NHAN, badgeHienTheoVai, badgeLop, demLoc, docGoc, docThamSoLoc, duongLichTest, khungCua, laVaiQuanLy, lopMoSan, needScoresText, tuanLich,
   type BadgeLop, type GocHocVien, type LocHocVien, type LocPhuCanLam, type NguCanhDs, type PhamVi, type SapXep, type WorkScope, vaiXemHocVien,
 } from '@shared/domain/index.ts';
 import { HocVienTheoVai } from './HocVienTheoVai.tsx';
@@ -83,6 +84,7 @@ export default function StudentsPage() {
 
 function TrangTheoLop({ admin }: { admin: boolean }) {
   const navigate = useNavigate();
+  const { homNay } = useNgayNghiepVu();
   const { can, session } = useSession();
   const [params, setParams] = useSearchParams();
   const doc = docThamSoLoc(params.get('view'));
@@ -233,7 +235,7 @@ function TrangTheoLop({ admin }: { admin: boolean }) {
   const myAssign = (session?.assignments ?? []).filter((a) => a.skill);
   const dam = !laQl && myAssign.length ? (topic: string | null) => !topic || myAssign.some((a) => a.skill === topic) : null;
   const moCase = (id: number, caseId: number) => setPanelEm({ id, caseMo: caseId });
-  const doiGoc = (g: GocHocVien) => setParam({ view: g === 'tat-ca' ? null : g, loc: null, open: null });
+  const doiGoc = (g: GocHocVien) => { if (g === 'can-lam' && work.error) work.reload(); setParam({ view: g === 'tat-ca' ? null : g, loc: null, open: null }); };
 
   const lopHien = (data?.rows ?? []).filter((c) => (khung === 'tat-ca' || khungCua(c.scoringMode) === khung)
     && (!chiLop || c.id === chiLop) && (!dangLoc || idsTheoLop.has(c.id)));
@@ -315,7 +317,9 @@ function TrangTheoLop({ admin }: { admin: boolean }) {
           <div className="flex min-w-0 max-w-full flex-wrap items-center gap-2 lg:flex-1" data-hd="hvl-goc">
             <BoLocDoan ariaLabel={t('Góc nhìn')} value={goc} onChange={doiGoc}
               muc={(admin ? (['tat-ca', 'can-lam'] as const) : (['tat-ca', 'sos', 'can-lam'] as const)).map((k) => ({
-                key: k, nhan: k === 'tat-ca' ? t('Tất cả') : k === 'sos' ? t('Đang SOS') : t('Cần làm'), so: demGoc[k],
+                key: k, nhan: k === 'tat-ca' ? t('Tất cả') : k === 'sos' ? (sos.data?.tuan ? `${t('Đang SOS')} · ${tuanLich(sos.data.tuan, homNay)}` : t('Đang SOS')) : t('Cần làm'),
+                /* UX-1: tải việc lỗi → "!" + lý do, bấm thử lại (không im lặng). */
+                ...(k === 'can-lam' && work.error ? { so: '!', title: t('Chưa tải được · bấm để thử lại') } : { so: demGoc[k] }),
               }))} />
             {chiLop && (
               <button type="button" className="btn btn-sm shrink-0 sm:h-8" title={t('Bỏ lọc lớp')} onClick={() => setParam({ classId: null })}>

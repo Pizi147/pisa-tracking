@@ -66,10 +66,10 @@ export const METRICS: readonly ChiSo[] = [
   },
   /* Ba chỉ số của khối Cần xử lý (PR-Pa, đặc tả §3.2) — mỗi dòng của khối là một chỉ số, để bấm vào ra đúng tập. */
   {
-    id: 'case-xac-dinh-nguyen-nhan-qua-han', ten: 'Case chờ duyệt quá hạn',
-    cauHoi: 'Trong các Case đang chờ người chốt, bao nhiêu Case đã quá hạn?',
+    id: 'case-xac-dinh-nguyen-nhan-qua-han', ten: 'Case chưa chốt PA quá hạn',
+    cauHoi: 'Trong các Case chưa chốt PA, bao nhiêu Case đã quá hạn?',
     donVi: 'case',
-    tapDuDieuKien: 'Trong tập "Case chờ duyệt": hạn Xác nhận PA / Xác nhận Case / ghi nhận xét (5 ngày, Gấp / SOS 3: 3 ngày, tính cả ngày Case ra đời) đã qua, hoặc Case chưa có PA nào đã qua hạn Thêm PA. Hết ngày hạn mới tính quá hạn. Cùng tập với ⚠ ở cột "Chờ duyệt" của Tổng hợp (OV-12d).',
+    tapDuDieuKien: 'Trong tập "Case chưa chốt PA": hạn Xác nhận PA / Xác nhận Case / ghi nhận xét (5 ngày, Gấp / SOS 3: 3 ngày, tính cả ngày Case ra đời) đã qua, hoặc Case chưa có PA nào đã qua hạn Thêm PA. Hết ngày hạn mới tính quá hạn. Cùng tập với ⚠ ở cột "Chưa có PA" của Tổng hợp (OV-12d).',
     thoiGian: 'hien-trang', khuTrung: 'Mỗi Case chỉ đếm 1 lần', drilldown: '/metrics/case-xac-dinh-nguyen-nhan-qua-han',
   },
   {
@@ -94,10 +94,10 @@ export const METRICS: readonly ChiSo[] = [
     thoiGian: 'hien-trang', khuTrung: 'Mỗi Case chỉ đếm 1 lần', drilldown: '/metrics/case-chua-co-nguoi-phu-trach',
   },
   {
-    id: 'case-cho-xac-dinh-nguyen-nhan', ten: 'Case chờ duyệt',
-    cauHoi: 'Bao nhiêu Case đang mở đang chờ người chốt?',
+    id: 'case-cho-xac-dinh-nguyen-nhan', ten: 'Case chưa chốt PA',
+    cauHoi: 'Bao nhiêu Case đang mở chưa có PA đang theo dõi?',
     donVi: 'case',
-    tapDuDieuKien: 'Case HỌC THUẬT đang mở trong phạm vi chưa có PA đang theo dõi: chưa có PA, PA theo quy chế chờ xác nhận, PA chờ Quản lý duyệt, "Không cần theo dõi" chờ Quản lý, Case Mock Test cũ chờ ghi nhận xét, Case Progress Test chờ Xác nhận Case. Cùng hàm với cột "Chờ duyệt" của Tổng hợp (OV-12d) — ô này còn đếm Case giáo viên báo tay (không sinh từ lượt). Case đã đóng không thuộc tập.',
+    tapDuDieuKien: 'Case HỌC THUẬT đang mở trong phạm vi chưa có PA đang theo dõi: chưa có PA, PA theo quy chế chờ xác nhận, PA chờ Quản lý duyệt, "Không cần theo dõi" chờ Quản lý, Case Mock Test cũ chờ ghi nhận xét, Case Progress Test chờ Xác nhận Case. Cùng hàm với cột "Chưa có PA" của Tổng hợp (OV-12d) — ô này còn đếm Case giáo viên báo tay (không sinh từ lượt). Case đã đóng không thuộc tập.',
     thoiGian: 'hien-trang', khuTrung: 'Mỗi Case chỉ đếm 1 lần', drilldown: '/metrics/case-cho-xac-dinh-nguyen-nhan',
   },
   {

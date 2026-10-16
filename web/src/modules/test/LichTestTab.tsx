@@ -13,7 +13,7 @@ import { NutLuat } from '../../ui/NutLuat.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { KhoiNhom } from '../../ui/HangNhom.tsx';
 import { useManHinhHep } from '../cham/LuoiChamLop.tsx';
-import { addDaysIso, chuOChuaLuu, mondayOfDate, ngay, tenMon, tuanDauThangCua, tuanLich } from '@shared/domain/index.ts';
+import { addDaysIso, chuOChuaLuu, demLopConBai, mondayOfDate, ngay, tenMon, tuanDauThangCua, tuanLich } from '@shared/domain/index.ts';
 import { khoaHang, type DongNo, type LichTest, type LopLichTest } from './lichTest/kieu.ts';
 import { DaiSo, type OSo } from './lichTest/DaiSo.tsx';
 import { KhoiNo } from './lichTest/KhoiNo.tsx';
@@ -215,9 +215,14 @@ export function LichTestTab() {
   const maTuan = data.tuan ? tuanLich(data.tuan.weekStart, homNay) : t('Tuần này');
   const tenTuan = data.laTuanNay ? t('Tuần này') : maTuan;
   const trong = data.lop.length === 0 && data.no.length === 0 && !(data.chamTuanNay ?? []).length && !dongMo;
-  const soLop = (ds: LopLichTest[]) => t('{size} lớp', { size: new Set(ds.map((l) => l.classId)).size });
   /* OV-11e (TE-7): badge khối của người có phân công = phần của họ (cùng số dải số). */
-  const conBai = (ds: LopLichTest[]) => ds.reduce((n, l) => n + (l.phan ? l.conBaiCuaToi : l.conBai), 0);
+  const conCua = (l: LopLichTest) => (l.phan ? l.conBaiCuaToi : l.conBai);
+  const conBai = (ds: LopLichTest[]) => ds.reduce((n, l) => n + conCua(l), 0);
+  /* UX-1: "n lớp" chỉ đếm lớp CÒN bài (cùng số bài của badge), lớp đã xong ghi riêng. */
+  const soLop = (ds: LopLichTest[]) => {
+    const d = demLopConBai(ds.map((l) => ({ classId: l.classId, con: conCua(l) })));
+    return d.con ? `${t('{n} lớp còn bài', { n: d.con })}${d.xong ? ` · ${t('{n} xong', { n: d.xong })}` : ''}` : t('{n} lớp xong', { n: d.xong });
+  };
   /* Tuần chính của khối (hàng của tuần khác ghi Đợt kèm mã tuần): khối 2 = tuần trước, khối 3 = tuần đang xem. */
   const tuanXem = data.tuan?.weekStart ?? '';
   const hangLop = (ds: LopLichTest[], khoi2: boolean) => (
@@ -242,7 +247,7 @@ export function LichTestTab() {
       : homNay === hanT4 ? <Nhan tone="soon">{t('hạn hôm nay')}</Nhan>
         : <Nhan tone="late">{t('Quá hạn · T4')}{' '}{ngay(hanT4, homNay)}</Nhan>
   );
-  const phuK2 = <> · {tuanLich(addDaysIso(tuanXem, -7), homNay)} {chipHan}</>;
+  const phuK2 = <> · {t('bài thi {tuan}', { tuan: tuanLich(addDaysIso(tuanXem, -7), homNay) })} {chipHan}</>;
 
   /* Các phần của hàng lọc — máy tính xếp một hàng, điện thoại gom vào khối "Lọc". */
   const tuanPicker = (

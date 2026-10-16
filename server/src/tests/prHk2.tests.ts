@@ -169,7 +169,7 @@ export async function runPrHk2Tests(t: YThucTestKit) {
       assert(!/Chưa đủ điểm|Tạm thời/.test(c.goiY + d.cotTongHopFor(ct)[0].goiY), `${ct}: gợi ý còn chữ cũ`);
     }
     assert(d.cotTongHopFor('ft').find((x: any) => x.khoa === 'chuaDu').goiY.includes('gồm SOS tạm (chưa chốt)'), 'gợi ý FT');
-    assert(d.cotTongHopFor('ft').find((x: any) => x.khoa === 'choDuyet').nhan('ft') === 'Chờ duyệt', 'choDuyet');
+    assert(d.cotTongHopFor('ft').find((x: any) => x.khoa === 'choDuyet').nhan('ft') === 'Chưa chốt PA', 'choDuyet');
   });
 
   check('C13 · một cột hvCase "HV - Case" thay hvCoCase + case; máy chủ giữ hai nguồn; Excel giữ hai cột riêng; ô web có hai SoLieuO riêng', () => {

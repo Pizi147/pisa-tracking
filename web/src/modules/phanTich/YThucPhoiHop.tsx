@@ -143,12 +143,12 @@ export function YThucPhoiHop(props: PhamViPhanTich) {
               title={<span className="inline-flex flex-wrap items-baseline gap-x-2">Học viên cần chú ý <span className="text-xs font-normal text-slate-500">· quá hạn, bắt buộc xử lý hoặc chờ QL duyệt</span> {khungLuat}</span>}
               action={<button type="button" className="btn btn-sm" disabled={!demoDate} onClick={xuatExcel}>⤓ Xuất Excel</button>}>
               {data.hvCanChuY.length === 0
-                ? <div className="p-4"><Empty title={`Không có học viên nào cần chú ý trong ${KHOANG_LABEL[props.tg]}`} /></div>
+                ? <div className="p-4"><Empty title={`Không có học viên nào cần chú ý trong ${KHOANG_LABEL[props.tg]}`} hint="Thử khoảng thời gian dài hơn." /></div>
                 : bang1(data.hvCanChuY)}
             </Card>
             <Card bodyClass="p-0" title={<span>Lớp nhiều vi phạm <span className="text-xs font-normal text-slate-500">· xếp theo vi phạm chưa xử lý</span></span>}>
               {data.lop.length === 0 && !data.gom
-                ? <div className="p-4"><Empty title={`Chưa có vi phạm nào trong ${KHOANG_LABEL[props.tg]}`} /></div>
+                ? <div className="p-4"><Empty title={`Chưa có vi phạm nào trong ${KHOANG_LABEL[props.tg]}`} hint="Số có khi đã ghi vi phạm — thử khoảng thời gian dài hơn." /></div>
                 : (
                   <div className="table-scroll">
                     <table className="w-full text-sm" style={{ tableLayout: 'fixed', minWidth: 640 }}>

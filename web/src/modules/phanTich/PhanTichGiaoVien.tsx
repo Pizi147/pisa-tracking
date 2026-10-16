@@ -66,6 +66,15 @@ function OSo({ o, den, onBam, ketQua, mo }: { o: OPtGv | undefined; den?: string
   const mau = ketQua && o.k === 'so' ? mauKetQuaGv(o.dung, o.tong) : null;
   const so = 'font-semibold tabular-nums underline decoration-dotted underline-offset-4 py-2 -my-2 inline-block';
   const soMau = mo ? 'text-slate-400' : 'text-slate-100';
+  /* UX-1: "0/n" không có danh sách để mở — chữ thường, không gạch chấm, không bấm (như số 0 nơi khác). */
+  if (o.k === 'so' && o.dung === 0) {
+    return (
+      <span className="inline-flex flex-col items-end">
+        <span className="font-semibold tabular-nums text-slate-400">{c.so}</span>
+        <span className={`text-xs leading-tight tabular-nums ${mau ? `${MAU[mau]} font-semibold` : 'text-slate-400'}`}>{c.phu}</span>
+      </span>
+    );
+  }
   return (
     <span className="inline-flex flex-col items-end">
       {onBam

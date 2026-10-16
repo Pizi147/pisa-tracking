@@ -143,7 +143,7 @@ export function HieuQuaPa(props: PhamViPhanTich) {
                 </NutLuat>
               )} />
             {data.gvThem.hang.length === 0 && !data.gvThem.gom
-              ? <p className="m-0 px-4 pb-3 text-sm text-slate-400">Chưa có PA do giáo viên thêm có kết quả trong {khoang}.</p>
+              ? <p className="m-0 px-4 pb-3 text-sm text-slate-400">Chưa có PA do giáo viên thêm có kết quả trong {khoang}. Số có khi PA kết thúc có kết quả — thử khoảng thời gian dài hơn.</p>
               : (
                 <div className="table-scroll">
                   <table className="w-full text-sm" style={{ tableLayout: 'fixed', minWidth: 700 }}>
@@ -176,7 +176,7 @@ export function HieuQuaPa(props: PhamViPhanTich) {
                   </NutLuat>
                 ) : undefined} />
               {data.quyChe.hang.length === 0
-                ? <p className="m-0 px-4 pb-3 text-sm text-slate-400">Chưa có PA theo quy chế có kết quả trong {khoang}.</p>
+                ? <p className="m-0 px-4 pb-3 text-sm text-slate-400">Chưa có PA theo quy chế có kết quả trong {khoang}. Số có khi PA kết thúc có kết quả — thử khoảng thời gian dài hơn.</p>
                 : (
                   <div className="table-scroll">
                     <table className="w-full text-sm" style={{ tableLayout: 'fixed', minWidth: 620 }}>
