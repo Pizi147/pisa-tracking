@@ -9401,6 +9401,9 @@ await runPrOv13mTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P,
 // ==================================================================== OV-13p (TVV / CX tạo lớp + thêm học viên — student.add, qua HTTP)
 const { runPrOv13pTests } = await import('./prOv13p.tests.ts');
 await runPrOv13pTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== UX-1 (sửa gấp đánh giá UX 16/10: bảng chi nhánh, đếm HV & Lớp, Case chưa có PA, Lịch Test)
+const { runPrUx1Tests } = await import('./prUx1.tests.ts');
+await runPrUx1Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`

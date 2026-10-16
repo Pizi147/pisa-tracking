@@ -131,7 +131,7 @@ export function signalsFor(p: Principal, f: { branchId?: number | null; periodId
   tuSo('missing_scores', 'bai-qua-han-nhap-diem', 'teacher', 'warn', (n) => `${n} bài quá hạn chưa nhập điểm`);
 
   // 3. Case / PA quá hạn — đếm CASE và PA (hai đơn vị, hai dòng), không học viên.
-  tuSo('sos_open', 'case-xac-dinh-nguyen-nhan-qua-han', 'teacher', 'danger', (n) => `${n} Case chờ duyệt quá hạn`);   // OV-12d: cùng ⚠ cột Chờ duyệt Tổng hợp
+  tuSo('sos_open', 'case-xac-dinh-nguyen-nhan-qua-han', 'teacher', 'danger', (n) => `${n} Case chưa có PA quá hạn`);   // OV-12d: cùng ⚠ cột Chờ duyệt Tổng hợp
   tuSo('pa_can_cap_nhat', 'pa-can-cap-nhat', 'teacher', 'warn', (n) => `${n} PA cần cập nhật kết quả`);
 
   // 4. Báo cáo tuần còn trống — chỉ nhắc khi cửa sổ cập nhật ĐANG MỞ.

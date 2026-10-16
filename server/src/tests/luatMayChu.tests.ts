@@ -474,7 +474,7 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
     assert(ids.includes(oldL.id), 'Case quá hạn phải có trong ô');
     assert(!ids.includes(fresh.id), 'Case còn trong hạn không được đếm');
     assert(!ids.includes(gone.id), 'Case đã đóng không được đếm');
-    assert(domain.metricById('tin-hieu-qua-han') === null && domain.metricById('case-xac-dinh-nguyen-nhan-qua-han')?.ten === 'Case chờ duyệt quá hạn', 'Chỉ số tín hiệu đã bỏ, chỉ số Case còn (OV-12d: tên mới)');
+    assert(domain.metricById('tin-hieu-qua-han') === null && domain.metricById('case-xac-dinh-nguyen-nhan-qua-han')?.ten === 'Case chưa có PA quá hạn', 'Chỉ số tín hiệu đã bỏ, chỉ số Case còn (OV-12d: tên mới)');
   });
 
   // ================================================================== 10. RB-8

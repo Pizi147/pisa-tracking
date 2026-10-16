@@ -88,7 +88,7 @@ export async function runPrOv12dTests(t: YThucTestKit) {
     }
     assert(chung > 0 && cho.size > 0, `dữ liệu: ${chung} Case chung, ${cho.size} chờ duyệt`);
     assert(quaTh <= cho.size, 'quá hạn');
-    assert(dm.metricById('case-cho-xac-dinh-nguyen-nhan').ten === 'Case chờ duyệt', dm.metricById('case-cho-xac-dinh-nguyen-nhan').ten);
+    assert(dm.metricById('case-cho-xac-dinh-nguyen-nhan').ten === 'Case chưa có PA', dm.metricById('case-cho-xac-dinh-nguyen-nhan').ten);
   });
 
   check('OV12d (5) · Case đổi cột theo PA: huỷ hết PA của Case Đang xử lý → Chờ duyệt (chưa có PA); xác nhận PA quy chế → Đang xử lý', () => {

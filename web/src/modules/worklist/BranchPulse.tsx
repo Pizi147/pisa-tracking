@@ -9,6 +9,7 @@ import { SoLieuO } from '../../ui/SoLieuO.tsx';
 import { DINH_TRAI } from '../phanTich/dungChung.tsx';
 import { thamSoCt, type ChuongTrinh, type CotBang } from '@shared/domain/index.ts';
 import { BangGiaoVienChiNhanh } from '../giaoVien/BangGiaoVienChiNhanh.tsx';
+import { nhoChiNhanh } from '../../ui/Filters.tsx';
 
 /**
  * BẢNG "THEO CHI NHÁNH" (PR-Pa §3.2, mockup 02 phương án A).
@@ -25,13 +26,13 @@ import { BangGiaoVienChiNhanh } from '../giaoVien/BangGiaoVienChiNhanh.tsx';
 
 type OBang = { n: number; mau?: number };
 type Hang = { khoa: string; id: number; loai: 'chi-nhanh' | 'lop'; nhan: string; laFt: boolean | null; o: Record<CotBang, OBang>; lop?: Hang[] };
-type Bang = { cheDo: 'chi-nhanh' | 'lop'; hang: Hang[]; tong: Record<CotBang, OBang>; tenChiNhanh: string | null; branchId: number | null };
+type Bang = { cheDo: 'chi-nhanh' | 'lop'; hang: Hang[]; conLai: Hang | null; tong: Record<CotBang, OBang>; tenChiNhanh: string | null; branchId: number | null };
 
 const COT_DAY_DU: { key: CotBang; nhan: (ct: ChuongTrinh) => string; goiY: string }[] = [
   { key: 'hocVien', nhan: () => 'Học viên', goiY: 'Học viên đang học, không tính em đã kết thúc.' },
   { key: 'duoiKyVong', nhan: (ct) => (ct === 'thuong' ? 'Chưa đạt' : 'Dưới kỳ vọng'),
     goiY: 'Học viên dưới kỳ vọng ít nhất một kỹ năng ở đợt Test mới nhất hợp lệ (lớp thường: chưa đạt ít nhất một môn).' },
-  { key: 'sos', nhan: () => 'SOS', goiY: 'Học viên có SOS ở đợt Test mới nhất hợp lệ, kể cả SOS tạm thời.' },
+  { key: 'sos', nhan: () => 'SOS', goiY: 'Học viên có SOS ở đợt Test mới nhất hợp lệ, kể cả SOS tạm thời. Overall đạt thì không SOS (dù có kỹ năng dưới kỳ vọng).' },
   { key: 'caseMo', nhan: () => 'Case đang mở', goiY: 'Case học thuật chưa kết luận — đếm Case, không đếm học viên.' },
   { key: 'thieuPa', nhan: () => 'Case chưa có PA', goiY: 'Case đã mở nhưng chưa ai ghi sẽ làm gì cho em.' },
   { key: 'duDuLieu', nhan: () => 'Tỷ lệ đủ dữ liệu', goiY: 'Em đã chấm đủ mọi kỹ năng ở đợt đã đến lịch mới nhất / em cần được đánh giá.' },
@@ -57,12 +58,17 @@ export function BranchPulse({ branchId, ct }: { branchId: number | null; ct: Chu
   if (!data) return null;
   /* QL một chi nhánh không có `cn` trên URL, server tự khoanh phạm vi. OV-10c: CX không xem GV (máy chủ 403) → không có "Theo giáo viên". */
   const coGv = data.cheDo === 'lop' && !!session?.nav?.phanTichGv;
-  const o = (h: { khoa: string; nhan: string }, c: CotBang, x: OBang) => (
+  const o = (h: { khoa: string; nhan: string; o?: Record<CotBang, OBang> }, c: CotBang, x: OBang) => (
     <td key={c} className="td text-right tabular-nums">
+      {/* UX-1: có học viên mà chưa em nào có đợt Test đến lịch → "—" có chữ, không phải 0/0. */}
+      {c === 'duDuLieu' && !x.mau && (h.o ?? data.tong).hocVien.n > 0 ? (
+        <span className="text-slate-500" title="Chưa có đợt Test đến lịch">—<span className="sr-only"> Chưa có đợt Test đến lịch</span></span>
+      ) : <>
       {/* OV-11f (TQ-14, P2-2): số bấm được có vùng chạm 44 px cả ngang trên điện thoại (dọc đã có ở SoLieuO), không đổi hình. */}
       <SoLieuO giaTri={x.n} className="max-sm:px-3 max-sm:-mx-3" tieuDe={`${COT.find((k) => k.key === c)!.nhan(ct)} · ${h.nhan}`}
         nguon={`/tong-quan/chi-nhanh/o?cot=${c}&khoa=${h.khoa}${q ? `&${q}` : ''}`} />
       {c === 'duDuLieu' && <span className="text-slate-500">/{x.mau ?? 0}</span>}
+      </>}
     </td>
   );
   const hangTong = (nhan: string) => (
@@ -104,7 +110,7 @@ export function BranchPulse({ branchId, ct }: { branchId: number | null; ct: Chu
                       nhan={h.nhan} className={DINH_TRAI}
                       tieuDe={(
                         <button type="button" className="link appearance-none bg-transparent border-0 p-0 max-sm:py-3 max-sm:-my-3 cursor-pointer font-extrabold"
-                          onClick={() => navigate(`/?cn=${h.id}${thamSoCt(ct)}`)}>{h.nhan}</button>
+                          onClick={() => { nhoChiNhanh(session?.user?.id, h.id); navigate(`/?cn=${h.id}${thamSoCt(ct)}`); }}>{h.nhan}</button>
                       )}>
                       {COT.map((c) => o(h, c.key, h.o[c.key]))}
                     </HangNhom>
@@ -122,6 +128,13 @@ export function BranchPulse({ branchId, ct }: { branchId: number | null; ct: Chu
                   ))}
                 </Fragment>
               ))}
+              {/* UX-1: Case / em của lớp đã kết thúc — có hàng riêng để cộng các hàng = hàng tổng. */}
+              {data.conLai && (
+                <tr className="row-hover" style={{ height: HANG }}>
+                  <td className="td sticky-col whitespace-nowrap text-slate-400">{data.conLai.nhan}</td>
+                  {COT.map((c) => o(data.conLai!, c.key, data.conLai!.o[c.key]))}
+                </tr>
+              )}
               {data.cheDo === 'chi-nhanh' && hangTong('Tất cả chi nhánh')}
             </tbody>
           </table>

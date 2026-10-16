@@ -435,10 +435,10 @@ export const EN_A = {
   'Xem thêm': 'Show more',
 
   /* OV-12d — Tổng hợp nhóm Xử lý 3 cột · ô Tổng quan "Case chờ duyệt" · hồ sơ MT khối Case & phương án */
-  'Case chờ duyệt': 'Pending cases',
+  'Case chưa có PA': 'Cases without PA',
   'Cách tính nhóm Xử lý': 'How the Handling columns are counted',
-  'HV - Case: học viên có Case - số Case sinh từ các lượt trong dòng (kể cả Case đã xong / huỷ). Chờ duyệt: Case đang chờ người chốt, chưa có PA đang theo dõi — chưa có PA, PA chờ xác nhận / chờ Quản lý duyệt, PA Bổ trợ chưa chạy, PA đã xong hết nhưng chưa Hoàn thành Case, "Không cần theo dõi" chờ Quản lý, Case Mock Test cũ chờ ghi nhận xét, Case Progress Test chờ Xác nhận Case; ⚠ = quá hạn. Đang xử lý: Case có PA đang theo dõi. Tính theo hôm nay, không phải lúc chấm.':
-    'Students - Cases: students with a case - number of cases from the tests in this row (including closed / cancelled cases). Pending: cases waiting for someone to decide, with no PA being followed — no PA yet, PA awaiting confirmation / manager approval, support PA not started, all PAs finished but case not closed, "No follow-up needed" awaiting the manager, older Mock Test case awaiting a comment, Progress Test case awaiting Confirm case; ⚠ = overdue. In progress: cases with a PA being followed. As of today, not at marking time.',
+  'HV - Case: học viên có Case - số Case sinh từ các lượt trong dòng (kể cả Case đã xong / huỷ). Chưa có PA: Case chưa có PA đang theo dõi — chưa có PA, PA chờ xác nhận / chờ Quản lý duyệt, PA Bổ trợ chưa chạy, PA đã xong hết nhưng chưa Hoàn thành Case, "Không cần theo dõi" chờ Quản lý, Case Mock Test cũ chờ ghi nhận xét, Case Progress Test chờ Xác nhận Case; ⚠ = quá hạn. Đang xử lý: Case có PA đang theo dõi. Tính theo hôm nay, không phải lúc chấm.':
+    'Students - Cases: students with a case - number of cases from the tests in this row (including closed / cancelled cases). No PA yet: cases with no PA being followed — no PA yet, PA awaiting confirmation / manager approval, support PA not started, all PAs finished but case not closed, "No follow-up needed" awaiting the manager, older Mock Test case awaiting a comment, Progress Test case awaiting Confirm case; ⚠ = overdue. In progress: cases with a PA being followed. As of today, not at marking time.',
   'Case & phương án': 'Cases & PAs',
   'lặp từ MT{n}': 'repeat from MT{n}',
 } satisfies Record<string, Dich>;

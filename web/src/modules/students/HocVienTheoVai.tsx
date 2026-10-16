@@ -11,7 +11,8 @@ import { HangCon, HangNhom } from '../../ui/HangNhom.tsx';
 import { MenuDong } from '../../ui/MenuDong.tsx';
 import { TheDong, useDienThoai } from '../../ui/TheDong.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
-import type { Branch } from '../../ui/Filters.tsx';
+import { nhoChiNhanh, type Branch } from '../../ui/Filters.tsx';
+import { useSession } from '../../lib/session.tsx';
 import { sosTone } from '../../lib/format.ts';
 import { useThaoTacDongHocVien } from '../classes/thaoTacDongHocVien.tsx';
 import { KetQuaOHocVien } from './BangHocVienLop.tsx';
@@ -122,6 +123,7 @@ function TrangThaiEm({ d, thieu }: { d: DongVai; thieu: boolean }) {
  * TVV mặc định "HV của tôi" · Tất cả; CX mọi chi nhánh · Cần chú ý. Bộ lọc nằm trên URL (`phamVi`, `cn`, `view`, `q`). < 640 px: thẻ.
  */
 export function HocVienTheoVai({ vai }: { vai: 'tvv' | 'cx' }) {
+  const { session } = useSession();
   const [params, setParams] = useSearchParams();
   const dienThoai = useDienThoai();
   const q = params.get('q') ?? '';
@@ -254,7 +256,7 @@ export function HocVienTheoVai({ vai }: { vai: 'tvv' | 'cx' }) {
             </select>
           )}
           {vai === 'cx' && (branches.data?.length ?? 0) > 1 && (
-            <select className={SELECT_GON} aria-label="Chi nhánh" value={cn ?? ''} onChange={(e) => setParam({ cn: e.target.value || null, branchId: null, phamVi: null })}>
+            <select className={SELECT_GON} aria-label="Chi nhánh" value={cn ?? ''} onChange={(e) => { nhoChiNhanh(session?.user?.id, e.target.value ? Number(e.target.value) : null); setParam({ cn: e.target.value || null, branchId: null, phamVi: null }); }}>
               <option value="">Tất cả chi nhánh</option>
               {(branches.data ?? []).map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
             </select>

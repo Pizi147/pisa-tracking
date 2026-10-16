@@ -93,7 +93,7 @@ export const HD_TVV: HuongDan = {
   ],
   luat: LUAT_TVV,
   tu: [
-    ...HD_GV.tu.filter((x) => ['MT (bài thi thử)', 'Kỳ vọng', 'SOS 1 · 2 · 3', 'Case (hồ sơ vấn đề)', 'PA (phương án)', 'GVCN · GVBM', 'Mã tuần', 'QL (Quản lý)'].includes(x.ten)),
+    ...HD_GV.tu,   // UX-1: đủ như GV (TVV / CX đọc cùng hồ sơ, Case, PA)
     { ten: 'HV của tôi', nghia: 'Em có TVV là bạn (ô TVV trong Sửa thông tin).' },
     { ten: 'Cần chú ý', nghia: 'Em đang SOS, có Case mới hoặc vi phạm Ý thức.' },
     { ten: 'Sắp thi', nghia: 'Em thi IELTS trong 6 tuần tới.' },

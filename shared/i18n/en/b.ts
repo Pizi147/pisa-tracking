@@ -82,7 +82,7 @@ const EN_B_WEB = {
   'Nhóm việc': 'Task group',
   'Của một GV': 'One teacher',
   'Đang xem:': 'Showing:',
-  '{nhom} nhóm việc · {so} {donVi}': (b) => `${so(b.nhom, 'group', 'groups')} · ${b.so} ${b.donVi}`,
+  '{nhom} việc · {so} {donVi}': (b) => `${so(b.nhom, 'task', 'tasks')} · ${b.so} ${b.donVi}`,
   'Xoá lọc': 'Clear filters',
   'Bạn chưa được cấp phạm vi nào': 'You have no access scope yet',
   'Không có việc nào khớp bộ lọc': 'No tasks match the filters',

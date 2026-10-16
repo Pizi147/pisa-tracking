@@ -58,7 +58,7 @@ export const HD_QL: HuongDan = {
         { id: 'ql-tq-cho-duyet', ten: 'Hàng Chờ duyệt', buoc: ['Số thẻ chờ bạn quyết, chia <b>Học thuật · Ý thức · Lịch thi · Thông tin HV</b>, thêm chip <b>Quá hạn</b>.', 'Bấm chip mở hộp đã lọc; <b>Mở hộp duyệt</b> xem hết.'] },
         { id: 'ql-tq-can-xu-ly', ten: 'Cần xử lý', buoc: ['Việc của chi nhánh: bài quá hạn chấm, PA chưa có kết quả, lớp cần Chốt lộ trình…', 'Nút cuối dòng mở Công việc lọc sẵn, có tên từng người.'],
           chi: { hd: 'tq-can-xu-ly', duong: '/', chu: 'Việc của chi nhánh — quá hạn ở đầu.' } },
-        { id: 'ql-tq-so-lieu', ten: 'Số liệu', buoc: ['Bốn ô: dưới kỳ vọng, Case đang mở, Case chờ duyệt, PA chưa có kết quả; bấm số mở danh sách.', '<b>Điểm đáng chú ý</b> · <b>Lịch sắp tới</b> (<b>Xem toàn bộ lịch ›</b> mở Kế hoạch Test) · bảng <b>Theo lớp</b>.'] },
+        { id: 'ql-tq-so-lieu', ten: 'Số liệu', buoc: ['Bốn ô: dưới kỳ vọng, Case đang mở, Case chưa có PA, PA chưa có kết quả; bấm số mở danh sách.', '<b>Điểm đáng chú ý</b> · <b>Lịch sắp tới</b> (<b>Xem toàn bộ lịch ›</b> mở Kế hoạch Test) · bảng <b>Theo lớp</b>.'] },
       ],
     },
     {

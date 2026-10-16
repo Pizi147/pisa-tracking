@@ -354,3 +354,9 @@ export function demSeXep(dong: DongHangLoat[]): Record<ToneSeXep, number> {
   for (const d of dong) t[nhanSeXep(d, null).tone] += 1;
   return t;
 }
+
+/** UX-1 (Lịch Test khối 2 / 3): số lớp CÒN bài và số lớp đã xong — một lớp nhiều hàng (nhiều đợt) còn bài ở hàng nào là còn bài. */
+export function demLopConBai(ds: readonly { classId: number; con: number }[]): { con: number; xong: number } {
+  const con = new Set(ds.filter((l) => l.con > 0).map((l) => l.classId));
+  return { con: con.size, xong: new Set(ds.map((l) => l.classId)).size - con.size };
+}

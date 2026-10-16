@@ -93,5 +93,5 @@ export const HD_ADMIN: HuongDan = {
     ...luatGv('han-cham', 'dau-gach'),
     { id: 'ad-luat-quyen', ten: 'Admin làm / không làm', buoc: ['Làm: xếp / dời lịch thi, nhập bù / sửa điểm, sửa thông tin HV.', 'Chỉ Quản lý: dời hạn chấm, huỷ / khôi phục lượt, Target, lộ trình.', 'Case, Ý thức, Phối hợp: chỉ xem.'] },
   ],
-  tu: HD_GV.tu.filter((x) => ['MT (bài thi thử)', 'Lớp thường (không phải FT)', 'Kỳ vọng', 'SOS 1 · 2 · 3', 'GVCN · GVBM', 'Speaking chấm chéo', 'Mã tuần', 'QL (Quản lý)'].includes(x.ten)),
+  tu: HD_GV.tu.filter((x) => ['MT (bài thi thử)', 'Lớp thường (không phải FT)', 'Kỳ vọng', 'SOS 1 · 2 · 3', 'GVCN · GVBM', 'Speaking chấm chéo', 'KCK', 'Mã tuần', 'QL (Quản lý)'].includes(x.ten)),
 };

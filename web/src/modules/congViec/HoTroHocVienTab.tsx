@@ -46,7 +46,7 @@ const phang = (ds: readonly WorkItem[]) => ds.flatMap((x) => [x, ...(x.con ?? []
  * CÔNG VIỆC › HỖ TRỢ HỌC VIÊN — LÀM TẠI CHỖ (OV-5a, đặc tả OV mục 4, mockup M1 §1–§2).
  *
  * Lọc HAI TẦNG: hàng chính Của tôi / Của GV (QL, Quản trị) · hạn có số · Chi nhánh; "Lọc thêm" (Chương trình · Nhóm việc · Của một GV, số bộ lọc
- * đang bật). Dòng phạm vi luôn hiện ("Đang xem: … · n nhóm việc · m học viên") + Xoá lọc. Mọi bộ lọc + việc đang mở (`viec`) nằm trên URL.
+ * đang bật). Dòng phạm vi luôn hiện ("Đang xem: … · n việc · m học viên") + Xoá lọc. Mọi bộ lọc + việc đang mở (`viec`) nằm trên URL.
  *
  * Danh sách trái (560 px) · panel phải xử lý việc đang chọn (`PanelViec`, panel sẵn có đặt tại chỗ qua `KhungTaiCho`); bấm việc khác → panel đổi.
  * Lưu xong: dòng đứng nguyên chỗ, mờ + gạch khi máy chủ không còn trả việc đó (`giu`); panel giữ; chỉ "· việc tiếp ›" chuyển việc. Số đếm chỉ từ
@@ -292,7 +292,7 @@ export function HoTroHocVienTab() {
           <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[12.5px] text-slate-400" aria-live="polite">
             <span>{t('Đang xem:')}{' '}<b className="font-semibold text-slate-200">{dangXem}</b></span>
             <span aria-hidden>·</span>
-            <span className="tabular-nums">{t('{nhom} nhóm việc · {so} {donVi}', { nhom: phamVi.nhom, so: phamVi.so, donVi: phamVi.donVi })}</span>
+            <span className="tabular-nums">{t('{nhom} việc · {so} {donVi}', { nhom: phamVi.nhom, so: phamVi.so, donVi: phamVi.donVi })}</span>
             {coLoc && <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 sm:min-h-0" onClick={xoaLoc}>{t('Xoá lọc')}</button>}
           </div>
         )}

@@ -9,7 +9,7 @@ import { t } from '@shared/i18n/index.ts';
 /**
  * BỐN Ô SỐ — tầng 3 của Tổng quan Quản lý, theo khung đang chọn (PR-VAI-a Q5, mockup 23 màn B). Mỗi ô đi qua `<SoLieu>`: con số và
  * danh sách mở ra là CÙNG một tập ID.
- *   Học viên dưới kỳ vọng (lớp thường: chưa đạt) · Học viên có Case đang mở (phụ "n Case") · Case chờ duyệt — cùng cột Chờ duyệt của Tổng
+ *   Học viên dưới kỳ vọng (lớp thường: chưa đạt) · Học viên có Case đang mở (phụ "n Case") · Case chưa có PA (UX-1, trước là "Case chờ duyệt") — cùng cột Chưa có PA của Tổng
  *   hợp, OV-12d (phụ "k quá hạn") · PA quá hạn ghi kết quả (phụ "tuần W4 SEP" = tuần của hạn cũ nhất, Q25).
  */
 type Lean = { n: number; denominator: number | null; empty: boolean; hanCu?: string | null };
@@ -40,7 +40,7 @@ export function MetricTiles({ branchId, ct }: { branchId: number | null; ct: Chu
         phu={(d) => (d.denominator !== null ? `/ ${d.denominator} đánh giá được` : null)} />
       <O id="hv-co-case-mo" branchId={branchId} ct={ct} nhan="Học viên có Case đang mở"
         phu={() => <SoPhu id="case-mo" branchId={branchId} ct={ct} sau={(n) => (n ? ' Case' : 'Không có Case mở')} />} />
-      <O id="case-cho-xac-dinh-nguyen-nhan" branchId={branchId} ct={ct} nhan={t('Case chờ duyệt')}
+      <O id="case-cho-xac-dinh-nguyen-nhan" branchId={branchId} ct={ct} nhan={t('Case chưa có PA')}
         phu={() => <SoPhu id="case-xac-dinh-nguyen-nhan-qua-han" branchId={branchId} ct={ct}
           sau={(n) => (n ? <span className="font-semibold text-late"> quá hạn</span> : 'không có Case quá hạn')} />} />
       <O id="pa-can-cap-nhat" branchId={branchId} ct={ct} nhan="PA chưa có Kết quả"
