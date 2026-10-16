@@ -180,8 +180,8 @@ export async function runPrOv13kTests(t: YThucTestKit) {
     const x = xm.duLieuXuatMt(QL, loc);
     const [tieuDe, ...dong] = x.sheets[0].aoa;
     const i = tieuDe.indexOf('Nhận xét GV phụ trách S');
-    const hv = one('SELECT student_code FROM students WHERE id = ?', sid).student_code;
-    const r = dong.find((h: any[]) => h[0] === hv && h[5] === mt);
+    const hv = one('SELECT email FROM students WHERE id = ?', sid).email;   // OV-13f: cột 2 = Email (bỏ cột Mã)
+    const r = dong.find((h: any[]) => h[1] === hv && h[5] === mt);
     assert(i > tieuDe.indexOf('Nhận xét S') && r?.[i] === 'Em cần luyện Part 2 thêm 2 phút mỗi buổi.', `Excel: ${i} ${JSON.stringify(r?.[i])}`);
   }));
 
