@@ -470,7 +470,7 @@ export async function runPrSosTests(t: YThucTestKit) {
     assert(d.cotXuLy('cho-nguyen-nhan', false) === 'choDuyet' && d.cotXuLy('cho-xac-nhan-pa', false) === 'choDuyet' && d.cotXuLy('huy-khong-theo-doi', false) === 'xongHuy'
       && d.cotXuLy('cho-duyet-khong-theo-doi', false) === 'choDuyet' && d.cotXuLy('cho-nhan-xet', false) === 'choDuyet', 'cotXuLy');
     const cot = d.cotTongHopFor('ft').filter((x: any) => x.nhom === 'xu-ly').map((x: any) => x.nhan('ft'));
-    assert(cot.join('|') === 'HV - Case|Chưa có PA|Đang xử lý', cot.join('|'));
+    assert(cot.join('|') === 'HV - Case|Chưa chốt PA|Đang xử lý', cot.join('|'));
   });
 
   // ------------------------------------------------------------------ Task 8 · HangCase / HangPA (quét nguồn + luật)

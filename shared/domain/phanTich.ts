@@ -246,11 +246,11 @@ const COT_HV_CO_CASE: CotTongHop = { khoa: 'hvCoCase', nhom: 'xu-ly', donVi: 'ho
 const COT_CASE: CotTongHop = { khoa: 'case', nhom: 'xu-ly', donVi: 'case', nhan: () => 'Case' };
 const COT_HV_CASE: CotTongHop = { khoa: 'hvCase', nhom: 'xu-ly', donVi: 'hoc-vien', nhan: () => 'HV - Case', gop: ['hvCoCase', 'case'] };
 /** OV-12d: chữ chung của nhóm Xử lý — MỘT ⓘ trên đầu nhóm (web) thay ⓘ từng cột. */
-export const GOI_Y_XU_LY = t('HV - Case: học viên có Case - số Case sinh từ các lượt trong dòng (kể cả Case đã xong / huỷ). Chưa có PA: Case chưa có PA đang theo dõi — chưa có PA, PA chờ xác nhận / chờ Quản lý duyệt, PA Bổ trợ chưa chạy, PA đã xong hết nhưng chưa Hoàn thành Case, "Không cần theo dõi" chờ Quản lý, Case Mock Test cũ chờ ghi nhận xét, Case Progress Test chờ Xác nhận Case; ⚠ = quá hạn. Đang xử lý: Case có PA đang theo dõi. Tính theo hôm nay, không phải lúc chấm.');
+export const GOI_Y_XU_LY = t('HV - Case: học viên có Case - số Case sinh từ các lượt trong dòng (kể cả Case đã xong / huỷ). Chưa chốt PA: Case chưa có PA đang theo dõi — chưa có PA, PA chờ xác nhận / chờ Quản lý duyệt, PA Bổ trợ chưa chạy, PA đã xong hết nhưng chưa Hoàn thành Case, "Không cần theo dõi" chờ Quản lý, Case Mock Test cũ chờ ghi nhận xét, Case Progress Test chờ Xác nhận Case; ⚠ = quá hạn. Đang xử lý: Case có PA đang theo dõi. Tính theo hôm nay, không phải lúc chấm.');
 const COT_XU_LY: CotTongHop[] = [
   COT_HV_CASE,
   /* OV-12d (chủ SP 14/10): hai cột theo `cotXuLy` — xong / huỷ chỉ nằm trong tổng HV - Case. */
-  { khoa: 'choDuyet', nhom: 'xu-ly', donVi: 'case', nhan: () => t('Chưa có PA') },   // UX-1: "Chờ duyệt" chỉ còn là hộp thẻ QL
+  { khoa: 'choDuyet', nhom: 'xu-ly', donVi: 'case', nhan: () => t('Chưa chốt PA') },   // UX-1: "Chờ duyệt" chỉ còn là hộp thẻ QL
   { khoa: 'dangLam', nhom: 'xu-ly', donVi: 'case', nhan: () => t('Đang xử lý') },
 ];
 /**

@@ -123,7 +123,7 @@ export function duongHocVienLop(params: { get(k: string): string | null }, o: { 
 
 /** Nhóm xử lý của một Case — cùng ba chữ với bảng Tổng hợp (chủ SP 14/10). */
 export type NhomXuLy = 'cho-duyet' | 'dang-xu-ly' | 'xong';
-export const NHAN_NHOM_XU_LY = { 'cho-duyet': 'Chưa có PA', 'dang-xu-ly': 'Đang xử lý', xong: 'Xong' } as const satisfies Record<NhomXuLy, string>;
+export const NHAN_NHOM_XU_LY = { 'cho-duyet': 'Chưa chốt PA', 'dang-xu-ly': 'Đang xử lý', xong: 'Xong' } as const satisfies Record<NhomXuLy, string>;
 /** OV-12d: nhóm của Case theo cột Tổng hợp (`cotXuLy` / `xuLyCuaDong`) — một luật cho Tổng hợp, Tổng quan, panel một em. */
 export const NHOM_THEO_COT: Record<CotXuLy, NhomXuLy> = { choDuyet: 'cho-duyet', dangLam: 'dang-xu-ly', xongHuy: 'xong' };
 

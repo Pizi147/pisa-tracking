@@ -40,7 +40,7 @@ export async function runPrOv12dTests(t: YThucTestKit) {
   check('OV12d (2) · nhóm Xử lý chỉ còn HV - Case · Chờ duyệt · Đang xử lý (FT + lớp thường); số liệu thô HV có Case · Case · Chờ duyệt · Đang xử lý', () => {
     for (const ct of ['ft', 'thuong'] as const) {
       const xl = dm.cotTongHopFor(ct).filter((c: any) => c.nhom === 'xu-ly');
-      assert(xl.map((c: any) => c.nhan(ct)).join(' · ') === 'HV - Case · Chưa có PA · Đang xử lý', `[${ct}] ${xl.map((c: any) => c.nhan(ct)).join(' · ')}`);
+      assert(xl.map((c: any) => c.nhan(ct)).join(' · ') === 'HV - Case · Chưa chốt PA · Đang xử lý', `[${ct}] ${xl.map((c: any) => c.nhan(ct)).join(' · ')}`);
       const so = dm.cotSoLieu(ct).filter((c: any) => c.nhom === 'xu-ly').map((c: any) => c.khoa).join();
       assert(so === 'hvCoCase,case,choDuyet,dangLam', `[${ct}] ${so}`);
     }
@@ -88,7 +88,7 @@ export async function runPrOv12dTests(t: YThucTestKit) {
     }
     assert(chung > 0 && cho.size > 0, `dữ liệu: ${chung} Case chung, ${cho.size} chờ duyệt`);
     assert(quaTh <= cho.size, 'quá hạn');
-    assert(dm.metricById('case-cho-xac-dinh-nguyen-nhan').ten === 'Case chưa có PA', dm.metricById('case-cho-xac-dinh-nguyen-nhan').ten);
+    assert(dm.metricById('case-cho-xac-dinh-nguyen-nhan').ten === 'Case chưa chốt PA', dm.metricById('case-cho-xac-dinh-nguyen-nhan').ten);
   });
 
   check('OV12d (5) · Case đổi cột theo PA: huỷ hết PA của Case Đang xử lý → Chờ duyệt (chưa có PA); xác nhận PA quy chế → Đang xử lý', () => {

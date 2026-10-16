@@ -63,10 +63,10 @@ export async function runPrUx1Tests(t: YThucTestKit) {
   });
 
   check('UX1-4 · Ô Tổng quan + cột Tổng hợp: "Case chưa có PA"; "Chờ duyệt" chỉ còn là hộp thẻ QL', () => {
-    eq(d.metricById('case-cho-xac-dinh-nguyen-nhan').ten, 'Case chưa có PA', 'tên chỉ số');
-    eq(d.metricById('case-xac-dinh-nguyen-nhan-qua-han').ten, 'Case chưa có PA quá hạn', 'tên chỉ số quá hạn');
-    eq(d.cotTongHopFor('ft').find((x: any) => x.khoa === 'choDuyet').nhan('ft'), 'Chưa có PA', 'cột Tổng hợp');
-    eq(d.NHAN_NHOM_XU_LY['cho-duyet'], 'Chưa có PA', 'nhóm của Case');
+    eq(d.metricById('case-cho-xac-dinh-nguyen-nhan').ten, 'Case chưa chốt PA', 'tên chỉ số');
+    eq(d.metricById('case-xac-dinh-nguyen-nhan-qua-han').ten, 'Case chưa chốt PA quá hạn', 'tên chỉ số quá hạn');
+    eq(d.cotTongHopFor('ft').find((x: any) => x.khoa === 'choDuyet').nhan('ft'), 'Chưa chốt PA', 'cột Tổng hợp');
+    eq(d.NHAN_NHOM_XU_LY['cho-duyet'], 'Chưa chốt PA', 'nhóm của Case');
   });
 
   check('UX1-8 · Lịch Test: "n lớp" chỉ đếm lớp còn bài, lớp nhiều hàng còn bài ở một hàng là còn bài', () => {
