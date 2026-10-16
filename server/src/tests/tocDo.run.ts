@@ -927,6 +927,53 @@ await checkAsync('TD5 (×3) · Case mở của lớp + bảng điểm tuần: kh
 });
 
 /*
+ * TD6: các câu đã sửa (đo bước máy ảo trên bản chụp ×3, mô tả PR TD6) không quét cả bảng lớn — khoá bằng EXPLAIN QUERY PLAN trên câu thật của các
+ * đường GET; migrate prTd6 chạy lần hai không làm gì. JSON trùng main ↔ nhánh đã so một lần trên bản chụp (mô tả PR).
+ */
+await checkAsync('TD6 (×3) · câu đã sửa không SCAN bảng lớn; migrate prTd6 chạy lặp được', async () => {
+  const { migratePrTd6, CHI_MUC_TD6 } = await import('../migrate/prTd6.ts');
+  const lan: string[][] = [[], []];
+  migratePrTd6(conn, lan[0]); migratePrTd6(conn, lan[1]);
+  assert(!lan[0].length && !lan[1].length, `migrate trên DB đã có chỉ mục vẫn báo đổi: ${lan.flat().join(' | ')}`);
+  for (const [ten] of CHI_MUC_TD6) assert(conn.prepare("SELECT 1 FROM sqlite_master WHERE type = 'index' AND name = ?").get(ten), `thiếu ${ten}`);
+  /* (câu, mẫu nhận câu, bảng câu cũ quét / duyệt cho từng dòng, chỉ mục TD6 phải dùng) — bảng ngoài tự lọc của câu (vd. lộ trình của Bước tiếp)
+     không thuộc TD6. Hai câu cuối trước đây đã SEARCH nhưng theo chỉ mục một cột (duyệt mọi lượt của lớp / mọi thẻ cùng loại) → khoá theo tên chỉ mục. */
+  const CAU: [string, RegExp, string[], string?][] = [
+    ['Case theo lượt (loadBundle)', /FROM sos_cases c\s+\/\*[^*]*\*\/\s+LEFT JOIN case_interventions iv/, ['case_interventions', 'sos_cases']],
+    ['Báo PH chưa làm', /FROM sos_coordination_actions x JOIN assessment_attempts/, ['assessment_attempts']],
+    ['Ý thức cần xử lý', /AND s\.id IN \(SELECT v\.student_id FROM violations/, ['students', 'yeu_cau_duyet']],
+    ['ngày kết quả lộ trình', /j\.cycle_id = c\.id AND j\.event_type/, ['journey_events']],
+    ['em chưa có lượt Mock', /a\.student_id = s\.id AND a\.class_id = e\.class_id/, ['assessment_attempts'], 'idx_attempt_student_class'],
+    ['thẻ Báo lên Ý thức', /y\.loai = 'bao_len_y_thuc' AND y\.doi_tuong_id = s\.id/, ['yeu_cau_duyet'], 'idx_ycd_loai_doi_tuong_cho'],
+  ];
+  const ghi: { sql: string; args: unknown[] }[] = [];
+  doQuet.ghi = ghi;
+  try {
+    for (const [vai, url] of [['CX', '/tong-quan/hoc-vien'], ['GVCN', '/my-work'], ['QL', '/classes/{lopFT}/diem-theo-luot/mt:2'], ['TVV', '/hoc-vien-lop/theo-vai']] as [Vai, string][]) {
+      assert((await doSql(vai, 'GET', urlFor(url))).status === 200, `${vai} ${url} không 200`);
+    }
+  } finally {
+    doQuet.ghi = null;
+  }
+  const quet: string[] = [];
+  for (const [ten, re, lon, chiMuc] of CAU) {
+    const cau = [...new Map(ghi.filter((g) => re.test(g.sql)).map((g) => [g.sql, g])).values()];
+    assert(cau.length, `không bắt được câu "${ten}"`);
+    for (const { sql, args } of cau) {
+      const bang = new Map([...sql.matchAll(/(?:FROM|JOIN)\s+(\w+)\s+(?:AS\s+)?(\w+)/gi)].map((m) => [m[2], m[1]]));
+      const plan = conn.prepare(`EXPLAIN QUERY PLAN ${sql}`).all(...args) as any[];
+      if (chiMuc && !plan.some((r) => r.detail.includes(chiMuc))) quet.push(`${ten}: không dùng ${chiMuc}`);
+      for (const r of plan) {
+        /* `SEARCH j` không kèm USING = duyệt cả bảng cho từng dòng ngoài (cách cũ của ngày kết quả lộ trình). */
+        const m = /^(?:SCAN (\w+)|SEARCH (\w+)$)/.exec(r.detail);
+        if (m && lon.includes(bang.get(m[1] ?? m[2]) ?? m[1] ?? m[2])) quet.push(`${ten}: ${r.detail}`);
+      }
+    }
+  }
+  assert(!quet.length, `còn quét cả bảng:\n        ${quet.join('\n        ')}`);
+});
+
+/*
  * TD4-a: Công việc trên dữ liệu ×3 — JSON đầy đủ (`items`, `dong`, `groups`, `summary`) TRÙNG ảnh chụp chụp bằng mã TRƯỚC TD4 (main 35517670), mọi vai
  * và mọi góc nhìn. Lọc sớm lượt ở `listAttempts` không được đổi một việc nào. Đổi đầu ra Công việc CÓ CHỦ Ý (hoặc seed / phép kiểm phía trên đổi
  * dữ liệu) thì lệch: chụp lại băm bằng mã trước thay đổi đó (phép in băm đang ra), không sửa cho khớp.
