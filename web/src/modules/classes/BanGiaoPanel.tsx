@@ -119,7 +119,7 @@ function MasterDetail({ dto, lenhId, onClose, onDone, reload }: Chung) {
           ? { nhan: 'Huỷ thay đổi', disabled: busy, onClick: () => { setDangSua(false); setDaBam(false); setDienThay(null); setNhanXet((m) => { const { [em!.lenhId]: _, ...con } = m; return con; }); } }
           : { nhan: 'Đóng', onClick: onClose },
         dongTren: ghi && em && !em.xacNhan ? (
-          <p className="m-0 px-4 pt-2 text-right text-xs text-slate-400">Xác nhận được khi đủ nhận xét chung. Môn chưa có thông tin sẽ ghi “GVBM chưa bàn giao”.</p>
+          <p className="m-0 px-4 pt-2 text-right text-xs text-slate-400">Môn còn trống sẽ ghi “GVBM chưa bàn giao”.</p>
         ) : undefined,
         chinh: ghi && em && !em.xacNhan ? (
           <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={xacNhan} disabled={busy || !nhap.trim()} title={!nhap.trim() ? 'Viết nhận xét chung trước khi xác nhận' : undefined}>{CHU_CHUYEN_LOP.banGiao}</button>
@@ -130,7 +130,7 @@ function MasterDetail({ dto, lenhId, onClose, onDone, reload }: Chung) {
         ) : undefined,
         conThieu: daBam && thieu && em && (ghi || suaPhieu) ? [{ nhan: 'Nhận xét chung', oId: 'o-nhan-xet' }] : undefined,
       }}>
-      {dto.ds.length === 0 && <p className="mt-3 text-sm text-slate-400">Chưa có quyết định chuyển lớp nào cần bàn giao.</p>}
+      {dto.ds.length === 0 && <p className="mt-3 text-sm text-slate-400">Không có em nào cần bàn giao.</p>}
       {em && (
         <div className="grid gap-4 pt-3 md:grid-cols-[280px_minmax(0,1fr)]">
           <ul ref={dsRef} role="listbox" aria-label="Học viên cần bàn giao" onKeyDown={phim}
@@ -160,7 +160,7 @@ function MasterDetail({ dto, lenhId, onClose, onDone, reload }: Chung) {
             </div>
 
             <section aria-label="Hệ thống tự điền" className="surface-2 rounded-lg p-3">
-              <h4 className="mb-2 mt-0 text-[11px] font-extrabold uppercase tracking-[.06em] text-slate-500">Hệ thống tự điền · chỉ đọc{em.tuDienDaChup && ' · chụp lúc xác nhận'}</h4>
+              <h4 className="mb-2 mt-0 text-[11px] font-extrabold uppercase tracking-[.06em] text-slate-500">Tự điền · chỉ đọc{em.tuDienDaChup && ' · chụp lúc xác nhận'}</h4>
               {em.tuDien ? (
                 <div className={dong}>
                   <span className="text-slate-500">Kết quả</span><span className="text-slate-200">{em.tuDien.ketQua}</span>
@@ -176,7 +176,7 @@ function MasterDetail({ dto, lenhId, onClose, onDone, reload }: Chung) {
 
             <section aria-label="Thông tin bàn giao của GVBM">
               <h4 className="mb-2 mt-0 text-[11px] font-extrabold uppercase tracking-[.06em] text-slate-500">
-                Thông tin bàn giao của GVBM · mỗi môn một câu{ghi && !em.xacNhan && <span className="ml-2 font-normal normal-case tracking-normal text-slate-500">GVCN điền thay được</span>}
+                Bàn giao của GVBM · mỗi môn một câu{ghi && !em.xacNhan && <span className="ml-2 font-normal normal-case tracking-normal text-slate-500">GVCN điền thay được</span>}
               </h4>
               <ul className="m-0 list-none space-y-1.5 p-0">
                 {em.mon.map((m) => (
@@ -225,11 +225,11 @@ function MasterDetail({ dto, lenhId, onClose, onDone, reload }: Chung) {
                 Xác nhận bởi {em.xacNhan.boi ?? 'GVCN'}{em.xacNhan.thay ? ' (Quản lý xác nhận thay)' : ''} · {ngay(em.xacNhan.luc, homNay)}
               </p>
             )}
-            {!ghi && !em.xacNhan && dto.nguoiXem.xemTuNguon && <p className="m-0 text-xs text-slate-400">Chỉ GVCN lớp cũ xác nhận. Quản lý xác nhận thay khi lớp chưa có GVCN hoặc quá hạn 3 ngày.</p>}
+            {!ghi && !em.xacNhan && dto.nguoiXem.xemTuNguon && <p className="m-0 text-xs text-slate-400">GVCN lớp cũ xác nhận; Quản lý xác nhận thay khi lớp chưa có GVCN hoặc quá hạn 3 ngày.</p>}
           </div>
         </div>
       )}
-      {dsXn === 0 && dto.ds.length > 0 && <p className="mt-4 text-xs text-slate-400">Đã xác nhận bàn giao đủ {dto.tong} em.</p>}
+      {dsXn === 0 && dto.ds.length > 0 && <p className="mt-4 text-xs text-slate-400">Đã xác nhận đủ {dto.tong} em.</p>}
     </KhungPanel>
   );
 }
@@ -272,7 +272,7 @@ function BangGvbm({ dto, mon, lenhId, onClose, onDone, reload }: Chung & { mon: 
       ngCanh={<span className="tabular-nums">{dto.lop.code} · {dto.tong} em{han && <> · <Han loai="viec-van-hanh" han={han} /></>} · mỗi em một câu</span>}
       chan={{
         huy: { nhan: 'Đóng', onClick: () => { onDone(); onClose(); } },
-        dongTren: <p className="m-0 px-4 pt-2 text-right text-xs tabular-nums text-slate-400">Lưu từng dòng khi rời ô · {soDaCo}/{dto.tong} đã có</p>,
+        dongTren: <p className="m-0 px-4 pt-2 text-right text-xs tabular-nums text-slate-400">Tự lưu khi rời ô · {soDaCo}/{dto.tong} em đã có</p>,
       }}>
       <div className="surface-2 mt-3 divide-y rounded-lg" style={{ borderColor: 'var(--line)' }} role="table" aria-label={`Bàn giao môn ${m0.ngan}`}>
         <div role="row" className="hidden grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)_minmax(0,2fr)] gap-3 px-3 py-2 text-[11px] font-extrabold uppercase tracking-[.06em] text-slate-500 sm:grid">
@@ -295,7 +295,7 @@ function BangGvbm({ dto, mon, lenhId, onClose, onDone, reload }: Chung & { mon: 
                 {!loi[e.lenhId] && luu[e.lenhId] && <span className="mt-0.5 block text-xs text-ok">Đã lưu</span>}
                 {!khoa && oMon(e)?.lamLai && !luu[e.lenhId] && (
                   <span className="mt-1 flex flex-wrap items-center gap-2 text-xs">
-                    <Nhan tone="soon">Cần làm lại</Nhan><span className="text-slate-400">Quản lý đổi lộ trình — sửa hoặc giữ câu cũ</span>
+                    <Nhan tone="soon">Cần làm lại</Nhan><span className="text-slate-400">Lộ trình đã đổi — sửa hoặc giữ câu cũ</span>
                     <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => void ghi(e, true)}>Giữ và lưu</button>
                   </span>
                 )}

@@ -2,24 +2,25 @@
  * MENU ⋮ Ở HỒ SƠ HỌC VIÊN (PR-UX3, Q10) — luật thuần: mục nào hiện, theo quyền và tình trạng. Web (`StudentManagePanel.tsx`) chỉ vẽ menu thả
  * và mở THẲNG panel của mục được chọn. Ẩn một mục không phải là chặn nó: máy chủ vẫn kiểm quyền.
  */
+import { t } from '../i18n/index.ts';
 export type ViecQuanLy = 'info' | 'lo-trinh-tiep' | 'lo-trinh' | 'chuyen-lop' | 'outcome' | 'tam-dung-thoi-hoc' | 'quay-lai' | 'hoc-lai' | 'luu-tru' | 'bo-luu-tru'
   | 'xoa-hoc-vien' | 'de-xuat-sua' | 'de-xuat-chuyen-lop' | 'lich-su-sua';
 
 export const NHAN_VIEC_QUAN_LY: Record<ViecQuanLy, string> = {
-  info: 'Sửa thông tin',
-  'lo-trinh-tiep': 'Lộ trình tiếp theo',
-  'lo-trinh': 'Lộ trình',
-  'chuyen-lop': 'Chuyển lớp…',
-  'de-xuat-chuyen-lop': 'Đề xuất chuyển lớp…',
-  outcome: 'Kết quả thi thật',
-  'tam-dung-thoi-hoc': 'Tạm dừng / Thôi học',
-  'quay-lai': 'Quay lại học',
-  'hoc-lai': 'Học lại',
-  'luu-tru': 'Lưu trữ',
-  'bo-luu-tru': 'Bỏ lưu trữ',
-  'xoa-hoc-vien': 'Xoá học viên',
-  'de-xuat-sua': 'Đề xuất sửa thông tin…',
-  'lich-su-sua': 'Lịch sử sửa',
+  info: t('Sửa thông tin'),
+  'lo-trinh-tiep': t('Lộ trình tiếp theo'),
+  'lo-trinh': t('Lộ trình'),
+  'chuyen-lop': t('Chuyển lớp…'),
+  'de-xuat-chuyen-lop': t('Đề xuất chuyển lớp…'),
+  outcome: t('Kết quả thi thật'),
+  'tam-dung-thoi-hoc': t('Tạm dừng / Thôi học'),
+  'quay-lai': t('Quay lại học'),
+  'hoc-lai': t('Học lại'),
+  'luu-tru': t('Lưu trữ'),
+  'bo-luu-tru': t('Bỏ lưu trữ'),
+  'xoa-hoc-vien': t('Xoá học viên'),
+  'de-xuat-sua': t('Đề xuất sửa thông tin…'),
+  'lich-su-sua': t('Lịch sử sửa'),
 };
 
 /** OV-11d (HV-3, Q4): hồ sơ đã Lưu trữ khoá — máy chủ trả câu này (400) ở mọi đường sửa hồ sơ / lộ trình / thi thật / Case. */
@@ -88,8 +89,8 @@ export function mucQuanLyHocVien({ canEdit, suaThongTin, suaThem, lopHoc, cycle,
   /* OV-11d (HV-22): em đang Tạm dừng — mục chỉ còn Thôi học, gọi đúng tên. */
   const thoiHoc = (key: ViecQuanLy) => key === 'tam-dung-thoi-hoc' && !cacTabTrangThai(quyen, status).includes('tam-dung');
   return [...dau, ...sau].map((key, i) => ({
-    key, nhan: thoiHoc(key) ? 'Thôi học' : NHAN_VIEC_QUAN_LY[key],
-    ...(thoiHoc(key) ? { phu: 'đóng lộ trình' } : PHU_VIEC[key] ? { phu: PHU_VIEC[key] } : {}),
+    key, nhan: thoiHoc(key) ? t('Thôi học') : NHAN_VIEC_QUAN_LY[key],
+    ...(thoiHoc(key) ? { phu: t('đóng lộ trình') } : PHU_VIEC[key] ? { phu: PHU_VIEC[key] } : {}),
     ...(key === 'xoa-hoc-vien' ? { nguyHiem: true, keTruoc: 'do' as const } : i === dau.length && i > 0 ? { keTruoc: 'dam' as const } : {}),
   }));
 }
@@ -106,12 +107,12 @@ export function mucDongTheoVai(i: { suaThongTin: boolean; suaThem: boolean; ft: 
 
 /** Một dòng hệ quả (mockup 24 B) — chỉ mục có hệ quả mới có. */
 const PHU_VIEC: Partial<Record<ViecQuanLy, string>> = {
-  'lo-trinh': 'lịch MT',
-  'de-xuat-sua': 'Quản lý duyệt rồi mới đổi',
-  'chuyen-lop': 'chọn lớp chuyển đến và tuần bắt đầu',
-  'de-xuat-chuyen-lop': 'Quản lý duyệt rồi quyết định',
-  'tam-dung-thoi-hoc': 'tạm dừng giữ lớp · thôi học đóng lộ trình',
-  'quay-lai': 'hạn tính lại từ ngày quay lại',
-  'hoc-lai': 'về lớp cũ · lộ trình chạy tiếp',
-  'xoa-hoc-vien': 'chỉ Quản trị hệ thống thấy dòng này',
+  'lo-trinh': t('lịch MT'),
+  'de-xuat-sua': t('Quản lý duyệt rồi mới đổi'),
+  'chuyen-lop': t('chọn lớp chuyển đến và tuần bắt đầu'),
+  'de-xuat-chuyen-lop': t('Quản lý duyệt rồi quyết định'),
+  'tam-dung-thoi-hoc': t('tạm dừng giữ lớp · thôi học đóng lộ trình'),
+  'quay-lai': t('hạn tính lại từ ngày quay lại'),
+  'hoc-lai': t('về lớp cũ · lộ trình chạy tiếp'),
+  'xoa-hoc-vien': t('chỉ Quản trị hệ thống thấy dòng này'),
 };

@@ -157,7 +157,7 @@ export const EN_HDB = {
   'khi có người mới · đổi việc': 'new staff · job change',
   '<b>+ Tạo tài khoản</b>: Họ và tên, Email đăng nhập (đuôi .pisa@gmail.com), Mật khẩu ban đầu.': '<b>+ Create account</b>: full name, login email (ending .pisa@gmail.com), initial password.',
   '<b>Vai trò và chi nhánh</b>: mỗi vai gắn một chi nhánh; Quản trị và CX là toàn hệ thống.': '<b>Roles and branches</b>: each role is tied to one branch; System admin and CX are whole-system.',
-  'GV: chọn <b>Kỹ năng phụ trách được</b>. Người nghỉ: <b>⋯ › Xoá tài khoản</b>.': 'Teachers: pick <b>Skills you can teach</b>. Leavers: <b>⋯ › Delete account</b>.',
+  'GV: chọn <b>Kỹ năng phụ trách được</b>. Người nghỉ: <b>⋯ › Xoá tài khoản</b>.': 'Teachers: pick <b>Can teach</b>. Leavers: <b>⋯ › Delete account</b>.',
   'Ba tab: <b>Tài khoản</b> · <b>Chương trình</b> · <b>Quyền & nhật ký</b>.': 'Three tabs: <b>Accounts</b> · <b>Programmes</b> · <b>Permissions & log</b>.',
   'Việc QL ở mọi chi nhánh': 'Manager work in every branch',
   '5 việc của QL, ở mọi chi nhánh — đọc ở <b>Xem vai</b> › Quản lý.': 'The manager\'s 5 tasks, in every branch — read them via <b>View as</b> › Manager.',

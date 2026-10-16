@@ -128,6 +128,13 @@ export const lyDoChiDoc = (cell: Cell) => cell.lyDoKhoa ?? (cell.sitStatus === '
   : cell.khoa ? KHOA_HOAN_TAT_HINT : t('Bạn không được phân công kỹ năng này'));
 
 /**
+ * HOTFIX-3 (OV-13o): điểm vừa lưu (dòng `score` máy chủ trả về) đè lên ô cũ tới khi bảng tải lại được — tải lại hỏng thì ô vẫn hiện
+ * điểm đã lưu, không quay về "Nhập" chờ Thử lại.
+ */
+export const apDiemVuaLuu = (cell: Cell, s?: { band?: number | null; raw_score?: number | null; c1?: number | null; c2?: number | null; c3?: number | null; c4?: number | null }): Cell =>
+  (!s ? cell : { ...cell, band: s.band ?? null, rawScore: s.raw_score ?? null, criteria: [s.c1 ?? null, s.c2 ?? null, s.c3 ?? null, s.c4 ?? null] });
+
+/**
  * Lưu điểm một kỹ năng. Khi lỗi, giữ nguyên giá trị người dùng vừa gõ để họ bấm lại,
  * không âm thầm quay về giá trị cũ.
  */
@@ -141,6 +148,8 @@ export function useSaveScore(attemptId: number, onSaved?: () => void, tenHv?: st
    */
   const tt = useTrangThaiLuuO<SavePatch>(`ft:${attemptId}`);
   const inflight = useRef(new Set<string>());
+  /* HOTFIX-3: dòng điểm vừa lưu theo kỹ năng — nơi gọi xoá khi dữ liệu bảng đổi (`xoaVuaLuu`). */
+  const [vuaLuu, setVuaLuu] = useState<Record<string, any>>({});
 
   const save = async (skill: string, patch: SavePatch, opts: SaveOpts = {}): Promise<boolean> => {
     if (inflight.current.has(skill)) return false;   // chặn gửi lặp cùng một ô
@@ -160,6 +169,7 @@ export function useSaveScore(attemptId: number, onSaved?: () => void, tenHv?: st
       invalidate('/my-work');   // PR-S6F-a: badge quá hạn của GV tải lại sau khi nhập điểm
       /* K4: gõ "-" và nút "Vắng" (điện thoại) cùng đi qua đây — một thông báo ngắn, không Hoàn tác. */
       if (patch.noShow === true) thongBaoVang(toast, `${attemptId}:${skill}`, ENTRY_SKILL_SHORT[skill as EntrySkill], tenHv, r?.vang);
+      if (r?.score && patch.noShow === undefined) setVuaLuu((v) => ({ ...v, [skill]: r.score }));
       tt.thanhCong(skill);
       onSaved?.();
       return true;
@@ -194,6 +204,7 @@ export function useSaveScore(attemptId: number, onSaved?: () => void, tenHv?: st
   return {
     save, saving, status: tt.status, lastError: tt.lastError, retry, o: tt.o, loi: tt.loi, luuLai, soLoi: tt.soLoi,
     loiNhap: tt.loiNhap, coGuiLai: tt.coGuiLai,
+    vuaLuu, xoaVuaLuu: () => setVuaLuu((v) => (Object.keys(v).length ? {} : v)),
   };
 }
 
