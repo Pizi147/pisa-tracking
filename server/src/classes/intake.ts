@@ -207,7 +207,7 @@ export function previewIntake(
       canPlanWeeks: false, programme: null, ratio: false, classCode: null,
     };
   }
-  if (!can(p, PERMISSIONS.STUDENT_EDIT, { classId: cls.id })) {
+  if (!can(p, PERMISSIONS.STUDENT_ADD, { classId: cls.id })) {
     return {
       rows: [],
       issues: [{ row: 0, field: 'classId', message: `Lớp ${cls.code} nằm ngoài phạm vi bạn được cấp quyền.`, muc: 'loi' }],
@@ -416,7 +416,7 @@ export function commitIntake(
   if (!classId) throw badRequest('Chưa chọn lớp cho lô này.');
   const cls = conn.prepare('SELECT * FROM classes WHERE id = ?').get(classId) as any;
   if (!cls) throw notFound('Không tìm thấy lớp');
-  require_(p, PERMISSIONS.STUDENT_EDIT, { classId: cls.id }, `Lớp ${cls.code} nằm ngoài phạm vi bạn được cấp quyền.`);
+  require_(p, PERMISSIONS.STUDENT_ADD, { classId: cls.id }, `Lớp ${cls.code} nằm ngoài phạm vi bạn được cấp quyền.`);
   /*
    * IDEMPOTENCY — bấm hai lần hoặc thử lại sau lỗi mạng không được tạo thêm học viên. Khoá gắn NGƯỜI GỬI + LỚP (PR-TOC): khoá do
    * trình duyệt sinh, người khác gửi lại đúng chuỗi đó không được đọc kết quả (mã HV, id) của lô người khác.

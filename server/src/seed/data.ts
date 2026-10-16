@@ -52,7 +52,7 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
     'deadline.override', 'attempt.view', 'score.override', 'case.view', 'sos.report', 'sos.edit',
     'case.close', 'case.approve',
     'violation.record', 'discipline.manage', 'discipline.stats',
-    'class.assign', 'class.edit', 'class.create', 'student.view', 'student.edit',
+    'class.assign', 'class.edit', 'class.create', 'student.view', 'student.edit', 'student.add',
     'meeting.view', 'meeting.edit', 'admin.config', 'request.approve', 'cycle.edit',
     'student.edit_info', 'test.view', 'work.view', 'analysis.view', 'analysis.view_teacher',
   ],
@@ -63,7 +63,7 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
     // Quản lý đóng được mọi Case trong chi nhánh mình; giáo viên đóng theo phân công (`teacherAllows`, PR-QU).
     'case.view', 'sos.report', 'sos.edit', 'case.close', 'case.approve', 'class.assign', 'class.edit', 'class.create',
     'violation.record', 'discipline.manage', 'discipline.stats',
-    'student.view', 'student.edit', 'meeting.view', 'meeting.edit', 'request.approve', 'cycle.edit',
+    'student.view', 'student.edit', 'student.add', 'meeting.view', 'meeting.edit', 'request.approve', 'cycle.edit',
     'student.edit_info', 'test.view', 'work.view', 'analysis.view', 'analysis.view_teacher',
   ],
   /*
@@ -85,7 +85,7 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
    * KHÔNG có `class.create` (cấp riêng được) và KHÔNG có `class.assign_subject` (quyền suy ra từ phân công GVCN).
    */
   teacher: ['attempt.view', 'score.edit', 'estimate.edit', 'schedule.move',
-    'case.view', 'sos.report', 'sos.edit', 'case.close', 'student.view', 'student.edit',
+    'case.view', 'sos.report', 'sos.edit', 'case.close', 'student.view', 'student.edit', 'student.add',
     'violation.record', 'discipline.manage', 'student.edit_info', 'test.view', 'work.view'],
   /*
    * PR-OV2a (đặc tả OV mục 2). Admin lo Mock Test của chi nhánh: Test đủ ba tab, xếp/dời lịch (`plan.week`), sửa điểm có lý do
@@ -97,10 +97,11 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
   /*
    * TVV: xem HV chi nhánh (mặc định "HV của tôi"), điểm, Case, PA, Ý thức, nhận xét; sửa MỌI thông tin HV — OV-8b (chủ SP 13/10): cả Target, ghi chú,
    * Tạm dừng / Quay lại / Thôi học, kết quả thi thật (`student.edit_more`). Học thuật vẫn của GV / QL. Không Test, không Công việc.
+   * OV-13p (chủ SP 16/10): tạo lớp (`class.create`, chi nhánh của grant) + thêm học viên (`student.add`) — KHÔNG phân công GV (`class.assign`).
    */
-  consultant: ['attempt.view', 'case.view', 'student.view', 'student.edit_info', 'student.edit_more', 'analysis.view'],
+  consultant: ['attempt.view', 'case.view', 'student.view', 'student.edit_info', 'student.edit_more', 'analysis.view', 'class.create', 'student.add'],
   /* CX: như TVV, grant toàn hệ thống; Tổng quan · Phân tích trừ phần giáo viên (không `analysis.view_teacher`). */
-  cx: ['attempt.view', 'case.view', 'student.view', 'student.edit_info', 'student.edit_more', 'analysis.view'],
+  cx: ['attempt.view', 'case.view', 'student.view', 'student.edit_info', 'student.edit_more', 'analysis.view', 'class.create', 'student.add'],
 };
 
 /*

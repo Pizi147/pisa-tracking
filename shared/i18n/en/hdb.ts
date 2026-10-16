@@ -1,6 +1,9 @@
 /** HD-b — chữ Hướng dẫn của QL · Quản trị · TVV · CX · Admin (`shared/huongDan/{ql,qt,tvv,cx,admin}.ts`). Khoá = chữ Việt; `<b>` giữ nguyên chỗ.
  *  Nhãn nút theo chữ app đang hiện ở EN: màn chưa dịch (Quản trị, Cần xử lý, Kế hoạch Test, ô TVV / Admin…) giữ nhãn Việt trong <b>. */
 export const EN_HDB = {
+  'Tạo lớp, thêm học viên': 'Create classes, add students',
+  '<b>+ Lớp mới</b> · <b>+ Học viên</b> (một em hoặc dán danh sách): lớp chi nhánh mình. Phân công giáo viên do QL làm.': '<b>+ New class</b> · <b>+ Student</b> (one student or paste a list): classes in your branch. Teacher assignment is done by the manager.',
+  '<b>+ Lớp mới</b> · <b>+ Học viên</b> (một em hoặc dán danh sách): mọi chi nhánh. Phân công giáo viên do QL làm.': '<b>+ New class</b> · <b>+ Student</b> (one student or paste a list): all branches. Teacher assignment is done by the manager.',
   'Tổng quan + Chờ duyệt mỗi sáng': 'Home + Pending every morning',
   'Mở <b>Tổng quan</b>: hàng <b>Chờ duyệt</b> đếm thẻ theo loại, có chip <b>Quá hạn</b>; bấm chip mở hộp đã lọc.': 'Open <b>Home</b>: the <b>Pending</b> row counts cards by type, with an <b>Overdue</b> chip; click a chip to open the box filtered.',
   'Khối <b>Cần xử lý</b>: việc của chi nhánh, quá hạn ở đầu; <b>Xem</b> mở Công việc lọc sẵn tên từng người.': '<b>Action needed</b> block: branch tasks, overdue on top; <b>View</b> opens Tasks filtered with each person\'s name.',

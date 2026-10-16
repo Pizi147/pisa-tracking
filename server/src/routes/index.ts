@@ -309,10 +309,13 @@ api.put('/demo/config', requireAuth, wrap((req) => {
 api.get('/ref/branches', requireAuth, wrap((req) => {
   const p = principalOf(req);
   const all = db().prepare("SELECT id, code, name FROM branches WHERE status='active' ORDER BY id").all() as any[];
-  /* PR-QU (B): panel "+ Lớp mới" chỉ bày chi nhánh người này có `class.create`. */
+  /*
+   * PR-QU (B): panel "+ Lớp mới" chỉ bày chi nhánh người này có `class.create`. OV-13p: `phanCong` = `class.assign` ở chi nhánh đó — web hiện khối
+   * Phân công theo cờ này (TVV / CX không có), không đoán qua lỗi 403 của `/ref/teachers`.
+   */
   if (req.query.muc === 'tao-lop') {
     const duoc = new Set(hocVienLopSvc.chiNhanhTaoLop(p));
-    return all.filter((b) => duoc.has(b.id));
+    return all.filter((b) => duoc.has(b.id)).map((b) => ({ ...b, phanCong: can(p, PERMISSIONS.CLASS_ASSIGN, { branchId: b.id }) }));
   }
   const scope = scopeFor(p, PERMISSIONS.ATTEMPT_VIEW);
   if (scope.all) return all;

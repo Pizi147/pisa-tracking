@@ -43,7 +43,7 @@ export type LopTrenTrang = {
   gvcn: { id: number; name: string } | null; soCaseMo: number; tuanKetThuc: string | null;
   /** B4: yêu cầu chờ Quản lý duyệt (chỉ người duyệt được) và số em có việc đã quá hạn — badge `cho-duyet` / `qua-han`. */
   soChoDuyet: number; soEmQuaHan: number;
-  viewer: { coTheSuaHocVien: boolean; coTheBaoCase: boolean; coTheGhiViPham: boolean; coTheNhapDiem: boolean; coTheChuyenTiep: boolean; coTheSuaThongTin?: boolean; coTheSuaThem?: boolean };
+  viewer: { coTheSuaHocVien: boolean; coTheThemHocVien: boolean; coTheBaoCase: boolean; coTheGhiViPham: boolean; coTheNhapDiem: boolean; coTheChuyenTiep: boolean; coTheSuaThongTin?: boolean; coTheSuaThem?: boolean };
   /** PR-LT: số em thật sự cần xếp lớp tiếp (Q9), số em lớp thường chưa có lộ trình tiếp theo (chỉ hai tuần cuối khoá, Q5). */
   canXepLop: number; soChuaLoTrinhTiep: number; nhacLoTrinh: boolean;
 };
@@ -519,7 +519,7 @@ function HopLop({ lop, mo, onDoiMo, chiHien, sapXep, onThemHocVien, onDoi, dsHoc
     ...(lop.viewer.coTheNhapDiem
       ? [{ key: 'nhap-diem', nhan: t('Nhập điểm'), onChon: () => navigate(`${DUONG_TAB_TEST['diem-lop']}?lop=${lop.id}`) }]   // HL-3: như nút đầu hồ sơ lớp
       : []),
-    ...(lop.viewer.coTheSuaHocVien ? [{ key: 'them', nhan: t('+ Học viên'), onChon: onThemHocVien }] : []),
+    ...(lop.viewer.coTheThemHocVien ? [{ key: 'them', nhan: t('+ Học viên'), onChon: onThemHocVien }] : []),
   ];
 
   const menuBadgeAn = b.an.length > 0 && (

@@ -414,6 +414,7 @@ function teacherAllows(p: Principal, permission: string, ctx: Ctx): boolean {
      */
     case PERMISSIONS.STUDENT_EDIT:
     case PERMISSIONS.STUDENT_EDIT_INFO:
+    case PERMISSIONS.STUDENT_ADD:
       return ctx.anyScope === true || coreDangHoc(p, ctx);
 
     /*

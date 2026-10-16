@@ -149,6 +149,11 @@ export const PERMISSIONS = {
    * (+ Hoàn tác), kết quả thi thật. Quyền HẸP: không mở `student.edit` / `cycle.edit` (lộ trình tiếp theo, chuyển lớp, lưu trữ, học lại).
    */
   STUDENT_EDIT_MORE: 'student.edit_more',
+  /**
+   * OV-13p (chủ SP 16/10): THÊM học viên vào lớp — một em hoặc nhập danh sách / Excel (đường intake: xem trước + lưu). Quyền HẸP cho TVV / CX:
+   * không mở `student.edit` (chuyển lớp, lưu trữ, học lại, lộ trình). GV: chỉ GVCN lớp đó (`teacherAllows`), như `student.edit`.
+   */
+  STUDENT_ADD: 'student.add',
   /** PR-OV2a: vào Test (Lịch Test, Điểm theo lớp, Kế hoạch Test). Xem điểm trong hồ sơ vẫn là `attempt.view`. */
   TEST_VIEW: 'test.view',
   /** PR-OV2a: vào Công việc. */
@@ -195,6 +200,7 @@ export const PERMISSION_LABEL: Record<string, string> = {
   'student.edit': 'Sửa hồ sơ học viên',
   'student.edit_info': 'Sửa thông tin học viên',
   'student.edit_more': 'Sửa Target, ghi chú, trạng thái học và kết quả thi thật của học viên',
+  'student.add': 'Thêm học viên vào lớp',
   'test.view': 'Vào Test',
   'work.view': 'Vào Công việc',
   'analysis.view': 'Xem Tổng quan số liệu và Phân tích',

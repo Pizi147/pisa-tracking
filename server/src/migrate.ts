@@ -57,6 +57,7 @@ import { migratePrOv12h } from './migrate/prOv12h.ts';
 import { cacBuocPrOv13a, khoaPrOv1c, themCotPrOv13a } from './migrate/prOv13a.ts';
 import { migratePrOv13e } from './migrate/prOv13e.ts';
 import { migratePrHd } from './migrate/prHd.ts';
+import { migratePrOv13p } from './migrate/prOv13p.ts';
 import { migratePrOv13k } from './migrate/prOv13k.ts';
 import { migratePrTd5 } from './migrate/prTd5.ts';
 
@@ -351,6 +352,7 @@ function migrateCaseEngine(applied: string[], skipped: string[], loiSauBuoc?: nu
     /* OV-13m: learning_cycles.buoc_tiep_hen — Hẹn bắt đầu lộ trình mới sau thi (chỉ thêm cột, chạy lặp được). */ buoc(() => migratePrOv13m(conn, applied));
     /* HD-a: users.da_xem_huong_dan — dải "Mới dùng PISA?" nhớ theo tài khoản (chỉ thêm cột, chạy lặp được). */ buoc(() => migratePrHd(conn, applied));
     /* TD5: chỉ mục sos_cases(attempt_id, …) — giảm dòng đọc Turso (chỉ thêm chỉ mục, chạy lặp được). */ buoc(() => migratePrTd5(conn, applied));
+    /* OV-13p (SAU PR-OV2a — cần vai TVV / CX): `class.create` + `student.add` cho TVV, CX; `student.add` cho vai có `student.edit` (một lần, khoá demo_config). */ buoc(() => migratePrOv13p(conn, applied));
 
     conn.prepare("INSERT OR REPLACE INTO demo_config (key, value, updated_at) VALUES ('case_engine_migrated_at', ?, ?)")
       .run(nowIso(), nowIso());

@@ -29,7 +29,7 @@ export type LopHocVienLop = ClassSummary & {
   /** Thứ Hai của tuần học cuối — lớp thường; FT null. */
   tuanKetThuc: string | null;
   viewer: {
-    coTheSuaHocVien: boolean; coTheBaoCase: boolean; coTheGhiViPham: boolean; coTheNhapDiem: boolean; coTheChuyenTiep: boolean;
+    coTheSuaHocVien: boolean; coTheThemHocVien: boolean; coTheBaoCase: boolean; coTheGhiViPham: boolean; coTheNhapDiem: boolean; coTheChuyenTiep: boolean;
     /** OV-10b: ⋯ dòng của Admin / TVV / CX — Sửa thông tin (`student.edit_info`), Tạm dừng / Kết quả thi thật (`student.edit_more`). */
     coTheSuaThongTin: boolean; coTheSuaThem: boolean;
   };
@@ -111,7 +111,7 @@ export function danhSachHocVienLop(
   const demLuuTru = { lop: dl.lop.length, hv: dl.hocVien.length };
   /* Đang tìm: hỏi theo mọi lớp trong phạm vi (không lọc tìm); không tìm thì đọc cờ của các hàng (dưới). */
   const themTheoPhamVi = (f.q ?? '').trim()
-    ? (lopTrongPhamVi(p, chiNhanh ?? undefined) ?? []).some((c) => can(p, PERMISSIONS.STUDENT_EDIT, { classId: c.id }))
+    ? (lopTrongPhamVi(p, chiNhanh ?? undefined) ?? []).some((c) => can(p, PERMISSIONS.STUDENT_ADD, { classId: c.id }))
     : null;
 
   const base = listClassSummaries(p, {
@@ -215,6 +215,8 @@ export function danhSachHocVienLop(
       tuanKetThuc: pr?.startWeekStart && pr.totalWeeks ? addDays(pr.startWeekStart, (pr.totalWeeks - 1) * 7) : null,
       viewer: {
         coTheSuaHocVien: can(p, PERMISSIONS.STUDENT_EDIT, { classId: r.id }),
+        /* OV-13p: "+ Học viên" theo `student.add` (TVV / CX có, không có `student.edit`). */
+        coTheThemHocVien: can(p, PERMISSIONS.STUDENT_ADD, { classId: r.id }),
         coTheBaoCase: can(p, PERMISSIONS.SOS_REPORT, { classId: r.id }),
         coTheGhiViPham: can(p, PERMISSIONS.VIOLATION_RECORD, { classId: r.id }),
         coTheNhapDiem: editableSkills(p, r.id, skillsByClass.get(r.id) ?? [...ENTRY_SKILLS]).length > 0,
@@ -281,7 +283,7 @@ export function danhSachHocVienLop(
     hocVien.push({ id: h.id as number, classId: h.class_id as number, loc: ['tat-ca'], khung: laFt.get(h.class_id) ? 'ft' : 'thuong', ten: h.full_name, ma: h.student_code ?? '' });
   }
 
-  const coTheThemHocVien = themTheoPhamVi ?? rows.some((r) => r.viewer.coTheSuaHocVien);
+  const coTheThemHocVien = themTheoPhamVi ?? rows.some((r) => r.viewer.coTheThemHocVien);
   return { rows, scopeEmpty: false, phamVi, dem: demLoc(hocVien, 'tat-ca'), hocVien, coTheTaoLop, coTheThemHocVien, demLuuTru };
 }
 

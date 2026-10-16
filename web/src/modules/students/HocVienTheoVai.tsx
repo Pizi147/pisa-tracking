@@ -2,6 +2,9 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
+import { invalidate } from '../../lib/api.ts';
+import { IntakePanel } from './IntakePanel.tsx';
+import { ClassCreatePanel } from '../classes/ClassCreatePanel.tsx';
 import { Card, Empty, ErrorState, ExamPlanText, Level, Skeleton, TargetText } from '../../ui/ui.tsx';
 import { Nhan } from '../../ui/Nhan.tsx';
 import { HangCon, HangNhom } from '../../ui/HangNhom.tsx';
@@ -43,6 +46,8 @@ type TrangVai = {
   rows: DongVai[];
   /** OV-12f: việc góc Cần làm của TVV — Chọn bước tiếp (lộ trình + hạn) · Kết quả thi thật chưa có. */
   viec: { buocTiep: Record<number, { cycleId: number; han: string }>; ketQuaThi: Record<number, { han: string; thi: string | null }> };
+  /** OV-13p: "+ Lớp mới" · "+ Học viên" — cùng panel trang Quản lý; máy chủ kiểm lại khi lưu. */
+  coTheTaoLop: boolean; coTheThemHocVien: boolean;
 };
 /** OV-12f: góc nhìn TVV (Tất cả · Đang SOS · Cần làm) / CX (Tất cả · Đang SOS · Cần chú ý — mặc định). */
 type GocVai = 'tat-ca' | 'sos' | 'can-lam' | 'can-chu-y';
@@ -148,6 +153,8 @@ export function HocVienTheoVai({ vai }: { vai: 'tvv' | 'cx' }) {
   const [panelEm, setPanelEm] = useState<number | null>(null);
   const [buocTiep, setBuocTiep] = useState<{ cycleId: number; em: { id: number; ten: string }; lop: string | null } | null>(null);
   const [suaEm, setSuaEm] = useState<{ id: number; ten: string; lop: string | null; viec: 'info' | 'outcome' } | null>(null);
+  const [taoLop, setTaoLop] = useState(false);
+  const [them, setThem] = useState(false);
   /* Nhóm đã bấm đảo so với mặc định. Mặc định mở hết; danh sách dài (CX "Tất cả" mọi chi nhánh) thì mặc định gập — không vẽ hàng nghìn dòng một lúc. */
   const [dao, setDao] = useState<Set<number | 'chua-xep'>>(new Set());
 
@@ -224,7 +231,20 @@ export function HocVienTheoVai({ vai }: { vai: 'tvv' | 'cx' }) {
 
   return (
     <div className="page space-y-3">
-      <h1 className="m-0 text-lg font-semibold text-slate-100">Học viên & Lớp</h1>
+      <div className="flex flex-wrap items-center gap-2">
+        <h1 className="m-0 text-lg font-semibold text-slate-100">Học viên & Lớp</h1>
+        {/* OV-13p: nút như trang Quản lý (StudentsPage) — điện thoại gom vào ⋯. */}
+        {(data?.coTheTaoLop || data?.coTheThemHocVien) && (
+          <div className="ml-auto flex items-center gap-2">
+            {data.coTheTaoLop && <button type="button" className="btn btn-sm max-sm:hidden" onClick={() => setTaoLop(true)}>{t('+ Lớp mới')}</button>}
+            {data.coTheThemHocVien && <button type="button" className="btn btn-sm btn-primary max-sm:hidden" onClick={() => setThem(true)}>{t('+ Học viên')}</button>}
+            {dienThoai && <MenuDong nhan={t('Thao tác trang')} muc={[
+              ...(data.coTheTaoLop ? [{ key: 'lop-moi', nhan: t('+ Lớp mới'), onChon: () => setTaoLop(true) }] : []),
+              ...(data.coTheThemHocVien ? [{ key: 'hoc-vien-moi', nhan: t('+ Học viên'), onChon: () => setThem(true) }] : []),
+            ]} />}
+          </div>
+        )}
+      </div>
       <div className="space-y-2 pb-1">
         <div className="flex flex-wrap items-center gap-2">
           <input className="field w-full sm:w-80" aria-label="Tìm" placeholder="Tìm học viên, mã, lớp…" value={draftQ} onChange={(e) => setDraftQ(e.target.value)} />
@@ -358,6 +378,14 @@ export function HocVienTheoVai({ vai }: { vai: 'tvv' | 'cx' }) {
         </section>
       ))}
       {createPortal(tt.panels, document.body)}
+      {taoLop && (
+        <ClassCreatePanel onClose={() => setTaoLop(false)}
+          onDone={() => { invalidate('/classes'); invalidate('/hoc-vien-lop'); trang.reload(); }} />
+      )}
+      {them && (
+        <IntakePanel defaultClass={null} onClose={() => setThem(false)}
+          onDone={() => { invalidate('/classes'); invalidate('/hoc-vien-lop'); invalidate('/students'); trang.reload(); }} />
+      )}
     </div>
   );
 }

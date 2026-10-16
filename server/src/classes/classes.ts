@@ -873,13 +873,15 @@ function classOverviewThat(p: Principal, classId: number) {
      * không còn gì để sửa/nhập/gán nữa.
      */
     viewer: { ...(finished ? {
-      canPlanWeek: false, canAddStudents: false, canAssign: false, canAssignSubject: false, canEditProgress: false,
+      canPlanWeek: false, canAddStudents: false, coTheSuaHocVien: false, canAssign: false, canAssignSubject: false, canEditProgress: false,
       editableSkills: [] as string[], isCoreTeacher: false,
       canReportCase: false, canRecordViolation: false, canEnterScores: false, coTheChuyenTiep: false,
       coTheSuaThongTin: false, coTheSuaThem: false, coTheSuaCaLop: false,
     } : {
       canPlanWeek: can(p, PERMISSIONS.PLAN_WEEK, { classId }),
-      canAddStudents: can(p, PERMISSIONS.STUDENT_EDIT, { classId }),
+      /* OV-13p: "+ Học viên" = `student.add`; `coTheSuaHocVien` = `student.edit` (thao tác dòng GVCN / QL: đề xuất chuyển lớp, lộ trình). */
+      canAddStudents: can(p, PERMISSIONS.STUDENT_ADD, { classId }),
+      coTheSuaHocVien: can(p, PERMISSIONS.STUDENT_EDIT, { classId }),
       canAssign: can(p, PERMISSIONS.CLASS_ASSIGN, { classId }),
       /** PR-QU (A): GVCN đổi được GV bộ môn lớp mình — nút Phân công hiện khi `canAssign || canAssignSubject`. */
       canAssignSubject: can(p, PERMISSIONS.CLASS_ASSIGN, { classId }) || can(p, PERMISSIONS.CLASS_ASSIGN_SUBJECT, { classId }),
