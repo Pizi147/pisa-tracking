@@ -284,7 +284,7 @@ export async function runPrS4fTests(t: YThucTestKit) {
     const f = d.docBoLocXuatMt({ tg: 'dot', dot: 'mt:1,mt:2,mt:3,mt:4,mt:5,mt:6,mt:7,mt:8', lop: String(FT), cot: 'day-du' });
     assert(typeof f !== 'string', String(f));
     const r = xm.duLieuXuatMt(P.mbManager, f);
-    const ten = r.sheets[0].aoa.slice(1).map((h: any[]) => String(h[1]));
+    const ten = r.sheets[0].aoa.slice(1).map((h: any[]) => String(h[0]));   // OV-13f: cột 1 = Tên (bỏ cột Mã)
     assert(ten.length > 3, `ít dòng: ${ten.length}`);
     for (let i = 1; i < ten.length; i++) assert(d.soTenVi(ten[i - 1], ten[i]) <= 0, `sai thứ tự: ${ten[i - 1]} → ${ten[i]}`);
     assert(maLoi(() => xm.xuatExcel(P.mbManager, f, 1000)) === 400, 'vượt trần cỡ phải 400');
