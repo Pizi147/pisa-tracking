@@ -51,8 +51,10 @@ export default function AdminPage() {
         </p>
       </div>
 
-      <HangTab ariaLabel="Quản trị hệ thống" value={tab} onChange={setTab}
-        tabs={TABS.map((t) => ({ key: t.key, label: t.label }))} />
+      <div data-hd="qt-tab">
+        <HangTab ariaLabel="Quản trị hệ thống" value={tab} onChange={setTab}
+          tabs={TABS.map((t) => ({ key: t.key, label: t.label }))} />
+      </div>
 
       {tab === 'accounts' && <AccountsAdmin />}
       {tab === 'catalog' && <CatalogAdmin />}

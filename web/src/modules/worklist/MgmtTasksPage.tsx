@@ -133,7 +133,7 @@ export function TasksBoard() {
     <div className="space-y-4">
       {/* ── hàng số: bốn câu hỏi CHỒNG NHAU (Q8), mỗi số là một nút lọc ── */}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs" title="Bốn con số này chồng nhau có chủ ý — một việc Tạm ngưng đã tới ngày xem lại cũng có thể vừa quá hạn.">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs" data-hd="vh-so" title="Bốn con số này chồng nhau có chủ ý — một việc Tạm ngưng đã tới ngày xem lại cũng có thể vừa quá hạn.">
           {HANG_SO.map((h) => {
             const n = hangSo[h] ?? 0;
             const active = hang === h;

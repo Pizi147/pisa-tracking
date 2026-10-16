@@ -153,7 +153,7 @@ export async function runPrS3ChuTests(t: YThucTestKit) {
     ['Đang chờ duyệt', /Đang chờ duyệt|nhan: 'Đang chờ'/],
     ['Case mở', /'Case mở'|>Case mở</],
     ['Đã kết thúc, chưa ghi kết quả', /Đã kết thúc, chưa ghi kết quả|PA đã xong,? chưa ghi kết quả/],
-  ], [['web/src/modules/cases/QuickReport.tsx', 'Đã xong từ trước'], ['web/src/modules/platform/AccountsAdmin.tsx', 'Không duyệt'],
+  ], [['web/src/modules/cases/QuickReport.tsx', 'Đã xong từ trước'], ['web/src/modules/platform/AccountsAdmin.tsx', 'Không duyệt'], ['shared/huongDan/qt.ts', 'Không duyệt'],
     ['shared/domain/students.ts', "completed: 'Đã hoàn thành'"], ['server/src/seed/seed.ts', 'Đã hoàn thành'],
     ['web/src/modules/platform/DemoBar.tsx', ''], ['web/src/modules/platform/WelcomePage.tsx', ''], ['server/src/migrate', ''],
     /* OV-13m: mockup bước tiếp chủ SP duyệt 15/10 — lộ trình có kết quả thi = "Đã xong" (một hằng `CHU_DA_XONG`). */

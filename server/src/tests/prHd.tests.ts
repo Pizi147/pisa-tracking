@@ -22,9 +22,17 @@ export async function runPrHdTests(t: any) {
   const { createApp } = await import('../app.ts');
   console.log('\nHD-a · Hướng dẫn trên web · mục theo màn · Chỉ cho tôi · nhớ dải Mới dùng');
 
-  /* Vai có hướng dẫn → tài khoản mẫu để dựng thanh điều hướng thật (`navOf`). HD-b thêm vai thì thêm tài khoản ở đây. */
-  const MAU: Record<string, any[]> = { gv: [P.coreTeacher, P.subjectTeacher] };
+  /* Vai có hướng dẫn → tài khoản mẫu để dựng thanh điều hướng thật (`navOf`). Thêm vai thì thêm tài khoản ở đây. */
+  const { loadPrincipal } = await import('../permissions.ts');
+  const theoVai = (vai: string) => loadPrincipal((conn.prepare(
+    'SELECT ur.user_id AS id FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE r.key = ? ORDER BY ur.user_id LIMIT 1').get(vai) as any).id);
+  const MAU: Record<string, any[]> = {
+    gv: [P.coreTeacher, P.subjectTeacher], ql: [P.mbManager], qt: [P.admin],
+    tvv: [theoVai('consultant')], cx: [theoVai('cx')], admin: [theoVai('office_admin')],
+  };
+  /* HD-b: thêm Phân tích (tab Tổng quan) và Quản trị (menu Tài khoản) khi vai có. */
   const duongNav = (nav: any): string[] => [
+    ...(nav.analysis ? ['/phan-tich'] : []), ...(nav.admin ? ['/quan-tri'] : []),
     ...dh.khuVucHienThi(nav).map((k: any) => k.to),
     ...dh.tabTestHienThi(nav).map((k: string) => dh.DUONG_TAB_TEST[k]),
     ...dh.tabCongViecHienThi(nav).map((k: string) => dh.DUONG_TAB_CONG_VIEC[k]),
@@ -33,6 +41,7 @@ export async function runPrHdTests(t: any) {
 
   check('HD-NAV · mỗi vai có hướng dẫn đều có tài khoản mẫu; mỗi đường trên thanh điều hướng của vai đó có mục Theo màn', () => {
     const loi: string[] = [];
+    assert(Object.keys(hd.HUONG_DAN).length === 6, `đủ 6 vai (${Object.keys(hd.HUONG_DAN).join(', ')})`);
     for (const vai of Object.keys(hd.HUONG_DAN)) {
       if (!MAU[vai]) { loi.push(`vai ${vai} chưa có tài khoản mẫu trong phép kiểm`); continue; }
       for (const p of MAU[vai]) {
@@ -52,9 +61,10 @@ export async function runPrHdTests(t: any) {
     assert(id('/') !== null && id('/quan-tri') === null, `"/" không được khớp mọi đường (${id('/quan-tri')})`);
   });
 
-  check('HD-VIEC · mỗi vai đúng 5 việc hằng tuần, mỗi việc 2–4 bước; GV có đủ 4 phần', () => {
+  check('HD-VIEC · mỗi vai đúng 5 việc hằng tuần, mỗi việc 2–4 bước; mỗi vai đủ 4 phần', () => {
     for (const [vai, h] of Object.entries(hd.HUONG_DAN) as [string, any][]) {
       assert(h.viec.length === 5, `${vai}: ${h.viec.length} việc`);
+      for (const m of h.viec) assert(m.buoc.length >= 2, `${vai} ${m.id}: việc hằng tuần cần 2–4 bước (${m.buoc.length})`);
       for (const m of [...h.viec, ...h.man.flatMap((x: any) => x.muc), ...h.luat]) assert(m.buoc.length >= 1 && m.buoc.length <= 4, `${vai} ${m.id}: ${m.buoc.length} bước`);
       assert(h.man.length > 0 && h.luat.length > 0 && h.tu.length > 0, `${vai}: thiếu phần`);
       const ids = hd.moiMuc(h).map((m: any) => m.id);
@@ -91,7 +101,7 @@ export async function runPrHdTests(t: any) {
       }
     }
     assert(loi.length === 0, loi.join(' · '));
-    assert(hd.moiMuc(hd.HUONG_DAN.gv).filter((m: any) => m.chi).length >= 5, 'GV: mỗi việc hằng tuần có Chỉ cho tôi');
+    for (const [vai, h] of Object.entries(hd.HUONG_DAN) as [string, any][]) assert(h.viec.filter((m: any) => m.chi).length >= 3, `${vai}: việc hằng tuần thiếu Chỉ cho tôi`);
   });
 
   check('HD-TIM · tìm không dấu ("han") ra mục có chữ "hạn"; chữ lạ → rỗng', () => {

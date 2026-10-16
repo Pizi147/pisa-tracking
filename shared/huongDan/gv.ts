@@ -127,7 +127,7 @@ export const HD_GV: HuongDan = {
     { id: 'sos-case', ten: 'SOS và Case', buoc: ['Số kỹ năng dưới kỳ vọng ở MT: 1 → SOS 1, 2 → SOS 2, 3–4 → SOS 3.', 'Lượt chưa chốt: Case tạm "Chờ chốt SOS" — chưa hạn, chưa việc.', 'Lượt chốt → "Chờ xác nhận PA"; Overall đạt mà chưa xác nhận PA → Case tự xoá.'] },
     { id: 'ket-thuc-pa', ten: 'Kết thúc PA sớm', buoc: ['PA quy chế: GVCN / QL vào <b>⋯ › Kết thúc PA</b>.', 'Lý do bắt buộc, từ <b>10</b> ký tự; nhật ký PA ghi lại.'] },
     { id: 'ban-giao', ten: 'Bàn giao khi em chuyển lớp', buoc: ['Hạn bàn giao = muộn hơn của (ngày quyết định chuyển lớp + 7 ngày) và mốc cũ.'] },
-    { id: 'sua-diem', ten: 'Sửa điểm sau hoàn tất', buoc: ['Ô còn trống: nhập được cả sau hoàn tất.', 'Sửa hoặc xoá một điểm đã có: qua QL duyệt.', 'Gỡ "-" lúc nào cũng được.'] },
+    { id: 'sua-diem', ten: 'Sửa điểm sau hoàn tất', buoc: ['Ô còn trống: nhập được cả sau hoàn tất.', 'Sửa hoặc xoá một điểm đã có: nhờ QL sửa.', 'Gỡ "-" lúc nào cũng được.'] },
     { id: 'nhan-xet', ten: 'Nhận xét MT', buoc: ['Mọi ô MT có điểm cần nhận xét từ <b>10</b> ký tự (trừ MT0, MT cũ / nhập bù).', 'Ô dưới kỳ vọng thêm <b>nhóm nguyên nhân</b>.', 'Nhận xét + nhóm là nguyên nhân của Case.'] },
     { id: 'gop-y', ten: 'Góp ý hàng tuần', buoc: ['Mỗi ô = một em × một kỹ năng × một tuần; tối đa <b>500</b> ký tự.', 'Chỉ ghi ở kỹ năng mình dạy.'] },
   ],
