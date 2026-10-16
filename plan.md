@@ -198,6 +198,13 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
   OV-4 và OV-6b của đặc tả **tách đôi** (mỗi nửa một vùng mã, rà riêng). Thứ tự + song song: mục 5; prompt: mục 9.3.
 - **Chủ SP trả lời 12/10:** (1) hạn khi SOS MT chốt = luật hiện có (5 ngày, SOS 3 = 3 ngày), tính từ ngày chốt; (2) **không làm** ô "Dự kiến quay lại" (mục 3).
 
+### OV-13 (15–16/10) — đặc tả `docs/superpowers/specs/2026-10-15-ov13-sua-loi-tinh-nang-design.md`, mockup `thiet-ke/mockup-ov13-*`
+- **Đã merge:** 13a #406 · 13b #415 · 13c #412 · 13d #408 · 13e #405 · 13g #419 · 13h #410 · 13i #409 · 13j #411 · 13k #420 · 13l #418 · 13n #423 · HOTFIX-2 #413 · HOTFIX-3 #421 · HD-a #417 (13m #422: đang rà / merge 16/10).
+- **Chủ SP 16/10 (OV-13n):** Phối hợp SOS 2 / SOS 3 KHÔNG điền sẵn "Trao đổi ngắn với HV" (SOS 1 giữ; GVCN tự thêm được); việc chưa làm của lượt SOS 2–3 migrate bỏ (`system_bang_doi`), việc đã xong giữ.
+- **HOTFIX-3:** `prOv1b` chỉ còn ghi khoá (chạy lặp từng đổi "-" mới thành Không dự thi — em PISA-000140, chủ SP gỡ tay); màn đen 16/10 00:25 = GET tải lại lưới lỗi khi Turso mất kết nối (bản cũ thay lưới bằng ErrorState) → nay giữ lưới + toast; mảnh JS mất sau deploy → tự tải lại một lần.
+- **Deploy kế tiếp** (chủ SP làm): tắt site → `git pull` → sao lưu → chạy chỉ đọc `kiem-truoc-ov13a`, `kiem-truoc-ov13n` (+ `kiem-truoc-ov13m` khi 13m đã merge), gửi số cho planning → `npm run migrate` → `netlify deploy --build --prod` → bật site. Migrate đổi dữ liệu: `prOv13a`, `prOv13l`, `prOv13n`; còn lại chỉ thêm cột.
+- **Việc tiếp:** HD-b · OV-13o (gom việc nhỏ) — prompt mục 9.4, chạy song song được.
+
 ### Sau deploy (chờ số liệu bản chính)
 - **PR-TD4** (M): chỉ khi log `[cham]` 1–2 ngày sau deploy còn đường > 1,5 s — `/hoc-vien-lop` (`standingFor` nạp từ lượt mới nhất mỗi em, còn 78 % dòng), đường top khác theo log.
 - **Dọn bộ bổ trợ trùng**: chỉ khi `npm run dem-bo-tro-trung` (chỉ đọc) trên bản chính báo có em > 1 bộ PA bổ trợ cùng bài.
@@ -224,7 +231,6 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 - `suggestCaseOwner` chạy theo (lớp FT, kỹ năng): lô 500 em nhiều lớp có thể > 200 câu — KV; **OV-3b chạm KQĐR thì đo lại**.
 - Case Học viên (KQĐR "Không đạt · Học viên") mang kỹ năng đầu tiên — KV, chủ SP xem khi rà OV-3b.
 - CT2: `huyNhieuLenh` / khôi phục nhiều lệnh ~25 câu/em — thêm phép đo 8 em, vượt thì gom lô (**OV-3b** chạm lệnh chuyển); giới hạn tự ghi (đổi lớp đích / tuần mà giữ quyết định không sinh lại bộ; Pre FOU Người dạy trống; sinh từ ô điểm cuối thì người xác nhận = người nhập).
-- **MT0 lớp thường đã nhập band vẫn là việc "Nhập điểm MT0"** (lỗi có sẵn, OV-3c phát hiện): `listAttempts` (`server/src/fasttrack/attempts.ts` ~655) đi nhánh lớp thường cho `kind = 'mt0'` → đòi `raw_score`; lệch Nợ điểm (`scoringModeOf` đã coi mt0 là band). Sửa: bỏ mt0 khỏi nhánh `regularSkills` — **OV-1c / OV-4b** (vùng `fasttrack/*`).
 - **Bộ demo không thêm được lượt MT nào** (OV-3c đo 12/10): `tocDo.run.ts` PR-TD Task5(2) — demo có 299 lượt, ×3 = 897 sát lô 900 tham số (`theoLo`); thêm ≥ 2 lượt (vd một em chuyển vào FT, tự sinh lịch MT) → QT `/tong-quan/chi-nhanh`, `/my-work` thêm 6–8 câu (một lô nữa) → đỏ. Vì vậy OV-3c không seed đợt FOU / nhiều đợt (MB FT 104) — planning chọn: nới phép đo theo số lô, hoặc chấp nhận +1 lô. Kèm: thêm seed làm dời id → chụp lại băm DL-2 (`prDl.tests.ts`).
 - Sổ tay PDF lỗi thời ("Nộp kế hoạch bổ trợ", "Đánh dấu kỳ vọng đầu ra") → bỏ cùng PR-SOTAY; Hướng dẫn trên web (`shared/huongDan/`) thay.
 - **Còn lại sau rà OV-11 (14/10, không chặn):**
