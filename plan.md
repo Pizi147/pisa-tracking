@@ -198,6 +198,13 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
   OV-4 và OV-6b của đặc tả **tách đôi** (mỗi nửa một vùng mã, rà riêng). Thứ tự + song song: mục 5; prompt: mục 9.3.
 - **Chủ SP trả lời 12/10:** (1) hạn khi SOS MT chốt = luật hiện có (5 ngày, SOS 3 = 3 ngày), tính từ ngày chốt; (2) **không làm** ô "Dự kiến quay lại" (mục 3).
 
+### OV-13 (15–16/10) — đặc tả `docs/superpowers/specs/2026-10-15-ov13-sua-loi-tinh-nang-design.md`, mockup `thiet-ke/mockup-ov13-*`
+- **Đã merge:** 13a #406 · 13b #415 · 13c #412 · 13d #408 · 13e #405 · 13g #419 · 13h #410 · 13i #409 · 13j #411 · 13k #420 · 13l #418 · 13n #423 · HOTFIX-2 #413 · HOTFIX-3 #421 · HD-a #417 (13m #422: đang rà / merge 16/10).
+- **Chủ SP 16/10 (OV-13n):** Phối hợp SOS 2 / SOS 3 KHÔNG điền sẵn "Trao đổi ngắn với HV" (SOS 1 giữ; GVCN tự thêm được); việc chưa làm của lượt SOS 2–3 migrate bỏ (`system_bang_doi`), việc đã xong giữ.
+- **HOTFIX-3:** `prOv1b` chỉ còn ghi khoá (chạy lặp từng đổi "-" mới thành Không dự thi — em PISA-000140, chủ SP gỡ tay); màn đen 16/10 00:25 = GET tải lại lưới lỗi khi Turso mất kết nối (bản cũ thay lưới bằng ErrorState) → nay giữ lưới + toast; mảnh JS mất sau deploy → tự tải lại một lần.
+- **Deploy kế tiếp** (chủ SP làm): tắt site → `git pull` → sao lưu → chạy chỉ đọc `kiem-truoc-ov13a`, `kiem-truoc-ov13n` (+ `kiem-truoc-ov13m` khi 13m đã merge), gửi số cho planning → `npm run migrate` → `netlify deploy --build --prod` → bật site. Migrate đổi dữ liệu: `prOv13a`, `prOv13l`, `prOv13n`; còn lại chỉ thêm cột.
+- **Việc tiếp:** HD-b · OV-13o (gom việc nhỏ) — prompt mục 9.4, chạy song song được.
+
 ### Sau deploy (chờ số liệu bản chính)
 - **PR-TD4** (M): chỉ khi log `[cham]` 1–2 ngày sau deploy còn đường > 1,5 s — `/hoc-vien-lop` (`standingFor` nạp từ lượt mới nhất mỗi em, còn 78 % dòng), đường top khác theo log.
 - **Dọn bộ bổ trợ trùng**: chỉ khi `npm run dem-bo-tro-trung` (chỉ đọc) trên bản chính báo có em > 1 bộ PA bổ trợ cùng bài.
@@ -224,7 +231,6 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 - `suggestCaseOwner` chạy theo (lớp FT, kỹ năng): lô 500 em nhiều lớp có thể > 200 câu — KV; **OV-3b chạm KQĐR thì đo lại**.
 - Case Học viên (KQĐR "Không đạt · Học viên") mang kỹ năng đầu tiên — KV, chủ SP xem khi rà OV-3b.
 - CT2: `huyNhieuLenh` / khôi phục nhiều lệnh ~25 câu/em — thêm phép đo 8 em, vượt thì gom lô (**OV-3b** chạm lệnh chuyển); giới hạn tự ghi (đổi lớp đích / tuần mà giữ quyết định không sinh lại bộ; Pre FOU Người dạy trống; sinh từ ô điểm cuối thì người xác nhận = người nhập).
-- **MT0 lớp thường đã nhập band vẫn là việc "Nhập điểm MT0"** (lỗi có sẵn, OV-3c phát hiện): `listAttempts` (`server/src/fasttrack/attempts.ts` ~655) đi nhánh lớp thường cho `kind = 'mt0'` → đòi `raw_score`; lệch Nợ điểm (`scoringModeOf` đã coi mt0 là band). Sửa: bỏ mt0 khỏi nhánh `regularSkills` — **OV-1c / OV-4b** (vùng `fasttrack/*`).
 - **Bộ demo không thêm được lượt MT nào** (OV-3c đo 12/10): `tocDo.run.ts` PR-TD Task5(2) — demo có 299 lượt, ×3 = 897 sát lô 900 tham số (`theoLo`); thêm ≥ 2 lượt (vd một em chuyển vào FT, tự sinh lịch MT) → QT `/tong-quan/chi-nhanh`, `/my-work` thêm 6–8 câu (một lô nữa) → đỏ. Vì vậy OV-3c không seed đợt FOU / nhiều đợt (MB FT 104) — planning chọn: nới phép đo theo số lô, hoặc chấp nhận +1 lô. Kèm: thêm seed làm dời id → chụp lại băm DL-2 (`prDl.tests.ts`).
 - Sổ tay PDF lỗi thời ("Nộp kế hoạch bổ trợ", "Đánh dấu kỳ vọng đầu ra") → bỏ cùng PR-SOTAY; Hướng dẫn trên web (`shared/huongDan/`) thay.
 - **Còn lại sau rà OV-11 (14/10, không chặn):**
@@ -340,6 +346,25 @@ PR đổi màn nào sửa mục Hướng dẫn của màn đó (`shared/huongDan
 | **OV-12c** · **EN-b** | prompt trong chat planning 14/10 | Opus 5.5 · XHigh | | đang chạy (cloud) |
 | **OV-12d · e · f** · **EN-c · d** | planning viết prompt theo đặc tả mục 7 + mockup v3, mỗi PR một session cloud | Opus 5.5 · XHigh (High) | 4343…4346 / 5516…5519 | sau OV-12c |
 
+### 9.4. Sau OV-13 (16/10) — HD-b · OV-13o (song song được; chỉ đưa khi 13m đã merge)
+
+**HD-b** — Hướng dẫn trên web cho QL · QT · TVV · CX · Admin (Opus 5.5, medium; `/ponytail lite`; impeccable `clarify`, `audit`):
+- Mỗi vai một tệp như `shared/huongDan/gv.ts`, đăng ký vào `HUONG_DAN`; đủ 4 phần (5 việc hằng tuần, 2–4 bước · Theo màn mọi đường trên thanh điều hướng · Luật và hạn · Thuật ngữ). QT chỉ ghi phần hơn QL (hệ thống); QL chỉ phần hơn GV khi trùng màn.
+- Khớp màn thật trên main sau OV-13a…n + HOTFIX-3 (duyệt Đề xuất PA / Xin hỗ trợ 5 ngày, Chuyển lớp "Ngay hôm nay" + bàn giao 7 ngày, Bước tiếp sau thi QL + TVV, Kết thúc PA sớm, sửa / xoá điểm sau hoàn tất qua QL, TVV / CX sửa cả lớp kể cả Target, Lịch sử sửa HV, duyệt tài khoản có vai đề nghị, SOS 2–3 không còn "Trao đổi ngắn với HV"); không chắc thì mở app demo kiểm. Nhãn trùng app (VI + EN).
+- "Chỉ cho tôi" chỉ ở mục có `data-hd` thật, bấm từ /huong-dan phải có `duong` (HD-CHI); thêm `data-hd` chỉ là thuộc tính. Bản Anh đủ; "Xem vai khác" cho QL / QT.
+- Phép kiểm HD-NAV / HD-VIEC / HD-CHI cho 6 vai; `do-khung hd-chi` mọi vai 1440 + 375; ảnh `docs/anh/pr-hd-b/`. Mô tả PR nêu câu chưa chắc để planning hỏi chủ SP.
+
+**OV-13o** — gom việc nhỏ sau rà OV-13 (Opus 5.5, medium; `/ponytail lite`; impeccable `polish` / `adapt`, `audit`; không đổi luật, không đổi bố cục):
+1. (13i) CX đổi KCK cả lô: lỗi báo ở bước xem trước, từng dòng, cùng hàm kiểm lúc lưu.
+2. (13j) Lịch sử sửa HV: hai lần sửa cùng người ≤ 5 s gộp một khối; Target / KCK đổi khi chuyển lớp mở lộ trình mới có dòng theo trường.
+3. (13j) 375: nút lọc "Trạng thái" không cắt mép; hàng nút hồ sơ HV ở EN hết chữ Việt.
+4. (13g) Tổng quan "Lớp tôi dạy" "Bài chờ chấm" cùng nguồn số với Công việc (tính cả Speaking chấm chéo).
+5. (13h) BanGiaoPanel câu chữ (clarify); nháp báo cáo đã nộp không còn là nháp; HoSoGiaoVienPage mọi chữ qua t() + EN (do-khung EN 0 chữ Việt sót).
+6. (HOTFIX-3) lưu thành công mà tải lại lưới lỗi: ô vừa lưu cập nhật từ phản hồi lưu, không còn "Nhập".
+7. (13k) Hồ sơ MT › Lịch sử: một lần lưu đổi cả nhận xét lẫn nhóm → hiện cả hai (`scoreHistoryOf` ~997).
+
+Cả hai: check xanh trên bản gộp origin/main mới nhất; TD4-a lệch băm thì chụp lại + một dòng lý do; xong nhắn "<PR> #N sẵn sàng rà" tới session "Piza-tracking session planning". Bản đầy đủ đã đưa trong chat planning 16/10.
+
 ## 10. Mẫu giao việc cho agent (session planning dùng)
 
 ### A. Agent soạn kế hoạch (Opus 5.5, chạy nền, mỗi PR một agent)
@@ -386,6 +411,7 @@ Nhật ký chi tiết tới 04/10 ở `git show 575e898d:plan.md` (mục 14) và
 | 15/10/2026 | HD-a (Opus 5.5) · `claude/pisa-web-guide-bihhrf` | Hướng dẫn trên web thay sổ tay PDF: trang `/huong-dan` (4 phần, tìm, In), nút "?" panel theo màn, "Chỉ cho tôi" khoanh `data-hd`, dải "Mới dùng PISA?" (`users.da_xem_huong_dan`, migrate chỉ thêm); nội dung GV VI + EN; phép kiểm HD-NAV / HD-CHI; do-khung `hd-chi`. |
 | 15/10/2026 | OV-13b (Opus 5.5) · `claude/ov13b-ghi-ket-qua-pa-wa2t95` | Ghi kết quả gọn trên dòng (Công việc / Case / panel một em), Case gọn, Xác nhận PA luôn mở form (Bắt đầu), Đề xuất PA khác qua thẻ "Đề xuất PA" (gửi / rút / duyệt / từ chối, Hoàn tác), "✓ Đã lưu · Việc tiếp ›", một hàm đếm quá hạn, panel tại chỗ + số liệu lên URL. |
 | 15/10/2026 | OV-13g (Opus 5.5) · `claude/speaking-cham-cheo-cong-viec-i2bm8y` | GV Speaking thấy ở Công việc › Chấm điểm MỘT dòng "Speaking chấm chéo · tuần · n lớp · m bài" (bài S Mock tuần trước + còn tồn, lớp FT cùng chi nhánh; khoá tuần OV-13c + `\|cc`); không hạn / quá hạn (T18); con mở `PanelNhapDiem` S. QL "Tất cả" như cũ; "Của một GV" không tính. Kiểm `prOv13g`, TD4-a thêm 'GVS toi' |
+| 16/10 | OV-13n · `claude/ov13n-sos-coordination-1yr95l` · Sonnet 5.5 | Phối hợp SOS 2/3 bỏ "Trao đổi ngắn với HV" điền sẵn (chủ SP 16/10); migrate `prOv13n` bỏ việc chưa làm (`system_bang_doi`) + `kiem-truoc-ov13n`; SOS về 1 thì hồi |
 | 15/10 | OV-13l · `claude/hopeful-hypatia-h0ozj1` · Opus 5.5 | Chuyển lớp "Ngay hôm nay" (thi hành ngay, không hoàn tác) · hạn bàn giao ≥ 7 ngày GVBM = GVCN (migrate `prOv13l`) · FT → FT khác lộ trình giữ lộ trình, bài dở + điểm đi theo · đổi chương trình đóng / mở khoá · web gửi chuyển ngay lô ≤ 2 em |
 | 15/10/2026 | OV-13h (Opus 5.5) · `claude/ov-13h-go-chan-cung-r2bjsj` | Gỡ chặn cứng (chủ SP 15/10): GV nhập ô trống sau hoàn tất / lớp kết thúc; gỡ "-" mọi lúc; ai hoàn thành được Case mở lại được; bàn giao sửa sau ngày chuyển; báo cáo tuần quá hạn = "nộp muộn" (bỏ QT mở lại); góp ý lớp kết thúc; thi thật em Lưu trữ, đề xuất sửa em Tạm dừng. Rulebook §20.1b. Kiểm HTTP `prOv13h` |
 | 15/10/2026 | OV-13a (Opus 5.5) · `claude/ov13a-case-pa-rules-rp7zpx` | Case tạm khi lượt chưa chốt (Q2, cột `sos_cases.tam`, không vào số đếm nào); PA quy chế hết kẹt A (đạt → Kết quả cuối) · B (mốc MT cuối ≥ xác nhận + 4 tuần) · C (GVCN/QL Kết thúc PA, lý do ≥ 10); Case MT bỏ ô Mô tả; migrate `prOv13a` + `kiem-truoc-ov13a`, prOv1c không chạy nữa (chỉ khoá) |
