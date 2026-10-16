@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { ErrorState, Skeleton } from '../../ui/ui.tsx';
@@ -30,8 +30,10 @@ export function LopToiDay() {
   const ct = khung ?? 'ft';
   const { data, loading, error, reload } = useApi<Data>(`/tong-quan/lop-toi-day?ct=${ct}`, [ct]);
   /* Q31-1 + D7: chưa chọn, hoặc khung đã nhớ không có lớp nào của mình → khung mặc định theo lớp mình dạy (chỉ lớp thường → Lớp thường). */
+  /* UX-2 (5): công tắc hiện theo phạm vi — khung người xem VỪA BẤM giữ nguyên dù 0 lớp (ghi "· 0"), không bị ép về khung có lớp. */
+  const daBam = useRef(false);
   useEffect(() => {
-    if (data && khungLopToiDay(khung, data.coFt, data.coThuong) !== ct) setKhung(khungLopToiDay(khung, data.coFt, data.coThuong));
+    if (data && !daBam.current && khungLopToiDay(khung, data.coFt, data.coThuong) !== ct) setKhung(khungLopToiDay(khung, data.coFt, data.coThuong));
   }, [data, khung, ct]);
   if (error) return <ErrorState message={error.message} hint={error.hint} onRetry={reload} />;
   if (data && !data.coFt && !data.coThuong) return null;
@@ -62,7 +64,7 @@ export function LopToiDay() {
       <header className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b px-4 py-3" style={{ borderColor: 'var(--line)' }}>
         <div className="flex flex-wrap items-center gap-3">
           <h2 id="lop-toi-day" className="m-0 text-sm font-semibold text-slate-200">{t('Lớp tôi dạy')}</h2>
-          {data && <CongTacKhung trang="tong-quan" value={ct} dem={{ ft: data.soFt, thuong: data.soThuong }} donVi={t('lớp')} onChange={(k) => setKhung(k === 'thuong' ? 'thuong' : 'ft')} />}
+          {data && <CongTacKhung trang="tong-quan" value={ct} dem={{ ft: data.soFt, thuong: data.soThuong }} donVi={t('lớp')} onChange={(k) => { daBam.current = true; setKhung(k === 'thuong' ? 'thuong' : 'ft'); }} />}
         </div>
         {!dienThoai && <span className="text-xs text-slate-500">{t('Bấm số để xem danh sách em')}</span>}
       </header>
