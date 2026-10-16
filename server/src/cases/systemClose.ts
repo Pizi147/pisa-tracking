@@ -247,10 +247,12 @@ export function chuyenCaseSangLoTrinh(actorUserId: number | null, studentId: num
   for (const c of ds) {
     const khoa = c.dedup_key ? caseDedupKey({ category: c.category, studentId, cycleId: denCycleId }) : null;
     conn.prepare('UPDATE sos_cases SET cycle_id = ?, dedup_key = ?, updated_at = ? WHERE id = ?').run(denCycleId, khoa, nowIso(), c.id);
+    /* OV-13m (rà #418): khoá có SỐ THỨ TỰ lần đổi trong ngày — LT1 → LT2 → LT1 → LT2 cùng ngày vẫn đủ bốn mốc (khoá theo route lặp lại thì mất mốc thứ ba). */
+    const lan = (conn.prepare(`SELECT COUNT(*) n FROM case_milestones WHERE case_id = ? AND kind = 'route_changed' AND occurred_on = ?`).get(c.id, on) as any).n as number;
     conn.prepare(
       `INSERT INTO case_milestones (case_id, kind, occurred_on, note, created_by, created_at, dedup_key)
        VALUES (?, 'route_changed', ?, ?, ?, ?, ?) ON CONFLICT(dedup_key) DO NOTHING`)
-      .run(c.id, on, `Sang lộ trình ${route ?? 'mới'}`, actorUserId, nowIso(), `lo-trinh:${c.id}:${denCycleId}:${route ?? ''}:${on}`);   // OV-13l: LT1 → LT2 → LT1 cùng ngày vẫn đủ mốc
+      .run(c.id, on, `Sang lộ trình ${route ?? 'mới'}`, actorUserId, nowIso(), `lo-trinh:${c.id}:${denCycleId}:${route ?? ''}:${on}:${lan + 1}`);
   }
   return ds.length;
 }

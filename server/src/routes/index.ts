@@ -1511,6 +1511,16 @@ api.put('/cycles/:id/outcome', requireAuth, wrap((req) => {
   return cycleSvc.setOutcome(principalOf(req), pInt(req, 'id'), body as any);
 }));
 
+/** OV-13m: panel Bước tiếp — trạng thái + "Đã xong" + hạn / hẹn; ai xem được hồ sơ em thì đọc được (GVCN chỉ đọc: `coTheChon` false). */
+api.get('/cycles/:id/buoc-tiep', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  const p = principalOf(req);
+  const c = cycleSvc.cycleById(pInt(req, 'id'));
+  if (!c) throw notFound('Không tìm thấy lộ trình');
+  require_(p, PERMISSIONS.STUDENT_VIEW, { studentId: c.student_id }, 'Học viên này nằm ngoài phạm vi bạn được xem.');
+  lenhSvc.quetLenhDenHan();   // hẹn bắt đầu tới tuần → bắt đầu trước khi đọc
+  return buocTiepSvc.trangThaiBuocTiep(p, c.id);
+}));
 /** OV-8a: Bước tiếp sau thi thật — Quản lý / Quản trị (`cycle.edit` của em) và OV-12a: TVV cùng chi nhánh (`coQuyenBuocTiep`). Chọn / đổi = một giao dịch; DELETE = hoàn tác lựa chọn. */
 api.post('/cycles/:id/buoc-tiep', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();

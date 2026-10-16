@@ -19,7 +19,7 @@ import { XacNhanPaLo } from './XacNhanPaLo.tsx';
 import { LOAI_HAN_CUA_VIEC, duongLichTest, laViecChamCheo, tuanLich } from '@shared/domain/index.ts';
 import { VIEC_LO_Y_THUC, type WorkItem } from '../worklist/WorkList.tsx';
 import { LoYThucPanel } from '../yThuc/LoYThucPanel.tsx';
-import { NganTongKet } from '../students/NganTongKet.tsx';
+import { PanelBuocTiep } from '../students/PanelBuocTiep.tsx';
 import { StudentYThucSection } from '../yThuc/StudentYThucSection.tsx';
 import { SuaThongTinMotEm } from '../students/StudentManagePanel.tsx';
 import { ThongTinLopPanel } from '../classes/ThongTinLopPanel.tsx';
@@ -34,7 +34,7 @@ const soCuaKhoa = (k: string) => Number(k.slice(k.lastIndexOf(':') + 1)) || null
  * VIỆC NÀO LÀM TẠI CHỖ (OV-5a, mockup M1 §2; OV-12c): Xác nhận Case (Progress) · Ghi nhận xét (Case MT cũ) · Thêm PA / Kết quả PA / Xác nhận PA /
  * Mini Test (Ngăn Case, khuôn panel v3 cho Xác nhận Case · Xác nhận PA · Ghi nhận xét) · Nhập điểm
  * (một lớp · một lượt) · Bàn giao · Ý thức (xử lý, đã thực hiện, khai bậc một em) · việc Vận hành. Còn lại (Chốt lộ trình, Kết quả đầu ra, Xét lại
- * lộ trình cần cả bảng lớp; Phối hợp, Thiếu dữ liệu, thi thật…) mở trang như cũ. OV-8a: Chọn bước tiếp sau thi = ngăn Tổng kết lộ trình (mục Bước tiếp).
+ * lộ trình cần cả bảng lớp; Phối hợp, Thiếu dữ liệu, thi thật…) mở trang như cũ. OV-13m: Chọn bước tiếp = panel Bước tiếp (`PanelBuocTiep`).
  */
 export function lamTaiCho(it: WorkItem): boolean {
   if (moCaDong(it)) return true;
@@ -113,7 +113,7 @@ export function PanelViec({ it, onDong, onDaLam, onTiep, onMo }: {
     case 'mgmt':
       return <NganViecVanHanh key={it.key} taskId={soCuaKhoa(it.key)} onClose={onDong} onDone={doi} />;
     case 'buoc_tiep':
-      return <NganTongKet key={it.key} cycleId={soCuaKhoa(it.key)!} onClose={onDong} onDoi={doi} />;
+      return <PanelBuocTiep key={it.key} cycleId={soCuaKhoa(it.key)!} hocVien={hv ? { id: it.studentId!, ten: hv } : null} lop={lop} onClose={onDong} onDone={doi} onTiep={onTiep} />;
     case 'phoi_hop_sos':
       return <PanelPhoiHop key={it.key} it={it} onDong={onDong} onDaLam={doi} />;
     case 'yt_xem':

@@ -11,7 +11,7 @@ import { conLaiMs } from '../platform/hanGio.ts';
 import { mondayOf } from '../platform/week.ts';
 import { reviseTarget } from '../fasttrack/cycles.ts';
 import { demoToday } from '../demoConfig.ts';
-import { notify, writeAudit } from '../platform/audit.ts';
+import { addJourney, notify, writeAudit } from '../platform/audit.ts';
 import { taoYeuCau } from '../duyet/yeuCau.ts';
 import { applyTransition } from './transition.ts';
 import { apDungMotDong, dongLopNeuHet, huongChuyenMotEm, lopDichHopLe, nguoiNhanGoiY } from './luatLoTrinh.ts';
@@ -19,6 +19,7 @@ import { coTheRaLenh } from './quyenChuyenLop.ts';
 import { classProgressMany, mocKetKhoa } from './schedule.ts';
 import { cuoiKhoaTheoHocVien, dongBoCheTaiFinal } from '../normal/cuoiKhoa.ts';
 import { dongBoTuLenh } from './loTrinhTiep.ts';
+import { batDauHenDenHan } from '../loTrinh/buocTiep.ts';
 
 /**
  * LỆNH CHUYỂN LỚP do QUẢN LÝ quyết (PR-CT, §3.1f Q30-1): em nào · lớp chuyển đến nào · tuần bắt đầu (Thứ Hai, từ tuần sau trở đi — hoặc
@@ -349,6 +350,15 @@ function huyMotLenh(p: Principal, l: any, why: string): void {
     `UPDATE lenh_chuyen_lop SET trang_thai = 'huy', huy_boi = ?, huy_luc = ?, ly_do_huy = ?, sua_luc = ? WHERE id = ? AND trang_thai = 'cho'`,
   ).run(p.userId, nowIso(), why, nowIso(), l.id);
   if (!r.changes) throw conflict('Quyết định chuyển lớp vừa được thi hành hoặc đã huỷ.');
+  /* OV-13m: lệnh của Bước tiếp "Lộ trình mới · Lớp khác" bị huỷ (ở đâu cũng vậy) → lộ trình về "Chọn bước tiếp", không kẹt ở lựa chọn không còn lệnh. */
+  const bt = conn.prepare(`SELECT id, buoc_tiep_hen FROM learning_cycles WHERE student_id = ? AND buoc_tiep = 'lo_trinh_moi' AND json_extract(buoc_tiep_json, '$.lenhId') = ?`).get(l.student_id, l.id) as any;
+  if (bt) {
+    conn.prepare('UPDATE learning_cycles SET buoc_tiep = NULL, buoc_tiep_luc = NULL, buoc_tiep_boi = NULL, buoc_tiep_json = NULL, buoc_tiep_hen = NULL WHERE id = ?').run(bt.id);
+    addJourney({ studentId: l.student_id, cycleId: bt.id, eventType: 'buoc_tiep', eventDate: demoToday(), title: 'Sau thi: huỷ hẹn Lộ trình mới', detail: why,
+      refTable: 'learning_cycles', refId: bt.id, createdBy: p.userId, dedupKey: `buoc_tiep:${bt.id}:${nowIso()}` });
+    writeAudit({ actorUserId: p.userId, action: 'cycle.buoc_tiep', entityType: 'learning_cycle', entityId: bt.id,
+      before: { buocTiep: 'lo_trinh_moi', buocTiepHen: bt.buoc_tiep_hen ?? null }, after: { buocTiep: null, buocTiepHen: null, _nguon: 'Huỷ quyết định chuyển lớp' } });
+  }
   if (l.boi_canh === 'cuoi-khoa') dongBoCheTaiFinal(p, l.lop_nguon_id, [l.student_id]);   // PR-CT2 (§8): không còn quyết định → huỷ bổ trợ Final chưa ai đụng
   const hv = conn.prepare('SELECT full_name FROM students WHERE id = ?').get(l.student_id) as any;
   writeAudit({ actorUserId: p.userId, action: 'lenh_chuyen.huy', entityType: 'student', entityId: l.student_id, entityLabel: hv?.full_name ?? null, before: { huong: l.huong, tuan: l.tuan_bat_dau }, after: { lyDo: why } });
@@ -611,6 +621,8 @@ function thiHanhMotNhom(g: { lop_nguon_id: number; tuan_bat_dau: string; boi_can
 /** Quét khi đọc: một lần mỗi request GET (`nho`) — thêm 1 câu khi không có gì đến hạn. Lỗi thi hành không làm hỏng trang đang đọc. */
 export function quetLenhDenHan(homNay = demoToday()): void {
   nho(`thi-hanh-lenh:${homNay}`, () => { try { thiHanhLenhDenHan(homNay); } catch (e) { console.error('[chuyen-lop] quét khi đọc', e); } return true; });
+  /* OV-13m: Lộ trình mới sau thi "Hẹn bắt đầu" tới tuần — cùng lượt quét (lỗi đã bắt trong hàm). */
+  nho(`bat-dau-hen:${homNay}`, () => { batDauHenDenHan(homNay); return true; });
 }
 
 const inHang = (ids: readonly number[]) => ids.map(() => '?').join(',');

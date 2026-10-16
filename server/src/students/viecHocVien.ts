@@ -28,6 +28,8 @@ export type ViecHocVien = {
 };
 
 type Nguon = {
+  /** OV-13m: lộ trình FT mới nhất có kết quả thi thật, chưa chọn bước tiếp — chỉ khi đó mới hỏi việc "Chọn bước tiếp" (một câu). */
+  choBuocTiep?: boolean;
   trangThaiEm: string; lopId: number | null; chuongTrinh: string | null;
   yThuc: EmYThuc | null | undefined;
   /** `gv` = người dạy bổ trợ có tài khoản đầu tiên của nhóm (cùng câu `myWork`), null → GVCN. */
@@ -45,15 +47,14 @@ type Nguon = {
  */
 export function viecCuaHocVien(p: Principal, sid: number, board: { rows: any[] }, n: Nguon): { cuaBan: ViecHocVien[]; nguoiKhac: ViecHocVien[] } {
   const today = demoToday();
-  /* OV-12a: em đã Kết thúc học có kết quả thi thật — "Chọn bước tiếp sau thi" của người xem; cùng tập + quyền với Công việc (`viecBuocTiep`: QL / TVV của chi nhánh). */
-  if (n.trangThaiEm !== 'active') {
-    const cuaBan: ViecHocVien[] = viecBuocTiep(p, { today, branchId: null, studentId: sid }).map((v) => {
-      const quaHanNgay = v.due < today ? diffDays(today, v.due) : null;
-      return { key: v.key, loai: 'buoc-tiep', chu: 'Chọn bước tiếp sau thi', kyNang: null, caseId: null, paId: null, han: v.due, quaHanNgay,
-        tone: quaHanNgay !== null ? 'danger' : 'info', nguoi: { id: p.userId, ten: p.fullName, vai: null }, cuaBan: true, nut: 'Chọn', mo: { loai: 'duong', href: v.href } };
-    });
-    return { cuaBan, nguoiKhac: [] };
-  }
+  /* OV-12a → OV-13m: lộ trình FT có kết quả thi thật (em còn học, Tạm dừng hay đã Kết thúc học) — "Chọn bước tiếp" của người xem; cùng tập + quyền với Công việc
+     (`viecBuocTiep`: QL / TVV của chi nhánh). Dòng: "Đã xong · OVR 6.5 · Đạt Target" + nút mở panel Bước tiếp. */
+  const bt: ViecHocVien[] = (n.choBuocTiep === false ? [] : viecBuocTiep(p, { today, branchId: null, studentId: sid })).map((v) => {
+    const quaHanNgay = v.due < today ? diffDays(today, v.due) : null;
+    return { key: v.key, loai: 'buoc-tiep', chu: v.contextLabel, kyNang: null, caseId: null, paId: null, han: v.due, quaHanNgay,
+      tone: quaHanNgay !== null ? 'danger' : 'info', nguoi: { id: p.userId, ten: p.fullName, vai: null }, cuaBan: true, nut: 'Chọn bước tiếp ›', mo: { loai: 'duong', href: v.href } };
+  });
+  if (n.trangThaiEm !== 'active') return { cuaBan: bt, nguoiKhac: [] };
   const conn = db();
   type Nhap = Omit<ViecHocVien, 'nguoi' | 'cuaBan' | 'quaHanNgay'> & { nguoiId: number | null; vaiChu?: string; cuaBanTheoVai?: boolean };
   const ds: Nhap[] = [];
@@ -195,5 +196,5 @@ export function viecCuaHocVien(p: Principal, sid: number, board: { rows: any[] }
   });
   /* Quá hạn → hạn sớm → không hạn (T72). */
   ra.sort((a, b) => (a.han ? 0 : 1) - (b.han ? 0 : 1) || (a.han ?? '').localeCompare(b.han ?? ''));
-  return { cuaBan: ra.filter((x) => x.cuaBan), nguoiKhac: ra.filter((x) => !x.cuaBan) };
+  return { cuaBan: [...bt, ...ra.filter((x) => x.cuaBan)], nguoiKhac: ra.filter((x) => !x.cuaBan) };
 }

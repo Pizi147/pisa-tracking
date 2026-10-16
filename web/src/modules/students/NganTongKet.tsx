@@ -1,16 +1,14 @@
 import { useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { api, invalidate } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
-import { useToast } from '../../ui/Toast.tsx';
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { Nhan, type ToneNhan } from '../../ui/Nhan.tsx';
 import { ErrorState, Skeleton } from '../../ui/ui.tsx';
-import { LUA_CHON_SAU_THI, NHAN_SAU_THI, duongHoSoHocVien, hienTargetKck, ngay, type LuaChonSauThi } from '@shared/domain/index.ts';
+import { NHAN_SAU_THI, duongHoSoHocVien, hienTargetKck, ngay, tuanLich } from '@shared/domain/index.ts';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { toneHuong } from './CacLoTrinh.tsx';
 import { KetQuaThiThatPanel } from './KetQuaThiThatPanel.tsx';
-import { HocLaiPanel } from './StudentManagePanel.tsx';
+import { PanelBuocTiep, type TrangThaiBuocTiep } from './PanelBuocTiep.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 
 type KyNang = { k: string; nhan: string; diem: number | null; tong: number | null; dat: boolean | null };
@@ -28,7 +26,7 @@ type TongKet = {
         kqdr: { dat: boolean; nguyenNhan: string | null; mon: string[] } | null };
   huongTiep: { khoa: string; nhan: string | null };
   /** OV-8a: Bước tiếp sau thi (FT có kết quả thi thật); null = không có mục. */
-  buocTiep: { chon: LuaChonSauThi | null; luc: string | null; boi: string | null; goiY: LuaChonSauThi | null; coTheChon: boolean } | null;
+  buocTiep: TrangThaiBuocTiep | null;
   luot: Luot[];
 };
 
@@ -147,70 +145,19 @@ function BangLuot({ luot, ft }: { luot: Luot[]; ft: boolean }) {
   );
 }
 
-const LAM_MOI = ['/students', '/classes', '/hoc-vien-lop', '/cases', '/lo-trinh', '/my-work'];
-
 /**
- * MỤC "BƯỚC TIẾP" (OV-8a) — ngay dưới kết quả thi thật. Quản lý / Quản trị / TVV của chi nhánh (OV-12a) có nút: Kết thúc (vào Lưu trữ, Hoàn tác trên thông báo) · Học tiếp lộ trình mới ·
- * Học lại (hai nút sau mở panel Học lại sẵn có). Gợi ý chỉ là chữ. Đã chọn → "Đã chọn: … · ngày · người" + Sửa (đổi = hoàn tác lựa chọn cũ rồi làm cái mới).
+ * MỤC "BƯỚC TIẾP" (OV-8a → OV-13m) — ngay dưới kết quả thi thật: một dòng trạng thái + nút mở panel Bước tiếp TRONG ngăn này (thay nội dung, "← Tổng kết").
  */
-function MucBuocTiep({ bt, cycleId, hocVien, ketQua, onDoi, onMo }: {
-  bt: NonNullable<TongKet['buocTiep']>; cycleId: number; hocVien: { id: number; ten: string }; ketQua: string; onDoi: () => void;
-  /** OV-11d (HV-9): Học tiếp / Học lại mở panel Học lại TRONG ngăn này (nơi gọi đổi nội dung). */
-  onMo: (chon: 'hoc_tiep' | 'hoc_lai', doi: boolean) => void;
-}) {
-  const toast = useToast();
+function MucBuocTiep({ bt, onMo }: { bt: NonNullable<TongKet['buocTiep']>; onMo: () => void }) {
   const { homNay } = useNgayNghiepVu();
-  const [sua, setSua] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const doi = !!bt.chon;
-  const xong = () => { setSua(false); onDoi(); };
-  const ketThuc = async () => {
-    setBusy(true);
-    try {
-      await api.post(`/cycles/${cycleId}/buoc-tiep`, { chon: 'ket_thuc' });
-      for (const k of LAM_MOI) invalidate(k);
-      const chu = t('Đã chọn Kết thúc — {ten} vào Lưu trữ', { ten: hocVien.ten });
-      if (doi) toast.push('ok', chu);
-      else {
-        toast.hoanTac(chu, async () => {
-          try { await api.del(`/cycles/${cycleId}/buoc-tiep`); } catch (e: any) { toast.push('error', e.message); return; }
-          for (const k of LAM_MOI) invalidate(k);
-          toast.push('ok', t('Đã hoàn tác'));
-          onDoi();
-        }, { key: `buoc-tiep:${cycleId}` });
-      }
-      xong();
-    } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
-  };
-  const bam = (k: LuaChonSauThi) => (k === 'ket_thuc' ? void ketThuc() : onMo(k, doi));
+  const chu = !bt.chon ? (bt.coTheChon ? null : t('Chờ QL / TVV chọn bước tiếp'))
+    : bt.hen ? t('Hẹn bắt đầu {tuan} · {lop}', { tuan: tuanLich(bt.hen, homNay), lop: bt.henLop ?? '—' }) : t('Đã chọn: {chon}', { chon: NHAN_SAU_THI[bt.chon] });
   return (
-    <section aria-labelledby={`buoc-tiep-${cycleId}`} className="rounded-[10px] border px-3 py-2.5" style={{ background: 'var(--surface-2)', borderColor: 'var(--line)' }}>
-      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
-        <h3 id={`buoc-tiep-${cycleId}`} className="m-0 text-xs font-normal text-slate-500">{t('Bước tiếp')}</h3>
-        {bt.goiY && (!bt.chon || sua) && <span className="text-xs text-slate-400">{t('Gợi ý:')} <b className="font-semibold text-slate-200">{NHAN_SAU_THI[bt.goiY]}</b> · {ketQua}</span>}
-      </div>
-      {bt.chon && !sua ? (
-        <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
-          <span className="text-sm text-slate-200">{t('Đã chọn:')} <b className="font-semibold text-slate-100">{NHAN_SAU_THI[bt.chon]}</b>
-            <span className="text-slate-400">{bt.luc ? ` · ${ngay(bt.luc, homNay)}` : ''}{bt.boi ? ` · ${bt.boi}` : ''}</span></span>
-          {bt.coTheChon && <button type="button" className="btn btn-ghost btn-sm min-h-[44px] sm:min-h-0" onClick={() => setSua(true)}>{t('Sửa')}</button>}
-        </div>
-      ) : bt.coTheChon ? (
-        <>
-          {sua && <p className="m-0 mt-1 text-[12.5px] text-slate-400">{t('Đổi lựa chọn: lựa chọn cũ được hoàn tác trước (lớp / lộ trình mới chưa có điểm thì gỡ).')}</p>}
-          <div role="group" aria-label={t('Chọn bước tiếp')} className="mt-2 flex flex-wrap gap-1.5">
-            {LUA_CHON_SAU_THI.map((k) => (
-              <button key={k} type="button" disabled={busy || k === bt.chon} onClick={() => bam(k)}
-                className="btn btn-sm min-h-[44px] max-sm:flex-1 sm:min-h-0">
-                {NHAN_SAU_THI[k]}{k === bt.chon ? ` · ${t('đang chọn')}` : ''}
-              </button>
-            ))}
-            {sua && <button type="button" className="btn btn-ghost btn-sm min-h-[44px] sm:min-h-0" onClick={() => setSua(false)}>{t('Giữ nguyên')}</button>}
-          </div>
-        </>
-      ) : (
-        <p className="m-0 mt-1 text-sm text-slate-400">{t('Chờ QL hoặc TVV chọn: Kết thúc · Học tiếp lộ trình mới · Học lại.')}</p>
-      )}
+    <section aria-label={t('Bước tiếp')} className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-[10px] border px-3 py-2.5" style={{ background: 'var(--surface-2)', borderColor: 'var(--line)' }}>
+      <span className="text-xs text-slate-500">{t('Bước tiếp')}</span>
+      {chu && <span className="text-sm text-slate-200">{chu}{bt.chon && bt.luc ? <span className="text-slate-400"> · {ngay(bt.luc, homNay)}{bt.boi ? ` · ${bt.boi}` : ''}</span> : null}</span>}
+      <span className="flex-1" />
+      {bt.coTheChon && <button type="button" className={`btn btn-sm min-h-[44px] sm:min-h-0 ${bt.chon ? '' : 'btn-primary'}`} onClick={onMo}>{bt.chon ? t('Xem') : t('Chọn bước tiếp ›')}</button>}
     </section>
   );
 }
@@ -223,7 +170,7 @@ export function NganTongKet({ cycleId, onClose, onDoi }: { cycleId: number; onCl
   const { homNay } = useNgayNghiepVu();
   const { data, loading, error, reload } = useApi<TongKet>(`/lo-trinh/${cycleId}/tong-ket`, [cycleId]);
   /* OV-11d (HV-9): Nhập kết quả / Học tiếp / Học lại THAY nội dung ngăn (dòng "← Tổng kết", như `NganCase`) — không panel chồng. */
-  const [view, setView] = useState<{ loai: 'nhap' } | { loai: 'hoc'; chon: 'hoc_tiep' | 'hoc_lai'; doi: boolean } | null>(null);
+  const [view, setView] = useState<{ loai: 'nhap' } | { loai: 'buoc-tiep' } | null>(null);
   const chuongTrinh = data ? (data.loai === 'ft' ? 'Fast Track' : dich(data.ten)) : null;
   const ft = data?.loai === 'ft';
   const kq = data?.ketQua;
@@ -233,11 +180,8 @@ export function NganTongKet({ cycleId, onClose, onDoi }: { cycleId: number; onCl
   if (data && view?.loai === 'nhap') {
     return <KetQuaThiThatPanel cycleId={cycleId} studentName={data.hocVien.ten} lop={data.lop} quayLai={quayLai} onClose={veTongKet} onDone={daDoi} />;
   }
-  if (data && view?.loai === 'hoc') {
-    return (
-      <HocLaiPanel studentId={data.hocVien.id} studentName={data.hocVien.ten} lop={data.lop} buocTiep={{ cycleId, chon: view.chon, doi: view.doi }}
-        quayLai={quayLai} onClose={veTongKet} onDone={daDoi} />
-    );
+  if (data && view?.loai === 'buoc-tiep') {
+    return <PanelBuocTiep cycleId={cycleId} hocVien={data.hocVien} lop={data.lop} quayLai={quayLai} onClose={veTongKet} onDone={() => { reload(); onDoi?.(); }} />;
   }
   /* OV-11d (HV-7): lộ trình đóng bằng Kết luận CŨ (không điểm thi thật) — ô Thi thật nói đúng nguồn, không "Chờ kết quả thi thật". */
   const ketLuanCu = kq?.loai === 'ft' && kq.ovr === null && !kq.khongThi && !kq.khongCoThi && (kq.ketLuan === 'reached' || kq.ketLuan === 'not_reached') ? kq.nhan : null;
@@ -290,11 +234,7 @@ export function NganTongKet({ cycleId, onClose, onDoi }: { cycleId: number; onCl
               </O>
             </div>
 
-            {data.buocTiep && (
-              <MucBuocTiep bt={data.buocTiep} cycleId={cycleId} hocVien={data.hocVien} onDoi={() => { reload(); onDoi?.(); }}
-                onMo={(chon, doi) => setView({ loai: 'hoc', chon, doi })}
-                ketQua={kq.loai === 'ft' ? (kq.khongThi ? t('Không thi') : ketLuanCu ? t('theo kết luận cũ') : (kq.nhan && dich(kq.nhan)) || (kq.ovr !== null ? `OVR ${b1(kq.ovr)}` : t('Có kết quả'))) : ''} />
-            )}
+            {data.buocTiep && <MucBuocTiep bt={data.buocTiep} onMo={() => setView({ loai: 'buoc-tiep' })} />}
 
             <div className="flex flex-wrap gap-x-3.5 gap-y-1 text-[12.5px] text-slate-400">
               {[[t('Lớp'), data.lop], [t('GVCN'), data.gvcn], [t('Đầu vào'), data.dauVao !== null ? b1(data.dauVao) : null], ...(ft ? [] : [['Target', data.khongCamKet ? hienTargetKck(data.target !== null ? b1(data.target) : null, true) : data.target !== null ? b1(data.target) : null]]), [t('Thời gian'), dich(data.thoiGian)],
