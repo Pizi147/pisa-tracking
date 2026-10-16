@@ -33,7 +33,7 @@ export const LUAT_TVV: MucHd[] = [
   { id: 'tvv-luat-target', ten: 'Đổi Target', buoc: ['TVV, CX, QL sửa thẳng; <b>Lý do đổi Target</b> bắt buộc.', 'Target mới tính từ hôm nay; kỳ vọng các lượt đã thi giữ nguyên.'] },
   { id: 'tvv-luat-tam-dung', ten: 'Tạm dừng', buoc: ['Em Tạm dừng: mọi hạn của em dừng, việc ẩn, không quá hạn.', 'Bấm nhầm: <b>Hoàn tác</b> ngay trên thông báo.'] },
   { id: 'tvv-luat-thi-that', ten: 'Kết quả thi thật', buoc: ['Nhập được cả khi em đã Lưu trữ.', 'Có kết quả → việc <b>Chọn bước tiếp</b>, hạn <b>7 ngày</b>; QL hoặc TVV chọn.'] },
-  { id: 'tvv-luat-phoi-hop', ten: 'Phối hợp SOS', buoc: ['SOS 1: <b>Trao đổi ngắn với HV</b> + <b>Trao đổi với gia đình</b>.', 'SOS 2–3: <b>Trao đổi với gia đình</b> + <b>GVCN meeting với HV</b> — không còn Trao đổi ngắn với HV (GVCN tự thêm được).', 'SOS 3 thêm <b>CX / GĐCN meeting</b>; GVCN xác nhận, hạn 5 ngày.'] },
+  { id: 'tvv-luat-phoi-hop', ten: 'Phối hợp SOS', buoc: ['SOS 1: <b>Trao đổi ngắn với HV</b> + <b>Trao đổi với gia đình</b>.', 'SOS 2–3: <b>Trao đổi với gia đình</b>, từ MT2 thêm <b>GVCN meeting với HV</b> (MT1: chỉ SOS 3) — không còn Trao đổi ngắn với HV (GVCN tự thêm được).', 'SOS 3 từ MT2 thêm <b>CX / GĐCN meeting</b> (MT3 có phụ huynh); GVCN xác nhận, hạn 5 ngày.'] },
   { id: 'tvv-luat-hoc-thuat', ten: 'Học thuật', buoc: ['Điểm, Case, PA, Ý thức: GV và QL ghi; TVV xem.'] },
 ];
 
