@@ -54,7 +54,7 @@ export const HD_TVV: HuongDan = {
     {
       id: 'tvv-thi-that', ten: 'Kết quả thi thật + Bước tiếp', khi: 'sau khi em thi',
       buoc: ['Hồ sơ em › <b>Kết quả thi thật</b>: <b>Ngày thi</b>, điểm L R W S (hoặc <b>Không thi</b>), <b>Lưu</b>.',
-        'Trong <b>7 ngày</b> bấm <b>Chọn bước tiếp ›</b>: <b>Lộ trình mới</b> · <b>Tạm dừng</b> · <b>Thôi học</b>; nút chính đổi chữ theo lựa chọn.',
+        'Lưu xong, panel <b>Bước tiếp</b> mở ngay (hạn <b>7 ngày</b>): <b>Lộ trình mới</b> · <b>Tạm dừng</b> · <b>Thôi học</b>; làm sau: hồ sơ › <b>Chọn bước tiếp ›</b>.',
         '<b>Lộ trình mới</b>: <b>Lớp này</b> / <b>Lớp khác</b>; <b>Bắt đầu</b> <b>Ngay bây giờ</b> hoặc hẹn một tuần (<b>Huỷ hẹn</b> được tới lúc đó).'],
       chi: { hd: 'hvl-goc', duong: '/hoc-vien', chu: '<b>Cần làm</b> có dòng "Chọn bước tiếp" khi tới lúc.' },
     },

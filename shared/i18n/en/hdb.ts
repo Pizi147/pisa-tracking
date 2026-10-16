@@ -211,7 +211,7 @@ export const EN_HDB = {
   'Kết quả thi thật + Bước tiếp': 'Real exam result + Next step',
   'sau khi em thi': 'after the student\'s exam',
   'Hồ sơ em › <b>Kết quả thi thật</b>: <b>Ngày thi</b>, điểm L R W S (hoặc <b>Không thi</b>), <b>Lưu</b>.': 'Student profile › <b>Real exam result</b>: <b>Exam date</b>, L R W S scores (or <b>No exam</b>), <b>Save</b>.',
-  'Trong <b>7 ngày</b> bấm <b>Chọn bước tiếp ›</b>: <b>Lộ trình mới</b> · <b>Tạm dừng</b> · <b>Thôi học</b>; nút chính đổi chữ theo lựa chọn.': 'Within <b>7 days</b> click <b>Choose next step ›</b>: <b>New route</b> · <b>Paused</b> · <b>Withdraw</b>; the main button changes with the choice.',
+  'Lưu xong, panel <b>Bước tiếp</b> mở ngay (hạn <b>7 ngày</b>): <b>Lộ trình mới</b> · <b>Tạm dừng</b> · <b>Thôi học</b>; làm sau: hồ sơ › <b>Chọn bước tiếp ›</b>.': 'After saving, the <b>Next step</b> panel opens (due in <b>7 days</b>): <b>New route</b> · <b>Paused</b> · <b>Withdraw</b>; later: profile › <b>Choose next step ›</b>.',
   '<b>Lộ trình mới</b>: <b>Lớp này</b> / <b>Lớp khác</b>; <b>Bắt đầu</b> <b>Ngay bây giờ</b> hoặc hẹn một tuần (<b>Huỷ hẹn</b> được tới lúc đó).': '<b>New route</b>: <b>This class</b> / <b>Other class</b>; <b>Start</b> <b>Right now</b> or schedule a week (<b>Cancel schedule</b> until then).',
   '<b>Cần làm</b> có dòng "Chọn bước tiếp" khi tới lúc.': '<b>To do</b> shows a "Choose next step" row when it is time.',
   'Sửa thông tin + Target': 'Edit info + Target',
