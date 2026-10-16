@@ -289,6 +289,15 @@ export type DongApDung = {
 /** OV-13j: chuyển lớp sang chi nhánh khác → nhật ký ghi kèm chi nhánh cũ → mới (Lịch sử sửa của em). Cùng chi nhánh → không ghi. */
 const doiCn = (cu: number | null, moi: number | null) => (cu !== moi ? { truoc: { branchId: cu }, sau: { branchId: moi } } : { truoc: {}, sau: {} });
 
+/** OV-13o: lộ trình mới mang Target / KCK khác lộ trình cũ → nhật ký Chuyển lớp ghi cũ → mới (Lịch sử sửa có dòng Target / KCK). Không đổi → không ghi. */
+export function doiTg(cu: { target_score?: number | null; khong_cam_ket?: number | null } | null | undefined,
+  moi: { target_score?: number | null; khong_cam_ket?: number | null } | null | undefined) {
+  const truoc: Record<string, unknown> = {}, sau: Record<string, unknown> = {};
+  if ((cu?.target_score ?? null) !== (moi?.target_score ?? null)) { truoc.targetScore = cu?.target_score ?? null; sau.targetScore = moi?.target_score ?? null; }
+  if (!!cu?.khong_cam_ket !== !!moi?.khong_cam_ket) { truoc.khongCamKet = !!cu?.khong_cam_ket; sau.khongCamKet = !!moi?.khong_cam_ket; }
+  return { truoc, sau };
+}
+
 export function apDungMotDong(p: Principal, d: DongApDung): { luat: LuatDoiLop | null; toClassCode: string } {
   const conn = db();
   const enr = lopHienTaiCua(d.sid);
@@ -350,6 +359,7 @@ export function apDungMotDong(p: Principal, d: DongApDung): { luat: LuatDoiLop |
    * GVCN gửi `mucTieu` thẳng qua API lúc FT → FT mở lộ trình mới thì BỎ QUA — giữ target cũ như giao diện.
    */
   const mucTieu = luat.canMucTieu || can(p, PERMISSIONS.CYCLE_EDIT, { studentId: d.sid }) ? d.mucTieu : undefined;
+  let tg = doiTg(null, null);
   if (luat.khoa === 'dong-mo') {
     if (curCycle) conn.prepare(`UPDATE learning_cycles SET status = 'completed', ended_at = ? WHERE id = ?`).run(d.ngay, curCycle.id);
     /* PR-CL (B4.4, §7 "chuyển từ FT: Target giữ như cũ", Q1): FT → thường giữ Target / KCK của lộ trình FT — chỉ nhánh này (Lưu trữ "Học lại" không đổi). */
@@ -358,6 +368,7 @@ export function apDungMotDong(p: Principal, d: DongApDung): { luat: LuatDoiLop |
       sid: d.sid, ngay: d.ngay, toClass, tuLop, denLop, cuCycle: curCycle, thangThi: d.thangThi,
       target: mucTieu ?? (veThuong ? curCycle.target_score ?? null : null), kck: veThuong && mucTieu == null && !!curCycle.khong_cam_ket,
     });
+    tg = doiTg(curCycle, conn.prepare('SELECT target_score, khong_cam_ket FROM learning_cycles WHERE id = ?').get(moiId) as any);
     /* PR-MT0 (T5b): từ lớp thường — sang FT thì MT0 thành mốc đầu vào lộ trình mới; hướng khác thì MT0 chưa điểm huỷ. */
     if (!tuLop.ft && curCycle) noiMt0VaoFt(p.userId, [{ sid: d.sid, cuCycleId: curCycle.id, ftCycleId: denLop.ft ? moiId : null, ngay: d.ngay }]);
     /* PR-CL (B4, R-C1): FT → thường — huỷ MT0 / Mock chưa điểm TRƯỚC bản chụp; MT0 có điểm về khoá thường + bỏ đầu vào SAU bản chụp (bản chụp = lúc đóng). */
@@ -416,8 +427,8 @@ export function apDungMotDong(p: Principal, d: DongApDung): { luat: LuatDoiLop |
   });
   writeAudit({
     actorUserId: p.userId, action: 'student.transfer', entityType: 'student', entityId: d.sid, entityLabel: toClass.code,
-    before: { classId: enr.class_id, endKind: null, ...doiCn(enr.branch_id, toClass.branch_id).truoc },
-    after: { classId: d.toClassId, endKind: luat.endKind, ...doiCn(enr.branch_id, toClass.branch_id).sau },
+    before: { classId: enr.class_id, endKind: null, ...doiCn(enr.branch_id, toClass.branch_id).truoc, ...tg.truoc },
+    after: { classId: d.toClassId, endKind: luat.endKind, ...doiCn(enr.branch_id, toClass.branch_id).sau, ...tg.sau },
   });
   thongBaoChuyenVao({
     sid: d.sid, tenHocVien: (conn.prepare('SELECT full_name FROM students WHERE id = ?').get(d.sid) as any).full_name,
@@ -642,6 +653,7 @@ export function apDungCaLop(p: Principal, o: {
 
   // 5) Mở khoá mới — đọc seq theo lô (MỘT câu), rồi MỘT INSERT nhiều dòng.
   let ftMoiCua = new Map<number, number>();
+  const tgMoi = new Map<number, ReturnType<typeof doiTg>>();
   {
     const sids = o.dongs.map((d) => d.sid);
     const ph = sids.map(() => '?').join(',');
@@ -673,6 +685,8 @@ export function apDungCaLop(p: Principal, o: {
         d.toClass.ft ? ftPeriodId : (startPeriodOf.get(d.toClassId) ?? null), o.ngay, 'active', now,
       ];
     });
+    /* OV-13o: Target / KCK lộ trình mới so với khoá cũ — cho nhật ký Chuyển lớp từng em (cột 5, 6 của dòng chèn). */
+    o.dongs.forEach((d, i) => tgMoi.set(d.sid, doiTg(khoaCu.get(d.sid), { target_score: params[i][4] as number | null, khong_cam_ket: params[i][5] as number })));
     /* 13 cột/em: `chenNhieuDong` tự chia lô theo trần tham số. */
     chenNhieuDong(
       `INSERT INTO learning_cycles (student_id, seq, route, programme_code, target_score, khong_cam_ket, exam_month, exam_date, exam_period_id,
@@ -741,8 +755,8 @@ export function apDungCaLop(p: Principal, o: {
   /* OV-13j: mỗi em một dòng nhật ký Chuyển lớp (lớp + chi nhánh nếu đổi) — MỘT câu. */
   writeAuditLo(o.dongs.map((d) => ({
     actorUserId: p.userId, action: 'student.transfer', entityType: 'student', entityId: d.sid, entityLabel: d.toClass.code,
-    before: { classId: o.fromClass.id, ...doiCn(cnCu.get(d.sid) ?? null, d.toClass.branchId).truoc },
-    after: { classId: d.toClassId, huong: d.huong, ...doiCn(cnCu.get(d.sid) ?? null, d.toClass.branchId).sau },
+    before: { classId: o.fromClass.id, ...doiCn(cnCu.get(d.sid) ?? null, d.toClass.branchId).truoc, ...tgMoi.get(d.sid)?.truoc },
+    after: { classId: d.toClassId, huong: d.huong, ...doiCn(cnCu.get(d.sid) ?? null, d.toClass.branchId).sau, ...tgMoi.get(d.sid)?.sau },
   })));
 }
 

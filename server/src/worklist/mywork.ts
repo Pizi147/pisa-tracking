@@ -2,7 +2,7 @@ import { phamViXemViec } from './xemViec.ts';
 import { db, theoLo } from '../db.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import {
-  ATTEMPT_KIND_SHORT, CHAM_CHEO, VIEC_CHAM_CHEO, chuViecChotLoTrinh, daiDienNhomBoTro, khoiCham, laChamCheo, laViecChamCheo, mondayOfDate,
+  ATTEMPT_KIND_SHORT, CHAM_CHEO, VIEC_CHAM_CHEO, chuViecChotLoTrinh, daiDienNhomBoTro, canChamCheo, khoiCham, laChamCheo, laViecChamCheo, mondayOfDate,
   INTERVENTION_KIND_LABEL, PERMISSIONS,
   SOS_LABEL, URGENCY_LABEL, URGENCY_TONE, caseHeadline, caseTopicLabel, cycleDeadline,
   duongCaseRieng, duongHoSoHocVien, duongLichTest, nhanDotNgan, hanThemPa,
@@ -534,7 +534,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     for (const a of attempts as any[]) {
       if (!lopCheo.has(a.classId)) continue;
       for (const c of (a.pendingDetail ?? []) as any[]) {
-        if (!laChamCheo(a.kind, c.skill) || !c.weekStart || khoiCham({ tuanThi: c.weekStart, tuanHomNay, quaHan: !!c.overdue }) === 'lich') continue;
+        if (!canChamCheo(laChamCheo(a.kind, c.skill), c.weekStart, tuanHomNay, !!c.overdue)) continue;
         ccDongs.push({
           classId: a.classId, classCode: a.classCode ?? null, attemptNo: a.attemptNo ?? null,
           kind: a.kind ?? null, attemptId: a.id, studentId: a.studentId, studentName: a.studentName,

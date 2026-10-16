@@ -18,7 +18,7 @@ import { evaluateAttempt, roundToHalf } from '../fasttrack/scoring.ts';
 import { currentCycle, cyclesOf, docDuKienThi, docTarget, examPlanOf } from '../fasttrack/cycles.ts';
 import { isRatioCycle } from '../normal/regular.ts';
 import {
-  apDungMotDong, danhSachLopDich, dongLopNeuHet, lopDichHopLe, lopHienTaiCua, moLoTrinhMoi, thongBaoChuyenVao,
+  apDungMotDong, danhSachLopDich, doiTg, dongLopNeuHet, lopDichHopLe, lopHienTaiCua, moLoTrinhMoi, thongBaoChuyenVao,
 } from '../classes/luatLoTrinh.ts';
 import { moLaiLop } from '../classes/xoaKetThucLop.ts';
 import { ghiBanChup } from '../loTrinh/banChup.ts';
@@ -431,6 +431,7 @@ export function hocLai(p: Principal, studentId: number, o: {
     let ghiDanhKhoiPhuc: { id: number; truoc: string | null }[] = [];
     let loTrinhKhoiPhuc: number[] = [];
     let cycleId: number | null = cuCycle?.id ?? null;
+    let tgDoi = doiTg(null, null);   // OV-13o: lộ trình mới ở lớp mới đổi Target / KCK → Lịch sử sửa có dòng
     if (lopMoi && denLop) {
       /* ghi danh cũ + lộ trình cũ ở nguyên; ghi danh mới + lộ trình mới */
       const ins = conn.prepare(`INSERT INTO enrollments (student_id, class_id, status, started_at, created_at) VALUES (?,?, 'active', ?, ?)`)
@@ -438,6 +439,7 @@ export function hocLai(p: Principal, studentId: number, o: {
       moi.ghiDanhId = Number(ins.lastInsertRowid);
       conn.prepare('UPDATE students SET branch_id = ? WHERE id = ?').run(lopMoi.branch_id, studentId);
       moi.loTrinhId = cycleId = moLoTrinhMoi(p, { sid: studentId, ngay: date, toClass: lopMoi, tuLop, denLop, cuCycle, target: tg?.target ?? null, kck: !!tg?.kck, thangThi }).moiId;
+      tgDoi = doiTg(cuCycle, conn.prepare('SELECT target_score, khong_cam_ket FROM learning_cycles WHERE id = ?').get(moi.loTrinhId) as any);
       thongBaoChuyenVao({
         sid: studentId, tenHocVien: s.full_name, enrollmentMoiId: moi.ghiDanhId, actorUserId: p.userId,
         tuMa: enr.code, tuChiNhanh: enr.branch_name, doiChiNhanh: enr.branch_id !== lopMoi.branch_id, lyDo, denLop: { id: lopMoi.id, code: lopMoi.code, branchId: lopMoi.branch_id },
@@ -467,8 +469,8 @@ export function hocLai(p: Principal, studentId: number, o: {
     chotHanXuLy([studentId], { ghiDe: true });   // sau `addJourney`: mốc đọc sự kiện `resume`
     writeAudit({
       actorUserId: p.userId, action: 'student.rejoin', entityType: 'student', entityId: studentId, entityLabel: s.student_code,
-      before: { status: 'finished', finishedAt: s.finished_at, archivedAt: s.archived_at, branchId: s.branch_id },
-      after: { status: 'active', date, lyDo, classId: lopMoi?.id ?? enr.class_id, lopMoi: !!lopMoi, moLaiLop: !lopMoi && lopDaDong, soGhiDanh: khoiPhuc.length, ghiDanhKhoiPhuc, loTrinhKhoiPhuc, lopMoLai, moi },
+      before: { status: 'finished', finishedAt: s.finished_at, archivedAt: s.archived_at, branchId: s.branch_id, ...tgDoi.truoc },
+      after: { ...tgDoi.sau, status: 'active', date, lyDo, classId: lopMoi?.id ?? enr.class_id, lopMoi: !!lopMoi, moLaiLop: !lopMoi && lopDaDong, soGhiDanh: khoiPhuc.length, ghiDanhKhoiPhuc, loTrinhKhoiPhuc, lopMoLai, moi },
     });
     return conn.prepare('SELECT * FROM students WHERE id = ?').get(studentId);
   });

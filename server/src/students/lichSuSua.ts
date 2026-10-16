@@ -6,7 +6,8 @@ import { nhanHanhDongNhatKy, PERMISSIONS, STUDENT_STATUS_LABEL } from '../../../
 /**
  * OV-13j — LỊCH SỬ SỬA THÔNG TIN HỌC VIÊN (chủ SP 15/10): ai sửa gì, cũ → mới. Đọc `audit_logs` của em (entity `student`) và các lộ trình của em
  * (`learning_cycle`), so từng TRƯỜNG đã biết giữa `before_json` / `after_json` (dòng cũ ghi cả hàng, dòng mới chỉ trường đổi — cùng cách so).
- * Các dòng của MỘT lần lưu (cùng người, cùng nguồn, ≤ 5 giây, mỗi việc `GOP` một lần) gộp MỘT khối (Sửa thông tin gửi hồ sơ + lộ trình; Sửa cả lớp một em nhiều bảng).
+ * Các dòng của MỘT lần lưu (cùng người, cùng nguồn, ≤ 5 giây, việc `GOP`) gộp MỘT khối (Sửa thông tin gửi hồ sơ + lộ trình; Sửa cả lớp một em nhiều bảng).
+ * OV-13o: hai lần sửa liền nhau (cùng việc, ≤ 5 giây) cũng một khối — trường đổi hai lần lấy cũ của lần đầu, mới của lần sau.
  */
 
 export type LoaiLichSu = 'thong-tin' | 'target' | 'trang-thai';
@@ -51,7 +52,7 @@ const HANH_DONG = ['student.create', 'student.update', 'student.status', 'studen
 /** Việc tự nói nguồn (chữ của Nhật ký Quản trị); sửa thường thì không ghi nguồn. */
 const CO_NGUON = new Set(['student.rejoin', 'student.rejoin_undo', 'student.finish_undo', 'student.pause_undo', 'student.transfer', 'cycle.create']);
 const BO_QUA_CYCLE = new Set(['status']);   // trạng thái lộ trình ≠ trạng thái học của em
-/** Việc của MỘT lần lưu form (hồ sơ + lộ trình + Target + đầu vào) — chỉ những việc này gộp, mỗi việc một lần; Tạm dừng rồi Quay lại học là hai khối. */
+/** Việc của MỘT lần lưu form (hồ sơ + lộ trình + Target + đầu vào) — chỉ những việc này gộp; Tạm dừng rồi Quay lại học là hai khối. */
 const GOP = new Set(['student.update', 'cycle.update', 'cycle.target.revise', 'cycle.baseline.set', 'cycle.baseline.clear']);
 
 export type DongLichSu = { id: number; luc: string; nguoi: string; nguon: string | null; truong: { ten: string; cu: string | null; moi: string | null }[] };
@@ -104,7 +105,7 @@ export function lichSuSua(p: Principal, studentId: number, q: { loai?: string; t
       const tr = khoi[khoi.length - 1];
       /* Sắp mới → cũ: dòng này CŨ hơn khối trước — giá trị cũ của nó là "cũ" của cả khối. */
       if (tr && tr.uid === r.uid && tr.nguon === nguon && Math.abs(Date.parse(tr.luc) - Date.parse(r.luc)) <= 5000
-        && GOP.has(r.action) && !tr.hd.has(r.action) && [...tr.hd].every((x) => GOP.has(x))) {
+        && GOP.has(r.action) && [...tr.hd].every((x) => GOP.has(x))) {
         for (const [c, [cu, moi]] of doi) tr.doi.set(c, [cu, tr.doi.get(c)?.[1] ?? moi]);
         tr.id = r.id; tr.hd.add(r.action);
       } else khoi.push({ id: r.id, luc: r.luc, uid: r.uid, nguoi: r.ten ?? 'Hệ thống', nguon, hd: new Set([r.action]), doi });
