@@ -30,6 +30,7 @@ import { activeClassOf, canManageDiscipline } from '../yThuc/access.ts';
 import { dongHocVien, khoangTamDung } from './tamDung.ts';
 import { viecCuaHocVien } from './viecHocVien.ts';
 import { coKetQuaThi, trangThaiBuocTiep } from '../loTrinh/buocTiep.ts';
+import { sauThiCuaEm } from '../loTrinh/thiThat.ts';
 import { dsTvv } from './students.ts';
 import { laGvLopDangHoc } from '../duyet/deXuatSua.ts';
 import { trangThaiYThuc } from '../yThuc/trangThai.ts';
@@ -796,8 +797,12 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
   const yThucEm = trangThaiYThuc([studentId], today).get(studentId) ?? null;
   /* OV-13m: lộ trình FT mới nhất — chỉ chạy câu Bước tiếp khi đã có kết quả thi thật / đã chọn (đa số hồ sơ không tốn thêm câu nào). */
   const cuoiFt = (() => { const c = [...allCycles].sort((a: any, b: any) => b.seq - a.seq)[0] as any; return c?.route ? c : null; })();
+  /* OV-13q: "Đã thi · chờ kết quả" / "chờ bước tiếp" — chỉ hỏi khi lộ trình FT mới nhất có thể đã thi (đa số hồ sơ không tốn thêm câu nào). */
+  const coTheDaThi = !!cuoiFt && !cuoiFt.buoc_tiep && !s.archived_at && (coKetQuaThi(cuoiFt)
+    || (cuoiFt.thi_that_ngay ?? cuoiFt.exam_date ?? (cuoiFt.exam_month ? `${cuoiFt.exam_month}-01` : null) ?? (cuoiFt.exam_period_id ? '' : null) ?? cuoiFt.ended_at ?? '9999') < today);
+  const sauThi = coTheDaThi ? sauThiCuaEm(p, studentId, today) : null;
   const viec = viecCuaHocVien(p, studentId, board, {
-    choBuocTiep: !!cuoiFt && !cuoiFt.buoc_tiep && coKetQuaThi(cuoiFt),
+    choBuocTiep: !!cuoiFt && !cuoiFt.buoc_tiep && coKetQuaThi(cuoiFt), sauThi,
     trangThaiEm: s.status, lopId: current?.class_id ?? null, chuongTrinh: board.chuongTrinh, yThuc: yThucEm, miniTest, dai,
   });
   const thongTin = dongThongTin({ keSel: selected ? { cycleId: selected.id, ke: examPlan } : null, startWeekSel: selected ? { cycleId: selected.id, weekStart: startWeekSel?.week_start ?? null } : null, s, current: lopDangGiu, khoa: khoaHienTai, gvcn: gvcnHienTai, dangChay: allCycles.find((c) => c.status === 'active') ?? null /* = nhánh dangHoc của loTrinhTinhTuan (Q11); không có lộ trình chạy thì không có dòng tuần học */, today,
@@ -1057,6 +1062,8 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
     })(),
     /** PR-CT: dải "Sắp chuyển / Đã chuyển" ngay dưới dòng thông tin đầu trang (mockup 20 — E). */
     dai,
+    /** OV-13q: lộ trình FT mới nhất "Đã thi · chờ kết quả" / "Đã xong · chờ bước tiếp" + hạn + nút (Gia hạn) — nhãn đầu hồ sơ. */
+    sauThi,
     /** OV-13m: Bước tiếp sau thi của lộ trình FT mới nhất ("Đã xong" ở đầu hồ sơ, Quay lại học sau Tạm dừng) — null khi không có mục. */
     buocTiep: (() => {
       return cuoiFt && (coKetQuaThi(cuoiFt) || cuoiFt.buoc_tiep) ? trangThaiBuocTiep(p, cuoiFt.id) : null;

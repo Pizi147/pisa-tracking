@@ -419,6 +419,7 @@ Nhật ký chi tiết tới 04/10 ở `git show 575e898d:plan.md` (mục 14) và
 
 | Ngày | PR / nhánh · model | Kết quả |
 |---|---|---|
+| 16/10/2026 | OV-13q (Opus 5.5) · `claude/wonderful-goodall-kwk1t8` | "Đã thi xong · hạn 1 tuần": một hàm `trangThaiSauThi`, việc thi thật từ hôm sau ngày thi, hạn chung ngày thi + 7 cho kết quả + bước tiếp, Gia hạn (hộp nhỏ) ở Công việc / panel / hồ sơ, ô Tổng quan "Đã thi · chờ kết quả", nhãn Học viên & Lớp + panel một em; migrate `prOv13q` + `kiem-truoc-ov13q`. Kiểm `prOv13q` |
 | 16/10/2026 | TD5 #431 (Opus 5.5) · `claude/td5-turso-doc` | Giảm dòng đọc Turso: chỉ mục `sos_cases(attempt_id, status, sos_level)` (migrate `prTd5`), đếm Case mở theo lớp một lần duyệt (~181k → ~4k dòng/lần), bảng điểm tuần `IN (… UNION …)`; đầu ra trùng |
 | 16/10/2026 | UX-1 (Opus 5.5) · `claude/nice-keller-vssn4e` | Sửa gấp đánh giá UX 16/10: bảng chi nhánh hàng "Lớp đã kết thúc" (Σ hàng = Tất cả) + ẩn lớp toàn 0 + "—" khi chưa có đợt đến lịch; HV & Lớp đếm theo id em, bỏ em Kết thúc học; "Case chưa có PA" thay "Case chờ duyệt" (ô, cột Tổng hợp, nhóm); Đang SOS · tuần; Lịch Test lớp còn bài; chữ Công việc / Phân tích / Hướng dẫn. Kiểm `prUx1` |
 | 16/10/2026 | OV-13p (Opus 5.5) · `claude/tvv-cx-class-student-add-bzur51` | TVV / CX tạo lớp (`class.create` theo grant) + thêm HV (quyền mới hẹp `student.add`, intake đổi kiểm); không mở phân công GV / chuyển lớp / lưu trữ; migrate `prOv13p` một lần; nút ở trang Học viên & Lớp TVV / CX |

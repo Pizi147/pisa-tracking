@@ -4,7 +4,7 @@ import { useApi } from '../../lib/useApi.ts';
 import { Card, Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
 
 /** Trả lời của `GET /tong-quan/hoc-vien` (server/src/worklist/hvCuaToi.ts). */
-type Chip = 'can-chu-y' | 'tam-dung' | 'sap-thi' | 'thieu_tt' | 'cho-buoc-tiep';
+type Chip = 'can-chu-y' | 'tam-dung' | 'sap-thi' | 'thieu_tt' | 'da-thi' | 'cho-buoc-tiep';
 type SoHocVien = { phamVi: 'cua-toi' | 'chi-nhanh' | 'tat-ca'; tong: number; dem: Record<Chip, number> };
 
 /** Ô đếm bấm được của Tổng quan theo vai (OV-10c): cả ô là link mở đúng danh sách đã lọc sẵn. Số 0 vẫn bấm được (danh sách trống nói rõ). */
@@ -43,6 +43,8 @@ export function HocVienCuaToi({ branchId = null }: { branchId?: number | null })
       <ODem to={den('tam-dung')} so={d['tam-dung']} nhan="Tạm dừng" phu="đang Tạm dừng học" />
       <ODem to={den('sap-thi')} so={d['sap-thi']} nhan="Sắp thi" phu="thi IELTS trong 6 tuần tới" />
       <ODem to={den('thieu_tt')} so={d.thieu_tt} nhan="Thiếu thông tin" phu="hồ sơ chưa đủ để theo dõi" />
+      {/* OV-13q: em đã qua ngày thi, chưa có kết quả — cạnh "Chờ chọn bước tiếp"; "Sắp thi" chỉ còn ngày thi từ hôm nay. */}
+      <ODem to={den('da-thi')} so={d['da-thi']} nhan="Đã thi · chờ kết quả" phu="hạn 1 tuần sau ngày thi" />
       {d['cho-buoc-tiep'] > 0 && <ODem to={den('cho-buoc-tiep')} so={d['cho-buoc-tiep']} nhan="Chờ chọn bước tiếp" phu="đã có kết quả thi thật" />}
     </div>
   );

@@ -4,13 +4,14 @@
  *
  * MỘT NGUỒN cho số ở Tổng quan và chip ở Học viên & Lớp (OV-10b dùng lại `chipHocVien`, không viết hàm đếm thứ hai):
  *  · `can-chu-y` — em đang học có SOS (MT gần nhất), Case mở trong 14 ngày, Ý thức trong 14 ngày, hoặc đang chờ QL chọn bước tiếp sau thi.
- *  · Tạm dừng — em Tạm dừng học. · Sắp thi — dự kiến thi trong 6 tuần tới. · Chờ chọn bước tiếp — cùng tập với việc QL / TVV (`choBuocTiep`).
+ *  · Tạm dừng — em Tạm dừng học. · Sắp thi — dự kiến thi từ hôm nay tới 6 tuần tới (OV-13q: ngày thi đã qua → không còn "sắp").
+ *  · Đã thi · chờ kết quả (OV-13q) — cùng tập với việc GVCN / góc Cần làm TVV (`loTrinhChoKetQuaThi`). · Chờ chọn bước tiếp — cùng tập với việc QL / TVV (`choBuocTiep`).
  *  · Thiếu thông tin — chính cờ `thieu_tt` của danh sách Học viên & Lớp (`danhSachHocVienLop`), chip đó đã có sẵn.
  * Câu đọc không theo danh sách id (Turso ≤ 900 tham số): Case / Ý thức đọc khoảng 14 ngày rồi lọc theo tập em.
  */
 import { CASE_THAT } from '../cases/sosState.ts';
 import { db } from '../db.ts';
-import { PERMISSIONS, VIOLATION_CATEGORY_LABEL } from '../../../shared/domain/index.ts';
+import { PERMISSIONS, VIOLATION_CATEGORY_LABEL, ngayThiSauThi } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addDays } from '../util.ts';
 import { can, napTruocPhamVi, type Principal } from '../permissions.ts';
@@ -18,12 +19,13 @@ import { mondayOf } from '../platform/week.ts';
 import { standingFor } from '../students/standing.ts';
 import { danhSachHocVienLop } from '../classes/hocVienLop.ts';
 import { choBuocTiep } from '../loTrinh/buocTiep.ts';
+import { loTrinhChoKetQuaThi } from '../loTrinh/thiThat.ts';
 
 /** "Sắp thi" = dự kiến thi trong từng này tuần tới. "Mới" = trong 14 ngày gần nhất. */
 const SAP_THI_TUAN = 6;
 const MOI_NGAY = 14;
 
-export const CHIP_HOC_VIEN = ['can-chu-y', 'tam-dung', 'sap-thi', 'thieu_tt', 'cho-buoc-tiep'] as const;
+export const CHIP_HOC_VIEN = ['can-chu-y', 'tam-dung', 'sap-thi', 'thieu_tt', 'da-thi', 'cho-buoc-tiep'] as const;
 export type ChipHocVien = (typeof CHIP_HOC_VIEN)[number];
 export type SoHocVien = { phamVi: 'cua-toi' | 'chi-nhanh' | 'tat-ca'; tong: number; dem: Record<ChipHocVien, number> };
 /** OV-10b: vì sao em vào chip `can-chu-y` — ghi NGAY trong vòng xếp chip (cột tương ứng của Học viên & Lớp TVV / CX đọc đúng lý do này). */
@@ -49,7 +51,7 @@ export function chipHocVien(p: Principal, f: { branchId?: number | null; phamVi?
   const thamSo: unknown[] = [];
   if (tvv) { dieuKien.push('s.consultant_user_id = ?'); thamSo.push(p.userId); }
   const rows = conn.prepare(
-    `SELECT s.id, s.status, COALESCE(c.branch_id, s.branch_id) AS branch_id, cy.exam_date, cy.exam_month, rp.week_start AS tuan_thi
+    `SELECT s.id, s.status, COALESCE(c.branch_id, s.branch_id) AS branch_id, cy.exam_date, cy.exam_month, cy.thi_that_ngay, rp.week_start AS tuan_thi
        FROM students s
        LEFT JOIN enrollments e ON e.student_id = s.id AND e.status IN ('active', 'paused')
        LEFT JOIN classes c ON c.id = e.class_id
@@ -68,13 +70,14 @@ export function chipHocVien(p: Principal, f: { branchId?: number | null; phamVi?
 
   ids['tam-dung'] = [...em.values()].filter((r) => r.status === 'inactive').map((r) => r.id);
   ids['cho-buoc-tiep'] = [...new Set(choBuocTiep().map((c) => c.student_id as number))].filter((id) => em.has(id));
+  ids['da-thi'] = [...new Set(loTrinhChoKetQuaThi(homNay).map((x) => x.c.student_id as number))].filter((id) => em.has(id));
 
   const cuoiKhoang = addDays(dauTuan, SAP_THI_TUAN * 7 - 1);
-  /* Chỉ ghi tháng thi → sắp thi khi tháng đó chạm khoảng 6 tuần. */
+  /* Ngày thi (cùng `ngayThiSauThi`: tuần → Chủ nhật, tháng → ngày cuối) từ hôm nay; đầu khoảng thi (ngày / thứ Hai / mùng 1) chạm 6 tuần. Đã nhập ngày thi thật → không còn "sắp". */
   const sapThi = (r: any) => {
-    if (!r.exam_date && !r.tuan_thi && r.exam_month) return `${r.exam_month}-01` <= cuoiKhoang && `${r.exam_month}-31` >= dauTuan;
-    const d = r.exam_date ?? r.tuan_thi;
-    return !!d && d >= dauTuan && d <= cuoiKhoang;
+    const cuoi = ngayThiSauThi({ exam_date: r.exam_date, exam_week: r.tuan_thi, exam_month: r.exam_month });
+    const dau = r.exam_date ?? r.tuan_thi ?? (r.exam_month ? `${r.exam_month}-01` : null);
+    return !r.thi_that_ngay && !!cuoi && !!dau && cuoi >= homNay && dau <= cuoiKhoang;
   };
   ids['sap-thi'] = dangHoc.filter(sapThi).map((r) => r.id);
 

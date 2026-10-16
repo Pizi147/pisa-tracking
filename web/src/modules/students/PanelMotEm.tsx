@@ -14,13 +14,20 @@ import { DongDaLuu, GhiNhanh, type DaLuuNhanh } from '../cases/GhiNhanh.tsx';
 import { OPhuHuynh } from './HocVienTheoVai.tsx';
 import { chuChuaNguyenNhan, type CaseTomTat } from './BangSos.tsx';
 import { t } from '@shared/i18n/index.ts';
-import { LOAI_HAN_CUA_VIEC, NHAN_NHOM_XU_LY, vaiXemHocVien, type LienHe } from '@shared/domain/index.ts';
+import { LOAI_HAN_CUA_VIEC, NHAN_NHOM_XU_LY, thuNgay, vaiXemHocVien, type GiaiDoanSauThi, type LienHe } from '@shared/domain/index.ts';
+import { HopGiaHan, NhanSauThi } from './HopGiaHan.tsx';
+import { KetQuaThiThatPanel } from './KetQuaThiThatPanel.tsx';
+import { PanelBuocTiep } from './PanelBuocTiep.tsx';
+import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 
 /** `GET /hoc-vien-lop/em/:id` (server/src/classes/hocVienSos.ts → panelMotEm). */
 type DuLieuEm = {
   em: { id: number; ten: string; ma: string; lop: { id: number; code: string; ft: boolean } | null; tvv: string | null; lienHe: LienHe };
   luot: { nhan: string | null; sosLevel: number | null } | null;
   cases: CaseTomTat[];
+  /** OV-13q: lộ trình FT mới nhất đã thi chưa xong (`sauThiCuaEm`) + nút người xem bấm được. */
+  sauThi: { cycleId: number; giaiDoan: GiaiDoanSauThi; ngayThi: string | null; han: string | null; quaHan: boolean; daGiaHan: boolean;
+    coTheNhap: boolean; coTheChon: boolean; coTheGiaHan: boolean } | null;
 };
 type ViecCase = NonNullable<Parameters<typeof NganCase>[0]['viec']>;
 
@@ -55,11 +62,21 @@ export function PanelMotEm({ studentId, caseMo, onClose, onDoi }: {
   const [mo, setMo] = useState<Set<number>>(() => new Set(caseMo ? [caseMo] : []));
   /* OV-13b: lần ghi nhanh vừa lưu theo Case — dòng "✓ Đã lưu · … · Hoàn tác" đứng lại sau khi việc rời danh sách. */
   const [daLuu, setDaLuu] = useState<ReadonlyMap<number, DaLuuNhanh>>(new Map());
+  /* OV-13q: việc sau thi THAY nội dung panel (như Ngăn Case, "← tên em"); Gia hạn là hộp nhỏ đè. */
+  const [sauThiMo, setSauThiMo] = useState<'thi-that' | 'buoc-tiep' | null>(null);
+  const [giaHan, setGiaHan] = useState(false);
+  const { homNay } = useNgayNghiepVu();
 
   const daDoi = () => { reload(); work.reload(); invalidate('/hoc-vien-lop'); onDoi?.(); };
   const ten = data?.em.ten ?? t('Học viên');
   const lop = data?.em.lop?.code ?? null;
 
+  const veEm = { nhan: ten, onClick: () => { setSauThiMo(null); reload(); } };
+  if (sauThiMo && data?.sauThi) {
+    return sauThiMo === 'thi-that'
+      ? <KetQuaThiThatPanel cycleId={data.sauThi.cycleId} studentName={ten} lop={lop} quayLai={veEm} onClose={onClose} onDone={daDoi} />
+      : <PanelBuocTiep cycleId={data.sauThi.cycleId} hocVien={{ id: studentId, ten }} lop={lop} quayLai={veEm} onClose={onClose} onDone={daDoi} />;
+  }
   if (view) {
     return (
       <NganCase key={`${view.caseId}:${view.viec ?? ''}:${view.paId ?? ''}`} caseId={view.caseId} viec={view.viec} paId={view.paId}
@@ -97,6 +114,25 @@ export function PanelMotEm({ studentId, caseMo, onClose, onDoi }: {
         : !data ? <div className="pt-3"><Skeleton rows={6} /></div>
           : (
             <div className="space-y-2 pt-2">
+              {data.sauThi && (
+                /* OV-13q: dòng trạng thái sau thi + nút làm việc (cùng hàm với việc Công việc; nút theo quyền máy chủ). */
+                <CanLam>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="min-w-0 flex-1 max-sm:basis-full">
+                      <NhanSauThi s={data.sauThi} />
+                      {data.sauThi.ngayThi && <span className="mt-1 block text-xs text-slate-400">{t('Đã thi {ngay}', { ngay: thuNgay(data.sauThi.ngayThi, homNay) })}</span>}
+                    </span>
+                    {data.sauThi.coTheGiaHan && <button type="button" className="btn min-h-[44px] max-sm:flex-1 sm:min-h-[36px]" onClick={() => setGiaHan(true)}>{t('Gia hạn')}</button>}
+                    {data.sauThi.giaiDoan === 'da_thi_cho_kq' && data.sauThi.coTheNhap && (
+                      <button type="button" className="btn btn-primary min-h-[44px] max-sm:flex-1 sm:min-h-[36px]" onClick={() => setSauThiMo('thi-that')}>{t('Nhập kết quả')}</button>
+                    )}
+                    {data.sauThi.giaiDoan === 'cho_buoc_tiep' && data.sauThi.coTheChon && (
+                      <button type="button" className="btn btn-primary min-h-[44px] max-sm:flex-1 sm:min-h-[36px]" onClick={() => setSauThiMo('buoc-tiep')}>{t('Chọn bước tiếp')}</button>
+                    )}
+                  </div>
+                  {giaHan && <HopGiaHan x={data.sauThi} hocVien={ten} lop={lop} onClose={() => setGiaHan(false)} onDone={daDoi} />}
+                </CanLam>
+              )}
               {chiDoc && (
                 <div className="flex items-start gap-3 rounded-lg border px-3 py-2 text-sm" style={{ borderColor: 'var(--line)' }}>
                   <span className="w-20 shrink-0 text-xs text-slate-500">{t('Phụ huynh')}</span>

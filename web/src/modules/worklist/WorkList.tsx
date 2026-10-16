@@ -34,6 +34,8 @@ export type WorkItem = {
   /** OV-13c: tuần thi (thứ Hai) · mức SOS · Nhập điểm: tuần + loại bài (lưới Lịch Test) · Xác nhận PA: PA đang chờ. */
   tuanThi?: string | null; sos?: number | null; periodId?: number | null; kind?: string | null; phu?: string | null;
   pa?: { kind: string; moTa: string | null; nguoiId: number | null; nguoi: string | null; soBuoi?: number | null };
+  /** OV-13q: Cập nhật kết quả thi thật · Chọn bước tiếp — lộ trình (nút Gia hạn) + hạn đã gia hạn. */
+  cycleId?: number; daGiaHan?: boolean;
 };
 export type WorkGroup = { key: string; label: string; hint: string; items: WorkItem[]; overdue: number; today: number };
 

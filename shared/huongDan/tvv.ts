@@ -32,7 +32,7 @@ export const MAN_HO_SO_TVV: ManHd[] = [
 export const LUAT_TVV: MucHd[] = [
   { id: 'tvv-luat-target', ten: 'Đổi Target', buoc: ['TVV, CX, QL sửa thẳng; <b>Lý do đổi Target</b> bắt buộc.', 'Target mới tính từ hôm nay; kỳ vọng các lượt đã thi giữ nguyên.'] },
   { id: 'tvv-luat-tam-dung', ten: 'Tạm dừng', buoc: ['Em Tạm dừng: mọi hạn của em dừng, việc ẩn, không quá hạn.', 'Bấm nhầm: <b>Hoàn tác</b> ngay trên thông báo.'] },
-  { id: 'tvv-luat-thi-that', ten: 'Kết quả thi thật', buoc: ['Nhập được cả khi em đã Lưu trữ.', 'Có kết quả → việc <b>Chọn bước tiếp</b>, hạn <b>7 ngày</b>; QL hoặc TVV chọn.'] },
+  { id: 'tvv-luat-thi-that', ten: 'Kết quả thi thật', buoc: ['Nhập được cả khi em đã Lưu trữ.', 'Có kết quả → việc <b>Chọn bước tiếp</b>; QL hoặc TVV chọn. Hạn: ngày thi + <b>7 ngày</b>, <b>Gia hạn</b> được.'] },
   { id: 'tvv-luat-phoi-hop', ten: 'Phối hợp SOS', buoc: ['SOS 1: <b>Trao đổi ngắn với HV</b> + <b>Trao đổi với gia đình</b>.', 'SOS 2–3: <b>Trao đổi với gia đình</b>, từ MT2 thêm <b>GVCN meeting với HV</b> (MT1: chỉ SOS 3) — không còn Trao đổi ngắn với HV (GVCN tự thêm được).', 'SOS 3 từ MT2 thêm <b>CX / GĐCN meeting</b> (MT3 có phụ huynh); GVCN xác nhận, hạn 5 ngày.'] },
   { id: 'tvv-luat-hoc-thuat', ten: 'Học thuật', buoc: ['Điểm, Case, PA, Ý thức: GV và QL ghi; TVV xem.'] },
 ];
@@ -41,7 +41,7 @@ export const HD_TVV: HuongDan = {
   viec: [
     {
       id: 'tvv-sang', ten: 'Mở Học viên của tôi mỗi sáng', khi: 'mỗi ngày',
-      buoc: ['<b>Tổng quan › Học viên của tôi</b>: ô <b>Cần chú ý</b> · <b>Tạm dừng</b> · <b>Sắp thi</b> · <b>Thiếu thông tin</b>.',
+      buoc: ['<b>Tổng quan › Học viên của tôi</b>: ô <b>Cần chú ý</b> · <b>Tạm dừng</b> · <b>Sắp thi</b> · <b>Đã thi · chờ kết quả</b> · <b>Thiếu thông tin</b>.',
         'Bấm một ô: Học viên & Lớp mở sẵn đúng nhóm em.', 'Chưa được gán em nào: <b>Xem cả chi nhánh</b>.'],
       chi: { hd: 'tq-hv-so', duong: '/', chu: 'Bấm một ô để xem đúng nhóm em.' },
     },
@@ -54,7 +54,7 @@ export const HD_TVV: HuongDan = {
     {
       id: 'tvv-thi-that', ten: 'Kết quả thi thật + Bước tiếp', khi: 'sau khi em thi',
       buoc: ['Hồ sơ em › <b>Kết quả thi thật</b>: <b>Ngày thi</b>, điểm L R W S (hoặc <b>Không thi</b>), <b>Lưu</b>.',
-        'Lưu xong, panel <b>Bước tiếp</b> mở ngay (hạn <b>7 ngày</b>): <b>Lộ trình mới</b> · <b>Tạm dừng</b> · <b>Thôi học</b>; làm sau: hồ sơ › <b>Chọn bước tiếp ›</b>.',
+        'Lưu xong, panel <b>Bước tiếp</b> mở ngay (hạn: ngày thi + <b>7 ngày</b>): <b>Lộ trình mới</b> · <b>Tạm dừng</b> · <b>Thôi học</b>; làm sau: hồ sơ › <b>Chọn bước tiếp ›</b>.',
         '<b>Lộ trình mới</b>: <b>Lớp này</b> / <b>Lớp khác</b>; <b>Bắt đầu</b> <b>Ngay bây giờ</b> hoặc hẹn một tuần (<b>Huỷ hẹn</b> được tới lúc đó).'],
       chi: { hd: 'hvl-goc', duong: '/hoc-vien', chu: '<b>Cần làm</b> có dòng "Chọn bước tiếp" khi tới lúc.' },
     },
@@ -72,7 +72,7 @@ export const HD_TVV: HuongDan = {
   man: [
     {
       id: 'tong-quan', ten: 'Tổng quan', duong: ['/'],
-      muc: [{ id: 'tvv-tq-o', ten: 'Học viên của tôi', buoc: ['Em được gán cho bạn: <b>Cần chú ý</b> (SOS · Case mới · Ý thức) · <b>Tạm dừng</b> · <b>Sắp thi</b> (6 tuần tới) · <b>Thiếu thông tin</b>.', 'Có em chờ bạn: thêm ô <b>Chờ chọn bước tiếp</b>.'],
+      muc: [{ id: 'tvv-tq-o', ten: 'Học viên của tôi', buoc: ['Em được gán cho bạn: <b>Cần chú ý</b> (SOS · Case mới · Ý thức) · <b>Tạm dừng</b> · <b>Sắp thi</b> (6 tuần tới) · <b>Đã thi · chờ kết quả</b> · <b>Thiếu thông tin</b>.', 'Có em chờ bạn: thêm ô <b>Chờ chọn bước tiếp</b>.'],
         chi: { hd: 'tq-hv-so', duong: '/', chu: 'Bấm một ô để xem đúng nhóm em.' } }],
     },
     {
@@ -84,7 +84,7 @@ export const HD_TVV: HuongDan = {
       id: 'hoc-vien', ten: 'Học viên & Lớp', duong: ['/hoc-vien'],
       muc: [
         mucGv('hoc-vien', 'hv-tim'),
-        { id: 'tvv-hvl-goc', ten: 'Góc nhìn và phạm vi', buoc: ['<b>Tất cả</b> · <b>Đang SOS</b> · <b>Cần làm</b>; lọc phụ <b>Cần chú ý</b>, <b>Tạm dừng</b>, <b>Sắp thi</b>.', '<b>Phạm vi</b>: <b>HV của tôi</b> (mặc định) · <b>Chi nhánh</b>.', 'Bấm dòng em mở panel một em, không rời trang.'],
+        { id: 'tvv-hvl-goc', ten: 'Góc nhìn và phạm vi', buoc: ['<b>Tất cả</b> · <b>Đang SOS</b> · <b>Cần làm</b>; lọc phụ <b>Cần chú ý</b>, <b>Tạm dừng</b>, <b>Sắp thi</b>, <b>Đã thi · chờ kết quả</b>.', '<b>Phạm vi</b>: <b>HV của tôi</b> (mặc định) · <b>Chi nhánh</b>.', 'Bấm dòng em mở panel một em, không rời trang.'],
           chi: { hd: 'hvl-goc', duong: '/hoc-vien', chu: 'Góc nhìn và lọc phụ ở hàng này.' } },
         { id: 'tvv-hvl-them', ten: 'Tạo lớp, thêm học viên', buoc: ['<b>+ Lớp mới</b> · <b>+ Học viên</b> (một em hoặc dán danh sách): lớp chi nhánh mình. Phân công giáo viên do QL làm.'] },
       ],

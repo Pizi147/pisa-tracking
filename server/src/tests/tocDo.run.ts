@@ -947,6 +947,7 @@ await checkAsync('TD5 (×3) · Case mở của lớp + bảng điểm tuần: kh
  * 15/10 gộp OV-13l với main (13b / 13c): chụp lại 9 băm trên bản gộp — ba đổi có chủ ý cộng lại.
  * 15/10 OV-13l: chụp lại mọi vai trừ ADMIN — đổi đầu ra CÓ CHỦ Ý: hạn bàn giao ≥ 7 ngày (GVBM = GVCN), seed D16 (LT1 → RF) giữ lộ trình,
  *   seed kịch bản 6 (MB FOU 23) ra lệnh 9 ngày trước để vẫn "Bàn giao quá hạn".
+ * 16/10 OV-13q: chụp lại 'QT toi' / 'QT tat-ca' — đổi CÓ CHỦ Ý: 2 dòng "Chọn bước tiếp" (UB FT 401) hạn = ngày thi + 7 (luật 1 tuần), thêm `cycleId` / `daGiaHan` (nút Gia hạn).
  * 16/10 gộp OV-13m với main (13k, 13n): chụp lại QT toi / QT tat-ca trên bản gộp (cùng 2 khoá 13m đã đổi có chủ ý).
  * 16/10 gộp OV-13n với main (13k): chụp lại băm trên bản gộp (13n + 13k đều đổi có chủ ý).
  * 16/10 OV-13n: chụp lại 8 băm — đổi CÓ CHỦ Ý: SOS2/3 không điền sẵn "Trao đổi ngắn với HV" (số việc Phối hợp + seed Khôi/Lan đổi việc đã xác nhận).
@@ -960,8 +961,8 @@ await checkAsync('TD5 (×3) · Case mở của lớp + bảng điểm tuần: kh
 await checkAsync('TD4-a (×3) · Công việc trùng JSON ảnh chụp trước TD4 — 6 vai × Của tôi / Tất cả / Của một GV / lọc chi nhánh', async () => {
   const { myWork, viecCuaNguoi } = await import('../worklist/mywork.ts');
   const ANH: Record<string, string> = {
-    'QL toi': 'd1a3dfdc6252cec3', 'QT toi': '73dfbc55903b6a9e', 'GVCN toi': '20f656de32b154dc', 'GVBM toi': '00dd012ac4781e7f',
-    'GVCN_THUONG toi': '20f656de32b154dc', 'ADMIN toi': '4ed1fc3fa34653f2', 'QL tat-ca': 'd0fdf221a7d1baf3', 'QT tat-ca': '5225d2c3931999eb',
+    'QL toi': 'd1a3dfdc6252cec3', 'QT toi': '29cc7df6dfaf06f2', 'GVCN toi': '20f656de32b154dc', 'GVBM toi': '00dd012ac4781e7f',
+    'GVCN_THUONG toi': '20f656de32b154dc', 'ADMIN toi': '4ed1fc3fa34653f2', 'QL tat-ca': 'd0fdf221a7d1baf3', 'QT tat-ca': '2e952892f587b934',
     'QT tat-ca cn': 'f4fb9cc0f9f7c35d', 'QL gvcn': '57ef1bdf575a6924', 'GVS toi': 'f17e10ea233c26df',
   };
   const p = (v: Vai) => loadPrincipal(USER[v]);

@@ -20,6 +20,7 @@ import { chiTietCaseMo } from '../cases/caseLop.ts';
 import { xuLyCaseMany } from '../cases/sosState.ts';
 import { phamViTrang } from './hocVienLop.ts';
 import { standingFor } from '../students/standing.ts';
+import { sauThiCuaEm } from '../loTrinh/thiThat.ts';
 
 /** "Toàn bộ" = 8 tuần gần nhất (mockup 3 v2 §3b), cùng khoảng mặc định của Tổng hợp. */
 export const SO_TUAN_SOS = 8;
@@ -180,5 +181,7 @@ export function panelMotEm(p: Principal, studentId: number) {
     /* Dòng 2 đầu panel: lượt gần nhất · SOS (không mã HV — panel v3 "Đã lược bỏ"). */
     luot: st ? { nhan: st.attemptLabel, sosLevel: st.sosLevel ?? null } : null,
     cases,
+    /* OV-13q: dòng "Đã thi · chờ kết quả · hạn …" + nút Nhập kết quả / Chọn bước tiếp / Gia hạn (cùng hàm với việc Công việc). */
+    sauThi: sauThiCuaEm(p, studentId),
   };
 }

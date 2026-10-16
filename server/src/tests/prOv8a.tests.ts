@@ -76,9 +76,9 @@ export async function runPrOv8aTests(t: YThucTestKit) {
     const bt = tongKetSvc.tongKetLoTrinh(QL, a.cy).buocTiep;
     assert(bt && bt.chon === null && bt.goiY === 'ket_thuc' && bt.coTheChon === true, JSON.stringify(bt));
     assert(tongKetSvc.tongKetLoTrinh(gvcn, a.cy).buocTiep.coTheChon === false, 'GVCN chỉ xem');
-    /* Việc quá hạn (đỏ, không chặn) khi qua 7 ngày: dời ngày nhập kết quả về trước. */
+    /* Việc quá hạn (đỏ, không chặn) khi qua 7 ngày: dời ngày nhập kết quả về trước. OV-13q: hạn tính từ ngày thi — dời cả ngày thi. */
     conn.prepare(`UPDATE journey_events SET event_date = ? WHERE cycle_id = ? AND event_type = 'cycle_outcome'`).run(addDays(NGAY, -10), a.cy);
-    conn.prepare('UPDATE learning_cycles SET ended_at = ? WHERE id = ?').run(addDays(NGAY, -10), a.cy);
+    conn.prepare('UPDATE learning_cycles SET ended_at = ?, thi_that_ngay = ? WHERE id = ?').run(addDays(NGAY, -10), addDays(NGAY, -10), a.cy);
     assert(viecBt(QL, a.sid)[0]?.urgency === 'overdue', 'quá hạn');
   }));
 

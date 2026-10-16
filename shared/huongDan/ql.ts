@@ -131,7 +131,7 @@ export const HD_QL: HuongDan = {
     { id: 'ql-chuyen-lop', ten: 'Chuyển lớp + bàn giao', buoc: ['<b>Ngay hôm nay</b>: chuyển ngay, không hoàn tác.', 'Hạn bàn giao = muộn hơn của (ngày quyết định + <b>7 ngày</b>) và mốc cũ.', 'Bàn giao quá hạn không chặn chuyển lớp; QL nhận thẻ Báo QL.'] },
     { id: 'ql-sua-diem', ten: 'Sửa điểm sau hoàn tất', buoc: ['GV vẫn nhập ô trống; sửa hoặc xoá một điểm đã có: chỉ QL.', 'Gỡ "-" lúc nào cũng được.'] },
     { id: 'ql-target', ten: 'Đổi Target', buoc: ['QL, TVV, CX sửa thẳng, ghi <b>Lý do đổi Target</b>.', 'GVCN sửa → thành Đề xuất sửa, QL duyệt rồi mới đổi.', 'Target mới tính từ hôm nay; kỳ vọng các lượt đã thi giữ nguyên.'] },
-    { id: 'ql-buoc-tiep', ten: 'Bước tiếp sau thi', buoc: ['Có kết quả thi thật → việc <b>Chọn bước tiếp</b>, hạn <b>7 ngày</b>.', 'QL hoặc TVV chọn; GVCN, CX chỉ xem ("Chờ QL / TVV chọn bước tiếp").', 'Lộ trình mới bắt đầu ngay: tuần này là tuần 1; lớp khác thì GV lớp cũ làm phiếu bàn giao.', 'Tạm dừng: đóng lộ trình, mọi hạn dừng; sau này <b>Quay lại học</b> mở Lộ trình mới.'] },
+    { id: 'ql-buoc-tiep', ten: 'Bước tiếp sau thi', buoc: ['Đã thi (từ hôm sau ngày thi) → <b>Cập nhật kết quả thi thật</b>; có kết quả → <b>Chọn bước tiếp</b>. Cùng hạn: ngày thi + <b>7 ngày</b>, <b>Gia hạn</b> được.', 'QL hoặc TVV chọn; GVCN, CX chỉ xem ("Chờ QL / TVV chọn bước tiếp").', 'Lộ trình mới bắt đầu ngay: tuần này là tuần 1; lớp khác thì GV lớp cũ làm phiếu bàn giao.', 'Tạm dừng: đóng lộ trình, mọi hạn dừng; sau này <b>Quay lại học</b> mở Lộ trình mới.'] },
     { id: 'ql-y-thuc-bao', ten: 'Ý thức: QL nhận gì', buoc: ['Cần QL duyệt: WL 3, Meeting CX/GĐCN, Đình chỉ học tạm thời, Khác.', 'Để biết: GVCN xử lý WL 1, Report 4 + Meeting, WL 2.'] },
   ],
   tu: [

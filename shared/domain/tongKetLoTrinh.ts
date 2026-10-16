@@ -91,19 +91,53 @@ export const coKetQuaCu = (c: { outcome?: string | null; outcome_score?: number 
   (c.outcome_score ?? null) !== null || (!!c.outcome && c.outcome !== 'unknown');
 
 /**
- * Việc nhắc "Cập nhật kết quả thi thật": hiện từ thứ Hai ĐẦU TIÊN SAU ngày thi / tuần thi / tháng thi dự kiến (cụ thể nhất thắng);
- * không có dự kiến → thứ Hai sau ngày đóng. Hạn = mốc + 4 tuần. `thangThi` 'YYYY-MM'; `tuanThi` = thứ Hai của tuần thi.
+ * OV-13q (chủ SP 16/10) — "ĐÃ THI XONG · HẠN 1 TUẦN": MỘT hàm trạng thái sau thi cho Công việc, Tổng quan, Học viên & Lớp, hồ sơ.
+ * Ngày thi = ngày thi thật đã nhập, không thì ngày dự kiến; chỉ tuần → Chủ nhật tuần thi; chỉ tháng → ngày cuối tháng; không có dự kiến → ngày đóng
+ * lộ trình (giữ luật nhắc cũ). Từ HÔM SAU ngày thi: "Đã thi · chờ kết quả". Hạn gốc = ngày thi + 7, dùng chung cho Cập nhật kết quả và Chọn bước tiếp;
+ * gia hạn (`han_sau_thi`) chỉ có hiệu lực khi muộn hơn hạn gốc (sửa ngày thi → hạn tính lại, gia hạn muộn hơn thì giữ). Bước tiếp: hạn = muộn hơn của
+ * hạn đó và ngày có kết quả (nhập muộn không quá hạn ngay; sửa kết quả không dời). Không chặn gì — chỉ là hạn.
+ * Vào: dòng `learning_cycles` (+ `exam_week` = thứ Hai tuần thi dự kiến, `ngay_kq` = ngày có kết quả lần đầu).
  */
-export function mocNhacThiThat(o: { thangThi: string | null; tuanThi: string | null; ngayThi: string | null; ngayDong: string | null }): { tu: string; han: string } | null {
-  let sau: string | null = null;
-  if (o.ngayThi) sau = o.ngayThi;
-  else if (o.tuanThi) sau = addDaysIso(mondayOfDate(o.tuanThi), 6);
-  else if (o.thangThi && /^\d{4}-\d{2}$/.test(o.thangThi)) {
-    sau = addDaysIso(`${o.thangThi}-01`, new Date(Date.UTC(+o.thangThi.slice(0, 4), +o.thangThi.slice(5, 7), 0)).getUTCDate() - 1);
-  } else sau = o.ngayDong;
-  if (!sau) return null;
-  const tu = addDaysIso(mondayOfDate(sau), 7);
-  return { tu, han: addDaysIso(tu, 28) };
+export const NGAY_HAN_SAU_THI = 7;
+export type GiaiDoanSauThi = 'chua_thi' | 'da_thi_cho_kq' | 'cho_buoc_tiep' | 'xong';
+export type DongSauThi = {
+  thi_that_ngay?: string | null; exam_date?: string | null; exam_week?: string | null; exam_month?: string | null; ended_at?: string | null;
+  thi_that_khong_thi?: number | boolean | null; thi_that_l?: number | null; thi_that_r?: number | null; thi_that_w?: number | null; thi_that_s?: number | null;
+  outcome?: string | null; outcome_score?: number | null; buoc_tiep?: string | null; ngay_kq?: string | null;
+  han_sau_thi?: string | null; han_sau_thi_so_lan?: number | null;
+};
+export type TrangThaiSauThi = {
+  giaiDoan: GiaiDoanSauThi; ngayThi: string | null; hanGoc: string | null; han: string | null;
+  daGiaHan: boolean; soLanGiaHan: number; quaHan: boolean;
+};
+export function ngayThiSauThi(c: DongSauThi): string | null {
+  const ngay = (v: string | null | undefined) => (v && /^\d{4}-\d{2}-\d{2}/.test(v) ? v.slice(0, 10) : null);
+  if (ngay(c.thi_that_ngay)) return ngay(c.thi_that_ngay);
+  if (ngay(c.exam_date)) return ngay(c.exam_date);
+  if (ngay(c.exam_week)) return addDaysIso(mondayOfDate(ngay(c.exam_week)!), 6);
+  const m = c.exam_month;
+  if (m && /^\d{4}-\d{2}$/.test(m)) return addDaysIso(`${m}-01`, new Date(Date.UTC(+m.slice(0, 4), +m.slice(5, 7), 0)).getUTCDate() - 1);
+  return ngay(c.ended_at);
+}
+export function trangThaiSauThi(c: DongSauThi, homNay: string): TrangThaiSauThi {
+  const coKq = !!c.thi_that_khong_thi || [c.thi_that_l, c.thi_that_r, c.thi_that_w, c.thi_that_s].every((x) => x !== null && x !== undefined) || coKetQuaCu(c);
+  const ngayThi = ngayThiSauThi(c);
+  const hanGoc = ngayThi ? addDaysIso(ngayThi, NGAY_HAN_SAU_THI) : null;
+  const gh = c.han_sau_thi ? c.han_sau_thi.slice(0, 10) : null;
+  const daGiaHan = !!gh && (!hanGoc || gh > hanGoc);
+  let han = daGiaHan ? gh : hanGoc;
+  const giaiDoan: GiaiDoanSauThi = coKq ? (c.buoc_tiep ? 'xong' : 'cho_buoc_tiep') : ngayThi && ngayThi < homNay ? 'da_thi_cho_kq' : 'chua_thi';
+  const nkq = c.ngay_kq ? c.ngay_kq.slice(0, 10) : null;
+  if (giaiDoan === 'cho_buoc_tiep' && nkq && (!han || nkq > han)) han = nkq;
+  return {
+    giaiDoan, ngayThi, hanGoc, han, daGiaHan, soLanGiaHan: c.han_sau_thi_so_lan ?? 0,
+    quaHan: (giaiDoan === 'da_thi_cho_kq' || giaiDoan === 'cho_buoc_tiep') && !!han && homNay > han,
+  };
+}
+/** Chữ trạng thái — cột "Target · Dự kiến thi", panel một em, đầu hồ sơ: "Đã thi · chờ kết quả" · `CHU_DA_XONG` + "chờ bước tiếp" (hạn nơi gọi ghép). */
+export function chuSauThi(s: Pick<TrangThaiSauThi, 'giaiDoan'>): string | null {
+  if (s.giaiDoan !== 'da_thi_cho_kq' && s.giaiDoan !== 'cho_buoc_tiep') return null;
+  return s.giaiDoan === 'da_thi_cho_kq' ? t('Đã thi · chờ kết quả') : `${CHU_DA_XONG} · ${t('chờ bước tiếp')}`;
 }
 
 /** Q2: lượt đại diện cho bảng cả lớp FT — MT cuối có OVR (không huỷ); không có → MT cuối bất kỳ. */

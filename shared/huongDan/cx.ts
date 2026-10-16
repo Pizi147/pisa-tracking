@@ -12,7 +12,7 @@ export const HD_CX: HuongDan = {
     {
       id: 'cx-sang', ten: 'Xem Số liệu mỗi sáng', khi: 'mỗi ngày',
       buoc: ['<b>Tổng quan › Số liệu</b>: chọn <b>Chi nhánh</b> (mặc định tất cả).',
-        'Ô <b>Cần chú ý</b> · <b>Tạm dừng</b> · <b>Sắp thi</b> · <b>Thiếu thông tin</b>; bấm ô mở đúng nhóm em.',
+        'Ô <b>Cần chú ý</b> · <b>Tạm dừng</b> · <b>Sắp thi</b> · <b>Đã thi · chờ kết quả</b> · <b>Thiếu thông tin</b>; bấm ô mở đúng nhóm em.',
         'Dưới: bốn số học thuật, <b>Điểm đáng chú ý</b>, <b>Lịch sắp tới</b>.'],
       chi: { hd: 'tq-hv-so', duong: '/', chu: 'Bấm một ô để xem đúng nhóm em.' },
     },
@@ -43,7 +43,7 @@ export const HD_CX: HuongDan = {
     {
       id: 'tong-quan', ten: 'Tổng quan', duong: ['/'],
       muc: [
-        { id: 'cx-tq-o', ten: 'Số liệu học viên', buoc: ['Chọn <b>Chi nhánh</b>; ô <b>Cần chú ý</b> · <b>Tạm dừng</b> · <b>Sắp thi</b> · <b>Thiếu thông tin</b>.', 'Bấm ô mở Học viên & Lớp đúng nhóm em.'],
+        { id: 'cx-tq-o', ten: 'Số liệu học viên', buoc: ['Chọn <b>Chi nhánh</b>; ô <b>Cần chú ý</b> · <b>Tạm dừng</b> · <b>Sắp thi</b> · <b>Đã thi · chờ kết quả</b> · <b>Thiếu thông tin</b>.', 'Bấm ô mở Học viên & Lớp đúng nhóm em.'],
           chi: { hd: 'tq-hv-so', duong: '/', chu: 'Bấm một ô để xem đúng nhóm em.' } },
         { id: 'cx-tq-so', ten: 'Số liệu học thuật', buoc: ['Bốn ô: dưới kỳ vọng, Case đang mở, Case chưa chốt PA, PA chưa có kết quả.', '<b>Điểm đáng chú ý</b> · <b>Lịch sắp tới</b>.'] },
       ],
@@ -54,7 +54,7 @@ export const HD_CX: HuongDan = {
       id: 'hoc-vien', ten: 'Học viên & Lớp', duong: ['/hoc-vien'],
       muc: [
         hvTim,
-        { id: 'cx-hvl-goc', ten: 'Góc nhìn và phạm vi', buoc: ['<b>Tất cả</b> · <b>Đang SOS</b> · <b>Cần chú ý</b> (mặc định); lọc phụ <b>Tạm dừng</b>, <b>Sắp thi</b>, <b>Thiếu thông tin</b>.', 'Phạm vi <b>Tất cả chi nhánh</b> hoặc một chi nhánh.', 'Bấm dòng em mở panel một em.'],
+        { id: 'cx-hvl-goc', ten: 'Góc nhìn và phạm vi', buoc: ['<b>Tất cả</b> · <b>Đang SOS</b> · <b>Cần chú ý</b> (mặc định); lọc phụ <b>Tạm dừng</b>, <b>Sắp thi</b>, <b>Đã thi · chờ kết quả</b>, <b>Thiếu thông tin</b>.', 'Phạm vi <b>Tất cả chi nhánh</b> hoặc một chi nhánh.', 'Bấm dòng em mở panel một em.'],
           chi: { hd: 'hvl-goc', duong: '/hoc-vien', chu: 'Góc nhìn và lọc phụ ở hàng này.' } },
         { id: 'cx-hvl-them', ten: 'Tạo lớp, thêm học viên', buoc: ['<b>+ Lớp mới</b> · <b>+ Học viên</b> (một em hoặc dán danh sách): mọi chi nhánh. Phân công giáo viên do QL làm.'] },
       ],
@@ -63,7 +63,7 @@ export const HD_CX: HuongDan = {
   ],
   luat: [
     ...LUAT_TVV.filter((m) => m.id !== 'tvv-luat-thi-that'),
-    { id: 'cx-luat-thi-that', ten: 'Kết quả thi thật', buoc: ['CX nhập được, cả khi em đã Lưu trữ.', 'Bước tiếp: QL hoặc TVV chọn trong <b>7 ngày</b>; CX chỉ xem.'] },
+    { id: 'cx-luat-thi-that', ten: 'Kết quả thi thật', buoc: ['CX nhập được, cả khi em đã Lưu trữ.', 'Bước tiếp: QL hoặc TVV chọn, hạn ngày thi + <b>7 ngày</b> (<b>Gia hạn</b> được); CX chỉ xem.'] },
   ],
   tu: [
     ...HD_TVV.tu.filter((x) => x.ten !== 'HV của tôi'),

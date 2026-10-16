@@ -5,7 +5,7 @@
  * QL / Quản trị / GV / Admin dùng bảng cũ (`danhSachHocVienLop`) — đường này 403.
  */
 import { db, theoLo } from '../db.ts';
-import { PERMISSIONS, vaiXemHocVien, type ExamPlan, type LienHe } from '../../../shared/domain/index.ts';
+import { PERMISSIONS, trangThaiSauThi, vaiXemHocVien, type ExamPlan, type GiaiDoanSauThi, type LienHe } from '../../../shared/domain/index.ts';
 import { forbidden } from '../util.ts';
 import { can, scopeFor, type Principal } from '../permissions.ts';
 import { chipHocVien, type ChipHocVien, type LyDoChuY, type SoHocVien } from '../worklist/hvCuaToi.ts';
@@ -14,7 +14,7 @@ import { khoangTamDung } from '../students/tamDung.ts';
 import { examPlanOf } from '../fasttrack/cycles.ts';
 import { classProgressMany } from './schedule.ts';
 import { choBuocTiep, hanBuocTiep } from '../loTrinh/buocTiep.ts';
-import { loTrinhChoKetQuaThi } from '../loTrinh/thiThat.ts';
+import { cotSauThi, loTrinhChoKetQuaThi } from '../loTrinh/thiThat.ts';
 import { demoToday } from '../demoConfig.ts';
 import { chiNhanhTaoLop } from './hocVienLop.ts';
 
@@ -26,6 +26,8 @@ export type DongHocVienVai = {
   lop: { id: number; code: string; ft: boolean; tuan: number | null; tongTuan: number | null; daRoi: boolean } | null;
   chiNhanh: string | null; tvv: string | null;
   target: number | null; kck: boolean; duKienThi: ExamPlan;
+  /** OV-13q: lộ trình FT đã thi chưa xong — nhãn "Đã thi · chờ kết quả · hạn …" / "Đã xong · chờ bước tiếp · hạn …" ở cột Target · Dự kiến thi. */
+  sauThi: { giaiDoan: GiaiDoanSauThi; han: string | null; quaHan: boolean; daGiaHan: boolean } | null;
   standing: Standing | null;
   chuY: LyDoChuY | null;
   lienHe: LienHe;
@@ -65,7 +67,8 @@ export function hocVienTheoVai(p: Principal, f: { phamVi?: string | null; branch
     for (const s of db().prepare(
       `SELECT s.id, s.full_name, s.student_code, s.status, s.phone, s.parent_name, s.parent_relation, s.parent_phone, u.full_name AS tvv,
               e.status AS enr_status, c.id AS lop_id, c.code AS lop_code, c.is_fast_track, b.name AS chi_nhanh,
-              cy.target_score, cy.khong_cam_ket, cy.exam_period_id, cy.exam_month, cy.exam_date, rp.code AS exam_week_code, rp.week_start AS exam_week_start
+              cy.target_score, cy.khong_cam_ket, cy.exam_period_id, cy.exam_month, cy.exam_date, rp.code AS exam_week_code, rp.week_start AS exam_week_start,
+              cy.id AS cy_id, cy.route AS cy_route, cy.seq AS cy_seq, (SELECT MAX(x.seq) FROM learning_cycles x WHERE x.student_id = s.id) AS seq_cuoi, ${cotSauThi('cy', 'rp')}
          FROM students s
          LEFT JOIN users u ON u.id = s.consultant_user_id
          LEFT JOIN enrollments e ON e.id = (SELECT x.id FROM enrollments x WHERE x.student_id = s.id ORDER BY x.status IN ('active', 'paused') DESC, x.id DESC LIMIT 1)
@@ -77,12 +80,16 @@ export function hocVienTheoVai(p: Principal, f: { phamVi?: string | null; branch
     ).all(...lo) as any[]) hs.set(s.id, s);
   });
   const tienDo = classProgressMany([...new Set([...hs.values()].map((s) => s.lop_id as number | null).filter((v): v is number => v != null))]);
+  const homNay = demoToday();
   const tamDung = khoangTamDung(ids.filter((id) => hs.get(id)?.status === 'inactive'));
 
   const rows: DongHocVienVai[] = ids.flatMap((id) => {
     const s = hs.get(id);
     if (!s) return [];
     const td = s.lop_id != null ? tienDo.get(s.lop_id) : undefined;
+    /* Cùng hàm với việc Công việc (lộ trình FT mới nhất; em chưa Lưu trữ đã lọc ở `chipHocVien`). */
+    const st = s.cy_route && s.cy_seq === s.seq_cuoi ? trangThaiSauThi(s, homNay) : null;
+    const sauThi = st && (st.giaiDoan === 'da_thi_cho_kq' || st.giaiDoan === 'cho_buoc_tiep') ? { giaiDoan: st.giaiDoan, han: st.han, quaHan: st.quaHan, daGiaHan: st.daGiaHan } : null;
     return [{
       id, ten: s.full_name, ma: s.student_code, status: s.status,
       tamDungTu: s.status === 'inactive' ? tamDung[id]?.find((k) => k.den === null)?.tu ?? null : null,
@@ -91,7 +98,7 @@ export function hocVienTheoVai(p: Principal, f: { phamVi?: string | null; branch
         daRoi: s.enr_status !== 'active' && s.enr_status !== 'paused',
       } : null,
       chiNhanh: s.chi_nhanh ?? null, tvv: s.tvv ?? null,
-      target: s.target_score ?? null, kck: !!s.khong_cam_ket, duKienThi: examPlanOf(s),
+      target: s.target_score ?? null, kck: !!s.khong_cam_ket, duKienThi: examPlanOf(s), sauThi,
       standing: chip.standing.get(id) ?? null,
       chuY: chip.lyDo.get(id) ?? null,
       lienHe: { phone: s.phone ?? null, parentName: s.parent_name ?? null, parentRelation: s.parent_relation ?? null, parentPhone: s.parent_phone ?? null },
@@ -99,12 +106,11 @@ export function hocVienTheoVai(p: Principal, f: { phamVi?: string | null; branch
     }];
   });
   const coEm = new Set(ids);
-  const homNay = demoToday();
   const buocTiep: TrangHocVienVai['viec']['buocTiep'] = {};
   /* Chỉ TVV có góc Cần làm — CX không chạy hai câu này. */
   if (vai === 'tvv') for (const c of choBuocTiep()) if (coEm.has(c.student_id)) buocTiep[c.student_id] = { cycleId: c.id, han: hanBuocTiep(c, homNay) };
   const ketQuaThi: TrangHocVienVai['viec']['ketQuaThi'] = {};
-  if (vai === 'tvv') for (const { c, m } of loTrinhChoKetQuaThi(homNay)) if (coEm.has(c.student_id)) ketQuaThi[c.student_id] = { han: m.han, thi: c.exam_date ?? c.exam_week ?? null };
+  if (vai === 'tvv') for (const { c, s } of loTrinhChoKetQuaThi(homNay)) if (coEm.has(c.student_id)) ketQuaThi[c.student_id] = { han: s.han!, thi: s.ngayThi };
   return {
     vai, phamVi: { coThe: vai === 'tvv' ? ['cua-toi', 'chi-nhanh'] : ['tat-ca', 'chi-nhanh'], dangDung, chiNhanh },
     ids: chip.ids, rows, viec: { buocTiep, ketQuaThi },

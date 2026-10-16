@@ -19,6 +19,7 @@ import { XacNhanPaLo } from './XacNhanPaLo.tsx';
 import { LOAI_HAN_CUA_VIEC, duongLichTest, laViecChamCheo, tuanLich } from '@shared/domain/index.ts';
 import { VIEC_LO_Y_THUC, type WorkItem } from '../worklist/WorkList.tsx';
 import { LoYThucPanel } from '../yThuc/LoYThucPanel.tsx';
+import { KetQuaThiThatPanel } from '../students/KetQuaThiThatPanel.tsx';
 import { PanelBuocTiep } from '../students/PanelBuocTiep.tsx';
 import { StudentYThucSection } from '../yThuc/StudentYThucSection.tsx';
 import { SuaThongTinMotEm } from '../students/StudentManagePanel.tsx';
@@ -48,7 +49,7 @@ export function lamTaiCho(it: WorkItem): boolean {
     case 'yt_xem': return laLo(it);
     case 'khai_bac': return it.studentId !== null || it.classId !== null;   // OV-13d: nhiều em → Xác nhận cấp bậc theo lô
     case 'phoi_hop_sos': return it.classId !== null;   // OV-12h: xác nhận meeting CX tại chỗ
-    case 'yt_thuc_hien': case 'mgmt': case 'buoc_tiep': return soCuaKhoa(it.key) !== null;
+    case 'yt_thuc_hien': case 'mgmt': case 'buoc_tiep': case 'thi_that': return soCuaKhoa(it.key) !== null;   // OV-13q: Kết quả thi thật tại chỗ
     /* OV-13b (đặc tả OV-13 §1): Ghi nhận vi phạm · Báo phụ huynh qua TVV · Điền Target (Thiếu thông tin) · Chọn người phụ trách — tại chỗ.
        Thiếu thông tin khác (Chốt tuần MT, Nhập điểm MT cũ, mốc thi) cần cả trang — mở trang như cũ. */
     case 'yt_xem': case 'phoi_hop': return it.studentId !== null;
@@ -114,6 +115,8 @@ export function PanelViec({ it, onDong, onDaLam, onTiep, onMo }: {
       return <NganViecVanHanh key={it.key} taskId={soCuaKhoa(it.key)} onClose={onDong} onDone={doi} />;
     case 'buoc_tiep':
       return <PanelBuocTiep key={it.key} cycleId={soCuaKhoa(it.key)!} hocVien={hv ? { id: it.studentId!, ten: hv } : null} lop={lop} onClose={onDong} onDone={doi} onTiep={onTiep} />;
+    case 'thi_that':
+      return <KetQuaThiThatPanel key={it.key} cycleId={soCuaKhoa(it.key)!} studentName={it.studentName} lop={lop} onClose={onDong} onDone={doi} />;
     case 'phoi_hop_sos':
       return <PanelPhoiHop key={it.key} it={it} onDong={onDong} onDaLam={doi} />;
     case 'yt_xem':

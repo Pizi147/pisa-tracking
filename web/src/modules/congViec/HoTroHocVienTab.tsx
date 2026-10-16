@@ -14,6 +14,7 @@ import { CongTacKhung, khungDaNho, nhoKhung, type KhungLoc } from '../../ui/Cong
 import { KhungTaiCho, coPanelDangSua } from '../../ui/KhungPanel.tsx';
 import { PanelViec, lamTaiCho, moCaDong } from './PanelViec.tsx';
 import { DongDaLuu, GhiNhanh, type DaLuuNhanh } from '../cases/GhiNhanh.tsx';
+import { HopGiaHan } from '../students/HopGiaHan.tsx';
 import {
   LOC_NHANH_LABEL, NHOM_VIEC, NHOM_VIEC_LABEL, demLocNhanh, demNhomChip, demPhamVi, gomNhomViec, khoaGopCua, khopLocNhanh, nhomViecCua,
   LOC_NHANH, type LocNhanh, type NhomViec as MaNhomViec,
@@ -223,6 +224,7 @@ export function HoTroHocVienTab() {
   // ------------------------------------------------------------------ Lọc thêm + dòng phạm vi
   const [locThem, setLocThem] = useState(false);
   const [tenGv, setTenGv] = useState<string | null>(null);
+  const [giaHan, setGiaHan] = useState<WorkItem | null>(null);
   const soLocThem = (khung !== 'tat-ca' ? 1 : 0) + (nhom ? 1 : 0) + (typeof nguoi === 'number' ? 1 : 0);
   const coLoc = loc !== 'tat-ca' || soLocThem > 0;
   const xoaLoc = () => {
@@ -308,7 +310,9 @@ export function HoTroHocVienTab() {
           )}
           {data && !data.scopeEmpty && dsNhom.length > 0 && (
             <Card bodyClass="p-0">
-              <NhomViec nhom={dsNhom} soHien={10} moHet={moHet} onOpen={(x) => { if (x.key === viec || boDuocChu()) mo(x); }} chon={viec} xong={xong} moTrang={(x) => !lamTaiCho(x)} moRong={moRong} moCaDong={moCaDong} />
+              <NhomViec nhom={dsNhom} soHien={10} moHet={moHet} onOpen={(x) => { if (x.key === viec || boDuocChu()) mo(x); }} chon={viec} xong={xong} moTrang={(x) => !lamTaiCho(x)} moRong={moRong} moCaDong={moCaDong}
+                nutPhu={(x) => (!x.con && x.cycleId && (x.group === 'thi_that' || x.group === 'buoc_tiep') && !xong.has(x.key)
+                  ? <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-[28px]" onClick={() => setGiaHan(x)}>{t('Gia hạn')}</button> : null)} />
             </Card>
           )}
         </div>
@@ -334,6 +338,8 @@ export function HoTroHocVienTab() {
         PR-Ra, nợ PR-O (#58): lối cũ `?mo-viec=` (chuông, việc Vận hành giao cho GV) vẫn mở panel Vận hành — phủ trang như trước. Bấm dòng
         việc Vận hành ở danh sách nay mở tại chỗ (`viec=mgmt:{id}`).
       */}
+      {/* OV-13q: Gia hạn sau thi ngay ở dòng việc — hộp nhỏ đè lên, không đổi việc đang mở. */}
+      {giaHan && <HopGiaHan x={{ cycleId: giaHan.cycleId!, han: giaHan.due, daGiaHan: !!giaHan.daGiaHan }} hocVien={giaHan.studentName} lop={giaHan.classCode} onClose={() => setGiaHan(null)} />}
       <NganViecVanHanh taskId={moViec} onClose={() => setParam('mo-viec', null)} onDone={() => invalidate('/my-work')} />
     </div>
   );

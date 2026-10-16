@@ -9,12 +9,15 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { CHU_DA_XONG, LUA_CHON_SAU_THI, NHAN_SAU_THI, ngay, thuNgay, tuanChonDuoc, tuanLich, type LuaChonSauThi } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
+import { HopGiaHan } from './HopGiaHan.tsx';
 
 /** `GET /cycles/:id/buoc-tiep` (máy chủ `trangThaiBuocTiep`). */
 export type TrangThaiBuocTiep = {
   chon: LuaChonSauThi | null; luc: string | null; boi: string | null; coTheChon: boolean;
   daXong: string; han: string; hen: string | null; henLop: string | null; lopNay: { id: number; code: string } | null; target: string; ngayThi: string | null;
   studentId: number; cycleId: number; ketLuan: string | null; hoanTacDuoc: boolean;
+  /** OV-13q: hạn đã gia hạn · nút Gia hạn. */
+  daGiaHan: boolean; coTheGiaHan: boolean;
 };
 type LopDich = { id: number; code: string; ft: boolean; route: string | null; tenChuongTrinh: string | null; gvcn: string | null; siSo?: number };
 type Chon = (typeof LUA_CHON_SAU_THI)[number];
@@ -50,6 +53,7 @@ export function PanelBuocTiep({ cycleId, hocVien, lop, quayLai, chonSan, onSuaKe
   const [tt, setTt] = useState<'dang' | 'loi' | null>(null);
   const [loi, setLoi] = useState<string | null>(null);
   const [daLuu, setDaLuu] = useState<{ x: DaLuuPanel; luc: string } | null>(null);
+  const [giaHan, setGiaHan] = useState(false);
   const lf = useLoiForm();
   const moLop = !!bt?.coTheChon && chon === 'lo_trinh_moi' && lopKhac;
   const dsLop = useApi<{ lop: LopDich[] }>(moLop ? `/students/${bt!.studentId}/hoc-lai/lop-dich` : null, [moLop, bt?.studentId]);
@@ -57,7 +61,7 @@ export function PanelBuocTiep({ cycleId, hocVien, lop, quayLai, chonSan, onSuaKe
   const tieuDe = t('Bước tiếp');
   const em = hocVien ?? (bt ? { id: bt.studentId, ten: '' } : null);
   const dau = dauViec({
-    han: bt && !bt.chon && bt.coTheChon ? <ChipHan loai="viec-van-hanh" han={bt.han} /> : null,
+    han: bt && !bt.chon && bt.coTheChon ? <ChipHan loai="sau-thi" han={bt.han} /> : null,
     em: em?.ten ? em : null, lop: lop ?? bt?.lopNay?.code ?? null, ngCanh: CHU_DA_XONG,
   });
   if (error) return <KhungPanel tieuDe={tieuDe} dau={dau} quayLai={quayLai} onDong={onClose}><ErrorState message={error.message} hint={error.hint} onRetry={reload} /></KhungPanel>;
@@ -109,8 +113,13 @@ export function PanelBuocTiep({ cycleId, hocVien, lop, quayLai, chonSan, onSuaKe
     <p className="m-0 flex flex-wrap items-center gap-x-2 gap-y-1 pt-3 text-[13.5px]">
       <span className="font-semibold text-slate-100"><span className="text-ok">✓</span> {dich(bt.daXong)}</span>
       {bt.ngayThi && <span className="text-slate-400">· {t('thi {ngay}', { ngay: thuNgay(bt.ngayThi, hn) })}</span>}
+      {!bt.chon && bt.daGiaHan && <span className="text-slate-400">· {t('đã gia hạn')}</span>}
       <span className="flex-1" />
+      {/* OV-13q: Gia hạn — hộp nhỏ đè panel này (không đóng panel). */}
+      {!bt.chon && bt.coTheGiaHan && <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 font-semibold sm:min-h-0" onClick={() => setGiaHan(true)}>{t('Gia hạn')}</button>}
       {onSuaKetQua && <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 font-semibold sm:min-h-0" onClick={onSuaKetQua}>{t('Sửa')}</button>}
+      {giaHan && <HopGiaHan x={{ cycleId, han: bt.han, daGiaHan: bt.daGiaHan }} hocVien={em?.ten || null} lop={lop ?? bt.lopNay?.code ?? null}
+        onClose={() => setGiaHan(false)} onDone={() => { reload(); onDone?.(); }} />}
     </p>
   );
 

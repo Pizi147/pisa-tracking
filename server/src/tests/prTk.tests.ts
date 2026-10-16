@@ -45,13 +45,14 @@ export async function runPrTkTests(t: YThucTestKit) {
     assert(d.canChoThiThat(x) && d.canChoThiThat({ ...x, l: 6, r: 6, w: 6 }), 'chờ');
     assert(!d.canChoThiThat({ ...x, l: 6, r: 6, w: 6, s: 6 }) && !d.canChoThiThat({ ...x, khongThi: true }) && !d.canChoThiThat({ ...x, laFt: false }), 'hết chờ');
   });
-  check('TK-1 · mocNhacThiThat: tháng / tuần / ngày thi / ngày đóng, hạn +4 tuần', () => {
-    const m = d.mocNhacThiThat({ thangThi: '2026-09', tuanThi: null, ngayThi: null, ngayDong: null });
-    assert(m.tu === '2026-10-05' && m.han === '2026-11-02', JSON.stringify(m));
-    assert(d.mocNhacThiThat({ thangThi: '2026-09', tuanThi: '2026-09-21', ngayThi: null, ngayDong: null }).tu === '2026-09-28', 'tuần thi thắng tháng');
-    assert(d.mocNhacThiThat({ thangThi: '2026-09', tuanThi: '2026-09-21', ngayThi: '2026-09-10', ngayDong: null }).tu === '2026-09-14', 'ngày thi thắng');
-    assert(d.mocNhacThiThat({ thangThi: null, tuanThi: null, ngayThi: null, ngayDong: '2026-09-30' }).tu === '2026-10-05', 'theo ngày đóng');
-    assert(d.mocNhacThiThat({ thangThi: null, tuanThi: null, ngayThi: null, ngayDong: null }) === null, 'không có gì → null');
+  check('TK-1 → OV-13q · trangThaiSauThi: ngày thi = thi thật > ngày > tuần (Chủ nhật) > tháng (ngày cuối) > ngày đóng; từ hôm sau "Đã thi", hạn +7', () => {
+    const st = (c: any, h = '2026-10-16') => d.trangThaiSauThi(c, h);
+    assert(st({ exam_month: '2026-09' }).ngayThi === '2026-09-30' && st({ exam_month: '2026-09' }).hanGoc === '2026-10-07', JSON.stringify(st({ exam_month: '2026-09' })));
+    assert(st({ exam_month: '2026-09', exam_week: '2026-09-21' }).ngayThi === '2026-09-27', 'tuần thi thắng tháng (Chủ nhật)');
+    assert(st({ exam_month: '2026-09', exam_week: '2026-09-21', exam_date: '2026-09-10' }).ngayThi === '2026-09-10', 'ngày thi thắng');
+    assert(st({ exam_date: '2026-09-10', thi_that_ngay: '2026-09-12' }).ngayThi === '2026-09-12', 'ngày thi thật thắng');
+    assert(st({ ended_at: '2026-09-30' }).ngayThi === '2026-09-30' && st({}).giaiDoan === 'chua_thi' && st({}).han === null, 'theo ngày đóng / không có gì');
+    assert(st({ exam_date: '2026-10-16' }).giaiDoan === 'chua_thi' && st({ exam_date: '2026-10-15' }).giaiDoan === 'da_thi_cho_kq', 'từ HÔM SAU ngày thi');
   });
   check('TK-1 · luotDaiDien + khoangTuan', () => {
     assert(d.luotDaiDien([]) === null, 'rỗng');
@@ -314,7 +315,7 @@ export async function runPrTkTests(t: YThucTestKit) {
     assert(b.thi_that_ovr === 6.5 && b.thi_that_l === 7 && b.thi_that_ngay === NGAY && b.target === 6.5 && b.ket_luan === 'reached' && b.lam_moi_luc !== null, JSON.stringify(b));
     assert(em(a.cy).outcome === 'not_reached', 'số sống so Target hiện tại (9) — khác bản chụp');
   }));
-  await checkAsync('TK-K · việc nhắc: hiện từ thứ Hai sau tháng thi, hạn +4 tuần; có kết quả / Không thi → mất; GVCN lớp cuối thấy, GVBM không', () => thu(() => {
+  await checkAsync('TK-K · việc nhắc (OV-13q): hiện từ hôm sau ngày thi, hạn sau thi; có kết quả / Không thi → mất; GVCN lớp cuối thấy, GVBM không', () => thu(() => {
     const ft = taoLop('FT', true);
     const a = taoHV(ft, 'FT', true, 6.5);
     const gvcn = ganGvcn(ft, P.normalCoreTeacher.userId);
@@ -327,7 +328,7 @@ export async function runPrTkTests(t: YThucTestKit) {
     conn.prepare('UPDATE learning_cycles SET exam_month = ? WHERE id = ?').run(new Date(Date.parse(NGAY) + 40 * 86400000).toISOString().slice(0, 7), a.cy);
     assert(viec(gvcn).length === 0, 'tháng thi còn tương lai → chưa hiện');
     conn.prepare('UPDATE learning_cycles SET exam_month = ? WHERE id = ?').run(thang, a.cy);
-    thiThatSvc.datKetQuaThiThat(gvcn, a.cy, NHAP4);
+    thiThatSvc.datKetQuaThiThat(gvcn, a.cy, { ...NHAP4, ngayThi: t.addDays(NGAY, -1) });   // OV-13q: thi hôm nay thì mai mới nhắc — ngày thi đã qua
     assert(viec(gvcn).length === 0, 'đủ 4 kỹ năng → mất');
     thiThatSvc.datKetQuaThiThat(gvcn, a.cy, { s: null });
     assert(viec(gvcn).length === 1, 'xoá S → hiện lại');

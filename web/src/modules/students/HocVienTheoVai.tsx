@@ -26,8 +26,9 @@ import { PanelBuocTiep } from './PanelBuocTiep.tsx';
 import { SuaThongTinMotEm } from './StudentManagePanel.tsx';
 import {
   PHAM_VI_NHAN, chuPhuHuynh, docChipVai, ketQuaGanNhat, maHocVienNgan, ngay, tenMon,
-  type ChipVai, type ExamPlan, type KetQuaVao, type LienHe, type NguCanhDs,
+  type ChipVai, type ExamPlan, type GiaiDoanSauThi, type KetQuaVao, type LienHe, type NguCanhDs,
 } from '@shared/domain/index.ts';
+import { NhanSauThi } from './HopGiaHan.tsx';
 
 /** `GET /hoc-vien-lop/theo-vai` (server/src/classes/hocVienTheoVai.ts). */
 type LyDoChuY = { sos?: number; caseMoi?: string[]; yThuc?: string; choBuocTiep?: true };
@@ -36,6 +37,8 @@ type DongVai = {
   lop: { id: number; code: string; ft: boolean; tuan: number | null; tongTuan: number | null; daRoi: boolean } | null;
   chiNhanh: string | null; tvv: string | null;
   target: number | null; kck: boolean; duKienThi: ExamPlan;
+  /** OV-13q: "Đã thi · chờ kết quả · hạn …" / "Đã xong · chờ bước tiếp · hạn …" (cùng hàm với việc Công việc). */
+  sauThi: { giaiDoan: GiaiDoanSauThi; han: string | null; quaHan: boolean; daGiaHan: boolean } | null;
   standing: KetQuaVao | null; chuY: LyDoChuY | null; lienHe: LienHe;
   viewer: { suaThongTin: boolean; suaThem: boolean };
 };
@@ -53,7 +56,8 @@ type TrangVai = {
 /** OV-12f: góc nhìn TVV (Tất cả · Đang SOS · Cần làm) / CX (Tất cả · Đang SOS · Cần chú ý — mặc định). */
 type GocVai = 'tat-ca' | 'sos' | 'can-lam' | 'can-chu-y';
 /** Lọc phụ của góc Tất cả (mockup 3 v2 §10): TVV Cần chú ý · Tạm dừng · Sắp thi; CX Tạm dừng · Sắp thi (+ Thiếu thông tin, Chờ chọn bước tiếp khi có em — không mất chip cũ). */
-const LOC_PHU_VAI: Record<'tvv' | 'cx', readonly ChipVai[]> = { tvv: ['can-chu-y', 'tam-dung', 'sap-thi'], cx: ['tam-dung', 'sap-thi', 'thieu_tt', 'cho-buoc-tiep'] };
+/* OV-13q: + Đã thi · chờ kết quả (em đã qua ngày thi, chưa có kết quả). */
+const LOC_PHU_VAI: Record<'tvv' | 'cx', readonly ChipVai[]> = { tvv: ['can-chu-y', 'tam-dung', 'sap-thi', 'da-thi'], cx: ['tam-dung', 'sap-thi', 'da-thi', 'thieu_tt', 'cho-buoc-tiep'] };
 /** `view` / `loc` → góc + lọc phụ; link cũ (`view=thieu_tt`, `cho-buoc-tiep`, `tam-dung`…) giữ nghĩa. */
 function docGocVai(view: string | null, loc: string | null, vai: 'tvv' | 'cx'): { goc: GocVai; chip: ChipVai } {
   if (view === 'sos') return { goc: 'sos', chip: 'tat-ca' };
@@ -69,6 +73,7 @@ const CHIP_VAI_NHAN: Record<ChipVai, { nhan: string; goiY: string }> = {
   'can-chu-y': { nhan: 'Cần chú ý', goiY: 'SOS ở MT gần nhất, Case mới hoặc Ý thức trong 14 ngày, chờ chọn bước tiếp sau thi.' },
   'tam-dung': { nhan: 'Tạm dừng', goiY: 'Đang Tạm dừng học.' },
   'sap-thi': { nhan: 'Sắp thi', goiY: 'Dự kiến thi IELTS trong 6 tuần tới.' },
+  'da-thi': { nhan: 'Đã thi · chờ kết quả', goiY: 'Đã qua ngày thi, chưa có kết quả thi thật — hạn 1 tuần sau ngày thi.' },
   thieu_tt: { nhan: 'Thiếu thông tin', goiY: 'Hồ sơ còn thiếu thông tin cần để xếp lịch và theo dõi (không tính liên hệ).' },
   'cho-buoc-tiep': { nhan: 'Chờ chọn bước tiếp', goiY: 'Đã có kết quả thi thật, chờ chọn bước tiếp.' },
 };
@@ -333,7 +338,7 @@ export function HocVienTheoVai({ vai }: { vai: 'tvv' | 'cx' }) {
                   )}
                   hanhDong={<MenuDong muc={menuCua(d)} />}
                   dong={[
-                    { nhan: 'Target · thi', noiDung: <><TargetText band={d.target} kck={d.kck} /> · <ExamPlanText plan={d.duKienThi} /></> },
+                    { nhan: 'Target · thi', noiDung: <><TargetText band={d.target} kck={d.kck} /> · <ExamPlanText plan={d.duKienThi} />{d.sauThi && <button type="button" className="mt-1 block min-h-[44px] cursor-pointer appearance-none border-0 bg-transparent p-0 text-left" onClick={() => setPanelEm(d.id)}><NhanSauThi s={d.sauThi} /></button>}</> },
                     { nhan: 'Kết quả', noiDung: <KetQuaOHocVien k={ketQuaGanNhat(d.standing)} standing={d.standing} thuong={!(d.lop?.ft ?? true)} /> },
                     ...(d.chuY ? [{ nhan: 'Cần chú ý', noiDung: <OCanChuY c={d.chuY} /> }] : []),
                     ...(vai === 'cx' ? [{ nhan: 'TVV', noiDung: d.tvv ?? <span className="text-slate-500">—</span> }] : []),
@@ -366,6 +371,8 @@ export function HocVienTheoVai({ vai }: { vai: 'tvv' | 'cx' }) {
                     <td className="td text-xs tabular-nums text-slate-200">
                       <span className="block"><TargetText band={d.target} kck={d.kck} /></span>
                       <span className="block text-slate-400"><ExamPlanText plan={d.duKienThi} /></span>
+                      {/* OV-13q: bấm nhãn mở panel một em (Nhập kết quả / Chọn bước tiếp / Gia hạn tại chỗ). */}
+                      {d.sauThi && <button type="button" className="mt-1 block cursor-pointer appearance-none whitespace-normal border-0 bg-transparent p-0 text-left hover:underline" onClick={() => setPanelEm(d.id)}><NhanSauThi s={d.sauThi} gon /></button>}
                     </td>
                     <td className="td"><KetQuaOHocVien k={ketQuaGanNhat(d.standing)} standing={d.standing} thuong={!(d.lop?.ft ?? true)} /></td>
                     <td className="td"><OCanChuY c={d.chuY} /></td>

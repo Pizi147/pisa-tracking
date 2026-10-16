@@ -5,13 +5,15 @@ import { demoToday } from '../demoConfig.ts';
 import { diffDays } from '../util.ts';
 import type { EmYThuc } from '../yThuc/trangThai.ts';
 import { viecBuocTiep } from '../loTrinh/buocTiep.ts';
+import type { SauThiEm } from '../loTrinh/thiThat.ts';
+import { duongHoSoHocVien } from '../../../shared/domain/index.ts';
 import { kem, type Bien } from '../../../shared/i18n/index.ts';
 
 export type ViecHocVien = {
   /** Đúng khoá của `myWork` (Q2) — phép kiểm so hai đường theo khoá. Việc "chờ Quản lý duyệt" không có ở Công việc → khoá `cho-duyet:…`. */
   key: string;
   loai: 'nguyen-nhan' | 'de-ra-pa' | 'xac-nhan-pa' | 'ghi-ket-qua' | 'cho-duyet' | 'bao-ph' | 'mini-test' | 'y-thuc' | 'yt-xem' | 'yt-thuc-hien'
-    | 'ban-giao' | 'ban-giao-mon' | 'buoc-tiep';
+    | 'ban-giao' | 'ban-giao-mon' | 'buoc-tiep' | 'thi-that';
   /** "Kết quả W3–W4 SEP · PA Tăng cường bài tập Writing Task 2" — động từ đầu câu. */
   chu: string;
   /** PR-EN-c: khoá + biến của `chu` (câu có biến) — web dịch bằng `dichChu`. Câu không biến dịch theo chính `chu`. */
@@ -30,6 +32,8 @@ export type ViecHocVien = {
 type Nguon = {
   /** OV-13m: lộ trình FT mới nhất có kết quả thi thật, chưa chọn bước tiếp — chỉ khi đó mới hỏi việc "Chọn bước tiếp" (một câu). */
   choBuocTiep?: boolean;
+  /** OV-13q: lộ trình FT mới nhất "Đã thi · chờ kết quả" (`sauThiCuaEm`) — việc "Cập nhật kết quả thi thật" của người nhập được. */
+  sauThi?: SauThiEm | null;
   trangThaiEm: string; lopId: number | null; chuongTrinh: string | null;
   yThuc: EmYThuc | null | undefined;
   /** `gv` = người dạy bổ trợ có tài khoản đầu tiên của nhóm (cùng câu `myWork`), null → GVCN. */
@@ -54,6 +58,14 @@ export function viecCuaHocVien(p: Principal, sid: number, board: { rows: any[] }
     return { key: v.key, loai: 'buoc-tiep', chu: v.contextLabel, kyNang: null, caseId: null, paId: null, han: v.due, quaHanNgay,
       tone: quaHanNgay !== null ? 'danger' : 'info', nguoi: { id: p.userId, ten: p.fullName, vai: null }, cuaBan: true, nut: 'Chọn bước tiếp ›', mo: { loai: 'duong', href: v.href } };
   });
+  /* OV-13q: "Cập nhật kết quả thi thật ›" mở panel Kết quả thi thật ngay trong hồ sơ (`?viec=thi-that`); hạn = hạn sau thi (cùng việc Công việc). */
+  const st = n.sauThi;
+  if (st && st.giaiDoan === 'da_thi_cho_kq' && st.coTheNhap) {
+    const quaHanNgay = st.quaHan && st.han ? diffDays(today, st.han) : null;
+    bt.push({ key: `thi_that:${st.cycleId}`, loai: 'thi-that', chu: 'Cập nhật kết quả thi thật', kyNang: null, caseId: null, paId: null, han: st.han, quaHanNgay,
+      tone: quaHanNgay !== null ? 'danger' : 'info', nguoi: { id: p.userId, ten: p.fullName, vai: null }, cuaBan: true, nut: 'Cập nhật kết quả thi thật ›',
+      mo: { loai: 'duong', href: duongHoSoHocVien(sid, { loTrinh: st.cycleId, viec: 'thi-that' }) } });
+  }
   if (n.trangThaiEm !== 'active') return { cuaBan: bt, nguoiKhac: [] };
   const conn = db();
   type Nhap = Omit<ViecHocVien, 'nguoi' | 'cuaBan' | 'quaHanNgay'> & { nguoiId: number | null; vaiChu?: string; cuaBanTheoVai?: boolean };

@@ -72,6 +72,7 @@ export function napDuLieuNen(conn: any, now: string): { roleId: Map<string, numb
   conn.prepare('INSERT INTO demo_config (key, value, updated_at) VALUES (?,?,?)').run('pr_qu_case_close_gv_at', now, now);
   /* OV-13p: DB mới đã cấp `class.create` + `student.add` theo `ROLE_PERMISSIONS` — khoá trước như PR-QU. */
   conn.prepare('INSERT INTO demo_config (key, value, updated_at) VALUES (?,?,?)').run('pr_ov13p_tvv_cx_tao_lop_at', now, now);
+  conn.prepare('INSERT INTO demo_config (key, value, updated_at) VALUES (?,?,?)').run('pr_ov13q_han_sau_thi_at', now, now);   // OV-13q: hạn sau thi theo luật mới từ đầu
   /* PR-CT2: DB mới không có Kết quả Tutor kỳ vọng kiểu cũ — khoá trước để migrate không điền Số buổi tuần này cho dòng mới. */
   conn.prepare('INSERT INTO demo_config (key, value, updated_at) VALUES (?,?,?)').run('pr_ct2_dien_buoi', now, now);
   /* PR-OV13a (d): DB mới không có Case "Chờ chốt SOS" kiểu cũ — khoá trước để migrate không chạy `prOv1c` (chỉ chạy một lần trên DB cũ). */

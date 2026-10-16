@@ -1514,6 +1514,16 @@ api.put('/cycles/:id/outcome', requireAuth, wrap((req) => {
   return cycleSvc.setOutcome(principalOf(req), pInt(req, 'id'), body as any);
 }));
 
+/** OV-13q: Gia hạn sau thi { han, lyDo? } · `han: null` = Bỏ gia hạn — GVCN lớp cuối, Quản lý, Quản trị, TVV chi nhánh (GVBM / Admin / CX 403). */
+api.get('/cycles/:id/han-sau-thi', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return thiThatSvc.docHanSauThi(principalOf(req), pInt(req, 'id'));
+}));
+api.put('/cycles/:id/han-sau-thi', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return thiThatSvc.datHanSauThi(principalOf(req), pInt(req, 'id'), req.body ?? {});
+}));
+
 /** OV-13m: panel Bước tiếp — trạng thái + "Đã xong" + hạn / hẹn; ai xem được hồ sơ em thì đọc được (GVCN chỉ đọc: `coTheChon` false). */
 api.get('/cycles/:id/buoc-tiep', requireAuth, wrap((req) => {
   maybeSimulateReadError();

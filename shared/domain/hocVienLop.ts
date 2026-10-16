@@ -56,7 +56,7 @@ export const duocDoiKck = (roles: readonly string[] | null | undefined, suaLoTri
 export const coONhapLienHe = (roles: readonly string[] | null | undefined): boolean => laVaiQuanLy(roles) || vaiXemHocVien(roles) !== null;
 
 /** OV-10b: chip Học viên & Lớp của TVV / CX — số = `chipHocVien` (OV-10c, cùng ô Tổng quan). "Chờ chọn bước tiếp" chỉ hiện khi có em. */
-export const CHIP_VAI = ['tat-ca', 'can-chu-y', 'tam-dung', 'sap-thi', 'thieu_tt', 'cho-buoc-tiep'] as const;
+export const CHIP_VAI = ['tat-ca', 'can-chu-y', 'tam-dung', 'sap-thi', 'thieu_tt', 'da-thi', 'cho-buoc-tiep'] as const;   // OV-13q: + Đã thi · chờ kết quả
 export type ChipVai = (typeof CHIP_VAI)[number];
 /** CX mở ở chip `can-chu-y` (không phải 1 000+ em), TVV ở `tat-ca` của HV mình. Nhãn chip ở web (`HocVienTheoVai.tsx`). */
 export const chipMacDinhVai = (vai: 'tvv' | 'cx'): ChipVai => (vai === 'cx' ? 'can-chu-y' : 'tat-ca');

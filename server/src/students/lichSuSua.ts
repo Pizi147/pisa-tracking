@@ -45,6 +45,8 @@ const TRUONG: Record<string, [string, LoaiLichSu, Kieu]> = {
   /* OV-13m: Bước tiếp sau thi (`cycle.buoc_tiep`). */
   buoc_tiep: ['Bước tiếp', 'trang-thai', 'buocTiep'],
   buoc_tiep_hen: ['Hẹn bắt đầu', 'trang-thai', 'tuanNgay'],
+  /* OV-13q: Gia hạn / Bỏ gia hạn sau thi. */
+  han_sau_thi: ['Hạn sau thi', 'trang-thai', 'ngay'],
 };
 const THU_TU = Object.keys(TRUONG);
 const BIET_DANH: Record<string, string> = { target: 'target_score', targetScore: 'target_score' };
@@ -52,7 +54,7 @@ const cot = (k: string) => BIET_DANH[k] ?? k.replace(/[A-Z]/g, (c) => `_${c.toLo
 
 /** Việc được đọc. Nhật ký `learning_cycle` của lộ trình (cycle.status…) dùng `status` khác nghĩa — chỉ đọc trường của các việc dưới đây. */
 const HANH_DONG = ['student.create', 'student.update', 'student.status', 'student.rejoin', 'student.rejoin_undo', 'student.finish_undo', 'student.pause_undo',
-  'student.archive', 'student.unarchive', 'student.transfer', 'cycle.create', 'cycle.update', 'cycle.target.revise', 'cycle.baseline.set', 'cycle.baseline.clear', 'cycle.buoc_tiep'];
+  'student.archive', 'student.unarchive', 'student.transfer', 'cycle.create', 'cycle.update', 'cycle.target.revise', 'cycle.baseline.set', 'cycle.baseline.clear', 'cycle.buoc_tiep', 'cycle.han_sau_thi'];
 /** Việc tự nói nguồn (chữ của Nhật ký Quản trị); sửa thường thì không ghi nguồn. */
 const CO_NGUON = new Set(['student.rejoin', 'student.rejoin_undo', 'student.finish_undo', 'student.pause_undo', 'student.transfer', 'cycle.create']);
 const BO_QUA_CYCLE = new Set(['status']);   // trạng thái lộ trình ≠ trạng thái học của em
