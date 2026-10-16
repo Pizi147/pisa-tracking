@@ -393,8 +393,8 @@ export const TRAN: Record<string, number> = {
   /* PR-Ra: trang "Công việc" dùng lại /my-work cho QL·QT, cộng chế độ nguoi=tat-ca/{gv} (Q1–Q2). */
   'QL /my-work': 63,   // TD4: đo 61 (trước 64)
   'QT /my-work': 63,   // TD4: đo 61 (trước 64)
-  'QL /my-work?nguoi=tat-ca': 71,   // TD4: đo 69 (trước 76) — một lần `listAttempts`
-  'QT /my-work?nguoi=tat-ca': 71,   // TD4: đo 69 (trước 76)
+  'QL /my-work?nguoi=tat-ca': 73,   // TD4: đo 69 (trước 76) — một lần `listAttempts`; 16/10 +1 OV-13k (xem_nx_s) +1 OV-13m (Chọn bước tiếp) = 73
+  'QT /my-work?nguoi=tat-ca': 73,   // TD4: đo 69 (trước 76); 16/10 +1 OV-13k +1 OV-13m = 73
   'GVCN /my-work?nguoi=tat-ca': 15,
   'QL /my-work?nguoi=7': 68,   // TD4: đo 66 (trước 70)
   /* PR-DUYET: đo khi hộp đã có thẻ thật (Task 4) — trần max(sau+10, ⌈sau×1,3⌉). */
