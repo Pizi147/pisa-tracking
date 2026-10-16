@@ -20,7 +20,7 @@ import { fmtBand } from '../../lib/format.ts';
 import { Info, Level } from '../../ui/ui.tsx';
 import { NhanCu } from '../../ui/OMt.tsx';
 import {
-  ChoNutDau, KHOA_HOAN_TAT_HINT, ODiemThuong, datPhanTram, suaDuoc, useSaveScore, type Cell,
+  ChoNutDau, KHOA_HOAN_TAT_HINT, ODiemThuong, apDiemVuaLuu, datPhanTram, suaDuoc, useSaveScore, type Cell,
 } from '../fasttrack/ScoreEntry.tsx';
 import { NutNhanXet, ODiemMt } from '../fasttrack/HopNhapDiem.tsx';
 import { GOI_Y_COT_MT, NutGvCham, useGvChamCot } from './GvCham.tsx';
@@ -214,8 +214,11 @@ function DongFt({ row, k, nhieuMt, lop, active, onReload, gvMacDinh, mo, onMo, o
   gvMacDinh: NguoiChon | null; tuanDangXem: string | null; tuanXem: string | null;
   mo: boolean; onMo: (mo: boolean) => void; onTiep: () => void;
 }) {
-  const { save, status, lastError, retry, o, loi, luuLai, soLoi, coGuiLai } = useSaveScore(row.attemptId, onReload, row.studentName);
-  const c = oCua(row, k);
+  const { save, status, lastError, retry, o, loi, luuLai, soLoi, coGuiLai, vuaLuu, xoaVuaLuu } = useSaveScore(row.attemptId, onReload, row.studentName);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- bảng tải lại (dòng mới) thì bỏ điểm tạm
+  useEffect(() => { xoaVuaLuu(); }, [row]);
+  const c0 = oCua(row, k);
+  const c = c0 && apDiemVuaLuu(c0, vuaLuu[k]);
   const kv = row.result?.expectation ?? null;
   const phu = [nhieuMt ? `MT${row.attemptNo}` : null, kv !== null ? t('KV {x}', { x: fmtBand(kv) }) : maHocVienNgan(row.studentCode)]
     .filter(Boolean).join(' · ');

@@ -530,19 +530,21 @@ type BoLocDoanProps<K extends string> = {
   muc: { key: K; nhan: string; so?: number | string | null; title?: string }[]; value: K; onChange: (k: K) => void; ariaLabel: string;
   /** VIEC-NHO-2: nhóm giữ chỗ nhưng tắt (mờ 40 %, không bấm, không nút nào chọn) — chữ là lý do khi rê chuột. */
   tat?: string;
+  /** OV-13o: điện thoại xuống dòng (mỗi nút một viền) thay vì vuốt ngang — panel hẹp, ít nút, nút cuối không được bị mép mờ che. */
+  boc?: boolean;
 };
-export function BoLocDoan<K extends string>({ muc, value, onChange, ariaLabel, tat }: BoLocDoanProps<K>) {
+export function BoLocDoan<K extends string>({ muc, value, onChange, ariaLabel, tat, boc = false }: BoLocDoanProps<K>) {
   /* PR-KHUNG G5 (chủ sản phẩm 06/10): điện thoại giữ MỘT hàng, vuốt ngang, mép phải mờ báo còn nút. Khung vuốt bọc ngoài viền
      nút đoạn: mép mờ rơi vào khoảng đệm pr-8 khi hàng vừa màn, không làm mờ viền / nút cuối. */
   return (
-    <div className="inline-flex max-w-full overflow-x-auto max-sm:[scrollbar-width:none] max-sm:pr-8 max-sm:[mask-image:linear-gradient(to_right,#000_calc(100%-2rem),transparent)]">
+    <div className={boc ? 'flex max-w-full' : 'inline-flex max-w-full overflow-x-auto max-sm:[scrollbar-width:none] max-sm:pr-8 max-sm:[mask-image:linear-gradient(to_right,#000_calc(100%-2rem),transparent)]'}>
     <div role="group" aria-label={ariaLabel} aria-disabled={tat ? true : undefined} title={tat}
-      className={`inline-flex shrink-0 rounded-lg border ${tat ? 'opacity-40' : ''}`} style={{ borderColor: 'var(--line-strong)' }}>
+      className={`inline-flex rounded-lg border ${boc ? 'max-sm:flex-wrap max-sm:gap-1.5 max-sm:border-0' : 'shrink-0'} ${tat ? 'opacity-40' : ''}`} style={{ borderColor: 'var(--line-strong)' }}>
       {muc.map((m, i) => {
         const chon = !tat && m.key === value;
         return (
           <button key={m.key} type="button" aria-pressed={chon} title={tat ? undefined : m.title} disabled={!!tat} onClick={() => onChange(m.key)} style={{ borderColor: 'var(--line)' }}
-            className={`inline-flex min-h-[44px] items-center gap-1 whitespace-nowrap px-3 text-xs font-semibold disabled:pointer-events-none sm:min-h-[32px] ${i ? 'border-l' : ''} ${
+            className={`inline-flex min-h-[44px] items-center gap-1 whitespace-nowrap px-3 text-xs font-semibold disabled:pointer-events-none sm:min-h-[32px] ${i ? 'border-l' : ''} ${boc ? 'max-sm:rounded-lg max-sm:border' : ''} ${
               chon ? 'bg-ink-800 text-slate-100 shadow-[inset_0_0_0_1px_theme(colors.teal.600)]' : 'bg-transparent text-slate-400 hover:text-slate-200'}`}>
             <span aria-hidden className={`text-[11px] text-teal-300 ${chon ? '' : 'invisible'}`}>✓</span>{m.nhan}
             {m.so != null && <span className="tabular-nums text-slate-500">{m.so}</span>}
