@@ -813,11 +813,13 @@ export function updateStudent(p: Principal, studentId: number, patch: any) {
   };
   const { dauVao: dauVaoGui, ...hoSo } = patch ?? {};
   patch = chuanHoaSuaHoSo(hoSo);
-  /* OV-13f (Q8): chỉ lần ĐỔI email bị kiểm trùng — em cũ đang trùng gửi lại đúng email cũ vẫn lưu được các ô khác. */
-  if (patch.email && patch.email !== String(s.email ?? '').trim().toLowerCase()) {
+  /* OV-13f (Q8): chỉ lần ĐỔI email bị kiểm trùng — em cũ đang trùng gửi lại đúng email cũ vẫn lưu được các ô khác. Kiểm lại trong giao dịch khi ghi. */
+  const kiemEmail = () => {
+    if (!patch.email || patch.email === String(s.email ?? '').trim().toLowerCase()) return;
     const em = emailDangDung([patch.email], [studentId]).get(patch.email);
     if (em) throw badRequest(cauEmailTrung(em));
-  }
+  };
+  kiemEmail();
   /* OV-8b: TVV phải cùng chi nhánh của em; TVV cũ (khác chi nhánh, gán trước luật này) gửi lại nguyên thì không chặn. */
   if (patch.consultantUserId != null && patch.consultantUserId !== s.consultant_user_id) kiemTvvCungChiNhanh(patch.consultantUserId, chiNhanhCuaEm(studentId));
   if (dauVaoGui !== undefined) {
@@ -841,7 +843,7 @@ export function updateStudent(p: Principal, studentId: number, patch: any) {
   }
   if (!sets.length) return s;
   params.push(studentId);
-  conn.prepare(`UPDATE students SET ${sets.join(', ')} WHERE id = ?`).run(...params);
+  tx(() => { kiemEmail(); conn.prepare(`UPDATE students SET ${sets.join(', ')} WHERE id = ?`).run(...params); });
   const sau = conn.prepare('SELECT * FROM students WHERE id = ?').get(studentId) as any;
   /* OV-13j: chỉ ghi trường thực sự đổi; gửi lại nguyên giá trị cũ thì không có dòng nhật ký. */
   const doi = Object.keys(sau).filter((k) => k !== 'normalized_name' && sau[k] !== s[k]);
