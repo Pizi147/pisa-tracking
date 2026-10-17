@@ -250,8 +250,10 @@ function OGhi({ nhan, giaTri, onLuu, onBao, conGiu, khoaNhap, tuDong }: {
 }) {
   const toast = useToast();
   const viTri = useLocation();
+  /* URL lúc ô gắn: Back chỉ đổi `?tuan=` thì ô nhận URL mới trước khi gỡ — "Mở lại" phải về đúng tuần của chữ. */
+  const [noi] = useState(() => `${viTri.pathname}${viTri.search}`);
   const navigate = useNavigate();
-  const moi = { onLuu, onBao, conGiu, navigate, noi: `${viTri.pathname}${viTri.search}` };
+  const moi = { onLuu, onBao, conGiu, navigate, noi };
   const the = useRef(moi);
   the.current = moi;
   const gan = useRef(true);
