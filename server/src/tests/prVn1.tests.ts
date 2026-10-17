@@ -69,7 +69,9 @@ export async function runPrVn1Tests(t: YThucTestKit) {
 
   check('VN-1 1f · chuyển lớp (thi hành) + học lại: Target 6.3 → 400', () => {
     const m1 = loi400(() => students.transferStudent(P.admin, s2, lopB, TODAY, 'Đổi giờ', { noNote: true, mucTieu: 6.3 }));
-    const m2 = loi400(() => students.hocLai(P.admin, s2, { lyDo: 'Học lại', mucTieu: '6.3' }));
+    const s3 = them(lopA, [{ fullName: 'Vũ Ba', email: 'vn1.ba@pisa.vn', target: 6.5 }]).studentIds[0] as number;
+    students.setStudentStatus(P.admin, s3, 'finished', TODAY, 'Nghỉ hẳn');
+    const m2 = loi400(() => students.hocLai(P.admin, s3, { lyDo: 'Học lại', mucTieu: '6.3' }));
     assert(m1 && BUOC.test(m1) && m2 && BUOC.test(m2), `${m1} | ${m2}`);
   });
 
