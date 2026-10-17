@@ -445,6 +445,7 @@ Nhật ký chi tiết tới 04/10 ở `git show 575e898d:plan.md` (mục 14) và
 
 | Ngày | PR / nhánh · model | Kết quả |
 |---|---|---|
+| 18/10/2026 | OV-14b (Opus 5.5) · `claude/ov14b-sua-nho-giao-dien-fed174` | Sửa nhỏ sau rà UX 17/10: "Đã thi · chờ kết quả" ở bảng lớp QL / GV + hồ sơ lớp FT + chip lọc (cùng `trangThaiSauThi`); Đang SOS mặc định Toàn bộ; Lịch Test "Quá hạn chấm" theo khung; ⚠ việc quá hạn; panel nhập điểm cuộn tới cột việc; 375 (ô 16px, nút đoạn xuống dòng, đầu nhóm 44px). Kiểm `prOv14b` |
 | 17/10/2026 | EN-e (Opus 5.5) · `claude/en-e-missing-english-text-630vn6` | Chữ EN sót: thứ theo ngôn ngữ (`THU_NGAN`), Đang SOS + panel một em + trang TVV/CX dịch, `mocChu` qua `dich`, một việc một tên ("Kết quả PA", "Meeting CX/GĐCN (sau Mock)"); do-khung thêm Đang SOS 4 vai + panel một em. Check xanh |
 | 17/10/2026 | OV-13f (Opus 5.5) · `claude/ov13f-hide-id-email-identifier-3kyk91` | Email HV không trùng (chặn ở 4 đường ghi, câu có tên + lớp), trống → việc "Thiếu email"; ẩn mã HV khỏi mọi màn (tìm theo mã vẫn ra); Excel bỏ cột Mã, Email cột 2; `npm run kiem-truoc-ov13f` (chỉ đọc). |
 | 17/10/2026 | PR-SOTAY-2 (Opus 5.5) · `pr-sotay-2` | 10 sổ tay PDF theo vai (GV, GV nước ngoài EN, QL, TVV & CX, Admin; MINI + FULL) ở `docs/so-tay/ban-2026-10/`, chữ từ Hướng dẫn trên web + ảnh app khoanh số (1440 tối, 375 sáng, EN); phụ lục Nhập từ Excel / làm cả lô; `dung.mjs` kiểm ảnh, MINI ≤ 4 trang, chữ nút có trên app, chữ lỗi thời. Sổ 02/10 → `docs/so-tay/cu/` |
