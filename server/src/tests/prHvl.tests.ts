@@ -55,8 +55,8 @@ export async function runPrHvlTests(t: YThucTestKit) {
       { id: 1, loc: ['tat-ca', 'sos', 'can-lam'], khung: 'ft' }, { id: 2, loc: ['tat-ca', 'cho-duyet'], khung: 'thuong' },
       { id: 3, loc: ['tat-ca', 'can-lam', 'thieu_tt'], khung: 'thuong' },
     ];
-    eq(d.demLoc(hv, 'tat-ca'), { 'tat-ca': 3, 'can-lam': 2, 'qua-han': 0, 'cho-duyet': 1, sos: 1, thieu_tt: 1 }, 'Đếm cả hai khung');
-    eq(d.demLoc(hv, 'thuong'), { 'tat-ca': 2, 'can-lam': 1, 'qua-han': 0, 'cho-duyet': 1, sos: 0, thieu_tt: 1 }, 'Đếm lớp thường');
+    eq(d.demLoc(hv, 'tat-ca'), { 'tat-ca': 3, 'can-lam': 2, 'qua-han': 0, 'cho-duyet': 1, sos: 1, thieu_tt: 1, 'da-thi': 0 }, 'Đếm cả hai khung');
+    eq(d.demLoc(hv, 'thuong'), { 'tat-ca': 2, 'can-lam': 1, 'qua-han': 0, 'cho-duyet': 1, sos: 0, thieu_tt: 1, 'da-thi': 0 }, 'Đếm lớp thường');
     eq(d.demLoc(hv, 'ft')['tat-ca'], 1, 'Đếm Fast Track');
   });
 
