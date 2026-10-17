@@ -16,7 +16,7 @@ import { useSession } from '../../lib/session.tsx';
 import { sosTone } from '../../lib/format.ts';
 import { useThaoTacDongHocVien } from '../classes/thaoTacDongHocVien.tsx';
 import { KetQuaOHocVien } from './BangHocVienLop.tsx';
-import { t } from '@shared/i18n/index.ts';
+import { dich, t } from '@shared/i18n/index.ts';
 import { BoLocDoan } from '../../ui/ui.tsx';
 import { BangSos, type TrangSos } from './BangSos.tsx';
 import { BangCanLam, type ViecCanLam } from './BangCanLam.tsx';
@@ -69,13 +69,13 @@ function docGocVai(view: string | null, loc: string | null, vai: 'tvv' | 'cx'): 
 
 /** Nhãn chip TVV / CX (OV-10b) — số = `chipHocVien` (OV-10c, cùng ô Tổng quan). */
 const CHIP_VAI_NHAN: Record<ChipVai, { nhan: string; goiY: string }> = {
-  'tat-ca': { nhan: 'Tất cả', goiY: 'Mọi học viên trong phạm vi đang xem (chưa lưu trữ).' },
-  'can-chu-y': { nhan: 'Cần chú ý', goiY: 'SOS ở MT gần nhất, Case mới hoặc Ý thức trong 14 ngày, chờ chọn bước tiếp sau thi.' },
-  'tam-dung': { nhan: 'Tạm dừng', goiY: 'Đang Tạm dừng học.' },
-  'sap-thi': { nhan: 'Sắp thi', goiY: 'Dự kiến thi IELTS trong 6 tuần tới.' },
-  'da-thi': { nhan: 'Đã thi · chờ kết quả', goiY: 'Đã qua ngày thi, chưa có kết quả thi thật — hạn 1 tuần sau ngày thi.' },
-  thieu_tt: { nhan: 'Thiếu thông tin', goiY: 'Hồ sơ còn thiếu thông tin cần để xếp lịch và theo dõi (không tính liên hệ).' },
-  'cho-buoc-tiep': { nhan: 'Chờ chọn bước tiếp', goiY: 'Đã có kết quả thi thật, chờ chọn bước tiếp.' },
+  'tat-ca': { nhan: t('Tất cả'), goiY: t('Mọi học viên trong phạm vi đang xem (chưa lưu trữ).') },
+  'can-chu-y': { nhan: t('Cần chú ý'), goiY: t('SOS ở MT gần nhất, Case mới hoặc Ý thức trong 14 ngày, chờ chọn bước tiếp sau thi.') },
+  'tam-dung': { nhan: t('Tạm dừng'), goiY: t('Đang Tạm dừng học.') },
+  'sap-thi': { nhan: t('Sắp thi'), goiY: t('Dự kiến thi IELTS trong 6 tuần tới.') },
+  'da-thi': { nhan: t('Đã thi · chờ kết quả'), goiY: t('Đã qua ngày thi, chưa có kết quả thi thật — hạn 1 tuần sau ngày thi.') },
+  thieu_tt: { nhan: t('Thiếu thông tin'), goiY: t('Hồ sơ còn thiếu thông tin cần để xếp lịch và theo dõi (không tính liên hệ).') },
+  'cho-buoc-tiep': { nhan: t('Chờ chọn bước tiếp'), goiY: t('Đã có kết quả thi thật, chờ chọn bước tiếp.') },
 };
 
 const SELECT_GON = 'field h-8 w-auto !py-0 text-xs max-sm:min-h-[44px] max-sm:w-full';
@@ -88,9 +88,9 @@ export function OCanChuY({ c }: { c: LyDoChuY | null }) {
   return (
     <span className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-slate-400">
       {!!c.sos && <Level tone={sosTone(c.sos)}>SOS {c.sos}</Level>}
-      {!!c.caseMoi?.length && <><Nhan tone="wait">Case mới</Nhan><span>{c.caseMoi.map((k) => tenMon(null, k)).join(', ')}</span></>}
-      {c.yThuc && <><Nhan tone="late">Ý thức</Nhan><span>{c.yThuc}</span></>}
-      {c.choBuocTiep && <Nhan tone="soon">Chờ chọn bước tiếp</Nhan>}
+      {!!c.caseMoi?.length && <><Nhan tone="wait">{t('Case mới')}</Nhan><span>{c.caseMoi.map((k) => tenMon(null, k)).join(', ')}</span></>}
+      {c.yThuc && <><Nhan tone="late">{t('Ý thức')}</Nhan><span>{dich(c.yThuc)}</span></>}
+      {c.choBuocTiep && <Nhan tone="soon">{t('Chờ chọn bước tiếp')}</Nhan>}
     </span>
   );
 }
@@ -99,8 +99,8 @@ export function OCanChuY({ c }: { c: LyDoChuY | null }) {
 export function OPhuHuynh({ l }: { l: LienHe }) {
   const ten = chuPhuHuynh(l);
   if (!ten && !l.parentPhone) {
-    return l.phone ? <span className="text-xs text-slate-400">Em · <span className="tabular-nums text-slate-200">{l.phone}</span></span>
-      : <span className="text-xs text-slate-500">chưa có</span>;
+    return l.phone ? <span className="text-xs text-slate-400">{t('Em')} · <span className="tabular-nums text-slate-200">{l.phone}</span></span>
+      : <span className="text-xs text-slate-500">{t('chưa có')}</span>;
   }
   return (
     <>
@@ -114,9 +114,9 @@ function TrangThaiEm({ d, thieu }: { d: DongVai; thieu: boolean }) {
   const { homNay } = useNgayNghiepVu();
   return (
     <>
-      {d.status === 'inactive' && <Nhan tone="soon">Tạm dừng{d.tamDungTu ? ` · từ ${ngay(d.tamDungTu, homNay)}` : ''}</Nhan>}
-      {d.status === 'finished' && <Nhan tone="done">Đã kết thúc học</Nhan>}
-      {thieu && <span className="text-xs text-slate-400">Thiếu thông tin</span>}   {/* CA2-7: một kiểu với "Thiếu n" của QL — chữ mờ, không chip */}
+      {d.status === 'inactive' && <Nhan tone="soon">{d.tamDungTu ? t('Tạm dừng · từ {ngay}', { ngay: ngay(d.tamDungTu, homNay) }) : t('Tạm dừng')}</Nhan>}
+      {d.status === 'finished' && <Nhan tone="done">{t('Đã kết thúc học')}</Nhan>}
+      {thieu && <span className="text-xs text-slate-400">{t('Thiếu thông tin')}</span>}   {/* CA2-7: một kiểu với "Thiếu n" của QL — chữ mờ, không chip */}
     </>
   );
 }
@@ -179,7 +179,7 @@ export function HocVienTheoVai({ vai }: { vai: 'tvv' | 'cx' }) {
   }, [hien]);
   const gapSan = hien.length > NHIEU_DONG;
   const dong = { has: (k: number | 'chua-xep') => gapSan !== dao.has(k) };
-  const ds: NguCanhDs = { loai: 'hoc-vien', nhan: 'Học viên & Lớp', ids: nhom.flatMap(([k, em]) => (dong.has(k) ? [] : em.map((d) => d.id))) };
+  const ds: NguCanhDs = { loai: 'hoc-vien', nhan: t('Học viên & Lớp'), ids: nhom.flatMap(([k, em]) => (dong.has(k) ? [] : em.map((d) => d.id))) };
 
   const tt = useThaoTacDongHocVien({
     laLopThuong: false, quyen: { coTheSuaHocVien: false, coTheBaoCase: false, coTheGhiViPham: false, coTheNhapDiem: false, theoVai: true },
@@ -191,7 +191,7 @@ export function HocVienTheoVai({ vai }: { vai: 'tvv' | 'cx' }) {
   });
 
   const pv = data?.phamVi;
-  const tenCn = vai === 'cx' ? (cn ? branches.data?.find((b) => b.id === cn)?.name ?? 'Một chi nhánh' : 'Tất cả chi nhánh') : null;
+  const tenCn = vai === 'cx' ? (cn ? branches.data?.find((b) => b.id === cn)?.name ?? t('Một chi nhánh') : t('Tất cả chi nhánh')) : null;
   const tenGoc: Record<GocVai, string> = { 'tat-ca': t('Tất cả'), sos: t('Đang SOS'), 'can-lam': t('Cần làm'), 'can-chu-y': CHIP_VAI_NHAN['can-chu-y'].nhan };   // nhãn chip TVV / CX sẵn có (cùng chữ, bản Anh theo EN-c)
   const dangXem = [tenCn, vai === 'tvv' && pv ? PHAM_VI_NHAN[pv.dangDung] : null, tenGoc[goc], goc === 'tat-ca' && chip !== 'tat-ca' ? CHIP_VAI_NHAN[chip].nhan : null,
     q.trim() ? `“${q.trim()}”` : null].filter(Boolean).join(' · ');
@@ -224,9 +224,9 @@ export function HocVienTheoVai({ vai }: { vai: 'tvv' | 'cx' }) {
 
   const dauNhom = (em: DongVai[]): ReactNode => {
     const l = em[0].lop;
-    if (!l) return <span className="font-extrabold text-slate-100">Chưa xếp lớp <span className="font-normal text-slate-400">· {em.length} em</span></span>;
-    const tuan = l.tuan && l.tuan >= 1 ? `tuần ${l.tongTuan ? `${Math.min(l.tuan, l.tongTuan)}/${l.tongTuan}` : l.tuan}` : null;
-    const phu = [vai === 'cx' ? em[0].chiNhanh : null, tuan, `${em.length} em${pv?.dangDung === 'cua-toi' ? ' của tôi' : ''}`].filter(Boolean).join(' · ');
+    if (!l) return <span className="font-extrabold text-slate-100">{t('Chưa xếp lớp')} <span className="font-normal text-slate-400">· {t('{n} em', { n: em.length })}</span></span>;
+    const tuan = l.tuan && l.tuan >= 1 ? t('tuần {n}', { n: l.tongTuan ? `${Math.min(l.tuan, l.tongTuan)}/${l.tongTuan}` : l.tuan }) : null;
+    const phu = [vai === 'cx' ? em[0].chiNhanh : null, tuan, pv?.dangDung === 'cua-toi' ? t('{n} em của tôi', { n: em.length }) : t('{n} em', { n: em.length })].filter(Boolean).join(' · ');
     return (
       <span className="flex min-w-0 items-baseline gap-2">
         <Link to={`/hoc-vien/lop/${l.id}`} className="shrink-0 font-extrabold text-slate-100 underline decoration-dotted underline-offset-4">{l.code}</Link>
@@ -239,7 +239,7 @@ export function HocVienTheoVai({ vai }: { vai: 'tvv' | 'cx' }) {
   return (
     <div className="page space-y-3">
       <div className="flex flex-wrap items-center gap-2">
-        <h1 className="m-0 text-lg font-semibold text-slate-100">Học viên & Lớp</h1>
+        <h1 className="m-0 text-lg font-semibold text-slate-100">{t('Học viên & Lớp')}</h1>
         {/* OV-13p: nút như trang Quản lý (StudentsPage) — điện thoại gom vào ⋯. */}
         {(data?.coTheTaoLop || data?.coTheThemHocVien) && (
           <div className="ml-auto flex items-center gap-2">
@@ -254,15 +254,15 @@ export function HocVienTheoVai({ vai }: { vai: 'tvv' | 'cx' }) {
       </div>
       <div className="space-y-2 pb-1">
         <div className="flex flex-wrap items-center gap-2">
-          <input className="field w-full sm:w-80" aria-label="Tìm" placeholder="Tìm học viên, mã, lớp…" value={draftQ} onChange={(e) => setDraftQ(e.target.value)} />
+          <input className="field w-full sm:w-80" aria-label={t('Tìm')} placeholder={t('Tìm học viên, mã, lớp…')} value={draftQ} onChange={(e) => setDraftQ(e.target.value)} />
           {vai === 'tvv' && pv && (
-            <select className={SELECT_GON} aria-label="Phạm vi" value={pv.dangDung} onChange={(e) => setParam({ phamVi: e.target.value === 'chi-nhanh' ? 'chi-nhanh' : null })}>
-              {pv.coThe.map((v) => <option key={v} value={v}>Phạm vi: {PHAM_VI_NHAN[v]}</option>)}
+            <select className={SELECT_GON} aria-label={t('Phạm vi')} value={pv.dangDung} onChange={(e) => setParam({ phamVi: e.target.value === 'chi-nhanh' ? 'chi-nhanh' : null })}>
+              {pv.coThe.map((v) => <option key={v} value={v}>{t('Phạm vi: {pv}', { pv: PHAM_VI_NHAN[v] })}</option>)}
             </select>
           )}
           {vai === 'cx' && (branches.data?.length ?? 0) > 1 && (
-            <select className={SELECT_GON} aria-label="Chi nhánh" value={cn ?? ''} onChange={(e) => { nhoChiNhanh(session?.user?.id, e.target.value ? Number(e.target.value) : null); setParam({ cn: e.target.value || null, branchId: null, phamVi: null }); }}>
-              <option value="">Tất cả chi nhánh</option>
+            <select className={SELECT_GON} aria-label={t('Chi nhánh')} value={cn ?? ''} onChange={(e) => { nhoChiNhanh(session?.user?.id, e.target.value ? Number(e.target.value) : null); setParam({ cn: e.target.value || null, branchId: null, phamVi: null }); }}>
+              <option value="">{t('Tất cả chi nhánh')}</option>
               {(branches.data ?? []).map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
             </select>
           )}
@@ -286,10 +286,10 @@ export function HocVienTheoVai({ vai }: { vai: 'tvv' | 'cx' }) {
         </div>
         {data && (
           <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[12.5px] text-slate-400" aria-live="polite">
-            <span>Đang xem: <b className="font-semibold text-slate-200">{dangXem}</b></span>
+            <span>{t('Đang xem')}: <b className="font-semibold text-slate-200">{dangXem}</b></span>
             <span aria-hidden>·</span>
-            <span className="tabular-nums">{goc === 'sos' ? demGoc.sos ?? 0 : goc === 'can-lam' ? demGoc['can-lam'] : hien.length} học viên</span>
-            {coLoc && <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 sm:min-h-0" onClick={xoaLoc}>Xoá lọc</button>}
+            <span className="tabular-nums">{t('{n} học viên', { n: goc === 'sos' ? demGoc.sos ?? 0 : goc === 'can-lam' ? demGoc['can-lam'] ?? 0 : hien.length })}</span>
+            {coLoc && <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 sm:min-h-0" onClick={xoaLoc}>{t('Xoá lọc')}</button>}
           </div>
         )}
       </div>
@@ -311,15 +311,15 @@ export function HocVienTheoVai({ vai }: { vai: 'tvv' | 'cx' }) {
       {(goc === 'tat-ca' || goc === 'can-chu-y') && data && (hien.length === 0 ? (
         <Card>
           {!data.rows.length && pv?.dangDung === 'cua-toi'
-            ? <Empty title="Chưa có học viên nào của bạn" hint="Học viên có TVV là bạn sẽ hiện ở đây."
-                action={<button type="button" className="btn btn-sm" onClick={() => setParam({ phamVi: 'chi-nhanh' })}>Xem cả chi nhánh</button>} />
-            : <Empty title="Không có học viên nào khớp" hint="Đổi chip lọc, bỏ bớt từ khoá hoặc đổi phạm vi."
-                action={coLoc ? <button type="button" className="btn btn-sm" onClick={xoaLoc}>Xoá lọc</button> : undefined} />}
+            ? <Empty title={t('Chưa có học viên nào của bạn')} hint={t('Học viên có TVV là bạn sẽ hiện ở đây.')}
+                action={<button type="button" className="btn btn-sm" onClick={() => setParam({ phamVi: 'chi-nhanh' })}>{t('Xem cả chi nhánh')}</button>} />
+            : <Empty title={t('Không có học viên nào khớp')} hint={t('Đổi chip lọc, bỏ bớt từ khoá hoặc đổi phạm vi.')}
+                action={coLoc ? <button type="button" className="btn btn-sm" onClick={xoaLoc}>{t('Xoá lọc')}</button> : undefined} />}
         </Card>
       ) : dienThoai ? (
         <div className="space-y-2">
           {nhom.map(([k, em]) => (
-            <section key={k} className="card overflow-hidden" aria-label={em[0].lop ? `Lớp ${em[0].lop.code}` : 'Chưa xếp lớp'}>
+            <section key={k} className="card overflow-hidden" aria-label={em[0].lop ? t('Lớp {code}', { code: em[0].lop.code }) : t('Chưa xếp lớp')}>
               <button type="button" aria-expanded={!dong.has(k)} onClick={() => doiDong(k)}
                 className="flex min-h-[44px] w-full cursor-pointer items-center gap-2 border-0 bg-transparent p-3 text-left">
                 <svg aria-hidden viewBox="0 0 8 8" width="8" height="8" className={`shrink-0 text-slate-400 transition-transform ${dong.has(k) ? '' : 'rotate-90'}`}>
@@ -338,27 +338,27 @@ export function HocVienTheoVai({ vai }: { vai: 'tvv' | 'cx' }) {
                   )}
                   hanhDong={<MenuDong muc={menuCua(d)} />}
                   dong={[
-                    { nhan: 'Target · thi', noiDung: <><TargetText band={d.target} kck={d.kck} /> · <ExamPlanText plan={d.duKienThi} />{d.sauThi && <button type="button" className="mt-1 block min-h-[44px] cursor-pointer appearance-none border-0 bg-transparent p-0 text-left" onClick={() => setPanelEm(d.id)}><NhanSauThi s={d.sauThi} /></button>}</> },
-                    { nhan: 'Kết quả', noiDung: <KetQuaOHocVien k={ketQuaGanNhat(d.standing)} standing={d.standing} thuong={!(d.lop?.ft ?? true)} /> },
-                    ...(d.chuY ? [{ nhan: 'Cần chú ý', noiDung: <OCanChuY c={d.chuY} /> }] : []),
+                    { nhan: t('Target · thi'), noiDung: <><TargetText band={d.target} kck={d.kck} /> · <ExamPlanText plan={d.duKienThi} />{d.sauThi && <button type="button" className="mt-1 block min-h-[44px] cursor-pointer appearance-none border-0 bg-transparent p-0 text-left" onClick={() => setPanelEm(d.id)}><NhanSauThi s={d.sauThi} /></button>}</> },
+                    { nhan: t('Kết quả'), noiDung: <KetQuaOHocVien k={ketQuaGanNhat(d.standing)} standing={d.standing} thuong={!(d.lop?.ft ?? true)} /> },
+                    ...(d.chuY ? [{ nhan: t('Cần chú ý'), noiDung: <OCanChuY c={d.chuY} /> }] : []),
                     ...(vai === 'cx' ? [{ nhan: 'TVV', noiDung: d.tvv ?? <span className="text-slate-500">—</span> }] : []),
-                    { nhan: 'Phụ huynh', noiDung: <OPhuHuynh l={d.lienHe} /> },
+                    { nhan: t('Phụ huynh'), noiDung: <OPhuHuynh l={d.lienHe} /> },
                   ]} />
               ))}
             </section>
           ))}
         </div>
       ) : (
-        <section className="card overflow-x-auto" aria-label="Học viên theo lớp">
+        <section className="card overflow-x-auto" aria-label={t('Học viên theo lớp')}>
           <table className="w-full min-w-[960px] table-fixed text-sm">
             <colgroup>
               <col className={vai === 'cx' ? 'w-[21%]' : 'w-[24%]'} /><col className="w-[13%]" /><col className="w-[17%]" /><col className={vai === 'cx' ? 'w-[18%]' : 'w-[22%]'} />
               {vai === 'cx' && <col className="w-[11%]" />}<col className="w-[16%]" /><col className="w-12" />
             </colgroup>
-            <thead><tr>{cot.map((t, i) => <th key={i} className="th">{t || <span className="sr-only">Thao tác</span>}</th>)}</tr></thead>
+            <thead><tr>{cot.map((x, i) => <th key={i} className="th">{x ? dich(x) : <span className="sr-only">{t('Thao tác')}</span>}</th>)}</tr></thead>
             {nhom.map(([k, em]) => (
               <tbody key={k}>
-                <HangNhom mo={!dong.has(k)} onMo={() => doiDong(k)} nhan={em[0].lop ? `lớp ${em[0].lop.code}` : 'nhóm chưa xếp lớp'} soCotDau={cot.length} tieuDe={dauNhom(em)} />
+                <HangNhom mo={!dong.has(k)} onMo={() => doiDong(k)} nhan={em[0].lop ? t('lớp {ma}', { ma: em[0].lop.code }) : t('nhóm chưa xếp lớp')} soCotDau={cot.length} tieuDe={dauNhom(em)} />
                 {!dong.has(k) && em.map((d) => (
                   <HangCon key={d.id} className={`row-hover ${d.status !== 'active' ? 'row-muted' : ''}`}>
                     <td className="td h-14">

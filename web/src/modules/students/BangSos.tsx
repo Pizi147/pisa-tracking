@@ -7,7 +7,7 @@ import { TheDong } from '../../ui/TheDong.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { skillShort, sosTone } from '../../lib/format.ts';
 import { OPhuHuynh } from './HocVienTheoVai.tsx';
-import { t } from '@shared/i18n/index.ts';
+import { dich, t } from '@shared/i18n/index.ts';
 import {
   NHAN_NHOM_XU_LY, deadlineView, maHocVienNgan, tuanLich, type DeadlineKind, type LienHe, type NguCanhDs, type NhomXuLy,
 } from '@shared/domain/index.ts';
@@ -66,7 +66,7 @@ function ViecTiepDong({ r }: { r: DongSos }) {
   const d = v.han ? deadlineView({ kind: v.loaiHan ?? 'xac-minh-sos', due: v.han, today: homNay }) : null;
   return (
     <span className="block text-xs">
-      <span className="block truncate text-slate-200" title={v.chu}>{v.chu}</span>
+      <span className="block truncate text-slate-200" title={dich(v.chu)}>{dich(v.chu)}</span>
       <span className="block text-slate-500">
         {v.quaHan && d ? <QuaHan ngay={d.daysOverdue} /> : d ? d.han : null}
         {ds.length > 1 && <span>{d ? ' · ' : ''}{t('+{n} việc', { n: ds.length - 1 })}</span>}
@@ -91,11 +91,11 @@ function OSos({ r, toanBo }: { r: DongSos; toanBo: boolean }) {
 /** Case chưa có nguyên nhân: Case MT cũ chưa nhận xét → "Chờ ghi nhận xét" (máy chủ: `trangThaiCaseV4`), còn lại (Progress) "chưa xác nhận". */
 export const chuChuaNguyenNhan = (c: CaseTomTat, dai = false) =>
   c.trangThai === 'Chờ ghi nhận xét' ? t('Chờ ghi nhận xét') : dai ? t('chưa xác nhận nguyên nhân') : t('chưa xác nhận');
-const chuNguyenNhan = (c: CaseTomTat) => c.nguyenNhan ?? <span className="text-slate-500">{chuChuaNguyenNhan(c)}</span>;
+const chuNguyenNhan = (c: CaseTomTat) => (c.nguyenNhan && dich(c.nguyenNhan)) ?? <span className="text-slate-500">{chuChuaNguyenNhan(c)}</span>;
 const chuPa = (c: CaseTomTat) => (c.pa.length
-  ? `${c.pa[0].ten}${c.pa[0].nguoi ? ` · ${c.pa[0].nguoi}` : ''}${c.pa.length > 1 ? ` +${c.pa.length - 1} PA` : ''}`
+  ? `${dich(c.pa[0].ten)}${c.pa[0].nguoi ? ` · ${c.pa[0].nguoi}` : ''}${c.pa.length > 1 ? ` +${c.pa.length - 1} PA` : ''}`
   : <span className="text-slate-500">{t('Chưa có PA')}</span>);
-const chuKetQua = (c: CaseTomTat) => (c.done && c.ketQua ? `${t('Xong')} · ${c.ketQua}` : c.ketQua ?? <span className="text-slate-500">{c.done ? t('Xong') : t('Chưa có kết quả')}</span>);
+const chuKetQua = (c: CaseTomTat) => (c.done && c.ketQua ? `${t('Xong')} · ${dich(c.ketQua)}` : (c.ketQua && dich(c.ketQua)) ?? <span className="text-slate-500">{c.done ? t('Xong') : t('Chưa có kết quả')}</span>);
 
 /**
  * GÓC "ĐANG SOS" (OV-12f, mockup 3 v2 §3 / §5 / §7 / §8): nhóm theo lớp (Fast Track trước, lớp thường sau), mỗi lượt SOS một dòng — Toàn bộ thêm cột

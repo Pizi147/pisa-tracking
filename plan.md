@@ -421,6 +421,7 @@ Nhật ký chi tiết tới 04/10 ở `git show 575e898d:plan.md` (mục 14) và
 
 | Ngày | PR / nhánh · model | Kết quả |
 |---|---|---|
+| 17/10/2026 | EN-e (Opus 5.5) · `claude/en-e-missing-english-text-630vn6` | Chữ EN sót: thứ theo ngôn ngữ (`THU_NGAN`), Đang SOS + panel một em + trang TVV/CX dịch, `mocChu` qua `dich`, một việc một tên ("Kết quả PA", "Meeting CX/GĐCN (sau Mock)"); do-khung thêm Đang SOS 4 vai + panel một em. Check xanh |
 | 17/10/2026 | PR-SOTAY-2 (Opus 5.5) · `pr-sotay-2` | 10 sổ tay PDF theo vai (GV, GV nước ngoài EN, QL, TVV & CX, Admin; MINI + FULL) ở `docs/so-tay/ban-2026-10/`, chữ từ Hướng dẫn trên web + ảnh app khoanh số (1440 tối, 375 sáng, EN); phụ lục Nhập từ Excel / làm cả lô; `dung.mjs` kiểm ảnh, MINI ≤ 4 trang, chữ nút có trên app, chữ lỗi thời. Sổ 02/10 → `docs/so-tay/cu/` |
 | 16/10/2026 | OV-13q (Opus 5.5) · `claude/wonderful-goodall-kwk1t8` | "Đã thi xong · hạn 1 tuần": một hàm `trangThaiSauThi`, việc thi thật từ hôm sau ngày thi, hạn chung ngày thi + 7 cho kết quả + bước tiếp, Gia hạn (hộp nhỏ) ở Công việc / panel / hồ sơ, ô Tổng quan "Đã thi · chờ kết quả", nhãn Học viên & Lớp + panel một em; migrate `prOv13q` + `kiem-truoc-ov13q`. Kiểm `prOv13q` |
 | 16/10/2026 | TD5 #431 (Opus 5.5) · `claude/td5-turso-doc` | Giảm dòng đọc Turso: chỉ mục `sos_cases(attempt_id, status, sos_level)` (migrate `prTd5`), đếm Case mở theo lớp một lần duyệt (~181k → ~4k dòng/lần), bảng điểm tuần `IN (… UNION …)`; đầu ra trùng |

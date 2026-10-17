@@ -356,12 +356,12 @@ export function kyGhiKetQua(han: string, homNay: string): string {
  * khép (cùng luật `hanKe`: hạn kỳ đầu tiên > ngày ghi). Ghi thêm khi kỳ đang đòi chưa bắt đầu (trước hạn − 15 ngày) → kỳ vừa xong, hạn không đổi.
  */
 export function nhanTuanGhiKetQua(actionDue: string | null, homNay: string): { tieuDe: string; soKy: number } {
-  if (!validIso(actionDue)) return { tieuDe: t('Kết quả kỳ này'), soKy: 1 };
-  if (homNay < congNgay(actionDue, -15)) return { tieuDe: t('Kết quả {ky}', { ky: kyGhiKetQua(congNgay(actionDue, -14), homNay) }), soKy: 1 };
+  if (!validIso(actionDue)) return { tieuDe: t('Kết quả PA'), soKy: 1 };
+  if (homNay < congNgay(actionDue, -15)) return { tieuDe: t('Kết quả PA · {ky}', { ky: kyGhiKetQua(congNgay(actionDue, -14), homNay) }), soKy: 1 };
   const soKy = homNay < actionDue ? 1 : Math.floor(daysBetween(actionDue, homNay) / 14) + 1;
-  if (soKy === 1) return { tieuDe: t('Kết quả {ky}', { ky: kyGhiKetQua(actionDue, homNay) }), soKy };
+  if (soKy === 1) return { tieuDe: t('Kết quả PA · {ky}', { ky: kyGhiKetQua(actionDue, homNay) }), soKy };
   const dau = tuanKetQuaCuaHan(actionDue);
-  return { tieuDe: t('Kết quả {ky} (ghi bù {soKy} kỳ)', { ky: khoangTuan(dau, congNgay(dau, 14 * soKy - 7), homNay), soKy }), soKy };
+  return { tieuDe: t('Kết quả PA · {ky} (ghi bù {soKy} kỳ)', { ky: khoangTuan(dau, congNgay(dau, 14 * soKy - 7), homNay), soKy }), soKy };
 }
 
 /**
@@ -385,8 +385,8 @@ export function deadlineView(i: DeadlineInput): DeadlineView {
   /* C-khác (Dọn-b 14a): hạn có giờ (ISO UTC) đổi sang NGÀY giờ Việt Nam trước khi so — 18:30Z ngày 21 là 01:30 ngày 22 ở VN. */
   const ngayVn = (s: string) => ngayTheoGioVN(s)!;   // đã qua validIso
   const han = `${tien} ${shortDate(ngayVn(i.due), i.today)}`;
-  /* OV-12a: hạn Thứ Ba là hạn của KỲ hai tuần trước nó — "Ghi kết quả W3–W4 SEP · hạn hết T3 29/09". */
-  const viecHien = i.kind === 'cap-nhat-pa' ? t('Kết quả {ky}', { ky: kyGhiKetQua(i.due, i.today) }) : viec;
+  /* OV-12a: hạn Thứ Ba là hạn của KỲ hai tuần trước nó — "Kết quả PA · W3–W4 SEP · hạn hết T3 29/09". */
+  const viecHien = i.kind === 'cap-nhat-pa' ? t('Kết quả PA · {ky}', { ky: kyGhiKetQua(i.due, i.today) }) : viec;
   const base = ngayVn(validIso(i.originalDue) ? i.originalDue : i.due);
   const duKien = i.kind === 'du-kien-ket-thuc';
   let daysOverdue: number | null = null;

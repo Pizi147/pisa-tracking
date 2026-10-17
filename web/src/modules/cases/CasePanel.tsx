@@ -370,7 +370,7 @@ function TheKhoiPa({ iv, data, homNay, ngan, onViec, onDoi, anDau = false }: {
           <span><span className="text-slate-500">{nhanNguoiDay(iv.kind) === 'Người dạy' ? t('Dạy') : t('Thực hiện')}</span> {nguoi ?? <span className="text-slate-500">{t('chưa chọn')}</span>}</span>
         )}
         {(khoang || iv.mocChu) && (
-          <span className="tabular-nums">{batDau && <span className="text-slate-500">{t('Từ')} </span>}{[khoang, iv.mocChu].filter(Boolean).join(' · ')}</span>
+          <span className="tabular-nums">{batDau && <span className="text-slate-500">{t('Từ')} </span>}{[khoang, iv.mocChu && dich(iv.mocChu)].filter(Boolean).join(' · ')}</span>
         )}
       </p>
       {dem && (

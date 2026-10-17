@@ -66,7 +66,7 @@ export function FormPa({ v, dat, lf, loi, chonLoai, quyChe, toiThieu = 8, daDay 
     </div>
   ) : phang ? null : (
     <OKhoa nhan={t('Loại PA')} chu={tenLoai(v.kind)} sau={quyChe ? t('theo quy chế') : undefined}
-      phu={quyChe ? (quyChe.mocChu ? t('Kết thúc theo quy chế: {mocChu}', { mocChu: quyChe.mocChu }) : undefined) : t('Đổi loại: Kết quả › Thay PA')} />
+      phu={quyChe ? (quyChe.mocChu ? t('Kết thúc theo quy chế: {mocChu}', { mocChu: dich(quyChe.mocChu) }) : undefined) : t('Đổi loại: Kết quả › Thay PA')} />
   );
 
   const phuongAn = <>
