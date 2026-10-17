@@ -95,6 +95,35 @@ export function chiaLo<T>(ds: readonly T[], co: number): T[][] {
 }
 
 /**
+ * OV-14a (F05): chia lô Sửa cả lớp mà dòng ĐỔI email cho nhau (em A lấy email em B đang có, em B cũng đổi email) luôn nằm CÙNG lô — mỗi lô
+ * một giao dịch, máy chủ chỉ không tính trùng khi em rời email ở cùng lô (VN-1). Nhóm phụ thuộc giữ nguyên, xếp vào lô theo thứ tự dòng;
+ * nhóm lớn hơn `co` không chia được → `qua` (mã em), xem trước báo lỗi ô Email.
+ */
+export function chiaLoSuaCaLop<T extends { studentId: number; email?: unknown }>(rows: readonly T[], emailCu: (studentId: number) => string | null, co = LO_LUU_SUA_CA_LOP): { lo: T[][]; qua: number[] } {
+  const chuan = (v: unknown) => String(v ?? '').trim().toLowerCase();
+  const cha = rows.map((_, i) => i);
+  const goc = (i: number): number => (cha[i] === i ? i : (cha[i] = goc(cha[i])));
+  /* Email cũ của dòng đang ĐỔI email → dòng đó. */
+  const roi = new Map<string, number>();
+  rows.forEach((r, i) => { const cu = chuan(emailCu(r.studentId)); if (r.email !== undefined && cu && chuan(r.email) !== cu) roi.set(cu, i); });
+  rows.forEach((r, i) => {
+    const j = r.email !== undefined ? roi.get(chuan(r.email)) : undefined;
+    if (j !== undefined && j !== i) cha[goc(i)] = goc(j);
+  });
+  const nhom = new Map<number, T[]>();
+  rows.forEach((r, i) => { const g = goc(i); if (!nhom.has(g)) nhom.set(g, []); nhom.get(g)!.push(r); });
+  const lo: T[][] = [];
+  const qua: number[] = [];
+  for (const n of nhom.values()) {
+    if (n.length > co) qua.push(...n.map((r) => r.studentId));
+    const cuoi = lo[lo.length - 1];
+    if (cuoi && cuoi.length + n.length <= co) cuoi.push(...n);
+    else lo.push([...n]);
+  }
+  return { lo, qua };
+}
+
+/**
  * Q29-1 (PR-KCK): ô Target ghi `KCK` / `-` / "không cam kết" = học viên KHÔNG CAM KẾT đầu ra (OV-9: dấu riêng — Target giữ, có kỳ vọng; không SOS).
  * KHÁC ô trống (= chưa có target, vẫn có việc "Điền target"). Dùng chung cho nhập học viên, sửa target, Đề xuất sửa.
  */

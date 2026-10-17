@@ -1,8 +1,11 @@
 import { Fragment, useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { GOP_Y_HIEN_DEM, GOP_Y_TOI_DA, type NguCanhDs } from '@shared/domain/index.ts';
 import { api, ApiError } from '../../lib/api.ts';
-import { useApi } from '../../lib/useApi.ts';
+import { quenBanXem, useApi } from '../../lib/useApi.ts';
+import { khoaNhapO, taoOLuu, type TrangThaiO } from '../../lib/luuChac.ts';
+import { useSession } from '../../lib/session.tsx';
+import { useToast } from '../../ui/Toast.tsx';
 import { fmtDateTime } from '../../lib/format.ts';
 import { Empty, Skeleton } from '../../ui/ui.tsx';
 import { TheDong, useDienThoai } from '../../ui/TheDong.tsx';
@@ -23,7 +26,11 @@ type DuLieu = {
 };
 type Em = Pick<RosterRow, 'id' | 'fullName' | 'studentCode' | 'status' | 'archived'> & Partial<RosterRow>;
 
-const khoa = (sid: number, skill: string) => `${sid}:${skill}`;
+/**
+ * OV-14a (F07): chữ của ô bị gỡ khi chưa lưu được (Back, lưu lỗi sau khi rời trang, hết phiên) — giữ trong trang tới khi lưu xong;
+ * vào lại đúng ô thì chữ hiện lại (còn "chưa lưu"). Tải lại trình duyệt thì mất (đã có hỏi `beforeunload`).
+ */
+const banNhap = new Map<string, string>();
 
 export function BangGopYTuan({ classId, maLop, laFt, tuan, onTuan }: {
   classId: number; maLop?: string; laFt: boolean; tuan: string | null; onTuan: (w: string | null) => void;
@@ -32,7 +39,8 @@ export function BangGopYTuan({ classId, maLop, laFt, tuan, onTuan }: {
   const duong = `/classes/${classId}/gop-y${tuan ? `?tuan=${tuan}` : ''}`;
   const { data, error, setData, reload } = useApi<DuLieu>(duong, [duong]);
   const dienThoai = useDienThoai();
-  /** Ô còn chữ chưa lưu (đang gõ / lỗi) — hỏi lại khi đổi tuần hoặc rời trang. */
+  const uid = useSession().session?.user?.id;
+  /** Ô còn chữ chưa lưu (đang gõ / đang lưu / lỗi), khoá `banNhap` — hỏi lại khi đổi tuần hoặc rời trang. */
   const chuaLuu = useRef(new Set<string>());
   const [mo, setMo] = useState<Set<number>>(new Set());
   useEffect(() => {
@@ -73,6 +81,8 @@ export function BangGopYTuan({ classId, maLop, laFt, tuan, onTuan }: {
         const con = d!.o.filter((x) => !(x.studentId === sid && x.skill === skill && x.tuan === xem.weekStart));
         return { ...d!, o: r.noiDung === null ? con : [...con, { studentId: sid, skill, tuan: xem.weekStart, noiDung: r.noiDung, ghiBoi: r.ghiBoi, ghiLuc: r.ghiLuc ?? '' }] };
       });
+      /* F03: bản vừa xem (‹ › tuần, rời trang rồi về trong 10 s) là bản TRƯỚC khi lưu — quên mọi tuần của lớp, lần sau đọc máy chủ. */
+      quenBanXem(`/classes/${classId}/gop-y`);
       return null;
     } catch (e) {
       /* Mất mạng / 5xx: "Chưa lưu — thử lại"; máy chủ từ chối (vd vừa đổi phân công): lý do hiện dưới ô. Chữ đã gõ giữ nguyên. */
@@ -83,12 +93,14 @@ export function BangGopYTuan({ classId, maLop, laFt, tuan, onTuan }: {
     const v = oCua(s.id, c.skill, xem.weekStart);
     if (!c.ghiDuoc) return <ODoc o={v} />;
     const cu = tuanCu ? oCua(s.id, c.skill, tuanCu.weekStart) : null;
+    const k = khoaNhapO(uid, classId, xem.weekStart, s.id, c.skill);
     return (
       <>
         {cu && <DongCu code={tuanCu.code} noiDung={cu.noiDung} />}
         <OGhi key={`${xem.weekStart}:${s.id}:${c.skill}`} nhan={`${dich(c.nhan)} · ${s.fullName} · ${xem.code}`} giaTri={v?.noiDung ?? null}
           tuDong={oDau ? s.id === rows[0].id && c.skill === oDau.skill : false}
-          onLuu={(nd) => luu(s.id, c.skill, nd)} onBao={(con) => baoChuaLuu(khoa(s.id, c.skill), con)} />
+          khoaNhap={k} conGiu={() => chuaLuu.current.has(k)}
+          onLuu={(nd) => luu(s.id, c.skill, nd)} onBao={(con) => baoChuaLuu(k, con)} />
       </>
     );
   };
@@ -228,49 +240,86 @@ function DongCu({ code, noiDung }: { code: string; noiDung: string }) {
 /**
  * Ô ghi góp ý: tự cao theo chữ, lưu khi rời ô hoặc Ctrl+Enter; Đang lưu… / Đã lưu / Chưa lưu — thử lại (giữ chữ). Xoá hết chữ = xoá góp ý.
  * Cùng cách với ô nhận xét hồ sơ Mock (`ONhanXet`) nhưng ≤ 500 ký tự, nằm trong ô bảng và báo "chưa lưu" lên bảng.
+ * OV-14a: lưu theo lượt (`taoOLuu`, F01) — gõ thêm khi đang lưu không bị ghi đè. Ô bị gỡ khi còn chữ chưa lưu (Back, đổi trang) → tự gửi lưu;
+ * lỗi → toast "Mở lại", chữ giữ trong `banNhap` (F07). Đổi tuần mà người dùng đã chọn bỏ chữ (`conGiu` false) thì không gửi.
  */
-function OGhi({ nhan, giaTri, onLuu, onBao, tuDong }: {
-  nhan: string; giaTri: string | null; tuDong: boolean;
+function OGhi({ nhan, giaTri, onLuu, onBao, conGiu, khoaNhap, tuDong }: {
+  nhan: string; giaTri: string | null; tuDong: boolean; khoaNhap: string;
   /** null = đã lưu; '' = lỗi mạng; chữ khác = lý do máy chủ từ chối. */
   onLuu: (v: string | null) => Promise<string | null>; onBao: (conChuaLuu: boolean) => void;
+  /** Bảng còn coi ô này là "chưa lưu" (chưa bị bỏ khi đổi tuần). */
+  conGiu: () => boolean;
 }) {
-  const [nhap, setNhap] = useState(giaTri ?? '');
-  const [tt, setTt] = useState<'idle' | 'dang' | 'xong' | 'loi'>('idle');
+  const toast = useToast();
+  const viTri = useLocation();
+  /* URL lúc ô gắn: Back chỉ đổi `?tuan=` thì ô nhận URL mới trước khi gỡ — "Mở lại" phải về đúng tuần của chữ. */
+  const [noi] = useState(() => `${viTri.pathname}${viTri.search}`);
+  const navigate = useNavigate();
+  const moi = { onLuu, onBao, conGiu, navigate, noi };
+  const the = useRef(moi);
+  the.current = moi;
+  const gan = useRef(true);
+  const [tt, setTt] = useState<TrangThaiO>('idle');
   const [lyDo, setLyDo] = useState('');
+  const [bo] = useState(() => {
+    let dangTao = true;
+    const b = taoOLuu(giaTri ?? '', (v) => the.current.onLuu(v), (x, l) => {
+      if (dangTao) return;
+      setTt(x);
+      setLyDo(l);
+      const con = b.chuaLuu();
+      the.current.onBao(con);
+      if (!con) banNhap.delete(khoaNhap);
+      else if (x === 'loi' && !gan.current) {
+        banNhap.set(khoaNhap, b.nhap());
+        toast.push('error', t('Góp ý chưa lưu được — chữ vẫn giữ.'), {
+          key: 'gop-y-chua-luu', ms: 20_000, hanhDong: { nhan: t('Mở lại'), onBam: () => the.current.navigate(the.current.noi) },
+        });
+      }
+    });
+    const cu = banNhap.get(khoaNhap);
+    if (cu !== undefined) b.go(cu);
+    dangTao = false;
+    return b;
+  });
+  const [nhap, setNhap] = useState(bo.nhap);
   const o = useRef<HTMLTextAreaElement>(null);
-  const sua = useRef(false);
-  useEffect(() => { if (!sua.current) setNhap(giaTri ?? ''); }, [giaTri]);
+  useEffect(() => { const v = bo.nhanGoc(giaTri ?? ''); if (v !== null) setNhap(v); }, [giaTri, bo]);
   useEffect(() => { if (tuDong) o.current?.focus(); }, [tuDong]);
-  useEffect(() => () => onBao(false), []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    gan.current = true;
+    if (bo.chuaLuu()) the.current.onBao(true);   // nháp còn từ lần trước
+    return () => {
+      gan.current = false;
+      /* Chờ một nhịp: StrictMode gỡ thử rồi gắn lại ngay — chỉ xử lý khi ô bị gỡ thật. */
+      setTimeout(() => {
+        if (gan.current || !bo.chuaLuu()) return;
+        if (!the.current.conGiu()) { banNhap.delete(khoaNhap); return; }
+        banNhap.set(khoaNhap, bo.nhap());
+        void bo.luu();
+      }, 0);
+    };
+  }, [bo, khoaNhap]);
   useEffect(() => {
     const el = o.current;
     if (!el) return;
     el.style.height = 'auto';
     el.style.height = `${el.scrollHeight + 2}px`;
   }, [nhap]);
-  const luu = async () => {
-    if (tt === 'dang') return;
-    if (nhap.trim() === (giaTri ?? '').trim()) { sua.current = false; onBao(false); if (tt === 'loi') setTt('idle'); return; }
-    setTt('dang');
-    const loi = await onLuu(nhap.trim() || null);
-    setTt(loi === null ? 'xong' : 'loi');
-    setLyDo(loi ?? '');
-    if (loi === null) { sua.current = false; onBao(false); }
-  };
   return (
     <div className="min-w-0">
       <textarea ref={o} aria-label={nhan} rows={1} maxLength={GOP_Y_TOI_DA} value={nhap}
         className={`o-sua block w-full resize-none px-2 py-1.5 text-[13px] leading-relaxed text-slate-100 max-sm:min-h-[44px] ${nhap ? 'min-h-[54px]' : 'min-h-[36px] border-dashed'} ${tt === 'loi' ? '!border-bad-line' : ''}`}
-        onChange={(e) => { sua.current = true; setNhap(e.target.value); onBao(true); if (tt !== 'dang') setTt('idle'); }}
-        onBlur={() => void luu()}
-        onKeyDown={(e) => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); void luu(); } }} />
+        onChange={(e) => { setNhap(e.target.value); bo.go(e.target.value); }}
+        onBlur={() => void bo.luu()}
+        onKeyDown={(e) => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); void bo.luu(); } }} />
       <span className="mt-0.5 flex items-baseline gap-2 text-[11.5px]" aria-live="polite">
         {tt === 'dang' && <span className="text-slate-500">{t('Đang lưu…')}</span>}
         {tt === 'xong' && <span className="text-slate-500">{t('Đã lưu')}</span>}
         {tt === 'loi' && (lyDo
           ? <span className="text-bad">{lyDo}</span>
           : <button type="button" className="appearance-none border-0 bg-transparent p-0 font-semibold text-bad underline"
-              onMouseDown={(e) => e.preventDefault()} onClick={() => void luu()}>{t('Chưa lưu — thử lại')}</button>)}
+              onMouseDown={(e) => e.preventDefault()} onClick={() => void bo.luu()}>{t('Chưa lưu — thử lại')}</button>)}
         {nhap.length > GOP_Y_HIEN_DEM && <span className={`ml-auto tabular-nums ${nhap.length >= GOP_Y_TOI_DA ? 'text-bad' : 'text-slate-500'}`}>{nhap.length}/{GOP_Y_TOI_DA}</span>}
       </span>
     </div>

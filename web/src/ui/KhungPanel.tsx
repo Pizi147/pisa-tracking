@@ -50,6 +50,8 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong = 'hep', tabs, ngCanh, q
     phu?: ReactNode; chinh?: ReactNode; conThieu?: (string | MucThieu)[];
     /** Luật S3 (I1): form đã sửa → nút trái mặc định "Huỷ thay đổi", chưa sửa → "Đóng". `huy.nhan` riêng (Xong, ‹ Sửa…) thắng. */
     daSua?: boolean;
+    /** OV-14a (F12): nơi gọi tự hỏi khi đóng (hộp nêu đúng số em bị ảnh hưởng) — khung không hỏi thêm lần nữa ở ✕ / Esc / nền. */
+    tuHoi?: boolean;
     /** Một dòng riêng NGAY TRÊN hàng nút (ví dụ dòng xem trước trên điện thoại — PR-XLMT). Nơi gọi tự ẩn/hiện theo cỡ màn. */
     dongTren?: ReactNode;
     /** OV-12c — CHÂN v3: không nút trái; ≥ 640 px nút chính nằm trong khối Cần làm (nơi gọi) nên chân chỉ hiện khi có `dongTren`
@@ -64,7 +66,7 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong = 'hep', tabs, ngCanh, q
   dongRef.current = onDong;
   /* Hotfix 15/10 (L5): ✕ / Esc / bấm nền đi chung một đường — đang sửa dở thì hỏi trước, không mất chữ âm thầm. */
   const daSuaRef = useRef(false);
-  daSuaRef.current = !!chan?.daSua;
+  daSuaRef.current = !!chan?.daSua && !chan?.tuHoi;
   const dong = () => { if (!daSuaRef.current || window.confirm(t('Bỏ nội dung đang gõ?'))) dongRef.current(); };
   const taiCho = useContext(KhungTaiCho);
 
