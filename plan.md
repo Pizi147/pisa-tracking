@@ -12,6 +12,8 @@ File này **thay** cho: `plan.md` cũ (mục 0–24), `PROMPT_SESSION_CODE.md`, 
 
 | File chi tiết | Dùng cho |
 |---|---|
+| `docs/superpowers/specs/2026-10-17-ov14-danh-gia-ux.md` | **OV-14** (overhaul UX 17/10): rà docx 16/10 + audit 17/10 + 3 góp ý chủ SP, xác minh mã, impeccable 27/40 · ui-ux-pro-max 25/40, đường lên ≥ 35/40, 12 ý tưởng, thứ tự |
+| `thiet-ke/mockup-ov14-{1,2,3}-*-2026-10-17.html` | Mockup **OV-14** — **chờ chủ SP duyệt**: 1 hệ thiết kế v2 + Học viên & Lớp · 2 lưới điểm + Công việc · 3 Tổng quan QL + Báo cáo tuần + Phân tích |
 | `docs/superpowers/specs/2026-10-14-ov12-sos-workflow-design.md` | **OV-12** (prompt overhaul chủ SP 14/10): nhận xét MT = nguyên nhân SOS, hồ sơ MT Case, Góp ý hàng tuần, panel số liệu, Học viên & Lớp ba góc nhìn, hạn 2 tuần, quyền — hiện trạng, quyết định, 7 PR, kiểm chứng |
 | `thiet-ke/mockup-ov12-{1..4}-*-2026-10-14.html` | Mockup **OV-12** — **chờ chủ SP duyệt** (trừ OV-12a đã chốt) |
 | `docs/superpowers/plans/2026-10-14-ov11-phoi-hop.md` | Luật phối hợp tự động session code ↔ planning (dùng lại cho OV-12) |
@@ -218,8 +220,17 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
   3. ~~Kho tệp bằng chứng~~ ✅ chủ SP 18/10: không có tệp cần chép.
   4. **~25/10:** xoá DB Turso `pisatracking-261017`, `pisatracking-261014`, `pisatracking`, `pisatracking-demo-thu-mig` + thư mục `D:\pisa-mig` (giữ file sao lưu trên Drive); thu hồi mã Turso cũ. **Chủ SP xử lý dữ liệu email** (14 nhóm trùng / 13 thiếu, Monbay) khi tiện.
   5. **Sổ tay PDF**: cập nhật theo EN-e + 13f trước lần deploy kế (mục 17/10 ở trên) — vẫn còn.
-  6. **Overhaul UX tuần sau** theo file chủ SP gửi lại; thêm từ rà 13q: bảng lớp QL / GV ở Học viên & Lớp chưa có nhãn "Đã thi · chờ kết quả" ở cột Dự kiến thi (QL thấy qua panel một em / Công việc); dán điểm nhiều ô từ Excel vào lưới (tính năng mới).
+  6. ~~Overhaul UX tuần sau~~ → **OV-14** (khối dưới).
   7. Nhỏ: ~~Netlify CLI 27.13~~ ✅ 18/10; huy hiệu "Powered by Netlify" (chủ SP tắt trong Project configuration › General).
+
+### OV-14 — overhaul UX 17–18/10 (đánh giá `docs/superpowers/specs/2026-10-17-ov14-danh-gia-ux.md`, mockup `thiet-ke/mockup-ov14-*`)
+- **Rà 17/10** (impeccable critique + detector, ui-ux-pro-max, hai bên đối thoại, xác minh mã main 6177d36f, 266 ảnh demo): Nielsen 27/40, ui-ux-pro-max 25/40 → đích ≥ 35 (37).
+  Audit 17/10: F01–F12 đúng (phần lớn nhỏ; F01 / F03 mất chữ / bản cũ); Q01 không lộ quyền; Q03 chép kho tệp trước khi xoá DB cũ. Docx 16/10: 6 mục UX-2 đã sửa; 5 mục trái luật không làm như viết (3 màu, gộp cột điểm, ô "—", một định nghĩa SOS, tách HV - Case).
+- **Chủ SP chốt 17/10:** sáng / tối **theo máy** (đổi DESIGN.md); ý tưởng vào mockup: hàng đợi việc GV · lưới điểm mới · Công việc một danh sách · Tổng quan QL giao ban · thanh lọc cố định · Báo cáo tuần · "Vì sao?" (không Ctrl+K); gói sửa ngay chạy song song.
+  **Planning tự quyết** (đúng 3 góp ý chủ SP, validator đạt): SOS thang 3 bậc vàng viền → cam nền nhạt → đỏ nền đặc, "quá hạn" chỉ chữ cam + ⚠; hàng đã thi nền xanh cả hàng + vạch + chip (hôm sau ngày thi → chọn Bước tiếp), "đang chọn" = viền khung; W to, W1 · W2 nhỏ mờ (lưới nhập: W1 / W2 ô rõ, W đậm hơn).
+- **Đang chạy:** OV-14a (lưu chắc chắn F01–F12, session `ov14a-luu-chac`) · OV-14b (12 sửa nhỏ giao diện: nhãn Đã thi QL/GV, Đang SOS mặc định Toàn bộ, 58/53, ⚠, emoji, ô 16 px ở 375…, session `ov14b-sua-nho`).
+- **Chờ chủ SP:** duyệt 3 mockup (phương án + câu hỏi ở cuối mỗi file) → planning viết đặc tả + chia PR (hệ thiết kế v2 → lưới điểm → Công việc / Tổng quan → Phân tích / Báo cáo tuần).
+- Ghi nhớ: Rulebook §20.6 (T58 "lớp thường không SOS") đã bị thay bởi đặc tả OV-12 mục 7.2 (14/10: Progress lớp thường ghi nhãn SOS theo số môn trượt) — sửa Rulebook khi viết đặc tả OV-14.
 - **Chủ SP 16/10 (OV-13p):** TVV / CX được TẠO LỚP (`class.create` theo phạm vi grant, CX toàn hệ thống) và THÊM HV (quyền hẹp mới `student.add` thay `student.edit` ở intake); không mở chuyển lớp / lưu trữ / lộ trình / phân công GV; không bước duyệt.
 - **UX-1 (đánh giá UX 16/10):** ô Tổng quan "Case chờ duyệt" đổi **"Case chưa chốt PA"** (Case mở chưa có PA đang theo dõi — kể cả PA chờ xác nhận / duyệt); "Case chưa có PA" giữ cho cột bảng chi nhánh (chưa có PA nào); "Chờ duyệt" chỉ còn là hộp thẻ QL. Bảng chi nhánh thêm hàng "Lớp đã kết thúc" (Σ hàng = Tất cả), "—" khi chưa có đợt Test đến lịch, "SOS hiện tại" / "Đang SOS · tuần".
 - **OV-13q (chủ SP 16/10) — "Đã thi xong · hạn 1 tuần":** hiện rõ ở Công việc, Tổng quan, Học viên & Lớp (dòng + panel một em), hồ sơ HV; có gia hạn; không chặn cứng. Hiện trạng đã rà (16/10): việc `thi_that` hạn = thứ Hai sau ngày thi + 4 tuần (chủ GVCN), `buoc_tiep` hạn = ngày NHẬP kết quả + 7 (QL / TVV) — hai đồng hồ lệch; không có gia hạn; Tổng quan TVV / CX không có em "đã thi, chưa kết quả"; hồ sơ không có việc "Cập nhật kết quả thi thật"; `thi_that` không lọc lộ trình mới nhất / em Lưu trữ. Luật planning chọn (chủ SP sửa nếu khác):
