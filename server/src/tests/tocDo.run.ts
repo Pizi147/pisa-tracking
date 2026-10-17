@@ -1031,6 +1031,43 @@ await checkAsync('TD4-a (×3) · Công việc trùng JSON ảnh chụp trước 
 });
 
 /*
+ * TD7a (chủ SP 17/10, Turso Top Queries: câu "Xem nhận xét Speaking" ~225 k dòng / lần): câu xem_nx_s — "Tất cả" (không lọc / lọc chi nhánh) và nhánh lớp
+ * ("Của tôi" của GV S) — đi chỉ mục một phần idx_score_cho_phu_trach, không SCAN assessment_scores / case_milestones; migrate prTd7a chạy lần hai không làm gì. JSON /my-work không đổi: TD4-a ở trên.
+ */
+await checkAsync('TD7a (×3) · Xem nhận xét Speaking: không SCAN assessment_scores / case_milestones; migrate prTd7a chạy lặp được', async () => {
+  const { migratePrTd7a, CHI_MUC_TD7A } = await import('../migrate/prTd7a.ts');
+  const { myWork } = await import('../worklist/mywork.ts');
+  const lan: string[][] = [[], []];
+  migratePrTd7a(conn, lan[0]); migratePrTd7a(conn, lan[1]);
+  assert(!lan[0].length && !lan[1].length, `migrate trên DB đã có chỉ mục vẫn báo đổi: ${lan.flat().join(' | ')}`);
+  for (const [ten] of CHI_MUC_TD7A) assert(conn.prepare("SELECT 1 FROM sqlite_master WHERE type = 'index' AND name = ?").get(ten), `thiếu ${ten}`);
+  const gvS = (conn.prepare(`SELECT user_id AS id FROM teacher_assignments WHERE class_id = ? AND skill = 'speaking' AND status = 'active' ORDER BY id LIMIT 1`).get(LOP_FT) as any).id;
+  const ghi: { sql: string; args: unknown[] }[] = [];
+  doQuet.ghi = ghi;
+  try {
+    chayTrongRequest('GET', () => myWork(loadPrincipal(USER.QT), { nguoi: 'tat-ca', branchId: CN }));
+    chayTrongRequest('GET', () => myWork(loadPrincipal(USER.QL), { nguoi: 'tat-ca' }));
+    chayTrongRequest('GET', () => myWork(loadPrincipal(gvS)));
+  } finally {
+    doQuet.ghi = null;
+  }
+  const cau = [...new Map(ghi.filter((g) => /s\.cho_phu_trach_xem = 1/.test(g.sql)).map((g) => [g.sql, g])).values()];
+  assert(cau.length === 3 && cau.some((g) => /c\.branch_id = \?/.test(g.sql)) && cau.some((g) => /a\.class_id IN \(/.test(g.sql)), `không bắt đủ ba dạng câu xem_nx_s (${cau.length} câu)`);
+  const quet: string[] = [];
+  for (const { sql, args } of cau) {
+    const bang = new Map([...sql.matchAll(/(?:FROM|JOIN)\s+(\w+)\s+(?:AS\s+)?(\w+)/gi)].map((m) => [m[2], m[1]]));
+    const plan = conn.prepare(`EXPLAIN QUERY PLAN ${sql}`).all(...args) as any[];
+    if (!plan.some((r) => r.detail.includes('idx_score_cho_phu_trach'))) quet.push(`không dùng idx_score_cho_phu_trach: ${plan[0]?.detail}`);
+    for (const r of plan) {
+      const m = /^(?:SCAN (\w+)|SEARCH (\w+)$)/.exec(r.detail);
+      /* `SCAN s USING … INDEX idx_score_cho_phu_trach` = duyệt chỉ mục một phần — chỉ các ô đang chờ, không phải cả bảng. */
+      if (m && !r.detail.includes('idx_score_cho_phu_trach') && ['assessment_scores', 'case_milestones'].includes(bang.get(m[1] ?? m[2]) ?? m[1] ?? m[2])) quet.push(r.detail);
+    }
+  }
+  assert(!quet.length, `còn quét cả bảng:\n        ${quet.join('\n        ')}`);
+});
+
+/*
  * TD4-b: bản chính 15/10 log `[cham]` /my-work 5–7,5 s, 75–126 câu, 6 900–18 400 dòng (top: lịch kỹ năng của MỌI lượt trong phạm vi). Mốc ×3 trước TD4
  * (main 35517670, đo trong chính phép này): câu / dòng dưới đây. Khoá: dòng ≤ 40 % mốc, số câu ×3 ≤ ×1 + 2 (không tăng theo dữ liệu) và ≤ mốc − 3.
  */
