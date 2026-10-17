@@ -8,7 +8,7 @@ import { ODiemMt } from '../fasttrack/HopNhapDiem.tsx';
 import {
   fmtBand, skillLabel, skillShort, sosLabel, sosTone,
 } from '../../lib/format.ts';
-import { ENTRY_SKILLS, chipSosMt0, chuOChuaLuu, dotGvCham, duongDotTest, maHocVienNgan, ngay, nhanLuot, tuanLich, type AssessedSkill, type NguoiChon, type TrangThaiLuuO } from '@shared/domain/index.ts';
+import { ENTRY_SKILLS, chipSosMt0, chuOChuaLuu, dotGvCham, duongDotTest, ngay, nhanLuot, tuanLich, type AssessedSkill, type NguoiChon, type TrangThaiLuuO } from '@shared/domain/index.ts';
 import { DongThi } from './DongThi.tsx';
 import { GOI_Y_COT_MT, NutGvCham, useGvChamCot } from './GvCham.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
@@ -41,7 +41,7 @@ export const khopKn = (skill: string, kn: string | null | undefined) =>
   !!kn && (skill === kn || (kn === 'writing' && skill.startsWith('writing')));
 
 /** HÀNG MỜ cuối bảng (PR-DL): em chưa có lịch lượt đang xem — không có ô nhập, chỉ một câu `chu` trải hết các cột điểm. */
-export type HangMo = { studentId: number; ten: string; ma: string; chu: ReactNode };
+export type HangMo = { studentId: number; ten: string; chu: ReactNode };
 
 /** Ô CÒN PHẢI NHẬP của người đang xem — dùng để cuộn tới em đầu tiên chưa có điểm (Q12). */
 export const oTrongFt = (c: Cell) => c.required && c.canEdit && c.band === null && !c.noShow
@@ -202,7 +202,6 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
             <tr key={`mo-${h.studentId}`} className="h-12" data-hv={h.studentId}>
               <td className="td py-1.5 sticky-col text-slate-500">
                 <span className="block truncate" title={h.ten}>{h.ten}</span>
-                <span className="text-[11px]">{h.ma}</span>
               </td>
               <td className="td py-1.5 text-xs text-slate-400" colSpan={COT.length - 1}>{h.chu}</td>
             </tr>
@@ -306,7 +305,6 @@ function SheetRow({ row, lop, active, cot, tuanDangXem, tuanXem, onReload, gvMac
         </div>
         {/* Tóm tắt lưu của dòng: "n ô chưa lưu" khi còn ô lỗi (không bao giờ "đã lưu" che ô lỗi) — trạng thái từng ô ở ô. */}
         <div className="flex items-center gap-1.5 text-xs text-slate-500 min-w-0">
-          <span className="shrink-0">{maHocVienNgan(row.studentCode)}</span>
           {row.lichSu && <NhanCu />}
           <DauLuu status={status} error={lastError} onRetry={coGuiLai ? retry : undefined} soLoi={soLoi} />
         </div>

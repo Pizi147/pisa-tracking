@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { YThucTestKit } from './yThuc.tests.ts';
+import { emailThu } from '../seed/emailThu.ts';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..', '..');
 
@@ -19,7 +20,7 @@ export async function runPrKiemDuLieuMtTests(t: YThucTestKit) {
   let dem = 0;
   /** Em mới ở MB FT 101: MT1 (T+1), MT2 (T+4), MT3 (T+8) — lịch nhất quán, lượt và kỹ năng cùng tuần. */
   const emMoi = () => {
-    const r = intake.commitIntake(P.admin, { classId: classId('MB FT 101'), rows: [{ fullName: `KDLMT Em ${++dem}`, target: 6.5, startWeek: tuanNay, email: 'hv@demo.test', dob: '2010-01-01' }] });
+    const r = intake.commitIntake(P.admin, { classId: classId('MB FT 101'), rows: [{ fullName: `KDLMT Em ${++dem}`, target: 6.5, startWeek: tuanNay, email: emailThu(), dob: '2010-01-01' }] });
     const ds = conn.prepare(`SELECT id FROM assessment_attempts WHERE student_id = ? AND status != 'cancelled' ORDER BY attempt_no`).all(r.studentIds[0]) as any[];
     const m = ds.map((x) => x.id as number);
     [1, 4, 8].forEach((w, i) => datTuan(m[i], w));

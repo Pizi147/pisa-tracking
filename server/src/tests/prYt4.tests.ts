@@ -1,5 +1,6 @@
 /** PHÉP KIỂM PR-YT4 — Ý thức v4: một hàm trạng thái, thang bắt buộc, QL duyệt biện pháp nặng. Harness do `run.ts` truyền vào. */
 import type { YThucTestKit } from './yThuc.tests.ts';
+import { emailThu } from '../seed/emailThu.ts';
 
 export async function runPrYt4Tests(t: YThucTestKit) {
   const { check, assert } = t;
@@ -210,7 +211,7 @@ export async function runPrYt4Tests(t: YThucTestKit) {
   /** Học viên thử riêng từng phép kiểm (không lẫn số). */
   const hv = (lop = LOP): number => {
     const ten = `YT4 HV ${++seq}`;
-    intake.commitIntake(P.admin, { classId: lop, rows: [{ fullName: ten, target: 7, email: 'hv@demo.test', dob: '2010-01-01' }], idempotencyKey: `yt4-${seq}` });
+    intake.commitIntake(P.admin, { classId: lop, rows: [{ fullName: ten, target: 7, email: emailThu(), dob: '2010-01-01' }], idempotencyKey: `yt4-${seq}` });
     const id = (conn.prepare('SELECT id FROM students WHERE full_name = ?').get(ten) as any).id as number;
     const cy = conn.prepare("SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active'").get(id) as any;
     if (cy) boLichTuTao(conn, cy.id);

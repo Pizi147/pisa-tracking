@@ -6,6 +6,7 @@
  */
 import { boLichTuTao } from './luotThu.ts';
 import type { YThucTestKit } from './yThuc.tests.ts';
+import { emailThu } from '../seed/emailThu.ts';
 
 export async function runKeHoachTestTests(t: YThucTestKit) {
   const { check, assert, assertThrows, conn, classId, addDays, P } = t;
@@ -40,7 +41,7 @@ export async function runKeHoachTestTests(t: YThucTestKit) {
   let demEmMoi = 0;
   const emMoiFT = (ten: string): number => {
     demEmMoi += 1;
-    const r = intakeMod.commitIntake(P.admin, { classId: mbClass, rows: [{ fullName: `KH ${ten} ${demEmMoi}`, target: 7, email: 'hv@demo.test', dob: '2010-01-01' }] });
+    const r = intakeMod.commitIntake(P.admin, { classId: mbClass, rows: [{ fullName: `KH ${ten} ${demEmMoi}`, target: 7, email: emailThu(), dob: '2010-01-01' }] });
     const sid = r.studentIds[0] as number;
     boLichTuTao(conn, (conn.prepare(`SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active'`).get(sid) as any).id);
     return sid;

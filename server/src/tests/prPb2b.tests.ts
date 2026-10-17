@@ -1,5 +1,6 @@
 /** PHÉP KIỂM PR-Pb2-b — Phân tích giáo viên · FOU 2 GV · hồ sơ GV · ngày nghiệp vụ mới (kế hoạch 2026-10-01-pr-pb2, Phần B). */
 import type { YThucTestKit } from './yThuc.tests.ts';
+import { emailThu } from '../seed/emailThu.ts';
 
 export async function runPrPb2bTests(t: YThucTestKit) {
   const { check, assert, conn, P, TODAY, addDays, classId } = t;
@@ -62,7 +63,7 @@ export async function runPrPb2bTests(t: YThucTestKit) {
   let seq = 0;
   const emMoi = (lop: string) => {
     const ten = `PB2B HV ${++seq}`;
-    intake.commitIntake(P.admin, { classId: classId(lop), rows: [{ fullName: ten, target: 6.5, email: 'hv@demo.test', dob: '2010-01-01' }], idempotencyKey: `pb2b-${seq}` });
+    intake.commitIntake(P.admin, { classId: classId(lop), rows: [{ fullName: ten, target: 6.5, email: emailThu(), dob: '2010-01-01' }], idempotencyKey: `pb2b-${seq}` });
     const st = get('SELECT id FROM students WHERE full_name = ?', ten);
     const cy = get("SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active'", st.id);
     return { sid: st.id as number, cy: cy?.id as number };

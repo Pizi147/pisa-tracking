@@ -46,7 +46,7 @@ export async function runPrXuatTests(t: YThucTestKit) {
   });
 
   const dong = (o: Partial<import('../../../shared/domain/xuatMt.ts').DongFT> = {}): import('../../../shared/domain/xuatMt.ts').DongFT => ({
-    ma: 'PISA-000001', ten: 'Nguyễn Minh An', chiNhanh: 'Monbay', lop: 'MB FT 101', loTrinh: 'Lộ trình A', mt: 3, tuan: 'W3 SEP 2026', tuanBd: '2026-09-14',
+    ten: 'Nguyễn Minh An', email: 'an.nguyen@gmail.com', chiNhanh: 'Monbay', lop: 'MB FT 101', loTrinh: 'Lộ trình A', mt: 3, tuan: 'W3 SEP 2026', tuanBd: '2026-09-14',
     l: 6, r: 6.5, w: null, s: null, overall: null, target: 7, kyVong: 6.5, sos: 2, trangThai: 'Thiếu điểm 2/4 · SOS tạm thời',
     w1: null, w2: null, tieuChi: { writing1: [null, null, null, null], writing2: [null, null, null, null], speaking: [null, null, null, null] },
     tuanKn: { listening: 'W3 SEP 2026', reading: 'W3 SEP 2026', writing: null, speaking: null }, nguoiNhap: 'Trần Ngọc Hà',
@@ -55,7 +55,7 @@ export async function runPrXuatTests(t: YThucTestKit) {
 
   check('PR-XUAT (1) · bangFT: 16 cột gọn đúng thứ tự T40; đầy đủ = 16 + COT_FT_THEM, 16 cột đầu không đổi', () => {
     const gon = d.bangFT([dong()], 'gon');
-    assert(gon[0].join('|') === 'Mã|Tên|Chi nhánh|Lớp|Lộ trình|MT|Tuần|L|R|W|S|Overall|Target|Kỳ vọng|SOS|Trạng thái lượt', gon[0].join('|'));
+    assert(gon[0].join('|') === 'Tên|Email|Chi nhánh|Lớp|Lộ trình|MT|Tuần|L|R|W|S|Overall|Target|Kỳ vọng|SOS|Trạng thái lượt', gon[0].join('|'));
     assert(gon[0].length === 16 && gon[1].length === 16 && gon[1][5] === 'MT3', 'gọn 16 cột, MT là chữ MT3');
     const day = d.bangFT([dong()], 'day-du');
     assert(day[0].length === 16 + d.COT_FT_THEM.length && day[1].length === day[0].length, `đầy đủ ${day[0].length} cột`);
@@ -101,7 +101,7 @@ export async function runPrXuatTests(t: YThucTestKit) {
 
   check('PR-XUAT (1) · dongXemTruoc theo mẫu M11; bangBoLoc + moTaBoLoc: đủ mục, lớp thường không nhắc SOS/Overall (T58)', () => {
     const x = d.dongXemTruoc(dong(), '2026-09-29');
-    assert(x === 'PISA-000001 Nguyễn Minh An · MB FT 101 · MT3 · W3 SEP · L 6.0 · R 6.5 · W — · S — · SOS 2 tạm thời', x);
+    assert(x === 'Nguyễn Minh An · MB FT 101 · MT3 · W3 SEP · L 6.0 · R 6.5 · W — · S — · SOS 2 tạm thời', x);
     const f = d.docBoLocXuatMt({ tg: 'tuan', tu: '2026-09-07', den: '2026-09-28', cot: 'day-du' }) as import('../../../shared/domain/xuatMt.ts').BoLocXuatMt;
     const moTa = d.moTaBoLoc(f, { chiNhanh: ['Monbay'], lop: [] });
     const bl = d.bangBoLoc({ khung: 'ft', nguoiXuat: 'Nguyễn Khánh Vy', luc: '2026-09-29T03:05:00.000Z', moTa, soLuot: 312 });
@@ -126,7 +126,7 @@ export async function runPrXuatTests(t: YThucTestKit) {
     const doc = XLSX.read(buf);
     assert(doc.SheetNames.join() === 'Mock Test,Bộ lọc đã dùng', doc.SheetNames.join());
     const ws = doc.Sheets['Mock Test'];
-    assert(ws['B2'].v === 'Nguyễn Minh An' && ws['B2'].t === 's', 'ô tên giữ dấu');
+    assert(ws['A2'].v === 'Nguyễn Minh An' && ws['A2'].t === 's' && ws['B2'].v === 'an.nguyen@gmail.com', 'ô tên giữ dấu, cột 2 là email (OV-13f)');
     assert(ws['H2'].t === 'n' && ws['H2'].v === 6 && ws['I2'].t === 'n', 'điểm L, R là ô số');
     assert(ws['J2'] === undefined && ws['K2'] === undefined && ws['L2'] === undefined, 'W/S/Overall thiếu → không có ô (không phải chuỗi rỗng)');
     assert(doc.Sheets['Bộ lọc đã dùng']['B2'].v === 'Nguyễn Khánh Vy', 'sheet Bộ lọc giữ dấu');
@@ -197,7 +197,7 @@ async function mayChu(t: YThucTestKit) {
 
   check('PR-XUAT (2) · tuần của lượt = tuần SỚM NHẤT của kỹ năng phải thi, khác planned_period_id (tuần hoàn tất, muộn nhất) (K4-35b)', () => {
     const a = conn.prepare(
-      `SELECT a.id, a.attempt_no, a.planned_period_id, st.student_code FROM assessment_attempts a JOIN students st ON st.id = a.student_id
+      `SELECT a.id, a.attempt_no, a.planned_period_id, st.email, st.full_name FROM assessment_attempts a JOIN students st ON st.id = a.student_id
         WHERE a.class_id = ? AND a.kind = 'mock' AND a.status != 'cancelled'
           AND (SELECT COUNT(*) FROM attempt_skills k WHERE k.attempt_id = a.id AND k.required = 1) = 4 ORDER BY a.id LIMIT 1`,
     ).get(mbLop) as any;
@@ -210,7 +210,7 @@ async function mayChu(t: YThucTestKit) {
       conn.prepare(`UPDATE attempt_skills SET planned_period_id = ? WHERE attempt_id = ? AND skill = 'speaking'`).run(py, a.id);
       skillSchedule.recomputeCompletionWeek(a.id, null);
       assert((conn.prepare('SELECT planned_period_id AS p FROM assessment_attempts WHERE id = ?').get(a.id) as any).p === py, 'planned_period_id = tuần muộn nhất');
-      const co = (f: BoLoc) => hang(xm.duLieuXuatMt(P.mbManager, f)).some((r) => r[0] === a.student_code && r[5] === `MT${a.attempt_no}`);
+      const co = (f: BoLoc) => hang(xm.duLieuXuatMt(P.mbManager, f)).some((r) => r[0] === a.full_name && r[1] === a.email && r[5] === `MT${a.attempt_no}`);
       const theoTuan = (x: string, y: string) => loc({ tg: 'tuan', tu: x, den: y, lop: String(mbLop) });
       assert(co(theoTuan(tuanX, tuanX)), 'lọc tuần sớm nhất (X–X) phải CÓ lượt');
       assert(!co(theoTuan(tuanY, tuanY)), 'lọc tuần muộn nhất (Y–Y) phải KHÔNG có lượt');
@@ -242,11 +242,11 @@ async function mayChu(t: YThucTestKit) {
     assert(kck.length >= 1 && kck.every((r) => r[13] === null && r[14] === null), `KCK ${kck.length}: kỳ vọng/SOS phải trống`);
     /* Lượt huỷ cả lượt: không dòng nào của (học viên, MT) đó — trừ khi em có lượt MT cùng số được tạo lại (không bị huỷ). */
     for (const h of conn.prepare(
-      `SELECT a.id, st.student_code, a.attempt_no FROM assessment_attempts a JOIN students st ON st.id = a.student_id WHERE a.status = 'cancelled' AND a.kind = 'mock'`,
+      `SELECT a.id, st.email, st.full_name, a.attempt_no FROM assessment_attempts a JOIN students st ON st.id = a.student_id WHERE a.status = 'cancelled' AND a.kind = 'mock'`,
     ).all() as any[]) {
       const taoLai = (conn.prepare(`SELECT COUNT(*) n FROM assessment_attempts a2 JOIN assessment_attempts a1 ON a1.student_id = a2.student_id AND a1.attempt_no = a2.attempt_no
         WHERE a1.id = ? AND a2.status != 'cancelled' AND a2.kind = 'mock'`).get(h.id) as any).n;
-      assert(taoLai > 0 || !tatCa.some((r) => r[0] === h.student_code && r[5] === `MT${h.attempt_no}`), `lượt huỷ ${h.student_code} MT${h.attempt_no} không được xuất`);
+      assert(taoLai > 0 || !tatCa.some((r) => r[0] === h.full_name && r[1] === h.email && r[5] === `MT${h.attempt_no}`), `lượt huỷ ${h.email} MT${h.attempt_no} không được xuất`);
     }
   });
 
@@ -316,7 +316,7 @@ async function mayChu(t: YThucTestKit) {
 
   check('PR-XUAT (8) · OV-12b: cột Nhận xét W1 · W2 (riêng) · Nhận xét S · GV chấm S: đúng chữ, null khi không có, cột gọn không có, không thêm câu SQL (YC-13.5)', () => {
     const a = conn.prepare(
-      `SELECT a.id, a.attempt_no, st.student_code FROM assessment_attempts a JOIN students st ON st.id = a.student_id
+      `SELECT a.id, a.attempt_no, st.email, st.full_name FROM assessment_attempts a JOIN students st ON st.id = a.student_id
         WHERE a.class_id = ? AND a.kind = 'mock' AND a.status != 'cancelled' ORDER BY a.id LIMIT 2`,
     ).all(mbLop) as any[];
     assert(a.length === 2, 'demo thiếu 2 lượt MB FT 101');
@@ -335,9 +335,9 @@ async function mayChu(t: YThucTestKit) {
       const [tieuDe, ...dong] = r.sheets[0].aoa;
       const [iW, iW2, iS, iGv] = ['Nhận xét W1', 'Nhận xét W2', 'Nhận xét S', 'GV chấm S'].map((c) => tieuDe.indexOf(c));
       assert(iW > 0 && iW2 === iW + 1 && iS > iW2 && iGv > iS, `thiếu cột: ${tieuDe.slice(-8)}`);
-      const co = dong.find((x) => x[0] === a[0].student_code && x[5] === `MT${a[0].attempt_no}`)!;
+      const co = dong.find((x) => x[0] === a[0].full_name && x[1] === a[0].email && x[5] === `MT${a[0].attempt_no}`)!;
       assert(co[iW] === 'Thiếu ví dụ' && co[iW2] === 'Lạc đề một phần' && co[iS] === 'Nói tự nhiên' && co[iGv] === 'Giám khảo ngoài', JSON.stringify([co[iW], co[iW2], co[iS], co[iGv]]));
-      const khong = dong.find((x) => x[0] === a[1].student_code && x[5] === `MT${a[1].attempt_no}`)!;
+      const khong = dong.find((x) => x[0] === a[1].full_name && x[1] === a[1].email && x[5] === `MT${a[1].attempt_no}`)!;
       assert(khong[iW] === null && khong[iS] === null && khong[iGv] === null, 'lượt không nhận xét → ô trống (null)');
       assert(!f('gon').sheets[0].aoa[0].some((c) => /Nhận xét|GV chấm/.test(String(c))), 'cột gọn không có 3 cột này');
       const n1 = nguCanh.soCauSql(); f('day-du'); const nSql2 = nguCanh.soCauSql() - n1;

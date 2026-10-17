@@ -412,7 +412,7 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
 
   /* OV-11d (Q3 chủ SP, HL-11): ngày sinh và email không bắt buộc — gõ thì kiểm dạng (ONgay / máy chủ), xoá trống = bỏ; em thiếu nằm ở "Thiếu thông tin". */
   const loi = dsLoi([{ khoa: 'ho-ten', nhan: 'Họ tên', toiThieu: 1 }], { 'ho-ten': fullName });
-  const loiEmail = docEmail(email).loi;   // PR-OV2c: trống được, có gõ thì đúng dạng
+  const loiEmail = docEmail(email).loi;   // PR-OV2c / OV-13f: trống vẫn lưu (việc Thiếu email), có gõ thì đúng dạng; trùng em khác → máy chủ báo
   if (loiEmail) loi.push({ khoa: 'email', nhan: 'Email', lyDo: loiEmail });
   for (const k of ['phone', 'parentPhone'] as const) {
     const e = nhapLienHe ? docSoDienThoai(lh[k]).loi : null;
@@ -500,7 +500,7 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
           <ONgay kieu="ngay" toiDa={homNay} id={lf.oId('ngay-sinh')} onBlur={lf.roi('ngay-sinh')} invalid={!!lf.loiCua(loi, 'ngay-sinh')}
             value={dob} onChange={sua(setDob)} />
         </Truong>
-        <Truong nhan="Email" tuyChon loi={lf.loiCua(loi, 'email')}>
+        <Truong nhan="Email" batBuoc thieu={!email.trim()} loi={lf.loiCua(loi, 'email')}>
           <input className="field w-full" type="email" inputMode="email" autoComplete="off" {...lf.o(loi, 'email')}
             value={email} onChange={(e) => sua(setEmail)(e.target.value)} placeholder="Ví dụ: an.nguyen@gmail.com" />
         </Truong>

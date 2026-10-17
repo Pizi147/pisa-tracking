@@ -6,6 +6,7 @@
  */
 import type { YThucTestKit } from './yThuc.tests.ts';
 import { chotSan } from './luotThu.ts';
+import { emailThu } from '../seed/emailThu.ts';
 
 export async function runPrOv5aTests(t: YThucTestKit) {
   const { check, assert, conn, P, TODAY, classId } = t;
@@ -41,7 +42,7 @@ export async function runPrOv5aTests(t: YThucTestKit) {
   let dem = 0;
   /** Em mới ở MB FT 101: MT1 tuần trước, chốt sẵn (OV-1c), các kỹ năng trong `diem` dưới kỳ vọng, KHÔNG nhận xét (dữ liệu trước OV-12b) → Case MT cũ "Chờ ghi nhận xét". */
   const em = (diem: Record<string, number>) => {
-    const r = intake.commitIntake(P.admin, { classId: LOP, rows: [{ fullName: `OV5a Em ${++dem}`, target: 6.5, startWeek: tuanNay, email: 'hv@demo.test', dob: '2010-01-01' }] });
+    const r = intake.commitIntake(P.admin, { classId: LOP, rows: [{ fullName: `OV5a Em ${++dem}`, target: 6.5, startWeek: tuanNay, email: emailThu(), dob: '2010-01-01' }] });
     const sid = r.studentIds[0] as number;
     const m1 = one(`SELECT id FROM assessment_attempts WHERE student_id = ? AND kind = 'mock' ORDER BY attempt_no LIMIT 1`, sid)?.id as number;
     if (!m1) throw new Error(`em ${sid} không có MT: ${JSON.stringify({ r, lop: one('SELECT status, lich_mt, route, start_date FROM classes WHERE id = ?', LOP), luot: all('SELECT kind, attempt_no, status FROM assessment_attempts WHERE student_id = ?', sid), hom: TODAY })}`);

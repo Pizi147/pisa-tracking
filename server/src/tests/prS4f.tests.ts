@@ -1,6 +1,7 @@
 /** PHÉP KIỂM PR-S4F — sửa sau rà cuối đợt 4 (mỗi mục một phép kiểm tái hiện đúng tình huống rà; quyền: gọi API bằng vai sai → 403). */
 import type { YThucTestKit } from './yThuc.tests.ts';
 import { duXacNhan } from './luotThu.ts';
+import { emailThu } from '../seed/emailThu.ts';
 
 export async function runPrS4fTests(t: YThucTestKit) {
   const { check, checkAsync, assert, conn, P, classId } = t;
@@ -85,7 +86,7 @@ export async function runPrS4fTests(t: YThucTestKit) {
   await checkAsync('S4F (3) · Lớp thường: xoá điểm R trượt (API) → Case chỉ dựng trên điểm đó đóng, không mốc "đã đạt"; sửa lên đạt cũng không mốc; lượt sau đạt → có mốc (Case Progress Test tự tạo — PR-LT2a)', async () => {
     const fou = classId('MB FOU 12');
     const taoEm = (ten: string) => {
-      intake.commitIntake(P.admin, { classId: fou, rows: [{ fullName: ten, email: 'hv@demo.test', dob: '2010-01-01' }], idempotencyKey: `s4f-${ten}` });
+      intake.commitIntake(P.admin, { classId: fou, rows: [{ fullName: ten, email: emailThu(), dob: '2010-01-01' }], idempotencyKey: `s4f-${ten}` });
       regular.planRegularTests(P.admin, fou);
       const st = get('SELECT id FROM students WHERE full_name = ?', ten);
       const cy = get(`SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active'`, st.id);
@@ -211,7 +212,7 @@ export async function runPrS4fTests(t: YThucTestKit) {
   const maLoi = (fn: () => unknown): number | string => { try { fn(); return 'không ném'; } catch (e: any) { return e?.status ?? String(e?.message ?? e); } };
   const FT = classId('MB FT 101');
   const emFt = (ten: string) => {
-    intake.commitIntake(P.admin, { classId: FT, rows: [{ fullName: `S4F ${ten}`, target: 7, email: 'hv@demo.test', dob: '2010-01-01' }], idempotencyKey: `s4f-ft-${ten}` });
+    intake.commitIntake(P.admin, { classId: FT, rows: [{ fullName: `S4F ${ten}`, target: 7, email: emailThu(), dob: '2010-01-01' }], idempotencyKey: `s4f-ft-${ten}` });
     const st = get('SELECT id FROM students WHERE full_name = ?', `S4F ${ten}`);
     const cy = get(`SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active'`, st.id);
     boLichTuTao(conn, cy.id);
@@ -283,7 +284,7 @@ export async function runPrS4fTests(t: YThucTestKit) {
     const f = d.docBoLocXuatMt({ tg: 'dot', dot: 'mt:1,mt:2,mt:3,mt:4,mt:5,mt:6,mt:7,mt:8', lop: String(FT), cot: 'day-du' });
     assert(typeof f !== 'string', String(f));
     const r = xm.duLieuXuatMt(P.mbManager, f);
-    const ten = r.sheets[0].aoa.slice(1).map((h: any[]) => String(h[1]));
+    const ten = r.sheets[0].aoa.slice(1).map((h: any[]) => String(h[0]));   // OV-13f: cột 1 = Tên (bỏ cột Mã)
     assert(ten.length > 3, `ít dòng: ${ten.length}`);
     for (let i = 1; i < ten.length; i++) assert(d.soTenVi(ten[i - 1], ten[i]) <= 0, `sai thứ tự: ${ten[i - 1]} → ${ten[i]}`);
     assert(maLoi(() => xm.xuatExcel(P.mbManager, f, 1000)) === 400, 'vượt trần cỡ phải 400');

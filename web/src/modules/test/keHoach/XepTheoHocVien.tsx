@@ -337,7 +337,7 @@ export function XepTheoHocVien({ lopDs, lopMoSan, tabs, onClose, onDone }: {
                           <input type="checkbox" className="mt-0.5 h-4 w-4 flex-none accent-sky-400 max-sm:h-5 max-sm:w-5" checked={da} disabled={het}
                             onChange={(e) => doiChon(h.studentId, e.target.checked)} aria-label={`Chọn ${h.ten}`} />
                           <span className="min-w-0 flex-1">
-                            <span className="font-bold text-slate-100">{h.ten}</span> <span className="text-xs text-slate-500">{h.ma}{lopChon.length > 1 ? ` · ${h.classCode}` : ''}</span>
+                            <span className="font-bold text-slate-100">{h.ten}</span> {lopChon.length > 1 && <span className="text-xs text-slate-500">{h.classCode}</span>}
                             <span className="mt-1 flex flex-wrap gap-1">
                               {mt.map(([n, o]) => {
                                 const t = minTuan(Object.values(o.kn).map((k) => k?.tuan));
@@ -372,7 +372,7 @@ export function XepTheoHocVien({ lopDs, lopMoSan, tabs, onClose, onDone }: {
               <section key={sid} className="rounded-[10px] border" style={{ borderColor: 'var(--line)' }} aria-label={h?.ten}>
                 <header className="flex flex-wrap items-baseline gap-x-2 border-b px-3 py-2" style={{ borderColor: 'var(--line)' }}>
                   <b className="text-sm text-slate-100">{h?.ten ?? sid}</b>
-                  <span className="text-xs text-slate-500">{h?.ma}{h ? ` · ${h.classCode}` : ''}</span>
+                  {h && <span className="text-xs text-slate-500">{h.classCode}</span>}
                 </header>
                 {!b ? <div className="px-3 py-3 text-xs text-slate-500">Đang tải lịch MT…</div>
                   : 'loi' in b ? <div className="px-3 py-3 text-xs text-bad">{b.loi}</div> : (

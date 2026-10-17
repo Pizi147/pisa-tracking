@@ -29,7 +29,7 @@ import {
 } from '../../lib/format.ts';
 import {
   HO_SO_TAB_LABEL, duongDotTest, caseCategoriesFor, tenMon, tenMonNgan, docThamSoHoSo, duongHoSoHocVien,
-  nhanKetQuaThuong, tenBaiThuong, CHUONG_TRINH_KHONG_CHIA_MON, ngay, tuanLich, maHocVienNgan, trangCha, vaiXemHocVien, type HoSoTab,
+  nhanKetQuaThuong, tenBaiThuong, CHUONG_TRINH_KHONG_CHIA_MON, ngay, tuanLich, trangCha, vaiXemHocVien, type HoSoTab,
 } from '@shared/domain/index.ts';
 import { HangTab } from '../../ui/HangTab.tsx';
 import { KetQuaDot } from '../../ui/KetQuaDot.tsx';
@@ -219,7 +219,7 @@ export default function StudentDetailPage() {
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0">
               <span className="block text-xs text-slate-500">
-                {t('Hồ sơ học viên')} · {maHocVienNgan(data.studentCode)}
+                {t('Hồ sơ học viên')}
               </span>
               <h1 className="text-xl font-semibold text-slate-100 flex flex-wrap items-center gap-2 m-0 mt-0.5">
                 {data.fullName}

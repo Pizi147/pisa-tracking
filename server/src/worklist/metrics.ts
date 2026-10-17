@@ -168,7 +168,7 @@ export function rowsFor(unit: ChiSo['donVi'], ids: number[], metricId?: string, 
                   WHERE e.student_id = s.id AND e.status = 'active' ORDER BY e.id DESC LIMIT 1) AS class_code
            FROM students s WHERE s.id IN (${ph})`,
       ).all(...chunk) as any[]) {
-        byId.set(r.id, { id: r.id, title: r.full_name, sub: [r.student_code, r.class_code].filter(Boolean).join(' · '), href: `/hoc-vien/${r.id}` });
+        byId.set(r.id, { id: r.id, title: r.full_name, sub: [r.class_code].filter(Boolean).join(' · '), href: `/hoc-vien/${r.id}` });
       }
     } else if (unit === 'case') {
       const ds = conn.prepare(
@@ -199,7 +199,7 @@ export function rowsFor(unit: ChiSo['donVi'], ids: number[], metricId?: string, 
         const v = viec.get(r.id);
         const ten = r.title ?? (r.mon ? tenMon(r.ct ?? null, r.mon) : `Case ${r.id}`);
         byId.set(r.id, {
-          id: r.id, title: ten, sub: [r.full_name, r.student_code].filter(Boolean).join(' · '),
+          id: r.id, title: ten, sub: [r.full_name].filter(Boolean).join(' · '),
           /* OV-12e (đặc tả mục 1, nghi lỗi): hạn = hạn của VIỆC TIẾP — Case xong / không còn việc thì không còn hạn (trước: luôn `han_xac_nhan`). */
           href: duongCase(r.sid, r.id), nguoi: r.nguoi ?? null, han: v?.viec?.han ?? null, nguoiId: r.owner_user_id ?? null,
           em: r.sid ? { id: r.sid, ten: r.full_name } : null, lop: r.lop ?? null, ngCanh: ten,
@@ -250,7 +250,7 @@ export function rowsFor(unit: ChiSo['donVi'], ids: number[], metricId?: string, 
             lam: !!ghiDuoc.get(r.id),   // cùng `ghiDuoc` của Ngăn Case
           } : null;
         byId.set(r.id, {
-          id: r.id, title: r.title, sub: [r.full_name, r.student_code].filter(Boolean).join(' · '),
+          id: r.id, title: r.title, sub: [r.full_name].filter(Boolean).join(' · '),
           href: duongCase(r.sid, r.case_id), nguoi: r.nguoi ?? null, han: viec?.han ?? r.action_due ?? null, nguoiId: r.nguoi_id ?? null,
           em: r.sid ? { id: r.sid, ten: r.full_name } : null, lop: r.lop ?? null, ngCanh: r.title,
           viec, tinhTrang: viec ? null : r.approval_state === 'pending' ? t('Chờ Quản lý duyệt') : r.pa_status === 'completed' ? t('PA đã kết thúc') : cv?.tinhTrang ?? null,
@@ -278,7 +278,7 @@ export function rowsFor(unit: ChiSo['donVi'], ids: number[], metricId?: string, 
         const ten = r.kind === 'mock' ? `MT${r.attempt_no}` : ATTEMPT_KIND_SHORT[r.kind as AttemptKind] ?? r.kind;
         byId.set(x.id, {
           id: x.id, title: `${ten} · ${r.full_name} · ${tenMonNgan(r.programme_code ?? null, x.skill)}`,
-          sub: [r.student_code, r.class_code, tuan ? tuanLich(tuan, homNay) : null].filter(Boolean).join(' · '),
+          sub: [r.class_code, tuan ? tuanLich(tuan, homNay) : null].filter(Boolean).join(' · '),
           href: duongDotTest({ id: r.id, kind: r.kind, classId: r.class_id }, x.skill),   // PR-UXF-b: có kỹ năng → hồ sơ Mock cuộn tới đúng ô (lớp thường bỏ kn)
           em: { id: r.student_id, ten: r.full_name }, lop: r.class_code ?? null, ngCanh: `${ten} · ${tenMonNgan(r.programme_code ?? null, x.skill)}`,
           /* OV-12e: Nhập điểm tại chỗ — cùng bảng một lớp · một lượt · một kỹ năng của Công việc (`PanelNhapDiem`). */
@@ -302,7 +302,7 @@ export function rowsFor(unit: ChiSo['donVi'], ids: number[], metricId?: string, 
           : r.kind === 'final' ? 'Bài Final Test' : 'Bài Progress Test';
         byId.set(r.id, {
           id: r.id, title: `${name} · ${r.full_name}`,
-          sub: [r.student_code, r.class_code, r.period_code].filter(Boolean).join(' · '),
+          sub: [r.class_code, r.period_code].filter(Boolean).join(' · '),
           href: duongDotTest({ id: r.id, kind: r.kind, classId: r.class_id }),
         });
       }
@@ -322,7 +322,7 @@ export function rowsFor(unit: ChiSo['donVi'], ids: number[], metricId?: string, 
         if (!r) continue;
         byId.set(id, {
           id, title: `${r.title} · đợt ${cycle}${k ? ` · tuần ghi bù thứ ${k + 1}` : ''}`,
-          sub: [r.full_name, r.student_code].filter(Boolean).join(' · '), href: duongCase(r.sid, r.case_id),
+          sub: [r.full_name].filter(Boolean).join(' · '), href: duongCase(r.sid, r.case_id),
         });
       }
     } else if (unit === 'vi-pham') {
@@ -334,7 +334,7 @@ export function rowsFor(unit: ChiSo['donVi'], ids: number[], metricId?: string, 
         const cat = VIOLATION_CATEGORY_LABEL[r.category as keyof typeof VIOLATION_CATEGORY_LABEL] ?? r.category;
         byId.set(r.id, {
           id: r.id, title: `${cat} · ${String(r.occurred_on).slice(8, 10)}/${String(r.occurred_on).slice(5, 7)}`,
-          sub: [r.full_name, r.student_code, tachTenMoTa(r.ten, r.description, r.category).ten].filter(Boolean).join(' · '), href: `/hoc-vien/${r.student_id}`,
+          sub: [r.full_name, tachTenMoTa(r.ten, r.description, r.category).ten].filter(Boolean).join(' · '), href: `/hoc-vien/${r.student_id}`,
         });
       }
     } else if (unit === 'bien-phap') {
@@ -346,7 +346,7 @@ export function rowsFor(unit: ChiSo['donVi'], ids: number[], metricId?: string, 
         /* PR-S3F #12: nói đúng trạng thái thật — không còn "đang chuẩn bị" chung cho cả đề xuất chờ duyệt lẫn đã duyệt. */
         const state = r.status === 'done' ? `đã thực hiện ${String(r.performed_on ?? '').slice(8, 10)}/${String(r.performed_on ?? '').slice(5, 7)}`
           : r.status === 'cho_duyet' ? 'Chờ Quản lý duyệt' : r.status === 'da_duyet' ? 'Đã duyệt · chờ thực hiện' : 'nháp';
-        byId.set(r.id, { id: r.id, title: name, sub: [r.full_name, r.student_code, state].filter(Boolean).join(' · '), href: `/hoc-vien/${r.student_id}` });
+        byId.set(r.id, { id: r.id, title: name, sub: [r.full_name, state].filter(Boolean).join(' · '), href: `/hoc-vien/${r.student_id}` });
       }
     } else if (unit === 'viec-van-hanh') {
       /* PR-VAI-a: việc Vận hành cần quyết định — dòng mở đúng việc (ngăn Vận hành ở Công việc). */
@@ -376,7 +376,7 @@ export function rowsFor(unit: ChiSo['donVi'], ids: number[], metricId?: string, 
            FROM assessment_attempts a JOIN students s ON s.id = a.student_id LEFT JOIN classes c ON c.id = a.class_id
           WHERE a.id IN (${ph})`,
       ).all(...chunk) as any[]) {
-        byId.set(r.id, { id: r.id, title: `MT${r.attempt_no} · ${r.full_name}`, sub: [r.student_code, r.class_code].filter(Boolean).join(' · '), href: `/hoc-vien/${r.student_id}` });
+        byId.set(r.id, { id: r.id, title: `MT${r.attempt_no} · ${r.full_name}`, sub: [r.class_code].filter(Boolean).join(' · '), href: `/hoc-vien/${r.student_id}` });
       }
     }
   }

@@ -10,7 +10,7 @@ import { CongTacKhung, khungDaNho, type KhungLoc } from '../../ui/CongTacKhung.t
 import { useDienThoai } from '../../ui/TheDong.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { docChiNhanhDaNho, nhoChiNhanh, type Branch } from '../../ui/Filters.tsx';
-import { coDichLienKet, demQuaHan } from '@shared/domain/index.ts';
+import { coDichLienKet, demQuaHan, tachThieuEmail } from '@shared/domain/index.ts';
 import { MenuDong, type MucMenu } from '../../ui/MenuDong.tsx';
 import { IntakePanel } from './IntakePanel.tsx';
 import { ClassCreatePanel } from '../classes/ClassCreatePanel.tsx';
@@ -214,9 +214,9 @@ function TrangTheoLop({ admin }: { admin: boolean }) {
         ...(h.loc.includes('cho-duyet')
           ? [{ ...chung, key: `cho-duyet:${h.id}`, viec: t('Chờ duyệt'), phu: t('Yêu cầu chờ Quản lý'), kieu: 'cho-duyet' as const, nguoi: session?.nav?.workApprove ? null : t('Quản lý'),
             mo: () => navigate(session?.nav?.workApprove ? `${DUONG_TAB_CONG_VIEC['cho-duyet']}?lop=${h.classId}` : DUONG_TAB_CONG_VIEC['yeu-cau']) }] : []),
-        ...(h.loc.includes('thieu_tt')
-          ? [{ ...chung, key: `thieu:${h.id}`, viec: t('Thiếu thông tin'), phu: h.thieu?.join(' · ') ?? null, kieu: 'thieu-tt' as const,
-            mo: () => setSuaTT({ id: h.id, ten: h.ten, lop: lop?.code ?? null }) }] : []),
+        /* OV-13f (Q8): thiếu email là việc riêng "Thiếu email" (cùng nhóm Thiếu thông tin), các ô thiếu khác gom một dòng như cũ. */
+        ...(h.loc.includes('thieu_tt') ? tachThieuEmail(h.thieu ?? []).map((x) => ({ ...chung, key: `${x.khoa}:${h.id}`, viec: x.viec, phu: x.phu, kieu: 'thieu-tt' as const,
+          mo: () => setSuaTT({ id: h.id, ten: h.ten, lop: lop?.code ?? null }) })) : []),
       ];
     })),
   ];

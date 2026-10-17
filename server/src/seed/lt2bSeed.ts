@@ -16,6 +16,7 @@ import { applyTransition } from '../classes/transition.ts';
 import { planRegularTests, saveRegularScore } from '../normal/regular.ts';
 import { updateResult } from '../cases/cases.ts';
 import type { BuildCtx } from './build.ts';
+import { emailThu } from './emailThu.ts';
 
 export function buildLt2bDemo(ctx: BuildCtx): { em: number } {
   const { conn } = ctx;
@@ -26,7 +27,7 @@ export function buildLt2bDemo(ctx: BuildCtx): { em: number } {
   const ql = loadPrincipal(ctx.userId.get('MGR_MB')!);
   /** Thêm em vào lớp, xếp bài Cuối khoá (đã qua tuần → đường Quản lý), nhập điểm /20 theo môn. */
   const dung = (classId: number, ten: string, diem: Record<string, number>, tong = 20) => {
-    commitIntake(admin, { classId, rows: [{ fullName: ten, email: 'hv@demo.test', dob: '2010-01-01' }], idempotencyKey: `lt2b-demo-${ten}` } as any);
+    commitIntake(admin, { classId, rows: [{ fullName: ten, email: emailThu(), dob: '2010-01-01' }], idempotencyKey: `lt2b-demo-${ten}` } as any);
     const sid = (conn.prepare('SELECT id FROM students WHERE full_name = ?').get(ten) as any).id as number;
     planRegularTests(ql, classId, { studentIds: [sid], kinds: ['final'] });
     const cuoi = (conn.prepare(`SELECT id FROM assessment_attempts WHERE student_id = ? AND kind = 'final' ORDER BY id DESC LIMIT 1`).get(sid) as any).id as number;

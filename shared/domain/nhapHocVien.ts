@@ -47,7 +47,7 @@ export function canNamGan(homNay: string): { toiThieu: string; toiDa: string } {
 }
 
 const MAU_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
-/** Email học viên (T8): cắt khoảng trắng, chữ thường. Không bắt duy nhất (anh chị em có thể dùng chung email phụ huynh). */
+/** Email học viên (T8): cắt khoảng trắng, chữ thường. OV-13f (Q8): KHÔNG TRÙNG giữa các em — máy chủ kiểm (`emailDangDung`); hàm này chỉ đọc dạng. */
 export function docEmail(raw: unknown): { email: string | null; loi: string | null } {
   const s = String(raw ?? '').trim().toLowerCase();
   if (TRONG.has(s)) return { email: null, loi: null };
@@ -151,7 +151,8 @@ export function nhanDangCot(dongDau: string[]): { cot: (CotNhap | null)[]; boQua
 
 export type CotLuoi = { key: CotNhap; nhan: string; batBuoc?: boolean; so?: boolean };
 const COT_DAU: CotLuoi[] = [
-  { key: 'fullName', nhan: 'Họ và tên', batBuoc: true }, { key: 'dob', nhan: 'Ngày sinh' }, { key: 'email', nhan: 'Email' },
+  /* OV-13f (Q8): Email có dấu * nhưng trống vẫn lưu — em có việc "Thiếu email" tới khi điền; trùng em khác thì máy chủ chặn dòng. */
+  { key: 'fullName', nhan: 'Họ và tên', batBuoc: true }, { key: 'dob', nhan: 'Ngày sinh' }, { key: 'email', nhan: 'Email', batBuoc: true },
 ];
 const COT_BAND: CotLuoi[] = [
   { key: 'baselineScore', nhan: 'Overall', so: true }, { key: 'entryListening', nhan: 'L', so: true },

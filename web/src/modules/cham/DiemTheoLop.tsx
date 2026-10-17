@@ -15,7 +15,7 @@ import { useApi } from '../../lib/useApi.ts';
 import { BaoDangLuuContext } from '../../ui/SaveState.tsx';
 import { Card, Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
 import {
-  HOI_DOI_LUOT_RONG, buocHoiDoiLuot, cauChanDoiLuot, dongPhuLuot, duongHoSoHocVien, hangThuongConTrong, maHocVienNgan, oTrongLuotFt,
+  HOI_DOI_LUOT_RONG, buocHoiDoiLuot, cauChanDoiLuot, dongPhuLuot, duongHoSoHocVien, hangThuongConTrong, oTrongLuotFt,
   yeuCauDoiLuot, type HoiDoiLuot, type TomTatLuot,
 } from '@shared/domain/index.ts';
 import {
@@ -139,7 +139,7 @@ export function DiemTheoLop({ classId, luotBanDau, locBanDau, gon = false, congR
   }, [chiOTrong, locCu, b]);
   /* "MT cũ" chỉ hàng MT cũ — em chưa có lịch lượt này không phải việc nhập bù. */
   const hangMo = useMemo<HangMo[]>(() => (locCu ? [] : b?.chuaCoLich ?? []).map((h) => ({
-    studentId: h.studentId, ten: h.fullName, ma: maHocVienNgan(h.studentCode),
+    studentId: h.studentId, ten: h.fullName,
     chu: <>{t('Chưa có lịch {nhan} —', { nhan: b!.luot.nhan })}{' '}<Link className="link" to={duongHoSoHocVien(h.studentId, { mo: 'lo-trinh' })}>{t('xếp ở panel Lộ trình')}</Link></>,
   })), [b, locCu]);
 

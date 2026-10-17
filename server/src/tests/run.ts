@@ -7,6 +7,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { boLichTuTao, chotSan, duXacNhan } from './luotThu.ts';
+import { emailThu } from '../seed/emailThu.ts';
 
 /*
  * Dọn rác thư mục tạm của các lần `npm run check` trước (tiền tố `z2-`, xem server/src/tests/banChinh.tests.ts):
@@ -1545,10 +1546,10 @@ check('Ghi thật: tạo học viên, enrollment và lộ trình; bỏ qua dòng
   const r = intake.commitIntake(P.admin, {
     classId: classId('MB FT 101'),
     rows: [
-      { fullName: 'Học Viên Nhập Một', target: 6.5, dob: '01/02/2009', email: 'hv@demo.test',
+      { fullName: 'Học Viên Nhập Một', target: 6.5, dob: '01/02/2009', email: emailThu(),
         entryListening: 5, entryReading: '5.5', entryWriting: '-', baselineScore: '5.0' },
       { fullName: '' },
-      { fullName: 'Học Viên Nhập Hai', email: 'hv@demo.test', dob: '2010-01-01' },
+      { fullName: 'Học Viên Nhập Hai', email: emailThu(), dob: '2010-01-01' },
     ],
     idempotencyKey: 'test-intake-1',
   });
@@ -1591,9 +1592,9 @@ check('Bấm hai lần hoặc thử lại không tạo học viên trùng', () =
   const again = intake.commitIntake(P.admin, {
     classId: classId('MB FT 101'),
     rows: [
-      { fullName: 'Học Viên Nhập Một', target: 6.5, dob: '01/02/2009', email: 'hv@demo.test' },
+      { fullName: 'Học Viên Nhập Một', target: 6.5, dob: '01/02/2009', email: emailThu() },
       { fullName: '' },
-      { fullName: 'Học Viên Nhập Hai', email: 'hv@demo.test', dob: '2010-01-01' },
+      { fullName: 'Học Viên Nhập Hai', email: emailThu(), dob: '2010-01-01' },
     ],
     idempotencyKey: 'test-intake-1',
   });
@@ -1609,7 +1610,7 @@ check('[12.1 → PR-MT M1] Nhập hàng loạt tạo lịch MT MẶC ĐỊNH do 
    */
   const r = intake.commitIntake(P.coreTeacher, {
     classId: classId('MB FT 101'),
-    rows: [{ fullName: 'Học Viên Không Quyền Tuần', target: 6, email: 'hv@demo.test', dob: '2010-01-01' }],
+    rows: [{ fullName: 'Học Viên Không Quyền Tuần', target: 6, email: emailThu(), dob: '2010-01-01' }],
     idempotencyKey: 'test-intake-2',
   });
   assert(r.added === 1, 'GVCN phải thêm được học viên vào lớp mình phụ trách');
@@ -1619,7 +1620,7 @@ check('[12.1 → PR-MT M1] Nhập hàng loạt tạo lịch MT MẶC ĐỊNH do 
 
   const r2 = intake.commitIntake(P.mbManager, {
     classId: classId('MB FT 101'),
-    rows: [{ fullName: 'Học Viên Có Quyền Tuần', target: 6, email: 'hv@demo.test', dob: '2010-01-01' }],
+    rows: [{ fullName: 'Học Viên Có Quyền Tuần', target: 6, email: emailThu(), dob: '2010-01-01' }],
     idempotencyKey: 'test-intake-3',
   });
   assert(r2.added === 1, 'Quản lý phải thêm được học viên');
@@ -1633,8 +1634,8 @@ check('[12.1] Tuần bắt đầu: mặc định cho cả lô, ghi đè được
     classId: classId('MB FT 101'),
     defaultStartWeek: '2026-10-05',
     rows: [
-      { fullName: 'Em Theo Tuần Chung', email: 'hv@demo.test', dob: '2010-01-01' },
-      { fullName: 'Em Vào Muộn Một Tuần', startWeek: '2026-10-12', email: 'hv@demo.test', dob: '2010-01-01' },
+      { fullName: 'Em Theo Tuần Chung', email: emailThu(), dob: '2010-01-01' },
+      { fullName: 'Em Vào Muộn Một Tuần', startWeek: '2026-10-12', email: emailThu(), dob: '2010-01-01' },
     ],
     idempotencyKey: 'test-intake-week',
   });
@@ -8431,7 +8432,7 @@ check('C02 (đã chốt 20/09): GVCN xử lý case học thuật ĐÚNG môn mì
 const nowIsoPrn = () => new Date().toISOString();
 const prnClass = classId('MB FT 101');
 const prnMake = (name: string, target = 7): { id: number; cycleId: number } => {
-  intake.commitIntake(P.admin, { classId: prnClass, rows: [{ fullName: name, target, email: 'hv@demo.test', dob: '2010-01-01' }], idempotencyKey: 'prn-' + name });
+  intake.commitIntake(P.admin, { classId: prnClass, rows: [{ fullName: name, target, email: emailThu(), dob: '2010-01-01' }], idempotencyKey: 'prn-' + name });
   const st = conn.prepare('SELECT id FROM students WHERE full_name = ?').get(name) as any;
   const cy = conn.prepare("SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active'").get(st.id) as any;
   assert(st && cy, `Không dựng được học viên thử "${name}"`);
@@ -9410,6 +9411,9 @@ await runPrUx2Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, a
 // ==================================================================== OV-13q (Đã thi xong · hạn 1 tuần + Gia hạn — qua HTTP theo vai, migrate, EXPLAIN)
 const { runPrOv13qTests } = await import('./prOv13q.tests.ts');
 await runPrOv13qTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== OV-13f (ẩn mã HV + Email là định danh, không trùng — qua HTTP)
+const { runPrOv13fTests } = await import('./prOv13f.tests.ts');
+await runPrOv13fTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`

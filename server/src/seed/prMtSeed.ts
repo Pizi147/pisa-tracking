@@ -9,6 +9,7 @@ import { decideAbsenceMove, requestAbsenceMove, sweepExpiredMoves } from '../fas
 import { recomputeCompletionWeek, setSitStatus } from '../fasttrack/skillSchedule.ts';
 import type { BuildCtx } from './build.ts';
 import { DEMO_DATE } from './journeys.ts';
+import { emailThu } from './emailThu.ts';
 
 /**
  * BỘ DEMO PR-MT (kế hoạch 29/09 Task 10, K5 §6 D1–D6, D16) — đi qua CHÍNH các hàm nghiệp vụ như `sosV3Seed.ts`, dựng SAU khi đặt ngày demo.
@@ -38,7 +39,7 @@ export function buildPrMtDemo(ctx: BuildCtx): { students: number } {
   const tuan = (n: number) => mondayOf(addDays(DEMO_DATE, 7 * n));   // thứ Hai của tuần cách tuần demo n tuần
 
   const them = (classId: number, ten: string, startWeek: string, target = 6.5) => {
-    commitIntake(admin, { classId, rows: [{ fullName: ten, target, startWeek, email: 'hv@demo.test', dob: '2010-01-01' }], idempotencyKey: `prmt-demo-${ten}` } as any);
+    commitIntake(admin, { classId, rows: [{ fullName: ten, target, startWeek, email: emailThu(), dob: '2010-01-01' }], idempotencyKey: `prmt-demo-${ten}` } as any);
     const st = conn.prepare('SELECT id FROM students WHERE full_name = ?').get(ten) as any;
     const cy = conn.prepare(`SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active'`).get(st.id) as any;
     return { id: st.id as number, cycleId: cy.id as number };

@@ -56,7 +56,7 @@ export const EN_HD = {
   'Tìm em hoặc lớp': 'Find a student or class',
   'Gõ ít nhất 2 chữ ở ô <b>Tìm học viên, lớp…</b> trên thanh trên.': 'Type at least 2 letters in <b>Search student, class…</b> on the top bar.',
   'Gõ "ft101" ra lớp MB FT 101.': 'Typing "ft101" finds class MB FT 101.',
-  'Gõ tên em hoặc mã lớp.': 'Type a student name or class code.',
+  'Gõ tên, email em hoặc mã lớp.': 'Type a student name, email or class code.',
   'Ba góc nhìn': 'Three views',
   '<b>Tất cả</b> · <b>Đang SOS</b> theo tuần thi · <b>Cần làm</b>.': '<b>All</b> · <b>In SOS</b> by test week · <b>To do</b>.',
   'Bấm dòng em mở panel một em, không rời trang.': 'Click a student row to open their panel without leaving the page.',

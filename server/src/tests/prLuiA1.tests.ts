@@ -1,5 +1,6 @@
 /** PHÉP KIỂM PR-LUI-a1 — Ý thức: ghi nhiều học viên / nhiều vi phạm, ô Vi phạm + Mô tả, tệp dùng chung. */
 import type { YThucTestKit } from './yThuc.tests.ts';
+import { emailThu } from '../seed/emailThu.ts';
 
 export async function runPrLuiA1Tests(t: YThucTestKit) {
   const { check, checkAsync, assert, assertThrows, conn, TODAY, P, classId } = t;
@@ -40,7 +41,7 @@ export async function runPrLuiA1Tests(t: YThucTestKit) {
   const { boLichTuTao } = await import('./luotThu.ts');
   const xu: any = await import('../yThuc/xuLy.ts');
   const moiEm = (ten: string, lop = 'MB FT 101'): number => {
-    intake.commitIntake(P.admin, { classId: classId(lop), rows: [{ fullName: `LUIa1 ${ten}`, target: 7, email: 'hv@demo.test', dob: '2010-01-01' }], idempotencyKey: `luia1-${ten}` } as any);
+    intake.commitIntake(P.admin, { classId: classId(lop), rows: [{ fullName: `LUIa1 ${ten}`, target: 7, email: emailThu(), dob: '2010-01-01' }], idempotencyKey: `luia1-${ten}` } as any);
     const st = conn.prepare('SELECT id FROM students WHERE full_name = ?').get(`LUIa1 ${ten}`) as any;
     const cy = conn.prepare("SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active'").get(st.id) as any;
     boLichTuTao(conn, cy.id);

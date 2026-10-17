@@ -807,11 +807,11 @@ function notifyTeachers(attempt: any, level: SosLevel) {
   const teachers = db()
     .prepare(`SELECT DISTINCT user_id FROM teacher_assignments WHERE class_id = ? AND status = 'active' AND is_core = 1`)
     .all(attempt.class_id) as any[];
-  const student = db().prepare('SELECT full_name, student_code FROM students WHERE id = ?').get(attempt.student_id) as any;
+  const student = db().prepare('SELECT full_name FROM students WHERE id = ?').get(attempt.student_id) as any;
   for (const t of teachers) {
     notify({
       userId: t.user_id, kind: 'sos', title: `${SOS_LABEL[level]} · ${student.full_name}`,
-      body: `MT${attempt.attempt_no} · ${student.student_code}`,
+      body: `MT${attempt.attempt_no}`,   // OV-13f: không hiện mã HV
       entityType: 'assessment_attempt', entityId: attempt.id, dedupKey: `sos:${attempt.id}:${level}`,
     });
   }

@@ -12,7 +12,7 @@ import { KhoaQuyChe, TenCase } from '../cases/SkillBoard.tsx';
 import { NganCase } from '../students/NganCase.tsx';
 import { nhapDiemCua, useThaoTacDongHocVien, type QuyenDong } from './thaoTacDongHocVien.tsx';
 import {
-  ROUTE_NAME, ketQuaGanNhat, locCanHoTro, maHocVienNgan, viecTiepCuaEm,
+  ROUTE_NAME, ketQuaGanNhat, locCanHoTro, viecTiepCuaEm,
   type HangKyNang, type KetQuaVao, type ViecTiepCase,
 } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
@@ -113,7 +113,6 @@ export function BangCanHoTro({ classId, maLop, laLopThuong, quyen, onDoi, chuong
               <div className="flex items-start gap-1.5">
                 <span className="min-w-0 flex-1">
                   <Link className="link font-semibold" to={`/hoc-vien/${e.id}`}>{e.ten}</Link>{' '}
-                  <span className="text-[11px] tabular-nums text-slate-500">{maHocVienNgan(e.ma)}</span>
                 </span>
                 {r && (
                   <MenuDong muc={tt.mucCua({ id: e.id, ten: e.ten, dangHoc: r.status === 'active', nhapDiem: nhapDiemCua(classId, laLopThuong, r.timeline ?? []), status: r.status })} />

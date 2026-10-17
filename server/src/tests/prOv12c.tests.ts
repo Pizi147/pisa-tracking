@@ -6,6 +6,7 @@
  */
 import type { YThucTestKit } from './yThuc.tests.ts';
 import { duXacNhan } from './luotThu.ts';
+import { emailThu } from '../seed/emailThu.ts';
 
 export async function runPrOv12cTests(t: YThucTestKit) {
   const { check, assert, conn, P, classId, TODAY } = t;
@@ -40,7 +41,7 @@ export async function runPrOv12cTests(t: YThucTestKit) {
   week.ensurePeriod('2026-11-16');
 
   /* Em MỚI ở MB FT 101 — lượt MT cuối tự tạo. */
-  const sid = (intake.commitIntake(P.admin, { classId: lop, rows: [{ fullName: 'OV12c Em A', target: 7, email: 'hv@demo.test', dob: '2010-01-01' }],
+  const sid = (intake.commitIntake(P.admin, { classId: lop, rows: [{ fullName: 'OV12c Em A', target: 7, email: emailThu(), dob: '2010-01-01' }],
     idempotencyKey: 'ov12c-a' }).studentIds[0]) as number;
   const luotEm = all(`SELECT id FROM assessment_attempts WHERE student_id = ? AND kind = 'mock' ORDER BY attempt_no`, sid).map((r) => r.id as number);
   const luot = luotEm[luotEm.length - 1];
@@ -187,7 +188,7 @@ export async function runPrOv12cTests(t: YThucTestKit) {
   /* ------------------------------------------------------------------ Progress Test lớp thường */
   const taoEmThuong = (ten: string, ma: string) => {
     const cid = classId(ma);
-    intake.commitIntake(P.admin, { classId: cid, rows: [{ fullName: ten, email: 'hv@demo.test', dob: '2010-01-01' }], idempotencyKey: `ov12c-${ten}` });
+    intake.commitIntake(P.admin, { classId: cid, rows: [{ fullName: ten, email: emailThu(), dob: '2010-01-01' }], idempotencyKey: `ov12c-${ten}` });
     regular.planRegularTests(P.admin, cid);
     const st = one('SELECT id FROM students WHERE full_name = ?', ten);
     return { id: st.id as number, pt: one(`SELECT id FROM assessment_attempts WHERE student_id = ? AND kind = 'progress'`, st.id).id as number };

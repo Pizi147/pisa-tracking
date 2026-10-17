@@ -1,5 +1,6 @@
 /** PHÉP KIỂM PR-SO — số liệu một nguồn & dọn mã máy chủ (kế hoạch 2026-10-04-pr-so-so-lieu-don-ma, SO-1 → SO-4). */
 import type { YThucTestKit } from './yThuc.tests.ts';
+import { emailThu } from '../seed/emailThu.ts';
 
 export async function runPrSoTests(t: YThucTestKit) {
   const { check, assert, conn, P, TODAY, classId, addDays } = t;
@@ -16,7 +17,7 @@ export async function runPrSoTests(t: YThucTestKit) {
   let seq = 0;
   const emMoi = (lop: string) => {
     const ten = `PRSO HV ${++seq}`;
-    intake.commitIntake(P.admin, { classId: classId(lop), rows: [{ fullName: ten, target: 6.5, email: 'hv@demo.test', dob: '2010-01-01' }], idempotencyKey: `prso-${seq}` });
+    intake.commitIntake(P.admin, { classId: classId(lop), rows: [{ fullName: ten, target: 6.5, email: emailThu(), dob: '2010-01-01' }], idempotencyKey: `prso-${seq}` });
     return get('SELECT id FROM students WHERE full_name = ?', ten).id as number;
   };
 

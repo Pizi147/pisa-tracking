@@ -7,6 +7,7 @@
  * Harness do `run.ts` sở hữu và truyền vào, file này không tự mở database.
  */
 import type { YThucTestKit } from './yThuc.tests.ts';
+import { emailThu } from '../seed/emailThu.ts';
 
 export async function runFormTests(t: YThucTestKit) {
   const { check, assert, assertThrows, conn, P, TODAY } = t;
@@ -101,7 +102,7 @@ export async function runFormTests(t: YThucTestKit) {
 
     const fouClassId = t.classId('MB FOU 12');
     intake.commitIntake(P.admin, {
-      classId: fouClassId, rows: [{ fullName: 'PR-Form Em Fou', target: 7, email: 'hv@demo.test', dob: '2010-01-01' }],
+      classId: fouClassId, rows: [{ fullName: 'PR-Form Em Fou', target: 7, email: emailThu(), dob: '2010-01-01' }],
       idempotencyKey: 'pr-form-ref-nguoi-fou',
     });
     const fouStudent = conn.prepare(`SELECT id FROM students WHERE full_name = 'PR-Form Em Fou'`).get() as any;

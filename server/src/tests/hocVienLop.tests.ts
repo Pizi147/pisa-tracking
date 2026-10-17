@@ -227,13 +227,14 @@ export async function runHocVienLopTests(t: YThucTestKit) {
     eq(d.laVaiQuanLy(['manager']), true, 'QL');
   });
 
-  check('PR-Qa · Q4 hồ sơ lớp 3 tab, không còn tab Giáo viên; mã học viên 6 số; dòng phụ ≤ 60 ký tự', () => {
+  check('PR-Qa · Q4 hồ sơ lớp 3 tab, không còn tab Giáo viên; OV-13f Thiếu email tách riêng; dòng phụ ≤ 60 ký tự', () => {
     /* PR-TK: lớp ĐANG HỌC vẫn 3 tab; lớp đã kết thúc có thêm "Tổng kết" đứng đầu (`tabHienCuaLop`). */
     eq(d.tabHienCuaLop(false).map((k: string) => d.TAB_HO_SO_LOP_NHAN[k]), ['Học viên', 'Ý thức & Phối hợp', 'Phân tích lớp'], 'Tab');
     eq(d.tabHoSoLop('giao-vien'), 'hoc-vien', 'Link cũ tab Giáo viên về tab Học viên');
     eq(d.tabHoSoLop('phan-tich'), 'phan-tich', 'Tab Phân tích lớp');
-    eq(d.maHocVienNgan('PISA-000011'), '000011', 'Mã có tiền tố');
-    eq(d.maHocVienNgan('PISA-QA-3'), '000003', 'Đệm đủ 6 số');
+    eq(d.tachThieuEmail(['Email', 'Ngày sinh']).map((x: any) => `${x.viec}|${x.phu}`), ['Thiếu email|null', 'Thiếu thông tin|Ngày sinh'], 'OV-13f: Thiếu email tách riêng');
+    eq(d.tachThieuEmail(['Email']).length, 1, 'OV-13f: chỉ thiếu email → một dòng');
+    eq(d.tachThieuEmail([]).map((x: any) => x.viec), ['Thiếu thông tin'], 'OV-13f: không biết ô → Thiếu thông tin');
     eq(d.catDongPhu('x'.repeat(70)).length, 60, 'G-3');
   });
 

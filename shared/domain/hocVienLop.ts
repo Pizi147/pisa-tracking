@@ -25,10 +25,18 @@ export function catDongPhu(s: string): string {
   return s.length <= DONG_PHU_TOI_DA ? s : `${s.slice(0, DONG_PHU_TOI_DA - 1)}…`;
 }
 
-/** Mã học viên viết gọn 6 số, chữ mờ (§3.6). Mã không có chữ số thì giữ nguyên. */
-export function maHocVienNgan(ma: string | null | undefined): string {
-  const so = (ma ?? '').replace(/\D/g, '');
-  return so ? so.slice(-6).padStart(6, '0') : (ma ?? '');
+/** OV-13f (Q8): nhãn ô Email trong "Thiếu thông tin" (`missingForStudent`). Mã HV không hiện trên màn nữa (giữ ở DB, nhật ký, đường dẫn, tìm kiếm). */
+export const NHAN_THIEU_EMAIL = 'Email';
+/**
+ * OV-13f: nhãn ô thiếu của một em → dòng việc Cần làm (QL, TVV): "Thiếu email" riêng (tới khi điền) + "Thiếu thông tin" cho các ô còn lại.
+ * Danh sách rỗng (chỉ biết em có cờ thiếu) → một dòng "Thiếu thông tin" như cũ.
+ */
+export function tachThieuEmail(thieu: readonly string[]): { khoa: string; viec: string; phu: string | null }[] {
+  const khac = thieu.filter((x) => x !== NHAN_THIEU_EMAIL);
+  return [
+    ...(thieu.includes(NHAN_THIEU_EMAIL) ? [{ khoa: 'thieu-email', viec: t('Thiếu email'), phu: null }] : []),
+    ...(khac.length || !thieu.length ? [{ khoa: 'thieu', viec: t('Thiếu thông tin'), phu: khac.length ? khac.join(' · ') : null }] : []),
+  ];
 }
 
 /** Tên đầy đủ của một kỹ năng/môn — tooltip của chữ viết tắt (G-7). */

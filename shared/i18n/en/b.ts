@@ -382,7 +382,7 @@ const EN_B_WEB = {
   'Bạn không được phân công kỹ năng này': 'You are not assigned this skill',
   'Chọn kỹ năng để chấm': 'Pick a skill to mark',
   '{tenMon} — đã nhập {daNhap}/{tong}{x}': '{tenMon} — entered {daNhap}/{tong}{x}',
-  'Kỳ vọng (KV) của lượt này: {fmtBand} · {maHocVienNgan}': 'Expected (Exp) for this test: {fmtBand} · {maHocVienNgan}',
+  'Kỳ vọng (KV) của lượt này: {fmtBand}': 'Expected (Exp) for this test: {fmtBand}',
   'KV {x}': 'Exp {x}',
   'Tổng số câu của đề cả lớp làm. Ô tổng còn trống của từng em lấy sẵn số này; em làm đề khác thì sửa riêng ô đó.': 'Total questions of the paper the class sat. Empty total cells use this; a student who sat a different paper gets their own total.',
   'Tổng số câu của đề': 'Total questions',

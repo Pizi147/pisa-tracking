@@ -5,7 +5,7 @@ import { Han } from '../../ui/Han.tsx';
 import { HangCon, HangNhom } from '../../ui/HangNhom.tsx';
 import { OPhuHuynh } from './HocVienTheoVai.tsx';
 import { t } from '@shared/i18n/index.ts';
-import { demQuaHan, maHocVienNgan, type DeadlineKind, type LienHe, type NguCanhDs } from '@shared/domain/index.ts';
+import { demQuaHan, type DeadlineKind, type LienHe, type NguCanhDs } from '@shared/domain/index.ts';
 
 /**
  * MỘT VIỆC của góc Cần làm — nguồn là việc của người xem ở Công việc (`/my-work`, cùng số Công việc) + hai lọc phụ của QL (Chờ duyệt, Thiếu thông tin)
@@ -79,7 +79,6 @@ export function BangCanLam({ viec, coNguoi, coPhuHuynh, dienThoai, ds }: {
     : (
       <span className="flex min-w-0 flex-wrap items-baseline gap-x-1.5">
         <Link className="link max-w-full truncate font-semibold" title={v.ten} to={`/hoc-vien/${v.studentId}`} state={{ ds }}>{v.ten}</Link>
-        {v.ma && <span className="shrink-0 text-[11.5px] tabular-nums text-slate-500">{maHocVienNgan(v.ma)}</span>}
       </span>
     ));
   const nut = (v: ViecCanLam) => <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-[32px]" aria-label={`${t('Mở')} · ${v.viec} · ${v.ten}`} onClick={v.mo}>{t('Mở')}</button>;

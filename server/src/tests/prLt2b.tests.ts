@@ -401,7 +401,7 @@ export async function runPrLt2bTests(t: YThucTestKit) {
   });
   check('LT2b (8) · Excel lớp thường: cột "Hướng gợi ý" sau "% tổng", số cột khớp tiêu đề, Progress Test để trống', () => {
     const mon = ['Listening', 'Reading', 'Writing', 'Speaking'].map((ten) => ({ ten, pct: 70, diem: 28, tong: 40, tuan: 'W1 OCT' }));
-    const dong = (bai: string, huong: string | null) => ({ ma: 'PISA-1', ten: 'A', chiNhanh: 'MB', lop: 'MB BE 08', bai, tuan: 'W1 OCT', tuanBd: '2026-10-05', mon, tyLeTong: 64, trangThai: 'Đủ điểm', nguoiNhap: null, huong });
+    const dong = (bai: string, huong: string | null) => ({ ten: 'A', email: 'a@x.vn', chiNhanh: 'MB', lop: 'MB BE 08', bai, tuan: 'W1 OCT', tuanBd: '2026-10-05', mon, tyLeTong: 64, trangThai: 'Đủ điểm', nguoiNhap: null, huong });
     for (const cot of ['gon', 'day-du'] as const) {
       const b = d.bangThuong([dong('Final Test', 'Lên ELE + bổ trợ'), dong('Progress Test', null)], cot);
       const i = b[0].indexOf('Hướng gợi ý');

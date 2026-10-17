@@ -9,12 +9,12 @@ import { NutNgonNgu } from '../../ui/NutNgonNgu.tsx';
 import { NutHuongDan } from '../huongDan/NutHuongDan.tsx';
 import { useDienThoai } from '../../ui/TheDong.tsx';
 import { skillShort } from '../../lib/format.ts';
-import { buocDanhSach, chuanHoaMaLop, duongThongBao, maHocVienNgan, moDuocThongBao, ngayTheoGioVN, nhanPhamVi, noiDenThongBao, nhomThongBao, thoiGianThongBao } from '@shared/domain/index.ts';
+import { buocDanhSach, chuanHoaMaLop, duongThongBao, moDuocThongBao, ngayTheoGioVN, nhanPhamVi, noiDenThongBao, nhomThongBao, thoiGianThongBao } from '@shared/domain/index.ts';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 
-type SearchHit = { id: number; studentCode: string; fullName: string; classCode: string | null };
+type SearchHit = { id: number; fullName: string; email: string | null; classCode: string | null };
 
 type LopRef = { id: number; code: string; student_count: number };
 
@@ -165,7 +165,7 @@ export function Header() {
             <li key={`hv${h.id}`} role="none">
               <button {...nutMuc(i)}>
                 <span className="text-slate-100">{h.fullName}</span>
-                <span className="text-slate-500 text-xs ml-2">{maHocVienNgan(h.studentCode)}</span>
+                {h.email && <span className="text-slate-500 text-xs ml-2">{h.email}</span>}
                 {h.classCode && <span className="text-slate-500 text-xs ml-2">{h.classCode}</span>}
               </button>
             </li>

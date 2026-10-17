@@ -2,7 +2,7 @@ import { THAM_SO_TOI_DA, chenNhieuDong, db, theoLo, tx } from '../db.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import {
   CHUONG_TRINH_KHONG_CHIA_MON, boMonLich, CLASS_PHASE_LABEL, CO_DIEM_SQL, MOC_KE_TIEP_SQL, PERMISSIONS, docLichMt, kiemSoMtMoi, laMtCu, lichMtGoc, tuanHocCuaMt, tuanLich,
-  PROGRAMME_TEMPLATES, kyHieuLop, laLienTuc, nextStepsAfter, programmeOf, studyWeekOf,
+  NHAN_THIEU_EMAIL, PROGRAMME_TEMPLATES, kyHieuLop, laLienTuc, nextStepsAfter, programmeOf, studyWeekOf,
   type ClassPhase, type ProgrammeCode,
 } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, notFound, nowIso } from '../util.ts';
@@ -715,7 +715,7 @@ const MISSING_LABEL: Record<MissingInfo['key'], { label: string; who: string }> 
   exam_month: { label: 'Tháng/năm dự kiến thi', who: 'Admin CN · Quản lý · GVCN' },
   target: { label: 'Target', who: 'Admin CN · Quản lý' },
   dob: { label: 'Ngày sinh', who: 'TVV · Admin CN' },
-  email: { label: 'Email', who: 'TVV · Admin CN' },
+  email: { label: NHAN_THIEU_EMAIL, who: 'TVV · Admin CN' },   // OV-13f: Cần làm tách việc "Thiếu email" theo nhãn này (`tachThieuEmail`)
   class_start_week: { label: 'Tuần bắt đầu của lớp', who: 'Admin CN · Quản lý' },
   teachers: { label: 'Giáo viên các kỹ năng', who: 'Admin CN · Quản lý' },
   core_teacher: { label: 'Giáo viên chủ nhiệm', who: 'Admin CN · Quản lý' },

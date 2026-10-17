@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { GOP_Y_HIEN_DEM, GOP_Y_TOI_DA, maHocVienNgan, type NguCanhDs } from '@shared/domain/index.ts';
+import { GOP_Y_HIEN_DEM, GOP_Y_TOI_DA, type NguCanhDs } from '@shared/domain/index.ts';
 import { api, ApiError } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { fmtDateTime } from '../../lib/format.ts';
@@ -97,7 +97,6 @@ export function BangGopYTuan({ classId, maLop, laFt, tuan, onTuan }: {
   const ten = (s: Em) => (
     <span className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5">
       <Link className="link font-semibold" to={`/hoc-vien/${s.id}`} state={{ ds }}>{s.fullName}</Link>
-      <span className="shrink-0 text-[11.5px] tabular-nums text-slate-500">{maHocVienNgan(s.studentCode)}</span>
     </span>
   );
   const chip = (s: Em) => (laFt && s.sosLevel !== undefined ? <span className="mt-1 block"><KetLuan row={s as RosterRow} cotMocTrong={false} /></span> : null);

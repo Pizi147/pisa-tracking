@@ -8,7 +8,7 @@ import { Nhan } from '../../ui/Nhan.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import { DINH_TRAI, MAU_SO_VOI_TRUOC, SoO as SoLieuO, thamSoLoc, type PhamViPhanTich } from './dungChung.tsx';
 import {
-  KHOA_LOAI_XU_LY, KHOANG_LABEL, NHOM_EM_LABEL, duongHoSoHocVien, nhanLoaiXuLy, nhanSoVoiTruoc, ngay,
+  COT_XUAT_HV_CAN_CHU_Y, KHOA_LOAI_XU_LY, KHOANG_LABEL, NHOM_EM_LABEL, duongHoSoHocVien, nhanLoaiXuLy, nhanSoVoiTruoc, ngay,
   type DongHvCanChuY, type DongLopViPham, type YThucPhanTichKetQua,
 } from '@shared/domain/index.ts';
 
@@ -44,8 +44,8 @@ export function YThucPhoiHop(props: PhamViPhanTich) {
     const moTa = [tenChiNhanh ?? 'Tất cả chi nhánh', KHOANG_LABEL[props.tg], tenLop, `dữ liệu đến ${ngay(demoDate)}`].filter(Boolean).join(' · ');
     const hv: (string | number)[][] = [
       [`Học viên cần chú ý · ${moTa}`], [],
-      ['Học viên', 'Lớp', 'Trạng thái', 'Bậc hiện tại', 'Bậc kế', 'Vi phạm', 'Chưa xử lý', 'Lần xử lý gần nhất', 'Ngày'],
-      ...data.hvCanChuY.map((x) => [x.ten, x.lop ?? '', NHOM_EM_LABEL[x.nhom], x.bac ?? 'Chưa xử lý lần nào', x.bacKe ?? '', x.viPham, x.chuaXuLy,
+      [...COT_XUAT_HV_CAN_CHU_Y],
+      ...data.hvCanChuY.map((x) => [x.ten, x.email ?? '', x.lop ?? '', NHOM_EM_LABEL[x.nhom], x.bac ?? 'Chưa xử lý lần nào', x.bacKe ?? '', x.viPham, x.chuaXuLy,
         `${x.bienPhapGanNhat ?? ''}${x.lanXuLyMoi ? ` (mới hơn: ${x.lanXuLyMoi.ten} · ${x.lanXuLyMoi.nhan})` : ''}`, x.ngay ? ngay(x.ngay, demoDate) : '']),
     ];
     const dongLop = (x: DongLopViPham, thut: boolean): (string | number)[] => [

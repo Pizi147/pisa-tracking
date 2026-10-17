@@ -4,6 +4,7 @@ import { ensurePeriod, mondayOf } from '../platform/week.ts';
 import { commitIntake, taoLopVaPhanCong } from '../classes/intake.ts';
 import { saveRegularScore } from '../normal/regular.ts';
 import { DEMO_DATE } from './journeys.ts';
+import { emailThu } from './emailThu.ts';
 
 /**
  * BỘ DEMO OV-6b2 — lớp PET dựng qua CHÍNH hàm nghiệp vụ (tạo lớp + phân công, thêm em, nhập điểm): `MB PET 01` khai giảng 5 tuần trước ngày demo
@@ -20,7 +21,7 @@ export function buildPetDemo(conn: any, o: { adminId: number; mbId: number; user
       { skill: 'reading_writing', userId: gv('T_KHOA'), isCore: false }],
   });
   const em = ['Lâm Bảo Ngọc', 'Hồ Minh Quân', 'Tạ Khánh Vy'].map((ten) => {
-    commitIntake(admin, { classId: lop.id, rows: [{ fullName: ten, startWeek: khaiGiang, email: 'hv@demo.test', dob: '2012-03-01' }], idempotencyKey: `pet-demo-${ten}` } as any);
+    commitIntake(admin, { classId: lop.id, rows: [{ fullName: ten, startWeek: khaiGiang, email: emailThu(), dob: '2012-03-01' }], idempotencyKey: `pet-demo-${ten}` } as any);
     return (conn.prepare('SELECT id FROM students WHERE full_name = ?').get(ten) as any).id as number;
   });
   const cp1 = (sid: number) => (conn.prepare(`SELECT id FROM assessment_attempts WHERE student_id = ? AND kind = 'checkpoint' AND attempt_no = 1`).get(sid) as any).id as number;

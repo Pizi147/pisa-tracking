@@ -401,7 +401,6 @@ function HangEm({ h, homNay, cot, dot, d, chon, dangXem, rieng, thiLai, onTick, 
         </td>
         <td className="sticky left-[80px] z-[1] min-w-[150px] max-w-[220px] border-r max-sm:left-[48px] max-sm:min-w-[112px] max-sm:max-w-[112px] border-t px-2.5 py-1.5" style={{ background: 'var(--surface)', borderColor: 'var(--line)' }}>
           <div className="font-bold text-slate-100 sm:truncate max-sm:line-clamp-2" title={h.ten}>{h.ten}</div>
-          <div className="text-[11px] text-slate-500">{h.ma}</div>
         </td>
         <td className="whitespace-nowrap border-t px-2.5 py-1.5 text-slate-300" style={{ borderColor: 'var(--line)' }}>{h.classCode}</td>
         <td className="border-t px-2.5 py-1.5" style={{ borderColor: 'var(--line)' }}>

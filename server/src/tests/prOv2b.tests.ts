@@ -108,12 +108,12 @@ export async function runPrOv2bTests(t: YThucTestKit) {
     thu(() => {
       const v = V();
       const r = intake.previewIntake(v.QL, { classId: lop, rows: [
-        { fullName: 'OV2b Đủ', ...DU }, { fullName: 'OV2b Thiếu NS', email: DU.email }, { fullName: 'OV2b Thiếu Email', dob: DU.dob },
+        { fullName: 'OV2b Đủ', ...DU }, { fullName: 'OV2b Thiếu NS', email: 'thieu.ns.ov2b@gmail.com' }, { fullName: 'OV2b Thiếu Email', dob: DU.dob },
       ] });
       const o = (row: number, field: string) => r.issues.some((i: any) => i.row === row && i.field === field && i.muc === 'loi');
       assert(!r.issues.some((i: any) => i.row === 1 && i.muc === 'loi'), `dòng đủ bị chặn: ${JSON.stringify(r.issues.filter((i: any) => i.row === 1))}`);
       assert(!o(2, 'dob') && !r.issues.some((i: any) => (i.row === 2 || i.row === 3) && i.muc === 'loi'), `lỗi ô: ${JSON.stringify(r.issues)}`);   // OV-11g Q3
-      const c = intake.commitIntake(v.QL, { classId: lop, rows: [{ fullName: 'OV2b Đủ', ...DU }, { fullName: 'OV2b Thiếu NS', email: DU.email }, { fullName: 'OV2b Sai NS', dob: '31/02/2010' }] });
+      const c = intake.commitIntake(v.QL, { classId: lop, rows: [{ fullName: 'OV2b Đủ', ...DU }, { fullName: 'OV2b Thiếu NS', email: 'thieu.ns.ov2b@gmail.com' }, { fullName: 'OV2b Sai NS', dob: '31/02/2010' }] });
       assert(one(`SELECT 1 FROM students WHERE full_name = 'OV2b Thiếu NS'`) && one(`SELECT 1 FROM students WHERE full_name = 'OV2b Đủ'`)
         && !one(`SELECT 1 FROM students WHERE full_name = 'OV2b Sai NS'`), `commit: ${JSON.stringify(c.failed)}`);
       const dan = intake.parsePaste('Họ và tên\tNgày sinh\tEmail\nOV2b Dán\t\tdan@gmail.com', { classId: lop });

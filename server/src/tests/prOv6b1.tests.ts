@@ -3,6 +3,7 @@
  * đạt), lớp đang chạy giữ lịch; tuần MT FT đọc bản chụp của lớp; migrate điền bản chụp cho mọi lớp cũ.
  */
 import type { YThucTestKit } from './yThuc.tests.ts';
+import { emailThu } from '../seed/emailThu.ts';
 
 export async function runPrOv6b1Tests(t: YThucTestKit) {
   const { check, assert, conn, P, TODAY, addDays, classId } = t;
@@ -31,7 +32,7 @@ export async function runPrOv6b1Tests(t: YThucTestKit) {
     code: `MB OV6B ${so++}`, branchId: MB, kind, route, isFastTrack: kind === 'FT', startDate: startWeek, startPeriodId: week.ensurePeriod(startWeek).id,
   }) as any;
   const them = (lop: number, ten: string, startWeek: string) => {
-    const r = intake.commitIntake(P.admin, { classId: lop, rows: [{ fullName: ten, target: 6.5, startWeek, email: 'hv@demo.test', dob: '2010-01-01' }] });
+    const r = intake.commitIntake(P.admin, { classId: lop, rows: [{ fullName: ten, target: 6.5, startWeek, email: emailThu(), dob: '2010-01-01' }] });
     assert(r.added === 1, `thêm ${ten}: ${JSON.stringify(r.failed)}`);
     return r.studentIds[0] as number;
   };

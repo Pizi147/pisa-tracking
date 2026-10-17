@@ -1,5 +1,6 @@
 /** PHÉP KIỂM PR-OV2c — email học viên KHÔNG bắt buộc ở mọi chỗ nhập / sửa (chủ SP 13/10); có gõ thì vẫn kiểm dạng; ngày sinh vẫn bắt buộc. */
 import type { YThucTestKit } from './yThuc.tests.ts';
+import { emailThu } from '../seed/emailThu.ts';
 
 export async function runPrOv2cTests(t: YThucTestKit) {
   const { check, assert, conn, P } = t;
@@ -35,10 +36,10 @@ export async function runPrOv2cTests(t: YThucTestKit) {
 
   check('OV2c-0 · dữ liệu thử đủ (lớp FT CP, 2 em, QL)', () => { assert(lop && dsEm.length === 2 && ql, `lop ${lop} em ${dsEm.length} ql ${ql}`); });
 
-  check('OV2c-1 · Thêm HV: cột Email không còn dấu *; OV-11g (Q3): Ngày sinh cũng không *', () => {
+  check('OV2c-1 · Thêm HV: OV-13f (Q8) cột Email có dấu * (trống vẫn lưu — việc Thiếu email); OV-11g (Q3): Ngày sinh không *', () => {
     for (const ft of [false, true]) {
       const cot = dm.cotLuoiNhap(ft);
-      assert(!cot.find((x: any) => x.key === 'email')?.batBuoc, `Email còn bắt buộc (ft=${ft})`);
+      assert(cot.find((x: any) => x.key === 'email')?.batBuoc, `Email thiếu dấu * (ft=${ft})`);
       assert(!cot.find((x: any) => x.key === 'dob')?.batBuoc, `Ngày sinh còn bắt buộc (ft=${ft})`);
     }
   });
@@ -47,7 +48,7 @@ export async function runPrOv2cTests(t: YThucTestKit) {
     thu(() => {
       const v = QL();
       const r = intake.previewIntake(v, { classId: lop, rows: [
-        { fullName: 'OV2c Không Email', dob: DOB }, { fullName: 'OV2c Email Sai', dob: DOB, email: 'abc' }, { fullName: 'OV2c Thiếu NS', email: 'a@b.vn' },
+        { fullName: 'OV2c Không Email', dob: DOB }, { fullName: 'OV2c Email Sai', dob: DOB, email: 'abc' }, { fullName: 'OV2c Thiếu NS', email: emailThu() },
       ] });
       assert(!r.issues.some((i: any) => i.row === 1 && i.muc === 'loi'), `dòng không email bị chặn: ${JSON.stringify(r.issues)}`);
       assert(loiO(r.issues, 2, 'email') && !loiO(r.issues, 3, 'dob'), `lỗi ô: ${JSON.stringify(r.issues)}`);
