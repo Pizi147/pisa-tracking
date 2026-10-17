@@ -46,10 +46,12 @@ function TheoCase({ r, dam, chu }: { r: DongSos; dam: ((topic: string | null) =>
     <span className="flex flex-col gap-0.5">
       {r.cases.map((c) => {
         const mo = dam && !dam(c.topic);
+        const x = chu(c);
         return (
           <span key={c.id} className={`flex min-w-0 items-baseline gap-1.5 ${c.done ? 'opacity-60' : ''}`}>
             <span className={`shrink-0 text-[11.5px] font-bold ${mo ? 'text-slate-500' : 'text-slate-200'}`}>{c.topic ? skillShort(c.topic) : 'Case'}</span>
-            <span className={`min-w-0 truncate text-xs ${mo ? 'text-slate-500' : 'text-slate-300'}`}>{chu(c)}</span>
+            {/* OV-14b: chữ dài cắt — rê chuột đọc đủ (mẫu truncate + title, G4). */}
+            <span className={`min-w-0 truncate text-xs ${mo ? 'text-slate-500' : 'text-slate-300'}`} title={typeof x === 'string' ? x : undefined}>{x}</span>
           </span>
         );
       })}
@@ -102,8 +104,10 @@ const chuKetQua = (c: CaseTomTat) => (c.done && c.ketQua ? `${t('Xong')} · ${di
  * MT · tuần. Cột: Học viên · SOS · Nguyên nhân · Phương án (QL / GV) · Kết quả đến nay · Trạng thái (chữ Tổng hợp) · Việc tiếp (QL / GV) · Phụ huynh
  * (TVV / CX) · TVV (CX) · Mở (panel một em). Không Nhắc. < 640 px: mỗi em một thẻ.
  */
-export function BangSos({ data, cot, dam, dienThoai, ds, onMo }: {
+export function BangSos({ data, cot, dam, dienThoai, ds, onMo, dangMo = null }: {
   data: TrangSos; cot: CotSos; dienThoai: boolean;
+  /** OV-14b: em đang mở panel — hàng / thẻ tô `row-active` như các bảng khác. */
+  dangMo?: number | null;
   /** GVBM / GVCN: kỹ năng mình dạy đậm, còn lại mờ (null = không làm mờ). */
   dam: ((topic: string | null) => boolean) | null;
   ds: NguCanhDs; onMo: (r: DongSos) => void;
@@ -163,7 +167,7 @@ export function BangSos({ data, cot, dam, dienThoai, ds, onMo }: {
                   <span className="min-w-0 flex-1">{dauLop(em)}</span>
                 </button>
                 {mo(em[0].classId) && em.map((r) => (
-                  <TheDong key={r.attemptId}
+                  <TheDong key={r.attemptId} className={r.studentId === dangMo ? 'row-active' : ''}
                     dau={<span className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1">{tenEm(r, false)}<Level tone={sosTone(r.sosLevel)}>SOS {r.sosLevel}</Level>{trangThai(r)}</span>}
                     hanhDong={nutMo(r)}
                     dong={[
@@ -203,7 +207,7 @@ export function BangSos({ data, cot, dam, dienThoai, ds, onMo }: {
                 {mo(em[0].classId) && em.map((r, i) => {
                   const lap = toanBo && i > 0 && em[i - 1].studentId === r.studentId;
                   return (
-                    <HangCon key={r.attemptId} className={`row-hover ${nhomDong(r) === 'xong' ? 'row-muted' : ''}`}>
+                    <HangCon key={r.attemptId} className={`row-hover ${nhomDong(r) === 'xong' ? 'row-muted' : ''} ${r.studentId === dangMo ? 'row-active' : ''}`}>
                       <td className="td h-14">{tenEm(r, lap)}</td>
                       {toanBo && <td className="td text-xs tabular-nums text-slate-300">{r.luot} · {tuanLich(r.tuan, homNay)}</td>}
                       <td className="td"><OSos r={r} toanBo={toanBo} /></td>

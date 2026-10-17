@@ -300,7 +300,7 @@ export function HocVienTheoVai({ vai }: { vai: 'tvv' | 'cx' }) {
         sos.error ? <ErrorState message={sos.error.message} hint={sos.error.hint} onRetry={sos.reload} />
           : !sos.data ? <Skeleton rows={6} />
             : sosRows.length === 0 ? <Card><Empty title={sos.data.toanBo ? t('Không có học viên SOS trong 8 tuần') : t('Không có học viên SOS ở tuần thi này')} hint={t('Chọn tuần khác hoặc Toàn bộ.')} /></Card>
-              : <BangSos data={{ ...sos.data, rows: sosRows }} cot={vai} dam={null} dienThoai={dienThoai} ds={ds} onMo={(r) => setPanelEm(r.studentId)} />
+              : <BangSos data={{ ...sos.data, rows: sosRows }} cot={vai} dam={null} dienThoai={dienThoai} ds={ds} onMo={(r) => setPanelEm(r.studentId)} dangMo={panelEm} />
       )}
       {goc === 'can-lam' && data && (viecTvv.length === 0
         ? <Card><Empty title={t('Không có việc nào')} /></Card>

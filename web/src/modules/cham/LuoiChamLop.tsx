@@ -112,7 +112,6 @@ export function LuoiChamLop({
   useEffect(() => {
     if (!datConTro || daCuon.current === khoaCuon) return;
     const id = requestAnimationFrame(() => {
-      daCuon.current = khoaCuon;
       const root = khung.current;
       if (!root) return;
       /* Không gắn tên thẻ: cùng bộ chọn cho lưới (tr/td) và màn điện thoại (li/div). */
@@ -124,6 +123,8 @@ export function LuoiChamLop({
           ?? (hang ? tim(`[data-kn="${kn}"][data-trong]`) : null)
         : hv !== null ? tim(`[data-hv="${hv}"]`) : tim('[data-trong]');
       if (!o) return;
+      /* OV-14b: chỉ đánh dấu khi đã thấy ô — lưới trong panel vẽ ô sau lần chạy đầu, đánh dấu sớm thì không bao giờ đặt con trỏ. */
+      daCuon.current = khoaCuon;
       o.scrollIntoView({ block: 'center', inline: 'nearest' });
       /* OV-14b: ô điểm trước nút "Nhận xét" cùng ô (bộ chọn gộp lấy phần tử đứng trước trong trang). */
       const f = o.querySelector<HTMLElement>('input:not([readonly]):not([disabled])') ?? o.querySelector<HTMLElement>('button:not([disabled]), input');

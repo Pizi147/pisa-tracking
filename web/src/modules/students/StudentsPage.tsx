@@ -430,7 +430,7 @@ function TrangTheoLop({ admin }: { admin: boolean }) {
                 {sosRows.length === 0
                   ? <Card><Empty title={sos.data.toanBo ? t('Không có học viên SOS trong 8 tuần') : t('Không có học viên SOS ở tuần thi này')} hint={t('Chọn tuần khác hoặc Toàn bộ.')} /></Card>
                   : <BangSos data={{ ...sos.data, rows: sosRows }} cot="ql" dam={dam} dienThoai={dienThoai} ds={dsHocVien}
-                      onMo={(r) => setPanelEm({ id: r.studentId, caseMo: r.cases.find((c) => !c.done)?.id ?? null })} />}
+                      onMo={(r) => setPanelEm({ id: r.studentId, caseMo: r.cases.find((c) => !c.done)?.id ?? null })} dangMo={panelEm?.id ?? null} />}
               </>
             )
       )}
