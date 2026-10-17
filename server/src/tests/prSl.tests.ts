@@ -299,7 +299,10 @@ export async function runPrSlTests(t: YThucTestKit) {
       assert(JSON.stringify(lo.map((x: number[]) => x.length)) === '[8,8,4]' && lo.flat().join() === Array.from({ length: 20 }, (_, i) => i).join(), JSON.stringify(lo));
       assert(d.LO_LUU_SUA_CA_LOP <= d.TOI_DA_LUU_SUA_CA_LOP, 'cỡ lô web phải ≤ trần máy chủ');
       const pn = doc('web/src/modules/students/SuaCaLopPanel.tsx');
-      assert(pn.includes('chiaLo(payload, LO_LUU_SUA_CA_LOP)') && pn.includes('em chưa lưu') && pn.includes('Đang lưu ${tienDo.xong}/${tienDo.tong}…'),
+      /* OV-14a (F05): panel chia lô bằng `chiaLoSuaCaLop` — không có em đổi email cho nhau thì vẫn (8, 8, 4). */
+      const lo2 = d.chiaLoSuaCaLop(Array.from({ length: 20 }, (_, i) => ({ studentId: i })), () => null).lo;
+      assert(JSON.stringify(lo2.map((x: unknown[]) => x.length)) === '[8,8,4]', JSON.stringify(lo2));
+      assert(pn.includes('chiaLoSuaCaLop(payload,') && pn.includes('em chưa lưu') && pn.includes('Đang lưu ${tienDo.xong}/${tienDo.tong}…'),
         'panel gửi theo lô, báo lưu dở ở chân panel, hiện tiến độ');
     });
 

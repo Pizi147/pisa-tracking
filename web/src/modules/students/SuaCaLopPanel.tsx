@@ -75,7 +75,7 @@ export function SuaCaLopPanel({ classId, onClose, onDone }: { classId: number; o
   const [hoiDong, setHoiDong] = useState(false);
   const lf = useLoiForm();
   const khoa = useRef(moiKhoa());
-  const luotXem = useRef(taoLuot()).current;
+  const batLuotXem = useRef(taoLuot()).current;
 
   const d = du.data;
   const cot = COT.filter((c) => !(d?.lopThuong && c.key === 'baseline') && (d?.nhapLienHe || !(TRUONG_LIEN_HE as readonly string[]).includes(c.key)));
@@ -110,7 +110,7 @@ export function SuaCaLopPanel({ classId, onClose, onDone }: { classId: number; o
 
   /* OV-14a (F04): dữ liệu đổi → bỏ xem trước cũ (Lưu mờ tới khi có bản khớp); phản hồi của lần xem trước cũ về sau thì bỏ. */
   useEffect(() => {
-    const conMoi = luotXem.bat();
+    const conMoi = batLuotXem();
     setXem(null);
     if (!payload.length) return undefined;
     const t = setTimeout(() => {

@@ -1,9 +1,9 @@
 /** OV-14a (audit 17/10): lưu chắc chắn — hàm thuần, không React, để phép kiểm `prOv14a` gọi thẳng. */
 
-/** Mỗi `bat()` mở một lượt; hàm trả về cho biết lượt đó còn là lượt MỚI NHẤT không — phản hồi của lượt cũ về sau thì bỏ (F04). */
+/** Mỗi lần gọi hàm trả về là mở một lượt; nó trả hàm cho biết lượt đó còn là lượt MỚI NHẤT không — phản hồi cũ về sau thì bỏ (F04). */
 export function taoLuot() {
   let n = 0;
-  return { bat: () => { const m = ++n; return () => m === n; } };
+  return () => { const m = ++n; return () => m === n; };
 }
 
 export type TrangThaiO = 'idle' | 'dang' | 'xong' | 'loi';

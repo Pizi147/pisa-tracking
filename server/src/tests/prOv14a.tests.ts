@@ -75,9 +75,9 @@ export async function runPrOv14aTests(t: YThucTestKit) {
   });
 
   check('OV-14a F04 · hai lần xem trước, phản hồi lần 1 về SAU lần 2 → bị bỏ', () => {
-    const l = lc.taoLuot();
-    const lan1 = l.bat();
-    const lan2 = l.bat();
+    const bat = lc.taoLuot();
+    const lan1 = bat();
+    const lan2 = bat();
     assert(!lan1() && lan2(), 'phản hồi cũ vẫn được nhận');
   });
 
