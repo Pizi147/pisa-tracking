@@ -960,7 +960,8 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     ];
     const ds = conn.prepare(
       `SELECT a.id AS attempt_id, a.attempt_no, a.kind, a.class_id, c.code AS class_code, c.branch_id, a.student_id, st.full_name
-         FROM assessment_scores s JOIN assessment_attempts a ON a.id = s.attempt_id AND a.kind = 'mock' AND a.status != 'cancelled'
+         /* TD7a: CROSS JOIN giữ assessment_scores làm bảng ngoài → đi chỉ mục một phần idx_score_cho_phu_trach (vài ô), không duyệt mọi lượt của lớp / chi nhánh. */
+         FROM assessment_scores s CROSS JOIN assessment_attempts a ON a.id = s.attempt_id AND a.kind = 'mock' AND a.status != 'cancelled'
          JOIN students st ON st.id = a.student_id AND ${HV_DANG_HOC_SQL('st')}
          JOIN classes c ON c.id = a.class_id
         WHERE s.skill = 'speaking' AND s.cho_phu_trach_xem = 1${loc.map((x) => ` AND ${x}`).join('')}

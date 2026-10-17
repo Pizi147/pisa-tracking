@@ -28,6 +28,8 @@ export async function runPrPb2bTests(t: YThucTestKit) {
       .replace(/\n  -- OV-12b [^\n]*\n  --[^\n]*\n  nhom_nguyen_nhan TEXT,/, '')
       /* OV-13k: bốn cột thêm sau OV-12b — cắt luôn, (1b) chạy lại migrate OV-13k sau OV-12b. */
       .replace(/\n  -- OV-13k [^\n]*\n  --[^\n]*\n  nhan_xet_phu_trach TEXT,\n[^\n]*\n[^\n]*\n  cho_phu_trach_xem INTEGER NOT NULL DEFAULT 0,/, '')
+      /* TD7a: chỉ mục một phần trên cột OV-13k — cắt cùng (chỉ so cột, không so chỉ mục). */
+      .replace(/\n\/\* TD7a: ô S Mock[^\n]*\nCREATE INDEX idx_score_cho_phu_trach [^\n]*/, '')
       .replace(/,\n  -- PR-Pb2-b \(Q14\)[\s\S]*?phan_hoi_ngay TEXT\n\);/, '\n);');
     if (/nhap_dau_ngay|han_xu_ly|phan_hoi_ngay|nhom_nguyen_nhan|nhan_xet_phu_trach|cho_phu_trach_xem/.test(cat)) throw new Error('schema.sql đổi khuôn — sửa bộ cắt của phép kiểm Pb2b (1)');
     const m = new SqliteDb(':memory:');

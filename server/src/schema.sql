@@ -766,6 +766,8 @@ CREATE TABLE assessment_scores (
   UNIQUE (attempt_id, skill)
 );
 CREATE INDEX idx_score_attempt ON assessment_scores(attempt_id);
+/* TD7a: ô S Mock chờ GV phụ trách xem ("Xem nhận xét Speaking") — chỉ mục một phần, câu xem_nx_s khỏi quét cả bảng. */
+CREATE INDEX idx_score_cho_phu_trach ON assessment_scores(attempt_id) WHERE skill = 'speaking' AND cho_phu_trach_xem = 1;
 
 -- Ước lượng của giáo viên. Tách hoàn toàn khỏi điểm chính thức, chỉ ghi thêm dòng mới
 -- nên có sẵn lịch sử. Không bao giờ ghi đè điểm Mock.
@@ -1415,6 +1417,8 @@ CREATE TABLE case_milestones (
 );
 CREATE UNIQUE INDEX idx_milestone_dedup ON case_milestones(dedup_key);
 CREATE INDEX idx_milestone_case ON case_milestones(case_id, occurred_on);
+/* TD7a: mốc của một lượt (`m.attempt_id = a.id`) — trước đây quét cả bảng cho từng lượt. */
+CREATE INDEX idx_milestone_attempt ON case_milestones(attempt_id, kind);
 
 CREATE TABLE sos_case_history (
   id INTEGER PRIMARY KEY,
