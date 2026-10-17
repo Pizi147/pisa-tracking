@@ -631,7 +631,7 @@ export const INTERVENTION_KIND_LABEL: Record<InterventionKind, string> = {
   reschedule_mt: t('Dời lịch thi'),
   extra_support: t('Hỗ trợ học thuật'),
   /* Giữ ĐÚNG chức danh của trung tâm, không tự đổi thành "Ban giám đốc" hay tên khác. */
-  meeting_cx: t('Meeting CX / GĐCN'),
+  meeting_cx: t('Meeting CX/GĐCN'),
   other_proposal: t('Khác'),
   bo_tro: t('Bổ trợ'),
   /** PR-LT2b (T47, M-05): sau Cuối khoá — miễn phí học viên, không tính lương GV; kết quả cuối là Mini Test. */
@@ -1089,10 +1089,6 @@ export type CycleOutcome = (typeof CYCLE_OUTCOMES)[number];
 export const CYCLE_OUTCOME_LABEL: Record<CycleOutcome, string> = {
   reached: t('Đạt Target'), not_reached: t('Chưa đạt Target'), unknown: t('Chưa có căn cứ kết luận'),
 };
-
-// ---------------------------------------------------------------- Xử lý SOS
-
-export const MEETING_KINDS = [t('Không cần'), t('GVCN meeting với HV'), t('CX / GĐCN meeting với HV')] as const;
 
 export const CASE_STATUSES = ['open', 'in_progress', 'done'] as const;
 export type CaseStatus = (typeof CASE_STATUSES)[number];

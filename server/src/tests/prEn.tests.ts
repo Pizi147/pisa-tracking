@@ -28,7 +28,7 @@ export async function runPrEnTests(t: any) {
 
   const bienCua = (s: string) => [...new Set([...s.matchAll(/\{(\w+)\}/g)].map((m) => m[1]))].sort().join();
   /* Chữ giữ nguyên ở EN (THUAT_NGU_EN luật 3): mã, tên riêng — chữ Việt mà bản Anh trùng y nguyên phải nằm đây. */
-  const GIU = new Set<string>([]);
+  const GIU = new Set<string>(['Tutor']);   // EN-e: tên PA / nhãn ô — luật thuật ngữ 3 giữ nguyên
 
   check('EN-KHOA · mọi chữ có bản Anh không rỗng, cùng {biến}, không còn "{" sau khi thay; không chép nguyên chữ Việt', () => {
     const loi: string[] = [];

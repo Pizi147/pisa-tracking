@@ -147,7 +147,7 @@ export async function runPanelUx3Tests(t: YThucTestKit) {
     assert(f([PA()], C).text === '1 PA · chưa có kết quả', 'chưa có kết quả');
     assert(f([PA({ lastOutcome: 'improved' }), PA()], C).text === '2 PA · 1 có kết quả', 'một phần');
     assert(f([PA({ lastOutcome: 'improved' }), PA({ lastOutcome: 'partial' })], C).text === '2 PA · đủ kết quả', 'đủ');
-    assert(f([], C).tiep?.text === 'Kết quả', 'việc tiếp');
+    assert(f([], C).tiep?.text === 'Kết quả PA', 'việc tiếp');
   });
 
   // ==================================================================== 2. Máy chủ: chữ việc, đường dẫn mở ngăn Case, người làm PA

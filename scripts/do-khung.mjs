@@ -6,8 +6,7 @@
 // KHUNG_RONG=1280,1366 thêm các chiều rộng đó cho MỌI kịch bản (dò trang nào tràn).
 // Chạy: npm run dev (PORT/WEB_PORT riêng) rồi `KHUNG_BASE=http://localhost:5530 node scripts/do-khung.mjs [lọc]`.
 // Playwright không nằm trong package.json: `npm i --no-save playwright` hoặc trỏ PW=<đường tới playwright>.
-// PR-EN: KHUNG_NGON_NGU=en — chạy cả bộ ở tiếng Anh (tài khoản + máy) và thêm lỗi (v) CHỮ VIỆT CÒN SÓT trên màn GV (vai 7, 9 và màn
-// chưa đăng nhập): bỏ khối [lang=vi] và chữ dữ liệu (mọi giá trị chữ có dấu trong DB demo — tên, mã, ghi chú, thông báo cũ). DB đọc từ
+// PR-EN: KHUNG_NGON_NGU=en — chạy cả bộ ở tiếng Anh (tài khoản + máy) và thêm lỗi (v) CHỮ VIỆT CÒN SÓT trên màn có trong `GOC_V` (mọi vai — EN-e): bỏ khối [lang=vi] và chữ dữ liệu (mọi giá trị chữ có dấu trong DB demo — tên, mã, ghi chú, thông báo cũ). DB đọc từ
 // PISA_DB (mặc định data/pisa-demo.sqlite). Kịch bản `ngon-ngu` bấm bốn bước nhớ ngôn ngữ (E-NHO).
 // HD-a / HD-b: kịch bản `hd-chi` bấm mọi "Chỉ cho tôi" của 6 vai (khoanh hiện, phần tử bấm được, Esc tắt). HD_VAI=ql,tvv chỉ chạy các vai đó.
 import fs from 'node:fs';
@@ -34,6 +33,9 @@ const GOC_V = {
   'lop-ft-y-thuc': '*:has(> * > [role=tablist][aria-label="Class conduct & SOS"])',
   /* OV-13o: Hồ sơ giáo viên (vai 7 xem chính mình) + menu ⋯ hồ sơ HV. */
   'gv-ho-so': '#noi-dung', 'hv-menu': '[role=menu]',
+  /* EN-e: Đang SOS (QL · GV · TVV · CX), panel một em (QL · GV), Công việc của QL (chip hạn). */
+  'sos-ql': '#noi-dung', 'sos-gv': '#noi-dung', 'sos-tvv': '#noi-dung', 'sos-cx': '#noi-dung', 'panel-mot-em-ql': '[role=dialog]', 'panel-mot-em-gv': '[role=dialog]',
+  'cv-ho-tro': '#noi-dung',
 };
 /** (v) bỏ qua vùng của đợt khác: lưới Điểm theo lớp cuối hồ sơ lớp — đo ở kịch bản gv-diem-lop (EN-b). */
 const BO_V = { 'lop-ft': '#khoi-diem-lop-bang', 'lop-ft-phan-tich': '#khoi-diem-lop-bang' };
@@ -81,6 +83,9 @@ const KICH_BAN = [
   ['gv-ket-qua-pa', 7, '/cong-viec', async (p) => { await p.getByRole('button', { name: /^(Kết quả PA|PA result)/ }).first().click(); await p.waitForTimeout(800); }],
   ['gv-ho-so', 7, '/giao-vien/7'],
   ['hv-menu', 7, '/hoc-vien/3', async (p) => { await p.locator('#noi-dung button[aria-haspopup]').first().click(); await p.waitForTimeout(400); }],
+  // EN-e: Đang SOS bốn vai + panel một em (bấm Mở dòng đầu).
+  ['sos-ql', 2, '/hoc-vien?view=sos'], ['sos-gv', 7, '/hoc-vien?view=sos'], ['sos-tvv', 23, '/hoc-vien?view=sos'], ['sos-cx', 24, '/hoc-vien?view=sos'],
+  ['panel-mot-em-ql', 2, '/hoc-vien?view=sos', nut(/^(Mở|Open) /)], ['panel-mot-em-gv', 7, '/hoc-vien?view=sos', nut(/^(Mở|Open) /)],
   ['gv-chuong', 7, '/', async (p) => { await p.getByRole('button', { name: /^(Thông báo|Notifications)/ }).first().click(); await p.waitForTimeout(500); }],
   // PR-EN: màn chưa đăng nhập (vai 0) và menu Tài khoản mở (điện thoại: hàng Ngôn ngữ ngay trên Giao diện).
   ['dang-nhap', 0, '/'],
@@ -256,7 +261,7 @@ for (const [w, h] of [[1440, 900], [375, 812], [1366, 768], [1280, 800]]) for (c
     if (BO_QUA_CAT.some((k) => tenKb.includes(k))) loi = loi.filter((l) => !l.startsWith('c '));
     // Panel tại chỗ của Công việc (máy tính) tự cuộn thân — thiết kế OV-5a, bản Việt cũng vậy; không phải cuộn lồng của trang.
     if (tenKb === 'gv-ket-qua-pa') loi = loi.filter((l) => !l.startsWith('b '));
-    if (NN === 'en' && [0, 7, 9].includes(v) && GOC_V[tenKb]) loi = [...loi, ...await p.evaluate(chuVietSot, [DU_LIEU, GOC_V[tenKb], BO_V[tenKb] ?? null])];
+    if (NN === 'en' && GOC_V[tenKb]) loi = [...loi, ...await p.evaluate(chuVietSot, [DU_LIEU, GOC_V[tenKb], BO_V[tenKb] ?? null])];
     console.log(`${loi.length ? '✗' : '✓'} ${nhan}${loi.map((l) => `\n    ${l}`).join('')}`);
     tongLoi += loi.length;
     // Ảnh lỗi; KHUNG_CHUP=1 chụp mọi lần đo (ảnh nghiệm thu).

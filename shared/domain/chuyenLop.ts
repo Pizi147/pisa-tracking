@@ -13,7 +13,7 @@ import type { ProgrammeCode } from './normal.ts';
 import { tuanLich } from './hienThiNgay.ts';
 import { shortDate } from './display.ts';
 import { mondayOfDate } from './week.ts';
-import { t } from '../i18n/index.ts';
+import { NGON_NGU, t } from '../i18n/index.ts';
 import { kyHieuLop } from './tenLop.ts';
 import { hienTargetKck, tachKck } from './nhapHocVien.ts';
 
@@ -67,9 +67,12 @@ export const LO_CHUYEN_NGAY = 2;
 export const LO_CHUYEN_NGAY_THUONG = 1;
 export const LOI_TUAN_BAT_DAU = 'Tuần bắt đầu phải là hôm nay hoặc từ tuần sau trở đi';
 
-const THU = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+/** EN-e: thứ viết tắt theo tiếng của trang (Chủ nhật đầu, như `getUTCDay`) — MỘT mảng cho chip hạn, lịch nhỏ, "T5 15/10". */
+export const THU_NGAN = NGON_NGU === 'en' ? ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] : ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+/** "T5" / "Thu" của một ngày ISO. */
+export const thuNgan = (iso: string): string => THU_NGAN[new Date(`${iso.slice(0, 10)}T00:00:00Z`).getUTCDay()];
 /** "T5 15/10" — thứ + ngày (hạn cụ thể, "Ngay hôm nay"). */
-export const thuNgay = (iso: string, homNay: string): string => `${THU[new Date(`${iso.slice(0, 10)}T00:00:00Z`).getUTCDay()]} ${shortDate(iso, homNay)}`;
+export const thuNgay = (iso: string, homNay: string): string => `${thuNgan(iso)} ${shortDate(iso, homNay)}`;
 /** Nhãn tuần bắt đầu của lệnh: hôm nay → "Ngay hôm nay · T5 15/10", Thứ Hai → mã tuần. */
 export const nhanTuanBatDau = (tuan: string, homNay: string): string =>
   (laChuyenNgay(tuan, homNay) ? t('Ngay hôm nay · {ngay}', { ngay: thuNgay(tuan, homNay) }) : tuanLich(tuan, homNay));

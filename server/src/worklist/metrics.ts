@@ -139,7 +139,7 @@ function viecCuaCase(rows: any[], p: Principal | undefined): Map<number, { viec:
     out.set(r.id, {
       tinhTrang: c!.trangThai.chu,
       viec: {
-        chu: loai === 'ghi-ket-qua' ? (v.chu.startsWith('Kết quả cuối') ? t('Ghi kết quả cuối') : t('Ghi kết quả')) : loai === 'xac-nhan-pa' ? t('Xác nhận PA') : v.chu,
+        chu: loai === 'ghi-ket-qua' ? (v.chu.startsWith('Kết quả cuối') ? t('Kết quả cuối') : t('Kết quả PA')) : loai === 'xac-nhan-pa' ? t('Xác nhận PA') : v.chu,
         loai, loaiHan: v.loaiHan, han: v.han, caseId: r.id, paId: v.paId,
         /* Cùng cờ máy chủ: Ghi kết quả = `ghiDuoc`; Xác nhận PA = SOS_EDIT; Xác nhận Case Progress = SOS_EDIT hoặc GVCN lớp em đang học (`coTheXacNhanCase`). */
         lam: loai === 'ghi-ket-qua' ? !!v.paId && !!ghiDuoc.get(v.paId)
@@ -246,7 +246,7 @@ export function rowsFor(unit: ChiSo['donVi'], ids: number[], metricId?: string, 
         const chay = r.pa_status !== 'completed' && r.pa_status !== 'cancelled' && r.approval_state !== 'pending';
         const viec: ViecDong | null = cv?.viec && cv.viec.paId === r.id ? cv.viec
           : chay && r.action_due && r.sid ? {
-            chu: t('Ghi kết quả'), loai: 'ghi-ket-qua', loaiHan: 'cap-nhat-pa', han: r.action_due, caseId: r.case_id, paId: r.id,
+            chu: t('Kết quả PA'), loai: 'ghi-ket-qua', loaiHan: 'cap-nhat-pa', han: r.action_due, caseId: r.case_id, paId: r.id,
             lam: !!ghiDuoc.get(r.id),   // cùng `ghiDuoc` của Ngăn Case
           } : null;
         byId.set(r.id, {

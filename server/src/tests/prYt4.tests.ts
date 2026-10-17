@@ -891,7 +891,8 @@ export async function runPrYt4Tests(t: YThucTestKit) {
   });
   check('YT4 (9) · Phối hợp (K3-38): "Meeting CX/GĐCN (sau Mock)" + chữ phụ "không phải xử lý vi phạm, không cần QL duyệt"', () => {
     const s = docW(`${YT}/PhoiHopSosSection.tsx`);
-    assert(/Meeting CX\/GĐCN \(sau Mock\)/.test(s) && /không phải xử lý vi phạm, không cần QL duyệt/.test(s), 'nhãn');
+    /* EN-e: nhãn ở MỘT chỗ — COORDINATION_KIND_LABEL (sos.ts), section dùng lại. */
+    assert(/Meeting CX\/GĐCN \(sau Mock\)/.test(docW('shared/domain/sos.ts')) && /COORDINATION_KIND_LABEL\[a\.kind/.test(s) && /không phải xử lý vi phạm, không cần QL duyệt/.test(s), 'nhãn');
   });
   check('YT4 (10) · Tab HV (K3 §4f): thanh việc, thang, bộ lọc MỘT hàng, dòng thời gian trộn không ô tick, "Xem cả lịch sử", dòng đếm cuối', () => {
     const s = docW(`${YT}/StudentYThucSection.tsx`);

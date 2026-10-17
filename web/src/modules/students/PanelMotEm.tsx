@@ -13,7 +13,7 @@ import { NganCase } from './NganCase.tsx';
 import { DongDaLuu, GhiNhanh, type DaLuuNhanh } from '../cases/GhiNhanh.tsx';
 import { OPhuHuynh } from './HocVienTheoVai.tsx';
 import { chuChuaNguyenNhan, type CaseTomTat } from './BangSos.tsx';
-import { t } from '@shared/i18n/index.ts';
+import { dich, t } from '@shared/i18n/index.ts';
 import { LOAI_HAN_CUA_VIEC, NHAN_NHOM_XU_LY, thuNgay, vaiXemHocVien, type GiaiDoanSauThi, type LienHe } from '@shared/domain/index.ts';
 import { HopGiaHan, NhanSauThi } from './HopGiaHan.tsx';
 import { KetQuaThiThatPanel } from './KetQuaThiThatPanel.tsx';
@@ -103,7 +103,7 @@ export function PanelMotEm({ studentId, caseMo, onClose, onDoi }: {
     han: gapNhat ? <ChipHan loai={LOAI_HAN_CUA_VIEC[gapNhat.group]!} han={gapNhat.due} /> : null,
     dong2: data ? [
       <Link className="link inline-flex min-h-[44px] items-center sm:min-h-0" to={`/hoc-vien/${studentId}`}>{t('Hồ sơ')} <span aria-hidden className="text-xs">↗</span></Link>,
-      lop, data.luot?.nhan ?? null,
+      lop, data.luot?.nhan ? dich(data.luot.nhan) : null,
       data.luot?.sosLevel ? <Level tone={sosTone(data.luot.sosLevel)}>SOS {data.luot.sosLevel}</Level> : null,
     ] : [],
   };
@@ -145,15 +145,15 @@ export function PanelMotEm({ studentId, caseMo, onClose, onDoi }: {
                 const viec = viecCua(c.id);
                 const m = dangMo(c);
                 return (
-                  <section key={c.id} className={`rounded-lg border ${c.done ? 'opacity-70' : ''}`} style={{ borderColor: 'var(--line)' }} aria-label={`Case ${c.kyNang ?? ''}`}>
+                  <section key={c.id} className={`rounded-lg border ${c.done ? 'opacity-70' : ''}`} style={{ borderColor: 'var(--line)' }} aria-label={`Case ${c.kyNang ? dich(c.kyNang) : ''}`}>
                     <button type="button" aria-expanded={m} onClick={() => doiMo(c)}
                       className="flex min-h-[44px] w-full cursor-pointer items-center gap-2 border-0 bg-transparent px-3 py-2 text-left">
                       <svg aria-hidden viewBox="0 0 8 8" width="8" height="8" className={`shrink-0 text-slate-400 transition-transform ${m ? 'rotate-90' : ''}`}>
                         <path d="M2.5 1 6 4 2.5 7" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                       </svg>
                       <span className="shrink-0 text-sm font-bold text-slate-100">{c.topic ? skillShort(c.topic) : 'Case'}{c.attemptNo ? <span className="font-normal text-slate-400"> · MT{c.attemptNo}</span> : null}</span>
-                      <span className="min-w-0 flex-1 truncate text-[13px] text-slate-300">{c.nguyenNhan ?? chuChuaNguyenNhan(c, true)}</span>
-                      {!m && viec.length > 0 && <span className="shrink-0 text-xs font-semibold text-[color:var(--accent)]">{viec[0].tieuDe}</span>}
+                      <span className="min-w-0 flex-1 truncate text-[13px] text-slate-300 max-sm:overflow-visible max-sm:whitespace-normal max-sm:break-words">{c.nguyenNhan ? dich(c.nguyenNhan) : chuChuaNguyenNhan(c, true)}</span>
+                      {!m && viec.length > 0 && <span className="shrink-0 text-xs font-semibold text-[color:var(--accent)]">{dich(viec[0].tieuDe)}</span>}
                       <Nhan tone={TONE_NHOM[c.nhom]}>{t(NHAN_NHOM_XU_LY[c.nhom])}</Nhan>
                     </button>
                     {m && (
@@ -165,7 +165,7 @@ export function PanelMotEm({ studentId, caseMo, onClose, onDoi }: {
                           /* OV-13b (mockup OV-13 §1): Kết quả PA ghi nhanh ngay trong khối; "Điều chỉnh / Kết thúc…" mở Ngăn Case (panel lớn). */
                           <div key={v.key} className="space-y-1.5">
                             <div className="flex flex-wrap items-center gap-2">
-                              <span className="min-w-0 flex-1 text-sm font-bold text-slate-100">{v.tieuDe}</span>
+                              <span className="min-w-0 flex-1 text-sm font-bold text-slate-100">{dich(v.tieuDe)}</span>
                               {v.due && <ChipHan loai="cap-nhat-pa" han={v.due} />}
                             </div>
                             <GhiNhanh paId={v.paId} onDaLuu={(kq) => { setDaLuu((m) => new Map(m).set(c.id, kq)); daDoi(); }}
@@ -176,8 +176,8 @@ export function PanelMotEm({ studentId, caseMo, onClose, onDoi }: {
                           <CanLam key={v.key}>
                             <div className="flex flex-wrap items-center gap-2">
                               <span className="min-w-0 flex-1">
-                                <span className="block text-sm font-bold text-slate-100">{v.tieuDe}</span>
-                                {v.owner && <span className="block text-xs text-slate-400">{v.owner}</span>}
+                                <span className="block text-sm font-bold text-slate-100">{dich(v.tieuDe)}</span>
+                                {v.owner && <span className="block text-xs text-slate-400">{dich(v.owner)}</span>}
                               </span>
                               {v.due && LOAI_HAN_CUA_VIEC[v.group] && <ChipHan loai={LOAI_HAN_CUA_VIEC[v.group]!} han={v.due} />}
                               <button type="button" className="btn btn-primary min-h-[44px] max-sm:w-full sm:min-h-[36px]"
@@ -188,16 +188,16 @@ export function PanelMotEm({ studentId, caseMo, onClose, onDoi }: {
                           </CanLam>
                         ))}
                         {!viec.length && c.viecTiep && (
-                          <p className="m-0 text-xs text-slate-400">{t('Việc tiếp')}: <span className="text-slate-200">{c.viecTiep.chu}</span>
+                          <p className="m-0 text-xs text-slate-400">{t('Việc tiếp')}: <span className="text-slate-200">{dich(c.viecTiep.chu)}</span>
                             {c.viecTiep.quaHan && <span className="font-semibold text-late"> · ⚠ {t('quá hạn')}</span>}</p>
                         )}
                         {/* Bối cảnh chung (`BoiCanh`, ≤ 3 dòng). */}
                         <BoiCanh dong={[
-                          [t('Nguyên nhân'), <>{c.nguyenNhan ?? chuChuaNguyenNhan(c)}{c.nhanXet && <span className="block text-slate-400">“{c.nhanXet}”</span>}</>],
+                          [t('Nguyên nhân'), <>{c.nguyenNhan ? dich(c.nguyenNhan) : chuChuaNguyenNhan(c)}{c.nhanXet && <span className="block text-slate-400">“{c.nhanXet}”</span>}</>],
                           [t('Phương án'), c.pa.length ? c.pa.map((p) => (
-                            <span key={p.id} className="block">{p.ten}{p.nguoi ? ` · ${p.nguoi}` : ''}{p.choXacNhan ? ` · ${t('chờ xác nhận')}` : p.xong ? ` · ${t('đã khép')}` : ''}</span>
+                            <span key={p.id} className="block">{dich(p.ten)}{p.nguoi ? ` · ${p.nguoi}` : ''}{p.choXacNhan ? ` · ${t('chờ xác nhận')}` : p.xong ? ` · ${t('đã khép')}` : ''}</span>
                           )) : t('Chưa có PA')],
-                          [t('Kết quả gần nhất'), c.ketQua ?? t('Chưa có kết quả')],
+                          [t('Kết quả gần nhất'), c.ketQua ? dich(c.ketQua) : t('Chưa có kết quả')],
                         ]} />
                         <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 text-xs sm:min-h-0" onClick={() => setView({ caseId: c.id })}>{t('Xem thêm ›')}</button>
                       </div>

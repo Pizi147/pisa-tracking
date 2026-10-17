@@ -481,7 +481,7 @@ export function confirmCoordination(p: Principal, id: number, input: { performed
   if (input.performedOn > demoToday()) throw badRequest('Ngày thực hiện không được ở tương lai.');
   const who = capText(input.performerName, 100, 'Tên người thực hiện');
   const note = capText(input.note, 1000, 'Ghi chú');
-  if (laMeetingCx(r.kind) && note.length < GHI_CHU_MEETING_TOI_THIEU) throw loi(400, 'Meeting CX / GĐCN: ghi chú nói rõ kết quả buổi gặp, ít nhất {n} ký tự.', { n: GHI_CHU_MEETING_TOI_THIEU });
+  if (laMeetingCx(r.kind) && note.length < GHI_CHU_MEETING_TOI_THIEU) throw loi(400, 'Meeting CX/GĐCN (sau Mock): ghi chú nói rõ kết quả buổi gặp, ít nhất {n} ký tự.', { n: GHI_CHU_MEETING_TOI_THIEU });
   tx(() => {
     /* PR-PHH: bản chụp 4 nội dung bằng CHÍNH `turnsOf` đang dùng để hiển thị, tính như sau khi xong (ngày thực hiện) — trước UPDATE, cùng giao dịch. */
     const chup = r.kind === 'bao_ph_tvv'

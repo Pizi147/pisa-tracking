@@ -1,7 +1,7 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState, type KeyboardEvent as PhimReact, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
 import {
-  buocLich, chotTuan, docONgay, goiYGanDay, hienONgay, loiKhoangNgay, luoiThang, mondayOfDate,
+  buocLich, chotTuan, docONgay, goiYGanDay, hienONgay, loiKhoangNgay, luoiThang, mondayOfDate, THU_NGAN,
   type KieuONgay, type LuatONgay,
 } from '@shared/domain/index.ts';
 import { useGiuFocus } from './giuFocus.ts';
@@ -23,7 +23,7 @@ const THANG_NAM = (thang: string, nam: number) => t('Tháng {thang}/{nam}', { th
  * Bàn phím trong lưới: một ô nhận Tab (đang chọn / hôm nay), mũi tên theo `buocLich`; Enter/Space là bấm nút gốc (chọn).
  */
 
-const THU = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
+const THU = [...THU_NGAN.slice(1), THU_NGAN[0]];   // lưới T2 → CN
 const NGAY = /^\d{4}-\d{2}-\d{2}$/;
 const THANG = /^\d{4}-\d{2}$/;
 const p2 = (x: number) => String(x).padStart(2, '0');

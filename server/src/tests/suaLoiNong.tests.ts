@@ -45,16 +45,16 @@ export async function runSuaLoiNongTests(t: YThucTestKit) {
   });
   check('N1 (1) → OV-12a · deadlineView cap-nhat-pa: "Kết quả W3–W4 SEP · hạn hết T3 29/09"', () => {
     const v = d.deadlineView({ kind: 'cap-nhat-pa', due: '2026-09-29', today: '2026-09-24' });
-    assert(v.viec === 'Kết quả W3–W4 SEP' && v.han === 'hạn hết T3 29/09' && v.tone === 'waiting', JSON.stringify(v));
+    assert(v.viec === 'Kết quả PA · W3–W4 SEP' && v.han === 'hạn hết T3 29/09' && v.tone === 'waiting', JSON.stringify(v));
     assert(d.deadlineView({ kind: 'cap-nhat-pa', due: '2026-09-29', today: '2026-09-29' }).homNay, 'đúng Thứ Ba là hôm nay');
     assert(d.deadlineView({ kind: 'cap-nhat-pa', due: '2026-09-29', today: '2026-10-01' }).quaHan === 'quá hạn 2 ngày', 'quá hạn');
     assert(!/CN|Chủ nhật/.test(v.text), v.text);
   });
   check('N1 (1) → OV-12a · nhanTuanGhiKetQua: một kỳ / ghi bù nhiều kỳ (K3-17)', () => {
-    assert(d.nhanTuanGhiKetQua('2026-09-29', '2026-09-29').tieuDe === 'Kết quả W3–W4 SEP', 'một kỳ');
+    assert(d.nhanTuanGhiKetQua('2026-09-29', '2026-09-29').tieuDe === 'Kết quả PA · W3–W4 SEP', 'một kỳ');
     const bu = d.nhanTuanGhiKetQua('2026-09-15', '2026-10-13');
-    assert(bu.tieuDe === 'Kết quả W1 SEP – W2 OCT (ghi bù 3 kỳ)' && bu.soKy === 3, JSON.stringify(bu));
-    assert(d.nhanTuanGhiKetQua(null, '2026-09-29').tieuDe === 'Kết quả kỳ này', 'không hạn');
+    assert(bu.tieuDe === 'Kết quả PA · W1 SEP – W2 OCT (ghi bù 3 kỳ)' && bu.soKy === 3, JSON.stringify(bu));
+    assert(d.nhanTuanGhiKetQua(null, '2026-09-29').tieuDe === 'Kết quả PA', 'không hạn');
   });
   check('N1 (1) · chữ luật PA không còn "Chủ nhật" (K3 §4c #3)', () => {
     assert(!/Chủ nhật/.test(d.PLAN_DECISION_HINT.keep) && !/Chủ nhật/.test(d.cycleDeadlineHint()), 'còn Chủ nhật');
@@ -94,7 +94,7 @@ export async function runSuaLoiNongTests(t: YThucTestKit) {
     /* Chỉ khoá theo id PA (`action:`/`review:`) — `support:`/`owner:` mang id CASE, có thể trùng số với id PA này. */
     const dong = groups.flatMap((g) => g.items).filter((it: any) => it.key === `action:${ivId}` || it.key === `review:${ivId}`);
     assert(dong.length === 1 && dong[0].key === `action:${ivId}` && dong[0].group === 'ghi_ket_qua_pa', JSON.stringify(dong.map((x: any) => x.key)));
-    assert(dong[0].tieuDe.startsWith('Kết quả PA') && dong[0].actionLabel === 'Kết quả', dong[0].tieuDe);
+    assert(dong[0].tieuDe.startsWith('Kết quả PA') && dong[0].actionLabel === 'Kết quả PA', dong[0].tieuDe);
   });
   check('N1 (2) · T53 Q1: dự kiến kết thúc đã qua mà hạn tuần chưa tới → KHÔNG có việc', () => {
     const { ivId } = taoPa('du-kien');

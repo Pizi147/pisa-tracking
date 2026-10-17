@@ -14,7 +14,7 @@ import { NHAN_TRANG_THAI } from './trangThai.ts';
 import { ngay, tuanLich } from './hienThiNgay.ts';
 import { VIOLATION_CATEGORIES, VIOLATION_CATEGORY_LABEL, type ViolationCategory } from './yThuc.ts';
 import { moiNhatTruoc, nhanBaiThuong } from './normal.ts';
-import { ghepChu, kem, t, type ChuKhoa } from '../i18n/index.ts';
+import { dich, ghepChu, kem, t, type ChuKhoa } from '../i18n/index.ts';
 
 // ====================================================================== ba tab (D2, A6)
 
@@ -82,10 +82,10 @@ export function tienDoCase(plans: readonly PhuongAnTomTat[], c: { status: string
     const choDuyet = chay.find((p) => p.pendingApproval);
     const coHan = chay.filter((p) => p.actionDue).sort((a, b) => a.actionDue!.localeCompare(b.actionDue!))[0];
     const quaHanRoi = chay.filter((p) => p.actionDue && p.actionOverdue).sort((a, b) => a.actionDue!.localeCompare(b.actionDue!))[0];
-    if (quaHanRoi) tiep = { text: t('Kết quả'), due: quaHanRoi.actionDue, overdue: true };
+    if (quaHanRoi) tiep = { text: t('Kết quả PA'), due: quaHanRoi.actionDue, overdue: true };
     else if (choDuyet) tiep = { text: t('Chờ Quản lý trả lời'), due: choDuyet.approvalDue, overdue: false };
-    else if (coHan) tiep = { text: t('Kết quả'), due: coHan.actionDue, overdue: coHan.actionOverdue };
-    else if (c.followUntil) tiep = { text: t('Kết quả'), due: c.followUntil, overdue: c.followOverdue };
+    else if (coHan) tiep = { text: t('Kết quả PA'), due: coHan.actionDue, overdue: coHan.actionOverdue };
+    else if (c.followUntil) tiep = { text: t('Kết quả PA'), due: c.followUntil, overdue: c.followOverdue };
   }
   return { coKetQua, tong, text, tiep };
 }
@@ -98,7 +98,7 @@ export function viecTiepPhuongAn(p: PhuongAnTomTat): {
   /* PR-SOS: PA quy chế chờ xác nhận chưa chạy — việc là Xác nhận PA (hạn ở Case). Tuần chạm mốc → Ghi kết quả cuối. */
   if (p.choXacNhan) return { loai: 'cho-xac-nhan', text: t('Chờ xác nhận'), due: null, overdue: false };
   if (p.lanCuoi && dangChay(p)) return { loai: 'ghi-cuoi', text: t('Kết quả cuối'), due: p.actionDue, overdue: p.actionOverdue };
-  if (dangChay(p)) return { loai: 'ghi-ket-qua', text: t('Kết quả'), due: p.actionDue, overdue: p.actionOverdue };
+  if (dangChay(p)) return { loai: 'ghi-ket-qua', text: t('Kết quả PA'), due: p.actionDue, overdue: p.actionOverdue };
   return { loai: 'da-xong', text: p.closedReason === 'superseded' ? t('Được thay thế') : p.closedReason === 'doi_pa' ? t('Đã kết thúc · Đổi PA') : t('Đã kết thúc'), due: p.completedOn, overdue: false };
 }
 
@@ -357,7 +357,7 @@ export function oSapToi(i: {
 /** Khoảng PA nói MÃ TUẦN (Q19, Q30-6): `từ W3 SEP` · `W3 SEP → W1 OCT` (đã xong) — mốc quy chế nối sau (`· đến MT2 · W4 OCT`). */
 export function chuKhoangPa(p: { startedOn: string | null; completedOn: string | null; mocChu?: string | null }, homNay: string): string | null {
   const dau = p.startedOn ? (p.completedOn ? `${tuanLich(p.startedOn, homNay)} → ${tuanLich(p.completedOn, homNay)}` : t('từ {tuan}', { tuan: tuanLich(p.startedOn, homNay) })) : null;
-  return [dau, p.mocChu || null].filter(Boolean).join(' · ') || null;
+  return [dau, p.mocChu ? dich(p.mocChu) : null].filter(Boolean).join(' · ') || null;   // mocChu máy chủ dựng (chữ Việt) → tiếng của trang
 }
 
 /** Kết quả gần nhất của PA: `Tiến bộ một phần · W3 SEP` (tuần của lần ghi, không dd/mm). */

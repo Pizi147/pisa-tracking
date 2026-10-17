@@ -23,7 +23,7 @@ export const HD_CX: HuongDan = {
       chi: { hd: 'hvl-goc', duong: '/hoc-vien', chu: 'Góc nhìn và lọc phụ ở hàng này.' },
     },
     {
-      id: 'cx-meeting', ten: 'Meeting CX / GĐCN', khi: 'khi em SOS 3 hoặc Ý thức bậc 4',
+      id: 'cx-meeting', ten: 'Meeting CX/GĐCN', khi: 'khi em SOS 3 hoặc Ý thức bậc 4',
       buoc: ['GVCN hẹn meeting với em (MT3 SOS 3: có cả phụ huynh) hoặc Report 4 + Meeting CX/GĐCN.',
         'Xem việc: hồ sơ em › <b>Ý thức & Phối hợp</b> › <b>Phối hợp SOS</b>.', 'GVCN bấm <b>Xác nhận meeting</b> kèm ghi chú; hạn 5 ngày.'],
     },

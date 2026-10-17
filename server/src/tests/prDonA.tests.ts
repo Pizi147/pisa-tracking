@@ -625,7 +625,7 @@ export async function runPrDonATests(t: YThucTestKit) {
     for (let k = 0; k < 8; k++) {
       const han = t.addDays('2026-09-08', 14 * k);
       const a = d.tuanCuaHanGhiKetQua(han, han);
-      const b = d.nhanTuanGhiKetQua(han, han).tieuDe.replace(/^Kết quả /, '');
+      const b = d.nhanTuanGhiKetQua(han, han).tieuDe.replace(/^Kết quả PA · /, '');
       assert(a === `kỳ ${b}` && d.tuanKetQuaCuaHan(han) === t.addDays(han, -15), `${han}: "${a}" ≠ "kỳ ${b}"`);
     }
   });
