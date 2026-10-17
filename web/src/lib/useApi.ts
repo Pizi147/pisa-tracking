@@ -84,6 +84,60 @@ export function thuLaiNen() { [...loiNen].forEach((f) => f()); }
 /** Lỗi trang cần hiện: chỉ khi CHƯA có dữ liệu — có rồi thì giữ dữ liệu (toast nhỏ thay ErrorState). */
 export const loiCanHien = <T,>(data: T | null, error: ApiError | null): ApiError | null => (data === null ? error : null);
 
+/** OV-14a (F03): quên bản vừa xem theo tiền tố mà KHÔNG gọi tải lại hook đang gắn — sau khi ghi đã tự cập nhật dữ liệu tại chỗ (`setData`). */
+export function quenBanXem(prefix: string) {
+  for (const k of [...dangBay.keys()]) if (k.startsWith(prefix)) dangBay.delete(k);
+  for (const k of [...daXem.keys()]) if (k.startsWith(prefix)) daXem.delete(k);
+}
+
+/** OV-14a (F09): tải gặp 401 = phiên đã hết — App tải lại phiên (màn đăng nhập nếu hết thật), không coi như lỗi mạng. */
+const ngheHetPhien = new Set<() => void>();
+export function onHetPhien(f: () => void): () => void { ngheHetPhien.add(f); return () => { ngheHetPhien.delete(f); }; }
+
+type Ref<V> = { current: V };
+/** Thân effect tải của `useApi` — tách ra để phép kiểm gọi không cần React (OV-14a F06, F09). */
+export function batDauTai<T>(path: string | null, b: {
+  latest: Ref<number>; currentPath: Ref<string | null>; coDuLieu: Ref<boolean>;
+  setData: (d: T | null) => void; setFetching: (v: boolean) => void; setError: (e: ApiError | null) => void; reload: () => void;
+}): void {
+  const { latest, currentPath, coDuLieu, reload } = b;
+  if (!path) {
+    latest.current += 1;   // F06: phản hồi của đường cũ còn bay không được đặt lại dữ liệu
+    b.setData(null);
+    b.setFetching(false);
+    currentPath.current = null;
+    return;
+  }
+  // Đổi sang truy vấn khác thì mới bỏ dữ liệu cũ đi.
+  if (currentPath.current !== path) {
+    b.setData((daXem.get(path) as T | undefined) ?? null);
+    currentPath.current = path;
+    /* Mới gắn / đổi đường, bản lưu còn mới → dùng luôn (PR-TD2-c). */
+    if (conMoi(path)) { latest.current += 1; b.setFetching(false); b.setError(null); return; }
+  }
+  const seq = ++latest.current;
+  b.setFetching(true);
+  b.setError(null);
+  taiVaNho<T>(path)
+    .then((kq) => {
+      if (seq !== latest.current || !kq) return;   // bỏ qua phản hồi cũ
+      loiNen.delete(reload);
+      b.setData(kq.d);
+      b.setFetching(false);
+    })
+    .catch((e) => {
+      if (seq !== latest.current) return;
+      const loi = e instanceof ApiError ? e : new ApiError(500, String(e));
+      b.setError(loi);
+      b.setFetching(false);
+      if (loi.status === 401) ngheHetPhien.forEach((f) => f());
+      else if (coDuLieu.current) {
+        loiNen.add(reload);
+        ngheLoi.forEach((f) => f());
+      }
+    });
+}
+
 export type ApiState<T> = {
   data: T | null;
   /** true chỉ khi CHƯA có dữ liệu để hiển thị — dùng để bật skeleton. */
@@ -124,38 +178,7 @@ export function useApi<T>(path: string | null, deps: unknown[] = []): ApiState<T
   );
 
   useEffect(() => {
-    if (!path) {
-      setDataState(null);
-      setFetching(false);
-      currentPath.current = null;
-      return;
-    }
-    // Đổi sang truy vấn khác thì mới bỏ dữ liệu cũ đi.
-    if (currentPath.current !== path) {
-      setDataState((daXem.get(path) as T | undefined) ?? null);
-      currentPath.current = path;
-      /* Mới gắn / đổi đường, bản lưu còn mới → dùng luôn (PR-TD2-c). */
-      if (conMoi(path)) { latest.current += 1; setFetching(false); setError(null); return; }
-    }
-    const seq = ++latest.current;
-    setFetching(true);
-    setError(null);
-    taiVaNho<T>(path)
-      .then((kq) => {
-        if (seq !== latest.current || !kq) return;   // bỏ qua phản hồi cũ
-        loiNen.delete(reload);
-        setDataState(kq.d);
-        setFetching(false);
-      })
-      .catch((e) => {
-        if (seq !== latest.current) return;
-        setError(e instanceof ApiError ? e : new ApiError(500, String(e)));
-        setFetching(false);
-        if (coDuLieu.current) {
-          loiNen.add(reload);
-          ngheLoi.forEach((f) => f());
-        }
-      });
+    batDauTai<T>(path, { latest, currentPath, coDuLieu, setData: setDataState, setFetching, setError, reload });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [path, tick, ...deps]);
 
