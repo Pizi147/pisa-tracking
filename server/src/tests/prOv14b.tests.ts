@@ -67,18 +67,19 @@ export async function runPrOv14bTests(t: YThucTestKit) {
     assert(!motTuan.toanBo && motTuan.tuan === md.tuanGanNhat && motTuan.rows.length < toan.rows.length, 'chọn một tuần hỏng');
   });
 
-  check('OV14b-3 · "Quá hạn chấm" theo khung: FT + Lớp thường = cả hai; số = số dòng; khung FT = khối "Test quá hạn chấm" FT', () => {
+  check('OV14b-3 · "Quá hạn chấm" theo khung: FT + Lớp thường = cả hai; số = số dòng; ô khung ⊇ khối "Test quá hạn chấm" cùng khung', () => {
     const ca = cham.dsQuaHanCham(QL, {}, TODAY, true);
     const ft = cham.dsQuaHanCham(QL, { khung: 'ft' }, TODAY, true);
     const th = cham.dsQuaHanCham(QL, { khung: 'thuong' }, TODAY, true);
     assert(ca.n > 0 && ft.n + th.n === ca.n, `ft ${ft.n} + thường ${th.n} ≠ ${ca.n}`);
     for (const x of [ca, ft, th]) assert(x.rows.length === x.n, `số ${x.n} ≠ ${x.rows.length} dòng`);
     assert(ft.lop + th.lop >= ca.lop, 'số lớp');
-    /* Bộ demo 14/09: không ô quá hạn nào nằm ở khối 2 → ô theo khung = khối 1 cùng khung (số bài + số lớp). */
+    /* Ô theo khung ⊇ khối 1 cùng khung (ô còn đếm ô quá hạn tuần trước nằm ở khối 2). Bộ demo sạch 14/09: bằng nhau (FT 53 · 2 lớp — đo tay). */
     const lt = cham.lichTest(QL, week.ensurePeriod(T2).id, null, TODAY, {});
     for (const [kh, o] of [['ft', ft], ['thuong', th]] as const) {
       const no = (lt.no as any[]).filter((x) => (x.kind === 'mt0' ? 'thuong' : x.mode === 'ielts_band' ? 'ft' : 'thuong') === kh);
-      assert(no.reduce((s, x) => s + x.conBai, 0) === o.n && new Set(no.map((x) => x.classId)).size === o.lop, `${kh}: ô ${o.n} · ${o.lop} lớp ≠ khối`);
+      const khoi = no.reduce((s, x) => s + x.conBai, 0);
+      assert(khoi <= o.n && new Set(no.map((x) => x.classId)).size <= o.lop, `${kh}: ô ${o.n} · ${o.lop} lớp < khối ${khoi}`);
     }
   });
 }

@@ -401,13 +401,11 @@ export function oQuaHanCham(
   /* OV-14b: khung đang xem (công tắc FT / Lớp thường) — cùng luật `khungDong` của các khối (MT0 thuộc Lớp thường); FT + thường = cả hai. */
   const khungLuot = new Map<number, Khung>();
   if (o.khung) {
-    const idLuot = [...new Set(r.ids.map((id) => Math.floor(id / 10)))];
-    for (let i = 0; i < idLuot.length; i += 400) {
-      const lo = idLuot.slice(i, i + 400);
-      for (const a of db().prepare(`SELECT id, kind, class_id FROM assessment_attempts WHERE id IN (${lo.map(() => '?').join(',')})`).all(...lo) as any[]) {
+    theoLo([...new Set(r.ids.map((id) => Math.floor(id / 10)))], (lo, ph) => {
+      for (const a of db().prepare(`SELECT id, kind, class_id FROM assessment_attempts WHERE id IN (${ph})`).all(...lo) as any[]) {
         khungLuot.set(a.id, khungDong({ mode: cheDoCua(programmeOfClass(a.class_id)?.code), kind: a.kind }));
       }
-    }
+    });
   }
   const ids: number[] = [], khac: number[] = [];
   const lop = new Set<number>();

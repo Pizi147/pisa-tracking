@@ -84,7 +84,7 @@ export async function runHocVienLopTests(t: YThucTestKit) {
 
   check('PR-Qa · Q4 chip lọc: nhãn THUAT_NGU, khoá URL cũ vẫn mở đúng chip, missing_scores sang Test › Lịch Test', () => {
     eq(d.LOC_HOC_VIEN.map((k: string) => d.LOC_HOC_VIEN_NHAN[k].nhan),
-      ['Tất cả', 'Cần làm', 'Quá hạn', 'Chờ duyệt', 'Đang SOS', 'Thiếu thông tin'], 'Nhãn chip');
+      ['Tất cả', 'Cần làm', 'Quá hạn', 'Chờ duyệt', 'Đang SOS', 'Thiếu thông tin', 'Đã thi · chờ kết quả'], 'Nhãn chip');
     eq(d.docThamSoLoc(null), { loc: 'tat-ca' }, 'Không có view');
     eq(d.docThamSoLoc('classes'), { loc: 'tat-ca' }, 'view=classes cũ');
     eq(d.docThamSoLoc('sos_open'), { loc: 'sos' }, 'signals.ts dùng sos_open');

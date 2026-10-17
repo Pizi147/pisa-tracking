@@ -47,7 +47,7 @@ export async function runPrHvlTests(t: YThucTestKit) {
   // ------------------------------------------------------------------ Task 1 · chip, badge
 
   check('PR-HVL (1) · K2-02/03 chip Cần làm · Chờ duyệt · Đang SOS · Thiếu thông tin; link cũ không vỡ; demLoc một hàm đếm', () => {
-    eq(d.LOC_HOC_VIEN, ['tat-ca', 'can-lam', 'qua-han', 'cho-duyet', 'sos', 'thieu_tt'], 'Khoá chip (PR-S4F thêm qua-han)');
+    eq(d.LOC_HOC_VIEN, ['tat-ca', 'can-lam', 'qua-han', 'cho-duyet', 'sos', 'thieu_tt', 'da-thi'], 'Khoá chip (PR-S4F thêm qua-han, OV-14b thêm da-thi)');
     for (const v of ['case_working', 'case_no_plan', 'case_overdue']) eq(d.docThamSoLoc(v), { loc: 'can-lam' }, `view=${v}`);
     eq(d.docThamSoLoc('sos_open'), { loc: 'sos' }, 'sos_open');
     eq(d.docThamSoLoc('cho-duyet'), { loc: 'cho-duyet' }, 'cho-duyet');
