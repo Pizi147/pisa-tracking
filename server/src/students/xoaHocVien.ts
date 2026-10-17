@@ -175,17 +175,17 @@ export function matNhieuEm(ids: number[]): { nhan: string; so: number }[] {
 }
 
 export type XemXoaHocVien = {
-  id: number; ma: string; ten: string; lop: string | null; dangHoc: boolean;
+  id: number; ma: string; ten: string; lop: string | null; email: string | null; dangHoc: boolean;
   /** Chỉ loại > 0, thứ tự như `LOAI_MAT`. */
   mat: { khoa: string; nhan: string; so: number }[];
   congViecGoLienKet: number;
 };
 
-type Em = { id: number; student_code: string; full_name: string; status: string; lop: string | null; lop_dang_hoc: number };
+type Em = { id: number; student_code: string; full_name: string; email: string | null; status: string; lop: string | null; lop_dang_hoc: number };
 
 function docEm(sid: number): Em {
   const s = db().prepare(
-    `SELECT s.id, s.student_code, s.full_name, s.status,
+    `SELECT s.id, s.student_code, s.full_name, s.email, s.status,
             (SELECT c.code FROM enrollments e JOIN classes c ON c.id = e.class_id
               WHERE e.student_id = s.id AND e.status IN ('active','paused') ORDER BY e.id DESC LIMIT 1) AS lop,
             EXISTS (SELECT 1 FROM enrollments e WHERE e.student_id = s.id AND e.status = 'active') AS lop_dang_hoc
@@ -208,7 +208,7 @@ export function xemXoaHocVien(p: Principal, studentId: number): XemXoaHocVien {
   require_(p, PERMISSIONS.CYCLE_EDIT, { studentId }, CHI_QL);
   const { soDong, congViec } = demMat(studentId);
   return {
-    id: s.id, ma: s.student_code, ten: s.full_name, lop: s.lop ?? null,
+    id: s.id, ma: s.student_code, ten: s.full_name, lop: s.lop ?? null, email: s.email || null,   // VN-1: phân biệt em trùng tên
     dangHoc: s.status === 'active' && !!s.lop_dang_hoc,
     mat: LOAI_MAT.filter((l) => soDong[l.khoa] > 0).map((l) => ({ khoa: l.khoa, nhan: l.nhan, so: soDong[l.khoa] })),
     congViecGoLienKet: congViec,

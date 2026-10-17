@@ -3,7 +3,7 @@ import { nho } from '../platform/nguCanhRequest.ts';
 import {
   BASELINE_SOURCES, CO_DIEM_SQL, CYCLE_OUTCOMES, CYCLE_OUTCOME_LABEL, CYCLE_STATUSES, PERMISSIONS, soMtKeTiep, tuanLich,
   canNamGan, docNgayNhap, hienTargetKck, mondayOfDate, tachKck, ngay, type ExamPlan, type LuotSo, type Route,
-  CHI_SUA_THONG_TIN, CAU_LIEN_TUC, duocDoiKck,
+  CHI_SUA_THONG_TIN, CAU_LIEN_TUC, duocDoiKck, laBandLenh,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { closeCasesBySystem } from '../cases/systemClose.ts';
@@ -125,7 +125,7 @@ export function docTarget(v: unknown): { target: number | null; kck: boolean } {
   const { so, kck } = tachKck(v);
   if (so === null || so === undefined || so === '') return { target: null, kck };
   const n = Number(so);
-  if (!Number.isFinite(n) || n < 0 || n > 9) throw badRequest('Target phải nằm trong khoảng 0–9 (thêm KCK nếu không cam kết).');
+  if (!laBandLenh(n)) throw badRequest('Target phải từ 0 đến 9, bước 0,5 (ví dụ 6.5) — thêm KCK nếu không cam kết.');
   return { target: n, kck };
 }
 const hienTarget = (target: number | null, kck: unknown) => hienTargetKck(target, !!kck);

@@ -224,6 +224,7 @@ export function transferStudent(p: Principal, studentId: number, toClassId: numb
   if (!typed && !handover?.noNote) throw badRequest(`Ghi lưu ý bàn giao, hoặc chọn "${NO_HANDOVER_NOTE}".`);
   const handoverNote = typed || NO_HANDOVER_NOTE;
 
+  if (handover?.mucTieu != null) docTarget(handover.mucTieu);   // VN-1: cùng luật band 0–9 bước 0,5
   /* Q7: chuyển THẬT sang Fast Track (không phải chỉ ghi dự định) bắt buộc Target. Không áp dụng khi xếp lớp lần đầu. */
   if (enr) {
     const luatXem = luatDoiLop(
@@ -796,7 +797,8 @@ export function chanLuuTruHv(p: Principal, studentId: number) {
   if (r?.archived_at && can(p, PERMISSIONS.STUDENT_VIEW, { studentId })) throw badRequest(CAU_LUU_TRU);
 }
 
-export function updateStudent(p: Principal, studentId: number, patch: any) {
+/** `emailRoiDi`: em cùng lô Sửa cả lớp đang bỏ email cũ (VN-1: hai em đổi email cho nhau) — không tính là đang dùng. */
+export function updateStudent(p: Principal, studentId: number, patch: any, emailRoiDi: readonly number[] = []) {
   if (!can(p, PERMISSIONS.STUDENT_EDIT, { studentId })) {
     require_(p, PERMISSIONS.STUDENT_EDIT_INFO, { studentId });
     const ghiChu = can(p, PERMISSIONS.STUDENT_EDIT_MORE, { studentId });
@@ -816,7 +818,7 @@ export function updateStudent(p: Principal, studentId: number, patch: any) {
   /* OV-13f (Q8): chỉ lần ĐỔI email bị kiểm trùng — em cũ đang trùng gửi lại đúng email cũ vẫn lưu được các ô khác. Kiểm lại trong giao dịch khi ghi. */
   const kiemEmail = () => {
     if (!patch.email || patch.email === String(s.email ?? '').trim().toLowerCase()) return;
-    const em = emailDangDung([patch.email], [studentId]).get(patch.email);
+    const em = emailDangDung([patch.email], [studentId, ...emailRoiDi]).get(patch.email);
     if (em) throw badRequest(cauEmailTrung(em));
   };
   kiemEmail();
