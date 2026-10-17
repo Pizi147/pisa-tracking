@@ -6,6 +6,9 @@ export function taoLuot() {
   return () => { const m = ++n; return () => m === n; };
 }
 
+/** Khoá nháp một ô Góp ý: có NGƯỜI đăng nhập — máy dùng chung, người sau cùng tab không thấy (và không lưu dưới tên mình) chữ của người trước. */
+export const khoaNhapO = (uid: number | undefined, classId: number, tuan: string, sid: number, skill: string) => `${uid ?? 0}:${classId}:${tuan}:${sid}:${skill}`;
+
 export type TrangThaiO = 'idle' | 'dang' | 'xong' | 'loi';
 
 /**

@@ -74,6 +74,12 @@ export async function runPrOv14aTests(t: YThucTestKit) {
     assert(o.nhanGoc('A') === null && o.nhap() === 'A ', `chữ bị cắt: "${o.nhap()}"`);
   });
 
+  check('OV-14a F07 · nháp giữ theo NGƯỜI: cùng người đăng nhập lại thấy lại, người khác cùng máy không thấy', () => {
+    const a = lc.khoaNhapO(7, 3, '2026-09-14', 48, 'writing');
+    assert(a === lc.khoaNhapO(7, 3, '2026-09-14', 48, 'writing'), 'cùng người, cùng ô phải cùng khoá');
+    assert(a !== lc.khoaNhapO(9, 3, '2026-09-14', 48, 'writing'), 'người khác dùng chung khoá nháp');
+  });
+
   check('OV-14a F04 · hai lần xem trước, phản hồi lần 1 về SAU lần 2 → bị bỏ', () => {
     const bat = lc.taoLuot();
     const lan1 = bat();
@@ -139,6 +145,17 @@ export async function runPrOv14aTests(t: YThucTestKit) {
       ds.forEach((d) => ua.taiTruoc(d));
       assert(soGoi(ds[0]) === 1 && soGoi(ds[1]) === 1, 'bản cũ của Góp ý vẫn được dùng');
       assert(soGoi(ds[2]) === 0, 'xoá nhầm đường khác');
+      cho = [];
+    });
+
+    await checkAsync('OV-14a F03 · GET Góp ý đang bay TRƯỚC lúc lưu xong về sau → không ghi bản cũ vào bản vừa xem', async () => {
+      api.invalidateAll(); cho = [];
+      const p = ua.taiVaNho('/classes/78/gop-y');
+      ua.quenBanXem('/classes/78/gop-y');
+      traJson('/classes/78/gop-y', { cu: 1 });
+      assert((await p) === null, 'phản hồi bắt đầu trước lúc lưu vẫn được nhận');
+      ua.taiTruoc('/classes/78/gop-y');
+      assert(soGoi('/classes/78/gop-y') === 1, 'bản cũ vào bản vừa xem');
       cho = [];
     });
 

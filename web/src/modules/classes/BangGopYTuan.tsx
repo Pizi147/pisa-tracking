@@ -3,7 +3,8 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { GOP_Y_HIEN_DEM, GOP_Y_TOI_DA, type NguCanhDs } from '@shared/domain/index.ts';
 import { api, ApiError } from '../../lib/api.ts';
 import { quenBanXem, useApi } from '../../lib/useApi.ts';
-import { taoOLuu, type TrangThaiO } from '../../lib/luuChac.ts';
+import { khoaNhapO, taoOLuu, type TrangThaiO } from '../../lib/luuChac.ts';
+import { useSession } from '../../lib/session.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 import { fmtDateTime } from '../../lib/format.ts';
 import { Empty, Skeleton } from '../../ui/ui.tsx';
@@ -38,6 +39,7 @@ export function BangGopYTuan({ classId, maLop, laFt, tuan, onTuan }: {
   const duong = `/classes/${classId}/gop-y${tuan ? `?tuan=${tuan}` : ''}`;
   const { data, error, setData, reload } = useApi<DuLieu>(duong, [duong]);
   const dienThoai = useDienThoai();
+  const uid = useSession().session?.user?.id;
   /** Ô còn chữ chưa lưu (đang gõ / đang lưu / lỗi), khoá `banNhap` — hỏi lại khi đổi tuần hoặc rời trang. */
   const chuaLuu = useRef(new Set<string>());
   const [mo, setMo] = useState<Set<number>>(new Set());
@@ -91,7 +93,7 @@ export function BangGopYTuan({ classId, maLop, laFt, tuan, onTuan }: {
     const v = oCua(s.id, c.skill, xem.weekStart);
     if (!c.ghiDuoc) return <ODoc o={v} />;
     const cu = tuanCu ? oCua(s.id, c.skill, tuanCu.weekStart) : null;
-    const k = `${classId}:${xem.weekStart}:${s.id}:${c.skill}`;
+    const k = khoaNhapO(uid, classId, xem.weekStart, s.id, c.skill);
     return (
       <>
         {cu && <DongCu code={tuanCu.code} noiDung={cu.noiDung} />}

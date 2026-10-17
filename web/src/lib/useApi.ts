@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ApiError, api, cachedGet, onInvalidate, theHe } from './api.ts';
+import { ApiError, api, boLoiGoiDangBay, cachedGet, onInvalidate, theHe } from './api.ts';
 
 /*
  * PR-S6F-b (D14): GET ĐANG BAY cùng đường dẫn dùng chung MỘT lời gọi — Tổng quan có nhiều khối cùng đọc `/my-work`, `/tong-quan/quan-ly`.
@@ -86,6 +86,7 @@ export const loiCanHien = <T,>(data: T | null, error: ApiError | null): ApiError
 
 /** OV-14a (F03): quên bản vừa xem theo tiền tố mà KHÔNG gọi tải lại hook đang gắn — sau khi ghi đã tự cập nhật dữ liệu tại chỗ (`setData`). */
 export function quenBanXem(prefix: string) {
+  boLoiGoiDangBay(prefix);   // GET bắt đầu trước lúc lưu xong về sau → bỏ, không ghi bản cũ
   for (const k of [...dangBay.keys()]) if (k.startsWith(prefix)) dangBay.delete(k);
   for (const k of [...daXem.keys()]) if (k.startsWith(prefix)) daXem.delete(k);
 }
@@ -120,7 +121,8 @@ export function batDauTai<T>(path: string | null, b: {
   b.setError(null);
   taiVaNho<T>(path)
     .then((kq) => {
-      if (seq !== latest.current || !kq) return;   // bỏ qua phản hồi cũ
+      if (seq !== latest.current) return;   // bỏ qua phản hồi cũ
+      if (!kq) { b.setFetching(false); return; }   // bị xoá giữa chừng: giữ dữ liệu đang có (invalidate tự tải lại)
       loiNen.delete(reload);
       b.setData(kq.d);
       b.setFetching(false);

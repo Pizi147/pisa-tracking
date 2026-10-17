@@ -53,6 +53,9 @@ export function invalidate(prefix: string) {
   listeners.forEach((l) => l(prefix));
 }
 
+/** OV-14a (F03): như `invalidate` nhưng KHÔNG gọi tải lại — chỉ để lời gọi đang bay của tiền tố này về sau bị bỏ (đã tự cập nhật tại chỗ). */
+export function boLoiGoiDangBay(prefix: string) { demXoa(prefix); }
+
 export function onInvalidate(fn: InvalidateListener) {
   listeners.add(fn);
   return () => { listeners.delete(fn); };
