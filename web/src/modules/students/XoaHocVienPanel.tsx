@@ -10,7 +10,7 @@ import { CHU_XAC_NHAN_XOA, khopXacNhanXoa } from '@shared/domain/index.ts';
 
 /** `GET /students/:id/xoa` (chỉ Quản trị hệ thống) — `server/src/students/xoaHocVien.ts`. */
 export type XemXoaHocVien = {
-  id: number; ma: string; ten: string; lop: string | null; dangHoc: boolean;
+  id: number; ma: string; ten: string; lop: string | null; email: string | null; dangHoc: boolean;
   mat: { khoa: string; nhan: string; so: number }[];
   congViecGoLienKet: number;
 };
@@ -57,7 +57,7 @@ export function XoaHocVienPanel({ studentId, studentName, lop, onClose }: {
           <>
             <Khoi tieuDe="Học viên">
               <p className="m-0 text-sm text-slate-200">
-                {d.ten} · {d.lop ?? 'Chưa xếp lớp'}
+                {d.ten} · {d.lop ?? 'Chưa xếp lớp'} · {d.email ?? 'Chưa có email'}
                 {d.dangHoc && <span className="text-soon"> · đang học</span>}
               </p>
             </Khoi>

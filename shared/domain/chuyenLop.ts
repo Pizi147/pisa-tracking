@@ -123,7 +123,8 @@ export const canLopDich = (h: HuongLenh): boolean => h !== 'bao_luu' && h !== 'd
 
 /** OV-9: Target của lệnh — số, "KCK" (chưa có Target), hoặc "6.5 KCK" (Target + dấu KCK). Lưu `muc_tieu` + `khong_cam_ket` riêng. */
 export type MucTieuLenh = number | 'KCK' | `${number} KCK`;
-const laBandLenh = (m: unknown) => typeof m === 'number' && m >= 0 && m <= 9 && Math.round(m * 2) === m * 2;
+/** Band Target 0–9 bước 0,5 — một luật cho mọi ô Target (VN-1). */
+export const laBandLenh = (m: unknown) => typeof m === 'number' && m >= 0 && m <= 9 && Math.round(m * 2) === m * 2;
 /** MucTieuLenh → Target + dấu KCK. Phần số sai → target NaN (nơi gọi kiểm bằng `mucTieuHopLe`). */
 export function tachMucTieu(m: MucTieuLenh | string | null | undefined): { target: number | null; kck: boolean } {
   if (typeof m === 'number') return { target: m, kck: false };

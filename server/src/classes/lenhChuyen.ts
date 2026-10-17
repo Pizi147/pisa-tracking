@@ -1,7 +1,7 @@
 import { THAM_SO_TOI_DA, chenNhieuDong, db, theoLo, tx } from '../db.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import {
-  KHOI_PHUC_LENH_GIO, LO_HANG_LOAT_EM, chuTargetKck, ghepMucTieu, tachMucTieu, laLienTuc, NHAN_XET_TOI_THIEU, PERMISSIONS, coPhieu, canLopDich, hanBanGiaoLenh, khacGoiY, mocLoTrinh, kiemDongChuyenTiep, kiemDongLenh, targetLenFt, tuanHopLe, tuanLich,
+  KHOI_PHUC_LENH_GIO, LO_HANG_LOAT_EM, chuTargetKck, ghepMucTieu, tachMucTieu, laBandLenh, laLienTuc, NHAN_XET_TOI_THIEU, PERMISSIONS, coPhieu, canLopDich, hanBanGiaoLenh, khacGoiY, mocLoTrinh, kiemDongChuyenTiep, kiemDongLenh, targetLenFt, tuanHopLe, tuanLich,
   type DemChotLoTrinh, type Huong, type HuongLenh, type MucTieuLenh, type ProgrammeCode,
 } from '../../../shared/domain/index.ts';
 import { HttpError, badRequest, chuTuDo, conflict, forbidden, notFound, nowIso } from '../util.ts';
@@ -173,6 +173,7 @@ export function raLenh(p: Principal, v: {
       } else if (d.huong === 'fast_track' && !lopDich.is_fast_track) { loi('Lớp chuyển đến phải là Fast Track'); continue; }
       const han = coPhieu(d.huong) ? hanMoi : null;
       const mt = d.mucTieu == null ? null : tachMucTieu(d.mucTieu);   // OV-9: Target + dấu KCK lưu riêng
+      if (mt && mt.target !== null && !laBandLenh(mt.target)) { loi('Target phải từ 0 đến 9, bước 0,5.'); continue; }   // VN-1: cả FT → FT
       if (cu) daSua.add(d.studentId);
       if (cu && v.boiCanh === 'cuoi-khoa' && !nguonFt && coPhieu(d.huong) && (cu.huong !== d.huong || (cu.lop_dich_id ?? null) !== (lopDich?.id ?? null))) lamLai.push(d.studentId);
       hang.push([

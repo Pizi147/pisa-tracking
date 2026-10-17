@@ -9414,6 +9414,9 @@ await runPrOv13qTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P,
 // ==================================================================== OV-13f (ẩn mã HV + Email là định danh, không trùng — qua HTTP)
 const { runPrOv13fTests } = await import('./prOv13f.tests.ts');
 await runPrOv13fTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== VN-1 (rà OV-13f: Target bước 0,5 mọi đường, email ở Xoá HV, đổi email cho nhau)
+const { runPrVn1Tests } = await import('./prVn1.tests.ts');
+await runPrVn1Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`

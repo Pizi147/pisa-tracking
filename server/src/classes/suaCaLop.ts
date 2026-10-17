@@ -172,13 +172,15 @@ function kiemLo(p: Principal, classId: number, input: DauVao) {
 
   /*
    * OV-13f (Q8): email không trùng — cùng luật `updateStudent` (chỉ dòng ĐỔI email). Báo ở xem trước đúng dòng: trùng em khác (một câu cả lô)
-   * hoặc trùng dòng trước trong lô. Lưu theo lô nhỏ: lô sau gặp email lô trước đã ghi thì `updateStudent` chặn (400) — cả lô cuộn lại.
+   * hoặc trùng dòng trước trong lô. Email của em khác CÙNG LÔ cũng đang đổi thì không tính (VN-1: hai em đổi email cho nhau). Cả lô ghi trong MỘT
+   * giao dịch: `updateStudent` kiểm lại với cùng danh sách em rời email cũ; trùng thật thì 400 — cả lô cuộn lại.
    */
   const doiEmail = dong.flatMap((x, i) => {
     const e = x.hoSo.email !== undefined ? docEmail(x.hoSo.email).email : null;
     return e && e !== String(x.s.email ?? '').trim().toLowerCase() ? [{ x, i, e }] : [];
   });
-  const dungEmail = emailDangDung(doiEmail.map((d) => d.e));
+  const roiEmail = doiEmail.map((d) => d.x.s.id as number);
+  const dungEmail = emailDangDung(doiEmail.map((d) => d.e), roiEmail);
   const trongLo = new Map<string, string>();
   for (const { x, i, e } of doiEmail) {
     const em = dungEmail.get(e);
@@ -208,7 +210,7 @@ function kiemLo(p: Principal, classId: number, input: DauVao) {
     const cau = cauMtSeDoi(lichMtCua(cls, x.c.route), luotOf.get(x.c.id) ?? [], x.tuanMoi!, demoToday());
     if (cau) canhBaoMt.push({ studentId: x.s.id, cau });
   }
-  return { cls, dong, canhBaoMt };
+  return { cls, dong, canhBaoMt, roiEmail };
 }
 
 export function xemTruocSuaCaLop(p: Principal, classId: number, input: DauVao) {
@@ -222,7 +224,7 @@ export function luuSuaCaLop(p: Principal, classId: number, input: DauVao & { ide
   if (Array.isArray(input?.rows) && input.rows.length > TOI_DA_LUU_SUA_CA_LOP) {
     throw badRequest(`Lưu tối đa ${TOI_DA_LUU_SUA_CA_LOP} học viên một lần.`);
   }
-  const { cls, dong } = kiemLo(p, classId, input);
+  const { cls, dong, roiEmail } = kiemLo(p, classId, input);
   /* Chống gửi trùng như `commitIntake`: khoá gắn NGƯỜI GỬI + LỚP, kiểm sau quyền; đọc lại trong giao dịch. */
   const k = typeof input.idempotencyKey === 'string' ? input.idempotencyKey.trim().slice(0, 100) : '';
   const key = k ? `suacalop:${p.userId}:${cls.id}:${k}` : null;
@@ -245,7 +247,7 @@ export function luuSuaCaLop(p: Principal, classId: number, input: DauVao & { ide
       /* Netlify cắt hàm sau 10 s, bị cắt giữa giao dịch là giữ khoá ghi Turso: sắp hết giờ thì dừng — cả lô cuộn lại, 503 "chưa lưu gì". */
       chanGiaoDichNeuSapHetGio();
       try {
-        if (Object.keys(hoSo).length) updateStudent(p, s.id, hoSo);
+        if (Object.keys(hoSo).length) updateStudent(p, s.id, hoSo, roiEmail);
         const ct = { ...(r.startWeek !== undefined ? { startWeek: r.startWeek } : {}), ...(r.examDate !== undefined ? { examDate: r.examDate } : {}) };
         if (Object.keys(ct).length) updateCycle(p, c.id, ct);
         if (r.baseline !== undefined) setBaseline(p, c.id, r.baseline === null ? { source: null } : { source: 'manual', score: r.baseline });
