@@ -470,7 +470,7 @@ export const EN_C = {
   'Việc tiếp': 'Next task',
   'Thao tác trang': 'Page actions',
   'Tìm': 'Search',
-  '🔍 Lọc trong danh sách này…': '🔍 Filter this list…',
+  'Lọc trong danh sách này…': 'Filter this list…',
   'Phạm vi': 'Scope',
   'Phạm vi: {pv}': 'Scope: {pv}',
   'Lọc học viên': 'Filter students',

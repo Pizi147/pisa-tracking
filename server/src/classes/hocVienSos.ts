@@ -41,7 +41,7 @@ export type DongSos = {
   luot: string; tuan: string; sosLevel: number; kyNang: string[];
   cases: CaseTomTat[]; tvv: string | null; lienHe: LienHe;
 };
-export type TrangSos = { tuan: string | null; toanBo: boolean; tu: string; den: string; tuanCo: string[]; phamVi: PhamVi; rows: DongSos[] };
+export type TrangSos = { tuan: string | null; toanBo: boolean; tuanGanNhat: string; tu: string; den: string; tuanCo: string[]; phamVi: PhamVi; rows: DongSos[] };
 
 const LA_SOS = new Set(['sos1', 'sos2', 'sos3', 'gk-1', 'gk-2']);
 
@@ -112,11 +112,15 @@ export function dangSos(p: Principal, f: { tuan?: string | null; phamVi?: string
   const luot = luotTrongKhoang(where.join(' AND '), args);
   const pl = phanLoaiCacLuot(luot);
 
-  /* Tuần mặc định = tuần thi gần nhất ĐÃ QUA (trước tuần này) có lượt đã chấm trong phạm vi (mockup 3 v2); không có thì tuần này. */
+  /*
+   * OV-14b (rà UX 17/10): mặc định Toàn bộ 8 tuần — một tuần ẩn em SOS các tuần khác. `tuanGanNhat` = tuần thi gần nhất ĐÃ QUA có lượt đã chấm
+   * (không có thì tuần này) — đích của nút ‹ / bỏ "Toàn bộ". Định nghĩa SOS theo tuần thi giữ nguyên (chủ SP 14/10).
+   */
   const daCham = luot.filter((a) => pl.has(a.id));
-  const toanBo = f.tuan === 'tat-ca';
+  const toanBo = !f.tuan || f.tuan === 'tat-ca';
   if (f.tuan && !toanBo && !/^\d{4}-\d{2}-\d{2}$/.test(f.tuan)) throw badRequest('Tuần thi không hợp lệ.');
-  const tuan = toanBo ? null : f.tuan ? mondayOfDate(f.tuan) : daCham.reduce<string | null>((m, a) => (a.week_start < den && (!m || a.week_start > m) ? a.week_start : m), null) ?? den;
+  const tuanGanNhat = daCham.reduce<string | null>((m, a) => (a.week_start < den && (!m || a.week_start > m) ? a.week_start : m), null) ?? den;
+  const tuan = toanBo ? null : mondayOfDate(f.tuan!);
 
   const sosLuot = daCham.filter((a) => LA_SOS.has(pl.get(a.id)!.loai));
   const tuanCo = [...new Set(sosLuot.map((a) => a.week_start as string))].sort().reverse();
@@ -153,7 +157,7 @@ export function dangSos(p: Principal, f: { tuan?: string | null; phamVi?: string
       kyNang: x.kyNangDuoi, cases: cuaLuot, tvv: e?.tvv ?? null, lienHe: e?.lienHe ?? { phone: null, parentName: null, parentRelation: null, parentPhone: null },
     };
   }).sort((a, b) => (a.tuan === b.tuan ? a.ten.localeCompare(b.ten, 'vi') : a.tuan < b.tuan ? 1 : -1));
-  return { tuan, toanBo, tu, den, tuanCo, phamVi: dangDung, rows };
+  return { tuan, toanBo, tuanGanNhat, tu, den, tuanCo, phamVi: dangDung, rows };
 }
 
 /**

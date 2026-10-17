@@ -392,17 +392,29 @@ export function noQuaHan(
  * người có phân công xem "Lớp tôi dạy" đếm ô của mình, ô GV khác vào `khac` (OV-11e TE-7). Khác khối 1 (`noQuaHan`): khối chia theo tuần thi.
  */
 export function oQuaHanCham(
-  p: Principal, o: { branchId?: number | null; phamVi?: PhamViLichTest | null; classId?: number | null }, today: string = demoToday(),
+  p: Principal, o: { branchId?: number | null; phamVi?: PhamViLichTest | null; classId?: number | null; khung?: Khung | null }, today: string = demoToday(),
 ): { ids: number[]; khac: number[]; lop: number } {
   const coPhanCong = defaultWorkScope(p) === 'mine';
   const cuaToi = coPhanCong && (o.phamVi ?? 'cua-toi') === 'cua-toi';
   const lopCuaToi = new Set(p.assignments.filter((a) => activeAt(a, today)).map((a) => a.classId));
   const r = overdueScoreBai(p, o.branchId ?? null, today);
+  /* OV-14b: khung đang xem (công tắc FT / Lớp thường) — cùng luật `khungDong` của các khối (MT0 thuộc Lớp thường); FT + thường = cả hai. */
+  const khungLuot = new Map<number, Khung>();
+  if (o.khung) {
+    const idLuot = [...new Set(r.ids.map((id) => Math.floor(id / 10)))];
+    for (let i = 0; i < idLuot.length; i += 400) {
+      const lo = idLuot.slice(i, i + 400);
+      for (const a of db().prepare(`SELECT id, kind, class_id FROM assessment_attempts WHERE id IN (${lo.map(() => '?').join(',')})`).all(...lo) as any[]) {
+        khungLuot.set(a.id, khungDong({ mode: cheDoCua(programmeOfClass(a.class_id)?.code), kind: a.kind }));
+      }
+    }
+  }
   const ids: number[] = [], khac: number[] = [];
   const lop = new Set<number>();
   for (const id of r.ids) {
     const classId = r.lopCua.get(id)!;
     if ((o.classId && classId !== o.classId) || (cuaToi && !lopCuaToi.has(classId))) continue;
+    if (o.khung && khungLuot.get(Math.floor(id / 10)) !== o.khung) continue;
     if (cuaToi && !r.chiTiet.get(id)?.nguoi.includes(p.userId)) { khac.push(id); continue; }
     ids.push(id);
     lop.add(classId);

@@ -141,7 +141,8 @@ export default function ChamDiemPage() {
         </div>
       </div>
 
-      <LuoiChamLop data={data} kind={kindChon} kn={kn} hv={hv} onReload={onReload} onSoOChuaLuu={setChuaLuu} />
+      {/* OV-14b: mở cả bảng (không kỹ năng / em đích) thì không tự đặt con trỏ — trang đứng đầu, bấm ô nào gõ ô đó. */}
+      <LuoiChamLop data={data} kind={kindChon} kn={kn} hv={hv} onReload={onReload} onSoOChuaLuu={setChuaLuu} datConTro={!!kn || hv !== null} />
     </div>
   );
 }

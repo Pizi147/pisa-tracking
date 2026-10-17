@@ -499,7 +499,7 @@ function KhoiNhanXet({ cells, save, phuTrach }: {
     if (sua(c) && !nhomSua) {
       return (
         <div key={c.skill} className="min-w-0 space-y-2.5">
-          <ONhanXet nhan={nhan} phu={phu(c)} giaTri={c.nhanXet ?? null} batBuoc={batBuoc(c)} onLuu={(v) => save(c.skill, { nhanXet: v })} />
+          <ONhanXet nhan={nhan} phu={phu(c)} kyNang={c.skill} giaTri={c.nhanXet ?? null} batBuoc={batBuoc(c)} onLuu={(v) => save(c.skill, { nhanXet: v })} />
           {canNhom(c) && <NhomTaiCho skill={c.skill} giaTri={c.nhomNguyenNhan ?? []} onLuu={(v) => save(c.skill, { nhomNguyenNhan: v })} />}
         </div>
       );

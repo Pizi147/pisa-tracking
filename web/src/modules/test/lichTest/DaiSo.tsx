@@ -6,7 +6,7 @@ export type OSo = 'da-cham' | 'con-phai-cham' | 'no';
 
 /**
  * DẢI SỐ của Lịch Test (PR-UX1, G-10; PR-LT3 Q1 còn ba ô) — số nào cũng bấm được và mở đúng TẬP tạo ra số đó: hai ô đầu → khối 2
- * (tuần hiện tại) hoặc khối 3 (tuần khác); ô ba "Quá hạn chấm" (UX-2) = Tổng quan "Bài quá hạn" (gồm ô tuần trước nằm ở khối 2) → mở
+ * (tuần hiện tại) hoặc khối 3 (tuần khác); ô ba "Quá hạn chấm" (UX-2) = Tổng quan "Bài quá hạn" của khung đang xem (OV-14b; gồm ô tuần trước nằm ở khối 2) → mở
  * DANH SÁCH các ô đó, không mở một khối. Ba ô một hàng cả trên điện thoại. Số đã cộng sẵn ở máy chủ.
  * OV-11e (TE-7): người có phân công — số là bài của CHÍNH họ; bài GV khác ghi nhạt dưới số ("n bài của GV khác").
  */

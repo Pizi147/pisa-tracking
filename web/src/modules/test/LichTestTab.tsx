@@ -195,8 +195,12 @@ export function LichTestTab() {
     setMoKhoi((m) => ({ ...m, [k]: false }));
   };
 
-  /* UX-2 (1): ô "Quá hạn chấm" = Tổng quan "Bài quá hạn" (mọi ô có cờ quá hạn, cả ô tuần trước, cả hai khung) — đường riêng, không theo tuần. */
+  /*
+   * UX-2 (1): ô "Quá hạn chấm" = Tổng quan "Bài quá hạn" (mọi ô có cờ quá hạn, cả ô tuần trước) — đường riêng, không theo tuần.
+   * OV-14b: theo khung đang xem như hai ô kia và các khối (cùng hàm `oQuaHanCham`, lọc khung) — hết "58 · 4 lớp" trên khối "53 · 2 lớp".
+   */
   const qsQuaHan = new URLSearchParams([...qs].filter(([k]) => k !== 'periodId'));
+  if (loai) qsQuaHan.set('khung', loai);
   const quaHan = useApi<{ n: number; lop: number; khac: number }>(`/cham/lich-test/qua-han?${qsQuaHan}`).data;
   const [moQuaHan, setMoQuaHan] = useState(false);
   const cuon = (id: string) => requestAnimationFrame(() => document.getElementById(id)?.scrollIntoView({ block: 'start', behavior: 'smooth' }));
@@ -349,7 +353,7 @@ export function LichTestTab() {
         </div>
       ) : (
         <>
-          {/* UX-2 (1): ô "Quá hạn chấm" lấy từ `/cham/lich-test/qua-han` (cả hai khung); hai ô đầu theo khung như cũ. */}
+          {/* UX-2 (1): ô "Quá hạn chấm" lấy từ `/cham/lich-test/qua-han`, theo khung đang xem (OV-14b) như hai ô đầu. */}
           <DaiSo tq={((tq) => ({ ...tq, no: { bai: quaHan?.n ?? 0, lop: quaHan?.lop ?? 0 }, khac: { ...tq.khac, no: quaHan?.khac ?? 0 } }))(loai ? data.tongQuanKhung[loai] : data.tongQuan)}
             tenTuan={tenTuan} onBam={bamSo} dangTaiNo={!quaHan} />
           <DanhSachNguon nguon={`/cham/lich-test/qua-han?${qsQuaHan}&rows=1`} tieuDe={t('Quá hạn chấm')} open={moQuaHan} onClose={() => setMoQuaHan(false)} />

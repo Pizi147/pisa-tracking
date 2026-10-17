@@ -309,7 +309,6 @@ const EN_D_WEB = {
   'Đã lưu nhận xét — Case sang Xác nhận PA': 'Feedback saved — case moves to Confirm PA',
   'Lưu nhận xét': 'Save feedback',
   'Cũng là nguyên nhân của Case': 'Also the cause of the case',
-  'Ví dụ: Nghe phần 3 còn chậm, sai nhiều câu điền số': 'E.g. Slow on Part 3, many number-gap errors',
   'Chọn một lý do.': 'Pick a reason.',
   'Đã gửi Quản lý duyệt — xem ở Yêu cầu của tôi': 'Sent to manager — see My requests',
   'Không cần theo dõi': 'Stop tracking',

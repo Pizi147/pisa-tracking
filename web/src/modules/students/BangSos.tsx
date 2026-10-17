@@ -24,7 +24,7 @@ export type DongSos = {
   attemptId: number; studentId: number; ten: string; ma: string; classId: number; classCode: string; branchName: string | null; ft: boolean;
   luot: string; tuan: string; sosLevel: number; kyNang: string[]; cases: CaseTomTat[]; tvv: string | null; lienHe: LienHe;
 };
-export type TrangSos = { tuan: string | null; toanBo: boolean; tu: string; den: string; tuanCo: string[]; rows: DongSos[] };
+export type TrangSos = { tuan: string | null; toanBo: boolean; tuanGanNhat: string; tu: string; den: string; tuanCo: string[]; rows: DongSos[] };
 
 /** Cột theo vai (mockup 3 v2 §10): QL / GV đủ cột · TVV chỉ đọc + Phụ huynh · CX như TVV + TVV, đầu nhóm ghi chi nhánh. */
 export type CotSos = 'ql' | 'tvv' | 'cx';

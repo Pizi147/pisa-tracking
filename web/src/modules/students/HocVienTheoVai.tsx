@@ -281,7 +281,7 @@ export function HocVienTheoVai({ vai }: { vai: 'tvv' | 'cx' }) {
             </div>
           )}
           {goc === 'sos' && sos.data && (
-            <ChonTuanSos tuan={sos.data.tuan} toanBo={sos.data.toanBo} tu={sos.data.tu} den={sos.data.den} onChon={(t) => setParam({ tuan: t || null })} />
+            <ChonTuanSos tuan={sos.data.tuan} toanBo={sos.data.toanBo} tuanGanNhat={sos.data.tuanGanNhat} tu={sos.data.tu} den={sos.data.den} onChon={(t) => setParam({ tuan: t || null })} />
           )}
         </div>
         {data && (

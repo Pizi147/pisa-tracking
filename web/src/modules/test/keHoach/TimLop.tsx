@@ -35,8 +35,7 @@ export function TimLop({ lop, value, onChange, onChon, className = '' }: {
     <div ref={goc} className={`relative ${className}`}>
       <span className="label">Lớp</span>
       <div className="relative">
-        <span aria-hidden className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500">⌕</span>
-        <input className="field w-full pl-7 pr-8" value={value} placeholder="Tìm lớp…" aria-label="Tìm lớp" role="combobox" aria-expanded={mo && goiY.length > 0}
+        <input className="field w-full pr-8" value={value} placeholder="Tìm lớp…" aria-label="Tìm lớp" role="combobox" aria-expanded={mo && goiY.length > 0}
           aria-controls="tim-lop-goi-y" aria-autocomplete="list"
           onChange={(e) => { onChange(e.target.value); setMo(true); }} onFocus={() => setMo(true)} onKeyDown={onKey} />
         {value && (

@@ -184,6 +184,8 @@
     :where(.bang-dinh > table > thead, table.bang-dinh > thead) { position: sticky; top: var(--th-top); z-index: 10; }   /* cả khối đầu, để đầu hai hàng không chồng nhau */
     :where(.bang-dinh > table > thead > tr > th, table.bang-dinh > thead > tr > th) { background: var(--surface-2); }
     td .bang-dinh { overflow-x: auto; overflow-y: hidden; --th-top: 0px; }
+    /* OV-14b: lưới trong panel việc (Công việc / Tổng quan) rộng hơn panel — cuộn trong khung riêng, đầu panel không trôi ngang theo. */
+    .luoi-trong-panel .bang-dinh { overflow-x: auto; overflow-y: hidden; --th-top: 0px; }
   }
   /* Rà #235 I2: bảng RỘNG HƠN khung ở 1280–1439 px (Tổng hợp 1332–1393 px; lưới Điểm theo lớp 1108 px, khung 950 px) giữ khung cuộn riêng, chỉ dính đầu từ 1440. */
   @media (min-width: 1280px) and (max-width: 1439px) {
@@ -242,6 +244,8 @@
    */
   @media not all and (min-width: 640px) {
     .btn, .field { min-height: 44px; }
+    /* OV-14b: Safari iPhone tự phóng to khi chạm ô chữ < 16px — điện thoại mọi ô gõ / ô chọn 16px (thắng `text-xs` của ô gọn); máy tính giữ cỡ cũ. */
+    .field, input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, textarea { font-size: 16px !important; }
   }
   .label { display: block; font-size: 12px; color: var(--text-dim); margin-bottom: 0.25rem; font-weight: 500; }
 

@@ -10,7 +10,7 @@ import { CongTacKhung, khungDaNho, type KhungLoc } from '../../ui/CongTacKhung.t
 import { useDienThoai } from '../../ui/TheDong.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { docChiNhanhDaNho, nhoChiNhanh, type Branch } from '../../ui/Filters.tsx';
-import { coDichLienKet, demQuaHan, tachThieuEmail } from '@shared/domain/index.ts';
+import { LOC_HOC_VIEN_NHAN, coDichLienKet, demQuaHan, tachThieuEmail } from '@shared/domain/index.ts';
 import { MenuDong, type MucMenu } from '../../ui/MenuDong.tsx';
 import { IntakePanel } from './IntakePanel.tsx';
 import { ClassCreatePanel } from '../classes/ClassCreatePanel.tsx';
@@ -158,9 +158,10 @@ function TrangTheoLop({ admin }: { admin: boolean }) {
   const khung: KhungLoc = coHaiKhung ? khungMuon : 'tat-ca';
   /* HL-9: lọc một lớp (badge "n HV quá hạn việc", "Thiếu n thông tin") → số trên chip đếm theo lớp đó, = số em hiện ra. */
   const dem = useMemo(() => demLoc((data?.hocVien ?? []).filter((h) => !chiLop || h.classId === chiLop), khung), [data, khung, chiLop]);
-  /* Góc Tất cả: không lọc phụ (Thiếu thông tin, Chờ duyệt, Quá hạn nằm trong Cần làm — P14). "HV của tôi" (TVV) — máy chủ chỉ gửi em mình. */
-  const loc: LocHocVien = 'tat-ca';
-  const dangLoc = !!q.trim() || data?.phamVi.dangDung === 'cua-toi';
+  /* Góc Tất cả: một lọc phụ "Đã thi · chờ kết quả" (OV-14b, cùng chip TVV / CX); Thiếu thông tin, Chờ duyệt, Quá hạn nằm trong Cần làm — P14. "HV của tôi" (TVV) — máy chủ chỉ gửi em mình. */
+  const locDaThi = goc === 'tat-ca' && params.get('loc') === 'da-thi';
+  const loc: LocHocVien = locDaThi ? 'da-thi' : 'tat-ca';
+  const dangLoc = !!q.trim() || data?.phamVi.dangDung === 'cua-toi' || locDaThi;
   const idsTheoLop = useMemo(() => {
     const m = new Map<number, Set<number>>();
     for (const h of data?.hocVien ?? []) {
@@ -295,7 +296,7 @@ function TrangTheoLop({ admin }: { admin: boolean }) {
         */}
       <div className="space-y-2 pb-1">
         <div className="flex flex-wrap items-center gap-2">
-          <input className="field w-full sm:w-80" aria-label={t('Tìm')} placeholder={t('🔍 Lọc trong danh sách này…')}
+          <input className="field w-full sm:w-80" aria-label={t('Tìm')} placeholder={t('Lọc trong danh sách này…')}
             value={draftQ} onChange={(e) => setDraftQ(e.target.value)} />
           {pv && pv.coThe.length > 1 && (
             <select className={SELECT_GON} aria-label={t('Phạm vi')} value={pv.dangDung}
@@ -326,6 +327,12 @@ function TrangTheoLop({ admin }: { admin: boolean }) {
                 {t('Lớp {lop} ✕', { lop: lopDangLoc?.code ?? chiLop! })}
               </button>
             )}
+            {goc === 'tat-ca' && (
+              <button type="button" className="nut-loc" title={LOC_HOC_VIEN_NHAN['da-thi'].goiY} aria-pressed={locDaThi}
+                onClick={() => setParam({ loc: locDaThi ? null : 'da-thi', open: null })}>
+                {LOC_HOC_VIEN_NHAN['da-thi'].nhan}<span className="tabular-nums font-medium">{data ? dem['da-thi'] : ''}</span>
+              </button>
+            )}
             {goc === 'can-lam' && (
               <div className="flex flex-wrap items-center gap-2" role="group" aria-label={t('Lọc phụ')}>
                 {locPhuCo.map((k) => (
@@ -337,7 +344,7 @@ function TrangTheoLop({ admin }: { admin: boolean }) {
               </div>
             )}
             {goc === 'sos' && sos.data && (
-              <ChonTuanSos tuan={sos.data.tuan} toanBo={sos.data.toanBo} tu={sos.data.tu} den={sos.data.den}
+              <ChonTuanSos tuan={sos.data.tuan} toanBo={sos.data.toanBo} tuanGanNhat={sos.data.tuanGanNhat} tu={sos.data.tu} den={sos.data.den}
                 onChon={(t) => setParam({ tuan: t || null, open: null })} />
             )}
           </div>

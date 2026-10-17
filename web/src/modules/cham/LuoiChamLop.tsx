@@ -125,7 +125,8 @@ export function LuoiChamLop({
         : hv !== null ? tim(`[data-hv="${hv}"]`) : tim('[data-trong]');
       if (!o) return;
       o.scrollIntoView({ block: 'center', inline: 'nearest' });
-      const f = o.querySelector<HTMLElement>('input:not([readonly]):not([disabled]), button:not([disabled]), input');
+      /* OV-14b: ô điểm trước nút "Nhận xét" cùng ô (bộ chọn gộp lấy phần tử đứng trước trong trang). */
+      const f = o.querySelector<HTMLElement>('input:not([readonly]):not([disabled])') ?? o.querySelector<HTMLElement>('button:not([disabled]), input');
       f?.focus();
       if (f instanceof HTMLInputElement) f.select();
     });

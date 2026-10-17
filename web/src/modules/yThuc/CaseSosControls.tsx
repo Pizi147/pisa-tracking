@@ -13,7 +13,7 @@ import { BoiCanh, CanLam, NhomCoSo, NutChu, TrangThaiLuu as TrangThaiLuuV3, type
 import { ONgay } from '../../ui/ONgay.tsx';
 import { FormDoiPa, useDoiPa } from '../cases/DoiPa.tsx';
 import { ChipHan } from '../../ui/Nhan.tsx';
-import { ChonNhom } from '../fasttrack/NhanXet.tsx';
+import { ChonNhom, viDuNhanXet } from '../fasttrack/NhanXet.tsx';
 import { skillShort } from '../../lib/format.ts';
 import {
   CASE_DISMISS_REASONS, CASE_DISMISS_REASON_LABEL, INTERVENTION_KIND_LABEL, NHAN_XET_MT_TOI_THIEU, NHAN_XET_TOI_DA,
@@ -325,7 +325,7 @@ export function GhiNhanXetPanel({ data, onXong, ...chung }: ChungPanel & { data:
         <CanLam>
           <Truong nhan={t('Nhận xét')} batBuoc phu={t('Cũng là nguyên nhân của Case')} loi={lf.loiCua(loi, 'nhan-xet')} dem={{ co: nx.trim().length, can: NHAN_XET_MT_TOI_THIEU }}>
             <textarea className="field w-full" rows={3} maxLength={NHAN_XET_TOI_DA} {...lf.o(loi, 'nhan-xet')} value={nx} disabled={busy} onChange={(e) => setNx(e.target.value)}
-              placeholder={t('Ví dụ: Nghe phần 3 còn chậm, sai nhiều câu điền số')} />
+              placeholder={viDuNhanXet(skill)} />
           </Truong>
           <div>
             <span id={`gnx-${data.id}`} className="mb-1.5 block text-[13px] font-semibold text-slate-300">{t('Nhóm nguyên nhân')}<span aria-hidden className="text-bad"> *</span></span>
