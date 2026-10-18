@@ -34,25 +34,21 @@ export async function runPrOv13gTests(t: YThucTestKit) {
   const laCc = (x: any) => d.laViecChamCheo(x);
   const dongCc = (p: any) => (mywork.myWork(p).dong as any[]).filter(laCc);
   const baiCua = (r: any) => (r.con ?? [r]).reduce((n: number, c: any) => n + (c.soBai ?? 0), 0);
-  const lopCua = (r: any) => new Set<number>((r.con ?? [r]).map((c: any) => c.classId));
 
   const trang = () => perm.loadPrincipal(P.sTeacher.userId);
 
-  check('OV13g-1 · GV Speaking: MỘT dòng "Speaking chấm chéo" = đúng bài chờ chấm lớp FT cùng chi nhánh (Nợ điểm, khối 1 + 2); không quá hạn, không hạn', () => {
+  /* OV-14c thay dòng gộp theo tuần bằng MỘT việc "Chấm Speaking · n bài" (từ thứ Hai tuần thi) — OV13g-1 / -5 cũ chuyển sang prOv14c. */
+  check('OV13g-1 · GV Speaking: MỘT việc "Chấm Speaking" = đúng bài S Mock chờ chấm lớp FT chi nhánh (Nợ điểm, tới tuần này); không quá hạn, không hạn', () => {
     const p = trang();
     const lopS = new Set<number>(perm.lopFtChoGvSpeaking(p, TODAY));
-    const ky = noCheo().filter((c) => lopS.has(c.classId));
+    const ky = scoreDebtCells(perm.loadPrincipal(P.admin.userId), TODAY, null)
+      .filter((c) => c.chamCheo && lopS.has(c.classId) && d.canChamCheo(true, tuanS(c.attemptId), tuanNay));
     assert(ky.length > 0, 'dữ liệu demo: phải có bài S Mock chờ chấm ở lớp FT cùng chi nhánh');
     const ds = dongCc(p);
-    assert(ds.length === 1, `phải đúng một dòng chấm chéo (${ds.length})`);
+    assert(ds.length === 1 && ds[0].key === d.KHOA_CHAM_SPEAKING, `phải đúng một việc Chấm Speaking (${ds.length})`);
     const r = ds[0];
-    assert(r.tieuDe.startsWith('Speaking chấm chéo · ') && r.group === 'score', `tiêu đề: ${r.tieuDe}`);
-    assert(r.urgency === 'normal' && r.due === null && (r.con ?? []).every((c: any) => c.urgency === 'normal' && c.due === null), 'không đỏ / quá hạn, không hạn');
-    assert(baiCua(r) === ky.length, `số bài ${baiCua(r)} ≠ Nợ điểm ${ky.length}`);
-    assert([...lopCua(r)].sort().join() === [...new Set(ky.map((c) => c.classId))].sort().join(), 'đúng tập lớp');
-    assert(r.tieuDe === `Speaking chấm chéo · ${d.tuanLich(d.addDaysIso(tuanNay, -7))} · ${ky.length} bài`, `tuần trên dòng = tuần trước: ${r.tieuDe}`);
-    /* Mở được tại chỗ: mỗi lớp một panel nhập điểm S (không lưới tuần). */
-    assert(!d.laViecChamCheo({ key: 'score:3|mock|p1|u9' }) && (r.con ?? [r]).every((c: any) => c.kn === 'speaking' && c.luot && c.classId), 'con mở PanelNhapDiem kỹ năng S');
+    assert(r.tieuDe === `${d.VIEC_CHAM_CHEO} · ${ky.length} bài` && r.soBai === ky.length, `số bài ${r.tieuDe} ≠ Nợ điểm ${ky.length}`);
+    assert(r.urgency === 'normal' && r.due === null, 'không đỏ / quá hạn, không hạn');
   });
 
   check('OV13g-2 · chi nhánh khác không thấy; GV không dạy S không có dòng', () => {
@@ -60,8 +56,8 @@ export async function runPrOv13gTests(t: YThucTestKit) {
     const lopS = new Set<number>(perm.lopFtChoGvSpeaking(p, TODAY));
     const ngoai = scoreDebtCells(perm.loadPrincipal(P.admin.userId), TODAY, null).filter((c) => c.chamCheo && !lopS.has(c.classId));
     assert(ngoai.length > 0, 'dữ liệu demo: phải có bài S Mock chờ chấm ở chi nhánh khác');
-    const r = dongCc(p)[0];
-    assert(!ngoai.some((c) => lopCua(r).has(c.classId)), 'lớp chi nhánh khác lọt vào dòng');
+    const lopQ = new Set(svc.baiChamSpeaking(p, TODAY).rows.map((x: any) => x.classId));
+    assert(!ngoai.some((c) => lopQ.has(c.classId)), 'lớp chi nhánh khác lọt vào hàng đợi');
     for (const k of ['w1Teacher', 'lrTeacher', 'normalCoreTeacher'] as const) {
       const x = (P as any)[k];
       assert(!perm.lopFtChoGvSpeaking(x, TODAY).length && dongCc(x).length === 0, `${k} không dạy S mà có dòng chấm chéo`);
@@ -85,23 +81,5 @@ export async function runPrOv13gTests(t: YThucTestKit) {
       && ql.some((x) => (x.con ?? [x]).some((c: any) => c.key.endsWith('|u0|cc'))), 'QL: dòng chấm chéo u0 như cũ (theo lớp, không người giữ)');
     const gv = mywork.viecCuaNguoi(P.mbManager, P.sTeacher.userId).items as any[];
     assert(!gv.some(laCc), 'Của một GV: không có việc chấm chéo');
-  });
-
-  check('OV13g-5 · gopViec: chấm chéo của GV gom theo tuần (khoá OV-13c), tách khỏi Nhập điểm của chính GV cùng tuần', () => {
-    const v = (o: Record<string, unknown>) => ({
-      key: 'score:10|mock|p1|u9|cc', group: 'score', urgency: 'normal', due: null, studentId: null, studentName: 'Lớp MB FT 101', classId: 10, classCode: 'MB FT 101',
-      khung: 'ft', ownerId: 9, tieuDe: 'Speaking chấm chéo · MT2', contextLabel: null, count: 3, href: '/test', actionLabel: 'Nhập điểm',
-      phu: 'MT2', soBai: 3, tuanThi: '2026-09-07', ...o,
-    });
-    const nhan = (g: string) => (g === 'score' ? 'Nhập điểm' : g);
-    const g = d.gopViecTheoLop([
-      v({}), v({ key: 'score:11|mock|p0|u9|cc', classId: 11, classCode: 'MB FT 102', contextLabel: 'còn tồn từ W4 AUG', soBai: 2 }),
-      v({ key: 'score:10|mock|p1|u9', tieuDe: 'Nhập điểm Reading', phu: 'Reading', soBai: 4 }),
-      v({ key: 'score:12|mock|p1|u9', classId: 12, classCode: 'MB FT RF 12', tieuDe: 'Nhập điểm Reading', phu: 'Reading', soBai: 1 }),
-    ], nhan);
-    const cc = g.filter(laCc), minh = g.filter((x: any) => !laCc(x));
-    assert(cc.length === 1 && cc[0].tieuDe === 'Speaking chấm chéo · W2 SEP · 5 bài' && cc[0].contextLabel === '2 lớp', `dòng cc: ${JSON.stringify(cc.map((x: any) => [x.tieuDe, x.contextLabel]))}`);
-    assert(cc[0].con.some((c: any) => c.conTen === 'MB FT 102 · MT2 · còn tồn từ W4 AUG'), `con: ${cc[0].con.map((c: any) => c.conTen)}`);
-    assert(minh.length === 1 && minh[0].tieuDe === 'Nhập điểm · W2 SEP · 5 bài', `dòng của GV: ${minh.map((x: any) => x.tieuDe)}`);
   });
 }

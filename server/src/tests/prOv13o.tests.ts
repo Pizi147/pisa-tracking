@@ -78,9 +78,8 @@ export async function runPrOv13oTests(t: YThucTestKit) {
   check('OV13o-4 · GV Speaking: "Lớp tôi dạy" · Bài chờ chấm = bài của mình + bài S chấm chéo ở lớp đó (cùng số với Công việc)', () => {
     const p = perm.loadPrincipal(P.sTeacher.userId);
     const cc = new Map<number, number>();
-    for (const r of (mywork.myWork(p).dong as any[]).filter((x) => d.laViecChamCheo(x))) {
-      for (const c of r.con ?? [r]) cc.set(c.classId, (cc.get(c.classId) ?? 0) + (c.soBai ?? 0));
-    }
+    /* OV-14c: Công việc có MỘT việc Chấm Speaking — số theo lớp đọc từ hàng đợi của việc đó (cùng tập bài). */
+    for (const r of (attempts.baiChamSpeaking(p, TODAY).rows as any[]).filter((x) => x.cho)) cc.set(r.classId, (cc.get(r.classId) ?? 0) + 1);
     const rows = tongQuan.lopToiDay(p, { ct: 'ft' }).rows as any[];
     const co = rows.filter((r) => cc.has(r.classId));
     assert(co.length > 0, `dữ liệu demo: GV S phải dạy ít nhất một lớp có bài chấm chéo (${[...cc.keys()]})`);

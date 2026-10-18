@@ -281,7 +281,7 @@ export async function runPrOv13kTests(t: YThucTestKit) {
     assert(!a3.length, 'DB đã có cột: không đổi');
   });
 
-  check('OV13k-7 · "còn tồn từ" của dòng Speaking chấm chéo = tuần thi CŨ NHẤT của (lớp, lượt), bài đầu nhóm thi tuần trước hay tuần cũ đều vậy', () => {
+  check('OV13k-7 · bài S chấm chéo thi tuần trước và tuần cũ đều ở hàng đợi Chấm Speaking, đúng tuần thi từng bài (OV-14c thay nhãn "còn tồn từ")', () => {
     conn.exec('BEGIN IMMEDIATE');
     try {
       const p = loadPrincipal(gvCheo);
@@ -302,9 +302,10 @@ export async function runPrOv13kTests(t: YThucTestKit) {
           run(`UPDATE attempt_skills SET planned_period_id = ?, sit_status = 'scheduled', required = 1 WHERE attempt_id = ? AND skill = 'speaking'`, week.ensurePeriod(w).id, id);
         }
         xoaNho();
-        const dong = (mywork.myWork(p).items as any[]).filter((v) => dm.laViecChamCheo(v) && v.classId === FT101 && v.attemptNo === luot);
-        assert(dong.length === 1 && dong[0].soBai === 2 && dong[0].contextLabel === `còn tồn từ ${dm.tuanLich(cu)}`,
-          `${wx}/${wy}: ${JSON.stringify(dong.map((v) => [v.key, v.soBai, v.contextLabel]))}`);
+        /* OV-14c: không còn dòng theo (lớp, lượt) "còn tồn từ" — hàng đợi Chấm Speaking có cả hai bài (tuần trước + tuần cũ), mỗi bài ghi tuần thi riêng. */
+        const q = (attempts.baiChamSpeaking(p, TODAY).rows as any[]).filter((v) => v.cho && (v.attemptId === x || v.attemptId === y));
+        assert(q.length === 2 && q.map((v) => v.weekStart.slice(0, 10)).sort().join() === [wx, wy].sort().join(),
+          `${wx}/${wy}: ${JSON.stringify(q.map((v) => [v.attemptId, v.weekStart]))}`);
       }
     } finally { conn.exec('ROLLBACK'); xoaNho(); }
   });
