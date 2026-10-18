@@ -31,6 +31,8 @@ export type Cell = {
   resultDate: string | null;
   enteredByName: string | null;
   enteredAt: string | null;
+  /** OV-14c: người nhập (id) — hộp chấm S "Đã chấm bởi … lúc …" khi là người khác. */
+  enteredById?: number | null;
   /** Hạn chấm CỦA CHÍNH MÔN NÀY, tính từ tuần thi của nó — không phải hạn của cả đợt. */
   deadline: string | null;
   deadlineSource: 'skill_override' | 'attempt_override' | 'default' | 'none';

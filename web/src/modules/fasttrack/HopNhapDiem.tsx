@@ -62,6 +62,8 @@ type HopProps = {
 };
 
 const laLR = (s: string) => s === 'listening' || s === 'reading';
+/** "18/10 14:05" — ngày (như `ngay`) + giờ máy người xem. */
+const lucNgan = (iso: string, homNay: string) => `${ngay(iso, homNay)} ${new Date(iso).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}`;
 
 /**
  * OV-11a (TE-2/TE-3): ô mở hộp ở chế độ VẮNG (dòng "Vắng lần n", không nút Vắng) khi dấu "-" đã chốt là của CHÍNH tuần thi (vắng chờ
@@ -310,8 +312,15 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, gvMacDi
   const nTask = cell.skill === 'writing1' ? 1 : 2;
   const coTieuChi = vals.some((v) => v.trim() !== '');
 
+  /* OV-14c: S đã có điểm của NGƯỜI KHÁC — nói ai / lúc nào trước khi ghi đè (hai GV cùng chấm chéo một em). */
+  const nguoiKhac = laS && coDiemChinhThuc(cell) && !!cell.enteredByName && cell.enteredById != null && cell.enteredById !== session?.user?.id;
   const than = (
     <>
+      {nguoiKhac && (
+        <div role="note" className="rounded-lg border border-wait-line bg-wait-bg px-3 py-2 text-[13px] text-slate-200">
+          {t('Đã chấm bởi {ten} lúc {luc}', { ten: cell.enteredByName!, luc: cell.enteredAt ? lucNgan(cell.enteredAt, homNay) : '—' })}
+        </div>
+      )}
       {vang && (
         <div className="flex flex-col gap-1.5 rounded-lg border border-wait-line bg-wait-bg px-3 py-2.5 text-[13px] text-slate-200">
           {/* CA3-3: ô huỷ một trạng thái — "Đã huỷ phần thi · vắng 2 lần", không "Vắng lần 1". */}

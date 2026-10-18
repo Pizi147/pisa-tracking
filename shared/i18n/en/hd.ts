@@ -131,7 +131,7 @@ export const EN_HD = {
   'GVCN · GVBM': 'Core teacher · Subject teacher',
   'Giáo viên chủ nhiệm lớp · giáo viên dạy một kỹ năng.': 'Teacher in charge of the class · teacher of one skill.',
   'Speaking chấm chéo': 'Speaking cross-marking',
-  'GV cùng chi nhánh chấm Speaking của lớp khác.': 'Teachers of the same branch mark Speaking for another class.',
+  'GV có kỹ năng Speaking chấm S Mock mọi lớp FT chi nhánh mình.': 'Teachers with the Speaking skill mark Mock Speaking for every FT class in their branch.',
   'Mã tuần': 'Week code',
   '<b>W2 OCT</b> = tuần thứ 2 của tháng 10; tuần thuộc tháng chứa Thứ Năm.': '<b>W2 OCT</b> = the 2nd week of October; a week belongs to the month of its Thursday.',
   'Quản lý chi nhánh — duyệt Case, PA, đề xuất, lịch Test.': 'Branch manager — approves Cases, PAs, proposals, Test schedules.',
@@ -164,11 +164,12 @@ export const EN_HD = {
   'Theo số kỹ năng dưới kỳ vọng: 1, 2, hoặc 3–4.': 'By number of skills below expected: 1, 2, or 3–4.',
   'Lớp thường (không phải FT)': 'Normal class (not FT)',
   // ---------------------------------------------------------------- khớp màn thật sau OV-13b / 13c / 13g
-  'Speaking chấm chéo: <b>Công việc</b>, nhóm <b>Chấm điểm</b>, dòng "Speaking chấm chéo" — không tính quá hạn.': 'Speaking cross-marking: <b>Tasks</b>, <b>Marking</b> group, the "Speaking cross-marking" row — never overdue.',
+  'Chấm Speaking: <b>Công việc</b>, dòng "Chấm Speaking · n bài" đầu nhóm <b>Chấm điểm</b> — không tính quá hạn.': 'Speaking marking: <b>Tasks</b>, the "Speaking marking · n tests" row at the top of <b>Marking</b> — never overdue.',
   'Một em: panel <b>Xác nhận PA</b> — ghi nội dung, <b>Bắt đầu</b>, bấm <b>Xác nhận PA</b>.': 'One student: the <b>Confirm PA</b> panel — write the content, set <b>Start</b>, click <b>Confirm PA</b>.',
   'Nhiều em cùng lớp, tuần thi, mức SOS: <b>Xác nhận PA cùng lúc</b> — em tick sẵn, <b>Nội dung / hướng dẫn</b> + <b>Bắt đầu</b> + <b>Người dạy</b> ghi một lần, <b>Sửa riêng</b> từng em.': 'Several students of one class, test week and SOS level: <b>Confirm PAs together</b> — students pre-ticked, <b>Content / guidance</b> + <b>Start</b> + <b>Teacher</b> filled once, <b>Edit for this student</b> per student.',
   'Muốn cách khác: <b>Đề xuất PA khác…</b> → <b>Gửi Quản lý duyệt</b>; Case "Chờ duyệt đổi PA".': 'Want another way: <b>Propose another PA…</b> → <b>Send to manager</b>; the case shows "Awaiting PA change approval".',
-  'Nhóm <b>Chấm điểm</b>: bài Speaking lớp khác cùng chi nhánh — tuần trước + bài còn tồn, gom theo tuần thi → lớp.': '<b>Marking</b> group: Speaking papers of other classes in your branch — last week plus any left over, grouped by test week → class.',
+  'Dòng "Chấm Speaking · n bài" đầu nhóm <b>Chấm điểm</b>: bài Speaking Mock mọi lớp FT chi nhánh bạn, từ Thứ Hai tuần thi.': 'The "Speaking marking · n tests" row at the top of <b>Marking</b>: Mock Speaking of every FT class in your branch, from Monday of the test week.',
+  'Bấm dòng: tìm em (tên, email), lọc lớp, bấm ô S để chấm; <b>Enter</b> sang em kế.': 'Click the row: find a student (name, email), filter by class, click the S cell to mark; <b>Enter</b> goes to the next student.',
   // ---------------------------------------------------------------- rà lại planning #417 (2)
   'Lưu trên dòng: "✓ Đã lưu · … · Hoàn tác" rồi tự sang việc kế; trong panel bấm <b>Việc tiếp ›</b>.': 'Saved on the row: "✓ Saved · … · Undo", then the next task opens; in a panel click <b>Next task ›</b>.',
   'Em dưới kỳ vọng ở MT: lượt chưa chốt → Case tạm "Chờ chốt SOS"; lượt chốt → Case + PA theo quy chế, GVBM đúng kỹ năng <b>Xác nhận PA</b> (QL làm thay được).': 'Student below expected on an MT: round not closed → provisional case "Awaiting SOS close"; round closed → case + rule-based PA, the subject teacher of that skill clicks <b>Confirm PA</b> (the manager can do it for them).',
