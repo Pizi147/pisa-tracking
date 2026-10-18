@@ -209,6 +209,7 @@ const EN_B_WEB = {
   'Bỏ lọc lớp': 'Clear class filter',
   'Đang lọc: lớp': 'Filtered: class',
   '{maTuan} không có Test nào': 'No tests in {maTuan}',
+  '{khung} · {maTuan} không có Test nào': '{khung} · no tests in {maTuan}',
   'Đổi tuần ở trên, hoặc mở Kế hoạch Test để xếp lịch.': 'Change the week above, or open the Test plan to schedule.',
   'Đổi tuần ở trên để xem tuần khác.': 'Change the week above to see another week.',
   'Lớp {classCode} còn {chuOChuaLuu}. Đóng lưới thì mất các giá trị đó — vẫn đóng?': 'Class {classCode} has {chuOChuaLuu}. Closing the grid loses those values — close anyway?',

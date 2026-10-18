@@ -226,6 +226,9 @@ export function LichTestTab() {
   const maTuan = data.tuan ? tuanLich(data.tuan.weekStart, homNay) : t('Tuần này');
   const tenTuan = data.laTuanNay ? t('Tuần này') : maTuan;
   const trong = data.lop.length === 0 && data.no.length === 0 && !(data.chamTuanNay ?? []).length && !dongMo;
+  /* OV-14b (14): khung đang chọn (vd `loai=thuong`) không có lớp ở khối nào mà khung kia có → rỗng + nút chuyển khung (không tự nhảy). */
+  const khungKhac: Loai | null = loai && dem[loai] === 0 ? (loai === 'ft' ? 'thuong' : 'ft') : null;
+  const tenKhung = (k: Loai) => (k === 'ft' ? 'Fast Track' : t('Lớp thường'));
   /* OV-11e (TE-7): badge khối của người có phân công = phần của họ (cùng số dải số). */
   const conCua = (l: LopLichTest) => (l.phan ? l.conBaiCuaToi : l.conBai);
   const conBai = (ds: LopLichTest[]) => ds.reduce((n, l) => n + conCua(l), 0);
@@ -346,7 +349,12 @@ export function LichTestTab() {
         </div>
       )}
 
-      {trong ? (
+      {khungKhac && dem[khungKhac] > 0 && !trong ? (
+        <div className="card">
+          <Empty title={t('{khung} · {maTuan} không có Test nào', { khung: tenKhung(loai!), maTuan })}
+            action={<button type="button" className="btn btn-sm" onClick={() => datThamSo({ loai: khungKhac })}>{tenKhung(khungKhac)} · {t('{n} lớp', { n: dem[khungKhac] })} ›</button>} />
+        </div>
+      ) : trong ? (
         <div className="card">
           <Empty title={t('{maTuan} không có Test nào', { maTuan })}
             hint={session?.nav?.testPlan ? t('Đổi tuần ở trên, hoặc mở Kế hoạch Test để xếp lịch.') : t('Đổi tuần ở trên để xem tuần khác.')} />
