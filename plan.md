@@ -239,7 +239,9 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 - **18/10: prompt tổng hợp chủ SP + GPT (C01–C31)** → bản thiết kế tổng thể `docs/superpowers/specs/2026-10-18-ov14-thiet-ke-tong-the-design.md`
   (bảng quyết định, bản đồ web, mẫu dùng chung, Rà soát lịch thi phương án D, phân kỳ OV-14c + OV-15a…g) — **chờ chủ SP duyệt**.
   **Gấp — chấm chéo Speaking** (GV nước ngoài không thấy bài): `lopFtChoGvSpeaking` chỉ tính người có phân công S ở lớp FT · URL `loai=thuong`
-  giữ khung rỗng · `canChamCheo` chỉ sau tuần thi · đang xem tuần cũ → thiết kế "Chấm Speaking" (OV-14c), 3 câu hỏi chủ SP.
+  giữ khung rỗng · `canChamCheo` chỉ sau tuần thi · đang xem tuần cũ → thiết kế "Chấm Speaking" (OV-14c).
+  **Chủ SP chốt 18/10:** GV Speaking = có kỹ năng Speaking trong hồ sơ (hoặc đang dạy S lớp FT) · phạm vi = mọi lớp FT ở chi nhánh tài khoản GV
+  được cấp · bài hiện từ thứ Hai tuần thi. C14: Progress / Final lớp thường không hiện ở Test › Lịch Test / chấm Test → OV-14c tái hiện.
   OV-14a #448 đã merge (chưa deploy). OV-14b dừng giữa chừng vì hết lượt dùng tuần — tiếp khi có lượt.
 - Ghi nhớ: Rulebook §20.6 (T58 "lớp thường không SOS") đã bị thay bởi đặc tả OV-12 mục 7.2 (14/10: Progress lớp thường ghi nhãn SOS theo số môn trượt) — sửa Rulebook khi viết đặc tả OV-14.
 - **Chủ SP 16/10 (OV-13p):** TVV / CX được TẠO LỚP (`class.create` theo phạm vi grant, CX toàn hệ thống) và THÊM HV (quyền hẹp mới `student.add` thay `student.edit` ở intake); không mở chuyển lớp / lưu trữ / lộ trình / phân công GV; không bước duyệt.
