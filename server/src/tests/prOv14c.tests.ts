@@ -141,6 +141,13 @@ export async function runPrOv14cTests(t: YThucTestKit) {
     assert(cua(P.sTeacher.userId) === true, 'GV dạy S lớp FT');
   });
 
+  await checkAsync('OV14c-10 · menu: GV Speaking không phân công có Test + Công việc (nav); GV Writing không phân công thì không', async () => {
+    const { navOf } = await import('../platform/nav.ts');
+    const s = navOf(gvS()), w = navOf(perm.loadPrincipal(idW));
+    assert(s.test && s.work && s.workSupport, `GV S: ${JSON.stringify({ test: s.test, work: s.work, ho: s.workSupport })}`);
+    assert(!w.test && !w.work, `GV Writing: ${JSON.stringify({ test: w.test, work: w.work })}`);
+  });
+
   check('OV14c-8 · OV-13k giữ nguyên: GV Speaking chấm chéo KHÔNG thành GV phụ trách S của lớp', () => {
     const lop = [...ftMb][0];
     assert(!svc.quyenPhuTrachS(gvS(), lop), 'GV Speaking không phân công mà thành GV phụ trách');

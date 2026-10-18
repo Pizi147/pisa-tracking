@@ -547,8 +547,9 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     if (mau) {
       const soBai = ccDongs.length;
       items.push({
-        ...mau, key: KHOA_CHAM_SPEAKING, studentId: null, studentName: VIEC_CHAM_CHEO, emIds: undefined, classId: null, classCode: null,
-        attemptId: null, attemptNo: null, contextLabel: null, phu: null, luot: undefined, periodId: null, tuanThi: null,
+        ...mau, key: KHOA_CHAM_SPEAKING, studentId: null, studentName: '', emIds: undefined, classId: null, classCode: null,
+        /* Dòng phụ: số lớp (tiêu đề đã có số bài). */
+        attemptId: null, attemptNo: null, contextLabel: `${new Set(ccDongs.map((x) => x.classId)).size} lớp`, phu: null, luot: undefined, periodId: null, tuanThi: null,
         tieuDe: `${VIEC_CHAM_CHEO} · ${soBai} bài`, reason: `${soBai} bài`, count: soBai, soBai, href: `/cong-viec?viec=${encodeURIComponent(KHOA_CHAM_SPEAKING)}`,
       });
     }

@@ -2478,7 +2478,7 @@ export function baiChamSpeaking(p: Principal, today = demoToday()) {
       classId: a.class_id as number, classCode: a.class_code as string, attemptNo: a.attempt_no as number,
       weekStart: cell.weekStart, kyVong: kyVongCuaLuot(a), cho, cell,
     }];
-  }).sort((x, y) => soSanhLop({ code: x.classCode }, { code: y.classCode }) || x.studentName.localeCompare(y.studentName, 'vi'));
+  }).sort((x, y) => soSanhLop({ code: x.classCode }, { code: y.classCode }) || x.studentName.localeCompare(y.studentName, 'vi') || x.attemptNo - y.attemptNo);
   return { rows, soBai: rows.filter((r) => r.cho).length };
 }
 

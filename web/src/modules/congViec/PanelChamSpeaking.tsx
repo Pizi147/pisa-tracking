@@ -19,7 +19,7 @@ type Dong = {
 
 /** Tìm không dấu, không phân biệt hoa thường. */
 const chuan = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/gi, 'd').toLowerCase().trim();
-const sap = (a: Dong, b: Dong) => soSanhLop({ code: a.classCode }, { code: b.classCode }) || a.studentName.localeCompare(b.studentName, 'vi');
+const sap = (a: Dong, b: Dong) => soSanhLop({ code: a.classCode }, { code: b.classCode }) || a.studentName.localeCompare(b.studentName, 'vi') || a.attemptNo - b.attemptNo;
 
 /**
  * CHẤM SPEAKING (OV-14c, chủ SP 18/10) — panel của việc "Chấm Speaking · n bài" (GV Speaking chấm chéo S Mock lớp FT chi nhánh mình).
