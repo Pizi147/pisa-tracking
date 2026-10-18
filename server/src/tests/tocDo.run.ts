@@ -1097,7 +1097,7 @@ await checkAsync('TD7 (×3) · chỉ mục một phần + câu dùng chung một
     /* Danh sách Case lọc chi nhánh: đi tập cha theo chỉ mục, không SCAN mọi Case (CX hỏi lần lượt 5 chi nhánh). */
     for (const { sql, args } of ghi.filter((g) => MAU.dsCase.test(g.sql) && /COALESCE\(cc\.branch_id, ac\.branch_id\) = \?/.test(g.sql)).slice(0, 1)) {
       const plan = (conn.prepare(`EXPLAIN QUERY PLAN ${sql}`).all(...args) as any[]).map((r) => r.detail as string);
-      if (plan.some((d) => /^SCAN sc/.test(d))) loi.push(`${vai} ${url}: danh sách Case lọc chi nhánh vẫn SCAN sos_cases`);
+      if (plan.some((d) => /^SCAN sc\b/.test(d))) loi.push(`${vai} ${url}: danh sách Case lọc chi nhánh vẫn SCAN sos_cases`);
       daXet.add(sql);
     }
     if (url === '/tong-quan/chi-nhanh') {
