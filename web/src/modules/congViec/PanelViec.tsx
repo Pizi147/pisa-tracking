@@ -240,9 +240,11 @@ function PanelNhapDiemTuan({ it, onDong, onDaLam }: { it: WorkItem; onDong: () =
                 <span className="min-w-0 truncate text-xs text-slate-400">{dich(x.contextLabel ?? '')} · {dich(x.phu ?? x.reason)} · {t('{soBai} bài', { soBai: x.soBai ?? 0 })}</span>
               </button>
               {dangMo && (
-                <div className="px-2 pb-2">
+                <div className="luoi-trong-panel px-2 pb-2">
                   <LuoiNhung classId={x.classId!} periodId={x.periodId ?? null} kind={x.kind ?? null} tuanDangXem={x.tuanThi ?? null} kn={x.kn ?? null}
-                    hrefDayDu={duongLichTest({ classId: x.classId, periodId: x.periodId })} datConTro={false} onDaLuu={onDaLam} />
+                    hrefDayDu={duongLichTest({ classId: x.classId, periodId: x.periodId })} onDaLuu={onDaLam}
+                    /* OV-14b: lớp đầu (mở sẵn) cuộn ngang tới cột của việc + con trỏ ở ô trống đầu cột đó; lớp mở sau không giật trang. */
+                    datConTro={!!x.kn && x.key === lop[0].key} />
                 </div>
               )}
             </li>

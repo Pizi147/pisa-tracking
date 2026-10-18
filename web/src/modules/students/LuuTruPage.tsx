@@ -96,7 +96,7 @@ export default function LuuTruPage() {
       <h1 className="text-lg font-semibold text-slate-100 m-0">Lưu trữ</h1>
 
       <div className="flex flex-wrap items-center gap-2">
-        <input className="field w-full sm:w-72" aria-label="Tìm" placeholder="🔍 Tìm tên, mã học viên hoặc mã lớp…"
+        <input className="field w-full sm:w-72" aria-label="Tìm" placeholder="Tìm tên, mã học viên hoặc mã lớp…"
           value={draftQ} onChange={(e) => setDraftQ(e.target.value)} />
         {(branches.data?.length ?? 0) > 1 && (
           <select className="field w-auto" aria-label="Chi nhánh" value={branchId ?? ''}

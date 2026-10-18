@@ -19,7 +19,8 @@ import {
 } from '@shared/domain/index.ts';
 import { OPhuHuynh } from './HocVienTheoVai.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
-import { dichViec } from './BangHocVienLop.tsx';
+import { dichViec, type NhanSauThiEm } from './BangHocVienLop.tsx';
+import { NhanSauThi } from './HopGiaHan.tsx';
 
 type Timeline = {
   id: number; attemptNo: number; cycleSeq: number; route: string | null;
@@ -59,6 +60,8 @@ export type RosterRow = {
   /** OV-9: em KCK dưới kỳ vọng — chip trung tính "Dưới kỳ vọng · KCK". */
   kckDuoi?: boolean;
   openCases: number; handoverCases: number; examPlan: ExamPlan;
+  /** OV-14b: "Đã thi · chờ kết quả" / "Đã xong · chờ bước tiếp" (`sauThiTheoEm`, cùng hàm panel một em) — dưới Dự kiến thi. */
+  sauThi?: NhanSauThiEm | null;
   latest: Timeline | null; next: Timeline | null; timeline: Timeline[];
   history: HistoryRow[];
   myPending: string[];
@@ -156,7 +159,7 @@ export function ClassRoster({ classId, maLop, quyen, onDoi, onAddStudents, chon 
               hanhDong={<MenuDong muc={tt.mucCua({ id: s.id, ten: s.fullName, dangHoc: s.status === 'active', nhapDiem: nhapDiemCua(classId, false, s.timeline), status: s.status, xuLyYThuc: !!s.canhBaoYThuc })} />}
               dong={[
                 { nhan: 'Target', noiDung: <TargetText band={s.cycle?.target} kck={s.cycle?.khongCamKet} /> },
-                { nhan: t('Dự kiến thi'), noiDung: <ExamPlanText plan={s.examPlan} /> },
+                { nhan: t('Dự kiến thi'), noiDung: <><ExamPlanText plan={s.examPlan} />{s.sauThi && <NhanSauThi s={s.sauThi} gon />}</> },
                 ...(dv ? [{ nhan: nhanDauVao(dv), noiDung: (
                   <span className="tabular-nums">
                     {'OVR '}<SoDauVao v={dv.overall} />
@@ -250,7 +253,7 @@ export function ClassRoster({ classId, maLop, quyen, onDoi, onAddStudents, chon 
                   </td>
 
                   <td className="td text-right tabular-nums whitespace-nowrap"><TargetText band={s.cycle?.target} kck={s.cycle?.khongCamKet} /></td>
-                  <td className="td whitespace-nowrap text-xs"><ExamPlanText plan={s.examPlan} /></td>
+                  <td className="td whitespace-nowrap text-xs"><ExamPlanText plan={s.examPlan} />{s.sauThi && <NhanSauThi s={s.sauThi} gon />}</td>
 
                   {/* ─── các cột điểm: mỗi mốc một hàng con, thẳng cột với nhau ─── */}
                   <td className="td p-0">

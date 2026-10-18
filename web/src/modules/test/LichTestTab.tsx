@@ -195,8 +195,12 @@ export function LichTestTab() {
     setMoKhoi((m) => ({ ...m, [k]: false }));
   };
 
-  /* UX-2 (1): ô "Quá hạn chấm" = Tổng quan "Bài quá hạn" (mọi ô có cờ quá hạn, cả ô tuần trước, cả hai khung) — đường riêng, không theo tuần. */
+  /*
+   * UX-2 (1): ô "Quá hạn chấm" = Tổng quan "Bài quá hạn" (mọi ô có cờ quá hạn, cả ô tuần trước) — đường riêng, không theo tuần.
+   * OV-14b: theo khung đang xem như hai ô kia và các khối (cùng hàm `oQuaHanCham`, lọc khung) — hết "58 · 4 lớp" trên khối "53 · 2 lớp".
+   */
   const qsQuaHan = new URLSearchParams([...qs].filter(([k]) => k !== 'periodId'));
+  if (loai) qsQuaHan.set('khung', loai);
   const quaHan = useApi<{ n: number; lop: number; khac: number }>(`/cham/lich-test/qua-han?${qsQuaHan}`).data;
   const [moQuaHan, setMoQuaHan] = useState(false);
   const cuon = (id: string) => requestAnimationFrame(() => document.getElementById(id)?.scrollIntoView({ block: 'start', behavior: 'smooth' }));
@@ -222,6 +226,9 @@ export function LichTestTab() {
   const maTuan = data.tuan ? tuanLich(data.tuan.weekStart, homNay) : t('Tuần này');
   const tenTuan = data.laTuanNay ? t('Tuần này') : maTuan;
   const trong = data.lop.length === 0 && data.no.length === 0 && !(data.chamTuanNay ?? []).length && !dongMo;
+  /* OV-14b (14): khung đang chọn (vd `loai=thuong`) không có lớp ở khối nào mà khung kia có → rỗng + nút chuyển khung (không tự nhảy). */
+  const khungKhac: Loai | null = loai && dem[loai] === 0 ? (loai === 'ft' ? 'thuong' : 'ft') : null;
+  const tenKhung = (k: Loai) => (k === 'ft' ? 'Fast Track' : t('Lớp thường'));
   /* OV-11e (TE-7): badge khối của người có phân công = phần của họ (cùng số dải số). */
   const conCua = (l: LopLichTest) => (l.phan ? l.conBaiCuaToi : l.conBai);
   const conBai = (ds: LopLichTest[]) => ds.reduce((n, l) => n + conCua(l), 0);
@@ -342,14 +349,19 @@ export function LichTestTab() {
         </div>
       )}
 
-      {trong ? (
+      {khungKhac && dem[khungKhac] > 0 && !trong ? (
+        <div className="card">
+          <Empty title={t('{khung} · {maTuan} không có Test nào', { khung: tenKhung(loai!), maTuan })}
+            action={<button type="button" className="btn btn-sm" onClick={() => datThamSo({ loai: khungKhac })}>{tenKhung(khungKhac)} · {t('{n} lớp', { n: dem[khungKhac] })} ›</button>} />
+        </div>
+      ) : trong ? (
         <div className="card">
           <Empty title={t('{maTuan} không có Test nào', { maTuan })}
             hint={session?.nav?.testPlan ? t('Đổi tuần ở trên, hoặc mở Kế hoạch Test để xếp lịch.') : t('Đổi tuần ở trên để xem tuần khác.')} />
         </div>
       ) : (
         <>
-          {/* UX-2 (1): ô "Quá hạn chấm" lấy từ `/cham/lich-test/qua-han` (cả hai khung); hai ô đầu theo khung như cũ. */}
+          {/* UX-2 (1): ô "Quá hạn chấm" lấy từ `/cham/lich-test/qua-han`, theo khung đang xem (OV-14b) như hai ô đầu. */}
           <DaiSo tq={((tq) => ({ ...tq, no: { bai: quaHan?.n ?? 0, lop: quaHan?.lop ?? 0 }, khac: { ...tq.khac, no: quaHan?.khac ?? 0 } }))(loai ? data.tongQuanKhung[loai] : data.tongQuan)}
             tenTuan={tenTuan} onBam={bamSo} dangTaiNo={!quaHan} />
           <DanhSachNguon nguon={`/cham/lich-test/qua-han?${qsQuaHan}&rows=1`} tieuDe={t('Quá hạn chấm')} open={moQuaHan} onClose={() => setMoQuaHan(false)} />

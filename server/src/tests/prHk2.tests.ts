@@ -267,7 +267,7 @@ export async function runPrHk2Tests(t: YThucTestKit) {
 
   check('C19a · Học viên & Lớp: ô tìm "Lọc trong danh sách này…"; "+ Lớp mới" / "+ Học viên" max-sm:hidden và có trong MenuDong "Thao tác trang" (chỉ < 640 px)', () => {
     const s = doc('web/src/modules/students/StudentsPage.tsx');
-    assert(/placeholder=\{t\('🔍 Lọc trong danh sách này…'\)\}/.test(s) && !/Tìm tên, mã học viên hoặc mã lớp/.test(s), 'placeholder ô tìm');
+    assert(/placeholder=\{t\('Lọc trong danh sách này…'\)\}/.test(s) && !/Tìm tên, mã học viên hoặc mã lớp/.test(s), 'placeholder ô tìm');
     assert(/className="btn btn-sm max-sm:hidden"[^]*?>\{t\('\+ Lớp mới'\)\}</.test(s) && /className="btn btn-sm btn-primary max-sm:hidden"[^]*?>\{t\('\+ Học viên'\)\}</.test(s), 'hai nút ngoài phải max-sm:hidden');
     const mn = s.slice(s.indexOf("<MenuDong nhan={t('Thao tác trang')}"), s.indexOf("<MenuDong nhan={t('Thao tác trang')}") + 900);
     assert(/dienThoai && data\?\.coTheTaoLop/.test(mn) && /nhan: t\('\+ Lớp mới'\)/.test(mn), 'mục "+ Lớp mới" trong menu chỉ khi dienThoai');

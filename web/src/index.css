@@ -184,6 +184,8 @@
     :where(.bang-dinh > table > thead, table.bang-dinh > thead) { position: sticky; top: var(--th-top); z-index: 10; }   /* cả khối đầu, để đầu hai hàng không chồng nhau */
     :where(.bang-dinh > table > thead > tr > th, table.bang-dinh > thead > tr > th) { background: var(--surface-2); }
     td .bang-dinh { overflow-x: auto; overflow-y: hidden; --th-top: 0px; }
+    /* OV-14b: lưới trong panel việc (Công việc / Tổng quan) rộng hơn panel — cuộn trong khung riêng, đầu panel không trôi ngang theo. */
+    .luoi-trong-panel .bang-dinh { overflow-x: auto; overflow-y: hidden; --th-top: 0px; }
   }
   /* Rà #235 I2: bảng RỘNG HƠN khung ở 1280–1439 px (Tổng hợp 1332–1393 px; lưới Điểm theo lớp 1108 px, khung 950 px) giữ khung cuộn riêng, chỉ dính đầu từ 1440. */
   @media (min-width: 1280px) and (max-width: 1439px) {
@@ -242,6 +244,8 @@
    */
   @media not all and (min-width: 640px) {
     .btn, .field { min-height: 44px; }
+    /* OV-14b: Safari iPhone tự phóng to khi chạm ô chữ < 16px — điện thoại mọi ô gõ / ô chọn 16px (thắng `text-xs` của ô gọn); máy tính giữ cỡ cũ. */
+    .field, input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, textarea { font-size: 16px !important; }
   }
   .label { display: block; font-size: 12px; color: var(--text-dim); margin-bottom: 0.25rem; font-weight: 500; }
 
@@ -273,6 +277,11 @@
   .hang-lon > td:first-child { box-shadow: inset 3px 0 0 var(--hang-lon-vach); }
   .hang-lon.dong > td { background: var(--hang-lon-dong-bg); }
   .hang-lon.dong > td:first-child { box-shadow: inset 3px 0 0 var(--hang-lon-dong-vach); }
+  /* OV-14b: đầu nhóm (Công việc, Lịch Test) bấm cả hàng để mở / thu — điện thoại cao 44px như nút (đặt sau để thắng 38px). */
+  @media not all and (min-width: 640px) {
+    .hang-lon > td { height: 44px; }
+    div.khoi-nhom-dau { min-height: 44px; }   /* `div.` thắng `.khoi-nhom-dau` khai báo sau */
+  }
   /* PR-N1 (YC-11.1): hàng lớp ĐANG MỞ dính ngay dưới tiêu đề cột khi cuộn trong <main> — luôn biết đang xem lớp nào. */
   @media (min-width: 768px) {
     .hang-lon.hang-lon-dinh > td {
@@ -282,6 +291,9 @@
   }
   .hang-con > td { background: var(--hang-con-bg); font-size: 12px; color: var(--hang-con-chu); height: 32px; }
   .hang-con > td:first-child { padding-left: calc(0.75rem + 32px); }
+  /* OV-14b: hàng con đang mở panel (Đang SOS) — nền `row-active` thắng nền hàng con; vạch trái ở ô đầu. */
+  .hang-con.row-active > td { background: var(--accent-soft); }
+  .hang-con.row-active > td:first-child { box-shadow: inset 2px 0 0 var(--accent); }
   /* PR-SOS (M7, T20): Case và PA khác hẳn — hàng Case sáng hơn một bậc, cao hơn; hàng PA giữ nền hàng con (thụt ở ô). */
   .hang-con.hang-case > td { background: var(--hang-lon-dong-bg); height: 38px; }
   .hang-con.hang-case > td:first-child { padding-left: calc(0.75rem + 20px); }

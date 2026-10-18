@@ -20,6 +20,7 @@ import { listCases } from '../cases/cases.ts';
 import { allProgrammes } from '../normal/regular.ts';
 import { danhSachLuuTru } from './luuTru.ts';
 import { nhapDiemTheoEm, viecHocVienTheoLop } from './dongHocVien.ts';
+import { loTrinhChoKetQuaThi } from '../loTrinh/thiThat.ts';
 
 export type LopHocVienLop = ClassSummary & {
   gvcn: { id: number; name: string } | null;
@@ -243,6 +244,8 @@ export function danhSachHocVienLop(
   const standing = standingFor(hvKhop.map((h) => h.id));
 
   const laFt = new Map(lops.map((r) => [r.id, r.programmeCode === 'FT']));
+  /* OV-14b: lọc "Đã thi · chờ kết quả" — cùng tập với chip TVV / CX (`hvCuaToi.ts`). */
+  const daThi = new Set(loTrinhChoKetQuaThi(today).map((x) => x.c.student_id as number));
   const hocVien: TrangHocVienLop['hocVien'] = hvKhop.map((h) => {
     const loc: LocHocVien[] = ['tat-ca'];
     const ft = !!laFt.get(h.class_id);
@@ -266,6 +269,7 @@ export function danhSachHocVienLop(
           : coMocTiepTheoThuong({ soLuotKeHoach: h.so_luot_ke_hoach, coCuoiKhoa: !!h.co_cuoi_khoa }),
     });
     if (thieu.length) loc.push('thieu_tt');
+    if (daThi.has(h.id)) loc.push('da-thi');
     /* OV-12f: tên + mã + ô thiếu — dòng "Thiếu thông tin" / "Chờ duyệt" của góc Cần làm (em không có việc ở Công việc vẫn có tên). */
     return { id: h.id as number, classId: h.class_id as number, loc, khung: ft ? 'ft' as const : 'thuong' as const,
       ten: h.full_name as string, ma: (h.student_code ?? '') as string, ...(thieu.length ? { thieu: thieu.map((m) => m.label) } : {}) };

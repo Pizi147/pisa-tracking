@@ -58,7 +58,7 @@ export async function runPrOv12fTests(t: YThucTestKit) {
     assert(tr.tuanCo.includes(W2SEP), 'danh sách tuần có SOS thiếu W2 SEP');
   });
 
-  check('OV12f-2 · Toàn bộ = mọi tuần trong 8 tuần (mỗi lượt một dòng, tuần mới trước); Case đã xong vẫn có dòng; mặc định = tuần MT gần nhất đã thi; nhóm xử lý đúng ba chữ', () => {
+  check('OV12f-2 · Toàn bộ = mọi tuần trong 8 tuần (mỗi lượt một dòng, tuần mới trước); Case đã xong vẫn có dòng; mặc định = Toàn bộ (OV-14b); nhóm xử lý đúng ba chữ', () => {
     const toan = sos.dangSos(QL, { tuan: 'tat-ca', phamVi: 'chi-nhanh', branchId: mb });
     assert(toan.toanBo && toan.tuan === null, 'không phải Toàn bộ');
     const tuan = sos.dangSos(QL, { tuan: W2SEP, phamVi: 'chi-nhanh', branchId: mb });
@@ -66,8 +66,9 @@ export async function runPrOv12fTests(t: YThucTestKit) {
     assert(tuan.rows.every((r: any) => idToan.has(r.attemptId)), 'Toàn bộ thiếu lượt của W2 SEP');
     assert(new Set(toan.rows.map((r: any) => r.tuan)).size > 1, 'Toàn bộ chỉ có một tuần');
     assert(toan.rows.every((r: any) => r.tuan >= toan.tu && r.tuan <= toan.den), 'dòng ngoài khoảng 8 tuần');
+    /* OV-14b (rà UX 17/10): mặc định = Toàn bộ; tuần thi gần nhất đã qua trả kèm (`tuanGanNhat`). */
     const macDinh = sos.dangSos(QL, { phamVi: 'chi-nhanh', branchId: mb });
-    assert(macDinh.tuan === W2SEP && !macDinh.toanBo, `mặc định phải là tuần thi gần nhất đã qua (W2 SEP): ${macDinh.tuan}`);
+    assert(macDinh.toanBo && macDinh.tuanGanNhat === W2SEP, `mặc định phải là Toàn bộ, tuần gần nhất W2 SEP: ${macDinh.tuanGanNhat}`);
     const nhom = new Set(toan.rows.flatMap((r: any) => r.cases.map((c: any) => c.nhom)));
     assert([...nhom].every((k) => ['cho-duyet', 'dang-xu-ly', 'xong'].includes(k as string)), `nhóm lạ: ${[...nhom]}`);
     /* Case đã xong của một lượt SOS: vẫn là dòng, nhóm Xong. */

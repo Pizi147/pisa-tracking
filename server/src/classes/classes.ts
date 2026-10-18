@@ -31,6 +31,7 @@ import { emCoBaoPhChuaLam } from '../yThuc/phoiHop.ts';
 import { trongBoNho } from '../platform/nguCanhRequest.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import { duocSuaCaLop } from './suaCaLop.ts';
+import { sauThiTheoEm } from '../loTrinh/thiThat.ts';
 
 /**
  * Màn Học viên lấy LỚP làm gốc.
@@ -388,6 +389,7 @@ export function classRoster(p: Principal, classId: number, q?: string, kemKetThu
     .all(...sids) as any[];
   const bundle = loadBundle(attempts.map((a) => a.id));
   const today = demoToday();
+  const sauThi = sauThiTheoEm(sids, today);
   const byStudent = new Map<number, any[]>();
   for (const a of attempts) {
     if (!byStudent.has(a.student_id)) byStudent.set(a.student_id, []);
@@ -655,6 +657,8 @@ export function classRoster(p: Principal, classId: number, q?: string, kemKetThu
       handoverCases: handoverCount.get(s.id) ?? 0,
       /** DỰ KIẾN THI ở đúng mức chắc chắn đang có: tuần, hoặc tháng, hoặc chưa biết. */
       examPlan: examPlanOf(s),
+      /** OV-14b: "Đã thi · chờ kết quả" / "Đã xong · chờ bước tiếp" — cùng hàm với panel một em (`sauThiTheoEm`). */
+      sauThi: sauThi.get(s.id) ?? null,
       archived: !!s.archived_at,
       /** PR-CT (mockup 20 — H): tuần đầu ở lớp mới → nhãn nhỏ "mới vào" cạnh tên (vào lớp từ Thứ Hai của tuần này). */
       moiVao: !!s.enrollment_started_at && s.enrollment_status === 'active' && s.enrollment_started_at >= dauTuanNay,

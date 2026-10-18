@@ -74,7 +74,8 @@ export const docChipVai = (s: string | null | undefined, vai: 'tvv' | 'cx'): Chi
 // ---------------------------------------------------------------- chip lọc (§3.6, Q4)
 
 /** PR-S4F #4: `qua-han` — đích của badge "n HV quá hạn việc" (hộp lớp + đầu hồ sơ lớp); chip chỉ hiện khi đang lọc bằng nó (`chipHienLoc`). */
-export const LOC_HOC_VIEN = ['tat-ca', 'can-lam', 'qua-han', 'cho-duyet', 'sos', 'thieu_tt'] as const;
+/** OV-14b: `da-thi` — lọc "Đã thi · chờ kết quả" của góc Tất cả (QL / GV), cùng tập chip TVV / CX (`loTrinhChoKetQuaThi`). */
+export const LOC_HOC_VIEN = ['tat-ca', 'can-lam', 'qua-han', 'cho-duyet', 'sos', 'thieu_tt', 'da-thi'] as const;
 export type LocHocVien = (typeof LOC_HOC_VIEN)[number];
 export const LOC_HOC_VIEN_NHAN: Record<LocHocVien, { nhan: string; goiY: string; can: string | null }> = {
   'tat-ca': { nhan: t('Tất cả'), goiY: t('Mọi học viên đang học trong các lớp đang hiện.'), can: null },
@@ -83,6 +84,7 @@ export const LOC_HOC_VIEN_NHAN: Record<LocHocVien, { nhan: string; goiY: string;
   'cho-duyet': { nhan: NHAN_TRANG_THAI['cho-duyet'], goiY: t('Có yêu cầu đang chờ Quản lý duyệt.'), can: null },
   sos: { nhan: t('Đang SOS'), goiY: t('Chỉ Fast Track: Mock gần nhất ở mức SOS 1–3.'), can: 'case.view' },
   thieu_tt: { nhan: t('Thiếu thông tin'), goiY: t('Hồ sơ còn thiếu thông tin cần để xếp lịch và theo dõi.'), can: null },
+  'da-thi': { nhan: t('Đã thi · chờ kết quả'), goiY: t('Đã qua ngày thi, chưa có kết quả thi thật — hạn 1 tuần sau ngày thi.'), can: null },
 };
 
 export type DocLoc = { loc: LocHocVien } | { chuyenDen: string };
@@ -328,7 +330,7 @@ export function badgeLop(c: {
   if (CHANG_THI.includes(c.phase)) co.chang = { key: 'chang', nhan: dichChuoi(CLASS_PHASE_LABEL[c.phase as ClassPhase]), tone: 'info' };
   if (c.missingCount > 0) co['thieu-tt'] = { key: 'thieu-tt', nhan: t('Thiếu {n} thông tin', { n: c.missingCount }), tone: 'warn' };
   if (c.soChoDuyet) co['cho-duyet'] = { key: 'cho-duyet', nhan: t('{n} chờ duyệt', { n: c.soChoDuyet }), tone: TONE_BADGE_TRANG_THAI['cho-duyet'], title: t('Yêu cầu đang chờ Quản lý duyệt') };
-  if (c.soViecQuaHan) co['qua-han'] = { key: 'qua-han', nhan: t('{n} việc quá hạn', { n: c.soViecQuaHan }), tone: 'danger', title: t('Việc đã quá hạn (xác nhận, kết quả, xử lý vi phạm)') };
+  if (c.soViecQuaHan) co['qua-han'] = { key: 'qua-han', nhan: `⚠ ${t('{n} việc quá hạn', { n: c.soViecQuaHan })}`, tone: 'danger', title: t('Việc đã quá hạn (xác nhận, kết quả, xử lý vi phạm)') };
   const all = THU_TU_BADGE[c.vai].flatMap((k) => (co[k] ? [co[k]!] : []));
   return { hien: all.slice(0, 2), an: all.slice(2) };
 }

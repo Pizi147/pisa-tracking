@@ -1,4 +1,5 @@
-import type { ExamPlan, NguCanhDs, NhanYThucEm } from '@shared/domain/index.ts';
+import type { ExamPlan, GiaiDoanSauThi, NguCanhDs, NhanYThucEm } from '@shared/domain/index.ts';
+import { NhanSauThi } from './HopGiaHan.tsx';
 import { useEffect, useMemo, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
@@ -22,6 +23,7 @@ import {
 import { dich, t } from '@shared/i18n/index.ts';
 
 /** Các trường của một dòng `GET /classes/:id/roster` mà bảng này đọc. */
+export type NhanSauThiEm = { giaiDoan: GiaiDoanSauThi; han: string | null; quaHan: boolean; daGiaHan: boolean };
 export type DongRoster = {
   id: number; studentCode: string; fullName: string; status: string; archived: boolean;
   cycle: { target: number | null; khongCamKet?: boolean } | null;
@@ -29,6 +31,8 @@ export type DongRoster = {
   standing: (KetQuaVao & { nextAttemptLabel?: string | null; nextWeekStart?: string | null; nextKyVong?: number | null; nhanLuotChuaXep?: string | null }) | null;
   /** Dự kiến thi ở đúng mức chắc chắn đang có (cột "Dự kiến thi"; roster FT và lớp thường đều trả). */
   examPlan: ExamPlan;
+  /** OV-14b: "Đã thi · chờ kết quả" / "Đã xong · chờ bước tiếp" (`sauThiTheoEm`, cùng hàm panel một em) — dưới Dự kiến thi. */
+  sauThi?: NhanSauThiEm | null;
   openCases: number; handoverCases: number;
   missing: { key: string; label: string; who: string }[];
   canhBaoYThuc: NhanYThucEm | null;
@@ -164,7 +168,7 @@ export function BangHocVienLop({ lop, chiHien, sapXep, onDoi, soCot, the = false
                 { nhan: thuong ? t('Khoá') : 'Target', noiDung: thuong
                   ? <>{khoa?.chinh}{khoa?.phu && <span className="block text-xs text-slate-500">{khoa.phu}</span>}</>
                   : <TargetText band={s.cycle?.target} kck={s.cycle?.khongCamKet} /> },
-                { nhan: t('Dự kiến thi'), noiDung: <ExamPlanText plan={s.examPlan} /> },
+                { nhan: t('Dự kiến thi'), noiDung: <><ExamPlanText plan={s.examPlan} />{s.sauThi && <NhanSauThi s={s.sauThi} gon />}</> },
                 { nhan: t('Sắp tới'), noiDung: sapToi.chu ? <span title={sapToi.title} className={sapToi.thiThat ? 'text-slate-400' : ''}>{sapToi.chu}</span> : <span className="text-slate-600">—</span> },
                 { nhan: 'Case', noiDung: s.openCases || <span className="text-slate-600">—</span> },
                 { nhan: t('Việc tiếp'), noiDung: (
@@ -216,7 +220,7 @@ export function BangHocVienLop({ lop, chiHien, sapXep, onDoi, soCot, the = false
                 </>
               ) : <span className="tabular-nums text-slate-200"><TargetText band={s.cycle?.target} kck={s.cycle?.khongCamKet} /></span>}
             </td>
-            <td className="td text-xs"><ExamPlanText plan={s.examPlan} /></td>
+            <td className="td text-xs"><ExamPlanText plan={s.examPlan} />{s.sauThi && <NhanSauThi s={s.sauThi} gon />}</td>
             <td className={`td text-xs tabular-nums ${sapToi.thiThat ? 'text-slate-400' : 'text-slate-300'}`} title={sapToi.title}>
               {sapToi.chu ?? <span className="text-slate-600">—</span>}
             </td>
