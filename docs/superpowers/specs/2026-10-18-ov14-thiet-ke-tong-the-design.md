@@ -27,9 +27,9 @@ TẤT CẢ học viên cần chấm Speaking.
 **Speaking** ở ít nhất một lớp FT đang học (chưa có thì thêm — luật hiện tại cần thế).
 
 **Thiết kế mới — "Chấm Speaking" (một hàng đợi):** [ĐỀ XUẤT]
-- **Ai:** GV có kỹ năng **Speaking** trong hồ sơ (Quản trị › Kỹ năng) **hoặc** đang dạy S ở lớp FT — không cần phân công từng lớp. [HỎI 1]
-- **Phạm vi:** mọi lớp FT trong các chi nhánh tài khoản GV có quyền (vai GV toàn hệ thống → mọi chi nhánh). [HỎI 2]
-- **Khi nào:** bài S Mock hiện từ **thứ Hai tuần thi** (như C14 lớp thường), chưa chấm thì còn tới khi chấm; hạn chấm không đổi. [HỎI 3]
+- **Ai:** GV có kỹ năng **Speaking** trong hồ sơ (Quản trị › Kỹ năng) **hoặc** đang dạy S ở lớp FT — không cần phân công từng lớp. **[CHỐT 18/10]**
+- **Phạm vi:** mọi lớp FT trong các chi nhánh tài khoản GV có quyền (vai GV toàn hệ thống → mọi chi nhánh). **[CHỐT 18/10]**
+- **Khi nào:** bài S Mock hiện từ **thứ Hai tuần thi** (như C14 lớp thường), chưa chấm thì còn tới khi chấm; hạn chấm không đổi. **[CHỐT 18/10]**
 - **Ở đâu:** Công việc của GV Speaking có nhóm đầu **"Chấm Speaking · n bài"**: ô **Tìm học viên** (tên / email, có/không dấu) + lọc lớp;
   mỗi dòng = một em (tên · lớp · MT · tuần · "Nhập bởi" nếu đã có người chấm). Bấm → hộp chấm Speaking (4 tiêu chí + nhận xét) ngay
   trong panel, Enter = em tiếp. Hai người cùng chấm một em: hộp hiện "Đã chấm bởi … lúc …" trước khi ghi đè.
@@ -57,7 +57,7 @@ TẤT CẢ học viên cần chấm Speaking.
 | C11 | Thanh trên | — | [CHỐT] Giao diện, Ngôn ngữ, Hướng dẫn vào menu tài khoản; sáng / tối mặc định theo máy |
 | C12 | Hồ sơ lớp | [ĐÃ CÓ] `ClassRoster` 2 lượt (`depth = 2`, lượt cũ mờ) + cột W1 · W2 · **W** | [CHỐT] bỏ cột W tổng; thêm cột nhỏ "Đợt" (MT3 / MT2); một hàng = một lượt, không ghép |
 | C13 | Học viên & Lớp mở lớp FT | chưa có cột điểm | [CHỐT] thêm OVR · L · R · W · S (W1 · W2 dòng phụ mờ) |
-| C14 | Progress / Final hiện trong tuần thi | [ĐÃ CÓ] Lịch Test hiện từ tuần đã xếp; Công việc từ thứ Hai tuần thi (`skillSchedule.ts:325`); nhập được trong tuần thi; quá tuần vẫn còn (khối 2 → khối 1) | [HỎI 4] chủ SP thấy không hiện ở màn nào (có thể là Final chưa xếp tuần, hoặc khung Lớp thường bị lọc). Rulebook :683, :771 lỗi thời → sửa |
+| C14 | Progress / Final hiện trong tuần thi | [ĐÃ CÓ] Lịch Test hiện từ tuần đã xếp; Công việc từ thứ Hai tuần thi (`skillSchedule.ts:325`); nhập được trong tuần thi; quá tuần vẫn còn (khối 2 → khối 1) | Chủ SP 18/10: không hiện ở **Test › Lịch Test / chấm Test** → OV-14c tái hiện bằng bản sao dữ liệu (chỉ đọc) tìm đúng lớp / tuần, sửa theo nguyên nhân. Rulebook :683, :771 lỗi thời → sửa |
 | C15 | Dán điểm + nhận xét từ Excel | lưới KHÔNG nhận dán (chỉ IntakePanel nhập HV) | [ĐỀ XUẤT] Ở mọi lưới nhập: nút **Dán từ Excel** + `?`; nhận cặp `Tên | điểm | nhận xét | …` (có / không hàng tiêu đề; báo cột đã nhận); khớp tên bỏ dấu, trùng tên → chọn em; xem trước một bảng trong panel (mới / ghi đè trước→sau / lỗi); MT: nhận xét dán thoả "nhận xét bắt buộc", nhóm nguyên nhân dưới kỳ vọng chọn tại chỗ trong bảng xem trước; lưu dòng hợp lệ, phần chưa đủ là nháp. Một mẫu "loại dữ liệu" mỗi lô (số câu / band) |
 | C16 | Bỏ tab Điểm theo lớp | [ĐÃ CÓ] ⋯ hàng lớp có "Nhập điểm" (→ `/test/diem-lop?lop=`), hồ sơ lớp có nút Nhập điểm | [CHỐT] bỏ tab; ⋯ → Nhập điểm mở **panel nhập điểm tại chỗ** (chọn lượt / môn trong panel); link cũ `/test/diem-lop?lop=` chuyển sang panel của lớp đó |
 | C17 | Xuất Excel Kế hoạch Test | chưa có (`xuatMt` là điểm, không phải lịch) | [CHỐT] 13 cột `Gmail | Tên học sinh | Lớp | MT1…MT10`; ô = lịch thi `W4 AUG/2026` hoặc `L/R: W4 AUG/2026; W/S: W1 SEP/2026`; "Chưa xếp" / "Đã huỷ" / "Vắng"; phạm vi = bộ lọc đang xem; sheet "Thông tin xuất" ghi MT > 10 nếu có |
