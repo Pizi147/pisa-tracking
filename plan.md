@@ -12,6 +12,7 @@ File này **thay** cho: `plan.md` cũ (mục 0–24), `PROMPT_SESSION_CODE.md`, 
 
 | File chi tiết | Dùng cho |
 |---|---|
+| `docs/superpowers/specs/2026-10-18-ov14-thiet-ke-tong-the-design.md` | **OV-14 thiết kế tổng thể** (18/10, chờ duyệt): C01–C31 giữ / thay / hỏi, Chấm Speaking, bản đồ web, phân kỳ — nguồn `specs/nguon/2026-10-18-ov14-prompt-tong-hop.md` |
 | `docs/superpowers/specs/2026-10-17-ov14-danh-gia-ux.md` | **OV-14** (overhaul UX 17/10): rà docx 16/10 + audit 17/10 + 3 góp ý chủ SP, xác minh mã, impeccable 27/40 · ui-ux-pro-max 25/40, đường lên ≥ 35/40, 12 ý tưởng, thứ tự |
 | `thiet-ke/mockup-ov14-{1,2,3}-*-2026-10-17.html` | Mockup **OV-14** — **chờ chủ SP duyệt**: 1 hệ thiết kế v2 + Học viên & Lớp · 2 lưới điểm + Công việc · 3 Tổng quan QL + Báo cáo tuần + Phân tích |
 | `docs/superpowers/specs/2026-10-14-ov12-sos-workflow-design.md` | **OV-12** (prompt overhaul chủ SP 14/10): nhận xét MT = nguyên nhân SOS, hồ sơ MT Case, Góp ý hàng tuần, panel số liệu, Học viên & Lớp ba góc nhìn, hạn 2 tuần, quyền — hiện trạng, quyết định, 7 PR, kiểm chứng |
@@ -235,6 +236,11 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
   - Mockup 2: duyệt khuyến nghị (ô trống khung rỗng · GV vào thẳng Công việc · lưu xong tự sang việc kế, thay luật OV-5a · dán Excel vào MT thành nháp rồi ghi nhận xét · bỏ tab Điểm theo lớp khi Tổng quan QL có cột "Chưa điểm").
   - Mockup 3: duyệt khuyến nghị (Tổng quan A 3 khối · "Case chưa chốt PA · trong đó chưa lập PA" · "21 HV / 34 Case" xếp chồng · Phân tích mục riêng 2 tầng · Báo cáo tuần mở tuần vừa qua).
   - **Chủ SP sẽ xem lại và góp ý sau** — CHƯA viết đặc tả / chia PR tới khi chủ SP nói.
+- **18/10: prompt tổng hợp chủ SP + GPT (C01–C31)** → bản thiết kế tổng thể `docs/superpowers/specs/2026-10-18-ov14-thiet-ke-tong-the-design.md`
+  (bảng quyết định, bản đồ web, mẫu dùng chung, Rà soát lịch thi phương án D, phân kỳ OV-14c + OV-15a…g) — **chờ chủ SP duyệt**.
+  **Gấp — chấm chéo Speaking** (GV nước ngoài không thấy bài): `lopFtChoGvSpeaking` chỉ tính người có phân công S ở lớp FT · URL `loai=thuong`
+  giữ khung rỗng · `canChamCheo` chỉ sau tuần thi · đang xem tuần cũ → thiết kế "Chấm Speaking" (OV-14c), 3 câu hỏi chủ SP.
+  OV-14a #448 đã merge (chưa deploy). OV-14b dừng giữa chừng vì hết lượt dùng tuần — tiếp khi có lượt.
 - Ghi nhớ: Rulebook §20.6 (T58 "lớp thường không SOS") đã bị thay bởi đặc tả OV-12 mục 7.2 (14/10: Progress lớp thường ghi nhãn SOS theo số môn trượt) — sửa Rulebook khi viết đặc tả OV-14.
 - **Chủ SP 16/10 (OV-13p):** TVV / CX được TẠO LỚP (`class.create` theo phạm vi grant, CX toàn hệ thống) và THÊM HV (quyền hẹp mới `student.add` thay `student.edit` ở intake); không mở chuyển lớp / lưu trữ / lộ trình / phân công GV; không bước duyệt.
 - **UX-1 (đánh giá UX 16/10):** ô Tổng quan "Case chờ duyệt" đổi **"Case chưa chốt PA"** (Case mở chưa có PA đang theo dõi — kể cả PA chờ xác nhận / duyệt); "Case chưa có PA" giữ cho cột bảng chi nhánh (chưa có PA nào); "Chờ duyệt" chỉ còn là hộp thẻ QL. Bảng chi nhánh thêm hàng "Lớp đã kết thúc" (Σ hàng = Tất cả), "—" khi chưa có đợt Test đến lịch, "SOS hiện tại" / "Đang SOS · tuần".
