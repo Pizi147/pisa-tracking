@@ -405,6 +405,10 @@ CREATE TABLE cycle_target_revisions (
 );
 CREATE INDEX idx_target_rev_cycle ON cycle_target_revisions(cycle_id);
 CREATE INDEX idx_cycle_student ON learning_cycles(student_id);
+/* TD7: lộ trình FT chưa có kết quả thi thật (một phần) — trước SCAN cả learning_cycles. */
+CREATE INDEX idx_cycle_cho_kq ON learning_cycles(student_id) WHERE route IS NOT NULL AND thi_that_khong_thi = 0 AND outcome_score IS NULL;
+/* TD7: lộ trình FT có kết quả, chưa chọn bước tiếp (một phần, điều kiện = CO_KET_QUA của buocTiep.ts). */
+CREATE INDEX idx_cycle_cho_buoc_tiep ON learning_cycles(student_id) WHERE route IS NOT NULL AND buoc_tiep IS NULL AND (thi_that_khong_thi = 1 OR (thi_that_l IS NOT NULL AND thi_that_r IS NOT NULL AND thi_that_w IS NOT NULL AND thi_that_s IS NOT NULL) OR outcome_score IS NOT NULL OR COALESCE(outcome, 'unknown') != 'unknown');
 
 -- Lịch sử lớp. Chuyển lớp mở dòng mới, không ghi đè.
 CREATE TABLE enrollments (
@@ -563,6 +567,8 @@ CREATE INDEX idx_attempt_period ON assessment_attempts(planned_period_id);
 CREATE INDEX idx_attempt_class ON assessment_attempts(class_id);
 /* TD6: lượt của một em ở một lớp — trước đây duyệt mọi lượt của lớp cho từng em. */
 CREATE INDEX idx_attempt_student_class ON assessment_attempts(student_id, class_id);
+/* TD7: lượt MT lịch sử chưa nhập (một phần) — trước đọc mọi lượt của mọi lớp đang chạy. */
+CREATE INDEX idx_attempt_lich_su_cho ON assessment_attempts(class_id) WHERE lich_su = 1 AND status = 'planned';
 
 CREATE TABLE attempt_schedule_history (
   id INTEGER PRIMARY KEY,

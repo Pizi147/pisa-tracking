@@ -1068,6 +1068,57 @@ await checkAsync('TD7a (×3) · Xem nhận xét Speaking: không SCAN assessment
 });
 
 /*
+ * TD7 (chủ SP 19/10, Turso Top Queries — tổng dòng đọc theo câu): (1) "MT lịch sử chưa nhập", "chờ kết quả thi thật", "chờ chọn bước tiếp" đi chỉ mục một
+ * phần (migrate prTd7), không SCAN learning_cycles / không duyệt mọi lượt của lớp; (2) câu dùng chung chạy MỘT lần mỗi request GET (chờ kết quả thi, chờ
+ * bước tiếp, bốn bảng phụ của danh sách Case); danh sách Case lọc chi nhánh không SCAN mọi Case; (3) lượt mới nhất (`latestAttempts`) chỉ nạp lịch kỹ
+ * năng của lượt ứng viên — QL Tổng quan chi nhánh trước 765 lượt / request. JSON mọi GET trùng main (đã so 460 phản hồi ×3, mô tả PR); Công việc: TD4-a.
+ */
+await checkAsync('TD7 (×3) · chỉ mục một phần + câu dùng chung một lần / request + lịch kỹ năng chỉ lượt ứng viên; migrate prTd7 chạy lặp được', async () => {
+  const { migratePrTd7, CHI_MUC_TD7 } = await import('../migrate/prTd7.ts');
+  const lan: string[][] = [[], []];
+  migratePrTd7(conn, lan[0]); migratePrTd7(conn, lan[1]);
+  assert(!lan[0].length && !lan[1].length, `migrate trên DB đã có chỉ mục vẫn báo đổi: ${lan.flat().join(' | ')}`);
+  for (const [ten] of CHI_MUC_TD7) assert(conn.prepare("SELECT 1 FROM sqlite_master WHERE type = 'index' AND name = ?").get(ten), `thiếu ${ten}`);
+  const MAU = {
+    lichSu: /a\.lich_su = 1 AND a\.status = 'planned'/, choKq: /AS class_id\s+FROM learning_cycles c JOIN students s/,
+    buocTiep: /AS branch_id\s+FROM learning_cycles c JOIN students s/, phuCase: /FROM case_milestones\s+WHERE attempt_no IS NOT NULL GROUP BY case_id/,
+    dsCase: /AS intervention_count/, lich: /FROM attempt_skills ask\b/,
+  };
+  const loi: string[] = [];
+  const daXet = new Set<string>();
+  for (const [vai, url] of [['GVCN', '/my-work'], ['QL', '/cham/lich-test'], ['CX', '/tong-quan/hoc-vien'], ['TVV', '/hoc-vien-lop/theo-vai'], ['QL', '/tong-quan/chi-nhanh']] as [Vai, string][]) {
+    const tho: { sql: string; args: unknown[] }[] = [];
+    doQuet.ghi = tho;
+    try { assert((await doSql(vai, 'GET', urlFor(url))).status === 200, `${vai} ${url} không 200`); } finally { doQuet.ghi = null; }
+    /* libsql: all() gọi iterate() → móc ghi đôi liền nhau; bỏ bản ghi trùng hệt ngay trước. */
+    const ghi = tho.filter((g, i) => !i || g.sql !== tho[i - 1].sql || JSON.stringify(g.args) !== JSON.stringify(tho[i - 1].args));
+    const dem = (re: RegExp) => ghi.filter((g) => re.test(g.sql)).length;
+    for (const k of ['choKq', 'buocTiep', 'phuCase'] as const) if (dem(MAU[k]) > 1) loi.push(`${vai} ${url}: câu ${k} chạy ${dem(MAU[k])} lần`);
+    /* Danh sách Case lọc chi nhánh: đi tập cha theo chỉ mục, không SCAN mọi Case (CX hỏi lần lượt 5 chi nhánh). */
+    for (const { sql, args } of ghi.filter((g) => MAU.dsCase.test(g.sql) && /COALESCE\(cc\.branch_id, ac\.branch_id\) = \?/.test(g.sql)).slice(0, 1)) {
+      const plan = (conn.prepare(`EXPLAIN QUERY PLAN ${sql}`).all(...args) as any[]).map((r) => r.detail as string);
+      if (plan.some((d) => /^SCAN sc/.test(d))) loi.push(`${vai} ${url}: danh sách Case lọc chi nhánh vẫn SCAN sos_cases`);
+      daXet.add(sql);
+    }
+    if (url === '/tong-quan/chi-nhanh') {
+      const soLuot = ghi.filter((g) => MAU.lich.test(g.sql)).reduce((n, g) => n + g.args.flat().length, 0);
+      console.log(`      (đo ×3: QL /tong-quan/chi-nhanh lịch kỹ năng ${soLuot} lượt, trước TD7 765)`);
+      if (soLuot > 765 * 0.4) loi.push(`QL ${url}: lịch kỹ năng ${soLuot} lượt (> 40 % của 765)`);
+    }
+    for (const [k, chiMuc] of [['lichSu', 'idx_attempt_lich_su_cho'], ['choKq', 'idx_cycle_cho_kq'], ['buocTiep', 'idx_cycle_cho_buoc_tiep']] as const) {
+      for (const { sql, args } of ghi.filter((g) => MAU[k].test(g.sql) && !/c\.student_id = \?$/.test(g.sql.trim()))) {
+        if (daXet.has(sql)) continue;
+        daXet.add(sql);
+        const plan = (conn.prepare(`EXPLAIN QUERY PLAN ${sql}`).all(...args) as any[]).map((r) => r.detail as string);
+        if (!plan.some((d) => d.includes(chiMuc))) loi.push(`${k}: không dùng ${chiMuc} — ${plan[0]}`);
+      }
+    }
+  }
+  for (const k of ['lichSu', 'choKq', 'buocTiep', 'dsCase']) if (![...daXet].some((s) => MAU[k as keyof typeof MAU].test(s))) loi.push(`không bắt được câu ${k}`);
+  assert(!loi.length, loi.join('\n        '));
+});
+
+/*
  * TD4-b: bản chính 15/10 log `[cham]` /my-work 5–7,5 s, 75–126 câu, 6 900–18 400 dòng (top: lịch kỹ năng của MỌI lượt trong phạm vi). Mốc ×3 trước TD4
  * (main 35517670, đo trong chính phép này): câu / dòng dưới đây. Khoá: dòng ≤ 40 % mốc, số câu ×3 ≤ ×1 + 2 (không tăng theo dữ liệu) và ≤ mốc − 3.
  */

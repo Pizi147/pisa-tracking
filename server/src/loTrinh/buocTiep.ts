@@ -23,6 +23,7 @@ import { ghiBanChup } from './banChup.ts';
 import { docTarget } from '../fasttrack/cycles.ts';
 import { COT_SAU_THI, NGAY_CO_KQ } from './cotSauThi.ts';
 import { addJourney, notify, writeAudit } from '../platform/audit.ts';
+import { nho } from '../platform/nguCanhRequest.ts';
 
 /** Lộ trình FT có kết quả thi thật (cùng nghĩa `!canChoThiThat`): đủ 4 kỹ năng, "Không thi", hoặc kết quả CŨ (Overall / kết luận chọn tay). */
 const CO_KET_QUA = `(c.thi_that_khong_thi = 1 OR (c.thi_that_l IS NOT NULL AND c.thi_that_r IS NOT NULL AND c.thi_that_w IS NOT NULL AND c.thi_that_s IS NOT NULL)
@@ -357,8 +358,10 @@ export const SQL_CHO_BUOC_TIEP = `SELECT c.id, c.student_id, s.full_name AS ten,
  WHERE c.route IS NOT NULL AND c.buoc_tiep IS NULL AND s.archived_at IS NULL
    AND (c.status = 'active' OR COALESCE(b.ly_do, '') != 'chuyen_lop') AND ${CO_KET_QUA}
    AND c.seq = (SELECT MAX(seq) FROM learning_cycles x WHERE x.student_id = c.student_id)`;
+/** TD7: cả hệ thống nhớ trong request GET (Công việc, Học viên & Lớp gọi nhiều lần). Người gọi không sửa kết quả. */
 export function choBuocTiep(studentId?: number): any[] {
-  return (studentId ? db().prepare(`${SQL_CHO_BUOC_TIEP} AND c.student_id = ?`).all(studentId) : db().prepare(SQL_CHO_BUOC_TIEP).all()) as any[];
+  if (studentId) return db().prepare(`${SQL_CHO_BUOC_TIEP} AND c.student_id = ?`).all(studentId) as any[];
+  return nho('cho-buoc-tiep', () => db().prepare(SQL_CHO_BUOC_TIEP).all() as any[]);
 }
 
 /**

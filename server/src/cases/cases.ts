@@ -2239,8 +2239,23 @@ function caseTrongPhamVi(p: Principal, f: CaseFilters): MappedCase[] {
    *
    * Em chưa xếp lớp thì lấy lớp của bài — vẫn hơn là rơi ra khỏi mọi bộ lọc.
    */
-  if (f.classId) { where.push(`${LOP_CUA_CASE} = ?`); params.push(f.classId); }
-  if (f.branchId) { where.push(`${CN_CUA_CASE} = ?`); params.push(f.branchId); }
+  /*
+   * TD7: lớp / chi nhánh của Case là biểu thức trên bảng nối (không chỉ mục nào dùng được) → trước mỗi lần lọc phải nối đủ 6 bảng cho MỌI Case.
+   * Lọc trước bằng TẬP CHA đi chỉ mục: Case của em đang học lớp ấy (ghi danh active), Case của lượt thuộc lớp ấy, Case chưa gắn em (nối qua lượt);
+   * biểu thức cũ vẫn lọc đúng sau đó nên tập kết quả không đổi.
+   */
+  if (f.classId) {
+    where.push(`sc.id IN (SELECT x.id FROM enrollments e JOIN sos_cases x ON x.student_id = e.student_id WHERE e.class_id = ? AND e.status = 'active'
+                          UNION SELECT x.id FROM assessment_attempts a2 JOIN sos_cases x ON x.attempt_id = a2.id WHERE a2.class_id = ?
+                          UNION SELECT x.id FROM sos_cases x WHERE x.student_id IS NULL)`, `${LOP_CUA_CASE} = ?`);
+    params.push(f.classId, f.classId, f.classId);
+  }
+  if (f.branchId) {
+    where.push(`sc.id IN (SELECT x.id FROM classes k JOIN enrollments e ON e.class_id = k.id AND e.status = 'active' JOIN sos_cases x ON x.student_id = e.student_id WHERE k.branch_id = ?
+                          UNION SELECT x.id FROM classes k JOIN assessment_attempts a2 ON a2.class_id = k.id JOIN sos_cases x ON x.attempt_id = a2.id WHERE k.branch_id = ?
+                          UNION SELECT x.id FROM sos_cases x WHERE x.student_id IS NULL)`, `${CN_CUA_CASE} = ?`);
+    params.push(f.branchId, f.branchId, f.branchId);
+  }
   if (f.status) { where.push('sc.status = ?'); params.push(f.status); }
   if (f.cycleId) { where.push('COALESCE(sc.cycle_id, a.cycle_id) = ?'); params.push(f.cycleId); }
   if (f.origin) { where.push('sc.origin_kind = ?'); params.push(f.origin); }
@@ -2289,6 +2304,9 @@ function caseTrongPhamVi(p: Principal, f: CaseFilters): MappedCase[] {
     )
     .all(...params) as any[];
 
+  /* TD7: bốn bảng phụ dưới (đọc cả bảng, không theo bộ lọc) nhớ MỘT lần mỗi request GET — Học viên & Lớp / Tổng quan gọi danh sách Case
+     theo từng chi nhánh (tới 5 lần), trước mỗi lần đọc lại cả bốn bảng. Người gọi không sửa kết quả. */
+  const { latestAttemptByCase, planOf, lastResultOf, skillsByCase } = nho('ds-case-phu', () => {
   /*
    * LƯỢT MT MỚI NHẤT của từng Case, lấy MỘT LẦN cho cả danh sách.
    *
@@ -2344,6 +2362,8 @@ function caseTrongPhamVi(p: Principal, f: CaseFilters): MappedCase[] {
     if (!cur.includes(r.skill)) cur.push(r.skill);
     skillsByCase.set(r.case_id, cur);
   }
+  return { latestAttemptByCase, planOf, lastResultOf, skillsByCase };
+  });
 
   /*
    * PR-TD: nạp trước chi nhánh/lớp của MỌI HV trong một lô, để `can()` dưới đây không hỏi DB từng dòng một.
