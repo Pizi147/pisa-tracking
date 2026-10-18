@@ -39,8 +39,10 @@ const GIU_TUNG_DONG_FT = new Set(['no_plan']);
 const GOP_TUAN_SOS = new Set(['ghi_nhan_xet', 'xac_nhan_pa']);
 /** Khoá Nhập điểm Speaking chấm chéo (T18, `mywork.ts`) — việc lẻ `…|cc`, dòng gộp theo tuần cũng `…|cc`. */
 export const laViecChamCheo = (it: { key: string }): boolean => it.key.endsWith('|cc');
-/** OV-13g (Q7): tên dòng chấm chéo của GV Speaking ở Công việc › Chấm điểm. */
-export const VIEC_CHAM_CHEO = 'Speaking chấm chéo';
+/** OV-13g (Q7); OV-14c: tên việc chấm chéo của GV Speaking ở Công việc › Chấm điểm. */
+export const VIEC_CHAM_CHEO = 'Chấm Speaking';
+/** OV-14c: khoá MỘT việc "Chấm Speaking · n bài" của GV Speaking — panel hàng đợi từng em. */
+export const KHOA_CHAM_SPEAKING = 'score:cham-speaking|cc';
 
 export const khoaDongGop = (group: string, classId: number, ownerId: number | null) => `gop:${group}:${classId}:u${ownerId ?? 0}`;
 /** Nhóm của khoá dòng gộp (`gop:{nhóm}:{lớp}:u{người}`); khoá khác → null. */

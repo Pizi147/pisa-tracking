@@ -2,7 +2,7 @@ import { phamViXemViec } from './xemViec.ts';
 import { db, theoLo } from '../db.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import {
-  ATTEMPT_KIND_SHORT, CHAM_CHEO, VIEC_CHAM_CHEO, chuViecChotLoTrinh, daiDienNhomBoTro, canChamCheo, khoiCham, laChamCheo, laViecChamCheo, mondayOfDate,
+  ATTEMPT_KIND_SHORT, CHAM_CHEO, KHOA_CHAM_SPEAKING, VIEC_CHAM_CHEO, chuViecChotLoTrinh, daiDienNhomBoTro, canChamCheo, khoiCham, laChamCheo, laViecChamCheo, mondayOfDate,
   INTERVENTION_KIND_LABEL, PERMISSIONS,
   SOS_LABEL, URGENCY_LABEL, URGENCY_TONE, caseHeadline, caseTopicLabel, cycleDeadline,
   duongCaseRieng, duongHoSoHocVien, duongLichTest, nhanDotNgan, hanThemPa,
@@ -524,36 +524,32 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   items.push(...gomBaiChuaCham(minhDongs));
 
   /*
-   * OV-13g (Q7, mockup OV-13 §3b): "Speaking chấm chéo" — bài S Mock tuần trước + mọi bài còn tồn (khối 1 + 2 của `khoiCham`, như Lịch Test) ở lớp FT
-   * cùng chi nhánh. Có số, KHÔNG hạn / quá hạn (T18: không là nợ của ai). Người giữ dòng = người xem (để gom theo tuần, khoá `|cc` riêng); mọi
-   * bài vào tuần trước (tuần chấm) để thành MỘT dòng — bài cũ hơn ghi "còn tồn từ {tuần}". Không đổi luật ai chấm.
+   * OV-14c (chủ SP 18/10; thay dòng gộp theo tuần của OV-13g): GV Speaking có MỘT việc "Chấm Speaking · n bài" — bài S Mock ở lớp FT
+   * `lopFtChoGvSpeaking` từ thứ Hai tuần thi tới khi chấm (`canChamCheo`). Có số, KHÔNG hạn / quá hạn (T18: không là nợ của ai). Panel của việc
+   * (`/my-work/cham-speaking`, `baiChamSpeaking` — cùng tập bài) liệt kê từng em. Không đổi luật ai chấm.
    */
   if (lopCheo.size) {
-    const tuanHomNay = mondayOfDate(today), tuanTruoc = addDays(tuanHomNay, -7);
+    const tuanHomNay = mondayOfDate(today);
     const ccDongs: BaiChuaCham[] = [];
     for (const a of attempts as any[]) {
       if (!lopCheo.has(a.classId)) continue;
       for (const c of (a.pendingDetail ?? []) as any[]) {
-        if (!canChamCheo(laChamCheo(a.kind, c.skill), c.weekStart, tuanHomNay, !!c.overdue)) continue;
+        if (!canChamCheo(laChamCheo(a.kind, c.skill), c.weekStart, tuanHomNay)) continue;
         ccDongs.push({
           classId: a.classId, classCode: a.classCode ?? null, attemptNo: a.attemptNo ?? null,
           kind: a.kind ?? null, attemptId: a.id, studentId: a.studentId, studentName: a.studentName,
-          /* `periodId` null: gom theo lớp × LƯỢT (không theo tuần) — mỗi con mở đúng một panel nhập điểm một lượt. */
           skill: c.skill, deadline: null, ownerId: p.userId, overdue: false, periodId: null, weekStart: c.weekStart,
         });
       }
     }
-    /* Rà #419: "còn tồn từ" = tuần thi NHỎ NHẤT của (lớp, lượt) — dòng gộp lấy tuần của bài đầu nhóm, em đầu thi tuần trước thì mất nhãn. */
-    const tuanCuNhat = new Map<string, string>();
-    for (const d of ccDongs) {
-      const k = `${d.classId}|${d.kind}|${d.attemptNo}`, w = tuanCuNhat.get(k);
-      if (d.weekStart && (!w || d.weekStart < w)) tuanCuNhat.set(k, d.weekStart);
-    }
-    for (const it of gomBaiChuaCham(ccDongs)) {
-      const w = tuanCuNhat.get(`${it.classId}|${it.kind}|${it.attemptNo}`) ?? null;
-      const cu = w && w < tuanTruoc ? w : null;
-      const luot = nhanDot(it.kind, it.attemptNo);
-      items.push({ ...it, tieuDe: `${VIEC_CHAM_CHEO} · ${luot}`, phu: luot, contextLabel: cu ? `còn tồn từ ${tuanLich(cu)}` : null, tuanThi: tuanTruoc });
+    const mau = gomBaiChuaCham(ccDongs)[0];
+    if (mau) {
+      const soBai = ccDongs.length;
+      items.push({
+        ...mau, key: KHOA_CHAM_SPEAKING, studentId: null, studentName: VIEC_CHAM_CHEO, emIds: undefined, classId: null, classCode: null,
+        attemptId: null, attemptNo: null, contextLabel: null, phu: null, luot: undefined, periodId: null, tuanThi: null,
+        tieuDe: `${VIEC_CHAM_CHEO} · ${soBai} bài`, reason: `${soBai} bài`, count: soBai, soBai, href: `/cong-viec?viec=${encodeURIComponent(KHOA_CHAM_SPEAKING)}`,
+      });
     }
   }
 

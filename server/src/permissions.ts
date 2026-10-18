@@ -45,6 +45,8 @@ export type Principal = {
   ngonNgu?: string | null;
   /** HD-a: đã mở Hướng dẫn / bấm Ẩn dải "Mới dùng PISA?" (`users.da_xem_huong_dan`). Đọc cùng câu phiên. */
   daXemHuongDan?: boolean;
+  /** OV-14c: kỹ năng khai ở hồ sơ (`user_skills`, Quản trị › Kỹ năng) — `speaking` = GV Speaking chấm chéo. Đọc cùng câu phiên. */
+  kyNang?: string[];
 };
 
 export type Ctx = {
@@ -77,7 +79,8 @@ export const COT_PRINCIPAL = `u.id AS u_id, u.code AS u_code, u.full_name AS u_f
      LEFT JOIN branches b ON b.id = up.branch_id
     WHERE up.user_id = u.id) AS u_rieng,
   (SELECT json_group_array(json_array(ta.id, ta.class_id, ta.skill, ta.is_core, ta.effective_from, ta.effective_to))
-     FROM teacher_assignments ta WHERE ta.user_id = u.id AND ta.status = 'active') AS u_phan_cong`;
+     FROM teacher_assignments ta WHERE ta.user_id = u.id AND ta.status = 'active') AS u_phan_cong,
+  (SELECT json_group_array(us.skill) FROM user_skills us WHERE us.user_id = u.id) AS u_ky_nang`;
 
 export function loadPrincipal(userId: number): Principal {
   const row = db().prepare(`SELECT ${COT_PRINCIPAL} FROM users u WHERE u.id = ?`).get(userId) as any;
@@ -122,6 +125,7 @@ export function principalTuDong(row: any): Principal {
     title: row.u_title,
     ngonNgu: row.u_ngon_ngu ?? null,
     daXemHuongDan: row.u_da_xem_hd === 1,
+    kyNang: row.u_ky_nang ? JSON.parse(row.u_ky_nang) : [],
     grants,
     /* `granted` không phải một vai trò — nó chỉ là chỗ chứa quyền cấp riêng. */
     roleKeys: [...new Set(grants.map((g) => g.roleKey).filter((k) => k !== 'granted'))],
@@ -270,24 +274,26 @@ export function napTruocPhamVi(studentIds: readonly (number | null | undefined)[
 }
 
 /**
- * GV SPEAKING CHẤM CHÉO (chủ sản phẩm chốt 30/09, PR-HSM): GV đang được phân công **Speaking** ở một lớp Fast Track thì nhập được ô
- * **S** Mock của MỌI lớp Fast Track **cùng chi nhánh** — vì thế mới cần ghi "GV chấm". Đây chỉ là QUYỀN: `mySkills` (việc / nợ
- * điểm) không đổi — ô S của lớp khác vẫn là việc của GV được phân công S lớp đó. Lớp thường không áp.
- * Trả các lớp FT được mở; rỗng khi người này không dạy Speaking FT, hoặc vai giáo viên không còn quyền nhập điểm ở chi nhánh đó.
+ * GV SPEAKING CHẤM CHÉO (PR-HSM 30/09; OV-14c chủ SP chốt 18/10): GV Speaking nhập được ô **S** Mock của MỌI lớp Fast Track ở các chi nhánh mà
+ * grant vai Giáo viên (có `SCORE_EDIT`) của tài khoản phủ — grant toàn hệ thống → mọi chi nhánh. Không cần phân công từng lớp.
+ * Đây chỉ là QUYỀN: `mySkills` (việc / nợ điểm) không đổi — ô S của lớp khác không thành nợ của người này. Lớp thường không áp.
  */
 export function lopFtChoGvSpeaking(p: Principal, date = demoToday()): number[] {
-  const dayS = p.assignments.filter((a) => a.skill === 'speaking' && activeAt(a, date));
-  if (!dayS.length) return [];
-  const bang = bangLop();
-  const cn = new Set<number>();
-  for (const a of dayS) {
-    const l = bang.get(a.classId);
-    if (!l?.isFastTrack || l.branchId == null) continue;
-    if (p.grants.some((g) => g.roleKey === 'teacher' && g.permissions.has(PERMISSIONS.SCORE_EDIT) && grantCovers(g, { classId: a.classId }))) {
-      cn.add(l.branchId);
-    }
-  }
-  return [...bang].filter(([, l]) => l.isFastTrack && l.branchId != null && cn.has(l.branchId)).map(([id]) => id);
+  if (!laGvSpeaking(p, date)) return [];
+  const gv = grantGvNhapDiem(p);
+  const toanHt = gv.some((g) => g.branchId === null);
+  const cn = new Set(gv.map((g) => g.branchId));
+  return [...bangLop()].filter(([, l]) => l.isFastTrack && l.branchId != null && (toanHt || cn.has(l.branchId))).map(([id]) => id);
+}
+const grantGvNhapDiem = (p: Pick<Principal, 'grants'>) => p.grants.filter((g) => g.roleKey === 'teacher' && g.permissions.has(PERMISSIONS.SCORE_EDIT));
+/**
+ * OV-14c: AI LÀ GV SPEAKING — vai Giáo viên có `SCORE_EDIT`, và có kỹ năng `speaking` ở hồ sơ (`user_skills`) HOẶC đang có phân công
+ * `speaking` ở một lớp FT. Một luật cho quyền (`lopFtChoGvSpeaking`) và chip "Chấm Speaking" ở Quản trị › Tài khoản.
+ */
+export function laGvSpeaking(p: Pick<Principal, 'grants' | 'kyNang' | 'assignments'>, date = demoToday()): boolean {
+  if (!grantGvNhapDiem(p).length) return false;
+  if (p.kyNang?.includes('speaking')) return true;
+  return p.assignments.some((a) => a.skill === 'speaking' && activeAt(a, date) && !!bangLop().get(a.classId)?.isFastTrack);
 }
 const laGvSpeakingLop = (p: Principal, classId: number, date?: string) => lopFtChoGvSpeaking(p, date).includes(classId);
 

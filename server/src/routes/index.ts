@@ -491,6 +491,12 @@ api.get('/my-work', requireAuth, wrap((req) => {
   return nheMyWork(myWork(p, { branchId }));
 }));
 
+/** OV-14c: hàng đợi "Chấm Speaking" của GV Speaking (panel của việc `KHOA_CHAM_SPEAKING`) — mỗi em một ô S Mock (`baiChamSpeaking`). */
+api.get('/my-work/cham-speaking', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return attemptSvc.baiChamSpeaking(principalOf(req));
+}));
+
 /* OV-12h (chủ SP 14/10): bỏ hẳn Nhắc — `/my-work/nhac`, `/my-work/nhac-nhieu`, `/yeu-cau/nhac-nhieu`, `/lenh-chuyen/:id/nhac` (404). */
 /* PR-S6F-b (D14): `/my-work/dem` đã bỏ — badge GV đọc `summary.overdue` của chính `/my-work` (web gộp GET đang bay, không tính `myWork` hai lần). */
 

@@ -1,7 +1,7 @@
-import { db, tx } from '../db.ts';
+import { db, theoLo, tx } from '../db.ts';
 import {
   ASSESSED_SKILLS, ASSESSED_SKILL_LABEL, duongDotTest, ENTRY_SKILLS, ENTRY_SKILL_LABEL, NO_SHOW_OVERRIDDEN_NOTE,
-  CHAM_CHEO, LOI_BAND_TU_TINH, PERMISSIONS, awaitingScore, kyNangXongThieu, laChamCheo, cachHuyLuot, kiemBand, kiemNhanXet, kiemNhomNguyenNhan, kiemSoMtMoi, batBuocNhanXetMt, canNhomNguyenNhan, docNhomNguyenNhan, issueLabel, thieuNhanXetMt, LOI_THIEU_NHAN_XET, NHAN_XET_MT_TOI_THIEU, type ThieuNhanXet, kyNangSosMt0, laMt0, laMtCu, ngay, dauTruCuaO, duocNhapBandThang, noShowText, pendingSkillsOf, soMtKeTiep, tenGvCham, tenMon, tuanHocCuaMt, tuanLich,
+  CHAM_CHEO, addDaysIso, canChamCheo, mondayOfDate, soSanhLop, LOI_BAND_TU_TINH, PERMISSIONS, awaitingScore, kyNangXongThieu, laChamCheo, cachHuyLuot, kiemBand, kiemNhanXet, kiemNhomNguyenNhan, kiemSoMtMoi, batBuocNhanXetMt, canNhomNguyenNhan, docNhomNguyenNhan, issueLabel, thieuNhanXetMt, LOI_THIEU_NHAN_XET, NHAN_XET_MT_TOI_THIEU, type ThieuNhanXet, kyNangSosMt0, laMt0, laMtCu, ngay, dauTruCuaO, duocNhapBandThang, noShowText, pendingSkillsOf, soMtKeTiep, tenGvCham, tenMon, tuanHocCuaMt, tuanLich,
   type CachHuy, CASE_CATEGORY_LABEL, INTERVENTION_KIND_LABEL, SYSTEM_CLOSE_REASON_LABEL, categoryOf, type CaseCategory, type InterventionKind,
   type AssessedSkill, type EntrySkill, type KetQuaVang, type NoShowState, type PendingCell, type SkillProgress, type WorkScope,
 } from '../../../shared/domain/index.ts';
@@ -10,7 +10,7 @@ import { phanCongDangHieuLuc } from '../worklist/scoreDebt.ts';
 import { badRequest, chuTuDo, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
 import { CAU_KHONG_VANG, chanVangLopKetThuc, dotHoanTat, dotHoanTatMany, kiemLopKetThuc, laLopKetThuc, oChuaCoDiem, quyenSuaSauHoanTat } from './hoanTat.ts';
 import {
-  can, classScopeSql, defaultWorkScope, editableSkills, isCoreTeacherOf, moveableSkills, mySkills, require_, requireXemLuotCham, scopeFor, scopeXemLuotCham, scoreEditPath, type LuotQuyen,
+  can, classScopeSql, defaultWorkScope, editableSkills, isCoreTeacherOf, lopFtChoGvSpeaking, moveableSkills, mySkills, require_, requireXemLuotCham, scopeFor, scopeXemLuotCham, scoreEditPath, type LuotQuyen,
   type Principal,
 } from '../permissions.ts';
 import { addJourney, notify, writeAudit } from '../platform/audit.ts';
@@ -284,6 +284,8 @@ export type SkillCell = {
   resultDate: string | null;
   enteredByName: string | null;
   enteredAt: string | null;
+  /** OV-14c: người nhập (id) — hộp chấm S "Đã chấm bởi … lúc …" khi là người khác. */
+  enteredById: number | null;
   deadline: string | null;
   deadlineSource: 'skill_override' | 'attempt_override' | 'default' | 'none';
   overdue: boolean;
@@ -472,6 +474,7 @@ export function skillCells(
       resultDate: row?.result_date ?? null,
       enteredByName: row?.entered_by_name ?? null,
       enteredAt: row?.entered_at ?? null,
+      enteredById: row?.entered_by ?? null,
       deadline: view.deadline,
       deadlineSource: view.deadlineSource,
       /* Quá hạn tính trên Ô NÀY: W2 còn trống thì W2 quá hạn, W1 đã nộp thì không. */
@@ -654,7 +657,7 @@ function ownersByClass(classIds: number[]): Map<number, Record<string, string>> 
 }
 
 const ATTEMPT_SELECT = `
-  SELECT a.*, s.full_name, s.student_code, s.status AS student_status, s.archived_at AS student_archived_at,
+  SELECT a.*, s.full_name, s.student_code, s.email AS student_email, s.status AS student_status, s.archived_at AS student_archived_at,
          cy.route, cy.target_score, cy.khong_cam_ket, cy.exam_month, cy.exam_period_id, cy.exam_date, cy.seq AS cycle_seq,
          c.code AS class_code, c.programme_code, c.lich_mt AS lop_lich_mt, c.route AS lop_route, c.branch_id, b.name AS branch_name, b.code AS branch_code,
          pr.code AS period_code, pr.week_start AS period_start, pr.week_end AS period_end
@@ -2433,6 +2436,50 @@ export function classScoreSheet(
       });
     })(),
   };
+}
+
+/** OV-14c: tuần thi của ô S (lịch riêng của kỹ năng, không có thì tuần của lượt) — mảnh SQL dùng alias `a`, `pr` của `ATTEMPT_SELECT`. */
+const TUAN_S_SQL = `COALESCE((SELECT kp.week_start FROM attempt_skills k JOIN report_periods kp ON kp.id = k.planned_period_id
+    WHERE k.attempt_id = a.id AND k.skill = 'speaking'), pr.week_start)`;
+
+/**
+ * OV-14c (chủ SP 18/10) — HÀNG ĐỢI "CHẤM SPEAKING" của GV Speaking ở Công việc: mỗi dòng một em = ô S Mock ở lớp FT `lopFtChoGvSpeaking`.
+ *  · chưa chấm (`cho`): cùng tập dòng Công việc — `pendingSkillsOf(…, 'managed')` + `canChamCheo` (từ thứ Hai tuần thi, tới khi chấm);
+ *  · đã có điểm, tuần thi S từ tuần trước: vẫn hiện kèm "Nhập bởi …" — tìm em không ra trống, thấy ai đã chấm.
+ * Ô = đúng ô của bảng FT (`skillCells` + R11 `dotHoanTatMany`) — hộp chấm dùng lại, ghi qua `saveScore` như mọi nơi.
+ */
+export function baiChamSpeaking(p: Principal, today = demoToday()) {
+  const lop = lopFtChoGvSpeaking(p, today);
+  if (!lop.length) return { rows: [] as any[], soBai: 0 };
+  const tuanNay = mondayOfDate(today);
+  const tuanTruoc = mondayOfDate(addDaysIso(tuanNay, -7));
+  const conn = db();
+  const attempts: any[] = [];
+  theoLo(lop, (lo, ph) => {
+    attempts.push(...conn.prepare(
+      `${ATTEMPT_SELECT}
+        WHERE a.class_id IN (${ph}) AND a.kind = 'mock' AND a.status != 'cancelled' AND a.lich_su = 0
+          AND ${HV_DANG_HOC_SQL('s')} AND c.status = 'active' AND ${TUAN_S_SQL} <= ?
+          AND (NOT EXISTS (SELECT 1 FROM assessment_scores sc WHERE sc.attempt_id = a.id AND sc.skill = 'speaking' AND sc.band IS NOT NULL)
+            OR ${TUAN_S_SQL} >= ?)`,
+    ).all(...lo, today, tuanTruoc) as any[]);
+  });
+  const bundle = loadBundle(attempts.map((a) => a.id));
+  const hoanTatOf = dotHoanTatMany(attempts.map((a) => a.id), today);
+  const rows = attempts.flatMap((a) => {
+    const scores = bundle.scores.get(a.id) ?? [];
+    const cells = skillCells(p, a, scores, bundle.skips.get(a.id) ?? [], today, bundle.skillRows.get(a.id), hoanTatOf.get(a.id));
+    const cell = cells.find((c) => c.skill === 'speaking');
+    if (!cell?.required) return [];
+    const cho = pendingSkillsOf(pendingInputOf(cells), 'managed').includes('speaking') && canChamCheo(true, cell.weekStart, tuanNay);
+    if (!cho && cell.band === null) return [];
+    return [{
+      attemptId: a.id as number, studentId: a.student_id as number, studentName: a.full_name as string, studentEmail: (a.student_email ?? null) as string | null,
+      classId: a.class_id as number, classCode: a.class_code as string, attemptNo: a.attempt_no as number,
+      weekStart: cell.weekStart, kyVong: kyVongCuaLuot(a), cho, cell,
+    }];
+  }).sort((x, y) => soSanhLop({ code: x.classCode }, { code: y.classCode }) || x.studentName.localeCompare(y.studentName, 'vi'));
+  return { rows, soBai: rows.filter((r) => r.cho).length };
 }
 
 export { notify };
