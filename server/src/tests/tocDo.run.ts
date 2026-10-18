@@ -990,6 +990,8 @@ await checkAsync('TD6 (×3) · câu đã sửa không SCAN bảng lớn; migrate
  * 15/10 OV-13c: chụp lại 7 băm — đổi CÓ CHỦ Ý: Nhập điểm gom theo tuần thi (khoá `|p{tuần}|`, dòng phụ có mã tuần), việc Case SOS FT + Nhập điểm
  * thêm `tuanThi` / `sos` / `pa` / `periodId` / `kind`. Đã so JSON mã trước (main 0359276) ↔ sau trên bộ demo, 5 vai × Của tôi / Tất cả: việc khác
  * TRÙNG hoàn toàn (trừ trường mới), tổng số bài Nhập điểm không đổi.
+ * 18/10 OV-14c: chụp lại 'GVS toi' — đổi CÓ CHỦ Ý chỉ ở việc chấm chéo: các dòng "Speaking chấm chéo · {tuần}" gộp theo tuần thay bằng MỘT việc
+ *   "Chấm Speaking · n bài" (khoá `KHOA_CHAM_SPEAKING`), cộng bài thi tuần này (từ thứ Hai tuần thi); 10 băm khác trùng.
  * 15/10 OV-13g: thêm 'GVS toi' (GV Speaking MB FT 101 — chấm chéo). Đầu ra đổi CÓ CHỦ Ý chỉ ở GV dạy Speaking FT: thêm dòng "Speaking chấm chéo".
  *   Đã so JSON mã trước (main a4f9c00) ↔ sau trên bộ demo, mọi tài khoản × Của tôi / Tất cả + QL xem GV 7/9/10: chỉ GV 9, 19 lệch; bỏ việc `|cc` thì
  *   `items` + `dong` TRÙNG hoàn toàn. Số câu /my-work (×1): GV 9 58 → 58, GV 19 55 → 56. 10 băm cũ không đổi.
@@ -1012,7 +1014,7 @@ await checkAsync('TD4-a (×3) · Công việc trùng JSON ảnh chụp trước 
   const ANH: Record<string, string> = {
     'QL toi': 'd1a3dfdc6252cec3', 'QT toi': '29cc7df6dfaf06f2', 'GVCN toi': 'a9e39629266c9ee1', 'GVBM toi': '00dd012ac4781e7f',
     'GVCN_THUONG toi': 'a9e39629266c9ee1', 'ADMIN toi': '4ed1fc3fa34653f2', 'QL tat-ca': 'caf10d13bbdf7962', 'QT tat-ca': 'd7462e17803c125b',
-    'QT tat-ca cn': '3d97326116d4d992', 'QL gvcn': '1e6b783e0d4a5d15', 'GVS toi': 'cf95f37a6f57748e',
+    'QT tat-ca cn': '3d97326116d4d992', 'QL gvcn': '1e6b783e0d4a5d15', 'GVS toi': 'c1d1af9888036e59',
   };
   const p = (v: Vai) => loadPrincipal(USER[v]);
   const goc: [string, () => unknown][] = [

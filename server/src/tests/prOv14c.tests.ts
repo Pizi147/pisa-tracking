@@ -7,6 +7,9 @@
  */
 import type { YThucTestKit } from './yThuc.tests.ts';
 
+/** Trần câu SQL của `GET /my-work/cham-speaking` cho GV Speaking (đo 14 câu 18/10 trên bộ demo, 25 em) — max(đo + 10, ⌈đo × 1,3⌉). */
+export const TRAN_CHAM_SPEAKING = 24;
+
 export async function runPrOv14cTests(t: YThucTestKit) {
   const { check, checkAsync, assert, assertThrows, conn, P, TODAY } = t as any;
   const d: any = await import('../../../shared/domain/index.ts');
@@ -16,7 +19,7 @@ export async function runPrOv14cTests(t: YThucTestKit) {
   const accounts: any = await import('../platform/accounts.ts');
   const { createApp } = await import('../app.ts');
   const { createSession } = await import('../auth.ts');
-  const { xoaNho } = await import('../platform/nguCanhRequest.ts');
+  const { xoaNho, soCauSql } = await import('../platform/nguCanhRequest.ts');
   console.log('\nOV-14c · Chấm Speaking: GV Speaking theo kỹ năng hồ sơ, mọi lớp FT chi nhánh mình, từ thứ Hai tuần thi');
 
   const one = (sql: string, ...a: unknown[]) => conn.prepare(sql).get(...a) as any;
@@ -151,7 +154,12 @@ export async function runPrOv14cTests(t: YThucTestKit) {
         const res = await fetch(`http://127.0.0.1:${cong}/api${url}`, { headers: { cookie: `pisa_demo_session=${createSession(uid)}` } });
         return { status: res.status, json: await res.json().catch(() => null) as any };
       };
+      const truoc = soCauSql();
       const s = await goi(idS, '/my-work/cham-speaking');
+      const cau = soCauSql() - truoc;
+      console.log(`      (đo: GV Speaking /my-work/cham-speaking ${cau} câu SQL, ${s.json?.rows?.length} dòng)`);
+      /* Trần câu SQL (Turso): một câu lượt theo lô 900 lớp + nạp lô điểm / lịch / hoàn tất — không theo số em. */
+      assert(cau <= TRAN_CHAM_SPEAKING, `${cau} câu > trần ${TRAN_CHAM_SPEAKING}`);
       assert(s.status === 200 && s.json.soBai === svc.baiChamSpeaking(gvS(), TODAY).soBai && s.json.rows.length > 0, `GV S: ${s.status}`);
       const w = await goi(idW, '/my-work/cham-speaking');
       assert(w.status === 200 && w.json.rows.length === 0, `GV Writing: ${w.status} ${w.json?.rows?.length}`);
