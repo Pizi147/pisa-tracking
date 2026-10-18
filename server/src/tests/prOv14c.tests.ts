@@ -40,7 +40,7 @@ export async function runPrOv14cTests(t: YThucTestKit) {
   const idToan = tao([{ role: 'teacher', branches: ['MB'] }], ['speaking']);
   conn.prepare(`UPDATE user_roles SET branch_id = NULL WHERE user_id = ?`).run(idToan);
   const gvS = () => perm.loadPrincipal(idS);
-  const viecCs = (p: any) => (mywork.myWork(p).dong as any[]).filter((x) => x.key === d.KHOA_CHAM_SPEAKING);
+  const viecCs = (p: any) => ((mywork.myWork(p).dong ?? []) as any[]).filter((x) => x.key === d.KHOA_CHAM_SPEAKING);
 
   check('OV14c-1 · luật thuần: bài chấm chéo cần chấm từ thứ Hai tuần thi (không chờ hết tuần); tuần sau chưa; không chấm chéo không', () => {
     const nay = d.mondayOfDate(TODAY);
@@ -84,13 +84,21 @@ export async function runPrOv14cTests(t: YThucTestKit) {
 
   check('OV14c-4 · GV Speaking nhập được S Mock lớp FT MB; KHÔNG L/R/W; KHÔNG lớp FT chi nhánh khác', () => thu(() => {
     const p = gvS();
-    const r = svc.baiChamSpeaking(p, TODAY).rows.find((x: any) => x.cho && x.cell.canEdit);
+    const truoc = svc.baiChamSpeaking(p, TODAY);
+    const tuanTruoc = d.addDaysIso(d.mondayOfDate(TODAY), -7);
+    /* Bài thi từ tuần trước: chấm xong vẫn ở hàng đợi ("Nhập bởi …"); bài còn tồn cũ hơn rời hàng đợi (web giữ chỗ dòng vừa lưu). */
+    const r = truoc.rows.find((x: any) => x.cho && x.cell.canEdit && (x.weekStart ?? '').slice(0, 10) >= tuanTruoc)
+      ?? truoc.rows.find((x: any) => x.cho && x.cell.canEdit);
     assert(r, 'cần một bài S chờ chấm sửa được');
     svc.saveScore(p, r.attemptId, 'speaking', { criteria: [6, 6.5, 6, 7], nhanXet: 'Fluent, good range of vocabulary.', gvCham: { performerSelf: true } }, TODAY);
     xoaNho();
     const sau = svc.baiChamSpeaking(gvS(), TODAY);
+    assert(sau.soBai === truoc.soBai - 1, `số bài ${truoc.soBai} → ${sau.soBai}`);
     const dong = sau.rows.find((x: any) => x.attemptId === r.attemptId);
-    assert(dong && !dong.cho && dong.cell.band !== null && dong.cell.enteredById === idS, 'bài vừa chấm còn trong hàng đợi, có điểm, "Nhập bởi" là GV này');
+    if ((r.weekStart ?? '').slice(0, 10) >= tuanTruoc) {
+      assert(dong && !dong.cho && dong.cell.band !== null && dong.cell.enteredById === idS,
+        `bài vừa chấm còn trong hàng đợi, có điểm, "Nhập bởi" là GV này: ${JSON.stringify(dong && { cho: dong.cho, band: dong.cell.band, by: dong.cell.enteredById })}`);
+    } else assert(!dong, 'bài còn tồn cũ đã chấm phải rời hàng đợi');
     assert(viecCs(gvS())[0]?.soBai === sau.soBai, 'Công việc giảm cùng hàng đợi');
     assertThrows(() => svc.saveScore(gvS(), r.attemptId, 'listening', { rawScore: 30 }, TODAY), /./, 'GV Speaking nhập L');
     assertThrows(() => svc.saveScore(gvS(), r.attemptId, 'writing1', { criteria: [6, 6, 6, 6] }, TODAY), /./, 'GV Speaking nhập W1');

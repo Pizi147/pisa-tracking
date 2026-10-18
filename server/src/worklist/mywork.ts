@@ -336,7 +336,8 @@ function nhanDot(kind: string | null | undefined, no: number | null | undefined,
 export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi' | 'tat-ca'; chiNhom?: ReadonlySet<WorkGroupKey> } = {}) {
   const today = demoToday();
   const scope = scopeFor(p, PERMISSIONS.ATTEMPT_VIEW);
-  if (scope.none) return { summary: { total: 0, overdue: 0, today: 0 }, groups: [], scopeEmpty: true, xemNguoiKhac: false };
+  /* OV-14c: GV Speaking không phân công (GV nước ngoài) vẫn có việc Chấm Speaking. */
+  if (scope.none && !lopFtChoGvSpeaking(p, today).length) return { summary: { total: 0, overdue: 0, today: 0 }, groups: [], scopeEmpty: true, xemNguoiKhac: false };
   /* PR-OV2a: Admin chỉ có nhóm Chấm điểm (của mình và của GV trong phạm vi, để Nhắc). */
   const xemViec = phamViXemViec(p);
   if (xemViec === 'cham-diem') f = { ...f, chiNhom: new Set<WorkGroupKey>(['score']) };

@@ -308,7 +308,8 @@ export function requireXemLuotCham(p: Principal, ctx: Ctx, message: string) {
 export function scopeXemLuotCham(p: Principal, date = demoToday()): Scope {
   const s = scopeFor(p, PERMISSIONS.ATTEMPT_VIEW);
   const lopS = s.all ? [] : lopFtChoGvSpeaking(p, date);
-  return lopS.length ? { ...s, classIds: [...new Set([...s.classIds, ...lopS])] } : s;
+  /* OV-14c: GV Speaking không phân công lớp nào (`scopeFor` rỗng) vẫn có phạm vi chấm = các lớp FT này. */
+  return lopS.length ? { ...s, none: false, classIds: [...new Set([...s.classIds, ...lopS])] } : s;
 }
 
 /** Chi nhánh mà ngữ cảnh đang nói tới. */
