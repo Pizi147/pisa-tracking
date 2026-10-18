@@ -1,7 +1,7 @@
-import { Component, Suspense, useEffect, useState, type ErrorInfo, type ReactNode } from 'react';
+import { Component, Suspense, useEffect, useRef, useState, type ErrorInfo, type ReactNode } from 'react';
 import { Link, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { useSession } from './lib/session.tsx';
-import { onLoiTaiLai, thuLaiNen, useApi } from './lib/useApi.ts';
+import { onHetPhien, onLoiTaiLai, thuLaiNen, useApi } from './lib/useApi.ts';
 import { DemoBar } from './modules/platform/DemoBar.tsx';
 import { LA_BAN_CHINH } from './lib/banChinh.ts';
 import { useGhiNguon, useTieuDeTab } from './lib/quayLai.ts';
@@ -127,6 +127,13 @@ export default function App() {
   useEffect(() => onLoiTaiLai(() => toast.push('error', t('Chưa tải lại được'), {
     key: 'tai-lai-loi', ms: 10_000, hanhDong: { nhan: t('Thử lại'), onBam: thuLaiNen },
   })), [toast]);
+  /* OV-14a (F09): tải gặp 401 → hỏi lại phiên MỘT lần (nhiều khối cùng 401 không gọi chồng); hết thật thì về màn đăng nhập, ô đang gõ tự gửi lưu / giữ nháp. */
+  const dangHoiPhien = useRef(false);
+  useEffect(() => onHetPhien(() => {
+    if (dangHoiPhien.current) return;
+    dangHoiPhien.current = true;
+    void reload().finally(() => { dangHoiPhien.current = false; });
+  }), [reload]);
   /* PR-PH / HK2: bấm "Thử lại" ở dải Mất kết nối → nút khoá, chữ "Đang thử…" tới khi tải xong. */
   const [dangThu, setDangThu] = useState(false);
   const thuLai = async () => { setDangThu(true); try { await reload(); } finally { setDangThu(false); } };

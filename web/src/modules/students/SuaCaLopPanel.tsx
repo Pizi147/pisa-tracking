@@ -1,13 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
+import { taoLuot } from '../../lib/luuChac.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
 import { ConfirmDialog } from '../../ui/Drawer.tsx';
 import { ErrorState, Skeleton, Th } from '../../ui/ui.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
-import { KCK, LIEN_HE_TOI_DA, LO_LUU_SUA_CA_LOP, NHAN_LIEN_HE, QUAN_HE_GOI_Y, TRUONG_LIEN_HE, chiaLo, chuTargetKck, chuanOTarget, tachKck, type VanDeNhap } from '@shared/domain/index.ts';
+import { KCK, LIEN_HE_TOI_DA, NHAN_LIEN_HE, QUAN_HE_GOI_Y, TRUONG_LIEN_HE, chiaLoSuaCaLop, chuTargetKck, chuanOTarget, tachKck, type VanDeNhap } from '@shared/domain/index.ts';
 import { ChonNguoi, type NguoiTrongDs } from '../../ui/PeoplePicker.tsx';
 import { t } from '@shared/i18n/index.ts';
 
@@ -74,6 +75,7 @@ export function SuaCaLopPanel({ classId, onClose, onDone }: { classId: number; o
   const [hoiDong, setHoiDong] = useState(false);
   const lf = useLoiForm();
   const khoa = useRef(moiKhoa());
+  const batLuotXem = useRef(taoLuot()).current;
 
   const d = du.data;
   const cot = COT.filter((c) => !(d?.lopThuong && c.key === 'baseline') && (d?.nhapLienHe || !(TRUONG_LIEN_HE as readonly string[]).includes(c.key)));
@@ -106,11 +108,14 @@ export function SuaCaLopPanel({ classId, onClose, onDone }: { classId: number; o
   });
   const payloadKey = JSON.stringify(payload);
 
+  /* OV-14a (F04): dữ liệu đổi → bỏ xem trước cũ (Lưu mờ tới khi có bản khớp); phản hồi của lần xem trước cũ về sau thì bỏ. */
   useEffect(() => {
-    if (!payload.length) { setXem(null); return undefined; }
+    const conMoi = batLuotXem();
+    setXem(null);
+    if (!payload.length) return undefined;
     const t = setTimeout(() => {
       api.post<XemTruoc>(`/classes/${classId}/sua-ca-lop/xem-truoc`, { rows: payload })
-        .then(setXem).catch((e: any) => toast.push('error', e.message));
+        .then((x) => { if (conMoi()) setXem(x); }).catch((e: any) => { if (conMoi()) toast.push('error', e.message); });
     }, 400);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -134,7 +139,8 @@ export function SuaCaLopPanel({ classId, onClose, onDone }: { classId: number; o
     if (busy || !soEm || soLoi || !xem || loiLyDo) return;
     setBusy(true);
     setLuuDo(null);
-    const lo = chiaLo(payload, LO_LUU_SUA_CA_LOP);
+    /* F05: em đổi email cho nhau chung một lô (một giao dịch) — xem trước đã báo nhóm quá một lô. */
+    const lo = chiaLoSuaCaLop(payload, (sid) => (luuRoi[sid]?.email ?? goc.get(sid)?.email) || null).lo;
     let xong = 0, daSua = 0;
     setTienDo({ xong, tong: payload.length });
     try {
@@ -169,7 +175,7 @@ export function SuaCaLopPanel({ classId, onClose, onDone }: { classId: number; o
     <KhungPanel tieuDe="Sửa thông tin học viên" lop={d ? `Lớp ${d.lop.code}` : null} rong="toan" onDong={dong}
       ngCanh={soEm ? `Đã sửa ${soEm} em` : undefined}
       chan={{
-        daSua: soEm > 0, huy: { onClick: dong, disabled: busy },
+        daSua: soEm > 0, tuHoi: true, huy: { onClick: dong, disabled: busy },
         conThieu: lf.conThieu(loiForm),
         phu: soLoi > 0 ? <span className="text-xs text-late tabular-nums">{soLoi} ô cần sửa</span>
           : luuDo && soEm ? <span className="text-xs text-late tabular-nums" title={luuDo.lyDo}>{luuDo.cau}</span> : null,
@@ -184,7 +190,8 @@ export function SuaCaLopPanel({ classId, onClose, onDone }: { classId: number; o
         : !d ? <Skeleton rows={6} />
         : !d.rows.length ? <p className="pt-3 text-sm text-slate-400">Lớp chưa có học viên đang học.</p>
         : (
-          <div className="space-y-3 pt-3">
+          /* OV-14a (F02): đang lưu thì khoá mọi ô (chữ, ngày, TVV, ↺) — lưu xong panel đóng, chữ gõ thêm lúc lưu sẽ mất. */
+          <fieldset disabled={busy} className="m-0 min-w-0 space-y-3 border-0 p-0 pt-3">
             {doiTarget && (
               <div className="max-w-xl">
                 <Truong nhan={`Lý do đổi Target · ${soDoiTarget} em`} batBuoc loi={lf.loiCua(loiForm, 'ly-do-target')}>
@@ -277,7 +284,7 @@ export function SuaCaLopPanel({ classId, onClose, onDone }: { classId: number; o
                 </tbody>
               </table>
             </div>
-          </div>
+          </fieldset>
         )}
       <ConfirmDialog open={hoiDong} onClose={() => setHoiDong(false)} onConfirm={() => { setHoiDong(false); onClose(); }} danger
         title="Bỏ những gì vừa sửa?" closeLabel="Tiếp tục sửa" confirmLabel="Bỏ thay đổi"

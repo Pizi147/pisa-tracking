@@ -1,6 +1,6 @@
 import { db, theoLo, tx } from '../db.ts';
 import {
-  CHI_SUA_THONG_TIN, CO_DIEM_SQL, chuTargetKck, docEmail, PERMISSIONS, TOI_DA_LUU_SUA_CA_LOP, cauMtSeDoi, coONhapLienHe, cotLuoiNhap, NHAN_LIEN_HE, type VanDeNhap,
+  CHI_SUA_THONG_TIN, CO_DIEM_SQL, chuTargetKck, docEmail, PERMISSIONS, LO_LUU_SUA_CA_LOP, TOI_DA_LUU_SUA_CA_LOP, chiaLoSuaCaLop, cauMtSeDoi, coONhapLienHe, cotLuoiNhap, NHAN_LIEN_HE, type VanDeNhap,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { chanGiaoDichNeuSapHetGio } from '../platform/hanGio.ts';
@@ -188,6 +188,12 @@ function kiemLo(p: Principal, classId: number, input: DauVao) {
     if (em && em.id !== x.s.id) x.issues.push({ row: i + 1, field: 'email', message: cauEmailTrung(em), muc: 'loi' });
     else if (truoc) x.issues.push({ row: i + 1, field: 'email', message: `Email trùng dòng ${truoc}`, muc: 'loi' });
     else trongLo.set(e, x.s.full_name);
+  }
+  /* OV-14a (F05): web lưu theo lô — nhóm em đổi email cho nhau phải chung một lô; nhóm quá một lô thì báo ngay ở xem trước. */
+  const emailCu = new Map(dong.map((x) => [x.s.id as number, x.s.email as string | null]));
+  const { qua } = chiaLoSuaCaLop(dong.map((x) => ({ studentId: x.s.id as number, email: x.hoSo.email })), (sid) => emailCu.get(sid) ?? null);
+  for (const [i, x] of dong.entries()) {
+    if (qua.includes(x.s.id)) x.issues.push({ row: i + 1, field: 'email', message: `${qua.length} em đổi email cho nhau — mỗi lần lưu tối đa ${LO_LUU_SUA_CA_LOP} em; lưu bớt rồi sửa tiếp.`, muc: 'loi' });
   }
 
   /* Cảnh báo MT sẽ dời (M6) — cùng câu với panel Thông tin HV (`cauMtSeDoi`). Lượt của mọi lộ trình đổi tuần đọc MỘT câu theo lô. */

@@ -53,6 +53,9 @@ export function invalidate(prefix: string) {
   listeners.forEach((l) => l(prefix));
 }
 
+/** OV-14a (F03): như `invalidate` nhưng KHÔNG gọi tải lại — chỉ để lời gọi đang bay của tiền tố này về sau bị bỏ (đã tự cập nhật tại chỗ). */
+export function boLoiGoiDangBay(prefix: string) { demXoa(prefix); }
+
 export function onInvalidate(fn: InvalidateListener) {
   listeners.add(fn);
   return () => { listeners.delete(fn); };
@@ -76,7 +79,10 @@ async function request<T>(method: string, path: string, body?: unknown, isForm =
   let payload: any = null;
   if (text) {
     /* HOTFIX-3: lỗi mà thân không phải JSON (vd 504 HTML của Netlify) → câu "Lỗi {status} — thử lại", không in nguyên HTML. */
-    try { payload = JSON.parse(text); } catch { payload = res.ok ? { error: text } : null; }
+    try { payload = JSON.parse(text); } catch {
+      /* OV-14a (F10): 2xx mà thân không phải JSON (trang HTML của Netlify / Vite) KHÔNG phải dữ liệu — báo lỗi, không đưa HTML ra màn. */
+      if (res.ok) throw new ApiError(res.status, t('Máy chủ trả dữ liệu lạ — thử lại.'));
+    }
   }
   if (!res.ok) {
     /* PR-EN: câu lỗi dịch theo khoá (câu có biến) hoặc theo chính câu Việt; chưa có bản Anh → câu Việt máy chủ gửi (không vỡ).

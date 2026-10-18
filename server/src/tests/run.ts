@@ -9420,6 +9420,9 @@ await runPrVn1Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, a
 // ==================================================================== OV-14b (sửa nhỏ sau rà UX 17/10: Đã thi · chờ kết quả, Đang SOS Toàn bộ, Quá hạn chấm theo khung)
 const { runPrOv14bTests } = await import('./prOv14b.tests.ts');
 await runPrOv14bTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== OV-14a (lưu chắc chắn, không mất chữ — audit 17/10 F01–F12)
+const { runPrOv14aTests } = await import('./prOv14a.tests.ts');
+await runPrOv14aTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`

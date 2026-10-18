@@ -50,11 +50,13 @@ export function ConfirmDialog({ open, onClose, onConfirm, title, body, confirmLa
   /** Tooltip nút xác nhận — nói vì sao đang mờ (ví dụ câu lỗi của ô lý do). */
   confirmTitle?: string;
 }) {
+  /* OV-14a (F11): đang chạy thì Esc / bấm nền / ✕ không đóng — hộp là chỗ duy nhất hiện lỗi của thao tác. */
+  const dong = busy ? () => {} : onClose;
   return (
-    <Modal open={open} onClose={onClose} title={title} width="max-w-md" z={z}
+    <Modal open={open} onClose={dong} title={title} width="max-w-md" z={z}
       footer={
         <>
-          <button className="btn min-h-[44px] sm:min-h-0" onClick={onClose} disabled={busy}>{closeLabel}</button>
+          <button className="btn min-h-[44px] sm:min-h-0" onClick={dong} disabled={busy}>{closeLabel}</button>
           <button className={`btn min-h-[44px] sm:min-h-0 ${danger ? 'btn-danger' : 'btn-primary'}`} onClick={onConfirm} disabled={busy || confirmDisabled} title={confirmDisabled ? confirmTitle : undefined}>
             {busy ? t('Đang xử lý…') : confirmLabel}
           </button>

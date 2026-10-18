@@ -12,6 +12,7 @@ File này **thay** cho: `plan.md` cũ (mục 0–24), `PROMPT_SESSION_CODE.md`, 
 
 | File chi tiết | Dùng cho |
 |---|---|
+| `docs/superpowers/specs/2026-10-18-ov14-thiet-ke-tong-the-design.md` | **OV-14 thiết kế tổng thể** (18/10, chờ duyệt): C01–C31 giữ / thay / hỏi, Chấm Speaking, bản đồ web, phân kỳ — nguồn `specs/nguon/2026-10-18-ov14-prompt-tong-hop.md` |
 | `docs/superpowers/specs/2026-10-17-ov14-danh-gia-ux.md` | **OV-14** (overhaul UX 17/10): rà docx 16/10 + audit 17/10 + 3 góp ý chủ SP, xác minh mã, impeccable 27/40 · ui-ux-pro-max 25/40, đường lên ≥ 35/40, 12 ý tưởng, thứ tự |
 | `thiet-ke/mockup-ov14-{1,2,3}-*-2026-10-17.html` | Mockup **OV-14** — **chờ chủ SP duyệt**: 1 hệ thiết kế v2 + Học viên & Lớp · 2 lưới điểm + Công việc · 3 Tổng quan QL + Báo cáo tuần + Phân tích |
 | `docs/superpowers/specs/2026-10-14-ov12-sos-workflow-design.md` | **OV-12** (prompt overhaul chủ SP 14/10): nhận xét MT = nguyên nhân SOS, hồ sơ MT Case, Góp ý hàng tuần, panel số liệu, Học viên & Lớp ba góc nhìn, hạn 2 tuần, quyền — hiện trạng, quyết định, 7 PR, kiểm chứng |
@@ -229,7 +230,19 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 - **Chủ SP chốt 17/10:** sáng / tối **theo máy** (đổi DESIGN.md); ý tưởng vào mockup: hàng đợi việc GV · lưới điểm mới · Công việc một danh sách · Tổng quan QL giao ban · thanh lọc cố định · Báo cáo tuần · "Vì sao?" (không Ctrl+K); gói sửa ngay chạy song song.
   **Planning tự quyết** (đúng 3 góp ý chủ SP, validator đạt): SOS thang 3 bậc vàng viền → cam nền nhạt → đỏ nền đặc, "quá hạn" chỉ chữ cam + ⚠; hàng đã thi nền xanh cả hàng + vạch + chip (hôm sau ngày thi → chọn Bước tiếp), "đang chọn" = viền khung; W to, W1 · W2 nhỏ mờ (lưới nhập: W1 / W2 ô rõ, W đậm hơn).
 - **Đang chạy:** OV-14a (lưu chắc chắn F01–F12, session `ov14a-luu-chac`) · OV-14b (12 sửa nhỏ giao diện: nhãn Đã thi QL/GV, Đang SOS mặc định Toàn bộ, 58/53, ⚠, emoji, ô 16 px ở 375…, session `ov14b-sua-nho`).
-- **Chờ chủ SP:** duyệt 3 mockup (phương án + câu hỏi ở cuối mỗi file) → planning viết đặc tả + chia PR (hệ thiết kế v2 → lưới điểm → Công việc / Tổng quan → Phân tích / Báo cáo tuần).
+- **Chủ SP trả lời mockup 18/10:**
+  - Mockup 1: SOS phương án A (vàng → cam → đỏ) **nhưng cả ba dạng VIỀN, không nền đặc**. Phần còn lại của khuyến nghị (cỡ chữ mới 12/13, thanh lọc A, cột OVR·L·R·W·S khi mở lớp FT) — planning hiểu là duyệt, xác nhận lại khi chủ SP góp ý.
+    Số đo viền cả ba (chữ = viền): tối `#f7d44c · #ff8a3d · #ff4d6d` ΔE 14.4 (ngưỡng 15) / mù màu 9.6; sáng `#8a5a00 · #c2410c · #be123c` ΔE 8.3 / mù màu 0.9 — KHÔNG ĐẠT ở sáng → khi sửa mockup thêm khác biệt không dựa vào màu (viền dày dần 1 → 1.5 → 2.5 px, SOS 3 viền đôi hoặc nền rất nhạt) và hỏi chủ SP.
+  - Mockup 2: duyệt khuyến nghị (ô trống khung rỗng · GV vào thẳng Công việc · lưu xong tự sang việc kế, thay luật OV-5a · dán Excel vào MT thành nháp rồi ghi nhận xét · bỏ tab Điểm theo lớp khi Tổng quan QL có cột "Chưa điểm").
+  - Mockup 3: duyệt khuyến nghị (Tổng quan A 3 khối · "Case chưa chốt PA · trong đó chưa lập PA" · "21 HV / 34 Case" xếp chồng · Phân tích mục riêng 2 tầng · Báo cáo tuần mở tuần vừa qua).
+  - **Chủ SP sẽ xem lại và góp ý sau** — CHƯA viết đặc tả / chia PR tới khi chủ SP nói.
+- **18/10: prompt tổng hợp chủ SP + GPT (C01–C31)** → bản thiết kế tổng thể `docs/superpowers/specs/2026-10-18-ov14-thiet-ke-tong-the-design.md`
+  (bảng quyết định, bản đồ web, mẫu dùng chung, Rà soát lịch thi phương án D, phân kỳ OV-14c + OV-15a…g) — **chờ chủ SP duyệt**.
+  **Gấp — chấm chéo Speaking** (GV nước ngoài không thấy bài): `lopFtChoGvSpeaking` chỉ tính người có phân công S ở lớp FT · URL `loai=thuong`
+  giữ khung rỗng · `canChamCheo` chỉ sau tuần thi · đang xem tuần cũ → thiết kế "Chấm Speaking" (OV-14c).
+  **Chủ SP chốt 18/10:** GV Speaking = có kỹ năng Speaking trong hồ sơ (hoặc đang dạy S lớp FT) · phạm vi = mọi lớp FT ở chi nhánh tài khoản GV
+  được cấp · bài hiện từ thứ Hai tuần thi. C14: Progress / Final lớp thường không hiện ở Test › Lịch Test / chấm Test → OV-14c tái hiện.
+  OV-14a #448 đã merge (chưa deploy). OV-14b dừng giữa chừng vì hết lượt dùng tuần — tiếp khi có lượt.
 - Ghi nhớ: Rulebook §20.6 (T58 "lớp thường không SOS") đã bị thay bởi đặc tả OV-12 mục 7.2 (14/10: Progress lớp thường ghi nhãn SOS theo số môn trượt) — sửa Rulebook khi viết đặc tả OV-14.
 - **Chủ SP 16/10 (OV-13p):** TVV / CX được TẠO LỚP (`class.create` theo phạm vi grant, CX toàn hệ thống) và THÊM HV (quyền hẹp mới `student.add` thay `student.edit` ở intake); không mở chuyển lớp / lưu trữ / lộ trình / phân công GV; không bước duyệt.
 - **UX-1 (đánh giá UX 16/10):** ô Tổng quan "Case chờ duyệt" đổi **"Case chưa chốt PA"** (Case mở chưa có PA đang theo dõi — kể cả PA chờ xác nhận / duyệt); "Case chưa có PA" giữ cho cột bảng chi nhánh (chưa có PA nào); "Chờ duyệt" chỉ còn là hộp thẻ QL. Bảng chi nhánh thêm hàng "Lớp đã kết thúc" (Σ hàng = Tất cả), "—" khi chưa có đợt Test đến lịch, "SOS hiện tại" / "Đang SOS · tuần".
@@ -446,6 +459,7 @@ Nhật ký chi tiết tới 04/10 ở `git show 575e898d:plan.md` (mục 14) và
 | Ngày | PR / nhánh · model | Kết quả |
 |---|---|---|
 | 18/10/2026 | OV-14b (Opus 5.5) · `claude/ov14b-sua-nho-giao-dien-fed174` | Sửa nhỏ sau rà UX 17/10: "Đã thi · chờ kết quả" ở bảng lớp QL / GV + hồ sơ lớp FT + chip lọc (cùng `trangThaiSauThi`); Đang SOS mặc định Toàn bộ; Lịch Test "Quá hạn chấm" theo khung; ⚠ việc quá hạn; panel nhập điểm cuộn tới cột việc; 375 (ô 16px, nút đoạn xuống dòng, đầu nhóm 44px). Kiểm `prOv14b` |
+| 18/10/2026 | OV-14a (Opus 5.5) · `claude/ov14a-luu-chac-chan-48bb3d` | Lưu chắc chắn (audit 17/10 F01–F07, F09–F12): Góp ý gõ khi đang lưu không mất / không báo Đã lưu sai, quên bản nhớ tạm sau lưu, ô bị gỡ tự lưu + toast Mở lại giữ chữ; Sửa cả lớp khoá ô khi lưu, xem trước cũ bỏ, đổi email chéo chung lô; hỏi đóng một lần; hộp đang chạy không đóng; 401 → tải lại phiên; 200 HTML = lỗi. Kiểm `prOv14a` |
 | 17/10/2026 | EN-e (Opus 5.5) · `claude/en-e-missing-english-text-630vn6` | Chữ EN sót: thứ theo ngôn ngữ (`THU_NGAN`), Đang SOS + panel một em + trang TVV/CX dịch, `mocChu` qua `dich`, một việc một tên ("Kết quả PA", "Meeting CX/GĐCN (sau Mock)"); do-khung thêm Đang SOS 4 vai + panel một em. Check xanh |
 | 17/10/2026 | OV-13f (Opus 5.5) · `claude/ov13f-hide-id-email-identifier-3kyk91` | Email HV không trùng (chặn ở 4 đường ghi, câu có tên + lớp), trống → việc "Thiếu email"; ẩn mã HV khỏi mọi màn (tìm theo mã vẫn ra); Excel bỏ cột Mã, Email cột 2; `npm run kiem-truoc-ov13f` (chỉ đọc). |
 | 17/10/2026 | PR-SOTAY-2 (Opus 5.5) · `pr-sotay-2` | 10 sổ tay PDF theo vai (GV, GV nước ngoài EN, QL, TVV & CX, Admin; MINI + FULL) ở `docs/so-tay/ban-2026-10/`, chữ từ Hướng dẫn trên web + ảnh app khoanh số (1440 tối, 375 sáng, EN); phụ lục Nhập từ Excel / làm cả lô; `dung.mjs` kiểm ảnh, MINI ≤ 4 trang, chữ nút có trên app, chữ lỗi thời. Sổ 02/10 → `docs/so-tay/cu/` |
