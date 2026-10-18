@@ -236,6 +236,7 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
   - Mockup 2: duyệt khuyến nghị (ô trống khung rỗng · GV vào thẳng Công việc · lưu xong tự sang việc kế, thay luật OV-5a · dán Excel vào MT thành nháp rồi ghi nhận xét · bỏ tab Điểm theo lớp khi Tổng quan QL có cột "Chưa điểm").
   - Mockup 3: duyệt khuyến nghị (Tổng quan A 3 khối · "Case chưa chốt PA · trong đó chưa lập PA" · "21 HV / 34 Case" xếp chồng · Phân tích mục riêng 2 tầng · Báo cáo tuần mở tuần vừa qua).
   - **Chủ SP sẽ xem lại và góp ý sau** — CHƯA viết đặc tả / chia PR tới khi chủ SP nói.
+- **19/10 Turso Top Queries (chủ SP gửi):** 6 câu đầu ≈ 2,5M dòng / kỳ đo — `lich_su = 1` đếm điểm MT lịch sử 5,5K × 157 lần (857K), Lịch Test lượt lớp thường 6,8K × 96 (655K), `attempt_skills … IN (…)` 5,3K × 75, `SELECT a.*` lượt theo chi nhánh 36K × 4 + 9,5K × 31, lượt + lộ trình theo em 4,1K × 38 → **TD7** (thẻ trong chat planning).
 - **18/10: prompt tổng hợp chủ SP + GPT (C01–C31)** → bản thiết kế tổng thể `docs/superpowers/specs/2026-10-18-ov14-thiet-ke-tong-the-design.md`
   (bảng quyết định, bản đồ web, mẫu dùng chung, Rà soát lịch thi phương án D, phân kỳ OV-14c + OV-15a…g) — **chờ chủ SP duyệt**.
   **Gấp — chấm chéo Speaking** (GV nước ngoài không thấy bài): `lopFtChoGvSpeaking` chỉ tính người có phân công S ở lớp FT · URL `loai=thuong`
@@ -375,6 +376,7 @@ test-driven-development (đỏ trước), systematic-debugging khi lỗi lạ, b
 npm run check MỘT lần cuối → bấm thử MỘT lần chỉ màn PR chạm (1440 tối + 375 sáng, vai PR chạm), ảnh đính PR; PR chỉ máy chủ
 không cần ảnh → /impeccable audit (nếu có giao diện) → /ponytail-review → mở PR vào main, KHÔNG merge. Mô tả PR ≤ 30 dòng.
 Xong: [x] kế hoạch, một dòng mục 11, CODE_MAP.md nếu thêm/xoá file. Cổng PORT/WEB_PORT riêng, không 4000/5173.
+**Dòng đọc Turso (chủ SP 19/10, mọi PR từ nay):** đường API mới / đổi phải nạp ít nhất có thể — không `SELECT a.*` khi chỉ cần vài cột, không nạp mọi lượt khi màn chỉ cần lượt gần nhất, gom câu dùng chung trong một request, cột lọc mới có chỉ mục; mô tả PR ghi số câu + dòng đọc trước → sau của đường chạm (log `[cham]` / `tocDo.run`).
 PR đổi màn nào sửa mục Hướng dẫn của màn đó (`shared/huongDan/<vai>.ts`, Theo màn + bước của Việc hằng tuần); đổi / xoá phần tử có
 `data-hd` thì sửa "Chỉ cho tôi" trỏ tới — phép kiểm HD-NAV / HD-CHI (`prHd.tests.ts`) đỏ khi thiếu.
 ```
