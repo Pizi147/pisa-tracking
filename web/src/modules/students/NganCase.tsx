@@ -270,6 +270,8 @@ export function NganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose
             : data.systemCloseReason === 'overall_dat' ? t('Hệ thống đóng — Overall đã đạt')
             : t('Hệ thống đóng · {lyDoHeThong}', { lyDoHeThong: dich(data.systemCloseLabel) })}</span>
         : null;
+  /* OV-14b: nút chính là "Xác nhận PA" → thẻ PA đó trong thân không lặp nút. */
+  const paNutChinh = data.viewer.canEdit && canDong && v?.chu.startsWith('Xác nhận PA') && v.paId ? v.paId : null;
   const nutChinh = (() => {
     const nut = (chu: string, lam: () => void, title?: string) => <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" title={title} onClick={lam}>{chu}</button>;
     if (v?.chu === 'Xác nhận Case') return data.viewer.coTheXacNhanCase && canDong ? nut(t('Xác nhận Case'), () => setView({ loai: 'xac-nhan' })) : undefined;
@@ -333,7 +335,7 @@ export function NganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose
         {data.yeuCauCase && data.viewer.canApprove && (
           <div className="pt-3"><TheYeuCau gon yc={data.yeuCauCase} onXong={() => { reload(); onChanged?.(); }} /></div>
         )}
-        <ThanCase data={data} onViec={setView} onDoi={() => { reload(); onChanged?.(); }} />
+        <ThanCase data={data} onViec={setView} onDoi={() => { reload(); onChanged?.(); }} paNutChinh={paNutChinh} />
       </div>
     </KhungPanel>
   );

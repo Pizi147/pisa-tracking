@@ -253,7 +253,8 @@ export function TongHopTestSos({ branchId, ct, tg, classId }: {
             <table className="w-full text-sm" style={{ tableLayout: 'fixed' }}>
               <colgroup>
                 {/* PR-HK2: bảng đủ cột (FT 17 · lớp thường 18) vừa 1440 (≤ 1398 px) — đầu cột hai dòng; ô "HV - Case" rộng hơn. Điện thoại: cột Tuần đứng yên nhỏ lại, nhường chỗ cho số. */}
-                <col className="w-[208px] max-sm:w-[132px]" />
+                {/* OV-14b: lớp thường 22 cột — cột đầu 158 px để cả bảng ≤ 1398 px (208 thì 1469/1440, trang trượt ngang). */}
+                <col className={`${ct === 'thuong' ? 'w-[158px]' : 'w-[208px]'} max-sm:w-[132px]`} />
                 {cols.map((c) => <col key={c.khoa} style={{ width: rongCot(c) }} />)}
               </colgroup>
               <thead>

@@ -47,7 +47,7 @@ export async function runPrHvlTests(t: YThucTestKit) {
   // ------------------------------------------------------------------ Task 1 · chip, badge
 
   check('PR-HVL (1) · K2-02/03 chip Cần làm · Chờ duyệt · Đang SOS · Thiếu thông tin; link cũ không vỡ; demLoc một hàm đếm', () => {
-    eq(d.LOC_HOC_VIEN, ['tat-ca', 'can-lam', 'qua-han', 'cho-duyet', 'sos', 'thieu_tt'], 'Khoá chip (PR-S4F thêm qua-han)');
+    eq(d.LOC_HOC_VIEN, ['tat-ca', 'can-lam', 'qua-han', 'cho-duyet', 'sos', 'thieu_tt', 'da-thi'], 'Khoá chip (PR-S4F thêm qua-han, OV-14b thêm da-thi)');
     for (const v of ['case_working', 'case_no_plan', 'case_overdue']) eq(d.docThamSoLoc(v), { loc: 'can-lam' }, `view=${v}`);
     eq(d.docThamSoLoc('sos_open'), { loc: 'sos' }, 'sos_open');
     eq(d.docThamSoLoc('cho-duyet'), { loc: 'cho-duyet' }, 'cho-duyet');
@@ -55,8 +55,8 @@ export async function runPrHvlTests(t: YThucTestKit) {
       { id: 1, loc: ['tat-ca', 'sos', 'can-lam'], khung: 'ft' }, { id: 2, loc: ['tat-ca', 'cho-duyet'], khung: 'thuong' },
       { id: 3, loc: ['tat-ca', 'can-lam', 'thieu_tt'], khung: 'thuong' },
     ];
-    eq(d.demLoc(hv, 'tat-ca'), { 'tat-ca': 3, 'can-lam': 2, 'qua-han': 0, 'cho-duyet': 1, sos: 1, thieu_tt: 1 }, 'Đếm cả hai khung');
-    eq(d.demLoc(hv, 'thuong'), { 'tat-ca': 2, 'can-lam': 1, 'qua-han': 0, 'cho-duyet': 1, sos: 0, thieu_tt: 1 }, 'Đếm lớp thường');
+    eq(d.demLoc(hv, 'tat-ca'), { 'tat-ca': 3, 'can-lam': 2, 'qua-han': 0, 'cho-duyet': 1, sos: 1, thieu_tt: 1, 'da-thi': 0 }, 'Đếm cả hai khung');
+    eq(d.demLoc(hv, 'thuong'), { 'tat-ca': 2, 'can-lam': 1, 'qua-han': 0, 'cho-duyet': 1, sos: 0, thieu_tt: 1, 'da-thi': 0 }, 'Đếm lớp thường');
     eq(d.demLoc(hv, 'ft')['tat-ca'], 1, 'Đếm Fast Track');
   });
 
@@ -68,7 +68,7 @@ export async function runPrHvlTests(t: YThucTestKit) {
     eq([...ql.hien, ...ql.an].map((x: any) => x.key), ['cho-duyet', 'xep-lop', 'cham', 'qua-han'], 'Thứ tự Quản lý');
     eq([ql.hien.length, ql.an.length], [2, 2], 'Hiện 2, còn lại "+n"');
     const tat = [...ql.hien, ...ql.an];
-    eq(tat.find((x: any) => x.key === 'qua-han'), { key: 'qua-han', nhan: '4 việc quá hạn', tone: 'danger', title: tat.find((x: any) => x.key === 'qua-han').title }, 'qua-han');
+    eq(tat.find((x: any) => x.key === 'qua-han'), { key: 'qua-han', nhan: '⚠ 4 việc quá hạn', tone: 'danger', title: tat.find((x: any) => x.key === 'qua-han').title }, 'qua-han');
     eq(tat.find((x: any) => x.key === 'cho-duyet').tone, 'wait', 'cho-duyet tone');
     eq(tat.find((x: any) => x.key === 'xep-lop').nhan, '3 HV chưa chốt lộ trình', 'xep-lop khi lớp chưa hết khoá (PR-Dọn Câu 2 = B)');
     const het = d.badgeLop({ ...goc, vai: 'gv', needsPlacement: true, canXepLop: 5 });

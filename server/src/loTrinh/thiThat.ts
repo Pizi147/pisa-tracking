@@ -231,6 +231,22 @@ export function datHanSauThi(p: Principal, cycleId: number, input: { han?: unkno
   return sauThiCuaLoTrinh(cycleId, homNay);
 }
 
+/**
+ * OV-14b: nhãn "Đã thi · chờ kết quả" / "chờ bước tiếp" cho cả lô em (bảng lớp QL / GV, hồ sơ lớp FT) — cùng lọc + cùng hàm với `sauThiCuaEm`, không nút.
+ */
+export type NhanSauThiEm = Pick<TrangThaiSauThi, 'giaiDoan' | 'han' | 'quaHan' | 'daGiaHan'>;
+export function sauThiTheoEm(ids: number[], today = demoToday()): Map<number, NhanSauThiEm> {
+  const out = new Map<number, NhanSauThiEm>();
+  theoLo(ids, (lo, ph) => {
+    for (const c of db().prepare(`SELECT c.student_id, ${COT_SAU_THI} FROM learning_cycles c JOIN students s ON s.id = c.student_id LEFT JOIN report_periods ep ON ep.id = c.exam_period_id
+       WHERE c.student_id IN (${ph}) AND c.route IS NOT NULL AND ${LO_TRINH_MOI_NHAT}`).all(...lo) as any[]) {
+      const st = trangThaiSauThi(c, today);
+      if (st.giaiDoan === 'da_thi_cho_kq' || st.giaiDoan === 'cho_buoc_tiep') out.set(c.student_id, { giaiDoan: st.giaiDoan, han: st.han, quaHan: st.quaHan, daGiaHan: st.daGiaHan });
+    }
+  });
+  return out;
+}
+
 export type SauThiEm = TrangThaiSauThi & { cycleId: number; coTheNhap: boolean; coTheChon: boolean; coTheGiaHan: boolean };
 /**
  * Lộ trình FT MỚI NHẤT của em đang "Đã thi · chờ kết quả" / "Đã xong · chờ bước tiếp" + nút người xem bấm được — panel một em (Học viên & Lớp) và đầu hồ sơ.

@@ -84,7 +84,7 @@ export async function runHocVienLopTests(t: YThucTestKit) {
 
   check('PR-Qa · Q4 chip lọc: nhãn THUAT_NGU, khoá URL cũ vẫn mở đúng chip, missing_scores sang Test › Lịch Test', () => {
     eq(d.LOC_HOC_VIEN.map((k: string) => d.LOC_HOC_VIEN_NHAN[k].nhan),
-      ['Tất cả', 'Cần làm', 'Quá hạn', 'Chờ duyệt', 'Đang SOS', 'Thiếu thông tin'], 'Nhãn chip');
+      ['Tất cả', 'Cần làm', 'Quá hạn', 'Chờ duyệt', 'Đang SOS', 'Thiếu thông tin', 'Đã thi · chờ kết quả'], 'Nhãn chip');
     eq(d.docThamSoLoc(null), { loc: 'tat-ca' }, 'Không có view');
     eq(d.docThamSoLoc('classes'), { loc: 'tat-ca' }, 'view=classes cũ');
     eq(d.docThamSoLoc('sos_open'), { loc: 'sos' }, 'signals.ts dùng sos_open');
@@ -146,7 +146,7 @@ export async function runHocVienLopTests(t: YThucTestKit) {
     eq(ql.hien.map((x: any) => x.nhan), ['2 chờ duyệt', '4 HV cần xếp lớp tiếp'], 'B4: Quản lý — chờ duyệt, cần xếp lớp trước');
     eq(ql.an.map((x: any) => x.key), ['cham', 'qua-han', 'thieu-gv', 'chang', 'thieu-tt'], 'Phần gom (Quản lý)');
     const gv = d.badgeLop({ ...goc, vai: 'gv' });
-    eq(gv.hien.map((x: any) => x.nhan), ['3 bài chờ chấm', '1 việc quá hạn'], 'B4: GV — việc của mình trước');
+    eq(gv.hien.map((x: any) => x.nhan), ['3 bài chờ chấm', '⚠ 1 việc quá hạn'], 'B4: GV — việc của mình trước');
     eq(gv.an.map((x: any) => x.key), ['chang', 'thieu-gv', 'thieu-tt', 'xep-lop', 'cho-duyet'], 'Phần gom (GV)');
     eq([...ql.hien, ...ql.an].find((x: any) => x.key === 'qua-han').tone, 'danger', 'qua-han tone danger');
     eq([...ql.hien, ...ql.an].find((x: any) => x.key === 'cho-duyet').tone, 'wait', 'cho-duyet tone wait');

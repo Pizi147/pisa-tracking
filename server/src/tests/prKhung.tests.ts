@@ -60,9 +60,9 @@ export async function runPrKhungTests(t: Pick<YThucTestKit, 'check' | 'assert'>)
     assert(sai.length === 0, `cuộn lồng: ${sai.join(', ')}`);
   });
 
-  check('K6 · điện thoại: BoLocDoan và HangTab một hàng vuốt ngang có mép mờ (chủ sản phẩm 06/10, Q2 = B)', () => {
-    assert(/max-sm:\[mask-image:/.test(than(ui, 'BoLocDoan')), 'BoLocDoan thiếu mép mờ max-sm');
-    assert(!/max-sm:flex-wrap/.test(than(ui, 'BoLocDoan')), 'BoLocDoan không xuống dòng (Q2 = B)');
+  /* OV-14b (rà UX 17/10, chủ SP chọn gói sửa nhỏ): BoLocDoan điện thoại xuống dòng — nút cuối không còn bị cắt; HangTab giữ vuốt ngang. */
+  check('K6 · điện thoại: BoLocDoan xuống dòng (OV-14b), HangTab một hàng vuốt ngang có mép mờ (chủ sản phẩm 06/10, Q2 = B)', () => {
+    assert(/max-sm:flex-wrap/.test(than(ui, 'BoLocDoan')) && !/max-sm:\[mask-image:/.test(than(ui, 'BoLocDoan')), 'BoLocDoan điện thoại phải xuống dòng (OV-14b)');
     assert(/max-sm:\[mask-image:/.test(doc('web/src/ui/HangTab.tsx')), 'HangTab thiếu mép mờ max-sm');
   });
 

@@ -74,7 +74,7 @@ export async function runPrLmTests(t: YThucTestKit) {
     const b = d.chuDoiVang({ weekStart: '2026-09-21', doiTu: 'W2 SEP', absenceMoveCount: 2 }, '2026-10-01');
     assert(b.chu === 'vắng · dời sang W4 SEP · lần 2', JSON.stringify(b));
     const nx = nguon('web/src/modules/fasttrack/NhanXet.tsx');
-    assert(!/"Không bắt buộc"/.test(nx) && /placeholder=\{t\('Ví dụ:/.test(nx), 'chữ mẫu nhận xét');
+    assert(!/"Không bắt buộc"/.test(nx) && /placeholder=\{viDuNhanXet\(kyNang\)\}/.test(nx) && /t\('Ví dụ:/.test(nx), 'chữ mẫu nhận xét (OV-14b: theo kỹ năng)');
     assert(/chuDoiVang\(/.test(nguon('web/src/modules/fasttrack/ODiemLon.tsx')), 'ODiemLon chưa dùng chuDoiVang');
   });
 

@@ -201,7 +201,7 @@ export async function runPrOv13bTests(t: YThucTestKit) {
       const dong = ds.filter((v: any) => v.classId === id && v.quaHan).length;
       const badge = dm.badgeLop({ vai: 'ql', needsPlacement: false, canXepLop: 0, missingSkills: [], soBaiChoCham: 0, phase: 'running', missingCount: 0, soViecQuaHan: n.viec });
       const qh = [...badge.hien, ...badge.an].find((x: any) => x.key === 'qua-han');
-      assert(n.viec === dong && qh?.nhan === `${dong} việc quá hạn`, `lớp ${id}: badge "${qh?.nhan}" ≠ ${dong} dòng`);
+      assert(n.viec === dong && qh?.nhan === `⚠ ${dong} việc quá hạn`, `lớp ${id}: badge "${qh?.nhan}" ≠ ${dong} dòng`);
       assert(n.em <= n.viec && n.em === new Set(ds.filter((v: any) => v.classId === id && v.quaHan && v.studentId !== null).map((v: any) => v.studentId)).size, 'số em cùng nguồn');
     }
   });

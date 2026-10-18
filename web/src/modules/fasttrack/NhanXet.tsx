@@ -12,6 +12,15 @@ import { NHAN_XET_MT_TOI_THIEU, NHAN_XET_TOI_DA, issueLabel, issuesForTopic } fr
 import { NutChon } from '../../ui/ui.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 
+/** OV-14b: chữ gợi ý ô nhận xét đúng kỹ năng (hồ sơ Mock, Ghi nhận xét của Case MT); không rõ kỹ năng → câu chung. */
+export function viDuNhanXet(kyNang: string | null | undefined): string {
+  if (kyNang === 'listening') return t('Ví dụ: Nghe phần 3 còn chậm, cần luyện thêm dạng điền bảng');
+  if (kyNang === 'reading') return t('Ví dụ: Sai nhiều câu True/False/Not Given, đọc chậm passage 3');
+  if (kyNang?.startsWith('writing')) return t('Ví dụ: Task 2 thiếu ví dụ cụ thể, câu phức còn sai ngữ pháp');
+  if (kyNang === 'speaking') return t('Ví dụ: Part 2 chưa nói đủ 2 phút, phát âm đuôi -s còn sai');
+  return t('Ví dụ: Tiến bộ ở Reading, cần luyện thêm Speaking Part 2');
+}
+
 /** Đếm ký tự chỉ hiện khi đã gần trần (> 800) — không làm rối lúc gõ vài câu. */
 function Dem({ n }: { n: number }) {
   if (n <= 800) return null;
@@ -22,8 +31,10 @@ function Dem({ n }: { n: number }) {
  * Ô nhận xét tại chỗ của hồ sơ Mock: tự cao theo chữ, lưu khi rời ô hoặc Ctrl+Enter, trạng thái lưu nhỏ bên phải nhãn.
  * Lỗi mạng: giữ chữ đã gõ, hiện "Chưa lưu — thử lại" (bấm để gửi lại).
  */
-export function ONhanXet({ nhan, phu, giaTri, onLuu, batBuoc = false }: {
+export function ONhanXet({ nhan, phu, giaTri, onLuu, batBuoc = false, kyNang = null }: {
   nhan: string; phu?: string | null; giaTri: string | null; onLuu: (v: string | null) => Promise<boolean>;
+  /** OV-14b: kỹ năng của ô — chữ gợi ý đúng kỹ năng (`viDuNhanXet`). */
+  kyNang?: string | null;
   /** OV-12b: ô MT đã có điểm — xoá / dưới 10 ký tự thì không lưu, viền đỏ + "Cần nhận xét — chưa lưu" (bản cũ giữ trên máy chủ). */
   batBuoc?: boolean;
 }) {
@@ -65,7 +76,7 @@ export function ONhanXet({ nhan, phu, giaTri, onLuu, batBuoc = false }: {
       </span>
       <textarea ref={o} className="field mt-1 w-full resize-none text-sm leading-relaxed" rows={2} maxLength={NHAN_XET_TOI_DA}
         style={tt === 'thieu' ? { borderColor: 'rgb(var(--bad-rgb))' } : undefined} aria-invalid={tt === 'thieu' || undefined} aria-required={batBuoc || undefined}
-        value={nhap} placeholder={t('Ví dụ: Nghe phần 3 còn chậm, cần luyện thêm dạng điền bảng')}
+        value={nhap} placeholder={viDuNhanXet(kyNang)}
         onChange={(e) => { sua.current = true; setNhap(e.target.value); if (tt !== 'dang') setTt('idle'); }}
         onBlur={() => void luu()}
         onKeyDown={(e) => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); void luu(); } }} />

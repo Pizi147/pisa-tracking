@@ -56,7 +56,7 @@ export async function runPrUx1Tests(t: YThucTestKit) {
     eq(d.demLoc([
       { id: 1, loc: ['tat-ca', 'sos'], khung: 'ft' }, { id: 1, loc: ['tat-ca', 'sos'], khung: 'ft' },
       { id: 2, loc: ['tat-ca'], khung: 'ft', ketThuc: true },
-    ], 'tat-ca'), { 'tat-ca': 1, 'can-lam': 0, 'qua-han': 0, 'cho-duyet': 0, sos: 1, thieu_tt: 0 }, 'demLoc');
+    ], 'tat-ca'), { 'tat-ca': 1, 'can-lam': 0, 'qua-han': 0, 'cho-duyet': 0, sos: 1, thieu_tt: 0, 'da-thi': 0 }, 'demLoc');
     const r = hvl.danhSachHocVienLop(P.admin, {});
     const dangHoc = new Set(r.hocVien.filter((h: any) => !h.ketThuc).map((h: any) => h.id));
     eq(r.dem['tat-ca'], dangHoc.size, 'dem Tất cả = số em đang học khác nhau');

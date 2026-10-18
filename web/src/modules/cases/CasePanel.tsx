@@ -175,7 +175,11 @@ export function CasePanel({ caseId }: { caseId: number }) {
  * THÂN của Case (PR-PA §8, mockup pa-dong-bo §9): ba THẺ Vấn đề · Phương án (dòng PA mang `data-pa-id` cho Hành trình cuộn tới; Lịch sử
  * kết quả thu gọn ở cuối thẻ) · Bằng chứng. Không vỏ, không chân — vỏ là `KhungPanel` của `NganCase` hoặc trang riêng.
  */
-export function ThanCase({ data, onViec, onDoi }: { data: CaseDetail; onViec: (v: ViewCase) => void; /** OV-13b: đã lưu tại chỗ (ghi nhanh, chọn người dạy, rút) — nơi gọi tải lại. */ onDoi?: () => void }) {
+export function ThanCase({ data, onViec, onDoi, paNutChinh = null }: {
+  data: CaseDetail; onViec: (v: ViewCase) => void; /** OV-13b: đã lưu tại chỗ (ghi nhanh, chọn người dạy, rút) — nơi gọi tải lại. */ onDoi?: () => void;
+  /** OV-14b: PA mà nút chính ở chân panel đã là "Xác nhận PA" — thẻ PA đó không lặp nút. */
+  paNutChinh?: number | null;
+}) {
   const { homNay, ngan } = useNgayNghiepVu();
   const primary = data.issues.find((i) => i.role === 'primary') ?? null;
   const secondary = data.issues.filter((i) => i.role === 'secondary');
@@ -236,14 +240,14 @@ export function ThanCase({ data, onViec, onDoi }: { data: CaseDetail; onViec: (v
           <>
             {paMo.length > 0 && (
               <ul className="m-0 flex list-none flex-col gap-2 p-0">
-                {paMo.map((iv) => <TheKhoiPa key={iv.id} iv={iv} data={data} homNay={homNay} ngan={ngan} onViec={onViec} onDoi={onDoi} />)}
+                {paMo.map((iv) => <TheKhoiPa key={iv.id} iv={iv} data={data} homNay={homNay} ngan={ngan} onViec={onViec} onDoi={onDoi} anXacNhan={iv.id === paNutChinh} />)}
               </ul>
             )}
             {paKhep.length > 0 && (
               <details open={paMo.length === 0}>
                 <summary className="flex min-h-[44px] cursor-pointer items-center text-[12.5px] text-slate-400 sm:min-h-0">{t('Lịch sử PA · {n}', { n: paKhep.length })}</summary>
                 <ul className="m-0 mt-2 flex list-none flex-col gap-2 p-0">
-                  {paKhep.map((iv) => <TheKhoiPa key={iv.id} iv={iv} data={data} homNay={homNay} ngan={ngan} onViec={onViec} onDoi={onDoi} />)}
+                  {paKhep.map((iv) => <TheKhoiPa key={iv.id} iv={iv} data={data} homNay={homNay} ngan={ngan} onViec={onViec} onDoi={onDoi} anXacNhan={iv.id === paNutChinh} />)}
                 </ul>
               </details>
             )}
@@ -299,9 +303,9 @@ function The({ tieuDe, dem, luat, children }: { tieuDe: string; dem?: number; lu
  * MỘT DÒNG PA (mockup §8, một mẫu cho mọi loại): tên loại + khoá quy chế + trạng thái · ⋯ (Sửa PA · Xoá PA) · nội dung ·
  * "Dạy X / Thực hiện X · Từ W1 OCT · mốc" · vạch buổi (PA có Số buổi) · chân gạch đứt "Kết quả · hạn T2 13/10" + nút · Nhật ký PA (n).
  */
-function TheKhoiPa({ iv, data, homNay, ngan, onViec, onDoi, anDau = false }: {
+function TheKhoiPa({ iv, data, homNay, ngan, onViec, onDoi, anDau = false, anXacNhan = false }: {
   iv: any; data: CaseDetail; homNay: string; ngan: (d: string | null | undefined) => string; onViec: (v: ViewCase) => void;
-  onDoi?: () => void;
+  onDoi?: () => void; anXacNhan?: boolean;
   /** OV-13b: phần chi tiết dưới dòng PA gọn — không đầu dòng, không chân việc. */
   anDau?: boolean;
 }) {
@@ -332,7 +336,7 @@ function TheKhoiPa({ iv, data, homNay, ngan, onViec, onDoi, anDau = false }: {
   /* Chân dòng PA: mỗi phần một cờ, tính một lần; không phần nào thì không vẽ chân. */
   const hienHan = !!hanGhi && !choDuyet;
   const hienChoQl = choDuyet && !(data.viewer.canApprove && iv.yeuCau);
-  const nutXacNhan = !!(data.viewer.canEdit && iv.awaitingConfirmation && data.sos?.hasCause);
+  const nutXacNhan = !anXacNhan && !!(data.viewer.canEdit && iv.awaitingConfirmation && data.sos?.hasCause);
   const nutKetQua = nut.ketQua && !iv.awaitingConfirmation && !chuaChay;
   const coChan = hienHan || hienChoQl || nutXacNhan || nutKetQua;
   /* Nhật ký PA (mockup §8): Tạo · Kết quả từng tuần · Sửa PA / Điều chỉnh — luôn có ít nhất dòng Tạo. */
