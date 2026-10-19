@@ -35,29 +35,33 @@ export const O_CHO_TU_SQL = `(CASE
   END)`;
 
 /** MỘT chỗ ghi cờ. `dieuKien` chọn lượt (alias `a`); chỉ ghi dòng thật sự đổi — không viết lại dòng đã đúng. */
-function capNhat(dieuKien: string, args: readonly unknown[]): void {
-  db().prepare(`UPDATE assessment_attempts AS a SET o_cho_tu = ${O_CHO_TU_SQL} WHERE ${dieuKien} AND a.o_cho_tu IS NOT ${O_CHO_TU_SQL}`).run(...args);
+function capNhat(conn: any, dieuKien: string, args: readonly unknown[]): void {
+  conn.prepare(`UPDATE assessment_attempts AS a SET o_cho_tu = ${O_CHO_TU_SQL} WHERE ${dieuKien} AND a.o_cho_tu IS NOT ${O_CHO_TU_SQL}`).run(...args);
 }
 
 /** Tính lại cờ của các lượt này. Gọi ở CUỐI giao dịch ghi điểm / lịch của lượt (trong `tx` của nơi gọi). */
 export function capNhatConOCho(attemptIds: readonly (number | null | undefined)[]): void {
   const ids = [...new Set(attemptIds.filter((x): x is number => typeof x === 'number'))];
-  theoLo(ids, (lo, ph) => capNhat(`a.id IN (${ph})`, lo), THAM_SO_TOI_DA);
+  theoLo(ids, (lo, ph) => capNhat(db(), `a.id IN (${ph})`, lo), THAM_SO_TOI_DA);
 }
 
 /** Mọi lượt của các lớp này — đổi mốc Progress / Final của lớp dời bài cả lớp. */
 export function capNhatConOChoLop(classIds: readonly number[]): void {
-  theoLo([...new Set(classIds)], (lo, ph) => capNhat(`a.class_id IN (${ph})`, lo), THAM_SO_TOI_DA);
+  theoLo([...new Set(classIds)], (lo, ph) => capNhat(db(), `a.class_id IN (${ph})`, lo), THAM_SO_TOI_DA);
 }
 
-/** Migrate / sửa chữa: tính lại cờ của MỌI lượt. */
-export function capNhatConOChoTatCa(): void {
-  capNhat('1 = 1', []);
+/** Lượt mỗi lô khi tính lại cả bảng — mỗi câu UPDATE chạm ≤ chừng này lượt (Turso cắt câu quá nặng). */
+const LUOT_MOI_LO = 2000;
+
+/** Migrate / sửa chữa: tính lại cờ của MỌI lượt, chia lô theo id. `conn` = kết nối của nơi gọi (migrate truyền vào). */
+export function capNhatConOChoTatCa(conn: any = db()): void {
+  const max = (conn.prepare('SELECT COALESCE(MAX(id), 0) AS m FROM assessment_attempts').get() as any).m as number;
+  for (let tu = 0; tu < max; tu += LUOT_MOI_LO) capNhat(conn, 'a.id > ? AND a.id <= ?', [tu, tu + LUOT_MOI_LO]);
 }
 
-/** Lượt mà cờ đang lưu KHÁC giá trị tính lại (phải rỗng sau mọi đường ghi) — phép kiểm + `kiem-truoc-td7b`. */
-export function luotLechCo(): number[] {
-  return (db().prepare(`SELECT a.id FROM assessment_attempts a WHERE a.o_cho_tu IS NOT ${O_CHO_TU_SQL} ORDER BY a.id`).all() as any[]).map((r) => r.id);
+/** Số lượt mà cờ đang lưu KHÁC giá trị tính lại (phải 0 sau mọi đường ghi) — migrate + phép kiểm. */
+export function demLuotLechCo(conn: any = db()): number {
+  return (conn.prepare(`SELECT COUNT(*) AS n FROM assessment_attempts a WHERE a.o_cho_tu IS NOT ${O_CHO_TU_SQL}`).get() as any).n as number;
 }
 
 /**

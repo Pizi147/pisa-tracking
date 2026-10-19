@@ -3,11 +3,11 @@
  * Thêm cột (dòng cũ = '' = chưa tính, luôn được đọc), thêm chỉ mục, tính lại cờ của MỌI lượt bằng chính hàm các đường ghi dùng
  * (`conOCho.ts`). Chạy lặp được: cột / chỉ mục đã có thì bỏ qua; tính lại chỉ ghi dòng đang lệch (lần hai không ghi gì, không báo gì).
  */
-import { capNhatConOChoTatCa, luotLechCo } from '../fasttrack/conOCho.ts';
+import { capNhatConOChoTatCa, demLuotLechCo } from '../fasttrack/conOCho.ts';
 
 export const CHI_MUC_TD7B: [string, string][] = [
-  ['idx_attempt_o_cho', 'CREATE INDEX IF NOT EXISTS idx_attempt_o_cho ON assessment_attempts(o_cho_tu) WHERE o_cho_tu IS NOT NULL'],
-  ['idx_attempt_o_cho_lop', 'CREATE INDEX IF NOT EXISTS idx_attempt_o_cho_lop ON assessment_attempts(class_id, o_cho_tu) WHERE o_cho_tu IS NOT NULL'],
+  ['idx_attempt_o_cho', "CREATE INDEX IF NOT EXISTS idx_attempt_o_cho ON assessment_attempts(o_cho_tu) WHERE o_cho_tu IS NOT NULL AND status != 'cancelled'"],
+  ['idx_attempt_o_cho_lop', "CREATE INDEX IF NOT EXISTS idx_attempt_o_cho_lop ON assessment_attempts(class_id, o_cho_tu) WHERE o_cho_tu IS NOT NULL AND status != 'cancelled'"],
 ];
 
 export function migratePrTd7b(conn: any, applied: string[]) {
@@ -21,9 +21,9 @@ export function migratePrTd7b(conn: any, applied: string[]) {
     conn.exec(sql);
     applied.push(`TD7b: thêm chỉ mục ${ten}`);
   }
-  const lech = luotLechCo().length;
+  const lech = demLuotLechCo(conn);
   if (lech) {
-    capNhatConOChoTatCa();
+    capNhatConOChoTatCa(conn);
     applied.push(`TD7b: tính lại cờ ô chờ điểm cho ${lech} lượt`);
   }
 }

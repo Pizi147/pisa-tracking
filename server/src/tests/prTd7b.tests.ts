@@ -1,7 +1,8 @@
 /**
- * PHÉP KIỂM PR-TD7b — cờ "còn ô chờ điểm" `assessment_attempts.o_cho_tu` (fasttrack/conOCho.ts): ĐÚNG ở mọi đường ghi, đầu ra TRÙNG KHÍT.
- * Gọi ở CUỐI run.ts — nên TD7b-2 soi cả trạng thái mọi phép kiểm trước để lại (đường ghi nào quên cập nhật cờ là lệch ngay ở đây).
- * Phép ghi chạy trong `thu` (cuộn lại). Lệch cờ về phía "hết" = MẤT việc nhập điểm → mỗi đường ghi có một phép đổi cờ thật (`doiCo`).
+ * PHÉP KIỂM PR-TD7b — cờ "còn ô chờ điểm" `assessment_attempts.o_cho_tu` (fasttrack/conOCho.ts): ĐÚNG ở từng đường ghi, đầu ra TRÙNG KHÍT; TD7c: Lịch Test khối 1.
+ * Gọi ở CUỐI run.ts. Bằng chứng cho đường ghi là TD7b-4…13 (mỗi phép đổi cờ THẬT qua đường dịch vụ, `doiCo`) + chạy đột biến gỡ từng lời gọi cờ (mô tả PR). Nhiều phép kiểm
+ * cũ dựng lượt bằng SQL thẳng nên cờ cả bộ sau chúng KHÔNG phải bằng chứng — TD7b-2 chỉ đồng bộ lại (idempotent) và in số cờ lệch lành; phép kiểm cũ soi đường đọc
+ * (TD3-a-1, OV14c…) tự đồng bộ cờ ở đầu. Lệch cờ về phía "hết" = MẤT việc nhập điểm → `luotLechNguyHiem`.
  */
 import type { YThucTestKit } from './yThuc.tests.ts';
 import { emailThu } from '../seed/emailThu.ts';
@@ -61,9 +62,9 @@ export async function runPrTd7bTests(t: YThucTestKit) {
 
   check('TD7b-2 · tính lại cờ cho MỌI lượt: lần hai không ghi gì (idempotent), không còn lượt "chưa tính" hay lệch', () => {
     /* Các phép kiểm trước dựng lượt bằng SQL thẳng nên cờ cả bộ không phải bằng chứng cho đường ghi thật (bằng chứng: TD7b-4…13) — chỉ báo con số. */
-    console.log(`      (trước khi đồng bộ: ${(cc.luotLechCo() as number[]).length}/${get('SELECT COUNT(*) n FROM assessment_attempts').n} lượt cờ lệch do fixture ghi SQL thẳng; ${(cc.luotLechNguyHiem() as number[]).length} lệch về phía hết)`);
+    console.log(`      (trước khi đồng bộ: ${(cc.demLuotLechCo() as number)}/${get('SELECT COUNT(*) n FROM assessment_attempts').n} lượt cờ lệch do fixture ghi SQL thẳng; ${(cc.luotLechNguyHiem() as number[]).length} lệch về phía hết)`);
     cc.capNhatConOChoTatCa();
-    assert(cc.luotLechCo().length === 0, 'tính lại xong vẫn lệch');
+    assert(cc.demLuotLechCo() === 0, 'tính lại xong vẫn lệch');
     const truoc = get('SELECT total_changes() n').n as number;
     cc.capNhatConOChoTatCa();
     assert((get('SELECT total_changes() n').n as number) === truoc, 'lần hai vẫn ghi dòng — không idempotent');
@@ -78,12 +79,15 @@ export async function runPrTd7bTests(t: YThucTestKit) {
     const { migratePrTd7b } = await import('../migrate/prTd7b.ts');
     const lan1: string[] = []; migratePrTd7b(conn, lan1);
     assert(!lan1.length, `migrate trên DB đã đủ vẫn báo đổi: ${lan1.join(' | ')}`);
-    /* DB cũ (bảng chỉ có id): migrate thêm cột + chỉ mục; lần hai im lặng. Phần tính lại chạy trên DB test (đã nhất quán → không có gì để tính). */
+    /* DB cũ: dựng từ schema.sql rồi gỡ cột + chỉ mục → migrate thêm lại, lần hai im lặng (DB tạm, không đụng DB đang chạy). */
     const { default: SqliteDb } = await import('libsql');
+    const fs = await import('node:fs');
+    const { SCHEMA_PATH } = await import('../db.ts');
     const tam = new SqliteDb(':memory:');
-    tam.exec('CREATE TABLE assessment_attempts (id INTEGER PRIMARY KEY, class_id INTEGER)');
+    tam.exec(fs.readFileSync(SCHEMA_PATH, 'utf8'));
+    tam.exec('DROP INDEX idx_attempt_o_cho; DROP INDEX idx_attempt_o_cho_lop; ALTER TABLE assessment_attempts DROP COLUMN o_cho_tu;');
     const a: string[] = []; migratePrTd7b(tam, a);
-    assert(a.some((x) => /cột/.test(x)) && a.some((x) => /chỉ mục/.test(x)), `lần 1: ${a.join(' | ')}`);
+    assert(a.some((x) => /cột/.test(x)) && a.filter((x) => /chỉ mục/.test(x)).length === 2, `lần 1: ${a.join(' | ')}`);
     const b: string[] = []; migratePrTd7b(tam, b);
     assert(!b.length, `lần 2 vẫn báo: ${b.join(' | ')}`);
     tam.close();
@@ -93,7 +97,7 @@ export async function runPrTd7bTests(t: YThucTestKit) {
       const c: string[] = []; migratePrTd7b(conn, c);
       assert(c.some((x) => /tính lại cờ/.test(x)), `tính lại: ${c.join(' | ')}`);
       const d2: string[] = []; migratePrTd7b(conn, d2);
-      assert(!d2.length && cc.luotLechCo().length === 0, `lần 2: ${d2.join(' | ')}`);
+      assert(!d2.length && cc.demLuotLechCo() === 0, `lần 2: ${d2.join(' | ')}`);
     });
 
   });
@@ -323,7 +327,7 @@ export async function runPrTd7bTests(t: YThucTestKit) {
       conn.prepare(`UPDATE assessment_scores SET band = NULL WHERE attempt_id = ? AND skill = 'speaking'`).run(ft[7].id);
       conn.prepare(`UPDATE assessment_scores SET no_show_period_id = (SELECT planned_period_id FROM attempt_skills WHERE attempt_id = ? AND skill = 'speaking'), no_show_by = 1, no_show_at = '2026-09-01T00:00:00.000Z' WHERE attempt_id = ? AND skill = 'speaking'`).run(ft[7].id, ft[7].id);
       cc.capNhatConOChoTatCa();
-      assert(cc.luotLechCo().length === 0, 'đồng bộ cờ sau ca biên vẫn lệch');
+      assert(cc.demLuotLechCo() === 0, 'đồng bộ cờ sau ca biên vẫn lệch');
       const that = chup();
       conn.exec("UPDATE assessment_attempts SET o_cho_tu = ''");   // không lọc: mọi lượt đều được nạp (đúng như trước khi có lọc)
       const khongLoc = chup();
