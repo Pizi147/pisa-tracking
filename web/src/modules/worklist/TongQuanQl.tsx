@@ -72,9 +72,9 @@ function DaiTomTat({ d, nguon, phamVi, ct, branchId }: { d: TongQuanQlA; nguon: 
 }
 
 /** Khối có đầu "h2 · phụ" — một khuôn cho ba khối (mockup `.khoi`). */
-function Khoi({ tieuDe, phu, children, id }: { tieuDe: string; phu?: React.ReactNode; children: React.ReactNode; id: string }) {
+function Khoi({ tieuDe, phu, children, id, hd }: { tieuDe: string; phu?: React.ReactNode; children: React.ReactNode; id: string; hd?: string }) {
   return (
-    <section className="card" aria-labelledby={id} data-hd={`tq-${id}`}>
+    <section className="card" aria-labelledby={id} data-hd={hd}>
       <header className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b px-4 py-3" style={{ borderColor: 'var(--line)' }}>
         <h2 id={id} className="m-0 text-[15px] font-semibold text-slate-100">{tieuDe}</h2>
         {phu}
@@ -121,13 +121,13 @@ function CanBanQuyetKhoi({ branchId, ct }: { branchId: number | null; ct: Chuong
                     <div key={x.classId} className={dong} style={{ borderColor: 'var(--line)' }}>
                       <span className="min-w-0"><b className="block text-[13px] font-semibold text-slate-100">{x.lop}</b><span className="block text-xs text-slate-500">{dich(x.chu)}</span></span>
                       <Han han={x.han} quaHan={x.quaHan} />
-                      <Link to={`/hoc-vien/lop/${x.classId}?viec=lo-trinh-ca-lop`} className="btn btn-sm min-h-[44px] no-underline sm:min-h-[32px]">{t('Chốt lộ trình')}</Link>
+                      <Link to={`/hoc-vien/lop/${x.classId}?viec=lo-trinh-ca-lop`} className="btn btn-sm min-h-[44px] no-underline max-sm:col-start-2 max-sm:justify-self-end sm:min-h-[32px]">{t('Chốt lộ trình')}</Link>
                     </div>
       )} />
     </div>
   );
   return (
-    <Khoi id="can-quyet" tieuDe={t('Cần bạn quyết')} phu={<span className="text-xs text-slate-500">{t('quá hạn lên đầu')}</span>}>
+    <Khoi id="can-quyet" hd="tq-can-quyet" tieuDe={t('Cần bạn quyết')} phu={<span className="text-xs text-slate-500">{t('quá hạn lên đầu')}</span>}>
       {error ? <div className="p-4"><ErrorState message={t('Không tải được việc cần quyết.')} hint={error.message} onRetry={reload} /></div>
         : loading || !data ? <div className="p-4"><Skeleton rows={3} /></div>
           : !coGi ? <p className="m-0 px-4 py-3 text-sm text-slate-400">{t('Không có việc chờ ✓')}</p> : (
@@ -153,7 +153,7 @@ function CanBanQuyetKhoi({ branchId, ct }: { branchId: number | null; ct: Chuong
                         {x.tinhTrang && <span className="block text-xs text-slate-400">{dich(x.tinhTrang)}</span>}
                       </span>
                       <span className="text-xs font-semibold text-late">⚠ {nhanQuaHan(x.soNgay)}</span>
-                      <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-[32px]" onClick={() => setNgan({ caseId: x.caseId, em: x.em?.ten ?? null, lop: x.lop })}>{t('Mở Case')}</button>
+                      <button type="button" className="btn btn-sm min-h-[44px] max-sm:col-start-2 max-sm:justify-self-end sm:min-h-[32px]" onClick={() => setNgan({ caseId: x.caseId, em: x.em?.ten ?? null, lop: x.lop })}>{t('Mở Case')}</button>
                     </div>
                   )} />
                 </div>
@@ -166,7 +166,7 @@ function CanBanQuyetKhoi({ branchId, ct }: { branchId: number | null; ct: Chuong
                       <span className="min-w-0"><b className="block text-[13px] font-semibold text-slate-100">{x.em.ten}{x.lop ? <span className="font-normal text-slate-500"> · {x.lop}</span> : null}</b>
                         <span className="block text-xs text-slate-400">{dich(x.ketQua)}</span></span>
                       <Han han={x.han} quaHan={x.quaHan} />
-                      <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-[32px]" onClick={() => setBuoc(x)}>{t('Chọn bước tiếp')}</button>
+                      <button type="button" className="btn btn-sm min-h-[44px] max-sm:col-start-2 max-sm:justify-self-end sm:min-h-[32px]" onClick={() => setBuoc(x)}>{t('Chọn bước tiếp')}</button>
                     </div>
                   )} />
                 </div>
@@ -187,6 +187,11 @@ function Han({ han, quaHan }: { han: string | null; quaHan: boolean }) {
     : <span className="text-xs tabular-nums text-slate-400">{t('hạn {ngay}', { ngay: `${han.slice(8, 10)}/${han.slice(5, 7)}` })}</span>;
 }
 
+/** Tên cột đọc to / tiêu đề panel của một ô bảng lớp. */
+const TEN_COT: Record<CotLopQl, string> = {
+  hv: 'HV', chuaLich: t('Chưa lịch'), chuaDiem: t('Chưa điểm'), sos1: 'SOS 1', sos2: 'SOS 2', sos3: 'SOS 3',
+  caseHv: t('HV có Case chưa chốt PA'), caseN: t('Case chưa chốt PA'), daThiChoKq: t('Đã thi · chờ KQ'),
+};
 const COT_SO: { cot: CotLopQl; nhan: string }[] = [
   { cot: 'hv', nhan: 'HV' }, { cot: 'chuaLich', nhan: t('Chưa lịch') }, { cot: 'chuaDiem', nhan: t('Chưa điểm') },
 ];
@@ -200,7 +205,7 @@ function LopCanChuY({ d, nguon, ct }: { d: TongQuanQlA; nguon: (o: string) => st
   const o = (h: HangLopQl, cot: CotLopQl, cls = 'font-semibold text-slate-100', nhan?: string) => {
     const v = h[cot];
     if (v === null) return <span className="text-slate-500">—</span>;
-    return <SoLieuO nguon={nguon(`lop:${h.classId ?? 'tong'}:${cot}`)} tieuDe={`${h.lop} · ${cot}`} giaTri={v} nhan={nhan} className={cls} />;
+    return <SoLieuO nguon={nguon(`lop:${h.classId ?? 'tong'}:${cot}`)} tieuDe={`${h.lop} · ${TEN_COT[cot]}`} giaTri={v} nhan={nhan} className={cls} />;
   };
   const caseO = (h: HangLopQl) => (h.caseN
     ? <span className="inline-flex flex-col items-center leading-tight">{o(h, 'caseHv', 'font-semibold text-slate-100', t('{n} HV', { n: h.caseHv }))}{o(h, 'caseN', 'text-xs text-slate-400', t('{n} Case', { n: h.caseN }))}</span>
@@ -214,7 +219,7 @@ function LopCanChuY({ d, nguon, ct }: { d: TongQuanQlA; nguon: (o: string) => st
   );
   const rows = [d.lop.tong, ...hien];
   return (
-    <Khoi id="lop-chu-y" tieuDe={t('Lớp cần chú ý')} phu={phu}>
+    <Khoi id="lop-chu-y" hd="tq-lop-chu-y" tieuDe={t('Lớp cần chú ý')} phu={phu}>
       {!d.lop.hang.length ? <p className="m-0 px-4 py-3 text-sm text-slate-400">{t('Không có lớp nào đang mở trong phạm vi.')}</p>
         : !hien.length ? <p className="m-0 px-4 py-3 text-sm text-slate-400">{t('Không lớp nào cần chú ý')}{' '}
           <button type="button" className="link appearance-none border-0 bg-transparent p-0" onClick={() => setChiVanDe(false)}>{t('Hiện cả {n} lớp', { n: d.lop.hang.length })}</button></p>
@@ -234,7 +239,7 @@ function LopCanChuY({ d, nguon, ct }: { d: TongQuanQlA; nguon: (o: string) => st
               ))}
             </ul>
           ) : (
-            <div className="table-scroll">
+            <div className="table-scroll bang-dinh">
               <table className="w-full min-w-[820px] border-collapse text-[13px]">
                 <thead>
                   <tr className="text-[12px] font-semibold text-slate-400">

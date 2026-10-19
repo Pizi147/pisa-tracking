@@ -8,7 +8,7 @@ export const HD_GV: HuongDan = {
   viec: [
     {
       id: 'cong-viec', ten: 'Mở Công việc mỗi sáng', khi: 'mỗi ngày',
-      buoc: ['Đăng nhập là vào <b>Công việc</b>: việc tới hết tuần, quá hạn ở đầu, có ⚠; panel tự mở việc đầu.', 'Làm xong (lưu được) → panel tự sang việc kế; <b>‹ việc vừa xong</b> để mở lại. Lưu lỗi: ở lại, chữ đang gõ còn nguyên.',
+      buoc: ['Đăng nhập là vào <b>Công việc</b>: việc tới hết tuần, quá hạn ở đầu, có ⚠; panel tự mở việc đầu.', 'Làm xong (lưu được) → panel tự sang việc kế; <b>‹ việc vừa xong</b> để mở lại. Không lưu được: ở lại, chữ đang gõ còn nguyên.',
         'Hết việc: "Xong hết hôm nay ✓"; việc sau tuần này gập ở <b>Sau tuần này</b>.'],
       chi: { hd: 'nav-cong-viec', chu: 'Bấm <b>Công việc</b> — mọi việc của bạn ở đây.' },
     },

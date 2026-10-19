@@ -9,8 +9,8 @@
 import type { YThucTestKit } from './yThuc.tests.ts';
 
 /** Trần câu SQL (Turso) của đường mới, QL MB trên bộ demo — max(đo + 10, ⌈đo × 1,3⌉); số đo ghi trong log. */
-export const TRAN_QL = 67;   // đo 51
-export const TRAN_CAN_QUYET = 45;   // đo 34
+export const TRAN_QL = 84;   // đo 51 trên bộ demo vừa dựng, 64 khi chạy đủ bộ kiểm → ⌈64 × 1,3⌉
+export const TRAN_CAN_QUYET = 47;   // đo 34 / 36 khi chạy đủ → ⌈36 × 1,3⌉
 
 export async function runPrOv15dTests(t: YThucTestKit) {
   const { check, checkAsync, assert, conn, P, TODAY } = t as any;
@@ -74,7 +74,8 @@ export async function runPrOv15dTests(t: YThucTestKit) {
   check('OV15d-3 · đồng bộ: thêm một lần (chạy lại không trùng), giữ "đã đọc"; việc xong → xoá của người xem khi đủ phạm vi; không xoá của người khác', () => thu(() => {
     const gv = P.w1Teacher.userId as number, ql = P.mbManager.userId as number;
     const mau = (userId: number, k: string) => ({ userId, kind: 'qua_han_cham', dedupKey: `td:cham:${k}`, title: `Quá hạn chấm ${k}`, body: 'b', duong: '/cong-viec', entityType: 'class', entityId: null });
-    const dem = (u: number) => (conn.prepare(`SELECT COUNT(*) n FROM notifications WHERE user_id = ? AND dedup_key LIKE 'td:%'`).get(u) as any).n as number;
+    /* Chỉ đếm ba khoá của phép kiểm — bộ chạy đủ có thể đã có thông báo tự động khác của GV này (các phép kiểm trước gọi /my-work). */
+    const dem = (u: number) => (conn.prepare(`SELECT COUNT(*) n FROM notifications WHERE user_id = ? AND dedup_key IN ('td:cham:a', 'td:cham:b', 'td:cham:c')`).get(u) as any).n as number;
     const g0 = dem(gv);
     tb.dongBoThongBaoViec([mau(gv, 'a'), mau(gv, 'b'), mau(ql, 'c')], { nguoiXem: ql, day: true });
     tb.dongBoThongBaoViec([mau(gv, 'a'), mau(gv, 'b'), mau(ql, 'c')], { nguoiXem: ql, day: true });

@@ -120,7 +120,7 @@ export async function runPrHk2Tests(t: YThucTestKit) {
 
   check('C10 · mỗi bảng vừa khung ở 1440 có bang-dinh (không cùng overflow-x-auto); khung bao (card / ô) không còn overflow-hidden', () => {
     const DS: Array<[string, number]> = [   // [tệp, số chỗ bang-dinh tối thiểu]
-      ['web/src/modules/worklist/KhoiCanXuLy.tsx', 1], ['web/src/modules/worklist/LopToiDay.tsx', 1], ['web/src/modules/worklist/BranchPulse.tsx', 1],
+      ['web/src/modules/worklist/TongQuanQl.tsx', 1], ['web/src/modules/worklist/LopToiDay.tsx', 1], ['web/src/modules/worklist/BranchPulse.tsx', 1],
       ['web/src/modules/students/ClassRoster.tsx', 1], ['web/src/modules/classes/BangDiemLopThuong.tsx', 1], ['web/src/modules/classes/TabTongKetLop.tsx', 1],
       ['web/src/modules/test/lichTest/HangLop.tsx', 1], ['web/src/modules/test/lichTest/KhoiNo.tsx', 1],
       ['web/src/modules/cham/LuoiFT.tsx', 1], ['web/src/modules/cham/LuoiThuong.tsx', 1],
@@ -300,7 +300,7 @@ export async function runPrHk2Tests(t: YThucTestKit) {
       }
     }
     assert(soQuaHan > 0, 'bộ demo phải có dòng quá hạn dạng chữ');
-    assert(/⚠ \{x\.han\.chu\}/.test(doc('web/src/modules/worklist/KhoiCanXuLy.tsx')), 'KhoiCanXuLy chưa in ⚠ trước chữ quá hạn');
+    assert(/⚠ \{nhanQuaHan\(x\.soNgay\)\}/.test(doc('web/src/modules/worklist/TongQuanQl.tsx')), 'Tổng quan QL (OV-15d) chưa in ⚠ trước chữ quá hạn');
   });
 
   const mywork: any = await import('../worklist/mywork.ts');
@@ -315,7 +315,8 @@ export async function runPrHk2Tests(t: YThucTestKit) {
     const khac = tatCa.filter((i) => i.ownerId !== null && i.ownerId !== P.mbManager.userId);
     assert(khac.length > 0 && khac.every((i) => typeof i.owner === 'string' && i.owner !== 'Bạn'), 'việc người khác phải ghi tên thật');
     assert(!/'Bạn'/.test(doc('server/src/worklist/mywork.ts')), 'mywork.ts còn "Bạn"');
-    assert(/Bạn/.test(doc('web/src/modules/worklist/KhoiCanXuLy.tsx')), 'cột "Người giữ việc" của Tổng quan QL phải giữ "Bạn"');
+    /* OV-15d: Tổng quan QL A — việc của chính QL gom ở khối "Cần bạn quyết" (thay cột "Người giữ việc · Bạn"). */
+    assert(/t\('Cần bạn quyết'\)/.test(doc('web/src/modules/worklist/TongQuanQl.tsx')), 'Tổng quan QL phải có khối "Cần bạn quyết"');
   });
 
   check('C22 · J9: "Xác nhận PA Tutor" không kèm mô tả máy gán (· đến lúc thi / đến MT n / 1 tháng); tên người dạy tự viết giữ nguyên, kể cả có " · "', () => {

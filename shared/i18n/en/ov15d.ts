@@ -81,7 +81,7 @@ export const EN_OV15D = {
   "Hết việc: \"Xong hết hôm nay ✓\"; việc sau tuần này gập ở <b>Sau tuần này</b>.": "Nothing left: \"All done for today ✓\"; tasks after this week are collapsed under <b>After this week</b>.",
   "Khối <b>Cần bạn quyết</b>: Chờ duyệt (Duyệt · Từ chối…) · Case chưa chốt PA quá hạn (<b>Mở Case</b>) · Chọn bước tiếp sau thi · Chốt lộ trình khi tới hạn.": "<b>Needs your decision</b>: approvals (Approve · Reject…) · overdue Cases without a confirmed plan (<b>Open Case</b>) · Next step after exam · Lock pathway when due.",
   "Làm ngay tại trang: Duyệt / Từ chối…, <b>Mở Case</b>, <b>Chọn bước tiếp</b>.": "Act on the page: Approve / Reject…, <b>Open Case</b>, <b>Choose next step</b>.",
-  "Làm xong (lưu được) → panel tự sang việc kế; <b>‹ việc vừa xong</b> để mở lại. Lưu lỗi: ở lại, chữ đang gõ còn nguyên.": "Done (saved) → the panel moves to the next task; <b>‹ task just done</b> reopens it. Save error: it stays, your typing is kept.",
+  "Làm xong (lưu được) → panel tự sang việc kế; <b>‹ việc vừa xong</b> để mở lại. Không lưu được: ở lại, chữ đang gõ còn nguyên.": "Done (saved) → the panel moves to the next task; <b>‹ task just done</b> reopens it. Save error: it stays, your typing is kept.",
   "Lớp cần chú ý · Tuần này": "Classes needing attention · This week",
   "Lớp thường: Tổng quan › <b>Cần bạn quyết</b> › <b>Chốt lộ trình</b> (chỉ hiện khi tới hạn; có thông báo).": "Standard classes: Overview › <b>Needs your decision</b> › <b>Lock pathway</b> (only when due; you get a notification).",
   "Lớp tôi dạy · Yêu cầu": "My classes · Requests",

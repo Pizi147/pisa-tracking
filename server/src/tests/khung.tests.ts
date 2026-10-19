@@ -51,7 +51,7 @@ export async function runKhungTests(t: YThucTestKit) {
     assert(keys(GV) === 'cong-viec,tong-quan,hoc-vien,test', `GV thấy cả Test và Công việc (spec §3.1): ${keys(GV)}`);
     assert(keys(nav({ overview: true, students: true })) === 'tong-quan,hoc-vien', 'Không có Test/Công việc thì không hiện');
     const labels = d.KHU_VUC.map((k) => `${k.label}|${k.labelNgan}`).join(',');
-    assert(labels === 'Tổng quan|Tổng quan,Học viên & Lớp|Học viên,Test|Test,Phân tích|Phân tích,Công việc|Công việc', `Chữ: ${labels}`);
+    assert(labels === 'Công việc|Công việc,Tổng quan|Tổng quan,Học viên & Lớp|Học viên,Test|Test,Phân tích|Phân tích', `Chữ: ${labels}`);
   });
 
   check('PR-O · Khu vực của một đường dẫn (tô sáng đúng mục trên thanh)', () => {

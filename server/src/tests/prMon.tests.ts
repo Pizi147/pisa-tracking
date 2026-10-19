@@ -365,7 +365,7 @@ export async function runPrMonTests(t: YThucTestKit) {
   check('MON (9) · CongTacKhung: BoLocDoan, localStorage bọc try, ba trang dùng chung', () => {
     const src = doc('web/src/ui/CongTacKhung.tsx');
     assert(/BoLocDoan/.test(src) && /try\s*\{[^}]*localStorage\.getItem/.test(src) && /try\s*\{[^}]*localStorage\.setItem/.test(src), 'CongTacKhung');
-    for (const f of ['web/src/modules/test/LichTestTab.tsx', 'web/src/modules/test/KeHoachTestTab.tsx', 'web/src/modules/congViec/HoTroHocVienTab.tsx']) {
+    for (const f of ['web/src/modules/test/LichTestTab.tsx', 'web/src/modules/test/KeHoachTestTab.tsx']) {   // OV-15d: Công việc bỏ công tắc khung (lọc 3 trục)
       assert(/<CongTacKhung/.test(doc(f)), `${f} chưa dùng CongTacKhung`);
     }
     assert(!/HangTab/.test(doc('web/src/modules/test/LichTestTab.tsx')), 'Lịch Test còn HangTab khung cũ');
