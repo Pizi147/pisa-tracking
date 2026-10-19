@@ -11,8 +11,11 @@ import { NganXepLichMt } from './keHoach/NganXepLichMt.tsx';
 import { LopKeHoach } from './keHoach/LopKeHoach.tsx';
 import { boMonLich, chuanHoaMaLop, kyHieuLop, tenMon, tenMonNgan, tuanLich } from '@shared/domain/index.ts';
 import type { Data as LichSapToiData } from '../worklist/Highlights.tsx';
-import { TimLop } from './keHoach/TimLop.tsx';
-import type { DanhSachLop, LopKH } from './keHoach/kieu.ts';
+import { TimKeHoach, type KetQuaTim } from './keHoach/TimKeHoach.tsx';
+import { NganXuatKeHoach } from './keHoach/NganXuatKeHoach.tsx';
+import { NganXuatDiem } from './keHoach/NganXuatDiem.tsx';
+import type { DanhSachLop } from './keHoach/kieu.ts';
+import { t } from '@shared/i18n/index.ts';
 
 /**
  * TEST › KẾ HOẠCH TEST (mockup 14, PR-UX2) — CHỈ Quản lý. Một hàng điều khiển: Chi nhánh · ô tìm lớp · tab nhỏ
@@ -28,6 +31,9 @@ export function KeHoachTestTab() {
   const branchId = cnUrl ? Number(cnUrl) : macDinh;
   const loaiParam = params.get('loai') as 'ft' | 'thuong' | null;
   const classIdParam = params.get('classId') ? Number(params.get('classId')) : null;
+  /* OV-15c (C18): em vừa chọn ở ô tìm — lưới lớp đó cuộn tới hàng em và đánh dấu hàng. */
+  const hvParam = params.get('hv') ? Number(params.get('hv')) : null;
+  const [xuat, setXuat] = useState<'ke-hoach' | 'diem' | null>(null);
 
   const { data, loading, error, reload } = useApi<DanhSachLop>(`/ke-hoach-test/lop${branchId ? `?branchId=${branchId}` : ''}`);
   const [chu, setChu] = useState('');
@@ -88,18 +94,24 @@ export function KeHoachTestTab() {
   const boTuan = () => { const next = new URLSearchParams(params); next.delete('tuan'); setParams(next, { replace: true }); };
   const soCanXepLai = lopFT.reduce((n, l) => n + (l.canXepLai ?? 0), 0);
   const locXepLai = loai === 'ft' && chiXepLai && soCanXepLai > 0;
+  /* Chữ ở ô tìm lọc danh sách lớp chỉ khi khớp mã lớp nào đó — gõ tên / email học viên thì danh sách giữ nguyên (chọn em ở gợi ý). */
+  const khopMa = chu.trim() ? (loai === 'ft' ? lopFT : lopThuong).filter((l) => chuanHoaMaLop(l.code).includes(chuanHoaMaLop(chu))) : [];
   const danhSach = (loai === 'ft' ? lopFT : lopThuong)
-    .filter((l) => !chu.trim() || chuanHoaMaLop(l.code).includes(chuanHoaMaLop(chu)))
+    .filter((l) => !khopMa.length || khopMa.includes(l))
     .filter((l) => !locXepLai || l.canXepLai > 0)
     .filter((l) => !lopTrongTuan || lopTrongTuan.has(l.id));
   const toggle = (id: number) => setMoList((m) => (m.includes(id) ? m.filter((x) => x !== id) : [...m, id]));
-  const chonLop = (l: LopKH) => {
-    setChu(l.code);
-    setMoList((m) => [...m.filter((x) => x !== l.id), l.id]);
+  /* C18: chọn lớp → mở lớp đó (lớp khung kia thì tự đổi khung, không hỏi); chọn em → mở lớp của em, cuộn tới hàng em. */
+  const moLop = (id: number, loaiLop: 'ft' | 'thuong', hv: number | null) => {
+    setMoList((m) => [...m.filter((x) => x !== id), id]);
     const next = new URLSearchParams(params);
-    next.set('loai', l.loai); next.set('classId', String(l.id));
+    next.set('loai', loaiLop); next.set('classId', String(id));
+    if (hv) next.set('hv', String(hv)); else next.delete('hv');
+    next.delete('tuan'); setChiXepLai(false);
     setParams(next, { replace: true });
   };
+  const chonLop = (l: KetQuaTim['lop'][number]) => { setChu(l.code); moLop(l.id, l.loai, null); };
+  const chonHv = (h: KetQuaTim['hocVien'][number]) => { setChu(h.ten); moLop(h.classId, h.loai, h.studentId); };
 
   const lopChon = [...moList].reverse().map((id) => data?.lop.find((l) => l.id === id)).find((l) => l && l.loai === loai) ?? null;
   const lyDoTat = hopMo ? 'Đóng hộp kỹ năng trước' : undefined;
@@ -151,7 +163,7 @@ export function KeHoachTestTab() {
             </details>
           </>
         )}
-        <TimLop lop={data.lop} value={chu} onChange={setChu} onChon={chonLop} className="min-w-0 basis-full sm:basis-auto sm:w-56" />
+        <TimKeHoach branchId={branchId} value={chu} onChange={setChu} onChonLop={chonLop} onChonHv={chonHv} className="min-w-0 basis-full sm:basis-auto sm:w-72" />
         <span className="pb-2">
           <NutLuat label="Luật xếp lịch Test">
             {loai === 'ft' ? (
@@ -182,6 +194,14 @@ export function KeHoachTestTab() {
           </NutLuat>
         </span>
         <span className="flex-1" />
+        {loai === 'ft' && (
+          /* OV-15c: Xuất Excel Kế hoạch Test 13 cột (C17) theo bộ lọc đang xem + Xuất điểm Test (mockup 6 khung 9). */
+          <span className="flex flex-wrap items-center gap-2">
+            <span className="text-xs tabular-nums text-slate-400">{t('{n} học viên', { n: danhSach.reduce((n, l) => n + l.soHv, 0) })}</span>
+            <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={!!lyDoTat || !danhSach.length} title={lyDoTat} onClick={() => setXuat('ke-hoach')}>{t('Xuất Excel')}</button>
+            <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={!!lyDoTat} title={lyDoTat} onClick={() => setXuat('diem')}>{t('Xuất điểm Test')}</button>
+          </span>
+        )}
         <button type="button" className="btn btn-primary btn-sm min-h-[44px] sm:min-h-0" disabled={!!lyDoTat} title={lyDoTat}
           onClick={() => setXep(loai)}>
           {loai === 'ft' ? 'Xếp nhiều MT…' : 'Xếp lịch Test…'}
@@ -193,7 +213,8 @@ export function KeHoachTestTab() {
       ) : (
         <div className="space-y-3">
           {danhSach.map((l) => (
-            <LopKeHoach key={l.id} lop={l} mo={moList.includes(l.id)} onToggle={() => toggle(l.id)} onHienDien={setHopMo} chiCanXepLai={locXepLai} />
+            <LopKeHoach key={l.id} lop={l} mo={moList.includes(l.id)} onToggle={() => toggle(l.id)} onHienDien={setHopMo} chiCanXepLai={locXepLai}
+              hvChon={l.id === classIdParam ? hvParam : null} />
           ))}
         </div>
       )}
@@ -201,6 +222,12 @@ export function KeHoachTestTab() {
       {xep === 'ft' && (
         <NganXepLichMt chiNhanhDau={branchId} lopDs={data.lop} lopMoSan={lopChon?.loai === 'ft' ? lopChon.id : null} coThuong={lopThuong.length > 0}
           onDoiKhung={setXep} onClose={() => setXep(null)} onDone={reload} />
+      )}
+      {xuat === 'ke-hoach' && (
+        <NganXuatKeHoach branchId={branchId} classIds={danhSach.length === lopFT.length ? [] : danhSach.map((l) => l.id)} onDong={() => setXuat(null)} />
+      )}
+      {xuat === 'diem' && (
+        <NganXuatDiem branchId={branchId} lopFt={lopFT} lopDau={lopChon?.loai === 'ft' ? lopChon.id : null} onDong={() => setXuat(null)} />
       )}
       {xep === 'thuong' && (
         <NganXepHangLoat lopThuong={lopThuong} classIdBanDau={lopChon?.loai === 'thuong' ? lopChon.id : null} coFt={lopFT.length > 0}
