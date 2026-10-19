@@ -121,6 +121,8 @@ export const DUONG_DO: MucDo[] = [
   { trang: 'Học viên & Lớp · panel một em', vai: MOI_VAI, url: '/hoc-vien-lop/em/{hv}' },
   { trang: 'Hồ sơ HV CX / Admin', vai: ['CX', 'ADMIN'], url: '/students/{hv}' },
   { trang: 'Học viên & Lớp', vai: MOI_VAI, url: '/hoc-vien-lop/luu-tru' },
+  /* OV-15f: góc Lịch thi — em có tháng dự kiến thi chọn + em chưa có dự kiến (lọc tháng ngay trong SQL), kết luận ở cột `learning_cycles.lich_thi_*`. */
+  { trang: 'Học viên & Lớp · Lịch thi', vai: ['QL', 'QT', 'GVCN', 'GVBM', 'TVV', 'CX'], url: '/hoc-vien-lop/lich-thi?thang=2026-10,2026-11' },
   { trang: 'Học viên & Lớp', vai: MOI_VAI, url: '/hoc-vien-lop/ids' },   // PR-TD2-b: Trước/Sau của hồ sơ lớp
   { trang: 'Học viên & Lớp', vai: MOI_VAI, url: '/hoc-vien-lop/luu-tru?branchId={cn}' },
 
@@ -512,6 +514,13 @@ export const TRAN: Record<string, number> = {
   'GVCN_THUONG /classes/3/roster?chiId=1': 22,
   'QT /classes/3/roster?chiId=1': 20,
   'QL /hoc-vien-lop/ids': 20,
+  /* OV-15f: góc Lịch thi — đo 15–16 câu; quyền sửa tính theo LỚP (không theo em: 102 câu → 16). Trần = đo + 6. */
+  'QL /hoc-vien-lop/lich-thi?thang=2026-10,2026-11': 22,
+  'QT /hoc-vien-lop/lich-thi?thang=2026-10,2026-11': 23,
+  'TVV /hoc-vien-lop/lich-thi?thang=2026-10,2026-11': 23,
+  'CX /hoc-vien-lop/lich-thi?thang=2026-10,2026-11': 22,
+  'GVCN /hoc-vien-lop/lich-thi?thang=2026-10,2026-11': 21,   // OV-15f: đo 15 → đo + 6
+  'GVBM /hoc-vien-lop/lich-thi?thang=2026-10,2026-11': 21,   // OV-15f: đo 15 → đo + 6
   'GVCN /hoc-vien-lop/ids': 19,
   'GVBM /hoc-vien-lop/ids': 19,
   'GVCN_THUONG /hoc-vien-lop/ids': 19,
@@ -807,6 +816,7 @@ export const TRAN: Record<string, number> = {
 export const TRAN_DONG: Record<string, number> = {
   /* TU-b: trang Tutor — trần = max(đo+50, ⌈đo×1,3⌉), đo 20/10. */
   'QL /tutors': 65, 'QT /tutors': 66, 'QL /tutors/1': 58, 'QT /tutors/1': 59, 'QT /tutors/dem': 51, 'QT /tutors/go-tay': 52,   // đo 15 · 16 · 8 · 9 · 1 · 2
+  'QL /hoc-vien-lop/lich-thi?thang=2026-10,2026-11': 771,   // OV-15f: đo 593 (FT + lớp thường; ×3 → 1 659); trần = max(đo + 50, ⌈đo × 1,3⌉)
   /* TU-a: ô chọn tutor — trần = max(đo+50, ⌈đo×1,3⌉), đo 20/10 (13 · 11 · 17 · 17 · 44 · 12 · 45 dòng). */
   'QL /tutors/chon?studentId=1': 63, 'QT /tutors/chon?studentId=1': 61, 'GVCN /tutors/chon?studentId=1': 67, 'GVBM /tutors/chon?studentId=1': 67,
   'QL /tutors/chon?paId=7': 94, 'QT /tutors/chon?paId=7': 62, 'GVCN /tutors/chon?paId=7': 95,
@@ -861,6 +871,10 @@ export const TRAN_DONG: Record<string, number> = {
 };
 
 export const TRAN_GHI_LO = {
+  /** OV-15f: PUT /hoc-vien-lop/lich-thi/:cycleId (kết luận + ghi chú: quyền, đọc / ghi 5 cột lich_thi_*, nhật ký) */
+  luuLichThi: 24,   // đo 14 câu, 11 dòng → max(14 + 10, ⌈14 × 1,3⌉)
+  /** OV-15f: POST /hoc-vien-lop/xuat mẫu "Theo dõi SOS" cả lớp MB FT 101 (quyền theo lớp, dangSos, Case của các em trong tệp). */
+  xuatDanhSachSos: 140,   // đo 107 câu, 4 653 dòng (99 em: quyền theo lớp, dangSos, Case của các em trong tệp) → max(107 + 10, ⌈107 × 1,3⌉)
   /** PR-VN4: Huỷ cả lượt (`huyLuot`) lượt nặng nhất trên dữ liệu cuối run.ts — trước 223–341 câu (bản chính 329): Huỷ điểm từng ô qua `saveScore`. */
   huyCaLuot: 120,
   /** PR-OV4a: Khôi phục lượt (`reopenAttempt` đưa bản cất về: lượt, lịch, điểm, Case / PA / Phối hợp / tín hiệu) — lượt nặng nhất trên dữ liệu cuối run.ts. */

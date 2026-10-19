@@ -6,6 +6,7 @@ import { HD_TVV, LUAT_TVV, MAN_HO_SO_TVV } from './tvv.ts';
 import type { HuongDan } from './kieu.ts';
 
 const hvTim = HD_GV.man.find((m) => m.id === 'hoc-vien')!.muc.find((m) => m.id === 'hv-tim')!;
+const hvLichThi = HD_GV.man.find((m) => m.id === 'hoc-vien')!.muc.find((m) => m.id === 'hv-lich-thi')!;
 
 export const HD_CX: HuongDan = {
   viec: [
@@ -54,6 +55,7 @@ export const HD_CX: HuongDan = {
       id: 'hoc-vien', ten: 'Học viên & Lớp', duong: ['/hoc-vien'],
       muc: [
         hvTim,
+        hvLichThi,
         { id: 'cx-hvl-goc', ten: 'Góc nhìn và phạm vi', buoc: ['<b>Tất cả</b> · <b>Đang SOS</b> · <b>Cần chú ý</b> (mặc định); lọc phụ <b>Tạm dừng</b>, <b>Sắp thi</b>, <b>Đã thi · chờ kết quả</b>, <b>Thiếu thông tin</b>.', 'Phạm vi <b>Tất cả chi nhánh</b> hoặc một chi nhánh.', 'Bấm dòng em mở panel một em.'],
           chi: { hd: 'hvl-goc', duong: '/hoc-vien', chu: 'Góc nhìn và lọc phụ ở hàng này.' } },
         { id: 'cx-hvl-them', ten: 'Tạo lớp, thêm học viên', buoc: ['<b>+ Lớp mới</b> · <b>+ Học viên</b> (một em hoặc dán danh sách): mọi chi nhánh. Phân công giáo viên do QL làm.'] },

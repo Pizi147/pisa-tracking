@@ -30,6 +30,9 @@ import { SuaThongTinMotEm } from './StudentManagePanel.tsx';
 import type { WorkItem } from '../worklist/WorkList.tsx';
 import { ChonTuanSos } from './ChonTuanSos.tsx';
 import { PanelNhapDiemLop } from '../cham/PanelNhapDiemLop.tsx';
+import { GocLichThi } from './GocLichThi.tsx';
+import { NganXuatDs } from './NganXuatDs.tsx';
+import { PhanTrang, usePhanTrang } from '../../ui/PhanTrang.tsx';
 
 /** Ô chọn gọn của đầu trang: cùng cao 32 px với chip (điện thoại 44 px, `.field` đã có min-height 40). */
 const SELECT_GON = 'field h-8 w-auto !py-0 text-xs max-sm:min-h-[44px] max-sm:w-full';
@@ -53,7 +56,7 @@ type TrangHocVienLop = {
   rows: LopTrenTrang[]; scopeEmpty: boolean;
   phamVi: { coThe: PhamVi[]; dangDung: PhamVi; chiNhanh: number | null };
   dem: Record<LocHocVien, number>;
-  hocVien: { id: number; classId: number; loc: LocHocVien[]; khung: 'ft' | 'thuong'; ten: string; ma: string; thieu?: string[] }[];
+  hocVien: { id: number; classId: number; loc: LocHocVien[]; khung: 'ft' | 'thuong'; ten: string; ma: string; thieu?: string[]; ketThuc?: true }[];
   /** Người xem có tạo được lớp MỚI ở chi nhánh nào không — không gắn với lớp đã tồn tại nào (điểm a rà soát cuối). */
   coTheTaoLop: boolean;
   /** HL-14: "+ Học viên" theo phạm vi, không theo kết quả ô tìm. */
@@ -173,8 +176,6 @@ function TrangTheoLop({ admin }: { admin: boolean }) {
     return m;
   }, [data, loc]);
 
-  if ('chuyenDen' in doc) return <Navigate to={`${doc.chuyenDen}${branchId ? `?cn=${branchId}` : ''}`} replace />;
-
   // ------------------------------------------------------------------ OV-12f: góc Đang SOS · Cần làm
   const lopTrang = new Map((data?.rows ?? []).map((c) => [c.id, c]));
   const trongLoc = (classId: number | null, ft?: boolean) => {
@@ -233,17 +234,39 @@ function TrangTheoLop({ admin }: { admin: boolean }) {
     'tat-ca': data ? dem['tat-ca'] : undefined,
     sos: sos.data ? new Set(sosRows.map((r) => r.studentId)).size : undefined,
     'can-lam': work.data ? emCua(viecTatCa) : undefined,
+    'lich-thi': undefined,
   };
   const myAssign = (session?.assignments ?? []).filter((a) => a.skill);
   const dam = !laQl && myAssign.length ? (topic: string | null) => !topic || myAssign.some((a) => a.skill === topic) : null;
   const moCase = (id: number, caseId: number) => setPanelEm({ id, caseMo: caseId });
-  const doiGoc = (g: GocHocVien) => { if (g === 'can-lam' && work.error) work.reload(); setParam({ view: g === 'tat-ca' ? null : g, loc: null, open: null }); };
+  const doiGoc = (g: GocHocVien) => { if (g === 'can-lam' && work.error) work.reload(); setParam({ view: g === 'tat-ca' ? null : g, loc: null, open: null, thang: null }); };
 
   const lopHien = (data?.rows ?? []).filter((c) => (khung === 'tat-ca' || khungCua(c.scoringMode) === khung)
     && (!chiLop || c.id === chiLop) && (!dangLoc || idsTheoLop.has(c.id)));
   /* M3, K2-03: nhóm theo kiểu lớp (Fast Track trước, lớp thường sau) — mỗi nhóm một khối tiêu đề cột riêng: "Target" cho FT, "Khoá" cho lớp thường. */
   const nhomLop = (['ft', 'thuong'] as const)
     .map((k) => ({ k, lop: lopHien.filter((c) => khungCua(c.scoringMode) === k) })).filter((g) => g.lop.length > 0);
+  /*
+   * OV-15f — PHÂN TRANG (mockup 6 khung 7): MỘT hook cho cả trang (cỡ trang nhớ chung) — góc nhóm (Tất cả) theo LỚP, góc phẳng (Đang SOS · Cần làm) theo dòng.
+   * Đổi bộ lọc / góc → về trang 1. Xuất Excel lấy đủ mọi trang (từ danh sách gốc, không từ trang đang hiện).
+   */
+  const lopThuTu = nhomLop.flatMap((g) => g.lop);
+  const tongGoc = goc === 'tat-ca' ? lopThuTu.length : goc === 'sos' ? sosRows.length : goc === 'can-lam' ? viecHien.length : 0;
+  const pt = usePhanTrang(tongGoc, [goc, q, khung, chiLop, locDaThi, locPhu, branchId, phamViUrl, tuanUrl].join('|'), goc === 'tat-ca' ? t('lớp') : goc === 'sos' ? t('lượt') : t('việc'));
+  const lopTrangNay = new Set(pt.cat(lopThuTu).map((c) => c.id));
+  const nhomLopHien = nhomLop.map((g) => ({ ...g, lop: g.lop.filter((c) => lopTrangNay.has(c.id)) })).filter((g) => g.lop.length > 0);
+  /* Xuất Excel (C31): đúng các em trang đang hiện theo góc + bộ lọc (số trên nút = số trong tệp). */
+  const lopDangLoc = chiLop ? (data?.rows ?? []).find((c) => c.id === chiLop) : null;
+  const idsLop = new Set(lopThuTu.map((c) => c.id));
+  const idsXuat = goc === 'tat-ca' ? [...new Set((data?.hocVien ?? []).filter((h) => !h.ketThuc && idsLop.has(h.classId) && (!dangLoc || h.loc.includes(loc))).map((h) => h.id))]
+    : goc === 'sos' ? [...new Set(sosRows.map((r) => r.studentId))]
+    : goc === 'can-lam' ? [...new Set(viecHien.flatMap((v) => (v.studentId !== null ? [v.studentId] : [])))] : [];
+  const boLocXuat = goc === 'tat-ca'
+    ? [t('Tất cả'), locDaThi ? LOC_HOC_VIEN_NHAN['da-thi'].nhan : null, lopDangLoc ? lopDangLoc.code : null, q.trim() ? `“${q.trim()}”` : null].filter(Boolean).join(' · ')
+    : goc === 'sos' ? `${t('Đang SOS')}${sos.data?.tuan ? ` · ${tuanLich(sos.data.tuan, homNay)}` : ''}`
+    : `${t('Cần làm')}${locPhu ? ` · ${nhanLocPhu[locPhu]}` : ''}`;
+  const [xuat, setXuat] = useState(false);
+
   /* PR-DH (04/10): cột Dự kiến thi cho CẢ hai nhóm (lớp thường cũng có Target + Dự kiến thi sau PR-NT). */
   /* OV-10b (mockup vai mục 6): Admin — Học viên · Lượt MT gần nhất · Ô chưa nhập · ⋯ (không Case / Việc tiếp theo). */
   /* OV-15b (C13): nhóm FT thêm OVR · L · R · W · S sau Kết quả gần nhất (số căn giữa). */
@@ -262,11 +285,13 @@ function TrangTheoLop({ admin }: { admin: boolean }) {
     if (s.has(id)) s.delete(id); else s.add(id);
     setParam({ open: s.size ? [...s].join(',') : '-' });
   };
-  const lopDangLoc = chiLop ? (data?.rows ?? []).find((c) => c.id === chiLop) : null;
   const pv = data?.phamVi;
   /* Danh sách học viên = các lớp đang MỞ, theo thứ tự trên màn (Fast Track trước); danh sách lớp = các lớp cùng nhóm khung. */
   const dsHocVien: NguCanhDs = { loai: 'hoc-vien', nhan: t('Học viên & Lớp'), ids: nhomLop.flatMap((g) => g.lop).filter((c) => openIds.includes(c.id)).flatMap((c) => thuTu.get(c.id) ?? []) };
   const dsLopCua = (g: { lop: LopTrenTrang[] }): NguCanhDs => ({ loai: 'lop', nhan: t('Lớp'), ids: g.lop.map((c) => c.id) });
+
+  /* Đặt SAU mọi hook: chuyển trang khi link cũ trỏ chỗ khác (`chuyenDen`). */
+  if ('chuyenDen' in doc) return <Navigate to={`${doc.chuyenDen}${branchId ? `?cn=${branchId}` : ''}`} replace />;
 
   return (
     <div className="page space-y-3">
@@ -280,6 +305,9 @@ function TrangTheoLop({ admin }: { admin: boolean }) {
             * chắc chắn ra 403 (`hasAssignment` đòi `ctx.classId`/`ctx.branchId` cụ thể). Dùng đúng cờ máy chủ đã tính theo
             * TỪNG lớp/chi nhánh thay vào đó.
             */}
+          {goc !== 'lich-thi' && idsXuat.length > 0 && (
+            <button type="button" className="btn btn-sm max-sm:min-h-[44px]" data-hd="hvl-xuat" onClick={() => setXuat(true)}>{t('Xuất Excel · {n} HV', { n: idsXuat.length })}</button>
+          )}
           {data?.coTheTaoLop && <button type="button" className="btn btn-sm max-sm:hidden" onClick={() => setTaoLop(true)}>{t('+ Lớp mới')}</button>}
           {data?.coTheThemHocVien && (
             <button type="button" className="btn btn-sm btn-primary max-sm:hidden" onClick={() => setThem(null)}>{t('+ Học viên')}</button>
@@ -321,8 +349,8 @@ function TrangTheoLop({ admin }: { admin: boolean }) {
           {/* OV-12f: thanh góc nhìn (số = số học viên) · vạch · lọc phụ của góc / tuần thi. Đổi góc thì lọc phụ về trống. */}
           <div className="flex min-w-0 max-w-full flex-wrap items-center gap-2 lg:flex-1" data-hd="hvl-goc">
             <BoLocDoan ariaLabel={t('Góc nhìn')} value={goc} onChange={doiGoc}
-              muc={(admin ? (['tat-ca', 'can-lam'] as const) : (['tat-ca', 'sos', 'can-lam'] as const)).map((k) => ({
-                key: k, nhan: k === 'tat-ca' ? t('Tất cả') : k === 'sos' ? (sos.data?.tuan ? `${t('Đang SOS')} · ${tuanLich(sos.data.tuan, homNay)}` : t('Đang SOS')) : t('Cần làm'),
+              muc={(admin ? (['tat-ca', 'can-lam', 'lich-thi'] as const) : (['tat-ca', 'sos', 'can-lam', 'lich-thi'] as const)).map((k) => ({
+                key: k, nhan: k === 'tat-ca' ? t('Tất cả') : k === 'lich-thi' ? t('Lịch thi') : k === 'sos' ? (sos.data?.tuan ? `${t('Đang SOS')} · ${tuanLich(sos.data.tuan, homNay)}` : t('Đang SOS')) : t('Cần làm'),
                 /* UX-1: tải việc lỗi → "!" + lý do, bấm thử lại (không im lặng). */
                 ...(k === 'can-lam' && work.error ? { so: '!', title: t('Chưa tải được · bấm để thử lại') } : { so: demGoc[k] }),
               }))} />
@@ -353,9 +381,9 @@ function TrangTheoLop({ admin }: { admin: boolean }) {
             )}
           </div>
           <div className="flex shrink-0 items-center gap-2 max-sm:grid max-sm:w-full max-sm:grid-cols-2 lg:ml-auto">
-            <CongTacKhung trang="hoc-vien-lop" coTatCa kieu="chon" value={khung}
+            {goc !== 'lich-thi' && <CongTacKhung trang="hoc-vien-lop" coTatCa kieu="chon" value={khung}
               dem={{ 'tat-ca': data?.rows.length, ft: soLopTheoKhung.ft, thuong: soLopTheoKhung.thuong }}
-              onChange={(k) => setParam({ khung: k === 'tat-ca' ? null : k, open: null })} />
+              onChange={(k) => setParam({ khung: k === 'tat-ca' ? null : k, open: null })} />}
             {/* Xếp: Tất cả theo lựa chọn; Đang SOS theo tuần rồi tên, Cần làm theo hạn (mockup 3 v2 §1) — không cần ô chọn. */}
             {goc === 'tat-ca' && (
               <select className={SELECT_GON} aria-label={t('Cách xếp')} value={sapXep}
@@ -389,10 +417,11 @@ function TrangTheoLop({ admin }: { admin: boolean }) {
          * Điện thoại: cả khối cuộn ngang, không dính.
          */
         <div className="space-y-3">
+          <PhanTrang {...pt.thanh} />
           {/* Điện thoại (< 640 px, D2): mỗi lớp một thẻ gập, mỗi em một thẻ con — không bảng, không cuộn ngang. */}
-          {dienThoai && nhomLop.map((g) => (
+          {dienThoai && nhomLopHien.map((g) => (
             <section key={g.k} className="space-y-2" aria-label={g.k === 'ft' ? t('Lớp Fast Track') : t('Lớp thường')}>
-              {nhomLop.length > 1 && <h2 className="m-0 px-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">{g.k === 'ft' ? 'Fast Track' : t('Lớp thường')}</h2>}
+              {nhomLopHien.length > 1 && <h2 className="m-0 px-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">{g.k === 'ft' ? 'Fast Track' : t('Lớp thường')}</h2>}
               {g.lop.map((c) => (
                 <HopLop key={c.id} the admin={admin} lop={c} soViecQuaHan={demQuaHan(viecLop, c.id).viec} mo={openIds.includes(c.id)} onDoiMo={() => doiMo(c.id)} dsHocVien={dsHocVien} dsLop={dsLopCua(g)} onThuTu={baoThuTu}
                   chiHien={dangLoc ? (idsTheoLop.get(c.id) ?? new Set()) : null} sapXep={sapXep} onMoCase={moCase}
@@ -400,7 +429,7 @@ function TrangTheoLop({ admin }: { admin: boolean }) {
               ))}
             </section>
           ))}
-          {!dienThoai && nhomLop.map((g) => (
+          {!dienThoai && nhomLopHien.map((g) => (
             <section key={g.k} className="card overflow-x-auto md:overflow-visible" aria-label={g.k === 'ft' ? t('Lớp Fast Track') : t('Lớp thường')}>
               <div className="md:sticky md:-top-5 md:z-10" aria-hidden>
                 <table className={`w-full ${g.k === 'ft' && !admin ? 'min-w-[1160px]' : 'min-w-[960px]'} table-fixed text-sm`}>
@@ -419,6 +448,7 @@ function TrangTheoLop({ admin }: { admin: boolean }) {
               ))}
             </section>
           ))}
+          <PhanTrang {...pt.thanh} duoi />
         </div>
       ))}
 
@@ -433,8 +463,8 @@ function TrangTheoLop({ admin }: { admin: boolean }) {
                 </p>
                 {sosRows.length === 0
                   ? <Card><Empty title={sos.data.toanBo ? t('Không có học viên SOS trong 8 tuần') : t('Không có học viên SOS ở tuần thi này')} hint={t('Chọn tuần khác hoặc Toàn bộ.')} /></Card>
-                  : <BangSos data={{ ...sos.data, rows: sosRows }} cot="ql" dam={dam} dienThoai={dienThoai} ds={dsHocVien}
-                      onMo={(r) => setPanelEm({ id: r.studentId, caseMo: r.cases.find((c) => !c.done)?.id ?? null })} dangMo={panelEm?.id ?? null} />}
+                  : <><PhanTrang {...pt.thanh} /><BangSos data={{ ...sos.data, rows: pt.cat(sosRows) }} cot="ql" dam={dam} dienThoai={dienThoai} ds={dsHocVien}
+                      onMo={(r) => setPanelEm({ id: r.studentId, caseMo: r.cases.find((c) => !c.done)?.id ?? null })} dangMo={panelEm?.id ?? null} /><PhanTrang {...pt.thanh} duoi /></>}
               </>
             )
       )}
@@ -450,9 +480,15 @@ function TrangTheoLop({ admin }: { admin: boolean }) {
                 </p>
                 {viecHien.length === 0
                   ? <Card><Empty title={locPhu ? t('Không có việc nào khớp lọc') : t('Không có việc nào')} /></Card>
-                  : <BangCanLam viec={viecHien} coNguoi={laQl || admin} coPhuHuynh={false} dienThoai={dienThoai} ds={dsHocVien} />}
+                  : <><PhanTrang {...pt.thanh} /><BangCanLam viec={pt.cat(viecHien)} coNguoi={laQl || admin} coPhuHuynh={false} dienThoai={dienThoai} ds={dsHocVien} /><PhanTrang {...pt.thanh} duoi /></>}
               </>
             )
+      )}
+      {goc === 'lich-thi' && (
+        <GocLichThi duongGoc={qs.slice(qs.indexOf('?'))} thangUrl={params.get('thang')} onDoiThang={(m) => setParam({ thang: m.join(','), open: null })} />
+      )}
+      {xuat && goc !== 'lich-thi' && (
+        <NganXuatDs ids={idsXuat} boLoc={boLocXuat} mauMacDinh={goc === 'sos' ? 'theo-doi-sos' : undefined} locSos={{ tuan: tuanUrl, phamVi: phamViUrl, branchId, q: q.trim() || null }} onDong={() => setXuat(false)} />
       )}
       {panelEm && (
         <PanelMotEm key={panelEm.id} studentId={panelEm.id} caseMo={panelEm.caseMo} onClose={() => setPanelEm(null)}

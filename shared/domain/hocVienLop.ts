@@ -100,11 +100,12 @@ export function docThamSoLoc(view: string | null | undefined): DocLoc {
 // ---------------------------------------------------------------- ba góc nhìn (OV-12f, đặc tả OV-12 mục 3.5 / 7.9, P14)
 
 /** Góc nhìn của Học viên & Lớp — thay hàng chip. Lọc phụ (Quá hạn · Chờ duyệt · Thiếu thông tin) nằm TRONG góc Cần làm, không bỏ lọc nào. */
-export const GOC_HOC_VIEN = ['tat-ca', 'sos', 'can-lam'] as const;
+export const GOC_HOC_VIEN = ['tat-ca', 'sos', 'can-lam', 'lich-thi'] as const;
 export type GocHocVien = (typeof GOC_HOC_VIEN)[number];
 export type LocPhuCanLam = 'qua-han' | 'cho-duyet' | 'thieu_tt';
 /** `view` (+ `loc`) trên URL → góc + lọc phụ. Link cũ giữ nghĩa qua `docThamSoLoc`: `qua-han` / `cho-duyet` / `thieu_tt` / `case_*` → Cần làm. */
 export function docGoc(view: string | null | undefined, loc: string | null | undefined): { goc: GocHocVien; loc: LocPhuCanLam | null } {
+  if (view === 'lich-thi') return { goc: 'lich-thi', loc: null };   // OV-15f: rà soát lịch thi thật khi họp
   const d = docThamSoLoc(view);
   const l = 'loc' in d ? d.loc : 'tat-ca';
   if (l === 'sos') return { goc: 'sos', loc: null };

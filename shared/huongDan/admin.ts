@@ -58,7 +58,7 @@ export const HD_ADMIN: HuongDan = {
     },
     {
       id: 'hoc-vien', ten: 'Học viên & Lớp', duong: ['/hoc-vien'],
-      muc: [mucGv('hoc-vien', 'hv-tim'),
+      muc: [mucGv('hoc-vien', 'hv-tim'), mucGv('hoc-vien', 'hv-lich-thi'),
         { id: 'ad-hvl-goc', ten: 'Góc nhìn', buoc: ['<b>Tất cả</b> · <b>Cần làm</b>; phạm vi chi nhánh của bạn.', 'Bấm dòng em mở panel một em.'],
           chi: { hd: 'hvl-goc', duong: '/hoc-vien', chu: 'Góc nhìn ở hàng này.' } }],
     },

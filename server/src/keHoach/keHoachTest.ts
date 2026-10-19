@@ -1322,7 +1322,7 @@ const tenChiNhanh = (lop: readonly any[]) => [...new Set(lop.map((l) => l.chi_nh
 const ngayTep = (iso: string) => `${iso.slice(8, 10)}-${iso.slice(5, 7)}-${iso.slice(0, 4)}`;
 
 /** Lớp đã qua của từng lộ trình (theo số MT tăng dần) — em học 2 lớp trong kỳ ghi "A → B". */
-function lopTheoLoTrinh(cycleIds: readonly number[]): Map<number, string[]> {
+export function lopTheoLoTrinh(cycleIds: readonly number[]): Map<number, string[]> {
   const out = new Map<number, string[]>();
   theoLo([...new Set(cycleIds)], (lo, ph) => {
     for (const r of db().prepare(

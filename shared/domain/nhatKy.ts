@@ -37,7 +37,7 @@ const NHAN_NHAT_KY: Record<string, string> = {
   'measure.add_violations': 'Gom thêm vi phạm vào lần xử lý', 'measure.confirm': 'Xác nhận đã xử lý vi phạm', 'measure.create': 'Tạo lần xử lý vi phạm',
   'measure.delete': 'Xoá lần xử lý vi phạm', 'measure.edit': 'Sửa lần xử lý vi phạm', 'measure.note': 'Ghi chú lần xử lý vi phạm',
   'measure.remove_violation': 'Bỏ vi phạm khỏi PA',
-  'mgmt_task.create': 'Tạo công việc quản lý', 'mt.xuat_excel': 'Xuất Excel kết quả Test', 'ke_hoach.xuat_excel': 'Xuất Excel Kế hoạch Test', 'ke_hoach.xuat_diem': 'Xuất điểm Test',
+  'mgmt_task.create': 'Tạo công việc quản lý', 'mt.xuat_excel': 'Xuất Excel kết quả Test', 'ke_hoach.xuat_excel': 'Xuất Excel Kế hoạch Test', 'lich_thi.luu': 'Lưu kết luận lịch thi', 'hoc_vien.xuat_excel': 'Xuất Excel danh sách học viên', 'ke_hoach.xuat_diem': 'Xuất điểm Test',
   'regular.no_show': 'Báo vắng', 'regular.no_show_cleared': 'Bỏ báo vắng', 'regular.plan': 'Xếp lịch bài lớp thường',
   'request.approve': 'Duyệt yêu cầu', 'request.decline': 'Từ chối yêu cầu', 'request.answer': 'Trả lời Xin ý kiến', 'request.undo': 'Huỷ quyết định duyệt',
   'request.create': 'Gửi yêu cầu duyệt', 'request.edit': 'Người gửi sửa yêu cầu', 'request.withdraw': 'Người gửi rút yêu cầu', 'request.answer_edit': 'Sửa câu trả lời Xin ý kiến',
