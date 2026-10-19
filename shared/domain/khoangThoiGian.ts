@@ -14,8 +14,8 @@ export const NHAN_KIEU_KHOANG: Record<KieuKhoang, string> = {
 };
 /** `tu`, `den` là NGÀY (gồm cả hai đầu). Theo tuần / tháng / 2 tuần: `tu` Thứ Hai, `den` Chủ nhật. */
 export type KhoangNgay = { kieu: KieuKhoang; tu: string; den: string };
-/** Một năm — bảng mở nhanh, Turso đọc vừa phải. */
-export const TOI_DA_NGAY_KHOANG = 371;
+/** 52 tuần — bảng mở nhanh, Turso đọc vừa phải; cùng trần với Hiệu quả PA (`HQ_PA_TOI_DA_TUAN`). */
+export const TOI_DA_NGAY_KHOANG = 364;
 
 const NGAY = /^\d{4}-\d{2}-\d{2}$/;
 const laNgay = (s: string | null | undefined): s is string =>
@@ -44,7 +44,7 @@ export function khoangThang(thang: string): { tu: string; den: string } | null {
 export function loiKhoang(k: { tu: string; den: string }): string | null {
   if (!laNgay(k.tu) || !laNgay(k.den)) return t('Ngày không hợp lệ (YYYY-MM-DD).');
   if (k.tu > k.den) return t('Ngày đầu phải trước ngày cuối.');
-  if (soNgay(k.tu, k.den) > TOI_DA_NGAY_KHOANG) return t('Khoảng tối đa một năm.');
+  if (soNgay(k.tu, k.den) > TOI_DA_NGAY_KHOANG) return t('Khoảng tối đa 52 tuần.');
   return null;
 }
 

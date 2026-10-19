@@ -4,6 +4,8 @@
  */
 export const CHI_MUC_OV15E: [string, string][] = [
   ['idx_cycle_thi_that_ngay', 'CREATE INDEX IF NOT EXISTS idx_cycle_thi_that_ngay ON learning_cycles(thi_that_ngay) WHERE thi_that_ngay IS NOT NULL'],
+  /* "Không thi" không có ngày thi thật — lọc theo ngày thi dự kiến. */
+  ['idx_cycle_khong_thi', 'CREATE INDEX IF NOT EXISTS idx_cycle_khong_thi ON learning_cycles(exam_date) WHERE thi_that_khong_thi = 1'],
 ];
 
 export function migratePrOv15e(conn: any, applied: string[]) {

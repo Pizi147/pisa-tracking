@@ -119,7 +119,7 @@ export function BaoCao(pv: PhamViPhanTich) {
                     <th className="th">{soTuanTruoc ? t('So {n} tuần trước', { n: soTuanTruoc }) : t('So kỳ trước')}</th>
                   </tr></thead>
                   <tbody>
-                    {[...ptSos.cat(data.sos.hang), { ...data.sos.tong, lop: t('Cả {cn}', { cn: tenCn }) }].map((h) => (
+                    {[...ptSos.cat(data.sos.hang), { ...data.sos.tong, lop: pv.branchId ? t('Cả {cn}', { cn: tenCn }) : t('Tổng') }].map((h) => (
                       <tr key={h.classId} className={h.classId ? '' : 'border-t font-semibold'} style={h.classId ? undefined : { borderColor: 'var(--line-strong)' }}>
                         <td className="td truncate">{h.lop}</td>
                         {([1, 2, 3] as const).map((m) => (

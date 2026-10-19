@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import {
-  KIEU_KHOANG, NHAN_KIEU_KHOANG, addDaysIso, khoangMacDinh, khoangThang, loiKhoang, nhanKhoang,
+  KIEU_KHOANG, NHAN_KIEU_KHOANG, addDaysIso, khoangMacDinh, mondayOfDate, khoangThang, loiKhoang, nhanKhoang,
   type KhoangNgay, type KieuKhoang,
 } from '@shared/domain/index.ts';
 import { ONgay } from '../../ui/ONgay.tsx';
@@ -36,7 +36,8 @@ export function BoChonThoiGian({ khoang, onChange }: { khoang: KhoangNgay; onCha
   const doiKieu = (k: KieuKhoang) => {
     if (k === '2-tuan') return setNhap(khoangMacDinh(homNay));
     if (k === 'thang') return setNhap({ kieu: k, ...(khoangThang(nhap.den.slice(0, 7)) ?? khoangMacDinh(homNay)) });
-    setNhap({ ...nhap, kieu: k });
+    /* Theo tuần: chuẩn về Thứ Hai đầu → Chủ nhật cuối (khoảng Tùy chọn có thể bắt đầu giữa tuần). */
+    setNhap(k === 'tuan' ? { kieu: k, tu: mondayOfDate(nhap.tu), den: addDaysIso(mondayOfDate(nhap.den), 6) } : { ...nhap, kieu: k });
   };
   const loi = loiKhoang(nhap);
   const xem = loi ? null : nhanKhoang(nhap);

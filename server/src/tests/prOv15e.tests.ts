@@ -156,6 +156,14 @@ export async function runPrOv15eTests(t: YThucTestKit) {
       r = kq.rows.find((x: any) => x.cycleId === cy.id);
       assert(r.buocTiepChu === 'Tạm dừng' && r.nguoiChon && r.ngayChon, `sau chọn: ${JSON.stringify(r)}`);
       assert(!kqt.ketQuaThiThatKq(QL, { branchId: MB, tu: d.addDaysIso(TODAY, 1), den: d.addDaysIso(TODAY, 6) }).rows.some((x: any) => x.cycleId === cy.id), 'ngoài khoảng không có');
+      /* Không thi: không có ngày thi thật → tính theo ngày thi dự kiến (`exam_date`); vẫn hiện để chọn Bước tiếp. */
+      const cy2 = one(`SELECT c.id FROM learning_cycles c JOIN enrollments e ON e.student_id = c.student_id AND e.status = 'active'
+        JOIN classes l ON l.id = e.class_id AND l.branch_id = ? WHERE c.route IS NOT NULL AND c.status = 'active' AND c.id != ?
+          AND c.started_at <= ? AND c.seq = (SELECT MAX(x.seq) FROM learning_cycles x WHERE x.student_id = c.student_id) ORDER BY c.id LIMIT 1`, MB, cy.id, d.addDaysIso(TODAY, -3));
+      conn.prepare('UPDATE learning_cycles SET exam_date = ? WHERE id = ?').run(d.addDaysIso(TODAY, -1), cy2.id);
+      thiThat.datKetQuaThiThat(QL, cy2.id, { khongThi: true });
+      const kt = kqt.ketQuaThiThatKq(QL, { branchId: MB, ...RONG }).rows.find((x: any) => x.cycleId === cy2.id);
+      assert(kt && kt.khongThi && kt.dat === null && kt.ngayThi === d.addDaysIso(TODAY, -1), `Không thi phải có hàng: ${JSON.stringify(kt)}`);
     });
   });
 
@@ -217,8 +225,9 @@ export async function runPrOv15eTests(t: YThucTestKit) {
   });
 
   await checkAsync('OV15e-11 · Thi thật lọc ngày thi qua chỉ mục (không quét learning_cycles); migrate chỉ mục chạy lặp được', async () => {
-    const plan = conn.prepare(`EXPLAIN QUERY PLAN SELECT c.id FROM learning_cycles c WHERE c.route IS NOT NULL AND c.thi_that_ngay BETWEEN ? AND ?`).all('2026-01-01', '2026-12-31') as any[];
-    assert(plan.some((r: any) => /idx_cycle_thi_that_ngay/.test(r.detail)), `kế hoạch: ${plan.map((r: any) => r.detail).join(' | ')}`);
+    const plan = conn.prepare(`EXPLAIN QUERY PLAN ${kqt.SQL_THI_THAT}`).all('2026-01-01', '2026-12-31', '2026-01-01', '2026-12-31') as any[];
+    const ke = plan.map((r: any) => r.detail).join(' | ');
+    assert(/idx_cycle_thi_that_ngay/.test(ke) && /idx_cycle_khong_thi/.test(ke) && !/SCAN c\b/.test(ke), `kế hoạch: ${ke}`);
     const { migratePrOv15e } = await import('../migrate/prOv15e.ts');
     const ap: string[] = [];
     migratePrOv15e(conn, ap); migratePrOv15e(conn, ap);

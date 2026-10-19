@@ -93,6 +93,17 @@ export function ketQuaMockKq(p: Principal, f: LocKetQuaThi & { xep?: XepMock; kq
 }
 
 /**
+ * Lộ trình FT có kết quả thi thật trong khoảng (4 tham số: tu, den, tu, den). Có điểm → ngày thi thật; "Không thi" không có ngày thi thật
+ * (`thi_that_ngay` NULL) → ngày thi dự kiến (`exam_date`). Hai vế OR, mỗi vế một chỉ mục một phần (`idx_cycle_thi_that_ngay`, `idx_cycle_khong_thi`).
+ */
+export const SQL_THI_THAT = `SELECT c.id, c.student_id, s.full_name AS ten, COALESCE(c.thi_that_ngay, c.exam_date) AS ngay_thi, c.thi_that_l, c.thi_that_r, c.thi_that_w, c.thi_that_s,
+            c.thi_that_khong_thi, c.outcome, c.outcome_score, c.target_score, c.khong_cam_ket, c.buoc_tiep, c.buoc_tiep_luc, c.buoc_tiep_json, u.full_name AS nguoi_chon
+       FROM learning_cycles c JOIN students s ON s.id = c.student_id LEFT JOIN users u ON u.id = c.buoc_tiep_boi
+      WHERE c.route IS NOT NULL
+        AND ((c.thi_that_ngay BETWEEN ? AND ? AND c.thi_that_l IS NOT NULL AND c.thi_that_r IS NOT NULL AND c.thi_that_w IS NOT NULL AND c.thi_that_s IS NOT NULL)
+          OR (c.thi_that_khong_thi = 1 AND c.exam_date BETWEEN ? AND ?))`;
+
+/**
  * Thi thật: lộ trình FT có kết quả (đủ 4 kỹ năng / Không thi) với ngày thi trong khoảng; lớp = lớp của lượt MT cuối của lộ trình (một câu theo lô),
  * không có lượt → ghi danh cuối. Phạm vi: lớp trong `classScopeSql` của quyền Phân tích.
  * ponytail: `coQuyenBuocTiep` hỏi quyền theo từng em — bảng thi thật một khoảng chỉ vài chục hàng.
@@ -100,13 +111,7 @@ export function ketQuaMockKq(p: Principal, f: LocKetQuaThi & { xep?: XepMock; kq
 export function ketQuaThiThatKq(p: Principal, f: LocKetQuaThi): KetQuaThiThatKq {
   const scope = phamVi(p);
   const conn = db();
-  const ds = conn.prepare(
-    `SELECT c.id, c.student_id, s.full_name AS ten, c.thi_that_ngay, c.thi_that_l, c.thi_that_r, c.thi_that_w, c.thi_that_s, c.thi_that_khong_thi,
-            c.outcome, c.outcome_score, c.target_score, c.khong_cam_ket, c.buoc_tiep, c.buoc_tiep_luc, c.buoc_tiep_json, u.full_name AS nguoi_chon
-       FROM learning_cycles c JOIN students s ON s.id = c.student_id LEFT JOIN users u ON u.id = c.buoc_tiep_boi
-      WHERE c.route IS NOT NULL AND c.thi_that_ngay BETWEEN ? AND ?
-        AND (c.thi_that_khong_thi = 1 OR (c.thi_that_l IS NOT NULL AND c.thi_that_r IS NOT NULL AND c.thi_that_w IS NOT NULL AND c.thi_that_s IS NOT NULL))`,
-  ).all(f.tu, f.den) as any[];
+  const ds = conn.prepare(SQL_THI_THAT).all(f.tu, f.den, f.tu, f.den) as any[];
   /* Lớp: lượt cuối của lộ trình, không có thì ghi danh cuối của em — hai câu theo lô. */
   const lopCua = new Map<number, number>();
   theoLo(ds.map((c) => c.id as number), (lo, ph) => {
@@ -134,7 +139,7 @@ export function ketQuaThiThatKq(p: Principal, f: LocKetQuaThi): KetQuaThiThatKq 
     const g = JSON.parse(c.buoc_tiep_json ?? '{}');
     const chon = (c.buoc_tiep ?? null) as LuaChonSauThi | null;
     return {
-      cycleId: c.id, studentId: c.student_id, ten: c.ten, classId: l, lop: lop.get(l)!.code, ngayThi: c.thi_that_ngay ?? null, khongThi: !!c.thi_that_khong_thi,
+      cycleId: c.id, studentId: c.student_id, ten: c.ten, classId: l, lop: lop.get(l)!.code, ngayThi: c.ngay_thi ?? null, khongThi: !!c.thi_that_khong_thi,
       ovr: c.outcome_score ?? null, l: c.thi_that_l ?? null, r: c.thi_that_r ?? null, w: c.thi_that_w ?? null, s: c.thi_that_s ?? null,
       target: chuTargetKck(c.target_score ?? null, !!c.khong_cam_ket),
       dat: c.thi_that_khong_thi ? null : c.outcome === 'reached' ? true : c.outcome === 'not_reached' ? false : null,
