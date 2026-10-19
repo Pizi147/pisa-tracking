@@ -159,7 +159,8 @@ type CoDot = { giua: boolean; cuoi: boolean; checkpoint: boolean };
 type DongRaw = { khoa: string; nhan: string; phu?: string; tuanNay?: boolean; tap: Tap; sortKey: readonly unknown[]; con: Map<string, DongRaw>; coDot: CoDot };
 const coDotMoi = (): CoDot => ({ giua: false, cuoi: false, checkpoint: false });
 
-export type FilterTongHop = { branchId?: number | null; ct: ChuongTrinh; soTuan: number; classId?: number | null; theo: TheoDong };
+/** OV-15e (C29): `tu`/`den` (ngày, bộ chọn thời gian chung) thắng `soTuan` — tuần thi có Thứ Hai trong [Thứ Hai của `tu`, Thứ Hai của `den`]. */
+export type FilterTongHop = { branchId?: number | null; ct: ChuongTrinh; soTuan: number; classId?: number | null; theo: TheoDong; tu?: string | null; den?: string | null };
 
 function tinh(p: Principal, f: FilterTongHop) {
   const scope = scopeFor(p, PERMISSIONS.ANALYSIS_VIEW);
@@ -167,8 +168,8 @@ function tinh(p: Principal, f: FilterTongHop) {
   const conn = db();
   const today = demoToday();
   const soTuan = Math.min(Math.max(f.soTuan, 1), 52);
-  const tu = tuDauKhoang(today, soTuan);
-  const den = mondayOf(today);
+  const tu = f.tu && f.den ? mondayOf(f.tu) : tuDauKhoang(today, soTuan);
+  const den = f.tu && f.den ? mondayOf(f.den) : mondayOf(today);
 
   const cs = classScopeSql(scope);
   const where = [cs.sql, `a.status != 'cancelled'`, 'rp.week_start >= ?', 'rp.week_start <= ?'];
@@ -302,7 +303,7 @@ const soCuaTap = (tap: Tap, cols: readonly string[]): Record<string, number> =>
  * OV-11h (PT-10): lớp ĐÃ KẾT THÚC có lượt (không huỷ) trong khoảng `soTuan` tuần — ô Lớp của Phân tích, nhóm "Đã kết thúc" (bảng "Theo lớp" đã có hàng
  * của chúng). Cùng phạm vi `ATTEMPT_VIEW` và cùng cột như `/ref/classes`; `ket_thuc: true` để web xếp nhóm.
  */
-export function lopKetThucCoLuot(p: Principal, soTuan: number, branchId: number | null): any[] {
+export function lopKetThucCoLuot(p: Principal, soTuan: number, branchId: number | null, khoang?: { tu: string; den: string }): any[] {
   const scope = scopeFor(p, PERMISSIONS.ATTEMPT_VIEW);
   if (scope.none) return [];
   const today = demoToday();
@@ -311,7 +312,7 @@ export function lopKetThucCoLuot(p: Principal, soTuan: number, branchId: number 
        FROM classes c LEFT JOIN programmes pg ON pg.code = c.programme_code
       WHERE c.status IN ('finished', 'ended') AND EXISTS (SELECT 1 FROM assessment_attempts a JOIN report_periods rp ON rp.id = a.planned_period_id
              WHERE a.class_id = c.id AND a.status != 'cancelled' AND rp.week_start >= ? AND rp.week_start <= ?)`,
-  ).all(tuDauKhoang(today, Math.min(Math.max(soTuan, 1), 52)), mondayOf(today)) as any[];
+  ).all(khoang ? mondayOf(khoang.tu) : tuDauKhoang(today, Math.min(Math.max(soTuan, 1), 52)), khoang ? mondayOf(khoang.den) : mondayOf(today)) as any[];
   return rows
     .filter((c) => (scope.all || scope.branchIds.includes(c.branch_id) || scope.classIds.includes(c.id)) && (!branchId || c.branch_id === branchId))
     .sort((a, b) => soSanhLop({ code: a.code, branchId: a.branch_id }, { code: b.code, branchId: b.branch_id }))

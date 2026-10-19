@@ -1,8 +1,7 @@
 import { useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { useSession } from '../../lib/session.tsx';
 import { BranchFilter, useChiNhanhMacDinh } from '../../ui/Filters.tsx';
-import { PhanTich } from '../phanTich/PhanTich.tsx';
 import { BranchPulse } from './BranchPulse.tsx';
 import { LichSapToi } from './Highlights.tsx';
 import { MetricTiles } from './MetricTiles.tsx';
@@ -13,7 +12,6 @@ import { HocVienCuaToi } from './HocVienCuaToi.tsx';
 import { DaiMoiDung } from '../huongDan/DaiMoiDung.tsx';
 import { MockTestAdmin } from './MockTestAdmin.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
-import { HangTab } from '../../ui/HangTab.tsx';
 import { CongTacKhung, khungDaNho } from '../../ui/CongTacKhung.tsx';
 import { TAB_TONG_QUAN_LABEL, laVaiQuanLy, ngay, tuanLich, type TabTongQuan } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
@@ -25,18 +23,12 @@ import { t } from '@shared/i18n/index.ts';
  * sắp tới, bảng chi nhánh) theo công tắc `Fast Track · Lớp thường` đặt ĐẦU phần Số liệu — đặt đầu trang dễ hiểu nhầm là cả trang đổi.
  * Tab "Việc hôm nay · Phân tích" nằm trên ĐƯỜNG DẪN (`/`, `/phan-tich`) nên Back giữ đúng chỗ; không lặp tiêu đề "Tổng quan" (K1-10).
  */
-export default function OverviewPage({ tab: tabProp = 'tong-quan' }: { tab?: TabTongQuan } = {}) {
+/* OV-15e (plan §7): Phân tích thành mục thanh trên (`/phan-tich`, `PhanTichPage`) — Tổng quan không còn hàng tab "Việc hôm nay · Phân tích". */
+export default function OverviewPage(_: { tab?: TabTongQuan } = {}) {
   const { session } = useSession();
   const [params, setParams] = useSearchParams();
   const canSeeBoard = !!session?.nav?.analysis;
   const { homNay, ngan } = useNgayNghiepVu();
-  const tab = canSeeBoard && tabProp === 'phan-tich' ? 'board' : 'work';
-  const navigate = useNavigate();
-  const goTab = (k: TabTongQuan) => {
-    const giu = new URLSearchParams();
-    for (const ten of ['cn', 'ct']) if (params.get(ten)) giu.set(ten, params.get(ten)!);
-    navigate(`${k === 'phan-tich' ? '/phan-tich' : '/'}${giu.size ? `?${giu}` : ''}`);
-  };
   /* CHI NHÁNH ĐANG CHỌN NẰM TRÊN ĐỊA CHỈ TRANG (`cn`) — một nguồn cho cả trang, gửi đường dẫn vẫn ra đúng chi nhánh. */
   const macDinh = useChiNhanhMacDinh();
   const branchId = params.get('cn') ? Number(params.get('cn')) : macDinh;
@@ -54,16 +46,9 @@ export default function OverviewPage({ tab: tabProp = 'tong-quan' }: { tab?: Tab
   if (session?.nav?.hvCuaToi) {
     return (
       <div className="page space-y-4">
-        {canSeeBoard ? (
-          <div className="flex flex-wrap items-end justify-between gap-x-3 gap-y-2">
-            <h1 className="sr-only">{t('Học viên của tôi')}</h1>
-            <HangTab ariaLabel={t('Tổng quan')} value={tabProp} onChange={goTab}
-              tabs={(['tong-quan', 'phan-tich'] as const).map((k) => ({ key: k, label: k === 'tong-quan' ? t('Học viên của tôi') : TAB_TONG_QUAN_LABEL[k] }))} />
-            {tab === 'board' && <BranchFilter branchId={branchId} onBranch={setBranchId} />}
-          </div>
-        ) : <h1 className="m-0 text-lg font-semibold text-slate-100">{t('Học viên của tôi')}</h1>}
-        {tab === 'work' && <DaiMoiDung />}
-        {tab === 'board' ? <PhanTich /> : <HocVienCuaToi />}
+        <h1 className="m-0 text-lg font-semibold text-slate-100">{t('Học viên của tôi')}</h1>
+        <DaiMoiDung />
+        <HocVienCuaToi />
       </div>
     );
   }
@@ -100,23 +85,20 @@ export default function OverviewPage({ tab: tabProp = 'tong-quan' }: { tab?: Tab
 
   return (
     <div className="page space-y-4">
-      <h1 className="sr-only">{t('Tổng quan')}</h1>{/* OV-11f (P2-5): mọi vai có h1 */}
       <div className="flex flex-wrap items-end justify-between gap-x-3 gap-y-2">
-        <HangTab ariaLabel={t('Tổng quan')} value={tabProp} onChange={goTab}
-          tabs={(['tong-quan', 'phan-tich'] as const).map((k) => ({ key: k, label: k === 'tong-quan' ? nhanTabDau : TAB_TONG_QUAN_LABEL[k] }))} />
+        <h1 className="m-0 text-lg font-semibold text-slate-100">{nhanTabDau}</h1>{/* OV-11f (P2-5): mọi vai có h1 */}
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
           {duLieuDen && <span className="text-xs text-slate-500">{duLieuDen}</span>}
           <BranchFilter branchId={branchId} onBranch={setBranchId} />
         </div>
       </div>
-      {tab === 'board' && <PhanTich />}
-      {tab === 'work' && vai === 'admin' && (
+      {vai === 'admin' && (
         <>
           <MockTestAdmin branchId={branchId} />
           <LichSapToi branchId={branchId} ct={null} />
         </>
       )}
-      {tab === 'work' && vai !== 'admin' && (
+      {vai !== 'admin' && (
         <>
           <DaiMoiDung />
           {/* ─────────────── tầng 1: việc chờ Quản lý quyết + việc đang trễ (gộp hai khung) */}

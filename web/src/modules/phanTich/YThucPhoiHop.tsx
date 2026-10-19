@@ -6,9 +6,10 @@ import { Card, Empty, ErrorState, NhanTrangThai, Skeleton, Th } from '../../ui/u
 import { HangCon, HangNhom } from '../../ui/HangNhom.tsx';
 import { Nhan } from '../../ui/Nhan.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
+import { PhanTrang, usePhanTrang } from '../../ui/PhanTrang.tsx';
 import { DINH_TRAI, MAU_SO_VOI_TRUOC, SoO as SoLieuO, thamSoLoc, type PhamViPhanTich } from './dungChung.tsx';
 import {
-  COT_XUAT_HV_CAN_CHU_Y, KHOA_LOAI_XU_LY, KHOANG_LABEL, NHOM_EM_LABEL, duongHoSoHocVien, nhanLoaiXuLy, nhanSoVoiTruoc, ngay,
+  COT_XUAT_HV_CAN_CHU_Y, KHOA_LOAI_XU_LY, NHOM_EM_LABEL, nhanKhoang, duongHoSoHocVien, nhanLoaiXuLy, nhanSoVoiTruoc, ngay,
   type DongHvCanChuY, type DongLopViPham, type YThucPhanTichKetQua,
 } from '@shared/domain/index.ts';
 
@@ -25,6 +26,9 @@ export function YThucPhoiHop(props: PhamViPhanTich) {
   const demoDate = useNgayNghiepVu().homNay || null;
   const query = thamSoLoc(props);
   const { data, loading, error, reload } = useApi<YThucPhanTichKetQua>(`/phan-tich/y-thuc?${query}`, [query]);
+  const nhanKy = nhanKhoang(props.khoang).chinh;
+  const ptHv = usePhanTrang(data?.hvCanChuY.length ?? 0, query, 'HV');
+  const ptLop = usePhanTrang(data?.lop.length ?? 0, query, 'lớp');
   const nguon = (dong: string, cot: string) => `/phan-tich/y-thuc/o?${query}&dong=${encodeURIComponent(dong)}&cot=${encodeURIComponent(cot)}`;
   const [mo, setMo] = useState<Set<string>>(new Set());
   useEffect(() => {
@@ -41,7 +45,7 @@ export function YThucPhoiHop(props: PhamViPhanTich) {
   async function xuatExcel() {
     if (!data || !demoDate) return;
     const XLSX = await import('xlsx');
-    const moTa = [tenChiNhanh ?? 'Tất cả chi nhánh', KHOANG_LABEL[props.tg], tenLop, `dữ liệu đến ${ngay(demoDate)}`].filter(Boolean).join(' · ');
+    const moTa = [tenChiNhanh ?? 'Tất cả chi nhánh', nhanKy, tenLop, `dữ liệu đến ${ngay(demoDate)}`].filter(Boolean).join(' · ');
     const hv: (string | number)[][] = [
       [`Học viên cần chú ý · ${moTa}`], [],
       [...COT_XUAT_HV_CAN_CHU_Y],
@@ -143,13 +147,15 @@ export function YThucPhoiHop(props: PhamViPhanTich) {
               title={<span className="inline-flex flex-wrap items-baseline gap-x-2">Học viên cần chú ý <span className="text-xs font-normal text-slate-500">· quá hạn, bắt buộc xử lý hoặc chờ QL duyệt</span> {khungLuat}</span>}
               action={<button type="button" className="btn btn-sm" disabled={!demoDate} onClick={xuatExcel}>⤓ Xuất Excel</button>}>
               {data.hvCanChuY.length === 0
-                ? <div className="p-4"><Empty title={`Không có học viên nào cần chú ý trong ${KHOANG_LABEL[props.tg]}`} hint="Thử khoảng thời gian dài hơn." /></div>
-                : bang1(data.hvCanChuY)}
+                ? <div className="p-4"><Empty title={`Không có học viên nào cần chú ý trong ${nhanKy}`} hint="Thử khoảng thời gian dài hơn." /></div>
+                : <><div className="px-3"><PhanTrang {...ptHv.thanh} /></div>{bang1(ptHv.cat(data.hvCanChuY))}<div className="px-3"><PhanTrang {...ptHv.thanh} duoi /></div></>}
             </Card>
             <Card bodyClass="p-0" title={<span>Lớp nhiều vi phạm <span className="text-xs font-normal text-slate-500">· xếp theo vi phạm chưa xử lý</span></span>}>
               {data.lop.length === 0 && !data.gom
-                ? <div className="p-4"><Empty title={`Chưa có vi phạm nào trong ${KHOANG_LABEL[props.tg]}`} hint="Số có khi đã ghi vi phạm — thử khoảng thời gian dài hơn." /></div>
+                ? <div className="p-4"><Empty title={`Chưa có vi phạm nào trong ${nhanKy}`} hint="Số có khi đã ghi vi phạm — thử khoảng thời gian dài hơn." /></div>
                 : (
+                  <>
+                  <div className="px-3"><PhanTrang {...ptLop.thanh} /></div>
                   <div className="table-scroll">
                     <table className="w-full text-sm" style={{ tableLayout: 'fixed', minWidth: 640 }}>
                       <colgroup><col style={{ width: '27%' }} /><col style={{ width: 80 }} /><col style={{ width: 90 }} /><col style={{ width: 100 }} /><col style={{ width: 100 }} /><col style={{ width: '23%' }} /></colgroup>
@@ -161,7 +167,7 @@ export function YThucPhoiHop(props: PhamViPhanTich) {
                         </tr>
                       </thead>
                       <tbody>
-                        {data.lop.map((x) => (
+                        {ptLop.cat(data.lop).map((x) => (
                           <Fragment key={x.khoa}>
                             <HangNhom mo={mo.has(x.khoa)} onMo={() => doiMo(x.khoa)} nhan={x.nhan} tieuDe={tenLopCell(x)} className={DINH_TRAI}>{oLop(x, false)}</HangNhom>
                             {mo.has(x.khoa) && x.con?.map((c) => (
@@ -181,6 +187,8 @@ export function YThucPhoiHop(props: PhamViPhanTich) {
                       </tbody>
                     </table>
                   </div>
+                  <div className="px-3"><PhanTrang {...ptLop.thanh} duoi /></div>
+                  </>
                 )}
             </Card>
           </>

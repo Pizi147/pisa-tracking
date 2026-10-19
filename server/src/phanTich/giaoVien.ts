@@ -17,7 +17,9 @@ import { BUSINESS_TZ, addDays, badRequest, forbidden, notFound } from '../util.t
 import { loadBundle, regularSkillViews, skillCells } from '../fasttrack/attempts.ts';
 import { allProgrammes } from '../normal/regular.ts';
 import { danhGiaMon } from '../classes/phanTichLop.ts';
-import { metricSet, parseObligation } from '../worklist/metrics.ts';
+import { metricSet, parseObligation, rowsFor, type MetricRow } from '../worklist/metrics.ts';
+import { expectationFor } from '../fasttrack/scoring.ts';
+import { tuanLich as tuanLichNgan } from '../../../shared/domain/hienThiNgay.ts';
 import { mocTreNhapDiem, quaHanNhapDiem } from '../platform/week.ts';
 import { paCoKetQua } from './hieuQuaPa.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
@@ -439,4 +441,44 @@ export function oChamDiemGv(p: Principal, f: LocPtGv & { gv: number }): {
     ten, tenChiNhanh: c.tenChiNhanh, khung: c.khung, tu: c.tu, den: c.den, n: out.filter((d) => d.dung).length, tre: out.filter((d) => !d.dung).length,
     khongTinhVang: r.khongTinh.get(f.gv) ?? 0, rows: out,
   };
+}
+
+/**
+ * OV-15e (C30, mockup 3 mục 4c): PANEL CỦA MỘT CHỈ SỐ KHÁC "Chấm điểm" — đúng GV + đúng khoảng, CÙNG hàm tập với ô bảng (số = số dòng; `0/20` mở 20 mục).
+ * `cot`: `ket-qua:<kỹ năng>` · `tien-bo` · `ghi-pa` · `vi-pham` · `pa-hieu-qua`. Dòng chưa đạt / trễ lên đầu.
+ */
+export function oChiSoGv(p: Principal, f: LocPtGv & { gv: number; cot: string }): { n: number; tieuDe: string; rows: MetricRow[] } {
+  const c = nguCanhPtGv(p, f);
+  const ten = c.pc.find((a) => a.gv === f.gv)?.ten;
+  if (!ten) throw notFound('Giáo viên không có lớp ở chi nhánh này.');
+  const xong = (nhan: string, tap: { dung: number[]; tong: number[] } | undefined, dong: (ids: number[]) => MetricRow[]) => {
+    const dung = new Set(tap?.dung ?? []);
+    const ids = [...(tap?.tong ?? [])].sort((a, b) => Number(dung.has(a)) - Number(dung.has(b)) || a - b);
+    return { n: ids.length, tieuDe: `${nhan} · ${ten} · ${dung.size}/${ids.length}`, rows: dong(ids) };
+  };
+  const theoBai = (nap: NapBai, dung: Set<number>, phu: (x: OBai) => string) => (ids: number[]): MetricRow[] => {
+    const o = new Map(nap.o.map((x) => [x.id, x]));
+    return ids.map((id) => {
+      const x = o.get(id)!;
+      return {
+        id, title: x.hocVien, href: `/hoc-vien/${x.studentId}`,
+        sub: [c.lop.get(x.classId)?.ma, `${x.bai} · ${tuanLichNgan(x.tuan)}`, phu(x), dung.has(id) ? 'Đạt' : 'Chưa đạt'].filter(Boolean).join(' · '),
+      };
+    });
+  };
+  const kq = /^ket-qua:(\w+)$/.exec(f.cot);
+  if (kq || f.cot === 'tien-bo') {
+    const nap = napBai(p, c);
+    const tap = kq ? tapKetQua(c, nap).get(kq[1])?.get(f.gv) : tapTienBo(c, nap).get(f.gv);
+    const ky = (x: OBai) => {
+      const a = nap.attempts.get(x.attemptId);
+      const kv = a && a.scoring_mode !== 'ratio' ? expectationFor(a.target_score ?? null, a.attempt_no, a.route) : null;
+      return [x.band !== null ? `${tenMonNgan(c.lop.get(x.classId)?.ct ?? null, x.skill)} ${x.band.toFixed(1)}` : null, kv !== null ? `kỳ vọng ${kv.toFixed(1)}` : null].filter(Boolean).join(' · ');
+    };
+    return xong(kq ? `Kết quả ${tenMonNgan(null, kq[1])}` : 'HV tiến bộ', tap, theoBai(nap, new Set(tap?.dung ?? []), ky));
+  }
+  if (f.cot === 'ghi-pa') return xong('Kết quả PA đúng hạn', tapGhiKetQuaPa(p, c).tap.get(f.gv), (ids) => rowsFor('nghia-vu', ids, 'dung-han-cap-nhat', p));
+  if (f.cot === 'vi-pham') return xong('Xử lý vi phạm đúng hạn', tapXuLyViPham(c).get(f.gv), (ids) => rowsFor('vi-pham', ids, undefined, p));
+  if (f.cot === 'pa-hieu-qua') return xong('PA hiệu quả', tapPaHieuQua(c).get(f.gv), (ids) => rowsFor('phuong-an', ids, undefined, p));
+  throw badRequest(`Cột "${f.cot}" không có trong bảng.`);
 }

@@ -254,7 +254,8 @@ export async function runPrS3ChuTests(t: YThucTestKit) {
   ], KY_THUAT);
   // ------------------------------------------------------------------ Task 9 · việc nhỏ chuyển cho S3
   check('S3 (9) · A5 giữ ct · A6 một tham số chi nhánh cn (link cũ branchId vẫn đọc được) · A8 ngày nghiệp vụ qua useNgayNghiepVu · A10 Được thay thế · A11 bỏ "chu kỳ" · A17 mgmt có loại hạn', () => {
-    assert(/\['cn', 'ct'\]/.test(docNguon('web/src/modules/worklist/OverviewPage.tsx')), 'A5');
+    /* OV-15e: Phân tích thành trang riêng — đổi tab trong Phân tích giữ `cn`, `ct` (chỉ dọn bộ lọc riêng của tab). */
+    assert(!/next\.delete\('ct'\)|next\.delete\('cn'\)/.test(docNguon('web/src/modules/phanTich/PhanTich.tsx')), 'A5');
     for (const f of ['students/StudentsPage.tsx', 'students/LuuTruPage.tsx', 'test/KeHoachTestTab.tsx', 'test/TestPage.tsx']) {
       assert(/get\('cn'\) \?\? params\.get\('branchId'\)/.test(docNguon(`web/src/modules/${f}`)), `A6 ${f}`);
     }
