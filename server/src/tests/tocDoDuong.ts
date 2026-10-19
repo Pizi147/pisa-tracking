@@ -244,6 +244,8 @@ export const DUONG_DO: MucDo[] = [
     trang: 'Kế hoạch Test', vai: ['QL', 'QT', 'GVCN', 'GVBM', 'GVCN_THUONG'], url: '/ke-hoach-test/thuong/{lopThuong}',
     maChuDich: { GVCN: 403, GVBM: 403, GVCN_THUONG: 403 },
   },
+  /* OV-15c (C18): ô tìm lớp / học viên / email — một câu lớp + một câu học viên. */
+  { trang: 'Kế hoạch Test', vai: ['QL', 'QT', 'GVCN'], url: '/ke-hoach-test/tim?q=minh&branchId={cn}', maChuDich: { GVCN: 403 } },
 
   // ---------------------------------------------------------------- Công việc · Vận hành (PR-Ra)
   /* GVCN không vào được tab Vận hành, nhưng `listMgmtTasks` trả `scopeEmpty` chứ không 403 — mã thật là 200. */

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../../../lib/api.ts';
 import { useNgayNghiepVu } from '../../../ui/ngayNghiepVu.ts';
 import { Hang2, Khoi, KhungPanel, Truong } from '../../../ui/KhungPanel.tsx';
+import { useLoiForm } from '../../../ui/loiForm.tsx';
 import { ONgay } from '../../../ui/ONgay.tsx';
 import { useToast } from '../../../ui/Toast.tsx';
 import { BoLocDoan } from '../../../ui/ui.tsx';
@@ -41,6 +42,11 @@ export function NganXuatDiem({ branchId, lopFt, lopDau, onDong }: { branchId: nu
   const loiNhap = phamVi !== 'tuan' && !lop ? t('Chọn lớp.')
     : phamVi === 'lop-mt' && mt[0] > mt[1] ? t('MT đầu phải trước MT cuối.')
       : phamVi !== 'lop-mt' && (!tuan[0] || (phamVi === 'lop-tuan' && (!tuan[1] || tuan[0] > tuan[1]))) ? t('Chọn tuần hợp lệ.') : null;
+
+  /* Lỗi phạm vi hiện ngay khi xảy ra, qua `useLoiForm` như mọi form KhungPanel. */
+  const lf = useLoiForm();
+  useEffect(() => { if (loiNhap) lf.roi('pham-vi')(); }, [loiNhap]);   // eslint-disable-line react-hooks/exhaustive-deps
+  const loiPhamVi = lf.loiCua(loiNhap ? [{ khoa: 'pham-vi', nhan: t('Phạm vi'), lyDo: loiNhap }] : [], 'pham-vi');
 
   useEffect(() => {
     if (loiNhap) return undefined;
@@ -113,7 +119,7 @@ export function NganXuatDiem({ branchId, lopFt, lopDau, onDong }: { branchId: nu
             </Hang2>
           </>
         )}
-        {loiNhap && <p role="alert" className="m-0 text-xs text-late">{loiNhap}</p>}
+        {loiPhamVi && <p role="alert" id={lf.oId('pham-vi')} className="m-0 text-xs text-late">{loiPhamVi}</p>}
       </Khoi>
       <Khoi tieuDe={t('Xem trước cột · {n} cột', { n: cot.length })}>
         <p className="m-0 text-xs leading-relaxed text-slate-300">{cot.join(' · ')}</p>

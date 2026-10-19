@@ -277,7 +277,7 @@ export function HopKyNang({ anchor, tieuDe, tenHv = tieuDe.split(' · ')[0], ghi
       toast.push('ok', cach === 'khong-mock-lai' ? t('Đã giữ huỷ {kn}.', { kn: tenMon(ct, k) }) : t('{kn} về Chưa xếp — chọn tuần mới.', { kn: tenMon(ct, k) }));
       onSaved(); onClose();
     } catch (e: any) {
-      toast.push('error', e.message ?? t('Chưa lưu được — thử lại.'));
+      toast.push('error', e.message ?? t('Không lưu được — thử lại.'));
     } finally {
       setBusy(false);
     }

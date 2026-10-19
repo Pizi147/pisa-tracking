@@ -35,7 +35,7 @@ export function GhiChuTaiCho({ khoa, ghiChu, onDoi, them, nhan, className = '' }
     if (sua === null || busy) return;
     if (sua.trim() === (ghiChu?.noiDung ?? '')) { setSua(null); return; }
     setBusy(true); setLoi(null);
-    try { await luuGhiChu(khoa, sua); setSua(null); onDoi(); } catch (e: any) { setLoi(e.message ?? t('Chưa lưu — thử lại')); } finally { setBusy(false); }
+    try { await luuGhiChu(khoa, sua); setSua(null); onDoi(); } catch (e: any) { setLoi(e.message ?? t('Không lưu được — thử lại.')); } finally { setBusy(false); }
   };
 
   if (sua !== null) {

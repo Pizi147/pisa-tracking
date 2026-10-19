@@ -42,7 +42,7 @@ function tuanThat(l: NonNullable<HangMt['luot']>, homNay: string): string | null
 
 /**
  * MỘT HÀNG LỊCH MT ở panel Lộ trình (PR-LM mục 2, 3): nút chính theo trạng thái lượt + menu ⋯ — xếp / dời lịch (hộp `HopKyNang`
- * như Kế hoạch Test, có xác nhận huỷ lịch lượt bị vượt), Huỷ lịch (bỏ tuần, giữ lượt — Q-0310-1), nhập điểm ngay dưới hàng
+ * như Kế hoạch Test, có xác nhận huỷ lịch lượt bị vượt), Xóa (bỏ tuần, giữ lượt — Q-0310-1, OV-15c), nhập điểm ngay dưới hàng
  * (`DaiODiemLon`, như hồ sơ MT). Không phải vào hồ sơ MT cho các việc lịch thường ngày.
  */
 export function HangLichMt({ h, bang, hocVien, homNay, moDiem, onMoDiem, onHienDien, onDoi }: {
