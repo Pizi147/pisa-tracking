@@ -42,7 +42,7 @@ export function HopTutor({ dsChiNhanh, ds, tutor, coBuoi = true, tenSan, onDong,
       onXong(kq.id);
     } catch (e) {
       const d = e instanceof ApiError ? e.details?.loi : null;
-      setLoi(d && typeof d === 'object' ? d : { chung: e instanceof Error ? e.message : t('Chưa lưu được — thử lại.') });
+      setLoi(d && typeof d === 'object' ? d : { chung: e instanceof Error ? e.message : t('Không lưu được — thử lại.') });
     } finally { setGui(false); }
   }
   async function xoa() {
@@ -55,7 +55,7 @@ export function HopTutor({ dsChiNhanh, ds, tutor, coBuoi = true, tenSan, onDong,
       onXoa?.();
     } catch (e) {
       setHoiXoa(false);
-      setLoi({ chung: e instanceof Error ? e.message : t('Chưa xoá được — thử lại.') });
+      setLoi({ chung: e instanceof Error ? e.message : t('Không xoá được — thử lại.') });
     } finally { setGui(false); }
   }
 
@@ -120,11 +120,11 @@ export function HopGop({ ds, onDong, onThem }: { ds: DongTutor[]; onDong: () => 
       invalidate('/tutors');
       toast.hoanTac(t('Đã gộp {n} tên', { n: muc.length }), async () => {
         try { await api.post('/tutors/gop/hoan-tac', kq); invalidate('/tutors'); toast.push('ok', t('Đã hoàn tác gộp tên')); }
-        catch (e) { toast.push('error', e instanceof Error ? e.message : t('Chưa hoàn tác được — thử lại.')); }
+        catch (e) { toast.push('error', e instanceof Error ? e.message : t('Không hoàn tác được — thử lại.')); }
       });
       onDong();
     } catch (e) {
-      setLoi(e instanceof Error ? e.message : t('Chưa gộp được — thử lại.'));
+      setLoi(e instanceof Error ? e.message : t('Không gộp được — thử lại.'));
     } finally { setGui(false); }
   }
 

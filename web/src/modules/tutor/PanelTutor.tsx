@@ -6,9 +6,10 @@ import { KhungPanel, Khoi, Truong } from '../../ui/KhungPanel.tsx';
 import { BoLocDoan, ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { ConfirmDialog } from '../../ui/Drawer.tsx';
 import { TheDong, useDienThoai } from '../../ui/TheDong.tsx';
+import { useLoiForm } from '../../ui/loiForm.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 import { BoChonThoiGian } from '../phanTich/BoChonThoiGian.tsx';
-import { ngay, type KhoangNgay } from '@shared/domain/index.ts';
+import { ngay, type KhoangNgay, type LoiTruong } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
 import {
   KET_LUAN, NHAN_KET_LUAN, TIEU_CHI, nhanKyNang, nhanNoiDay, nhanSdt,
@@ -38,16 +39,22 @@ export function PanelTutor({ id, tieuChi, khoang, onKhoang, dsChiNhanh, ds, onDo
   const [kl, setKl] = useState<KetLuan | null>(null);
   const [noiDung, setNoiDung] = useState('');
   const [dangSua, setDangSua] = useState<number | null>(null);
-  const [loi, setLoi] = useState<{ kl?: string; noiDung?: string; chung?: string }>({});
+  const [loiChung, setLoiChung] = useState<string | null>(null);
+  const lf = useLoiForm();
   const [gui, setGui] = useState(false);
   const [xoa, setXoa] = useState<NhanXet | null>(null);
   const [suaTutor, setSuaTutor] = useState(false);
 
   const daGo = !!noiDung.trim() || !!kl;
-  const boForm = () => { setKl(null); setNoiDung(''); setDangSua(null); setLoi({}); };
+  /* Luật lỗi form chung (PR-N1): lý do dưới ô sau khi rời ô / bấm Lưu; chân panel "n ô cần sửa ↑". */
+  const loi: LoiTruong[] = [
+    ...(kl ? [] : [{ khoa: 'tutor-kl', nhan: t('Kết luận'), lyDo: t('Chọn Kết luận') }]),
+    ...(noiDung.trim().length >= 10 ? [] : [{ khoa: 'tutor-nx', nhan: t('Nhận xét'), lyDo: t('Nhận xét cần ít nhất 10 ký tự.') }]),
+  ];
+  const boForm = () => { setKl(null); setNoiDung(''); setDangSua(null); setLoiChung(null); lf.datLai(); };
   async function luu() {
-    const l = { kl: kl ? undefined : t('Chọn Kết luận'), noiDung: noiDung.trim().length < 10 ? t('Nhận xét cần ít nhất 10 ký tự.') : undefined };
-    if (l.kl || l.noiDung) { setLoi(l); return; }
+    lf.bam();
+    if (loi.length) { document.getElementById(lf.oId(loi[0].khoa))?.focus(); return; }
     setGui(true);
     try {
       const than = { ketLuan: kl, noiDung: noiDung.trim() };
@@ -56,7 +63,7 @@ export function PanelTutor({ id, tieuChi, khoang, onKhoang, dsChiNhanh, ds, onDo
       invalidate('/tutors');
       toast.push('ok', dangSua ? t('Đã sửa nhận xét') : t('Đã lưu nhận xét'));
     } catch (e) {
-      setLoi({ chung: e instanceof ApiError ? e.message : t('Chưa lưu được — thử lại.') });
+      setLoiChung(e instanceof ApiError ? e.message : t('Không lưu được — thử lại.'));
     } finally { setGui(false); }
   }
   async function xoaNx(n: NhanXet) {
@@ -68,7 +75,7 @@ export function PanelTutor({ id, tieuChi, khoang, onKhoang, dsChiNhanh, ds, onDo
       invalidate('/tutors');
       toast.push('ok', t('Đã xoá nhận xét'));
     } catch (e) {
-      toast.push('error', e instanceof ApiError ? e.message : t('Chưa xoá được — thử lại.'));
+      toast.push('error', e instanceof ApiError ? e.message : t('Không xoá được — thử lại.'));
     } finally { setGui(false); }
   }
 
@@ -99,7 +106,7 @@ export function PanelTutor({ id, tieuChi, khoang, onKhoang, dsChiNhanh, ds, onDo
 
   return (
     <KhungPanel tieuDe={tu?.ten ?? t('Tutor')} rong="rong" onDong={onDong}
-      chan={{ huy: { onClick: onDong }, daSua: daGo,
+      chan={{ huy: { onClick: onDong }, daSua: daGo, conThieu: data?.coSua ? lf.conThieu(loi) : undefined,
         chinh: data?.coSua ? <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={gui} onClick={luu}>{dangSua ? t('Lưu sửa') : t('Lưu nhận xét')}</button> : undefined }}>
       {error ? <ErrorState message={error.message} hint={error.hint} onRetry={reload} />
         : loading || !data || !tu || !so ? <Skeleton rows={8} /> : (
@@ -125,17 +132,19 @@ export function PanelTutor({ id, tieuChi, khoang, onKhoang, dsChiNhanh, ds, onDo
             <Khoi tieuDe={t('Nhận xét')}>
               {data.coSua && (
                 <div className="space-y-2" data-hd="tutor-nhan-xet">
-                  <Truong nhan={t('Kết luận')} batBuoc as="div" loi={loi.kl}>
-                    <BoLocDoan<KetLuan | ''> ariaLabel={t('Kết luận')} value={kl ?? ''} onChange={(k) => { setKl(k || null); setLoi({ ...loi, kl: undefined }); }}
+                  <Truong nhan={t('Kết luận')} batBuoc as="div" loi={lf.loiCua(loi, 'tutor-kl')}>
+                    <span {...lf.o(loi, 'tutor-kl')} tabIndex={-1} className="inline-flex max-w-full">
+                    <BoLocDoan<KetLuan | ''> ariaLabel={t('Kết luận')} value={kl ?? ''} onChange={(k) => setKl(k || null)}
                       muc={KET_LUAN.map((k) => ({ key: k, nhan: NHAN_KET_LUAN[k] }))} />
+                    </span>
                   </Truong>
-                  <Truong nhan={t('Nhận xét')} batBuoc loi={loi.noiDung} dem={{ co: noiDung.trim().length, can: 10 }}>
+                  <Truong nhan={t('Nhận xét')} batBuoc loi={lf.loiCua(loi, 'tutor-nx')} dem={{ co: noiDung.trim().length, can: 10 }}>
                     <textarea className="field w-full" rows={dienThoai ? 3 : 2} maxLength={1000} value={noiDung}
                       placeholder={t('Ví dụ: Đã gọi nhắc gửi feedback cho GV sau mỗi buổi.')}
-                      onChange={(e) => { setNoiDung(e.target.value); if (loi.noiDung) setLoi({ ...loi, noiDung: undefined }); }} />
+                      {...lf.o(loi, 'tutor-nx')} onChange={(e) => setNoiDung(e.target.value)} />
                   </Truong>
-                  {loi.chung && <p role="alert" className="m-0 text-xs text-late">{loi.chung}</p>}
-                  {dangSua && <button type="button" className="btn btn-sm btn-ghost" onClick={boForm}>{t('Thôi sửa')}</button>}
+                  {loiChung && <p role="alert" className="m-0 text-xs text-late">{loiChung}</p>}
+                  {dangSua && <button type="button" className="btn btn-sm btn-ghost" onClick={boForm}>{t('Bỏ sửa')}</button>}
                 </div>
               )}
               {data.nhanXet.length ? (
@@ -149,7 +158,7 @@ export function PanelTutor({ id, tieuChi, khoang, onKhoang, dsChiNhanh, ds, onDo
                       </span>
                       {n.coSua && (
                         <span className="flex shrink-0 gap-1">
-                          <button type="button" className="btn btn-sm btn-ghost min-h-[44px] sm:min-h-0" onClick={() => { setDangSua(n.id); setKl(n.kl); setNoiDung(n.noiDung); setLoi({}); }}>{t('Sửa')}</button>
+                          <button type="button" className="btn btn-sm btn-ghost min-h-[44px] sm:min-h-0" onClick={() => { setDangSua(n.id); setKl(n.kl); setNoiDung(n.noiDung); setLoiChung(null); lf.datLai(); }}>{t('Sửa')}</button>
                           <button type="button" className="btn btn-sm btn-ghost min-h-[44px] sm:min-h-0" onClick={() => setXoa(n)}>{t('Xoá')}</button>
                         </span>
                       )}

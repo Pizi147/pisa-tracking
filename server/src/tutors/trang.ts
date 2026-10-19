@@ -1,7 +1,7 @@
 /**
  * TRANG TUTOR (TU-b, đặc tả Tutor mục 7, 8) — bảng tutor + panel một tutor, nhận xét / kết luận, thêm / sửa / xoá tutor, gộp tên gõ tay.
  * Quyền: đọc `tutor.view` (QL: chỉ BUỔI có `lop_id` thuộc chi nhánh mình — lớp chụp lúc ghi, mục 12.1); ghi `tutor.manage` (Head tutor, Quản trị).
- * Ngày của buổi = `case_followups.created_at` theo giờ VN. "Cần chú ý" = MỘT hàm (`canChuY`) cho bộ lọc, số menu và cột lý do.
+ * Ngày của buổi = `case_followups.created_at` theo giờ VN. Nhóm chú ý = MỘT hàm (`canChuY`) cho bộ lọc, số menu và cột lý do.
  */
 import { db, theoLo, tx } from '../db.ts';
 import { addDays, badRequest, forbidden, normalizeName, notFound, nowIso } from '../util.ts';
@@ -43,7 +43,7 @@ const ngayVn = (iso: string) => new Date(new Date(iso).getTime() + 7 * 3600_000)
 export const khoaTen = (s: string) => normalizeName(String(s ?? ''));
 const tron1 = (x: number | null) => (x == null ? null : Math.round(x * 10) / 10);
 
-// ---------------------------------------------------------------- Cần chú ý
+// ---------------------------------------------------------------- Nhóm chú ý
 
 /**
  * Tutor có ≥ 1 buổi (MỌI thời gian) có ô "Không" hoặc đánh giá ≤ 2, ghi SAU nhận xét gần nhất về tutor đó (sửa nhận xét không dời mốc `luc`);
@@ -298,7 +298,7 @@ export function ghiNhanXet(p: Principal, tutorId: number, v: unknown): { id: num
   });
 }
 
-/** Sửa / xoá: chỉ người ghi, trong 24 giờ kể từ `luc` (mục 3.1). Sửa không dời `luc` (mốc "Cần chú ý"). */
+/** Sửa / xoá: chỉ người ghi, trong 24 giờ kể từ `luc` (mục 3.1). Sửa không dời `luc` (mốc nhóm chú ý). */
 function nhanXetSuaDuoc(p: Principal, id: number): any {
   canSua(p);
   const n = db().prepare('SELECT id, tutor_id, ket_luan, noi_dung, nguoi_id, luc FROM tutor_nhan_xet WHERE id = ?').get(id) as any;

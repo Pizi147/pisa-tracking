@@ -83,7 +83,7 @@ function SoCho({ so, className = 'ml-1.5' }: { so: SoBadge; className?: string }
   );
 }
 
-function NavItem({ muc, active, so }: { muc: KhuVucMuc; active: boolean; so: SoBadge }) {
+function NavItem({ muc, active, so, soTutor }: { muc: KhuVucMuc; active: boolean; so: SoBadge; soTutor: SoBadge }) {
   return (
     <Link to={muc.to} aria-current={active ? 'page' : undefined} data-hd={`nav-${muc.key}`}
       className={`px-3 py-1.5 rounded-lg text-sm no-underline whitespace-nowrap transition-colors border ${
@@ -91,7 +91,7 @@ function NavItem({ muc, active, so }: { muc: KhuVucMuc; active: boolean; so: SoB
           ? 'bg-[color:var(--accent-soft)] text-[color:var(--accent-strong)] border-[color:var(--accent-line)]'
           : 'text-slate-300 border-transparent hover:bg-white/5'
       }`}>
-      {muc.label}{(muc.key === 'cong-viec' || muc.key === 'tutor') && <SoCho so={so} />}
+      {muc.label}{muc.key === 'cong-viec' && <SoCho so={so} />}{muc.key === 'tutor' && <SoCho so={soTutor} />}
     </Link>
   );
 }
@@ -106,7 +106,7 @@ const BIEU_TUONG: Record<KhuVuc, ReactNode> = {
   tutor: <><circle cx="10" cy="6.5" r="2.8" /><path d="M4.5 16.5c.8-3.1 2.9-4.7 5.5-4.7s4.7 1.6 5.5 4.7M14.5 4.5l2-1M15.2 7h2.2" /></>,
 };
 
-function NutDay({ muc, active, so }: { muc: KhuVucMuc; active: boolean; so: SoBadge }) {
+function NutDay({ muc, active, so, soTutor }: { muc: KhuVucMuc; active: boolean; so: SoBadge; soTutor: SoBadge }) {
   return (
     <Link to={muc.to} aria-current={active ? 'page' : undefined} title={muc.label} data-hd={`nav-${muc.key}`}
       className={`relative flex min-h-[56px] min-w-0 flex-1 flex-col items-center justify-center gap-[3px] text-[11.5px] no-underline ${
@@ -117,7 +117,7 @@ function NutDay({ muc, active, so }: { muc: KhuVucMuc; active: boolean; so: SoBa
         {BIEU_TUONG[muc.key]}
       </svg>
       <span className="max-w-full truncate">{muc.labelNgan}</span>
-      {(muc.key === 'cong-viec' || muc.key === 'tutor') && <SoCho so={so} className="absolute top-[5px] left-[calc(50%+5px)] ml-0" />}
+      {(muc.key === 'cong-viec' || muc.key === 'tutor') && <SoCho so={muc.key === 'tutor' ? soTutor : so} className="absolute top-[5px] left-[calc(50%+5px)] ml-0" />}
     </Link>
   );
 }
@@ -206,7 +206,7 @@ export default function App() {
             </div>
           </div>
           <nav aria-label={t('Điều hướng chính')} className="hidden md:flex items-center gap-1 min-w-0 overflow-x-auto">
-            {items.map((m) => <NavItem key={m.key} muc={m} active={dangO === m.key} so={m.key === 'tutor' ? soTutor : so} />)}
+            {items.map((m) => <NavItem key={m.key} muc={m} active={dangO === m.key} so={so} soTutor={soTutor} />)}
           </nav>
           <div className="flex-1 min-w-0" />
           <Header />
@@ -272,7 +272,7 @@ export default function App() {
       <KhoanhPhanTu />
       <nav aria-label={t('Điều hướng chính')} className="md:hidden fixed bottom-0 inset-x-0 z-30 flex border-t bg-[color:var(--surface)] print:hidden"
         style={{ borderColor: 'var(--line)', paddingBottom: 'env(safe-area-inset-bottom)' }}>
-        {items.map((m) => <NutDay key={m.key} muc={m} active={dangO === m.key} so={m.key === 'tutor' ? soTutor : so} />)}
+        {items.map((m) => <NutDay key={m.key} muc={m} active={dangO === m.key} so={so} soTutor={soTutor} />)}
       </nav>
     </div>
   );

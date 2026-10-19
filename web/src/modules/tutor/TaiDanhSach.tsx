@@ -46,7 +46,7 @@ export function TaiDanhSach({ dsChiNhanh, onDong }: { dsChiNhanh: ChiNhanh[]; on
       setKq(x);
       setLoc(x.soLoi ? 'loi' : 'tat-ca');
     } catch (e) {
-      setLoi(e instanceof ApiError ? e.message : t('Chưa đọc được dữ liệu — thử lại.'));
+      setLoi(e instanceof ApiError ? e.message : t('Không đọc được dữ liệu — thử lại.'));
     } finally { setGui(false); }
   }
   async function chonTep(f: File | undefined) {

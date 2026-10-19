@@ -71,6 +71,10 @@ const NHAN_NHAT_KY: Record<string, string> = {
   'user_roles_set': 'Đổi vai tài khoản', 'user_permissions_set': 'Đổi quyền tài khoản', 'user_skills_set': 'Sửa kỹ năng tài khoản', 'password_reset': 'Đặt lại mật khẩu',
   'violation.delete': 'Xoá vi phạm', 'violation.edit': 'Sửa vi phạm', 'violation.record': 'Ghi vi phạm',
   'work.remind': 'Nhắc việc',
+  /* TU-b: trang Tutor. */
+  'tutor.them': 'Thêm tutor', 'tutor.sua': 'Sửa tutor', 'tutor.xoa': 'Xoá tutor', 'tutor.tai_len': 'Tải danh sách tutor',
+  'tutor.nhan_xet': 'Ghi nhận xét về tutor', 'tutor.nhan_xet_sua': 'Sửa nhận xét về tutor', 'tutor.nhan_xet_xoa': 'Xoá nhận xét về tutor',
+  'tutor.gop_ten': 'Gộp tên tutor gõ tay', 'tutor.gop_hoan_tac': 'Hoàn tác gộp tên tutor',
 };
 
 export function nhanHanhDongNhatKy(ma: string): string {

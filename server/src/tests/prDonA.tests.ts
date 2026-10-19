@@ -727,6 +727,7 @@ export async function runPrDonATests(t: YThucTestKit) {
     '/attachments': 'PanelViec (OV-13b) — chỉ khi bấm việc',
     '/ke-hoach-test/ghi-chu/lich-su': 'HopKyNang (OV-15c) — chỉ khi bấm Lịch sử của ghi chú lịch thi',
     '/tutors/chon': 'ChonNguoi (TU-a) — ô chọn tutor, chỉ khi mở danh sách',
+    '/tutors/dem': 'App (TU-b) — số "Tutor n", chỉ Head tutor / Quản trị (`nav.tutorSua`); vai đo trong TAI_TRANG không gọi',
     '/attempts/': 'PanelViec (OV-13b) — chỉ khi bấm việc',
     '/cases/': 'PanelViec (OV-13b) — chỉ khi bấm việc',
     '/chuyen-lop/lop-dich': 'PanelViec (OV-13b) — chỉ khi bấm việc',
