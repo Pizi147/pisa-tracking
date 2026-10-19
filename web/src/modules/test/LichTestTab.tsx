@@ -257,9 +257,9 @@ export function LichTestTab() {
   /* Khối "Test chấm tuần này": hạn chấm mặc định = thứ Tư tuần này (xám trước · vàng đúng hôm đó · đỏ từ thứ Năm). */
   const hanT4 = homNay ? addDaysIso(mondayOfDate(homNay), 2) : null;
   const chipHan = hanT4 && homNay && (
-    homNay < hanT4 ? <Nhan tone="muted">{t('hạn T4')}{' '}{ngay(hanT4, homNay)}</Nhan>
+    homNay < hanT4 ? <Nhan tone="muted">{t('hạn {ngan}', { ngan: ngay(hanT4, homNay) })}</Nhan>
       : homNay === hanT4 ? <Nhan tone="soon">{t('hạn hôm nay')}</Nhan>
-        : <Nhan tone="late">{t('Quá hạn · T4')}{' '}{ngay(hanT4, homNay)}</Nhan>
+        : <Nhan tone="late">{t('Quá hạn')} · {ngay(hanT4, homNay)}</Nhan>
   );
   const phuK2 = <> · {t('bài thi {tuan}', { tuan: tuanLich(addDaysIso(tuanXem, -7), homNay) })} {chipHan}</>;
 

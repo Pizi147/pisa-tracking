@@ -124,12 +124,12 @@ export async function runPrGvbTests(t: YThucTestKit) {
     assert(!('dongPhuChoDuyet' in d), 'hàm câu tóm tắt cũ còn sót');
   });
 
-  check('GVb (7) · U01: badge lớp "n bài chờ chấm" cùng tone với "Chờ chấm" ở Lịch Test (tím wait)', () => {
+  check('GVb (7) · U01: badge lớp "n bài chờ chấm" cùng tone với "Chờ chấm" ở Lịch Test (xám muted — OV-15a bỏ tím)', () => {
     const b = d.badgeLop({ vai: 'gv', needsPlacement: false, canXepLop: 0, missingSkills: [], soBaiChoCham: 3, needScoresTitle: null, phase: 'running', missingCount: 0 } as any);
     const cham = [...b.hien, ...b.an].find((x) => x.key === 'cham')!;
     assert(cham && cham.tone === d.TONE_BADGE_TRANG_THAI['cho-cham'], `tone ${cham?.tone}`);
-    /* Lịch Test (KhoiNo) dùng TONE_TRANG_THAI['cho-cham']; danh sách lớp đi qua toneNhanTuBadge('wait') → TONE_TRANG_THAI['cho-duyet'] — cùng 'wait'. */
-    assert(d.TONE_TRANG_THAI['cho-cham'] === 'wait' && d.TONE_BADGE_TRANG_THAI['cho-cham'] === 'wait' && d.TONE_TRANG_THAI['cho-duyet'] === 'wait', 'bảng tone lệch');
+    /* Lịch Test (KhoiNo) dùng TONE_TRANG_THAI['cho-cham']; danh sách lớp đi qua toneNhanTuBadge → 'muted' — cùng xám (OV-15a). */
+    assert(d.TONE_TRANG_THAI['cho-cham'] === 'muted' && d.TONE_BADGE_TRANG_THAI['cho-cham'] === 'muted' && d.TONE_TRANG_THAI['cho-duyet'] === 'muted', 'bảng tone lệch');
   });
 
   check('GVb (8) · "Bị từ chối" kiểu Cần làm ở hộp duyệt và Yêu cầu của tôi (cùng nhãn với Tổng quan GV)', () => {

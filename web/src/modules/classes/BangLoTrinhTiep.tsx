@@ -182,7 +182,7 @@ export function BangLoTrinhTiep({ classId, quyen, onDoi, emMo, onDaMoEm }: {
     const noiDung = k.chot ? (
       <span className="flex flex-wrap items-center gap-1.5"><Nhan tone={k.chot.dat ? 'ok' : 'bad'}>{k.chot.dat ? 'Đạt' : 'Không đạt'}</Nhan><span className="text-xs text-slate-400">QL chốt{chu(k.chot) && ` · ${chu(k.chot)}`}</span></span>
     ) : k.deXuat ? (
-      <span className="flex flex-wrap items-center gap-1.5"><Nhan tone="wait">GVCN đề xuất</Nhan><span className="text-xs text-slate-300">{k.deXuat.dat ? 'Đạt' : `Không đạt · ${chu(k.deXuat)}`}</span></span>
+      <span className="flex flex-wrap items-center gap-1.5"><Nhan tone="muted">GVCN đề xuất</Nhan><span className="text-xs text-slate-300">{k.deXuat.dat ? 'Đạt' : `Không đạt · ${chu(k.deXuat)}`}</span></span>
     ) : <span className="text-xs text-slate-500">Chưa có</span>;
     const sua = (d.laGvcn && !k.chot) || d.coTheChotKq;
     return sua ? (
@@ -535,7 +535,7 @@ function HopKetQua({ kh, em, onDong, onXong }: { kh: KeHoach; em: Em; onDong: ()
         <p className="m-0 text-xs tabular-nums text-slate-400">MT0 Overall {b1(k.mt0!.overall)} · ngưỡng {ma} {ma === 'FOU' ? '> 3.5' : b1(k.nguong)}</p>
         {laQl && k.deXuat && (
           <p className="m-0 flex flex-wrap items-center gap-1.5 text-xs text-slate-300">
-            <Nhan tone="wait">GVCN đề xuất</Nhan>{k.deXuat.dat ? 'Đạt' : `Không đạt · ${k.deXuat.nguyenNhan === 'hoc_sinh' ? 'Học viên' : 'Trung tâm'} · ${k.deXuat.mon.map((m) => NGAN[m as RegularSkill] ?? m).join(' ')}`}
+            <Nhan tone="muted">GVCN đề xuất</Nhan>{k.deXuat.dat ? 'Đạt' : `Không đạt · ${k.deXuat.nguyenNhan === 'hoc_sinh' ? 'Học viên' : 'Trung tâm'} · ${k.deXuat.mon.map((m) => NGAN[m as RegularSkill] ?? m).join(' ')}`}
             {k.deXuat.boi && ` — ${k.deXuat.boi}`}{k.deXuat.ghiChu && <span className="basis-full text-slate-400">{k.deXuat.ghiChu}</span>}
           </p>
         )}

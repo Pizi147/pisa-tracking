@@ -34,16 +34,17 @@ export async function runNenGiaoDienTests(t: YThucTestKit) {
       const r = d.tuongPhan(a, b);
       if (r < 4.5) hong.push(`${chu} trên ${nen} = ${r}`);
     };
-    const coNen = ['ok-rgb', 'done-rgb', 'bad-rgb', 'late-rgb', 'soon-rgb', 'doing-rgb', 'wait-rgb', 'muted-rgb'];
+    const coNen = ['ok-rgb', 'done-rgb', 'bad-rgb', 'late-rgb', 'soon-rgb', 'doing-rgb', 'muted-rgb'];   // OV-15a bỏ wait
     for (const c of coNen) cap(c, c.replace('-rgb', '-bg-rgb'));
     const chu = [...coNen, 'text-dim-rgb', 'text-faint-rgb'];
     for (const c of chu) for (const n of ['bg', 'surface', 'surface-2', 'hang-lon-bg', 'hang-con-bg']) cap(c, n);
     assert(hong.length === 0, hong.join(' · '));
   });
 
-  check('UX0 · N-1b: --dat/--sos1/--sos2/--sos3 là bí danh của ok/soon/late/bad (một bảng màu kết quả Test)', () => {
+  /* OV-15a: SOS tách token riêng (chỉ viền + chữ) — phép kiểm ở prOv15a; Đạt vẫn là bí danh của ok. */
+  check('UX0 · N-1b: --dat là bí danh của ok; SOS 1/2/3 khác màu nhau', () => {
     const cung = (a: string, b: string) => mau[a] && mau[b] && mau[a].join() === mau[b].join();
-    for (const [x, y] of [['dat', 'ok'], ['sos1', 'soon'], ['sos2', 'late'], ['sos3', 'bad']] as const) {
+    for (const [x, y] of [['dat', 'ok']] as const) {
       for (const hau of ['-rgb', '-bg-rgb', '-line-rgb']) assert(cung(x + hau, y + hau), `--${x}${hau} phải bằng --${y}${hau}`);
       assert(css.includes(`--${x}-rgb: var(--${y}-rgb);`), `--${x}-rgb phải là var(--${y}-rgb), không chép hex`);
     }

@@ -366,7 +366,9 @@ if (!LOC || 'hd-chi'.includes(LOC)) {
     for (const man of hd.man) for (const m of man.muc) if (m.chi) {
       await thu(`${w}/v${vai} ${man.id}›${m.id}`, async () => {
         await p.goto(BASE + man.duong[0], { waitUntil: 'networkidle' });
-        await p.locator('[data-hd="nut-hd"]:visible').first().click();
+        /* OV-15a: Hướng dẫn của màn nằm trong menu Tài khoản (bỏ nút "?" trên thanh). */
+        await p.locator('[data-hd="tai-khoan"]:visible').first().click();
+        await p.getByRole('button', { name: /^(Hướng dẫn|Guide)$/ }).click();
       }, '[role=dialog]', m.id, m.chi.hd);
     }
     await ctx.close();

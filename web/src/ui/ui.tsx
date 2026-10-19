@@ -6,7 +6,7 @@ import { laCauLoi403 } from '../lib/api.ts';
 import { useChongVe, useVe } from '../lib/quayLai.ts';
 import { BaoOTrongNhan, coOTuNhan } from './ONgay.tsx';
 import { useNoiLoi } from './loiForm.tsx';
-import { CHIP_TRON, CHIP_VUONG } from './Nhan.tsx';
+import { CHIP_TRON, CHIP_VUONG, lopSos } from './Nhan.tsx';
 import { t } from '@shared/i18n/index.ts';
 
 export function Card({ title, action, children, className = '', bodyClass = 'p-4' }: {
@@ -27,8 +27,8 @@ export function Card({ title, action, children, className = '', bodyClass = 'p-4
 }
 
 type Tone = 'ok' | 'warn' | 'danger' | 'info' | 'neutral' | 'muted';
-/** `<Level>` còn nhận màu KẾT QUẢ Test (N-1b): Đạt xanh lá · SOS 1 vàng · SOS 2 cam · SOS 3 đỏ. `late`: quá hạn (cam, PR-YT4 K1-17). */
-export type LevelTone = Tone | 'sos1' | 'sos2' | 'sos3' | 'late';
+/** `late`: quá hạn (cam, PR-YT4 K1-17). Mức SOS KHÔNG đi qua `<Level>` — dùng `<ChipSos>` (OV-15a, một component). */
+export type LevelTone = Tone | 'late';
 
 /**
  * MÀU ĐIỂM — MỘT BẢNG DUY NHẤT (HE_GIAO_DIEN §2, chốt 17/09; màu đọc từ token N-1 ở `index.css`).
@@ -37,7 +37,7 @@ export type LevelTone = Tone | 'sos1' | 'sos2' | 'sos3' | 'late';
  *   sky      bằng kỳ vọng
  *   emerald  vượt kỳ vọng / Đạt — xanh lá chỉ dành cho kết quả học tập
  *   slate    thiếu dữ liệu    — khác điểm 0, khác ô trống
- *   sos1/2/3 mức SOS (N-1b)   — vàng · cam · đỏ, đọc như nhau ở mọi nơi hiện kết quả Test
+ *   sos1/2/3 mức SOS          — OV-15a: chỉ viền vàng · cam · đỏ (dày 1 / 1,5 / 2,5 px), cùng lớp với `<ChipSos>` (`lopSos`)
  *   tam      tạm thời / chưa đủ điểm — xám, viền đứt
  *
  * Trước đây bảng này được chép ở `SkillBoard.tsx`, và mỗi component mới sẽ tự chép thêm một
@@ -52,15 +52,15 @@ export const SCORE_CHIP: Record<ScoreTone, string> = {
   sky: 'bg-doing-bg text-doing border-doing-line',
   emerald: 'bg-dat-bg text-dat border-dat-line',
   slate: 'bg-muted-bg text-muted border-muted-line',
-  sos1: 'bg-sos1-bg text-sos1 border-sos1-line',
-  sos2: 'bg-sos2-bg text-sos2 border-sos2-line',
-  sos3: 'bg-sos3-bg text-sos3 border-sos3-line',
+  sos1: lopSos(1),
+  sos2: lopSos(2),
+  sos3: lopSos(3),
   tam: 'bg-transparent text-muted border-dashed border-muted-line',
 };
 /** Chữ trơn cùng họ màu — cho dòng phụ ngắn cạnh số điểm (không phải chip). */
 export const SCORE_TEXT: Record<ScoreTone, string> = {
   rose: 'text-bad', sky: 'text-doing', emerald: 'text-dat', slate: 'text-faint',
-  sos1: 'text-sos1', sos2: 'text-sos2', sos3: 'text-sos3', tam: 'text-muted',
+  sos1: 'text-sos1-chu', sos2: 'text-sos2-chu', sos3: 'text-sos3-chu', tam: 'text-muted',
 };
 
 /**
@@ -99,9 +99,6 @@ const LEVEL_CLASS: Record<LevelTone, string> = {
   danger: 'bg-bad-bg text-bad',
   neutral: 'bg-muted-bg text-muted',
   muted: 'bg-transparent text-muted border border-dashed border-muted-line',
-  sos1: 'bg-sos1-bg text-sos1',
-  sos2: 'bg-sos2-bg text-sos2',
-  sos3: 'bg-sos3-bg text-sos3',
   late: 'bg-late-bg text-late',
 };
 
@@ -507,10 +504,10 @@ export function ExamPlanText({ plan }: { plan?: { confidence: string; label: str
   return <span className="text-slate-100 font-medium">{plan.label}</span>;
 }
 
-/** ĐANG CHỌN (UX-B B3, HE §2 "Đang chọn"): viền teal-600 + nền ink-800 + ✓ nhỏ + aria-pressed — KHÁC nút chính (xanh đặc = Lưu).
+/** ĐANG CHỌN (UX-B B3, HE §2 "Đang chọn"): viền nhấn + nền nhấn nhạt + ✓ nhỏ (OV-15a, bỏ teal) + aria-pressed — KHÁC nút chính (xanh đặc = Lưu).
  * PR-KHUNG G2: nút CHỌN được xuống dòng (`.btn` nowrap chỉ cho nút thao tác); ✓ chỉ vẽ ở nút đang chọn — không chừa chỗ trống làm chữ tràn viền. */
 /* `!`: `.btn:hover:not(:disabled)` (index.css) mạnh hơn lớp Tailwind thường — không có `!` thì rê chuột là mất kiểu đang chọn. */
-const CHON = '!border-teal-600 !bg-ink-800 text-slate-100';
+const CHON = '!border-[color:var(--accent)] !bg-[color:var(--accent-soft)] text-slate-100';
 type NutChonProps = {
   chon: boolean; onClick: () => void; children: ReactNode; nho?: boolean; className?: string; disabled?: boolean; title?: string;
   /** Dấu góc khi đang chọn — mặc định ✓; OV-12b: số thứ tự chọn (chip nhóm nguyên nhân, 1 = chính). */
@@ -520,7 +517,7 @@ export function NutChon({ chon, onClick, children, nho, className = '', disabled
   return (
     <button type="button" aria-pressed={chon} onClick={onClick} disabled={disabled} title={title}
       className={`btn ${nho ? 'btn-sm' : ''} relative min-h-[44px] min-w-0 gap-1 whitespace-normal text-center leading-tight sm:min-h-0 ${chon ? CHON : ''} ${className}`}>
-      {chon && <span aria-hidden className="pointer-events-none absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-md border border-teal-600 bg-[color:var(--surface)] text-[11px] leading-none tabular-nums text-teal-300">{dau}</span>}{children}
+      {chon && <span aria-hidden className="pointer-events-none absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-md border border-[color:var(--accent)] bg-[color:var(--surface)] text-[11px] leading-none tabular-nums text-[color:var(--accent-strong)]">{dau}</span>}{children}
     </button>
   );
 }
@@ -542,8 +539,8 @@ export function BoLocDoan<K extends string>({ muc, value, onChange, ariaLabel, t
         return (
           <button key={m.key} type="button" aria-pressed={chon} title={tat ? undefined : m.title} disabled={!!tat} onClick={() => onChange(m.key)} style={{ borderColor: 'var(--line)' }}
             className={`inline-flex min-h-[44px] items-center gap-1 whitespace-nowrap px-3 text-xs font-semibold disabled:pointer-events-none max-sm:rounded-lg max-sm:border sm:min-h-[32px] ${i ? 'sm:border-l' : ''} ${
-              chon ? 'bg-ink-800 text-slate-100 shadow-[inset_0_0_0_1px_theme(colors.teal.600)]' : 'bg-transparent text-slate-400 hover:text-slate-200'}`}>
-            <span aria-hidden className={`text-[11px] text-teal-300 ${chon ? '' : 'invisible'}`}>✓</span>{m.nhan}
+              chon ? 'bg-[color:var(--accent-soft)] text-slate-100 shadow-[inset_0_0_0_1px_var(--accent)]' : 'bg-transparent text-slate-400 hover:text-slate-200'}`}>
+            <span aria-hidden className={`text-[11px] text-[color:var(--accent-strong)] ${chon ? '' : 'invisible'}`}>✓</span>{m.nhan}
             {m.so != null && <span className="tabular-nums text-slate-500">{m.so}</span>}
           </button>
         );
@@ -556,7 +553,7 @@ export function BoLocDoan<K extends string>({ muc, value, onChange, ariaLabel, t
 /** NHÃN TRẠNG THÁI CHÍNH (§7.3, brainstorm C.2) — một dòng một nhãn; màu điểm/SOS không dùng ở đây. */
 const NHAN_LOP: Record<TrangThai, string> = {
   'can-lam': 'border-[color:var(--line-strong)] text-slate-200', 'dang-lam': 'border-transparent bg-white/[.06] text-slate-200',
-  'cho-duyet': 'border-wait-line bg-wait-bg text-wait', 'qua-han': 'border-late-line bg-late-bg text-late',
+  'cho-duyet': 'border-muted-line bg-muted-bg text-muted', 'qua-han': 'border-transparent !px-0 font-bold text-late',   // OV-15a: quá hạn chỉ chữ cam + ⚠, không chip
   xong: 'border-transparent text-done', 'da-huy': 'border-transparent text-slate-500 line-through decoration-1',
 };
 export function NhanTrangThai({ t, soNgay, title, chu }: {
@@ -564,6 +561,7 @@ export function NhanTrangThai({ t, soNgay, title, chu }: {
   /** Chữ riêng của một loại việc (Vận hành: THUAT_NGU C-069…C-073) — kiểu nhãn vẫn theo `t`. */
   chu?: string;
 }) {
+  const chuHien = chu ?? chuTrangThai(t, soNgay);
   return <span title={title} className={`${CHIP_VUONG} ${NHAN_LOP[t]}`}>
-    {chu ?? chuTrangThai(t, soNgay)}</span>;
+    {t === 'qua-han' && !chuHien.includes('⚠') ? `⚠ ${chuHien}` : chuHien}</span>;
 }

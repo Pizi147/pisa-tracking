@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
-import { deadlineView, nhanQuaHan, shortDate, thuNgan, TONE_TRANG_THAI, type DeadlineKind } from '@shared/domain/index.ts';
+import { deadlineView, nhanQuaHan, shortDate, TONE_TRANG_THAI, type DeadlineKind } from '@shared/domain/index.ts';
 import { useNgayNghiepVu } from './ngayNghiepVu.ts';
+import { IconKhong } from './BieuTuong.tsx';
 import { t } from '@shared/i18n/index.ts';
 
 /**
@@ -19,18 +20,32 @@ export function QuaHan({ ngay, gon }: { ngay: number | null; gon?: boolean }) {
 export const CHIP_TRON = 'inline-flex items-center whitespace-nowrap rounded-full border border-transparent px-[7px] text-[11.5px] font-bold leading-[18px]';
 export const CHIP_VUONG = 'inline-flex items-center whitespace-nowrap rounded-md border px-1.5 text-[11.5px] font-semibold leading-[18px] tabular-nums';
 
-export type ToneNhan = 'ok' | 'done' | 'bad' | 'late' | 'soon' | 'doing' | 'wait' | 'muted';
+/**
+ * DÁNG CHIP SOS — MỘT CHỖ (OV-15a, C08): chỉ VIỀN vàng / cam / đỏ, không nền; bậc đọc được cả khi không phân biệt màu:
+ * viền 1 → 1,5 → 2,5 px, SOS 3 thêm vòng ngoài (viền đôi); tạm = viền đứt. `SCORE_CHIP` (ô kết quả) dùng lại lớp này.
+ */
+export function lopSos(muc: number, tam?: boolean): string {
+  const vien = muc <= 1 ? 'border border-sos1 text-sos1-chu'
+    : muc === 2 ? 'border-[1.5px] border-sos2 text-sos2-chu'
+    : 'mx-[2.5px] border-[2.5px] border-sos3 text-sos3-chu outline outline-1 outline-offset-[1.5px] outline-sos3';
+  return `bg-transparent ${vien} ${tam ? `border-dashed ${muc >= 3 ? 'outline-dashed' : ''}` : ''}`;
+}
+/** Khung chip SOS (C3: chip tròn chỉ khai ở đây). */
+export const CHIP_SOS = 'inline-flex h-[22px] min-w-[30px] shrink-0 items-center justify-center whitespace-nowrap rounded-full px-2 text-[12px] font-bold leading-none tabular-nums';
+
+export type ToneNhan = 'ok' | 'done' | 'bad' | 'late' | 'soon' | 'doing' | 'muted';
 
 const NHAN: Record<ToneNhan, string> = {
-  ok: 'bg-ok-bg text-ok', done: 'bg-done-bg text-done', bad: 'bg-bad-bg text-bad', late: 'bg-late-bg text-late', soon: 'bg-soon-bg text-soon',
-  doing: 'bg-doing-bg text-doing', wait: 'bg-wait-bg text-wait', muted: 'bg-muted-bg text-muted',
+  /* OV-15a: `late` (quá hạn) chỉ là chữ cam + ⚠ — không nền, không chip. */
+  ok: 'bg-ok-bg text-ok', done: 'bg-done-bg text-done', bad: 'bg-bad-bg text-bad', late: 'bg-transparent !px-0 text-late', soon: 'bg-soon-bg text-soon',
+  doing: 'bg-doing-bg text-doing', muted: 'bg-muted-bg text-muted',
 };
 
 /** Bảng trạng thái → tone ở shared (PR-GVb U01) — re-export để chỗ gọi cũ (`KhoiNo`) không đổi import. */
 export { TONE_TRANG_THAI };
 
 /**
- * MỘT BADGE = MỘT TRẠNG THÁI NGẮN (≤ 3 từ + số; B-1). Xanh dương = đang chạy · tím = chờ (`TONE_TRANG_THAI`) · vàng = cần chú ý ·
+ * MỘT BADGE = MỘT TRẠNG THÁI NGẮN (≤ 3 từ + số; B-1). Xanh dương = đang chạy · xám = chờ (`TONE_TRANG_THAI`, OV-15a bỏ tím) · vàng = cần chú ý ·
  * xám = chưa bắt đầu, thông tin · xanh lá = ổn · đỏ = chỉ SOS 3 và "Chưa đạt" · đỏ cam = quá hạn (luôn kèm ⚠) · viền đứt (`dut`) = số tạm.
  * Có `onClick` thì là nút (≥ 28px cao; điện thoại nới vùng bấm ẩn lên 44px — PR-HK1 K3); không thì chỉ là chữ.
  */
@@ -38,6 +53,7 @@ export function Nhan({ tone, dut, title, onClick, children }: {
   tone: ToneNhan; dut?: boolean; title?: string; onClick?: () => void; children: ReactNode;
 }) {
   const cls = `${CHIP_TRON} ${NHAN[tone]} ${dut ? 'bg-transparent border-dashed !border-current' : ''}`;
+  if (tone === 'late' && !coCanhBao(children)) children = <>⚠ {children}</>;   // quá hạn luôn kèm ⚠
   if (onClick) {
     return (
       <button type="button" title={title} onClick={onClick} className={`${cls} relative min-h-[28px] hover:brightness-125 max-sm:after:absolute max-sm:after:-inset-y-2 max-sm:after:inset-x-0 max-sm:after:content-['']`}>{children}</button>
@@ -46,39 +62,45 @@ export function Nhan({ tone, dut, title, onClick, children }: {
   return <span title={title} className={cls}>{children}</span>;
 }
 
-/** Tone của luật badge hộp lớp (`badgeLop`) → tone `Nhan`: đỏ · vàng · xanh dương · tím (chờ) · xám. */
+/** Đã có ⚠ ở đầu nội dung (chỗ gọi tự ghi "⚠ n quá hạn") — không thêm lần nữa. */
+function coCanhBao(c: ReactNode): boolean {
+  return Array.isArray(c) ? c.some((x) => typeof x === 'string' && x.includes('⚠')) : typeof c === 'string' && c.includes('⚠');
+}
+
+/** Badge hộp lớp → tone `Nhan`; "n việc quá hạn" là chữ cam + ⚠ (OV-15a), không chip đỏ. */
+export function toneBadgeLop(x: { key: string; tone: 'danger' | 'warn' | 'info' | 'wait' | 'muted' }): ToneNhan {
+  return x.key === 'qua-han' ? 'late' : toneNhanTuBadge(x.tone);
+}
+
+/** Tone của luật badge hộp lớp (`badgeLop`) → tone `Nhan`: đỏ · vàng · xanh dương · xám (chờ, OV-15a). */
 export function toneNhanTuBadge(t: 'danger' | 'warn' | 'info' | 'wait' | 'muted'): ToneNhan {
-  return t === 'danger' ? 'bad' : t === 'warn' ? 'soon' : t === 'info' ? 'doing' : t === 'wait' ? TONE_TRANG_THAI['cho-duyet'] : 'muted';
+  return t === 'danger' ? 'bad' : t === 'warn' ? 'soon' : t === 'info' ? 'doing' : 'muted';
 }
 
 /**
- * DẤU "DƯỚI KỲ VỌNG / CHƯA ĐẠT" cạnh một con số (PR-N1 A3, chủ sản phẩm 28/09 "cho rõ hơn"): tam giác chỉ xuống 7×5px, cùng màu chữ.
- * Vẽ SVG thay ký tự ▾ — ở cỡ chữ nhỏ ▾ của Inter chỉ còn như một dấu chấm. Không chỉ dựa vào màu: người mù màu vẫn thấy.
+ * DẤU "DƯỚI KỲ VỌNG / CHƯA ĐẠT" cạnh một con số — OV-15a (C05): ✗ trơn SVG (không ▾, không vòng tròn), cùng màu chữ. Không chỉ dựa vào màu.
  */
 export function DauDuoi() {
-  return (
-    <svg aria-hidden viewBox="0 0 7 5" width="7" height="5" className="mr-1 inline-block align-middle" style={{ marginTop: -2 }}>
-      <path d="M0 0h7L3.5 5z" fill="currentColor" />
-    </svg>
-  );
+  return <span className="mr-1 inline-flex align-middle" style={{ marginTop: -2 }}><IconKhong size={11} /></span>;
 }
 
-const CHIP_HAN = 'inline-flex h-6 shrink-0 items-center gap-1 whitespace-nowrap rounded-full border px-2.5 text-[12.5px] font-bold tabular-nums';
-/** OV-12e: "⚠ n quá hạn" ở đầu panel số liệu — cùng hình chip hạn quá hạn. */
+/** OV-15a (mockup 1 §1c): hạn ở đầu panel là CHỮ — không nền, không viền, không chip. Quá hạn = chữ cam đậm + ⚠; sắp hạn / hôm nay = chữ vàng; xa hơn = chữ phụ. */
+const CHU_HAN = 'inline-flex shrink-0 items-center gap-1 whitespace-nowrap text-[13px] tabular-nums';
+/** OV-12e: "⚠ n quá hạn" ở đầu panel số liệu — cùng kiểu chữ hạn quá hạn. */
 export function ChipSoQuaHan({ n }: { n: number }) {
-  return <span className={`${CHIP_HAN} border-late-line bg-late-bg text-late`}><span aria-hidden>⚠</span>{t('{n} quá hạn', { n })}</span>;
+  return <span className={`${CHU_HAN} font-semibold text-late`}><span aria-hidden>⚠</span>{t('{n} quá hạn', { n })}</span>;
 }
-/** MỘT chip hạn ở đầu panel làm việc v3 (OV-12c) — 3 mức (OV-12e, chủ SP 14/10 tối): quá hạn nền cam + ⚠ + số ngày · còn ≤ 3 ngày vàng · xa hơn
- *  viền xám; luôn có chữ, không chỉ màu. Ngưỡng ở MỘT chỗ: `deadlineView` (`ganHan`). */
+/** MỘT dòng hạn ở đầu panel làm việc v3 (OV-12c) — 3 mức (OV-12e): quá hạn ⚠ + số ngày · còn ≤ 3 ngày vàng · xa hơn chữ phụ; luôn có chữ, không chỉ màu.
+ *  Ngưỡng ở MỘT chỗ: `deadlineView` (`ganHan`). Hạn chỉ ghi ngày ("hạn 18/09", OV-15a). */
 export function ChipHan({ loai, han }: { loai: DeadlineKind; han: string | null }) {
   const { homNay } = useNgayNghiepVu();
   if (!han) return null;
   const v = deadlineView({ kind: loai, due: han, today: homNay });
-  const lop = v.tone === 'overdue' ? 'border-late-line bg-late-bg text-late' : v.ganHan ? 'border-soon-line bg-soon-bg text-soon' : 'border-[color:var(--line-strong)] text-slate-200';
+  const lop = v.tone === 'overdue' ? 'font-semibold text-late' : v.ganHan ? 'font-semibold text-soon' : 'text-dim';
   return (
-    <span title={v.text} className={`${CHIP_HAN} ${lop}`}>
+    <span title={v.text} className={`${CHU_HAN} ${lop}`}>
       {v.tone === 'overdue' ? <><span aria-hidden>⚠</span>{t('Quá hạn {n} ngày', { n: v.daysOverdue ?? 0 })}</> : v.homNay ? t('Hạn hôm nay')
-        : t('Hạn {thu} {ngay}', { thu: thuNgan(han), ngay: shortDate(han, homNay) })}
+        : t('hạn {ngan}', { ngan: shortDate(han, homNay) })}
     </span>
   );
 }

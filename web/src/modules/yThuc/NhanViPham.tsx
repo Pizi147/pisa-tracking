@@ -28,7 +28,7 @@ const LOP: Record<TrangThaiVp, string> = {
   da_ghi_nhan: 'border-transparent px-0 text-slate-400 font-medium',
   can_xu_ly: 'border-soon-line bg-soon-bg text-soon',
   qua_han: 'border-late-line bg-late-bg text-late',
-  cho_duyet: 'border-wait-line bg-wait-bg text-wait',
+  cho_duyet: 'border-muted-line bg-muted-bg text-muted',
   da_xu_ly: 'border-transparent bg-white/[.08] text-slate-200',
 };
 

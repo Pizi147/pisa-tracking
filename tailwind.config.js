@@ -11,13 +11,12 @@ export default {
   theme: {
     extend: {
       colors: {
-        // "Đang chọn" (ui.tsx NutChon, LichNho): nền `ink-800` + viền `teal-500/600` + ✓ `teal-300`; `ink-950` = chữ trên chip nền `doing` đặc.
-        ink: { 800: v('chon-bg'), 950: v('accent-ink') },
-        teal: { 300: v('chon-dau'), 500: v('chon-vien'), 600: v('chon-vien') },
         ok: nghia('ok'), bad: nghia('bad'), late: nghia('late'), soon: nghia('soon'),
-        doing: nghia('doing'), done: nghia('done'), wait: nghia('wait'), muted: nghia('muted'),
-        // N-1b: màu kết quả Test — cùng bảng với ok/soon/late/bad
-        dat: nghia('dat'), sos1: nghia('sos1'), sos2: nghia('sos2'), sos3: nghia('sos3'),
+        doing: nghia('doing'), done: nghia('done'), muted: nghia('muted'),
+        dat: nghia('dat'),
+        // OV-15a: SOS chỉ viền (`border-sos1`) + chữ (`text-sos1-chu`), không nền; nền hàng đã thi `bg-da-thi`.
+        sos1: { DEFAULT: v('sos1'), chu: v('sos1-chu') }, sos2: { DEFAULT: v('sos2'), chu: v('sos2-chu') }, sos3: { DEFAULT: v('sos3'), chu: v('sos3-chu') },
+        'da-thi': v('da-thi-bg'),
         dim: v('text-dim'), faint: v('text-faint'),
         // Ghi đè (PR-SANG, Q5): MỌI cấp màu Tailwind còn dùng trong web/src đi qua biến của index.css → đổi theo chế độ sáng/tối,
         // không sửa từng component. Tên (`slate-100`, `white`…) là tên CŨ; giá trị theo chế độ. Phép kiểm `prSang` S6 báo cấp dùng mà chưa ánh xạ.

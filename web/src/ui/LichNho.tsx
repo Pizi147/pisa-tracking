@@ -149,7 +149,7 @@ export function LichNho({ kieu, value, homNay, luat, neo, onChon, onDong, goNgay
         </div>
         <div className="space-y-0.5">
           {hang.map((h) => (
-            <div key={h[0]} className={`grid grid-cols-7 gap-0.5 rounded ${tuanDangChon === h[0] ? 'bg-ink-800' : ''}`}>
+            <div key={h[0]} className={`grid grid-cols-7 gap-0.5 rounded ${tuanDangChon === h[0] ? 'bg-[color:var(--accent-soft)]' : ''}`}>
               {h.map((d) => {
                 const gt = giaTriO(d);
                 const tat = ngoaiLuat(gt);
@@ -163,7 +163,7 @@ export function LichNho({ kieu, value, homNay, luat, neo, onChon, onDong, goNgay
                       'min-h-[44px] sm:min-h-[32px] rounded text-center text-[12.5px] tabular-nums',
                       trongThang(d) ? 'text-slate-200' : 'text-slate-500',
                       homNayO ? 'font-semibold underline underline-offset-2' : '',
-                      dangChon ? 'bg-ink-800 ring-1 ring-teal-600 text-slate-100 font-semibold' : '',
+                      dangChon ? 'bg-[color:var(--accent-soft)] ring-1 ring-[color:var(--accent)] text-slate-100 font-semibold' : '',
                       tat ? 'cursor-not-allowed line-through opacity-40' : 'hover:bg-white/10',
                     ].join(' ')}
                     onClick={() => chon(gt)} onKeyDown={(e) => phimNgay(e, d)}
@@ -192,7 +192,7 @@ export function LichNho({ kieu, value, homNay, luat, neo, onChon, onDong, goNgay
               aria-disabled={tat || undefined} aria-pressed={dangChon} aria-label={THANG_NAM(p2(t), xem.nam)}
               className={[
                 'min-h-[44px] sm:min-h-[34px] rounded-md border text-[12.5px] tabular-nums',
-                dangChon ? 'bg-ink-800 border-teal-600 text-slate-100 font-semibold' : 'text-slate-200',
+                dangChon ? 'bg-[color:var(--accent-soft)] border-[color:var(--accent)] text-slate-100 font-semibold' : 'text-slate-200',
                 gt === thangNay ? 'underline underline-offset-2' : '',
                 tat ? 'cursor-not-allowed line-through opacity-40' : 'hover:bg-white/10',
               ].join(' ')}

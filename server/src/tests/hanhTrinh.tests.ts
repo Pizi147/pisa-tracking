@@ -239,22 +239,23 @@ export async function runHanhTrinhTests(t: YThucTestKit) {
 
   console.log('\nPR-UX5 · Hành trình: một lưới, điểm ▲▼, màu ghim N-1b');
 
-  check('PR-UX5 (1) · lechDiem FT: ▲ ▼ = theo band một chữ số lẻ, dấu trừ là U+2212 (không phải "-")', () => {
+  /* OV-15a (C05): xu hướng bằng CHỮ "Tăng 0.5 / Giảm 0.5 / Không đổi" — bỏ ▲ ▼ và "=" (mũi tên chỉ dành cho hộp điểm lẻ so kỳ vọng). */
+  check('PR-UX5 (1) · lechDiem FT: "Tăng / Giảm / Không đổi" theo band một chữ số lẻ, không mũi tên, không "="', () => {
     const len = d.lechDiem(5, 6, 'ielts');
-    assert(len.dau === 'len' && len.chu === '▲+1.0', `Lên: ${JSON.stringify(len)}`);
+    assert(len.dau === 'len' && len.chu === 'Tăng 1.0', `Lên: ${JSON.stringify(len)}`);
     const xuong = d.lechDiem(6, 5.5, 'ielts');
-    assert(xuong.dau === 'xuong' && xuong.chu === '▼−0.5', `Xuống: ${JSON.stringify(xuong)}`);
-    assert(xuong.chu.includes('−') && !xuong.chu.includes('-'), 'Phải là dấu trừ U+2212, không phải gạch nối ASCII');
+    assert(xuong.dau === 'xuong' && xuong.chu === 'Giảm 0.5', `Xuống: ${JSON.stringify(xuong)}`);
     const bang = d.lechDiem(5.5, 5.5, 'ielts');
-    assert(bang.dau === 'bang' && bang.chu === '=', `Bằng: ${JSON.stringify(bang)}`);
+    assert(bang.dau === 'bang' && bang.chu === 'Không đổi', `Bằng: ${JSON.stringify(bang)}`);
+    for (const x of [len, xuong, bang]) assert(!/[▲▼=]/.test(x.chu), `còn mũi tên / "=": ${x.chu}`);
   });
 
-  check('PR-UX5 (1) · lechDiem lớp thường: chênh tính từ % ĐÃ LÀM TRÒN (13/20 → 14/19 = 65% → 74% = ▲+9)', () => {
+  check('PR-UX5 (1) · lechDiem lớp thường: chênh tính từ % ĐÃ LÀM TRÒN (13/20 → 14/19 = 65% → 74% = Tăng 9)', () => {
     const r = d.lechDiem(65, 74, 'ratio');
-    assert(r.chu === '▲+9', `Chênh %: ${JSON.stringify(r)}`);
+    assert(r.chu === 'Tăng 9', `Chênh %: ${JSON.stringify(r)}`);
     const m = d.chuoiDiem([{ gt: 13, tong: 20, chuaDat: true }, { gt: 14, tong: 19, chuaDat: false }], 'ratio', false);
-    assert(m[0].chu === '65%' && m[1].chu === '74%' && m[1].lech?.chu === '▲+9', `Chuỗi: ${JSON.stringify(m)}`);
-    assert(d.lechDiem(70, 63, 'ratio').chu === '▼−7', 'Xuống 7 điểm %');
+    assert(m[0].chu === '65%' && m[1].chu === '74%' && m[1].lech?.chu === 'Tăng 9', `Chuỗi: ${JSON.stringify(m)}`);
+    assert(d.lechDiem(70, 63, 'ratio').chu === 'Giảm 7', 'Xuống 7 điểm %');
   });
 
   check('PR-UX5 (1) · chuoiDiem FT: chữ 5.0, mốc xấu, title "dưới kỳ vọng 6.0", mũi tên giữa hai mốc', () => {
@@ -264,7 +265,7 @@ export async function runHanhTrinhTests(t: YThucTestKit) {
       { gt: 5.5, chuaDat: true, attemptNo: 3, kind: 'mock', kyVong: 6 },
     ], 'ielts', false);
     assert(m[0].chu === '5.0' && m[0].xau && m[0].lech === null, `Mốc đầu: ${JSON.stringify(m[0])}`);
-    assert(m[1].lech?.chu === '▲+1.0' && m[2].lech?.chu === '▼−0.5', `Mũi tên: ${JSON.stringify(m)}`);
+    assert(m[1].lech?.chu === 'Tăng 1.0' && m[2].lech?.chu === 'Giảm 0.5', `Xu hướng: ${JSON.stringify(m)}`);
     assert(m[2].title === 'MT3 · 5.5 · dưới kỳ vọng 6.0', `Title dưới kỳ vọng: ${m[2].title}`);
     assert(m[1].title === 'MT2 · 6.0 · kỳ vọng 6.0', `Title đạt: ${m[1].title}`);
     assert(d.chuoiDiem([{ gt: 6, chuaDat: false, attemptNo: 2, kind: 'mock' }], 'ielts', false)[0].title === 'MT2 · 6.0', 'Thiếu kyVong: chỉ MT + điểm');

@@ -444,7 +444,7 @@ function HopThiLai({ h, d, onThiLai, onKhong }: { h: Hang; d: DongHangLoat; onTh
     <tr>
       {/* Bảng cuộn ngang: hộp dính trái để luôn nằm trong tầm nhìn (điện thoại), không trôi theo cột. */}
       <td colSpan={5} className="border-t px-2.5 pb-2 pt-1" style={{ borderColor: 'var(--line)' }}>
-        <div className="sticky left-2.5 w-[min(640px,calc(100vw_-_4rem))] rounded border px-2.5 py-2 text-xs text-slate-200" style={{ borderColor: 'var(--wait-line, var(--line))' }}>
+        <div className="sticky left-2.5 w-[min(640px,calc(100vw_-_4rem))] rounded border px-2.5 py-2 text-xs text-slate-200" style={{ borderColor: 'var(--line-strong)' }}>
           <p className="m-0">
             Cho <b>{h.ten}</b> thi lại {ks.map(mon).join(' ')} của MT{d.attemptNo}? {ks.map(mon).join(' ')} đã có điểm{tuan ? ` (${tuanLich(tuan)})` : ''}.
             Chỉ dùng khi thật sự thi lại — điểm cũ giữ trong Lịch sử.

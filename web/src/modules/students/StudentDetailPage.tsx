@@ -1,4 +1,5 @@
 import { Fragment, useEffect, useState } from 'react';
+import { ChipSos } from '../../ui/ChipSos.tsx';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { api } from '../../lib/api.ts';
@@ -695,7 +696,10 @@ function KetQuaThuongO({ a, ct }: { a: any; ct: string | null }) {
   }
   return (
     <>
-      <Level tone={a.sosLevel === null ? (kq.dat ? 'ok' : 'muted') : sosTone(a.sosLevel)}>{dich(kq.chinh)}{a.kind !== 'final' && !khongChiaMon && a.sosLevel > 0 ? ` · SOS ${a.sosLevel}` : ''}</Level>
+      <span className="inline-flex flex-wrap items-center gap-1">
+        <Level tone={a.sosLevel === null ? (kq.dat ? 'ok' : 'muted') : sosTone(a.sosLevel)}>{dich(kq.chinh)}</Level>
+        {a.kind !== 'final' && !khongChiaMon && a.sosLevel > 0 && <ChipSos muc={a.sosLevel} thuong dot="Progress Test" ten={null} kyNang={(a.skills ?? []).filter((s: any) => s.outcome === 'fail').map((s: any) => tenMonNgan(ct, s.skill))} />}
+      </span>
       {kq.phu && <div className="text-xs text-slate-400">{dich(kq.phu)}</div>}
     </>
   );

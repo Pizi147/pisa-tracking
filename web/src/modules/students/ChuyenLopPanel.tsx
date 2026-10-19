@@ -244,7 +244,7 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone, cheDo,
       <KhungPanel tieuDe="Chuyển lớp" hocVien={studentName} lop={dt ? null : lop} onDong={dong}
         chan={{ huy: { onClick: dong }, chinh: <Link className="btn min-h-[44px] max-sm:flex-1 sm:min-h-0" to={`/hoc-vien/lop/${daChuyen.lop.id}`} onClick={dong}>{t('Hồ sơ {lop}', { lop: daChuyen.lop.code })} ›</Link> }}>
         <p role="status" className="mb-0 mt-3 text-sm text-ok">
-          ✓ {t('Đã chuyển sang {lop} từ hôm nay {ngay} · bàn giao hạn {han}', { lop: daChuyen.lop.code, ngay: thuNgay(homNayMay ?? '', homNayMay ?? ''), han: thuNgay(daChuyen.han, homNayMay ?? '') })}
+          ✓ {t('Đã chuyển sang {lop} từ hôm nay {ngay} · bàn giao hạn {han}', { lop: daChuyen.lop.code, ngay: thuNgay(homNayMay ?? '', homNayMay ?? ''), han: ngay(daChuyen.han, homNayMay ?? '') })}
         </p>
       </KhungPanel>
     );

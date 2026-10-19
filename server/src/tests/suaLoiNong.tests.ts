@@ -43,9 +43,9 @@ export async function runSuaLoiNongTests(t: YThucTestKit) {
     assert(d.planDueDate('2026-09-14', 'urgent') === '2026-09-16' && d.signalVerifyDue('2026-09-14') === '2026-09-16', 'hạn 3 ngày');
     assert(d.HAN_DUYET_NGAY === 5, 'HAN_DUYET_NGAY');
   });
-  check('N1 (1) → OV-12a · deadlineView cap-nhat-pa: "Kết quả W3–W4 SEP · hạn hết T3 29/09"', () => {
+  check('N1 (1) → OV-12a · deadlineView cap-nhat-pa: "Kết quả W3–W4 SEP · hạn 29/09" (OV-15a: hạn chỉ ngày)', () => {
     const v = d.deadlineView({ kind: 'cap-nhat-pa', due: '2026-09-29', today: '2026-09-24' });
-    assert(v.viec === 'Kết quả PA · W3–W4 SEP' && v.han === 'hạn hết T3 29/09' && v.tone === 'waiting', JSON.stringify(v));
+    assert(v.viec === 'Kết quả PA · W3–W4 SEP' && v.han === 'hạn 29/09' && v.tone === 'waiting', JSON.stringify(v));
     assert(d.deadlineView({ kind: 'cap-nhat-pa', due: '2026-09-29', today: '2026-09-29' }).homNay, 'đúng Thứ Ba là hôm nay');
     assert(d.deadlineView({ kind: 'cap-nhat-pa', due: '2026-09-29', today: '2026-10-01' }).quaHan === 'quá hạn 2 ngày', 'quá hạn');
     assert(!/CN|Chủ nhật/.test(v.text), v.text);

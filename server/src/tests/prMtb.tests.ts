@@ -484,7 +484,7 @@ export async function runPrMtbTests(t: YThucTestKit) {
     const o = (tt: string, tuan: string | null, x: Record<string, unknown> = {}) => okKn(tt, tuan, x) as any;
     const chip = (kn: any) => d.chipDongKyNang(kn, H);
     assert(JSON.stringify(chip(o('da-xep', TUAN.qua, { hanCham: '2026-09-30' }))) === '{"chu":"trễ chấm","tone":"bad"}', JSON.stringify(chip(o('da-xep', TUAN.qua, { hanCham: '2026-09-30' }))));
-    assert(JSON.stringify(chip(o('da-xep', TUAN.vua, { hanCham: '2026-10-07' }))) === '{"chu":"chờ chấm","tone":"wait"}', 'chờ chấm');
+    assert(JSON.stringify(chip(o('da-xep', TUAN.vua, { hanCham: '2026-10-07' }))) === '{"chu":"chờ chấm","tone":"muted"}', 'chờ chấm');
     assert(JSON.stringify(chip(o('vang', TUAN.qua, { sit: 'absent' }))) === '{"chu":"vắng","tone":"soon"}', 'vắng');
     assert(JSON.stringify(chip(o('cho-duyet', TUAN.qua, { sit: 'absent', choDuyet: true }))) === '{"chu":"vắng","tone":"soon"}', 'chờ duyệt dời = vắng');
     assert(JSON.stringify(chip(o('da-huy', TUAN.qua, { sit: 'cancelled' }))) === '{"chu":"huỷ","tone":"soon"}', 'huỷ');
@@ -765,10 +765,10 @@ export async function runPrMtbTests(t: YThucTestKit) {
     assert((d as any).khongDuThiTuO([], 'speaking', true) === false, 'không có ô');
   });
 
-  check('MTb sau rà (3, 4) · màu ô "xong" = token ok (xanh lá); MT cũ chưa điểm = kiểu "cho-cham-cu", chữ "chờ" (màu tím — FIX-DTL, C2)', () => {
+  check('MTb sau rà (3, 4) · màu ô "xong" = token ok (xanh lá); MT cũ chưa điểm = kiểu "cho-cham-cu", chữ "chờ" (màu như mọi "chờ" — FIX-DTL, C2; OV-15a xám)', () => {
     const o = nguon('web/src/ui/OMt.tsx');
     assert(/xong: 'border-transparent bg-ok-bg text-ok'/.test(o), 'xong chưa dùng ok');
-    assert(/'cho-cham-cu': '[^']*bg-wait-bg[^']*text-wait'/.test(o), 'cho-cham-cu chưa tím (C2)');
+    assert(/'cho-cham-cu': '[^']*bg-muted-bg[^']*text-muted'/.test(o), 'cho-cham-cu chưa cùng màu "chờ" (C2)');
     const het: any = { trangThai: 'da-xep', tuan: '2026-09-07', periodId: 1, doiTu: null, batBuoc: true, khoa: null, sit: 'scheduled', tuanKetThuc: '2026-09-13', choDuyet: false, hanCham: null };
     const cu = d.oMt({ so: 1, attemptId: 1, kn: { listening: het }, cu: true }, '2026-10-06');
     assert((cu.kieu as string) === 'cho-cham-cu' && cu.viec === 'chờ' && cu.cu === true, JSON.stringify(cu));
@@ -833,10 +833,10 @@ export async function runPrMtbTests(t: YThucTestKit) {
   check('MTb sau rà đợt 2 (7) · chip dòng của hộp một đợt: MT cũ chưa điểm = "chờ chấm" TÍM như MT thường (FIX-DTL, C2); hộp truyền `lichSu`', () => {
     const het: any = { trangThai: 'da-xep', tuan: '2026-09-07', periodId: 1, doiTu: null, batBuoc: true, khoa: null, sit: 'scheduled', tuanKetThuc: '2026-09-13', choDuyet: false, hanCham: null };
     const cu = (d as any).chipDongKyNang(het, '2026-10-06', null, true);
-    assert(cu?.chu === 'chờ chấm' && cu.tone === 'wait', JSON.stringify(cu));
+    assert(cu?.chu === 'chờ chấm' && cu.tone === 'muted', JSON.stringify(cu));
     const thuong = (d as any).chipDongKyNang(het, '2026-10-06', null, false);
-    assert(thuong?.chu === 'chờ chấm' && thuong.tone === 'wait', JSON.stringify(thuong));
-    assert((d as any).chipDongKyNang(het, '2026-10-06')?.tone === 'wait', 'mặc định không phải MT cũ');
+    assert(thuong?.chu === 'chờ chấm' && thuong.tone === 'muted', JSON.stringify(thuong));
+    assert((d as any).chipDongKyNang(het, '2026-10-06')?.tone === 'muted', 'mặc định không phải MT cũ');
     const h = nguon('web/src/modules/test/keHoach/HopKyNang.tsx');
     assert(/chipDongKyNang\(o, homNay, ct, lichSu\)/.test(h) && /lichSu=\{lichSu\}/.test(h), 'hộp chưa truyền lichSu');
     assert(/!\(chip\.chu === 'chưa xếp' && d\.weekStart\)/.test(h), 'chip "chờ chấm" bị ẩn cùng chip "chưa xếp"');

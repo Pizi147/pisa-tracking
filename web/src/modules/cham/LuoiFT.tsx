@@ -3,12 +3,13 @@ import { Link } from 'react-router-dom';
 import { Empty, Info, Level, Status, Th } from '../../ui/ui.tsx';
 import { NhanCu } from '../../ui/OMt.tsx';
 import { ChipDuoiKck } from '../../ui/KetQuaDot.tsx';
+import { ChipSos } from '../../ui/ChipSos.tsx';
 import { DeadlinePill, KHOA_HOAN_TAT_HINT, apDiemVuaLuu, suaDuoc, useSaveScore, type Cell } from '../fasttrack/ScoreEntry.tsx';
 import { ODiemMt } from '../fasttrack/HopNhapDiem.tsx';
 import {
   fmtBand, skillLabel, skillShort, sosLabel, sosTone,
 } from '../../lib/format.ts';
-import { ENTRY_SKILLS, chipSosMt0, chuOChuaLuu, dotGvCham, duongDotTest, ngay, nhanLuot, tuanLich, type AssessedSkill, type NguoiChon, type TrangThaiLuuO } from '@shared/domain/index.ts';
+import { ENTRY_SKILLS, chipSosMt0, soLieuSos, chuOChuaLuu, dotGvCham, duongDotTest, ngay, nhanLuot, tuanLich, type AssessedSkill, type NguoiChon, type TrangThaiLuuO } from '@shared/domain/index.ts';
 import { DongThi } from './DongThi.tsx';
 import { GOI_Y_COT_MT, NutGvCham, useGvChamCot } from './GvCham.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
@@ -223,6 +224,16 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
  * Tối đa MỘT dòng phụ (G-3): dấu "-" (mốc chốt Chủ nhật, §17.1) được ưu tiên vì đó là mốc người chấm có thể lỡ; các
  * môn khác cùng mang dấu gom vào một dòng, câu đầy đủ của từng môn nằm ở tooltip.
  */
+/** OV-15a: mức SOS của lượt = chip SOS chung; hộp "Vì sao" có kỳ vọng + điểm từng kỹ năng, mở hồ sơ MT. Mức 0 giữ nhãn Đạt. */
+function SosLuot({ row, tam }: { row: FtSheet['rows'][number]; tam?: boolean }) {
+  const muc = row.result.sosLevel as number;
+  if (muc <= 0) return <Level tone={sosTone(muc)}>{sosLabel(muc)}</Level>;
+  const dot = `MT${row.attemptNo}`;
+  const { kyNang, soLieu } = soLieuSos(row.result, dot);
+  return <ChipSos muc={muc} tam={tam} kyNang={kyNang} dot={dot} ten={row.studentName} soLieu={soLieu}
+    viec={<Link className="link" to={duongDotTest({ id: row.attemptId })}>{t('Mở hồ sơ {dot} ›', { dot })}</Link>} />;
+}
+
 function DeadlineSummary({ cells }: { cells: Cell[] }) {
   /* Bài đã báo "-" không nợ điểm: nó có mốc chốt Chủ nhật riêng, hiện CẠNH hạn nhập điểm nhưng khác tên (§17.1). */
   const owing = cells.filter((c) => c.required && c.band === null && c.deadline && !c.noShow
@@ -374,7 +385,7 @@ function SheetRow({ row, lop, active, cot, tuanDangXem, tuanXem, onReload, gvMac
           {row.ngungHoc ? (
             <>
               {row.result.kckDuoi ? <ChipDuoiKck />
-                : row.result.chot && row.result.sosLevel !== null && <Level tone={sosTone(row.result.sosLevel)}>{sosLabel(row.result.sosLevel)}</Level>}
+                : row.result.chot && row.result.sosLevel !== null && <SosLuot row={row} />}
               <Level tone="muted" title={row.cells[0]?.lyDoKhoa && dich(row.cells[0].lyDoKhoa)}>{dich(row.ngungHoc)}</Level>
             </>
           ) : row.mt0Sos && row.result.scoredRequired > 0 ? (
@@ -386,10 +397,8 @@ function SheetRow({ row, lop, active, cot, tuanDangXem, tuanXem, onReload, gvMac
             /* OV-1c: lượt CHỐT (đủ điểm, hoặc kỹ năng thiếu đã dời / huỷ / Không dự thi) mới có mức SOS — cờ của máy chủ, không suy từ số ô.
                Chưa chốt mà đã có SOS → chip "SOS tạm · a/4" vàng viền đứt (mockup 11/10). */
             row.result.kckDuoi ? <ChipDuoiKck />   /* OV-9: em KCK dưới kỳ vọng — chip trung tính, không SOS */
-              : row.result.chot && row.result.sosLevel !== null ? <Level tone={sosTone(row.result.sosLevel)}>{sosLabel(row.result.sosLevel)}</Level>
-              : row.result.provisional && (row.result.sosLevel ?? 0) > 0
-                ? <Level tone="warn" dut title={t('SOS tạm thời: mới có {scoredRequired}/{length} kỹ năng', { scoredRequired: row.result.scoredRequired, length: row.result.required.length })}>
-                  {t('SOS tạm · {scoredRequired}/{length}', { scoredRequired: row.result.scoredRequired, length: row.result.required.length })}</Level>
+              : row.result.chot && row.result.sosLevel !== null ? <SosLuot row={row} />
+              : row.result.provisional && (row.result.sosLevel ?? 0) > 0 ? <SosLuot row={row} tam />
                 : tuanChuaToi ? <Level tone="muted" title={t('Chưa tới tuần thi')}>{tuanLich(tuanChuaToi)}</Level>
                 : <Level tone="muted">{t('Chờ {x} kỹ năng', { x: row.result.required.length - row.result.scoredRequired })}</Level>
           )}

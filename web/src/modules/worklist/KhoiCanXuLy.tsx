@@ -127,7 +127,7 @@ export function DaiChoDuyet({ branchId }: { branchId: number | null }) {
   const chip = chipChoDuyet(d);
   return (
     <div className="card flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3">
-      <Nhan tone="wait">Chờ duyệt <span className="ml-1 tabular-nums">{d.cho}</span></Nhan>
+      <Nhan tone="muted">Chờ duyệt <span className="ml-1 tabular-nums">{d.cho}</span></Nhan>
       <span className="flex min-w-0 flex-1 basis-[16rem] flex-wrap items-center gap-1.5 tabular-nums">
         {chip.map((c) => (
           <Nhan key={c.key} tone={c.quaHan ? 'late' : 'muted'} title={`Mở hộp: ${c.nhan}`}

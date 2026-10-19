@@ -246,13 +246,12 @@ export async function runPrHk2Tests(t: YThucTestKit) {
     assert(/max-sm:absolute/.test(nut('{unread > 0 &&')), 'số chưa đọc phải max-sm:absolute đè góc chuông');
   });
 
-  check('C17a · Q2 = A: Sáng/Tối < 640 px nằm trong menu Tài khoản, không trên thanh', () => {
+  /* OV-15a (C11): mọi kích thước — Giao diện nằm trong menu Tài khoản (phép kiểm thanh trên ở prOv15a). */
+  check('C17a · Sáng/Tối nằm trong menu Tài khoản, không trên thanh; hàng cao ≥ 44 px', () => {
     const hd = doc('web/src/modules/platform/Header.tsx');
-    const thanh = hd.indexOf('<CongTacGiaoDien />'), menu = hd.indexOf('<CongTacGiaoDien kieu="menu"'), tk = hd.indexOf('ref={nutTaiKhoan}');
-    assert(thanh >= 0 && /!dienThoai && <CongTacGiaoDien \/>/.test(hd), 'nút Sáng/Tối trên thanh chỉ vẽ khi !dienThoai');
-    assert(menu > tk && /dienThoai && <CongTacGiaoDien kieu="menu"/.test(hd), 'Sáng/Tối kiểu menu phải nằm trong menu Tài khoản, chỉ khi dienThoai');
+    assert(hd.indexOf('<CongTacGiaoDien') > hd.indexOf('ref={nutTaiKhoan}'), 'Giao diện phải nằm trong menu Tài khoản');
     const cd = doc('web/src/ui/CongTacGiaoDien.tsx');
-    assert(/kieu === 'menu'/.test(cd) && /Giao diện/.test(cd) && /'Sáng'/.test(cd) && /'Tối'/.test(cd) && /min-h-\[44px\]/.test(cd), 'CongTacGiaoDien kieu="menu": hàng "Giao diện" + Sáng / Tối cao ≥ 44 px');
+    assert(/Giao diện/.test(cd) && /'Theo máy'/.test(cd) && /'Sáng'/.test(cd) && /'Tối'/.test(cd) && /min-h-\[44px\]/.test(cd), 'CongTacGiaoDien: hàng "Giao diện" + Theo máy / Sáng / Tối cao ≥ 44 px');
   });
 
   check('C18a · DemoBar một dòng ở < 640 px: "Demo" · ngày · "Công cụ" · "Tài khoản" (chữ đầy đủ chỉ ở sm+), nút ≥ 44 px', () => {

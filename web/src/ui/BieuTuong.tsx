@@ -1,3 +1,4 @@
+import { t } from '@shared/i18n/index.ts';
 /**
  * BIỂU TƯỢNG SVG 12 px dùng chung (PR-VAI-b) — ký tự nhỏ của Inter (▾ ▸ ✓ ⚠) ở cỡ 11–12 px chỉ còn như một dấu chấm, nên vẽ SVG.
  * Nét theo `currentColor`: màu đi theo chữ bao quanh.
@@ -90,5 +91,30 @@ export function IconSang(p: P) {
     <svg {...khung(p)}>
       <path d="M4.5 3 7.5 6 4.5 9" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
+  );
+}
+
+/**
+ * KÝ HIỆU KẾT QUẢ ĐIỂM (OV-15a, C05 + mục 6 chủ SP 19/10): ✓ / ✗ nét trơn, không vòng tròn — vượt kỳ vọng ✓ xanh lá · bằng ✓ xanh dương ·
+ * dưới ✗ đỏ. Không chữ "thiếu / vượt", không "=". "Chưa đủ điểm" chỉ ghi chữ (không ký hiệu) — chỗ gọi tự xử lý `null`.
+ */
+export function DauKetQua({ kq, size = 12 }: { kq: 'vuot' | 'bang' | 'duoi'; size?: number }) {
+  const ten = kq === 'duoi' ? t('Dưới kỳ vọng') : kq === 'bang' ? t('Bằng kỳ vọng') : t('Vượt kỳ vọng');
+  return (
+    <span className={`inline-flex ${kq === 'duoi' ? 'text-bad' : kq === 'bang' ? 'text-doing' : 'text-ok'}`} title={ten}>
+      {kq === 'duoi' ? <IconKhong size={size} /> : <IconDat size={size} />}<span className="sr-only">{ten}</span>
+    </span>
+  );
+}
+
+/** ▲ trên / ▼ dưới kỳ vọng cạnh band — chỉ ở chỗ KHÔNG có cột kỳ vọng (hộp nhập điểm lẻ); bằng kỳ vọng: không mũi tên. */
+export function MuiTenKyVong({ kq }: { kq: 'vuot' | 'bang' | 'duoi' | null }) {
+  if (kq !== 'vuot' && kq !== 'duoi') return null;
+  const ten = kq === 'duoi' ? t('Dưới kỳ vọng') : t('Vượt kỳ vọng');
+  return (
+    <span className={`inline-flex ${kq === 'duoi' ? 'text-bad' : 'text-ok'}`} title={ten}>
+      <svg {...khung({ size: 10 })}><path d={kq === 'duoi' ? 'M6 10 1.2 2.4h9.6z' : 'M6 2 10.8 9.6H1.2z'} fill="currentColor" /></svg>
+      <span className="sr-only">{ten}</span>
+    </span>
   );
 }

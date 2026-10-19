@@ -399,7 +399,7 @@ function ONhieu({ chon, onClick, children }: { chon: boolean; onClick: () => voi
   return (
     <button type="button" aria-pressed={chon} onClick={onClick}
       className="flex min-h-[44px] w-full items-center gap-2 rounded-md px-2 text-left text-sm hover:bg-slate-500/10 sm:min-h-[32px]">
-      <span aria-hidden className={`w-3 text-[11px] text-teal-300 ${chon ? '' : 'invisible'}`}>✓</span>
+      <span aria-hidden className={`w-3 text-[11px] text-[color:var(--accent-strong)] ${chon ? '' : 'invisible'}`}>✓</span>
       <span className="min-w-0 truncate">{children}</span>
     </button>
   );

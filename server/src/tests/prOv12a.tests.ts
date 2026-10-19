@@ -84,14 +84,14 @@ export async function runPrOv12aTests(t: any) {
     ];
     for (const [hanCu, ngayGhi, mong] of ca) assert(d.hanKe('2026-09-17', hanCu, ngayGhi) === mong, `hạn ${hanCu} ghi ${ngayGhi} → ${d.hanKe('2026-09-17', hanCu, ngayGhi)} (cần ${mong})`);
   });
-  check('OV12a-1b · chữ: "Kết quả W3–W4 SEP", ghi bù "(ghi bù 2 kỳ)", Cần xử lý "kỳ W3–W4 SEP", hạn "hạn hết T3 29/09"', () => {
+  check('OV12a-1b · chữ: "Kết quả W3–W4 SEP", ghi bù "(ghi bù 2 kỳ)", Cần xử lý "kỳ W3–W4 SEP", hạn "hạn 29/09"', () => {
     assert(d.nhanTuanGhiKetQua('2026-09-29', '2026-09-22').tieuDe === 'Kết quả PA · W3–W4 SEP', d.nhanTuanGhiKetQua('2026-09-29', '2026-09-22').tieuDe);
     const bu = d.nhanTuanGhiKetQua('2026-09-29', '2026-10-14');
     assert(bu.soKy === 2 && bu.tieuDe === 'Kết quả PA · W3 SEP – W2 OCT (ghi bù 2 kỳ)', JSON.stringify(bu));
     assert(d.nhanTuanGhiKetQua('2026-10-13', '2026-09-24').tieuDe === 'Kết quả PA · W3–W4 SEP', 'ghi thêm nói kỳ vừa xong');
     assert(d.tuanCuaHanGhiKetQua('2026-09-29', '2026-09-30') === 'kỳ W3–W4 SEP', d.tuanCuaHanGhiKetQua('2026-09-29', '2026-09-30'));
     const v = d.deadlineView({ kind: 'cap-nhat-pa', due: '2026-09-29', today: '2026-09-22' });
-    assert(v.viec === 'Kết quả PA · W3–W4 SEP' && v.han === 'hạn hết T3 29/09', JSON.stringify(v));
+    assert(v.viec === 'Kết quả PA · W3–W4 SEP' && v.han === 'hạn 29/09', JSON.stringify(v));
   });
 
   // ------------------------------------------------------------------ (2) qua API

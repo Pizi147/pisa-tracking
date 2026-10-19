@@ -1,16 +1,17 @@
 import { useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { Level } from '../../ui/ui.tsx';
+
 import { Nhan, QuaHan } from '../../ui/Nhan.tsx';
 import { HangCon, HangNhom } from '../../ui/HangNhom.tsx';
 import { TheDong } from '../../ui/TheDong.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
-import { skillShort, sosTone } from '../../lib/format.ts';
+import { skillShort } from '../../lib/format.ts';
 import { OPhuHuynh } from './HocVienTheoVai.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 import {
-  NHAN_NHOM_XU_LY, deadlineView, tuanLich, type DeadlineKind, type LienHe, type NguCanhDs, type NhomXuLy,
+  NHAN_NHOM_XU_LY, deadlineView, duongDotTest, tuanLich, type DeadlineKind, type LienHe, type NguCanhDs, type NhomXuLy,
 } from '@shared/domain/index.ts';
+import { ChipSos } from '../../ui/ChipSos.tsx';
 
 /** `GET /hoc-vien-lop?goc=sos` (server/src/classes/hocVienSos.ts → CaseTomTat / DongSos / TrangSos). */
 export type CaseTomTat = {
@@ -34,7 +35,7 @@ const NHAN_COT: Record<string, string> = {
   'Học viên': t('Học viên'), 'MT · tuần': t('MT · tuần'), 'Nguyên nhân': t('Nguyên nhân'), 'Phương án': t('Phương án'), 'Kết quả đến nay': t('Kết quả đến nay'),
   'Trạng thái': t('Trạng thái'), 'Việc tiếp': t('Việc tiếp'), 'Phụ huynh': t('Phụ huynh'),
 };
-const TONE_NHOM: Record<NhomXuLy, 'wait' | 'doing' | 'done'> = { 'cho-duyet': 'wait', 'dang-xu-ly': 'doing', xong: 'done' };
+const TONE_NHOM: Record<NhomXuLy, 'muted' | 'doing' | 'done'> = { 'cho-duyet': 'muted', 'dang-xu-ly': 'doing', xong: 'done' };
 const THU_NHOM: Record<NhomXuLy, number> = { 'cho-duyet': 0, 'dang-xu-ly': 1, xong: 2 };
 /** Trạng thái của dòng = nhóm "gấp" nhất trong các Case của lượt (Chờ duyệt → Đang xử lý → Xong); chưa có Case thì Chờ duyệt. */
 export const nhomDong = (r: DongSos): NhomXuLy => r.cases.reduce<NhomXuLy>((m, c) => (THU_NHOM[c.nhom] < THU_NHOM[m] ? c.nhom : m), r.cases.length ? 'xong' : 'cho-duyet');
@@ -82,10 +83,10 @@ function OSos({ r, toanBo }: { r: DongSos; toanBo: boolean }) {
   return (
     <>
       <span className="flex flex-wrap items-center gap-1.5">
-        <Level tone={sosTone(r.sosLevel)}>SOS {r.sosLevel}</Level>
+        <ChipSos muc={r.sosLevel} hienKyNang={false} kyNang={r.kyNang.map((k) => skillShort(k))} dot={r.luot} ten={r.ten} thuong={!r.ft} />
         <span className="text-xs font-semibold text-slate-200">{r.kyNang.map((k) => skillShort(k)).join(', ')}</span>
       </span>
-      {!toanBo && <span className="block text-xs text-slate-500">{r.ft ? `${r.luot} · ${tuanLich(r.tuan, homNay)}` : `Progress · ${tuanLich(r.tuan, homNay)}`}</span>}
+      {!toanBo && <Link className="link block text-xs" to={duongDotTest({ id: r.attemptId, kind: r.ft ? 'mock' : 'progress', classId: r.classId })}>{r.ft ? `${r.luot} · ${tuanLich(r.tuan, homNay)}` : `Progress · ${tuanLich(r.tuan, homNay)}`}</Link>}
     </>
   );
 }
@@ -135,7 +136,7 @@ export function BangSos({ data, cot, dam, dienThoai, ds, onMo, dangMo = null }: 
         <Link to={`/hoc-vien/lop/${r.classId}`} className="shrink-0 font-extrabold text-slate-100 underline decoration-dotted underline-offset-4">{r.classCode}</Link>
         {cot === 'cx' && r.branchName && <span className="text-xs text-slate-400">{r.branchName}</span>}
         <Nhan tone="muted">{toanBo ? t('{n} em · {m} lượt SOS', { n: soEm, m: em.length }) : t('{n} em SOS', { n: soEm })}</Nhan>
-        {cot === 'ql' && cho > 0 && <Nhan tone="wait">{t('{n} chờ duyệt', { n: cho })}</Nhan>}
+        {cot === 'ql' && cho > 0 && <Nhan tone="muted">{t('{n} chờ duyệt', { n: cho })}</Nhan>}
         {cot === 'ql' && tre > 0 && <Nhan tone="late">⚠ {t('{n} quá hạn', { n: tre })}</Nhan>}
       </span>
     );
@@ -168,7 +169,7 @@ export function BangSos({ data, cot, dam, dienThoai, ds, onMo, dangMo = null }: 
                 </button>
                 {mo(em[0].classId) && em.map((r) => (
                   <TheDong key={r.attemptId} className={r.studentId === dangMo ? 'row-active' : ''}
-                    dau={<span className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1">{tenEm(r, false)}<Level tone={sosTone(r.sosLevel)}>SOS {r.sosLevel}</Level>{trangThai(r)}</span>}
+                    dau={<span className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1">{tenEm(r, false)}<ChipSos muc={r.sosLevel} hienKyNang={false} kyNang={r.kyNang.map((k) => skillShort(k))} dot={r.luot} ten={r.ten} thuong={!r.ft} />{trangThai(r)}</span>}
                     hanhDong={nutMo(r)}
                     dong={[
                       { nhan: r.ft ? t('Kỹ năng') : t('Môn'), noiDung: `${r.kyNang.map((k) => skillShort(k)).join(', ')} · ${r.luot} · ${tuanLich(r.tuan, homNay)}` },
@@ -209,7 +210,7 @@ export function BangSos({ data, cot, dam, dienThoai, ds, onMo, dangMo = null }: 
                   return (
                     <HangCon key={r.attemptId} className={`row-hover ${nhomDong(r) === 'xong' ? 'row-muted' : ''} ${r.studentId === dangMo ? 'row-active' : ''}`}>
                       <td className="td h-14">{tenEm(r, lap)}</td>
-                      {toanBo && <td className="td text-xs tabular-nums text-slate-300">{r.luot} · {tuanLich(r.tuan, homNay)}</td>}
+                      {toanBo && <td className="td text-xs tabular-nums text-slate-300"><Link className="link" to={duongDotTest({ id: r.attemptId, kind: r.ft ? 'mock' : 'progress', classId: r.classId })}>{r.luot} · {tuanLich(r.tuan, homNay)}</Link></td>}
                       <td className="td"><OSos r={r} toanBo={toanBo} /></td>
                       <td className="td"><TheoCase r={r} dam={dam} chu={chuNguyenNhan} /></td>
                       {cot === 'ql' && <td className="td"><TheoCase r={r} dam={dam} chu={chuPa} /></td>}

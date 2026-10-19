@@ -302,17 +302,15 @@ export type DiemMoc = {
 export type LechDiem = { dau: 'len' | 'xuong' | 'bang'; chu: string };
 export type MocDiem = { chu: string; xau: boolean; cho: boolean; lech: LechDiem | null; title: string; /** PR-VAI-b (G5): lượt của mốc. */ attemptId?: number | null; kind?: string | null; classId?: number | null };
 
-const DAU_TRU = '−';
-
 /**
- * MŨI TÊN GIỮA HAI MỐC LIỀN NHAU (Q8). Fast Track chênh band 1 chữ số lẻ; lớp thường chênh điểm % tính từ % ĐÃ LÀM
- * TRÒN của hai mốc — số đang hiện và mức chênh không bao giờ lệch nhau. Dấu trừ là U+2212.
+ * XU HƯỚNG GIỮA HAI MỐC LIỀN NHAU (Q8; OV-15a C05: bằng CHỮ "Tăng 0.5 / Giảm 0.5 / Không đổi", không ▲ ▼ =). Fast Track chênh band
+ * 1 chữ số lẻ; lớp thường chênh điểm % tính từ % ĐÃ LÀM TRÒN của hai mốc — số đang hiện và mức chênh không bao giờ lệch nhau.
  */
 export function lechDiem(truoc: number, sau: number, cheDo: 'ielts' | 'ratio'): LechDiem {
   const d = cheDo === 'ratio' ? Math.round(sau) - Math.round(truoc) : Math.round((sau - truoc) * 10) / 10;
-  if (d === 0) return { dau: 'bang', chu: '=' };
+  if (d === 0) return { dau: 'bang', chu: t('Không đổi') };
   const so = cheDo === 'ratio' ? String(Math.abs(d)) : Math.abs(d).toFixed(1);
-  return d > 0 ? { dau: 'len', chu: `▲+${so}` } : { dau: 'xuong', chu: `▼${DAU_TRU}${so}` };
+  return d > 0 ? { dau: 'len', chu: t('Tăng {so}', { so }) } : { dau: 'xuong', chu: t('Giảm {so}', { so }) };
 }
 
 /**

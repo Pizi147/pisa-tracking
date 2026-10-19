@@ -1,7 +1,8 @@
 import { type ReactNode, useState } from 'react';
+import { ChipSos } from '../../ui/ChipSos.tsx';
 import { Level, NhanTrangThai } from '../../ui/ui.tsx';
 import { Han } from '../../ui/Han.tsx';
-import { toneTheoNhan } from '../../lib/format.ts';
+import { mucSosTheoNhan } from '../../lib/format.ts';
 import { CHAM_CHEO, LOAI_HAN_CUA_VIEC, laViecChamCheo } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 
@@ -92,14 +93,14 @@ export function DongViec({ it, onOpen, nutPhu, gon = false, chon = null, xong, m
   const daXong = !!xong?.has(it.key);
   const dangChon = chon === it.key;
   /* OV-5a: dòng đang mở ở panel — `row-active` (nền nhấn + vạch trái, DESIGN.md); vừa xong — mờ + gạch, đứng nguyên chỗ (mockup M1 §1). */
-  const nen = dangChon ? 'row-active' : con && it.urgency === 'overdue' ? 'bg-late-bg/60' : 'hover:bg-white/5';
+  /* OV-15a: quá hạn chỉ là chữ cam + ⚠ ở cột hạn — không tô hàng, không chip "Quá hạn" / "Cần làm" lặp đầu dòng. */
+  const nen = dangChon ? 'row-active' : 'hover:bg-white/5';
   return (
-    /* PR-VAI-a (§7.3, mockup 23 màn A): bốn cột thẳng qua mọi nhóm — nhãn trạng thái · việc · hạn (12 px) · nút. OV-5a `gon`: ba cột, cả dòng bấm. */
-    <div data-hd="cv-dong" className={`grid grid-cols-[78px_minmax(0,1fr)] gap-x-3 gap-y-1 py-2 pr-3 ${gon
-      ? `cursor-pointer sm:grid-cols-[78px_minmax(0,1fr)_auto] sm:items-center ${daXong ? 'opacity-55' : ''}`
-      : 'sm:grid-cols-[78px_minmax(0,1fr)_150px_230px] sm:items-center'} ${nen}`}
+    /* PR-VAI-a (§7.3, mockup 23 màn A): ba cột thẳng qua mọi nhóm — việc · hạn (12 px) · nút. OV-5a `gon`: hai cột, cả dòng bấm. */
+    <div data-hd="cv-dong" className={`grid grid-cols-[minmax(0,1fr)] gap-x-3 gap-y-1 py-2 pl-3 pr-3 ${gon
+      ? `cursor-pointer sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center ${daXong ? 'opacity-55' : ''}`
+      : 'sm:grid-cols-[minmax(0,1fr)_150px_230px] sm:items-center'} ${nen}`}
       title={con ? undefined : dich(it.reason)} onClick={gon ? bam : undefined}>
-      <span className="pt-0.5 sm:pt-0">{daXong ? <NhanTrangThai t="xong" /> : <NhanTrangThai t={it.urgency === 'overdue' ? 'qua-han' : 'can-lam'} />}</span>
       <button type="button" className="min-w-0 appearance-none border-0 bg-transparent p-0 text-left cursor-pointer"
         onClick={gon ? (e) => { e.stopPropagation(); bam(); } : bam}
         aria-expanded={con ? mo : undefined} aria-controls={con && mo ? maDs : undefined} aria-current={dangChon ? 'true' : undefined}>
@@ -108,19 +109,20 @@ export function DongViec({ it, onOpen, nutPhu, gon = false, chon = null, xong, m
             <span className={daXong ? 'line-through decoration-slate-500' : undefined}>{dich(it.tieuDe)}</span>
             {moTrang && <span aria-label={t('mở trang')} className="ml-1 text-xs font-normal text-[color:var(--accent)]">↗</span>}
           </span>
-          {it.level && <Level tone={toneTheoNhan(it.level.text, it.level.tone)}>{dich(it.level.text)}</Level>}
+          {daXong && <NhanTrangThai t="xong" />}
+          {it.level && (mucSosTheoNhan(it.level.text) ? <ChipSos muc={mucSosTheoNhan(it.level.text)!} tinh /> : <Level tone={it.level.tone}>{dich(it.level.text)}</Level>)}
         </span>
         <span className="block truncate text-xs text-slate-500 max-sm:whitespace-normal max-sm:overflow-visible max-sm:break-words">
           {dich(dongPhu)}{nguoi && <>{dongPhu ? ' · ' : ''}<span className="text-xs text-slate-400">{nguoi}</span></>}
         </span>
       </button>
-      <span className={`col-start-2 text-xs sm:col-start-auto [&>span]:text-xs ${gon ? 'flex flex-wrap items-center gap-2 sm:justify-end sm:text-right' : ''}`}>
+      <span className={`text-xs [&>span]:text-xs ${gon ? 'flex flex-wrap items-center gap-2 sm:justify-end sm:text-right' : ''}`}>
         {/* Hotfix 15/10: dòng đã xong (gạch) không còn hạn / "⚠ quá hạn". */}
         {/* OV-13g: Speaking chấm chéo không có hạn (T18) — không ghi "Chưa có hạn" (mockup OV-13 §3b). */}
         {daXong ? null : it.due ? <Han loai={loaiHan ?? 'viec-van-hanh'} han={it.due} haiDong /> : laViecChamCheo(it) ? null : <span className="text-slate-500">{t('Chưa có hạn')}</span>}
         {gon && nutPhu && <span onClick={(e) => e.stopPropagation()}>{nutPhu}</span>}
       </span>
-      {!gon && <span className="col-start-2 flex items-center gap-2 sm:col-start-auto sm:justify-end">
+      {!gon && <span className="flex items-center gap-2 sm:justify-end">
         {nutPhu}
         {con ? (
           <button type="button" className="btn btn-sm inline-flex min-h-[44px] items-center gap-1.5 sm:min-h-[32px]" onClick={bam}
@@ -135,7 +137,7 @@ export function DongViec({ it, onOpen, nutPhu, gon = false, chon = null, xong, m
         )}
       </span>}
       {con && mo && (
-        <ul id={maDs} className="col-span-full m-0 mb-0.5 mt-1 list-none divide-y rounded-lg border p-0 sm:col-start-2 sm:col-end-[-1]"
+        <ul id={maDs} className="col-span-full m-0 mb-0.5 mt-1 list-none divide-y rounded-lg border p-0 sm:col-start-1 sm:col-end-[-1]"
           style={{ borderColor: 'var(--line)', background: 'var(--surface)' }} onClick={(e) => e.stopPropagation()}>
           {con.map((c) => <li key={c.key}><DongCon it={c} loaiHan={loaiHan} onOpen={onOpen} gon={gon} chon={chon === c.key} xong={!!xong?.has(c.key)} moTrang={!!conMoTrang?.(c)} />
             {moRong?.(c) && <div className="px-2.5 pb-2.5">{moRong(c)}</div>}</li>)}

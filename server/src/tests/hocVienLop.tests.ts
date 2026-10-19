@@ -149,7 +149,7 @@ export async function runHocVienLopTests(t: YThucTestKit) {
     eq(gv.hien.map((x: any) => x.nhan), ['3 bài chờ chấm', '⚠ 1 việc quá hạn'], 'B4: GV — việc của mình trước');
     eq(gv.an.map((x: any) => x.key), ['chang', 'thieu-gv', 'thieu-tt', 'xep-lop', 'cho-duyet'], 'Phần gom (GV)');
     eq([...ql.hien, ...ql.an].find((x: any) => x.key === 'qua-han').tone, 'danger', 'qua-han tone danger');
-    eq([...ql.hien, ...ql.an].find((x: any) => x.key === 'cho-duyet').tone, 'wait', 'cho-duyet tone wait');
+    eq([...ql.hien, ...ql.an].find((x: any) => x.key === 'cho-duyet').tone, 'muted', 'cho-duyet tone muted (OV-15a bỏ tím)');
     const c = d.badgeLop({ vai: 'gv', needsPlacement: false, canXepLop: 8, missingSkills: [], soBaiChoCham: 0, needScoresTitle: null, phase: 'running', missingCount: 0 });
     eq(c.hien, [], 'Không còn badge "Case mở" (K2-06)');
     assert(!/Progress(?! Test)|Final(?! Test)/.test(Object.values(d.CLASS_PHASE_LABEL).join(' ')), 'CLASS_PHASE_LABEL còn Progress/Final');
@@ -209,10 +209,10 @@ export async function runHocVienLopTests(t: YThucTestKit) {
     });
     eq(v.map((x: any) => [x.viec, x.han, x.quaHanNgay, x.tone, x.title]), [
       /* PR-S5F-b (mockup 21) → OV-12a: việc ghi kết quả PA nói KỲ (hai tuần) của kết quả. */
-      ['Kết quả PA L · kỳ W4 AUG – W1 SEP', 'hạn hết T3 13/09', 1, 'danger', 'Kết quả PA Nghe podcast · Listening · kỳ W4 AUG – W1 SEP · hạn hết T3 13/09 · quá hạn 1 ngày'],
+      ['Kết quả PA L · kỳ W4 AUG – W1 SEP', 'hạn 13/09', 1, 'danger', 'Kết quả PA Nghe podcast · Listening · kỳ W4 AUG – W1 SEP · hạn 13/09 · quá hạn 1 ngày'],
       ['Nhập điểm L, W · Progress Test', null, null, 'warn', 'Nhập điểm L, W · Progress Test'],
       ['Thêm PA W2', null, null, 'warn', 'Thêm PA · Writing Task 2'],
-      ['Kết quả PA R · kỳ W1–W2 SEP', 'hạn hết T3 20/09', null, 'info', 'Kết quả PA Đọc báo · Reading · kỳ W1–W2 SEP · hạn hết T3 20/09'],
+      ['Kết quả PA R · kỳ W1–W2 SEP', 'hạn 20/09', null, 'info', 'Kết quả PA Đọc báo · Reading · kỳ W1–W2 SEP · hạn 20/09'],
     ], 'Thứ tự và chữ (Case không việc bị bỏ)');
     /* Ý kiểm cũ "Case nói trước" (chonCaseChinh) nay là thứ tự hàng của `hangCanHoTro` — kiểm ở prHvl.tests.ts (T19). */
   });

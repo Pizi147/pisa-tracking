@@ -46,15 +46,6 @@ export function fmtTime(d?: string | null): string {
   return `${String(dt.getHours()).padStart(2, '0')}:${String(dt.getMinutes()).padStart(2, '0')}`;
 }
 
-const TEN_THU = [t('Chủ nhật'), t('thứ Hai'), t('thứ Ba'), t('thứ Tư'), t('thứ Năm'), t('thứ Sáu'), t('thứ Bảy')];
-/** Tên thứ trong tuần từ một ngày ISO — đọc ĐÚNG ngày đưa vào, không viết cứng một thứ cố định (G-6). */
-export function fmtThu(d?: string | null): string {
-  if (!d) return '';
-  const dt = new Date(`${d.slice(0, 10)}T00:00:00Z`);
-  if (Number.isNaN(dt.getTime())) return '';
-  return TEN_THU[dt.getUTCDay()];
-}
-
 /** Band trống KHÁC điểm 0 — luôn hiện dấu gạch, không bao giờ hiện 0 thay cho ô trống. */
 export function fmtBand(n: number | null | undefined): string {
   return n === null || n === undefined ? '—' : Number(n).toFixed(1);
@@ -72,16 +63,14 @@ export function addDaysStr(d: string, days: number): string {
 
 export type Tone = 'ok' | 'warn' | 'danger' | 'info' | 'neutral' | 'muted';
 
-/** Màu KẾT QUẢ Test (N-1b): Đạt xanh lá · SOS 1 vàng · SOS 2 cam · SOS 3 đỏ — cùng bảng ở `index.css`. */
-export type SosTone = 'ok' | 'sos1' | 'sos2' | 'sos3' | 'muted';
-export function sosTone(level: number | null): SosTone {
-  if (level === null) return 'muted';
-  return level === 0 ? 'ok' : level === 1 ? 'sos1' : level === 2 ? 'sos2' : 'sos3';
+/** Mức SOS 0 (Đạt xanh lá) / chưa có (xám) cho `<Level>`. Mức 1–3 KHÔNG đi qua đây — dùng `<ChipSos>` (OV-15a). */
+export function sosTone(level: number | null): 'ok' | 'muted' {
+  return level === 0 ? 'ok' : 'muted';
 }
-/** Nhãn do máy chủ gửi kèm tone chung: nếu là "SOS n" thì đổi sang màu SOS đúng bảng, còn lại giữ nguyên. */
-export function toneTheoNhan<T extends string>(text: string, tone: T): T | SosTone {
+/** Nhãn "SOS n" do máy chủ gửi kèm → mức để vẽ `<ChipSos>`; nhãn khác → null. */
+export function mucSosTheoNhan(text: string): number | null {
   const m = /^SOS\s*([123])\b/.exec(text);
-  return m ? sosTone(Number(m[1])) : tone;
+  return m ? Number(m[1]) : null;
 }
 /** Ba trạng thái Case phải khác nhau ngay từ màu, không cần mở chi tiết mới biết. */
 export function caseStatusTone(status: string | null): Tone {

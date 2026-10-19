@@ -69,7 +69,7 @@ export async function runPrHvlTests(t: YThucTestKit) {
     eq([ql.hien.length, ql.an.length], [2, 2], 'Hiện 2, còn lại "+n"');
     const tat = [...ql.hien, ...ql.an];
     eq(tat.find((x: any) => x.key === 'qua-han'), { key: 'qua-han', nhan: '⚠ 4 việc quá hạn', tone: 'danger', title: tat.find((x: any) => x.key === 'qua-han').title }, 'qua-han');
-    eq(tat.find((x: any) => x.key === 'cho-duyet').tone, 'wait', 'cho-duyet tone');
+    eq(tat.find((x: any) => x.key === 'cho-duyet').tone, 'muted', 'cho-duyet tone (OV-15a bỏ tím)');
     eq(tat.find((x: any) => x.key === 'xep-lop').nhan, '3 HV chưa chốt lộ trình', 'xep-lop khi lớp chưa hết khoá (PR-Dọn Câu 2 = B)');
     const het = d.badgeLop({ ...goc, vai: 'gv', needsPlacement: true, canXepLop: 5 });
     eq([...het.hien, ...het.an].find((x: any) => x.key === 'xep-lop').nhan, '5 HV cần xếp lớp tiếp', 'xep-lop khi hết khoá dùng canXepLop');
@@ -103,10 +103,10 @@ export async function runPrHvlTests(t: YThucTestKit) {
     eq([pa.viec, pa.tone, pa.quaHanNgay, pa.dich.paId], ['Xác nhận PA R', 'danger', 2, 90], 'Xác nhận PA quá hạn');
     assert(!/True|Ôn lại/.test(pa.viec) && /Ôn lại/.test(pa.title), `Tên PA dài phải bỏ khỏi viec, còn ở title: ${JSON.stringify(pa)}`);
     const gk = theoViec(/^Kết quả PA/);
-    eq([gk.viec, gk.han, gk.tone, gk.dich.ghiKetQua], ['Kết quả PA S · kỳ W2–W3 SEP', 'hạn hết T3 21/09', 'info', true], 'Kết quả');
+    eq([gk.viec, gk.han, gk.tone, gk.dich.ghiKetQua], ['Kết quả PA S · kỳ W2–W3 SEP', 'hạn 21/09', 'info', true], 'Kết quả');
     const cuoi = theoViec(/^Kết quả cuối/);
     eq([cuoi.viec, cuoi.tone, cuoi.quaHanNgay], ['Kết quả cuối W1 · kỳ W1–W2 SEP', 'danger', 2], 'Kết quả cuối');
-    assert(/hạn hết T3 14\/09 · quá hạn 2 ngày/.test(cuoi.title), cuoi.title);
+    assert(/hạn 14\/09 · quá hạn 2 ngày/.test(cuoi.title), cuoi.title);
     eq(theoViec(/^Thêm PA/).tone, 'warn', 'Thêm PA chưa hạn');
     eq([theoViec(/^Chờ Quản lý/).viec, theoViec(/^Chờ Quản lý/).tone], ['Chờ Quản lý duyệt Case', 'info'], 'Chờ QL duyệt');
     const yt = theoViec(/^Xử lý vi phạm/);
@@ -397,7 +397,7 @@ export async function runPrHvlTests(t: YThucTestKit) {
     assert(ghi.length > 0, 'Bộ demo phải có Case đang chờ ghi kết quả');
     for (const v of ghi) {
       const [x] = d.viecTiepCuaEm({ nhapDiem: null, cases: [{ caseId: 1, topic: 'reading', viecTiep: v }], yThuc: null, homNay: TODAY });
-      assert(/^hạn hết T3 \d\d\/\d\d$/.test(x.han ?? ''), `Hạn Ghi kết quả: ${x.han}`);
+      assert(/^hạn \d\d\/\d\d$/.test(x.han ?? ''), `Hạn Ghi kết quả: ${x.han}`);
     }
   });
 

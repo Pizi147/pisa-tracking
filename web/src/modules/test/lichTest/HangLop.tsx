@@ -50,7 +50,7 @@ function NhanLop({ l, chuaLuu = 0 }: { l: LopLichTest; chuaLuu?: number }) {
       )}
       {/* PR-MT (YC-13.1): bài vắng tuần này đang chờ Quản lý duyệt dời lần 2 — dòng nhạt, không phải việc chấm. */}
       {l.choDuyetDoi > 0 && (
-        <span className="block whitespace-nowrap text-xs text-wait" title={t('Đề nghị dời do vắng (từ lần 2) đang chờ Quản lý trả lời')}>
+        <span className="block whitespace-nowrap text-xs text-muted" title={t('Đề nghị dời do vắng (từ lần 2) đang chờ Quản lý trả lời')}>
           {l.choDuyetDoi > 1 ? t('{choDuyetDoi} bài ', { choDuyetDoi: l.choDuyetDoi }) : ''}{t('vắng · chờ Quản lý duyệt dời')}
         </span>
       )}

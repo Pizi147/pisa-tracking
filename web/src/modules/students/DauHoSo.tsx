@@ -196,7 +196,7 @@ export function ThanhViec({ viec, homNay, onLam }: { viec: { cuaBan: Viec[]; ngu
 // ====================================================================== câu tóm tắt + bốn ô (Task 3)
 
 const MAU_MANH: Record<string, string> = {
-  danger: 'text-bad', warn: 'text-soon', sos1: 'text-sos1', sos2: 'text-sos2', sos3: 'text-sos3', wait: 'text-wait', accent: 'text-doing',
+  danger: 'text-bad', warn: 'text-soon', sos1: 'text-sos1-chu', sos2: 'text-sos2-chu', sos3: 'text-sos3-chu', wait: 'text-muted', accent: 'text-doing',
 };
 
 /** CÂU TÓM TẮT (Q6) — máy viết, tối đa 3 mảnh, mỗi mảnh một màu theo nghĩa, ngăn bằng `·` mờ. 14 px, dưới vạch mảnh của khung thông tin. */
@@ -215,7 +215,7 @@ export function CauTomTat({ manh }: { manh: (ChuKhoa & { tone: string | null })[
 }
 
 const MAU_NHAN: Record<string, string> = {
-  'qua-han': 'bg-bad-bg text-bad', 'can-lam': 'border border-[color:var(--line-strong)] text-slate-200', 'cho-duyet': 'bg-wait-bg text-wait',
+  'qua-han': 'bg-bad-bg text-bad', 'can-lam': 'border border-[color:var(--line-strong)] text-slate-200', 'cho-duyet': 'bg-muted-bg text-muted',
   'dang-lam': 'bg-[color:var(--surface-2)] text-slate-200', 'tam-dung': 'bg-soon-bg text-soon',
 };
 
@@ -318,7 +318,7 @@ export function BonO({ o, homNay, onDot, onKn, onYThuc, kyNangHref }: {
         {h.so} Case
       </O>
       <O nhan={t('Ý thức')} tren={dk(y.tren)} title={t('Mở tab Ý thức & Phối hợp')} onClick={onYThuc}
-        phu={<span className={y.tone === 'danger' ? 'font-semibold text-bad' : y.tone === 'warn' ? 'font-semibold text-soon' : y.tone === 'wait' ? 'text-wait' : ''}>{dk(y.phu, y.phuK)}</span>}>
+        phu={<span className={y.tone === 'danger' ? 'font-semibold text-bad' : y.tone === 'warn' ? 'font-semibold text-soon' : y.tone === 'wait' ? 'text-muted' : ''}>{dk(y.phu, y.phuK)}</span>}>
         <span className={y.tren ? '' : 'text-[15px]'}>{dk(y.gt)}</span>
       </O>
       <O nhan={t('Sắp tới')} tren={dk(s.tren)} phu={dk(s.phu, s.phuK)} title={t('Mở đợt Test sắp tới ở bảng Học thuật')}
@@ -370,13 +370,13 @@ export function DaiChoDuyet({ studentId, homNay, onDoi, onThemPa }: {
   if (!ds.length) return null;
   const quaHan = ds.filter((y) => !!y.hanDuyet && !!homNay && y.hanDuyet < homNay).length;
   return (
-    <section aria-label={t('Yêu cầu chờ bạn duyệt')} className="rounded-[10px] bg-wait-bg">
+    <section aria-label={t('Yêu cầu chờ bạn duyệt')} className="rounded-[10px] bg-muted-bg">
       <button type="button" aria-expanded={mo} onClick={() => setMo(!mo)}
         className="flex w-full flex-wrap items-center gap-x-2.5 gap-y-1 border-0 bg-transparent px-3 py-[9px] text-left text-[13px] text-slate-100">
-        <span className="whitespace-nowrap text-[11.5px] font-bold uppercase tracking-[.04em] text-wait">{t('Chờ duyệt')}</span>
+        <span className="whitespace-nowrap text-[11.5px] font-bold uppercase tracking-[.04em] text-muted">{t('Chờ duyệt')}</span>
         <span><b className="font-semibold">{t('{n} yêu cầu chờ bạn duyệt', { n: ds.length })}</b>
           {quaHan > 0 && <span className="font-semibold text-bad"> · {t('{n} quá hạn', { n: quaHan })}</span>}</span>
-        <span className="text-wait"><IconGap mo={mo} /></span>
+        <span className="text-muted"><IconGap mo={mo} /></span>
       </button>
       {mo && (
         <div className="flex flex-col gap-2 px-2.5 pb-2.5">

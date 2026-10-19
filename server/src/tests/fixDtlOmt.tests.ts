@@ -158,13 +158,13 @@ export async function runFixDtlOmtTests(t: YThucTestKit) {
     assert(det.kind !== 'mock' && Array.isArray(det.skillSchedule), JSON.stringify({ kind: det.kind }));
   });
 
-  check('DTL4 · C2: "chờ" luôn TÍM (wait), kể cả MT cũ chưa điểm — không trùng màu "chưa xếp" (xám)', () => {
+  check('DTL4 · C2: "chờ" (OV-15a: xám muted, bỏ tím) giống nhau kể cả MT cũ chưa điểm — không trùng kiểu "chưa xếp" (viền)', () => {
     const o = doc('web/src/ui/OMt.tsx');
     const mau = (k: string) => new RegExp(`'?${k}'?: '([^']*)'`).exec(o)?.[1] ?? '';
-    assert(/bg-wait-bg/.test(mau('cho-cham-cu')) && /text-wait/.test(mau('cho-cham-cu')), `cho-cham-cu: ${mau('cho-cham-cu')}`);
+    assert(mau('cho-cham-cu') === mau('cho-cham') && /text-muted/.test(mau('cho-cham-cu')), `cho-cham-cu: ${mau('cho-cham-cu')}`);
     assert(mau('cho-cham-cu') !== mau('chua-lich'), 'chờ (MT cũ) trùng màu chưa xếp');
     const het: any = { trangThai: 'da-xep', tuan: '2026-09-07', periodId: 1, doiTu: null, batBuoc: true, khoa: null, sit: 'scheduled', tuanKetThuc: '2026-09-13', choDuyet: false, hanCham: null };
-    assert(d.chipDongKyNang(het, '2026-10-06', null, true)?.tone === 'wait', 'chip dòng MT cũ chờ phải tím');
+    assert(d.chipDongKyNang(het, '2026-10-06', null, true)?.tone === 'muted', 'chip dòng MT cũ chờ: xám (OV-15a bỏ tím)');
   });
 
   check('DTL5 · lưới FT (ChipDotFT): chữ chip không bị cắt — không truncate, chip xuống dòng được (cao tối thiểu 20px)', () => {

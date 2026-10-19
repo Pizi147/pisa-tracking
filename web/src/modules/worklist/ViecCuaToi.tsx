@@ -20,9 +20,9 @@ export type Work = { summary: { total: number; overdue: number }; dong?: WorkIte
 const DAY = 86_400_000;
 /** Một mốc hạn ngắn cho dòng điện thoại: "quá hạn 3 ngày" · "hạn hôm nay" · "hạn 03/10". */
 function hanNgan(it: WorkItem, homNay: string, ngan: (d: string) => string): { chu: string; mau: string } {
-  if (!it.due) return { chu: t('quá hạn'), mau: 'text-late' };
+  if (!it.due) return { chu: `⚠ ${t('quá hạn')}`, mau: 'text-late' };
   const n = Math.round((Date.parse(homNay) - Date.parse(it.due.slice(0, 10))) / DAY);
-  if (it.urgency === 'overdue') return { chu: n > 0 ? t('quá hạn {n} ngày', { n }) : t('quá hạn'), mau: 'text-late' };
+  if (it.urgency === 'overdue') return { chu: `⚠ ${n > 0 ? t('quá hạn {n} ngày', { n }) : t('quá hạn')}`, mau: 'text-late' };
   if (it.due.slice(0, 10) === homNay) return { chu: t('Hạn hôm nay'), mau: 'text-soon' };
   return { chu: t('hạn {ngan}', { ngan: ngan(it.due) }), mau: 'text-slate-400' };
 }
@@ -76,10 +76,8 @@ export function ViecCuaToi() {
             <button key={it.key} type="button" onClick={() => (it.con?.length ? navigate(it.href) : moViec(it))}
               className="flex min-h-[44px] w-full flex-col gap-1 border-0 border-t bg-transparent px-3.5 py-2.5 text-left first-of-type:border-t-0 hover:bg-white/5"
               style={{ borderColor: 'var(--line)' }}>
-              <span className="flex items-center justify-between gap-2">
-                <NhanTrangThai t={it.urgency === 'overdue' ? 'qua-han' : 'can-lam'} />
-                <span className={`text-xs font-semibold tabular-nums ${h.mau}`}>{h.chu}</span>
-              </span>
+              {/* OV-15a: không chip "Quá hạn" / "Cần làm" lặp — hạn (quá hạn = chữ cam + ⚠) là đủ. */}
+              <span className={`text-xs font-semibold tabular-nums ${h.mau}`}>{h.chu}</span>
               {/* Dòng phụ ẩn (Q2) — nên tên việc tự mang lớp khi tiêu đề chưa có ("Nhập điểm Reading · MB FT 101"). */}
               <b className="text-sm font-semibold leading-snug text-slate-100">
                 {dich(it.tieuDe)}{it.classCode && !it.tieuDe.includes(it.classCode) ? ` · ${it.classCode}` : ''}

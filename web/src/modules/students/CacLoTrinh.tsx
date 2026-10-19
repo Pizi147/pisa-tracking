@@ -18,7 +18,7 @@ export type DongCacLoTrinh = {
 /** Nhãn hướng tiếp: Học lại vàng · Kết thúc / Chuyển lớp xám · còn lại xanh dương (như mockup). */
 export const toneHuong = (h: string): ToneNhan => (h === 'Học lại' ? 'soon' : h === 'Kết thúc' || h === 'Chuyển lớp' ? 'muted' : 'doing');
 
-const toneXong = (kl: string | null): ToneNhan => (kl === 'not_reached' ? 'late' : kl === 'reached' ? 'ok' : 'muted');
+const toneXong = (kl: string | null): ToneNhan => (kl === 'not_reached' ? 'bad' : kl === 'reached' ? 'ok' : 'muted');
 const NUT_CHU = 'link min-h-[44px] appearance-none border-0 bg-transparent p-0 text-[12.5px] font-semibold sm:min-h-0';
 
 function KetQua({ d, onBuocTiep, onDoi }: { d: DongCacLoTrinh; onBuocTiep?: (cycleId: number) => void; onDoi: () => void }) {
@@ -35,7 +35,7 @@ function KetQua({ d, onBuocTiep, onDoi }: { d: DongCacLoTrinh; onBuocTiep?: (cyc
     return (
       <span className="inline-flex flex-wrap items-center gap-x-2 gap-y-1">
         <Nhan tone={toneXong(bt.ketLuan)}>{dich(bt.daXong)}</Nhan>
-        {bt.hen ? <><Nhan tone="wait">{t('Hẹn bắt đầu {tuan}', { tuan: tuanLich(bt.hen, homNay) })}</Nhan>{bt.coTheChon && <button type="button" className={NUT_CHU} onClick={() => void huyHen()}>{t('Huỷ hẹn')}</button>}</>
+        {bt.hen ? <><Nhan tone="muted">{t('Hẹn bắt đầu {tuan}', { tuan: tuanLich(bt.hen, homNay) })}</Nhan>{bt.coTheChon && <button type="button" className={NUT_CHU} onClick={() => void huyHen()}>{t('Huỷ hẹn')}</button>}</>
           : bt.chon ? (!d.dangHoc && d.huong && <Nhan tone={toneHuong(d.huong)}>{dich(d.huong)}</Nhan>)
             : bt.coTheChon && onBuocTiep ? <button type="button" className={NUT_CHU} onClick={() => onBuocTiep(d.id)}>{t('Chọn bước tiếp ›')}</button>
               : <span className="text-[11.5px] text-slate-500">{t('Chờ QL / TVV chọn bước tiếp')}</span>}

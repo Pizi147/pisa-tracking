@@ -14,6 +14,7 @@ import {
   type CheDoKhoang, type DiemMoc, type DotRef, type MauKetQua, type ToneKhoiPa,
 } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
+import { ChipSos } from '../../ui/ChipSos.tsx';
 
 /**
  * TAB HÀNH TRÌNH (PR-Qb, spec §3.8; PR-UX5; PR-VAI-b — mockup 26 bản 2 + bản 1). Đầu tab: CHƯƠNG THEO LỚP (`ChuongLop`). Dưới: TRỤC TUẦN
@@ -66,9 +67,8 @@ const CHIP_TAT_CA = 'tat-ca';
 
 /** Màu kết quả Test (N-1b) → họ chip của `SCORE_CHIP`. */
 const MAU_GHIM = { dat: 'emerald', sos1: 'sos1', sos2: 'sos2', sos3: 'sos3', tam: 'tam' } as const satisfies Record<MauKetQua, ScoreTone>;
-/** Mũi tên ▲▼= của chuỗi điểm. */
+/** Xu hướng "Tăng / Giảm / Không đổi" của chuỗi điểm (OV-15a: chữ, không mũi tên). */
 const LECH = { len: 'text-ok', xuong: 'text-bad', bang: 'text-faint' } as const;
-const LECH_TITLE = { len: t('Tăng'), xuong: t('Giảm'), bang: t('Giữ nguyên') } as const;
 /** PA = KHỐI ĐẶC: nền sẫm cùng họ, chữ màu, không viền (mockup 18 (a) luật 5; Q13). Dấu kết quả là SVG (không ký tự nhỏ). */
 const KHOI: Record<ToneKhoiPa, string> = {
   ok: 'bg-ok-bg text-ok', part: 'bg-soon-bg text-soon', bad: 'bg-bad-bg text-bad',
@@ -78,11 +78,10 @@ const DAU_KHOI: Record<ToneKhoiPa, ReactNode> = {
   ok: <IconDat size={11} />, part: <IconMotPhan size={11} />, bad: <IconKhong size={11} />, run: <IconDangLam size={11} />,
   late: <IconCanhBao size={11} />, done: <IconDat size={11} />,
 };
-/** Khối "chờ" (Q18): viền đứt tím — chờ duyệt / chờ nguyên nhân / chưa có PA. */
-const KHOI_CHO = 'border border-dashed border-wait text-wait';
+/** Khối "chờ" (Q18): viền đứt xám (OV-15a bỏ tím) — chờ duyệt / chờ nguyên nhân / chưa có PA. */
+const KHOI_CHO = 'border border-dashed border-muted text-muted';
 /** Khung Case viền theo mức SOS; lớp thường viền trung tính (không SOS). */
 const VIEN_CASE: Record<number, string> = { 1: 'rgb(var(--sos1-rgb))', 2: 'rgb(var(--sos2-rgb))', 3: 'rgb(var(--sos3-rgb))' };
-const CHIP_SOS: Record<number, string> = { 1: 'bg-sos1-bg text-sos1', 2: 'bg-sos2-bg text-sos2', 3: 'bg-sos3-bg text-sos3' };
 const NEN_HOP = { background: 'var(--surface-2)' } as const;
 const SOC_DUNG = 'repeating-linear-gradient(135deg, rgb(var(--soon-bg-rgb)) 0 5px, transparent 5px 10px)';
 /** Ngưỡng màn hẹp: dưới đây Xem gọn tự bật lúc mở tab (không lưu). */
@@ -400,7 +399,7 @@ function HopKyNang({ hop, vi, vanDe, soAn, truc, boCuc, rongTuan, homNay, onOpen
                   return (
                     <Fragment key={k}>
                       {m.lech && (
-                        <i className={`mx-[5px] text-[11px] font-bold not-italic ${LECH[m.lech.dau]}`} title={LECH_TITLE[m.lech.dau]}>{m.lech.chu}</i>
+                        <i className={`mx-[5px] text-[11px] font-bold not-italic ${LECH[m.lech.dau]}`}>{m.lech.chu}</i>
                       )}
                       {href
                         ? <Link to={href} title={`${m.title} · ${t('mở Hồ sơ Mock Test')}`} className={`${lop} no-underline hover:underline`}>{m.chu}</Link>
@@ -480,7 +479,7 @@ function VanDeHang({ v, vi, cuoi, truc, boCuc, rongTuan, homNay, onOpenCase }: {
             <NhanLoai loai="Case" />
             {v.attemptNo != null && v.sos != null && <span className="rounded border border-[color:var(--line-strong)] px-1 text-[11px] font-semibold leading-4 tabular-nums text-slate-300">MT{v.attemptNo}</span>}
             {!boCuc.xuongDong && <span className="min-w-0 truncate group-hover:underline">{v.sos != null ? giua : dich(v.ten)}</span>}
-            {v.sos ? <span className={`rounded px-1 text-[11.5px] font-bold leading-4 tabular-nums ${CHIP_SOS[v.sos] ?? ''}`}>SOS {v.sos}</span> : null}
+            {v.sos ? <ChipSos muc={v.sos} tinh /> : null}
           </span>
           {!boCuc.xuongDong && <span className="block truncate text-[12px] leading-4 text-faint" title={phu}>{phu}</span>}
         </button>
@@ -566,7 +565,7 @@ function ChuGiai({ cheDo }: { cheDo: 'ielts' | 'ratio' }) {
       t('kết quả PA ({a} · {b} · {c})', { a: dich(outcomeLabelFor('improved')).toLowerCase(), b: dich(outcomeLabelFor('partial')).toLowerCase(), c: dich(outcomeLabelFor('unchanged')).toLowerCase() })],
     [khoi(KHOI.late, <IconCanhBao size={10} />), t('quá hạn')],
     [khoi(KHOI_CHO, null), t('chờ (duyệt / nguyên nhân)')],
-    [<span key="l" className="inline-flex gap-0.5 text-[11px] font-bold"><i className="not-italic text-ok">▲</i><i className="not-italic text-bad">▼</i></span>, t('so với lần trước')],
+    [<span key="l" className="text-[11px] font-bold"><i className="not-italic text-ok">{t('Tăng')}</i> / <i className="not-italic text-bad">{t('Giảm')}</i></span>, t('so với lần trước')],
     [<span key="d" className="inline-block h-3 w-[22px] rounded-md border border-dashed border-[color:var(--text)] opacity-70" />, cheDo === 'ratio' ? t('bài chưa chấm') : t('dự kiến')],
     [<span key="t" className="inline-block h-3 w-4 rounded-sm" style={{ background: SOC_DUNG }} />, t('tạm dừng')],
   ];

@@ -5,7 +5,7 @@ import { useApi } from '../../lib/useApi.ts';
 import { invalidate } from '../../lib/api.ts';
 import { IntakePanel } from './IntakePanel.tsx';
 import { ClassCreatePanel } from '../classes/ClassCreatePanel.tsx';
-import { Card, Empty, ErrorState, ExamPlanText, Level, Skeleton, TargetText } from '../../ui/ui.tsx';
+import { Card, Empty, ErrorState, ExamPlanText, Skeleton, TargetText } from '../../ui/ui.tsx';
 import { Nhan } from '../../ui/Nhan.tsx';
 import { HangCon, HangNhom } from '../../ui/HangNhom.tsx';
 import { MenuDong } from '../../ui/MenuDong.tsx';
@@ -13,7 +13,7 @@ import { TheDong, useDienThoai } from '../../ui/TheDong.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { nhoChiNhanh, type Branch } from '../../ui/Filters.tsx';
 import { useSession } from '../../lib/session.tsx';
-import { sosTone } from '../../lib/format.ts';
+
 import { useThaoTacDongHocVien } from '../classes/thaoTacDongHocVien.tsx';
 import { KetQuaOHocVien } from './BangHocVienLop.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
@@ -29,6 +29,7 @@ import {
   type ChipVai, type ExamPlan, type GiaiDoanSauThi, type KetQuaVao, type LienHe, type NguCanhDs,
 } from '@shared/domain/index.ts';
 import { NhanSauThi } from './HopGiaHan.tsx';
+import { ChipSos } from '../../ui/ChipSos.tsx';
 
 /** `GET /hoc-vien-lop/theo-vai` (server/src/classes/hocVienTheoVai.ts). */
 type LyDoChuY = { sos?: number; caseMoi?: string[]; yThuc?: string; choBuocTiep?: true };
@@ -87,9 +88,9 @@ export function OCanChuY({ c }: { c: LyDoChuY | null }) {
   if (!c) return <span className="text-slate-600">—</span>;
   return (
     <span className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-slate-400">
-      {!!c.sos && <Level tone={sosTone(c.sos)}>SOS {c.sos}</Level>}
-      {!!c.caseMoi?.length && <><Nhan tone="wait">{t('Case mới')}</Nhan><span>{c.caseMoi.map((k) => tenMon(null, k)).join(', ')}</span></>}
-      {c.yThuc && <><Nhan tone="late">{t('Ý thức')}</Nhan><span>{dich(c.yThuc)}</span></>}
+      {!!c.sos && <ChipSos muc={c.sos} />}
+      {!!c.caseMoi?.length && <><Nhan tone="muted">{t('Case mới')}</Nhan><span>{c.caseMoi.map((k) => tenMon(null, k)).join(', ')}</span></>}
+      {c.yThuc && <><Nhan tone="muted">{t('Ý thức')}</Nhan><span>{dich(c.yThuc)}</span></>}
       {c.choBuocTiep && <Nhan tone="soon">{t('Chờ chọn bước tiếp')}</Nhan>}
     </span>
   );

@@ -13,6 +13,7 @@ import { NhanTamDung, TenCase } from './SkillBoard.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { CHUA_CO_PHUONG_AN, GOI_Y_THEM_PHUONG_AN } from '../../ui/chu.ts';
 import { caseStatusLabel, fmtBand, skillLabel, sosLabel, sosTone } from '../../lib/format.ts';
+import { ChipSos } from '../../ui/ChipSos.tsx';
 import {
   FOLLOWUP_OUTCOMES, INTERVENTION_KIND_LABEL, INTERVENTION_STATUS_LABEL,
   NEXT_STEP_LABEL, OUTCOME_MARK, OUTCOME_TONE,
@@ -131,7 +132,7 @@ const daBatDau = (iv: any) => iv.status === 'planned' || iv.status === 'started'
 
 /** Tone `Nhan` của trạng thái PA (trạng thái CÔNG VIỆC, không phải kết quả — mục 2.2): xanh dương đang chạy, tím chờ, xám xong/huỷ. */
 function toneTrangThaiPa(status: string): ToneNhan {
-  return status === 'completed' ? 'done' : status === 'cancelled' ? 'muted' : status === 'planned' ? 'wait' : 'doing';
+  return status === 'completed' ? 'done' : status === 'cancelled' ? 'muted' : status === 'planned' ? 'muted' : 'doing';
 }
 
 /** Số ngày từ `tu` đến `den` (ISO), `null` khi thiếu. */
@@ -152,7 +153,9 @@ export function CasePanel({ caseId }: { caseId: number }) {
       <div className="flex flex-wrap items-center gap-2">
         <h3 className="m-0 text-base font-semibold text-slate-100">{data.title ?? data.headline}</h3>
         <Nhan tone={data.status === 'done' ? 'done' : data.status === 'open' ? 'muted' : 'doing'}>{caseStatusLabel(data.status)}</Nhan>
-        {data.sosLevel !== null && data.status !== 'done' && <Level tone={sosTone(data.sosLevel)}>{sosLabel(data.sosLevel)}</Level>}
+        {data.sosLevel !== null && data.status !== 'done' && (data.sosLevel > 0
+          ? <ChipSos muc={data.sosLevel} dot={data.attemptNo ? `MT${data.attemptNo}` : null} ten={data.student?.name} />
+          : <Level tone={sosTone(data.sosLevel)}>{sosLabel(data.sosLevel)}</Level>)}
         {data.student && <Link className="link text-xs" to={`/hoc-vien/${data.student.id}`}>{data.student.name}</Link>}
       </div>
       <ThanCase data={data} onViec={setNgan} />
@@ -352,7 +355,7 @@ function TheKhoiPa({ iv, data, homNay, ngan, onViec, onDoi, anDau = false, anXac
         {/* Trạng thái CÔNG VIỆC, không phải kết quả (mục 2.2): "Đã xong" chỉ nghĩa việc đã làm xong. */}
         {/* PR-SOS: PA quy chế chưa xác nhận = "Chờ xác nhận" (cùng chữ với hàng PA ở bảng kỹ năng), không phải "Đã lên kế hoạch". */}
         <Nhan tone={toneTrangThaiPa(iv.status)}>{chuaChay ? t('Chưa bắt đầu') : iv.awaitingConfirmation ? t('Chờ xác nhận') : INTERVENTION_STATUS_LABEL[iv.status as keyof typeof INTERVENTION_STATUS_LABEL] ?? iv.status}</Nhan>
-        {choDuyet && <Nhan tone="wait" title={iv.approvalDue ? t('Hạn Quản lý trả lời {ngan}', { ngan: ngan(iv.approvalDue) }) : undefined}>{t('Chờ Quản lý duyệt')}</Nhan>}
+        {choDuyet && <Nhan tone="muted" title={iv.approvalDue ? t('Hạn Quản lý trả lời {ngan}', { ngan: ngan(iv.approvalDue) }) : undefined}>{t('Chờ Quản lý duyệt')}</Nhan>}
         {iv.approvalState === 'approved' && <Nhan tone="done">{t('Đã duyệt')}</Nhan>}
         {iv.approvalState === 'declined' && <NhanTrangThai t="can-lam" chu={t('Bị từ chối')} />}
         <span className="flex-1" />
@@ -532,7 +535,7 @@ function DongDoiPa({ iv, data, ngan, onDoi }: { iv: any; data: CaseDetail; ngan:
     return (
       <div className="flex flex-col gap-1.5">
         <p className="m-0 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12.5px] text-slate-300">
-          <Nhan tone="wait">{t('Chờ duyệt đổi PA')}</Nhan>
+          <Nhan tone="muted">{t('Chờ duyệt đổi PA')}</Nhan>
           <span>→ <b className="font-semibold text-slate-100">{tenMoi}</b></span>
           <span className="text-slate-400">· {iv.status === 'started' ? t('PA gốc vẫn chạy') : t('chưa chạy')} · {t('gửi {ngay}', { ngay: ngan(d.guiLuc) })}{d.hanDuyet ? ` · ${t('QL hạn {ngay}', { ngay: ngan(d.hanDuyet) })}` : ''}</span>
           {d.laNguoiGui && <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 font-semibold sm:min-h-0" disabled={busy} onClick={() => void rut()}>{busy ? t('Đang lưu…') : t('Rút')}</button>}
@@ -673,7 +676,7 @@ function buildLichSu(data: CaseDetail, ngan: (d: string | null | undefined) => s
               {fmtBand(m.band)}{m.expectation !== null ? t(' · kỳ vọng {fmtBand}', { fmtBand: fmtBand(m.expectation) }) : ''}
             </Outcome>
           )}
-          {m.sosLevel ? <Level tone={sosTone(m.sosLevel)}>{sosLabel(m.sosLevel)}</Level> : null}
+          {m.sosLevel ? <ChipSos muc={m.sosLevel} dot={m.attemptNo ? (m.dot ?? `MT${m.attemptNo}`) : null} /> : null}
         </>
       ),
       than: m.note ? <span className="block text-slate-400">{m.note}</span> : null,
