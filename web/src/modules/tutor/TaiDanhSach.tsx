@@ -3,7 +3,7 @@ import { api, ApiError, invalidate } from '../../lib/api.ts';
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { BoLocDoan } from '../../ui/ui.tsx';
 import { useToast } from '../../ui/Toast.tsx';
-import { t } from '@shared/i18n/index.ts';
+import { dich, t } from '@shared/i18n/index.ts';
 import { nhanKyNang, nhanSdt, type ChiNhanh } from './kieu.ts';
 
 type Kq = 'moi' | 'capNhat' | 'giuNguyen' | 'loi';
@@ -85,8 +85,8 @@ export function TaiDanhSach({ dsChiNhanh, onDong }: { dsChiNhanh: ChiNhanh[]; on
   const dong = (kq?.dong ?? []).filter((d) => loc === 'tat-ca' || d.kq === loc);
   const soLuu = (kq?.soMoi ?? 0) + (kq?.soCapNhat ?? 0);
   const ketQua = (d: DongTai) => (
-    d.kq === 'loi' ? <span className="text-xs text-late"><b className="font-semibold">{t('Lỗi')}</b><span className="block">{(d.loi ?? []).join(' · ')}</span></span>
-      : d.kq === 'capNhat' ? <span className="text-xs text-slate-200"><b className="font-semibold">{t('Cập nhật')}</b><span className="block text-slate-400">{(d.doi ?? []).join(' · ')}</span></span>
+    d.kq === 'loi' ? <span className="text-xs text-late"><b className="font-semibold">{t('Lỗi')}</b><span className="block">{(d.loi ?? []).map((x) => dich(x)).join(' · ')}</span></span>
+      : d.kq === 'capNhat' ? <span className="text-xs text-slate-200"><b className="font-semibold">{t('Cập nhật')}</b><span className="block text-slate-400">{(d.doi ?? []).map((x) => dich(x)).join(' · ')}</span></span>
         : d.kq === 'moi' ? <b className="text-xs font-semibold text-ok">{t('Mới')}</b> : <span className="text-xs text-slate-500">{t('Không đổi')}</span>
   );
   const o = (d: DongTai, c: Cot, hien: string) => (d.kq === 'loi' && kq && kq.cot[c] >= 0 && rows

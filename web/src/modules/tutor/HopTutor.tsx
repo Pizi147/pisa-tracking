@@ -7,7 +7,7 @@ import { Truong } from '../../ui/KhungPanel.tsx';
 import { ErrorState, NutChon, Skeleton } from '../../ui/ui.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 import { KN_TUTOR, ngay } from '@shared/domain/index.ts';
-import { t } from '@shared/i18n/index.ts';
+import { dich, t } from '@shared/i18n/index.ts';
 import { boDau, type ChiNhanh, type DongTutor } from './kieu.ts';
 
 type LoiO = Partial<Record<'ten' | 'sdt' | 'noiDay' | 'kyNang', string>>;
@@ -42,7 +42,7 @@ export function HopTutor({ dsChiNhanh, ds, tutor, coBuoi = true, tenSan, onDong,
       onXong(kq.id);
     } catch (e) {
       const d = e instanceof ApiError ? e.details?.loi : null;
-      setLoi(d && typeof d === 'object' ? d : { chung: e instanceof Error ? e.message : t('Không lưu được — thử lại.') });
+      setLoi(d && typeof d === 'object' ? Object.fromEntries(Object.entries(d).map(([k, v]) => [k, dich(String(v))])) : { chung: e instanceof Error ? e.message : t('Không lưu được — thử lại.') });
     } finally { setGui(false); }
   }
   async function xoa() {
@@ -116,10 +116,10 @@ export function HopGop({ ds, onDong, onThem }: { ds: DongTutor[]; onDong: () => 
   async function gop() {
     setGui(true);
     try {
-      const kq = await api.post<{ hoanTac: unknown[] }>('/tutors/gop', { muc });
+      const kq = await api.post<{ nhatKyId: number }>('/tutors/gop', { muc });
       invalidate('/tutors');
       toast.hoanTac(t('Đã gộp {n} tên', { n: muc.length }), async () => {
-        try { await api.post('/tutors/gop/hoan-tac', kq); invalidate('/tutors'); toast.push('ok', t('Đã hoàn tác gộp tên')); }
+        try { await api.post('/tutors/gop/hoan-tac', { nhatKyId: kq.nhatKyId }); invalidate('/tutors'); toast.push('ok', t('Đã hoàn tác gộp tên')); }
         catch (e) { toast.push('error', e instanceof Error ? e.message : t('Không hoàn tác được — thử lại.')); }
       });
       onDong();

@@ -7,7 +7,7 @@ import { TheDong, useDienThoai } from '../../ui/TheDong.tsx';
 import { PhanTrang, usePhanTrang } from '../../ui/PhanTrang.tsx';
 import { BoChonThoiGian } from '../phanTich/BoChonThoiGian.tsx';
 import { khoangTuUrl, ngay, nhanKhoang, thamSoKhoang, KN_TUTOR, type KhoangNgay } from '@shared/domain/index.ts';
-import { t } from '@shared/i18n/index.ts';
+import { dich, t } from '@shared/i18n/index.ts';
 import {
   NHAN_KET_LUAN, TIEU_CHI, boDau, nhanKyNang, nhanNoiDay, nhanSdt,
   type BangTutor, type DongTutor, type TieuChi, type TyLe,
@@ -76,7 +76,7 @@ export default function TutorPage() {
       <span className="ml-1.5 tabular-nums text-slate-500">{ngay(d.ketLuan.luc, homNay)}</span></span>
     : <span className="text-faint">—</span>);
   /* Lý do bằng chữ (không chỉ màu); không dùng ⚠ — ký hiệu đó chỉ nghĩa quá hạn (G-4). */
-  const lyDo = (d: DongTutor) => (d.chuY ? <span className="block text-xs text-late">{d.chuY}</span> : null);
+  const lyDo = (d: DongTutor) => (d.chuY ? <span className="block text-xs text-late">{dich(d.chuY)}</span> : null);
   const ten = (d: DongTutor) => (
     <span className="block min-w-0">
       <button type="button" className="link inline-flex min-h-[44px] items-center border-0 bg-transparent p-0 text-left font-semibold sm:min-h-0" onClick={() => setMo({ id: d.id })}>{d.ten}</button>

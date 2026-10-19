@@ -122,6 +122,11 @@ export async function runPrTubTests(t: any) {
     assert(!dong(hdQ, bc) && !dong(hdQ, hd), 'QL CP: không thấy tutor / buổi của MB, BC, HD');
     const mb = themTutor('Thử Monbay chưa dạy', 'MB');
     assert(dong(tr.bangTutor(QL, K), mb)?.buoi === 0, '"Tất cả" của QL có tutor nơi dạy chi nhánh mình chưa có buổi');
+    /* Rà #477: tutor chi nhánh khác có buổi "Không" với em MB NGOÀI khoảng → vẫn trong Cần chú ý của QL MB (mọi thời gian), 0 buổi trong khoảng. */
+    const cp = themTutor('Thử Cẩm Phả cũ', 'CP');
+    themBuoi(cp, { fb: 0 });
+    const ngoai = tr.bangTutor(QL, { tu: '2026-10-05', den: '2026-10-11' });
+    assert(dong(ngoai, cp)?.chuY === '1 buổi không gửi feedback cho GV' && dong(ngoai, cp).buoi === 0, `QL thấy tutor Cần chú ý ngoài khoảng: ${JSON.stringify(dong(ngoai, cp))}`);
   }));
 
   check('TUB-2c · panel: 5 ô số, nhận xét (người ghi, coSua), buổi có HV + lớp + người ghi + KN; giờ VN 23:30 ngày cuối khoảng vẫn tính', () => thu(() => {
@@ -183,6 +188,13 @@ export async function runPrTubTests(t: any) {
     tr.luuTutor(HT, { ten: 'Thử SĐT 2', sdt: '0912000111', noiDay: cn('MB'), kyNang: ['L'] }, s.id);
     assert(one('SELECT ten, noi_day_branch_id, chi_online FROM tutors WHERE id = ?', s.id).noi_day_branch_id === cn('MB'), 'sửa giữ SĐT của chính mình');
     assertThrows(() => tr.luuTutor(QL, { ten: 'X', kyNang: ['L'] }), /quyền/, 'QL không thêm');
+    /* Lưu đồng thời: người khác vừa lấy SĐT sau bước kiểm (trigger giả lập) → lỗi tại ô SĐT, không 500. */
+    conn.exec(`CREATE TEMP TRIGGER tub_dua BEFORE INSERT ON tutors WHEN NEW.sdt = '0909111222' AND NEW.ten <> 'Người nhanh hơn'
+      BEGIN INSERT INTO tutors (ten, sdt, ky_nang, created_at) VALUES ('Người nhanh hơn', NEW.sdt, 'L', 'x'); END`);
+    let bat: any = null;
+    try { tr.luuTutor(HT, { ten: 'Thử Đồng Thời', sdt: '0909111222', kyNang: ['L'] }); } catch (e) { bat = e; }
+    conn.exec('DROP TRIGGER tub_dua');
+    assert(bat?.status === 400 && /SĐT đã có/.test(bat.message) && bat.details?.loi?.sdt, `UNIQUE → 400 tại ô SĐT: ${bat?.status} ${bat?.message}`);
     themBuoi(s.id);
     assertThrows(() => tr.xoaTutor(HT, s.id), /Ngừng hợp tác/, 'có buổi → không xoá');
     nhanXet(r.id, 'on', '2026-09-01T00:00:00.000Z');
@@ -248,6 +260,12 @@ export async function runPrTubTests(t: any) {
     const k2 = tl.taiLenTutor(HT, { rows: [['Thử Tải H', '', 'cp', 'R'], ['thu trung', '', '', 'L']], luu: false });
     assert(k2.dong[0].kq === 'moi' && k2.dong[0].noiDay === cn('CP'), `không tiêu đề: ${JSON.stringify(k2.dong[0])}`);
     assert(k2.dong[1].kq === 'loi' && k2.dong[1].loi.join() === 'Trùng tên — thêm SĐT', `trùng tên: ${k2.dong[1].loi}`);
+    /* Chốt planning 20/10: SĐT chưa có + tên khớp đúng một tutor CHƯA có SĐT → Cập nhật (bổ sung SĐT), không tạo trùng. */
+    const k3 = tl.taiLenTutor(HT, { rows: [['Bùi Quang Minh', '0977 000 123', '', 'S']], luu: false });
+    assert(k3.dong[0].kq === 'capNhat' && k3.dong[0].doi.join() === 'SĐT: trống → 0977000123', `bổ sung SĐT: ${JSON.stringify(k3.dong[0])}`);
+    /* Hai dòng cùng một tutor (SĐT của tutor + tên của chính tutor đó) → lỗi cả hai. */
+    const k4 = tl.taiLenTutor(HT, { rows: [['Phạm Đức Long', '0983220117', '', 'L'], ['Phạm Đức Long', '', '', 'S']], luu: false });
+    assert(k4.dong.every((x: any) => x.kq === 'loi' && /Trùng tutor với dòng/.test(x.loi.join())), `trùng tutor: ${JSON.stringify(k4.dong)}`);
     assertThrows(() => tl.taiLenTutor(HT, { rows: Array.from({ length: 501 }, (_, i) => [`T${i}`, '', '', 'L']), luu: false }), /500/, '> 500 dòng');
     assertThrows(() => tl.taiLenTutor(QL, { rows, luu: false }), /quyền/, 'QL không tải');
     /* Giữa xem trước và lưu có người thêm tutor cùng SĐT: lưu chạy lại cùng hàm kiểm → dòng đó thành Cập nhật, không lỗi UNIQUE / không trùng. */
@@ -267,13 +285,23 @@ export async function runPrTubTests(t: any) {
     assert(thuy && thuy.soBuoi === 2, `một dòng 2 buổi: ${JSON.stringify(thuy)}`);
     const a = themTutor('Thử Gộp');
     const kq = tr.gopTen(HT, { muc: [{ khoa: thuy.khoa, tutorId: a }] });
+    assert(kq.soBuoi === 2 && kq.nhatKyId > 0, `gộp: ${JSON.stringify(kq)}`);
+    assertThrows(() => tr.hoanTacGop(P.admin, { nhatKyId: kq.nhatKyId }), /người gộp/, 'người khác không hoàn tác lần gộp của Head tutor');
     assert(all('SELECT tutor_id, tutor_ten FROM case_followup_buoi WHERE id IN (?,?)', x1, x2).every((r) => r.tutor_id === a && /thu/i.test(r.tutor_ten)), 'gộp: tutor_id đặt, giữ tên');
     assert(!tr.tenGoTay(HT).some((r: any) => r.khoa === thuy.khoa), 'tên đã gộp rời danh sách');
     const b = themTutor('Thử Gộp Khác');
     run('UPDATE case_followup_buoi SET tutor_id = ? WHERE id = ?', b, x2);
-    tr.hoanTacGop(HT, kq);
+    tr.hoanTacGop(HT, { nhatKyId: kq.nhatKyId, buoiIds: [x2] });   // buoiIds web gửi bị bỏ qua — đọc từ nhật ký
     assert(one('SELECT tutor_id FROM case_followup_buoi WHERE id = ?', x1).tutor_id === null && one('SELECT tutor_id FROM case_followup_buoi WHERE id = ?', x2).tutor_id === b,
       'hoàn tác: dòng 1 về NULL, dòng đã sửa tay sang tutor khác giữ nguyên');
     assertThrows(() => tr.gopTen(QL, { muc: [{ khoa: thuy.khoa, tutorId: a }] }), /quyền/, 'QL không gộp');
   }));
+
+  // ------------------------------------------------------------------ TUB-7 · chỉ mục nhóm chú ý
+  check('TUB-7 · canChuY đọc qua chỉ mục một phần idx_followup_buoi_chu_y (không SCAN bảng buổi) — toàn hệ thống, QL một chi nhánh, một tutor', () => {
+    for (const [ten, c] of [['toàn hệ thống', tr.cauChuY(null)], ['QL MB', tr.cauChuY([cn('MB')])], ['một tutor', tr.cauChuY(null, 1)]] as const) {
+      const ke = (all(`EXPLAIN QUERY PLAN ${c.sql}`, ...c.args) as any[]).map((x) => String(x.detail));
+      assert(!ke.some((d) => /SCAN (b|case_followup_buoi)/.test(d)) && ke.some((d) => /idx_followup_buoi_chu_y/.test(d)), `${ten}: ${ke.join(' | ')}`);
+    }
+  });
 }

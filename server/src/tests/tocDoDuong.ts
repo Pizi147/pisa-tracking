@@ -871,6 +871,8 @@ export const TRAN_DONG: Record<string, number> = {
 };
 
 export const TRAN_GHI_LO = {
+  /** TU-b: POST /tutors/tai-len lưu 50 dòng (40 mới + 10 cập nhật) — đọc tutors + chi nhánh một lần, ghi gom một câu upsert, một nhật ký. */
+  taiLenTutor: 24,   // đo 14 câu, 11 dòng → max(14 + 10, ⌈14 × 1,3⌉)
   /** OV-15f: PUT /hoc-vien-lop/lich-thi/:cycleId (kết luận + ghi chú: quyền, đọc / ghi 5 cột lich_thi_*, nhật ký) */
   luuLichThi: 24,   // đo 14 câu, 11 dòng → max(14 + 10, ⌈14 × 1,3⌉)
   /** OV-15f: POST /hoc-vien-lop/xuat mẫu "Theo dõi SOS" cả lớp MB FT 101 (quyền theo lớp, dangSos, Case của các em trong tệp). */

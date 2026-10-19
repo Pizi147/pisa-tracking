@@ -1,11 +1,12 @@
 /**
  * TẢI DANH SÁCH TUTOR (TU-b, đặc tả Tutor mục 8 + 13) — `POST /tutors/tai-len { rows: string[][], luu }`. Web đọc tệp (.xlsx / .xls / .csv, sheet đầu)
  * hoặc vùng dán TSV thành `rows`; máy chủ xem trước và lưu bằng CÙNG một hàm (`xemTruoc`), lưu chạy lại trong giao dịch nên dữ liệu đổi sau xem trước
- * vẫn đúng. Cột Tên · SĐT · Nơi dạy · Kỹ năng, có / không hàng tiêu đề. Khớp: có SĐT → theo SĐT; không SĐT → tên (bỏ dấu) khớp đúng một tutor.
+ * vẫn đúng. Cột Tên · SĐT · Nơi dạy · Kỹ năng, có / không hàng tiêu đề. Khớp: có SĐT → theo SĐT, SĐT chưa có → tên (bỏ dấu) khớp đúng một tutor CHƯA có
+ * SĐT (bổ sung SĐT, chốt planning 20/10); không SĐT → tên khớp đúng một tutor. Hai dòng cùng một tutor → lỗi cả hai.
  * Ô trống trong tệp không xoá giá trị đang có. Tutor không có trong tệp: giữ nguyên. ≤ 500 dòng.
  */
 import { chenNhieuDong, db, tx } from '../db.ts';
-import { badRequest, forbidden, normalizeName, nowIso } from '../util.ts';
+import { badRequest, forbidden, loi, normalizeName, nowIso } from '../util.ts';
 import { can, type Principal } from '../permissions.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { KN_TUTOR, PERMISSIONS, chuanSdt } from '../../../shared/domain/index.ts';
@@ -53,7 +54,7 @@ function xemTruoc(conn: any, rows: unknown) {
     if (cot.ten < 0 || cot.kyNang < 0) throw badRequest('Dòng tiêu đề cần cột "Tên" và "Kỹ năng".');
   }
   const vao = bang.map((r, i) => ({ r, so: i + 1 })).slice(laTieuDe ? 1 : 0).filter(({ r }) => r.some(Boolean));
-  if (vao.length > TOI_DA) throw badRequest(`Tối đa ${TOI_DA} dòng một lần — tách tệp rồi tải lần lượt.`);
+  if (vao.length > TOI_DA) throw loi(400, 'Tối đa {n} dòng một lần — tách tệp rồi tải lần lượt.', { n: TOI_DA });
 
   const tutors = conn.prepare('SELECT id, ten, sdt, noi_day_branch_id, chi_online, ky_nang FROM tutors').all() as any[];
   const chiNhanh = conn.prepare('SELECT id, code, name FROM branches').all() as any[];
@@ -87,8 +88,14 @@ function xemTruoc(conn: any, rows: unknown) {
     if (loi.length) return { ...d, loi };
     /* Khớp tutor có sẵn. */
     let cu: any = null;
-    if (sdt) cu = tutors.find((t) => t.sdt === sdt) ?? null;
-    else {
+    if (sdt) {
+      cu = tutors.find((t) => t.sdt === sdt) ?? null;
+      /* SĐT chưa có: tutor nhập trước chưa có SĐT, cùng tên (đúng một) → bổ sung SĐT, không tạo tutor trùng (mục 13.2 "sau phải bổ sung"). */
+      if (!cu) {
+        const chuaSdt = (theoKhoa.get(khoaTen(ten)) ?? []).filter((t) => !t.sdt);
+        if (chuaSdt.length === 1) cu = chuaSdt[0];
+      }
+    } else {
       const ds = theoKhoa.get(khoaTen(ten)) ?? [];
       if (ds.length > 1) return { ...d, loi: ['Trùng tên — thêm SĐT'] };
       cu = ds[0] ?? null;
@@ -116,6 +123,7 @@ function xemTruoc(conn: any, rows: unknown) {
   };
   trung((x) => (x.sdt && chuanSdt(x.sdt) ? chuanSdt(x.sdt) as string : null), 'Trùng SĐT');
   trung((x) => (!chuanSdt(x.sdt) && x.ten ? khoaTen(x.ten) : null), 'Trùng tên');
+  trung((x) => (x.kq === 'capNhat' ? String(x.id) : null), 'Trùng tutor');
 
   /* Cập nhật: ghi trước → sau từng trường đổi; không đổi gì → Giữ nguyên. */
   for (const x of dong) {
@@ -143,14 +151,13 @@ export function taiLenTutor(p: Principal, v: { rows?: unknown; luu?: unknown }) 
     if (v?.luu === true) {
       const luc = nowIso();
       const moi = kq.dong.filter((x) => x.kq === 'moi').map((x) => x._sach);
-      chenNhieuDong('INSERT INTO tutors (ten, sdt, noi_day_branch_id, chi_online, ky_nang, created_at, created_by)',
-        moi.map((s) => [s.ten, s.sdt, s.noiDayBranchId, s.chiOnline, s.kyNang, luc, p.userId]));
-      // ponytail: mỗi dòng Cập nhật một câu UPDATE (≤ 500, chỉ dòng có đổi) — gom CASE nếu tải lại tệp lớn chậm trên Turso.
-      for (const x of kq.dong.filter((y) => y.kq === 'capNhat')) {
-        const s = x._sach;
-        conn.prepare('UPDATE tutors SET ten = ?, sdt = ?, noi_day_branch_id = ?, chi_online = ?, ky_nang = ?, updated_at = ?, updated_by = ? WHERE id = ?')
-          .run(s.ten, s.sdt, s.noiDayBranchId, s.chiOnline, s.kyNang, luc, p.userId, x.id);
-      }
+      const sua = kq.dong.filter((x) => x.kq === 'capNhat');
+      /* Mới + Cập nhật gom theo lô (≤ 900 tham số một câu): dòng có id → ON CONFLICT(id) cập nhật 5 trường, giữ created_*. */
+      chenNhieuDong('INSERT INTO tutors (id, ten, sdt, noi_day_branch_id, chi_online, ky_nang, created_at, created_by, updated_at, updated_by)', [
+        ...moi.map((s) => [null, s.ten, s.sdt, s.noiDayBranchId, s.chiOnline, s.kyNang, luc, p.userId, null, null]),
+        ...sua.map((x) => [x.id, x._sach.ten, x._sach.sdt, x._sach.noiDayBranchId, x._sach.chiOnline, x._sach.kyNang, luc, p.userId, luc, p.userId]),
+      ], ` ON CONFLICT(id) DO UPDATE SET ten = excluded.ten, sdt = excluded.sdt, noi_day_branch_id = excluded.noi_day_branch_id,
+        chi_online = excluded.chi_online, ky_nang = excluded.ky_nang, updated_at = excluded.updated_at, updated_by = excluded.updated_by`);
       writeAudit({ actorUserId: p.userId, action: 'tutor.tai_len', entityType: 'tutor',
         after: { moi: moi.map((s) => s.ten), capNhat: kq.dong.filter((y) => y.kq === 'capNhat').map((y) => ({ id: y.id, doi: y.doi })) } });
     }

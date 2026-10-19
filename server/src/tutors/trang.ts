@@ -4,7 +4,7 @@
  * Ngày của buổi = `case_followups.created_at` theo giờ VN. Nhóm chú ý = MỘT hàm (`canChuY`) cho bộ lọc, số menu và cột lý do.
  */
 import { db, theoLo, tx } from '../db.ts';
-import { addDays, badRequest, forbidden, normalizeName, notFound, nowIso } from '../util.ts';
+import { addDays, badRequest, forbidden, loi, normalizeName, notFound, nowIso } from '../util.ts';
 import { can, scopeFor, type Principal } from '../permissions.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { KN_TUTOR, PERMISSIONS, chuanSdt, knTutorCuaTopic } from '../../../shared/domain/index.ts';
@@ -49,15 +49,24 @@ const tron1 = (x: number | null) => (x == null ? null : Math.round(x * 10) / 10)
  * Tutor có ≥ 1 buổi (MỌI thời gian) có ô "Không" hoặc đánh giá ≤ 2, ghi SAU nhận xét gần nhất về tutor đó (sửa nhận xét không dời mốc `luc`);
  * kết luận mới nhất "Ngừng hợp tác" → không vào. `branchIds` (QL): chỉ buổi lớp chi nhánh đó. Chỉ đọc buổi "xấu" (ít dòng), nhận xét qua chỉ mục.
  */
-export function canChuY(conn: any, branchIds: number[] | null): Map<number, ChuY> {
+/**
+ * Câu đọc buổi "xấu": WHERE viết ĐÚNG biểu thức của chỉ mục một phần `idx_followup_buoi_chu_y` (migrate `prTub`) để SQLite dùng chỉ mục, không
+ * quét cả bảng buổi (phép kiểm TUB-7 soi EXPLAIN). `tutorId` (panel một tutor): chỉ đọc buổi của tutor đó.
+ */
+export function cauChuY(branchIds: number[] | null, tutorId?: number): { sql: string; args: number[] } {
   const l = locLop(branchIds);
-  const hang = conn.prepare(
-    `SELECT b.tutor_id, b.chuan_bi, b.tai_lieu, b.feedback_gv, b.danh_gia, b.ghi_luc,
+  return {
+    sql: `SELECT b.tutor_id, b.chuan_bi, b.tai_lieu, b.feedback_gv, b.danh_gia, b.ghi_luc,
             (SELECT n.ket_luan FROM tutor_nhan_xet n WHERE n.tutor_id = b.tutor_id ORDER BY n.luc DESC, n.id DESC LIMIT 1) AS kl,
             (SELECT MAX(n.luc) FROM tutor_nhan_xet n WHERE n.tutor_id = b.tutor_id) AS moc
        FROM case_followup_buoi b
-      WHERE b.tutor_id IS NOT NULL AND (b.chuan_bi = 0 OR b.tai_lieu = 0 OR b.feedback_gv = 0 OR b.danh_gia <= 2)${l.sql}`,
-  ).all(...l.args) as any[];
+      WHERE (b.chuan_bi = 0 OR b.tai_lieu = 0 OR b.feedback_gv = 0 OR b.danh_gia <= 2) AND b.tutor_id ${tutorId ? '= ?' : 'IS NOT NULL'}${l.sql}`,
+    args: [...(tutorId ? [tutorId] : []), ...l.args],
+  };
+}
+export function canChuY(conn: any, branchIds: number[] | null, tutorId?: number): Map<number, ChuY> {
+  const c = cauChuY(branchIds, tutorId);
+  const hang = conn.prepare(c.sql).all(...c.args) as any[];
   const m = new Map<number, ChuY>();
   for (const r of hang) {
     if (r.kl === 'ngung' || (r.moc && !(String(r.ghi_luc ?? '') > r.moc))) continue;
@@ -119,6 +128,7 @@ export function bangTutor(p: Principal, k: Khoang) {
   const conn = db();
   const [tu, den] = mocKhoang(k);
   const l = locLop(branchIds);
+  // ponytail: đọc mọi buổi có tutor rồi lọc ngày qua case_followups (bảng buổi tutor nhỏ); nâng cấp = chỉ mục case_followups(created_at) khi bảng lớn.
   const so = new Map<number, SoTutor>((conn.prepare(
     `SELECT b.tutor_id AS id, COUNT(*) AS buoi, SUM(b.chuan_bi = 1) AS cb, COUNT(b.chuan_bi) AS cbn, SUM(b.tai_lieu = 1) AS tl, COUNT(b.tai_lieu) AS tln,
             SUM(b.feedback_gv = 1) AS fb, COUNT(b.feedback_gv) AS fbn, AVG(b.danh_gia) AS sao
@@ -131,7 +141,7 @@ export function bangTutor(p: Principal, k: Khoang) {
   const cn = docChiNhanh(conn);
   const chuY = canChuY(conn, branchIds);
   const dong = docTutors(conn)
-    .filter((r) => !branchIds || so.has(r.id) || branchIds.includes(r.noi_day_branch_id))
+    .filter((r) => !branchIds || so.has(r.id) || chuY.has(r.id) || branchIds.includes(r.noi_day_branch_id))   // chuY: Cần chú ý tính mọi thời gian
     .map((r) => thanhDong(r, cn, so.get(r.id) ?? SO_RONG, chuY.get(r.id), sua))
     .sort((a, b) => a.ten.localeCompare(b.ten, 'vi'));
   let goTay: { soTen: number; soBuoi: number } | null = null;
@@ -189,7 +199,7 @@ export function panelTutor(p: Principal, id: number, k: Khoang) {
     coSua: sua && n.nguoi_id === p.userId && trong24h(n.luc),
   }));
   return {
-    tutor: thanhDong(r, docChiNhanh(conn), so, canChuY(conn, branchIds).get(id), sua), so, coSua: sua, nhanXet,
+    tutor: thanhDong(r, docChiNhanh(conn), so, canChuY(conn, branchIds, id).get(id), sua), so, coSua: sua, nhanXet,
     coBuoi: sua ? !!conn.prepare('SELECT 1 AS x FROM case_followup_buoi WHERE tutor_id = ? LIMIT 1').get(id) : true,
     buoi: hang.map((b) => ({
       id: b.id, ngay: ngayVn(b.created_at), hocVien: b.hv ?? '', lop: b.lop ?? null, nguoiGhi: b.nguoi_ghi ?? null, kn: knCua(b.topic),
@@ -242,6 +252,7 @@ export function luuTutor(p: Principal, v: TutorVao, id?: number): { id: number; 
   if ('loi' in k) throw badRequest(Object.values(k.loi).join(' · '), { loi: k.loi });
   const t = k.ok;
   const luc = nowIso();
+  try {
   return tx(() => {
     let ma = id ?? 0;
     if (id) {
@@ -255,6 +266,14 @@ export function luuTutor(p: Principal, v: TutorVao, id?: number): { id: number; 
     const trungTen = (conn.prepare('SELECT ten FROM tutors WHERE id <> ?').all(ma) as any[]).some((r) => khoaTen(r.ten) === khoaTen(t.ten));
     return { id: ma, trungTen };
   });
+  } catch (e) {
+    /* Hai người lưu cùng SĐT cùng lúc: chỉ mục UNIQUE chặn người sau — báo tại ô SĐT, không 500. */
+    if (t.sdt && /UNIQUE/i.test(String((e as Error)?.message))) {
+      const ai = conn.prepare('SELECT ten FROM tutors WHERE sdt = ?').get(t.sdt) as any;
+      throw loi(400, 'SĐT đã có: {ten}', { ten: ai?.ten ?? t.sdt }, { loi: { sdt: `SĐT đã có: ${ai?.ten ?? t.sdt}` } });
+    }
+    throw e;
+  }
 }
 
 /** Xoá tutor CHỈ khi chưa có buổi nào trỏ tới (có buổi → dùng kết luận "Ngừng hợp tác"); nhận xét của tutor xoá theo. */
@@ -263,10 +282,11 @@ export function xoaTutor(p: Principal, id: number): { ok: true } {
   const conn = db();
   const t = conn.prepare('SELECT ten, sdt, noi_day_branch_id, chi_online, ky_nang FROM tutors WHERE id = ?').get(id) as any;
   if (!t) throw notFound('Không tìm thấy tutor.');
-  if (conn.prepare('SELECT 1 AS x FROM case_followup_buoi WHERE tutor_id = ? LIMIT 1').get(id)) {
-    throw badRequest('Tutor đã có buổi dạy — không xoá được. Dùng kết luận "Ngừng hợp tác".');
-  }
   tx(() => {
+    /* Kiểm trong giao dịch: GV vừa ghi buổi trỏ tutor này thì không xoá. */
+    if (conn.prepare('SELECT 1 AS x FROM case_followup_buoi WHERE tutor_id = ? LIMIT 1').get(id)) {
+      throw badRequest('Tutor đã có buổi dạy — không xoá được. Dùng kết luận "Ngừng hợp tác".');
+    }
     conn.prepare('DELETE FROM tutor_nhan_xet WHERE tutor_id = ?').run(id);
     conn.prepare('DELETE FROM tutors WHERE id = ?').run(id);
     writeAudit({ actorUserId: p.userId, action: 'tutor.xoa', entityType: 'tutor', entityId: id, entityLabel: t.ten, before: t });
@@ -350,11 +370,11 @@ export function tenGoTay(p: Principal) {
   return [...nhom.values()].sort((a, b) => b.soBuoi - a.soBuoi || a.ten.localeCompare(b.ten, 'vi'));
 }
 
-export type HoanTacGop = { hoanTac: { tutorId: number; buoiIds: number[] }[] };
+export type GoiGop = { tutorId: number; buoiIds: number[] }[];
 const laId = (x: unknown) => Number.isInteger(x) && (x as number) > 0;
 
-/** Gộp: mỗi tên (khoá) → một tutor có sẵn; đặt `tutor_id` cho các buổi đó (giữ `tutor_ten`), một giao dịch. Trả gói Hoàn tác. */
-export function gopTen(p: Principal, v: { muc?: unknown }): HoanTacGop {
+/** Gộp: mỗi tên (khoá) → một tutor có sẵn; đặt `tutor_id` cho các buổi đó (giữ `tutor_ten`), một giao dịch. Trả id mục nhật ký để Hoàn tác. */
+export function gopTen(p: Principal, v: { muc?: unknown }): { nhatKyId: number; soBuoi: number } {
   canSua(p);
   const muc = Array.isArray(v?.muc) ? v.muc as any[] : [];
   if (!muc.length || muc.some((m) => typeof m?.khoa !== 'string' || !laId(m?.tutorId))) throw badRequest('Chọn tutor cho ít nhất một tên.');
@@ -368,22 +388,29 @@ export function gopTen(p: Principal, v: { muc?: unknown }): HoanTacGop {
       theoLo(buoiIds, (lo, ph) => conn.prepare(`UPDATE case_followup_buoi SET tutor_id = ? WHERE tutor_id IS NULL AND id IN (${ph})`).run(m.tutorId, ...lo), 800);
       return { tutorId: m.tutorId as number, buoiIds };
     }).filter((h) => h.buoiIds.length);
-    writeAudit({ actorUserId: p.userId, action: 'tutor.gop_ten', entityType: 'tutor', after: hoanTac });
-    return { hoanTac };
+    writeAudit({ actorUserId: p.userId, action: 'tutor.gop_ten', entityType: 'tutor', after: { hoanTac } });
+    const nhatKyId = (conn.prepare('SELECT last_insert_rowid() AS id').get() as any).id as number;
+    return { nhatKyId, soBuoi: hoanTac.reduce((a, h) => a + h.buoiIds.length, 0) };
   });
 }
 
-/** Hoàn tác gộp: đặt lại NULL ĐÚNG các dòng của lần gộp còn trỏ tutor đó (dòng đã đổi sang tutor khác giữ nguyên). */
-export function hoanTacGop(p: Principal, v: Partial<HoanTacGop>): { ok: true } {
+/**
+ * Hoàn tác gộp: đọc ĐÚNG mục nhật ký `tutor.gop_ten` của chính người gọi (không tin danh sách buổi web gửi) rồi đặt lại NULL các dòng của lần
+ * gộp còn trỏ tutor đó (dòng đã đổi sang tutor khác giữ nguyên).
+ */
+export function hoanTacGop(p: Principal, v: { nhatKyId?: unknown }): { ok: true } {
   canSua(p);
-  const ds = Array.isArray(v?.hoanTac) ? v.hoanTac : [];
-  if (ds.some((h) => !laId(h?.tutorId) || !Array.isArray(h?.buoiIds) || !h.buoiIds.every(laId))) throw badRequest('Gói hoàn tác không hợp lệ.');
+  if (!laId(v?.nhatKyId)) throw badRequest('Không tìm thấy lần gộp để hoàn tác.');
   const conn = db();
+  const nk = conn.prepare('SELECT actor_user_id, action, after_json FROM audit_logs WHERE id = ?').get(v.nhatKyId) as any;
+  if (!nk || nk.action !== 'tutor.gop_ten') throw notFound('Không tìm thấy lần gộp để hoàn tác.');
+  if (nk.actor_user_id !== p.userId) throw forbidden('Chỉ người gộp hoàn tác được lần gộp này.');
+  const ds = ((JSON.parse(nk.after_json ?? '{}').hoanTac ?? []) as GoiGop).filter((h) => laId(h?.tutorId) && Array.isArray(h?.buoiIds));
   tx(() => {
     for (const h of ds) {
-      theoLo(h.buoiIds, (lo, ph) => conn.prepare(`UPDATE case_followup_buoi SET tutor_id = NULL WHERE tutor_id = ? AND id IN (${ph})`).run(h.tutorId, ...lo), 800);
+      theoLo(h.buoiIds.filter(laId), (lo, ph) => conn.prepare(`UPDATE case_followup_buoi SET tutor_id = NULL WHERE tutor_id = ? AND id IN (${ph})`).run(h.tutorId, ...lo), 800);
     }
-    writeAudit({ actorUserId: p.userId, action: 'tutor.gop_hoan_tac', entityType: 'tutor', after: ds });
+    writeAudit({ actorUserId: p.userId, action: 'tutor.gop_hoan_tac', entityType: 'tutor', entityId: v.nhatKyId as number, after: { hoanTac: ds } });
   });
   return { ok: true };
 }

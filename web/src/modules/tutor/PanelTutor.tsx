@@ -10,7 +10,7 @@ import { useLoiForm } from '../../ui/loiForm.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 import { BoChonThoiGian } from '../phanTich/BoChonThoiGian.tsx';
 import { ngay, type KhoangNgay, type LoiTruong } from '@shared/domain/index.ts';
-import { t } from '@shared/i18n/index.ts';
+import { dich, t } from '@shared/i18n/index.ts';
 import {
   KET_LUAN, NHAN_KET_LUAN, TIEU_CHI, nhanKyNang, nhanNoiDay, nhanSdt,
   type BuoiDay, type ChiNhanh, type DongTutor, type KetLuan, type NhanXet, type PanelTutorKq, type TieuChi,
@@ -122,7 +122,7 @@ export function PanelTutor({ id, tieuChi, khoang, onKhoang, dsChiNhanh, ds, onDo
               <span className="flex-1" />
               {tu.ketLuan && <span className="text-xs text-slate-300">{NHAN_KET_LUAN[tu.ketLuan.kl]} <span className="tabular-nums text-slate-500">{ngay(tu.ketLuan.luc, homNay)}</span></span>}
             </div>
-            {tu.chuY && <p className="m-0 text-xs text-late">{t('Cần chú ý vì')}: {tu.chuY}</p>}
+            {tu.chuY && <p className="m-0 text-xs text-late">{t('Cần chú ý vì')}: {dich(tu.chuY)}</p>}
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
               {oSo('tat-ca', t('Buổi'), so.buoi)}
               {TIEU_CHI.map((c) => <span key={c.k} className="contents">{oSo(c.k, c.nhan, tl(so[c.k]))}</span>)}
