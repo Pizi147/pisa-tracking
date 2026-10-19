@@ -9450,6 +9450,9 @@ await runPrTuTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, ad
 // ==================================================================== TD7b (cờ "còn ô chờ điểm" o_cho_tu: đúng ở mọi đường ghi, đầu ra trùng khít) — CUỐI: soi cả trạng thái các phép kiểm trước để lại
 const { runPrTd7bTests } = await import('./prTd7b.tests.ts');
 await runPrTd7bTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== TU-b (trang Tutor: Cần chú ý, bảng / panel, phạm vi QL, thêm sửa xoá, nhận xét, tải danh sách, gộp tên)
+const { runPrTubTests } = await import('./prTub.tests.ts');
+await runPrTubTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`

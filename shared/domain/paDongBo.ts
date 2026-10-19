@@ -133,6 +133,17 @@ export function hinhThucTuSuy(tutor: { noiDayBranchId: number | null; chiOnline:
 }
 /** Kỹ năng tutor (mã ngắn, thứ tự cố định — `ENTRY_SKILL_SHORT`, chủ SP 20/10 có W1 / W2). */
 export const KN_TUTOR = ['L', 'R', 'W1', 'W2', 'S'] as const;
+/**
+ * TU-b (đặc tả Tutor mục 3.1, 8): SĐT tutor — bỏ dấu cách / chấm / gạch / ngoặc; `+84` → `0`; 9 số không bắt đầu bằng 0 → thêm 0 (ô Excel kiểu số mất số 0 đầu).
+ * Trống → null; không phải 9–11 chữ số → false.
+ */
+export function chuanSdt(v: unknown): string | null | false {
+  let s = String(v ?? '').replace(/[\s.\-()]/g, '');
+  if (!s) return null;
+  if (s.startsWith('+84')) s = `0${s.slice(3)}`;
+  if (/^[1-9]\d{8}$/.test(s)) s = `0${s}`;
+  return /^\d{9,11}$/.test(s) ? s : false;
+}
 /** Kỹ năng PA lấy từ topic của Case → kỹ năng tutor khớp (đủ một là được). Writing → W1 hoặc W2 (mục 13.1). Rỗng = không lọc theo kỹ năng. */
 export function knTutorCuaTopic(topic: string | null | undefined): string[] {
   if (topic === 'listening') return ['L'];

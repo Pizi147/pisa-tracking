@@ -46,6 +46,7 @@ export function navOf(p: Principal): NavQuyen {
     workChamDiem: support && chamDiem,
     xuatMt: coPhamViXuat(phamViXuatMt(p)),
     tutor,
+    tutorSua: tutor && can(p, PERMISSIONS.TUTOR_MANAGE, { anyScope: true }),
   };
 }
 
