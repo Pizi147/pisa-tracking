@@ -34,6 +34,8 @@ const accounts = await import('../platform/accounts.ts');
 const { PERMISSIONS, LO_LUU_SUA_CA_LOP } = await import('../../../shared/domain/index.ts');
 const { listCases } = await import('../cases/cases.ts');
 const { DUONG_DO, MOI_VAI, TRAN, TRAN_DONG, TRAN_GHI_LO } = await import('./tocDoDuong.ts');
+const td15d = await import('../platform/thongBaoTuDong.ts');   // OV-15d
+const { demoToday: demoToday15d } = await import('../demoConfig.ts');
 
 runSeed();
 
@@ -1183,6 +1185,24 @@ await checkAsync(`PR-XLMT · Xem trước Xếp lịch MT cả lớp MB FT 101 (
   console.log(`      (đo: ${sids.length} em, ${r.n} câu)`);
   assert(r.n <= TRAN_GHI_LO.xemTruocXepLichMt, `${r.n} câu > trần ${TRAN_GHI_LO.xemTruocXepLichMt}`);
 });
+
+for (const [vai, tran] of [['QL', TRAN_GHI_LO.dongBoThongBaoQL], ['GVCN', TRAN_GHI_LO.dongBoThongBaoGVCN]] as const) {
+  check(`OV-15d · đồng bộ thông báo tự động (dongBoThongBaoTuDong) ${vai} ≤ ${tran} câu SQL`, () => {
+    const { dongBoThongBaoTuDong } = td15d;
+    const p = loadPrincipal(USER[vai]);
+    let n = 0, dong = 0;
+    conn.exec('BEGIN IMMEDIATE');
+    try {
+      chayTrongRequest('GET', () => {
+        const truoc = soCauSql(), dongTruoc = soDongSql();
+        dongBoThongBaoTuDong(p, demoToday15d());
+        n = soCauSql() - truoc; dong = soDongSql() - dongTruoc;
+      });
+    } finally { conn.exec('ROLLBACK'); }
+    console.log(`      (đo ×3: ${n} câu, ${dong} dòng)`);
+    assert(n <= tran, `${n} câu > trần ${tran}`);
+  });
+}
 
 await checkAsync(`PR-TOC · Thêm 35 em lớp FT (POST /intake/commit) ≤ ${TRAN_GHI_LO.themHocVien35FT} câu SQL, đủ lịch MT mặc định`, async () => {
   const r = await doGhi('QL', '/intake/commit', { classId: LOP_FT, rows: dongNhap('Tốc Độ FT', 35, true), idempotencyKey: 'pr-toc-35' });

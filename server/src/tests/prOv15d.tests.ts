@@ -124,4 +124,22 @@ export async function runPrOv15dTests(t: YThucTestKit) {
     const mw = (mywork.myWork(ql, { chiNhom: new Set(['buoc_tiep', 'chot_len_ft']) }).items as any[]);
     assert(r.canQuyet.sauThi.length === mw.length, `số việc ${r.canQuyet.sauThi.length} ≠ ${mw.length}`);
   });
+
+  const audit: any = await import('../platform/audit.ts');
+
+  check('OV15d-9 · chỉ mục idx_case_owner (sos_cases theo người phụ trách) có và được câu thông báo Case dùng — không quét cả bảng mỗi người', () => {
+    assert(conn.prepare(`SELECT 1 FROM sqlite_master WHERE type = 'index' AND name = 'idx_case_owner'`).get(), 'thiếu chỉ mục idx_case_owner');
+    const plan = (conn.prepare(`EXPLAIN QUERY PLAN ${td.CAU_CASE_CUA_NGUOI}`).all(1) as any[]).map((r) => r.detail).join(' | ');
+    assert(/idx_case_owner/.test(plan), `câu không dùng chỉ mục: ${plan}`);
+  });
+
+  check('OV15d-10 · notify upsert cập nhật cả đường mở (duong) — thông báo cũ trỏ đúng việc mới', () => {
+    thu(() => {
+      const uid = P.w1Teacher.userId;
+      audit.notify({ userId: uid, kind: 'cham_qua_han', title: 'x', dedupKey: 'ov15d:duong', duong: '/cong-viec?viec=a' });
+      audit.notify({ userId: uid, kind: 'cham_qua_han', title: 'x', dedupKey: 'ov15d:duong', duong: '/cong-viec?viec=b' });
+      const r = conn.prepare(`SELECT duong FROM notifications WHERE user_id = ? AND dedup_key = 'ov15d:duong'`).get(uid) as any;
+      assert(r?.duong === '/cong-viec?viec=b', `duong = ${r?.duong}`);
+    });
+  });
 }

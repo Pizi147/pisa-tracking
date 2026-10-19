@@ -26,6 +26,11 @@ export const khoaChamQuaHan = (x: Pick<WorkItem, 'classId' | 'attemptNo' | 'peri
 const NGAY_MS = 86_400_000;
 const soNgay = (tu: string, den: string) => Math.round((Date.parse(`${den.slice(0, 10)}T00:00:00Z`) - Date.parse(`${tu.slice(0, 10)}T00:00:00Z`)) / NGAY_MS);
 
+/** Case đang mở của MỘT người phụ trách — Case thật (OV-13a), em chưa lưu trữ, như tập chỉ số; đi chỉ mục `idx_case_owner`. */
+export const CAU_CASE_CUA_NGUOI = `SELECT sc.id, s.full_name AS ten, COALESCE(sc.category, sc.topic) AS mon, cy.programme_code AS ct
+       FROM sos_cases sc JOIN students s ON s.id = sc.student_id LEFT JOIN learning_cycles cy ON cy.id = sc.cycle_id
+      WHERE sc.owner_user_id = ? AND sc.status != 'done' AND sc.tam = 0 AND s.archived_at IS NULL`;
+
 function viecMuon(p: Principal, homNay: string): Map<string, Muon> {
   const muon = new Map<string, Muon>();
   const items = (myWork(p, { chiNhom: new Set(['score', 'chot_len_ft']) }).items ?? []) as WorkItem[];
@@ -59,11 +64,7 @@ function viecMuon(p: Principal, homNay: string): Map<string, Muon> {
   }
 
   /* 3. Case chưa chốt PA quá hạn — Case người này phụ trách; một câu đọc Case đang mở của người đó. */
-  const cs = db().prepare(
-    `SELECT sc.id, s.full_name AS ten, COALESCE(sc.category, sc.topic) AS mon, cy.programme_code AS ct
-       FROM sos_cases sc JOIN students s ON s.id = sc.student_id LEFT JOIN learning_cycles cy ON cy.id = sc.cycle_id
-      WHERE sc.owner_user_id = ? AND sc.status != 'done' AND sc.tam = 0 AND s.archived_at IS NULL`,   /* Case thật (OV-13a), em chưa lưu trữ — như tập chỉ số */
-  ).all(p.userId) as any[];
+  const cs = db().prepare(CAU_CASE_CUA_NGUOI).all(p.userId) as any[];
   const xl = xuLyCaseMany(cs.map((c) => c.id as number), homNay);
   for (const c of cs) {
     const x = xl.get(c.id);
@@ -81,7 +82,7 @@ function viecMuon(p: Principal, homNay: string): Map<string, Muon> {
 export function dongBoThongBaoTuDong(p: Principal, homNay: string): number {
   const muon = viecMuon(p, homNay);
   const co = db().prepare(
-    `SELECT id, dedup_key, title, body FROM notifications WHERE user_id = ? AND kind IN (${KIND.map(() => '?').join(',')})`,
+    `SELECT id, dedup_key, title, body, duong FROM notifications WHERE user_id = ? AND kind IN (${KIND.map(() => '?').join(',')})`,
   ).all(p.userId, ...KIND) as any[];
   let ghi = 0;
   const het = co.filter((n) => !muon.has(n.dedup_key)).map((n) => n.id as number);
@@ -92,7 +93,7 @@ export function dongBoThongBaoTuDong(p: Principal, homNay: string): number {
   const cu = new Map(co.map((n) => [n.dedup_key as string, n]));
   for (const [dedupKey, m] of muon) {
     const n = cu.get(dedupKey);
-    if (n && n.title === m.title && (n.body ?? '') === m.body) continue;
+    if (n && n.title === m.title && (n.body ?? '') === m.body && n.duong === m.duong) continue;
     notify({ userId: p.userId, ...m, dedupKey });
     ghi += 1;
   }
