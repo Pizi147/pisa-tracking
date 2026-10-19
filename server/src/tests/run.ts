@@ -9447,6 +9447,9 @@ await runPrOv15e2Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P
 // ==================================================================== TU-a (Tutor: migrate, vai Head tutor, buổi tutor 3 ô, /tutors/chon)
 const { runPrTuTests } = await import('./prTu.tests.ts');
 await runPrTuTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== TD7b (cờ "còn ô chờ điểm" o_cho_tu: đúng ở mọi đường ghi, đầu ra trùng khít) — CUỐI: soi cả trạng thái các phép kiểm trước để lại
+const { runPrTd7bTests } = await import('./prTd7b.tests.ts');
+await runPrTd7bTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`

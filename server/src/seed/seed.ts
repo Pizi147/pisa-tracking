@@ -1,3 +1,4 @@
+import { capNhatConOChoTatCa } from '../fasttrack/conOCho.ts';
 import { buildOv2aDemo } from './ov2aSeed.ts';
 import { buildHeadTutor, buildTutorDs } from './tuSeed.ts';
 import { buildPetDemo } from './petSeed.ts';
@@ -306,6 +307,7 @@ export function runSeed() {
     /* OV-12c: Case dựng bằng SQL thẳng theo luật cũ → nguyên nhân MT từ nhận xét, nhãn SOS Progress (cùng hàm với migrate). */
     migratePrOv12c(conn, []);
 
+    capNhatConOChoTatCa();   // TD7b: dữ liệu mẫu ghi thẳng SQL — tính cờ "còn ô chờ điểm" một lần cho mọi lượt
     return {
       'Chi nhánh': BRANCHES.length,
       'Thẻ Chờ duyệt (demo)': duyet.the,

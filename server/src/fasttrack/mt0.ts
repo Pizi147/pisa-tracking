@@ -3,6 +3,7 @@
  * MT0 = `assessment_attempts` `kind = 'mt0'`, `attempt_no = 0`, gắn khoá lớp thường đang chạy (`route IS NULL`). Không bao giờ xoá dòng
  * hay điểm: huỷ = `status = 'cancelled'`, mở lại được. Mọi hàm ghi chạy TRONG `tx` của thao tác gây ra nó; số câu SQL không tăng theo số em.
  */
+import { capNhatConOCho } from './conOCho.ts';
 import { chenNhieuDong, db, theoLo } from '../db.ts';
 import {
   ASSESSED_SKILLS, coMt0, skillShort, hanChamMt0, kyNangSosMt0, trangThaiMt0, tuanLich,
@@ -94,6 +95,7 @@ export function dongBoMt0(actorUserId: number, dongs: readonly DongMt0[]): void 
       conn.prepare(`UPDATE assessment_attempts SET class_id = ?, planned_period_id = ?, plan_source = 'auto', updated_at = ? WHERE id IN (${ph})`).run(lop, pid, now, ...lo);
       conn.prepare(`UPDATE attempt_skills SET planned_period_id = ?, plan_source = 'auto', updated_at = ? WHERE attempt_id IN (${ph})`).run(pid, now, ...lo);
     });
+    capNhatConOCho(ids);   // TD7b: MT0 đổi lớp đích + tuần
   }
   if (!tao.length) return;
   chenNhieuDong(
@@ -109,6 +111,7 @@ export function dongBoMt0(actorUserId: number, dongs: readonly DongMt0[]): void 
     'INSERT INTO attempt_skills (attempt_id, skill, required, planned_period_id, plan_source, sit_status, created_at)',
     moi.flatMap((a) => ASSESSED_SKILLS.map((k) => [a.id, k, 1, a.planned_period_id, 'auto', 'scheduled', now])),
   );
+  capNhatConOCho(moi.map((a) => a.id));   // TD7b: MT0 mới
   chenNhieuDong('INSERT INTO attempt_schedule_history (attempt_id, action, actor_user_id, created_at)',
     moi.map((a) => [a.id, 'created', actorUserId, now]));
   const tuanTheoKy = new Map([...ky.values()].map((p) => [p.id, p.weekStart]));

@@ -790,6 +790,8 @@ export const TRAN: Record<string, number> = {
  * TRẦN DÒNG ĐỌC (TD2-a) — khoá như `TRAN`. Số dòng mọi câu SQL trả về trong request (`all` → length, `get` → 0/1; đếm ở db.ts).
  * Turso: khối dữ liệu đọc (dòng × cột) chiếm phần lớn thời gian các trang chậm, số câu không bắt được — trần này bắt đọc lặp/đọc thừa.
  * Trần = max(đo + 50, ⌈đo × 1,3⌉), đo NGAY SAU TD2-a trên bộ demo gốc. Sau nhân dữ liệu ×3: ≤ 3 × trần.
+ * TD7b: dòng TRẢ VỀ không đổi (cùng tập lượt, JSON trùng) nên trần giữ nguyên; phần giảm là dòng DUYỆT (điểm + lịch của MỌI lượt cho từng lượt) — không đếm ở đây,
+ * khoá bằng EXPLAIN (không SCAN assessment_attempts, đi idx_attempt_o_cho[_lop]) ở khối "TD7b" của tocDo.run.ts.
  */
 export const TRAN_DONG: Record<string, number> = {
   'QL /my-work': 1104,   // TD4: đo 849 (trước 2155)
@@ -804,20 +806,20 @@ export const TRAN_DONG: Record<string, number> = {
   'GVBM /classes/3/roster': 2463,   // đo 1894
   'GVCN_THUONG /classes/3/roster': 2447,   // đo 1882
   'QT /classes/3/roster': 2153,   // đo 1656
-  'QL /cham/lich-test': 917,   // TD3-a: đo 705 (27 câu)
-  'GVCN /cham/lich-test': 705,   // TD3-a: đo 542 (25 câu)
-  'GVBM /cham/lich-test': 774,   // TD3-a: đo 595 (26 câu)
-  'GVCN_THUONG /cham/lich-test': 705,   // TD3-a: đo 542 (25 câu)
-  'QT /cham/lich-test': 1111,   // TD3-a: đo 854 (28 câu)
-  'QL /cham/lich-test?phamVi=tat-ca': 917,   // TD3-a: đo 705 (27 câu)
-  'GVCN /cham/lich-test?phamVi=tat-ca': 705,   // TD3-a: đo 542 (25 câu)
-  'GVBM /cham/lich-test?phamVi=tat-ca': 774,   // TD3-a: đo 595 (26 câu)
-  'GVCN_THUONG /cham/lich-test?phamVi=tat-ca': 705,   // TD3-a: đo 542 (25 câu)
-  'QT /cham/lich-test?phamVi=tat-ca': 1111,   // TD3-a: đo 854 (28 câu)
-  'QL /cham/lich-test?classId=3': 709,   // TD3-a: đo 545 (25 câu)
-  'QT /cham/lich-test?classId=3': 735,   // TD3-a: đo 565 (24 câu)
-  'GVCN /cham/lich-test?classId=3': 611,   // TD3-a: đo 470 (25 câu)
-  'GVBM /cham/lich-test?classId=3': 647,   // TD3-a: đo 497 (25 câu)
+  'QL /cham/lich-test': 748,   // TD7c: đo 575 (trước TD7c 720; khối 1 chỉ nạp lượt có ô thi trước tuần trước)
+  'GVCN /cham/lich-test': 579,   // TD7c: đo 445 (trước TD7c 561; khối 1 chỉ nạp lượt có ô thi trước tuần trước)
+  'GVBM /cham/lich-test': 631,   // TD7c: đo 485 (trước TD7c 614; khối 1 chỉ nạp lượt có ô thi trước tuần trước)
+  'GVCN_THUONG /cham/lich-test': 579,   // TD7c: đo 445 (trước TD7c 561; khối 1 chỉ nạp lượt có ô thi trước tuần trước)
+  'QT /cham/lich-test': 860,   // TD7c: đo 661 (trước TD7c 868; khối 1 chỉ nạp lượt có ô thi trước tuần trước)
+  'QL /cham/lich-test?phamVi=tat-ca': 748,   // TD7c: đo 575 (trước TD7c 720; khối 1 chỉ nạp lượt có ô thi trước tuần trước)
+  'GVCN /cham/lich-test?phamVi=tat-ca': 579,   // TD7c: đo 445 (trước TD7c 561; khối 1 chỉ nạp lượt có ô thi trước tuần trước)
+  'GVBM /cham/lich-test?phamVi=tat-ca': 631,   // TD7c: đo 485 (trước TD7c 614; khối 1 chỉ nạp lượt có ô thi trước tuần trước)
+  'GVCN_THUONG /cham/lich-test?phamVi=tat-ca': 579,   // TD7c: đo 445 (trước TD7c 561; khối 1 chỉ nạp lượt có ô thi trước tuần trước)
+  'QT /cham/lich-test?phamVi=tat-ca': 860,   // TD7c: đo 661 (trước TD7c 868; khối 1 chỉ nạp lượt có ô thi trước tuần trước)
+  'QL /cham/lich-test?classId=3': 653,   // TD7c: đo 502 (trước TD7c 559; khối 1 chỉ nạp lượt có ô thi trước tuần trước)
+  'QT /cham/lich-test?classId=3': 678,   // TD7c: đo 521 (trước TD7c 578; khối 1 chỉ nạp lượt có ô thi trước tuần trước)
+  'GVCN /cham/lich-test?classId=3': 556,   // TD7c: đo 427 (trước TD7c 484; khối 1 chỉ nạp lượt có ô thi trước tuần trước)
+  'GVBM /cham/lich-test?classId=3': 591,   // TD7c: đo 454 (trước TD7c 511; khối 1 chỉ nạp lượt có ô thi trước tuần trước)
   'QL /tong-quan/chi-nhanh': 3336,   // đo 2566
   'QT /tong-quan/chi-nhanh': 4397,   // đo 3382
   'QL /tong-quan/diem-chu-y?ct=ft': 3260,   // đo 2507

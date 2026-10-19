@@ -4,6 +4,7 @@ import type { YThucTestKit } from './yThuc.tests.ts';
 export async function runPrTd3Tests(t: YThucTestKit) {
   const { check, assert, conn, P, TODAY } = t;
   const att: any = await import('../fasttrack/attempts.ts');
+  const cc: any = await import('../fasttrack/conOCho.ts');
   const ngu: any = await import('../platform/nguCanhRequest.ts');
   const cham: any = await import('../cham/canCham.ts');
   const week: any = await import('../platform/week.ts');
@@ -27,6 +28,7 @@ export async function runPrTd3Tests(t: YThucTestKit) {
    * của Review Focus; thiếu Writing một ô thì thêm ở đây (bỏ band W2 của một lượt MT đã chấm đủ W).
    */
   check('TD3-a-1 · listAttempts chiConO: sau conBaiCanCham trùng JSON với không chiConO — mọi vai, có đủ "-" dời, W một ô, ô huỷ, lượt huỷ, em Tạm dừng', () => {
+    cc.capNhatConOChoTatCa();   // TD7b: phép kiểm trước dựng lượt bằng SQL thẳng → đồng bộ cờ "còn ô chờ" trước khi so hai đường đọc
     const wMotO = () => (conn.prepare(`SELECT COUNT(*) n FROM assessment_attempts a WHERE a.kind = 'mock' AND a.status != 'cancelled'
       AND (SELECT COUNT(*) FROM assessment_scores sc WHERE sc.attempt_id = a.id AND sc.skill IN ('writing1', 'writing2') AND sc.band IS NOT NULL) = 1`).get() as any).n;
     if (!wMotO()) {
@@ -35,6 +37,7 @@ export async function runPrTd3Tests(t: YThucTestKit) {
           AND (SELECT COUNT(*) FROM assessment_scores sc WHERE sc.attempt_id = a.id AND sc.skill IN ('writing1', 'writing2') AND sc.band IS NOT NULL) = 2
         ORDER BY a.id LIMIT 1`).get(t.classId('MB FT 101')) as any;
       conn.prepare(`UPDATE assessment_scores SET band = NULL WHERE attempt_id = ? AND skill = 'writing2'`).run(a.id);
+      cc.capNhatConOCho([a.id]);   // TD7b: fixture ghi thẳng SQL → đồng bộ cờ
     }
     const dem = (sql: string) => (conn.prepare(sql).get() as any).n as number;
     const co = {
