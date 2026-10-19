@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { PanelNhapDiemLop } from '../cham/PanelNhapDiemLop.tsx';
 import { useApi } from '../../lib/useApi.ts';
 import { invalidate } from '../../lib/api.ts';
 import { ErrorState, Skeleton } from '../../ui/ui.tsx';
@@ -151,6 +152,8 @@ export function PanelNhapDiem({ it, onDong, onDaLam, quayLai }: {
 }) {
   const { data, error, reload } = useApi<BangTheoLuot>(duongDiemTheoLuot(it.classId!, it.luot!), [it.classId, it.luot]);
   const daLuu = () => { reload(); onDaLam(); };
+  /* OV-15b: "lớp · lượt ↗" đổi panel này sang Nhập điểm cả lớp (cùng chỗ, không panel lồng panel); "‹ Việc" quay về việc. */
+  const [caLop, setCaLop] = useState(false);
   /* Plan mục 4: kỹ năng VÀ tiêu đề giữ như lúc mở — tải lại sau khi lưu (việc còn môn khác) không đổi chữ đầu panel dưới tay người dùng. */
   const [kn] = useState(it.kn ?? null);
   const [kns] = useState(() => it.kns ?? (it.kn ? [it.kn] : null));
@@ -163,11 +166,14 @@ export function PanelNhapDiem({ it, onDong, onDaLam, quayLai }: {
   const dau = dauViec({
     han: it.due ? <ChipHan loai={LOAI_HAN_CUA_VIEC.score ?? 'nhap-diem'} han={it.due} /> : null,
     lop: it.classCode, ngCanh: (
-      <Link className="link" to={`/test/diem-lop?lop=${it.classId}&luot=${encodeURIComponent(it.luot!)}`}>
+      <button type="button" className="link text-left" onClick={() => setCaLop(true)}>
         {dich((laViecChamCheo({ key: it.key ?? '' }) ? it.phu : it.contextLabel) ?? '')} <span aria-hidden className="text-xs">↗</span>
-      </Link>
+      </button>
     ),
   });
+  if (caLop) {
+    return <PanelNhapDiemLop classId={it.classId!} classCode={it.classCode} luot={it.luot} onDong={onDong} quayLai={{ nhan: t('‹ Việc'), onClick: () => setCaLop(false) }} />;
+  }
   return (
     <KhungPanel tieuDe={dich(tieuDe)} dau={dau} quayLai={quayLai} onDong={onDong}>
       {error ? <ErrorState message={error.message} hint={error.hint} onRetry={reload} />

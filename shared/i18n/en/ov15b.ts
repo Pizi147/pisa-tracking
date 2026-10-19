@@ -85,5 +85,7 @@ export const EN_OV15B = {
   'Lớp không hợp lệ.': 'Invalid class.',
   'Có dòng không thuộc lớp / lượt đang mở — tải lại bảng rồi dán lại.': 'Some rows are not in the open class / test — reload the table and paste again.',
   'Ô "-": nhận xét bị bỏ': 'Cell "-": comment is dropped',
+  '‹ Việc': '‹ Task',
+  'Không hoàn tác {ten}: ô đã đổi sau khi dán': 'Not undone for {ten}: cells changed after the paste',
   'Hoàn tác dán điểm từ Excel': 'Undid scores pasted from Excel',
 } satisfies Record<string, Dich>;

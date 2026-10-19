@@ -1026,7 +1026,8 @@ await checkAsync('TD4-a (×3) · Công việc trùng JSON ảnh chụp trước 
   ];
   const sai: string[] = [];
   for (const [ten, fn] of goc) {
-    const bam = chayTrongRequest('GET', () => createHash('sha256').update(JSON.stringify(fn())).digest('hex').slice(0, 16));
+    /* 19/10 OV-15b: việc Nhập điểm thêm `kns` (đủ kỹ năng của việc — panel chỉ mở các cột này); băm bỏ trường đó → trùng ảnh cũ (không việc nào khác đổi). */
+    const bam = chayTrongRequest('GET', () => createHash('sha256').update(JSON.stringify(fn(), (k, v) => (k === 'kns' ? undefined : v))).digest('hex').slice(0, 16));
     if (ANH[ten] !== bam) sai.push(`'${ten}': '${bam}',`);
   }
   assert(!sai.length, `lệch ảnh chụp:\n${sai.join('\n')}`);
@@ -1407,6 +1408,24 @@ await checkAsync('OV-13c · POST /interventions/xac-nhan-pa-lo (×3): lô 3 PA �
   console.log(`      (đo ×3: ${ids.length} PA → ${cau} câu, ${(cau / ids.length).toFixed(1)} câu / PA · ok ${json?.ok?.length} · lỗi ${json?.loi?.length})`);
   assert(status === 200 && json.ok.length === ids.length, `kết quả: ${status} ${JSON.stringify(json)}`);
   assert(cau <= 45 * ids.length, `${cau} câu cho ${ids.length} PA (> 45 / PA)`);
+});
+
+await checkAsync(`OV-15b · Dán từ Excel một dòng 5 ô (POST /attempts/scores/lo) ≤ ${TRAN_GHI_LO.danExcelMotDong} câu SQL`, async () => {
+  const { demoToday } = await import('../demoConfig.ts');
+  /* Lượt MT thường của MB FT 101 có đủ 5 ô bắt buộc, mọi ô đã tới tuần thi, chưa huỷ / vắng — xoá điểm rồi dán như GV dán cả dòng. */
+  const a = conn.prepare(`SELECT a.id, a.attempt_no FROM assessment_attempts a WHERE a.class_id = ? AND a.kind = 'mock' AND a.status <> 'cancelled' AND COALESCE(a.lich_su, 0) = 0
+      AND NOT EXISTS (SELECT 1 FROM attempt_skills k LEFT JOIN report_periods pr ON pr.id = k.planned_period_id WHERE k.attempt_id = a.id
+        AND (k.required = 0 OR k.sit_status IN ('cancelled','absent') OR pr.week_start IS NULL OR pr.week_start > ?))
+    ORDER BY a.id LIMIT 1`).get(LOP_FT, demoToday()) as any;
+  assert(a, 'bộ đo: cần một lượt MT đủ 5 ô đã tới tuần thi');
+  conn.prepare('DELETE FROM assessment_scores WHERE attempt_id = ?').run(a.id);
+  const nx = 'Đủ ý, trình bày rõ ràng';
+  const o = [{ skill: 'listening', rawScore: 39, nhanXet: nx }, { skill: 'reading', rawScore: 39, nhanXet: nx },
+    ...['writing1', 'writing2', 'speaking'].map((skill) => ({ skill, criteria: [9, 9, 9, 9], nhanXet: nx }))];
+  const r = await doGhi('QL', '/attempts/scores/lo', { dong: [{ attemptId: a.id, o }], classId: LOP_FT, luot: `mt:${a.attempt_no}`, loId: 'toc-do', cuoi: true });
+  assert(r.status === 200 && r.json.dong[0].ok, `lưu dòng: ${r.status} ${JSON.stringify(r.json)}`);
+  console.log(`      (đo: 1 dòng 5 ô, ${r.n} câu)`);
+  assert(r.n <= TRAN_GHI_LO.danExcelMotDong, `${r.n} câu > trần ${TRAN_GHI_LO.danExcelMotDong}`);
 });
 
 check('PR-DEPLOY (3b) · Giới hạn Turso trên mọi (đường × vai) sau nhân dữ liệu ×3 + mọi đường ghi lô: mỗi câu ≤ 900 tham số, ≤ 20 vế UNION, 0 tham số đặt tên', () => {

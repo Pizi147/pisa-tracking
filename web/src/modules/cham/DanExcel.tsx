@@ -6,7 +6,7 @@ import { ChonNhom } from '../fasttrack/NhanXet.tsx';
 import { lyDoChiDoc, type Cell } from '../fasttrack/ScoreEntry.tsx';
 import type { FtSheet } from './LuoiFT.tsx';
 import {
-  ENTRY_SKILL_SHORT, LO_DAN, docBangDan, khopHocVien, xetODan, chiaLo, tuanLich, patchTruoc,
+  ENTRY_SKILL_SHORT, LO_DAN, docBangDan, khopHocVien, xetODan, chiaLo, tuanLich, patchTruoc, oConNhuDan,
   type CheDoLR, type EntrySkill, type PatchDan, type XetODan,
 } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
@@ -27,10 +27,15 @@ type DongXem = {
   /** Mọi ô lỗi của dòng cùng một câu (≥ 2 ô) — nói một lần dưới tên, ô chỉ đỏ. */
   loiChung: string | null;
 };
-type KetQua = { dong: ({ attemptId: number; ok: true } | { attemptId: number; ok: false; skill: string | null; loi: string })[] };
+type KetQua = { dong: ({ attemptId: number; ok: true } | { attemptId: number; ok: false; skill: string | null; loi: string })[]; soO: number };
+type DongGui = { so: number; attemptId: number; o: ({ skill: string } & PatchDan)[] };
+/** Dòng đã lưu: `o` = lệnh đã gửi (để so ô còn như dán), `tra` = lệnh Hoàn tác theo thứ tự. */
+type DongVua = DongGui & { tra: DongGui['o'] };
 
-export function DanExcel({ data, cot, tenLuot, homNay, hep, hoiBanDau = false, onDong, onDaLuu }: {
+export function DanExcel({ data, cot, tenLuot, luot, homNay, hep, hoiBanDau = false, onDong, onDaLuu }: {
   data: FtSheet; cot: readonly EntrySkill[]; tenLuot: string; homNay: string; hep: boolean; hoiBanDau?: boolean; onDong: () => void; onDaLuu: () => void;
+  /** Mã lượt đang mở (`mt:2`…) — máy chủ ràng mọi dòng vào lớp + lượt này; lưới theo tuần: null (chỉ ràng lớp). */
+  luot: string | null;
 }) {
   /* Chữ dán giữ trong phiên theo lớp + lượt: đóng panel (Đóng / ✕) không mất bảng đang nháp; "Dán lại" xoá. */
   const khoaNhap = `pisa.dan-excel.${data.classId}.${tenLuot}`;
@@ -46,7 +51,8 @@ export function DanExcel({ data, cot, tenLuot, homNay, hep, hoiBanDau = false, o
   const [loiMay, setLoiMay] = useState<Record<number, string>>({});
   const [dang, setDang] = useState<{ xong: number; tong: number } | null>(null);
   const [loiMang, setLoiMang] = useState<string | null>(null);
-  const [vua, setVua] = useState<{ n: number; luc: string; tra: { so: number; attemptId: number; o: ({ skill: string } & PatchDan)[] }[] } | null>(null);
+  const [vua, setVua] = useState<{ n: number; luc: string; dong: DongVua[] } | null>(null);
+  const [bao, setBao] = useState<string | null>(null);
   const [hoi, setHoi] = useState(hoiBanDau);
 
   const bang = useMemo(() => docBangDan(chu, cot), [chu, cot]);
@@ -98,16 +104,24 @@ export function DanExcel({ data, cot, tenLuot, homNay, hep, hoiBanDau = false, o
   };
   const conNhap = dong.length - luuDuoc.length;
 
-  const goi = async (lo: { so: number; attemptId: number; o: ({ skill: string } & PatchDan)[] }[]) => {
+  /* Một lần bấm Lưu / Hoàn tác = một `loId`; request cuối mang tổng các request trước → máy chủ ghi MỘT mục lịch sử. */
+  const goi = async (lo: DongGui[], hoanTac = false) => {
     const ok: number[] = [], loi: Record<number, string> = {};
+    const loId = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+    const phan = chiaLo(lo, LO_DAN);
+    let soDong = 0, soO = 0;
     setDang({ xong: 0, tong: lo.length });
     try {
-      for (const phan of chiaLo(lo, LO_DAN)) {
-        const r = await api.post<KetQua>('/attempts/scores/lo', { dong: phan.map(({ attemptId, o }) => ({ attemptId, o })) });
-        r.dong.forEach((k, i) => {
-          if (k.ok) ok.push(phan[i].so);
-          else loi[phan[i].so] = `${k.skill ? `${ENTRY_SKILL_SHORT[k.skill as EntrySkill] ?? k.skill}: ` : ''}${dich(k.loi)}`;
+      for (const [i, p] of phan.entries()) {
+        const r = await api.post<KetQua>('/attempts/scores/lo', {
+          dong: p.map(({ attemptId, o }) => ({ attemptId, o })), classId: data.classId, luot, loId, hoanTac,
+          cuoi: i === phan.length - 1, truoc: { soDong, soDaLuu: ok.length, soO },
         });
+        r.dong.forEach((k, j) => {
+          if (k.ok) ok.push(p[j].so);
+          else loi[p[j].so] = `${k.skill ? `${ENTRY_SKILL_SHORT[k.skill as EntrySkill] ?? k.skill}: ` : ''}${dich(k.loi)}`;
+        });
+        soDong += p.length; soO += r.soO;
         setDang({ xong: ok.length + Object.keys(loi).length, tong: lo.length });
       }
       return { ok, loi, mang: null as string | null };
@@ -123,35 +137,48 @@ export function DanExcel({ data, cot, tenLuot, homNay, hep, hoiBanDau = false, o
   };
 
   const luu = async () => {
-    const lo = luuDuoc.map((d) => ({
-      so: d.so, attemptId: d.hang!.attemptId,
-      o: ghi(d).map((o) => {
-        const p = (o.x as Extract<XetODan, { loai: 'ghi' }>).patch;
-        const n = nhom[khoaNhom(d.so, o.skill)];
-        return { skill: o.skill, ...p, ...(n?.length ? { nhomNguyenNhan: n } : {}) };
-      }),
-    }));
-    const tra = lo.map((d) => ({ ...d, o: d.o.map((x) => ({ skill: x.skill, ...patchTruoc(luuDuoc.find((r) => r.so === d.so)!.o.find((o) => o.skill === x.skill)!.cell!, x) })) }));
+    const lo: DongVua[] = luuDuoc.map((d) => {
+      const o = ghi(d).map((x) => {
+        const p = (x.x as Extract<XetODan, { loai: 'ghi' }>).patch;
+        const n = nhom[khoaNhom(d.so, x.skill)];
+        return { skill: x.skill, ...p, ...(n?.length ? { nhomNguyenNhan: n } : {}) };
+      });
+      const tra = o.flatMap((x) => patchTruoc(d.o.find((c) => c.skill === x.skill)!.cell!, x).map((p) => ({ skill: x.skill, ...p })));
+      return { so: d.so, attemptId: d.hang!.attemptId, o, tra };
+    });
     setLoiMang(null);
+    setBao(null);
     const r = await goi(lo);
     setLoiMay((m) => { const moi = { ...m, ...r.loi }; for (const so of r.ok) delete moi[so]; return moi; });
-    setDaLuu((s) => new Set([...s, ...r.ok]));
+    setDaLuu((x) => new Set([...x, ...r.ok]));
+    /* Lần lưu sau (Thử lại, dòng nháp vừa sửa) CỘNG vào lần trước — Hoàn tác vẫn trả được mọi dòng đã lưu. */
     if (r.ok.length) {
       const luc = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
-      setVua({ n: r.ok.length, luc, tra: tra.filter((x) => r.ok.includes(x.so)) });
+      setVua((v) => ({ n: (v?.n ?? 0) + r.ok.length, luc, dong: [...(v?.dong ?? []), ...lo.filter((x) => r.ok.includes(x.so))] }));
     }
     if (r.mang) setLoiMang(r.mang);
   };
 
+  /* Hoàn tác: chỉ dòng mà mọi ô (bảng vừa tải lại) còn đúng giá trị đã dán — ai đã sửa sau đó thì không trả ngược. */
   const hoanTac = async () => {
     if (!vua) return;
-    const r = await goi(vua.tra);
-    setDaLuu((s) => { const moi = new Set(s); for (const so of r.ok) moi.delete(so); return moi; });
-    setVua(r.ok.length === vua.tra.length ? null : { ...vua, tra: vua.tra.filter((x) => !r.ok.includes(x.so)) });
-    if (r.mang || Object.keys(r.loi).length) setLoiMang(r.mang ?? Object.values(r.loi)[0]);
+    const con = vua.dong.filter((x) => {
+      const h = theoId.get(x.attemptId);
+      return !!h && x.o.every((p) => { const c = h.cells.find((cc) => cc.skill === p.skill); return !!c && oConNhuDan(c, p); });
+    });
+    const doi = vua.dong.filter((x) => !con.includes(x)).map((x) => theoId.get(x.attemptId)?.studentName ?? `#${x.so}`);
+    const r = con.length ? await goi(con.map((x) => ({ so: x.so, attemptId: x.attemptId, o: x.tra })), true) : { ok: [], loi: {}, mang: null };
+    setDaLuu((x) => { const moi = new Set(x); for (const so of r.ok) moi.delete(so); return moi; });
+    const conLai = con.filter((x) => !r.ok.includes(x.so));
+    setVua(conLai.length ? { ...vua, n: conLai.length, dong: conLai } : null);
+    const cau = [
+      ...(doi.length ? [t('Không hoàn tác {ten}: ô đã đổi sau khi dán', { ten: doi.join(', ') })] : []),
+      ...Object.values(r.loi), ...(r.mang ? [r.mang] : []),
+    ];
+    setBao(cau.length ? cau.join(' · ') : null);
   };
 
-  const huy = () => { setChu(''); setChon({}); setNhom({}); setDaLuu(new Set()); setLoiMay({}); setLoiMang(null); setVua(null); };
+  const huy = () => { setChu(''); setChon({}); setNhom({}); setDaLuu(new Set()); setLoiMay({}); setLoiMang(null); setVua(null); setBao(null); };
   const tieuDe = t('Dán từ Excel · {luot}', { luot: tenLuot });
   const kn = cot.filter((k) => bang.dong.some((d) => d.o.some((o) => o.skill === k)));
 
@@ -205,6 +232,8 @@ export function DanExcel({ data, cot, tenLuot, homNay, hep, hoiBanDau = false, o
               {!!dong.length && <span className="text-slate-400">{t('{n} dòng còn nháp ở dưới', { n: dong.length })}</span>}
             </div>
           )}
+
+          {bao && <p role="status" className="text-sm text-bad">⚠ {bao}</p>}
 
           {!dong.length ? (
             <p className="text-sm text-slate-400">{bang.dong.length ? t('Đã lưu hết các dòng.') : t('Không đọc được dòng nào — kiểm lại vùng đã chép.')}</p>
@@ -303,7 +332,11 @@ function TenDong({ d, chon }: { d: DongXem; chon: (v: number | 'bo' | null) => v
         <small className="text-xs text-slate-400">{t('{n} em cùng tên trong lớp', { n: d.trung.length })}</small>
         <select className="field min-h-[44px] text-sm sm:min-h-0" defaultValue="" onChange={(e) => chon(e.target.value === 'bo' ? 'bo' : Number(e.target.value))}>
           <option value="" disabled>{t('Chọn em…')}</option>
-          {d.trung.map((h) => <option key={h.attemptId} value={h.attemptId}>{h.studentName}{h.studentEmail ? ` · ${h.studentEmail}` : ''}</option>)}
+          {d.trung.map((h) => (
+            <option key={h.attemptId} value={h.attemptId}>
+              {h.studentName}{h.studentEmail ? ` · ${h.studentEmail}` : ''}{d.trung.some((k) => k !== h && k.studentId === h.studentId) ? ` · MT${h.attemptNo}` : ''}
+            </option>
+          ))}
           <option value="bo">{t('Không dán dòng này')}</option>
         </select>
       </label>
@@ -331,6 +364,7 @@ function OCh({ o, gon, tho, anLoi }: { o: ODong; gon?: boolean; tho?: boolean; a
       {ten}{x.truoc !== null ? <span className="tabular-nums"><s className="text-slate-500">{x.truoc}</s> → <b>{x.sau}</b></span> : <b className="tabular-nums">{x.sau}</b>}
       {!gon && (o.nhanXet || x.truoc !== null) && <small className="block max-w-[18ch] text-xs text-slate-400">{x.truoc !== null ? `${t('Ghi đè')}${o.nhanXet ? ' · ' : ''}` : ''}{o.nhanXet}</small>}
       {x.canNhom && <small className="block text-xs font-semibold text-[color:var(--accent-strong)]">{t('Nguyên nhân *')}</small>}
+      {x.canhBao && <small className="block text-xs text-slate-400">{x.canhBao}</small>}
     </span>
   );
 }

@@ -161,7 +161,7 @@ export function LuoiChamLop({
   );
 
   const khoiDan = dan && data.ft && (
-    <DanExcel data={data.ft} cot={cotDan} tenLuot={tenLuot} homNay={data.today} hep={hep} hoiBanDau={dan.hoi}
+    <DanExcel data={data.ft} cot={cotDan} tenLuot={tenLuot} luot={'luot' in data ? (data as BangTheoLuot).luot.ma : null} homNay={data.today} hep={hep} hoiBanDau={dan.hoi}
       onDong={() => setDan(null)} onDaLuu={onReload} />
   );
   const luoiKhung = gon ? luoi : <Card bodyClass="p-0" className="xl:overflow-clip">{luoi}</Card>;

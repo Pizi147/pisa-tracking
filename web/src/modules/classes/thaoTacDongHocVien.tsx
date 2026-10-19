@@ -5,6 +5,7 @@ import { RecordViolationPanel } from '../yThuc/RecordViolationPanel.tsx';
 import { ChuyenLopPanel } from '../students/ChuyenLopPanel.tsx';
 import { XacNhanXuLyPanel } from '../yThuc/XacNhanXuLyPanel.tsx';
 import { StudentManagePanel, SuaThongTinMotEm } from '../students/StudentManagePanel.tsx';
+import { PanelNhapDiemLop } from '../cham/PanelNhapDiemLop.tsx';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import type { MucMenu } from '../../ui/MenuDong.tsx';
@@ -24,7 +25,7 @@ export type QuyenDong = {
 };
 /** `status` / `ft` chỉ cần cho ⋯ theo vai (Tạm dừng / Quay lại, Kết quả thi thật chỉ FT); `ft` không gửi = theo lớp của bảng. */
 export type DongChoMenu = {
-  id: number; ten: string; dangHoc: boolean; nhapDiem: { nhan: string; den: string } | null; status?: string; ft?: boolean;
+  id: number; ten: string; dangHoc: boolean; nhapDiem: { nhan: string; den: string; classId: number; luot: string | null } | null; status?: string; ft?: boolean;
   /** Danh sách nhiều lớp (Học viên & Lớp TVV / CX): lớp và quyền của chính dòng — không gửi thì theo bảng. */
   maLop?: string | null; suaThongTin?: boolean; suaThem?: boolean;
   /** OV-12e: em đang cần xử lý Ý thức (cờ `canhBaoYThuc` của dòng) — ⋯ có "Xác nhận xử lý". */
@@ -44,7 +45,9 @@ export function nhapDiemCua(
     : lu.kind === 'mock' && lu.attemptNo ? { loai: 'mt', so: lu.attemptNo } : null;
   return {
     nhan: t('Nhập điểm {dot}', { dot: lu.kind === 'checkpoint' ? nhanBai(khoaBai(lu.kind, lu.attemptNo)) : dich(lu.kindLabel) }),   // OV-6b2: "Checkpoint 2"
+    /* `den` cho link "Việc tiếp theo" (đường cũ mở Lịch Test + panel lớp); ⋯ dòng mở panel Nhập điểm lớp tại chỗ (OV-15b) bằng `classId` + `luot`. */
     den: `${DUONG_TAB_TEST['diem-lop']}?lop=${classId}${ma ? `&luot=${encodeURIComponent(vietMaLuot(ma))}` : ''}`,
+    classId, luot: ma ? vietMaLuot(ma) : null,
   };
 }
 
@@ -77,7 +80,8 @@ export function useThaoTacDongHocVien({ laLopThuong, quyen, onDone, maLop, class
   const navigate = useNavigate();
   const toast = useToast();
   const [mo, setMo] = useState<{
-    viec: 'case' | 'vi-pham' | 'xu-ly-y-thuc' | 'sua-thong-tin' | 'chuyen-lop' | 'de-xuat-chuyen-lop' | 'hoc-lai'; id: number; ten: string; quanLy?: ViecQuanLy; lop?: string | null;
+    viec: 'case' | 'vi-pham' | 'xu-ly-y-thuc' | 'sua-thong-tin' | 'chuyen-lop' | 'de-xuat-chuyen-lop' | 'hoc-lai' | 'nhap-diem'; id: number; ten: string; quanLy?: ViecQuanLy; lop?: string | null;
+    nhap?: { classId: number; luot: string | null };
   } | null>(null);
   const daDoi = (id: number) => { invalidate('/hoc-vien-lop'); invalidate(`/students/${id}`); onDone(); };
   /* OV-11g (Q11, Q12): Lưu trữ một chạm + Hoàn tác (bỏ lưu trữ) — như Lưu trữ / Bỏ lưu trữ ở trang Lưu trữ. */
@@ -112,7 +116,8 @@ export function useThaoTacDongHocVien({ laLopThuong, quyen, onDone, maLop, class
     /* K2-30: vạch ngăn trước việc hiếm đầu tiên (khi phía trên còn việc hằng ngày). */
     keTruoc: MUC_MENU_DONG_HIEM.includes(k) && i > 0 && !MUC_MENU_DONG_HIEM.includes(ds[i - 1]),
     onChon: () => {
-      if (k === 'nhap-diem') { if (d.nhapDiem) navigate(d.nhapDiem.den); }
+      /* OV-15b: Nhập điểm mở panel lớp tại chỗ (đúng lượt), không chuyển trang. */
+      if (k === 'nhap-diem') { if (d.nhapDiem) setMo({ viec: 'nhap-diem', id: d.id, ten: d.ten, nhap: { classId: d.nhapDiem.classId, luot: d.nhapDiem.luot } }); }
       else if (k === 'lo-trinh-tiep') navigate(duongLoTrinhLop(classId!, d.id));
       else setMo({ viec: k, id: d.id, ten: d.ten });
     },
@@ -132,6 +137,9 @@ export function useThaoTacDongHocVien({ laLopThuong, quyen, onDone, maLop, class
       {mo?.viec === 'hoc-lai' && (
         <StudentManagePanel viec="hoc-lai" onClose={() => setMo(null)} student={{ id: mo.id, name: mo.ten, classId: null }}
           lop={maLop} cycle={null} attempts={[]} onDone={() => daDoi(mo.id)} quyen={{ canEdit: false }} />
+      )}
+      {mo?.viec === 'nhap-diem' && mo.nhap && (
+        <PanelNhapDiemLop classId={mo.nhap.classId} classCode={maLop} luot={mo.nhap.luot} onDong={xong} />
       )}
       {mo?.viec === 'sua-thong-tin' && <SuaThongTinMotEm viec={mo.quanLy} studentId={mo.id} studentName={mo.ten} lop={mo.lop ?? maLop} onClose={() => setMo(null)} onDone={xong} />}
     </>
