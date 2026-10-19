@@ -9429,6 +9429,9 @@ await runPrOv14cTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P,
 // ==================================================================== OV-15a (nền: token màu, chip SOS, ký hiệu, giao diện theo máy, hạn chỉ ngày)
 const { runPrOv15aTests } = await import('./prOv15a.tests.ts');
 await runPrOv15aTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== OV-15d (Công việc một danh sách, Tổng quan QL A, thông báo tự động thay Nhắc)
+const { runPrOv15dTests } = await import('./prOv15d.tests.ts');
+await runPrOv15dTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`

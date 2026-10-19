@@ -45,6 +45,7 @@ import * as tongKetSvc from '../loTrinh/tongKet.ts';
 import * as profileSvc from '../students/profile.ts';
 import { hanhTrinhHocVien } from '../students/hanhTrinh.ts';
 import { docHet, thongBaoCua } from '../platform/thongBao.ts';
+import { dongBoKhiMoChuong } from '../platform/thongBaoTuDong.ts';
 import * as yeuCauSvc from '../duyet/yeuCau.ts';
 import * as deXuatSuaSvc from '../duyet/deXuatSua.ts';
 import * as classSvc from '../classes/classes.ts';
@@ -2378,7 +2379,11 @@ api.patch('/tasks/:id', requireAuth, wrap((req) => {
 
 // ============================================================ Thông báo
 
-api.get('/notifications', requireAuth, wrap((req) => thongBaoCua(principalOf(req).userId)));
+api.get('/notifications', requireAuth, wrap((req) => {
+  const p = principalOf(req);
+  dongBoKhiMoChuong(p, demoToday());   // OV-15d (C03): thông báo tự động thay Nhắc — đồng bộ khi mở chuông, tối đa 5 phút / người
+  return thongBaoCua(p.userId);
+}));
 
 /** PR-VAI-a (Q18): "Đọc hết" — một câu UPDATE, chỉ thông báo của chính người gọi; không xoá dòng. */
 api.post('/notifications/doc-het', requireAuth, wrap((req) => ({ daDoc: docHet(principalOf(req).userId, demoToday()) })));
