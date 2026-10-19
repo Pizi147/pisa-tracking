@@ -1,6 +1,6 @@
 # Tutor — vai Head tutor, danh sách tutor, đánh giá buổi tutor (19/10/2026)
 
-Mockup: `thiet-ke/mockup-tutor-1-head-tutor-2026-10-19.html` (#468 + sửa #470). Trạng thái: **chờ chủ SP duyệt đặc tả + mockup**. Đã qua đọc thử (builder check) 19/10 — 4 điểm planning tự quyết ghi ở mục 12.
+Mockup: `thiet-ke/mockup-tutor-1-head-tutor-2026-10-19.html` (#468 + sửa #470). Trạng thái: **chủ SP duyệt 20/10** ("tạm thời ổn") kèm 2 sửa: tutor có **W1 / W2**; khi nhập chỉ **Tên + Kỹ năng** bắt buộc (mục 13). Không làm lại mockup — chỗ mockup khác đặc tả: theo đặc tả. Đã qua đọc thử (builder check) 19/10 — điểm tự quyết ở mục 12.
 Nguồn: hỏi đáp chủ SP 19/10 (4 vòng + góp ý mockup) trong chat PTA Plan. Hiện trạng mã: rà 19/10 trên `main` (mục 2).
 
 ## 0. Vì sao, và cái gì KHÔNG đổi
@@ -22,7 +22,7 @@ Nguồn: hỏi đáp chủ SP 19/10 (4 vòng + góp ý mockup) trong chat PTA Pl
 | Q5 | Chọn tutor từ danh sách; chưa có thì **"Tutor khác"** gõ tên (không chặn GV). Buổi sau tự điền tutor buổi trước. Người dạy PA chọn được tutor. |
 | Q6 | **Offline / Online** tự suy, người ghi bấm đổi được. |
 | Q7 | Không tạo việc: tutor có buổi chưa đạt lên nhóm **"Cần chú ý"** của trang Tutor. **Đánh giá ≤ 2/5 cũng tính** (khi có đánh giá). |
-| Q8 | Danh sách tutor từ **Excel** (tải tệp + dán), cột **Tên · SĐT · Nơi dạy chính · Kỹ năng**; **SĐT** chống trùng. |
+| Q8 | Danh sách tutor từ **Excel** (tải tệp + dán), cột **Tên · SĐT · Nơi dạy chính · Kỹ năng**. **Bắt buộc chỉ Tên + Kỹ năng** (20/10); SĐT, Nơi dạy để trống được nhưng phải bổ sung sau (hiện "Thiếu …"). SĐT (khi có) chống trùng. |
 | Q9 | Trang **"Tutor"** trên thanh trên. Head tutor + Quản trị: toàn hệ thống, sửa được. **QL: chỉ xem**, thấy tutor **có ca dạy em chi nhánh mình trong khoảng thời gian đang chọn** (kể cả tutor nơi dạy chính ở chi nhánh khác). GV: không có trang. |
 | Q10 | Ai ghi nhận xét về tutor: **Head tutor + Quản trị**. Ai sửa danh sách: **Head tutor + Quản trị** (QL không). |
 | Q11 | Kết luận nhận xét: **Ổn · Cần cải thiện · Ngừng hợp tác**; ghi bất kỳ lúc nào; kết luận mới nhất hiện cạnh tên. |
@@ -50,8 +50,9 @@ Nguồn: hỏi đáp chủ SP 19/10 (4 vòng + góp ý mockup) trong chat PTA Pl
 ### 3.1 Bảng mới
 
 `tutors` — danh sách tutor (không phải tài khoản):
-- `id`, `ten TEXT NOT NULL`, `sdt TEXT NOT NULL UNIQUE` (chỉ chữ số, đã chuẩn hoá: bỏ dấu cách / chấm / gạch; `+84` → `0`; 9–11 số),
-  `noi_day_branch_id INTEGER NULL REFERENCES branches(id)` (NULL = **Chỉ online**), `ky_nang TEXT NOT NULL` (tập con `L,R,W,S`, ≥ 1, thứ tự cố định),
+- `id`, `ten TEXT NOT NULL`, `sdt TEXT NULL` (chỉ chữ số, đã chuẩn hoá: bỏ dấu cách / chấm / gạch; `+84` → `0`; 9–11 số; **chỉ mục UNIQUE một phần `WHERE sdt IS NOT NULL`**),
+  `noi_day_branch_id INTEGER NULL REFERENCES branches(id)` + `chi_online INTEGER NOT NULL DEFAULT 0` — ba trạng thái: chi nhánh · **Chỉ online** (`chi_online = 1`) · **chưa có** (cả hai trống),
+  `ky_nang TEXT NOT NULL` (tập con **`L,R,W1,W2,S`** — cùng mã `ENTRY_SKILLS`, ≥ 1, thứ tự cố định),
   `created_at`, `created_by`, `updated_at`, `updated_by`.
 - Xoá tutor: chỉ khi **chưa có buổi nào** trỏ tới (máy chủ kiểm). Có buổi → dùng kết luận "Ngừng hợp tác".
 
@@ -87,7 +88,7 @@ phép kiểm đếm bảng / cạnh (`xoaDuLieu.tests.ts`) cập nhật.
 - Máy chủ kiểm mọi đường `/tutors*`. QL hỏi tutor / buổi ngoài phạm vi → không trả (không lộ buổi chi nhánh khác: QL chỉ thấy các **buổi** của em chi nhánh mình,
   số liệu chỉ tính các buổi đó; nhận xét Head tutor về tutor đó vẫn đọc được — nhận xét nói về tutor, không về em).
 - Ô chọn tutor trong form (GV, QL…): đường riêng chỉ đọc `GET /tutors/chon?q=&kyNang=&classId=` cho người **ghi được kết quả PA** (cùng quyền đang có);
-  trả `id, ten, noiDay, kyNang, sdtDuoi` (**3 số cuối SĐT**, không trả đủ SĐT cho GV), bỏ tutor có kết luận mới nhất "Ngừng hợp tác". ≤ 20 dòng.
+  trả `id, ten, noiDay, kyNang, sdtDuoi` (**3 số cuối SĐT** khi có, không trả đủ SĐT cho GV), bỏ tutor có kết luận mới nhất "Ngừng hợp tác". ≤ 20 dòng.
 - Head tutor đăng nhập: thanh trên chỉ **"Tutor"** (+ chuông, menu tài khoản có Hướng dẫn); `/` → `/tutor`.
 
 ## 5. Ghi kết quả PA Tutor (mockup mục 1)
@@ -96,7 +97,7 @@ Thứ tự trong panel (giữ mọi phần hiện có): Tiến triển → Số 
 1. **Tutor \*** — ô chọn (gõ để tìm). Gợi ý: nhóm đầu = tutor có nơi dạy chính = chi nhánh lớp của em **và** có kỹ năng của PA (kỹ năng PA lấy từ Case; Case nhiều kỹ năng → đủ một kỹ năng là được);
    nhóm "Khác" = còn lại. Cuối danh sách: **Tutor khác: "…"** (gõ tên tự do, 2–100 ký tự).
    Điền sẵn: buổi 1 = theo ô "Người dạy" kỳ này (mục 6), không có thì tutor buổi cuối của lần ghi trước của PA này; buổi n > 1 = tutor buổi n − 1. Người ghi đổi được.
-2. **Hình thức** Offline · Online — tự chọn khi chọn tutor: `noi_day_branch_id` = chi nhánh lớp của em → Offline; khác hoặc "Chỉ online" / "Tutor khác" → Online. Bấm đổi được; lưu giá trị đang chọn.
+2. **Hình thức** Offline · Online — tự chọn khi chọn tutor: `noi_day_branch_id` = chi nhánh lớp của em → Offline; chi nhánh khác hoặc "Chỉ online" → Online; **tutor chưa có nơi dạy / "Tutor khác" → không tự chọn** (để trống, bấm nếu biết; trống lưu NULL, không vào số Online / Offline). Bấm đổi được; lưu giá trị đang chọn.
 3. **Nhận xét buổi \*** — như hiện nay (feedback tutor gửi và / hoặc GV ghi; vẫn ghép thành `note` của lần ghi).
 4. Khối **"Tutor buổi này \*"**: 3 dòng, mỗi dòng nút đôi **Có · Không** (✓ / ✗ + chữ, không chỉ màu), nút **"Cả 3 Có"**. Chưa chọn đủ → không lưu được;
    lỗi ngay dưới dòng thiếu "Chọn Có hoặc Không"; chân panel "n ô còn thiếu"; bấm Lưu nhảy tới ô thiếu đầu tiên (như luật lỗi form hiện có).
@@ -126,7 +127,7 @@ Ngày của một buổi = **ngày ghi lần kết quả** chứa buổi đó (`
 - Buổi = số dòng buổi có `tutor_id` = tutor, trong khoảng (QL: chỉ buổi có `lop_id` thuộc chi nhánh QL — lớp **chụp lúc ghi**, mục 3.2; dòng cũ không có `lop_id` không có 3 ô nên không vào số).
 - 3 cột tỉ lệ = số buổi "Có" / số buổi **có trả lời** ô đó (dòng cũ NULL không vào mẫu). Có buổi "Không" → số màu cam (lý do bằng chữ ở cột cuối, không chỉ màu).
 - Đánh giá = trung bình các buổi có đánh giá, 1 chữ số lẻ; không có → "—".
-- Bộ lọc: **Cần chú ý** · **Đang dạy** (có ≥ 1 buổi trong khoảng, chưa Ngừng) · **Ngừng hợp tác** · **Tất cả** (có số); Nơi dạy; Kỹ năng; ô tìm tên / SĐT (bỏ dấu).
+- Bộ lọc: **Cần chú ý** · **Đang dạy** (có ≥ 1 buổi trong khoảng, chưa Ngừng) · **Ngừng hợp tác** · **Thiếu thông tin** (thiếu SĐT hoặc nơi dạy; chỉ Head tutor / Quản trị) · **Tất cả** (có số); Nơi dạy; Kỹ năng; ô tìm tên / SĐT (bỏ dấu).
   Mặc định "Cần chú ý" nếu > 0, không thì "Đang dạy". QL: không có lọc Nơi dạy (cố định chi nhánh), không có "Ngừng hợp tác" (vẫn thấy trong "Tất cả").
 - **Cần chú ý** (một hàm, dùng cho bộ lọc, số trên menu "Tutor n" của Head tutor, cột lý do): tutor có ít nhất một buổi (**mọi thời gian**, không theo khoảng)
   có một ô "Không" hoặc Đánh giá ≤ 2, có `ghi_luc` **sau** `luc` của nhận xét Head tutor / Quản trị gần nhất về tutor đó (hoặc chưa có nhận xét nào; sửa nhận xét không dời mốc).
@@ -144,11 +145,12 @@ nút bật **"Chỉ buổi chưa đạt"**. Không link sang hồ sơ HV / Case 
 ## 8. Danh sách tutor: tải lên, thêm, sửa, gộp (mockup mục 4, 5)
 
 - **Tải danh sách** (panel): "Chọn tệp" (.xlsx / .xls / .csv, đọc sheet đầu bằng `xlsx` có sẵn, nạp động ở web) hoặc "Dán từ Excel" (TSV); **Tải mẫu** (.xlsx 4 cột).
-  Có / không hàng tiêu đề (nhận diện bằng bí danh tiêu đề như nhập HV). Nơi dạy: tên hoặc mã chi nhánh (bỏ dấu), trống = Chỉ online. Kỹ năng: L, R, W, S cách bằng dấu phẩy / dấu cách / "·".
-  Xem trước (máy chủ, cùng hàm kiểm với lúc lưu): **Mới** · **Cập nhật** (SĐT đã có; ghi trước → sau từng trường đổi) · **Lỗi** (lý do từng dòng; trùng SĐT trong tệp → lỗi cả hai).
+  Có / không hàng tiêu đề (nhận diện bằng bí danh tiêu đề như nhập HV). Nơi dạy: tên hoặc mã chi nhánh (bỏ dấu), "Online" / "Chỉ online" = Chỉ online, trống = chưa có. Kỹ năng: L, R, W1, W2, S (cả "W" = W1 + W2) cách bằng dấu phẩy / dấu cách / "·".
+  Xem trước (máy chủ, cùng hàm kiểm với lúc lưu): **Mới** · **Cập nhật** (khớp: dòng có SĐT → theo SĐT; không SĐT → theo tên bỏ dấu khớp **đúng một** tutor; ghi trước → sau từng trường đổi; ô trống trong tệp **không xoá** giá trị đang có) · **Lỗi** (lý do từng dòng: thiếu tên / kỹ năng, SĐT sai, chi nhánh lạ, trùng SĐT trong tệp → lỗi cả hai, không SĐT mà tên khớp nhiều tutor → "Trùng tên — thêm SĐT").
   Sửa ô lỗi ngay trong bảng xem trước hoặc dán lại. **Lưu n dòng** = mọi dòng hợp lệ, **một giao dịch**, một mục nhật ký. Tutor không có trong tệp: giữ nguyên.
   Giới hạn 500 dòng / lần.
-- **Thêm / Sửa** (hộp nhỏ): Tên \* · SĐT \* · Nơi dạy chính · Kỹ năng \* (bật tắt L R W S). SĐT trùng → lỗi tại ô "SĐT đã có: {tên}". **Xoá tutor** chỉ khi chưa có buổi.
+- **Thêm / Sửa** (hộp nhỏ): Tên \* · SĐT · Nơi dạy chính (chi nhánh · Chỉ online · trống) · Kỹ năng \* (bật tắt L R W1 W2 S). SĐT trùng → lỗi tại ô "SĐT đã có: {tên}". Tên trùng tutor khác → dòng nhắc "Đã có tutor tên này" (vẫn lưu được).
+- **Thiếu thông tin**: bảng hiện chữ nhỏ trung tính "Thiếu SĐT" / "Thiếu nơi dạy" dưới tên (không chặn, không việc, không thông báo); panel một tutor có nút "Bổ sung" mở hộp Sửa. **Xoá tutor** chỉ khi chưa có buổi.
 - **Gộp tên gõ tay** (hộp nhỏ): mỗi tên một dòng (số buổi, lớp, ngày) → chọn tutor có sẵn hoặc "Thêm vào danh sách" (mở hộp Thêm điền sẵn tên). Lưu = đặt `tutor_id`
   cho các dòng đó (giữ `tutor_ten`), một giao dịch; thông báo có **Hoàn tác** (đặt lại NULL đúng các dòng đó).
 
@@ -189,3 +191,9 @@ TU-a và TU-b không chạy song song (TU-b đọc bảng + cột của TU-a). M
 3. "Cần chú ý" so `ghi_luc` của buổi với `luc` nhận xét gần nhất; sửa kết quả mà đổi 3 ô / đánh giá thì `ghi_luc` mới.
 4. Nhóm "Tutor" ở ô Người dạy chỉ cho PA loại Tutor.
 5. Ô chọn tutor của GV chỉ hiện 3 số cuối SĐT (đủ để phân biệt, không lộ số).
+
+## 13. Chủ SP sửa 20/10 (khi duyệt)
+
+1. Kỹ năng tutor có **W1 / W2** (L · R · W1 · W2 · S), như kỹ năng GV. Gợi ý tutor theo kỹ năng PA: Case Writing khớp tutor có W1 hoặc W2.
+2. Khi nhập (Excel, Thêm), **chỉ Tên + Kỹ năng bắt buộc**; SĐT, Nơi dạy chính để trống được nhưng **sau phải bổ sung** → nhãn "Thiếu …" + bộ lọc "Thiếu thông tin" (mục 7, 8).
+   Planning tự quyết theo đó: SĐT UNIQUE chỉ khi có; Nơi dạy ba trạng thái (chi nhánh · Chỉ online · chưa có); chưa có nơi dạy → Hình thức không tự chọn; tải lại tệp khớp theo SĐT, không SĐT thì theo tên (đúng một).
