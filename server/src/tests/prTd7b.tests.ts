@@ -71,8 +71,10 @@ export async function runPrTd7bTests(t: YThucTestKit) {
 
   await checkAsync('TD7b-1 · cột + chỉ mục một phần; migrate prTd7b thêm cột / chỉ mục / tính lại trên DB cũ, chạy lặp không làm gì', async () => {
     assert(all("SELECT name FROM pragma_table_info('assessment_attempts')").some((c) => c.name === 'o_cho_tu'), 'thiếu cột o_cho_tu');
-    const ix = get("SELECT sql FROM sqlite_master WHERE type = 'index' AND name = 'idx_attempt_o_cho'");
-    assert(ix && /o_cho_tu IS NOT NULL/.test(ix.sql), `chỉ mục một phần: ${ix?.sql}`);
+    for (const ten of ['idx_attempt_o_cho', 'idx_attempt_o_cho_lop']) {
+      const ix = get("SELECT sql FROM sqlite_master WHERE type = 'index' AND name = ?", ten);
+      assert(ix && /o_cho_tu IS NOT NULL/.test(ix.sql), `chỉ mục một phần ${ten}: ${ix?.sql}`);
+    }
     const { migratePrTd7b } = await import('../migrate/prTd7b.ts');
     const lan1: string[] = []; migratePrTd7b(conn, lan1);
     assert(!lan1.length, `migrate trên DB đã đủ vẫn báo đổi: ${lan1.join(' | ')}`);
@@ -340,9 +342,12 @@ export async function runPrTd7bTests(t: YThucTestKit) {
     });
   });
 
-  check('TD7b-11 · EXPLAIN: câu Nợ điểm và danh sách chiConO đi chỉ mục một phần idx_attempt_o_cho (không SCAN assessment_attempts)', () => {
-    const plan = (all(`EXPLAIN QUERY PLAN SELECT a.id FROM assessment_attempts a JOIN classes c ON c.id = a.class_id WHERE a.status != 'cancelled' AND a.o_cho_tu <= ?`, TODAY)).map((r) => r.detail as string);
-    assert(plan.some((d) => d.includes('idx_attempt_o_cho')), `không dùng idx_attempt_o_cho: ${plan.join(' | ')}`);
+  check('TD7b-11 · EXPLAIN: truy vấn theo lớp và truy vấn toàn hệ thống đều đi chỉ mục một phần của cờ (câu thật của các đường: tocDo.run)', () => {
+    const plan = (sql: string, ...a: unknown[]) => (all(`EXPLAIN QUERY PLAN ${sql}`, ...a)).map((r) => r.detail as string).join(' | ');
+    const tatCa = plan(`SELECT a.id FROM assessment_attempts a WHERE a.status != 'cancelled' AND a.o_cho_tu <= ?`, TODAY);
+    assert(/idx_attempt_o_cho/.test(tatCa), `toàn hệ thống: ${tatCa}`);
+    const theoLop = plan(`SELECT a.id FROM assessment_attempts a WHERE a.class_id IN (1, 2, 3) AND a.status != 'cancelled' AND a.o_cho_tu <= ?`, TODAY);
+    assert(/idx_attempt_o_cho_lop/.test(theoLop), `theo lớp: ${theoLop}`);
   });
 }
 

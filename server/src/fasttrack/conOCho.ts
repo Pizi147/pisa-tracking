@@ -65,7 +65,7 @@ export function luotLechCo(): number[] {
  * (lưu sớm hơn / ô đã hết) chỉ tốn dòng đọc; '' (chưa tính — lượt ghi thẳng SQL, dữ liệu mẫu) luôn được đọc nên cũng an toàn. Phải rỗng ở mọi lúc.
  */
 export function luotLechNguyHiem(): number[] {
-  return (db().prepare(`SELECT a.id FROM assessment_attempts a, (SELECT 1) WHERE ${O_CHO_TU_SQL} IS NOT NULL AND (a.o_cho_tu IS NULL OR a.o_cho_tu > ${O_CHO_TU_SQL}) ORDER BY a.id`).all() as any[]).map((r) => r.id);
+  return (db().prepare(`SELECT a.id FROM assessment_attempts a WHERE ${O_CHO_TU_SQL} IS NOT NULL AND (a.o_cho_tu IS NULL OR a.o_cho_tu > ${O_CHO_TU_SQL}) ORDER BY a.id`).all() as any[]).map((r) => r.id);
 }
 
 /**

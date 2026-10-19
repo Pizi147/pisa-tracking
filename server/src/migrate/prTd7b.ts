@@ -7,6 +7,7 @@ import { capNhatConOChoTatCa, luotLechCo } from '../fasttrack/conOCho.ts';
 
 export const CHI_MUC_TD7B: [string, string][] = [
   ['idx_attempt_o_cho', 'CREATE INDEX IF NOT EXISTS idx_attempt_o_cho ON assessment_attempts(o_cho_tu) WHERE o_cho_tu IS NOT NULL'],
+  ['idx_attempt_o_cho_lop', 'CREATE INDEX IF NOT EXISTS idx_attempt_o_cho_lop ON assessment_attempts(class_id, o_cho_tu) WHERE o_cho_tu IS NOT NULL'],
 ];
 
 export function migratePrTd7b(conn: any, applied: string[]) {

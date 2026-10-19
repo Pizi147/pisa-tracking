@@ -575,6 +575,8 @@ CREATE INDEX idx_attempt_student_class ON assessment_attempts(student_id, class_
 CREATE INDEX idx_attempt_lich_su_cho ON assessment_attempts(class_id) WHERE lich_su = 1 AND status = 'planned';
 /* TD7b: lượt còn ô chờ điểm (một phần) — Nợ điểm / Cần chấm / badge lớp chỉ đọc lượt có ô chờ, không quét mọi lượt đã chấm xong. */
 CREATE INDEX idx_attempt_o_cho ON assessment_attempts(o_cho_tu) WHERE o_cho_tu IS NOT NULL;
+/* TD7b: cùng cờ, theo lớp — câu giới hạn lớp / chi nhánh / giáo viên (Công việc, Lịch Test, badge lớp, Nợ điểm theo chi nhánh) chỉ đọc lượt ĐẾN HẠN của các lớp đó. */
+CREATE INDEX idx_attempt_o_cho_lop ON assessment_attempts(class_id, o_cho_tu) WHERE o_cho_tu IS NOT NULL;
 
 CREATE TABLE attempt_schedule_history (
   id INTEGER PRIMARY KEY,

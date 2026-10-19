@@ -1127,7 +1127,7 @@ await checkAsync('TD7 (×3) · chỉ mục một phần + câu dùng chung một
  * TD7b (chủ SP 19/10): Nợ điểm (`scoreDebtCells`), badge lớp, danh sách `chiConO` (Công việc, Lịch Test) đọc lượt qua cờ `o_cho_tu` + chỉ mục một phần — không SCAN
  * assessment_attempts, không nạp mọi lượt đã chấm xong. Khoá bằng EXPLAIN QUERY PLAN trên câu thật của các đường chạm; số câu / dòng trước → sau: mô tả PR + TRAN_DONG.
  */
-await checkAsync('TD7b (×3) · câu đọc lượt của Nợ điểm / badge lớp / Công việc đi chỉ mục một phần idx_attempt_o_cho', async () => {
+await checkAsync('TD7b (×3) · câu đọc lượt của Nợ điểm / badge lớp / Công việc đi chỉ mục một phần idx_attempt_o_cho[_lop]', async () => {
   const loi: string[] = [];
   const thay = new Set<string>();
   for (const [vai, url] of [['QL', '/tong-quan/chi-nhanh'], ['GVCN', '/my-work'], ['QL', '/cham/lich-test'], ['QL', '/classes'], ['QL', '/metrics/bai-qua-han-nhap-diem?rows=1']] as [Vai, string][]) {
@@ -1139,7 +1139,7 @@ await checkAsync('TD7b (×3) · câu đọc lượt của Nợ điểm / badge l
       thay.add(sql);
       const plan = (conn.prepare(`EXPLAIN QUERY PLAN ${sql}`).all(...args) as any[]).map((r) => r.detail as string);
       if (plan.some((d) => /^SCAN a\b/.test(d) && !d.includes('idx_attempt_o_cho'))) loi.push(`${vai} ${url}: SCAN assessment_attempts — ${plan.filter((d) => /SCAN|SEARCH a\b/.test(d)).join(' | ')}`);
-      if (!plan.some((d) => d.includes('idx_attempt_o_cho'))) loi.push(`${vai} ${url}: không dùng idx_attempt_o_cho — ${plan.slice(0, 4).join(' | ')}`);
+      if (!plan.some((d) => /idx_attempt_o_cho/.test(d))) loi.push(`${vai} ${url}: không dùng chỉ mục cờ idx_attempt_o_cho[_lop] — ${plan.filter((d) => /SEARCH a\b|SCAN a\b/.test(d)).join(' | ')}`);
     }
   }
   assert(thay.size >= 3, `chỉ bắt được ${thay.size} câu dùng cờ`);
