@@ -420,6 +420,7 @@ export function skillCells(
      * cũng là điểm thật, nên không dùng riêng `band`.
      */
     const hasScore = cellScored || (row?.raw_score ?? null) !== null;
+    const coGiaTri = hasScore || [row?.c1, row?.c2, row?.c3, row?.c4].some((v) => v !== null && v !== undefined);
     /* OV-1b: một luật với hàng lớp Lịch Test (`dauTruCuaO`) — "-" có hiệu lực ngay khi ghi, không chờ chốt cuối Chủ nhật. */
     const ns = dauTruCuaO({
       marked: !!row?.no_show_period_id,
@@ -473,10 +474,10 @@ export function skillCells(
       /* OV-4c: ô W / S nhập Band thẳng được không — cùng hàm với `saveScore` (web chỉ đọc cờ này). */
       bandThang: duocNhapBandThang({ lichSu: !!attempt.lich_su, mt0: laMt0(attempt) }),
       resultDate: row?.result_date ?? null,
-      /* OV-15b (mục 7): "Nhập bởi …" chỉ khi ô ĐÃ có điểm — ô chỉ nhận xét / đã xoá điểm / GV chấm chéo đã gán không có người nhập. */
-      enteredByName: hasScore ? row?.entered_by_name ?? null : null,
-      enteredAt: hasScore ? row?.entered_at ?? null : null,
-      enteredById: hasScore ? row?.entered_by ?? null : null,
+      /* OV-15b (mục 7): "Nhập bởi …" chỉ khi ô có giá trị điểm (cả tiêu chí dở dang — PR-I) — ô chỉ nhận xét / đã xoá điểm / GV chấm chéo đã gán thì không. */
+      enteredByName: coGiaTri ? row?.entered_by_name ?? null : null,
+      enteredAt: coGiaTri ? row?.entered_at ?? null : null,
+      enteredById: coGiaTri ? row?.entered_by ?? null : null,
       deadline: view.deadline,
       deadlineSource: view.deadlineSource,
       /* Quá hạn tính trên Ô NÀY: W2 còn trống thì W2 quá hạn, W1 đã nộp thì không. */

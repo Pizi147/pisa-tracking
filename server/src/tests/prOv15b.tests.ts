@@ -130,7 +130,7 @@ export async function runPrOv15bTests(t: YThucTestKit) {
     const w = x('5.5 6 6 5.5', 'Thiếu số liệu chính', o('writing1'));
     assert(w.loai === 'ghi' && JSON.stringify(w.patch.criteria) === '[5.5,6,6,5.5]' && w.band === 6 && !w.canNhom, `W 4 tiêu chí: ${JSON.stringify(w)}`);
     const wb = x('6.5', 'Thiếu số liệu chính', o('writing1'));
-    assert(wb.loai === 'loi' && wb.loi === d.LOI_BAND_TU_TINH, 'MT thường: một band ở W/S → lỗi (Band tự tính từ 4 tiêu chí)');
+    assert(wb.loai === 'loi' && wb.loi === d.LOI_DAN_BAND, 'MT thường: một band ở W/S → lỗi (Band tự tính từ 4 tiêu chí)');
     const cu = x('6.5', '', o('speaking', { bandThang: true, batBuocNhanXet: false }));
     assert(cu.loai === 'ghi' && cu.patch.band === 6.5, 'MT cũ / MT0 nhận band thẳng');
     assert(x('6 6 6', NX, o('speaking')).loai === 'loi', 'thiếu tiêu chí');
@@ -140,6 +140,7 @@ export async function runPrOv15bTests(t: YThucTestKit) {
     const duoi = x('17', 'Hết giờ ở passage 3', o('listening'));
     assert(duoi.loai === 'ghi' && duoi.canNhom, 'dưới kỳ vọng → cần nhóm nguyên nhân');
     assert(!x('17', 'Hết giờ ở passage 3', o('listening', { nhomNguyenNhan: ['L1'] })).canNhom, 'ô đã có nhóm → không hỏi lại');
+    assert(!x('17', '', o('listening', { batBuocNhanXet: false })).canNhom, 'MT cũ / MT0: nhóm không bắt buộc (như máy chủ)');
     const de = x('22', 'Part 2 tiến bộ rõ', o('listening', { rawScore: 17, band: 5 }));
     assert(de.loai === 'ghi' && de.truoc === '17' && de.sau === '22', 'ghi đè trước → sau');
     assert(x('17', '', o('listening', { rawScore: 17, band: 5, nhanXet: 'Nhận xét cũ đủ dài' })).loai === 'bo', 'giống hệt → bỏ qua');

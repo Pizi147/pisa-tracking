@@ -1,5 +1,5 @@
 import { ENTRY_SKILL_SHORT, type EntrySkill } from './skills.ts';
-import { LOI_BAND_TU_TINH, LOI_SO_CAU_KHOANG, bandTuSoCau, criteriaPatchFrom, kiemBand, type PatchDiem } from './chamDiem.ts';
+import { bandTuSoCau, criteriaPatchFrom, kiemBand, type PatchDiem } from './chamDiem.ts';
 import { canNhomNguyenNhan, CAU_THIEU_NHAN_XET, kiemNhanXet, thieuNhanXetMt } from './nhanXet.ts';
 import { chuanTieuDe } from './nhapHocVien.ts';
 import { t } from '../i18n/index.ts';
@@ -139,6 +139,8 @@ export type XetODan = { loai: 'bo' } | { loai: 'loi'; loi: string }
 /** L / R: cả lô là số câu (0–40) hay band (0–9). */
 export type CheDoLR = 'cau' | 'band';
 
+/** Ô W / S MT thường dán một band: chữ ngắn ở ô xem trước. */
+export const LOI_DAN_BAND = t('Dán 4 tiêu chí — Band tự tính');
 const so = (s: string) => (/^\d+(?:[.,]\d+)?$/.test(s) ? Number(s.replace(',', '.')) : NaN);
 const chuBand = (b: number) => b.toFixed(1);
 const chuO = (c: { rawScore: number | null; band: number | null }) => (c.rawScore !== null ? String(c.rawScore) : c.band !== null ? chuBand(c.band) : null);
@@ -165,7 +167,7 @@ export function xetODan(raw: { diem: string; nhanXet: string }, cell: ODanHienCo
   } else if (cell.skill === 'listening' || cell.skill === 'reading') {
     const v = so(d);
     if (cheDo === 'cau') {
-      if (!Number.isInteger(v) || v > 40) return { loai: 'loi', loi: t('Số câu: {x}', { x: LOI_SO_CAU_KHOANG }) };
+      if (!Number.isInteger(v) || v > 40) return { loai: 'loi', loi: t('Ngoài 0–40 câu') };
       patch = { rawScore: v }; band = bandTuSoCau(cell.skill, v); sau = String(v);
     } else {
       const loi = kiemBand(v);
@@ -175,9 +177,10 @@ export function xetODan(raw: { diem: string; nhanXet: string }, cell: ODanHienCo
   } else {
     const tok = d.replace(/,(?=\d)/g, '.').split(/[\s/;|]+/).filter(Boolean);
     if (tok.length === 1) {
-      if (!cell.bandThang) return { loai: 'loi', loi: LOI_BAND_TU_TINH };
+      /* OV-4c: MT thường không nhận band thẳng ở W1 / W2 / S (máy chủ `LOI_BAND_TU_TINH`) — chỉ MT cũ / MT0. */
+      if (!cell.bandThang) return { loai: 'loi', loi: LOI_DAN_BAND };
       const r = criteriaPatchFrom(['', '', '', ''], {}, tok[0], true);
-      if (!r.patch || r.loi) return { loai: 'loi', loi: r.loi ?? LOI_BAND_TU_TINH };
+      if (!r.patch || r.loi) return { loai: 'loi', loi: r.loi ?? LOI_DAN_BAND };
       patch = r.patch; band = r.preview;
     } else if (tok.length === 4) {
       const r = criteriaPatchFrom(tok, {});
@@ -196,7 +199,8 @@ export function xetODan(raw: { diem: string; nhanXet: string }, cell: ODanHienCo
   const coDiem = band !== null || (patch?.rawScore ?? cell.rawScore) !== null;
   const thieu = thieuNhanXetMt({ batBuoc: !!cell.batBuocNhanXet, coDiem, band, kyVong: cell.kyVong ?? null, nhanXet: nhanXetSau, nhom: ['?'] });
   if (thieu) return { loai: 'loi', loi: CAU_THIEU_NHAN_XET[thieu] };
-  const canNhom = canNhomNguyenNhan(band, cell.kyVong) && !cell.nhomNguyenNhan?.length;
+  /* Nhóm nguyên nhân chỉ bắt buộc ở MT thường (`batBuocNhanXet`, như `thieuNhanXetMt` của máy chủ); MT cũ / MT0 không hỏi. */
+  const canNhom = !!cell.batBuocNhanXet && canNhomNguyenNhan(band, cell.kyVong) && !cell.nhomNguyenNhan?.length;
   const p: PatchDan = { ...(patch && sau !== truoc ? patch : {}), ...(doiNx ? { nhanXet: nx } : {}) };
   return { loai: 'ghi', patch: p, band, truoc: patch && sau !== truoc ? truoc : null, sau, canNhom };
 }

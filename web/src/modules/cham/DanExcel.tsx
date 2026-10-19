@@ -3,10 +3,10 @@ import { api, invalidate } from '../../lib/api.ts';
 import { IconDat } from '../../ui/BieuTuong.tsx';
 import { BoLocDoan } from '../../ui/ui.tsx';
 import { ChonNhom } from '../fasttrack/NhanXet.tsx';
-import type { Cell } from '../fasttrack/ScoreEntry.tsx';
+import { lyDoChiDoc, type Cell } from '../fasttrack/ScoreEntry.tsx';
 import type { FtSheet } from './LuoiFT.tsx';
 import {
-  ENTRY_SKILL_SHORT, LO_DAN, docBangDan, khopHocVien, xetODan, chiaLo,
+  ENTRY_SKILL_SHORT, LO_DAN, docBangDan, khopHocVien, xetODan, chiaLo, tuanLich,
   type CheDoLR, type EntrySkill, type PatchDan, type XetODan,
 } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
@@ -24,6 +24,8 @@ type DongXem = {
   /** Em do người dùng chọn (trùng tên) — có "Chọn lại". */
   daChon: boolean;
   o: ODong[]; loiMay: string | null;
+  /** Mọi ô lỗi của dòng cùng một câu (≥ 2 ô) — nói một lần dưới tên, ô chỉ đỏ. */
+  loiChung: string | null;
 };
 type KetQua = { dong: ({ attemptId: number; ok: true } | { attemptId: number; ok: false; skill: string | null; loi: string })[] };
 
@@ -41,8 +43,8 @@ function patchTruoc(c: Cell, p: PatchDan): PatchDan {
   };
 }
 
-export function DanExcel({ data, cot, tenLuot, hep, hoiBanDau = false, onDong, onDaLuu }: {
-  data: FtSheet; cot: readonly EntrySkill[]; tenLuot: string; hep: boolean; hoiBanDau?: boolean; onDong: () => void; onDaLuu: () => void;
+export function DanExcel({ data, cot, tenLuot, homNay, hep, hoiBanDau = false, onDong, onDaLuu }: {
+  data: FtSheet; cot: readonly EntrySkill[]; tenLuot: string; homNay: string; hep: boolean; hoiBanDau?: boolean; onDong: () => void; onDaLuu: () => void;
 }) {
   const [chu, setChu] = useState('');
   const [cheDo, setCheDo] = useState<CheDoLR>('cau');
@@ -69,12 +71,18 @@ export function DanExcel({ data, cot, tenLuot, hep, hoiBanDau = false, onDong, o
       const trungDong = hang ? dungBoi.get(hang.attemptId) ?? null : null;
       if (hang && trungDong === null) dungBoi.set(hang.attemptId, d.so);
       const o = d.o.map((x) => {
-        const cell = hang?.cells.find((cc) => cc.skill === x.skill);
-        const r: XetODan = cell ? xetODan(x, cell, cheDo) : x.diem || x.nhanXet ? { loai: 'loi', loi: t('Lượt này không thi kỹ năng này') } : { loai: 'bo' };
+        const c0 = hang?.cells.find((cc) => cc.skill === x.skill);
+        /* Ô chỉ đọc: cùng câu với lưới (`lyDoChiDoc`); ô chưa tới tuần thi nói tuần. */
+        const cell = c0 && !c0.canEdit ? { ...c0, lyDoKhoa: c0.weekStart && c0.weekStart.slice(0, 10) > homNay
+          ? t('Chưa tới tuần thi {tuan}', { tuan: tuanLich(c0.weekStart, homNay) }) : lyDoChiDoc(c0) } : c0;
+        /* Chưa có em (trùng tên / không có trong lớp): chưa xét — hiện số thô. */
+        const r: XetODan = !hang || !(x.diem || x.nhanXet) ? { loai: 'bo' } : cell ? xetODan(x, cell, cheDo) : { loai: 'loi', loi: t('Lượt này không thi kỹ năng này') };
         return { ...x, x: r, cell };
       });
+      const cauLoi = [...new Set(o.flatMap((x) => (x.x.loai === 'loi' ? [x.x.loi] : [])))];
+      const loiChung = cauLoi.length === 1 && o.filter((x) => x.x.loai === 'loi').length > 1 ? cauLoi[0] : null;
       return {
-        so: d.so, ten: d.ten, hang, daChon: !k.attemptId && !!hang, trung: (k.trung ?? []).map((id) => theoId.get(id)!).filter(Boolean), khongCo: !!k.khongCo, trungDong, o,
+        loiChung, so: d.so, ten: d.ten, hang, daChon: !k.attemptId && !!hang, trung: (k.trung ?? []).map((id) => theoId.get(id)!).filter(Boolean), khongCo: !!k.khongCo, trungDong, o,
         loiMay: loiMay[d.so] ?? null,
       };
     });
@@ -86,9 +94,12 @@ export function DanExcel({ data, cot, tenLuot, hep, hoiBanDau = false, onDong, o
   const ghi = (d: DongXem) => d.o.filter((o) => o.x.loai === 'ghi');
   const hopLe = (d: DongXem) => !!d.hang && d.trungDong === null && !loiO(d) && ghi(d).length > 0 && !ghi(d).some((o) => thieuNhom(d, o));
   const luuDuoc = dong.filter(hopLe);
+  /* Mới / ghi đè: dòng khớp em, không lỗi (kể cả dòng còn chờ chọn nhóm nguyên nhân). */
+  const sach = (d: DongXem) => !!d.hang && d.trungDong === null && !loiO(d) && !d.loiMay && ghi(d).length > 0;
+  const coDe = (d: DongXem) => ghi(d).some((o) => o.x.loai === 'ghi' && o.x.truoc !== null);
   const dem = {
-    moi: dong.filter((d) => hopLe(d) && !ghi(d).some((o) => o.x.loai === 'ghi' && o.x.truoc !== null)).length,
-    ghiDe: dong.filter((d) => hopLe(d) && ghi(d).some((o) => o.x.loai === 'ghi' && o.x.truoc !== null)).length,
+    moi: dong.filter((d) => sach(d) && !coDe(d)).length,
+    ghiDe: dong.filter((d) => sach(d) && coDe(d)).length,
     trung: dong.filter((d) => !d.hang && d.trung.length).length,
     loi: dong.filter((d) => d.hang && (loiO(d) || d.loiMay)).length,
     khong: dong.filter((d) => !d.hang && d.khongCo).length,
@@ -210,14 +221,15 @@ export function DanExcel({ data, cot, tenLuot, hep, hoiBanDau = false, onDong, o
               {[...dong].sort((a, b) => Number(hopLe(a)) - Number(hopLe(b))).map((d) => (
                 <li key={d.so} className="flex flex-col gap-1.5 rounded-lg border p-3" style={{ borderColor: hopLe(d) ? 'var(--line)' : 'var(--accent)' }}>
                   <TenDong d={d} chon={(v) => setChon((c) => ({ ...c, [d.so]: v }))} />
-                  <p className="text-xs text-slate-300">{d.o.map((o) => <span key={o.skill} className="mr-2 inline-block"><OCh o={o} gon /></span>)}</p>
+                  <p className="text-xs text-slate-300">{d.o.map((o) => <span key={o.skill} className={o.x.loai === 'loi' && !d.loiChung ? 'block' : 'mr-2 inline-block'}><OCh o={o} gon tho={!d.hang} anLoi={!!d.loiChung} /></span>)}</p>
                   <NhomDong d={d} thieuNhom={thieuNhom} nhom={nhom} setNhom={setNhom} khoa={khoaNhom} />
                 </li>
               ))}
             </ul>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-[13px]">
+              <table className="w-full min-w-[40rem] table-fixed text-[13px]">
+                <colgroup><col className="w-44" />{kn.map((k) => <col key={k} />)}</colgroup>
                 <thead>
                   <tr className="text-left text-xs text-slate-400">
                     <th className="px-2 py-1.5 font-medium">{t('Học viên')}</th>
@@ -238,7 +250,7 @@ export function DanExcel({ data, cot, tenLuot, hep, hoiBanDau = false, onDong, o
 
           {loiMang && (
             <div role="alert" className="flex flex-wrap items-center gap-2 text-sm text-bad">
-              <span className="flex-1 min-w-0">⚠ {t('Chưa lưu được — {loi}. Bảng dán giữ nguyên.', { loi: loiMang })}</span>
+              <span className="flex-1 min-w-0">⚠ {t('Không lưu được — {loi}. Bảng dán giữ nguyên.', { loi: loiMang })}</span>
               <button type="button" className="btn btn-sm btn-primary" onClick={() => void luu()} disabled={!!dang || !luuDuoc.length}>{t('Thử lại')}</button>
             </div>
           )}
@@ -248,7 +260,7 @@ export function DanExcel({ data, cot, tenLuot, hep, hoiBanDau = false, onDong, o
               {dang ? t('Đang lưu {x}/{n} dòng…', { x: dang.xong, n: dang.tong })
                 : <>{t('Lưu được')} <b className="text-slate-100">{t('{n} dòng', { n: luuDuoc.length })}</b>{conNhap ? ` · ${t('{n} dòng còn nháp', { n: conNhap })}` : ''}</>}
             </span>
-            <button type="button" className="btn btn-sm" onClick={huy} disabled={!!dang}>{t('Huỷ')}</button>
+            <button type="button" className="btn btn-sm" onClick={huy} disabled={!!dang}>{t('Dán lại')}</button>
             <button type="button" className="btn btn-sm btn-primary" onClick={() => void luu()} disabled={!!dang || !luuDuoc.length}>
               {t('Lưu {n} dòng', { n: luuDuoc.length })}
             </button>
@@ -271,7 +283,7 @@ function FragmentDong({ d, kn, ten, nhom, coNhom }: { d: DongXem; kn: readonly E
     <>
       <tr className={`border-t align-top ${mo ? 'opacity-60' : ''}`} style={{ borderColor: 'var(--line)' }}>
         <td className="px-2 py-2">{ten}</td>
-        {kn.map((k) => { const o = d.o.find((x) => x.skill === k); return <td key={k} className="px-2 py-2">{o ? <OCh o={o} /> : null}</td>; })}
+        {kn.map((k) => { const o = d.o.find((x) => x.skill === k); return <td key={k} className="px-2 py-2">{o ? <OCh o={o} tho={!d.hang} anLoi={!!d.loiChung} /> : null}</td>; })}
       </tr>
       {coNhom && d.hang && <tr><td colSpan={kn.length + 1} className="px-2 pb-2">{nhom}</td></tr>}
     </>
@@ -288,6 +300,7 @@ function TenDong({ d, chon }: { d: DongXem; chon: (v: number | 'bo' | null) => v
         {d.daChon && <button type="button" className="link text-xs" onClick={() => chon(null)}>{t('Chọn lại')}</button>}
         {d.trungDong !== null && <small className="block text-xs text-bad">{t('Trùng em với dòng {so}', { so: d.trungDong })}</small>}
         {d.loiMay && <small className="block text-xs text-bad">⚠ {d.loiMay}</small>}
+        {d.loiChung && <small className="block text-xs text-bad">⚠ {d.loiChung}</small>}
       </div>
     );
   }
@@ -298,7 +311,7 @@ function TenDong({ d, chon }: { d: DongXem; chon: (v: number | 'bo' | null) => v
         <small className="text-xs text-slate-400">{t('{n} em cùng tên trong lớp', { n: d.trung.length })}</small>
         <select className="field min-h-[44px] text-sm sm:min-h-0" defaultValue="" onChange={(e) => chon(e.target.value === 'bo' ? 'bo' : Number(e.target.value))}>
           <option value="" disabled>{t('Chọn em…')}</option>
-          {d.trung.map((h) => <option key={h.attemptId} value={h.attemptId}>{h.studentName} · {h.studentEmail ?? h.studentCode}</option>)}
+          {d.trung.map((h) => <option key={h.attemptId} value={h.attemptId}>{h.studentName}{h.studentEmail ? ` · ${h.studentEmail}` : ''}</option>)}
           <option value="bo">{t('Không dán dòng này')}</option>
         </select>
       </label>
@@ -308,14 +321,15 @@ function TenDong({ d, chon }: { d: DongXem; chon: (v: number | 'bo' | null) => v
 }
 
 /** Ô xem trước: điểm (ghi đè: cũ gạch → mới) + nhận xét nhỏ; lỗi: chữ đỏ + lý do; bỏ qua: chữ mờ. */
-function OCh({ o, gon }: { o: ODong; gon?: boolean }) {
+function OCh({ o, gon, tho, anLoi }: { o: ODong; gon?: boolean; tho?: boolean; anLoi?: boolean }) {
   const ten = gon ? `${ENTRY_SKILL_SHORT[o.skill]} ` : '';
-  if (o.x.loai === 'bo') return gon ? null : <span className="text-xs text-slate-500">{o.diem || o.nhanXet ? t('không đổi') : t('bỏ qua · ô trống')}</span>;
+  if (tho) return o.diem ? <span className="tabular-nums">{ten}{o.diem}</span> : null;
+  if (o.x.loai === 'bo') return gon ? null : <span className="whitespace-nowrap text-xs text-slate-500">{o.diem || o.nhanXet ? t('không đổi') : t('bỏ qua · ô trống')}</span>;
   if (o.x.loai === 'loi') {
     return (
       <span className="text-bad">
         {ten}<b className="tabular-nums">{o.diem || '—'}</b>
-        <small className="block text-xs">⚠ {o.x.loi}</small>
+        {anLoi ? <span aria-hidden> ⚠</span> : <small className="block text-xs">⚠ {o.x.loi}</small>}
       </span>
     );
   }

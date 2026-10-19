@@ -161,7 +161,7 @@ export function LuoiChamLop({
   );
 
   const khoiDan = dan && data.ft && (
-    <DanExcel data={data.ft} cot={cotDan} tenLuot={tenLuot} hep={hep} hoiBanDau={dan.hoi}
+    <DanExcel data={data.ft} cot={cotDan} tenLuot={tenLuot} homNay={data.today} hep={hep} hoiBanDau={dan.hoi}
       onDong={() => setDan(null)} onDaLuu={onReload} />
   );
   const luoiKhung = gon ? luoi : <Card bodyClass="p-0" className="xl:overflow-clip">{luoi}</Card>;
@@ -198,7 +198,7 @@ export function LuoiChamLop({
       {!dan ? luoiKhung : hep ? khoiDan : (
         /* 1440: lưới trái, khối dán phải (mockup 1d); dưới xl xếp chồng, khối dán trước. */
         <div className="mt-2 flex flex-col gap-3 xl:flex-row-reverse xl:items-start">
-          <div className="xl:w-[44rem] xl:shrink-0">{khoiDan}</div>
+          <div className="xl:w-[56rem] xl:shrink-0">{khoiDan}</div>
           <div className="min-w-0 flex-1 overflow-x-auto">{luoiKhung}</div>
         </div>
       )}
