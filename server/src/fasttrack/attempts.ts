@@ -153,7 +153,8 @@ function docTheoLo<T extends { attempt_id: number }>(ids: number[], sql: (ph: st
   return out;
 }
 
-export function loadBundle(attemptIds: number[]): AttemptBundle {
+/** TD7: `boCase` — người gọi không đọc `bundle.cases` (đánh giá lượt mới nhất) thì bỏ câu Case theo lượt. */
+export function loadBundle(attemptIds: number[], o: { boCase?: boolean } = {}): AttemptBundle {
   const bundle: AttemptBundle = { scores: new Map(), skips: new Map(), skillRows: new Map(), cases: new Map() };
   if (!attemptIds.length) return bundle;
   bundle.skillRows = loadSkillRows(attemptIds);
@@ -176,7 +177,7 @@ export function loadBundle(attemptIds: number[]): AttemptBundle {
    * Một lượt nay sinh NHIỀU vấn đề (mỗi kỹ năng một cái), nên gộp lại thành một dòng tóm tắt cho lượt: mức cao nhất, và mốc mới nhất đã thực
    * sự xảy ra. Người dùng phải nhìn một lượt là biết đã được làm hay chưa; không có gì thì nói thẳng "chưa có follow-up".
    */
-  for (const [id, [r]] of nhoTheoId('case-luot:', attemptIds, (ids) => docTheoLo<any>(ids,
+  if (!o.boCase) for (const [id, [r]] of nhoTheoId('case-luot:', attemptIds, (ids) => docTheoLo<any>(ids,
     (ph) => `SELECT c.attempt_id, MIN(c.id) AS id,
                 MAX(c.sos_level) AS sos_level,
                 MIN(CASE c.status WHEN 'open' THEN 0 WHEN 'in_progress' THEN 1 ELSE 2 END) AS st,

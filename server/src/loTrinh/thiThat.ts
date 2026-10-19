@@ -9,6 +9,7 @@ import { demoToday } from '../demoConfig.ts';
 import { badRequest, chuTuDo, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
 import { can, coQuyenBuocTiep, type Principal } from '../permissions.ts';
 import { addJourney, writeAudit } from '../platform/audit.ts';
+import { nho } from '../platform/nguCanhRequest.ts';
 import { cycleById, examPlanOf } from '../fasttrack/cycles.ts';
 import { thiThatCuaCycle } from './banChup.ts';
 
@@ -120,14 +121,20 @@ export const SQL_CHO_KET_QUA_THI = `SELECT c.id, c.student_id, s.full_name AS te
     FROM learning_cycles c JOIN students s ON s.id = c.student_id LEFT JOIN report_periods ep ON ep.id = c.exam_period_id
    WHERE c.route IS NOT NULL AND c.thi_that_khong_thi = 0 AND (c.thi_that_l IS NULL OR c.thi_that_r IS NULL OR c.thi_that_w IS NULL OR c.thi_that_s IS NULL)
      /* Kết quả CŨ (chỉ Overall / kết luận chọn tay) là đã có kết quả. */
-     AND c.outcome_score IS NULL AND COALESCE(c.outcome, 'unknown') = 'unknown' AND ${LO_TRINH_MOI_NHAT}
+     AND c.outcome_score IS NULL AND COALESCE(c.outcome, 'unknown') = 'unknown'
+     /* TD4: tập cha của "đã thi" — ngày thi (trangThaiSauThi) ≥ cận dưới này; lọc JS giữ nguyên. TD7: đứng TRƯỚC các điều kiện có câu con và đọc tuần
+        thi qua câu con theo khoá (không qua ep nối sau) — SQLite xét nó ngay trên dòng lộ trình, lộ trình chưa tới ngày thi không đọc tiếp. */
+     AND COALESCE(c.thi_that_ngay, c.exam_date, (SELECT p.week_start FROM report_periods p WHERE p.id = c.exam_period_id),
+                  CASE WHEN c.exam_month GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]' THEN c.exam_month || '-01' END, c.ended_at) < ?
+     AND ${LO_TRINH_MOI_NHAT}
      /* Đóng vì CHUYỂN LỚP (đóng-mở): em không đi thi — không nhắc. */
-     AND NOT EXISTS (SELECT 1 FROM ban_chup_lo_trinh b WHERE b.cycle_id = c.id AND b.ly_do = 'chuyen_lop' AND b.lan = (SELECT MAX(lan) FROM ban_chup_lo_trinh WHERE cycle_id = c.id))
-     /* TD4: tập cha của "đã thi" — ngày thi (trangThaiSauThi) ≥ cận dưới này; lọc JS giữ nguyên. */
-     AND COALESCE(c.thi_that_ngay, c.exam_date, ep.week_start, CASE WHEN c.exam_month GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]' THEN c.exam_month || '-01' END, c.ended_at) < ?`;
+     AND NOT EXISTS (SELECT 1 FROM ban_chup_lo_trinh b WHERE b.cycle_id = c.id AND b.ly_do = 'chuyen_lop' AND b.lan = (SELECT MAX(lan) FROM ban_chup_lo_trinh WHERE cycle_id = c.id))`;
+/** TD7: nhớ trong request GET — Công việc, Học viên & Lớp, Tổng quan gọi 2–5 lần mỗi request (cả hệ thống, kết quả như nhau). Người gọi không sửa kết quả. */
 export function loTrinhChoKetQuaThi(today: string): { c: any; s: TrangThaiSauThi }[] {
-  const ds = db().prepare(SQL_CHO_KET_QUA_THI).all(today) as any[];
-  return ds.map((c) => ({ c, s: trangThaiSauThi(c, today) })).filter((x) => x.s.giaiDoan === 'da_thi_cho_kq');
+  return nho(`cho-kq-thi:${today}`, () => {
+    const ds = db().prepare(SQL_CHO_KET_QUA_THI).all(today) as any[];
+    return ds.map((c) => ({ c, s: trangThaiSauThi(c, today) })).filter((x) => x.s.giaiDoan === 'da_thi_cho_kq');
+  });
 }
 /** "Đã thi T7 10/10 · hạn 17/10 · đã gia hạn" — dòng phụ việc Công việc (OV-13q). */
 export const chuDaThi = (s: TrangThaiSauThi, today: string): string =>

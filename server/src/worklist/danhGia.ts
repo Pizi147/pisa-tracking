@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { db } from '../db.ts';
-import { CHUONG_TRINH_KHONG_CHIA_MON, PERMISSIONS, luotSinhViec, moiNhatTruoc } from '../../../shared/domain/index.ts';
+import { CHUONG_TRINH_KHONG_CHIA_MON, CO_DIEM_SQL, PERMISSIONS, luotSinhViec, moiNhatTruoc } from '../../../shared/domain/index.ts';
 import { ngayTaoLuot } from '../classes/schedule.ts';
 import { classScopeSql, scopeFor, type Principal } from '../permissions.ts';
 import { kckCuaLuot, loadBundle, resultOf, type AttemptBundle } from '../fasttrack/attempts.ts';
@@ -137,7 +137,9 @@ function attemptsNewestFirstGoc(studentIds: number[]): Map<number, any[]> {
                 (SELECT cy.route FROM learning_cycles cy WHERE cy.id = a.cycle_id) AS route, (SELECT cy.khong_cam_ket FROM learning_cycles cy WHERE cy.id = a.cycle_id) AS cy_kck,
                 /* OV-11f (PT-3): lộ trình FAST TRACK đang chạy của em (nếu có) — SOS / dưới kỳ vọng chỉ đọc lượt của lộ trình này, không rơi về Final lớp thường cũ. */
                 (SELECT cy2.id FROM learning_cycles cy2 WHERE cy2.student_id = a.student_id AND cy2.status = 'active' AND cy2.route IS NOT NULL
-                  ORDER BY cy2.id DESC LIMIT 1) AS cy_ft_dang_chay
+                  ORDER BY cy2.id DESC LIMIT 1) AS cy_ft_dang_chay,
+                /* TD7: lượt không ô nào có band / điểm thô thì chắc chắn scored = 0 — latestAttempts bỏ qua, không nạp lịch + điểm. */
+                ${CO_DIEM_SQL('a')} AS _co_diem
            FROM assessment_attempts a
            LEFT JOIN classes c ON c.id = a.class_id
            LEFT JOIN report_periods pr ON pr.id = a.planned_period_id
@@ -172,26 +174,56 @@ export function latestAttempts(studentIds: number[], pick: 'valid' | 'due', toda
   /* PR-Dọn (9g): khoá nhớ ngắn — băm tập id (2 000 em từng là khoá hơn 10 000 ký tự). */
   return nho(`luot-moi:${pick}:${today}:${createHash('sha1').update(studentIds.join(',')).digest('hex')}`, () => {
     const byStudent = attemptsNewestFirst(studentIds);
-    const all = [...byStudent.values()].flat();
-    const bundle = loadBundle(all.map((a) => a.id));
     const programmes = allProgrammes();
-    const out = new Map<number, AttemptEval>();
-    for (const [sid, list] of byStudent) {
-      for (const a of list) {
-        if (pick === 'due' && !(a.period_start && a.period_start <= today)) continue;
-        if (pick === 'valid' && !luotSinhViecRow(a, today)) continue;
-        if (pick === 'valid' && a.cy_ft_dang_chay && a.cycle_id !== a.cy_ft_dang_chay) continue;   // OV-11f (PT-3): như `standingFor`
+    /* Lọc không cần điểm / lịch kỹ năng (đọc ngay trên dòng lượt). */
+    const quaLocNhanh = (a: any, kieu: 'valid' | 'due') => {
+      if (kieu === 'due') return !!(a.period_start && a.period_start <= today);
+      if (!luotSinhViecRow(a, today)) return false;
+      if (a.cy_ft_dang_chay && a.cycle_id !== a.cy_ft_dang_chay) return false;   // OV-11f (PT-3): như `standingFor`
+      return !!a._co_diem;   // TD7: không band / điểm thô → scored = 0, như vòng cũ bỏ qua
+    };
+    /*
+     * TD7: nạp lịch + điểm THEO VÒNG — mỗi vòng chỉ lượt ứng viên kế tiếp của từng em chưa có kết quả, thay vì mọi lượt của mọi em (Turso: câu lịch
+     * kỹ năng ~5 k dòng / lần). Vòng đầu nạp kèm ứng viên đầu của kiểu kia ('valid' ↔ 'due', Tổng quan gọi cả hai) — lần gọi sau đọc từ bộ nhớ
+     * theo lượt, thường không thêm câu nào. Cùng thứ tự duyệt, cùng điều kiện như vòng cũ → cùng lượt được chọn.
+     */
+    const kieuKia = pick === 'valid' ? 'due' : 'valid';
+    const viTri = new Map<number, number>();
+    const chon = new Map<number, AttemptEval>();
+    let cho = [...byStudent.keys()];
+    let vongDau = true;
+    while (cho.length) {
+      const ungVien: [number, any][] = [];
+      const kem: number[] = [];
+      for (const sid of cho) {
+        const list = byStudent.get(sid)!;
+        let i = viTri.get(sid) ?? 0;
+        while (i < list.length && !quaLocNhanh(list[i], pick)) i++;
+        viTri.set(sid, i);
+        if (i < list.length) ungVien.push([sid, list[i]]);
+        if (vongDau) { const k = list.find((a) => quaLocNhanh(a, kieuKia)); if (k) kem.push(k.id); }
+      }
+      if (!ungVien.length) break;
+      const bundle = loadBundle([...new Set([...ungVien.map(([, a]) => a.id as number), ...kem])], { boCase: true });
+      vongDau = false;
+      cho = [];
+      for (const [sid, a] of ungVien) {
         const ev = evaluateAttemptRow(a, bundle, programmes);
-        if (pick === 'valid' && ev.scored === 0) continue;
         /* Độ phủ: MT lịch sử chưa đủ điểm không phải "cần được đánh giá" (nhập bù, không hạn — T34). */
-        if (pick === 'due' && a.lich_su && !ev.complete) continue;
-        out.set(sid, {
+        if ((pick === 'valid' && ev.scored === 0) || (pick === 'due' && a.lich_su && !ev.complete)) {
+          viTri.set(sid, viTri.get(sid)! + 1);
+          cho.push(sid);
+          continue;
+        }
+        chon.set(sid, {
           attemptId: a.id, studentId: sid, kind: a.kind, weekStart: a.period_start ?? null, attemptNo: a.attempt_no, ...ev,
           kck: luotKck(a),
         });
-        break;
       }
     }
+    /* Giữ thứ tự em như vòng cũ (thứ tự `byStudent`). */
+    const out = new Map<number, AttemptEval>();
+    for (const sid of byStudent.keys()) if (chon.has(sid)) out.set(sid, chon.get(sid)!);
     return out;
   });
 }
