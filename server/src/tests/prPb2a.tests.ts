@@ -189,8 +189,9 @@ export async function runPrPb2aTests(t: YThucTestKit) {
     }
     assert(!lo.length, `còn: ${lo.join(', ')}`);
     assert(!fsMod.existsSync(pathMod.join(REPO, 'web/src/modules/phanTich/DanhSachBoQuen.tsx')), 'DanhSachBoQuen.tsx còn');
-    const ov = fsMod.readFileSync(pathMod.join(REPO, 'web/src/modules/worklist/OverviewPage.tsx'), 'utf8');
-    assert(/import \{ PhanTich \} from '\.\.\/phanTich\/PhanTich\.tsx'/.test(ov) && !/CaseBoard/.test(ov), 'OverviewPage import PhanTich thẳng');
+    /* OV-15e: Phân tích là trang riêng (`PhanTichPage`) — import PhanTich thẳng, không qua CaseBoard. */
+    const ov = fsMod.readFileSync(pathMod.join(REPO, 'web/src/modules/phanTich/PhanTichPage.tsx'), 'utf8');
+    assert(/import \{ PhanTich \} from '\.\/PhanTich\.tsx'/.test(ov) && !/CaseBoard/.test(ov), 'PhanTichPage import PhanTich thẳng');
     const rt = fsMod.readFileSync(pathMod.join(REPO, 'web/src/modules/cases/CaseBoardPage.tsx'), 'utf8');
     assert(/<Navigate replace to=\{duongHoSoHocVien\(/.test(rt), 'CaseRoutePage chuyển hướng về hồ sơ HV');
   });

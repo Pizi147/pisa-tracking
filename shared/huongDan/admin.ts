@@ -53,8 +53,8 @@ export const HD_ADMIN: HuongDan = {
     },
     {
       id: 'phan-tich', ten: 'Phân tích', duong: ['/phan-tich'],
-      muc: [{ id: 'ad-pt', ten: 'Góc phân tích', buoc: ['<b>Tổng hợp Test + SOS</b> · <b>Tổng hợp vấn đề HV</b> · <b>Hiệu quả PA</b> · <b>Ý thức</b> · <b>Giáo viên</b>.', 'Bấm số xem danh sách.'],
-        chi: { hd: 'pt-goc', duong: '/phan-tich', chu: 'Chọn góc phân tích ở hàng này.' } }],
+      muc: [{ id: 'ad-pt', ten: 'Sáu tab phân tích', buoc: ['<b>Báo cáo</b> · <b>Test + SOS</b> · <b>Kết quả thi</b> · <b>Hiệu quả PA</b> · <b>Phân tích GV</b> · <b>Ý thức</b>.', 'Một <b>Khoảng thời gian</b> cho mọi tab (mặc định 2 tuần vừa qua); bấm số mở danh sách, làm tại chỗ.'],
+        chi: { hd: 'pt-goc', duong: '/phan-tich', chu: 'Chọn tab ở hàng này.' } }],
     },
     {
       id: 'hoc-vien', ten: 'Học viên & Lớp', duong: ['/hoc-vien'],

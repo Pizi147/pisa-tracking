@@ -101,7 +101,7 @@ export async function runPrOv10aTests(t: YThucTestKit) {
     assert(/x\.key === 'cham' && session\?\.nav\?\.test\b/.test(lop) && /x\.key === 'cho-duyet' && session\?\.nav\?\.workApprove\b/.test(lop), 'DauTrangLop: badge chờ chấm / chờ duyệt theo nav');
     const ds = doc('web/src/modules/students/StudentsPage.tsx');
     assert(/x\.key === 'cham' && session\?\.nav\?\.test\b/.test(ds) && /x\.key === 'cho-duyet' && session\?\.nav\?\.workApprove\b/.test(ds), 'StudentsPage: như trên');
-    assert(/session\?\.nav\?\.work\b/.test(doc('web/src/modules/phanTich/TongHopVanDeHv.tsx')), 'Tổng hợp vấn đề HV: link Công việc theo nav.work');
+    /* OV-15e: tab Tổng hợp vấn đề HV (TongHopVanDeHv.tsx) đã bỏ khỏi Phân tích — không còn link Công việc ở đó. */
     assert(/session\?\.nav\?\.testPlan\b/.test(doc('web/src/modules/classes/ClassProgressPanel.tsx')), 'ClassProgressPanel: link Kế hoạch Test theo nav.testPlan');
   });
 
