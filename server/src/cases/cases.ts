@@ -2115,6 +2115,8 @@ export type CaseFilters = {
   branchId?: number | null;
   classId?: number | null;
   studentId?: number | null;
+  /** OV-15f: chỉ Case của các em này (xuất Excel danh sách — không đọc cả chi nhánh); ≤ 500 em một lần. */
+  studentIds?: number[] | null;
   status?: string | null;
   origin?: string | null;
   skill?: string | null;
@@ -2199,7 +2201,7 @@ export type MappedCase = {
  */
 function khoaDsCase(userId: number, f: CaseFilters): string {
   const fSql: Record<string, unknown> = {};
-  for (const k of ['studentId', 'classId', 'branchId', 'status', 'cycleId', 'origin', 'ownerUserId', 'noOwner', 'kemTam'] as const) {
+  for (const k of ['studentId', 'studentIds', 'classId', 'branchId', 'status', 'cycleId', 'origin', 'ownerUserId', 'noOwner', 'kemTam'] as const) {
     const v = f[k];
     if (v !== null && v !== undefined && v !== false) fSql[k] = v;
   }
@@ -2229,6 +2231,7 @@ function caseTrongPhamVi(p: Principal, f: CaseFilters): MappedCase[] {
   const where: string[] = ['1=1'];
   const params: unknown[] = [];
   if (f.studentId) { where.push('COALESCE(sc.student_id, a.student_id) = ?'); params.push(f.studentId); }
+  if (f.studentIds?.length) { where.push(`COALESCE(sc.student_id, a.student_id) IN (${f.studentIds.map(() => '?').join(',')})`); params.push(...f.studentIds); }
   /*
    * LỌC THEO LỚP EM ĐANG HỌC, không phải lớp lúc đánh giá.
    *

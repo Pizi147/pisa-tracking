@@ -1210,6 +1210,26 @@ await checkAsync(`PR-XLMT · Xem trước Xếp lịch MT cả lớp MB FT 101 (
   assert(r.n <= TRAN_GHI_LO.xemTruocXepLichMt, `${r.n} câu > trần ${TRAN_GHI_LO.xemTruocXepLichMt}`);
 });
 
+await checkAsync(`OV-15f · Lưu kết luận Lịch thi (PUT /hoc-vien-lop/lich-thi/:cycleId) ≤ ${TRAN_GHI_LO.luuLichThi} câu SQL`, async () => {
+  const cy = (conn.prepare(`SELECT cy.id FROM learning_cycles cy JOIN enrollments e ON e.student_id = cy.student_id AND e.status = 'active' WHERE e.class_id = ? AND cy.status = 'active' LIMIT 1`).get(LOP_FT) as any).id as number;
+  const truoc = soCauSql(), dongTruoc = soDongSql();
+  const r = await callHttp('QL', 'PUT', `/hoc-vien-lop/lich-thi/${cy}`, { ketLuan: 'can-xac-nhan', ghiChu: 'đo tốc độ' });
+  const n = soCauSql() - truoc;
+  assert(r.status === 200, `PUT lich-thi ${r.status}`);
+  console.log(`      (đo: ${n} câu, ${soDongSql() - dongTruoc} dòng)`);
+  assert(n <= TRAN_GHI_LO.luuLichThi, `${n} câu > trần ${TRAN_GHI_LO.luuLichThi}`);
+});
+
+await checkAsync(`OV-15f · Xuất Excel danh sách HV mẫu Theo dõi SOS cả lớp MB FT 101 (POST /hoc-vien-lop/xuat) ≤ ${TRAN_GHI_LO.xuatDanhSachSos} câu SQL`, async () => {
+  const sids = (conn.prepare(`SELECT student_id AS id FROM enrollments WHERE class_id = ? AND status = 'active'`).all(LOP_FT) as any[]).map((x) => x.id);
+  const truoc = soCauSql(), dongTruoc = soDongSql();
+  const r = await callHttp('QL', 'POST', '/hoc-vien-lop/xuat', { ids: sids, mau: 'theo-doi-sos', boLoc: 'Đang SOS', xemTruoc: true, sos: { tuan: 'tat-ca' } });
+  const n = soCauSql() - truoc;
+  assert(r.status === 200 && r.json.dem.hocVien === sids.length, `xuất ${r.status}`);
+  console.log(`      (đo: ${sids.length} em, ${n} câu, ${soDongSql() - dongTruoc} dòng)`);
+  assert(n <= TRAN_GHI_LO.xuatDanhSachSos, `${n} câu > trần ${TRAN_GHI_LO.xuatDanhSachSos}`);
+});
+
 for (const [vai, tran] of [['QL', TRAN_GHI_LO.dongBoThongBaoQL], ['GVCN', TRAN_GHI_LO.dongBoThongBaoGVCN]] as const) {
   check(`OV-15d · đồng bộ thông báo tự động (dongBoThongBaoTuDong) ${vai} ≤ ${tran} câu SQL`, () => {
     const { dongBoThongBaoTuDong } = td15d;

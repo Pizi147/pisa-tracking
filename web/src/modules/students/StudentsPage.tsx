@@ -488,7 +488,7 @@ function TrangTheoLop({ admin }: { admin: boolean }) {
         <GocLichThi duongGoc={qs.slice(qs.indexOf('?'))} thangUrl={params.get('thang')} onDoiThang={(m) => setParam({ thang: m.join(','), open: null })} />
       )}
       {xuat && goc !== 'lich-thi' && (
-        <NganXuatDs ids={idsXuat} boLoc={boLocXuat} mauMacDinh={goc === 'sos' ? 'theo-doi-sos' : undefined} onDong={() => setXuat(false)} />
+        <NganXuatDs ids={idsXuat} boLoc={boLocXuat} mauMacDinh={goc === 'sos' ? 'theo-doi-sos' : undefined} locSos={{ tuan: tuanUrl, phamVi: phamViUrl, branchId, q: q.trim() || null }} onDong={() => setXuat(false)} />
       )}
       {panelEm && (
         <PanelMotEm key={panelEm.id} studentId={panelEm.id} caseMo={panelEm.caseMo} onClose={() => setPanelEm(null)}

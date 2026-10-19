@@ -1,10 +1,12 @@
 /**
  * XUẤT EXCEL DANH SÁCH HỌC VIÊN (OV-15f, C31, mockup 5 khung 2) — "lọc ở đâu, xuất ở đó".
  *
- * Nhận ĐÚNG danh sách em web đang hiện theo bộ lọc của trang (nên số em trong nút = số trong tệp, và SOS không có logic riêng ở file) — máy chủ
- * KIỂM QUYỀN XEM từng em (một em ngoài phạm vi → 403, không âm thầm bỏ), rồi dựng chữ từ cùng nguồn trang dùng (`standingFor` cho SOS / kết quả gần nhất,
- * `tomTatCase` cho Case / PA, `examPlanOf` cho lịch thi). Một hàng một em (em học hai lớp: cột Lớp ghi cả hai). `xemTruoc` không ghi nhật ký.
- * Dòng đọc: mỗi lô ≤ 900 em một câu em + lớp, một câu lộ trình, `standingFor`; Case chỉ khi tệp có cột Case / PA (một lần cho mỗi chi nhánh).
+ * Nhận ĐÚNG danh sách em web đang hiện theo bộ lọc của trang (nên số em trong nút = số trong tệp) — máy chủ KIỂM QUYỀN XEM từng em (một em ngoài
+ * phạm vi → 403, không âm thầm bỏ), rồi dựng chữ từ cùng nguồn trang dùng. Cột SOS (mức · tạm / chính thức · MT · kỹ năng) lấy từ CHÍNH `dangSos` của góc
+ * Đang SOS (web gửi kèm bộ lọc góc đó: tuần · phạm vi · chi nhánh · tìm) — lượt SOS MỚI NHẤT của em, kể cả lớp thường; không tính SOS riêng cho tệp.
+ * Kết quả gần nhất / điểm: `standingFor` + `loadBundle`; Case / PA: `listCases` CHỈ của các em trong tệp (`studentIds`) + `tomTatCase`; lịch thi: `examPlanOf`
+ * + cột `lich_thi_*`. Một hàng một em (em học hai lớp: cột Lớp ghi cả hai). `xemTruoc` không ghi nhật ký.
+ * Dòng đọc: mỗi lô ≤ 900 em một câu em + lớp, một câu lộ trình; `standingFor` chỉ khi có cột điểm / kết quả / MT; `dangSos` chỉ khi có cột SOS.
  */
 import { db, theoLo } from '../db.ts';
 import {
@@ -21,7 +23,8 @@ import { examPlanOf } from '../fasttrack/cycles.ts';
 import { loadBundle, resultOf } from '../fasttrack/attempts.ts';
 import { lopTheoLoTrinh } from '../keHoach/keHoachTest.ts';
 import { listCases } from '../cases/cases.ts';
-import { docLuu } from './lichThi.ts';
+import { COT_LICH_THI_SQL, luuTuCot } from './lichThi.ts';
+import { dangSos } from './hocVienSos.ts';
 import { tomTatCase } from './hocVienSos.ts';
 
 const TOI_DA = 5000;
@@ -29,7 +32,7 @@ const KET_LUAN_NHAN: Record<string, string> = { 'giu-thang': 'Giữ tháng', 'ch
 const KY_HIEU: Record<string, string> = { listening: 'L', reading: 'R', writing: 'W', writing1: 'W', writing2: 'W', speaking: 'S' };
 
 export function xuatDanhSach(
-  p: Principal, i: { ids: number[]; mau: unknown; cot: unknown; boLoc: unknown; pham: unknown; xemTruoc: boolean },
+  p: Principal, i: { ids: number[]; mau: unknown; cot: unknown; boLoc: unknown; pham: unknown; xemTruoc: boolean; sos?: unknown },
   luc = nowIso(),
 ) {
   const mau = MAU_XUAT_DS.find((m) => m === i.mau);
@@ -48,9 +51,9 @@ export function xuatDanhSach(
   theoLo(ids, (lo, ph) => {
     for (const s of conn.prepare(
       `SELECT s.id, s.full_name, s.email, cy.id AS cycle_id, cy.target_score, cy.khong_cam_ket, cy.exam_month, cy.exam_date, cy.exam_period_id,
-              rp.week_start AS exam_week_start, rp.code AS exam_week_code
+              rp.week_start AS exam_week_start, rp.code AS exam_week_code, ${COT_LICH_THI_SQL}
          FROM students s LEFT JOIN learning_cycles cy ON cy.student_id = s.id AND cy.status = 'active'
-         LEFT JOIN report_periods rp ON rp.id = cy.exam_period_id WHERE s.id IN (${ph})`).all(...lo) as any[]) hs.set(s.id, s);
+         LEFT JOIN report_periods rp ON rp.id = cy.exam_period_id LEFT JOIN users gu ON gu.id = cy.lich_thi_ghi_chu_boi WHERE s.id IN (${ph})`).all(...lo) as any[]) hs.set(s.id, s);
     for (const e of conn.prepare(
       `SELECT e.student_id, e.status, c.id AS class_id, c.code, c.branch_id, b.name AS co_so FROM enrollments e JOIN classes c ON c.id = e.class_id
          LEFT JOIN branches b ON b.id = c.branch_id WHERE e.student_id IN (${ph}) AND e.status IN ('active', 'completed') ORDER BY e.id`).all(...lo) as any[]) {
@@ -69,7 +72,21 @@ export function xuatDanhSach(
   };
   if (ids.some((id) => !hs.has(id) || !xemDuoc(id))) throw forbidden('Có học viên nằm ngoài phạm vi bạn được xuất.');
   const coCot = (k: string) => (cot as string[]).includes(k);
-  const standing = standingFor(ids);
+  /* SOS: từ `dangSos` của góc Đang SOS (cùng bộ lọc web gửi) → lượt SOS mới nhất của từng em; Admin không có Đang SOS (403) → cột để trống. */
+  const nguonSos = coCot('sos') || coCot('tamChinh') || coCot('kyNang');
+  const sosCua = new Map<number, { sosLevel: number; tam: boolean; luot: string; tuan: string; kyNang: string[] }>();
+  if (nguonSos) {
+    const b: any = i.sos && typeof i.sos === 'object' ? i.sos : {};
+    try {
+      const t = dangSos(p, { tuan: typeof b.tuan === 'string' ? b.tuan : null, phamVi: typeof b.phamVi === 'string' ? b.phamVi : null,
+        branchId: Number.isInteger(b.branchId) ? b.branchId : null, cnNho: Number.isInteger(b.cnNho) ? b.cnNho : null, q: typeof b.q === 'string' ? b.q : null });
+      for (const r of t.rows) {
+        const cu = sosCua.get(r.studentId);
+        if (!cu || r.tuan > cu.tuan) sosCua.set(r.studentId, { sosLevel: r.sosLevel, tam: r.tam, luot: r.luot, tuan: r.tuan, kyNang: r.kyNang });
+      }
+    } catch { /* không có góc Đang SOS với vai này — cột SOS để trống */ }
+  }
+  const standing = coCot('diem') || coCot('ketQua') || coCot('tuanThi') || (coCot('mt') && !nguonSos) ? standingFor(ids) : standingFor([]);
   const cycleIds = [...hs.values()].map((s) => s.cycle_id).filter((x): x is number => !!x);
   const lopLoTrinh = lopTheoLoTrinh(cycleIds);
 
@@ -91,9 +108,8 @@ export function xuatDanhSach(
   }
   const caseCua = new Map<number, { caseTt: string; paTt: string }>();
   if (coCot('caseTt') || coCot('paTt')) {
-    const idSet = new Set(ids);
-    const chiNhanh = [...new Set([...lopHienTai.values()].flat().map((x) => x.branchId).filter((b): b is number => !!b))];
-    const mo = chiNhanh.flatMap((b) => listCases(p, { branchId: b }).rows).filter((c) => c.studentId !== null && idSet.has(c.studentId) && c.status !== 'done');
+    const mo: ReturnType<typeof listCases>['rows'] = [];
+    for (let k = 0; k < ids.length; k += 500) mo.push(...listCases(p, { studentIds: ids.slice(k, k + 500) }).rows.filter((c) => c.studentId !== null && c.status !== 'done'));
     const tt = tomTatCase(mo);
     for (const c of mo) {
       const x = tt.get(c.id);
@@ -107,7 +123,6 @@ export function xuatDanhSach(
     }
   }
 
-  const luu = coCot('ketLuan') || coCot('ghiChuHop') ? docLuu(cycleIds) : new Map<number, never>();
   const hv: HvXuatDs[] = ids.map((id) => {
     const s = hs.get(id);
     const ds = lopHienTai.get(id) ?? [];
@@ -117,22 +132,24 @@ export function xuatDanhSach(
     const diemW = (k: string) => (bundle && a ? (bundle.scores.get(a.id) ?? []).find((x: any) => x.skill === k)?.band ?? null : null);
     const tuan = a && bundle
       ? (bundle.skillRows.get(a.id) ?? []).filter((x: any) => x.required && x.week_start).map((x: any) => String(x.week_start).slice(0, 10)).sort()[0] ?? null : null;
-    const k = st?.kckDuoi ? [] : st?.belowSkills.length ? st.belowSkills.map((x) => KY_HIEU[x.skill] ?? x.skill) : (st?.failedSkills ?? []).map((x) => KY_HIEU[x.skill] ?? x.skill);
+    const sc = sosCua.get(id);
+    const k = (sc?.kyNang ?? []).map((x) => KY_HIEU[x] ?? x);
+    const luu = luuTuCot(s);
     const plan = examPlanOf(s);
     const target = s?.target_score != null ? `${s.target_score}${s.khong_cam_ket ? ' KCK' : ''}` : s?.khong_cam_ket ? 'KCK' : null;
     return {
       ten: s?.full_name ?? '', gmail: s?.email ?? null,
       lop: chuoiLop([...(s?.cycle_id ? lopLoTrinh.get(s.cycle_id) ?? [] : []), ...ds.map((x) => x.code)]),
       coSo: [...new Set(ds.map((x) => x.coSo).filter(Boolean))].join(', ') || null,
-      sos: st?.sosLevel ? `SOS ${st.sosLevel}` : null, tamChinh: st?.sosLevel ? (st.provisional ? 'Tạm' : 'Chính thức') : null,
-      mt: st?.attemptLabel ?? null, kyNang: k.length ? [...new Set(k)].join(', ') : null,
+      sos: sc ? `SOS ${sc.sosLevel}` : null, tamChinh: sc ? (sc.tam ? 'Tạm' : 'Chính thức') : null,
+      mt: nguonSos ? sc?.luot ?? null : st?.attemptLabel ?? null, kyNang: k.length ? [...new Set(k)].join(', ') : null,
       caseTt: caseCua.get(id)?.caseTt || null, paTt: caseCua.get(id)?.paTt || null,
       phuTrach: ds.map((x) => gvcn.get(x.classId)).find(Boolean) ?? null,
       diem: { OVR: r?.overall ?? null, L: r?.bands.listening ?? null, R: r?.bands.reading ?? null, W1: diemW('writing1'), W2: diemW('writing2'), S: r?.bands.speaking ?? null },
       target, lichThi: plan.confidence === 'none' ? null : plan.label, tuanThi: tuan ? tuanNam(tuan) : null,
       ketQua: r ? ketQuaLuot({ ovr: r.overall, kyVong: r.expectation, danhGiaDuoc: r.evaluable }) : null,
-      ketLuan: KET_LUAN_NHAN[ketLuanHienTai({ coNgay: !!s?.exam_date, thangDuKien: plan.month, luu: (s?.cycle_id && luu.get(s.cycle_id)) || null }) ?? ''] ?? null,
-      ghiChuHop: (s?.cycle_id && luu.get(s.cycle_id)?.ghiChu) || null,
+      ketLuan: KET_LUAN_NHAN[ketLuanHienTai({ coNgay: !!s?.exam_date, thangDuKien: plan.month, luu }) ?? ''] ?? null,
+      ghiChuHop: luu?.ghiChu ?? null,
     };
   });
   hv.sort((x, y) => x.lop.localeCompare(y.lop, 'vi', { numeric: true }) || x.ten.localeCompare(y.ten, 'vi'));

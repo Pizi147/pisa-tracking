@@ -386,6 +386,8 @@ CREATE TABLE learning_cycles (
   buoc_tiep_hen TEXT,
   -- OV-13q: hạn sau thi đã gia hạn (NULL = ngày thi + 7), người / lúc / lý do, số lần gia hạn (0 = hệ thống lúc chuyển luật).
   han_sau_thi TEXT, han_sau_thi_boi INTEGER, han_sau_thi_luc TEXT, han_sau_thi_ly_do TEXT, han_sau_thi_so_lan INTEGER NOT NULL DEFAULT 0,
+  -- OV-15f: Lịch thi — kết luận họp (giu-thang · chot-ngay · chuyen-thang · can-xac-nhan), tháng lúc kết luận, ghi chú họp + người / lúc ghi chú (NULL = chưa rà).
+  lich_thi_ket_luan TEXT, lich_thi_thang TEXT, lich_thi_ghi_chu TEXT, lich_thi_ghi_chu_boi INTEGER, lich_thi_ghi_chu_luc TEXT,
   UNIQUE (student_id, seq)
 );
 

@@ -28,8 +28,10 @@ const TEN_MAU: Record<MauXuatDs, string> = { 'co-ban': t('Danh sách cơ bản')
  * Nhận ĐÚNG danh sách em trang đang hiện (`ids`, `daChon`) + chữ bộ lọc (`boLoc`, vào sheet "Thông tin xuất"); máy chủ kiểm quyền từng em.
  * Nhớ mẫu / cột lần gần nhất (máy này). `macDinh` đặt sẵn mẫu / cột của nơi gọi (Lịch thi: cột Kết luận + Ghi chú). Bộ lọc giữ khi lỗi / sau khi tải.
  */
-export function NganXuatDs({ ids, daChon = [], boLoc, macDinh, mauMacDinh, onDong }: {
-  ids: number[]; daChon?: number[]; boLoc: string; macDinh?: KhoaCotXuatDs[]; mauMacDinh?: MauXuatDs; onDong: () => void;
+export function NganXuatDs({ ids, daChon = [], boLoc, macDinh, mauMacDinh, locSos, onDong }: {
+  ids: number[]; daChon?: number[]; boLoc: string; macDinh?: KhoaCotXuatDs[]; mauMacDinh?: MauXuatDs;
+  /** Bộ lọc góc Đang SOS của trang (tuần · phạm vi · chi nhánh · tìm) — máy chủ lấy cột SOS từ CHÍNH danh sách đó. */
+  locSos?: { tuan: string | null; phamVi: string | null; branchId: number | null; q: string | null }; onDong: () => void;
 }) {
   const toast = useToast();
   const uid = useSession().session?.user?.id ?? null;
@@ -49,7 +51,7 @@ export function NganXuatDs({ ids, daChon = [], boLoc, macDinh, mauMacDinh, onDon
     if (busy || !dsId.length) return;
     setBusy(true); setLoi(null); setXong(null);
     try {
-      const r = await api.post<KetQua>('/hoc-vien-lop/xuat', { ids: dsId, mau, cot: cotThuTu, boLoc, pham });
+      const r = await api.post<KetQua>('/hoc-vien-lop/xuat', { ids: dsId, mau, cot: cotThuTu, boLoc, pham, sos: locSos });
       await taiXlsx(r.sheets, r.tenTep);
       try { localStorage.setItem(khoaNho(uid), JSON.stringify({ mau, cot: cotThuTu })); } catch { /* không nhớ được thì lần sau chọn lại */ }
       const gio = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });

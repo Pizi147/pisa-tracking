@@ -11,6 +11,8 @@ export async function runPrOv15fTests(t: YThucTestKit) {
   const accounts: any = await import('../platform/accounts.ts');
   const util: any = await import('../util.ts');
   const d: any = await import('../../../shared/domain/index.ts');
+  const m15f: any = await import('../migrate/prOv15f.ts');
+  const Database = (await import('libsql')).default as any;
   const { getConfig, setConfig } = await import('../demoConfig.ts');
   const { createApp } = await import('../app.ts');
   const { xoaNho } = await import('../platform/nguCanhRequest.ts');
@@ -145,10 +147,14 @@ export async function runPrOv15fTests(t: YThucTestKit) {
       /* Giữ tháng: lịch không đổi, nhật ký có; ghi chú sau đó giữ kết luận */
       const g = await json(await goi(QL, `/hoc-vien-lop/lich-thi/${c.cy}`, put({ ketLuan: 'giu-thang' })));
       assert(g.ketLuan === 'giu-thang' && cuaEm(c.cy).exam_month === M1 && cuaEm(c.cy).exam_date === null, JSON.stringify(g));
-      assert(all(`SELECT 1 FROM audit_logs WHERE entity_type = 'lich_thi' AND entity_id = ?`, c.cy).length === 1, 'một dòng nhật ký');
+      assert(all(`SELECT 1 FROM audit_logs WHERE entity_type = 'lich_thi' AND entity_id = ?`, c.cy).length === 1, 'một dòng nhật ký (chỉ là nhật ký)');
+      const cc = one(`SELECT lich_thi_ket_luan, lich_thi_thang, lich_thi_ghi_chu FROM learning_cycles WHERE id = ?`, c.cy);
+      assert(cc.lich_thi_ket_luan === 'giu-thang' && cc.lich_thi_thang === M1 && cc.lich_thi_ghi_chu === null, `trạng thái nằm ở cột lộ trình: ${JSON.stringify(cc)}`);
       await json(await goi(QL, `/hoc-vien-lop/lich-thi/${c.cy}`, put({ ghiChu: 'Đăng ký IDP trước 30/10' })));
       const rc = await dong(c.sid);
       assert(rc.ketLuan === 'giu-thang' && rc.luu.ghiChu === 'Đăng ký IDP trước 30/10' && rc.luu.ai, `ghi chú giữ kết luận: ${JSON.stringify(rc.luu)}`);
+      const gc = one(`SELECT lich_thi_ghi_chu, lich_thi_ghi_chu_boi, lich_thi_ghi_chu_luc FROM learning_cycles WHERE id = ?`, c.cy);
+      assert(gc.lich_thi_ghi_chu === 'Đăng ký IDP trước 30/10' && gc.lich_thi_ghi_chu_boi === QL && !!gc.lich_thi_ghi_chu_luc, `người / lúc ghi chú: ${JSON.stringify(gc)}`);
       /* Cần xác nhận → rồi đổi tháng ở nơi khác thì là lần rà mới */
       await json(await goi(QL, `/hoc-vien-lop/lich-thi/${c.cy}`, put({ ketLuan: 'can-xac-nhan' })));
       assert((await dong(c.sid)).ketLuan === 'can-xac-nhan', 'cần xác nhận');
@@ -181,6 +187,12 @@ export async function runPrOv15fTests(t: YThucTestKit) {
       conn.prepare(`UPDATE students SET archived_at = ? WHERE id = ?`).run(NOW, b.sid);
       const e = await loi(await goi(QL, `/hoc-vien-lop/lich-thi/${b.cy}`, put({ ketLuan: 'giu-thang' })));
       assert(e.status === 400, `lưu trữ khoá: ${JSON.stringify(e)}`);
+      /* Ngoài phạm vi: QL chi nhánh khác và TVV chi nhánh khác không sửa được lịch thi của em chi nhánh này. */
+      const tvvCp = nguoi('consultant', ['CP']);
+      for (const [ai, ten] of [[P.cpManager.userId as number, 'QL CP'], [tvvCp, 'TVV CP']] as const) {
+        const x = await loi(await goi(ai, `/hoc-vien-lop/lich-thi/${a.cy}`, put({ ketLuan: 'can-xac-nhan' })));
+        assert(x.status === 403, `${ten} sửa em chi nhánh khác → 403: ${JSON.stringify(x)}`);
+      }
     });
   });
 
@@ -230,5 +242,62 @@ export async function runPrOv15fTests(t: YThucTestKit) {
       assert(['Đạt', 'Chưa đạt', 'Chưa đủ điểm'].includes(dong[dau.indexOf('Kết quả')]), `kết quả: ${dong[dau.indexOf('Kết quả')]}`);
       assert(dong[dau.indexOf('Target')] === '6.5', 'Target');
     });
+  });
+
+  await checkAsync('F15-8 · Lịch thi gồm cả lớp thường (em có tháng); nhóm "Chưa có dự kiến" chỉ em FT', async () => {
+    const thuong = one(`SELECT c.id FROM classes c JOIN programmes pg ON pg.code = c.programme_code WHERE pg.scoring_mode = 'ratio' AND c.status = 'active' AND c.branch_id = ? LIMIT 1`, MB)?.id as number | undefined;
+    assert(thuong, 'seed có lớp thường MB');
+    const coThang = em(thuong!, 'Võ Thường Có Tháng', { month: M3 });
+    const khong = em(thuong!, 'Võ Thường Không Dự Kiến');
+    const ft = em(lop(), 'Võ FT Không Dự Kiến');
+    await voiMayChu(async (goi) => {
+      const r = await json(await goi(QL, `/hoc-vien-lop/lich-thi?thang=${M3}`));
+      const rc = r.rows.find((x: any) => x.studentId === coThang.sid);
+      assert(rc && rc.thuong === true && rc.thangDuKien === M3 && !rc.chuaCo, `lớp thường có tháng vào danh sách: ${JSON.stringify(rc)}`);
+      assert(!r.rows.some((x: any) => x.studentId === khong.sid), 'lớp thường chưa có dự kiến KHÔNG vào nhóm "Chưa có"');
+      assert(r.rows.some((x: any) => x.studentId === ft.sid && x.chuaCo), 'em FT chưa có dự kiến vào nhóm "Chưa có"');
+      const s = await json(await goi(QL, `/hoc-vien-lop/lich-thi/${coThang.cy}`, put({ ketLuan: 'giu-thang' })));
+      assert(s.ketLuan === 'giu-thang', 'lớp thường lưu được kết luận');
+    });
+  });
+
+  await checkAsync('F15-9 · Xuất "Theo dõi SOS" lấy cột SOS từ CHÍNH danh sách Đang SOS (lượt mới nhất, cả lớp thường) + Case chỉ của các em trong tệp', async () => {
+    await voiMayChu(async (goi) => {
+      const t = await json(await goi(QL, '/hoc-vien-lop?goc=sos&tuan=tat-ca'));
+      const moiNhat = new Map<number, any>();
+      for (const r of t.rows) { const cu = moiNhat.get(r.studentId); if (!cu || r.tuan > cu.tuan) moiNhat.set(r.studentId, r); }
+      assert(moiNhat.size > 0, 'bộ demo có em SOS');
+      const mau = [...moiNhat.values()].filter((r) => r.ft).slice(0, 2).concat([...moiNhat.values()].filter((r) => !r.ft).slice(0, 1));
+      assert(mau.some((r) => !r.ft), 'có em lớp thường SOS để kiểm');
+      const x = await json(await goi(QL, '/hoc-vien-lop/xuat', post({ ids: mau.map((r) => r.studentId), mau: 'theo-doi-sos', boLoc: 'Đang SOS', xemTruoc: true, sos: { tuan: 'tat-ca' } })));
+      const [dau, ...dong] = x.sheets[0].aoa;
+      const k = (ten: string) => dau.indexOf(ten);
+      for (const r of mau) {
+        const h = dong.find((z: any[]) => z[k('Tên học sinh')] === r.ten);
+        assert(h, `thiếu em ${r.ten}`);
+        assert(h[k('Mức SOS')] === `SOS ${r.sosLevel}` && h[k('MT liên quan')] === r.luot, `${r.ten}: ${h[k('Mức SOS')]} / ${h[k('MT liên quan')]} ≠ SOS ${r.sosLevel} / ${r.luot}`);
+        assert(h[k('Tạm / Chính thức')] === (r.tam ? 'Tạm' : 'Chính thức'), `${r.ten}: tạm / chính thức`);
+        assert((h[k('Kỹ năng cần xử lý')] ?? '') !== '' || r.kyNang.length === 0, `${r.ten}: kỹ năng`);
+        if (r.cases.some((c: any) => !c.done)) assert(!!h[k('Trạng thái Case')], `${r.ten}: có Case mở thì có trạng thái Case`);
+      }
+      /* Em không có lượt SOS trong bộ lọc → để trống (không tự tính SOS riêng cho tệp). */
+      const ngoai = one(`SELECT s.id FROM students s JOIN enrollments e ON e.student_id = s.id AND e.status = 'active' JOIN classes c ON c.id = e.class_id WHERE c.branch_id = ? ORDER BY s.id DESC LIMIT 1`, MB).id as number;
+      if (!moiNhat.has(ngoai)) {
+        const y = await json(await goi(QL, '/hoc-vien-lop/xuat', post({ ids: [ngoai], mau: 'theo-doi-sos', xemTruoc: true, sos: { tuan: 'tat-ca' } })));
+        assert(y.sheets[0].aoa[1][y.sheets[0].aoa[0].indexOf('Mức SOS')] === null, 'em không SOS → ô trống');
+      }
+    });
+  });
+
+  check('F15-10 · migrate prOv15f: thêm đúng 5 cột NULL trên learning_cycles giống schema.sql; chạy lần hai không làm gì', () => {
+    const tam = new Database(':memory:');
+    tam.exec('CREATE TABLE learning_cycles (id INTEGER PRIMARY KEY)');
+    const ap: string[] = [];
+    m15f.themCotPrOv15f(tam, ap);
+    m15f.themCotPrOv15f(tam, ap);
+    assert(ap.length === 1, JSON.stringify(ap));
+    const cot = (c: any) => c.prepare(`SELECT name, type, "notnull" AS nn, dflt_value AS dv FROM pragma_table_info('learning_cycles') WHERE name LIKE 'lich_thi_%' ORDER BY name`).all().map((x: any) => `${x.name}:${x.type}:${x.nn}:${x.dv}`).join(',');
+    assert(cot(tam) === cot(conn) && cot(conn).split(',').length === 5, `${cot(tam)} ≠ ${cot(conn)}`);
+    tam.close();
   });
 }

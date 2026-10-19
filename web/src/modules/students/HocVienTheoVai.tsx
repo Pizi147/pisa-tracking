@@ -321,7 +321,7 @@ export function HocVienTheoVai({ vai }: { vai: 'tvv' | 'cx' }) {
       {goc === 'lich-thi' && (
         <GocLichThi duongGoc={vai === 'tvv' ? `?phamVi=${phamViUrl ?? 'cua-toi'}` : cn ? `?branchId=${cn}` : '?phamVi=tat-ca'} thangUrl={params.get('thang')} onDoiThang={(m) => setParam({ thang: m.join(',') })} />
       )}
-      {xuat && goc !== 'lich-thi' && <NganXuatDs ids={idsXuat} boLoc={dangXem} mauMacDinh={goc === 'sos' ? 'theo-doi-sos' : undefined} onDong={() => setXuat(false)} />}
+      {xuat && goc !== 'lich-thi' && <NganXuatDs ids={idsXuat} boLoc={dangXem} mauMacDinh={goc === 'sos' ? 'theo-doi-sos' : undefined} locSos={{ tuan, phamVi: phamViUrl, branchId: cnTvv ?? cn, q: q.trim() || null }} onDong={() => setXuat(false)} />}
       {panelEm !== null && <PanelMotEm key={panelEm} studentId={panelEm} onClose={() => setPanelEm(null)} />}
       {buocTiep && <PanelBuocTiep cycleId={buocTiep.cycleId} hocVien={buocTiep.em} lop={buocTiep.lop} onClose={() => setBuocTiep(null)} onDone={trang.reload} />}
       {suaEm && <SuaThongTinMotEm viec={suaEm.viec} studentId={suaEm.id} studentName={suaEm.ten} lop={suaEm.lop} onClose={() => setSuaEm(null)} onDone={() => { setSuaEm(null); trang.reload(); }} />}

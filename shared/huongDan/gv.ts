@@ -53,7 +53,7 @@ export const HD_GV: HuongDan = {
           chi: { hd: 'tim-hv', chu: 'Gõ tên, email em hoặc mã lớp.' } },
         { id: 'hv-goc', ten: 'Ba góc nhìn', buoc: ['<b>Tất cả</b> (lọc <b>Đã thi · chờ kết quả</b>) · <b>Đang SOS</b> (mặc định <b>Toàn bộ</b> 8 tuần, chọn được tuần thi) · <b>Cần làm</b>.', 'Bấm dòng em mở panel một em, không rời trang.'] },
         { id: 'hv-lich-thi', ten: 'Lịch thi và xuất Excel', buoc: ['Góc <b>Lịch thi</b>: chọn tháng ở <b>Dự kiến thi</b> → bấm <b>Kết luận</b> ngay trên hàng (<b>Giữ tháng</b> · <b>Chốt ngày</b> · <b>Chuyển tháng</b> · <b>Cần xác nhận</b>); lưu ngay vào lịch thi của em, không bước duyệt.', '<b>Xuất Excel · n HV</b>: xuất đúng danh sách đang lọc; chọn mẫu <b>Danh sách cơ bản</b> · <b>Theo dõi SOS</b> · <b>Kết quả thi</b> hoặc <b>Chọn cột</b>.', 'Danh sách dài: 10 dòng một trang, chọn 20 / 50 ở đầu và cuối bảng.'],
-          chi: { hd: 'hvl-lich-thi', duong: '/hoc-vien', chu: 'Chọn tháng thi ở hàng này.' } },
+          chi: { hd: 'hvl-goc', duong: '/hoc-vien', chu: 'Bấm <b>Lịch thi</b> ở hàng này.' } },
       ],
     },
     {

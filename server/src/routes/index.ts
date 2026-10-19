@@ -1456,7 +1456,7 @@ api.put('/hoc-vien-lop/lich-thi/:cycleId', requireAuth, wrap((req) => {
 /** OV-15f (C31): Xuất Excel danh sách học viên — nhận chính danh sách em web đang hiện (kế thừa bộ lọc), kiểm quyền xem từng em. `xemTruoc` không ghi nhật ký. */
 api.post('/hoc-vien-lop/xuat', requireAuth, wrap((req) => xuatDsSvc.xuatDanhSach(principalOf(req), {
   ids: Array.isArray(req.body?.ids) ? req.body.ids.map(Number).filter((n: number) => Number.isInteger(n) && n > 0) : [],
-  mau: req.body?.mau, cot: req.body?.cot, boLoc: req.body?.boLoc, pham: req.body?.pham, xemTruoc: !!req.body?.xemTruoc,
+  mau: req.body?.mau, cot: req.body?.cot, boLoc: req.body?.boLoc, pham: req.body?.pham, xemTruoc: !!req.body?.xemTruoc, sos: req.body?.sos,
 })));
 
 /** OV-12f: Panel một em (Học viên & Lớp › Mở) — mọi Case em người xem được thấy, tóm tắt cùng hàm với Đang SOS; ngoài phạm vi 403. */
