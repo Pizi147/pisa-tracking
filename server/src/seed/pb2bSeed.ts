@@ -16,6 +16,7 @@ import { xacNhanXuLy } from '../yThuc/xuLy.ts';
 import { recordIntervention, reportIssue, updateResult } from '../cases/cases.ts';
 import { issuesForTopic } from '../../../shared/domain/index.ts';
 import { emailThu } from './emailThu.ts';
+import { idTutor } from './tuSeed.ts';
 
 /**
  * PR-Pb2-b (Task 1) — BÙ ba cột ngày nghiệp vụ cho dữ liệu seed dựng thẳng bằng SQL (không qua `saveScore` / `recordViolation` / xử lý).
@@ -185,7 +186,13 @@ export function buildPb2bDemo(ctx: BuildCtx): { gv: number; lop: number } {
     const ivId = (iv?.interventions?.[0]?.id ?? (conn.prepare('SELECT MAX(id) AS id FROM case_interventions WHERE case_id = ?').get(c.id) as any).id) as number;
     updateResult(admin, ivId, { decision: 'end', outcome, observedOn: '2026-09-11', completedOn: '2026-09-11', note: 'Bài kiểm tra nhỏ cuối đợt làm tốt hơn hẳn.',
       /* OV-12h: mọi PA Tutor ghi Số buổi kỳ này + một dòng mỗi buổi. */
-      ...(kind === 'tutor' ? { soBuoi: 2, buoi: [{ tutor: 'Ms Mai', nhanXet: 'Nghe chép số điện thoại, đúng 8/10' }, { tutor: 'Ms Mai', nhanXet: 'Nghe tên riêng Part 1, còn sót 2 tên' }] } : {}) } as any);
+      /* TU-a: buổi 1 tutor danh sách (đánh giá 4), buổi 2 tên gõ tay "Ms Mai" — Không xin tài liệu đúng hạn, đánh giá 2/5. */
+      ...(kind === 'tutor' ? { soBuoi: 2, buoi: [
+        { tutorId: idTutor(conn, 'Nguyễn Thu Lan'), tutor: 'Nguyễn Thu Lan', nhanXet: 'Nghe chép số điện thoại, đúng 8/10', hinhThuc: 'offline',
+          chuanBi: true, taiLieu: true, feedbackGv: true, danhGia: 4 },
+        { tutor: 'Ms Mai', nhanXet: 'Nghe tên riêng Part 1, còn sót 2 tên', chuanBi: true, taiLieu: false, feedbackGv: true, danhGia: 2,
+          nhanXetTutor: 'Gửi tài liệu muộn một ngày, em chưa kịp xem trước.' },
+      ] } : {}) } as any);
   };
   paGvThem(em[3].id, 'listening', huong, 'tutor', 'Listening: nghe sót số và tên riêng', 'improved');
   paGvThem(em[1].id, 'writing1', duyen, 'extra_homework', 'Writing Task 1: mô tả xu hướng chưa đủ số liệu', 'partial');

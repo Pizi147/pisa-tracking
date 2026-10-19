@@ -28,7 +28,7 @@ export type NhomNguoi = (typeof NHOM_NGUOI)[number];
 export type NguoiChon =
   | { kieu: 'toi' }
   | { kieu: 'tai_khoan'; id: number; ten: string; phu?: string }
-  | { kieu: 'ngoai'; ten: string };
+  | { kieu: 'ngoai'; ten: string; /** TU-a: dòng phụ khi hiện (Tutor, Tutor khác) — không gửi máy chủ. */ phu?: string };
 
 /** Payload gửi máy chủ cho PA HỌC THUẬT — cột `performer_user_id` / `performer_name`. */
 export function nguoiThanhPayload(v: NguoiChon | null): {

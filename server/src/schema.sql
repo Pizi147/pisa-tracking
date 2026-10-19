@@ -1273,8 +1273,50 @@ CREATE TABLE case_followup_buoi (
   buoi_so INTEGER NOT NULL,
   tutor_ten TEXT NOT NULL,
   nhan_xet TEXT NOT NULL,
+  /* TU-a (đặc tả Tutor mục 3.2) — chỉ thêm, dòng cũ NULL. Chọn tutor danh sách: `tutor_id` + tên chụp lúc ghi; "Tutor khác": chỉ `tutor_ten`.
+     3 ô Có (1) / Không (0) bắt buộc từ TU-a; dòng cũ NULL không vào mẫu số. `lop_id` = lớp em lúc ghi (phạm vi QL); `ghi_luc` = lúc ghi 3 ô / đánh giá
+     (sửa không đổi 3 ô + đánh giá thì giữ). */
+  tutor_id INTEGER REFERENCES tutors(id),
+  hinh_thuc TEXT CHECK (hinh_thuc IN ('offline','online')),
+  chuan_bi INTEGER,
+  tai_lieu INTEGER,
+  feedback_gv INTEGER,
+  danh_gia INTEGER CHECK (danh_gia BETWEEN 1 AND 5),
+  nhan_xet_tutor TEXT,
+  lop_id INTEGER REFERENCES classes(id),
+  ghi_luc TEXT,
   UNIQUE (followup_id, buoi_so)
 );
+CREATE INDEX idx_followup_buoi_tutor ON case_followup_buoi(tutor_id);
+
+/*
+ * TU-a: DANH SÁCH TUTOR (không phải tài khoản — tutor không đăng nhập). Bắt buộc chỉ Tên + Kỹ năng (chủ SP 20/10); SĐT chuẩn hoá chữ số, duy nhất khi có;
+ * Nơi dạy ba trạng thái: chi nhánh · Chỉ online (`chi_online = 1`) · chưa có (cả hai trống). Kỹ năng: tập con `L,R,W1,W2,S`, thứ tự cố định.
+ */
+CREATE TABLE tutors (
+  id INTEGER PRIMARY KEY,
+  ten TEXT NOT NULL,
+  sdt TEXT,
+  noi_day_branch_id INTEGER REFERENCES branches(id),
+  chi_online INTEGER NOT NULL DEFAULT 0,
+  ky_nang TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  created_by INTEGER REFERENCES users(id),
+  updated_at TEXT,
+  updated_by INTEGER REFERENCES users(id)
+);
+CREATE UNIQUE INDEX idx_tutors_sdt ON tutors(sdt) WHERE sdt IS NOT NULL;
+/* TU-a: nhận xét + kết luận của Head tutor / Quản trị về một tutor (TU-b ghi). Kết luận mới nhất "ngung" → bỏ khỏi ô chọn tutor. */
+CREATE TABLE tutor_nhan_xet (
+  id INTEGER PRIMARY KEY,
+  tutor_id INTEGER NOT NULL REFERENCES tutors(id),
+  ket_luan TEXT NOT NULL CHECK (ket_luan IN ('on','can_cai_thien','ngung')),
+  noi_dung TEXT NOT NULL,
+  nguoi_id INTEGER NOT NULL REFERENCES users(id),
+  luc TEXT NOT NULL,
+  sua_luc TEXT
+);
+CREATE INDEX idx_tutor_nhan_xet ON tutor_nhan_xet(tutor_id, luc);
 
 /*
  * LỊCH SỬ ĐIỀU CHỈNH PHƯƠNG ÁN HỌC THUẬT (PR-S2 · S2 · rulebook §18.2 điểm 2 · nguồn §7).

@@ -30,6 +30,8 @@ export async function runPrOv12hTests(t: any) {
     try { xoaNho(); return fn(); } finally { conn.exec('ROLLBACK'); xoaNho(); }
   };
   const GV = P.lrTeacher;
+  /* TU-a: 3 ô "Tutor buổi này" bắt buộc ở mọi lần ghi mới. */
+  const CO3 = { chuanBi: true, taiLieu: true, feedbackGv: true };
   const LOP = classId('MB FT 101');
   let seq = 0;
   const em = (): number => {
@@ -98,19 +100,19 @@ export async function runPrOv12hTests(t: any) {
     const { caseId, ivId } = caseVaPa(em(), { kind: 'tutor', description: 'Tutor Listening 1-1', soBuoi: 6, performerName: 'Tutor ngoài' });
     const vao = (x: Record<string, unknown>) => ({ decision: 'keep', outcome: 'partial', note: 'Hai buổi tutor, đúng thêm 3 câu', observedOn: TODAY, soBuoi: 2, ...x });
     assert(maLoi(() => cases.updateResult(GV, ivId, vao({}))) === 400, 'không gửi dòng buổi phải 400');
-    assert(maLoi(() => cases.updateResult(GV, ivId, vao({ buoi: [{ tutor: 'Ms Lan', nhanXet: 'Luyện số đếm, em tiến bộ' }] }))) === 400, 'thiếu một dòng phải 400');
-    assert(maLoi(() => cases.updateResult(GV, ivId, vao({ buoi: [{ tutor: 'Ms Lan', nhanXet: 'Luyện số đếm' }, { tutor: ' ', nhanXet: 'Luyện bản đồ' }] }))) === 400, 'tên tutor trống phải 400');
-    assert(maLoi(() => cases.updateResult(GV, ivId, vao({ buoi: [{ tutor: 'Ms Lan', nhanXet: 'Luyện số đếm' }, { tutor: 'Mr Nam', nhanXet: '' }] }))) === 400, 'nhận xét trống phải 400');
+    assert(maLoi(() => cases.updateResult(GV, ivId, vao({ buoi: [{ tutor: 'Ms Lan', nhanXet: 'Luyện số đếm, em tiến bộ', ...CO3 }] }))) === 400, 'thiếu một dòng phải 400');
+    assert(maLoi(() => cases.updateResult(GV, ivId, vao({ buoi: [{ tutor: 'Ms Lan', nhanXet: 'Luyện số đếm', ...CO3 }, { tutor: ' ', nhanXet: 'Luyện bản đồ', ...CO3 }] }))) === 400, 'tên tutor trống phải 400');
+    assert(maLoi(() => cases.updateResult(GV, ivId, vao({ buoi: [{ tutor: 'Ms Lan', nhanXet: 'Luyện số đếm', ...CO3 }, { tutor: 'Mr Nam', nhanXet: '', ...CO3 }] }))) === 400, 'nhận xét trống phải 400');
     assert(get('SELECT COUNT(*) n FROM case_followups WHERE intervention_id = ?', ivId).n === 0, 'lỗi mà vẫn ghi');
-    cases.updateResult(GV, ivId, vao({ buoi: [{ tutor: 'Ms Lan', nhanXet: 'Luyện số đếm, em tiến bộ' }, { tutor: 'Mr Nam', nhanXet: 'Luyện bản đồ, còn sai hướng' }] }));
+    cases.updateResult(GV, ivId, vao({ buoi: [{ tutor: 'Ms Lan', nhanXet: 'Luyện số đếm, em tiến bộ', ...CO3 }, { tutor: 'Mr Nam', nhanXet: 'Luyện bản đồ, còn sai hướng', ...CO3 }] }));
     const f = get('SELECT id FROM case_followups WHERE intervention_id = ? ORDER BY id DESC LIMIT 1', ivId);
     const dong = conn.prepare('SELECT buoi_so, tutor_ten, nhan_xet FROM case_followup_buoi WHERE followup_id = ? ORDER BY buoi_so').all(f.id) as any[];
     assert(dong.length === 2 && dong[0].tutor_ten === 'Ms Lan' && dong[1].buoi_so === 2 && dong[1].nhan_xet === 'Luyện bản đồ, còn sai hướng', `dòng: ${JSON.stringify(dong)}`);
     const ls = cases.caseDetail(GV, caseId).followups.find((x: any) => x.id === f.id);
     assert(ls?.buoi?.length === 2 && ls.buoi[1].tutor === 'Mr Nam', `lịch sử: ${JSON.stringify(ls?.buoi)}`);
     /* Sửa lần ghi (OV-7b, giữ lựa chọn = sửa chữ): thiếu dòng → 400; đủ → thay đúng 2 dòng. */
-    assert(maLoi(() => cases.suaKetQua(GV, f.id, vao({ buoi: [{ tutor: 'Ms Lan', nhanXet: 'Sửa nhận xét buổi 1' }] }))) === 400, 'sửa thiếu dòng phải 400');
-    cases.suaKetQua(GV, f.id, vao({ buoi: [{ tutor: 'Ms Lan', nhanXet: 'Sửa nhận xét buổi 1' }, { tutor: 'Mr Nam', nhanXet: 'Luyện bản đồ, còn sai hướng' }] }));
+    assert(maLoi(() => cases.suaKetQua(GV, f.id, vao({ buoi: [{ tutor: 'Ms Lan', nhanXet: 'Sửa nhận xét buổi 1', ...CO3 }] }))) === 400, 'sửa thiếu dòng phải 400');
+    cases.suaKetQua(GV, f.id, vao({ buoi: [{ tutor: 'Ms Lan', nhanXet: 'Sửa nhận xét buổi 1', ...CO3 }, { tutor: 'Mr Nam', nhanXet: 'Luyện bản đồ, còn sai hướng', ...CO3 }] }));
     const sau = conn.prepare('SELECT nhan_xet FROM case_followup_buoi WHERE followup_id = ? ORDER BY buoi_so').all(f.id) as any[];
     assert(sau.length === 2 && sau[0].nhan_xet === 'Sửa nhận xét buổi 1', `sau sửa: ${JSON.stringify(sau)}`);
     /* Kỳ 0 buổi (em nghỉ): không cần dòng. */
@@ -123,7 +125,7 @@ export async function runPrOv12hTests(t: any) {
     const kq = { decision: 'keep', outcome: 'partial', note: 'Một buổi tutor, đúng thêm 2 câu', observedOn: TODAY };
     assert(maLoi(() => cases.updateResult(GV, ivId, kq)) === 400, 'không Số buổi kỳ này phải 400');
     assert(maLoi(() => cases.updateResult(GV, ivId, { ...kq, soBuoi: 1 })) === 400, 'thiếu dòng buổi phải 400');
-    cases.updateResult(GV, ivId, { ...kq, soBuoi: 1, buoi: [{ tutor: 'Ms Lan', nhanXet: 'Luyện số đếm, còn nhầm 15 và 50' }] });
+    cases.updateResult(GV, ivId, { ...kq, soBuoi: 1, buoi: [{ tutor: 'Ms Lan', nhanXet: 'Luyện số đếm, còn nhầm 15 và 50', ...CO3 }] });
     const f = get('SELECT id, so_buoi FROM case_followups WHERE intervention_id = ? ORDER BY id DESC LIMIT 1', ivId);
     assert(f.so_buoi === 1 && get('SELECT COUNT(*) n FROM case_followup_buoi WHERE followup_id = ?', f.id).n === 1, `lần ghi: ${JSON.stringify(f)}`);
     /* Lần ghi CŨ (trước OV-12h: không số buổi, không dòng) — sửa chữ không hỏi số buổi / dòng. */

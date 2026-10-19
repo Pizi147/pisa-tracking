@@ -10,7 +10,7 @@ export async function runPrPaTests(t: YThucTestKit) {
   const d: any = await import('../../../shared/domain/index.ts');
   const casesGoc: any = await import('../cases/cases.ts');
   /* OV-12h: Kết quả PA Tutor có Số buổi bắt buộc n dòng buổi — các ca cũ (đếm buổi, người dạy) tự kèm n dòng mẫu khi không gửi; luật dòng buổi ở prOv12h. */
-  const buoiMau = (n: unknown) => Array.from({ length: Number(n) || 0 }, (_, i) => ({ tutor: 'Tutor thử', nhanXet: `Buổi ${i + 1} em làm đủ bài` }));
+  const buoiMau = (n: unknown) => Array.from({ length: Number(n) || 0 }, (_, i) => ({ tutor: 'Tutor thử', nhanXet: `Buổi ${i + 1} em làm đủ bài`, chuanBi: true, taiLieu: true, feedbackGv: true }));   // TU-a: 3 ô bắt buộc
   const cases: any = { ...casesGoc, updateResult: (p: any, id: number, x: any, o?: any) => casesGoc.updateResult(p, id, x?.buoi === undefined ? { ...x, buoi: buoiMau(x?.soBuoi) } : x, o) };
   const taoPa: any = await import('../cases/taoPa.ts');
   const intake: any = await import('../classes/intake.ts');

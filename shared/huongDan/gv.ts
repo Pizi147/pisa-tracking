@@ -27,7 +27,7 @@ export const HD_GV: HuongDan = {
     {
       id: 'ket-qua-pa', ten: 'Ghi kết quả PA', khi: '2 tuần · hết Thứ Ba',
       buoc: ['PA đang chạy: ghi mỗi kỳ <b>2 tuần</b>, hạn <b>Thứ Ba</b> sau kỳ.', 'PA không đếm buổi: ghi ngay trên dòng — <b>Tiến triển (2 tuần)</b>, <b>Nhận xét</b>, <b>Lưu</b> (PA giữ nguyên, <b>Hoàn tác</b> 10 giây).',
-        'Tutor, PA có số buổi, lần ghi cuối, Bổ trợ miễn phí: luôn mở panel.',
+        'Tutor, PA có số buổi, lần ghi cuối, Bổ trợ miễn phí: luôn mở panel. Tutor: mỗi buổi chọn tutor (chưa có: <b>Tutor khác</b>), <b>Nhận xét buổi</b>, 3 ô <b>Có · Không</b> (<b>Cả 3 Có</b>); <b>Đánh giá tutor</b> tuỳ chọn.',
         'Cần đổi: <b>Điều chỉnh…</b> (PA quy chế) hoặc <b>Điều chỉnh / Kết thúc…</b>; tới mốc: việc "Kết quả cuối · tên PA", nút <b>Kết quả cuối</b>.'],
       chi: { hd: 'cv-dong', duong: '/cong-viec', chu: 'Việc Case, PA nằm ở nhóm <b>Case học thuật</b>.' },
     },

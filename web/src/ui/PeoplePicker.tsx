@@ -4,7 +4,7 @@ import { Info } from './ui.tsx';
 import { BaoOTrongNhan } from './ONgay.tsx';
 import { buocDanhSach, chotChuGo, locNguoiChon, skillShort, type NguoiChon } from '@shared/domain/index.ts';
 import { useSession } from '../lib/session.tsx';
-import { t } from '@shared/i18n/index.ts';
+import { dich, t } from '@shared/i18n/index.ts';
 
 export type Person = { id: number; name: string; title: string | null; role: string | null; branches: string[] };
 
@@ -172,6 +172,39 @@ function useNguoiSearch(
   return { rows, loading };
 }
 
+/** TU-a: một dòng của `GET /tutors/chon` (máy chủ `tutors/chon.ts`). */
+export type TutorChon = { id: number; ten: string; noiDay: string | null; kyNang: string; sdtDuoi: string | null; goiY: boolean; hinhThuc: 'offline' | 'online' | null };
+export type KetQuaTutorChon = { ds: TutorChon[]; dienSan: { tutorId: number | null; ten: string; hinhThuc: 'offline' | 'online' | null } | null; nhomGoiY: string | null };
+/** Tham số ô chọn tutor: `paId` (buổi của Ghi kết quả PA Tutor) hoặc `studentId` (ô Người dạy PA Tutor). `chi`: chỉ tutor (ô Tutor của buổi). */
+export type ThamSoTutor = { paId?: number | null; studentId?: number | null; chi?: boolean };
+
+// ponytail: chép khuôn trễ + bộ đếm lượt của `useNguoiSearch` (khác kiểu trả về); gộp một hook chung khi có nơi gọi thứ ba.
+function useTutorChon(term: string, tutor: ThamSoTutor | undefined, active: boolean) {
+  const [kq, setKq] = useState<KetQuaTutorChon | null>(null);
+  const [loading, setLoading] = useState(false);
+  const seq = useRef(0);
+  const khoa = tutor ? `${tutor.paId ?? ''}:${tutor.studentId ?? ''}` : '';
+  useEffect(() => {
+    if (!active || !khoa) { setKq(null); return; }
+    const my = ++seq.current;
+    setLoading(true);
+    const h = setTimeout(async () => {
+      try {
+        const qs = new URLSearchParams({ q: term.trim() });
+        if (tutor?.paId) qs.set('paId', String(tutor.paId)); else if (tutor?.studentId) qs.set('studentId', String(tutor.studentId));
+        const r = await api.get<KetQuaTutorChon>(`/tutors/chon?${qs.toString()}`);
+        if (my === seq.current) setKq(r);
+      } catch { if (my === seq.current) setKq(null); } finally { if (my === seq.current) setLoading(false); }
+    }, 250);
+    return () => clearTimeout(h);
+  }, [term, khoa, active]); // eslint-disable-line react-hooks/exhaustive-deps
+  return { kq, loading };
+}
+
+/** Dòng phụ của một tutor: `L · R · Monbay · …908` (3 số cuối SĐT, không đủ số — đặc tả Tutor mục 12.5). */
+export const phuTutor = (x: TutorChon) =>
+  [x.kyNang.split(',').join(' · '), x.noiDay ? dich(x.noiDay) : t('Chưa có nơi dạy'), x.sdtDuoi ? `…${x.sdtDuoi}` : null].filter(Boolean).join(' · ');
+
 /** `dạy L · R lớp này` · hoặc `vai · chi nhánh` cho một dòng kết quả tìm. */
 function nguoiContextOf(r: NguoiKetQua): string {
   if (r.cungLop && r.monDay.length) return t('dạy {mon} lớp này', { mon: r.monDay.map(skillShort).join(' · ') });
@@ -179,7 +212,11 @@ function nguoiContextOf(r: NguoiKetQua): string {
 }
 
 /** Một người trong danh sách của ô: tên + dòng phụ (vai · chi nhánh, "3 lớp — dạy được L", mã học viên…). */
-export type NguoiTrongDs = { id: number; ten: string; phu?: string };
+export type NguoiTrongDs = { id: number; ten: string; phu?: string;
+  /** TU-a: tiêu đề nhóm vẽ trước dòng đầu của nhóm ("Monbay · L", "Khác", "Tutor", "Giáo viên"). */
+  nhom?: string;
+  /** TU-a: dòng là một tutor (`/tutors/chon`), không phải tài khoản. */
+  tutor?: TutorChon };
 
 type ChonNguoiOption =
   | { kind: 'trong' }
@@ -200,10 +237,10 @@ type ChonNguoiOption =
  */
 export function ChonNguoi({
   value, onChange, nhom, studentId, choToi = true, choNgoai = true, cungChiNhanh = false,
-  khongDoi, macDinhTrong, ariaLabel, disabled, tuMo, ds, choTrong, placeholder, id, onBlur, invalid, khongKhop,
+  khongDoi, macDinhTrong, ariaLabel, disabled, tuMo, ds, choTrong, placeholder, id, onBlur, invalid, khongKhop, tutor,
 }: {
   value: NguoiChon | null;
-  onChange: (v: NguoiChon | null) => void;
+  onChange: (v: NguoiChon | null, tutor?: TutorChon) => void;
   nhom: 'giao_vien' | 'nhan_vien';
   studentId?: number | null;
   choToi?: boolean; choNgoai?: boolean;
@@ -225,6 +262,12 @@ export function ChonNguoi({
   id?: string; onBlur?: () => void; invalid?: boolean;
   /** Chữ khi gõ không khớp ai (ô gõ tên lớp, PR-LCb: `Không có lớp khớp “…”`). */
   khongKhop?: (go: string) => string;
+  /**
+   * TU-a (đặc tả Tutor mục 5, 6): danh sách tutor. `chi` — ô Tutor của một buổi: chỉ tutor (gợi ý trước, "Khác" sau), dòng cuối "Tutor khác: «…»";
+   * chọn tutor → `{ kieu: 'tai_khoan', id: tutorId }`. Không `chi` — ô Người dạy PA Tutor: nhóm "Tutor" đứng đầu, chọn tutor lưu như người ngoài (tên).
+   * Đối số thứ hai của `onChange` là dòng tutor đã chọn (hình thức tự suy, điền sẵn buổi).
+   */
+  tutor?: ThamSoTutor;
 }) {
   const { session } = useSession();
   const [editing, setEditing] = useState(!value && khongDoi === undefined && macDinhTrong === undefined);
@@ -234,10 +277,21 @@ export function ChonNguoi({
   const box = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const uid = useId();
-  const tim = useNguoiSearch(term, nhom, studentId, editing && !ds, cungChiNhanh);
-  const rows = useMemo<NguoiTrongDs[]>(() => (ds ? locNguoiChon(ds, term)
-    : tim.rows.map((r) => ({ id: r.id, ten: r.name, phu: nguoiContextOf(r) }))), [ds, term, tim.rows]);
-  const loading = !ds && tim.loading;
+  const chiTutor = !!tutor?.chi;
+  const tim = useNguoiSearch(term, nhom, studentId, editing && !ds && !chiTutor, cungChiNhanh);
+  const tt = useTutorChon(term, tutor, editing && open && !!tutor);   // chỉ nạp khi danh sách mở
+  const rows = useMemo<NguoiTrongDs[]>(() => {
+    /* TU-a: tutor — gợi ý (nơi dạy = chi nhánh lớp + kỹ năng PA) rồi "Khác"; ô Người dạy: nhóm "Tutor" trước người. */
+    const dsTutor: NguoiTrongDs[] = (tt.kq?.ds ?? []).map((x) => ({
+      id: x.id, ten: x.ten, phu: phuTutor(x), tutor: x,
+      nhom: chiTutor ? (x.goiY ? tt.kq?.nhomGoiY ?? t('Gợi ý') : t('Khác')) : t('Tutor'),
+    }));
+    if (chiTutor) return dsTutor;
+    const nguoi: NguoiTrongDs[] = ds ? locNguoiChon(ds, term)
+      : tim.rows.map((r) => ({ id: r.id, ten: r.name, phu: nguoiContextOf(r), ...(dsTutor.length ? { nhom: nhom === 'giao_vien' ? t('Giáo viên') : t('Nhân viên') } : {}) }));
+    return [...dsTutor, ...nguoi];
+  }, [ds, term, tim.rows, tt.kq, chiTutor, nhom]);
+  const loading = (!ds && !chiTutor && tim.loading) || (!!tutor && tt.loading && !tt.kq);
   const oId = id ?? `${uid}-o`;
   /* Nằm dưới Truong/Field: nhãn trỏ vào ô gõ (label htmlFor), không bọc cả danh sách + nút "Đổi" (`BaoOTrongNhan`). */
   const bao = useContext(BaoOTrongNhan);
@@ -280,8 +334,9 @@ export function ChonNguoi({
     if (tat(opt)) return;
     if (opt.kind === 'trong') onChange(null);
     else if (opt.kind === 'toi') onChange({ kieu: 'toi' });
-    else if (opt.kind === 'nguoi') onChange({ kieu: 'tai_khoan', id: opt.row.id, ten: opt.row.ten, phu: opt.row.phu });
-    else onChange({ kieu: 'ngoai', ten: opt.text });
+    else if (opt.kind === 'nguoi' && opt.row.tutor && !chiTutor) onChange({ kieu: 'ngoai', ten: opt.row.ten, phu: t('Tutor') }, opt.row.tutor);
+    else if (opt.kind === 'nguoi') onChange({ kieu: 'tai_khoan', id: opt.row.id, ten: opt.row.ten, phu: opt.row.phu }, opt.row.tutor);
+    else onChange({ kieu: 'ngoai', ten: opt.text, ...(chiTutor ? { phu: t('Tutor khác') } : {}) });
     setTerm('');
     setOpen(false);
     /* Bỏ chọn ở ô không có chữ thay thế (phân công GV trống): ở lại ô gõ, không hiện "—" + Đổi. */
@@ -308,7 +363,7 @@ export function ChonNguoi({
     let chinh: string; let phu: string;
     if (value?.kieu === 'toi') { chinh = t('Tôi'); phu = session?.user?.fullName ?? ''; }
     else if (value?.kieu === 'tai_khoan') { chinh = value.ten; phu = value.phu ?? ''; }
-    else if (value?.kieu === 'ngoai') { chinh = value.ten; phu = t('ngoài hệ thống'); }
+    else if (value?.kieu === 'ngoai') { chinh = value.ten; phu = value.phu ?? t('ngoài hệ thống'); }
     else if (khongDoi !== undefined) { chinh = t('Không đổi · hiện: {gt}', { gt: khongDoi }); phu = ''; }
     else { chinh = macDinhTrong ?? (disabled ? t('Chưa chọn') : '—'); phu = ''; }
 
@@ -380,8 +435,12 @@ export function ChonNguoi({
         /* mousedown không lấy focus khỏi ô gõ (Safari không focus nút khi bấm) → rời ô không chạy trước cú bấm chọn. */
         <div id={`${uid}-listbox`} role="listbox" onMouseDown={(e) => e.preventDefault()} className="mt-1 max-h-56 overflow-y-auto surface-2 rounded-lg border" style={{ borderColor: 'var(--line-strong)' }}>
           {options.map((opt, i) => (
-            <Fragment key={opt.kind === 'nguoi' ? `u${opt.row.id}` : opt.kind}>
+            <Fragment key={opt.kind === 'nguoi' ? `${opt.row.tutor ? 't' : 'u'}${opt.row.id}` : opt.kind}>
               {opt.kind === 'ngoai' && trangThai}
+              {/* TU-a: tiêu đề nhóm trước dòng đầu của mỗi nhóm (không bấm, mũi tên bỏ qua). */}
+              {opt.kind === 'nguoi' && opt.row.nhom && (options[i - 1]?.kind !== 'nguoi' || (options[i - 1] as { row: NguoiTrongDs }).row.nhom !== opt.row.nhom) && (
+                <div role="presentation" className="px-3 pt-2 pb-0.5 text-[11.5px] font-semibold text-slate-500">{opt.row.nhom}</div>
+              )}
               <button
                 id={`${uid}-opt-${i}`}
                 role="option"
@@ -408,8 +467,8 @@ export function ChonNguoi({
                   </>
                 )}
                 {opt.kind === 'ngoai' && (tat(opt)
-                  ? <div className="text-sm text-slate-500">{t('Dùng tên ngoài hệ thống: gõ tên ở ô trên')}</div>
-                  : <div className="text-sm text-slate-100">{t('Dùng tên ngoài hệ thống: «{ten}»', { ten: opt.text })}</div>)}
+                  ? <div className="text-sm text-slate-500">{chiTutor ? t('Tutor khác: gõ tên ở ô trên') : t('Dùng tên ngoài hệ thống: gõ tên ở ô trên')}</div>
+                  : <div className="text-sm text-slate-100">{chiTutor ? t('Tutor khác: «{ten}»', { ten: opt.text }) : t('Dùng tên ngoài hệ thống: «{ten}»', { ten: opt.text })}</div>)}
               </button>
             </Fragment>
           ))}
