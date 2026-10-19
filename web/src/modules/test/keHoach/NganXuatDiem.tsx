@@ -95,7 +95,6 @@ export function NganXuatDiem({ branchId, lopFt, lopDau, onDong }: { branchId: nu
     <KhungPanel tieuDe={t('Xuất điểm Test')} onDong={onDong}
       chan={{
         huy: { onClick: onDong },
-        phu: hienTai ? <span className="hidden min-w-0 truncate text-xs text-slate-400 sm:inline" title={hienTai.tenTep}>{hienTai.tenTep}</span> : undefined,
         chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={!hienTai?.dem.luot || busy || !!loiNhap} onClick={() => void xuat()}>
           {busy ? t('Đang xuất…') : hienTai ? t('Xuất Excel · {n} lượt', { n: hienTai.dem.luot }) : t('Xuất Excel')}</button>,
       }}>
@@ -128,6 +127,7 @@ export function NganXuatDiem({ branchId, lopFt, lopDau, onDong }: { branchId: nu
           {loiMay ? <span className="text-bad">{loiMay}</span>
             : hienTai ? `${hienTai.boLoc} · ${t('Kèm sheet “Thông tin xuất”')}` : loiNhap ? '' : t('Đang tính…')}
         </p>
+        {hienTai && <p className="m-0 break-all text-xs text-slate-400">{t('Tên file')} <span className="text-slate-200">{hienTai.tenTep}</span></p>}
         {hienTai?.dem.luot === 0 && <p className="m-0 text-xs text-slate-400">{t('Không có lượt nào khớp — đổi phạm vi.')}</p>}
       </Khoi>
     </KhungPanel>

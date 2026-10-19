@@ -67,6 +67,7 @@ export const EN_OV15C = {
   'Không có lượt nào khớp — đổi phạm vi.': 'No tests match — change the scope.',
   'Xuất Excel · {n} lượt': 'Export Excel · {n} tests',
   'Đang tính…': 'Counting…',
+  'Tên file': 'File name',
   // Hướng dẫn (QL, Admin)
   "<b>+ Ghi chú lớp</b> dưới bảng. Chỉ là ghi chú, không dời lịch.": "<b>+ Class note</b> below the table. A note only — it does not move the schedule.",
   "<b>Tìm lớp, học viên hoặc email…</b>: chọn em → lớp mở, hàng em được đánh dấu.": "<b>Search class, student or email…</b>: pick a student → the class opens with the row highlighted.",
