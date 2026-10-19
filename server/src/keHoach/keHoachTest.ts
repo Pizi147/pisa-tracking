@@ -1289,6 +1289,8 @@ export function timKeHoach(p: Principal, i: { q: string; branchId: number | null
   const theoId = new Map(lop.map((l) => [l.id as number, l]));
   const loai = (l: any) => (l.mode === 'ratio' ? 'thuong' : 'ft') as 'ft' | 'thuong';
   const thoat = (s: string) => `%${s.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
+  /* shortcut: 60 em khớp đầu tiên của chi nhánh rồi mới lọc phạm vi lớp — đủ khi chọn chi nhánh (web luôn gửi); Quản trị không chọn chi nhánh mà tên quá
+     phổ biến có thể thiếu em ở lớp mình xem, khi đó lọc lớp trong SQL. */
   const hv = theoId.size ? (db().prepare(
     `SELECT s.id, s.full_name, s.email, e.class_id FROM students s
        JOIN enrollments e ON e.student_id = s.id AND e.status = 'active'

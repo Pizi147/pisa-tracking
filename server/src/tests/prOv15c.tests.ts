@@ -114,6 +114,12 @@ export async function runPrOv15cTests(t: YThucTestKit) {
       const k = all(`SELECT planned_period_id, sit_status FROM attempt_skills WHERE attempt_id = ? AND required = 1`, ida);
       assert(s.status === 'planned' && k.length === 4 && k.every((x) => x.planned_period_id === null && x.sit_status === 'scheduled'), JSON.stringify({ s, k }));
       assert(all(`SELECT 1 FROM attempt_schedule_history WHERE attempt_id = ? AND action = 'skill_unscheduled'`, ida).length === 4, 'lịch sử ghi 4 kỹ năng');
+      /* Hoàn tác (web): đặt lại đúng tuần cũ qua /ke-hoach-test/dot — lượt có lịch lại như trước khi Xóa. */
+      const cu = tuan(addDays(T2, 14));
+      await json(await goi(QL, '/ke-hoach-test/dot', post({ attemptId: ida, kyNang: ['listening', 'reading', 'writing', 'speaking'].map((skill) => ({ skill, periodId: cu })), reason: 'Hoàn tác xóa lịch', force: true })));
+      const sau = all(`SELECT planned_period_id FROM attempt_skills WHERE attempt_id = ? AND required = 1`, ida);
+      assert(sau.length === 4 && sau.every((x) => x.planned_period_id === cu), `hoàn tác: ${JSON.stringify(sau)}`);
+      await json(await goi(QL, `/attempts/${ida}/bo-tuan`, post({})));
       await json(await goi(ADMIN, `/attempts/${idb}/bo-tuan`, post({})));
       conn.prepare(`INSERT INTO assessment_scores (attempt_id, skill, band, entered_at) VALUES (?, 'listening', 6.5, ?)`).run(idc, NOW);
       const e = await loi(await goi(QL, `/attempts/${idc}/bo-tuan`, post({})));
