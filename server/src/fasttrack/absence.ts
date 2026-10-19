@@ -1,3 +1,4 @@
+import { capNhatConOCho } from './conOCho.ts';
 import { db, tx } from '../db.ts';
 import {
   ASSESSED_SKILLS, ASSESSED_SKILL_LABEL, PERMISSIONS, hanDuyetDoiLan2, kiemLyDoThaoTac, ngay, sauTuanThi, tenMon, tenMonNgan, tuanLich,
@@ -780,6 +781,7 @@ export function settleGroup(
     )
     .run(actor, effective, reason, nowIso(), schedId, scoreIds[0]).changes;
   if (!changed) return false;
+  capNhatConOCho([attemptId]);   // TD7b: ô vừa thành `absent` — không còn chờ điểm (nếu sau đó dời tuần thì recomputeCompletionWeek tính lại)
   conn
     .prepare(`UPDATE assessment_scores SET no_show_settled_at = ? WHERE id IN (${scoreIds.map(() => '?').join(',')}) AND no_show_settled_at IS NULL`)
     .run(nowIso(), ...scoreIds);

@@ -1124,6 +1124,29 @@ await checkAsync('TD7 (×3) · chỉ mục một phần + câu dùng chung một
 });
 
 /*
+ * TD7b (chủ SP 19/10): Nợ điểm (`scoreDebtCells`), badge lớp, danh sách `chiConO` (Công việc, Lịch Test) đọc lượt qua cờ `o_cho_tu` + chỉ mục một phần — không SCAN
+ * assessment_attempts, không nạp mọi lượt đã chấm xong. Khoá bằng EXPLAIN QUERY PLAN trên câu thật của các đường chạm; số câu / dòng trước → sau: mô tả PR + TRAN_DONG.
+ */
+await checkAsync('TD7b (×3) · câu đọc lượt của Nợ điểm / badge lớp / Công việc đi chỉ mục một phần idx_attempt_o_cho[_lop]', async () => {
+  const loi: string[] = [];
+  const thay = new Set<string>();
+  for (const [vai, url] of [['QL', '/tong-quan/chi-nhanh'], ['GVCN', '/my-work'], ['QL', '/cham/lich-test'], ['QL', '/classes'], ['QL', '/metrics/bai-qua-han-nhap-diem?rows=1']] as [Vai, string][]) {
+    const tho: { sql: string; args: unknown[] }[] = [];
+    doQuet.ghi = tho;
+    try { assert((await doSql(vai, 'GET', urlFor(url))).status === 200, `${vai} ${url} không 200`); } finally { doQuet.ghi = null; }
+    for (const { sql, args } of tho.filter((g, i) => (!i || g.sql !== tho[i - 1].sql) && /a\.o_cho_tu <= \?/.test(g.sql))) {
+      if (thay.has(sql)) continue;
+      thay.add(sql);
+      const plan = (conn.prepare(`EXPLAIN QUERY PLAN ${sql}`).all(...args) as any[]).map((r) => r.detail as string);
+      if (plan.some((d) => /^SCAN a\b/.test(d) && !d.includes('idx_attempt_o_cho'))) loi.push(`${vai} ${url}: SCAN assessment_attempts — ${plan.filter((d) => /SCAN|SEARCH a\b/.test(d)).join(' | ')}`);
+      if (!plan.some((d) => /idx_attempt_o_cho/.test(d))) loi.push(`${vai} ${url}: không dùng chỉ mục cờ idx_attempt_o_cho[_lop] — ${plan.filter((d) => /SEARCH a\b|SCAN a\b/.test(d)).join(' | ')}`);
+    }
+  }
+  assert(thay.size >= 3, `chỉ bắt được ${thay.size} câu dùng cờ`);
+  assert(!loi.length, loi.join(' | '));
+});
+
+/*
  * TD4-b: bản chính 15/10 log `[cham]` /my-work 5–7,5 s, 75–126 câu, 6 900–18 400 dòng (top: lịch kỹ năng của MỌI lượt trong phạm vi). Mốc ×3 trước TD4
  * (main 35517670, đo trong chính phép này): câu / dòng dưới đây. Khoá: dòng ≤ 40 % mốc, số câu ×3 ≤ ×1 + 2 (không tăng theo dữ liệu) và ≤ mốc − 3.
  */

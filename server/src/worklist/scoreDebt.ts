@@ -71,26 +71,15 @@ export function scoreDebtCells(p: Principal, today: string, branchIds: number[] 
          LEFT JOIN programmes pg ON pg.code = cl.programme_code
          LEFT JOIN report_periods rp ON rp.id = a.planned_period_id
         WHERE ${where.join(' AND ')}
-          AND (EXISTS (SELECT 1 FROM attempt_skills k JOIN report_periods r2 ON r2.id = k.planned_period_id
-                        WHERE k.attempt_id = a.id AND r2.week_start <= ?)
-               OR (NOT EXISTS (SELECT 1 FROM attempt_skills k2 WHERE k2.attempt_id = a.id) AND rp.week_start <= ?))
           /*
-           * LỌC TRƯỚC, CHỈ BỎ LƯỢT CHẮC CHẮN KHÔNG NỢ: mọi ô của bộ kỹ năng đã có điểm (lớp thường: số câu đúng ở mọi môn của chương
-           * trình — bảng programme_skills, Pre FOU một ô (K5-39); FT: band ở
-           * L R W1 W2 S). Không có dòng này thì mọi lượt đã chấm xong từ đầu khoá đều bị nạp lại mỗi lần mở bảng chi nhánh (Turso).
-           * Luật "còn nợ" vẫn nằm ở \`skillCells\`/\`regularSkillViews\` bên dưới — đây chỉ là tập cha an toàn.
+           * LỌC TRƯỚC, CHỈ BỎ LƯỢT CHẮC CHẮN KHÔNG NỢ (TD7b): lượt còn ô chờ điểm mà tuần thi đã tới — cờ o_cho_tu (fasttrack/conOCho.ts, chỉ mục một phần
+           * idx_attempt_o_cho) thay cho hai câu con tương quan trên điểm + lịch của MỌI lượt (trước: mọi lượt chưa đủ điểm từ đầu khoá đều bị nạp mỗi lần mở bảng chi nhánh).
+           * Luật "còn nợ" vẫn nằm ở skillCells / regularSkillViews bên dưới — đây chỉ là tập cha an toàn (ô chờ ⊇ ô nợ).
            */
-          AND (SELECT COUNT(*) FROM assessment_scores sx
-                WHERE sx.attempt_id = a.id
-                  AND CASE WHEN COALESCE(pg.scoring_mode, '') = 'ratio'
-                        THEN sx.raw_score IS NOT NULL
-                             AND sx.skill IN (SELECT ps.skill FROM programme_skills ps WHERE ps.programme_code = cl.programme_code)
-                        ELSE sx.band IS NOT NULL AND sx.skill IN ('listening', 'reading', 'writing1', 'writing2', 'speaking')
-                      END)
-              < CASE WHEN COALESCE(pg.scoring_mode, '') = 'ratio'
-                  THEN (SELECT COUNT(*) FROM programme_skills ps2 WHERE ps2.programme_code = cl.programme_code) ELSE 5 END`,
+          AND a.o_cho_tu <= ?
+        ORDER BY a.id`,   // thứ tự cố định (trước không có ORDER BY: phụ thuộc kế hoạch truy vấn, đổi theo chỉ mục)
     )
-    .all(...args, today, today) as any[];
+    .all(...args, today) as any[];
   if (!rows.length) return [];
 
   /* PR-UXF-a → PR-Dọn (Q13): phân công ĐANG HIỆU LỰC, một luật chung (`phanCongDangHieuLuc`). */

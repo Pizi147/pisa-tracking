@@ -1,3 +1,4 @@
+import { capNhatConOCho } from './conOCho.ts';
 import { db, tx } from '../db.ts';
 import {
   ASSESSED_SKILLS, CHU_KY_NANG, CO_DIEM_SQL, KY_NANG_KE_HOACH, PERMISSIONS, SIT_STATUSES, boMonLich, duongDotTest,
@@ -168,6 +169,7 @@ export function ensureSkillRows(attemptId: number): SkillRow[] {
       )
       .run(attemptId, skill, legacySkips.has(skill) ? 0 : 1, a.planned_period_id ?? null, nowIso());
   }
+  capNhatConOCho([attemptId]);   // TD7b: dòng lịch mới (kể cả phạm vi "không mock" cũ) có thể đổi ô chờ
   return sortRows(conn.prepare(`${SELECT_SKILLS} WHERE ask.attempt_id = ?`).all(attemptId) as SkillRow[], bo);
 }
 
@@ -416,7 +418,7 @@ export function recomputeCompletionWeek(attemptId: number, actorUserId: number |
   const cw = completionWeekOf(rows);
   const a = conn.prepare('SELECT planned_period_id, kind, cycle_id FROM assessment_attempts WHERE id = ?').get(attemptId) as any;
   if (a?.kind === 'final') mt0TheoFinal(a.cycle_id, rows, actorUserId);
-  if (!a || a.planned_period_id === cw.periodId) return cw;
+  if (!a || a.planned_period_id === cw.periodId) { capNhatConOCho([attemptId]); return cw; }
 
   const codeOf = (id: number | null) =>
     id ? ((conn.prepare('SELECT code FROM report_periods WHERE id = ?').get(id) as any)?.code ?? null) : null;
@@ -429,6 +431,8 @@ export function recomputeCompletionWeek(attemptId: number, actorUserId: number |
     reason: 'Tính lại theo tuần muộn nhất của các kỹ năng bắt buộc',
     actor: actorUserId,
   });
+  /* TD7b: MỌI đổi lịch kỹ năng (đổi tuần, phạm vi, xác nhận vắng / huỷ phần thi, Xóa lịch, khôi phục…) kết thúc ở đây → cờ "còn ô chờ" cập nhật ở cuối. */
+  capNhatConOCho([attemptId]);
   return cw;
 }
 
@@ -452,6 +456,7 @@ function mt0TheoFinal(cycleId: number, rows: readonly SkillRow[], actorUserId: n
   const now = nowIso();
   conn.prepare('UPDATE attempt_skills SET planned_period_id = ?, updated_at = ? WHERE attempt_id = ?').run(dau.planned_period_id, now, m.id);
   conn.prepare('UPDATE assessment_attempts SET planned_period_id = ?, updated_at = ? WHERE id = ?').run(dau.planned_period_id, now, m.id);
+  capNhatConOCho([m.id]);
   logSchedule(m.id, { action: 'week_set', field: 'planned_period', newValue: dau.period_code ?? null, reason: 'Theo tuần Final Test', actor: actorUserId });
 }
 
