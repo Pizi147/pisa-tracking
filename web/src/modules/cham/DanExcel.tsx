@@ -6,7 +6,7 @@ import { ChonNhom } from '../fasttrack/NhanXet.tsx';
 import { lyDoChiDoc, type Cell } from '../fasttrack/ScoreEntry.tsx';
 import type { FtSheet } from './LuoiFT.tsx';
 import {
-  ENTRY_SKILL_SHORT, LO_DAN, docBangDan, khopHocVien, xetODan, chiaLo, tuanLich,
+  ENTRY_SKILL_SHORT, LO_DAN, docBangDan, khopHocVien, xetODan, chiaLo, tuanLich, patchTruoc,
   type CheDoLR, type EntrySkill, type PatchDan, type XetODan,
 } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
@@ -29,24 +29,16 @@ type DongXem = {
 };
 type KetQua = { dong: ({ attemptId: number; ok: true } | { attemptId: number; ok: false; skill: string | null; loi: string })[] };
 
-/** Ô trước khi lưu → lệnh trả lại như cũ (Hoàn tác). Ô trống → xoá; nhận xét / nhóm chỉ trả khi lần dán có gửi. */
-function patchTruoc(c: Cell, p: PatchDan): PatchDan {
-  const diem: PatchDan = p.noShow ? { noShow: false }
-    : p.rawScore === undefined && p.band === undefined && p.criteria === undefined ? {}
-    : c.skill === 'listening' || c.skill === 'reading'
-      ? (c.rawScore !== null ? { rawScore: c.rawScore } : c.band !== null ? { band: c.band } : { rawScore: null })
-      : (c.criteria.some((v) => v !== null) ? { criteria: c.criteria } : c.band !== null ? { band: c.band } : { criteria: [null, null, null, null] });
-  return {
-    ...diem,
-    ...(p.nhanXet !== undefined ? { nhanXet: c.nhanXet ?? null } as PatchDan : {}),
-    ...(p.nhomNguyenNhan !== undefined ? { nhomNguyenNhan: c.nhomNguyenNhan ?? [] } : {}),
-  };
-}
-
 export function DanExcel({ data, cot, tenLuot, homNay, hep, hoiBanDau = false, onDong, onDaLuu }: {
   data: FtSheet; cot: readonly EntrySkill[]; tenLuot: string; homNay: string; hep: boolean; hoiBanDau?: boolean; onDong: () => void; onDaLuu: () => void;
 }) {
-  const [chu, setChu] = useState('');
+  /* Chữ dán giữ trong phiên theo lớp + lượt: đóng panel (Đóng / ✕) không mất bảng đang nháp; "Dán lại" xoá. */
+  const khoaNhap = `pisa.dan-excel.${data.classId}.${tenLuot}`;
+  const [chu, datChu] = useState(() => { try { return sessionStorage.getItem(khoaNhap) ?? ''; } catch { return ''; } });
+  const setChu = (v: string) => {
+    datChu(v);
+    try { if (v) sessionStorage.setItem(khoaNhap, v); else sessionStorage.removeItem(khoaNhap); } catch { /* chế độ riêng tư: chỉ giữ trong lúc mở */ }
+  };
   const [cheDo, setCheDo] = useState<CheDoLR>('cau');
   const [chon, setChon] = useState<Record<number, number | 'bo' | null>>({});
   const [nhom, setNhom] = useState<Record<string, string[]>>({});
@@ -208,7 +200,7 @@ export function DanExcel({ data, cot, tenLuot, homNay, hep, hoiBanDau = false, o
           {vua && (
             <div role="status" className="flex flex-wrap items-center gap-2 rounded-md px-3 py-2 text-sm surface-2">
               <span className="font-semibold text-ok">✓ {t('Đã lưu {n} dòng lúc {luc}', { n: vua.n, luc: vua.luc })}</span>
-              <button type="button" className="link" disabled={!!dang} onClick={() => void hoanTac()}>{t('Hoàn tác')}</button>
+              <button type="button" className="link max-sm:min-h-[44px]" disabled={!!dang} onClick={() => void hoanTac()}>{t('Hoàn tác')}</button>
               <span className="flex-1" />
               {!!dong.length && <span className="text-slate-400">{t('{n} dòng còn nháp ở dưới', { n: dong.length })}</span>}
             </div>
@@ -251,7 +243,7 @@ export function DanExcel({ data, cot, tenLuot, homNay, hep, hoiBanDau = false, o
           {loiMang && (
             <div role="alert" className="flex flex-wrap items-center gap-2 text-sm text-bad">
               <span className="flex-1 min-w-0">⚠ {t('Không lưu được — {loi}. Bảng dán giữ nguyên.', { loi: loiMang })}</span>
-              <button type="button" className="btn btn-sm btn-primary" onClick={() => void luu()} disabled={!!dang || !luuDuoc.length}>{t('Thử lại')}</button>
+              <button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" onClick={() => void luu()} disabled={!!dang || !luuDuoc.length}>{t('Thử lại')}</button>
             </div>
           )}
 
@@ -260,8 +252,8 @@ export function DanExcel({ data, cot, tenLuot, homNay, hep, hoiBanDau = false, o
               {dang ? t('Đang lưu {x}/{n} dòng…', { x: dang.xong, n: dang.tong })
                 : <>{t('Lưu được')} <b className="text-slate-100">{t('{n} dòng', { n: luuDuoc.length })}</b>{conNhap ? ` · ${t('{n} dòng còn nháp', { n: conNhap })}` : ''}</>}
             </span>
-            <button type="button" className="btn btn-sm" onClick={huy} disabled={!!dang}>{t('Dán lại')}</button>
-            <button type="button" className="btn btn-sm btn-primary" onClick={() => void luu()} disabled={!!dang || !luuDuoc.length}>
+            <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={huy} disabled={!!dang}>{t('Dán lại')}</button>
+            <button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" onClick={() => void luu()} disabled={!!dang || !luuDuoc.length}>
               {t('Lưu {n} dòng', { n: luuDuoc.length })}
             </button>
           </div>
@@ -297,7 +289,7 @@ function TenDong({ d, chon }: { d: DongXem; chon: (v: number | 'bo' | null) => v
       <div className="min-w-0">
         <span className="inline-flex items-center gap-1 font-medium text-slate-100"><IconDat className="text-ok" />{d.hang.studentName}</span>
         {khac && <small className="block text-xs text-slate-400">{t('Excel: {ten}', { ten: d.ten })}</small>}
-        {d.daChon && <button type="button" className="link text-xs" onClick={() => chon(null)}>{t('Chọn lại')}</button>}
+        {d.daChon && <button type="button" className="link text-xs max-sm:min-h-[44px]" onClick={() => chon(null)}>{t('Chọn lại')}</button>}
         {d.trungDong !== null && <small className="block text-xs text-bad">{t('Trùng em với dòng {so}', { so: d.trungDong })}</small>}
         {d.loiMay && <small className="block text-xs text-bad">⚠ {d.loiMay}</small>}
         {d.loiChung && <small className="block text-xs text-bad">⚠ {d.loiChung}</small>}
@@ -382,7 +374,7 @@ function HuongDan({ cot }: { cot: readonly EntrySkill[] }) {
       <p className="my-1.5 flex flex-wrap gap-1 text-xs">{mau.map((c, i) => <span key={i} className="rounded border px-1.5 py-0.5" style={{ borderColor: 'var(--line-strong)' }}>{c}</span>)}</p>
       <ol className="list-decimal pl-5 text-slate-300">
         <li>{t('Chọn đúng lớp, lượt Test và kỹ năng.')}</li>
-        <li>{t('Sao chép mẫu có tiêu đề cột')} (<button type="button" className="link" onClick={() => void chep()}>{t('Sao chép mẫu')}</button>{daChep === 'ok' ? ` ✓ ${t('đã chép')}` : daChep === 'loi' ? ` · ${t('trình duyệt chặn — gõ tiêu đề theo mẫu trên')}` : ''}).</li>
+        <li>{t('Sao chép mẫu có tiêu đề cột')} (<button type="button" className="link max-sm:min-h-[44px]" onClick={() => void chep()}>{t('Sao chép mẫu')}</button>{daChep === 'ok' ? ` ✓ ${t('đã chép')}` : daChep === 'loi' ? ` · ${t('trình duyệt chặn — gõ tiêu đề theo mẫu trên')}` : ''}).</li>
         <li>{t('Điền mỗi em một dòng; điểm và nhận xét cạnh nhau theo mẫu.')}</li>
         <li>{t('Chọn vùng dữ liệu trong Excel (có hoặc không hàng tiêu đề), Ctrl C rồi Ctrl V vào khung.')}</li>
         <li>{t('Kiểm bảng: em khớp, ô mới, ô ghi đè, dòng lỗi; trùng tên thì chọn em.')}</li>

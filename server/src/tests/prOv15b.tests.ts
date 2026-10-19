@@ -145,6 +145,15 @@ export async function runPrOv15bTests(t: YThucTestKit) {
     assert(de.loai === 'ghi' && de.truoc === '17' && de.sau === '22', 'ghi đè trước → sau');
     assert(x('17', '', o('listening', { rawScore: 17, band: 5, nhanXet: 'Nhận xét cũ đủ dài' })).loai === 'bo', 'giống hệt → bỏ qua');
     assert(x('28', NX, o('listening', { canEdit: false })).loai === 'loi', 'ô không được sửa → lỗi');
+    /* Hoàn tác: lệnh trả lại như trước khi dán. */
+    const tr = (cell: object, p: object) => JSON.stringify(d.patchTruoc(o('listening', cell), p));
+    assert(tr({}, { rawScore: 28, nhanXet: NX }) === '{"rawScore":null,"nhanXet":null}', `ô trống → xoá: ${tr({}, { rawScore: 28, nhanXet: NX })}`);
+    assert(tr({ rawScore: 17, band: 5, nhanXet: 'Cũ đủ mười ký tự' }, { rawScore: 22, nhanXet: NX }) === '{"rawScore":17,"nhanXet":"Cũ đủ mười ký tự"}', 'L có số câu → trả số câu');
+    assert(tr({ rawScore: null, band: 6.5 }, { band: 7 }) === '{"band":6.5}', 'L chỉ band → trả band');
+    assert(JSON.stringify(d.patchTruoc(o('writing1', { criteria: [6, 6, 6, 5.5], band: 6 }), { criteria: [7, 7, 7, 7], nhomNguyenNhan: ['x'] }))
+      === '{"criteria":[6,6,6,5.5],"nhomNguyenNhan":[]}', 'W có tiêu chí → trả tiêu chí; nhóm cũ');
+    assert(tr({}, { noShow: true }) === '{"noShow":false}', '"-" → gỡ dấu');
+    assert(tr({ rawScore: 30, band: 7 }, { nhanXet: NX }) === '{"nhanXet":null}', 'chỉ nhận xét → không đụng điểm');
     assert(x('28', NX, o('listening', { required: false })).loai === 'loi', 'kỹ năng không thuộc lượt → lỗi');
   });
 

@@ -133,7 +133,7 @@ export type ODanHienCo = {
   lyDoKhoa?: string; progress?: string; khongVang?: string | null;
 };
 /** Lệnh của một ô gửi `POST /attempts/scores/lo` (cùng trường với `PUT /attempts/:id/scores/:skill`). */
-export type PatchDan = PatchDiem & { nhanXet?: string; nhomNguyenNhan?: string[] };
+export type PatchDan = PatchDiem & { nhanXet?: string | null; nhomNguyenNhan?: string[] };
 export type XetODan = { loai: 'bo' } | { loai: 'loi'; loi: string }
   | { loai: 'ghi'; patch: PatchDan; band: number | null; truoc: string | null; sau: string; canNhom: boolean };
 /** L / R: cả lô là số câu (0–40) hay band (0–9). */
@@ -203,4 +203,21 @@ export function xetODan(raw: { diem: string; nhanXet: string }, cell: ODanHienCo
   const canNhom = !!cell.batBuocNhanXet && canNhomNguyenNhan(band, cell.kyVong) && !cell.nhomNguyenNhan?.length;
   const p: PatchDan = { ...(patch && sau !== truoc ? patch : {}), ...(doiNx ? { nhanXet: nx } : {}) };
   return { loai: 'ghi', patch: p, band, truoc: patch && sau !== truoc ? truoc : null, sau, canNhom };
+}
+
+/**
+ * HOÀN TÁC một ô vừa dán: ô trước khi lưu → lệnh trả lại như cũ (gửi cùng `POST /attempts/scores/lo`). Ô trống → xoá; "-" → gỡ dấu;
+ * L / R giữ dạng cũ (số câu / band), W / S giữ tiêu chí (hoặc band MT cũ); nhận xét / nhóm chỉ trả khi lần dán có gửi.
+ */
+export function patchTruoc(c: Pick<ODanHienCo, 'skill' | 'rawScore' | 'band' | 'criteria' | 'nhanXet' | 'nhomNguyenNhan'>, p: PatchDan): PatchDan {
+  const diem: PatchDan = p.noShow ? { noShow: false }
+    : p.rawScore === undefined && p.band === undefined && p.criteria === undefined ? {}
+    : c.skill === 'listening' || c.skill === 'reading'
+      ? (c.rawScore !== null ? { rawScore: c.rawScore } : c.band !== null ? { band: c.band } : { rawScore: null })
+      : (c.criteria.some((v) => v !== null) ? { criteria: c.criteria } : c.band !== null ? { band: c.band } : { criteria: [null, null, null, null] });
+  return {
+    ...diem,
+    ...(p.nhanXet !== undefined ? { nhanXet: c.nhanXet ?? null } : {}),
+    ...(p.nhomNguyenNhan !== undefined ? { nhomNguyenNhan: c.nhomNguyenNhan ?? [] } : {}),
+  };
 }
