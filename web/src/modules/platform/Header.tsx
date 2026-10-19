@@ -193,7 +193,8 @@ export function Header() {
 
   return (
     <div className="flex items-center gap-2 max-sm:gap-0.5 min-w-0" ref={boxRef}>
-      {dienThoai ? (
+      {/* TU-b (đặc tả Tutor mục 4): không có quyền xem học viên (Head tutor) → không ô tìm học viên. */}
+      {!session?.nav?.students ? null : dienThoai ? (
         <>
           <button ref={nutTim} type="button" data-hd="tim-hv" className="btn btn-sm min-h-[44px] min-w-[44px] justify-center border-0 bg-transparent" aria-label={t('Tìm học viên, lớp')}
             aria-expanded={moTimDt} onClick={() => { setMoTimDt((v) => !v); setOpenMenu(null); }}>

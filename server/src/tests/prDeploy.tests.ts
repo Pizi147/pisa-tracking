@@ -375,12 +375,13 @@ export async function runPrDeployTests(t: YThucTestKit) {
     const a = thieu('mot-mach.sqlite'), b = thieu('dut-giua.sqlite');
     const da = migrateTurso(a);
     /* TU-a: bảng buổi OV-12h dựng lại thiếu 9 cột TU-a → thêm bước TU-a. */
-    assert(da.length === 4, `một mạch phải làm đúng 4 bước: ${JSON.stringify(da)}`);
+    /* TU-b: thêm bước chỉ mục buổi tutor cần chú ý (prTub). */
+    assert(da.length === 5, `một mạch phải làm đúng 5 bước: ${JSON.stringify(da)}`);
     let loi = '';
     try { migrateTurso(b, 70); } catch (e: any) { loi = String(e.message); }
     assert(loi.includes('Giả lập đứt kết nối sau bước 70'), `không đứt đúng bước 70: ${loi.slice(-200)}`);
     const db2 = migrateTurso(b);
-    assert(db2.length === 3 && db2.every((x) => /OV12[gh]|TU-a/.test(x)), `chạy lại phải chỉ làm OV12h + OV12g + TU-a (EN đã chốt): ${JSON.stringify(db2)}`);
+    assert(db2.length === 4 && db2.every((x) => /OV12[gh]|TU-[ab]/.test(x)), `chạy lại phải chỉ làm OV12h + OV12g + TU-a + TU-b (EN đã chốt): ${JSON.stringify(db2)}`);
     const l = lech(chup(a), chup(b));
     assert(!l.length, `đứt giữa rồi chạy lại ≠ một mạch: ${l.slice(0, 3).join(' ‖ ')}`);
     const truoc = chup(b);

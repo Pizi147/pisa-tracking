@@ -1216,6 +1216,17 @@ await checkAsync(`PR-XLMT · Xem trước Xếp lịch MT cả lớp MB FT 101 (
   assert(r.n <= TRAN_GHI_LO.xemTruocXepLichMt, `${r.n} câu > trần ${TRAN_GHI_LO.xemTruocXepLichMt}`);
 });
 
+await checkAsync(`TU-b · Tải danh sách tutor 50 dòng (POST /tutors/tai-len, lưu) ≤ ${TRAN_GHI_LO.taiLenTutor} câu SQL`, async () => {
+  const cu = (conn.prepare('SELECT ten FROM tutors ORDER BY id LIMIT 10').all() as any[]).map((x) => [x.ten, '', '', 'L, R, S']);
+  const rows = [['Tên', 'SĐT', 'Nơi dạy', 'Kỹ năng'], ...cu, ...Array.from({ length: 40 }, (_, i) => [`Tutor đo ${i}`, `09${String(10000000 + i)}`, 'Online', 'W'])];
+  const truoc = soCauSql(), dongTruoc = soDongSql();
+  const r = await callHttp('QT', 'POST', '/tutors/tai-len', { rows, luu: true });
+  const n = soCauSql() - truoc;
+  assert(r.status === 200, `POST tai-len ${r.status}`);
+  console.log(`      (đo: ${n} câu, ${soDongSql() - dongTruoc} dòng)`);
+  assert(n <= TRAN_GHI_LO.taiLenTutor, `${n} câu > trần ${TRAN_GHI_LO.taiLenTutor}`);
+});
+
 await checkAsync(`OV-15f · Lưu kết luận Lịch thi (PUT /hoc-vien-lop/lich-thi/:cycleId) ≤ ${TRAN_GHI_LO.luuLichThi} câu SQL`, async () => {
   const cy = (conn.prepare(`SELECT cy.id FROM learning_cycles cy JOIN enrollments e ON e.student_id = cy.student_id AND e.status = 'active' WHERE e.class_id = ? AND cy.status = 'active' LIMIT 1`).get(LOP_FT) as any).id as number;
   const truoc = soCauSql(), dongTruoc = soDongSql();

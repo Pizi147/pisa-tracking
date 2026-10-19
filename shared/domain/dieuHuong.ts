@@ -30,13 +30,15 @@ export type NavQuyen = {
   xuatMt: boolean;
   /** TU-a: trang Tutor (`tutor.view`) — Head tutor, Quản trị, QL. */
   tutor: boolean;
+  /** TU-b: sửa danh sách tutor, gộp, nhận xét (`tutor.manage`) — Head tutor, Quản trị; số "Tutor n" trên menu. */
+  tutorSua: boolean;
 };
 
 export const NAV_RONG: NavQuyen = {
   overview: true, students: false, admin: false, analysis: false, phanTichGv: false, hvCuaToi: false,
   test: false, testGrade: false, testSchedule: false, testPlan: false,
   work: false, workSupport: false, workOps: false, workReports: false, workApprove: false, workRequests: false, workChamDiem: false,
-  xuatMt: false, tutor: false,
+  xuatMt: false, tutor: false, tutorSua: false,
 };
 
 export type KhuVucMuc = { key: KhuVuc; to: string; label: string; labelNgan: string };

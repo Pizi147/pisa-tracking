@@ -4,7 +4,7 @@
  */
 import type { Khoa } from '../i18n/index.ts';
 
-export type VaiHd = 'gv' | 'ql' | 'qt' | 'tvv' | 'cx' | 'admin';
+export type VaiHd = 'gv' | 'ql' | 'qt' | 'tvv' | 'cx' | 'admin' | 'ht';
 
 /** "Chỉ cho tôi": khoanh phần tử `data-hd="{hd}"` đang hiện + một dòng chú thích; `duong` = trang mở trước nếu đang ở trang khác.
  *  Nhiều `hd` = cùng một chỗ nhưng máy tính / điện thoại là hai phần tử khác nhau (phép HD-CHI đòi đủ cả hai). */

@@ -69,6 +69,7 @@ import { migratePrOv15d } from './migrate/prOv15d.ts';
 import { migratePrOv15e } from './migrate/prOv15e.ts';
 import { migratePrTd7 } from './migrate/prTd7.ts';
 import { migratePrTu } from './migrate/prTu.ts';
+import { migratePrTub } from './migrate/prTub.ts';
 import { migratePrTd7b } from './migrate/prTd7b.ts';
 
 /**
@@ -374,6 +375,7 @@ function migrateCaseEngine(applied: string[], skipped: string[], loiSauBuoc?: nu
     /* OV-13q: lộ trình đã thi chưa xong mà hạn 1 tuần đã qua → hạn = hôm nay + 7 (đổi dữ liệu, chạy lặp không đổi). */ buoc(() => migratePrOv13q(conn, applied));
     /* OV-15c: bảng ghi_chu_lich_thi — ghi chú lịch thi ở Kế hoạch Test (chỉ thêm bảng, chạy lặp được). */ buoc(() => migratePrOv15c(conn, applied));
     /* TU-a (SAU migratePermissions): bảng tutors, tutor_nhan_xet, 9 cột buổi tutor, vai Head tutor (chỉ thêm, chạy lặp được). */ buoc(() => migratePrTu(conn, applied));
+    /* TU-b (sau TU-a): chỉ mục một phần buổi tutor cần chú ý (chỉ thêm). */ buoc(() => migratePrTub(conn, applied));
 
     conn.prepare("INSERT OR REPLACE INTO demo_config (key, value, updated_at) VALUES ('case_engine_migrated_at', ?, ?)")
       .run(nowIso(), nowIso());

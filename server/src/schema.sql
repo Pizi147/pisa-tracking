@@ -1290,6 +1290,8 @@ CREATE TABLE case_followup_buoi (
   UNIQUE (followup_id, buoi_so)
 );
 CREATE INDEX idx_followup_buoi_tutor ON case_followup_buoi(tutor_id);
+/* TU-b: buổi "xấu" (ô Không / đánh giá ≤ 2) — nhóm chú ý trang Tutor đọc qua đây, không quét cả bảng (migrate prTub). */
+CREATE INDEX idx_followup_buoi_chu_y ON case_followup_buoi(tutor_id) WHERE chuan_bi = 0 OR tai_lieu = 0 OR feedback_gv = 0 OR danh_gia <= 2;
 
 /*
  * TU-a: DANH SÁCH TUTOR (không phải tài khoản — tutor không đăng nhập). Bắt buộc chỉ Tên + Kỹ năng (chủ SP 20/10); SĐT chuẩn hoá chữ số, duy nhất khi có;

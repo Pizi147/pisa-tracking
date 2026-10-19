@@ -17,6 +17,8 @@ import { khungPhamVi, navOf } from '../platform/nav.ts';
 import * as attachmentSvc from '../platform/attachments.ts';
 import * as timNguoiSvc from '../platform/timNguoi.ts';
 import { chonTutor } from '../tutors/chon.ts';
+import * as tutorSvc from '../tutors/trang.ts';
+import { taiLenTutor } from '../tutors/taiLen.ts';
 import * as violationSvc from '../yThuc/violations.ts';
 import * as accessSvc from '../yThuc/access.ts';
 import * as xuLySvc from '../yThuc/xuLy.ts';
@@ -434,6 +436,25 @@ api.get('/ref/nguoi', requireAuth, wrap((req) => {
 /** TU-a: ô chọn tutor (Ghi kết quả PA Tutor theo `paId`; ô Người dạy PA Tutor theo `studentId`) — 3 số cuối SĐT, ≤ 20 dòng (`tutors/chon.ts`). */
 api.get('/tutors/chon', requireAuth, wrap((req) =>
   chonTutor(principalOf(req), { q: qStr(req, 'q'), paId: qInt(req, 'paId'), studentId: qInt(req, 'studentId') })));
+
+/*
+ * TU-b: TRANG TUTOR (đặc tả Tutor mục 7, 8) — quyền kiểm trong `tutors/trang.ts` / `taiLen.ts`: đọc `tutor.view` (QL: buổi lớp chi nhánh mình), ghi `tutor.manage`.
+ * Khoảng thời gian = bộ chọn chung của Phân tích (`kieu`/`tu`/`den`; vắng = 2 tuần vừa qua). Đường cố định đặt TRƯỚC `/tutors/:id`.
+ */
+const khoangTutor = (req: Request) => khoangOf(req) ?? (({ tu, den }) => ({ tu, den }))(khoangTuUrl({ get: () => null }, demoToday()));
+api.get('/tutors', requireAuth, wrap((req) => tutorSvc.bangTutor(principalOf(req), khoangTutor(req))));
+api.get('/tutors/dem', requireAuth, wrap((req) => tutorSvc.demChuY(principalOf(req))));
+api.get('/tutors/go-tay', requireAuth, wrap((req) => tutorSvc.tenGoTay(principalOf(req))));
+api.post('/tutors/gop', requireAuth, wrap((req) => tutorSvc.gopTen(principalOf(req), req.body)));
+api.post('/tutors/gop/hoan-tac', requireAuth, wrap((req) => tutorSvc.hoanTacGop(principalOf(req), req.body)));
+api.post('/tutors/tai-len', requireAuth, wrap((req) => taiLenTutor(principalOf(req), req.body)));
+api.post('/tutors', requireAuth, wrap((req) => tutorSvc.luuTutor(principalOf(req), req.body)));
+api.patch('/tutors/nhan-xet/:id', requireAuth, wrap((req) => tutorSvc.suaNhanXet(principalOf(req), pInt(req, 'id'), req.body)));
+api.delete('/tutors/nhan-xet/:id', requireAuth, wrap((req) => tutorSvc.xoaNhanXet(principalOf(req), pInt(req, 'id'))));
+api.get('/tutors/:id', requireAuth, wrap((req) => tutorSvc.panelTutor(principalOf(req), pInt(req, 'id'), khoangTutor(req))));
+api.patch('/tutors/:id', requireAuth, wrap((req) => tutorSvc.luuTutor(principalOf(req), req.body, pInt(req, 'id'))));
+api.delete('/tutors/:id', requireAuth, wrap((req) => tutorSvc.xoaTutor(principalOf(req), pInt(req, 'id'))));
+api.post('/tutors/:id/nhan-xet', requireAuth, wrap((req) => tutorSvc.ghiNhanXet(principalOf(req), pInt(req, 'id'), req.body)));
 
 api.get('/ref/users', requireAuth, wrap((req) => {
   const p = principalOf(req);
