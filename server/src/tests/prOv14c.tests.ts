@@ -21,6 +21,8 @@ export async function runPrOv14cTests(t: YThucTestKit) {
   const { createSession } = await import('../auth.ts');
   const { xoaNho, soCauSql } = await import('../platform/nguCanhRequest.ts');
   console.log('\nOV-14c · Chấm Speaking: GV Speaking theo kỹ năng hồ sơ, mọi lớp FT chi nhánh mình, từ thứ Hai tuần thi');
+  /* TD7b: các phép kiểm trước dựng lượt bằng SQL thẳng (không qua đường ghi giữ cờ "còn ô chờ") → đồng bộ cờ một lần trước khi soi đường đọc. */
+  (await import('../fasttrack/conOCho.ts')).capNhatConOChoTatCa();
 
   const one = (sql: string, ...a: unknown[]) => conn.prepare(sql).get(...a) as any;
   const thu = <T>(fn: () => T): T => {

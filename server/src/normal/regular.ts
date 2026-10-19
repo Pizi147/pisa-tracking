@@ -1,3 +1,4 @@
+import { capNhatConOCho } from '../fasttrack/conOCho.ts';
 import { THAM_SO_TOI_DA, chenNhieuDong, db, theoLo, tx } from '../db.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import { addMilestone, caseKhacChuongTrinh, chuongTrinhCuaLop, followUntilAfter, taoCaseTuDong } from '../cases/sos.ts';
@@ -492,6 +493,7 @@ function ghiLuotThuong(moi: readonly LuotMoi[], ctLop: Map<number, string | null
            FROM assessment_attempts a CROSS JOIN (${mon}) k WHERE a.id IN (${ph}) ORDER BY a.id, k.thu`).run(now, ...bo, ...lo);
     }, THAM_SO_TOI_DA - bo.length - 1);
   }
+  capNhatConOCho(ids);   // TD7b: lượt mới + dòng lịch chèn bằng SQL lô
   chenNhieuDong(
     'INSERT INTO journey_events (student_id, cycle_id, event_type, event_date, title, detail, ref_table, ref_id, created_by, created_at)',
     moi.map((m, i) => [m.studentId, m.cycleId, 'mock_scheduled', m.week,
@@ -721,6 +723,7 @@ export function saveRegularScore(
       entityId: (after as any).id, entityLabel: `${prog.code} · ${skill}`, before,
       after: afterGhi });
 
+    capNhatConOCho([attemptId]);   // TD7b: nhập / sửa / xoá điểm số câu đúng đổi ô chờ
     refreshRegularOutcome(p, attemptId);
     return { score: after, result: regularResultOf(attemptId) };
   });

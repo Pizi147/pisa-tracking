@@ -662,6 +662,11 @@ trước → sau). Chụp gửi planning trước khi deploy.
 lớp · lượt · Case · việc): lượt chưa chốt có Case chưa ai đụng → "Đóng · Chờ chốt SOS" (máy tạo lại lúc lượt chốt); lượt đã chốt mà Overall ≥ kỳ vọng →
 "Đóng · Overall đạt" hoặc "Giữ · ghi mốc Overall đã đạt" (Case đã có người làm). Chụp gửi planning trước khi deploy.
 
+**Trước deploy TD7b** (CHỈ ĐỌC): `npm run kiem-truoc-td7b` — đếm theo chi nhánh số lượt "đang có ô chờ điểm mà tuần thi đã tới" (cờ mới `o_cho_tu <= hôm nay`) và so
+từng lượt với cách tính cũ; phải ra `KHỚP 100 %` (lệch thì lệnh thoát mã 1 và in vài lượt lệch — gửi planning, đừng deploy). Chạy được cả trước khi có cột mới.
+**Thứ tự deploy TD7b:** `npm run migrate` (hoặc migrate cục bộ → `khoi-phuc`) **TRƯỚC** khi chạy máy chủ mới — máy chủ mới đọc cột `assessment_attempts.o_cho_tu`;
+thiếu cột thì Nợ điểm, Công việc, Lịch Test, badge lớp trả 500. Migrate thêm cột + 2 chỉ mục + tính lại cờ cho mọi lượt; chạy lần hai không làm gì.
+
 ---
 
 ## 12. Bảng tra — mọi tên biến dùng trong file này

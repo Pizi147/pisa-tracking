@@ -70,7 +70,7 @@ export async function runPrOv4aTests(t: YThucTestKit) {
     };
     return { sid, m1: ds[0], m2: ds[1], m3: ds[2], caseW2: cs, paThieu: pa('self_study', 'insufficient'), paTot: pa('tutor', 'improved') };
   };
-  const bo = (r: any, ...k: string[]) => { const x = { ...r }; for (const c of ['id', 'updated_at', ...k]) delete x[c]; return x; };
+  const bo = (r: any, ...k: string[]) => { const x = { ...r }; for (const c of ['id', 'updated_at', 'o_cho_tu', ...k]) delete x[c]; return x; };   // o_cho_tu = cờ suy ra (TD7b), không phải dữ liệu gốc
   /** Mọi thứ huỷ / khôi phục chạm của một em — so trước huỷ với sau khôi phục. */
   const chup = (sid: number, aid: number) => ({
     luot: bo(one('SELECT * FROM assessment_attempts WHERE id = ?', aid)),

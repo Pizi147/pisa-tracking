@@ -1,3 +1,4 @@
+import { capNhatConOCho, capNhatConOChoLop } from '../fasttrack/conOCho.ts';
 import { THAM_SO_TOI_DA, chenNhieuDong, db, theoLo, tx } from '../db.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import {
@@ -274,6 +275,7 @@ export function apLichMacDinhLo(yc: readonly YeuCauLichMt[], actorUserId: number
               WHERE a.id IN (${ph}) ORDER BY a.id, k.thu`).run(now, ...bo, ...lo);   // thứ tự `?` trong câu: now, tên môn, lô
         }, THAM_SO_TOI_DA - bo.length - 1);   // tham số cố định: tên môn + `now`
       }
+      capNhatConOCho(ids);   // TD7b: lượt mới + dòng lịch vừa chèn bằng SQL lô
       chenNhieuDong(
         'INSERT INTO attempt_schedule_history (attempt_id, action, field, old_value, new_value, reason, actor_user_id, created_at)',
         moi.map((m, i) => [ids[i], 'created', 'planned_period', null, m.s.code, 'Lịch MT mặc định', actorUserId, now]));
@@ -624,6 +626,7 @@ function doiBaiTheoMoc(p: Principal, classId: number, kind: 'progress' | 'final'
         WHERE k.attempt_id = assessment_attempts.id AND k.required = 1 AND k.sit_status != 'cancelled' ORDER BY pr.week_start DESC LIMIT 1), planned_period_id)
       WHERE id IN (${cua})`,
   ).run(now, classId, kind);
+  capNhatConOChoLop([classId]);   // TD7b: tuần của kỹ năng + bài vừa dời cả lớp
   if (kind === 'final') {
     /* MT0 chưa thi, chưa ai dời tay → tuần ĐẦU của Final cùng khoá (như `mt0TheoFinal`). */
     const dich = (cy: string) => `(SELECT k.planned_period_id FROM assessment_attempts f JOIN attempt_skills k ON k.attempt_id = f.id AND k.required = 1 AND k.sit_status != 'cancelled'
@@ -637,6 +640,7 @@ function doiBaiTheoMoc(p: Principal, classId: number, kind: 'progress' | 'final'
       .run(classId, now, classId);
     conn.prepare(`UPDATE assessment_attempts SET planned_period_id = COALESCE(${dich('assessment_attempts.cycle_id')}, planned_period_id), updated_at = ? WHERE id IN (${mt0})`)
       .run(classId, now, classId);
+    capNhatConOCho((conn.prepare(mt0).all(classId) as any[]).map((r) => r.id));   // TD7b: MT0 đi theo Final (có thể ở lớp khác)
   }
   writeAudit({ actorUserId: p.userId, action: 'class.progress.doi_bai', entityType: 'class', entityId: classId, entityLabel: kind,
     before: { week: cu.code }, after: { week: moi.code, kyNang: soKn } });

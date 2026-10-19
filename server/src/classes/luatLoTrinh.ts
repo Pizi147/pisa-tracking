@@ -1,3 +1,4 @@
+import { capNhatConOCho } from '../fasttrack/conOCho.ts';
 import { THAM_SO_TOI_DA, chenNhieuDong, db, theoLo, tx } from '../db.ts';
 import {
   PERMISSIONS, coMt0, dongKhiChuyen, ghepMucTieu, huongMotEm, kiemDongChuyenTiep, luatDoiLop, targetLenFt, tuanChonDuoc, tuanHocTai, tuanLich,
@@ -388,6 +389,8 @@ export function apDungMotDong(p: Principal, d: DongApDung): { luat: LuatDoiLop |
   /* Q12: bài chưa làm CHỈ đi theo em khi GIỮ khoá — đóng khoá thì lượt planned ở lại lớp cũ. MT0 không đi theo (PR-MT0): chưa điểm thì huỷ. */
   if (luat.khoa === 'giu' && curCycle && !sauThi) {
     conn.prepare(`UPDATE assessment_attempts SET class_id = ? WHERE cycle_id = ? AND status = 'planned' AND kind != 'mt0'`).run(d.toClassId, curCycle.id);
+    /* TD7b: lớp đích có thể chấm theo cách khác (bộ môn, band ↔ số câu đúng) → cờ "còn ô chờ" của các lượt vừa đổi lớp. */
+    capNhatConOCho((conn.prepare(`SELECT id FROM assessment_attempts WHERE cycle_id = ? AND status = 'planned' AND kind != 'mt0'`).all(curCycle.id) as any[]).map((r) => r.id));
     /* OV-13l: FT → FT khác lộ trình giữ lộ trình đang chạy — chỉ đổi mã theo lớp chuyển đến (lịch MT, tuần học giữ). */
     if (denLop.ft && denLop.lt && curCycle.route && curCycle.route !== denLop.lt) {
       conn.prepare('UPDATE learning_cycles SET route = ? WHERE id = ?').run(denLop.lt, curCycle.id);
