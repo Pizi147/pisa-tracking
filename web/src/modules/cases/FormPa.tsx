@@ -39,7 +39,7 @@ export function FormPa({ v, dat, lf, loi, chonLoai, quyChe, toiThieu = 8, daDay 
   studentId?: number | null;
   /** Khoá ô lỗi riêng (cùng `tienTo` của `loiFormPa`) khi form nằm trong panel khác — Thay PA trong Kết quả: 'moi-'. */
   tienTo?: string;
-  /** OV-13b (Xác nhận PA): Người dạy * · Tutor Số buổi * (cùng `loiFormPa({ batBuoc })`). */
+  /** OV-13b (Xác nhận PA): Tutor Số buổi * (cùng `loiFormPa({ batBuoc })`). Người dạy luôn tuỳ chọn (chủ SP 19/10). */
   batBuoc?: boolean;
 }) {
   const k = (x: string) => tienTo + x;
@@ -85,8 +85,8 @@ export function FormPa({ v, dat, lf, loi, chonLoai, quyChe, toiThieu = 8, daDay 
   </>;
 
   const nguoi = coNguoiDay(v.kind) ? (
-    <Truong nhan={nhanNguoi} tuyChon={!batBuoc} batBuoc={batBuoc} as="div" loi={lf.loiCua(loi, k('nguoi'))}
-      phu={!batBuoc && nhanNguoi === 'Người dạy' && !v.nguoi ? t('Chưa biết ai dạy thì để trống — ghi ở Kết quả từng tuần') : undefined}>
+    <Truong nhan={nhanNguoi} tuyChon as="div" loi={lf.loiCua(loi, k('nguoi'))}
+      phu={nhanNguoi === 'Người dạy' && !v.nguoi ? t('Chưa biết ai dạy thì để trống — ghi ở Kết quả từng tuần') : undefined}>
       {/* key: đổi nhãn (Người dạy ↔ Người thực hiện) thì ô vẽ lại đúng trạng thái trống / có tên. */}
       <ChonNguoi key={nhanNguoi} nhom="giao_vien" studentId={studentId} cungChiNhanh={v.kind === 'bo_tro'} value={v.nguoi} onChange={(x) => dat({ nguoi: x })}
         choTrong={t('Để trống')} placeholder={t('Chưa chọn · gõ tên để tìm')} ariaLabel={nhanNguoi}

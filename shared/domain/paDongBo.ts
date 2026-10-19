@@ -132,7 +132,7 @@ export function khacNguoi(a: NguoiChon | null, b: NguoiChon | null): boolean {
 
 /** Lỗi của form PA. `tienTo`: khoá ô riêng khi form nằm trong panel khác (Thay PA trong Kết quả: 'moi-'). `goc` (Sửa PA): ô KHÔNG đổi thì không kiểm — PA vượt buổi (Số buổi < đã dạy), mô tả cũ ngắn vẫn sửa được ô khác. */
 export function loiFormPa(v: GiaTriPa, o: { toiThieu?: number; daDay?: number; goc?: GiaTriPa; tienTo?: string;
-  /** OV-13b (Xác nhận PA, mockup OV-13 §9): Người dạy * (loại có người dạy) · Tutor: Số buổi / 2 tuần *. Cùng luật `xacNhanPaQuyChe`. */
+  /** OV-13b (Xác nhận PA): Tutor Số buổi / 2 tuần *. Người dạy không bắt buộc (chủ SP 19/10). Cùng luật `xacNhanPaQuyChe`. */
   batBuoc?: boolean } = {}): LoiTruong[] {
   const { goc } = o;
   const tien = o.tienTo ?? '';
@@ -144,7 +144,7 @@ export function loiFormPa(v: GiaTriPa, o: { toiThieu?: number; daDay?: number; g
   const sb = coSoBuoi(v.kind) && doi('soBuoi') ? kiemSoBuoiPa(v.soBuoi, o.daDay ?? 0)
     ?? (o.batBuoc && v.kind === 'tutor' && !v.soBuoi.trim() ? t('Nhập số buổi') : null) : null;
   if (sb) loi.push({ khoa: `${tien}so-buoi`, nhan: t('Số buổi'), lyDo: sb });
-  const ng = coNguoiDay(v.kind) ? nguoiThieu(v.nguoi, !!o.batBuoc) : null;
+  const ng = coNguoiDay(v.kind) ? nguoiThieu(v.nguoi, false) : null;
   if (ng) loi.push({ khoa: `${tien}nguoi`, nhan: nhanNguoiDay(v.kind), lyDo: ng });
   return loi;
 }

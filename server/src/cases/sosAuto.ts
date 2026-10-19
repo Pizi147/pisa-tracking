@@ -480,8 +480,7 @@ export function xacNhanPaQuyChe(p: Principal, interventionId: number, input: {
   const soBuoi = soBuoiMoi(iv, input.soBuoi, 0);
   const today = demoToday();
   const batDau = batDauHopLe(input.batDau, today);
-  /* OV-13b (mockup OV-13 §9): Người dạy * với loại có người dạy; Tutor: Số buổi / 2 tuần *. */
-  if (coNguoiDay(iv.kind) && !performerUserId && !performerName) throw badRequest('Chọn người dạy rồi mới xác nhận PA.');
+  /* OV-13b: Tutor cần Số buổi / 2 tuần. Người dạy để trống được (chủ SP 19/10) — tên tutor bắt buộc ở Kết quả, mỗi buổi một dòng. */
   if (iv.kind === 'tutor' && soBuoi == null) throw badRequest('PA Tutor cần Số buổi / 2 tuần.');
   const luot = luotSinhPa(iv);
   const moc = iv.moc_quy_che

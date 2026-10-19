@@ -520,14 +520,16 @@ function KhungHop({ anchor, ten, phu, nhanHop, daGo, cauBo, onDong, onKeyDown, c
   };
   useGiuFocus(box);
   const dienThoai = typeof window !== 'undefined' && window.innerWidth < 640;
-  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+  /* Hotfix 19/10: vị trí ghi thẳng vào style, KHÔNG qua state — setState trong layout effect chạy mỗi lần vẽ, gặp setPos của sự kiện cuộn
+     đang chờ (ưu tiên thấp hơn) thì React tính lại từ state gốc mãi → "Maximum update depth" → trang lỗi khi gõ ô L/R. */
   const dat = () => {
     if (dienThoai || !box.current) return;
     const r = anchor.getBoundingClientRect();
     const rong = box.current.offsetWidth, cao = box.current.offsetHeight;
     const left = Math.min(Math.max(8, r.left), window.innerWidth - rong - 8);
     const top = r.bottom + 4 + cao > window.innerHeight - 8 ? Math.max(8, r.top - cao - 4) : r.bottom + 4;
-    setPos((p) => (p && p.top === top && p.left === left ? p : { top, left }));
+    box.current.style.top = `${top}px`;
+    box.current.style.left = `${left}px`;
   };
   /* CA3-7: ô lên giữa vùng cuộn — hộp em kế neo dưới, ô vừa lưu phía trên vẫn thấy. */
   useLayoutEffect(() => { if (!dienThoai) anchor.scrollIntoView({ block: 'center', inline: 'nearest' }); }, []);   // eslint-disable-line react-hooks/exhaustive-deps
@@ -570,7 +572,7 @@ function KhungHop({ anchor, ten, phu, nhanHop, daGo, cauBo, onDong, onKeyDown, c
         className={`z-[60] border outline-none ${dienThoai
           ? 'fixed inset-x-0 bottom-0 max-h-[85vh] overflow-y-auto rounded-t-2xl'
           : 'fixed w-[min(400px,calc(100vw-32px))] rounded-xl shadow-2xl'}`}
-        style={{ background: 'var(--surface)', borderColor: 'var(--line-strong)', ...(dienThoai ? {} : { top: pos?.top ?? 0, left: pos?.left ?? 0, opacity: pos ? 1 : 0 }) }}>
+        style={{ background: 'var(--surface)', borderColor: 'var(--line-strong)' }}>
         {dienThoai && <div aria-hidden className="mx-auto mt-2 h-1 w-10 rounded-full bg-white/20" />}
         <div className="border-b px-3.5 pb-2 pt-3" style={{ borderColor: 'var(--line)' }}>
           <div className="text-[15px] font-extrabold text-slate-100">{ten}</div>
