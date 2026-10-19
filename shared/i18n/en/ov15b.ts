@@ -82,4 +82,8 @@ export const EN_OV15B = {
   'Lượt Test không hợp lệ.': 'Invalid test attempt.',
   'Ô điểm của dòng không hợp lệ.': 'Invalid score cells in this row.',
   'Lỗi máy chủ — dòng này chưa lưu.': 'Server error — this row was not saved.',
+  'Lớp không hợp lệ.': 'Invalid class.',
+  'Có dòng không thuộc lớp / lượt đang mở — tải lại bảng rồi dán lại.': 'Some rows are not in the open class / test — reload the table and paste again.',
+  'Ô "-": nhận xét bị bỏ': 'Cell "-": comment is dropped',
+  'Hoàn tác dán điểm từ Excel': 'Undid scores pasted from Excel',
 } satisfies Record<string, Dich>;

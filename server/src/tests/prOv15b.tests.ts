@@ -8,7 +8,6 @@ import type { YThucTestKit } from './yThuc.tests.ts';
 export async function runPrOv15bTests(t: YThucTestKit) {
   const { check, assert, assertThrows, conn, P, TODAY } = t as any;
   const { luuDiemLo } = await import('../cham/luuLo.ts');
-  const lo = (p: any, dong: unknown) => luuDiemLo(p, dong);
   const svc: any = await import('../fasttrack/attempts.ts');
   const d: any = await import('../../../shared/domain/index.ts');
   const mywork: any = await import('../worklist/mywork.ts');
@@ -145,45 +144,76 @@ export async function runPrOv15bTests(t: YThucTestKit) {
     assert(de.loai === 'ghi' && de.truoc === '17' && de.sau === '22', 'ghi đè trước → sau');
     assert(x('17', '', o('listening', { rawScore: 17, band: 5, nhanXet: 'Nhận xét cũ đủ dài' })).loai === 'bo', 'giống hệt → bỏ qua');
     assert(x('28', NX, o('listening', { canEdit: false })).loai === 'loi', 'ô không được sửa → lỗi');
-    /* Hoàn tác: lệnh trả lại như trước khi dán. */
-    const tr = (cell: object, p: object) => JSON.stringify(d.patchTruoc(o('listening', cell), p));
-    assert(tr({}, { rawScore: 28, nhanXet: NX }) === '{"rawScore":null,"nhanXet":null}', `ô trống → xoá: ${tr({}, { rawScore: 28, nhanXet: NX })}`);
-    assert(tr({ rawScore: 17, band: 5, nhanXet: 'Cũ đủ mười ký tự' }, { rawScore: 22, nhanXet: NX }) === '{"rawScore":17,"nhanXet":"Cũ đủ mười ký tự"}', 'L có số câu → trả số câu');
-    assert(tr({ rawScore: null, band: 6.5 }, { band: 7 }) === '{"band":6.5}', 'L chỉ band → trả band');
-    assert(JSON.stringify(d.patchTruoc(o('writing1', { criteria: [6, 6, 6, 5.5], band: 6 }), { criteria: [7, 7, 7, 7], nhomNguyenNhan: ['x'] }))
-      === '{"criteria":[6,6,6,5.5],"nhomNguyenNhan":[]}', 'W có tiêu chí → trả tiêu chí; nhóm cũ');
-    assert(tr({}, { noShow: true }) === '{"noShow":false}', '"-" → gỡ dấu');
-    assert(tr({ rawScore: 30, band: 7 }, { nhanXet: NX }) === '{"nhanXet":null}', 'chỉ nhận xét → không đụng điểm');
-    assert(x('28', NX, o('listening', { required: false })).loai === 'loi', 'kỹ năng không thuộc lượt → lỗi');
+    /* "-" với ô đang "-": bỏ qua; điểm đè "-": "- → x"; "-" có nhận xét: báo bị bỏ. */
+    assert(x('-', '', o('listening', { noShow: { state: 'khong-co-bai' } })).loai === 'bo', '"-" lên ô đã "-" → bỏ qua');
+    const de2 = x('22', 'Part 2 tiến bộ rõ', o('listening', { daChot: { doiSang: null } }));
+    assert(de2.loai === 'ghi' && de2.truoc === '-' && de2.sau === '22' && de2.patch.rawScore === 22, `điểm đè "-": ${JSON.stringify(de2)}`);
+    const vnx = x('-', 'Ốm cả tuần thi', o('listening'));
+    assert(vnx.loai === 'ghi' && vnx.patch.nhanXet === undefined && !!vnx.canhBao, '"-" có nhận xét → nhận xét bị bỏ, có báo');
+    /* Hoàn tác: các lệnh trả lại như trước khi dán, theo thứ tự. */
+    const tr = (cell: object, p: object, k = 'listening') => JSON.stringify(d.patchTruoc(o(k, cell), p));
+    assert(tr({}, { rawScore: 28, nhanXet: NX }) === '[{"rawScore":null,"nhanXet":null}]', `ô trống → xoá: ${tr({}, { rawScore: 28, nhanXet: NX })}`);
+    assert(tr({ rawScore: 17, band: 5, nhanXet: 'Cũ đủ mười ký tự' }, { rawScore: 22, nhanXet: NX }) === '[{"rawScore":17,"nhanXet":"Cũ đủ mười ký tự"}]', 'L có số câu → trả số câu');
+    assert(tr({ rawScore: null, band: 6.5 }, { band: 7 }) === '[{"band":6.5}]', 'L chỉ band → trả band');
+    assert(tr({ criteria: [6, 6, 6, 5.5], band: 6 }, { criteria: [7, 7, 7, 7], nhomNguyenNhan: ['x'] }, 'writing1') === '[{"criteria":[6,6,6,5.5],"nhomNguyenNhan":[]}]', 'W có tiêu chí → trả tiêu chí; nhóm rỗng');
+    assert(tr({ rawScore: 17, band: 5, nhomNguyenNhan: ['L2'] }, { rawScore: 30 }) === '[{"rawScore":17,"nhomNguyenNhan":["L2"]}]', 'ô cũ có nhóm → luôn gửi lại nhóm cũ');
+    assert(tr({}, { noShow: true }) === '[{"noShow":false}]', 'vừa dán "-" → gỡ dấu');
+    assert(tr({ noShow: { state: 'khong-du-thi' } }, { rawScore: 22 }) === '[{"rawScore":null},{"noShow":true}]', 'điểm đè "-" → xoá điểm rồi đặt lại "-"');
+    assert(tr({ rawScore: 30, band: 7 }, { nhanXet: NX }) === '[{"nhanXet":null}]', 'chỉ nhận xét → không đụng điểm');
+    /* Trước Hoàn tác: ô còn đúng giá trị đã dán? */
+    assert(d.oConNhuDan(o('listening', { rawScore: 28, band: 6.5, nhanXet: NX }), { rawScore: 28, nhanXet: NX }), 'còn như dán');
+    assert(!d.oConNhuDan(o('listening', { rawScore: 29, band: 6.5, nhanXet: NX }), { rawScore: 28, nhanXet: NX }), 'đã có người sửa điểm');
+    assert(!d.oConNhuDan(o('listening'), { noShow: true }) && d.oConNhuDan(o('listening', { daChot: { doiSang: 'W4 SEP' } }), { noShow: true }), '"-" còn / mất');
   });
 
-  check('OV15b-2d · lưu lô: mỗi dòng một giao dịch — ô sai môn 403 làm cả dòng không lưu, dòng khác vẫn lưu; nhận xét MT ngắn lỗi dòng đó', () => thu(() => {
-    const ds = conn.prepare(`SELECT a.id FROM assessment_attempts a JOIN classes c ON c.id = a.class_id
+  check('OV15b-2d · lưu lô: ràng lớp / lượt; mỗi dòng một giao dịch — ô sai môn 403 làm cả dòng không lưu, dòng khác vẫn lưu; nhận xét MT ngắn lỗi dòng đó; một lần dán = một mục lịch sử', () => thu(() => {
+    const LOP = t.classId('MB FT 101');
+    const ds = conn.prepare(`SELECT a.id, a.attempt_no FROM assessment_attempts a
       JOIN attempt_skills k ON k.attempt_id = a.id AND k.skill = 'listening' AND k.required = 1 AND k.sit_status NOT IN ('cancelled','absent')
       JOIN report_periods pr ON pr.id = k.planned_period_id AND pr.week_start <= ?
-      WHERE c.code = 'MB FT 101' AND a.kind = 'mock' AND a.status <> 'cancelled' AND COALESCE(a.lich_su, 0) = 0
-      ORDER BY a.id LIMIT 3`).all(TODAY) as any[];
+      WHERE a.class_id = ? AND a.kind = 'mock' AND a.status <> 'cancelled' AND COALESCE(a.lich_su, 0) = 0
+      ORDER BY a.id LIMIT 3`).all(TODAY, LOP) as any[];
     assert(ds.length === 3, `dữ liệu demo: cần 3 lượt MT có L tới tuần thi (${ds.length})`);
     for (const r of ds) conn.prepare(`DELETE FROM assessment_scores WHERE attempt_id = ? AND skill = 'listening'`).run(r.id);
     const [a1, a2, a3] = ds.map((r) => r.id);
+    const lo = (p: any, dong: unknown, them: object = {}) => luuDiemLo(p, { dong, classId: LOP, ...them });
+    const nhatKy = (action: string) => one(`SELECT COUNT(*) AS n FROM audit_logs WHERE action = ? AND entity_type = 'class' AND entity_id = ?`, action, LOP).n as number;
     const NX = 'Nghe tốt phần 1 và 2';
     const c0 = soCauSql(), d0 = soDongSql();
     const kq = lo(P.lrTeacher, [
       { attemptId: a1, o: [{ skill: 'listening', rawScore: 30, nhanXet: NX }, { skill: 'writing1', criteria: [6, 6, 6, 6], nhanXet: 'Đủ ý, bố cục rõ ràng' }] },
       { attemptId: a2, o: [{ skill: 'listening', rawScore: 31, nhanXet: 'Ngắn' }] },
-      { attemptId: a3, o: [{ skill: 'listening', rawScore: 32, nhanXet: NX }] },
-    ]);
-    console.log(`      [đo] lô 3 dòng (4 ô): ${soCauSql() - c0} câu, ${soDongSql() - d0} dòng đọc`);
+    ], { loId: 'lo-1' });
+    console.log(`      [đo] lô 2 dòng (3 ô): ${soCauSql() - c0} câu, ${soDongSql() - d0} dòng đọc`);
     const diem = (id: number) => one(`SELECT raw_score FROM assessment_scores WHERE attempt_id = ? AND skill = 'listening'`, id)?.raw_score ?? null;
     assert(!kq.dong[0].ok && kq.dong[0].skill === 'writing1' && kq.dong[0].status === 403, `ô sai môn: ${JSON.stringify(kq.dong[0])}`);
     assert(diem(a1) === null, 'dòng có ô bị từ chối không được lưu nửa chừng (L của dòng đó phải chưa ghi)');
     assert(!kq.dong[1].ok && kq.dong[1].skill === 'listening' && /10 ký tự/.test(kq.dong[1].loi) && diem(a2) === null, `nhận xét ngắn: ${JSON.stringify(kq.dong[1])}`);
-    assert(kq.dong[2].ok && diem(a3) === 32, 'dòng hợp lệ vẫn lưu');
-    assert(kq.soDaLuu === 1, 'đếm dòng đã lưu');
-    const nk = one(`SELECT COUNT(*) AS n FROM audit_logs WHERE action = 'score.dan_excel'`)?.n;
-    assert(nk >= 1, 'một lần lưu = một mục lịch sử dán Excel');
+    assert(nhatKy('score.dan_excel') === 0, 'request chưa cuối: chưa ghi mục tổng');
+    const kq3 = lo(P.lrTeacher, [{ attemptId: a3, o: [{ skill: 'listening', rawScore: 32, nhanXet: NX }] }],
+      { loId: 'lo-1', cuoi: true, luot: `mt:${ds[2].attempt_no}`, truoc: { soDong: 2, soDaLuu: 0, soO: 0 } });
+    assert(kq3.dong[0].ok && diem(a3) === 32 && kq3.soDaLuu === 1, 'dòng hợp lệ vẫn lưu');
+    const tong = one(`SELECT after_json FROM audit_logs WHERE action = 'score.dan_excel' AND entity_type = 'class' AND entity_id = ?`, LOP);
+    assert(nhatKy('score.dan_excel') === 1 && /"soDong":3/.test(tong.after_json) && /"soDaLuu":1/.test(tong.after_json) && /"loId":"lo-1"/.test(tong.after_json),
+      `một lần dán = MỘT mục tổng gắn lớp: ${tong?.after_json}`);
+    /* Ràng lớp / lượt ở cửa: sai một dòng → 400 cả lô, không ghi gì. */
+    const khac = one(`SELECT a.id FROM assessment_attempts a WHERE a.class_id IS NOT NULL AND a.class_id <> ? LIMIT 1`, LOP).id;
+    assertThrows(() => lo(P.lrTeacher, [{ attemptId: a3, o: [{ skill: 'listening', rawScore: 1 }] }, { attemptId: khac, o: [{ skill: 'listening', rawScore: 1 }] }]),
+      /không thuộc lớp/, 'lượt của lớp khác');
+    assertThrows(() => lo(P.lrTeacher, [{ attemptId: a3, o: [{ skill: 'listening', rawScore: 1 }] }], { luot: 'mt:99' }), /không thuộc lớp/, 'sai lượt');
+    assert(diem(a3) === 32, '400 cả lô: không ô nào bị ghi');
     assertThrows(() => lo(P.lrTeacher, [{ attemptId: a3, o: [{ skill: 'xyz', rawScore: 1 }] }]), /Kỹ năng/, 'kỹ năng lạ bị chặn ở cửa');
     assertThrows(() => lo(P.lrTeacher, [{ attemptId: 'x', o: [] }]), /Lượt/, 'lượt không hợp lệ');
-    assertThrows(() => lo(P.lrTeacher, Array.from({ length: d.DAN_TOI_DA_DONG + 1 }, () => ({ attemptId: a3, o: [] }))), /tối đa/, 'lô quá lớn bị chặn ở cửa');
+    assertThrows(() => lo(P.lrTeacher, [{ attemptId: a3, o: [] }]), /Ô điểm/, 'dòng không có ô');
+    assertThrows(() => lo(P.lrTeacher, [{ attemptId: a3, o: [{ skill: 'listening' }] }]), /Ô điểm/, 'ô không có trường nào');
+    assertThrows(() => lo(P.lrTeacher, Array.from({ length: d.DAN_TOI_DA_DONG + 1 }, () => ({ attemptId: a3, o: [{ skill: 'listening', rawScore: 1 }] }))), /tối đa/, 'lô quá lớn bị chặn ở cửa');
+    /* Đầu-cuối: dán "-" → Hoàn tác (noShow:false) → dấu về NULL; Hoàn tác ghi mục riêng. QL: "-" có thể làm đợt hoàn tất — sau đó GV không gỡ dấu
+       được nữa (luật `saveScore`, web báo câu máy chủ ở dòng). */
+    const dau = () => one(`SELECT no_show_period_id AS d FROM assessment_scores WHERE attempt_id = ? AND skill = 'listening'`, a2)?.d ?? null;
+    const v = lo(P.mbManager, [{ attemptId: a2, o: [{ skill: 'listening', noShow: true }] }], { cuoi: true });
+    assert(v.dong[0].ok && dau() !== null, `dán "-": ${JSON.stringify(v.dong[0])}`);
+    const h = lo(P.mbManager, [{ attemptId: a2, o: [{ skill: 'listening', noShow: false }] }], { cuoi: true, hoanTac: true });
+    assert(h.dong[0].ok && dau() === null, `Hoàn tác "-" phải gỡ dấu: ${JSON.stringify(h.dong[0])} · dấu ${dau()}`);
+    assert(nhatKy('score.dan_excel_hoan_tac') === 1, 'Hoàn tác: mục lịch sử riêng');
   }));
 }

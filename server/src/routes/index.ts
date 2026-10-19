@@ -942,7 +942,7 @@ api.put('/attempts/:id/scores/:skill', requireAuth, wrap((req) => {
 /** OV-15b: Dán từ Excel — nhiều ô nhiều em một lần; mỗi dòng một giao dịch qua `saveScore` (quyền, nhận xét MT, band) — `cham/luuLo.ts`. */
 api.post('/attempts/scores/lo', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
-  return luuDiemLo(principalOf(req), req.body?.dong);
+  return luuDiemLo(principalOf(req), req.body);
 }));
 
 /** OV-13k: "Nhận xét GV phụ trách" + nhóm nguyên nhân ô Speaking Mock chấm chéo — GV phụ trách S của lớp, GVCN, Quản lý; không đụng điểm. */

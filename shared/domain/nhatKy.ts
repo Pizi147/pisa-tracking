@@ -56,6 +56,7 @@ const NHAN_NHAT_KY: Record<string, string> = {
   'score.nhan_xet': 'Sửa nhận xét',
   'score.nhan_xet_phu_trach': 'Nhận xét GV phụ trách',   // OV-13k
   'score.dan_excel': 'Dán điểm từ Excel',   // OV-15b
+  'score.dan_excel_hoan_tac': 'Hoàn tác dán điểm từ Excel',   // OV-15b
   'signal.assign': 'Giao xác nhận nguyên nhân', 'signal.dismissed': 'Bỏ qua, không lập Case', 'signal.linked': 'Nối vào Case',
   'signal.raised': 'Có Case chờ xác nhận nguyên nhân', 'signal.withdrawn': 'Rút Case chờ xác nhận nguyên nhân', 'signal.withdrawn_batch': 'Rút Case chờ xác nhận nguyên nhân hàng loạt',
   'sos_coordination.add': 'Thêm việc phối hợp SOS', 'sos_coordination.confirm': 'Xác nhận việc phối hợp SOS',

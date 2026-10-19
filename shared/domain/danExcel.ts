@@ -131,11 +131,13 @@ export type ODanHienCo = {
   skill: string; required: boolean; canEdit: boolean; rawScore: number | null; band: number | null; criteria: (number | null)[];
   bandThang: boolean; batBuocNhanXet?: boolean; kyVong?: number | null; nhanXet?: string | null; nhomNguyenNhan?: string[];
   lyDoKhoa?: string; progress?: string; khongVang?: string | null;
+  /** Dấu "-" còn trên ô (chưa chốt / đã chốt) — như `coDau` của lưới. */
+  noShow?: unknown; daChot?: unknown;
 };
 /** Lệnh của một ô gửi `POST /attempts/scores/lo` (cùng trường với `PUT /attempts/:id/scores/:skill`). */
 export type PatchDan = PatchDiem & { nhanXet?: string | null; nhomNguyenNhan?: string[] };
 export type XetODan = { loai: 'bo' } | { loai: 'loi'; loi: string }
-  | { loai: 'ghi'; patch: PatchDan; band: number | null; truoc: string | null; sau: string; canNhom: boolean };
+  | { loai: 'ghi'; patch: PatchDan; band: number | null; truoc: string | null; sau: string; canNhom: boolean; canhBao?: string };
 /** L / R: cả lô là số câu (0–40) hay band (0–9). */
 export type CheDoLR = 'cau' | 'band';
 
@@ -144,6 +146,7 @@ export const LOI_DAN_BAND = t('Dán 4 tiêu chí — Band tự tính');
 const so = (s: string) => (/^\d+(?:[.,]\d+)?$/.test(s) ? Number(s.replace(',', '.')) : NaN);
 const chuBand = (b: number) => b.toFixed(1);
 const chuO = (c: { rawScore: number | null; band: number | null }) => (c.rawScore !== null ? String(c.rawScore) : c.band !== null ? chuBand(c.band) : null);
+const coDauO = (c: { noShow?: unknown; daChot?: unknown }) => !!c.noShow || !!c.daChot;
 
 /** Một ô dán × ô hiện có → xem trước. Không đoán: chữ lạ là lỗi có lý do, ô trống là bỏ qua. */
 export function xetODan(raw: { diem: string; nhanXet: string }, cell: ODanHienCo, cheDo: CheDoLR): XetODan {
@@ -154,11 +157,14 @@ export function xetODan(raw: { diem: string; nhanXet: string }, cell: ODanHienCo
   if (!cell.canEdit) return { loai: 'loi', loi: cell.lyDoKhoa ?? t('Bạn không được phân công kỹ năng này') };
   const kx = kiemNhanXet(nx);
   if ('loi' in kx) return { loai: 'loi', loi: kx.loi };
-  const truoc = chuO(cell);
+  /* Ô đang "-" (chưa có điểm): trước = "-" — dán điểm lên hiện "- → x" (máy chủ: điểm thật thắng dấu). */
+  const diemCu = chuO(cell);
+  const truoc = diemCu ?? (coDauO(cell) ? '-' : null);
   if (d === '-') {
-    if (truoc !== null) return { loai: 'loi', loi: t('Ô đã có điểm — "-" không xoá được điểm') };
+    if (diemCu !== null) return { loai: 'loi', loi: t('Ô đã có điểm — "-" không xoá được điểm') };
+    if (truoc === '-') return { loai: 'bo' };
     if (cell.khongVang) return { loai: 'loi', loi: cell.khongVang };
-    return { loai: 'ghi', patch: { noShow: true }, band: null, truoc: null, sau: '-', canNhom: false };
+    return { loai: 'ghi', patch: { noShow: true }, band: null, truoc: null, sau: '-', canNhom: false, ...(nx ? { canhBao: t('Ô "-": nhận xét bị bỏ') } : {}) };
   }
   let patch: PatchDan | null = null, band: number | null = null, sau = '';
   if (!d) {
@@ -206,18 +212,31 @@ export function xetODan(raw: { diem: string; nhanXet: string }, cell: ODanHienCo
 }
 
 /**
- * HOÀN TÁC một ô vừa dán: ô trước khi lưu → lệnh trả lại như cũ (gửi cùng `POST /attempts/scores/lo`). Ô trống → xoá; "-" → gỡ dấu;
- * L / R giữ dạng cũ (số câu / band), W / S giữ tiêu chí (hoặc band MT cũ); nhận xét / nhóm chỉ trả khi lần dán có gửi.
+ * HOÀN TÁC một ô vừa dán: ô trước khi lưu → các lệnh trả lại như cũ, theo thứ tự (gửi cùng `POST /attempts/scores/lo`). Ô trống → xoá; vừa dán
+ * "-" → gỡ dấu; ô "-" bị điểm đè → xoá điểm rồi đặt lại "-"; L / R giữ dạng cũ (số câu / band), W / S giữ tiêu chí (hoặc band MT cũ);
+ * nhận xét trả khi lần dán có gửi; nhóm nguyên nhân cũ LUÔN gửi lại (điểm cũ dưới kỳ vọng thiếu nhóm thì máy chủ từ chối).
  */
-export function patchTruoc(c: Pick<ODanHienCo, 'skill' | 'rawScore' | 'band' | 'criteria' | 'nhanXet' | 'nhomNguyenNhan'>, p: PatchDan): PatchDan {
-  const diem: PatchDan = p.noShow ? { noShow: false }
-    : p.rawScore === undefined && p.band === undefined && p.criteria === undefined ? {}
-    : c.skill === 'listening' || c.skill === 'reading'
-      ? (c.rawScore !== null ? { rawScore: c.rawScore } : c.band !== null ? { band: c.band } : { rawScore: null })
-      : (c.criteria.some((v) => v !== null) ? { criteria: c.criteria } : c.band !== null ? { band: c.band } : { criteria: [null, null, null, null] });
-  return {
-    ...diem,
-    ...(p.nhanXet !== undefined ? { nhanXet: c.nhanXet ?? null } : {}),
-    ...(p.nhomNguyenNhan !== undefined ? { nhomNguyenNhan: c.nhomNguyenNhan ?? [] } : {}),
-  };
+export function patchTruoc(c: Pick<ODanHienCo, 'skill' | 'rawScore' | 'band' | 'criteria' | 'nhanXet' | 'nhomNguyenNhan' | 'noShow' | 'daChot'>, p: PatchDan): PatchDan[] {
+  if (p.noShow) return [{ noShow: false }];
+  const nx: PatchDan = p.nhanXet !== undefined ? { nhanXet: c.nhanXet ?? null } : {};
+  const nhom: PatchDan = c.nhomNguyenNhan?.length ? { nhomNguyenNhan: c.nhomNguyenNhan } : p.nhomNguyenNhan !== undefined ? { nhomNguyenNhan: [] } : {};
+  if (p.rawScore === undefined && p.band === undefined && p.criteria === undefined) return [{ ...nx, ...nhom }];
+  const lr = c.skill === 'listening' || c.skill === 'reading';
+  const xoa: PatchDan = lr ? { rawScore: null } : { criteria: [null, null, null, null] };
+  if (chuO(c) === null && coDauO(c)) return [{ ...xoa, ...nx }, { noShow: true }];
+  const diem: PatchDan = lr
+    ? (c.rawScore !== null ? { rawScore: c.rawScore } : c.band !== null ? { band: c.band } : xoa)
+    : (c.criteria.some((v) => v !== null) ? { criteria: c.criteria } : c.band !== null ? { band: c.band } : xoa);
+  return [{ ...diem, ...nx, ...nhom }];
+}
+
+/** Trước khi Hoàn tác: ô (sau khi tải lại) còn đúng giá trị đã dán không — đã ai sửa thì không trả ngược. */
+export function oConNhuDan(c: Pick<ODanHienCo, 'rawScore' | 'band' | 'criteria' | 'nhanXet' | 'nhomNguyenNhan' | 'noShow' | 'daChot'>, p: PatchDan): boolean {
+  const cung = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
+  return (p.noShow !== true || coDauO(c))
+    && (p.rawScore === undefined || c.rawScore === p.rawScore)
+    && (p.band === undefined || c.band === p.band)
+    && (p.criteria === undefined || cung(c.criteria, p.criteria))
+    && (p.nhanXet === undefined || (c.nhanXet ?? null) === p.nhanXet)
+    && (p.nhomNguyenNhan === undefined || cung(c.nhomNguyenNhan ?? [], p.nhomNguyenNhan));
 }
