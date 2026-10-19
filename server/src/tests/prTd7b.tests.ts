@@ -342,6 +342,28 @@ export async function runPrTd7bTests(t: YThucTestKit) {
     });
   });
 
+  check('TD7c-1 · Lịch Test khối 1: lượt bị bỏ khi lọc "o_cho_tu < tuần trước" KHÔNG có ô chờ nào thi trước tuần trước (đầu ra noQuaHan không đổi); lượt có ô cũ vẫn được nạp', () => {
+    cc.capNhatConOChoTatCa();
+    let bot = 0, giu = 0;
+    for (const homNay of [TODAY, addDays(TODAY, 7), addDays(TODAY, 21)]) {
+      const tuanTruoc = addDays(week.mondayOf(homNay), -7);
+      for (const [ten, p] of Object.entries(P)) {
+        for (const lop of [undefined, classId('MB FT 101'), classId('MB FOU 12')]) {
+          xoaNho();
+          const tatCa = att.listAttempts(p, { classId: lop, scope: 'managed', chiDangHoc: true, phamViCham: true, chiConO: true }).rows;
+          const moi = new Set(att.listAttempts(p, { classId: lop, scope: 'managed', chiDangHoc: true, phamViCham: true, chiConO: true, chiTruocTuan: tuanTruoc }).rows.map((r: any) => r.id));
+          for (const r of tatCa as any[]) {
+            const cuHon = (r.pendingDetail ?? []).some((x: any) => x.weekStart && x.weekStart < tuanTruoc);
+            if (att.conBaiCanCham(r) && moi.has(r.id)) giu++;
+            if (!moi.has(r.id)) bot++;
+            if (att.conBaiCanCham(r) && cuHon) assert(moi.has(r.id), `${ten} lớp ${lop ?? 'mọi'} (${homNay}): lượt ${r.id} có ô thi trước ${tuanTruoc} mà bị bỏ`);
+          }
+        }
+      }
+    }
+    assert(bot > 0 && giu > 0, `phép kiểm rỗng: bỏ ${bot}, giữ ${giu}`);
+  });
+
   check('TD7b-11 · EXPLAIN: truy vấn theo lớp và truy vấn toàn hệ thống đều đi chỉ mục một phần của cờ (câu thật của các đường: tocDo.run)', () => {
     const plan = (sql: string, ...a: unknown[]) => (all(`EXPLAIN QUERY PLAN ${sql}`, ...a)).map((r) => r.detail as string).join(' | ');
     const tatCa = plan(`SELECT a.id FROM assessment_attempts a WHERE a.status != 'cancelled' AND a.o_cho_tu <= ?`, TODAY);

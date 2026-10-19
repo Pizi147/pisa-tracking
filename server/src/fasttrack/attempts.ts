@@ -620,6 +620,8 @@ export type AttemptFilters = {
   chiConO?: boolean;
   /** TD4: cùng `chiConO`, giữ thêm lượt chưa xếp tuần (`planned`, không tuần) — việc "Chốt tuần MT" của Công việc. */
   kemChuaTuan?: boolean;
+  /** TD7c: kèm `chiConO` — chỉ lượt có ô chờ thi TRƯỚC thứ Hai này (`o_cho_tu < …`); nơi gọi chỉ dùng ô cũ hơn mốc đó (khối 1 Lịch Test). Không dùng với `kemChuaTuan`. */
+  chiTruocTuan?: string;
 };
 
 /*
@@ -682,6 +684,7 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
   if (f.chiConO || f.need === 'my_scores') {
     where.push(f.kemChuaTuan ? `(${CON_O_SQL} OR (a.planned_period_id IS NULL AND a.status = 'planned'))` : CON_O_SQL);
     params.push(today);
+    if (f.chiTruocTuan) { where.push('a.o_cho_tu < ?'); params.push(f.chiTruocTuan); }
   }
   // Tuần kết quả LUÔN là tuần kế hoạch của lượt, kể cả khi các kỹ năng mock lệch tuần.
   if (f.periodId) { where.push('a.planned_period_id = ?'); params.push(f.periodId); }
