@@ -18,8 +18,13 @@ export type DanhSachLop = { tieuDe: string; lop: LopKH[] };
 /** `huy` (PR-OV4a): số MT chỉ có lượt đã huỷ (id) — ô "MT2 · Đã huỷ"; `attemptId` vẫn null. */
 export type DotFT = { attemptId: number | null; trangThaiDot: string | null; kn: KnO; lichSu?: boolean; do?: boolean; huyPhan?: boolean; huy?: number };
 /** `soKeTiep` (PR-MT, K4-08): chỉ ô MT này có "+ xếp" — số MT liền mạch. */
-export type HangFT = { studentId: number; ten: string; ma: string; cycleId?: number | null; vaoMuon: boolean; dot: Record<number, DotFT>; soKeTiep: number };
-export type LuoiFTData = { classId: number; classCode: string; cot: number[]; hang: HangFT[] };
+/** OV-15c (C21): ghi chú lịch thi hiện tại — chữ · ai · lúc. Khoá theo `khoaDot` (`mt4`, `progress`…). */
+export type GhiChuLich = { noiDung: string; ai: string | null; luc: string };
+export type HangFT = {
+  studentId: number; ten: string; ma: string; cycleId?: number | null; vaoMuon: boolean; dot: Record<number, DotFT>; soKeTiep: number;
+  ghiChu?: Record<string, GhiChuLich>;
+};
+export type LuoiFTData = { classId: number; classCode: string; cot: number[]; hang: HangFT[]; ghiChuLop?: GhiChuLich | null };
 
 export type DotThuong = { attemptId: number | null; kn: KnO };
 /** `progress` | `final`; OV-6b2 lớp liên tục: `cp{n}` = Checkpoint n. */
@@ -29,12 +34,14 @@ export type HangThuong = {
   studentId: number; ten: string; ma: string; dot: Partial<Record<KindThuong, DotThuong>>;
   /** PR-MT0 (mockup ④): MT0 của em — ô MT số 0 cạnh Final. */
   mt0?: { attemptId: number; kn: KnO; khongDung: boolean } | null;
+  ghiChu?: Record<string, GhiChuLich>;
 };
 export type LuoiThuongData = {
   classId: number; classCode: string; chuongTrinh: string | null; khaiGiang: string | null; tongTuan: number | null;
   tuanHienTai: string | null; hvChuaCoLich: number; cot: CotThuong[]; hang: HangThuong[];
   /** Bộ môn của chương trình lớp (K4-16): FOU/BE/ELE 4 môn, Pre FOU `tong_hop`. */
   boMon: KyNangKH[];
+  ghiChuLop?: GhiChuLich | null;
 };
 
 /** Một đợt của lớp: FT = MT{n}, lớp thường = Giữa khoá / Cuối khoá. */

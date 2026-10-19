@@ -277,7 +277,7 @@ function XepTheoTuan({ chiNhanhDau, lopDs, lopMoSan, onClose, onDone, tabs }: Ng
         <div className="flex flex-wrap items-center gap-2">
           <div className="flex min-w-[240px] max-w-[380px] flex-1 items-center gap-2">
             <div className="min-w-0 flex-1">
-              <TuanNho d={{ periodId: tuanChung?.periodId ?? null, weekStart: tuanChung?.weekStart ?? null }} goc={homNay} onTuan={setTuanChung} />
+              <TuanNho nam d={{ periodId: tuanChung?.periodId ?? null, weekStart: tuanChung?.weekStart ?? null }} goc={homNay} onTuan={setTuanChung} />
             </div>
             {quaTuan(tuanChung) && <Nhan tone="soon" title={CAU_TUAN_DA_QUA}>Tuần đã qua</Nhan>}
           </div>
@@ -305,7 +305,7 @@ function XepTheoTuan({ chiNhanhDau, lopDs, lopMoSan, onClose, onDone, tabs }: Ng
                 <span className="text-xs text-slate-200"><b>{tenMonNgan(null, k)}</b> <span className="text-slate-400">{tenMon(null, k)}</span></span>
                 <div className="flex min-w-0 flex-wrap items-center gap-2 sm:flex-nowrap">
                   <div className="min-w-[220px] flex-1 sm:min-w-0">
-                    <TuanNho d={{ periodId: tuanKn(k)?.periodId ?? null, weekStart: tuanKn(k)?.weekStart ?? null }} goc={homNay}
+                    <TuanNho nam d={{ periodId: tuanKn(k)?.periodId ?? null, weekStart: tuanKn(k)?.weekStart ?? null }} goc={homNay}
                       onTuan={(t) => setRieng((s) => ({ ...s, [k]: t }))} />
                   </div>
                   {quaTuan(tuanKn(k)) && <Nhan tone="soon" title={CAU_TUAN_DA_QUA}>Tuần đã qua</Nhan>}
