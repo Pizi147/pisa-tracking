@@ -95,4 +95,32 @@ export async function runPrOv15dTests(t: YThucTestKit) {
     assert(dem.toi === 1 && dem.gv === 2 && dem['tat-ca'] === 3, JSON.stringify(dem));
     assert(d.khopNguoiViec(ds[0], 'toi') && !d.khopNguoiViec(ds[0], 'gv') && d.khopNguoiViec(ds[1], 'gv') && d.khopNguoiViec(ds[2], 'tat-ca'), 'khớp');
   });
+
+  const tq: any = await import('../worklist/tongQuan.ts');
+  const bang: any = await import('../worklist/bangChiNhanh.ts');
+  const metrics: any = await import('../worklist/metrics.ts');
+
+  check('OV15d-7 · Lớp cần chú ý: cột "Case chưa chốt PA" = HV / Case, CÙNG hàm ô số (`case-cho-xac-dinh-nguyen-nhan`); Σ hàng = tổng; ô mở đúng danh sách', () => {
+    const ql = P.mbManager;
+    const mb = (conn.prepare(`SELECT id FROM branches WHERE code = 'MB'`).get() as any).id;
+    const r = bang.bangChiNhanh(ql, { branchId: mb, ct: 'ft' });
+    const m = metrics.metricSet(ql, 'case-cho-xac-dinh-nguyen-nhan', { branchId: mb, program: 'ft' });
+    assert(r.tong.caseChuaChot.n === m.n, `tổng Case ${r.tong.caseChuaChot.n} ≠ ô số ${m.n}`);
+    const hv = new Set((conn.prepare(`SELECT DISTINCT student_id FROM sos_cases WHERE id IN (${m.ids.map(() => '?').join(',') || 'NULL'})`).all(...m.ids) as any[]).map((x) => x.student_id));
+    assert(r.tong.caseChuaChotHv.n === hv.size, `tổng HV ${r.tong.caseChuaChotHv.n} ≠ ${hv.size}`);
+    const sigma = r.hang.reduce((s: number, h: any) => s + h.o.caseChuaChot.n, 0) + (r.conLai?.o.caseChuaChot.n ?? 0);
+    assert(sigma === r.tong.caseChuaChot.n, `Σ hàng ${sigma} ≠ tổng`);
+    const h = r.hang.find((x: any) => x.o.caseChuaChotHv.n > 0);
+    if (h) assert(bang.oBangChiNhanh(ql, { branchId: mb, ct: 'ft', cot: 'caseChuaChotHv', khoa: h.khoa }).n === h.o.caseChuaChotHv.n, 'ô mở = số');
+  });
+
+  check('OV15d-8 · Tổng quan QL "Cần bạn quyết": Case chưa chốt PA quá hạn = chỉ số; Bước tiếp sau thi / Chốt lộ trình = việc của QL', () => {
+    const ql = P.mbManager;
+    const r = tq.tongQuanQuanLy(ql, {});
+    const m = metrics.metricSet(ql, 'case-xac-dinh-nguyen-nhan-qua-han', { branchId: null });
+    assert(r.canQuyet && r.canQuyet.caseQuaHan.length === m.n, `Case quá hạn ${r.canQuyet?.caseQuaHan.length} ≠ ${m.n}`);
+    assert(r.canQuyet.sauThi.every((x: any) => x.group === 'buoc_tiep' || x.group === 'chot_len_ft'), 'chỉ Bước tiếp + Chốt lộ trình');
+    const mw = (mywork.myWork(ql, { chiNhom: new Set(['buoc_tiep', 'chot_len_ft']) }).items as any[]);
+    assert(r.canQuyet.sauThi.length === mw.length, `số việc ${r.canQuyet.sauThi.length} ≠ ${mw.length}`);
+  });
 }

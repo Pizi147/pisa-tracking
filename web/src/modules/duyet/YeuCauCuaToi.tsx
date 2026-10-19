@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { Card, Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { TheYeuCau } from './TheYeuCau.tsx';
@@ -9,9 +10,25 @@ import { t } from '@shared/i18n/index.ts';
  * CÔNG VIỆC › YÊU CẦU CỦA TÔI (PR-DUYET, M8) — thẻ mình đã gửi Quản lý: đang chờ trước, rồi đã xử lý 60 ngày (Đã duyệt · Bị từ chối +
  * lý do · Đã trả lời · Tự đóng). Không có nút quyết định. Chuông "QL đã duyệt/từ chối/trả lời" mở đúng thẻ ở đây (`?the=`).
  */
-export function YeuCauCuaToi() {
+export function YeuCauCuaToi({ gon = false }: {
+  /** OV-15d: phần cuối Công việc của GV — chỉ thẻ Bị từ chối (việc: Sửa và gửi lại) + một dòng "n yêu cầu chờ duyệt ›"; đủ ở `/cong-viec/yeu-cau`. */
+  gon?: boolean;
+} = {}) {
   const { data, loading, error, reload } = useApi<{ the: TheYeuCauDto[] }>('/yeu-cau?hop=cua-toi');
   const nhan = useTheNhanManh(data?.the);
+  if (gon) {
+    if (!data) return null;
+    const tuChoi = data.the.filter((x) => x.trangThai === 'tu_choi');
+    const dangCho = data.the.filter((x) => x.trangThai === 'cho').length;
+    if (!tuChoi.length && !dangCho) return null;
+    return (
+      <section className="space-y-2" aria-label={t('Yêu cầu của tôi')}>
+        {tuChoi.length > 0 && <h2 className="m-0 text-sm font-semibold text-slate-200">{t('Bị từ chối')} <span className="tabular-nums text-slate-400">{tuChoi.length}</span></h2>}
+        {tuChoi.map((y) => <TheYeuCau key={y.id} yc={y} laNguoiXin nhanManh={nhan === y.id} onXong={reload} />)}
+        {dangCho > 0 && <Link to="/cong-viec/yeu-cau" className="link inline-block text-[13px] max-sm:py-3">{t('{n} yêu cầu chờ duyệt ›', { n: dangCho })}</Link>}
+      </section>
+    );
+  }
   if (error) return <ErrorState message={error.message} hint={error.hint} onRetry={reload} />;
   if (loading) return <Card><Skeleton rows={5} /></Card>;
   const ds = data?.the ?? [];

@@ -17,6 +17,7 @@ import { lopCuaTap, tachTheoLop } from './chuongTrinh.ts';
 import { demYeuCau, quetYeuCau } from '../duyet/yeuCau.ts';
 import { noDiemCuaGv } from '../giaoVien/hoSo.ts';
 import { phamViXemViec } from './xemViec.ts';
+import { myWork, type WorkItem } from './mywork.ts';
 
 /**
  * TỔNG QUAN (PR-Pa, đặc tả §3.2). File này KHÔNG ĐẾM gì: mọi số lấy từ `metricSet` (hợp đồng số liệu luật 1), ở đây chỉ
@@ -169,8 +170,17 @@ export function tongQuanQuanLy(p: Principal, f: { branchId?: number | null }) {
     }
   });
 
+  /*
+   * OV-15d "CẦN BẠN QUYẾT" (mockup 3, C23, Q5): Case chưa chốt PA quá hạn — dòng của CHÍNH tập chỉ số (mở Case tại chỗ); Chọn bước tiếp sau thi +
+   * Chốt lộ trình (chỉ khi có) — đúng việc `buoc_tiep` / `chot_len_ft` của `/my-work` người xem (cùng hàm, mở panel / trang như Công việc).
+   */
+  const caseQh = sets.get('case-xac-dinh-nguyen-nhan-qua-han')!;
+  const canQuyet = {
+    caseQuaHan: rowsFor('case', caseQh.ids, 'case-xac-dinh-nguyen-nhan-qua-han', p),
+    sauThi: (myWork(p, { branchId: base.branchId, chiNhom: new Set(['buoc_tiep', 'chot_len_ft']) }).items ?? []) as WorkItem[],
+  };
   /* PR-DUYET (Q8): số của hộp Chờ duyệt — đọc từ hộp, không thêm chỉ số vào sổ. */
-  return { canXuLy, choDuyet: demYeuCau(p, { branchId: base.branchId }) };
+  return { canXuLy, canQuyet, choDuyet: demYeuCau(p, { branchId: base.branchId }) };
 }
 
 /**
