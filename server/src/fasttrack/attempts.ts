@@ -421,6 +421,7 @@ export function skillCells(
      * cũng là điểm thật, nên không dùng riêng `band`.
      */
     const hasScore = cellScored || (row?.raw_score ?? null) !== null;
+    const coGiaTri = hasScore || [row?.c1, row?.c2, row?.c3, row?.c4].some((v) => v !== null && v !== undefined);
     /* OV-1b: một luật với hàng lớp Lịch Test (`dauTruCuaO`) — "-" có hiệu lực ngay khi ghi, không chờ chốt cuối Chủ nhật. */
     const ns = dauTruCuaO({
       marked: !!row?.no_show_period_id,
@@ -474,9 +475,10 @@ export function skillCells(
       /* OV-4c: ô W / S nhập Band thẳng được không — cùng hàm với `saveScore` (web chỉ đọc cờ này). */
       bandThang: duocNhapBandThang({ lichSu: !!attempt.lich_su, mt0: laMt0(attempt) }),
       resultDate: row?.result_date ?? null,
-      enteredByName: row?.entered_by_name ?? null,
-      enteredAt: row?.entered_at ?? null,
-      enteredById: row?.entered_by ?? null,
+      /* OV-15b (mục 7): "Nhập bởi …" chỉ khi ô có giá trị điểm (cả tiêu chí dở dang — PR-I) — ô chỉ nhận xét / đã xoá điểm / GV chấm chéo đã gán thì không. */
+      enteredByName: coGiaTri ? row?.entered_by_name ?? null : null,
+      enteredAt: coGiaTri ? row?.entered_at ?? null : null,
+      enteredById: coGiaTri ? row?.entered_by ?? null : null,
       deadline: view.deadline,
       deadlineSource: view.deadlineSource,
       /* Quá hạn tính trên Ô NÀY: W2 còn trống thì W2 quá hạn, W1 đã nộp thì không. */
@@ -1165,7 +1167,8 @@ export function attemptDetail(p: Principal, attemptId: number) {
       laGvcn: !!a.class_id && isCoreTeacherOf(p, a.class_id),
       canCancel: can(p, PERMISSIONS.ATTEMPT_CANCEL, { classId: a.class_id }),
       /** PR-MT (M-12, K4-10): cách huỷ được phép + hệ quả thật, để hộp huỷ nói trước — không bấm rồi mới biết. */
-      huyLuot: a.status !== 'cancelled' && can(p, PERMISSIONS.ATTEMPT_CANCEL, { classId: a.class_id })
+      /* OV-15c: Mock / MT0 không còn "Huỷ MT{n}" trên web (Xóa = về Chưa xếp, `boTuanLuot`) — hồ sơ MT không vẽ nút. */
+      huyLuot: a.status !== 'cancelled' && !HUY_MT_DA_BO.includes(a.kind) && can(p, PERMISSIONS.ATTEMPT_CANCEL, { classId: a.class_id })
         ? (({ caseIds: _bo, ...hq }) => hq)(heQuaHuyLuot(a.id)) : null,
       /** Xử lý vắng (dời lần đầu / xin duyệt) — GVCN của lớp và Quản lý; giáo viên bộ môn thì không. */
       canHandleAbsence: canRequestAbsence(p, a),
@@ -1558,9 +1561,15 @@ export function caseSinhRieng(attemptId: number): number[] {
  * còn chờ, tín hiệu còn chờ của lượt và ghi danh sách đóng vào bản cất để Khôi phục mở lại đúng. MỘT giao dịch. Bài lớp thường: điểm xoá theo
  * lô như cũ (`xoaDiemLuot`, PR-VN5) — không cất.
  */
-export function huyLuot(p: Principal, attemptId: number, input: { lyDo?: string | null }) {
+/** OV-15c (mục 6): loại lượt KHÔNG còn huỷ từ web — Kế hoạch Test chỉ có Xóa (bỏ tuần, về Chưa xếp). Huỷ do hệ thống (MT0, vắng 2 lần) giữ. */
+const HUY_MT_DA_BO = ['mock', 'mt0'];
+
+export function huyLuot(p: Principal, attemptId: number, input: { lyDo?: string | null; quaWeb?: boolean }) {
   const a = loadAttempt(attemptId);
   require_(p, PERMISSIONS.ATTEMPT_CANCEL, { classId: a.class_id, studentId: a.student_id }, 'Bạn không có quyền huỷ lượt Mock.');
+  if (input.quaWeb && HUY_MT_DA_BO.includes(a.kind)) {
+    throw badRequest(`Không còn huỷ MT${a.attempt_no} — dùng Xóa ở hộp lịch (Kế hoạch Test): đợt về Chưa xếp, lịch sử giữ.`);
+  }
   const lyDo = String(input.lyDo ?? '').trim() || `Huỷ MT${a.attempt_no}`;   // rà #282: lý do tuỳ chọn
   const hq = heQuaHuyLuot(attemptId);
   if (!hq.cachDuoc) throw badRequest('Lượt này đã huỷ.');
@@ -2413,6 +2422,8 @@ export function classScoreSheet(
         studentId: a.student_id,
         studentName: a.full_name,
         studentCode: a.student_code,
+        /* OV-15b: Dán từ Excel — phân biệt hai em trùng tên (cột đã có trong ATTEMPT_SELECT, không thêm câu đọc). */
+        studentEmail: a.student_email ?? null,
         attemptNo: a.attempt_no,
         status: a.status,
         /* OV-1d: em đã Kết thúc học / Lưu trữ — ô không việc / quá hạn; Lưu trữ thêm chỉ đọc, không Bỏ vắng (máy chủ cũng chặn ở `saveScore`). */

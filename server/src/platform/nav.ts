@@ -24,14 +24,17 @@ export function navOf(p: Principal): NavQuyen {
   const viec = coPhamVi(PERMISSIONS.WORK_VIEW) || gvS(PERMISSIONS.WORK_VIEW);
   const support = viec && attempt;
   const chamDiem = phamViXemViec(p) === 'cham-diem';
+  const analysis = coPhamVi(PERMISSIONS.ANALYSIS_VIEW);
+  const hvCuaToi = p.roleKeys.includes('consultant') && !laVaiQuanLy(p.roleKeys);
   return {
-    overview: true,
+    /* OV-15d: GV (không Phân tích, không TVV, có Công việc) vào thẳng Công việc — Tổng quan của GV trùng danh sách việc nên bỏ. */
+    overview: analysis || hvCuaToi || !(viec && (attempt || board || meeting)),
     students: coPhamVi(PERMISSIONS.STUDENT_VIEW),
     admin: can(p, PERMISSIONS.ADMIN_CONFIG, { anyScope: true }),
-    analysis: coPhamVi(PERMISSIONS.ANALYSIS_VIEW),
+    analysis,
     phanTichGv: coPhamVi(PERMISSIONS.ANALYSIS_VIEW_TEACHER),
     /* OV-11f (TQ-8): QL / Quản trị kiêm TVV ở vai gốc giữ Tổng quan QL; Học viên của tôi chỉ khi Góc nhìn = TVV (vai QL bị lọc khỏi `roleKeys`). */
-    hvCuaToi: p.roleKeys.includes('consultant') && !laVaiQuanLy(p.roleKeys),
+    hvCuaToi,
     test, testGrade: test, testSchedule: test, testPlan: test && plan,
     work: viec && (attempt || board || meeting),
     workSupport: support, workOps: viec && board, workReports: viec && meeting,

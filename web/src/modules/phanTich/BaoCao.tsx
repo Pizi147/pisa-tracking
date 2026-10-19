@@ -89,19 +89,22 @@ export function BaoCao(pv: PhamViPhanTich) {
           {data.test.gvQuaHan.length > 0 && (
             <div>
               <PhanTrang {...ptGv.thanh} />
+              {/* 375: đầu cột + tên GV + kỹ năng xuống dòng; còn rộng hơn khung thì cuộn ngang TRONG khung bảng, trang không trượt. */}
+              <div className="table-scroll">
               <table className="w-full text-sm">
-                <thead><tr><th className="th">{t('Quá hạn theo GV')}</th><th className="th">{t('Kỹ năng')}</th><th className="th text-center">{t('Bài')}</th><th className="th max-sm:hidden">{t('Lớp')}</th></tr></thead>
+                <thead><tr><th className="th max-sm:whitespace-normal">{t('Quá hạn theo GV')}</th><th className="th max-sm:whitespace-normal">{t('Kỹ năng')}</th><th className="th text-center">{t('Bài')}</th><th className="th max-sm:hidden">{t('Lớp')}</th></tr></thead>
                 <tbody>
                   {ptGv.cat(data.test.gvQuaHan).map((g) => (
                     <tr key={g.khoa}>
-                      <td className="td">{dich(g.ten)}</td>
-                      <td className="td whitespace-nowrap">{g.kyNang.join(' · ')}</td>
+                      <td className="td break-words">{dich(g.ten)}</td>
+                      <td className="td sm:whitespace-nowrap">{g.kyNang.join(' · ')}</td>
                       <td className="td text-center">{soO(g.bai, `gv:${g.khoa}`, `${t('Quá hạn')} · ${dich(g.ten)}`)}</td>
                       <td className="td text-xs text-slate-300 max-sm:hidden" title={g.lop.join(' · ')}>{g.lop.join(' · ')}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
+              </div>
               <PhanTrang {...ptGv.thanh} duoi />
             </div>
           )}

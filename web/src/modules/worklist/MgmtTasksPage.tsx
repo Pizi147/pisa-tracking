@@ -637,7 +637,7 @@ type CreateTaskProps = {
  * lọc / việc cha lúc mở), khoá gửi và lỗi form đều mới mỗi lần mở; rerender trong lúc mở không ghi đè lựa chọn của người dùng.
  * Trước đây ruột luôn mount (chỉ `return null` khi đóng) nên state đầu là của lần dựng trang: lọc "Tất cả", đổi sang A rồi mở → việc vẫn lưu "Toàn hệ thống".
  */
-function CreateTask(props: CreateTaskProps) {
+export function CreateTask(props: CreateTaskProps) {
   const lan = useRef(0);
   const moTruoc = useRef(false);
   if (props.open && !moTruoc.current) lan.current += 1;   // đóng → mở: một lần mở mới

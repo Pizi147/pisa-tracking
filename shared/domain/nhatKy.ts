@@ -37,7 +37,7 @@ const NHAN_NHAT_KY: Record<string, string> = {
   'measure.add_violations': 'Gom thêm vi phạm vào lần xử lý', 'measure.confirm': 'Xác nhận đã xử lý vi phạm', 'measure.create': 'Tạo lần xử lý vi phạm',
   'measure.delete': 'Xoá lần xử lý vi phạm', 'measure.edit': 'Sửa lần xử lý vi phạm', 'measure.note': 'Ghi chú lần xử lý vi phạm',
   'measure.remove_violation': 'Bỏ vi phạm khỏi PA',
-  'mgmt_task.create': 'Tạo công việc quản lý', 'mt.xuat_excel': 'Xuất Excel kết quả Test',
+  'mgmt_task.create': 'Tạo công việc quản lý', 'mt.xuat_excel': 'Xuất Excel kết quả Test', 'ke_hoach.xuat_excel': 'Xuất Excel Kế hoạch Test', 'ke_hoach.xuat_diem': 'Xuất điểm Test',
   'regular.no_show': 'Báo vắng', 'regular.no_show_cleared': 'Bỏ báo vắng', 'regular.plan': 'Xếp lịch bài lớp thường',
   'request.approve': 'Duyệt yêu cầu', 'request.decline': 'Từ chối yêu cầu', 'request.answer': 'Trả lời Xin ý kiến', 'request.undo': 'Huỷ quyết định duyệt',
   'request.create': 'Gửi yêu cầu duyệt', 'request.edit': 'Người gửi sửa yêu cầu', 'request.withdraw': 'Người gửi rút yêu cầu', 'request.answer_edit': 'Sửa câu trả lời Xin ý kiến',
@@ -55,6 +55,8 @@ const NHAN_NHAT_KY: Record<string, string> = {
   'score.edit': 'Nhập điểm', 'score.override': 'Sửa điểm', 'score.no_show': 'Báo vắng', 'score.no_show_cleared': 'Bỏ báo vắng',
   'score.nhan_xet': 'Sửa nhận xét',
   'score.nhan_xet_phu_trach': 'Nhận xét GV phụ trách',   // OV-13k
+  'score.dan_excel': 'Dán điểm từ Excel',   // OV-15b
+  'score.dan_excel_hoan_tac': 'Hoàn tác dán điểm từ Excel',   // OV-15b
   'signal.assign': 'Giao xác nhận nguyên nhân', 'signal.dismissed': 'Bỏ qua, không lập Case', 'signal.linked': 'Nối vào Case',
   'signal.raised': 'Có Case chờ xác nhận nguyên nhân', 'signal.withdrawn': 'Rút Case chờ xác nhận nguyên nhân', 'signal.withdrawn_batch': 'Rút Case chờ xác nhận nguyên nhân hàng loạt',
   'sos_coordination.add': 'Thêm việc phối hợp SOS', 'sos_coordination.confirm': 'Xác nhận việc phối hợp SOS',

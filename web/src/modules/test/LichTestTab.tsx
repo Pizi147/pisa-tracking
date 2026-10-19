@@ -8,12 +8,12 @@ import { Nhan } from '../../ui/Nhan.tsx';
 import { BranchFilter, WeekPicker, useChiNhanhMacDinh } from '../../ui/Filters.tsx';
 import { IconGap } from '../../ui/BieuTuong.tsx';
 import { useDienThoai } from '../../ui/TheDong.tsx';
-import { CongTacKhung, khungDaNho, phamViCoHaiKhung } from '../../ui/CongTacKhung.tsx';
+import { CongTacKhung, phamViCoHaiKhung } from '../../ui/CongTacKhung.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { KhoiNhom } from '../../ui/HangNhom.tsx';
 import { useManHinhHep } from '../cham/LuoiChamLop.tsx';
-import { addDaysIso, chuOChuaLuu, demLopConBai, mondayOfDate, ngay, tenMon, tuanDauThangCua, tuanLich } from '@shared/domain/index.ts';
+import { addDaysIso, chuOChuaLuu, demLopConBai, khungLichTestMacDinh, mondayOfDate, ngay, tenMon, tuanDauThangCua, tuanLich } from '@shared/domain/index.ts';
 import { khoaHang, type DongNo, type LichTest, type LopLichTest } from './lichTest/kieu.ts';
 import { DaiSo, type OSo } from './lichTest/DaiSo.tsx';
 import { KhoiNo } from './lichTest/KhoiNo.tsx';
@@ -35,8 +35,8 @@ const loaiCua = (l: { mode: LopLichTest['mode']; kind?: string | null }): Loai =
  *   khối 1     Test quá hạn chấm — theo hôm nay, không đổi khi đổi tuần; bấm Nhập điểm mở lưới ngay dưới dòng (mục con)
  *   khối 2     Test chấm tuần này — chỉ khi xem tuần hiện tại; lớp đã chấm xong thu gọn, chữ nhạt, cuối (Q4)
  *   khối 3     Lịch Test tuần này / Lịch Test W1 OCT (tuần khác: mở sẵn — Q2)
- *   công tắc   Fast Track · n lớp | Lớp thường · n lớp ở HÀNG LỌC (MH4, K4-05) — áp cho dải số và ba khối;
- *              nhớ theo máy, `loai` trên đường dẫn thắng; chỉ một khung có lớp thì ẩn.
+ *   công tắc   Tất cả · Fast Track · n lớp | Lớp thường · n lớp ở HÀNG LỌC (MH4, K4-05) — áp cho dải số và ba khối;
+ *              `loai` trên đường dẫn thắng; mặc định khung có bài của người xem, cả hai có bài → Tất cả (OV-15b, C14); chỉ một khung có lớp thì ẩn.
  *
  * Mọi trạng thái nằm trên đường dẫn (replace): `periodId`, `branchId`, `phamVi`, `loai`, `classId`, `kn` — F5 và Back
  * giữ đúng chỗ. Máy chủ trả đủ trong MỘT lời gọi; không có `periodId` thì máy chủ tự lấy tuần hiện tại.
@@ -164,18 +164,14 @@ export function LichTestTab() {
     const lop = (k: Loai) => new Set(tatCaHang.filter((x) => loaiCua(x) === k).map((x) => x.classId)).size;
     return { ft: lop('ft'), thuong: lop('thuong') };
   }, [tatCaHang]);
+  /* OV-15b (C14): `null` = cả hai khung. Mặc định khung có bài của người xem; cả hai có bài → hiện cả hai (`khungLichTestMacDinh`). */
   const loai: Loai | null = useMemo(() => {
     if (!data) return null;
-    const co = (k: string | null | undefined): k is Loai => (k === 'ft' || k === 'thuong') && dem[k] > 0;
-    /* UX-2 (5): khung bấm chọn ở công tắc (theo phạm vi) mở được cả khi tuần này khung đó rỗng ("· 0"). */
-    if ((loaiParam === 'ft' || loaiParam === 'thuong') && (dem[loaiParam] > 0 || phamViCoHaiKhung())) return loaiParam;
     const theoLop = tatCaHang.find((l) => l.classId === urlClassId);
-    if (theoLop && co(loaiCua(theoLop))) return loaiCua(theoLop);
-    const daNho = khungDaNho('lich-test');
-    if (co(daNho)) return daNho;
-    /* Khung đầu (FT → thường) có lớp tự mở, rồi khung đầu có lớp. */
-    return (['ft', 'thuong'] as const).find((k) => [...(data.chamTuanNay ?? []), ...data.lop].some((l) => l.moSan && loaiCua(l) === k))
-      ?? (['ft', 'thuong'] as const).find((k) => dem[k] > 0) ?? null;
+    const coBai = { ft: 0, thuong: 0 };
+    /* Bài của người xem: có phân công thì phần của mình (`phan`), Quản lý / Quản trị thì cả hàng — như badge khối. */
+    for (const l of tatCaHang) coBai[loaiCua(l)] += 'conBaiCuaToi' in l ? (l.phan ? l.conBaiCuaToi : l.conBai) : (l.phan ? l.phan.toi?.con ?? 0 : l.conBai);
+    return khungLichTestMacDinh({ param: loaiParam, theoLop: theoLop ? loaiCua(theoLop) : null, coBai, dem, phamViHai: phamViCoHaiKhung() });
   }, [data, dem, tatCaHang, loaiParam, urlClassId]);
   const theoKhung = <T extends { mode: LopLichTest['mode']; kind?: string | null }>(ds: T[]) => ds.filter((x) => !loai || loaiCua(x) === loai);
   const noTab = theoKhung(data?.no ?? []);
@@ -268,11 +264,11 @@ export function LichTestTab() {
     <WeekPicker periodId={periodParam ?? data.tuan?.id ?? null} label={t('Tuần')}
       onPeriod={(id) => datThamSo({ periodId: id ? String(id) : null })} />
   );
-  const congTacKhung = loai && (
-    <CongTacKhung trang="lich-test" value={loai} dem={dem} donVi={dienThoai ? '' : t('lớp')}
-      onChange={(k) => datThamSo({ loai: k === 'tat-ca' ? null : k })} />
+  const congTacKhung = (dem.ft > 0 || dem.thuong > 0) && (
+    <CongTacKhung trang="lich-test" value={loai ?? 'tat-ca'} coTatCa dem={{ ...dem, 'tat-ca': dem.ft + dem.thuong }} donVi={dienThoai ? '' : t('lớp')}
+      onChange={(k) => datThamSo({ loai: k })} />
   );
-  const nutLuatLuoi = loai === 'thuong' && (
+  const nutLuatLuoi = loai !== 'ft' && dem.thuong > 0 && (
     <span className="inline-flex min-h-[44px] items-center sm:min-h-[32px]">
       <NutLuat label={t('Luật lưới lớp thường')}>
         <span className="block">
@@ -302,7 +298,7 @@ export function LichTestTab() {
   const locChiNhanh = <BranchFilter branchId={branchId} onBranch={(id) => datThamSo({ cn: id ? String(id) : null, branchId: null })} />;
   /* Số lựa chọn đang KHÁC mặc định: chi nhánh đã chọn, phạm vi "Tất cả" (máy chủ mặc định 'cua-toi' khi GV có lớp). */
   const soLoc = (branchId ? 1 : 0) + (data.coPhamViRong && data.phamVi !== 'cua-toi' ? 1 : 0);
-  const coGiTrongLoc = branchCount > 1 || !!data.coPhamViRong || loai === 'thuong' || !!session?.nav?.xuatMt;
+  const coGiTrongLoc = branchCount > 1 || !!data.coPhamViRong || !!nutLuatLuoi || !!session?.nav?.xuatMt;
 
   return (
     <div className="space-y-3">

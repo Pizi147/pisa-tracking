@@ -14,10 +14,10 @@ export const HD_QL: HuongDan = {
   viec: [
     {
       id: 'ql-sang', ten: 'Tổng quan + Chờ duyệt mỗi sáng', khi: 'mỗi ngày',
-      buoc: ['Mở <b>Tổng quan</b>: hàng <b>Chờ duyệt</b> đếm thẻ theo loại, có chip <b>Quá hạn</b>; bấm chip mở hộp đã lọc.',
-        'Khối <b>Cần xử lý</b>: việc của chi nhánh, quá hạn ở đầu; <b>Xem</b> mở Công việc lọc sẵn tên từng người.',
-        'Menu <b>Công việc</b> vào thẳng <b>Chờ duyệt</b>; số trên menu = thẻ cần bạn quyết.'],
-      chi: { hd: 'tq-can-xu-ly', duong: '/', chu: 'Việc của chi nhánh cần bạn để ý — quá hạn ở đầu.' },
+      buoc: ['Mở <b>Tổng quan</b>: dải <b>HV cần chú ý</b> — bấm số mở danh sách.',
+        'Khối <b>Cần bạn quyết</b>: <b>Chờ duyệt</b> (Duyệt / Từ chối ngay trên thẻ), Case chưa chốt PA quá hạn, Chọn bước tiếp, Chốt lộ trình.',
+        'Menu <b>Công việc</b>: một danh sách, <b>Chờ bạn duyệt</b> ở đầu; số trên menu = thẻ cần bạn quyết.'],
+      chi: { hd: 'tq-can-xu-ly', duong: '/', chu: 'Việc cần bạn quyết — quá hạn ở đầu.' },
     },
     {
       id: 'ql-lich-test', ten: 'Xếp / dời lịch Test', khi: 'mỗi tuần',
@@ -44,7 +44,7 @@ export const HD_QL: HuongDan = {
     },
     {
       id: 'ql-lo-trinh', ten: 'Hết khoá / Lộ trình tiếp theo', khi: 'khi lớp sắp hết khoá',
-      buoc: ['Lớp thường: Tổng quan › <b>Cần xử lý</b> "n lớp cần Chốt lộ trình" → <b>Lộ trình tiếp theo</b>.',
+      buoc: ['Lớp thường: Tổng quan › <b>Cần bạn quyết</b> › <b>Chốt lộ trình</b> (khi tới hạn; có thông báo) → nút <b>Chốt lộ trình</b>.',
         'Hồ sơ lớp › <b>Chốt lộ trình</b>: chọn hướng từng em (Lên lớp, Học lại, Lên FT…); lớp cũ có phiếu bàn giao.',
         'Em FT có kết quả thi thật: <b>Chọn bước tiếp ›</b> — <b>Lộ trình mới</b> · <b>Tạm dừng</b> · <b>Thôi học</b> (QL hoặc TVV chọn).',
         'Một em đổi lớp khi đang học: hồ sơ em › <b>⋯ › Chuyển lớp…</b>.'],
@@ -55,10 +55,10 @@ export const HD_QL: HuongDan = {
     {
       id: 'tong-quan', ten: 'Tổng quan', duong: ['/'],
       muc: [
-        { id: 'ql-tq-cho-duyet', ten: 'Hàng Chờ duyệt', buoc: ['Số thẻ chờ bạn quyết, chia <b>Học thuật · Ý thức · Lịch thi · Thông tin HV</b>, thêm chip <b>Quá hạn</b>.', 'Bấm chip mở hộp đã lọc; <b>Mở hộp duyệt</b> xem hết.'] },
-        { id: 'ql-tq-can-xu-ly', ten: 'Cần xử lý', buoc: ['Việc của chi nhánh: bài quá hạn chấm, PA chưa có kết quả, lớp cần Chốt lộ trình…', 'Nút cuối dòng mở Công việc lọc sẵn, có tên từng người.'],
-          chi: { hd: 'tq-can-xu-ly', duong: '/', chu: 'Việc của chi nhánh — quá hạn ở đầu.' } },
-        { id: 'ql-tq-so-lieu', ten: 'Số liệu', buoc: ['Bốn ô: dưới kỳ vọng, Case đang mở, Case chưa chốt PA, PA chưa có kết quả; bấm số mở danh sách.', '<b>Điểm đáng chú ý</b> · <b>Lịch sắp tới</b> (<b>Xem toàn bộ lịch ›</b> mở Kế hoạch Test) · bảng <b>Theo lớp</b>.'] },
+        { id: 'ql-tq-cho-duyet', ten: 'HV cần chú ý', buoc: ['Dải đầu trang: <b>HV · Case chưa chốt PA</b> (⚠ quá hạn), <b>bài trễ chấm · n GV</b>.', 'Bấm số mở danh sách tại chỗ; thống kê theo kỳ ở <b>Phân tích</b>; <b>Báo cáo ›</b> mở trang Báo cáo.'] },
+        { id: 'ql-tq-can-xu-ly', ten: 'Cần bạn quyết', buoc: ['<b>Chờ duyệt</b>: thẻ "Nếu duyệt: …", <b>Duyệt · Từ chối…</b> tại chỗ; <b>Mở hộp duyệt ›</b> xem hết.', '<b>Case chưa chốt PA</b> quá hạn → <b>Mở Case</b>; <b>Chọn bước tiếp</b> sau thi; <b>Chốt lộ trình</b> khi tới hạn.', 'Không có Nhắc: GV tự nhận thông báo khi quá hạn.'],
+          chi: { hd: 'tq-can-xu-ly', duong: '/', chu: 'Việc cần bạn quyết — quá hạn ở đầu.' } },
+        { id: 'ql-tq-so-lieu', ten: 'Lớp cần chú ý · Tuần này', buoc: ['<b>Lớp cần chú ý</b>: dưới kỳ vọng, SOS, <b>Case chưa chốt PA</b> (HV / Case — hai số bấm riêng); mặc định <b>Chỉ lớp có vấn đề</b>.', '<b>Tuần này</b>: lịch Test sắp tới + <b>Trễ chấm</b> theo GV (bấm số bài để nhập thay).'] },
       ],
     },
     {
@@ -97,6 +97,10 @@ export const HD_QL: HuongDan = {
           chi: { hd: 'kht-loc', duong: '/test/ke-hoach', chu: 'Lọc và xếp lịch nhiều lớp ở hàng này.' } },
         { id: 'ql-kh-ky-nang', ten: 'Một kỹ năng', buoc: ['Bấm chip kỹ năng ở dòng lớp: chọn tuần, <b>Lưu</b>.', '<b>⋯</b>: <b>Dời lịch thi</b> · <b>Dời hạn chấm</b> · <b>Huỷ kỹ năng</b> · <b>Huỷ điểm</b> · <b>Trả lời đề nghị dời</b> · <b>Không mock lại</b>.'] },
         { id: 'ql-kh-luat', ten: 'Luật xếp lịch', buoc: ['Link <b>Luật xếp lịch Test</b> trên hàng lọc.'] },
+        { id: 'ql-kh-tim', ten: 'Tìm lớp, học viên', buoc: ['Gõ mã lớp, tên (có / không dấu) hoặc email vào <b>Tìm lớp, học viên hoặc email…</b>.', 'Chọn em: lớp mở, hàng em được đánh dấu.'] },
+        { id: 'ql-kh-xoa', ten: 'Xóa lịch một đợt', buoc: ['Bấm ô MT, chân hộp: <b>Xóa</b> → đợt về <b>Chưa xếp</b>, lịch sử giữ; có <b>Hoàn tác</b>.', 'Đã có điểm / đã thi: nút mờ. Kỹ năng huỷ vì vắng 2 lần: <b>Khôi phục → Chưa xếp</b> hoặc <b>Giữ huỷ</b>.'] },
+        { id: 'ql-kh-ghi-chu', ten: 'Ghi chú lịch thi', buoc: ['Ô <b>Ghi chú lịch thi</b> trong hộp; ghi chú hiện một dòng dưới chip, bấm để sửa (Enter lưu · Esc huỷ).', '<b>+ Ghi chú lớp</b> dưới bảng. Chỉ là ghi chú, không dời lịch.'] },
+        { id: 'ql-kh-xuat', ten: 'Xuất Excel', buoc: ['<b>Xuất Excel</b>: Kế hoạch Test 13 cột theo bộ lọc đang xem (tuần kèm năm, <b>W4 AUG/2026</b>).', '<b>Xuất điểm Test</b>: <b>Điểm + nhận xét</b> / <b>Chỉ điểm</b>; theo tuần, theo lớp (nhiều MT) hoặc lớp + khoảng tuần.'] },
       ],
     },
     themMan('nhap-diem', { id: 'ql-nd-sua', ten: 'Sửa điểm đợt đã hoàn tất', buoc: ['Chỉ QL sửa hoặc xoá một điểm đã có: bấm ô, sửa, ghi <b>Lý do sửa</b> (tuỳ chọn).', 'Nhật ký ghi lại; GV nhờ QL khi cần sửa.'] }),
@@ -109,8 +113,8 @@ export const HD_QL: HuongDan = {
         { id: 'ql-cd-nhieu', ten: 'Duyệt nhiều', buoc: ['Đề xuất PA, Dời lịch thi lần 2: đánh dấu ô ở thẻ cùng loại.', '<b>Duyệt n yêu cầu</b> hoặc <b>Từ chối n…</b>.'] },
       ],
     },
-    themMan('cong-viec', { id: 'ql-cv-cua-gv', ten: 'Việc của GV', buoc: ['<b>Của tôi</b> / <b>Của GV</b>: xem việc của mọi GV chi nhánh.', '<b>Lọc thêm</b> › <b>Của một GV</b>.'],
-      chi: { hd: 'cv-loc-them', duong: '/cong-viec', chu: 'Lọc theo nhóm việc, chương trình, một GV.' } }),
+    themMan('cong-viec', { id: 'ql-cv-cua-gv', ten: 'Việc của GV', buoc: ['<b>Của tôi · Của GV · Tất cả</b> (mặc định Tất cả); ô <b>▾</b> chọn một GV.', '<b>Chờ bạn duyệt</b> ở đầu; <b>Việc quản lý</b> cuối (gập) có <b>+ Giao việc</b>, <b>Vận hành ›</b>, <b>Báo cáo đơn vị ›</b>.', 'Việc <b>Chưa có người</b>: <b>Phân công…</b> mở Phân công GV môn của lớp.'],
+      chi: { hd: 'cv-loc-them', duong: '/cong-viec', chu: 'Chọn việc của ai, lọc quá hạn ở đây.' } }),
     {
       id: 'van-hanh', ten: 'Vận hành', duong: ['/cong-viec/van-hanh'],
       muc: [{ id: 'ql-vh', ten: 'Việc vận hành', buoc: ['Bốn số lọc: <b>Quá hạn</b> · <b>Chờ người khác</b> · <b>Cần quyết định</b> · <b>Vừa hoàn thành (7 ngày)</b>.', '<b>+ Giao việc</b>: việc ngoài học viên (giáo trình, tutor…), có người phụ trách, hạn.'],

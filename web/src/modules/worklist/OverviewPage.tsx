@@ -1,19 +1,20 @@
 import { useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, Navigate, useSearchParams } from 'react-router-dom';
 import { useSession } from '../../lib/session.tsx';
+import { useApi } from '../../lib/useApi.ts';
 import { BranchFilter, useChiNhanhMacDinh } from '../../ui/Filters.tsx';
 import { BranchPulse } from './BranchPulse.tsx';
 import { LichSapToi } from './Highlights.tsx';
 import { MetricTiles } from './MetricTiles.tsx';
 import { DaiChoDuyet, DiemDangChuY, KhoiCanXuLy } from './KhoiCanXuLy.tsx';
-import { ViecCuaToi, YeuCauCuaToi } from './ViecCuaToi.tsx';
-import { LopToiDay } from './LopToiDay.tsx';
+import { DaiTomTat, KhoiCanQuyet } from './KhoiCanQuyet.tsx';
+import { BangGiaoVienChiNhanh } from '../giaoVien/BangGiaoVienChiNhanh.tsx';
 import { HocVienCuaToi } from './HocVienCuaToi.tsx';
 import { DaiMoiDung } from '../huongDan/DaiMoiDung.tsx';
 import { MockTestAdmin } from './MockTestAdmin.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { CongTacKhung, khungDaNho } from '../../ui/CongTacKhung.tsx';
-import { TAB_TONG_QUAN_LABEL, laVaiQuanLy, ngay, tuanLich, type TabTongQuan } from '@shared/domain/index.ts';
+import { TAB_TONG_QUAN_LABEL, laVaiQuanLy, ngay, type TabTongQuan } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
 
 /**
@@ -28,9 +29,10 @@ export default function OverviewPage(_: { tab?: TabTongQuan } = {}) {
   const { session } = useSession();
   const [params, setParams] = useSearchParams();
   const canSeeBoard = !!session?.nav?.analysis;
-  const { homNay, ngan } = useNgayNghiepVu();
+  const { homNay } = useNgayNghiepVu();
   /* CHI NHÁNH ĐANG CHỌN NẰM TRÊN ĐỊA CHỈ TRANG (`cn`) — một nguồn cho cả trang, gửi đường dẫn vẫn ra đúng chi nhánh. */
   const macDinh = useChiNhanhMacDinh();
+  const soChiNhanh = useApi<unknown[]>('/ref/branches').data?.length ?? 0;
   const branchId = params.get('cn') ? Number(params.get('cn')) : macDinh;
   const setBranchId = (id: number | null) => {
     const next = new URLSearchParams(params);
@@ -53,27 +55,8 @@ export default function OverviewPage(_: { tab?: TabTongQuan } = {}) {
     );
   }
 
-  if (!canSeeBoard) {
-    /*
-     * GIÁO VIÊN (mockup 23 màn A/C): tầng 1 = Việc của tôi · hôm nay (+ Yêu cầu của tôi bên cạnh); tầng 3 = Lớp tôi dạy. Lời chào nói
-     * tuần bằng mã tuần, hôm nay bằng ngày (Q22).
-     */
-    const ten = (session?.user?.fullName ?? '').trim().split(/\s+/).pop() ?? '';
-    return (
-      <div className="page space-y-4">
-        <div className="flex flex-col gap-0.5">
-          <h1 className="m-0 text-lg font-semibold text-slate-100">{ten ? t('Chào {ten}', { ten }) : t('Tổng quan')}</h1>
-          <span className="text-xs text-slate-500">{t('Tuần')}{' '}<b className="font-semibold tabular-nums text-slate-300">{tuanLich(homNay, homNay)}</b>{' '}{t('· hôm nay')}{' '}{ngan(homNay)}</span>
-        </div>
-        <DaiMoiDung />
-        <div className="grid items-start gap-3 lg:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)]">
-          <ViecCuaToi />
-          <YeuCauCuaToi />
-        </div>
-        <LopToiDay />
-      </div>
-    );
-  }
+  /* OV-15d: GIÁO VIÊN vào thẳng Công việc (hàng đợi) — Tổng quan GV trùng danh sách việc nên bỏ; Lớp tôi dạy + Yêu cầu của tôi ở cuối Công việc. */
+  if (!canSeeBoard) return <Navigate to={session?.nav?.work ? '/cong-viec' : '/hoc-vien'} replace />;
 
   /*
    * OV-10c (mockup vai 13/10 mục 4–6): tab đầu theo việc của vai — Admin "Mock Test" (4 ô + GV chấm quá hạn + Lịch sắp tới, không khối Case / PA);
@@ -98,7 +81,38 @@ export default function OverviewPage(_: { tab?: TabTongQuan } = {}) {
           <LichSapToi branchId={branchId} ct={null} />
         </>
       )}
-      {vai !== 'admin' && (
+      {vai === 'ql' && (
+        /* OV-15d — TỔNG QUAN QL A (mockup 3, C23): dải tóm tắt nhỏ dẫn tới việc · Cần bạn quyết · Lớp cần chú ý · Tuần này. Thống kê chi tiết ở Phân tích. */
+        <>
+          <DaiMoiDung />
+          <div className="flex flex-wrap items-center gap-3">
+            <CongTacKhung trang="tong-quan" value={khung} onChange={(k) => setKhung(k === 'thuong' ? 'thuong' : 'ft')} />
+            <span className="flex-1" />
+            {/* Báo cáo = tab đầu của Phân tích (kế hoạch OV-15 mục 7, OV-15e) — mở thẳng. */}
+            <Link to={`/phan-tich?goc=bao-cao${branchId ? `&cn=${branchId}` : ''}`} className="btn btn-sm min-h-[44px] no-underline sm:min-h-[32px]">{t('Báo cáo ›')}</Link>
+          </div>
+          {/* Hai khối việc của QL đọc `/tong-quan/quan-ly` (quyền xem việc người khác) — như Cần xử lý cũ, chỉ khi có Công việc. */}
+          {session?.nav?.work && <DaiTomTat branchId={branchId} ct={khung} />}
+          {session?.nav?.work && <KhoiCanQuyet branchId={branchId} />}
+          <BranchPulse branchId={branchId} ct={khung} chuY />
+          <section aria-labelledby="tuan-nay" className="space-y-3">
+            <h2 id="tuan-nay" className="m-0 text-base font-semibold text-slate-100">{t('Tuần này')}</h2>
+            <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-3">
+              <LichSapToi branchId={branchId} ct={khung} />
+              {/* Trễ chấm theo GV — số bài bấm ra đúng bài của GV đó (QL nhập tại chỗ); GV đã nhận thông báo tự động, không có Nhắc. */}
+              {/* Bảng GV cần MỘT chi nhánh (máy chủ báo "Chọn một chi nhánh." khi nhiều) — Quản trị chưa chọn chi nhánh thì ẩn. */}
+              {session?.nav?.phanTichGv && (branchId !== null || soChiNhanh === 1) && (
+                <div className="card p-0">
+                  <h3 className="m-0 border-b px-4 py-2.5 text-sm font-semibold text-slate-200" style={{ borderColor: 'var(--line)' }}>{t('Trễ chấm')}</h3>
+                  <BangGiaoVienChiNhanh branchId={branchId} ct={khung} />
+                  <p className="m-0 border-t px-4 py-2 text-xs text-slate-500" style={{ borderColor: 'var(--line)' }}>{t('GV đã nhận thông báo tự động.')}</p>
+                </div>
+              )}
+            </div>
+          </section>
+        </>
+      )}
+      {vai === 'cx' && (
         <>
           <DaiMoiDung />
           {/* ─────────────── tầng 1: việc chờ Quản lý quyết + việc đang trễ (gộp hai khung) */}

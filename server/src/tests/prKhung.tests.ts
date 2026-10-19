@@ -53,7 +53,7 @@ export async function runPrKhungTests(t: Pick<YThucTestKit, 'check' | 'assert'>)
   });
 
   check('K5 · không khối max-h-* + overflow-y-auto tự cuộn trong trang (trừ menu / gợi ý / popover / panel)', () => {
-    const CHO_PHEP = ['Header.tsx', 'PeoplePicker.tsx', 'TimLop.tsx', 'HopKyNang.tsx', 'MeetingPage.tsx', 'Drawer.tsx', 'RecordViolationPanel.tsx'];
+    const CHO_PHEP = ['Header.tsx', 'PeoplePicker.tsx', 'TimLop.tsx', 'TimKeHoach.tsx', 'HopKyNang.tsx', 'MeetingPage.tsx', 'Drawer.tsx', 'RecordViolationPanel.tsx'];
     assert(!/max-h-96/.test(doc('web/src/modules/platform/AdminPage.tsx')), 'AdminPage còn max-h-96');
     const sai = tsx('web/src/modules').filter((f) => !CHO_PHEP.some((c) => f.endsWith(c)))
       .filter((f) => /className="[^"]*\bmax-h-[^"]*\boverflow-y-auto|className="[^"]*\boverflow-y-auto[^"]*\bmax-h-/.test(doc(f)));

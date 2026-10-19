@@ -315,3 +315,16 @@ export function duocGiao(ky: TrangThaiKy, busy: boolean): boolean {
  */
 export const viecTuMo = <T extends { key: string }>(ds: readonly T[], o: { manHep: boolean; dangMo: boolean; daTuMo: boolean }): string | null =>
   (o.manHep || o.dangMo || o.daTuMo ? null : ds[0]?.key ?? null);
+
+// ====================================================================== OV-15d — lọc người (Của tôi · Của GV · Tất cả)
+
+/** OV-15d (mockup 2 mục 3): trục lọc duy nhất không thấy trên màn là "người". Ba ô đếm từ CÙNG một danh sách: Của tôi + Của GV = Tất cả. */
+export const LOC_NGUOI_VIEC = ['toi', 'gv', 'tat-ca'] as const;
+export type LocNguoiViec = (typeof LOC_NGUOI_VIEC)[number];
+export const LOC_NGUOI_VIEC_LABEL: Record<LocNguoiViec, string> = { toi: t('Của tôi'), gv: t('Của GV'), 'tat-ca': t('Tất cả') };
+/** "Của GV" = mọi việc không phải của người xem, kể cả việc chưa có người phụ trách (để Phân công). */
+export const khopNguoiViec = (it: { mine: boolean }, loc: LocNguoiViec): boolean => loc === 'tat-ca' || (loc === 'toi') === it.mine;
+export function demNguoiViec(ds: readonly { mine: boolean }[]): Record<LocNguoiViec, number> {
+  const toi = ds.filter((x) => x.mine).length;
+  return { toi, gv: ds.length - toi, 'tat-ca': ds.length };
+}

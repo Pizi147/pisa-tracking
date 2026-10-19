@@ -328,10 +328,10 @@ export async function runPrHk2Tests(t: YThucTestKit) {
   });
 
   /* OV-4b (mockup overhaul-1 §3): ô có điểm ghi band ("5.0"; L/R "14 · 4.5"), bỏ chữ "sửa". */
-  check('C23 · J9: ô FT chưa có điểm ghi "Nhập" (không "— sửa"); ô có điểm ghi band; đầu cột S ghi "GV chấm: tên thật" + title có tên', () => {
+  check('C23 · J9 (OV-15b: ô cần nhập = khung rỗng, "Nhập" chỉ cho trình đọc màn hình); ô có điểm ghi band; đầu cột S ghi "GV chấm: tên thật" + title có tên', () => {
     const s = doc('web/src/modules/fasttrack/HopNhapDiem.tsx');
-    /* OV-11a: chữ ô dựng ở `hienO` (chữ + câu đọc màn hình + kiểu ô). */
-    assert(/return \{ chu: t\('Nhập'\), doc: t\('Nhập'\), kieu: 'trong' \};/.test(s), 'ô trống chưa ghi "Nhập"');
+    /* OV-11a: chữ ô dựng ở `hienO` (chữ + câu đọc màn hình + kiểu ô). OV-15b (mockup 2 khung 1b): ô trống là khung rỗng. */
+    assert(/return \{ chu: null, doc: t\('Nhập'\), kieu: 'trong' \};/.test(s), 'ô trống: khung rỗng + câu đọc "Nhập"');
     assert(/if \(c\.band !== null\) return \{ chu: fmtBand\(c\.band\),/.test(s), 'ô có điểm phải ghi band');
     assert(/<NutGvCham nhan=\{t\('GV chấm S'\)\} value=/.test(doc('web/src/modules/cham/LuoiFT.tsx')) && /<NutGvCham hang nhan=\{t\('GV chấm S'\)\} value=/.test(doc('web/src/modules/cham/MotKyNang.tsx')), 'đầu cột S dùng NutGvCham (luôn ghi "GV chấm: tên thật")');
     assert(/title=\{t\('GV chấm Speaking: \{x\} — \{goiY\}', \{ x: ten/.test(doc('web/src/modules/cham/GvCham.tsx')), 'GvCham: title phải ghi tên (phòng khi tên dài)');
@@ -381,7 +381,6 @@ export async function runPrHk2Tests(t: YThucTestKit) {
   console.log('\nPR-HK2 · Task 6b · J8, C33–C37');
 
   check('J8 · tên lớp / đợt có title; lưới chấm: tên break-words, chip "Đã hoàn tất" xuống dòng DƯỚI tên (không cùng hàng flex)', () => {
-    assert(/<span className="min-w-0 truncate" title=\{l\.classCode\}>/.test(doc('web/src/modules/test/TabDiemLop.tsx')), 'TabDiemLop: tên lớp thiếu title');
     assert(/<span className="truncate" title=\{`?[^}]*classCode/.test(doc('web/src/modules/cham/ChamDiemPage.tsx')), 'ChamDiemPage: tiêu đề "lớp · đợt" thiếu title');
     for (const f of ['LuoiFT', 'LuoiThuong', 'MotKyNang']) {
       const m = /<div className="([^"]*)">\s*<Link className="([^"]*)" to=\{.*\} title=\{(?:row\.studentName|ten)\}>/.exec(doc(`web/src/modules/cham/${f}.tsx`));

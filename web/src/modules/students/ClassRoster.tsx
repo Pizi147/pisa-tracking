@@ -1,5 +1,6 @@
 import type { NguCanhDs, NhanYThucEm } from '@shared/domain/index.ts';
-import { CHIP_VUONG, DauDuoi } from '../../ui/Nhan.tsx';
+import { CHIP_VUONG } from '../../ui/Nhan.tsx';
+import { DauKetQua } from '../../ui/BieuTuong.tsx';
 import { NhanCu } from '../../ui/OMt.tsx';
 import { ViecTiep } from '../../ui/ViecTiep.tsx';
 import { Link } from 'react-router-dom';
@@ -15,7 +16,7 @@ import { MoiVao } from '../classes/DaiChuyenLop.tsx';
 import { OChon, OChonTatCa, type ChonNhieu } from './chonNhieuHocVien.tsx';
 import { fmtBand } from '../../lib/format.ts';
 import {
-  ENTRY_SKILL_LABEL, GIAI_THICH_KCK, duongHoSoHocVien, skillShort, type EntrySkill, type ExamPlan, type LienHe, type ViecTiepTheo, chipSauThi } from '@shared/domain/index.ts';
+  ENTRY_SKILL_LABEL, GIAI_THICH_KCK, duongHoSoHocVien, skillShort, soKyVong, type EntrySkill, type ExamPlan, type LienHe, type ViecTiepTheo, chipSauThi } from '@shared/domain/index.ts';
 import { OPhuHuynh } from './HocVienTheoVai.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 import { dichViec, type NhanSauThiEm } from './BangHocVienLop.tsx';
@@ -85,8 +86,8 @@ function NhanDauVao({ d }: { d: DauVao }) {
   return <span className="whitespace-nowrap text-xs text-slate-400" title={t('Điểm đầu vào khi nhập học — chỉ để nhìn, không tính SOS / Overall / Phân tích')}>{nhanDauVao(d)}</span>;
 }
 
-/** Bộ cột điểm của lớp Fast Track — mục 5.2: Target · Dự kiến thi · Mốc · OVR · L · R · W1 · W2 · W · S (W = Writing tổng, PR-N1 K2-10). */
-const FT_SKILLS = ['listening', 'reading', 'writing1', 'writing2', 'writing', 'speaking'] as const;
+/** Bộ cột điểm của lớp Fast Track — Target · Dự kiến thi · Đợt · OVR · L · R · W1 · W2 · S (OV-15b mục 3, C12: bỏ cột W tổng). */
+const FT_SKILLS = ['listening', 'reading', 'writing1', 'writing2', 'speaking'] as const;
 
 /**
  * TAB HỌC VIÊN · CHẾ ĐỘ ĐIỂM · LỚP FAST TRACK (đặc tả §3.7 "FT: như hiện có (đợt MT)", mockup 06).
@@ -212,14 +213,14 @@ export function ClassRoster({ classId, maLop, quyen, onDoi, onAddStudents, chon 
                 {t('Dự kiến thi')}
               </Th>
               <Th hint={t('Lượt MT ứng với mỗi hàng điểm bên phải — mốc mới nhất ở trên.')}>
-                {t('Mốc')}
+                {t('Đợt')}
               </Th>
               <Th align="right" hint={t('Overall — chỉ có khi đợt Test đó đủ cả bốn kỹ năng. Không ghép điểm của đợt khác thành Overall.')}>
                 OVR
               </Th>
               {skills.map((k) => (
-                <Th key={k} align="right" hint={k === 'writing' ? t('Writing tổng ở từng mốc — SOS xét cột này') : t('{kn} ở từng mốc', { kn: ENTRY_SKILL_LABEL[k as EntrySkill] ?? k })}>
-                  {k === 'writing' ? 'W' : skillLabel(k)}
+                <Th key={k} align="right" hint={t('{kn} ở từng mốc', { kn: ENTRY_SKILL_LABEL[k as EntrySkill] ?? k })}>
+                  {skillLabel(k)}
                 </Th>
               ))}
               {quyen.theoVai ? <Th hint={t('Tên phụ huynh (quan hệ) và số điện thoại — sửa ở Sửa thông tin của em.')}>{t('Phụ huynh')}</Th> : (
@@ -263,7 +264,7 @@ export function ClassRoster({ classId, maLop, quyen, onDoi, onAddStudents, chon 
                         : [...rows.map((h, i) => (
                           <Link key={h.id} className="no-underline"
                             to={duongHoSoHocVien(s.id, { dot: h.id })} title={t('Mở hồ sơ {ten} ở {dot}', { ten: s.fullName, dot: dich(h.label) })}>
-                            <span className={`text-xs whitespace-nowrap ${i === 0 ? 'text-slate-200' : 'text-slate-500'}`}>
+                            <span className={`whitespace-nowrap ${i === 0 ? 'text-[13px] text-slate-200' : 'text-xs text-slate-500'}`}>
                               {dich(h.label)}{h.lichSu && <> <NhanCu /></>}
                               {h.scoredRequired < h.requiredCount && (
                                 <span className="text-xs text-amber-200 ml-1">
@@ -290,7 +291,7 @@ export function ClassRoster({ classId, maLop, quyen, onDoi, onAddStudents, chon 
                       <Stack n={span} align="right">
                         {rows.length === 0 && !dv ? [<Dash key="none" />]
                           : [...rows.map((h, i) => (
-                            <Band key={h.id} v={k === 'writing' ? h.writing ?? null : h.bands?.[k] ?? null} kyVong={h.expectation ?? null}
+                            <Band key={h.id} v={h.bands?.[k] ?? null} kyVong={h.expectation ?? null}
                               soSanh={k !== 'writing1' && k !== 'writing2'} faded={i > 0} lichSu={h.lichSu} />
                           )), ...(dv ? [<SoDauVao key="dv" v={k === 'writing1' || k === 'writing2' ? null : dv[k]} />] : [])]}
                       </Stack>
@@ -336,8 +337,9 @@ function Stack({ children, n, align = 'left' }: {
 }) {
   return (
     <span className={`flex flex-col ${align === 'right' ? 'items-end' : 'items-start'} px-2 py-1.5`}>
+      {/* OV-15b (mockup 6 khung 2): hàng MT mới nhất cao thường; MT cũ thấp hơn (chữ 12, mờ) — mọi cột cùng chiều cao từng hàng nên vẫn thẳng. */}
       {Array.from({ length: n }, (_, i) => (
-        <span key={i} className="h-5 flex items-center">{children[i] ?? null}</span>
+        <span key={i} className={`${i === 0 ? 'h-6' : 'h-[18px]'} flex items-center`}>{children[i] ?? null}</span>
       ))}
     </span>
   );
@@ -347,19 +349,19 @@ function Stack({ children, n, align = 'left' }: {
 function Dash() { return <span className="text-faint">–</span>; }
 
 /**
- * Ô band (PR-N1 K2-10, A3, A9): so KỲ VỌNG CỦA ĐÚNG MỐC (không so target); dưới kỳ vọng có dấu mảnh ▾ (không chỉ dựa màu);
- * luôn một chữ số thập phân. W1/W2 không tô đạt/chưa đạt (SOS xét Writing tổng). Mốc cũ nhạt hơn (mục 5.4).
+ * Ô band (PR-N1 K2-10, A9): so KỲ VỌNG CỦA ĐÚNG MỐC (không so target); luôn một chữ số thập phân. OV-15b (6b): mốc mới nhất có ✓ / ✗
+ * (`DauKetQua`: vượt ✓ xanh lá · bằng ✓ xanh dương · dưới ✗ đỏ) — không chỉ màu; W1/W2 không ký hiệu (SOS xét Writing tổng). Mốc cũ: chữ 12 xám, không ký hiệu.
  */
 function Band({ v, kyVong, faded, soSanh = true, lichSu = false }: { v: number | null; kyVong: number | null; faded: boolean; soSanh?: boolean; lichSu?: boolean }) {
   if (v === null) return <Dash />;
   /* MT lịch sử: xám, không đạt/chưa đạt, không dấu dưới — hết mâu thuẫn "Chưa có kết quả" cạnh "▾5.0" đỏ (rà #119). */
   if (lichSu) return <span className="tabular-nums text-xs text-slate-400" title={t('MT cũ — không phải hiện trạng')}>{fmtBand(v)}</span>;
-  const duoi = soSanh && kyVong !== null && v < kyVong;
-  /* Mốc cũ (faded) nhạt hơn bằng MÀU XÁM chứ không bằng độ trong: opacity-55 làm chữ đạt/chưa đạt < 4.5:1 ở chế độ sáng (PR-SANG, Task 8). */
-  const tone = faded ? 'text-slate-400' : !soSanh || kyVong === null ? 'text-slate-100' : duoi ? 'text-rose-200' : 'text-emerald-200';
+  /* Mốc cũ (faded) nhạt hơn bằng MÀU XÁM chứ không bằng độ trong: opacity làm chữ < 4.5:1 ở chế độ sáng (PR-SANG, Task 8). */
+  if (faded) return <span className="tabular-nums text-xs text-slate-500">{fmtBand(v)}</span>;
+  const kq = soSanh ? soKyVong(v, kyVong) : null;
   return (
-    <span className={`tabular-nums text-xs ${tone}`} title={kyVong !== null ? t('kỳ vọng {kv}', { kv: fmtBand(kyVong) }) : undefined}>
-      {duoi && <DauDuoi />}{fmtBand(v)}
+    <span className="inline-flex items-center gap-1 tabular-nums text-[13px] font-semibold text-slate-100" title={kyVong !== null ? t('kỳ vọng {kv}', { kv: fmtBand(kyVong) }) : undefined}>
+      {fmtBand(v)}{kq && <DauKetQua kq={kq} />}
     </span>
   );
 }

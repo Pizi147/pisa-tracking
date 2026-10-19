@@ -642,7 +642,7 @@ function cancelPart(
  *
  * Khôi phục KHÔNG đặt lại bộ đếm dời: những lần em vắng trước đó vẫn đã xảy ra.
  */
-export function restoreCancelledSkill(p: Principal, attemptId: number, skill: string, periodId: number, opts: {
+export function restoreCancelledSkill(p: Principal, attemptId: number, skill: string, periodId: number | null, opts: {
   reason?: string | null;
 } = {}) {
   const attempt = loadAttempt(attemptId);
@@ -660,10 +660,12 @@ export function restoreCancelledSkill(p: Principal, attemptId: number, skill: st
     throw badRequest(`${skillName(skill)} đang có lịch hẹn — dùng thao tác đổi lịch thường.`);
   }
 
-  const period = db().prepare('SELECT * FROM report_periods WHERE id = ?').get(periodId) as any;
-  if (!period) throw notFound('Không tìm thấy tuần.');
+  /* OV-15c (mục 6): `periodId = null` = "Khôi phục → Chưa xếp" — chỉ kỹ năng huỷ vì vắng 2 lần; không tuần nên không kiểm trùng tuần. */
+  if (periodId === null && !row.huy_vang) throw badRequest(`${skillName(skill)} không huỷ vì vắng 2 lần — không khôi phục về Chưa xếp được.`);
+  const period = periodId === null ? null : db().prepare('SELECT * FROM report_periods WHERE id = ?').get(periodId) as any;
+  if (periodId !== null && !period) throw notFound('Không tìm thấy tuần.');
   /* PR-MTa T21: Quản lý khôi phục vào tuần này / tuần đã qua được (em đã thi thật) — rồi nhập điểm ngay (T19). */
-  const check = checkSkillWeekMove({ attemptId, skill: skill as AssessedSkill, newWeekStart: period.week_start });
+  const check = period ? checkSkillWeekMove({ attemptId, skill: skill as AssessedSkill, newWeekStart: period.week_start }) : { blockers: [] as string[], warnings: [] as string[] };
   if (check.blockers.length) throw badRequest(check.blockers.join(' '));
 
   return tx(() => {
@@ -686,7 +688,7 @@ export function restoreCancelledSkill(p: Principal, attemptId: number, skill: st
     rutDeNghiDoi(attemptId, skill);
     logSchedule(attemptId, {
       action: 'skill_part_restored', field: skill,
-      oldValue: row.period_code, newValue: period.code,
+      oldValue: row.period_code, newValue: period?.code ?? null,
       reason: opts.reason ?? 'Quản lý khôi phục và đặt tuần mới', actor: p.userId,
     });
     const cw = recomputeCompletionWeek(attemptId, p.userId);
@@ -695,7 +697,7 @@ export function restoreCancelledSkill(p: Principal, attemptId: number, skill: st
     writeAudit({
       actorUserId: p.userId, action: 'attempt.restore_part', entityType: 'assessment_attempt',
       entityId: attemptId, entityLabel: `${attemptId} · ${skill}`,
-      before: { sitStatus: row.sit_status }, after: { week: period.code },
+      before: { sitStatus: row.sit_status }, after: { week: period?.code ?? null },
     });
     return { ok: true, completionWeek: cw, warnings: check.warnings };
   });

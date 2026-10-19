@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { BaoLuuContext } from '../../ui/SaveState.tsx';
 import { Card } from '../../ui/ui.tsx';
-import { LuoiFT, type FtSheet, type HangMo } from './LuoiFT.tsx';
+import { LuoiFT, tenDotFt, type FtSheet, type HangMo } from './LuoiFT.tsx';
+import { DanExcel } from './DanExcel.tsx';
 import { LuoiThuong, type ThuongSheet } from './LuoiThuong.tsx';
 import { MotKyNang } from './MotKyNang.tsx';
-import type { TomTatLuot } from '@shared/domain/index.ts';
+import { ENTRY_SKILLS, type EntrySkill, type TomTatLuot } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
 
 /** Trả lời của `GET /classes/:classId/cham` (`chamSheet` ở server/src/cham/canCham.ts). */
@@ -69,7 +70,7 @@ export function thuongTheoBai(t: ThuongSheet | null | undefined, kind: string | 
  */
 export function LuoiChamLop({
   data, kind, kn = null, hv = null, onReload, gon = false, tuanDangXem = null, chiAttempt = null, datConTro = true, thanhTren,
-  onSoOChuaLuu, hangMo, anNutTao,
+  onSoOChuaLuu, hangMo, anNutTao, chiCot = null, nutCaLop = true,
 }: {
   data: Cham; kind: string | null; kn?: string | null; hv?: number | null; onReload: () => void;
   gon?: boolean; tuanDangXem?: string | null; chiAttempt?: ReadonlySet<number> | null; datConTro?: boolean;
@@ -81,6 +82,10 @@ export function LuoiChamLop({
   hangMo?: HangMo[];
   /** PR-DL: ẩn nút "Tạo bài kiểm tra theo chương trình" của lưới lớp thường (Điểm theo lớp). */
   anNutTao?: boolean;
+  /** OV-15b (mục 1, mockup 2 khung 1a): mở từ việc — chỉ cột kỹ năng của việc + Kết quả; nút "Cả lớp" mở đủ cột. */
+  chiCot?: readonly string[] | null;
+  /** Nơi gọi có bộ chọn môn riêng (panel Nhập điểm lớp) — không vẽ nút "Cả lớp". */
+  nutCaLop?: boolean;
 }) {
   const hep = useManHinhHep();
   /* Mỗi dòng báo số ô lỗi của nó (`useBaoLuu`); cộng lại rồi báo lên trên. */
@@ -94,16 +99,27 @@ export function LuoiChamLop({
   const soOChuaLuu = Object.values(loiTheoDong).reduce((a, b) => a + b, 0);
   useEffect(() => { onSoOChuaLuu?.(soOChuaLuu); }, [soOChuaLuu, onSoOChuaLuu]);
   const [xemBang, setXemBang] = useState(false);
+  const [caLop, setCaLop] = useState(false);
+  const cotHien = chiCot?.length && !caLop ? chiCot : null;
   const laFt = data.mode === 'ielts_band';
+  /* OV-15b (mục 2, mockup 2 khung 1d): Dán từ Excel — lưới FT, người xem sửa được ít nhất một ô; cột dán = cột đang mở. Lớp thường: chưa làm. */
+  const [dan, setDan] = useState<null | { hoi: boolean }>(null);
+  const coDan = laFt && !!data.ft?.rows.some((r) => r.cells.some((c) => c.canEdit));
+  const cotDan = (cotHien ?? ENTRY_SKILLS).filter((k): k is EntrySkill => (ENTRY_SKILLS as readonly string[]).includes(k));
+  const tenLuot = 'luot' in data ? (data as BangTheoLuot).luot.nhan : data.ft?.period?.code ?? tenDotFt(data.ft);
 
+  /* "Cả lớp" (chỉ có khi mở từ việc) mở cả mọi em của lượt, không chỉ em của việc. */
+  const locLuot = caLop ? null : chiAttempt;
   const ft = useMemo<FtSheet | null>(
-    () => (data.ft && chiAttempt ? { ...data.ft, rows: data.ft.rows.filter((r) => chiAttempt.has(r.attemptId)) } : data.ft),
-    [data.ft, chiAttempt],
+    () => (data.ft && locLuot ? { ...data.ft, rows: data.ft.rows.filter((r) => locLuot.has(r.attemptId)) } : data.ft),
+    [data.ft, locLuot],
   );
   const thuong = useMemo<ThuongSheet | null>(() => {
     const t = thuongTheoBai(data.thuong, kind);
-    return t && chiAttempt ? { ...t, rows: t.rows.filter((r) => chiAttempt.has(r.attemptId)) } : t;
-  }, [data.thuong, kind, chiAttempt]);
+    const loc = t && locLuot ? { ...t, rows: t.rows.filter((r) => locLuot.has(r.attemptId)) } : t;
+    /* Cột của việc: lưới lớp thường vẽ cột theo `programme.skills` — bớt môn ở đó (kết quả vẫn của máy chủ). */
+    return loc && cotHien ? { ...loc, programme: { ...loc.programme, skills: loc.programme.skills.filter((k) => cotHien.includes(k)) } } : loc;
+  }, [data.thuong, kind, locLuot, cotHien]);
 
   /* Cuộn tới ô cần chấm MỘT LẦN cho mỗi ngữ cảnh mở lưới. `data-trong` chỉ gắn cho ô còn trống VÀ mình được sửa. */
   const khung = useRef<HTMLDivElement>(null);
@@ -139,17 +155,37 @@ export function LuoiChamLop({
     <>
       {tungKyNang && laFt && ft && <MotKyNang mode="ielts_band" data={ft} onReload={onReload} kn={kn} hv={hv} hangMo={hangMo} tuanDangXem={tuanDangXem} />}
       {tungKyNang && !laFt && thuong && <MotKyNang mode="ratio" data={thuong} onReload={onReload} kn={kn} hv={hv} anNutTao={anNutTao} tuanDangXem={tuanDangXem} />}
-      {!tungKyNang && laFt && ft && <LuoiFT data={ft} onReload={onReload} kn={kn} hv={hv} gon={gon} tuanDangXem={tuanDangXem} hangMo={hangMo} />}
+      {!tungKyNang && laFt && ft && <LuoiFT data={ft} onReload={onReload} kn={kn} hv={hv} gon={gon} tuanDangXem={tuanDangXem} hangMo={hangMo} chiCot={cotHien} />}
       {!tungKyNang && !laFt && thuong && <LuoiThuong data={thuong} onReload={onReload} kn={kn} hv={hv} tuanDangXem={tuanDangXem} anNutTao={anNutTao} />}
     </>
   );
 
+  const khoiDan = dan && data.ft && (
+    <DanExcel data={data.ft} cot={cotDan} tenLuot={tenLuot} luot={'luot' in data ? (data as BangTheoLuot).luot.ma : null} homNay={data.today} hep={hep} hoiBanDau={dan.hoi}
+      onDong={() => setDan(null)} onDaLuu={onReload} />
+  );
+  const luoiKhung = gon ? luoi : <Card bodyClass="p-0" className="xl:overflow-clip">{luoi}</Card>;
+
   return (
     <BaoLuuContext.Provider value={bao}>
     <div ref={khung}>
-      {(hep || thanhTren) && (
-        <div className="flex items-center justify-end gap-3">
+      {(hep || thanhTren || coDan || (nutCaLop && !!chiCot?.length)) && !(hep && dan) && (
+        <div className="flex flex-wrap items-center justify-end gap-x-3 gap-y-1">
           {thanhTren}
+          {coDan && (
+            <span className="inline-flex items-center gap-1.5">
+              <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" aria-expanded={!!dan} onClick={() => setDan(dan ? null : { hoi: false })}>
+                {t('Dán từ Excel')}
+              </button>
+              <button type="button" className="btn btn-sm min-h-[44px] min-w-[44px] justify-center sm:min-h-0" aria-label={t('Cách dán từ Excel')}
+                onClick={() => setDan({ hoi: true })}>?</button>
+            </span>
+          )}
+          {nutCaLop && !!chiCot?.length && !tungKyNang && (
+            <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" aria-pressed={caLop} onClick={() => setCaLop((v) => !v)}>
+              {t('Cả lớp')}
+            </button>
+          )}
           {hep && (
             <button type="button" className="min-h-[44px] px-1 text-xs text-slate-500 hover:text-slate-200"
               onClick={() => setXemBang((v) => !v)}
@@ -159,7 +195,13 @@ export function LuoiChamLop({
           )}
         </div>
       )}
-      {gon ? luoi : <Card bodyClass="p-0" className="xl:overflow-clip">{luoi}</Card>}
+      {!dan ? luoiKhung : hep ? khoiDan : (
+        /* 1440: lưới trái, khối dán phải (mockup 1d); dưới xl xếp chồng, khối dán trước. */
+        <div className="mt-2 flex flex-col gap-3 xl:flex-row-reverse xl:items-start">
+          <div className="xl:w-[56rem] xl:shrink-0">{khoiDan}</div>
+          <div className="min-w-0 flex-1 overflow-x-auto">{luoiKhung}</div>
+        </div>
+      )}
     </div>
     </BaoLuuContext.Provider>
   );

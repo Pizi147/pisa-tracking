@@ -28,6 +28,8 @@ export type WorkItem = {
   con?: (WorkItem & { conTen: string; conPhu: string })[];
   /** OV-5a: PA của việc (Kết quả PA, Xác nhận PA, Mini Test) · Nhập điểm: mã lượt (`mt:2`) + kỹ năng — panel Công việc mở đúng chỗ. */
   paId?: number | null; luot?: string; kn?: string; soBai?: number;
+  /** OV-15b: mọi kỹ năng của việc Nhập điểm — panel chỉ hiện các cột này. */
+  kns?: string[];
   /** OV-13b: Kết quả PA ghi nhanh được ngay dưới dòng (máy chủ `ghiNhanhDuoc`). */
   ghiNhanh?: boolean;
   /** OV-11c: id em của việc cả lớp (Nhập điểm theo bài…) — panel Nhập điểm đưa em của việc lên đầu. */
@@ -85,7 +87,7 @@ export function DongViec({ it, onOpen, nutPhu, gon = false, chon = null, xong, m
     ].filter(Boolean).join(' · ');
   /* Q31-4 (D9): người phụ trách 12 px — tách khỏi phần ngữ cảnh 11 px của dòng phụ. */
   /* OV-11c (TQ-4): chấm chéo (T18) không phải "chưa ai phụ trách" — cùng tên với Tổng quan. */
-  const nguoi = it.owner ?? (it.ownerId === null && !it.mine && !viecCaLop ? (dich(it.statusLabel) === CHAM_CHEO ? CHAM_CHEO : t('chưa ai phụ trách')) : null);
+  const nguoi = it.owner ?? (it.ownerId === null && !it.mine && !viecCaLop ? (dich(it.statusLabel) === CHAM_CHEO ? CHAM_CHEO : t('Chưa có người')) : null);
   /* PR-GOP (mockup phần 4): bấm tiêu đề hay nút "n em ▾" đều mở / đóng danh sách em; có em quá hạn → nền đỏ nhạt cả dòng.
      OV-13d: ở Công việc (`gon`) dòng gộp Ý thức mở thẳng panel lô; OV-13c: `moCaDong` (Xác nhận PA cùng lúc) cũng mở thẳng panel. */
   const bam = () => (con && !moCaDong?.(it) && !(gon && VIEC_LO_Y_THUC.has(it.group)) ? setMo(!mo) : onOpen(it));

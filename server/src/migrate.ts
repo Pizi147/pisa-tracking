@@ -61,8 +61,10 @@ import { migratePrOv13p } from './migrate/prOv13p.ts';
 import { migratePrOv13k } from './migrate/prOv13k.ts';
 import { migratePrTd5 } from './migrate/prTd5.ts';
 import { migratePrOv13q, themCotPrOv13q } from './migrate/prOv13q.ts';
+import { migratePrOv15c } from './migrate/prOv15c.ts';
 import { migratePrTd6 } from './migrate/prTd6.ts';
 import { migratePrTd7a } from './migrate/prTd7a.ts';
+import { migratePrOv15d } from './migrate/prOv15d.ts';
 import { migratePrOv15e } from './migrate/prOv15e.ts';
 import { migratePrTd7 } from './migrate/prTd7.ts';
 import { migratePrTd7b } from './migrate/prTd7b.ts';
@@ -362,10 +364,12 @@ function migrateCaseEngine(applied: string[], skipped: string[], loiSauBuoc?: nu
     /* TD6: chỉ mục lượt (em, lớp), nhật ký (lộ trình, loại), thẻ chờ (loại, đối tượng) — giảm dòng đọc Turso (chỉ thêm chỉ mục, chạy lặp được). */ buoc(() => migratePrTd6(conn, applied));
     /* TD7a: chỉ mục ô S chờ GV phụ trách xem (một phần) + mốc Case theo lượt — câu "Xem nhận xét Speaking" thôi quét cả bảng (chỉ thêm chỉ mục, chạy lặp được). */ buoc(() => migratePrTd7a(conn, applied));
     /* OV-15e: chỉ mục ngày thi thật (Kết quả thi › Thi thật lọc theo khoảng) — chỉ thêm, chạy lặp được. */ buoc(() => migratePrOv15e(conn, applied));
+    /* OV-15d: chỉ mục sos_cases(owner_user_id, status) — thông báo tự động Case theo người phụ trách (chỉ thêm chỉ mục, chạy lặp được). */ buoc(() => migratePrOv15d(conn, applied));
     /* TD7: chỉ mục một phần — lượt MT lịch sử chưa nhập, lộ trình FT chưa có kết quả thi thật (chỉ thêm chỉ mục, chạy lặp được). */ buoc(() => migratePrTd7(conn, applied));
     /* TD7b: cờ assessment_attempts.o_cho_tu (còn ô chờ điểm) + chỉ mục một phần + tính lại cho mọi lượt — Nợ điểm / Cần chấm thôi đọc lượt đã chấm xong (chạy lặp được). */ buoc(() => migratePrTd7b(conn, applied));
     /* OV-13p (SAU PR-OV2a — cần vai TVV / CX): `class.create` + `student.add` cho TVV, CX; `student.add` cho vai có `student.edit` (một lần, khoá demo_config). */ buoc(() => migratePrOv13p(conn, applied));
     /* OV-13q: lộ trình đã thi chưa xong mà hạn 1 tuần đã qua → hạn = hôm nay + 7 (đổi dữ liệu, chạy lặp không đổi). */ buoc(() => migratePrOv13q(conn, applied));
+    /* OV-15c: bảng ghi_chu_lich_thi — ghi chú lịch thi ở Kế hoạch Test (chỉ thêm bảng, chạy lặp được). */ buoc(() => migratePrOv15c(conn, applied));
 
     conn.prepare("INSERT OR REPLACE INTO demo_config (key, value, updated_at) VALUES ('case_engine_migrated_at', ?, ?)")
       .run(nowIso(), nowIso());

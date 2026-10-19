@@ -9,7 +9,8 @@ import { useEffect, useRef } from 'react';
 import { CHIP_TRON } from './Nhan.tsx';
 import { t } from '@shared/i18n/index.ts';
 
-const DA_NHAC = t('Đã nhắc');
+/* OV-15d (C03): chấm ● = tab có việc cần xử lý (hồ sơ HV › Ý thức) — không còn "Đã nhắc" (Nhắc thủ công đã bỏ). */
+const CAN_XU_LY = t('Cần xử lý');
 
 export type HangTabMuc<K extends string> = { key: K; label: string; so?: number | null; canhBao?: boolean };
 
@@ -39,7 +40,7 @@ export function HangTab<K extends string>({ tabs, value, onChange, ariaLabel, ca
               cap === 'con' ? 'text-xs' : 'text-sm'
             } ${active ? 'border-[color:var(--accent)] text-slate-100' : 'border-transparent text-slate-400 hover:text-slate-200'}`}>
             {t.label}
-            {t.canhBao && <span className="ml-1 text-soon" role="img" aria-label={DA_NHAC} title={DA_NHAC}>●</span>}
+            {t.canhBao && <span className="ml-1 text-soon" role="img" aria-label={CAN_XU_LY} title={CAN_XU_LY}>●</span>}
             {!!t.so && t.so > 0 && (
               <span className={`ml-1.5 ${CHIP_TRON} tabular-nums bg-doing-bg text-doing`}>{t.so}</span>
             )}

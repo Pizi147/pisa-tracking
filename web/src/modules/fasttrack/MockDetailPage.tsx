@@ -559,7 +559,7 @@ function KhoiNhanXet({ cells, save, phuTrach }: {
               {sua(s)
                 ? <NutGvCham value={gvChamThanhChon(s.gvCham)} goiY={t('Lưu ngay cho bài Speaking này.')}
                   onChange={(v) => void save('speaking', { gvCham: gvChamPayload(v) })} />
-                : s.gvCham && <span className="text-xs text-slate-400">{t('GV chấm: {ten}', { ten: s.gvCham.ten })}</span>}
+                : s.gvCham && coDiemChinhThuc(s) && <span className="text-xs text-slate-400">{t('GV chấm: {ten}', { ten: s.gvCham.ten })}</span>}
             </div>
             {nxS}
             {nxPt}

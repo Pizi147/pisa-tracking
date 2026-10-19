@@ -15,9 +15,9 @@ import { MenuDong, type MucMenu } from '../../ui/MenuDong.tsx';
 import { IntakePanel } from './IntakePanel.tsx';
 import { ClassCreatePanel } from '../classes/ClassCreatePanel.tsx';
 import { TenGiaoVien } from '../classes/TenGiaoVien.tsx';
-import { BangHocVienLop } from './BangHocVienLop.tsx';
+import { BangHocVienLop, COT_DIEM_FT, NHAN_COT_DIEM_FT } from './BangHocVienLop.tsx';
 import {
-  DUONG_TAB_CONG_VIEC, DUONG_TAB_TEST, duongHocVienLop, LOAI_HAN_CUA_VIEC, PHAM_VI_NHAN, badgeHienTheoVai, badgeLop, demLoc, docGoc, docThamSoLoc, duongLichTest, khungCua, laVaiQuanLy, lopMoSan, needScoresText, tuanLich,
+  DUONG_TAB_CONG_VIEC, duongHocVienLop, LOAI_HAN_CUA_VIEC, PHAM_VI_NHAN, badgeHienTheoVai, badgeLop, demLoc, docGoc, docThamSoLoc, duongLichTest, khungCua, laVaiQuanLy, lopMoSan, needScoresText, tuanLich,
   type BadgeLop, type GocHocVien, type LocHocVien, type LocPhuCanLam, type NguCanhDs, type PhamVi, type SapXep, type WorkScope, vaiXemHocVien,
 } from '@shared/domain/index.ts';
 import { HocVienTheoVai } from './HocVienTheoVai.tsx';
@@ -29,6 +29,7 @@ import { PanelViec, lamTaiCho } from '../congViec/PanelViec.tsx';
 import { SuaThongTinMotEm } from './StudentManagePanel.tsx';
 import type { WorkItem } from '../worklist/WorkList.tsx';
 import { ChonTuanSos } from './ChonTuanSos.tsx';
+import { PanelNhapDiemLop } from '../cham/PanelNhapDiemLop.tsx';
 
 /** Ô chọn gọn của đầu trang: cùng cao 32 px với chip (điện thoại 44 px, `.field` đã có min-height 40). */
 const SELECT_GON = 'field h-8 w-auto !py-0 text-xs max-sm:min-h-[44px] max-sm:w-full';
@@ -245,8 +246,11 @@ function TrangTheoLop({ admin }: { admin: boolean }) {
     .map((k) => ({ k, lop: lopHien.filter((c) => khungCua(c.scoringMode) === k) })).filter((g) => g.lop.length > 0);
   /* PR-DH (04/10): cột Dự kiến thi cho CẢ hai nhóm (lớp thường cũng có Target + Dự kiến thi sau PR-NT). */
   /* OV-10b (mockup vai mục 6): Admin — Học viên · Lượt MT gần nhất · Ô chưa nhập · ⋯ (không Case / Việc tiếp theo). */
+  /* OV-15b (C13): nhóm FT thêm OVR · L · R · W · S sau Kết quả gần nhất (số căn giữa). */
   const tieuDeCot = (k: 'ft' | 'thuong') => admin ? [t('Học viên'), t('Lượt MT gần nhất'), t('Ô chưa nhập'), '']
-    : [t('Học viên'), t('Kết quả gần nhất'), k === 'ft' ? 'Target' : t('Khoá'), t('Dự kiến thi'), t('Sắp tới'), 'Case', t('Việc tiếp theo'), ''];
+    : [t('Học viên'), t('Kết quả gần nhất'), ...(k === 'ft' ? COT_DIEM_FT.map((c) => NHAN_COT_DIEM_FT[c]) : []), k === 'ft' ? 'Target' : t('Khoá'), t('Dự kiến thi'), t('Sắp tới'), 'Case', t('Việc tiếp theo'), ''];
+  const canhCot = (k: 'ft' | 'thuong', i: number) => admin ? (i === 2 ? 'text-right' : '')
+    : k === 'ft' && i >= 2 && i < 2 + COT_DIEM_FT.length ? 'text-center' : i === (k === 'ft' ? 5 + COT_DIEM_FT.length : 5) ? 'text-right' : '';
   const openIds = lopMoSan({
     thamSoOpen: openRaw === null ? null : openRaw === '-' ? []
       : openRaw.split(',').map(Number).filter((n) => Number.isFinite(n) && n > 0),
@@ -399,14 +403,14 @@ function TrangTheoLop({ admin }: { admin: boolean }) {
           {!dienThoai && nhomLop.map((g) => (
             <section key={g.k} className="card overflow-x-auto md:overflow-visible" aria-label={g.k === 'ft' ? t('Lớp Fast Track') : t('Lớp thường')}>
               <div className="md:sticky md:-top-5 md:z-10" aria-hidden>
-                <table className="w-full min-w-[960px] table-fixed text-sm">
-                  <CotBangLop admin={admin} />
-                  <thead><tr>{tieuDeCot(g.k).map((x, i) => <th key={i} className={`th ${i === (admin ? 2 : 5) ? 'text-right' : ''}`}>{x}</th>)}</tr></thead>
+                <table className={`w-full ${g.k === 'ft' && !admin ? 'min-w-[1160px]' : 'min-w-[960px]'} table-fixed text-sm`}>
+                  <CotBangLop admin={admin} ft={g.k === 'ft'} />
+                  <thead><tr>{tieuDeCot(g.k).map((x, i) => <th key={i} className={`th ${canhCot(g.k, i)}`}>{x}</th>)}</tr></thead>
                 </table>
               </div>
               {g.lop.map((c) => (
-                <table key={c.id} className="w-full min-w-[960px] table-fixed text-sm" aria-label={t('Lớp {lop}', { lop: c.code })}>
-                  <CotBangLop admin={admin} />
+                <table key={c.id} className={`w-full ${g.k === 'ft' && !admin ? 'min-w-[1160px]' : 'min-w-[960px]'} table-fixed text-sm`} aria-label={t('Lớp {lop}', { lop: c.code })}>
+                  <CotBangLop admin={admin} ft={g.k === 'ft'} />
                   <thead className="sr-only"><tr>{tieuDeCot(g.k).map((x, i) => <th key={i}>{x || t('Thao tác')}</th>)}</tr></thead>
                   <HopLop admin={admin} lop={c} soViecQuaHan={demQuaHan(viecLop, c.id).viec} mo={openIds.includes(c.id)} onDoiMo={() => doiMo(c.id)} dsHocVien={dsHocVien} dsLop={dsLopCua(g)} onThuTu={baoThuTu}
                     chiHien={dangLoc ? (idsTheoLop.get(c.id) ?? new Set()) : null} sapXep={sapXep} onMoCase={moCase}
@@ -475,8 +479,17 @@ function TrangTheoLop({ admin }: { admin: boolean }) {
 }
 
 /** Cột chung của khối tiêu đề và mọi bảng lớp — một chỗ khai báo để cột luôn thẳng nhau. */
-function CotBangLop({ admin }: { admin: boolean }) {
+function CotBangLop({ admin, ft = false }: { admin: boolean; ft?: boolean }) {
   if (admin) return <colgroup><col className="w-[40%]" /><col className="w-[34%]" /><col className="w-[20%]" /><col className="w-12" /></colgroup>;
+  /* OV-15b (C13): FT thêm 5 cột điểm hẹp (OVR · L · R · W · S). */
+  if (ft) {
+    return (
+      <colgroup>
+        <col className="w-[16%]" /><col className="w-[16%]" />{COT_DIEM_FT.map((c) => <col key={c} className="w-[4.5%]" />)}<col className="w-[7%]" /><col className="w-[9%]" />
+        <col className="w-[12%]" /><col className="w-[4%]" /><col className="w-[13%]" /><col className="w-12" />
+      </colgroup>
+    );
+  }
   return (
     <colgroup>
       <col className="w-[19%]" /><col className="w-[20%]" /><col className="w-[10%]" /><col className="w-[11%]" />
@@ -505,6 +518,9 @@ function HopLop({ lop, mo, onDoiMo, chiHien, sapXep, onThemHocVien, onDoi, dsHoc
   const navigate = useNavigate();
   const { session } = useSession();
   const thuong = lop.scoringMode === 'ratio';
+  const [nhapDiem, setNhapDiem] = useState(false);
+  /* Panel vẽ qua portal — đặt ở đâu trong hàng cũng được; danh sách và vị trí cuộn giữ nguyên. */
+  const panelNhap = nhapDiem && <PanelNhapDiemLop classId={lop.id} classCode={lop.code} onDong={() => setNhapDiem(false)} />;
   /** Dòng phụ hàng lớp: `Fast Track · LT1 · 18 HV` — lớp thường không có lộ trình nên bỏ khúc giữa (mockup 21 mục 5). */
   const chuLop = [lop.programmeName ? dich(lop.programmeName) : '—', !thuong && lop.route ? lop.route : null, t('{n} HV', { n: lop.studentCount })].filter(Boolean).join(' · ');
   const bGoc = badgeLop({
@@ -528,7 +544,7 @@ function HopLop({ lop, mo, onDoiMo, chiHien, sapXep, onThemHocVien, onDoi, dsHoc
   const mucLop: MucMenu[] = [
     { key: 'ho-so', nhan: t('Hồ sơ lớp'), onChon: () => navigate(`/hoc-vien/lop/${lop.id}`, { state: { ds: dsLop } }) },
     ...(lop.viewer.coTheNhapDiem
-      ? [{ key: 'nhap-diem', nhan: t('Nhập điểm'), onChon: () => navigate(`${DUONG_TAB_TEST['diem-lop']}?lop=${lop.id}`) }]   // HL-3: như nút đầu hồ sơ lớp
+      ? [{ key: 'nhap-diem', nhan: t('Nhập điểm'), onChon: () => setNhapDiem(true) }]   // OV-15b (C16): panel nhập điểm tại chỗ, như nút đầu hồ sơ lớp
       : []),
     ...(lop.viewer.coTheThemHocVien ? [{ key: 'them', nhan: t('+ Học viên'), onChon: onThemHocVien }] : []),
   ];
@@ -548,6 +564,7 @@ function HopLop({ lop, mo, onDoiMo, chiHien, sapXep, onThemHocVien, onDoi, dsHoc
   if (the) {
     return (
       <div className="card overflow-hidden" aria-label={t('Lớp {lop}', { lop: lop.code })}>
+        {panelNhap}
         <div className="flex items-start gap-2 p-3">
           <button type="button" aria-expanded={mo} onClick={onDoiMo}
             className="flex min-h-[44px] min-w-0 flex-1 cursor-pointer items-start gap-2 border-0 bg-transparent p-0 text-left">
@@ -584,12 +601,12 @@ function HopLop({ lop, mo, onDoiMo, chiHien, sapXep, onThemHocVien, onDoi, dsHoc
             </span>
           </span>
         }>
-        <td className="px-3" colSpan={admin ? 2 : 4}>
+        <td className="px-3" colSpan={admin ? 2 : thuong ? 4 : 4 + COT_DIEM_FT.length}>
           <span className="flex items-center justify-end gap-1.5">{cacBadge}{menuBadgeAn}</span>
         </td>
-        <td className="px-2 text-center"><MenuDong muc={mucLop} nhan={t('Thao tác khác')} /></td>
+        <td className="px-2 text-center"><MenuDong muc={mucLop} nhan={t('Thao tác khác')} />{panelNhap}</td>
       </HangNhom>
-      {mo && <BangHocVienLop admin={admin} lop={lop} chiHien={chiHien} sapXep={sapXep} onDoi={onDoi} soCot={admin ? 4 : 8} ds={dsHocVien} onThuTu={onThuTu} onMoCase={onMoCase} />}
+      {mo && <BangHocVienLop admin={admin} lop={lop} chiHien={chiHien} sapXep={sapXep} onDoi={onDoi} soCot={admin ? 4 : thuong ? 8 : 8 + COT_DIEM_FT.length} ds={dsHocVien} onThuTu={onThuTu} onMoCase={onMoCase} />}
     </tbody>
   );
 }
