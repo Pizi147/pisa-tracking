@@ -71,7 +71,9 @@ export const HD_QL: HuongDan = {
     /* TU-a: trang Tutor (QL chỉ xem; TU-b làm bảng, panel). */
     {
       id: 'tutor', ten: 'Tutor', duong: ['/tutor'],
-      muc: [{ id: 'ql-tutor', ten: 'Trang Tutor', buoc: ['Tutor dạy em chi nhánh mình: số buổi, 3 tiêu chí <b>Có · Không</b>, đánh giá — chỉ xem.', 'Số liệu lấy từ <b>Ghi kết quả PA Tutor</b> của GV.'] }],
+      muc: [{ id: 'ql-tutor', ten: 'Trang Tutor', buoc: ['Tutor dạy em chi nhánh mình: số buổi, 3 tiêu chí <b>Có · Không</b>, đánh giá — chỉ xem.', 'Số liệu lấy từ <b>Ghi kết quả PA Tutor</b> của GV.',
+        'Bấm tên tutor mở panel: các buổi em chi nhánh mình, nhận xét của Head tutor.'],
+        chi: { hd: 'tutor-loc', duong: '/tutor', chu: 'Lọc Cần chú ý · Đang dạy · Tất cả ở hàng này.' } }],
     },
     themMan('hoc-vien',
       { id: 'ql-hvl-them', ten: 'Thêm lớp, học viên', buoc: ['<b>+ Lớp mới</b> · <b>+ Học viên</b> (điện thoại: trong <b>⋯</b>).', '<b>+ Học viên</b>: dán vùng bảng từ Excel / Google Sheets. <b>Email</b> * không trùng em khác; trống vẫn lưu, em có việc <b>Thiếu email</b>.'] },
