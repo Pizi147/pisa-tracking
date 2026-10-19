@@ -193,6 +193,7 @@ export const DUONG_DO: MucDo[] = [
   { trang: 'Hồ sơ HV', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/ref/nguoi?nhom=giao_vien&studentId={hv}' },
   /* TU-a: nhóm "Tutor" của ô Người dạy PA Tutor (Thêm / Sửa / Xác nhận PA) — một câu đọc tutor + kết luận mới nhất. */
   { trang: 'Hồ sơ HV', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/tutors/chon?studentId={hv}' },
+  { trang: 'Hồ sơ HV', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/tutors/chon?paId={paTutor}', maChuDich: { GVBM: 403 } },   // GVBM không dạy kỹ năng của PA: không ghi được
   { trang: 'Hồ sơ HV', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/cases/{case}' },
   /* PR-VAI-b (V1/K3-47): dải "n yêu cầu chờ bạn duyệt" của hồ sơ HV — chỉ Quản lý / Quản trị gọi (GVCN 403). */
   { trang: 'Hồ sơ HV', vai: ['QL', 'QT', 'GVCN'], url: '/yeu-cau?studentId={hv}', maChuDich: { GVCN: 403 } },
@@ -305,6 +306,9 @@ export const DUONG_DO: MucDo[] = [
  * số "đo …" trong chú thích từng dòng dưới đây là số đo CŨ, trước TD2-d.
  */
 export const TRAN: Record<string, number> = {
+  /* TU-a: ô chọn tutor — trần = max(đo+10, ⌈đo×1,3⌉), đo 20/10. */
+  'QL /tutors/chon?studentId=1': 17, 'QT /tutors/chon?studentId=1': 15, 'GVCN /tutors/chon?studentId=1': 19, 'GVBM /tutors/chon?studentId=1': 19,
+  'QL /tutors/chon?paId=7': 20, 'QT /tutors/chon?paId=7': 17, 'GVCN /tutors/chon?paId=7': 21,
   'QL /demo/session': 16,
   'GVCN /demo/session': 16,
   'GVBM /demo/session': 16,
@@ -794,6 +798,9 @@ export const TRAN: Record<string, number> = {
  * khoá bằng EXPLAIN (không SCAN assessment_attempts, đi idx_attempt_o_cho[_lop]) ở khối "TD7b" của tocDo.run.ts.
  */
 export const TRAN_DONG: Record<string, number> = {
+  /* TU-a: ô chọn tutor — trần = max(đo+50, ⌈đo×1,3⌉), đo 20/10 (13 · 11 · 17 · 17 · 44 · 12 · 45 dòng). */
+  'QL /tutors/chon?studentId=1': 63, 'QT /tutors/chon?studentId=1': 61, 'GVCN /tutors/chon?studentId=1': 67, 'GVBM /tutors/chon?studentId=1': 67,
+  'QL /tutors/chon?paId=7': 94, 'QT /tutors/chon?paId=7': 62, 'GVCN /tutors/chon?paId=7': 95,
   'QL /my-work': 1104,   // TD4: đo 849 (trước 2155)
   'GVCN /my-work': 1069,   // TD4: đo 822 (trước 1784)
   'GVBM /my-work': 1102,   // TD4: đo 847 (trước 2016)
