@@ -43,19 +43,19 @@ export async function runPhanTichTests(t: YThucTestKit) {
     eq(g('loai-lop=normal'), { goc: 'tong-hop', ct: 'thuong', boThamSo: ['loai-lop'], gocMoi: null }, 'loai-lop=normal → ct=thuong, xoá loai-lop');
     eq(g('loai-lop=ft'), { goc: 'tong-hop', ct: 'ft', boThamSo: ['loai-lop'], gocMoi: null }, 'loai-lop=ft → ct=ft');
     eq(g('goc=y-thuc'), { goc: 'y-thuc', ct: null, boThamSo: [], gocMoi: null }, 'goc=y-thuc giữ nguyên');
-    eq(g(''), { goc: 'tong-hop', ct: null, boThamSo: [], gocMoi: null }, 'không tham số → mặc định Tổng hợp');
+    eq(g(''), { goc: 'bao-cao', ct: null, boThamSo: [], gocMoi: null }, 'không tham số → Báo cáo (OV-15e: tab đầu)');
   });
 
-  check('UX4 · gocNhinTuThamSo: ket-qua→hieu-qua-pa, chua-ai-nhan→van-de, gocMoi đúng; hang-doi vẫn giữ', () => {
+  check('UX4 · gocNhinTuThamSo: ket-qua→hieu-qua-pa; OV-15e: chua-ai-nhan / van-de (tab đã bỏ) → Test + SOS, gocMoi đúng', () => {
     const g = (qs: string) => d.gocNhinTuThamSo(new URLSearchParams(qs));
     eq(g('goc=ket-qua'), { goc: 'hieu-qua-pa', ct: null, boThamSo: [], gocMoi: 'hieu-qua-pa' }, 'ket-qua → Hiệu quả PA');
-    eq(g('goc=chua-ai-nhan'), { goc: 'van-de', ct: null, boThamSo: [], gocMoi: 'van-de' }, 'chua-ai-nhan → Tổng hợp vấn đề HV');
+    eq(g('goc=chua-ai-nhan'), { goc: 'tong-hop', ct: null, boThamSo: [], gocMoi: 'tong-hop' }, 'chua-ai-nhan → Test + SOS');
     eq(g('goc=hieu-qua-pa').gocMoi, null, 'khoá mới không cần thay URL');
-    eq(g('goc=van-de').goc, 'van-de', 'van-de giữ khoá cũ');
+    eq(g('goc=van-de').goc, 'tong-hop', 'van-de (đã bỏ) → Test + SOS');
     eq(g('goc=danh-sach&hang-doi=can-ho-tro-2-lan').goc, 'tong-hop', 'danh-sach đã bỏ (PR-Pb2-a)');
-    /* PR-Pb2-b: thêm 'giao-vien' ở CUỐI (Hợp đồng a↔b). */
-    eq([...d.GOC_NHIN], ['tong-hop', 'van-de', 'hieu-qua-pa', 'y-thuc', 'giao-vien'], 'đúng thứ tự chủ sản phẩm chốt (PR-Pb2-a bỏ Danh sách Case, PR-Pb2-b thêm Giáo viên)');
-    eq(d.GOC_NHIN_LABEL['van-de'], 'Tổng hợp vấn đề HV', 'nhãn');
+    /* OV-15e (C28, plan §7): sáu tab, Báo cáo đầu. */
+    eq([...d.GOC_NHIN], ['bao-cao', 'tong-hop', 'ket-qua-thi', 'hieu-qua-pa', 'giao-vien', 'y-thuc'], 'đúng thứ tự chủ sản phẩm chốt (OV-15e)');
+    eq(d.GOC_NHIN_LABEL['tong-hop'], 'Test + SOS', 'nhãn');
     eq(d.GOC_NHIN_LABEL['hieu-qua-pa'], 'Hiệu quả PA', 'nhãn');
   });
 
@@ -126,7 +126,7 @@ export async function runPhanTichTests(t: YThucTestKit) {
     const flat = JSON.stringify(day);
     assert(!flat.includes('kn:'), 'ẩn nhóm ky-nang thì không còn khoá kn: nào trong bảng xuất');
     assert(!/\d{4}-\d{2}-\d{2}/.test(flat), 'không có chuỗi ISO nào trong bảng xuất');
-    assert(day[0][0].includes('Tổng hợp Test + SOS'), 'dòng 1 là tiêu đề + mô tả bộ lọc');
+    assert(day[0][0].startsWith('Test + SOS · '), 'dòng 1 là tiêu đề + mô tả bộ lọc (OV-15e: tên tab "Test + SOS")');
     const dongChinh = day.find((r: any[]) => r[0] === 'W3 SEP · 21/09–27/09 · tuần này');
     assert(!!dongChinh, 'dòng chính có nhãn + phụ');
     const dongCon = day.find((r: any[]) => typeof r[0] === 'string' && r[0].startsWith('  FT101'));
@@ -1022,10 +1022,10 @@ export async function runPhanTichTests(t: YThucTestKit) {
     const p1 = new URLSearchParams('tinh-hinh=no_plan');
     eq(d.gocNhinTuThamSo(p1).goc, 'tong-hop', 'tinh-hinh một mình không còn vào Danh sách Case');
     const next = new URLSearchParams(p1);
-    next.delete('goc');
+    next.set('goc', 'tong-hop');   // OV-15e: setGoc luôn ghi `goc` (không `goc` = Báo cáo)
     for (const k of d.thamSoXoaKhiDoiGoc('tong-hop')) next.delete(k);
     eq(d.gocNhinTuThamSo(next).goc, 'tong-hop', 'Sau khi bấm Tổng hợp: phải sang Tổng hợp, không kẹt lại Danh sách Case');
-    eq(d.thamSoXoaKhiDoiGoc('van-de'), ['hang-doi', 'tinh-hinh', 'ky-nang', 'gv', 'tu', 'den'], 'Sang góc nhìn khác: xoá thêm bộ lọc riêng của Hiệu quả PA (PR-Pb2-a)');
+    eq(d.thamSoXoaKhiDoiGoc('y-thuc'), ['hang-doi', 'tinh-hinh', 'ky-nang', 'gv'], 'Sang góc nhìn khác: xoá `gv` của Hiệu quả PA; OV-15e: tu/den là khoảng chung — giữ');
     eq(d.thamSoXoaKhiDoiGoc('hieu-qua-pa'), ['hang-doi', 'tinh-hinh', 'ky-nang'], 'Vào Hiệu quả PA: giữ gv/tu/den');
     // gocNhinTuThamSo tự nó cũng phải để `goc` tường minh thắng heuristic, không cần chờ dọn tham số.
     eq(d.gocNhinTuThamSo(new URLSearchParams('goc=tong-hop&tinh-hinh=no_plan')).goc, 'tong-hop',

@@ -63,8 +63,10 @@ export const HD_QL: HuongDan = {
     },
     {
       id: 'phan-tich', ten: 'Phân tích', duong: ['/phan-tich'],
-      muc: [{ id: 'ql-pt-goc', ten: 'Năm góc phân tích', buoc: ['<b>Tổng hợp Test + SOS</b> · <b>Tổng hợp vấn đề HV</b> · <b>Hiệu quả PA</b> · <b>Ý thức</b> · <b>Giáo viên</b>.', 'Chọn chương trình, khoảng thời gian, lớp; bấm số xem danh sách em.'],
-        chi: { hd: 'pt-goc', duong: '/phan-tich', chu: 'Chọn góc phân tích ở hàng này.' } }],
+      muc: [{ id: 'ql-pt-goc', ten: 'Sáu tab phân tích', buoc: ['<b>Báo cáo</b> · <b>Test + SOS</b> · <b>Kết quả thi</b> · <b>Hiệu quả PA</b> · <b>Phân tích GV</b> · <b>Ý thức</b>.', '<b>Báo cáo</b> (mặc định): 2 tuần vừa qua cho buổi họp; <b>In</b> ra một trang A4 ngang.'],
+        chi: { hd: 'pt-goc', duong: '/phan-tich', chu: 'Chọn tab ở hàng này.' } },
+      { id: 'ql-pt-thoi-gian', ten: 'Khoảng thời gian', buoc: ['Một <b>Khoảng thời gian</b> cho mọi tab (mặc định 2 tuần vừa qua); bấm số mở danh sách, làm tại chỗ.', 'Bảng dài: 10 dòng một trang, chọn 20 / 50 ở đầu hoặc cuối bảng.'],
+        chi: { hd: 'pt-thoi-gian', duong: '/phan-tich', chu: 'Đổi khoảng cho mọi tab ở đây.' } }],
     },
     themMan('hoc-vien',
       { id: 'ql-hvl-them', ten: 'Thêm lớp, học viên', buoc: ['<b>+ Lớp mới</b> · <b>+ Học viên</b> (điện thoại: trong <b>⋯</b>).', '<b>+ Học viên</b>: dán vùng bảng từ Excel / Google Sheets. <b>Email</b> * không trùng em khác; trống vẫn lưu, em có việc <b>Thiếu email</b>.'] },

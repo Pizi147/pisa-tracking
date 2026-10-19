@@ -234,16 +234,18 @@ export async function runPrOv13bTests(t: YThucTestKit) {
     assert(ct.viecTiep?.chu === 'Chờ duyệt đổi PA' && ct.viecTiep.han === null && ct.viecTiep.loaiHan === null, JSON.stringify(ct.viecTiep));
   }));
 
-  check('OV13b-12 · Xác nhận PA bắt Người dạy (loại có người dạy) và Số buổi (Tutor) — máy chủ', () => thu(() => {
+  /* Chủ SP 19/10: chưa biết ai dạy thì để trống lúc xác nhận — tên tutor bắt buộc ở Kết quả, mỗi buổi một dòng (`kiemBuoiTutor`). */
+  check('OV13b-12 · Xác nhận PA: Người dạy để trống được; Tutor vẫn cần Số buổi — máy chủ + form', () => thu(() => {
     const { goc } = dungCase();
     conn.prepare('UPDATE case_interventions SET kind = ?, performer_user_id = NULL, performer_name = NULL, so_buoi = NULL WHERE id = ?').run('tutor', goc.id);
     xoaNho();
     const g = one('SELECT * FROM case_interventions WHERE id = ?', goc.id);
-    assert(loi(() => sosAuto.xacNhanPaQuyChe(GV, g.id, { description: 'Tutor kèm Section 3, 2 buổi một tuần.', soBuoi: 4 }))?.status === 400, 'thiếu người dạy → 400');
-    assert(loi(() => sosAuto.xacNhanPaQuyChe(GV, g.id, { description: 'Tutor kèm Section 3, 2 buổi một tuần.', performerSelf: true }))?.status === 400, 'Tutor thiếu số buổi → 400');
-    sosAuto.xacNhanPaQuyChe(GV, g.id, { description: 'Tutor kèm Section 3, 2 buổi một tuần.', performerSelf: true, soBuoi: 4 });
+    assert(loi(() => sosAuto.xacNhanPaQuyChe(GV, g.id, { description: 'Tutor kèm Section 3, 2 buổi một tuần.' }))?.status === 400, 'Tutor thiếu số buổi → 400');
+    const form = (soBuoi: string) => dm.loiFormPa({ kind: 'tutor', description: 'Tutor kèm Section 3, 2 buổi một tuần.', soBuoi, nguoi: null, ghiRo: '' }, { toiThieu: 15, batBuoc: true }).map((x: any) => x.khoa);
+    assert(form('4').length === 0 && form('').join() === 'so-buoi', `form: ${form('4')} | ${form('')}`);
+    sosAuto.xacNhanPaQuyChe(GV, g.id, { description: 'Tutor kèm Section 3, 2 buổi một tuần.', soBuoi: 4 });
     const sau = one('SELECT * FROM case_interventions WHERE id = ?', g.id);
-    assert(sau.status === 'started' && sau.so_buoi === 4 && sau.performer_user_id === GV.userId, 'đủ ô → chạy');
+    assert(sau.status === 'started' && sau.so_buoi === 4 && sau.performer_user_id == null && sau.performer_name == null, 'trống người dạy → vẫn chạy');
   }));
 
   check('OV13b-13 · Hoàn tác lần ghi kèm đề xuất mà QL đã duyệt → 400 "QL đã duyệt đổi PA"; thẻ đổi PA tự đóng (PA mới huỷ) → PA gốc thôi trỏ', () => thu(() => {

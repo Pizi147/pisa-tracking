@@ -7,7 +7,7 @@
 import { laLoaiBoQuen } from './phanTich.ts';
 import { t } from '../i18n/index.ts';
 
-export type KhuVuc = 'tong-quan' | 'hoc-vien' | 'test' | 'cong-viec';
+export type KhuVuc = 'tong-quan' | 'hoc-vien' | 'test' | 'phan-tich' | 'cong-viec';
 export type TabTest = 'lich' | 'diem-lop' | 'ke-hoach';
 export type TabCongViec = 'cho-duyet' | 'ho-tro' | 'yeu-cau' | 'van-hanh' | 'bao-cao';
 export type TabTongQuan = 'tong-quan' | 'phan-tich';
@@ -43,6 +43,8 @@ export const KHU_VUC: readonly KhuVucMuc[] = [
   { key: 'tong-quan', to: '/', label: t('Tổng quan'), labelNgan: t('Tổng quan') },
   { key: 'hoc-vien', to: '/hoc-vien', label: t('Học viên & Lớp'), labelNgan: t('Học viên') },
   { key: 'test', to: '/test', label: t('Test'), labelNgan: t('Test') },
+  /* OV-15e (plan §7): Phân tích là mục thanh trên (trước là tab của Tổng quan). */
+  { key: 'phan-tich', to: '/phan-tich', label: t('Phân tích'), labelNgan: t('Phân tích') },
   { key: 'cong-viec', to: '/cong-viec', label: t('Công việc'), labelNgan: t('Công việc') },
 ];
 
@@ -50,6 +52,7 @@ const HIEN: Record<KhuVuc, (n: NavQuyen) => boolean> = {
   'tong-quan': (n) => n.overview,
   'hoc-vien': (n) => n.students,
   test: (n) => n.test,
+  'phan-tich': (n) => n.analysis,
   'cong-viec': (n) => n.work,
 };
 
@@ -67,7 +70,8 @@ const thuoc = (p: string, goc: string) => p === goc || p.startsWith(`${goc}/`);
 /** Khu vực chứa đường dẫn này — để tô sáng đúng mục. Trang ngoài 4 khu (Quản trị, Hồ sơ cá nhân) → null. */
 export function khuVucCuaDuong(pathname: string): KhuVuc | null {
   const p = pathname.length > 1 ? pathname.replace(/\/+$/, '') : pathname;
-  if (p === '/' || thuoc(p, '/phan-tich') || thuoc(p, '/hoc-thuat')) return 'tong-quan';
+  if (thuoc(p, '/phan-tich')) return 'phan-tich';
+  if (p === '/' || thuoc(p, '/hoc-thuat')) return 'tong-quan';
   if (thuoc(p, '/hoc-vien')) return 'hoc-vien';
   if (['/test', '/nhap-diem', '/bang-diem-thuong', '/mock-test'].some((g) => thuoc(p, g))) return 'test';
   if (thuoc(p, '/cong-viec')) return 'cong-viec';

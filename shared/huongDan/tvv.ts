@@ -77,8 +77,8 @@ export const HD_TVV: HuongDan = {
     },
     {
       id: 'phan-tich', ten: 'Phân tích', duong: ['/phan-tich'],
-      muc: [{ id: 'tvv-pt', ten: 'Góc phân tích', buoc: ['<b>Tổng hợp Test + SOS</b> · <b>Tổng hợp vấn đề HV</b> · <b>Hiệu quả PA</b> · <b>Ý thức</b>.', 'Bấm số xem danh sách em.'],
-        chi: { hd: 'pt-goc', duong: '/phan-tich', chu: 'Chọn góc phân tích ở hàng này.' } }],
+      muc: [{ id: 'tvv-pt', ten: 'Tab phân tích', buoc: ['<b>Báo cáo</b> · <b>Test + SOS</b> · <b>Kết quả thi</b> · <b>Hiệu quả PA</b> · <b>Ý thức</b>.', 'Một <b>Khoảng thời gian</b> cho mọi tab (mặc định 2 tuần vừa qua); bấm số mở danh sách, làm tại chỗ.'],
+        chi: { hd: 'pt-goc', duong: '/phan-tich', chu: 'Chọn tab ở hàng này.' } }],
     },
     {
       id: 'hoc-vien', ten: 'Học viên & Lớp', duong: ['/hoc-vien'],

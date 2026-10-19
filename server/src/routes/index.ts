@@ -5,6 +5,7 @@ import { laBanChinh } from '../moiTruong.ts';
 import {
   ENTRY_SKILLS, THEO_DONG, ghepMucTieu, tenMonNgan, canNamGan, docBoLocXuatMt, kiemGhiRoKhac, laKhac, soSanhLop, transferReasonText,
   PERMISSIONS, ROLE_LABEL, coTheDoiGocNhin, tenMon, WORK_SCOPES, chuongTrinhTuThamSo, ctTuyChon, khoangTuThamSo, thamSoNguoi, tuDauKhoang,
+  khoangTuUrl, loiKhoang, mondayOfDate,
   type Role, type TheoDong, type WorkScope,
 } from '../../../shared/domain/index.ts';
 import { demoToday, getConfig, scenarioMode, setConfig } from '../demoConfig.ts';
@@ -93,6 +94,8 @@ import * as vanDeHvSvc from '../phanTich/vanDeHv.ts';
 import * as hieuQuaPaSvc from '../phanTich/hieuQuaPa.ts';
 import * as yThucPhanTichSvc from '../phanTich/yThucPhanTich.ts';
 import * as giaoVienPtSvc from '../phanTich/giaoVien.ts';
+import * as baoCaoSvc from '../phanTich/baoCao.ts';
+import * as ketQuaThiSvc from '../phanTich/ketQuaThi.ts';
 import { khungPtGvTuThamSo } from '../../../shared/domain/index.ts';   // PR-Pb2-b: dòng riêng (Hợp đồng a↔b — không sửa import chung)
 import { metricResponse, metricSet, rowsFor } from '../worklist/metrics.ts';
 import { myWork, viecCuaNguoi } from '../worklist/mywork.ts';
@@ -352,11 +355,12 @@ api.get('/ref/classes', requireAuth, wrap((req) => {
   const fastTrackOnly = qStr(req, 'fastTrackOnly') === '1';
   /* OV-11h (PT-10): `tg` = số tuần của Phân tích → thêm lớp đã kết thúc có lượt trong khoảng (`ket_thuc: true`, web xếp nhóm "Đã kết thúc"). */
   const tg = qInt(req, 'tg');
+  const khoang = khoangOf(req);   // OV-15e: bộ chọn thời gian chung của Phân tích
   return [
     ...rows
       .filter((c) => scope.all || scope.branchIds.includes(c.branch_id) || scope.classIds.includes(c.id))
       .filter((c) => !branchId || c.branch_id === branchId),
-    ...(tg ? tongHopSvc.lopKetThucCoLuot(p, tg, branchId ?? null) : []),
+    ...(khoang ? tongHopSvc.lopKetThucCoLuot(p, 0, branchId ?? null, khoang) : tg ? tongHopSvc.lopKetThucCoLuot(p, tg, branchId ?? null) : []),
   ].filter((c) => !fastTrackOnly || c.scoring_mode === 'ielts_band');
 }));
 
@@ -607,6 +611,24 @@ api.get('/ke-hoach-test/thuong/:classId', requireAuth, wrap((req) => {
   return keHoachSvc.luoiThuong(principalOf(req), pInt(req, 'classId'));
 }));
 
+/**
+ * OV-15e (C29): BỘ CHỌN THỜI GIAN CHUNG — `kieu`/`tu`/`den` (ngày) → khoảng; sai → 400. Không có `kieu` và thiếu một trong `tu`/`den` → null (đường cũ
+ * giữ mặc định riêng: `tg`, `thang`, `tu` một mình của Hiệu quả PA).
+ */
+function khoangOf(req: Request): { tu: string; den: string } | null {
+  const get = (k: string) => qStr(req, k) ?? null;
+  if (!get('kieu') && !(get('tu') && get('den'))) return null;
+  const k = khoangTuUrl({ get }, demoToday());
+  const l = loiKhoang(k);
+  if (l) throw badRequest(l);
+  return { tu: k.tu, den: k.den };
+}
+/** Hiệu quả PA / Phân tích GV đọc theo TUẦN: Thứ Hai tuần đầu / tuần cuối của khoảng chung; không có khoảng chung → giá trị cũ. */
+function tuanKhoangOf(req: Request, cu: { tu?: string | null; den?: string | null }) {
+  const k = khoangOf(req);
+  return k ? { tu: mondayOfDate(k.tu), den: mondayOfDate(k.den) } : cu;
+}
+
 /*
  * PHÂN TÍCH (PR-Pb, §3.3; PR-UX4) — Tổng hợp Test + SOS, Tổng hợp vấn đề HV, Hiệu quả PA, Ý thức, Bỏ quên.
  * Quyền `meeting.view` được kiểm ngay trong từng dịch vụ (`phanTich/phamVi.ts` cho các đường mới).
@@ -615,6 +637,7 @@ const filterTongHopOf = (req: Request) => ({
   branchId: qInt(req, 'branchId') ?? null, ct: chuongTrinhTuThamSo(qStr(req, 'ct')),
   soTuan: khoangTuThamSo(qStr(req, 'tg')), classId: qInt(req, 'lop') ?? null,
   theo: (THEO_DONG as readonly string[]).includes(qStr(req, 'theo') ?? '') ? (qStr(req, 'theo') as TheoDong) : 'tuan',
+  ...khoangOf(req),
 });
 api.get('/phan-tich/tong-hop', requireAuth, wrap((req) => {
   maybeSimulateReadError();
@@ -658,7 +681,7 @@ api.get('/phan-tich/van-de-hv/o', requireAuth, wrap((req) => {
 const filterHieuQuaPaOf = (req: Request) => ({
   branchId: qInt(req, 'branchId') ?? null, ct: chuongTrinhTuThamSo(qStr(req, 'ct')),
   classId: qInt(req, 'lop') ?? null, soTuan: khoangTuThamSo(qStr(req, 'tg')),
-  gv: qStr(req, 'gv') ?? null, tu: qStr(req, 'tu') ?? null, den: qStr(req, 'den') ?? null,
+  gv: qStr(req, 'gv') ?? null, ...tuanKhoangOf(req, { tu: qStr(req, 'tu') ?? null, den: qStr(req, 'den') ?? null }),
 });
 api.get('/phan-tich/hieu-qua-pa', requireAuth, wrap((req) => {
   maybeSimulateReadError();
@@ -673,7 +696,7 @@ api.get('/phan-tich/hieu-qua-pa/o', requireAuth, wrap((req) => {
 /* Ý thức & Phối hợp (PR-UX4): Học viên cần chú ý + Lớp nhiều vi phạm. Kỳ = từ đầu khoảng `tg` đến hôm nay. */
 const filterYThucPhanTichOf = (req: Request) => ({
   branchId: qInt(req, 'branchId') ?? null, ct: null, classId: qInt(req, 'lop') ?? null,   // PR-Pb2-a (Q2): Ý thức luôn gộp hai khung — bỏ qua `ct`
-  from: tuDauKhoang(demoToday(), khoangTuThamSo(qStr(req, 'tg'))), to: demoToday(),
+  from: khoangOf(req)?.tu ?? tuDauKhoang(demoToday(), khoangTuThamSo(qStr(req, 'tg'))), to: khoangOf(req)?.den ?? demoToday(),
 });
 api.get('/phan-tich/y-thuc', requireAuth, wrap((req) => {
   maybeSimulateReadError();
@@ -688,7 +711,7 @@ api.get('/phan-tich/y-thuc/o', requireAuth, wrap((req) => {
 /* PR-Pb2-b: bảng Phân tích giáo viên (Q30-5, Q31-9) + panel Chấm điểm của một GV. `cn`, `gv` số nguyên dương; khoảng `tu`/`den` (Thứ Hai) hoặc `thang`. */
 const filterPtGvOf = (req: Request) => ({
   cn: soDuong(req.query.cn, 'cn'), ct: khungPtGvTuThamSo(qStr(req, 'ct')),
-  tu: qStr(req, 'tu') ?? null, den: qStr(req, 'den') ?? null, thang: qStr(req, 'thang') ?? null,
+  ...(qStr(req, 'kieu') ? { ...tuanKhoangOf(req, {}), thang: null } : { tu: qStr(req, 'tu') ?? null, den: qStr(req, 'den') ?? null, thang: qStr(req, 'thang') ?? null }),
 });
 api.get('/phan-tich/giao-vien', requireAuth, wrap((req) => {
   maybeSimulateReadError();
@@ -699,6 +722,35 @@ api.get('/phan-tich/giao-vien/cham-diem', requireAuth, wrap((req) => {
   const gv = soDuong(req.query.gv, 'gv');
   if (gv == null) throw badRequest('Thiếu giáo viên.');
   return giaoVienPtSvc.oChamDiemGv(principalOf(req), { ...filterPtGvOf(req), gv });
+}));
+/* OV-15e (C30): panel một chỉ số khác Chấm điểm của một GV — `cot` = ket-qua:<kỹ năng> · tien-bo · ghi-pa · vi-pham · pa-hieu-qua. */
+api.get('/phan-tich/giao-vien/o', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  const gv = soDuong(req.query.gv, 'gv');
+  if (gv == null) throw badRequest('Thiếu giáo viên.');
+  return giaoVienPtSvc.oChiSoGv(principalOf(req), { ...filterPtGvOf(req), gv, cot: qStr(req, 'cot') ?? '' });
+}));
+/* OV-15e: Báo cáo (C24–C26) + Kết quả thi (C27) — bộ chọn thời gian chung (`kieu`/`tu`/`den`; vắng = 2 tuần vừa qua). */
+const filterBaoCaoOf = (req: Request) => {
+  const k = khoangOf(req) ?? khoangTuUrl({ get: () => null }, demoToday());
+  return { branchId: qInt(req, 'branchId') ?? null, ct: chuongTrinhTuThamSo(qStr(req, 'ct')), classId: qInt(req, 'lop') ?? null, tu: k.tu, den: k.den };
+};
+api.get('/phan-tich/bao-cao', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return baoCaoSvc.baoCao(principalOf(req), filterBaoCaoOf(req));
+}));
+api.get('/phan-tich/bao-cao/o', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return baoCaoSvc.oBaoCao(principalOf(req), { ...filterBaoCaoOf(req), o: qStr(req, 'o') ?? '' });
+}));
+api.get('/phan-tich/ket-qua-thi', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  const f = filterBaoCaoOf(req);
+  if (qStr(req, 'loai') === 'thi-that') return ketQuaThiSvc.ketQuaThiThatKq(principalOf(req), f);
+  const kq = qStr(req, 'kq');
+  return ketQuaThiSvc.ketQuaMockKq(principalOf(req), {
+    ...f, xep: qStr(req, 'xep') === 'sos' ? 'sos' : 'lop', kq: kq === 'dat' || kq === 'chua-dat' || kq === 'chua-du' ? kq : null,
+  });
 }));
 
 /** Việc sinh ra từ dữ liệu — tự hết khi nguồn được xử lý, không có nút đóng giả. */
