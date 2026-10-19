@@ -27,7 +27,7 @@ const toneDai = (d: string | null | undefined): ToneNhan => (d === 'dat' ? 'ok' 
 function ketQuaThi(d: Dong): { tone: ToneNhan; chu: string } | null {
   if (d.roiSom || d.huongKhoa === 'chuyen_lop') return null;   // em chuyển lớp (đóng-mở): không đi thi
   if (d.ketLuan === 'reached') return { tone: 'ok', chu: t('Đạt Target') };
-  if (d.ketLuan === 'not_reached') return { tone: 'late', chu: t('Chưa đạt Target') };
+  if (d.ketLuan === 'not_reached') return { tone: 'bad', chu: t('Chưa đạt Target') };   // OV-15a: `late` chỉ cho quá hạn
   if (d.thiThat?.ovr != null) return null;   // có Overall (kết quả cũ) mà kết luận chưa rõ: không nhãn "Chờ"
   return { tone: 'muted', chu: d.thiThat?.khongThi ? t('Không thi') : t('Chờ kết quả thi thật') };
 }

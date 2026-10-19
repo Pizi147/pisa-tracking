@@ -20,6 +20,19 @@ export function QuaHan({ ngay, gon }: { ngay: number | null; gon?: boolean }) {
 export const CHIP_TRON = 'inline-flex items-center whitespace-nowrap rounded-full border border-transparent px-[7px] text-[11.5px] font-bold leading-[18px]';
 export const CHIP_VUONG = 'inline-flex items-center whitespace-nowrap rounded-md border px-1.5 text-[11.5px] font-semibold leading-[18px] tabular-nums';
 
+/**
+ * DÁNG CHIP SOS — MỘT CHỖ (OV-15a, C08): chỉ VIỀN vàng / cam / đỏ, không nền; bậc đọc được cả khi không phân biệt màu:
+ * viền 1 → 1,5 → 2,5 px, SOS 3 thêm vòng ngoài (viền đôi); tạm = viền đứt. `SCORE_CHIP` (ô kết quả) dùng lại lớp này.
+ */
+export function lopSos(muc: number, tam?: boolean): string {
+  const vien = muc <= 1 ? 'border border-sos1 text-sos1-chu'
+    : muc === 2 ? 'border-[1.5px] border-sos2 text-sos2-chu'
+    : 'mx-[2.5px] border-[2.5px] border-sos3 text-sos3-chu outline outline-1 outline-offset-[1.5px] outline-sos3';
+  return `bg-transparent ${vien} ${tam ? `border-dashed ${muc >= 3 ? 'outline-dashed' : ''}` : ''}`;
+}
+/** Khung chip SOS (C3: chip tròn chỉ khai ở đây). */
+export const CHIP_SOS = 'inline-flex h-[22px] min-w-[30px] shrink-0 items-center justify-center whitespace-nowrap rounded-full px-2 text-[12px] font-bold leading-none tabular-nums';
+
 export type ToneNhan = 'ok' | 'done' | 'bad' | 'late' | 'soon' | 'doing' | 'muted';
 
 const NHAN: Record<ToneNhan, string> = {

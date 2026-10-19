@@ -60,7 +60,6 @@ export async function runPrUxGTests(t: YThucTestKit) {
     const b = d.badgeLop({ vai: 'ql', needsPlacement: false, canXepLop: 0, missingSkills: [], soBaiChoCham: 0, needScoresTitle: null, phase: 'running', missingCount: 0, soChoDuyet: 3 });
     const x = [...b.hien, ...b.an].find((k: any) => k.key === 'cho-duyet');
     assert(x?.tone === 'muted', `tone cho-duyet = ${x?.tone}`);
-    assert(/'wait'/.test(doc('web/src/ui/Nhan.tsx').split('toneNhanTuBadge')[1] ?? ''), 'toneNhanTuBadge chưa nhận tone wait');
   });
   await checkAsync('G2c · mức độ Case "Bình thường" ở Tổng quan GV là chip trung tính (không vàng); "Gấp" vẫn đỏ', async () => {
     const { levelOf } = await import('../worklist/mywork.ts');

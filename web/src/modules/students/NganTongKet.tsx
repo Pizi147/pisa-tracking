@@ -35,7 +35,7 @@ const NGAN_KN: Record<string, string> = { listening: 'L', reading: 'R', writing:
 const chuKqdr = (k: { dat: boolean; nguyenNhan: string | null; mon: string[] }) => (k.dat ? t('Đạt')
   : [t('Không đạt'), k.nguyenNhan === 'hoc_sinh' ? t('Học viên') : k.nguyenNhan === 'trung_tam' ? t('Trung tâm') : null, k.mon.map((m) => NGAN_KN[m] ?? m).join(' ') || null].filter(Boolean).join(' · '));
 const DAI: Record<string, { nhan: string; tone: ToneNhan }> = {
-  dat: { nhan: '≥ 70%', tone: 'ok' }, '60_69': { nhan: '60–69%', tone: 'soon' }, '50_59': { nhan: '50–59%', tone: 'soon' }, duoi_50: { nhan: '< 50%', tone: 'late' },
+  dat: { nhan: '≥ 70%', tone: 'ok' }, '60_69': { nhan: '60–69%', tone: 'soon' }, '50_59': { nhan: '50–59%', tone: 'soon' }, duoi_50: { nhan: '< 50%', tone: 'bad' },
 };
 const MUI = (
   <span className="flex items-center justify-center text-slate-600 max-sm:rotate-90" aria-hidden>
@@ -206,7 +206,7 @@ export function NganTongKet({ cycleId, onClose, onDoi }: { cycleId: number; onCl
                     <O nho={`${t('Thi thật')}${kq.ngay ? ` · ${ngay(kq.ngay, homNay)}` : ''}`}>
                       <Lon em="OVR">{b1(kq.ovr)}</Lon>
                       <div className="mt-0.5 text-xs tabular-nums text-slate-400">L {b1(kq.l)} · R {b1(kq.r)} · W {b1(kq.w)} · S {b1(kq.s)}</div>
-                      {kq.nhan && <div className="mt-1.5"><Nhan tone={kq.ketLuan === 'reached' ? 'ok' : kq.ketLuan === 'not_reached' ? 'late' : 'muted'}>{dich(kq.nhan)}</Nhan></div>}
+                      {kq.nhan && <div className="mt-1.5"><Nhan tone={kq.ketLuan === 'reached' ? 'ok' : kq.ketLuan === 'not_reached' ? 'bad' : 'muted'}>{dich(kq.nhan)}</Nhan></div>}
                     </O>
                   ) : kq.khongCoThi ? (
                     <O nho={t('Thi thật')} cho><div className="text-sm font-semibold text-slate-500">—</div></O>

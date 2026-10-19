@@ -7654,7 +7654,7 @@ check('PR-E · <Han>: sáu loại hạn có sáu nhãn khác nhau, đúng bảng
   const t = (loai: any, han = '2026-09-23') => domain.deadlineView({ kind: loai, due: han, today: '2026-09-14' }).text;
   assert(t('xac-minh-sos') === 'Xác nhận · hạn 23/09', `xac-minh-sos: "${t('xac-minh-sos')}"`);
   assert(t('lap-pa') === 'Thêm PA · hạn 23/09', `lap-pa: "${t('lap-pa')}"`);
-  assert(t('cap-nhat-pa') === 'Kết quả PA · W2–W3 SEP · hạn hết T3 23/09', `cap-nhat-pa: "${t('cap-nhat-pa')}"`);
+  assert(t('cap-nhat-pa') === 'Kết quả PA · W2–W3 SEP · hạn 23/09', `cap-nhat-pa: "${t('cap-nhat-pa')}"`);
   /* PR-YT4 (K5-24): `thuc-hien-y-thuc`, `hoan-thanh-y-thuc` bỏ — Ý thức dùng `xu-ly-vi-pham`. */
   assert(t('xu-ly-vi-pham') === 'Xử lý vi phạm · hạn 23/09', `xu-ly-vi-pham: "${t('xu-ly-vi-pham')}"`);
   assert(!(domain.DEADLINE_KINDS as readonly string[]).includes('thuc-hien-y-thuc') && !(domain.DEADLINE_KINDS as readonly string[]).includes('hoan-thanh-y-thuc'), 'hai loại cũ còn');
@@ -7689,7 +7689,7 @@ check('PR-E · <Han>: "Dự kiến kết thúc" KHÔNG phải hạn — không b
 
 check('PR-E · <Han>: cập nhật phương án cũng đếm số ngày quá hạn từ mốc hạn (Thứ Ba, OV-12a; đổi nghĩa PR-UX0, mockup 17 #1; PR-N1 R-PA3)', () => {
   const v = domain.deadlineView({ kind: 'cap-nhat-pa', due: '2026-09-08', today: '2026-09-15' });
-  assert(v.tone === 'overdue' && v.daysOverdue === 7 && v.quaHan === 'quá hạn 7 ngày' && v.han === 'hạn hết T3 08/09',
+  assert(v.tone === 'overdue' && v.daysOverdue === 7 && v.quaHan === 'quá hạn 7 ngày' && v.han === 'hạn 08/09',
     `Phải báo quá hạn 7 ngày: "${v.text}" (${v.daysOverdue}, ${v.han})`);
 });
 

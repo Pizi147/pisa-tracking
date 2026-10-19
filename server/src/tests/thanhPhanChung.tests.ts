@@ -126,7 +126,7 @@ export async function runThanhPhanChungTests(t: YThucTestKit) {
     const ok = doc('web/src/ui/OKhac.tsx');
     assert(/kiemGhiRoKhac\(/.test(ok) && /\.focus\(\)/.test(ok), 'OKhac chưa dùng kiemGhiRoKhac / không tự focus');
     const ui = doc('web/src/ui/ui.tsx');
-    for (const x of ['export function NutChon', 'export function BoLocDoan', 'export function NhanTrangThai', 'aria-pressed', 'bg-ink-800', 'teal-600'])
+    for (const x of ['export function NutChon', 'export function BoLocDoan', 'export function NhanTrangThai', 'aria-pressed', '!bg-[color:var(--accent-soft)]', '!border-[color:var(--accent)]'])   // OV-15a: đang chọn = nền nhấn nhạt + viền nhấn (bỏ teal)
       assert(ui.includes(x), `ui.tsx thiếu ${x}`);
     assert(!/doing: 'bg-doing-bg text-doing/.test(ui), 'Status doing còn mượn màu xanh của điểm (A8)');
     assert(/useGiuFocus\(/.test(doc('web/src/ui/KhungPanel.tsx')) && /useGiuFocus\(/.test(doc('web/src/ui/Drawer.tsx')), 'panel/modal chưa giữ focus');

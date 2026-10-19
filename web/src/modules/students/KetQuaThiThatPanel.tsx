@@ -16,7 +16,7 @@ import { HopGiaHan } from './HopGiaHan.tsx';
 
 const KY_NANG = ['l', 'r', 'w', 's'] as const;
 const fmt = (v: number | null | undefined) => (v === null || v === undefined ? '' : v.toFixed(1));
-const toneKq = (n: string) => (n === 'Đạt Target' ? 'ok' : n === 'Chưa đạt Target' ? 'late' : 'muted') as 'ok' | 'late' | 'muted';
+const toneKq = (n: string) => (n === 'Đạt Target' ? 'ok' : n === 'Chưa đạt Target' ? 'bad' : 'muted') as 'ok' | 'bad' | 'muted';
 
 /** Nhãn "Dự kiến thi" từ cột lộ trình: ngày → dd/mm; tháng → SEP 2026; chưa có → null. */
 function nhanThi(c: any, homNay: string | null): string | null {

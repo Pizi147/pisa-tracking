@@ -18,7 +18,7 @@ export type DongCacLoTrinh = {
 /** Nhãn hướng tiếp: Học lại vàng · Kết thúc / Chuyển lớp xám · còn lại xanh dương (như mockup). */
 export const toneHuong = (h: string): ToneNhan => (h === 'Học lại' ? 'soon' : h === 'Kết thúc' || h === 'Chuyển lớp' ? 'muted' : 'doing');
 
-const toneXong = (kl: string | null): ToneNhan => (kl === 'not_reached' ? 'late' : kl === 'reached' ? 'ok' : 'muted');
+const toneXong = (kl: string | null): ToneNhan => (kl === 'not_reached' ? 'bad' : kl === 'reached' ? 'ok' : 'muted');
 const NUT_CHU = 'link min-h-[44px] appearance-none border-0 bg-transparent p-0 text-[12.5px] font-semibold sm:min-h-0';
 
 function KetQua({ d, onBuocTiep, onDoi }: { d: DongCacLoTrinh; onBuocTiep?: (cycleId: number) => void; onDoi: () => void }) {

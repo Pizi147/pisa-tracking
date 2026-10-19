@@ -1,18 +1,7 @@
-import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { useEffect, useId, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { chuChipSos, giaiThichSos, type VaoChipSos } from '@shared/domain/index.ts';
-
-/**
- * DÁNG CHIP SOS — MỘT CHỖ (OV-15a, C08): chỉ VIỀN vàng / cam / đỏ, không nền; bậc đọc được cả khi không phân biệt màu:
- * viền 1 → 1,5 → 2,5 px, SOS 3 thêm vòng ngoài (viền đôi); tạm = viền đứt. `SCORE_CHIP` (ô kết quả) dùng lại lớp này.
- */
-export function lopSos(muc: number, tam?: boolean): string {
-  const vien = muc <= 1 ? 'border border-sos1 text-sos1-chu'
-    : muc === 2 ? 'border-[1.5px] border-sos2 text-sos2-chu'
-    : 'mx-[2.5px] border-[2.5px] border-sos3 text-sos3-chu outline outline-1 outline-offset-[1.5px] outline-sos3';
-  return `bg-transparent ${vien} ${tam ? `border-dashed ${muc >= 3 ? 'outline-dashed' : ''}` : ''}`;
-}
-const CHIP = 'inline-flex h-[22px] min-w-[30px] shrink-0 items-center justify-center whitespace-nowrap rounded-full px-2 text-[12px] font-bold leading-none tabular-nums';
+import { CHIP_SOS as CHIP, lopSos } from './Nhan.tsx';
 
 /**
  * CHIP SOS — mọi màn (Học viên & Lớp, lưới điểm, Case, hồ sơ…). Bấm chip = hộp "Vì sao SOS n" ngay cạnh (tiêu đề → kết luận đậm → số → việc),
@@ -31,8 +20,10 @@ export function ChipSos({ muc, kyNang, hienKyNang = true, tam, dot, ten, thuong,
   const [cho, setCho] = useState<CSSProperties | null>(null);
   const nut = useRef<HTMLButtonElement>(null);
   const hop = useRef<HTMLSpanElement>(null);
+  const idHop = useId();
   useEffect(() => {
     if (!cho) return;
+    hop.current?.focus({ preventScroll: true });   // không cuộn (cuộn = đóng hộp); hộp vẽ cuối <body>: đưa focus vào để bàn phím / trình đọc màn hình tới được việc trong hộp
     const dong = () => setCho(null);
     const ngoai = (e: MouseEvent) => { if (!hop.current?.contains(e.target as Node) && !nut.current?.contains(e.target as Node)) dong(); };
     const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') { dong(); nut.current?.focus(); } };
@@ -58,12 +49,12 @@ export function ChipSos({ muc, kyNang, hienKyNang = true, tam, dot, ten, thuong,
   };
   return (
     <>
-      <button ref={nut} type="button" aria-haspopup="dialog" aria-expanded={!!cho} onClick={() => (cho ? setCho(null) : mo())}
+      <button ref={nut} type="button" aria-haspopup="dialog" aria-expanded={!!cho} aria-controls={cho ? idHop : undefined} onClick={() => (cho ? setCho(null) : mo())}
         className={`${CHIP} ${lopSos(muc, tam)} relative cursor-pointer hover:bg-[color:var(--accent-soft)] max-sm:after:absolute max-sm:after:-inset-y-3 max-sm:after:inset-x-0 max-sm:after:content-['']`}>
         {chuChipSos(hienKyNang ? vao : { muc, tam })}
       </button>
       {cho && createPortal(
-        <span ref={hop} role="dialog" aria-label={g.tieuDe} style={cho}
+        <span ref={hop} id={idHop} role="dialog" aria-label={g.tieuDe} tabIndex={-1} style={cho}
           className="fixed z-50 flex flex-col gap-1.5 rounded-[10px] border border-[color:var(--line-strong)] bg-[color:var(--surface)] px-3.5 py-3 text-left text-[13px] font-normal normal-case leading-[1.45] tracking-normal text-dim shadow-xl">
           <span className="text-[13px] font-bold text-slate-100">{g.tieuDe}</span>
           <span className="text-[14px] font-semibold text-slate-100">{g.ketLuan}</span>

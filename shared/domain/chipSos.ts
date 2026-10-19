@@ -30,8 +30,8 @@ export function giaiThichSos(v: VaoChipSos): { tieuDe: string; ketLuan: string; 
   const n = v.kyNang?.length ?? 0;
   const ketLuan = v.thuong
     ? (v.dot ? t('{n} môn chưa đạt ở {dot}', { n: n || v.muc, dot: v.dot }) : t('{n} môn chưa đạt', { n: n || v.muc }))
-    : n && v.dot ? t('{n} kỹ năng chưa đạt kỳ vọng ở {dot}', { n, dot: v.dot })
-    : t('Có {n} kỹ năng chưa đạt kỳ vọng', { n: n || v.muc });
+    : n && v.dot ? t('{n} kỹ năng dưới kỳ vọng ở {dot}', { n, dot: v.dot })
+    : t('Có {n} kỹ năng dưới kỳ vọng', { n: n || v.muc });
   return {
     tieuDe: v.ten ? `${goc} · ${v.ten}` : goc,
     ketLuan,

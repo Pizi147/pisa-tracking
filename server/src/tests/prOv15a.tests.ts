@@ -84,7 +84,7 @@ export async function runPrOv15aTests(t: YThucTestKit) {
   check('OV15a · 2: giaiThichSos — tiêu đề "Vì sao SOS n", kết luận đếm kỹ năng ở đợt, tạm thời nói rõ', () => {
     const g = d.giaiThichSos({ muc: 3, kyNang: ['L', 'R', 'W'], dot: 'MT3', ten: 'Hoàng Bảo Ngọc' });
     assert(g.tieuDe === 'Vì sao SOS 3 · Hoàng Bảo Ngọc', g.tieuDe);
-    assert(g.ketLuan === '3 kỹ năng chưa đạt kỳ vọng ở MT3', g.ketLuan);
+    assert(g.ketLuan === '3 kỹ năng dưới kỳ vọng ở MT3', g.ketLuan);
     assert(d.chuChipSos({ muc: 2, kyNang: ['R', 'W'] }) === 'SOS 2 · R, W', d.chuChipSos({ muc: 2, kyNang: ['R', 'W'] }));
     assert(d.chuChipSos({ muc: 3, tam: true }) === 'SOS 3 tạm', d.chuChipSos({ muc: 3, tam: true }));
     const tam = d.giaiThichSos({ muc: 1, tam: true, kyNang: ['S'] });
@@ -92,7 +92,7 @@ export async function runPrOv15aTests(t: YThucTestKit) {
     const thuong = d.giaiThichSos({ muc: 2, kyNang: ['Reading', 'Writing'], dot: 'Progress Test', thuong: true });
     assert(thuong.ketLuan === '2 môn chưa đạt ở Progress Test', thuong.ketLuan);
     const khong = d.giaiThichSos({ muc: 2 });
-    assert(khong.ketLuan === 'Có 2 kỹ năng chưa đạt kỳ vọng', khong.ketLuan);
+    assert(khong.ketLuan === 'Có 2 kỹ năng dưới kỳ vọng', khong.ketLuan);
     assert(d.giaiThichSos({ muc: 3 }).luat.includes('SOS 3 = 3–4'), 'luật SOS 3 = 3–4 kỹ năng');
   });
 

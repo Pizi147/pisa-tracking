@@ -6,8 +6,7 @@ import { laCauLoi403 } from '../lib/api.ts';
 import { useChongVe, useVe } from '../lib/quayLai.ts';
 import { BaoOTrongNhan, coOTuNhan } from './ONgay.tsx';
 import { useNoiLoi } from './loiForm.tsx';
-import { CHIP_TRON, CHIP_VUONG } from './Nhan.tsx';
-import { lopSos } from './ChipSos.tsx';
+import { CHIP_TRON, CHIP_VUONG, lopSos } from './Nhan.tsx';
 import { t } from '@shared/i18n/index.ts';
 
 export function Card({ title, action, children, className = '', bodyClass = 'p-4' }: {
