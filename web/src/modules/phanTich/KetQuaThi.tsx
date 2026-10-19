@@ -1,6 +1,7 @@
 import { Fragment, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
+import { fmtBand } from '../../lib/format.ts';
 import { api, invalidate } from '../../lib/api.ts';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { Card, Empty, ErrorState, Skeleton, BoLocDoan } from '../../ui/ui.tsx';
@@ -25,7 +26,6 @@ import {
  * Mock: xếp theo Lớp hoặc Mức SOS (nặng trước); L · R · W · S ✓ / ✗ so kỳ vọng của đợt; "MT · tuần" mở hồ sơ MT, "Việc tiếp" mở Case.
  * Thi thật: nhóm theo lớp; Bước tiếp chọn ngay trên hàng (Tạm dừng / Thôi học / Chưa chọn lưu ngay; Lộ trình mới… mở panel Bước tiếp sẵn có).
  */
-const so = (x: number | null) => (x === null ? '—' : x.toFixed(1));
 const ALL = 'tat-ca' as const;
 type LocKq = KetQuaMock | typeof ALL;
 
@@ -71,7 +71,7 @@ export function BangMock({ pv, kqMacDinh, trongPanel }: { pv: PhamViPhanTich; kq
     const aoa: (string | number)[][] = [
       [`Kết quả thi · Mock Test · ${nhanKhoang(pv.khoang).chinh} · dữ liệu đến ${ngay(homNay)}`], [],
       ['Học viên', 'Lớp', 'MT', 'Tuần', 'OVR', 'L', 'R', 'W', 'S', 'Kỳ vọng', 'Kết quả', 'SOS', 'Case / PA', 'Việc tiếp'],
-      ...rows.map((r) => [r.ten, r.lop, `MT${r.mt}`, tuanLich(r.tuan, homNay), so(r.ovr), ...KN_THI.map((k) => so(r.kn[k].band)), so(r.kyVong),
+      ...rows.map((r) => [r.ten, r.lop, `MT${r.mt}`, tuanLich(r.tuan, homNay), fmtBand(r.ovr), ...KN_THI.map((k) => fmtBand(r.kn[k].band)), fmtBand(r.kyVong),
         NHAN_KET_QUA_MOCK[r.ketQua], r.sos ? `SOS ${r.sos}${r.sosTam ? ' tạm' : ''}` : '', r.casePa ?? '', r.viecTiep ?? '']),
     ];
     const wb = XLSX.utils.book_new();
@@ -131,7 +131,7 @@ export function BangMock({ pv, kqMacDinh, trongPanel }: { pv: PhamViPhanTich; kq
                   <TheDong key={r.attemptId}
                     dau={<span className="block min-w-0"><b className="text-slate-100">{r.ten}</b> {sos(r)}<span className="block text-xs text-slate-400">{r.lop} · {mt(r)}</span></span>}
                     dong={[
-                      { nhan: t('OVR · Kỳ vọng'), noiDung: <span className="flex items-center justify-end gap-2 tabular-nums">{so(r.ovr)} · {so(r.kyVong)} {ketQua(r)}</span> },
+                      { nhan: t('OVR · Kỳ vọng'), noiDung: <span className="flex items-center justify-end gap-2 tabular-nums">{fmtBand(r.ovr)} · {fmtBand(r.kyVong)} {ketQua(r)}</span> },
                       { nhan: 'L · R · W · S', noiDung: <span className="flex justify-end gap-2">{KN_THI.map((k) => <span key={k}>{NHAN_KN_THI[k]} {knO(r, k)}</span>)}</span> },
                       ...(r.casePa || r.viecTiep ? [{ nhan: r.casePa ? dich(r.casePa) : t('Việc tiếp'), noiDung: <span className="flex justify-end">{viec(r)}</span> }] : []),
                     ]} />
@@ -158,9 +158,9 @@ export function BangMock({ pv, kqMacDinh, trongPanel }: { pv: PhamViPhanTich; kq
                         <td className="td sticky-col"><Link to={`/hoc-vien/${r.studentId}`} className="link font-semibold">{r.ten}</Link></td>
                         <td className="td text-slate-300">{r.lop}</td>
                         <td className="td">{mt(r)}</td>
-                        <td className="td text-center text-[15px] font-bold tabular-nums">{so(r.ovr)}</td>
+                        <td className="td text-center text-[15px] font-bold tabular-nums">{fmtBand(r.ovr)}</td>
                         {KN_THI.map((k) => <td key={k} className="td text-center">{knO(r, k)}</td>)}
-                        <td className="td text-center text-[15px] font-bold tabular-nums">{so(r.kyVong)}</td>
+                        <td className="td text-center text-[15px] font-bold tabular-nums">{fmtBand(r.kyVong)}</td>
                         <td className="td">{ketQua(r)}</td>
                         <td className="td">{sos(r)}</td>
                         <td className="td truncate text-xs text-slate-300" title={r.casePa ? dich(r.casePa) : undefined}>{r.casePa ? dich(r.casePa) : <span className="text-faint">—</span>}</td>
@@ -248,8 +248,8 @@ function BangThiThat({ pv }: { pv: PhamViPhanTich }) {
                   <TheDong key={r.cycleId}
                     dau={<span className="block min-w-0"><b className="text-slate-100">{r.ten}</b><span className="block text-xs text-slate-400">{r.lop} · {ngay(r.ngayThi, homNay)}</span></span>}
                     dong={[
-                      { nhan: t('OVR · Target'), noiDung: <span className="flex items-center justify-end gap-2 tabular-nums">{so(r.ovr)} · {r.target} {datTarget(r)}</span> },
-                      { nhan: 'L · R · W · S', noiDung: <span className="tabular-nums">{[r.l, r.r, r.w, r.s].map(so).join(' · ')}</span> },
+                      { nhan: t('OVR · Target'), noiDung: <span className="flex items-center justify-end gap-2 tabular-nums">{fmtBand(r.ovr)} · {r.target} {datTarget(r)}</span> },
+                      { nhan: 'L · R · W · S', noiDung: <span className="tabular-nums">{[r.l, r.r, r.w, r.s].map(fmtBand).join(' · ')}</span> },
                       { nhan: t('Bước tiếp'), noiDung: <span className="flex justify-end">{buocTiep(r)}</span> },
                     ]} />
                 ))}
@@ -283,8 +283,8 @@ function BangThiThat({ pv }: { pv: PhamViPhanTich }) {
                               <td className="td sticky-col"><Link to={`/hoc-vien/${r.studentId}`} className="link font-semibold">{r.ten}</Link></td>
                               <td className="td text-slate-300">{r.lop}</td>
                               <td className="td tabular-nums">{ngay(r.ngayThi, homNay)}</td>
-                              <td className="td text-center text-[15px] font-bold tabular-nums">{so(r.ovr)}</td>
-                              {[r.l, r.r, r.w, r.s].map((x, i) => <td key={i} className="td text-center tabular-nums">{so(x)}</td>)}
+                              <td className="td text-center text-[15px] font-bold tabular-nums">{fmtBand(r.ovr)}</td>
+                              {[r.l, r.r, r.w, r.s].map((x, i) => <td key={i} className="td text-center tabular-nums">{fmtBand(x)}</td>)}
                               <td className="td text-center text-[15px] font-bold tabular-nums">{r.target}</td>
                               <td className="td">{datTarget(r)}</td>
                               <td className="td">{buocTiep(r)}</td>

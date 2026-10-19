@@ -13,7 +13,7 @@ import {
 import { forbidden } from '../util.ts';
 import { classScopeSql, coQuyenBuocTiep, scopeFor, type Principal } from '../permissions.ts';
 import { mondayOf } from '../platform/week.ts';
-import { loadBundle, resultOf } from '../fasttrack/attempts.ts';
+import { diemCuaLuot, loadBundle, resultOf } from '../fasttrack/attempts.ts';
 import { listCases } from '../cases/cases.ts';
 import { tomTatCase } from '../classes/hocVienSos.ts';
 import { luotTrongKhoang } from './tongHop.ts';
@@ -28,20 +28,24 @@ function phamVi(p: Principal) {
 
 const NHAN_KN_NGAN: Record<string, string> = { listening: 'L', reading: 'R', writing: 'W', speaking: 'S' };
 
-/** Lượt Mock (lớp FT) trong khoảng đã có ít nhất một band, trong phạm vi Phân tích — tập chung của tab Kết quả thi và khối Mock của Báo cáo. */
+/** Lượt Mock (lớp FT) trong khoảng, trong phạm vi Phân tích. "Đã có ít nhất một band" lọc ở `mockTrongKhoang` sau khi nạp điểm (không EXISTS theo từng lượt). */
 export function luotMockKhoang(p: Principal, f: LocKetQuaThi): any[] {
   const cs = classScopeSql(phamVi(p));
-  const where = [cs.sql, `a.status != 'cancelled'`, `a.kind = 'mock'`, 'c.is_fast_track = 1', 'rp.week_start >= ?', 'rp.week_start <= ?',
-    `EXISTS (SELECT 1 FROM assessment_scores sx WHERE sx.attempt_id = a.id AND sx.band IS NOT NULL)`];
+  const where = [cs.sql, `a.status != 'cancelled'`, `a.kind = 'mock'`, 'c.is_fast_track = 1', 'rp.week_start >= ?', 'rp.week_start <= ?'];
   const args: unknown[] = [...cs.params, mondayOf(f.tu), mondayOf(f.den)];
   if (f.branchId) { where.push('c.branch_id = ?'); args.push(f.branchId); }
   if (f.classId) { where.push('c.id = ?'); args.push(f.classId); }
   return luotTrongKhoang(where.join(' AND '), args);
 }
 
-/** Chấm các lượt Mock thành dòng Kết quả thi. `luot` truyền sẵn (Báo cáo) thì không đọc lại; `boCase`: chỉ đếm kết quả, không nạp Case / PA. */
+/**
+ * Chấm các lượt Mock ĐÃ CÓ ÍT NHẤT MỘT BAND thành dòng Kết quả thi. `luot` truyền sẵn (Báo cáo) thì không đọc lại; `boCase`: chỉ đếm kết quả, không nạp Case / PA.
+ * Điểm nạp một lần (`diemCuaLuot`, nhớ theo lượt trong request — `loadBundle` dưới dùng lại).
+ */
 export function mockTrongKhoang(p: Principal, f: LocKetQuaThi, o: { luot?: any[]; boCase?: boolean } = {}): DongMock[] {
-  const luot = o.luot ?? luotMockKhoang(p, f);
+  const tat = o.luot ?? luotMockKhoang(p, f);
+  const diem = diemCuaLuot(tat.map((a) => a.id));
+  const luot = tat.filter((a) => diem.get(a.id)?.some((s) => s.band !== null));
   if (!luot.length) return [];
   const conn = db();
   const ten = new Map<number, string>();
@@ -141,7 +145,7 @@ export function ketQuaThiThatKq(p: Principal, f: LocKetQuaThi): KetQuaThiThatKq 
     return {
       cycleId: c.id, studentId: c.student_id, ten: c.ten, classId: l, lop: lop.get(l)!.code, ngayThi: c.ngay_thi ?? null, khongThi: !!c.thi_that_khong_thi,
       ovr: c.outcome_score ?? null, l: c.thi_that_l ?? null, r: c.thi_that_r ?? null, w: c.thi_that_w ?? null, s: c.thi_that_s ?? null,
-      target: chuTargetKck(c.target_score ?? null, !!c.khong_cam_ket),
+      target: chuTargetKck(c.target_score == null ? null : Number(c.target_score).toFixed(1), !!c.khong_cam_ket),   // một chữ số lẻ như OVR: 6 → "6.0"
       dat: c.thi_that_khong_thi ? null : c.outcome === 'reached' ? true : c.outcome === 'not_reached' ? false : null,
       buocTiep: chon, buocTiepChu: chon ? NHAN_SAU_THI[chon] : null, buocTiepPhu: g.lopMoiCode ? `lớp ${g.lopMoiCode}` : null,
       nguoiChon: chon ? c.nguoi_chon ?? null : null, ngayChon: chon ? c.buoc_tiep_luc ?? null : null,

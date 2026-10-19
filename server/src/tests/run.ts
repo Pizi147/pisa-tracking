@@ -9435,6 +9435,9 @@ await runPrOv15cTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P,
 // ==================================================================== OV-15e (Phân tích thanh trên, Báo cáo, Kết quả thi, Phân tích GV, bộ chọn thời gian, phân trang)
 const { runPrOv15eTests } = await import('./prOv15e.tests.ts');
 await runPrOv15eTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== OV-15e2 (sửa lẻ sau rà OV-15e: lượt Mock không subquery tương quan, link ?tg cũ, Báo cáo TVV / CX)
+const { runPrOv15e2Tests } = await import('./prOv15e2.tests.ts');
+await runPrOv15e2Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`
