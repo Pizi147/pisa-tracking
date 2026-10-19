@@ -57,7 +57,7 @@ export function TaiDanhSach({ dsChiNhanh, onDong }: { dsChiNhanh: ChiNhanh[]; on
       const wb = XLSX.read(await f.arrayBuffer(), { type: 'array' });
       const ws = wb.Sheets[wb.SheetNames[0]];
       const aoa = XLSX.utils.sheet_to_json<unknown[]>(ws, { header: 1, raw: false, defval: '' }).map((r) => r.map((c) => String(c ?? '')));
-      setTenTep(`${f.name} · ${t('sheet "{ten}"', { ten: wb.SheetNames[0] })}`);
+      setTenTep(`${f.name} · ${t('trang tính "{ten}"', { ten: wb.SheetNames[0] })}`);
       await xemTruoc(aoa);
     } catch {
       setLoi(t('Không đọc được tệp — chọn tệp .xlsx, .xls hoặc .csv.'));

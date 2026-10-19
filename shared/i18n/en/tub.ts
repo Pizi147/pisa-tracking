@@ -57,7 +57,7 @@ export const EN_TUB = {
   'Xoá nhận xét?': 'Delete the comment?',
   'Đã lưu danh sách: {a} mới · {b} cập nhật': (b) => `List saved: ${b.a} new · ${b.b} updated`,
   'Không đọc được dữ liệu — thử lại.': 'Could not read the data — try again.',
-  'sheet "{ten}"': (b) => `sheet "${b.ten}"`,
+  'trang tính "{ten}"': (b) => `sheet "${b.ten}"`,
   'Không đọc được tệp — chọn tệp .xlsx, .xls hoặc .csv.': 'Could not read the file — choose an .xlsx, .xls or .csv file.',
   'Lỗi': 'Error',
   'Dòng': 'Row',
