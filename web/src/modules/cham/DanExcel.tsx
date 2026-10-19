@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { api, invalidate } from '../../lib/api.ts';
 import { IconDat } from '../../ui/BieuTuong.tsx';
 import { BoLocDoan } from '../../ui/ui.tsx';
@@ -53,6 +53,9 @@ export function DanExcel({ data, cot, tenLuot, luot, homNay, hep, hoiBanDau = fa
   const [loiMang, setLoiMang] = useState<string | null>(null);
   const [vua, setVua] = useState<{ n: number; luc: string; dong: DongVua[] } | null>(null);
   const [bao, setBao] = useState<string | null>(null);
+  /* Vừa lưu: bảng đang tải lại — Hoàn tác phải so với bảng MỚI (`oConNhuDan`), nên chờ `data` đổi rồi mới bấm được. */
+  const [choTai, setChoTai] = useState(false);
+  useEffect(() => { setChoTai(false); }, [data]);
   const [hoi, setHoi] = useState(hoiBanDau);
 
   const bang = useMemo(() => docBangDan(chu, cot), [chu, cot]);
@@ -131,6 +134,7 @@ export function DanExcel({ data, cot, tenLuot, luot, homNay, hep, hoiBanDau = fa
       setDang(null);
       if (ok.length) {
         for (const p of ['/attempts', '/tong-quan', '/classes', '/students', '/my-work']) invalidate(p);
+        setChoTai(true);
         onDaLuu();
       }
     }
@@ -227,7 +231,7 @@ export function DanExcel({ data, cot, tenLuot, luot, homNay, hep, hoiBanDau = fa
           {vua && (
             <div role="status" className="flex flex-wrap items-center gap-2 rounded-md px-3 py-2 text-sm surface-2">
               <span className="font-semibold text-ok">✓ {t('Đã lưu {n} dòng lúc {luc}', { n: vua.n, luc: vua.luc })}</span>
-              <button type="button" className="link max-sm:min-h-[44px]" disabled={!!dang} onClick={() => void hoanTac()}>{t('Hoàn tác')}</button>
+              <button type="button" className="link max-sm:min-h-[44px]" disabled={!!dang || choTai} onClick={() => void hoanTac()}>{t('Hoàn tác')}</button>
               <span className="flex-1" />
               {!!dong.length && <span className="text-slate-400">{t('{n} dòng còn nháp ở dưới', { n: dong.length })}</span>}
             </div>
