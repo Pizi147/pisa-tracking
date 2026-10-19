@@ -76,7 +76,8 @@ export function scoreDebtCells(p: Principal, today: string, branchIds: number[] 
            * idx_attempt_o_cho) thay cho hai câu con tương quan trên điểm + lịch của MỌI lượt (trước: mọi lượt chưa đủ điểm từ đầu khoá đều bị nạp mỗi lần mở bảng chi nhánh).
            * Luật "còn nợ" vẫn nằm ở skillCells / regularSkillViews bên dưới — đây chỉ là tập cha an toàn (ô chờ ⊇ ô nợ).
            */
-          AND a.o_cho_tu <= ?`,
+          AND a.o_cho_tu <= ?
+        ORDER BY a.id`,   // thứ tự cố định (trước không có ORDER BY: phụ thuộc kế hoạch truy vấn, đổi theo chỉ mục)
     )
     .all(...args, today) as any[];
   if (!rows.length) return [];

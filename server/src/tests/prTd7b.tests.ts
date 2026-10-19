@@ -81,7 +81,7 @@ export async function runPrTd7bTests(t: YThucTestKit) {
     /* DB cũ (bảng chỉ có id): migrate thêm cột + chỉ mục; lần hai im lặng. Phần tính lại chạy trên DB test (đã nhất quán → không có gì để tính). */
     const { default: SqliteDb } = await import('libsql');
     const tam = new SqliteDb(':memory:');
-    tam.exec('CREATE TABLE assessment_attempts (id INTEGER PRIMARY KEY)');
+    tam.exec('CREATE TABLE assessment_attempts (id INTEGER PRIMARY KEY, class_id INTEGER)');
     const a: string[] = []; migratePrTd7b(tam, a);
     assert(a.some((x) => /cột/.test(x)) && a.some((x) => /chỉ mục/.test(x)), `lần 1: ${a.join(' | ')}`);
     const b: string[] = []; migratePrTd7b(tam, b);
