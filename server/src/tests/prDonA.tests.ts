@@ -773,9 +773,9 @@ export async function runPrDonATests(t: YThucTestKit) {
         }
       }
     }
-    /* Sáu ô số của Quản lý gọi `/metrics/{id}` lúc mở trang — id ghi trong MetricTiles.tsx. */
+    /* Sáu ô số gọi `/metrics/{id}` lúc mở trang — id ghi trong MetricTiles.tsx. OV-15d: Tổng quan QL A bỏ ô số, còn ở Tổng quan CX. */
     const o = [...docNguon('web/src/modules/worklist/MetricTiles.tsx').matchAll(/<(?:O|SoPhu) id="([^"]+)"/g)].map((m) => `/metrics/${m[1]}`);
-    for (const u of o) if (!TAI_TRANG['QL trang Tổng quan'].urls.some((x) => goc(x) === u)) thieu.push(`MetricTiles: ${u}`);
+    for (const u of o) if (!TAI_TRANG['CX trang Tổng quan'].urls.some((x) => goc(x) === u)) thieu.push(`MetricTiles: ${u}`);
     assert(tep.size > 20 && o.length >= 4 && !thieu.length, `GET lúc mở trang chưa có trong TAI_TRANG:\n${[...new Set(thieu)].join('\n')}`);
   });
 

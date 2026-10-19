@@ -1,4 +1,4 @@
-import { db } from '../db.ts';
+import { db, theoLo } from '../db.ts';
 import {
   COT_BANG, COT_BANG_DON_VI, METRIC_UNIT_LABEL, PERMISSIONS, soSanhLop, type ChuongTrinh, type CotBang,
 } from '../../../shared/domain/index.ts';
@@ -29,6 +29,7 @@ export type HangBang = {
 type Tap = Record<CotBang, Set<number>> & { duDuLieuMau: Set<number> };
 const tapRong = (): Tap => ({
   hocVien: new Set(), duoiKyVong: new Set(), sos: new Set(), caseMo: new Set(), thieuPa: new Set(), duDuLieu: new Set(), duDuLieuMau: new Set(),
+  caseChuaChotHv: new Set(), caseChuaChot: new Set(),
 });
 const gop = (a: Tap, b: Tap) => { for (const k of Object.keys(a) as (keyof Tap)[]) for (const x of b[k]) a[k].add(x); };
 const soCua = (t: Tap): Record<CotBang, OBang> => {
@@ -39,6 +40,7 @@ const soCua = (t: Tap): Record<CotBang, OBang> => {
 };
 const NHAN_COT: Record<CotBang, string> = {
   hocVien: 'Học viên', duoiKyVong: 'Dưới kỳ vọng', sos: 'SOS hiện tại', caseMo: 'Case đang mở', thieuPa: 'Case chưa có PA', duDuLieu: 'Tỷ lệ đủ dữ liệu',
+  caseChuaChotHv: 'HV có Case chưa chốt PA', caseChuaChot: 'Case chưa chốt PA',
 };
 
 function tinh(p: Principal, f: { branchId?: number | null; ct: ChuongTrinh }) {
@@ -53,6 +55,8 @@ function tinh(p: Principal, f: { branchId?: number | null; ct: ChuongTrinh }) {
   const caseMo = metricSet(p, 'case-mo', base);
   const thieu = metricSet(p, 'case-thieu-pa', base);
   const phu = metricSet(p, 'do-phu-danh-gia', base);
+  /* OV-15d: Case chưa chốt PA — CÙNG tập ô số Tổng quan (`case-cho-xac-dinh-nguyen-nhan`); HV = em của các Case đó (một câu). */
+  const chot = metricSet(p, 'case-cho-xac-dinh-nguyen-nhan', base);
 
   const where = [`c.status = 'active'`];
   const args: unknown[] = [];
@@ -87,9 +91,19 @@ function tinh(p: Principal, f: { branchId?: number | null; ct: ChuongTrinh }) {
       if (sMau.has(sid)) t.duDuLieuMau.add(sid);
     }
   }
-  const lopCuaCase = lopCuaTap('case', [...new Set([...caseMo.ids, ...thieu.ids])]);
+  const lopCuaCase = lopCuaTap('case', [...new Set([...caseMo.ids, ...thieu.ids, ...chot.ids])]);
   for (const id of caseMo.ids) { const l = lopCuaCase.get(id)?.classId; if (l && tapLop.has(l)) tapLop.get(l)!.caseMo.add(id); }
   for (const id of thieu.ids) { const l = lopCuaCase.get(id)?.classId; if (l && tapLop.has(l)) tapLop.get(l)!.thieuPa.add(id); }
+  const emCase = new Map<number, number>();
+  theoLo(chot.ids, (lo, ph) => {
+    for (const r of conn.prepare(`SELECT id, student_id FROM sos_cases WHERE id IN (${ph})`).all(...lo) as any[]) emCase.set(r.id, r.student_id);
+  });
+  for (const id of chot.ids) {
+    const l = lopCuaCase.get(id)?.classId;
+    if (!l || !tapLop.has(l)) continue;
+    tapLop.get(l)!.caseChuaChot.add(id);
+    if (emCase.get(id)) tapLop.get(l)!.caseChuaChotHv.add(emCase.get(id)!);
+  }
 
   const tongTap = tapRong();
   const danSo = new Set(locTheoChuongTrinh('hoc-vien', studentsInScope(p, branchId), f.ct));
@@ -97,6 +111,7 @@ function tinh(p: Principal, f: { branchId?: number | null; ct: ChuongTrinh }) {
   sDuoi.forEach((x) => tongTap.duoiKyVong.add(x)); sSos.forEach((x) => tongTap.sos.add(x));
   caseMo.ids.forEach((x) => tongTap.caseMo.add(x)); thieu.ids.forEach((x) => tongTap.thieuPa.add(x));
   sDu.forEach((x) => tongTap.duDuLieu.add(x)); sMau.forEach((x) => tongTap.duDuLieuMau.add(x));
+  chot.ids.forEach((x) => { tongTap.caseChuaChot.add(x); if (emCase.get(x)) tongTap.caseChuaChotHv.add(emCase.get(x)!); });
 
   /* UX-1: phần của tập gốc không rơi vào hàng lớp nào (Case / em của lớp đã kết thúc) gom vào MỘT hàng — Σ hàng = hàng tổng. */
   const conLai = tapRong();

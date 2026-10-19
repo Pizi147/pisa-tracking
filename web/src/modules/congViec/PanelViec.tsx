@@ -258,7 +258,7 @@ function PanelNhapDiemTuan({ it, onDong, onDaLam }: { it: WorkItem; onDong: () =
 }
 
 /** OV-13b: Chọn người phụ trách = Phân công GV môn của lớp (người phụ trách Case đi theo phân công) — panel Thông tin lớp mở sẵn Phân công. */
-function PanelPhanCong({ classId, onDong, onDaLam }: { classId: number; onDong: () => void; onDaLam: () => void }) {
+export function PanelPhanCong({ classId, onDong, onDaLam }: { classId: number; onDong: () => void; onDaLam: () => void }) {
   const { data, error, reload } = useApi<HoSoLop>(`/classes/${classId}/overview`, [classId]);
   if (!data) {
     return (

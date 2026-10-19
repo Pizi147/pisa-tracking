@@ -85,8 +85,8 @@ export async function runKhungTests(t: YThucTestKit) {
     assert(Object.values(d.TAB_CONG_VIEC_LABEL).join(',') === 'Chờ duyệt,Hỗ trợ học viên,Yêu cầu của tôi,Vận hành,Báo cáo đơn vị', 'Chữ tab Công việc');
     assert(d.DUONG_TAB_CONG_VIEC['ho-tro'] === '/cong-viec' && d.DUONG_TAB_CONG_VIEC['van-hanh'] === '/cong-viec/van-hanh'
       && d.DUONG_TAB_CONG_VIEC['cho-duyet'] === '/cong-viec/cho-duyet', 'Đường dẫn tab');
-    /* UX-2 (3): QL vào Chờ duyệt chỉ khi có thẻ chờ; không có thì Hỗ trợ học viên. */
-    assert(d.khuVucHienThi(QL, 2).find((k: any) => k.key === 'cong-viec')?.to === '/cong-viec/cho-duyet'
+    /* OV-15d (thay UX-2 (3)): Công việc một danh sách — "Chờ bạn duyệt" là nhóm đầu, mục menu luôn `/cong-viec`. */
+    assert(d.khuVucHienThi(QL, 2).find((k: any) => k.key === 'cong-viec')?.to === '/cong-viec'
       && d.khuVucHienThi(QL, 0).find((k: any) => k.key === 'cong-viec')?.to === '/cong-viec'
       && d.khuVucHienThi(GV, 2).find((k: any) => k.key === 'cong-viec')?.to === '/cong-viec', 'Mục Công việc: QL vào Chờ duyệt khi có thẻ');
     assert(Object.values(d.TAB_TONG_QUAN_LABEL).join(',') === 'Việc hôm nay,Phân tích', 'Chữ tab Tổng quan (O3; PR-VAI-a K1-10: \"Việc hôm nay\")');
@@ -143,7 +143,8 @@ export async function runKhungTests(t: YThucTestKit) {
   check('PR-O · O6/R1 GV (GVCN, GVBM): 4 khu; Test: Lịch Test + Điểm theo lớp; Công việc: Việc học viên + Yêu cầu của tôi (PR-DUYET); không Phân tích', () => {
     for (const [ten, p] of [['GVCN', t.P.coreTeacher], ['GVBM', t.P.subjectTeacher], ['GVCN lớp thường', t.P.normalCoreTeacher]] as const) {
       const n = navOf(p);
-      assert(tabs(n) === 'tong-quan,hoc-vien,test,cong-viec|lich,diem-lop|ho-tro,yeu-cau|false|false', `${ten}: ${tabs(n)}`);   // PR-DL G4
+      /* OV-15d: GV vào thẳng Công việc — không còn khu Tổng quan. */
+      assert(tabs(n) === 'hoc-vien,test,cong-viec|lich,diem-lop|ho-tro,yeu-cau|false|false', `${ten}: ${tabs(n)}`);   // PR-DL G4
       assert(d.tabTestMacDinh(n) === 'lich', `${ten} mở Test vào ${d.tabTestMacDinh(n)}`);
       assert(!n.workOps && !n.workReports, `${ten} không được thấy Vận hành / Báo cáo đơn vị`);
     }

@@ -9,7 +9,7 @@ import { dich, t } from '@shared/i18n/index.ts';
  * nhóm cố định, mỗi nhóm gập/mở, nhóm có việc quá hạn tự mở sẵn. Tổng quan giữ đúng hành vi cũ
  * (`soHien = 5`); Hỗ trợ học viên gọi với `soHien = 10` và có thể ép mở hết khi đang lọc.
  */
-export function NhomViec({ nhom, soHien, moHet, onOpen, nutPhu, chon, xong, moTrang, moRong, moCaDong }: {
+export function NhomViec({ nhom, soHien, moHet, onOpen, nutPhu, chon, xong, moTrang, moRong, moCaDong, cuoiNhom }: {
   nhom: NhomViecXem<WorkItem>[];
   soHien: number;
   /** Ép mở hết mọi nhóm — dùng khi đang lọc nhanh/loại việc, kết quả đã ít thì không cần gập nữa. */
@@ -26,6 +26,8 @@ export function NhomViec({ nhom, soHien, moHet, onOpen, nutPhu, chon, xong, moTr
   nutPhu?: (it: WorkItem) => ReactNode;
   /** OV-13b: phần mở NGAY DƯỚI dòng (ghi nhanh Kết quả PA, dòng "✓ Đã lưu") — `null` = không. */
   moRong?: (it: WorkItem) => ReactNode;
+  /** OV-15d: phần cuối một nhóm (Việc quản lý: "+ Giao việc", lối Vận hành / Báo cáo đơn vị). */
+  cuoiNhom?: (key: string) => ReactNode;
 }) {
   const [mo, setMo] = useState<Record<string, boolean>>({});
   const [them, setThem] = useState<Record<string, number>>({});
@@ -59,6 +61,7 @@ export function NhomViec({ nhom, soHien, moHet, onOpen, nutPhu, chon, xong, moTr
                     </button>
                   </div>
                 )}
+                {cuoiNhom?.(g.key)}
               </>
             )}
           </KhoiNhom>

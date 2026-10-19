@@ -36,6 +36,8 @@ export function thongBaoCua(userId: number) {
                   CASE WHEN n.entity_type = 'assessment_attempt' THEN n.entity_id ELSE smr.attempt_id END AS attempt_id,
                   COALESCE(sc.category, sc.topic) AS mon_goc, cy.programme_code AS ct, cs.case_id,
                   CASE
+                    /* OV-15d: thông báo tự động chỉ còn khi việc còn (đồng bộ xoá khi xong) — luôn là Cần làm. */
+                    WHEN n.kind IN ('cham_qua_han', 'case_chua_chot_pa', 'chot_lo_trinh') THEN 1
                     /* OV-11f (TQ-7): tín hiệu đã vào Case / đã rút → việc xong (Case có chuông riêng). Báo PH qua TVV: còn khi việc phối hợp của lượt chưa làm. */
                     WHEN n.entity_type = 'case_signal' THEN CASE WHEN cs.status = 'pending' THEN 1 ELSE 0 END
                     WHEN n.entity_type = 'assessment_attempt' AND n.kind = 'phoi_hop' THEN
