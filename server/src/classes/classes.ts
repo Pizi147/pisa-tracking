@@ -209,7 +209,7 @@ function listClassSummariesThat(p: Principal, f: { branchId?: number; classId?: 
          LEFT JOIN report_periods pr ON pr.id = a.planned_period_id
         WHERE a.class_id IN (${ph}) AND a.status != 'cancelled' AND ${CON_O_SQL}`,
     )
-    .all(...ids, today, today, today, today) as any[];
+    .all(...ids, today) as any[];
   const bundle = loadBundle(attempts.map((a) => a.id));
 
   const needScores = new Map<number, number>();

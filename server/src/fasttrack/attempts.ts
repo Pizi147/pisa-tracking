@@ -1,3 +1,4 @@
+import { capNhatConOCho } from './conOCho.ts';
 import { db, theoLo, tx } from '../db.ts';
 import {
   ASSESSED_SKILLS, ASSESSED_SKILL_LABEL, duongDotTest, ENTRY_SKILLS, ENTRY_SKILL_LABEL, NO_SHOW_OVERRIDDEN_NOTE,
@@ -620,25 +621,11 @@ export type AttemptFilters = {
 };
 
 /*
- * TD3-a: lượt CÓ THỂ còn ô cần chấm — TẬP CHA của `pendingSkills` (lọc JS giữ nguyên phía sau), chỉ để bớt dòng đọc từ Turso.
- * Hai nhánh như `listAttempts`: lớp chấm `ratio` → môn của chương trình, có điểm = `raw_score`; còn lại (FT, MT0 mọi lớp, lượt không lớp) →
- * 5 ô L R W1 W2 S, có điểm = `band`. Ô còn là ứng viên khi chưa có điểm ("-" vẫn tính chưa có — dời "-" phải còn hiện) và có thể đang chờ
- * điểm (`awaitingScore` của `viewSkill`): dòng lịch của môn `required = 1`, không huỷ / vắng, tuần thi đã tới; thiếu dòng lịch → dự phòng
- * của `skillScheduleOf` (bắt buộc, tuần của lượt). Bốn `?` = hôm nay.
+ * TD3-a → TD7b: lượt CÓ THỂ còn ô cần chấm — TẬP CHA của `pendingSkills` (lọc JS giữ nguyên phía sau), chỉ để bớt dòng đọc từ Turso.
+ * Có ô chờ điểm mà tuần thi đã tới (`a.o_cho_tu <= hôm nay`; cờ do `conOCho.ts` giữ, chỉ mục một phần `idx_attempt_o_cho`) — định nghĩa "ô chờ"
+ * nằm ở đó: ô của bộ kỹ năng chưa có điểm ("-" vẫn tính chưa có — dời "-" phải còn hiện), dòng lịch `required = 1`, không huỷ / vắng. Một `?` = hôm nay.
  */
-const oChoDiem = (mon: string) => `(EXISTS (SELECT 1 FROM attempt_skills k JOIN report_periods kp ON kp.id = k.planned_period_id
-      WHERE k.attempt_id = a.id AND k.skill = ${mon} AND k.required = 1 AND k.sit_status NOT IN ('cancelled', 'absent') AND kp.week_start <= ?)
-    OR (NOT EXISTS (SELECT 1 FROM attempt_skills k WHERE k.attempt_id = a.id AND k.skill = ${mon}) AND pr.week_start <= ?))`;
-export const CON_O_SQL = `a.status != 'cancelled' AND (CASE WHEN a.kind != 'mt0' AND (SELECT pg.scoring_mode FROM programmes pg WHERE pg.code = c.programme_code) = 'ratio'
-  THEN EXISTS (SELECT 1 FROM programme_skills ps WHERE ps.programme_code = c.programme_code
-    AND NOT EXISTS (SELECT 1 FROM assessment_scores sc WHERE sc.attempt_id = a.id AND sc.skill = ps.skill AND sc.raw_score IS NOT NULL)
-    AND ${oChoDiem('ps.skill')})
-  ELSE EXISTS (SELECT 1 FROM (SELECT 'listening' AS o, 'listening' AS kn UNION ALL SELECT 'reading' AS o, 'reading' AS kn
-      UNION ALL SELECT 'writing1' AS o, 'writing' AS kn UNION ALL SELECT 'writing2' AS o, 'writing' AS kn
-      UNION ALL SELECT 'speaking' AS o, 'speaking' AS kn) e
-    WHERE NOT EXISTS (SELECT 1 FROM assessment_scores sc WHERE sc.attempt_id = a.id AND sc.skill = e.o AND sc.band IS NOT NULL)
-      AND ${oChoDiem('e.kn')})
-  END)`;
+export const CON_O_SQL = `a.status != 'cancelled' AND a.o_cho_tu <= ?`;
 
 /**
  * AI PHỤ TRÁCH TỪNG MÔN của một lớp, cho CẢ DANH SÁCH lượt trong một lần đọc.
@@ -689,9 +676,10 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
   if (f.studentId) { where.push('a.student_id = ?'); params.push(f.studentId); }
   if (f.status) { where.push('a.status = ?'); params.push(f.status); }
   const today = demoToday();
-  if (f.chiConO) {
+  /* `my_scores` = `conBaiCanCham` (có môn đang chờ nhập) ⊆ CON_O_SQL → lọc ở SQL, JSON trùng. */
+  if (f.chiConO || f.need === 'my_scores') {
     where.push(f.kemChuaTuan ? `(${CON_O_SQL} OR (a.planned_period_id IS NULL AND a.status = 'planned'))` : CON_O_SQL);
-    params.push(today, today, today, today);
+    params.push(today);
   }
   // Tuần kết quả LUÔN là tuần kế hoạch của lượt, kể cả khi các kỹ năng mock lệch tuần.
   if (f.periodId) { where.push('a.planned_period_id = ?'); params.push(f.periodId); }
@@ -1619,6 +1607,7 @@ export function huyLuot(p: Principal, attemptId: number, input: { lyDo?: string 
       const yeuCau = yeuCauChoCua(chup.map((c) => c.id), [...chup.flatMap((c) => c.pa.map((x) => x.id)), ...paDong.map((x) => x.id)]);
       soDiem = catHuyLuot(p, attemptId, lyDo, { luot: a, case: chup, pa: paDong, phoiHop: phoiHopIds, tinHieu, yeuCau });
     }
+    capNhatConOCho([attemptId]);   // TD7b: điểm bị xoá (`xoaDiemLuot`) hoặc cất đi (`catHuyLuot`)
     lamMoiDiemBanChup(conn, [attemptId]);   // PR-VN5: bản chụp (lộ trình đã đóng) thấy `cancelled` + điểm ẩn ngay, không trễ một nhịp
     writeAudit({ actorUserId: p.userId, action: 'attempt.cancel', entityType: 'assessment_attempt', entityId: attemptId,
       before: { status: a.status }, after: { status: 'cancelled', reason: lyDo, ...(hq.xoaDiem ? {} : { diemAn: soDiem }) } });
@@ -1707,6 +1696,7 @@ export function reopenAttempt(p: Principal, attemptId: number, o: { banId?: numb
     /* Bản cất đưa về NGUYÊN trạng (điểm, Case, tín hiệu, Phối hợp) — không tính lại; còn lại (lượt cũ / dời vượt / đổi tuần) tính lại như mọi lần sửa. */
     if (banId === null || sai || doiVuot) refreshOutcome(p, attemptId);
     else lamMoiDiemBanChup(conn, [attemptId]);
+    capNhatConOCho([attemptId]);   // TD7b: điểm + lịch trả về từ bản cất
     writeAudit({ actorUserId: p.userId, action: 'attempt.khoi_phuc', entityType: 'assessment_attempt', entityId: attemptId, entityLabel: lyDo,
       before: { status: 'cancelled' }, after: { banId, soDiem, soCase, soPa, soPhoiHop, chuaXep: sai } });
     return { ok: true as const, soDiem, soCase, soPa, soPhoiHop, chuaXep: sai, cau };
@@ -2327,6 +2317,7 @@ export function saveScore(
         reason: 'Suy từ việc đã có điểm', actor: p.userId,
       });
     }
+    capNhatConOCho([attemptId]);   // TD7b: nhập / sửa / xoá điểm đổi ô chờ
     refreshOutcome(p, attemptId, !!o.thiLai);
     const fresh = conn.prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(attemptId) as any;
     return { score: after, result: resultOf(fresh), attemptStatus: fresh.status };

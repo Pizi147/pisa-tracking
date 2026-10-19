@@ -9432,6 +9432,9 @@ await runPrOv15aTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P,
 // ==================================================================== OV-15e (Phân tích thanh trên, Báo cáo, Kết quả thi, Phân tích GV, bộ chọn thời gian, phân trang)
 const { runPrOv15eTests } = await import('./prOv15e.tests.ts');
 await runPrOv15eTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== TD7b (cờ "còn ô chờ điểm" o_cho_tu: đúng ở mọi đường ghi, đầu ra trùng khít) — CUỐI: soi cả trạng thái các phép kiểm trước để lại
+const { runPrTd7bTests } = await import('./prTd7b.tests.ts');
+await runPrTd7bTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`

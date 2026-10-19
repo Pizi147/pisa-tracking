@@ -65,6 +65,7 @@ import { migratePrTd6 } from './migrate/prTd6.ts';
 import { migratePrTd7a } from './migrate/prTd7a.ts';
 import { migratePrOv15e } from './migrate/prOv15e.ts';
 import { migratePrTd7 } from './migrate/prTd7.ts';
+import { migratePrTd7b } from './migrate/prTd7b.ts';
 
 /**
  * Nâng cấp database ĐANG CÓ lên schema mới, không xoá dữ liệu. PR-SO (DEP-gỡ): nhánh nâng cấp từ mô hình `mock_attempts` (trước overhaul)
@@ -362,6 +363,7 @@ function migrateCaseEngine(applied: string[], skipped: string[], loiSauBuoc?: nu
     /* TD7a: chỉ mục ô S chờ GV phụ trách xem (một phần) + mốc Case theo lượt — câu "Xem nhận xét Speaking" thôi quét cả bảng (chỉ thêm chỉ mục, chạy lặp được). */ buoc(() => migratePrTd7a(conn, applied));
     /* OV-15e: chỉ mục ngày thi thật (Kết quả thi › Thi thật lọc theo khoảng) — chỉ thêm, chạy lặp được. */ buoc(() => migratePrOv15e(conn, applied));
     /* TD7: chỉ mục một phần — lượt MT lịch sử chưa nhập, lộ trình FT chưa có kết quả thi thật (chỉ thêm chỉ mục, chạy lặp được). */ buoc(() => migratePrTd7(conn, applied));
+    /* TD7b: cờ assessment_attempts.o_cho_tu (còn ô chờ điểm) + chỉ mục một phần + tính lại cho mọi lượt — Nợ điểm / Cần chấm thôi đọc lượt đã chấm xong (chạy lặp được). */ buoc(() => migratePrTd7b(conn, applied));
     /* OV-13p (SAU PR-OV2a — cần vai TVV / CX): `class.create` + `student.add` cho TVV, CX; `student.add` cho vai có `student.edit` (một lần, khoá demo_config). */ buoc(() => migratePrOv13p(conn, applied));
     /* OV-13q: lộ trình đã thi chưa xong mà hạn 1 tuần đã qua → hạn = hôm nay + 7 (đổi dữ liệu, chạy lặp không đổi). */ buoc(() => migratePrOv13q(conn, applied));
 

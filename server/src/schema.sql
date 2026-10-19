@@ -563,6 +563,7 @@ CREATE TABLE assessment_attempts (
   created_at TEXT NOT NULL,
   updated_at TEXT,
   lich_su INTEGER NOT NULL DEFAULT 0, -- MT lịch sử: tuần thi đã qua trước ngày tạo lượt, lưu lúc tạo (T34)
+  o_cho_tu TEXT DEFAULT '',           -- TD7b: week_start sớm nhất của ô đang chờ điểm; NULL = hết ô chờ; '' = chưa tính (luôn được đọc). Tính ở fasttrack/conOCho.ts
   UNIQUE (cycle_id, attempt_no)
 );
 CREATE INDEX idx_attempt_student ON assessment_attempts(student_id);
@@ -572,6 +573,8 @@ CREATE INDEX idx_attempt_class ON assessment_attempts(class_id);
 CREATE INDEX idx_attempt_student_class ON assessment_attempts(student_id, class_id);
 /* TD7: lượt MT lịch sử chưa nhập (một phần) — trước đọc mọi lượt của mọi lớp đang chạy. */
 CREATE INDEX idx_attempt_lich_su_cho ON assessment_attempts(class_id) WHERE lich_su = 1 AND status = 'planned';
+/* TD7b: lượt còn ô chờ điểm (một phần) — Nợ điểm / Cần chấm / badge lớp chỉ đọc lượt có ô chờ, không quét mọi lượt đã chấm xong. */
+CREATE INDEX idx_attempt_o_cho ON assessment_attempts(o_cho_tu) WHERE o_cho_tu IS NOT NULL;
 
 CREATE TABLE attempt_schedule_history (
   id INTEGER PRIMARY KEY,

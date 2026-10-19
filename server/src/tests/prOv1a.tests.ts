@@ -14,6 +14,7 @@ export async function runPrOv1aTests(t: YThucTestKit) {
   const { kiemDuLieuMt } = await import('../ops/kiemDuLieuMt.ts');
   const { kiemOLop } = await import('../ops/kiemOLop.ts');
   const { xoaNho } = await import('../platform/nguCanhRequest.ts');
+  const { capNhatConOCho } = await import('../fasttrack/conOCho.ts');
   console.log('\nPR-OV1a · MT0 nhập đúng bảng, Điểm theo lớp, lệnh kiểm chỉ đọc');
 
   const thu = <T>(fn: () => T): T => {
@@ -161,6 +162,7 @@ export async function runPrOv1aTests(t: YThucTestKit) {
       const cu = all(`SELECT id FROM report_periods WHERE week_end < ? ORDER BY week_start DESC LIMIT 1`, addDays(t.TODAY, -10))[0].id;
       conn.prepare('UPDATE attempt_skills SET planned_period_id = ? WHERE attempt_id = ?').run(cu, m.id);
       conn.prepare('UPDATE assessment_attempts SET planned_period_id = ? WHERE id = ?').run(cu, m.id);
+      capNhatConOCho([m.id]);   // TD7b: fixture ghi thẳng SQL lịch → đồng bộ cờ "còn ô chờ" (đường ghi thật tự gọi)
       xoaNho();
       const viec = () => attempts.listAttempts(QL, { studentId: em.sid }).rows.find((r: any) => r.id === m.id);
       const no = () => scoreDebtCells(QL, t.TODAY, null).filter((c: any) => c.attemptId === m.id).length;
@@ -168,6 +170,7 @@ export async function runPrOv1aTests(t: YThucTestKit) {
       for (const k of ['listening', 'reading', 'writing1', 'writing2', 'speaking']) {
         conn.prepare('INSERT INTO assessment_scores (attempt_id, skill, band, nhap_dau_ngay) VALUES (?,?,?,?)').run(m.id, k, 6, t.TODAY);
       }
+      capNhatConOCho([m.id]);
       xoaNho();
       const v = viec();
       assert(v.pendingSkills.length === 0 && v.overdueSkills === 0 && v.myPendingSkills.length === 0, `đủ band vẫn là việc: ${JSON.stringify({ p: v.pendingSkills, o: v.overdueSkills })}`);
