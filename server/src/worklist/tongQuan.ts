@@ -1,7 +1,7 @@
 import { db } from '../db.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import {
-  ASSESSED_SKILLS, ATTEMPT_KIND_SHORT, CAN_XU_LY, CHAM_CHEO, CHUA_CO_HAN, baiId, MOC_KE_TIEP_SQL, PERMISSIONS, type AttemptKind, tenMon, tenMonNgan, chonDiemDangChuY, sapCanXuLy,
+  ASSESSED_SKILLS, ATTEMPT_KIND_SHORT, chuViecChotLoTrinh, CAN_XU_LY, CHAM_CHEO, CHUA_CO_HAN, baiId, MOC_KE_TIEP_SQL, PERMISSIONS, type AttemptKind, tenMon, tenMonNgan, chonDiemDangChuY, sapCanXuLy,
   duongHoSoHocVien, nguoiGiuViecChu, soSanhLop, tuanCuaHanGhiKetQua, tuanLich,
   type ChuongTrinh, type DiemChuY, type DongCanXuLyGoc, type MaCanXuLy, type UngVienChuY,
 } from '../../../shared/domain/index.ts';
@@ -17,7 +17,7 @@ import { lopCuaTap, tachTheoLop } from './chuongTrinh.ts';
 import { demYeuCau, quetYeuCau } from '../duyet/yeuCau.ts';
 import { noDiemCuaGv } from '../giaoVien/hoSo.ts';
 import { phamViXemViec } from './xemViec.ts';
-import { myWork, type WorkItem } from './mywork.ts';
+import { viecBuocTiep } from '../loTrinh/buocTiep.ts';
 
 /**
  * TỔNG QUAN (PR-Pa, đặc tả §3.2). File này KHÔNG ĐẾM gì: mọi số lấy từ `metricSet` (hợp đồng số liệu luật 1), ở đây chỉ
@@ -176,8 +176,16 @@ export function tongQuanQuanLy(p: Principal, f: { branchId?: number | null }) {
    */
   const caseQh = sets.get('case-xac-dinh-nguyen-nhan-qua-han')!;
   const canQuyet = {
-    caseQuaHan: rowsFor('case', caseQh.ids, 'case-xac-dinh-nguyen-nhan-qua-han', p),
-    sauThi: (myWork(p, { branchId: base.branchId, chiNhom: new Set(['buoc_tiep', 'chot_len_ft']) }).items ?? []) as WorkItem[],
+    caseQuaHan: rowsFor('case', caseQh.ids),   // không `p`: chỉ cần tên em · lớp · người · hạn để hiện, việc làm ở Ngăn Case
+    /* Dựng thẳng từ hai hàm nguồn của `/my-work` (không chạy cả `myWork` — Turso): `viecBuocTiep` + `lopChot` đã tính ở trên. */
+    sauThi: [
+      ...viecBuocTiep(p, { today, branchId: base.branchId }),
+      ...lopChot.map((x) => ({
+        key: `chotft:${x.classId}`, group: 'chot_len_ft', urgency: !x.han ? 'normal' : x.han < today ? 'overdue' : x.han === today ? 'today' : 'normal',
+        classId: x.classId, classCode: x.code, studentName: `Lớp ${x.code}`, tieuDe: `Chốt lộ trình · ${x.code}`, contextLabel: chuViecChotLoTrinh(x),
+        due: x.han, href: `/hoc-vien/lop/${x.classId}?viec=lo-trinh-ca-lop`,
+      })),
+    ],
   };
   /* PR-DUYET (Q8): số của hộp Chờ duyệt — đọc từ hộp, không thêm chỉ số vào sổ. */
   return { canXuLy, canQuyet, choDuyet: demYeuCau(p, { branchId: base.branchId }) };

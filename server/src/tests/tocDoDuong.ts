@@ -324,8 +324,8 @@ export const TRAN: Record<string, number> = {
   'GVCN /tong-quan/lop-toi-day/o?ct=ft&classId=3&cot=bai-qua-han': 54,   // PR-S6F-b D10 — đo 46 (01/10)
   'QL /signals': 41,   // PR-S6F-b: đo 38 (một metricSet mỗi chỉ số)
   'QT /signals': 38,   // đo 35
-  'QL /tong-quan/quan-ly': 64,   // PR-LCb: một hàm Chốt lộ trình thay lopChoLenhChuyen + lopChoChotLenFt, bỏ hv-chua-co-lenh-chuyen: đo 60 (PR-MT0 đo 76)
-  'QT /tong-quan/quan-ly': 64,   // PR-LCb: đo 60 (PR-MT0 đo 76)
+  'QL /tong-quan/quan-ly': 92,   // OV-15d: + "Cần bạn quyết" (Case quá hạn · Bước tiếp · Chốt lộ trình) — đo 73; trang Tổng quan QL bỏ 6 ô số + Điểm đáng chú ý nên tổng trang giảm
+  'QT /tong-quan/quan-ly': 99,   // OV-15d: đo 76   // PR-LCb: đo 60 (PR-MT0 đo 76)
   'GVCN /tong-quan/quan-ly': 15,
   'GVBM /tong-quan/quan-ly': 15,
   'QL /highlights': 25,
@@ -347,8 +347,8 @@ export const TRAN: Record<string, number> = {
   'ADMIN /highlights': 20,
   'QL /tong-quan/chi-nhanh': 45,
   'QT /tong-quan/chi-nhanh': 41,
-  'QL /tong-quan/chi-nhanh/o?cot=caseMo&khoa=tong': 46,
-  'QT /tong-quan/chi-nhanh/o?cot=caseMo&khoa=tong': 42,
+  'QL /tong-quan/chi-nhanh/o?cot=caseMo&khoa=tong': 63,   // OV-15d: + tập Case chưa chốt PA (cột Lớp cần chú ý) — đo 48
+  'QT /tong-quan/chi-nhanh/o?cot=caseMo&khoa=tong': 60,   // OV-15d: + tập Case chưa chốt PA — đo 46
   'QL /metrics/case-mo': 22,
   'QT /metrics/case-mo': 19,
   'QL /metrics/bai-qua-han-nhap-diem?rows=1': 30,   // PR-UXF-a Task 5: đo 25 → max(25+10, ⌈25×1.3⌉)
@@ -879,11 +879,10 @@ export const TAI_TRANG: Record<string, { vai: Vai; urls: string[]; tran: number 
   },
   'QL trang Tổng quan': {
     vai: 'QL', tran: 450,   // PR-Dọn (9e): đủ 15 GET lúc mở trang → đo 346 câu (trước chỉ 6 GET, đo 126) — max(346 + 10, ⌈346 × 1,3⌉)
-    /* PR-Dọn (9e): đủ MỌI GET lúc mở trang (phép quét `prDonA.tests.ts` 9e bắt route mới): thêm badge Chờ duyệt (App), Điểm đáng chú ý,
-       sáu ô số, Lịch sắp tới, bảng chi nhánh. */
-    urls: ['/demo/session', '/notifications', '/ref/branches', '/ref/classes', '/yeu-cau/dem', '/tong-quan/quan-ly', '/tong-quan/diem-chu-y?ct=ft',
-      '/metrics/hv-duoi-ky-vong-mon?ct=ft', '/metrics/hv-co-case-mo?ct=ft', '/metrics/case-mo?ct=ft', '/metrics/case-cho-xac-dinh-nguyen-nhan?ct=ft',
-      '/metrics/case-xac-dinh-nguyen-nhan-qua-han?ct=ft', '/metrics/pa-can-cap-nhat?ct=ft', '/highlights?ct=ft', '/tong-quan/chi-nhanh?ct=ft'],
+    /* PR-Dọn (9e): đủ MỌI GET lúc mở trang (phép quét `prDonA.tests.ts` 9e bắt route mới). OV-15d (Tổng quan QL A): bỏ sáu ô số + Điểm đáng chú ý;
+       thêm bảng GV (Trễ chấm). Thẻ "Chờ duyệt" (`/yeu-cau?hop=cho-duyet`) chỉ tải khi có thẻ. */
+    urls: ['/demo/session', '/notifications', '/ref/branches', '/ref/classes', '/yeu-cau/dem', '/tong-quan/quan-ly',
+      '/highlights?ct=ft', '/tong-quan/chi-nhanh?ct=ft', '/giao-vien?ct=ft'],
   },
   'CX trang Tổng quan': {
     vai: 'CX', tran: 450,

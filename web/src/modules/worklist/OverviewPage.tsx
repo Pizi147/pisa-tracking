@@ -112,7 +112,7 @@ export default function OverviewPage({ tab: tabProp = 'tong-quan' }: { tab?: Tab
           <BranchPulse branchId={branchId} ct={khung} chuY />
           <section aria-labelledby="tuan-nay" className="space-y-3">
             <h2 id="tuan-nay" className="m-0 text-base font-semibold text-slate-100">{t('Tuần này')}</h2>
-            <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-3 lg:grid-cols-2">
+            <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-3">
               <LichSapToi branchId={branchId} ct={khung} />
               {/* Trễ chấm theo GV — số bài bấm ra đúng bài của GV đó (QL nhập tại chỗ); GV đã nhận thông báo tự động, không có Nhắc. */}
               {session?.nav?.phanTichGv && (
