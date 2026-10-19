@@ -4,12 +4,13 @@ import { Empty, Info, Level, Status, Th } from '../../ui/ui.tsx';
 import { NhanCu } from '../../ui/OMt.tsx';
 import { ChipDuoiKck } from '../../ui/KetQuaDot.tsx';
 import { ChipSos } from '../../ui/ChipSos.tsx';
+import { DauKetQua } from '../../ui/BieuTuong.tsx';
 import { DeadlinePill, KHOA_HOAN_TAT_HINT, apDiemVuaLuu, suaDuoc, useSaveScore, type Cell } from '../fasttrack/ScoreEntry.tsx';
 import { ODiemMt } from '../fasttrack/HopNhapDiem.tsx';
 import {
   fmtBand, skillLabel, skillShort, sosLabel, sosTone,
 } from '../../lib/format.ts';
-import { ENTRY_SKILLS, chipSosMt0, soLieuSos, chuOChuaLuu, dotGvCham, duongDotTest, ngay, nhanLuot, tuanLich, type AssessedSkill, type NguoiChon, type TrangThaiLuuO } from '@shared/domain/index.ts';
+import { ENTRY_SKILLS, chipSosMt0, soKyVong, soLieuSos, chuOChuaLuu, dotGvCham, duongDotTest, ngay, nhanLuot, tuanLich, type AssessedSkill, type NguoiChon, type TrangThaiLuuO } from '@shared/domain/index.ts';
 import { DongThi } from './DongThi.tsx';
 import { GOI_Y_COT_MT, NutGvCham, useGvChamCot } from './GvCham.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
@@ -90,6 +91,10 @@ const COT_OVR = 84, COT_KQ_OV = COT_KQ - 12;
 /* PR-HSM: cột W tổng chỉ đọc (K4-26, Q12) · cột S nới cho nút "GV chấm: {tên}" dưới tiêu đề (K4-24). */
 const COT_W = 56, COT_S = 130;   // PR-HSM: +W, S rộng hơn → Hạn 200→140, Kết quả 176→150 để bảng đủ cột vẫn vừa 1400 px
 const W_HINT = t('Band Writing = (Task 1 + Task 2 × 2) / 3, khi đủ hai task.');
+/* OV-15b (mockup 6 khung 3): hai cột Kỳ vọng · Overall nền nhấn + số đậm 15 để mắt so ngay; cột W (máy tính) nền xám. */
+const NOI_BAT_TH = 'bg-[color:var(--accent-soft)] !text-slate-100';
+const NOI_BAT_TD = 'bg-[color:var(--accent-soft)] text-[15px] font-extrabold text-slate-100';
+const NEN_W = 'bg-[color:var(--surface-2)]';
 
 /**
  * LƯỚI CHẤM LỚP FAST TRACK — phần bảng của màn nhập điểm cả lớp trong một tuần (dời nguyên từ `ScoreSheetPage`).
@@ -101,25 +106,32 @@ const W_HINT = t('Band Writing = (Task 1 + Task 2 × 2) / 3, khi đủ hai task.
  * Lịch Test (PR-UX1 Q10): `gon` bỏ cột Trạng thái và Hạn (hàng lớp đã nói), bỏ cột MT khi cả lưới cùng một lượt;
  * `tuanDangXem` làm mờ ô thi tuần khác (`khacTuanFt`).
  */
-export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuanDangXem = null, hangMo = [] }: {
+export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuanDangXem = null, hangMo = [], chiCot = null }: {
   data: FtSheet; onReload: () => void; kn?: string | null; hv?: number | null;
   gon?: boolean; tuanDangXem?: string | null;
   /** PR-DL: em chưa có lịch lượt này — hàng mờ cuối bảng. */
   hangMo?: HangMo[];
+  /** OV-15b (mục 1): mở từ việc — chỉ cột kỹ năng của việc + Kết quả (`writing` = W1 + W2); null = đủ cột. */
+  chiCot?: readonly string[] | null;
 }) {
   /* Hộp đang mở: lượt × kỹ năng. */
   const [mo, setMo] = useState<{ aid: number; s: string } | null>(null);
+  const hien = (s: string) => !chiCot || chiCot.some((k) => khopKn(s, k));
   const cot = {
     mt: !gon || new Set(data.rows.map((r) => r.attemptNo)).size > 1,
     trangThai: !gon,
     han: !gon,
     /* PR-MT0: lưới chỉ MT0 (`kind=mt0`) — không kỳ vọng. */
-    kyVong: !(data.rows.length > 0 && data.rows.every((r) => r.mt0Sos)),
+    kyVong: !chiCot && !(data.rows.length > 0 && data.rows.every((r) => r.mt0Sos)),
+    w: !chiCot,
+    ovr: !chiCot,
   };
+  const rawCot = RAW_SKILLS.filter(hien), wCot = W_SKILLS.filter(hien);
   /* Cột theo đúng những cột đang hiện — `colgroup` khớp số cột (G-2). */
   const COT = [
     COT_HV, ...(cot.mt ? [COT_MT] : []), ...(cot.trangThai ? [COT_TT] : []), ...(cot.han ? [COT_HAN] : []),
-    COT_KN, COT_KN, COT_KN, COT_KN, COT_W, COT_S, ...(cot.kyVong ? [COT_SO] : []), COT_OVR, COT_KQ_OV,
+    ...rawCot.map(() => COT_KN), ...wCot.map(() => COT_KN), ...(cot.w ? [COT_W] : []), ...(hien('speaking') ? [COT_S] : []),
+    ...(cot.kyVong ? [COT_SO] : []), ...(cot.ovr ? [COT_OVR] : []), COT_KQ_OV,
   ];
   const RONG = COT.reduce((a, b) => a + b, 0);
   /* K4-24: GV chấm chọn MỘT lần ở đầu cột S (nhớ theo lớp × tuần); chỉ người sửa được S, chỉ khi có tuần. */
@@ -150,6 +162,8 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
   };
 
   const toCot = (s: string) => (khopKn(s, kn) ? 'text-[color:var(--accent-strong)]' : '');
+  /* Chỉ một ít cột (mở từ việc): bảng co theo cột, không giãn ô ra khắp panel. */
+  const rongBang = chiCot ? '' : 'w-full';
 
   // ponytail: gon (Điểm theo lớp / Lịch Test, 1108 px) vừa khung → đầu cột dính; đủ cột (Nhập điểm) rộng 1400 > khung 1398 ở 1440 → giữ cuộn ngang.
   return (
@@ -157,7 +171,7 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
     {/* FIX-DTL (chủ sản phẩm 07/10): GV chấm S ở hàng trên bảng — đầu cột S chỉ "S (band)", thẳng hàng các cột khác. */}
     {suaS && dot && <div className="flex justify-end px-3 pb-1"><NutGvCham nhan={t('GV chấm S')} value={gvCot} onChange={setGvCot} goiY={data.period ? undefined : GOI_Y_COT_MT} /></div>}
     <div className={gon ? 'table-scroll bang-dinh bang-dinh-1440' : 'overflow-x-auto'}>
-      <table className="w-full text-sm tabular-nums" style={{ tableLayout: 'fixed', minWidth: RONG }}>
+      <table className={`${rongBang} text-sm tabular-nums`} style={{ tableLayout: 'fixed', minWidth: RONG }}>
         <colgroup>{COT.map((w, i) => <col key={i} style={{ width: w }} />)}</colgroup>
         <thead>
           <tr>
@@ -165,22 +179,24 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
             {cot.mt && <Th hint={t('Số thứ tự lượt Mock Test (MT) trong lộ trình của em.')}>MT</Th>}
             {cot.trangThai && <Th hint={t('Lượt đã chấm xong, đang chờ, hay đã huỷ.')}>{t('Trạng thái')}</Th>}
             {cot.han && <Th hint={t('Hạn chấm tính riêng cho từng môn, từ tuần thi của chính môn đó: hết thứ Tư của tuần kế tiếp. Quản lý đặt được hạn riêng.')}>{t('Hạn chấm')}</Th>}
-            {RAW_SKILLS.map((s) => (
+            {rawCot.map((s) => (
               <Th key={s} align="right" className={toCot(s)} hint={t('{skillLabel} — bấm ô để nhập số câu đúng (0–40), máy tự quy ra band.', { skillLabel: skillLabel(s) })}>
-                {skillShort(s)} <span className="normal-case text-slate-500">{cot.kyVong ? t('(số câu)') : '(band)'}</span>
+                {skillShort(s)}
               </Th>
             ))}
-            {W_SKILLS.map((s) => (
+            {wCot.map((s) => (
               <Th key={s} align="right" className={toCot(s)} hint={t('{skillLabel} — bấm ô để chấm bốn tiêu chí, ra band.', { skillLabel: skillLabel(s) })}>
                 {skillShort(s)}
               </Th>
             ))}
-            <Th align="right" className={toCot('writing')} hint={W_HINT}>W</Th>
-            <Th align="right" className={toCot('speaking')} hint={t('{skillLabel} — bấm ô để chấm bốn tiêu chí, ra band.', { skillLabel: skillLabel('speaking') })}>
-              {skillShort('speaking')}
-            </Th>
-            {cot.kyVong && <Th align="right" hint={t('Mức mong đợi của chính lượt này, tính theo Target tại thời điểm đó.')}>{t('Kỳ vọng')}</Th>}
-            <Th align="right" hint={t('Band tổng, chỉ có khi đã đủ điểm mọi kỹ năng bắt buộc.')}>Overall</Th>
+            {cot.w && <Th align="right" className={`${toCot('writing')} ${NEN_W}`} hint={W_HINT}>W</Th>}
+            {hien('speaking') && (
+              <Th align="right" className={toCot('speaking')} hint={t('{skillLabel} — bấm ô để chấm bốn tiêu chí, ra band.', { skillLabel: skillLabel('speaking') })}>
+                {skillShort('speaking')}
+              </Th>
+            )}
+            {cot.kyVong && <Th align="right" className={NOI_BAT_TH} hint={t('Mức mong đợi của chính lượt này, tính theo Target tại thời điểm đó.')}>{t('Kỳ vọng')}</Th>}
+            {cot.ovr && <Th align="right" className={NOI_BAT_TH} hint={t('Band tổng, chỉ có khi đã đủ điểm mọi kỹ năng bắt buộc.')}>Overall</Th>}
             <Th hint={t('Số kỹ năng dưới kỳ vọng của lượt này — đó chính là mức SOS.')}>{t('Kết quả')}</Th>
           </tr>
         </thead>
@@ -191,7 +207,7 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
               row={r}
               lop={data.classCode}
               active={hv !== null && r.studentId === hv}
-              cot={cot} tuanDangXem={tuanDangXem} tuanXem={tuanXem}
+              cot={cot} hien={hien} tuanDangXem={tuanDangXem} tuanXem={tuanXem}
               onReload={onReload}
               gvMacDinh={gvCot}
               moS={mo?.aid === r.attemptId ? mo.s : null}
@@ -270,9 +286,10 @@ function DeadlineSummary({ cells }: { cells: Cell[] }) {
   );
 }
 
-function SheetRow({ row, lop, active, cot, tuanDangXem, tuanXem, onReload, gvMacDinh, moS, onMo, onTiep }: {
+function SheetRow({ row, lop, active, cot, hien, tuanDangXem, tuanXem, onReload, gvMacDinh, moS, onMo, onTiep }: {
   row: FtSheet['rows'][number]; lop: string; active: boolean;
-  cot: { mt: boolean; trangThai: boolean; han: boolean; kyVong: boolean }; tuanDangXem: string | null; tuanXem: string | null;
+  cot: { mt: boolean; trangThai: boolean; han: boolean; kyVong: boolean; w: boolean; ovr: boolean }; hien: (s: string) => boolean;
+  tuanDangXem: string | null; tuanXem: string | null;
   onReload: () => void;
   gvMacDinh: NguoiChon | null;
   moS: string | null; onMo: (s: string | null) => void; onTiep: (s: string) => void;
@@ -286,8 +303,11 @@ function SheetRow({ row, lop, active, cot, tuanDangXem, tuanXem, onReload, gvMac
   const tuanChuaToi = can.length > 0 && can.every((c) => c.progress === 'upcoming' && c.weekStart)
     ? can.map((c) => c.weekStart!).sort()[0] : null;
   /* Một ô điểm MT (mọi cột L/R/W1/W2/S): nút → hộp nhập điểm. */
+  /* OV-15b (6b): ✓ / ✗ so kỳ vọng ở ô L · R · S khi lưới có cột Kỳ vọng; W1 / W2 là ô nhập thường (✓ / ✗ ở cột W). */
+  const kyVong = cot.kyVong ? row.result.expectation ?? null : null;
   const oDiem = (s: string, cell: Cell) => (
     <ODiemMt cell={cell} mo={moS === s} onMo={(m) => onMo(m ? s : null)} onTiep={() => onTiep(s)} tuanXem={tuanXem}
+      chinh={!s.startsWith('writing')} dauKq={s.startsWith('writing') ? null : soKyVong(cell.band, kyVong)}
       onSave={(p, x) => save(s, p, x)} gvMacDinh={s === 'speaking' ? gvMacDinh : null}
       ctx={{ tenHv: row.studentName, lop, luot: `MT${row.attemptNo}`, kyVong: row.result.expectation ?? null, mt0: !!row.mt0Sos,
         bandTaskKia: s === 'writing1' ? cellOf('writing2')?.band ?? null : s === 'writing2' ? cellOf('writing1')?.band ?? null : undefined }} />
@@ -341,7 +361,7 @@ function SheetRow({ row, lop, active, cot, tuanDangXem, tuanXem, onReload, gvMac
           {row.ngungHoc ? <span className="text-slate-500">—</span> : <DeadlineSummary cells={row.cells} />}
         </td>
       )}
-      {RAW_SKILLS.map((s) => {
+      {RAW_SKILLS.filter(hien).map((s) => {
         const cell = cellOf(s);
         if (!cell) return <td key={s} className="td py-1.5 text-right text-slate-500">—</td>;   // OV-11i (P3-1): "—" = không có — đọc được (faint)
         if (khacTuan(cell)) return oKhacTuan(s, cell);
@@ -354,13 +374,16 @@ function SheetRow({ row, lop, active, cot, tuanDangXem, tuanXem, onReload, gvMac
           </td>
         );
       })}
-      {[...W_SKILLS, 'w', 'speaking'].map((s) => {
+      {[...W_SKILLS.filter(hien), ...(cot.w ? ['w'] : []), ...(hien('speaking') ? ['speaking'] : [])].map((s) => {
         if (s === 'w') {
-          /* K4-26: band Writing tổng — chỉ đọc, chỉ khi đủ hai task; dưới kỳ vọng thì đỏ. */
+          /* K4-26: band Writing tổng — chỉ đọc, chỉ khi đủ hai task. OV-15b: đậm như L / R / S, nền xám (cột máy tính), ✓ / ✗ so kỳ vọng. */
           const v = row.result.verdicts?.find((x: any) => x.skill === 'writing');
+          const kq = soKyVong(v?.band, kyVong);
           return (
-            <td key="w" className={`td py-1.5 text-right ${v?.passed === false ? 'text-bad' : 'text-slate-200'}`} title={W_HINT}>
-              {v?.band != null ? fmtBand(v.band) : <span className="text-slate-500">—</span>}
+            <td key="w" className={`td py-1.5 text-right font-bold text-slate-100 ${NEN_W}`} title={W_HINT}>
+              {v?.band != null
+                ? <span className="inline-flex items-center gap-1">{fmtBand(v.band)}{kq && <DauKetQua kq={kq} />}</span>
+                : <span className="sr-only">{t('Chưa có')}</span>}
             </td>
           );
         }
@@ -376,8 +399,8 @@ function SheetRow({ row, lop, active, cot, tuanDangXem, tuanXem, onReload, gvMac
           </td>
         );
       })}
-      {cot.kyVong && <td className="td py-1.5 text-right">{fmtBand(row.result.expectation)}</td>}
-      <td className="td py-1.5 text-right text-slate-100">{fmtBand(row.result.overall)}</td>
+      {cot.kyVong && <td className={`td py-1.5 text-right ${NOI_BAT_TD}`}>{fmtBand(row.result.expectation)}</td>}
+      {cot.ovr && <td className={`td py-1.5 text-right ${NOI_BAT_TD}`}>{fmtBand(row.result.overall)}</td>}
       {/* Badge ôm sát nội dung: items-start để ô bảng rộng cũng không kéo giãn nó ra. */}
       <td className="td py-1.5">
         <div className="flex flex-col items-start gap-0.5 min-w-0">

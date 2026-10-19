@@ -381,7 +381,6 @@ export async function runPrHk2Tests(t: YThucTestKit) {
   console.log('\nPR-HK2 · Task 6b · J8, C33–C37');
 
   check('J8 · tên lớp / đợt có title; lưới chấm: tên break-words, chip "Đã hoàn tất" xuống dòng DƯỚI tên (không cùng hàng flex)', () => {
-    assert(/<span className="min-w-0 truncate" title=\{l\.classCode\}>/.test(doc('web/src/modules/test/TabDiemLop.tsx')), 'TabDiemLop: tên lớp thiếu title');
     assert(/<span className="truncate" title=\{`?[^}]*classCode/.test(doc('web/src/modules/cham/ChamDiemPage.tsx')), 'ChamDiemPage: tiêu đề "lớp · đợt" thiếu title');
     for (const f of ['LuoiFT', 'LuoiThuong', 'MotKyNang']) {
       const m = /<div className="([^"]*)">\s*<Link className="([^"]*)" to=\{.*\} title=\{(?:row\.studentName|ten)\}>/.exec(doc(`web/src/modules/cham/${f}.tsx`));

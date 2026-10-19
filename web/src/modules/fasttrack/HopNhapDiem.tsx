@@ -3,7 +3,7 @@
  * Lịch Test nhúng, `/nhap-diem`), màn điện thoại một kỹ năng, hồ sơ lượt MT, Lộ trình. Thay khung 4 tiêu chí trượt phải, khung sửa dưới
  * dải ô lớn và ô gõ thẳng L/R.
  *
- *   ODiemMt      Ô điểm là NÚT: L/R "14 · 4.5", W/S "5.0", ô trống "Nhập", ô vắng "Vắng → W3 OCT". Bấm → hộp neo ngay ô.
+ *   ODiemMt      Ô điểm là NÚT: L/R "4.5" + dòng "14 câu", W/S "5.0", ô trống = khung rỗng (OV-15b), ô vắng "Vắng → W3 OCT". Bấm → hộp neo ngay ô.
  *   HopNhapDiem  Đầu "Reading · MT2" / "{em} · {lớp} · {W2 OCT}"; con trỏ đứng sẵn ở ô điểm; chân Vắng · Lưu · Lưu · em tiếp ›.
  *                Enter = "Lưu · em tiếp ›" (trang một em: Lưu). Esc đóng. < 640 px: tấm trượt từ dưới.
  *
@@ -28,7 +28,7 @@ import { useSession } from '../../lib/session.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { useGiuFocus } from '../../ui/giuFocus.ts';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
-import { MuiTenKyVong } from '../../ui/BieuTuong.tsx';
+import { DauKetQua, MuiTenKyVong } from '../../ui/BieuTuong.tsx';
 import { useBaoHopLyDoMo } from '../../ui/SaveState.tsx';
 import { cungGvCham, gvChamPayload, gvChamThanhChon } from '../cham/GvCham.tsx';
 import { ChonNhom } from './NhanXet.tsx';
@@ -84,11 +84,13 @@ function hienO(c: Cell, vangGoc: boolean): { chu: ReactNode; doc: string; kieu: 
   if (c.daChot && !c.daChot.doiSang && c.sitStatus === 'absent') return { chu: hai(t('Vắng'), t('chờ QL')), doc: t('Vắng, chờ Quản lý xếp lại'), kieu: 'vang' };
   if (c.noShow?.state === 'khong-du-thi') return { chu: hai(t('Không'), t('dự thi')), doc: t('Không dự thi'), kieu: 'chot' };
   if (c.noShow) return { chu: '-', doc: c.noShow.text, kieu: null };
+  /* OV-15b (mockup 2 · 6): band trước, số câu là dòng phụ dưới ô (`SoCau`). */
   if (c.rawScore !== null) {
-    return { chu: <>{c.rawScore} <span className="text-xs text-slate-500">· {fmtBand(c.band)}</span></>, doc: t('{rawScore} câu, band {fmtBand}', { rawScore: c.rawScore, fmtBand: fmtBand(c.band) }), kieu: null };
+    return { chu: c.band !== null ? fmtBand(c.band) : String(c.rawScore), doc: t('{rawScore} câu, band {fmtBand}', { rawScore: c.rawScore, fmtBand: fmtBand(c.band) }), kieu: null };
   }
   if (c.band !== null) return { chu: fmtBand(c.band), doc: `band ${fmtBand(c.band)}`, kieu: null };
-  return { chu: t('Nhập'), doc: t('Nhập'), kieu: 'trong' };
+  /* OV-15b (mục 1, ô "cần nhập"): khung rỗng — chữ "Nhập" chỉ còn cho trình đọc màn hình. */
+  return { chu: null, doc: t('Nhập'), kieu: 'trong' };
 }
 
 /**
@@ -113,7 +115,7 @@ function DongDau({ cell, thiBu = false }: { cell: Cell; thiBu?: boolean }) {
  */
 const KIEU_O = {
   vang: 'flex-col !gap-0 leading-tight border-[color:rgb(var(--muted-line-rgb))] text-[color:rgb(var(--muted-rgb))]',
-  trong: 'justify-center border-dashed text-[color:var(--accent)]',
+  trong: 'min-w-[3rem] min-h-[28px] justify-center border-dashed border-[color:var(--accent)]',
   huy: 'border-dotted text-slate-500',
   /* OV-11a (CA3-2): Không dự thi — hai dòng chữ như ô Vắng, màu trung tính (trạng thái cuối, không phải việc). */
   chot: 'flex-col !gap-0 leading-tight text-slate-400',
@@ -134,8 +136,18 @@ function ChuThieu({ cell }: { cell: Cell }) {
  * Ô ĐIỂM MT: nút mở hộp; ô không mở được là chữ (E5: không viền, không mờ) có câu "vì sao" ở tooltip.
  * `mo` do nơi gọi giữ (lưới / danh sách: một hộp một lúc, "em tiếp" chuyển sang dòng kế).
  */
-export function ODiemMt({ cell, lon = false, mo, onMo, ...hop }: Omit<HopProps, 'anchor' | 'onDong'> & {
+/** Số câu đúng (L / R) — dòng phụ dưới band ở lưới (mockup 2: "7.0 ✓" / "30 câu"). */
+function SoCau({ cell }: { cell: Cell }) {
+  if (cell.rawScore === null || cell.band === null) return null;
+  return <span className="block text-right text-[11px] leading-tight text-slate-500 tabular-nums">{t('{rawScore} câu', { rawScore: cell.rawScore })}</span>;
+}
+
+export function ODiemMt({ cell, lon = false, mo, onMo, chinh = false, dauKq = null, ...hop }: Omit<HopProps, 'anchor' | 'onDong'> & {
   lon?: boolean; mo: boolean; onMo: (mo: boolean) => void;
+  /** OV-15b: ô kỹ năng chính (L · R · S) — band đậm; W1 / W2 là ô nhập thường. */
+  chinh?: boolean;
+  /** OV-15b (6b): ✓ / ✗ so kỳ vọng cạnh band — chỉ lưới có cột Kỳ vọng. */
+  dauKq?: 'vuot' | 'bang' | 'duoi' | null;
 }) {
   const [neo, setNeo] = useState<HTMLButtonElement | null>(null);
   const vangGoc = oVangCua(cell, hop.tuanXem);
@@ -145,10 +157,13 @@ export function ODiemMt({ cell, lon = false, mo, onMo, ...hop }: Omit<HopProps, 
     const hai = h.kieu === 'chot' || h.kieu === 'vang';
     return (
       <span className="inline-flex flex-col items-end gap-0.5">
-        <span className={`tabular-nums ${hai ? 'inline-flex flex-col items-end leading-tight' : ''} ${vang || hai || cell.progress === 'cancelled' ? 'text-xs text-slate-500' : 'text-slate-300'} ${lon ? 'text-base' : ''}`}
+        <span className={`tabular-nums ${hai ? 'inline-flex flex-col items-end leading-tight' : 'inline-flex items-center gap-1'} ${vang || hai || cell.progress === 'cancelled' ? 'text-xs text-slate-500' : 'text-slate-300'} ${chinh && !h.kieu ? 'font-bold text-slate-100' : ''} ${lon ? 'text-base' : ''}`}
           title={cell.noShow?.text ?? lyDoChiDoc(cell)}>
-          {vang ? t('Vắng') : h.kieu === 'trong' ? '—' : h.chu}
+          {/* OV-15b: ô của người khác chưa có điểm = trống (không "—"). */}
+          {vang ? t('Vắng') : h.kieu === 'trong' ? <span className="sr-only">{t('Chưa có')}</span> : h.chu}
+          {dauKq && cell.band !== null && <DauKetQua kq={dauKq} />}
         </span>
+        <SoCau cell={cell} />
         <ChuThieu cell={cell} />
         <DongDau cell={cell} />
       </span>
@@ -158,11 +173,13 @@ export function ODiemMt({ cell, lon = false, mo, onMo, ...hop }: Omit<HopProps, 
     <span className="inline-flex max-w-full flex-col items-end gap-0.5">
       <button ref={setNeo} type="button" aria-expanded={mo} aria-haspopup="dialog"
         aria-label={`${skillLabel(cell.skill)} · ${hop.ctx.tenHv}: ${h.doc}${cell.thieuNhanXet ? `, ${CHU_O_THIEU[cell.thieuNhanXet]}` : ''}`}
-        className={`btn max-w-full tabular-nums ${lon ? 'min-h-[44px] min-w-[60px] justify-center text-base font-semibold' : 'btn-sm'} ${h.kieu ? KIEU_O[h.kieu] : ''} ${mo ? 'border-[color:var(--accent)]' : ''}`}
+        className={`btn max-w-full tabular-nums ${lon ? 'min-h-[44px] min-w-[60px] justify-center text-base font-semibold' : 'btn-sm'} ${h.kieu ? KIEU_O[h.kieu] : ''} ${chinh && !h.kieu ? 'font-bold text-[13px]' : ''} ${mo ? 'border-[color:var(--accent)]' : ''}`}
         title={cell.noShow?.text ?? t('{skillLabel} — bấm để nhập', { skillLabel: skillLabel(cell.skill) })}
         onClick={() => onMo(!mo)}>
         {h.chu}
+        {dauKq && cell.band !== null && <DauKetQua kq={dauKq} />}
       </button>
+      <SoCau cell={cell} />
       <ChuThieu cell={cell} />
       <DongDau cell={cell} thiBu={!!cell.daChot?.doiSang && !vangGoc} />
       {mo && neo && <HopNhapDiem cell={cell} anchor={neo} onDong={() => onMo(false)} {...hop} />}

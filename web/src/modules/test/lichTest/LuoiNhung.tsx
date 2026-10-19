@@ -12,10 +12,12 @@ import { t } from '@shared/i18n/index.ts';
  * "Mở lưới đầy đủ ↗": hàng lớp trên máy tính đã có ↗ ở cột riêng (`coLinkRieng`) nên không lặp; màn hẹp thì hàng lớp gập,
  * link về lại trên lưới.
  */
-export function LuoiNhung({ classId, periodId, kind, tuanDangXem, chiAttempt = null, kn = null, hrefDayDu, datConTro, onDaLuu, coLinkRieng, onSoOChuaLuu }: {
+export function LuoiNhung({ classId, periodId, kind, tuanDangXem, chiAttempt = null, kn = null, hrefDayDu, datConTro, onDaLuu, coLinkRieng, onSoOChuaLuu, chiCot = null }: {
   classId: number; periodId: number | null; kind: string | null; tuanDangXem: string | null;
   chiAttempt?: ReadonlySet<number> | null; kn?: string | null; hrefDayDu: string; datConTro: boolean;
   onDaLuu: () => void; coLinkRieng?: boolean; onSoOChuaLuu?: (n: number) => void;
+  /** OV-15b: panel việc — chỉ cột của việc (+ nút "Cả lớp"). */
+  chiCot?: readonly string[] | null;
 }) {
   const { data, error, reload } = useApi<Cham>(duongCham(classId, { periodId, kind }));
   const hep = useManHinhHep();
@@ -32,7 +34,7 @@ export function LuoiNhung({ classId, periodId, kind, tuanDangXem, chiAttempt = n
         : (
           <LuoiChamLop data={data} kind={kind} kn={kn} onReload={() => { reload(); onDaLuu(); }}
             gon tuanDangXem={tuanDangXem} chiAttempt={chiAttempt} datConTro={datConTro} thanhTren={link}
-            onSoOChuaLuu={onSoOChuaLuu} />
+            onSoOChuaLuu={onSoOChuaLuu} chiCot={chiCot} />
         )}
     </div>
   );

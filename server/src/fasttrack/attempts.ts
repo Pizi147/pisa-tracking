@@ -473,9 +473,10 @@ export function skillCells(
       /* OV-4c: ô W / S nhập Band thẳng được không — cùng hàm với `saveScore` (web chỉ đọc cờ này). */
       bandThang: duocNhapBandThang({ lichSu: !!attempt.lich_su, mt0: laMt0(attempt) }),
       resultDate: row?.result_date ?? null,
-      enteredByName: row?.entered_by_name ?? null,
-      enteredAt: row?.entered_at ?? null,
-      enteredById: row?.entered_by ?? null,
+      /* OV-15b (mục 7): "Nhập bởi …" chỉ khi ô ĐÃ có điểm — ô chỉ nhận xét / đã xoá điểm / GV chấm chéo đã gán không có người nhập. */
+      enteredByName: hasScore ? row?.entered_by_name ?? null : null,
+      enteredAt: hasScore ? row?.entered_at ?? null : null,
+      enteredById: hasScore ? row?.entered_by ?? null : null,
       deadline: view.deadline,
       deadlineSource: view.deadlineSource,
       /* Quá hạn tính trên Ô NÀY: W2 còn trống thì W2 quá hạn, W1 đã nộp thì không. */

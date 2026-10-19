@@ -17,6 +17,7 @@ import {
 } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 import type { WorkItem } from '../worklist/WorkList.tsx';
+import { PanelNhapDiemLop } from '../cham/PanelNhapDiemLop.tsx';
 
 /** `GET /classes/:id/overview` (server/src/classes/classes.ts → classOverview). */
 export type HoSoLop = {
@@ -127,8 +128,8 @@ export function DauTrangLop({ data, onViec, onBanGiao }: {
   /* Quản trị hoặc Quản lý của lớp gọi được đường này (403 với người khác) — nên chỉ hỏi khi có cờ. `coTheXoa` do máy chủ trả: lớp trống (OV-12a). */
   const hoiXk = !!data.viewer.coTheXoaKetThuc || !!data.viewer.coTheKetThucLop;
   const xk = useApi<TinhTrangXoaKetThuc>(hoiXk ? `/classes/${data.id}/xoa-ket-thuc` : null, [data.id, hoiXk]);
-  /* PR-OV1a (3.2): cả lớp thường và FT mở Test › Điểm theo lớp đúng lớp (lớp thường có lượt MT0 bảng band). */
-  const nhapDiem = `${DUONG_TAB_TEST['diem-lop']}?lop=${data.id}`;
+  /* OV-15b (C16): Nhập điểm mở panel nhập điểm của lớp ngay tại hồ sơ (thay Test › Điểm theo lớp); chọn lượt / môn trong panel. */
+  const [nhapDiem, setNhapDiem] = useState(false);
   /* PR-OV3a (M2 §1): nút cố định Nhập điểm · + Case · ⋯ — không đổi chỗ theo chặng. ⋯ gom Lớp → Lộ trình → Công cụ → (kẻ) kết thúc, cùng thứ tự hai loại lớp. */
   const mucLop = menuHoSoLop({
     thuong, lienTuc: !!data.lienTuc, chuongTrinh: data.programme?.code ?? null, soHocVien: s?.studentCount ?? 0,
@@ -174,7 +175,8 @@ export function DauTrangLop({ data, onViec, onBanGiao }: {
         </div>
         <div className="flex-1" />
         <div className="flex flex-wrap items-center gap-1.5 max-sm:w-full">
-          {data.viewer.canEnterScores && <Link className="btn btn-sm no-underline max-sm:min-h-[44px] max-sm:flex-1" to={nhapDiem}>{t('Nhập điểm')}</Link>}
+          {data.viewer.canEnterScores && <button type="button" className="btn btn-sm max-sm:min-h-[44px] max-sm:flex-1" onClick={() => setNhapDiem(true)}>{t('Nhập điểm')}</button>}
+          {nhapDiem && <PanelNhapDiemLop classId={data.id} classCode={data.code} onDong={() => setNhapDiem(false)} />}
           {data.viewer.canReportCase && <button type="button" className="btn btn-sm max-sm:min-h-[44px] max-sm:flex-1" onClick={() => onViec('case')}>+ Case</button>}
           <MenuDong muc={menu} nhan={t('Thao tác khác')} />
         </div>

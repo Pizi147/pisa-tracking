@@ -86,8 +86,11 @@ const HIEN_TEST: Record<TabTest, (n: NavQuyen) => boolean> = {
 };
 
 export function tabTestHienThi(nav: NavQuyen): TabTest[] {
-  return nav.test ? TAB_TEST.filter((k) => HIEN_TEST[k](nav)) : [];
+  /* OV-15b (C16): bỏ tab "Điểm theo lớp" — nhập điểm một lớp là panel tại chỗ (⋯ hàng lớp, hồ sơ lớp); đường cũ còn đọc được (`moDiemLopCu`). */
+  return nav.test ? TAB_TEST.filter((k) => k !== 'diem-lop' && HIEN_TEST[k](nav)) : [];
 }
+/** OV-15b: link cũ `/test/diem-lop?lop=` → panel nhập điểm của đúng lớp đó (trên Lịch Test) — cùng quyền tab cũ. */
+export const moDiemLopCu = (nav: NavQuyen): boolean => nav.test && HIEN_TEST['diem-lop'](nav);
 export function tabTestTuDuong(seg: string | undefined): TabTest | null {
   return (TAB_TEST as readonly string[]).includes(seg ?? '') ? (seg as TabTest) : null;
 }

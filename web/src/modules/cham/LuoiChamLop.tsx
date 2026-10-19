@@ -69,7 +69,7 @@ export function thuongTheoBai(t: ThuongSheet | null | undefined, kind: string | 
  */
 export function LuoiChamLop({
   data, kind, kn = null, hv = null, onReload, gon = false, tuanDangXem = null, chiAttempt = null, datConTro = true, thanhTren,
-  onSoOChuaLuu, hangMo, anNutTao,
+  onSoOChuaLuu, hangMo, anNutTao, chiCot = null, nutCaLop = true,
 }: {
   data: Cham; kind: string | null; kn?: string | null; hv?: number | null; onReload: () => void;
   gon?: boolean; tuanDangXem?: string | null; chiAttempt?: ReadonlySet<number> | null; datConTro?: boolean;
@@ -81,6 +81,10 @@ export function LuoiChamLop({
   hangMo?: HangMo[];
   /** PR-DL: ẩn nút "Tạo bài kiểm tra theo chương trình" của lưới lớp thường (Điểm theo lớp). */
   anNutTao?: boolean;
+  /** OV-15b (mục 1, mockup 2 khung 1a): mở từ việc — chỉ cột kỹ năng của việc + Kết quả; nút "Cả lớp" mở đủ cột. */
+  chiCot?: readonly string[] | null;
+  /** Nơi gọi có bộ chọn môn riêng (panel Nhập điểm lớp) — không vẽ nút "Cả lớp". */
+  nutCaLop?: boolean;
 }) {
   const hep = useManHinhHep();
   /* Mỗi dòng báo số ô lỗi của nó (`useBaoLuu`); cộng lại rồi báo lên trên. */
@@ -94,16 +98,22 @@ export function LuoiChamLop({
   const soOChuaLuu = Object.values(loiTheoDong).reduce((a, b) => a + b, 0);
   useEffect(() => { onSoOChuaLuu?.(soOChuaLuu); }, [soOChuaLuu, onSoOChuaLuu]);
   const [xemBang, setXemBang] = useState(false);
+  const [caLop, setCaLop] = useState(false);
+  const cotHien = chiCot?.length && !caLop ? chiCot : null;
   const laFt = data.mode === 'ielts_band';
 
+  /* "Cả lớp" (chỉ có khi mở từ việc) mở cả mọi em của lượt, không chỉ em của việc. */
+  const locLuot = caLop ? null : chiAttempt;
   const ft = useMemo<FtSheet | null>(
-    () => (data.ft && chiAttempt ? { ...data.ft, rows: data.ft.rows.filter((r) => chiAttempt.has(r.attemptId)) } : data.ft),
-    [data.ft, chiAttempt],
+    () => (data.ft && locLuot ? { ...data.ft, rows: data.ft.rows.filter((r) => locLuot.has(r.attemptId)) } : data.ft),
+    [data.ft, locLuot],
   );
   const thuong = useMemo<ThuongSheet | null>(() => {
     const t = thuongTheoBai(data.thuong, kind);
-    return t && chiAttempt ? { ...t, rows: t.rows.filter((r) => chiAttempt.has(r.attemptId)) } : t;
-  }, [data.thuong, kind, chiAttempt]);
+    const loc = t && locLuot ? { ...t, rows: t.rows.filter((r) => locLuot.has(r.attemptId)) } : t;
+    /* Cột của việc: lưới lớp thường vẽ cột theo `programme.skills` — bớt môn ở đó (kết quả vẫn của máy chủ). */
+    return loc && cotHien ? { ...loc, programme: { ...loc.programme, skills: loc.programme.skills.filter((k) => cotHien.includes(k)) } } : loc;
+  }, [data.thuong, kind, locLuot, cotHien]);
 
   /* Cuộn tới ô cần chấm MỘT LẦN cho mỗi ngữ cảnh mở lưới. `data-trong` chỉ gắn cho ô còn trống VÀ mình được sửa. */
   const khung = useRef<HTMLDivElement>(null);
@@ -139,7 +149,7 @@ export function LuoiChamLop({
     <>
       {tungKyNang && laFt && ft && <MotKyNang mode="ielts_band" data={ft} onReload={onReload} kn={kn} hv={hv} hangMo={hangMo} tuanDangXem={tuanDangXem} />}
       {tungKyNang && !laFt && thuong && <MotKyNang mode="ratio" data={thuong} onReload={onReload} kn={kn} hv={hv} anNutTao={anNutTao} tuanDangXem={tuanDangXem} />}
-      {!tungKyNang && laFt && ft && <LuoiFT data={ft} onReload={onReload} kn={kn} hv={hv} gon={gon} tuanDangXem={tuanDangXem} hangMo={hangMo} />}
+      {!tungKyNang && laFt && ft && <LuoiFT data={ft} onReload={onReload} kn={kn} hv={hv} gon={gon} tuanDangXem={tuanDangXem} hangMo={hangMo} chiCot={cotHien} />}
       {!tungKyNang && !laFt && thuong && <LuoiThuong data={thuong} onReload={onReload} kn={kn} hv={hv} tuanDangXem={tuanDangXem} anNutTao={anNutTao} />}
     </>
   );
@@ -147,9 +157,14 @@ export function LuoiChamLop({
   return (
     <BaoLuuContext.Provider value={bao}>
     <div ref={khung}>
-      {(hep || thanhTren) && (
+      {(hep || thanhTren || (nutCaLop && !!chiCot?.length)) && (
         <div className="flex items-center justify-end gap-3">
           {thanhTren}
+          {nutCaLop && !!chiCot?.length && !tungKyNang && (
+            <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" aria-pressed={caLop} onClick={() => setCaLop((v) => !v)}>
+              {t('Cả lớp')}
+            </button>
+          )}
           {hep && (
             <button type="button" className="min-h-[44px] px-1 text-xs text-slate-500 hover:text-slate-200"
               onClick={() => setXemBang((v) => !v)}
