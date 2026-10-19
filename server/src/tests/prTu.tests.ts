@@ -10,6 +10,7 @@ export async function runPrTuTests(t: any) {
   const { check, assert, conn, P } = t;
   const d: any = await import('../../../shared/domain/index.ts');
   const mTu: any = await import('../migrate/prTu.ts');
+  const mTub: any = await import('../migrate/prTub.ts');
   console.log('\nTU-a · Tutor: migrate · vai Head tutor · luật buổi tutor');
 
   const all = (sql: string, ...a: unknown[]) => conn.prepare(sql).all(...a) as any[];
@@ -30,8 +31,10 @@ export async function runPrTuTests(t: any) {
       INSERT INTO case_followups (id) VALUES (1); INSERT INTO case_followup_buoi (followup_id, buoi_so, tutor_ten, nhan_xet) VALUES (1, 1, 'Ms Mai', 'Nghe số');`);
     const ap: string[] = [];
     mTu.migratePrTu(tam, ap);
+    mTub.migratePrTub(tam, ap);   // TU-b: chỉ mục một phần nhóm chú ý (sau TU-a, như migrate.ts)
     mTu.migratePrTu(tam, ap);
-    assert(ap.length === 1, JSON.stringify(ap));
+    mTub.migratePrTub(tam, ap);
+    assert(ap.length === 2, JSON.stringify(ap));
     const cot = (c: any, ten: string) => c.prepare('SELECT name, type, "notnull" AS nn, dflt_value AS dv FROM pragma_table_info(?)').all(ten)
       .map((x: any) => `${x.name}:${x.type}:${x.nn}:${x.dv}`).join(',');
     for (const b of ['tutors', 'tutor_nhan_xet', 'case_followup_buoi']) assert(cot(tam, b) === cot(conn, b), `${b}: ${cot(tam, b)} ≠ ${cot(conn, b)}`);
@@ -39,7 +42,7 @@ export async function runPrTuTests(t: any) {
     for (const b of ['tutors', 'tutor_nhan_xet', 'case_followup_buoi']) assert(fk(tam, b) === fk(conn, b), `FK ${b}: ${fk(tam, b)} ≠ ${fk(conn, b)}`);
     const cm = (c: any) => c.prepare(`SELECT name FROM sqlite_master WHERE type = 'index' AND name NOT LIKE 'sqlite_%' AND tbl_name IN ('tutors','tutor_nhan_xet','case_followup_buoi') ORDER BY name`)
       .all().map((x: any) => x.name).join(',');
-    assert(cm(tam) === cm(conn) && cm(conn) === 'idx_followup_buoi_tutor,idx_tutor_nhan_xet,idx_tutors_sdt', `${cm(tam)} | ${cm(conn)}`);
+    assert(cm(tam) === cm(conn) && cm(conn) === 'idx_followup_buoi_chu_y,idx_followup_buoi_tutor,idx_tutor_nhan_xet,idx_tutors_sdt', `${cm(tam)} | ${cm(conn)}`);
     const dong = tam.prepare('SELECT tutor_ten, chuan_bi, ghi_luc FROM case_followup_buoi').get() as any;
     assert(dong.tutor_ten === 'Ms Mai' && dong.chuan_bi === null && dong.ghi_luc === null, `dòng cũ giữ, cột mới NULL: ${JSON.stringify(dong)}`);
     const q = tam.prepare(`SELECT group_concat(p.key) k FROM role_permissions rp JOIN roles r ON r.id = rp.role_id JOIN permissions p ON p.id = rp.permission_id WHERE r.key = 'head_tutor'`).get() as any;

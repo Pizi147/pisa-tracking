@@ -375,7 +375,8 @@ export async function runPrDeployTests(t: YThucTestKit) {
     const a = thieu('mot-mach.sqlite'), b = thieu('dut-giua.sqlite');
     const da = migrateTurso(a);
     /* TU-a: bảng buổi OV-12h dựng lại thiếu 9 cột TU-a → thêm bước TU-a. */
-    assert(da.length === 4, `một mạch phải làm đúng 4 bước: ${JSON.stringify(da)}`);
+    /* TU-b: thêm bước chỉ mục buổi tutor cần chú ý (prTub). */
+    assert(da.length === 5, `một mạch phải làm đúng 5 bước: ${JSON.stringify(da)}`);
     let loi = '';
     try { migrateTurso(b, 70); } catch (e: any) { loi = String(e.message); }
     assert(loi.includes('Giả lập đứt kết nối sau bước 70'), `không đứt đúng bước 70: ${loi.slice(-200)}`);

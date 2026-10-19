@@ -141,7 +141,7 @@ export function bangTutor(p: Principal, k: Khoang) {
   const cn = docChiNhanh(conn);
   const chuY = canChuY(conn, branchIds);
   const dong = docTutors(conn)
-    .filter((r) => !branchIds || so.has(r.id) || chuY.has(r.id) || branchIds.includes(r.noi_day_branch_id))   // chuY: Cần chú ý tính mọi thời gian
+    .filter((r) => !branchIds || so.has(r.id) || chuY.has(r.id) || branchIds.includes(r.noi_day_branch_id))   // chuY: nhóm chú ý tính mọi thời gian
     .map((r) => thanhDong(r, cn, so.get(r.id) ?? SO_RONG, chuY.get(r.id), sua))
     .sort((a, b) => a.ten.localeCompare(b.ten, 'vi'));
   let goTay: { soTen: number; soBuoi: number } | null = null;

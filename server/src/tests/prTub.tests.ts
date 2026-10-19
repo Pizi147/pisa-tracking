@@ -301,7 +301,7 @@ export async function runPrTubTests(t: any) {
   check('TUB-7 · canChuY đọc qua chỉ mục một phần idx_followup_buoi_chu_y (không SCAN bảng buổi) — toàn hệ thống, QL một chi nhánh, một tutor', () => {
     for (const [ten, c] of [['toàn hệ thống', tr.cauChuY(null)], ['QL MB', tr.cauChuY([cn('MB')])], ['một tutor', tr.cauChuY(null, 1)]] as const) {
       const ke = (all(`EXPLAIN QUERY PLAN ${c.sql}`, ...c.args) as any[]).map((x) => String(x.detail));
-      assert(!ke.some((d) => /SCAN (b|case_followup_buoi)/.test(d)) && ke.some((d) => /idx_followup_buoi_chu_y/.test(d)), `${ten}: ${ke.join(' | ')}`);
+      assert(!ke.some((d) => /SCAN (b|case_followup_buoi)\b/.test(d)) && ke.some((d) => /idx_followup_buoi_chu_y/.test(d)), `${ten}: ${ke.join(' | ')}`);
     }
   });
 }
