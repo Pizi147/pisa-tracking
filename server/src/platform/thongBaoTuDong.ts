@@ -62,7 +62,7 @@ function viecMuon(p: Principal, homNay: string): Map<string, Muon> {
   const cs = db().prepare(
     `SELECT sc.id, s.full_name AS ten, COALESCE(sc.category, sc.topic) AS mon, cy.programme_code AS ct
        FROM sos_cases sc JOIN students s ON s.id = sc.student_id LEFT JOIN learning_cycles cy ON cy.id = sc.cycle_id
-      WHERE sc.owner_user_id = ? AND sc.status != 'done'`,
+      WHERE sc.owner_user_id = ? AND sc.status != 'done' AND sc.tam = 0 AND s.archived_at IS NULL`,   /* Case thật (OV-13a), em chưa lưu trữ — như tập chỉ số */
   ).all(p.userId) as any[];
   const xl = xuLyCaseMany(cs.map((c) => c.id as number), homNay);
   for (const c of cs) {

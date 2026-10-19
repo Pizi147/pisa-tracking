@@ -58,7 +58,8 @@ export async function runPrOv15dTests(t: YThucTestKit) {
   check('OV15d-3 · Case chưa chốt PA quá hạn → người phụ trách Case (cùng luật cột Chờ duyệt ⚠ `xuLyCaseMany`), mở Case', () => {
     thu(() => {
       const { xuLyCaseMany } = sosState;
-      const mo = conn.prepare(`SELECT id, owner_user_id FROM sos_cases WHERE status != 'done' AND owner_user_id IS NOT NULL`).all() as any[];
+      const mo = conn.prepare(`SELECT sc.id, sc.owner_user_id FROM sos_cases sc JOIN students s ON s.id = sc.student_id
+        WHERE sc.status != 'done' AND sc.owner_user_id IS NOT NULL AND sc.tam = 0 AND s.archived_at IS NULL`).all() as any[];   // Case thật, em chưa lưu trữ
       const xl = xuLyCaseMany(mo.map((c) => c.id), TODAY);
       const qh = mo.filter((c) => xl.get(c.id)?.cot === 'choDuyet' && xl.get(c.id)?.quaHan);
       assert(qh.length > 0, 'dữ liệu demo: phải có Case chưa chốt PA quá hạn');

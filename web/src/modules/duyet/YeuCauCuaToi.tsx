@@ -18,7 +18,9 @@ export function YeuCauCuaToi({ gon = false }: {
   const nhan = useTheNhanManh(data?.the);
   if (gon) {
     if (!data) return null;
-    const tuChoi = data.the.filter((x) => x.trangThai === 'tu_choi');
+    /* Bị từ chối CÒN VIỆC: chưa có thẻ cùng loại, cùng em / lớp gửi sau nó (đã sửa gửi lại → hết) — gần luật `con_viec` của chuông (thông báo.ts). */
+    const tuChoi = data.the.filter((x) => x.trangThai === 'tu_choi'
+      && !data.the.some((y) => y.id > x.id && y.loai === x.loai && y.hocVienId === x.hocVienId && y.lopId === x.lopId));
     const dangCho = data.the.filter((x) => x.trangThai === 'cho').length;
     if (!tuChoi.length && !dangCho) return null;
     return (

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { useSession } from '../../lib/session.tsx';
+import { useApi } from '../../lib/useApi.ts';
 import { BranchFilter, useChiNhanhMacDinh } from '../../ui/Filters.tsx';
 import { PhanTich } from '../phanTich/PhanTich.tsx';
 import { BranchPulse } from './BranchPulse.tsx';
@@ -39,6 +40,7 @@ export default function OverviewPage({ tab: tabProp = 'tong-quan' }: { tab?: Tab
   };
   /* CHI NHÁNH ĐANG CHỌN NẰM TRÊN ĐỊA CHỈ TRANG (`cn`) — một nguồn cho cả trang, gửi đường dẫn vẫn ra đúng chi nhánh. */
   const macDinh = useChiNhanhMacDinh();
+  const soChiNhanh = useApi<unknown[]>('/ref/branches').data?.length ?? 0;
   const branchId = params.get('cn') ? Number(params.get('cn')) : macDinh;
   const setBranchId = (id: number | null) => {
     const next = new URLSearchParams(params);
@@ -107,15 +109,17 @@ export default function OverviewPage({ tab: tabProp = 'tong-quan' }: { tab?: Tab
             {/* Báo cáo = tab đầu của Phân tích (kế hoạch OV-15 mục 7) — mở thẳng. */}
             <Link to={`/phan-tich?goc=bao-cao${branchId ? `&cn=${branchId}` : ''}`} className="btn btn-sm min-h-[44px] no-underline sm:min-h-[32px]">{t('Báo cáo ›')}</Link>
           </div>
-          <DaiTomTat branchId={branchId} ct={khung} />
-          <KhoiCanQuyet branchId={branchId} />
+          {/* Hai khối việc của QL đọc `/tong-quan/quan-ly` (quyền xem việc người khác) — như Cần xử lý cũ, chỉ khi có Công việc. */}
+          {session?.nav?.work && <DaiTomTat branchId={branchId} ct={khung} />}
+          {session?.nav?.work && <KhoiCanQuyet branchId={branchId} />}
           <BranchPulse branchId={branchId} ct={khung} chuY />
           <section aria-labelledby="tuan-nay" className="space-y-3">
             <h2 id="tuan-nay" className="m-0 text-base font-semibold text-slate-100">{t('Tuần này')}</h2>
             <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-3">
               <LichSapToi branchId={branchId} ct={khung} />
               {/* Trễ chấm theo GV — số bài bấm ra đúng bài của GV đó (QL nhập tại chỗ); GV đã nhận thông báo tự động, không có Nhắc. */}
-              {session?.nav?.phanTichGv && (
+              {/* Bảng GV cần MỘT chi nhánh (máy chủ báo "Chọn một chi nhánh." khi nhiều) — Quản trị chưa chọn chi nhánh thì ẩn. */}
+              {session?.nav?.phanTichGv && (branchId !== null || soChiNhanh === 1) && (
                 <div className="card p-0">
                   <h3 className="m-0 border-b px-4 py-2.5 text-sm font-semibold text-slate-200" style={{ borderColor: 'var(--line)' }}>{t('Trễ chấm')}</h3>
                   <BangGiaoVienChiNhanh branchId={branchId} ct={khung} />

@@ -13,6 +13,7 @@ import { CreateTask, NganViecVanHanh } from '../worklist/MgmtTasksPage.tsx';
 import { HopChoDuyet } from '../duyet/HopChoDuyet.tsx';
 import { YeuCauCuaToi } from '../duyet/YeuCauCuaToi.tsx';
 import { LopToiDay } from '../worklist/LopToiDay.tsx';
+import { DaiMoiDung } from '../huongDan/DaiMoiDung.tsx';
 import { ChonPhuTrach } from './ChonPhuTrach.tsx';
 import { CongTacKhung, khungDaNho, nhoKhung, phamViCoHaiKhung, type KhungLoc } from '../../ui/CongTacKhung.tsx';
 import { KhungTaiCho, coPanelDangSua } from '../../ui/KhungPanel.tsx';
@@ -277,7 +278,8 @@ export function HoTroHocVienTab() {
   const chuaCoNguoi = (x: WorkItem) => x.ownerId === null && !x.mine && !x.owner && x.classId !== null && !x.con
     && dich(x.statusLabel) !== CHAM_CHEO && !['chot_len_ft', 'xet_lai_lo_trinh', 'ky_vong_dau_ra', 'mgmt'].includes(x.group);
   const coVanHanh = !!session?.nav?.workOps && !chiChamDiem;
-  const cuoiNhom = (key: string) => (key === 'van-hanh' && coVanHanh ? <LoiVanHanh cn={branchId} onGiao={() => setGiaoViec(true)} /> : null);
+  const coBaoCao = !!session?.nav?.workReports;
+  const cuoiNhom = (key: string) => (key === 'van-hanh' && coVanHanh ? <LoiVanHanh cn={branchId} baoCao={coBaoCao} onGiao={() => setGiaoViec(true)} /> : null);
   /* Hàng đợi GV (mockup 2 mục 2): hết việc quá hạn + hạn tuần này → "Xong hết hôm nay ✓"; việc sau tuần này vẫn ở danh sách (gập). */
   const xongHet = !!data && !data.scopeEmpty && !coLoc && !tatCaViec.some((x) => trongKhoiHomNay(x, homNay));
   const tenGvChon = typeof nguoi === 'number' ? (tenGv ?? dsGoc.find((x) => x.ownerId === nguoi)?.owner ?? t('một GV')) : null;
@@ -290,8 +292,9 @@ export function HoTroHocVienTab() {
   return (
     <div className="space-y-3">
       <div className={`space-y-2.5 ${anTrenDienThoai}`}>
+        {laGv && <DaiMoiDung />}
         {laGv ? (
-          /* GV vào thẳng Công việc (OV-15d): lời chào + tuần như Tổng quan GV cũ. */
+          /* GV vào thẳng Công việc (OV-15d): lời chào + tuần như Tổng quan GV cũ; dải "Mới dùng PISA?" theo GV sang đây. */
           <div className="flex flex-col gap-0.5">
             <h1 className="m-0 text-lg font-semibold text-slate-100">{tenChao ? t('Chào {ten}', { ten: tenChao }) : t('Công việc')}</h1>
             <span className="text-xs text-slate-500">{t('Tuần')}{' '}<b className="font-semibold tabular-nums text-slate-300">{tuanLich(homNay, homNay)}</b>{' '}{t('· hôm nay')}{' '}{ngan(homNay)}</span>
@@ -367,7 +370,7 @@ export function HoTroHocVienTab() {
             </Card>
           )}
           {coVanHanh && data && !dsNhom.some((g) => g.key === 'van-hanh') && (
-            <div className="card mt-3 px-3 py-1"><LoiVanHanh cn={branchId} onGiao={() => setGiaoViec(true)} /></div>
+            <div className="card mt-3 px-3 py-1"><LoiVanHanh cn={branchId} baoCao={coBaoCao} onGiao={() => setGiaoViec(true)} /></div>
           )}
           {laGv && data && !data.scopeEmpty && (
             <div className="mt-4 space-y-4">
@@ -415,13 +418,13 @@ export function HoTroHocVienTab() {
 }
 
 /** OV-15d: cuối nhóm "Việc quản lý" — "+ Giao việc" (hộp Giao việc sẵn có) và lối tới bảng Vận hành / Báo cáo đơn vị (màn đầy đủ). */
-function LoiVanHanh({ cn, onGiao }: { cn: number | null; onGiao: () => void }) {
+function LoiVanHanh({ cn, baoCao, onGiao }: { cn: number | null; baoCao: boolean; onGiao: () => void }) {
   const q = cn ? `?cn=${cn}` : '';
   return (
     <div className="flex flex-wrap items-center gap-x-4 gap-y-1 py-2 text-[13px]">
       <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-[28px]" onClick={onGiao}>{t('+ Giao việc')}</button>
       <Link to={`/cong-viec/van-hanh${q}`} className="link max-sm:py-3">{t('Vận hành ›')}</Link>
-      <Link to={`/cong-viec/bao-cao${q}`} className="link max-sm:py-3">{t('Báo cáo đơn vị ›')}</Link>
+      {baoCao && <Link to={`/cong-viec/bao-cao${q}`} className="link max-sm:py-3">{t('Báo cáo đơn vị ›')}</Link>}
     </div>
   );
 }
