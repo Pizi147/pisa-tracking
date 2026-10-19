@@ -652,6 +652,15 @@ textarea.field{height:auto;padding:8px 10px;min-height:56px;resize:vertical;line
 .chon-tutor .m{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .chon-tutor[aria-expanded=true]{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
 .hinh .seg button{height:34px}
+details.dg{border:1px solid var(--line);border-radius:10px}
+details.dg>summary{list-style:none;display:flex;align-items:center;gap:8px;min-height:40px;padding:0 12px;cursor:pointer;font-size:13px;font-weight:600;color:var(--muted)}
+details.dg>summary::-webkit-details-marker{display:none}
+details.dg>summary:hover{color:var(--c1)}
+details.dg>summary .mui{transition:transform .15s ease-out}
+details.dg[open]>summary .mui{transform:rotate(90deg)}
+details.dg[open]>summary{border-bottom:1px solid var(--line)}
+.dg-than{padding:10px 12px 12px;display:flex;flex-direction:column;gap:10px}
+.w375 details.dg>summary{min-height:44px}
 .truong>.seg{align-self:flex-start}
 .bang-buoi td:nth-child(2){white-space:nowrap}
 .bang-buoi td:last-child{min-width:150px}
@@ -804,10 +813,10 @@ textarea.field{height:auto;padding:8px 10px;min-height:56px;resize:vertical;line
     <dt>Đọc thế nào</dt><dd>Chữ trong khung = chữ thật trên web; ghi chú nằm ngoài khung. Màu, chữ, khung theo mockup OV-14 đã duyệt (mockup 6). Dữ liệu demo.</dd>
     <dt>Chủ SP đã chốt</dt><dd><b>Head tutor</b>: một vai đăng nhập, xem <b>toàn hệ thống</b>, quản lý danh sách tutor, ghi nhận xét + kết luận về tutor. Không ghi kết quả PA, không mở hồ sơ HV / Case / điểm.
       <b>Tutor</b>: không đăng nhập; chỉ là danh sách Tên · SĐT · Nơi dạy chính · Kỹ năng, tải từ Excel (SĐT chống trùng).
-      <b>Mỗi buổi tutor</b>: chọn tutor từ danh sách (hoặc "Tutor khác"), Online / Offline tự suy (sửa được), 3 tiêu chí Có · Không bắt buộc, sao 1–5 tuỳ chọn.
-      Trang <b>Tutor</b> trên thanh trên: Head tutor + Quản trị toàn hệ thống; QL chi nhánh mình, chỉ xem. GV không có trang.</dd>
+      <b>Mỗi buổi tutor</b>: chọn tutor từ danh sách (hoặc "Tutor khác"), Online / Offline tự suy (sửa được), 3 ô Có · Không bắt buộc (Có chuẩn bị bài · Xin tài liệu đúng hạn · Gửi feedback về HV cho GV). <b>Đánh giá tutor</b> (Đánh giá 1–5 + Nhận xét về tutor) tuỳ chọn, mặc định gập. Kết quả PA vẫn là chính — app theo dõi tiến bộ HV, đánh giá tutor là phụ.
+      Trang <b>Tutor</b> trên thanh trên: Head tutor + Quản trị toàn hệ thống; QL xem tutor có ca dạy em chi nhánh mình trong khoảng thời gian đang chọn (kể cả tutor chi nhánh khác), chỉ xem. GV không có trang.</dd>
     <dt>Planning tự quyết</dt><dd>
-      <b>Cần chú ý</b> = tutor có buổi có tiêu chí "Không" hoặc ≤ 2 sao mà Head tutor <b>chưa ghi nhận xét sau buổi đó</b> — ghi nhận xét là tutor rời nhóm. Không tạo việc, không hạn, không thông báo; số ở menu "Tutor 3".
+      <b>Cần chú ý</b> = tutor có buổi có ô "Không" hoặc Đánh giá ≤ 2/5 (nếu có đánh giá) mà Head tutor <b>chưa ghi nhận xét sau buổi đó</b> — ghi nhận xét là tutor rời nhóm. Không tạo việc, không hạn, không thông báo; số ở menu "Tutor 3".
       · Kết luận <b>Ngừng hợp tác</b> → tutor không còn trong gợi ý chọn (buổi cũ giữ nguyên).
       · Nhận xét buổi vẫn bắt buộc như hiện nay (OV-12h); không thêm ô bắt buộc nào khác ngoài 3 tiêu chí.
       · Online / Offline: tutor có Nơi dạy chính = chi nhánh lớp của em → Offline, khác / trống → Online.
@@ -818,7 +827,7 @@ textarea.field{height:auto;padding:8px 10px;min-height:56px;resize:vertical;line
   <div class="q"><b>Câu hỏi khi duyệt (trả lời ngắn được):</b>
     <ol>
       <li>Cột "Cần chú ý vì" (khung 2) — đủ rõ, hay muốn bấm vào mới thấy lý do?</li>
-      <li>Sao thấp (≤ 2) có nên tính "Cần chú ý" không, hay chỉ 3 tiêu chí "Không"?</li>
+      <li>Đánh giá thấp (≤ 2/5, khi người ghi có mở phần Đánh giá tutor) có tính "Cần chú ý" không, hay chỉ ô "Không"?</li>
       <li>Head tutor có cần thấy tên GV đã ghi buổi (cột "Người ghi", khung 3) không?</li>
     </ol>
   </div>
@@ -829,9 +838,10 @@ textarea.field{height:auto;padding:8px 10px;min-height:56px;resize:vertical;line
   <h2>1 · Ghi kết quả PA Tutor — mỗi buổi: tutor · hình thức · 3 tiêu chí · sao · nhận xét</h2>
   <dl class="ct">
     <dt>Thay</dt><dd>Ô "Tutor" gõ tự do → ô chọn tutor (gõ để tìm). Buổi 2, 3… <b>tự điền tutor của buổi trước</b>; buổi 1 tự điền <b>Người dạy</b> của PA nếu là tutor, không thì tutor của lần ghi trước.</dd>
-    <dt>Thêm</dt><dd>Offline · Online (tự chọn, bấm đổi được) · 3 tiêu chí Có · Không (bắt buộc, có "Cả 3 Có") · Sao 1–5 (tuỳ chọn, bấm lại sao đang chọn = bỏ).</dd>
+    <dt>Thêm</dt><dd>Offline · Online (tự chọn, bấm đổi được) · khối "Tutor buổi này" 3 ô Có · Không (bắt buộc, có "Cả 3 Có") · khối gập <b>Đánh giá tutor</b> (tuỳ chọn): Đánh giá 1–5 (bấm lại = bỏ) + Nhận xét về tutor.</dd>
+    <dt>Thứ tự</dt><dd>Kết quả trước: Tiến triển → Số buổi → mỗi buổi: Tutor · Nhận xét buổi (feedback tutor gửi và / hoặc GV ghi — như hiện nay) → 3 ô Có · Không → Đánh giá tutor (gập). Mở rồi đóng không mất chữ đã gõ.</dd>
     <dt>Giữ</dt><dd>Tiến triển, Số buổi kỳ này, Nhận xét buổi bắt buộc, cách lưu / nháp / Sửa kết quả / Hoàn tác như hiện nay.</dd>
-    <dt>Trạng thái vẽ</dt><dd>Buổi 1 đủ · Buổi 2 tự điền tutor, còn thiếu một tiêu chí → nút Lưu báo "1 ô còn thiếu", bấm Lưu nhảy tới ô đó.</dd>
+    <dt>Trạng thái vẽ</dt><dd>Buổi 1 đủ, Đánh giá tutor gập (mặc định) · Buổi 2 tự điền tutor, còn thiếu một ô Có · Không → "1 ô còn thiếu", bấm Lưu nhảy tới ô đó; Đánh giá tutor đã mở và có điền.</dd>
   </dl>
   <div class="row2">
     <div class="khung"><span class="nhan">1440 · panel Ghi kết quả (mở từ Công việc / Ngăn Case) — chỉ phần panel</span>
@@ -856,15 +866,19 @@ textarea.field{height:auto;padding:8px 10px;min-height:56px;resize:vertical;line
             <div class="truong"><span class="nh">Tutor<span class="bb">*</span></span><div class="chon-tutor"><b>Nguyễn Thu Lan</b><span class="m">L · R · Monbay</span><span class="sp"></span><svg class="ico f"><use href="#i-xuong"/></svg></div></div>
             <div class="truong hinh"><span class="nh">Hình thức</span><div class="seg"><button aria-pressed="true">Offline</button><button aria-pressed="false">Online</button></div></div>
           </div>
+          <div class="truong"><span class="nh">Nhận xét buổi<span class="bb">*</span></span><textarea class="field" rows="2">Chữa Section 3 dạng điền bảng; em còn sai chính tả số đếm. Tutor gửi: em cần luyện nghe số 15 / 50.</textarea></div>
           <div class="tcs">
-            <div class="tcs-dau"><span>Đánh giá tutor<span class="bb">*</span></span><span class="sp"></span><button class="btn btn-ghost btn-sm">Cả 3 Có</button></div>
+            <div class="tcs-dau"><span>Tutor buổi này<span class="bb">*</span></span><span class="sp"></span><button class="btn btn-ghost btn-sm">Cả 3 Có</button></div>
             <div class="tc"><span class="ten-tc">Có chuẩn bị bài</span><span class="yn"><button class="co" aria-pressed="true"><svg class="ico"><use href="#i-dat"/></svg>Có</button><button class="khong" aria-pressed="false"><svg class="ico"><use href="#i-chua"/></svg>Không</button></span></div>
             <div class="tc"><span class="ten-tc">Xin tài liệu đúng hạn</span><span class="yn"><button class="co" aria-pressed="true"><svg class="ico"><use href="#i-dat"/></svg>Có</button><button class="khong" aria-pressed="false"><svg class="ico"><use href="#i-chua"/></svg>Không</button></span></div>
-            <div class="tc"><span class="ten-tc">Có feedback cho HV</span><span class="yn"><button class="co" aria-pressed="true"><svg class="ico"><use href="#i-dat"/></svg>Có</button><button class="khong" aria-pressed="false"><svg class="ico"><use href="#i-chua"/></svg>Không</button></span></div>
+            <div class="tc"><span class="ten-tc">Gửi feedback về HV cho GV</span><span class="yn"><button class="co" aria-pressed="true"><svg class="ico"><use href="#i-dat"/></svg>Có</button><button class="khong" aria-pressed="false"><svg class="ico"><use href="#i-chua"/></svg>Không</button></span></div>
           </div>
-          <div class="truong"><span class="nh">Sao<span class="tuy">tuỳ chọn</span></span>
-            <span class="sao" role="radiogroup" aria-label="Sao"><button class="on" aria-label="1 sao"><svg class="ico"><use href="#i-sao"/></svg></button><button class="on" aria-label="2 sao"><svg class="ico"><use href="#i-sao"/></svg></button><button class="on" aria-label="3 sao"><svg class="ico"><use href="#i-sao"/></svg></button><button class="on" aria-label="4 sao" aria-checked="true"><svg class="ico"><use href="#i-sao"/></svg></button><button aria-label="5 sao"><svg class="ico"><use href="#i-sao"/></svg></button><span class="m" style="margin-left:8px">4/5</span></span></div>
-          <div class="truong"><span class="nh">Nhận xét buổi<span class="bb">*</span></span><textarea class="field" rows="2">Chữa Section 3 dạng điền bảng; em còn sai chính tả số đếm.</textarea></div>
+          <details class="dg"><summary><svg class="ico s mui"><use href="#i-phai"/></svg>Đánh giá tutor<span class="tuy">tuỳ chọn</span></summary>
+            <div class="dg-than">
+              <div class="truong"><span class="nh">Đánh giá</span><span class="sao"><button aria-label="1/5"><svg class="ico"><use href="#i-sao"/></svg></button><button aria-label="2/5"><svg class="ico"><use href="#i-sao"/></svg></button><button aria-label="3/5"><svg class="ico"><use href="#i-sao"/></svg></button><button aria-label="4/5"><svg class="ico"><use href="#i-sao"/></svg></button><button aria-label="5/5"><svg class="ico"><use href="#i-sao"/></svg></button></span></div>
+              <div class="truong"><span class="nh">Nhận xét về tutor</span><textarea class="field" rows="2" placeholder=""></textarea></div>
+            </div>
+          </details>
         </div>
 
         <div class="buoi">
@@ -873,15 +887,19 @@ textarea.field{height:auto;padding:8px 10px;min-height:56px;resize:vertical;line
             <div class="truong"><span class="nh">Tutor<span class="bb">*</span></span><div class="chon-tutor"><b>Nguyễn Thu Lan</b><span class="m">L · R · Monbay</span><span class="sp"></span><svg class="ico f"><use href="#i-xuong"/></svg></div></div>
             <div class="truong hinh"><span class="nh">Hình thức</span><div class="seg"><button aria-pressed="false">Offline</button><button aria-pressed="true">Online</button></div></div>
           </div>
+          <div class="truong"><span class="nh">Nhận xét buổi<span class="bb">*</span></span><textarea class="field" rows="2">Luyện Reading TFNG online; em làm đúng 9/13, còn nhầm Not Given.</textarea></div>
           <div class="tcs">
-            <div class="tcs-dau"><span>Đánh giá tutor<span class="bb">*</span></span><span class="sp"></span><button class="btn btn-ghost btn-sm">Cả 3 Có</button></div>
+            <div class="tcs-dau"><span>Tutor buổi này<span class="bb">*</span></span><span class="sp"></span><button class="btn btn-ghost btn-sm">Cả 3 Có</button></div>
             <div class="tc"><span class="ten-tc">Có chuẩn bị bài</span><span class="yn"><button class="co" aria-pressed="true"><svg class="ico"><use href="#i-dat"/></svg>Có</button><button class="khong" aria-pressed="false"><svg class="ico"><use href="#i-chua"/></svg>Không</button></span></div>
             <div class="tc"><span class="ten-tc">Xin tài liệu đúng hạn</span><span class="yn"><button class="co" aria-pressed="false"><svg class="ico"><use href="#i-dat"/></svg>Có</button><button class="khong" aria-pressed="true"><svg class="ico"><use href="#i-chua"/></svg>Không</button></span></div>
-            <div class="tc"><span class="ten-tc">Có feedback cho HV <span class="loi-o"><svg class="ico s"><use href="#i-loi"/></svg>Chọn Có hoặc Không</span></span><span class="yn thieu"><button class="co" aria-pressed="false"><svg class="ico"><use href="#i-dat"/></svg>Có</button><button class="khong" aria-pressed="false"><svg class="ico"><use href="#i-chua"/></svg>Không</button></span></div>
+            <div class="tc"><span class="ten-tc">Gửi feedback về HV cho GV <span class="loi-o"><svg class="ico s"><use href="#i-loi"/></svg>Chọn Có hoặc Không</span></span><span class="yn thieu"><button class="co" aria-pressed="false"><svg class="ico"><use href="#i-dat"/></svg>Có</button><button class="khong" aria-pressed="false"><svg class="ico"><use href="#i-chua"/></svg>Không</button></span></div>
           </div>
-          <div class="truong"><span class="nh">Sao<span class="tuy">tuỳ chọn</span></span>
-            <span class="sao"><button aria-label="1 sao"><svg class="ico"><use href="#i-sao"/></svg></button><button aria-label="2 sao"><svg class="ico"><use href="#i-sao"/></svg></button><button aria-label="3 sao"><svg class="ico"><use href="#i-sao"/></svg></button><button aria-label="4 sao"><svg class="ico"><use href="#i-sao"/></svg></button><button aria-label="5 sao"><svg class="ico"><use href="#i-sao"/></svg></button></span></div>
-          <div class="truong"><span class="nh">Nhận xét buổi<span class="bb">*</span></span><textarea class="field" rows="2">Luyện Reading TFNG online, em vào muộn 10 phút.</textarea></div>
+          <details class="dg" open><summary><svg class="ico s mui"><use href="#i-phai"/></svg>Đánh giá tutor<span class="tuy">tuỳ chọn</span></summary>
+            <div class="dg-than">
+              <div class="truong"><span class="nh">Đánh giá</span><span class="sao"><button class="on" aria-label="1/5"><svg class="ico"><use href="#i-sao"/></svg></button><button class="on" aria-label="2/5" aria-checked="true"><svg class="ico"><use href="#i-sao"/></svg></button><button aria-label="3/5"><svg class="ico"><use href="#i-sao"/></svg></button><button aria-label="4/5"><svg class="ico"><use href="#i-sao"/></svg></button><button aria-label="5/5"><svg class="ico"><use href="#i-sao"/></svg></button><span class="m" style="margin-left:8px">2/5</span></span></div>
+              <div class="truong"><span class="nh">Nhận xét về tutor</span><textarea class="field" rows="2">Vào lớp online muộn 10 phút, chưa có bài đọc gửi trước.</textarea></div>
+            </div>
+          </details>
         </div>
       </div>
       <div class="pn-chan"><span class="luu dang">Nháp · chưa lưu</span><span class="sp"></span><span class="late">1 ô còn thiếu</span><button class="btn btn-primary">Lưu kết quả</button></div>
@@ -922,7 +940,7 @@ textarea.field{height:auto;padding:8px 10px;min-height:56px;resize:vertical;line
     <dt>Thanh trên Head tutor</dt><dd>Chỉ "Tutor" (+ chuông, menu tài khoản có Hướng dẫn). Số cạnh "Tutor" = số tutor Cần chú ý.</dd>
     <dt>Mặc định</dt><dd>Lọc "Cần chú ý" khi có; hết thì "Đang dạy". Thời gian 2 tuần vừa qua. Phân trang 10 / 20 / 50 như Phân tích.</dd>
     <dt>Bấm</dt><dd>Tên / hàng → panel một tutor (khung 3). Số ở 3 cột tiêu chí → cùng panel, lọc sẵn buổi "Không" của tiêu chí đó.</dd>
-    <dt>Cột</dt><dd>Tỉ lệ = số buổi "Có" / số buổi trong khoảng; dòng phụ cam = số buổi "Không". Sao = trung bình các buổi có sao (số lượt trong ngoặc phụ).</dd>
+    <dt>Cột</dt><dd>Tỉ lệ = số buổi "Có" / số buổi trong khoảng (cam khi có buổi "Không"; lý do bằng chữ ở cột cuối). Đánh giá = trung bình các buổi có đánh giá, "—" khi chưa ai đánh giá. Không ghi số đếm phụ dưới số.</dd>
   </dl>
   <div class="row2">
     <div class="khung"><span class="nhan">1440 · Head tutor Hoàng Hải · lọc Cần chú ý</span>
@@ -949,17 +967,17 @@ textarea.field{height:auto;padding:8px 10px;min-height:56px;resize:vertical;line
         <div class="dai-gop"><svg class="ico f"><use href="#i-nguoi"/></svg><span><b>3 tên gõ tay</b> chưa có trong danh sách · 5 buổi</span><span class="sp"></span><button class="btn btn-sm">Gộp…</button></div>
         <div class="cuon">
           <table class="bang">
-            <thead><tr><th>Tutor</th><th>Nơi dạy</th><th>Kỹ năng</th><th class="r">Buổi</th><th class="c">Chuẩn bị</th><th class="c">Tài liệu đúng hạn</th><th class="c">Feedback</th><th class="c">Sao</th><th>Kết luận</th><th>Cần chú ý vì</th></tr></thead>
+            <thead><tr><th>Tutor</th><th>Nơi dạy</th><th>Kỹ năng</th><th class="r">Buổi</th><th class="c">Chuẩn bị</th><th class="c">Tài liệu đúng hạn</th><th class="c">Feedback GV</th><th class="c">Đánh giá</th><th>Kết luận</th><th>Cần chú ý vì</th></tr></thead>
             <tbody>
-              <tr><td><a href="#m3"><b>Trần Mai Anh</b></a><span class="phu">0912 345 678</span></td><td>Cẩm Phả</td><td>R · W</td><td class="r"><button class="sb">6</button><span class="phu">Online 2</span></td>
-                <td class="c"><span class="ty">6/6</span></td><td class="c"><button class="sb"><span class="ty thap">4/6</span></button><span class="phu" style="color:var(--late);font-size:12px">2 Không</span></td><td class="c"><button class="sb"><span class="ty thap">3/6</span></button><span class="phu" style="color:var(--late);font-size:12px">3 Không</span></td>
-                <td class="c"><span class="sao-nho"><svg class="ico"><use href="#i-sao"/></svg>2.8</span><span class="phu">5 lượt</span></td><td><span class="chip kl-on">Ổn</span><span class="phu">02/10</span></td><td><span class="chu-y"><svg class="ico"><use href="#i-canh"/></svg>3 buổi không feedback</span></td></tr>
+              <tr><td><a href="#m3"><b>Trần Mai Anh</b></a><span class="phu">0912 345 678</span></td><td>Cẩm Phả</td><td>R · W</td><td class="r"><button class="sb">6</button></td>
+                <td class="c"><span class="ty">6/6</span></td><td class="c"><button class="sb"><span class="ty thap">4/6</span></button></td><td class="c"><button class="sb"><span class="ty thap">3/6</span></button></td>
+                <td class="c"><span class="sao-nho"><svg class="ico"><use href="#i-sao"/></svg>2.8</span></td><td><span class="chip kl-on">Ổn</span><span class="phu">02/10</span></td><td><span class="chu-y"><svg class="ico"><use href="#i-canh"/></svg>3 buổi không gửi feedback cho GV</span></td></tr>
               <tr><td><a href="#m3"><b>Phạm Đức Long</b></a><span class="phu">0987 112 233</span></td><td>Monbay</td><td>L · S</td><td class="r"><button class="sb">4</button></td>
                 <td class="c"><span class="ty">4/4</span></td><td class="c"><span class="ty">4/4</span></td><td class="c"><span class="ty">4/4</span></td>
-                <td class="c"><span class="sao-nho thap"><svg class="ico"><use href="#i-sao"/></svg>2.0</span><span class="phu">1 lượt</span></td><td><span class="f">—</span></td><td><span class="chu-y"><svg class="ico"><use href="#i-canh"/></svg>1 buổi 2 sao</span></td></tr>
-              <tr><td><a href="#m3"><b>Đặng Thu Hà</b></a><span class="phu">0903 556 778</span></td><td>Hải Dương</td><td>L · R</td><td class="r"><button class="sb">5</button><span class="phu">Online 1</span></td>
-                <td class="c"><button class="sb"><span class="ty thap">4/5</span></button><span class="phu" style="color:var(--late);font-size:12px">1 Không</span></td><td class="c"><span class="ty">5/5</span></td><td class="c"><span class="ty">5/5</span></td>
-                <td class="c"><span class="sao-nho"><svg class="ico"><use href="#i-sao"/></svg>4.5</span><span class="phu">4 lượt</span></td><td><span class="chip kl-can">Cần cải thiện</span><span class="phu">05/10</span></td><td><span class="chu-y"><svg class="ico"><use href="#i-canh"/></svg>1 buổi không chuẩn bị</span></td></tr>
+                <td class="c"><span class="sao-nho thap"><svg class="ico"><use href="#i-sao"/></svg>2.0</span></td><td><span class="f">—</span></td><td><span class="chu-y"><svg class="ico"><use href="#i-canh"/></svg>1 buổi 2 sao</span></td></tr>
+              <tr><td><a href="#m3"><b>Đặng Thu Hà</b></a><span class="phu">0903 556 778</span></td><td>Hải Dương</td><td>L · R</td><td class="r"><button class="sb">5</button></td>
+                <td class="c"><button class="sb"><span class="ty thap">4/5</span></button></td><td class="c"><span class="ty">5/5</span></td><td class="c"><span class="ty">5/5</span></td>
+                <td class="c"><span class="sao-nho"><svg class="ico"><use href="#i-sao"/></svg>4.5</span></td><td><span class="chip kl-can">Cần cải thiện</span><span class="phu">05/10</span></td><td><span class="chu-y"><svg class="ico"><use href="#i-canh"/></svg>1 buổi không chuẩn bị</span></td></tr>
             </tbody>
           </table>
           <div class="chan"><span>1–3 / 3</span><span class="sp"></span><span>10 / trang</span><svg class="ico s"><use href="#i-xuong"/></svg></div>
@@ -973,7 +991,7 @@ textarea.field{height:auto;padding:8px 10px;min-height:56px;resize:vertical;line
     <div class="win" style="width:1240px"><div class="trang">
       <div class="cuon">
         <table class="bang">
-          <thead><tr><th>Tutor</th><th>Nơi dạy</th><th>Kỹ năng</th><th class="r">Buổi</th><th class="c">Chuẩn bị</th><th class="c">Tài liệu đúng hạn</th><th class="c">Feedback</th><th class="c">Sao</th><th>Kết luận</th><th>Cần chú ý vì</th></tr></thead>
+          <thead><tr><th>Tutor</th><th>Nơi dạy</th><th>Kỹ năng</th><th class="r">Buổi</th><th class="c">Chuẩn bị</th><th class="c">Tài liệu đúng hạn</th><th class="c">Feedback GV</th><th class="c">Đánh giá</th><th>Kết luận</th><th>Cần chú ý vì</th></tr></thead>
           <tbody>
             <tr><td><a href="#m3"><b>Đặng Thu Hà</b></a><span class="phu">0903 556 778</span></td><td>Hải Dương</td><td>L · R</td><td class="r"><button class="sb">5</button></td><td class="c"><span class="ty thap">4/5</span></td><td class="c"><span class="ty">5/5</span></td><td class="c"><span class="ty">5/5</span></td><td class="c"><span class="sao-nho"><svg class="ico"><use href="#i-sao"/></svg>4.5</span></td><td><span class="chip kl-can">Cần cải thiện</span></td><td><span class="chu-y"><svg class="ico"><use href="#i-canh"/></svg>1 buổi không chuẩn bị</span></td></tr>
             <tr><td><a href="#m3"><b>Lê Hà My</b></a><span class="phu">0915 880 210</span></td><td>Bãi Cháy</td><td>W · S</td><td class="r"><button class="sb">7</button></td><td class="c"><span class="ty">7/7</span></td><td class="c"><span class="ty">7/7</span></td><td class="c"><span class="ty">7/7</span></td><td class="c"><span class="sao-nho"><svg class="ico"><use href="#i-sao"/></svg>4.8</span></td><td><span class="chip kl-on">Ổn</span></td><td></td></tr>
@@ -1009,11 +1027,11 @@ textarea.field{height:auto;padding:8px 10px;min-height:56px;resize:vertical;line
       <div style="padding:14px 18px;display:flex;flex-direction:column;gap:16px">
         <div style="display:flex;align-items:center;gap:10px"><button class="chon"><svg class="ico f"><use href="#i-lich"/></svg>2 tuần vừa qua <span class="nh">· W1–W2 OCT</span><svg class="ico s"><use href="#i-xuong"/></svg></button><span class="sp"></span><span class="chip kl-on">Ổn</span><span class="m">02/10</span></div>
         <div class="ts">
-          <button><span class="nh">Buổi</span><span class="so">6</span><span class="phu">Offline 4 · Online 2</span></button>
-          <button><span class="nh">Chuẩn bị</span><span class="so">6<span class="u">/6</span></span><span class="phu">&nbsp;</span></button>
-          <button><span class="nh">Tài liệu đúng hạn</span><span class="so thap">4<span class="u">/6</span></span><span class="phu">2 Không</span></button>
-          <button><span class="nh">Feedback</span><span class="so thap">3<span class="u">/6</span></span><span class="phu">3 Không</span></button>
-          <button><span class="nh">Sao</span><span class="so">2.8</span><span class="phu">5 lượt</span></button>
+          <button><span class="nh">Buổi</span><span class="so">6</span></button>
+          <button><span class="nh">Chuẩn bị</span><span class="so">6<span class="u">/6</span></span></button>
+          <button><span class="nh">Tài liệu đúng hạn</span><span class="so thap">4<span class="u">/6</span></span></button>
+          <button><span class="nh">Feedback GV</span><span class="so thap">3<span class="u">/6</span></span></button>
+          <button><span class="nh">Đánh giá</span><span class="so">2.8</span></button>
         </div>
 
         <div class="khoi">
@@ -1034,7 +1052,7 @@ textarea.field{height:auto;padding:8px 10px;min-height:56px;resize:vertical;line
         <div class="khoi">
           <div class="khoi-dau"><h2>Buổi dạy</h2><span class="m">6 buổi</span><span class="sp"></span><button class="loc" aria-pressed="true">Chỉ buổi chưa đạt <span class="n">3</span></button></div>
           <table class="bang bang-buoi">
-            <thead><tr><th style="padding-left:16px">Ngày</th><th>Học viên · lớp</th><th class="c">KN</th><th>Hình thức</th><th class="c">Chuẩn bị</th><th class="c">Tài liệu</th><th class="c">Feedback</th><th class="c">Sao</th><th>Nhận xét buổi</th></tr></thead>
+            <thead><tr><th style="padding-left:16px">Ngày</th><th>Học viên · lớp</th><th class="c">KN</th><th>Hình thức</th><th class="c">Chuẩn bị</th><th class="c">Tài liệu</th><th class="c">Feedback GV</th><th class="c">Đánh giá</th><th>Nhận xét buổi</th></tr></thead>
             <tbody>
               <tr><td style="padding-left:16px">16/10</td><td><b>Phan Gia Bảo</b><span class="phu">CP FT 116 · ghi: Hoàng Dũng</span></td><td class="c">W</td><td>Online</td><td class="c"><span class="kq dat chi"><svg class="ico" role="img" aria-label="Có"><use href="#i-dat"/></svg></span></td><td class="c"><span class="kq chua chi"><svg class="ico" role="img" aria-label="Không"><use href="#i-chua"/></svg></span></td><td class="c"><span class="kq chua chi"><svg class="ico" role="img" aria-label="Không"><use href="#i-chua"/></svg></span></td><td class="c"><span class="sao-nho thap"><svg class="ico"><use href="#i-sao"/></svg>2</span></td><td>Chữa Task 2 chung chung, chưa gửi bài sửa cho em.</td></tr>
               <tr><td style="padding-left:16px">13/10</td><td><b>Kiều Thu Trang</b><span class="phu">CP FT 116 · ghi: Hoàng Dũng</span></td><td class="c">R</td><td>Offline</td><td class="c"><span class="kq dat chi"><svg class="ico" role="img" aria-label="Có"><use href="#i-dat"/></svg></span></td><td class="c"><span class="kq dat chi"><svg class="ico" role="img" aria-label="Có"><use href="#i-dat"/></svg></span></td><td class="c"><span class="kq chua chi"><svg class="ico" role="img" aria-label="Không"><use href="#i-chua"/></svg></span></td><td class="c"><span class="sao-nho"><svg class="ico"><use href="#i-sao"/></svg>3</span></td><td>Luyện Matching Headings, em làm kịp giờ.</td></tr>
@@ -1119,7 +1137,7 @@ textarea.field{height:auto;padding:8px 10px;min-height:56px;resize:vertical;line
 <section class="sec" id="m6">
   <h2>6 · Quản lý xem Tutor — chi nhánh mình, chỉ xem</h2>
   <dl class="ct">
-    <dt>Khác Head tutor</dt><dd>"Tutor" là mục cuối thanh trên (sau Phân tích), không số. Nơi dạy cố định chi nhánh QL; thấy cả tutor chi nhánh khác đã dạy em chi nhánh mình (Online). Không nút Thêm / Tải danh sách / Gộp; panel không có ô Nhận xét (chỉ đọc dòng thời gian).</dd>
+    <dt>Khác Head tutor</dt><dd>"Tutor" là mục cuối thanh trên (sau Phân tích), không số. Danh sách = tutor có <b>ca dạy em chi nhánh QL trong khoảng thời gian đang chọn</b> — kể cả tutor có nơi dạy chính ở chi nhánh khác; số buổi / tỉ lệ chỉ tính các ca đó. "Tất cả" thêm tutor có nơi dạy chính là chi nhánh QL mà chưa có ca trong khoảng. Không nút Thêm / Tải danh sách / Gộp; panel không có ô Nhận xét (chỉ đọc dòng thời gian).</dd>
     <dt>Quản trị</dt><dd>Như Head tutor (toàn hệ thống, sửa được).</dd>
   </dl>
   <div class="row2">
@@ -1140,11 +1158,11 @@ textarea.field{height:auto;padding:8px 10px;min-height:56px;resize:vertical;line
         </div>
         <div class="cuon">
           <table class="bang">
-            <thead><tr><th>Tutor</th><th>Nơi dạy</th><th>Kỹ năng</th><th class="r">Buổi</th><th class="c">Chuẩn bị</th><th class="c">Tài liệu đúng hạn</th><th class="c">Feedback</th><th class="c">Sao</th><th>Kết luận</th></tr></thead>
+            <thead><tr><th>Tutor</th><th>Nơi dạy</th><th>Kỹ năng</th><th class="r">Buổi</th><th class="c">Chuẩn bị</th><th class="c">Tài liệu đúng hạn</th><th class="c">Feedback GV</th><th class="c">Đánh giá</th><th>Kết luận</th></tr></thead>
             <tbody>
               <tr><td><a href="#m6"><b>Nguyễn Thu Lan</b></a><span class="phu">0904 221 908</span></td><td>Monbay</td><td>L · R</td><td class="r"><button class="sb">10</button></td><td class="c"><span class="ty">10/10</span></td><td class="c"><span class="ty">10/10</span></td><td class="c"><span class="ty">9/10</span></td><td class="c"><span class="sao-nho"><svg class="ico"><use href="#i-sao"/></svg>4.6</span></td><td><span class="chip kl-on">Ổn</span></td></tr>
               <tr><td><a href="#m6"><b>Phạm Đức Long</b></a><span class="phu">0987 112 233</span></td><td>Monbay</td><td>L · S</td><td class="r"><button class="sb">4</button></td><td class="c"><span class="ty">4/4</span></td><td class="c"><span class="ty">4/4</span></td><td class="c"><span class="ty">4/4</span></td><td class="c"><span class="sao-nho thap"><svg class="ico"><use href="#i-sao"/></svg>2.0</span></td><td><span class="f">—</span></td></tr>
-              <tr><td><a href="#m6"><b>Lê Hà My</b></a><span class="phu">0915 880 210</span></td><td>Bãi Cháy</td><td>W · S</td><td class="r"><button class="sb">2</button><span class="phu">Online 2</span></td><td class="c"><span class="ty">2/2</span></td><td class="c"><span class="ty">2/2</span></td><td class="c"><span class="ty">2/2</span></td><td class="c"><span class="sao-nho"><svg class="ico"><use href="#i-sao"/></svg>5.0</span></td><td><span class="chip kl-on">Ổn</span></td></tr>
+              <tr><td><a href="#m6"><b>Lê Hà My</b></a><span class="phu">0915 880 210</span></td><td>Bãi Cháy</td><td>W · S</td><td class="r"><button class="sb">2</button></td><td class="c"><span class="ty">2/2</span></td><td class="c"><span class="ty">2/2</span></td><td class="c"><span class="ty">2/2</span></td><td class="c"><span class="sao-nho"><svg class="ico"><use href="#i-sao"/></svg>5.0</span></td><td><span class="chip kl-on">Ổn</span></td></tr>
             </tbody>
           </table>
         </div>
@@ -1168,16 +1186,16 @@ textarea.field{height:auto;padding:8px 10px;min-height:56px;resize:vertical;line
         <div class="seg" style="width:100%"><button aria-pressed="true" style="flex:1;justify-content:center">Cần chú ý <span class="n">3</span></button><button aria-pressed="false" style="flex:1;justify-content:center">Đang dạy</button><button aria-pressed="false" style="flex:1;justify-content:center">Tất cả</button></div>
         <div class="muc">
           <div class="tut375"><div class="l1"><a href="#m7">Trần Mai Anh</a><span class="m">Cẩm Phả · R · W</span></div>
-            <span class="chu-y"><svg class="ico"><use href="#i-canh"/></svg>3 buổi không feedback</span>
-            <div class="ba"><div><span class="nh">Chuẩn bị</span><span class="ty">6/6</span></div><div><span class="nh">Tài liệu</span><span class="ty thap">4/6</span></div><div><span class="nh">Feedback</span><span class="ty thap">3/6</span></div></div>
+            <span class="chu-y"><svg class="ico"><use href="#i-canh"/></svg>3 buổi không gửi feedback cho GV</span>
+            <div class="ba"><div><span class="nh">Chuẩn bị</span><span class="ty">6/6</span></div><div><span class="nh">Tài liệu</span><span class="ty thap">4/6</span></div><div><span class="nh">Feedback GV</span><span class="ty thap">3/6</span></div></div>
             <div class="l1"><span class="m">6 buổi</span><span class="sao-nho"><svg class="ico"><use href="#i-sao"/></svg>2.8</span><span class="sp"></span><span class="chip kl-on">Ổn</span></div></div>
           <div class="tut375"><div class="l1"><a href="#m7">Phạm Đức Long</a><span class="m">Monbay · L · S</span></div>
             <span class="chu-y"><svg class="ico"><use href="#i-canh"/></svg>1 buổi 2 sao</span>
-            <div class="ba"><div><span class="nh">Chuẩn bị</span><span class="ty">4/4</span></div><div><span class="nh">Tài liệu</span><span class="ty">4/4</span></div><div><span class="nh">Feedback</span><span class="ty">4/4</span></div></div>
+            <div class="ba"><div><span class="nh">Chuẩn bị</span><span class="ty">4/4</span></div><div><span class="nh">Tài liệu</span><span class="ty">4/4</span></div><div><span class="nh">Feedback GV</span><span class="ty">4/4</span></div></div>
             <div class="l1"><span class="m">4 buổi</span><span class="sao-nho thap"><svg class="ico"><use href="#i-sao"/></svg>2.0</span></div></div>
           <div class="tut375"><div class="l1"><a href="#m7">Đặng Thu Hà</a><span class="m">Hải Dương · L · R</span></div>
             <span class="chu-y"><svg class="ico"><use href="#i-canh"/></svg>1 buổi không chuẩn bị</span>
-            <div class="ba"><div><span class="nh">Chuẩn bị</span><span class="ty thap">4/5</span></div><div><span class="nh">Tài liệu</span><span class="ty">5/5</span></div><div><span class="nh">Feedback</span><span class="ty">5/5</span></div></div>
+            <div class="ba"><div><span class="nh">Chuẩn bị</span><span class="ty thap">4/5</span></div><div><span class="nh">Tài liệu</span><span class="ty">5/5</span></div><div><span class="nh">Feedback GV</span><span class="ty">5/5</span></div></div>
             <div class="l1"><span class="m">5 buổi</span><span class="sao-nho"><svg class="ico"><use href="#i-sao"/></svg>4.5</span><span class="sp"></span><span class="chip kl-can">Cần cải thiện</span></div></div>
         </div>
       </div>
@@ -1189,10 +1207,10 @@ textarea.field{height:auto;padding:8px 10px;min-height:56px;resize:vertical;line
         <div class="sheet-dau" style="display:flex;gap:8px;align-items:flex-start"><div class="sp"><h3>Trần Mai Anh</h3><span class="m">0912 345 678 · Cẩm Phả · R · W</span></div><button class="ib" aria-label="Đóng"><svg class="ico"><use href="#i-x"/></svg></button></div>
         <div class="sheet-than">
           <div class="ts" style="grid-template-columns:repeat(2,minmax(0,1fr))">
-            <button><span class="nh">Buổi</span><span class="so">6</span><span class="phu">Online 2</span></button>
-            <button><span class="nh">Sao</span><span class="so">2.8</span><span class="phu">5 lượt</span></button>
+            <button><span class="nh">Buổi</span><span class="so">6</span></button>
+            <button><span class="nh">Đánh giá</span><span class="so">2.8</span></button>
             <button><span class="nh">Tài liệu đúng hạn</span><span class="so thap">4<span class="u">/6</span></span></button>
-            <button><span class="nh">Feedback</span><span class="so thap">3<span class="u">/6</span></span></button>
+            <button><span class="nh">Feedback GV</span><span class="so thap">3<span class="u">/6</span></span></button>
           </div>
           <div class="truong"><span class="nh">Kết luận<span class="bb">*</span></span><div class="seg" style="width:100%"><button aria-pressed="false" style="flex:1;justify-content:center">Ổn</button><button aria-pressed="true" style="flex:1;justify-content:center">Cần cải thiện</button><button aria-pressed="false" style="flex:1;justify-content:center">Ngừng</button></div></div>
           <div class="truong"><span class="nh">Nhận xét<span class="bb">*</span></span><textarea class="field" rows="3">Đã gọi nhắc: gửi feedback cho HV sau mỗi buổi.</textarea></div>
@@ -1201,21 +1219,25 @@ textarea.field{height:auto;padding:8px 10px;min-height:56px;resize:vertical;line
       </div>
     </div></div>
 
-    <div class="khung"><span class="nhan">375 · Ghi kết quả — một buổi</span>
+    <div class="khung"><span class="nhan">375 · Ghi kết quả — một buổi (Đánh giá tutor đang gập)</span>
     <div class="win w375"><div class="sheet" style="border-radius:0">
       <div class="sheet-dau"><h3>Buổi 2</h3></div>
       <div class="sheet-than">
         <div class="truong"><span class="nh">Tutor<span class="bb">*</span></span><div class="chon-tutor"><b>Nguyễn Thu Lan</b><span class="m">L · R · Monbay</span><span class="sp"></span><svg class="ico f"><use href="#i-xuong"/></svg></div></div>
         <div class="seg" style="width:100%"><button aria-pressed="false" style="flex:1;justify-content:center">Offline</button><button aria-pressed="true" style="flex:1;justify-content:center">Online</button></div>
+        <div class="truong"><span class="nh">Nhận xét buổi<span class="bb">*</span></span><textarea class="field" rows="3">Luyện Reading TFNG online; em làm đúng 9/13, còn nhầm Not Given.</textarea></div>
         <div class="tcs">
-          <div class="tcs-dau"><span>Đánh giá tutor<span class="bb">*</span></span><span class="sp"></span><button class="btn btn-ghost btn-sm">Cả 3 Có</button></div>
+          <div class="tcs-dau"><span>Tutor buổi này<span class="bb">*</span></span><span class="sp"></span><button class="btn btn-ghost btn-sm">Cả 3 Có</button></div>
           <span class="ten-tc">Có chuẩn bị bài</span><span class="yn"><button class="co" aria-pressed="true"><svg class="ico"><use href="#i-dat"/></svg>Có</button><button class="khong" aria-pressed="false"><svg class="ico"><use href="#i-chua"/></svg>Không</button></span>
           <span class="ten-tc" style="margin-top:8px">Xin tài liệu đúng hạn</span><span class="yn"><button class="co" aria-pressed="false"><svg class="ico"><use href="#i-dat"/></svg>Có</button><button class="khong" aria-pressed="true"><svg class="ico"><use href="#i-chua"/></svg>Không</button></span>
-          <span class="ten-tc" style="margin-top:8px">Có feedback cho HV</span><span class="yn thieu"><button class="co" aria-pressed="false"><svg class="ico"><use href="#i-dat"/></svg>Có</button><button class="khong" aria-pressed="false"><svg class="ico"><use href="#i-chua"/></svg>Không</button></span>
-          <span class="loi-o"><svg class="ico s"><use href="#i-loi"/></svg>Chọn Có hoặc Không</span>
+          <span class="ten-tc" style="margin-top:8px">Gửi feedback về HV cho GV</span><span class="yn"><button class="co" aria-pressed="true"><svg class="ico"><use href="#i-dat"/></svg>Có</button><button class="khong" aria-pressed="false"><svg class="ico"><use href="#i-chua"/></svg>Không</button></span>
         </div>
-        <div class="truong"><span class="nh">Sao<span class="tuy">tuỳ chọn</span></span><span class="sao"><button><svg class="ico"><use href="#i-sao"/></svg></button><button><svg class="ico"><use href="#i-sao"/></svg></button><button><svg class="ico"><use href="#i-sao"/></svg></button><button><svg class="ico"><use href="#i-sao"/></svg></button><button><svg class="ico"><use href="#i-sao"/></svg></button></span></div>
-        <div class="truong"><span class="nh">Nhận xét buổi<span class="bb">*</span></span><textarea class="field" rows="2">Luyện Reading TFNG online, em vào muộn 10 phút.</textarea></div>
+        <details class="dg"><summary><svg class="ico s mui"><use href="#i-phai"/></svg>Đánh giá tutor<span class="tuy">tuỳ chọn</span></summary>
+          <div class="dg-than">
+            <div class="truong"><span class="nh">Đánh giá</span><span class="sao"><button aria-label="1/5"><svg class="ico"><use href="#i-sao"/></svg></button><button aria-label="2/5"><svg class="ico"><use href="#i-sao"/></svg></button><button aria-label="3/5"><svg class="ico"><use href="#i-sao"/></svg></button><button aria-label="4/5"><svg class="ico"><use href="#i-sao"/></svg></button><button aria-label="5/5"><svg class="ico"><use href="#i-sao"/></svg></button></span></div>
+            <div class="truong"><span class="nh">Nhận xét về tutor</span><textarea class="field" rows="2"></textarea></div>
+          </div>
+        </details>
       </div>
     </div></div></div>
   </div>
@@ -1235,9 +1257,9 @@ textarea.field{height:auto;padding:8px 10px;min-height:56px;resize:vertical;line
     <div class="win" style="width:720px;padding:16px;background:var(--surface)">
       <div style="display:flex;gap:10px;align-items:baseline;font-size:13px;margin-bottom:10px"><b style="color:var(--c1)">Kết quả PA · W1–W2 OCT</b><span class="m">Tiến bộ một phần · 2 buổi · Nguyễn Hoàng Dũng · 16/10</span></div>
       <div class="ls-buoi">
-        <div class="l1"><b>Buổi 1 · Nguyễn Thu Lan</b><span class="chip xam">Offline</span><span class="dau3"><span class="kq dat"><svg class="ico"><use href="#i-dat"/></svg>Chuẩn bị</span><span class="kq dat"><svg class="ico"><use href="#i-dat"/></svg>Tài liệu</span><span class="kq dat"><svg class="ico"><use href="#i-dat"/></svg>Feedback</span></span><span class="sao-nho"><svg class="ico"><use href="#i-sao"/></svg>4</span></div>
+        <div class="l1"><b>Buổi 1 · Nguyễn Thu Lan</b><span class="chip xam">Offline</span><span class="dau3"><span class="kq dat"><svg class="ico"><use href="#i-dat"/></svg>Chuẩn bị</span><span class="kq dat"><svg class="ico"><use href="#i-dat"/></svg>Tài liệu</span><span class="kq dat"><svg class="ico"><use href="#i-dat"/></svg>Feedback GV</span></span><span class="sao-nho"><svg class="ico"><use href="#i-sao"/></svg>4</span></div>
         <span>Chữa Section 3 dạng điền bảng; em còn sai chính tả số đếm.</span>
-        <div class="l1" style="margin-top:8px"><b>Buổi 2 · Nguyễn Thu Lan</b><span class="chip xam">Online</span><span class="dau3"><span class="kq dat"><svg class="ico"><use href="#i-dat"/></svg>Chuẩn bị</span><span class="kq chua"><svg class="ico"><use href="#i-chua"/></svg>Tài liệu</span><span class="kq dat"><svg class="ico"><use href="#i-dat"/></svg>Feedback</span></span></div>
+        <div class="l1" style="margin-top:8px"><b>Buổi 2 · Nguyễn Thu Lan</b><span class="chip xam">Online</span><span class="dau3"><span class="kq dat"><svg class="ico"><use href="#i-dat"/></svg>Chuẩn bị</span><span class="kq chua"><svg class="ico"><use href="#i-chua"/></svg>Tài liệu</span><span class="kq dat"><svg class="ico"><use href="#i-dat"/></svg>Feedback GV</span></span></div>
         <span>Luyện Reading TFNG online, em vào muộn 10 phút.</span>
       </div>
     </div></div>
