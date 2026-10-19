@@ -59,6 +59,7 @@ export function TimKeHoach({ branchId, value, onChange, onChonLop, onChonHv, cla
       <div className="relative">
         <input className="field w-full pr-8" value={value} placeholder={t('Tìm lớp, học viên hoặc email…')} aria-label={t('Tìm lớp, học viên hoặc email')}
           role="combobox" aria-expanded={mo && !!q} aria-controls="tim-kht-goi-y" aria-autocomplete="list"
+          aria-activedescendant={mo && ds[dong] ? `tim-kht-${dong}` : undefined}
           onChange={(e) => { onChange(e.target.value); setMo(true); }} onFocus={() => setMo(true)} onKeyDown={onKey} />
         {value && (
           <button type="button" aria-label={t('Xoá chữ tìm')} title={t('Xoá')}
@@ -78,7 +79,7 @@ export function TimKeHoach({ branchId, value, onChange, onChonLop, onChonHv, cla
                     <div className={nhom}>{t('Lớp')}{r.lop.length ? ` · ${r.lop.length}` : ''}</div>
                     {!r.lop.length && <div className="px-2 pb-1 text-xs text-slate-500">{t('Không có lớp khớp “{q}”', { q })}</div>}
                     {r.lop.map((l, i) => (
-                      <div key={`l${l.id}`} role="option" aria-selected={i === dong} className={dongCls(i)}
+                      <div key={`l${l.id}`} id={`tim-kht-${i}`} role="option" aria-selected={i === dong} className={dongCls(i)}
                         onMouseDown={(e) => { e.preventDefault(); chon({ loai: 'lop', x: l }); }} onMouseEnter={() => setDong(i)}>
                         <b className="text-slate-100">{l.code}</b>
                         <span className="truncate text-slate-400">
@@ -91,7 +92,7 @@ export function TimKeHoach({ branchId, value, onChange, onChonLop, onChonHv, cla
                     {r.hocVien.map((h, j) => {
                       const i = r.lop.length + j;
                       return (
-                        <div key={`h${h.studentId}-${h.classId}`} role="option" aria-selected={i === dong} className={dongCls(i)}
+                        <div key={`h${h.studentId}-${h.classId}`} id={`tim-kht-${i}`} role="option" aria-selected={i === dong} className={dongCls(i)}
                           onMouseDown={(e) => { e.preventDefault(); chon({ loai: 'hv', x: h }); }} onMouseEnter={() => setDong(i)}>
                           <b className="text-slate-100">{h.ten}</b>
                           <span className="truncate text-slate-400">{[h.classCode, h.email].filter(Boolean).join(' · ')}</span>

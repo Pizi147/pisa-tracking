@@ -416,7 +416,8 @@ export function HopKyNang({ anchor, tieuDe, tenHv = tieuDe.split(' · ')[0], ghi
           <p className="m-0 text-xs text-slate-400">{t('Đợt về Chưa xếp, lịch sử vẫn xem được.')}</p>
           {loiXoa && <p className="m-0 text-xs text-bad" role="alert">⚠ {loiXoa}</p>}
           <div className="flex items-center justify-end gap-2">
-            <button type="button" className="btn min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => { setHoi(false); setLoiXoa(null); }}>{t('Đóng')}</button>
+            {/* Nút Xóa ở chân vừa biến mất — đưa focus vào câu hỏi (nút an toàn), không rơi về body. */}
+            <button type="button" autoFocus className="btn min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => { setHoi(false); setLoiXoa(null); }}>{t('Đóng')}</button>
             <button type="button" className="btn btn-danger min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => void xoa()}>{busy ? t('Đang xóa…') : t('Xóa')}</button>
           </div>
         </div>
