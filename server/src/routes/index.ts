@@ -605,6 +605,50 @@ api.post('/ke-hoach-test/hang-loat', requireAuth, wrap((req) => {
   });
 }));
 
+/* OV-15c: tìm lớp / học viên / email (C18), ghi chú lịch thi (C21), xuất Kế hoạch Test 13 cột (C17) + Xuất điểm Test. */
+api.get('/ke-hoach-test/tim', requireAuth, wrap((req) =>
+  keHoachSvc.timKeHoach(principalOf(req), { q: String(req.query?.q ?? '').slice(0, 100), branchId: toInt(req.query?.branchId) })));
+
+api.post('/ke-hoach-test/ghi-chu', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  const classId = toInt(req.body?.classId);
+  if (!classId) throw badRequest('Thiếu lớp.');
+  return keHoachSvc.luuGhiChu(principalOf(req), { classId, studentId: toInt(req.body?.studentId), dot: typeof req.body?.dot === 'string' ? req.body.dot : null, noiDung: req.body?.noiDung });
+}));
+
+api.get('/ke-hoach-test/ghi-chu/lich-su', requireAuth, wrap((req) => {
+  const classId = toInt(req.query?.classId);
+  if (!classId) throw badRequest('Thiếu lớp.');
+  return keHoachSvc.lichSuGhiChu(principalOf(req), { classId, studentId: toInt(req.query?.studentId), dot: typeof req.query?.dot === 'string' ? req.query.dot : null });
+}));
+
+/** Danh sách id lớp `[1, 2]` — phần tử lạ → 400 (không bỏ qua âm thầm). */
+function dsLop(v: unknown): number[] {
+  if (v === undefined || v === null) return [];
+  if (!Array.isArray(v) || v.length > 200) throw badRequest('Danh sách lớp không hợp lệ.');
+  const ids = v.map((x) => toInt(x));
+  if (ids.some((x) => !x)) throw badRequest('Danh sách lớp không hợp lệ.');
+  return [...new Set(ids as number[])];
+}
+
+api.post('/ke-hoach-test/xuat', requireAuth, wrap((req) =>
+  keHoachSvc.xuatKeHoach(principalOf(req), { branchId: toInt(req.body?.branchId), classIds: dsLop(req.body?.classIds), xemTruoc: !!req.body?.xemTruoc })));
+
+api.post('/ke-hoach-test/xuat-diem', requireAuth, wrap((req) => {
+  const b = req.body ?? {};
+  const noiDung = b.noiDung === 'chi-diem' || b.noiDung === 'diem-nhan-xet' ? b.noiDung : null;
+  if (!noiDung) throw badRequest('Chọn Điểm + nhận xét hoặc Chỉ điểm.');
+  const mtTu = toInt(b.mtTu), mtDen = toInt(b.mtDen);
+  const coMt = b.mtTu != null || b.mtDen != null;
+  if (coMt && (!mtTu || !mtDen || mtTu < 0 || mtDen > 20 || mtTu > mtDen)) throw badRequest('Khoảng MT không hợp lệ.');
+  const coTuan = b.tuanTu != null || b.tuanDen != null;
+  if (coTuan && (!isIsoDate(b.tuanTu) || !isIsoDate(b.tuanDen) || b.tuanTu > b.tuanDen)) throw badRequest('Khoảng tuần không hợp lệ.');
+  return keHoachSvc.xuatDiemTest(principalOf(req), {
+    branchId: toInt(b.branchId), classIds: dsLop(b.classIds), noiDung, xemTruoc: !!b.xemTruoc,
+    mt: coMt ? [mtTu!, mtDen!] : null, tuan: coTuan ? [b.tuanTu, b.tuanDen] : null,
+  });
+}));
+
 api.get('/ke-hoach-test/thuong/:classId', requireAuth, wrap((req) => {
   regularSvc.quetCheckpoint(pInt(req, 'classId'));   // OV-6b2: lớp liên tục — Checkpoint kế tiếp cho em đã qua tuần thi
   return keHoachSvc.luoiThuong(principalOf(req), pInt(req, 'classId'));
@@ -852,6 +896,12 @@ api.post('/attempts/:id/skills/:skill/restore', requireAuth, wrap((req) => {
   });
 }));
 
+/** OV-15c (mục 6): kỹ năng huỷ vì vắng 2 lần → "Khôi phục → Chưa xếp" (không đặt tuần; Quản lý xếp tự do sau đó). Vai khác 403. */
+api.post('/attempts/:id/skills/:skill/khoi-phuc-chua-xep', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return absenceSvc.restoreCancelledSkill(principalOf(req), pInt(req, 'id'), String(req.params.skill), null, { reason: 'Khôi phục → Chưa xếp' });
+}));
+
 /** PR-MTa (T3): Quản lý "Xin dời" (vai khác 403) kỹ năng đã huỷ vì vắng 2 lần → thẻ Lịch thi ở Chờ duyệt `{ reason?, idempotencyKey? }`. */
 api.post('/attempts/:id/skills/:skill/xin-doi', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
@@ -902,7 +952,7 @@ api.post('/attempts/:id/deadline', requireAuth, wrap((req) => {
 
 api.post('/attempts/:id/cancel', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
-  return attemptSvc.huyLuot(principalOf(req), pInt(req, 'id'), { lyDo: typeof req.body?.reason === 'string' ? req.body.reason : null });
+  return attemptSvc.huyLuot(principalOf(req), pInt(req, 'id'), { lyDo: typeof req.body?.reason === 'string' ? req.body.reason : null, quaWeb: true });
 }));
 
 api.post('/attempts/:id/reopen', requireAuth, wrap((req) => {

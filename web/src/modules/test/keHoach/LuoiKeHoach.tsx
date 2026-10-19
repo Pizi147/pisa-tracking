@@ -4,11 +4,14 @@ import { Empty, Th } from '../../../ui/ui.tsx';
 import { duongDotTest, duongHoSoHocVien, type KyNangKH } from '@shared/domain/index.ts';
 import { OMt } from '../../../ui/OMt.tsx';
 import { useNgayNghiepVu } from '../../../ui/ngayNghiepVu.ts';
+import { fmtDateTime } from '../../../lib/format.ts';
 import { ChipDotFT, ChipKyNang } from './ChipKyNang.tsx';
 import { HopKyNang } from './HopKyNang.tsx';
 import { HopKhoiPhucMt } from './HopKhoiPhucKetQua.tsx';
+import { GhiChuTaiCho } from './GhiChuLichThi.tsx';
+import { t } from '@shared/i18n/index.ts';
 import {
-  dotCuaEm, emXongDot, nhanDot,
+  dotCuaEm, emXongDot, khoaDot, nhanDot,
   type DotChon, type HangFT, type HangThuong, type KnO, type LuoiFTData, type LuoiThuongData,
 } from './kieu.ts';
 
@@ -23,8 +26,10 @@ const RONG_TEN = 180;
  * thẻ, cột tên dính trái (G-11); trên điện thoại tự cuộn tới đợt đang tới (đợt nhỏ nhất còn em chưa xong). Ô FT: chưa có đợt = `OMt` (`MT3 · chưa xếp`),
  * đã có đợt = `ChipDotFT` (chip theo nhóm kỹ năng, PR-OMT C6); ô lớp thường = `ChipKyNang`; bấm ô mở `HopKyNang` neo cạnh ô.
  */
-export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiCanXepLai = false }: {
+export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiCanXepLai = false, hvChon = null }: {
   loai: 'ft' | 'thuong'; data: LuoiFTData | LuoiThuongData; onReload: () => void; onHienDien: (open: boolean) => void;
+  /** OV-15c (C18): em vừa chọn ở ô tìm — cuộn tới hàng và đánh dấu hàng. */
+  hvChon?: number | null;
   /** PR-XLMT (chip "Cần xếp lại"): chỉ còn hàng có kỹ năng vắng / phần thi đã huỷ. */
   chiCanXepLai?: boolean;
 }) {
@@ -50,6 +55,12 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiCanXepLai = f
   const dotDenLuot = useMemo(() => cots.findIndex((c) => (data.hang as Array<HangFT | HangThuong>).some((h) => (
     !emXongDot(dotCuaEm(loai === 'ft' ? { loai: 'ft', luoi: data as LuoiFTData, hang: h as HangFT } : { loai: 'thuong', luoi: data as LuoiThuongData, hang: h as HangThuong }, c.dot))
   ))), [cots, data, loai]);
+
+  /* C18: chọn em ở ô tìm → cuộn tới hàng em (giữa màn). */
+  useEffect(() => {
+    if (!hvChon) return;
+    document.getElementById(`kht-hv-${data.classId}-${hvChon}`)?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  }, [hvChon, data.classId]);
 
   /* 375px: mở sẵn ở đợt đang tới — MT trước đó nằm bên trái ngoài khung nhìn. */
   useEffect(() => {
@@ -89,7 +100,8 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiCanXepLai = f
         </thead>
         <tbody>
           {hangs.map((h) => (
-            <tr key={h.studentId} className="row-hover">
+            <tr key={h.studentId} id={`kht-hv-${data.classId}-${h.studentId}`} className={`row-hover ${hvChon === h.studentId ? 'row-active' : ''}`}
+              aria-current={hvChon === h.studentId ? 'true' : undefined}>
               <td className="td sticky-col py-1.5 align-middle">
                 <Link to={duongHoSoHocVien(h.studentId)} className="link block truncate text-slate-100" title={h.ten}>{h.ten}</Link>
                 <div className="text-xs text-slate-500">
@@ -135,6 +147,9 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiCanXepLai = f
                       </div>
                       )
                     )}
+                    {/* C21: ghi chú lịch thi một dòng dưới chip — bấm sửa tại chỗ (Enter lưu · Esc huỷ). Chỉ ghi chú, không dời lịch. */}
+                    <GhiChuTaiCho khoa={{ classId: data.classId, studentId: h.studentId, dot: khoaDot(c.dot) }} ghiChu={h.ghiChu?.[khoaDot(c.dot)] ?? null}
+                      onDoi={onReload} nhan={t('Ghi chú lịch thi {dot}', { dot: nhanDot(c.dot) })} className="mx-auto mt-0.5 max-w-[168px]" />
                   </td>
                 );
               })}
@@ -142,6 +157,15 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiCanXepLai = f
           ))}
         </tbody>
       </table>
+      {/* C21: ghi chú cả lớp dưới bảng, ghi rõ "Ghi chú lớp". */}
+      <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 border-t px-3 py-2 text-xs" style={{ borderColor: 'var(--line)' }}>
+        {data.ghiChuLop && <b className="text-slate-300">{t('Ghi chú lớp · {lop}', { lop: data.classCode })}</b>}
+        <div className="min-w-0 flex-1">
+          <GhiChuTaiCho khoa={{ classId: data.classId }} ghiChu={data.ghiChuLop ?? null} onDoi={onReload}
+            nhan={t('Ghi chú lớp · {lop}', { lop: data.classCode })} them={t('+ Ghi chú lớp')} />
+        </div>
+        {data.ghiChuLop && <span className="text-[11px] text-slate-500">{[data.ghiChuLop.ai, fmtDateTime(data.ghiChuLop.luc)].filter(Boolean).join(' · ')}</span>}
+      </div>
 
       {huy && huy.cot.dot.loai === 'ft' && (() => {
         const n = huy.cot.dot.attemptNo;
@@ -154,7 +178,7 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiCanXepLai = f
         const dot = o(hop.hang, hop.cot);
         return (
           <HopKyNang key={`${hop.hang.studentId}-${hop.cot.key}`} anchor={hop.anchor}
-            tieuDe={`${hop.hang.ten} · ${nhanDot(hop.cot.dot)}`} loai={loai} classId={data.classId} studentId={hop.hang.studentId}
+            tieuDe={`${hop.hang.ten} · ${nhanDot(hop.cot.dot)}`} tenHv={hop.hang.ten} ghiChu={hop.hang.ghiChu?.[khoaDot(hop.cot.dot)] ?? null} loai={loai} classId={data.classId} studentId={hop.hang.studentId}
             dot={hop.cot.dot} attemptId={dot.attemptId} kn={dot.kn} kyNangDau={hop.kyNangDau} lichSu={!!dot.lichSu}
             deXuat={hop.cot.deXuat} khaiGiang={khaiGiang} tongTuan={tongTuan}
             {...(loai === 'thuong' ? { ky: (data as LuoiThuongData).boMon, ct: (data as LuoiThuongData).chuongTrinh } : {})}
