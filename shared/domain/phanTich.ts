@@ -53,7 +53,7 @@ export function gocNhinTuThamSo(params: { get(key: string): string | null }): Ke
   if (gocParam === 'ket-qua') { goc = 'hieu-qua-pa'; gocMoi = goc; }
   else if (gocParam === 'chua-ai-nhan' || gocParam === 'van-de') { goc = 'tong-hop'; gocMoi = goc; }
   else if ((GOC_NHIN as readonly string[]).includes(gocParam ?? '')) goc = gocParam as GocNhin;
-  else goc = ['xem', 'loai-lop', 'hang-doi', 'tinh-hinh', 'ky-nang', 'theo', 'goc'].some((k) => params.get(k) !== null) ? 'tong-hop' : GOC_NHIN_MAC_DINH;
+  else goc = ['xem', 'loai-lop', 'hang-doi', 'tinh-hinh', 'ky-nang', 'theo', 'goc', 'tg'].some((k) => params.get(k) !== null) ? 'tong-hop' : GOC_NHIN_MAC_DINH;
   const boThamSo: string[] = [];
   if (params.get('xem') !== null) boThamSo.push('xem');
   const loaiLop = params.get('loai-lop');

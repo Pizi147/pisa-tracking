@@ -95,8 +95,7 @@ export function luotTrongKhoang(where: string, args: readonly unknown[]): any[] 
   return db()
     .prepare(
       `SELECT a.id, a.status, a.kind, a.attempt_no, a.class_id, a.planned_period_id, a.target_at_attempt, a.kck_at_attempt, a.student_id,
-              (SELECT cy.route FROM learning_cycles cy WHERE cy.id = a.cycle_id) AS route, (SELECT cy.khong_cam_ket FROM learning_cycles cy WHERE cy.id = a.cycle_id) AS cy_kck,
-              (SELECT cy.khong_cam_ket FROM learning_cycles cy WHERE cy.id = a.cycle_id) AS kck,
+              cy.route, cy.khong_cam_ket AS cy_kck, cy.khong_cam_ket AS kck,
               c.programme_code, c.code AS class_code, c.branch_id, c.is_fast_track,
               b.name AS branch_name,
               rp.id AS period_id, rp.week_start, rp.week_end
@@ -104,6 +103,7 @@ export function luotTrongKhoang(where: string, args: readonly unknown[]): any[] 
          JOIN report_periods rp ON rp.id = a.planned_period_id
          LEFT JOIN classes c ON c.id = a.class_id
          LEFT JOIN branches b ON b.id = c.branch_id
+         LEFT JOIN learning_cycles cy ON cy.id = a.cycle_id
         WHERE ${where}`,
     )
     .all(...args) as any[];

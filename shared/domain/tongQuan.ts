@@ -208,8 +208,10 @@ export function chonDiemDangChuY(ds: UngVienChuY[], ct: ChuongTrinh): DiemChuY[]
 }
 
 // ------------------------------------------------------------------ bảng Theo chi nhánh (mockup 02 phương án A)
-export const COT_BANG = ['hocVien', 'duoiKyVong', 'sos', 'caseMo', 'thieuPa', 'duDuLieu'] as const;
+/* OV-15d: + "Case chưa chốt PA" hai vùng bấm (HV / Case) — cột của Lớp cần chú ý (mockup 3). */
+export const COT_BANG = ['hocVien', 'duoiKyVong', 'sos', 'caseMo', 'thieuPa', 'duDuLieu', 'caseChuaChotHv', 'caseChuaChot'] as const;
 export type CotBang = (typeof COT_BANG)[number];
 export const COT_BANG_DON_VI: Record<CotBang, 'hoc-vien' | 'case'> = {
   hocVien: 'hoc-vien', duoiKyVong: 'hoc-vien', sos: 'hoc-vien', caseMo: 'case', thieuPa: 'case', duDuLieu: 'hoc-vien',
+  caseChuaChotHv: 'hoc-vien', caseChuaChot: 'case',
 };

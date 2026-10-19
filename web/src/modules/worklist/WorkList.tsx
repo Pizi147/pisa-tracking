@@ -87,7 +87,7 @@ export function DongViec({ it, onOpen, nutPhu, gon = false, chon = null, xong, m
     ].filter(Boolean).join(' · ');
   /* Q31-4 (D9): người phụ trách 12 px — tách khỏi phần ngữ cảnh 11 px của dòng phụ. */
   /* OV-11c (TQ-4): chấm chéo (T18) không phải "chưa ai phụ trách" — cùng tên với Tổng quan. */
-  const nguoi = it.owner ?? (it.ownerId === null && !it.mine && !viecCaLop ? (dich(it.statusLabel) === CHAM_CHEO ? CHAM_CHEO : t('chưa ai phụ trách')) : null);
+  const nguoi = it.owner ?? (it.ownerId === null && !it.mine && !viecCaLop ? (dich(it.statusLabel) === CHAM_CHEO ? CHAM_CHEO : t('Chưa có người')) : null);
   /* PR-GOP (mockup phần 4): bấm tiêu đề hay nút "n em ▾" đều mở / đóng danh sách em; có em quá hạn → nền đỏ nhạt cả dòng.
      OV-13d: ở Công việc (`gon`) dòng gộp Ý thức mở thẳng panel lô; OV-13c: `moCaDong` (Xác nhận PA cùng lúc) cũng mở thẳng panel. */
   const bam = () => (con && !moCaDong?.(it) && !(gon && VIEC_LO_Y_THUC.has(it.group)) ? setMo(!mo) : onOpen(it));

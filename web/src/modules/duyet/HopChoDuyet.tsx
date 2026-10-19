@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { ApiError, api, invalidate } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { useToast } from '../../ui/Toast.tsx';
@@ -37,19 +37,22 @@ export function useTheNhanManh(ds: TheYeuCauDto[] | undefined): number | null {
  * số 0 (Q12), ba tab Chờ duyệt · Báo QL (PR-GVb J5b; OV-12h bỏ Nhắc, đổi tên — mã `de-biet` giữ) · Đã xử lý 30 ngày, chi nhánh. Thẻ quá hạn đứng đầu (máy chủ xếp).
  * Duyệt hàng loạt (PR-GVb D01/Q-B): mọi tab phân loại (cả Tất cả), chỉ cùng MỘT loại `hangLoat`, tối đa `TRAN_HANG_LOAT`; kết quả một câu.
  */
-export function HopChoDuyet() {
+export function HopChoDuyet({ gon = false }: {
+  /** OV-15d: nhóm "Chờ bạn duyệt" đầu Công việc — chỉ thẻ đang chờ (mọi loại), không hàng lọc; vài thẻ đầu + "Xem thêm", hộp đầy đủ ở `/cong-viec/cho-duyet`. */
+  gon?: boolean;
+} = {}) {
   const toast = useToast();
   const [params, setParams] = useSearchParams();
   const thamXem = params.get('xem');
-  const xem = thamXem === 'da-xu-ly' || thamXem === 'de-biet' ? thamXem : 'cho';
+  const xem = !gon && (thamXem === 'da-xu-ly' || thamXem === 'de-biet') ? thamXem : 'cho';
   /* Phân loại chỉ lọc ở tab Chờ duyệt; Báo QL chỉ có một phân loại. */
-  const phan = xem !== 'de-biet' && laPhanLoai(params.get('phan')) && params.get('phan') !== 'bao-len' ? (params.get('phan') as KhoaChip) : 'tat-ca';
+  const phan = !gon && xem !== 'de-biet' && laPhanLoai(params.get('phan')) && params.get('phan') !== 'bao-len' ? (params.get('phan') as KhoaChip) : 'tat-ca';
   /* Chủ sản phẩm 06/10: hộp LUÔN mở Tất cả chi nhánh (không áp chi nhánh mặc định) — số dòng khớp badge Công việc; tự lọc nếu muốn. */
   const branchId = params.get('cn') ? Number(params.get('cn')) : null;
   /* PR-S4F #5: `?lop=` — từ badge "n chờ duyệt" của một lớp. */
-  const lopId = Number(params.get('lop')) || null;
+  const lopId = gon ? null : Number(params.get('lop')) || null;
   /* PR-VAI-a (Q17): `?qua-han=1` — từ số "k quá hạn" của dải Chờ duyệt ở Tổng quan. */
-  const quaHan = params.get('qua-han') === '1' && xem !== 'da-xu-ly';
+  const quaHan = !gon && params.get('qua-han') === '1' && xem !== 'da-xu-ly';
   const setParam = (k: string, v: string | null) => {
     const next = new URLSearchParams(params);
     if (v) next.set(k, v); else next.delete(k);
@@ -92,6 +95,7 @@ export function HopChoDuyet() {
   /* Gợi ý một lần: có ≥ 2 thẻ cùng loại hàng loạt mà chưa chọn gì. */
   const coCapHangLoat = choHangLoat && !chon.size && ds.some((a, i) => a.hangLoat && ds.some((b, j) => j !== i && b.loai === a.loai));
   const [ngan, setNgan] = useState<number | null>(null);
+  const [soHien, setSoHien] = useState(3);
 
   const xong = () => { reload(); invalidate('/yeu-cau/dem'); };
   /* Thẻ lỗi: một câu tổng + tối đa 3 dòng chi tiết, còn lại gộp — không dồn hàng chục toast. */
@@ -137,8 +141,10 @@ export function HopChoDuyet() {
   };
   if (error) return <ErrorState message={error.message} hint={error.hint} onRetry={reload} />;
   const dem = data?.dem;
+  const dsHien = gon ? ds.slice(0, soHien) : ds;
   return (
     <div className="space-y-3">
+      {!gon && <>
       <div className="flex flex-wrap items-end gap-2" data-hd="cd-loc">
         <BoLocDoan ariaLabel="Trạng thái" value={xem} onChange={(k) => {
           const next = new URLSearchParams(params);
@@ -181,20 +187,32 @@ export function HopChoDuyet() {
           )}
         </p>
       )}
+      </>}
+      {gon && coCapHangLoat && <p className="m-0 text-[12px] text-slate-400">Đánh dấu ô ở thẻ để duyệt nhiều cùng loại.</p>}
       {loading && <Card><Skeleton rows={6} /></Card>}
-      {data && ds.length === 0 && (
+      {data && ds.length === 0 && !gon && (
         <Card><Empty title={xem === 'cho' ? 'Không có yêu cầu nào đang chờ' : xem === 'de-biet' ? 'Không có thẻ Báo QL'
           : 'Chưa có yêu cầu nào được xử lý trong 30 ngày'} /></Card>
       )}
       {ds.length > 0 && (
         <div className="space-y-2">
-          {ds.map((y) => (
+          {dsHien.map((y) => (
             <TheYeuCau key={y.id} yc={y} nhanManh={nhan === y.id} onXong={xong} onThemPa={setNgan}
               chon={choHangLoat && y.hangLoat && y.trangThai === 'cho' ? {
                 checked: chon.has(y.id),
                 onChange: (v) => setChon((s) => chonMot(ds, s, y.id, v)),
               } : null} />
           ))}
+        </div>
+      )}
+      {gon && data && (
+        <div className="flex flex-wrap items-center gap-3 text-[13px]">
+          {ds.length > soHien && (
+            <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setSoHien((n) => n + 10)}>
+              Xem thêm {Math.min(10, ds.length - soHien)} thẻ
+            </button>
+          )}
+          <Link to="/cong-viec/cho-duyet" className="link max-sm:py-3">Mở hộp duyệt ›</Link>
         </div>
       )}
 

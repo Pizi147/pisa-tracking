@@ -284,7 +284,7 @@ export function NganXepHangLoat({ lopThuong, classIdBanDau, coFt, onDoiKhung, on
             <div className="grid items-start gap-2" style={{ gridTemplateColumns: 'minmax(0,1fr) auto' }}>
               <div className="min-w-0">
                 <span className="mb-1 block text-[11.5px] font-bold text-slate-200">Áp một tuần cho mọi môn đã chọn</span>
-                <TuanNho d={ap ?? { periodId: null, weekStart: null }} goc={homNay} onTuan={setAp} />
+                <TuanNho nam d={ap ?? { periodId: null, weekStart: null }} goc={homNay} onTuan={setAp} />
               </div>
               <button type="button" className="btn mt-[22px] min-h-[44px] sm:min-h-[32px]" disabled={!ap}
                 onClick={() => setTuan((s) => {
@@ -356,7 +356,7 @@ function DongKyNang({ k, ct, laFt, oId, tick, onTick, tuan, goc, onTuan, nhanKho
         {laFt && k === 'writing' && <span className="ml-1 cursor-help text-slate-500" title="W = chấm cả W1 và W2">ⓘ</span>}
       </div>
       <div className={`min-w-0 max-w-[320px] ${tick ? '' : 'pointer-events-none'}`}>
-        <TuanNho d={tuan ?? { periodId: null, weekStart: null }} goc={goc} onTuan={onTuan} nhanKhoa={nhanKhoa} />
+        <TuanNho nam d={tuan ?? { periodId: null, weekStart: null }} goc={goc} onTuan={onTuan} nhanKhoa={nhanKhoa} />
       </div>
     </div>
   );

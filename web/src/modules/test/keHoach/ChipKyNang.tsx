@@ -1,4 +1,4 @@
-import { gomChip, nhomKyNang, tenMon, tenMonNgan, nhanTuanKhoa, tuanLich, type ChipKH, type KyNangKH } from '@shared/domain/index.ts';
+import { gomChip, nhomKyNang, tenMon, tenMonNgan, nhanTuanKhoa, tuanNam, type ChipKH, type KyNangKH } from '@shared/domain/index.ts';
 import { MAU_O_MT } from '../../../ui/OMt.tsx';
 import type { KnO } from './kieu.ts';
 
@@ -24,7 +24,7 @@ export function ChipKyNang({ kn, attemptId, khaiGiang, tongTuan, deXuat, nhanDeX
     return (
       <button type="button" onClick={(e) => onMo(null, e.currentTarget)} title={`Xếp ${tenDot} cho em này (đang là đề xuất)`}
         className="flex h-[44px] w-full flex-col items-center justify-center rounded border border-dashed border-muted-line text-[11px] text-slate-500 hover:text-slate-200">
-        <span>đề xuất {deXuat ? tuanLich(deXuat) : '—'}</span>
+        <span>đề xuất {deXuat ? tuanNam(deXuat) : '—'}</span>
         {nhanDeXuat && <span className="text-[11px]">{nhanDeXuat}</span>}
       </button>
     );
@@ -32,7 +32,7 @@ export function ChipKyNang({ kn, attemptId, khaiGiang, tongTuan, deXuat, nhanDeX
 
   const g = gomChip(kn);
   const tooltip = (chip: ChipKH) => chip.kyNang
-    .map((k) => `${tenMon(ct, k)}: ${kn[k]?.tuan ? tuanLich(kn[k]!.tuan!) : 'chưa xếp'}${kn[k]?.doiTu ? ` (dời từ ${tuanLich(kn[k]!.doiTu!)})` : ''}${kn[k]?.khoa ? ` (${kn[k]!.khoa})` : ''}`)
+    .map((k) => `${tenMon(ct, k)}: ${kn[k]?.tuan ? tuanNam(kn[k]!.tuan!) : 'chưa xếp'}${kn[k]?.doiTu ? ` (dời từ ${tuanNam(kn[k]!.doiTu!)})` : ''}${kn[k]?.khoa ? ` (${kn[k]!.khoa})` : ''}`)
     .join('\n');
 
   if (g.xong) {
@@ -41,7 +41,7 @@ export function ChipKyNang({ kn, attemptId, khaiGiang, tongTuan, deXuat, nhanDeX
         <button type="button" className={`${CHIP_CLS} bg-done-bg text-done border-done-line`} title="Đã thi — xem" onClick={(e) => onMo(null, e.currentTarget)}>
           <span className="font-bold">Xong</span>
           <span className="whitespace-nowrap tabular-nums">
-            {g.tuanXong ? tuanLich(g.tuanXong) : ''}<span aria-hidden title="Đã thi"> ✓</span>
+            {g.tuanXong ? tuanNam(g.tuanXong) : ''}<span aria-hidden title="Đã thi"> ✓</span>
             <NhanKhoa tuan={g.tuanXong} khaiGiang={khaiGiang} tongTuan={tongTuan} />
           </span>
         </button>
@@ -60,7 +60,7 @@ export function ChipKyNang({ kn, attemptId, khaiGiang, tongTuan, deXuat, nhanDeX
     <div className={bao}>
       {hienThi.map((c, i) => (
         <Chip key={i} c={c} ct={ct} khaiGiang={khaiGiang} tongTuan={tongTuan}
-          them={i === 1 && them > 0 ? { n: them, ds: conLai.map((x) => `${x.kyNang.map((k) => tenMonNgan(ct, k)).join(' ')} · ${x.tuan ? tuanLich(x.tuan) : 'chưa xếp'}`).join('\n') } : null}
+          them={i === 1 && them > 0 ? { n: them, ds: conLai.map((x) => `${x.kyNang.map((k) => tenMonNgan(ct, k)).join(' ')} · ${x.tuan ? tuanNam(x.tuan) : 'chưa xếp'}`).join('\n') } : null}
           title={tooltip(c)} onMo={onMo} />
       ))}
     </div>
@@ -104,7 +104,7 @@ function Chip({ c, khaiGiang, tongTuan, them, title, onMo, ct = null }: {
         {chu}{!chua && tt?.duoi && <span className="font-normal"> · {tt.duoi}</span>}
       </span>
       <span className="whitespace-nowrap tabular-nums">
-        {chua ? 'chưa xếp' : tuanLich(c.tuan!)}
+        {chua ? 'chưa xếp' : tuanNam(c.tuan!)}
         {c.trangThai === 'xong' && !c.khongDuThi && <span aria-hidden title="Đã thi"> ✓</span>}
         {!chua && <NhanKhoa tuan={c.tuan} khaiGiang={khaiGiang} tongTuan={tongTuan} />}
         {them && <span className="ml-1 text-[11px]" title={them.ds}>+{them.n}</span>}
@@ -122,6 +122,8 @@ export function ChipDotFT({ so, kn, cu, homNay, ct = null, chon, onMo }: {
   so: number; kn: KnO; cu: boolean; homNay: string; ct?: string | null; chon: boolean; onMo: (el: HTMLElement) => void;
 }) {
   const nhom = nhomKyNang(kn, homNay, ct, cu);
+  /* C20 (OV-15c): Kế hoạch Test luôn kèm năm — tuần của nhóm (nhóm "xong" = tuần muộn nhất) đọc lại từ `kn`, cùng luật gom của `nhomKyNang`. */
+  const tuanCua = (ks: readonly KyNangKH[]) => ks.map((k) => kn[k]?.tuan).filter((x): x is string => !!x).sort().pop() ?? null;
   if (!nhom.length) return <span className="block text-center text-[11px] text-slate-600" title="Đợt này không thi kỹ năng nào">—</span>;
   return (
     <div className="mx-auto flex w-full max-w-[168px] flex-col gap-[3px]">
@@ -133,7 +135,7 @@ export function ChipDotFT({ so, kn, cu, homNay, ct = null, chon, onMo }: {
           <span className="font-bold">
             {g.ten}{g.viec && <span className="font-medium"> · {g.viec}</span>}
           </span>
-          <span className="ml-auto whitespace-nowrap tabular-nums">{g.tuan ?? 'chưa xếp'}{g.kieu === 'xong' && <span aria-hidden> ✓</span>}</span>
+          <span className="ml-auto whitespace-nowrap tabular-nums">{g.tuan ? tuanNam(tuanCua(g.kyNang)) : 'chưa xếp'}{g.kieu === 'xong' && <span aria-hidden> ✓</span>}</span>
         </button>
       ))}
     </div>

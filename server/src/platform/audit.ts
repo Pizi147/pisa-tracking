@@ -72,7 +72,7 @@ export function notify(n: {
     .prepare(
       `INSERT INTO notifications (user_id, kind, title, body, entity_type, entity_id, dedup_key, created_at, duong)
        VALUES (?,?,?,?,?,?,?,?,?)
-       ON CONFLICT(user_id, dedup_key) DO UPDATE SET title = excluded.title, body = excluded.body`,
+       ON CONFLICT(user_id, dedup_key) DO UPDATE SET title = excluded.title, body = excluded.body, duong = excluded.duong`,   /* OV-15d: thông báo cũ mở đúng việc mới */
     )
     .run(n.userId, n.kind, n.title, n.body ?? null, n.entityType ?? null, n.entityId ?? null, n.dedupKey, nowIso(), n.duong ?? null);
 }

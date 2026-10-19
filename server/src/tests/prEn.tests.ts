@@ -352,7 +352,7 @@ const FILE_DA_DICH = [
   ...['web/src/ui', 'web/src/lib'].flatMap((d) => fs.readdirSync(path.join(GOC_REPO, d)).filter((f) => /\.tsx?$/.test(f) && f !== 'chu.ts').map((f) => `${d}/${f}`)),
   ...['oNgay', 'chonNgay', 'loiForm', 'hienThiNgay', 'trangThai', 'dieuHuong', 'khac', 'quayLai'].map((f) => `shared/domain/${f}.ts`),
   /* Đợt b — Tổng quan GV, Công việc, Yêu cầu của tôi, Lịch Test, Điểm theo lớp, nhập điểm, hộp chấm MT, hồ sơ Mock, Ghi kết quả PA. */
-  ...['OverviewPage', 'ViecCuaToi', 'WorkList', 'NhomViec', 'LopToiDay'].map((f) => `web/src/modules/worklist/${f}.tsx`),
+  ...['OverviewPage', 'WorkList', 'NhomViec', 'LopToiDay'].map((f) => `web/src/modules/worklist/${f}.tsx`),
   ...['ChonPhuTrach', 'CongViecPage', 'HoTroHocVienTab', 'PanelViec'].map((f) => `web/src/modules/congViec/${f}.tsx`),
   ...['YeuCauCuaToi', 'TheYeuCau', 'DeXuatSuaPanel'].map((f) => `web/src/modules/duyet/${f}.tsx`),
   ...['TestPage', 'LichTestTab'].map((f) => `web/src/modules/test/${f}.tsx`),

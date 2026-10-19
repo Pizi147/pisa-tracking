@@ -442,7 +442,7 @@ export async function runPrMtTests(t: YThucTestKit) {
       .run(sid, mt2.cycle_id, TODAY).lastInsertRowid);
     conn.prepare(`INSERT INTO case_milestones (case_id, kind, attempt_id, attempt_no, occurred_on, created_at) VALUES (?, 'opened', ?, 2, ?, ?)`)
       .run(cid, mt2.id, TODAY, TODAY);
-    assert(attemptsSvc.attemptDetail(QL, mt2.id).viewer.huyLuot.cachDuoc === 'ca-luot', 'MT2 ở giữa, có điểm');
+    assert(attemptsSvc.heQuaHuyLuot(mt2.id).cachDuoc === 'ca-luot', 'MT2 ở giữa, có điểm');   // OV-15c: web không còn nút Huỷ MT — hệ quả đọc thẳng
     const kq = attemptsSvc.huyLuot(QL, mt2.id, { lyDo: 'Em nghỉ đợt này' });
     assert(kq.cach === 'ca-luot', JSON.stringify(kq));
     const sau = conn.prepare('SELECT attempt_no, status FROM assessment_attempts WHERE id = ?').get(mt2.id) as any;
@@ -460,7 +460,7 @@ export async function runPrMtTests(t: YThucTestKit) {
       .run(sid, mt3.cycle_id, TODAY).lastInsertRowid);
     conn.prepare(`INSERT INTO case_milestones (case_id, kind, attempt_id, attempt_no, occurred_on, created_at) VALUES (?, 'opened', ?, 3, ?, ?)`)
       .run(cid, mt3.id, TODAY, TODAY);
-    const hq = attemptsSvc.attemptDetail(QL, mt3.id).viewer.huyLuot;
+    const hq = attemptsSvc.heQuaHuyLuot(mt3.id);   // OV-15c: web không còn nút Huỷ MT — hệ quả đọc thẳng
     assert(hq.cachDuoc === 'ca-luot' && hq.case === 1 && hq.phoiHop === 1, JSON.stringify(hq));
     attemptsSvc.huyLuot(QL, mt3.id, { lyDo: 'Em chuyển sang học lịch khác' });
     const ph = conn.prepare('SELECT status, remove_reason_code FROM sos_coordination_actions WHERE attempt_id = ?').get(mt3.id) as any;
@@ -588,7 +588,7 @@ export async function runPrMtTests(t: YThucTestKit) {
     const sid = them('MB FT 101', 'PRMT Em Rà Đã Thi', tuanNay);
     const m3 = luotCua(sid)[2];
     conn.prepare(`UPDATE attempt_skills SET sit_status = 'sat' WHERE attempt_id = ? AND skill = 'listening'`).run(m3.id);
-    assert(attemptsSvc.attemptDetail(QL, m3.id).viewer.huyLuot.cachDuoc === 'ca-luot', 'hộp huỷ');
+    assert(attemptsSvc.heQuaHuyLuot(m3.id).cachDuoc === 'ca-luot', 'hộp huỷ');   // OV-15c
     attemptsSvc.huyLuot(QL, m3.id, { lyDo: 'Thử huỷ' });
     assert((conn.prepare('SELECT status FROM assessment_attempts WHERE id = ?').get(m3.id) as any).status === 'cancelled', 'chưa huỷ');
   });
