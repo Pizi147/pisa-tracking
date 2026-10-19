@@ -117,6 +117,8 @@ export type WorkItem = {
   /** OV-5a: Nhập điểm mở panel một lớp · một lượt (`mt:2`, `thuong:progress`) · kỹ năng đầu tiên của dòng. */
   luot?: string;
   kn?: string;
+  /** OV-15b: mọi kỹ năng của việc Nhập điểm (`kn` là kỹ năng đầu) — panel việc chỉ hiện các cột này. */
+  kns?: string[];
   /** OV-5a: số bài của dòng Nhập điểm (một kỹ năng của một em) — dòng phạm vi "m bài cần chấm". */
   soBai?: number;
   /** OV-11c (CV-1): id các em của việc cả lớp (`studentId` null) — dòng phạm vi đếm em KHÁC NHAU, không cộng dồn `count`. */
@@ -503,6 +505,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
         href: first.href,
         /* Mã lượt của Điểm theo lớp (`docMaLuot`): MT `mt:n`, Checkpoint lớp liên tục `cp:n` (OV-6b2), lớp thường `thuong:{bài}`. */
         luot: first.kind === 'checkpoint' ? `cp:${first.attemptNo}` : first.kind && first.kind !== 'mock' ? `thuong:${first.kind}` : `mt:${first.attemptNo}`, kn: first.skill,
+        kns: [...new Set(list.map((b) => b.skill))],
         soBai: list.reduce((n, b) => n + b.students.size, 0),   // OV-5a: "bài cần chấm" = kỹ năng × em
         ownerId: first.ownerId, owner: null, mine: first.ownerId === p.userId,
         due, tuanThi: first.weekStart, periodId: first.periodId, kind: first.kind ?? 'mock',

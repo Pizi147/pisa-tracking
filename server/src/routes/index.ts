@@ -107,6 +107,7 @@ import * as caseSvc from '../cases/cases.ts';
 import * as regularSvc from '../normal/regular.ts';
 import * as chamSvc from '../cham/canCham.ts';
 import * as diemTheoLuotSvc from '../cham/diemTheoLuot.ts';
+import { luuDiemLo } from '../cham/luuLo.ts';
 
 export const api = Router();
 
@@ -987,6 +988,12 @@ api.put('/attempts/:id/scores/:skill', requireAuth, wrap((req) => {
     /* OV-12b: nhóm nguyên nhân (ô MT dưới kỳ vọng) — `saveScore` kiểm mã + luật nhận xét bắt buộc (cửa người dùng: `tuNguoiDung`). */
     nhomNguyenNhan: b.nhomNguyenNhan,
   }, undefined, { tuNguoiDung: true });
+}));
+
+/** OV-15b: Dán từ Excel — nhiều ô nhiều em một lần; mỗi dòng một giao dịch qua `saveScore` (quyền, nhận xét MT, band) — `cham/luuLo.ts`. */
+api.post('/attempts/scores/lo', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return luuDiemLo(principalOf(req), req.body);
 }));
 
 /** OV-13k: "Nhận xét GV phụ trách" + nhóm nguyên nhân ô Speaking Mock chấm chéo — GV phụ trách S của lớp, GVCN, Quản lý; không đụng điểm. */

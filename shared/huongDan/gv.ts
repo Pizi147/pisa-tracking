@@ -77,8 +77,14 @@ export const HD_GV: HuongDan = {
       ],
     },
     {
-      id: 'diem-lop', ten: 'Điểm theo lớp', duong: ['/test/diem-lop'],
-      muc: [{ id: 'dl-luot', ten: 'Bảng điểm một lượt', buoc: ['Chọn lớp, chọn lượt (MT1, MT2…).', '<b>Chỉ ô còn trống</b> để nhập nốt.'] }],
+      id: 'diem-lop', ten: 'Nhập điểm một lớp', duong: ['/test/diem-lop'],
+      muc: [
+        { id: 'dl-luot', ten: 'Mở panel Nhập điểm', buoc: ['Học viên & Lớp: <b>⋯</b> ở hàng lớp › <b>Nhập điểm</b>; hoặc nút <b>Nhập điểm</b> ở hồ sơ lớp.',
+          'Trong panel: chọn lượt (MT1, MT2…) và môn (<b>Tất cả · L · R · W1 · W2 · S</b>); <b>Chỉ ô còn trống</b> để nhập nốt.'] },
+        { id: 'dl-dan', ten: 'Dán từ Excel', buoc: ['Bấm <b>Dán từ Excel</b> (nút <b>?</b>: 6 bước + Sao chép mẫu): mỗi em một dòng, <b>Tên | điểm | nhận xét</b> từng kỹ năng.',
+          'Kiểm bảng xem trước: ô mới, ghi đè, lỗi; trùng tên thì chọn em; dưới kỳ vọng chọn nhóm nguyên nhân.',
+          'W1, W2, S: bốn tiêu chí cách nhau dấu cách. <b>Lưu n dòng</b>: dòng chưa đủ còn là nháp; <b>Hoàn tác</b> trả lại như trước.'] },
+      ],
     },
     {
       id: 'nhap-diem', ten: 'Nhập điểm', duong: ['/nhap-diem', '/bang-diem-thuong', '/mock-test'],

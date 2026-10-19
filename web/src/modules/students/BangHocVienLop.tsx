@@ -17,10 +17,11 @@ import { MissingBadge } from './MissingBadge.tsx';
 import { CanhBaoYThuc } from '../classes/CanhBaoYThuc.tsx';
 import { duongViecTiep, nhapDiemCua, useThaoTacDongHocVien, type QuyenDong } from '../classes/thaoTacDongHocVien.tsx';
 import {
-  chuSapToi, duongDotTest, ketQuaGanNhat, khoaLopThuong, sapXepHocVien, tachViecChung, tuanLich,
+  chuSapToi, duongDotTest, ketQuaGanNhat, khoaLopThuong, sapXepHocVien, soKyVong, tachViecChung, tuanLich,
   type KetQuaVao, type SapXep, type ViecTiepTheo, chipSosTuKetQua, chipSauThi } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 import { ChipSos } from '../../ui/ChipSos.tsx';
+import { DauKetQua } from '../../ui/BieuTuong.tsx';
 
 /** Các trường của một dòng `GET /classes/:id/roster` mà bảng này đọc. */
 export type NhanSauThiEm = { giaiDoan: GiaiDoanSauThi; han: string | null; quaHan: boolean; daGiaHan: boolean };
@@ -46,7 +47,27 @@ export type DongRoster = {
   tiepTheo: string | null;
   chuaLoTrinh: boolean;
   choDuyetChuyen?: boolean;
+  /** OV-15b (C13): lượt MT có điểm, mới nhất đầu (`roster` ở classes.ts) — lớp FT hiện OVR · L · R · W · S của lượt đầu. */
+  history?: { id: number; overall: number | null; expectation: number | null; writing: number | null; bands: Record<string, number | null> | null; lichSu?: boolean }[];
 };
+
+/** OV-15b (C13): cột điểm lớp FT ở Học viên & Lớp — W là Writing tổng (W1 · W2 dòng phụ mờ). */
+export const COT_DIEM_FT = ['overall', 'listening', 'reading', 'writing', 'speaking'] as const;
+export const NHAN_COT_DIEM_FT: Record<(typeof COT_DIEM_FT)[number], string> = { overall: 'OVR', listening: 'L', reading: 'R', writing: 'W', speaking: 'S' };
+
+/** Một ô điểm của lượt MT mới nhất: band đậm + ✓ / ✗ so kỳ vọng của lượt đó (`DauKetQua`); W thêm dòng "W1 · W2" mờ; trống = chưa có. */
+function ODiemFt({ h, k }: { h: NonNullable<DongRoster['history']>[number] | undefined; k: (typeof COT_DIEM_FT)[number] }) {
+  const v = !h ? null : k === 'overall' ? h.overall : k === 'writing' ? h.writing : h.bands?.[k] ?? null;
+  const kq = h && !h.lichSu ? soKyVong(v, h.expectation) : null;
+  const w = k === 'writing' && h ? [h.bands?.writing1 ?? null, h.bands?.writing2 ?? null] : null;
+  return (
+    <>
+      {v === null ? <span className="sr-only">{t('Chưa có')}</span>
+        : <span className="inline-flex items-center gap-1 font-semibold tabular-nums text-slate-100">{fmtBand(v)}{kq && <DauKetQua kq={kq} />}</span>}
+      {w && w.some((x) => x !== null) && <span className="block text-[11px] tabular-nums text-slate-500">{w.map((x) => (x === null ? '–' : fmtBand(x))).join(' · ')}</span>}
+    </>
+  );
+}
 
 export type LopChoBang = {
   id: number; code?: string; programmeCode: string | null; scoringMode: string | null;
@@ -165,6 +186,11 @@ export function BangHocVienLop({ lop, chiHien, sapXep, onDoi, soCot, the = false
                 { nhan: t('Ô chưa nhập'), noiDung: oTrong(s) },
               ] : [
                 { nhan: t('Kết quả'), noiDung: <KetQuaOHocVien k={k} standing={s.standing} thuong={thuong} /> },
+                ...(!thuong && s.history?.length ? [{ nhan: t('Điểm'), noiDung: (
+                  <span className="flex flex-wrap gap-x-3 gap-y-1">
+                    {COT_DIEM_FT.map((c) => <span key={c} className="inline-flex items-start gap-1"><span className="text-slate-500">{NHAN_COT_DIEM_FT[c]}</span><span><ODiemFt h={s.history![0]} k={c} /></span></span>)}
+                  </span>
+                ) }] : []),
                 { nhan: thuong ? t('Khoá') : 'Target', noiDung: thuong
                   ? <>{khoa?.chinh}{khoa?.phu && <span className="block text-xs text-slate-500">{khoa.phu}</span>}</>
                   : <TargetText band={s.cycle?.target} kck={s.cycle?.khongCamKet} /> },
@@ -212,6 +238,7 @@ export function BangHocVienLop({ lop, chiHien, sapXep, onDoi, soCot, the = false
               </>
             ) : (<>
             <td className="td"><KetQuaOHocVien k={k} standing={s.standing} thuong={thuong} /></td>
+            {!thuong && COT_DIEM_FT.map((c) => <td key={c} className="td text-center"><ODiemFt h={s.history?.[0]} k={c} /></td>)}
             <td className="td">
               {thuong ? (
                 <>

@@ -471,6 +471,7 @@ Nhật ký chi tiết tới 04/10 ở `git show 575e898d:plan.md` (mục 14) và
 
 | Ngày | PR / nhánh · model | Kết quả |
 |---|---|---|
+| 19/10/2026 | OV-15b (Opus 5.5) · `claude/pr-ov15b-overhaul-xcfpus` | Lưới một component (cột của việc + Cả lớp, 4 dáng ô, ✓/✗); bỏ tab Điểm theo lớp → panel Nhập điểm lớp (⋯ hàng lớp, hồ sơ lớp); hồ sơ lớp OVR·L·R·W1·W2·S + Đợt; Học viên & Lớp FT cột điểm; Lịch Test khung theo bài; "Nhập bởi" chỉ khi có điểm; **Dán từ Excel** FT (`POST /attempts/scores/lo`, mỗi dòng một giao dịch). Lớp thường chưa dán. Kiểm `prOv15b` |
 | 19/10/2026 | OV-15d (Opus 5.5) · `claude/elegant-lovelace-nyvyp0` | Công việc một danh sách (Chờ bạn duyệt đầu, Của tôi · Của GV ▾ · Tất cả + ⚠ quá hạn, Việc quản lý gập, Phân công…), hàng đợi tự sang việc kế, GV vào thẳng Công việc; Tổng quan QL A (HV cần chú ý · Cần bạn quyết · Lớp cần chú ý · Tuần này · Báo cáo ›); thông báo tự động thay Nhắc. Kiểm `prOv15d` |
 | 19/10/2026 | OV-15e2 (Opus 5.5) · `claude/ov15e2` | Sửa lẻ sau rà OV-15e: lượt Mock / `luotTrongKhoang` không còn subquery tương quan (EXISTS → lọc sau nạp điểm, 3 câu cy → 1 JOIN); `?tg=` cũ mở Test + SOS; Báo cáo TVV / CX qua HTTP; Target "6.0"; bảng Quá hạn theo GV vừa 375. Kiểm `prOv15e2` |
 | 19/10/2026 | OV-15c (Opus 5.5) · `claude/pr-ov15c-overhaul-6oag9s` | Kế hoạch Test: Xóa = bỏ tuần (Hoàn tác; bỏ Huỷ MT web, vắng 2 lần Khôi phục → Chưa xếp / Giữ huỷ), `W4 AUG/2026`, tìm lớp / HV / email, ghi chú lịch thi (bảng mới), Xuất Excel 13 cột + Xuất điểm Test. Kiểm `prOv15c`; `kiem-truoc-ov15c` đếm lượt huỷ cũ |

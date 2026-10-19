@@ -127,7 +127,7 @@ export async function runPrDlTests(t: YThucTestKit) {
    * tạo sau dời. Đã so JSON hai bảng origin/main ↔ nhánh sau khi bỏ trường id + studentCode (mã theo thứ tự tạo): trùng từng byte. */
   /* OV-12c: seed SOS v3 nay ghi nhận xét + nhóm nguyên nhân vào ô MT (Case MT lấy nguyên nhân từ nhận xét) — so JSON bản gốc ↔ nhánh: chỉ lệch
    * `nhanXet` / `nhomNguyenNhan` của ô demo và `thieuNhanXet` hết ở ô đã có nhận xét; không trường nào khác. */
-  const ANH_CHUP = { tuan: '7de154ae966d6159', moi: '781d4aaf52443083' };   // OV-13n: phép kiểm sosV3 (cùng lớp MB FT 101, chạy trước) thêm HV thử / đổi việc phối hợp → dòng lớp đổi   // OV-13l: em chuyển FT → FT giữ lộ trình — lượt chưa thi đi theo em, bảng lớp cũ đổi
+  const ANH_CHUP = { tuan: '98dff5c3c389b7b3', moi: '9552df35b0f43a67' };   // OV-15b: hàng thêm `studentEmail` (Dán từ Excel), ô chưa có giá trị (điểm / tiêu chí) không gửi người nhập   // OV-13n: phép kiểm sosV3 (cùng lớp MB FT 101, chạy trước) thêm HV thử / đổi việc phối hợp → dòng lớp đổi   // OV-13l: em chuyển FT → FT giữ lộ trình — lượt chưa thi đi theo em, bảng lớp cũ đổi
   /* Mã cố ý độc lập với hàm: điều kiện lọc tuần của bản trước refactor, viết lại bằng SQL. */
   const idsTuan = (periodId: number) => (conn.prepare(
     `SELECT a.id FROM assessment_attempts a JOIN students s ON s.id = a.student_id
@@ -575,12 +575,11 @@ export async function runPrDlTests(t: YThucTestKit) {
   });
 
   // ------------------------------------------------------------------ DL-6: hai lối vào
-  check('DL-6 tab Test "Điểm theo lớp": /test/diem-lop, giữa Lịch Test và Kế hoạch Test, hiện theo testGrade', () => {
+  /* OV-15b (C16): bỏ tab "Điểm theo lớp" — đường /test/diem-lop vẫn đọc được (link cũ mở panel nhập điểm của lớp), không còn ở hàng tab. */
+  check('DL-6 đường Test "Điểm theo lớp" /test/diem-lop còn đọc được (link cũ) nhưng không là tab', () => {
     const nav = (o: object) => ({ ...d.NAV_RONG, test: true, ...o });
     assert(d.tabTestTuDuong('diem-lop') === 'diem-lop', 'đọc tab từ đường dẫn');
-    assert(d.tabTestHienThi(nav({ testGrade: true, testPlan: true })).join(',') === 'lich,diem-lop,ke-hoach', 'thứ tự (G4)');
-    assert(d.tabTestHienThi(nav({ testGrade: true })).includes('diem-lop'), 'có khi testGrade');
-    assert(!d.tabTestHienThi(nav({ testPlan: true })).includes('diem-lop'), 'không có khi chỉ testPlan');
+    assert(d.tabTestHienThi(nav({ testGrade: true, testPlan: true })).join(',') === 'lich,ke-hoach', 'thứ tự (G4)');
     assert(d.TAB_TEST_LABEL['diem-lop'] === 'Điểm theo lớp' && d.DUONG_TAB_TEST['diem-lop'] === '/test/diem-lop', 'nhãn, đường');
     assert(d.tabTestMacDinh(nav({ testGrade: true })) === 'lich', 'mở Test vẫn vào Lịch Test');
   });
@@ -617,25 +616,7 @@ export async function runPrDlTests(t: YThucTestKit) {
       'thu gọn chỉ ẩn, không gỡ (giữ ô đang gõ)');
   });
 
-  check('DL-6 TabDiemLop: danh sách lopCuaToi, lớp chọn ở ?lop=, 375 thành ô chọn; TestPage gắn tab', () => {
-    const f = doc('web/src/modules/test/TabDiemLop.tsx');
-    for (const chu of ["'/diem-theo-lop/lop'", "get('lop')", '<select', '<DiemTheoLop', 'aria-current', 'Lớp · còn ô trống', "aria-label={t('Danh sách lớp')}", ' trống', "t('đủ')"]) assert(f.includes(chu), `TabDiemLop thiếu: ${chu}`);
-    assert(/tab === 'diem-lop' && <TabDiemLop/.test(doc('web/src/modules/test/TestPage.tsx')), 'TestPage gắn tab');
-    assert(!f.includes('Lớp tôi dạy') && !f.includes('Lớp của tôi'), 'tiêu đề trung tính (QL/GVCN không "dạy")');
-    assert(f.includes('grid grid-cols-1 items-start gap-4 md:grid-cols-[240px_minmax(0,1fr)]'), '375: lưới một cột minmax(0,1fr), không tràn ngang');
-  });
-
-  check('DL-6 fix: đổi lớp đi CÙNG đường chặn với đổi lượt (CongRoi); danh sách + ô chọn lớp giữ hộp lý do; số ô trống tải lại sau khi lưu', () => {
-    const f = doc('web/src/modules/test/TabDiemLop.tsx');
-    assert(/congRoi=\{cong\}/.test(f) && /cong\.current\.roi\(sang\)/.test(f), 'đổi lớp gọi CongRoi.roi');
-    /* OV-11e (HL-6): thêm nút "‹ Hồ sơ lớp {mã}" — cũng qua CongRoi. */
-    assert((f.match(/onMouseDown=\{giu\}/g) ?? []).length === 4 && f.includes('cong.current?.giu(e)'), 'hàng lọc, danh sách lớp, ô chọn 375 và nút về hồ sơ lớp chặn mousedown');
-    const dt = doc('web/src/modules/cham/DiemTheoLop.tsx');
-    assert(/roi: \(lam\) => \{ dichNgoai\.current = lam; doiLuot\(DICH_NGOAI\); \}, giu: giuHopLyDo/.test(dt), 'roi đi qua doiLuot (blur + yeuCauDoiLuot)');
-    assert(/if \(ma === DICH_NGOAI\) \{ dichNgoai\.current\?\.\(\); return; \}/.test(dt), 'sang đích ngoài chạy hành động đổi lớp');
-    assert(d.docMaLuot('ngoai') === null, 'mã đích ngoài không trùng mã lượt');
-    /* Đợt sửa cuối (final review #2): không tải lại mỗi ô nữa — xem phép kiểm "DL fix cuối (2)". */
-  });
+  /* OV-15b (C16): tab Test › Điểm theo lớp (`TabDiemLop`) đã bỏ — phép kiểm lối vào mới ở prOv15b (OV15b-5). */
 
   // ------------------------------------------------------------------ đợt sửa cuối (final review + audit + ponytail-review)
   check('DL fix cuối (1) lượt mở ban đầu chốt MỘT lần (bản tải mới) — lưu ô làm macDinh đổi không tự nhảy bảng, đổi lượt chỉ qua đường chặn', () => {
@@ -652,8 +633,6 @@ export async function runPrDlTests(t: YThucTestKit) {
     assert(/export function useGopTaiLai\(reload: \(\) => void\)/.test(ua) && ua.includes('GOP_TAI_LAI_MS = 1500'), 'useGopTaiLai ở useApi.ts');
     const lt = doc('web/src/modules/test/LichTestTab.tsx');
     assert(lt.includes('const baoDaLuu = useGopTaiLai(reload);') && !lt.includes('GOP_TAI_LAI_MS'), 'Lịch Test dùng chung useGopTaiLai');
-    const tab = doc('web/src/modules/test/TabDiemLop.tsx');
-    assert(tab.includes('useGopTaiLai(reload)') && /<DiemTheoLop[^>]*onDaLuu=\{/.test(tab), 'TabDiemLop gộp tải lại danh sách lớp');
     const dt = doc('web/src/modules/cham/DiemTheoLop.tsx');
     assert(dt.includes('const daLuuO = () => { bang.reload(); onDaLuu?.(); };') && /<LuoiChamLop[^>]*onReload=\{daLuuO\}/.test(dt), 'lưu ô báo onDaLuu');
   });

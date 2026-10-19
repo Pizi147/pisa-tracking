@@ -15,7 +15,7 @@ import { useApi } from '../../lib/useApi.ts';
 import { BaoDangLuuContext } from '../../ui/SaveState.tsx';
 import { Card, Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
 import {
-  HOI_DOI_LUOT_RONG, buocHoiDoiLuot, cauChanDoiLuot, dongPhuLuot, duongHoSoHocVien, hangThuongConTrong, oTrongLuotFt,
+  ENTRY_SKILLS, HOI_DOI_LUOT_RONG, buocHoiDoiLuot, cauChanDoiLuot, dongPhuLuot, duongHoSoHocVien, hangThuongConTrong, oTrongLuotFt,
   yeuCauDoiLuot, type HoiDoiLuot, type TomTatLuot,
 } from '@shared/domain/index.ts';
 import {
@@ -23,6 +23,7 @@ import {
 } from './LuoiChamLop.tsx';
 import type { HangMo } from './LuoiFT.tsx';
 import { DongThiContext } from './DongThi.tsx';
+import { skillShort } from '../../lib/format.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 
 const KHOA_CHI_O_TRONG = 'pisa.diem-theo-lop.chi-o-trong';
@@ -42,8 +43,10 @@ export type CongRoi = { roi: (lam: () => void) => void; giu: (e: MouseEvent) => 
 /** Mã đích "ra ngoài bảng" trong luồng hỏi đổi lượt — không bao giờ trùng mã lượt (`docMaLuot`). */
 const DICH_NGOAI = 'ngoai';
 
-export function DiemTheoLop({ classId, luotBanDau, locBanDau, gon = false, congRoi, onDaLuu, onLuot }: {
+export function DiemTheoLop({ classId, luotBanDau, locBanDau, gon = false, congRoi, onDaLuu, onLuot, chonMon = false }: {
   classId: number; luotBanDau?: string; gon?: boolean; congRoi?: MutableRefObject<CongRoi | null>;
+  /** OV-15b (mục 5, mockup 2 khung 4): panel Nhập điểm lớp — hàng chọn môn "Tất cả · L · R · W1 · W2 · S" lọc cột lưới. */
+  chonMon?: boolean;
   /** OV-11e (TE-8): vào từ link (`?trong=`) — `trong` bật sẵn "Chỉ ô còn trống"; `cu` ("MT cũ chưa nhập") lọc thêm hàng MT cũ ở lượt mở đầu. */
   locBanDau?: 'trong' | 'cu';
   /** Vừa lưu một ô (Test › Điểm theo lớp: gộp tải lại số ô trống của danh sách lớp). */
@@ -63,6 +66,7 @@ export function DiemTheoLop({ classId, luotBanDau, locBanDau, gon = false, congR
   useEffect(() => { if (luot && nhanLuot) onLuot?.(luot, nhanLuot); }, [luot, nhanLuot]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const [chiOTrong, setChiOTrong] = useState(() => !!locBanDau || docChiOTrong());
+  const [mon, setMon] = useState<string | null>(null);
   const [chiCu, setChiCu] = useState(locBanDau === 'cu');
   /* "MT cũ" chỉ áp ở lượt của link; bỏ tích ô thì về như thường. */
   const locCu = chiOTrong && chiCu && luot === luotBanDau;
@@ -211,6 +215,8 @@ export function DiemTheoLop({ classId, luotBanDau, locBanDau, gon = false, congR
           </div>
         )}
 
+        {chonMon && b && <ChonMon b={b} mon={mon} onMon={setMon} />}
+
         <label className="inline-flex items-center gap-2 text-sm self-start min-h-[44px] sm:min-h-0 cursor-pointer">
           <input type="checkbox" checked={chiOTrong}
             onChange={(e) => { setChiOTrong(e.target.checked); ghiChiOTrong(e.target.checked); if (!e.target.checked) setChiCu(false); }} />
@@ -234,7 +240,7 @@ export function DiemTheoLop({ classId, luotBanDau, locBanDau, gon = false, congR
                     <BaoDangLuuContext.Provider value={baoLuu}>
                       <DongThiContext.Provider value>
                         <LuoiChamLop data={b} kind={null} onReload={daLuuO} gon datConTro={false}
-                          chiAttempt={chiAttempt} hangMo={hangMo} anNutTao />
+                          chiAttempt={chiAttempt} hangMo={hangMo} anNutTao chiCot={mon ? [mon] : null} nutCaLop={false} />
                       </DongThiContext.Provider>
                     </BaoDangLuuContext.Provider>
                   </div>
@@ -245,6 +251,25 @@ export function DiemTheoLop({ classId, luotBanDau, locBanDau, gon = false, congR
   }
   /* Màn hẹp: bỏ khung + đệm của card ngoài (bảng đã có khung riêng) — tên HV đỡ bị cắt ở 375. */
   return gon ? noiDung : <Card className="max-md:border-0 max-md:bg-transparent" bodyClass="md:p-4">{noiDung}</Card>;
+}
+
+/** Hàng chọn môn của panel Nhập điểm lớp: FT theo 5 cột nhập, lớp thường theo môn của chương trình. "Tất cả" = đủ cột. */
+function ChonMon({ b, mon, onMon }: { b: BangTheoLuot; mon: string | null; onMon: (m: string | null) => void }) {
+  const ds: { k: string | null; nhan: string }[] = [
+    { k: null, nhan: t('Tất cả') },
+    ...(b.ft ? ENTRY_SKILLS.map((k) => ({ k, nhan: skillShort(k) }))
+      : (b.thuong?.programme.skills ?? []).map((k) => ({ k, nhan: b.thuong!.monNgan?.[k] ?? b.thuong!.skillLabels[k] ?? k }))),
+  ];
+  return (
+    <div role="group" aria-label={t('Môn')} className="flex flex-wrap gap-1.5">
+      {ds.map((x) => (
+        <button key={x.k ?? 'tat-ca'} type="button" aria-pressed={mon === x.k} onClick={() => onMon(x.k)}
+          className={`btn btn-sm min-h-[44px] sm:min-h-0 ${mon === x.k ? 'border-[color:var(--accent-line)] bg-[color:var(--accent-soft)] text-[color:var(--accent-strong)]' : ''}`}>
+          {x.nhan}
+        </button>
+      ))}
+    </div>
+  );
 }
 
 /** Tải lại nền lỗi khi ĐÃ có dữ liệu: dòng nhỏ + "Thử lại" — không thay lưới bằng ErrorState (gỡ ô đang giữ giá trị gõ). */

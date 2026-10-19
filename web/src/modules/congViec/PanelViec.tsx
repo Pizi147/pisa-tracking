@@ -1,5 +1,6 @@
-import { type ReactNode, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { PanelNhapDiemLop } from '../cham/PanelNhapDiemLop.tsx';
 import { useApi } from '../../lib/useApi.ts';
 import { invalidate } from '../../lib/api.ts';
 import { ErrorState, Skeleton } from '../../ui/ui.tsx';
@@ -12,8 +13,7 @@ import { XacNhanXuLyPanel } from '../yThuc/XacNhanXuLyPanel.tsx';
 import { DaThucHienPanel } from '../yThuc/DaThucHienPanel.tsx';
 import { KhaiBacPanel } from '../yThuc/KhaiBacPanel.tsx';
 import { NganViecVanHanh } from '../worklist/MgmtTasksPage.tsx';
-import { MotKyNang } from '../cham/MotKyNang.tsx';
-import { duongDiemTheoLuot, type BangTheoLuot } from '../cham/LuoiChamLop.tsx';
+import { LuoiChamLop, duongDiemTheoLuot, type BangTheoLuot } from '../cham/LuoiChamLop.tsx';
 import { LuoiNhung } from '../test/lichTest/LuoiNhung.tsx';
 import { XacNhanPaLo } from './XacNhanPaLo.tsx';
 import { KHOA_CHAM_SPEAKING, LOAI_HAN_CUA_VIEC, duongLichTest, laViecChamCheo, tuanLich } from '@shared/domain/index.ts';
@@ -141,54 +141,47 @@ export function PanelViec({ it, onDong, onDaLam, onTiep, onMo }: {
 }
 
 /**
- * NHẬP ĐIỂM TẠI CHỖ (mockup M1 §2): bảng điểm của lớp · lượt (`/classes/:id/diem-theo-luot/:luot`, cùng nguồn Điểm theo lớp), dạng MỘT KỸ NĂNG
- * MỘT LÚC (`MotKyNang`, chọn sẵn kỹ năng của việc) — ô FT mở hộp nhập điểm (Lưu · em tiếp ›), lớp thường ô gõ thẳng. Không đường ghi mới.
+ * NHẬP ĐIỂM TẠI CHỖ (mockup M1 §2; OV-15b mockup 2 khung 1a): bảng điểm của lớp · lượt (`/classes/:id/diem-theo-luot/:luot`), lưới chung
+ * `LuoiChamLop` chỉ cột của việc (`kns`) + "Cả lớp"; màn hẹp một kỹ năng một lúc (`MotKyNang`). Không đường ghi mới.
  */
 export function PanelNhapDiem({ it, onDong, onDaLam, quayLai }: {
-  it: Pick<WorkItem, 'classId' | 'luot' | 'kn' | 'studentId' | 'emIds' | 'tieuDe' | 'classCode' | 'contextLabel' | 'due'> & Partial<Pick<WorkItem, 'key' | 'phu'>>;
+  it: Pick<WorkItem, 'classId' | 'luot' | 'kn' | 'studentId' | 'emIds' | 'tieuDe' | 'classCode' | 'contextLabel' | 'due'> & Partial<Pick<WorkItem, 'key' | 'phu' | 'kns'>>;
   onDong: () => void; onDaLam: () => void;
   /** OV-12e: mở từ panel số liệu — "← Danh sách". */
   quayLai?: { nhan: string; onClick: () => void };
 }) {
   const { data, error, reload } = useApi<BangTheoLuot>(duongDiemTheoLuot(it.classId!, it.luot!), [it.classId, it.luot]);
   const daLuu = () => { reload(); onDaLam(); };
-  /* OV-11c (CV-6): em của việc lên đầu; phần còn lại của lớp gập "Cả lớp (n)". Kỹ năng giữ như lúc mở (`kn` ban đầu). */
-  const em = new Set(it.studentId !== null ? [it.studentId] : it.emIds ?? []);
+  /* OV-15b: "lớp · lượt ↗" đổi panel này sang Nhập điểm cả lớp (cùng chỗ, không panel lồng panel); "‹ Việc" quay về việc. */
+  const [caLop, setCaLop] = useState(false);
   /* Plan mục 4: kỹ năng VÀ tiêu đề giữ như lúc mở — tải lại sau khi lưu (việc còn môn khác) không đổi chữ đầu panel dưới tay người dùng. */
   const [kn] = useState(it.kn ?? null);
+  const [kns] = useState(() => it.kns ?? (it.kn ? [it.kn] : null));
   const [tieuDe] = useState(it.tieuDe);
-  const tach = <S extends { rows: { studentId: number }[] }>(d: S, ve: (x: S) => ReactNode) => {
-    const viec = d.rows.filter((r) => em.has(r.studentId));
-    if (!viec.length || viec.length === d.rows.length) return ve(d);
-    const khac = d.rows.filter((r) => !em.has(r.studentId));
-    return (
-      <>
-        {ve({ ...d, rows: viec })}
-        <details className="border-t" style={{ borderColor: 'var(--line)' }}>
-          <summary className="min-h-[44px] cursor-pointer px-4 py-3 text-[13px] text-slate-300 sm:min-h-0 sm:py-2">{t('Cả lớp ({length})', { length: khac.length })}</summary>
-          {ve({ ...d, rows: khac })}
-        </details>
-      </>
-    );
-  };
+  /* OV-15b (mục 1, mockup 2 khung 1a / 2): lưới chung, chỉ cột của việc + Kết quả, con trỏ ở ô trống đầu. Việc một em: chỉ hàng em đó;
+     "Cả lớp" mở mọi em + mọi cột. */
+  const chiAttempt = useMemo(() => (data && it.studentId !== null
+    ? new Set((data.ft?.rows ?? data.thuong?.rows ?? []).filter((r) => r.studentId === it.studentId).map((r) => r.attemptId)) : null), [data, it.studentId]);
   /* OV-12e: đầu panel v3 — tên việc + chip hạn / lớp · lượt ↗ (xem Điểm theo lớp, tách khỏi ô nhập). */
   const dau = dauViec({
     han: it.due ? <ChipHan loai={LOAI_HAN_CUA_VIEC.score ?? 'nhap-diem'} han={it.due} /> : null,
     lop: it.classCode, ngCanh: (
-      <Link className="link" to={`/test/diem-lop?lop=${it.classId}&luot=${encodeURIComponent(it.luot!)}`}>
+      <button type="button" className="link text-left" onClick={() => setCaLop(true)}>
         {dich((laViecChamCheo({ key: it.key ?? '' }) ? it.phu : it.contextLabel) ?? '')} <span aria-hidden className="text-xs">↗</span>
-      </Link>
+      </button>
     ),
   });
+  if (caLop) {
+    return <PanelNhapDiemLop classId={it.classId!} classCode={it.classCode} luot={it.luot} onDong={onDong} quayLai={{ nhan: t('‹ Việc'), onClick: () => setCaLop(false) }} />;
+  }
   return (
     <KhungPanel tieuDe={dich(tieuDe)} dau={dau} quayLai={quayLai} onDong={onDong}>
       {error ? <ErrorState message={error.message} hint={error.hint} onRetry={reload} />
         : !data ? <div className="pt-3"><Skeleton rows={6} /></div>
           : (
-            <div className="-mx-4">
-              {data.mode === 'ielts_band' && data.ft
-                ? tach(data.ft, (d) => <MotKyNang mode="ielts_band" data={d} kn={kn} onReload={daLuu} />)
-                : data.thuong ? tach(data.thuong, (d) => <MotKyNang mode="ratio" data={d} kn={kn} onReload={daLuu} anNutTao />) : null}
+            <div className="luoi-trong-panel -mx-4 px-2">
+              <LuoiChamLop data={data} kind={null} kn={kn} onReload={daLuu} gon anNutTao chiCot={kns}
+                chiAttempt={chiAttempt?.size ? chiAttempt : null} />
             </div>
           )}
     </KhungPanel>
@@ -244,7 +237,7 @@ function PanelNhapDiemTuan({ it, onDong, onDaLam }: { it: WorkItem; onDong: () =
               {dangMo && (
                 <div className="luoi-trong-panel px-2 pb-2">
                   <LuoiNhung classId={x.classId!} periodId={x.periodId ?? null} kind={x.kind ?? null} tuanDangXem={x.tuanThi ?? null} kn={x.kn ?? null}
-                    hrefDayDu={duongLichTest({ classId: x.classId, periodId: x.periodId })} onDaLuu={onDaLam}
+                    hrefDayDu={duongLichTest({ classId: x.classId, periodId: x.periodId })} onDaLuu={onDaLam} chiCot={x.kns ?? (x.kn ? [x.kn] : null)}
                     /* OV-14b: lớp đầu (mở sẵn) cuộn ngang tới cột của việc + con trỏ ở ô trống đầu cột đó; lớp mở sau không giật trang. */
                     datConTro={!!x.kn && x.key === lop[0].key} />
                 </div>

@@ -746,7 +746,8 @@ export function ODiemThuong({
         </span>
       );
     }
-    const chu = cell.khongDuThi ? t('Không dự thi') : dau ? '-' : cell.chuaToiTuan && cell.tuanHienTai ? cell.tuanHienTai : '—';
+    /* OV-15b (4 dáng ô): ô của người khác chưa có điểm = trống (chữ chỉ cho trình đọc màn hình). */
+    const chu = cell.khongDuThi ? t('Không dự thi') : dau ? '-' : cell.chuaToiTuan && cell.tuanHienTai ? cell.tuanHienTai : <span className="sr-only">{t('Chưa có')}</span>;
     const title = cell.khongDuThi ? t('{khongDay} Không dự thi · {x}', { khongDay, x: cell.tuanHienTai ?? '' }).trim()
       : dau && cell.tuanHienTai ? t('{khongDay} Đã dời sang {tuanHienTai}.', { khongDay, tuanHienTai: cell.tuanHienTai })
       : cell.chuaToiTuan && cell.tuanHienTai ? `${khongDay} Thi ${cell.tuanHienTai}.` : khongDay;

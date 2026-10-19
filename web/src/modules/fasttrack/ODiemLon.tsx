@@ -97,7 +97,7 @@ export function DaiODiemLon({ cells, lich, result, lichSu, homNay, mo, onMo, sav
       phu = { chu: `W1 ${w('writing1')} · W2 ${w('writing2')}`, title: CONG_THUC_W };
     } else if ((k === 'listening' || k === 'reading') && bai[0]?.rawScore != null) {
       phu = { chu: t('{rawScore} câu', { rawScore: bai[0].rawScore }) };
-    } else if (k === 'speaking' && bai[0]?.gvCham) {
+    } else if (k === 'speaking' && bai[0]?.gvCham && band !== null) {   // OV-15b (7): người chấm chỉ hiện khi đã có điểm
       /* PR-S4F #10: tên dài bị cắt (truncate) — title cho đủ tên. */
       phu = { chu: t('GV chấm: {ten}', { ten: bai[0].gvCham.ten }), title: t('GV chấm: {ten}', { ten: bai[0].gvCham.ten }) };
     } else if (band !== null) {

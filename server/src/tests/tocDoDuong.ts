@@ -890,6 +890,8 @@ export const TRAN_GHI_LO = {
   themHocVien30Thuong: 72,   // đo 55 câu → trần max(sau+10, ⌈sau×1,3⌉) = 72
   /** PR-SL: Sửa cả lớp — 30 em MB FT 101 đổi họ tên. Xem trước đọc theo lô (không tăng theo số em); lưu gọi `updateStudent` từng em trong một giao dịch. */
   xemTruocSuaCaLop30: 97,   // đo 74 câu (quyền theo em đọc DB) → max(74+10, ⌈74×1,3⌉) = 97
+  /** OV-15b: POST /attempts/scores/lo — Dán từ Excel, MỘT dòng 5 ô (L R W1 W2 S, nhận xét) = một request của web (`LO_DAN` = 1); mỗi ô một `saveScore`. */
+  danExcelMotDong: 314,   // đo 241 câu (×3, QL, 5 ô có nhận xét; ~48 câu / ô = `saveScore` như PUT một ô) → max(241 + 10, ⌈241 × 1,3⌉)
   luuSuaCaLopMotLo: 119,   // một lô 8 em đổi họ tên: đo 91 câu → ⌈91×1,3⌉ = 119 (30 em một lần cũ: 289 câu, 7–14 s trên Turso). ponytail: lô cố định 8 em theo số em, không theo số câu — em đổi nhiều ô (tuần bắt đầu dời MT, Target) nặng hơn ~3 lần; lưới chặn cuối: dừng trước 10 s mỗi dòng (503, lô đó cuộn lại); chia lô theo ước lượng câu nếu hay gặp 503
 };
 
