@@ -7,18 +7,19 @@ import { addDaysStr } from '../../../lib/format.ts';
 import { useToast } from '../../../ui/Toast.tsx';
 import { useSession } from '../../../lib/session.tsx';
 import {
-  CAU_TUAN_DA_QUA, CHU_MUC_HOP, PERMISSIONS, chipDongKyNang, duongDotTest, kiemTuanXep, menuHopKyNang, mondayOfDate,
-  nhanTuanKhoa, tenMon, tenMonNgan, thaoTacKyNang, theoTuanChung, trangThaiTT, tuanDaSo, tuanLich, tuanMacDinhDotMoi,
+  CAU_TUAN_DA_QUA, CHU_MUC_HOP, PERMISSIONS, chipDongKyNang, duongDotTest, kiemTuanXep, lyDoKhongXoa, menuHopKyNang, mondayOfDate,
+  nhanTuanKhoa, tenMon, tenMonNgan, thaoTacKyNang, theoTuanChung, trangThaiTT, tuanDaSo, tuanMacDinhDotMoi, tuanNam,
   type BaiXemTruoc, type DongHangLoat, type KyNangKH, type MucHop, type OKyNang, type ThaoTac, type TrangThaiTT,
 } from '@shared/domain/index.ts';
-import { KY, khoaBaiThuong, thanDot, type DotChon, type KnO } from './kieu.ts';
+import { KY, khoaBaiThuong, khoaDot, nhanDot, thanDot, type DotChon, type GhiChuLich, type KnO } from './kieu.ts';
+import { GHI_CHU_TOI_DA, chuTacGia, luuGhiChu } from './GhiChuLichThi.tsx';
+import { t } from '@shared/i18n/index.ts';
 import { Nhan } from '../../../ui/Nhan.tsx';
 import { Truong } from '../../../ui/KhungPanel.tsx';
 import { TuanNho, resolveTuan, type Tuan } from './TuanNho.tsx';
 import { MenuDong } from '../../../ui/MenuDong.tsx';
 import { useGiuFocus } from '../../../ui/giuFocus.ts';
 import { HopThaoTacMt } from '../../fasttrack/HopThaoTacMt.tsx';
-import { HopHuyMt } from '../../fasttrack/HopHuyMt.tsx';
 import { NganLichSuBai } from '../../cham/NganLichSuBai.tsx';
 
 type Dong = { tick: boolean; periodId: number | null; weekStart: string | null };
@@ -36,11 +37,18 @@ type Dong = { tick: boolean; periodId: number | null; weekStart: string | null }
  *     `Chặn: …` (Lưu tắt; PR-MTGON: dời vượt lượt sau cũng chặn ở đây) và dòng vàng (cảnh báo → nút đổi thành `Vẫn xếp vào tuần này`;
  *     chip "Tuần đã qua"). Hộp chỉ dành cho Quản lý / Quản trị: chọn được tuần đã qua ở mọi lượt (T4, T20 — rà #212).
  * PR-HOP1: một việc dời lịch một MT chỉ có hộp này và một đường lưu `/ke-hoach-test/dot` (Hồ sơ MT cũng mở nó). FT đợt đã có: ⋯ đầu
- *   hộp `Huỷ MT{n} · Nhật ký · Mở hồ sơ MT`. `doiTuanDau`: dòng `kyNangDau` mở sẵn bộ chọn tuần (⋯ "Dời lịch thi" một kỹ năng).
+ *   hộp `Nhật ký · Mở hồ sơ MT`. `doiTuanDau`: dòng `kyNangDau` mở sẵn bộ chọn tuần (⋯ "Dời lịch thi" một kỹ năng).
+ * OV-15c (mục 6, mockup 6 khung 8): chân hộp `Đóng · Xóa … Lưu` — Xóa = bỏ tuần (`/attempts/:id/bo-tuan`, đợt về Chưa xếp, lịch sử giữ),
+ *   hỏi một lần NGAY TRONG hộp, xong có Hoàn tác; đã có điểm / đã thi → mờ + lý do. Không còn "Huỷ MT{n}". Dòng huỷ vì vắng 2 lần:
+ *   `Khôi phục → Chưa xếp` · `Giữ huỷ`. Ô "Ghi chú lịch thi" (C21) lưu cùng nút Lưu. Tuần luôn kèm năm (C20).
  * Bộ chọn tuần KHỞI TẠO bằng TUẦN HIỆN CÓ (Bổ sung sau rà #87): không để bộ chọn tự phát "tuần này" làm nút Lưu mở ngay.
  */
-export function HopKyNang({ anchor, tieuDe, loai, classId, studentId, dot, attemptId, kn, kyNangDau, deXuat, khaiGiang, tongTuan, onClose, onSaved, onHienDien, ky = KY, ct = null, lichSu = false, doiTuanDau = false }: {
+export function HopKyNang({ anchor, tieuDe, tenHv = tieuDe.split(' · ')[0], ghiChu, loai, classId, studentId, dot, attemptId, kn, kyNangDau, deXuat, khaiGiang, tongTuan, onClose, onSaved, onHienDien, ky = KY, ct = null, lichSu = false, doiTuanDau = false }: {
   anchor: HTMLElement; tieuDe: string; loai: 'ft' | 'thuong'; classId: number; studentId: number; dot: DotChon;
+  /** OV-15c: tên em cho câu hỏi Xóa ("Xóa lịch MT4 của Đỗ Trọng Tiến?") và ghi chú lịch thi hiện tại của em × đợt (C21). */
+  tenHv?: string;
+  /** Không truyền (hồ sơ MT, Lộ trình) = không có ô ghi chú — ô trống không được đè ghi chú đang có mà nơi đó không tải. */
+  ghiChu?: GhiChuLich | null;
   /** Lớp thường: bộ môn của chương trình (Pre FOU một dòng Tổng hợp — PF6); FT: 4 kỹ năng. `ct` = mã chương trình (tên FOU G+V/P). */
   ky?: readonly KyNangKH[]; ct?: string | null;
   attemptId: number | null; kn: KnO; kyNangDau: KyNangKH | null;
@@ -58,10 +66,7 @@ export function HopKyNang({ anchor, tieuDe, loai, classId, studentId, dot, attem
   const [thaoTac, setThaoTac] = useState<{ t: ThaoTac; k: KyNangKH } | null>(null);
   /** `ca-luot` = nhật ký cả lượt (⋯ đầu hộp). */
   const [nhatKy, setNhatKy] = useState<KyNangKH | 'ca-luot' | null>(null);
-  const [huyMt, setHuyMt] = useState(false);
-  /* PR-OV4a: "Huỷ MT{n}" chỉ Quản lý / Quản trị (`attempt.cancel`) — Admin mở được hộp xếp lịch nhưng không có nút Huỷ (máy chủ cũng 403). */
   const { can } = useSession();
-  const coHuy = can(PERMISSIONS.ATTEMPT_CANCEL);
   const navigate = useNavigate();
   const { pathname } = useLocation();
 
@@ -103,6 +108,13 @@ export function HopKyNang({ anchor, tieuDe, loai, classId, studentId, dot, attem
   const [force, setForce] = useState(false);
   const [busy, setBusy] = useState(false);
   const [lyDo, setLyDo] = useState('');
+  /* C21: ghi chú lịch thi — sửa trong hộp, lưu cùng nút Lưu (chỉ ghi chú, không dời lịch). */
+  const [ghi, setGhi] = useState(ghiChu?.noiDung ?? '');
+  const doiGhi = ghiChu !== undefined && ghi.trim() !== (ghiChu?.noiDung ?? '');
+  const [lichSuGhi, setLichSuGhi] = useState<GhiChuLich[] | null>(null);
+  /* Xóa (mục 6): `hoi` = đang hỏi lại trong hộp; `loiXoa` = câu lỗi (lịch giữ nguyên, bấm lại được). */
+  const [hoi, setHoi] = useState(false);
+  const [loiXoa, setLoiXoa] = useState<string | null>(null);
   const [bai, setBai] = useState<BaiXemTruoc[] | null>(null);
   const seq = useRef(0);
 
@@ -135,7 +147,7 @@ export function HopKyNang({ anchor, tieuDe, loai, classId, studentId, dot, attem
     return rows[k].tick && rows[k].periodId !== null && rows[k].periodId !== (o?.periodId ?? null);
   };
   const coDoi = ky.some(daDoi);
-  const daSua = moi ? daChinh : coDoi;
+  const daSua = moi ? daChinh : coDoi;   // OV-15c: ghi chú đổi tính riêng ở nút (`doiGhi`) — khai báo sau
   const bo = ky.filter((k) => !moi && !laKhoa(k) && (kn[k]?.batBuoc ?? false) && !rows[k].tick);
   const coTuan = ky.filter((k) => !laKhoa(k) && rows[k].tick && rows[k].periodId);
   const dungKy = ky.filter((k) => rows[k].tick);
@@ -177,7 +189,8 @@ export function HopKyNang({ anchor, tieuDe, loai, classId, studentId, dot, attem
   const cauChan = chan.length ? `Chặn: ${[...new Set(chan.map((b) => b.cau))].join(' ')}` : '';
   const cauCanhBao = canhBao.length ? [...new Set(canhBao.map((b) => b.cau))].join(' ') : '';
 
-  const luuDuoc = !busy && !chan.length && (moi ? !thieuTuan && dungKy.length > 0 && !!bai : coDoi);
+  const luuLich = !chan.length && (moi ? !thieuTuan && dungKy.length > 0 && !!bai : coDoi);
+  const luuDuoc = !busy && (luuLich || (doiGhi && !coDoi && !(moi && daChinh)));
   /* T4: Quản lý chọn tuần đã qua cho kỹ năng chưa thi → chip vàng (không chặn). Chỉ tính dòng vừa đổi — tuần cũ giữ nguyên không phải "chọn". */
   const quaTuan = !!nghiepVu && coTuan.some((k) => daDoi(k) && !!rows[k].weekStart && (moi || kn[k]?.khoa == null)
     && kiemTuanXep({ ketThuc: [addDaysStr(rows[k].weekStart.slice(0, 10), 6)], homNay: nghiepVu, quanLy: true }).quaTuan);
@@ -187,7 +200,9 @@ export function HopKyNang({ anchor, tieuDe, loai, classId, studentId, dot, attem
     setBusy(true);
     const dungForce = force || canhBao.length > 0;
     try {
-      if (moi) {
+      if (!luuLich) {
+        /* Chỉ đổi ghi chú: không gọi đường lịch. */
+      } else if (moi) {
         const tuan: Record<string, number> = {};
         for (const k of dungKy) tuan[k] = rows[k].periodId!;
         if (dot.loai === 'ft') {
@@ -201,7 +216,8 @@ export function HopKyNang({ anchor, tieuDe, loai, classId, studentId, dot, attem
         ));
         await api.post('/ke-hoach-test/dot', { attemptId, kyNang, lyDoBo: null, reason: lyDo.trim() || null, force: dungForce });
       }
-      toast.push('ok', 'Đã lưu lịch.');
+      if (doiGhi) await luuGhiChu({ classId, studentId, dot: khoaDot(dot) }, ghi);
+      toast.push('ok', luuLich ? 'Đã lưu lịch.' : t('Đã lưu ghi chú.'));
       invalidate('/ke-hoach-test'); invalidate('/attempts'); invalidate('/cham');
       onSaved(); onClose();
     } catch (e: any) {
@@ -227,7 +243,49 @@ export function HopKyNang({ anchor, tieuDe, loai, classId, studentId, dot, attem
   const huyDoi = () => {
     setRows(moi ? (macDinhMoi.current?.rows ?? khoiTao()) : khoiTao());
     setChung(moi ? (macDinhMoi.current?.chung ?? null) : chungKhoiTao());
-    setRieng({}); setDaChinh(false); setForce(false); setLyDo('');
+    setRieng({}); setDaChinh(false); setForce(false); setLyDo(''); setGhi(ghiChu?.noiDung ?? '');
+  };
+
+  /* Xóa (mục 6): bỏ tuần mọi kỹ năng chưa thi — máy chủ chặn có điểm / đã thi / đề nghị dời chờ duyệt. Hoàn tác = đặt lại đúng tuần cũ. */
+  const lyDoXoa = attemptId === null ? null : lyDoKhongXoa(kn);
+  const xoa = async () => {
+    if (attemptId === null || busy) return;
+    setBusy(true); setLoiXoa(null);
+    const cu = ky.filter((k) => kn[k]?.batBuoc && kn[k]?.periodId && kn[k]?.sit === 'scheduled').map((k) => ({ skill: k, periodId: kn[k]!.periodId }));
+    try {
+      await api.post(`/attempts/${attemptId}/bo-tuan`, { lyDo: t('Xóa lịch') });
+      invalidate('/ke-hoach-test'); invalidate('/attempts'); invalidate('/cham'); invalidate('/cycles');
+      toast.hoanTac(t('Đã xóa lịch {dot} · {ten}', { dot: nhanDot(dot), ten: tenHv }), () => {
+        void api.post('/ke-hoach-test/dot', { attemptId, kyNang: cu, lyDoBo: null, reason: t('Hoàn tác xóa lịch'), force: true })
+          .then(() => { invalidate('/ke-hoach-test'); invalidate('/attempts'); invalidate('/cham'); invalidate('/cycles'); onSaved(); })
+          .catch((e: any) => toast.push('error', e.message ?? t('Chưa hoàn tác được — thử lại.')));
+      });
+      onSaved(); onClose();
+    } catch (e: any) {
+      setLoiXoa(t('Chưa xóa được — {loi} Lịch giữ nguyên.', { loi: e.message ?? '' }));
+    } finally {
+      setBusy(false);
+    }
+  };
+  /* Vắng 2 lần (ngoại lệ duy nhất còn trạng thái huỷ): Khôi phục → Chưa xếp · Giữ huỷ (= Không mock lại). */
+  const xuLyHuyVang = async (k: KyNangKH, cach: 'khoi-phuc-chua-xep' | 'khong-mock-lai') => {
+    if (attemptId === null || busy) return;
+    setBusy(true);
+    try {
+      await api.post(`/attempts/${attemptId}/skills/${k}/${cach}`, {});
+      invalidate('/ke-hoach-test'); invalidate('/attempts'); invalidate('/cham'); invalidate('/cycles');
+      toast.push('ok', cach === 'khong-mock-lai' ? t('Đã giữ huỷ {kn}.', { kn: tenMon(ct, k) }) : t('{kn} về Chưa xếp — chọn tuần mới.', { kn: tenMon(ct, k) }));
+      onSaved(); onClose();
+    } catch (e: any) {
+      toast.push('error', e.message ?? t('Chưa lưu được — thử lại.'));
+    } finally {
+      setBusy(false);
+    }
+  };
+  const moLichSuGhi = () => {
+    if (lichSuGhi) { setLichSuGhi(null); return; }
+    void api.get<{ dong: GhiChuLich[] }>(`/ke-hoach-test/ghi-chu/lich-su?classId=${classId}&studentId=${studentId}&dot=${khoaDot(dot)}`)
+      .then((r) => setLichSuGhi(r.dong)).catch(() => setLichSuGhi([]));
   };
   const chonMuc = (k: KyNangKH, muc: MucHop, thay?: 'xep-lai' | 'khoi-phuc') => {
     if (muc === 'doi-tuan') { if (thay) setThaoTac({ t: thay, k }); else setRieng((s) => ({ ...s, [k]: true })); }
@@ -271,10 +329,9 @@ export function HopKyNang({ anchor, tieuDe, loai, classId, studentId, dot, attem
     return () => { document.removeEventListener('mousedown', away); document.removeEventListener('keydown', esc); window.removeEventListener('resize', dat); };
   }, []);   // eslint-disable-line react-hooks/exhaustive-deps
 
-  /* ⋯ đầu hộp (PR-HOP1): chữ y như nơi khác — "Huỷ MT{n}" (Hồ sơ MT), "Nhật ký" (⋯ dòng), "Mở hồ sơ MT" (Lộ trình). */
+  /* ⋯ đầu hộp (PR-HOP1): chữ y như nơi khác — "Nhật ký" (⋯ dòng), "Mở hồ sơ MT" (Lộ trình). OV-15c: bỏ "Huỷ MT{n}" (thay bằng Xóa ở chân hộp). */
   const hoSo = attemptId !== null && dot.loai === 'ft' ? duongDotTest({ id: attemptId, kind: 'mock', classId }, null) : null;
   const mucDau = attemptId === null || dot.loai !== 'ft' ? [] : [
-    ...(coHuy ? [{ key: 'huy-mt', nhan: `Huỷ MT${dot.attemptNo}`, nguyHiem: true, onChon: () => setHuyMt(true) }] : []),
     { key: 'nhat-ky', nhan: CHU_MUC_HOP['nhat-ky'], onChon: () => setNhatKy('ca-luot') },
     ...(hoSo && hoSo !== pathname ? [{ key: 'ho-so', nhan: 'Mở hồ sơ MT', onChon: () => { onClose(); navigate(hoSo); } }] : []),
   ];
@@ -302,7 +359,7 @@ export function HopKyNang({ anchor, tieuDe, loai, classId, studentId, dot, attem
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Tuần chung</span>
             <div className="min-w-[220px] flex-1">
-              <TuanNho d={{ periodId: chung?.periodId ?? null, weekStart: chung?.weekStart ?? null }} goc={homNay} onTuan={datChung} nhanKhoa={nhanChung} />
+              <TuanNho nam d={{ periodId: chung?.periodId ?? null, weekStart: chung?.weekStart ?? null }} goc={homNay} onTuan={datChung} nhanKhoa={nhanChung} />
             </div>
           </div>
         )}
@@ -311,7 +368,8 @@ export function HopKyNang({ anchor, tieuDe, loai, classId, studentId, dot, attem
             <DongKyNangHop key={k} k={k} o={kn[k]} khoa={laKhoa(k)} moi={moi} loai={loai} d={rows[k]} ct={ct} homNay={ngayNghiepVu} lichSu={lichSu}
               muc={menuCua(k)} riengTuan={!!rieng[k]} tickDuoc={moi || !(kn[k]?.batBuoc ?? false) || thaoTacKyNang(ttCua(k), quyen).menu.includes('bo-ky-nang')}
               noiBat={k === kyNangDau} khaiGiang={khaiGiang} tongTuan={tongTuan}
-              onTick={(v) => datTick(k, v)} onTuan={(t) => datTuanDong(k, t)} onMuc={(muc, thay) => chonMuc(k, muc, thay)} goc={homNay} />
+              onTick={(v) => datTick(k, v)} onTuan={(t) => datTuanDong(k, t)} onMuc={(muc, thay) => chonMuc(k, muc, thay)} goc={homNay}
+              huyVang={!moi && ttCua(k) === 'huy-vang' && quyen.quanLy ? (cach) => void xuLyHuyVang(k, cach) : undefined} busy={busy} />
           ))}
         </div>
         {!moi && coDoi && (
@@ -319,6 +377,26 @@ export function HopKyNang({ anchor, tieuDe, loai, classId, studentId, dot, attem
             <input className="field w-full" maxLength={300} value={lyDo} onChange={(e) => setLyDo(e.target.value)} placeholder="Ví dụ: trùng lịch phòng thi" />
           </Truong>
         )}
+        {/* C21 (mockup 4): ghi chú lịch thi — chỉ là ghi chú, không dời lịch; lưu cùng nút Lưu. */}
+        {ghiChu !== undefined && <div className="border-t pt-2" style={{ borderColor: 'var(--line)' }}>
+          <label className="block">
+            <span className="text-[11px] font-bold text-slate-400">{t('Ghi chú lịch thi')}</span>
+            <input className="field mt-1 w-full" maxLength={GHI_CHU_TOI_DA} value={ghi} onChange={(e) => setGhi(e.target.value)} placeholder={t('Thêm ghi chú…')} />
+          </label>
+          {ghiChu && (
+            <div className="mt-1 flex flex-wrap items-center gap-x-2 text-[11px] text-slate-500">
+              <span>{chuTacGia(ghiChu)}</span>
+              <button type="button" className="link min-h-[44px] sm:min-h-0" aria-expanded={!!lichSuGhi} onClick={moLichSuGhi}>{t('Lịch sử')}</button>
+            </div>
+          )}
+          {lichSuGhi && (
+            <ul className="m-0 mt-1 list-none space-y-1 p-0 text-[11px]" aria-label={t('Lịch sử ghi chú')}>
+              {lichSuGhi.map((g, i) => (
+                <li key={i}><span className="text-slate-300">{g.noiDung || t('(đã xoá)')}</span> <span className="text-slate-500">· {chuTacGia(g)}</span></li>
+              ))}
+            </ul>
+          )}
+        </div>}
         {coDongDuoi && (
           <div className="space-y-1.5" role="status">
             {cauChan && <div className="text-xs leading-relaxed text-bad">{cauChan}</div>}
@@ -331,12 +409,34 @@ export function HopKyNang({ anchor, tieuDe, loai, classId, studentId, dot, attem
           </div>
         )}
       </div>
-      <div className="flex items-center justify-between gap-2 border-t px-3 py-2" style={{ borderColor: 'var(--line)' }}>
-        <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={daSua ? huyDoi : onClose} disabled={busy}>{daSua ? 'Huỷ thay đổi' : 'Đóng'}</button>
-        <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={() => { if (canhBao.length) setForce(true); void luu(); }} disabled={!luuDuoc}>
-          {busy ? 'Đang lưu…' : nutLuu}
-        </button>
-      </div>
+      {hoi && attemptId !== null ? (
+        /* Mục 6: hỏi lại MỘT lần ngay trong hộp (không panel chồng panel) — nêu đúng em + đợt. */
+        <div className="space-y-2 border-t px-3 py-2.5" style={{ borderColor: 'var(--line)' }} role="alertdialog" aria-label={t('Xóa lịch')}>
+          <p className="m-0 text-sm font-bold text-slate-100">{t('Xóa lịch {dot} của {ten}?', { dot: nhanDot(dot), ten: tenHv })}</p>
+          <p className="m-0 text-xs text-slate-400">{t('Đợt về Chưa xếp, lịch sử vẫn xem được.')}</p>
+          {loiXoa && <p className="m-0 text-xs text-bad" role="alert">⚠ {loiXoa}</p>}
+          <div className="flex items-center justify-end gap-2">
+            <button type="button" className="btn min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => { setHoi(false); setLoiXoa(null); }}>{t('Đóng')}</button>
+            <button type="button" className="btn btn-danger min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => void xoa()}>{busy ? t('Đang xóa…') : t('Xóa')}</button>
+          </div>
+        </div>
+      ) : (
+        <div className="border-t px-3 py-2" style={{ borderColor: 'var(--line)' }}>
+          <div className="flex items-center gap-2">
+            <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={daSua || doiGhi ? huyDoi : onClose} disabled={busy}>{daSua || doiGhi ? 'Huỷ thay đổi' : t('Đóng')}</button>
+            {attemptId !== null && (
+              /* Xóa ngay phải Đóng (mục 6): mờ khi có điểm / đã thi / chưa xếp, hoặc đang sửa dở (lưu / huỷ thay đổi trước). */
+              <button type="button" className="btn min-h-[44px] sm:min-h-0" disabled={busy || !!lyDoXoa || daSua || doiGhi}
+                title={lyDoXoa ?? (daSua || doiGhi ? t('Lưu hoặc huỷ thay đổi trước') : undefined)} onClick={() => setHoi(true)}>{t('Xóa')}</button>
+            )}
+            <span className="flex-1" />
+            <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={() => { if (canhBao.length) setForce(true); void luu(); }} disabled={!luuDuoc}>
+              {busy ? 'Đang lưu…' : nutLuu}
+            </button>
+          </div>
+          {lyDoXoa && lyDoXoa !== t('Chưa xếp lịch') && <p className="m-0 mt-1 text-xs text-slate-400">{lyDoXoa}</p>}
+        </div>
+      )}
       {thaoTac && attemptId !== null && (
         <HopThaoTacMt key={`${thaoTac.t}:${thaoTac.k}`} thaoTac={thaoTac.t} attemptId={attemptId} skill={thaoTac.k} ct={ct} laThuong={loai === 'thuong'}
           quanLy row={{ periodId: kn[thaoTac.k]?.periodId ?? null, weekStart: kn[thaoTac.k]?.tuan ?? null }}
@@ -347,15 +447,14 @@ export function HopKyNang({ anchor, tieuDe, loai, classId, studentId, dot, attem
       {nhatKy && attemptId !== null && (
         <NganLichSuBai attemptId={attemptId} skill={nhatKy === 'ca-luot' ? null : nhatKy} ct={ct} tenHv={tieuDe} trongHop onClose={() => setNhatKy(null)} />
       )}
-      {huyMt && attemptId !== null && dot.loai === 'ft' && (
-        <HopHuyMt open attemptId={attemptId} attemptNo={dot.attemptNo} phu={tieuDe} trongHop onClose={() => setHuyMt(false)} onDone={() => { onSaved(); onClose(); }} />
-      )}
     </div>,
     document.body,
   );
 }
 
-function DongKyNangHop({ k, o, khoa, moi, loai, d, noiBat, khaiGiang, tongTuan, onTick, onTuan, onMuc, goc, homNay, ct = null, muc, riengTuan, tickDuoc, lichSu }: {
+function DongKyNangHop({ k, o, khoa, moi, loai, d, noiBat, khaiGiang, tongTuan, onTick, onTuan, onMuc, goc, homNay, ct = null, muc, riengTuan, tickDuoc, lichSu, huyVang, busy }: {
+  /** OV-15c (mục 6): dòng huỷ vì vắng 2 lần — `Khôi phục → Chưa xếp` · `Giữ huỷ` ngay trên dòng (Quản lý). */
+  huyVang?: (cach: 'khoi-phuc-chua-xep' | 'khong-mock-lai') => void; busy: boolean;
   /** MT lịch sử: chip "chờ chấm" tím như mọi "chờ" (C2); tooltip không hạn. */
   lichSu: boolean;
   ct?: string | null; muc: ReturnType<typeof menuHopKyNang>; onMuc: (m: MucHop, thay?: 'xep-lai' | 'khoi-phuc') => void;
@@ -375,7 +474,7 @@ function DongKyNangHop({ k, o, khoa, moi, loai, d, noiBat, khaiGiang, tongTuan, 
   /* Tuần đã đổi (chưa lưu) thì trạng thái cũ (vắng, trễ chấm …) không còn đúng — chỉ hiện chip tuần mới. */
   const daDoiTuan = !moi && d.periodId !== (o?.periodId ?? null);
   const chip = !moi && o && !daDoiTuan && homNay ? chipDongKyNang(o, homNay, ct, lichSu) : null;
-  const chuTuan = (iso: string) => tuanLich(iso, homNay);
+  const chuTuan = (iso: string) => tuanNam(iso);   // C20: hộp lịch luôn kèm năm
   const grid = coTick ? 'grid-cols-[24px_104px_minmax(0,1fr)_auto]' : 'grid-cols-[0px_104px_minmax(0,1fr)_auto]';
   return (
     <div className={`grid ${grid} items-center gap-x-2 gap-y-1 border-t py-1.5 first:border-t-0 max-sm:min-h-[48px] ${noiBat ? 'rounded bg-white/5' : ''}`} style={{ borderColor: 'var(--line)' }}>
@@ -397,7 +496,7 @@ function DongKyNangHop({ k, o, khoa, moi, loai, d, noiBat, khaiGiang, tongTuan, 
           <span className="text-slate-500">Bỏ kỹ năng khỏi đợt</span>
         ) : riengTuan ? (
           /* Rà #212 (T4/T20): hộp chỉ mở cho Quản lý / Quản trị (PLAN_WEEK) — chọn được cả tuần đã qua, máy chủ đã cho. */
-          <TuanNho d={d} goc={goc} onTuan={onTuan} nhanKhoa={nhanTuan} />
+          <TuanNho nam d={d} goc={goc} onTuan={onTuan} nhanKhoa={nhanTuan} />
         ) : coDiem && (d.weekStart ?? o?.tuan) ? (
           <span className="text-slate-400">{chuTuan((d.weekStart ?? o!.tuan)!)} · <b className="tabular-nums text-slate-100">{o.diem ?? 'có điểm'}</b></span>
         ) : (
@@ -405,6 +504,14 @@ function DongKyNangHop({ k, o, khoa, moi, loai, d, noiBat, khaiGiang, tongTuan, 
             {d.weekStart && <Nhan tone="doing">{chuTuan(d.weekStart)}</Nhan>}
             {chip && !(chip.chu === 'chưa xếp' && d.weekStart) && <Nhan tone={chip.tone}>{chip.chu}</Nhan>}
             {!d.weekStart && !chip && <span className="text-slate-500">chưa xếp</span>}
+          </span>
+        )}
+        {huyVang && (
+          /* Mockup 6 khung 8: "Huỷ · vắng 2 lần" → Khôi phục → Chưa xếp (xếp tuần nào cũng được) hoặc Giữ huỷ. */
+          <span className="mt-1 flex flex-wrap items-center gap-1.5">
+            <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => huyVang('khoi-phuc-chua-xep')}
+              title={t('Xếp lại tuần nào cũng được')}>{t('Khôi phục → Chưa xếp')}</button>
+            <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => huyVang('khong-mock-lai')}>{t('Giữ huỷ')}</button>
           </span>
         )}
       </div>

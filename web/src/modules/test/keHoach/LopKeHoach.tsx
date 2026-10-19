@@ -13,8 +13,10 @@ import { kyHieuLop } from '@shared/domain/index.ts';
  * `MT3 đang thi · MT4 chưa xếp 4 em`, lớp thường `đang W8/8`) rồi lưới HV × đợt khi mở. Lưới chỉ được tải khi mở lớp.
  * Lớp thường còn em chưa có bài → nút nhỏ `Xếp cả lớp theo đề xuất`.
  */
-export function LopKeHoach({ lop, mo, onToggle, onHienDien, chiCanXepLai = false }: {
+export function LopKeHoach({ lop, mo, onToggle, onHienDien, chiCanXepLai = false, hvChon = null }: {
   lop: LopKH; mo: boolean; onToggle: () => void; onHienDien: (open: boolean) => void; chiCanXepLai?: boolean;
+  /** OV-15c (C18): em vừa chọn ở ô tìm (thuộc lớp này) — lưới cuộn tới hàng em. */
+  hvChon?: number | null;
 }) {
   const toast = useToast();
   const [busy, setBusy] = useState(false);
@@ -57,16 +59,16 @@ export function LopKeHoach({ lop, mo, onToggle, onHienDien, chiCanXepLai = false
           </HangNhom>
         </tbody>
       </table>
-      {mo && <NoiDungLop lop={lop} onHienDien={onHienDien} chiCanXepLai={chiCanXepLai} />}
+      {mo && <NoiDungLop lop={lop} onHienDien={onHienDien} chiCanXepLai={chiCanXepLai} hvChon={hvChon} />}
     </div>
   );
 }
 
-function NoiDungLop({ lop, onHienDien, chiCanXepLai }: { lop: LopKH; onHienDien: (open: boolean) => void; chiCanXepLai: boolean }) {
+function NoiDungLop({ lop, onHienDien, chiCanXepLai, hvChon }: { lop: LopKH; onHienDien: (open: boolean) => void; chiCanXepLai: boolean; hvChon: number | null }) {
   const ft = useApi<LuoiFTData>(lop.loai === 'ft' ? `/ke-hoach-test/ft/${lop.id}` : null);
   const th = useApi<LuoiThuongData>(lop.loai === 'thuong' ? `/ke-hoach-test/thuong/${lop.id}` : null);
   const s = lop.loai === 'ft' ? ft : th;
   if (s.error) return <div className="p-3"><ErrorState message={s.error.message} hint={s.error.hint} onRetry={s.reload} /></div>;
   if (s.loading || !s.data) return <div className="p-3"><Skeleton rows={4} /></div>;
-  return <LuoiKeHoach loai={lop.loai} data={s.data} onReload={s.reload} onHienDien={onHienDien} chiCanXepLai={chiCanXepLai} />;
+  return <LuoiKeHoach loai={lop.loai} data={s.data} onReload={s.reload} onHienDien={onHienDien} chiCanXepLai={chiCanXepLai} hvChon={hvChon} />;
 }
