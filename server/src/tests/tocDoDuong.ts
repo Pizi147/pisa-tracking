@@ -246,6 +246,8 @@ export const DUONG_DO: MucDo[] = [
   },
   /* OV-15c (C18): ô tìm lớp / học viên / email — một câu lớp + một câu học viên. */
   { trang: 'Kế hoạch Test', vai: ['QL', 'QT', 'GVCN'], url: '/ke-hoach-test/tim?q=minh&branchId={cn}', maChuDich: { GVCN: 403 } },
+  /* OV-15c (C21): lịch sử ghi chú lịch thi (ghi chú lớp — một câu quyền lớp + một câu lịch sử). */
+  { trang: 'Kế hoạch Test', vai: ['QL', 'QT', 'GVCN'], url: '/ke-hoach-test/ghi-chu/lich-su?classId={lopFT}', maChuDich: { GVCN: 403 } },
 
   // ---------------------------------------------------------------- Công việc · Vận hành (PR-Ra)
   /* GVCN không vào được tab Vận hành, nhưng `listMgmtTasks` trả `scopeEmpty` chứ không 403 — mã thật là 200. */
@@ -653,6 +655,8 @@ export const TRAN: Record<string, number> = {
   'GVBM /ke-hoach-test/lop?branchId=1': 13,
   'GVCN_THUONG /ke-hoach-test/lop?branchId=1': 13,
   'QT /ke-hoach-test/lop?branchId=1': 22,   // PR-XLMT: +1 câu đếm "cần xếp lại"
+  'QL /ke-hoach-test/tim?q=minh&branchId=1': 15, 'QT /ke-hoach-test/tim?q=minh&branchId=1': 14,   // OV-15c: đo 5 / 4 → đo + 10
+  'QL /ke-hoach-test/ghi-chu/lich-su?classId=3': 15, 'QT /ke-hoach-test/ghi-chu/lich-su?classId=3': 14,   // OV-15c: đo 5 / 4 → đo + 10
   'QL /ke-hoach-test/ft/3': 23,   // TD2-a: đo 18 → max(đo+10, ⌈đo×1,3⌉), cũ 30   // PR-XLMT: +1 câu đề nghị dời chờ duyệt (chip chờ Quản lý duyệt)
   'QT /ke-hoach-test/ft/3': 22,   // TD2-a: đo 17 → max(đo+10, ⌈đo×1,3⌉), cũ 30   // PR-XLMT: +1 câu đề nghị dời chờ duyệt (chip chờ Quản lý duyệt)
   // PR-UX2: lưới lớp thường theo HV × kỹ năng — đo 25/24 câu, trần = max(đo+10, ⌈đo×1.3⌉).

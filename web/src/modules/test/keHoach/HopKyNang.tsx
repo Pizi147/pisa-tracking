@@ -294,20 +294,21 @@ export function HopKyNang({ anchor, tieuDe, tenHv = tieuDe.split(' · ')[0], ghi
   };
 
   /* Vị trí: neo dưới chip, kẹp trong màn; hết chỗ thì lật lên. < 640px → tấm dưới đáy. */
-  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
   const box = useRef<HTMLDivElement>(null);
   /* Bàn phím: hộp nằm cuối `body` (portal) nên Tab từ ô MT không tới được — mở là đưa focus vào hộp, Tab vòng trong hộp, đóng thì trả focus về ô đã mở nó. */
   useGiuFocus(box);
   const dienThoai = typeof window !== 'undefined' && window.innerWidth < 640;
+  /* Hotfix 19/10 (như `KhungHop` hộp điểm): vị trí ghi thẳng vào style, không setState trong layout effect mỗi lần vẽ (vòng lặp vô hạn). */
   const dat = () => {
-    if (dienThoai) return;
+    if (dienThoai || !box.current) return;
     const r = anchor.getBoundingClientRect();
     const rong = Math.min(520, window.innerWidth - 32);
     const cao = box.current?.offsetHeight ?? 360;
     const left = Math.min(Math.max(8, r.left), window.innerWidth - rong - 8);
     const duoi = r.bottom + 4;
     const top = duoi + cao > window.innerHeight - 8 ? Math.max(8, r.top - cao - 4) : duoi;
-    setPos((p) => (p && p.top === top && p.left === left ? p : { top, left }));
+    box.current.style.top = `${top}px`;
+    box.current.style.left = `${left}px`;
   };
   useLayoutEffect(() => { dat(); });   // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
@@ -338,11 +339,10 @@ export function HopKyNang({ anchor, tieuDe, tenHv = tieuDe.split(' · ')[0], ghi
   const nutLuu = canhBao.length && !force ? 'Vẫn xếp vào tuần này' : 'Lưu';
   const nhanChung = loai === 'thuong' && chung?.weekStart ? nhanTuanKhoa(chung.weekStart, khaiGiang ?? null, tongTuan ?? null) : null;
   const coDongDuoi = !!cauChan || !!cauCanhBao || quaTuan;
-  /* Chưa có vị trí: opacity 0 (không dùng visibility:hidden — phần tử ẩn không nhận focus của `useGiuFocus` lúc mở). */
   return createPortal(
     <div ref={box} role="dialog" aria-label={`Lịch ${tieuDe}`} tabIndex={-1}
       className={`surface-2 z-[60] border shadow-2xl outline-none ${dienThoai ? 'fixed inset-x-0 bottom-0 rounded-t-xl' : 'fixed w-[min(520px,calc(100vw-32px))] rounded-lg'}`}
-      style={{ borderColor: 'var(--line-strong)', ...(dienThoai ? {} : { top: pos?.top ?? 0, left: pos?.left ?? 0, opacity: pos ? 1 : 0 }) }}>
+      style={{ borderColor: 'var(--line-strong)' }}>
       <div className="flex items-center justify-between gap-2 border-b px-3 py-2" style={{ borderColor: 'var(--line)' }}>
         {/* Đợt đã có → tên là liên kết tới hồ sơ đợt (`duongDotTest`, một đường dẫn ở mọi màn); bấm thì đóng hộp. Đợt mới: chữ. */}
         <div className="min-w-0 flex-1 text-sm font-bold text-slate-100" title={tieuDe}>

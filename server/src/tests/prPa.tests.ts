@@ -570,17 +570,17 @@ export async function runPrPaTests(t: YThucTestKit) {
     assert(pl.soBuoi === 10 && !('performerSelf' in pl), 'Tự học: có Số buổi, không người');
     assert(d.paPayload({ ...tutor, kind: 'teaching_adjust' }).soBuoi === null, 'loại không Số buổi → null');
   });
-  check('PA15 · Xác nhận PA: gửi khoá người = đặt lại (cả ba trống → chặn, OV-13b: Tutor bắt Người dạy); không gửi khoá nào → giữ người máy gán', () => {
+  check('PA15 · Xác nhận PA: gửi khoá người = đặt lại (cả ba trống → xoá người, vẫn chạy — chủ SP 19/10 không bắt Người dạy); không gửi khoá nào → giữ người máy gán', () => {
     const c = caseThu('XN2');
     const [a, b] = taoPa.chenPa(conn, ['A', 'B'].map((x) => ({
       caseId: c, kind: 'tutor', description: `Tutor theo quy chế ${x}`, status: 'planned', preset: true, mocQuyChe: 'one_month', performerName: 'Cô cũ đã nghỉ',
     })));
     const MO_TA = 'Tutor Listening hai buổi mỗi tuần, chữa bài nghe Section 3.';
-    const loiA = maLoi(() => sosAuto.xacNhanPaQuyChe(P.lrTeacher, a, { description: MO_TA, soBuoi: 4, performerSelf: false, performerUserId: null, performerName: null }));
+    sosAuto.xacNhanPaQuyChe(P.lrTeacher, a, { description: MO_TA, soBuoi: 4, performerSelf: false, performerUserId: null, performerName: null });
     sosAuto.xacNhanPaQuyChe(P.lrTeacher, b, duXacNhan(conn, b, { description: MO_TA }));
     const ra = get('SELECT performer_user_id u, performer_name n, status FROM case_interventions WHERE id = ?', a);
     const rb = get('SELECT performer_user_id u, performer_name n FROM case_interventions WHERE id = ?', b);
-    assert(/Chọn người dạy/.test(loiA.msg) && ra.n === 'Cô cũ đã nghỉ' && ra.status === 'planned', `xoá người bị chặn: ${loiA.msg} ${JSON.stringify(ra)}`);
+    assert(ra.u === null && ra.n === null && ra.status === 'started', `xoá người, vẫn chạy: ${JSON.stringify(ra)}`);
     assert(rb.u === null && rb.n === 'Cô cũ đã nghỉ', `giữ người: ${JSON.stringify(rb)}`);
   });
 
