@@ -38,6 +38,6 @@ export const EN_TU = {
   'Trang Tutor': 'Tutor page',
   'Tutor dạy em chi nhánh mình: số buổi, 3 tiêu chí <b>Có · Không</b>, đánh giá — chỉ xem.': 'Tutors teaching students of your branch: sessions, 3 <b>Yes · No</b> items, rating — view only.',
   'Số liệu lấy từ <b>Ghi kết quả PA Tutor</b> của GV.': 'Figures come from teachers\' <b>Record Tutor PA result</b>.',
-  'Tutor: mỗi buổi chọn tutor (chưa có: <b>Tutor khác</b>), <b>Nhận xét buổi</b>, 3 ô <b>Có · Không</b> (<b>Cả 3 Có</b>); <b>Đánh giá tutor</b> tuỳ chọn.':
-    'Tutor: for each session pick the tutor (not listed: <b>Other tutor</b>), <b>Session comment</b>, 3 <b>Yes · No</b> items (<b>All 3 Yes</b>); <b>Rate tutor</b> is optional.',
+  'Tutor, PA có số buổi, lần ghi cuối, Bổ trợ miễn phí: luôn mở panel. Tutor: mỗi buổi chọn tutor (chưa có: <b>Tutor khác</b>), <b>Nhận xét buổi</b>, 3 ô <b>Có · Không</b> (<b>Cả 3 Có</b>); <b>Đánh giá tutor</b> tuỳ chọn.':
+    'Tutor, PA with session counts, final result, free extra classes: always open the panel. Tutor: for each session pick the tutor (not listed: <b>Other tutor</b>), <b>Session comment</b>, 3 <b>Yes · No</b> items (<b>All 3 Yes</b>); <b>Rate tutor</b> is optional.',
 } satisfies Record<string, Dich>;

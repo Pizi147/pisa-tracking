@@ -81,7 +81,7 @@ export async function runPrOv15eTests(t: YThucTestKit) {
 
   check('OV15e-3 · Phân tích là mục thanh trên (sau Test); sáu tab, Báo cáo đầu + mặc định; link cũ van-de → Test + SOS; đổi tab giữ thời gian', () => {
     const n = navOf(QL);
-    assert(d.khuVucHienThi(n).map((k: any) => k.key).join(',') === 'tong-quan,hoc-vien,test,phan-tich,cong-viec', d.khuVucHienThi(n).map((k: any) => k.key).join(','));
+    assert(d.khuVucHienThi(n).map((k: any) => k.key).join(',') === 'tong-quan,hoc-vien,test,phan-tich,cong-viec,tutor', d.khuVucHienThi(n).map((k: any) => k.key).join(','));
     assert(!d.khuVucHienThi(navOf(P.w1Teacher)).some((k: any) => k.key === 'phan-tich'), 'GV không có mục Phân tích');
     assert(d.khuVucCuaDuong('/phan-tich') === 'phan-tich', 'tô sáng mục Phân tích');
     assert([...d.GOC_NHIN].join(',') === 'bao-cao,tong-hop,ket-qua-thi,hieu-qua-pa,giao-vien,y-thuc', [...d.GOC_NHIN].join(','));

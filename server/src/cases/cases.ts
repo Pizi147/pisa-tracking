@@ -3660,7 +3660,7 @@ const buoiTuDong = (b: any): BuoiTutor => ({
 });
 /**
  * Ghi (thay) các dòng buổi của một lần ghi Kết quả — trong giao dịch của nơi gọi. `null` = không đụng. TU-a (mục 3.2): dòng cùng `buoi_so` mà 3 ô + đánh giá
- * không đổi giữ `ghi_luc` cũ (mốc "Cần chú ý"), đổi thì `ghi_luc` = lúc sửa; `lop_id` = lớp chụp lần đầu (giữ khi sửa), không có thì lớp em lúc này.
+ * không đổi giữ `ghi_luc` cũ (mốc nhóm tutor cần xem lại ở trang Tutor), đổi thì `ghi_luc` = lúc sửa; `lop_id` = lớp chụp lần đầu (giữ khi sửa), không có thì lớp em lúc này.
  */
 function ghiBuoiTutor(conn: any, followupId: number, buoi: BuoiTutor[] | null, lopId: number | null, truoc: DongBuoiCu[] = docBuoiCu(conn, followupId)): void {
   if (!buoi) return;

@@ -726,6 +726,7 @@ export async function runPrDonATests(t: YThucTestKit) {
     /* OV-13b: Tổng quan GV mở việc tại chỗ (`PanelViec`) — cây panel việc chỉ gọi khi bấm một việc, không lúc mở trang. */
     '/attachments': 'PanelViec (OV-13b) — chỉ khi bấm việc',
     '/ke-hoach-test/ghi-chu/lich-su': 'HopKyNang (OV-15c) — chỉ khi bấm Lịch sử của ghi chú lịch thi',
+    '/tutors/chon': 'ChonNguoi (TU-a) — ô chọn tutor, chỉ khi mở danh sách',
     '/attempts/': 'PanelViec (OV-13b) — chỉ khi bấm việc',
     '/cases/': 'PanelViec (OV-13b) — chỉ khi bấm việc',
     '/chuyen-lop/lop-dich': 'PanelViec (OV-13b) — chỉ khi bấm việc',

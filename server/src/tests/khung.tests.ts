@@ -47,11 +47,11 @@ export async function runKhungTests(t: YThucTestKit) {
 
   check('PR-O · O1/O6 Bốn khu vực đúng thứ tự, khu không có quyền thì bỏ hẳn', () => {
     const keys = (n: any) => d.khuVucHienThi(n).map((k) => k.key).join(',');
-    assert(keys(QL) === 'tong-quan,hoc-vien,test,phan-tich,cong-viec', `QL: ${keys(QL)}`);   // OV-15e: Phân tích lên thanh trên
+    assert(keys(QL) === 'tong-quan,hoc-vien,test,phan-tich,cong-viec,tutor', `QL: ${keys(QL)}`);   // TU-a: + Tutor (QL chỉ xem)   // OV-15e: Phân tích lên thanh trên
     assert(keys(GV) === 'tong-quan,hoc-vien,test,cong-viec', `GV thấy cả Test và Công việc (spec §3.1): ${keys(GV)}`);
     assert(keys(nav({ overview: true, students: true })) === 'tong-quan,hoc-vien', 'Không có Test/Công việc thì không hiện');
     const labels = d.KHU_VUC.map((k) => `${k.label}|${k.labelNgan}`).join(',');
-    assert(labels === 'Tổng quan|Tổng quan,Học viên & Lớp|Học viên,Test|Test,Phân tích|Phân tích,Công việc|Công việc', `Chữ: ${labels}`);
+    assert(labels === 'Tổng quan|Tổng quan,Học viên & Lớp|Học viên,Test|Test,Phân tích|Phân tích,Công việc|Công việc,Tutor|Tutor', `Chữ: ${labels}`);
   });
 
   check('PR-O · Khu vực của một đường dẫn (tô sáng đúng mục trên thanh)', () => {
@@ -132,7 +132,7 @@ export async function runKhungTests(t: YThucTestKit) {
   check('PR-O · O6 Quản trị và QL chi nhánh: đủ 4 khu, đủ tab, có Phân tích', () => {
     for (const [ten, p] of [['Quản trị', t.P.admin], ['QL MB', t.P.mbManager]] as const) {
       const n = navOf(p);
-      assert(d.khuVucHienThi(n).length === 5, `${ten}: ${tabs(n)}`);   // OV-15e: + Phân tích
+      assert(d.khuVucHienThi(n).length === 6, `${ten}: ${tabs(n)}`);   // OV-15e: + Phân tích; TU-a: + Tutor
       assert(d.tabTestHienThi(n).join(',') === 'lich,ke-hoach', `${ten} tab Test: ${tabs(n)}`);   // OV-15b: bỏ tab Điểm theo lớp
       assert(d.tabCongViecHienThi(n).join(',') === 'cho-duyet,ho-tro,van-hanh,bao-cao', `${ten} tab Công việc: ${tabs(n)}`);
       assert(n.analysis, `${ten} phải thấy Phân tích`);
