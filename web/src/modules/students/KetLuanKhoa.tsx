@@ -29,7 +29,7 @@ export type MiniTestEm = {
   coTheSua?: boolean;
 };
 
-const TONE = { ok: 'ok', warn: 'warn', bad: 'sos3', muted: 'muted' } as const;
+const TONE = { ok: 'ok', warn: 'warn', bad: 'danger', muted: 'muted' } as const;
 
 /**
  * HỘP "KẾT LUẬN KHOÁ" (PR-LT2b, K3 §4b, K3-43, T49) — Nằm ở: Hồ sơ HV → tab Học thuật → ngay trên bảng "Tiến độ và hỗ trợ theo kỹ năng"

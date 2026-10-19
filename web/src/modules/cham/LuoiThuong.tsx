@@ -14,7 +14,7 @@ import { thongBaoVang } from './thongBaoVang.ts';
 import { Empty, Info, Level, Status } from '../../ui/ui.tsx';
 import { useTrangThaiLuuO } from '../../ui/SaveState.tsx';
 import { ODiemThuong, laTuChoi, type SaveOpts } from '../fasttrack/ScoreEntry.tsx';
-import { caseStatusLabel, sosTone } from '../../lib/format.ts';
+import { caseStatusLabel } from '../../lib/format.ts';
 import {
   CHU_THAO_TAC, CHUONG_TRINH_KHONG_CHIA_MON, PERMISSIONS, nhanBai, ketQuaThuong, ngay, tenMon, tenMonNgan, thaoTacKyNang, trangThaiTT, tuanLich,
   type AttemptKind, type ThaoTac,
@@ -537,7 +537,7 @@ function DongThuong({ row, rowIndex, sheet, laCp, active, tongCot, dien, onReloa
         );
       })}
       {laCp && (
-        <td className={`td py-1.5 text-right ${row.chip ? (row.chip.dat ? 'text-ok' : 'text-sos1') : 'text-slate-500'}`}>
+        <td className={`td py-1.5 text-right ${row.chip ? (row.chip.dat ? 'text-ok' : 'text-bad') : 'text-slate-500'}`}>
           {row.result.tyLeTong != null ? `${Math.round(row.result.tyLeTong * 100)}%` : '—'}
         </td>
       )}
@@ -595,12 +595,12 @@ function KetQua({ row, sheet }: { row: Row; sheet: ThuongSheet }) {
       : null;
 
   const chiTiet = r.skills.map((s) => `${ngan(s.skill)} ${s.score === null ? '—' : `${s.score}/${s.total ?? '?'}`}`).join(' · ');
-  /* N-1b: màu kết quả Test — Đạt xanh lá · 1 môn trượt vàng · 2 cam · ≥ 3 đỏ · chưa đủ điểm xám. Chỉ MÀU, không có chữ SOS (T58). */
+  /* OV-15a: màu SOS chỉ ở chip SOS (viền) — kết quả lớp thường: Đạt xanh lá · có môn trượt đỏ (chưa đạt) · chưa đủ điểm xám. */
   const tone = khongChiaMon ? (truot ? 'warn' : r.complete ? 'ok' : 'muted')
-    : truot ? (r.sosLevel ? sosTone(r.sosLevel) : 'sos3') : r.complete ? 'ok' : 'muted';
+    : truot ? 'danger' : r.complete ? 'ok' : 'muted';
   const chinh = row.chip
     /* OV-6b2: Checkpoint đủ điểm — chip "Đạt" / "SOS · L+S" (chưa đạt chỉ chip, không Case). Chữ nói kết quả, màu chỉ đi kèm. */
-    ? <Level tone={row.chip.dat ? 'ok' : 'sos1'} title={chiTiet}>{dich(row.chip.chu)}</Level>
+    ? <Level tone={row.chip.dat ? 'ok' : 'danger'} title={chiTiet}>{dich(row.chip.chu)}</Level>
     : r.scored === 0
     ? <span className="text-xs text-slate-500">{kq.chinh}</span>
     : (

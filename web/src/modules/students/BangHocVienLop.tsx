@@ -4,7 +4,7 @@ import { useEffect, useMemo, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
-import { Empty, ExamPlanText, Level, Skeleton, TargetText } from '../../ui/ui.tsx';
+import { Empty, ExamPlanText, Skeleton, TargetText } from '../../ui/ui.tsx';
 import { ChipDuoiKck } from '../../ui/KetQuaDot.tsx';
 import { Nhan, QuaHan } from '../../ui/Nhan.tsx';
 import { DanhSachViecTiep } from '../../ui/ViecTiep.tsx';
@@ -12,15 +12,15 @@ import { MenuDong } from '../../ui/MenuDong.tsx';
 import { HangCon } from '../../ui/HangNhom.tsx';
 import { TheDong } from '../../ui/TheDong.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
-import { fmtBand, sosTone } from '../../lib/format.ts';
+import { fmtBand } from '../../lib/format.ts';
 import { MissingBadge } from './MissingBadge.tsx';
 import { CanhBaoYThuc } from '../classes/CanhBaoYThuc.tsx';
 import { duongViecTiep, nhapDiemCua, useThaoTacDongHocVien, type QuyenDong } from '../classes/thaoTacDongHocVien.tsx';
 import {
   chuSapToi, duongDotTest, ketQuaGanNhat, khoaLopThuong, sapXepHocVien, tachViecChung, tuanLich,
-  type KetQuaVao, type SapXep, type ViecTiepTheo,
-} from '@shared/domain/index.ts';
+  type KetQuaVao, type SapXep, type ViecTiepTheo, chipSosTuKetQua, chipSauThi } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
+import { ChipSos } from '../../ui/ChipSos.tsx';
 
 /** Các trường của một dòng `GET /classes/:id/roster` mà bảng này đọc. */
 export type NhanSauThiEm = { giaiDoan: GiaiDoanSauThi; han: string | null; quaHan: boolean; daGiaHan: boolean };
@@ -151,7 +151,7 @@ export function BangHocVienLop({ lop, chiHien, sapXep, onDoi, soCot, the = false
           const khoa = khoaCua(s);
           const sapToi = sapToiCua(s);
           return (
-            <TheDong key={s.id} className={s.status !== 'active' ? 'row-muted' : ''}
+            <TheDong key={s.id} className={`${s.status !== 'active' ? 'row-muted' : ''} ${chipSauThi(s.sauThi) ? 'hang-da-thi' : ''}`}
               dau={(
                 <span className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5">
                   <Link className="link font-semibold" to={`/hoc-vien/${s.id}`} state={{ ds }}>{s.fullName}</Link>
@@ -196,7 +196,7 @@ export function BangHocVienLop({ lop, chiHien, sapXep, onDoi, soCot, the = false
         const khoa = khoaCua(s);
         const sapToi = sapToiCua(s);
         return (
-          <HangCon key={s.id} className={`row-hover ${s.status !== 'active' ? 'row-muted' : ''}`}>
+          <HangCon key={s.id} className={`row-hover ${s.status !== 'active' ? 'row-muted' : ''} ${chipSauThi(s.sauThi) ? 'hang-da-thi' : ''}`}>
             <td className="td h-14">
               {/* PR-S4F #11: tên được ưu tiên chỗ — badge xuống dòng khi chật; tên quá dài vẫn cắt nhưng có title. */}
               <span className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5">
@@ -252,10 +252,7 @@ export function KetQuaOHocVien({ k, standing, thuong }: { k: ReturnType<typeof k
         {k.lech && <span className={`text-xs font-semibold tabular-nums ${k.kckDuoi ? 'text-slate-400' : 'text-bad'}`} title={t('Dưới kỳ vọng {n}', { n: k.lech.replace('−', '') })}>{k.lech}</span>}
         {k.dat && <span className="text-[11px] text-slate-400" title={thuong ? t('Đạt mọi môn') : t('Đạt kỳ vọng')}>✓</span>}
         {k.kckDuoi && <ChipDuoiKck />}
-        {k.sos && (
-          <Level tone={sosTone(standing?.sosLevel ?? null)} dut={k.sosTamThoi}
-            title={k.sosTamThoi ? t('Tạm thời: chưa đủ điểm các môn') : undefined}>{k.sos}{k.sosTamThoi ? ` ${t('tạm thời')}` : ''}</Level>
-        )}
+        {k.sos && chipSosTuKetQua(standing) && <ChipSos {...chipSosTuKetQua(standing)!} />}
       </span>
       {k.dong1 && <span className="block text-[12px] leading-4 text-slate-500"><DongCham chu={k.dong1} lienKet={standing?.attemptId && standing.attemptLabel ? { nhan: standing.attemptLabel, den: duongDotTest({ id: standing.attemptId, kind: standing.attemptKind, classId: standing.attemptClassId }) } : undefined} /></span>}
       {k.dong2 && <span className="block text-[12px] leading-4 text-slate-500"><DongCham chu={k.dong2} /></span>}

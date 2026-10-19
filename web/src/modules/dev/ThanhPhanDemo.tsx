@@ -130,7 +130,7 @@ export default function ThanhPhanDemo() {
         <div className="grid gap-3 sm:grid-cols-2">
           <Cell title="Nhan — bảy màu nghĩa + viền đứt (số tạm)">
             <div className="flex flex-wrap gap-1.5">
-              {(['ok', 'done', 'bad', 'soon', 'doing', 'wait', 'muted'] as ToneNhan[]).map((t) => <Nhan key={t} tone={t}>{t}</Nhan>)}
+              {(['ok', 'done', 'bad', 'soon', 'doing', 'muted'] as ToneNhan[]).map((t) => <Nhan key={t} tone={t}>{t}</Nhan>)}
               <Nhan tone="muted" dut>tạm thời</Nhan>
               <Nhan tone="soon" onClick={() => undefined}>bấm được</Nhan>
             </div>

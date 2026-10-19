@@ -138,7 +138,7 @@ function MasterDetail({ dto, lenhId, onClose, onDone, reload }: Chung) {
             {dto.ds.map((e) => (
               <li key={e.lenhId} role="option" aria-selected={e.lenhId === em.lenhId} tabIndex={e.lenhId === em.lenhId ? 0 : -1}
                 onClick={() => setChon(e.lenhId)} onFocus={() => setChon(e.lenhId)}
-                className={`cursor-pointer px-3 py-2 outline-none ${e.lenhId === em.lenhId ? 'bg-ink-800 shadow-[inset_0_0_0_1px_theme(colors.teal.600)]' : 'hover:bg-white/[.04]'}`}>
+                className={`cursor-pointer px-3 py-2 outline-none ${e.lenhId === em.lenhId ? 'bg-[color:var(--accent-soft)] shadow-[inset_0_0_0_1px_var(--accent)]' : 'hover:bg-white/[.04]'}`}>
                 <div className="flex items-center justify-between gap-2">
                   <span className="min-w-0 truncate text-sm text-slate-100">{e.ten}</span>
                   <Nhan tone={e.phieu.khoa === 'da-xac-nhan' ? 'ok' : e.phieu.khoa === 'mon' ? 'soon' : 'muted'}>{e.phieu.nhan}</Nhan>

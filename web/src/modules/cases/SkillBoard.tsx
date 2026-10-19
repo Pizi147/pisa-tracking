@@ -18,6 +18,7 @@ import {
   type AttemptKind, type DeadlineKind, type DeadlineView, type TrangThai, type TrangThaiCaseV4,
 } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
+import { ChipSos } from '../../ui/ChipSos.tsx';
 
 /**
  * TIẾN ĐỘ VÀ HỖ TRỢ THEO KỸ NĂNG — khối chính của hồ sơ học viên (mục 4.2).
@@ -340,7 +341,6 @@ function CotCase({ row }: { row: Row }) {
 }
 
 /** Chip nhỏ, viền mảnh — `[MT1]`, `[SOS 3]` trong tên Case (T21). SOS chỉ hiện Ở ĐÂY, một lần (K3-08). */
-const CHIP_SOS: Record<number, string> = { 1: 'bg-sos1-bg text-sos1', 2: 'bg-sos2-bg text-sos2', 3: 'bg-sos3-bg text-sos3' };
 export function TenCase({ c }: { c: Pick<CaseCard, 'title' | 'tenSos'> }) {
   if (!c.tenSos) return <>{c.title}</>;
   const { mt, giua, sos, kck } = c.tenSos;
@@ -350,7 +350,7 @@ export function TenCase({ c }: { c: Pick<CaseCard, 'title' | 'tenSos'> }) {
       <span className="min-w-0 truncate max-sm:whitespace-normal max-sm:overflow-visible max-sm:break-words">{giua}</span>
       {/* OV-9: Case nhẹ của em KCK — chip trung tính, không SOS, không đỏ. */}
       {kck ? <span className="shrink-0 rounded border border-[color:var(--line-strong)] px-1 text-[11px] font-semibold leading-4 text-slate-300" title={GIAI_THICH_KCK}>KCK</span>
-        : sos ? <span className={`shrink-0 rounded px-1 text-xs font-bold leading-4 tabular-nums ${CHIP_SOS[sos] ?? ''}`}>SOS {sos}</span> : null}
+        : sos ? <ChipSos muc={sos} dot={mt ? `MT${mt}` : null} tinh /> : null}
     </span>
   );
 }
@@ -379,13 +379,13 @@ export function KhoaQuyChe() {
  */
 export function NhanLoai({ loai, cho }: { loai: 'Case' | 'PA'; cho?: boolean }) {
   const lop = loai === 'Case' ? 'border-current text-slate-100'
-    : cho ? 'border-transparent bg-wait-bg text-wait' : 'border-transparent bg-[color:var(--line-strong)] text-slate-100';
+    : cho ? 'border-transparent bg-muted-bg text-muted' : 'border-transparent bg-[color:var(--line-strong)] text-slate-100';
   return <span className={`${CHIP_VUONG} shrink-0 ${lop}`}>{loai}</span>;
 }
 
 /** Màu vạch trái 3px của hàng Case theo nhãn trạng thái (token có sẵn — không màu mới). */
 const VACH_CASE: Record<TrangThai, string> = {
-  'can-lam': 'var(--line-strong)', 'dang-lam': 'rgb(var(--doing-rgb))', 'cho-duyet': 'rgb(var(--wait-rgb))',
+  'can-lam': 'var(--line-strong)', 'dang-lam': 'rgb(var(--doing-rgb))', 'cho-duyet': 'rgb(var(--muted-rgb))',
   'qua-han': 'rgb(var(--late-rgb))', xong: 'rgb(var(--done-line-rgb))', 'da-huy': 'rgb(var(--muted-line-rgb))',
 };
 
@@ -563,7 +563,7 @@ function HangPA({ p, c, ngan, onMoCase }: {
       <td className="td">
         {chuaChay ? null   /* PR-CT2: PA Bổ trợ chờ Xác nhận Case (việc ở hàng Case); "Chưa bắt đầu" đã ở cột Kết quả — không lặp. */
         : v.loai === 'cho-duyet' ? (
-          <CotPhai phu={<><span className="text-wait">{v.text}</span>{v.due ? t(' · hạn {ngan}', { ngan: ngan(v.due) }) : null}</>} />
+          <CotPhai phu={<><span className="text-muted">{v.text}</span>{v.due ? t(' · hạn {ngan}', { ngan: ngan(v.due) }) : null}</>} />
         ) : v.loai === 'cho-xac-nhan' ? (
           <CotPhai
             nut={c.canEdit && c.sos.hasCause ? (

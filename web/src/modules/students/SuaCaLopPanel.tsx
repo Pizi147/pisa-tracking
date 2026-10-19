@@ -235,7 +235,7 @@ export function SuaCaLopPanel({ classId, onClose, onDone }: { classId: number; o
                           const idLoi = `loi-${r.studentId}-${c.key}`;
                           return (
                             <td key={c.key} className={`td px-1.5 py-1.5 align-top${c.key === 'fullName' ? ' sticky-col' : ''}`}
-                              style={daSuaO ? { background: 'rgb(var(--chon-bg-rgb))' } : undefined}>
+                              style={daSuaO ? { background: 'var(--accent-soft)' } : undefined}>
                               <div className="flex items-center gap-1">
                                 <span className="min-w-0 flex-1">
                                   {c.key === 'consultantUserId' ? (

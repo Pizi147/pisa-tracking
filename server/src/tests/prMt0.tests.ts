@@ -588,10 +588,10 @@ export async function runPrMt0Tests(t: YThucTestKit) {
     assert(nhan.includes('"nhanNgan":"MT0 · không dùng"') && nhan.includes('"nhanNgan":"MT0"'), nhan.join());
   });
 
-  check('Rà #226 (4b) · hạn việc "Chốt lộ trình" (trước: Chốt lên FT; Công việc, Tổng quan) = "hạn hết CN dd/mm"', () => {
+  check('Rà #226 (4b) · hạn việc "Chốt lộ trình" (trước: Chốt lên FT; Công việc, Tổng quan) = "hạn dd/mm"', () => {
     assert(dm.LOAI_HAN_CUA_VIEC.chot_len_ft === 'chot-len-ft', 'loại hạn của việc');
     const v = dm.deadlineView({ kind: 'chot-len-ft', due: '2026-10-04', today: '2026-09-28' });
-    assert(v.text.includes('hạn hết CN 04/10'), v.text);
+    assert(v.text.includes('hạn 04/10'), v.text);
     const tq = tongQuan.tongQuanQuanLy(QL, { branchId: MB }).canXuLy.find((x: any) => x.metricId === 'lop-chua-chot-len-ft');
     assert(tq?.han?.loai === 'chot-len-ft', JSON.stringify(tq?.han));
   });

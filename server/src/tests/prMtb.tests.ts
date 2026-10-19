@@ -833,10 +833,10 @@ export async function runPrMtbTests(t: YThucTestKit) {
   check('MTb sau rà đợt 2 (7) · chip dòng của hộp một đợt: MT cũ chưa điểm = "chờ chấm" TÍM như MT thường (FIX-DTL, C2); hộp truyền `lichSu`', () => {
     const het: any = { trangThai: 'da-xep', tuan: '2026-09-07', periodId: 1, doiTu: null, batBuoc: true, khoa: null, sit: 'scheduled', tuanKetThuc: '2026-09-13', choDuyet: false, hanCham: null };
     const cu = (d as any).chipDongKyNang(het, '2026-10-06', null, true);
-    assert(cu?.chu === 'chờ chấm' && cu.tone === 'wait', JSON.stringify(cu));
+    assert(cu?.chu === 'chờ chấm' && cu.tone === 'muted', JSON.stringify(cu));
     const thuong = (d as any).chipDongKyNang(het, '2026-10-06', null, false);
-    assert(thuong?.chu === 'chờ chấm' && thuong.tone === 'wait', JSON.stringify(thuong));
-    assert((d as any).chipDongKyNang(het, '2026-10-06')?.tone === 'wait', 'mặc định không phải MT cũ');
+    assert(thuong?.chu === 'chờ chấm' && thuong.tone === 'muted', JSON.stringify(thuong));
+    assert((d as any).chipDongKyNang(het, '2026-10-06')?.tone === 'muted', 'mặc định không phải MT cũ');
     const h = nguon('web/src/modules/test/keHoach/HopKyNang.tsx');
     assert(/chipDongKyNang\(o, homNay, ct, lichSu\)/.test(h) && /lichSu=\{lichSu\}/.test(h), 'hộp chưa truyền lichSu');
     assert(/!\(chip\.chu === 'chưa xếp' && d\.weekStart\)/.test(h), 'chip "chờ chấm" bị ẩn cùng chip "chưa xếp"');

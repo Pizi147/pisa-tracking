@@ -179,7 +179,7 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
             {chon && (
               /* OV-11i (P2-3): bọc <label> — vùng chạm 44 × 44 ở điện thoại (`after:`, mẫu MenuDong), ô tích giữ 16 px. */
               <label className="relative mt-1 inline-flex shrink-0 cursor-pointer max-sm:after:absolute max-sm:after:left-1/2 max-sm:after:top-1/2 max-sm:after:h-11 max-sm:after:w-11 max-sm:after:-translate-x-1/2 max-sm:after:-translate-y-1/2 max-sm:after:content-['']">
-                <input type="checkbox" className="h-4 w-4 accent-teal-500" checked={chon.checked}
+                <input type="checkbox" className="h-4 w-4 accent-[color:var(--accent)]" checked={chon.checked}
                   onChange={(e) => chon.onChange(e.target.checked)} aria-label={t('Chọn: {tieuDe}', { tieuDe: dich(yc.tieuDe) })} />
               </label>
             )}
@@ -197,7 +197,7 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
               {yc.dong.map((d, i) => <p key={i} className="m-0 whitespace-pre-line">{dich(d)}</p>)}
             </div>
             {(biCat || moHet) && (
-              <button type="button" className="mt-0.5 min-h-[44px] text-[12px] text-teal-300 hover:underline sm:min-h-0" onClick={() => setMoHet(!moHet)}
+              <button type="button" className="mt-0.5 min-h-[44px] text-[12px] text-[color:var(--accent-strong)] hover:underline sm:min-h-0" onClick={() => setMoHet(!moHet)}
                 aria-expanded={moHet}>{moHet ? t('Thu gọn') : t('Xem thêm')}</button>
             )}
             {yc.neuDuyet && cho && <p className="m-0 mt-1 text-[12px] text-slate-400">{t('Nếu duyệt: {neuDuyet}', { neuDuyet: dich(yc.neuDuyet) })}</p>}
@@ -242,7 +242,7 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
             </div>
           )}
           {tuDuyetDuoc && (
-            <span className="text-[12px] text-wait" title={t('Bạn tự gửi yêu cầu này. Duyệt được — nhật ký ghi \'tự duyệt\' và Quản trị được báo.')}>
+            <span className="text-[12px] text-muted" title={t('Bạn tự gửi yêu cầu này. Duyệt được — nhật ký ghi \'tự duyệt\' và Quản trị được báo.')}>
               {t('Bạn tự gửi · tự duyệt được')}
             </span>
           )}

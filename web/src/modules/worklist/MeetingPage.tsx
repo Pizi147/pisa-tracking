@@ -12,7 +12,7 @@ import { t } from '@shared/i18n/index.ts';
 import { SignalList } from './SignalList.tsx';
 import { ManagerTaskList } from './ManagerTasks.tsx';
 import { BangChung } from '../../ui/BangChung.tsx';
-import { fmtDate, fmtDateTime, fmtThu, unitStatusLabel, unitTone } from '../../lib/format.ts';
+import { fmtDate, fmtDateTime, unitStatusLabel, unitTone } from '../../lib/format.ts';
 import { UNIT_STATUSES, demTrangThaiDonVi, hienONgay, khopChiNhanhBaoCao, locDonViBaoCao, luaChonChiNhanhBaoCao } from '@shared/domain/index.ts';
 
 type LinkedTask = { id: number; code: string; title: string; progress: string; progressLabel: string; due: string | null; overdue: boolean };
@@ -175,10 +175,10 @@ export function MeetingBoard() {
         /* Ba trạng thái: chưa mở · trong hạn · quá hạn (OV-13h: vẫn nộp được, lần nộp ghi "nộp muộn" — không còn khoá / Quản trị mở lại). */
         <p className="text-xs m-0" style={{ color: 'var(--text-dim)' }}>
           {!ew.open
-            ? `Chưa mở — mở từ ${fmtThu(ew.opensOn)} ${fmtDate(ew.opensOn)}.`
+            ? `Chưa mở — mở từ ${fmtDate(ew.opensOn)}.`
             : ew.late
-              ? t('Quá hạn (hết {thu} {ngay}) — vẫn nộp được, ghi "nộp muộn".', { thu: fmtThu(ew.closesOn), ngay: fmtDate(ew.closesOn) })
-              : `Nộp từ ${fmtThu(ew.opensOn)} ${fmtDate(ew.opensOn)} đến hết ${fmtThu(ew.closesOn)} ${fmtDate(ew.closesOn)}.`}
+              ? t('Quá hạn (hết {ngay}) — vẫn nộp được, ghi "nộp muộn".', { ngay: fmtDate(ew.closesOn) })
+              : `Nộp từ ${fmtDate(ew.opensOn)} đến hết ${fmtDate(ew.closesOn)}.`}
         </p>
       )}
 
@@ -206,7 +206,7 @@ export function MeetingBoard() {
               /* L2.3: tuần chưa ai báo cáo → một dòng thay hàng chục ô "—"; vẫn giữ đường mở ô báo cáo theo từng đơn vị. */
               <div className="px-4 py-3 space-y-2">
                 <p className="m-0 text-sm text-slate-400">
-                  Chưa đơn vị nào báo cáo{ew?.opensOn && ew?.closesOn ? ` — nộp từ ${fmtThu(ew.opensOn)} ${fmtDate(ew.opensOn)} đến hết ${fmtThu(ew.closesOn)} ${fmtDate(ew.closesOn)}` : ''}.
+                  Chưa đơn vị nào báo cáo{ew?.opensOn && ew?.closesOn ? ` — nộp từ ${fmtDate(ew.opensOn)} đến hết ${fmtDate(ew.closesOn)}` : ''}.
                   {' '}Bấm tên đơn vị để mở ô báo cáo.
                 </p>
                 <div className="flex flex-wrap gap-2">

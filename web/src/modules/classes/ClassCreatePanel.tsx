@@ -303,7 +303,7 @@ export function chonNguoi<T extends { id: number; name: string }>(id: number | '
   return { kieu: 'tai_khoan', id, ten: t?.name ?? '…', phu: t ? phu(t) : undefined };
 }
 
-/** Một hàng lựa chọn trong form: `NutChon` (đang chọn nền ink-800 + viền teal + ✓, không `btn-primary` — B3, Q19). */
+/** Một hàng lựa chọn trong form: `NutChon` (đang chọn nền nhấn nhạt + viền nhấn + ✓, không `btn-primary` — B3, Q19). */
 export function PhanDoan({ nhan, giaTri, onChon, muc }: {
   nhan: string; giaTri: string; onChon: (v: string) => void;
   muc: { v: string; nhan: string; tat?: boolean; title?: string }[];

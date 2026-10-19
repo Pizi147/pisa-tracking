@@ -6,7 +6,7 @@ import { useDaXemHd, useVaiHd } from './MucHuongDan.tsx';
 
 /**
  * HD-a — DẢI "Mới dùng PISA?" ở Tổng quan (mockup OV-13 §5c): chỉ tài khoản chưa mở Hướng dẫn, vai đã có nội dung. Xem → trang Hướng dẫn
- * (trang tự ghi "đã xem"); Ẩn → tắt hẳn, nhớ theo tài khoản (vẫn mở được qua "?"). Lưu lỗi thì dải hiện lại + báo.
+ * (trang tự ghi "đã xem"); Ẩn → tắt hẳn, nhớ theo tài khoản (vẫn mở được qua menu Tài khoản › Hướng dẫn, OV-15a). Lưu lỗi thì dải hiện lại + báo.
  */
 export function DaiMoiDung() {
   const { chuaXem, ghi } = useDaXemHd();

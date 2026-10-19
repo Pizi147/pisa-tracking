@@ -135,6 +135,14 @@ export function trangThaiSauThi(c: DongSauThi, homNay: string): TrangThaiSauThi 
     quaHan: (giaiDoan === 'da_thi_cho_kq' || giaiDoan === 'cho_buoc_tiep') && !!han && homNay > han,
   };
 }
+/**
+ * OV-15a (mockup 1 §1d): hàng ĐÃ THI — nền cả hàng + chip ngắn "Đã thi · chờ KQ" → "Có KQ · chờ bước tiếp"; ngoài hai giai đoạn đó → null (hàng thường).
+ * Cùng `trangThaiSauThi` với chữ dài (`chuSauThi`) và lọc "Đã thi · chờ kết quả".
+ */
+export function chipSauThi(s: Pick<TrangThaiSauThi, 'giaiDoan'> | null | undefined): string | null {
+  if (!s) return null;
+  return s.giaiDoan === 'da_thi_cho_kq' ? t('Đã thi · chờ KQ') : s.giaiDoan === 'cho_buoc_tiep' ? t('Có KQ · chờ bước tiếp') : null;
+}
 /** Chữ trạng thái — cột "Target · Dự kiến thi", panel một em, đầu hồ sơ: "Đã thi · chờ kết quả" · `CHU_DA_XONG` + "chờ bước tiếp" (hạn nơi gọi ghép). */
 export function chuSauThi(s: Pick<TrangThaiSauThi, 'giaiDoan'>): string | null {
   if (s.giaiDoan !== 'da_thi_cho_kq' && s.giaiDoan !== 'cho_buoc_tiep') return null;

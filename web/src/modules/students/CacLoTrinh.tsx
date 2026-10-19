@@ -35,7 +35,7 @@ function KetQua({ d, onBuocTiep, onDoi }: { d: DongCacLoTrinh; onBuocTiep?: (cyc
     return (
       <span className="inline-flex flex-wrap items-center gap-x-2 gap-y-1">
         <Nhan tone={toneXong(bt.ketLuan)}>{dich(bt.daXong)}</Nhan>
-        {bt.hen ? <><Nhan tone="wait">{t('Hẹn bắt đầu {tuan}', { tuan: tuanLich(bt.hen, homNay) })}</Nhan>{bt.coTheChon && <button type="button" className={NUT_CHU} onClick={() => void huyHen()}>{t('Huỷ hẹn')}</button>}</>
+        {bt.hen ? <><Nhan tone="muted">{t('Hẹn bắt đầu {tuan}', { tuan: tuanLich(bt.hen, homNay) })}</Nhan>{bt.coTheChon && <button type="button" className={NUT_CHU} onClick={() => void huyHen()}>{t('Huỷ hẹn')}</button>}</>
           : bt.chon ? (!d.dangHoc && d.huong && <Nhan tone={toneHuong(d.huong)}>{dich(d.huong)}</Nhan>)
             : bt.coTheChon && onBuocTiep ? <button type="button" className={NUT_CHU} onClick={() => onBuocTiep(d.id)}>{t('Chọn bước tiếp ›')}</button>
               : <span className="text-[11.5px] text-slate-500">{t('Chờ QL / TVV chọn bước tiếp')}</span>}

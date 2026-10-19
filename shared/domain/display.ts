@@ -261,7 +261,7 @@ export type DeadlineKind = (typeof DEADLINE_KINDS)[number];
 
 /**
  * Việc + tiền tố hạn của từng loại — MỘT nơi duy nhất, khớp bảng ở HE_GIAO_DIEN §4.
- * PR-UX0 (B-2/B-3): "việc" là tiêu đề dòng ở chỗ hiện hạn, còn `<Han>` chỉ nói mốc ("hạn hết T3 29/09").
+ * PR-UX0 (B-2/B-3): "việc" là tiêu đề dòng ở chỗ hiện hạn, còn `<Han>` chỉ nói mốc ("hạn 29/09").
  * PR-N1 (R-PA1/R-PA3): hạn ghi kết quả tuần là HẾT THỨ HAI tuần kế tiếp; việc có hạn nói rõ tuần ("Ghi kết quả tuần W4 SEP").
  */
 /** D-046: một chữ cho việc lập PA; nơi so khớp (việc học viên, ngăn Case) dùng hằng này, không so chuỗi hiển thị. */
@@ -272,7 +272,7 @@ const DEADLINE_VIEC: Record<DeadlineKind, { viec: string; tien: string }> = {
   /* PR-NEN Q16: giữ khoá `xac-minh-sos`, chữ đổi theo thuật ngữ chốt (như N1 Q4). */
   'xac-minh-sos': { viec: t('Xác nhận'), tien: t('hạn') },   // OV-12c: Xác nhận Case (Progress) · Xác nhận PA · Ghi nhận xét (MT cũ)
   'lap-pa': { viec: t('Thêm PA'), tien: t('hạn') },
-  'cap-nhat-pa': { viec: t('Kết quả PA'), tien: t('hạn hết T3') },
+  'cap-nhat-pa': { viec: t('Kết quả PA'), tien: t('hạn') },   // OV-15a: hạn chỉ ghi ngày (trước: "hạn hết T3")
   'nhap-diem': { viec: t('Nhập điểm'), tien: t('hạn') },
   'du-kien-ket-thuc': { viec: t('Dự kiến kết thúc'), tien: t('dự kiến kết thúc') },
   /* PR-Ra Q9: quá hạn tính theo hạn HIỆN TẠI — hạn gốc/lý do dời hiện ở dòng phụ riêng (`dongHanDaDoi`), không qua `originalDue` ở đây. */
@@ -281,7 +281,7 @@ const DEADLINE_VIEC: Record<DeadlineKind, { viec: string; tien: string }> = {
   'xu-ly-vi-pham': { viec: t('Xử lý vi phạm'), tien: t('hạn') },
   'mini-test': { viec: 'Mini Test', tien: t('hạn') },
   'phoi-hop': { viec: t('Xác nhận meeting CX'), tien: t('hạn') },
-  'chot-len-ft': { viec: t('Chốt lộ trình'), tien: t('hạn hết CN') },
+  'chot-len-ft': { viec: t('Chốt lộ trình'), tien: t('hạn') },   // OV-15a: hạn chỉ ghi ngày (trước: "hạn hết CN")
   'sau-thi': { viec: t('Hạn sau thi'), tien: t('hạn') },
 };
 
@@ -307,7 +307,7 @@ export type DeadlineInput = {
 };
 
 export type DeadlineView = {
-  /** Câu đầy đủ cho tooltip: "Ghi kết quả W3–W4 SEP · hạn hết T3 29/09 · quá hạn 2 ngày". */
+  /** Câu đầy đủ cho tooltip: "Ghi kết quả W3–W4 SEP · hạn 29/09 · quá hạn 2 ngày". */
   text: string;
   tone: DeadlineTone;
   /** Số ngày quá hạn tính từ hạn gốc; null khi không quá hạn hoặc không áp dụng (dự kiến). */
@@ -316,7 +316,7 @@ export type DeadlineView = {
   title: string | null;
   /** Việc: "Ghi kết quả tuần W4 SEP" (có hạn) · "Ghi kết quả PA" (chưa có hạn). */
   viec: string;
-  /** Mốc: "hạn hết T3 29/09" · "hạn 09/09" · "dự kiến kết thúc 14/09" · "chưa có hạn". */
+  /** Mốc: "hạn 29/09" · "hạn 09/09" · "dự kiến kết thúc 14/09" · "chưa có hạn". */
   han: string;
   /** Đúng ngày hạn, chưa quá (không bao giờ true với `du-kien-ket-thuc`). */
   homNay: boolean;
@@ -385,7 +385,7 @@ export function deadlineView(i: DeadlineInput): DeadlineView {
   /* C-khác (Dọn-b 14a): hạn có giờ (ISO UTC) đổi sang NGÀY giờ Việt Nam trước khi so — 18:30Z ngày 21 là 01:30 ngày 22 ở VN. */
   const ngayVn = (s: string) => ngayTheoGioVN(s)!;   // đã qua validIso
   const han = `${tien} ${shortDate(ngayVn(i.due), i.today)}`;
-  /* OV-12a: hạn Thứ Ba là hạn của KỲ hai tuần trước nó — "Kết quả PA · W3–W4 SEP · hạn hết T3 29/09". */
+  /* OV-12a: hạn Thứ Ba là hạn của KỲ hai tuần trước nó — "Kết quả PA · W3–W4 SEP · hạn 29/09". */
   const viecHien = i.kind === 'cap-nhat-pa' ? t('Kết quả PA · {ky}', { ky: kyGhiKetQua(i.due, i.today) }) : viec;
   const base = ngayVn(validIso(i.originalDue) ? i.originalDue : i.due);
   const duKien = i.kind === 'du-kien-ket-thuc';

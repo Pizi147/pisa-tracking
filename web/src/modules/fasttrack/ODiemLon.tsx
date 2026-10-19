@@ -9,7 +9,8 @@
  * `HopNhapDiem`) neo ngay ô, chỉ "Lưu" (trang một em). W: dòng phụ là HAI nút W1 · W2 — hai hộp riêng, mỗi task lưu riêng (K4-31).
  */
 import { useRef, type ReactNode } from 'react';
-import { CHU_O_THIEU, chuDoiVang, ngay, skillShort, tuanLich } from '@shared/domain/index.ts';
+import { CHU_O_THIEU, chuDoiVang, ngay, skillShort, soKyVong, tuanLich } from '@shared/domain/index.ts';
+import { DauKetQua } from '../../ui/BieuTuong.tsx';
 import { fmtBand, skillLabel } from '../../lib/format.ts';
 import { KetQuaDot } from '../../ui/KetQuaDot.tsx';
 import { Han } from '../../ui/Han.tsx';
@@ -31,16 +32,6 @@ export type LichKn = {
 
 const coDiem = (c: Cell | undefined) => !!c && (c.band !== null || c.rawScore !== null);
 
-/** Dấu đạt / dưới kỳ vọng 12 px, vẽ SVG (ký tự nhỏ của Inter nhoè thành chấm). */
-function DauKyVong({ dat }: { dat: boolean }) {
-  return (
-    <svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"
-      className={`inline-block shrink-0 ${dat ? 'text-ok' : 'text-bad'}`} fill="currentColor">
-      <path d={dat ? 'M6 2.5 10.5 9.5h-9z' : 'M6 9.5 1.5 2.5h9z'} />
-    </svg>
-  );
-}
-
 /**
  * DÒNG PHỤ của ô chưa có điểm (K4-30) — một câu, theo thứ tự việc cần biết trước. `[chữ, màu, câu đầy đủ]`.
  * Hạn nhập / quá hạn đi qua `<Han>` để cùng một câu ở mọi màn.
@@ -50,7 +41,7 @@ function trangThaiO(l: LichKn | undefined, c: Cell | undefined, lichSu: boolean,
   if (l.sitStatus === 'cancelled' || l.progress === 'cancelled') return { chu: t('Đã huỷ phần thi') };
   if (l.pendingMove) {
     const cau = t('chờ Quản lý duyệt dời lần {moveNo} · hạn {ngay}', { moveNo: l.pendingMove.moveNo, ngay: ngay(l.pendingMove.decideBy, homNay) });
-    return { chu: cau, mau: 'text-wait', title: t('Đề nghị dời sang {x} — Quản lý trả lời trước {ngay}, quá hạn thì huỷ phần thi.', { x: l.pendingMove.toWeek ?? t('tuần kế tiếp'), ngay: ngay(l.pendingMove.decideBy, homNay) }) };
+    return { chu: cau, mau: 'text-muted', title: t('Đề nghị dời sang {x} — Quản lý trả lời trước {ngay}, quá hạn thì huỷ phần thi.', { x: l.pendingMove.toWeek ?? t('tuần kế tiếp'), ngay: ngay(l.pendingMove.decideBy, homNay) }) };
   }
   if (l.sitStatus === 'absent') return { chu: t('vắng · chờ xếp lại'), title: t('Đã xác nhận vắng — Quản lý xếp lại bài trước khi nhập.') };
   if (lichSu) return { chu: t('Nhập bù, không tính hạn') };
@@ -123,9 +114,7 @@ export function DaiODiemLon({ cells, lich, result, lichSu, homNay, mo, onMo, sav
             {band === null ? '—' : fmtBand(band)}
           </span>
           {band !== null && v && v.passed !== null && (
-            <span title={v.passed ? t('Đạt kỳ vọng') : t('Dưới kỳ vọng')}>
-              <DauKyVong dat={v.passed} /><span className="sr-only">{v.passed ? t('Đạt kỳ vọng') : t('Dưới kỳ vọng')}</span>
-            </span>
+            <DauKetQua kq={soKyVong(band, result.expectation) ?? (v.passed ? 'bang' : 'duoi')} size={14} />
           )}
         </span>
         <span className={`mt-1 block min-h-[1rem] truncate text-xs ${phu.mau ?? 'text-slate-500'}`} title={laW ? undefined : phu.title}>{phu.chu}</span>

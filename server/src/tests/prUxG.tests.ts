@@ -56,10 +56,10 @@ export async function runPrUxGTests(t: YThucTestKit) {
     assert(dong.length === 2, `KhoiNo: ${dong.length} dòng nhãn chờ chấm (mong 2)`);
     for (const l of dong) assert(/TONE_TRANG_THAI\['cho-cham'\]/.test(l), `nhãn chờ chấm chưa tra bảng: ${l.trim()}`);
   });
-  check('G2b · badge "n chờ duyệt" ở hộp lớp / đầu hồ sơ lớp mang tone chờ (`wait`), không phải xanh dương (đang chạy)', () => {
+  check('G2b · badge "n chờ duyệt" ở hộp lớp / đầu hồ sơ lớp mang tone chờ (OV-15a: xám `muted`), không phải xanh dương (đang chạy)', () => {
     const b = d.badgeLop({ vai: 'ql', needsPlacement: false, canXepLop: 0, missingSkills: [], soBaiChoCham: 0, needScoresTitle: null, phase: 'running', missingCount: 0, soChoDuyet: 3 });
     const x = [...b.hien, ...b.an].find((k: any) => k.key === 'cho-duyet');
-    assert(x?.tone === 'wait', `tone cho-duyet = ${x?.tone}`);
+    assert(x?.tone === 'muted', `tone cho-duyet = ${x?.tone}`);
     assert(/'wait'/.test(doc('web/src/ui/Nhan.tsx').split('toneNhanTuBadge')[1] ?? ''), 'toneNhanTuBadge chưa nhận tone wait');
   });
   await checkAsync('G2c · mức độ Case "Bình thường" ở Tổng quan GV là chip trung tính (không vàng); "Gấp" vẫn đỏ', async () => {

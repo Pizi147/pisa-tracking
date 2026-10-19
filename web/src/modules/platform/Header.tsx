@@ -6,7 +6,7 @@ import { api } from '../../lib/api.ts';
 import { Info } from '../../ui/ui.tsx';
 import { CongTacGiaoDien } from '../../ui/CongTacGiaoDien.tsx';
 import { NutNgonNgu } from '../../ui/NutNgonNgu.tsx';
-import { NutHuongDan } from '../huongDan/NutHuongDan.tsx';
+import { PanelHuongDanManNay } from '../huongDan/NutHuongDan.tsx';
 import { useDienThoai } from '../../ui/TheDong.tsx';
 import { skillShort } from '../../lib/format.ts';
 import { buocDanhSach, chuanHoaMaLop, duongThongBao, moDuocThongBao, ngayTheoGioVN, nhanPhamVi, noiDenThongBao, nhomThongBao, thoiGianThongBao } from '@shared/domain/index.ts';
@@ -25,6 +25,8 @@ export function Header() {
   const navigate = useNavigate();
   const [q, setQ] = useState('');
   const [openMenu, setOpenMenu] = useState<null | 'account' | 'notif'>(null);
+  /** OV-15a (C11): panel Hướng dẫn của màn đang đứng — mở từ menu Tài khoản, sống ngoài menu (menu đóng khi bấm). */
+  const [moHd, setMoHd] = useState(false);
   const [hits, setHits] = useState<SearchHit[]>([]);
   /** Lượt tìm cuối đã trả về (để "Không tìm thấy…" không hiện khi đang chờ). */
   const [daTim, setDaTim] = useState(false);
@@ -204,8 +206,6 @@ export function Header() {
         <div className="relative w-52 lg:w-64 shrink" data-hd="tim-hv">{oTimVaKetQua}</div>
       )}
 
-      {/* HD-a: "?" cạnh Thông báo — panel đúng mục của màn đang đứng. */}
-      <NutHuongDan />
       <div className="sm:relative">
         <button ref={nutThongBao} className="btn btn-sm relative max-sm:min-h-[44px] max-sm:min-w-[44px] max-sm:justify-center max-sm:border-0 max-sm:bg-transparent"
           onClick={() => { if (openMenu !== 'notif') notifications.reload(); setOpenMenu(openMenu === 'notif' ? null : 'notif'); setMoTimDt(false); }}
@@ -287,13 +287,9 @@ export function Header() {
         )}
       </div>
 
-      {/* Q2 = A: điện thoại (< 640 px) — Sáng/Tối nằm trong menu Tài khoản (bên dưới), không chiếm chỗ trên thanh. */}
-      {!dienThoai && <CongTacGiaoDien />}
-      {/* PR-EN: VI | EN chữ nhỏ ngay sau ◐ (máy tính); điện thoại ở menu Tài khoản, ngay trên hàng Giao diện. */}
-      {!dienThoai && <NutNgonNgu />}
-
+      {/* OV-15a (C11, mockup OV-14 1 §2a): thanh trên chỉ còn Tìm · Thông báo · Tài khoản — Hướng dẫn, Giao diện, Ngôn ngữ ở menu Tài khoản. */}
       <div className="relative">
-        <button ref={nutTaiKhoan} className="btn btn-sm max-sm:min-h-[44px] max-sm:min-w-[44px] max-sm:justify-center max-sm:border-0 max-sm:bg-transparent" onClick={() => { setOpenMenu(openMenu === 'account' ? null : 'account'); setMoTimDt(false); }}
+        <button ref={nutTaiKhoan} data-hd="tai-khoan" className="btn btn-sm max-sm:min-h-[44px] max-sm:min-w-[44px] max-sm:justify-center max-sm:border-0 max-sm:bg-transparent" onClick={() => { setOpenMenu(openMenu === 'account' ? null : 'account'); setMoTimDt(false); }}
           aria-label={t('Tài khoản {ten}', { ten: hoTen })} aria-expanded={openMenu === 'account'}>
           <span aria-hidden className="grid h-[30px] w-[30px] place-items-center rounded-full text-[13px] font-bold sm:hidden"
             style={{ background: 'var(--accent-soft)', color: 'var(--accent)' }}>{chuCaiDau}</span>
@@ -359,8 +355,6 @@ export function Header() {
               những màn dưới đây mở thỉnh thoảng nên không cần chiếm chỗ trên thanh menu.
             */}
             <div className="border-t pt-2 mb-2 space-y-1" style={{ borderColor: 'var(--line)' }}>
-              {dienThoai && <NutNgonNgu kieu="menu" />}
-              {dienThoai && <CongTacGiaoDien kieu="menu" />}
               {/*
                 "Tổng hợp theo tuần" và "Báo cáo tuần" ĐÃ RỜI THANH ĐIỀU HƯỚNG ở vòng 4.
 
@@ -371,8 +365,8 @@ export function Header() {
               {/* Hồ sơ cá nhân (mục 7.2) — ai cũng có, nên đứng trước lối vào quản trị. */}
               <Link to="/ho-so-ca-nhan" className="btn btn-sm w-full justify-center no-underline"
                 onClick={() => setOpenMenu(null)}>{t('Hồ sơ cá nhân')}</Link>
-              <Link to="/huong-dan" className="btn btn-sm w-full justify-center no-underline"
-                onClick={() => setOpenMenu(null)}>{t('Hướng dẫn')}</Link>
+              {/* Hướng dẫn của màn đang đứng (panel, không chuyển trang); trang Hướng dẫn đầy đủ ở cuối panel. */}
+              <button type="button" className="btn btn-sm w-full justify-center" onClick={() => { setOpenMenu(null); setMoHd(true); }}>{t('Hướng dẫn')}</button>
               {/* Hồ sơ giáo viên (PR-GV, G-12) — chỉ người có vai Giáo viên; không thuộc bốn khu vực. */}
               {session?.user && session.roles?.includes('teacher') && (
                 <Link to={`/giao-vien/${session.user.id}`} className="btn btn-sm w-full justify-center no-underline"
@@ -383,10 +377,15 @@ export function Header() {
                   onClick={() => setOpenMenu(null)}>{t('Quản trị hệ thống')}</Link>
               )}
             </div>
+            <div className="border-t pt-1 mb-2" style={{ borderColor: 'var(--line)' }}>
+              <CongTacGiaoDien />
+              <NutNgonNgu kieu="menu" />
+            </div>
             <button className="btn btn-sm w-full justify-center" onClick={signOut}>{t('Đăng xuất')}</button>
           </div>
         )}
       </div>
+      {moHd && <PanelHuongDanManNay onDong={() => setMoHd(false)} />}
     </div>
   );
 }

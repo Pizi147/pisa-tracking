@@ -1,7 +1,7 @@
 import { Fragment, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { DaiChiXem } from '../../ui/ui.tsx';
-import { Nhan, toneNhanTuBadge } from '../../ui/Nhan.tsx';
+import { Nhan, toneBadgeLop } from '../../ui/Nhan.tsx';
 import { MenuDong, type MucMenu } from '../../ui/MenuDong.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { useApi } from '../../lib/useApi.ts';
@@ -196,8 +196,8 @@ export function DauTrangLop({ data, onViec, onBanGiao }: {
           {b.hien.map((x) => {
             const bam = bamBadge(x);
             return bam
-              ? <Nhan key={x.key} tone={toneNhanTuBadge(x.tone)} title={x.title} onClick={bam}>{x.nhan}</Nhan>
-              : <Nhan key={x.key} tone={toneNhanTuBadge(x.tone)} title={x.title}>{x.nhan}</Nhan>;
+              ? <Nhan key={x.key} tone={toneBadgeLop(x)} title={x.title} onClick={bam}>{x.nhan}</Nhan>
+              : <Nhan key={x.key} tone={toneBadgeLop(x)} title={x.title}>{x.nhan}</Nhan>;
           })}
           {b.an.length > 0 && (
             <MenuDong kieu="chip" bieuTuong={`+${b.an.length}`} nhan={t('{n} việc khác của lớp', { n: b.an.length })}

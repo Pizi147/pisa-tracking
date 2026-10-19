@@ -2,9 +2,9 @@
 name: PISA Progress
 description: Bàn làm việc của giáo viên — theo dõi Test, điểm, Case cho trung tâm IELTS
 colors:
-  bg: "#0c1220"
-  surface: "#141d2f"
-  surface-2: "#1a2437"
+  bg: "#080d18"
+  surface: "#162033"
+  surface-2: "#1d2840"
   text: "#dde5f2"
   accent: "#7db3f0"
   accent-strong: "#a9cdf7"
@@ -14,13 +14,16 @@ colors:
   soon: "rgb(242 196 80)"
   doing: "rgb(128 184 255)"
   done: "rgb(169 181 200)"
-  wait: "rgb(196 169 255)"
   muted: "rgb(201 212 230)"
-  text-dim: "rgb(147 163 192)"
-  text-faint: "rgb(130 146 174)"
-  light-bg: "#f5f7fa"
+  text-dim: "rgb(174 188 211)"
+  text-faint: "rgb(168 182 208)"
+  sos1: "rgb(214 184 40)"
+  sos2: "rgb(232 112 42)"
+  sos3: "rgb(230 74 160)"
+  da-thi-bg: "rgb(22 64 42)"
+  light-bg: "#f1f3f7"
   light-surface: "#ffffff"
-  light-surface-2: "#eef1f5"
+  light-surface-2: "#f4f6f9"
   light-text: "#0f172a"
   light-accent: "#1d5fbf"
 typography:
@@ -34,9 +37,16 @@ typography:
     fontWeight: 500
   table-head:
     fontFamily: "'Be Vietnam Pro', system-ui, sans-serif"
-    fontSize: "11px"
+    fontSize: "12px"
     fontWeight: 600
-    letterSpacing: "0.04em"
+  table-cell:
+    fontFamily: "'Be Vietnam Pro', system-ui, sans-serif"
+    fontSize: "13px"
+    fontWeight: 400
+  page-title:
+    fontFamily: "'Be Vietnam Pro', system-ui, sans-serif"
+    fontSize: "20px"
+    fontWeight: 700
   group-row:
     fontFamily: "'Be Vietnam Pro', system-ui, sans-serif"
     fontSize: "12.5px"
@@ -99,7 +109,8 @@ components:
 
 Gọn, rõ, yên tĩnh. Người dùng mở PISA để làm việc — nhập điểm, xếp lịch, xử lý Case — nên màn nào cũng phải cho thấy ngay
 việc còn thiếu và làm được tại chỗ. Mật độ cao kiểu bảng dữ liệu, nhưng cột hàng thẳng, không dồn chữ. Màu không dùng để
-trang trí: màu chỉ báo **trạng thái**. Tối là mặc định, có chế độ sáng (`:root[data-theme="light"]`) cùng bộ token.
+trang trí: màu chỉ báo **trạng thái**. Giao diện mặc định **theo máy** (`prefers-color-scheme`), chọn Sáng / Tối trong menu tài khoản; chế độ sáng
+`:root[data-theme="light"]` cùng bộ token.
 
 **Key Characteristics:**
 - Bảng và danh sách là chính; hàng nhóm (lớp) đậm có vạch trái, hàng con nhạt hơn.
@@ -113,20 +124,25 @@ trang trí: màu chỉ báo **trạng thái**. Tối là mặc định, có ch�
 Nền xanh than tối, một màu nhấn xanh pastel, và một bộ màu trạng thái cố định.
 
 - **Nền / bề mặt**: `bg` → `surface` (thẻ, panel) → `surface-2` (nút, ô phụ). Vạch kẻ `--line` mảnh, `--line-strong` khi cần rõ.
-- **Nhấn** (`accent`, sáng `#1d5fbf`): nút chính, mục đang chọn (`row-active` vạch trái 2 px), focus ô nhập.
-- **Trạng thái** (mỗi loại có bộ ba chữ / nền / viền `--x-rgb`, `--x-bg-rgb`, `--x-line-rgb`):
-  - `ok` đạt · tiến bộ · ổn
-  - `soon` sắp tới hạn · hôm nay · chờ · SOS 1
-  - `late` quá hạn — **luôn kèm ⚠** · SOS 2
-  - `bad` chưa đạt · SOS 3 · thao tác nguy hiểm
-  - `doing` đang làm · `done` đã xong · `wait` chờ người khác · `muted` trung tính / thông tin
-- SOS ánh xạ cố định: SOS 1 = `soon`, SOS 2 = `late`, SOS 3 = `bad`; Đạt = `ok`.
-- Chữ phụ: `text-dim` (quan trọng), `text-faint` (nhỏ). Không dùng màu xám tối hơn `text-faint`.
+- **Nền tách lớp** (OV-15a, chủ SP 19/10): trang tối hơn (`bg`), thẻ / bảng sáng hơn một bậc (`surface`), viền rõ hơn (`--line` 0.18, `--line-strong` 0.32).
+- **Nhấn** (`accent`, sáng `#1d5fbf`): nút chính, focus ô nhập, **đang chọn = viền khung 2 px quanh cả hàng** (`row-active`), không tô nền; thắng mọi nền.
+- **5 nghĩa — dáng / ký hiệu mang nghĩa, màu chỉ phụ** (mockup OV-14 1 §1a):
+  1. Nhấn — đang chọn, nút chính, focus.
+  2. Kết quả — chỉ trong ô điểm và chip SOS: ✓ xanh lá vượt kỳ vọng · ✓ xanh dương (`doing`) bằng · ✗ đỏ (`bad`) dưới (SVG nét trơn, không vòng tròn);
+     "Chưa đủ điểm" chỉ chữ. Chip SOS chỉ VIỀN (`--sosN-rgb`) + chữ (`--sosN-chu-rgb`), không nền: vàng 1 px · cam 1,5 px · đỏ 2,5 px + viền đôi; tạm = viền đứt.
+  3. Đã thi — nền cả hàng `--da-thi-bg-rgb` + vạch trái 3 px `ok` + chip "Đã thi · chờ KQ" / "Có KQ · chờ bước tiếp". Nền hàng CHỈ cho nghĩa này.
+  4. Hạn — chỉ chữ: quá hạn cam `late` **luôn kèm ⚠** (không chip, không nền, không tô hàng); sắp hạn / hôm nay vàng `soon`. Hạn ghi ngày `hạn 18/09`, không thứ.
+  5. Trung tính `muted` — mọi trạng thái khác (chờ duyệt, chờ chấm, Chưa chốt PA…). Đã bỏ tím `wait` và teal `chon-*` (OV-15a).
+- Đạt = `ok`; `bad` còn cho thao tác nguy hiểm.
+- Chữ phụ: `text-dim` (quan trọng), `text-faint` (nhỏ) — cả hai ≥ 7:1 trên `bg`, `surface`, `surface-2` ở sáng lẫn tối (`prOv15a`).
 
 ## Typography
 
 - **Be Vietnam Pro** cho mọi chữ; **chữ số lấy từ Inter** (khai báo `@font-face` cùng tên, `unicode-range` 0–9) để số thẳng hàng.
-- Cỡ gốc 14 px. Nhãn ô 12 px. Đầu cột bảng 11 px in hoa, giãn 0.04em. Hàng nhóm 12.5 px đậm 800, hàng con 12 px.
+- **Thang 12 / 13 / 14 / 16 / 20** (OV-15a, C09): đầu cột · chip · chữ phụ 12 — ô bảng · chữ phụ quan trọng 13 — chữ thường · nút · số điểm 14 —
+  ô nhập ở 375 = 16 (Safari không tự phóng to) — tiêu đề trang 20. Thêm 17 (tiêu đề panel) và 28 (số lớn). Đầu cột **không in hoa**.
+- Hàng nhóm 12.5 px đậm 800, hàng con 12 px.
+- **Số căn giữa** + `tabular-nums` (`td.tabular-nums`, đầu cột số); tên / chữ dài căn trái (C06).
 - Đối tượng trong khối **Cần làm** của panel v3 (tên PA, mức kỷ luật, loại meeting): **15 px đậm 700** (OV-12e, chủ SP 14/10).
 - **Không chữ < 11 px** ở bất kỳ đâu.
 - Số liệu, điểm, mã tuần: `tabular-nums`.
@@ -156,7 +172,9 @@ trái (inset) của hàng nhóm / hàng chọn và vòng focus `0 0 0 3px var(--
 - **Ô nhập** `.field`: nền `--o-nhap-nen`, viền `--o-nhap-vien`, focus viền nhấn. Ô ngày luôn là `ONgay` (gõ được + nút lịch).
 - **Ô sửa trong lưới điểm** `.o-sua`: viền xanh nhạt, focus vòng nhấn.
 - **Hàng nhóm / con** (`.hang-lon`, `.hang-con`, `.khoi-nhom-*`): nhóm đậm có vạch trái 3 px màu nhấn, khi thu gọn vạch xám.
-- **Chip trạng thái** (`Nhan`): màu theo bảng trạng thái, chữ luôn có nghĩa khi bỏ màu.
+- **Chip trạng thái** (`Nhan`): màu theo bảng trạng thái, chữ luôn có nghĩa khi bỏ màu. Tone `late` = chữ cam + ⚠, không chip.
+- **Chip SOS** (`ChipSos`, MỘT component mọi màn): "SOS 2 · R, W" / "SOS 3 tạm"; bấm chip = hộp "Vì sao SOS n" (tiêu đề → kết luận đậm → số → việc), không nút `?` cạnh.
+- **Ký hiệu điểm** (`DauKetQua` ✓ / ✗, `MuiTenKyVong` ▲ / ▼ chỉ ở hộp điểm lẻ không có cột kỳ vọng); xu hướng ở Hành trình bằng chữ "Tăng 0.5 / Giảm 0.5 / Không đổi".
 - **Thẻ** `.card`: nền `surface`, viền `--line`, bo 0.75rem.
 - **Đang tải**: `.skel` shimmer theo khung của nội dung.
 - **Toast** báo kết quả lưu; lỗi máy chủ hiện ngay trong hộp/panel (`role="alert"`).

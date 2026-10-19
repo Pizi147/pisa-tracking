@@ -21,13 +21,14 @@ import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 're
 import { createPortal } from 'react-dom';
 import {
   CAU_THIEU_NHAN_XET, CHU_O_THIEU, LOI_SO_CAU, LOI_SO_CAU_KHOANG, NHAN_XET_TOI_DA, bandTuSoCau, canNhomNguyenNhan, chuNutVang, criteriaPatchFrom,
-  demNguocSuaDau, ngay, rawPatchFrom, thieuNhanXetMt, tieuChiNganCua, tuanLich, type NguoiChon,
+  demNguocSuaDau, ngay, rawPatchFrom, soKyVong, thieuNhanXetMt, tieuChiNganCua, tuanLich, type NguoiChon,
 } from '@shared/domain/index.ts';
 import { fmtBand, skillLabel } from '../../lib/format.ts';
 import { useSession } from '../../lib/session.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { useGiuFocus } from '../../ui/giuFocus.ts';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
+import { MuiTenKyVong } from '../../ui/BieuTuong.tsx';
 import { useBaoHopLyDoMo } from '../../ui/SaveState.tsx';
 import { cungGvCham, gvChamPayload, gvChamThanhChon } from '../cham/GvCham.tsx';
 import { ChonNhom } from './NhanXet.tsx';
@@ -111,7 +112,7 @@ function DongDau({ cell, thiBu = false }: { cell: Cell; thiBu?: boolean }) {
  * Ô vắng hai dòng ("Vắng" / "→ W3 SEP") để vừa cột 104 px của lưới (bảng `table-layout: fixed`).
  */
 const KIEU_O = {
-  vang: 'flex-col !gap-0 leading-tight border-[color:rgb(var(--wait-line-rgb))] text-[color:rgb(var(--wait-rgb))]',
+  vang: 'flex-col !gap-0 leading-tight border-[color:rgb(var(--muted-line-rgb))] text-[color:rgb(var(--muted-rgb))]',
   trong: 'justify-center border-dashed text-[color:var(--accent)]',
   huy: 'border-dotted text-slate-500',
   /* OV-11a (CA3-2): Không dự thi — hai dòng chữ như ô Vắng, màu trung tính (trạng thái cuối, không phải việc). */
@@ -317,16 +318,16 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, gvMacDi
   const than = (
     <>
       {nguoiKhac && (
-        <div role="note" className="rounded-lg border border-wait-line bg-wait-bg px-3 py-2 text-[13px] text-slate-200">
+        <div role="note" className="rounded-lg border border-muted-line bg-muted-bg px-3 py-2 text-[13px] text-slate-200">
           {t('Đã chấm bởi {ten} lúc {luc}', { ten: cell.enteredByName!, luc: cell.enteredAt ? lucNgan(cell.enteredAt, homNay) : '—' })}
         </div>
       )}
       {vang && (
-        <div className="flex flex-col gap-1.5 rounded-lg border border-wait-line bg-wait-bg px-3 py-2.5 text-[13px] text-slate-200">
+        <div className="flex flex-col gap-1.5 rounded-lg border border-muted-line bg-muted-bg px-3 py-2.5 text-[13px] text-slate-200">
           {/* CA3-3: ô huỷ một trạng thái — "Đã huỷ phần thi · vắng 2 lần", không "Vắng lần 1". */}
           {cell.progress === 'cancelled'
-            ? <span><b className="text-wait">{t('Đã huỷ phần thi')}</b>{' '}{t('· vắng')}{' '}{Math.max(2, cell.daChot!.lan)}{' '}{t('lần')}</span>
-            : <span><b className="text-wait">{t('Vắng lần')}{' '}{Math.max(1, cell.daChot!.lan)}</b>
+            ? <span><b className="text-muted">{t('Đã huỷ phần thi')}</b>{' '}{t('· vắng')}{' '}{Math.max(2, cell.daChot!.lan)}{' '}{t('lần')}</span>
+            : <span><b className="text-muted">{t('Vắng lần')}{' '}{Math.max(1, cell.daChot!.lan)}</b>
               {cell.daChot!.doiSang && <>{' '}{t('· đã dời sang')}{' '}<span className="tabular-nums">{cell.daChot!.doiSang}</span></>}</span>}
           {cell.daChot!.ghiLuc && <span className="text-slate-400">Ghi {ngay(cell.daChot!.ghiLuc, homNay)}{cell.daChot!.ghiBoi ? t(' bởi {ghiBoi}', { ghiBoi: cell.daChot!.ghiBoi }) : ''}</span>}
         </div>
@@ -351,10 +352,11 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, gvMacDi
               onChange={(e) => { setT(e.target.value); setLoi(null); }} />
             {!theoBand && <span className="text-xs tabular-nums text-slate-500">/ 40</span>}
             {!theoBand && !vang && (
-              <span className="ml-auto text-sm text-slate-400">Band <b className="tabular-nums text-slate-100">{diem.patch && 'noShow' in diem.patch ? '-' : fmtBand(diem.preview)}</b></span>
+              <span className="ml-auto inline-flex items-center gap-1 text-sm text-slate-400">Band <b className="tabular-nums text-slate-100">{diem.patch && 'noShow' in diem.patch ? '-' : fmtBand(diem.preview)}</b>
+                <MuiTenKyVong kq={soKyVong(bandSau, kvHien)} /></span>
             )}
           </div>
-          <DongKyVong luot={ctx.luot} kv={kvHien} band={bandSau} />
+          <DongKyVong luot={ctx.luot} kv={kvHien} />
         </div>
       ) : (
         <div>
@@ -368,8 +370,8 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, gvMacDi
                 onChange={(e) => { setVals((v) => v.map((x, j) => (j === i ? e.target.value : x))); setLoi(null); }} />
             ))}
             {coTieuChi || !cell.bandThang ? (
-              <output className="self-center text-center text-base font-bold tabular-nums text-slate-100" aria-label={`${skillLabel(cell.skill)} — band`}>
-                {diem.patch && 'noShow' in diem.patch ? '-' : fmtBand(coTieuChi ? diem.preview : cell.band)}
+              <output className="inline-flex items-center justify-center gap-1 self-center text-base font-bold tabular-nums text-slate-100" aria-label={`${skillLabel(cell.skill)} — band`}>
+                {diem.patch && 'noShow' in diem.patch ? '-' : fmtBand(coTieuChi ? diem.preview : cell.band)}<MuiTenKyVong kq={soKyVong(bandSau, kvHien)} />
               </output>
             ) : (
               <input className={oSo('w-full px-1 max-sm:h-11 max-sm:text-base')} style={stSai(loi?.o === 4)} inputMode="decimal" value={bandText}
@@ -377,7 +379,7 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, gvMacDi
                 onChange={(e) => { setBandText(e.target.value); setLoi(null); }} />
             )}
           </div>
-          {!vang && <DongKyVong luot={ctx.luot} kv={kvHien} band={bandSau} />}
+          {!vang && <DongKyVong luot={ctx.luot} kv={kvHien} />}
           {laW && !vang && (
             <div className="mt-1.5 text-xs text-slate-500">
               {ctx.bandTaskKia == null ? t('Task {x} chưa có · ', { x: 3 - nTask }) : ''}{t('Writing = (Task 1 + Task 2 × 2) / 3 khi đủ hai task')}
@@ -463,15 +465,10 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, gvMacDi
   );
 }
 
-/** OV-12b: "Kỳ vọng MT2: 5.5 · dưới 1.0" — mọi kỹ năng (MT0 không kỳ vọng). */
-function DongKyVong({ luot, kv, band }: { luot: string; kv: number | null; band: number | null }) {
+/** OV-12b · OV-15a: "Kỳ vọng MT2 5.5" một lần — mọi kỹ năng (MT0 không kỳ vọng); trên / dưới là mũi tên cạnh band, không chữ "dưới 1.0". */
+function DongKyVong({ luot, kv }: { luot: string; kv: number | null }) {
   if (kv === null) return null;
-  return (
-    <div className="mt-1.5 text-xs tabular-nums text-slate-500">
-      {t('Kỳ vọng {luot}:', { luot })}{' '}{fmtBand(kv)}
-      {band !== null && band < kv && <> · <span className="text-bad">{t('dưới')}{' '}{fmtBand(kv - band)}</span></>}
-    </div>
-  );
+  return <div className="mt-1.5 text-xs tabular-nums text-slate-500">{t('Kỳ vọng {dot}', { dot: luot })}{' '}{fmtBand(kv)}</div>;
 }
 
 /** OV-12b: lý do nút Lưu tắt — một dòng ngay trước nút (375: dòng riêng phía trên). Chỗ trống đẩy nút sang phải khi đủ. */

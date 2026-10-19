@@ -3,11 +3,11 @@ import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { invalidate } from '../../lib/api.ts';
 import { useSession } from '../../lib/session.tsx';
-import { ErrorState, Level, Skeleton } from '../../ui/ui.tsx';
+import { ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { ChipHan, Nhan } from '../../ui/Nhan.tsx';
 import { BoiCanh, CanLam } from '../../ui/KhuonViec.tsx';
-import { skillShort, sosTone } from '../../lib/format.ts';
+import { skillShort } from '../../lib/format.ts';
 import type { WorkItem } from '../worklist/WorkList.tsx';
 import { NganCase } from './NganCase.tsx';
 import { DongDaLuu, GhiNhanh, type DaLuuNhanh } from '../cases/GhiNhanh.tsx';
@@ -19,6 +19,7 @@ import { HopGiaHan, NhanSauThi } from './HopGiaHan.tsx';
 import { KetQuaThiThatPanel } from './KetQuaThiThatPanel.tsx';
 import { PanelBuocTiep } from './PanelBuocTiep.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
+import { ChipSos } from '../../ui/ChipSos.tsx';
 
 /** `GET /hoc-vien-lop/em/:id` (server/src/classes/hocVienSos.ts → panelMotEm). */
 type DuLieuEm = {
@@ -31,7 +32,7 @@ type DuLieuEm = {
 };
 type ViecCase = NonNullable<Parameters<typeof NganCase>[0]['viec']>;
 
-const TONE_NHOM = { 'cho-duyet': 'wait', 'dang-xu-ly': 'doing', xong: 'done' } as const;
+const TONE_NHOM = { 'cho-duyet': 'muted', 'dang-xu-ly': 'doing', xong: 'done' } as const;
 /** Việc ở Công việc → view của Ngăn Case (cùng `PanelViec`). */
 const VIEC_CUA_NHOM: Record<string, ViecCase> = { xac_nhan_pa: 'xac-nhan-pa', ghi_ket_qua_pa: 'ghi-ket-qua', mini_test: 'ghi-ket-qua', no_plan: 'them-pa', cause: 'xac-nhan', ghi_nhan_xet: 'ghi-nhan-xet' };
 /** Nút chính = động từ của việc (panel v3 §1: một nút chính, chữ = động từ việc). */
@@ -104,7 +105,7 @@ export function PanelMotEm({ studentId, caseMo, onClose, onDoi }: {
     dong2: data ? [
       <Link className="link inline-flex min-h-[44px] items-center sm:min-h-0" to={`/hoc-vien/${studentId}`}>{t('Hồ sơ')} <span aria-hidden className="text-xs">↗</span></Link>,
       lop, data.luot?.nhan ? dich(data.luot.nhan) : null,
-      data.luot?.sosLevel ? <Level tone={sosTone(data.luot.sosLevel)}>SOS {data.luot.sosLevel}</Level> : null,
+      data.luot?.sosLevel ? <ChipSos muc={data.luot.sosLevel} dot={data.luot.nhan ? dich(data.luot.nhan) : null} /> : null,
     ] : [],
   };
 

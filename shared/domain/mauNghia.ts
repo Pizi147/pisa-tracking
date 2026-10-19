@@ -76,7 +76,12 @@ export function docMauHaiCheDo(css: string): { toi: Record<string, RGB>; sang: R
 /** Khoá `localStorage` nhớ chế độ giao diện theo máy (PR-SANG, T15). */
 export const CHE_DO_KHOA = 'pisa-giao-dien';
 
-/** Chỉ đúng chuỗi 'light' là sáng; thiếu, lạ, hỏng → tối (mặc định). */
-export function docCheDo(v: unknown): 'dark' | 'light' {
-  return v === 'light' ? 'light' : 'dark';
+/** OV-15a (C11): lựa chọn giao diện lưu theo máy — 'light' / 'dark' do người dùng chọn; thiếu, lạ, hỏng → 'may' (theo máy). */
+export type LuaChonGiaoDien = 'may' | 'light' | 'dark';
+export function docLuaChonGiaoDien(v: unknown): LuaChonGiaoDien {
+  return v === 'light' || v === 'dark' ? v : 'may';
+}
+/** Chế độ vẽ thật: chọn tay thắng; "Theo máy" đi theo `prefers-color-scheme` (`mayToi` = máy đang tối). */
+export function cheDoThuc(chon: LuaChonGiaoDien, mayToi: boolean): 'dark' | 'light' {
+  return chon === 'may' ? (mayToi ? 'dark' : 'light') : chon;
 }

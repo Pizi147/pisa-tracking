@@ -30,7 +30,7 @@ const THU_KIEU = (v: ViecCanLam) => (v.quaHan ? 0 : v.han ? 1 : v.kieu === 'cho-
 const soSanh = (a: ViecCanLam, b: ViecCanLam) => THU_KIEU(a) - THU_KIEU(b) || (a.han ?? '9').localeCompare(b.han ?? '9');
 
 function ChipViec({ v }: { v: ViecCanLam }) {
-  const tone = v.quaHan ? 'late' : v.kieu === 'cho-duyet' ? 'wait' : 'muted';
+  const tone = v.quaHan ? 'late' : 'muted';
   return (
     <span className="block min-w-0">
       <Nhan tone={tone} dut={v.kieu === 'thieu-tt'}>{v.quaHan ? '⚠ ' : ''}{v.viec}</Nhan>
@@ -70,7 +70,7 @@ export function BangCanLam({ viec, coNguoi, coPhuHuynh, dienThoai, ds }: {
       {g.classId ? <Link to={`/hoc-vien/lop/${g.classId}`} className="shrink-0 font-extrabold text-slate-100 underline decoration-dotted underline-offset-4">{g.code}</Link>
         : <span className="font-extrabold text-slate-100">{g.code}</span>}
       {g.tre > 0 && <Nhan tone="late">⚠ {t('{n} việc quá hạn', { n: g.tre })}</Nhan>}
-      {g.cho > 0 && <Nhan tone="wait">{t('{n} chờ duyệt', { n: g.cho })}</Nhan>}
+      {g.cho > 0 && <Nhan tone="muted">{t('{n} chờ duyệt', { n: g.cho })}</Nhan>}
       {g.em.some((e) => e[0].studentId !== null) && <Nhan tone="muted">{t('{n} em', { n: g.em.filter((e) => e[0].studentId !== null).length })}</Nhan>}
     </span>
   );

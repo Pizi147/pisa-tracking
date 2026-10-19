@@ -4,7 +4,7 @@ import { NhanCu } from '../../ui/OMt.tsx';
 import { ViecTiep } from '../../ui/ViecTiep.tsx';
 import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
-import { Empty, ExamPlanText, Level, Outcome, Skeleton, TargetText, Th } from '../../ui/ui.tsx';
+import { Empty, ExamPlanText, Outcome, Skeleton, TargetText, Th } from '../../ui/ui.tsx';
 import { ChipDuoiKck } from '../../ui/KetQuaDot.tsx';
 import { MenuDong } from '../../ui/MenuDong.tsx';
 import { TheDong, useDienThoai } from '../../ui/TheDong.tsx';
@@ -13,14 +13,14 @@ import { CanhBaoYThuc } from '../classes/CanhBaoYThuc.tsx';
 import { duongViecTiep, nhapDiemCua, useThaoTacDongHocVien, type QuyenDong } from '../classes/thaoTacDongHocVien.tsx';
 import { MoiVao } from '../classes/DaiChuyenLop.tsx';
 import { OChon, OChonTatCa, type ChonNhieu } from './chonNhieuHocVien.tsx';
-import { fmtBand, sosTone } from '../../lib/format.ts';
+import { fmtBand } from '../../lib/format.ts';
 import {
-  ENTRY_SKILL_LABEL, GIAI_THICH_KCK, duongHoSoHocVien, skillShort, type EntrySkill, type ExamPlan, type LienHe, type ViecTiepTheo,
-} from '@shared/domain/index.ts';
+  ENTRY_SKILL_LABEL, GIAI_THICH_KCK, duongHoSoHocVien, skillShort, type EntrySkill, type ExamPlan, type LienHe, type ViecTiepTheo, chipSauThi } from '@shared/domain/index.ts';
 import { OPhuHuynh } from './HocVienTheoVai.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 import { dichViec, type NhanSauThiEm } from './BangHocVienLop.tsx';
 import { NhanSauThi } from './HopGiaHan.tsx';
+import { ChipSos } from '../../ui/ChipSos.tsx';
 
 type Timeline = {
   id: number; attemptNo: number; cycleSeq: number; route: string | null;
@@ -144,7 +144,7 @@ export function ClassRoster({ classId, maLop, quyen, onDoi, onAddStudents, chon 
           const h = s.history[0];
           const dv = dauVaoHien(s, s.history.length);
           return (
-            <TheDong key={s.id} className={`${s.status !== 'active' ? 'row-muted' : ''} ${chon?.chon.has(s.id) ? 'bg-[color:var(--accent-soft)]' : ''}`}
+            <TheDong key={s.id} className={`${s.status !== 'active' ? 'row-muted' : ''} ${chipSauThi(s.sauThi) ? 'hang-da-thi' : ''} ${chon?.chon.has(s.id) ? 'bg-[color:var(--accent-soft)]' : ''}`}
               dau={(
                 <>
                   <span className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5">
@@ -236,7 +236,7 @@ export function ClassRoster({ classId, maLop, quyen, onDoi, onAddStudents, chon 
               const dv = dauVaoHien(s, rows.length);
               const span = Math.max(rows.length + (dv ? 1 : 0), 1);
               return (
-                <tr key={s.id} className={`row-hover align-top ${s.status !== 'active' ? 'row-muted' : ''} ${chon?.chon.has(s.id) ? 'bg-[color:var(--accent-soft)]' : ''}`}>
+                <tr key={s.id} className={`row-hover align-top ${s.status !== 'active' ? 'row-muted' : ''} ${chipSauThi(s.sauThi) ? 'hang-da-thi' : ''} ${chon?.chon.has(s.id) ? 'bg-[color:var(--accent-soft)]' : ''}`}>
                   {/* 640–1023 px: bảng cuộn ngang TRONG vùng bảng, cột tên dính (mỗi lớp một bảng nên không bám cả trang). */}
                   <td className="td sticky-col [background:var(--surface-2)]">
                     <span className="flex min-w-0 flex-wrap items-center gap-1.5">
@@ -326,7 +326,7 @@ export function KetLuan({ row, cotMocTrong }: { row: RosterRow; /** CA2-7: cột
   if (row.sosLevel === null) return cotMocTrong ? null : <span className={xam}>{t('Chưa có kết quả')}</span>;
   const tamThoi = row.provisional ? ` · ${t('tạm thời')}` : '';
   /* PR-N1 A2: màu theo đúng mức SOS (hết vàng cho mọi mức); tạm thời = viền đứt + chữ "tạm thời". */
-  if (row.sosLevel > 0) return <Level tone={sosTone(row.sosLevel)} dut={row.provisional}>SOS {row.sosLevel}{row.provisional ? ` ${t('tạm thời')}` : ''}</Level>;
+  if (row.sosLevel > 0) return <ChipSos muc={row.sosLevel} tam={row.provisional} ten={row.fullName} />;
   return <span className={xam}>{t('Đạt kỳ vọng')}{tamThoi}</span>;
 }
 

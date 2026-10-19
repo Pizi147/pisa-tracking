@@ -1,21 +1,21 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
-import { Empty, ErrorState, Level, NhanTrangThai, Skeleton, TargetText } from '../../ui/ui.tsx';
+import { Empty, ErrorState, NhanTrangThai, Skeleton, TargetText } from '../../ui/ui.tsx';
 import { ChipDuoiKck } from '../../ui/KetQuaDot.tsx';
 import { ViecTiep } from '../../ui/ViecTiep.tsx';
 import { TheDong, useDienThoai } from '../../ui/TheDong.tsx';
 import { MenuDong } from '../../ui/MenuDong.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
-import { sosTone } from '../../lib/format.ts';
+
 import { KhoaQuyChe, TenCase } from '../cases/SkillBoard.tsx';
 import { NganCase } from '../students/NganCase.tsx';
 import { nhapDiemCua, useThaoTacDongHocVien, type QuyenDong } from './thaoTacDongHocVien.tsx';
 import {
   ROUTE_NAME, ketQuaGanNhat, locCanHoTro, viecTiepCuaEm,
-  type HangKyNang, type KetQuaVao, type ViecTiepCase,
-} from '@shared/domain/index.ts';
+  type HangKyNang, type KetQuaVao, type ViecTiepCase, chipSosTuKetQua } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
+import { ChipSos } from '../../ui/ChipSos.tsx';
 
 type PaCase = { id: number; ten: string; batBuoc: boolean; choXacNhan: boolean; choDuyet: boolean; xong: boolean; nguoi: string | null; mocChu: string | null };
 export type CaseCua = {
@@ -125,7 +125,7 @@ export function BangCanHoTro({ classId, maLop, laLopThuong, quyen, onDoi, chuong
                 </p>
               )}
               <p className="m-0 flex flex-wrap items-center gap-1.5 text-xs text-slate-400">
-                {k.sos ? <Level tone={sosTone(r?.standing?.sosLevel ?? null)} dut={k.sosTamThoi}>{k.sos}{k.sosTamThoi ? ` ${t('tạm thời')}` : ''}</Level>
+                {k.sos && chipSosTuKetQua(r?.standing ?? null) ? <ChipSos {...chipSosTuKetQua(r?.standing ?? null)!} ten={r?.fullName} />
                   : <span className="tabular-nums text-slate-300">{k.chinh}</span>}
                 {k.kckDuoi && <ChipDuoiKck />}
                 {r?.standing?.attemptLabel && <span>{r.standing.attemptLabel}</span>}

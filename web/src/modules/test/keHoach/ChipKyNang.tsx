@@ -75,14 +75,14 @@ function NhanKhoa({ tuan, khaiGiang, tongTuan }: { tuan: string | null; khaiGian
 }
 
 /**
- * Màu theo trạng thái (N-1, token nghĩa): xong `done` · đã xếp `doing` · đã dời `soon` · vắng `late` · chờ Quản lý duyệt `wait` ·
+ * Màu theo trạng thái (N-1, token nghĩa): xong `done` · đã xếp `doing` · đã dời `soon` · vắng `late` · chờ Quản lý duyệt `muted` ·
  * trễ `bad` (viền mảnh, nền trong) · đã huỷ `done` gạch ngang · chưa xếp viền đứt. Chữ đuôi ngắn để chip 20px không xuống dòng;
  * câu đủ nằm ở tooltip.
  */
 const MAU_TT: Record<string, { mau: string; duoi: string | null; nghia: string | null }> = {
   'da-doi': { mau: 'bg-soon-bg text-soon border-soon-line', duoi: 'dời', nghia: null },
   vang: { mau: 'bg-late-bg text-late border-late-line', duoi: 'vắng', nghia: 'vắng · Quản lý xếp lại' },
-  'cho-duyet': { mau: 'bg-wait-bg text-wait border-wait-line', duoi: 'chờ duyệt', nghia: 'chờ Quản lý duyệt đề nghị dời' },
+  'cho-duyet': { mau: 'bg-muted-bg text-muted border-muted-line', duoi: 'chờ duyệt', nghia: 'chờ Quản lý duyệt đề nghị dời' },
   tre: { mau: 'bg-transparent text-bad border-bad-line', duoi: 'trễ', nghia: 'trễ — tuần thi đã hết, chưa có điểm' },
   'da-huy': { mau: 'bg-done-bg text-done border-done-line line-through', duoi: 'đã huỷ', nghia: 'đã huỷ phần thi' },
   xong: { mau: 'bg-done-bg text-done border-done-line', duoi: null, nghia: null },

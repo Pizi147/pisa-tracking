@@ -196,14 +196,14 @@ function ThanhViec({ d, homNay, onDaThucHien, onGhiNhan }: {
     tone = 'border-late-line bg-late-bg text-late';
     cau = <>{t('{soBatBuoc} vi phạm bắt buộc xử lý · quá hạn {x} ngày{x2}', { soBatBuoc: d.soBatBuoc, x: d.quaHanNgay ?? '', x2: d.daBaoQl ? t(' · đã báo QL') : '' })}</>;
   } else if (d.deXuat?.status === 'da_duyet') {
-    tone = d.deXuat.quaHan ? 'border-late-line bg-late-bg text-late' : 'border-wait-line bg-wait-bg text-wait';
+    tone = d.deXuat.quaHan ? 'border-late-line bg-late-bg text-late' : 'border-muted-line bg-muted-bg text-muted';
     cau = <>{t('Đã duyệt {nhan}{x}{x2}', { nhan: d.deXuat.nhan, x: d.deXuat.han ? t(' · ghi "Đã thực hiện" trước {ngay}', { ngay: ngay(d.deXuat.han, homNay) }) : '', x2: d.deXuat.quaHan && d.daBaoQl ? t(' · đã báo QL') : '' })}</>;
     hanh = nut(t('Đánh dấu đã thực hiện'), () => onDaThucHien(d.deXuat!.id));
   } else if (d.soBatBuoc > 0) {
     tone = 'border-soon-line bg-soon-bg text-soon';
     cau = <>{t('{soBatBuoc} vi phạm trong tuần này + tuần trước → bắt buộc xử lý{x}', { soBatBuoc: d.soBatBuoc, x: d.han ? t(' · hạn {ngay}', { ngay: ngay(d.han, homNay) }) : '' })}</>;
   } else if (d.deXuat?.status === 'cho_duyet') {
-    tone = 'border-wait-line bg-wait-bg text-wait';
+    tone = 'border-muted-line bg-muted-bg text-muted';
     cau = <>{t('Đề xuất {nhan} · chờ QL{x}', { nhan: d.deXuat.nhan, x: d.deXuat.han ? t(' · hạn {ngay}', { ngay: ngay(d.deXuat.han, homNay) }) : '' })}</>;
   } else if (d.soMoi > 0) {
     tone = d.nhom === 'qua_han' ? 'border-late-line bg-late-bg text-late' : 'border-[color:var(--line-strong)] text-slate-300';

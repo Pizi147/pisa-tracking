@@ -8,9 +8,9 @@ export type TrangThai = (typeof TRANG_THAI)[number];
 
 /**
  * MỘT BẢNG TRẠNG THÁI → TONE (UX-G G2; PR-GVb U01 chuyển từ `web/src/ui/Nhan.tsx` sang shared): cùng một trạng thái thì cùng một màu ở mọi
- * chỗ — `Nhan` (web) và luật badge lớp (`badgeLop`) cùng đọc. `wait` (tím) = đang chờ một người làm: chờ chấm, chờ duyệt.
+ * chỗ — `Nhan` (web) và luật badge lớp (`badgeLop`) cùng đọc. Chờ một người làm (chờ chấm, chờ duyệt) = xám `muted` (OV-15a bỏ tím).
  */
-export const TONE_TRANG_THAI = { 'cho-cham': 'wait', 'cho-duyet': 'wait' } as const;
+export const TONE_TRANG_THAI = { 'cho-cham': 'muted', 'cho-duyet': 'muted' } as const;
 /** Bản cho tone badge lớp (`'danger'|'warn'|'info'|'wait'|'muted'`) — hai bảng hiện trùng giá trị, giữ hai tên để mỗi phía đọc đúng kiểu. */
 export const TONE_BADGE_TRANG_THAI = TONE_TRANG_THAI;
 

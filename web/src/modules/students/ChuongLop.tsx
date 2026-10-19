@@ -9,6 +9,7 @@ import {
 import { NhanLoai } from '../cases/SkillBoard.tsx';
 import { chuKhoangDung, chuTuanHoc, duongDotTest, nhanGhim, skillShort, tenMonNgan, tuanLich, type MauKetQua, type TonePaChuong } from '@shared/domain/index.ts';
 import { dich, dichChu, t, type Bien } from '@shared/i18n/index.ts';
+import { ChipSos } from '../../ui/ChipSos.tsx';
 
 /**
  * CHƯƠNG THEO LỚP (PR-VAI-b Task 10, mockup 26 bản 2) — khối đầu tab Hành trình, thay bảng Lịch sử lớp và khối "Mốc học tập".
@@ -33,12 +34,11 @@ const MAU_PIN: Record<MauKetQua, ScoreTone> = { dat: 'emerald', sos1: 'sos1', so
 /** PA = khối ĐẶC tô theo kết quả (luật chung với bảng kỹ năng và trục tuần, Q13); chờ = viền đứt tím. */
 const KHOI_PA: Record<TonePaChuong, string> = {
   ok: 'border-transparent bg-ok-bg text-ok', part: 'border-transparent bg-soon-bg text-soon', bad: 'border-transparent bg-bad-bg text-bad', run: 'border-transparent bg-doing-bg text-doing',
-  wait: 'border-dashed border-wait text-wait', done: 'border-transparent bg-done-bg text-done',
+  wait: 'border-dashed border-muted text-muted', done: 'border-transparent bg-done-bg text-done',
 };
 const DAU_PA: Record<TonePaChuong, ReactNode> = {
   ok: <IconDat />, part: <IconMotPhan />, bad: <IconKhong />, run: <IconDangLam />, wait: <IconTamDung />, done: <IconDat />,
 };
-const CHIP_SOS: Record<number, string> = { 1: 'bg-sos1-bg text-sos1', 2: 'bg-sos2-bg text-sos2', 3: 'bg-sos3-bg text-sos3' };
 
 /** "[MT1] Reading … [SOS 1]" (tên Case SOS, T21) → chip MT + phần giữa + chip SOS; tên khác giữ nguyên. */
 function TenCaseChuong({ ten }: { ten: string }) {
@@ -48,7 +48,7 @@ function TenCaseChuong({ ten }: { ten: string }) {
     <>
       <span className="rounded border border-[color:var(--line-strong)] px-1 text-[11px] font-semibold leading-4 tabular-nums text-slate-300">{m[1]}</span>
       <span className="min-w-0">{dich(m[2])}</span>
-      {m[3] && <span className={`rounded px-1 text-[11.5px] font-bold leading-4 tabular-nums ${CHIP_SOS[Number(m[3])] ?? ''}`}>SOS {m[3]}</span>}
+      {m[3] && <ChipSos muc={Number(m[3])} dot={m[1]} tinh />}
     </>
   );
 }

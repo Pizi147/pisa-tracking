@@ -19,7 +19,7 @@ import {
  */
 const nhanNhom = (x: DongHvCanChuY) => (x.nhom === 'qua_han'
   ? <NhanTrangThai t="qua-han" />
-  : <Nhan tone={x.nhom === 'bat_buoc' ? 'soon' : 'wait'}>{NHOM_EM_LABEL[x.nhom]}</Nhan>);
+  : <Nhan tone={x.nhom === 'bat_buoc' ? 'soon' : 'muted'}>{NHOM_EM_LABEL[x.nhom]}</Nhan>);
 
 export function YThucPhoiHop(props: PhamViPhanTich) {
   const demoDate = useNgayNghiepVu().homNay || null;
@@ -116,7 +116,7 @@ export function YThucPhoiHop(props: PhamViPhanTich) {
               <td className="td text-right tabular-nums"><SoLieuO giaTri={x.chuaXuLy} nguon={nguon(`hv:${x.studentId}`, 'chua-xu-ly')} tieuDe={`${x.ten} · chưa xử lý`} /></td>
               <td className="td truncate text-slate-300" title={x.bienPhapGanNhat ?? undefined}>
                 {x.bienPhapGanNhat ? `${x.bienPhapGanNhat}${x.ngay ? ` · ${ngay(x.ngay, demoDate)}` : ''}` : <span className="text-faint">—</span>}
-                {x.lanXuLyMoi && <div className="text-xs text-wait">{x.lanXuLyMoi.ten} · {x.lanXuLyMoi.nhan}</div>}
+                {x.lanXuLyMoi && <div className="text-xs text-muted">{x.lanXuLyMoi.ten} · {x.lanXuLyMoi.nhan}</div>}
               </td>
             </tr>
           ))}

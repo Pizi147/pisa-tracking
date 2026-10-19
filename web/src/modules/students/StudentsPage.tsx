@@ -4,7 +4,7 @@ import { useApi } from '../../lib/useApi.ts';
 import { useSession } from '../../lib/session.tsx';
 import { invalidate } from '../../lib/api.ts';
 import { BoLocDoan, Card, Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
-import { Nhan, toneNhanTuBadge } from '../../ui/Nhan.tsx';
+import { Nhan, toneBadgeLop } from '../../ui/Nhan.tsx';
 import { HangNhom } from '../../ui/HangNhom.tsx';
 import { CongTacKhung, khungDaNho, type KhungLoc } from '../../ui/CongTacKhung.tsx';
 import { useDienThoai } from '../../ui/TheDong.tsx';
@@ -541,8 +541,8 @@ function HopLop({ lop, mo, onDoiMo, chiHien, sapXep, onThemHocVien, onDoi, dsHoc
   const cacBadge = b.hien.map((x) => {
     const den = denBadge(x);
     return den
-      ? <Nhan key={x.key} tone={toneNhanTuBadge(x.tone)} title={x.title} onClick={() => navigate(den)}>{x.nhan}</Nhan>
-      : <Nhan key={x.key} tone={toneNhanTuBadge(x.tone)} title={x.title}>{x.nhan}</Nhan>;
+      ? <Nhan key={x.key} tone={toneBadgeLop(x)} title={x.title} onClick={() => navigate(den)}>{x.nhan}</Nhan>
+      : <Nhan key={x.key} tone={toneBadgeLop(x)} title={x.title}>{x.nhan}</Nhan>;
   });
 
   if (the) {

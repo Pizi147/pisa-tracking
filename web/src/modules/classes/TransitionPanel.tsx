@@ -380,7 +380,7 @@ function HangEm({ s, d, tuanCh, homNay, loi, loiMayChu, oId, khoa, chon, onChon,
   const [doiTuan, setDoiTuan] = useState(false);
 
   return (
-    <div role="row" className={`grid gap-x-3 gap-y-2 px-3 py-2.5 text-sm ${LUOI} ${chon ? 'bg-ink-800/60' : ''}`}>
+    <div role="row" className={`grid gap-x-3 gap-y-2 px-3 py-2.5 text-sm ${LUOI} ${chon ? 'bg-[color:var(--accent-soft)]' : ''}`}>
       <span role="cell" className="flex items-start pt-1">
         <input type="checkbox" aria-label={`Chọn ${s.fullName}`} checked={chon} disabled={khoa} onChange={(e) => onChon(e.target.checked)} />
       </span>
@@ -401,7 +401,7 @@ function HangEm({ s, d, tuanCh, homNay, loi, loiMayChu, oId, khoa, chon, onChon,
         <span className={nhan}>Quản lý quyết định</span>
         <span id={oId} tabIndex={-1} aria-invalid={!!loi} className="flex flex-wrap items-center gap-1 outline-none">
           {nutKieu.map((kk) => <NutChon key={kk} nho chon={d.kieu === kk} disabled={khoa} onClick={() => chonKieu(d.kieu === kk ? '' : kk)}>{NHAN_KIEU[kk]}</NutChon>)}
-          <select className={`field !h-8 !w-auto !py-0 text-xs ${khac ? '!border-teal-600' : ''}`} aria-label={`Khác cho ${s.fullName}`} disabled={khoa}
+          <select className={`field !h-8 !w-auto !py-0 text-xs ${khac ? '!border-[color:var(--accent)]' : ''}`} aria-label={`Khác cho ${s.fullName}`} disabled={khoa}
             value={khac ? d.kieu : ''} onChange={(e) => chonKieu((e.target.value || '') as Kieu | '')}>
             <option value="">Khác ▾</option>
             <option value="bao-luu">Tạm dừng học (bảo lưu)</option>

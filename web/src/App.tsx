@@ -211,8 +211,8 @@ export default function App() {
         const goc = gocNhin.coThe.find((v) => v.role === gocNhin.vaiGoc);
         return (
           <div role="status" className="shrink-0 flex items-center gap-x-2.5 gap-y-1 border-b px-4 sm:px-5 py-1.5 text-[12.5px] text-slate-300 min-w-0"
-            style={{ borderColor: 'rgb(var(--wait-line-rgb))', background: 'rgb(var(--wait-bg-rgb))' }}>
-            <b className="shrink-0 font-semibold" style={{ color: 'rgb(var(--wait-rgb))' }}>{t('Góc nhìn: {vai}', { vai: vai?.nhan ?? gocNhin.dangChon })}</b>
+            style={{ borderColor: 'rgb(var(--muted-line-rgb))', background: 'rgb(var(--muted-bg-rgb))' }}>
+            <b className="shrink-0 font-semibold" style={{ color: 'rgb(var(--muted-rgb))' }}>{t('Góc nhìn: {vai}', { vai: vai?.nhan ?? gocNhin.dangChon })}</b>
             {vai?.phamVi && <span className="hidden sm:inline min-w-0 truncate" title={vai.phamVi}>· {vai.phamVi}</span>}
             <span className="flex-1" />
             <button type="button" className="shrink-0 min-h-[32px] max-sm:min-h-[44px] border-0 bg-transparent p-0 text-[12.5px] cursor-pointer text-[color:var(--accent)] hover:underline"

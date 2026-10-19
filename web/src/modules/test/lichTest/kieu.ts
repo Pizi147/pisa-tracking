@@ -71,7 +71,7 @@ export type LichTest = {
 
 /** Màu badge theo loại nhãn (N-3): chờ mình = vàng · chờ người khác = chờ · xong = đã xong · chưa tới = xám. */
 export const TONE_NHAN_LOP: Record<LoaiNhanLop, ToneNhan> = {
-  'da-cham': 'done', 'chua-toi-han': 'muted', 'cho-ban': 'soon', 'cho-gv-khac': 'wait', 'cho-cham': 'wait',
+  'da-cham': 'done', 'chua-toi-han': 'muted', 'cho-ban': 'soon', 'cho-gv-khac': 'muted', 'cho-cham': 'muted',
 };
 
 /** Khoá một hàng lớp trên màn (nhớ mở/thu, React key): khối 2 có thể có hai hàng cùng lớp ở hai tuần thi khác nhau. */

@@ -194,7 +194,7 @@ function KhoiDiemLop({ classId, thuong, mo, onDoi }: { classId: number; thuong: 
           className="flex w-full min-h-[44px] scroll-mt-4 flex-wrap items-center gap-x-2.5 gap-y-1 rounded-xl px-3 py-3 text-left sm:px-4">
           <span className="text-slate-400"><MuiTen mo={mo} /></span>
           <span>{thuong ? t('Điểm Test của lớp') : t('Điểm Mock Test của lớp')}</span>
-          {l && l.oTrong > 0 && vai !== 'tvv' && vai !== 'cx' && <Nhan tone="wait">{t('{dot} còn {n} ô trống', { dot: dich(l.nhan), n: l.oTrong })}</Nhan>}
+          {l && l.oTrong > 0 && vai !== 'tvv' && vai !== 'cx' && <Nhan tone="muted">{t('{dot} còn {n} ô trống', { dot: dich(l.nhan), n: l.oTrong })}</Nhan>}
         </button>
       </h2>
       <div id="khoi-diem-lop-bang" hidden={!mo} className="px-3 pb-3 sm:px-4 sm:pb-4">

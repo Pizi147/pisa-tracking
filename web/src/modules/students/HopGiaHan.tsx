@@ -6,8 +6,8 @@ import { ONgay } from '../../ui/ONgay.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { addDaysStr } from '../../lib/format.ts';
 import { useLoiForm } from '../../ui/loiForm.tsx';
-import { Nhan } from '../../ui/Nhan.tsx';
-import { chuSauThi, ngay, type GiaiDoanSauThi } from '@shared/domain/index.ts';
+import { CHIP_TRON, Nhan } from '../../ui/Nhan.tsx';
+import { chipSauThi, chuSauThi, ngay, type GiaiDoanSauThi } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
 
 /** Thông tin hạn sau thi mà nơi gọi đã có (việc Công việc, panel Bước tiếp, panel một em, hồ sơ). */
@@ -67,12 +67,17 @@ export function NhanSauThi({ s, gon }: { s: { giaiDoan: GiaiDoanSauThi; han: str
   const chu = chuSauThi(s);
   if (!chu) return null;
   const tone = s.quaHan ? 'late' : s.giaiDoan === 'cho_buoc_tiep' ? 'ok' : 'soon';
-  const mau = { late: 'text-late', ok: 'text-ok', soon: 'text-soon' }[tone];
   const han = s.han ? (
     <span className={`text-xs tabular-nums ${s.quaHan ? 'font-semibold text-late' : 'text-slate-400'}`}>
       {[t('hạn {ngay}', { ngay: ngay(s.han, homNay) }), s.quaHan ? `⚠ ${t('quá hạn')}` : s.daGiaHan ? t('đã gia hạn') : null].filter(Boolean).join(' · ')}
     </span>
   ) : null;
-  if (gon) return <span className="block text-xs leading-snug"><span className={`block font-semibold ${mau}`}>{chu}</span>{han}</span>;
+  /* OV-15a: ô bảng — chip viền xanh "Đã thi · chờ KQ" / "Có KQ · chờ bước tiếp" (hàng tô nền đã thi ở chỗ gọi), trễ thêm ⚠ trong chip. */
+  if (gon) return (
+    <span className="block text-xs leading-snug">
+      <span className={`${CHIP_TRON} border-ok bg-[color:var(--surface)] font-semibold text-slate-100`}>{s.quaHan && <span aria-hidden className="mr-1 text-late">⚠</span>}{chipSauThi(s)}</span>
+      <span className="block">{han}</span>
+    </span>
+  );
   return <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5"><Nhan tone={tone}>{chu}</Nhan>{han}</span>;
 }

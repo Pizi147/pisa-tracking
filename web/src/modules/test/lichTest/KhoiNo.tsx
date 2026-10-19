@@ -50,7 +50,7 @@ function GvCham({ gv }: { gv: string[] }) {
       {gv.map((t, i) => (
         <Fragment key={t}>
           {i > 0 && ', '}
-          {dich(t) === CHAM_CHEO ? <span className="whitespace-nowrap font-semibold text-wait">{CHAM_CHEO}</span> : dich(t)}
+          {dich(t) === CHAM_CHEO ? <span className="whitespace-nowrap font-semibold text-muted">{CHAM_CHEO}</span> : dich(t)}
         </Fragment>
       ))}
     </>

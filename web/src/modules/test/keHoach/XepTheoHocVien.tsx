@@ -439,7 +439,7 @@ function BangEm({ sid, ds, homNay, kiem, lf, loiO, onTuan, onBo }: {
     const khoa = `xthv-${sid}-${x.d.n}`;
     const loi = lf.loiCua(loiO, khoa);
     return (
-      <div {...lf.o(loiO, khoa)} tabIndex={-1} className={x.doi.length ? 'rounded ring-1 ring-[color:var(--doing-line,theme(colors.teal.600))]' : ''}>
+      <div {...lf.o(loiO, khoa)} tabIndex={-1} className={x.doi.length ? 'rounded ring-1 ring-[color:var(--doing-line,var(--accent))]' : ''}>
         <TuanNho gon d={{ periodId: x.chung?.periodId ?? null, weekStart: x.chung?.weekStart ?? null }} goc={homNay} onTuan={(t) => onTuan(x.d.n, x.ks, t)} />
         {loi && <p className="m-0 mt-0.5 text-xs text-bad">{loi}</p>}
       </div>

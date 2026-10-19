@@ -104,7 +104,7 @@ export const HD_GV: HuongDan = {
     },
     {
       id: 'ho-so-ca-nhan', ten: 'Hồ sơ cá nhân', duong: ['/ho-so-ca-nhan'],
-      muc: [{ id: 'hs-sua', ten: 'Sửa hồ sơ', buoc: ['Đổi họ tên, điện thoại, mật khẩu.', 'Ngôn ngữ: nút <b>VI | EN</b> ở thanh trên (điện thoại: menu Tài khoản), nhớ theo tài khoản.'] }],
+      muc: [{ id: 'hs-sua', ten: 'Sửa hồ sơ', buoc: ['Đổi họ tên, điện thoại, mật khẩu.', 'Ngôn ngữ: menu Tài khoản › <b>VI | EN</b>, nhớ theo tài khoản. Giao diện: <b>Theo máy · Sáng · Tối</b> ở cùng menu.'] }],
     },
     {
       id: 'ho-so-gv', ten: 'Hồ sơ giáo viên', duong: ['/giao-vien'],
@@ -112,8 +112,8 @@ export const HD_GV: HuongDan = {
     },
     {
       id: 'huong-dan', ten: 'Hướng dẫn', duong: ['/huong-dan'],
-      muc: [{ id: 'hd-dung', ten: 'Dùng Hướng dẫn', buoc: ['Nút <b>?</b> ở mọi màn mở đúng mục của màn đó.', '<b>Chỉ cho tôi</b> khoanh nút cần bấm; Esc để tắt.', '<b>In</b> để có bản giấy.'],
-        chi: { hd: 'nut-hd', chu: 'Nút <b>?</b> có ở mọi màn.' } }],
+      muc: [{ id: 'hd-dung', ten: 'Dùng Hướng dẫn', buoc: ['Menu Tài khoản › <b>Hướng dẫn</b> ở mọi màn mở đúng mục của màn đó.', '<b>Chỉ cho tôi</b> khoanh nút cần bấm; Esc để tắt.', '<b>In</b> để có bản giấy.'],
+        chi: { hd: 'tai-khoan', chu: 'Bấm tên bạn › <b>Hướng dẫn</b>.' } }],
     },
   ],
   luat: [
@@ -124,7 +124,8 @@ export const HD_GV: HuongDan = {
     { id: 'han-vi-pham', ten: 'Hạn Xử lý vi phạm', buoc: ['<b>5 ngày</b> từ ngày ghi nhận, tính cả ngày đầu.', 'Bậc cần QL thì QL duyệt.'] },
     { id: 'han-ql', ten: 'QL trả lời đề xuất', buoc: ['QL trả lời Đề xuất PA / Xin hỗ trợ trong <b>5 ngày</b>, tính cả ngày gửi.'] },
     { id: 'dau-gach', ten: 'Dấu "-" (vắng)', buoc: ['Trong tuần thi: "-" = vắng, chốt ngay.', 'Nhập bù / MT cũ: "-" = Không dự thi.', 'Gỡ vắng: xoá "-", lúc nào cũng được.'] },
-    { id: 'sos-case', ten: 'SOS và Case', buoc: ['Số kỹ năng dưới kỳ vọng ở MT: 1 → SOS 1, 2 → SOS 2, 3–4 → SOS 3.', 'Lượt chưa chốt: Case tạm "Chờ chốt SOS" — chưa hạn, chưa việc.', 'Lượt chốt → "Chờ xác nhận PA"; Overall đạt mà chưa xác nhận PA → Case tự xoá.'] },
+    { id: 'sos-case', ten: 'SOS và Case', buoc: ['Số kỹ năng dưới kỳ vọng ở MT: 1 → SOS 1, 2 → SOS 2, 3–4 → SOS 3.', 'Lượt chưa chốt: Case tạm "Chờ chốt SOS" — chưa hạn, chưa việc.', 'Lượt chốt → "Chờ xác nhận PA"; Overall đạt mà chưa xác nhận PA → Case tự xoá.',
+      'Bấm <b>chip SOS</b> ở mọi màn: hộp "Vì sao SOS n" — kỹ năng dưới kỳ vọng, điểm từng kỹ năng, lối mở hồ sơ MT.'] },
     { id: 'ket-thuc-pa', ten: 'Kết thúc PA sớm', buoc: ['PA quy chế: GVCN / QL vào <b>⋯ › Kết thúc PA</b>.', 'Lý do bắt buộc, từ <b>10</b> ký tự; nhật ký PA ghi lại.'] },
     { id: 'ban-giao', ten: 'Bàn giao khi em chuyển lớp', buoc: ['Hạn bàn giao = muộn hơn của (ngày quyết định chuyển lớp + 7 ngày) và mốc cũ.'] },
     { id: 'sua-diem', ten: 'Sửa điểm sau hoàn tất', buoc: ['Ô còn trống: nhập được cả sau hoàn tất.', 'Sửa hoặc xoá một điểm đã có: nhờ QL sửa.', 'Gỡ "-" lúc nào cũng được.'] },
@@ -135,7 +136,8 @@ export const HD_GV: HuongDan = {
     { ten: 'MT (bài thi thử)', nghia: 'Mock Test 4 kỹ năng L R W S của lớp Fast Track; MT0 là mốc đầu vào.' },
     { ten: 'Lớp thường (không phải FT)', nghia: 'Pre FOU, FOU, BE, ELE — làm Progress Test và Final Test, đếm theo môn.' },
     { ten: 'Kỳ vọng', nghia: 'Band em cần đạt ở mỗi MT theo lộ trình.' },
-    { ten: 'SOS 1 · 2 · 3', nghia: 'Theo số kỹ năng dưới kỳ vọng: 1, 2, hoặc 3–4.' },
+    { ten: 'SOS 1 · 2 · 3', nghia: 'Theo số kỹ năng dưới kỳ vọng: 1, 2, hoặc 3–4. Chip chỉ có viền vàng / cam / đỏ, dày dần; SOS tạm viền đứt.' },
+    { ten: '✓ / ✗ cạnh điểm', nghia: '✓ xanh lá vượt kỳ vọng · ✓ xanh dương bằng · ✗ đỏ dưới. Hộp nhập điểm: ▲ / ▼ so kỳ vọng.' },
     { ten: 'Case (hồ sơ vấn đề)', nghia: 'Hồ sơ một vấn đề học thuật của em: nguyên nhân, PA, kết quả.' },
     { ten: 'Case tạm / SOS tạm', nghia: 'Lượt MT chưa chốt: SOS và Case chỉ tạm ("Chờ chốt SOS") — chưa hạn, chưa việc, chưa vào số đếm; chốt lượt mới thành thật.' },
     { ten: 'KCK', nghia: 'Không cam kết Target: không kỳ vọng MT, không SOS tự động; vẫn có lịch MT, nhập điểm, Case tay, Ý thức.' },

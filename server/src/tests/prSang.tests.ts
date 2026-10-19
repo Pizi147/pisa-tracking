@@ -37,7 +37,7 @@ export async function runPrSangTests(t: YThucTestKit) {
   const nguon = taiFile(path.join(REPO, 'web/src')).map((p) => ({ f: path.relative(REPO, p).replace(/\\/g, '/'), text: fs.readFileSync(p, 'utf8') }));
 
   const NEN = ['bg', 'surface', 'surface-2', 'hang-lon-bg', 'hang-con-bg'];
-  const NGHIA = ['ok', 'done', 'bad', 'late', 'soon', 'doing', 'wait', 'muted'];
+  const NGHIA = ['ok', 'done', 'bad', 'late', 'soon', 'doing', 'muted'];   // OV-15a bỏ wait
 
   for (const [ten, mau] of [['tối', toi], ['sáng', sang]] as const) {
     check(`SANG · S1 (${ten}): chữ ≥ 4.5:1 trên nền trang và nền riêng`, () => {
@@ -53,7 +53,6 @@ export async function runPrSangTests(t: YThucTestKit) {
       for (const n of NGHIA) cap(`${n}-rgb`, `${n}-bg-rgb`);
       for (const n of [...NEN, 'surface']) { cap('text', n); cap('accent', n); }
       cap('accent-ink-rgb', 'accent');
-      cap('chon-dau-rgb', 'chon-bg-rgb');
       assert(hong.length === 0, hong.join(' · '));
     });
   }
@@ -71,7 +70,7 @@ export async function runPrSangTests(t: YThucTestKit) {
   const goc = d.docKhoiCss(css, ':root');
   const khoiSang = d.docKhoiCss(css, ':root[data-theme="light"]');
 
-  check('SANG · S3: mọi màu gốc của :root có ở khối sáng; SOS 1/2/3 sáng khác nhau và vẫn là bí danh', () => {
+  check('SANG · S3: mọi màu gốc của :root có ở khối sáng; SOS 1/2/3 sáng khác nhau (OV-15a: token riêng, không còn bí danh)', () => {
     assert(khoiSang.length > 0, 'thiếu khối :root[data-theme="light"]');
     const thieu: string[] = [];
     for (const m of goc.matchAll(/--([a-z0-9-]+)\s*:\s*([^;]+);/gi)) {
@@ -81,7 +80,7 @@ export async function runPrSangTests(t: YThucTestKit) {
     }
     assert(thieu.length === 0, `khối sáng thiếu: ${thieu.join(', ')}`);
     const cung = (a: string, b: string) => sang[a] && sang[b] && sang[a].join() === sang[b].join();
-    for (const [x, y] of [['sos1', 'soon'], ['sos2', 'late'], ['sos3', 'bad'], ['dat', 'ok']] as const) {
+    for (const [x, y] of [['dat', 'ok']] as const) {
       for (const hau of ['-rgb', '-bg-rgb', '-line-rgb']) assert(cung(x + hau, y + hau), `sáng: --${x}${hau} phải bằng --${y}${hau}`);
       assert(!new RegExp(`--${x}-rgb\\s*:`).test(khoiSang), `khối sáng không chép lại bí danh --${x}-rgb`);
     }
@@ -165,14 +164,10 @@ export async function runPrSangTests(t: YThucTestKit) {
     assert(hong.length === 0, hong.slice(0, 10).join(' · ') + (hong.length > 10 ? ` … (${hong.length})` : ''));
   });
 
-  check('SANG · S9: công tắc — docCheDo, script nội dòng chống nháy, nút ◐ nằm giữa Thông báo và tài khoản', () => {
-    assert(d.docCheDo('light') === 'light', "'light' → sáng");
-    for (const v of [null, undefined, 'x', 'dark', '']) assert(d.docCheDo(v) === 'dark', `${String(v)} → tối`);
+  /* OV-15a (C11): công tắc 3 lựa chọn ở menu tài khoản — phép kiểm ở prOv15a; ở đây giữ phần script chống nháy. */
+  check('SANG · S9: script nội dòng chống nháy chạy TRƯỚC script ứng dụng', () => {
     assert(html.includes(d.CHE_DO_KHOA) && html.includes('document.documentElement.dataset.theme'), 'index.html thiếu script nội dòng đặt data-theme');
     const dauApp = html.indexOf('src="/web/src/main.tsx"');
     assert(html.indexOf(d.CHE_DO_KHOA) < dauApp, 'script chế độ phải chạy TRƯỚC script ứng dụng');
-    const header = fs.readFileSync(path.join(REPO, 'web/src/modules/platform/Header.tsx'), 'utf8');
-    const [a, b, c] = [header.indexOf("aria-label={t('Thông báo')}"), header.indexOf('<CongTacGiaoDien'), header.indexOf('ref={nutTaiKhoan}')];
-    assert(a >= 0 && b > a && c > b, 'Header.tsx: <CongTacGiaoDien /> phải nằm giữa nút Thông báo và nút tài khoản');
   });
 }

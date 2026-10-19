@@ -133,8 +133,8 @@ function EmCuaToiOLop({ lop }: { lop: HoSoLop }) {
         <>
           <p className="m-0 flex flex-wrap items-center gap-x-2 gap-y-1">
             <b className="font-semibold tabular-nums">{t('{n} em', { n: em.length })}</b>
-            <span aria-hidden className="text-slate-500">·</span><Level tone="sos3">SOS</Level><span className="tabular-nums">{so((r) => !!r.chuY?.sos)}</span>
-            <span aria-hidden className="text-slate-500">·</span><Nhan tone="wait">{t('Case mới')}</Nhan><span className="tabular-nums">{so((r) => !!r.chuY?.caseMoi?.length)}</span>
+            <span aria-hidden className="text-slate-500">·</span><Nhan tone="muted">SOS</Nhan><span className="tabular-nums">{so((r) => !!r.chuY?.sos)}</span>
+            <span aria-hidden className="text-slate-500">·</span><Nhan tone="muted">{t('Case mới')}</Nhan><span className="tabular-nums">{so((r) => !!r.chuY?.caseMoi?.length)}</span>
             <span aria-hidden className="text-slate-500">·</span><Nhan tone="soon">{t('Tạm dừng')}</Nhan><span className="tabular-nums">{so((r) => r.status === 'inactive')}</span>
           </p>
           <Link to={`/hoc-vien?q=${encodeURIComponent(lop.code)}`} className="link mt-1.5 inline-flex min-h-[44px] items-center sm:min-h-0">{t('Xem từng em ở Học viên & Lớp')}</Link>
