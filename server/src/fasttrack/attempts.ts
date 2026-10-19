@@ -1177,7 +1177,8 @@ export function attemptDetail(p: Principal, attemptId: number) {
       laGvcn: !!a.class_id && isCoreTeacherOf(p, a.class_id),
       canCancel: can(p, PERMISSIONS.ATTEMPT_CANCEL, { classId: a.class_id }),
       /** PR-MT (M-12, K4-10): cách huỷ được phép + hệ quả thật, để hộp huỷ nói trước — không bấm rồi mới biết. */
-      huyLuot: a.status !== 'cancelled' && can(p, PERMISSIONS.ATTEMPT_CANCEL, { classId: a.class_id })
+      /* OV-15c: Mock / MT0 không còn "Huỷ MT{n}" trên web (Xóa = về Chưa xếp, `boTuanLuot`) — hồ sơ MT không vẽ nút. */
+      huyLuot: a.status !== 'cancelled' && !HUY_MT_DA_BO.includes(a.kind) && can(p, PERMISSIONS.ATTEMPT_CANCEL, { classId: a.class_id })
         ? (({ caseIds: _bo, ...hq }) => hq)(heQuaHuyLuot(a.id)) : null,
       /** Xử lý vắng (dời lần đầu / xin duyệt) — GVCN của lớp và Quản lý; giáo viên bộ môn thì không. */
       canHandleAbsence: canRequestAbsence(p, a),
@@ -1570,9 +1571,15 @@ export function caseSinhRieng(attemptId: number): number[] {
  * còn chờ, tín hiệu còn chờ của lượt và ghi danh sách đóng vào bản cất để Khôi phục mở lại đúng. MỘT giao dịch. Bài lớp thường: điểm xoá theo
  * lô như cũ (`xoaDiemLuot`, PR-VN5) — không cất.
  */
-export function huyLuot(p: Principal, attemptId: number, input: { lyDo?: string | null }) {
+/** OV-15c (mục 6): loại lượt KHÔNG còn huỷ từ web — Kế hoạch Test chỉ có Xóa (bỏ tuần, về Chưa xếp). Huỷ do hệ thống (MT0, vắng 2 lần) giữ. */
+const HUY_MT_DA_BO = ['mock', 'mt0'];
+
+export function huyLuot(p: Principal, attemptId: number, input: { lyDo?: string | null; quaWeb?: boolean }) {
   const a = loadAttempt(attemptId);
   require_(p, PERMISSIONS.ATTEMPT_CANCEL, { classId: a.class_id, studentId: a.student_id }, 'Bạn không có quyền huỷ lượt Mock.');
+  if (input.quaWeb && HUY_MT_DA_BO.includes(a.kind)) {
+    throw badRequest(`Không còn huỷ MT${a.attempt_no} — dùng Xóa ở hộp lịch (Kế hoạch Test): đợt về Chưa xếp, lịch sử giữ.`);
+  }
   const lyDo = String(input.lyDo ?? '').trim() || `Huỷ MT${a.attempt_no}`;   // rà #282: lý do tuỳ chọn
   const hq = heQuaHuyLuot(attemptId);
   if (!hq.cachDuoc) throw badRequest('Lượt này đã huỷ.');

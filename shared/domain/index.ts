@@ -45,6 +45,7 @@ export * from './phanTich.ts';
 export * from './duongHoSo.ts';
 export * from './hanhTrinh.ts';
 export * from './keHoachTest.ts';
+export * from './keHoachOv15c.ts';
 export * from './oMt.ts';
 export * from './vang.ts';
 export * from './congViec.ts';

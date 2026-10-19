@@ -2036,3 +2036,19 @@ CREATE TABLE gop_y_tuan (
   UNIQUE (student_id, class_id, period_id, skill)
 );
 CREATE INDEX idx_gop_y_tuan_lop ON gop_y_tuan(class_id, period_id);
+
+-- OV-15c (C21): GHI CHÚ LỊCH THI ở Kế hoạch Test — CHỈ ghi chú, không dời lịch. Mỗi lần lưu THÊM một dòng (lịch sử: tác giả, lúc);
+-- dòng mới nhất của một khoá là ghi chú hiện tại, `noi_dung = ''` = đã xoá. Khoá: FT (student_id, cycle_id, dot 'mt4') — MT đánh số theo lộ trình;
+-- lớp thường (student_id, class_id, dot 'progress' | 'final' | 'cp2'); ghi chú lớp (class_id, student_id NULL, dot NULL). Migrate `prOv15c` chép y câu này.
+CREATE TABLE IF NOT EXISTS ghi_chu_lich_thi (
+  id INTEGER PRIMARY KEY,
+  class_id INTEGER NOT NULL REFERENCES classes(id),
+  student_id INTEGER REFERENCES students(id),
+  cycle_id INTEGER REFERENCES learning_cycles(id),
+  dot TEXT,
+  noi_dung TEXT NOT NULL,
+  created_by INTEGER REFERENCES users(id),
+  created_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_gcl_hoc_vien ON ghi_chu_lich_thi(student_id, dot);
+CREATE INDEX IF NOT EXISTS idx_gcl_lop ON ghi_chu_lich_thi(class_id, student_id);
