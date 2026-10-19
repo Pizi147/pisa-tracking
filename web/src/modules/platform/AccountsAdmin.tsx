@@ -342,7 +342,7 @@ function PendingRow({ user, branches, onDone, duyetLai }: {
               <option key={r} value={r}>{ROLE_LABEL[r as Role]}</option>
             ))}
           </select>
-          <button className="btn btn-sm btn-primary" disabled={busy || (picked.size === 0 && role !== 'cx')}
+          <button className="btn btn-sm btn-primary" disabled={busy || (picked.size === 0 && role !== 'cx' && role !== 'head_tutor')}
             onClick={() => act(() => api.post(`/admin/accounts/${user.id}/approve`, { role, branches: [...picked] }),
               `Đã duyệt ${user.fullName} · ${roleLabel(role)} · ${cnChon}`)}>
             Duyệt
@@ -457,7 +457,7 @@ function AccountDialog({ account, branches, onClose, onDone }: {
     ...(!editing && form.password.length < 6 ? [{ khoa: 'mat-khau', nhan: 'Mật khẩu ban đầu', lyDo: `Cần ít nhất 6 ký tự (đang có ${form.password.length})` }] : []),
     ...(!editing && payloadRoles().length === 0 ? [{ khoa: 'vai-tro', nhan: 'Vai trò', lyDo: 'Cấp ít nhất một vai trò' }] : []),
     /* OV-11b (QT-1): vai (trừ Quản trị, CX) chưa chọn chi nhánh — máy chủ cũng chặn 400. */
-    ...grants.flatMap((g, i) => (g.role && g.role !== 'system_admin' && g.role !== 'cx' && g.branches.size === 0
+    ...grants.flatMap((g, i) => (g.role && g.role !== 'system_admin' && g.role !== 'cx' && g.role !== 'head_tutor' && g.branches.size === 0
       ? [{ khoa: `vai-${i}`, nhan: 'Vai trò', lyDo: `Chọn chi nhánh cho vai ${roleLabel(g.role)}` }] : [])),
     ...(editing && newPassword && newPassword.length < 6 ? [{ khoa: 'mat-khau-moi', nhan: 'Đặt lại mật khẩu', lyDo: `Cần ít nhất 6 ký tự (đang có ${newPassword.length})` }] : []),
     ...(editing && thieuPhamVi.length ? [{ khoa: 'quyen-rieng', nhan: 'Quyền cấp riêng', lyDo: `Chưa chọn phạm vi cho: ${thieuPhamVi.map((k) => PERMISSION_LABEL[k] ?? k).join(', ')}` }] : []),
@@ -537,7 +537,8 @@ function AccountDialog({ account, branches, onClose, onDone }: {
                   onChange={(e) => setGrants(grants.map((x, j) => (j === i ? { ...x, role: e.target.value } : x)))}>
                   {ROLES.map((r) => <option key={r} value={r}>{ROLE_LABEL[r as Role]}</option>)}
                 </select>
-                {g.role === 'system_admin' ? (
+                {/* TU-a: Head tutor như Quản trị — luôn toàn hệ thống. */}
+                {g.role === 'system_admin' || g.role === 'head_tutor' ? (
                   <span className="text-xs text-slate-400">Toàn hệ thống — không gắn chi nhánh</span>
                 ) : (<>
                   {/* PR-OV2a: CX mặc định toàn hệ thống (không chọn chi nhánh nào); chọn chi nhánh thì theo chi nhánh như vai khác. */}

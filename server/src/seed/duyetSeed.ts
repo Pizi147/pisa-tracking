@@ -74,7 +74,9 @@ export function buildDuyetDemo(ctx: BuildCtx): { the: number } {
           note: 'Em vẫn nghe sót số và tên riêng ở Part 1, dù đã tự học đều.',
           decisionNote: 'Có nên chuyển em sang tutor 1-1 không, hay giữ tự học thêm một tuần?',
           /* OV-12h: PA Tutor (kể cả không có Số buổi) ghi Số buổi kỳ này + dòng buổi — giữ đúng PA được chọn như trước. */
-          ...(r.kind === 'tutor' && r.so_buoi == null ? { soBuoi: 1, buoi: [{ tutor: 'Mr Long', nhanXet: 'Nghe số và tên riêng Part 1, vẫn sót 3/10' }] } : {}),
+          /* TU-a: tên gõ tay "Mr Long" (chưa có trong danh sách) — Không gửi feedback cho GV. */
+          ...(r.kind === 'tutor' && r.so_buoi == null ? { soBuoi: 1, buoi: [{ tutor: 'Mr Long', nhanXet: 'Nghe số và tên riêng Part 1, vẫn sót 3/10',
+            chuanBi: true, taiLieu: true, feedbackGv: false }] } : {}),
         } as any);
         break;
       } catch { /* PA này chưa ghi được (ví dụ chưa tới tuần) — thử PA kế */ }

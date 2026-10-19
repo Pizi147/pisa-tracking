@@ -82,20 +82,64 @@ export function loiKetQuaTuan(pa: PaKetQua, tuan: string, nguoi: NguoiChon | nul
   return loi;
 }
 
-/** OV-12h (chủ SP 14/10): một buổi của Kết quả PA Tutor — tên tutor gõ tự do + nhận xét buổi, cả hai bắt buộc. */
-export type BuoiTutor = { tutor: string; nhanXet: string };
+/**
+ * OV-12h (chủ SP 14/10) + TU-a (đặc tả Tutor mục 5): một buổi của Kết quả PA Tutor. Bắt buộc: tutor (chọn từ danh sách → `tutorId` + tên chụp; "Tutor khác"
+ * → chỉ tên), nhận xét buổi, 3 ô Có / Không. Tuỳ chọn: hình thức (tự suy, trống được), đánh giá 1–5, nhận xét về tutor.
+ */
+export type BuoiTutor = {
+  tutorId?: number | null; tutor: string; nhanXet: string; hinhThuc?: HinhThuc | null;
+  chuanBi?: boolean | null; taiLieu?: boolean | null; feedbackGv?: boolean | null;
+  danhGia?: number | null; nhanXetTutor?: string | null;
+};
+export type HinhThuc = 'offline' | 'online';
+/** Ba tiêu chí "Tutor buổi này" (Q3) — thứ tự hiện trên form, lịch sử, trang Tutor. */
+export const TIEU_CHI_TUTOR = [
+  { k: 'chuanBi', nhan: t('Có chuẩn bị bài'), ngan: t('Chuẩn bị') },
+  { k: 'taiLieu', nhan: t('Xin tài liệu đúng hạn'), ngan: t('Tài liệu') },
+  { k: 'feedbackGv', nhan: t('Gửi feedback về HV cho GV'), ngan: t('Feedback GV') },
+] as const;
 /** MỌI PA Tutor → Kết quả ghi theo buổi (n buổi kỳ này = n dòng; n = 0 không dòng). Chỉ sửa lần ghi cũ chưa có số buổi (`cu`) là không hỏi. */
 export const canBuoiTutor = (pa: PaKetQua): boolean => pa.kind === 'tutor' && !pa.cu;
-/** Đúng `n` dòng, mỗi dòng đủ tên tutor + nhận xét → null; sai → câu lỗi (web và máy chủ cùng gọi). */
-export function kiemBuoiTutor(n: number, buoi: unknown): string | null {
+const laCoKhong = (v: unknown) => v === true || v === false;
+/**
+ * Đúng `n` dòng, mỗi dòng đủ tên tutor + nhận xét + 3 ô Có / Không → null; sai → câu lỗi (web và máy chủ cùng gọi). `cu3`: lần ghi đã có dòng buổi từ
+ * trước TU-a (3 ô trống) — Sửa không bắt 3 ô (đặc tả mục 5, 11); có gửi thì vẫn phải đúng kiểu. `tutorId` có trong danh sách: máy chủ kiểm thêm.
+ */
+export function kiemBuoiTutor(n: number, buoi: unknown, cu3 = false): string | null {
   if (!Array.isArray(buoi) || buoi.length !== n) return t('cần đủ {n} dòng (mỗi buổi một dòng)', { n });
   for (const [i, b] of buoi.entries()) {
+    const x = i + 1;
     const tutor = String(b?.tutor ?? '').trim(), nhanXet = String(b?.nhanXet ?? '').trim();
-    if (!tutor) return t('buổi {x} chưa có tên tutor', { x: i + 1 });
-    if (!nhanXet) return t('buổi {x} chưa có nhận xét', { x: i + 1 });
-    if (tutor.length > 100 || nhanXet.length > 1000) return t('buổi {x} quá dài (tên ≤ 100, nhận xét ≤ 1000 ký tự)', { x: i + 1 });
+    if (!tutor) return t('buổi {x} chưa có tên tutor', { x });
+    if (!nhanXet) return t('buổi {x} chưa có nhận xét', { x });
+    if (tutor.length > 100 || nhanXet.length > 1000) return t('buổi {x} quá dài (tên ≤ 100, nhận xét ≤ 1000 ký tự)', { x });
+    if (b.tutorId != null && !(Number.isInteger(b.tutorId) && b.tutorId > 0)) return t('buổi {x}: tutor không hợp lệ', { x });
+    for (const { k } of TIEU_CHI_TUTOR) {
+      if (cu3 ? b[k] != null && !laCoKhong(b[k]) : !laCoKhong(b[k])) return t('buổi {x}: chọn Có hoặc Không ở cả 3 ô "Tutor buổi này"', { x });
+    }
+    if (b.hinhThuc != null && b.hinhThuc !== 'offline' && b.hinhThuc !== 'online') return t('buổi {x}: hình thức là Offline hoặc Online', { x });
+    if (b.danhGia != null && !(Number.isInteger(b.danhGia) && b.danhGia >= 1 && b.danhGia <= 5)) return t('buổi {x}: đánh giá từ 1 đến 5, hoặc để trống', { x });
+    if (String(b.nhanXetTutor ?? '').length > 1000) return t('buổi {x}: nhận xét về tutor tối đa 1000 ký tự', { x });
   }
   return null;
+}
+
+/** Hình thức tự chọn (mục 5.2, 13): nơi dạy = chi nhánh lớp của em → Offline; chi nhánh khác / Chỉ online → Online; chưa có nơi dạy / "Tutor khác" → trống. */
+export function hinhThucTuSuy(tutor: { noiDayBranchId: number | null; chiOnline: number | boolean } | null, branchIdLop: number | null): HinhThuc | null {
+  if (!tutor) return null;
+  if (tutor.chiOnline) return 'online';
+  if (tutor.noiDayBranchId == null) return null;
+  return tutor.noiDayBranchId === branchIdLop ? 'offline' : 'online';
+}
+/** Kỹ năng tutor (mã ngắn, thứ tự cố định — `ENTRY_SKILL_SHORT`, chủ SP 20/10 có W1 / W2). */
+export const KN_TUTOR = ['L', 'R', 'W1', 'W2', 'S'] as const;
+/** Kỹ năng PA lấy từ topic của Case → kỹ năng tutor khớp (đủ một là được). Writing → W1 hoặc W2 (mục 13.1). Rỗng = không lọc theo kỹ năng. */
+export function knTutorCuaTopic(topic: string | null | undefined): string[] {
+  if (topic === 'listening') return ['L'];
+  if (topic === 'reading') return ['R'];
+  if (topic === 'speaking' || topic === 'pronunciation') return ['S'];
+  if (topic && /writing/.test(topic)) return ['W1', 'W2'];
+  return [];
 }
 
 /** Phần thân `POST /interventions/:id/result` của khối đếm: `soBuoi` khi có ô Số buổi kỳ này (`coSoBuoiKy`); `nguoiDay` chỉ khi loại có người. */

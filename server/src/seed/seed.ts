@@ -1,4 +1,5 @@
 import { buildOv2aDemo } from './ov2aSeed.ts';
+import { buildHeadTutor, buildTutorDs } from './tuSeed.ts';
 import { buildPetDemo } from './petSeed.ts';
 import crypto from 'node:crypto';
 import { db, recreateSchema, tx } from '../db.ts';
@@ -278,6 +279,8 @@ export function runSeed() {
     }
     /* PR-DUYET: PA chờ duyệt / đề nghị dời dựng thẳng bằng SQL ở trên cũng có thẻ ở hộp Chờ duyệt (seed không chạy migrate()). */
     napYeuCauTuNguonCu(conn);
+    /* TU-a: danh sách tutor TRƯỚC các bộ demo ghi kết quả PA Tutor (duyệt, pb2b) — buổi trỏ được tutor. */
+    buildTutorDs(conn, adminId);
     /* PR-DUYET (D17): mỗi phân loại có thẻ, có quá hạn, tự duyệt, tự đóng, Báo lên — dựng qua hàm dịch vụ. */
     const duyet = buildDuyetDemo({ conn, adminId, branchId, classId, userId, classBranch, nextStudentCode, studentIdByCode });
     /* PR-CT: lệnh chuyển lớp + bàn giao (6 kịch bản + 1 lệnh đã chuyển) — SAU bộ demo Chờ duyệt, tự quét Báo lên ở cuối. */
@@ -294,6 +297,8 @@ export function runSeed() {
     const ov2a = buildOv2aDemo(conn);
     /* OV-6b2: lớp MB PET 01 (3 em, Checkpoint 1 một Đạt · một SOS) — sau OV-2a để id học viên / người dùng cũ không đổi. */
     const pet = buildPetDemo(conn, { adminId, mbId: branchId.get('MB')!, userId });
+    /* TU-a: tài khoản Head tutor + một kết luận "Ngừng hợp tác" — sau PET để id người dùng / học viên cũ không đổi. */
+    buildHeadTutor(conn);
     /* OV-11e (Q8): lượt MT đã chốt dựng bằng SQL thẳng chưa có dấu KCK theo lượt — chụp theo cờ hiện tại (cùng hàm với migrate). Sau mọi bộ demo. */
     migratePrOv11e(conn, []);
     /* OV-12a: PA dựng bằng SQL thẳng với hạn kiểu cũ (Thứ Hai hằng tuần) → lịch kỳ hai tuần, hết Thứ Ba (cùng hàm với migrate; seed → migrate không đổi gì). */

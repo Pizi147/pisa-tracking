@@ -7,7 +7,7 @@
 import { laLoaiBoQuen } from './phanTich.ts';
 import { t } from '../i18n/index.ts';
 
-export type KhuVuc = 'tong-quan' | 'hoc-vien' | 'test' | 'phan-tich' | 'cong-viec';
+export type KhuVuc = 'tong-quan' | 'hoc-vien' | 'test' | 'phan-tich' | 'cong-viec' | 'tutor';
 export type TabTest = 'lich' | 'diem-lop' | 'ke-hoach';
 export type TabCongViec = 'cho-duyet' | 'ho-tro' | 'yeu-cau' | 'van-hanh' | 'bao-cao';
 export type TabTongQuan = 'tong-quan' | 'phan-tich';
@@ -28,13 +28,15 @@ export type NavQuyen = {
   workChamDiem: boolean;
   /** PR-XUAT: nút Xuất Excel kết quả Test — Quản lý/Quản trị theo phạm vi, GVCN lớp mình (không phải GVBM). */
   xuatMt: boolean;
+  /** TU-a: trang Tutor (`tutor.view`) — Head tutor, Quản trị, QL. */
+  tutor: boolean;
 };
 
 export const NAV_RONG: NavQuyen = {
   overview: true, students: false, admin: false, analysis: false, phanTichGv: false, hvCuaToi: false,
   test: false, testGrade: false, testSchedule: false, testPlan: false,
   work: false, workSupport: false, workOps: false, workReports: false, workApprove: false, workRequests: false, workChamDiem: false,
-  xuatMt: false,
+  xuatMt: false, tutor: false,
 };
 
 export type KhuVucMuc = { key: KhuVuc; to: string; label: string; labelNgan: string };
@@ -46,6 +48,8 @@ export const KHU_VUC: readonly KhuVucMuc[] = [
   /* OV-15e (plan §7): Phân tích là mục thanh trên (trước là tab của Tổng quan). */
   { key: 'phan-tich', to: '/phan-tich', label: t('Phân tích'), labelNgan: t('Phân tích') },
   { key: 'cong-viec', to: '/cong-viec', label: t('Công việc'), labelNgan: t('Công việc') },
+  /* TU-a: Head tutor chỉ có mục này; QL / Quản trị thêm ở cuối. */
+  { key: 'tutor', to: '/tutor', label: t('Tutor'), labelNgan: t('Tutor') },
 ];
 
 const HIEN: Record<KhuVuc, (n: NavQuyen) => boolean> = {
@@ -54,6 +58,7 @@ const HIEN: Record<KhuVuc, (n: NavQuyen) => boolean> = {
   test: (n) => n.test,
   'phan-tich': (n) => n.analysis,
   'cong-viec': (n) => n.work,
+  tutor: (n) => n.tutor,
 };
 
 /**
@@ -75,6 +80,7 @@ export function khuVucCuaDuong(pathname: string): KhuVuc | null {
   if (thuoc(p, '/hoc-vien')) return 'hoc-vien';
   if (['/test', '/nhap-diem', '/bang-diem-thuong', '/mock-test'].some((g) => thuoc(p, g))) return 'test';
   if (thuoc(p, '/cong-viec')) return 'cong-viec';
+  if (thuoc(p, '/tutor')) return 'tutor';
   return null;
 }
 

@@ -29,6 +29,7 @@ export const ROLES = [
   { key: 'office_admin', name: 'Admin' },
   { key: 'consultant', name: 'Tư vấn viên' },
   { key: 'cx', name: 'CX' },
+  { key: 'head_tutor', name: 'Head tutor' },
 ] as const;
 
 /**
@@ -54,7 +55,7 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
     'violation.record', 'discipline.manage', 'discipline.stats',
     'class.assign', 'class.edit', 'class.create', 'student.view', 'student.edit', 'student.add',
     'meeting.view', 'meeting.edit', 'admin.config', 'request.approve', 'cycle.edit',
-    'student.edit_info', 'test.view', 'work.view', 'analysis.view', 'analysis.view_teacher',
+    'student.edit_info', 'test.view', 'work.view', 'analysis.view', 'analysis.view_teacher', 'tutor.view', 'tutor.manage',
   ],
   // Quản lý: chốt TUẦN của mọi lượt MT trong chi nhánh mình.
   manager: [
@@ -64,7 +65,7 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
     'case.view', 'sos.report', 'sos.edit', 'case.close', 'case.approve', 'class.assign', 'class.edit', 'class.create',
     'violation.record', 'discipline.manage', 'discipline.stats',
     'student.view', 'student.edit', 'student.add', 'meeting.view', 'meeting.edit', 'request.approve', 'cycle.edit',
-    'student.edit_info', 'test.view', 'work.view', 'analysis.view', 'analysis.view_teacher',
+    'student.edit_info', 'test.view', 'work.view', 'analysis.view', 'analysis.view_teacher', 'tutor.view',
   ],
   /*
    * Giáo viên: nhập điểm và đánh giá ĐÚNG kỹ năng được phân công.
@@ -102,6 +103,8 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
   consultant: ['attempt.view', 'case.view', 'student.view', 'student.edit_info', 'student.edit_more', 'analysis.view', 'class.create', 'student.add'],
   /* CX: như TVV, grant toàn hệ thống; Tổng quan · Phân tích trừ phần giáo viên (không `analysis.view_teacher`). */
   cx: ['attempt.view', 'case.view', 'student.view', 'student.edit_info', 'student.edit_more', 'analysis.view', 'class.create', 'student.add'],
+  /* TU-a: Head tutor — chỉ trang Tutor (toàn hệ thống). Không Case, HV, điểm, Công việc. */
+  head_tutor: ['tutor.view', 'tutor.manage'],
 };
 
 /*

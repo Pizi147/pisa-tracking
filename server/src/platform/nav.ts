@@ -26,9 +26,12 @@ export function navOf(p: Principal): NavQuyen {
   const chamDiem = phamViXemViec(p) === 'cham-diem';
   const analysis = coPhamVi(PERMISSIONS.ANALYSIS_VIEW);
   const hvCuaToi = p.roleKeys.includes('consultant') && !laVaiQuanLy(p.roleKeys);
+  const tutor = coPhamVi(PERMISSIONS.TUTOR_VIEW);
+  /* TU-a: chỉ có trang Tutor (Head tutor) — không Tổng quan, `/` mở `/tutor`. */
+  const chiTutor = tutor && !analysis && !viec && !hvCuaToi && !coPhamVi(PERMISSIONS.STUDENT_VIEW);
   return {
     /* OV-15d: GV (không Phân tích, không TVV, có Công việc) vào thẳng Công việc — Tổng quan của GV trùng danh sách việc nên bỏ. */
-    overview: analysis || hvCuaToi || !(viec && (attempt || board || meeting)),
+    overview: !chiTutor && (analysis || hvCuaToi || !(viec && (attempt || board || meeting))),
     students: coPhamVi(PERMISSIONS.STUDENT_VIEW),
     admin: can(p, PERMISSIONS.ADMIN_CONFIG, { anyScope: true }),
     analysis,
@@ -42,6 +45,7 @@ export function navOf(p: Principal): NavQuyen {
     workApprove: viec && can(p, PERMISSIONS.REQUEST_APPROVE, { anyScope: true }), workRequests: support && !chamDiem,
     workChamDiem: support && chamDiem,
     xuatMt: coPhamViXuat(phamViXuatMt(p)),
+    tutor,
   };
 }
 
