@@ -106,7 +106,7 @@ export function noDiemCuaGv(p: Principal, gvId: number, homNay: string, lop: rea
   const chiNhanh = [...new Set(lop.map((l) => l.branchId).filter((b): b is number => b !== null))];
   const tuan = mondayOfDate(homNay);
   return scoreDebtCells(p, homNay, chiNhanh).filter((d) => lopIds.has(d.classId)
-    && (d.userId === gvId || (lopCheo.has(d.classId) && canChamCheo(!!d.chamCheo, d.tuanThi, tuan, d.overdue))));
+    && (d.userId === gvId || (lopCheo.has(d.classId) && canChamCheo(!!d.chamCheo, d.tuanThi, tuan))));
 }
 
 export type CaseGv = CaseChiTiet & { hocVien: string; maLop: string | null };

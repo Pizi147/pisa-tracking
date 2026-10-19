@@ -9423,6 +9423,9 @@ await runPrOv14bTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P,
 // ==================================================================== OV-14a (lưu chắc chắn, không mất chữ — audit 17/10 F01–F12)
 const { runPrOv14aTests } = await import('./prOv14a.tests.ts');
 await runPrOv14aTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== OV-14c (Chấm Speaking: GV Speaking theo kỹ năng hồ sơ, chi nhánh grant, từ thứ Hai tuần thi)
+const { runPrOv14cTests } = await import('./prOv14c.tests.ts');
+await runPrOv14cTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`
