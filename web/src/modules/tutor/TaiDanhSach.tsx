@@ -80,6 +80,7 @@ export function TaiDanhSach({ dsChiNhanh, onDong }: { dsChiNhanh: ChiNhanh[]; on
     setRows(r);
   };
 
+  const NHAN_COT: Record<Cot, string> = { ten: t('Tên'), sdt: t('SĐT'), noiDay: t('Nơi dạy'), kyNang: t('Kỹ năng') };
   const nhanNoi = (d: DongTai) => (d.noiDay === 'online' ? t('Chỉ online') : d.noiDay ? dsChiNhanh.find((c) => c.id === d.noiDay)?.ten ?? '' : '');
   const dong = (kq?.dong ?? []).filter((d) => loc === 'tat-ca' || d.kq === loc);
   const soLuu = (kq?.soMoi ?? 0) + (kq?.soCapNhat ?? 0);
@@ -89,7 +90,7 @@ export function TaiDanhSach({ dsChiNhanh, onDong }: { dsChiNhanh: ChiNhanh[]; on
         : d.kq === 'moi' ? <b className="text-xs font-semibold text-ok">{t('Mới')}</b> : <span className="text-xs text-slate-500">{t('Không đổi')}</span>
   );
   const o = (d: DongTai, c: Cot, hien: string) => (d.kq === 'loi' && kq && kq.cot[c] >= 0 && rows
-    ? <input className="field w-full text-xs" aria-label={`${t('Dòng')} ${d.so} · ${c}`} value={rows[d.so - 1]?.[kq.cot[c]] ?? ''}
+    ? <input className="field w-full text-xs" aria-label={`${t('Dòng')} ${d.so} · ${NHAN_COT[c]}`} value={rows[d.so - 1]?.[kq.cot[c]] ?? ''}
       onChange={(e) => suaO(d.so, c, e.target.value)} onBlur={() => rows && xemTruoc(rows)} />
     : <span className="text-slate-300">{hien || '—'}</span>);
 
@@ -108,7 +109,7 @@ export function TaiDanhSach({ dsChiNhanh, onDong }: { dsChiNhanh: ChiNhanh[]; on
         </div>
         <p className="m-0 text-xs text-slate-400">{t('Cột: Tên · SĐT · Nơi dạy (tên hoặc mã chi nhánh, "Chỉ online") · Kỹ năng (L, R, W1, W2, S; "W" = W1 + W2). Bắt buộc Tên + Kỹ năng; có hay không có dòng tiêu đề đều được. Tối đa 500 dòng.')}</p>
         {cach === 'tep' ? (
-          <label className="flex min-h-[44px] cursor-pointer flex-wrap items-center gap-2 rounded-lg border border-dashed px-3 py-3 text-sm" style={{ borderColor: 'var(--line-strong)' }}>
+          <label className="flex min-h-[44px] cursor-pointer flex-wrap items-center gap-2 rounded-lg border border-dashed px-3 py-3 text-sm focus-within:ring-2 focus-within:ring-[color:var(--accent)]" style={{ borderColor: 'var(--line-strong)' }}>
             <input type="file" accept=".xlsx,.xls,.csv" className="sr-only" onChange={(e) => { chonTep(e.target.files?.[0]); e.target.value = ''; }} />
             <span className="btn btn-sm">{tenTep ? t('Chọn tệp khác') : t('Chọn tệp')}</span>
             <span className="min-w-0 truncate text-slate-300">{tenTep ?? t('.xlsx, .xls hoặc .csv — đọc sheet đầu tiên')}</span>

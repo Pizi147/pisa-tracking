@@ -69,7 +69,7 @@ export default function TutorPage() {
     'chu-y': t('Cần chú ý'), 'dang-day': t('Đang dạy'), ngung: t('Ngừng hợp tác'), thieu: t('Thiếu thông tin'), 'tat-ca': t('Tất cả'),
   };
 
-  const tyLe = (d: DongTutor, k: TieuChi) => <OTyLe v={d[k]} onClick={d[k][0] < d[k][1] ? () => setMo({ id: d.id, tieuChi: k }) : undefined} />;
+  const tyLe = (d: DongTutor, k: TieuChi) => <OTyLe v={d[k]} nhan={TIEU_CHI.find((c) => c.k === k)!.nhan} onClick={d[k][0] < d[k][1] ? () => setMo({ id: d.id, tieuChi: k }) : undefined} />;
   const sao = (v: number | null) => (v == null ? <span className="text-faint">—</span> : <span className={`tabular-nums ${v <= 2 ? 'font-semibold text-late' : ''}`}>★ {v.toFixed(1)}</span>);
   const ketLuan = (d: DongTutor) => (d.ketLuan
     ? <span className="whitespace-nowrap text-xs"><span className={d.ketLuan.kl === 'ngung' ? 'text-slate-400' : d.ketLuan.kl === 'can_cai_thien' ? 'text-late' : 'text-slate-200'}>{NHAN_KET_LUAN[d.ketLuan.kl]}</span>
@@ -79,7 +79,7 @@ export default function TutorPage() {
   const lyDo = (d: DongTutor) => (d.chuY ? <span className="block text-xs text-late">{d.chuY}</span> : null);
   const ten = (d: DongTutor) => (
     <span className="block min-w-0">
-      <button type="button" className="link border-0 bg-transparent p-0 text-left font-semibold" onClick={() => setMo({ id: d.id })}>{d.ten}</button>
+      <button type="button" className="link inline-flex min-h-[44px] items-center border-0 bg-transparent p-0 text-left font-semibold sm:min-h-0" onClick={() => setMo({ id: d.id })}>{d.ten}</button>
       {d.sdt && <span className="block text-xs tabular-nums text-slate-400">{nhanSdt(d.sdt)}</span>}
       {d.thieu.length > 0 && <span className="block text-xs text-slate-500">{d.thieu.map((x) => (x === 'sdt' ? t('Thiếu SĐT') : t('Thiếu nơi dạy'))).join(' · ')}</span>}
     </span>
@@ -205,10 +205,11 @@ export default function TutorPage() {
 }
 
 /** Ô tỉ lệ "4/6": có buổi "Không" → cam + bấm mở panel lọc sẵn; chưa có buổi trả lời → "—". */
-export function OTyLe({ v, onClick }: { v: TyLe; onClick?: () => void }) {
+export function OTyLe({ v, nhan, onClick }: { v: TyLe; nhan: string; onClick?: () => void }) {
   if (!v[1]) return <span className="text-faint">—</span>;
   const chu = <span className="tabular-nums">{v[0]}/{v[1]}</span>;
   return onClick
-    ? <button type="button" className="link border-0 bg-transparent p-0 font-semibold text-late" onClick={onClick} title={t('Xem buổi "Không"')}>{chu}</button>
+    ? <button type="button" className="link border-0 bg-transparent p-0 font-semibold text-late max-sm:min-h-[44px]" onClick={onClick} title={t('Xem buổi "Không"')}
+      aria-label={`${nhan} ${v[0]}/${v[1]} · ${t('Xem buổi "Không"')}`}>{chu}</button>
     : <span className="text-slate-200">{chu}</span>;
 }
