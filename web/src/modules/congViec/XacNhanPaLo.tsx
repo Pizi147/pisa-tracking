@@ -56,15 +56,12 @@ export function XacNhanPaLo({ it, onDong, onDaLam, onMo, onTiep }: {
   const canChung = chon.some((x) => riengCua(x.key).moTa.trim().length < TOI_THIEU);
   const ngan = t('Nội dung cần ít nhất {n} ký tự', { n: TOI_THIEU });
   const oRieng = (x: Em) => `noi-dung-${x.paId}`;
-  /* Mockup §3a / §9 "Người dạy *": bắt buộc khi còn em đang tick có PA cần người dạy mà chưa có người (của PA, hay riêng). */
-  const canNguoi = !nguoi && chon.some((x) => coNguoiDay(x.pa?.kind ?? 'self_study') && !x.pa?.nguoi && !riengCua(x.key).nguoi);
   /* OV-13b (mockup §9 "Số buổi *"): PA Tutor quy chế sinh ra chưa có Số buổi — ô chung điền cho em Tutor còn trống (em đã có giữ nguyên). */
   const thieuSoBuoi = (x: Em) => x.pa?.kind === 'tutor' && x.pa.soBuoi == null;
   const canSoBuoi = chon.some(thieuSoBuoi);
   const loiSoBuoi = canSoBuoi ? (soBuoiTu(soBuoi) === null ? t('Nhập số buổi') : kiemSoBuoiPa(soBuoi)) : null;
   const loi: LoiTruong[] = [
     ...(loiSoBuoi ? [{ khoa: 'so-buoi', nhan: t('Số buổi / 2 tuần'), lyDo: loiSoBuoi }] : []),
-    ...(canNguoi ? [{ khoa: 'nguoi', nhan: t('Người dạy'), lyDo: t('Chọn người dạy') }] : []),
     ...(canChung && moTa.trim().length < TOI_THIEU ? [{ khoa: 'noi-dung', nhan: t('Nội dung / hướng dẫn'), lyDo: moTa.trim() ? ngan : t('Ghi nội dung / hướng dẫn') }] : []),
     ...chon.filter((x) => { const m = riengCua(x.key).moTa.trim(); return m && m.length < TOI_THIEU; }).map((x) => ({ khoa: oRieng(x), nhan: x.studentName, lyDo: ngan })),
   ];
@@ -150,7 +147,7 @@ export function XacNhanPaLo({ it, onDong, onDaLam, onMo, onTiep }: {
                 <ONgay kieu="ngay" value={ngay} onChange={setBatDau} toiThieu={homNay ? addDaysIso(homNay, -30) : null} toiDa={homNay ? addDaysIso(homNay, 30) : null} disabled={busy} />
               </Truong>
               {coNguoi && (
-                <Truong nhan={t('Người dạy')} as="div" batBuoc={canNguoi || !!lf.loiCua(loi, 'nguoi')} loi={lf.loiCua(loi, 'nguoi')} phu={t('Em đã có người dạy giữ nguyên')}>
+                <Truong nhan={t('Người dạy')} as="div" tuyChon phu={t('Em đã có người dạy giữ nguyên')}>
                   <ChonNguoi nhom="giao_vien" value={nguoi} onChange={setNguoi} choTrong={t('Để trống')} placeholder={t('Chưa chọn · gõ tên để tìm')}
                     ariaLabel={t('Người dạy')} disabled={busy} id={lf.oId('nguoi')} onBlur={lf.roi('nguoi')} invalid={!!lf.loiCua(loi, 'nguoi')} />
                 </Truong>
