@@ -104,6 +104,7 @@ export function xoaLop(p: Principal, classId: number, input: { maLop?: unknown }
   tx(() => {
     conn.prepare('DELETE FROM teacher_assignments WHERE class_id = ?').run(classId);
     conn.prepare('DELETE FROM class_skills WHERE class_id = ?').run(classId);
+    conn.prepare('DELETE FROM ghi_chu_lich_thi WHERE class_id = ?').run(classId);   // OV-15c: ghi chú lớp của lớp trống
     conn.prepare('DELETE FROM classes WHERE id = ?').run(classId);
     writeAudit({
       actorUserId: p.userId, action: 'class.delete', entityType: 'class', entityId: classId, entityLabel: c.code,

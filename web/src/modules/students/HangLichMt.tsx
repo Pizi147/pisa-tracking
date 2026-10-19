@@ -6,7 +6,6 @@ import { addDaysStr, fmtBand } from '../../lib/format.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { ConfirmDialog } from '../../ui/Drawer.tsx';
 import { MenuDong, type MucMenu } from '../../ui/MenuDong.tsx';
-import { Truong } from '../../ui/KhungPanel.tsx';
 import { Skeleton, Status } from '../../ui/ui.tsx';
 import { OMt } from '../../ui/OMt.tsx';
 import { HopKyNang } from '../test/keHoach/HopKyNang.tsx';
@@ -15,6 +14,7 @@ import { DaiODiemLon, type LichKn } from '../fasttrack/ODiemLon.tsx';
 import { nguCanhChiTiet } from '../fasttrack/HopNhapDiem.tsx';
 import { useSaveScore } from '../fasttrack/ScoreEntry.tsx';
 import { duongDotTest, ngay, tuanLich, type KetQuaHuy, type KyNangKH, type OKyNang } from '@shared/domain/index.ts';
+import { t } from '@shared/i18n/index.ts';
 
 /** Một hàng của bảng lịch MT — khớp `HangLichMt` của `server/src/keHoach/keHoachTest.ts` (`GET /cycles/:id/suggested-mocks`). */
 export type HangMt = {
@@ -42,7 +42,7 @@ function tuanThat(l: NonNullable<HangMt['luot']>, homNay: string): string | null
 
 /**
  * MỘT HÀNG LỊCH MT ở panel Lộ trình (PR-LM mục 2, 3): nút chính theo trạng thái lượt + menu ⋯ — xếp / dời lịch (hộp `HopKyNang`
- * như Kế hoạch Test, có xác nhận huỷ lịch lượt bị vượt), Huỷ lịch (bỏ tuần, giữ lượt — Q-0310-1), nhập điểm ngay dưới hàng
+ * như Kế hoạch Test, có xác nhận huỷ lịch lượt bị vượt), Xóa (bỏ tuần, giữ lượt — Q-0310-1, OV-15c), nhập điểm ngay dưới hàng
  * (`DaiODiemLon`, như hồ sơ MT). Không phải vào hồ sơ MT cho các việc lịch thường ngày.
  */
 export function HangLichMt({ h, bang, hocVien, homNay, moDiem, onMoDiem, onHienDien, onDoi }: {
@@ -71,7 +71,8 @@ export function HangLichMt({ h, bang, hocVien, homNay, moDiem, onMoDiem, onHienD
     if (l.trangThai === 'chua-xep') chinh = { nhan: 'Xếp lịch', lam: moHop };
     else if (l.trangThai === 'da-xep') {
       chinh = { nhan: 'Dời lịch', lam: moHop };
-      muc.push({ key: 'huy-lich', nhan: 'Huỷ lịch', onChon: () => setHuyLich(true), nguyHiem: true },
+      /* OV-15c (mục 6): "Huỷ lịch" → "Xóa" — cùng tên, cùng câu hỏi với chân hộp lịch ở Kế hoạch Test. */
+      muc.push({ key: 'huy-lich', nhan: t('Xóa'), onChon: () => setHuyLich(true), nguyHiem: true },
         { key: 'nhap-diem', nhan: 'Nhập điểm', onChon: () => onMoDiem(true) });
     } else if (l.trangThai === 'co-diem' || l.trangThai === 'lich-su') {
       chinh = { nhan: 'Nhập điểm', lam: () => onMoDiem(!moDiem) };
@@ -137,7 +138,7 @@ export function HangLichMt({ h, bang, hocVien, homNay, moDiem, onMoDiem, onHienD
         </tr>
       )}
       {hop && l && bang.classId !== null && (
-        <HopKyNang anchor={hop} tieuDe={`${hocVien} · MT${h.attemptNo}`} loai="ft" classId={bang.classId} studentId={bang.studentId}
+        <HopKyNang anchor={hop} tieuDe={`${hocVien} · MT${h.attemptNo}`} tenHv={hocVien} loai="ft" classId={bang.classId} studentId={bang.studentId}
           dot={{ loai: 'ft', attemptNo: h.attemptNo }} attemptId={l.attemptId} kn={l.kn} kyNangDau={null} lichSu={l.lichSu}
           onClose={() => setHop(null)} onSaved={onDoi} onHienDien={onHienDien} />
       )}
@@ -148,38 +149,34 @@ export function HangLichMt({ h, bang, hocVien, homNay, moDiem, onMoDiem, onHienD
         <HopKhoiPhucKetQua attemptId={l.attemptId} nhan={`MT${h.attemptNo}`} ketQua={l.ketQuaHuy} onDong={() => setKhoiPhuc(false)} onXong={onDoi} />
       )}
       {huyLich && l && (
-        <HopHuyLich attemptId={l.attemptId} nhan={`MT${h.attemptNo}`} tuan={that} onDong={() => setHuyLich(false)} onDoi={onDoi} />
+        <HopHuyLich attemptId={l.attemptId} nhan={`MT${h.attemptNo}`} hocVien={hocVien} onDong={() => setHuyLich(false)} onDoi={onDoi} />
       )}
     </>
   );
 }
 
-/** "Huỷ lịch" (Q-0310-1): bỏ tuần, giữ lượt — lý do tuỳ chọn (T7), máy chủ chặn lượt đã có điểm / đã thi. */
-function HopHuyLich({ attemptId, nhan, tuan, onDong, onDoi }: {
-  attemptId: number; nhan: string; tuan: string | null; onDong: () => void; onDoi: () => void;
+/** "Xóa" (Q-0310-1 · OV-15c mục 6): bỏ tuần, giữ lượt — đợt về Chưa xếp, lịch sử giữ; máy chủ chặn lượt đã có điểm / đã thi. Câu như hộp lịch. */
+function HopHuyLich({ attemptId, nhan, hocVien, onDong, onDoi }: {
+  attemptId: number; nhan: string; hocVien: string; onDong: () => void; onDoi: () => void;
 }) {
   const toast = useToast();
-  const [lyDo, setLyDo] = useState('');
   const [busy, setBusy] = useState(false);
   const [loiMay, setLoiMay] = useState<string | null>(null);
   const lam = async () => {
     if (busy) return;
     setBusy(true); setLoiMay(null);
     try {
-      await api.post(`/attempts/${attemptId}/bo-tuan`, { lyDo: lyDo.trim() });
+      await api.post(`/attempts/${attemptId}/bo-tuan`, { lyDo: t('Xóa lịch') });
       invalidate('/attempts'); invalidate('/cycles'); invalidate('/ke-hoach-test'); invalidate('/students'); invalidate('/classes');
-      toast.push('ok', `Đã huỷ lịch ${nhan} — lượt về Chưa xếp lịch.`);
+      toast.push('ok', t('Đã xóa lịch {dot} · {ten}', { dot: nhan, ten: hocVien }));
       onDoi(); onDong();
     } catch (e: any) { setLoiMay(e.message); } finally { setBusy(false); }
   };
   return (
-    <ConfirmDialog open danger busy={busy} title={`Huỷ lịch ${nhan}?`} confirmLabel="Huỷ lịch" onClose={onDong} onConfirm={() => void lam()}
+    <ConfirmDialog open danger busy={busy} title={t('Xóa lịch {dot} của {ten}?', { dot: nhan, ten: hocVien })} confirmLabel={t('Xóa')} onClose={onDong} onConfirm={() => void lam()}
       body={(
         <div className="space-y-3">
-          <p className="m-0">{nhan}{tuan ? ` (đang ở ${tuan})` : ''} bỏ tuần thi, giữ lượt và số MT — các kỹ năng chưa thi về <b>Chưa xếp lịch</b>. Không đóng Case; điểm đã có giữ nguyên.</p>
-          <Truong nhan="Lý do" tuyChon>
-            <input className="field" value={lyDo} onChange={(e) => setLyDo(e.target.value)} placeholder="Ví dụ: em xin lùi lịch thi sang tháng sau" />
-          </Truong>
+          <p className="m-0">{t('Đợt về Chưa xếp, lịch sử vẫn xem được.')}</p>
           {loiMay && <p className="m-0 text-xs font-semibold text-bad" role="alert">{loiMay}</p>}
         </div>
       )} />

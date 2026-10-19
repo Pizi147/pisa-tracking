@@ -215,7 +215,8 @@ export async function runPrLmMayChu(t: YThucTestKit) {
     assert(r.soKeTiep === 4 && r.studentId === b.sid && r.classId === LOP, JSON.stringify({ k: r.soKeTiep, c: r.classId }));
     const hl = nguon('web/src/modules/students/HangLichMt.tsx');
     const pn = nguon('web/src/modules/students/StudentPlanPanel.tsx');
-    assert(/Dời lịch/.test(hl) && /Huỷ lịch/.test(hl) && /Nhập điểm/.test(hl) && /Xếp lịch/.test(hl), 'HangLichMt thiếu thao tác');
+    assert(/Dời lịch/.test(hl) && /t\('Xóa'\)/.test(hl) &&   // OV-15c: "Huỷ lịch" → "Xóa"
+       /Nhập điểm/.test(hl) && /Xếp lịch/.test(hl), 'HangLichMt thiếu thao tác');
     assert(/Thêm MT/.test(pn) && /<HangLichMt/.test(pn), 'panel thiếu "+ Thêm MT" / HangLichMt');
   });
 }
