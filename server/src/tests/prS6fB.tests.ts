@@ -13,25 +13,25 @@ export async function runPrS6fBTests(t: YThucTestKit) {
   console.log('\nPR-S6F-b · Sửa sau rà đợt 6 — giao diện, chữ, tốc độ');
 
   // ------------------------------------------------------------------ Task 5 · Phân tích — chữ và link (D8)
-  check('S6F-b (5) · nhãn tab Tổng hợp theo khung: lớp thường "Tổng hợp Test", FT "Tổng hợp Test + SOS"; góc khác như cũ', () => {
-    assert(d.nhanGocNhin('tong-hop', 'thuong') === 'Tổng hợp Test', d.nhanGocNhin('tong-hop', 'thuong'));
-    assert(d.nhanGocNhin('tong-hop', 'ft') === 'Tổng hợp Test + SOS', d.nhanGocNhin('tong-hop', 'ft'));
+  check('S6F-b (5) · nhãn tab Tổng hợp theo khung: lớp thường "Test", FT "Test + SOS" (OV-15e, C28); góc khác như cũ', () => {
+    assert(d.nhanGocNhin('tong-hop', 'thuong') === 'Test', d.nhanGocNhin('tong-hop', 'thuong'));
+    assert(d.nhanGocNhin('tong-hop', 'ft') === 'Test + SOS', d.nhanGocNhin('tong-hop', 'ft'));
     for (const g of d.GOC_NHIN) if (g !== 'tong-hop') assert(d.nhanGocNhin(g, 'thuong') === d.GOC_NHIN_LABEL[g], g);
   });
 
   check('S6F-b (5) · Excel Tổng hợp khung Lớp thường: dòng 1 và tên file không có "SOS"; FT giữ', () => {
     const kq = (ct: string) => ({ theo: 'lop', ct, cot: [], hang: [], tong: {}, scopeEmpty: false });
     const dau = (ct: string) => String(d.bangXuatTongHop(kq(ct), new Set(), 'MB')[0][0]);
-    assert(!dau('thuong').includes('SOS') && dau('thuong').startsWith('Tổng hợp Test'), dau('thuong'));
-    assert(dau('ft').startsWith('Tổng hợp Test + SOS'), dau('ft'));
+    assert(!dau('thuong').includes('SOS') && dau('thuong').startsWith('Test · '), dau('thuong'));
+    assert(dau('ft').startsWith('Test + SOS'), dau('ft'));
     const tsx = doc('web/src/modules/phanTich/TongHopTestSos.tsx');
     assert(/ct === 'thuong' \? 'tong-hop-test' : 'tong-hop-test-sos'/.test(tsx), 'tên file Excel theo khung');
   });
 
-  check('S6F-b (5) · rời góc "Giáo viên" thì dọn tu/den/thang (kể cả sang Hiệu quả PA); vào Hiệu quả PA từ góc khác vẫn giữ tu/den', () => {
-    for (const g of ['tong-hop', 'van-de', 'hieu-qua-pa', 'y-thuc']) {
+  check('S6F-b (5) · OV-15e: tu/den là khoảng chung — rời góc "Giáo viên" GIỮ tu/den; vào Hiệu quả PA từ góc khác vẫn giữ tu/den', () => {
+    for (const g of ['tong-hop', 'bao-cao', 'hieu-qua-pa', 'y-thuc']) {
       const x = d.thamSoXoaKhiDoiGoc(g, 'giao-vien') as string[];
-      assert(['tu', 'den', 'thang'].every((k) => x.includes(k)), `${g}: ${x}`);
+      assert(!['tu', 'den', 'kieu'].some((k) => x.includes(k)), `${g}: ${x}`);
     }
     assert(!d.thamSoXoaKhiDoiGoc('hieu-qua-pa', 'tong-hop').includes('tu'), 'vào Hiệu quả PA từ Tổng hợp: giữ tu');
     assert(d.thamSoXoaKhiDoiGoc('giao-vien', 'hieu-qua-pa').includes('gv'), 'rời Hiệu quả PA: dọn gv/tu/den như cũ');

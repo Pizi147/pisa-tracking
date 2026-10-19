@@ -10,11 +10,12 @@ import { MenuDong, type MucMenu } from '../../ui/MenuDong.tsx';
 import { HangCon, HangNhom } from '../../ui/HangNhom.tsx';
 import { DINH_TRAI, SoO as SoLieuO } from './dungChung.tsx';
 import { NganXuatMt } from '../test/NganXuatMt.tsx';
+import { PhanTrang, usePhanTrang } from '../../ui/PhanTrang.tsx';
 import { t } from '@shared/i18n/index.ts';
 import {
-  CHUONG_TRINH_LABEL, GOI_Y_XU_LY, KHOANG_LABEL, KHOANG_MAC_DINH, THEO_DONG, THEO_DONG_COT_DAU, THEO_DONG_DANH_TU, THEO_DONG_LABEL,
-  NHAN_NHOM_CON, addDaysIso, bangXuatTongHop, cotSoLieu, cotTheoDuLieu, cotTongHopFor, mauOKetQua, mondayOfDate, ngay, nhomCotNhanNgan, oKhongApDung,
-  type ChuongTrinh, type CotTongHop, type DongTongHop, type Khoang, type MauOKetQua, type NhomCot, type TheoDong, type TongHopKetQua,
+  CHUONG_TRINH_LABEL, GOI_Y_XU_LY, THEO_DONG, THEO_DONG_COT_DAU, THEO_DONG_DANH_TU,
+  NHAN_NHOM_CON, bangXuatTongHop, cotSoLieu, cotTheoDuLieu, cotTongHopFor, mauOKetQua, mondayOfDate, ngay, nhanKhoang, nhomCotNhanNgan, oKhongApDung,
+  type ChuongTrinh, type CotTongHop, type DongTongHop, type KhoangNgay, type MauOKetQua, type NhomCot, type TheoDong, type TongHopKetQua,
 } from '@shared/domain/index.ts';
 
 const KHOA_LUU_COT_HIEN = 'pisa.phan-tich.tong-hop.cot-hien';
@@ -52,10 +53,13 @@ const CHU_GIAI: { khoa: string; nhan: string; chip: keyof typeof SCORE_CHIP }[] 
 
 /** Tuần con của "Theo tuần" mở theo lớp; "Theo lớp" mở theo đợt; "Theo đợt"/"Theo chi nhánh" mở theo lớp. */
 const NHAN_MO_CON: Record<TheoDong, string> = { tuan: 'Mở theo lớp', lop: 'Mở theo đợt', dot: 'Mở theo lớp', cn: 'Mở theo lớp' };
+/** OV-15e (Q6b, mockup 3 mục 4): ô "Xếp theo" riêng — Tuần · Lớp · Đợt Test · Chi nhánh. */
+const NHAN_XEP: Record<TheoDong, string> = { tuan: 'Tuần', lop: 'Lớp', dot: 'Đợt Test', cn: 'Chi nhánh' };
 
-export function TongHopTestSos({ branchId, ct, tg, classId }: {
-  branchId: number | null; ct: ChuongTrinh; tg: Khoang; classId: number | null;
+export function TongHopTestSos({ branchId, ct, khoang, classId }: {
+  branchId: number | null; ct: ChuongTrinh; khoang: KhoangNgay; classId: number | null;
 }) {
+  const nhanKy = nhanKhoang(khoang).chinh;
   const { session } = useSession();
   const demoDate = useNgayNghiepVu().homNay || null;
   const [params, setParams] = useSearchParams();
@@ -85,11 +89,12 @@ export function TongHopTestSos({ branchId, ct, tg, classId }: {
   const qs = new URLSearchParams();
   if (branchId) qs.set('branchId', String(branchId));
   qs.set('ct', ct);
-  if (tg !== KHOANG_MAC_DINH) qs.set('tg', String(tg));
+  qs.set('kieu', khoang.kieu); qs.set('tu', khoang.tu); qs.set('den', khoang.den);
   if (classId) qs.set('lop', String(classId));
   qs.set('theo', theo);
   const query = qs.toString();
   const { data, loading, error, reload } = useApi<TongHopKetQua>(`/phan-tich/tong-hop?${query}`, [query]);
+  const pt = usePhanTrang(data?.hang.length ?? 0, query, THEO_DONG_DANH_TU[theo]);
 
   useEffect(() => {
     if (!data || data.theo !== theo || daMoSan.current === theo) return;
@@ -138,7 +143,7 @@ export function TongHopTestSos({ branchId, ct, tg, classId }: {
     if (!data || !demoDate) return;
     const XLSX = await import('xlsx');
     const moTa = [
-      branchName ?? 'Tất cả chi nhánh', CHUONG_TRINH_LABEL[ct], KHOANG_LABEL[tg],
+      branchName ?? 'Tất cả chi nhánh', CHUONG_TRINH_LABEL[ct], nhanKy,
       className, `dữ liệu đến ${ngay(demoDate)}`,
     ].filter(Boolean).join(' · ');
     const aoa = bangXuatTongHop(data, cotHien, moTa);
@@ -223,14 +228,11 @@ export function TongHopTestSos({ branchId, ct, tg, classId }: {
       bodyClass="p-0"
       action={
         <div className="flex flex-wrap items-center gap-2 p-3 pb-0">
-          <div role="radiogroup" aria-label="Cách xếp dòng" className="inline-flex rounded-lg border overflow-hidden" style={{ borderColor: 'var(--line)' }}>
-            {THEO_DONG.filter((k) => k !== 'cn' || !anCotChiNhanh).map((k) => (
-              <button key={k} type="button" role="radio" aria-checked={theo === k} onClick={() => setTheo(k)}
-                className={`px-3 py-1 text-xs border-0 cursor-pointer max-sm:min-h-10 ${theo === k ? 'bg-doing-bg text-doing font-semibold' : 'bg-transparent text-slate-400 hover:text-slate-200'}`}>
-                {THEO_DONG_LABEL[k]}
-              </button>
-            ))}
-          </div>
+          <label className="flex items-center gap-1.5 text-xs text-slate-400">Xếp theo
+            <select className="field w-32 text-xs max-sm:min-h-[44px]" value={theo} onChange={(e) => setTheo(e.target.value as TheoDong)} aria-label="Xếp theo">
+              {THEO_DONG.filter((k) => k !== 'cn' || !anCotChiNhanh).map((k) => <option key={k} value={k}>{NHAN_XEP[k]}</option>)}
+            </select>
+          </label>
           {!laThuong && <span className="flex flex-wrap items-center gap-x-3 gap-y-1" role="group" aria-label="Chú giải màu kết quả">
             {CHU_GIAI.map((g) => (
               <span key={g.khoa} title={allCols.find((c) => c.khoa === g.khoa)?.goiY}
@@ -247,8 +249,10 @@ export function TongHopTestSos({ branchId, ct, tg, classId }: {
       {error ? <div className="p-4"><ErrorState message={error.message} hint={error.hint} onRetry={reload} /></div>
         : loading || !data ? <div className="p-4"><Skeleton rows={8} /></div>
         : data.scopeEmpty ? <div className="p-4"><Empty title="Bạn chưa được cấp phạm vi nào" /></div>
-        : data.hang.length === 0 ? <div className="p-4"><Empty title={`Chưa có lượt nào có điểm trong ${KHOANG_LABEL[tg]}`} /></div>
+        : data.hang.length === 0 ? <div className="p-4"><Empty title={`Chưa có lượt nào có điểm trong ${nhanKy}`} /></div>
         : (
+          <>
+          <div className="px-2"><PhanTrang {...pt.thanh} /></div>
           <div className="table-scroll bang-dinh bang-dinh-1440">
             <table className="w-full text-sm" style={{ tableLayout: 'fixed' }}>
               <colgroup>
@@ -279,7 +283,7 @@ export function TongHopTestSos({ branchId, ct, tg, classId }: {
                 </tr>
               </thead>
               <tbody>
-                {data.hang.map((r) => (
+                {pt.cat(data.hang).map((r) => (
                   <Fragment key={r.khoa}>
                     {dongLon(r)}
                     {open.has(r.khoa) && r.con?.map((c) => dongCon(c))}
@@ -296,11 +300,13 @@ export function TongHopTestSos({ branchId, ct, tg, classId }: {
               </tbody>
             </table>
           </div>
+          <div className="px-2"><PhanTrang {...pt.thanh} duoi /></div>
+          </>
         )}
     </Card>
     {moXuat && demoDate && (
       <NganXuatMt khung={ct === 'thuong' ? 'thuong' : 'ft'} chiNhanh={branchId} lop={classId ? { id: classId, ma: className ?? `#${classId}` } : null}
-        thoiGianMacDinh={{ kieu: 'tuan', tu: addDaysIso(mondayOfDate(demoDate), -7 * (tg - 1)), den: mondayOfDate(demoDate) }} onDong={() => setMoXuat(false)} />
+        thoiGianMacDinh={{ kieu: 'tuan', tu: mondayOfDate(khoang.tu), den: mondayOfDate(khoang.den) }} onDong={() => setMoXuat(false)} />
     )}
     </>
   );

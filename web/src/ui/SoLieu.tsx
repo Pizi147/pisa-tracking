@@ -8,6 +8,7 @@ import { useSession } from '../lib/session.tsx';
 import { KhungPanel } from './KhungPanel.tsx';
 import { CanLam, NutChu } from './KhuonViec.tsx';
 import { ChipHan, ChipSoQuaHan } from './Nhan.tsx';
+import { PhanTrang, usePhanTrang } from './PhanTrang.tsx';
 import { Empty, ErrorState, Skeleton } from './ui.tsx';
 import { useNgayNghiepVu } from './ngayNghiepVu.ts';
 import { dich, t } from '@shared/i18n/index.ts';
@@ -112,6 +113,13 @@ export function NganDanhSach({ tieuDe, dv, data, loading, error, reload, onDong,
   const hien: (DongSoLieu & { xong?: string })[] = [...xep];
   for (const [id, g] of giu) if (!xep.some((r) => r.id === id)) hien.splice(Math.min(g.i, hien.length), 0, { ...g.dong, xong: g.chu });
   const soTre = xep.filter(tre).length;
+  /* OV-15e: panel số liệu phân trang 10 / 20 / 50 (thanh đầu + cuối); dòng đang mở (`?dong=`) ở trang sau vẫn mở được khi lật tới. */
+  const pt = usePhanTrang(hien.length, tieuDe, dv ?? t('mục'));
+  /* Dòng đang mở (về từ hồ sơ) nằm ở trang sau → lật tới trang đó. */
+  const viTriMo = mo === null ? -1 : hien.findIndex((r) => r.id === mo);
+  useEffect(() => {
+    if (viTriMo >= 0 && (viTriMo < pt.thanh.dau || viTriMo >= pt.thanh.cuoi)) pt.thanh.onTrang(Math.floor(viTriMo / pt.thanh.co) + 1);
+  }, [viTriMo]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const daLam = (r: DongSoLieu, chu: string) => {
     const i = hien.findIndex((x) => x.id === r.id);
@@ -214,7 +222,13 @@ export function NganDanhSach({ tieuDe, dv, data, loading, error, reload, onDong,
       {error ? <div className="pt-3"><ErrorState message={error.message} hint={error.hint} onRetry={reload} /></div>
         : loading || !data ? <div className="pt-3"><Skeleton rows={5} /></div>
         : !hien.length ? <Empty title={trong ?? t('Không có mục nào')} />
-        : <ul ref={ds} className="-mx-4 m-0 list-none p-0">{hien.map(veDong)}</ul>}
+        : (
+          <>
+            <PhanTrang {...pt.thanh} />
+            <ul ref={ds} className="-mx-4 m-0 list-none p-0">{pt.cat(hien).map(veDong)}</ul>
+            <PhanTrang {...pt.thanh} duoi />
+          </>
+        )}
       {cachTinh && (
         <details className="mt-4 border-t pt-3" style={{ borderColor: 'var(--line)' }}>
           <summary className="min-h-[44px] cursor-pointer text-[13px] font-semibold text-[color:var(--accent)] sm:min-h-0">{t('Cách tính')}</summary>

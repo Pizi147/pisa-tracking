@@ -46,7 +46,7 @@ export type TrangSos = { tuan: string | null; toanBo: boolean; tuanGanNhat: stri
 const LA_SOS = new Set(['sos1', 'sos2', 'sos3', 'gk-1', 'gk-2']);
 
 /** Tóm tắt Case cho bảng / panel — một nguồn (`chiTietCaseMo`, cùng luật trạng thái V4 + việc tiếp của hồ sơ lớp). */
-function tomTatCase(cases: readonly MappedCase[]): Map<number, CaseTomTat> {
+export function tomTatCase(cases: readonly MappedCase[]): Map<number, CaseTomTat> {
   const out = new Map<number, CaseTomTat>();
   const ct = chiTietCaseMo(cases);
   const nhanXet = new Map<number, string>();

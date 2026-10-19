@@ -47,16 +47,16 @@ export async function runKhungTests(t: YThucTestKit) {
 
   check('PR-O · O1/O6 Bốn khu vực đúng thứ tự, khu không có quyền thì bỏ hẳn', () => {
     const keys = (n: any) => d.khuVucHienThi(n).map((k) => k.key).join(',');
-    assert(keys(QL) === 'tong-quan,hoc-vien,test,cong-viec', `QL: ${keys(QL)}`);
+    assert(keys(QL) === 'tong-quan,hoc-vien,test,phan-tich,cong-viec', `QL: ${keys(QL)}`);   // OV-15e: Phân tích lên thanh trên
     assert(keys(GV) === 'tong-quan,hoc-vien,test,cong-viec', `GV thấy cả Test và Công việc (spec §3.1): ${keys(GV)}`);
     assert(keys(nav({ overview: true, students: true })) === 'tong-quan,hoc-vien', 'Không có Test/Công việc thì không hiện');
     const labels = d.KHU_VUC.map((k) => `${k.label}|${k.labelNgan}`).join(',');
-    assert(labels === 'Tổng quan|Tổng quan,Học viên & Lớp|Học viên,Test|Test,Công việc|Công việc', `Chữ: ${labels}`);
+    assert(labels === 'Tổng quan|Tổng quan,Học viên & Lớp|Học viên,Test|Test,Phân tích|Phân tích,Công việc|Công việc', `Chữ: ${labels}`);
   });
 
   check('PR-O · Khu vực của một đường dẫn (tô sáng đúng mục trên thanh)', () => {
     const cases: Array<[string, string | null]> = [
-      ['/', 'tong-quan'], ['/phan-tich', 'tong-quan'], ['/hoc-thuat/case/3', 'tong-quan'],
+      ['/', 'tong-quan'], ['/phan-tich', 'phan-tich'], ['/hoc-thuat/case/3', 'tong-quan'],
       ['/hoc-vien', 'hoc-vien'], ['/hoc-vien/12', 'hoc-vien'], ['/hoc-vien/lop/3', 'hoc-vien'],
       ['/test', 'test'], ['/test/lich', 'test'], ['/nhap-diem/4', 'test'], ['/bang-diem-thuong/4', 'test'], ['/mock-test/9', 'test'],
       ['/cong-viec', 'cong-viec'], ['/cong-viec/bao-cao', 'cong-viec'],
@@ -132,7 +132,7 @@ export async function runKhungTests(t: YThucTestKit) {
   check('PR-O · O6 Quản trị và QL chi nhánh: đủ 4 khu, đủ tab, có Phân tích', () => {
     for (const [ten, p] of [['Quản trị', t.P.admin], ['QL MB', t.P.mbManager]] as const) {
       const n = navOf(p);
-      assert(d.khuVucHienThi(n).length === 4, `${ten}: ${tabs(n)}`);
+      assert(d.khuVucHienThi(n).length === 5, `${ten}: ${tabs(n)}`);   // OV-15e: + Phân tích
       assert(d.tabTestHienThi(n).join(',') === 'lich,diem-lop,ke-hoach', `${ten} tab Test: ${tabs(n)}`);   // PR-DL G4
       assert(d.tabCongViecHienThi(n).join(',') === 'cho-duyet,ho-tro,van-hanh,bao-cao', `${ten} tab Công việc: ${tabs(n)}`);
       assert(n.analysis, `${ten} phải thấy Phân tích`);

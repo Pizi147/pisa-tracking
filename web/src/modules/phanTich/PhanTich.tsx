@@ -1,160 +1,127 @@
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { useSession } from '../../lib/session.tsx';
 import { useChiNhanhMacDinh } from '../../ui/Filters.tsx';
+import { HangTab } from '../../ui/HangTab.tsx';
+import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { ChonChuongTrinh } from '../worklist/ChonChuongTrinh.tsx';
+import { BaoCao } from './BaoCao.tsx';
+import { BoChonThoiGian } from './BoChonThoiGian.tsx';
 import { HieuQuaPa } from './HieuQuaPa.tsx';
-import { PERMISSIONS } from '@shared/domain/index.ts';
+import { KetQuaThi } from './KetQuaThi.tsx';
 import { PhanTichGiaoVien } from './PhanTichGiaoVien.tsx';
 import { TongHopTestSos } from './TongHopTestSos.tsx';
-import { TongHopVanDeHv } from './TongHopVanDeHv.tsx';
 import { YThucPhoiHop } from './YThucPhoiHop.tsx';
+import type { PhamViPhanTich } from './dungChung.tsx';
+import { dich as dichGoc, t } from '@shared/i18n/index.ts';
 import {
-  GOC_NHIN, KHOANG, KHOANG_LABEL, KHOANG_MAC_DINH,
-  chuongTrinhTuThamSo, gocNhinTuThamSo, khoangTuThamSo, nhanGocNhin, thamSoXoaKhiDoiGoc,
-  type ChuongTrinh, type GocNhin,
+  GOC_NHIN, PERMISSIONS, chuongTrinhTuThamSo, gocNhinTuThamSo, khoangTuUrl, nhanGocNhin, thamSoKhoang, thamSoXoaKhiDoiGoc,
+  type ChuongTrinh, type GocNhin, type KhoangNgay,
 } from '@shared/domain/index.ts';
 
 /**
- * KHUNG PHÂN TÍCH (§3.3, P7/P11; PR-UX4 — năm góc nhìn) — tab "Phân tích" của Tổng quan (`/phan-tich`). Đầu trang (tiêu đề, ô chi nhánh,
- * hai tab Tổng quan | Phân tích) là của `OverviewPage.tsx` (PR-Pa, chỉ import). Ngay dưới là MỘT hàng: bên trái nhóm nút góc nhìn
- * (Tổng hợp Test + SOS · Tổng hợp vấn đề HV · Hiệu quả PA · Ý thức — PR-Pb2-a bỏ Danh sách Case), bên phải bộ lọc chung
- * (chương trình · khoảng thời gian · lớp) — mọi góc nhìn đọc CÙNG bộ lọc này.
+ * KHUNG PHÂN TÍCH (OV-15e, plan §7, mockup 3 mục 4 + mockup 6) — sáu tab (tối đa hai tầng: tab · tab con của Kết quả thi):
+ * Báo cáo · Test + SOS · Kết quả thi · Hiệu quả PA · Phân tích GV · Ý thức. Dưới tab MỘT hàng lọc chung: Chương trình · Khoảng thời gian (C29, giữ khi
+ * đổi tab, URL `kieu`/`tu`/`den`) · Lớp. Ô "Xếp theo" (Q6b) nằm ở đầu bảng của tab có nó. Chi nhánh ở đầu trang (`PhanTichPage`).
  */
 export function PhanTich() {
   const { branchCount, session, can } = useSession();
-  /* PR-OV2a: CX, TVV không có phần giáo viên (`nav.phanTichGv`); link cũ `?goc=giao-vien` về góc đầu. */
-  /* OV-10a: góc Ý thức cần `discipline.stats` (QL, Quản trị) — TVV, CX, Admin không có thì ẩn, không để ra lỗi 403. */
+  const { homNay } = useNgayNghiepVu();
+  /* PR-OV2a: CX, TVV không có phần giáo viên (`nav.phanTichGv`); OV-10a: Ý thức cần `discipline.stats`. */
   const gocCo = GOC_NHIN.filter((k) => (k !== 'giao-vien' || !!session?.nav?.phanTichGv) && (k !== 'y-thuc' || can(PERMISSIONS.DISCIPLINE_STATS)));
   const [params, setParams] = useSearchParams();
-  /* PR-NV (T9): cùng mặc định với Tổng quan (tab Phân tích nằm trong Tổng quan). */
   const macDinh = useChiNhanhMacDinh();
   const branchId = params.get('cn') ? Number(params.get('cn')) : macDinh;
   const doc = gocNhinTuThamSo(params);
   const { ct: ctTuLoaiLop, boThamSo, gocMoi } = doc;
   const goc = gocCo.includes(doc.goc) ? doc.goc : gocCo[0];
   const ct = chuongTrinhTuThamSo(params.get('ct'));
-  const tg = khoangTuThamSo(params.get('tg'));
+  const khoang = khoangTuUrl(params, homNay);
   const classId = params.get('lop') ? Number(params.get('lop')) : null;
 
-  /*
-   * ĐƯỜNG DẪN CŨ VẪN VÀO ĐÚNG MÀN (Q1) — dọn `xem`/`loai-lop`; đổi tên góc nhìn cũ (`ket-qua` → `hieu-qua-pa`, `chua-ai-nhan` →
-   * `van-de`) bằng `replace`. Bộ lọc cũ của Danh sách Case đã được `duongMoi` chuyển hướng trước khi tới đây.
-   */
+  /* ĐƯỜNG DẪN CŨ VẪN VÀO ĐÚNG MÀN (Q1): dọn `xem`/`loai-lop`, đổi tên góc cũ; `tg` / `thang` cũ → khoảng chung (`kieu`/`tu`/`den`) — `replace`. */
+  const cu = !!params.get('tg') || !!params.get('thang');
   useEffect(() => {
-    if (!boThamSo.length && !gocMoi) return;
+    if (!boThamSo.length && !gocMoi && !cu) return;
     const next = new URLSearchParams(params);
     for (const k of boThamSo) next.delete(k);
     if (ctTuLoaiLop) next.set('ct', ctTuLoaiLop);
     if (gocMoi) next.set('goc', gocMoi);
+    if (cu) { for (const k of ['tg', 'thang', 'kieu', 'tu', 'den']) next.delete(k); for (const [k, v] of Object.entries(thamSoKhoang(khoang, homNay))) next.set(k, v); }
     setParams(next, { replace: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [boThamSo.join('|'), ctTuLoaiLop, gocMoi]);
-
-  /* 375px: hàng góc nhìn cuộn ngang trong chính nó — cuộn tới nút đang chọn để không bị che. */
-  const hangGoc = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const nut = hangGoc.current?.querySelector<HTMLElement>('[aria-checked="true"]');
-    const hang = hangGoc.current;
-    if (!nut || !hang) return;
-    hang.scrollLeft = Math.max(0, nut.offsetLeft - (hang.clientWidth - nut.offsetWidth) / 2);
-  }, [goc]);
+  }, [boThamSo.join('|'), ctTuLoaiLop, gocMoi, cu]);
 
   const branches = useApi<any[]>('/ref/branches');
-  /*
-   * QUẢN LÝ MỘT CHI NHÁNH VÀO THẲNG PHẠM VI CỦA MÌNH (mục 10.2, chuyển nguyên từ CaseBoardPage cũ của PR-O/Pa):
-   * bắt họ tự chọn đúng chi nhánh mình quản là một cú bấm thừa lặp lại mỗi lần mở màn.
-   */
+  /* Quản lý một chi nhánh vào thẳng phạm vi của mình (mục 10.2) — đọc URL MỚI NHẤT (OV-11h PT-12). */
   useEffect(() => {
     if (branchId || branchCount !== 1) return;
     const only = branches.data?.length === 1 ? branches.data[0] : null;
     if (!only) return;
-    /* OV-11h (PT-12): đọc URL MỚI NHẤT — cùng lượt vẽ, Tổng hợp vừa ghi `mo-hang` (mở sẵn hàng đầu); `params` của lượt vẽ trước sẽ đè mất nó. */
     const next = new URLSearchParams(window.location.search);
     next.set('cn', String(only.id));
     setParams(next, { replace: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [branches.data, branchId, branchCount]);
 
+  const dat = (o: Record<string, string | null>, replace = false) => {
+    const next = new URLSearchParams(params);
+    for (const [k, v] of Object.entries(o)) if (v === null) next.delete(k); else next.set(k, v);
+    setParams(next, { replace });
+  };
   const setGoc = (k: GocNhin) => {
     const next = new URLSearchParams(params);
-    if (k === 'tong-hop') next.delete('goc'); else next.set('goc', k);
-    for (const p of thamSoXoaKhiDoiGoc(k, goc)) next.delete(p);   // dọn tham số cũ nếu còn sót
+    next.set('goc', k);
+    for (const p of thamSoXoaKhiDoiGoc(k, goc)) next.delete(p);   // khoảng thời gian chung giữ nguyên
     setParams(next, { replace: false });
   };
-  const setCt = (v: ChuongTrinh) => {
-    const next = new URLSearchParams(params);
-    next.set('ct', v);
-    /* Đổi chương trình thì lớp đang chọn có thể không còn hợp lệ — bỏ ngay, đừng để ra danh sách rỗng khó hiểu (mục 4.4). */
-    next.delete('lop');
-    setParams(next, { replace: false });
-  };
-  const setTg = (n: number) => {
-    const next = new URLSearchParams(params);
-    if (n === KHOANG_MAC_DINH) next.delete('tg'); else next.set('tg', String(n));
-    setParams(next, { replace: false });
-  };
-  const setClassId = (id: string) => {
-    const next = new URLSearchParams(params);
-    if (id) next.set('lop', id); else next.delete('lop');
-    setParams(next, { replace: false });
-  };
+  /* Đổi chương trình thì lớp đang chọn có thể không còn hợp lệ — bỏ ngay (mục 4.4). */
+  const setCt = (v: ChuongTrinh) => dat({ ct: v, lop: null });
+  const setKhoang = (k: KhoangNgay) => dat({ kieu: null, tu: null, den: null, ...thamSoKhoang(k, homNay) });
 
-  /* Ô lớp (Q6) — P14 (PR-YT2): máy chủ Ý thức nay đã nhận tham số lớp, nên bật lại ở góc nhìn Ý thức. */
-  /* OV-11h (PT-10): `tg` → thêm lớp đã kết thúc có lượt trong khoảng (nhóm "Đã kết thúc"). */
-  const classesApi = useApi<any[]>(`/ref/classes?tg=${tg}${branchId ? `&branchId=${branchId}` : ''}`, [branchId, tg]);
-  /* Ý thức gộp hai khung (Q2) → ô Lớp liệt kê mọi lớp; góc nhìn khác chỉ lớp của khung đang chọn. */
+  /* Ô Lớp (Q6): lớp của khung đang chọn (Ý thức gộp hai khung) + lớp đã kết thúc có lượt trong khoảng (OV-11h PT-10). */
+  const coLop = goc === 'tong-hop' || goc === 'hieu-qua-pa' || goc === 'y-thuc' || goc === 'ket-qua-thi';
   const laYThuc = goc === 'y-thuc';
-  const classes = (classesApi.data ?? []).filter((c) => laYThuc || (c.scoring_mode === 'ratio') === (ct === 'thuong'));
+  const coCt = goc !== 'y-thuc' && goc !== 'ket-qua-thi';   // Kết quả thi chỉ Fast Track (Mock / Thi thật)
+  const qLop = new URLSearchParams({ kieu: khoang.kieu, tu: khoang.tu, den: khoang.den, ...(branchId ? { branchId: String(branchId) } : {}) });
+  const classesApi = useApi<any[]>(coLop ? `/ref/classes?${qLop}` : null, [qLop.toString(), coLop]);
+  const ctLop: ChuongTrinh = goc === 'ket-qua-thi' ? 'ft' : ct;
+  const classes = (classesApi.data ?? []).filter((c) => laYThuc || (c.scoring_mode === 'ratio') === (ctLop === 'thuong'));
   useEffect(() => {
-    if (classId && classesApi.data && !classes.some((c) => c.id === classId)) setClassId('');
+    if (classId && classesApi.data && !classes.some((c) => c.id === classId)) dat({ lop: null }, true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [classId, classesApi.data, ct, laYThuc]);
+  }, [classId, classesApi.data, ct, goc]);
 
+  const pv: PhamViPhanTich = { branchId, ct: laYThuc ? null : ctLop, khoang, classId: coLop ? classId : null };
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        {/* PR-KHUNG G5: khung vuốt bọc ngoài viền, mép phải mờ dưới 640px (cùng mẫu BoLocDoan). */}
-        <div ref={hangGoc} data-hd="pt-goc" className="relative inline-flex max-w-full overflow-x-auto max-sm:[scrollbar-width:none] max-sm:pr-8 max-sm:[mask-image:linear-gradient(to_right,#000_calc(100%-2rem),transparent)]">
-        <div role="radiogroup" aria-label="Góc nhìn" className="inline-flex shrink-0 rounded-lg border"
-          style={{ borderColor: 'var(--line)' }}>
-          {gocCo.map((k) => (
-            <button key={k} type="button" role="radio" aria-checked={goc === k} onClick={() => setGoc(k)}
-              className={`px-3 py-1.5 text-sm border-0 cursor-pointer whitespace-nowrap max-sm:min-h-10 ${
-                goc === k
-                  ? 'bg-[color:var(--accent-soft)] text-[color:var(--accent-strong)] font-semibold'
-                  : 'bg-transparent text-slate-400 hover:text-slate-200'
-              }`}>
-              {nhanGocNhin(k, ct)}
-            </button>
-          ))}
-        </div>
-        </div>
-        {goc !== 'giao-vien' && (<div className="flex flex-wrap items-center gap-2">
-          {!laYThuc && <ChonChuongTrinh value={ct} onChange={setCt} />}
-          {goc === 'van-de' && <span className="text-xs text-slate-500" title="Case đang mở, cộng Case đã đóng trong khoảng này">Case mở + đóng trong</span>}
-          {!(goc === 'hieu-qua-pa' && params.get('tu')) && <select className="field w-28 text-xs" value={tg} onChange={(e) => setTg(Number(e.target.value))} aria-label="Khoảng thời gian">
-            {KHOANG.map((n) => <option key={n} value={n}>{KHOANG_LABEL[n]}</option>)}
-          </select>}
-          <select className="field w-40 text-xs" value={classId ?? ''} onChange={(e) => setClassId(e.target.value)} aria-label="Lớp">
-            <option value="">Mọi lớp</option>
+    <div className="space-y-3">
+      <div data-hd="pt-goc" className="print:hidden">
+        <HangTab ariaLabel={t('Phân tích')} value={goc} onChange={setGoc} tabs={gocCo.map((k) => ({ key: k, label: dichGoc(nhanGocNhin(k, ct)) }))} />
+      </div>
+      <div className="flex flex-wrap items-center gap-2 print:hidden">
+        {coCt && <ChonChuongTrinh value={ct} onChange={setCt} />}
+        <BoChonThoiGian khoang={khoang} onChange={setKhoang} />
+        {coLop && (
+          <select className="field w-40 text-xs max-sm:min-h-[44px]" value={classId ?? ''} onChange={(e) => dat({ lop: e.target.value || null })} aria-label={t('Lớp')}>
+            <option value="">{t('Mọi lớp')}</option>
             {classes.filter((c) => !c.ket_thuc).map((c) => <option key={c.id} value={c.id}>{c.code}</option>)}
             {classes.some((c) => c.ket_thuc) && (
-              <optgroup label="Đã kết thúc">
+              <optgroup label={t('Đã kết thúc')}>
                 {classes.filter((c) => c.ket_thuc).map((c) => <option key={c.id} value={c.id}>{c.code}</option>)}
               </optgroup>
             )}
           </select>
-        </div>)}
+        )}
       </div>
 
-      {goc === 'tong-hop' && <TongHopTestSos branchId={branchId} ct={ct} tg={tg} classId={classId} />}
-      {goc === 'van-de' && <TongHopVanDeHv branchId={branchId} ct={ct} tg={tg} classId={classId} />}
-      {goc === 'hieu-qua-pa' && <HieuQuaPa branchId={branchId} ct={ct} tg={tg} classId={classId} />}
-      {goc === 'y-thuc' && <YThucPhoiHop branchId={branchId} ct={null} tg={tg} classId={classId} />}
-      {goc === 'giao-vien' && <PhanTichGiaoVien branchId={branchId} />}
+      {goc === 'bao-cao' && <BaoCao {...pv} />}
+      {goc === 'tong-hop' && <TongHopTestSos {...pv} ct={ct} />}
+      {goc === 'ket-qua-thi' && <KetQuaThi {...pv} />}
+      {goc === 'hieu-qua-pa' && <HieuQuaPa {...pv} ct={ct} />}
+      {goc === 'y-thuc' && <YThucPhoiHop {...pv} ct={null} />}
+      {goc === 'giao-vien' && <PhanTichGiaoVien branchId={branchId} ct={ct} khoang={khoang} />}
     </div>
   );
 }
