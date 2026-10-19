@@ -20,28 +20,25 @@
   --bg:#0c1220;--surface:#141d2f;--surface-2:#1a2437;--line:rgba(160,178,214,.14);--line-strong:rgba(160,178,214,.26);
   --accent:#7db3f0;--accent-strong:#a9cdf7;--accent-ink:#0b1626;--accent-soft:rgba(125,179,240,.14);--accent-line:rgba(125,179,240,.38);
   --text:#dde5f2;--c1:#f1f5f9;--c2:#e2e8f0;--c3:#cbd5e1;--dim:#93a3c0;--faint:#8292ae;
-  --sos1-vien:#f7d44c;--sos1-chu:#f7d44c;--sos2-nen:#6b3417;--sos2-chu:#ffc4a3;--sos3-nen:#ff4d6d;--sos3-chu:#1d0509;
+  --sos1-vien:#d6b828;--sos1-chu:#e3c84a;--sos2-vien:#e8702a;--sos2-chu:#f5935a;--sos3-vien:#e64aa0;--sos3-chu:#f27fbd;
   --duoi:#ff9aa2;--bang:#80b8ff;--ok:#6fdc9f;--da-thi-bg:#16402a;--late:#ff9166;--soon:#f2c450;--muted:#c9d4e6;--muted-bg:#1d2a40;
   --hl-bg:#172640;--hl-vach:#7db3f0;--hl-dong-bg:#131f35;--hl-dong-vach:#3a4f72;--hc-bg:#0b1322;
   --hover:rgba(255,255,255,.045);--o-nen:#0e1727;--o-vien:#64748b;--bong:0 8px 24px rgba(0,0,0,.45);
   /* HIỆN TẠI (chỉ để so) */
   --cu-s1:#f2c450;--cu-s1-bg:#352b10;--cu-s2:#ff9166;--cu-s2-bg:#3e1f13;--cu-s3:#ff9aa2;--cu-s3-bg:#3c1d24;
   --cu-wait:#c4a9ff;--cu-wait-bg:#272043;--cu-chon-bg:#13212d;--cu-chon-vien:#0d9488;--cu-doing:#80b8ff;--cu-doing-bg:#132c4d;
-  /* Phương án B — một họ đỏ */
-  --b-s1:#ff8a96;--b-s2-nen:#5a1f27;--b-s2-chu:#ffc9cf;--b-s3-nen:#ff5a67;--b-s3-chu:#1d0509;
 }
 :root[data-theme="light"],.t-light{
   color-scheme:light;
   --bg:#f5f7fa;--surface:#ffffff;--surface-2:#eef1f5;--line:rgba(15,23,42,.12);--line-strong:rgba(15,23,42,.22);
   --accent:#1d5fbf;--accent-strong:#174e9e;--accent-ink:#ffffff;--accent-soft:rgba(29,95,191,.08);--accent-line:rgba(29,95,191,.35);
   --text:#0f172a;--c1:#0f172a;--c2:#1e293b;--c3:#334155;--dim:#475569;--faint:#5b6678;
-  --sos1-vien:#b58300;--sos1-chu:#8a5a00;--sos2-nen:#fdd3bd;--sos2-chu:#8f2f0f;--sos3-nen:#b91c1c;--sos3-chu:#ffffff;
+  --sos1-vien:#8a6a00;--sos1-chu:#7a5d00;--sos2-vien:#e06a10;--sos2-chu:#a8430a;--sos3-vien:#b5125e;--sos3-chu:#a3104f;
   --duoi:#b42323;--bang:#1d5fbf;--ok:#157a42;--da-thi-bg:#d6f0df;--late:#b4400f;--soon:#8a5a00;--muted:#334155;--muted-bg:#eef1f5;
   --hl-bg:#eaf1fb;--hl-vach:#1d5fbf;--hl-dong-bg:#f1f4f8;--hl-dong-vach:#9fb0c8;--hc-bg:#fafbfc;
   --hover:rgba(15,23,42,.04);--o-nen:#ffffff;--o-vien:#7c8799;--bong:0 8px 24px rgba(15,23,42,.16);
   --cu-s1:#8a5a00;--cu-s1-bg:#fdf1cf;--cu-s2:#b4400f;--cu-s2-bg:#fde6d8;--cu-s3:#b42323;--cu-s3-bg:#fde2e2;
   --cu-wait:#5b3fb8;--cu-wait-bg:#ece6fd;--cu-chon-bg:#e0f2ef;--cu-chon-vien:#0f766e;--cu-doing:#1d5fbf;--cu-doing-bg:#e3edfb;
-  --b-s1:#c0263a;--b-s2-nen:#fcd5d9;--b-s2-chu:#8f1d2c;--b-s3-nen:#b42335;--b-s3-chu:#ffffff;
 }
 *{box-sizing:border-box}
 html{background:var(--bg)}
@@ -123,7 +120,7 @@ h3{font-size:14px;margin:8px 0 0;color:var(--c2)}
 .o .ic{color:var(--dim)}
 .o.o-tim{width:280px;color:var(--faint);font-size:14px}
 .w375 .o{height:44px;font-size:14px}
-.w375 .o.o-tim{width:auto;flex:1 1 160px}
+.w375 .o.o-tim{width:auto;flex:1 1 160px;font-size:16px}
 .seg{display:inline-flex;flex:none;border:1px solid var(--line-strong);border-radius:8px;overflow:hidden;max-width:100%}
 .seg button{all:unset;display:inline-flex;align-items:center;justify-content:center;gap:5px;height:34px;padding:0 12px;font-size:13px;font-weight:500;color:var(--dim);white-space:nowrap;cursor:pointer}
 .seg button+button{border-left:1px solid var(--line)}
@@ -161,12 +158,8 @@ h3{font-size:14px;margin:8px 0 0;color:var(--c2)}
 .bang th{text-align:left;font-size:12px;line-height:1.3;font-weight:600;color:var(--dim);padding:10px 10px;background:var(--surface-2);border-bottom:1px solid var(--line-strong);white-space:nowrap;overflow:hidden}
 .bang td{font-size:13px;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:middle;background:var(--hc-bg);color:var(--c2);overflow-wrap:anywhere}
 .bang tr:last-child>td{border-bottom:0}
-.bang .n{text-align:right}
-.bang th.n{text-align:right}
-.bang.co-cu th{font-size:11px;letter-spacing:.04em;text-transform:uppercase}
-.bang.co-cu td{font-size:12px}
-.bang.co-cu .d{font-size:12.5px}
-.bang.co-cu .ten{font-size:13px}
+/* C06/C07: số căn giữa (W và dòng W1 · W2 cũng giữa); tên, chữ dài, việc căn trái */
+.bang .n,.bang th.n{text-align:center}
 /* hàng lớp */
 tr.lop>td{background:var(--hl-bg);font-weight:700;color:var(--c1)}
 tr.lop>td:first-child{box-shadow:inset 3px 0 0 var(--hl-vach);padding-left:12px}
@@ -199,7 +192,6 @@ tr.mo .ten{color:var(--dim)}
 .dong2{display:flex;flex-wrap:wrap;gap:4px 6px;margin-top:4px}
 .d{font-size:14px;font-weight:600;color:var(--c2);white-space:nowrap}
 .d.bang{color:var(--bang)}.d.ok{color:var(--ok)}.d.duoi{color:var(--duoi)}
-.d i{font-style:normal;font-size:11px;margin-right:2px;vertical-align:1px}
 .d.thieu-kn{font-size:12px;font-weight:500;color:var(--faint)}
 .w12{display:block;font-size:12px;color:var(--faint);font-weight:400;margin-top:1px;white-space:nowrap}
 .viec a{color:var(--accent)}
@@ -210,18 +202,23 @@ tr.mo .ten{color:var(--dim)}
 .lam-o{display:inline-flex;align-items:center;justify-content:center;min-height:30px;padding:0 10px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface-2);font-size:13px;font-weight:600;color:var(--c1)}
 
 /* ============ CHIP */
-.sos{display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:999px;font-size:12px;font-weight:700;line-height:1;white-space:nowrap;border:1.5px solid transparent;vertical-align:middle}
+/* C08 chốt: chỉ viền, không nền. Viền dày dần 1 → 1,5 → 2,5 px; SOS 3 thêm vòng ngoài 1 px (viền đôi). Tạm thời = viền đứt. */
+.sos{display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:999px;font-size:12px;font-weight:700;line-height:1;white-space:nowrap;border:1px solid transparent;background:transparent;vertical-align:middle}
 .sos .k{font-weight:600}
 .s1{border-color:var(--sos1-vien);color:var(--sos1-chu)}
-.s2{background:var(--sos2-nen);border-color:var(--sos2-nen);color:var(--sos2-chu)}
-.s3{background:var(--sos3-nen);border-color:var(--sos3-nen);color:var(--sos3-chu)}
-.s1.tam{border-style:dashed}
-.s2.tam{border-style:dashed;border-color:var(--sos2-chu)}
-.s3.tam{outline:1.5px dashed var(--sos3-nen);outline-offset:2px}
-.b1{border-color:var(--b-s1);color:var(--b-s1)}
-.b2{background:var(--b-s2-nen);border-color:var(--b-s2-nen);color:var(--b-s2-chu)}
-.b3{background:var(--b-s3-nen);border-color:var(--b-s3-nen);color:var(--b-s3-chu)}
-.b1.tam{border-style:dashed}.b2.tam{border-style:dashed;border-color:var(--b-s2-chu)}.b3.tam{outline:1.5px dashed var(--b-s3-nen);outline-offset:2px}
+.s2{border-width:1.5px;border-color:var(--sos2-vien);color:var(--sos2-chu)}
+.s3{border-width:2.5px;border-color:var(--sos3-vien);color:var(--sos3-chu);outline:1px solid var(--sos3-vien);outline-offset:1.5px;margin:0 2.5px}
+.sos.tam{border-style:dashed}
+.s3.tam{outline-style:dashed}
+/* C05 ký hiệu: ✓ Đạt · ✗ Chưa đạt, SVG nét đơn (chủ SP 19/10); Chưa đủ điểm chỉ chữ */
+.kh{width:12px;height:12px;flex:none;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;vertical-align:-1px;margin-right:3px}
+.chip .kh{margin-right:1px}
+.lech{display:block;font-size:12px;font-weight:500;color:var(--faint);white-space:nowrap}
+/* C04 nút ? */
+.hoi{position:relative;display:inline-grid;place-items:center;width:18px;height:18px;margin-left:4px;padding:0;border-radius:50%;border:1px solid var(--line-strong);background:transparent;color:var(--dim);font-size:11px;font-weight:700;line-height:1;cursor:pointer;vertical-align:middle}
+.hoi::after{content:"";position:absolute;inset:-6px}
+.hoi[aria-expanded=true]{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
+.w375 .hoi::after{inset:-13px}
 .cu{display:inline-flex;align-items:center;height:18px;padding:0 7px;border-radius:999px;font-size:11.5px;font-weight:700;line-height:1;white-space:nowrap;border:1px solid transparent;vertical-align:middle}
 .cu1{background:var(--cu-s1-bg);color:var(--cu-s1)}.cu2{background:var(--cu-s2-bg);color:var(--cu-s2)}.cu3{background:var(--cu-s3-bg);color:var(--cu-s3)}
 .cu.tam{background:transparent;border:1px dashed currentColor}
@@ -251,6 +248,20 @@ tr.mo .ten{color:var(--dim)}
 .neo{position:relative;display:inline-block}
 .neo>.sos,.neo>.vs-dich{cursor:help}
 .vs-dich{border-radius:6px;box-shadow:0 0 0 2px var(--accent-line)}
+
+.vs .kl{font-size:14px;color:var(--c1);margin:0 0 8px}
+.vs .kl b{font-weight:700}
+.vs h4{font-size:12.5px;font-weight:600;color:var(--dim)}
+/* C10: khung cuộn để thử dải dính */
+.cuon-doc{max-height:900px;overflow-y:auto}
+.cuon-doc .dai{position:sticky;top:0;z-index:3}
+/* C12: hai hàng MT */
+tr.co-cu-dot>td:not([rowspan]){border-bottom:1px dashed var(--line)}
+tr.cu-dot>td{background:var(--surface);color:var(--faint);font-size:12px;padding-top:4px;padding-bottom:4px}
+tr.cu-dot .d{font-size:12.5px;font-weight:500;color:var(--dim)}
+tr.cu-dot .d.duoi{color:var(--duoi)}
+tr.cu-dot.da-thi>td{background:var(--da-thi-bg)}
+tr.cu-dot>td:first-child,tr.cu-dot.da-thi>td:first-child{box-shadow:none;padding-left:10px}
 
 /* ============ MENU TÀI KHOẢN */
 .menu{position:absolute;right:20px;top:56px;z-index:7;width:300px;background:var(--surface);border:1px solid var(--line-strong);border-radius:12px;box-shadow:var(--bong);padding:12px}
@@ -307,11 +318,12 @@ tr.mo .ten{color:var(--dim)}
 .bang tr.hv>td.kieu{padding-left:12px}
 /* 1440: khung 1440 vừa khít màn (bỏ gờ 16 px hai bên) */
 @media (min-width:1440px){.row2{margin:0 -16px;max-width:none}.row2 .cap{padding-left:16px}}
-/* màn hẹp (xem mockup trên điện thoại): ô so sánh một cột, hộp "Vì sao?" nằm ngay dưới */
+/* màn hẹp (xem mockup trên điện thoại): ô so sánh một cột, hộp ? nằm ngay dưới */
 @media (max-width:900px){
   .so-sanh{grid-template-columns:minmax(0,1fr)}
   .o-ss .kb{overflow-x:auto}.o-ss .bang{min-width:520px}
-  .neo{display:block}.vs{position:static;width:auto;margin-top:8px}
+  .neo{display:block;flex-basis:100%}.vs{position:static;width:auto;margin-top:8px}
+  .o-ss>div{flex-wrap:wrap}
 }
 </style>
 </head>
@@ -330,11 +342,13 @@ tr.mo .ten{color:var(--dim)}
   <symbol id="i-nguoi" viewBox="0 0 16 16"><circle cx="6" cy="5.5" r="2.3"/><path d="M1.8 13.5a4.2 4.2 0 0 1 8.4 0"/><path d="M10.5 3.4a2.3 2.3 0 0 1 0 4.4M12 9.6a4.2 4.2 0 0 1 2.2 3.9"/></symbol>
   <symbol id="i-test" viewBox="0 0 16 16"><rect x="3" y="2.5" width="10" height="11.5" rx="1.5"/><path d="M6 2.5h4v2H6zM5.5 8h5M5.5 11h3"/></symbol>
   <symbol id="i-viec" viewBox="0 0 16 16"><path d="M2.5 4l1.2 1.2L6 3M2.5 9l1.2 1.2L6 8M8.5 4.2h5M8.5 9.2h5M8.5 13h5M2.8 13h2.5"/></symbol>
+  <symbol id="i-dat" viewBox="0 0 12 12"><path d="M2 6.3 4.7 9 10 3"/></symbol>
+  <symbol id="i-chua-dat" viewBox="0 0 12 12"><path d="M3 3l6 6M9 3 3 9"/></symbol>
 </svg>
 
 <div class="top">
-  <b>Mockup · OV-14 · 1 · 17/10</b>
-  <span class="toc"><a href="#s1">1 Hệ thiết kế v2</a>·<a href="#s2">2 Thanh lọc cố định</a>·<a href="#s3">3 Học viên &amp; Lớp</a>·<a href="#s4">4 Hồ sơ lớp FT</a>·<a href="#hoi">Cần chủ SP chọn</a></span>
+  <b>Mockup · OV-14 · 1 · 17/10 (sửa 19/10)</b>
+  <span class="toc"><a href="#s1">1 Hệ thiết kế v2</a>·<a href="#s2">2 Thanh trên · dải lọc</a>·<a href="#s3">3 Học viên &amp; Lớp</a>·<a href="#s4">4 Hồ sơ lớp FT</a>·<a href="#hoi">Còn mở</a></span>
   <span class="sp"></span>
   <button class="btn btn-sm" data-t="dark" aria-pressed="true" onclick="doi('dark')">Tối</button>
   <button class="btn btn-sm" data-t="light" aria-pressed="false" onclick="doi('light')">Sáng</button>
@@ -343,9 +357,9 @@ tr.mo .ten{color:var(--dim)}
 <div class="wrap">
 
 <section class="sec" style="margin-top:20px">
-  <h1>OV-14 · 1 — Hệ thiết kế v2 · Thanh lọc cố định · Học viên &amp; Lớp · Hồ sơ lớp FT</h1>
+  <h1>OV-14 · 1 — Hệ thiết kế v2 · Dải lọc dính · Học viên &amp; Lớp · Hồ sơ lớp FT</h1>
   <ul class="note">
-    <li>Nguồn: brief OV-14 (chủ SP 17/10 + planning) · bảng token <b>doi-thoai-uiux.md mục 4</b> (đã chạy validator) · luật dáng hai skill thống nhất.</li>
+    <li>Nguồn: brief OV-14 (chủ SP 17/10, chốt 18/10 C03–C13 · sửa 19/10) · bảng token <b>doi-thoai-uiux.md mục 4</b> (đã chạy validator) · luật dáng hai skill thống nhất.</li>
     <li>Dữ liệu demo: ngày <b>T2 14/09/2026 = W3 SEP</b> · chi nhánh Monbay · QL Nguyễn Khánh Vy · lớp MB FT 101 (GVCN Trần Ngọc Hà · L, R Trần Ngọc Hà · S Phạm Thu Trang · W1 Lê Minh Khoa · W2 Cao Khánh Linh).</li>
     <li>Trang mở theo sáng / tối của máy; nút <b>Tối / Sáng</b> ở trên đổi cả trang. Ô ghi sẵn "Tối" / "Sáng" thì cố định để so cạnh nhau.</li>
     <li>Chữ trong khung = chữ sẽ hiện trên web. Chú thích, phương án, khuyến nghị, số bước: ngoài khung.</li>
@@ -359,8 +373,8 @@ tr.mo .ten{color:var(--dim)}
 
   <h3 id="s1a">1a · Token 5 nghĩa</h3>
   <ul class="note">
-    <li><b>Luật dáng (bắt buộc)</b> — không bộ màu chữ nào tách được 5 nghĩa (validator: 6 bộ thử đều không đạt), nên dáng mang nghĩa, màu chỉ phụ:</li>
-    <li>Màu <b>kết quả</b> chỉ nằm trong ô điểm và chip SOS · màu <b>hạn</b> chỉ là chữ + biểu tượng · <b>nền hàng</b> chỉ cho "đã thi" · <b>mọi trạng thái khác xám</b> · số điểm luôn kèm ▲ ▼ / ±n.</li>
+    <li><b>Luật dáng (bắt buộc)</b> — màu không tự tách được 5 nghĩa, nên dáng / ký hiệu mang nghĩa, màu chỉ phụ:</li>
+    <li>Màu <b>kết quả</b> chỉ nằm trong ô điểm và chip SOS · màu <b>hạn</b> chỉ là chữ + ⚠ · <b>nền hàng</b> chỉ cho "đã thi" · <b>mọi trạng thái khác xám</b> · ký hiệu SVG một bộ: <b>✓ Đạt · ✗ Chưa đạt</b> (nét đơn, không vòng tròn) · <b>Chưa đủ điểm</b> chỉ ghi chữ; chênh kỳ vọng bằng chữ ("thiếu 0.5 / vượt 0.5"); bỏ ▲ ▼ và "=" (xu hướng chỉ ở Hành trình, bằng chữ "Tăng / Giảm / Không đổi").</li>
   </ul>
   <div class="cuon"><table class="tok">
     <thead><tr><th>Nghĩa</th><th>Token</th><th>Tối</th><th>Sáng</th><th>Dáng bắt buộc</th></tr></thead>
@@ -369,30 +383,34 @@ tr.mo .ten{color:var(--dim)}
         <td class="t-dark"><div class="mau"><button class="btn btn-sm btn-primary">Lưu</button><span class="mini-chon">Lý Minh Châu</span><span class="hex">#7db3f0</span></div></td>
         <td class="t-light"><div class="mau"><button class="btn btn-sm btn-primary">Lưu</button><span class="mini-chon">Lý Minh Châu</span><span class="hex">#1d5fbf</span></div></td>
         <td class="dang">Đang chọn = <b>viền khung 2 px</b> · nút chính · focus. Không tô nền hàng, không dùng cho thông tin thường.</td></tr>
-      <tr><td class="nghia" rowspan="6">2 · Kết quả</td><td class="tk-ten">sos1</td>
-        <td class="t-dark"><div class="mau"><span class="sos s1">SOS 1<span class="k">&nbsp;· S</span></span><span class="hex">viền + chữ #f7d44c</span></div></td>
-        <td class="t-light"><div class="mau"><span class="sos s1">SOS 1<span class="k">&nbsp;· S</span></span><span class="hex">viền #b58300 · chữ #8a5a00</span></div></td>
-        <td class="dang">Chip <b>viền</b>, không nền</td></tr>
+      <tr><td class="nghia" rowspan="7">2 · Kết quả</td><td class="tk-ten">sos1</td>
+        <td class="t-dark"><div class="mau"><span class="sos s1">SOS 1<span class="k">&nbsp;· S</span></span><span class="hex">viền #d6b828 · chữ #e3c84a</span></div></td>
+        <td class="t-light"><div class="mau"><span class="sos s1">SOS 1<span class="k">&nbsp;· S</span></span><span class="hex">viền #8a6a00 · chữ #7a5d00</span></div></td>
+        <td class="dang">Viền <b>1 px</b>, không nền</td></tr>
       <tr><td class="tk-ten">sos2</td>
-        <td class="t-dark"><div class="mau"><span class="sos s2">SOS 2<span class="k">&nbsp;· R, W</span></span><span class="hex">nền #6b3417 · chữ #ffc4a3</span></div></td>
-        <td class="t-light"><div class="mau"><span class="sos s2">SOS 2<span class="k">&nbsp;· R, W</span></span><span class="hex">nền #fdd3bd · chữ #8f2f0f</span></div></td>
-        <td class="dang">Chip <b>nền nhạt</b></td></tr>
+        <td class="t-dark"><div class="mau"><span class="sos s2">SOS 2<span class="k">&nbsp;· R, W</span></span><span class="hex">viền #e8702a · chữ #f5935a</span></div></td>
+        <td class="t-light"><div class="mau"><span class="sos s2">SOS 2<span class="k">&nbsp;· R, W</span></span><span class="hex">viền #e06a10 · chữ #a8430a</span></div></td>
+        <td class="dang">Viền <b>1,5 px</b>, không nền</td></tr>
       <tr><td class="tk-ten">sos3</td>
-        <td class="t-dark"><div class="mau"><span class="sos s3">SOS 3<span class="k">&nbsp;· L, R, S</span></span><span class="hex">nền #ff4d6d · chữ #1d0509</span></div></td>
-        <td class="t-light"><div class="mau"><span class="sos s3">SOS 3<span class="k">&nbsp;· L, R, S</span></span><span class="hex">nền #b91c1c · chữ #ffffff</span></div></td>
-        <td class="dang">Chip <b>nền đặc</b> (chữ tối ở Tối, chữ trắng ở Sáng)</td></tr>
+        <td class="t-dark"><div class="mau"><span class="sos s3">SOS 3<span class="k">&nbsp;· L, R, S</span></span><span class="hex">viền #e64aa0 · chữ #f27fbd</span></div></td>
+        <td class="t-light"><div class="mau"><span class="sos s3">SOS 3<span class="k">&nbsp;· L, R, S</span></span><span class="hex">viền #b5125e · chữ #a3104f</span></div></td>
+        <td class="dang">Viền <b>2,5 px + vòng ngoài 1 px</b> (viền đôi), không nền</td></tr>
       <tr><td class="tk-ten">duoi</td>
-        <td class="t-dark"><div class="mau"><span class="d duoi"><i>▼</i>5.5</span><span class="hex">#ff9aa2</span></div></td>
-        <td class="t-light"><div class="mau"><span class="d duoi"><i>▼</i>5.5</span><span class="hex">#b42323</span></div></td>
-        <td class="dang">Dưới kỳ vọng / chưa đạt: chữ + ▼ / −n, chỉ trong ô điểm</td></tr>
+        <td class="t-dark"><div class="mau"><span class="d duoi"><svg class="kh" aria-hidden="true"><use href="#i-chua-dat"/></svg>5.5</span><span class="lech">thiếu 1.0</span><span class="hex">#ff9aa2</span></div></td>
+        <td class="t-light"><div class="mau"><span class="d duoi"><svg class="kh" aria-hidden="true"><use href="#i-chua-dat"/></svg>5.5</span><span class="lech">thiếu 1.0</span><span class="hex">#b42323</span></div></td>
+        <td class="dang"><b>✗ Chưa đạt</b>: ký hiệu + số đỏ, chỉ trong ô điểm. Chênh ghi bằng chữ "thiếu 0.5", không mũi tên.</td></tr>
       <tr><td class="tk-ten">bang</td>
-        <td class="t-dark"><div class="mau"><span class="d bang">6.5</span><span class="hex">#80b8ff</span></div></td>
-        <td class="t-light"><div class="mau"><span class="d bang">6.5</span><span class="hex">#1d5fbf</span></div></td>
-        <td class="dang">Bằng kỳ vọng: chỉ chữ trong ô điểm</td></tr>
+        <td class="t-dark"><div class="mau"><span class="d bang" title="Đạt · bằng kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>6.5</span><span class="hex">#80b8ff</span></div></td>
+        <td class="t-light"><div class="mau"><span class="d bang" title="Đạt · bằng kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>6.5</span><span class="hex">#1d5fbf</span></div></td>
+        <td class="dang"><b>✓ Đạt · bằng kỳ vọng</b>: ✓ + số xanh dương (Rulebook §3.5). Không dùng "=".</td></tr>
       <tr><td class="tk-ten">ok</td>
-        <td class="t-dark"><div class="mau"><span class="d ok"><i>▲</i>7.0</span><span class="tl da">✓ Đã lưu</span><span class="hex">#6fdc9f</span></div></td>
-        <td class="t-light"><div class="mau"><span class="d ok"><i>▲</i>7.0</span><span class="tl da">✓ Đã lưu</span><span class="hex">#157a42</span></div></td>
-        <td class="dang">Vượt: chữ + ▲ · xong ✓ · vạch hàng đã thi</td></tr>
+        <td class="t-dark"><div class="mau"><span class="d ok"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>7.0</span><span class="lech">vượt 0.5</span><span class="chip"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>Đạt</span><span class="hex">#6fdc9f</span></div></td>
+        <td class="t-light"><div class="mau"><span class="d ok"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>7.0</span><span class="lech">vượt 0.5</span><span class="chip"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>Đạt</span><span class="hex">#157a42</span></div></td>
+        <td class="dang"><b>✓ Đạt · vượt</b>: ✓ + số xanh lá · chênh "vượt 0.5" · ✓ Đã lưu · vạch hàng đã thi</td></tr>
+      <tr><td class="tk-ten">faint</td>
+        <td class="t-dark"><div class="mau"><span class="d thieu-kn">3/4</span><span class="chip">Chưa có kết quả</span></div></td>
+        <td class="t-light"><div class="mau"><span class="d thieu-kn">3/4</span><span class="chip">Chưa có kết quả</span></div></td>
+        <td class="dang"><b>Chưa đủ điểm</b> để đánh giá: chỉ chữ / số kỹ năng đã có (3/4), xám, không ký hiệu</td></tr>
       <tr><td class="nghia">3 · Đã thi</td><td class="tk-ten">da-thi-bg</td>
         <td class="t-dark"><div class="mini-hang">Lê Minh Khang <span class="chip-dt">Đã thi · chờ KQ</span></div><span class="hex">#16402a + vạch #6fdc9f</span></td>
         <td class="t-light"><div class="mini-hang">Lê Minh Khang <span class="chip-dt">Đã thi · chờ KQ</span></div><span class="hex">#d6f0df + vạch #157a42</span></td>
@@ -406,9 +424,9 @@ tr.mo .ten{color:var(--dim)}
         <td class="t-light"><div class="mau"><span class="sap">hạn hôm nay</span><span class="hex">#8a5a00</span></div></td>
         <td class="dang">Sắp hạn ≤ 3 ngày · hôm nay · tạm: chỉ chữ</td></tr>
       <tr><td class="nghia">5 · Trung tính</td><td class="tk-ten">muted</td>
-        <td class="t-dark"><div class="mau"><span class="chip">Chờ duyệt</span><span class="chip">Chưa chốt PA</span><span class="hex">#c9d4e6 / #1d2a40</span></div></td>
-        <td class="t-light"><div class="mau"><span class="chip">Chờ duyệt</span><span class="chip">Chưa chốt PA</span><span class="hex">#334155 / #eef1f5</span></div></td>
-        <td class="dang">Mọi trạng thái khác: Chờ duyệt · Chưa chốt PA · Đang xử lý · Chờ chọn bước tiếp · bài chờ chấm · Đã huỷ</td></tr>
+        <td class="t-dark"><div class="mau"><span class="chip">Chờ duyệt</span><span class="chip">Chưa chốt PA</span><span class="chip">Trống PA</span><span class="hex">#c9d4e6 / #1d2a40</span></div></td>
+        <td class="t-light"><div class="mau"><span class="chip">Chờ duyệt</span><span class="chip">Chưa chốt PA</span><span class="chip">Trống PA</span><span class="hex">#334155 / #eef1f5</span></div></td>
+        <td class="dang">Mọi trạng thái khác: Chờ duyệt · Chưa chốt PA · Trống PA · Đang xử lý · Chờ chọn bước tiếp · bài chờ chấm · Đã huỷ</td></tr>
       <tr><td class="nghia" style="color:var(--duoi)">Bỏ</td><td class="tk-ten">wait · chon-* · doing</td>
         <td class="t-dark"><div class="mau"><span class="cu wait gach">Chưa chốt PA</span><span class="seg cu nho gach"><button aria-pressed="true">✓ Tất cả</button><button>Đang SOS</button></span><span class="cu doing gach">Đang xử lý</span></div></td>
         <td class="t-light"><div class="mau"><span class="cu wait gach">Chưa chốt PA</span><span class="seg cu nho gach"><button aria-pressed="true">✓ Tất cả</button><button>Đang SOS</button></span><span class="cu doing gach">Đang xử lý</span></div></td>
@@ -416,26 +434,21 @@ tr.mo .ten{color:var(--dim)}
     </tbody>
   </table></div>
 
-  <h3 id="s1b">1b · Chip SOS — hiện tại · phương án A · phương án B</h3>
+  <h3 id="s1b">1b · Chip SOS — vàng / cam / đỏ, chỉ viền (chốt C08)</h3>
   <ul class="note">
-    <li>Một dáng chip ở mọi màn (bỏ ô vuông ở Case / hồ sơ HV). Kèm kỹ năng: <b>"SOS 2 · R, W"</b> — W1 / W2 không tách thành môn (Rulebook §3: SOS đếm L / R / W / S).</li>
-    <li><b>SOS tạm thời</b> = cùng bậc, viền <b>đứt</b>, giữ chữ "tạm thời". SOS 3 tạm: viền đứt vòng ngoài (khối đặc không hiện được viền đứt bên trong).</li>
+    <li>Không nền. Bậc đọc được cả khi không phân biệt màu: viền <b>1 → 1,5 → 2,5 px</b>, SOS 3 thêm vòng ngoài (<b>viền đôi</b>); chữ "SOS n · kỹ năng" luôn có. W1 / W2 không tách thành môn (Rulebook §3).</li>
+    <li><b>SOS tạm thời</b> = cùng bậc, viền <b>đứt</b> + chữ "tạm thời" (SOS 3 tạm: cả hai vòng đứt). Một dáng chip mọi màn (bỏ ô vuông ở Case / hồ sơ HV).</li>
   </ul>
   <div class="cuon"><table class="tok">
-    <thead><tr><th>Bộ</th><th>Tối</th><th>Sáng</th><th>Validator (thường · mù màu, ngưỡng 15 · 8)</th></tr></thead>
+    <thead><tr><th>Nền</th><th>Tối</th><th>Sáng</th><th>Validator (viền, --pairs all)</th></tr></thead>
     <tbody>
-      <tr><td class="nghia">Hiện tại</td>
-        <td class="t-dark"><div class="mau"><span class="cu cu1">SOS 1</span><span class="cu cu2">SOS 2</span><span class="cu cu3">SOS 3</span><span class="cu cu1 tam">SOS 1 tạm thời</span></div><div class="mau" style="margin-top:8px"><span class="cu cu1 vuong">SOS 1</span><span class="cu cu2 vuong">SOS 2</span><span class="cu cu3 vuong">SOS 3</span><span class="hex">ô vuông ở Case, hồ sơ HV</span></div></td>
-        <td class="t-light"><div class="mau"><span class="cu cu1">SOS 1</span><span class="cu cu2">SOS 2</span><span class="cu cu3">SOS 3</span><span class="cu cu1 tam">SOS 1 tạm thời</span></div><div class="mau" style="margin-top:8px"><span class="cu cu1 vuong">SOS 1</span><span class="cu cu2 vuong">SOS 2</span><span class="cu cu3 vuong">SOS 3</span><span class="hex">ô vuông ở Case, hồ sơ HV</span></div></td>
-        <td class="dang">Cùng dáng, chỉ khác sắc. SOS 2 ↔ SOS 3 độ khác <b>7</b> (tối) / <b>5</b> (sáng). SOS 2 dùng đúng màu "quá hạn", SOS 3 trùng màu "dưới kỳ vọng". Hai dáng chip.</td></tr>
-      <tr><td class="nghia">A<span class="kn">khuyến nghị</span></td>
+      <tr><td class="nghia">Nền ô</td>
         <td class="t-dark"><div class="mau"><span class="sos s1">SOS 1<span class="k">&nbsp;· S</span></span><span class="sos s2">SOS 2<span class="k">&nbsp;· R, W</span></span><span class="sos s3">SOS 3<span class="k">&nbsp;· L, R, S</span></span></div><div class="mau" style="margin-top:10px"><span class="sos s1 tam">SOS 1 tạm thời<span class="k">&nbsp;· L</span></span><span class="sos s2 tam">SOS 2 tạm thời<span class="k">&nbsp;· W, S</span></span><span class="sos s3 tam">SOS 3 tạm thời</span></div></td>
         <td class="t-light"><div class="mau"><span class="sos s1">SOS 1<span class="k">&nbsp;· S</span></span><span class="sos s2">SOS 2<span class="k">&nbsp;· R, W</span></span><span class="sos s3">SOS 3<span class="k">&nbsp;· L, R, S</span></span></div><div class="mau" style="margin-top:10px"><span class="sos s1 tam">SOS 1 tạm thời<span class="k">&nbsp;· L</span></span><span class="sos s2 tam">SOS 2 tạm thời<span class="k">&nbsp;· W, S</span></span><span class="sos s3 tam">SOS 3 tạm thời</span></div></td>
-        <td class="dang">Vàng <b>viền</b> → cam <b>nền nhạt</b> → đỏ <b>nền đặc</b>: hai kênh (sắc + độ đặc). Thường <b>31.0</b> / <b>20.7</b> · mù màu <b>20.9</b> / <b>13.4</b> — <b style="color:var(--ok)">ĐẠT</b> cả hai chế độ. Giữ màu N-1b đã duyệt.</td></tr>
-      <tr><td class="nghia">B</td>
-        <td class="t-dark"><div class="mau"><span class="sos b1">SOS 1<span class="k">&nbsp;· S</span></span><span class="sos b2">SOS 2<span class="k">&nbsp;· R, W</span></span><span class="sos b3">SOS 3<span class="k">&nbsp;· L, R, S</span></span></div><div class="mau" style="margin-top:10px"><span class="sos b1 tam">SOS 1 tạm thời<span class="k">&nbsp;· L</span></span><span class="sos b2 tam">SOS 2 tạm thời<span class="k">&nbsp;· W, S</span></span><span class="sos b3 tam">SOS 3 tạm thời</span></div></td>
-        <td class="t-light"><div class="mau"><span class="sos b1">SOS 1<span class="k">&nbsp;· S</span></span><span class="sos b2">SOS 2<span class="k">&nbsp;· R, W</span></span><span class="sos b3">SOS 3<span class="k">&nbsp;· L, R, S</span></span></div><div class="mau" style="margin-top:10px"><span class="sos b1 tam">SOS 1 tạm thời<span class="k">&nbsp;· L</span></span><span class="sos b2 tam">SOS 2 tạm thời<span class="k">&nbsp;· W, S</span></span><span class="sos b3 tam">SOS 3 tạm thời</span></div></td>
-        <td class="dang">Một họ đỏ đậm dần, chỉ khác bằng dáng. Thường <b>9.5</b> / <b>2.6</b> · mù màu <b>7.7</b> / <b>2.0</b> — <b style="color:var(--duoi)">KHÔNG ĐẠT</b>; ở Sáng viền SOS 1 và nền SOS 3 gần như cùng màu. Cả bảng thành báo động, trùng màu "chưa đạt".</td></tr>
+        <td class="dang" rowspan="2">Tối #d6b828 · #e8702a · #e64aa0: thường ΔE <b>17.3</b> · mù màu <b>10.6</b> — đạt; dải sáng tối "lệch" vì vàng phải sáng mới đọc được (dải dành cho mảng màu biểu đồ).<br>Sáng #8a6a00 · #e06a10 · #b5125e: thường <b>15.7</b> · mù màu <b>6.2</b> (vùng 6–8: hợp lệ vì có mã phụ là độ dày viền + chữ).<br>Viền ≥ 3:1 trên nền ô; chữ ≥ 4.75:1 ở mọi nền (thấp nhất: chữ SOS 3 trên nền đã thi, Tối).</td></tr>
+      <tr><td class="nghia">Hàng lớp · đã thi</td>
+        <td class="t-dark"><div class="mau"><span class="mini-hang" style="background:var(--hl-bg);box-shadow:inset 3px 0 0 var(--hl-vach)"><span class="sos s1">SOS 1</span><span class="sos s2">SOS 2</span><span class="sos s3">SOS 3</span></span><span class="mini-hang"><span class="sos s2">SOS 2<span class="k">&nbsp;· R</span></span><span class="sos s3">SOS 3</span></span></div></td>
+        <td class="t-light"><div class="mau"><span class="mini-hang" style="background:var(--hl-bg);box-shadow:inset 3px 0 0 var(--hl-vach)"><span class="sos s1">SOS 1</span><span class="sos s2">SOS 2</span><span class="sos s3">SOS 3</span></span><span class="mini-hang"><span class="sos s2">SOS 2<span class="k">&nbsp;· R</span></span><span class="sos s3">SOS 3</span></span></div></td></tr>
     </tbody>
   </table></div>
 
@@ -467,13 +480,13 @@ tr.mo .ten{color:var(--dim)}
           <colgroup><col style="width:122px"><col style="width:160px"><col style="width:136px"><col style="width:70px"><col></colgroup>
           <thead><tr><th>Kiểu</th><th>Học viên</th><th>Kết quả gần nhất</th><th class="n">W</th><th>Dự kiến thi</th></tr></thead>
           <tbody>
-            <tr class="hv"><td class="kieu">Thường</td><td><a class="ten">Bùi Thảo Vy</a></td><td><span class="sos s1">SOS 1<span class="k">&nbsp;· S</span></span></td><td class="n"><span class="d bang">7.0</span><span class="w12">7.0 · 7.0</span></td><td></td></tr>
+            <tr class="hv"><td class="kieu">Thường</td><td><a class="ten">Bùi Thảo Vy</a></td><td><span class="sos s1">SOS 1<span class="k">&nbsp;· S</span></span></td><td class="n"><span class="d bang" title="Đạt · bằng kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>7.0</span><span class="w12">7.0 · 7.0</span></td><td></td></tr>
             <tr class="hv hover"><td class="kieu">Rê chuột</td><td><a class="ten">Chu Nhật Minh</a></td><td><span class="chip">Chưa có kết quả</span></td><td class="n"></td><td></td></tr>
-            <tr class="hv chon"><td class="kieu">Đang chọn</td><td><a class="ten">Lý Minh Châu</a></td><td><span class="sos s1">SOS 1<span class="k">&nbsp;· R</span></span></td><td class="n"><span class="d bang">6.5</span><span class="w12">6.5 · 6.5</span></td><td></td></tr>
-            <tr class="hv da-thi"><td class="kieu">Đã thi · 1</td><td><a class="ten">Lê Minh Khang</a></td><td><span class="chip">Đạt kỳ vọng</span></td><td class="n"><span class="d bang">6.5</span><span class="w12">6.0 · 7.0</span></td><td><span class="chip-dt">Đã thi · chờ KQ</span><span class="phu">12/09 · hạn KQ 19/09</span></td></tr>
-            <tr class="hv da-thi"><td class="kieu">Đã thi · trễ</td><td><a class="ten">Đoàn Khánh Chi</a></td><td><span class="chip">Đạt kỳ vọng</span></td><td class="n"><span class="d bang">6.5</span><span class="w12">6.5 · 6.5</span></td><td><span class="chip-dt">Đã thi · chờ KQ<span class="qh">⚠</span></span><span class="phu">05/09 · <span class="qh">⚠ quá hạn 2 ngày</span></span></td></tr>
-            <tr class="hv da-thi"><td class="kieu">Đã thi · 2</td><td><a class="ten">Trần Hữu Phúc</a></td><td>Thi thật<span class="phu">05/09 · Target 6.5</span></td><td class="n"><span class="d duoi"><i>▼</i>6.0</span><span class="w12">6.0 · 6.0</span></td><td><span class="chip-dt">Có KQ · chờ bước tiếp</span></td></tr>
-            <tr class="hv chon da-thi"><td class="kieu">Đang chọn + đã thi</td><td><a class="ten">Lê Minh Khang</a></td><td><span class="chip">Đạt kỳ vọng</span></td><td class="n"><span class="d bang">6.5</span><span class="w12">6.0 · 7.0</span></td><td><span class="chip-dt">Đã thi · chờ KQ</span></td></tr>
+            <tr class="hv chon"><td class="kieu">Đang chọn</td><td><a class="ten">Lý Minh Châu</a></td><td><span class="sos s1">SOS 1<span class="k">&nbsp;· R</span></span></td><td class="n"><span class="d bang" title="Đạt · bằng kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>6.5</span><span class="w12">6.5 · 6.5</span></td><td></td></tr>
+            <tr class="hv da-thi"><td class="kieu">Đã thi · 1</td><td><a class="ten">Lê Minh Khang</a></td><td><span class="chip"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>Đạt</span></td><td class="n"><span class="d bang" title="Đạt · bằng kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>6.5</span><span class="w12">6.0 · 7.0</span></td><td><span class="chip-dt">Đã thi · chờ KQ</span><span class="phu">12/09 · hạn KQ 19/09</span></td></tr>
+            <tr class="hv da-thi"><td class="kieu">Đã thi · trễ</td><td><a class="ten">Đoàn Khánh Chi</a></td><td><span class="chip"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>Đạt</span></td><td class="n"><span class="d bang" title="Đạt · bằng kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>6.5</span><span class="w12">6.5 · 6.5</span></td><td><span class="chip-dt">Đã thi · chờ KQ<span class="qh">⚠</span></span><span class="phu">05/09 · <span class="qh">⚠ quá hạn 2 ngày</span></span></td></tr>
+            <tr class="hv da-thi"><td class="kieu">Đã thi · 2</td><td><a class="ten">Trần Hữu Phúc</a></td><td>Thi thật<span class="phu">05/09 · Target 6.5</span></td><td class="n"><span class="d duoi" title="Chưa đạt kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-chua-dat"/></svg>6.0</span><span class="w12">6.0 · 6.0</span></td><td><span class="chip-dt">Có KQ · chờ bước tiếp</span></td></tr>
+            <tr class="hv chon da-thi"><td class="kieu">Đang chọn + đã thi</td><td><a class="ten">Lê Minh Khang</a></td><td><span class="chip"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>Đạt</span></td><td class="n"><span class="d bang" title="Đạt · bằng kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>6.5</span><span class="w12">6.0 · 7.0</span></td><td><span class="chip-dt">Đã thi · chờ KQ</span></td></tr>
             <tr class="hv mo"><td class="kieu">Mờ · kết thúc</td><td><a class="ten">Ngô Thanh Tùng</a> <span class="chip">Đã kết thúc học</span></td><td></td><td class="n"></td><td></td></tr>
             <tr class="hv mo"><td class="kieu">Mờ · lưu trữ</td><td><a class="ten">Võ Minh Triết</a> <span class="chip">Lưu trữ</span></td><td></td><td class="n"></td><td></td></tr>
           </tbody></table></div>
@@ -484,40 +497,27 @@ tr.mo .ten{color:var(--dim)}
           <colgroup><col style="width:122px"><col style="width:160px"><col style="width:136px"><col style="width:70px"><col></colgroup>
           <thead><tr><th>Kiểu</th><th>Học viên</th><th>Kết quả gần nhất</th><th class="n">W</th><th>Dự kiến thi</th></tr></thead>
           <tbody>
-            <tr class="hv"><td class="kieu">Thường</td><td><a class="ten">Bùi Thảo Vy</a></td><td><span class="sos s1">SOS 1<span class="k">&nbsp;· S</span></span></td><td class="n"><span class="d bang">7.0</span><span class="w12">7.0 · 7.0</span></td><td></td></tr>
+            <tr class="hv"><td class="kieu">Thường</td><td><a class="ten">Bùi Thảo Vy</a></td><td><span class="sos s1">SOS 1<span class="k">&nbsp;· S</span></span></td><td class="n"><span class="d bang" title="Đạt · bằng kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>7.0</span><span class="w12">7.0 · 7.0</span></td><td></td></tr>
             <tr class="hv hover"><td class="kieu">Rê chuột</td><td><a class="ten">Chu Nhật Minh</a></td><td><span class="chip">Chưa có kết quả</span></td><td class="n"></td><td></td></tr>
-            <tr class="hv chon"><td class="kieu">Đang chọn</td><td><a class="ten">Lý Minh Châu</a></td><td><span class="sos s1">SOS 1<span class="k">&nbsp;· R</span></span></td><td class="n"><span class="d bang">6.5</span><span class="w12">6.5 · 6.5</span></td><td></td></tr>
-            <tr class="hv da-thi"><td class="kieu">Đã thi · 1</td><td><a class="ten">Lê Minh Khang</a></td><td><span class="chip">Đạt kỳ vọng</span></td><td class="n"><span class="d bang">6.5</span><span class="w12">6.0 · 7.0</span></td><td><span class="chip-dt">Đã thi · chờ KQ</span><span class="phu">12/09 · hạn KQ 19/09</span></td></tr>
-            <tr class="hv da-thi"><td class="kieu">Đã thi · trễ</td><td><a class="ten">Đoàn Khánh Chi</a></td><td><span class="chip">Đạt kỳ vọng</span></td><td class="n"><span class="d bang">6.5</span><span class="w12">6.5 · 6.5</span></td><td><span class="chip-dt">Đã thi · chờ KQ<span class="qh">⚠</span></span><span class="phu">05/09 · <span class="qh">⚠ quá hạn 2 ngày</span></span></td></tr>
-            <tr class="hv da-thi"><td class="kieu">Đã thi · 2</td><td><a class="ten">Trần Hữu Phúc</a></td><td>Thi thật<span class="phu">05/09 · Target 6.5</span></td><td class="n"><span class="d duoi"><i>▼</i>6.0</span><span class="w12">6.0 · 6.0</span></td><td><span class="chip-dt">Có KQ · chờ bước tiếp</span></td></tr>
-            <tr class="hv chon da-thi"><td class="kieu">Đang chọn + đã thi</td><td><a class="ten">Lê Minh Khang</a></td><td><span class="chip">Đạt kỳ vọng</span></td><td class="n"><span class="d bang">6.5</span><span class="w12">6.0 · 7.0</span></td><td><span class="chip-dt">Đã thi · chờ KQ</span></td></tr>
+            <tr class="hv chon"><td class="kieu">Đang chọn</td><td><a class="ten">Lý Minh Châu</a></td><td><span class="sos s1">SOS 1<span class="k">&nbsp;· R</span></span></td><td class="n"><span class="d bang" title="Đạt · bằng kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>6.5</span><span class="w12">6.5 · 6.5</span></td><td></td></tr>
+            <tr class="hv da-thi"><td class="kieu">Đã thi · 1</td><td><a class="ten">Lê Minh Khang</a></td><td><span class="chip"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>Đạt</span></td><td class="n"><span class="d bang" title="Đạt · bằng kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>6.5</span><span class="w12">6.0 · 7.0</span></td><td><span class="chip-dt">Đã thi · chờ KQ</span><span class="phu">12/09 · hạn KQ 19/09</span></td></tr>
+            <tr class="hv da-thi"><td class="kieu">Đã thi · trễ</td><td><a class="ten">Đoàn Khánh Chi</a></td><td><span class="chip"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>Đạt</span></td><td class="n"><span class="d bang" title="Đạt · bằng kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>6.5</span><span class="w12">6.5 · 6.5</span></td><td><span class="chip-dt">Đã thi · chờ KQ<span class="qh">⚠</span></span><span class="phu">05/09 · <span class="qh">⚠ quá hạn 2 ngày</span></span></td></tr>
+            <tr class="hv da-thi"><td class="kieu">Đã thi · 2</td><td><a class="ten">Trần Hữu Phúc</a></td><td>Thi thật<span class="phu">05/09 · Target 6.5</span></td><td class="n"><span class="d duoi" title="Chưa đạt kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-chua-dat"/></svg>6.0</span><span class="w12">6.0 · 6.0</span></td><td><span class="chip-dt">Có KQ · chờ bước tiếp</span></td></tr>
+            <tr class="hv chon da-thi"><td class="kieu">Đang chọn + đã thi</td><td><a class="ten">Lê Minh Khang</a></td><td><span class="chip"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>Đạt</span></td><td class="n"><span class="d bang" title="Đạt · bằng kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>6.5</span><span class="w12">6.0 · 7.0</span></td><td><span class="chip-dt">Đã thi · chờ KQ</span></td></tr>
             <tr class="hv mo"><td class="kieu">Mờ · kết thúc</td><td><a class="ten">Ngô Thanh Tùng</a> <span class="chip">Đã kết thúc học</span></td><td></td><td class="n"></td><td></td></tr>
             <tr class="hv mo"><td class="kieu">Mờ · lưu trữ</td><td><a class="ten">Võ Minh Triết</a> <span class="chip">Lưu trữ</span></td><td></td><td class="n"></td><td></td></tr>
           </tbody></table></div>
       </div></div>
   </div>
 
-  <h3 id="s1e">1e · Cỡ chữ — mới (đầu cột 12 thường · ô 13) vs cũ (đầu cột 11 in hoa · ô 12)</h3>
-  <div class="so-sanh">
-    <div class="o-ss"><span class="nhan-o">A · Mới<span class="kn">khuyến nghị</span></span>
-      <div class="kb"><table class="bang">
-        <colgroup><col style="width:34%"><col style="width:30%"><col><col><col></colgroup>
-        <thead><tr><th>Học viên</th><th>Kết quả gần nhất</th><th class="n">L</th><th class="n">W</th><th class="n">S</th></tr></thead>
-        <tbody>
-          <tr class="hv"><td><a class="ten">Đỗ Minh Khôi</a></td><td><span class="sos s2">SOS 2<span class="k">&nbsp;· W, S</span></span><span class="phu">MT2 · kỳ vọng 6.5</span></td><td class="n"><span class="d bang">6.5</span></td><td class="n"><span class="d duoi"><i>▼</i>6.0</span><span class="w12">6.5 · 5.5</span></td><td class="n"><span class="d duoi"><i>▼</i>5.5</span></td></tr>
-          <tr class="hv"><td><a class="ten">Nguyễn Minh An</a></td><td><span class="chip">Đạt kỳ vọng</span><span class="phu">MT2 · kỳ vọng 6.0</span></td><td class="n"><span class="d bang">6.0</span></td><td class="n"><span class="d bang">6.0</span><span class="w12">5.5 · 6.0</span></td><td class="n"><span class="d bang">6.0</span></td></tr>
-        </tbody></table></div>
-    </div>
-    <div class="o-ss"><span class="nhan-o">B · Cũ (đang chạy)</span>
-      <div class="kb"><table class="bang co-cu">
-        <colgroup><col style="width:34%"><col style="width:30%"><col><col><col></colgroup>
-        <thead><tr><th>Học viên</th><th>Kết quả gần nhất</th><th class="n">L</th><th class="n">W</th><th class="n">S</th></tr></thead>
-        <tbody>
-          <tr class="hv"><td><a class="ten">Đỗ Minh Khôi</a></td><td><span class="sos s2">SOS 2<span class="k">&nbsp;· W, S</span></span><span class="phu">MT2 · kỳ vọng 6.5</span></td><td class="n"><span class="d bang">6.5</span></td><td class="n"><span class="d duoi"><i>▼</i>6.0</span><span class="w12">6.5 · 5.5</span></td><td class="n"><span class="d duoi"><i>▼</i>5.5</span></td></tr>
-          <tr class="hv"><td><a class="ten">Nguyễn Minh An</a></td><td><span class="chip">Đạt kỳ vọng</span><span class="phu">MT2 · kỳ vọng 6.0</span></td><td class="n"><span class="d bang">6.0</span></td><td class="n"><span class="d bang">6.0</span><span class="w12">5.5 · 6.0</span></td><td class="n"><span class="d bang">6.0</span></td></tr>
-        </tbody></table></div>
-    </div>
-  </div>
+  <h3 id="s1e">1e · Cỡ chữ (chốt C09) — đầu cột 12 không in hoa · ô bảng 13 · ô nhập 375 = 16</h3>
+  <div class="kb" style="max-width:720px"><table class="bang">
+    <colgroup><col style="width:34%"><col style="width:30%"><col><col><col></colgroup>
+    <thead><tr><th>Học viên</th><th>Kết quả gần nhất</th><th class="n">L</th><th class="n">W</th><th class="n">S</th></tr></thead>
+    <tbody>
+      <tr class="hv"><td><a class="ten">Đỗ Minh Khôi</a></td><td><span class="sos s2">SOS 2<span class="k">&nbsp;· W, S</span></span><span class="phu">MT2 · kỳ vọng 6.5</span></td><td class="n"><span class="d bang" title="Đạt · bằng kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>6.5</span></td><td class="n"><span class="d duoi"><svg class="kh" aria-hidden="true"><use href="#i-chua-dat"/></svg>6.0</span><span class="w12">6.5 · 5.5</span></td><td class="n"><span class="d duoi"><svg class="kh" aria-hidden="true"><use href="#i-chua-dat"/></svg>5.5</span></td></tr>
+      <tr class="hv"><td><a class="ten">Nguyễn Minh An</a></td><td><span class="chip"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>Đạt</span><span class="phu">MT2 · kỳ vọng 6.0</span></td><td class="n"><span class="d bang" title="Đạt · bằng kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>6.0</span></td><td class="n"><span class="d bang" title="Đạt · bằng kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>6.0</span><span class="w12">5.5 · 6.0</span></td><td class="n"><span class="d bang" title="Đạt · bằng kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>6.0</span></td></tr>
+    </tbody></table></div>
   <div class="thang">
     <span style="font-size:12px">Đầu cột · chip · chữ phụ<small>12</small></span>
     <span style="font-size:13px">Ô bảng · chữ phụ quan trọng<small>13</small></span>
@@ -525,7 +525,7 @@ tr.mo .ten{color:var(--dim)}
     <span style="font-size:16px">Ô nhập ở 375<small>16 — Safari không tự phóng to</small></span>
     <span style="font-size:20px;font-weight:700">Tiêu đề trang<small>20</small></span>
   </div>
-  <ul class="note"><li>Mới: tên cột tiếng Việt có dấu đọc dễ hơn khi không in hoa; hàng cao thêm ~2 px. Không chữ &lt; 11 px. Thêm 17 (tiêu đề panel) và 28 (số lớn) vào DESIGN.md như detector đề xuất.</li></ul>
+  <ul class="note"><li>Thêm 17 (tiêu đề panel) và 28 (số lớn) vào DESIGN.md. Không chữ &lt; 11 px.</li></ul>
 
   <h3 id="s1f">1f · Trạng thái lưu + Hoàn tác 10 s</h3>
   <ul class="note">
@@ -549,30 +549,35 @@ tr.mo .ten{color:var(--dim)}
     </div>
   </div>
 
-  <h3 id="s1g">1g · "Vì sao?" — rê / chạm chip SOS hoặc dòng việc → hộp nhỏ nêu luật đang áp</h3>
-  <ul class="note"><li>Không thêm nút "?": chính chip / dòng việc là chỗ bấm (con trỏ hỏi). Esc hoặc bấm ra ngoài thì đóng. 375: chạm → cùng hộp, rộng hết dòng.</li></ul>
+  <h3 id="s1g">1g · Nút ? — giải thích tại chỗ (chốt C04)</h3>
+  <ul class="note">
+    <li><b>?</b> đặt cạnh chip SOS, ô số tổng và mọi chỗ dán Excel. Bấm chip / dòng việc = mở việc; bấm <b>?</b> = chỉ mở giải thích. Tên truy cập nói nội dung ("Giải thích mức SOS").</li>
+    <li>Hộp có phân cấp: <b>tiêu đề → kết luận đậm → số liệu → việc có thể làm</b>. Chạm / Enter / Space mở; Esc hoặc bấm ra ngoài đóng. 375: hộp rộng hết dòng, vùng chạm ? 44 px.</li>
+  </ul>
   <div class="so-sanh">
-    <div class="o-ss" style="min-height:300px"><span class="nhan-o">Trên chip SOS · Học viên &amp; Lớp</span>
-      <div style="display:flex;align-items:center;gap:12px;font-size:13px"><a class="ten">Đỗ Minh Khôi</a>
-        <span class="neo"><span class="sos s2 vs-dich">SOS 2<span class="k">&nbsp;· W, S</span></span>
+    <div class="o-ss" style="min-height:300px"><span class="nhan-o">Cạnh chip SOS · Học viên &amp; Lớp</span>
+      <div style="display:flex;align-items:center;gap:8px;font-size:13px"><a class="ten">Đỗ Minh Khôi</a>
+        <span class="neo"><span class="sos s2">SOS 2<span class="k">&nbsp;· W, S</span></span><button class="hoi" aria-label="Giải thích mức SOS" aria-expanded="true">?</button>
           <div class="vs" style="left:0;top:30px">
-            <h4>SOS 2 · MT2 · W1 SEP</h4>
-            <div>2 kỹ năng dưới kỳ vọng 6.5:</div>
-            <div class="dg"><span>W <span class="w12" style="display:inline">W1 6.5 · W2 5.5</span></span><span class="d duoi"><i>▼</i>6.0</span></div>
-            <div class="dg"><span>S</span><span class="d duoi"><i>▼</i>5.5</span></div>
+            <h4>Cách xác định SOS 2</h4>
+            <p class="kl">Có <b>2 kỹ năng dưới kỳ vọng</b> ở MT2.</p>
+            <div class="dg"><span>Kỳ vọng</span><b>6.5</b></div>
+            <div class="dg"><span>W <span class="w12" style="display:inline">W1 6.5 · W2 5.5</span></span><span><span class="d duoi"><svg class="kh" aria-hidden="true"><use href="#i-chua-dat"/></svg>6.0</span> <span class="lech" style="display:inline">thiếu 0.5</span></span></div>
+            <div class="dg"><span>S</span><span><span class="d duoi"><svg class="kh" aria-hidden="true"><use href="#i-chua-dat"/></svg>5.5</span> <span class="lech" style="display:inline">thiếu 1.0</span></span></div>
+            <a class="lk">Xem kết quả và xử lý Case ›</a>
             <div class="luat">SOS 1 = 1 kỹ năng · SOS 2 = 2 · SOS 3 = 3–4 dưới kỳ vọng. Lấy đợt gần nhất có kết quả.</div>
-            <a class="lk">Hồ sơ MT2 ›</a>
           </div></span></div>
     </div>
-    <div class="o-ss" style="min-height:300px"><span class="nhan-o">Trên dòng việc · Việc tiếp theo</span>
-      <div class="viec" style="font-size:13px"><span class="neo"><span class="vs-dich" style="display:inline-block;padding:2px 4px"><a>Ghi nhận xét W2</a><span class="phu"><span class="qh">⚠ quá hạn 2 ngày</span></span></span>
-        <div class="vs" style="left:0;top:50px">
+    <div class="o-ss" style="min-height:300px"><span class="nhan-o">Cạnh dòng việc · Việc tiếp theo</span>
+      <div class="viec" style="font-size:13px;display:flex;align-items:flex-start;gap:4px"><span><a>Ghi nhận xét W2</a><span class="phu"><span class="qh">⚠ quá hạn 2 ngày</span></span></span>
+        <span class="neo"><button class="hoi" aria-label="Giải thích việc Ghi nhận xét W2" aria-expanded="true">?</button>
+        <div class="vs" style="left:-120px;top:48px">
           <h4>Ghi nhận xét W2 · Đỗ Minh Khôi</h4>
-          <div class="dg"><span>Người làm</span><b>GVBM W2 · Cao Khánh Linh</b></div>
+          <p class="kl"><b>Cao Khánh Linh</b> cần ghi nhận xét — <b>quá hạn 2 ngày</b>.</p>
           <div class="dg"><span>Từ</span><span>Case SOS 2 · MT2 · mở 10/09</span></div>
-          <div class="dg"><span>Hạn</span><span>12/09 · <span class="qh">⚠ quá hạn 2 ngày</span></span></div>
-          <div class="luat">Case SOS có 3 ngày (tính cả ngày đầu) để ghi nhận xét / xác nhận nguyên nhân.</div>
+          <div class="dg"><span>Hạn</span><span>12/09</span></div>
           <a class="lk">Mở việc ›</a>
+          <div class="luat">Case SOS có 3 ngày (tính cả ngày đầu) để ghi nhận xét / xác nhận nguyên nhân.</div>
         </div></span></div>
     </div>
   </div>
@@ -580,26 +585,16 @@ tr.mo .ten{color:var(--dim)}
 
 <!-- =================================================================== 2 THANH LỌC -->
 <section class="sec" id="s2">
-  <h2>2 · Thanh lọc cố định + thanh trên gọn</h2>
+  <h2>2 · Thanh trên gọn + dải lọc dính</h2>
 
-  <h3 id="s2a">2a · Thanh trên: 10 → 6 nút (không tính ô Tìm)</h3>
+  <h3 id="s2a">2a · Thanh trên: Giao diện · Ngôn ngữ · Hướng dẫn vào menu tài khoản (chốt C11)</h3>
   <span class="where">mọi trang · thanh trên · vai QL (1440) · mọi vai (375)</span>
   <ul class="note">
-    <li>Trước: 4 mục · ? · Thông báo · Sáng/Tối · VI · EN · Tài khoản = <b>10</b>. Sau: 4 mục · Thông báo · Tài khoản = <b>6</b>. <b>?</b> (Hướng dẫn), <b>Giao diện</b>, <b>Ngôn ngữ</b> vào menu tài khoản — đúng như 375 đang làm.</li>
-    <li>Số đếm Công việc thôi màu cam (cam chỉ cho quá hạn). Giao diện mặc định theo máy; chỉ cần mở menu khi muốn đổi tay.</li>
+    <li>Thanh trên còn: 4 mục · Tìm · Thông báo · Tài khoản. <b>Hướng dẫn</b>, <b>Giao diện</b> (mặc định Theo máy), <b>Ngôn ngữ</b> nằm trong menu tài khoản, giống 375.</li>
+    <li>Số đếm Công việc màu xám (cam chỉ cho quá hạn).</li>
   </ul>
   <div class="row2">
-    <div><div class="cap"><b>Trước</b> — 10 nút</div>
-      <div class="win w1440">
-        <div class="app"><span class="logo"><span class="p">P</span><span><b>PISA Tracking</b><small>Bản demo nội bộ</small></span></span>
-          <nav class="nav"><a>Tổng quan</a><a class="on">Học viên &amp; Lớp</a><a>Test</a><a>Công việc <span class="dem cu">10</span></a></nav><span class="sp"></span>
-          <span class="tim"><svg class="ic"><use href="#i-kinh"/></svg>Tìm học viên, lớp…</span>
-          <button class="btn btn-sm">?</button><button class="btn btn-sm">Thông báo <span class="dem">24</span></button><button class="btn btn-sm" aria-label="Đổi giao diện"><svg class="ic"><use href="#i-tron"/></svg></button><span class="seg nho"><button aria-pressed="true">VI</button><button>EN</button></span><button class="btn btn-sm">Nguyễn Khánh Vy</button>
-        </div>
-      </div></div>
-  </div>
-  <div class="row2">
-    <div><div class="cap"><b>Sau</b> — 6 nút · menu tài khoản đang mở</div>
+    <div><div class="cap"><b>1440</b> — 4 mục · Tìm · Thông báo · Tài khoản · menu tài khoản đang mở</div>
       <div class="win w1440" style="height:430px">
         <div class="app"><span class="logo"><span class="p">P</span><span><b>PISA Tracking</b><small>Bản demo nội bộ</small></span></span>
           <nav class="nav"><a>Tổng quan</a><a class="on">Học viên &amp; Lớp</a><a>Test</a><a>Công việc <span class="dem">10</span></a></nav><span class="sp"></span>
@@ -613,7 +608,7 @@ tr.mo .ten{color:var(--dim)}
           <a class="mt lk">Hồ sơ cá nhân</a>
           <a class="mt lk">Hướng dẫn</a>
           <div class="ke"></div>
-          <div class="mt">Giao diện<span class="seg nho"><button aria-pressed="true">Tối</button><button>Sáng</button></span></div>
+          <div class="mt">Giao diện<span class="seg nho"><button aria-pressed="true">Theo máy</button><button>Sáng</button><button>Tối</button></span></div>
           <div class="mt">Ngôn ngữ<span class="seg nho"><button aria-pressed="true">VI</button><button>EN</button></span></div>
           <div class="ke"></div>
           <button class="btn btn-sm" style="width:100%">Đăng xuất</button>
@@ -621,18 +616,16 @@ tr.mo .ten{color:var(--dim)}
       </div></div>
   </div>
   <div class="row2">
-    <div><div class="cap"><b>375 trước</b> — ? · Thông báo · Tài khoản</div>
-      <div class="win w375"><div class="app"><span class="logo"><b>PISA</b></span><button class="btn-vuong" style="border:0" aria-label="Tìm"><svg class="ic"><use href="#i-kinh"/></svg></button><button class="btn-vuong" style="border:0">?</button><span class="chuong"><button class="btn-vuong" style="border:0" aria-label="Thông báo"><svg class="ic"><use href="#i-chuong"/></svg></button><span class="dem">24</span></span><span class="av">V</span></div></div></div>
-    <div><div class="cap"><b>375 sau</b> — Thông báo · Tài khoản</div>
+    <div><div class="cap"><b>375</b> — Tìm · Thông báo · Tài khoản</div>
       <div class="win w375"><div class="app"><span class="logo"><b>PISA</b></span><button class="btn-vuong" style="border:0" aria-label="Tìm"><svg class="ic"><use href="#i-kinh"/></svg></button><span class="chuong"><button class="btn-vuong" style="border:0" aria-label="Thông báo"><svg class="ic"><use href="#i-chuong"/></svg></button><span class="dem">24</span></span><span class="av">V</span></div></div></div>
   </div>
 
-  <h3 id="s2b">2b · Phương án A<span class="kn">khuyến nghị</span> — một dải dính ngay dưới tiêu đề trang, cùng chỗ mọi trang</h3>
-  <span class="where">dưới tiêu đề mọi trang: Học viên &amp; Lớp · Test · Công việc · (Tổng quan, Phân tích khi vẽ đợt sau)</span>
+  <h3 id="s2b">2b · Dải lọc dính dưới tiêu đề — cùng chỗ mọi trang (chốt C10)</h3>
+  <span class="where">dưới tiêu đề mọi trang: Học viên &amp; Lớp · Test · Công việc · Tổng quan · Phân tích</span>
   <ul class="note">
     <li>Thứ tự cố định: <b>Chi nhánh · Chương trình · Tuần</b> rồi <b>Đang lọc</b> (chip có ✕) + Bỏ lọc. Trang không dùng ô nào thì ẩn ô đó, ô còn lại không dời chỗ.</li>
-    <li>Dính khi cuộn: cuộn tới em thứ 30 vẫn thấy đang lọc gì. Giá trị Chi nhánh / Chương trình nhớ khi chuyển trang. QL một chi nhánh: ô Chi nhánh chỉ đọc.</li>
-    <li>Nút góc nhìn của trang (Tất cả · Đang SOS · Cần làm; tab Test) nằm dưới dải, như nay.</li>
+    <li>Dính khi cuộn (thử ở khung đầu mục 3): cuộn tới em thứ 30 vẫn thấy đang lọc gì. Chi nhánh / Chương trình nhớ khi chuyển trang. QL một chi nhánh: ô Chi nhánh chỉ đọc.</li>
+    <li>Nút góc nhìn của trang (Tất cả · Đang SOS · Cần làm; tab Test) nằm dưới dải.</li>
   </ul>
   <div class="row2">
     <div><div class="cap"><b>Học viên &amp; Lớp</b> · Đang SOS · lọc Đã thi</div>
@@ -692,45 +685,6 @@ tr.mo .ten{color:var(--dim)}
       </div></div>
   </div>
 
-  <h3 id="s2c">2c · Phương án B — Chi nhánh lên thanh trên; Chương trình + Tuần ở từng trang (chỗ cũ)</h3>
-  <ul class="note"><li>Chi nhánh luôn thấy (cạnh tên người). Chương trình / Tuần giữ chỗ cũ của từng trang: Học viên &amp; Lớp là ô chọn bên phải, Test là hàng nút dưới tab. Không có chỗ chung cho "Đang lọc" — bộ lọc đang bật chỉ thấy ở nút của nó, cuộn xuống là mất.</li></ul>
-  <div class="row2">
-    <div><div class="cap"><b>Học viên &amp; Lớp</b> · B</div>
-      <div class="win w1440">
-        <div class="app"><span class="logo"><span class="p">P</span><span><b>PISA Tracking</b><small>Bản demo nội bộ</small></span></span>
-          <nav class="nav"><a>Tổng quan</a><a class="on">Học viên &amp; Lớp</a><a>Test</a><a>Công việc <span class="dem">10</span></a></nav><span class="sp"></span>
-          <span class="tim"><svg class="ic"><use href="#i-kinh"/></svg>Tìm học viên, lớp…</span>
-          <span class="o"><span class="o-n">Chi nhánh</span><b>Monbay</b><svg class="ic"><use href="#i-xuong"/></svg></span>
-          <button class="btn btn-sm"><svg class="ic"><use href="#i-chuong"/></svg>Thông báo <span class="dem">24</span></button><button class="btn btn-sm">Nguyễn Khánh Vy<svg class="ic"><use href="#i-xuong"/></svg></button>
-        </div>
-        <div class="dau"><span class="tde">Học viên &amp; Lớp</span><span class="sp"></span><button class="btn btn-sm">+ Lớp mới</button><button class="btn btn-sm btn-primary">+ Học viên</button><button class="btn-vuong" aria-label="Thêm"><svg class="ic"><use href="#i-ba"/></svg></button></div>
-        <div class="xem" style="padding-top:0"><span class="o o-tim"><svg class="ic"><use href="#i-kinh"/></svg>Lọc trong danh sách này…</span></div>
-        <div class="xem" style="padding-top:0"><span class="seg"><button>Tất cả <span class="n">99</span></button><button aria-pressed="true">Đang SOS <span class="n">22</span></button><button>Cần làm <span class="n">73</span></button></span>
-          <span class="tuan"><span class="dang-loc">Tuần thi</span><button class="btn-vuong" aria-label="Tuần trước"><svg class="ic"><use href="#i-trai"/></svg></button><span class="o"><b>Toàn bộ</b></span><button class="btn-vuong" aria-label="Tuần sau"><svg class="ic"><use href="#i-phai"/></svg></button></span>
-          <button class="pill" aria-pressed="true"><i class="vdt"></i>Đã thi <span class="n">2</span></button>
-          <span class="sp"></span><span class="o"><span class="o-n">Loại lớp</span><b>Tất cả · 20</b><svg class="ic"><use href="#i-xuong"/></svg></span></div>
-      </div></div>
-  </div>
-  <div class="row2">
-    <div><div class="cap"><b>Test</b> · B</div>
-      <div class="win w1440">
-        <div class="dau"><span class="tde">Test</span></div>
-        <div class="tabs"><span class="on">Lịch Test / Chấm Test</span><span>Điểm theo lớp</span><span>Kế hoạch Test</span></div>
-        <div class="xem"><span class="tuan"><button class="btn-vuong" aria-label="Tuần trước"><svg class="ic"><use href="#i-trai"/></svg></button><span class="o"><span class="o-n">Tuần</span><b>W3 SEP</b><span style="color:var(--faint)">14/09 – 20/09</span></span><button class="btn-vuong" aria-label="Tuần sau"><svg class="ic"><use href="#i-phai"/></svg></button><button class="btn btn-sm">Tuần này</button></span>
-          <span class="seg"><button aria-pressed="true">Fast Track <span class="n">4 lớp</span></button><button>Lớp thường <span class="n">9 lớp</span></button></span><span class="sp"></span><button class="btn btn-sm">Xuất Excel</button></div>
-      </div></div>
-  </div>
-  <div class="cuon"><table class="buoc">
-    <thead><tr><th>Luồng</th><th>Hiện tại</th><th>A · dải dính</th><th>B · chi nhánh lên trên</th></tr></thead>
-    <tbody>
-      <tr><td>QL xem việc một chi nhánh ở 3 trang</td><td>chọn chi nhánh <b>3 lần</b>, 3 vị trí</td><td class="tot">1 lần, nhớ khi chuyển trang</td><td class="tot">1 lần</td></tr>
-      <tr><td>Biết đang lọc gì khi đã cuộn xuống</td><td>cuộn lên đọc từng nút</td><td class="tot">nhìn dải (0 bấm)</td><td>chi nhánh thấy; khung / tuần phải cuộn lên</td></tr>
-      <tr><td>Bỏ một bộ lọc</td><td>tìm lại nút / ô đã chọn</td><td class="tot">1 bấm ✕ trên chip</td><td>tìm lại nút / ô</td></tr>
-      <tr><td>Học chỗ đặt bộ lọc</td><td>mỗi trang một chỗ</td><td class="tot">một chỗ cho mọi trang</td><td>2 chỗ (trên cùng + từng trang)</td></tr>
-      <tr><td>Thanh trên</td><td>10 nút</td><td class="tot">6 nút</td><td>6 nút + 1 ô chi nhánh</td></tr>
-    </tbody>
-  </table></div>
-  <div class="q"><b>Khuyến nghị A</b> — một chỗ để nhìn và bỏ lọc ở mọi trang, chip đang bật luôn thấy khi cuộn; B chỉ giải bài chi nhánh, khung và tuần vẫn mỗi trang một chỗ. Giá của A: dải cao thêm ~56 px ở đầu trang (bù lại: bỏ hàng ô Lọc riêng và ô Loại lớp).</div>
 </section>
 
 <!-- =================================================================== 3 HỌC VIÊN & LỚP -->
@@ -738,20 +692,21 @@ tr.mo .ten{color:var(--dim)}
   <h2>3 · Học viên &amp; Lớp (QL) — áp hệ mới</h2>
   <span class="where">Học viên &amp; Lớp › Tất cả / Đang SOS · vai QL Nguyễn Khánh Vy · Monbay · 1440 + 375</span>
   <ul class="note">
-    <li><b>Hàng lớp có tóm tắt đúng cột</b>: số em ở cột Học viên · SOS theo bậc ở cột Kết quả · "Đã thi n" ở cột Dự kiến thi · "⚠ n quá hạn" ở cột Việc tiếp theo. Chip "bài chờ chấm", "chờ duyệt" thành xám.</li>
-    <li>Mở lớp: thêm cột <b>OVR · L · R · W · S</b> (W to như L / R / S; dưới là W1 · W2 nhỏ mờ). Ô trống = chưa có điểm (không "—"). Số dưới / bằng / trên kỳ vọng: ▼ đỏ / xanh dương / ▲ xanh lá.</li>
-    <li>"Kết quả gần nhất" chỉ còn chip + "MT · kỳ vọng" (OVR sang cột riêng, "Không đạt: S" thành chữ trong chip SOS). "Sắp tới" tách 2 dòng để không cắt chữ.</li>
-    <li>Khung rút gọn: MB FT 101 hiện 13 / 33 em (đủ mọi kiểu hàng); lớp thường hiện 5 / 14 lớp. Hàng Lý Minh Châu = panel một em đang mở bên phải (panel v3, không vẽ lại).</li>
+    <li><b>Hàng lớp có tóm tắt đúng cột</b>: số em ở cột Học viên · SOS theo bậc ở cột Kết quả · "Đã thi n" ở cột Dự kiến thi · "⚠ n quá hạn" ở cột Việc tiếp theo. Chip "bài chờ chấm", "chờ duyệt" xám.</li>
+    <li>Mở lớp FT: cột <b>OVR · L · R · W · S</b> (C13; W to như L / R / S, dưới là W1 · W2 nhỏ mờ). Số căn giữa (C06, C07); tên, việc căn trái. Ô trống = chưa có điểm. Ký hiệu C05: ✗ chưa đạt · ✓ đạt (bằng xanh dương, vượt xanh lá) · chưa đủ điểm chỉ ghi chữ / số kỹ năng (3/4).</li>
+    <li><b>?</b> cạnh chip SOS mở giải thích (1g); bấm chip / tên vẫn là mở việc / hồ sơ — hai việc tách nhau.</li>
+    <li>Khung 1440 đầu tiên cuộn được: dải lọc dính ở đầu khung khi cuộn (C10). Hàng Lý Minh Châu = panel một em đang mở bên phải (panel v3, không vẽ lại).</li>
   </ul>
 
   <div class="row2">
-    <div><div class="cap"><b>1440 · Tất cả</b> — mặc định, MB FT 101 đang mở</div>
+    <div><div class="cap"><b>1440 · Tất cả</b> — mặc định, MB FT 101 đang mở · cuộn trong khung: dải lọc dính</div>
       <div class="win w1440">
         <div class="app"><span class="logo"><span class="p">P</span><span><b>PISA Tracking</b><small>Bản demo nội bộ</small></span></span>
           <nav class="nav"><a>Tổng quan</a><a class="on">Học viên &amp; Lớp</a><a>Test</a><a>Công việc <span class="dem">10</span></a></nav><span class="sp"></span>
           <span class="tim"><svg class="ic"><use href="#i-kinh"/></svg>Tìm học viên, lớp…</span>
           <button class="btn btn-sm"><svg class="ic"><use href="#i-chuong"/></svg>Thông báo <span class="dem">24</span></button><button class="btn btn-sm">Nguyễn Khánh Vy<svg class="ic"><use href="#i-xuong"/></svg></button>
         </div>
+        <div class="cuon-doc">
         <div class="dau"><span class="tde">Học viên &amp; Lớp</span><span class="sp"></span><button class="btn btn-sm">+ Lớp mới</button><button class="btn btn-sm btn-primary">+ Học viên</button><button class="btn-vuong" aria-label="Thêm"><svg class="ic"><use href="#i-ba"/></svg></button></div>
         <div class="dai dinh">
           <span class="o"><span class="o-n">Chi nhánh</span><b>Monbay</b><svg class="ic"><use href="#i-xuong"/></svg></span>
@@ -764,7 +719,7 @@ tr.mo .ten{color:var(--dim)}
         <div class="noi">
           <div class="nhan-bang">Fast Track · 6 lớp</div>
           <div class="kb"><table class="bang">
-            <colgroup><col style="width:244px"><col style="width:166px"><col style="width:56px"><col style="width:52px"><col style="width:52px"><col style="width:64px"><col style="width:52px"><col style="width:66px"><col style="width:184px"><col style="width:136px"><col style="width:54px"><col><col style="width:44px"></colgroup>
+            <colgroup><col style="width:236px"><col style="width:188px"><col style="width:56px"><col style="width:52px"><col style="width:52px"><col style="width:64px"><col style="width:52px"><col style="width:62px"><col style="width:170px"><col style="width:136px"><col style="width:54px"><col><col style="width:44px"></colgroup>
             <thead><tr><th>Học viên</th><th>Kết quả gần nhất</th><th class="n">OVR</th><th class="n">L</th><th class="n">R</th><th class="n">W</th><th class="n">S</th><th class="n">Target</th><th>Dự kiến thi</th><th>Sắp tới</th><th class="n">Case</th><th>Việc tiếp theo</th><th></th></tr></thead>
             <tbody>
               <tr class="lop"><td><div class="lop-ten"><svg class="ic"><use href="#i-xuong"/></svg><span><b>MB FT 101</b><span class="hv">33 HV</span><small>LT1 · GVCN Trần Ngọc Hà</small></span></div></td>
@@ -774,8 +729,8 @@ tr.mo .ten{color:var(--dim)}
                 <td><button class="btn-vuong nho" aria-label="Thao tác lớp"><svg class="ic"><use href="#i-ba"/></svg></button></td></tr>
 
               <tr class="hv"><td><a class="ten">Bùi Thảo Vy</a><span class="thieu">Thiếu 3</span></td>
-                <td><span class="sos s1">SOS 1<span class="k">&nbsp;· S</span></span><span class="phu">MT3 · kỳ vọng 7.0</span></td>
-                <td class="n"><span class="d duoi"><i>▼</i>6.5</span></td><td class="n"><span class="d bang">7.0</span></td><td class="n"><span class="d bang">7.0</span></td><td class="n"><span class="d bang">7.0</span><span class="w12">7.0 · 7.0</span></td><td class="n"><span class="d duoi"><i>▼</i>5.0</span></td>
+                <td><span class="sos s1">SOS 1<span class="k">&nbsp;· S</span></span><button class="hoi" aria-label="Giải thích mức SOS">?</button><span class="phu">MT3 · kỳ vọng 7.0</span></td>
+                <td class="n"><span class="d duoi" title="Chưa đạt kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-chua-dat"/></svg>6.5</span></td><td class="n"><span class="d bang" title="Đạt · bằng kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>7.0</span></td><td class="n"><span class="d bang" title="Đạt · bằng kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>7.0</span></td><td class="n"><span class="d bang" title="Đạt · bằng kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>7.0</span><span class="w12">7.0 · 7.0</span></td><td class="n"><span class="d duoi" title="Chưa đạt kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-chua-dat"/></svg>5.0</span></td>
                 <td class="n">7.0</td><td></td><td>Thi thật<span class="phu">chưa có ngày</span></td><td class="n">1</td>
                 <td class="viec"><a>Xác nhận PA S</a><span class="phu">hạn 18/09</span></td>
                 <td><button class="btn-vuong nho" aria-label="Thao tác"><svg class="ic"><use href="#i-ba"/></svg></button></td></tr>
@@ -788,71 +743,71 @@ tr.mo .ten{color:var(--dim)}
                 <td><button class="btn-vuong nho" aria-label="Thao tác"><svg class="ic"><use href="#i-ba"/></svg></button></td></tr>
 
               <tr class="hv"><td><a class="ten">Đỗ Minh Khôi</a><span class="thieu">Thiếu 2</span></td>
-                <td><span class="sos s2">SOS 2<span class="k">&nbsp;· W, S</span></span><span class="phu">MT2 · kỳ vọng 6.5</span></td>
-                <td class="n"><span class="d duoi"><i>▼</i>6.0</span></td><td class="n"><span class="d bang">6.5</span></td><td class="n"><span class="d bang">6.5</span></td><td class="n"><span class="d duoi"><i>▼</i>6.0</span><span class="w12">6.5 · 5.5</span></td><td class="n"><span class="d duoi"><i>▼</i>5.5</span></td>
+                <td><span class="sos s2">SOS 2<span class="k">&nbsp;· W, S</span></span><button class="hoi" aria-label="Giải thích mức SOS">?</button><span class="phu">MT2 · kỳ vọng 6.5</span></td>
+                <td class="n"><span class="d duoi" title="Chưa đạt kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-chua-dat"/></svg>6.0</span></td><td class="n"><span class="d bang" title="Đạt · bằng kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>6.5</span></td><td class="n"><span class="d bang" title="Đạt · bằng kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>6.5</span></td><td class="n"><span class="d duoi" title="Chưa đạt kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-chua-dat"/></svg>6.0</span><span class="w12">6.5 · 5.5</span></td><td class="n"><span class="d duoi" title="Chưa đạt kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-chua-dat"/></svg>5.5</span></td>
                 <td class="n">7.0</td><td></td><td>MT3 · W1 OCT<span class="phu">kỳ vọng 7.0</span></td><td class="n">2</td>
                 <td class="viec"><a>Ghi nhận xét W2</a><span class="phu"><span class="qh">⚠ quá hạn 2 ngày</span> · +1 việc</span></td>
                 <td><button class="btn-vuong nho" aria-label="Thao tác"><svg class="ic"><use href="#i-ba"/></svg></button></td></tr>
 
               <tr class="hv"><td><a class="ten">Hoàng Bảo Ngọc</a><span class="thieu">Thiếu 2</span></td>
-                <td><span class="sos s1">SOS 1<span class="k">&nbsp;· L</span></span><span class="phu">MT1 · kỳ vọng 6.0</span></td>
-                <td class="n"><span class="d thieu-kn">3/4</span></td><td class="n"><span class="d duoi"><i>▼</i>5.5</span></td><td class="n"><span class="d bang">6.0</span></td><td class="n"><span class="d bang">6.0</span><span class="w12">6.0 · 6.0</span></td><td class="n"></td>
+                <td><span class="sos s1">SOS 1<span class="k">&nbsp;· L</span></span><button class="hoi" aria-label="Giải thích mức SOS">?</button><span class="phu">MT1 · kỳ vọng 6.0</span></td>
+                <td class="n"><span class="d thieu-kn" title="Chưa đủ điểm để đánh giá">3/4</span></td><td class="n"><span class="d duoi" title="Chưa đạt kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-chua-dat"/></svg>5.5</span></td><td class="n"><span class="d bang" title="Đạt · bằng kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>6.0</span></td><td class="n"><span class="d bang" title="Đạt · bằng kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>6.0</span><span class="w12">6.0 · 6.0</span></td><td class="n"></td>
                 <td class="n">7.0</td><td></td><td>MT2 · W4 SEP<span class="phu">kỳ vọng 6.5</span></td><td class="n">1</td>
                 <td class="viec"><a>Kết quả cuối L · kỳ W3–W4 SEP</a><span class="phu">hạn hết T3 29/09</span></td>
                 <td><button class="btn-vuong nho" aria-label="Thao tác"><svg class="ic"><use href="#i-ba"/></svg></button></td></tr>
 
               <tr class="hv da-thi"><td><a class="ten">Lê Minh Khang</a><span class="thieu">Thiếu 1</span></td>
-                <td><span class="chip">Đạt kỳ vọng</span><span class="phu">MT3 · kỳ vọng 6.5</span></td>
-                <td class="n"><span class="d bang">6.5</span></td><td class="n"><span class="d bang">6.5</span></td><td class="n"><span class="d ok"><i>▲</i>7.0</span></td><td class="n"><span class="d bang">6.5</span><span class="w12">6.0 · 7.0</span></td><td class="n"><span class="d bang">6.5</span></td>
+                <td><span class="chip"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>Đạt</span><span class="phu">MT3 · kỳ vọng 6.5</span></td>
+                <td class="n"><span class="d bang" title="Đạt · bằng kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>6.5</span></td><td class="n"><span class="d bang" title="Đạt · bằng kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>6.5</span></td><td class="n"><span class="d ok" title="Vượt kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>7.0</span></td><td class="n"><span class="d bang" title="Đạt · bằng kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>6.5</span><span class="w12">6.0 · 7.0</span></td><td class="n"><span class="d bang" title="Đạt · bằng kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>6.5</span></td>
                 <td class="n">6.5</td><td><span class="chip-dt">Đã thi · chờ KQ</span><span class="phu">12/09 · hạn KQ 19/09</span></td><td></td><td class="n"></td>
                 <td class="viec"><a>Nhập kết quả thi thật</a><span class="phu">hạn 19/09</span></td>
                 <td><button class="btn-vuong nho" aria-label="Thao tác"><svg class="ic"><use href="#i-ba"/></svg></button></td></tr>
 
               <tr class="hv chon"><td><a class="ten">Lý Minh Châu</a><span class="thieu">Thiếu 2</span></td>
-                <td><span class="sos s1">SOS 1<span class="k">&nbsp;· R</span></span><span class="phu">MT2 · kỳ vọng 6.5</span></td>
-                <td class="n"><span class="d thieu-kn">3/4</span></td><td class="n"><span class="d bang">6.5</span></td><td class="n"><span class="d duoi"><i>▼</i>5.5</span></td><td class="n"><span class="d bang">6.5</span><span class="w12">6.5 · 6.5</span></td><td class="n"></td>
+                <td><span class="sos s1">SOS 1<span class="k">&nbsp;· R</span></span><button class="hoi" aria-label="Giải thích mức SOS">?</button><span class="phu">MT2 · kỳ vọng 6.5</span></td>
+                <td class="n"><span class="d thieu-kn" title="Chưa đủ điểm để đánh giá">3/4</span></td><td class="n"><span class="d bang" title="Đạt · bằng kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>6.5</span></td><td class="n"><span class="d duoi" title="Chưa đạt kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-chua-dat"/></svg>5.5</span></td><td class="n"><span class="d bang" title="Đạt · bằng kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>6.5</span><span class="w12">6.5 · 6.5</span></td><td class="n"></td>
                 <td class="n">7.0</td><td></td><td>MT3 · W1 OCT<span class="phu">kỳ vọng 7.0</span></td><td class="n">1</td>
                 <td class="viec"><a>Kết quả PA R · kỳ W4 AUG – W1 SEP</a><span class="phu"><span class="qh">⚠ quá hạn 6 ngày</span></span></td>
                 <td><button class="btn-vuong nho" aria-label="Thao tác"><svg class="ic"><use href="#i-ba"/></svg></button></td></tr>
 
               <tr class="hv"><td><a class="ten">Nguyễn Minh An</a><span class="thieu">Thiếu 1</span></td>
-                <td><span class="chip">Đạt kỳ vọng</span><span class="phu">MT2 · kỳ vọng 6.0</span></td>
-                <td class="n"><span class="d bang">6.0</span></td><td class="n"><span class="d bang">6.0</span></td><td class="n"><span class="d bang">6.0</span></td><td class="n"><span class="d bang">6.0</span><span class="w12">5.5 · 6.0</span></td><td class="n"><span class="d bang">6.0</span></td>
+                <td><span class="chip"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>Đạt</span><span class="phu">MT2 · kỳ vọng 6.0</span></td>
+                <td class="n"><span class="d bang" title="Đạt · bằng kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>6.0</span></td><td class="n"><span class="d bang" title="Đạt · bằng kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>6.0</span></td><td class="n"><span class="d bang" title="Đạt · bằng kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>6.0</span></td><td class="n"><span class="d bang" title="Đạt · bằng kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>6.0</span><span class="w12">5.5 · 6.0</span></td><td class="n"><span class="d bang" title="Đạt · bằng kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>6.0</span></td>
                 <td class="n">6.5</td><td>W2 FEB 2027</td><td>MT3 · W3 SEP<span class="phu">kỳ vọng 6.5</span></td><td class="n">1</td>
                 <td class="viec"><a>Kết quả PA R · kỳ W2–W3 SEP</a><span class="phu">hạn hết T3 22/09</span></td>
                 <td><button class="btn-vuong nho" aria-label="Thao tác"><svg class="ic"><use href="#i-ba"/></svg></button></td></tr>
 
               <tr class="hv"><td><a class="ten">Phạm Bảo Ngọc</a></td>
-                <td><span class="sos s1 tam">SOS 1 tạm thời<span class="k">&nbsp;· L</span></span><span class="phu">MT3 · kỳ vọng 7.0</span></td>
-                <td class="n"><span class="d thieu-kn">2/4</span></td><td class="n"><span class="d duoi"><i>▼</i>6.5</span></td><td class="n"><span class="d bang">7.0</span></td><td class="n"></td><td class="n"></td>
+                <td><span class="sos s1 tam">SOS 1 tạm thời<span class="k">&nbsp;· L</span></span><button class="hoi" aria-label="Giải thích mức SOS">?</button><span class="phu">MT3 · kỳ vọng 7.0</span></td>
+                <td class="n"><span class="d thieu-kn" title="Chưa đủ điểm để đánh giá">2/4</span></td><td class="n"><span class="d duoi" title="Chưa đạt kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-chua-dat"/></svg>6.5</span></td><td class="n"><span class="d bang" title="Đạt · bằng kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>7.0</span></td><td class="n"></td><td class="n"></td>
                 <td class="n">6.5</td><td>MAR 2027</td><td>MT3 · W3 SEP<span class="phu">kỳ vọng 7.0</span></td><td class="n">1</td>
                 <td class="viec"><a>Xử lý vi phạm</a><span class="phu"><span class="qh">⚠ quá hạn 1 ngày</span></span></td>
                 <td><button class="btn-vuong nho" aria-label="Thao tác"><svg class="ic"><use href="#i-ba"/></svg></button></td></tr>
 
               <tr class="hv"><td><a class="ten">Tạ Minh Quân</a><span class="thieu">Thiếu 3</span></td>
-                <td><span class="chip">Đạt kỳ vọng</span><span class="phu">MT3 · kỳ vọng 6.5</span></td>
-                <td class="n"><span class="d bang">6.5</span></td><td class="n"><span class="d bang">6.5</span></td><td class="n"><span class="d ok"><i>▲</i>7.0</span></td><td class="n"><span class="d bang">6.5</span><span class="w12">6.5 · 6.5</span></td><td class="n"><span class="d bang">6.5</span></td>
+                <td><span class="chip"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>Đạt</span><span class="phu">MT3 · kỳ vọng 6.5</span></td>
+                <td class="n"><span class="d bang" title="Đạt · bằng kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>6.5</span></td><td class="n"><span class="d bang" title="Đạt · bằng kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>6.5</span></td><td class="n"><span class="d ok" title="Vượt kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>7.0</span></td><td class="n"><span class="d bang" title="Đạt · bằng kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>6.5</span><span class="w12">6.5 · 6.5</span></td><td class="n"><span class="d bang" title="Đạt · bằng kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>6.5</span></td>
                 <td class="n">6.5</td><td></td><td>Thi thật<span class="phu">chưa có ngày</span></td><td class="n"></td>
                 <td class="viec"></td>
                 <td><button class="btn-vuong nho" aria-label="Thao tác"><svg class="ic"><use href="#i-ba"/></svg></button></td></tr>
 
               <tr class="hv da-thi"><td><a class="ten">Trần Hữu Phúc</a><span class="thieu">Thiếu 2</span></td>
                 <td>Thi thật<span class="phu">05/09 · Target 6.5</span></td>
-                <td class="n"><span class="d bang">6.5</span></td><td class="n"><span class="d ok"><i>▲</i>7.0</span></td><td class="n"><span class="d ok"><i>▲</i>7.0</span></td><td class="n"><span class="d duoi"><i>▼</i>6.0</span><span class="w12">6.0 · 6.0</span></td><td class="n"><span class="d bang">6.5</span></td>
+                <td class="n"><span class="d bang" title="Đạt · bằng kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>6.5</span></td><td class="n"><span class="d ok" title="Vượt kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>7.0</span></td><td class="n"><span class="d ok" title="Vượt kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>7.0</span></td><td class="n"><span class="d duoi" title="Chưa đạt kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-chua-dat"/></svg>6.0</span><span class="w12">6.0 · 6.0</span></td><td class="n"><span class="d bang" title="Đạt · bằng kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>6.5</span></td>
                 <td class="n">6.5</td><td><span class="chip-dt">Có KQ · chờ bước tiếp</span><span class="phu">Thi 05/09</span></td><td></td><td class="n"></td>
                 <td class="viec"><a>Chọn bước tiếp</a></td>
                 <td><button class="btn-vuong nho" aria-label="Thao tác"><svg class="ic"><use href="#i-ba"/></svg></button></td></tr>
 
               <tr class="hv"><td><a class="ten">Trịnh Bảo Ngọc</a><span class="thieu">Thiếu 2</span></td>
-                <td><span class="sos s2">SOS 2<span class="k">&nbsp;· R, W</span></span><span class="phu">MT1 · kỳ vọng 5.5</span></td>
-                <td class="n"><span class="d duoi"><i>▼</i>5.0</span></td><td class="n"><span class="d bang">5.5</span></td><td class="n"><span class="d duoi"><i>▼</i>4.5</span></td><td class="n"><span class="d duoi"><i>▼</i>5.0</span><span class="w12">5.5 · 5.0</span></td><td class="n"><span class="d bang">5.5</span></td>
+                <td><span class="sos s2">SOS 2<span class="k">&nbsp;· R, W</span></span><button class="hoi" aria-label="Giải thích mức SOS">?</button><span class="phu">MT1 · kỳ vọng 5.5</span></td>
+                <td class="n"><span class="d duoi" title="Chưa đạt kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-chua-dat"/></svg>5.0</span></td><td class="n"><span class="d bang" title="Đạt · bằng kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>5.5</span></td><td class="n"><span class="d duoi" title="Chưa đạt kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-chua-dat"/></svg>4.5</span></td><td class="n"><span class="d duoi" title="Chưa đạt kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-chua-dat"/></svg>5.0</span><span class="w12">5.5 · 5.0</span></td><td class="n"><span class="d bang" title="Đạt · bằng kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>5.5</span></td>
                 <td class="n">6.5</td><td></td><td>MT2 · W2 OCT<span class="phu">kỳ vọng 6.0</span></td><td class="n">4</td>
                 <td class="viec"><a>Ghi nhận xét W2</a><span class="phu">hạn 18/09 · +2 việc</span></td>
                 <td><button class="btn-vuong nho" aria-label="Thao tác"><svg class="ic"><use href="#i-ba"/></svg></button></td></tr>
 
               <tr class="hv"><td><a class="ten">Vũ Ngọc Lan</a><span class="thieu">Thiếu 2</span></td>
-                <td><span class="sos s3">SOS 3<span class="k">&nbsp;· L, R, S</span></span><span class="phu">MT1 · kỳ vọng 6.0</span></td>
-                <td class="n"><span class="d duoi"><i>▼</i>5.5</span></td><td class="n"><span class="d duoi"><i>▼</i>5.5</span></td><td class="n"><span class="d duoi"><i>▼</i>5.5</span></td><td class="n"><span class="d bang">6.0</span><span class="w12">6.0 · 6.0</span></td><td class="n"><span class="d duoi"><i>▼</i>5.0</span></td>
+                <td><span class="sos s3">SOS 3<span class="k">&nbsp;· L, R, S</span></span><button class="hoi" aria-label="Giải thích mức SOS">?</button><span class="phu">MT1 · kỳ vọng 6.0</span></td>
+                <td class="n"><span class="d duoi" title="Chưa đạt kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-chua-dat"/></svg>5.5</span></td><td class="n"><span class="d duoi" title="Chưa đạt kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-chua-dat"/></svg>5.5</span></td><td class="n"><span class="d duoi" title="Chưa đạt kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-chua-dat"/></svg>5.5</span></td><td class="n"><span class="d bang" title="Đạt · bằng kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>6.0</span><span class="w12">6.0 · 6.0</span></td><td class="n"><span class="d duoi" title="Chưa đạt kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-chua-dat"/></svg>5.0</span></td>
                 <td class="n">7.0</td><td></td><td>MT2 · W2 OCT<span class="phu">kỳ vọng 6.5</span></td><td class="n">2</td>
                 <td class="viec"><a>Xác nhận PA L</a><span class="phu">hạn 16/09 · +1 việc</span></td>
                 <td><button class="btn-vuong nho" aria-label="Thao tác"><svg class="ic"><use href="#i-ba"/></svg></button></td></tr>
@@ -885,6 +840,7 @@ tr.mo .ten{color:var(--dim)}
               <tr class="lop dong"><td colspan="2"><div class="lop-ten"><svg class="ic"><use href="#i-phai"/></svg><span><b>MB BE 04</b><span class="hv">2 HV</span><small>Beginner · GVCN Lê Minh Khoa</small></span></div></td><td></td><td></td><td></td><td class="n"></td><td><div class="tom"><span class="qh">⚠ 1 quá hạn</span><span class="chip">2 HV cần xếp lớp tiếp</span></div></td><td><button class="btn-vuong nho" aria-label="Thao tác lớp"><svg class="ic"><use href="#i-ba"/></svg></button></td></tr>
             </tbody></table></div>
         </div>
+        </div>
       </div></div>
   </div>
 
@@ -908,11 +864,11 @@ tr.mo .ten{color:var(--dim)}
             <tbody>
               <tr class="lop"><td><div class="lop-ten"><svg class="ic"><use href="#i-xuong"/></svg><span><b>MB FT 101</b><small>7 em · 7 lượt SOS</small></span></div></td><td></td>
                 <td colspan="2"><div class="tom"><span class="tk"><span class="sos s1">SOS 1</span><b>4</b></span><span class="tk"><span class="sos s2">SOS 2</span><b>2</b></span><span class="tk"><span class="sos s3">SOS 3</span><b>1</b></span></div></td><td></td><td></td><td><span class="chip">5 chờ duyệt</span></td><td><span class="qh">⚠ 2 quá hạn</span></td><td></td></tr>
-              <tr class="hv"><td><a class="ten">Bùi Thảo Vy</a></td><td>MT3 · W2 SEP</td><td><span class="sos s1">SOS 1<span class="k">&nbsp;· S</span></span></td><td><b>S</b> Trôi chảy / mạch lạc</td><td><b>S</b> Tutor · Phạm Thu Trang</td><td><b>S</b> Chưa có kết quả</td><td><span class="chip">Chưa chốt PA</span></td><td class="viec"><a>Xác nhận PA Tutor</a><span class="phu">hạn 18/09</span></td><td><button class="btn btn-sm">Mở</button></td></tr>
-              <tr class="hv"><td><a class="ten">Lý Minh Châu</a></td><td>MT2 · W2 SEP</td><td><span class="sos s1">SOS 1<span class="k">&nbsp;· R</span></span></td><td><b>R</b> Từ vựng / ngữ pháp</td><td><b>R</b> Tự học Reading: hai bài / tuần</td><td><b>R</b> Chưa có kết quả</td><td><span class="chip">Đang xử lý</span></td><td class="viec"><a>Kết quả PA Tự học Reading</a><span class="phu"><span class="qh">⚠ quá hạn 6 ngày</span></span></td><td><button class="btn btn-sm">Mở</button></td></tr>
-              <tr class="hv"><td><a class="ten">Đỗ Minh Khôi</a></td><td>MT2 · W1 SEP</td><td><span class="sos s2">SOS 2<span class="k">&nbsp;· W, S</span></span></td><td><b>W2</b> Chờ ghi nhận xét<span class="phu" style="color:var(--c2);font-size:13px"><b>S</b> Trôi chảy / mạch lạc</span></td><td><b>W2</b> Tự học<span class="phu" style="color:var(--c2);font-size:13px"><b>S</b> Tự học Speaking: ghi âm</span></td><td><b>W2</b> Chưa có kết quả<span class="phu" style="color:var(--c2);font-size:13px"><b>S</b> Chưa có kết quả</span></td><td><span class="chip">Chưa chốt PA</span></td><td class="viec"><a>Ghi nhận xét</a><span class="phu"><span class="qh">⚠ quá hạn 2 ngày</span> · +1 việc</span></td><td><button class="btn btn-sm">Mở</button></td></tr>
-              <tr class="hv"><td><a class="ten">Trịnh Bảo Ngọc</a></td><td>MT1 · W4 AUG</td><td><span class="sos s2">SOS 2<span class="k">&nbsp;· R, W</span></span></td><td><b>W2</b> Chờ ghi nhận xét<span class="phu" style="color:var(--c2);font-size:13px"><b>R</b> Chờ ghi nhận xét</span></td><td><b>W2</b> Tự học<span class="phu" style="color:var(--c2);font-size:13px"><b>R</b> Tự học</span></td><td><b>W2</b> Chưa có kết quả<span class="phu" style="color:var(--c2);font-size:13px"><b>R</b> Chưa có kết quả</span></td><td><span class="chip">Chưa chốt PA</span></td><td class="viec"><a>Ghi nhận xét</a><span class="phu">hạn 18/09 · +2 việc</span></td><td><button class="btn btn-sm">Mở</button></td></tr>
-              <tr class="hv"><td><a class="ten">Vũ Ngọc Lan</a></td><td>MT1 · W4 AUG</td><td><span class="sos s3">SOS 3<span class="k">&nbsp;· L, R, S</span></span></td><td><b>L</b> Từ vựng / ngữ pháp<span class="phu" style="color:var(--c2);font-size:13px"><b>R</b> Từ vựng / ngữ pháp</span><span class="phu" style="color:var(--c2);font-size:13px"><b>S</b> Trôi chảy / mạch lạc</span></td><td><b>L</b> Tutor · Trần Ngọc Hà<span class="phu" style="color:var(--c2);font-size:13px"><b>R</b> Tutor · Trần Ngọc Hà</span><span class="phu" style="color:var(--faint);font-size:13px"><b>S</b> Chưa có PA</span></td><td><b>L</b> Chưa có kết quả<span class="phu" style="color:var(--c2);font-size:13px"><b>R</b> Chưa có kết quả</span><span class="phu" style="color:var(--c2);font-size:13px"><b>S</b> Xong</span></td><td><span class="chip">Chưa chốt PA</span></td><td class="viec"><a>Xác nhận PA Tutor</a><span class="phu">hạn 16/09 · +1 việc</span></td><td><button class="btn btn-sm">Mở</button></td></tr>
+              <tr class="hv"><td><a class="ten">Bùi Thảo Vy</a></td><td>MT3 · W2 SEP</td><td><span class="sos s1">SOS 1<span class="k">&nbsp;· S</span></span><button class="hoi" aria-label="Giải thích mức SOS">?</button></td><td><b>S</b> Trôi chảy / mạch lạc</td><td><b>S</b> Tutor · Phạm Thu Trang</td><td><b>S</b> Chưa có kết quả</td><td><span class="chip">Chưa chốt PA</span></td><td class="viec"><a>Xác nhận PA Tutor</a><span class="phu">hạn 18/09</span></td><td><button class="btn btn-sm">Mở</button></td></tr>
+              <tr class="hv"><td><a class="ten">Lý Minh Châu</a></td><td>MT2 · W2 SEP</td><td><span class="sos s1">SOS 1<span class="k">&nbsp;· R</span></span><button class="hoi" aria-label="Giải thích mức SOS">?</button></td><td><b>R</b> Từ vựng / ngữ pháp</td><td><b>R</b> Tự học Reading: hai bài / tuần</td><td><b>R</b> Chưa có kết quả</td><td><span class="chip">Đang xử lý</span></td><td class="viec"><a>Kết quả PA Tự học Reading</a><span class="phu"><span class="qh">⚠ quá hạn 6 ngày</span></span></td><td><button class="btn btn-sm">Mở</button></td></tr>
+              <tr class="hv"><td><a class="ten">Đỗ Minh Khôi</a></td><td>MT2 · W1 SEP</td><td><span class="sos s2">SOS 2<span class="k">&nbsp;· W, S</span></span><button class="hoi" aria-label="Giải thích mức SOS">?</button></td><td><b>W2</b> Chờ ghi nhận xét<span class="phu" style="color:var(--c2);font-size:13px"><b>S</b> Trôi chảy / mạch lạc</span></td><td><b>W2</b> Tự học<span class="phu" style="color:var(--c2);font-size:13px"><b>S</b> Tự học Speaking: ghi âm</span></td><td><b>W2</b> Chưa có kết quả<span class="phu" style="color:var(--c2);font-size:13px"><b>S</b> Chưa có kết quả</span></td><td><span class="chip">Chưa chốt PA</span></td><td class="viec"><a>Ghi nhận xét</a><span class="phu"><span class="qh">⚠ quá hạn 2 ngày</span> · +1 việc</span></td><td><button class="btn btn-sm">Mở</button></td></tr>
+              <tr class="hv"><td><a class="ten">Trịnh Bảo Ngọc</a></td><td>MT1 · W4 AUG</td><td><span class="sos s2">SOS 2<span class="k">&nbsp;· R, W</span></span><button class="hoi" aria-label="Giải thích mức SOS">?</button></td><td><b>W2</b> Chờ ghi nhận xét<span class="phu" style="color:var(--c2);font-size:13px"><b>R</b> Chờ ghi nhận xét</span></td><td><b>W2</b> Tự học<span class="phu" style="color:var(--c2);font-size:13px"><b>R</b> Tự học</span></td><td><b>W2</b> Chưa có kết quả<span class="phu" style="color:var(--c2);font-size:13px"><b>R</b> Chưa có kết quả</span></td><td><span class="chip">Chưa chốt PA</span></td><td class="viec"><a>Ghi nhận xét</a><span class="phu">hạn 18/09 · +2 việc</span></td><td><button class="btn btn-sm">Mở</button></td></tr>
+              <tr class="hv"><td><a class="ten">Vũ Ngọc Lan</a></td><td>MT1 · W4 AUG</td><td><span class="sos s3">SOS 3<span class="k">&nbsp;· L, R, S</span></span><button class="hoi" aria-label="Giải thích mức SOS">?</button></td><td><b>L</b> Từ vựng / ngữ pháp<span class="phu" style="color:var(--c2);font-size:13px"><b>R</b> Từ vựng / ngữ pháp</span><span class="phu" style="color:var(--c2);font-size:13px"><b>S</b> Trôi chảy / mạch lạc</span></td><td><b>L</b> Tutor · Trần Ngọc Hà<span class="phu" style="color:var(--c2);font-size:13px"><b>R</b> Tutor · Trần Ngọc Hà</span><span class="phu" style="color:var(--faint);font-size:13px"><b>S</b> Trống PA</span></td><td><b>L</b> Chưa có kết quả<span class="phu" style="color:var(--c2);font-size:13px"><b>R</b> Chưa có kết quả</span><span class="phu" style="color:var(--c2);font-size:13px"><b>S</b> Xong</span></td><td><span class="chip">Chưa chốt PA</span></td><td class="viec"><a>Xác nhận PA Tutor</a><span class="phu">hạn 16/09 · +1 việc</span></td><td><button class="btn btn-sm">Mở</button></td></tr>
               <tr class="lop dong"><td><div class="lop-ten"><svg class="ic"><use href="#i-phai"/></svg><span><b>MB FT 105</b><small>1 em · 1 lượt SOS</small></span></div></td><td></td><td colspan="2"><div class="tom"><span class="tk"><span class="sos s2">SOS 2</span><b>1</b></span></div></td><td></td><td></td><td><span class="chip">1 chờ duyệt</span></td><td></td><td></td></tr>
               <tr class="lop dong"><td><div class="lop-ten"><svg class="ic"><use href="#i-phai"/></svg><span><b>MB FOU 12</b><small>3 em · 3 lượt SOS</small></span></div></td><td></td><td colspan="2"><div class="tom"><span class="tk"><span class="sos s1">SOS 1</span><b>1</b></span><span class="tk"><span class="sos s3">SOS 3</span><b>2</b></span></div></td><td></td><td></td><td><span class="chip">2 chờ duyệt</span></td><td><span class="qh">⚠ 1 quá hạn</span></td><td></td></tr>
             </tbody></table></div>
@@ -937,18 +893,18 @@ tr.mo .ten{color:var(--dim)}
         <div class="dang-xem"><b>2</b> học viên · <b>1</b> lớp</div>
         <div class="noi">
           <div class="kb"><table class="bang">
-            <colgroup><col style="width:244px"><col style="width:166px"><col style="width:56px"><col style="width:52px"><col style="width:52px"><col style="width:64px"><col style="width:52px"><col style="width:66px"><col style="width:184px"><col style="width:136px"><col style="width:54px"><col><col style="width:44px"></colgroup>
+            <colgroup><col style="width:236px"><col style="width:188px"><col style="width:56px"><col style="width:52px"><col style="width:52px"><col style="width:64px"><col style="width:52px"><col style="width:62px"><col style="width:170px"><col style="width:136px"><col style="width:54px"><col><col style="width:44px"></colgroup>
             <thead><tr><th>Học viên</th><th>Kết quả gần nhất</th><th class="n">OVR</th><th class="n">L</th><th class="n">R</th><th class="n">W</th><th class="n">S</th><th class="n">Target</th><th>Dự kiến thi</th><th>Sắp tới</th><th class="n">Case</th><th>Việc tiếp theo</th><th></th></tr></thead>
             <tbody>
               <tr class="lop"><td><div class="lop-ten"><svg class="ic"><use href="#i-xuong"/></svg><span><b>MB FT 101</b><span class="hv">2 / 33 HV</span><small>LT1 · GVCN Trần Ngọc Hà</small></span></div></td><td colspan="4"></td><td></td><td></td><td></td><td><span class="chip-dt">Đã thi · 2</span></td><td></td><td class="n"></td><td></td><td></td></tr>
               <tr class="hv da-thi"><td><a class="ten">Lê Minh Khang</a><span class="thieu">Thiếu 1</span></td>
-                <td><span class="chip">Đạt kỳ vọng</span><span class="phu">MT3 · kỳ vọng 6.5</span></td>
-                <td class="n"><span class="d bang">6.5</span></td><td class="n"><span class="d bang">6.5</span></td><td class="n"><span class="d ok"><i>▲</i>7.0</span></td><td class="n"><span class="d bang">6.5</span><span class="w12">6.0 · 7.0</span></td><td class="n"><span class="d bang">6.5</span></td>
+                <td><span class="chip"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>Đạt</span><span class="phu">MT3 · kỳ vọng 6.5</span></td>
+                <td class="n"><span class="d bang" title="Đạt · bằng kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>6.5</span></td><td class="n"><span class="d bang" title="Đạt · bằng kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>6.5</span></td><td class="n"><span class="d ok" title="Vượt kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>7.0</span></td><td class="n"><span class="d bang" title="Đạt · bằng kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>6.5</span><span class="w12">6.0 · 7.0</span></td><td class="n"><span class="d bang" title="Đạt · bằng kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>6.5</span></td>
                 <td class="n">6.5</td><td><span class="chip-dt">Đã thi · chờ KQ</span><span class="phu">12/09 · hạn KQ 19/09</span></td><td></td><td class="n"></td>
                 <td class="viec"><a>Nhập kết quả thi thật</a><span class="phu">hạn 19/09</span></td><td><button class="btn-vuong nho" aria-label="Thao tác"><svg class="ic"><use href="#i-ba"/></svg></button></td></tr>
               <tr class="hv da-thi"><td><a class="ten">Trần Hữu Phúc</a><span class="thieu">Thiếu 2</span></td>
                 <td>Thi thật<span class="phu">05/09 · Target 6.5</span></td>
-                <td class="n"><span class="d bang">6.5</span></td><td class="n"><span class="d ok"><i>▲</i>7.0</span></td><td class="n"><span class="d ok"><i>▲</i>7.0</span></td><td class="n"><span class="d duoi"><i>▼</i>6.0</span><span class="w12">6.0 · 6.0</span></td><td class="n"><span class="d bang">6.5</span></td>
+                <td class="n"><span class="d bang" title="Đạt · bằng kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>6.5</span></td><td class="n"><span class="d ok" title="Vượt kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>7.0</span></td><td class="n"><span class="d ok" title="Vượt kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>7.0</span></td><td class="n"><span class="d duoi" title="Chưa đạt kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-chua-dat"/></svg>6.0</span><span class="w12">6.0 · 6.0</span></td><td class="n"><span class="d bang" title="Đạt · bằng kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>6.5</span></td>
                 <td class="n">6.5</td><td><span class="chip-dt">Có KQ · chờ bước tiếp</span><span class="phu">Thi 05/09</span></td><td></td><td class="n"></td>
                 <td class="viec"><a>Chọn bước tiếp</a></td><td><button class="btn-vuong nho" aria-label="Thao tác"><svg class="ic"><use href="#i-ba"/></svg></button></td></tr>
             </tbody></table></div>
@@ -974,20 +930,20 @@ tr.mo .ten{color:var(--dim)}
             <div class="tom"><span class="tk"><span class="sos s1">SOS 1</span><b>4</b></span><span class="tk"><span class="sos s2">SOS 2</span><b>2</b></span><span class="tk"><span class="sos s3">SOS 3</span><b>1</b></span></div>
             <div class="tom"><span class="chip-dt">Đã thi · 2</span><span class="qh">⚠ 8 quá hạn</span><span class="chip">8 chờ duyệt</span></div>
           </div>
-          <div class="the"><div class="h1"><a class="ten">Bùi Thảo Vy</a><span class="sos s1">SOS 1<span class="k">&nbsp;· S</span></span></div>
+          <div class="the"><div class="h1"><a class="ten">Bùi Thảo Vy</a><span class="sos s1">SOS 1<span class="k">&nbsp;· S</span></span><button class="hoi" aria-label="Giải thích mức SOS">?</button></div>
             <div class="viec"><a>Xác nhận PA S</a><span class="phu">hạn 18/09</span></div></div>
-          <div class="the"><div class="h1"><a class="ten">Đỗ Minh Khôi</a><span class="sos s2">SOS 2<span class="k">&nbsp;· W, S</span></span></div>
+          <div class="the"><div class="h1"><a class="ten">Đỗ Minh Khôi</a><span class="sos s2">SOS 2<span class="k">&nbsp;· W, S</span></span><button class="hoi" aria-label="Giải thích mức SOS">?</button></div>
             <div class="viec"><a>Ghi nhận xét W2</a><span class="phu"><span class="qh">⚠ quá hạn 2 ngày</span> · +1 việc</span></div></div>
           <div class="the da-thi"><div class="h1"><a class="ten">Lê Minh Khang</a><span class="chip-dt">Đã thi · chờ KQ</span></div>
             <div class="h2">Thi <b>12/09</b> · hạn KQ 19/09</div>
             <div class="viec"><a>Nhập kết quả thi thật</a></div></div>
-          <div class="the"><div class="h1"><a class="ten">Nguyễn Minh An</a><span class="chip">Đạt kỳ vọng</span></div>
+          <div class="the"><div class="h1"><a class="ten">Nguyễn Minh An</a><span class="chip"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>Đạt</span></div>
             <div class="h2">Dự kiến thi <b>W2 FEB 2027</b></div>
             <div class="viec"><a>Kết quả PA R · kỳ W2–W3 SEP</a><span class="phu">hạn hết T3 22/09</span></div></div>
           <div class="the da-thi"><div class="h1"><a class="ten">Trần Hữu Phúc</a><span class="chip-dt">Có KQ · chờ bước tiếp</span></div>
             <div class="h2">Thi <b>05/09</b> · OVR 6.5</div>
             <div class="viec"><a>Chọn bước tiếp</a></div></div>
-          <div class="the"><div class="h1"><a class="ten">Vũ Ngọc Lan</a><span class="sos s3">SOS 3<span class="k">&nbsp;· L, R, S</span></span></div>
+          <div class="the"><div class="h1"><a class="ten">Vũ Ngọc Lan</a><span class="sos s3">SOS 3<span class="k">&nbsp;· L, R, S</span></span><button class="hoi" aria-label="Giải thích mức SOS">?</button></div>
             <div class="viec"><a>Xác nhận PA L</a><span class="phu">hạn 16/09 · +1 việc</span></div></div>
           <div class="the mo"><div class="h1"><a class="ten">Ngô Thanh Tùng</a><span class="chip">Lưu trữ</span></div></div>
           <div class="the-lop dong"><div class="h1"><svg class="ic"><use href="#i-phai"/></svg><b>MB FT 105</b><span class="sp"></span><button class="btn-vuong" aria-label="Thao tác lớp"><svg class="ic"><use href="#i-ba"/></svg></button></div>
@@ -1004,7 +960,7 @@ tr.mo .ten{color:var(--dim)}
       <tr><td>Biết lớp nào có SOS 3</td><td>Đang SOS → Toàn bộ: <b>2 bấm</b> (mặc định 1 tuần có thể không thấy)</td><td class="tot">0 bấm — tóm tắt trên hàng lớp</td></tr>
       <tr><td>Xem danh sách mọi em SOS</td><td>2 bấm (Đang SOS → Toàn bộ)</td><td class="tot">1 bấm (Đang SOS mặc định Toàn bộ)</td></tr>
       <tr><td>QL / GV tìm em đã thi</td><td>không lọc được; hàng ghi "Chưa có kết quả" (chỉ TVV / CX thấy "Đã thi")</td><td class="tot">nhìn hàng tô là thấy · 1 chip lọc</td></tr>
-      <tr><td>Đọc điểm Writing của một em</td><td>không có ở Học viên &amp; Lớp — mở hồ sơ lớp, đọc 3 cột W1 · W2 · W</td><td class="tot">cột W ngay trong lớp, W1 · W2 dòng phụ</td></tr>
+      <tr><td>Đọc điểm Writing của một em</td><td>không có ở Học viên &amp; Lớp — phải mở hồ sơ lớp</td><td class="tot">cột W ngay trong lớp, W1 · W2 dòng phụ</td></tr>
       <tr><td>Biết em nào đang mở panel</td><td>không có dấu</td><td class="tot">viền khung quanh hàng</td></tr>
     </tbody>
   </table></div>
@@ -1015,9 +971,10 @@ tr.mo .ten{color:var(--dim)}
   <h2>4 · Hồ sơ lớp FT (GVCN) — khối bảng học viên</h2>
   <span class="where">Học viên &amp; Lớp › MB FT 101 › Học viên › Tổng hợp · vai GVCN Trần Ngọc Hà · chỉ khối bảng</span>
   <ul class="note">
-    <li>Cùng luật với Học viên &amp; Lớp: <b>W nổi</b> (bỏ 2 cột W1, W2 → dòng phụ dưới W) · <b>đã thi tô hàng</b> (thay chip sai "Chưa có kết quả") · <b>chip SOS mới</b> dưới tên · "⚠ quá hạn" thành chữ ở dòng hạn.</li>
-    <li>Hàng Hoàng Bảo Ngọc = panel đang mở. Bảng bớt 2 cột; thứ tự cột cố định <b>OVR · L · R · W · S</b>.</li>
-    <li><b>[Hỏi]</b> Hàng có hai mốc (vd MT2 + MT1 mờ bên dưới): bản mới chỉ giữ mốc mới nhất, để dòng phụ dưới W chỉ có một nghĩa (W1 · W2). Mốc trước xem ở hồ sơ HV.</li>
+    <li>Cột điểm chốt <b>OVR · L · R · W1 · W2 · S</b> — không có W tổng (C12). Mục 3 (Học viên &amp; Lớp) giữ OVR · L · R · W · S (C13): hai màn khác nhau có chủ đích.</li>
+    <li><b>Hai hàng MT</b>: cột nhỏ <b>Đợt</b>. Hàng trên = đợt gần nhất, chữ chính · hàng dưới = đợt trước, chữ nhỏ xám, nền nhạt, vạch ngăn đứt. Tên, Target, Dự kiến thi, Theo dõi chỉ hiện một lần.</li>
+    <li>Một hàng = một lượt: không ghép L của MT3 với W2 của MT2; thiếu điểm để trống đúng lượt (Phạm Bảo Ngọc MT3 2/4). Chỉ có một lượt → một hàng (Hoàng Bảo Ngọc, Vũ Ngọc Lan), không tạo lịch sử giả.</li>
+    <li>Hàng Hoàng Bảo Ngọc = panel đang mở (viền khung). Hàng đã thi tô nền xanh cả hai hàng.</li>
   </ul>
   <div class="row2">
     <div><div class="cap"><b>1440</b> · tab Học viên › Tổng hợp</div>
@@ -1025,74 +982,47 @@ tr.mo .ten{color:var(--dim)}
         <div style="display:flex;align-items:center;gap:8px"><span class="seg"><button aria-pressed="true">Tổng hợp</button><button>Góp ý hàng tuần</button><button>Cần hỗ trợ</button><button>Kết quả đầu ra 1 đợt</button></span>
           <button class="pill" aria-pressed="false"><i class="vdt"></i>Đã thi <span class="n">2</span></button><span class="sp"></span><a class="bo-loc">Sửa thông tin</a></div>
         <div class="kb"><table class="bang">
-          <colgroup><col style="width:246px"><col style="width:64px"><col style="width:184px"><col style="width:112px"><col style="width:62px"><col style="width:58px"><col style="width:58px"><col style="width:70px"><col style="width:58px"><col><col style="width:48px"></colgroup>
-          <thead><tr><th>Học viên</th><th class="n">Target</th><th>Dự kiến thi</th><th>Mốc</th><th class="n">OVR</th><th class="n">L</th><th class="n">R</th><th class="n">W</th><th class="n">S</th><th>Theo dõi</th><th></th></tr></thead>
+          <colgroup><col style="width:236px"><col style="width:64px"><col style="width:162px"><col style="width:84px"><col style="width:62px"><col style="width:56px"><col style="width:56px"><col style="width:56px"><col style="width:56px"><col style="width:56px"><col><col style="width:48px"></colgroup>
+          <thead><tr><th>Học viên</th><th class="n">Target</th><th>Dự kiến thi</th><th>Đợt</th><th class="n">OVR</th><th class="n">L</th><th class="n">R</th><th class="n">W1</th><th class="n">W2</th><th class="n">S</th><th>Theo dõi</th><th></th></tr></thead>
           <tbody>
-            <tr class="hv" style="--x:0"><td style="padding-left:12px"><a class="ten">Bùi Thảo Vy</a><span class="thieu">Thiếu 3</span><div class="dong2"><span class="sos s1">SOS 1<span class="k">&nbsp;· S</span></span></div></td>
-              <td class="n">7.0</td><td></td><td>MT3</td>
-              <td class="n"><span class="d duoi"><i>▼</i>6.5</span></td><td class="n"><span class="d bang">7.0</span></td><td class="n"><span class="d bang">7.0</span></td><td class="n"><span class="d bang">7.0</span><span class="w12">7.0 · 7.0</span></td><td class="n"><span class="d duoi"><i>▼</i>5.0</span></td>
-              <td class="viec"><a>Xác nhận PA S</a><span class="phu">hạn 18/09 · 1 Case</span></td><td><button class="btn-vuong nho" aria-label="Thao tác"><svg class="ic"><use href="#i-ba"/></svg></button></td></tr>
-            <tr class="hv"><td style="padding-left:12px"><a class="ten">Chu Nhật Minh</a><span class="thieu">Thiếu 2</span></td>
-              <td class="n">6.5</td><td></td><td style="color:var(--faint)">chưa có điểm</td>
-              <td class="n"></td><td class="n"></td><td class="n"></td><td class="n"></td><td class="n"></td>
-              <td class="viec"><a>Kết quả PA R · kỳ W2–W3 SEP</a><span class="phu">hạn hết T3 22/09 · 1 Case</span></td><td><button class="btn-vuong nho" aria-label="Thao tác"><svg class="ic"><use href="#i-ba"/></svg></button></td></tr>
-            <tr class="hv chon"><td style="padding-left:12px"><a class="ten">Hoàng Bảo Ngọc</a><span class="thieu">Thiếu 2</span><div class="dong2"><span class="sos s1">SOS 1<span class="k">&nbsp;· L</span></span></div></td>
-              <td class="n">7.0</td><td></td><td>MT1 <span style="color:var(--faint)">3/4</span></td>
-              <td class="n"></td><td class="n"><span class="d duoi"><i>▼</i>5.5</span></td><td class="n"><span class="d bang">6.0</span></td><td class="n"><span class="d bang">6.0</span><span class="w12">6.0 · 6.0</span></td><td class="n"></td>
-              <td class="viec"><a>Kết quả cuối L · kỳ W3–W4 SEP</a><span class="phu">hạn hết T3 29/09 · 1 Case</span></td><td><button class="btn-vuong nho" aria-label="Thao tác"><svg class="ic"><use href="#i-ba"/></svg></button></td></tr>
-            <tr class="hv"><td style="padding-left:12px"><a class="ten">Hà Gia Bình</a><span class="thieu">Thiếu 2</span></td>
-              <td class="n">6.5</td><td></td><td style="color:var(--faint)">chưa có điểm</td>
-              <td class="n"></td><td class="n"></td><td class="n"></td><td class="n"></td><td class="n"></td>
-              <td class="viec"><a>Nhập điểm L, R · MT1</a><span class="phu"><span class="qh">⚠ quá hạn 47 ngày</span></span></td><td><button class="btn-vuong nho" aria-label="Thao tác"><svg class="ic"><use href="#i-ba"/></svg></button></td></tr>
-            <tr class="hv da-thi"><td style="padding-left:12px"><a class="ten">Lê Minh Khang</a><span class="thieu">Thiếu 1</span><div class="dong2"><span class="chip">Đạt kỳ vọng</span></div></td>
-              <td class="n">6.5</td><td><span class="chip-dt">Đã thi · chờ KQ</span><span class="phu">12/09 · hạn KQ 19/09</span></td><td>MT3</td>
-              <td class="n"><span class="d bang">6.5</span></td><td class="n"><span class="d bang">6.5</span></td><td class="n"><span class="d ok"><i>▲</i>7.0</span></td><td class="n"><span class="d bang">6.5</span><span class="w12">6.0 · 7.0</span></td><td class="n"><span class="d bang">6.5</span></td>
-              <td class="viec"><span style="color:var(--dim)">Chờ nhập kết quả thi thật</span><span class="phu">hạn 19/09</span></td><td><button class="btn-vuong nho" aria-label="Thao tác"><svg class="ic"><use href="#i-ba"/></svg></button></td></tr>
-            <tr class="hv"><td style="padding-left:12px"><a class="ten">Lý Minh Châu</a><span class="thieu">Thiếu 2</span><div class="dong2"><span class="sos s1">SOS 1<span class="k">&nbsp;· R</span></span></div></td>
-              <td class="n">7.0</td><td></td><td>MT2 <span style="color:var(--faint)">3/4</span></td>
-              <td class="n"></td><td class="n"><span class="d bang">6.5</span></td><td class="n"><span class="d duoi"><i>▼</i>5.5</span></td><td class="n"><span class="d bang">6.5</span><span class="w12">6.5 · 6.5</span></td><td class="n"></td>
-              <td class="viec"><a>Kết quả PA R · kỳ W4 AUG – W1 SEP</a><span class="phu"><span class="qh">⚠ quá hạn 6 ngày</span> · 1 Case</span></td><td><button class="btn-vuong nho" aria-label="Thao tác"><svg class="ic"><use href="#i-ba"/></svg></button></td></tr>
-            <tr class="hv"><td style="padding-left:12px"><a class="ten">Nguyễn Minh An</a><span class="thieu">Thiếu 1</span><div class="dong2"><span class="chip">Đạt kỳ vọng</span></div></td>
-              <td class="n">6.5</td><td>W2 FEB 2027</td><td>MT2</td>
-              <td class="n"><span class="d bang">6.0</span></td><td class="n"><span class="d bang">6.0</span></td><td class="n"><span class="d bang">6.0</span></td><td class="n"><span class="d bang">6.0</span><span class="w12">5.5 · 6.0</span></td><td class="n"><span class="d bang">6.0</span></td>
-              <td class="viec"><a>Nhập điểm L, R · MT3</a><span class="phu">hạn 23/09 · 1 Case bàn giao</span></td><td><button class="btn-vuong nho" aria-label="Thao tác"><svg class="ic"><use href="#i-ba"/></svg></button></td></tr>
-            <tr class="hv"><td style="padding-left:12px"><a class="ten">Phạm Bảo Ngọc</a><div class="dong2"><span class="sos s1 tam">SOS 1 tạm thời<span class="k">&nbsp;· L</span></span><span class="chip">Ý thức</span></div></td>
-              <td class="n">6.5</td><td>MAR 2027</td><td>MT3 <span style="color:var(--faint)">2/4</span></td>
-              <td class="n"></td><td class="n"><span class="d duoi"><i>▼</i>6.5</span></td><td class="n"><span class="d bang">7.0</span></td><td class="n"></td><td class="n"></td>
-              <td class="viec"><a>Xử lý vi phạm</a><span class="phu"><span class="qh">⚠ quá hạn 1 ngày</span> · 1 Case</span></td><td><button class="btn-vuong nho" aria-label="Thao tác"><svg class="ic"><use href="#i-ba"/></svg></button></td></tr>
-            <tr class="hv da-thi"><td style="padding-left:12px"><a class="ten">Trần Hữu Phúc</a><span class="thieu">Thiếu 2</span></td>
-              <td class="n">6.5</td><td><span class="chip-dt">Có KQ · chờ bước tiếp</span><span class="phu">Thi 05/09</span></td><td>Thi thật</td>
-              <td class="n"><span class="d bang">6.5</span></td><td class="n"><span class="d ok"><i>▲</i>7.0</span></td><td class="n"><span class="d ok"><i>▲</i>7.0</span></td><td class="n"><span class="d duoi"><i>▼</i>6.0</span><span class="w12">6.0 · 6.0</span></td><td class="n"><span class="d bang">6.5</span></td>
-              <td class="viec"><span style="color:var(--dim)">Chờ chọn bước tiếp</span></td><td><button class="btn-vuong nho" aria-label="Thao tác"><svg class="ic"><use href="#i-ba"/></svg></button></td></tr>
-            <tr class="hv"><td style="padding-left:12px"><a class="ten">Vũ Ngọc Lan</a><span class="thieu">Thiếu 2</span><div class="dong2"><span class="sos s3">SOS 3<span class="k">&nbsp;· L, R, S</span></span></div></td>
-              <td class="n">7.0</td><td></td><td>MT1</td>
-              <td class="n"><span class="d duoi"><i>▼</i>5.5</span></td><td class="n"><span class="d duoi"><i>▼</i>5.5</span></td><td class="n"><span class="d duoi"><i>▼</i>5.5</span></td><td class="n"><span class="d bang">6.0</span><span class="w12">6.0 · 6.0</span></td><td class="n"><span class="d duoi"><i>▼</i>5.0</span></td>
-              <td class="viec"><a>Xác nhận PA L</a><span class="phu">hạn 16/09 · Chờ Quản lý duyệt R · 2 Case</span></td><td><button class="btn-vuong nho" aria-label="Thao tác"><svg class="ic"><use href="#i-ba"/></svg></button></td></tr>
+            <tr class="hv co-cu-dot"><td rowspan="2" style="padding-left:12px"><a class="ten">Bùi Thảo Vy</a><span class="thieu">Thiếu 3</span><div class="dong2"><span class="sos s1">SOS 1<span class="k">&nbsp;· S</span></span><button class="hoi" aria-label="Giải thích mức SOS">?</button></div></td><td class="n" rowspan="2">7.0</td><td rowspan="2"></td><td>MT3</td><td class="n"><span class="d duoi" title="Chưa đạt kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-chua-dat"/></svg>6.5</span></td><td class="n"><span class="d bang" title="Đạt · bằng kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>7.0</span></td><td class="n"><span class="d bang" title="Đạt · bằng kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>7.0</span></td><td class="n"><span class="d bang" title="Đạt · bằng kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>7.0</span></td><td class="n"><span class="d bang" title="Đạt · bằng kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>7.0</span></td><td class="n"><span class="d duoi" title="Chưa đạt kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-chua-dat"/></svg>5.0</span></td><td class="viec" rowspan="2"><a>Xác nhận PA S</a><span class="phu">hạn 18/09 · 1 Case</span></td><td rowspan="2"><button class="btn-vuong nho" aria-label="Thao tác"><svg class="ic"><use href="#i-ba"/></svg></button></td></tr>
+            <tr class="hv cu-dot"><td>MT2</td><td class="n"><span class="d duoi" title="Chưa đạt kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-chua-dat"/></svg>6.5</span></td><td class="n"><span class="d bang" title="Đạt · bằng kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>7.0</span></td><td class="n"><span class="d duoi" title="Chưa đạt kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-chua-dat"/></svg>6.5</span></td><td class="n"><span class="d duoi" title="Chưa đạt kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-chua-dat"/></svg>6.5</span></td><td class="n"><span class="d bang" title="Đạt · bằng kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>7.0</span></td><td class="n"><span class="d duoi" title="Chưa đạt kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-chua-dat"/></svg>6.0</span></td></tr>
+            <tr class="hv"><td style="padding-left:12px"><a class="ten">Chu Nhật Minh</a><span class="thieu">Thiếu 2</span></td><td class="n">6.5</td><td></td><td><span style="color:var(--faint);white-space:nowrap">chưa có</span></td><td class="n"></td><td class="n"></td><td class="n"></td><td class="n"></td><td class="n"></td><td class="n"></td><td class="viec"><a>Kết quả PA R · kỳ W2–W3 SEP</a><span class="phu">hạn hết T3 22/09 · 1 Case</span></td><td><button class="btn-vuong nho" aria-label="Thao tác"><svg class="ic"><use href="#i-ba"/></svg></button></td></tr>
+            <tr class="hv chon"><td style="padding-left:12px"><a class="ten">Hoàng Bảo Ngọc</a><span class="thieu">Thiếu 2</span><div class="dong2"><span class="sos s1">SOS 1<span class="k">&nbsp;· L</span></span><button class="hoi" aria-label="Giải thích mức SOS">?</button></div></td><td class="n">7.0</td><td></td><td>MT1</td><td class="n"><span class="d thieu-kn" title="Chưa đủ điểm để đánh giá">3/4</span></td><td class="n"><span class="d duoi" title="Chưa đạt kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-chua-dat"/></svg>5.5</span></td><td class="n"><span class="d bang" title="Đạt · bằng kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>6.0</span></td><td class="n"><span class="d bang" title="Đạt · bằng kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>6.0</span></td><td class="n"><span class="d bang" title="Đạt · bằng kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>6.0</span></td><td class="n"></td><td class="viec"><a>Kết quả cuối L · kỳ W3–W4 SEP</a><span class="phu">hạn hết T3 29/09 · 1 Case</span></td><td><button class="btn-vuong nho" aria-label="Thao tác"><svg class="ic"><use href="#i-ba"/></svg></button></td></tr>
+            <tr class="hv"><td style="padding-left:12px"><a class="ten">Hà Gia Bình</a><span class="thieu">Thiếu 2</span></td><td class="n">6.5</td><td></td><td><span style="color:var(--faint);white-space:nowrap">chưa có</span></td><td class="n"></td><td class="n"></td><td class="n"></td><td class="n"></td><td class="n"></td><td class="n"></td><td class="viec"><a>Nhập điểm L, R · MT1</a><span class="phu"><span class="qh">⚠ quá hạn 47 ngày</span></span></td><td><button class="btn-vuong nho" aria-label="Thao tác"><svg class="ic"><use href="#i-ba"/></svg></button></td></tr>
+            <tr class="hv da-thi co-cu-dot"><td rowspan="2" style="padding-left:12px"><a class="ten">Lê Minh Khang</a><span class="thieu">Thiếu 1</span><div class="dong2"><span class="chip"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>Đạt</span></div></td><td class="n" rowspan="2">6.5</td><td rowspan="2"><span class="chip-dt">Đã thi · chờ KQ</span><span class="phu">12/09 · hạn KQ 19/09</span></td><td>MT3</td><td class="n"><span class="d bang" title="Đạt · bằng kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>6.5</span></td><td class="n"><span class="d bang" title="Đạt · bằng kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>6.5</span></td><td class="n"><span class="d ok" title="Vượt kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>7.0</span></td><td class="n"><span class="d duoi" title="Chưa đạt kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-chua-dat"/></svg>6.0</span></td><td class="n"><span class="d ok" title="Vượt kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>7.0</span></td><td class="n"><span class="d bang" title="Đạt · bằng kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>6.5</span></td><td class="viec" rowspan="2"><span style="color:var(--dim)">Chờ nhập kết quả thi thật</span><span class="phu">hạn 19/09</span></td><td rowspan="2"><button class="btn-vuong nho" aria-label="Thao tác"><svg class="ic"><use href="#i-ba"/></svg></button></td></tr>
+            <tr class="hv cu-dot da-thi"><td>MT2</td><td class="n"><span class="d duoi" title="Chưa đạt kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-chua-dat"/></svg>6.0</span></td><td class="n"><span class="d duoi" title="Chưa đạt kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-chua-dat"/></svg>6.0</span></td><td class="n"><span class="d bang" title="Đạt · bằng kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>6.5</span></td><td class="n"><span class="d duoi" title="Chưa đạt kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-chua-dat"/></svg>6.0</span></td><td class="n"><span class="d duoi" title="Chưa đạt kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-chua-dat"/></svg>6.0</span></td><td class="n"><span class="d duoi" title="Chưa đạt kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-chua-dat"/></svg>6.0</span></td></tr>
+            <tr class="hv co-cu-dot"><td rowspan="2" style="padding-left:12px"><a class="ten">Lý Minh Châu</a><span class="thieu">Thiếu 2</span><div class="dong2"><span class="sos s1">SOS 1<span class="k">&nbsp;· R</span></span><button class="hoi" aria-label="Giải thích mức SOS">?</button></div></td><td class="n" rowspan="2">7.0</td><td rowspan="2"></td><td>MT2</td><td class="n"><span class="d thieu-kn" title="Chưa đủ điểm để đánh giá">3/4</span></td><td class="n"><span class="d bang" title="Đạt · bằng kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>6.5</span></td><td class="n"><span class="d duoi" title="Chưa đạt kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-chua-dat"/></svg>5.5</span></td><td class="n"><span class="d bang" title="Đạt · bằng kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>6.5</span></td><td class="n"><span class="d bang" title="Đạt · bằng kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>6.5</span></td><td class="n"></td><td class="viec" rowspan="2"><a>Kết quả PA R · kỳ W4 AUG – W1 SEP</a><span class="phu"><span class="qh">⚠ quá hạn 6 ngày</span> · 1 Case</span></td><td rowspan="2"><button class="btn-vuong nho" aria-label="Thao tác"><svg class="ic"><use href="#i-ba"/></svg></button></td></tr>
+            <tr class="hv cu-dot"><td>MT1</td><td class="n"><span class="d bang" title="Đạt · bằng kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>6.0</span></td><td class="n"><span class="d bang" title="Đạt · bằng kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>6.0</span></td><td class="n"><span class="d duoi" title="Chưa đạt kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-chua-dat"/></svg>5.5</span></td><td class="n"><span class="d bang" title="Đạt · bằng kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>6.0</span></td><td class="n"><span class="d duoi" title="Chưa đạt kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-chua-dat"/></svg>5.5</span></td><td class="n"><span class="d bang" title="Đạt · bằng kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>6.0</span></td></tr>
+            <tr class="hv co-cu-dot"><td rowspan="2" style="padding-left:12px"><a class="ten">Nguyễn Minh An</a><span class="thieu">Thiếu 1</span><div class="dong2"><span class="chip"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>Đạt</span></div></td><td class="n" rowspan="2">6.5</td><td rowspan="2">W2 FEB 2027</td><td>MT2</td><td class="n"><span class="d bang" title="Đạt · bằng kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>6.0</span></td><td class="n"><span class="d bang" title="Đạt · bằng kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>6.0</span></td><td class="n"><span class="d bang" title="Đạt · bằng kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>6.0</span></td><td class="n"><span class="d duoi" title="Chưa đạt kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-chua-dat"/></svg>5.5</span></td><td class="n"><span class="d bang" title="Đạt · bằng kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>6.0</span></td><td class="n"><span class="d bang" title="Đạt · bằng kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>6.0</span></td><td class="viec" rowspan="2"><a>Nhập điểm L, R · MT3</a><span class="phu">hạn 23/09 · 1 Case bàn giao</span></td><td rowspan="2"><button class="btn-vuong nho" aria-label="Thao tác"><svg class="ic"><use href="#i-ba"/></svg></button></td></tr>
+            <tr class="hv cu-dot"><td>MT1</td><td class="n"><span class="d bang" title="Đạt · bằng kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>5.5</span></td><td class="n"><span class="d bang" title="Đạt · bằng kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>5.5</span></td><td class="n"><span class="d bang" title="Đạt · bằng kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>5.5</span></td><td class="n"><span class="d bang" title="Đạt · bằng kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>5.5</span></td><td class="n"><span class="d duoi" title="Chưa đạt kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-chua-dat"/></svg>5.0</span></td><td class="n"><span class="d bang" title="Đạt · bằng kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>5.5</span></td></tr>
+            <tr class="hv co-cu-dot"><td rowspan="2" style="padding-left:12px"><a class="ten">Phạm Bảo Ngọc</a><div class="dong2"><span class="sos s1 tam">SOS 1 tạm thời<span class="k">&nbsp;· L</span></span><button class="hoi" aria-label="Giải thích mức SOS">?</button><span class="chip">Ý thức</span></div></td><td class="n" rowspan="2">6.5</td><td rowspan="2">MAR 2027</td><td>MT3</td><td class="n"><span class="d thieu-kn" title="Chưa đủ điểm để đánh giá">2/4</span></td><td class="n"><span class="d duoi" title="Chưa đạt kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-chua-dat"/></svg>6.5</span></td><td class="n"><span class="d bang" title="Đạt · bằng kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>7.0</span></td><td class="n"></td><td class="n"></td><td class="n"></td><td class="viec" rowspan="2"><a>Xử lý vi phạm</a><span class="phu"><span class="qh">⚠ quá hạn 1 ngày</span> · 1 Case</span></td><td rowspan="2"><button class="btn-vuong nho" aria-label="Thao tác"><svg class="ic"><use href="#i-ba"/></svg></button></td></tr>
+            <tr class="hv cu-dot"><td>MT2</td><td class="n"><span class="d bang" title="Đạt · bằng kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>6.5</span></td><td class="n"><span class="d bang" title="Đạt · bằng kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>6.5</span></td><td class="n"><span class="d bang" title="Đạt · bằng kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>6.5</span></td><td class="n"><span class="d bang" title="Đạt · bằng kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>6.5</span></td><td class="n"><span class="d duoi" title="Chưa đạt kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-chua-dat"/></svg>6.0</span></td><td class="n"><span class="d bang" title="Đạt · bằng kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>6.5</span></td></tr>
+            <tr class="hv da-thi co-cu-dot"><td rowspan="2" style="padding-left:12px"><a class="ten">Trần Hữu Phúc</a><span class="thieu">Thiếu 2</span></td><td class="n" rowspan="2">6.5</td><td rowspan="2"><span class="chip-dt">Có KQ · chờ bước tiếp</span><span class="phu">Thi 05/09</span></td><td>Thi thật</td><td class="n"><span class="d bang" title="Đạt · bằng kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>6.5</span></td><td class="n"><span class="d ok" title="Vượt kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>7.0</span></td><td class="n"><span class="d ok" title="Vượt kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>7.0</span></td><td class="n"><span class="d duoi" title="Chưa đạt kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-chua-dat"/></svg>6.0</span></td><td class="n"><span class="d duoi" title="Chưa đạt kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-chua-dat"/></svg>6.0</span></td><td class="n"><span class="d bang" title="Đạt · bằng kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>6.5</span></td><td class="viec" rowspan="2"><span style="color:var(--dim)">Chờ chọn bước tiếp</span></td><td rowspan="2"><button class="btn-vuong nho" aria-label="Thao tác"><svg class="ic"><use href="#i-ba"/></svg></button></td></tr>
+            <tr class="hv cu-dot da-thi"><td>MT3</td><td class="n"><span class="d bang" title="Đạt · bằng kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>6.5</span></td><td class="n"><span class="d bang" title="Đạt · bằng kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>6.5</span></td><td class="n"><span class="d bang" title="Đạt · bằng kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>6.5</span></td><td class="n"><span class="d bang" title="Đạt · bằng kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>6.5</span></td><td class="n"><span class="d duoi" title="Chưa đạt kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-chua-dat"/></svg>6.0</span></td><td class="n"><span class="d bang" title="Đạt · bằng kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>6.5</span></td></tr>
+            <tr class="hv"><td style="padding-left:12px"><a class="ten">Vũ Ngọc Lan</a><span class="thieu">Thiếu 2</span><div class="dong2"><span class="sos s3">SOS 3<span class="k">&nbsp;· L, R, S</span></span><button class="hoi" aria-label="Giải thích mức SOS">?</button></div></td><td class="n">7.0</td><td></td><td>MT1</td><td class="n"><span class="d duoi" title="Chưa đạt kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-chua-dat"/></svg>5.5</span></td><td class="n"><span class="d duoi" title="Chưa đạt kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-chua-dat"/></svg>5.5</span></td><td class="n"><span class="d duoi" title="Chưa đạt kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-chua-dat"/></svg>5.5</span></td><td class="n"><span class="d bang" title="Đạt · bằng kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>6.0</span></td><td class="n"><span class="d bang" title="Đạt · bằng kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-dat"/></svg>6.0</span></td><td class="n"><span class="d duoi" title="Chưa đạt kỳ vọng"><svg class="kh" aria-hidden="true"><use href="#i-chua-dat"/></svg>5.0</span></td><td class="viec"><a>Xác nhận PA L</a><span class="phu">hạn 16/09 · Chờ Quản lý duyệt R · 2 Case</span></td><td><button class="btn-vuong nho" aria-label="Thao tác"><svg class="ic"><use href="#i-ba"/></svg></button></td></tr>
           </tbody></table></div>
       </div></div>
   </div>
   <div class="cuon"><table class="buoc">
     <thead><tr><th>Luồng</th><th>Trước</th><th>Sau</th></tr></thead>
     <tbody>
-      <tr><td>Đọc điểm Writing</td><td>3 cột W1 · W2 · W, W1 / W2 nổi hơn W</td><td class="tot">1 cột W đậm, W1 · W2 dòng phụ mờ</td></tr>
-      <tr><td>Biết em đã thi</td><td>chip "Chưa có kết quả" (sai nghĩa) + ngày ở Dự kiến thi</td><td class="tot">hàng tô + chip "Đã thi · chờ KQ" · 1 chip lọc</td></tr>
-      <tr><td>Phân biệt SOS 1 / 2 / 3</td><td>3 chip cùng dáng, SOS 2 ↔ 3 độ khác 7</td><td class="tot">viền / nền nhạt / nền đặc, độ khác 31</td></tr>
+      <tr><td>Đọc điểm Writing</td><td>3 cột W1 · W2 · W</td><td class="tot">2 cột W1 · W2, bỏ W tổng</td></tr>
+      <tr><td>So với đợt trước</td><td>hàng cũ mờ, không ghi đợt</td><td class="tot">cột Đợt ghi rõ MT3 / MT2, hàng cũ chữ nhỏ</td></tr>
+      <tr><td>Biết em đã thi</td><td>chip "Chưa có kết quả" (sai nghĩa)</td><td class="tot">hàng tô + chip "Đã thi · chờ KQ" · 1 chip lọc</td></tr>
+      <tr><td>Phân biệt SOS 1 / 2 / 3</td><td>3 chip nền, cùng dáng</td><td class="tot">viền 1 / 1,5 / 2,5 px + viền đôi · chữ "SOS n"</td></tr>
     </tbody>
   </table></div>
 </section>
 
 <!-- =================================================================== CẦN CHỦ SP CHỌN -->
 <section class="sec" id="hoi">
-  <h2>Cần chủ SP chọn</h2>
-  <div class="q"><b>1 · Chip SOS:</b> A vàng viền → cam nền nhạt → đỏ nền đặc <span class="kn">khuyến nghị</span> hay B một họ đỏ? (A đạt validator cả hai chế độ; B không đạt ở Sáng.)</div>
-  <div class="q"><b>2 · Cỡ chữ:</b> mới (đầu cột 12 thường · ô 13 · chip 12 · ô nhập 375 = 16) <span class="kn">khuyến nghị</span> hay giữ cũ (11 in hoa · 12)? Đổi DESIGN.md.</div>
-  <div class="q"><b>3 · Thanh lọc:</b> A dải dính dưới tiêu đề <span class="kn">khuyến nghị</span> hay B chi nhánh lên thanh trên?</div>
-  <div class="q"><b>4 · Thanh trên 6 nút:</b> Sáng/Tối vào menu tài khoản như brief? Skill impeccable muốn giữ Sáng/Tối ngoài thanh trên (1 bấm khi chiếu họp); nay mặc định theo máy nên tôi theo brief (đổi tay = 2 bấm).</div>
-  <div class="q"><b>5 · Hồ sơ lớp, hàng hai mốc:</b> bỏ dòng mốc trước (MT1 mờ dưới MT2) để dòng phụ dưới W chỉ là W1 · W2?</div>
-  <div class="q"><b>6 · Học viên &amp; Lớp thêm cột OVR · L · R · W · S</b> khi mở lớp FT (đổi bố cục bảng; "Kết quả gần nhất" còn chip + MT · kỳ vọng)?</div>
+  <h2>Còn mở — chủ SP xem khi duyệt (ngoài khung)</h2>
   <ul class="note">
-    <li>Tự quyết trong mockup (sửa nếu khác): "Đạt kỳ vọng" giữ chip xám (luật: màu kết quả chỉ ở ô điểm + chip SOS) · ô trống ở bảng xem = để trống (không "—") · SOS 3 tạm = viền đứt vòng ngoài · chip "Đã thi n" trên hàng lớp đếm cả hai giai đoạn · lỗi lưu dùng chữ đỏ <b>duoi</b> + ⚠ · chọn nhiều (không vẽ) chỉ ô tích, không nền.</li>
-    <li>Màu mới ngoài bảng token: chỉ bộ B để so (#ff8a96 · #5a1f27 / #ffc9cf · #ff5a67 tối; #c0263a · #fcd5d9 / #8f1d2c · #b42335 sáng) — chữ trên chip đều ≥ 6.4:1.</li>
+    <li><b>Màu đỏ SOS 3 ngả hồng</b> (#e64aa0 Tối · #b5125e Sáng): đỏ thuần (#ff4d6d, #f04870, #b91c1c) không tách được với cam / vàng khi mù màu (validator ΔE 2.9–6.0). Muốn đỏ hơn thì phải chấp nhận dựa vào độ dày viền + chữ.</li>
+    <li><b>Ô điểm</b> [C05, ✓ / ✗ trơn chốt 19/10]: dưới kỳ vọng ✗ + số đỏ · Đạt = band ≥ kỳ vọng (scoring.ts evaluateAttempt): bằng ✓ + số xanh dương · vượt ✓ + số xanh lá. Chênh "thiếu 0.5 / vượt 0.5" hiện trong hộp <b>?</b> và tên truy cập, không thêm dòng chữ vào từng ô (bảng dày).</li>
+    <li>Tự quyết (sửa nếu khác): chip kết quả "✓ Đạt" giữ nền xám · ô trống = để trống (không "—") · SOS 3 tạm = cả hai vòng viền đứt · "Đã thi n" trên hàng lớp đếm cả hai giai đoạn · Giao diện mặc định <b>Theo máy</b>.</li>
+    <li>C03: mockup này không còn nút Nhắc nào; việc tự đẩy về Thông báo vẽ ở mockup Công việc.</li>
   </ul>
 </section>
 

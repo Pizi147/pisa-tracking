@@ -1,0 +1,797 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>OV-14 · Kế hoạch Test</title>
+<script>
+/* Sáng / tối theo máy khi chưa chọn; bấm Tối / Sáng thì nhớ. */
+(function(){var r=document.documentElement,t=null;try{t=localStorage.getItem('ov14-theme')}catch(e){}
+r.dataset.theme=t||(matchMedia('(prefers-color-scheme: light)').matches?'light':'dark');})();
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap">
+<style>
+/* Chữ số 0–9 lấy từ Inter, khai lại đúng họ 'Be Vietnam Pro' (như web/src/index.css). Khai SAU gói Google nên thắng ở vùng chữ số. */
+@font-face{font-family:'Be Vietnam Pro';font-style:normal;font-display:swap;font-weight:400;unicode-range:U+0030-0039;src:url(https://cdn.jsdelivr.net/npm/@fontsource/inter@5.3.0/files/inter-latin-400-normal.woff2) format('woff2')}
+@font-face{font-family:'Be Vietnam Pro';font-style:normal;font-display:swap;font-weight:500;unicode-range:U+0030-0039;src:url(https://cdn.jsdelivr.net/npm/@fontsource/inter@5.3.0/files/inter-latin-500-normal.woff2) format('woff2')}
+@font-face{font-family:'Be Vietnam Pro';font-style:normal;font-display:swap;font-weight:600;unicode-range:U+0030-0039;src:url(https://cdn.jsdelivr.net/npm/@fontsource/inter@5.3.0/files/inter-latin-600-normal.woff2) format('woff2')}
+@font-face{font-family:'Be Vietnam Pro';font-style:normal;font-display:swap;font-weight:700;unicode-range:U+0030-0039;src:url(https://cdn.jsdelivr.net/npm/@fontsource/inter@5.3.0/files/inter-latin-700-normal.woff2) format('woff2')}
+@font-face{font-family:'Be Vietnam Pro';font-style:normal;font-display:swap;font-weight:800;unicode-range:U+0030-0039;src:url(https://cdn.jsdelivr.net/npm/@fontsource/inter@5.3.0/files/inter-latin-800-normal.woff2) format('woff2')}
+
+/* TOKEN — bảng 5 nghĩa (bao-cao/doi-thoai-uiux.md mục 4, đã chạy validator) + nền/chữ của web/src/index.css. Không thêm màu mới. */
+:root{
+  color-scheme:dark;
+  --bg:#0c1220;--surface:#141d2f;--surface-2:#1a2437;--line:rgba(160,178,214,.14);--line-strong:rgba(160,178,214,.26);
+  --accent:#7db3f0;--accent-strong:#a9cdf7;--accent-ink:#0b1626;--accent-soft:rgba(125,179,240,.14);--accent-line:rgba(125,179,240,.38);
+  --text:#dde5f2;--c1:#f1f5f9;--c2:#e2e8f0;--c3:#cbd5e1;--dim:#93a3c0;--faint:#8292ae;
+  --o-nen:#0e1727;--o-vien:#64748b;--o-sua:#4f79b3;--nut-hover:#24304a;--hang-lon-bg:#172640;
+  --sos1-vien:#f7d44c;--sos1-chu:#f7d44c;--sos2-vien:#ff9166;--sos2-chu:#ffc4a3;--sos3-vien:#ff4d6d;--sos3-chu:#ff9aa2;--sos2-bg:#6b3417;
+  --duoi:#ff9aa2;--bang:#80b8ff;--ok:#6fdc9f;--da-thi-bg:#16402a;--late:#ff9166;--soon:#f2c450;--muted:#c9d4e6;--muted-bg:#1d2a40;
+  --bong:0 14px 36px rgba(0,0,0,.5),0 2px 6px rgba(0,0,0,.35);--chon-nen:rgba(125,179,240,.10);
+  --sans:'Be Vietnam Pro',system-ui,'Segoe UI',Roboto,sans-serif;
+}
+:root[data-theme="light"]{
+  color-scheme:light;
+  --bg:#f5f7fa;--surface:#ffffff;--surface-2:#eef1f5;--line:rgba(15,23,42,.12);--line-strong:rgba(15,23,42,.22);
+  --accent:#1d5fbf;--accent-strong:#174e9e;--accent-ink:#ffffff;--accent-soft:rgba(29,95,191,.08);--accent-line:rgba(29,95,191,.35);
+  --text:#0f172a;--c1:#0f172a;--c2:#1e293b;--c3:#334155;--dim:#475569;--faint:#5b6678;
+  --o-nen:#ffffff;--o-vien:#7c8799;--o-sua:#7c8799;--nut-hover:#e4e8ee;--hang-lon-bg:#eaf1fb;
+  --sos1-vien:#b58300;--sos1-chu:#8a5a00;--sos2-vien:#c2410c;--sos2-chu:#8f2f0f;--sos3-vien:#b91c1c;--sos3-chu:#b42323;--sos2-bg:#fdd3bd;
+  --duoi:#b42323;--bang:#1d5fbf;--ok:#157a42;--da-thi-bg:#d6f0df;--late:#b4400f;--soon:#8a5a00;--muted:#334155;--muted-bg:#eef1f5;
+  --bong:0 14px 36px rgba(15,23,42,.16),0 2px 6px rgba(15,23,42,.10);--chon-nen:rgba(29,95,191,.07);
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 var(--sans);font-variant-numeric:tabular-nums;-webkit-font-smoothing:antialiased;padding:0 16px 96px}
+::selection{background:var(--accent);color:var(--accent-ink)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+button{font:inherit;color:inherit}
+p{margin:0}
+::-webkit-scrollbar{width:10px;height:10px}::-webkit-scrollbar-thumb{background:var(--line-strong);border-radius:6px}::-webkit-scrollbar-track{background:transparent}
+
+/* ---------- trang mockup (ngoài khung màn) ---------- */
+.topbar{position:sticky;top:0;z-index:60;display:flex;align-items:center;gap:8px 16px;flex-wrap:wrap;padding:10px 0;background:var(--bg);border-bottom:1px solid var(--line)}
+.topbar>b{font-size:14px;color:var(--c1)}
+.toc{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:13px}
+.toc a{color:var(--accent);text-decoration:none}.toc a:hover{text-decoration:underline}
+.sp{flex:1}
+@media (max-width:760px){.topbar{position:static}}
+.wrap{max-width:1480px;margin:0 auto;display:flex;flex-direction:column;gap:64px;padding-top:24px}
+.sec{display:flex;flex-direction:column;gap:16px;scroll-margin-top:72px}
+.sec>h2{margin:0;padding-top:14px;border-top:2px solid var(--line-strong);font-size:20px;color:var(--c1)}
+.sub{display:flex;flex-direction:column;gap:12px;scroll-margin-top:72px}
+.sub>h3{margin:12px 0 0;font-size:16px;color:var(--c1)}
+.ghi{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:12px 28px;max-width:1440px;font-size:13px;color:var(--dim)}
+.ghi>div{display:flex;flex-direction:column;gap:6px}
+.ghi b{color:var(--c2)}
+.ghi ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px}
+.ghi .tde{font-size:12px;font-weight:700;color:var(--c3)}
+.where{display:inline-block;width:fit-content;max-width:100%;font-size:13px;color:var(--accent);background:var(--accent-soft);border-radius:999px;padding:3px 12px}
+.buoc{display:inline-flex;flex-wrap:wrap;align-items:baseline;gap:4px 8px;font-size:13px;color:var(--c2)}
+.buoc s{color:var(--faint);text-decoration-thickness:1px}
+.buoc b{color:var(--ok)}
+.kn{font-size:13px;color:var(--c2)}.kn b{color:var(--c1)}
+.hoi{font-size:13px;color:var(--c2);border:1px dashed var(--line-strong);border-radius:10px;padding:8px 12px;max-width:1440px}
+.hoi b{color:var(--c1)}
+.cap{font-size:12px;font-weight:700;color:var(--faint);margin:4px 0 -4px}
+.row2{display:flex;gap:24px;align-items:flex-start;max-width:100%;overflow-x:auto;padding-bottom:10px}
+@media (max-width:420px){.row2{margin:0 -16px;padding:0 0 10px}}
+
+/* ---------- khung màn ---------- */
+.win{position:relative;flex:none;border:1px solid var(--line-strong);border-radius:12px;overflow:hidden;background:var(--bg)}
+.w1440{width:1440px}.w375{width:375px}
+.app{display:flex;align-items:center;gap:6px;height:52px;padding:0 20px;background:var(--surface);border-bottom:1px solid var(--line);font-size:14px;color:var(--dim)}
+.app .logo{display:flex;align-items:center;gap:8px;margin-right:14px;color:var(--c1);font-weight:700;white-space:nowrap}
+.app .logo i{display:grid;place-items:center;width:26px;height:26px;border:1px solid var(--accent-line);border-radius:7px;font-style:normal;font-size:12px;color:var(--accent)}
+.app .muc{display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:0 10px;border-radius:8px;white-space:nowrap}
+.app .muc.on{color:var(--c1);font-weight:600;box-shadow:inset 0 -2px 0 var(--accent);border-radius:0}
+.dem{display:inline-grid;place-items:center;min-width:22px;height:20px;padding:0 6px;border-radius:999px;background:var(--surface-2);border:1px solid var(--line-strong);color:var(--c2);font-size:12px;font-weight:700}
+.tim{display:flex;align-items:center;width:260px;height:36px;padding:0 12px;border:1px solid var(--o-vien);border-radius:8px;background:var(--o-nen);color:var(--faint);font-size:13px}
+.w375 .app{height:56px;padding:0 12px}
+.trang{position:relative;padding:20px}
+.w375 .trang{padding:14px 16px 20px}
+.h1{font-size:20px;font-weight:800;color:var(--c1);margin:0}
+.mo{font-size:13px;color:var(--faint)}
+.tom{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 18px;font-size:13px;color:var(--dim)}
+.tom b{font-size:16px;color:var(--c1);margin-right:3px}
+.tom .q b,.tom .q{color:var(--late)}
+.tom .xg b,.tom .xg{color:var(--ok)}
+
+/* nút */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:36px;padding:0 14px;border-radius:8px;border:1px solid var(--line-strong);background:var(--surface-2);color:var(--text);font:500 14px var(--sans);white-space:nowrap;cursor:pointer}
+.btn:hover{background:var(--nut-hover);border-color:var(--accent-line)}
+.btn-sm{min-height:32px;padding:0 10px;font-size:13px;border-radius:7px}
+.btn-primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+.btn-primary:hover{background:var(--accent-strong);border-color:var(--accent-strong)}
+.btn-ghost{background:transparent;border-color:transparent;color:var(--dim)}
+.btn[aria-disabled=true]{opacity:.45;cursor:not-allowed}
+.w375 .btn,.w375 .btn-sm{min-height:44px}
+.btn-day{width:100%;min-height:48px!important;font-size:15px;font-weight:700}
+.lk{color:var(--accent);text-decoration:none;cursor:pointer}
+.lk:hover{text-decoration:underline;text-underline-offset:3px}
+.nut-loc{display:inline-flex;align-items:center;gap:6px;min-height:32px;padding:0 12px;border-radius:999px;border:1px solid var(--line-strong);background:transparent;color:var(--c3);font-size:13px;font-weight:600;white-space:nowrap;cursor:pointer}
+.nut-loc[aria-pressed=true]{border-color:var(--accent);background:var(--accent-soft);color:var(--c1);box-shadow:inset 0 0 0 1px var(--accent)}
+.w375 .nut-loc{min-height:44px}
+.seg{display:inline-flex;flex:none;border:1px solid var(--line-strong);border-radius:8px;overflow:hidden;background:var(--surface)}
+.seg>span{display:inline-flex;align-items:center;gap:6px;min-height:34px;padding:0 14px;font-size:13px;font-weight:600;color:var(--dim);white-space:nowrap;cursor:pointer}
+.seg>span+span{border-left:1px solid var(--line-strong)}
+.seg>span[aria-pressed=true]{color:var(--c1);background:var(--accent-soft);box-shadow:inset 0 0 0 2px var(--accent)}
+.seg .n{font-weight:500;color:var(--faint)}
+.w375 .seg>span{min-height:44px;padding:0 12px}
+.cv{display:inline-block;width:7px;height:7px;border:solid currentColor;border-width:0 1.6px 1.6px 0;transform:rotate(45deg) translateY(-2px);opacity:.8}
+.cv.phai{transform:rotate(-45deg)}
+.ic{width:16px;height:16px;flex:none;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.cb{display:inline-grid;place-items:center;flex:none;width:18px;height:18px;border-radius:4px;border:1.5px solid var(--o-vien);background:var(--o-nen)}
+.cb.on{background:var(--accent);border-color:var(--accent)}
+.cb.on::after{content:"";width:9px;height:5px;border:solid var(--accent-ink);border-width:0 0 2px 2px;transform:rotate(-45deg) translate(1px,-1px)}
+.w375 .cb{width:22px;height:22px}
+
+/* chip SOS (C08) — CHỈ VIỀN, không nền: vàng 1 px · cam 1,5 px · đỏ 2,5 px + viền đôi; chữ "SOS n" giữ; tạm = viền đứt */
+.sos{display:inline-flex;align-items:center;gap:4px;height:22px;padding:0 8px;border-radius:999px;border:1px solid transparent;background:transparent;font-size:12px;font-weight:700;white-space:nowrap}
+.sos.s1{border-width:1px;border-color:var(--sos1-vien);color:var(--sos1-chu)}
+.sos.s2{border-width:1.5px;border-color:var(--sos2-vien);color:var(--sos2-chu)}
+.sos.s3{border-width:2.5px;border-color:var(--sos3-vien);color:var(--sos3-chu);outline:1.5px solid var(--sos3-vien);outline-offset:1.5px;margin:0 3px}
+.sos.tam{border-style:dashed}
+.sos.s3.tam{outline-style:dashed}
+.sos-n{display:inline-flex;align-items:center;gap:2px;vertical-align:middle}
+/* nút ? (C04) — một mẫu: mở hộp giải thích; chạm + bàn phím */
+.hoi-n{display:inline-grid;place-items:center;flex:none;width:22px;height:22px;padding:0;border-radius:50%;border:1px solid var(--line-strong);background:transparent;color:var(--accent);font:700 12px/1 var(--sans);cursor:pointer}
+.hoi-n:hover,.hoi-n[aria-expanded=true]{background:var(--accent-soft);border-color:var(--accent-line)}
+.w375 .hoi-n{width:32px;height:32px;font-size:14px}
+/* ký hiệu kết quả (C05) — SVG một bộ: ✓ Đạt · ✗ Chưa đạt · Chưa đủ điểm (chỉ chữ); chênh = chữ nhỏ */
+.ki{width:1em;height:1em;flex:none;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.kqc{display:inline-flex;align-items:center;gap:5px;font-size:13px;font-weight:600;white-space:nowrap}
+.kqc.dat{color:var(--ok)}.kqc.chua{color:var(--duoi)}.kqc.thieu{color:var(--muted);font-weight:500}
+.loai{display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:6px;background:var(--muted-bg);color:var(--muted);font-size:12px;font-weight:600;white-space:nowrap}
+/* hạn — chỉ chữ + ⚠, không nền, không chip */
+.han{font-size:13px;color:var(--faint);white-space:nowrap;text-align:right;line-height:1.35}
+.han .qh{display:block;color:var(--late);font-weight:700}
+.han .gan{color:var(--soon);font-weight:700}
+.qh-t{color:var(--late);font-weight:700;white-space:nowrap}
+.gan-t{color:var(--soon);font-weight:700;white-space:nowrap}
+.ok-t{color:var(--ok);font-weight:700}
+.xam{color:var(--muted)}
+
+/* danh sách việc */
+.ds{background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.nhom-h{display:flex;align-items:center;gap:8px;min-height:42px;padding:0 14px;background:var(--hang-lon-bg);box-shadow:inset 3px 0 0 var(--accent);font-size:13px;font-weight:700;color:var(--c1);border-top:1px solid var(--line);cursor:pointer}
+.nhom-h:first-child{border-top:0}
+.nhom-h .n{color:var(--faint);font-weight:600}
+.nhom-h .q{color:var(--late);font-weight:700}
+.nhom-h.dong{background:var(--surface-2);box-shadow:inset 3px 0 0 var(--line-strong)}
+.dv{position:relative;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 14px;align-items:center;padding:10px 14px;border-top:1px solid var(--line);cursor:pointer}
+.dv:hover{background:var(--chon-nen)}
+.dv .t1{font-size:14px;font-weight:600;color:var(--c1);display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px}
+.dv .t2{font-size:13px;color:var(--faint)}
+.dv.chon{box-shadow:inset 0 0 0 2px var(--accent)}
+.dv.xong .t1{color:var(--dim);font-weight:500}
+.dv.xong .t2{color:var(--faint)}
+.dv-them{padding:8px 14px;border-top:1px solid var(--line)}
+.hang-lop{display:flex;align-items:center;gap:10px;min-height:48px;padding:6px 10px 6px 14px;border-top:1px solid var(--line);font-size:13px}
+.hang-lop>b{color:var(--c1);font-size:14px}
+.hang-lop.chon{box-shadow:inset 0 0 0 2px var(--accent)}
+.nut-ba{display:inline-grid;place-items:center;width:32px;height:32px;border-radius:8px;border:1px solid var(--line-strong);color:var(--c2);font-weight:700;cursor:pointer}
+.nut-ba[aria-expanded=true]{background:var(--accent-soft);border-color:var(--accent)}
+.w375 .nut-ba{width:44px;height:44px}
+.menu{position:absolute;z-index:8;display:flex;flex-direction:column;min-width:200px;padding:4px;border-radius:10px;background:var(--surface);border:1px solid var(--line-strong);box-shadow:var(--bong)}
+.menu>span{display:flex;align-items:center;min-height:36px;padding:0 12px;border-radius:7px;font-size:13px;color:var(--c2);cursor:pointer;white-space:nowrap}
+.menu>span.on{background:var(--accent-soft);color:var(--c1);font-weight:600}
+.menu>span.nguy{color:var(--duoi)}
+.menu>hr{width:100%;margin:4px 0;border:0;border-top:1px solid var(--line)}
+.muc-day{display:flex;align-items:center;min-height:48px;padding:0 16px;font-size:15px;color:var(--c2);border-top:1px solid var(--line)}
+.muc-day.on{color:var(--c1);font-weight:700;background:var(--accent-soft)}
+.loc-sp{display:flex;align-items:center;gap:8px;padding:10px 14px;border-top:1px solid var(--line)}
+.w375 .dv{padding:10px 12px;min-height:52px}
+
+/* panel */
+.pn{display:flex;flex-direction:column;min-width:0;background:var(--surface);border:1px solid var(--line);border-radius:12px}
+.pn-h{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:4px 14px;align-items:center;padding:18px 20px 14px;border-bottom:1px solid var(--line)}
+.pn-t{font-size:17px;font-weight:800;color:var(--c1)}
+.pn-s{grid-column:1/-1;font-size:14px;color:var(--dim)}
+.pn-s b{color:var(--c2);font-weight:600}
+.x{display:grid;place-items:center;width:32px;height:32px;border-radius:8px;color:var(--dim);font-size:16px;cursor:pointer}
+.w375 .x{width:44px;height:44px}
+.pn-tool{display:flex;align-items:center;flex-wrap:wrap;gap:8px 12px;padding:10px 20px;border-bottom:1px solid var(--line);font-size:13px;color:var(--dim)}
+.pn-f{display:flex;align-items:center;flex-wrap:wrap;gap:8px 12px;min-height:46px;padding:6px 20px;border-top:1px solid var(--line);font-size:13px}
+.dai{display:flex;align-items:center;flex-wrap:wrap;gap:6px 12px;padding:12px 20px;border-bottom:1px solid var(--line);font-size:14px;color:var(--c2)}
+.dai .ok-t{font-size:15px}
+
+/* lưới điểm */
+.the{background:var(--surface);border:1px solid var(--line);border-radius:12px}
+table.luoi{width:100%;border-collapse:separate;border-spacing:0}
+.luoi th{padding:9px 10px;background:var(--surface-2);border-bottom:1px solid var(--line-strong);font-size:12px;font-weight:600;color:var(--dim);text-align:left;white-space:nowrap}
+.luoi th:first-child{border-top-left-radius:11px}.luoi th:last-child{border-top-right-radius:11px}
+.luoi td{position:relative;height:50px;padding:5px 10px;border-bottom:1px solid var(--line);font-size:13px;vertical-align:middle}
+.luoi tr:last-child td{border-bottom:0}
+.luoi .ten{font-weight:600;color:var(--accent)}
+.luoi .tp{display:block;font-size:12px;color:var(--faint)}
+.luoi .wc{background:color-mix(in srgb,var(--surface-2) 70%,transparent)}
+.luoi tr.chon td{box-shadow:inset 0 2px 0 var(--accent),inset 0 -2px 0 var(--accent)}
+.luoi tr.chon td:first-child{box-shadow:inset 2px 0 0 var(--accent),inset 0 2px 0 var(--accent),inset 0 -2px 0 var(--accent)}
+.luoi tr.chon td:last-child{box-shadow:inset -2px 0 0 var(--accent),inset 0 2px 0 var(--accent),inset 0 -2px 0 var(--accent)}
+.luoi.cu th{font-size:11px;text-transform:uppercase;letter-spacing:.04em}
+/* 4 dáng ô */
+.o{display:inline-flex;align-items:center;justify-content:center;min-width:64px;height:34px;padding:0 8px;border-radius:6px;border:1px solid transparent;font-size:13px;vertical-align:middle}
+.o.can{border-color:var(--o-sua);background:var(--o-nen);cursor:text}
+.o.nhap{border-color:var(--o-sua);background:var(--o-nen);justify-content:flex-start;gap:6px;min-width:96px}
+.o.can.a{color:var(--accent);font-size:12px;font-weight:600;border-style:dashed}
+.o.f{border:2px solid var(--accent);box-shadow:0 0 0 3px var(--accent-soft);background:var(--o-nen)}
+.o.loi{border:2px solid var(--duoi);background:var(--o-nen)}
+.caret{display:inline-block;width:1.5px;height:17px;background:var(--c1)}
+.d{display:inline-flex;align-items:center;gap:4px;font-size:14px;font-weight:700;color:var(--c1);white-space:nowrap}
+.d i{font-style:normal;font-size:12px;font-weight:500;margin-left:1px}
+.d.duoi{color:var(--duoi)}.d.bang{color:var(--bang)}.d.ok{color:var(--ok)}
+.d.phu{font-size:13px;font-weight:500}
+.luoi .wc .d{font-weight:800}
+.o-tk{display:inline-flex;align-items:center;min-width:64px;height:30px;padding:0 8px;border-radius:6px;border:1px solid var(--line-strong)}
+.d2{display:inline-flex;flex-direction:column;line-height:1.25}
+.d2 .cau{font-size:12px;color:var(--faint);font-weight:500}
+.gach{display:inline-flex;flex-direction:column;line-height:1.25}
+.gach b{font-size:15px;color:var(--muted)}
+.gach small,.vang small{font-size:12px;color:var(--faint);white-space:nowrap}
+.vang{display:inline-flex;flex-direction:column;line-height:1.25;font-size:13px;font-weight:600;color:var(--muted)}
+.nhap-nx{display:inline-flex;flex-direction:column;line-height:1.25}
+.nhap-nx small{font-size:12px;color:var(--dim)}
+.luu-o{font-size:12px;color:var(--faint)}
+.thieu{display:block;font-size:12px;color:var(--dim)}
+.kq{display:inline-flex;flex-wrap:wrap;align-items:center;gap:4px 8px}
+.kq .mo{font-size:12px}
+.nx-btn{display:inline-flex;align-items:center;min-height:30px;padding:0 9px;margin-left:8px;border-radius:7px;border:1px solid var(--line-strong);font-size:12px;font-weight:600;color:var(--c3);background:var(--surface-2);cursor:pointer;white-space:nowrap}
+.tong{font-size:12px;color:var(--faint);font-weight:500}
+
+/* hộp nhập điểm (neo cạnh ô) */
+.hop{position:absolute;z-index:6;width:400px;background:var(--surface);border:1px solid var(--line-strong);border-radius:12px;box-shadow:var(--bong);text-align:left;white-space:normal}
+.hop.tinh{position:relative;box-shadow:none;z-index:auto}
+.hop-h{display:flex;align-items:flex-start;gap:10px;padding:14px 16px 10px;border-bottom:1px solid var(--line)}
+.hop-h .k{font-size:16px;font-weight:800;color:var(--c1)}
+.hop-h .s{font-size:13px;color:var(--dim);margin-top:2px}
+.hop-b{display:flex;flex-direction:column;gap:12px;padding:12px 16px}
+.hop-f{display:flex;align-items:center;flex-wrap:wrap;gap:8px;padding:10px 16px;border-top:1px solid var(--line)}
+.tc{display:grid;grid-template-columns:repeat(4,minmax(0,1fr)) 58px;gap:6px}
+.tc .l{font-size:12px;font-weight:600;color:var(--dim);text-align:center}
+.oi{display:flex;align-items:center;justify-content:center;gap:2px;height:40px;border-radius:8px;border:1px solid var(--o-vien);background:var(--o-nen);font-size:15px;font-weight:600;color:var(--c1)}
+.oi.f{border:2px solid var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.oi.loi{border:2px solid var(--duoi)}
+.oi.kq-o{border-color:transparent;background:transparent;font-size:18px;font-weight:800}
+.oi16{height:44px;font-size:16px;padding:0 12px;justify-content:flex-start;min-width:84px}
+.lb{display:block;margin-bottom:6px;font-size:12px;font-weight:600;color:var(--c3)}
+.bb::after{content:" *";color:var(--duoi)}
+.ta{min-height:58px;padding:8px 10px;border-radius:8px;border:1px solid var(--o-vien);background:var(--o-nen);font-size:13px;color:var(--c2);line-height:1.45}
+.ta.f{border:2px solid var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.dong-kv{font-size:12px;color:var(--faint)}
+.dong-kv .duoi{color:var(--duoi);font-weight:600}
+.dong-kv .ok{color:var(--ok);font-weight:600}
+.mau{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:6px}
+.mau .t{font-size:12px;color:var(--faint);margin-right:2px}
+.mau span:not(.t),.nn span{display:inline-flex;align-items:center;min-height:28px;padding:0 10px;border-radius:999px;border:1px solid var(--line-strong);background:var(--surface-2);font-size:12px;font-weight:500;color:var(--c2);cursor:pointer;white-space:nowrap}
+.w375 .mau span:not(.t),.w375 .nn span{min-height:36px}
+.nn{display:flex;flex-wrap:wrap;gap:6px}
+.nn span.on{border-color:var(--accent);color:var(--c1);box-shadow:inset 0 0 0 1px var(--accent);font-weight:600}
+.nn b{display:inline-grid;place-items:center;width:18px;height:18px;margin:0 6px 0 -4px;border-radius:50%;background:var(--accent);color:var(--accent-ink);font-size:12px}
+.luu{display:inline-flex;align-items:center;gap:6px;font-size:13px;white-space:nowrap}
+.luu.dang{color:var(--dim)}.luu.da{color:var(--ok);font-weight:600}.luu.loi{color:var(--duoi);font-weight:600}
+.cham{display:inline-block;width:10px;height:10px;border-radius:50%;border:2px solid currentColor;border-right-color:transparent;animation:quay .8s linear infinite}
+@keyframes quay{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.cham{animation:none}}
+
+/* hộp giải thích của nút ? — tiêu đề → kết luận đậm → số liệu → việc có thể làm */
+.vs{position:absolute;z-index:7;width:330px;padding:12px 14px;border-radius:10px;background:var(--surface);border:1px solid var(--line-strong);box-shadow:var(--bong);font-size:13px;color:var(--c2);line-height:1.5;white-space:normal;text-align:left}
+.vs .k{font-size:13px;font-weight:700;color:var(--c1);margin-bottom:4px}
+.vs ul,.vs ol{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:3px}
+.vs .kl{font-size:14px;font-weight:700;color:var(--c1);margin-bottom:4px}
+.vs .sl{color:var(--dim)}.vs .sl b{color:var(--c1)}
+.vs .vl{margin-top:8px}
+.vs.tinh{position:relative;box-shadow:none;z-index:auto}
+
+/* dán từ Excel */
+table.dan{width:100%;border-collapse:collapse;font-size:13px}
+.dan th{padding:6px 8px;font-size:12px;font-weight:600;color:var(--dim);text-align:left;border-bottom:1px solid var(--line-strong);white-space:nowrap}
+.dan td{padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
+.dan tr.khong td{color:var(--faint)}
+.dan .so{font-weight:700;color:var(--c1)}
+.dan .sai{display:inline-flex;align-items:center;gap:4px;padding:2px 6px;border-radius:6px;border:2px solid var(--duoi);font-weight:700;color:var(--duoi)}
+.dan .bo{font-size:12px;color:var(--faint)}
+.chon-em{display:inline-flex;align-items:center;gap:8px;min-height:30px;padding:0 10px;border-radius:7px;border:1px solid var(--o-vien);background:var(--o-nen);font-size:12px;color:var(--c3)}
+.nhap-o{display:inline-flex;align-items:center;gap:6px;min-width:64px;height:34px;padding:0 8px;border-radius:6px;border:1px dashed var(--accent);background:var(--accent-soft);font-weight:700;color:var(--c1)}
+.nhap-o small{font-size:12px;font-weight:600;color:var(--dim)}
+.cot-nhan{display:flex;flex-wrap:wrap;align-items:center;gap:4px}
+.cot-nhan>span:not(.mo){display:inline-flex;align-items:center;height:22px;padding:0 7px;border-radius:5px;background:var(--surface-2);border:1px solid var(--line);font-size:12px;color:var(--c2);white-space:nowrap}
+.dem-tt{font-size:13px;color:var(--dim);white-space:nowrap}.dem-tt b{color:var(--c1)}.dem-tt.loi,.dem-tt.loi b{color:var(--duoi)}
+.dan.xt td{padding:7px 8px;vertical-align:top}
+.dan.xt th{padding:8px}
+.o2{display:flex;flex-direction:column;gap:1px;min-width:0}
+.o2 b{font-size:14px;color:var(--c1)}
+.o2 small{display:block;max-width:116px;font-size:12px;color:var(--faint);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.o2.sai-o{padding:2px 6px;margin:-3px -7px;border:2px solid var(--duoi);border-radius:6px}
+.o2.sai-o b,.o2.sai-o small,.ddu{color:var(--duoi)!important}
+.tsau{font-size:14px;color:var(--c1);white-space:nowrap}.tsau s{color:var(--faint);font-weight:500}
+.khop{display:inline-flex;align-items:center;gap:6px;font-weight:600;color:var(--c1)}.khop .ki{color:var(--ok)}
+small.excel{display:block;margin-top:2px;font-size:12px;color:var(--faint)}
+.nn-can{display:inline-flex;align-items:center;margin-top:4px;min-height:24px;padding:0 8px;border-radius:999px;border:1px dashed var(--accent);color:var(--accent);font-size:12px;font-weight:600;white-space:nowrap}
+.dan tr.mo-nn td{background:var(--chon-nen)}
+.dan tr.nn-dong td{padding-top:2px;padding-bottom:10px}
+.dan tr.hoi-tr td{background:color-mix(in srgb,var(--accent-soft) 60%,transparent)}
+.ds-em{display:flex;flex-direction:column;margin-top:6px;border:1px solid var(--line-strong);border-radius:8px;background:var(--surface);box-shadow:var(--bong);overflow:hidden;width:250px}
+.ds-em>span{display:flex;flex-direction:column;padding:7px 10px;font-size:13px;color:var(--c1);font-weight:600;cursor:pointer;border-top:1px solid var(--line)}
+.ds-em>span:first-child{border-top:0;background:var(--accent-soft)}
+.ds-em small{font-size:12px;font-weight:500;color:var(--faint)}
+.ds-em>span.bo{font-weight:500;color:var(--dim)}
+
+/* 375 */
+.sheet-top{display:flex;align-items:center;gap:6px;height:48px;padding:0 6px;border-bottom:1px solid var(--line);background:var(--surface);font-size:14px}
+.the-em{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:10px}
+.the-em.chon{box-shadow:inset 0 0 0 2px var(--accent)}
+.the-em .ten{font-size:16px;font-weight:700;color:var(--c1)}
+.thanh-day{position:absolute;left:0;right:0;bottom:0;display:flex;flex-direction:column;gap:6px;padding:10px 16px 14px;background:var(--surface);border-top:1px solid var(--line-strong)}
+.toast{display:flex;align-items:center;flex-wrap:wrap;gap:6px 12px;padding:10px 14px;border-radius:10px;background:var(--surface);border:1px solid var(--line-strong);box-shadow:var(--bong);font-size:13px;color:var(--c2)}
+
+/* bảng tóm tắt + sơ đồ */
+table.tt{border-collapse:collapse;font-size:13px;max-width:1200px;width:100%}
+.tt th,.tt td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+.tt th{font-size:12px;font-weight:600;color:var(--dim);border-bottom-color:var(--line-strong)}
+.tt td b{color:var(--c1)}
+.tt td s{color:var(--faint)}
+.tt td .ok-t{font-weight:700}
+.so-do{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:20px;max-width:1440px}
+.sd{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:10px;font-size:13px;color:var(--dim)}
+.sd .k{font-size:15px;font-weight:800;color:var(--c1)}
+.sd .k.kn-on{color:var(--ok)}
+.nut-nav{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.nut-nav>span{display:inline-flex;align-items:center;min-height:30px;padding:0 10px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface-2);font-size:13px;color:var(--c2);white-space:nowrap}
+.nut-nav>span.on{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent);color:var(--c1);font-weight:600}
+.nut-nav>span.bo{text-decoration:line-through;color:var(--faint);border-style:dashed;background:transparent}
+.nut-nav>i{font-style:normal;color:var(--faint)}
+.chu-thich{display:flex;flex-wrap:wrap;gap:14px 28px;align-items:flex-start}
+.chu-thich>div{display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--dim)}
+/* ---------- Kế hoạch Test (mockup 4) ---------- */
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line)}
+.tabs>span{display:inline-flex;align-items:center;min-height:40px;padding:0 14px;font-size:14px;color:var(--dim);white-space:nowrap}
+.tabs>span.on{color:var(--c1);font-weight:600;box-shadow:inset 0 -2px 0 var(--accent)}
+.loc{display:flex;align-items:center;flex-wrap:wrap;gap:8px 10px}
+.o-tim{display:flex;align-items:center;gap:8px;width:360px;height:38px;padding:0 12px;border:1px solid var(--o-vien);border-radius:8px;background:var(--o-nen);font-size:14px;color:var(--faint)}
+.o-tim.f{border:2px solid var(--accent);box-shadow:0 0 0 3px var(--accent-soft);color:var(--c1)}
+.w375 .o-tim{width:100%;height:44px;font-size:16px}
+.ket-tim{display:flex;flex-direction:column;width:420px;padding:6px;border-radius:10px;background:var(--surface);border:1px solid var(--line-strong);box-shadow:var(--bong)}
+.ket-tim .nh{padding:8px 10px 4px;font-size:12px;font-weight:700;color:var(--dim)}
+.ket-tim .kt{display:flex;flex-direction:column;gap:1px;padding:8px 10px;border-radius:7px;cursor:pointer}
+.ket-tim .kt b{font-size:14px;color:var(--c1);font-weight:600}
+.ket-tim .kt span{font-size:12px;color:var(--faint)}
+.ket-tim .kt.on{background:var(--accent-soft);box-shadow:inset 0 0 0 1px var(--accent-line)}
+.ket-tim mark{background:transparent;color:var(--accent-strong);font-weight:700}
+.ket-tim .rong{padding:4px 10px 8px;font-size:13px;color:var(--faint)}
+.w375 .ket-tim{width:100%}
+table.kh{width:100%;border-collapse:separate;border-spacing:0}
+.kh th{padding:9px 10px;background:var(--surface-2);border-bottom:1px solid var(--line-strong);font-size:12px;font-weight:600;color:var(--dim);text-align:left;white-space:nowrap}
+.kh td{padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top;font-size:13px}
+.kh tr:last-child td{border-bottom:0}
+.kh .ten{display:block;font-weight:600;color:var(--accent)}
+.kh .em{display:block;font-size:12px;color:var(--faint)}
+.kh tr.chon td{background:var(--chon-nen)}
+.kh tr.chon td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
+.cl{display:inline-flex;flex-direction:column;align-items:flex-start;gap:1px;padding:4px 8px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);font-size:13px;font-weight:600;color:var(--c1);white-space:nowrap;cursor:pointer}
+.cl small{font-size:12px;font-weight:500;color:var(--dim)}
+.cl.da{background:var(--da-thi-bg);border-color:transparent}
+.cl.da .ki{color:var(--ok)}
+.cl.cx{border-style:dashed;color:var(--dim);font-weight:500}
+.cl.huy{color:var(--muted);font-weight:500;background:var(--muted-bg);border-color:transparent}
+.cl.chon{border:2px solid var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.cl .dong{display:inline-flex;align-items:center;gap:5px}
+.gc{display:block;max-width:150px;margin-top:4px;font-size:12px;color:var(--dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:text}
+.gc::before{content:"Ghi chú: ";color:var(--faint)}
+.gc-sua{display:flex;flex-direction:column;gap:2px;margin-top:4px;width:150px}
+.gc-sua .oi{height:30px;justify-content:flex-start;padding:0 6px;font-size:12px;font-weight:500;border:2px solid var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.gc-sua small{font-size:12px;color:var(--faint)}
+.gc-lop{display:flex;align-items:flex-start;gap:10px 14px;flex-wrap:wrap;padding:12px 14px;border-top:1px solid var(--line);font-size:13px;color:var(--c2)}
+.gc-lop .k{font-weight:700;color:var(--c1);white-space:nowrap}
+.tuan-chon{display:flex;align-items:center;gap:6px}
+.tuan-chon .oi{flex:1;height:38px;justify-content:space-between;padding:0 10px;font-size:14px}
+.tuan-chon .oi small{font-size:12px;font-weight:500;color:var(--faint)}
+.knd{display:grid;grid-template-columns:22px 92px minmax(0,1fr) 32px;gap:8px;align-items:center;min-height:40px;border-top:1px solid var(--line);font-size:13px}
+.knd:first-child{border-top:0}
+.knd .tk{color:var(--c1);font-weight:600}
+.knd .tk small{font-weight:500;color:var(--faint)}
+.chip-t{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 8px;border-radius:6px;background:var(--surface-2);border:1px solid var(--line);font-size:12px;font-weight:600;color:var(--c2);white-space:nowrap;width:fit-content}
+.chip-t.tt{background:transparent;color:var(--dim);font-weight:500}
+.btn-nguy{color:var(--duoi);border-color:color-mix(in srgb,var(--duoi) 55%,transparent);background:transparent}
+.btn-nguy:hover{background:color-mix(in srgb,var(--duoi) 12%,transparent);border-color:var(--duoi)}
+.ly-do{font-size:12px;color:var(--dim);line-height:1.4}
+.ls{display:flex;flex-direction:column}
+.ls .lan{padding:10px 16px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:4px;font-size:13px}
+.ls .lan:first-child{border-top:0}
+.ls .dau{display:flex;flex-wrap:wrap;gap:2px 8px;align-items:baseline}
+.ls .dau b{color:var(--c1)}
+.ls .dau span{font-size:12px;color:var(--faint)}
+.ls .ty{color:var(--c2)}
+.ls .ty s{color:var(--faint)}
+.ls .ld{font-size:12px;color:var(--dim)}
+table.xem{border-collapse:separate;border-spacing:0;font-size:12px}
+.xem th,.xem td{padding:6px 8px;border-bottom:1px solid var(--line);border-right:1px solid var(--line);text-align:left;white-space:nowrap;vertical-align:top}
+.xem th{background:var(--surface-2);font-weight:700;color:var(--c2)}
+.xem td{color:var(--c2)}
+.xem td.cx{color:var(--faint)}
+.cuon{max-width:100%;overflow-x:auto;border:1px solid var(--line);border-radius:8px}
+.dd{display:grid;grid-template-columns:120px minmax(0,1fr);gap:4px 12px;font-size:13px}
+.dd>span:nth-child(odd){color:var(--faint)}
+.dd>span:nth-child(even){color:var(--c2)}
+.nen-mo{position:absolute;inset:0;background:rgba(5,10,20,.55)}
+:root[data-theme="light"] .nen-mo{background:rgba(15,23,42,.35)}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-dat" viewBox="0 0 16 16"><path d="M3 8.5l3.2 3.2L13 4.8"/></symbol>
+  <symbol id="i-chua" viewBox="0 0 16 16"><path d="M4 4l8 8M12 4l-8 8"/></symbol>
+</svg>
+
+<div class="topbar">
+  <b>OV-14 · 4 · Kế hoạch Test</b>
+  <nav class="toc" aria-label="Mục lục">
+    <a href="#k1">1 Lưới lớp + hộp lịch</a><a href="#k2">2 Xóa lịch · Lịch sử</a><a href="#k3">3 Tìm</a><a href="#k4">4 Xuất Excel</a><a href="#k5">5 375</a><a href="#k6">6 Hỏi</a>
+  </nav>
+  <span class="sp"></span>
+  <span class="seg" role="group" aria-label="Chế độ màu"><span data-t="dark" role="button" tabindex="0" onclick="doi('dark')">Tối</span><span data-t="light" role="button" tabindex="0" onclick="doi('light')">Sáng</span></span>
+</div>
+
+<div class="wrap">
+
+<section class="sec" style="gap:10px">
+  <div class="ghi">
+    <div><span class="tde">Mockup 19/10 · planning, chưa duyệt · OV-15c</span>
+      <p>Dữ liệu demo ngày <b>14/09/2026 (W3 SEP)</b>, chi nhánh Hải Dương. Chữ trong khung = chữ sẽ hiện trên web; giải thích nằm ngoài khung. Token, phông, bảng màu như mockup 1–2.</p></div>
+    <div><span class="tde">Gồm</span>
+      <p><b>C17</b> Xuất Excel 13 cột · <b>C18</b> tìm lớp / học viên / email · <b>C19</b> Xóa lịch ở chân hộp · <b>C20</b> tuần kèm năm mọi chip · <b>C21</b> ghi chú lịch thi · <b>C22</b> Lịch sử thay đổi từ ⋯ hộp.</p></div>
+    <div><span class="tde">Giữ nguyên</span>
+      <p>Hộp một đợt neo cạnh chip (<code>HopKyNang</code>), “Tuần chung”, bốn dòng L · R · W · S có ⋯, “Huỷ MT” trong ⋯ đầu hộp, Lưu một đường. Chỉ Quản lý / Quản trị mở hộp.</p></div>
+  </div>
+</section>
+
+<!-- ============================================================ 1 -->
+<section class="sec" id="k1">
+  <h2>1 · Lưới lớp — chip tuần kèm năm, ghi chú dưới chip, hộp lịch một em × MT</h2>
+  <span class="where">Test › Kế hoạch Test · Quản lý Nguyễn Khánh Vy · Hải Dương · HD FT 03 · đã chọn Đỗ Trọng Tiến từ ô tìm (C18) → lớp mở, hàng em sáng</span>
+  <div class="ghi">
+    <div><span class="tde">Chip (C20)</span><ul>
+      <li>Mọi chip: <b>W4 AUG/2026</b>. Kỹ năng khác tuần: hai dòng <b>L/R W4 AUG/2026 · W/S W1 SEP/2026</b>.</li>
+      <li>Đã thi: nền xanh + ✓. Chưa xếp: viền đứt. Đã huỷ: xám, chữ “Đã huỷ”.</li></ul></div>
+    <div><span class="tde">Ghi chú lịch thi (C21)</span><ul>
+      <li>Theo <b>học viên × lượt MT</b>; một dòng dưới chip, dài thì cắt “…”, rê chuột / chạm xem đủ. Bấm dòng = sửa tại chỗ (Enter lưu · Esc huỷ).</li>
+      <li>Ô “Ghi chú lịch thi” trong hộp; có tác giả · lúc; sửa vào Lịch sử thay đổi. Chỉ là ghi chú, <b>không dời lịch</b>.</li>
+      <li>Ghi chú cả lớp: dưới bảng, ghi rõ “Ghi chú lớp”.</li></ul></div>
+    <div><span class="tde">Hộp lịch (C19)</span><ul>
+      <li>Chân hộp: <b>Đóng · Xóa lịch</b> (ngay phải Đóng) … <b>Lưu</b>.</li>
+      <li>Xóa lịch = bỏ tuần: lượt về “Chưa xếp”, giữ học viên, lượt, lịch sử. Hỏi lại một lần (nêu đúng em, đúng MT, số kỹ năng).</li>
+      <li>⋯ đầu hộp: Huỷ MT4 · Lịch sử thay đổi · Mở hồ sơ MT.</li></ul></div>
+  </div>
+
+  <p class="cap">1440 · tối / sáng theo nút trên cùng</p>
+  <div class="row2">
+    <div class="win w1440">
+      <div class="app"><span class="logo"><i>P</i>PISA Tracking</span><span class="muc">Tổng quan</span><span class="muc">Học viên &amp; Lớp</span><span class="muc on">Test</span><span class="muc">Công việc <span class="dem">8</span></span><span class="sp"></span><span class="tim">Tìm học viên, lớp…</span><span class="muc">Thông báo <span class="dem">6</span></span><span class="muc" style="color:var(--c1);font-weight:600">Nguyễn Khánh Vy</span></div>
+      <div class="trang" style="display:flex;flex-direction:column;gap:14px;min-height:900px">
+        <div class="tabs"><span>Lịch Test</span><span class="on">Kế hoạch Test</span></div>
+        <div class="loc">
+          <span class="btn btn-sm">Hải Dương <span class="cv"></span></span><span class="seg"><span aria-pressed="true">Fast Track <span class="n">3 lớp</span></span><span>Lớp thường <span class="n">5 lớp</span></span></span>
+          <span class="o-tim">Tìm lớp, học viên hoặc email…</span>
+          <span class="sp"></span><span class="mo">21 học viên</span><span class="btn btn-sm">Xuất Excel</span>
+        </div>
+
+        <div class="ds" style="overflow:visible">
+          <div class="nhom-h dong"><span class="cv phai"></span>HD FT 01 <span class="n">· 7 HV · GVCN Phạm Hồng Nhung</span></div>
+          <div class="nhom-h"><span class="cv"></span>HD FT 03 <span class="n">· 7 HV · GVCN Trần Quốc Bảo · khai giảng W1 JUL/2026</span></div>
+          <div style="position:relative">
+            <table class="kh">
+              <thead><tr><th style="width:230px">Học viên</th><th>MT1</th><th>MT2</th><th>MT3</th><th>MT4</th><th>MT5</th><th>MT6</th></tr></thead>
+              <tbody>
+                <tr><td><span class="ten">Bùi Minh Châu</span><span class="em">chau.buiminh@gmail.com</span></td>
+                  <td><span class="cl da"><span class="dong"><svg class="ki" aria-hidden="true"><use href="#i-dat"/></svg>W1 JUL/2026</span><small>Đã thi</small></span></td>
+                  <td><span class="cl da"><span class="dong"><svg class="ki" aria-hidden="true"><use href="#i-dat"/></svg>W1 AUG/2026</span><small>Đã thi</small></span></td>
+                  <td><span class="cl da"><span class="dong"><svg class="ki" aria-hidden="true"><use href="#i-dat"/></svg>W4 AUG/2026</span><small>Đã thi</small></span></td>
+                  <td><span class="cl">W4 SEP/2026</span></td><td><span class="cl">W4 OCT/2026</span></td><td><span class="cl cx">Chưa xếp</span></td></tr>
+                <tr><td><span class="ten">Đặng Gia Huy</span><span class="em">giahuy.dang@gmail.com</span></td>
+                  <td><span class="cl da"><span class="dong"><svg class="ki" aria-hidden="true"><use href="#i-dat"/></svg>W1 JUL/2026</span><small>Đã thi</small></span></td>
+                  <td><span class="cl da"><span class="dong"><svg class="ki" aria-hidden="true"><use href="#i-dat"/></svg>W1 AUG/2026</span><small>Đã thi</small></span></td>
+                  <td><span class="cl da"><span class="dong">L/R W4 AUG/2026</span><small>W/S W1 SEP/2026</small></span></td>
+                  <td><span class="cl">W4 SEP/2026</span></td><td><span class="cl">W4 OCT/2026</span></td><td><span class="cl cx">Chưa xếp</span></td></tr>
+                <tr class="chon"><td><span class="ten">Đỗ Trọng Tiến</span><span class="em">tien.dotrong@gmail.com</span></td>
+                  <td><span class="cl da"><span class="dong"><svg class="ki" aria-hidden="true"><use href="#i-dat"/></svg>W1 JUL/2026</span><small>Đã thi</small></span></td>
+                  <td><span class="cl da"><span class="dong"><svg class="ki" aria-hidden="true"><use href="#i-dat"/></svg>W1 AUG/2026</span><small>Đã thi</small></span></td>
+                  <td><span class="cl da"><span class="dong"><svg class="ki" aria-hidden="true"><use href="#i-dat"/></svg>W4 AUG/2026</span><small>Đã thi</small></span></td>
+                  <td><span class="cl chon">W4 SEP/2026</span><span class="gc" title="Chờ xác nhận lịch Speaking">Chờ xác nhận lịch Speaking</span></td>
+                  <td><span class="cl">W4 OCT/2026</span></td><td><span class="cl cx">Chưa xếp</span></td></tr>
+                <tr><td><span class="ten">Hoàng Khánh Ngân</span><span class="em">ngan.hk2009@gmail.com</span></td>
+                  <td><span class="cl da"><span class="dong"><svg class="ki" aria-hidden="true"><use href="#i-dat"/></svg>W1 JUL/2026</span><small>Đã thi</small></span></td>
+                  <td><span class="cl da"><span class="dong"><svg class="ki" aria-hidden="true"><use href="#i-dat"/></svg>W2 AUG/2026</span><small>Đã thi</small></span></td>
+                  <td><span class="cl da"><span class="dong"><svg class="ki" aria-hidden="true"><use href="#i-dat"/></svg>W4 AUG/2026</span><small>Đã thi</small></span></td>
+                  <td><span class="cl">W4 SEP/2026</span><span class="gc" title="Gia đình đề nghị chuyển sang đầu tháng 11">Gia đình đề nghị chuyển sang đầu tháng 11</span></td>
+                  <td><span class="cl">W4 OCT/2026</span></td><td><span class="cl cx">Chưa xếp</span></td></tr>
+                <tr><td><span class="ten">Lê Bảo Trâm</span><span class="em">tram.lebao@gmail.com</span></td>
+                  <td><span class="cl da"><span class="dong"><svg class="ki" aria-hidden="true"><use href="#i-dat"/></svg>W1 JUL/2026</span><small>Đã thi</small></span></td>
+                  <td><span class="cl da"><span class="dong"><svg class="ki" aria-hidden="true"><use href="#i-dat"/></svg>W1 AUG/2026</span><small>Đã thi</small></span></td>
+                  <td><span class="cl"><span class="dong">L/R W4 AUG/2026</span><small>W/S W3 SEP/2026</small></span></td>
+                  <td><span class="cl">W4 SEP/2026</span></td><td><span class="cl">W4 OCT/2026</span></td><td><span class="cl cx">Chưa xếp</span></td></tr>
+                <tr><td><span class="ten">Nguyễn Hữu Phát</span><span class="em">phat.nguyenhuu@gmail.com</span></td>
+                  <td><span class="cl da"><span class="dong"><svg class="ki" aria-hidden="true"><use href="#i-dat"/></svg>W1 JUL/2026</span><small>Đã thi</small></span></td>
+                  <td><span class="cl huy">Đã huỷ<small>vắng 2 lần</small></span></td>
+                  <td><span class="cl da"><span class="dong"><svg class="ki" aria-hidden="true"><use href="#i-dat"/></svg>W4 AUG/2026</span><small>Đã thi</small></span></td>
+                  <td><span class="cl">W4 SEP/2026</span></td>
+                  <td><span class="cl">W4 OCT/2026</span><div class="gc-sua"><span class="oi">Thi bù S cùng HD FT 05<span class="caret" style="height:14px"></span></span><small>Enter lưu · Esc huỷ</small></div></td><td><span class="cl cx">Chưa xếp</span></td></tr>
+                <tr><td><span class="ten">Trịnh Mai Anh</span><span class="em">maianh.03@gmail.com</span></td>
+                  <td><span class="cl da"><span class="dong"><svg class="ki" aria-hidden="true"><use href="#i-dat"/></svg>W1 JUL/2026</span><small>Đã thi</small></span></td>
+                  <td><span class="cl da"><span class="dong"><svg class="ki" aria-hidden="true"><use href="#i-dat"/></svg>W1 AUG/2026</span><small>Đã thi</small></span></td>
+                  <td><span class="cl da"><span class="dong"><svg class="ki" aria-hidden="true"><use href="#i-dat"/></svg>W4 AUG/2026</span><small>Đã thi</small></span></td>
+                  <td><span class="cl">W4 SEP/2026</span></td><td><span class="cl cx">Chưa xếp</span></td><td><span class="cl cx">Chưa xếp</span></td></tr>
+              </tbody>
+            </table>
+
+            <!-- HỘP LỊCH neo cạnh chip MT4 của Đỗ Trọng Tiến -->
+            <div class="hop" style="left:930px;top:150px;width:430px" role="dialog" aria-label="Đỗ Trọng Tiến · MT4">
+              <div class="hop-h" style="align-items:center"><div style="flex:1"><div class="k"><span class="lk">Đỗ Trọng Tiến · MT4</span></div><div class="s">HD FT 03 · Mock Test 4</div></div><span class="nut-ba" aria-label="Thao tác khác · Đỗ Trọng Tiến · MT4">⋯</span><span class="x" aria-label="Đóng">✕</span></div>
+              <div class="hop-b">
+                <div><span class="lb">Tuần chung</span>
+                  <div class="tuan-chon"><span class="btn btn-sm" aria-label="Tuần trước">‹</span><span class="oi">W4 SEP/2026<small>21/09–27/09</small></span><span class="btn btn-sm" aria-label="Tuần sau">›</span></div></div>
+                <div>
+                  <div class="knd"><span class="cb on"></span><span class="tk">L <small>Listening</small></span><span class="chip-t">W4 SEP/2026</span><span class="nut-ba" aria-label="Thao tác · Listening">⋯</span></div>
+                  <div class="knd"><span class="cb on"></span><span class="tk">R <small>Reading</small></span><span class="chip-t">W4 SEP/2026</span><span class="nut-ba" aria-label="Thao tác · Reading">⋯</span></div>
+                  <div class="knd"><span class="cb on"></span><span class="tk">W <small>Writing</small></span><span class="chip-t">W4 SEP/2026</span><span class="nut-ba" aria-label="Thao tác · Writing">⋯</span></div>
+                  <div class="knd"><span class="cb on"></span><span class="tk">S <small>Speaking</small></span><span class="chip-t">W4 SEP/2026</span><span class="nut-ba" aria-label="Thao tác · Speaking">⋯</span></div>
+                </div>
+                <div><span class="lb">Ghi chú lịch thi</span><div class="ta f" style="min-height:44px">Chờ xác nhận lịch Speaking<span class="caret" style="height:14px;vertical-align:-2px;margin-left:1px"></span></div>
+                  <div class="dong-kv" style="margin-top:4px">Nguyễn Khánh Vy · 12/09 10:20 · không dời lịch</div></div>
+              </div>
+              <div class="hop-f"><span class="btn btn-sm">Đóng</span><span class="btn btn-sm btn-nguy">Xóa lịch</span><span class="sp"></span><span class="btn btn-sm btn-primary">Lưu</span></div>
+            </div>
+          </div>
+          <div class="gc-lop"><span class="k">Ghi chú lớp · HD FT 03</span><span style="flex:1;min-width:260px">MT5 cả lớp có thể dời sang W1 NOV/2026 nếu trùng lịch thi thật tháng 10.<span class="mo" style="display:block">Nguyễn Khánh Vy · 10/09 16:05</span></span><span class="lk">Sửa</span></div>
+          <div class="nhom-h dong"><span class="cv phai"></span>HD FT 05 <span class="n">· 7 HV · GVCN Lý Thanh Tùng</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ 2 -->
+<section class="sec" id="k2">
+  <h2>2 · Xóa lịch, nút mờ khi đã có điểm, ⋯ hộp và Lịch sử thay đổi</h2>
+  <span class="where">Cùng hộp · bấm Xóa lịch → hộp hỏi nhỏ ngay trên hộp (không panel chồng panel) · ⋯ › Lịch sử thay đổi thay nội dung hộp, “‹ Lịch MT4” quay lại</span>
+  <div class="ghi">
+    <div><span class="tde">Khi nào chặn</span><p>Có điểm ở bất kỳ kỹ năng nào hoặc đã thi → <b>Xóa lịch mờ</b>, ngay dưới chân hộp nói lý do và bước tiếp theo. Không xoá dây chuyền điểm.</p></div>
+    <div><span class="tde">Sau khi xóa</span><p>Hộp đóng, chip thành “Chưa xếp”, thông báo nhỏ có <b>Hoàn tác</b>; ghi vào Lịch sử thay đổi. Ghi chú lịch thi của lượt giữ nguyên.</p></div>
+    <div><span class="tde">Lịch sử thay đổi (C22)</span><p>Một component chung: gom theo lần lưu · ai · lúc · nguồn · trước → sau · lý do. Mới nhất trên cùng.</p></div>
+  </div>
+  <div class="row2">
+    <div class="hop tinh" style="flex:none;width:300px">
+      <div class="hop-h" style="align-items:center"><div style="flex:1"><div class="k">Đỗ Trọng Tiến · MT4</div></div><span class="nut-ba" aria-expanded="true" aria-label="Thao tác khác">⋯</span><span class="x" aria-label="Đóng">✕</span></div>
+      <div style="position:relative;height:150px"><div class="menu" role="menu" style="right:10px;top:4px"><span role="menuitem" class="on">Lịch sử thay đổi</span><span role="menuitem">Mở hồ sơ MT</span><hr><span role="menuitem" class="nguy">Huỷ MT4</span></div></div>
+    </div>
+
+    <div class="hop tinh" role="alertdialog" aria-label="Xóa lịch MT4" style="flex:none;width:380px">
+      <div class="hop-h"><div style="flex:1"><div class="k">Xóa lịch MT4 của Đỗ Trọng Tiến?</div></div></div>
+      <div class="hop-b"><p style="font-size:14px;color:var(--c2)"><b style="color:var(--c1)">4 kỹ năng về Chưa xếp.</b></p><p class="mo">Học viên, lượt MT4, ghi chú và lịch sử giữ nguyên. Xếp lại bất cứ lúc nào.</p></div>
+      <div class="hop-f"><span class="sp"></span><span class="btn btn-sm">Huỷ</span><span class="btn btn-sm btn-nguy" style="background:var(--duoi);color:var(--bg);border-color:var(--duoi);font-weight:600">Xóa lịch</span></div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:10px;flex:none;width:340px">
+      <div class="toast" style="box-shadow:none"><span class="ok-t">✓ Đã xóa lịch MT4 · Đỗ Trọng Tiến</span><span class="sp"></span><span class="lk">Hoàn tác</span></div>
+      <div class="the" style="padding:10px 12px;display:flex;align-items:center;gap:12px"><span class="mo">MT4 sau khi xóa</span><span class="cl cx">Chưa xếp</span></div>
+      <div class="toast" style="box-shadow:none"><span class="luu loi">⚠ Chưa xóa được — mất kết nối. Lịch giữ nguyên.</span><span class="sp"></span><span class="lk">Thử lại</span></div>
+    </div>
+  </div>
+
+  <div class="row2">
+    <div class="hop tinh" style="flex:none;width:430px" role="dialog" aria-label="Lê Bảo Trâm · MT3">
+      <div class="hop-h" style="align-items:center"><div style="flex:1"><div class="k"><span class="lk">Lê Bảo Trâm · MT3</span></div><div class="s">HD FT 03 · Mock Test 3</div></div><span class="nut-ba" aria-label="Thao tác khác">⋯</span><span class="x" aria-label="Đóng">✕</span></div>
+      <div class="hop-b">
+        <div>
+          <div class="knd"><span class="cb on" style="opacity:.5"></span><span class="tk">L <small>Listening</small></span><span class="chip-t">W4 AUG/2026 · 6.5</span><span class="nut-ba" aria-label="Thao tác · Listening">⋯</span></div>
+          <div class="knd"><span class="cb on" style="opacity:.5"></span><span class="tk">R <small>Reading</small></span><span class="chip-t">W4 AUG/2026 · 6.0</span><span class="nut-ba" aria-label="Thao tác · Reading">⋯</span></div>
+          <div class="knd"><span class="cb on"></span><span class="tk">W <small>Writing</small></span><span style="display:flex;gap:6px;flex-wrap:wrap"><span class="chip-t">W3 SEP/2026</span><span class="chip-t tt">chờ chấm</span></span><span class="nut-ba" aria-label="Thao tác · Writing">⋯</span></div>
+          <div class="knd"><span class="cb on"></span><span class="tk">S <small>Speaking</small></span><span style="display:flex;gap:6px;flex-wrap:wrap"><span class="chip-t">W3 SEP/2026</span><span class="chip-t tt">chờ chấm</span></span><span class="nut-ba" aria-label="Thao tác · Speaking">⋯</span></div>
+        </div>
+        <div><span class="lb">Ghi chú lịch thi</span><div class="ta" style="min-height:40px;color:var(--faint)">Thêm ghi chú…</div></div>
+      </div>
+      <div class="hop-f" style="flex-direction:column;align-items:stretch;gap:6px">
+        <div style="display:flex;gap:8px;align-items:center"><span class="btn btn-sm">Đóng</span><span class="btn btn-sm btn-nguy" aria-disabled="true" title="Đã có điểm L, R">Xóa lịch</span><span class="sp"></span><span class="btn btn-sm btn-primary" aria-disabled="true">Lưu</span></div>
+        <p class="ly-do">Không xóa được: đã có điểm L, R và đã thi W, S. Đổi tuần ở ⋯ từng kỹ năng, hoặc Huỷ MT3 ở ⋯ đầu hộp.</p>
+      </div>
+    </div>
+
+    <div class="hop tinh" style="flex:none;width:460px" role="dialog" aria-label="Lịch sử thay đổi · Đỗ Trọng Tiến · MT4">
+      <div class="hop-h" style="align-items:center"><span class="btn btn-sm btn-ghost" style="padding:0 6px">‹ Lịch MT4</span><div style="flex:1"><div class="k">Lịch sử thay đổi</div><div class="s">Đỗ Trọng Tiến · MT4</div></div><span class="x" aria-label="Đóng">✕</span></div>
+      <div class="ls">
+        <div class="lan"><div class="dau"><b>12/09 10:20</b><span>Nguyễn Khánh Vy · Kế hoạch Test</span></div><div class="ty">Ghi chú lịch thi: <s>(trống)</s> → “Chờ xác nhận lịch Speaking”</div></div>
+        <div class="lan"><div class="dau"><b>05/09 09:02</b><span>Nguyễn Khánh Vy · Kế hoạch Test · 4 kỹ năng</span></div><div class="ty">L, R, W, S: <s>W3 SEP/2026</s> → W4 SEP/2026</div><div class="ld">Lý do: trùng lịch phòng thi</div></div>
+        <div class="lan"><div class="dau"><b>18/08 14:40</b><span>Hệ thống · Xếp lịch cả lớp HD FT 03</span></div><div class="ty">Xếp MT4: <s>Chưa xếp</s> → W3 SEP/2026 (4 kỹ năng)</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ 3 -->
+<section class="sec" id="k3">
+  <h2>3 · Tìm lớp, học viên hoặc email (C18)</h2>
+  <span class="where">Ô tìm trên đầu Kế hoạch Test · tên có / không dấu · email không phân biệt hoa thường · chọn em → mở lớp, cuộn tới hàng em, hàng sáng (khung 1)</span>
+  <div class="row2">
+    <div style="display:flex;flex-direction:column;gap:6px;flex:none">
+      <span class="o-tim f">tien<span class="caret" style="height:16px;margin-left:-6px"></span></span>
+      <div class="ket-tim" role="listbox" aria-label="Kết quả tìm">
+        <div class="nh">Lớp</div><div class="rong">Không có lớp khớp “tien”</div>
+        <div class="nh">Học viên · 2</div>
+        <div class="kt on" role="option"><b>Đỗ Trọng <mark>Tiến</mark></b><span>HD FT 03 · <mark>tien</mark>.dotrong@gmail.com</span></div>
+        <div class="kt" role="option"><b>Phạm Minh <mark>Tiến</mark></b><span>HD FT 05 · <mark>tien</mark>pham.2010@gmail.com</span></div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px;flex:none">
+      <span class="o-tim f">03<span class="caret" style="height:16px;margin-left:-6px"></span></span>
+      <div class="ket-tim" role="listbox" aria-label="Kết quả tìm">
+        <div class="nh">Lớp · 2</div>
+        <div class="kt" role="option"><b>HD FT <mark>03</mark></b><span>Fast Track · 7 HV · GVCN Trần Quốc Bảo</span></div>
+        <div class="kt" role="option"><b>HD PRE <mark>03</mark></b><span>Lớp thường · 12 HV</span></div>
+        <div class="nh">Học viên · 1</div>
+        <div class="kt" role="option"><b>Trịnh Mai Anh</b><span>HD FT 03 · maianh.<mark>03</mark>@gmail.com</span></div>
+      </div>
+    </div>
+    <div class="ghi" style="flex:none;width:420px;grid-template-columns:1fr">
+      <div><span class="tde">Luật</span><ul>
+        <li>Một ô cho cả ba; kết quả chia <b>Lớp</b> / <b>Học viên</b>. Học viên luôn kèm lớp · email để phân biệt trùng tên.</li>
+        <li>Phím ↑ ↓ chọn, Enter mở. Không có kết quả: “Không có lớp hoặc học viên khớp”.</li>
+        <li>Chọn lớp “Lớp thường” khi đang ở Fast Track → tự đổi khung (như bấm lọc), không hỏi.</li></ul></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ 4 -->
+<section class="sec" id="k4">
+  <h2>4 · Xuất Excel Kế hoạch Test — 13 cột (C17)</h2>
+  <span class="where">Nút Xuất Excel trên dải lọc → panel phải xem trước · phạm vi = bộ lọc đang xem · ô MT là lịch thi, không phải điểm</span>
+  <div class="ghi">
+    <div><span class="tde">Cột (cố định)</span><p><b>Gmail | Tên học sinh | Lớp | MT1 … MT10</b>. Không thêm cột mã học viên.</p></div>
+    <div><span class="tde">Ô MT</span><p>Cùng tuần: <b>W4 AUG/2026</b> · khác tuần: <b>L/R: W4 AUG/2026; W/S: W1 SEP/2026</b> · “Chưa xếp” · “Đã huỷ” · “Vắng”. Không thành điểm 0.</p></div>
+    <div><span class="tde">Sheet “Thông tin xuất”</span><p>Chi nhánh, bộ lọc, lúc xuất, người xuất; học viên có MT &gt; 10 liệt kê ở đây (website không mất).</p></div>
+  </div>
+  <div class="row2">
+    <div class="win w1440" style="height:640px">
+      <div class="trang" style="display:grid;grid-template-columns:minmax(0,1fr) 980px;gap:16px;align-items:start;height:100%">
+        <div style="display:flex;flex-direction:column;gap:12px;opacity:.6">
+          <div class="tabs"><span>Lịch Test</span><span class="on">Kế hoạch Test</span></div>
+          <div class="loc"><span class="btn btn-sm">Hải Dương <span class="cv"></span></span><span class="btn btn-sm" style="border-color:var(--accent)">Xuất Excel</span></div>
+          <div class="ds" style="padding:12px 14px" ><span class="mo">HD FT 01 · HD FT 03 · HD FT 05</span></div>
+        </div>
+        <div class="pn" role="dialog" aria-label="Xuất Excel · Kế hoạch Test">
+          <div class="pn-h"><div class="pn-t">Xuất Excel · Kế hoạch Test</div><span class="x" aria-label="Đóng">✕</span>
+            <div class="pn-s">Theo bộ lọc đang xem: <b>Hải Dương · Fast Track · 3 lớp · 21 học viên</b></div></div>
+          <div style="padding:14px 20px;display:flex;flex-direction:column;gap:10px">
+            <span class="lb" style="margin:0">Xem trước · sheet “Kế hoạch Test” (4 / 21 hàng)</span>
+            <div class="cuon">
+              <table class="xem">
+                <thead><tr><th>Gmail</th><th>Tên học sinh</th><th>Lớp</th><th>MT1</th><th>MT2</th><th>MT3</th><th>MT4</th><th>MT5</th><th>MT6</th><th>MT7</th><th>MT8</th><th>MT9</th><th>MT10</th></tr></thead>
+                <tbody>
+                  <tr><td>chau.buiminh@gmail.com</td><td>Bùi Minh Châu</td><td>HD FT 03</td><td>W1 JUL/2026</td><td>W1 AUG/2026</td><td>W4 AUG/2026</td><td>W4 SEP/2026</td><td>W4 OCT/2026</td><td class="cx">Chưa xếp</td><td class="cx">Chưa xếp</td><td class="cx">Chưa xếp</td><td class="cx">Chưa xếp</td><td class="cx">Chưa xếp</td></tr>
+                  <tr><td>giahuy.dang@gmail.com</td><td>Đặng Gia Huy</td><td>HD FT 03</td><td>W1 JUL/2026</td><td>W1 AUG/2026</td><td>L/R: W4 AUG/2026;<br>W/S: W1 SEP/2026</td><td>W4 SEP/2026</td><td>W4 OCT/2026</td><td class="cx">Chưa xếp</td><td class="cx">Chưa xếp</td><td class="cx">Chưa xếp</td><td class="cx">Chưa xếp</td><td class="cx">Chưa xếp</td></tr>
+                  <tr><td>tien.dotrong@gmail.com</td><td>Đỗ Trọng Tiến</td><td>HD FT 03</td><td>W1 JUL/2026</td><td>W1 AUG/2026</td><td>W4 AUG/2026</td><td>W4 SEP/2026</td><td>W4 OCT/2026</td><td class="cx">Chưa xếp</td><td class="cx">Chưa xếp</td><td class="cx">Chưa xếp</td><td class="cx">Chưa xếp</td><td class="cx">Chưa xếp</td></tr>
+                  <tr><td>phat.nguyenhuu@gmail.com</td><td>Nguyễn Hữu Phát</td><td>HD FT 03</td><td>W1 JUL/2026</td><td>Đã huỷ</td><td>W4 AUG/2026</td><td>W4 SEP/2026</td><td>W4 OCT/2026</td><td class="cx">Chưa xếp</td><td class="cx">Chưa xếp</td><td class="cx">Chưa xếp</td><td class="cx">Chưa xếp</td><td class="cx">Chưa xếp</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <span class="lb" style="margin:6px 0 0">Sheet “Thông tin xuất”</span>
+            <div class="dd"><span>Chi nhánh</span><span>Hải Dương</span><span>Bộ lọc</span><span>Fast Track · 3 lớp · 21 học viên</span><span>Xuất lúc</span><span>14/09/2026 15:20 · Nguyễn Khánh Vy</span><span>MT ngoài 1–10</span><span>1 học viên có MT11 (Lý Đức Anh · HD FT 01 · W2 OCT/2026) — ghi ở sheet này</span></div>
+          </div>
+          <div class="pn-f"><span class="mo">File: Ke-hoach-Test_Hai-Duong_14-09-2026.xlsx</span><span class="sp"></span><span class="btn btn-sm">Huỷ</span><span class="btn btn-sm btn-primary">Tải file .xlsx</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ 5 -->
+<section class="sec" id="k5">
+  <h2>5 · 375 — tìm, thẻ học viên, hộp lịch là tấm dưới đáy, hỏi xóa, xuất</h2>
+  <span class="where">Điện thoại · ô nhập 16 px · nút 44 px · không trượt ngang (bảng xem trước cuộn trong khung riêng)</span>
+  <div class="row2">
+    <div class="win w375" style="height:760px">
+      <div class="app"><span class="logo" style="margin-right:0"><i>P</i></span><span class="muc on">Test</span><span class="sp"></span><span class="btn btn-ghost" style="padding:0 10px">Menu</span></div>
+      <div class="trang" style="display:flex;flex-direction:column;gap:10px">
+        <div class="tabs"><span>Lịch Test</span><span class="on">Kế hoạch Test</span></div>
+        <span class="o-tim f">tien<span class="caret" style="height:18px;margin-left:-6px"></span></span>
+        <div class="ket-tim" role="listbox" aria-label="Kết quả tìm">
+          <div class="nh">Lớp</div><div class="rong">Không có lớp khớp “tien”</div>
+          <div class="nh">Học viên · 2</div>
+          <div class="kt on" role="option" style="min-height:52px"><b>Đỗ Trọng <mark>Tiến</mark></b><span>HD FT 03 · <mark>tien</mark>.dotrong@gmail.com</span></div>
+          <div class="kt" role="option" style="min-height:52px"><b>Phạm Minh <mark>Tiến</mark></b><span>HD FT 05 · <mark>tien</mark>pham.2010@gmail.com</span></div>
+        </div>
+        <div style="display:flex;gap:8px"><span class="btn btn-sm" style="flex:1">Hải Dương <span class="cv"></span></span><span class="btn btn-sm" style="flex:1">Xuất Excel</span></div>
+      </div>
+    </div>
+
+    <div class="win w375" style="height:760px">
+      <div class="sheet-top"><span class="btn btn-ghost" style="padding:0 8px">‹ Kế hoạch Test</span></div>
+      <div class="trang" style="display:flex;flex-direction:column;gap:10px">
+        <div><p class="pn-t">HD FT 03</p><p class="mo">7 HV · GVCN Trần Quốc Bảo</p></div>
+        <div class="the-em chon" style="gap:8px">
+          <div><span class="ten" style="display:block">Đỗ Trọng Tiến</span><span class="mo">tien.dotrong@gmail.com</span></div>
+          <div style="display:grid;grid-template-columns:44px minmax(0,1fr);gap:8px 10px;align-items:start;font-size:13px">
+            <b style="color:var(--dim);padding-top:6px">MT3</b><span class="cl da" style="min-height:44px;justify-content:center"><span class="dong"><svg class="ki" aria-hidden="true"><use href="#i-dat"/></svg>W4 AUG/2026</span><small>Đã thi</small></span>
+            <b style="color:var(--dim);padding-top:6px">MT4</b><span><span class="cl chon" style="min-height:44px;justify-content:center">W4 SEP/2026</span><span class="gc" style="max-width:none">Chờ xác nhận lịch Speaking</span></span>
+            <b style="color:var(--dim);padding-top:6px">MT5</b><span class="cl" style="min-height:44px;justify-content:center">W4 OCT/2026</span>
+            <b style="color:var(--dim);padding-top:6px">MT6</b><span class="cl cx" style="min-height:44px;justify-content:center">Chưa xếp</span>
+          </div>
+          <span class="lk" style="font-size:13px">MT1–MT2 đã thi ›</span>
+        </div>
+        <div class="the-em" style="padding:12px 14px"><span class="ten" style="font-size:15px">Hoàng Khánh Ngân</span><span class="mo">MT4 W4 SEP/2026 · Ghi chú: Gia đình đề nghị chuyển…</span></div>
+        <div class="gc-lop" style="border:1px solid var(--line);border-radius:10px;flex-direction:column;gap:4px"><span class="k">Ghi chú lớp · HD FT 03</span><span>MT5 cả lớp có thể dời sang W1 NOV/2026 nếu trùng lịch thi thật tháng 10.</span><span class="lk">Sửa</span></div>
+      </div>
+    </div>
+
+    <div class="win w375" style="height:760px">
+      <div class="nen-mo"></div>
+      <div class="thanh-day" style="padding:0;gap:0;border-radius:14px 14px 0 0">
+        <div class="hop-h" style="align-items:center"><div style="flex:1"><div class="k">Đỗ Trọng Tiến · MT4</div><div class="s">HD FT 03</div></div><span class="nut-ba" aria-label="Thao tác khác">⋯</span><span class="x" aria-label="Đóng">✕</span></div>
+        <div class="hop-b">
+          <div><span class="lb">Tuần chung</span><div class="tuan-chon"><span class="btn btn-sm" aria-label="Tuần trước">‹</span><span class="oi" style="height:44px;font-size:16px">W4 SEP/2026<small>21/09–27/09</small></span><span class="btn btn-sm" aria-label="Tuần sau">›</span></div></div>
+          <div>
+            <div class="knd" style="grid-template-columns:24px 70px minmax(0,1fr) 44px;min-height:48px"><span class="cb on"></span><span class="tk">L</span><span class="chip-t">W4 SEP/2026</span><span class="nut-ba" aria-label="Thao tác · Listening">⋯</span></div>
+            <div class="knd" style="grid-template-columns:24px 70px minmax(0,1fr) 44px;min-height:48px"><span class="cb on"></span><span class="tk">R</span><span class="chip-t">W4 SEP/2026</span><span class="nut-ba" aria-label="Thao tác · Reading">⋯</span></div>
+            <div class="knd" style="grid-template-columns:24px 70px minmax(0,1fr) 44px;min-height:48px"><span class="cb on"></span><span class="tk">W</span><span class="chip-t">W4 SEP/2026</span><span class="nut-ba" aria-label="Thao tác · Writing">⋯</span></div>
+            <div class="knd" style="grid-template-columns:24px 70px minmax(0,1fr) 44px;min-height:48px"><span class="cb on"></span><span class="tk">S</span><span class="chip-t">W4 SEP/2026</span><span class="nut-ba" aria-label="Thao tác · Speaking">⋯</span></div>
+          </div>
+          <div><span class="lb">Ghi chú lịch thi</span><div class="ta" style="font-size:16px;min-height:48px">Chờ xác nhận lịch Speaking</div></div>
+        </div>
+        <div class="hop-f" style="padding:10px 16px 16px"><span class="btn btn-sm">Đóng</span><span class="btn btn-sm btn-nguy">Xóa lịch</span><span class="sp"></span><span class="btn btn-sm btn-primary">Lưu</span></div>
+      </div>
+    </div>
+
+    <div class="win w375" style="height:760px">
+      <div class="nen-mo"></div>
+      <div class="hop" role="alertdialog" aria-label="Xóa lịch MT4" style="left:16px;right:16px;top:260px;width:auto">
+        <div class="hop-h"><div class="k">Xóa lịch MT4 của Đỗ Trọng Tiến?</div></div>
+        <div class="hop-b"><p style="font-size:15px;color:var(--c1);font-weight:700">4 kỹ năng về Chưa xếp.</p><p class="mo">Học viên, lượt MT4, ghi chú và lịch sử giữ nguyên.</p></div>
+        <div class="hop-f"><span class="btn btn-sm" style="flex:1">Huỷ</span><span class="btn btn-sm" style="flex:1;background:var(--duoi);color:var(--bg);border-color:var(--duoi);font-weight:600">Xóa lịch</span></div>
+      </div>
+    </div>
+
+    <div class="win w375" style="height:760px">
+      <div class="sheet-top"><span class="btn btn-ghost" style="padding:0 8px">‹ Kế hoạch Test</span><span class="sp"></span><span class="x" aria-label="Đóng">✕</span></div>
+      <div class="trang" style="display:flex;flex-direction:column;gap:10px">
+        <div><p class="pn-t">Xuất Excel · Kế hoạch Test</p><p class="mo">Theo bộ lọc: Hải Dương · Fast Track · 3 lớp · 21 HV</p></div>
+        <span class="lb" style="margin:0">Xem trước (cuộn ngang trong khung)</span>
+        <div class="cuon">
+          <table class="xem">
+            <thead><tr><th>Gmail</th><th>Tên học sinh</th><th>Lớp</th><th>MT1</th><th>MT2</th><th>MT3</th><th>MT4</th><th>…</th><th>MT10</th></tr></thead>
+            <tbody>
+              <tr><td>chau.buiminh@gmail.com</td><td>Bùi Minh Châu</td><td>HD FT 03</td><td>W1 JUL/2026</td><td>W1 AUG/2026</td><td>W4 AUG/2026</td><td>W4 SEP/2026</td><td>…</td><td class="cx">Chưa xếp</td></tr>
+              <tr><td>giahuy.dang@gmail.com</td><td>Đặng Gia Huy</td><td>HD FT 03</td><td>W1 JUL/2026</td><td>W1 AUG/2026</td><td>L/R: W4 AUG/2026;<br>W/S: W1 SEP/2026</td><td>W4 SEP/2026</td><td>…</td><td class="cx">Chưa xếp</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="dd" style="grid-template-columns:110px minmax(0,1fr)"><span>Sheet phụ</span><span>Thông tin xuất · 1 HV có MT11</span><span>File</span><span>Ke-hoach-Test_Hai-Duong_14-09-2026.xlsx</span></div>
+      </div>
+      <div class="thanh-day"><span class="btn btn-primary btn-day">Tải file .xlsx</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ 6 -->
+<section class="sec" id="k6">
+  <h2>6 · Cần chủ SP chọn</h2>
+  <div class="ghi">
+    <div><span class="tde">Đề xuất (chưa duyệt)</span><ul>
+      <li><b>Nhãn “Xóa lịch”</b> thay “Xóa” (vị trí đã chốt; nhãn là đề xuất câu chữ).</li>
+      <li><b>Ghi chú theo học viên × lượt MT</b> + ghi chú lớp dưới bảng (C21 — bảng dữ liệu mới, chỉ thêm).</li>
+      <li>Xuất Excel <b>một hàng một học viên trong lớp đang lọc</b>; em ở hai lớp cùng kỳ → hai hàng (mỗi lớp một hàng), không trộn lượt.</li></ul></div>
+    <div><span class="tde">Có thể đụng luật cũ</span><ul>
+      <li>Năm luôn hiện cạnh tuần ở Kế hoạch Test, hộp lịch, xuất (C20) — ngoại lệ của luật “mã tuần ngắn” 30/09; nơi khác giữ ngắn.</li>
+      <li>Xóa lịch dùng API bỏ tuần sẵn có (QL, chặn khi có điểm / đã thi); “Huỷ MT” giữ trong ⋯.</li></ul></div>
+  </div>
+</section>
+
+</div>
+
+<script>
+function dongBo(){var t=document.documentElement.dataset.theme;document.querySelectorAll('[data-t]').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.t===t))});}
+function doi(t){document.documentElement.dataset.theme=t;try{localStorage.setItem('ov14-theme',t)}catch(e){}dongBo();}
+document.querySelectorAll('[data-t]').forEach(function(b){b.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();doi(b.dataset.t)}})});
+dongBo();
+</script>
+</body>
+</html>

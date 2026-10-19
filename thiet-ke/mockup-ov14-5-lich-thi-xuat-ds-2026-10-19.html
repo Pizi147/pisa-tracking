@@ -1,0 +1,895 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>OV-14 · mockup 5 · Lịch thi, Xuất Excel HV</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap">
+<style>
+/* Chữ số lấy từ Inter (như web/src/index.css): khai cùng họ, chỉ vùng 0–9, khai SAU nên thắng ở vùng trùng. */
+@font-face{font-family:'Be Vietnam Pro';font-style:normal;font-display:swap;font-weight:400;unicode-range:U+0030-0039;src:url(https://cdn.jsdelivr.net/npm/@fontsource/inter@5.3.0/files/inter-latin-400-normal.woff2) format('woff2')}
+@font-face{font-family:'Be Vietnam Pro';font-style:normal;font-display:swap;font-weight:500;unicode-range:U+0030-0039;src:url(https://cdn.jsdelivr.net/npm/@fontsource/inter@5.3.0/files/inter-latin-500-normal.woff2) format('woff2')}
+@font-face{font-family:'Be Vietnam Pro';font-style:normal;font-display:swap;font-weight:600;unicode-range:U+0030-0039;src:url(https://cdn.jsdelivr.net/npm/@fontsource/inter@5.3.0/files/inter-latin-600-normal.woff2) format('woff2')}
+@font-face{font-family:'Be Vietnam Pro';font-style:normal;font-display:swap;font-weight:700;unicode-range:U+0030-0039;src:url(https://cdn.jsdelivr.net/npm/@fontsource/inter@5.3.0/files/inter-latin-700-normal.woff2) format('woff2')}
+@font-face{font-family:'Be Vietnam Pro';font-style:normal;font-display:swap;font-weight:800;unicode-range:U+0030-0039;src:url(https://cdn.jsdelivr.net/npm/@fontsource/inter@5.3.0/files/inter-latin-800-normal.woff2) format('woff2')}
+
+/* Token: nền = web/src/index.css. SOS: chỉ viền (C08) — vàng / cam / đỏ. */
+:root,[data-theme=dark]{
+  color-scheme:dark;
+  --bg:#0c1220;--surface:#141d2f;--surface-2:#1a2437;--line:rgba(160,178,214,.14);--line-strong:rgba(160,178,214,.26);
+  --accent:#7db3f0;--accent-strong:#a9cdf7;--accent-ink:#0b1626;--accent-soft:rgba(125,179,240,.14);--accent-line:rgba(125,179,240,.38);
+  --text:#dde5f2;--c1:#f1f5f9;--dim:rgb(147 163 192);--faint:rgb(130 146 174);
+  --sos1:#f7d44c;--sos1-chu:#f7d44c;--sos2:#ff9a5c;--sos2-chu:#ffb183;--sos3:#ff5d73;--sos3-chu:#ff8a9a;
+  --duoi:#ff9aa2;--bang:#80b8ff;--ok:#6fdc9f;--da-thi-bg:#16402a;--late:#ff9166;--soon:#f2c450;
+  --muted:#c9d4e6;--muted-bg:#1d2a40;
+  --nut-hover:#24304a;--o-nen:#0e1727;--o-vien:#64748b;--hang-lon:#172640;--pop:#22304a;--man:rgba(4,8,16,.55);
+}
+[data-theme=light]{
+  color-scheme:light;
+  --bg:#f5f7fa;--surface:#ffffff;--surface-2:#eef1f5;--line:rgba(15,23,42,.12);--line-strong:rgba(15,23,42,.22);
+  --accent:#1d5fbf;--accent-strong:#174e9e;--accent-ink:#ffffff;--accent-soft:rgba(29,95,191,.08);--accent-line:rgba(29,95,191,.35);
+  --text:#0f172a;--c1:#0f172a;--dim:rgb(71 85 105);--faint:rgb(91 102 120);
+  --sos1:#b58300;--sos1-chu:#7a5000;--sos2:#d4540f;--sos2-chu:#9a3a08;--sos3:#c81e1e;--sos3-chu:#a11818;
+  --duoi:#b42323;--bang:#1d5fbf;--ok:#157a42;--da-thi-bg:#d6f0df;--late:#b4400f;--soon:#8a5a00;
+  --muted:#334155;--muted-bg:#eef1f5;
+  --nut-hover:#e4e8ee;--o-nen:#ffffff;--o-vien:#7c8799;--hang-lon:#eaf1fb;--pop:#ffffff;--man:rgba(15,23,42,.28);
+}
+*{box-sizing:border-box}
+html{accent-color:var(--accent);scrollbar-color:var(--line-strong) transparent}
+::selection{background:var(--accent-line)}
+body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 'Be Vietnam Pro',system-ui,'Segoe UI',sans-serif;-webkit-font-smoothing:antialiased;padding:0 24px 96px}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+h1,h2,h3,h4,p{margin:0}
+button{font:inherit;color:inherit}
+a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline;text-underline-offset:3px}
+.so,td,.sb,.z{font-variant-numeric:tabular-nums}
+.sp{flex:1}
+.m{color:var(--dim);font-size:13px}
+.f{color:var(--faint)}
+.ico{width:16px;height:16px;flex:none}
+.ico.l{width:20px;height:20px}
+.ico.s{width:14px;height:14px}
+
+/* ---------- vỏ mockup (ngoài khung màn) ---------- */
+.top{position:sticky;top:0;z-index:60;display:flex;gap:10px 14px;align-items:center;flex-wrap:wrap;background:var(--bg);padding:10px 0;border-bottom:1px solid var(--line)}
+.top>b{color:var(--c1)}
+.toc{display:flex;gap:4px 14px;flex-wrap:wrap;font-size:13px}
+.top [data-t][aria-pressed=true]{box-shadow:inset 0 0 0 2px var(--accent);color:var(--c1)}
+.wrap{display:flex;flex-direction:column;gap:72px;margin-top:28px}
+.sec{display:flex;flex-direction:column;gap:16px}
+.sec>h2{font-size:20px;color:var(--c1);padding-top:16px;border-top:2px solid var(--line-strong)}
+.sec>h1{font-size:24px;color:var(--c1)}
+.ct{display:grid;grid-template-columns:170px minmax(0,1fr);gap:7px 18px;font-size:13px;color:var(--dim);max-width:1240px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 18px}
+.ct dt{color:var(--c1);font-weight:600}
+.ct dd{margin:0}
+.ct b{color:var(--text)}
+.q{max-width:1240px;border:1px solid var(--accent-line);background:var(--accent-soft);border-radius:10px;padding:12px 16px;font-size:13px;color:var(--text)}
+.q b{color:var(--c1)}
+.q ol,.q ul{margin:6px 0 0;padding-left:20px;display:flex;flex-direction:column;gap:4px}
+.row2{display:flex;gap:24px;align-items:flex-start;overflow-x:auto;padding-bottom:10px}
+.khung{display:flex;flex-direction:column;gap:6px;flex:none}
+.khung>.nhan{font-size:12px;color:var(--faint)}
+.chu-giai{display:flex;flex-wrap:wrap;gap:10px 22px;align-items:center;font-size:13px;color:var(--dim);background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 16px;max-width:1240px}
+.chu-giai>span{display:inline-flex;align-items:center;gap:8px}
+.mau-hang{display:inline-block;width:120px;height:26px;border-radius:4px}
+
+/* ---------- khung màn ---------- */
+.win{position:relative;border:1px solid var(--line-strong);border-radius:12px;overflow:hidden;background:var(--bg);color:var(--text);flex:none}
+.w1440{width:1440px}.w375{width:375px}
+.app{display:flex;align-items:center;gap:18px;height:56px;padding:0 20px;background:var(--surface);border-bottom:1px solid var(--line)}
+.logo{width:28px;height:28px;border-radius:7px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font-weight:800;font-size:13px;flex:none}
+.ten{font-weight:700;color:var(--c1);white-space:nowrap}
+.menu{display:flex;gap:2px}
+.menu a{padding:7px 12px;border-radius:8px;color:var(--dim);font-weight:500;display:inline-flex;gap:6px;align-items:center;white-space:nowrap}
+.menu a:hover{text-decoration:none;background:var(--surface-2)}
+.menu a.on{color:var(--c1);background:var(--accent-soft);box-shadow:inset 0 0 0 2px var(--accent)}
+.dem{font-size:12px;font-weight:700;background:var(--muted-bg);color:var(--muted);border-radius:999px;padding:0 6px;line-height:18px;font-variant-numeric:tabular-nums}
+.tim{display:flex;align-items:center;gap:8px;width:300px;height:36px;padding:0 10px;border:1px solid var(--o-vien);border-radius:8px;background:var(--o-nen);color:var(--faint);font-size:13px}
+.ib{position:relative;width:36px;height:36px;display:inline-grid;place-items:center;border-radius:8px;border:1px solid var(--line-strong);background:var(--surface-2);color:var(--text);cursor:pointer;flex:none;padding:0}
+.ib:hover{background:var(--nut-hover)}
+.ib .dem{position:absolute;top:-7px;right:-9px}
+.tk{height:36px;padding:0 10px;border-radius:8px;border:1px solid var(--line-strong);background:var(--surface-2);font-weight:600;display:inline-flex;gap:6px;align-items:center;cursor:pointer;white-space:nowrap}
+.trang{padding:20px 24px 28px;display:flex;flex-direction:column;gap:16px}
+.dau-trang{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.dau-trang h1{font-size:20px;font-weight:700;color:var(--c1);margin-right:8px}
+.chon{display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 10px;border-radius:8px;border:1px solid var(--o-vien);background:var(--o-nen);font-weight:600;font-size:13px;cursor:pointer;white-space:nowrap}
+.chon .nh{font-weight:500;color:var(--dim)}
+.chon[aria-expanded=true]{box-shadow:inset 0 0 0 2px var(--accent);border-color:var(--accent)}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:36px;padding:0 14px;border-radius:8px;border:1px solid var(--line-strong);background:var(--surface-2);color:var(--text);font-weight:500;font-size:14px;white-space:nowrap;cursor:pointer}
+.btn:hover{background:var(--nut-hover);border-color:var(--accent-line)}
+.btn-sm{height:30px;padding:0 10px;font-size:13px;border-radius:7px}
+.btn-primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+.btn-primary:hover{background:var(--accent-strong);border-color:var(--accent-strong);color:var(--accent-ink)}
+.btn-ghost{background:transparent;border-color:transparent;color:var(--accent);font-weight:600}
+.btn-ghost:hover{background:var(--accent-soft);border-color:transparent}
+.seg{display:inline-flex;border:1px solid var(--line-strong);border-radius:8px;overflow:hidden;flex:none}
+.seg button{all:unset;display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 12px;font-size:13px;font-weight:600;color:var(--dim);cursor:pointer;white-space:nowrap}
+.seg button+button{border-left:1px solid var(--line-strong)}
+.seg button:hover{color:var(--c1)}
+.seg button[aria-pressed=true]{color:var(--c1);background:var(--accent-soft);box-shadow:inset 0 0 0 2px var(--accent)}
+.seg .n{font-weight:500;color:var(--faint);font-variant-numeric:tabular-nums}
+.loc{all:unset;display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 12px;border-radius:999px;border:1px solid var(--line-strong);font-size:13px;font-weight:600;color:var(--dim);cursor:pointer;white-space:nowrap}
+.loc[aria-pressed=true]{color:var(--c1);background:var(--accent-soft);box-shadow:inset 0 0 0 2px var(--accent);border-color:transparent}
+
+/* chip trạng thái (xám) + chip SOS: chỉ viền, dày dần 1 → 1,5 → 2,5 px; SOS 3 viền đôi; tạm = viền đứt */
+.chip{display:inline-flex;align-items:center;justify-content:center;gap:4px;height:22px;min-width:30px;padding:0 8px;border-radius:999px;font-size:12px;font-weight:700;white-space:nowrap;line-height:1;border:1px solid transparent;background:transparent;font-variant-numeric:tabular-nums}
+.chip.xam{background:var(--muted-bg);color:var(--muted);font-weight:600}
+.s1{border:1px solid var(--sos1);color:var(--sos1-chu)}
+.s2{border:1.5px solid var(--sos2);color:var(--sos2-chu)}
+.s3{border:2.5px solid var(--sos3);color:var(--sos3-chu);outline:1px solid var(--sos3);outline-offset:1.5px;margin:0 2.5px}
+.s1.tam,.s2.tam,.s3.tam{border-style:dashed}
+.s3.tam{outline-style:dashed}
+.chip.thi{border-color:var(--ok);color:var(--c1);font-weight:600}
+button.chip{cursor:pointer;font-family:inherit}
+button.chip:hover{background:var(--accent-soft)}
+button.chip.s3:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.late{color:var(--late);font-weight:600}
+.soon{color:var(--soon);font-weight:600}
+.okc{color:var(--ok);font-weight:600}
+
+/* ký hiệu kết quả (C05): ✓ Đạt · ✗ Chưa đạt (nét trơn, không vòng tròn) · Chưa đủ điểm chỉ chữ — không mũi tên */
+.kq{display:inline-flex;align-items:center;gap:4px;font-weight:600;white-space:nowrap}
+.kq .ico{width:1em;height:1em}
+.kq.dat{color:var(--ok)}.kq.chua{color:var(--duoi)}.kq.thieu{color:var(--dim)}
+.kq.chi .ico{width:13px;height:13px}
+.diem{font-weight:700;white-space:nowrap;display:inline-flex;align-items:center;gap:4px}
+.diem.duoi{color:var(--duoi)}
+.diem.duoi .ico{width:12px;height:12px}
+.thieu-nh{font-size:12px;font-weight:500;color:var(--dim);white-space:nowrap}
+
+/* số bấm được = nút nhỏ; số 0 không phải nút */
+.sb{all:unset;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:4px;min-width:34px;height:26px;padding:0 9px;border-radius:7px;background:var(--surface-2);border:1px solid var(--line-strong);font-weight:600;font-size:13px;color:var(--c1);cursor:pointer;white-space:nowrap}
+.sb:hover{border-color:var(--accent);background:var(--accent-soft)}
+.sb:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.sb .u{font-weight:500;color:var(--dim)}
+.sb.late{color:var(--late)}
+.z{display:inline-flex;min-width:34px;justify-content:center;color:var(--faint)}
+.na{color:var(--faint);font-size:12px;white-space:nowrap}
+
+/* HV - Case xếp chồng: một khối, hai hàng bấm riêng, số canh phải · đơn vị canh trái */
+.hvc{display:inline-flex;flex-direction:column;border:1px solid var(--line-strong);border-radius:8px;overflow:hidden;background:var(--surface-2);vertical-align:middle}
+.hvc button{all:unset;box-sizing:border-box;display:grid;grid-template-columns:3ch 2.6em;column-gap:5px;align-items:center;height:23px;padding:0 9px 0 6px;cursor:pointer;font-variant-numeric:tabular-nums}
+.hvc button+button{border-top:1px solid var(--line)}
+.hvc button:hover{background:var(--accent-soft)}
+.hvc button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.hvc b{text-align:right;color:var(--c1);font-weight:700;font-size:13px}
+.hvc i{font-style:normal;color:var(--dim);font-size:12px;font-weight:500}
+.hvc.lon button{height:30px;grid-template-columns:3ch 2.8em;padding:0 12px 0 8px}
+.hvc.lon b{font-size:15px}
+
+/* nút ? (C04) + hộp giải thích: tiêu đề → kết luận đậm → số liệu → việc có thể làm */
+.vs{position:relative;display:inline-flex;align-items:center;gap:4px}
+.hoi{all:unset;box-sizing:border-box;display:inline-grid;place-items:center;width:20px;height:20px;border-radius:999px;border:1px solid var(--line-strong);background:var(--surface-2);color:var(--dim);font-size:12px;font-weight:700;cursor:pointer;flex:none;line-height:1;position:relative}
+.hoi::after{content:"";position:absolute;inset:-8px}
+.hoi:hover{color:var(--c1);border-color:var(--accent)}
+.hoi:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.vs-pop{position:absolute;z-index:20;top:calc(100% + 8px);left:50%;transform:translateX(-50%);width:300px;padding:12px 14px;border-radius:10px;background:var(--pop);border:1px solid var(--line-strong);box-shadow:0 8px 24px rgba(0,0,0,.28);font-size:13px;font-weight:400;color:var(--dim);text-align:left;white-space:normal;display:none;line-height:1.45;flex-direction:column;gap:6px}
+.vs-pop h4{font-size:13px;color:var(--c1);font-weight:700}
+.vs-pop .kl{color:var(--c1);font-weight:600;font-size:14px}
+.vs-pop .ss{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 12px;font-variant-numeric:tabular-nums}
+.vs-pop .ss b{color:var(--c1);text-align:right}
+.vs-pop .ss .tong{border-top:1px solid var(--line-strong);padding-top:3px;color:var(--text);font-weight:600}
+.vs-pop .vl{color:var(--accent);font-weight:600}
+.vs:hover .vs-pop,.vs:focus-within .vs-pop,.vs.mo .vs-pop{display:flex}
+.vs-pop.trai{left:auto;right:-8px;transform:none}
+.pop-tinh{position:static;display:flex;transform:none;width:320px}
+
+/* khối */
+.khoi{background:var(--surface);border:1px solid var(--line);border-radius:12px;container-type:inline-size;position:relative}
+.khoi-dau{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 16px;min-height:56px;border-bottom:1px solid var(--line)}
+.khoi-dau h2{font-size:16px;font-weight:700;color:var(--c1)}
+
+/* dải tóm tắt nhỏ (Q6a) */
+.tom{display:flex;align-items:center;gap:8px 10px;flex-wrap:wrap;padding:10px 14px;border:1px solid var(--line);border-radius:12px;background:var(--surface);font-size:13px}
+.tom .nh{font-weight:700;color:var(--c1);margin-right:2px}
+.tom .gach{width:1px;height:22px;background:var(--line-strong);margin:0 4px}
+.tm{all:unset;box-sizing:border-box;display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 10px;border-radius:8px;border:1px solid var(--line-strong);background:var(--surface-2);cursor:pointer;white-space:nowrap;color:var(--text)}
+.tm b{color:var(--c1);font-weight:700;font-variant-numeric:tabular-nums}
+.tm:hover{border-color:var(--accent);background:var(--accent-soft)}
+.tm:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* Cần bạn quyết */
+.nhom-dau{display:flex;align-items:center;gap:8px;padding:12px 16px 8px;font-size:13px;color:var(--dim)}
+.nhom-dau b{color:var(--c1);font-size:14px;font-weight:700}
+.nhom+.nhom{border-top:1px solid var(--line-strong)}
+.dq{display:grid;grid-template-columns:176px minmax(0,1.05fr) minmax(0,1fr) 150px 190px;gap:4px 16px;align-items:center;padding:10px 16px;border-top:1px solid var(--line);font-size:13px}
+.dq .viec b{color:var(--c1);font-weight:600;font-size:14px}
+.dq .viec .m2{display:block;color:var(--dim);font-size:13px}
+.dq .neu{color:var(--dim)}
+.dq .nut{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+.dq.xong{color:var(--dim)}
+.dq.xong .viec b{color:var(--dim)}
+.da-thi{background:var(--da-thi-bg);box-shadow:inset 3px 0 0 var(--ok)}
+.them{padding:6px 10px 10px}
+@container (max-width:900px){
+  .dq{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"loai han" "viec nut" "neu neu"}
+  .dq .loai{grid-area:loai}.dq .han{grid-area:han;text-align:right}.dq .viec{grid-area:viec}.dq .nut{grid-area:nut;align-self:start}.dq .neu{grid-area:neu}
+}
+
+/* bảng */
+.bang{width:100%;border-collapse:separate;border-spacing:0;font-size:13px}
+.bang th{font-size:12px;font-weight:600;color:var(--dim);text-align:left;padding:8px 12px;border-bottom:1px solid var(--line-strong);background:var(--surface-2);white-space:nowrap;vertical-align:bottom;line-height:1.3}
+.bang td{padding:6px 12px;border-bottom:1px solid var(--line);vertical-align:middle;height:44px}
+.bang tr:last-child td{border-bottom:0}
+.bang .r{text-align:right}.bang .c{text-align:center}
+.bang tr.tong td{background:var(--hang-lon);font-weight:700}
+.bang .ten-lop{font-weight:600}
+.bang .gv{color:var(--dim)}
+.bang .phu{display:block;font-size:12px;color:var(--dim);font-weight:500}
+.sticky{position:sticky;left:0;z-index:2;background:var(--surface)}
+th.sticky{background:var(--surface-2);z-index:3}
+tr.tong td.sticky{background:var(--hang-lon)}
+.slh,.sl{display:inline-grid;grid-template-columns:repeat(3,48px);justify-items:center;align-items:center}
+.sl4h,.sl4{display:inline-grid;grid-template-columns:repeat(4,40px);justify-items:center;align-items:center}
+.slh span,.sl4h span{font-size:12px}
+.th2{display:flex;flex-direction:column;gap:2px;align-items:center}
+.thv{display:inline-flex;align-items:center;gap:6px}
+.bang tr.an{display:none}
+.khoi.hien-het tr.an{display:table-row}
+.khoi.hien-het .chi-an{display:none}
+.chan{display:flex;align-items:center;gap:8px;padding:10px 16px;border-top:1px solid var(--line);font-size:13px;color:var(--dim)}
+@container (max-width:900px){.c-gv{display:none}}
+
+/* Tuần này */
+.dai{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;padding:14px 16px}
+.tuan{all:unset;box-sizing:border-box;display:flex;flex-direction:column;gap:3px;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--surface-2);cursor:pointer;font-size:13px;min-height:96px;color:var(--text)}
+.tuan:hover{border-color:var(--accent-line)}
+.tuan b{font-size:14px;color:var(--c1)}
+.tuan .tn{font-size:12px;color:var(--accent);font-weight:600;margin-left:6px}
+.tuan[aria-pressed=true]{box-shadow:inset 0 0 0 2px var(--accent);background:var(--accent-soft);border-color:transparent}
+.chi-tiet{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:16px;padding:0 16px 16px}
+.chi-tiet h3{font-size:14px;font-weight:700;color:var(--c1);display:flex;gap:8px;align-items:center;margin:4px 0 8px}
+.chi-tiet h3 .m{font-weight:500}
+.ds{border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.gvd{display:grid;grid-template-columns:minmax(0,1fr) 84px minmax(0,1.6fr) 150px;gap:4px 12px;align-items:center;padding:8px 12px;border-top:1px solid var(--line);font-size:13px;min-height:52px}
+.gvd:first-child{border-top:0}
+.gvd b{color:var(--c1);font-weight:600}
+@container (max-width:900px){
+  .dai{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .chi-tiet{grid-template-columns:minmax(0,1fr)}
+  .gvd{grid-template-columns:minmax(0,1fr) 76px 132px}.gvd .lp{display:none}
+}
+
+/* panel làm việc (C02 / C26): đối tượng + ngữ cảnh → dữ liệu → thao tác → trạng thái lưu */
+.man{position:relative;background:var(--bg);overflow:hidden}
+.man .mo-nen{position:absolute;inset:0;background:var(--man)}
+.pn{background:var(--surface);border-left:1px solid var(--line-strong);display:flex;flex-direction:column;box-shadow:-12px 0 32px rgba(0,0,0,.22)}
+.man .pn{position:relative;margin-left:auto;width:720px;min-height:100%}
+.pn-dau{display:flex;gap:10px;align-items:flex-start;padding:16px 18px 12px;border-bottom:1px solid var(--line)}
+.pn-dau h3{font-size:16px;font-weight:700;color:var(--c1);line-height:1.3}
+.pn-dau .m{display:block;margin-top:2px}
+.pn-tom{display:flex;gap:8px 10px;flex-wrap:wrap;align-items:center;padding:12px 18px;font-size:13px;color:var(--dim);border-bottom:1px solid var(--line)}
+.pn-tom b{color:var(--c1)}
+.pn .bang td{height:48px}
+.pn .bang th:first-child,.pn .bang td:first-child{padding-left:18px}
+.pn-chan{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:12px 18px;border-top:1px solid var(--line);margin-top:auto;font-size:13px}
+.o-nhap{width:58px;height:32px;border:1px solid var(--o-vien);border-radius:7px;background:var(--o-nen);color:var(--c1);font:inherit;font-weight:600;text-align:center;font-variant-numeric:tabular-nums}
+.o-nhap:focus{outline:2px solid var(--accent);outline-offset:1px}
+.hang-mo td{background:var(--accent-soft)}
+.luu{display:inline-flex;align-items:center;gap:6px;font-size:12px;white-space:nowrap}
+.luu.ok{color:var(--ok)}.luu.dang{color:var(--dim)}
+
+/* trạng thái */
+.rong{display:flex;align-items:center;gap:10px;padding:18px 16px;font-size:14px}
+.rong b{color:var(--c1)}
+.loi{display:flex;align-items:center;gap:12px;padding:16px;font-size:14px;color:var(--text)}
+.loi .ico{color:var(--duoi)}
+
+/* ---------- 375 ---------- */
+.a375{display:flex;align-items:center;gap:8px;height:52px;padding:0 12px;background:var(--surface);border-bottom:1px solid var(--line)}
+.a375 .ten{font-size:15px}
+.a375 .ib{width:44px;height:44px;border:0;background:transparent}
+.av{width:32px;height:32px;border-radius:999px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font-weight:700;font-size:13px}
+.t375{padding:14px 16px 20px;display:flex;flex-direction:column;gap:16px}
+.t375 .dau-trang h1{font-size:20px}
+.w375 .btn,.w375 .btn-sm{height:44px}
+.w375 .chon{height:44px}
+.w375 .loc{height:44px}
+.w375 .seg button{height:42px}
+.w375 .tm{height:44px}
+.w375 .hoi{width:28px;height:28px;font-size:13px}
+.w375 .tom{padding:10px 12px}
+.muc{display:flex;flex-direction:column}
+.muc-dau{display:flex;align-items:center;gap:8px;padding:6px 0 10px}
+.muc-dau h2{font-size:16px;font-weight:700;color:var(--c1)}
+.d375{border-top:1px solid var(--line);padding:12px 0;display:flex;flex-direction:column;gap:6px;font-size:13px}
+.d375 .l1{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.d375 .l1 b{color:var(--c1);font-size:14px;font-weight:600}
+.d375 .nut{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px}
+.gr375{display:flex;align-items:center;gap:8px;min-height:48px;border-top:1px solid var(--line);font-size:14px;cursor:pointer}
+.gr375 b{color:var(--c1);font-weight:600}
+.gr375 .ico{color:var(--dim)}
+.lop375{border-top:1px solid var(--line);padding:12px 0;display:flex;flex-direction:column;gap:10px}
+.lop375 .l1{display:flex;align-items:baseline;gap:8px}
+.lop375 .l1 a{font-weight:700;font-size:15px}
+.ba-so{display:grid;grid-template-columns:1.25fr .8fr 1.15fr;gap:8px}
+.ba-so>div{display:flex;flex-direction:column;gap:4px;min-width:0}
+.ba-so .nh{font-size:12px;color:var(--dim);white-space:nowrap}
+.sb.lon{height:44px;min-width:48px;font-size:16px;border-radius:9px;justify-content:center;width:fit-content}
+.sl3{display:flex;gap:6px;align-items:center;min-height:44px}
+.sl3 .chip{height:30px;min-width:32px;font-size:13px}
+.sl3 .z{min-width:24px}
+.phu375{display:flex;gap:8px;flex-wrap:wrap}
+.phu375 .sb{height:36px}
+.dai375{display:grid;grid-template-columns:44px repeat(3,minmax(0,1fr)) 44px;gap:6px;align-items:stretch}
+.dai375 .ib{width:44px;height:auto;min-height:44px}
+.dai375 .tuan{min-height:84px;padding:8px;gap:2px;font-size:12px}
+.dai375 .tuan b{font-size:13px}
+.gv375{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 10px;align-items:center;border-top:1px solid var(--line);padding:10px 0;font-size:13px}
+.gv375 b{color:var(--c1);font-weight:600}
+.day-duoi{display:grid;grid-template-columns:repeat(5,1fr);border-top:1px solid var(--line);background:var(--surface);height:60px}
+.day-duoi a{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:12px;color:var(--dim)}
+.day-duoi a.on{color:var(--accent);font-weight:600}
+.day-duoi a:hover{text-decoration:none}
+.the375{border-top:1px solid var(--line);padding:12px 0;display:flex;flex-direction:column;gap:6px;font-size:13px}
+.the375 .l1{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.the375 .l1 b,.the375 .l1 a{font-weight:700;font-size:15px}
+.the375 .dong{display:flex;gap:6px 10px;flex-wrap:wrap;align-items:center}
+.the375 .nh{color:var(--dim);font-size:12px}
+
+/* ---------- Báo cáo ---------- */
+.bc{container-type:inline-size;background:var(--bg)}
+.bc-trang{--k:1;font-size:calc(var(--k)*18px);padding:calc(var(--k)*30px) calc(var(--k)*40px) calc(var(--k)*36px);display:flex;flex-direction:column;gap:calc(var(--k)*22px)}
+.bc-dau{display:flex;align-items:center;gap:calc(var(--k)*14px) calc(var(--k)*22px);flex-wrap:wrap}
+.bc-dau h1{font-size:calc(var(--k)*30px);font-weight:800;color:var(--c1);line-height:1.1}
+.bc-pv{font-size:calc(var(--k)*20px);color:var(--dim);font-weight:600}
+.bc-ky{display:flex;flex-direction:column;gap:2px}
+.bc-tuan{font-size:calc(var(--k)*26px);font-weight:800;color:var(--c1);line-height:1.15}
+.bc-m{font-size:calc(var(--k)*15px);color:var(--dim)}
+.bc-luoi{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:calc(var(--k)*18px)}
+.bc-khoi{border:1px solid var(--line-strong);border-radius:12px;padding:calc(var(--k)*18px) calc(var(--k)*20px);background:var(--surface);display:flex;flex-direction:column;gap:calc(var(--k)*12px);min-width:0}
+.k7{grid-column:span 7}.k5{grid-column:span 5}.k4{grid-column:span 4}
+.bc-khoi h2{font-size:calc(var(--k)*22px);font-weight:800;color:var(--c1);line-height:1.2;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.bc-khoi h2 .bc-m{font-weight:500}
+.bc-tk{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:calc(var(--k)*12px)}
+.bc-tk>div{display:flex;flex-direction:column;gap:2px;min-width:0}
+.sbn{all:unset;box-sizing:border-box;display:inline-flex;align-items:baseline;gap:6px;width:fit-content;padding:2px calc(var(--k)*12px);border-radius:10px;background:var(--surface-2);border:1px solid var(--line-strong);cursor:pointer;color:var(--c1)}
+.sbn:hover{border-color:var(--accent);background:var(--accent-soft)}
+.sbn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.bc-so{font-size:calc(var(--k)*44px);font-weight:700;line-height:1.15}
+.bc-so.vua{font-size:calc(var(--k)*34px)}
+.bc-so .ph{font-size:.55em;font-weight:600;color:var(--dim)}
+.sbn.late .bc-so{color:var(--late)}
+.bc-nh{font-size:calc(var(--k)*18px);font-weight:600;color:var(--text)}
+.bc-phu{font-size:calc(var(--k)*15px);color:var(--dim)}
+.bc .bang{font-size:calc(var(--k)*18px)}
+.bc .bang th{font-size:calc(var(--k)*15px);padding:calc(var(--k)*7px) calc(var(--k)*12px)}
+.bc .bang td{height:calc(var(--k)*50px);padding:calc(var(--k)*4px) calc(var(--k)*12px)}
+.bc .chip{height:calc(var(--k)*30px);min-width:calc(var(--k)*42px);font-size:calc(var(--k)*17px);padding:0 calc(var(--k)*10px)}
+.bc .sb{height:calc(var(--k)*34px);min-width:calc(var(--k)*44px);font-size:calc(var(--k)*18px)}
+.bc .z{min-width:calc(var(--k)*44px)}
+.bc .kq{font-size:calc(var(--k)*18px)}
+.bc-dong{display:grid;grid-template-columns:calc(var(--k)*96px) minmax(0,1fr);gap:calc(var(--k)*12px);align-items:center;padding:calc(var(--k)*6px) 0;border-top:1px solid var(--line)}
+.bc-dong:first-of-type{border-top:0}
+.bc-dong .bc-nh{line-height:1.25}
+.bc .gt{font-weight:700;color:var(--c1)}
+.bc .doi{color:var(--text);white-space:nowrap}
+@container (max-width:700px){
+  .bc-trang{--k:.8;padding:16px}
+  .bc-luoi{grid-template-columns:minmax(0,1fr)}
+  .bc-luoi>.bc-khoi{grid-column:1/-1}
+  .bc-tk{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .bc-dau h1{width:100%}
+  .bc .an-hep{display:none}
+  .bc .gt{white-space:nowrap}
+  .bc .chip{min-width:28px;padding:0 6px}
+  .bc .bang th,.bc .bang td{padding-left:4px;padding-right:4px}
+  .bc .doi{white-space:normal}
+  .bc .chon{width:100%}
+}
+
+/* bộ chọn khoảng thời gian (C24 / C29) */
+.kt{width:420px;background:var(--pop);border:1px solid var(--line-strong);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.28);padding:14px;display:flex;flex-direction:column;gap:12px;font-size:13px}
+.kt .seg{width:100%}
+.kt .seg button{flex:1;justify-content:center;padding:0 6px}
+.kt-dong{display:grid;grid-template-columns:72px minmax(0,1fr) 96px;gap:8px;align-items:center}
+.kt-dong .nh{color:var(--dim)}
+.kt .chon{width:100%;justify-content:space-between}
+.kt-kq{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;background:var(--surface-2);color:var(--dim)}
+.kt-kq b{color:var(--c1)}
+.kt-chan{display:flex;justify-content:flex-end;gap:8px}
+.ongay{display:flex;align-items:center;height:34px;border:1px solid var(--o-vien);border-radius:8px;background:var(--o-nen);overflow:hidden}
+.ongay input{all:unset;flex:1;min-width:0;padding:0 10px;font-weight:600;color:var(--c1);font-variant-numeric:tabular-nums}
+.ongay button{all:unset;display:grid;place-items:center;width:34px;height:100%;border-left:1px solid var(--line-strong);color:var(--dim);cursor:pointer}
+.menu-xep{width:220px;background:var(--pop);border:1px solid var(--line-strong);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.28);padding:6px;display:flex;flex-direction:column;font-size:13px}
+.menu-xep button{all:unset;display:flex;align-items:center;gap:8px;height:36px;padding:0 10px;border-radius:7px;cursor:pointer}
+.menu-xep button:hover{background:var(--surface-2)}
+.menu-xep button[aria-checked=true]{color:var(--c1);font-weight:600}
+.menu-xep button .ico{visibility:hidden;color:var(--accent)}
+.menu-xep button[aria-checked=true] .ico{visibility:visible}
+
+/* ---------- Phân tích ---------- */
+.tang1{display:flex;gap:4px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.tang1 a{padding:10px 14px;color:var(--dim);font-weight:600;font-size:14px;border-radius:8px 8px 0 0;white-space:nowrap}
+.tang1 a:hover{text-decoration:none;color:var(--c1)}
+.tang1 a.on{color:var(--c1);box-shadow:inset 0 -2px 0 var(--accent)}
+.thanh-loc{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.cuon{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+.cuon .bang th:first-child,.cuon .bang td:first-child{padding-left:16px}
+.tang375{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.tang375 a{display:flex;align-items:center;justify-content:center;min-height:44px;border-radius:8px;border:1px solid var(--line-strong);font-weight:600;color:var(--dim);font-size:13px;text-align:center;padding:0 6px}
+.tang375 a.on{color:var(--c1);background:var(--accent-soft);box-shadow:inset 0 0 0 2px var(--accent);border-color:transparent}
+.tang375 a:hover{text-decoration:none}
+.tang375 a:last-child:nth-child(odd){grid-column:1/-1}
+.pt375{border-top:1px solid var(--line);padding:12px 0;display:flex;flex-direction:column;gap:8px;font-size:13px}
+.pt375 .l1{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.pt375 .l1 a{font-weight:700;font-size:15px}
+.pt375 .hang{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.pt375 .hang .nh{color:var(--dim);font-size:12px;margin-right:2px}
+.pt375 .sb{height:36px}
+.tong-kq{display:flex;gap:10px;flex-wrap:wrap;align-items:stretch}
+.tong-kq>div{display:flex;flex-direction:column;gap:2px;padding:10px 14px;border:1px solid var(--line);border-radius:10px;background:var(--surface);min-width:150px}
+.tong-kq .nh{font-size:12px;color:var(--dim);display:inline-flex;align-items:center;gap:6px}
+.tong-kq .so{font-size:20px;font-weight:700;color:var(--c1);display:flex;align-items:baseline;gap:6px}
+.tong-kq .so .m{font-weight:500}
+.mon{display:flex;flex-direction:column;gap:3px;align-items:flex-start}
+.mon .sb{height:24px;font-size:12px;min-width:0;padding:0 8px}
+.mon .sb .u{font-weight:600;color:var(--dim)}
+.td2{display:flex;flex-direction:column;gap:2px;font-size:12px;color:var(--dim)}
+.td2 b{color:var(--c1);font-weight:600;font-size:13px}
+.hut{font-size:12.5px;line-height:1.5}
+.hut b{color:var(--duoi);font-weight:600}
+
+.bs{width:100%;max-width:1240px;border-collapse:separate;border-spacing:0;font-size:13px;background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.bs th,.bs td{padding:9px 14px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+.bs th{font-size:12px;color:var(--dim);background:var(--surface-2);font-weight:600}
+.bs tr:last-child td{border-bottom:0}
+.bs td:first-child{color:var(--c1);font-weight:600;width:260px}
+.bs .sau{color:var(--c1)}
+
+
+/* ---------- riêng mockup 5 ---------- */
+.tab2{display:flex;gap:4px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.tab2 a{padding:10px 14px;color:var(--dim);font-weight:600;font-size:14px;white-space:nowrap;display:inline-flex;gap:6px;align-items:center}
+.tab2 a:hover{text-decoration:none;color:var(--c1)}
+.tab2 a.on{color:var(--c1);box-shadow:inset 0 -2px 0 var(--accent)}
+.dem-dau{display:flex;align-items:center;gap:8px 18px;flex-wrap:wrap;padding:10px 14px;border:1px solid var(--line);border-radius:12px;background:var(--surface);font-size:13px;color:var(--dim)}
+.dem-dau b{color:var(--c1);font-size:15px;font-variant-numeric:tabular-nums}
+.dem-dau .tieu{color:var(--c1);font-weight:700;font-size:14px}
+.kl{display:inline-flex;border:1px solid var(--line-strong);border-radius:8px;overflow:hidden}
+.kl button{all:unset;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;height:30px;padding:0 9px;font-size:12px;font-weight:600;color:var(--dim);cursor:pointer;white-space:nowrap}
+.kl button+button{border-left:1px solid var(--line-strong)}
+.kl button:hover{color:var(--c1);background:var(--surface-2)}
+.kl button[aria-pressed=true]{color:var(--c1);background:var(--accent-soft);box-shadow:inset 0 0 0 2px var(--accent)}
+.kl button:disabled{color:var(--faint);cursor:not-allowed}
+.kl-o{display:flex;flex-direction:column;gap:6px;align-items:flex-start}
+.kl-o .ongay{height:30px;width:170px}
+.kl-o .ongay button{width:30px}
+.ghi{display:flex;flex-direction:column;gap:3px;font-size:12.5px}
+.ghi .noi{color:var(--text)}
+.ghi .tg{color:var(--faint);font-size:12px}
+.o-ghi{height:30px;width:100%;border:1px dashed var(--o-vien);border-radius:7px;background:transparent;color:var(--faint);font:inherit;font-size:12.5px;padding:0 8px;text-align:left}
+tr.da-chuyen td{color:var(--dim)}
+tr.da-chuyen td b{color:var(--dim)}
+.nhan-chuyen{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 9px;border-radius:999px;border:1px dashed var(--line-strong);font-size:12px;font-weight:600;color:var(--text);white-space:nowrap}
+.loi-dong{color:var(--duoi);font-size:12px;font-weight:600;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+tr.nhom-hang td{background:var(--surface-2);height:36px;font-weight:700;color:var(--c1);font-size:13px}
+.lich-ht{display:flex;flex-direction:column;gap:2px}
+.lich-ht b{color:var(--c1)}
+.lich-ht .m{font-size:12px}
+.kqg{display:flex;flex-direction:column;gap:2px;font-size:12.5px}
+.kqg .m{font-size:12px}
+
+/* Xuất Excel */
+.chk{width:18px;height:18px;accent-color:var(--accent);margin:0;vertical-align:middle}
+.w375 .chk{width:22px;height:22px}
+.loc-x{all:unset;display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 6px 0 10px;border-radius:999px;background:var(--accent-soft);box-shadow:inset 0 0 0 1px var(--accent-line);font-size:13px;font-weight:600;color:var(--c1);cursor:pointer}
+.loc-x .ico{width:14px;height:14px;color:var(--dim)}
+.tach{display:inline-flex}
+.tach .btn{border-radius:8px 0 0 8px}
+.tach .btn+.btn{border-radius:0 8px 8px 0;border-left:1px solid var(--accent-ink);padding:0 9px}
+.thanh-chon{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 14px;border-radius:10px;background:var(--hang-lon);font-size:13px}
+.thanh-chon b{color:var(--c1)}
+.tuy{display:flex;flex-direction:column;gap:14px;padding:16px 18px;font-size:13px;overflow:auto}
+.tuy h4{font-size:13px;font-weight:700;color:var(--c1)}
+.radio{display:grid;grid-template-columns:20px minmax(0,1fr);gap:2px 8px;align-items:start;padding:10px 12px;border:1px solid var(--line);border-radius:10px;cursor:pointer}
+.radio input{margin:2px 0 0;accent-color:var(--accent);width:16px;height:16px}
+.radio b{color:var(--c1)}
+.radio .m{grid-column:2}
+.radio.on{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent);background:var(--accent-soft)}
+.nhom-r{display:flex;flex-direction:column;gap:8px}
+.cot{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 14px}
+.cot label{display:flex;gap:8px;align-items:center}
+.cot input{accent-color:var(--accent);width:16px;height:16px;margin:0}
+.ten-file{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;background:var(--surface-2);font-size:12.5px;color:var(--text);word-break:break-all}
+.xl{border:1px solid var(--line-strong);border-radius:10px;overflow:hidden;background:#fff;color:#1f2937;font:12px/1.35 'Segoe UI',system-ui,sans-serif;width:780px}
+.xl table{border-collapse:collapse;width:100%}
+.xl th,.xl td{border:1px solid #d4d8de;padding:4px 7px;text-align:left;white-space:nowrap}
+.xl th{background:#e9f2ea;font-weight:700}
+.xl .rn{background:#f3f4f6;color:#6b7280;text-align:center;width:28px;font-weight:400}
+.xl .so{text-align:right}
+.xl .tabs{display:flex;gap:0;background:#f3f4f6;border-top:1px solid #d4d8de}
+.xl .tabs span{padding:5px 14px;border-right:1px solid #d4d8de;color:#4b5563}
+.xl .tabs span.on{background:#fff;color:#166534;font-weight:700;box-shadow:inset 0 2px 0 #166534}
+.xl .cap{padding:6px 10px;background:#f9fafb;border-bottom:1px solid #d4d8de;color:#4b5563}
+.xl .day-co{border-bottom:2px solid #9ca3af}
+.day375{position:sticky;bottom:0;display:flex;gap:8px;padding:10px 16px;background:var(--surface);border-top:1px solid var(--line)}
+.day375 .btn{flex:1}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-tim" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-3.6-3.6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-chuong" viewBox="0 0 24 24"><path d="M6 16v-5a6 6 0 1 1 12 0v5l1.5 2h-15zM10 20.5a2 2 0 0 0 4 0" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/></symbol>
+  <symbol id="i-xuong" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-trai" viewBox="0 0 24 24"><path d="m15 6-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-phai" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-in" viewBox="0 0 24 24"><path d="M7 9V4h10v5M7 17H5a1 1 0 0 1-1-1v-6a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1h-2M7 14h10v6H7z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></symbol>
+  <symbol id="i-loi" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 7.5v5.5M12 16.4v.1" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-v" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-dat" viewBox="0 0 24 24"><path d="m4.5 12.5 4.8 4.8L19.5 7" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-chua" viewBox="0 0 24 24"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-lich" viewBox="0 0 24 24"><path d="M4 7h16v13H4zM4 11h16M8 4v4M16 4v4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/></symbol>
+  <symbol id="i-xuat" viewBox="0 0 24 24"><path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M5 19h14" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-nha" viewBox="0 0 24 24"><path d="M4 11 12 4l8 7v9h-5v-6H9v6H4z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></symbol>
+  <symbol id="i-nguoi" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3 19c.8-3.3 3.2-5 6-5s5.2 1.7 6 5M15.5 5.2a3 3 0 0 1 0 5.6M18 14.4c1.4.7 2.4 2.3 2.8 4.6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+  <symbol id="i-bai" viewBox="0 0 24 24"><path d="M6 3h9l3 3v15H6zM9 10h6M9 14h6M9 18h4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/></symbol>
+  <symbol id="i-viec" viewBox="0 0 24 24"><path d="m4 7 2 2 3.5-3.5M4 15l2 2 3.5-3.5M13 8h7M13 16h7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-bieu" viewBox="0 0 24 24"><path d="M4 20h16M7 17v-5M12 17V7M17 17v-8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+  <symbol id="i-loc" viewBox="0 0 24 24"><path d="M4 6h16M7 12h10M10 18h4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+</svg>
+
+<div class="top">
+  <b>OV-14 · mockup 5 · Lịch thi · Xuất Excel danh sách HV</b>
+  <nav class="toc" aria-label="Mục lục"><a href="#q0">0 Đọc</a><a href="#q1">1 Lịch thi</a><a href="#q1b">1b Trạng thái</a><a href="#q2">2 Xuất Excel</a><a href="#q2b">2b File xuất</a><a href="#q3">3 Trước → sau</a></nav>
+  <span class="sp"></span>
+  <button class="btn btn-sm" data-t="dark" aria-pressed="false">Tối</button>
+  <button class="btn btn-sm" data-t="light" aria-pressed="false">Sáng</button>
+</div>
+
+<div class="wrap">
+
+<section class="sec" id="q0">
+  <h1>OV-14 · mockup 5 (19/10): Học viên &amp; Lớp › Lịch thi · Xuất Excel danh sách HV</h1>
+  <dl class="ct">
+    <dt>Đọc thế nào</dt><dd>Chữ trong khung = chữ thật trên web; ghi chú ngoài khung. Ký hiệu: <span class="kq dat"><svg class="ico"><use href="#i-dat"/></svg>Đạt</span> · <span class="kq chua"><svg class="ico"><use href="#i-chua"/></svg>Chưa đạt</span> · Chưa đủ điểm (chỉ chữ). Chip SOS chỉ viền như mockup 3.</dd>
+    <dt>Dữ liệu</dt><dd>Demo Monbay · QL Nguyễn Khánh Vy · họp rà soát Thứ Hai 19/10/2026, xem HV thi thật dự kiến <b>11/2026</b>.</dd>
+    <dt>Phương án</dt><dd><b>D</b> (thiết kế tổng thể mục 4): góc <b>Lịch thi</b> trong Học viên &amp; Lớp + lối "Lịch thi thật ›" từ Test › Lịch Test. Chỉ thi thật; Mock Test ở Kế hoạch Test. Không thêm bước duyệt; quyền như sửa "Dự kiến thi" hiện nay.</dd>
+  </dl>
+</section>
+
+<!-- ===================== 1 ===================== -->
+<section class="sec" id="q1">
+  <h2>1 · Học viên &amp; Lớp › Lịch thi — rà soát lịch thi thật khi họp</h2>
+  <dl class="ct">
+    <dt>Workflow</dt><dd>Chọn <b>Tháng dự kiến thi</b> (một hoặc nhiều tháng) → danh sách HV có tháng đó + nhóm "Chưa có dự kiến thi" → bấm Kết luận ngay trên hàng (1 bấm; Chốt ngày / Chuyển tháng thêm một ô) → <b>lưu ngay</b> vào lịch chuẩn, có lịch sử. Không nhập lại biên bản ở nơi khác.</dd>
+    <dt>Chuyển tháng</dt><dd>HV vẫn ở danh sách tới khi rời trang, nhãn "Đã chuyển sang 12/2026" (không mất dấu cuộc họp, không nhân đôi). Danh sách 12/2026 cập nhật theo lịch mới. Đổi ý: bấm Kết luận khác ngay trên hàng.</dd>
+    <dt>Không tự làm</dt><dd>"Dự kiến 11/2026" ≠ ngày 01/11; "Chốt ngày" ≠ đã đăng ký thi; dời thi thật không tự dời MT / hạn PA.</dd>
+  </dl>
+  <div class="row2">
+    <div class="khung"><span class="nhan">1440 · Lịch thi · Tháng dự kiến 11/2026</span>
+    <div class="win w1440">
+      <header class="app">
+        <span class="logo">P</span><span class="ten">PISA Tracking</span>
+        <nav class="menu"><a href="#q1">Công việc <span class="dem">10</span></a><a href="#q1">Tổng quan</a><a class="on" href="#q1">Học viên &amp; Lớp</a><a href="#q1">Test</a><a href="#q1">Phân tích</a></nav>
+        <span class="sp"></span>
+        <span class="tim"><svg class="ico"><use href="#i-tim"/></svg>Tìm lớp, học viên hoặc email…</span>
+        <button class="ib" aria-label="Thông báo"><svg class="ico"><use href="#i-chuong"/></svg><span class="dem">24</span></button>
+        <button class="tk">Nguyễn Khánh Vy<svg class="ico"><use href="#i-xuong"/></svg></button>
+      </header>
+      <div class="trang">
+        <div class="dau-trang"><h1>Học viên &amp; Lớp</h1><span class="sp"></span><span class="m">Dữ liệu đến 19/10 14:30</span></div>
+        <nav class="tab2" aria-label="Góc xem"><a href="#q2">Tất cả</a><a href="#q1">Đang SOS</a><a href="#q1">Cần làm</a><a class="on" href="#q1">Lịch thi</a></nav>
+        <div class="thanh-loc">
+          <button class="chon"><span class="nh">Tháng dự kiến thi</span>11/2026<svg class="ico"><use href="#i-xuong"/></svg></button>
+          <button class="chon"><span class="nh">Chi nhánh</span>Monbay<svg class="ico"><use href="#i-xuong"/></svg></button>
+          <button class="chon"><span class="nh">Lớp</span>Tất cả<svg class="ico"><use href="#i-xuong"/></svg></button>
+          <button class="loc" aria-pressed="true">Gồm HV chưa có dự kiến thi · 2</button>
+          <span class="sp"></span>
+          <button class="btn btn-sm"><svg class="ico"><use href="#i-xuat"/></svg>Xuất Excel · 10 HV</button>
+        </div>
+        <div class="dem-dau" aria-label="Kết quả rà soát">
+          <span class="tieu">Thi thật dự kiến 11/2026 · 8 HV</span>
+          <span><b>2</b> đã chốt ngày</span><span><b>1</b> giữ tháng</span><span><b>1</b> chuyển tháng</span><span><b>1</b> cần xác nhận</span><span><b>3</b> chưa rà</span>
+          <span class="sp"></span><span>Chưa có dự kiến thi: <b>2</b></span>
+        </div>
+        <div class="cuon">
+          <table class="bang">
+            <colgroup><col style="width:210px"><col style="width:62px"><col style="width:200px"><col style="width:126px"><col style="width:360px"><col></colgroup>
+            <thead><tr><th class="sticky">Học viên</th><th class="c">Target</th><th>Kết quả gần nhất</th><th>Lịch hiện tại</th><th>Kết luận</th><th>Ghi chú họp</th></tr></thead>
+            <tbody>
+              <tr><td class="sticky"><b>Bùi Thảo Vy</b><span class="phu">MB FT 101 · GVCN Trần Ngọc Hà · TVV Phan Mai</span></td><td class="c">6.5</td>
+                <td><span class="kqg"><span>MT3 · W2 OCT · OVR <b>6.5</b> <span class="kq dat"><svg class="ico"><use href="#i-dat"/></svg>Đạt</span></span></span></td>
+                <td><span class="lich-ht"><b>Chốt 21/11/2026</b><span class="m">trước: dự kiến 11/2026</span></span></td>
+                <td><div class="kl-o"><span class="kl" role="group" aria-label="Kết luận Bùi Thảo Vy"><button aria-pressed="false">Giữ tháng</button><button aria-pressed="true">Chốt ngày</button><button aria-pressed="false">Chuyển tháng</button><button aria-pressed="false">Cần xác nhận</button></span><span class="ongay"><input value="21/11/2026" aria-label="Ngày thi"><button aria-label="Chọn trên lịch"><svg class="ico"><use href="#i-lich"/></svg></button></span></div></td>
+                <td><div class="ghi"><span class="noi">Đăng ký IDP trước 30/10</span><span class="tg">Phan Mai · 14:21 · <span class="okc">Đã lưu</span></span></div></td></tr>
+              <tr class="da-chuyen"><td class="sticky"><b>Hoàng Bảo Ngọc</b><span class="phu">MB FT 101 · GVCN Trần Ngọc Hà · TVV Phan Mai</span></td><td class="c">6.5</td>
+                <td><span class="kqg"><span>MT3 · W2 OCT · OVR <b>6.0</b> <span class="kq chua"><svg class="ico"><use href="#i-chua"/></svg>Chưa đạt</span></span><span class="m">W 5.5/6.5 · thiếu 1.0</span></span></td>
+                <td><span class="lich-ht"><span class="nhan-chuyen">Đã chuyển sang 12/2026</span><span class="m">trước: dự kiến 11/2026</span></span></td>
+                <td><div class="kl-o"><span class="kl" role="group" aria-label="Kết luận Hoàng Bảo Ngọc"><button aria-pressed="false">Giữ tháng</button><button aria-pressed="false">Chốt ngày</button><button aria-pressed="true">Chuyển tháng</button><button aria-pressed="false">Cần xác nhận</button></span><button class="chon" style="height:30px">12/2026<svg class="ico"><use href="#i-xuong"/></svg></button></div></td>
+                <td><div class="ghi"><span class="noi">Writing chưa ổn, thi sau MT4</span><span class="tg">Nguyễn Khánh Vy · 14:32 · <span class="okc">Đã lưu</span></span></div></td></tr>
+              <tr><td class="sticky"><b>Tạ Minh Quân</b><span class="phu">MB FT 105 · GVCN Cao Khánh Linh · TVV Lê Thu</span></td><td class="c">6.0</td>
+                <td><span class="kqg"><span>MT2 · W2 OCT · OVR <b>6.0</b> <span class="kq dat"><svg class="ico"><use href="#i-dat"/></svg>Đạt</span></span></span></td>
+                <td><span class="lich-ht"><b>Chốt 14/11/2026</b><span class="m">chốt 05/10 · Lê Thu</span></span></td>
+                <td><div class="kl-o"><span class="kl" role="group" aria-label="Kết luận Tạ Minh Quân"><button aria-pressed="false">Giữ tháng</button><button aria-pressed="true">Chốt ngày</button><button aria-pressed="false">Chuyển tháng</button><button aria-pressed="false">Cần xác nhận</button></span><span class="ongay"><input value="14/11/2026" aria-label="Ngày thi"><button aria-label="Chọn trên lịch"><svg class="ico"><use href="#i-lich"/></svg></button></span></div></td>
+                <td><button class="o-ghi">Thêm ghi chú…</button></td></tr>
+              <tr><td class="sticky"><b>Lương Bảo Anh</b><span class="phu">MB FT 101 · GVCN Trần Ngọc Hà · TVV Phan Mai</span></td><td class="c">7.0</td>
+                <td><span class="kqg"><span>MT2 · W1 OCT · OVR <b>6.0</b> <span class="kq chua"><svg class="ico"><use href="#i-chua"/></svg>Chưa đạt</span></span><span class="m">W 5.0/6.5 · thiếu 1.5</span></span></td>
+                <td><span class="lich-ht"><b>Dự kiến 11/2026</b></span></td>
+                <td><div class="kl-o"><span class="kl" role="group" aria-label="Kết luận Lương Bảo Anh"><button aria-pressed="true">Giữ tháng</button><button aria-pressed="false">Chốt ngày</button><button aria-pressed="false">Chuyển tháng</button><button aria-pressed="false">Cần xác nhận</button></span></div></td>
+                <td><div class="ghi"><span class="noi">Xem lại sau MT3 (W1 NOV)</span><span class="tg">Trần Ngọc Hà · 14:25 · <span class="okc">Đã lưu</span></span></div></td></tr>
+              <tr><td class="sticky"><b>Kiều Thu Trang</b><span class="phu">MB FT 105 · GVCN Cao Khánh Linh · TVV Lê Thu</span></td><td class="c">6.0</td>
+                <td><span class="kqg"><span>MT2 · W2 OCT · OVR <b>5.0</b> <span class="kq chua"><svg class="ico"><use href="#i-chua"/></svg>Chưa đạt</span></span><span class="m">L · R · W thiếu 0.5</span></span></td>
+                <td><span class="lich-ht"><b>Dự kiến 11/2026</b></span></td>
+                <td><div class="kl-o"><span class="kl" role="group" aria-label="Kết luận Kiều Thu Trang"><button aria-pressed="false">Giữ tháng</button><button aria-pressed="false">Chốt ngày</button><button aria-pressed="false">Chuyển tháng</button><button aria-pressed="true">Cần xác nhận</button></span></div></td>
+                <td><div class="ghi"><span class="noi">Chờ phụ huynh đồng ý dời sang 12/2026</span><span class="tg">CX Ngô Lan · 14:28 · <span class="okc">Đã lưu</span></span></div></td></tr>
+              <tr><td class="sticky"><b>Đinh Gia Huy</b><span class="phu">MB FT 101 · GVCN Trần Ngọc Hà · TVV Phan Mai</span></td><td class="c">6.5</td>
+                <td><span class="kqg"><span>MT2 · W4 SEP · OVR <b>6.0</b> <span class="kq dat"><svg class="ico"><use href="#i-dat"/></svg>Đạt</span></span></span></td>
+                <td><span class="lich-ht"><b>Dự kiến 11/2026</b></span></td>
+                <td><div class="kl-o"><span class="kl" role="group" aria-label="Kết luận Đinh Gia Huy"><button aria-pressed="false">Giữ tháng</button><button aria-pressed="true">Chốt ngày</button><button aria-pressed="false">Chuyển tháng</button><button aria-pressed="false">Cần xác nhận</button></span><span class="ongay"><input value="28/11/2026" aria-label="Ngày thi"><button aria-label="Chọn trên lịch"><svg class="ico"><use href="#i-lich"/></svg></button></span><span class="loi-dong"><svg class="ico s"><use href="#i-loi"/></svg>Chưa lưu được. Nội dung bạn nhập vẫn được giữ.<button class="btn btn-sm">Thử lại</button></span></div></td>
+                <td><button class="o-ghi">Thêm ghi chú…</button></td></tr>
+              <tr><td class="sticky"><b>Mạc Đức Long</b><span class="phu">MB FT 101 · GVCN Trần Ngọc Hà · TVV Phan Mai</span></td><td class="c">7.0</td>
+                <td><span class="kqg"><span>MT2 · W4 SEP · Chưa đủ điểm</span><span class="m">thiếu điểm S</span></span></td>
+                <td><span class="lich-ht"><b>Dự kiến 11/2026</b></span></td>
+                <td><div class="kl-o"><span class="kl" role="group" aria-label="Kết luận Mạc Đức Long"><button aria-pressed="false">Giữ tháng</button><button aria-pressed="false">Chốt ngày</button><button aria-pressed="false">Chuyển tháng</button><button aria-pressed="false">Cần xác nhận</button></span></div></td>
+                <td><button class="o-ghi">Thêm ghi chú…</button></td></tr>
+              <tr class="nhom-hang"><td class="sticky" colspan="6">Chưa có dự kiến thi · 2 HV</td></tr>
+              <tr><td class="sticky"><b>Dương Tuấn Kiên</b><span class="phu">MB FT RF 12 · GVCN Phạm Thu Trang · TVV Lê Thu</span></td><td class="c">6.5</td>
+                <td><span class="kqg"><span>MT2 · W1 OCT · Chưa đủ điểm</span><span class="m">thiếu điểm S</span></span></td>
+                <td><span class="lich-ht"><span class="m">Chưa có</span></span></td>
+                <td><div class="kl-o"><span class="kl" role="group" aria-label="Kết luận Dương Tuấn Kiên"><button aria-pressed="false">Đặt tháng</button><button aria-pressed="false">Chốt ngày</button><button aria-pressed="false">Cần xác nhận</button></span></div></td>
+                <td><button class="o-ghi">Thêm ghi chú…</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="chan" style="border:0;padding-left:0">Hiện 8 / 10 HV · <button class="btn btn-sm btn-ghost">Hiện 2 HV nữa</button><span class="sp"></span><span>Bấm tên HV: xem điểm, Target, lịch sử lịch thi ngay dưới hàng.</span></div>
+      </div>
+    </div></div>
+
+    <div class="khung"><span class="nhan">375 · thẻ HV, Kết luận 2 × 2</span>
+    <div class="win w375">
+      <header class="a375">
+        <span class="logo">P</span><span class="ten">PISA</span><span class="sp"></span>
+        <button class="ib" aria-label="Tìm"><svg class="ico l"><use href="#i-tim"/></svg></button>
+        <button class="ib" aria-label="Thông báo"><svg class="ico l"><use href="#i-chuong"/></svg></button>
+        <span class="av">V</span>
+      </header>
+      <div class="t375">
+        <div class="dau-trang"><h1>Học viên &amp; Lớp</h1></div>
+        <nav class="tang375" aria-label="Góc xem"><a href="#q2">Tất cả</a><a href="#q1">Đang SOS</a><a href="#q1">Cần làm</a><a class="on" href="#q1">Lịch thi</a></nav>
+        <button class="chon" style="width:100%"><span class="nh">Tháng dự kiến thi</span>11/2026 · Monbay<span class="sp"></span><svg class="ico"><use href="#i-xuong"/></svg></button>
+        <div class="dem-dau"><span class="tieu" style="width:100%">Dự kiến 11/2026 · 8 HV</span><span><b>2</b> chốt ngày</span><span><b>1</b> giữ</span><span><b>1</b> chuyển</span><span><b>1</b> cần xác nhận</span><span><b>3</b> chưa rà</span></div>
+        <div class="muc">
+          <div class="the375">
+            <div class="l1"><b>Bùi Thảo Vy</b><span class="m">MB FT 101 · Target 6.5</span></div>
+            <span class="m">MT3 · W2 OCT · OVR 6.5 <span class="kq dat"><svg class="ico"><use href="#i-dat"/></svg>Đạt</span></span>
+            <span class="kl" role="group" style="display:grid;grid-template-columns:1fr 1fr" aria-label="Kết luận"><button aria-pressed="false" style="height:44px">Giữ tháng</button><button aria-pressed="true" style="height:44px">Chốt ngày</button><button aria-pressed="false" style="height:44px;border-left:0;border-top:1px solid var(--line-strong)">Chuyển tháng</button><button aria-pressed="false" style="height:44px;border-top:1px solid var(--line-strong)">Cần xác nhận</button></span>
+            <span class="ongay" style="height:44px"><input value="21/11/2026" aria-label="Ngày thi" style="font-size:16px"><button aria-label="Chọn trên lịch" style="width:44px"><svg class="ico"><use href="#i-lich"/></svg></button></span>
+            <span class="m">Đăng ký IDP trước 30/10 · Phan Mai · <span class="okc">Đã lưu</span></span>
+          </div>
+          <div class="the375">
+            <div class="l1"><b style="color:var(--dim)">Hoàng Bảo Ngọc</b><span class="nhan-chuyen">Đã chuyển sang 12/2026</span></div>
+            <span class="m">MT3 · W2 OCT · OVR 6.0 <span class="kq chua"><svg class="ico"><use href="#i-chua"/></svg>Chưa đạt</span> · W thiếu 1.0</span>
+            <span class="m">Writing chưa ổn, thi sau MT4 · Nguyễn Khánh Vy</span>
+          </div>
+          <div class="the375">
+            <div class="l1"><b>Mạc Đức Long</b><span class="m">MB FT 101 · Target 7.0</span></div>
+            <span class="m">MT2 · W4 SEP · Chưa đủ điểm (thiếu S) · Dự kiến 11/2026</span>
+            <span class="kl" role="group" style="display:grid;grid-template-columns:1fr 1fr" aria-label="Kết luận"><button aria-pressed="false" style="height:44px">Giữ tháng</button><button aria-pressed="false" style="height:44px">Chốt ngày</button><button aria-pressed="false" style="height:44px;border-left:0;border-top:1px solid var(--line-strong)">Chuyển tháng</button><button aria-pressed="false" style="height:44px;border-top:1px solid var(--line-strong)">Cần xác nhận</button></span>
+          </div>
+        </div>
+      </div>
+      <nav class="day-duoi" aria-label="Điều hướng">
+        <a href="#q1"><svg class="ico l"><use href="#i-viec"/></svg>Công việc</a>
+        <a href="#q1"><svg class="ico l"><use href="#i-nha"/></svg>Tổng quan</a>
+        <a class="on" href="#q1"><svg class="ico l"><use href="#i-nguoi"/></svg>Học viên</a>
+        <a href="#q1"><svg class="ico l"><use href="#i-bai"/></svg>Test</a>
+        <a href="#q1"><svg class="ico l"><use href="#i-bieu"/></svg>Phân tích</a>
+      </nav>
+    </div></div>
+  </div>
+</section>
+
+<!-- ===================== 1b ===================== -->
+<section class="sec" id="q1b">
+  <h2>1b · Lối vào từ Test · Kết thúc buổi họp · Không có HV</h2>
+  <dl class="ct">
+    <dt>Lối vào</dt><dd>Test › Lịch Test có link "Lịch thi thật ›" mở đúng góc Lịch thi, tháng kế tiếp. Bấm thông báo "Lịch thi tháng 11 cần rà" (nếu có) cũng mở đúng chỗ.</dd>
+    <dt>Kết thúc</dt><dd>Không cần nút "Kết thúc họp": dải đếm đầu bảng là tóm tắt. Muốn gửi biên bản: "Xuất Excel" xuất đúng danh sách + Kết luận + Ghi chú.</dd>
+  </dl>
+  <div class="row2">
+    <div class="khung"><span class="nhan">Test › Lịch Test · đầu trang</span>
+      <div class="win" style="width:700px"><div class="trang"><div class="dau-trang"><h1>Test</h1><nav class="tab2" style="border:0"><a class="on" href="#q1b">Lịch Test</a><a href="#q1b">Kế hoạch Test</a></nav><span class="sp"></span><a href="#q1">Lịch thi thật ›</a></div></div></div>
+    </div>
+    <div class="khung"><span class="nhan">Tháng dự kiến không có HV</span>
+      <div class="win" style="width:700px"><div class="trang">
+        <div class="rong" style="border:1px solid var(--line);border-radius:12px;background:var(--surface)"><span><b>Không có HV dự kiến thi thật trong 01/2027.</b> <span class="m">2 HV chưa có dự kiến thi.</span></span><span class="sp"></span><button class="btn btn-sm">Xem 2 HV chưa có dự kiến</button></div>
+      </div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== 2 ===================== -->
+<section class="sec" id="q2">
+  <h2>2 · Xuất Excel danh sách HV (C31) — lọc ở đâu, xuất ở đó</h2>
+  <dl class="ct">
+    <dt>Luồng</dt><dd>Học viên &amp; Lớp › Tất cả → SOS: <b>SOS 3</b> → bảng còn 18 HV → <b>Xuất Excel · 18 HV</b> (1 bấm, mẫu "Theo dõi SOS"). Mũi tên bên cạnh mở <b>Tùy chọn xuất</b> khi cần đổi phạm vi / cột. Cùng nút ở mọi panel danh sách (Báo cáo, Phân tích).</dd>
+    <dt>Lọc</dt><dd>Trong một nhóm là "hoặc" (SOS 2 hoặc SOS 3), giữa các nhóm là "và". Mặc định: SOS · Cơ sở · Lớp; Case / PA, kỹ năng, kết quả, thời gian ở "Bộ lọc thêm". Dùng chung truy vấn với bảng, không tính SOS riêng cho file.</dd>
+    <dt>Đã chọn</dt><dd>Tích hàng → thanh "Đã chọn 3 HV · Xuất các HV đã chọn". Đổi bộ lọc thì bỏ chọn cũ và báo "Đã bỏ chọn 3 HV vì đổi bộ lọc".</dd>
+  </dl>
+  <div class="row2">
+    <div class="khung"><span class="nhan">1440 · Tất cả · lọc SOS 3 · đang chọn 3 HV</span>
+    <div class="win w1440">
+      <header class="app">
+        <span class="logo">P</span><span class="ten">PISA Tracking</span>
+        <nav class="menu"><a href="#q2">Công việc <span class="dem">10</span></a><a href="#q2">Tổng quan</a><a class="on" href="#q2">Học viên &amp; Lớp</a><a href="#q2">Test</a><a href="#q2">Phân tích</a></nav>
+        <span class="sp"></span>
+        <span class="tim"><svg class="ico"><use href="#i-tim"/></svg>Tìm lớp, học viên hoặc email…</span>
+        <button class="ib" aria-label="Thông báo"><svg class="ico"><use href="#i-chuong"/></svg><span class="dem">24</span></button>
+        <button class="tk">Nguyễn Khánh Vy<svg class="ico"><use href="#i-xuong"/></svg></button>
+      </header>
+      <div class="trang">
+        <div class="dau-trang"><h1>Học viên &amp; Lớp</h1><span class="sp"></span><span class="tach"><button class="btn btn-primary"><svg class="ico"><use href="#i-xuat"/></svg>Xuất Excel · 18 HV</button><button class="btn btn-primary" aria-label="Tùy chọn xuất" aria-expanded="false"><svg class="ico"><use href="#i-xuong"/></svg></button></span></div>
+        <nav class="tab2" aria-label="Góc xem"><a class="on" href="#q2">Tất cả</a><a href="#q2">Đang SOS</a><a href="#q2">Cần làm</a><a href="#q1">Lịch thi</a></nav>
+        <div class="thanh-loc">
+          <span class="m">SOS</span>
+          <div class="seg" role="group" aria-label="SOS"><button aria-pressed="false">Có SOS</button><button aria-pressed="false">SOS 1</button><button aria-pressed="false">SOS 2</button><button aria-pressed="true">SOS 3</button></div>
+          <button class="chon"><span class="nh">Cơ sở</span>Tất cả<svg class="ico"><use href="#i-xuong"/></svg></button>
+          <button class="chon"><span class="nh">Lớp</span>Tất cả<svg class="ico"><use href="#i-xuong"/></svg></button>
+          <button class="chon"><svg class="ico"><use href="#i-loc"/></svg>Bộ lọc thêm<svg class="ico"><use href="#i-xuong"/></svg></button>
+          <span class="sp"></span>
+          <span class="m">Đang lọc:</span><button class="loc-x">SOS 3<svg class="ico"><use href="#i-x"/></svg></button>
+          <span class="m"><b style="color:var(--c1)">18 HV</b> · 7 lớp · trạng thái hiện tại</span>
+        </div>
+        <div class="thanh-chon"><b>Đã chọn 3 HV</b><button class="btn btn-sm"><svg class="ico"><use href="#i-xuat"/></svg>Xuất các HV đã chọn</button><button class="btn btn-sm btn-ghost">Bỏ chọn</button></div>
+        <div class="cuon">
+          <table class="bang">
+            <thead><tr><th class="sticky" style="width:44px"><input type="checkbox" class="chk" aria-label="Chọn tất cả"></th><th>Học viên</th><th>Gmail</th><th>Lớp</th><th>Cơ sở</th><th>SOS</th><th>Kỹ năng cần xử lý</th><th>Case</th><th>Phụ trách</th></tr></thead>
+            <tbody>
+              <tr><td class="sticky"><input type="checkbox" class="chk" checked aria-label="Chọn Hoàng Bảo Ngọc"></td><td><b>Hoàng Bảo Ngọc</b></td><td class="m">ngoc.hb@pisa.edu.vn</td><td>MB FT 101</td><td>Monbay</td><td><span class="chip s3">SOS 3</span></td><td>L · R · W <span class="m">· MT3</span></td><td><span class="chip xam">Case trống PA</span></td><td>Trần Ngọc Hà</td></tr>
+              <tr><td class="sticky"><input type="checkbox" class="chk" checked aria-label="Chọn Kiều Thu Trang"></td><td><b>Kiều Thu Trang</b></td><td class="m">trang.kt@pisa.edu.vn</td><td>MB FT 105</td><td>Monbay</td><td><span class="chip s3 tam">SOS 3 tạm</span></td><td>L · R · W <span class="m">· MT2</span></td><td><span class="chip xam">Chờ nhận xét</span></td><td>Cao Khánh Linh</td></tr>
+              <tr><td class="sticky"><input type="checkbox" class="chk" checked aria-label="Chọn Dương Tuấn Kiên"></td><td><b>Dương Tuấn Kiên</b></td><td class="m">kien.dt@pisa.edu.vn</td><td>MB FT RF 12</td><td>Monbay</td><td><span class="chip s3 tam">SOS 3 tạm</span></td><td>L · R · W <span class="m">· MT2</span></td><td><span class="chip xam">PA chờ xác nhận</span></td><td>Phạm Thu Trang</td></tr>
+              <tr><td class="sticky"><input type="checkbox" class="chk" aria-label="Chọn Phan Gia Bảo"></td><td><b>Phan Gia Bảo</b></td><td class="m">bao.pg@pisa.edu.vn</td><td>HD FT 204</td><td>Hải Dương</td><td><span class="chip s3">SOS 3</span></td><td>R · W · S <span class="m">· MT3</span></td><td><span class="chip xam">PA đang chạy</span></td><td>Vũ Hải Yến</td></tr>
+              <tr><td class="sticky"><input type="checkbox" class="chk" aria-label="Chọn Trịnh Mai Anh"></td><td><b>Trịnh Mai Anh</b></td><td class="m">anh.tm@pisa.edu.vn</td><td>HD FT 204</td><td>Hải Dương</td><td><span class="chip s3">SOS 3</span></td><td>L · W · S <span class="m">· MT2</span></td><td><span class="chip xam">PA chờ duyệt đổi</span></td><td>Vũ Hải Yến</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="chan" style="border:0;padding-left:0">Hiện 5 / 18 HV · <button class="btn btn-sm btn-ghost">Hiện 13 HV nữa</button><span class="sp"></span><span>File xuất đủ 18 HV, kể cả hàng chưa hiện.</span></div>
+      </div>
+    </div></div>
+
+    <div class="khung"><span class="nhan">375 · lọc SOS 3 · nút xuất dính đáy</span>
+    <div class="win w375">
+      <header class="a375">
+        <span class="logo">P</span><span class="ten">PISA</span><span class="sp"></span>
+        <button class="ib" aria-label="Tìm"><svg class="ico l"><use href="#i-tim"/></svg></button>
+        <button class="ib" aria-label="Thông báo"><svg class="ico l"><use href="#i-chuong"/></svg></button>
+        <span class="av">V</span>
+      </header>
+      <div class="t375">
+        <div class="dau-trang"><h1>Học viên &amp; Lớp</h1></div>
+        <nav class="tang375" aria-label="Góc xem"><a class="on" href="#q2">Tất cả</a><a href="#q2">Đang SOS</a><a href="#q2">Cần làm</a><a href="#q1">Lịch thi</a></nav>
+        <button class="chon" style="width:100%"><svg class="ico"><use href="#i-loc"/></svg>Bộ lọc · SOS 3<span class="sp"></span><svg class="ico"><use href="#i-xuong"/></svg></button>
+        <div class="thanh-loc"><button class="loc-x">SOS 3<svg class="ico"><use href="#i-x"/></svg></button><span class="m"><b style="color:var(--c1)">18 HV</b> · 7 lớp</span></div>
+        <div class="muc">
+          <div class="the375"><div class="l1"><input type="checkbox" class="chk" aria-label="Chọn Hoàng Bảo Ngọc"><b>Hoàng Bảo Ngọc</b><span class="chip s3">SOS 3</span></div><span class="m">MB FT 101 · L · R · W · Case trống PA</span></div>
+          <div class="the375"><div class="l1"><input type="checkbox" class="chk" aria-label="Chọn Kiều Thu Trang"><b>Kiều Thu Trang</b><span class="chip s3 tam">SOS 3 tạm</span></div><span class="m">MB FT 105 · L · R · W · Chờ nhận xét</span></div>
+          <div class="the375"><div class="l1"><input type="checkbox" class="chk" aria-label="Chọn Phan Gia Bảo"><b>Phan Gia Bảo</b><span class="chip s3">SOS 3</span></div><span class="m">HD FT 204 · R · W · S · PA đang chạy</span></div>
+        </div>
+      </div>
+      <div class="day375"><button class="btn btn-primary"><svg class="ico"><use href="#i-xuat"/></svg>Xuất Excel · 18 HV</button><button class="btn" aria-label="Tùy chọn xuất" style="flex:none;width:48px"><svg class="ico"><use href="#i-xuong"/></svg></button></div>
+    </div></div>
+  </div>
+
+  <dl class="ct">
+    <dt>Tùy chọn xuất</dt><dd>Panel phải (375: toàn màn). Phạm vi · mẫu cột · Chọn cột · tên file. Nhớ mẫu / cột lần gần nhất; không bắt chọn lại mỗi lần. Chỉ xuất trường người dùng được xem.</dd>
+  </dl>
+  <div class="row2">
+    <div class="khung"><span class="nhan">1440 · panel Tùy chọn xuất</span>
+    <div class="win w1440 man" style="height:880px">
+      <div class="mo-nen"></div>
+      <aside class="pn" style="width:520px" aria-label="Tùy chọn xuất">
+        <div class="pn-dau"><div><h3>Xuất Excel danh sách HV</h3><span class="m">Đang lọc: SOS 3 · trạng thái hiện tại · 19/10/2026</span></div><span class="sp"></span><button class="ib" aria-label="Đóng"><svg class="ico"><use href="#i-x"/></svg></button></div>
+        <div class="tuy">
+          <div class="nhom-r"><h4>Phạm vi</h4>
+            <label class="radio on"><input type="radio" name="pv" checked><b>Toàn bộ kết quả đang lọc — 18 HV</b><span class="m">Đủ mọi trang, kể cả hàng chưa hiện</span></label>
+            <label class="radio"><input type="radio" name="pv"><b>Các HV đã chọn — 3 HV</b></label>
+          </div>
+          <div class="nhom-r"><h4>Mẫu cột</h4>
+            <label class="radio"><input type="radio" name="mau"><b>Danh sách cơ bản</b><span class="m">Tên học sinh · Gmail · Lớp · Cơ sở</span></label>
+            <label class="radio on"><input type="radio" name="mau" checked><b>Theo dõi SOS</b><span class="m">11 cột · mặc định khi đang lọc SOS</span></label>
+            <label class="radio"><input type="radio" name="mau"><b>Kết quả thi</b><span class="m">Loại Test / MT · tuần thi kèm năm · điểm · Đạt / Chưa đạt / Chưa đủ điểm</span></label>
+          </div>
+          <div class="nhom-r"><h4>Chọn cột · Theo dõi SOS</h4>
+            <div class="cot">
+              <label><input type="checkbox" checked>Tên học sinh</label><label><input type="checkbox" checked>Gmail</label>
+              <label><input type="checkbox" checked>Lớp</label><label><input type="checkbox" checked>Cơ sở</label>
+              <label><input type="checkbox" checked>Mức SOS</label><label><input type="checkbox" checked>Tạm / Chính thức</label>
+              <label><input type="checkbox" checked>MT liên quan</label><label><input type="checkbox" checked>Kỹ năng cần xử lý</label>
+              <label><input type="checkbox" checked>Trạng thái Case</label><label><input type="checkbox" checked>Trạng thái PA</label>
+              <label><input type="checkbox" checked>Người phụ trách</label><label><input type="checkbox">Điểm OVR · L · R · W1 · W2 · S</label>
+              <label><input type="checkbox">Target</label><label><input type="checkbox">Lịch thi thật</label>
+            </div>
+          </div>
+          <div class="nhom-r"><h4>Tên file</h4><span class="ten-file"><svg class="ico"><use href="#i-bai"/></svg>PISA_HV_SOS3_2026-10-19.xlsx</span></div>
+        </div>
+        <div class="pn-chan"><span class="m">Kèm sheet "Thông tin xuất"</span><span class="sp"></span><button class="btn">Huỷ</button><button class="btn btn-primary"><svg class="ico"><use href="#i-xuat"/></svg>Xuất 18 HV</button></div>
+      </aside>
+    </div></div>
+  </div>
+
+  <div class="row2">
+    <div class="khung"><span class="nhan">Đang tạo file (tại chỗ, bộ lọc giữ)</span>
+      <div class="win" style="width:440px"><div class="trang"><span class="tach"><button class="btn btn-primary" disabled style="opacity:.75">Đang tạo file · 18 HV…</button><button class="btn btn-primary" disabled style="opacity:.75" aria-label="Tùy chọn xuất"><svg class="ico"><use href="#i-xuong"/></svg></button></span><span class="luu ok"><svg class="ico s"><use href="#i-v"/></svg>Đã tạo PISA_HV_SOS3_2026-10-19.xlsx · 18 HV · 14:32</span></div></div>
+    </div>
+    <div class="khung"><span class="nhan">Lỗi</span>
+      <div class="win" style="width:440px"><div class="loi" role="alert"><svg class="ico l"><use href="#i-loi"/></svg><span><b>Chưa tạo được file.</b> <span class="m">Bộ lọc vẫn giữ.</span></span><button class="btn btn-sm">Thử lại</button></div></div>
+    </div>
+    <div class="khung"><span class="nhan">Không có HV phù hợp</span>
+      <div class="win" style="width:440px"><div class="trang"><button class="btn btn-primary" disabled style="opacity:.5;cursor:not-allowed">Xuất Excel · 0 HV</button><span class="m">Không có học viên phù hợp để xuất. Bỏ bớt bộ lọc để thấy HV.</span></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== 2b ===================== -->
+<section class="sec" id="q2b">
+  <h2>2b · File xuất — sheet Danh sách + sheet Thông tin xuất</h2>
+  <dl class="ct">
+    <dt>File</dt><dd>.xlsx · hàng đầu cố định · bật bộ lọc Excel · điểm là số, Gmail là văn bản · chữ người dùng nhập ghi như văn bản (không thành công thức) · ô thiếu để trống, không thành 0 · một hàng một HV (khử trùng theo mã hệ thống).</dd>
+  </dl>
+  <div class="row2">
+    <div class="khung"><span class="nhan">Sheet "Danh sách" (5 / 18 hàng)</span>
+      <div class="xl">
+        <table>
+          <tr><th class="rn"></th><th>Tên học sinh</th><th>Gmail</th><th>Lớp</th><th>Cơ sở</th><th>Mức SOS</th><th>Tạm / Chính thức</th><th>MT</th><th>Kỹ năng cần xử lý</th><th>Trạng thái Case</th></tr>
+          <tr><td class="rn">2</td><td>Hoàng Bảo Ngọc</td><td>ngoc.hb@pisa.edu.vn</td><td>MB FT 101</td><td>Monbay</td><td>SOS 3</td><td>Chính thức</td><td>MT3</td><td>L, R, W</td><td>Case trống PA</td></tr>
+          <tr><td class="rn">3</td><td>Kiều Thu Trang</td><td>trang.kt@pisa.edu.vn</td><td>MB FT 105</td><td>Monbay</td><td>SOS 3</td><td>Tạm</td><td>MT2</td><td>L, R, W</td><td>Chờ nhận xét</td></tr>
+          <tr><td class="rn">4</td><td>Dương Tuấn Kiên</td><td>kien.dt@pisa.edu.vn</td><td>MB FT RF 12</td><td>Monbay</td><td>SOS 3</td><td>Tạm</td><td>MT2</td><td>L, R, W</td><td>PA chờ xác nhận</td></tr>
+          <tr><td class="rn">5</td><td>Phan Gia Bảo</td><td>bao.pg@pisa.edu.vn</td><td>HD FT 204</td><td>Hải Dương</td><td>SOS 3</td><td>Chính thức</td><td>MT3</td><td>R, W, S</td><td>PA đang chạy</td></tr>
+          <tr><td class="rn">6</td><td>Trịnh Mai Anh</td><td>anh.tm@pisa.edu.vn</td><td>HD FT 204</td><td>Hải Dương</td><td>SOS 3</td><td>Chính thức</td><td>MT2</td><td>L, W, S</td><td>PA chờ duyệt đổi</td></tr>
+        </table>
+        <div class="tabs"><span class="on">Danh sách</span><span>Thông tin xuất</span></div>
+      </div>
+    </div>
+    <div class="khung"><span class="nhan">Sheet "Thông tin xuất"</span>
+      <div class="xl" style="width:460px">
+        <table>
+          <tr><th class="rn"></th><th>Mục</th><th>Giá trị</th></tr>
+          <tr><td class="rn">1</td><td>Điều kiện lọc</td><td>SOS: SOS 3 · Cơ sở: Tất cả · Lớp: Tất cả</td></tr>
+          <tr><td class="rn">2</td><td>Thời điểm dữ liệu</td><td>Trạng thái hiện tại · 19/10/2026 14:32</td></tr>
+          <tr><td class="rn">3</td><td>Phạm vi</td><td>Toàn bộ kết quả đang lọc</td></tr>
+          <tr><td class="rn">4</td><td>Số học viên</td><td class="so">18</td></tr>
+          <tr><td class="rn">5</td><td>Mẫu cột</td><td>Theo dõi SOS (11 cột)</td></tr>
+          <tr><td class="rn">6</td><td>Người xuất</td><td>Nguyễn Khánh Vy</td></tr>
+        </table>
+        <div class="tabs"><span>Danh sách</span><span class="on">Thông tin xuất</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="sec" id="q3">
+  <h2>3 · Số bước trước → sau</h2>
+  <table class="bs">
+    <thead><tr><th>Luồng</th><th>Trước</th><th>Sau</th></tr></thead>
+    <tbody>
+      <tr><td>Họp rà soát lịch thi tháng 11</td><td>Excel riêng → nhập lại từng hồ sơ HV (Dự kiến thi)</td><td class="sau">Một trang: chọn tháng → 1 bấm Kết luận mỗi HV, lưu ngay, 0 nhập lại</td></tr>
+      <tr><td>Chuyển một HV sang tháng 12</td><td>Mở hồ sơ → sửa Dự kiến thi → quay lại danh sách</td><td class="sau">"Chuyển tháng" + chọn 12/2026 trên hàng: 2 bấm, 0 chuyển trang</td></tr>
+      <tr><td>Danh sách SOS 3 ra Excel</td><td>Không có ở Học viên &amp; Lớp; chép tay từ Test + SOS</td><td class="sau">Lọc SOS 3 → "Xuất Excel · 18 HV": 2 bấm</td></tr>
+    </tbody>
+  </table>
+  <div class="q"><b>Còn hỏi chủ SP</b>
+    <ol>
+      <li>Lịch thi chỉ áp cho <b>thi thật (khuyến nghị)</b>; Mock Test vẫn ở Kế hoạch Test?</li>
+      <li>"Cần xác nhận" có tự tạo việc trong Công việc cho người ghi chú (vd CX) không? Khuyến nghị: <b>không</b>, chỉ hiện ở dải đếm "Còn" cho buổi họp sau.</li>
+    </ol>
+  </div>
+</section>
+
+</div>
+
+<script>
+(function(){
+  var html=document.documentElement;
+  function dat(t){html.dataset.theme=t;document.querySelectorAll('.top [data-t]').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.t===t))})}
+  dat(matchMedia('(prefers-color-scheme: light)').matches?'light':'dark');
+  document.querySelectorAll('.top [data-t]').forEach(function(b){b.addEventListener('click',function(){dat(b.dataset.t)})});
+  /* Kết luận: một bấm đổi lựa chọn trên hàng. */
+  document.addEventListener('click',function(e){var b=e.target.closest('.kl button');if(!b)return;b.parentNode.querySelectorAll('button').forEach(function(x){x.setAttribute('aria-pressed',String(x===b))})});
+})();
+</script>
+</body>
+</html>
