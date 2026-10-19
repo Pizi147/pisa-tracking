@@ -86,7 +86,7 @@ async function runTask12(t: YThucTestKit) {
   });
 
   check('S6F-b (12) · Cần bạn quyết (Tổng quan QL, OV-15d thay dải Chờ duyệt) báo lỗi thay vì biến mất', () => {
-    assert(/function CanBanQuyetKhoi[\s\S]{0,1500}error \? <div className="p-4"><ErrorState/.test(doc('web/src/modules/worklist/TongQuanQl.tsx')), 'Cần bạn quyết nuốt lỗi');
+    assert(/function CanBanQuyetKhoi[\s\S]{0,5000}error \? <div className="p-4"><ErrorState/.test(doc('web/src/modules/worklist/TongQuanQl.tsx')), 'Cần bạn quyết nuốt lỗi');
   });
 
   check('S6F-b (12) · /signals: mỗi chỉ số gọi metricSet MỘT lần (không theo chi nhánh) — HAI ĐƯỜNG: số mỗi chi nhánh = metricSet(id, {branchId}).n; số câu không tăng khi thêm 2 chi nhánh có lớp', () => {

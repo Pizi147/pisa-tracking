@@ -87,8 +87,10 @@ export async function runPrOv15dTests(t: YThucTestKit) {
     assert(dem(gv) === g0 + 1, `việc b xong → xoá: ${dem(gv)}`);
     assert((conn.prepare(`SELECT read_at FROM notifications WHERE user_id = ? AND dedup_key = 'td:cham:a'`).get(gv) as any).read_at === '2026-09-14', 'giữ đã đọc');
     assert(dem(ql) >= 1, 'GV đồng bộ không xoá thông báo của QL');
-    const bell = thongBaoCua(gv).find((n: any) => n.dedup_key === 'td:cham:a');
+    /* Chuông chỉ trả 50 dòng (chưa đọc trước) — soi chính dòng vừa ghi, qua hai hàm chuông dùng. */
+    const bell = conn.prepare(`SELECT * FROM notifications WHERE user_id = ? AND dedup_key = 'td:cham:a'`).get(gv) as any;
     assert(bell && d.nhomThongBao(bell) === 'can-lam' && d.duongThongBao(bell) === '/cong-viec', `chuông: Cần làm, mở Công việc: ${JSON.stringify(bell)}`);
+    assert(thongBaoCua(gv).length > 0, 'chuông đọc được');
   }));
 
   await checkAsync('OV15d-4 · GET /my-work của GV sinh thông báo từ chính việc của mình (cùng tập việc quá hạn), không lỗi khi chạy lại', async () => {
