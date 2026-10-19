@@ -63,6 +63,7 @@ Phạm vi: `web/src/modules/cham/*`, `fasttrack/LuoiFT*`, `HopNhapDiem.tsx`, `Sc
 4. Học viên & Lớp mở lớp FT (C13): OVR · L · R · W · S (W1 · W2 dòng phụ mờ), căn giữa.
 5. Bỏ tab "Điểm theo lớp" (C16): ⋯ hàng lớp → "Nhập điểm" mở panel nhập tại chỗ (chọn lượt / môn trong panel); hồ sơ lớp nút Nhập điểm; link cũ `/test/diem-lop?lop=` → panel lớp đó.
 6. Lịch Test (C14): mặc định khung có bài của người xem; cả hai khung có bài → hiện cả hai (không giấu lớp thường sau công tắc).
+6b. (Rà #460) Ô điểm ở bảng (lưới, hồ sơ lớp, Học viên & Lớp) hiện CẢ ✓ (đạt: bằng xanh dương / vượt xanh lá) lẫn ✗ (dưới) — dùng `DauKetQua` (`web/src/ui/BieuTuong.tsx`) của OV-15a, không chỉ ✗.
 7. **"Nhập bởi … / Marked by …"** chỉ hiện khi ô ĐÃ có điểm — chủ SP thấy chữ này trên web thật khi chưa ai chấm: tìm mọi nguồn (người chấm mặc định `gvMacDinh`,
    ô chỉ có nhận xét, "GV chấm chéo", Lịch Test, hộp chấm, Chấm Speaking) và sửa; phép kiểm.
 
