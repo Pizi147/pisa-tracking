@@ -88,7 +88,9 @@ export function FormPa({ v, dat, lf, loi, chonLoai, quyChe, toiThieu = 8, daDay 
     <Truong nhan={nhanNguoi} tuyChon as="div" loi={lf.loiCua(loi, k('nguoi'))}
       phu={nhanNguoi === 'Người dạy' && !v.nguoi ? t('Chưa biết ai dạy thì để trống — ghi ở Kết quả từng tuần') : undefined}>
       {/* key: đổi nhãn (Người dạy ↔ Người thực hiện) thì ô vẽ lại đúng trạng thái trống / có tên. */}
+      {/* TU-a (mục 6): PA Tutor — nhóm "Tutor" đầu danh sách (chọn tutor lưu như người ngoài). */}
       <ChonNguoi key={nhanNguoi} nhom="giao_vien" studentId={studentId} cungChiNhanh={v.kind === 'bo_tro'} value={v.nguoi} onChange={(x) => dat({ nguoi: x })}
+        tutor={v.kind === 'tutor' && studentId ? { studentId } : undefined}
         choTrong={t('Để trống')} placeholder={t('Chưa chọn · gõ tên để tìm')} ariaLabel={nhanNguoi}
         id={lf.oId(k('nguoi'))} onBlur={lf.roi(k('nguoi'))} invalid={!!lf.loiCua(loi, k('nguoi'))} />
     </Truong>

@@ -80,6 +80,8 @@ export const COT_TRO_TAI_KHOAN: readonly { bang: string; cot: string; loai: Loai
   c('lenh_chuyen_lop', 'xac_nhan_boi', DV, 'bàn giao'), c('ban_giao_mon', 'nguoi_ghi', DV, 'bàn giao'),
   c('gop_y_tuan', 'ghi_boi', DV, 'góp ý hàng tuần'),   // OV-12g
   c('ghi_chu_lich_thi', 'created_by', DV, 'ghi chú lịch thi'),   // OV-15c
+  c('tutors', 'created_by', DV, 'danh sách tutor'), c('tutors', 'updated_by', DV, 'danh sách tutor'),   // TU-a
+  c('tutor_nhan_xet', 'nguoi_id', DV, 'nhận xét về tutor'),
 ];
 
 const COT_DAU_VET = COT_TRO_TAI_KHOAN.filter((x) => x.loai === 'dau_vet');

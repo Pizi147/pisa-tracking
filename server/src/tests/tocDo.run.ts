@@ -176,6 +176,11 @@ const KASE = (
     )
     .get(HV) as any
 )?.id as number | undefined;
+/** TU-a: một PA Tutor đang chạy của lớp mẫu — đường `/tutors/chon?paId={paTutor}` (ô chọn tutor của Ghi kết quả). */
+const PA_TUTOR = (conn.prepare(`SELECT iv.id FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id
+    JOIN enrollments e ON e.student_id = sc.student_id AND e.status = 'active' AND e.class_id = ?
+   WHERE iv.kind = 'tutor' AND iv.status = 'started' ORDER BY iv.id LIMIT 1`).get(LOP_FT) as any)?.id as number;
+assert(PA_TUTOR, 'Seed thiếu PA Tutor đang chạy ở MB FT 101');
 assert(KASE, `Seed thiếu Case cho HV mẫu (id ${HV}) ở lớp MB FT 101 — DUONG_DO cần một Case thật`);
 
 const USER: Record<Vai, number> = {
@@ -210,6 +215,7 @@ function urlFor(mau: string): string {
     .replace('{loTrinhDong}', String(LO_TRINH_DONG))
     .replace('{lopKetThuc}', String(LOP_KET_THUC))
     .replace('{case}', String(KASE))
+    .replace('{paTutor}', String(PA_TUTOR))
     .replace('{cn}', String(CN))
     .replace('{gv}', String(USER.GVCN));
 }

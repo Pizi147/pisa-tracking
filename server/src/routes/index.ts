@@ -16,6 +16,7 @@ import { writeAudit } from '../platform/audit.ts';
 import { khungPhamVi, navOf } from '../platform/nav.ts';
 import * as attachmentSvc from '../platform/attachments.ts';
 import * as timNguoiSvc from '../platform/timNguoi.ts';
+import { chonTutor } from '../tutors/chon.ts';
 import * as violationSvc from '../yThuc/violations.ts';
 import * as accessSvc from '../yThuc/access.ts';
 import * as xuLySvc from '../yThuc/xuLy.ts';
@@ -429,6 +430,10 @@ api.get('/ref/nguoi', requireAuth, wrap((req) => {
     cungChiNhanh: qStr(req, 'cungChiNhanh') === '1',
   });
 }));
+
+/** TU-a: ô chọn tutor (Ghi kết quả PA Tutor theo `paId`; ô Người dạy PA Tutor theo `studentId`) — 3 số cuối SĐT, ≤ 20 dòng (`tutors/chon.ts`). */
+api.get('/tutors/chon', requireAuth, wrap((req) =>
+  chonTutor(principalOf(req), { q: qStr(req, 'q'), paId: qInt(req, 'paId'), studentId: qInt(req, 'studentId') })));
 
 api.get('/ref/users', requireAuth, wrap((req) => {
   const p = principalOf(req);

@@ -21,6 +21,8 @@ import {
   type NguoiChon, type TrangThai,
 } from '@shared/domain/index.ts';
 import { DongXinYKien } from './DongXinYKien.tsx';
+import { DongBuoiTutor } from './BuoiTutorO.tsx';
+import type { BuoiTutor } from '@shared/domain/index.ts';
 import { DongDaLuu, GhiNhanh, type DaLuuNhanh } from './GhiNhanh.tsx';
 import { FormDoiPa, useDoiPa } from './DoiPa.tsx';
 import { CanLam, NutChu } from '../../ui/KhuonViec.tsx';
@@ -712,10 +714,9 @@ function buildLichSu(data: CaseDetail, ngan: (d: string | null | undefined) => s
           {f.nguoiDay && <span className="block text-xs text-slate-400">{t('Người dạy: {nguoiDay}', { nguoiDay: f.nguoiDay })}</span>}
           {/* OV-12h: Kết quả PA Tutor theo buổi. */}
           {f.buoi?.length > 0 && (
-            <ol className="m-0 mt-0.5 list-none space-y-0.5 p-0 text-xs text-slate-400" aria-label={t('Các buổi tutor')}>
-              {f.buoi.map((b: { tutor: string; nhanXet: string }, i: number) => (
-                <li key={i} className="break-words">{t('Buổi {x} · {tutor}:', { x: i + 1, tutor: b.tutor })} <span className="text-slate-300">{b.nhanXet}</span></li>
-              ))}
+            <ol className="m-0 mt-0.5 list-none space-y-1.5 p-0 text-xs text-slate-400" aria-label={t('Các buổi tutor')}>
+              {/* TU-a (mockup tutor-1 §8): hình thức + 3 dấu ✓ / ✗ + sao + nhận xét về tutor. */}
+              {f.buoi.map((b: BuoiTutor, i: number) => <DongBuoiTutor key={i} b={b} i={i} />)}
             </ol>
           )}
           {f.remainingIssue && <span className="block text-xs text-slate-400">{t('Còn tồn / Ghi chú: {remainingIssue}', { remainingIssue: f.remainingIssue })}</span>}

@@ -15,11 +15,12 @@ import { t } from '../i18n/index.ts';
  * Vai "Admin" mới KHÁC vai `branch_admin` cũ (Admin chi nhánh, đã bỏ sau PR15 — từng huỷ lượt MT, bỏ kỹ năng, đặt hạn nhập điểm):
  * mã cũ giữ để đọc lịch sử, không dùng lại.
  */
-export const ROLES = ['system_admin', 'manager', 'teacher', 'office_admin', 'consultant', 'cx'] as const;
+/* TU-a (đặc tả Tutor mục 4): `head_tutor` = Head tutor — rà soát tutor part-time (trang Tutor), toàn hệ thống, không mở HV / Case / điểm. */
+export const ROLES = ['system_admin', 'manager', 'teacher', 'office_admin', 'consultant', 'cx', 'head_tutor'] as const;
 export type Role = (typeof ROLES)[number];
 export const ROLE_LABEL: Record<Role, string> = {
   system_admin: t('Quản trị hệ thống'), manager: t('Quản lý'), teacher: t('Giáo viên'),
-  office_admin: 'Admin', consultant: t('Tư vấn viên'), cx: 'CX',
+  office_admin: 'Admin', consultant: t('Tư vấn viên'), cx: 'CX', head_tutor: 'Head tutor',
 };
 /** OV-13e: vai tự đăng ký chọn được (thứ tự = chip trên form). KHÔNG có Quản trị hệ thống — vai đó chỉ Quản trị cấp tay. */
 export const VAI_DANG_KY = ['teacher', 'manager', 'consultant', 'cx', 'office_admin'] as const satisfies readonly Role[];
@@ -171,6 +172,12 @@ export const PERMISSIONS = {
   REQUEST_APPROVE: 'request.approve',
   /** Sửa target, lộ trình của học viên (T44). GVCN gửi "Đề xuất sửa" thay vì tự sửa. Chuyển lớp vẫn `student.edit` (Câu 1 = B). */
   CYCLE_EDIT: 'cycle.edit',
+
+  // --- TU-a (Tutor) ---
+  /** Xem trang Tutor — Head tutor, Quản trị (toàn hệ thống), QL (buổi của em chi nhánh mình). */
+  TUTOR_VIEW: 'tutor.view',
+  /** Sửa danh sách tutor, gộp tên gõ tay, ghi nhận xét về tutor — Head tutor, Quản trị. */
+  TUTOR_MANAGE: 'tutor.manage',
 } as const;
 export type PermissionKey = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
 
@@ -210,6 +217,8 @@ export const PERMISSION_LABEL: Record<string, string> = {
   'admin.config': 'Quản trị hệ thống',
   'request.approve': 'Duyệt yêu cầu trong hộp Chờ duyệt',
   'cycle.edit': 'Sửa Target, lộ trình học viên',
+  'tutor.view': 'Xem trang Tutor',
+  'tutor.manage': 'Quản lý danh sách tutor, ghi nhận xét về tutor',
 };
 
 /**

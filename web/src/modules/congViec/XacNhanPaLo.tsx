@@ -149,6 +149,7 @@ export function XacNhanPaLo({ it, onDong, onDaLam, onMo, onTiep }: {
               {coNguoi && (
                 <Truong nhan={t('Người dạy')} as="div" tuyChon phu={t('Em đã có người dạy giữ nguyên')}>
                   <ChonNguoi nhom="giao_vien" value={nguoi} onChange={setNguoi} choTrong={t('Để trống')} placeholder={t('Chưa chọn · gõ tên để tìm')}
+                    tutor={loai.length === 1 && loai[0] === 'tutor' && ds[0]?.studentId ? { studentId: ds[0].studentId } : undefined}
                     ariaLabel={t('Người dạy')} disabled={busy} id={lf.oId('nguoi')} onBlur={lf.roi('nguoi')} invalid={!!lf.loiCua(loi, 'nguoi')} />
                 </Truong>
               )}
@@ -190,6 +191,7 @@ export function XacNhanPaLo({ it, onDong, onDaLam, onMo, onTiep }: {
                             {coNguoiDay(x.pa?.kind ?? 'self_study') && (
                               <Truong nhan={t('Người dạy')} as="div">
                                 <ChonNguoi nhom="giao_vien" studentId={x.studentId} value={r.nguoi} onChange={(v) => datRieng(x.key, { nguoi: v })}
+                                  tutor={x.pa?.kind === 'tutor' && x.studentId ? { studentId: x.studentId } : undefined}
                                   choTrong={t('Để trống')} placeholder={x.pa?.nguoi ?? t('Như ô chung')} ariaLabel={t('Người dạy')} disabled={busy} />
                               </Truong>
                             )}

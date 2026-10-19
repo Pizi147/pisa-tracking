@@ -64,6 +64,8 @@ export const MO_TA_QUYEN: Record<PermissionKey, { nhom: NhomQuyenKey; moTa: stri
   'work.view': { nhom: 'van_hanh', moTa: 'Vào Công việc.' },
   'analysis.view': { nhom: 'van_hanh', moTa: 'Xem Tổng quan số liệu và Phân tích.' },
   'analysis.view_teacher': { nhom: 'van_hanh', moTa: 'Xem Phân tích theo giáo viên và hồ sơ giáo viên khác.' },
+  'tutor.view': { nhom: 'van_hanh', moTa: 'Xem trang Tutor: tutor, buổi dạy, nhận xét.', phamVi: 'QL: chỉ buổi của em chi nhánh mình.' },
+  'tutor.manage': { nhom: 'van_hanh', moTa: 'Sửa danh sách tutor, gộp tên gõ tay, ghi nhận xét về tutor.' },
   'admin.config': { nhom: 'quan_tri', moTa: 'Quản trị phần mềm: tài khoản, vai trò, quyền và cấu hình.' },
 };
 

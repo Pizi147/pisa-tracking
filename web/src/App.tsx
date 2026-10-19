@@ -52,6 +52,7 @@ const ProfilePage = lazyTai(() => import('./modules/platform/ProfilePage.tsx'));
 const HoSoGiaoVienPage = lazyTai(() => import('./modules/giaoVien/HoSoGiaoVienPage.tsx').then((m) => ({ default: m.HoSoGiaoVienPage })));
 const HuongDanPage = lazyTai(() => import('./modules/huongDan/HuongDanPage.tsx'));
 const PhanTichPage = lazyTai(() => import('./modules/phanTich/PhanTichPage.tsx'));
+const TutorPage = lazyTai(() => import('./modules/tutor/TutorPage.tsx'));
 const NAP_SAN = [() => import('./modules/worklist/OverviewPage.tsx'), () => import('./modules/fasttrack/MockDetailPage.tsx'), () => import('./modules/cham/ChamDiemPage.tsx'), () => import('./modules/students/StudentsPage.tsx'), () => import('./modules/classes/ClassOverviewPage.tsx'), () => import('./modules/students/StudentDetailPage.tsx'), () => import('./modules/students/LuuTruPage.tsx'), () => import('./modules/cases/CaseBoardPage.tsx'), () => import('./modules/test/TestPage.tsx'), () => import('./modules/congViec/CongViecPage.tsx'), () => import('./modules/platform/AdminPage.tsx'), () => import('./modules/platform/ProfilePage.tsx'), () => import('./modules/giaoVien/HoSoGiaoVienPage.tsx'), () => import('./modules/huongDan/HuongDanPage.tsx'), () => import('./modules/phanTich/PhanTichPage.tsx')];
 
 /**
@@ -102,6 +103,7 @@ const BIEU_TUONG: Record<KhuVuc, ReactNode> = {
   test: <><rect x="4.5" y="3.8" width="11" height="13" rx="1.6" /><path d="M8 3.8V3h4v.8M7.5 9h5M7.5 12.2h5" /></>,
   'cong-viec': <path d="m3.8 6.2 1.5 1.5L8 5M3.8 12.2l1.5 1.5L8 11M10.8 6.5h5.4M10.8 12.5h5.4" />,
   'phan-tich': <path d="M3.5 16.5h13M6 14v-4M10 14V6M14 14V8.5" />,
+  tutor: <><circle cx="10" cy="6.5" r="2.8" /><path d="M4.5 16.5c.8-3.1 2.9-4.7 5.5-4.7s4.7 1.6 5.5 4.7M14.5 4.5l2-1M15.2 7h2.2" /></>,
 };
 
 function NutDay({ muc, active, so }: { muc: KhuVucMuc; active: boolean; so: SoBadge }) {
@@ -227,7 +229,9 @@ export default function App() {
         <BatLoiTrang duong={location.pathname}>
         <Suspense fallback={<div className="p-8 max-w-4xl mx-auto"><Skeleton rows={8} /></div>}>
         <Routes>
-          <Route path="/" element={<OverviewPage tab="tong-quan" />} />
+          {/* TU-a: Head tutor (chỉ có trang Tutor) mở `/` → `/tutor`. */}
+          <Route path="/" element={nav.tutor && !nav.overview ? <Navigate to="/tutor" replace /> : <OverviewPage tab="tong-quan" />} />
+          <Route path="/tutor" element={nav.tutor ? <TutorPage /> : <Navigate to="/" replace />} />
           <Route path="/phan-tich" element={nav.analysis ? <PhanTichPage /> : <Navigate to="/" replace />} />
           <Route path="/hoc-vien" element={<StudentsPage />} />
           <Route path="/hoc-vien/lop/:classId" element={<ClassOverviewPage />} />
