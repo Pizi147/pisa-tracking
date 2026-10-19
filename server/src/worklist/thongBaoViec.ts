@@ -6,11 +6,10 @@
  * Nguồn là CHÍNH danh sách việc (`myWork().items`) — không đếm lại, chỉ thêm một câu đọc thông báo đang có.
  * Dedup theo (người, đối tượng); việc xong → thông báo của người xem tự xoá ở lần tải Công việc kế (`day`). Không email / push.
  */
-import { db, tx } from '../db.ts';
+import { chenNhieuDong, db, tx } from '../db.ts';
 import { laViecChamCheo } from '../../../shared/domain/index.ts';
-import { notify } from '../platform/audit.ts';
 import { mondayOf } from '../platform/week.ts';
-import { addDays } from '../util.ts';
+import { addDays, nowIso } from '../util.ts';
 import type { WorkItem } from './mywork.ts';
 
 export const LOAI_THONG_BAO_VIEC = ['qua_han_cham', 'case_chua_chot_pa', 'chot_lo_trinh'] as const;
@@ -72,7 +71,10 @@ export function dongBoThongBaoViec(ds: readonly ThongBaoViec[], o: { nguoiXem: n
   const xong = o.day ? co.filter((r) => r.user_id === o.nguoiXem && !con.has(`${r.user_id}|${r.dedup_key}`)).map((r) => r.id) : [];
   if (!moi.length && !xong.length) return;
   tx(() => {
-    for (const x of moi) notify({ ...x });
+    /* Một câu cho cả lô (không một câu mỗi thông báo — số câu không tăng theo dữ liệu); trùng khoá (request song song) → bỏ qua. */
+    const luc = nowIso();
+    chenNhieuDong('INSERT INTO notifications (user_id, kind, title, body, entity_type, entity_id, dedup_key, created_at, duong)',
+      moi.map((x) => [x.userId, x.kind, x.title, x.body, x.entityType, x.entityId, x.dedupKey, luc, x.duong]), ' ON CONFLICT(user_id, dedup_key) DO NOTHING');
     if (xong.length) db().prepare(`DELETE FROM notifications WHERE id IN (${xong.map(() => '?').join(',')})`).run(...xong);
   });
 }

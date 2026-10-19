@@ -1126,8 +1126,9 @@ await checkAsync('TD7 (×3) · chỉ mục một phần + câu dùng chung một
  */
 check('TD4-b (×3) · /my-work mọi vai: dòng ≤ 40 % mốc trước TD4, số câu không tăng theo dữ liệu', () => {
   const MOC: Record<string, [number, number]> = {
-    'QL /my-work': [66, 5647], 'QT /my-work': [66, 7775], 'GVCN /my-work': [66, 4502], 'GVBM /my-work': [66, 5140], 'GVCN_THUONG /my-work': [66, 4502],
-    'QL /my-work?nguoi=tat-ca': [78, 6721], 'QT /my-work?nguoi=tat-ca': [78, 9176], [`QL /my-work?nguoi=${USER.GVCN}`]: [72, 4530],
+    /* OV-15d: câu +2 — đọc thông báo tự động đang có + ghi theo lô khi việc quá hạn mới xuất hiện (sau nhân dữ liệu). Dòng giữ nguyên. */
+    'QL /my-work': [68, 5647], 'QT /my-work': [68, 7775], 'GVCN /my-work': [68, 4502], 'GVBM /my-work': [68, 5140], 'GVCN_THUONG /my-work': [68, 4502],
+    'QL /my-work?nguoi=tat-ca': [80, 6721], 'QT /my-work?nguoi=tat-ca': [80, 9176], [`QL /my-work?nguoi=${USER.GVCN}`]: [74, 4530],
   };
   const sai: string[] = [];
   for (const [k, [cau, dong]] of Object.entries(MOC)) {
