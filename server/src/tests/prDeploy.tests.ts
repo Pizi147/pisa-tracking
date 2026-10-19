@@ -363,7 +363,7 @@ export async function runPrDeployTests(t: YThucTestKit) {
     assert(!l.length, `migrate đổi dữ liệu do mã hiện hành ghi (applied ${JSON.stringify(a).slice(0, 300)}): ${l.slice(0, 4).join(' ‖ ')}`);
     assert(a.length === 0, `migrate còn việc trên DB mới: ${JSON.stringify(a)}`);
   });
-  check('DEPLOY-2g · mỗi bước migrate một giao dịch: bộ demo thiếu 3 bước cuối (EN, OV12h, OV12g) → đứt sau bước 69 (EN; OV-13a, OV-13k, OV-13q thêm bước thêm cột ở đầu) rồi chạy lại = chạy một mạch; lần hai không đổi', () => {
+  check('DEPLOY-2g · mỗi bước migrate một giao dịch: bộ demo thiếu 3 bước cuối (EN, OV12h, OV12g) → đứt sau bước 70 (EN; OV-13a, OV-13k, OV-13q, OV-15f thêm bước thêm cột ở đầu) rồi chạy lại = chạy một mạch; lần hai không đổi', () => {
     const goc = pathMod.join(thuMuc, 'seed.sqlite');
     const thieu = (ten: string) => {
       const f = pathMod.join(thuMuc, ten);
@@ -377,8 +377,8 @@ export async function runPrDeployTests(t: YThucTestKit) {
     /* TU-a: bảng buổi OV-12h dựng lại thiếu 9 cột TU-a → thêm bước TU-a. */
     assert(da.length === 4, `một mạch phải làm đúng 4 bước: ${JSON.stringify(da)}`);
     let loi = '';
-    try { migrateTurso(b, 69); } catch (e: any) { loi = String(e.message); }
-    assert(loi.includes('Giả lập đứt kết nối sau bước 69'), `không đứt đúng bước 69: ${loi.slice(-200)}`);
+    try { migrateTurso(b, 70); } catch (e: any) { loi = String(e.message); }
+    assert(loi.includes('Giả lập đứt kết nối sau bước 70'), `không đứt đúng bước 70: ${loi.slice(-200)}`);
     const db2 = migrateTurso(b);
     assert(db2.length === 3 && db2.every((x) => /OV12[gh]|TU-a/.test(x)), `chạy lại phải chỉ làm OV12h + OV12g + TU-a (EN đã chốt): ${JSON.stringify(db2)}`);
     const l = lech(chup(a), chup(b));

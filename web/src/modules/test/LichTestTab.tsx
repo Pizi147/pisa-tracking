@@ -13,7 +13,7 @@ import { NutLuat } from '../../ui/NutLuat.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { KhoiNhom } from '../../ui/HangNhom.tsx';
 import { useManHinhHep } from '../cham/LuoiChamLop.tsx';
-import { addDaysIso, chuOChuaLuu, demLopConBai, khungLichTestMacDinh, mondayOfDate, ngay, tenMon, tuanDauThangCua, tuanLich } from '@shared/domain/index.ts';
+import { addDaysIso, chuOChuaLuu, demLopConBai, khungLichTestMacDinh, mondayOfDate, ngay, tenMon, tuanDauThangCua, tuanLich, thangKeTiep } from '@shared/domain/index.ts';
 import { khoaHang, type DongNo, type LichTest, type LopLichTest } from './lichTest/kieu.ts';
 import { DaiSo, type OSo } from './lichTest/DaiSo.tsx';
 import { KhoiNo } from './lichTest/KhoiNo.tsx';
@@ -295,6 +295,11 @@ export function LichTestTab() {
   const nutXuat = session?.nav?.xuatMt && (
     <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setMoXuat(true)}>{t('Xuất Excel')}</button>
   );
+  /* OV-15f: lối vào Học viên & Lớp › Lịch thi (rà soát thi thật), tháng kế tiếp; mang theo chi nhánh đang lọc. */
+  const nutLichThi = session?.nav?.students && (
+    <Link className="link inline-flex min-h-[44px] items-center text-xs sm:min-h-0" data-hd="test-lich-thi-that"
+      to={`/hoc-vien?view=lich-thi&thang=${thangKeTiep(homNay)}${branchId ? `&cn=${branchId}` : ''}`}>{t('Lịch thi thật ›')}</Link>
+  );
   const locChiNhanh = <BranchFilter branchId={branchId} onBranch={(id) => datThamSo({ cn: id ? String(id) : null, branchId: null })} />;
   /* Số lựa chọn đang KHÁC mặc định: chi nhánh đã chọn, phạm vi "Tất cả" (máy chủ mặc định 'cua-toi' khi GV có lớp). */
   const soLoc = (branchId ? 1 : 0) + (data.coPhamViRong && data.phamVi !== 'cua-toi' ? 1 : 0);
@@ -321,6 +326,7 @@ export function LichTestTab() {
               {nhomPhamVi}
               {nutLuatLuoi}
               {nutXuat}
+              {nutLichThi}
             </div>
           )}
         </div>
@@ -333,6 +339,7 @@ export function LichTestTab() {
           {nhomPhamVi}
           <div className="flex-1" />
           {nutXuat}
+          {nutLichThi}
           {locChiNhanh}
         </div>
       )}

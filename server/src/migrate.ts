@@ -61,6 +61,7 @@ import { migratePrOv13p } from './migrate/prOv13p.ts';
 import { migratePrOv13k } from './migrate/prOv13k.ts';
 import { migratePrTd5 } from './migrate/prTd5.ts';
 import { migratePrOv13q, themCotPrOv13q } from './migrate/prOv13q.ts';
+import { themCotPrOv15f } from './migrate/prOv15f.ts';
 import { migratePrOv15c } from './migrate/prOv15c.ts';
 import { migratePrTd6 } from './migrate/prTd6.ts';
 import { migratePrTd7a } from './migrate/prTd7a.ts';
@@ -128,6 +129,7 @@ function migrateCaseEngine(applied: string[], skipped: string[], loiSauBuoc?: nu
     /* PR-OV13a: cột sos_cases.tam (Case tạm) — TRƯỚC mọi bước có thể chạy luật Case (đọc / ghi cột này). Chỉ thêm cột. */ buoc(() => themCotPrOv13a(conn, applied));
     /* OV-13k: cột nhận xét GV phụ trách Speaking (assessment_scores) — TRƯỚC mọi bước đọc điểm (`scoresOf` / `diemCuaLuot` JOIN các cột này). Chỉ thêm cột. */ buoc(() => migratePrOv13k(conn, applied));
     /* OV-13q: cột hạn sau thi (learning_cycles.han_sau_thi…) — TRƯỚC mọi bước có thể đọc việc thi thật / bước tiếp (COT_SAU_THI). Chỉ thêm cột. */ buoc(() => themCotPrOv13q(conn, applied));
+    /* OV-15f: 5 cột learning_cycles.lich_thi_* (kết luận + ghi chú họp Lịch thi) — cũng ĐẦU migrate, chỉ thêm cột NULL. */ buoc(() => themCotPrOv15f(conn, applied));
     buoc(() => {
     // 1. Cột mới trên các bảng đang có.
     for (const [col, decl] of [

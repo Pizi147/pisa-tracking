@@ -39,6 +39,8 @@ export type CaseTomTat = {
 export type DongSos = {
   attemptId: number; studentId: number; ten: string; ma: string; classId: number; classCode: string; branchName: string | null; ft: boolean;
   luot: string; tuan: string; sosLevel: number; kyNang: string[];
+  /** OV-15f: lượt chưa chấm đủ (SOS tạm) — tệp xuất "Tạm / Chính thức". */
+  tam: boolean;
   cases: CaseTomTat[]; tvv: string | null; lienHe: LienHe;
 };
 export type TrangSos = { tuan: string | null; toanBo: boolean; tuanGanNhat: string; tu: string; den: string; tuanCo: string[]; phamVi: PhamVi; rows: DongSos[] };
@@ -154,7 +156,7 @@ export function dangSos(p: Principal, f: { tuan?: string | null; phamVi?: string
       luot: ft ? `MT${a.attempt_no}` : 'Progress', tuan: a.week_start,
       /* Lớp thường: SOS theo số môn trượt (chủ SP 14/10). */
       sosLevel: ft ? x.sosLevel ?? 1 : Math.min(3, x.kyNangDuoi.length),
-      kyNang: x.kyNangDuoi, cases: cuaLuot, tvv: e?.tvv ?? null, lienHe: e?.lienHe ?? { phone: null, parentName: null, parentRelation: null, parentPhone: null },
+      kyNang: x.kyNangDuoi, tam: a.status !== 'done', cases: cuaLuot, tvv: e?.tvv ?? null, lienHe: e?.lienHe ?? { phone: null, parentName: null, parentRelation: null, parentPhone: null },
     };
   }).sort((a, b) => (a.tuan === b.tuan ? a.ten.localeCompare(b.ten, 'vi') : a.tuan < b.tuan ? 1 : -1));
   return { tuan, toanBo, tuanGanNhat, tu, den, tuanCo, phamVi: dangDung, rows };

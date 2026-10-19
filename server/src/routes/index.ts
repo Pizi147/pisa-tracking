@@ -62,6 +62,8 @@ import * as kyVongSvc from '../normal/kyVong.ts';
 import * as gopYSvc from '../classes/gopYTuan.ts';
 import * as luatLoTrinhSvc from '../classes/luatLoTrinh.ts';
 import * as hocVienLopSvc from '../classes/hocVienLop.ts';
+import * as lichThiSvc from '../classes/lichThi.ts';
+import * as xuatDsSvc from '../classes/xuatDanhSach.ts';
 import * as hocVienSosSvc from '../classes/hocVienSos.ts';
 import { hocVienTheoVai } from '../classes/hocVienTheoVai.ts';
 import * as luuTruSvc from '../classes/luuTru.ts';
@@ -1444,6 +1446,23 @@ api.get('/hoc-vien-lop', requireAuth, wrap((req) => {
 api.get('/hoc-vien-lop/ids', requireAuth, wrap((req) => hocVienLopSvc.idsHocVienLop(principalOf(req))));
 /* OV-10b: Học viên & Lớp của TVV / CX — mỗi em một dòng theo việc của vai, chip = `chipHocVien` (cùng ô Tổng quan). */
 api.get('/hoc-vien-lop/theo-vai', requireAuth, wrap((req) => hocVienTheoVai(principalOf(req), { phamVi: qStr(req, 'phamVi'), branchId: qInt(req, 'branchId') })));
+
+/** OV-15f: Học viên & Lớp › Lịch thi — rà soát lịch thi thật theo tháng dự kiến (mockup 5); lưu một kết luận / ghi chú họp qua `updateCycle` + nhật ký. */
+api.get('/hoc-vien-lop/lich-thi', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return lichThiSvc.danhSachLichThi(principalOf(req), {
+    thang: qStr(req, 'thang') ?? null, branchId: qInt(req, 'branchId') ?? null, q: qStr(req, 'q') ?? null, phamVi: qStr(req, 'phamVi') ?? null, cnNho: qInt(req, 'cnNho') ?? null,
+  });
+}));
+api.put('/hoc-vien-lop/lich-thi/:cycleId', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return lichThiSvc.luuLichThi(principalOf(req), pInt(req, 'cycleId'), req.body ?? {});
+}));
+/** OV-15f (C31): Xuất Excel danh sách học viên — nhận chính danh sách em web đang hiện (kế thừa bộ lọc), kiểm quyền xem từng em. `xemTruoc` không ghi nhật ký. */
+api.post('/hoc-vien-lop/xuat', requireAuth, wrap((req) => xuatDsSvc.xuatDanhSach(principalOf(req), {
+  ids: Array.isArray(req.body?.ids) ? req.body.ids.map(Number).filter((n: number) => Number.isInteger(n) && n > 0) : [],
+  mau: req.body?.mau, cot: req.body?.cot, boLoc: req.body?.boLoc, pham: req.body?.pham, xemTruoc: !!req.body?.xemTruoc, sos: req.body?.sos,
+})));
 
 /** OV-12f: Panel một em (Học viên & Lớp › Mở) — mọi Case em người xem được thấy, tóm tắt cùng hàm với Đang SOS; ngoài phạm vi 403. */
 api.get('/hoc-vien-lop/em/:id', requireAuth, wrap((req) => hocVienSosSvc.panelMotEm(principalOf(req), pInt(req, 'id'))));

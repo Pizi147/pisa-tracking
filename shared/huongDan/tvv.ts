@@ -84,6 +84,7 @@ export const HD_TVV: HuongDan = {
       id: 'hoc-vien', ten: 'Học viên & Lớp', duong: ['/hoc-vien'],
       muc: [
         mucGv('hoc-vien', 'hv-tim'),
+        mucGv('hoc-vien', 'hv-lich-thi'),
         { id: 'tvv-hvl-goc', ten: 'Góc nhìn và phạm vi', buoc: ['<b>Tất cả</b> · <b>Đang SOS</b> · <b>Cần làm</b>; lọc phụ <b>Cần chú ý</b>, <b>Tạm dừng</b>, <b>Sắp thi</b>, <b>Đã thi · chờ kết quả</b>.', '<b>Phạm vi</b>: <b>HV của tôi</b> (mặc định) · <b>Chi nhánh</b>.', 'Bấm dòng em mở panel một em, không rời trang.'],
           chi: { hd: 'hvl-goc', duong: '/hoc-vien', chu: 'Góc nhìn và lọc phụ ở hàng này.' } },
         { id: 'tvv-hvl-them', ten: 'Tạo lớp, thêm học viên', buoc: ['<b>+ Lớp mới</b> · <b>+ Học viên</b> (một em hoặc dán danh sách): lớp chi nhánh mình. Phân công giáo viên do QL làm.'] },
