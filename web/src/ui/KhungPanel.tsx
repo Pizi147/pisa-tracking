@@ -169,8 +169,9 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong = 'hep', tabs, ngCanh, q
     </>
   );
   if (taiCho) {
+    /* OV-14c: Esc từ hộp nằm trong portal (hộp nhập điểm) nổi bọt qua cây React — chỉ đóng panel khi Esc phát ra TRONG khung panel. */
     return (
-      <section ref={khung} tabIndex={-1} aria-label={tieuDe} onKeyDown={(e) => { if (e.key === 'Escape' && !e.defaultPrevented && !khung.current?.querySelector('[aria-modal="true"]')) dong(); }}
+      <section ref={khung} tabIndex={-1} aria-label={tieuDe} onKeyDown={(e) => { if (e.key === 'Escape' && !e.defaultPrevented && khung.current?.contains(e.target as Node) && !khung.current.querySelector('[aria-modal="true"]')) dong(); }}
         className={`card flex flex-col -outline-offset-2 lg:max-h-[calc(100dvh-8rem)] ${chan?.v3 ? 'max-sm:overflow-visible sm:overflow-hidden' : 'overflow-hidden'}`}>
         <KhungTaiCho.Provider value={false}>{than}</KhungTaiCho.Provider>
       </section>

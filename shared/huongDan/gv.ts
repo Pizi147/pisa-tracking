@@ -14,7 +14,7 @@ export const HD_GV: HuongDan = {
     {
       id: 'nhap-diem', ten: 'Nhập điểm MT + Speaking chấm chéo', khi: 'sau mỗi tuần thi',
       buoc: ['Mở <b>Test › Lịch Test / Chấm Test</b>: khối "Test chấm tuần này", hạn hết <b>Thứ Tư</b>.', 'Bấm lớp, gõ điểm; mọi ô MT có điểm cần <b>nhận xét</b>, ô dưới kỳ vọng thêm <b>nhóm nguyên nhân</b>.',
-        'Em vắng: gõ <b>-</b>.', 'Speaking chấm chéo: <b>Công việc</b>, nhóm <b>Chấm điểm</b>, dòng "Speaking chấm chéo" — không tính quá hạn.'],
+        'Em vắng: gõ <b>-</b>.', 'Chấm Speaking: <b>Công việc</b>, dòng "Chấm Speaking · n bài" đầu nhóm <b>Chấm điểm</b> — không tính quá hạn.'],
       chi: { hd: 'lich-test-tuan', duong: '/test/lich', chu: 'Bài tuần trước cần chấm nằm ở khối này.' },
     },
     {
@@ -91,7 +91,7 @@ export const HD_GV: HuongDan = {
       muc: [
         { id: 'cv-tai-cho', ten: 'Làm việc ngay trên dòng', buoc: ['Bấm dòng → ô cần điền mở ngay bên.', 'Lưu trên dòng: "✓ Đã lưu · … · Hoàn tác" rồi tự sang việc kế; panel: <b>Việc tiếp ›</b>.'],
           chi: { hd: 'cv-dong', duong: '/cong-viec', chu: 'Bấm một dòng để làm việc đó.' } },
-        { id: 'cd-cheo', ten: 'Speaking chấm chéo', buoc: ['Nhóm <b>Chấm điểm</b>: bài Speaking lớp khác cùng chi nhánh — tuần trước + bài còn tồn, gom theo tuần thi → lớp.', 'Có số bài chờ, không tính quá hạn.'] },
+        { id: 'cd-cheo', ten: 'Speaking chấm chéo', buoc: ['Dòng "Chấm Speaking · n bài" đầu nhóm <b>Chấm điểm</b>: bài Speaking Mock mọi lớp FT chi nhánh bạn, từ Thứ Hai tuần thi.', 'Bấm dòng: tìm em (tên, email), lọc lớp, bấm ô S để chấm; <b>Enter</b> sang em kế.', 'Có số bài chờ, không tính quá hạn.'] },
         { id: 'cv-gop', ten: 'Dòng gộp nhiều em', buoc: ['Dòng "n em" mở danh sách em; làm từng em hoặc cùng lúc.'] },
         { id: 'cv-qua-han', ten: 'Vì sao việc quá hạn', buoc: ['Qua hạn mà chưa Lưu: chip <b>Quá hạn</b> cam + ⚠, nằm đầu danh sách.', 'Lưu xong là hết quá hạn ở mọi nơi.'] },
         { id: 'cv-loc', ten: 'Lọc việc', buoc: ['Chip <b>Quá hạn · Hôm nay · Tuần này · Tất cả</b>; <b>Lọc thêm</b> theo nhóm việc, chương trình.'],
@@ -144,7 +144,7 @@ export const HD_GV: HuongDan = {
     { ten: 'PA Bổ trợ', nghia: 'PA của lớp thường sau Progress Test, chạy đến Cuối khoá.' },
     { ten: 'Tutor (học kèm)', nghia: 'PA học kèm; ghi kết quả từng buổi.' },
     { ten: 'GVCN · GVBM', nghia: 'Giáo viên chủ nhiệm lớp · giáo viên dạy một kỹ năng.' },
-    { ten: 'Speaking chấm chéo', nghia: 'GV cùng chi nhánh chấm Speaking của lớp khác.' },
+    { ten: 'Speaking chấm chéo', nghia: 'GV có kỹ năng Speaking chấm S Mock mọi lớp FT chi nhánh mình.' },
     { ten: 'Mã tuần', nghia: '<b>W2 OCT</b> = tuần thứ 2 của tháng 10; tuần thuộc tháng chứa Thứ Năm.' },
     { ten: 'QL (Quản lý)', nghia: 'Quản lý chi nhánh — duyệt Case, PA, đề xuất, lịch Test.' },
   ],

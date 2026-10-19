@@ -3,7 +3,7 @@ import { db, tx } from '../db.ts';
 import { ENTRY_SKILLS, PERMISSIONS, duocCapRieng, lyDoCamCapRieng, roleLabel, ROLE_LABEL, VAI_DANG_KY } from '../../../shared/domain/index.ts';
 import { badRequest, chuTuDo, conflict, forbidden, loi, notFound, nowIso, padCode } from '../util.ts';
 import { laNgonNgu } from '../../../shared/i18n/index.ts';
-import { can, require_, type Principal } from '../permissions.ts';
+import { COT_PRINCIPAL, can, laGvSpeaking, principalTuDong, require_, type Principal } from '../permissions.ts';
 import { notify, writeAudit } from './audit.ts';
 
 /**
@@ -624,7 +624,7 @@ export function listAccounts(p: Principal) {
   require_(p, PERMISSIONS.ADMIN_CONFIG, { anyScope: true }, 'Chỉ Quản trị hệ thống xem được danh sách tài khoản.');
   const conn = db();
   const users = conn
-    .prepare("SELECT * FROM users WHERE approval_state != 'pending' ORDER BY full_name COLLATE NOCASE")
+    .prepare(`SELECT u.*, ${COT_PRINCIPAL} FROM users u WHERE u.approval_state != 'pending' ORDER BY u.full_name COLLATE NOCASE`)
     .all() as any[];
   return users.map((u) => ({
     id: u.id, code: u.code, fullName: u.full_name, email: u.email, phone: u.phone,
@@ -638,6 +638,8 @@ export function listAccounts(p: Principal) {
     /** PR-XOA: tài khoản xoá mềm (`status = 'deleted'`) — màn quản trị để ở nút lọc "Đã xoá". */
     deletedAt: u.deleted_at ?? null,
     hasPassword: !!u.password_hash,
+    /** OV-14c: được tính là GV Speaking chấm chéo (`laGvSpeaking`, cùng hàm với quyền) — chip "Chấm Speaking". */
+    chamSpeaking: laGvSpeaking(principalTuDong(u)),
     roles: (conn
       .prepare(
         `SELECT r.key AS role, r.name_vi AS roleName, b.code AS branchCode, b.name AS branchName

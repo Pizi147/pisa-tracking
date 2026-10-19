@@ -16,7 +16,8 @@ import { MotKyNang } from '../cham/MotKyNang.tsx';
 import { duongDiemTheoLuot, type BangTheoLuot } from '../cham/LuoiChamLop.tsx';
 import { LuoiNhung } from '../test/lichTest/LuoiNhung.tsx';
 import { XacNhanPaLo } from './XacNhanPaLo.tsx';
-import { LOAI_HAN_CUA_VIEC, duongLichTest, laViecChamCheo, tuanLich } from '@shared/domain/index.ts';
+import { KHOA_CHAM_SPEAKING, LOAI_HAN_CUA_VIEC, duongLichTest, laViecChamCheo, tuanLich } from '@shared/domain/index.ts';
+import { PanelChamSpeaking } from './PanelChamSpeaking.tsx';
 import { VIEC_LO_Y_THUC, type WorkItem } from '../worklist/WorkList.tsx';
 import { LoYThucPanel } from '../yThuc/LoYThucPanel.tsx';
 import { KetQuaThiThatPanel } from '../students/KetQuaThiThatPanel.tsx';
@@ -38,7 +39,7 @@ const soCuaKhoa = (k: string) => Number(k.slice(k.lastIndexOf(':') + 1)) || null
  * lộ trình cần cả bảng lớp; Phối hợp, Thiếu dữ liệu, thi thật…) mở trang như cũ. OV-13m: Chọn bước tiếp = panel Bước tiếp (`PanelBuocTiep`).
  */
 export function lamTaiCho(it: WorkItem): boolean {
-  if (moCaDong(it)) return true;
+  if (moCaDong(it) || it.key === KHOA_CHAM_SPEAKING) return true;   // OV-14c: Chấm Speaking — panel hàng đợi từng em
   switch (it.group) {
     case 'cause': case 'ghi_nhan_xet': return it.caseId !== null;
     case 'xac_nhan_pa': case 'ghi_ket_qua_pa': case 'mini_test': return it.caseId !== null && !!it.paId;
@@ -96,6 +97,7 @@ export function PanelViec({ it, onDong, onDaLam, onTiep, onMo }: {
     case 'no_plan':
       return <NganCase key={it.key} caseId={it.caseId!} viec="them-pa" hocVien={hv} lop={lop} onClose={onDong} onChanged={onDaLam} onTiep={onTiep} />;
     case 'score':
+      if (it.key === KHOA_CHAM_SPEAKING) return <PanelChamSpeaking key={it.key} onDong={onDong} onDaLam={doi} />;
       if (!laViecChamCheo(it) && (it.con || it.periodId)) return <PanelNhapDiemTuan key={it.key} it={it} onDong={onDong} onDaLam={doi} />;
       return <PanelNhapDiem key={it.key} it={it} onDong={onDong} onDaLam={doi} />;
     case 'ban_giao':

@@ -39,8 +39,10 @@ const GIU_TUNG_DONG_FT = new Set(['no_plan']);
 const GOP_TUAN_SOS = new Set(['ghi_nhan_xet', 'xac_nhan_pa']);
 /** Khoá Nhập điểm Speaking chấm chéo (T18, `mywork.ts`) — việc lẻ `…|cc`, dòng gộp theo tuần cũng `…|cc`. */
 export const laViecChamCheo = (it: { key: string }): boolean => it.key.endsWith('|cc');
-/** OV-13g (Q7): tên dòng chấm chéo của GV Speaking ở Công việc › Chấm điểm. */
-export const VIEC_CHAM_CHEO = 'Speaking chấm chéo';
+/** OV-13g (Q7); OV-14c: tên việc chấm chéo của GV Speaking ở Công việc › Chấm điểm. */
+export const VIEC_CHAM_CHEO = 'Chấm Speaking';
+/** OV-14c: khoá MỘT việc "Chấm Speaking · n bài" của GV Speaking — panel hàng đợi từng em. */
+export const KHOA_CHAM_SPEAKING = 'score:cham-speaking|cc';
 
 export const khoaDongGop = (group: string, classId: number, ownerId: number | null) => `gop:${group}:${classId}:u${ownerId ?? 0}`;
 /** Nhóm của khoá dòng gộp (`gop:{nhóm}:{lớp}:u{người}`); khoá khác → null. */
@@ -48,14 +50,14 @@ export const nhomCuaKhoaGop = (key: string): string | null => (key.startsWith('g
 
 const gopDuoc = (it: ViecGopDuoc) => it.classId !== null && !(it.khung === 'ft' && it.caseSos && GIU_TUNG_DONG_FT.has(it.group));
 /**
- * Dòng Nhập điểm gộp theo tuần thi qua nhiều lớp (OV-13c). OV-13g: chấm chéo của GV Speaking (người giữ việc = người xem) cũng gom theo tuần,
- * khoá thêm `|cc` để không lẫn Nhập điểm của chính GV; chấm chéo không người giữ (QL "Tất cả", u0) giữ gom theo lớp như cũ.
+ * Dòng Nhập điểm gộp theo tuần thi qua nhiều lớp (OV-13c). Chấm chéo không gom theo tuần: QL "Tất cả" (u0) gom theo lớp như cũ; GV Speaking có
+ * MỘT việc "Chấm Speaking" (OV-14c, `KHOA_CHAM_SPEAKING`, không gắn lớp).
  */
-const theoTuanThi = (it: ViecGopDuoc) => it.group === 'score' && !!it.tuanThi && (!laViecChamCheo(it) || it.ownerId !== null);
+const theoTuanThi = (it: ViecGopDuoc) => it.group === 'score' && !!it.tuanThi && !laViecChamCheo(it);
 /** Khoá dòng gộp mà việc này thuộc về; việc giữ từng dòng → null. Giao diện dùng để giữ việc vừa xong trong dòng gộp của nó. */
 export function khoaGopCua(it: ViecGopDuoc): string | null {
   if (!gopDuoc(it)) return null;
-  if (theoTuanThi(it)) return `gop:score:t${it.tuanThi}:u${it.ownerId ?? 0}:${it.khung ?? ''}${laViecChamCheo(it) ? '|cc' : ''}`;
+  if (theoTuanThi(it)) return `gop:score:t${it.tuanThi}:u${it.ownerId ?? 0}:${it.khung ?? ''}`;
   const k = khoaDongGop(it.group, it.classId!, it.ownerId);
   return it.khung === 'ft' && it.caseSos && GOP_TUAN_SOS.has(it.group) ? `${k}:t${it.tuanThi ?? ''}:s${it.sos ?? 0}` : k;
 }
@@ -98,7 +100,7 @@ export function gopViecTheoLop<T extends ViecGopDuoc>(items: readonly T[], nhan:
     if (!k || !nhom || nhom.length < 2) { out.push(it); continue; }
     if (daDat.has(k)) continue;
     daDat.add(k);
-    const nhanLoai = laViecChamCheo(it) && theoTuanThi(it) ? VIEC_CHAM_CHEO : nhan(it.group);   // dòng u0 theo lớp của QL có thể lẫn môn chưa phân công
+    const nhanLoai = nhan(it.group);
     const con = [...nhom].sort(sapViec).map((x) => conCua(x));
     const dau = con[0];
     /*

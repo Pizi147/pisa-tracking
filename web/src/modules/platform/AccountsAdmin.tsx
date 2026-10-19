@@ -28,6 +28,8 @@ type Account = {
   /** OV-11b (QT-4): `approvalState = 'declined'` — lý do + chi nhánh tự khai (hộp Duyệt lại). */
   declineReason: string | null; requestedBranches: string[]; requestedRole: string | null;
   roles: RoleGrant[]; skills: string[]; extraEmails: string[];
+  /** OV-14c: được tính là GV Speaking chấm chéo (`laGvSpeaking` máy chủ). */
+  chamSpeaking?: boolean;
   extra: { permission: string; name: string; branchCode: string | null }[];
 };
 type Pending = {
@@ -277,6 +279,8 @@ function HangTaiKhoan({ u, hienQuyenRieng, onSua, onSuaTt, onXoa, onDuyetLai }: 
       )}
       <td className="td text-xs text-slate-400">
         {u.skills.length ? u.skills.map(skillLabel).join(', ') : '—'}
+        {/* OV-14c: ai được tính là GV Speaking chấm chéo (kỹ năng S hoặc dạy S lớp FT, có vai GV) — vì sao một GV thấy / không thấy bài S. */}
+        {u.chamSpeaking && <span className="mt-1 block"><Info title="Kỹ năng Speaking hoặc dạy Speaking lớp FT — chấm S Mock mọi lớp FT chi nhánh của vai GV">Chấm Speaking</Info></span>}
       </td>
       <td className="td whitespace-nowrap">
         {u.status === 'deleted' ? (

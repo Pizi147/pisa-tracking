@@ -2,7 +2,7 @@ import { useRef, useState, type MouseEvent } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useApi, useGopTaiLai } from '../../lib/useApi.ts';
 import { Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
-import { CongTacKhung, khungDaNho } from '../../ui/CongTacKhung.tsx';
+import { CongTacKhung, khungDaNho, type KhungLoc } from '../../ui/CongTacKhung.tsx';
 import { BranchFilter, useChiNhanhMacDinh } from '../../ui/Filters.tsx';
 import { DiemTheoLop, type CongRoi } from '../cham/DiemTheoLop.tsx';
 import { useChongVe, useTenTrang, useVe } from '../../lib/quayLai.ts';
@@ -47,10 +47,11 @@ export function TabDiemLop() {
   const loaiUrl = sp.get('loai');
   /* PR-OV1a: vào từ link có `?lop=` (Nhập điểm ở hồ sơ lớp) mà chưa có `?loai=` → công tắc theo loại của chính lớp đó. */
   const lopUrl = data.find((l) => String(l.classId) === sp.get('lop'));
-  const loai: 'ft' | 'thuong' = lopFT.length && lopThuong.length
-    ? (loaiUrl === 'ft' || loaiUrl === 'thuong' ? loaiUrl : lopUrl ? (lopUrl.mode === 'ielts_band' ? 'ft' : 'thuong') : daNho === 'thuong' ? 'thuong' : 'ft')
+  /* OV-14c (C14): chưa chọn / chưa nhớ khung → "Tất cả" (trước: Fast Track trước — Progress / Final lớp thường nằm ẩn sau công tắc). */
+  const loai: KhungLoc = lopFT.length && lopThuong.length
+    ? (loaiUrl === 'ft' || loaiUrl === 'thuong' || loaiUrl === 'tat-ca' ? loaiUrl : lopUrl ? (lopUrl.mode === 'ielts_band' ? 'ft' : 'thuong') : daNho ?? 'tat-ca')
     : lopThuong.length ? 'thuong' : 'ft';
-  const loc = loai === 'ft' ? lopFT : lopThuong;
+  const loc = loai === 'ft' ? lopFT : loai === 'thuong' ? lopThuong : [...lopFT, ...lopThuong];
   const chon = data.find((l) => String(l.classId) === sp.get('lop')) ?? loc[0] ?? theoCn[0] ?? data[0];
   /* Lớp đang xem luôn còn trong danh sách dù lọc loại nó đi — không để bảng bên phải mất chỗ đứng. */
   const ds = loc.some((l) => l.classId === chon.classId) ? loc : [chon, ...loc];
@@ -87,9 +88,9 @@ export function TabDiemLop() {
       )}
       <div className="flex min-w-0 flex-col gap-2">
       <div className="flex flex-wrap items-end gap-x-3 gap-y-2" onMouseDown={giu}>
-        {/* OV-11e (CA3-11): cột trái 240 px — số không kèm "lớp" để công tắc không bị cắt. */}
-        <CongTacKhung trang="diem-theo-lop" value={loai} dem={{ ft: lopFT.length, thuong: lopThuong.length }}
-          onChange={(k) => { if (k !== 'tat-ca') doiLoc((q) => q.set('loai', k)); }} />
+        {/* OV-11e (CA3-11): cột trái 240 px; OV-14c: thêm "Tất cả" → ô chọn "Loại lớp" (ba ô phân đoạn tràn cột). */}
+        <CongTacKhung trang="diem-theo-lop" coTatCa kieu="chon" value={loai} dem={{ 'tat-ca': theoCn.length, ft: lopFT.length, thuong: lopThuong.length }}
+          onChange={(k) => doiLoc((q) => q.set('loai', k))} />
         <BranchFilter branchId={branchId} onBranch={(id) => doiLoc((q) => { if (id) q.set('cn', String(id)); else q.delete('cn'); })} />
       </div>
       <select className="field md:hidden" aria-label={t('Chọn lớp')} value={chon.classId} onMouseDown={giu} onChange={(e) => chonLop(Number(e.target.value))}>

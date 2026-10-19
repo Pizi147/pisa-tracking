@@ -5,7 +5,7 @@
  * Một hàm thuần để phép kiểm gọi thẳng được (server/src/tests/khung.tests.ts).
  */
 import { PERMISSIONS, laVaiQuanLy, type NavQuyen } from '../../../shared/domain/index.ts';
-import { can, classScopeSql, scopeFor, type Principal } from '../permissions.ts';
+import { can, classScopeSql, lopFtChoGvSpeaking, scopeFor, type Principal } from '../permissions.ts';
 import { db } from '../db.ts';
 import { canSeeBoard } from '../worklist/mgmttasks.ts';
 import { coPhamViXuat, phamViXuatMt } from '../phanTich/xuatMt.ts';
@@ -13,13 +13,15 @@ import { phamViXemViec } from '../worklist/xemViec.ts';
 
 export function navOf(p: Principal): NavQuyen {
   const coPhamVi = (perm: string) => !scopeFor(p, perm).none;
-  const attempt = coPhamVi(PERMISSIONS.ATTEMPT_VIEW);
+  /* OV-14c: GV Speaking không phân công lớp nào (GV nước ngoài) vẫn có Test + Công việc — phạm vi chấm là lớp FT chấm chéo (`scopeXemLuotCham`). */
+  const gvS = (perm: string) => lopFtChoGvSpeaking(p).length > 0 && can(p, perm, { anyScope: true });
+  const attempt = coPhamVi(PERMISSIONS.ATTEMPT_VIEW) || gvS(PERMISSIONS.ATTEMPT_VIEW);
   const meeting = coPhamVi(PERMISSIONS.MEETING_VIEW);
   const plan = coPhamVi(PERMISSIONS.PLAN_WEEK);
   const board = canSeeBoard(p);
   /* PR-OV2a: Test và Công việc có quyền vào riêng — TVV, CX xem điểm / Case trong hồ sơ (`attempt.view`) mà không có hai khu này. */
-  const test = attempt && coPhamVi(PERMISSIONS.TEST_VIEW);
-  const viec = coPhamVi(PERMISSIONS.WORK_VIEW);
+  const test = attempt && (coPhamVi(PERMISSIONS.TEST_VIEW) || gvS(PERMISSIONS.TEST_VIEW));
+  const viec = coPhamVi(PERMISSIONS.WORK_VIEW) || gvS(PERMISSIONS.WORK_VIEW);
   const support = viec && attempt;
   const chamDiem = phamViXemViec(p) === 'cham-diem';
   return {

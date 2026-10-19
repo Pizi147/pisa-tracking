@@ -7,6 +7,7 @@
  */
 import { kyGhiKetQua, type DeadlineKind } from './display.ts';
 import { t } from '../i18n/index.ts';
+import { KHOA_CHAM_SPEAKING } from './gopViec.ts';
 
 // ------------------------------------------------------------------ chương trình
 /* PR-Pb2-a (Q31-1, T60): chỉ còn hai khung, FT trước. Nút "Cả hai" đã bỏ — khối không theo kỹ năng gộp bằng `null`. */
@@ -56,7 +57,7 @@ export const LOAI_HAN_CUA_VIEC: Partial<Record<string, DeadlineKind>> = {
   thi_that: 'sau-thi', buoc_tiep: 'sau-thi',   // OV-13q
 };
 
-export type ViecGom = { group: string; urgency: 'overdue' | 'today' | 'normal'; due: string | null };
+export type ViecGom = { group: string; urgency: 'overdue' | 'today' | 'normal'; due: string | null; key?: string };
 export type NhomViecXem<T> = {
   key: NhomViec; label: string; items: T[];
   /** Số việc — mọi số đếm từ `items` (PR-VAI-a: không còn dòng nhắc mềm cộng tay). */
@@ -68,7 +69,9 @@ export function gomNhomViec<T extends ViecGom>(items: T[]): NhomViecXem<T>[] {
   const w = (u: ViecGom['urgency']) => (u === 'overdue' ? 0 : u === 'today' ? 1 : 2);
   return NHOM_VIEC.map((key) => {
     const list = items.filter((i) => nhomViecCua(i.group) === key)
-      .sort((a, b) => w(a.urgency) - w(b.urgency) || (a.due ?? '9999').localeCompare(b.due ?? '9999'));
+      /* OV-14c: việc "Chấm Speaking · n bài" của GV Speaking đứng đầu nhóm (chủ SP 18/10). */
+      .sort((a, b) => Number(b.key === KHOA_CHAM_SPEAKING) - Number(a.key === KHOA_CHAM_SPEAKING)
+        || w(a.urgency) - w(b.urgency) || (a.due ?? '9999').localeCompare(b.due ?? '9999'));
     const quaHan = list.filter((i) => i.urgency === 'overdue').length;
     return {
       key, label: NHOM_VIEC_LABEL[key], items: list,
