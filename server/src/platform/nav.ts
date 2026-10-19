@@ -24,16 +24,20 @@ export function navOf(p: Principal): NavQuyen {
   const viec = coPhamVi(PERMISSIONS.WORK_VIEW) || gvS(PERMISSIONS.WORK_VIEW);
   const support = viec && attempt;
   const chamDiem = phamViXemViec(p) === 'cham-diem';
+  const analysis = coPhamVi(PERMISSIONS.ANALYSIS_VIEW);
+  const hvCuaToi = p.roleKeys.includes('consultant') && !laVaiQuanLy(p.roleKeys);
+  const work = viec && (attempt || board || meeting);
   return {
-    overview: true,
+    /* OV-15d: GV (có Công việc, không Phân tích, không phải TVV) vào thẳng Công việc — không có Tổng quan. */
+    overview: analysis || hvCuaToi || !work,
     students: coPhamVi(PERMISSIONS.STUDENT_VIEW),
     admin: can(p, PERMISSIONS.ADMIN_CONFIG, { anyScope: true }),
-    analysis: coPhamVi(PERMISSIONS.ANALYSIS_VIEW),
+    analysis,
     phanTichGv: coPhamVi(PERMISSIONS.ANALYSIS_VIEW_TEACHER),
     /* OV-11f (TQ-8): QL / Quản trị kiêm TVV ở vai gốc giữ Tổng quan QL; Học viên của tôi chỉ khi Góc nhìn = TVV (vai QL bị lọc khỏi `roleKeys`). */
-    hvCuaToi: p.roleKeys.includes('consultant') && !laVaiQuanLy(p.roleKeys),
+    hvCuaToi,
     test, testGrade: test, testSchedule: test, testPlan: test && plan,
-    work: viec && (attempt || board || meeting),
+    work,
     workSupport: support, workOps: viec && board, workReports: viec && meeting,
     /* Admin (chỉ nhóm Chấm điểm, `phamViXemViec`) không có Yêu cầu của tôi — không gửi yêu cầu nào. */
     workApprove: viec && can(p, PERMISSIONS.REQUEST_APPROVE, { anyScope: true }), workRequests: support && !chamDiem,

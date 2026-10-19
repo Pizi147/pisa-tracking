@@ -151,6 +151,7 @@ const LOAI_CAN_LAM = new Set([
   'nhac_viec', 'nhac_ban_giao', 'duyet_moi', 'duyet_qua_han', 'duyet_tu_choi', 'sos', 'sos_new', 'discipline', 'schedule_move', 'phoi_hop',
   'dang_ky', 'lenh_loi', 'ban_giao', 'overdue_score', 'overdue_task',
   'bao_len',   // PR-S6F-a Q12: thẻ Báo QL đang chờ chính Quản lý quyết
+  'qua_han_cham', 'case_chua_chot_pa', 'chot_lo_trinh',   // OV-15d: thông báo tự động thay Nhắc — tự xoá khi việc xong
 ]);
 export function nhomThongBao(n: { kind: string | null; con_viec?: number | null }): 'can-lam' | 'de-biet' {
   if (n.con_viec === 0) return 'de-biet';

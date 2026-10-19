@@ -92,3 +92,4 @@ export * from './khoangThoiGian.ts';
 export * from './phanTrang.ts';
 export * from './ketQuaThi.ts';
 export * from './baoCaoPhanTich.ts';
+export * from './tongQuanQl.ts';   // OV-15d

@@ -39,6 +39,11 @@ export const DUONG_DO: MucDo[] = [
   { trang: 'Tổng quan TVV / CX', vai: ['TVV', 'CX', 'QT'], url: '/tong-quan/hoc-vien' },   // OV-10c: QT đi nhánh CX (mọi em) trên chi nhánh mẫu
   { trang: 'Tổng quan CX', vai: ['CX'], url: '/tong-quan/hoc-vien?branchId={cn}' },
   { trang: 'Tổng quan Admin', vai: ['ADMIN'], url: '/tong-quan/mock-test' },
+  /* OV-15d: Tổng quan QL phương án A (theo khung) + Cần bạn quyết (gộp khung) + panel một số. */
+  { trang: 'Tổng quan QL', vai: ['QL', 'QT', 'GVCN'], url: '/tong-quan/ql?ct=ft', maChuDich: { GVCN: 403 } },
+  { trang: 'Tổng quan QL', vai: ['QL', 'QT'], url: '/tong-quan/ql?ct=thuong' },
+  { trang: 'Tổng quan QL', vai: ['QL', 'QT'], url: '/tong-quan/can-quyet' },
+  { trang: 'Tổng quan QL', vai: ['QL', 'QT'], url: '/tong-quan/ql/o?ct=ft&o=chua-diem' },
   { trang: 'Tổng quan Admin', vai: ['ADMIN'], url: '/highlights' },
   {
     trang: 'Tổng quan QL', vai: ['QL', 'QT', 'GVCN'], url: '/tong-quan/diem-chu-y?ct=ft',   // PR-VAI-a: tách khỏi /tong-quan/quan-ly
@@ -904,9 +909,8 @@ export const TAI_TRANG: Record<string, { vai: Vai; urls: string[]; tran: number 
     vai: 'QL', tran: 450,   // PR-Dọn (9e): đủ 15 GET lúc mở trang → đo 346 câu (trước chỉ 6 GET, đo 126) — max(346 + 10, ⌈346 × 1,3⌉)
     /* PR-Dọn (9e): đủ MỌI GET lúc mở trang (phép quét `prDonA.tests.ts` 9e bắt route mới): thêm badge Chờ duyệt (App), Điểm đáng chú ý,
        sáu ô số, Lịch sắp tới, bảng chi nhánh. */
-    urls: ['/demo/session', '/notifications', '/ref/branches', '/ref/classes', '/yeu-cau/dem', '/tong-quan/quan-ly', '/tong-quan/diem-chu-y?ct=ft',
-      '/metrics/hv-duoi-ky-vong-mon?ct=ft', '/metrics/hv-co-case-mo?ct=ft', '/metrics/case-mo?ct=ft', '/metrics/case-cho-xac-dinh-nguyen-nhan?ct=ft',
-      '/metrics/case-xac-dinh-nguyen-nhan-qua-han?ct=ft', '/metrics/pa-can-cap-nhat?ct=ft', '/highlights?ct=ft', '/tong-quan/chi-nhanh?ct=ft'],
+    /* OV-15d: Tổng quan A — 4 GET dữ liệu (trước 11; đo trên DB demo mới: 245 câu · 8 370 dòng → 129 câu · 2 964 dòng). */
+    urls: ['/demo/session', '/notifications', '/ref/branches', '/ref/classes', '/yeu-cau/dem', '/tong-quan/ql?ct=ft', '/tong-quan/can-quyet', '/yeu-cau?hop=cho-duyet'],
   },
   'CX trang Tổng quan': {
     vai: 'CX', tran: 450,

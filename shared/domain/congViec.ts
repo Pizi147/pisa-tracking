@@ -10,7 +10,7 @@ import { catDongPhu } from './hocVienLop.ts';
 import { ngay } from './hienThiNgay.ts';
 import { mondayOfDate } from './week.ts';
 import { TASK_GROUPS, TASK_PROGRESS_CLOSED, type TaskGroup, type TaskProgress } from './worklist.ts';
-import { NHOM_VIEC, nhomViecCua, type NhomViec } from './tongQuan.ts';
+import { NHOM_VIEC, NHOM_VIEC_LABEL, nhomViecCua, type NhomViec } from './tongQuan.ts';
 import { t } from '../i18n/index.ts';
 
 const DAY_MS = 86_400_000;
@@ -315,3 +315,39 @@ export function duocGiao(ky: TrangThaiKy, busy: boolean): boolean {
  */
 export const viecTuMo = <T extends { key: string }>(ds: readonly T[], o: { manHep: boolean; dangMo: boolean; daTuMo: boolean }): string | null =>
   (o.manHep || o.dangMo || o.daTuMo ? null : ds[0]?.key ?? null);
+
+// ====================================================================== OV-15d — Công việc một danh sách, hàng đợi GV
+
+/** Trục người (mockup 2 mục 3): Của tôi · Của GV (việc của người khác trong phạm vi) · Tất cả. Một GV cụ thể đi qua `?nguoi={id}` (máy chủ lọc). */
+export const NGUOI_VIEC = ['toi', 'gv', 'tat-ca'] as const;
+export type NguoiViec = (typeof NGUOI_VIEC)[number];
+export const khopNguoi = (it: { mine: boolean }, nguoi: NguoiViec): boolean => nguoi === 'tat-ca' || (nguoi === 'toi') === it.mine;
+/** Số trên ba nút = số DÒNG khớp (cùng `khopNguoi`). */
+export function demNguoi(items: readonly { mine: boolean }[]): Record<NguoiViec, number> {
+  const toi = items.filter((x) => x.mine).length;
+  return { toi, gv: items.length - toi, 'tat-ca': items.length };
+}
+
+/** Nhóm "Vận hành" của Quản lý gồm Vận hành + Báo cáo đơn vị + Chốt lộ trình / Bàn giao → tên "Việc quản lý" (mockup 2 mục 3). */
+export const nhanNhomCongViec = (k: NhomViec, laQuanLy: boolean): string => (k === 'van-hanh' && laQuanLy ? t('Việc quản lý') : NHOM_VIEC_LABEL[k]);
+
+/** Việc cả lớp không gán người (Chốt lộ trình, Xét lại lộ trình, Kết quả đầu ra) — không phải "chưa có người". */
+const VIEC_CA_LOP = new Set(['chot_len_ft', 'xet_lai_lo_trinh', 'ky_vong_dau_ra']);
+/** Việc CHƯA có người phụ trách (hiện "Chưa có người" + Phân công…): không gán ai, không chấm chéo (T18), không việc cả lớp, có lớp để phân công GV môn. */
+export const chuaCoNguoi = (it: { key: string; group: string; ownerId: number | null; mine: boolean; classId: number | null }): boolean =>
+  it.ownerId === null && !it.mine && it.classId !== null && !it.key.endsWith('|cc') && !VIEC_CA_LOP.has(it.group);
+
+/** Hàng đợi GV (mockup 2 mục 2): việc có hạn SAU Chủ nhật tuần này (chưa quá hạn) gập vào "Sau tuần này". */
+export function sauTuanNay(it: MucLocNhanh, homNay: string): boolean {
+  return it.urgency !== 'overdue' && !!it.due && it.due.slice(0, 10) > addDaysIso(mondayOfDate(homNay), 6);
+}
+
+/**
+ * Lưu xong → việc kế (OV-15d): CHỈ khi máy chủ không còn trả việc đang mở (`xong` có nó) — lưu một phần / lỗi thì ở lại (`undefined`). Việc kế = việc
+ * đầu SAU nó trong thứ tự đang vẽ chưa xong; hết việc → `null` (đóng panel).
+ */
+export function viecSauKhiXong(thuTu: readonly { key: string }[], dangMo: string, xong: ReadonlySet<string>): string | null | undefined {
+  if (!xong.has(dangMo)) return undefined;
+  const i = thuTu.findIndex((x) => x.key === dangMo);
+  return thuTu.slice(i + 1).find((x) => !xong.has(x.key))?.key ?? null;
+}

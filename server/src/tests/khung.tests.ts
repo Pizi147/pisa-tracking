@@ -47,8 +47,8 @@ export async function runKhungTests(t: YThucTestKit) {
 
   check('PR-O · O1/O6 Bốn khu vực đúng thứ tự, khu không có quyền thì bỏ hẳn', () => {
     const keys = (n: any) => d.khuVucHienThi(n).map((k) => k.key).join(',');
-    assert(keys(QL) === 'tong-quan,hoc-vien,test,phan-tich,cong-viec', `QL: ${keys(QL)}`);   // OV-15e: Phân tích lên thanh trên
-    assert(keys(GV) === 'tong-quan,hoc-vien,test,cong-viec', `GV thấy cả Test và Công việc (spec §3.1): ${keys(GV)}`);
+    assert(keys(QL) === 'cong-viec,tong-quan,hoc-vien,test,phan-tich', `QL: ${keys(QL)}`);   // OV-15e: Phân tích lên thanh trên; OV-15d: Công việc đầu
+    assert(keys(GV) === 'cong-viec,tong-quan,hoc-vien,test', `GV thấy cả Test và Công việc (spec §3.1): ${keys(GV)}`);
     assert(keys(nav({ overview: true, students: true })) === 'tong-quan,hoc-vien', 'Không có Test/Công việc thì không hiện');
     const labels = d.KHU_VUC.map((k) => `${k.label}|${k.labelNgan}`).join(',');
     assert(labels === 'Tổng quan|Tổng quan,Học viên & Lớp|Học viên,Test|Test,Phân tích|Phân tích,Công việc|Công việc', `Chữ: ${labels}`);
@@ -86,9 +86,8 @@ export async function runKhungTests(t: YThucTestKit) {
     assert(d.DUONG_TAB_CONG_VIEC['ho-tro'] === '/cong-viec' && d.DUONG_TAB_CONG_VIEC['van-hanh'] === '/cong-viec/van-hanh'
       && d.DUONG_TAB_CONG_VIEC['cho-duyet'] === '/cong-viec/cho-duyet', 'Đường dẫn tab');
     /* UX-2 (3): QL vào Chờ duyệt chỉ khi có thẻ chờ; không có thì Hỗ trợ học viên. */
-    assert(d.khuVucHienThi(QL, 2).find((k: any) => k.key === 'cong-viec')?.to === '/cong-viec/cho-duyet'
-      && d.khuVucHienThi(QL, 0).find((k: any) => k.key === 'cong-viec')?.to === '/cong-viec'
-      && d.khuVucHienThi(GV, 2).find((k: any) => k.key === 'cong-viec')?.to === '/cong-viec', 'Mục Công việc: QL vào Chờ duyệt khi có thẻ');
+    assert(d.khuVucHienThi(QL).find((k: any) => k.key === 'cong-viec')?.to === '/cong-viec'
+      && d.khuVucHienThi(GV).find((k: any) => k.key === 'cong-viec')?.to === '/cong-viec', 'Mục Công việc: một danh sách (OV-15d), luôn /cong-viec');
     assert(Object.values(d.TAB_TONG_QUAN_LABEL).join(',') === 'Việc hôm nay,Phân tích', 'Chữ tab Tổng quan (O3; PR-VAI-a K1-10: \"Việc hôm nay\")');
   });
 
@@ -143,7 +142,7 @@ export async function runKhungTests(t: YThucTestKit) {
   check('PR-O · O6/R1 GV (GVCN, GVBM): 4 khu; Test: Lịch Test + Điểm theo lớp; Công việc: Việc học viên + Yêu cầu của tôi (PR-DUYET); không Phân tích', () => {
     for (const [ten, p] of [['GVCN', t.P.coreTeacher], ['GVBM', t.P.subjectTeacher], ['GVCN lớp thường', t.P.normalCoreTeacher]] as const) {
       const n = navOf(p);
-      assert(tabs(n) === 'tong-quan,hoc-vien,test,cong-viec|lich,diem-lop|ho-tro,yeu-cau|false|false', `${ten}: ${tabs(n)}`);   // PR-DL G4
+      assert(tabs(n) === 'cong-viec,hoc-vien,test|lich,diem-lop|ho-tro,yeu-cau|false|false', `${ten}: ${tabs(n)}`);   // PR-DL G4; OV-15d: GV không có Tổng quan
       assert(d.tabTestMacDinh(n) === 'lich', `${ten} mở Test vào ${d.tabTestMacDinh(n)}`);
       assert(!n.workOps && !n.workReports, `${ten} không được thấy Vận hành / Báo cáo đơn vị`);
     }

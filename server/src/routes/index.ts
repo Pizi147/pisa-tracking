@@ -98,6 +98,9 @@ import * as ketQuaThiSvc from '../phanTich/ketQuaThi.ts';
 import { khungPtGvTuThamSo } from '../../../shared/domain/index.ts';   // PR-Pb2-b: dòng riêng (Hợp đồng a↔b — không sửa import chung)
 import { metricResponse, metricSet, rowsFor } from '../worklist/metrics.ts';
 import { myWork, viecCuaNguoi } from '../worklist/mywork.ts';
+import { dongBoThongBaoViec, thongBaoTuViec } from '../worklist/thongBaoViec.ts';   // OV-15d
+import { laVaiQuanLy } from '../../../shared/domain/index.ts';   // OV-15d
+import * as tongQuanQlSvc from '../worklist/tongQuanQl.ts';   // OV-15d
 import { bangGvChiNhanh, hoSoGiaoVien, ketQuaHoSoGv, oHoSoGv, viecHoSoGv } from '../giaoVien/hoSo.ts';
 import { phamViXemViec } from '../worklist/xemViec.ts';
 import { soHocVien } from '../worklist/hvCuaToi.ts';
@@ -488,12 +491,19 @@ api.get('/my-work', requireAuth, wrap((req) => {
 
   if (nguoi === 'tat-ca') {
     if (!phamViXemViec(p)) throw forbidden('Bạn chỉ xem được việc của mình.');
-    return nheMyWork(myWork(p, { branchId, nguoi: 'tat-ca' }));
+    return nheMyWork(baoViec(p, myWork(p, { branchId, nguoi: 'tat-ca' }), !branchId));
   }
-  if (typeof nguoi === 'number') return nheMyWork(viecCuaNguoi(p, nguoi, branchId));
+  if (typeof nguoi === 'number') return nheMyWork(baoViec(p, viecCuaNguoi(p, nguoi, branchId), false));
 
-  return nheMyWork(myWork(p, { branchId }));
+  return nheMyWork(baoViec(p, myWork(p, { branchId }), !branchId));
 }));
+/** OV-15d (C03): thông báo tự động từ CHÍNH danh sách việc vừa tính — lỗi ghi thông báo không làm hỏng Công việc. */
+function baoViec<T extends { items?: any[] }>(p: Principal, w: T, day: boolean): T {
+  try {
+    dongBoThongBaoViec(thongBaoTuViec(w.items ?? [], { nguoiXem: p.userId, laQuanLy: laVaiQuanLy(p.roleKeys), homNay: demoToday() }), { nguoiXem: p.userId, day });
+  } catch (e) { console.error('[thong-bao-viec]', e); }
+  return w;
+}
 
 /** OV-14c: hàng đợi "Chấm Speaking" của GV Speaking (panel của việc `KHOA_CHAM_SPEAKING`) — mỗi em một ô S Mock (`baiChamSpeaking`). */
 api.get('/my-work/cham-speaking', requireAuth, wrap((req) => {
@@ -1905,6 +1915,20 @@ api.get('/tong-quan/chi-nhanh/o', requireAuth, wrap((req) => {
     branchId: qInt(req, 'branchId') ?? null, ct: chuongTrinhTuThamSo(qStr(req, 'ct')),
     cot: qStr(req, 'cot') ?? '', khoa: qStr(req, 'khoa') ?? '',
   });
+}));
+
+/* OV-15d: Tổng quan QL phương án A — dải tóm tắt · Lớp cần chú ý · Tuần này (theo khung) · Cần bạn quyết (gộp khung) · panel của từng số. */
+api.get('/tong-quan/ql', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return tongQuanQlSvc.tongQuanQlA(principalOf(req), { branchId: qInt(req, 'branchId') ?? null, ct: chuongTrinhTuThamSo(qStr(req, 'ct')) });
+}));
+api.get('/tong-quan/ql/o', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return tongQuanQlSvc.oTongQuanQlA(principalOf(req), { branchId: qInt(req, 'branchId') ?? null, ct: chuongTrinhTuThamSo(qStr(req, 'ct')), o: qStr(req, 'o') ?? '' });
+}));
+api.get('/tong-quan/can-quyet', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return tongQuanQlSvc.canBanQuyet(principalOf(req), { branchId: qInt(req, 'branchId') ?? null });
 }));
 
 api.get('/cases/:id', requireAuth, wrap((req) => caseSvc.caseDetail(principalOf(req), pInt(req, 'id'))));

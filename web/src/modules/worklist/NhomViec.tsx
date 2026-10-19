@@ -9,7 +9,7 @@ import { dich, t } from '@shared/i18n/index.ts';
  * nhóm cố định, mỗi nhóm gập/mở, nhóm có việc quá hạn tự mở sẵn. Tổng quan giữ đúng hành vi cũ
  * (`soHien = 5`); Hỗ trợ học viên gọi với `soHien = 10` và có thể ép mở hết khi đang lọc.
  */
-export function NhomViec({ nhom, soHien, moHet, onOpen, nutPhu, chon, xong, moTrang, moRong, moCaDong }: {
+export function NhomViec({ nhom, soHien, moHet, onOpen, nutPhu, chon, xong, moTrang, moRong, moCaDong, nhanNhom, gapSan, dauThem }: {
   nhom: NhomViecXem<WorkItem>[];
   soHien: number;
   /** Ép mở hết mọi nhóm — dùng khi đang lọc nhanh/loại việc, kết quả đã ít thì không cần gập nữa. */
@@ -26,23 +26,30 @@ export function NhomViec({ nhom, soHien, moHet, onOpen, nutPhu, chon, xong, moTr
   nutPhu?: (it: WorkItem) => ReactNode;
   /** OV-13b: phần mở NGAY DƯỚI dòng (ghi nhanh Kết quả PA, dòng "✓ Đã lưu") — `null` = không. */
   moRong?: (it: WorkItem) => ReactNode;
+  /** OV-15d: tên nhóm theo vai ("Việc quản lý" của QL) · nhóm gập sẵn dù có việc quá hạn · nút / link ở đầu nhóm (+ Giao việc). */
+  nhanNhom?: (g: NhomViecXem<WorkItem>) => string;
+  gapSan?: ReadonlySet<string>;
+  dauThem?: (g: NhomViecXem<WorkItem>) => ReactNode;
 }) {
   const [mo, setMo] = useState<Record<string, boolean>>({});
   const [them, setThem] = useState<Record<string, number>>({});
   return (
     <div className="divide-y" style={{ borderColor: 'var(--line)' }}>
       {nhom.map((g) => {
-        const dangMo = moHet || (mo[g.key] ?? (g.moSan || nhom.length === 1));   // OV-11c (CV-17g): chỉ một nhóm thì mở sẵn
+        const dangMo = moHet || (mo[g.key] ?? (!gapSan?.has(g.key) && (g.moSan || nhom.length === 1)));   // OV-11c (CV-17g): chỉ một nhóm thì mở sẵn
         const soHienNhom = soHien + (them[g.key] ?? 0);
-        const phu = (g.quaHan > 0 || g.homNay > 0) ? (
+        const dauNut = dauThem?.(g);
+        const phu = (g.quaHan > 0 || g.homNay > 0 || dauNut) ? (
           <span className="flex flex-wrap items-center gap-x-2">
             {g.quaHan > 0 && <span className="font-bold text-late">{t('⚠ {quaHan} quá hạn', { quaHan: g.quaHan })}</span>}
             {g.homNay > 0 && <span className="font-semibold text-soon">{t('{homNay} hôm nay', { homNay: g.homNay })}</span>}
+            {dauNut}
           </span>
         ) : null;
+        const ten = nhanNhom ? nhanNhom(g) : dich(g.label);
         return (
           <KhoiNhom key={g.key} id={`nhom-${g.key}`} mo={dangMo} onMo={() => setMo((s) => ({ ...s, [g.key]: !dangMo }))}
-            nhan={dich(g.label)} tieuDe={dich(g.label)} dem={g.n} phu={phu}>
+            nhan={ten} tieuDe={ten} dem={g.n} phu={phu}>
             {/* PR-YT4: nhóm Ý thức có việc thật (`yt_*`, có hạn). PR-VAI-a: Phối hợp SOS là việc `phoi_hop_sos` — hết dòng nhắc mềm. */}
             {(
               <>

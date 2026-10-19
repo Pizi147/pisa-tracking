@@ -7,6 +7,7 @@ import { BoLocDoan, Card, Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { BranchFilter } from '../../ui/Filters.tsx';
 import { NganCase } from '../students/NganCase.tsx';
 import { TheYeuCau } from './TheYeuCau.tsx';
+import { t } from '@shared/i18n/index.ts';
 import {
   LOAI_YC_META, PHAN_LOAI_CAN_QUYET, PHAN_LOAI_LABEL, TRAN_HANG_LOAT, chiaLo, chonHet, chonMot, laPhanLoai, tomTatKetQuaHangLoat,
   type KhoaChip, type LoaiYeuCau, type TheYeuCauDto,
@@ -37,19 +38,22 @@ export function useTheNhanManh(ds: TheYeuCauDto[] | undefined): number | null {
  * số 0 (Q12), ba tab Chờ duyệt · Báo QL (PR-GVb J5b; OV-12h bỏ Nhắc, đổi tên — mã `de-biet` giữ) · Đã xử lý 30 ngày, chi nhánh. Thẻ quá hạn đứng đầu (máy chủ xếp).
  * Duyệt hàng loạt (PR-GVb D01/Q-B): mọi tab phân loại (cả Tất cả), chỉ cùng MỘT loại `hangLoat`, tối đa `TRAN_HANG_LOAT`; kết quả một câu.
  */
-export function HopChoDuyet() {
+export function HopChoDuyet({ gon = false }: {
+  /** OV-15d: nhóm đầu của Công việc ("Chờ bạn duyệt") — không hàng lọc, 3 thẻ đầu + "Xem thêm"; hộp đầy đủ (Báo QL, Đã xử lý) ở `/cong-viec/cho-duyet`. */
+  gon?: boolean;
+} = {}) {
   const toast = useToast();
   const [params, setParams] = useSearchParams();
-  const thamXem = params.get('xem');
+  const thamXem = gon ? null : params.get('xem');
   const xem = thamXem === 'da-xu-ly' || thamXem === 'de-biet' ? thamXem : 'cho';
   /* Phân loại chỉ lọc ở tab Chờ duyệt; Báo QL chỉ có một phân loại. */
-  const phan = xem !== 'de-biet' && laPhanLoai(params.get('phan')) && params.get('phan') !== 'bao-len' ? (params.get('phan') as KhoaChip) : 'tat-ca';
+  const phan = !gon && xem !== 'de-biet' && laPhanLoai(params.get('phan')) && params.get('phan') !== 'bao-len' ? (params.get('phan') as KhoaChip) : 'tat-ca';
   /* Chủ sản phẩm 06/10: hộp LUÔN mở Tất cả chi nhánh (không áp chi nhánh mặc định) — số dòng khớp badge Công việc; tự lọc nếu muốn. */
   const branchId = params.get('cn') ? Number(params.get('cn')) : null;
   /* PR-S4F #5: `?lop=` — từ badge "n chờ duyệt" của một lớp. */
-  const lopId = Number(params.get('lop')) || null;
+  const lopId = gon ? null : Number(params.get('lop')) || null;
   /* PR-VAI-a (Q17): `?qua-han=1` — từ số "k quá hạn" của dải Chờ duyệt ở Tổng quan. */
-  const quaHan = params.get('qua-han') === '1' && xem !== 'da-xu-ly';
+  const quaHan = !gon && params.get('qua-han') === '1' && xem !== 'da-xu-ly';
   const setParam = (k: string, v: string | null) => {
     const next = new URLSearchParams(params);
     if (v) next.set(k, v); else next.delete(k);
@@ -92,6 +96,8 @@ export function HopChoDuyet() {
   /* Gợi ý một lần: có ≥ 2 thẻ cùng loại hàng loạt mà chưa chọn gì. */
   const coCapHangLoat = choHangLoat && !chon.size && ds.some((a, i) => a.hangLoat && ds.some((b, j) => j !== i && b.loai === a.loai));
   const [ngan, setNgan] = useState<number | null>(null);
+  const [hetThe, setHetThe] = useState(false);
+  const hien = gon && !hetThe ? ds.slice(0, 3) : ds;
 
   const xong = () => { reload(); invalidate('/yeu-cau/dem'); };
   /* Thẻ lỗi: một câu tổng + tối đa 3 dòng chi tiết, còn lại gộp — không dồn hàng chục toast. */
@@ -139,7 +145,7 @@ export function HopChoDuyet() {
   const dem = data?.dem;
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap items-end gap-2" data-hd="cd-loc">
+      {!gon && <div className="flex flex-wrap items-end gap-2" data-hd="cd-loc">
         <BoLocDoan ariaLabel="Trạng thái" value={xem} onChange={(k) => {
           const next = new URLSearchParams(params);
           if (k === 'cho') next.delete('xem'); else next.set('xem', k);
@@ -167,9 +173,9 @@ export function HopChoDuyet() {
             Lớp {data?.lopDangLoc?.code ?? lopId} ✕
           </button>
         )}
-      </div>
-      {xem !== 'da-xu-ly' && ds.length > 1 && <p className="m-0 text-[12px] text-slate-400">Xếp: quá hạn trước → hạn gần nhất</p>}
-      {coCapHangLoat && <p className="m-0 text-[12px] text-slate-400">Đánh dấu ô ở thẻ để duyệt nhiều cùng loại.</p>}
+      </div>}
+      {!gon && xem !== 'da-xu-ly' && ds.length > 1 && <p className="m-0 text-[12px] text-slate-400">Xếp: quá hạn trước → hạn gần nhất</p>}
+      {!gon && coCapHangLoat && <p className="m-0 text-[12px] text-slate-400">Đánh dấu ô ở thẻ để duyệt nhiều cùng loại.</p>}
       {theLac && (
         <p role="status" className="m-0 flex flex-wrap items-center gap-2 rounded-lg border px-3 py-2 text-[13px] text-slate-300"
           style={{ borderColor: 'var(--line)' }}>
@@ -181,20 +187,23 @@ export function HopChoDuyet() {
           )}
         </p>
       )}
-      {loading && <Card><Skeleton rows={6} /></Card>}
-      {data && ds.length === 0 && (
+      {loading && (gon ? <Skeleton rows={3} /> : <Card><Skeleton rows={6} /></Card>)}
+      {!gon && data && ds.length === 0 && (
         <Card><Empty title={xem === 'cho' ? 'Không có yêu cầu nào đang chờ' : xem === 'de-biet' ? 'Không có thẻ Báo QL'
           : 'Chưa có yêu cầu nào được xử lý trong 30 ngày'} /></Card>
       )}
       {ds.length > 0 && (
         <div className="space-y-2">
-          {ds.map((y) => (
+          {hien.map((y) => (
             <TheYeuCau key={y.id} yc={y} nhanManh={nhan === y.id} onXong={xong} onThemPa={setNgan}
               chon={choHangLoat && y.hangLoat && y.trangThai === 'cho' ? {
                 checked: chon.has(y.id),
                 onChange: (v) => setChon((s) => chonMot(ds, s, y.id, v)),
               } : null} />
           ))}
+          {hien.length < ds.length && (
+            <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setHetThe(true)}>{t('Xem thêm {n} thẻ', { n: ds.length - hien.length })}</button>
+          )}
         </div>
       )}
 

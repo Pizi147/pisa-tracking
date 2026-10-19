@@ -57,13 +57,11 @@ export async function runPrUx2Tests(t: YThucTestKit) {
     }
   }));
 
-  check('UX2-3 · Menu Công việc: người duyệt vào Chờ duyệt chỉ khi có thẻ chờ; không có thì Hỗ trợ học viên', () => {
+  check('UX2-3 · Menu Công việc: OV-15d — một danh sách, "Chờ bạn duyệt" là nhóm đầu; mục luôn mở /cong-viec', () => {
     const QL = { ...d.NAV_RONG, overview: true, work: true, workApprove: true };
-    const den = (n: any, cho?: number) => d.khuVucHienThi(n, cho).find((k: any) => k.key === 'cong-viec')?.to;
-    eq(den(QL, 3), '/cong-viec/cho-duyet', 'có thẻ');
-    eq(den(QL, 0), '/cong-viec', 'không thẻ');
-    eq(den(QL), '/cong-viec', 'chưa đếm');
-    eq(den({ ...QL, workApprove: false }, 3), '/cong-viec', 'không phải người duyệt');
+    const den = (n: any) => d.khuVucHienThi(n).find((k: any) => k.key === 'cong-viec')?.to;
+    eq(den(QL), '/cong-viec', 'người duyệt');
+    eq(den({ ...QL, workApprove: false }), '/cong-viec', 'không phải người duyệt');
   });
 
   check('UX2-4 · Hỗ trợ học viên: tự mở việc đầu (máy tính, chưa mở việc, chưa tự mở ở bộ lọc này); điện thoại / 0 việc thì không', () => {

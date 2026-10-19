@@ -207,8 +207,7 @@ async function runTask9(t: YThucTestKit, d: any) {
   });
 
   check('S6F-b (9) · D13: link từ Tổng quan sang Công việc mang khung=tat-ca (Xem hết, Tất cả việc, Xem và nhắc)', () => {
-    const v = doc('web/src/modules/worklist/ViecCuaToi.tsx');
-    assert(/to="\/cong-viec\?loc=den-het-tuan&khung=tat-ca"/.test(v) && /to="\/cong-viec\?khung=tat-ca"/.test(v), 'ViecCuaToi: hai link thiếu khung=tat-ca');
+    /* OV-15d: Tổng quan GV (ViecCuaToi) gộp vào Công việc — chỉ còn link của Tổng quan QL. */
     const den = (tq.tongQuanQuanLy(P.mbManager, {}).canXuLy as any[]).filter((x) => !x.cuaNguoiXem && x.den !== null).map((x) => x.den as string);   // UX-2: den null = mở panel danh sách
     assert(den.length && den.every((u) => u.includes('khung=tat-ca')), JSON.stringify(den));
   });

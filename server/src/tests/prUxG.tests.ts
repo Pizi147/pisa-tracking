@@ -68,9 +68,9 @@ export async function runPrUxGTests(t: YThucTestKit) {
     const gap = levelOf({ sos_level: null, urgency: 'urgent' }) as any;
     assert(gap?.text === 'Gấp' && gap.tone === 'danger', JSON.stringify(gap));
   });
-  check('G2d · "Yêu cầu của tôi" (Tổng quan GV): yêu cầu bị từ chối ghi "Bị từ chối", không "Cần làm" — nhãn ghi đúng chữ', () => {
-    const s = doc('web/src/modules/worklist/ViecCuaToi.tsx');
-    assert(/chu=\{x\.trangThai === 'tu_choi' \? t\('Bị từ chối'\)/.test(s), 'nhãn yêu cầu bị từ chối chưa ghi "Bị từ chối"');
+  check('G2d · "Yêu cầu của tôi" (OV-15d: nhóm trong Công việc GV): yêu cầu bị từ chối là nhóm "Bị từ chối", không "Cần làm"', () => {
+    const s = doc('web/src/modules/congViec/NhomYeuCau.tsx');
+    assert(/tieuDe=\{t\('Bị từ chối'\)\}/.test(s) && /trangThai === 'tu_choi'/.test(s), 'nhóm yêu cầu bị từ chối chưa ghi "Bị từ chối"');
   });
 
   // ------------------------------------------------------------------ G3 · thông báo: giờ và chữ

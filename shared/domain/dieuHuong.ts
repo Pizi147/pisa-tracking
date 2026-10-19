@@ -39,13 +39,14 @@ export const NAV_RONG: NavQuyen = {
 
 export type KhuVucMuc = { key: KhuVuc; to: string; label: string; labelNgan: string };
 
+/* OV-15d (mockup 3, 6): Công việc đứng đầu thanh trên — trang làm việc hằng ngày của mọi vai. */
 export const KHU_VUC: readonly KhuVucMuc[] = [
+  { key: 'cong-viec', to: '/cong-viec', label: t('Công việc'), labelNgan: t('Công việc') },
   { key: 'tong-quan', to: '/', label: t('Tổng quan'), labelNgan: t('Tổng quan') },
   { key: 'hoc-vien', to: '/hoc-vien', label: t('Học viên & Lớp'), labelNgan: t('Học viên') },
   { key: 'test', to: '/test', label: t('Test'), labelNgan: t('Test') },
   /* OV-15e (plan §7): Phân tích là mục thanh trên (trước là tab của Tổng quan). */
   { key: 'phan-tich', to: '/phan-tich', label: t('Phân tích'), labelNgan: t('Phân tích') },
-  { key: 'cong-viec', to: '/cong-viec', label: t('Công việc'), labelNgan: t('Công việc') },
 ];
 
 const HIEN: Record<KhuVuc, (n: NavQuyen) => boolean> = {
@@ -56,13 +57,9 @@ const HIEN: Record<KhuVuc, (n: NavQuyen) => boolean> = {
   'cong-viec': (n) => n.work,
 };
 
-/**
- * PR-DUYET: người duyệt vào thẳng Công việc › Chờ duyệt; UX-2 (3, chủ SP 16/10): CHỈ khi đang có thẻ chờ duyệt (`soChoDuyet`, số badge của menu) —
- * không có thẻ (hoặc chưa đếm xong) thì vào Hỗ trợ học viên. `/cong-viec` vẫn là Việc học viên (link cũ không gãy).
- */
-export function khuVucHienThi(nav: NavQuyen, soChoDuyet = 0): KhuVucMuc[] {
-  return KHU_VUC.filter((k) => HIEN[k.key](nav))
-    .map((k) => (k.key === 'cong-viec' && nav.workApprove && soChoDuyet > 0 ? { ...k, to: DUONG_TAB_CONG_VIEC['cho-duyet'] } : k));
+/** OV-15d: Công việc là MỘT danh sách ("Chờ bạn duyệt" là nhóm đầu khi có thẻ) — mục luôn mở `/cong-viec`. */
+export function khuVucHienThi(nav: NavQuyen): KhuVucMuc[] {
+  return KHU_VUC.filter((k) => HIEN[k.key](nav));
 }
 
 const thuoc = (p: string, goc: string) => p === goc || p.startsWith(`${goc}/`);

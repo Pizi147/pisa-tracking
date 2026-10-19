@@ -5,7 +5,7 @@ import { loadBundle, regularSkillViews, skillCells } from '../fasttrack/attempts
 import { scoringModeOf } from '../fasttrack/skillSchedule.ts';
 import { allProgrammes } from '../normal/regular.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
-import { nhoTheoId } from '../platform/nguCanhRequest.ts';
+import { nho, nhoTheoId } from '../platform/nguCanhRequest.ts';
 
 /**
  * Ô ĐIỂM CÒN NỢ — một ô = một kỹ năng một lượt, tuần thi đã bắt đầu, người được phân công chưa nhập (S12 + đặc tả §6).
@@ -55,6 +55,10 @@ export function phanCongDangHieuLuc(classIds: readonly number[], ngay: string): 
 
 export function scoreDebtCells(p: Principal, today: string, branchIds: number[] | null): DebtCell[] {
   if (Array.isArray(branchIds) && branchIds.length === 0) return [];
+  /* OV-15d: nhớ trong request — Tổng quan QL đọc cùng tập cho chỉ số "bài trễ chấm" và chấm a/b theo tuần (không quét hai lần). */
+  return nho(`no-diem:${p.userId}:${today}:${branchIds?.join(',') ?? '*'}`, () => tinhNoDiem(p, today, branchIds));
+}
+function tinhNoDiem(p: Principal, today: string, branchIds: number[] | null): DebtCell[] {
   const conn = db();
   /* PR-MT (M3, K4-01): MT lịch sử không bao giờ là nợ — bỏ từ câu SQL (phủ Theo giáo viên, bai-qua-han-nhap-diem, Tổng quan). */
   /* PR-UXF-a T65 → PR-S6F-a Q2: em không đang học (Tạm dừng, Kết thúc học, lưu trữ) không sinh nợ điểm. Hồ sơ HV vẫn hiện ô (đường riêng). */

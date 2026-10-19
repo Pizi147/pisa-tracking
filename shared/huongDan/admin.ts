@@ -28,8 +28,8 @@ export const HD_ADMIN: HuongDan = {
     {
       id: 'ad-cham', ten: 'Theo dõi chấm điểm', khi: 'sau mỗi tuần thi',
       buoc: ['<b>Test › Lịch Test / Chấm Test</b>: <b>Test quá hạn chấm</b> · <b>Test chấm tuần này</b> (hạn <b>Thứ Tư</b>).',
-        '<b>Công việc</b>: chỉ nhóm Chấm điểm của chi nhánh; <b>Lọc thêm</b> › <b>Của một GV</b>.', 'Nhắc GV trực tiếp; việc tự hết khi GV nhập đủ điểm.'],
-      chi: { hd: 'cv-loc-them', duong: '/cong-viec', chu: 'Lọc việc chấm theo một GV ở đây.' },
+        '<b>Công việc</b>: chỉ nhóm Chấm điểm của chi nhánh; chọn <b>một GV</b> ở đầu trang.', 'GV quá hạn tự nhận thông báo; việc tự hết khi GV nhập đủ điểm.'],
+      chi: { hd: 'cv-qua-han', duong: '/cong-viec', chu: 'Chỉ xem bài quá hạn chấm.' },
     },
     {
       id: 'ad-sua-diem', ten: 'Nhập bù / sửa điểm', khi: 'khi GV vắng · nhập nhầm',
@@ -84,8 +84,8 @@ export const HD_ADMIN: HuongDan = {
     manGv('nhap-diem'),
     {
       id: 'cong-viec', ten: 'Công việc', duong: ['/cong-viec'],
-      muc: [{ id: 'ad-cv', ten: 'Việc chấm điểm', buoc: ['Chỉ nhóm Chấm điểm của chi nhánh: bài GV chưa nhập.', 'Chip <b>Quá hạn · Hôm nay · Tuần này</b>; <b>Lọc thêm</b> › <b>Của một GV</b>.'],
-        chi: { hd: 'cv-loc-them', duong: '/cong-viec', chu: 'Lọc theo một GV ở đây.' } }],
+      muc: [{ id: 'ad-cv', ten: 'Việc chấm điểm', buoc: ['Chỉ nhóm Chấm điểm của chi nhánh: bài GV chưa nhập.', 'Nút <b>⚠ n quá hạn</b>; ô chọn <b>một GV</b> ở đầu trang.'],
+        chi: { hd: 'cv-qua-han', duong: '/cong-viec', chu: 'Chỉ xem bài quá hạn chấm.' } }],
     },
     ...MAN_HO_SO_TVV.filter((m) => m.id === 'ho-so-ca-nhan' || m.id === 'huong-dan'),
   ],

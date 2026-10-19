@@ -1,13 +1,12 @@
 import { useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, Navigate, useSearchParams } from 'react-router-dom';
+import { TongQuanQl, useSoLopQl } from './TongQuanQl.tsx';
 import { useSession } from '../../lib/session.tsx';
 import { BranchFilter, useChiNhanhMacDinh } from '../../ui/Filters.tsx';
 import { BranchPulse } from './BranchPulse.tsx';
 import { LichSapToi } from './Highlights.tsx';
 import { MetricTiles } from './MetricTiles.tsx';
-import { DaiChoDuyet, DiemDangChuY, KhoiCanXuLy } from './KhoiCanXuLy.tsx';
-import { ViecCuaToi, YeuCauCuaToi } from './ViecCuaToi.tsx';
-import { LopToiDay } from './LopToiDay.tsx';
+import { DiemDangChuY } from './KhoiCanXuLy.tsx';
 import { HocVienCuaToi } from './HocVienCuaToi.tsx';
 import { DaiMoiDung } from '../huongDan/DaiMoiDung.tsx';
 import { MockTestAdmin } from './MockTestAdmin.tsx';
@@ -53,27 +52,8 @@ export default function OverviewPage(_: { tab?: TabTongQuan } = {}) {
     );
   }
 
-  if (!canSeeBoard) {
-    /*
-     * GIÁO VIÊN (mockup 23 màn A/C): tầng 1 = Việc của tôi · hôm nay (+ Yêu cầu của tôi bên cạnh); tầng 3 = Lớp tôi dạy. Lời chào nói
-     * tuần bằng mã tuần, hôm nay bằng ngày (Q22).
-     */
-    const ten = (session?.user?.fullName ?? '').trim().split(/\s+/).pop() ?? '';
-    return (
-      <div className="page space-y-4">
-        <div className="flex flex-col gap-0.5">
-          <h1 className="m-0 text-lg font-semibold text-slate-100">{ten ? t('Chào {ten}', { ten }) : t('Tổng quan')}</h1>
-          <span className="text-xs text-slate-500">{t('Tuần')}{' '}<b className="font-semibold tabular-nums text-slate-300">{tuanLich(homNay, homNay)}</b>{' '}{t('· hôm nay')}{' '}{ngan(homNay)}</span>
-        </div>
-        <DaiMoiDung />
-        <div className="grid items-start gap-3 lg:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)]">
-          <ViecCuaToi />
-          <YeuCauCuaToi />
-        </div>
-        <LopToiDay />
-      </div>
-    );
-  }
+  /* OV-15d (mockup 2 mục 2): GIÁO VIÊN vào thẳng Công việc — hàng đợi việc, lời chào và Lớp tôi dạy ở đó; không còn Tổng quan GV. */
+  if (!canSeeBoard) return <Navigate to={session?.nav?.work ? '/cong-viec' : '/hoc-vien'} replace />;
 
   /*
    * OV-10c (mockup vai 13/10 mục 4–6): tab đầu theo việc của vai — Admin "Mock Test" (4 ô + GV chấm quá hạn + Lịch sắp tới, không khối Case / PA);
@@ -82,6 +62,12 @@ export default function OverviewPage(_: { tab?: TabTongQuan } = {}) {
   const ql = laVaiQuanLy(session?.roles);
   const vai: 'ql' | 'admin' | 'cx' = ql ? 'ql' : session?.nav?.workChamDiem ? 'admin' : session?.roles?.includes('cx') ? 'cx' : 'ql';
   const nhanTabDau = vai === 'admin' ? 'Mock Test' : vai === 'cx' ? t('Số liệu') : TAB_TONG_QUAN_LABEL['tong-quan'];
+
+  /*
+   * OV-15d (mockup 3 mục 1, phương án A): Quản lý / Quản trị — dải tóm tắt · Cần bạn quyết · Lớp cần chú ý · Tuần này; công tắc khung đầu trang (số lớp
+   * mỗi khung); "Báo cáo ›" mở Phân tích tab Báo cáo (plan §7). Thống kê chi tiết ở Phân tích.
+   */
+  if (vai === 'ql') return <TongQuanQuanLy branchId={branchId} setBranchId={setBranchId} khung={khung} setKhung={setKhung} duLieuDen={duLieuDen} />;
 
   return (
     <div className="page space-y-4">
@@ -101,10 +87,6 @@ export default function OverviewPage(_: { tab?: TabTongQuan } = {}) {
       {vai !== 'admin' && (
         <>
           <DaiMoiDung />
-          {/* ─────────────── tầng 1: việc chờ Quản lý quyết + việc đang trễ (gộp hai khung) */}
-          {session?.nav?.workApprove && <DaiChoDuyet branchId={branchId} />}
-          {/* PR-OV2a: Cần xử lý là việc — CX (không có Công việc) chỉ xem Số liệu. */}
-          {session?.nav?.work && <KhoiCanXuLy branchId={branchId} />}
 
           {/* OV-10c: CX — ô đếm học viên bấm được (mọi chi nhánh, hoặc chi nhánh đang chọn), như TVV. */}
           {vai === 'cx' && <HocVienCuaToi branchId={branchId} />}
@@ -128,6 +110,29 @@ export default function OverviewPage(_: { tab?: TabTongQuan } = {}) {
           </section>
         </>
       )}
+    </div>
+  );
+}
+
+function TongQuanQuanLy({ branchId, setBranchId, khung, setKhung, duLieuDen }: {
+  branchId: number | null; setBranchId: (id: number | null) => void; khung: 'ft' | 'thuong'; setKhung: (k: 'ft' | 'thuong') => void; duLieuDen: string | null;
+}) {
+  const soLop = useSoLopQl(branchId, khung);
+  return (
+    <div className="page space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+          <h1 className="m-0 text-lg font-semibold text-slate-100">{t('Tổng quan')}</h1>
+          <BranchFilter branchId={branchId} onBranch={setBranchId} />
+          <CongTacKhung trang="tong-quan" value={khung} onChange={(k) => setKhung(k === 'thuong' ? 'thuong' : 'ft')} dem={soLop} donVi={t('lớp')} />
+        </div>
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+          {duLieuDen && <span className="text-xs text-slate-500">{duLieuDen}</span>}
+          <Link to={`/phan-tich?goc=bao-cao${branchId ? `&cn=${branchId}` : ''}`} className="btn btn-sm min-h-[44px] no-underline sm:min-h-[32px]" data-hd="tq-bao-cao">{t('Báo cáo ›')}</Link>
+        </div>
+      </div>
+      <DaiMoiDung />
+      <TongQuanQl branchId={branchId} ct={khung} />
     </div>
   );
 }
