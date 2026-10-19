@@ -22,6 +22,8 @@ export type FtSheet = {
   editableSkills: string[];
   rows: {
     attemptId: number; studentId: number; studentName: string; studentCode: string;
+    /** OV-15b: Dán từ Excel — phân biệt em trùng tên. */
+    studentEmail?: string | null;
     attemptNo: number; status: string;
     /** R11: đợt đã đủ điểm và qua Chủ nhật của tuần bắt buộc muộn nhất — chỉ Quản lý sửa được điểm nữa. */
     hoanTat?: boolean; chuNhatCuoi?: string | null;

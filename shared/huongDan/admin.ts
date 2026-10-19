@@ -33,7 +33,7 @@ export const HD_ADMIN: HuongDan = {
     },
     {
       id: 'ad-sua-diem', ten: 'Nhập bù / sửa điểm', khi: 'khi GV vắng · nhập nhầm',
-      buoc: ['Mở lưới điểm (bấm dòng lớp ở Lịch Test, hoặc <b>Điểm theo lớp</b>).',
+      buoc: ['Mở lưới điểm (bấm dòng lớp ở Lịch Test, hoặc <b>⋯</b> hàng lớp › <b>Nhập điểm</b>).',
         'Nhập bù hoặc sửa ô ngoài phân công; ghi <b>Lý do sửa</b> (tuỳ chọn).', 'Nhật ký ghi lại người sửa.'],
       chi: { hd: 'nav-test', chu: 'Bấm <b>Test</b>, rồi bấm dòng lớp để mở lưới điểm.' },
     },

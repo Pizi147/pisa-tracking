@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { BaoLuuContext } from '../../ui/SaveState.tsx';
 import { Card } from '../../ui/ui.tsx';
-import { LuoiFT, type FtSheet, type HangMo } from './LuoiFT.tsx';
+import { LuoiFT, tenDotFt, type FtSheet, type HangMo } from './LuoiFT.tsx';
+import { DanExcel } from './DanExcel.tsx';
 import { LuoiThuong, type ThuongSheet } from './LuoiThuong.tsx';
 import { MotKyNang } from './MotKyNang.tsx';
-import type { TomTatLuot } from '@shared/domain/index.ts';
+import { ENTRY_SKILLS, type EntrySkill, type TomTatLuot } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
 
 /** Trả lời của `GET /classes/:classId/cham` (`chamSheet` ở server/src/cham/canCham.ts). */
@@ -101,6 +102,11 @@ export function LuoiChamLop({
   const [caLop, setCaLop] = useState(false);
   const cotHien = chiCot?.length && !caLop ? chiCot : null;
   const laFt = data.mode === 'ielts_band';
+  /* OV-15b (mục 2, mockup 2 khung 1d): Dán từ Excel — lưới FT, người xem sửa được ít nhất một ô; cột dán = cột đang mở. Lớp thường: chưa làm. */
+  const [dan, setDan] = useState<null | { hoi: boolean }>(null);
+  const coDan = laFt && !!data.ft?.rows.some((r) => r.cells.some((c) => c.canEdit));
+  const cotDan = (cotHien ?? ENTRY_SKILLS).filter((k): k is EntrySkill => (ENTRY_SKILLS as readonly string[]).includes(k));
+  const tenLuot = 'luot' in data ? (data as BangTheoLuot).luot.nhan : data.ft?.period?.code ?? tenDotFt(data.ft);
 
   /* "Cả lớp" (chỉ có khi mở từ việc) mở cả mọi em của lượt, không chỉ em của việc. */
   const locLuot = caLop ? null : chiAttempt;
@@ -154,12 +160,27 @@ export function LuoiChamLop({
     </>
   );
 
+  const khoiDan = dan && data.ft && (
+    <DanExcel data={data.ft} cot={cotDan} tenLuot={tenLuot} hep={hep} hoiBanDau={dan.hoi}
+      onDong={() => setDan(null)} onDaLuu={onReload} />
+  );
+  const luoiKhung = gon ? luoi : <Card bodyClass="p-0" className="xl:overflow-clip">{luoi}</Card>;
+
   return (
     <BaoLuuContext.Provider value={bao}>
     <div ref={khung}>
-      {(hep || thanhTren || (nutCaLop && !!chiCot?.length)) && (
-        <div className="flex items-center justify-end gap-3">
+      {(hep || thanhTren || coDan || (nutCaLop && !!chiCot?.length)) && !(hep && dan) && (
+        <div className="flex flex-wrap items-center justify-end gap-x-3 gap-y-1">
           {thanhTren}
+          {coDan && (
+            <span className="inline-flex items-center gap-1.5">
+              <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" aria-expanded={!!dan} onClick={() => setDan(dan ? null : { hoi: false })}>
+                {t('Dán từ Excel')}
+              </button>
+              <button type="button" className="btn btn-sm min-h-[44px] min-w-[44px] justify-center sm:min-h-0" aria-label={t('Cách dán từ Excel')}
+                onClick={() => setDan({ hoi: true })}>?</button>
+            </span>
+          )}
           {nutCaLop && !!chiCot?.length && !tungKyNang && (
             <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" aria-pressed={caLop} onClick={() => setCaLop((v) => !v)}>
               {t('Cả lớp')}
@@ -174,7 +195,13 @@ export function LuoiChamLop({
           )}
         </div>
       )}
-      {gon ? luoi : <Card bodyClass="p-0" className="xl:overflow-clip">{luoi}</Card>}
+      {!dan ? luoiKhung : hep ? khoiDan : (
+        /* 1440: lưới trái, khối dán phải (mockup 1d); dưới xl xếp chồng, khối dán trước. */
+        <div className="mt-2 flex flex-col gap-3 xl:flex-row-reverse xl:items-start">
+          <div className="xl:w-[44rem] xl:shrink-0">{khoiDan}</div>
+          <div className="min-w-0 flex-1 overflow-x-auto">{luoiKhung}</div>
+        </div>
+      )}
     </div>
     </BaoLuuContext.Provider>
   );

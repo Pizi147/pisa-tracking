@@ -12,6 +12,13 @@ import { t } from '../i18n/index.ts';
  * Máy chủ kiểm lại mọi luật trong `saveScore` (`POST /attempts/scores/lo`) — đây chỉ là xem trước.
  */
 
+/**
+ * Cỡ lô: mỗi ô một `saveScore` (~30 câu SQL, đo ở prOv15b-2d) — một dòng 5 ô ~150 câu, trên Turso 3–7 s; Netlify cắt 10 s (như PR-SL).
+ * Web gửi `LO_DAN` dòng mỗi request, lần lượt; máy chủ nhận tối đa `DAN_TOI_DA_DONG` dòng một lần.
+ */
+export const LO_DAN = 1;
+export const DAN_TOI_DA_DONG = 5;
+
 /** Tách chữ Excel chép ra: tab giữa ô, xuống dòng giữa hàng; ô có tab / xuống dòng / ngoặc kép nằm trong "…" ("" = một "). */
 export function tachTsv(text: string): string[][] {
   const hang: string[][] = [];

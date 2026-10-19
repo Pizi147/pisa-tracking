@@ -1,12 +1,10 @@
 import { db, tx } from '../db.ts';
-import { ENTRY_SKILLS } from '../../../shared/domain/index.ts';
+import { DAN_TOI_DA_DONG, ENTRY_SKILLS } from '../../../shared/domain/index.ts';
 import { saveScore } from '../fasttrack/attempts.ts';
 import { voiNguon, writeAudit } from '../platform/audit.ts';
 import type { Principal } from '../permissions.ts';
 import { HttpError, badRequest, loi } from '../util.ts';
 
-/** Trần một lần lưu dán Excel: một lớp FT ~40 em; mỗi em ≤ 5 ô (L R W1 W2 S). */
-export const DAN_TOI_DA_DONG = 80;
 const TRUONG = ['rawScore', 'band', 'criteria', 'noShow', 'nhanXet', 'nhomNguyenNhan'] as const;
 type ODan = { skill: string } & Partial<Record<(typeof TRUONG)[number], unknown>>;
 type DongLo = { attemptId: number; o: ODan[] };

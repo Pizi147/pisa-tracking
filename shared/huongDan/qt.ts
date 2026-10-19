@@ -30,7 +30,7 @@ export const HD_QT: HuongDan = {
     },
     {
       id: 'qt-nhap-bu', ten: 'Nhập bù / sửa điểm', khi: 'khi GV vắng',
-      buoc: ['Mở lưới điểm của lớp (Test › Lịch Test / Chấm Test hoặc Điểm theo lớp).',
+      buoc: ['Mở lưới điểm của lớp (Test › Lịch Test / Chấm Test, hoặc ⋯ hàng lớp › Nhập điểm).',
         'Nhập bù hoặc sửa ô ngoài phân công; ghi <b>Lý do sửa</b> (tuỳ chọn).', 'Nhật ký ghi "Sửa điểm".'],
       chi: { hd: 'lich-test-tuan', duong: '/test/lich', chu: 'Bấm dòng lớp để mở lưới điểm.' },
     },

@@ -2423,6 +2423,8 @@ export function classScoreSheet(
         studentId: a.student_id,
         studentName: a.full_name,
         studentCode: a.student_code,
+        /* OV-15b: Dán từ Excel — phân biệt hai em trùng tên (cột đã có trong ATTEMPT_SELECT, không thêm câu đọc). */
+        studentEmail: a.student_email ?? null,
         attemptNo: a.attempt_no,
         status: a.status,
         /* OV-1d: em đã Kết thúc học / Lưu trữ — ô không việc / quá hạn; Lưu trữ thêm chỉ đọc, không Bỏ vắng (máy chủ cũng chặn ở `saveScore`). */

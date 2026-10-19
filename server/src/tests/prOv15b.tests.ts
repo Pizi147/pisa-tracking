@@ -12,7 +12,7 @@ export async function runPrOv15bTests(t: YThucTestKit) {
   const svc: any = await import('../fasttrack/attempts.ts');
   const d: any = await import('../../../shared/domain/index.ts');
   const mywork: any = await import('../worklist/mywork.ts');
-  const { xoaNho } = await import('../platform/nguCanhRequest.ts');
+  const { xoaNho, soCauSql, soDongSql } = await import('../platform/nguCanhRequest.ts');
   console.log('\nOV-15b · Lưới điểm, dán Excel, "Nhập bởi" chỉ khi có điểm');
 
   const one = (sql: string, ...a: unknown[]) => conn.prepare(sql).get(...a) as any;
@@ -157,11 +157,13 @@ export async function runPrOv15bTests(t: YThucTestKit) {
     for (const r of ds) conn.prepare(`DELETE FROM assessment_scores WHERE attempt_id = ? AND skill = 'listening'`).run(r.id);
     const [a1, a2, a3] = ds.map((r) => r.id);
     const NX = 'Nghe tốt phần 1 và 2';
+    const c0 = soCauSql(), d0 = soDongSql();
     const kq = lo(P.lrTeacher, [
       { attemptId: a1, o: [{ skill: 'listening', rawScore: 30, nhanXet: NX }, { skill: 'writing1', criteria: [6, 6, 6, 6], nhanXet: 'Đủ ý, bố cục rõ ràng' }] },
       { attemptId: a2, o: [{ skill: 'listening', rawScore: 31, nhanXet: 'Ngắn' }] },
       { attemptId: a3, o: [{ skill: 'listening', rawScore: 32, nhanXet: NX }] },
     ]);
+    console.log(`      [đo] lô 3 dòng (4 ô): ${soCauSql() - c0} câu, ${soDongSql() - d0} dòng đọc`);
     const diem = (id: number) => one(`SELECT raw_score FROM assessment_scores WHERE attempt_id = ? AND skill = 'listening'`, id)?.raw_score ?? null;
     assert(!kq.dong[0].ok && kq.dong[0].skill === 'writing1' && kq.dong[0].status === 403, `ô sai môn: ${JSON.stringify(kq.dong[0])}`);
     assert(diem(a1) === null, 'dòng có ô bị từ chối không được lưu nửa chừng (L của dòng đó phải chưa ghi)');
@@ -172,6 +174,6 @@ export async function runPrOv15bTests(t: YThucTestKit) {
     assert(nk >= 1, 'một lần lưu = một mục lịch sử dán Excel');
     assertThrows(() => lo(P.lrTeacher, [{ attemptId: a3, o: [{ skill: 'xyz', rawScore: 1 }] }]), /Kỹ năng/, 'kỹ năng lạ bị chặn ở cửa');
     assertThrows(() => lo(P.lrTeacher, [{ attemptId: 'x', o: [] }]), /Lượt/, 'lượt không hợp lệ');
-    assertThrows(() => lo(P.lrTeacher, Array.from({ length: 81 }, () => ({ attemptId: a3, o: [] }))), /tối đa/, 'lô quá lớn bị chặn ở cửa');
+    assertThrows(() => lo(P.lrTeacher, Array.from({ length: d.DAN_TOI_DA_DONG + 1 }, () => ({ attemptId: a3, o: [] }))), /tối đa/, 'lô quá lớn bị chặn ở cửa');
   }));
 }
