@@ -3637,11 +3637,16 @@ function buoiTutorCua(iv: any, soBuoiTuan: number | null, buoi: unknown, cu = fa
     chuanBi: b.chuanBi ?? null, taiLieu: b.taiLieu ?? null, feedbackGv: b.feedbackGv ?? null, danhGia: b.danhGia ?? null,
     nhanXetTutor: String(b.nhanXetTutor ?? '').trim() || null,
   }));
+  /* "Tutor khác" (gõ tay): 2–100 ký tự (đặc tả mục 5.1). */
+  const ngan = ds.findIndex((b) => !b.tutorId && b.tutor.length < 2);
+  if (ngan >= 0) throw loi(400, 'Buổi tutor: buổi {x}: tên tutor ít nhất 2 ký tự.', { x: ngan + 1 });
   const ids = [...new Set(ds.flatMap((b) => (b.tutorId ? [b.tutorId] : [])))];
   if (ids.length) {
-    const co = new Set((db().prepare(`SELECT id FROM tutors WHERE id IN (${ids.map(() => '?').join(',')})`).all(...ids) as any[]).map((r) => r.id as number));
-    const i = ds.findIndex((b) => b.tutorId && !co.has(b.tutorId));
+    /* Tutor danh sách: tên lưu = tên trong danh sách lúc ghi (bản chụp), không theo chữ web gửi. */
+    const ten = new Map((db().prepare(`SELECT id, ten FROM tutors WHERE id IN (${ids.map(() => '?').join(',')})`).all(...ids) as any[]).map((r) => [r.id as number, r.ten as string]));
+    const i = ds.findIndex((b) => b.tutorId && !ten.has(b.tutorId));
     if (i >= 0) throw loi(400, 'Buổi tutor: buổi {x}: tutor không có trong danh sách.', { x: i + 1 });
+    for (const b of ds) if (b.tutorId) b.tutor = ten.get(b.tutorId)!;
   }
   return ds;
 }

@@ -13,6 +13,7 @@ export const EN_TU = {
   'buổi {x}: hình thức là Offline hoặc Online': (b) => `session ${b.x}: mode must be Offline or Online`,
   'buổi {x}: đánh giá từ 1 đến 5, hoặc để trống': (b) => `session ${b.x}: rating 1 to 5, or leave empty`,
   'buổi {x}: nhận xét về tutor tối đa 1000 ký tự': (b) => `session ${b.x}: comment on the tutor up to 1000 characters`,
+  'Buổi tutor: buổi {x}: tên tutor ít nhất 2 ký tự.': (b) => `Tutor sessions: session ${b.x}: the tutor name needs at least 2 characters.`,
   'Buổi tutor: buổi {x}: tutor không có trong danh sách.': (b) => `Tutor sessions: session ${b.x}: the tutor is not in the list.`,
   'Tutor khác': 'Other tutor',
   'Tutor khác: gõ tên ở ô trên': 'Other tutor: type the name above',

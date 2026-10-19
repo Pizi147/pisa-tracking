@@ -137,9 +137,13 @@ export async function runPrTuTests(t: any) {
     for (const k of ['chuanBi', 'taiLieu', 'feedbackGv']) assert(maLoi(() => cases.updateResult(GV, ivId, kq({ buoi: hai({ [k]: null }) }))) === 400, `thiếu ${k} phải 400`);
     assert(maLoi(() => cases.updateResult(GV, ivId, kq({ buoi: hai({ tutorId: 999999 }) }))) === 400, 'tutor không có trong danh sách phải 400');
     assert(maLoi(() => cases.updateResult(GV, ivId, kq({ buoi: hai({ danhGia: 7 }) }))) === 400, 'đánh giá 7 phải 400');
+    assert(maLoi(() => cases.updateResult(GV, ivId, kq({ buoi: hai({ tutor: 'M' }) }))) === 400, '"Tutor khác" 1 ký tự phải 400');
     assert(get('SELECT COUNT(*) n FROM case_followups WHERE intervention_id = ?', ivId).n === 0, 'lỗi mà vẫn ghi');
-    cases.updateResult(GV, ivId, kq({ buoi: hai({ danhGia: null, nhanXetTutor: '' }) }));
+    const vao = hai({ danhGia: null, nhanXetTutor: '' });
+    vao[0].tutor = 'Chữ web gửi sai';   // tutor danh sách: tên lưu lấy từ danh sách (bản chụp)
+    cases.updateResult(GV, ivId, kq({ buoi: vao }));
     const r = dong(lanCuoi(ivId));
+    assert(r[0].tutor_ten === 'Nguyễn Thu Lan', `tên chụp từ danh sách: ${r[0].tutor_ten}`);
     assert(r.length === 2 && r[0].tutor_id === tutorId('Nguyễn Thu Lan') && r[0].hinh_thuc === 'offline' && r[0].chuan_bi === 1, `buổi 1: ${JSON.stringify(r[0])}`);
     assert(r[1].tutor_id === null && r[1].tutor_ten === 'Ms Mai' && r[1].tai_lieu === 0 && r[1].danh_gia === null && r[1].nhan_xet_tutor === null, `buổi 2: ${JSON.stringify(r[1])}`);
     assert(r.every((x) => x.lop_id === LOP && typeof x.ghi_luc === 'string'), `lop_id / ghi_luc: ${JSON.stringify(r.map((x) => [x.lop_id, x.ghi_luc]))}`);
@@ -217,6 +221,13 @@ export async function runPrTuTests(t: any) {
       assert(tim.ds.map((r: any) => r.ten).sort().join() === 'Hồ Ngọc Lan,Lê Lan Hương,Nguyễn Thu Lan', `tìm "lan": ${tim.ds.map((r: any) => r.ten)}`);
       const theoSo: any = await (await goi(GV.userId, `/tutors/chon?paId=${ivId}&q=442`)).json();
       assert(theoSo.ds.length === 1 && theoSo.ds[0].ten === 'Hồ Ngọc Lan', `tìm theo số cuối: ${theoSo.ds.map((r: any) => r.ten)}`);
+      /* Rà #475: GV không dò được đủ SĐT — 6 số giữa / 4 số đầu không ra ai; Quản trị (`tutor.manage`) tìm được cả SĐT. */
+      for (const q of ['234590', '0912', '45908']) {
+        const x: any = await (await goi(GV.userId, `/tutors/chon?paId=${ivId}&q=${q}`)).json();
+        assert(x.ds.length === 0, `GV gõ "${q}" ra: ${x.ds.map((r: any) => r.ten)}`);
+      }
+      const qt: any = await (await goi(P.admin.userId, `/tutors/chon?paId=${ivId}&q=234590`)).json();
+      assert(qt.ds.length === 1 && qt.ds[0].ten === 'Nguyễn Thu Lan', `QT tìm đủ SĐT: ${qt.ds.map((r: any) => r.ten)}`);
     });
 
     await t.checkAsync('TU-4b · Head tutor, CX, QL chi nhánh khác → 403; ô Người dạy theo studentId: QL / GV 200, nhóm gợi ý = tutor MB', async () => {
