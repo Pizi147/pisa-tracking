@@ -123,6 +123,17 @@ API (tên, props) như mục OV-15e 6 rồi gộp khi merge.
 
 ## Prompt (dán vào session cloud — mỗi PR một session, chạy song song)
 
+| PR | Model | Effort | Vì sao |
+|---|---|---|---|
+| OV-15a nền | Opus 5.5 | **High** | ~20 chỗ chip + token dùng chung; lỗi ở đây lan mọi màn |
+| OV-15b lưới + Excel | Opus 5.5 | **XHigh** | dán Excel ghi điểm hàng loạt (không gán nhầm em, trống ≠ 0), luật nhận xét MT |
+| OV-15c Kế hoạch Test | Opus 5.5 | **XHigh** | đổi luật Huỷ = Xóa (nhiều luật đọc `cancelled`), migrate bảng ghi chú |
+| OV-15d Công việc + Tổng quan | Opus 5.5 | **High** | luồng chính, số đếm cùng hàm, thông báo tự động |
+| OV-15e Phân tích + Báo cáo | Opus 5.5 | **High** | nhiều chỉ số tử / mẫu, dòng đọc Turso |
+| OV-15f Lịch thi + Xuất DS | Opus 5.5 | **High** | sửa dự kiến thi tại hàng, xuất theo quyền |
+
+Không dùng Fable. Phương án B khi thiếu lượt: Sonnet 5.5 cùng effort (ghi model thật vào mô tả PR); không chạy model nhỏ hơn.
+
 Mẫu chung (thay `<X>` = a…f):
 
 ```
