@@ -143,7 +143,8 @@ export async function runKhungTests(t: YThucTestKit) {
   check('PR-O · O6/R1 GV (GVCN, GVBM): 4 khu; Test: Lịch Test + Điểm theo lớp; Công việc: Việc học viên + Yêu cầu của tôi (PR-DUYET); không Phân tích', () => {
     for (const [ten, p] of [['GVCN', t.P.coreTeacher], ['GVBM', t.P.subjectTeacher], ['GVCN lớp thường', t.P.normalCoreTeacher]] as const) {
       const n = navOf(p);
-      assert(tabs(n) === 'tong-quan,hoc-vien,test,cong-viec|lich,diem-lop|ho-tro,yeu-cau|false|false', `${ten}: ${tabs(n)}`);   // PR-DL G4
+      /* OV-15d: GV vào thẳng Công việc — không còn khu Tổng quan. */
+      assert(tabs(n) === 'hoc-vien,test,cong-viec|lich,diem-lop|ho-tro,yeu-cau|false|false', `${ten}: ${tabs(n)}`);   // PR-DL G4
       assert(d.tabTestMacDinh(n) === 'lich', `${ten} mở Test vào ${d.tabTestMacDinh(n)}`);
       assert(!n.workOps && !n.workReports, `${ten} không được thấy Vận hành / Báo cáo đơn vị`);
     }

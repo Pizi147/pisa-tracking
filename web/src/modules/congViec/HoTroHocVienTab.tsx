@@ -13,7 +13,7 @@ import { CreateTask, NganViecVanHanh } from '../worklist/MgmtTasksPage.tsx';
 import { HopChoDuyet } from '../duyet/HopChoDuyet.tsx';
 import { YeuCauCuaToi } from '../duyet/YeuCauCuaToi.tsx';
 import { LopToiDay } from '../worklist/LopToiDay.tsx';
-import { ChonPhuTrach, type NguoiPhuTrach } from './ChonPhuTrach.tsx';
+import { ChonPhuTrach } from './ChonPhuTrach.tsx';
 import { CongTacKhung, khungDaNho, nhoKhung, phamViCoHaiKhung, type KhungLoc } from '../../ui/CongTacKhung.tsx';
 import { KhungTaiCho, coPanelDangSua } from '../../ui/KhungPanel.tsx';
 import { PanelPhanCong, PanelViec, lamTaiCho, moCaDong } from './PanelViec.tsx';
@@ -296,7 +296,7 @@ export function HoTroHocVienTab() {
             <h1 className="m-0 text-lg font-semibold text-slate-100">{tenChao ? t('Chào {ten}', { ten: tenChao }) : t('Công việc')}</h1>
             <span className="text-xs text-slate-500">{t('Tuần')}{' '}<b className="font-semibold tabular-nums text-slate-300">{tuanLich(homNay, homNay)}</b>{' '}{t('· hôm nay')}{' '}{ngan(homNay)}</span>
           </div>
-        ) : <h1 className="m-0 text-lg font-semibold text-slate-100">{t('Công việc')}</h1>}
+        ) : <h1 className="m-0 text-lg font-semibold text-slate-100">{chiChamDiem ? t('Chấm điểm') : t('Công việc')}</h1>}
         <div className="flex flex-wrap items-center gap-2" data-hd="cv-loc-them">
           {laQuanLy && data && (
             <>

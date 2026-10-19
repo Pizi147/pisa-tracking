@@ -5,7 +5,7 @@ import { MeetingBoard } from '../worklist/MeetingPage.tsx';
 import { HoTroHocVienTab } from './HoTroHocVienTab.tsx';
 import { HopChoDuyet } from '../duyet/HopChoDuyet.tsx';
 import { YeuCauCuaToi } from '../duyet/YeuCauCuaToi.tsx';
-import { DUONG_TAB_CONG_VIEC, NAV_RONG, TAB_CONG_VIEC_LABEL, tabCongViecHienThi, tabCongViecTuDuong } from '@shared/domain/index.ts';
+import { DUONG_TAB_CONG_VIEC, NAV_RONG, nhanTabCongViec, tabCongViecHienThi, tabCongViecTuDuong } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
 
 /**
@@ -34,7 +34,7 @@ export default function CongViecPage() {
     <div className="page space-y-4">
       <div className="flex flex-col gap-1">
         {tabs.includes('ho-tro') && <Link to={`/cong-viec${cn ? `?cn=${cn}` : ''}`} className="link w-fit text-[13px] max-sm:py-2">{t('‹ Công việc')}</Link>}
-        <h1 className="m-0 text-lg font-semibold text-slate-100">{TAB_CONG_VIEC_LABEL[tab]}</h1>
+        <h1 className="m-0 text-lg font-semibold text-slate-100">{nhanTabCongViec(tab, session?.nav ?? NAV_RONG)}</h1>
       </div>
       {tab === 'cho-duyet' && <HopChoDuyet />}
       {tab === 'yeu-cau' && <YeuCauCuaToi />}
