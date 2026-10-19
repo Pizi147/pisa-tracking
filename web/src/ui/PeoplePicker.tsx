@@ -178,6 +178,7 @@ export type KetQuaTutorChon = { ds: TutorChon[]; dienSan: { tutorId: number | nu
 /** Tham số ô chọn tutor: `paId` (buổi của Ghi kết quả PA Tutor) hoặc `studentId` (ô Người dạy PA Tutor). `chi`: chỉ tutor (ô Tutor của buổi). */
 export type ThamSoTutor = { paId?: number | null; studentId?: number | null; chi?: boolean };
 
+// ponytail: chép khuôn trễ + bộ đếm lượt của `useNguoiSearch` (khác kiểu trả về); gộp một hook chung khi có nơi gọi thứ ba.
 function useTutorChon(term: string, tutor: ThamSoTutor | undefined, active: boolean) {
   const [kq, setKq] = useState<KetQuaTutorChon | null>(null);
   const [loading, setLoading] = useState(false);

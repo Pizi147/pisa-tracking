@@ -143,6 +143,15 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
     moi[i] = { ...moi[i], ...p };
     return moi;
   });
+  /* TU-a: chọn tutor ở buổi i → các buổi sau còn trống tutor điền theo (buổi n = buổi n − 1). */
+  const datTutorBuoi = (i: number, p: Partial<BuoiTutor>) => {
+    datBuoi(i, p);
+    if (!p.tutor?.trim()) return;
+    for (let j = i + 1; j < soDong; j += 1) {
+      if (buoi[j]?.tutor.trim()) break;
+      datBuoi(j, { tutorId: p.tutorId ?? null, tutor: p.tutor, hinhThuc: p.hinhThuc ?? null });
+    }
+  };
   /* TU-a (đặc tả Tutor mục 5, 11): lần ghi có dòng buổi từ trước TU-a (3 ô trống) — Sửa không bắt 3 ô (cùng luật máy chủ). */
   const cu3 = !!g?.buoi?.length && g.buoi.some((b) => b.chuanBi == null);
   /* Điền sẵn (ghi mới): buổi 1 = tutor của Người dạy PA hoặc buổi cuối lần ghi trước (`dienSan`), buổi n > 1 = buổi n − 1. Chỉ dòng chưa có tutor. */
@@ -420,7 +429,7 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
                 <ol className="m-0 list-none space-y-3 p-0" aria-label={t('Các buổi tutor')}>
                   {Array.from({ length: soDong }, (_, i) => (
                     <li key={i} className="border-t border-dashed pt-3" style={{ borderColor: 'var(--line-strong)' }}>
-                      <BuoiTutorO i={i} b={buoi[i]} dat={(p) => datBuoi(i, p)} paId={pa.id} lf={lf} loi={loi} cu3={cu3} />
+                      <BuoiTutorO i={i} b={buoi[i]} dat={(p) => datTutorBuoi(i, p)} paId={pa.id} lf={lf} loi={loi} cu3={cu3} />
                     </li>
                   ))}
                 </ol>

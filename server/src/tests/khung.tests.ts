@@ -47,7 +47,7 @@ export async function runKhungTests(t: YThucTestKit) {
 
   check('PR-O · O1/O6 Bốn khu vực đúng thứ tự, khu không có quyền thì bỏ hẳn', () => {
     const keys = (n: any) => d.khuVucHienThi(n).map((k) => k.key).join(',');
-    assert(keys(QL) === 'tong-quan,hoc-vien,test,phan-tich,cong-viec,tutor', `QL: ${keys(QL)}`);   // TU-a: + Tutor (QL chỉ xem)   // OV-15e: Phân tích lên thanh trên
+    assert(keys(QL) === 'tong-quan,hoc-vien,test,phan-tich,cong-viec', `QL: ${keys(QL)}`);   // OV-15e: Phân tích lên thanh trên
     assert(keys(GV) === 'tong-quan,hoc-vien,test,cong-viec', `GV thấy cả Test và Công việc (spec §3.1): ${keys(GV)}`);
     assert(keys(nav({ overview: true, students: true })) === 'tong-quan,hoc-vien', 'Không có Test/Công việc thì không hiện');
     const labels = d.KHU_VUC.map((k) => `${k.label}|${k.labelNgan}`).join(',');
