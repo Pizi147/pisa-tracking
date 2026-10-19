@@ -133,3 +133,24 @@ sửa Dự kiến thi hiện nay. Chỉ thi thật (Mock ở Kế hoạch Test).
 
 Mỗi đợt: planning viết kế hoạch PR + sửa mockup → chủ SP duyệt → session code. Đợt 1 trước vì mọi màn sau dùng lại token / chip / panel.
 Không migrate đổi dữ liệu trừ C21 (bảng ghi chú mới, chỉ thêm) và OV-14c (không migrate).
+
+---
+
+## 6. Chủ SP duyệt mockup v2 (19/10) — CHỐT, thay các dòng tương ứng ở trên
+
+Không nhắc = duyệt như mockup v2 (PR #455).
+
+- **SOS:** bỏ nút `?` cạnh chip — bấm chip SOS mở giải thích; bấm "MT · tuần" (cột trái) mở hồ sơ MT.
+- **Hồ sơ lớp:** hàng MT cũ (vd MT2 dưới MT3) mờ hơn nữa + chữ nhỏ hơn. Mockup 1 KHÔNG vẽ lại; vẽ chi tiết này ở mockup 2.
+- **Lưới điểm:** BỎ "thiếu 0.5 / vượt 0.5" cạnh điểm; làm nổi hai cột **Kỳ vọng** và **Overall**. Chỗ không có cột kỳ vọng (vd hộp nhập điểm lẻ ở Công việc) dùng **mũi tên** ▲ / ▼ cạnh điểm, không chữ. Ký hiệu ✓ / ✗ trơn, không vòng tròn; bằng kỳ vọng = ✓.
+- **"Nhập bởi … / Marked by …":** chỉ hiện khi ô ĐÃ có điểm. Chủ SP thấy chữ này khi chưa ai chấm ở CẢ mockup lẫn web thật → tìm nguồn trên web (nghi: tên người chấm mặc định / ô chỉ có nhận xét / "GV chấm chéo") và sửa trong đợt OV-15.
+- **Hạn:** mọi chỗ ghi hạn trên toàn web chỉ ghi NGÀY (`hạn 18/09`), không ghi thứ.
+- **Kết quả thi:** chỉ **Mock Test** và **Thi thật**. Mock: xếp theo lớp hoặc theo mức SOS (nặng trước); thi thật: theo lớp. Đếm **theo lượt** (dòng tổng ghi cả số lượt và số HV). Cột (planning đề xuất trong mockup 3 v3): Mock — HV · Lớp · MT · tuần · OVR · L · R · W · S (✓ / ✗) · Kỳ vọng · Kết quả · SOS · Case / PA · Việc tiếp; Thi thật — HV · Lớp · Ngày thi · OVR · L · R · W · S · Target · Đạt Target? · **Bước tiếp** (Học tiếp lộ trình … ở lớp … / Tạm dừng / Thôi học / Chưa chọn) · Người chọn.
+- **Phân trang:** mặc định 10 dòng, chọn 20 / 50; thanh trang + chọn cỡ ở **đầu và cuối** bảng. Áp cho danh sách dài (Học viên & Lớp, Case, Phân tích, Kết quả thi, Lịch thi, panel số liệu); KHÔNG áp lưới nhập điểm cả lớp và hàng đợi Công việc.
+- **Huỷ = Xóa (Kế hoạch Test):** một nút **Xóa** (không "Xóa lịch"): đợt về **Chưa xếp** như bình thường, xem được lịch sử; QL và Admin đều làm được. **Bỏ** "Huỷ MT{n}" và trạng thái "Đã huỷ" / "mở lại vào đợt". Đợt đã có điểm hoặc đã thi một phần → **không cho xóa** (nút mờ + lý do). Ngoại lệ duy nhất: huỷ vì **vắng 2 lần** vẫn có trạng thái huỷ, khôi phục được — khôi phục thì về Chưa xếp (xếp tự do) hoặc giữ huỷ. Đặc tả phải liệt kê mọi luật đang đọc `status = 'cancelled'` (Case, PA, nợ điểm, SOS, đếm MT, MT0, xuất…) để không xung đột.
+- **Xuất điểm Test:** hai lựa chọn **Điểm + nhận xét** / **Chỉ điểm**; phạm vi tự do: theo tuần, theo lớp (nhiều MT), theo lớp + khoảng; cùng mẫu panel với Xuất danh sách (mockup 5). Xuất Kế hoạch Test 13 cột giữ như mockup 4.
+- **Xuất Excel em học 2 lớp trong kỳ:** một hàng, cột Lớp ghi cả hai ("MB FT 101 → MB FT 105").
+- **Tên trang:** **Báo cáo**.
+- **C21 ghi chú lịch thi:** duyệt như mockup 4.
+- **Lịch Test tự chọn Fast Track che bài lớp thường (C14):** làm chung đợt overhaul (không PR riêng).
+- Còn lại theo khuyến nghị mockup: Lịch thi chỉ thi thật; "Cần xác nhận" không tự tạo việc; QL không còn thao tác hàng loạt ở Chấm điểm (chỉ mở việc / Phân công).

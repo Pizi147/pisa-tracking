@@ -237,6 +237,7 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
   - Mockup 3: duyệt khuyến nghị (Tổng quan A 3 khối · "Case chưa chốt PA · trong đó chưa lập PA" · "21 HV / 34 Case" xếp chồng · Phân tích mục riêng 2 tầng · Báo cáo tuần mở tuần vừa qua).
   - **Chủ SP sẽ xem lại và góp ý sau** — CHƯA viết đặc tả / chia PR tới khi chủ SP nói.
 - **19/10 Turso Top Queries (chủ SP gửi):** 6 câu đầu ≈ 2,5M dòng / kỳ đo — `lich_su = 1` đếm điểm MT lịch sử 5,5K × 157 lần (857K), Lịch Test lượt lớp thường 6,8K × 96 (655K), `attempt_skills … IN (…)` 5,3K × 75, `SELECT a.*` lượt theo chi nhánh 36K × 4 + 9,5K × 31, lượt + lộ trình theo em 4,1K × 38 → **TD7** (thẻ trong chat planning).
+- **19/10 chủ SP duyệt mockup v2 (#455)** — quyết định mục 6 bản thiết kế 18/10 (Huỷ = Xóa, KQ thi Mock + thi thật, phân trang 10/20/50, hạn chỉ ngày, bỏ "thiếu/vượt", "Nhập bởi" chỉ khi có điểm…). Đã merge chưa deploy: OV-14a #448, OV-14b #451, OV-14c #453, TD7 #454 (có migrate chỉ mục). Tiếp: sửa mockup 2/3/4 theo mục 6 → kế hoạch OV-15a.
 - **18/10: prompt tổng hợp chủ SP + GPT (C01–C31)** → bản thiết kế tổng thể `docs/superpowers/specs/2026-10-18-ov14-thiet-ke-tong-the-design.md`
   (bảng quyết định, bản đồ web, mẫu dùng chung, Rà soát lịch thi phương án D, phân kỳ OV-14c + OV-15a…g) — **chờ chủ SP duyệt**.
   **Gấp — chấm chéo Speaking** (GV nước ngoài không thấy bài): `lopFtChoGvSpeaking` chỉ tính người có phân công S ở lớp FT · URL `loai=thuong`
