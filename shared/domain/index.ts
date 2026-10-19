@@ -89,3 +89,4 @@ export * from './lienHe.ts';
 export * from './gopYTuan.ts';
 export * from './chipSos.ts';
 export * from './khungLichTest.ts';
+export * from './danExcel.ts';
