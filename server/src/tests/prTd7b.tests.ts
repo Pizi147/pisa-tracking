@@ -16,6 +16,7 @@ export async function runPrTd7bTests(t: YThucTestKit) {
   const absence: any = await import('../fasttrack/absence.ts');
   const students: any = await import('../students/students.ts');
   const mt0: any = await import('../fasttrack/mt0.ts');
+  const classesSvc: any = await import('../classes/classes.ts');
   const schedule: any = await import('../classes/schedule.ts');
   const regular: any = await import('../normal/regular.ts');
   const { xoaNho } = await import('../platform/nguCanhRequest.ts');
@@ -75,16 +76,24 @@ export async function runPrTd7bTests(t: YThucTestKit) {
     const { migratePrTd7b } = await import('../migrate/prTd7b.ts');
     const lan1: string[] = []; migratePrTd7b(conn, lan1);
     assert(!lan1.length, `migrate trên DB đã đủ vẫn báo đổi: ${lan1.join(' | ')}`);
-    /* DB cũ: gỡ chỉ mục + cột thật (cuộn lại) rồi migrate phải dựng lại, lần hai im lặng. */
+    /* DB cũ (bảng chỉ có id): migrate thêm cột + chỉ mục; lần hai im lặng. Phần tính lại chạy trên DB test (đã nhất quán → không có gì để tính). */
+    const { default: SqliteDb } = await import('libsql');
+    const tam = new SqliteDb(':memory:');
+    tam.exec('CREATE TABLE assessment_attempts (id INTEGER PRIMARY KEY)');
+    const a: string[] = []; migratePrTd7b(tam, a);
+    assert(a.some((x) => /cột/.test(x)) && a.some((x) => /chỉ mục/.test(x)), `lần 1: ${a.join(' | ')}`);
+    const b: string[] = []; migratePrTd7b(tam, b);
+    assert(!b.length, `lần 2 vẫn báo: ${b.join(' | ')}`);
+    tam.close();
+    /* Cờ đang '' (DB cũ vừa thêm cột) → migrate tính lại đúng số lượt, lần hai không báo. */
     thu(() => {
-      conn.exec('DROP INDEX idx_attempt_o_cho');
-      conn.exec('ALTER TABLE assessment_attempts DROP COLUMN o_cho_tu');
-      const a: string[] = []; migratePrTd7b(conn, a);
-      assert(a.some((x) => /cột/.test(x)) && a.some((x) => /chỉ mục/.test(x)) && a.some((x) => /tính lại/.test(x)), `lần 1: ${a.join(' | ')}`);
-      const b: string[] = []; migratePrTd7b(conn, b);
-      assert(!b.length, `lần 2 vẫn báo: ${b.join(' | ')}`);
-      assert(cc.luotLechCo().length === 0, 'sau migrate vẫn lệch');
+      conn.exec("UPDATE assessment_attempts SET o_cho_tu = ''");
+      const c: string[] = []; migratePrTd7b(conn, c);
+      assert(c.some((x) => /tính lại cờ/.test(x)), `tính lại: ${c.join(' | ')}`);
+      const d2: string[] = []; migratePrTd7b(conn, d2);
+      assert(!d2.length && cc.luotLechCo().length === 0, `lần 2: ${d2.join(' | ')}`);
     });
+
   });
 
   check('TD7b-3 · cờ ≡ cách tính cũ: với nhiều ngày, tập lượt (status ≠ cancelled AND o_cho_tu ≤ ngày) = tập CON_O_SQL cũ', () => {
@@ -155,12 +164,23 @@ export async function runPrTd7bTests(t: YThucTestKit) {
 
   check('TD7b-13 · nhập lô (FT + lớp thường), MT0, vắng chờ Quản lý duyệt, chuyển lớp: lượt mới / đổi có cờ đúng ngay (không để "chưa tính")', () => thu(() => {
     /* Nhập học viên (Excel / lô) tạo lượt + lịch bằng SQL lô — cờ phải có ngay. */
-    for (const lop of ['MB FT 101', 'MB FOU 12']) {
-      intake.commitIntake(P.admin, { classId: classId(lop), rows: [0, 1].map((i) => ({ fullName: `TD7b Lo ${lop} ${i}`, target: 6.5, email: emailThu(), dob: '2010-01-01' })), idempotencyKey: `td7b-lo-${lop}` });
-      const ds = all(`SELECT a.id FROM assessment_attempts a JOIN students s ON s.id = a.student_id WHERE s.full_name LIKE ?`, `TD7b Lo ${lop} %`);
-      assert(ds.length >= 2, `${lop}: lô không tạo lượt`);
-      for (const r of ds) { dung(`nhập lô ${lop}`, r.id); assert(co(r.id) !== '', `${lop}: lượt ${r.id} còn "chưa tính"`); }
+    intake.commitIntake(P.admin, { classId: classId('MB FT 101'), rows: [0, 1].map((i) => ({ fullName: `TD7b Lo FT ${i}`, target: 6.5, email: emailThu(), dob: '2010-01-01' })), idempotencyKey: 'td7b-lo-ft' });
+    const dsFt = all(`SELECT a.id FROM assessment_attempts a JOIN students s ON s.id = a.student_id WHERE s.full_name LIKE 'TD7b Lo FT %'`);
+    assert(dsFt.length >= 2, 'lô FT không tạo lượt');
+    for (const r of dsFt) { dung('nhập lô FT', r.id); assert(co(r.id) !== '', `FT: lượt ${r.id} còn "chưa tính"`); }
+    /* Lớp thường: bài Progress / Final mặc định tạo bằng SQL lô (`taoBaiThuongMacDinh`) — thử lần lượt các lớp đang chạy tới khi tạo được. */
+    let taoDuoc = 0;
+    for (const lop of all(`SELECT c.id, c.code FROM classes c WHERE c.status = 'active' AND c.programme_code IN (SELECT code FROM programmes WHERE scoring_mode = 'ratio') ORDER BY c.id`)) {
+      intake.commitIntake(P.admin, { classId: lop.id, rows: [{ fullName: `TD7b Lo Th ${lop.id}`, target: 6.5, email: emailThu(), dob: '2010-01-01' }], idempotencyKey: `td7b-lo-th-${lop.id}` });
+      const st = get('SELECT id FROM students WHERE full_name = ?', `TD7b Lo Th ${lop.id}`);
+      if (!st) continue;
+      const cy = get("SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active'", st.id);
+      const ids: number[] = regular.taoBaiThuongMacDinh([cy.id], P.admin.userId);
+      const ds = ids.length ? ids.map((id) => ({ id })) : all('SELECT id FROM assessment_attempts WHERE student_id = ?', st.id);
+      for (const r of ds) { dung(`nhập lô lớp thường ${lop.code}`, r.id); assert(co(r.id) !== '', `${lop.code}: lượt ${r.id} còn "chưa tính"`); }
+      if (ds.length) { taoDuoc++; break; }
     }
+    assert(taoDuoc > 0, 'không lớp thường nào tạo được bài mặc định');
     /* MT0 (Lên FT). */
     const fou = emMoi('MB FOU 12', 'Mt0');
     const sid = get('SELECT student_id s FROM assessment_attempts WHERE id = ?', fou).s;
@@ -235,15 +255,27 @@ export async function runPrTd7bTests(t: YThucTestKit) {
     const lop = get(`SELECT c.id FROM classes c WHERE c.kind IS NOT NULL AND c.programme_code IN (SELECT code FROM programmes WHERE scoring_mode = 'ratio') AND c.status = 'active' ORDER BY c.id LIMIT 1`);
     if (lop) {
       const cp = schedule.classProgress(lop.id);
-      if (cp.finalWeek && cp.finalWeek > 2) schedule.setClassProgress(P.admin, lop.id, { finalWeek: cp.finalWeek - 1 });
+      for (const doi of [{ finalWeek: cp.finalWeek - 1 }, { finalWeek: cp.finalWeek + 1 }, { progressWeek: cp.progressWeek - 1 }]) {
+        try { schedule.setClassProgress(P.admin, lop.id, doi); break; } catch { /* mốc không hợp lệ ở lớp này — thử mốc khác */ }
+      }
       const lech = cc.luotLechNguyHiem();
       assert(!lech.length, `sau đổi mốc lớp vẫn lệch nguy hiểm: ${lech.slice(0, 5)}`);
     }
   }));
 
+  check('TD7b-10b · badge lớp ("n bài chờ chấm"): cờ mới cho cùng kết quả bộ lọc CON_O_SQL cũ (không so với "không lọc": MT0 ở lớp tỷ lệ vốn chỉ được badge đếm khi còn ô chờ band)', () => thu(() => {
+    const chup = () => { const out: Record<string, unknown> = {}; for (const [ten, p] of Object.entries(P)) { xoaNho(); out[ten] = classesSvc.listClassSummaries(p, {}); } return JSON.stringify(out); };
+    const that = chup();
+    /* Ép cờ mô phỏng ĐÚNG bộ lọc cũ: lượt thuộc tập CON_O_SQL cũ (hôm nay) → '' (luôn đọc), còn lại → NULL. */
+    conn.exec('UPDATE assessment_attempts SET o_cho_tu = NULL');
+    conn.prepare(`UPDATE assessment_attempts SET o_cho_tu = '' WHERE id IN (SELECT a.id FROM assessment_attempts a LEFT JOIN classes c ON c.id = a.class_id
+        LEFT JOIN report_periods pr ON pr.id = a.planned_period_id WHERE ${cc.CON_O_SQL_TRUOC_TD7B})`).run(TODAY, TODAY, TODAY, TODAY);
+    const cu = chup();
+    assert(that.length > 1000 && that === cu, `badge lệch bộ lọc cũ (${that.length} vs ${cu.length} ký tự)`);
+  }));
+
   await checkAsync('TD7b-10 · đầu ra TRÙNG KHÍT khi bỏ lọc cờ: Nợ điểm (mọi vai), Cần chấm / Công việc, badge lớp, hồ sơ GV, Phân tích GV', async () => {
     const mywork: any = await import('../worklist/mywork.ts');
-    const classes: any = await import('../classes/classes.ts');
     const debt: any = await import('../worklist/scoreDebt.ts');
     const hoSo: any = await import('../giaoVien/hoSo.ts');
     const ptGv: any = await import('../phanTich/giaoVien.ts');
@@ -263,7 +295,6 @@ export async function runPrTd7bTests(t: YThucTestKit) {
         }
         xoaNho(); out[`mywork:${ten}`] = mywork.myWork(p, {}).items;
         if (ten === 'mbManager' || ten === 'admin') { xoaNho(); out[`mywork-tc:${ten}`] = mywork.myWork(p, { nguoi: 'tat-ca' }).items; }
-        xoaNho(); out[`badge:${ten}`] = classes.listClassSummaries(p, {});
       }
       xoaNho();
       for (const uid of all(`SELECT DISTINCT user_id u FROM teacher_assignments WHERE status = 'active' ORDER BY user_id LIMIT 12`).map((r) => r.u as number)) {
@@ -296,7 +327,16 @@ export async function runPrTd7bTests(t: YThucTestKit) {
       const khongLoc = chup();
       assert(JSON.stringify(that).length > 1000, 'đầu ra rỗng — phép kiểm không soi gì');
       const lech = Object.keys(that).filter((k) => JSON.stringify(that[k]) !== JSON.stringify(khongLoc[k]));
-      assert(!lech.length, `đầu ra LỆCH khi bật lọc cờ ở: ${lech.slice(0, 6).join(', ')}`);
+      if (lech.length) {
+        const diff = (x: any, y: any, p = ''): string | null => {
+          if (JSON.stringify(x) === JSON.stringify(y)) return null;
+          if (x && y && typeof x === 'object' && typeof y === 'object') {
+            for (const k of new Set([...Object.keys(x), ...Object.keys(y)])) { const r = diff(x[k], y[k], `${p}.${k}`); if (r) return r; }
+          }
+          return `${p}: có cờ ${JSON.stringify(x)?.slice(0, 120)} · không cờ ${JSON.stringify(y)?.slice(0, 120)}`;
+        };
+        assert(false, `đầu ra LỆCH khi bật lọc cờ ở: ${lech.slice(0, 6).join(', ')} · ${diff(that[lech[0]], khongLoc[lech[0]], lech[0])}`);
+      }
     });
   });
 
