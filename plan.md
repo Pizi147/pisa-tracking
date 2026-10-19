@@ -12,6 +12,7 @@ File này **thay** cho: `plan.md` cũ (mục 0–24), `PROMPT_SESSION_CODE.md`, 
 
 | File chi tiết | Dùng cho |
 |---|---|
+| `docs/superpowers/plans/2026-10-19-ov15-overhaul-6-pr.md` | **OV-15a…f** — 6 PR overhaul song song (nền màu/chữ/chip · lưới + Excel · Kế hoạch Test · Công việc + Tổng quan · Phân tích + Báo cáo · Lịch thi + Xuất DS), prompt cloud ở cuối |
 | `docs/superpowers/specs/2026-10-18-ov14-thiet-ke-tong-the-design.md` | **OV-14 thiết kế tổng thể** (18/10, chờ duyệt): C01–C31 giữ / thay / hỏi, Chấm Speaking, bản đồ web, phân kỳ — nguồn `specs/nguon/2026-10-18-ov14-prompt-tong-hop.md` |
 | `docs/superpowers/specs/2026-10-17-ov14-danh-gia-ux.md` | **OV-14** (overhaul UX 17/10): rà docx 16/10 + audit 17/10 + 3 góp ý chủ SP, xác minh mã, impeccable 27/40 · ui-ux-pro-max 25/40, đường lên ≥ 35/40, 12 ý tưởng, thứ tự |
 | `thiet-ke/mockup-ov14-{1,2,3}-*-2026-10-17.html` | Mockup **OV-14** — **chờ chủ SP duyệt**: 1 hệ thiết kế v2 + Học viên & Lớp · 2 lưới điểm + Công việc · 3 Tổng quan QL + Báo cáo tuần + Phân tích |
@@ -237,6 +238,7 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
   - Mockup 3: duyệt khuyến nghị (Tổng quan A 3 khối · "Case chưa chốt PA · trong đó chưa lập PA" · "21 HV / 34 Case" xếp chồng · Phân tích mục riêng 2 tầng · Báo cáo tuần mở tuần vừa qua).
   - **Chủ SP sẽ xem lại và góp ý sau** — CHƯA viết đặc tả / chia PR tới khi chủ SP nói.
 - **19/10 Turso Top Queries (chủ SP gửi):** 6 câu đầu ≈ 2,5M dòng / kỳ đo — `lich_su = 1` đếm điểm MT lịch sử 5,5K × 157 lần (857K), Lịch Test lượt lớp thường 6,8K × 96 (655K), `attempt_skills … IN (…)` 5,3K × 75, `SELECT a.*` lượt theo chi nhánh 36K × 4 + 9,5K × 31, lượt + lộ trình theo em 4,1K × 38 → **TD7** (thẻ trong chat planning).
+- **19/10 chủ SP duyệt mockup 6 + màu trang đậm hơn + Báo cáo thành tab đầu Phân tích** → kế hoạch **OV-15a…f** (6 PR song song, session cloud) `docs/superpowers/plans/2026-10-19-ov15-overhaul-6-pr.md` (prompt ở cuối file). Session cloud không nhắn về planning: chủ SP báo số PR.
 - **19/10 chủ SP duyệt mockup v2 (#455)** — quyết định mục 6 bản thiết kế 18/10 (Huỷ = Xóa, KQ thi Mock + thi thật, phân trang 10/20/50, hạn chỉ ngày, bỏ "thiếu/vượt", "Nhập bởi" chỉ khi có điểm…). Đã merge chưa deploy: OV-14a #448, OV-14b #451, OV-14c #453, TD7 #454 (có migrate chỉ mục). Tiếp: sửa mockup 2/3/4 theo mục 6 → kế hoạch OV-15a.
 - **18/10: prompt tổng hợp chủ SP + GPT (C01–C31)** → bản thiết kế tổng thể `docs/superpowers/specs/2026-10-18-ov14-thiet-ke-tong-the-design.md`
   (bảng quyết định, bản đồ web, mẫu dùng chung, Rà soát lịch thi phương án D, phân kỳ OV-14c + OV-15a…g) — **chờ chủ SP duyệt**.
