@@ -37,7 +37,6 @@ export function xuatDanhSach(
   const ids = [...new Set(i.ids)];
   if (!ids.length) throw badRequest('Không có học viên phù hợp để xuất.');
   if (ids.length > TOI_DA) throw badRequest(`Xuất tối đa ${TOI_DA} học viên một lần — thu hẹp bộ lọc.`);
-  if (ids.some((id) => !can(p, PERMISSIONS.STUDENT_VIEW, { studentId: id }))) throw forbidden('Có học viên nằm ngoài phạm vi bạn được xuất.');
   const pham: 'loc' | 'chon' = i.pham === 'chon' ? 'chon' : 'loc';
   const cot = cotXuatDs(mau as MauXuatDs, i.cot);
   const dieuKien = String(i.boLoc ?? '').trim().slice(0, 300) || 'Không lọc';
@@ -45,7 +44,7 @@ export function xuatDanhSach(
 
   /* Em + lớp đang học (đủ lớp, theo thứ tự vào lớp) + lộ trình đang chạy. */
   const hs = new Map<number, any>();
-  const lopHienTai = new Map<number, { code: string; coSo: string | null; branchId: number | null; classId: number }[]>();
+  const lopHienTai = new Map<number, { code: string; coSo: string | null; branchId: number | null; classId: number; dang: boolean }[]>();
   theoLo(ids, (lo, ph) => {
     for (const s of conn.prepare(
       `SELECT s.id, s.full_name, s.email, cy.id AS cycle_id, cy.target_score, cy.khong_cam_ket, cy.exam_month, cy.exam_date, cy.exam_period_id,
@@ -56,11 +55,19 @@ export function xuatDanhSach(
       `SELECT e.student_id, e.status, c.id AS class_id, c.code, c.branch_id, b.name AS co_so FROM enrollments e JOIN classes c ON c.id = e.class_id
          LEFT JOIN branches b ON b.id = c.branch_id WHERE e.student_id IN (${ph}) AND e.status IN ('active', 'completed') ORDER BY e.id`).all(...lo) as any[]) {
       const d = lopHienTai.get(e.student_id) ?? [];
+      const x = { code: e.code, coSo: e.co_so, branchId: e.branch_id, classId: e.class_id, dang: e.status === 'active' };
       /* Có lớp đang học thì chỉ lấy các lớp đang học; em đã kết thúc thì lấy lớp cuối. */
-      if (e.status === 'active') lopHienTai.set(e.student_id, [...d.filter((x) => (x as any).dang), { code: e.code, coSo: e.co_so, branchId: e.branch_id, classId: e.class_id, dang: true } as any]);
-      else if (!d.some((x) => (x as any).dang)) lopHienTai.set(e.student_id, [{ code: e.code, coSo: e.co_so, branchId: e.branch_id, classId: e.class_id } as any]);
+      lopHienTai.set(e.student_id, x.dang ? [...d.filter((y) => y.dang), x] : d.some((y) => y.dang) ? d : [x]);
     }
   });
+  /* Quyền xem kiểm theo LỚP (một lần mỗi lớp, không 2 câu mỗi em); em không có lớp nào thì kiểm theo em. Một em ngoài phạm vi → 403, không âm thầm bỏ. */
+  const xemLop = new Map<number, boolean>();
+  const xemDuoc = (id: number) => {
+    const ds = lopHienTai.get(id);
+    if (!ds?.length) return can(p, PERMISSIONS.STUDENT_VIEW, { studentId: id });
+    return ds.some((x) => { if (!xemLop.has(x.classId)) xemLop.set(x.classId, can(p, PERMISSIONS.STUDENT_VIEW, { classId: x.classId })); return xemLop.get(x.classId)!; });
+  };
+  if (ids.some((id) => !hs.has(id) || !xemDuoc(id))) throw forbidden('Có học viên nằm ngoài phạm vi bạn được xuất.');
   const coCot = (k: string) => (cot as string[]).includes(k);
   const standing = standingFor(ids);
   const cycleIds = [...hs.values()].map((s) => s.cycle_id).filter((x): x is number => !!x);

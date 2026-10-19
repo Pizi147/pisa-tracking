@@ -56,7 +56,7 @@ type TrangHocVienLop = {
   rows: LopTrenTrang[]; scopeEmpty: boolean;
   phamVi: { coThe: PhamVi[]; dangDung: PhamVi; chiNhanh: number | null };
   dem: Record<LocHocVien, number>;
-  hocVien: { id: number; classId: number; loc: LocHocVien[]; khung: 'ft' | 'thuong'; ten: string; ma: string; thieu?: string[] }[];
+  hocVien: { id: number; classId: number; loc: LocHocVien[]; khung: 'ft' | 'thuong'; ten: string; ma: string; thieu?: string[]; ketThuc?: true }[];
   /** Người xem có tạo được lớp MỚI ở chi nhánh nào không — không gắn với lớp đã tồn tại nào (điểm a rà soát cuối). */
   coTheTaoLop: boolean;
   /** HL-14: "+ Học viên" theo phạm vi, không theo kết quả ô tìm. */
@@ -258,7 +258,7 @@ function TrangTheoLop({ admin }: { admin: boolean }) {
   /* Xuất Excel (C31): đúng các em trang đang hiện theo góc + bộ lọc (số trên nút = số trong tệp). */
   const lopDangLoc = chiLop ? (data?.rows ?? []).find((c) => c.id === chiLop) : null;
   const idsLop = new Set(lopThuTu.map((c) => c.id));
-  const idsXuat = goc === 'tat-ca' ? [...new Set((data?.hocVien ?? []).filter((h) => idsLop.has(h.classId) && (!dangLoc || h.loc.includes(loc))).map((h) => h.id))]
+  const idsXuat = goc === 'tat-ca' ? [...new Set((data?.hocVien ?? []).filter((h) => !h.ketThuc && idsLop.has(h.classId) && (!dangLoc || h.loc.includes(loc))).map((h) => h.id))]
     : goc === 'sos' ? [...new Set(sosRows.map((r) => r.studentId))]
     : goc === 'can-lam' ? [...new Set(viecHien.flatMap((v) => (v.studentId !== null ? [v.studentId] : [])))] : [];
   const boLocXuat = goc === 'tat-ca'
@@ -381,9 +381,9 @@ function TrangTheoLop({ admin }: { admin: boolean }) {
             )}
           </div>
           <div className="flex shrink-0 items-center gap-2 max-sm:grid max-sm:w-full max-sm:grid-cols-2 lg:ml-auto">
-            <CongTacKhung trang="hoc-vien-lop" coTatCa kieu="chon" value={khung}
+            {goc !== 'lich-thi' && <CongTacKhung trang="hoc-vien-lop" coTatCa kieu="chon" value={khung}
               dem={{ 'tat-ca': data?.rows.length, ft: soLopTheoKhung.ft, thuong: soLopTheoKhung.thuong }}
-              onChange={(k) => setParam({ khung: k === 'tat-ca' ? null : k, open: null })} />
+              onChange={(k) => setParam({ khung: k === 'tat-ca' ? null : k, open: null })} />}
             {/* Xếp: Tất cả theo lựa chọn; Đang SOS theo tuần rồi tên, Cần làm theo hạn (mockup 3 v2 §1) — không cần ô chọn. */}
             {goc === 'tat-ca' && (
               <select className={SELECT_GON} aria-label={t('Cách xếp')} value={sapXep}

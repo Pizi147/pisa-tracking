@@ -53,6 +53,9 @@ export function GocLichThi({ duongGoc, thangUrl, onDoiThang }: { duongGoc: strin
   const [gomChuaCo, setGomChuaCo] = useState(true);
   const [xuat, setXuat] = useState(false);
   const [moRong, setMoRong] = useState<{ id: number; kieu: 'ngay' | 'thang' } | null>(null);
+  /* Điện thoại: hàng tháng cuộn ngang — đưa tháng đang chọn vào tầm nhìn (không cuộn cả trang). */
+  const hangThang = useRef<HTMLDivElement>(null);
+  useEffect(() => { hangThang.current?.querySelector<HTMLElement>('[aria-pressed="true"]')?.scrollIntoView({ inline: 'center', block: 'nearest' }); }, []);
 
   const hien = useMemo(() => {
     const co = rows.filter((r) => !r.chuaCoGoc || r.chuyenSang);
@@ -72,7 +75,8 @@ export function GocLichThi({ duongGoc, thangUrl, onDoiThang }: { duongGoc: strin
     sua(r.studentId, (x) => ({ ...x, tt: { kieu: 'luu' } }));
     api.put<Pick<Hang, 'duKien' | 'coNgay' | 'thangDuKien' | 'chuaCo' | 'ketLuan' | 'luu'>>(`/hoc-vien-lop/lich-thi/${r.cycleId}`, body)
       .then((kq) => {
-        invalidate('/hoc-vien-lop'); invalidate('/students');
+        /* Làm mới các trang khác (danh sách lớp, TVV / CX, hồ sơ) nhưng KHÔNG đường của chính góc này (`/hoc-vien-lop/lich-thi`): tải lại sẽ làm em vừa chuyển tháng biến mất khỏi danh sách. */
+        invalidate('/hoc-vien-lop?'); invalidate('/hoc-vien-lop/theo-vai'); invalidate('/hoc-vien-lop/em'); invalidate('/students');
         sua(r.studentId, (x) => ({
           ...x, ...kq, chuaCoGoc: x.chuaCoGoc && kq.chuaCo, chuyenSang: body.ketLuan === 'chuyen-thang' ? body.thang ?? null : body.ketLuan ? null : x.chuyenSang,
           tt: { kieu: 'xong' },
@@ -93,11 +97,13 @@ export function GocLichThi({ duongGoc, thangUrl, onDoiThang }: { duongGoc: strin
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2" data-hd="hvl-lich-thi">
-        <div className="flex min-w-0 flex-wrap items-center gap-1.5" role="group" aria-label={t('Tháng dự kiến thi')}>
-          <span className="text-xs font-semibold text-slate-400">{t('Tháng dự kiến thi')}</span>
-          {cuaSoThang(homNay, 1, 10).map((m) => (
-            <button key={m} type="button" className="nut-loc" aria-pressed={thang.includes(m)} onClick={() => thangChon(m)}>{nhanThang(m)}</button>
-          ))}
+        <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 max-sm:w-full" role="group" aria-label={t('Tháng dự kiến thi')}>
+          <span className="shrink-0 text-xs font-semibold text-slate-400">{t('Tháng dự kiến thi')}</span>
+          <div ref={hangThang} className="flex min-w-0 flex-wrap items-center gap-1.5 max-sm:w-full max-sm:flex-nowrap max-sm:overflow-x-auto max-sm:pb-1">
+            {cuaSoThang(homNay, 1, 10).map((m) => (
+              <button key={m} type="button" className="nut-loc shrink-0" aria-pressed={thang.includes(m)} onClick={() => thangChon(m)}>{nhanThang(m)}</button>
+            ))}
+          </div>
         </div>
         <label className="flex min-h-[44px] items-center gap-2 text-xs text-slate-300 sm:min-h-0">
           <input type="checkbox" checked={gomChuaCo} onChange={(e) => setGomChuaCo(e.target.checked)} />
@@ -130,16 +136,16 @@ export function GocLichThi({ duongGoc, thangUrl, onDoiThang }: { duongGoc: strin
             <Card className="overflow-hidden !p-0">
               <div className="px-2"><PhanTrang {...pt.thanh} /></div>
               <div role="table" aria-label={t('Lịch thi')}>
-                <div role="row" className="hidden border-b px-3 py-2 text-xs font-semibold text-slate-400 md:grid md:grid-cols-[minmax(0,2fr)_56px_minmax(0,1.4fr)_minmax(0,1.1fr)_minmax(0,2.4fr)_minmax(0,1.6fr)] md:gap-3" style={{ borderColor: 'var(--line)' }}>
+                <div role="row" className="hidden border-b px-3 py-2 text-xs font-semibold text-slate-400 md:grid md:grid-cols-[minmax(0,1.6fr)_48px_minmax(0,1.3fr)_104px_minmax(372px,2.4fr)_minmax(0,1.4fr)] md:gap-3" style={{ borderColor: 'var(--line)' }}>
                   <span role="columnheader">{t('Học viên')}</span><span role="columnheader" className="text-center">Target</span><span role="columnheader">{t('Kết quả gần nhất')}</span>
                   <span role="columnheader">{t('Lịch hiện tại')}</span><span role="columnheader">{t('Kết luận')}</span><span role="columnheader">{t('Ghi chú họp')}</span>
                 </div>
                 {trangRows.map((r, i) => (
                   <div key={r.studentId} role="presentation">
                     {r.chuaCoGoc && !r.chuyenSang && (i === 0 || !(trangRows[i - 1].chuaCoGoc && !trangRows[i - 1].chuyenSang)) && (
-                      <p className="m-0 border-b bg-white/[.03] px-3 py-1.5 text-xs font-semibold text-slate-300" style={{ borderColor: 'var(--line)' }}>
-                        {t('Chưa có dự kiến thi')} · <span className="tabular-nums">{t('{n} HV', { n: soChuaCo })}</span>
-                      </p>
+                      <div role="row" className="border-b bg-white/[.03] px-3 py-1.5 text-xs font-semibold text-slate-300" style={{ borderColor: 'var(--line)' }}>
+                        <span role="cell">{t('Chưa có dự kiến thi')} · <span className="tabular-nums">{t('{n} HV', { n: soChuaCo })}</span></span>
+                      </div>
                     )}
                     <DongLichThi r={r} ds={dsTrang} moRong={moRong?.id === r.studentId ? moRong.kieu : null} onMoRong={(k) => setMoRong(k ? { id: r.studentId, kieu: k } : null)}
                       onLuu={(b) => luu(r, b)} />
@@ -180,7 +186,7 @@ function DongLichThi({ r, ds, moRong, onMoRong, onLuu }: {
   };
   const luuGhiChu = () => { if (ghiChu.trim() !== daLuuGhiChu.current.trim()) onLuu({ ghiChu: ghiChu.trim() }); };
   return (
-    <div role="row" className={`grid gap-x-3 gap-y-2 border-b px-3 py-2.5 md:grid-cols-[minmax(0,2fr)_56px_minmax(0,1.4fr)_minmax(0,1.1fr)_minmax(0,2.4fr)_minmax(0,1.6fr)] ${r.chuyenSang ? 'bg-white/[.03]' : ''}`} style={{ borderColor: 'var(--line)' }}>
+    <div role="row" className={`grid gap-x-3 gap-y-2 border-b px-3 py-2.5 md:grid-cols-[minmax(0,1.6fr)_48px_minmax(0,1.3fr)_104px_minmax(372px,2.4fr)_minmax(0,1.4fr)] ${r.chuyenSang ? 'bg-white/[.03]' : ''}`} style={{ borderColor: 'var(--line)' }}>
       <div role="cell" className="min-w-0">
         <Link className="link font-semibold" to={`/hoc-vien/${r.studentId}`} state={{ ds }}>{r.ten}</Link>
         <span className="block truncate text-xs text-slate-400" title={[r.classCode, r.gvcn && `GVCN ${r.gvcn}`, r.tvv && `TVV ${r.tvv}`].filter(Boolean).join(' · ')}>
@@ -202,7 +208,7 @@ function DongLichThi({ r, ds, moRong, onMoRong, onLuu }: {
                 className={`inline-flex min-h-[44px] items-center justify-center rounded-md border px-2 text-xs font-semibold disabled:cursor-not-allowed sm:min-h-[30px] ${
                   dang ? 'bg-[color:var(--accent-soft)] text-slate-100 shadow-[inset_0_0_0_1px_var(--accent)]' : 'bg-transparent text-slate-300 hover:text-slate-100'} ${khoa && !dang ? 'opacity-50' : ''}`}
                 style={{ borderColor: 'var(--line)' }}>
-                {dang && <span aria-hidden className="mr-1">✓</span>}{nhanNut(x)}
+                <span aria-hidden className={`mr-1 ${dang ? '' : 'hidden'}`}>✓</span>{nhanNut(x)}
               </button>
             );
           })}

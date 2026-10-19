@@ -57,6 +57,12 @@ export const EN_OV15F = {
   'Kỹ năng cần xử lý': 'Skills to address',
   'Trạng thái Case': 'Case status',
   'Trạng thái PA': 'Plan status',
+  'Lịch thi và xuất Excel': 'Exam schedule and Excel export',
+  'Góc <b>Lịch thi</b>: chọn <b>Tháng dự kiến thi</b> → bấm <b>Kết luận</b> ngay trên hàng (<b>Giữ tháng</b> · <b>Chốt ngày</b> · <b>Chuyển tháng</b> · <b>Cần xác nhận</b>); lưu ngay vào lịch thi của em, không bước duyệt.': 'In the <b>Exam schedule</b> view: pick the <b>Planned exam month</b> → press a <b>Decision</b> right on the row (<b>Keep month</b> · <b>Set date</b> · <b>Move month</b> · <b>Needs confirming</b>); it saves straight into the exam plan of that student, no approval step.',
+  '<b>Xuất Excel · n HV</b>: xuất đúng danh sách đang lọc; chọn mẫu <b>Danh sách cơ bản</b> · <b>Theo dõi SOS</b> · <b>Kết quả thi</b> hoặc <b>Chọn cột</b>.': '<b>Export Excel · n students</b>: exports exactly the filtered list; pick a template (<b>Basic list</b> · <b>SOS tracking</b> · <b>Exam results</b>) or <b>Choose columns</b>.',
+  'Danh sách dài: 10 dòng một trang, chọn 20 / 50 ở đầu và cuối bảng.': 'Long lists: 10 rows per page, choose 20 / 50 at the top and bottom of the table.',
+  'Chọn tháng dự kiến thi ở hàng này.': 'Choose the planned exam month in this row.',
+  'Lịch thi thật ›': 'Real exam schedule ›',
   'Target': 'Target',
   'Lịch thi thật': 'Real exam schedule',
 } satisfies Record<string, Dich>;

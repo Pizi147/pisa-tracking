@@ -19,13 +19,8 @@ function docNho(uid: number | null): Nho {
 }
 
 /** Mô tả ngắn của từng mẫu (mockup 5 khung "Tùy chọn xuất"). */
-const MO_TA: Record<MauXuatDs, string> = {
-  'co-ban': 'Tên học sinh · Gmail · Lớp · Cơ sở',
-  'theo-doi-sos': '11 cột · mặc định khi đang lọc SOS',
-  'ket-qua-thi': 'Loại Test / MT · tuần thi kèm năm · điểm · Đạt / Chưa đạt / Chưa đủ điểm',
-};
 const MO_TA_T = (m: MauXuatDs) => ({ 'co-ban': t('Tên học sinh · Gmail · Lớp · Cơ sở'), 'theo-doi-sos': t('11 cột · mặc định khi đang lọc SOS'),
-  'ket-qua-thi': t('Loại Test / MT · tuần thi kèm năm · điểm · Đạt / Chưa đạt / Chưa đủ điểm') })[m] ?? MO_TA[m];
+  'ket-qua-thi': t('Loại Test / MT · tuần thi kèm năm · điểm · Đạt / Chưa đạt / Chưa đủ điểm') })[m];
 const TEN_MAU: Record<MauXuatDs, string> = { 'co-ban': t('Danh sách cơ bản'), 'theo-doi-sos': t('Theo dõi SOS'), 'ket-qua-thi': t('Kết quả thi') };
 
 /**

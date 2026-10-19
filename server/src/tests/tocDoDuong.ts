@@ -121,6 +121,8 @@ export const DUONG_DO: MucDo[] = [
   { trang: 'Học viên & Lớp · panel một em', vai: MOI_VAI, url: '/hoc-vien-lop/em/{hv}' },
   { trang: 'Hồ sơ HV CX / Admin', vai: ['CX', 'ADMIN'], url: '/students/{hv}' },
   { trang: 'Học viên & Lớp', vai: MOI_VAI, url: '/hoc-vien-lop/luu-tru' },
+  /* OV-15f: góc Lịch thi — em có tháng dự kiến thi chọn + em chưa có dự kiến (lọc tháng ngay trong SQL), nhật ký kết luận theo id lộ trình. */
+  { trang: 'Học viên & Lớp · Lịch thi', vai: ['QL', 'QT', 'TVV', 'CX'], url: '/hoc-vien-lop/lich-thi?thang=2026-10,2026-11' },
   { trang: 'Học viên & Lớp', vai: MOI_VAI, url: '/hoc-vien-lop/ids' },   // PR-TD2-b: Trước/Sau của hồ sơ lớp
   { trang: 'Học viên & Lớp', vai: MOI_VAI, url: '/hoc-vien-lop/luu-tru?branchId={cn}' },
 
@@ -499,6 +501,11 @@ export const TRAN: Record<string, number> = {
   'GVCN_THUONG /classes/3/roster?chiId=1': 22,
   'QT /classes/3/roster?chiId=1': 20,
   'QL /hoc-vien-lop/ids': 20,
+  /* OV-15f: góc Lịch thi — đo 16 (QL) / 17 (QT, TVV) / 16 (CX); quyền sửa tính theo LỚP (không theo em: 102 câu → 16). Trần = đo + 6. */
+  'QL /hoc-vien-lop/lich-thi?thang=2026-10,2026-11': 22,
+  'QT /hoc-vien-lop/lich-thi?thang=2026-10,2026-11': 23,
+  'TVV /hoc-vien-lop/lich-thi?thang=2026-10,2026-11': 23,
+  'CX /hoc-vien-lop/lich-thi?thang=2026-10,2026-11': 22,
   'GVCN /hoc-vien-lop/ids': 19,
   'GVBM /hoc-vien-lop/ids': 19,
   'GVCN_THUONG /hoc-vien-lop/ids': 19,
@@ -790,6 +797,7 @@ export const TRAN: Record<string, number> = {
  * Trần = max(đo + 50, ⌈đo × 1,3⌉), đo NGAY SAU TD2-a trên bộ demo gốc. Sau nhân dữ liệu ×3: ≤ 3 × trần.
  */
 export const TRAN_DONG: Record<string, number> = {
+  'QL /hoc-vien-lop/lich-thi?thang=2026-10,2026-11': 709,   // OV-15f: đo 545 (43 em FT, ×3 → 1 515); trần = max(đo + 50, ⌈đo × 1,3⌉)
   'QL /my-work': 1104,   // TD4: đo 849 (trước 2155)
   'GVCN /my-work': 1069,   // TD4: đo 822 (trước 1784)
   'GVBM /my-work': 1102,   // TD4: đo 847 (trước 2016)

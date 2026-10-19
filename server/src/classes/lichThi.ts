@@ -5,6 +5,7 @@
  * LƯU: "Chốt ngày" / "Chuyển tháng" / "Đặt tháng" đi qua `updateCycle` (hàm có sẵn của cột Dự kiến thi: cùng quyền, cùng kiểm ngày, cùng hành trình học).
  * "Giữ tháng" / "Cần xác nhận" và ghi chú họp KHÔNG đổi lịch → ghi nhật ký (`audit_logs`, `lich_thi` × id lộ trình); dòng MỚI NHẤT mang đủ trạng thái
  * (kết luận + tháng lúc kết luận + ghi chú) nên một lần đọc là đủ. Không bước duyệt, không tạo việc ("Cần xác nhận" chỉ hiện ở dải đếm).
+ * ponytail: trạng thái kết luận / ghi chú nằm ở `audit_logs` (không thêm bảng, không migrate) — cần lọc / đếm theo kết luận ở nhiều trang thì tách bảng riêng.
  * Dòng đọc Turso: MỘT câu em × lộ trình (lọc tháng ngay trong SQL — chỉ em có tháng chọn + em chưa có dự kiến), MỘT câu nhật ký theo id lộ trình.
  */
 import { db, theoLo } from '../db.ts';
@@ -76,7 +77,8 @@ export function danhSachLichThi(
   const hom = demoToday();
   const { dangDung, chiNhanh, phanCong } = phamViTrang(p, f, hom);
   const lopToi = new Set(phanCong.map((a) => a.classId));
-  const lops = (lopTrongPhamVi(p, chiNhanh ?? undefined) ?? []).filter((c) => dangDung !== 'toi' || lopToi.has(c.id));
+  /* Chỉ lớp Fast Track — lớp thường (chấm theo %) không có thi IELTS thật để rà (mockup 5: toàn lớp FT). */
+  const lops = (lopTrongPhamVi(p, chiNhanh ?? undefined) ?? []).filter((c) => c.scoring_mode !== 'ratio' && (dangDung !== 'toi' || lopToi.has(c.id)));
   if (!lops.length) return { thang, rows: [] };
   const lop = new Map(lops.map((c) => [c.id as number, c]));
   const q = (f.q ?? '').trim();
@@ -116,14 +118,17 @@ export function danhSachLichThi(
   });
   const standing = standingFor(chon.map((x) => x.r.id as number));
   const luu = docLuu(chon.map((x) => x.r.cycle_id).filter((x): x is number => !!x));
+  /* Quyền sửa tính MỘT lần cho mỗi LỚP (không theo từng em: `can` với `studentId` tra lớp / chi nhánh mỗi lần gọi — 2 câu mỗi em). */
+  const suaDuoc = new Map<number, boolean>();
+  const suaLop = (classId: number) => { if (!suaDuoc.has(classId)) suaDuoc.set(classId, can(p, PERMISSIONS.STUDENT_EDIT, { classId }) || can(p, PERMISSIONS.STUDENT_EDIT_INFO, { classId })); return suaDuoc.get(classId)!; };
   const rows: HangLichThi[] = chon.map(({ r }) => {
     const l = lop.get(r.class_id);
     return {
       studentId: r.id, cycleId: r.cycle_id ?? null, ten: r.full_name, ma: r.student_code ?? '',
-      classId: r.class_id, classCode: l?.code ?? '', thuong: l?.scoring_mode === 'ratio', gvcn: gvcn.get(r.class_id) ?? null, tvv: r.tvv ?? null,
+      classId: r.class_id, classCode: l?.code ?? '', thuong: false, gvcn: gvcn.get(r.class_id) ?? null, tvv: r.tvv ?? null,
       target: r.target_score ?? null, kck: !!r.khong_cam_ket, standing: (standing.get(r.id) as KetQuaVao | undefined) ?? null,
       ...tinhLich(r, r.cycle_id ? luu.get(r.cycle_id) ?? null : null),
-      coTheSua: !!r.cycle_id && coTheSua(p, r.id),
+      coTheSua: !!r.cycle_id && suaLop(r.class_id),
     };
   });
   rows.sort((a, b) => a.classCode.localeCompare(b.classCode, 'vi', { numeric: true }) || a.ten.localeCompare(b.ten, 'vi') || a.studentId - b.studentId);

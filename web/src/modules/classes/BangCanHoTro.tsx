@@ -16,6 +16,7 @@ import {
   type HangKyNang, type KetQuaVao, type ViecTiepCase, chipSosTuKetQua } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 import { ChipSos } from '../../ui/ChipSos.tsx';
+import { PhanTrang, usePhanTrang } from '../../ui/PhanTrang.tsx';
 
 type PaCase = { id: number; ten: string; batBuoc: boolean; choXacNhan: boolean; choDuyet: boolean; xong: boolean; nguoi: string | null; mocChu: string | null };
 export type CaseCua = {
@@ -76,6 +77,9 @@ export function BangCanHoTro({ classId, maLop, laLopThuong, quyen, onDoi, chuong
   /* PR-S4F #5: lọc em + đếm SAU `hangCanHoTro` — số ở dòng tổng và cột trái theo Case đang hiện. */
   const { em, tong } = useMemo(() => locCanHoTro({ ct, em: d?.em ?? [], chiKyNang: bat ? d!.kyNangToi : null }), [d, ct, bat]);
 
+  /* OV-15f: phân trang danh sách Case theo em (10 / 20 / 50, đầu + cuối) — đổi lớp / lọc kỹ năng về trang 1. */
+  const pt = usePhanTrang(em.length, `${classId}|${bat}`, t('HV'));
+
   if (trang.error || roster.error) {
     const e = (trang.error ?? roster.error)!;
     return <ErrorState message={e.message} hint={e.hint} onRetry={() => { trang.reload(); roster.reload(); }} />;
@@ -102,7 +106,8 @@ export function BangCanHoTro({ classId, maLop, laLopThuong, quyen, onDoi, chuong
         <span className={luoi}><span>{t('Kỹ năng')}</span><span>Case</span><span>{t('PA đang làm')}</span>{!chiDoc && <span>{t('Việc tiếp · hạn')}</span>}</span>
       </div>
 
-      {em.map((e) => {
+      <PhanTrang {...pt.thanh} />
+      {pt.cat(em).map((e) => {
         const r = rosterTheoEm.get(e.id);
         const k = ketQuaGanNhat(r?.standing ?? null);
         const hang = e.hang;
@@ -171,6 +176,7 @@ export function BangCanHoTro({ classId, maLop, laLopThuong, quyen, onDoi, chuong
           </article>
         );
       })}
+      <PhanTrang {...pt.thanh} duoi />
       {soEmHoc > em.length && <p className="m-0 text-xs text-slate-500">{bat ? t('{n} học viên không có Case đang mở ở kỹ năng bạn dạy.', { n: soEmHoc - em.length }) : t('{n} học viên không có Case đang mở.', { n: soEmHoc - em.length })}</p>}
       {tt.panels}
       {ngan && (

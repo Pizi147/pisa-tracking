@@ -18,6 +18,9 @@ import { useThaoTacDongHocVien } from '../classes/thaoTacDongHocVien.tsx';
 import { KetQuaOHocVien } from './BangHocVienLop.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 import { BoLocDoan } from '../../ui/ui.tsx';
+import { PhanTrang, usePhanTrang } from '../../ui/PhanTrang.tsx';
+import { GocLichThi } from './GocLichThi.tsx';
+import { NganXuatDs } from './NganXuatDs.tsx';
 import { BangSos, type TrangSos } from './BangSos.tsx';
 import { BangCanLam, type ViecCanLam } from './BangCanLam.tsx';
 import { ChonTuanSos } from './ChonTuanSos.tsx';
@@ -55,13 +58,14 @@ type TrangVai = {
   coTheTaoLop: boolean; coTheThemHocVien: boolean;
 };
 /** OV-12f: góc nhìn TVV (Tất cả · Đang SOS · Cần làm) / CX (Tất cả · Đang SOS · Cần chú ý — mặc định). */
-type GocVai = 'tat-ca' | 'sos' | 'can-lam' | 'can-chu-y';
+type GocVai = 'tat-ca' | 'sos' | 'can-lam' | 'can-chu-y' | 'lich-thi';
 /** Lọc phụ của góc Tất cả (mockup 3 v2 §10): TVV Cần chú ý · Tạm dừng · Sắp thi; CX Tạm dừng · Sắp thi (+ Thiếu thông tin, Chờ chọn bước tiếp khi có em — không mất chip cũ). */
 /* OV-13q: + Đã thi · chờ kết quả (em đã qua ngày thi, chưa có kết quả). */
 const LOC_PHU_VAI: Record<'tvv' | 'cx', readonly ChipVai[]> = { tvv: ['can-chu-y', 'tam-dung', 'sap-thi', 'da-thi'], cx: ['tam-dung', 'sap-thi', 'da-thi', 'thieu_tt', 'cho-buoc-tiep'] };
 /** `view` / `loc` → góc + lọc phụ; link cũ (`view=thieu_tt`, `cho-buoc-tiep`, `tam-dung`…) giữ nghĩa. */
 function docGocVai(view: string | null, loc: string | null, vai: 'tvv' | 'cx'): { goc: GocVai; chip: ChipVai } {
   if (view === 'sos') return { goc: 'sos', chip: 'tat-ca' };
+  if (view === 'lich-thi') return { goc: 'lich-thi', chip: 'tat-ca' };   // OV-15f
   if (vai === 'tvv' && (view === 'can-lam' || view === 'thieu_tt' || view === 'cho-buoc-tiep')) return { goc: 'can-lam', chip: 'tat-ca' };
   if (vai === 'cx' && (!view || view === 'can-chu-y')) return { goc: 'can-chu-y', chip: 'can-chu-y' };
   const c = docChipVai(loc ?? (view === 'tat-ca' ? null : view), vai);
@@ -193,13 +197,13 @@ export function HocVienTheoVai({ vai }: { vai: 'tvv' | 'cx' }) {
 
   const pv = data?.phamVi;
   const tenCn = vai === 'cx' ? (cn ? branches.data?.find((b) => b.id === cn)?.name ?? t('Một chi nhánh') : t('Tất cả chi nhánh')) : null;
-  const tenGoc: Record<GocVai, string> = { 'tat-ca': t('Tất cả'), sos: t('Đang SOS'), 'can-lam': t('Cần làm'), 'can-chu-y': CHIP_VAI_NHAN['can-chu-y'].nhan };   // nhãn chip TVV / CX sẵn có (cùng chữ, bản Anh theo EN-c)
+  const tenGoc: Record<GocVai, string> = { 'tat-ca': t('Tất cả'), sos: t('Đang SOS'), 'can-lam': t('Cần làm'), 'can-chu-y': CHIP_VAI_NHAN['can-chu-y'].nhan, 'lich-thi': t('Lịch thi') };   // nhãn chip TVV / CX sẵn có (cùng chữ, bản Anh theo EN-c)
   const dangXem = [tenCn, vai === 'tvv' && pv ? PHAM_VI_NHAN[pv.dangDung] : null, tenGoc[goc], goc === 'tat-ca' && chip !== 'tat-ca' ? CHIP_VAI_NHAN[chip].nhan : null,
     q.trim() ? `“${q.trim()}”` : null].filter(Boolean).join(' · ');
   const coLoc = (goc === 'tat-ca' && chip !== 'tat-ca') || !!q.trim();
   const xoaLoc = () => { setDraftQ(''); setParam({ loc: null, q: null }); };
   const chips = LOC_PHU_VAI[vai].filter((k) => (k !== 'cho-buoc-tiep' && k !== 'thieu_tt') || chip === k || dem(k) > 0);
-  const doiGoc = (g: GocVai) => setParam({ view: g === (vai === 'cx' ? 'can-chu-y' : 'tat-ca') ? null : g, loc: null });
+  const doiGoc = (g: GocVai) => setParam({ view: g === (vai === 'cx' ? 'can-chu-y' : 'tat-ca') ? null : g, loc: null, thang: null });
 
   /* OV-12f: Đang SOS (tìm lọc tại chỗ như bảng) · Cần làm của TVV (Chọn bước tiếp · Kết quả thi · Thiếu thông tin) — panel / hộp sẵn có. */
   const khopEm = (ten: string, ma: string, lop: string | null) => !ql || ten.toLowerCase().includes(ql) || ma.toLowerCase().includes(ql) || (lop ?? '').toLowerCase().includes(ql);
@@ -219,8 +223,15 @@ export function HocVienTheoVai({ vai }: { vai: 'tvv' | 'cx' }) {
   });
   const demGoc: Record<GocVai, number | undefined> = {
     'tat-ca': data ? khop.length : undefined, sos: sos.data ? new Set(sosRows.map((r) => r.studentId)).size : undefined,
-    'can-lam': data ? new Set(viecTvv.map((v) => v.studentId)).size : undefined, 'can-chu-y': data ? dem('can-chu-y') : undefined,
+    'can-lam': data ? new Set(viecTvv.map((v) => v.studentId)).size : undefined, 'can-chu-y': data ? dem('can-chu-y') : undefined, 'lich-thi': undefined,
   };
+  /* OV-15f — phân trang (một hook, cỡ trang nhớ chung): góc nhóm theo LỚP, Đang SOS / Cần làm theo dòng. Xuất Excel lấy đủ mọi trang của góc đang xem. */
+  const tongGoc = goc === 'tat-ca' || goc === 'can-chu-y' ? nhom.length : goc === 'sos' ? sosRows.length : goc === 'can-lam' ? viecTvv.length : 0;
+  const pt = usePhanTrang(tongGoc, [goc, chip, q, phamViUrl, cn, tuan].join('|'), goc === 'tat-ca' || goc === 'can-chu-y' ? t('lớp') : goc === 'sos' ? t('lượt') : t('việc'));
+  const idsXuat = goc === 'sos' ? [...new Set(sosRows.map((r) => r.studentId))]
+    : goc === 'can-lam' ? [...new Set(viecTvv.flatMap((v) => (v.studentId !== null ? [v.studentId] : [])))]
+    : goc === 'lich-thi' ? [] : hien.map((d) => d.id);
+  const [xuat, setXuat] = useState(false);
   const cot = ['Học viên', 'Target · Dự kiến thi', 'Kết quả gần nhất', 'Cần chú ý', ...(vai === 'cx' ? ['TVV'] : []), 'Phụ huynh', ''];
 
   const dauNhom = (em: DongVai[]): ReactNode => {
@@ -242,11 +253,12 @@ export function HocVienTheoVai({ vai }: { vai: 'tvv' | 'cx' }) {
       <div className="flex flex-wrap items-center gap-2">
         <h1 className="m-0 text-lg font-semibold text-slate-100">{t('Học viên & Lớp')}</h1>
         {/* OV-13p: nút như trang Quản lý (StudentsPage) — điện thoại gom vào ⋯. */}
-        {(data?.coTheTaoLop || data?.coTheThemHocVien) && (
+        {((data?.coTheTaoLop || data?.coTheThemHocVien) || idsXuat.length > 0) && (
           <div className="ml-auto flex items-center gap-2">
-            {data.coTheTaoLop && <button type="button" className="btn btn-sm max-sm:hidden" onClick={() => setTaoLop(true)}>{t('+ Lớp mới')}</button>}
-            {data.coTheThemHocVien && <button type="button" className="btn btn-sm btn-primary max-sm:hidden" onClick={() => setThem(true)}>{t('+ Học viên')}</button>}
-            {dienThoai && <MenuDong nhan={t('Thao tác trang')} muc={[
+            {idsXuat.length > 0 && <button type="button" className="btn btn-sm max-sm:min-h-[44px]" data-hd="hvl-xuat" onClick={() => setXuat(true)}>{t('Xuất Excel · {n} HV', { n: idsXuat.length })}</button>}
+            {data?.coTheTaoLop && <button type="button" className="btn btn-sm max-sm:hidden" onClick={() => setTaoLop(true)}>{t('+ Lớp mới')}</button>}
+            {data?.coTheThemHocVien && <button type="button" className="btn btn-sm btn-primary max-sm:hidden" onClick={() => setThem(true)}>{t('+ Học viên')}</button>}
+            {dienThoai && (data?.coTheTaoLop || data?.coTheThemHocVien) && <MenuDong nhan={t('Thao tác trang')} muc={[
               ...(data.coTheTaoLop ? [{ key: 'lop-moi', nhan: t('+ Lớp mới'), onChon: () => setTaoLop(true) }] : []),
               ...(data.coTheThemHocVien ? [{ key: 'hoc-vien-moi', nhan: t('+ Học viên'), onChon: () => setThem(true) }] : []),
             ]} />}
@@ -270,7 +282,7 @@ export function HocVienTheoVai({ vai }: { vai: 'tvv' | 'cx' }) {
         </div>
         <div className="flex min-w-0 max-w-full flex-wrap items-center gap-2" data-hd="hvl-goc">
           <BoLocDoan ariaLabel={t('Góc nhìn')} value={goc} onChange={doiGoc}
-            muc={(vai === 'cx' ? (['tat-ca', 'sos', 'can-chu-y'] as const) : (['tat-ca', 'sos', 'can-lam'] as const)).map((k) => ({ key: k, nhan: tenGoc[k], so: demGoc[k] }))} />
+            muc={(vai === 'cx' ? (['tat-ca', 'sos', 'can-chu-y', 'lich-thi'] as const) : (['tat-ca', 'sos', 'can-lam', 'lich-thi'] as const)).map((k) => ({ key: k, nhan: tenGoc[k], so: demGoc[k] }))} />
           {goc === 'tat-ca' && (
             <div className="flex flex-wrap items-center gap-2" role="group" aria-label={t('Lọc phụ')}>
               {chips.map((k) => (
@@ -285,7 +297,7 @@ export function HocVienTheoVai({ vai }: { vai: 'tvv' | 'cx' }) {
             <ChonTuanSos tuan={sos.data.tuan} toanBo={sos.data.toanBo} tuanGanNhat={sos.data.tuanGanNhat} tu={sos.data.tu} den={sos.data.den} onChon={(t) => setParam({ tuan: t || null })} />
           )}
         </div>
-        {data && (
+        {data && goc !== 'lich-thi' && (
           <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[12.5px] text-slate-400" aria-live="polite">
             <span>{t('Đang xem')}: <b className="font-semibold text-slate-200">{dangXem}</b></span>
             <span aria-hidden>·</span>
@@ -301,11 +313,15 @@ export function HocVienTheoVai({ vai }: { vai: 'tvv' | 'cx' }) {
         sos.error ? <ErrorState message={sos.error.message} hint={sos.error.hint} onRetry={sos.reload} />
           : !sos.data ? <Skeleton rows={6} />
             : sosRows.length === 0 ? <Card><Empty title={sos.data.toanBo ? t('Không có học viên SOS trong 8 tuần') : t('Không có học viên SOS ở tuần thi này')} hint={t('Chọn tuần khác hoặc Toàn bộ.')} /></Card>
-              : <BangSos data={{ ...sos.data, rows: sosRows }} cot={vai} dam={null} dienThoai={dienThoai} ds={ds} onMo={(r) => setPanelEm(r.studentId)} dangMo={panelEm} />
+              : <><PhanTrang {...pt.thanh} /><BangSos data={{ ...sos.data, rows: pt.cat(sosRows) }} cot={vai} dam={null} dienThoai={dienThoai} ds={ds} onMo={(r) => setPanelEm(r.studentId)} dangMo={panelEm} /><PhanTrang {...pt.thanh} duoi /></>
       )}
       {goc === 'can-lam' && data && (viecTvv.length === 0
         ? <Card><Empty title={t('Không có việc nào')} /></Card>
-        : <BangCanLam viec={viecTvv} coNguoi={false} coPhuHuynh dienThoai={dienThoai} ds={ds} />)}
+        : <><PhanTrang {...pt.thanh} /><BangCanLam viec={pt.cat(viecTvv)} coNguoi={false} coPhuHuynh dienThoai={dienThoai} ds={ds} /><PhanTrang {...pt.thanh} duoi /></>)}
+      {goc === 'lich-thi' && (
+        <GocLichThi duongGoc={vai === 'tvv' ? `?phamVi=${phamViUrl ?? 'cua-toi'}` : cn ? `?branchId=${cn}` : '?phamVi=tat-ca'} thangUrl={params.get('thang')} onDoiThang={(m) => setParam({ thang: m.join(',') })} />
+      )}
+      {xuat && goc !== 'lich-thi' && <NganXuatDs ids={idsXuat} boLoc={dangXem} mauMacDinh={goc === 'sos' ? 'theo-doi-sos' : undefined} onDong={() => setXuat(false)} />}
       {panelEm !== null && <PanelMotEm key={panelEm} studentId={panelEm} onClose={() => setPanelEm(null)} />}
       {buocTiep && <PanelBuocTiep cycleId={buocTiep.cycleId} hocVien={buocTiep.em} lop={buocTiep.lop} onClose={() => setBuocTiep(null)} onDone={trang.reload} />}
       {suaEm && <SuaThongTinMotEm viec={suaEm.viec} studentId={suaEm.id} studentName={suaEm.ten} lop={suaEm.lop} onClose={() => setSuaEm(null)} onDone={() => { setSuaEm(null); trang.reload(); }} />}
@@ -319,7 +335,8 @@ export function HocVienTheoVai({ vai }: { vai: 'tvv' | 'cx' }) {
         </Card>
       ) : dienThoai ? (
         <div className="space-y-2">
-          {nhom.map(([k, em]) => (
+          <PhanTrang {...pt.thanh} />
+          {pt.cat(nhom).map(([k, em]) => (
             <section key={k} className="card overflow-hidden" aria-label={em[0].lop ? t('Lớp {code}', { code: em[0].lop.code }) : t('Chưa xếp lớp')}>
               <button type="button" aria-expanded={!dong.has(k)} onClick={() => doiDong(k)}
                 className="flex min-h-[44px] w-full cursor-pointer items-center gap-2 border-0 bg-transparent p-3 text-left">
@@ -347,16 +364,18 @@ export function HocVienTheoVai({ vai }: { vai: 'tvv' | 'cx' }) {
               ))}
             </section>
           ))}
+          <PhanTrang {...pt.thanh} duoi />
         </div>
       ) : (
         <section className="card overflow-x-auto" aria-label={t('Học viên theo lớp')}>
+          <div className="px-2"><PhanTrang {...pt.thanh} /></div>
           <table className="w-full min-w-[960px] table-fixed text-sm">
             <colgroup>
               <col className={vai === 'cx' ? 'w-[21%]' : 'w-[24%]'} /><col className="w-[13%]" /><col className="w-[17%]" /><col className={vai === 'cx' ? 'w-[18%]' : 'w-[22%]'} />
               {vai === 'cx' && <col className="w-[11%]" />}<col className="w-[16%]" /><col className="w-12" />
             </colgroup>
             <thead><tr>{cot.map((x, i) => <th key={i} className="th">{x ? dich(x) : <span className="sr-only">{t('Thao tác')}</span>}</th>)}</tr></thead>
-            {nhom.map(([k, em]) => (
+            {pt.cat(nhom).map(([k, em]) => (
               <tbody key={k}>
                 <HangNhom mo={!dong.has(k)} onMo={() => doiDong(k)} nhan={em[0].lop ? t('lớp {ma}', { ma: em[0].lop.code }) : t('nhóm chưa xếp lớp')} soCotDau={cot.length} tieuDe={dauNhom(em)} />
                 {!dong.has(k) && em.map((d) => (
@@ -383,6 +402,7 @@ export function HocVienTheoVai({ vai }: { vai: 'tvv' | 'cx' }) {
               </tbody>
             ))}
           </table>
+          <div className="px-2"><PhanTrang {...pt.thanh} duoi /></div>
         </section>
       ))}
       {createPortal(tt.panels, document.body)}
