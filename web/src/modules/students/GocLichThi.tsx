@@ -32,7 +32,7 @@ const NHAN_KL: Record<KetLuanLichThi, string> = {
 const gio = (iso: string) => { try { return new Date(iso).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }); } catch { return ''; } };
 
 /**
- * HỌC VIÊN & LỚP › LỊCH THI (OV-15f, mockup 5 khung 1 — phương án D): chọn Tháng dự kiến thi (một hoặc nhiều) → em có tháng đó + em chưa có dự kiến →
+ * HỌC VIÊN & LỚP › LỊCH THI (OV-15f, mockup 5 khung 1 — phương án D): chọn Dự kiến thi (một hoặc nhiều) → em có tháng đó + em chưa có dự kiến →
  * bấm Kết luận ngay trên hàng (Giữ tháng · Cần xác nhận: 1 bấm; Chốt ngày · Chuyển tháng: thêm một ô) → LƯU NGAY vào lịch chuẩn / nhật ký, không bước duyệt.
  * Em vừa chuyển tháng ở lại danh sách tới khi rời trang ("Đã chuyển sang 12/2026"). Quyền = sửa "Dự kiến thi" (máy chủ kiểm; hàng không sửa được chỉ đọc).
  * `duongGoc`: đuôi truy vấn của trang (`?q=&phamVi=&branchId=`) — cùng phạm vi với các góc kia. Tháng nằm trên URL (`thang=`).
@@ -83,7 +83,7 @@ export function GocLichThi({ duongGoc, thangUrl, onDoiThang }: { duongGoc: strin
         }));
         setMoRong(null);
       })
-      .catch((e: any) => sua(r.studentId, (x) => ({ ...x, tt: { kieu: 'loi', loi: e?.message ?? t('Chưa lưu được.'), lai: lan } })));
+      .catch((e: any) => sua(r.studentId, (x) => ({ ...x, tt: { kieu: 'loi', loi: e?.message ?? t('Không lưu được'), lai: lan } })));
   };
 
   const thangChon = (m: string) => {
@@ -97,8 +97,8 @@ export function GocLichThi({ duongGoc, thangUrl, onDoiThang }: { duongGoc: strin
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2" data-hd="hvl-lich-thi">
-        <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 max-sm:w-full" role="group" aria-label={t('Tháng dự kiến thi')}>
-          <span className="shrink-0 text-xs font-semibold text-slate-400">{t('Tháng dự kiến thi')}</span>
+        <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 max-sm:w-full" role="group" aria-label={t('Dự kiến thi')}>
+          <span className="shrink-0 text-xs font-semibold text-slate-400">{t('Dự kiến thi')}</span>
           <div ref={hangThang} className="flex min-w-0 flex-wrap items-center gap-1.5 max-sm:w-full max-sm:flex-nowrap max-sm:overflow-x-auto max-sm:pb-1">
             {cuaSoThang(homNay, 1, 10).map((m) => (
               <button key={m} type="button" className="nut-loc shrink-0" aria-pressed={thang.includes(m)} onClick={() => thangChon(m)}>{nhanThang(m)}</button>
@@ -119,7 +119,7 @@ export function GocLichThi({ duongGoc, thangUrl, onDoiThang }: { duongGoc: strin
       {data && (
         <>
           <p className="m-0 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-300" aria-live="polite">
-            <b className="font-semibold text-slate-100">{t('Thi thật dự kiến {thang} · {n} HV', { thang: thang.map(nhanThang).join(' + '), n: hien.co.length })}</b>
+            <b className="font-semibold text-slate-100">{t('Dự kiến thi {thang} · {n} HV', { thang: thang.map(nhanThang).join(' + '), n: hien.co.length })}</b>
             <span className="tabular-nums"><b>{dem.chotNgay}</b> {t('đã chốt ngày')}</span>
             <span className="tabular-nums"><b>{dem.giuThang}</b> {t('giữ tháng')}</span>
             <span className="tabular-nums"><b>{dem.chuyenThang}</b> {t('chuyển tháng')}</span>

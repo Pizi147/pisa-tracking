@@ -65,7 +65,7 @@ export function NganXuatDs({ ids, daChon = [], boLoc, macDinh, mauMacDinh, onDon
   return (
     <KhungPanel tieuDe={t('Xuất Excel danh sách HV')} onDong={onDong}
       chan={{
-        huy: { onClick: onDong, nhan: t('Huỷ') },
+        huy: { onClick: onDong, nhan: t('Đóng') },
         chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy || !dsId.length || !cotThuTu.length} onClick={() => void tai()}>
           {busy ? t('Đang tạo file…') : t('Xuất {n} HV', { n: dsId.length })}</button>,
       }}>
@@ -86,7 +86,7 @@ export function NganXuatDs({ ids, daChon = [], boLoc, macDinh, mauMacDinh, onDon
           {(Object.keys(COT_XUAT_DS) as KhoaCotXuatDs[]).map((k) => (
             <label key={k} className="flex min-h-[44px] cursor-pointer items-center gap-2 text-sm text-slate-200 sm:min-h-[28px]">
               <input type="checkbox" checked={cotThuTu.includes(k)} onChange={() => batCot(k)} />
-              {k === 'diem' ? t('Điểm OVR · L · R · W1 · W2 · S') : t(COT_XUAT_DS[k])}
+              {k === 'diem' ? t('Điểm OVR · L · R · W1 · W2 · S') : k === 'gmail' || k === 'target' ? COT_XUAT_DS[k] : t(COT_XUAT_DS[k])}
             </label>
           ))}
         </div>
