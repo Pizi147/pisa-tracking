@@ -409,6 +409,9 @@ CREATE INDEX idx_cycle_student ON learning_cycles(student_id);
 CREATE INDEX idx_cycle_cho_kq ON learning_cycles(student_id) WHERE route IS NOT NULL AND thi_that_khong_thi = 0 AND outcome_score IS NULL;
 /* TD7: lộ trình FT có kết quả, chưa chọn bước tiếp (một phần, điều kiện = CO_KET_QUA của buocTiep.ts). */
 CREATE INDEX idx_cycle_cho_buoc_tiep ON learning_cycles(student_id) WHERE route IS NOT NULL AND buoc_tiep IS NULL AND (thi_that_khong_thi = 1 OR (thi_that_l IS NOT NULL AND thi_that_r IS NOT NULL AND thi_that_w IS NOT NULL AND thi_that_s IS NOT NULL) OR outcome_score IS NOT NULL OR COALESCE(outcome, 'unknown') != 'unknown');
+-- OV-15e: Kết quả thi › Thi thật lọc theo ngày thi thật trong khoảng.
+CREATE INDEX idx_cycle_thi_that_ngay ON learning_cycles(thi_that_ngay) WHERE thi_that_ngay IS NOT NULL;
+CREATE INDEX idx_cycle_khong_thi ON learning_cycles(exam_date) WHERE thi_that_khong_thi = 1;
 
 -- Lịch sử lớp. Chuyển lớp mở dòng mới, không ghi đè.
 CREATE TABLE enrollments (

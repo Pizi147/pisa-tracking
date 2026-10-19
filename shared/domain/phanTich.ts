@@ -18,26 +18,31 @@ import { t } from '../i18n/index.ts';
 
 // ------------------------------------------------------------------ góc nhìn (Q1, Q16)
 
-/* PR-Pb2-a (T59, K1-27): góc nhìn Danh sách Case đã bỏ — đường dẫn cũ chuyển hướng ở `duongMoi` (dieuHuong.ts). PR-Pb2-b: 'giao-vien' cuối. */
-export const GOC_NHIN = ['tong-hop', 'van-de', 'hieu-qua-pa', 'y-thuc', 'giao-vien'] as const;
+/*
+ * OV-15e (C28, plan §7): Phân tích là mục thanh trên; sáu tab — Báo cáo (đầu, mặc định) · Test + SOS · Kết quả thi · Hiệu quả PA · Phân tích GV · Ý thức.
+ * "Tổng hợp vấn đề HV" (`van-de`) đã bỏ khỏi tab: link cũ về Test + SOS (máy chủ `/phan-tich/van-de-hv` giữ cho phép kiểm cũ).
+ */
+export const GOC_NHIN = ['bao-cao', 'tong-hop', 'ket-qua-thi', 'hieu-qua-pa', 'giao-vien', 'y-thuc'] as const;
 export type GocNhin = (typeof GOC_NHIN)[number];
 export const GOC_NHIN_LABEL: Record<GocNhin, string> = {
-  'tong-hop': 'Tổng hợp Test + SOS',
-  'van-de': 'Tổng hợp vấn đề HV',
+  'bao-cao': 'Báo cáo',
+  'tong-hop': 'Test + SOS',
+  'ket-qua-thi': 'Kết quả thi',
   'hieu-qua-pa': 'Hiệu quả PA',
+  'giao-vien': 'Phân tích GV',
   'y-thuc': 'Ý thức',   // PR-YT4 (K1-25): Phối hợp SOS ở Việc của GVCN, không ở góc nhìn này
-  'giao-vien': 'Giáo viên',
 };
-export const GOC_NHIN_MAC_DINH: GocNhin = 'tong-hop';
-/** PR-S6F-b (D8): lớp thường không có SOS — tab, tiêu đề Excel của Tổng hợp khung Lớp thường là "Tổng hợp Test". */
+export const GOC_NHIN_MAC_DINH: GocNhin = 'bao-cao';
+/** PR-S6F-b (D8): lớp thường không có SOS — tab, tiêu đề Excel của Tổng hợp khung Lớp thường là "Test". */
 export const nhanGocNhin = (goc: GocNhin, ct: ChuongTrinh | null): string =>
-  goc === 'tong-hop' && ct === 'thuong' ? 'Tổng hợp Test' : GOC_NHIN_LABEL[goc];
+  goc === 'tong-hop' && ct === 'thuong' ? 'Test' : GOC_NHIN_LABEL[goc];
 
 /**
  * ĐƯỜNG DẪN CŨ VẪN PHẢI MỞ ĐÚNG MÀN (Q16). `boThamSo` là các tham số CŨ cần xoá khỏi URL.
  * `ct` khác `null` nghĩa là `loai-lop` cũ cần đổi thành tham số chương trình mới.
- * `gocMoi` khác `null` nghĩa là `goc` trên URL là TÊN CŨ (`ket-qua`, `chua-ai-nhan`) — web thay bằng tên mới (replace).
+ * `gocMoi` khác `null` nghĩa là `goc` trên URL là TÊN CŨ (`ket-qua`, `chua-ai-nhan`, `van-de`) — web thay bằng tên mới (replace).
  * Bộ lọc cũ của Danh sách Case (`hang-doi`/`tinh-hinh`/`ky-nang`) không tới được đây: `duongMoi` đã chuyển hướng trước.
+ * Link cũ không `goc` (`?xem=tuan`, `?loai-lop=`, chỉ còn bộ lọc Case) vẫn mở Test + SOS như trước; không tham số gì → Báo cáo.
  */
 export type KetQuaGocNhinTuThamSo = { goc: GocNhin; ct: ChuongTrinh | null; boThamSo: string[]; gocMoi: GocNhin | null };
 
@@ -46,9 +51,9 @@ export function gocNhinTuThamSo(params: { get(key: string): string | null }): Ke
   let gocMoi: GocNhin | null = null;
   let goc: GocNhin;
   if (gocParam === 'ket-qua') { goc = 'hieu-qua-pa'; gocMoi = goc; }
-  else if (gocParam === 'chua-ai-nhan') { goc = 'van-de'; gocMoi = goc; }
+  else if (gocParam === 'chua-ai-nhan' || gocParam === 'van-de') { goc = 'tong-hop'; gocMoi = goc; }
   else if ((GOC_NHIN as readonly string[]).includes(gocParam ?? '')) goc = gocParam as GocNhin;
-  else goc = GOC_NHIN_MAC_DINH;
+  else goc = ['xem', 'loai-lop', 'hang-doi', 'tinh-hinh', 'ky-nang', 'theo', 'goc'].some((k) => params.get(k) !== null) ? 'tong-hop' : GOC_NHIN_MAC_DINH;
   const boThamSo: string[] = [];
   if (params.get('xem') !== null) boThamSo.push('xem');
   const loaiLop = params.get('loai-lop');
@@ -61,13 +66,11 @@ export function gocNhinTuThamSo(params: { get(key: string): string | null }): Ke
 }
 
 /**
- * THAM SỐ CẦN XOÁ KHI BẤM SANG MỘT GÓC NHÌN — ba bộ lọc cũ của Danh sách Case (đã bỏ) luôn dọn; `gv`/`tu`/`den` là bộ lọc RIÊNG
- * của Hiệu quả PA (PR-Pb2-a) — rời góc nhìn đó thì dọn, để quay lại không bị lọc ngầm. PR-S6F-b: `tu`/`den`/`thang` của góc
- * Giáo viên cũng vậy — rời `tuGoc = 'giao-vien'` (kể cả sang Hiệu quả PA) thì dọn.
+ * THAM SỐ CẦN XOÁ KHI BẤM SANG MỘT GÓC NHÌN — ba bộ lọc cũ của Danh sách Case (đã bỏ) luôn dọn; `gv` là bộ lọc RIÊNG của Hiệu quả PA — rời góc đó thì dọn.
+ * OV-15e (C29): `kieu`/`tu`/`den` là bộ chọn thời gian CHUNG — giữ khi đổi tab; `thang` cũ của GV đã đổi sang `kieu=thang`.
  */
-export function thamSoXoaKhiDoiGoc(goc: GocNhin, tuGoc?: GocNhin): readonly string[] {
-  const x = goc === 'hieu-qua-pa' ? ['hang-doi', 'tinh-hinh', 'ky-nang'] : ['hang-doi', 'tinh-hinh', 'ky-nang', 'gv', 'tu', 'den'];
-  return tuGoc === 'giao-vien' && goc !== 'giao-vien' ? [...new Set([...x, 'tu', 'den', 'thang'])] : x;
+export function thamSoXoaKhiDoiGoc(goc: GocNhin, _tuGoc?: GocNhin): readonly string[] {
+  return goc === 'hieu-qua-pa' ? ['hang-doi', 'tinh-hinh', 'ky-nang'] : ['hang-doi', 'tinh-hinh', 'ky-nang', 'gv'];
 }
 
 // ------------------------------------------------------------------ khoảng thời gian (Q5)

@@ -1,30 +1,31 @@
 import { Fragment, useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
-import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { Card, Empty, ErrorState, Skeleton, Th } from '../../ui/ui.tsx';
 import { HangCon, HangNhom } from '../../ui/HangNhom.tsx';
 import { Nhan } from '../../ui/Nhan.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import { TyLe } from '../../ui/TyLe.tsx';
+import { PhanTrang, usePhanTrang } from '../../ui/PhanTrang.tsx';
 import { DINH_TRAI, DongTomTat, SoO as SoLieuO, thamSoLoc, type PhamViPhanTich } from './dungChung.tsx';
 import {
-  CHUONG_TRINH_LABEL, KHOANG_LABEL, NGUONG_IT_DU_LIEU, mondayOfDate, tuanLich, type DongHieuQuaPa, type HieuQuaPaKetQua,
+  CHUONG_TRINH_LABEL, NGUONG_IT_DU_LIEU, nhanKhoang, type DongHieuQuaPa, type HieuQuaPaKetQua,
 } from '@shared/domain/index.ts';
 
 /**
  * HIỆU QUẢ PA (PR-UX4, mockup 16 §4; PR-Pb2-a T61, K1-23, P9, P9b, P12) — hai khối:
  *   1. PA do giáo viên thêm: vấn đề (nhóm nguyên nhân chính) → loại PA; "Nên dùng" chỉ ở loại PA đủ mẫu, cải thiện ≥ 70% và cao nhất trong vấn đề.
  *   2. PA theo quy chế: FT theo SOS 1 · 2 · 3, lớp thường theo Bổ trợ Giữa khoá / sau Cuối khoá — thứ tự cố định, không so, không xếp hạng.
- * Lọc `gv` (người phụ trách Case) và khoảng `tu`/`den` đến từ URL (Hợp đồng a↔b: link từ hồ sơ GV / bảng giáo viên); tên GV lấy từ máy chủ.
+ * Lọc `gv` (người phụ trách Case) đến từ URL (Hợp đồng a↔b: link từ hồ sơ GV / bảng giáo viên); tên GV lấy từ máy chủ. OV-15e: khoảng = bộ chọn chung.
  */
 export function HieuQuaPa(props: PhamViPhanTich) {
   const [params, setParams] = useSearchParams();
-  const { homNay } = useNgayNghiepVu();
   const them: Record<string, string> = {};
-  for (const k of ['gv', 'tu', 'den'] as const) { const v = params.get(k); if (v) them[k] = v; }
+  if (params.get('gv')) them.gv = params.get('gv')!;
   const query = thamSoLoc(props, them);
   const { data, loading, error, reload } = useApi<HieuQuaPaKetQua>(`/phan-tich/hieu-qua-pa?${query}`, [query]);
+  const ptGv = usePhanTrang(data?.gvThem.hang.length ?? 0, query, 'vấn đề');
+  const ptQc = usePhanTrang(data?.quyChe.hang.length ?? 0, query, 'nhóm');
   const branches = useApi<any[]>('/ref/branches');
   const nguon = (dong: string, cot: string) => `/phan-tich/hieu-qua-pa/o?${query}&dong=${encodeURIComponent(dong)}&cot=${encodeURIComponent(cot)}`;
   const boLoc = (...khoa: string[]) => {
@@ -101,9 +102,7 @@ export function HieuQuaPa(props: PhamViPhanTich) {
 
   /* Dòng ngữ cảnh (P9): {khung} · {chi nhánh} · {khoảng}. Khoảng theo URL `tu`/`den` hiện bằng mã tuần. */
   const tenChiNhanh = props.branchId ? branches.data?.find((b) => b.id === props.branchId)?.name ?? '' : 'Tất cả chi nhánh';
-  const khoang = data?.loc.theoKhoang
-    ? `${tuanLich(data.loc.tu, homNay)} – ${tuanLich(data.loc.den ?? mondayOfDate(homNay), homNay)}`
-    : KHOANG_LABEL[props.tg];
+  const khoang = nhanKhoang(props.khoang).chinh;
 
   return (
     <Card bodyClass="p-0">
@@ -123,12 +122,6 @@ export function HieuQuaPa(props: PhamViPhanTich) {
               {params.get('gv') && !data.loc.gv && (
                 <button type="button" onClick={() => boLoc('gv')} className="btn btn-sm">Không xem được giáo viên này — bỏ lọc</button>
               )}
-              {data.loc.theoKhoang && (
-                <button type="button" onClick={() => boLoc('tu', 'den')} title="Bỏ lọc khoảng tuần"
-                  className="nut-loc nut-loc-dang tabular-nums">
-                  {khoang} <span aria-hidden>✕</span>
-                </button>
-              )}
             </div>
 
             {/* ---------------------------------------------------------------- 1. PA do giáo viên thêm */}
@@ -145,11 +138,13 @@ export function HieuQuaPa(props: PhamViPhanTich) {
             {data.gvThem.hang.length === 0 && !data.gvThem.gom
               ? <p className="m-0 px-4 pb-3 text-sm text-slate-400">Chưa có PA do giáo viên thêm có kết quả trong {khoang}. Số có khi PA kết thúc có kết quả — thử khoảng thời gian dài hơn.</p>
               : (
+                <>
+                <div className="px-3"><PhanTrang {...ptGv.thanh} /></div>
                 <div className="table-scroll">
                   <table className="w-full text-sm" style={{ tableLayout: 'fixed', minWidth: 700 }}>
                     {dauBang('Vấn đề / loại PA', true)}
                     <tbody>
-                      {data.gvThem.hang.map((d) => hangLon(d, true))}
+                      {ptGv.cat(data.gvThem.hang).map((d) => hangLon(d, true))}
                       {data.gvThem.gom && (
                         <Fragment>
                           <HangNhom mo={mo.has('gom')} onMo={() => doiMo('gom')} nhan="vấn đề khác"
@@ -163,6 +158,8 @@ export function HieuQuaPa(props: PhamViPhanTich) {
                     </tbody>
                   </table>
                 </div>
+                <div className="px-3"><PhanTrang {...ptGv.thanh} duoi /></div>
+                </>
               )}
 
             {/* ---------------------------------------------------------------- 2. PA theo quy chế */}
@@ -178,12 +175,16 @@ export function HieuQuaPa(props: PhamViPhanTich) {
               {data.quyChe.hang.length === 0
                 ? <p className="m-0 px-4 pb-3 text-sm text-slate-400">Chưa có PA theo quy chế có kết quả trong {khoang}. Số có khi PA kết thúc có kết quả — thử khoảng thời gian dài hơn.</p>
                 : (
+                  <>
+                  <div className="px-3"><PhanTrang {...ptQc.thanh} /></div>
                   <div className="table-scroll">
                     <table className="w-full text-sm" style={{ tableLayout: 'fixed', minWidth: 620 }}>
                       {dauBang(props.ct === 'thuong' ? 'Loại bổ trợ' : 'Mức SOS / loại PA', false)}
-                      <tbody>{data.quyChe.hang.map((d) => hangLon(d, false))}</tbody>
+                      <tbody>{ptQc.cat(data.quyChe.hang).map((d) => hangLon(d, false))}</tbody>
                     </table>
                   </div>
+                  <div className="px-3"><PhanTrang {...ptQc.thanh} duoi /></div>
+                  </>
                 )}
             </div>
 
