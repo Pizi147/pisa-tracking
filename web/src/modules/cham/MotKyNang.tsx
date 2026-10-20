@@ -234,7 +234,7 @@ function DongFt({ row, k, nhieuMt, lop, active, onReload, gvMacDinh, mo, onMo, o
       <div className={`shrink-0 flex items-center justify-end gap-1 rounded-md ${o[k] === 'loi' ? VIEN_LOI : ''}`} data-kn={k}
         data-trong={!row.ngungHoc && c && oTrongFt(c) && !khacTuanFt(c, tuanDangXem) ? '1' : undefined} data-luu={o[k]}>
         <DauO lon tt={o[k]} loi={loi[k]} onLuuLai={() => luuLai(k)} />
-        {!c ? <span className="text-slate-600">—</span>
+        {!c ? <span className="text-slate-500">—</span>
           /* CA3-9: cùng điều kiện ô tuần khác của lưới máy tính (`LuoiFT` › `oKhacTuan`). */
           : khacTuanFt(c, tuanDangXem) && !nutTuanGoc(c) ? (
             <span className="text-xs tabular-nums text-slate-500">{c.daChot?.doiSang ? t('Đã dời sang {doiSang}', { doiSang: c.daChot.doiSang }) : tuanLich(c.weekStart)}</span>

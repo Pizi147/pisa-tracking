@@ -7,12 +7,13 @@ import { Info } from '../../ui/ui.tsx';
 import { CongTacGiaoDien } from '../../ui/CongTacGiaoDien.tsx';
 import { NutNgonNgu } from '../../ui/NutNgonNgu.tsx';
 import { PanelHuongDanManNay } from '../huongDan/NutHuongDan.tsx';
-import { useDienThoai } from '../../ui/TheDong.tsx';
+import { useManHinh } from '../../ui/TheDong.tsx';
 import { skillShort } from '../../lib/format.ts';
 import { buocDanhSach, chuanHoaMaLop, duongThongBao, moDuocThongBao, ngayTheoGioVN, nhanPhamVi, noiDenThongBao, nhomThongBao, thoiGianThongBao } from '@shared/domain/index.ts';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
+import { useBamNgoai } from '../../ui/useBamNgoai.ts';
 
 type SearchHit = { id: number; fullName: string; email: string | null; classCode: string | null };
 
@@ -35,7 +36,8 @@ export function Header() {
   /** Chỉ số dòng đang sáng khi đi bằng mũi tên, đếm chung học viên rồi lớp (−1 = chưa chọn). */
   const [dong, setDong] = useState(-1);
   /** Điện thoại (< 640 px, VN33): ô tìm là nút kính lúp; bấm thì ô mở neo hai mép ngay dưới thanh trên. */
-  const dienThoai = useDienThoai();
+  /* KHUNG-LOI (A1-05, 04 "Thanh trên"): dưới 1 440 px ô tìm cũng thu thành nút kính lúp — nhường chỗ cho 6 mục menu. */
+  const timGon = useManHinh('(max-width: 1439px)');
   const [moTimDt, setMoTimDt] = useState(false);
   const nutTim = useRef<HTMLButtonElement>(null);
   const boxRef = useRef<HTMLDivElement>(null);
@@ -64,13 +66,7 @@ export function Header() {
     return () => clearTimeout(t);
   }, [q, timDu]);
 
-  useEffect(() => {
-    const onClick = (e: MouseEvent) => {
-      if (boxRef.current && !boxRef.current.contains(e.target as Node)) { setMoTim(false); setOpenMenu(null); setMoTimDt(false); }
-    };
-    document.addEventListener('mousedown', onClick);
-    return () => document.removeEventListener('mousedown', onClick);
-  }, []);
+  useBamNgoai(true, () => { setMoTim(false); setOpenMenu(null); setMoTimDt(false); }, boxRef);
 
   /* Một danh sách cho bàn phím: học viên trước, lớp sau. */
   const den = [...hits.map((h) => `/hoc-vien/${h.id}`), ...lops.map((l) => `/hoc-vien/lop/${l.id}`)];
@@ -126,13 +122,13 @@ export function Header() {
   const hoTen = session?.user?.fullName ?? '';
   const chuCaiDau = [...(hoTen.trim().split(/\s+/).pop() ?? '')][0]?.toUpperCase() ?? '';
   /** Danh sách kết quả: máy tính thả dưới ô; điện thoại nằm trong khung ô tìm đã neo hai mép. */
-  const lopDs = dienThoai ? 'mt-1 w-full' : 'absolute z-40 mt-1 w-[min(18rem,calc(100vw-2rem))] right-0 shadow-2xl';
+  const lopDs = timGon ? 'mt-1 w-full' : 'absolute z-40 mt-1 w-[min(18rem,calc(100vw-2rem))] right-0 shadow-2xl';
 
   const oTimVaKetQua = (
     <>
       <input
         ref={oTim}
-        autoFocus={dienThoai}
+        autoFocus={timGon}
         className="field"
         placeholder={t('Tìm học viên, lớp…')}
         value={q}
@@ -194,14 +190,14 @@ export function Header() {
   return (
     <div className="flex items-center gap-2 max-sm:gap-0.5 min-w-0" ref={boxRef}>
       {/* TU-b (đặc tả Tutor mục 4): không có quyền xem học viên (Head tutor) → không ô tìm học viên. */}
-      {!session?.nav?.students ? null : dienThoai ? (
+      {!session?.nav?.students ? null : timGon ? (
         <>
           <button ref={nutTim} type="button" data-hd="tim-hv" className="btn btn-sm min-h-[44px] min-w-[44px] justify-center border-0 bg-transparent" aria-label={t('Tìm học viên, lớp')}
             aria-expanded={moTimDt} onClick={() => { setMoTimDt((v) => !v); setOpenMenu(null); }}>
             <svg aria-hidden width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
               <circle cx="7" cy="7" r="4.5" /><path d="m10.5 10.5 3 3" /></svg>
           </button>
-          {moTimDt && <div className="card absolute inset-x-2 top-full z-40 mt-1 p-2 shadow-2xl">{oTimVaKetQua}</div>}
+          {moTimDt && <div className="card absolute inset-x-2 top-full z-40 mt-1 p-2 shadow-2xl sm:left-auto sm:w-[min(26rem,calc(100vw-2rem))]">{oTimVaKetQua}</div>}
         </>
       ) : (
         <div className="relative w-52 lg:w-64 shrink" data-hd="tim-hv">{oTimVaKetQua}</div>
@@ -297,7 +293,8 @@ export function Header() {
           <span className="hidden max-w-[10rem] truncate text-slate-200 sm:inline">{hoTen}</span>
         </button>
         {openMenu === 'account' && (
-          <div className="absolute right-0 mt-1 w-[min(20rem,calc(100vw-2rem))] card p-3 z-40 shadow-2xl">
+          /* KHUNG-LOI (B-09): không cao quá màn — cuộn trong menu, "Đăng xuất" dính đáy (trước: trang cuộn, Đăng xuất ra ngoài màn ở 375). */
+          <div className="absolute right-0 mt-1 w-[min(20rem,calc(100vw-2rem))] max-h-[calc(100dvh-4.5rem)] overflow-y-auto overscroll-contain card p-3 pb-0 z-40 shadow-2xl">
             <div className="text-sm font-medium text-slate-100">{session?.user?.fullName}</div>
             <div className="text-xs text-slate-500 mb-3">{session?.user?.title && dich(session.user.title)}</div>
 
@@ -382,7 +379,9 @@ export function Header() {
               <CongTacGiaoDien />
               <NutNgonNgu kieu="menu" />
             </div>
-            <button className="btn btn-sm w-full justify-center" onClick={signOut}>{t('Đăng xuất')}</button>
+            <div className="sticky bottom-0 -mx-3 px-3 pb-3 pt-1" style={{ background: 'var(--surface)' }}>
+              <button className="btn btn-sm w-full justify-center" onClick={signOut}>{t('Đăng xuất')}</button>
+            </div>
           </div>
         )}
       </div>

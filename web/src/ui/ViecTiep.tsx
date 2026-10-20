@@ -37,7 +37,7 @@ export function DanhSachViecTiep({ viec, den, onBam }: {
   /** OV-12f: việc mở tại chỗ (Học viên & Lớp › việc Case → Panel một em) — trả null thì dùng `den`. */
   onBam?: (v: ViecTiepTheo) => (() => void) | null;
 }) {
-  if (viec.length === 0) return <span className="text-slate-600">—</span>;
+  if (viec.length === 0) return <span className="text-slate-500">—</span>;
   return (
     <span className="flex flex-col items-start gap-0.5">
       {viec.slice(0, 2).map((v) => <ViecTiep key={v.viec} v={v} den={den?.(v)} onBam={onBam?.(v) ?? undefined} />)}

@@ -300,7 +300,7 @@ export function HoTroHocVienTab() {
             <h1 className="m-0 text-lg font-semibold text-slate-100">{tenChao ? t('Chào {ten}', { ten: tenChao }) : t('Công việc')}</h1>
             <span className="text-xs text-slate-500">{t('Tuần')}{' '}<b className="font-semibold tabular-nums text-slate-300">{tuanLich(homNay, homNay)}</b>{' '}{t('· hôm nay')}{' '}{ngan(homNay)}</span>
           </div>
-        ) : <h1 className="m-0 text-lg font-semibold text-slate-100">{chiChamDiem ? t('Chấm điểm') : t('Công việc')}</h1>}
+        ) : <h1 className="m-0 text-lg font-semibold text-slate-100">{t('Công việc')}</h1>}{/* KHUNG-LOI (A1-07): = tên menu, cả Admin */}
         <div className="flex flex-wrap items-center gap-2" data-hd="cv-loc-them">
           {laQuanLy && data && (
             <>

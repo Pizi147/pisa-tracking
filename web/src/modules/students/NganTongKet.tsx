@@ -101,13 +101,13 @@ function BangLuot({ luot, ft }: { luot: Luot[]; ft: boolean }) {
                       <td className="px-3 text-right tabular-nums">{b1(l.kyVong)}</td>
                     </>
                   ) : (
-                    <td className="px-3">{huy ? <span className="text-slate-600">—</span> : l.kyNang.map((k) => (
+                    <td className="px-3">{huy ? <span className="text-slate-500">—</span> : l.kyNang.map((k) => (
                       <span key={k.k} className={`mr-1 inline-flex rounded px-1.5 text-[11.5px] font-semibold tabular-nums ${k.dat === false ? 'bg-soon-bg text-soon' : k.dat ? 'bg-ok-bg text-ok' : 'bg-muted-bg text-slate-500'}`}>
                         {dich(k.nhan)} {k.diem ?? '—'}{k.tong ? `/${k.tong}` : ''}
                       </span>
                     ))}</td>
                   )}
-                  <td className="px-3">{nl ? <span className="inline-flex flex-wrap items-center gap-x-2"><Nhan tone={nl.tone}>{nl.chu}</Nhan>{nl.phu && <span className="text-[11.5px] text-slate-500">{nl.phu}</span>}</span> : <span className="text-slate-600">—</span>}</td>
+                  <td className="px-3">{nl ? <span className="inline-flex flex-wrap items-center gap-x-2"><Nhan tone={nl.tone}>{nl.chu}</Nhan>{nl.phu && <span className="text-[11.5px] text-slate-500">{nl.phu}</span>}</span> : <span className="text-slate-500">—</span>}</td>
                 </tr>
               );
             })}
@@ -230,7 +230,7 @@ export function NganTongKet({ cycleId, onClose, onDoi }: { cycleId: number; onCl
               )}
               <O nho={t('Hướng tiếp')}>
                 <div className="mt-1">{data.buocTiep && !data.buocTiep.chon ? <span className="text-sm text-slate-400">{t('Chờ chọn bước tiếp')}</span>
-                  : data.huongTiep.nhan ? <Nhan tone={toneHuong(data.huongTiep.nhan)}>{dich(data.huongTiep.nhan)}</Nhan> : <span className="text-slate-600">—</span>}</div>
+                  : data.huongTiep.nhan ? <Nhan tone={toneHuong(data.huongTiep.nhan)}>{dich(data.huongTiep.nhan)}</Nhan> : <span className="text-slate-500">—</span>}</div>
               </O>
             </div>
 

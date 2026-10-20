@@ -5,16 +5,18 @@ import { Fragment, useEffect, useState, type ReactNode } from 'react';
  * đổi chế độ ngay; chỉ MỘT biến thể được vẽ (không vẽ cả bảng lẫn thẻ rồi ẩn bằng CSS — tránh tải dữ liệu hai lần).
  */
 const DIEN_THOAI = '(max-width: 639px)';
-export function useDienThoai(): boolean {
-  const [dt, setDt] = useState(() => typeof window !== 'undefined' && !!window.matchMedia?.(DIEN_THOAI).matches);
+export const useDienThoai = (): boolean => useManHinh(DIEN_THOAI);
+/** `matchMedia` theo dõi đổi cỡ (KHUNG-LOI: thanh trên `< 1440 px` thu ô tìm thành nút kính lúp). */
+export function useManHinh(q: string): boolean {
+  const [dt, setDt] = useState(() => typeof window !== 'undefined' && !!window.matchMedia?.(q).matches);
   useEffect(() => {
     if (!window.matchMedia) return undefined;
-    const m = window.matchMedia(DIEN_THOAI);
+    const m = window.matchMedia(q);
     const doi = () => setDt(m.matches);
     doi();
     m.addEventListener('change', doi);
     return () => m.removeEventListener('change', doi);
-  }, []);
+  }, [q]);
   return dt;
 }
 

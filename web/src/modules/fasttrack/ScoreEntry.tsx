@@ -13,6 +13,7 @@ import {
   oLuoiThuong, tuanLich, ENTRY_SKILL_SHORT, type EntrySkill, type ThieuNhanXet,
 } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
+import { useBamNgoai } from '../../ui/useBamNgoai.ts';
 
 export type Cell = {
   skill: EntrySkill;
@@ -375,24 +376,20 @@ export function SuaDiemCoLyDo({ tieuDe, moTaCu, children, onLuu, onDong, loiGiaT
 
   useLayoutEffect(() => { dat(); }, [dat]);
 
+  useBamNgoai(true, () => { if (!dangLuu.current) dong.current(); }, pop);
   useEffect(() => {
     const dau = pop.current?.querySelector<HTMLInputElement>('input');
     dau?.focus();
     dau?.select();
-    const away = (e: MouseEvent) => {
-      if (!dangLuu.current && pop.current && !pop.current.contains(e.target as Node)) dong.current();
-    };
     const esc = (e: KeyboardEvent) => {
       if (e.key !== 'Escape' || dangLuu.current) return;
       e.stopPropagation(); e.preventDefault();
       dong.current();
     };
-    document.addEventListener('mousedown', away);
     document.addEventListener('keydown', esc, true);
     window.addEventListener('resize', dat);
     window.addEventListener('scroll', dat, true);
     return () => {
-      document.removeEventListener('mousedown', away);
       document.removeEventListener('keydown', esc, true);
       window.removeEventListener('resize', dat);
       window.removeEventListener('scroll', dat, true);
@@ -784,7 +781,7 @@ export function ODiemThuong({
               if (e.key === 'F2') { e.preventDefault(); mo(String(cell.diem)); return; }
               onKeyDown?.(e);
             }} />
-          <span className="text-slate-600">/</span>
+          <span className="text-slate-500">/</span>
           <input readOnly tabIndex={-1} className={`${oSo} cursor-pointer ${o.vienVang ? 'border-amber-400/80' : ''}`}
             value={tongDaLuu()} placeholder="?" aria-label={t('{tenMon} — tổng số câu', { tenMon })}
             title={o.vienVang ? t('Khác tổng của cột ({tongCot}) — em làm đề khác.', { tongCot }) : undefined}
@@ -808,7 +805,7 @@ export function ODiemThuong({
                 <span className="text-xs text-slate-500 w-20">{t('Giá trị mới')}</span>
                 <input className={oSo} inputMode="numeric" value={sua.diem} aria-label={t('{tenMon} — số câu đúng mới', { tenMon })}
                   onChange={(e) => setSua({ ...sua, diem: e.target.value })} />
-                <span className="text-slate-600">/</span>
+                <span className="text-slate-500">/</span>
                 <input className={oSo} inputMode="numeric" value={sua.tong} aria-label={t('{tenMon} — tổng số câu mới', { tenMon })}
                   onChange={(e) => setSua({ ...sua, tong: e.target.value })} />
                 {sua.diem.trim() === '' && <span className="text-xs text-slate-500">{t('huỷ điểm')}</span>}
@@ -848,7 +845,7 @@ export function ODiemThuong({
           setDiem(e.target.value); setDirty(true); goDiem.current = true; daBaoChuaToi.current = false;
           if (canhBao?.o === 'diem') setCanhBao(null);
         }} onKeyDown={phim} />
-      <span className="text-slate-600">/</span>
+      <span className="text-slate-500">/</span>
       <input ref={tongRef} className={`${oSo} ${canhBao?.o === 'tong' ? 'border-rose-400/70' : o.vienVang ? 'border-amber-400/80' : ''}`}
         inputMode="numeric" value={dangDau ? '' : tong} disabled={busy || dangDau} placeholder={dangDau ? '' : t('tổng')}
         title={dangDau ? t('Ô mang dấu "-" chưa cần tổng.') : titleTong}
