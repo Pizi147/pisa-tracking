@@ -5,10 +5,10 @@
  * Danh sách lớp đi qua ĐÚNG `listClassSummaries`; phần thêm ở đây: phạm vi "Lớp tôi dạy", GVCN, số Case đang mở, tuần kết thúc khoá,
  * cờ nút theo quyền, và cờ lọc của học viên (Case: cùng `listCases`; SOS: cùng `standingFor`; thiếu thông tin: cùng `missingForStudent`).
  */
-import { db } from '../db.ts';
+import { db, theoLo } from '../db.ts';
 import {
   ENTRY_SKILLS, MOC_KE_TIEP_SQL, PERMISSIONS, chiNhanhMacDinh, chuanHoaMaLop, coMocTiepTheo, coMocTiepTheoThuong, demLoc, mondayOfDate, phamViCoThe, phamViMacDinh,
-  laVaiQuanLy, type LocHocVien, type PhamVi,
+  laVaiQuanLy, kyNangLoc, ketQuaLoc, nhomCaseEm, type LocHocVien, type PhamVi, type ThemEm, type KetQuaVao,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addDays } from '../util.ts';
@@ -16,7 +16,8 @@ import { bangLop, can, editableSkills, scopeFor, type Principal } from '../permi
 import { listClassSummaries, lopTrongPhamVi, type ClassSummary } from './classes.ts';
 import { classProgressMany, lichMtCua, missingForStudent } from './schedule.ts';
 import { standingFor } from '../students/standing.ts';
-import { listCases } from '../cases/cases.ts';
+import { listCases, type MappedCase } from '../cases/cases.ts';
+import { chiTietCaseMo } from '../cases/caseLop.ts';
 import { allProgrammes } from '../normal/regular.ts';
 import { danhSachLuuTru } from './luuTru.ts';
 import { nhapDiemTheoEm, viecHocVienTheoLop } from './dongHocVien.ts';
@@ -42,7 +43,7 @@ export type TrangHocVienLop = {
   phamVi: { coThe: PhamVi[]; dangDung: PhamVi; chiNhanh: number | null };
   dem: Record<LocHocVien, number>;
   /** `khung`: Fast Track hay lớp thường của em — công tắc `Tất cả · Fast Track · Lớp thường` đếm chip bằng `demLoc(hocVien, khung)`. */
-  hocVien: { id: number; classId: number; loc: LocHocVien[]; khung: 'ft' | 'thuong'; ten: string; ma: string; thieu?: string[]; ketThuc?: true }[];
+  hocVien: { id: number; classId: number; loc: LocHocVien[]; khung: 'ft' | 'thuong'; ten: string; ma: string; thieu?: string[]; ketThuc?: true; them?: ThemEm }[];
   /** Người xem có tạo được lớp MỚI ở chi nhánh nào không — không gắn với lớp đã tồn tại nào (điểm a rà soát cuối). */
   coTheTaoLop: boolean;
   /** HL-14: "+ Học viên" đầu trang — có lớp trong phạm vi thêm được học viên, KHÔNG phụ thuộc ô tìm (tìm không ra em là lúc cần thêm). */
@@ -97,7 +98,7 @@ export function idsHocVienLop(p: Principal): { rows: { id: number; scoringMode: 
 }
 
 export function danhSachHocVienLop(
-  p: Principal, f: { branchId?: number | null; q?: string | null; phamVi?: string | null; cnNho?: number | null } = {},
+  p: Principal, f: { branchId?: number | null; q?: string | null; phamVi?: string | null; cnNho?: number | null; them?: boolean } = {},
 ): TrangHocVienLop {
   const today = demoToday();
   const conn = db();
@@ -243,6 +244,8 @@ export function danhSachHocVienLop(
 
   const standing = standingFor(hvKhop.map((h) => h.id));
 
+  /* OV-15h2 (ý 3): nhãn Bộ lọc thêm — CHỈ khi web hỏi (`them=1`, người dùng mở Bộ lọc thêm): lần mở trang thường không thêm câu đọc. */
+  const them = f.them ? nhanLocThem(hvKhop.map((h) => h.id as number), allCases, standing) : null;
   const laFt = new Map(lops.map((r) => [r.id, r.programmeCode === 'FT']));
   /* OV-14b: lọc "Đã thi · chờ kết quả" — cùng tập với chip TVV / CX (`hvCuaToi.ts`). */
   const daThi = new Set(loTrinhChoKetQuaThi(today).map((x) => x.c.student_id as number));
@@ -272,7 +275,8 @@ export function danhSachHocVienLop(
     if (daThi.has(h.id)) loc.push('da-thi');
     /* OV-12f: tên + mã + ô thiếu — dòng "Thiếu thông tin" / "Chờ duyệt" của góc Cần làm (em không có việc ở Công việc vẫn có tên). */
     return { id: h.id as number, classId: h.class_id as number, loc, khung: ft ? 'ft' as const : 'thuong' as const,
-      ten: h.full_name as string, ma: (h.student_code ?? '') as string, ...(thieu.length ? { thieu: thieu.map((m) => m.label) } : {}) };
+      ten: h.full_name as string, ma: (h.student_code ?? '') as string, ...(thieu.length ? { thieu: thieu.map((m) => m.label) } : {}),
+      ...(them ? { them: them.get(h.id as number) } : {}) };
   });
   /*
    * OV-11g (HL-19, Q11): em Kết thúc học chưa Lưu trữ — hiện mờ ở lớp CUỐI (cùng điều kiện `classRoster(…, kemKetThuc)`), chỉ trong "Tất cả":
@@ -289,6 +293,33 @@ export function danhSachHocVienLop(
 
   const coTheThemHocVien = themTheoPhamVi ?? rows.some((r) => r.viewer.coTheThemHocVien);
   return { rows, scopeEmpty: false, phamVi, dem: demLoc(hocVien, 'tat-ca'), hocVien, coTheTaoLop, coTheThemHocVien, demLuuTru };
+}
+
+/**
+ * NHÃN BỘ LỌC THÊM của từng em (OV-15h2 ý 3) — cùng nguồn trang đã đọc: Case đang mở (`allCases` → `chiTietCaseMo`, trạng thái V4 + PA), kết quả gần nhất
+ * (`standing`). Thêm: các câu của `chiTietCaseMo` cho Case ĐANG MỞ của các em trên trang + một câu tuần thi của lượt gần nhất (mỗi lô ≤ 900 lượt).
+ */
+function nhanLocThem(ids: readonly number[], allCases: readonly MappedCase[], standing: Map<number, unknown>): Map<number, ThemEm> {
+  const co = new Set(ids);
+  const mo = allCases.filter((c) => c.status !== 'done' && c.studentId !== null && co.has(c.studentId));
+  const ct = chiTietCaseMo(mo);
+  const caseEm = new Map<number, { k: string; pa: { xong: boolean }[] }[]>();
+  for (const c of mo) {
+    const x = ct.get(c.id);
+    if (x) caseEm.set(c.studentId!, [...(caseEm.get(c.studentId!) ?? []), { k: x.trangThai.k, pa: x.pas }]);
+  }
+  const st = (id: number) => (standing.get(id) as KetQuaVao | undefined) ?? null;
+  const luot = [...new Set(ids.map((id) => st(id)?.attemptId).filter((x): x is number => !!x))];
+  const tuan = new Map<number, string>();
+  theoLo(luot, (lo, ph) => {
+    for (const r of db().prepare(
+      `SELECT k.attempt_id, MIN(pr.week_start) AS tuan FROM attempt_skills k JOIN report_periods pr ON pr.id = k.planned_period_id
+        WHERE k.attempt_id IN (${ph}) AND k.required = 1 AND k.sit_status != 'cancelled' GROUP BY k.attempt_id`).all(...lo) as any[]) tuan.set(r.attempt_id, String(r.tuan).slice(0, 10));
+  });
+  return new Map(ids.map((id) => {
+    const s = st(id);
+    return [id, { case: nhomCaseEm(caseEm.get(id) ?? []), kn: kyNangLoc(s), kq: ketQuaLoc(s), tuan: s?.attemptId ? tuan.get(s.attemptId) ?? null : null }];
+  }));
 }
 
 /** PR-QU (B): chi nhánh đang hoạt động mà người này tạo lớp được (`class.create` phủ chi nhánh đó). */

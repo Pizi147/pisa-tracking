@@ -96,7 +96,6 @@ import * as tongQuanSvc from '../worklist/tongQuan.ts';
 import * as bangSvc from '../worklist/bangChiNhanh.ts';
 import * as tongHopSvc from '../phanTich/tongHop.ts';
 import * as xuatMtSvc from '../phanTich/xuatMt.ts';
-import * as vanDeHvSvc from '../phanTich/vanDeHv.ts';
 import * as hieuQuaPaSvc from '../phanTich/hieuQuaPa.ts';
 import * as yThucPhanTichSvc from '../phanTich/yThucPhanTich.ts';
 import * as giaoVienPtSvc from '../phanTich/giaoVien.ts';
@@ -596,25 +595,36 @@ api.post('/ke-hoach-test/dot', requireAuth, wrap((req) => {
   const kyNang = req.body.kyNang.map((k: any) => ({
     skill: String(k?.skill ?? ''), periodId: toInt(k?.periodId), bo: typeof k?.bo === 'boolean' ? k.bo : undefined,
   }));
-  return keHoachSvc.luuDot(principalOf(req), {
+  const p = principalOf(req);
+  return keHoachSvc.luuLichKemGhiChu(p, ghiChuKem(req.body?.ghiChu), () => keHoachSvc.luuDot(p, {
     attemptId, kyNang, lyDoBo: req.body.lyDoBo ?? null, force: !!req.body.force, reason: req.body.reason ?? null,
-  });
+  }));
 }));
+
+/** OV-15h2 (ý 5): ghi chú lịch thi đi kèm lần lưu lịch (`/dot`, `/xep-moi`) — một giao dịch; thiếu lớp → 400. */
+function ghiChuKem(g: any) {
+  if (g === undefined || g === null) return null;
+  const classId = toInt(g?.classId);
+  if (!classId) throw badRequest('Thiếu lớp của ghi chú.');
+  return { classId, studentId: toInt(g.studentId), dot: typeof g.dot === 'string' ? g.dot : null, noiDung: g.noiDung };
+}
 
 api.post('/ke-hoach-test/xep-moi', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   const studentId = toInt(req.body?.studentId);
   if (!studentId) throw badRequest('Thiếu học viên.');
   const tuan = tuanTheoKyNang(req.body?.tuan);
+  const p = principalOf(req);
+  const ghi = ghiChuKem(req.body?.ghiChu);
   if (req.body?.kind) {
     const classId = toInt(req.body?.classId);
     if (!classId) throw badRequest('Thiếu lớp.');
-    return keHoachSvc.xepMoiThuong(principalOf(req), { classId, studentId, kind: req.body.kind, tuan, force: !!req.body.force });
+    return keHoachSvc.luuLichKemGhiChu(p, ghi, () => keHoachSvc.xepMoiThuong(p, { classId, studentId, kind: req.body.kind, tuan, force: !!req.body.force }));
   }
-  return keHoachSvc.xepMoi(principalOf(req), {
+  return keHoachSvc.luuLichKemGhiChu(p, ghi, () => keHoachSvc.xepMoi(p, {
     studentId, attemptNo: toInt(req.body?.attemptNo) ?? undefined, tuan, bo: Array.isArray(req.body?.bo) ? req.body.bo : [],
     lyDoBo: req.body?.lyDoBo ?? null, force: !!req.body?.force,
-  });
+  }));
 }));
 
 api.post('/ke-hoach-test/hang-loat', requireAuth, wrap((req) => {
@@ -734,22 +744,6 @@ api.post('/xuat-mt', requireAuth, wrap((req) => {
   const f = docBoLocXuatMt((req.body ?? {}) as Record<string, unknown>);
   if (typeof f === 'string') throw badRequest(f);
   return xuatMtSvc.xuatExcel(principalOf(req), f);
-}));
-/* Tổng hợp vấn đề HV (PR-UX4): đếm HV theo nhóm nguyên nhân. `loi=chinh` chỉ lỗi chính; `gop=1` gộp theo nhóm nguyên nhân chung. */
-const filterVanDeHvOf = (req: Request) => ({
-  branchId: qInt(req, 'branchId') ?? null, ct: chuongTrinhTuThamSo(qStr(req, 'ct')),
-  classId: qInt(req, 'lop') ?? null, soTuan: khoangTuThamSo(qStr(req, 'tg')),
-  chiChinh: qStr(req, 'loi') === 'chinh', gop: qStr(req, 'gop') === '1',
-});
-api.get('/phan-tich/van-de-hv', requireAuth, wrap((req) => {
-  maybeSimulateReadError();
-  return vanDeHvSvc.vanDeHv(principalOf(req), filterVanDeHvOf(req));
-}));
-api.get('/phan-tich/van-de-hv/o', requireAuth, wrap((req) => {
-  maybeSimulateReadError();
-  return vanDeHvSvc.oVanDeHv(principalOf(req), {
-    ...filterVanDeHvOf(req), dong: qStr(req, 'dong') ?? '', cot: qStr(req, 'cot') ?? '',
-  });
 }));
 /* Hiệu quả PA (PR-UX4; PR-Pb2-a): PA GV thêm / PA theo quy chế. `gv`, `tu`, `den` — tên CHỐT trong Hợp đồng a↔b; `tu`/`den` thắng `tg`. */
 const filterHieuQuaPaOf = (req: Request) => ({
@@ -1023,6 +1017,12 @@ api.put('/attempts/:id/scores/:skill', requireAuth, wrap((req) => {
 api.post('/attempts/scores/lo', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return luuDiemLo(principalOf(req), req.body);
+}));
+
+/** OV-15h2 (ý 10): Dán từ Excel lớp thường — cùng `luuDiemLo`, mỗi ô qua `saveRegularScore`; một lần dán = một mục lịch sử. */
+api.post('/regular/scores/lo', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return luuDiemLo(principalOf(req), req.body, 'thuong');
 }));
 
 /** OV-13k: "Nhận xét GV phụ trách" + nhóm nguyên nhân ô Speaking Mock chấm chéo — GV phụ trách S của lớp, GVCN, Quản lý; không đụng điểm. */
@@ -1460,7 +1460,7 @@ api.get('/hoc-vien-lop', requireAuth, wrap((req) => {
   }
   return hocVienLopSvc.danhSachHocVienLop(principalOf(req), {
     branchId: qInt(req, 'branchId') ?? null, q: qStr(req, 'q') ?? null, phamVi: qStr(req, 'phamVi') ?? null,
-    cnNho: qInt(req, 'cnNho') ?? null,
+    cnNho: qInt(req, 'cnNho') ?? null, them: qStr(req, 'them') === '1',   // OV-15h2: nhãn Bộ lọc thêm
   });
 }));
 

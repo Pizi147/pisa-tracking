@@ -20,7 +20,7 @@ import { t } from '../i18n/index.ts';
 
 /*
  * OV-15e (C28, plan §7): Phân tích là mục thanh trên; sáu tab — Báo cáo (đầu, mặc định) · Test + SOS · Kết quả thi · Hiệu quả PA · Phân tích GV · Ý thức.
- * "Tổng hợp vấn đề HV" (`van-de`) đã bỏ khỏi tab: link cũ về Test + SOS (máy chủ `/phan-tich/van-de-hv` giữ cho phép kiểm cũ).
+ * "Tổng hợp vấn đề HV" (`van-de`) đã bỏ khỏi tab: link cũ về Test + SOS (máy chủ `/phan-tich/van-de-hv` bỏ ở OV-15h2).
  */
 export const GOC_NHIN = ['bao-cao', 'tong-hop', 'ket-qua-thi', 'hieu-qua-pa', 'giao-vien', 'y-thuc'] as const;
 export type GocNhin = (typeof GOC_NHIN)[number];

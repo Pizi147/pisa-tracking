@@ -199,24 +199,25 @@ export function HopKyNang({ anchor, tieuDe, tenHv = tieuDe.split(' · ')[0], ghi
     if (!luuDuoc) return;
     setBusy(true);
     const dungForce = force || canhBao.length > 0;
+    /* OV-15h2 (ý 5): ghi chú đi CÙNG lần lưu lịch (một giao dịch máy chủ) — lỗi ghi chú thì lịch cũng chưa lưu, bấm Lưu lại không gửi lịch hai lần. */
+    const ghiChu = doiGhi ? { classId, studentId, dot: khoaDot(dot), noiDung: ghi } : undefined;
     try {
       if (!luuLich) {
-        /* Chỉ đổi ghi chú: không gọi đường lịch. */
+        await luuGhiChu({ classId, studentId, dot: khoaDot(dot) }, ghi);   // chỉ đổi ghi chú: không gọi đường lịch
       } else if (moi) {
         const tuan: Record<string, number> = {};
         for (const k of dungKy) tuan[k] = rows[k].periodId!;
         if (dot.loai === 'ft') {
-          await api.post('/ke-hoach-test/xep-moi', { studentId, attemptNo: dot.attemptNo, tuan, bo: ky.filter((k) => !rows[k].tick), lyDoBo: null, force: dungForce });
-        } else await api.post('/ke-hoach-test/xep-moi', { classId, studentId, kind: dot.kind, tuan, force: dungForce });
+          await api.post('/ke-hoach-test/xep-moi', { studentId, attemptNo: dot.attemptNo, tuan, bo: ky.filter((k) => !rows[k].tick), lyDoBo: null, force: dungForce, ghiChu });
+        } else await api.post('/ke-hoach-test/xep-moi', { classId, studentId, kind: dot.kind, tuan, force: dungForce, ghiChu });
       } else {
         const kyNang = ky.filter((k) => daDoi(k) || (bo.includes(k))).map((k) => (
           !rows[k].tick ? { skill: k, bo: true }
             : !(kn[k]?.batBuoc ?? false) ? { skill: k, bo: false, periodId: rows[k].periodId }
               : { skill: k, periodId: rows[k].periodId }
         ));
-        await api.post('/ke-hoach-test/dot', { attemptId, kyNang, lyDoBo: null, reason: lyDo.trim() || null, force: dungForce });
+        await api.post('/ke-hoach-test/dot', { attemptId, kyNang, lyDoBo: null, reason: lyDo.trim() || null, force: dungForce, ghiChu });
       }
-      if (doiGhi) await luuGhiChu({ classId, studentId, dot: khoaDot(dot) }, ghi);
       toast.push('ok', luuLich ? 'Đã lưu lịch.' : t('Đã lưu ghi chú.'));
       invalidate('/ke-hoach-test'); invalidate('/attempts'); invalidate('/cham');
       onSaved(); onClose();

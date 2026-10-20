@@ -28,21 +28,23 @@ const TEN_MAU: Record<MauXuatDs, string> = { 'co-ban': t('Danh sách cơ bản')
  * Nhận ĐÚNG danh sách em trang đang hiện (`ids`, `daChon`) + chữ bộ lọc (`boLoc`, vào sheet "Thông tin xuất"); máy chủ kiểm quyền từng em.
  * Nhớ mẫu / cột lần gần nhất (máy này). `macDinh` đặt sẵn mẫu / cột của nơi gọi (Lịch thi: cột Kết luận + Ghi chú). Bộ lọc giữ khi lỗi / sau khi tải.
  */
-export function NganXuatDs({ ids, daChon = [], boLoc, macDinh, mauMacDinh, locSos, onDong }: {
-  ids: number[]; daChon?: number[]; boLoc: string; macDinh?: KhoaCotXuatDs[]; mauMacDinh?: MauXuatDs;
+export function NganXuatDs({ ids, daChon, phamDau, boLoc, macDinh, mauMacDinh, locSos, onDong }: {
+  /** `daChon` có (kể cả rỗng) = nơi gọi có cột tick: hiện "Các HV đã chọn" (0 em → tắt). `phamDau`: phạm vi chọn sẵn (nút "Xuất các HV đã chọn" → `chon`). */
+  ids: number[]; daChon?: number[]; phamDau?: 'loc' | 'chon'; boLoc: string; macDinh?: KhoaCotXuatDs[]; mauMacDinh?: MauXuatDs;
   /** Bộ lọc góc Đang SOS của trang (tuần · phạm vi · chi nhánh · tìm) — máy chủ lấy cột SOS từ CHÍNH danh sách đó. */
   locSos?: { tuan: string | null; phamVi: string | null; branchId: number | null; q: string | null }; onDong: () => void;
 }) {
   const toast = useToast();
   const uid = useSession().session?.user?.id ?? null;
   const [nho] = useState(() => docNho(uid));
-  const [pham, setPham] = useState<'loc' | 'chon'>(daChon.length ? 'chon' : 'loc');
+  const chonDs = daChon ?? [];
+  const [pham, setPham] = useState<'loc' | 'chon'>(chonDs.length && phamDau !== 'loc' ? 'chon' : 'loc');
   const [mau, setMau] = useState<MauXuatDs>(mauMacDinh ?? nho.mau);
   const [cot, setCot] = useState<KhoaCotXuatDs[]>(() => macDinh ?? (mauMacDinh ? [...COT_THEO_MAU[mauMacDinh]] : nho.cot ?? [...COT_THEO_MAU[nho.mau]]));
   const [busy, setBusy] = useState(false);
   const [loi, setLoi] = useState<string | null>(null);
   const [xong, setXong] = useState<string | null>(null);
-  const dsId = pham === 'chon' ? daChon : ids;
+  const dsId = pham === 'chon' ? chonDs : ids;
   const chonMau = (m: MauXuatDs) => { setMau(m); setCot([...COT_THEO_MAU[m]]); setXong(null); };
   const batCot = (k: KhoaCotXuatDs) => { setCot((c) => (c.includes(k) ? c.filter((x) => x !== k) : [...c, k])); setXong(null); };
   const cotThuTu = cotXuatDs(mau, cot);
@@ -75,7 +77,8 @@ export function NganXuatDs({ ids, daChon = [], boLoc, macDinh, mauMacDinh, locSo
       <Khoi tieuDe={t('Phạm vi')}>
         <div role="radiogroup" aria-label={t('Phạm vi')} className="space-y-1.5">
           <Chon dang={pham === 'loc'} onChon={() => setPham('loc')} nhan={t('Toàn bộ kết quả đang lọc — {n} HV', { n: ids.length })} phu={t('Đủ mọi trang, kể cả hàng chưa hiện')} />
-          {daChon.length > 0 && <Chon dang={pham === 'chon'} onChon={() => setPham('chon')} nhan={t('Các HV đã chọn — {n} HV', { n: daChon.length })} />}
+          {daChon && <Chon dang={pham === 'chon'} tat={!chonDs.length} onChon={() => setPham('chon')} nhan={t('Các HV đã chọn — {n} HV', { n: chonDs.length })}
+            phu={chonDs.length ? undefined : t('Tích hàng ở bảng để chọn')} />}
         </div>
       </Khoi>
       <Khoi tieuDe={t('Mẫu cột')}>
@@ -108,10 +111,10 @@ export function NganXuatDs({ ids, daChon = [], boLoc, macDinh, mauMacDinh, locSo
   );
 }
 
-function Chon({ dang, onChon, nhan, phu }: { dang: boolean; onChon: () => void; nhan: string; phu?: string }) {
+function Chon({ dang, onChon, nhan, phu, tat = false }: { dang: boolean; onChon: () => void; nhan: string; phu?: string; tat?: boolean }) {
   return (
-    <label className={`flex min-h-[44px] cursor-pointer items-start gap-2 rounded-lg border px-3 py-2 sm:min-h-0 ${dang ? 'shadow-[inset_0_0_0_1px_var(--accent)]' : ''}`} style={{ borderColor: 'var(--line)' }}>
-      <input type="radio" className="mt-1" checked={dang} onChange={onChon} />
+    <label className={`flex min-h-[44px] items-start gap-2 rounded-lg border px-3 py-2 sm:min-h-0 ${tat ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'} ${dang ? 'shadow-[inset_0_0_0_1px_var(--accent)]' : ''}`} style={{ borderColor: 'var(--line)' }}>
+      <input type="radio" className="mt-1" checked={dang} disabled={tat} onChange={onChon} />
       <span className="min-w-0"><span className="block text-sm text-slate-100">{nhan}</span>{phu && <span className="block text-xs text-slate-400">{phu}</span>}</span>
     </label>
   );

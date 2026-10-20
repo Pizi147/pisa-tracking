@@ -31,6 +31,8 @@ export type HangLichThi = {
   target: number | null; kck: boolean; standing: KetQuaVao | null;
   duKien: ExamPlan; coNgay: boolean; thangDuKien: string | null; chuaCo: boolean;
   ketLuan: KetLuanLichThi | null; luu: LuuLichThi | null; coTheSua: boolean;
+  /** OV-15h2 (ý 2): ai · lúc đặt ngày thi đang có ("chốt 05/10 · Lê Thu"); chỉ khi đã chốt ngày và có nhật ký. */
+  chot: { luc: string; ai: string | null } | null;
 };
 export type TrangLichThi = { thang: string[]; rows: HangLichThi[] };
 
@@ -44,11 +46,32 @@ export function luuTuCot(r: any): LuuLichThi | null {
 export const COT_LICH_THI_SQL = 'cy.lich_thi_ket_luan, cy.lich_thi_thang, cy.lich_thi_ghi_chu, cy.lich_thi_ghi_chu_luc, gu.full_name AS ghi_chu_ai';
 
 /** Tình trạng lịch của một lộ trình + nhật ký → các trường của hàng (một nguồn cho danh sách và cho kết quả sau khi lưu). */
-function tinhLich(c: any, luu: LuuLichThi | null) {
+function tinhLich(c: any, luu: LuuLichThi | null, chot: { luc: string; ai: string | null } | null = null) {
   const duKien = examPlanOf(c);
   const coNgay = !!c?.exam_date;
   const thangDuKien = duKien.month;
-  return { duKien, coNgay, thangDuKien, chuaCo: duKien.confidence === 'none', ketLuan: ketLuanHienTai({ coNgay, thangDuKien, luu }), luu };
+  return {
+    duKien, coNgay, thangDuKien, chuaCo: duKien.confidence === 'none', ketLuan: ketLuanHienTai({ coNgay, thangDuKien, luu }), luu,
+    chot: coNgay ? chot : null,
+  };
+}
+
+/**
+ * OV-15h2 (ý 2): dòng "chốt 05/10 · Lê Thu" dưới Lịch hiện tại — lần đổi lộ trình GẦN NHẤT đặt đúng ngày thi đang có (nhật ký `cycle.update`, mọi nơi sửa
+ * ngày thi đều đi qua `updateCycle`). Ngày đặt không qua nhật ký (dữ liệu cũ / nhập thẳng) → không có dòng, không bịa. Một câu mỗi lô, chỉ mục `idx_audit_entity`.
+ */
+export function chotNgayCua(ds: readonly { id: number; exam_date: string | null }[]): Map<number, { luc: string; ai: string | null }> {
+  const ngay = new Map(ds.filter((x) => x.exam_date).map((x) => [x.id, x.exam_date as string]));
+  const out = new Map<number, { luc: string; ai: string | null }>();
+  theoLo([...ngay.keys()], (lo, ph) => {
+    for (const r of db().prepare(
+      `SELECT a.entity_id, a.created_at, u.full_name AS ai, json_extract(a.after_json, '$.exam_date') AS ngay FROM audit_logs a LEFT JOIN users u ON u.id = a.actor_user_id
+        WHERE a.entity_type = 'learning_cycle' AND a.entity_id IN (${ph}) AND a.action = 'cycle.update'
+          AND json_extract(a.after_json, '$.exam_date') IS NOT json_extract(a.before_json, '$.exam_date') ORDER BY a.id`).all(...lo) as any[]) {
+      if (r.ngay === ngay.get(r.entity_id)) out.set(r.entity_id, { luc: r.created_at, ai: r.ai ?? null }); else out.delete(r.entity_id);
+    }
+  });
+  return out;
 }
 
 const coTheSua = (p: Principal, studentId: number) =>
@@ -109,13 +132,14 @@ export function danhSachLichThi(
   /* Quyền sửa tính MỘT lần cho mỗi LỚP (không theo từng em: `can` với `studentId` tra lớp / chi nhánh mỗi lần gọi — 2 câu mỗi em). */
   const suaDuoc = new Map<number, boolean>();
   const suaLop = (classId: number) => { if (!suaDuoc.has(classId)) suaDuoc.set(classId, can(p, PERMISSIONS.STUDENT_EDIT, { classId }) || can(p, PERMISSIONS.STUDENT_EDIT_INFO, { classId })); return suaDuoc.get(classId)!; };
+  const chot = chotNgayCua(chon.filter((x) => x.r.cycle_id).map((x) => ({ id: x.r.cycle_id as number, exam_date: x.r.exam_date ?? null })));
   const rows: HangLichThi[] = chon.map(({ r }) => {
     const l = lop.get(r.class_id);
     return {
       studentId: r.id, cycleId: r.cycle_id ?? null, ten: r.full_name, ma: r.student_code ?? '',
       classId: r.class_id, classCode: l?.code ?? '', thuong: l?.scoring_mode === 'ratio', gvcn: gvcn.get(r.class_id) ?? null, tvv: r.tvv ?? null,
       target: r.target_score ?? null, kck: !!r.khong_cam_ket, standing: (standing.get(r.id) as KetQuaVao | undefined) ?? null,
-      ...tinhLich(r, luuTuCot(r)),
+      ...tinhLich(r, luuTuCot(r), chot.get(r.cycle_id) ?? null),
       coTheSua: !!r.cycle_id && suaLop(r.class_id),
     };
   });
@@ -130,7 +154,7 @@ export function danhSachLichThi(
 export function luuLichThi(
   p: Principal, cycleId: number,
   i: { ketLuan?: unknown; ngay?: unknown; thang?: unknown; ghiChu?: unknown },
-): { duKien: ExamPlan; coNgay: boolean; thangDuKien: string | null; chuaCo: boolean; ketLuan: KetLuanLichThi | null; luu: LuuLichThi | null } {
+): { duKien: ExamPlan; coNgay: boolean; thangDuKien: string | null; chuaCo: boolean; ketLuan: KetLuanLichThi | null; luu: LuuLichThi | null; chot: HangLichThi['chot'] } {
   const c = cycleById(cycleId);
   if (!c) throw notFound('Không tìm thấy lộ trình');
   chanLuuTru(p, cycleId);
@@ -170,5 +194,5 @@ export function luuLichThi(
     entityLabel: `${st?.student_code ?? ''} · ${moi.ketLuan ?? 'ghi chú'}`, before: cu ? { ketLuan: cu.ketLuan, thang: cu.thang, ghiChu: cu.ghiChu } : null, after: moi,
   });
   const sau = doc();
-  return tinhLich(sau, luuTuCot(sau));
+  return tinhLich(sau, luuTuCot(sau), chotNgayCua([{ id: cycleId, exam_date: sau.exam_date ?? null }]).get(cycleId) ?? null);
 }

@@ -1508,6 +1508,23 @@ await checkAsync(`OV-15b · Dán từ Excel một dòng 5 ô (POST /attempts/sco
   assert(r.n <= TRAN_GHI_LO.danExcelMotDong, `${r.n} câu > trần ${TRAN_GHI_LO.danExcelMotDong}`);
 });
 
+await checkAsync(`OV-15h2 · Dán từ Excel lớp thường một dòng (POST /regular/scores/lo, 4 môn điểm + nhận xét) ≤ ${TRAN_GHI_LO.danExcelThuongMotDong} câu SQL`, async () => {
+  const { demoToday } = await import('../demoConfig.ts');
+  /* Bài lớp thường của MB FOU 12 mọi môn đã tới tuần thi, chưa huỷ / vắng — xoá điểm rồi dán như QL dán cả dòng (điểm + nhận xét mỗi môn = 2 lệnh). */
+  const a = conn.prepare(`SELECT a.id, a.kind FROM assessment_attempts a WHERE a.class_id = ? AND a.kind IN ('progress', 'final') AND a.status <> 'cancelled'
+      AND NOT EXISTS (SELECT 1 FROM attempt_skills k LEFT JOIN report_periods pr ON pr.id = k.planned_period_id WHERE k.attempt_id = a.id
+        AND (k.required = 0 OR k.sit_status IN ('cancelled','absent') OR pr.week_start IS NULL OR pr.week_start > ?))
+    ORDER BY a.id LIMIT 1`).get(LOP_THUONG, demoToday()) as any;
+  assert(a, 'bộ đo: cần một bài lớp thường mọi môn đã tới tuần thi');
+  const mon = (conn.prepare(`SELECT skill FROM attempt_skills WHERE attempt_id = ? AND required = 1 ORDER BY skill`).all(a.id) as any[]).map((x) => x.skill as string);
+  conn.prepare('DELETE FROM assessment_scores WHERE attempt_id = ?').run(a.id);
+  const o = mon.flatMap((skill) => [{ skill, score: 30, total: 40 }, { skill, nhanXet: 'Làm bài cẩn thận' }]);
+  const r = await doGhi('QL', '/regular/scores/lo', { dong: [{ attemptId: a.id, o }], classId: LOP_THUONG, luot: `thuong:${a.kind}`, loId: 'toc-do-thuong', cuoi: true });
+  assert(r.status === 200 && r.json.dong[0].ok, `lưu dòng: ${r.status} ${JSON.stringify(r.json)}`);
+  console.log(`      (đo: 1 dòng ${mon.length} môn × 2 lệnh, ${r.n} câu)`);
+  assert(r.n <= TRAN_GHI_LO.danExcelThuongMotDong, `${r.n} câu > trần ${TRAN_GHI_LO.danExcelThuongMotDong}`);
+});
+
 check('PR-DEPLOY (3b) · Giới hạn Turso trên mọi (đường × vai) sau nhân dữ liệu ×3 + mọi đường ghi lô: mỗi câu ≤ 900 tham số, ≤ 20 vế UNION, 0 tham số đặt tên', () => {
   doTurso.bat = false;
   const dong = (c: CauDo) => `${c.nhan} · ${c.thamSo} tham số · ${c.ve} vế · ${c.sql}`;
