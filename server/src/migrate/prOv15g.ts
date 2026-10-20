@@ -10,5 +10,5 @@ export function migratePrOv15g(conn: any, applied: string[]) {
   if (!conn.prepare(`SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'demo_config'`).get()) return;
   if (conn.prepare('SELECT 1 FROM demo_config WHERE key = ?').get(MOC_LICH_SU)) return;
   conn.prepare('INSERT INTO demo_config (key, value, updated_at) VALUES (?,?,?)').run(MOC_LICH_SU, nowIso(), nowIso());
-  applied.push('OV-15g: ghi mốc bắt đầu Lịch sử thay đổi. Dữ liệu cũ giữ nguyên.');
+  applied.push('OV-15g: ghi mốc bắt đầu ghi lịch sử. Dữ liệu cũ giữ nguyên.');
 }

@@ -68,7 +68,7 @@ export const HD_ADMIN: HuongDan = {
     },
     {
       id: 'ho-so-hv', ten: 'Hồ sơ học viên', duong: ['/hoc-vien/'],
-      muc: [{ id: 'ad-hv', ten: 'Hồ sơ em', buoc: ['<b>Sửa thông tin</b> (Target chỉ xem) · <b>Lịch sử thay đổi</b>.', 'Ba tab <b>Học thuật</b> · <b>Ý thức & Phối hợp</b> · <b>Hành trình</b>: chỉ xem.'] }],
+      muc: [{ id: 'ad-hv', ten: 'Hồ sơ em', buoc: ['<b>Sửa thông tin</b> (Target chỉ xem) · <b>Lịch sử</b>.', 'Ba tab <b>Học thuật</b> · <b>Ý thức & Phối hợp</b> · <b>Hành trình</b>: chỉ xem.'] }],
     },
     /* Khối "Test chấm tuần này" chỉ có khi tuần có Test — chi nhánh nhỏ thường trống, nên mục này không "Chỉ cho tôi". */
     { ...manGv('lich-test'), muc: manGv('lich-test').muc.map(({ chi: _, ...m }) => m) },

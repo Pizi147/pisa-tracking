@@ -256,7 +256,7 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
               <Link className="link text-xs" to={duongDotTest({ id: ketQua.mt.luotLichSuDau, kind: 'mock' })}>Nhập điểm MT cũ</Link>
             )}
             {hoSoLop && pathname !== hoSoLop && <Link className="link text-xs" to={hoSoLop}>Mở hồ sơ lớp</Link>}
-            <button type="button" className="link appearance-none border-0 bg-transparent p-0 text-xs max-sm:py-2" onClick={() => setLichSu(true)}>{t('Lịch sử thay đổi')}</button>
+            <button type="button" className="link appearance-none border-0 bg-transparent p-0 text-xs max-sm:py-2" onClick={() => setLichSu(true)}>{t('Lịch sử')}</button>
           </div>
         )}
 

@@ -239,7 +239,7 @@ function thiThat(p: Principal, cycleId: number, tiep: number | null): TrangLs {
 
 // ------------------------------------------------------------------ ô điểm của một lượt (điểm · "-" · nhận xét · GV chấm · lịch)
 
-const TRANG_THAI_THI: Record<string, string> = { scheduled: 'Theo lịch', sat: 'Đã thi', absent: 'Vắng', cancelled: 'Huỷ', excused: 'Không dự thi' };
+const TRANG_THAI_THI: Record<string, string> = { scheduled: 'Theo lịch', sat: 'Đã thi', absent: 'Vắng', cancelled: 'Đã huỷ', excused: 'Không dự thi' };
 
 function oDiem(p: Principal, attemptId: number, loc: string | null, tiep: number | null): TrangLs {
   const a = db().prepare('SELECT class_id, student_id FROM assessment_attempts WHERE id = ?').get(attemptId) as { class_id: number | null; student_id: number } | undefined;

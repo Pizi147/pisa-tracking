@@ -107,7 +107,7 @@ export function KetQuaThiThatPanel({ cycleId, studentName, lop, quayLai, onClose
               {st.coTheGiaHan && <>{' · '}<button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 font-semibold sm:min-h-0" onClick={() => setGiaHan(true)}>{t('Gia hạn')}</button></>}
             </span>
           )}
-          <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 sm:ml-auto sm:min-h-0" onClick={() => setLichSu(true)}>{t('Lịch sử thay đổi')}</button>
+          <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 sm:ml-auto sm:min-h-0" onClick={() => setLichSu(true)}>{t('Lịch sử')}</button>
         </div>
         {giaHan && st && <HopGiaHan x={{ cycleId, han: st.han, daGiaHan: st.daGiaHan }} hocVien={studentName} lop={lop} onClose={() => setGiaHan(false)} onDone={() => { sauThi.reload(); onDone(); }} />}
         <label className="flex min-h-[44px] items-center gap-2 text-[13px] text-slate-300 sm:min-h-0">

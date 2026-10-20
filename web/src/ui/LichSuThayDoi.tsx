@@ -124,12 +124,12 @@ export function LichSuThayDoi({ loai, id, dong2, quayLai, onClose }: {
   const coLoc = nhom.length > 1 && (!!loc || ds.length > 5 || tiep !== null);
 
   return (
-    <KhungPanel tieuDe={t('Lịch sử thay đổi')} quayLai={quayLai} onDong={onClose} dau={{ dong2: dong2.filter(Boolean) }}>
+    <KhungPanel tieuDe={t('Lịch sử')} quayLai={quayLai} onDong={onClose} dau={{ dong2: dong2.filter(Boolean) }}>
       <div data-hd="lich-su-thay-doi">
         {coLoc && (
           <div className="pt-3">
             <BoLocDoan muc={[{ key: '', nhan: t('Tất cả') }, ...nhom.map((x) => ({ key: x.key, nhan: dich(x.nhan) }))]} value={loc} onChange={setLoc}
-              ariaLabel={t('Lọc lịch sử thay đổi')} />
+              ariaLabel={t('Lọc lịch sử')} />
           </div>
         )}
         {error ? <div className="pt-3"><ErrorState message={error.message} hint={error.hint} onRetry={reload} /></div>

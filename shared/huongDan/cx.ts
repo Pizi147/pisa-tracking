@@ -37,7 +37,7 @@ export const HD_CX: HuongDan = {
     {
       id: 'cx-sua-tt', ten: 'Sửa thông tin, Target, Tạm dừng', khi: 'khi có thay đổi',
       buoc: ['Một em: hồ sơ › <b>Sửa thông tin</b>; đổi Target ghi <b>Lý do đổi Target</b>.',
-        'Cả lớp: hồ sơ lớp › tab <b>Học viên</b> › <b>Sửa thông tin</b>.', 'Nghỉ / dừng: <b>Tạm dừng / Thôi học</b>; xem lại: <b>Lịch sử thay đổi</b>.'],
+        'Cả lớp: hồ sơ lớp › tab <b>Học viên</b> › <b>Sửa thông tin</b>.', 'Nghỉ / dừng: <b>Tạm dừng / Thôi học</b>; xem lại: <b>Lịch sử</b>.'],
     },
   ],
   man: [

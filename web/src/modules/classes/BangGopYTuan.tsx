@@ -44,7 +44,7 @@ export function BangGopYTuan({ classId, maLop, laFt, tuan, onTuan }: {
   /** Ô còn chữ chưa lưu (đang gõ / đang lưu / lỗi), khoá `banNhap` — hỏi lại khi đổi tuần hoặc rời trang. */
   const chuaLuu = useRef(new Set<string>());
   const [mo, setMo] = useState<Set<number>>(new Set());
-  const [lichSu, setLichSu] = useState(false);   // OV-15g: Lịch sử thay đổi góp ý của lớp (vùng phụ, cuối thanh tuần)
+  const [lichSu, setLichSu] = useState(false);   // OV-15g: Lịch sử góp ý của lớp (vùng phụ, cuối thanh tuần)
   useEffect(() => {
     const chan = (e: BeforeUnloadEvent) => { if (chuaLuu.current.size) e.preventDefault(); };
     window.addEventListener('beforeunload', chan);
@@ -127,7 +127,7 @@ export function BangGopYTuan({ classId, maLop, laFt, tuan, onTuan }: {
       {dem && <span className="text-[13px] text-slate-400">
         {soCo ? <>{t('Có góp ý:')} <b className="font-semibold tabular-nums text-slate-200">{t('{a}/{b} em', { a: soCo, b: rows.length })}</b></> : t('Chưa có góp ý {tuan}', { tuan: xem.code })}
       </span>}
-      <button type="button" className="btn btn-ghost btn-sm min-h-[44px] sm:ml-auto sm:min-h-0" onClick={() => setLichSu(true)}>{t('Lịch sử thay đổi')}</button>
+      <button type="button" className="btn btn-ghost btn-sm min-h-[44px] sm:ml-auto sm:min-h-0" onClick={() => setLichSu(true)}>{t('Lịch sử')}</button>
       {lichSu && <LichSuThayDoi loai="gop-y" id={classId} dong2={[t('Góp ý hàng tuần'), maLop]} onClose={() => setLichSu(false)} />}
     </div>
   );

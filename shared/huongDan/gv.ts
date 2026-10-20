@@ -61,7 +61,7 @@ export const HD_GV: HuongDan = {
       muc: [
         { id: 'lop-hoc-vien', ten: 'Học viên của lớp', buoc: ['Bảng em của lớp; <b>⋯</b> ở dòng em: + Ghi vi phạm, + Case, Nhập điểm.', 'Cuối trang: <b>Điểm Mock Test của lớp</b> (lớp thường: <b>Điểm Test của lớp</b>).'] },
         { id: 'lop-gop-y', ten: 'Góp ý hàng tuần', buoc: ['Tab <b>Học viên</b> › Cách xem <b>Góp ý hàng tuần</b>: hàng = em, cột = kỹ năng, chọn tuần ‹ ›.', 'Bạn ghi / sửa ô ở kỹ năng mình dạy.'] },
-        { id: 'lop-lich-su', ten: 'Xem lịch sử thay đổi', buoc: ['Hồ sơ lớp › <b>⋯ › Lịch sử thay đổi</b>: thông tin lớp, tiến độ, phân công. Góp ý hàng tuần, hồ sơ MT: nút <b>Lịch sử thay đổi</b>.', 'Mỗi lần lưu một mục: ai · lúc · nguồn · lý do · trước → sau. Lô / Excel: một mục, bấm <b>Xem</b> mở từng em.'] },
+        { id: 'lop-lich-su', ten: 'Xem lịch sử', buoc: ['Hồ sơ lớp › <b>⋯ › Lịch sử</b>: thông tin lớp, tiến độ, phân công. Góp ý hàng tuần, hồ sơ MT: nút <b>Lịch sử</b>.', 'Mỗi lần lưu một mục: ai · lúc · nguồn · lý do · trước → sau. Lô / Excel: một mục, bấm <b>Xem</b> mở từng em.'] },
       ],
     },
     {

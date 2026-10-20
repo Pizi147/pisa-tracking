@@ -19,10 +19,10 @@ export const MAN_HO_SO_TVV: ManHd[] = [
   {
     id: 'ho-so-hv', ten: 'Hồ sơ học viên', duong: ['/hoc-vien/'],
     muc: [
-      { id: 'tvv-hv-nut', ten: 'Nút trên đầu hồ sơ', buoc: ['<b>Sửa thông tin</b> · <b>Tạm dừng / Thôi học</b> · <b>Kết quả thi thật</b> (FT) · <b>Lịch sử thay đổi</b>.', 'Em đang Tạm dừng: <b>Quay lại học</b> ở dải vàng.'] },
+      { id: 'tvv-hv-nut', ten: 'Nút trên đầu hồ sơ', buoc: ['<b>Sửa thông tin</b> · <b>Tạm dừng / Thôi học</b> · <b>Kết quả thi thật</b> (FT) · <b>Lịch sử</b>.', 'Em đang Tạm dừng: <b>Quay lại học</b> ở dải vàng.'] },
       { id: 'tvv-hv-sua', ten: 'Sửa thông tin', buoc: ['Khối <b>Học viên</b> · <b>Liên hệ</b> · <b>Lộ trình đang học</b> (Dự kiến thi, Target).', 'Đổi Target: ghi <b>Lý do đổi Target</b>.'] },
       { id: 'tvv-hv-tab', ten: 'Ba tab', buoc: ['<b>Học thuật</b>: điểm, Case, PA — chỉ xem.', '<b>Ý thức & Phối hợp</b>: vi phạm và Phối hợp SOS GVCN làm với em, gia đình.', '<b>Hành trình</b>: mọi lượt Test trên một lưới.'] },
-      { id: 'tvv-hv-lich-su', ten: 'Lịch sử thay đổi', buoc: ['<b>Lịch sử thay đổi</b>: ai sửa gì, lúc nào.', 'Lọc <b>Thông tin · Target / lộ trình · Trạng thái</b>.'] },
+      { id: 'tvv-hv-lich-su', ten: 'Lịch sử', buoc: ['<b>Lịch sử</b>: ai sửa gì, lúc nào.', 'Lọc <b>Thông tin · Target / lộ trình · Trạng thái</b>.'] },
     ],
   },
   { id: 'ho-so-ca-nhan', ten: 'Hồ sơ cá nhân', duong: ['/ho-so-ca-nhan'], muc: [mucGv('ho-so-ca-nhan', 'hs-sua')] },
@@ -61,7 +61,7 @@ export const HD_TVV: HuongDan = {
     {
       id: 'tvv-sua-tt', ten: 'Sửa thông tin + Target', khi: 'khi có thay đổi',
       buoc: ['Một em: hồ sơ › <b>Sửa thông tin</b> (liên hệ, Dự kiến thi, Target); đổi Target ghi lý do.',
-        'Cả lớp: hồ sơ lớp › tab <b>Học viên</b> › <b>Sửa thông tin</b>.', 'Xem ai đã sửa gì: hồ sơ em › <b>Lịch sử thay đổi</b>.'],
+        'Cả lớp: hồ sơ lớp › tab <b>Học viên</b> › <b>Sửa thông tin</b>.', 'Xem ai đã sửa gì: hồ sơ em › <b>Lịch sử</b>.'],
     },
     {
       id: 'tvv-tam-dung', ten: 'Tạm dừng / Thôi học', khi: 'khi gia đình báo',

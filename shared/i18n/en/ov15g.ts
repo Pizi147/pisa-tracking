@@ -1,10 +1,9 @@
-/** OV-15g — Lịch sử thay đổi (C22): panel chung, lối vào, tên trường / nguồn máy chủ gửi, Hướng dẫn. Khoá = chữ Việt trên web. */
+/** OV-15g — Lịch sử (C22): panel chung, lối vào, tên trường / nguồn máy chủ gửi, Hướng dẫn. Khoá = chữ Việt trên web. */
 import type { Dich } from '../en.ts';
 
 export const EN_OV15G = {
-  'Lịch sử thay đổi': 'Change history',
-  'Xem lịch sử thay đổi': 'View change history',
-  'Lọc lịch sử thay đổi': 'Filter change history',
+  'Xem lịch sử': 'View history',
+  'Lọc lịch sử': 'Filter history',
   'Chưa có thay đổi nào': 'No changes yet',
   'Lịch sử bắt đầu ghi từ {ngay}': (b) => `History recorded from ${b.ngay}`,
   'Nguồn': 'Source',
@@ -28,10 +27,10 @@ export const EN_OV15G = {
   'Tháng thi': 'Exam month',
   'Người dùng đã xoá': 'Deleted user',
   'Học viên đã xoá': 'Deleted student',
-  '<b>⋯ › Lịch sử thay đổi</b> ở hồ sơ em, hồ sơ lớp; nút <b>Lịch sử thay đổi</b> ở hồ sơ MT, Kết quả thi thật, Góp ý hàng tuần, kết quả Thêm học viên.':
-    '<b>⋯ › Change history</b> on the student and class profiles; a <b>Change history</b> button on the MT profile, Real exam result, Weekly feedback and the Add students result.',
+  '<b>⋯ › Lịch sử</b> ở hồ sơ em, hồ sơ lớp; nút <b>Lịch sử</b> ở hồ sơ MT, Kết quả thi thật, Góp ý hàng tuần, kết quả Thêm học viên.':
+    '<b>⋯ › History</b> on the student and class profiles; a <b>History</b> button on the MT profile, Real exam result, Weekly feedback and the Add students result.',
   'Mỗi lần lưu một mục: ai · lúc · nguồn · lý do · trước → sau. Lô / Excel: một mục, bấm <b>Xem</b> mở từng em.':
     'One entry per save: who · when · source · reason · before → after. Batch / Excel: one entry, tap <b>View</b> to open each student.',
-  'Hồ sơ lớp › <b>⋯ › Lịch sử thay đổi</b>: thông tin lớp, tiến độ, phân công. Góp ý hàng tuần, hồ sơ MT: nút <b>Lịch sử thay đổi</b>.':
-    'Class profile › <b>⋯ › Change history</b>: class info, schedule, assignment. Weekly feedback, MT profile: the <b>Change history</b> button.',
+  'Hồ sơ lớp › <b>⋯ › Lịch sử</b>: thông tin lớp, tiến độ, phân công. Góp ý hàng tuần, hồ sơ MT: nút <b>Lịch sử</b>.':
+    'Class profile › <b>⋯ › History</b>: class info, schedule, assignment. Weekly feedback, MT profile: the <b>History</b> button.',
 } satisfies Record<string, Dich>;
