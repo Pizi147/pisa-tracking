@@ -373,7 +373,8 @@ export async function runPrOv7aTests(t: YThucTestKit) {
   const { dinhNghiaCua } = await import('../duyet/loaiYeuCau.ts');
   t.check('OV7a-5d · loại sửa / rút được: một danh sách cho máy chủ và giao diện, mỗi loại có khiSua + khiRut', () => {
     const ds: string[] = d.LOAI_NGUOI_XIN_SUA;
-    assert(ds.length === 4 && ['sua_thong_tin', 'de_xuat_chuyen_lop', 'khong_theo_doi', 'y_thuc'].every((x) => ds.includes(x)), String(ds));
+    /* LUAT-5: + thẻ Thu hồi lần xử lý (GVCN sửa lý do / rút khi QL chưa quyết). */
+    assert(ds.length === 5 && ['sua_thong_tin', 'de_xuat_chuyen_lop', 'khong_theo_doi', 'y_thuc', 'thu_hoi_y_thuc'].every((x) => ds.includes(x)), String(ds));
     assert(ds.every((x) => dinhNghiaCua(x as any)?.khiSua && dinhNghiaCua(x as any)?.khiRut), 'thiếu khiSua / khiRut');
   });
 
