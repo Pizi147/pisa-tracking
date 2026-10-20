@@ -8,6 +8,8 @@
  *
  * Bậc kế cần QL (WL 3) hoặc hết thang → phải đi đường Đề xuất (thẻ `y_thuc`, `deXuat*` ở cuối file). Bậc không lùi (V4-12): bậc đọc từ
  * `kind` của lần xử lý, xoá vi phạm không xoá lần xử lý. Trạng thái mọi vi phạm đọc qua `trangThaiYThuc()` (một cửa).
+ * LUAT-5 (luật 5, 21/10): lần xử lý đã lưu KHÔNG xoá — "Thu hồi…" kèm lý do (GVCN gửi QL duyệt, QL làm thẳng) → `thu_hoi` giữ dòng; xử lý không
+ * tăng bậc = Đề xuất với bậc ≤ bậc hiện tại. Không Hoàn tác sau lưu (02 4.7 B15): bấm nhầm cũng gửi Thu hồi.
  */
 import { db, tx } from '../db.ts';
 import {
@@ -16,7 +18,7 @@ import {
   type MeasureKind, type TheYeuCauDto, type ViolationCategory,
 } from '../../../shared/domain/index.ts';
 import { can, require_, type Principal } from '../permissions.ts';
-import { badRequest, conflict, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
+import { badRequest, chuTuDo, conflict, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
 import { demoToday } from '../demoConfig.ts';
 import { notify, writeAudit } from '../platform/audit.ts';
 import { laNguoiHopLe } from '../platform/timNguoi.ts';
@@ -348,14 +350,16 @@ export type XuLyView = {
   /** OV-7a: điền sẵn ô Người thực hiện khi Sửa — tài khoản (`nguoiId`) hoặc tên ngoài (`nguoiNgoai`). */
   nguoiId: number | null; nguoiNgoai: string | null;
   viPham: ViolationView[]; soTep: number; canManage: boolean;
-  /** PR-LUI-a1: Sửa vi phạm / Xoá lần xử lý (quyền Q5) và tên lần xử lý SAU (chặn Xoá khi còn). */
-  coTheSua: boolean; coTheXoa: boolean; lanSau: string | null;
-  /** Bậc của em SAU KHI xoá lần này (0 = chưa có bậc) — chỉ khi `coTheXoa`; hộp hỏi nói "bậc về Report 1". */
+  /** PR-LUI-a1: Sửa vi phạm (quyền Q5) · LUAT-5: Thu hồi… (lần mới nhất, chưa có thẻ thu hồi chờ) và tên lần xử lý SAU (chặn Thu hồi khi còn). */
+  coTheSua: boolean; coTheThuHoi: boolean; lanSau: string | null;
+  /** Bậc của em SAU KHI thu hồi lần này (0 = chưa có bậc) — chỉ khi không còn lần sau; hộp hỏi nói "bậc về Report 1". */
   bacVe: number | null;
   /** Vi phạm của em CHƯA nằm trong lần xử lý nào — danh sách thêm của `Sửa vi phạm` (rỗng khi không sửa được). */
   chuaXuLy: ViolationView[];
   /** Thẻ duyệt mới nhất (đề xuất cần QL) — lý do từ chối nằm ở đây (Q13). */
   the: TheYeuCauDto | null;
+  /** LUAT-5: thẻ thu hồi mới nhất — chờ / từ chối (lý do) / đã duyệt (ai · lúc · lý do). */
+  thuHoi: TheYeuCauDto | null;
 };
 
 export function xemXuLy(p: Principal, id: number): XuLyView {
@@ -367,19 +371,22 @@ export function xemXuLy(p: Principal, id: number): XuLyView {
   if (!m) throw notFound('Không tìm thấy lần xử lý');
   requireViewStudent(p, m.student_id);
   const vIds = (db().prepare('SELECT violation_id FROM measure_violations WHERE measure_id = ? ORDER BY violation_id').all(id) as any[]).map((r) => r.violation_id);
-  const the = theCuaDoiTuong('discipline_measure', [id])[0] ?? null;
+  const cacThe = theCuaDoiTuong('discipline_measure', [id]);
+  const the = cacThe.find((c) => c.loai === 'y_thuc') ?? null;
+  const thuHoi = cacThe.find((c) => c.loai === 'thu_hoi_y_thuc') ?? null;
   const coTheSua = quyenSuaXuLy(p, m);
   const em = coTheSua ? emCua(m.student_id) : null;
   const sau = em ? lanSauCua(m, em) : null;
-  const bacVe = em && !sau ? bacHienTai(em.xuLy.filter((x) => x.id !== id && x.status === 'done' && (!em.chuoi.length || (x.cycleId != null && em.chuoi.includes(x.cycleId)))), em.khai?.bac ?? null) : null;
+  const bacVe = em && !sau ? bacSauThuHoi(em, id) : null;
   return {
     id, studentId: m.student_id, ten: m.ten, kind: m.kind, nhan: nhanLoaiXuLy(m.kind, m.custom_name), customName: m.custom_name ?? null,
     status: m.status, statusLabel: (XU_LY_STATUS_LABEL as Record<string, string>)[m.status] ?? m.status, bac: bacCuaLoai(m.kind),
     note: m.note ?? null, performedOn: m.performed_on ?? null, nguoi: m.status === 'done' ? m.nguoi ?? null : null,
     nguoiId: m.performed_by ?? null, nguoiNgoai: m.performer_name ?? null,
     quyetLuc: m.quyet_luc ?? null, createdAt: m.created_at,
-    viPham: violationsByIds(vIds), soTep: m.so_tep, canManage: canManageDiscipline(p, m.student_id), the,
-    coTheSua, coTheXoa: coTheSua && !sau, lanSau: sau ? nhanLoaiXuLy(sau.kind, sau.custom_name) : null, bacVe,
+    viPham: violationsByIds(vIds), soTep: m.so_tep, canManage: canManageDiscipline(p, m.student_id) && m.status !== 'thu_hoi', the,
+    coTheSua, coTheThuHoi: coTheSua && !sau && THU_HOI_DUOC.has(m.status) && thuHoi?.trangThai !== 'cho',
+    lanSau: sau ? nhanLoaiXuLy(sau.kind, sau.custom_name) : null, bacVe, thuHoi,
     chuaXuLy: em ? violationsByIds(em.dsViPham.map((v) => v.id).filter((vid) => {
       const t = em.viPham.get(vid);
       return t && t.t !== 'da_xu_ly' && t.t !== 'cho_duyet' && !vIds.includes(vid);
@@ -488,15 +495,16 @@ export function laGvcnDangHoc(p: Principal, studentId: number, em: EmYThuc = emC
 
 /**
  * Bước 1: tạo NHÁP (`nhap`, nội bộ, không vào trạng thái) để có chủ cho tệp/liên kết bằng chứng. Loại: WL 3 (bất kỳ lúc nào, không đẩy bậc) ·
- * Meeting CX/GĐCN · Đình chỉ học tạm thời · Khác (tên ≥ 3 ký tự — T30). Mô tả ≥ 10 ký tự.
+ * Meeting CX/GĐCN · Đình chỉ học tạm thời · Khác (tên ≥ 3 ký tự — T30) · LUAT-5 "không tăng bậc": bậc thang ≤ bậc hiện tại (lặp hoặc nhẹ hơn —
+ * bậc em không đổi vì `bacHienTai` = max). Mô tả (lý do) ≥ 10 ký tự.
  */
 export function deXuat(p: Principal, studentId: number, v: { kind?: unknown; customName?: unknown; violationIds?: unknown; note?: unknown }) {
   const hv = hocVien(studentId);
   requireManageDiscipline(p, studentId, MANAGE_MESSAGE);
   const kind = String(v.kind ?? '') as MeasureKind;
   const em = emCua(studentId);
-  if (!(NGOAI_THANG as readonly string[]).includes(kind)) {
-    throw badRequest('Chọn loại cần QL duyệt: WL 3 · Meeting CX/GĐCN · Đình chỉ học tạm thời · Khác.');
+  if (!(NGOAI_THANG as readonly string[]).includes(kind) && !khongTangBac(kind, em.bac)) {
+    throw badRequest('Chọn loại cần QL duyệt: WL 3 · Meeting CX/GĐCN · Đình chỉ học tạm thời · Khác · hoặc không tăng bậc (bậc hiện tại hoặc thấp hơn).');
   }
   let customName: string | null = null;
   if (kind === 'other') {
@@ -521,8 +529,13 @@ export function deXuat(p: Principal, studentId: number, v: { kind?: unknown; cus
   });
 }
 
+/** LUAT-5: loại thang ở bậc hiện tại hoặc thấp hơn = "xử lý không tăng bậc" (em chưa có bậc thì không có). */
+const khongTangBac = (kind: string, bac: number): boolean => (THANG as readonly string[]).includes(kind) && bacCuaLoai(kind) <= bac;
+/** Bằng chứng tệp bắt buộc chỉ với loại ngoài thang (V4-10); không tăng bậc chỉ cần lý do (luật 5 — tệp tuỳ chọn). */
+const canTep = (kind: string): boolean => (NGOAI_THANG as readonly string[]).includes(kind);
+
 /**
- * Bước 2: GỬI — cần ≥ 1 tệp/liên kết (V4-10). TRONG MỘT giao dịch: nháp → `cho_duyet` + thẻ `y_thuc` (bằng chứng = id tệp,
+ * Bước 2: GỬI — cần ≥ 1 tệp/liên kết (V4-10; không tăng bậc: tuỳ chọn). TRONG MỘT giao dịch: nháp → `cho_duyet` + thẻ `y_thuc` (bằng chứng = id tệp,
  * `duLieu` = loại + bậc kế lúc gửi để thẻ nói "bậc kế tiếp đang là …" — M-11). Hạn duyệt 5 ngày (mặc định của loại).
  */
 export function guiDeXuat(p: Principal, measureId: number) {
@@ -532,7 +545,7 @@ export function guiDeXuat(p: Principal, measureId: number) {
   requireManageDiscipline(p, m.student_id, MANAGE_MESSAGE);
   if (m.status !== 'nhap') throw badRequest('Đề xuất này đã gửi rồi.');
   const tep = (db().prepare(`SELECT id FROM attachments WHERE owner_type = 'discipline_measure' AND owner_id = ? ORDER BY id`).all(measureId) as any[]).map((r) => r.id as number);
-  if (!tep.length) throw badRequest('Cần đính kèm tệp hoặc liên kết làm bằng chứng trước khi gửi QL.');
+  if (!tep.length && canTep(m.kind)) throw badRequest('Cần đính kèm tệp hoặc liên kết làm bằng chứng trước khi gửi QL.');
   tx(() => {
     const em = emCua(m.student_id);
     const vIds = (db().prepare('SELECT violation_id FROM measure_violations WHERE measure_id = ?').all(measureId) as any[]).map((r) => r.violation_id);
@@ -540,11 +553,11 @@ export function guiDeXuat(p: Principal, measureId: number) {
     const doi = db().prepare(`UPDATE discipline_measures SET status = 'cho_duyet', updated_at = ? WHERE id = ? AND status = 'nhap'`).run(nowIso(), measureId).changes;
     if (!doi) throw conflict('Đề xuất này vừa được gửi — mở lại.');
     ghiPhanHoi(vIds);
-    const ngoaiThang = (NGOAI_THANG as readonly string[]).includes(m.kind);
+    if (!canTep(m.kind) && !khongTangBac(m.kind, em.bac)) throw badRequest('Bậc đã đổi — mở lại panel.');
     taoYeuCau(db(), {
       loai: 'y_thuc', doiTuongLoai: 'discipline_measure', doiTuongId: measureId, hocVienId: m.student_id, lopId: em.lopId,
       nguoiXin: p.userId, lyDo: m.note, bangChung: tep,
-      duLieu: { kind: m.kind, customName: m.custom_name ?? null, bacKe: ngoaiThang ? nhanLoaiXuLy(em.keTiep.kind) : null, soViPham: vIds.length, soTep: tep.length },
+      duLieu: { kind: m.kind, customName: m.custom_name ?? null, bacKe: nhanLoaiXuLy(em.keTiep.kind), soViPham: vIds.length, soTep: tep.length },
     });
     writeAudit({ actorUserId: p.userId, action: 'discipline.propose', entityType: 'discipline_measure', entityId: measureId,
       entityLabel: `${hv.student_code} · gửi QL ${nhanLoaiXuLy(m.kind, m.custom_name)}`, after: { bangChung: tep } });
@@ -556,7 +569,7 @@ export function guiDeXuat(p: Principal, measureId: number) {
 
 /** OV-7a (chủ SP 13/10, thay Q5 06/10): ai lưu được thì sửa được — GVCN lớp em (cả lần đã thực hiện) + QL / Quản trị. Lần nháp đi `xoaNhap`. */
 function quyenSuaXuLy(p: Principal, m: any): boolean {
-  if (m.status === 'nhap') return false;
+  if (m.status === 'nhap' || m.status === 'thu_hoi') return false;
   return can(p, PERMISSIONS.REQUEST_APPROVE, { studentId: m.student_id }) || canManageDiscipline(p, m.student_id);
 }
 
@@ -579,6 +592,7 @@ function lanSauCua(m: any, em: EmYThuc): any | null {
 
 function requireSuaXuLy(p: Principal, m: any) {
   if (m.status === 'nhap') throw badRequest('Đây là đề xuất chưa gửi — đóng panel để xoá nháp.');
+  if (m.status === 'thu_hoi') throw badRequest('Lần xử lý đã thu hồi — chỉ xem.');
   if (!quyenSuaXuLy(p, m)) throw forbidden(MANAGE_MESSAGE);
 }
 
@@ -615,26 +629,111 @@ export function suaViPhamXuLy(p: Principal, measureId: number, v: { violationIds
   return xemXuLy(p, measureId);
 }
 
+// ---------------------------------------------------------------- Thu hồi lần xử lý đã lưu (LUAT-5 — thay Xoá lần xử lý của PR-LUI-a1)
+
+/** Thu hồi được: đã thực hiện, hoặc QL đã duyệt chờ thực hiện. Bị từ chối không tính bậc (không cần thu hồi); đề xuất còn chờ thì Rút. */
+const THU_HOI_DUOC: ReadonlySet<string> = new Set(['done', 'da_duyet']);
+const theThuHoi = (measureId: number) => ({ loai: 'thu_hoi_y_thuc' as const, doiTuongLoai: 'discipline_measure', doiTuongId: measureId });
+const viPhamCua = (measureId: number): number[] =>
+  (db().prepare('SELECT violation_id FROM measure_violations WHERE measure_id = ? ORDER BY violation_id').all(measureId) as any[]).map((r) => r.violation_id as number);
+
+/** Bậc của em nếu bỏ lần `id` (0 = chưa có bậc) — câu "bậc về …" của hộp hỏi và thẻ. */
+function bacSauThuHoi(em: EmYThuc, id: number): number {
+  return bacHienTai(em.xuLy.filter((x) => x.id !== id && x.status === 'done' && (!em.chuoi.length || (x.cycleId != null && em.chuoi.includes(x.cycleId)))), em.khai?.bac ?? null);
+}
+
+/** Chỉ lần MỚI NHẤT của chuỗi (giữ thứ tự thang) — kiểm lúc gửi, lúc QL duyệt và lúc huỷ quyết định (có thể đã có lần mới). */
+function chanLanSau(m: any, viec: (ten: string) => string): void {
+  const sau = lanSauCua(m, emCua(m.student_id));
+  if (sau) {
+    const ten = nhanLoaiXuLy(sau.kind, sau.custom_name);
+    throw badRequest(`Đã có ${ten} sau lần này — ${viec(ten)}.`);
+  }
+}
+
+/** Đường DELETE cũ (PR-LUI-a1). Luật 5: lần xử lý đã lưu không xoá — GVCN 403 (gửi QL thu hồi), QL 400 (Thu hồi kèm lý do). Không xoá vật lý. */
+export function xoaXuLy(p: Principal, measureId: number): never {
+  const m = loadXuLy(measureId);
+  requireSuaXuLy(p, m);
+  if (!can(p, PERMISSIONS.REQUEST_APPROVE, { studentId: m.student_id })) throw forbidden('Lần xử lý đã lưu không xoá được — bấm "Thu hồi…" để gửi QL duyệt.');
+  throw badRequest('Lần xử lý đã lưu không xoá được — bấm "Thu hồi…" và ghi lý do.');
+}
+
 /**
- * XOÁ lần xử lý MỚI NHẤT của chuỗi (tạo nhầm). Bậc không lưu sẵn — `bacHienTai` đọc từ các lần `done` nên tự tính lại. Báo phụ huynh đã gửi giữ nguyên
- * (`phoiHop.ts` không trỏ lần xử lý). Thẻ `y_thuc` còn chờ tự đóng; tệp xoá theo luật tệp dùng chung; nhật ký giữ đủ nội dung.
+ * THU HỒI (luật 5): lý do bắt buộc · lần mới nhất của chuỗi · đã thực hiện hoặc QL đã duyệt. GVCN → thẻ `thu_hoi_y_thuc` (lần xử lý VẪN tính tới khi QL
+ * duyệt; đã có thẻ chờ → 400). QL trong phạm vi em (C26) → áp thẳng; thẻ đóng "tự duyệt" (Quản trị được báo — Q-D) làm lịch sử ai · lúc · lý do.
  */
-export function xoaXuLy(p: Principal, measureId: number): { ok: true; bac: number } {
+export function thuHoiXuLy(p: Principal, measureId: number, v: { lyDo?: unknown }): XuLyView {
   const m = loadXuLy(measureId);
   const hv = hocVien(m.student_id);
   requireSuaXuLy(p, m);
-  const khoaTep: string[] = [];
-  const bac = tx(() => {
-    const sau = lanSauCua(m, emCua(m.student_id));
-    if (sau) {
-      const ten = nhanLoaiXuLy(sau.kind, sau.custom_name);
-      throw badRequest(`Đã có ${ten} sau lần này — xoá ${ten} trước.`);
+  const lyDo = chuTuDo(v.lyDo, 'Lý do', 2000);
+  if (!lyDo) throw badRequest('Ghi lý do thu hồi.');
+  if (!THU_HOI_DUOC.has(m.status)) {
+    throw badRequest(m.status === 'cho_duyet' ? 'Đề xuất đang chờ QL — dùng Rút đề xuất.' : 'Lần xử lý bị QL từ chối không tính bậc — không cần thu hồi.');
+  }
+  const ql = can(p, PERMISSIONS.REQUEST_APPROVE, { studentId: m.student_id });
+  tx(() => {
+    chanLanSau(m, (ten) => `thu hồi ${ten} trước`);
+    const em = emCua(m.student_id);
+    const id = taoYeuCau(db(), {
+      ...theThuHoi(measureId), hocVienId: m.student_id, lopId: em.lopId, nguoiXin: p.userId, lyDo, khongBao: ql,
+      duLieu: { kind: m.kind, customName: m.custom_name ?? null, bacVe: bacSauThuHoi(em, measureId), soViPham: viPhamCua(measureId).length },
+    });
+    if (id === null) throw badRequest('Lần xử lý này đang chờ QL duyệt thu hồi.');
+    if (ql) {
+      apDungThuHoi(p, m, hv, lyDo);
+      chotYeuCau(db(), theThuHoi(measureId), 'duyet', { nguoiDuyet: p.userId });
+    } else {
+      writeAudit({ actorUserId: p.userId, action: 'discipline.revoke_request', entityType: 'discipline_measure', entityId: measureId,
+        entityLabel: `${hv.student_code} · xin thu hồi ${nhanLoaiXuLy(m.kind, m.custom_name)}`, after: { lyDo } });
     }
-    xoaXuLyTrongTx(p, m, hv, khoaTep, 'Lần xử lý đã xoá');
-    return emCua(m.student_id).bac;
   });
-  xoaTepSauGiaoDich(khoaTep);
-  return { ok: true, bac };
+  return xemXuLy(p, measureId);
+}
+
+/** Áp thu hồi (TRONG tx): `thu_hoi` giữ dòng + liên kết + tệp; vi phạm về chưa xử lý (lịch sử vi phạm), hạn chốt lại; nhật ký đủ nội dung. */
+function apDungThuHoi(p: Principal, m: any, hv: { student_code: string }, lyDo: string): void {
+  const doi = db().prepare(`UPDATE discipline_measures SET status = 'thu_hoi', updated_at = ? WHERE id = ? AND status IN ('done', 'da_duyet')`)
+    .run(nowIso(), m.id).changes;
+  if (!doi) throw conflict('Lần xử lý này vừa được cập nhật — mở lại.');
+  const vIds = viPhamCua(m.id);
+  for (const vid of vIds) noteMeasureChange(vid, m.id, null, p.userId);
+  chotHanXuLy([m.student_id]);
+  const daBaoPh = !!db().prepare("SELECT 1 FROM sos_coordination_actions WHERE student_id = ? AND kind = 'bao_ph_tvv' AND status = 'done' LIMIT 1").get(m.student_id);
+  writeAudit({ actorUserId: p.userId, action: 'discipline.revoke', entityType: 'discipline_measure', entityId: m.id,
+    entityLabel: `${hv.student_code} · thu hồi ${nhanLoaiXuLy(m.kind, m.custom_name)}`,
+    before: { status: m.status, kind: m.kind, violations: vIds, daBaoPhuHuynh: daBaoPh }, after: { status: 'thu_hoi', lyDo } });
+}
+
+/** Hộp Chờ duyệt: QL Duyệt thẻ thu hồi (TRONG tx của hộp) — kiểm lại như lúc gửi rồi áp. */
+export function duyetThuHoiYThuc(p: Principal, measureId: number, lyDo: string): void {
+  const m = loadXuLy(measureId);
+  if (!THU_HOI_DUOC.has(m.status)) throw badRequest('Lần xử lý này không còn để thu hồi. Danh sách đã được làm mới.');
+  chanLanSau(m, (ten) => `thu hồi ${ten} trước`);
+  apDungThuHoi(p, m, hocVien(m.student_id), lyDo);
+}
+
+/**
+ * QL Huỷ quyết định duyệt thu hồi bấm nhầm (trong ngày — PR-LUI-a2, TRONG tx của hộp): lần xử lý về như trước — đã thực hiện (có ngày thực hiện) hoặc
+ * đã duyệt chờ thực hiện. Chặn khi đã có lần sau, hoặc vi phạm của lần này đã vào lần xử lý khác (bậc / vi phạm sẽ đếm hai lần).
+ */
+export function huyThuHoiYThuc(p: Principal, measureId: number): void {
+  const m = loadXuLy(measureId);
+  if (m.status !== 'thu_hoi') throw badRequest('Lần xử lý này không còn ở trạng thái Đã thu hồi.');
+  chanLanSau(m, () => 'không huỷ quyết định được');
+  const vIds = viPhamCua(measureId);
+  const dung = vIds.length && db().prepare(
+    `SELECT 1 FROM measure_violations mv JOIN discipline_measures x ON x.id = mv.measure_id
+      WHERE mv.violation_id IN (${vIds.map(() => '?').join(',')}) AND x.id != ? AND x.status IN ('done', 'cho_duyet', 'da_duyet') LIMIT 1`,
+  ).get(...vIds, measureId);
+  if (dung) throw badRequest('Vi phạm của lần này đã nằm trong lần xử lý khác — không huỷ quyết định được.');
+  const ve = m.performed_on ? 'done' : 'da_duyet';
+  db().prepare(`UPDATE discipline_measures SET status = ?, updated_at = ? WHERE id = ? AND status = 'thu_hoi'`).run(ve, nowIso(), measureId);
+  for (const vid of vIds) noteMeasureChange(vid, null, measureId, p.userId);
+  chotHanXuLy([m.student_id]);
+  writeAudit({ actorUserId: p.userId, action: 'discipline.revoke_undo', entityType: 'discipline_measure', entityId: measureId,
+    entityLabel: `${hocVien(m.student_id).student_code} · huỷ thu hồi ${nhanLoaiXuLy(m.kind, m.custom_name)}`, before: { status: 'thu_hoi' }, after: { status: ve } });
 }
 
 /**
@@ -653,7 +752,7 @@ export function suaDeXuatYThuc(measureId: number, note: unknown): { lyDo: string
   if (m.status !== 'cho_duyet') throw badRequest('Đề xuất này không còn chờ QL duyệt.');
   const ghi = moTa(note);
   const tep = (db().prepare(`SELECT id FROM attachments WHERE owner_type = 'discipline_measure' AND owner_id = ? ORDER BY id`).all(measureId) as any[]).map((r) => r.id as number);
-  if (!tep.length) throw badRequest('Cần đính kèm tệp hoặc liên kết làm bằng chứng trước khi gửi QL.');
+  if (!tep.length && canTep(m.kind)) throw badRequest('Cần đính kèm tệp hoặc liên kết làm bằng chứng trước khi gửi QL.');
   db().prepare('UPDATE discipline_measures SET note = ?, updated_at = ? WHERE id = ?').run(ghi, nowIso(), measureId);
   return { lyDo: ghi, bangChung: tep, soTep: tep.length };
 }

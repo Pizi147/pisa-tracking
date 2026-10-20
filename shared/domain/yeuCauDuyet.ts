@@ -18,14 +18,14 @@ export const PHAN_LOAI_LABEL: Record<PhanLoai, string> = {
  * Mỗi PR thêm khoá của mình VÀO CUỐI mảng này (SOS: 'khong_theo_doi'; YT4: 'y_thuc' + 'bao_len_y_thuc'; CT: 'de_xuat_chuyen_lop', 'bao_len_ban_giao',
  * 'bao_len_chua_lenh'; LT2: 'ke_hoach_bo_tro', 'bao_len_mini_test', 'bao_len_cuoi_khoa' — thẻ "Quyết định Cuối khoá" đã bỏ theo Q30-3).
  */
-export const LOAI_YEU_CAU = ['de_xuat_pa', 'xin_y_kien', 'lich_thi', 'sua_thong_tin', 'bao_len_nguyen_nhan', 'khong_theo_doi', 'y_thuc', 'bao_len_y_thuc', 'de_xuat_chuyen_lop', 'bao_len_ban_giao', 'bao_len_chua_lenh', 'ke_hoach_bo_tro', 'bao_len_mini_test', 'bao_len_cuoi_khoa'] as const;
+export const LOAI_YEU_CAU = ['de_xuat_pa', 'xin_y_kien', 'lich_thi', 'sua_thong_tin', 'bao_len_nguyen_nhan', 'khong_theo_doi', 'y_thuc', 'bao_len_y_thuc', 'de_xuat_chuyen_lop', 'bao_len_ban_giao', 'bao_len_chua_lenh', 'ke_hoach_bo_tro', 'bao_len_mini_test', 'bao_len_cuoi_khoa', 'thu_hoi_y_thuc'] as const;
 export type LoaiYeuCau = (typeof LOAI_YEU_CAU)[number];
 
 /**
  * OV-7a (chủ SP 13/10): loại thẻ NGƯỜI GỬI còn Sửa / Rút được khi Quản lý chưa trả lời — máy chủ (`khiSua` / `khiRut` của loại) và giao diện
  * (nút Sửa… / Rút trên thẻ) đọc CÙNG danh sách này. Rút = thẻ `tu_dong` lý do "Người gửi đã rút", không chuông.
  */
-export const LOAI_NGUOI_XIN_SUA: readonly LoaiYeuCau[] = ['sua_thong_tin', 'de_xuat_chuyen_lop', 'khong_theo_doi', 'y_thuc'];
+export const LOAI_NGUOI_XIN_SUA: readonly LoaiYeuCau[] = ['sua_thong_tin', 'de_xuat_chuyen_lop', 'khong_theo_doi', 'y_thuc', 'thu_hoi_y_thuc'];
 export const LY_DO_RUT = t('Người gửi đã rút');
 
 /** `da_tra_loi` chỉ của Xin ý kiến; `tu_dong` = hệ thống tự đóng (đối tượng không còn ý nghĩa). */
@@ -66,6 +66,8 @@ export const LOAI_YC_META: Record<LoaiYeuCau, LoaiYcMeta> = {
   /* PR-LT2b (M-05, T76): Mini Test dưới 70% — QL xử lý case-by-case. Bài Cuối khoá dời quá tuần cuối khoá (K4-23) — QL biết và nhắc. */
   bao_len_mini_test: { phanLoai: 'bao-len', nhan: t('Mini Test chưa đạt'), kieuNut: 'nhac', hanNgay: null, hangLoat: false },
   bao_len_cuoi_khoa: { phanLoai: 'bao-len', nhan: t('Final Test dời quá hạn'), kieuNut: 'nhac', hanNgay: null, hangLoat: false },
+  /* LUAT-5 (luật 5, 21/10): GVCN xin thu hồi một lần xử lý đã lưu — lý do bắt buộc, QL duyệt trong 5 ngày. */
+  thu_hoi_y_thuc: { phanLoai: 'y-thuc', nhan: t('Thu hồi xử lý Ý thức'), kieuNut: 'duyet-tu-choi', hanNgay: HAN_DUYET_NGAY, hangLoat: false },
 };
 
 export function laPhanLoai(x: unknown): x is PhanLoai {

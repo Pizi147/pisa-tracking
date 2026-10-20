@@ -169,29 +169,29 @@ export async function runPrLuiA1Tests(t: YThucTestKit) {
     assertThrows(() => xu.suaViPhamXuLy(P.mbManager, r1.id, { violationIds: [] }), /Còn ít nhất 1 vi phạm/, 'rỗng');
   }));
 
-  await checkAsync('LUIa1-14 · xoaXuLy: chỉ lần mới nhất; dòng, liên kết, tệp biến mất; bậc về Report 1; nhật ký giữ đủ', () => thu(async () => {
+  /* LUAT-5 (luật 5, 21/10): Xoá lần xử lý → Thu hồi kèm lý do (QL làm thẳng ở đây) — dòng, liên kết, tệp GIỮ, trạng thái "Đã thu hồi". */
+  await checkAsync('LUIa1-14 · thu hồi (thay xoá): chỉ lần mới nhất; dòng, liên kết, tệp giữ; bậc về Report 1; nhật ký giữ đủ', () => thu(async () => {
     const sid = moiEm('14'); const [v1, v2] = nVp(sid, 2);
     const r1 = xuLy(gvcn, sid, [v1]); const r2 = xuLy(gvcn, sid, [v2]);
-    assert(r2.bac === 2 && xu.xemXuLy(P.mbManager, r1.id).coTheXoa === false && xu.xemXuLy(P.mbManager, r1.id).lanSau === 'Report 2', 'r1 không xoá được khi còn r2');
+    assert(r2.bac === 2 && xu.xemXuLy(P.mbManager, r1.id).coTheThuHoi === false && xu.xemXuLy(P.mbManager, r1.id).lanSau === 'Report 2', 'r1 không thu hồi được khi còn r2');
     const x2 = xu.xemXuLy(P.mbManager, r2.id);
-    assert(x2.coTheXoa && x2.bacVe === 1 && x2.chuaXuLy.length === 0, `bacVe/chuaXuLy: ${x2.bacVe} ${x2.chuaXuLy.length}`);
-    assertThrows(() => xu.xoaXuLy(P.mbManager, r1.id), /Đã có Report 2 sau lần này — xoá Report 2 trước\./, 'còn lần sau');
+    assert(x2.coTheThuHoi && x2.bacVe === 1 && x2.chuaXuLy.length === 0, `bacVe/chuaXuLy: ${x2.bacVe} ${x2.chuaXuLy.length}`);
+    assertThrows(() => xu.thuHoiXuLy(P.mbManager, r1.id, { lyDo: 'Ghi nhầm' }), /Đã có Report 2 sau lần này — thu hồi Report 2 trước\./, 'còn lần sau');
     const tep = await att.addFile(P.mbManager, { ownerType: 'discipline_measure', ownerId: r2.id, fileName: 'bien-ban.pdf', data: Buffer.from('bb') });
     const url = hang('SELECT url FROM attachments WHERE id = ?', tep.id)[0].url as string;
     try {
-      const kq = xu.xoaXuLy(P.mbManager, r2.id);
-      assert(kq.ok && kq.bac === 1, JSON.stringify(kq));
-      assert(hang('SELECT id FROM discipline_measures WHERE id = ?', r2.id).length === 0 && lienKet(r2.id).length === 0, 'dòng + liên kết');
-      assert(hang('SELECT id FROM attachments WHERE owner_type = ? AND owner_id = ?', 'discipline_measure', r2.id).length === 0, 'tệp');
-      assert(await kho().doc(url) === null, 'kho đã xoá tệp');
+      const kq = xu.thuHoiXuLy(P.mbManager, r2.id, { lyDo: 'Ghi nhầm' });
+      assert(kq.status === 'thu_hoi', JSON.stringify(kq.status));
+      assert(hang('SELECT id FROM discipline_measures WHERE id = ?', r2.id).length === 1 && lienKet(r2.id).length === 1, 'dòng + liên kết giữ');
+      assert(hang('SELECT id FROM attachments WHERE owner_type = ? AND owner_id = ?', 'discipline_measure', r2.id).length === 1, 'tệp giữ');
       const hv = xu.yThucHocVien(P.mbManager, sid);
       assert(hv.bac === 1 && hv.keTiep.kind === 'report_2', `bậc ${hv.bac} kế ${hv.keTiep.kind}`);
-      const nk = hang("SELECT before_json FROM audit_logs WHERE action = 'discipline.delete' AND entity_id = ?", r2.id);
+      const nk = hang("SELECT before_json, after_json FROM audit_logs WHERE action = 'discipline.revoke' AND entity_id = ?", r2.id);
       const truoc = JSON.parse(nk[0].before_json);
-      assert(nk.length === 1 && truoc.kind === 'report_2' && truoc.note.includes('gọi điện') && truoc.violations[0] === v2 && truoc.attachments === 1 && truoc.performedOn === TODAY, nk[0]?.before_json);
+      assert(nk.length === 1 && truoc.kind === 'report_2' && truoc.violations[0] === v2 && JSON.parse(nk[0].after_json).lyDo === 'Ghi nhầm', nk[0]?.before_json);
       assert(viol.loadViolation(v2).trangThai !== 'da_xu_ly', 'v2 về chưa xử lý');
-      xu.xoaXuLy(P.mbManager, r1.id);
-      assert(xu.yThucHocVien(P.mbManager, sid).bac === 0, 'xoá hết thì bậc 0');
+      xu.thuHoiXuLy(P.mbManager, r1.id, { lyDo: 'Ghi nhầm' });
+      assert(xu.yThucHocVien(P.mbManager, sid).bac === 0, 'thu hồi hết thì bậc 0');
     } finally { await kho().xoa(url); }
   }));
 
@@ -200,10 +200,10 @@ export async function runPrLuiA1Tests(t: YThucTestKit) {
     const sid = moiEm('15'); const [v1, v2, v3] = nVp(sid, 3);
     const r1 = xuLy(gvcn, sid, [v1]);
     assertThrows(() => xu.suaViPhamXuLy(gvbm, r1.id, { violationIds: [v1, v2] }), /chủ nhiệm/, 'GVBM sửa: câu quyền chung, không phải "chỉ Quản lý"');
-    assertThrows(() => xu.xoaXuLy(gvbm, r1.id), /chủ nhiệm/, 'GVBM xoá');
+    assertThrows(() => xu.thuHoiXuLy(gvbm, r1.id, { lyDo: 'Ghi nhầm' }), /chủ nhiệm/, 'GVBM thu hồi');
     assert(xu.suaViPhamXuLy(gvcn, r1.id, { violationIds: [v1, v2] }).viPham.length === 2, 'OV-7a: GVCN sửa lần đã thực hiện');
     xu.suaViPhamXuLy(gvcn, r1.id, { violationIds: [v1] });
-    assertThrows(() => xu.xoaXuLy(P.cpManager, r1.id), /chủ nhiệm/, 'QL chi nhánh khác: câu quyền chung');
+    assertThrows(() => xu.thuHoiXuLy(P.cpManager, r1.id, { lyDo: 'Ghi nhầm' }), /chủ nhiệm/, 'QL chi nhánh khác: câu quyền chung');
     assert(xu.xemXuLy(gvcn, r1.id).coTheSua === true && xu.xemXuLy(P.mbManager, r1.id).coTheSua === true && xu.xemXuLy(gvbm, r1.id).coTheSua === false, 'cờ coTheSua');
     for (const st of ['cho_duyet', 'da_duyet']) {
       conn.prepare('UPDATE discipline_measures SET status = ? WHERE id = ?').run(st, r1.id);
@@ -211,7 +211,7 @@ export async function runPrLuiA1Tests(t: YThucTestKit) {
       xu.suaViPhamXuLy(gvcn, r1.id, { violationIds: [v1] });
     }
     conn.prepare("UPDATE discipline_measures SET status = 'nhap' WHERE id = ?").run(r1.id);
-    assertThrows(() => xu.xoaXuLy(P.mbManager, r1.id), /chưa gửi/, 'nháp');
+    assertThrows(() => xu.thuHoiXuLy(P.mbManager, r1.id, { lyDo: 'Ghi nhầm' }), /chưa gửi/, 'nháp');
     void v3;
   }));
 
@@ -318,16 +318,16 @@ export async function runPrLuiA1Tests(t: YThucTestKit) {
     const sid = moiEm('19'); const [v1, v2] = nVp(sid, 2);
     const r1 = xuLy(gvcn, sid, [v1]); const r2 = xuLy(gvcn, sid, [v2]);
     conn.prepare("UPDATE discipline_measures SET status = 'tu_choi' WHERE id = ?").run(r2.id);
-    assert(xu.xoaXuLy(P.mbManager, r1.id).ok, 'lần sau bị từ chối không chặn xoá lần trước');
+    assert(xu.thuHoiXuLy(P.mbManager, r1.id, { lyDo: 'Ghi nhầm' }).status === 'thu_hoi', 'lần sau bị từ chối không chặn thu hồi lần trước');
   }));
 
-  await checkAsync('LUIa1-20 · nhật ký Xoá lần xử lý ghi "đã báo PH" khi em có việc Báo phụ huynh đã xong', () => thu(() => {
+  await checkAsync('LUIa1-20 · nhật ký Thu hồi lần xử lý (LUAT-5, thay Xoá) ghi "đã báo PH" khi em có việc Báo phụ huynh đã xong', () => thu(() => {
     const sid = moiEm('20'); const [v1] = nVp(sid, 1);
     const r1 = xuLy(gvcn, sid, [v1]);
     const att0 = Number((conn.prepare('SELECT id FROM assessment_attempts LIMIT 1').get() as any).id);
     conn.prepare("INSERT INTO sos_coordination_actions (attempt_id, student_id, kind, preset, status, created_at) VALUES (?, ?, 'bao_ph_tvv', 1, 'done', ?)").run(att0, sid, new Date().toISOString());
-    xu.xoaXuLy(P.mbManager, r1.id);
-    const nk = hang("SELECT before_json FROM audit_logs WHERE action = 'discipline.delete' AND entity_id = ?", r1.id);
+    xu.thuHoiXuLy(P.mbManager, r1.id, { lyDo: 'Ghi nhầm' });
+    const nk = hang("SELECT before_json FROM audit_logs WHERE action = 'discipline.revoke' AND entity_id = ?", r1.id);
     assert(JSON.parse(nk[0].before_json).daBaoPhuHuynh === true, nk[0].before_json);
   }));
 }

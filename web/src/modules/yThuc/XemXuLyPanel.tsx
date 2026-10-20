@@ -9,7 +9,7 @@ import { BangChung } from '../../ui/BangChung.tsx';
 import { ChonNgayGan } from '../../ui/ChonNgay.tsx';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
-import { kindCuaBac, ngay, nguoiThanhPayload, nguoiThieu, nhanLoaiXuLy, type NguoiChon } from '@shared/domain/index.ts';
+import { kindCuaBac, laVaiQuanLy, ngay, nguoiThanhPayload, nguoiThieu, nhanLoaiXuLy, type NguoiChon } from '@shared/domain/index.ts';
 import { lamMoiYThuc, type XuLyView } from './kieu.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 
@@ -21,6 +21,8 @@ import { dich, t } from '@shared/i18n/index.ts';
  * bậc tự tính lại). Quyền do máy chủ tính: `coTheSua` / `coTheXoa` — nút chỉ hiện khi máy chủ cho.
  * OV-7a: lần đã thực hiện `Sửa` ngày / người / mô tả; đề xuất QL đã duyệt mà bấm nhầm "Đã thực hiện" → `Chưa thực hiện`; đề xuất còn chờ: người gửi
  * `Sửa` mô tả (thẻ Chờ duyệt đổi theo) hoặc `Rút đề xuất` (thay Xoá lần xử lý — thẻ đóng "Người gửi đã rút").
+ * LUAT-5 (luật 5): `Xoá lần xử lý` → `Thu hồi…` (cùng chỗ, cùng hộp hỏi + ô Lý do *): GVCN gửi QL duyệt, QL thu hồi thẳng; dòng trạng thái thu hồi
+ * (chờ / QL từ chối + lý do / đã thu hồi) — người gửi `Rút yêu cầu thu hồi` khi QL chưa quyết. Lần "Đã thu hồi" chỉ xem.
  */
 export function XemXuLyPanel({ measureId, onClose, onDaThucHien, onDone }: {
   measureId: number | null; onClose: () => void;
@@ -36,6 +38,7 @@ export function XemXuLyPanel({ measureId, onClose, onDaThucHien, onDone }: {
   const [chon, setChon] = useState<number[]>([]);
   const [daBam, setDaBam] = useState(false);
   const [hoiXoa, setHoiXoa] = useState(false);
+  const [lyDo, setLyDo] = useState('');
   const [busy, setBusy] = useState(false);
   const [loiMay, setLoiMay] = useState<string | null>(null);
   /* OV-7a: sửa thông tin (ngày / người / mô tả) — `null` = không sửa. */
@@ -45,6 +48,15 @@ export function XemXuLyPanel({ measureId, onClose, onDaThucHien, onDone }: {
   const the = d?.the;
   const laNguoiGui = !!the && the.trangThai === 'cho' && the.nguoiXinId === session?.user?.id;
   const rutDuoc = d?.status === 'cho_duyet' && laNguoiGui;
+  /* LUAT-5: QL thu hồi thẳng (máy chủ quyết theo quyền duyệt); người khác gửi QL. */
+  const ql = laVaiQuanLy(session?.roles);
+  const th = d?.thuHoi ?? null;
+  const rutThuHoi = th?.trangThai === 'cho' && th.nguoiXinId === session?.user?.id;
+  const dongThuHoi = !th || !d ? null
+    : th.trangThai === 'cho' ? t('Chờ QL duyệt thu hồi · gửi {ngay}: “{lyDo}”', { ngay: ngay(th.taoLuc, homNay), lyDo: th.lyDo ?? '' })
+    : th.trangThai === 'tu_choi' ? t('{x} từ chối thu hồi {ngay}: “{lyDo}”', { x: th.nguoiDuyet ?? 'QL', ngay: ngay(th.xuLyLuc, homNay), lyDo: th.lyDoTuChoi ?? '' })
+    : th.trangThai === 'duyet' && d.status === 'thu_hoi' ? t('Đã thu hồi {ngay} · {x} duyệt: “{lyDo}”', { x: th.nguoiDuyet ?? 'QL', ngay: ngay(th.xuLyLuc, homNay), lyDo: th.lyDo ?? '' })
+    : null;
 
   const moSua = () => { if (d) { setChon(d.viPham.map((v) => v.id)); setDaBam(false); setLoiMay(null); setTt(null); setSua(true); } };
   const moSuaTt = () => {
@@ -52,7 +64,7 @@ export function XemXuLyPanel({ measureId, onClose, onDaThucHien, onDone }: {
     setSua(false); setDaBam(false); setLoiMay(null);
     setTt({ ngay: d.performedOn ?? '', moTa: d.note ?? '', nguoi: d.nguoiNgoai ? { kieu: 'ngoai', ten: d.nguoiNgoai } : d.nguoiId ? { kieu: 'tai_khoan', id: d.nguoiId, ten: d.nguoi ?? '' } : null });
   };
-  const dong = () => { setSua(false); setTt(null); setHoiXoa(false); setLoiMay(null); onClose(); };
+  const dong = () => { setSua(false); setTt(null); setHoiXoa(false); setLyDo(''); setLoiMay(null); onClose(); };
   const loiTt = tt ? (tt.moTa.trim().length < 10 ? t('Mô tả cần ít nhất 10 ký tự') : d?.status === 'done' && !tt.ngay ? t('Chọn ngày thực hiện') : d?.status === 'done' ? nguoiThieu(tt.nguoi, true) : null) : null;
 
   const luuTt = async () => {
@@ -92,12 +104,24 @@ export function XemXuLyPanel({ measureId, onClose, onDaThucHien, onDone }: {
 
   const xoa = async () => {
     if (!d) return;
+    if (!rutDuoc && !lyDo.trim()) { setDaBam(true); return; }
     setBusy(true); setLoiMay(null);
     try {
       if (rutDuoc) await api.post(`/yeu-cau/${the!.id}/rut`);
-      else await api.del(`/discipline-measures/${d.id}`);
-      lamMoiYThuc(); invalidate('/yeu-cau'); toast.push('ok', rutDuoc ? t('Đã rút đề xuất {nhan}', { nhan: d.nhan }) : t('Đã xoá {nhan}', { nhan: d.nhan }));
-      setHoiXoa(false); dong(); onDone?.();
+      else await api.post(`/discipline-measures/${d.id}/thu-hoi`, { lyDo: lyDo.trim() });
+      lamMoiYThuc(); invalidate('/yeu-cau');
+      toast.push('ok', rutDuoc ? t('Đã rút đề xuất {nhan}', { nhan: d.nhan }) : ql ? t('Đã thu hồi {nhan}', { nhan: d.nhan }) : t('Đã gửi QL thu hồi {nhan}', { nhan: d.nhan }));
+      setHoiXoa(false); setDaBam(false); onDone?.();
+      if (rutDuoc) dong(); else { setLyDo(''); reload(); }
+    } catch (e: any) { setLoiMay(e.message); } finally { setBusy(false); }
+  };
+  const rutTh = async () => {
+    if (!th || !d) return;
+    setBusy(true); setLoiMay(null);
+    try {
+      await api.post(`/yeu-cau/${th.id}/rut`);
+      invalidate('/yeu-cau'); onDone?.(); reload();
+      toast.push('ok', t('Đã rút yêu cầu thu hồi {nhan}', { nhan: d.nhan }));
     } catch (e: any) { setLoiMay(e.message); } finally { setBusy(false); }
   };
 
@@ -112,7 +136,9 @@ export function XemXuLyPanel({ measureId, onClose, onDaThucHien, onDone }: {
         ngCanh={d ? <span className="truncate">{dich(d.statusLabel)}{d.bac ? t(' · bậc {bac} trên thang', { bac: d.bac }) : t(' · ngoài thang, không đổi bậc')}</span> : undefined}
         chan={{
           huy: sua || tt ? { nhan: t('Huỷ thay đổi'), onClick: () => { setSua(false); setTt(null); setLoiMay(null); }, disabled: busy } : { nhan: t('Đóng'), onClick: dong },
-          xoa: (d?.coTheXoa || rutDuoc) && !sua && !tt ? { nhan: rutDuoc ? t('Rút đề xuất') : t('Xoá lần xử lý'), onClick: () => { setLoiMay(null); setHoiXoa(true); } } : undefined,
+          xoa: sua || tt ? undefined
+            : d?.coTheThuHoi || rutDuoc ? { nhan: rutDuoc ? t('Rút đề xuất') : t('Thu hồi…'), onClick: () => { setLoiMay(null); setLyDo(''); setDaBam(false); setHoiXoa(true); } }
+            : rutThuHoi ? { nhan: t('Rút yêu cầu thu hồi'), onClick: () => void rutTh() } : undefined,
           phu: d?.status === 'done' && d.quyetLuc && d.coTheSua && !sua && !tt
             ? <button type="button" className="btn min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => void chuaThucHien()}>{t('Chưa thực hiện')}</button> : undefined,
           conThieu: tt && daBam && loiTt ? [{ nhan: t('Lần xử lý'), lyDo: loiTt }] : undefined,
@@ -125,6 +151,7 @@ export function XemXuLyPanel({ measureId, onClose, onDaThucHien, onDone }: {
         }}>
         {error ? <div className="pt-3"><ErrorState message={error.message} onRetry={reload} /></div> : !d ? <div className="pt-3"><Skeleton rows={4} /></div> : (
           <>
+            {dongThuHoi && <p className="m-0 pt-3 text-sm text-slate-300" role="status">{dongThuHoi}</p>}
             {d.status === 'done' && tt ? (
               <Khoi tieuDe={t('Đã thực hiện')}>
                 <Hang2>
@@ -140,7 +167,7 @@ export function XemXuLyPanel({ measureId, onClose, onDaThucHien, onDone }: {
                 </Truong>
                 {loiMay && <p className="m-0 text-xs text-late" role="alert">{loiMay}</p>}
               </Khoi>
-            ) : d.status === 'done' ? (
+            ) : d.status === 'done' || (d.status === 'thu_hoi' && d.performedOn) ? (
               <Khoi tieuDe={t('Đã thực hiện')}>
                 {d.coTheSua && !sua && <button type="button" className="btn btn-sm min-h-[44px] self-start sm:min-h-0" onClick={moSuaTt}>{t('Sửa')}</button>}
                 <div className="grid grid-cols-2 gap-3 text-sm text-slate-200">
@@ -199,17 +226,24 @@ export function XemXuLyPanel({ measureId, onClose, onDaThucHien, onDone }: {
         )}
       </KhungPanel>
 
-      {/* Hộp hỏi MỘT DÒNG (mẫu `DeleteViolationConfirm`): panel con, lớp z trên, không đóng panel này. */}
+      {/* Hộp hỏi MỘT DÒNG (mẫu `DeleteViolationConfirm`): panel con, lớp z trên, không đóng panel này. LUAT-5: Thu hồi thêm ô Lý do *. */}
       {hoiXoa && d && (
-        <KhungPanel tieuDe={rutDuoc ? t('Rút đề xuất này?') : t('Xoá lần xử lý này?')} longTrong z="z-[60]" onDong={() => !busy && setHoiXoa(false)}
+        <KhungPanel tieuDe={rutDuoc ? t('Rút đề xuất này?') : ql ? t('Thu hồi lần xử lý này?') : t('Gửi QL thu hồi?')} longTrong z="z-[60]" onDong={() => !busy && setHoiXoa(false)}
           chan={{
             huy: { onClick: () => setHoiXoa(false), disabled: busy },
             chinh: <button type="button" className="btn btn-danger min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => void xoa()}>
-              {busy ? (rutDuoc ? t('Đang rút…') : t('Đang xoá…')) : rutDuoc ? t('Rút đề xuất') : t('Xoá lần xử lý')}</button>,
+              {busy ? (rutDuoc ? t('Đang rút…') : t('Đang gửi…')) : rutDuoc ? t('Rút đề xuất') : ql ? t('Thu hồi') : t('Gửi QL')}</button>,
           }}>
           <p className="m-0 pt-3 text-sm leading-relaxed text-slate-300">
             {rutDuoc ? t('{nhan} · {length} vi phạm về chưa xử lý · {soTep} tệp bằng chứng bị xoá', { nhan: d.nhan, length: d.viPham.length, soTep: d.soTep }) : t('{nhan} · {length} vi phạm · bậc về {bacVe}', { nhan: d.nhan, length: d.viPham.length, bacVe })}
           </p>
+          {!rutDuoc && (
+            <div className="pt-3">
+              <Truong nhan={t('Lý do')} batBuoc loi={daBam && !lyDo.trim() ? t('Chưa điền') : null}>
+                <textarea className="field w-full" rows={2} value={lyDo} onChange={(e) => setLyDo(e.target.value)} autoFocus />
+              </Truong>
+            </div>
+          )}
           {loiMay && <p className="m-0 mt-2 text-xs text-late" role="alert">{loiMay}</p>}
         </KhungPanel>
       )}

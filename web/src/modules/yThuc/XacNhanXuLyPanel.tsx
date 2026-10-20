@@ -13,7 +13,7 @@ import { OKhac } from '../../ui/OKhac.tsx';
 import { NutChon } from '../../ui/ui.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import {
-  KHAC_TOI_THIEU, MEASURE_KIND_LABEL, dsLoi, kiemGhiRoKhac, ngay, nguoiThanhPayload, nguoiThieu, type NguoiChon,
+  KHAC_TOI_THIEU, MEASURE_KIND_LABEL, THANG, dsLoi, kiemGhiRoKhac, ngay, nguoiThanhPayload, nguoiThieu, type NguoiChon,
 } from '@shared/domain/index.ts';
 import { MuiTenGap, NhanViPham } from './NhanViPham.tsx';
 import { DUONG_LAM_MOI_Y_THUC, type ViPhamV4, type XuLyView, type YThucHocVien } from './kieu.ts';
@@ -24,6 +24,8 @@ const lamMoi = () => DUONG_LAM_MOI_Y_THUC.forEach((d) => invalidate(d));
 
 /** Loại cần QL duyệt (V4-9): WL 3 chỉ khi là bậc kế (Q11) — thứ tự bày theo độ nặng. */
 const LOAI_DE_XUAT = ['wl_3', 'meeting_cx', 'suspension', 'other'] as const;
+/** LUAT-5: loại ngoài thang mới bắt tệp bằng chứng; "không tăng bậc" (bậc thang ≤ bậc hiện tại) chỉ cần lý do. */
+const canTep = (loai: string) => (LOAI_DE_XUAT as readonly string[]).includes(loai);
 
 /**
  * XÁC NHẬN XỬ LÝ — MỘT BƯỚC (V4-7, mockup M6) + chế độ ĐỀ XUẤT QL DUYỆT (V4-9, V4-10).
@@ -159,16 +161,17 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', lop, onC
   }
   if (daLuu?.loai === 'nhap') {
     const soTep = nhap.data?.soTep ?? 0;
+    const thieuTep = soTep === 0 && canTep(loai);
     const nutGui = <button type="button" className="btn btn-primary min-h-[40px] px-4 font-bold" disabled={busy}
-      onClick={() => { lf.bam(); if (soTep > 0) void gui(); }}>{t('Gửi Quản lý duyệt · trả lời trong 5 ngày')}</button>;
+      onClick={() => { lf.bam(); if (!thieuTep) void gui(); }}>{t('Gửi Quản lý duyệt · trả lời trong 5 ngày')}</button>;
     return (
       <KhungPanel tieuDe={t('Đề xuất QL duyệt')} hocVien={d.ten} onDong={dong} dau={dau(false)}
-        chan={{ v3: true, chinh: nutGui, conThieu: soTep === 0 && lf.daBam ? [{ nhan: t('Bằng chứng'), lyDo: t('Cần đính kèm tệp hoặc liên kết') }] : undefined }}>
+        chan={{ v3: true, chinh: nutGui, conThieu: thieuTep && lf.daBam ? [{ nhan: t('Bằng chứng'), lyDo: t('Cần đính kèm tệp hoặc liên kết') }] : undefined }}>
         <div className="flex flex-col gap-5 pt-4">
           <CanLam>
             <p className="m-0 text-sm font-bold text-slate-100">{dich(daLuu.nhan)} · {t('{n} vi phạm', { n: chon.size })}</p>
             <div>
-              <span className="mb-1 block text-[13px] font-semibold text-slate-300">{t('Bằng chứng')}<span aria-hidden className="text-bad"> *</span></span>
+              <span className="mb-1 block text-[13px] font-semibold text-slate-300">{t('Bằng chứng')}{canTep(loai) && <span aria-hidden className="text-bad"> *</span>}</span>
               <BangChung ownerType="discipline_measure" ownerId={daLuu.id} canEdit tieuDe="" onChanged={nhap.reload} />
             </div>
             <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
@@ -237,6 +240,19 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', lop, onC
                   </NutChon>
                 ))}
               </div>
+              {/* LUAT-5: xử lý không tăng bậc — bậc hiện tại (lặp) hoặc thấp hơn, cùng đường Đề xuất (cùng lưới nút chọn). */}
+              {d.bac > 0 && (
+                <>
+                  {nhanO(t('Không tăng bậc'))}
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                    {THANG.slice(0, Math.min(d.bac, THANG.length)).reverse().map((k) => (
+                      <NutChon key={k} chon={loai === k} onClick={() => setLoai(k)}>
+                        {dich(MEASURE_KIND_LABEL[k])}
+                      </NutChon>
+                    ))}
+                  </div>
+                </>
+              )}
               {lf.loiCua(loi, 'loai') && <p className="m-0 text-xs text-late">{lf.loiCua(loi, 'loai')}</p>}
               <OKhac hien={loai === 'other'} value={tenKhac} onChange={setTenKhac} goiY={t('Ví dụ: Gặp phụ huynh tại trung tâm')}
                 id={lf.oId('ghi-ro')} onBlur={lf.roi('ghi-ro')} loi={lf.hien('ghi-ro') ? kiemGhiRoKhac(tenKhac) : null} />
@@ -284,7 +300,7 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', lop, onC
             <span className="max-sm:hidden">{nutChinh}</span>
             {/* Chủ sản phẩm 02/10 → mockup v3 §8: "Đề xuất QL duyệt" là nút chữ đứng sau nút chính. */}
             {cheDo === 'xu-ly' && d.canManage && (
-              <NutChu disabled={busy} title={t('Cần xử lý nặng hơn: Meeting CX/GĐCN, WL 3, Đình chỉ…')} onClick={() => { setCheDo('de-xuat'); lf.datLai(); }}>{t('Đề xuất QL duyệt')}</NutChu>
+              <NutChu disabled={busy} title={t('Cần xử lý nặng hơn (Meeting CX/GĐCN, WL 3, Đình chỉ…) hoặc không tăng bậc')} onClick={() => { setCheDo('de-xuat'); lf.datLai(); }}>{t('Đề xuất QL duyệt')}</NutChu>
             )}
             {cheDo === 'de-xuat' && <NutChu onClick={() => { setCheDo('xu-ly'); lf.datLai(); }}>{t('← Quay lại Xác nhận xử lý')}</NutChu>}
           </div>
