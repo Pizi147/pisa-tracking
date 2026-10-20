@@ -233,8 +233,8 @@ function DongLichThi({ r, ds, moRong, onMoRong, onLuu }: {
           <div className="mt-1.5 max-w-[220px]"><ONgay kieu="thang" value={null} ariaLabel={t('Chuyển tháng')} onChange={(iso) => iso && onLuu({ ketLuan: 'chuyen-thang', thang: iso.slice(0, 7) })} toiThieu={homNay.slice(0, 7)} /></div>
         )}
         {moRong === 'bo' && (
-          <p className="m-0 mt-1.5 flex flex-wrap items-center gap-2 text-xs text-slate-200" role="group" aria-label={t('Bỏ ngày {ngay}?', { ngay: r.duKien.label })}>
-            <span>{t('Bỏ ngày {ngay}?', { ngay: r.duKien.label })}</span>
+          <p className="m-0 mt-1.5 flex flex-wrap items-center gap-2 text-xs text-slate-200" role="group" aria-labelledby={`bo-ngay-${r.studentId}`}>
+            <span id={`bo-ngay-${r.studentId}`}>{t('Bỏ ngày {ngay}?', { ngay: r.duKien.label })}</span>
             <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" autoFocus disabled={khoa} onClick={() => onLuu({ ketLuan: 'giu-thang' })}>{t('Bỏ ngày')}</button>
             <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 sm:min-h-0" onClick={() => onMoRong(null)}>{t('Không')}</button>
           </p>

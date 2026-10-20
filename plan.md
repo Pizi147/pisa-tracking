@@ -472,6 +472,7 @@ Nhật ký chi tiết tới 04/10 ở `git show 575e898d:plan.md` (mục 14) và
 
 | Ngày | PR / nhánh · model | Kết quả |
 |---|---|---|
+| 20/10/2026 | OV-15i2 (Opus 5.5) · `claude/sharp-ride-q33fc0` | Việc lẻ: Dán Excel thử lại không ghi trùng mục tổng · ≤ 2 lệnh mỗi môn · lớp thường khớp email; bỏ `viewer.huyLuot`; Xuất điểm Test không `a.*`, cột Lớp theo phạm vi; tutor gợi ý theo lớp nhóm PA; Lịch thi TVV/CX mang ô tìm + hỏi "Bỏ ngày …?"; CODE_MAP. Phép kiểm `prOv15i2` |
 | 20/10/2026 | OV-15h1 (Opus 5.5) · `claude/vibrant-davinci-5gzwos` | Tổng quan QL: GET dữ liệu 5 → 3 (`/tong-quan/ql` một GET cho Lớp cần chú ý + Tuần này + Trễ chấm, số giữ nguyên), Lớp cần chú ý theo mockup 3, Chốt lộ trình tại chỗ, Cần bạn quyết ≤ 7 ngày; thông báo theo lô; Chờ bạn duyệt theo chi nhánh. |
 | 20/10/2026 | OV-15g (Opus 5.5) · `claude/exciting-cerf-nrgx9w` | Lịch sử thay đổi (C22): một đường `/lich-su` + panel `LichSuThayDoi` (thay Lịch sử sửa OV-13j) cho HV · lớp (thông tin, tiến độ, phân công) · góp ý tuần · nhập HV · thi thật / Bước tiếp · ô điểm MT; ghi thêm phần thiếu ở máy chủ, mốc "bắt đầu ghi từ" (migrate `prOv15g`). |
 | 20/10/2026 | OV-15h2 (Opus 5.5) · `claude/vibrant-ptolemy-5f4su0` | Học viên & Lớp: Bộ lọc thêm (Case / PA · kỹ năng · kết quả · tuần thi) + tích HV → Xuất các HV đã chọn; Lịch thi dòng "chốt … · người"; ghi chú lịch thi cùng giao dịch với lịch; xuất 13 cột em hai lớp một hàng; Dán từ Excel lớp thường + Thử lại cùng lô; dọn `HopHuyMt`, `vanDeHv`. Kiểm `prOv15h2` |

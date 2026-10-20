@@ -6,7 +6,6 @@ export const EN_OV15H2 = {
   'Bỏ ngày {ngay}?': (b) => `Remove date ${b.ngay}?`,
   'Bỏ ngày': 'Remove date',
   'Chọn cả danh sách': 'Select the whole list',
-  'Em đã chốt ngày mà bấm <b>Giữ tháng</b>: hàng hỏi lại “Bỏ ngày …?” — bấm <b>Bỏ ngày</b> mới lưu.': 'A student with a set date and you press <b>Keep month</b>: the row asks “Remove date …?” — it saves only after <b>Remove date</b>.',
   'chốt {ngay}': (b) => `set ${b.ngay}`,
   'Tích hàng ở bảng để chọn': 'Tick rows in the table to select',
   'Đã bỏ chọn {n} HV vì đổi bộ lọc': (b) => `Cleared ${b.n} selected students because the filter changed`,
