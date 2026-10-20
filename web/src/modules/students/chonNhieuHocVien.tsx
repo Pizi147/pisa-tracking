@@ -24,9 +24,10 @@ export function OChon({ chon, id, ten }: { chon: ChonNhieu; id: number; ten: str
 }
 
 /** Ô tick cả cột — chọn / bỏ chọn mọi học viên đang hiện. */
-export function OChonTatCa({ chon, ids }: { chon: ChonNhieu; ids: number[] }) {
+/** `nhan`: chữ đang hiện cạnh ô (ô nằm trong `<label>`) — tên đọc cho trình đọc màn hình phải đúng chữ đó (OV-15i2). */
+export function OChonTatCa({ chon, ids, nhan }: { chon: ChonNhieu; ids: number[]; nhan?: string }) {
   return (
-    <input type="checkbox" className="h-[18px] w-[18px] cursor-pointer" aria-label="Chọn cả danh sách"
+    <input type="checkbox" className="h-[18px] w-[18px] cursor-pointer" aria-label={nhan ?? t('Chọn cả danh sách')}
       checked={ids.length > 0 && ids.every((i) => chon.chon.has(i))} onChange={(e) => chon.tatCa(ids, e.target.checked)} />
   );
 }

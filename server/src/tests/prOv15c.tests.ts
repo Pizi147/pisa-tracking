@@ -143,7 +143,7 @@ export async function runPrOv15cTests(t: YThucTestKit) {
       assert((await goi(ADMIN, `/attempts/${id}/cancel`, post({ reason: 'thử' }))).status === 403, 'Admin 403');
       assert(one(`SELECT status FROM assessment_attempts WHERE id = ?`, id).status === 'planned', 'không huỷ');
       const ct = await json(await goi(QL, `/attempts/${id}`));
-      assert(ct.viewer.huyLuot === null, `huyLuot: ${JSON.stringify(ct.viewer.huyLuot)}`);
+      assert(!('huyLuot' in ct.viewer), `huyLuot: ${JSON.stringify(ct.viewer.huyLuot)}`);   // OV-15i2: trường đã bỏ
     });
   });
 

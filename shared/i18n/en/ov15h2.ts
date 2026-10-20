@@ -2,6 +2,10 @@
 import type { Dich } from '../en.ts';
 
 export const EN_OV15H2 = {
+  /* OV-15i2 (thêm vào đây cho khỏi sửa dòng chung `en.ts`): Lịch thi hỏi trước khi bỏ ngày đã chốt; ô chọn cả danh sách. */
+  'Bỏ ngày {ngay}?': (b) => `Remove date ${b.ngay}?`,
+  'Bỏ ngày': 'Remove date',
+  'Chọn cả danh sách': 'Select the whole list',
   'chốt {ngay}': (b) => `set ${b.ngay}`,
   'Tích hàng ở bảng để chọn': 'Tick rows in the table to select',
   'Đã bỏ chọn {n} HV vì đổi bộ lọc': (b) => `Cleared ${b.n} selected students because the filter changed`,

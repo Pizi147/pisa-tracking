@@ -70,6 +70,8 @@ export function XacNhanPaLo({ it, onDong, onDaLam, onMo, onTiep }: {
   const tenLoai = loai.map((k) => INTERVENTION_KIND_LABEL[k as keyof typeof INTERVENTION_KIND_LABEL] ?? k).join(' · ');
   const coNguoi = ds.some((x) => coNguoiDay(x.pa?.kind ?? 'self_study'));
   const coSoBuoiTrong = ds.some(thieuSoBuoi);
+  /* OV-15i2: ô Người dạy chung gợi ý tutor theo chi nhánh LỚP của nhóm (lớp của Case), không theo lớp em đầu đang học; khác lớp → không nhóm Tutor. */
+  const lopNhom = ds.length && ds.every((x) => x.classId && x.classId === ds[0].classId) ? ds[0].classId : null;
 
   const gui = async () => {
     lf.bam();
@@ -149,7 +151,7 @@ export function XacNhanPaLo({ it, onDong, onDaLam, onMo, onTiep }: {
               {coNguoi && (
                 <Truong nhan={t('Người dạy')} as="div" tuyChon phu={t('Em đã có người dạy giữ nguyên')}>
                   <ChonNguoi nhom="giao_vien" value={nguoi} onChange={setNguoi} choTrong={t('Để trống')} placeholder={t('Chưa chọn · gõ tên để tìm')}
-                    tutor={loai.length === 1 && loai[0] === 'tutor' && ds[0]?.studentId ? { studentId: ds[0].studentId } : undefined}
+                    tutor={loai.length === 1 && loai[0] === 'tutor' && lopNhom ? { classId: lopNhom } : undefined}
                     ariaLabel={t('Người dạy')} disabled={busy} id={lf.oId('nguoi')} onBlur={lf.roi('nguoi')} invalid={!!lf.loiCua(loi, 'nguoi')} />
                 </Truong>
               )}

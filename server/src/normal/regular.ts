@@ -1103,7 +1103,7 @@ export function regularSheet(p: Principal, classId: number, kind?: string, today
 
   const attempts = conn
     .prepare(
-      `SELECT a.*, s.full_name, s.student_code, s.status AS student_status,
+      `SELECT a.*, s.full_name, s.student_code, s.email AS student_email, s.status AS student_status,
               rp.code AS period_code, rp.week_start
          FROM assessment_attempts a
          JOIN students s ON s.id = a.student_id
@@ -1281,6 +1281,8 @@ export function regularSheet(p: Principal, classId: number, kind?: string, today
         /** OV-6b2: Checkpoint — chip "Đạt" / "SOS · L+S" (chưa đạt chỉ chip, không Case); null khi chưa đủ điểm hoặc bài khác. */
         chip: a.kind === 'checkpoint' ? chipCheckpoint(result, prog.code) : null,
         studentId: a.student_id, studentName: a.full_name, studentCode: a.student_code,
+        /** OV-15i2: Dán từ Excel lớp thường khớp em theo email (như FT). */
+        studentEmail: (a.student_email ?? null) as string | null,
         studentStatus: a.student_status,
         periodCode: a.period_code ?? null,
         status: a.status,

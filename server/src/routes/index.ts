@@ -444,7 +444,7 @@ api.get('/ref/nguoi', requireAuth, wrap((req) => {
 
 /** TU-a: ô chọn tutor (Ghi kết quả PA Tutor theo `paId`; ô Người dạy PA Tutor theo `studentId`) — 3 số cuối SĐT, ≤ 20 dòng (`tutors/chon.ts`). */
 api.get('/tutors/chon', requireAuth, wrap((req) =>
-  chonTutor(principalOf(req), { q: qStr(req, 'q'), paId: qInt(req, 'paId'), studentId: qInt(req, 'studentId') })));
+  chonTutor(principalOf(req), { q: qStr(req, 'q'), paId: qInt(req, 'paId'), studentId: qInt(req, 'studentId'), classId: qInt(req, 'classId') })));
 
 /*
  * TU-b: TRANG TUTOR (đặc tả Tutor mục 7, 8) — quyền kiểm trong `tutors/trang.ts` / `taiLen.ts`: đọc `tutor.view` (QL: buổi lớp chi nhánh mình), ghi `tutor.manage`.
