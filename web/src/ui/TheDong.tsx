@@ -5,7 +5,7 @@ import { Fragment, useEffect, useState, type ReactNode } from 'react';
  * đổi chế độ ngay; chỉ MỘT biến thể được vẽ (không vẽ cả bảng lẫn thẻ rồi ẩn bằng CSS — tránh tải dữ liệu hai lần).
  */
 const DIEN_THOAI = '(max-width: 639px)';
-export const useDienThoai = (): boolean => useManHinh(DIEN_THOAI);
+export function useDienThoai(): boolean { return useManHinh(DIEN_THOAI); }
 /** `matchMedia` theo dõi đổi cỡ (KHUNG-LOI: thanh trên `< 1440 px` thu ô tìm thành nút kính lúp). */
 export function useManHinh(q: string): boolean {
   const [dt, setDt] = useState(() => typeof window !== 'undefined' && !!window.matchMedia?.(q).matches);

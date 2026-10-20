@@ -164,14 +164,14 @@ const BIEU_TUONG: Record<KhuVuc, ReactNode> = {
 };
 
 /* Chữ 12 px (KHUNG-LOI, 04 "Thanh dưới 375"; trước 11,5). */
-const lopDay = (active: boolean) => `relative flex min-h-[56px] min-w-0 flex-1 flex-col items-center justify-center gap-[3px] text-xs no-underline ${
+const lopDay = (active: boolean) => `relative flex min-w-0 flex-1 flex-col items-center justify-center gap-[3px] text-xs no-underline ${
   active ? 'text-[color:var(--accent-strong)] font-semibold' : 'text-slate-400'
 }`;
 
 function NutDay({ muc, active, so, soTutor }: { muc: KhuVucMuc; active: boolean; so: SoBadge; soTutor: SoBadge }) {
   return (
     <Link to={muc.to} aria-current={active ? 'page' : undefined} title={muc.label} data-hd={`nav-${muc.key}`}
-      className={lopDay(active)}>
+      className={`min-h-[56px] ${lopDay(active)}`}>
       {active && <span aria-hidden className="absolute top-0 left-1/2 h-[3px] w-8 -translate-x-1/2 rounded-b bg-[color:var(--accent)]" />}
       <svg aria-hidden width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
         {BIEU_TUONG[muc.key]}
@@ -337,7 +337,7 @@ export default function App() {
           {duoi.hien.map((m) => <NutDay key={m.key} muc={m} active={dangO === m.key} so={so} soTutor={soTutor} />)}
           {duoi.them.length > 0 && (
             <MenuDong nhan={THEM} muc={mucThem(duoi.them, navigate, so, soTutor)}
-              lopNut={`${lopDay(duoi.them.some((m) => m.key === dangO))} border-0 bg-transparent cursor-pointer`}
+              lopNut={`min-h-[56px] ${lopDay(duoi.them.some((m) => m.key === dangO))} border-0 bg-transparent cursor-pointer`}
               mat={<>
                 <svg aria-hidden width="20" height="20" viewBox="0 0 20 20" fill="currentColor"><circle cx="4.5" cy="10" r="1.5" /><circle cx="10" cy="10" r="1.5" /><circle cx="15.5" cy="10" r="1.5" /></svg>
                 <span className="max-w-full truncate">{THEM}</span>
