@@ -332,7 +332,7 @@ function SheetRow({ row, lop, active, cot, hien, tuanDangXem, tuanXem, onReload,
           <Link className="link block break-words max-sm:py-3 max-sm:-my-3" to={duongDotTest({ id: row.attemptId })} title={row.studentName}>{row.studentName}</Link>
           {row.hoanTat && (
             <div className="mt-0.5">
-              <Info title={t('Hết Chủ nhật {ngay}. {x}', { ngay: ngay(row.chuNhatCuoi), x: KHOA_HOAN_TAT_HINT })}>{t('Đã hoàn tất')}</Info>
+              <Info title={t('Hết Chủ nhật {ngay}. {x}', { ngay: ngay(row.chuNhatCuoi), x: KHOA_HOAN_TAT_HINT })}>{t('Đủ điểm')}</Info>
             </div>
           )}
         </div>

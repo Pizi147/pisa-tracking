@@ -79,7 +79,9 @@ export function HopKyNang({ anchor, tieuDe, tenHv = tieuDe.split(' · ')[0], ghi
     const o = kn[k];
     if (moi) return 'chua-xep';
     if (!o || !ngayNghiepVu) return 'khong-yeu-cau';
-    return trangThaiTT({ batBuoc: o.batBuoc, tuanBatDau: o.tuan, coDiem: o.khoa === 'đã có điểm', sit: o.sit, choDuyet: o.choDuyet, lichSu, homNay: ngayNghiepVu, huyVang: o.huyVang });
+    /* LUAT-34 (S13): MT cũ "-" = Đã huỷ (`khongDuThi` ở lượt MT cũ) → Khôi phục / Giữ huỷ như vắng 2 lần. */
+    return trangThaiTT({ batBuoc: o.batBuoc, tuanBatDau: o.tuan, coDiem: o.khoa === 'đã có điểm', sit: o.sit, choDuyet: o.choDuyet, lichSu, homNay: ngayNghiepVu, huyVang: o.huyVang,
+      huyCu: lichSu && !!o.khongDuThi });
   };
   const menuCua = (k: KyNangKH) => menuHopKyNang(ttCua(k), quyen, moi);
   /** Dòng đổi tuần thường (không qua Xếp lại / Khôi phục; không đã huỷ / vắng / chờ duyệt) — theo "Tuần chung", kể cả có điểm (điểm giữ, luật 1). */

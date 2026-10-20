@@ -9471,6 +9471,9 @@ await runPrTd7bTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, 
 // ==================================================================== TU-b (trang Tutor: Cần chú ý, bảng / panel, phạm vi QL, thêm sửa xoá, nhận xét, tải danh sách, gộp tên)
 const { runPrTubTests } = await import('./prTub.tests.ts');
 await runPrTubTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== LUAT-34 (bảng chuyển trạng thái Mock Test T01–T31 · chuyenVang · Luật 3 sửa sau lưu)
+const { runMtTrangThaiTests } = await import('./mtTrangThai.tests.ts');
+await runMtTrangThaiTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`

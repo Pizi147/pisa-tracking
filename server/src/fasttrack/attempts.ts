@@ -2,7 +2,7 @@ import { capNhatConOCho } from './conOCho.ts';
 import { db, theoLo, tx } from '../db.ts';
 import {
   ASSESSED_SKILLS, ASSESSED_SKILL_LABEL, duongDotTest, ENTRY_SKILLS, ENTRY_SKILL_LABEL, NO_SHOW_OVERRIDDEN_NOTE,
-  CHAM_CHEO, addDaysIso, canChamCheo, mondayOfDate, soSanhLop, LOI_BAND_TU_TINH, PERMISSIONS, awaitingScore, kyNangXongThieu, laChamCheo, cachHuyLuot, kiemBand, kiemNhanXet, kiemNhomNguyenNhan, kiemSoMtMoi, batBuocNhanXetMt, canNhomNguyenNhan, docNhomNguyenNhan, issueLabel, thieuNhanXetMt, LOI_THIEU_NHAN_XET, NHAN_XET_MT_TOI_THIEU, type ThieuNhanXet, kyNangSosMt0, laMt0, laMtCu, ngay, dauTruCuaO, duocNhapBandThang, noShowText, pendingSkillsOf, soMtKeTiep, tenGvCham, tenMon, tuanHocCuaMt, tuanLich,
+  CHAM_CHEO, addDaysIso, canChamCheo, mondayOfDate, soSanhLop, LOI_BAND_TU_TINH, PERMISSIONS, awaitingScore, kyNangXongThieu, laChamCheo, cachHuyLuot, kiemBand, kiemNhanXet, kiemNhomNguyenNhan, kiemSoMtMoi, batBuocNhanXetMt, canNhomNguyenNhan, docNhomNguyenNhan, issueLabel, thieuNhanXetMt, LOI_THIEU_NHAN_XET, NHAN_XET_MT_TOI_THIEU, type ThieuNhanXet, kyNangSosMt0, laMt0, laMtCu, ngay, dauTruCuaO, duocHoanTacVang, duocNhapBandThang, noShowText, pendingSkillsOf, soMtKeTiep, tenGvCham, tenMon, tuanHocCuaMt, tuanLich,
   type CachHuy, CASE_CATEGORY_LABEL, INTERVENTION_KIND_LABEL, SYSTEM_CLOSE_REASON_LABEL, categoryOf, type CaseCategory, type InterventionKind,
   type AssessedSkill, type EntrySkill, type KetQuaVang, type NoShowState, type PendingCell, type SkillProgress, type WorkScope,
 } from '../../../shared/domain/index.ts';
@@ -27,14 +27,16 @@ import {
   type SkillRow, type SkillScheduleView,
 } from './skillSchedule.ts';
 import {
-  canRequest as canRequestAbsence, chotVangNgay, dauDaChot, duocGoDau, goVangDaChot, pendingMove, rutDeNghiDoi,
+  baoHuyVangCu, canRequest as canRequestAbsence, chotVangNgay, dauDaChot, duocGoDau, goVangDaChot, pendingMove, rutDeNghiDoi,
 } from './absence.ts';
 import { raiseSignalsForResult, stepsFor } from '../cases/sos.ts';
 import { reconcileCorrectedSignals } from '../cases/signals.ts';
 import { dongBoNguyenNhanMt } from '../cases/nguyenNhanO.ts';
 import { currentCycle, cycleById, examPlanOf, luotSoCuaLoTrinh } from './cycles.ts';
 import { closeCasesBySystem, moLaiCaseHeThongDong } from '../cases/systemClose.ts';
-import { banHuyLuotCua, catHuyLuot, ketQuaHuyCua, traBanDoiVuot, traBanHuyLuot, traYeuCauCat, yeuCauChoCua, type BanHuyLuot } from './ketQuaHuy.ts';
+import {
+  banHuyLuotCua, catDiemO, catHuyLuot, diemHuyMo, dongBanCat, ketQuaHuyCua, traBanDoiVuot, traBanHuyLuot, traYeuCauCat, yeuCauChoCua, type BanHuyLuot,
+} from './ketQuaHuy.ts';
 import { chuanHoaNguoiThucHien } from '../cases/nguoiThucHien.ts';
 import { caseCuaLuot } from '../cases/caseLop.ts';
 import { allProgrammes, evaluateRegular, isRatioClass, nguongDatLop, programmeOfClass, refreshRegularOutcome, regularDeadline } from '../normal/regular.ts';
@@ -295,6 +297,8 @@ export type SkillCell = {
   canEdit: boolean;
   /** R11: đợt đã hoàn tất nên ô bị khoá với người không có `PLAN_WEEK`/`SCORE_OVERRIDE` — khác lý do khoá khác (huỷ, ngoài phạm vi…). */
   khoa: boolean;
+  /** LUAT-34 (T20b): ô trống có điểm đã huỷ còn cất — "Khôi phục điểm". */
+  diemHuy: boolean;
   /** Kỹ năng NÀY được phân công cho chính người đang xem — khác với "được phép sửa". */
   mine: boolean;
   /** TUẦN THI CỦA CHÍNH KỸ NĂNG NÀY — W1 và W2 dùng chung lịch của môn Writing. */
@@ -429,7 +433,7 @@ export function skillCells(
       sameWeek: !!row?.no_show_period_id && row.no_show_period_id === view.periodId,
       weekEnd: view.weekEnd,
       today,
-      settled: !!row?.no_show_settled_at, cu: !!row?.no_show_cu, sitStatus: view.sitStatus,
+      settled: !!row?.no_show_settled_at, cu: !!row?.no_show_cu, sitStatus: view.sitStatus, lichSu: !!attempt.lich_su,
     });
     const noShowNote = row?.no_show_settled_at && !row.no_show_cu && row.no_show_period_id === view.periodId && view.sitStatus !== 'absent'
       ? NO_SHOW_OVERRIDDEN_NOTE : null;
@@ -457,8 +461,8 @@ export function skillCells(
       /* T19 (PR-MTa): kỹ năng chưa tới tuần thi / chưa xếp tuần → ô khoá như máy chủ (`kiemDaToiTuanThi`), kể cả ô đã có điểm mà
        * Quản lý dời sang tuần chưa tới (T20) — điểm vẫn hiện. */
       && (!!view.weekStart && view.weekStart.slice(0, 10) <= mondayOf(today))
-      /* OV-13h: sau hoàn tất GV đúng môn vẫn nhập ô trống (cùng `oChuaCoDiem` với `saveScore`). */
-      && (hoanTat.hoanTat ? suaSauHoanTat || (editable.includes(skill) && oChuaCoDiem(row)) : editable.includes(skill));
+      /* LUAT-34 (L3): "Đủ điểm" không còn khoá — GV đúng ô sửa mọi lúc (cùng `saveScore`). */
+      && editable.includes(skill);
     const noShow = ns.state === 'none' ? null : {
       /* Tuần viết bằng `tuanLich` (G-6): "W3 SEP", chỉ kèm năm khi khác năm hôm nay — không in mã tuần có năm. */
       state: ns.state, text: noShowText(ns, view.weekStart ? tuanLich(view.weekStart, today) : view.periodCode, today) ?? '',
@@ -491,8 +495,10 @@ export function skillCells(
       /* Việc nhập điểm của người xem (bảng lớp "Nhập điểm …") — như `canEdit` nhưng trước hoàn tất bỏ quyền sửa mọi lúc của Quản lý. */
       viec: required && !cancelled && !chamCheo && view.sitStatus !== 'cancelled' && view.sitStatus !== 'absent'
         && (hoanTat.hoanTat ? suaSauHoanTat : viecList.includes(skill)),
-      /* R11: đánh dấu "đợt đã hoàn tất" cho MỌI người xem — Quản lý vẫn `khoa && canEdit` (sửa qua hộp lý do). */
+      /* LUAT-34: "Đủ điểm" — chỉ là trạng thái của đợt (tên trường giữ từ R11), không còn khoá ô. */
       khoa: hoanTat.hoanTat,
+      /* LUAT-34 (T20b): ô có điểm đã huỷ còn cất → "Khôi phục điểm". */
+      diemHuy: !hasScore && diemHuyMo().has(`${attempt.id}:${skill}`),
       /*
        * "TÔI SỬA ĐƯỢC" KHÁC "ĐÂY LÀ VIỆC CỦA TÔI" (mục 3.3).
        * Người có quyền sửa hộ vẫn bấm vào ô được, nhưng không vì thế mà nợ việc đó.
@@ -1411,12 +1417,8 @@ function xoaDiemLuot(p: Principal, a: ReturnType<typeof loadAttempt>, lyDo: stri
   const ct = a.class_id && scoringModeOf(a) === 'ratio' ? programmeOfClass(a.class_id) : null;
   const thuong = !!ct;
   if (o.some((s) => !(thuong ? ct!.skills : ENTRY_SKILLS as readonly string[]).includes(s.skill))) throw badRequest('Kỹ năng không hợp lệ.');
-  const today = demoToday();
-  const hoanTat = dotHoanTat(a.id, today);
-  /* R11 như `saveScore`: đợt đã hoàn tất thì chỉ người sửa được sau hoàn tất mới xoá điểm — kiểm một lần cho cả lượt, trước khi ghi. */
-  if (hoanTat.hoanTat && (!a.class_id || !quyenSuaSauHoanTat(p, a.class_id, !!a.lich_su))) {
-    throw forbidden(`Đợt này đã hoàn tất (hết Chủ nhật ${ngay(hoanTat.chuNhatCuoi)}). Chỉ Quản lý xoá được điểm — nhờ Quản lý huỷ lượt.`);
-  }
+  /* LUAT-34 (L3): "Đủ điểm" không còn khoá — quyền huỷ lượt đã kiểm ở `huyLuot`; nhật ký vẫn ghi `sauHoanTat`. */
+  const hoanTat = dotHoanTat(a.id, demoToday());
   if (thuong) return xoaDiemBaiThuong(p, a, o, lyDo, hoanTat.hoanTat, ct!.code);
   db().prepare(
     `UPDATE assessment_scores SET raw_score = NULL, c1 = NULL, c2 = NULL, c3 = NULL, c4 = NULL, band = NULL, entered_by = NULL, entered_at = NULL,
@@ -1424,9 +1426,7 @@ function xoaDiemLuot(p: Principal, a: ReturnType<typeof loadAttempt>, lyDo: stri
             nhan_xet_phu_trach = NULL, nhan_xet_phu_trach_by = NULL, nhan_xet_phu_trach_at = NULL, cho_phu_trach_xem = 0
       WHERE attempt_id = ? AND (band IS NOT NULL OR raw_score IS NOT NULL)`).run(a.id);
   for (const s of o) {
-    const path = hoanTat.hoanTat
-      ? (quyenSuaSauHoanTat(p, a.class_id) ? 'override' : 'lich_su')
-      : a.class_id ? scoreEditPath(p, a.class_id, s.skill, { lich_su: a.lich_su ?? 0 }) : null;
+    const path = a.class_id ? scoreEditPath(p, a.class_id, s.skill, { lich_su: a.lich_su ?? 0 }) : null;
     writeAudit({
       actorUserId: p.userId, action: path === 'override' ? 'score.override' : path === 'lich_su' ? 'score.lich_su' : 'score.edit',
       entityType: 'assessment_attempt', entityId: a.id, entityLabel: s.skill, before: s,
@@ -1446,7 +1446,7 @@ function xoaDiemBaiThuong(p: Principal, a: ReturnType<typeof loadAttempt>, o: Sc
   db().prepare(`UPDATE assessment_scores SET raw_score = NULL, entered_by = ?, entered_at = ?, nhap_dau_ngay = NULL
       WHERE attempt_id = ? AND (band IS NOT NULL OR raw_score IS NOT NULL)`).run(p.userId, luc, a.id);
   for (const s of o) {
-    const path = hoanTat ? 'override' : scoreEditPath(p, a.class_id!, s.skill);
+    const path = scoreEditPath(p, a.class_id!, s.skill);
     writeAudit({
       actorUserId: p.userId, action: path === 'override' ? 'regular.score.override' : 'regular.score',
       entityType: 'assessment_score', entityId: s.id, entityLabel: `${maCt} · ${s.skill}`, before: s,
@@ -2020,29 +2020,18 @@ export function saveScore(
     throw badRequest('Bài của lớp thường ghi dấu "-" ở bảng điểm lớp thường — ở đó môn được ghi "-" tự dời sang tuần sau.');
   }
 
-  /*
-   * R11 (23/09) — ĐỢT ĐÃ HOÀN TẤT (hết Chủ nhật của tuần bắt buộc muộn nhất) THÌ CHỈ NGƯỜI CÓ `PLAN_WEEK` HOẶC
-   * `SCORE_OVERRIDE` SỬA ĐƯỢC, qua đúng đường `path = 'override'` (nhật ký `score.override`, RB-5 đòi lý do —
-   * xem dưới). GVBM bị chặn hẳn, không còn đường `assigned` nữa dù đúng môn mình phụ trách.
-   */
-  /* PR-BV: xoá "-" ĐÃ CHỐT (Mock) = trả như trước khi gõ — quyền / khung riêng (`duocGoDau`), đi trước R11 và chặn vắng / huỷ bên dưới. */
+  /* PR-BV: xoá "-" ĐÃ CHỐT (Mock) = trả như trước khi gõ — quyền / khung riêng (`duocGoDau`), đi trước chặn vắng / huỷ bên dưới. */
   if (patch.noShow === false) {
     const dau = dauDaChot(attemptId, skill);
     if (dau) return goVangDaChot(p, attemptId, skill, dau, today);
   }
+  /*
+   * LUAT-34 (Luật 3, thay R11 23/09): "Đủ điểm" (hết Chủ nhật tuần bắt buộc muộn nhất / MT cũ 7 ngày sau lần nhập cuối) chỉ còn là TRẠNG THÁI —
+   * GVBM đúng ô sửa / xoá điểm mọi lúc qua đường của mình; nhật ký ghi `sauHoanTat`. Lớp đã kết thúc vẫn chỉ Quản lý (`kiemLopKetThuc`, Q-B1 ①).
+   */
   const hoanTat = dotHoanTat(attemptId, today);
   let path = a.class_id ? scoreEditPath(p, a.class_id, skill, { lich_su: a.lich_su ?? 0 }) : null;
-  if (hoanTat.hoanTat && !nxMoiLuc) {
-    if (a.class_id && quyenSuaSauHoanTat(p, a.class_id, !!a.lich_su)) {
-      /* GVCN sửa MT cũ của lớp mình (T22) giữ đường `lich_su`; Quản lý / quyền sửa hộ đi `override`. */
-      path = quyenSuaSauHoanTat(p, a.class_id) ? 'override' : 'lich_su';
-    } else if (!(path && oTrong())) {   // OV-13h: GV đúng môn nhập ô trống giữ đường của họ, nhật ký như nhập điểm thường
-      throw forbidden(
-        `Đợt này đã hoàn tất (hết Chủ nhật ${ngay(hoanTat.chuNhatCuoi)}). `
-        + 'Chỉ Quản lý sửa được điểm — nhờ Quản lý hiệu chỉnh.',
-      );
-    }
-  } else if (!path && !nxMoiLuc) {
+  if (!path && !nxMoiLuc) {
     require_(p, PERMISSIONS.SCORE_EDIT, { classId: a.class_id, studentId: a.student_id, skill },
       'Bạn chỉ nhập được điểm của kỹ năng mình được phân công.');
   }
@@ -2124,16 +2113,19 @@ export function saveScore(
         /* Báo lại cùng một tuần là VÔ HẠI: không đổi gì, và không biến một dấu báo đúng hạn thành báo muộn. */
         if (existing?.no_show_period_id === scheduleRow.planned_period_id) return done();
         /*
-         * OV-1b (đặc tả 3.3): "-" CÓ TÁC DỤNG NGAY, không chờ hết Chủ nhật.
-         *   · MT cũ, hoặc nhập bù SAU tuần thi → "Không dự thi" (`no_show_cu`): trạng thái cuối, không dời, không tính lần vắng, không Case.
-         *   · trong tuần thi (Mock) → đủ mọi ô của buổi "-" (Writing: W1 + W2) thì chốt vắng ngay: lần 1 dời tuần sau, lần 2 huỷ phần thi.
+         * OV-1b (đặc tả 3.3): "-" CÓ TÁC DỤNG NGAY, không chờ hết Chủ nhật. LUAT-34 (luật 4 sửa 21/10, `chuyenVang`):
+         *   · MT cũ → Đã huỷ ngay (`no_show_cu` — cùng dấu với "Không dự thi" cũ): không dời, không đếm, không Case; chuông Quản lý "để biết";
+         *     Hoàn tác 10 s / gỡ "-" trả như trước khi gõ.
+         *   · Mock (trong tuần thi HOẶC ghi muộn sau tuần thi) → đủ mọi ô của buổi "-" (Writing: task kia "-" hoặc có điểm) thì chốt vắng ngay:
+         *     lần 1 dời tuần kế của lịch (còn thi được) / thẻ Quản lý, lần 2 huỷ phần thi.
+         *   · MT0 / lượt khác ghi muộn → "Không dự thi" như cũ (ngoài phạm vi LUAT-34).
          * Ô `sat` mà không ô nào của buổi có điểm (điểm đã xoá — ca thật 09/10) vẫn nhận "-" như ô chưa thi.
          */
         if (scheduleRow.week_start && scheduleRow.week_start.slice(0, 10) > mondayOf(today)) {
           throw badRequest(`Chưa tới tuần thi ${tuanLich(scheduleRow.week_start, today)} — muốn đổi tuần thì "Dời lịch thi".`);
         }
         const late = today > scheduleRow.week_end.slice(0, 10);
-        const cu = a.lich_su || late ? 1 : 0;
+        const cu = a.lich_su || (late && a.kind !== 'mock') ? 1 : 0;
         const now = nowIso();
         if (existing) {
           conn
@@ -2156,15 +2148,16 @@ export function saveScore(
           entityLabel: skill, before, after: { noShow: true, week: scheduleRow.period_code, late, khongDuThi: !!cu },
         });
         if (!cu && a.kind === 'mock') chotVangNgay(conn, p, a, scheduleRow, today);
-        /* OV-11a (CA3-1): hậu quả thật của lần ghi — web nói đúng ("· dời W4 SEP" / "· huỷ phần thi" / "Không dự thi"). */
+        if (cu && a.lich_su) baoHuyVangCu(conn, p, a, skill, { bat: true });
+        /* OV-11a (CA3-1): hậu quả thật của lần ghi — web nói đúng ("· dời W4 SEP" / "· huỷ phần thi" / "Đã huỷ · vắng MT cũ"). */
         const sau = ensureSkillRows(attemptId).find((r) => r.skill === assessed)!;
-        const vang: KetQuaVang = cu ? { kq: 'khong-du-thi' }
+        const vang: KetQuaVang = cu ? { kq: a.lich_su ? 'huy-cu' : 'khong-du-thi' }
           : sau.sit_status === 'cancelled' ? { kq: 'huy' }
           : sau.planned_period_id !== scheduleRow.planned_period_id ? { kq: 'doi', tuanMoi: sau.week_start ? tuanLich(sau.week_start, today) : null }
           : sau.sit_status === 'absent' ? { kq: 'cho-ql' } : { kq: 'cho-o-kia' };
         return { ...done(), vang };
       }
-      /* patch.noShow === false: gỡ dấu trước khi tuần kết thúc. Sau chốt thì đã bị chặn ở kiểm `absent` phía trên. */
+      /* patch.noShow === false: gỡ dấu chưa chốt / "Đã huỷ · vắng MT cũ" / "Không dự thi" cũ. Vắng đã chốt đi `goVangDaChot` (trên). */
       if (!existing?.no_show_period_id) return done();
       conn
         .prepare(
@@ -2176,6 +2169,10 @@ export function saveScore(
         actorUserId: p.userId, action: 'score.no_show_cleared', entityType: 'assessment_attempt', entityId: attemptId,
         entityLabel: skill, before, after: { noShow: false },
       });
+      /* LUAT-34 (T09): gỡ "Đã huỷ · vắng MT cũ" — Hoàn tác (người vừa gõ, ≤ 10 s) rút chuông; sau đó chuông Quản lý "để biết". */
+      if (existing.no_show_cu && a.lich_su) {
+        baoHuyVangCu(conn, p, a, skill, { bat: false, hoanTac: existing.no_show_by === p.userId && duocHoanTacVang(existing.no_show_at, Date.now()) });
+      }
       return done();
     }
 
@@ -2250,24 +2247,29 @@ export function saveScore(
     const enteredBy = hasValue ? p.userId : null;
     const enteredAt = hasValue ? nowIso() : null;
     /*
-     * PR-HSM (Q6): nhận xét + GV chấm gửi kèm thì ghi luôn; ô VỪA MẤT HẾT điểm (Huỷ điểm, Thi lại, xoá tay — đều qua đây)
-     * thì cả ba về NULL: nhận xét nói về bài đã chấm, thi lại là bài mới. Bản cũ còn trong `before` của nhật ký.
+     * PR-HSM (Q6) · LUAT-34 (T20): ô VỪA MẤT HẾT điểm — Huỷ điểm, xoá tay, Bỏ khỏi đợt: điểm CẤT (`catDiemO`, "Khôi phục điểm" một bấm), nhận xét +
+     * nhóm nguyên nhân + GV chấm GIỮ trên ô. Thi lại (bài mới) thì cả ba về NULL như cũ. Bản cũ còn trong `before` của nhật ký.
      */
     const matHet = !hasValue && daCoDiem;
-    const comment = matHet ? null : nxGt !== undefined ? nxGt : existing?.comment ?? null;
+    const boKem = matHet && !!o.thiLai;
+    const comment = boKem ? null : nxGt !== undefined ? nxGt : existing?.comment ?? null;
     /* Q3 (PR-LT3, chủ sản phẩm 06/10): lưu ô S Mock có điểm mà không gửi GV chấm, dòng chưa có ai → GV chấm = người lưu (trễ tính cho
        người đó). Lưới an toàn — web luôn gửi tên đang hiện. Gửi `gvCham: null` có chủ ý (xoá) giữ như cũ. */
     const gvMacDinh = gv === undefined && hasValue && laChamCheo(a.kind, skill) && !existing?.examiner_user_id && !existing?.examiner_name;
-    const exUser = matHet ? null : gvMacDinh ? p.userId : gv !== undefined ? gv?.userId ?? null : existing?.examiner_user_id ?? null;
-    const exName = matHet ? null : gv !== undefined ? gv?.name ?? null : existing?.examiner_name ?? null;
+    const exUser = boKem ? null : gvMacDinh ? p.userId : gv !== undefined ? gv?.userId ?? null : existing?.examiner_user_id ?? null;
+    const exName = boKem ? null : gv !== undefined ? gv?.name ?? null : existing?.examiner_name ?? null;
     /*
      * PR-Pb2-b (Q13): ngày NGHIỆP VỤ lần đầu ô có điểm — sửa sau giữ nguyên, ô mất hết điểm về NULL (nhập lại tính lần đầu mới).
      * PR-S6F-a (Q18, P0): "có điểm" = điểm THẬT (điểm thô hoặc band) — ô tiêu chí mới gõ 1/4 (band còn NULL) chưa phải lần nhập đầu.
      */
     const coDiemThat = raw !== null || band !== null;
     const nhapDau = coDiemThat ? existing?.nhap_dau_ngay ?? today : null;
-    /* OV-12b: ô mất hết điểm → nhóm về NULL như nhận xét; kiểm luật trước mọi câu ghi (400 không để lại gì). */
-    const nhom = nhomVaLuatNhanXet(a, { band, coDiem: coDiemThat, comment, nhomGui, nhomCu: existing?.nhom_nguyen_nhan, luat });
+    /* OV-12b: kiểm luật trước mọi câu ghi (400 không để lại gì). LUAT-34: Huỷ điểm giữ nhóm cũ (Thi lại → NULL như nhận xét). */
+    const nhom = matHet && !boKem ? existing?.nhom_nguyen_nhan ?? null
+      : nhomVaLuatNhanXet(a, { band, coDiem: coDiemThat, comment, nhomGui, nhomCu: existing?.nhom_nguyen_nhan, luat });
+    /* LUAT-34 (T20, T20b): cất điểm vừa huỷ; ô trống nhập điểm mới / Thi lại → bản cất cũ hết hiệu lực. */
+    if (matHet && !boKem) catDiemO(conn, { attemptId, row: existing!, actor: p.userId, lyDo: patch.lyDo ? String(patch.lyDo).trim() : null });
+    else if ((hasValue && !daCoDiem) || boKem) dongBanCat(conn, attemptId, skill, boKem ? 'Thi lại' : 'Đã nhập điểm mới');
     if (existing) {
       conn
         .prepare(
@@ -2304,11 +2306,11 @@ export function saveScore(
         .run(attemptId, skill);
     }
 
-    /* OV-13k: ô mất hết điểm → nhận xét GV phụ trách hết nghĩa như nhận xét người chấm; có nhận xét mới của người chấm chéo → báo GV phụ trách. */
-    if (matHet && skill === 'speaking') {
+    /* OV-13k: Thi lại → nhận xét GV phụ trách hết nghĩa như nhận xét người chấm; có nhận xét mới của người chấm chéo → báo GV phụ trách. */
+    if (boKem && skill === 'speaking') {
       conn.prepare(`UPDATE assessment_scores SET nhan_xet_phu_trach = NULL, nhan_xet_phu_trach_by = NULL, nhan_xet_phu_trach_at = NULL, cho_phu_trach_xem = 0
                      WHERE attempt_id = ? AND skill = ?`).run(attemptId, skill);
-    } else if (skill === 'speaking') baoPhuTrachS(p, a, comment, existing?.comment, exUser);
+    } else if (skill === 'speaking' && !matHet) baoPhuTrachS(p, a, comment, existing?.comment, exUser);
 
     const after = conn.prepare('SELECT * FROM assessment_scores WHERE attempt_id = ? AND skill = ?').get(attemptId, skill);
     const afterGhi = (patch.lyDo || hoanTat.hoanTat)
@@ -2338,6 +2340,8 @@ export function saveScore(
         reason: 'Suy từ việc đã có điểm', actor: p.userId,
       });
     }
+    /* LUAT-34 (T07): Writing — task này vừa có điểm mà task kia đang "-" ở tuần này → buổi là vắng, chốt ngay (dời cả W, điểm đi theo). */
+    if (hasValue && a.kind === 'mock' && !a.lich_su && entrySkillsOf(assessed).length > 1) chotVangNgay(conn, p, a, scheduleRow, today);
     capNhatConOCho([attemptId]);   // TD7b: nhập / sửa / xoá điểm đổi ô chờ
     refreshOutcome(p, attemptId, !!o.thiLai);
     const fresh = conn.prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(attemptId) as any;

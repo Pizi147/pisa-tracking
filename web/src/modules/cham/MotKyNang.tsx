@@ -112,7 +112,7 @@ function DongHv({ studentId, active, ten, href, phu, phuTitle, phuDo = false, lu
   /** OV-1d: em đã Kết thúc học / Lưu trữ — dòng mờ. */
   mo?: boolean;
   phu: string; phuTitle?: string; phuDo?: boolean; luu: React.ReactNode; children: React.ReactNode;
-  /** R11: nhãn "Đã hoàn tất" cạnh tên khi đợt/bài của dòng này đã hoàn tất. */
+  /** LUAT-34: nhãn "Đủ điểm" (trạng thái, không khoá) cạnh tên khi đợt/bài của dòng này đã hoàn tất. */
   nhan?: React.ReactNode;
   /** Dòng "Thi W1 OCT" — chỉ hiện ở Điểm theo lớp (`DongThiContext`). */
   thi?: React.ComponentProps<typeof DongThi>['muc'];
@@ -138,10 +138,10 @@ function DongHv({ studentId, active, ten, href, phu, phuTitle, phuDo = false, lu
   );
 }
 
-/** R11: nhãn "Đã hoàn tất" cạnh tên — dùng chung cho dòng FT và dòng lớp thường của `MotKyNang`. */
+/** LUAT-34: nhãn "Đủ điểm" (trạng thái, không khoá) cạnh tên — dùng chung cho dòng FT và dòng lớp thường của `MotKyNang`. */
 function NhanHoanTat({ hoanTat, chuNhatCuoi }: { hoanTat?: boolean; chuNhatCuoi?: string | null }) {
   if (!hoanTat) return null;
-  return <Info title={t('Hết Chủ nhật {ngay}. {x}', { ngay: ngay(chuNhatCuoi), x: KHOA_HOAN_TAT_HINT })}>{t('Đã hoàn tất')}</Info>;
+  return <Info title={t('Hết Chủ nhật {ngay}. {x}', { ngay: ngay(chuNhatCuoi), x: KHOA_HOAN_TAT_HINT })}>{t('Đủ điểm')}</Info>;
 }
 
 /* ------------------------------------------------------------------ Lớp Fast Track */

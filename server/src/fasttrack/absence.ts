@@ -1,7 +1,7 @@
 import { capNhatConOCho } from './conOCho.ts';
 import { db, tx } from '../db.ts';
 import {
-  ASSESSED_SKILLS, ASSESSED_SKILL_LABEL, PERMISSIONS, hanDuyetDoiLan2, kiemLyDoThaoTac, ngay, sauTuanThi, tenMon, tenMonNgan, tuanLich,
+  ASSESSED_SKILLS, ASSESSED_SKILL_LABEL, PERMISSIONS, chuyenVang, duocHoanTacVang, hanDuyetDoiLan2, kiemLyDoThaoTac, ngay, tenMon, tenMonNgan, tuanLich,
   type AssessedSkill,
 } from '../../../shared/domain/index.ts';
 import { assessedSkillOf, entrySkillsOf } from './scoring.ts';
@@ -280,8 +280,9 @@ function xuLyVangMotKyNang(conn: any, actor: number | null, attempt: any, row: a
   if (moveNo >= 2 && attempt.kind === 'mock' && !isRatio(attempt)) return huyVangNoi(conn, actor, attempt, row, moveNo);
 
   const fromNoShow = row.absent_from_no_show === 1;
+  /* LUAT-34 (luật 4 sửa 21/10): "-" lần 1 — kể cả ghi muộn sau tuần thi — theo MỘT hàm `chuyenVang`: tuần kế của lịch còn chưa hết → dời. */
   const tooLate = moveNo === 1 && fromNoShow
-    ? addDays(target.week_start, 6) < today
+    ? chuyenVang({ lan: 0, tuanThi: row.week_start, homNay: today, mtCu: false, vuong: false }).kq !== 'doi'
     : target.week_start <= today || decideBy < today;
 
   if (moveNo === 1 && !tooLate && !check.blockers.length) {
@@ -381,11 +382,48 @@ export function khongMockLai(p: Principal, attemptId: number, skill: string, lyD
   if (!canDecide(p, attempt)) throw forbidden('Chỉ Quản lý mới chốt được "Không mock lại".');
   if (attempt.kind !== 'mock') throw badRequest('Chỉ áp cho Mock Test.');
   const row = ensureSkillRows(attemptId).find((r) => r.skill === skill);
-  if (!row?.required || row.sit_status !== 'cancelled') throw badRequest(`${skillName(skill)} chưa huỷ — dùng "Bỏ kỹ năng khỏi đợt".`);
+  if (!row?.required || (row.sit_status !== 'cancelled' && !oHuyCu(attempt, skill))) throw badRequest(`${skillName(skill)} chưa huỷ — dùng "Bỏ kỹ năng khỏi đợt".`);
   return tx(() => {
     khongMockLaiNoi(p, attemptId, skill, lyDo);
     return { ok: true as const };
   });
+}
+
+/**
+ * LUAT-34 (S13 "Đã huỷ · vắng MT cũ"): MT cũ, MỌI ô nhập của kỹ năng là "-" huỷ ngay (`no_show_cu`) và chưa ô nào có điểm — cùng cách lưu của
+ * "Không dự thi" cũ (không migrate), nên dữ liệu cũ ở MT cũ cũng là "Đã huỷ". Quản lý Khôi phục / Giữ huỷ như vắng 2 lần.
+ */
+export function oHuyCu(attempt: { id: number; lich_su?: number | null }, skill: string): boolean {
+  if (!attempt.lich_su) return false;
+  const o = entrySkillsOf(skill as AssessedSkill);
+  const d = db().prepare(`SELECT skill FROM assessment_scores WHERE attempt_id = ? AND skill IN (${o.map(() => '?').join(',')})
+      AND no_show_cu = 1 AND band IS NULL AND raw_score IS NULL`).all(attempt.id, ...o) as any[];
+  return o.every((k) => d.some((x) => x.skill === k));
+}
+
+/**
+ * LUAT-34 (T06, T09): chuông "để biết" cho Quản lý chi nhánh khi "-" ở MT cũ huỷ ngay (`bat`) và khi gỡ "-" đó sau cửa sổ Hoàn tác. Hoàn tác
+ * (người vừa gõ, ≤ 10 s) rút chuông "-" còn chưa đọc, không gửi chuông mới. Gọi trong tx của `saveScore` / `baoVang`.
+ */
+export function baoHuyVangCu(conn: any, p: Principal, attempt: any, skill: string, o: { bat: boolean; hoanTac?: boolean }) {
+  const khoa = `huy_vang_cu:${attempt.id}:${skill}`;
+  if (!o.bat && o.hoanTac) {
+    conn.prepare('DELETE FROM notifications WHERE dedup_key = ? AND read_at IS NULL').run(khoa);
+    return;
+  }
+  const ai = conn.prepare(`SELECT s.full_name AS em, c.programme_code AS ct FROM students s LEFT JOIN classes c ON c.id = ? WHERE s.id = ?`)
+    .get(attempt.class_id ?? null, attempt.student_id) as any;
+  const mon = tenMonNgan(ai?.ct ?? null, assessedSkillOf(skill) === 'writing' ? skill : assessedSkillOf(skill));
+  for (const userId of quanLyCuaLop(attempt.class_id)) {
+    if (o.bat) {
+      notify({ userId, kind: 'huy_vang', title: `Huỷ ${mon} · MT${attempt.attempt_no} · ${ai?.em ?? 'học viên'} (vắng MT cũ)`,
+        body: `${p.fullName} ghi "-"`, entityType: 'assessment_attempt', entityId: attempt.id, dedupKey: khoa });
+      conn.prepare('UPDATE notifications SET read_at = NULL, created_at = ? WHERE user_id = ? AND dedup_key = ?').run(nowIso(), userId, khoa);
+    } else {
+      notify({ userId, kind: 'huy_vang', title: `Gỡ huỷ ${mon} · MT${attempt.attempt_no} · ${ai?.em ?? 'học viên'} (MT cũ)`,
+        body: `${p.fullName} gỡ "-"`, entityType: 'assessment_attempt', entityId: attempt.id, dedupKey: `go_huy_cu:${attempt.id}:${skill}:${nowIso()}` });
+    }
+  }
 }
 
 function khongMockLaiNoi(p: Principal, attemptId: number, skill: string, lyDo?: string | null) {
@@ -456,6 +494,7 @@ function applyMove(
     reason: reason ?? `Dời do vắng lần ${moveNo}`, actor,
   });
   recomputeCompletionWeek(attempt.id, actor);
+  tinhLaiMtCu(attempt.id, demoToday());   // LUAT-34 (T27): mọi lần xếp / dời tính lại cờ MT cũ — cả dời do vắng
   writeAudit({
     actorUserId: actor, action: mayTuDoi ? 'attempt.absence_auto_move' : 'attempt.absence_move', entityType: 'assessment_attempt',
     entityId: attempt.id, entityLabel: `${attempt.kind === 'mock' ? `MT${attempt.attempt_no}` : attempt.kind} · ${row.skill}`,
@@ -640,7 +679,8 @@ function cancelPart(
  * Tách làm hai bước thì sẽ có những phần được khôi phục mà không có tuần, nằm im ở đúng
  * trạng thái mà cả mục này sinh ra để dọn.
  *
- * Khôi phục KHÔNG đặt lại bộ đếm dời: những lần em vắng trước đó vẫn đã xảy ra.
+ * LUAT-34 (luật 4 sửa 21/10, T14–15): Khôi phục ĐẶT LẠI chuỗi vắng (`absence_move_count = 0` — "-" kế tiếp lại là lần 1, được dời), không nhớ "-"
+ * trước. Nhận cả "Đã huỷ · vắng MT cũ" (S13, `oHuyCu` — gồm "Không dự thi" cũ ở MT cũ).
  */
 export function restoreCancelledSkill(p: Principal, attemptId: number, skill: string, periodId: number | null, opts: {
   reason?: string | null;
@@ -653,15 +693,16 @@ export function restoreCancelledSkill(p: Principal, attemptId: number, skill: st
   const row = rows.find((r) => r.skill === skill);
   if (!row) throw badRequest('Kỹ năng không hợp lệ.');
   const ratio = isRatio(attempt);
-  if (!ratio && row.sit_status !== 'cancelled') {
+  const huyCu = !ratio && row.sit_status !== 'cancelled' && oHuyCu(attempt, skill);
+  if (!ratio && row.sit_status !== 'cancelled' && !huyCu) {
     throw badRequest(`${skillName(skill)} chưa bị huỷ — không có gì để khôi phục.`);
   }
   if (ratio && row.planned_period_id) {
     throw badRequest(`${skillName(skill)} đang có lịch hẹn — dùng thao tác đổi lịch thường.`);
   }
 
-  /* OV-15c (mục 6): `periodId = null` = "Khôi phục → Chưa xếp" — chỉ kỹ năng huỷ vì vắng 2 lần; không tuần nên không kiểm trùng tuần. */
-  if (periodId === null && !row.huy_vang) throw badRequest(`${skillName(skill)} không huỷ vì vắng 2 lần — không khôi phục về Chưa xếp được.`);
+  /* OV-15c (mục 6): `periodId = null` = "Khôi phục → Chưa xếp" — chỉ kỹ năng huỷ vì vắng; không tuần nên không kiểm trùng tuần. */
+  if (periodId === null && !row.huy_vang && !huyCu) throw badRequest(`${skillName(skill)} không huỷ vì vắng — không khôi phục về Chưa xếp được.`);
   const period = periodId === null ? null : db().prepare('SELECT * FROM report_periods WHERE id = ?').get(periodId) as any;
   if (periodId !== null && !period) throw notFound('Không tìm thấy tuần.');
   /* PR-MTa T21: Quản lý khôi phục vào tuần này / tuần đã qua được (em đã thi thật) — rồi nhập điểm ngay (T19). */
@@ -673,15 +714,15 @@ export function restoreCancelledSkill(p: Principal, attemptId: number, skill: st
     conn
       .prepare(
         `UPDATE attempt_skills SET sit_status = 'scheduled', absent_from_no_show = 0, huy_vang = 0, planned_period_id = ?,
-                plan_source = 'manual', updated_at = ? WHERE id = ?`,
+                plan_source = 'manual', absence_move_count = 0, updated_at = ? WHERE id = ?`,
       )
       .run(periodId, nowIso(), row.id);
-    /* OV-11a (TE-3): khôi phục = lịch mới — dấu "-" của lần vắng đã huỷ hết nghĩa (cùng luật đổi tuần `setSkillWeek`); "Không dự thi" giữ. */
+    /* OV-11a (TE-3) · LUAT-34: khôi phục = lịch mới, chuỗi mới — mọi dấu "-" cũ (cả "Đã huỷ · vắng MT cũ" / "Không dự thi" cũ) hết nghĩa. */
     if (!ratio) {
       const o = entrySkillsOf(skill as AssessedSkill);
       conn.prepare(
-        `UPDATE assessment_scores SET no_show_period_id = NULL, no_show_by = NULL, no_show_at = NULL, no_show_late = 0, no_show_settled_at = NULL
-          WHERE attempt_id = ? AND skill IN (${o.map(() => '?').join(',')}) AND no_show_cu = 0 AND no_show_period_id IS NOT NULL`,
+        `UPDATE assessment_scores SET no_show_period_id = NULL, no_show_by = NULL, no_show_at = NULL, no_show_late = 0, no_show_settled_at = NULL, no_show_cu = 0
+          WHERE attempt_id = ? AND skill IN (${o.map(() => '?').join(',')}) AND no_show_period_id IS NOT NULL`,
       ).run(attemptId, ...o);
     }
     /* PR-MTb sau rà (I1): đề nghị dời đang chờ của kỹ năng này rút cùng lúc — không rút thì hết hạn quét huỷ lại kỹ năng vừa khôi phục. */
@@ -697,7 +738,7 @@ export function restoreCancelledSkill(p: Principal, attemptId: number, skill: st
     writeAudit({
       actorUserId: p.userId, action: 'attempt.restore_part', entityType: 'assessment_attempt',
       entityId: attemptId, entityLabel: `${attemptId} · ${skill}`,
-      before: { sitStatus: row.sit_status }, after: { week: period?.code ?? null },
+      before: { sitStatus: huyCu ? 'huy_cu' : row.sit_status, week: row.period_code, moveCount: row.absence_move_count }, after: { week: period?.code ?? null, moveCount: 0 },
     });
     return { ok: true, completionWeek: cw, warnings: check.warnings };
   });
@@ -749,11 +790,14 @@ function notifyPlanners(
  */
 export function chotVangNgay(conn: any, p: Principal, attempt: any, row: any, today: string): boolean {
   const entry = entrySkillsOf(row.skill as AssessedSkill);
-  const dau = conn.prepare(
-    `SELECT id, skill FROM assessment_scores WHERE attempt_id = ? AND skill IN (${entry.map(() => '?').join(',')})
-        AND no_show_period_id = ? AND no_show_settled_at IS NULL AND no_show_cu = 0 AND band IS NULL AND raw_score IS NULL`,
-  ).all(attempt.id, ...entry, row.planned_period_id) as any[];
-  if (!entry.every((k) => dau.some((d) => d.skill === k))) return false;
+  const o = conn.prepare(
+    `SELECT id, skill, band, raw_score, no_show_period_id, no_show_settled_at, no_show_cu FROM assessment_scores
+      WHERE attempt_id = ? AND skill IN (${entry.map(() => '?').join(',')})`,
+  ).all(attempt.id, ...entry) as any[];
+  const coDiem = (d: any) => d.band !== null || d.raw_score !== null;
+  const dau = o.filter((d) => !coDiem(d) && d.no_show_period_id === row.planned_period_id && d.no_show_settled_at === null && !d.no_show_cu);
+  /* LUAT-34 (T07): Writing — task kia "-" HOẶC đã có điểm thì buổi là vắng (dời cả W, điểm task kia đi theo); task kia còn trống thì chờ. */
+  if (!dau.length || !entry.every((k) => o.some((d) => d.skill === k && (coDiem(d) || dau.includes(d))))) return false;
   return settleGroup(conn, attempt.id, row.id, row.skill, row.week_end, row.period_code ?? '', dau.map((d) => d.id), p.userId,
     'Vắng — dấu "-" trong tuần thi', today);
 }
@@ -859,12 +903,14 @@ export function duocGoDau(p: Principal, o: {
   /** Quyền nhập ô đó đã tính sẵn ở nơi gọi (bảng nhiều ô) — bỏ trống thì hỏi `scoreEditPath`. */
   duocNhap?: boolean;
   daHuyPhan?: boolean;
+  /** LUAT-34 (T09): Hoàn tác — chính người vừa gõ "-", trong cửa sổ `duocHoanTacVang` — gỡ được cả khi "-" vừa huỷ phần thi (vắng 2 lần). */
+  hoanTac?: boolean;
 }): string | null {
   if (can(p, PERMISSIONS.PLAN_WEEK, { classId: o.classId })) return null;
   if (!(o.duocNhap ?? scoreEditPath(p, o.classId, o.skill) !== null) && !isCoreTeacherOf(p, o.classId, o.today)) {
     return teachesClass(p, o.classId, o.today) ? 'Chỉ GV chấm kỹ năng này, GVCN hoặc Quản lý gỡ được dấu "-".' : 'Bạn không có quyền với lớp này.';
   }
-  return o.daHuyPhan ? 'Đã huỷ phần thi (vắng 2 lần) — Quản lý khôi phục phần thi.' : null;
+  return o.daHuyPhan && !o.hoanTac ? 'Đã huỷ phần thi (vắng 2 lần) — Quản lý khôi phục phần thi.' : null;
 }
 
 /** Dấu "-" ĐÃ CHỐT của một ô Mock (không phải MT cũ) — dòng điểm, hoặc null. */
@@ -889,6 +935,7 @@ export function goVangDaChot(p: Principal, attemptId: number, skill: string, dau
   const hien = ensureSkillRows(attemptId).find((r) => r.skill === assessed)!;
   const loi = duocGoDau(p, {
     classId: a.class_id, skill, today, daHuyPhan: hien.sit_status === 'cancelled',
+    hoanTac: dau.no_show_by === p.userId && duocHoanTacVang(dau.no_show_at, Date.now()),
   });
   if (loi) throw forbidden(loi);
   const entry = entrySkillsOf(assessed);
@@ -952,8 +999,8 @@ export function goVangDaChot(p: Principal, attemptId: number, skill: string, dau
 
 /**
  * T38 "Báo vắng" (PR-XLMT, K4-28, Q10): ghi "-" cho MỌI ô nhập của kỹ năng (W = W1 + W2) rồi CHỐT NGAY qua `settleGroup` —
- * lần vắng đầu máy tự dời, lần 2 huỷ phần thi (T3, nằm sẵn trong `settleGroup`). GVCN của lớp / Quản lý. OV-11a: tuần thi đã hết →
- * Không dự thi, như "-" nhập bù (menu ⋯ ghi "Vắng").
+ * lần vắng đầu máy tự dời, lần 2 huỷ phần thi (T3, nằm sẵn trong `settleGroup`). GVCN của lớp / Quản lý. LUAT-34 (luật 4 sửa 21/10): một luật với
+ * "-" ở ô — ghi muộn sau tuần thi vẫn chốt (dời tuần kế của lịch / thẻ Quản lý); MT cũ → Đã huỷ ngay (dấu `no_show_cu`) + chuông Quản lý.
  */
 export function baoVang(p: Principal, attemptId: number, skill: string, lyDo: string | null | undefined, today: string = demoToday()) {
   const conn = db();
@@ -962,7 +1009,6 @@ export function baoVang(p: Principal, attemptId: number, skill: string, lyDo: st
   chanVangLopKetThuc(a.class_id);
   if (a.kind !== 'mock') throw badRequest('Bài lớp thường báo vắng ở bảng điểm lớp thường.');
   if (a.status === 'cancelled') throw badRequest('Đợt này đã huỷ.');
-  if (a.lich_su) throw badRequest('MT cũ không vào luồng vắng — nhập bù điểm, không dời lịch.');
   const row = ensureSkillRows(attemptId).find((r) => r.skill === skill);
   if (!row?.required) throw badRequest(`${skillName(skill)} không nằm trong lượt này.`);
   if (row.sit_status !== 'scheduled' || !row.planned_period_id || !row.week_start || !row.week_end) {
@@ -971,8 +1017,9 @@ export function baoVang(p: Principal, attemptId: number, skill: string, lyDo: st
   if (row.week_start.slice(0, 10) > mondayOf(today)) {
     throw badRequest(`${skillName(skill)} chưa tới tuần thi — muốn đổi tuần thì "Dời lịch thi".`);
   }
-  /* OV-11a (TE-5, Q2): một luật với "-" ở ô điểm (`saveScore`) — tuần thi đã hết → Không dự thi (`no_show_cu`): không dời, không tính lần vắng. */
-  const khongDuThi = sauTuanThi(row.week_start, today);
+  /* LUAT-34: MT cũ → Đã huỷ ngay (`chuyenVang` mtCu) — dấu `no_show_cu`, không dời, không đếm. Ghi muộn ở MT hiện tại → chốt như trong tuần. */
+  const huyCu = !!a.lich_su;
+  const late = today > row.week_end.slice(0, 10);
   return tx(() => {
     const ids: number[] = [];
     const now = nowIso();
@@ -981,24 +1028,25 @@ export function baoVang(p: Principal, attemptId: number, skill: string, lyDo: st
       if (s && ((s.band ?? null) !== null || (s.raw_score ?? null) !== null)) throw badRequest(`${skillName(skill)} đã có điểm — không báo vắng.`);
       if (s) {
         conn.prepare(`UPDATE assessment_scores SET no_show_period_id = ?, no_show_by = ?, no_show_at = ?, no_show_late = ?, no_show_settled_at = ?, no_show_cu = ? WHERE id = ?`)
-          .run(row.planned_period_id, p.userId, now, khongDuThi ? 1 : 0, khongDuThi ? now : null, khongDuThi ? 1 : 0, s.id);
+          .run(row.planned_period_id, p.userId, now, late ? 1 : 0, huyCu ? now : null, huyCu ? 1 : 0, s.id);
         ids.push(s.id);
       } else {
         ids.push(Number(conn.prepare(`INSERT INTO assessment_scores (attempt_id, skill, no_show_period_id, no_show_by, no_show_at, no_show_late, no_show_settled_at, no_show_cu) VALUES (?,?,?,?,?,?,?,?)`)
-          .run(attemptId, e, row.planned_period_id, p.userId, now, khongDuThi ? 1 : 0, khongDuThi ? now : null, khongDuThi ? 1 : 0).lastInsertRowid));
+          .run(attemptId, e, row.planned_period_id, p.userId, now, late ? 1 : 0, huyCu ? now : null, huyCu ? 1 : 0).lastInsertRowid));
       }
     }
-    if (khongDuThi) {
+    if (huyCu) {
       writeAudit({
         actorUserId: p.userId, action: 'score.no_show', entityType: 'assessment_attempt', entityId: attemptId, entityLabel: skill,
-        before: null, after: { noShow: true, week: row.period_code, late: true, khongDuThi: true, lyDo: lyDo?.trim() || null },
+        before: null, after: { noShow: true, week: row.period_code, late, huyCu: true, lyDo: lyDo?.trim() || null },
       });
+      for (const e of entrySkillsOf(skill as AssessedSkill)) baoHuyVangCu(conn, p, a, e, { bat: true });
       refreshOutcome(p, attemptId);
-      return { daDoi: false, tuanMoi: null, choDuyet: false, huyVang: false, khongDuThi: true };
+      return { daDoi: false, tuanMoi: null, choDuyet: false, huyVang: false, khongDuThi: false, huyCu: true };
     }
     settleGroup(conn, attemptId, row.id, skill, row.week_end!, row.period_code ?? '', ids, p.userId, lyDo?.trim() ? `Báo vắng: ${lyDo.trim()}` : 'Báo vắng', today);
     refreshOutcome(p, attemptId);   // OV-1c: vắng = kỹ năng thiếu đã xong → lượt có thể chốt
     const sau = ensureSkillRows(attemptId).find((r) => r.skill === skill)!;
-    return { daDoi: sau.sit_status === 'scheduled', tuanMoi: sau.week_start, choDuyet: !!pendingMove(attemptId, skill), huyVang: !!sau.huy_vang, khongDuThi: false };
+    return { daDoi: sau.sit_status === 'scheduled', tuanMoi: sau.week_start, choDuyet: !!pendingMove(attemptId, skill), huyVang: !!sau.huy_vang, khongDuThi: false, huyCu: false };
   });
 }

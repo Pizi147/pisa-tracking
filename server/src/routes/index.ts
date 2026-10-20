@@ -966,6 +966,12 @@ api.post('/attempts/:id/skills/:skill/huy-diem', requireAuth, wrap((req) => {
   });
 }));
 
+/** LUAT-34 (T20b): Khôi phục điểm đã huỷ (FT: mọi ô của kỹ năng; lớp thường: môn) — một bấm, người sửa được ô. */
+api.post('/attempts/:id/skills/:skill/khoi-phuc-diem', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return ketQuaHuySvc.khoiPhucDiem(principalOf(req), pInt(req, 'id'), String(req.params.skill));
+}));
+
 /** PR-XLMT (T37 "ép vào đợt trùng"): Quản lý cho thi lại kỹ năng đã có điểm — xoá ô (lịch sử giữ), đặt tuần mới. */
 api.post('/ke-hoach-test/thi-lai', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();

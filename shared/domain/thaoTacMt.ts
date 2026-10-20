@@ -8,13 +8,13 @@ import { mondayOfDate } from './week.ts';
 import { t } from '../i18n/index.ts';
 
 export type ThaoTac = 'nhap-diem' | 'sua-diem' | 'dat-lich' | 'doi-lich' | 'doi-han' | 'bo-ky-nang' | 'dua-lai' | 'bao-vang' | 'huy-diem'
-  | 'xep-lai' | 'tra-loi-de-nghi' | 'khoi-phuc' | 'khong-mock-lai';
+  | 'xep-lai' | 'tra-loi-de-nghi' | 'khoi-phuc' | 'khong-mock-lai' | 'khoi-phuc-diem';
 
 export const CHU_THAO_TAC: Record<ThaoTac, string> = {
   'nhap-diem': t('Nhập điểm'), 'sua-diem': t('Sửa điểm'), 'dat-lich': t('Xếp lịch'), 'doi-lich': t('Dời lịch thi'), 'doi-han': t('Dời hạn chấm'),
   'bo-ky-nang': t('Huỷ kỹ năng'), 'dua-lai': t('Đưa lại vào đợt'), 'bao-vang': t('Vắng'), 'huy-diem': t('Huỷ điểm'),
   'xep-lai': t('Xếp lại bài vắng'), 'tra-loi-de-nghi': t('Trả lời đề nghị dời'), 'khoi-phuc': t('Khôi phục và đặt tuần'),
-  'khong-mock-lai': t('Không mock lại'),
+  'khong-mock-lai': t('Không mock lại'), 'khoi-phuc-diem': t('Khôi phục điểm'),
 };
 
 export type TrangThaiTT = 'khong-yeu-cau' | 'chua-xep' | 'chua-toi-tuan' | 'dang-thi' | 'co-diem' | 'vang' | 'cho-duyet' | 'da-huy' | 'lich-su'
@@ -24,9 +24,12 @@ export function trangThaiTT(o: {
   batBuoc: boolean; tuanBatDau: string | null; coDiem: boolean; sit: string | null; choDuyet: boolean; lichSu: boolean; homNay: string;
   /** T3 (PR-MTa): kỹ năng huỷ vì vắng 2 lần. Tuỳ chọn để nơi gọi cũ không đổi. */
   huyVang?: boolean;
+  /** LUAT-34: MT cũ, mọi ô của kỹ năng "-" (`no_show_cu`) = Đã huỷ · vắng MT cũ — cùng nút với vắng 2 lần (Khôi phục / Giữ huỷ). */
+  huyCu?: boolean;
 }): TrangThaiTT {
   if (!o.batBuoc) return 'khong-yeu-cau';
   if (o.coDiem) return 'co-diem';
+  if (o.huyCu && o.sit !== 'cancelled') return o.choDuyet ? 'cho-duyet' : 'huy-vang';
   /* PR-MTGON: đã huỷ xét TRƯỚC MT cũ — kỹ năng huỷ của MT cũ vẫn có "Đưa lại vào đợt". */
   /* PR-MTb sau rà (I1): huỷ vì vắng mà đang có đề nghị dời chờ → "chờ duyệt" (Quản lý trả lời đề nghị, không Khôi phục / Không mock lại song song). */
   if (o.huyVang && o.sit === 'cancelled') return o.choDuyet ? 'cho-duyet' : 'huy-vang';
@@ -43,6 +46,8 @@ export type QuyenTT = {
   nhapDiem: boolean; quanLy: boolean; gvcn: boolean; laFt: boolean; dotHoanTat: boolean;
   /** OV-10a: `attempt.skip_skill` (Huỷ kỹ năng / Đưa lại) và `deadline.override` (Dời hạn chấm) — Admin có `plan.week` mà không có hai khoá này. Bỏ trống = theo `quanLy`. */
   huy?: boolean; han?: boolean;
+  /** LUAT-34 (T20b): ô có điểm đã huỷ còn cất (`ket_qua_huy` loại `huy_diem`) → "Khôi phục điểm" cho người sửa được ô. */
+  diemHuy?: boolean;
 };
 
 /** ≤ 1 nút chính + ≤ 3 mục menu (K4-27). "Lịch sử" KHÔNG nằm trong menu dòng — ở dòng thời gian của đợt (YC-13.6). */
@@ -50,20 +55,24 @@ export function thaoTacKyNang(tt: TrangThaiTT, q: QuyenTT): { chinh: ThaoTac | n
   const ql = q.quanLy, ftQl = q.laFt && q.quanLy && (q.huy ?? true), han = ql && (q.han ?? true);
   /* PR-MTGON (luật 3): Quản lý FT "Huỷ kỹ năng" ở MỌI trạng thái còn kỹ năng trong đợt (có điểm thì web hỏi "Xoá điểm và huỷ kỹ năng?"). */
   const huy: ThaoTac[] = ftQl ? ['bo-ky-nang'] : [];
+  /* LUAT-34 (T20b): ô trống có điểm cũ đã huỷ còn cất → "Khôi phục điểm" một bấm, người sửa được ô. */
+  const khoiPhuc: ThaoTac[] = q.diemHuy && (q.nhapDiem || ql) ? ['khoi-phuc-diem'] : [];
   switch (tt) {
     case 'khong-yeu-cau': return { chinh: ftQl ? 'dua-lai' : null, menu: [] };
     case 'chua-xep': return { chinh: ql ? 'dat-lich' : null, menu: huy };
     case 'chua-toi-tuan': return { chinh: q.nhapDiem ? 'nhap-diem' : null, menu: [...(ql ? ['doi-lich'] : []), ...huy] as ThaoTac[] };
     case 'dang-thi': return { chinh: q.nhapDiem ? 'nhap-diem' : null,
-      menu: [...(q.gvcn || ql ? ['bao-vang'] : []), ...(han ? ['doi-han'] : []), ...(ql ? ['doi-lich'] : []), ...huy] as ThaoTac[] };
-    /* PR-MTb T20: Quản lý / Quản trị dời được kỹ năng đã có điểm (điểm đi theo; máy chủ `setSkillWeek` `quanLy`). */
+      menu: [...khoiPhuc, ...(q.gvcn || ql ? ['bao-vang'] : []), ...(han ? ['doi-han'] : []), ...(ql ? ['doi-lich'] : []), ...huy] as ThaoTac[] };
+    /* PR-MTb T20: Quản lý / Quản trị dời được kỹ năng đã có điểm (điểm đi theo; máy chủ `setSkillWeek` `quanLy`). LUAT-34 (L3): "Đủ điểm"
+     * không còn khoá — Huỷ điểm theo quyền sửa ô. */
     case 'co-diem': return { chinh: q.nhapDiem ? 'sua-diem' : null,
-      menu: [...(ql ? ['doi-lich'] : []), ...((q.dotHoanTat ? ql : q.nhapDiem || ql) ? ['huy-diem'] : []), ...huy] as ThaoTac[] };
-    case 'vang': return { chinh: q.gvcn || ql ? 'xep-lai' : null, menu: huy };
+      menu: [...(ql ? ['doi-lich'] : []), ...(q.nhapDiem || ql ? ['huy-diem'] : []), ...huy] as ThaoTac[] };
+    /* LUAT-34 (H15): Xếp lại bài vắng FT chỉ Quản lý (luật 09/10, máy chủ 403 với GVCN) — GVCN lớp thường giữ (SCHEDULE_MOVE). */
+    case 'vang': return { chinh: ql || (q.gvcn && !q.laFt) ? 'xep-lai' : null, menu: huy };
     case 'cho-duyet': return { chinh: ql ? 'tra-loi-de-nghi' : null, menu: [] };
     /* PR-MTGON: kỹ năng đã huỷ (dữ liệu cũ, kể cả MT cũ) → "Đưa lại vào đợt" (Quản lý FT); lớp thường giữ Khôi phục. */
     case 'da-huy': return { chinh: ftQl ? 'dua-lai' : ql ? 'khoi-phuc' : null, menu: [] };
-    case 'lich-su': return { chinh: q.nhapDiem ? 'nhap-diem' : null, menu: huy };
+    case 'lich-su': return { chinh: q.nhapDiem ? 'nhap-diem' : null, menu: [...khoiPhuc, ...huy] };
     /* T3 (PR-MTa): Chỉ Quản lý khôi phục và đặt tuần / không mock lại (luật 09/10: GVCN không xử lý lịch Test). */
     case 'huy-vang': return { chinh: q.quanLy ? 'khoi-phuc' : null, menu: q.quanLy ? ['khong-mock-lai'] : [] };
   }
