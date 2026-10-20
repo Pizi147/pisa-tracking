@@ -143,6 +143,7 @@ function cuaLop(p: Principal, loai: 'lop' | 'phan-cong' | 'gop-y' | 'nhap-hv', c
   require_(p, PERMISSIONS.ATTEMPT_VIEW, { classId }, 'Lớp này nằm ngoài phạm vi bạn được xem.');   // cùng quyền mở hồ sơ lớp (`classOverview`)
 
   if (loai === 'gop-y') {
+    /* shortcut: nhật ký góp ý gắn em + nhãn "mã lớp · tuần · môn" — đổi mã lớp thì mục ghi dưới mã cũ không hiện; ghi thêm `lopId` vào nhật ký góp ý nếu việc đổi mã lớp có HV hay xảy ra. */
     const r = docNhatKy(`a.action IN ('gop_y_tuan.ghi', 'gop_y_tuan.xoa') AND a.entity_type = 'student'
         AND a.entity_id IN (SELECT student_id FROM enrollments WHERE class_id = ?) AND a.entity_label LIKE ?`, [classId, `${c.code} · %`], tiep, null,
     (r) => ({ nguon: null, lyDo: null, truong: [{ ten: `Góp ý · ${String(r.label).slice(c.code.length + 3)}`, doiTuong: r.hv ?? 'Học viên đã xoá', cu: chu(r.b.noiDung), moi: chu(r.f.noiDung) }] }));
