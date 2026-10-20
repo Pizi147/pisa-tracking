@@ -8,7 +8,7 @@ import { LichSapToi } from './Highlights.tsx';
 import { MetricTiles } from './MetricTiles.tsx';
 import { DaiChoDuyet, DiemDangChuY, KhoiCanXuLy } from './KhoiCanXuLy.tsx';
 import { DaiTomTat, KhoiCanQuyet } from './KhoiCanQuyet.tsx';
-import { LopCanChuY, TreCham, thamSoTq, type TongQuanQlData } from './TongQuanQl.tsx';
+import { LopCanChuY, TreCham, thamSoTq, type QuanLyData, type TongQuanQlData } from './TongQuanQl.tsx';
 import { ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { HocVienCuaToi } from './HocVienCuaToi.tsx';
 import { DaiMoiDung } from '../huongDan/DaiMoiDung.tsx';
@@ -48,10 +48,12 @@ export default function OverviewPage(_: { tab?: TabTongQuan } = {}) {
    * OV-10c (mockup vai 13/10 mục 4–6): tab đầu theo việc của vai — Admin "Mock Test" (4 ô + GV chấm quá hạn + Lịch sắp tới, không khối Case / PA);
    * CX "Số liệu" (ô đếm học viên mọi chi nhánh + Số liệu, không "Việc hôm nay"). QL / Quản trị giữ nguyên.
    */
-  const ql = laVaiQuanLy(session?.roles);
-  const vai: 'ql' | 'admin' | 'cx' = ql ? 'ql' : session?.nav?.workChamDiem ? 'admin' : session?.roles?.includes('cx') ? 'cx' : 'ql';
+  const vai: 'ql' | 'admin' | 'cx' = laVaiQuanLy(session?.roles) ? 'ql' : session?.nav?.workChamDiem ? 'admin' : session?.roles?.includes('cx') ? 'cx' : 'ql';
   const nhanTabDau = vai === 'admin' ? 'Mock Test' : vai === 'cx' ? t('Số liệu') : TAB_TONG_QUAN_LABEL['tong-quan'];
-  const tq = useApi<TongQuanQlData>(vai === 'ql' && canSeeBoard && !session?.nav?.hvCuaToi ? `/tong-quan/ql?${thamSoTq(branchId, khung)}` : null, [branchId, khung]);
+  const laTqQl = vai === 'ql' && canSeeBoard && !session?.nav?.hvCuaToi;
+  const tq = useApi<TongQuanQlData>(laTqQl ? `/tong-quan/ql?${thamSoTq(branchId, khung)}` : null, [branchId, khung]);
+  /* Cần bạn quyết + dải tóm tắt: việc của QL (quyền xem việc người khác), gộp hai khung — đổi khung không tải lại. */
+  const ql = useApi<QuanLyData>(laTqQl && session?.nav?.work ? `/tong-quan/quan-ly${branchId ? `?branchId=${branchId}` : ''}` : null, [branchId]);
 
   /* PR-OV2a (mockup overhaul-3 §3): TVV — tab đầu là "Học viên của tôi", không có việc của Quản lý; Phân tích như vai có quyền xem. */
   if (session?.nav?.hvCuaToi) {
@@ -84,7 +86,7 @@ export default function OverviewPage(_: { tab?: TabTongQuan } = {}) {
       )}
       {vai === 'ql' && (
         /* OV-15d — TỔNG QUAN QL A (mockup 3, C23): dải tóm tắt nhỏ dẫn tới việc · Cần bạn quyết · Lớp cần chú ý · Tuần này. Thống kê chi tiết ở Phân tích.
-           OV-15h1: cả trang MỘT GET `/tong-quan/ql` (trước: quan-ly · chi-nhanh · highlights · giao-vien) — cùng hàm đếm, số không đổi. */
+           OV-15h1: hai GET `/tong-quan/quan-ly` + `/tong-quan/ql` (trước 4: quan-ly · chi-nhanh · highlights · giao-vien) — cùng hàm đếm, số không đổi. */
         <>
           <DaiMoiDung />
           <div className="flex flex-wrap items-center gap-3">
@@ -98,8 +100,8 @@ export default function OverviewPage(_: { tab?: TabTongQuan } = {}) {
             : (
               <>
                 {/* Hai khối việc của QL (quyền xem việc người khác) — như Cần xử lý cũ, chỉ khi có Công việc. */}
-                {session?.nav?.work && tq.data.quanLy && <DaiTomTat data={tq.data.quanLy} bang={tq.data.bang} branchId={branchId} ct={khung} />}
-                {session?.nav?.work && tq.data.quanLy && <KhoiCanQuyet data={tq.data.quanLy} loading={tq.loading} error={null} reload={tq.reload} />}
+                {ql.data && <DaiTomTat data={ql.data} bang={tq.data.bang} branchId={branchId} ct={khung} />}
+                {session?.nav?.work && <KhoiCanQuyet data={ql.data} loading={ql.loading} error={ql.error} reload={ql.reload} />}
                 <LopCanChuY data={tq.data.bang} branchId={branchId} ct={khung} />
                 <section aria-labelledby="tuan-nay" className="space-y-3">
                   <h2 id="tuan-nay" className="m-0 text-base font-semibold text-slate-100">{t('Tuần này')}</h2>

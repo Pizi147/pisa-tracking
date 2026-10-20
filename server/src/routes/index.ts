@@ -2004,10 +2004,9 @@ api.get('/tong-quan/lop-toi-day/o', requireAuth, wrap((req) => {
   return tongQuanSvc.oLopToiDay(principalOf(req), { ct: chuongTrinhTuThamSo(qStr(req, 'ct')), classId, cot: qStr(req, 'cot') ?? '' });
 }));
 
-/** OV-15h1: Tổng quan QL MỘT GET — Cần bạn quyết + Lớp cần chú ý + Tuần này + Trễ chấm theo GV, gọi lại đúng hàm của các đường cũ (số không đổi). */
+/** OV-15h1: Tổng quan QL phần theo khung MỘT GET — Lớp cần chú ý + Tuần này + Trễ chấm theo GV, gọi lại đúng hàm của các đường cũ (số không đổi). */
 api.get('/tong-quan/ql', requireAuth, wrap((req) => {
   maybeSimulateReadError();
-  lenhSvc.quetLenhDenHan();
   return tongQuanQlSvc.tongQuanQl(principalOf(req), { branchId: qInt(req, 'branchId') ?? null, ct: chuongTrinhTuThamSo(qStr(req, 'ct')) });
 }));
 /** OV-15h1: panel "n bài" của một GV ở Trễ chấm (`gv`: id · 0 chưa phân công · -1 Speaking chấm chéo). */

@@ -19,19 +19,20 @@ import { NHOM_CASE_CHUA_CHOT, NHOM_CASE_CHUA_CHOT_LABEL, thamSoCt, vaiXemHocVien
 import { dich, t } from '@shared/i18n/index.ts';
 
 /**
- * TỔNG QUAN QL — MỘT GET (OV-15h1): `/tong-quan/ql` trả cả trang (Cần bạn quyết, Lớp cần chú ý, Tuần này, Trễ chấm); khối nào cũng vẽ từ đây,
- * không tự gọi API. Số bấm mở panel của CHÍNH hàm đếm (`/tong-quan/chi-nhanh/o`, `/tong-quan/ql/tre`).
+ * TỔNG QUAN QL (OV-15h1): `/tong-quan/ql` trả phần theo khung (Lớp cần chú ý, Tuần này, Trễ chấm), `/tong-quan/quan-ly` phần gộp khung (dải tóm tắt,
+ * Cần bạn quyết) — khối vẽ từ hai GET này của trang, không tự gọi API. Số bấm mở panel của CHÍNH hàm đếm (`/tong-quan/chi-nhanh/o`, `/tong-quan/ql/tre`).
  */
 type OBang = { n: number; mau?: number };
 type HangBang = { khoa: string; id: number; loai: 'chi-nhanh' | 'lop'; nhan: string; o: Record<CotBang, OBang>; lop?: HangBang[]; gvcn?: string | null };
 export type DongCase = { id: number; title: string; sub: string; em?: { id: number; ten: string } | null; lop?: string | null; nguoi?: string | null; han?: string | null; nhom?: string | null };
 export type GvTre = { khoa: number; ten: string; bai: number; kyNang: string[]; lop: { code: string; n: number }[]; treNhat: number };
+/** `/tong-quan/quan-ly` — dải tóm tắt + Cần bạn quyết (gộp hai khung). */
+export type QuanLyData = {
+  canXuLy: { metricId: string; n: number; nguoi: 'ban' | { ids: number[] } }[];
+  canQuyet: { caseQuaHan: DongCase[]; sauThi: WorkItem[] };
+  choDuyet?: DemYeuCau;
+};
 export type TongQuanQlData = {
-  quanLy: {
-    canXuLy: { metricId: string; n: number; nguoi: 'ban' | { ids: number[] } }[];
-    canQuyet: { caseQuaHan: DongCase[]; sauThi: WorkItem[] };
-    choDuyet?: DemYeuCau;
-  } | null;
   bang: { cheDo: 'chi-nhanh' | 'lop'; hang: HangBang[]; conLai: HangBang | null; tong: Record<CotBang, OBang>; tenChiNhanh: string | null; phanRa?: Record<string, number> | null };
   lich: LichData | null;
   tre: GvTre[];

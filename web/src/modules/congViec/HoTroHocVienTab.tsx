@@ -271,9 +271,10 @@ export function HoTroHocVienTab() {
       const next = new URLSearchParams(params); next.delete('nhom'); next.delete('loai'); setParams(next, { replace: true });
     } }] : []),
   ];
-  /* Chờ bạn duyệt — cùng số badge menu (`/yeu-cau/dem`, `useApi` gộp GET đang bay). */
-  const demDuyet = useApi<DemYeuCau>(session?.nav?.workApprove ? '/yeu-cau/dem' : null).data;
+  /* Chờ bạn duyệt — OV-15h1: đếm theo chi nhánh đang lọc (cùng `cn` hộp thẻ bên dưới đọc); chưa chọn chi nhánh = mọi chi nhánh như badge menu. */
+  const demDuyet = useApi<DemYeuCau>(session?.nav?.workApprove ? `/yeu-cau/dem${branchId ? `?branchId=${branchId}` : ''}` : null, [branchId]).data;
   const [moDuyet, setMoDuyet] = useState(true);
+  const [moQuanLy, setMoQuanLy] = useState(false);
   /* "Chưa có người": việc có chủ mà chưa ai giữ (không tính chấm chéo — T18, không tính việc cả lớp như Chốt lộ trình). */
   const chuaCoNguoi = (x: WorkItem) => x.ownerId === null && !x.mine && !x.owner && x.classId !== null && !x.con
     && dich(x.statusLabel) !== CHAM_CHEO && !['chot_len_ft', 'xet_lai_lo_trinh', 'ky_vong_dau_ra', 'mgmt'].includes(x.group);
@@ -369,8 +370,13 @@ export function HoTroHocVienTab() {
                     ? <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-[28px]" onClick={() => setPhanCong(x.classId)}>{t('Phân công…')}</button> : null)} />
             </Card>
           )}
+          {/* OV-15h1: không có việc Vận hành nào — "Việc quản lý" vẫn là MỘT nhóm gập ở cuối danh sách (Giao việc · Vận hành · Báo cáo đơn vị), không thẻ rời. */}
           {coVanHanh && data && !dsNhom.some((g) => g.key === 'van-hanh') && (
-            <div className="card mt-3 px-3 py-1"><LoiVanHanh cn={branchId} baoCao={coBaoCao} onGiao={() => setGiaoViec(true)} /></div>
+            <div className="card mt-3 px-3 py-1">
+              <KhoiNhom id="nhom-viec-quan-ly" mo={moQuanLy} onMo={() => setMoQuanLy((x) => !x)} nhan={t('Việc quản lý')} tieuDe={t('Việc quản lý')} dem={0}>
+                <LoiVanHanh cn={branchId} baoCao={coBaoCao} onGiao={() => setGiaoViec(true)} />
+              </KhoiNhom>
+            </div>
           )}
           {laGv && data && !data.scopeEmpty && (
             <div className="mt-4 space-y-4">

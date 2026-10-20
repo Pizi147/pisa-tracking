@@ -1,6 +1,6 @@
 /**
  * PHÉP KIỂM OV-15h1 (kế hoạch 2026-10-20-ov15g-ov15h.md mục OV-15h1) — Công việc + Tổng quan QL:
- *  · Tổng quan QL MỘT đường `tongQuanQl` (thay 4 GET): mỗi phần trùng khít đường cũ chạy riêng (số không đổi), cột mới của Lớp cần chú ý cộng đúng,
+ *  · Tổng quan QL phần theo khung MỘT đường `tongQuanQl` (thay 3 GET; Cần bạn quyết giữ đường riêng): mỗi phần trùng khít đường cũ chạy riêng (số không đổi), cột mới của Lớp cần chú ý cộng đúng,
  *    Trễ chấm theo GV = cột "Bài quá hạn" bảng GV, phân rã Case chưa chốt PA cộng đúng tổng;
  *  · Cần bạn quyết chỉ lấy việc hạn ≤ 7 ngày (cùng ngưỡng thông báo);
  *  · thông báo tự động ghi MỘT câu cho cả lô, không reset đã đọc; ghi xong (POST) thì lần mở chuông kế đồng bộ lại ngay;
@@ -30,16 +30,14 @@ export async function runPrOv15h1Tests(t: YThucTestKit) {
   const MOI = ['chuaLich', 'chuaDiem', 'sos1', 'sos2', 'sos3', 'daThiChoKq'];
   const vai: [string, any, number | null][] = [['QL', P.mbManager, null], ['QL·MB', P.mbManager, MB], ['QT', P.admin, null], ['QT·MB', P.admin, MB]];
 
-  check('H1-1 · /tong-quan/ql một request = bốn đường cũ chạy riêng: Cần bạn quyết · Lớp cần chú ý (cột cũ) · Lịch — từng số giữ nguyên', () => {
+  check('H1-1 · /tong-quan/ql một request = các đường cũ chạy riêng: Lớp cần chú ý (cột cũ) · Lịch — từng số giữ nguyên; Trễ chấm thay /giao-vien (H1-3)', () => {
     for (const ct of ['ft', 'thuong']) {
       for (const [ten, p, cn] of vai) {
         const moi = GET(() => tqQl.tongQuanQl(p, { branchId: cn, ct }));
         const cu = {
-          quanLy: GET(() => tq.tongQuanQuanLy(p, { branchId: cn })),
           bang: GET(() => bang.bangChiNhanh(p, { branchId: cn, ct })),
           lich: GET(() => hl.highlights(p, { branchId: cn, program: ct })),
         };
-        assert(JSON.stringify(moi.quanLy) === JSON.stringify(cu.quanLy), `${ten} ${ct}: Cần bạn quyết khác đường cũ`);
         assert(JSON.stringify(bo(moi.bang, [...MOI, 'gvcn', 'phanRa'])) === JSON.stringify(bo(cu.bang, [...MOI, 'gvcn', 'phanRa'])), `${ten} ${ct}: Lớp cần chú ý (cột cũ) khác đường cũ`);
         assert(JSON.stringify(moi.lich) === JSON.stringify(cu.lich), `${ten} ${ct}: Tuần này khác /highlights`);
       }

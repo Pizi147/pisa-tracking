@@ -1,4 +1,5 @@
 import { THAM_SO_TOI_DA, db, theoLo } from '../db.ts';
+import { nhoTheoId } from '../platform/nguCanhRequest.ts';
 import { CASE_DISMISS_REASON_LABEL, cotXuLy, hanThemPa, trangThaiCaseV4, type CaseDismissReason, type CotXuLy, type TrangThaiCaseV4 } from '../../../shared/domain/index.ts';
 
 /**
@@ -200,9 +201,13 @@ export function xuLyCuaDong(r: any, homNay: string): { cot: CotXuLy; quaHan: boo
 
 /** `xuLyCuaDong` cho NHIỀU Case — một câu mỗi lô (`theoLo`). */
 export function xuLyCaseMany(caseIds: readonly number[], homNay: string): Map<number, ReturnType<typeof xuLyCuaDong>> {
-  const out = new Map<number, ReturnType<typeof xuLyCuaDong>>();
-  theoLo(caseIds, (lo, ph) => {
-    for (const r of db().prepare(`SELECT ${XU_LY_COT_SQL} FROM sos_cases sc WHERE sc.id IN (${ph})`).all(...lo) as any[]) out.set(r.id as number, xuLyCuaDong(r, homNay));
+  /* OV-15h1: nhớ theo Case trong request (GET) — Tổng quan QL hỏi lại cùng các Case ở Case chưa chốt PA, quá hạn, phân rã. */
+  const dong = nhoTheoId(`xu-ly:${homNay}:`, [...caseIds], (thieu) => {
+    const m = new Map<number, ReturnType<typeof xuLyCuaDong>[]>();
+    theoLo(thieu, (lo, ph) => {
+      for (const r of db().prepare(`SELECT ${XU_LY_COT_SQL} FROM sos_cases sc WHERE sc.id IN (${ph})`).all(...lo) as any[]) m.set(r.id as number, [xuLyCuaDong(r, homNay)]);
+    });
+    return m;
   });
-  return out;
+  return new Map([...dong].map(([id, [x]]) => [id, x]));
 }

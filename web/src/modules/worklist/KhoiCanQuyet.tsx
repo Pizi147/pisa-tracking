@@ -8,15 +8,15 @@ import { NganCase } from '../students/NganCase.tsx';
 import { HopChoDuyet } from '../duyet/HopChoDuyet.tsx';
 import { PanelViec } from '../congViec/PanelViec.tsx';
 import type { WorkItem } from './WorkList.tsx';
-import { PanelLoTrinhLop, thamSoTq, type DongCase, type TongQuanQlData } from './TongQuanQl.tsx';
+import { PanelLoTrinhLop, thamSoTq, type DongCase, type QuanLyData, type TongQuanQlData } from './TongQuanQl.tsx';
 import type { ChuongTrinh } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 
 /**
  * TỔNG QUAN QL — A (OV-15d, mockup OV-14 số 3 mục 1, C23, Q5, Q6a). Hai khối đầu trang; "Lớp cần chú ý" là `LopCanChuY`, "Tuần này" là
- * `LichSapToi` + `TreCham` — cả trang đọc MỘT GET `/tong-quan/ql` (OV-15h1). Mọi số đi qua `SoLieuO` (bấm → panel đúng tập, cùng hàm đếm); không Nhắc (C03).
+ * `LichSapToi` + `TreCham` — trang đọc hai GET `/tong-quan/quan-ly` + `/tong-quan/ql` (OV-15h1, trước 4). Mọi số đi qua `SoLieuO` (bấm → panel đúng tập, cùng hàm đếm); không Nhắc (C03).
  */
-type Data = NonNullable<TongQuanQlData['quanLy']>;
+type Data = QuanLyData;
 
 /**
  * DẢI TÓM TẮT "HV cần chú ý" (Q6a, mockup 3): chưa lịch Test (FT) · chưa điểm · Case chưa chốt PA (HV · Case, ⚠ quá hạn) · bài trễ chấm · số GV.

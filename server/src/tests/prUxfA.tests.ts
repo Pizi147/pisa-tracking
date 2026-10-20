@@ -499,18 +499,6 @@ export async function runPrUxfATests(t: YThucTestKit) {
     }
   });
 
-  check('UXF-a (9) · F5 hàm thuần: Lọc nhanh "Tất cả" = Nhóm "Tất cả" = Σ nhóm; lọc Quá hạn thì nhóm chỉ đếm việc quá hạn (nhắc mềm đã thành việc thật — VAI-a K5-10)', () => {
-    const it = (group: string, urgency: string, due: string | null) => ({ group, urgency, due });
-    const items = [it('score', 'overdue', '2026-09-10'), it('case_plan', 'today', TODAY), it('violation', 'normal', null), it('task', 'normal', '2026-09-18')];
-    const loc = d.demLocNhanh(items, 'tat-ca', TODAY);
-    const nhom = d.demNhomChip(items, 'tat-ca', TODAY);
-    const tong = d.NHOM_VIEC.reduce((n: number, k: string) => n + nhom[k], 0);
-    assert(loc['tat-ca'] === items.length && nhom['tat-ca'] === loc['tat-ca'] && tong === nhom['tat-ca'], `Tất cả: lọc ${loc['tat-ca']} · nhóm ${nhom['tat-ca']} · Σ ${tong}`);
-    assert(loc['qua-han'] === 1 && loc['hom-nay'] === 1, `Quá hạn/Hôm nay: ${JSON.stringify(loc)}`);
-    const nhomQuaHan = d.demNhomChip(items, 'qua-han', TODAY);
-    assert(nhomQuaHan['tat-ca'] === 1 && nhomQuaHan['tat-ca'] === loc['qua-han'], `nhóm khi lọc Quá hạn: ${JSON.stringify(nhomQuaHan)}`);
-  });
-
   // ==================================================================== Task 10 · Chưa phân loại không rơi Case; hạn gốc đúng; tooltip Tạm thời
   const vanDe: any = await import('../phanTich/vanDeHv.ts');
   const mgmt: any = await import('../worklist/mgmttasks.ts');

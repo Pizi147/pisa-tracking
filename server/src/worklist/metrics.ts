@@ -18,16 +18,22 @@ import { NOT_UNCONFIRMED_PRESET, sosCaseStateMany, xuLyCaseMany } from '../cases
  */
 function phanRaCaseChuaChot(ids: number[], xl: ReturnType<typeof xuLyCaseMany>): Record<NhomCaseChuaChot, number[]> {
   const out = Object.fromEntries(NHOM_CASE_CHUA_CHOT.map((k) => [k, [] as number[]])) as Record<NhomCaseChuaChot, number[]>;
+  for (const [id, k] of nhomCaseChuaChot(ids, xl)) out[k].push(id);
+  return out;
+}
+/** Nhóm của từng Case chưa chốt PA (cùng luật phân rã) — Cần bạn quyết ghi nhãn dòng bằng hàm này. `xl` = `xuLyCaseMany` của chính các Case. */
+export function nhomCaseChuaChot(ids: number[], xl: ReturnType<typeof xuLyCaseMany>): Map<number, NhomCaseChuaChot> {
   const coPa = ids.filter((id) => xl.get(id)?.k === 'dang-lam' && xl.get(id)!.coPa);
   const choDuyet = new Set<number>();
   theoLo(coPa, (lo, ph) => {
     for (const r of db().prepare(`SELECT DISTINCT case_id FROM case_interventions WHERE case_id IN (${ph}) AND status != 'cancelled' AND approval_state = 'pending'`).all(...lo) as any[]) choDuyet.add(r.case_id);
   });
+  const out = new Map<number, NhomCaseChuaChot>();
   for (const id of ids) {
-    const x = xl.get(id)!;
-    const k: NhomCaseChuaChot = x.k === 'cho-nhan-xet' || x.k === 'cho-nguyen-nhan' ? 'choNhanXet' : x.k === 'cho-xac-nhan-pa' ? 'choXacNhanPa'
-      : x.k === 'cho-duyet-doi-pa' || choDuyet.has(id) ? 'choDuyetPa' : x.k === 'cho-duyet-khong-theo-doi' ? 'khongTheoDoi' : x.coPa ? 'paXong' : 'trongPa';
-    out[k].push(id);
+    const x = xl.get(id);
+    if (!x) continue;
+    out.set(id, x.k === 'cho-nhan-xet' || x.k === 'cho-nguyen-nhan' ? 'choNhanXet' : x.k === 'cho-xac-nhan-pa' ? 'choXacNhanPa'
+      : x.k === 'cho-duyet-doi-pa' || choDuyet.has(id) ? 'choDuyetPa' : x.k === 'cho-duyet-khong-theo-doi' ? 'khongTheoDoi' : x.coPa ? 'paXong' : 'trongPa');
   }
   return out;
 }

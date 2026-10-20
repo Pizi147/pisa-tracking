@@ -28,4 +28,12 @@ export const EN_OV15H1 = {
   '{n} Case của {hv} HV chưa có PA đang chạy.': (b) => `${b.n} Cases of ${b.hv} students have no running PA.`,
   '{n} bài': (b) => `${b.n} items`,
   'Ẩn {n} lớp không có việc': (b) => `${b.n} classes with nothing to do hidden`,
+  'Lớp thường: Tổng quan › <b>Cần bạn quyết</b> › <b>Chốt lộ trình</b> (hạn trong 7 ngày; có thông báo) → nút <b>Chốt lộ trình</b> mở bảng lộ trình cả lớp ngay tại chỗ.':
+    'Normal classes: Overview › <b>Needs your decision</b> › <b>Finalise pathway</b> (due within 7 days; you get a notification) → <b>Finalise pathway</b> opens the whole-class pathway table in place.',
+  'Dải đầu trang: <b>chưa lịch Test</b> · <b>chưa điểm</b> · <b>HV · Case chưa chốt PA</b> (⚠ quá hạn) · <b>bài trễ chấm · n GV</b>.':
+    'Top strip: <b>no Test date</b> · <b>no score</b> · <b>students · Cases without a set PA</b> (⚠ overdue) · <b>late marking · n teachers</b>.',
+  'Bấm một số để mở đúng danh sách.': 'Press a number to open its exact list.',
+  '<b>Lớp cần chú ý</b>: Chưa lịch, Chưa điểm, SOS 1 · 2 · 3, <b>Case chưa chốt PA</b> (HV / Case; <b>?</b> chia theo trạng thái), Đã thi · chờ KQ; mặc định <b>Chỉ lớp có vấn đề</b>.':
+    '<b>Classes needing attention</b>: No date, No score, SOS 1 · 2 · 3, <b>Cases without a set PA</b> (students / Cases; <b>?</b> splits by state), Sat · awaiting results; default <b>Only classes with issues</b>.',
+  'Mỗi lớp một hàng; bấm số để xử lý.': 'One row per class; press a number to act.',
 } satisfies Record<string, Dich>;

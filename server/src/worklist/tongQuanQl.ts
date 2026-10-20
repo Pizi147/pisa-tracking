@@ -5,22 +5,17 @@ import { badRequest } from '../util.ts';
 import type { Principal } from '../permissions.ts';
 import { scopeFor } from '../permissions.ts';
 import { metricSet, rowsFor, type MetricRow } from './metrics.ts';
-import { tongQuanQuanLy } from './tongQuan.ts';
 import { bangChiNhanh } from './bangChiNhanh.ts';
 import { highlights } from './highlights.ts';
-import { phamViXemViec } from './xemViec.ts';
 
 /**
- * TỔNG QUAN QL — MỘT ĐƯỜNG (OV-15h1, ý của #471). Trang Tổng quan QL trước gọi 4 GET dữ liệu (`/tong-quan/quan-ly`, `/tong-quan/chi-nhanh`,
- * `/highlights`, `/giao-vien`); nay một GET gọi lại ĐÚNG các hàm đó trong một request — chỉ số dùng chung (`metricSet`, `latestAttempts`, nợ điểm)
- * tính một lần nhờ bộ nhớ request, số không đổi (phép kiểm H1-1 so từng phần với đường cũ chạy riêng). Không luật đếm mới.
- *  · `quanLy`: dải tóm tắt + Cần bạn quyết (gộp hai khung) · `bang`: Lớp cần chú ý (`chuY`) · `lich`: Tuần này · `tre`: Trễ chấm theo GV.
+ * TỔNG QUAN QL — PHẦN THEO KHUNG MỘT ĐƯỜNG (OV-15h1, ý của #471). Trang trước gọi 4 GET dữ liệu (`/tong-quan/quan-ly`, `/tong-quan/chi-nhanh`, `/highlights`,
+ * `/giao-vien`); nay Cần bạn quyết giữ `/tong-quan/quan-ly` (gộp hai khung — đổi khung không tải lại; riêng nó ~70 câu nên không gộp được dưới trần 100 câu / đường),
+ * còn Lớp cần chú ý + Tuần này + Trễ chấm là MỘT GET gọi lại ĐÚNG các hàm cũ — chỉ số dùng chung tính một lần nhờ bộ nhớ request, số không đổi (H1-1).
  */
 export function tongQuanQl(p: Principal, f: { branchId?: number | null; ct: ChuongTrinh }) {
   const branchId = f.branchId ?? null;
   return {
-    /* Cần bạn quyết là việc của Quản lý (xem việc người khác) — vai chỉ có `analysis.view` vẫn xem được phần số liệu của trang. */
-    quanLy: phamViXemViec(p) === 'het' ? tongQuanQuanLy(p, { branchId }) : null,
     bang: bangChiNhanh(p, { branchId, ct: f.ct, chuY: true }),
     lich: highlights(p, { branchId, program: f.ct }),
     tre: treCham(p, branchId, f.ct).dong,
