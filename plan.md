@@ -12,6 +12,7 @@ File này **thay** cho: `plan.md` cũ (mục 0–24), `PROMPT_SESSION_CODE.md`, 
 
 | File chi tiết | Dùng cho |
 |---|---|
+| `docs/superpowers/specs/2026-10-20-danh-gia-lai-ux-ui-toan-dien.md` | **Đánh giá lại UX/UI toàn diện 20/10** (chủ SP không hài lòng sau OV-15): điểm ~23/40, vì sao lệch mockup, vấn đề xuyên suốt X1–X11, bảng mọi mã theo khu vực, kế hoạch GĐ0–GĐ4, 4 + 38 câu hỏi — phụ lục `2026-10-20-danh-gia-ux/` (8 báo cáo agent + 43 ảnh). **Đọc trước khi giao bất kỳ PR giao diện nào.** |
 | `docs/superpowers/plans/2026-10-20-ov15g-ov15h.md` | **OV-15g** Lịch sử thay đổi (C22) · **OV-15h1** Công việc + Tổng quan (việc lẻ 15d, ý #471) · **OV-15h2** Học viên & Lớp + xuất + dọn — 3 PR song song, prompt cuối file |
 | `docs/superpowers/plans/2026-10-19-ov15-overhaul-6-pr.md` | **OV-15a…f** — 6 PR overhaul song song (nền màu/chữ/chip · lưới + Excel · Kế hoạch Test · Công việc + Tổng quan · Phân tích + Báo cáo · Lịch thi + Xuất DS), prompt cloud ở cuối |
 | `docs/superpowers/specs/2026-10-18-ov14-thiet-ke-tong-the-design.md` | **OV-14 thiết kế tổng thể** (18/10, chờ duyệt): C01–C31 giữ / thay / hỏi, Chấm Speaking, bản đồ web, phân kỳ — nguồn `specs/nguon/2026-10-18-ov14-prompt-tong-hop.md` |
@@ -225,6 +226,13 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
   5. **Sổ tay PDF**: cập nhật theo EN-e + 13f trước lần deploy kế (mục 17/10 ở trên) — vẫn còn.
   6. ~~Overhaul UX tuần sau~~ → **OV-14** (khối dưới).
   7. Nhỏ: ~~Netlify CLI 27.13~~ ✅ 18/10; huy hiệu "Powered by Netlify" (chủ SP tắt trong Project configuration › General).
+
+### ĐÁNH GIÁ LẠI UX/UI 20/10 — chủ SP không hài lòng sau OV-15 (`docs/superpowers/specs/2026-10-20-danh-gia-lai-ux-ui-toan-dien.md`)
+- **Chủ SP 20/10 (12 ảnh):** web không bám mockup đã duyệt, vài chỗ tệ hơn bản trước, panel / chuyển trang thừa → yêu cầu rà toàn diện, khách quan, **chỉ đánh giá + kế hoạch, chưa sửa**.
+- **Kết quả (8 agent Opus, 1 789 ảnh, 9 vai):** ~23/40 (không xứng ≥ 35; Nhất quán 1/4 mọi khu vực); khớp mockup ~60 % (Tổng quan, Hồ sơ lớp ~40 %). Lỗi số: **P0 "Theo tháng" ra tháng trước**, "PA có kết quả trong kỳ" không theo kỳ,
+  Chờ duyệt 10 / 12 thẻ (chi nhánh), 8 số dải Tổng quan bấm không mở, 4 định nghĩa SOS, Đang SOS chia trang sai. Nguyên nhân lệch mockup = **quy trình** (kế hoạch dịch khung thành chữ, luật "sửa trên nền", PR chia theo tệp, không cổng ảnh cặp, chủ SP không xem trước merge).
+- **Đề xuất (CHƯA duyệt):** GĐ0 quy trình Q1–Q13 + seed + công cụ → GĐ1 sửa số / lỗi chức năng (SL1, SL2, CV-LOI, KHUNG-LOI; khuyến nghị **trước deploy**) → GĐ2 làm lại từng màn (M0…M7, chủ SP duyệt ảnh cặp) → GĐ3 thống nhất → GĐ4 chấm lại.
+  **Chờ chủ SP:** 4 câu mục 9.1 tài liệu (nguồn nào thắng · duyệt trước merge · sửa số trước deploy · một phạm vi một trang). Chưa giao PR nào.
 
 ### OV-14 — overhaul UX 17–18/10 (đánh giá `docs/superpowers/specs/2026-10-17-ov14-danh-gia-ux.md`, mockup `thiet-ke/mockup-ov14-*`)
 - **Rà 17/10** (impeccable critique + detector, ui-ux-pro-max, hai bên đối thoại, xác minh mã main 6177d36f, 266 ảnh demo): Nielsen 27/40, ui-ux-pro-max 25/40 → đích ≥ 35 (37).
