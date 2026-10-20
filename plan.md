@@ -12,6 +12,7 @@ File này **thay** cho: `plan.md` cũ (mục 0–24), `PROMPT_SESSION_CODE.md`, 
 
 | File chi tiết | Dùng cho |
 |---|---|
+| `docs/superpowers/plans/2026-10-20-ov15g-ov15h.md` | **OV-15g** Lịch sử thay đổi (C22) · **OV-15h1** Công việc + Tổng quan (việc lẻ 15d, ý #471) · **OV-15h2** Học viên & Lớp + xuất + dọn — 3 PR song song, prompt cuối file |
 | `docs/superpowers/plans/2026-10-19-ov15-overhaul-6-pr.md` | **OV-15a…f** — 6 PR overhaul song song (nền màu/chữ/chip · lưới + Excel · Kế hoạch Test · Công việc + Tổng quan · Phân tích + Báo cáo · Lịch thi + Xuất DS), prompt cloud ở cuối |
 | `docs/superpowers/specs/2026-10-18-ov14-thiet-ke-tong-the-design.md` | **OV-14 thiết kế tổng thể** (18/10, chờ duyệt): C01–C31 giữ / thay / hỏi, Chấm Speaking, bản đồ web, phân kỳ — nguồn `specs/nguon/2026-10-18-ov14-prompt-tong-hop.md` |
 | `docs/superpowers/specs/2026-10-17-ov14-danh-gia-ux.md` | **OV-14** (overhaul UX 17/10): rà docx 16/10 + audit 17/10 + 3 góp ý chủ SP, xác minh mã, impeccable 27/40 · ui-ux-pro-max 25/40, đường lên ≥ 35/40, 12 ý tưởng, thứ tự |
