@@ -1,5 +1,5 @@
 import { db } from '../db.ts';
-import { CASE_CATEGORY_SKILL, PERMISSIONS } from '../../../shared/domain/index.ts';
+import { CASE_CATEGORY_SKILL, PERMISSIONS, categoryOf } from '../../../shared/domain/index.ts';
 import { can, napTruocPhamVi, type Principal } from '../permissions.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 
@@ -37,7 +37,7 @@ function chonChuCase(ds: PhanCong[], category: string | null): PhanCong | null {
 }
 
 /** CASE-NHIEU: người phụ trách gợi ý cho từng kỹ năng (`case-topics` — đầu thẻ "phụ trách: …"), cùng luật `suggestCaseOwner`. */
-export function chuCaseTheoKyNang(classId: number | null, topics: readonly string[], categoryOf: (t: string) => string | null) {
+export function chuCaseTheoKyNang(classId: number | null, topics: readonly string[]) {
   const ds = classId ? phanCongLop(classId) : [];
   return Object.fromEntries(topics.map((k) => {
     const r = chonChuCase(ds, categoryOf(k));

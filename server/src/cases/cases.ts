@@ -830,7 +830,7 @@ export function caseTopicsOf(p: Principal, studentId: number, cycleId?: number |
     const c = khoa ? mo.find((x) => x.dedup_key === khoa && !caseKhacChuongTrinh(x, ctLop)) : null;
     if (c) dangMo[k] = { id: c.id, title: caseTitleOf(c), detectedAt: c.detected_at, soPa: c.so_pa };
   }
-  const phuTrach = chuCaseTheoKyNang(enr?.class_id ?? null, topics, categoryOf);
+  const phuTrach = chuCaseTheoKyNang(enr?.class_id ?? null, topics);
   return { ratio, topics, chuongTrinh, choNguyenNhan, ghiBuDuoc, dangMo, phuTrach };
 }
 
