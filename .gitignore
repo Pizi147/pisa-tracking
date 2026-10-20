@@ -23,3 +23,4 @@ data/*.bak
 
 # Sổ tay PDF: tệp dựng tạm (HTML, kịch bản dò)
 docs/so-tay/_dung/
+.agents/
