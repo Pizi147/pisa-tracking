@@ -56,6 +56,7 @@ export async function runPrOv15h2Tests(t: YThucTestKit) {
   const json = async (r: Response): Promise<any> => { const x = await r.json().catch(() => null); if (!r.ok) throw new Error(`${r.status} ${JSON.stringify(x)}`); return x; };
   const post = (body: unknown): RequestInit => ({ method: 'POST', body: JSON.stringify(body) });
   const KN = ['listening', 'reading', 'writing', 'speaking'];
+  const em2 = em;
   const xep = async (goi: any, sid: number, n: number, thuHai: string, them: Record<string, unknown> = {}) => (await json(await goi(QL, '/ke-hoach-test/xep-moi', post({
     studentId: sid, attemptNo: n, tuan: Object.fromEntries(KN.map((k) => [k, tuan(thuHai)])), force: true, ...them,
   }))));
@@ -213,6 +214,50 @@ export async function runPrOv15h2Tests(t: YThucTestKit) {
       const ap = pre.bai(pre.sids[0], 'final');
       const rp = await json(await goi(QL, '/regular/scores/lo', post({ classId: pre.l, luot: 'thuong:final', loId: 'h2-i', cuoi: true, dong: [{ attemptId: ap, o: [{ skill: 'tong_hop', score: 45, total: 50 }] }] })));
       assert(rp.dong[0].ok && o(ap, 'tong_hop')?.raw_score === 45, JSON.stringify(rp));
+    });
+  });
+
+  // ------------------------------------------------------------------ ý 3 · Bộ lọc thêm (Case / PA, kỹ năng, kết quả, thời gian)
+  await checkAsync('H2-3 · Bộ lọc thêm: hàm thuần (hoặc trong nhóm, và giữa nhóm; Case / PA theo trạng thái V4; kết quả theo khung); /hoc-vien-lop?them=1 gắn nhãn từng em, không them thì không', async () => {
+    assert(d.nhomCaseEm([]).join() === 'khong-case', 'không Case');
+    assert(d.nhomCaseEm([{ k: 'dang-lam', pa: [] }]).join() === 'co-case,trong-pa', 'Case trống PA');
+    assert(d.nhomCaseEm([{ k: 'dang-lam', pa: [{ xong: false }] }, { k: 'cho-nguyen-nhan', pa: [] }]).join() === 'co-case,pa-chay,cho-nhan-xet', 'hai Case');
+    assert(d.nhomCaseEm([{ k: 'dang-lam', pa: [{ xong: true }] }, { k: 'tam', pa: [] }]).join() === 'co-case,pa-xong', 'PA xong; tạm chỉ Có Case');
+    const st = (o: any) => ({ mode: 'ielts_band', attemptLabel: 'MT2', sosLevel: null, provisional: false, scored: 5, required: 5, failed: null, overall: 6, expectation: 6, belowSkills: [], failedSkills: [], ...o });
+    assert(d.ketQuaLoc(null) === null && d.ketQuaLoc(st({})) === 'dat' && d.ketQuaLoc(st({ overall: 5.5 })) === 'chua-dat' && d.ketQuaLoc(st({ scored: 3 })) === 'chua-du', 'FT');
+    assert(d.ketQuaLoc(st({ mode: 'ratio', failed: 0 })) === 'dat' && d.ketQuaLoc(st({ mode: 'ratio', failed: 2 })) === 'chua-dat', 'lớp thường');
+    assert(d.kyNangLoc(st({ belowSkills: [{ skill: 'writing2', band: 5 }, { skill: 'reading', band: 5 }] })).join() === 'writing,reading', 'W2 → W');
+    const em = { case: ['co-case', 'trong-pa'], kn: ['reading'], kq: 'chua-dat', tuan: '2026-09-07' };
+    const f = (o: any) => ({ case: [], kn: [], kq: [], tu: null, den: null, ...o });
+    assert(d.khopLocThem(undefined, f({})) && !d.khopLocThem(undefined, f({ kq: ['dat'] })), 'không lọc = khớp; đang lọc mà chưa có nhãn = không');
+    assert(d.khopLocThem(em, f({ case: ['trong-pa', 'pa-chay'], kq: ['chua-dat'] })), 'hoặc trong nhóm, và giữa nhóm');
+    assert(!d.khopLocThem(em, f({ case: ['trong-pa'], kn: ['listening'] })), 'nhóm kỹ năng không khớp');
+    assert(d.khopLocThem(em, f({ tu: '2026-09-10', den: '2026-09-20' })) && !d.khopLocThem(em, f({ tu: '2026-09-14', den: '2026-09-20' })), 'tuần thi chạm khoảng');
+    const doc = d.docLocThem((k: string) => ({ lc: 'trong-pa,xx', lk: 'reading', lq: 'dat', ltu: '2026-09-01', lden: '2026-08-01' } as any)[k] ?? null);
+    assert(doc.case.join() === 'trong-pa' && doc.kn.join() === 'reading' && doc.tu === null, JSON.stringify(doc));
+
+    const l = lop('MB H2 LOC 01');
+    const a = em2(l, 'Lý Thanh Tâm'), b = em2(l, 'Hà Minh Khôi'), c = em2(l, 'Kim Bảo Ngân');
+    const moCase = (sid: number, cy: number) => Number(conn.prepare(`INSERT INTO sos_cases (student_id, cycle_id, category, topic, origin_kind, status, detected_at, created_at) VALUES (?,?,?,?, 'teacher_report', 'in_progress', ?, ?)`)
+      .run(sid, cy, 'reading', 'reading', TODAY, NOW).lastInsertRowid);
+    moCase(a.sid, a.cy);
+    const cc = moCase(c.sid, c.cy);
+    conn.prepare(`INSERT INTO case_interventions (case_id, kind, description, status, recorded_by, created_at) VALUES (?, 'self_study', 'Tự học thêm', 'started', ?, ?)`).run(cc, QL, NOW);
+    await voiMayChu(async (goi) => {
+      const q = `/hoc-vien-lop?phamVi=chi-nhanh&cn=${MB}&q=${encodeURIComponent('MB H2 LOC')}`;
+      const khong = await json(await goi(QL, q));
+      assert(khong.hocVien.every((h: any) => h.them === undefined), 'không them=1 → không nhãn (dòng đọc như cũ)');
+      const co = await json(await goi(QL, `${q}&them=1`));
+      const nhan = (sid: number) => co.hocVien.find((h: any) => h.id === sid)?.them;
+      assert(nhan(a.sid)?.case.join() === 'co-case,trong-pa', `a: ${JSON.stringify(nhan(a.sid))}`);
+      assert(nhan(b.sid)?.case.join() === 'khong-case' && nhan(b.sid).kq === null && nhan(b.sid).tuan === null, `b: ${JSON.stringify(nhan(b.sid))}`);
+      assert(nhan(c.sid)?.case.join() === 'co-case,pa-chay', `c: ${JSON.stringify(nhan(c.sid))}`);
+    });
+    /* Em có kết quả trong bộ demo: nhãn kết quả + tuần đi cùng lượt gần nhất. */
+    await voiMayChu(async (goi) => {
+      const r = await json(await goi(QL, `/hoc-vien-lop?phamVi=chi-nhanh&cn=${MB}&them=1&q=${encodeURIComponent('MB FT 101')}`));
+      const coKq = r.hocVien.filter((h: any) => h.them?.kq);
+      assert(coKq.length > 0 && coKq.every((h: any) => /^\d{4}-\d{2}-\d{2}$/.test(h.them.tuan ?? '')), `demo MB FT 101: ${JSON.stringify(r.hocVien.slice(0, 3).map((h: any) => h.them))}`);
     });
   });
 }

@@ -22,6 +22,7 @@ import {
 import { dich, t } from '@shared/i18n/index.ts';
 import { ChipSos } from '../../ui/ChipSos.tsx';
 import { DauKetQua } from '../../ui/BieuTuong.tsx';
+import { OChon, type ChonNhieu } from './chonNhieuHocVien.tsx';
 
 /** Các trường của một dòng `GET /classes/:id/roster` mà bảng này đọc. */
 export type NhanSauThiEm = { giaiDoan: GiaiDoanSauThi; han: string | null; quaHan: boolean; daGiaHan: boolean };
@@ -84,7 +85,9 @@ export type LopChoBang = {
  * chữ ở ≥ 2 em thành MỘT hàng "Cả lớp" đầu lớp. `chiHien` = id học viên còn lại sau chip lọc / ô tìm (máy chủ tính); `null` = mọi em đang học.
  * Nằm ở: Học viên & Lớp (menu trái) → mở một lớp. Điện thoại (< 640 px, D2): `the` = mỗi em một `TheDong` thay vì `<tr>` (cùng dữ liệu, cùng thứ tự cột).
  */
-export function BangHocVienLop({ lop, chiHien, sapXep, onDoi, soCot, the = false, ds, onThuTu, admin = false, onMoCase }: {
+export function BangHocVienLop({ lop, chiHien, sapXep, onDoi, soCot, the = false, ds, onThuTu, admin = false, onMoCase, chon }: {
+  /** OV-15h2 (ý 1): ô tick trước tên em (Xuất Excel "Các HV đã chọn"); em Kết thúc học không tick. */
+  chon?: ChonNhieu;
   /** OV-12f: việc Case ở cột Việc tiếp theo mở Panel một em tại trang (không rời Học viên & Lớp). */
   onMoCase?: (studentId: number, caseId: number) => void;
   lop: LopChoBang; chiHien: Set<number> | null; sapXep: SapXep; onDoi: () => void;
@@ -175,6 +178,7 @@ export function BangHocVienLop({ lop, chiHien, sapXep, onDoi, soCot, the = false
             <TheDong key={s.id} className={`${s.status !== 'active' ? 'row-muted' : ''} ${chipSauThi(s.sauThi) ? 'hang-da-thi' : ''}`}
               dau={(
                 <span className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5">
+                  {chon && s.status !== 'finished' && <OChon chon={chon} id={s.id} ten={s.fullName} />}
                   <Link className="link font-semibold" to={`/hoc-vien/${s.id}`} state={{ ds }}>{s.fullName}</Link>
                   {s.status === 'finished' ? <Nhan tone="done">{t('Đã kết thúc học')}</Nhan> : <MissingBadge items={s.missing} gon />}
                   <CanhBaoYThuc cb={s.canhBaoYThuc} />
@@ -226,6 +230,7 @@ export function BangHocVienLop({ lop, chiHien, sapXep, onDoi, soCot, the = false
             <td className="td h-14">
               {/* PR-S4F #11: tên được ưu tiên chỗ — badge xuống dòng khi chật; tên quá dài vẫn cắt nhưng có title. */}
               <span className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5">
+                {chon && s.status !== 'finished' && <OChon chon={chon} id={s.id} ten={s.fullName} />}
                 <Link className="link max-w-full truncate font-semibold" title={s.fullName} to={`/hoc-vien/${s.id}`} state={{ ds }}>{s.fullName}</Link>
                 {s.status === 'finished' ? <Nhan tone="done">{t('Đã kết thúc học')}</Nhan> : <MissingBadge items={s.missing} gon />}
                 <CanhBaoYThuc cb={s.canhBaoYThuc} />
