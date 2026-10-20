@@ -510,6 +510,7 @@ tr.nhom-hang td{background:var(--surface-2);height:36px;font-weight:700;color:va
 </style>
 </head>
 <body>
+<div role="note" style="position:sticky;top:0;z-index:9999;background:#7a2e0e;color:#fff;font:600 13px/1.45 system-ui,sans-serif;padding:6px 12px">Khung 1, 2 PHẢI SỬA 21/10 — xem 06 mục 3: Lịch thi nhóm theo trạng thái, chip A / B, [Chốt ngày] [Dời tháng], bỏ "Cần xác nhận" → "Chưa kết luận", "Ghi chú" (Q-C3 ①, Q-C4 ①); Xuất DS bỏ cột tick, bớt em trong panel Xuất (Q-E2 ①).</div>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <symbol id="i-tim" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-3.6-3.6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
   <symbol id="i-chuong" viewBox="0 0 24 24"><path d="M6 16v-5a6 6 0 1 1 12 0v5l1.5 2h-15zM10 20.5a2 2 0 0 0 4 0" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/></symbol>
@@ -553,6 +554,7 @@ tr.nhom-hang td{background:var(--surface-2);height:36px;font-weight:700;color:va
 
 <!-- ===================== 1 ===================== -->
 <section class="sec" id="q1">
+  <!-- PHẢI SỬA 21/10 — Q-C3 ①, Q-C4 ① (02 mục 2.9); X-30, X-48. Nguồn: docs/superpowers/specs/2026-10-20-ke-hoach-overhaul/06-mockup-gap.md mục 3. -->
   <h2>1 · Học viên &amp; Lớp › Lịch thi — rà soát lịch thi thật khi họp</h2>
   <dl class="ct">
     <dt>Workflow</dt><dd>Chọn <b>Tháng dự kiến thi</b> (một hoặc nhiều tháng) → danh sách HV có tháng đó + nhóm "Chưa có dự kiến thi" → bấm Kết luận ngay trên hàng (1 bấm; Chốt ngày / Chuyển tháng thêm một ô) → <b>lưu ngay</b> vào lịch chuẩn, có lịch sử. Không nhập lại biên bản ở nơi khác.</dd>
@@ -704,6 +706,7 @@ tr.nhom-hang td{background:var(--surface-2);height:36px;font-weight:700;color:va
 
 <!-- ===================== 2 ===================== -->
 <section class="sec" id="q2">
+  <!-- PHẢI SỬA 21/10 — Q-E2 ① (02 mục 2.9): bỏ cột tick khỏi bảng, chọn em trong panel Xuất; X-42. Nguồn: docs/superpowers/specs/2026-10-20-ke-hoach-overhaul/06-mockup-gap.md mục 3. -->
   <h2>2 · Xuất Excel danh sách HV (C31) — lọc ở đâu, xuất ở đó</h2>
   <dl class="ct">
     <dt>Luồng</dt><dd>Học viên &amp; Lớp › Tất cả → SOS: <b>SOS 3</b> → bảng còn 18 HV → <b>Xuất Excel · 18 HV</b> (1 bấm, mẫu "Theo dõi SOS"). Mũi tên bên cạnh mở <b>Tùy chọn xuất</b> khi cần đổi phạm vi / cột. Cùng nút ở mọi panel danh sách (Báo cáo, Phân tích).</dd>
