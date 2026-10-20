@@ -16,7 +16,7 @@ import { addJourney, notify, writeAudit } from '../platform/audit.ts';
 import { ensurePeriod, ensurePeriods, mondayOf, skillScoreDeadline } from '../platform/week.ts';
 import { kckCuaLuot, regularSkillViews, weekStartOf } from '../fasttrack/attempts.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
-import { checkSkillWeekMove, ensureSkillRows, kiemDaToiTuanThi, loadSkillRows, setSkillWeek } from '../fasttrack/skillSchedule.ts';
+import { canMoveSkillSchedule, checkSkillWeekMove, ensureSkillRows, kiemDaToiTuanThi, loadSkillRows, setSkillWeek } from '../fasttrack/skillSchedule.ts';
 import { CAU_KHONG_VANG, chanVangLopKetThuc, dotHoanTat, dotHoanTatMany, kiemLopKetThuc, laLopKetThuc, oChuaCoDiem, quyenSuaSauHoanTat } from '../fasttrack/hoanTat.ts';
 import { canRequest, duocGoDau } from '../fasttrack/absence.ts';
 import { classProgress, classProgressMany, lichMtCua } from '../classes/schedule.ts';
@@ -1267,6 +1267,8 @@ export function regularSheet(p: Principal, classId: number, kind?: string, today
             nhanXetDuoc: hoanTat.hoanTat ? suaSauHoanTat || !!nhapSkill.get(k) : (canEditSkill.get(k) ?? false),
             /** OV-13h (rà #410): lớp đã kết thúc — ô không nhận "-" (cùng câu `chanVangLopKetThuc`); null = gõ "-" được. */
             khongVang: ketThuc ? CAU_KHONG_VANG : null,
+            /** CV-LOI (V4B H15): người xem đổi được lịch môn này (Xếp lại bài vắng) — cùng luật `setSkillWeek`. */
+            doiLich: canMoveSkillSchedule(p, { classId, studentId: a.student_id, skill: k }),
           };
         }),
         // Quá hạn khi có ÍT NHẤT MỘT môn đã tới hạn mà chưa chấm — không xét theo cả bài.

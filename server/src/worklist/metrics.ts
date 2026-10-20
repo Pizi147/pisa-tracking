@@ -52,6 +52,7 @@ import { locTheoChuongTrinh } from './chuongTrinh.ts';
 import { scoreDebtCells } from './scoreDebt.ts';
 import { boKetQuaChoMiniTest } from '../normal/cuoiKhoa.ts';
 import { nguoiGiuKetQua } from '../cases/giuKetQua.ts';
+import { caseChuaCoNguoi } from '../cases/owner.ts';
 import { assessedSkillOf } from '../fasttrack/scoring.ts';
 import { CO_MOC_KE_TIEP_SQL, XONG_MT_CUOI_SQL, missingForClasses } from '../classes/schedule.ts';
 import { lopChoChotLoTrinh } from '../classes/lenhChuyen.ts';
@@ -810,7 +811,8 @@ function metricSetGoc(
       return done(r.ids.filter((x) => !r.chiTiet.get(x)?.nguoi.length && !r.chiTiet.get(x)?.chamCheo), { chiTiet: r.chiTiet });
     }
     case 'case-chua-co-nguoi-phu-trach':
-      return done(openCases().filter((c: any) => !c.ownerUserId && !c.tam).map((c: any) => c.id as number));   // OV-13a: Case tạm chưa là việc
+      /* CV-LOI: cùng tập với dòng "Phân công GV … / Chọn người phụ trách" ở Công việc (`caseChuaCoNguoi`) — số Tổng quan = số dòng việc. */
+      return done(caseChuaCoNguoi(p, branchId ?? null).map((c) => c.id as number));
     case 'case-cho-xac-dinh-nguyen-nhan': {
       /* OV-12d: Case đang chờ người chốt (Tổng hợp › Chờ duyệt) — id giữ `case-cho-xac-dinh-nguyen-nhan` (đường, chuông, phép kiểm cũ). */
       const mo = openCases().map((c: any) => c.id as number);

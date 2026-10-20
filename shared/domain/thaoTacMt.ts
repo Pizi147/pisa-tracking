@@ -43,6 +43,8 @@ export type QuyenTT = {
   nhapDiem: boolean; quanLy: boolean; gvcn: boolean; laFt: boolean; dotHoanTat: boolean;
   /** OV-10a: `attempt.skip_skill` (Huỷ kỹ năng / Đưa lại) và `deadline.override` (Dời hạn chấm) — Admin có `plan.week` mà không có hai khoá này. Bỏ trống = theo `quanLy`. */
   huy?: boolean; han?: boolean;
+  /** CV-LOI (V4B H15): máy chủ cho đổi lịch kỹ năng này (`canMoveSkillSchedule`: Quản lý, hoặc GVCN / GVBM đúng môn ở lớp thường). Bỏ trống = suy theo vai. */
+  doiLich?: boolean;
 };
 
 /** ≤ 1 nút chính + ≤ 3 mục menu (K4-27). "Lịch sử" KHÔNG nằm trong menu dòng — ở dòng thời gian của đợt (YC-13.6). */
@@ -59,8 +61,8 @@ export function thaoTacKyNang(tt: TrangThaiTT, q: QuyenTT): { chinh: ThaoTac | n
     /* PR-MTb T20: Quản lý / Quản trị dời được kỹ năng đã có điểm (điểm đi theo; máy chủ `setSkillWeek` `quanLy`). */
     case 'co-diem': return { chinh: q.nhapDiem ? 'sua-diem' : null,
       menu: [...(ql ? ['doi-lich'] : []), ...((q.dotHoanTat ? ql : q.nhapDiem || ql) ? ['huy-diem'] : []), ...huy] as ThaoTac[] };
-    /* CV-LOI (V4B H15): GVCN chỉ xếp lại bài vắng ở lớp thường (máy chủ `SCHEDULE_MOVE` loại FT — FT chỉ Quản lý `PLAN_WEEK`). */
-    case 'vang': return { chinh: ql || (q.gvcn && !q.laFt) ? 'xep-lai' : null, menu: huy };
+    /* CV-LOI (V4B H15): nút theo cờ quyền máy chủ (`doiLich`); không có cờ thì suy như máy chủ — GVCN chỉ lớp thường (`SCHEDULE_MOVE` loại FT). */
+    case 'vang': return { chinh: (q.doiLich ?? (ql || (q.gvcn && !q.laFt))) ? 'xep-lai' : null, menu: huy };
     case 'cho-duyet': return { chinh: ql ? 'tra-loi-de-nghi' : null, menu: [] };
     /* PR-MTGON: kỹ năng đã huỷ (dữ liệu cũ, kể cả MT cũ) → "Đưa lại vào đợt" (Quản lý FT); lớp thường giữ Khôi phục. */
     case 'da-huy': return { chinh: ftQl ? 'dua-lai' : ql ? 'khoi-phuc' : null, menu: [] };
