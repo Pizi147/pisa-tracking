@@ -6,24 +6,14 @@ import { BoLocDoan, Empty, ErrorState, Skeleton } from './ui.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 
 export type LoaiLichSu = 'hv' | 'lop' | 'phan-cong' | 'gop-y' | 'nhap-hv' | 'thi-that' | 'o';
-type Truong = { ten: string; cu: string | null; moi: string | null; doiTuong?: string };
+type Truong = { ten: string; cu: string | null; moi: string | null; doiTuong?: string; heThong?: true };
 type Muc = { id: number | string; luc: string; nguoi: string; nguon: string | null; lyDo: string | null; truong: Truong[] };
 type Trang = { dong: Muc[]; tiep: number | null; nhom: { key: string; nhan: string }[]; batDau: string | null };
 
 /** Chữ dài hơn mức này hiện gọn "đã sửa …" + Xem (C22: không buộc đọc hai đoạn dài cạnh nhau). */
 const DAI = 120;
-/** Trường mang nhãn hệ thống (Có / Không, trạng thái, kết luận…) — dịch theo tiếng của trang; chữ người gõ giữ nguyên. */
-const NHAN_HE_THONG = new Set(['Trạng thái', 'KCK', 'Không thi', 'Kết luận', 'Bước tiếp', 'Trạng thái lớp', 'Kết luận lịch thi',
-  'Tuần Progress Test', 'Tuần Final Test', 'Lịch · Tuần thi']);
-
-/** Tên ghép bằng " · " (môn · Nhận xét, nguồn · lớp) — dịch từng đoạn. */
-const dichDoan = (s: string) => s.split(' · ').map((x) => dich(x)).join(' · ');
-const giaTri = (ten: string, v: string | null) => {
-  if (v === null) return <i>{t('trống')}</i>;
-  const tuan = /^tuần (\d+)$/.exec(v);
-  if (tuan) return t('tuần {n}', { n: tuan[1] });
-  return NHAN_HE_THONG.has(ten) || ten.startsWith('Lịch · ') ? dich(v) : v;
-};
+/** Nhãn hệ thống (máy chủ đánh `heThong`) dịch theo tiếng của trang; chữ người gõ giữ nguyên. */
+const giaTri = (x: Truong, v: string | null) => (v === null ? <i>{t('trống')}</i> : x.heThong ? dich(v) : v);
 
 /** "15/10 14:02" theo giờ máy; khác năm nay thì kèm năm. */
 function lucNgan(iso: string): string {
@@ -37,7 +27,7 @@ const ngayVn = (s: string) => `${s.slice(8, 10)}/${s.slice(5, 7)}/${s.slice(0, 4
 /** Một trường "trước → sau"; chữ dài → "đã sửa {tên}" + Xem mở hai bản. */
 function DongTruong({ x }: { x: Truong }) {
   const [mo, setMo] = useState(false);
-  const ten = dichDoan(x.ten);
+  const ten = dich(x.ten);
   if ((x.cu?.length ?? 0) > DAI || (x.moi?.length ?? 0) > DAI) {
     return (
       <li className="break-words">
@@ -62,9 +52,9 @@ function DongTruong({ x }: { x: Truong }) {
   return (
     <li className="break-words">
       <span className="text-slate-400">{ten}:</span>{' '}
-      <span className="text-slate-400">{giaTri(x.ten, x.cu)}</span>
+      <span className="text-slate-400">{giaTri(x, x.cu)}</span>
       <span className="px-1 text-slate-500" aria-label={t('thành')}>→</span>
-      <span className="font-medium text-slate-100">{giaTri(x.ten, x.moi)}</span>
+      <span className="font-medium text-slate-100">{giaTri(x, x.moi)}</span>
     </li>
   );
 }
@@ -143,7 +133,7 @@ export function LichSuThayDoi({ loai, id, dong2, quayLai, onClose }: {
                     <span className="tabular-nums">{lucNgan(d.luc)}</span>
                     <span aria-hidden>·</span>
                     <span className="font-semibold text-slate-200">{dich(d.nguoi)}</span>
-                    {d.nguon && <><span aria-hidden>·</span><span>{t('Nguồn')}: {dichDoan(d.nguon)}</span></>}
+                    {d.nguon && <><span aria-hidden>·</span><span>{t('Nguồn')}: {dich(d.nguon)}</span></>}
                     {d.lyDo && <><span aria-hidden>·</span><span className="break-words">{t('Lý do')}: {d.lyDo}</span></>}
                   </div>
                   <CacTruong ds={d.truong} />

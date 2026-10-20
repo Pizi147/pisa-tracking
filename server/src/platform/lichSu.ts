@@ -18,7 +18,8 @@ import { lichSuSua } from '../students/lichSuSua.ts';
 import { scoreHistoryOf } from '../fasttrack/attempts.ts';
 import { MOC_LICH_SU } from '../migrate/prOv15g.ts';
 
-export type TruongLs = { ten: string; cu: string | null; moi: string | null; doiTuong?: string };
+/** `heThong`: giá trị là nhãn hệ thống (Có / Không, trạng thái, kết luận, "tuần n"…) — web dịch theo tiếng của trang; chữ người gõ giữ nguyên. */
+export type TruongLs = { ten: string; cu: string | null; moi: string | null; doiTuong?: string; heThong?: true };
 export type MucLs = { id: number | string; luc: string; nguoi: string; nguon: string | null; lyDo: string | null; truong: TruongLs[] };
 export type TrangLs = { dong: MucLs[]; tiep: number | null; nhom: { key: string; nhan: string }[]; batDau: string | null };
 
@@ -28,6 +29,14 @@ const LO = 60;
 const GOP_MS = 5000;
 
 export function lichSu(p: Principal, q: { loai?: string | null; id?: number | null; loc?: string | null; tiep?: number | null }): TrangLs {
+  const r = docLichSu(p, q);
+  for (const m of r.dong) for (const x of m.truong) if (NHAN_HE_THONG.has(x.ten) || x.ten.startsWith('Lịch · ')) x.heThong = true;
+  return r;
+}
+
+const NHAN_HE_THONG = new Set(['Trạng thái', 'KCK', 'Không thi', 'Kết luận', 'Bước tiếp', 'Trạng thái lớp', 'Kết luận lịch thi', 'Tuần Progress Test', 'Tuần Final Test']);
+
+function docLichSu(p: Principal, q: { loai?: string | null; id?: number | null; loc?: string | null; tiep?: number | null }): TrangLs {
   const loai = q.loai as (typeof LOAI)[number];
   if (!LOAI.includes(loai)) throw badRequest('Loại lịch sử không hợp lệ.');
   const id = q.id;
