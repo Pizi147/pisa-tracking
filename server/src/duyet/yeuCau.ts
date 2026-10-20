@@ -68,6 +68,8 @@ export type TaoYeuCauVao = {
   lopId?: number | null; chiNhanhId?: number | null; nguoiXin: number | null; lyDo?: string | null; bangChung?: unknown; duLieu?: unknown;
   /** Không truyền = hạn mặc định của loại; `null` = không hạn. */
   hanDuyet?: string | null;
+  /** LUAT-5: thẻ tạo rồi QL tự chốt ngay trong cùng giao dịch (QL thu hồi thẳng) — không chuông "Chờ duyệt" cho QL khác. */
+  khongBao?: boolean;
 };
 
 /**
@@ -100,6 +102,7 @@ export function taoYeuCau(conn: any, v: TaoYeuCauVao): number | null {
     v.lyDo?.trim() || null, json(v.bangChung), json(v.duLieu), han, mocNghiepVu());
   if (!info.changes) return null;
   const id = Number(info.lastInsertRowid);
+  if (v.khongBao) return id;
   /* OV-11c (CA1-4): thẻ của lớp (không học viên) nói tên lớp trong thông báo — ba chuông "Lớp hết khoá" không còn giống hệt nhau. */
   const hv = tenHocVien(conn, hocVienId) ?? (lopId ? (conn.prepare('SELECT code FROM classes WHERE id = ?').get(lopId) as any)?.code ?? null : null);
   const baoLen = meta.kieuNut === 'nhac';

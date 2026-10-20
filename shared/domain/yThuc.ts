@@ -183,12 +183,14 @@ export function bacCuaLoai(kind: string): number {
 
 /**
  * Trạng thái một lần xử lý. `done` = đã xong (tự làm, hoặc QL duyệt rồi GVCN bấm Đã thực hiện) · `nhap` = đề xuất đang soạn để tải
- * bằng chứng (NỘI BỘ, không bao giờ hiện, không vào trạng thái — Q10) · `cho_duyet` · `da_duyet` (chờ Đã thực hiện) · `tu_choi`.
+ * bằng chứng (NỘI BỘ, không bao giờ hiện, không vào trạng thái — Q10) · `cho_duyet` · `da_duyet` (chờ Đã thực hiện) · `tu_choi` ·
+ * `thu_hoi` (LUAT-5: QL duyệt thu hồi — giữ dòng + lịch sử, KHÔNG vào trạng thái: `trangThaiYThuc` tách sang `em.thuHoi`).
  */
-export const MEASURE_STATUSES = ['done', 'nhap', 'cho_duyet', 'da_duyet', 'tu_choi'] as const;
+export const MEASURE_STATUSES = ['done', 'nhap', 'cho_duyet', 'da_duyet', 'tu_choi', 'thu_hoi'] as const;
 export type MeasureStatus = (typeof MEASURE_STATUSES)[number];
 export const XU_LY_STATUS_LABEL: Record<MeasureStatus, string> = {
   done: t('Đã xử lý'), nhap: t('Đang soạn'), cho_duyet: t('Chờ QL duyệt'), da_duyet: t('Đã duyệt · chờ thực hiện'), tu_choi: t('QL từ chối'),
+  thu_hoi: t('Đã thu hồi'),
 };
 
 /** Hạn Ý thức: 5 ngày, tính cả ngày bắt đầu (T26, M-16). */

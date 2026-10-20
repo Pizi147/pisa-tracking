@@ -3,6 +3,7 @@ import { api, invalidate } from '../../lib/api.ts';
 import { NutChon } from '../../ui/ui.tsx';
 import { CanLam, NutChu } from '../../ui/KhuonViec.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
+import { useChoHoanTac } from '../../ui/KhungPanel.tsx';
 import { FOLLOWUP_OUTCOMES, GOI_Y_KET_QUA_PA, ketQuaNhanh, outcomeLabelFor } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 
@@ -93,6 +94,7 @@ export function DongDaLuu({ kq, onHoanTac }: { kq: DaLuuNhanh; onHoanTac: (kq: D
   const [con, setCon] = useState(!!kq.followupId);
   const [busy, setBusy] = useState(false);
   const [loi, setLoi] = useState<string | null>(null);
+  useChoHoanTac(con);
   useEffect(() => {
     if (!con) return undefined;
     const h = setTimeout(() => setCon(false), HOAN_TAC_DONG_MS);

@@ -44,8 +44,10 @@ type BfAction = { description: string; nguoi: NguoiChon; fromDate: string; toDat
  * độ…) là Vi phạm — có form riêng ở phần Ý thức, không đi qua cửa case.
  */
 export function QuickReport({
-  open, onClose, studentId, studentName, lop, cycleId, onDone, students, onPickStudent, onMoCase,
+  open, onClose, studentId, studentName, lop, cycleId, onDone, students, onPickStudent, onMoCase, kyNangDau = null,
 }: {
+  /** CV-LOI (X-74): mở từ "+ Case cho {kỹ năng}" — category cần chọn sẵn khi danh sách kỹ năng tải xong. */
+  kyNangDau?: string | null;
   /** PR-SOS (K3-23, K3-24): mở Ngăn Case của Case có sẵn — Xác nhận Case (kỹ năng đang chờ nguyên nhân) / Thêm PA (Case vừa tạo). */
   onMoCase?: (caseId: number, viec: 'xac-nhan' | 'them-pa') => void;
   open: boolean; onClose: () => void;
@@ -137,6 +139,13 @@ export function QuickReport({
     if (topic && !topics.includes(topic)) { setTopic(''); setPrimaryCode(''); }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [topicsKey]);
+  /* CV-LOI (X-74): mở từ "+ Case cho {kỹ năng}" → chọn sẵn kỹ năng đó khi danh sách tải xong (chỉ khi chưa chọn gì, kỹ năng có trong chương trình). */
+  useEffect(() => {
+    if (!open || !kyNangDau || topic) return;
+    const k = topics.find((x) => x === kyNangDau || categoryOf(x) === kyNangDau);
+    if (k && !khongGhiBu(k)) setTopic(k);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, kyNangDau, topicsKey]);
 
   const ct = chuDe.data?.chuongTrinh ?? null;
   const topicLabel = (k: string) => tenMon(ct, k);

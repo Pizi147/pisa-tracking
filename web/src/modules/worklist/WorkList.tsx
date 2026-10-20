@@ -30,8 +30,10 @@ export type WorkItem = {
   paId?: number | null; luot?: string; kn?: string; soBai?: number;
   /** OV-15b: mọi kỹ năng của việc Nhập điểm — panel chỉ hiện các cột này. */
   kns?: string[];
-  /** OV-13b: Kết quả PA ghi nhanh được ngay dưới dòng (máy chủ `ghiNhanhDuoc`). */
+  /** OV-13b: Kết quả PA ghi nhanh được (máy chủ `ghiNhanhDuoc`) — CV-LOI: form gọn trong khung phải. */
   ghiNhanh?: boolean;
+  /** CV-LOI (A13): Case chưa có người phụ trách vì lớp thiếu GV môn (`mon`) / GVCN (`mon` null) — panel Phân công đúng ô đó. */
+  thieuNguoi?: { mon: string | null };
   /** OV-11c: id em của việc cả lớp (Nhập điểm theo bài…) — panel Nhập điểm đưa em của việc lên đầu. */
   emIds?: number[];
   /** OV-13c: tuần thi (thứ Hai) · mức SOS · Nhập điểm: tuần + loại bài (lưới Lịch Test) · Xác nhận PA: PA đang chờ. */
@@ -53,7 +55,7 @@ export type WorkGroup = { key: string; label: string; hint: string; items: WorkI
 /** OV-13d: loại việc Ý thức mà dòng gộp theo lớp mở panel lô (`LoYThucPanel`) — `PanelViec` đọc cùng tập này. */
 export const VIEC_LO_Y_THUC: ReadonlySet<string> = new Set(['yt_xu_ly', 'yt_xem']);
 
-export function DongViec({ it, onOpen, nutPhu, gon = false, chon = null, xong, moTrang = false, conMoTrang, moRong, moCaDong }: {
+export function DongViec({ it, onOpen, nutPhu, gon = false, chon = null, xong, moTrang = false, conMoTrang, moCaDong }: {
   it: WorkItem; onOpen: (it: WorkItem) => void;
   /** Nút phụ đứng cạnh nút chính (PR-Ra: Nhắc/Duyệt). */
   nutPhu?: ReactNode;
@@ -65,8 +67,6 @@ export function DongViec({ it, onOpen, nutPhu, gon = false, chon = null, xong, m
   moTrang?: boolean;
   /** OV-11c (CV-17c): em trong dòng gộp mở trang khác cũng có dấu ↗. */
   conMoTrang?: (it: WorkItem) => boolean;
-  /** OV-13b: phần mở ngay dưới dòng / dưới em của dòng gộp (ghi nhanh Kết quả PA). */
-  moRong?: (it: WorkItem) => ReactNode;
   /** OV-13c: dòng gộp làm CẢ DÒNG một lần (Xác nhận PA cùng lúc, Nhập điểm theo tuần) — bấm mở panel, không mở danh sách em. */
   moCaDong?: (it: WorkItem) => boolean;
 }) {
@@ -99,7 +99,7 @@ export function DongViec({ it, onOpen, nutPhu, gon = false, chon = null, xong, m
   const nen = dangChon ? 'row-active' : 'hover:bg-white/5';
   return (
     /* PR-VAI-a (§7.3, mockup 23 màn A): ba cột thẳng qua mọi nhóm — việc · hạn (12 px) · nút. OV-5a `gon`: hai cột, cả dòng bấm. */
-    <div data-hd="cv-dong" className={`grid grid-cols-[minmax(0,1fr)] gap-x-3 gap-y-1 py-2 pl-3 pr-3 ${gon
+    <div data-hd="cv-dong" data-khoa={it.key} className={`grid grid-cols-[minmax(0,1fr)] gap-x-3 gap-y-1 py-2 pl-3 pr-3 ${gon
       ? `cursor-pointer sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center ${daXong ? 'opacity-55' : ''}`
       : 'sm:grid-cols-[minmax(0,1fr)_150px_230px] sm:items-center'} ${nen}`}
       title={con ? undefined : dich(it.reason)} onClick={gon ? bam : undefined}>
@@ -141,11 +141,9 @@ export function DongViec({ it, onOpen, nutPhu, gon = false, chon = null, xong, m
       {con && mo && (
         <ul id={maDs} className="col-span-full m-0 mb-0.5 mt-1 list-none divide-y rounded-lg border p-0 sm:col-start-1 sm:col-end-[-1]"
           style={{ borderColor: 'var(--line)', background: 'var(--surface)' }} onClick={(e) => e.stopPropagation()}>
-          {con.map((c) => <li key={c.key}><DongCon it={c} loaiHan={loaiHan} onOpen={onOpen} gon={gon} chon={chon === c.key} xong={!!xong?.has(c.key)} moTrang={!!conMoTrang?.(c)} />
-            {moRong?.(c) && <div className="px-2.5 pb-2.5">{moRong(c)}</div>}</li>)}
+          {con.map((c) => <li key={c.key}><DongCon it={c} loaiHan={loaiHan} onOpen={onOpen} gon={gon} chon={chon === c.key} xong={!!xong?.has(c.key)} moTrang={!!conMoTrang?.(c)} /></li>)}
         </ul>
       )}
-      {!con && moRong?.(it) && <div className="col-span-full sm:col-start-2" onClick={(e) => e.stopPropagation()}>{moRong(it)}</div>}
     </div>
   );
 }
@@ -158,7 +156,7 @@ function DongCon({ it, loaiHan, onOpen, gon, chon, xong, moTrang = false }: {
   if (gon) {
     /* OV-5a: cột trái Công việc — một em là một việc bấm được (panel phải), không nút riêng. */
     return (
-      <button type="button" onClick={() => onOpen(it)} aria-current={chon ? 'true' : undefined}
+      <button type="button" data-khoa={it.key} onClick={() => onOpen(it)} aria-current={chon ? 'true' : undefined}
         className={`grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 border-0 px-2.5 py-1.5 text-left text-[12.5px] ${
           chon ? 'row-active' : 'bg-transparent hover:bg-white/5'} ${xong ? 'opacity-55' : ''}`}>
         <span className="min-w-0">

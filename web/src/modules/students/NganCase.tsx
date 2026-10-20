@@ -141,7 +141,7 @@ export function NganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose
           pa={{
             id: iv.id, kind: iv.kind, description: iv.description ?? null, performer: iv.performer ?? null,
             performerUserId: iv.performerUserId ?? null,
-            actionDue: iv.actionDue ?? null, cycleNo: iv.cycleNo ?? null,
+            actionDue: iv.actionDue ?? null, miniTestHan: iv.miniTestHan ?? null, cycleNo: iv.cycleNo ?? null,
             batBuoc: !!iv.batBuoc, lanCuoi: !!iv.lanCuoi, mocChu: iv.mocChu ?? null, soBuoi: iv.soBuoi ?? null, daDay: iv.daDay ?? 0,
             laMacDinh: laPaMacDinh(iv), doiPaCho: iv.doiPa?.trangThai === 'cho',
           }} />
@@ -270,6 +270,8 @@ export function NganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose
             : data.systemCloseReason === 'overall_dat' ? t('Hệ thống đóng — Overall đã đạt')
             : t('Hệ thống đóng · {lyDoHeThong}', { lyDoHeThong: dich(data.systemCloseLabel) })}</span>
         : null;
+  /* OV-13a: Case tạm / chờ nguyên nhân / chờ nhận xét / chờ duyệt không theo dõi chưa thêm PA. */
+  const themPaDuoc = data.viewer.canEdit && canDong && !(data.sos?.awaitingCause || data.sos?.choNhanXet || data.sos?.choDuyetKhongTheoDoi || data.sos?.tam);
   /* OV-14b: nút chính là "Xác nhận PA" → thẻ PA đó trong thân không lặp nút. */
   const paNutChinh = data.viewer.canEdit && canDong && v?.chu.startsWith('Xác nhận PA') && v.paId ? v.paId : null;
   const nutChinh = (() => {
@@ -278,6 +280,8 @@ export function NganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose
     if (!data.viewer.canEdit || !canDong) return undefined;
     if (v?.chu === 'Ghi nhận xét') return nut(t('Ghi nhận xét'), () => setView({ loai: 'ghi-nhan-xet' }));
     if (v?.chu.startsWith('Xác nhận PA') && v.paId) return nut(t('Xác nhận PA'), () => setView({ loai: 'xac-nhan-pa', paId: v.paId! }));
+    /* CV-LOI (A1-15): Case chưa có PA (việc tiếp = lập PA) → nút chính là "+ Thêm PA", không phải "Hoàn thành Case". */
+    if (v?.loaiHan === 'lap-pa' && themPaDuoc) return nut(t('+ Thêm PA'), () => setView({ loai: 'them-pa' }));
     if (v?.loaiHan === 'cap-nhat-pa' && v.paId) {
       /* OV-13b (mockup OV-13 §2): nút chính chỉ nổi khi TỚI KỲ; PA ghi nhanh được thì ô ghi đã nằm ngay dưới dòng PA — chân không lặp nút. */
       const pa = (data.interventions ?? []).find((x: any) => x.id === v.paId);
@@ -299,7 +303,7 @@ export function NganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose
       dau={dauViec({ em, lop })}
       chan={{
         huy: { nhan: t('Đóng'), onClick: onClose },
-        phu: data.viewer.canEdit && canDong && !(data.sos?.awaitingCause || data.sos?.choNhanXet || data.sos?.choDuyetKhongTheoDoi || data.sos?.tam)   // OV-13a: Case tạm chưa thêm PA
+        phu: themPaDuoc && v?.loaiHan !== 'lap-pa'   // CV-LOI (A1-15): đã là nút chính thì không lặp
           ? <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={() => setView({ loai: 'them-pa' })}>{t('+ Thêm PA')}</button>
           : undefined,
         chinh: nutChinh,

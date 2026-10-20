@@ -1,7 +1,7 @@
 import { metricById } from '@shared/domain/index.ts';
 import { useMoSoLieu } from '../lib/quayLai.ts';
 import { useApi } from '../lib/useApi.ts';
-import { DanhSachSoLieu, NganDanhSach, type DongSoLieu, type PhamViSoLieu } from './SoLieu.tsx';
+import { DanhSachSoLieu, NganDanhSach, VUNG_BAM_SO, type DongSoLieu, type PhamViSoLieu } from './SoLieu.tsx';
 import { t } from '@shared/i18n/index.ts';
 
 /**
@@ -26,7 +26,7 @@ export function SoLieuO(props: Props) {
   return (
     <>
       <button type="button" onClick={() => setOpen(true)}
-        className={`appearance-none bg-transparent border-0 p-0 max-sm:py-3 max-sm:-my-3 max-sm:px-2 max-sm:-mx-2 cursor-pointer tabular-nums underline decoration-dotted underline-offset-4 hover:text-white ${className}`}
+        className={`${VUNG_BAM_SO} appearance-none bg-transparent border-0 p-0 cursor-pointer tabular-nums underline decoration-dotted underline-offset-4 hover:text-white ${className}`}
         aria-label={t('{gt} — {ten}. Bấm để xem danh sách', { gt: props.nhan ?? giaTri, ten })}>{props.nhan ?? giaTri}</button>
       {props.id !== undefined
         ? <DanhSachSoLieu id={props.id} giaTri={giaTri} phamVi={props.phamVi} extra={props.extra} open={open} onClose={() => setOpen(false)} ten={props.ten} />
