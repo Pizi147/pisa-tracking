@@ -299,6 +299,33 @@
   .row-muted .link { color: var(--text-dim); }
 
   .sticky-col { position: sticky; left: 0; z-index: 5; background: var(--surface); }
+
+  /*
+   * BẢNG MỘT MẪU (BANG-0, 04 mục 6) — `ui/Bang.tsx`. Căn theo KIỂU CỘT: `data-kieu` gắn trên CẢ th và td (luật `KIEU_COT` ở
+   * `shared/domain/bang.ts`; phép kiểm prBang0 so khối này với luật): chữ trái · số / điểm giữa · nút phải → tiêu đề và ô không lệch.
+   * Hàng 44 px / 64 px khi ô có dòng phụ (`data-phu-odiem`), mọi ô chung đường cơ sở. Cột nổi bật (Kỳ vọng, Overall) = một dải nền nhấn.
+   */
+  .bang { width: 100%; table-layout: fixed; }   /* cột px theo kiểu (colgroup), một cột linh hoạt; rộng hơn khung → cuộn trong khung */
+  .bang :is(th, td) { vertical-align: baseline; }
+  /* Một hàng = một dòng chính: tên / chữ / việc dài thì cắt "…" (line-height 1.5 — không xén dấu). */
+  .bang td:is([data-kieu="ten"], [data-kieu="chu"], [data-kieu="viec"]) { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bang .bang-phu { overflow: hidden; text-overflow: ellipsis; }
+  .bang td[data-kieu="chip"] { white-space: nowrap; }
+  /* Hàng có ô / nút cao 32 px (ô điểm sửa, ⋯): đệm dọc 6 → vẫn 44 / 64. */
+  .bang > tbody > tr:has(.o-sua, button:not(.link)) > td { padding-top: 6px; padding-bottom: 6px; }
+  /* Chữ trong chip lùi 8 px (đệm chip) → tiêu đề cột chip lùi theo để thẳng chữ; chữ thường trong cột chip cũng lùi 8 (`px-2`). */
+  .bang th[data-kieu="chip"] { padding-left: 20px; }
+  .bang :is(th, td):is([data-kieu="ten"], [data-kieu="chu"], [data-kieu="chip"], [data-kieu="tuan"], [data-kieu="viec"]) { text-align: left; }
+  .bang :is(th, td):is([data-kieu="so"], [data-kieu="diem"], [data-kieu="noi-bat"], [data-kieu="diem-ti-le"], [data-kieu="phan-tram"]) { text-align: center; font-variant-numeric: tabular-nums; }
+  .bang :is(th, td):is([data-kieu="nut"]) { text-align: right; }
+  .bang > tbody > tr > td { height: 44px; padding: 10px 12px; line-height: 1.5; }
+  .bang > tbody > tr:has([data-phu-odiem]) > td { height: 64px; }
+  .bang[data-day] > tbody > tr > td { font-size: 14px; }
+  .bang :is(th, td)[data-kieu="noi-bat"] { background-color: var(--accent-soft); }
+  .bang .bang-phu { display: block; font-size: 12px; line-height: 1.4; color: var(--text-faint); font-weight: 400; }
+  .bang .bang-chu-thich { font-size: 12px; font-weight: 400; color: var(--text-faint); }
+  .bang-nhom > th { height: 32px; padding: 0 12px; font-size: 13px; font-weight: 600; color: var(--text-dim); background: var(--surface-2); text-align: center; }
+  .bang-nhom > th[data-co-nhom] { box-shadow: inset 1px 0 0 var(--accent-line), inset -1px 0 0 var(--accent-line); border-bottom: 1px solid var(--line); }
   .th.sticky-col { z-index: 15; background: var(--surface-2); }
 
   /*

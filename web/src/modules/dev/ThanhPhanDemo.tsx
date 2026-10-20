@@ -13,6 +13,7 @@ import { TyLe } from '../../ui/TyLe.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { addDaysStr } from '../../lib/format.ts';
 import { SanMauNen } from './SanMauNen.tsx';
+import { BangMau } from './BangMau.tsx';
 import { DEADLINE_KINDS, KIEU_O_NGAY, TRANG_THAI, type KieuONgay } from '@shared/domain/index.ts';
 
 /**
@@ -90,7 +91,7 @@ export default function ThanhPhanDemo() {
   const [moNhom, setMoNhom] = useState<Record<string, boolean>>({ a: true, b: false });
 
   return (
-    <div className="max-w-[1100px] space-y-6">
+    <div className="max-w-[1360px] space-y-6">
       <div>
         <h1 className="text-xl font-bold text-slate-100 m-0">Sân mẫu thành phần</h1>
         <p className="text-[13px] text-slate-500 mt-1">
@@ -101,6 +102,7 @@ export default function ThanhPhanDemo() {
 
       {/* NEN-TYPO-MAU: thang chữ · màu kết quả · trạng thái · báo lưu */}
       <SanMauNen />
+      <BangMau />
 
       {/* ------------------------------------------------------------ <Han> */}
       <Card title="<Han> — mọi hạn đều có loại">
