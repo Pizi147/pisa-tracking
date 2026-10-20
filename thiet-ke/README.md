@@ -3,6 +3,23 @@
 Ngày tạo: 20/09/2026. Cập nhật: 21/09/2026. Chủ sở hữu: bên design.
 Trạng thái: **đặc tả để triển khai**, chưa phải mô tả web hiện tại.
 
+## Mockup hết hiệu lực / phải sửa — 21/10/2026 (chủ SP duyệt kế hoạch overhaul #486)
+
+Luật: khung mockup đã duyệt thắng kế hoạch / luật giao diện cũ hơn; **quyết định mới hơn trái khung → sửa mockup** (`CLAUDE.md`). Danh sách đủ (kể cả khung GIỮ) và mockup mới phải vẽ:
+`docs/superpowers/specs/2026-10-20-ke-hoach-overhaul/06-mockup-gap.md` mục 3, 4. Năm tệp đầu bảng đã có dải đánh dấu đầu trang + chú thích HTML tại khung.
+
+| Tệp | Khung | Tình trạng | Vì sao (quyết định) |
+|---|---|---|---|
+| `mockup-ov14-6-sua-19-10-2026-10-19.html` (m6) | §10 tên trang "Báo cáo" thay "Tổng quan" | **HẾT HIỆU LỰC** | thứ tự menu V1 I.2; Báo cáo là tab đầu Phân tích |
+| m6 | §3 lưới FT căn trái · §6 tab "Kết quả thi" | **SỬA** (căn giữa + ký hiệu trước số; "Kết quả Test") | 02 X-01, X-37 |
+| `mockup-lich-test-ba-khoi-2026-10-06.html` | cả tệp (ba khối Lịch Test) | **SẼ HẾT HIỆU LỰC** khi mockup M5a "Chấm Test theo hạn" được duyệt | Q-C1 21/10; 02 X-08 (luật chia khối T15 giữ) |
+| `mockup-ov14-2-luoi-diem-cong-viec-2026-10-17.html` (m2) | §1a lớp thường "✗ 16/25 64%" · §1d Dán Excel mọi lưới | **SỬA** ("✗ 17/25", nhận xét trong hộp chấm; Excel chỉ lớp × lượt) | 02 X-02, X-15, X-33 |
+| m2 | §1 "Sau", §2, §2b, §3 Công việc | **SỬA** (vẽ lại — 06 mục 4 M2) | 02 X-64, Q-A1 ①; S chéo 21/10 |
+| `mockup-ov14-3-tong-quan-bao-cao-phan-tich-2026-10-17.html` (m3) | §3 Báo cáo | **SỬA + nâng cấp** (Chiếu, chấm trễ trong kỳ, Theo chi nhánh) | Q-C2 ① 21/10 |
+| m3 | §1 Tổng quan A + khối Trễ chấm + dải "HV cần chú ý" · §4 bộ chọn thời gian | **SỬA** (bố cục B) · Trễ chấm **HẾT HIỆU LỰC** · [Toàn bộ \| Khoảng tuần] | Q-A1 ①, Q-A2 ①; V1 II.4; V3 II.5 |
+| `mockup-ov14-5-lich-thi-xuat-ds-2026-10-19.html` (m5) | §1 Lịch thi (4 nút Kết luận) · §2 Xuất DS (cột tick) | **SỬA** (nhóm trạng thái, chip A / B, "Chưa kết luận"; bỏ cột tick) | Q-C3 ①, Q-C4 ①, Q-E2 ① |
+| `mockup-ov14-1-he-thiet-ke-hoc-vien-lop-2026-10-17.html` (m1) | §1a, §1d, §1g, §2a, §4 · §1e thang chữ | **SỬA** · §1e **HẾT HIỆU LỰC** (chưa gắn dải — làm khi vẽ sân mẫu) | 06 mục 3 |
+
 > **MỚI NHẤT (tối 21/09/2026):** `NGUON-Rule-v3-YThuc-PhoiHop-2026-09-21.md` (nguồn) → `SOS_VA_PHOI_HOP_V3.md`
 > (đặc tả, **thắng** `Y_THUC_VI_PHAM_VA_BIEN_PHAP.md` ở chỗ khác nhau). UX tham khảo: `tham-khao/*.html`.
 >

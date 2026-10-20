@@ -1,6 +1,6 @@
 # PISA Progress — Kế hoạch duy nhất
 
-Cập nhật: **18/10/2026 trưa** (**đã deploy 18/10 12:57** — DB `pisatracking-261018`; việc còn lại ở mục "Việc còn lại", phần OV-13).
+Cập nhật: **21/10/2026 đêm** (chủ SP duyệt kế hoạch overhaul #486 → GĐ0 / GĐ1 chạy đêm 21/10 — mục 4 "ĐÁNH GIÁ LẠI UX/UI 20/10", 9.5). Trước đó: **18/10/2026 trưa** (**đã deploy 18/10 12:57** — DB `pisatracking-261018`; việc còn lại ở mục "Việc còn lại", phần OV-13).
 File này **thay** cho: `plan.md` cũ (mục 0–24), `PROMPT_SESSION_CODE.md`, `PROMPT_BAN_GIAO_PLANNING.md`,
 `docs/superpowers/plans/2026-10-03-lo-trinh-tong-hop-viec-chua-lam.md`. Bản cũ còn trong git: `git show 575e898d:plan.md`.
 
@@ -12,6 +12,7 @@ File này **thay** cho: `plan.md` cũ (mục 0–24), `PROMPT_SESSION_CODE.md`, 
 
 | File chi tiết | Dùng cho |
 |---|---|
+| `docs/superpowers/specs/2026-10-20-ke-hoach-overhaul/` | **Kế hoạch overhaul HIỆN HÀNH (chủ SP duyệt 21/10, #486):** 00 mục lục · 01 sổ góp ý · 02 xung đột + quyết định (mục 2.9 = quyết định 21/10) · 03 kiểm định · 04 hệ thiết kế · 05 IA + workflow · 06 mockup ↔ web · 07 kế hoạch PR. Luật rút gọn: mục 1.6 file này. |
 | `docs/superpowers/specs/2026-10-20-danh-gia-lai-ux-ui-toan-dien.md` | **Đánh giá lại UX/UI toàn diện 20/10** (chủ SP không hài lòng sau OV-15): điểm ~23/40, vì sao lệch mockup, vấn đề xuyên suốt X1–X11, bảng mọi mã theo khu vực, kế hoạch GĐ0–GĐ4, 4 + 38 câu hỏi — phụ lục `2026-10-20-danh-gia-ux/` (8 báo cáo agent + 43 ảnh). **Đọc trước khi giao bất kỳ PR giao diện nào.** |
 | `docs/superpowers/plans/2026-10-20-ov15g-ov15h.md` | **OV-15g** Lịch sử thay đổi (C22) · **OV-15h1** Công việc + Tổng quan (việc lẻ 15d, ý #471) · **OV-15h2** Học viên & Lớp + xuất + dọn — 3 PR song song, prompt cuối file |
 | `docs/superpowers/plans/2026-10-19-ov15-overhaul-6-pr.md` | **OV-15a…f** — 6 PR overhaul song song (nền màu/chữ/chip · lưới + Excel · Kế hoạch Test · Công việc + Tổng quan · Phân tích + Báo cáo · Lịch thi + Xuất DS), prompt cloud ở cuối |
@@ -29,7 +30,7 @@ File này **thay** cho: `plan.md` cũ (mục 0–24), `PROMPT_SESSION_CODE.md`, 
 
 Kế hoạch các PR OV khác: planning viết **ngay trước khi giao** (theo đặc tả), không viết trước cả loạt. Kế hoạch của PR đã merge xoá 11/10 và 12/10 (OV-1a, OV-1b, OV-2b, OV-3b, OV-6a — git còn giữ).
 
-- **Khi các nguồn mâu thuẫn:** theo `CLAUDE.md` (quyết định chủ sản phẩm + kế hoạch đã duyệt → Rulebook + mockup → skill).
+- **Khi các nguồn mâu thuẫn:** theo `CLAUDE.md` (luật nghiệp vụ + quyết định chủ SP → khung mockup đã duyệt → kế hoạch / đặc tả / DESIGN.md → skill; 21/10).
   Luật sản phẩm: `thiet-ke/PISA-Rulebook-2026-09-19.md` (mục 20 ưu tiên nhất). Đặc tả đợt hiện tại: `docs/superpowers/specs/2026-10-11-overhaul-ux-workflow-design.md` (OV); nền cũ: `2026-09-27-nang-cap-sau-deploy-design.md`.
 - Hỏi "còn gì chưa làm": đối chiếu với **mã thật** (grep), không tin ô tick (nhiều kế hoạch cũ đã merge mà ô vẫn trống).
 
@@ -53,6 +54,7 @@ Kế hoạch các PR OV khác: planning viết **ngay trước khi giao** (theo 
 4. `npm run check` xanh **một lần** cuối PR (một lần một lúc, foreground); giữa các Task chỉ chạy phép kiểm của Task đó.
    **Bấm thử chỉ ở session code, MỘT lần, chỉ màn PR chạm**, đính ảnh vào PR: 1440 tối + 375 sáng (đủ 4 tổ hợp chỉ khi PR đổi
    bố cục/màu), vai = những vai PR chạm (thường QL + một GV). PR chỉ máy chủ: không ảnh — phép kiểm + số đo là đủ.
+   **PR đổi bố cục / làm lại màn:** thêm cổng mục 1.6 (bảng truy vết, ảnh cặp toàn trang, ≥ 90 % KHỚP, `do-khung` + `do-bang`, bấm thử ≥ 2 vòng).
 5. PR có giao diện: `/impeccable audit` + `/web-design-guidelines` trên file PR chạm (một lần, cuối). Mọi PR: `/ponytail-review`, rồi mở PR (**không merge**). Không chạy
    thêm `requesting-code-review` / `verification-before-completion` / `finishing-a-development-branch` (planning đã rà).
 6. Mô tả PR **≤ 30 dòng**: làm gì (theo Task), phép kiểm, ảnh, giới hạn còn lại, chú thích `ponytail:`, ảnh sổ tay bị lệch.
@@ -68,6 +70,9 @@ Kế hoạch các PR OV khác: planning viết **ngay trước khi giao** (theo 
   liệu / migrate · sửa luồng chính (xếp lịch, nhập điểm, huỷ, chuyển lớp) · ảnh thiếu hoặc đáng ngờ · logic máy chủ lớn.
   Rà sâu dùng agent ECC theo phạm vi (tối đa 2, CLAUDE.md "Rà PR bằng ECC"): quyền → `ecc:security-reviewer` ·
   mất dữ liệu / migrate / API → `ecc:silent-failure-hunter` · logic lớn → `ecc:typescript-reviewer` / `ecc:react-reviewer`.
+- **PR đổi bố cục:** agent rà (mẫu 10B) chấm từng dòng bảng truy vết trên ảnh cặp → KHỚP / KHÁC; **≥ 90 % KHỚP** (KHÁC chỉ khi chủ SP đồng ý lý do),
+  planning đăng bảng chấm làm bình luận PR; "tự quyết / lệch / chưa xác minh" chép vào mục 4 trước merge, còn "chưa xác minh" ở luồng chính → không merge.
+  Merge chỉ sau bình luận "chủ SP: đạt", không merge qua đêm (mục 1.6).
 - PR có giao diện: planning chạy thêm `impeccable` **`audit`** (skill trong repo từ #329, 12/10) trên phần màn PR chạm, ghi lỗi vào tin nhắn sửa.
 - Rà xong: planning soạn **tin nhắn sửa** (file:dòng) để chủ sản phẩm dán vào session code; sửa xong rà lại phần đã sửa.
   Việc nhỏ còn lại → ghi vào mục 4 file này (không để mất).
@@ -78,6 +83,8 @@ Kế hoạch các PR OV khác: planning viết **ngay trước khi giao** (theo 
   `bolder`, `delight`, `overdrive`. Chuẩn giao diện = `DESIGN.md`; không bàn lại phông/màu.
 - **Mockup** chỉ cho màn / luồng MỚI hoặc đổi bố cục. Đổi chữ, thêm một nút / một ô theo mẫu sẵn có, dời vị trí nhỏ: mô tả bằng
   chữ trong kế hoạch, không mockup. Mockup: 1440 + 375, chế độ tối, chỉ những trạng thái khác nhau thật.
+- **Hai loại PR giao diện (21/10, 06 Q8):** *sửa nhỏ* (đổi chữ, nút / ô theo mẫu sẵn có, sửa lỗi) theo mục này · *làm lại màn* (có mockup mới
+  đã duyệt) được `layout` + `polish` trong phạm vi, bấm thử ≥ 2 vòng, ảnh cặp toàn trang. Kế hoạch PR ghi rõ "Loại PR".
 - **Kế hoạch PR ≤ 200 dòng** (chữ ký + phép kiểm, không chép thân hàm). Việc nhỏ (< 3 file): không cần file kế hoạch, prompt đủ.
 - **Agent:** planning tự viết kế hoạch PR nhỏ/vừa (không agent soạn); rà theo 1.3 (agent chỉ khi rà sâu).
 - **Báo cáo** session code ≤ 15 dòng; planning trả lời chủ SP ngắn, không chép lại diff.
@@ -87,7 +94,9 @@ Kế hoạch các PR OV khác: planning viết **ngay trước khi giao** (theo 
 |---|---|
 | Biên dịch | `tsc`. **Không** dùng `tsx`/`esbuild` làm trình chạy TS. Import phải có đuôi `.ts`/`.tsx` |
 | Sửa máy chủ | `npm run build:server` (`npm run dev` không tự dựng lại máy chủ) |
-| Kiểm | `npm run check` = build + test + typecheck. Phép kiểm mới: file `server/src/tests/pr<Mã>.tests.ts`, gọi ở **cuối** `run.ts` |
+| Kiểm | `npm run check` = build + test + typecheck + **cảnh báo esbuild = lỗi** (`scripts/kiem-esbuild.mjs`: `case` trùng…). Phép kiểm mới: file `server/src/tests/pr<Mã>.tests.ts`, gọi ở **cuối** `run.ts` |
+| Đo trên trang thật (CONG-CU) | `npm run dev` cổng riêng, rồi `KHUNG_BASE=http://localhost:<WEB_PORT>`: `node scripts/do-khung.mjs [lọc]` (khung + bảng `do-bang` 1440 / 1280 / 375 + kịch bản `lich`: bấm trong lịch không đóng hộp cha) · `node scripts/do-bang.mjs [lọc]` (chỉ bảng). Lỗi đã biết: `scripts/mien-do.json` — mỗi dòng ghi PR gỡ; PR sửa xong **gỡ dòng** (dòng thừa = đỏ); `MIEN=0` xem lỗi thật |
+| Ảnh cặp mockup \| web | `node scripts/anh-cap.mjs <tệp mockup> <khung CSS \| -> <đường web> <vai> <bề rộng> [ra.png]` — một PNG trái mockup / phải web toàn trang (375 sáng, còn lại tối); cách chạy ở đầu tệp |
 | `shared/domain/*` | Hàm mới re-export qua `shared/domain/index.ts` |
 | Ngày demo | **14/09/2026** cố định: `demoToday()` (máy chủ), `session.demoDate` (web). Tuần T2→CN, thuộc tháng chứa thứ Năm |
 | Thời gian trên màn | Mã tuần `W2 OCT`; ngày chỉ cho hạn cụ thể, ngày thi, ngày sinh, nhật ký |
@@ -109,6 +118,28 @@ Kế hoạch các PR OV khác: planning viết **ngay trước khi giao** (theo 
 8. Chủ sản phẩm có thể merge trước khi rà → nhắc "chờ planning nói merge được"; lỡ merge thì rà sau merge.
 9. Tên skill đúng là `superpowers:<tên>` (một số kế hoạch cũ ghi nhầm `anthropic-skills:`).
 10. Merge nhầm rồi revert (#271, 08/10) → merge lại nhánh cũ KHÔNG đưa code vào. Phải tạo nhánh mới từ main, `git revert <commit revert>`, mở PR mới (đã làm #272).
+
+### 1.6. Luật overhaul 21/10 — chủ SP duyệt #486 (mỗi luật một dòng; nguồn trong `docs/superpowers/specs/2026-10-20-ke-hoach-overhaul/`)
+Không đổi luật nghiệp vụ nào ngoài các dòng N1–N7. Luật giao diện: `DESIGN.md` mục "Luật 21/10".
+
+| # | Luật | Nguồn |
+|---|---|---|
+| Q-1 | **Khung mockup đã duyệt thắng** câu kế hoạch, đặc tả, DESIGN.md và luật giao diện cũ hơn ngày duyệt — trừ nghiệp vụ, quyền, chống mất dữ liệu; quyết định mới trái khung → sửa mockup | 02 mục 2.3 (9.1-1); 06 Q6 |
+| Q-2 | **Một màn một PR** (sở hữu cả đầu trang, dải lọc, khối cũ); phần máy chủ là PR riêng chạy trước; ≤ 2 PR giao diện song song, khác màn | 06 mục 5.1 bước 7 (Q3); 07 mục 7 |
+| Q-3 | **Bảng truy vết** trong kế hoạch PR đổi bố cục: khung (tệp + id) → thành phần / tệp web → Task → ảnh nghiệm thu; có dòng **BỎ** và **GIỮ**; số dòng = số khung; thiếu bảng → không giao | 06 mục 5.2 Q1 |
+| Q-4 | **Ảnh cặp toàn trang** mockup \| web, cùng vai, cùng dữ liệu seed nguyên, 1440 tối + 375 sáng (+ 125 % cho màn nhiều chữ); bảng KHỚP / KHÁC trong mô tả PR | 06 Q2, K3 |
+| Q-5 | **Cổng ≥ 90 % KHỚP** do agent rà chấm (bình luận PR); KHÁC chỉ tính khi chủ SP đồng ý lý do; `do-khung` + `do-bang` xanh ở 1440 / 1280 / 375 | 06 Q4; 07 mục 2 |
+| Q-6 | **Chủ SP duyệt ảnh cặp / bản chạy trước merge** PR đổi bố cục / màn mới / thành phần mới; **không merge qua đêm**. PR tài liệu, máy chủ, sửa nhỏ: planning tự merge khi rà đạt + check xanh | 02 mục 2.3 (9.1-2); 07 mục 2 |
+| Q-7 | Hai loại PR giao diện: sửa nhỏ / làm lại màn (mục 1.3b) · được gỡ phép kiểm đọc chuỗi khoá bố cục cũ (liệt kê trong PR), không thêm phép kiểm chuỗi cho bố cục | 06 Q8, Q9; 02 X-12 |
+| Q-8 | "Tự quyết / lệch / chưa xác minh" chép vào mục 4 trước merge; không ghi "đạt" khi chưa chấm lại cùng phương pháp | 06 Q10, Q13 |
+| Q-9 | Sửa GĐ1 (số liệu, lỗi chức năng, luật 3–4–5, nền bảng) rồi mới deploy; việc TVV deploy riêng ngay sau (GĐ1b) | 02 mục 2.3 (9.1-3), 2.9 (Q-E1 ①); 07 mục 4–5 |
+| N1 | GVCN **lưu xử lý vi phạm** → **ngay** sinh việc TVV ghi kết quả xử lý, kể cả lần xử lý đang chờ QL duyệt | 02 mục 2.1 L1, 4.7 B2 |
+| N2 | Hạn việc đó **5 ngày lịch** gồm T7, CN: hết 23:59 giờ VN ngày (lưu + 4); vd lưu T2 14/09 → hết T6 18/09 | 02 mục 2.1 L2, 4.7 B1 |
+| N3 | Có quyền sửa → **sửa được sau lưu, có lịch sử**; giữ bước duyệt bắt buộc; không khoá cứng vô lý (giữ 3 khoá "vì đóng hồ sơ" — Q-B1 ①; sửa phần đã duyệt → duyệt lại — Q-B2 ①) | 02 mục 2.1 L3, 2.9 |
+| N4 | **Luật 4 bản sửa 21/10** — MT hiện tại: "-" lần 1 → dời tuần kế (không dời được → thẻ "Dời lịch Test" gửi QL), lần 2 → huỷ, **đếm theo tuần**; "-" ghi muộn (< 2 tuần) → tuần kế của lịch nếu còn thi được · MT cũ (≥ 2 tuần): "-" → **huỷ ngay** · QL Khôi phục = được dời 2 lần · QL duyệt thêm = +1 · Hoàn tác 10 s, sau đó vẫn khôi phục được (có lịch sử) · nút "Vắng", không còn "Không dự thi" · lớp thường không đổi | 02 mục 2.9 21/10-L4; 05 mục 4.3 |
+| N5 | GVCN **thu hồi** lần xử lý đã lưu hoặc **xử lý không tăng bậc** → gửi QL duyệt, **lý do bắt buộc**; duyệt → "Đã thu hồi" (giữ dòng + lịch sử); không Hoàn tác sau lưu xử lý | 02 mục 2.1 L5, 4.7 B4–B7, B15 |
+| N6 | **Việc TVV (21/10):** TVV của em giữ Chốt ngày thi · Chọn bước tiếp sau thi (**hạn 1 tuần** từ khi có KQ thi thật) · Bổ sung hồ sơ thiếu · Cập nhật KQ thi thật (chuyển từ GVCN) — không hạn; em không có TVV → QL chi nhánh; "Báo PH kết quả Test lớp thường" giữ GVCN | 02 mục 2.9 21/10-TVV, Q-D3 ① |
+| N7 | **S chéo:** GV có kỹ năng Speaking trong hồ sơ GV (`user_skills`), kể cả không dạy lớp nào, được chấm chéo Speaking trong chi nhánh của mình (mã đã đúng từ OV-14c) | 02 mục 2.9 21/10-SCHEO |
 
 ## 2. Đã làm (đã merge vào `main`, kiểm bằng danh sách PR GitHub 12/10)
 
@@ -230,6 +261,7 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
   7. Nhỏ: ~~Netlify CLI 27.13~~ ✅ 18/10; huy hiệu "Powered by Netlify" (chủ SP tắt trong Project configuration › General).
 
 ### ĐÁNH GIÁ LẠI UX/UI 20/10 — chủ SP không hài lòng sau OV-15 (`docs/superpowers/specs/2026-10-20-danh-gia-lai-ux-ui-toan-dien.md`)
+- **Trạng thái: 21/10 chủ SP duyệt (#486) → GĐ0 / GĐ1 chạy đêm 21/10** (bảng PR mục 9.5; luật rút gọn mục 1.6). Các dòng dưới giữ làm lịch sử.
 - **Chủ SP 20/10 (12 ảnh):** web không bám mockup đã duyệt, vài chỗ tệ hơn bản trước, panel / chuyển trang thừa → yêu cầu rà toàn diện, khách quan, **chỉ đánh giá + kế hoạch, chưa sửa**.
 - **Kết quả (8 agent Opus, 1 789 ảnh, 9 vai):** ~23/40 (không xứng ≥ 35; Nhất quán 1/4 mọi khu vực); khớp mockup ~60 % (Tổng quan, Hồ sơ lớp ~40 %). Lỗi số: **P0 "Theo tháng" ra tháng trước**, "PA có kết quả trong kỳ" không theo kỳ,
   Chờ duyệt 10 / 12 thẻ (chi nhánh), 8 số dải Tổng quan bấm không mở, 4 định nghĩa SOS, Đang SOS chia trang sai. Nguyên nhân lệch mockup = **quy trình** (kế hoạch dịch khung thành chữ, luật "sửa trên nền", PR chia theo tệp, không cổng ảnh cặp, chủ SP không xem trước merge).
@@ -255,7 +287,7 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
   Kế hoạch (07): GĐ0 tài liệu + công cụ + seed → **GĐ1 trước deploy** (số liệu, lỗi chức năng, bộ chọn tuần, lịch thi, Thi ↔ Test, L3, L4, L5, nền bảng + lưới điểm — Q-E1 ① đã chọn 21/10) → GĐ1b việc TVV (gán TVV trước) → NEN → GĐ2 mỗi màn một PR (mockup + ảnh cặp + chủ SP duyệt) → GĐ3 → GĐ4.
   **Chủ SP trả lời 21/10: 17/17 câu + đồng ý cả gói PTA tự quyết** (02 mục 5, 2.9). Khuyến nghị ① ở 12 câu (GĐ1 cả gói trừ việc TVV · trang đầu theo vai · bố cục B · …); đổi luật:
   **luật 4 sửa** (MT cũ "-" = huỷ ngay · đếm theo tuần · QL Khôi phục = được dời 2 lần · QL duyệt thêm = +1 · gõ nhầm Hoàn tác 10 s, vẫn khôi phục được) · **việc TVV** (Chốt ngày thi · Bước tiếp hạn 1 tuần · Bổ sung hồ sơ · KQ thi thật chuyển từ GVCN — không hạn) · **S chéo** cho mọi GV có kỹ năng S, kể cả không dạy lớp (mã đã có từ OV-14c) · góc **"Cần làm"** thành bộ lọc, giữ tên.
-  **Việc tiếp:** chủ SP duyệt plan cuối = merge PR #486 → GĐ0; vẽ **mockup Chấm Test theo hạn trước** (Q-C1 — chủ SP duyệt sau). Chưa code, chưa PR mã.
+  ~~**Việc tiếp:** chủ SP duyệt plan cuối = merge PR #486 → GĐ0~~ ✓ 21/10; vẽ **mockup Chấm Test theo hạn trước** (Q-C1 — chủ SP duyệt sau).
 
 ### OV-14 — overhaul UX 17–18/10 (đánh giá `docs/superpowers/specs/2026-10-17-ov14-danh-gia-ux.md`, mockup `thiet-ke/mockup-ov14-*`)
 - **Rà 17/10** (impeccable critique + detector, ui-ux-pro-max, hai bên đối thoại, xác minh mã main 6177d36f, 266 ảnh demo): Nielsen 27/40, ui-ux-pro-max 25/40 → đích ≥ 35 (37).
@@ -422,6 +454,7 @@ npm run check MỘT lần cuối → bấm thử MỘT lần chỉ màn PR chạ
 không cần ảnh → /impeccable audit + /web-design-guidelines (nếu có giao diện) → /ponytail-review → mở PR vào main, KHÔNG merge. Mô tả PR ≤ 30 dòng.
 Xong: [x] kế hoạch, một dòng mục 11, CODE_MAP.md nếu thêm/xoá file. Cổng PORT/WEB_PORT riêng, không 4000/5173.
 **Dòng đọc Turso (chủ SP 19/10, mọi PR từ nay):** đường API mới / đổi phải nạp ít nhất có thể — không `SELECT a.*` khi chỉ cần vài cột, không nạp mọi lượt khi màn chỉ cần lượt gần nhất, gom câu dùng chung trong một request, cột lọc mới có chỉ mục; mô tả PR ghi số câu + dòng đọc trước → sau của đường chạm (log `[cham]` / `tocDo.run`).
+PR đổi bố cục / làm lại màn (21/10): bảng truy vết + ảnh cặp toàn trang + cổng ≥ 90 % KHỚP + chủ SP duyệt trước merge (mục 1.6 Q-2…Q-6).
 PR đổi màn nào sửa mục Hướng dẫn của màn đó (`shared/huongDan/<vai>.ts`, Theo màn + bước của Việc hằng tuần); đổi / xoá phần tử có
 `data-hd` thì sửa "Chỉ cho tôi" trỏ tới — phép kiểm HD-NAV / HD-CHI (`prHd.tests.ts`) đỏ khi thiếu.
 ```
@@ -463,6 +496,26 @@ PR đổi màn nào sửa mục Hướng dẫn của màn đó (`shared/huongDan
 
 Cả hai: check xanh trên bản gộp origin/main mới nhất; TD4-a lệch băm thì chụp lại + một dòng lý do; xong nhắn "<PR> #N sẵn sàng rà" tới session "Piza-tracking session planning". Bản đầy đủ đã đưa trong chat planning 16/10.
 
+### 9.5. Đêm 21/10 — GĐ0 / GĐ1 (chủ SP duyệt #486; PTA Plan điều phối, rà, merge; nguồn phạm vi: 07 mục 3–4)
+Mỗi PR một session Opus 5.5 trong `.claude/worktrees/`; xong nhắn "PTA Plan: <MÃ> #<số> sẵn sàng rà". PR đổi bố cục / dữ liệu ghi "chờ chủ SP" → **không merge qua đêm** (1.6 Q-6).
+
+| PR | Phạm vi (07) | Phụ thuộc | Merge |
+|---|---|---|---|
+| **TL-QT** | luật 21/10 vào CLAUDE.md / plan.md 1.6 + 9.5 + 10B / DESIGN.md | — | PTA tự merge |
+| **TL-LUAT** | Rulebook: 16 chỗ v4b + 3 chỗ v3a, luật 1–5 (luật 4 bản sửa), việc TVV, S chéo, bảng thuật ngữ Thi ↔ Test; đánh dấu mockup hết hiệu lực (06 mục 3) | — (khác tệp TL-QT) | PTA tự merge |
+| **CONG-CU** | `do-bang`, cảnh báo esbuild = lỗi, phép kiểm lịch trong hộp, script ảnh cặp | — | PTA tự merge |
+| **LUAT-34** | luật 3 (gỡ R11, Khôi phục điểm) + luật 4 bản sửa 21/10 (bảng 31 chuyển T01–T31) | TL-LUAT | PTA tự merge sau rà sâu `ecc:silent-failure-hunter` |
+| **LUAT-5** | thu hồi / không tăng bậc qua QL, lý do bắt buộc, "Đã thu hồi" | TL-LUAT | PTA tự merge sau rà sâu |
+| **LT-SV** | `trangThaiLichThi` A / B, bỏ "tháng = đã thi", Chốt ngày thi không hạn | — | **chờ chủ SP** (danh sách em đổi trạng thái trước merge) |
+| **NEN-TYPO-MAU → BANG-0 → BANG-1** | thang chữ + token điểm + trạng thái → `Bang` + `ODiem` → lưới điểm 6 lối vào | CONG-CU | BANG-1 **chờ chủ SP duyệt bảng mẫu** `/dev/thanh-phan` |
+| **CV-LOI** | Công việc chạy đúng (07 mục 4) | CONG-CU | PTA tự merge |
+| **KHUNG-LOI** | khung không vỡ + **thứ tự menu + A1-05** (PTA chuyển từ NEN-TYPO-MAU để tránh chạm cùng tệp) | CONG-CU | PTA tự merge |
+| **SL1 → SL2** | số liệu đúng · một phạm vi một trang | CONG-CU | PTA tự merge |
+| **CASE-NHIEU** | Tạo Case nhiều kỹ năng một panel | CONG-CU, CV-LOI | PTA tự merge (ảnh trước / sau) |
+| **SEED-UX** | dữ liệu demo theo ngày demo, đủ trạng thái khung | — | PTA tự merge |
+| **CHU-THI** | ~295 chuỗi "thi" → "Test" theo bảng thuật ngữ Rulebook | TL-LUAT | PTA tự merge |
+| **MOCKUP-V4a / V4b** | mockup mới theo 06 mục 4 (M5a Chấm Test theo hạn vẽ trước) | — | **chờ chủ SP duyệt** |
+
 ## 10. Mẫu giao việc cho agent (session planning dùng)
 
 ### A. Agent soạn kế hoạch (Opus 5.5, chạy nền, mỗi PR một agent)
@@ -482,14 +535,17 @@ Bạn là NGƯỜI RÀ ĐỘC LẬP. KHÔNG sửa mã nhánh, KHÔNG push, KHÔN
    Nhánh chưa chứa origin/main mới nhất → git merge origin/main trong worktree. npm ci; npm run check MỘT lần.
 2. Diff git diff origin/main...HEAD đối chiếu kế hoạch PR + plan.md mục 3–4. Tìm: sai luật nghiệp vụ, lộ dữ liệu ngoài quyền
    (gửi API thẳng bằng vai khác), số không khớp danh sách khi bấm, N+1 (đường mới phải có trần ở tocDoDuong.ts), SQL hỏng trên
-   Turso, migrate không chạy lặp được, mất tính năng cũ.
+   Turso, migrate không chạy lặp được, mất tính năng cũ, **đổi luật nghiệp vụ ngoài plan.md 1.6 (N1–N7)**.
+2b. PR đổi bố cục (21/10, plan.md 1.6): kiểm bảng truy vết đủ dòng (kể cả BỎ / GIỮ); chấm từng dòng trên ảnh cặp toàn trang mockup | web
+   (cùng vai, cùng seed, 1440 tối + 375 sáng) → KHỚP / KHÁC (lý do); tỉ lệ KHỚP < 90 % → CHƯA MERGE; `do-khung` + `do-bang` xanh.
 3. Bấm thử theo vai (QL, GVCN, GVBM) + 375/1440 bằng ẢNH THẬT: npm run seed → API PORT=<API> node dist-server/server/src/index.js
    (nền) → Vite WEB_PORT=<web> (proxy /api → 127.0.0.1:<API>). Playwright npm i --no-save playwright, chromium.launch({ channel:
    'chrome' }); đăng nhập POST /api/demo/session {userId}. Git Bash: MSYS_NO_PATHCONV=1. Không chạm Turso/netlify.
 4. Model thật: git log --format=%B origin/main..origin/<nhánh> | grep Co-Authored.
 5. Dọn: tắt tiến trình, gỡ worktree (Windows tên dài: cmd /c "rmdir /s /q \\?\<đường dẫn>"; git worktree prune).
 BÁO LẠI (≤ 70 dòng): MERGE ĐƯỢC / MERGE ĐƯỢC SAU KHI SỬA <…> / CHƯA MERGE; số phép kiểm; Critical/Important (file:dòng + tình
-huống + cách sửa); Minor ≤ 8 dòng; việc kế hoạch giao mà chưa làm.
+huống + cách sửa); Minor ≤ 8 dòng; việc kế hoạch giao mà chưa làm; PR đổi bố cục: bảng chấm KHỚP / KHÁC + tỉ lệ % (planning đăng làm
+bình luận PR) và danh sách "tự quyết / lệch / chưa xác minh". PR đổi bố cục chỉ merge sau bình luận "chủ SP: đạt", không qua đêm.
 ```
 
 ### C. Prompt mở session planning mới (khi session này quá dài)
@@ -505,6 +561,7 @@ Nhật ký chi tiết tới 04/10 ở `git show 575e898d:plan.md` (mục 14) và
 
 | Ngày | PR / nhánh · model | Kết quả |
 |---|---|---|
+| 21/10/2026 | CONG-CU (Opus 5.5) · `claude/cong-cu-821f86` | Công cụ: `do-bang` (g1–g5) gắn `do-khung` 1440/1280/375, bỏ miễn đo lưới chấm; esbuild cảnh báo = lỗi trong check; kịch bản `lich`; `anh-cap.mjs`; lỗi đã biết ở `mien-do.json` (BANG-1, CV-LOI, KHUNG-LOI gỡ) |
 | 20/10/2026 | OV-15i1 (Opus 5.5) · `claude/pr-ov15i1-plan-z54zlx` | Lịch sử: góp ý đi chỉ mục `idx_audit_viec` (không LIKE), ô điểm phân trang con trỏ, thi-that cùng cổng hv (GVBM 403), Sửa cả lớp / Dán Excel một mục ở lớp, lô 0 em không ghi, HV đã xoá, đổi chương trình ghi phân công, `batDau` mọi loại, chữ EN; nhãn PA chờ duyệt đổi; trần 3 đường mới. Không làm: gộp GET Tổng quan (ý 11), chuông hết ngay do người khác (ý 12b) — lý do trong PR. |
 | 20/10/2026 | OV-15i2 (Opus 5.5) · `claude/sharp-ride-q33fc0` | Việc lẻ: Dán Excel thử lại không ghi trùng mục tổng · ≤ 2 lệnh mỗi môn · lớp thường khớp email; bỏ `viewer.huyLuot`; Xuất điểm Test không `a.*`, cột Lớp theo phạm vi; tutor gợi ý theo lớp nhóm PA; Lịch thi TVV/CX mang ô tìm + hỏi "Bỏ ngày …?"; CODE_MAP. Phép kiểm `prOv15i2` |
 | 20/10/2026 | OV-15h1 (Opus 5.5) · `claude/vibrant-davinci-5gzwos` | Tổng quan QL: GET dữ liệu 5 → 3 (`/tong-quan/ql` một GET cho Lớp cần chú ý + Tuần này + Trễ chấm, số giữ nguyên), Lớp cần chú ý theo mockup 3, Chốt lộ trình tại chỗ, Cần bạn quyết ≤ 7 ngày; thông báo theo lô; Chờ bạn duyệt theo chi nhánh. |
