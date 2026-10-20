@@ -33,7 +33,7 @@ function DongTruong({ x }: { x: Truong }) {
       <li className="break-words">
         <span className="text-slate-400">{ten}:</span>{' '}
         <span className="text-slate-200">{t('đã sửa')}</span>{' '}
-        <button type="button" className="link appearance-none border-0 bg-transparent p-0 text-sm max-sm:py-2" aria-expanded={mo} onClick={() => setMo(!mo)}>
+        <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 text-sm sm:min-h-0" aria-expanded={mo} onClick={() => setMo(!mo)}>
           {mo ? t('Ẩn') : t('Xem')}
         </button>
         {mo && (
@@ -53,7 +53,7 @@ function DongTruong({ x }: { x: Truong }) {
     <li className="break-words">
       <span className="text-slate-400">{ten}:</span>{' '}
       <span className="text-slate-400">{giaTri(x, x.cu)}</span>
-      <span className="px-1 text-slate-500" aria-label={t('thành')}>→</span>
+      <span className="sr-only">{t('thành')}</span><span aria-hidden className="px-1 text-slate-500">→</span>
       <span className="font-medium text-slate-100">{giaTri(x, x.moi)}</span>
     </li>
   );
@@ -75,7 +75,7 @@ function CacTruong({ ds }: { ds: Truong[] }) {
   if (!lo) return <div className="mt-1">{ds_.map(([k, tr]) => ve(k, tr))}</div>;
   return (
     <div className="mt-1">
-      <button type="button" className="link appearance-none border-0 bg-transparent p-0 text-sm max-sm:py-2" aria-expanded={mo} onClick={() => setMo(!mo)}>
+      <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 text-sm sm:min-h-0" aria-expanded={mo} onClick={() => setMo(!mo)}>
         {t('{n} học viên', { n: ds_.filter(([k]) => k).length })} · {mo ? t('Ẩn') : t('Xem')}
       </button>
       {mo && <div className="mt-1 space-y-1 border-l pl-3" style={{ borderColor: 'var(--line)' }}>{ds_.map(([k, tr]) => ve(k, tr))}</div>}
