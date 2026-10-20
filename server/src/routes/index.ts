@@ -1332,9 +1332,15 @@ api.patch('/discipline-measures/:id/vi-pham', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return xuLySvc.suaViPhamXuLy(principalOf(req), pInt(req, 'id'), { violationIds: yThucBody(req).violationIds });
 }));
+/** LUAT-5: đường xoá cũ chỉ còn trả lỗi (GVCN 403 · QL 400) — lần xử lý đã lưu đi "Thu hồi…" kèm lý do. */
 api.delete('/discipline-measures/:id', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return xuLySvc.xoaXuLy(principalOf(req), pInt(req, 'id'));
+}));
+/** LUAT-5 (luật 5): Thu hồi — GVCN gửi thẻ Chờ duyệt, QL thu hồi thẳng; lý do bắt buộc (máy chủ kiểm). */
+api.post('/discipline-measures/:id/thu-hoi', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return xuLySvc.thuHoiXuLy(principalOf(req), pInt(req, 'id'), { lyDo: yThucBody(req).lyDo });
 }));
 /** OV-7a: sửa mô tả / ngày / người thực hiện của lần xử lý đã xong — chỉ trường có gửi mới đổi. Quyền như Sửa vi phạm. */
 api.patch('/discipline-measures/:id', requireAuth, wrap((req) => {
