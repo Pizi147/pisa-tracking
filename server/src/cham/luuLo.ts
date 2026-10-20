@@ -107,7 +107,7 @@ export function luuDiemLo(p: Principal, body: any, kieu: Kieu = 'ft') {
   const tong = { soDong: (truoc?.soDong ?? 0) + dong.length, soDaLuu: (truoc?.soDaLuu ?? 0) + soDaLuu, soO: (truoc?.soO ?? 0) + soO };
   /* OV-15i2: request cuối gửi lại (mất mạng sau khi máy chủ đã lưu → "Thử lại" cùng `loId`) không ghi thêm mục tổng. */
   const daCoMuc = () => !!loId && !!db().prepare(`SELECT 1 FROM audit_logs WHERE entity_type = 'class' AND entity_id = ? AND action = ?
-    AND json_extract(after_json, '$.loId') = ? LIMIT 1`).get(classId, hoanTac ? 'score.dan_excel_hoan_tac' : 'score.dan_excel', loId);
+    AND json_extract(after_json, '$.loId') = ? AND actor_user_id = ? LIMIT 1`).get(classId, hoanTac ? 'score.dan_excel_hoan_tac' : 'score.dan_excel', loId, p.userId);   // rà #484: loId của người khác không chặn mục của mình
   if (body?.cuoi === true && tong.soDaLuu && !daCoMuc()) {
     writeAudit({
       actorUserId: p.userId, action: hoanTac ? 'score.dan_excel_hoan_tac' : 'score.dan_excel', entityType: 'class', entityId: classId,

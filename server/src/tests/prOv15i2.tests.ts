@@ -51,6 +51,8 @@ export async function runPrOv15i2Tests(t: YThucTestKit) {
     assert(muc('i2-1') === 1, `thử lại cùng loId: vẫn MỘT mục (được ${muc('i2-1')})`);
     lo(QL, [{ attemptId: a1, o: [{ skill: 'listening', rawScore: 31 }] }], { loId: 'i2-1b', cuoi: true });
     assert(muc('i2-1b') === 1, 'lần dán mới (loId khác) vẫn ghi mục');
+    lo(P.admin, [{ attemptId: a1, o: [{ skill: 'listening', rawScore: 32 }] }], { loId: 'i2-1', cuoi: true });
+    assert(muc('i2-1') === 2, `người khác dùng lại loId của QL vẫn ghi mục của mình (được ${muc('i2-1')})`);
   }));
 
   check('I2-2 · Dán Excel: tối đa HAI lệnh mỗi môn (trần dòng = 2 × số môn của chương trình) — ba lệnh cùng môn → 400 cả lô', () => thu(() => {
