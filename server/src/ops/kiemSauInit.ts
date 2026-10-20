@@ -14,7 +14,7 @@ import { BANG_NEN_INIT } from './initBanChinh.ts';
 import { KHONG_NOI_BO } from './saoLuu.ts';
 
 /** Khoá `demo_config` mà database mới được có (dấu do `napDuLieuNen` ghi). Khoá nào khác = dữ liệu / cấu hình demo lọt vào. */
-const KHOA_DUOC_CO = new Set(['normal_pass_threshold', 'xoa_du_lieu_backfill_at', 'khoi_tao_moi_at', 'pr_qu_case_close_gv_at', 'pr_ov13p_tvv_cx_tao_lop_at', 'pr_ov13q_han_sau_thi_at', 'pr_ct2_dien_buoi', 'pr_ov1c_da_chay', 'pr_ov1b_da_chay']);
+const KHOA_DUOC_CO = new Set(['normal_pass_threshold', 'xoa_du_lieu_backfill_at', 'khoi_tao_moi_at', 'pr_qu_case_close_gv_at', 'pr_ov13p_tvv_cx_tao_lop_at', 'pr_ov13q_han_sau_thi_at', 'pr_ct2_dien_buoi', 'pr_ov1c_da_chay', 'pr_ov1b_da_chay', 'lich_su_thay_doi_tu']);
 
 /**
  * Kiểm một database đã mở. Hàm thuần (nhận `conn`, trả `{ dong, loi }`) để phép kiểm chạy được mà không cần tiến trình con.

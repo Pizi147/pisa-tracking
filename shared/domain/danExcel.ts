@@ -1,4 +1,4 @@
-import { ENTRY_SKILL_SHORT, type EntrySkill } from './skills.ts';
+import { ENTRY_SKILLS, ENTRY_SKILL_SHORT, type EntrySkill } from './skills.ts';
 import { bandTuSoCau, criteriaPatchFrom, kiemBand, type PatchDiem } from './chamDiem.ts';
 import { canNhomNguyenNhan, CAU_THIEU_NHAN_XET, kiemNhanXet, thieuNhanXetMt } from './nhanXet.ts';
 import { chuanTieuDe } from './nhapHocVien.ts';
@@ -47,15 +47,25 @@ const TEN_COT: Record<EntrySkill, string[]> = {
   speaking: ['s', 'speaking', 'noi'],
 };
 const COT_TEN = ['ten', 'ho ten', 'ho va ten', 'hoc vien', 'ten hoc vien', 'name', 'full name', 'email'];
-const kyNangCua = (h: string): EntrySkill | null =>
-  (Object.keys(TEN_COT) as EntrySkill[]).find((k) => TEN_COT[k].includes(h)) ?? null;
-/** "Nhận xét L", "NX W1", "Comment" → kỹ năng (null = cột nhận xét không ghi kỹ năng); không phải cột nhận xét → undefined. */
-function nhanXetCua(h: string): EntrySkill | null | undefined {
-  const m = /^(nhan xet|nx|comment|comments|feedback)(?: (.+))?$/.exec(h);
-  return m ? (m[2] ? kyNangCua(m[2]) : null) : undefined;
+
+/**
+ * Bộ môn của lưới đang dán: mọi môn có thể có (để nhận ra cột tiêu đề), tên cột chấp nhận của từng môn (đã `chuanTieuDe`), chữ ngắn hiện trên màn.
+ * Fast Track: `COT_FT`; lớp thường (OV-15h2 ý 10): `cotThuong` theo môn của chương trình (FOU L · R · G+V · P; BE / ELE L · R · W · S; Pre FOU Tổng hợp).
+ */
+export type CotDan = { kyNang: readonly string[]; ten: (k: string) => readonly string[]; ngan: (k: string) => string };
+export const COT_FT: CotDan = { kyNang: ENTRY_SKILLS, ten: (k) => TEN_COT[k as EntrySkill] ?? [], ngan: (k) => ENTRY_SKILL_SHORT[k as EntrySkill] ?? k };
+const TEN_COT_THUONG: Record<string, string[]> = {
+  listening: TEN_COT.listening, reading: TEN_COT.reading, speaking: TEN_COT.speaking, writing: ['w', 'writing', 'viet'], tong_hop: ['tong hop', 'tong', 'diem'],
+};
+/** Lớp thường: tên cột = chữ ngắn + tên đầy đủ của môn trong chương trình (`tenMonNgan` / `tenMon` máy chủ gửi) + tên chung của mã môn. */
+export function cotThuong(mon: readonly string[], nhan: { ngan: (k: string) => string; ten: (k: string) => string }): CotDan {
+  return {
+    kyNang: mon, ngan: nhan.ngan,
+    ten: (k) => [...new Set([chuanTieuDe(nhan.ngan(k)), chuanTieuDe(nhan.ten(k)), ...(TEN_COT_THUONG[k] ?? [chuanTieuDe(k)])].filter(Boolean))],
+  };
 }
 
-export type ODanTho = { skill: EntrySkill; diem: string; nhanXet: string };
+export type ODanTho = { skill: string; diem: string; nhanXet: string };
 export type DongDan = { so: number; ten: string; o: ODanTho[] };
 export type BangDan = { coTieuDe: boolean; cot: string[]; dong: DongDan[] };
 
@@ -65,19 +75,25 @@ export type BangDan = { coTieuDe: boolean; cot: string[]; dong: DongDan[] };
  * kỹ năng gắn với cột điểm ngay trước. Không tiêu đề: `Tên | điểm | nhận xét` theo `cotMo`; đúng 1 + n cột → chỉ điểm, không nhận xét.
  * `so` = số dòng trong Excel (1 = dòng đầu dán) để người dùng tìm lại.
  */
-export function docBangDan(text: string, cotMo: readonly EntrySkill[]): BangDan {
+export function docBangDan(text: string, cotMo: readonly string[], bo: CotDan = COT_FT): BangDan {
+  const kyNangCua = (h: string): string | null => bo.kyNang.find((k) => bo.ten(k).includes(h)) ?? null;
+  /** "Nhận xét L", "NX W1", "Comment" → kỹ năng (null = cột nhận xét không ghi kỹ năng); không phải cột nhận xét → undefined. */
+  const nhanXetCua = (h: string): string | null | undefined => {
+    const m = /^(nhan xet|nx|comment|comments|feedback)(?: (.+))?$/.exec(h);
+    return m ? (m[2] ? kyNangCua(m[2]) : null) : undefined;
+  };
   const hang = tachTsv(text);
   const dau = hang.findIndex((h) => h.some((o) => o.trim()));
   if (dau < 0) return { coTieuDe: false, cot: [], dong: [] };
   const tieuDe = hang[dau].map(chuanTieuDe);
   const coTieuDe = tieuDe.some((h, i) => i > 0 && (kyNangCua(h) !== null || nhanXetCua(h) !== undefined));
   /* Vị trí cột: điểm / nhận xét của từng kỹ năng đang mở, và cột tên. */
-  const viDiem = new Map<EntrySkill, number>(), viNx = new Map<EntrySkill, number>();
+  const viDiem = new Map<string, number>(), viNx = new Map<string, number>();
   let viTen = 0;
   if (coTieuDe) {
     const iTen = tieuDe.findIndex((h) => COT_TEN.includes(h));
     viTen = iTen >= 0 ? iTen : 0;
-    let truoc: EntrySkill | null = null;
+    let truoc: string | null = null;
     tieuDe.forEach((h, i) => {
       if (i === viTen) return;
       const k = kyNangCua(h);
@@ -96,8 +112,8 @@ export function docBangDan(text: string, cotMo: readonly EntrySkill[]): BangDan 
   }
   const kn = cotMo.filter((k) => viDiem.has(k) || viNx.has(k));
   const cot = [t('Tên'), ...kn.flatMap((k) => [
-    ...(viDiem.has(k) ? [ENTRY_SKILL_SHORT[k]] : []),
-    ...(viNx.has(k) ? [t('Nhận xét {k}', { k: ENTRY_SKILL_SHORT[k] })] : []),
+    ...(viDiem.has(k) ? [bo.ngan(k)] : []),
+    ...(viNx.has(k) ? [t('Nhận xét {k}', { k: bo.ngan(k) })] : []),
   ])];
   const lay = (h: string[], i: number | undefined) => (i === undefined ? '' : (h[i] ?? '').trim());
   const dong: DongDan[] = [];
@@ -239,4 +255,64 @@ export function oConNhuDan(c: Pick<ODanHienCo, 'rawScore' | 'band' | 'criteria' 
     && (p.criteria === undefined || cung(c.criteria, p.criteria))
     && (p.nhanXet === undefined || (c.nhanXet ?? null) === p.nhanXet)
     && (p.nhomNguyenNhan === undefined || cung(c.nhomNguyenNhan ?? [], p.nhomNguyenNhan));
+}
+
+// ---------------------------------------------------------------- Lớp thường (OV-15h2 ý 10)
+
+/** Phần của ô lưới lớp thường (`oThuong` ở web) mà xem trước cần. `tongCot` = tổng câu hay gặp nhất của cột (ô "tổng" đầu cột của lưới). */
+export type ODanThuong = {
+  skill: string; canEdit: boolean; diem: number | null; tong: number | null; tongCot: number | null; dau: boolean; nhanXet: string | null;
+  progress?: string; chuaToiTuan?: boolean; lyDoKhoa?: string; khongVang?: string | null; nhanXetDuoc?: boolean;
+};
+/** Một lệnh `saveRegularScore` — một lệnh một việc: điểm (đúng + tổng), hoặc dấu "-", hoặc nhận xét. */
+export type PatchThuong = { score?: number | null; total?: number | null; noShow?: boolean; nhanXet?: string | null };
+export type XetOThuong = { loai: 'bo' } | { loai: 'loi'; loi: string } | { loai: 'ghi'; lenh: PatchThuong[]; truoc: string | null; sau: string; canhBao?: string };
+const chuThuong = (c: { diem: number | null; tong: number | null }) => (c.diem === null ? null : `${c.diem}/${c.tong ?? '?'}`);
+
+/**
+ * Một ô dán × ô lớp thường. Điểm = SỐ CÂU ĐÚNG ("24", tổng lấy từ ô / cột) hoặc "24/40"; "-" = em không làm bài (máy chủ dời môn sang tuần sau, C08);
+ * trống = bỏ qua (≠ 0 ≠ "-"). Máy chủ kiểm lại mọi luật trong `saveRegularScore` (quyền theo môn, "-", đúng ≤ tổng).
+ */
+export function xetOThuong(raw: { diem: string; nhanXet: string }, c: ODanThuong): XetOThuong {
+  const d = raw.diem.trim(), nx = raw.nhanXet.trim();
+  if (!d && !nx) return { loai: 'bo' };
+  if (c.progress === 'cancelled' || c.progress === 'absent') return { loai: 'loi', loi: t('Phần thi đã huỷ / đã xác nhận vắng') };
+  if (!(c.canEdit || (!d && c.nhanXetDuoc))) return { loai: 'loi', loi: c.lyDoKhoa ?? t('Bạn không được phân công môn này') };
+  const kx = kiemNhanXet(nx);
+  if ('loi' in kx) return { loai: 'loi', loi: kx.loi };
+  const truoc = chuThuong(c) ?? (c.dau ? '-' : null);
+  const doiNx = !!nx && nx !== (c.nhanXet ?? '');
+  const lenhNx: PatchThuong[] = doiNx ? [{ nhanXet: nx }] : [];
+  if (d === '-') {
+    if (c.diem !== null) return { loai: 'loi', loi: t('Ô đã có điểm — "-" không xoá được điểm') };
+    if (c.dau) return lenhNx.length ? { loai: 'ghi', lenh: lenhNx, truoc: null, sau: '-' } : { loai: 'bo' };
+    if (c.khongVang) return { loai: 'loi', loi: c.khongVang };
+    if (c.chuaToiTuan) return { loai: 'loi', loi: t('Chưa tới tuần thi') };
+    return { loai: 'ghi', lenh: [{ noShow: true }], truoc: null, sau: '-', ...(nx ? { canhBao: t('Ô "-": nhận xét bị bỏ') } : {}) };
+  }
+  if (!d) return lenhNx.length ? { loai: 'ghi', lenh: lenhNx, truoc: null, sau: truoc ?? '' } : { loai: 'bo' };
+  if (c.dau) return { loai: 'loi', loi: t('Ô đang "-" (đã dời tuần) — gỡ dấu ở lưới trước') };
+  if (c.chuaToiTuan) return { loai: 'loi', loi: t('Chưa tới tuần thi') };
+  const m = /^(\d+)(?:\s*\/\s*(\d+))?$/.exec(d);
+  if (!m) return { loai: 'loi', loi: t('Số câu đúng là số nguyên (vd 24 hoặc 24/40)') };
+  const score = Number(m[1]), total = m[2] !== undefined ? Number(m[2]) : c.tong ?? c.tongCot;
+  if (total === null) return { loai: 'loi', loi: t('Chưa có tổng câu — dán dạng 24/40') };
+  if (total <= 0) return { loai: 'loi', loi: t('Tổng câu phải lớn hơn 0') };
+  if (score > total) return { loai: 'loi', loi: t('Số câu đúng ({a}) lớn hơn tổng ({b})', { a: score, b: total }) };
+  const sau = `${score}/${total}`;
+  const doiDiem = sau !== truoc;
+  if (!doiDiem && !doiNx) return { loai: 'bo' };
+  return { loai: 'ghi', lenh: [...(doiDiem ? [{ score, total }] : []), ...lenhNx], truoc: doiDiem ? truoc : null, sau };
+}
+
+/** HOÀN TÁC các lệnh vừa dán của một ô lớp thường (ô trước khi lưu): "-" → gỡ dấu; điểm → điểm cũ (hoặc xoá); nhận xét → nhận xét cũ. */
+export function patchTruocThuong(c: Pick<ODanThuong, 'diem' | 'tong' | 'nhanXet'>, lenh: readonly PatchThuong[]): PatchThuong[] {
+  return lenh.map((p) => (p.noShow ? { noShow: false }
+    : p.nhanXet !== undefined ? { nhanXet: c.nhanXet ?? null }
+      : { score: c.diem, total: c.diem === null ? null : c.tong }));
+}
+
+/** Trước khi Hoàn tác: ô lớp thường (sau khi tải lại) còn đúng lệnh đã dán không. */
+export function oConNhuDanThuong(c: Pick<ODanThuong, 'diem' | 'tong' | 'nhanXet' | 'dau'>, p: PatchThuong): boolean {
+  return p.noShow ? c.dau : p.nhanXet !== undefined ? (c.nhanXet ?? null) === p.nhanXet : c.diem === (p.score ?? null) && c.tong === (p.total ?? null);
 }

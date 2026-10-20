@@ -35,6 +35,7 @@ import { migratePrOv1c } from '../migrate/prOv1c.ts';
 import { migratePrOv11e } from '../migrate/prOv11e.ts';
 import { migratePrOv12c } from '../migrate/prOv12c.ts';
 import { migratePrOv12a } from '../migrate/prOv12a.ts';
+import { MOC_LICH_SU } from '../migrate/prOv15g.ts';
 
 const NOW = nowIso();
 
@@ -308,6 +309,7 @@ export function runSeed() {
     migratePrOv12c(conn, []);
 
     capNhatConOChoTatCa();   // TD7b: dữ liệu mẫu ghi thẳng SQL — tính cờ "còn ô chờ điểm" một lần cho mọi lượt
+    conn.prepare('UPDATE demo_config SET value = ?, updated_at = ? WHERE key = ?').run(nowIso(), nowIso(), MOC_LICH_SU);   // OV-15g: bộ demo dựng thẳng SQL không có lịch sử — mốc SAU mọi dữ liệu mẫu
     return {
       'Chi nhánh': BRANCHES.length,
       'Thẻ Chờ duyệt (demo)': duyet.the,

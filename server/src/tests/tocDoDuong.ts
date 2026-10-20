@@ -67,12 +67,6 @@ export const DUONG_DO: MucDo[] = [
 
   // ---------------------------------------------------------------- Phân tích v2 cho QL (PR-UX4) — GV không có meeting.view nên 403
   {
-    trang: 'Phân tích QL', vai: ['QL', 'QT', 'GVCN'], url: '/phan-tich/van-de-hv',
-    maChuDich: { GVCN: 403 },
-  },
-  { trang: 'Phân tích QL', vai: ['QL', 'QT'], url: '/phan-tich/van-de-hv?gop=1' },
-  { trang: 'Phân tích QL', vai: ['QL', 'QT'], url: '/phan-tich/van-de-hv/o?dong=chua-phan-loai&cot=case' },
-  {
     trang: 'Phân tích QL', vai: ['QL', 'QT', 'GVCN'], url: '/phan-tich/hieu-qua-pa',
     maChuDich: { GVCN: 403 },
   },
@@ -114,6 +108,7 @@ export const DUONG_DO: MucDo[] = [
   { trang: 'Học viên & Lớp', vai: ['QL', 'QT'], url: '/classes?branchId={cn}' },
   { trang: 'Học viên & Lớp', vai: MOI_VAI, url: '/hoc-vien-lop' },
   { trang: 'Học viên & Lớp', vai: ['QL', 'QT'], url: '/hoc-vien-lop?phamVi=chi-nhanh&branchId={cn}' },
+  { trang: 'Học viên & Lớp · Bộ lọc thêm', vai: ['QL'], url: '/hoc-vien-lop?phamVi=chi-nhanh&branchId={cn}&them=1' },   // OV-15h2: nhãn Case / PA · kết quả · tuần
   /* OV-10b: Học viên & Lớp của TVV / CX (mỗi em một dòng, chip = chipHocVien) — TVV "HV của tôi" / Cả chi nhánh, CX mọi / một chi nhánh. */
   { trang: 'Học viên & Lớp TVV / CX', vai: ['TVV', 'CX'], url: '/hoc-vien-lop/theo-vai' },
   { trang: 'Học viên & Lớp TVV', vai: ['TVV'], url: '/hoc-vien-lop/theo-vai?phamVi=chi-nhanh' },
@@ -215,6 +210,11 @@ export const DUONG_DO: MucDo[] = [
   { trang: 'Hồ sơ HV', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/students/{hv}/lo-trinh' },
   /* OV-13j: Lịch sử sửa — GVBM không xem (403). */
   { trang: 'Hồ sơ HV', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/students/{hv}/lich-su-sua', maChuDich: { GVBM: 403 } },
+  /* OV-15g: Lịch sử thay đổi — một đường cho mọi đối tượng (hồ sơ HV · lớp · góp ý tuần · nhập HV). */
+  { trang: 'Hồ sơ HV', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/lich-su?loai=hv&id={hv}', maChuDich: { GVBM: 403 } },
+  { trang: 'Hồ sơ lớp FT', vai: MOI_VAI, url: '/lich-su?loai=lop&id={lopFT}' },
+  { trang: 'Hồ sơ lớp FT', vai: MOI_VAI, url: '/lich-su?loai=gop-y&id={lopFT}' },
+  { trang: 'Hồ sơ lớp FT', vai: ['QL', 'QT'], url: '/lich-su?loai=nhap-hv&id={lopFT}' },
   { trang: 'Hồ sơ HV', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/lo-trinh/{loTrinhDong}/tong-ket' },
   /* OV-13m: panel Bước tiếp sau thi (đọc trạng thái + quét hẹn bắt đầu). */
   { trang: 'Hồ sơ HV', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/cycles/{loTrinhDong}/buoc-tiep' },
@@ -318,6 +318,11 @@ export const DUONG_DO: MucDo[] = [
  * số "đo …" trong chú thích từng dòng dưới đây là số đo CŨ, trước TD2-d.
  */
 export const TRAN: Record<string, number> = {
+  /* OV-15g: Lịch sử thay đổi — trần = max(đo+10, ⌈đo×1,3⌉), đo 20/10. */
+  'QL /lich-su?loai=hv&id=1': 16, 'QT /lich-su?loai=hv&id=1': 14, 'GVCN /lich-su?loai=hv&id=1': 19, 'GVBM /lich-su?loai=hv&id=1': 18,
+  'QL /lich-su?loai=lop&id=3': 16, 'GVCN /lich-su?loai=lop&id=3': 17, 'GVBM /lich-su?loai=lop&id=3': 17, 'GVCN_THUONG /lich-su?loai=lop&id=3': 17, 'QT /lich-su?loai=lop&id=3': 15,
+  'QL /lich-su?loai=gop-y&id=3': 15, 'GVCN /lich-su?loai=gop-y&id=3': 16, 'GVBM /lich-su?loai=gop-y&id=3': 16, 'GVCN_THUONG /lich-su?loai=gop-y&id=3': 16, 'QT /lich-su?loai=gop-y&id=3': 14,
+  'QL /lich-su?loai=nhap-hv&id=3': 16, 'QT /lich-su?loai=nhap-hv&id=3': 15,
   /* TU-b: trang Tutor — trần = max(đo+10, ⌈đo×1,3⌉), đo 20/10. */
   'QL /tutors': 17, 'QT /tutors': 18, 'GVCN /tutors': 13, 'QL /tutors/1': 18, 'QT /tutors/1': 19, 'QL /tutors/dem': 12, 'QT /tutors/dem': 13, 'QT /tutors/go-tay': 13,
   /* TU-a: ô chọn tutor — trần = max(đo+10, ⌈đo×1,3⌉), đo 20/10. */
@@ -406,13 +411,6 @@ export const TRAN: Record<string, number> = {
   'QL /metrics/vi-pham-tong?classId=3': 16,
   'QT /metrics/vi-pham-tong?classId=3': 16,
   // PR-UX4 (2)(3), 24/09/2026 — mốc chốt ngay sau khi thêm đường (đo 13–16 câu): max(sau+10, ⌈sau×1.3⌉).
-  'QL /phan-tich/van-de-hv': 20,
-  'QT /phan-tich/van-de-hv': 20,
-  'GVCN /phan-tich/van-de-hv': 14,
-  'QL /phan-tich/van-de-hv?gop=1': 20,
-  'QT /phan-tich/van-de-hv?gop=1': 20,
-  'QL /phan-tich/van-de-hv/o?dong=chua-phan-loai&cot=case': 20,
-  'QT /phan-tich/van-de-hv/o?dong=chua-phan-loai&cot=case': 20,
   'QL /phan-tich/hieu-qua-pa': 21,
   'QT /phan-tich/hieu-qua-pa': 21,
   'GVCN /phan-tich/hieu-qua-pa': 14,
@@ -480,6 +478,7 @@ export const TRAN: Record<string, number> = {
   'QT /hoc-vien-lop': 84,
   'QL /hoc-vien-lop?phamVi=chi-nhanh&branchId=1': 72,
   'QT /hoc-vien-lop?phamVi=chi-nhanh&branchId=1': 72,   // PR-TK: đo 71 (bộ demo có thêm em Kết thúc học FT chờ kết quả thi thật chưa lưu trữ)
+  'QL /hoc-vien-lop?phamVi=chi-nhanh&branchId=1&them=1': 87,   // OV-15h2: đo 77 (= trang 71 + `chiTietCaseMo` Case đang mở + một câu tuần thi) → đo + 10
   'QL /classes/3/overview': 62,   // PR-CT gộp LT2b: 61 → 62
   'GVCN /classes/3/overview': 80,   // PR-UXF-a VN29: +6 câu (listAttempts một lần/trang cho việc nhập điểm của GV — chỉ lớp người xem dạy): đo 68, trần min(max(đo+10, ⌈đo×1.3⌉), ⌊cũ×1.3⌋)   // PR-CT gộp LT2b: 61 → 62
   'GVBM /classes/3/overview': 80,   // PR-UXF-a VN29: +6 câu (listAttempts một lần/trang cho việc nhập điểm của GV — chỉ lớp người xem dạy): đo 68, trần min(max(đo+10, ⌈đo×1.3⌉), ⌊cũ×1.3⌋)   // PR-CT gộp LT2b: 61 → 62
@@ -822,9 +821,12 @@ export const TRAN: Record<string, number> = {
  * khoá bằng EXPLAIN (không SCAN assessment_attempts, đi idx_attempt_o_cho[_lop]) ở khối "TD7b" của tocDo.run.ts.
  */
 export const TRAN_DONG: Record<string, number> = {
+  /* OV-15g: Lịch sử thay đổi — trần = max(đo+50, ⌈đo×1,3⌉), đo 20/10 (hv 4 · 2 · 9 · lop 33 · 34 · 34 · 34 · 3 · gop-y 32 · 33 · 33 · 33 · 2 · nhap-hv 62 · 32 dòng). */
+  'QL /lich-su?loai=hv&id=1': 54, 'QT /lich-su?loai=hv&id=1': 52, 'GVCN /lich-su?loai=hv&id=1': 59, 'QL /lich-su?loai=lop&id=3': 83, 'GVCN /lich-su?loai=lop&id=3': 84, 'GVBM /lich-su?loai=lop&id=3': 84, 'GVCN_THUONG /lich-su?loai=lop&id=3': 84, 'QT /lich-su?loai=lop&id=3': 53, 'QL /lich-su?loai=gop-y&id=3': 82, 'GVCN /lich-su?loai=gop-y&id=3': 83, 'GVBM /lich-su?loai=gop-y&id=3': 83, 'GVCN_THUONG /lich-su?loai=gop-y&id=3': 83, 'QT /lich-su?loai=gop-y&id=3': 52, 'QL /lich-su?loai=nhap-hv&id=3': 112, 'QT /lich-su?loai=nhap-hv&id=3': 82,
   /* TU-b: trang Tutor — trần = max(đo+50, ⌈đo×1,3⌉), đo 20/10. */
   'QL /tutors': 65, 'QT /tutors': 66, 'QL /tutors/1': 58, 'QT /tutors/1': 59, 'QT /tutors/dem': 51, 'QT /tutors/go-tay': 52,   // đo 15 · 16 · 8 · 9 · 1 · 2
   'QL /hoc-vien-lop/lich-thi?thang=2026-10,2026-11': 771,   // OV-15f: đo 593 (FT + lớp thường; ×3 → 1 659); trần = max(đo + 50, ⌈đo × 1,3⌉)
+  'QL /hoc-vien-lop?phamVi=chi-nhanh&branchId=1&them=1': 3661,   // OV-15h2: đo 2816 (×3 → 7094; trang không them ~2545) → max(đo + 50, ⌈đo × 1,3⌉)
   /* TU-a: ô chọn tutor — trần = max(đo+50, ⌈đo×1,3⌉), đo 20/10 (13 · 11 · 17 · 17 · 44 · 12 · 45 dòng). */
   'QL /tutors/chon?studentId=1': 63, 'QT /tutors/chon?studentId=1': 61, 'GVCN /tutors/chon?studentId=1': 67, 'GVBM /tutors/chon?studentId=1': 67,
   'QL /tutors/chon?paId=7': 94, 'QT /tutors/chon?paId=7': 62, 'GVCN /tutors/chon?paId=7': 95,
@@ -939,6 +941,8 @@ export const TRAN_GHI_LO = {
   xemTruocSuaCaLop30: 97,   // đo 74 câu (quyền theo em đọc DB) → max(74+10, ⌈74×1,3⌉) = 97
   /** OV-15b: POST /attempts/scores/lo — Dán từ Excel, MỘT dòng 5 ô (L R W1 W2 S, nhận xét) = một request của web (`LO_DAN` = 1); mỗi ô một `saveScore`. */
   danExcelMotDong: 314,   // đo 241 câu (×3, QL, 5 ô có nhận xét; ~48 câu / ô = `saveScore` như PUT một ô) → max(241 + 10, ⌈241 × 1,3⌉)
+  /** OV-15h2: POST /regular/scores/lo — Dán từ Excel lớp thường, MỘT dòng 4 môn × (điểm + nhận xét); mỗi lệnh một `saveRegularScore`. */
+  danExcelThuongMotDong: 383,   // đo 294 câu (QL, FOU 12, 4 môn × điểm + nhận xét = 8 lệnh; ~37 câu / lệnh như PUT một ô) → max(294 + 10, ⌈294 × 1,3⌉)
   luuSuaCaLopMotLo: 119,   // một lô 8 em đổi họ tên: đo 91 câu → ⌈91×1,3⌉ = 119 (30 em một lần cũ: 289 câu, 7–14 s trên Turso). ponytail: lô cố định 8 em theo số em, không theo số câu — em đổi nhiều ô (tuần bắt đầu dời MT, Target) nặng hơn ~3 lần; lưới chặn cuối: dừng trước 10 s mỗi dòng (503, lô đó cuộn lại); chia lô theo ước lượng câu nếu hay gặp 503
 };
 

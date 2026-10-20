@@ -9453,6 +9453,12 @@ await runPrTuTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, ad
 // ==================================================================== OV-15h1 (Tổng quan QL một đường, Lớp cần chú ý, Trễ chấm, Cần bạn quyết ≤ 7 ngày, thông báo theo lô, Chờ bạn duyệt theo chi nhánh)
 const { runPrOv15h1Tests } = await import('./prOv15h1.tests.ts');
 await runPrOv15h1Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== OV-15g (Lịch sử thay đổi C22: một đường đọc /lich-su, ghi đủ ở máy chủ, quyền, phân trang)
+const { runPrOv15gTests } = await import('./prOv15g.tests.ts');
+await runPrOv15gTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== OV-15h2 (Học viên & Lớp + xuất + dọn: ghi chú cùng giao dịch, 13 cột em hai lớp, chốt ngày, Bộ lọc thêm, Dán Excel lớp thường)
+const { runPrOv15h2Tests } = await import('./prOv15h2.tests.ts');
+await runPrOv15h2Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== TD7b (cờ "còn ô chờ điểm" o_cho_tu: đúng ở mọi đường ghi, đầu ra trùng khít) — CUỐI: soi cả trạng thái các phép kiểm trước để lại
 const { runPrTd7bTests } = await import('./prTd7b.tests.ts');
 await runPrTd7bTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);

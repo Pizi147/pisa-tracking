@@ -129,6 +129,8 @@ export function duongHocVienLop(params: { get(k: string): string | null }, o: { 
   if (cn) s.set('branchId', String(Number(cn)));
   /* PR-NV (T9): lần chọn trước — máy chủ bỏ nếu ngoài phạm vi; không đổi Phạm vi như `branchId`. Link trỏ một đích thì không gửi (rà PR #205). */
   else if (!o.tuLienKet && typeof o.daNho === 'number') s.set('cnNho', String(o.daNho));
+  /* OV-15h2 (ý 3): Bộ lọc thêm đang mở (`lt`) / đang lọc → máy chủ gắn nhãn từng em (`them=1`); không thì trang đọc như cũ. */
+  if (params.get('lt') === '1' || ['lc', 'lk', 'lq', 'ltu'].some((k) => params.get(k))) s.set('them', '1');
   return `/hoc-vien-lop?${s.toString()}`;
 }
 
@@ -639,7 +641,7 @@ export function sapEmCanHoTro<T extends { ten: string; cases: readonly { quaHan:
 
 // ---------------------------------------------------------------- menu ⋯ đầu hồ sơ lớp (PR-OV3a, M2 §1)
 
-export type ViecMenuLop = 'thong-tin' | 'sua-hoc-vien' | 'hoc-vien' | 'lo-trinh-ca-lop' | 'chuyen-tiep' | 'xuat-mt' | 'mo-lai-lop' | 'xoa-lop' | 'ket-thuc-lop';
+export type ViecMenuLop = 'thong-tin' | 'sua-hoc-vien' | 'hoc-vien' | 'lo-trinh-ca-lop' | 'chuyen-tiep' | 'xuat-mt' | 'mo-lai-lop' | 'xoa-lop' | 'ket-thuc-lop' | 'lich-su';
 export type MucMenuLop = { key: ViecMenuLop; nhan: string; nhom: 'Lớp' | 'Lộ trình' | 'Công cụ' | null };
 /**
  * Menu ⋯ hồ sơ lớp — CÙNG thứ tự lớp thường và FT: Lớp → Lộ trình → Công cụ → (kẻ) Mở lại / Xoá / Kết thúc (`nhom` null). Mỗi mục giữ
@@ -655,6 +657,8 @@ export function menuHoSoLop(i: {
   coTheSuaCaLop?: boolean;
   /** OV-13p: cờ máy chủ `viewer.coTheSuaHocVien` (`student.edit`) — Lộ trình tiếp theo; `canAddStudents` nay là `student.add` (TVV / CX có). Không truyền → theo `canAddStudents`. */
   coTheSuaHocVien?: boolean;
+  /** OV-15g (C22): Lịch sử thay đổi của lớp — ai xem được hồ sơ lớp đều xem được (máy chủ kiểm lại). */
+  coTheXemLichSu?: boolean;
 }): MucMenuLop[] {
   const m = (key: ViecMenuLop, nhan: string, nhom: MucMenuLop['nhom'], co: boolean): MucMenuLop[] => (co ? [{ key, nhan, nhom }] : []);
   return [
@@ -664,6 +668,7 @@ export function menuHoSoLop(i: {
     ...m('lo-trinh-ca-lop', t('Lộ trình tiếp theo'), 'Lộ trình', i.thuong && !i.lienTuc && (i.coTheChuyenTiep || (i.coTheSuaHocVien ?? i.canAddStudents))),
     ...m('chuyen-tiep', t('Chuyển tiếp lớp'), 'Lộ trình', !i.thuong && i.coTheChuyenNhieuEm),
     ...m('xuat-mt', t('Xuất Excel'), 'Công cụ', i.coTheXuatExcel),
+    ...m('lich-su', t('Lịch sử'), 'Công cụ', !!i.coTheXemLichSu),
     ...m('mo-lai-lop', t('Mở lại lớp'), null, i.coTheMoLaiLop),
     ...m('xoa-lop', t('Xoá lớp'), null, i.coTheXoa),
     ...m('ket-thuc-lop', t('Kết thúc lớp'), null, i.coTheKetThuc),

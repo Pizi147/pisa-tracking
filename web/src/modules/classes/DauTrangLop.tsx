@@ -138,6 +138,7 @@ export function DauTrangLop({ data, onViec, onBanGiao }: {
     /* PR-XUAT (Q8): GVCN của lớp hoặc người xếp lịch (Quản lý) — máy chủ xuất vẫn kiểm lại phạm vi. */
     coTheXuatExcel: !!session?.nav?.xuatMt && (data.viewer.isCoreTeacher || data.viewer.canPlanWeek),
     coTheMoLaiLop: !!data.viewer.coTheMoLaiLop, coTheXoa: !!xk.data?.coTheXoa, coTheKetThuc: !!xk.data && xk.data.coDuLieu && !xk.data.daKetThuc,
+    coTheXemLichSu: true,
   });
   const menu: MucMenu[] = mucLop.flatMap((m, i) => {
     const truoc = mucLop[i - 1];

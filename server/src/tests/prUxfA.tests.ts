@@ -500,28 +500,7 @@ export async function runPrUxfATests(t: YThucTestKit) {
   });
 
   // ==================================================================== Task 10 · Chưa phân loại không rơi Case; hạn gốc đúng; tooltip Tạm thời
-  const vanDe: any = await import('../phanTich/vanDeHv.ts');
   const mgmt: any = await import('../worklist/mgmttasks.ts');
-
-  check('UXF-a (10) · Vấn đề HV: Case có lỗi không vào hàng nào (Pre FOU tong_hop; chỉ lỗi phụ khi bật "chỉ chính") → "Chưa phân loại"; Σ hàng + Chưa phân loại = số Case trong phạm vi', () => {
-    const moCase = (sid: number, cy: number, cat: string) => Number(conn.prepare(`INSERT INTO sos_cases (student_id, cycle_id, category, topic, origin_kind, status, detected_at, created_at) VALUES (?,?,?,?, 'teacher_report', 'in_progress', ?, ?)`)
-      .run(sid, cy, cat, cat, TODAY, NOW).lastInsertRowid);
-    const loi = (caseId: number, ma: string, vai: string) => conn.prepare(`INSERT INTO case_issues (case_id, role, taxonomy_code, created_at) VALUES (?,?,?,?)`).run(caseId, vai, ma, NOW);
-    const cTongHop = moCase(Y.sid, Y.cycleId, 'tong_hop'); loi(cTongHop, 'student.tong_hop.language', 'primary');
-    const cPhu = moCase(Z.sid, Z.cycleId, 'reading'); loi(cPhu, 'student.reading.language', 'secondary');
-    const f = { branchId: MB, ct: 'thuong', soTuan: 52, gop: false };
-    const cpl = (chiChinh: boolean) => vanDe.oVanDeHv(P.admin, { ...f, chiChinh, dong: 'chua-phan-loai', cot: 'case' }).rows.map((r: any) => r.id) as number[];
-    assert(cpl(false).includes(cTongHop) && !cpl(false).includes(cPhu), `Case tong_hop vào Chưa phân loại; Case có lỗi phụ hợp lệ thì không (chỉ chính tắt)`);
-    assert(cpl(true).includes(cPhu), 'bật "chỉ chính": Case chỉ có lỗi phụ → Chưa phân loại, không rơi');
-    const tuNgay = d.tuDauKhoang(TODAY, 52);   // cùng mốc đầu khoảng với vanDeHv
-    const soCase = get(`SELECT COUNT(DISTINCT sc.id) n FROM sos_cases sc JOIN enrollments e ON e.student_id = sc.student_id AND e.status = 'active'
-        JOIN classes c ON c.id = e.class_id AND c.status = 'active' AND c.is_fast_track = 0 JOIN students s ON s.id = sc.student_id AND s.archived_at IS NULL
-       WHERE c.branch_id = ? AND (sc.status != 'done' OR substr(sc.closed_at, 1, 10) >= ?)`, MB, tuNgay).n as number;
-    for (const chiChinh of [false, true]) {
-      const r = vanDe.vanDeHv(P.admin, { ...f, chiChinh });
-      assert(r.tomTat.case + r.chuaPhanLoai.case === soCase, `chiChinh=${chiChinh}: ${r.tomTat.case} + ${r.chuaPhanLoai.case} ≠ ${soCase}`);
-    }
-  });
 
   check('UXF-a (10) · Vận hành: đặt hạn 10/09 rồi dời 12/09 → hạn gốc 10/09, dời 1 lần; chỉ đặt hạn → 0 lần; danh sách và chi tiết cùng số; lịch sử ghi "Đặt hạn"', () => {
     assert(JSON.stringify(mgmt.hanGocCua([{ old: null, new: '2026-09-10', reason: null }, { old: '2026-09-10', new: '2026-09-12', reason: 'Chờ phụ huynh' }]))

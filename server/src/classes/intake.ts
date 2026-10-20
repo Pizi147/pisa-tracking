@@ -565,8 +565,10 @@ export function commitIntake(
     }
 
     const out: IntakeResult = { added: studentIds.length, skipped, failed, studentIds, hangDaThem, mt };
-    writeAudit({ actorUserId: p.userId, action: 'student.bulk_add', entityType: 'student',
-      entityLabel: `${out.added} học viên`, after: { added: out.added, skipped: out.skipped } });
+    /* OV-15g: MỘT mục cho cả lô, gắn LỚP (Lịch sử thay đổi › nhập HV của lớp mở ra từng em). */
+    writeAudit({ actorUserId: p.userId, action: 'student.bulk_add', entityType: 'class', entityId: cls.id,
+      entityLabel: `${out.added} học viên`, after: { added: out.added, skipped: out.skipped, lop: cls.code,
+        hv: ok.map((r, i) => ({ id: studentIds[i], ten: r.fullName })) } });
     if (key) {
       donKhoaGuiCu(conn, nowIso());
       conn.prepare('INSERT OR REPLACE INTO demo_config (key, value, updated_at) VALUES (?,?,?)')
@@ -696,7 +698,8 @@ function ghiDongTaoLop(p: Principal, d: DongDaKiem): { dong: number; id: number;
     startDate: d.tuanBatDau, startPeriodId: d.input.startPeriodId ?? null,
     previousClassId: d.input.previousClassId ?? null, note: d.input.note ?? null,
   }) as any;
-  if (d.slots.length) ghiPhanCong(p, lop.id, d.slots, demoToday());
+  /* OV-15g: phân công lúc tạo lớp vào Lịch sử thay đổi của lớp (cùng dạng `truoc` / `sau` với Phân công GV). */
+  if (d.slots.length) ghiPhanCong(p, lop.id, d.slots, demoToday(), { via: 'tao_lop', truoc: [], sau: d.slots.map((x) => `${x.isCore ? 'GVCN' : x.skill}:${x.userId}`).sort() });
   return { dong: d.dong, id: lop.id as number, code: d.code };
 }
 

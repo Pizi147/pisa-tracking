@@ -362,7 +362,7 @@ export async function runPanelUx3Tests(t: YThucTestKit) {
     assert(ds.slice(0, 4).join() === 'info,chuyen-lop,tam-dung-thoi-hoc,luu-tru' && ds.indexOf('lo-trinh-tiep') < ds.indexOf('outcome'), ds.join());
     const xong = d.mucQuanLyHocVien({ canEdit: true, lopHoc: { quyen: q }, cycle: null, status: 'finished' }).map((x: any) => x.key);
     assert(!xong.includes('tam-dung-thoi-hoc'), xong.join());
-    assert(d.mucQuanLyHocVien({ canEdit: true, lopHoc: null, cycle: null, status: 'active' }).map((x: any) => x.nhan).join() === 'Sửa thông tin,Lịch sử sửa', 'chỉ có Sửa thông tin + Lịch sử sửa (OV-13j)');
+    assert(d.mucQuanLyHocVien({ canEdit: true, lopHoc: null, cycle: null, status: 'active' }).map((x: any) => x.nhan).join() === 'Sửa thông tin,Lịch sử', 'chỉ có Sửa thông tin + Lịch sử (OV-13j → OV-15g một tên, A-043)');
   });
 
   check('UX3 (3) · ChonNgay.tsx không đọc đồng hồ trình duyệt (new Date/Date.now) và không dựng ô lịch', () => {
