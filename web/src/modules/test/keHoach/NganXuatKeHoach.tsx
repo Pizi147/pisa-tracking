@@ -13,12 +13,13 @@ type KetQua = { sheets: SheetXuat[]; tenTep: string; dem: { hocVien: number; lop
  * `Gmail | Tên học sinh | Lớp | MT1…MT10`, ô MT là LỊCH THI (không phải điểm). Xem trước 4 hàng (cuộn ngang trong khung), sheet "Thông tin xuất".
  * Xem trước và tải gọi CÙNG `POST /ke-hoach-test/xuat` (tải mới ghi nhật ký) nên số hàng không lệch.
  */
-export function NganXuatKeHoach({ branchId, classIds, onDong }: { branchId: number | null; classIds: number[]; onDong: () => void }) {
+export function NganXuatKeHoach({ branchId, classIds, chiXepLai = false, onDong }: { branchId: number | null; classIds: number[];
+  /** SL1 (V3B-07 #4): chip "Chỉ cần xếp lại" đang bật — tệp cùng tập. */ chiXepLai?: boolean; onDong: () => void }) {
   const toast = useToast();
   const [kq, setKq] = useState<KetQua | null>(null);
   const [loi, setLoi] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const body = { branchId, classIds };
+  const body = { branchId, classIds, chiXepLai };
   useEffect(() => {
     api.post<KetQua>('/ke-hoach-test/xuat', { ...body, xemTruoc: true }).then(setKq).catch((e) => setLoi(e.message ?? t('Không xem trước được.')));
   }, []);   // eslint-disable-line react-hooks/exhaustive-deps

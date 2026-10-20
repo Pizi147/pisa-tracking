@@ -9481,6 +9481,9 @@ await runPrLuat5Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P,
 // ==================================================================== KHUNG-LOI (thứ tự menu, thanh trên "Thêm ▾" / thanh dưới ≤ 5, chú giải màu ô MT, tiêu đề, "Nếu duyệt" ghi ngày)
 const { runPrKhungLoiTests } = await import('./prKhungLoi.tests.ts');
 await runPrKhungLoiTests({ check, assert } as any);
+
+const { runPrSl1Tests } = await import('./prSl1.tests.ts');
+await runPrSl1Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`

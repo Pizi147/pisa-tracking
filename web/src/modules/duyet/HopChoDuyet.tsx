@@ -4,7 +4,7 @@ import { ApiError, api, invalidate } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { BoLocDoan, Card, Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
-import { BranchFilter } from '../../ui/Filters.tsx';
+import { BranchFilter, useChiNhanhMacDinh } from '../../ui/Filters.tsx';
 import { NganCase } from '../students/NganCase.tsx';
 import { TheYeuCau } from './TheYeuCau.tsx';
 import {
@@ -12,7 +12,7 @@ import {
   type KhoaChip, type LoaiYeuCau, type TheYeuCauDto,
 } from '@shared/domain/index.ts';
 
-type Hop = { the: TheYeuCauDto[]; dem: Record<KhoaChip, number>; demBiet: number; homNay: string; lopDangLoc?: { id: number; code: string } | null };
+type Hop = { the: TheYeuCauDto[]; dem: Record<KhoaChip, number>; demBiet: number; homNay: string; lopDangLoc?: { id: number; code: string } | null; khacChiNhanh?: number };
 
 /** `?the=12` → cuộn tới thẻ, viền nhấn 2 giây. Dùng chung hộp và Yêu cầu của tôi. */
 /** PR-LUI-a2: Từ chối nhiều gửi theo lô (mỗi thẻ ~16 câu SQL) — một request ≤ 200 câu. */
@@ -37,9 +37,11 @@ export function useTheNhanManh(ds: TheYeuCauDto[] | undefined): number | null {
  * số 0 (Q12), ba tab Chờ duyệt · Báo QL (PR-GVb J5b; OV-12h bỏ Nhắc, đổi tên — mã `de-biet` giữ) · Đã xử lý 30 ngày, chi nhánh. Thẻ quá hạn đứng đầu (máy chủ xếp).
  * Duyệt hàng loạt (PR-GVb D01/Q-B): mọi tab phân loại (cả Tất cả), chỉ cùng MỘT loại `hangLoat`, tối đa `TRAN_HANG_LOAT`; kết quả một câu.
  */
-export function HopChoDuyet({ gon = false }: {
+export function HopChoDuyet({ gon = false, branchId: cnTrang }: {
   /** OV-15d: nhóm "Chờ bạn duyệt" đầu Công việc — chỉ thẻ đang chờ (mọi loại), không hàng lọc; vài thẻ đầu + "Xem thêm", hộp đầy đủ ở `/cong-viec/cho-duyet`. */
   gon?: boolean;
+  /** SL1 (A7-01): chi nhánh của trang gọi (Tổng quan, Công việc) — số đầu nhóm và thẻ cùng một phạm vi. */
+  branchId?: number | null;
 } = {}) {
   const toast = useToast();
   const [params, setParams] = useSearchParams();
@@ -47,8 +49,11 @@ export function HopChoDuyet({ gon = false }: {
   const xem = !gon && (thamXem === 'da-xu-ly' || thamXem === 'de-biet') ? thamXem : 'cho';
   /* Phân loại chỉ lọc ở tab Chờ duyệt; Báo QL chỉ có một phân loại. */
   const phan = !gon && xem !== 'de-biet' && laPhanLoai(params.get('phan')) && params.get('phan') !== 'bao-len' ? (params.get('phan') as KhoaChip) : 'tat-ca';
-  /* Chủ sản phẩm 06/10: hộp LUÔN mở Tất cả chi nhánh (không áp chi nhánh mặc định) — số dòng khớp badge Công việc; tự lọc nếu muốn. */
-  const branchId = params.get('cn') ? Number(params.get('cn')) : null;
+  /* SL1 (A7-01, X-03 — thay luật 06/10 "luôn mọi chi nhánh"): theo chi nhánh của trang; hộp đầy đủ dùng `cn` hoặc chi nhánh đã nhớ như mọi trang.
+     `cn=tat-ca` (dòng "n thẻ ở chi nhánh khác · Xem") = mọi chi nhánh. */
+  const macDinh = useChiNhanhMacDinh();
+  const cnUrl = params.get('cn');
+  const branchId = cnTrang !== undefined ? cnTrang : cnUrl === 'tat-ca' ? null : cnUrl ? Number(cnUrl) : macDinh;
   /* PR-S4F #5: `?lop=` — từ badge "n chờ duyệt" của một lớp. */
   const lopId = gon ? null : Number(params.get('lop')) || null;
   /* PR-VAI-a (Q17): `?qua-han=1` — từ số "k quá hạn" của dải Chờ duyệt ở Tổng quan. */
@@ -112,7 +117,7 @@ export function HopChoDuyet({ gon = false }: {
     setBusy(true);
     try {
       const r = await api.post<{ ok: number[]; loi: { id: number; loi: string; ma: number }[] }>('/yeu-cau/duyet-nhieu', { ids: [...chon] });
-      invalidate('/yeu-cau'); invalidate('/my-work'); invalidate('/cases');
+      invalidate('/yeu-cau'); invalidate('/my-work'); invalidate('/cases'); invalidate('/tong-quan');   // SL1 (A7-14): số "Chờ duyệt n" + dải
       baoKetQua('duyet', r.ok.length, r.loi);
       setChon(new Set());
       xong();
@@ -132,7 +137,7 @@ export function HopChoDuyet({ gon = false }: {
         const k = await api.post<typeof r>('/yeu-cau/tu-choi-nhieu', { ids: lo, lyDo: lyDoTc.trim() });
         r.ok.push(...k.ok); r.loi.push(...k.loi);
       }
-      invalidate('/yeu-cau'); invalidate('/my-work'); invalidate('/cases');
+      invalidate('/yeu-cau'); invalidate('/my-work'); invalidate('/cases'); invalidate('/tong-quan');
       baoKetQua('tu-choi', r.ok.length, r.loi);
       setChon(new Set());
       xong();
@@ -164,7 +169,7 @@ export function HopChoDuyet({ gon = false }: {
           tat={xem === 'de-biet' ? 'Báo QL không chia loại' : undefined}
           muc={[{ key: 'tat-ca' as KhoaChip, nhan: 'Tất cả', so: dem?.['tat-ca'] ?? null },
             ...PHAN_LOAI_CAN_QUYET.map((k) => ({ key: k as KhoaChip, nhan: PHAN_LOAI_LABEL[k], so: dem?.[k] ?? null }))]} />
-        <BranchFilter branchId={branchId} onBranch={(id) => setParam('cn', id ? String(id) : null)} />
+        <BranchFilter branchId={branchId} onBranch={(id) => setParam('cn', id ? String(id) : 'tat-ca')} />
         {quaHan && (
           <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" title="Bỏ lọc quá hạn" onClick={() => setParam('qua-han', null)}>
             Quá hạn · <span className="tabular-nums">{ds.length}</span> ✕
@@ -206,6 +211,11 @@ export function HopChoDuyet({ gon = false }: {
               } : null} />
           ))}
         </div>
+      )}
+      {!!data?.khacChiNhanh && (
+        <p className="m-0 text-[13px] text-slate-400">
+          {data.khacChiNhanh} thẻ ở chi nhánh khác · <Link to="/cong-viec/cho-duyet?cn=tat-ca" className="link">Xem</Link>
+        </p>
       )}
       {gon && data && (
         <div className="flex flex-wrap items-center gap-3 text-[13px]">

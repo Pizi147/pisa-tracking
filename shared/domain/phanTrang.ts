@@ -13,3 +13,20 @@ export function catTrang(tong: number, trang: number, co: number): { trang: numb
   const tr = Math.min(Math.max(1, Math.floor(trang) || 1), soTrang);
   return { trang: tr, soTrang, dau: (tr - 1) * co, cuoi: Math.min(tong, tr * co) };
 }
+
+/**
+ * ĐẦU NHÓM TRÊN TRANG CÓ PHÂN TRANG (SL1 — A3-02, A7-09): bảng nhóm theo lớp mà chia trang theo dòng thì số ở đầu nhóm phải đếm trên TOÀN BỘ dòng
+ * của nhóm, không trên lát trang. Trả mỗi nhóm có mặt trong `lat`: mọi dòng của nhóm (`tatCa`) + `tiep` = nhóm đã bắt đầu ở trang trước.
+ * `lat` là lát của chính `tatCa` (cùng phần tử — `slice`).
+ */
+export function nhomTrenTrang<T>(tatCa: readonly T[], lat: readonly T[], khoa: (x: T) => string | number): Map<string | number, { tatCa: T[]; tiep: boolean }> {
+  const tren = new Set(lat);
+  const out = new Map<string | number, { tatCa: T[]; tiep: boolean }>();
+  for (const x of tatCa) {
+    const k = khoa(x);
+    const g = out.get(k);
+    if (g) g.tatCa.push(x); else out.set(k, { tatCa: [x], tiep: !tren.has(x) });
+  }
+  for (const [k, g] of out) if (!g.tatCa.some((x) => tren.has(x))) out.delete(k);
+  return out;
+}

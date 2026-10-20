@@ -220,7 +220,7 @@ export function KeHoachTestTab() {
           onDoiKhung={setXep} onClose={() => setXep(null)} onDone={reload} />
       )}
       {xuat === 'ke-hoach' && (
-        <NganXuatKeHoach branchId={branchId} classIds={danhSach.length === lopFT.length ? [] : danhSach.map((l) => l.id)} onDong={() => setXuat(null)} />
+        <NganXuatKeHoach branchId={branchId} classIds={danhSach.length === lopFT.length ? [] : danhSach.map((l) => l.id)} chiXepLai={locXepLai} onDong={() => setXuat(null)} />
       )}
       {xuat === 'diem' && (
         <NganXuatDiem branchId={branchId} lopFt={lopFT} lopDau={lopChon?.loai === 'ft' ? lopChon.id : null} onDong={() => setXuat(null)} />
