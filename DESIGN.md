@@ -102,6 +102,29 @@ components:
 
 > Bản ghi hệ giao diện **đang có** (nguồn: `web/src/index.css`, `web/src/ui/`), không phải thiết kế mới. Token gốc nằm trong
 > `index.css` — khi lệch, `index.css` đúng. Đổi phông, bảng màu, bố cục phải qua kế hoạch PR + mockup duyệt (CLAUDE.md).
+> **Hướng đích từ 21/10: mục "Luật 21/10" ngay dưới** — PR mới làm theo đó, không theo dòng cũ đã đánh dấu.
+
+## Luật 21/10 (overhaul — chủ SP duyệt #486; thắng phần mô tả bên dưới khi khác)
+
+Nguồn: `docs/superpowers/specs/2026-10-20-ke-hoach-overhaul/` — `02` quyết định, `04` hệ thiết kế (chi tiết từng thành phần), `05` workflow.
+Phần bên dưới mục này là **bản ghi mã hiện tại**; dòng ghi "→ Luật 21/10" sẽ đổi ở PR nền (NEN-TYPO-MAU, NEN-BANG, NEN-SO-PANEL, NEN-TUAN — `07` mục 6).
+
+| # | Luật | Nguồn |
+|---|---|---|
+| G1 | **Khung mockup đã duyệt thắng** file này và luật giao diện cũ hơn ngày duyệt (trừ nghiệp vụ, quyền, chống mất dữ liệu) | 02 mục 2.3 (9.1-1); 04 mục 1.8 |
+| G2 | **Thi** = kỳ thi thật (IELTS…) · **Test** = MT, Progress, Final, Mini…; gọi chung "Test". Chữ trạng thái Test theo bảng thuật ngữ Rulebook ("Đã làm bài", "Vắng", "Đã huỷ · vắng 2 lần", nút "Bỏ khỏi đợt") | 02 mục 2.5 (V2 I.5), 4.7 A8 |
+| G3 | **Việc của tôi ở trang đầu vai:** GV → Công việc · QL / QT / Admin VP / TVV / CX → Tổng quan · Head tutor → Tutor; TVV không thêm mục Công việc | 02 mục 2.9 (Q-A1 ①), 4.7 C24, C25 |
+| G4 | **Một danh sách một kiểu mở:** danh sách có khung phải → mọi dòng mở ở khung phải; bảng rộng không khung phải → mở dưới hàng; danh sách hẹp không mở rộng tại dòng; mở cái mới thay cái cũ, không panel chồng | 04 mục 9.2; 02 4.7 C5, A12, A14 |
+| G5 | **Thang làm tại chỗ 0–5**, chọn bậc thấp nhất đủ dùng: 0 chỉ xem · 1 một bấm + Hoàn tác 10 s · 2 hộp neo / mở dưới hàng · 3 khung chi tiết phải (375 toàn màn + "‹ Quay lại") · 4 panel rộng · 5 trang riêng (xem hồ sơ, cần không gian lớn); modal chỉ để xác nhận hậu quả lớn | 04 mục 9.2; 02 4.1 (10.7-6) |
+| G6 | **Một nghĩa một dáng:** ô số (`OSo`) = mở tại chỗ / panel · chữ + "›" = đổi trang (không "›" trong nút) · "↗" sau tên = mở hồ sơ · **ⓘ** = giải thích (thay "?") · bỏ gạch chấm chấm dưới chỉ số · số 0 không bấm | 04 mục 8; 02 2.5 (V3 II.1.1, II.1.3) |
+| G7 | **Số trên trang = số dòng panel** (cùng hàm, đúng tập tạo nên con số); một phạm vi số cho cả trang | 04 mục 1.6, 9.3; 02 2.3 (9.1-4) |
+| G8 | **Báo cáo thuần:** báo cáo / Phân tích không lồng việc, không cột quá hạn; chỉ bảng theo dõi việc mới có quá hạn | 02 2.5 (V3 II.3) |
+| G9 | **Cấm điều khiển trong tiêu đề bảng** (`th` không chứa ô nhập / nút / select); công cụ bảng ở một hàng ngoài khung; căn tiêu đề = căn ô theo kiểu cột (`Bang`) | 04 mục 6.2–6.3; 02 2.5 (V2 I.7, V3 I.3) |
+| G10 | **Thời gian:** bộ lọc chỉ Từ tuần – Đến tuần (`Khoảng tuần`); **"Toàn bộ" chỉ ở 6 tab Phân tích**; thi thật giữ tháng / ngày; không hàng nút / chip "Tuần này · Tuần trước", "Ngay hôm nay · W4 SEP" | 02 2.5 (V2 I.1, V3 II.5), 4.7 B12, B13 (X-06) |
+| G11 | Thứ tự menu: Tổng quan → Học viên & Lớp → Test → Công việc → Phân tích → Tutor | 02 2.4 (V1 I.2) |
+| G12 | Màu kết quả tô **chính con số điểm** (✓ / ✗ trước số), mọi chỗ có điểm; không % trong ô ("✗ 17/25") | 02 2.4 (V1 I.3), 4.7 A6 |
+| G13 | Thang chữ **12 · 13 · 14 · 15 · 17 · 22 · 28** (ô bảng / ô nhập 15, lưới điểm 14, nhãn 13, tối thiểu 12); không in hoa | 02 4.7 A4; 04 mục 2.2 |
+| G14 | **Đang chọn** = nền nhấn nhạt + vạch trái 3 px, khác hẳn vòng focus 2 px; vạch trái hàng nhóm màu trung tính | 02 4.7 A11; 04 mục 6.3 |
 
 ## Overview
 
@@ -125,7 +148,7 @@ Nền xanh than tối, một màu nhấn xanh pastel, và một bộ màu trạn
 
 - **Nền / bề mặt**: `bg` → `surface` (thẻ, panel) → `surface-2` (nút, ô phụ). Vạch kẻ `--line` mảnh, `--line-strong` khi cần rõ.
 - **Nền tách lớp** (OV-15a, chủ SP 19/10): trang tối hơn (`bg`), thẻ / bảng sáng hơn một bậc (`surface`), viền rõ hơn (`--line` 0.18, `--line-strong` 0.32).
-- **Nhấn** (`accent`, sáng `#1d5fbf`): nút chính, focus ô nhập, **đang chọn = viền khung 2 px quanh cả hàng** (`row-active`), không tô nền; thắng mọi nền.
+- **Nhấn** (`accent`, sáng `#1d5fbf`): nút chính, focus ô nhập, **đang chọn = viền khung 2 px quanh cả hàng** (`row-active`), không tô nền; thắng mọi nền. → Luật 21/10 G14.
 - **5 nghĩa — dáng / ký hiệu mang nghĩa, màu chỉ phụ** (mockup OV-14 1 §1a):
   1. Nhấn — đang chọn, nút chính, focus.
   2. Kết quả — chỉ trong ô điểm và chip SOS: ✓ xanh lá vượt kỳ vọng · ✓ xanh dương (`doing`) bằng · ✗ đỏ (`bad`) dưới (SVG nét trơn, không vòng tròn);
@@ -139,12 +162,12 @@ Nền xanh than tối, một màu nhấn xanh pastel, và một bộ màu trạn
 ## Typography
 
 - **Be Vietnam Pro** cho mọi chữ; **chữ số lấy từ Inter** (khai báo `@font-face` cùng tên, `unicode-range` 0–9) để số thẳng hàng.
-- **Thang 12 / 13 / 14 / 16 / 20** (OV-15a, C09): đầu cột · chip · chữ phụ 12 — ô bảng · chữ phụ quan trọng 13 — chữ thường · nút · số điểm 14 —
+- → Luật 21/10 G13. Hiện tại: **Thang 12 / 13 / 14 / 16 / 20** (OV-15a, C09): đầu cột · chip · chữ phụ 12 — ô bảng · chữ phụ quan trọng 13 — chữ thường · nút · số điểm 14 —
   ô nhập ở 375 = 16 (Safari không tự phóng to) — tiêu đề trang 20. Thêm 17 (tiêu đề panel) và 28 (số lớn). Đầu cột **không in hoa**.
 - Hàng nhóm 12.5 px đậm 800, hàng con 12 px.
 - **Số căn giữa** + `tabular-nums` (`td.tabular-nums`, đầu cột số); tên / chữ dài căn trái (C06).
 - Đối tượng trong khối **Cần làm** của panel v3 (tên PA, mức kỷ luật, loại meeting): **15 px đậm 700** (OV-12e, chủ SP 14/10).
-- **Không chữ < 11 px** ở bất kỳ đâu.
+- **Không chữ < 11 px** ở bất kỳ đâu (→ Luật 21/10 G13: tối thiểu 12).
 - Số liệu, điểm, mã tuần: `tabular-nums`.
 
 ## Layout
@@ -171,9 +194,9 @@ trái (inset) của hàng nhóm / hàng chọn và vòng focus `0 0 0 3px var(--
 - **Nút** `.btn`: nền `surface-2`, viền mảnh; hover đổi nền + viền nhấn. `.btn-primary` nền nhấn, chữ tối. `.btn-danger` chữ `bad`. `.btn-ghost` trong suốt. Tắt = mờ 45 %.
 - **Ô nhập** `.field`: nền `--o-nhap-nen`, viền `--o-nhap-vien`, focus viền nhấn. Ô ngày luôn là `ONgay` (gõ được + nút lịch).
 - **Ô sửa trong lưới điểm** `.o-sua`: viền xanh nhạt, focus vòng nhấn.
-- **Hàng nhóm / con** (`.hang-lon`, `.hang-con`, `.khoi-nhom-*`): nhóm đậm có vạch trái 3 px màu nhấn, khi thu gọn vạch xám.
+- **Hàng nhóm / con** (`.hang-lon`, `.hang-con`, `.khoi-nhom-*`): nhóm đậm có vạch trái 3 px màu nhấn, khi thu gọn vạch xám (→ Luật 21/10 G14: vạch trung tính).
 - **Chip trạng thái** (`Nhan`): màu theo bảng trạng thái, chữ luôn có nghĩa khi bỏ màu. Tone `late` = chữ cam + ⚠, không chip.
-- **Chip SOS** (`ChipSos`, MỘT component mọi màn): "SOS 2 · R, W" / "SOS 3 tạm"; bấm chip = hộp "Vì sao SOS n" (tiêu đề → kết luận đậm → số → việc), không nút `?` cạnh.
+- **Chip SOS** (`ChipSos`, MỘT component mọi màn): "SOS 2 · R, W" / "SOS 3 tạm"; bấm chip = hộp "Vì sao SOS n" (tiêu đề → kết luận đậm → số → việc), không nút `?` cạnh (nút giải thích khác: ⓘ — G6).
 - **Ký hiệu điểm** (`DauKetQua` ✓ / ✗, `MuiTenKyVong` ▲ / ▼ chỉ ở hộp điểm lẻ không có cột kỳ vọng); xu hướng ở Hành trình bằng chữ "Tăng 0.5 / Giảm 0.5 / Không đổi".
 - **Thẻ** `.card`: nền `surface`, viền `--line`, bo 0.75rem.
 - **Đang tải**: `.skel` shimmer theo khung của nội dung.
@@ -188,8 +211,8 @@ trái (inset) của hàng nhóm / hàng chọn và vòng focus `0 0 0 3px var(--
 - Làm thao tác tại chỗ (hộp, panel, ⋯) thay vì chuyển trang.
 
 **Don't**
-- Không đổi phông, bảng màu, bố cục đã khoá khi kế hoạch PR không ghi rõ.
+- Không đổi phông, bảng màu, bố cục đã khoá khi kế hoạch PR không ghi rõ và màn không có mockup mới đã duyệt.
 - Không dùng màu trạng thái để trang trí; không dùng màu nhấn cho thông tin thường.
-- Không chữ < 11 px; không câu giải thích dưới nút/ô.
+- Không chữ < 12 px (G13); không câu giải thích dưới nút/ô.
 - Không hàng nút "Hôm nay · Hôm qua · 2 ngày trước" cho ô ngày.
 - Không gradient, glassmorphism, đổ bóng lớn, minh hoạ trang trí.
