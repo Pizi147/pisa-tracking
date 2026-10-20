@@ -43,7 +43,7 @@ Tệp này tự nạp vào mọi session của repo (planning, code, worktree), 
 - Thời gian trên màn: ưu tiên **mã tuần** `W2 OCT`; ngày chỉ cho hạn cụ thể, ngày thi, ngày sinh, nhật ký (chủ sản phẩm 30/09).
 - Ô nhập ngày ở MỌI nơi: ô gõ được + nút lịch (`ONgay`), KHÔNG làm hàng nút "Hôm nay · Hôm qua · 2 ngày trước" (chủ sản phẩm 06/10).
 - Lệnh dùng: `critique` ở session planning để tìm vấn đề · `polish`, `clarify`, `layout`, `harden`, `adapt` ở
-  session code, chỉ trong phạm vi PR · `audit` trước khi mở PR có sửa giao diện.
+  session code, chỉ trong phạm vi PR · `audit` + skill `web-design-guidelines` trước khi mở PR có sửa giao diện.
 - Session code không chạy `init`, `document`, `hooks on`, `npx impeccable install|update`. PRODUCT.md / DESIGN.md
   chỉ do session planning tạo, khớp Rulebook, sau khi chủ sản phẩm đồng ý.
 - `.impeccable/` đã gitignore; không commit gì trong đó.
@@ -57,9 +57,16 @@ Tệp này tự nạp vào mọi session của repo (planning, code, worktree), 
 - Không bao giờ bớt: kiểm tra dữ liệu nhập, xử lý lỗi chống mất dữ liệu, phân quyền, bảo mật.
 - Chú thích `ponytail:` được phép, nhưng liệt kê chúng trong mô tả PR. Trước khi mở PR: `/ponytail-review`.
 
+## Rà PR bằng ECC (chủ SP duyệt 20/10)
+- Trước khi mở PR, chạy agent theo phạm vi PR (chỉ cái liên quan):
+  React/TS → `ecc:react-reviewer` + `ecc:typescript-reviewer` · lưu dữ liệu, API → `ecc:silent-failure-hunter` ·
+  phân quyền, đăng nhập → `ecc:security-reviewer` · giao diện → `ecc:click-path-audit` hoặc `ecc:browser-qa`.
+- Không dùng `orch-*`, `multi-*`, `gan-*`, `loop-*` (tốn token, trùng quy trình PTA Plan).
+- Plugin superpowers, ponytail, ecc khai báo trong `.claude/settings.json` để session cloud cũng có.
+
 ## Session planning soạn prompt cho session code
 - Có việc giao diện: ghi rõ lệnh impeccable cần chạy và `/ponytail lite`.
-- Không cài thêm plugin/skill cho toàn máy khi chưa hỏi chủ sản phẩm: mục tiêu là giảm token, và mỗi plugin
+- Không cài thêm plugin/skill (toàn máy hoặc vào repo) khi chưa hỏi chủ sản phẩm: mục tiêu là giảm token, và mỗi plugin
   luôn bật đều tốn token ở mọi phiên.
 
 ## Bộ nhớ khi chạy kiểm
