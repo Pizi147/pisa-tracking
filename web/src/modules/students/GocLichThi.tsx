@@ -9,7 +9,7 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { KetQuaOHocVien } from './BangHocVienLop.tsx';
 import { NganXuatDs } from './NganXuatDs.tsx';
 import {
-  KET_LUAN_LICH_THI, cuaSoThang, demKetLuan, dsThangLichThi, ketQuaGanNhat, nhanThang,
+  KET_LUAN_LICH_THI, cuaSoThang, demKetLuan, dsThangLichThi, ketQuaGanNhat, nhanThang, shortDate,
   type ExamPlan, type KetLuanLichThi, type KetQuaVao, type NguCanhDs,
 } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
@@ -20,6 +20,8 @@ type Hang = {
   studentId: number; cycleId: number | null; ten: string; ma: string; classId: number; classCode: string; thuong: boolean; gvcn: string | null; tvv: string | null;
   target: number | null; kck: boolean; standing: KetQuaVao | null;
   duKien: ExamPlan; coNgay: boolean; thangDuKien: string | null; chuaCo: boolean; ketLuan: KetLuanLichThi | null; luu: Luu | null; coTheSua: boolean;
+  /** OV-15h2 (ý 2): ai · lúc đặt ngày thi đang có — dòng "chốt 05/10 · Lê Thu". */
+  chot: { luc: string; ai: string | null } | null;
 };
 type Trang = { thang: string[]; rows: Hang[] };
 type TrangThaiLuu = { kieu: 'luu' | 'xong' | 'loi'; loi?: string; lai?: () => void };
@@ -73,7 +75,7 @@ export function GocLichThi({ duongGoc, thangUrl, onDoiThang }: { duongGoc: strin
     if (!r.cycleId) return;
     const lan = () => luu(r, body);
     sua(r.studentId, (x) => ({ ...x, tt: { kieu: 'luu' } }));
-    api.put<Pick<Hang, 'duKien' | 'coNgay' | 'thangDuKien' | 'chuaCo' | 'ketLuan' | 'luu'>>(`/hoc-vien-lop/lich-thi/${r.cycleId}`, body)
+    api.put<Pick<Hang, 'duKien' | 'coNgay' | 'thangDuKien' | 'chuaCo' | 'ketLuan' | 'luu' | 'chot'>>(`/hoc-vien-lop/lich-thi/${r.cycleId}`, body)
       .then((kq) => {
         /* Làm mới các trang khác (danh sách lớp, TVV / CX, hồ sơ) nhưng KHÔNG đường của chính góc này (`/hoc-vien-lop/lich-thi`): tải lại sẽ làm em vừa chuyển tháng biến mất khỏi danh sách. */
         invalidate('/hoc-vien-lop?'); invalidate('/hoc-vien-lop/theo-vai'); invalidate('/hoc-vien-lop/em'); invalidate('/students');
@@ -197,6 +199,13 @@ function DongLichThi({ r, ds, moRong, onMoRong, onLuu }: {
       <div role="cell" className="min-w-0 text-xs"><KetQuaOHocVien k={k} standing={r.standing} thuong={r.thuong} /></div>
       <div role="cell" className="text-xs">
         <span className="block text-slate-100">{r.chuyenSang ? `${t('Dự kiến')} ${nhanThang(r.chuyenSang)}` : lich}</span>
+        {!r.chuyenSang && r.coNgay && r.chot && (
+          /* Cột 104 px: ngày chốt một dòng, người chốt dòng dưới (không bẻ giữa "·"). */
+          <span className="block text-[11px] leading-4 text-slate-500">
+            <span className="block whitespace-nowrap">{t('chốt {ngay}', { ngay: shortDate(r.chot.luc, homNay) })}</span>
+            {r.chot.ai && <span className="block truncate" title={r.chot.ai}>{r.chot.ai}</span>}
+          </span>
+        )}
       </div>
       <div role="cell" className="min-w-0">
         {r.chuyenSang && <p className="m-0 mb-1 text-xs font-semibold text-slate-200">{t('Đã chuyển sang {thang}', { thang: nhanThang(r.chuyenSang) })}</p>}

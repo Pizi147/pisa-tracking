@@ -2,10 +2,10 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import { BaoLuuContext } from '../../ui/SaveState.tsx';
 import { Card } from '../../ui/ui.tsx';
 import { LuoiFT, tenDotFt, type FtSheet, type HangMo } from './LuoiFT.tsx';
-import { DanExcel } from './DanExcel.tsx';
+import { DanExcel, boDanFt, boDanThuong } from './DanExcel.tsx';
 import { LuoiThuong, type ThuongSheet } from './LuoiThuong.tsx';
 import { MotKyNang } from './MotKyNang.tsx';
-import { ENTRY_SKILLS, type EntrySkill, type TomTatLuot } from '@shared/domain/index.ts';
+import { ENTRY_SKILLS, nhanBai, type TomTatLuot } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
 
 /** Trả lời của `GET /classes/:classId/cham` (`chamSheet` ở server/src/cham/canCham.ts). */
@@ -102,11 +102,15 @@ export function LuoiChamLop({
   const [caLop, setCaLop] = useState(false);
   const cotHien = chiCot?.length && !caLop ? chiCot : null;
   const laFt = data.mode === 'ielts_band';
-  /* OV-15b (mục 2, mockup 2 khung 1d): Dán từ Excel — lưới FT, người xem sửa được ít nhất một ô; cột dán = cột đang mở. Lớp thường: chưa làm. */
+  /*
+   * OV-15b (mục 2, mockup 2 khung 1d): Dán từ Excel — người xem sửa được ít nhất một ô; cột dán = cột đang mở.
+   * OV-15h2 (ý 10): lớp thường cùng khối — cột theo môn của lớp, máy chủ ràng vào lớp + bài (`thuong:<bài>`).
+   */
   const [dan, setDan] = useState<null | { hoi: boolean }>(null);
-  const coDan = laFt && !!data.ft?.rows.some((r) => r.cells.some((c) => c.canEdit));
-  const cotDan = (cotHien ?? ENTRY_SKILLS).filter((k): k is EntrySkill => (ENTRY_SKILLS as readonly string[]).includes(k));
-  const tenLuot = 'luot' in data ? (data as BangTheoLuot).luot.nhan : data.ft?.period?.code ?? tenDotFt(data.ft);
+  const luotMo = 'luot' in data ? (data as BangTheoLuot).luot : null;
+  const coDan = laFt ? !!data.ft?.rows.some((r) => r.cells.some((c) => c.canEdit))
+    : !!data.thuong?.rows.some((r) => (kind === null || r.kind === kind) && r.skillSchedule.some((s) => s.canEdit));
+  const tenLuot = luotMo ? luotMo.nhan : laFt ? data.ft?.period?.code ?? tenDotFt(data.ft) : kind ? nhanBai(kind) : t('Lớp thường');
 
   /* "Cả lớp" (chỉ có khi mở từ việc) mở cả mọi em của lượt, không chỉ em của việc. */
   const locLuot = caLop ? null : chiAttempt;
@@ -160,8 +164,11 @@ export function LuoiChamLop({
     </>
   );
 
-  const khoiDan = dan && data.ft && (
-    <DanExcel data={data.ft} cot={cotDan} tenLuot={tenLuot} luot={'luot' in data ? (data as BangTheoLuot).luot.ma : null} homNay={data.today} hep={hep} hoiBanDau={dan.hoi}
+  const bo = useMemo(() => (!dan ? null
+    : laFt ? data.ft && boDanFt(data.ft, (cotHien ?? ENTRY_SKILLS).filter((k) => (ENTRY_SKILLS as readonly string[]).includes(k)), data.today)
+      : thuong && boDanThuong(thuong, thuong.programme.skills, data.today)), [dan, laFt, data.ft, data.today, cotHien, thuong]);
+  const khoiDan = dan && bo && (
+    <DanExcel bo={bo} tenLuot={tenLuot} luot={luotMo ? luotMo.ma : !laFt && kind ? `thuong:${kind}` : null} hep={hep} hoiBanDau={dan.hoi}
       onDong={() => setDan(null)} onDaLuu={onReload} />
   );
   const luoiKhung = gon ? luoi : <Card bodyClass="p-0" className="xl:overflow-clip">{luoi}</Card>;

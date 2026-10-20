@@ -52,7 +52,7 @@ export const HD_GV: HuongDan = {
         { id: 'hv-tim', ten: 'Tìm em hoặc lớp', buoc: ['Gõ ít nhất 2 chữ ở ô <b>Tìm học viên, lớp…</b> trên thanh trên.', 'Gõ "ft101" ra lớp MB FT 101.'],
           chi: { hd: 'tim-hv', chu: 'Gõ tên, email em hoặc mã lớp.' } },
         { id: 'hv-goc', ten: 'Ba góc nhìn', buoc: ['<b>Tất cả</b> (lọc <b>Đã thi · chờ kết quả</b>) · <b>Đang SOS</b> (mặc định <b>Toàn bộ</b> 8 tuần, chọn được tuần thi) · <b>Cần làm</b>.', 'Bấm dòng em mở panel một em, không rời trang.'] },
-        { id: 'hv-lich-thi', ten: 'Lịch thi và xuất Excel', buoc: ['Góc <b>Lịch thi</b>: chọn tháng ở <b>Dự kiến thi</b> → bấm <b>Kết luận</b> ngay trên hàng (<b>Giữ tháng</b> · <b>Chốt ngày</b> · <b>Chuyển tháng</b> · <b>Cần xác nhận</b>); lưu ngay vào lịch thi của em, không bước duyệt.', '<b>Xuất Excel · n HV</b>: xuất đúng danh sách đang lọc; chọn mẫu <b>Danh sách cơ bản</b> · <b>Theo dõi SOS</b> · <b>Kết quả thi</b> hoặc <b>Chọn cột</b>.', 'Danh sách dài: 10 dòng một trang, chọn 20 / 50 ở đầu và cuối bảng.'],
+        { id: 'hv-lich-thi', ten: 'Lịch thi và xuất Excel', buoc: ['Góc <b>Lịch thi</b>: chọn tháng ở <b>Dự kiến thi</b> → bấm <b>Kết luận</b> ngay trên hàng (<b>Giữ tháng</b> · <b>Chốt ngày</b> · <b>Chuyển tháng</b> · <b>Cần xác nhận</b>); lưu ngay vào lịch thi của em, không bước duyệt.', '<b>Xuất Excel · n HV</b>: xuất đúng danh sách đang lọc; chọn mẫu <b>Danh sách cơ bản</b> · <b>Theo dõi SOS</b> · <b>Kết quả thi</b> hoặc <b>Chọn cột</b>.', '<b>Bộ lọc thêm</b> (góc Tất cả): Case / PA · kỹ năng · kết quả · tuần thi — trong nhóm là "hoặc", giữa nhóm là "và". Tích ô trước tên em → <b>Xuất các HV đã chọn</b>.', 'Danh sách dài: 10 dòng một trang, chọn 20 / 50 ở đầu và cuối bảng.'],
           chi: { hd: 'hvl-goc', duong: '/hoc-vien', chu: 'Bấm <b>Lịch thi</b> ở hàng này.' } },
       ],
     },
@@ -85,7 +85,8 @@ export const HD_GV: HuongDan = {
           'Trong panel: chọn lượt (MT1, MT2…) và môn (<b>Tất cả · L · R · W1 · W2 · S</b>); <b>Chỉ ô còn trống</b> để nhập nốt.'] },
         { id: 'dl-dan', ten: 'Dán từ Excel', buoc: ['Bấm <b>Dán từ Excel</b> (nút <b>?</b>: 6 bước + Sao chép mẫu): mỗi em một dòng, <b>Tên | điểm | nhận xét</b> từng kỹ năng.',
           'Kiểm bảng xem trước: ô mới, ghi đè, lỗi; trùng tên thì chọn em; dưới kỳ vọng chọn nhóm nguyên nhân.',
-          'W1, W2, S: bốn tiêu chí cách nhau dấu cách. <b>Lưu n dòng</b>: dòng chưa đủ còn là nháp; <b>Hoàn tác</b> trả lại như trước.'] },
+          'W1, W2, S: bốn tiêu chí cách nhau dấu cách. <b>Lưu n dòng</b>: dòng chưa đủ còn là nháp; <b>Hoàn tác</b> trả lại như trước.',
+          'Lớp thường: cột theo môn của lớp; điểm = số câu đúng (tổng lấy từ cột) hoặc <b>24/40</b>; <b>-</b> = em không làm bài (môn dời sang tuần sau).'] },
       ],
     },
     {

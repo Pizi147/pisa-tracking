@@ -4,7 +4,7 @@ import { forbidden } from '../util.ts';
 import { classScopeSql, scopeFor, type Principal } from '../permissions.ts';
 
 /**
- * QUYỀN CHUNG CỦA MỌI ĐƯỜNG PHÂN TÍCH MỚI (PR-UX4, Q20) — một chỗ, để bốn dịch vụ (`vanDeHv`, `hieuQuaPa`,
+ * QUYỀN CHUNG CỦA MỌI ĐƯỜNG PHÂN TÍCH MỚI (PR-UX4, Q20) — một chỗ, để các dịch vụ (`hieuQuaPa`,
  * `yThucPhanTich`) không mỗi nơi tự viết lại một phiên bản hơi khác.
  *
  * - Không có `analysis.view` (giáo viên) → 403.

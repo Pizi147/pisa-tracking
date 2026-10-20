@@ -1236,11 +1236,33 @@ function khoaGhiChu(p: Principal, i: { classId: number; studentId?: number | nul
 
 const DK_KHOA = `g.student_id IS ? AND g.dot IS ? AND (CASE WHEN g.student_id IS NULL OR g.cycle_id IS NULL THEN g.class_id = ? ELSE g.cycle_id = ? END)`;
 
-/** POST /ke-hoach-test/ghi-chu — lưu ghi chú (chữ trống = xoá). Mỗi lần lưu THÊM một dòng (lịch sử). CHỈ ghi chú, không đụng lịch. */
-export function luuGhiChu(p: Principal, i: { classId: number; studentId?: number | null; dot?: string | null; noiDung: unknown }): { ghiChu: GhiChuLich | null } {
+type GhiChuVao = { classId: number; studentId?: number | null; dot?: string | null; noiDung: unknown };
+
+/** Kiểm ghi chú (quyền, lớp, em, đợt, độ dài) — TRƯỚC khi ghi bất cứ gì. */
+function kiemGhiChu(p: Principal, i: GhiChuVao) {
   const k = khoaGhiChu(p, i);
   const noiDung = String(i.noiDung ?? '').trim();
   if (noiDung.length > GHI_CHU_TOI_DA) throw badRequest(`Ghi chú tối đa ${GHI_CHU_TOI_DA} ký tự.`);
+  return { ...k, noiDung };
+}
+
+/** POST /ke-hoach-test/ghi-chu — lưu ghi chú (chữ trống = xoá). Mỗi lần lưu THÊM một dòng (lịch sử). CHỈ ghi chú, không đụng lịch. */
+export function luuGhiChu(p: Principal, i: GhiChuVao): { ghiChu: GhiChuLich | null } {
+  return ghiGhiChu(p, kiemGhiChu(p, i));
+}
+
+/**
+ * OV-15h2 (ý 5): lưu lịch (`/dot`, `/xep-moi`) KÈM ghi chú lịch thi trong MỘT giao dịch — ghi chú sai thì 400 trước khi đụng lịch, lỗi giữa chừng cuộn
+ * lại cả hai; web không phải gửi lịch lần hai khi ghi chú lỗi. `ghi` null = chỉ lịch.
+ */
+export function luuLichKemGhiChu<T>(p: Principal, ghi: GhiChuVao | null, luuLich: () => T): T {
+  if (!ghi) return luuLich();
+  const k = kiemGhiChu(p, ghi);
+  return tx(() => ({ ...(luuLich() as object), ...ghiGhiChu(p, k) }) as T);
+}
+
+function ghiGhiChu(p: Principal, k: ReturnType<typeof kiemGhiChu>): { ghiChu: GhiChuLich | null } {
+  const noiDung = k.noiDung;
   const conn = db();
   const cu = conn.prepare(`SELECT g.noi_dung FROM ghi_chu_lich_thi g WHERE ${DK_KHOA} ORDER BY g.id DESC LIMIT 1`)
     .get(k.studentId, k.dot, k.classId, k.cycleId) as any;
@@ -1347,7 +1369,13 @@ export function xuatKeHoach(p: Principal, i: { branchId: number | null; classIds
         WHERE e.class_id IN (${ph}) AND ${HV_DANG_HOC_SQL('s')}`).all(...lo) as any[]);
   });
   const maLop = new Map(lop.map((l) => [l.id as number, l.code as string]));
-  em.sort((a, b) => soSanhLop({ code: maLop.get(a.class_id)! }, { code: maLop.get(b.class_id)! }) || soTenVi(a.full_name, b.full_name) || a.id - b.id);
+  /* OV-15h2 (ý 6): em học cùng lúc hai lớp FT = MỘT hàng; mọi lớp đang học vào cột Lớp (theo thứ tự lớp). */
+  const lopDangHoc = new Map<number, string[]>();
+  for (const e of em) lopDangHoc.set(e.id, [...(lopDangHoc.get(e.id) ?? []), maLop.get(e.class_id)!]);
+  for (const ds of lopDangHoc.values()) ds.sort((a, b) => soSanhLop({ code: a }, { code: b }));
+  const gap = new Set<number>();
+  em.splice(0, em.length, ...em.filter((e) => !gap.has(e.id) && !!gap.add(e.id)));
+  em.sort((a, b) => soSanhLop({ code: lopDangHoc.get(a.id)![0] }, { code: lopDangHoc.get(b.id)![0] }) || soTenVi(a.full_name, b.full_name) || a.id - b.id);
   const cycleIds = em.map((e) => e.cycle_id).filter((x): x is number => !!x);
   const luot: any[] = [];
   theoLo([...new Set(cycleIds)], (lo, ph) => {
@@ -1363,7 +1391,9 @@ export function xuatKeHoach(p: Principal, i: { branchId: number | null; classIds
       if (a.status === 'cancelled') { if (!m.has(a.attempt_no)) m.set(a.attempt_no, { huy: true }); continue; }
       m.set(a.attempt_no, { kn: (skill.get(a.id) ?? []).map((r: any) => ({ skill: r.skill, tuan: r.week_start ?? null, sit: r.sit_status ?? null, batBuoc: r.required === 1 })) });
     }
-    return { email: e.email ?? null, ten: e.full_name, lop: [...cua.filter((a) => a.status !== 'cancelled').map((a) => a.code), maLop.get(e.class_id)!], luot: m };
+    const daQua = cua.filter((a) => a.status !== 'cancelled').map((a) => a.code);
+    const dang = lopDangHoc.get(e.id)!;
+    return { email: e.email ?? null, ten: e.full_name, lop: [...daQua.filter((c) => !dang.includes(c)), ...dang], luot: m };
   });
   const bang = bangKeHoachXuat(hv);
   const chiNhanh = tenChiNhanh(lop);

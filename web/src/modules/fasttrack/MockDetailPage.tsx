@@ -15,7 +15,6 @@ import { KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { TheYeuCau } from '../duyet/TheYeuCau.tsx';
 import { HopThaoTacMt } from './HopThaoTacMt.tsx';
-import { HopHuyMt, type HeQuaHuy } from './HopHuyMt.tsx';
 import { HopKyNang } from '../test/keHoach/HopKyNang.tsx';
 import { DongThoiGianLuot } from './DongThoiGianLuot.tsx';
 import {
@@ -89,8 +88,6 @@ type Detail = {
     /** Kỹ năng dời lịch/xác nhận thi được — GVCN·GVBM Normal + Quản lý mọi kỹ năng (SCH-01). */
     moveableSkills: string[];
     canEditSos: boolean; editableSkills: string[];
-    /** PR-MT (M-12): cách huỷ được phép + hệ quả thật — `null` khi không huỷ được. */
-    huyLuot: HeQuaHuy | null;
   };
 };
 
@@ -144,7 +141,6 @@ export default function MockDetailPage() {
   const [hopLich, setHopLich] = useState<{ anchor: HTMLElement; k: KyNangKH | null } | null>(null);
   const nutChinhLich = useRef<HTMLSpanElement>(null);
   const [deadlineOpen, setDeadlineOpen] = useState(false);
-  const [cancelOpen, setCancelOpen] = useState(false);
   const [khoiPhucOpen, setKhoiPhucOpen] = useState(false);
   const [khoiPhucLuot, setKhoiPhucLuot] = useState(false);
   /* PR-HSM: ô lớn đang mở khung sửa — nút chính "Nhập điểm / Sửa điểm" của bảng dưới cũng mở đúng ô này. */
@@ -244,11 +240,6 @@ export default function MockDetailPage() {
     /* PR-OV4a: số MT đã xếp lại mà còn bản huỷ cũ → hộp nói rõ cách khôi phục (huỷ MT mới trước). */
     ...(d.viewer.canCancel && !cancelled && d.khoiPhuc.ban.length ? [{
       label: t('Khôi phục MT{attemptNo} cũ', { attemptNo: d.attemptNo }), onClick: () => setKhoiPhucLuot(true),
-    }] : []),
-    /* PR-MTGON (luật 4): Quản lý huỷ MT{n} mọi lượt, mọi lúc — xếp lại thì vẫn là MT{n}. */
-    ...(d.viewer.huyLuot?.cachDuoc && !cancelled ? [{
-      label: t('Huỷ MT{attemptNo}', { attemptNo: d.attemptNo }), danger: true, onClick: () => setCancelOpen(true),
-      hint: t('Xếp lại thì vẫn là MT{attemptNo}', { attemptNo: d.attemptNo }),
     }] : []),
   ];
   const coKhoa = d.cells.some((c) => c.khoa);
@@ -379,11 +370,6 @@ export default function MockDetailPage() {
       )}
       {khoiPhucOpen && d.ketQuaHuy && (
         <HopKhoiPhucKetQua attemptId={d.id} nhan={`MT${d.attemptNo}`} ketQua={d.ketQuaHuy} onDong={() => setKhoiPhucOpen(false)} onXong={reload} />
-      )}
-      {d.viewer.huyLuot?.cachDuoc && (
-        <HopHuyMt open={cancelOpen} onClose={() => setCancelOpen(false)} attemptId={d.id}
-          attemptNo={d.attemptNo} heQua={d.viewer.huyLuot} onDone={reload}
-          phu={[d.student.name, d.classCode, d.period ? tuanLich(d.period.weekStart, homNay) : null].filter(Boolean).join(' · ')} />
       )}
     </div>
   );

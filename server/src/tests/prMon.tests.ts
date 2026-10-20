@@ -187,7 +187,7 @@ export async function runPrMonTests(t: YThucTestKit) {
     assert(no(l.classId).length === 0, 'còn nợ sau khi đủ điểm');
   });
   check('MON (4) · quét danh sách 4 môn viết tay ở máy chủ: chỉ bảng trắng', () => {
-    const TRANG = ['metrics.ts', 'vanDeHv.ts', 'phanTich.ts', 'keHoachTest.ts'];
+    const TRANG = ['metrics.ts', 'phanTich.ts', 'keHoachTest.ts'];
     const mau = [/\[\s*'listening',\s*'reading',\s*'writing',\s*'speaking'\s*\]/];
     const lo = quet('server/src').filter((f) => !/\/(tests|seed)\/|\/migrate/.test(f) && !TRANG.includes(path.basename(f)))
       .filter((f) => mau.some((m) => m.test(doc(f))));

@@ -127,7 +127,9 @@ export async function runPrDlTests(t: YThucTestKit) {
    * tạo sau dời. Đã so JSON hai bảng origin/main ↔ nhánh sau khi bỏ trường id + studentCode (mã theo thứ tự tạo): trùng từng byte. */
   /* OV-12c: seed SOS v3 nay ghi nhận xét + nhóm nguyên nhân vào ô MT (Case MT lấy nguyên nhân từ nhận xét) — so JSON bản gốc ↔ nhánh: chỉ lệch
    * `nhanXet` / `nhomNguyenNhan` của ô demo và `thieuNhanXet` hết ở ô đã có nhận xét; không trường nào khác. */
-  const ANH_CHUP = { tuan: '98dff5c3c389b7b3', moi: '9552df35b0f43a67' };   // OV-15b: hàng thêm `studentEmail` (Dán từ Excel), ô chưa có giá trị (điểm / tiêu chí) không gửi người nhập   // OV-13n: phép kiểm sosV3 (cùng lớp MB FT 101, chạy trước) thêm HV thử / đổi việc phối hợp → dòng lớp đổi   // OV-13l: em chuyển FT → FT giữ lộ trình — lượt chưa thi đi theo em, bảng lớp cũ đổi
+  /* OV-15h2: chỉ lệch id tuần (`moi`) — bỏ phép kiểm UX4 "Vấn đề HV" (máy chủ `vanDeHv` bỏ) vốn tạo hai tuần giả chạy trước → `periodId` tuần tạo sau
+   * dời −2. Đã so JSON `moi` origin/main ↔ nhánh: chỉ khác `periodId` (100 dòng, đều −2), không trường nào khác. */
+  const ANH_CHUP = { tuan: '98dff5c3c389b7b3', moi: '53d25ee1fd6e5732' };   // OV-15b: hàng thêm `studentEmail` (Dán từ Excel), ô chưa có giá trị (điểm / tiêu chí) không gửi người nhập   // OV-13n: phép kiểm sosV3 (cùng lớp MB FT 101, chạy trước) thêm HV thử / đổi việc phối hợp → dòng lớp đổi   // OV-13l: em chuyển FT → FT giữ lộ trình — lượt chưa thi đi theo em, bảng lớp cũ đổi
   /* Mã cố ý độc lập với hàm: điều kiện lọc tuần của bản trước refactor, viết lại bằng SQL. */
   const idsTuan = (periodId: number) => (conn.prepare(
     `SELECT a.id FROM assessment_attempts a JOIN students s ON s.id = a.student_id
