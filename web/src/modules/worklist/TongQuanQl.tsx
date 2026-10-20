@@ -1,4 +1,3 @@
-import { Fragment } from 'react';
 import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { invalidate } from '../../lib/api.ts';
@@ -156,8 +155,7 @@ export function LopCanChuY({ data, branchId, ct }: { data: TongQuanQlData['bang'
               </tr></thead>
               <tbody>
                 {[{ ...tong, id: 0, loai: 'lop' as const, cap: 1 as const, gvcn: null }, ...hang].map((h) => (
-                  <Fragment key={h.khoa}>
-                    <tr className={h.khoa === 'tong' || h.cap === 0 ? 'bg-white/5' : 'row-hover'}>
+                    <tr key={h.khoa} className={h.khoa === 'tong' || h.cap === 0 ? 'bg-white/5' : 'row-hover'}>
                       <td className="td sticky-col whitespace-nowrap font-medium"
                         style={h.khoa === 'tong' || h.cap === 0 ? { background: 'color-mix(in srgb, var(--surface) 95%, rgb(var(--phu-rgb)))' } : undefined}>
                         {h.khoa === 'tong' ? <span className="text-slate-100">{tongNhan}</span> : tenLop(h)}
@@ -170,7 +168,6 @@ export function LopCanChuY({ data, branchId, ct }: { data: TongQuanQlData['bang'
                       <td className="td text-center">{caseHv(h)}</td>
                       {ft && <td className="td text-center">{so(h, 'daThiChoKq', h.o.daThiChoKq)}</td>}
                     </tr>
-                  </Fragment>
                 ))}
               </tbody>
             </table>
@@ -205,13 +202,18 @@ export function TreCham({ ds, branchId, ct }: { ds: GvTre[]; branchId: number | 
       </h3>
       <ul className="m-0 list-none p-0">
         {ds.map((x) => (
-          <li key={x.khoa} className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-4 gap-y-0.5 border-t px-4 py-2 text-[13px] first:border-t-0 sm:grid-cols-[minmax(0,14rem)_5rem_minmax(0,1fr)_auto]" style={{ borderColor: 'var(--line)' }}>
-            <span className="min-w-0 truncate"><b className={x.khoa > 0 ? 'font-semibold text-slate-100' : 'font-normal text-slate-400'}>{dich(x.ten)}</b>{x.kyNang.length > 0 && <span className="text-slate-500"> · {x.kyNang.join(', ')}</span>}</span>
-            <span className="text-right tabular-nums sm:text-left">
-              <SoLieuO giaTri={x.bai} className="font-semibold" tieuDe={t('Trễ chấm · {ten}', { ten: dich(x.ten) })} nguon={`/tong-quan/ql/tre?gv=${x.khoa}${q ? `&${q}` : ''}`} /> <span className="text-xs text-slate-500">{t('bài')}</span>
-            </span>
-            <span className="min-w-0 truncate text-xs text-slate-500 max-sm:col-span-2 max-sm:row-start-2">{x.lop.map((l) => `${l.code} (${l.n})`).join(' · ')}</span>
-            <span className="whitespace-nowrap text-xs font-semibold text-late max-sm:col-start-2 max-sm:row-start-2 max-sm:text-right">{x.treNhat > 0 ? `⚠ ${t('trễ nhất {n} ngày', { n: x.treNhat })}` : ''}</span>
+          /* 375: hai dòng (tên · số bài / lớp · trễ nhất); từ sm một hàng bốn cột (`sm:contents` đưa con vào lưới). */
+          <li key={x.khoa} className="border-t px-4 py-2 text-[13px] first:border-t-0 sm:grid sm:grid-cols-[minmax(0,14rem)_5rem_minmax(0,1fr)_auto] sm:items-baseline sm:gap-x-4" style={{ borderColor: 'var(--line)' }}>
+            <div className="flex items-baseline justify-between gap-3 sm:contents">
+              <span className="min-w-0 truncate"><b className={x.khoa > 0 ? 'font-semibold text-slate-100' : 'font-normal text-slate-400'}>{dich(x.ten)}</b>{x.kyNang.length > 0 && <span className="text-slate-500"> · {x.kyNang.join(', ')}</span>}</span>
+              <span className="shrink-0 tabular-nums">
+                <SoLieuO giaTri={x.bai} className="font-semibold" tieuDe={t('Trễ chấm · {ten}', { ten: dich(x.ten) })} nguon={`/tong-quan/ql/tre?gv=${x.khoa}${q ? `&${q}` : ''}`} /> <span className="text-xs text-slate-500">{t('bài')}</span>
+              </span>
+            </div>
+            <div className="mt-0.5 flex items-baseline justify-between gap-3 sm:contents">
+              <span className="min-w-0 truncate text-xs text-slate-500">{x.lop.map((l) => `${l.code} (${l.n})`).join(' · ')}</span>
+              <span className="shrink-0 whitespace-nowrap text-xs font-semibold text-late">{x.treNhat > 0 ? `⚠ ${t('trễ nhất {n} ngày', { n: x.treNhat })}` : ''}</span>
+            </div>
           </li>
         ))}
       </ul>
