@@ -491,6 +491,10 @@ Kế hoạch cũ: `git show 575e898d:docs/superpowers/plans/2026-09-23-pr-td-toc
 | Danh sách đường đo (route × vai) + trần câu SQL + trần dòng đọc của đường nặng — **PR sau thêm đường mới vào đây** | `server/src/tests/tocDoDuong.ts` → `DUONG_DO`, `TRAN`, `TRAN_DONG` |
 | Phép kiểm ĐO (hạ tầng bộ nhớ, mọi đường×vai đúng mã, trần câu SQL, nhân dữ liệu ×3) — chạy tiến trình riêng, DB riêng, nối vào `npm test` sau `run.js` | `server/src/tests/tocDo.run.ts` |
 | Đo khung trên trang thật (html cuộn, cuộn lồng, chữ cắt, nút tràn) mọi màn GV / QL 1440 + 375, sáng + tối — chạy tay, cần dev server (`KHUNG_BASE`), không nằm trong `npm run check`; luật nguồn khoá ở `server/src/tests/prKhung.tests.ts` | `scripts/do-khung.mjs` |
+| Đo bảng trên trang thật (lệch tiêu đề ↔ ô, đường cơ sở, cao hàng 44/64, đè nhau, cỡ chữ ∈ thang) — gọi trong `do-khung` mọi kịch bản; chạy riêng `node scripts/do-bang.mjs` | `scripts/do-bang.mjs` |
+| Danh sách lỗi đã biết của `do-khung` / `do-bang` / `lich` / esbuild — mỗi dòng ghi PR gỡ; dòng không còn khớp = đỏ | `scripts/mien-do.json` |
+| Cảnh báo esbuild (case trùng…) = lỗi, chạy cuối `npm run check` | `scripts/kiem-esbuild.mjs` |
+| Ảnh cặp mockup \| web toàn trang (một PNG) cho PR đổi bố cục | `scripts/anh-cap.mjs` |
 | Chụp JSON mọi (đường × vai) của một cây mã bất kỳ đã build, so trước/sau — dùng `--db`/`--khong-seed` để hai lượt chụp dùng chung một lần seed (tránh lệch giờ các trường ghi `new Date()` lúc seed) | `scripts/chup-api.mjs` |
 | **Luật bắt buộc:** không sửa mảng/đối tượng nhận về từ `listCases`/các hàm có `nho()` (giá trị dùng chung trong request — sửa tại chỗ gọi thì phải copy trước) | xem chú thích đầu `nguCanhRequest.ts`; đặt `PISA_DONG_BANG_NHO=1` trong phép kiểm để lộ chỗ sửa nhầm (ném lỗi thay vì âm thầm sai) |
 
