@@ -9,9 +9,12 @@
 // PR-EN: KHUNG_NGON_NGU=en — chạy cả bộ ở tiếng Anh (tài khoản + máy) và thêm lỗi (v) CHỮ VIỆT CÒN SÓT trên màn có trong `GOC_V` (mọi vai — EN-e): bỏ khối [lang=vi] và chữ dữ liệu (mọi giá trị chữ có dấu trong DB demo — tên, mã, ghi chú, thông báo cũ). DB đọc từ
 // PISA_DB (mặc định data/pisa-demo.sqlite). Kịch bản `ngon-ngu` bấm bốn bước nhớ ngôn ngữ (E-NHO).
 // HD-a / HD-b: kịch bản `hd-chi` bấm mọi "Chỉ cho tôi" của 6 vai (khoanh hiện, phần tử bấm được, Esc tắt). HD_VAI=ql,tvv chỉ chạy các vai đó.
+// CONG-CU: (g) đo bảng `do-bang.mjs` ở mọi kịch bản — 1440 tối, 1280 tối, 375 sáng; KHUNG_CHI=bang chỉ đo bảng. Kịch bản `lich`: mọi hộp có ô ngày —
+// bấm ‹ và một ngày trong lịch (vẽ qua portal) không được đóng hộp cha. Lỗi đã biết: `scripts/mien-do.json` (MIEN=0 tắt miễn).
 import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { doBang, mien, mienThua } from './do-bang.mjs';
 
 const { chromium } = await import(process.env.PW ? pathToFileURL(process.env.PW).href : 'playwright');
 const BASE = process.env.KHUNG_BASE ?? `http://localhost:${process.env.WEB_PORT ?? 5173}`;
@@ -53,9 +56,12 @@ const DU_LIEU = NN === 'en' ? await (async () => {
 })() : [];
 fs.mkdirSync(ANH, { recursive: true });
 
-/** Chỗ cắt chữ của PR khác: Lịch Test (#12 LT3), hồ sơ Mock (#13), Điểm theo lớp (#14 HK2), lưới chấm (`cham/*` — PR-BV #228),
- *  nội dung panel Ghi kết quả PA (`CapNhatTuan.tsx` — PR-LUI-a2; nút chọn trong panel vẫn đo ở (d)). */
-const BO_QUA_CAT = ['lichTest', 'diem-lop', 'mock', 'nhap-diem', 'bang-diem-thuong', 'panel-pa'];
+/** Chỗ cắt chữ của PR khác: hồ sơ Mock (#13), nội dung panel Ghi kết quả PA (`CapNhatTuan.tsx` — PR-LUI-a2; nút chọn trong panel vẫn đo ở (d)).
+ *  CONG-CU: lưới chấm (Lịch Test, Điểm theo lớp, nhập điểm, lớp thường) đo lại — lỗi đã biết ghi ở `mien-do.json`. */
+const BO_QUA_CAT = ['mock', 'panel-pa'];
+const CHI_BANG = process.env.KHUNG_CHI === 'bang';
+/** Bảng đo ở 1440 tối, 1280 tối, 375 sáng (một lần mỗi bề rộng). */
+const doBangO = (w, sang) => (w === 375 ? sang : !sang && (w === 1440 || w === 1280));
 
 const RONG_MAY = [1440, 375, 1366, 1280];   // kịch bản có bảng dính đầu (bang-dinh): đo thêm ở 1366 và 1280, nơi bảng có thể rộng hơn khung
 const RONG_THEM = (process.env.KHUNG_RONG ?? '').split(',').filter(Boolean).map(Number);
@@ -94,14 +100,14 @@ const KICH_BAN = [
   ['panel-pa', 7, '/hoc-thuat/case/5', async (p) => {
     // 375: Ngăn Case tự mở đè trang — bấm "Ghi kết quả" trong ngăn.
     const ngan = p.locator('[role=dialog]');
-    await ((await ngan.count()) ? ngan : p).getByRole('button', { name: /Kết quả|Result/ }).first().click(); await p.waitForTimeout(500); await p.getByRole('button', { name: /Tiến bộ một phần|Some progress/ }).first().click().catch(() => {}); }],
+    await ((await ngan.count()) ? ngan : p).getByRole('button', { name: /^(Cập nhật trước hạn|Ghi kết quả|Update early|Log result)/ }).first().click(); await p.waitForTimeout(500); await p.getByRole('button', { name: /Tiến bộ một phần|Some progress/ }).first().click().catch(() => {}); }],
   ['panel-tao-case', 7, '/hoc-vien/3', nut(/^\+ Case$/)],
   ['panel-vi-pham', 7, '/hoc-vien/3?tab=y-thuc', async (p) => { await nut(/Ghi vi phạm|Log incident/)(p); await p.evaluate(() => { const t = document.querySelector('[role=dialog] .overflow-y-auto'); if (t) t.scrollTop = 120; }); await p.waitForTimeout(200); }],
   ['panel-sua-tt', 2, '/hoc-vien/lop/3?tab=hoc-vien', nut(/^Sửa thông tin$/)],
   ['panel-them-hv', 2, '/hoc-vien/lop/3?tab=hoc-vien', nut(/^\+ Học viên$/)],
   // Hộp kỹ năng MT (popover neo cạnh ô, Kế hoạch Test) và thanh dính đáy "Chọn nhiều học viên" (hồ sơ lớp).
   ['hop-ky-nang-mt', 2, '/test/ke-hoach', async (p) => {
-    await p.locator('#noi-dung [aria-expanded=false]').first().click(); await p.waitForTimeout(600);
+    await p.locator('#noi-dung button[aria-label^="Mở lớp"]').first().click(); await p.waitForTimeout(600);
     await p.locator('#noi-dung td button[aria-label^="MT"]').first().click(); await p.waitForTimeout(500);
     if (!(await p.locator('[role=dialog][aria-label^="Lịch "]').count())) throw new Error('không thấy hộp kỹ năng');
   }],
@@ -231,8 +237,17 @@ function chuVietSot([duLieu, goc, bo]) {
 }
 
 const trinh = await chromium.launch({ channel: 'msedge' }).catch(() => chromium.launch({ channel: 'chrome' })).catch(() => chromium.launch());
-let tongLoi = 0;
+let tongLoi = 0, tongMien = 0;
+/** Bỏ lỗi đã biết (mien-do.json); in số đã miễn theo PR. */
+const locMien = (congCu, nhan, ds) => {
+  const pr = {};
+  const con = ds.filter((l) => { const m = mien(congCu, `${nhan} ${l}`); if (m) pr[m.pr] = (pr[m.pr] ?? 0) + 1; return !m; });
+  const n = ds.length - con.length;
+  tongMien += n;
+  return [con, n ? ` (miễn ${Object.entries(pr).map(([k, v]) => `${k} ×${v}`).join(', ')})` : ''];
+};
 for (const [w, h] of [[1440, 900], [375, 812], [1366, 768], [1280, 800]]) for (const sang of [false, true]) {
+  if (CHI_BANG && !doBangO(w, sang)) continue;
   const ctx = await trinh.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: 1 });
   await ctx.addInitScript(([s, nn]) => { try { localStorage.setItem('pisa-giao-dien', s ? 'light' : 'dark'); localStorage.setItem('pisa-ngon-ngu', nn); } catch {} }, [sang, NN]);
   const p = await ctx.newPage();
@@ -240,7 +255,8 @@ for (const [w, h] of [[1440, 900], [375, 812], [1366, 768], [1280, 800]]) for (c
   let vai = 0;
   for (const [tenKb, v, duong, them, rong = [1440, 375]] of KICH_BAN) {
     if (LOC && !tenKb.includes(LOC)) continue;
-    if (!rong.includes(w) && !RONG_THEM.includes(w)) continue;
+    const doKhung = !CHI_BANG && (rong.includes(w) || RONG_THEM.includes(w));
+    if (!doKhung && !doBangO(w, sang)) continue;
     if (v !== vai) {
       if (v === 0) await p.request.delete(`${BASE}/api/demo/session`);
       else {
@@ -257,12 +273,21 @@ for (const [w, h] of [[1440, 900], [375, 812], [1366, 768], [1280, 800]]) for (c
       await p.waitForTimeout(400);
       if (them) await them(p);
     } catch (e) { tongLoi++; console.log(`✗ ${nhan}: kịch bản không mở được (${e.message.split('\n')[0]})`); continue; }
-    let loi = await p.evaluate(doTrang);
-    if (BO_QUA_CAT.some((k) => tenKb.includes(k))) loi = loi.filter((l) => !l.startsWith('c '));
-    // Panel tại chỗ của Công việc (máy tính) tự cuộn thân — thiết kế OV-5a, bản Việt cũng vậy; không phải cuộn lồng của trang.
-    if (tenKb === 'gv-ket-qua-pa') loi = loi.filter((l) => !l.startsWith('b '));
-    if (NN === 'en' && GOC_V[tenKb]) loi = [...loi, ...await p.evaluate(chuVietSot, [DU_LIEU, GOC_V[tenKb], BO_V[tenKb] ?? null])];
-    console.log(`${loi.length ? '✗' : '✓'} ${nhan}${loi.map((l) => `\n    ${l}`).join('')}`);
+    let loi = [], chuMien = '';
+    if (doKhung) {
+      loi = await p.evaluate(doTrang);
+      if (BO_QUA_CAT.some((k) => tenKb.includes(k))) loi = loi.filter((l) => !l.startsWith('c '));
+      // Panel tại chỗ của Công việc (máy tính) tự cuộn thân — thiết kế OV-5a, bản Việt cũng vậy; không phải cuộn lồng của trang.
+      if (tenKb === 'gv-ket-qua-pa') loi = loi.filter((l) => !l.startsWith('b '));
+      if (NN === 'en' && GOC_V[tenKb]) loi = [...loi, ...await p.evaluate(chuVietSot, [DU_LIEU, GOC_V[tenKb], BO_V[tenKb] ?? null])];
+      [loi, chuMien] = locMien('do-khung', nhan, loi);
+    }
+    if (doBangO(w, sang)) {
+      const [bang, m] = locMien('do-bang', nhan, await p.evaluate(doBang));
+      loi = [...loi, ...bang.map((l) => `g ${l}`)];
+      chuMien += m;
+    }
+    console.log(`${loi.length ? '✗' : '✓'} ${nhan}${chuMien}${loi.map((l) => `\n    ${l}`).join('')}`);
     tongLoi += loi.length;
     // Ảnh lỗi; KHUNG_CHUP=1 chụp mọi lần đo (ảnh nghiệm thu).
     if (loi.length || process.env.KHUNG_CHUP) await p.screenshot({ path: path.join(ANH, `${nhan}.png`) });
@@ -273,7 +298,7 @@ for (const [w, h] of [[1440, 900], [375, 812], [1366, 768], [1280, 800]]) for (c
  * E-NHO (PR-EN, kịch bản `ngon-ngu`): (1) chưa đăng nhập bấm English → tải lại vẫn EN; (2) đăng nhập vai chưa chọn → tài khoản lưu `en`;
  * (3) máy mới (localStorage trống) đăng nhập cùng vai → tự EN; (4) bấm VI ở thanh trên → tài khoản `vi`. Vai 9; trả tài khoản về `vi`.
  */
-if (!LOC || 'ngon-ngu'.includes(LOC)) {
+if (!CHI_BANG && (!LOC || 'ngon-ngu'.includes(LOC))) {
   const buoc = [];
   const ktra = (dk, chu) => { if (!dk) buoc.push(chu); };
   const ctx = await trinh.newContext({ viewport: { width: 1440, height: 900 } });
@@ -316,7 +341,7 @@ if (!LOC || 'ngon-ngu'.includes(LOC)) {
  * trong panel "?" của đúng màn. Đạt khi: khoanh hiện (không "Chưa có việc nào ở đây"), phần tử `data-hd` thấy được và bấm được (không bị che), Esc tắt.
  * Nội dung đọc từ bản dựng máy chủ (`npm run dev` đã `build:server`).
  */
-if (!LOC || 'hd-chi'.includes(LOC)) {
+if (!CHI_BANG && (!LOC || 'hd-chi'.includes(LOC))) {
   const { HUONG_DAN } = await import(pathToFileURL(path.resolve('dist-server/shared/huongDan/index.js')).href);
   const TAI_KHOAN = { gv: [7, 9], ql: [2], qt: [1], tvv: [23], cx: [24], admin: [22] };
   const chon = (process.env.HD_VAI ?? '').split(',').filter(Boolean);
@@ -376,6 +401,71 @@ if (!LOC || 'hd-chi'.includes(LOC)) {
   console.log(`${loi.length ? '✗' : '✓'} hd-chi (mọi "Chỉ cho tôi" của ${chon.length ? chon.join(', ') : '6 vai'})${loi.map((l) => `\n    ${l}`).join('')}`);
   tongLoi += loi.length;
 }
+/*
+ * CONG-CU (kịch bản `lich`, tài liệu đánh giá 12.7 / V3B-09): lịch `LichNho` vẽ qua portal ra ngoài cây hộp — hộp tự đóng khi "bấm ngoài" theo cây
+ * DOM sẽ đóng khi bấm trong lịch. Mỗi hộp có ô ngày, mỗi ô: mở lịch → bấm ‹ → hộp còn, lịch còn → bấm một ngày → hộp còn. 1440 tối + 375 sáng.
+ */
+if (!CHI_BANG && (!LOC || 'lich'.includes(LOC) || LOC.startsWith('lich-'))) {
+  const theoTen = (ten) => KICH_BAN.find((k) => k[0] === ten);
+  const hopThoiGian = async (p) => {   // BoChonThoiGian: mở hộp → "Theo tuần" (hiện ô Từ tuần / Đến tuần)
+    await p.locator('[data-hd="pt-thoi-gian"] > button[aria-expanded]:visible').last().click();   // panel (vẽ sau) nằm cuối
+    await p.getByRole('dialog', { name: 'Khoảng thời gian' }).getByRole('button', { name: 'Theo tuần' }).click();
+    await p.waitForTimeout(200);
+  };
+  /** [tên, vai, đường, mở hộp]: mọi hộp / panel có ô ngày mà demo mở được. */
+  const HOP_NGAY = [
+    ['lich-phan-tich', 2, '/phan-tich', hopThoiGian],
+    ['lich-tutor', 1, '/tutor', hopThoiGian],
+    ['lich-panel-tutor', 1, '/tutor', async (p) => { await p.getByRole('button', { name: /^✓?Tất cả/ }).click(); await p.waitForTimeout(600); await p.locator('#noi-dung button.link').first().click(); await p.waitForTimeout(800); await hopThoiGian(p); }],
+    ['lich-loc-them', 2, '/hoc-vien?lt=1&ltu=2026-08-03&lden=2026-09-13', hopThoiGian],
+    ...['hop-ky-nang-mt', 'panel-tao-case', 'panel-vi-pham', 'panel-pa'].map((k) => { const [, v, d, mo] = theoTen(k); return [`lich-${k}`, v, d, mo]; }),
+  ];
+  /* ONgay (nút lịch) và TuanNho (nút giữa ‹ tuần ›) — hai cửa mở LichNho. */
+  const NUT_LICH = 'button[aria-haspopup=dialog][aria-label^="Mở lịch"]:visible, button[aria-haspopup=dialog][title*="họn tuần"]:visible';
+  const LICH = '[role=dialog]:has(button[aria-label="Tháng trước"], button[aria-label="Năm trước"])';
+  const loi = [];
+  for (const [w, h, sang] of [[1440, 900, false], [375, 812, true]]) {
+    const ctx = await trinh.newContext({ viewport: { width: w, height: h } });
+    await ctx.addInitScript((s) => { try { localStorage.setItem('pisa-giao-dien', s ? 'light' : 'dark'); localStorage.setItem('pisa-ngon-ngu', 'vi'); } catch {} }, sang);
+    const p = await ctx.newPage();
+    p.setDefaultTimeout(8000);
+    for (const [ten, vai, duong, mo] of HOP_NGAY) {
+      if (LOC && LOC !== 'lich' && !ten.includes(LOC)) continue;
+      const nhan = `${ten}-${w}`;
+      const moHop = async () => { await p.goto(BASE + duong, { waitUntil: 'networkidle' }); await p.waitForTimeout(400); await mo(p); };
+      try {
+        await p.request.post(`${BASE}/api/demo/session`, { data: { userId: vai } });
+        await moHop();
+        const n = await p.locator(NUT_LICH).count();
+        if (!n) { loi.push(`${nhan}: không thấy ô ngày`); continue; }
+        for (let i = 0; i < n; i++) {
+          if (i) await moHop();
+          const nut = await p.locator(NUT_LICH).nth(i).elementHandle();
+          const o = await nut.evaluate((b) => b.parentElement?.querySelector('input')?.getAttribute('aria-label') ?? (b.textContent.trim() || '?'));
+          await nut.click();
+          const lich = p.locator(LICH).last();
+          await lich.waitFor();
+          await lich.locator('button[aria-label="Tháng trước"], button[aria-label="Năm trước"]').click();
+          await p.waitForTimeout(250);
+          if (!(await nut.isVisible())) { loi.push(`${nhan} «${o}»: bấm ‹ trong lịch đóng hộp cha`); continue; }
+          if (!(await lich.isVisible())) { loi.push(`${nhan} «${o}»: bấm ‹ đóng lịch`); continue; }
+          await lich.locator('[data-o]:not([aria-disabled=true]):not([disabled])').first().click();
+          await p.waitForTimeout(250);
+          if (!(await nut.isVisible())) loi.push(`${nhan} «${o}»: chọn ngày trong lịch đóng hộp cha`);
+        }
+      } catch (e) { loi.push(`${nhan}: kịch bản dừng: ${e.message.split('\n')[0]}`); }
+    }
+    await ctx.close();
+  }
+  const [con, chuMien] = locMien('lich', 'lich', loi);
+  console.log(`${con.length ? '✗' : '✓'} lich (bấm trong lịch không đóng hộp cha)${chuMien}${con.map((l) => `\n    ${l}`).join('')}`);
+  tongLoi += con.length;
+}
 await trinh.close();
-console.log(tongLoi ? `\n${tongLoi} lỗi` : '\nKhông lỗi');
+/* Dòng miễn không khớp lỗi nào (chỉ biết khi chạy đủ, không lọc): lỗi đã sửa → PR sửa phải gỡ dòng đó. */
+if (!LOC && process.env.MIEN !== '0') for (const m of ['do-bang', ...(CHI_BANG ? [] : ['do-khung', 'lich'])].flatMap(mienThua)) {
+  tongLoi++;
+  console.log(`✗ dòng miễn thừa (${m.cong_cu} · ${m.pr}): ${m.khop} — đã hết lỗi, gỡ khỏi scripts/mien-do.json`);
+}
+console.log(`${tongLoi ? `\n${tongLoi} lỗi` : '\nKhông lỗi'}${tongMien ? ` · ${tongMien} lỗi đã biết được miễn (scripts/mien-do.json)` : ''}`);
 process.exit(tongLoi ? 1 : 0);
