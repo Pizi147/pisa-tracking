@@ -119,7 +119,8 @@ export function BaoCao(pv: PhamViPhanTich) {
                   <colgroup><col style={{ width: '32%' }} /><col /><col /><col /><col style={{ width: '30%' }} /></colgroup>
                   <thead><tr>
                     <th className="th">{t('Lớp')}</th><th className="th text-center">SOS 1</th><th className="th text-center">SOS 2</th><th className="th text-center">SOS 3</th>
-                    <th className="th">{soTuanTruoc ? t('So {n} tuần trước', { n: soTuanTruoc }) : t('So kỳ trước')}</th>
+                    {/* OV-15h2 (ý 8): 375 — đầu cột dài xuống dòng trong cột, không tràn sát mép bảng. */}
+                    <th className="th whitespace-normal">{soTuanTruoc ? t('So {n} tuần trước', { n: soTuanTruoc }) : t('So kỳ trước')}</th>
                   </tr></thead>
                   <tbody>
                     {[...ptSos.cat(data.sos.hang), { ...data.sos.tong, lop: pv.branchId ? t('Cả {cn}', { cn: tenCn }) : t('Tổng') }].map((h) => (

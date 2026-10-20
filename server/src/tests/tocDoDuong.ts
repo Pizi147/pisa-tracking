@@ -62,12 +62,6 @@ export const DUONG_DO: MucDo[] = [
 
   // ---------------------------------------------------------------- Phân tích v2 cho QL (PR-UX4) — GV không có meeting.view nên 403
   {
-    trang: 'Phân tích QL', vai: ['QL', 'QT', 'GVCN'], url: '/phan-tich/van-de-hv',
-    maChuDich: { GVCN: 403 },
-  },
-  { trang: 'Phân tích QL', vai: ['QL', 'QT'], url: '/phan-tich/van-de-hv?gop=1' },
-  { trang: 'Phân tích QL', vai: ['QL', 'QT'], url: '/phan-tich/van-de-hv/o?dong=chua-phan-loai&cot=case' },
-  {
     trang: 'Phân tích QL', vai: ['QL', 'QT', 'GVCN'], url: '/phan-tich/hieu-qua-pa',
     maChuDich: { GVCN: 403 },
   },
@@ -398,13 +392,6 @@ export const TRAN: Record<string, number> = {
   'QL /metrics/vi-pham-tong?classId=3': 16,
   'QT /metrics/vi-pham-tong?classId=3': 16,
   // PR-UX4 (2)(3), 24/09/2026 — mốc chốt ngay sau khi thêm đường (đo 13–16 câu): max(sau+10, ⌈sau×1.3⌉).
-  'QL /phan-tich/van-de-hv': 20,
-  'QT /phan-tich/van-de-hv': 20,
-  'GVCN /phan-tich/van-de-hv': 14,
-  'QL /phan-tich/van-de-hv?gop=1': 20,
-  'QT /phan-tich/van-de-hv?gop=1': 20,
-  'QL /phan-tich/van-de-hv/o?dong=chua-phan-loai&cot=case': 20,
-  'QT /phan-tich/van-de-hv/o?dong=chua-phan-loai&cot=case': 20,
   'QL /phan-tich/hieu-qua-pa': 21,
   'QT /phan-tich/hieu-qua-pa': 21,
   'GVCN /phan-tich/hieu-qua-pa': 14,

@@ -346,7 +346,7 @@ export async function runPrOv13aTests(t: YThucTestKit) {
     const gv = GVCN.userId;
     const DS: [number, string][] = [
       ...['/metrics/case-mo', '/metrics/hv-co-case-mo', '/metrics/case-thieu-pa', '/metrics/case-cho-xac-dinh-nguyen-nhan', '/metrics/case-chua-co-nguoi-phu-trach',
-        '/tong-quan/quan-ly', '/tong-quan/chi-nhanh', '/tong-quan/chi-nhanh/o?cot=caseMo&khoa=tong', '/phan-tich/tong-hop?ct=ft', '/phan-tich/van-de-hv',
+        '/tong-quan/quan-ly', '/tong-quan/chi-nhanh', '/tong-quan/chi-nhanh/o?cot=caseMo&khoa=tong', '/phan-tich/tong-hop?ct=ft',
         '/hoc-vien-lop', '/hoc-vien-lop?goc=sos', `/classes/${lop}/overview`, `/classes/${lop}/can-ho-tro`, `/cases?classId=${lop}`, '/cases',
         `/giao-vien/${gv}`, `/giao-vien/${gv}/o?cot=case-mo`, '/giao-vien', '/my-work?nguoi=tat-ca'].map((u) => [QL.userId, u] as [number, string]),
       ...['/my-work', '/tong-quan/lop-toi-day?ct=ft', '/hoc-vien-lop', `/classes/${lop}/overview`].map((u) => [gv, u] as [number, string]),

@@ -223,10 +223,9 @@ export async function runPrMtGonTests(t: YThucTestKit) {
     assert(loiCua(() => attemptsSvc.duaLaiCaLuot(P.coreTeacher, a.m2)).status === 403, 'GV');
   });
 
-  check('MTG-3e · web: "Huỷ MT{n}" một câu xác nhận; mọi kỹ năng huỷ → "Đưa lại cả 4 kỹ năng", ẩn "Dời lịch thi cả đợt"', () => {
-    const s = nguon('web/src/modules/fasttrack/MockDetailPage.tsx') + nguon('web/src/modules/fasttrack/HopThaoTacMt.tsx') + nguon('web/src/modules/fasttrack/HopHuyMt.tsx');   // PR-HOP1: hộp Huỷ MT tách file
-    /* PR-OV4a (mockup §5): hộp nêu hệ quả từng dòng, điểm ẩn + Khôi phục được; thoát hộp "Đóng". */
-    assert(/Khôi phục được: lịch, điểm và Case trở lại như trước\./.test(s) && /closeLabel=(?:"Đóng"|\{t\('Đóng'\)\})/.test(nguon('web/src/modules/fasttrack/HopHuyMt.tsx')), 'câu xác nhận');
+  check('MTG-3e · web: mọi kỹ năng huỷ → "Đưa lại cả 4 kỹ năng", ẩn "Dời lịch thi cả đợt" (hộp "Huỷ MT{n}" bỏ ở OV-15h2 — Huỷ = Xóa)', () => {
+    const s = nguon('web/src/modules/fasttrack/MockDetailPage.tsx') + nguon('web/src/modules/fasttrack/HopThaoTacMt.tsx');
+    assert(!fs.existsSync(path.join(ROOT, 'web/src/modules/fasttrack/HopHuyMt.tsx')) && !/Huỷ MT\{attemptNo\}/.test(s), 'còn hộp / nút Huỷ MT');
     assert(/Đưa lại cả 4 kỹ năng/.test(s) && /dua-lai-ca-luot/.test(s), 'Đưa lại cả 4 kỹ năng');
     assert(!/Huỷ phần còn lại/.test(s) && !/Huỷ cả lượt/.test(s), 'chữ cũ');
   });
@@ -283,7 +282,5 @@ export async function runPrMtGonTests(t: YThucTestKit) {
     const l = luot(a.m3);
     assert(l.status === 'cancelled' && l.cancel_reason === 'Huỷ MT3', JSON.stringify({ s: l.status, r: l.cancel_reason }));
     assert(!d.canLyDo('huy-luot') && d.kiemLyDoThaoTac('huy-luot', '') === null, 'luật chung');
-    const hop = nguon('web/src/modules/fasttrack/HopHuyMt.tsx');   // PR-HOP1: hộp Huỷ MT tách khỏi Hồ sơ MT
-    assert(hop.length > 100 && !/kiemLyDoThaoTac/.test(hop) && /tuyChon/.test(hop), 'hộp Huỷ MT còn bắt lý do');
   });
 }

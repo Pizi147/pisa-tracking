@@ -95,7 +95,6 @@ import * as tongQuanSvc from '../worklist/tongQuan.ts';
 import * as bangSvc from '../worklist/bangChiNhanh.ts';
 import * as tongHopSvc from '../phanTich/tongHop.ts';
 import * as xuatMtSvc from '../phanTich/xuatMt.ts';
-import * as vanDeHvSvc from '../phanTich/vanDeHv.ts';
 import * as hieuQuaPaSvc from '../phanTich/hieuQuaPa.ts';
 import * as yThucPhanTichSvc from '../phanTich/yThucPhanTich.ts';
 import * as giaoVienPtSvc from '../phanTich/giaoVien.ts';
@@ -744,22 +743,6 @@ api.post('/xuat-mt', requireAuth, wrap((req) => {
   const f = docBoLocXuatMt((req.body ?? {}) as Record<string, unknown>);
   if (typeof f === 'string') throw badRequest(f);
   return xuatMtSvc.xuatExcel(principalOf(req), f);
-}));
-/* Tổng hợp vấn đề HV (PR-UX4): đếm HV theo nhóm nguyên nhân. `loi=chinh` chỉ lỗi chính; `gop=1` gộp theo nhóm nguyên nhân chung. */
-const filterVanDeHvOf = (req: Request) => ({
-  branchId: qInt(req, 'branchId') ?? null, ct: chuongTrinhTuThamSo(qStr(req, 'ct')),
-  classId: qInt(req, 'lop') ?? null, soTuan: khoangTuThamSo(qStr(req, 'tg')),
-  chiChinh: qStr(req, 'loi') === 'chinh', gop: qStr(req, 'gop') === '1',
-});
-api.get('/phan-tich/van-de-hv', requireAuth, wrap((req) => {
-  maybeSimulateReadError();
-  return vanDeHvSvc.vanDeHv(principalOf(req), filterVanDeHvOf(req));
-}));
-api.get('/phan-tich/van-de-hv/o', requireAuth, wrap((req) => {
-  maybeSimulateReadError();
-  return vanDeHvSvc.oVanDeHv(principalOf(req), {
-    ...filterVanDeHvOf(req), dong: qStr(req, 'dong') ?? '', cot: qStr(req, 'cot') ?? '',
-  });
 }));
 /* Hiệu quả PA (PR-UX4; PR-Pb2-a): PA GV thêm / PA theo quy chế. `gv`, `tu`, `den` — tên CHỐT trong Hợp đồng a↔b; `tu`/`den` thắng `tg`. */
 const filterHieuQuaPaOf = (req: Request) => ({

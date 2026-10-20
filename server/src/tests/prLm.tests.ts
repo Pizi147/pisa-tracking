@@ -81,8 +81,8 @@ export async function runPrLmTests(t: YThucTestKit) {
   check('PR-LM (7) · hồ sơ MT + HopThaoTacMt: Modal → KhungPanel (chỉ còn ConfirmDialog), chân luật S3, không nút "Huỷ" trần', () => {
     const md = nguon('web/src/modules/fasttrack/MockDetailPage.tsx');
     const tt = nguon('web/src/modules/fasttrack/HopThaoTacMt.tsx');
-    /* PR-HOP1: hộp Huỷ MT{n} (ConfirmDialog) tách ra `HopHuyMt.tsx` để ⋯ đầu `HopKyNang` dùng chung. */
-    assert(/import \{ ConfirmDialog \} from '..\/..\/ui\/Drawer.tsx'/.test(nguon('web/src/modules/fasttrack/HopHuyMt.tsx')) && !/<Modal\b/.test(md), 'MockDetailPage còn Modal');
+    /* OV-15h2 (ý 7): hộp Huỷ MT{n} (`HopHuyMt.tsx`) đã bỏ — Huỷ = Xóa từ OV-15c. */
+    assert(!/<Modal\b/.test(md), 'MockDetailPage còn Modal');
     assert(!/from '..\/..\/ui\/Drawer.tsx'/.test(tt) && !/<Modal\b/.test(tt), 'HopThaoTacMt còn Modal');
     /* PR-HOP1: WeekModal (một KhungPanel) bỏ → còn 3: hạn chấm, vắng, trả lời đề nghị. */
     assert((md.match(/<KhungPanel\b/g) ?? []).length >= 3 && /<KhungPanel\b/.test(tt), 'thiếu KhungPanel');

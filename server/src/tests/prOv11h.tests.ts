@@ -9,7 +9,6 @@ export async function runPrOv11hTests(t: YThucTestKit) {
   const ptLop: any = await import('../classes/phanTichLop.ts');
   const tongHop: any = await import('../phanTich/tongHop.ts');
   const xuatMt: any = await import('../phanTich/xuatMt.ts');
-  const vanDe: any = await import('../phanTich/vanDeHv.ts');
   const ptGv: any = await import('../phanTich/giaoVien.ts');
   const hoSoGv: any = await import('../giaoVien/hoSo.ts');
   const phamVi: any = await import('../giaoVien/phamVi.ts');
@@ -80,23 +79,6 @@ export async function runPrOv11hTests(t: YThucTestKit) {
     const ds = b.rows as any[];
     assert(JSON.stringify(ds.map((r: any) => r.category)) === '["listening_speaking","reading_writing"]', `bảng kỹ năng: ${ds.map((r: any) => r.category)}`);
     assert(ds.every((r: any) => r.points.some((p: any) => p.attemptKind === 'checkpoint')) && ds[0].short === 'L+S', JSON.stringify(ds.map((r: any) => [r.short, r.points])));
-  }));
-
-  check('OV11h-3 · Tổng hợp vấn đề HV bỏ Case đóng vì huỷ lượt: huỷ lượt → số giảm, khôi phục → như cũ', () => thu(() => {
-    const QL = P.mbManager;
-    const loc = { ct: 'ft', soTuan: 8, chiChinh: false, gop: false };
-    const so = () => { const r = vanDe.vanDeHv(QL, loc); return { tomTat: r.tomTat, chua: r.chuaPhanLoai }; };
-    const truoc = so();
-    const a = all(`SELECT DISTINCT a.id FROM sos_cases sc JOIN assessment_attempts a ON a.id = sc.attempt_id JOIN classes c ON c.id = a.class_id
-                    WHERE sc.status != 'done' AND a.kind = 'mock' AND a.status != 'cancelled' AND c.branch_id = ? ORDER BY a.id`, pet.branch_id)
-      .find((x) => attempts.caseSinhRieng(x.id).length > 0);
-    assert(a, 'demo phải có Case đang mở từ một lượt MT');
-    attempts.huyLuot(QL, a.id, { lyDo: 'Thử OV-11h' });
-    assert(one(`SELECT COUNT(*) n FROM sos_cases WHERE attempt_id = ? AND system_close_reason = 'luot_da_huy'`, a.id).n > 0, 'huỷ lượt phải đóng Case');
-    const sau = so();
-    assert(sau.tomTat.case + sau.chua.case < truoc.tomTat.case + truoc.chua.case, `huỷ lượt không giảm: ${JSON.stringify(truoc)} → ${JSON.stringify(sau)}`);
-    attempts.reopenAttempt(QL, a.id);
-    assert(JSON.stringify(so()) === JSON.stringify(truoc), `khôi phục không như cũ: ${JSON.stringify(truoc)} → ${JSON.stringify(so())}`);
   }));
 
   check('OV11h-4 · chữ: đơn vị "lượt MT" / "bài" / "Case" (không "đợt Test"), Thiếu điểm gồm SOS tạm, hồ sơ GV với CX / TVV "dành cho Quản lý"', () => thu(() => {
