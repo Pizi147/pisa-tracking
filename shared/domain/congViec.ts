@@ -58,17 +58,6 @@ export function trongKhoiHomNay(it: MucLocNhanh, homNay: string): boolean {
   return d >= homNay && d <= addDaysIso(mondayOfDate(homNay), 6);
 }
 
-/**
- * ĐIỆN THOẠI "HÔM NAY" (Q2, T53 Q8): 3 dòng đầu của CÙNG danh sách `trongKhoiHomNay`, không chia nhóm — quá hạn lâu nhất → hạn hôm nay →
- * hạn gần. `soXemHet` = độ dài cả danh sách = số chip "Đến hết tuần" ở Công việc.
- */
-export function baViecDau<T extends MucLocNhanh>(items: readonly T[], homNay: string): { ds: T[]; soXemHet: number } {
-  const w = (it: T) => (it.urgency === 'overdue' ? 0 : it.urgency === 'today' ? 1 : 2);
-  const ds = items.filter((it) => trongKhoiHomNay(it, homNay))
-    .sort((a, b) => w(a) - w(b) || (a.due ?? '9999').localeCompare(b.due ?? '9999'));
-  return { ds: ds.slice(0, 3), soXemHet: ds.length };
-}
-
 /** Dòng tối thiểu để đếm phạm vi (OV-5a) — trùng `WorkItem` của `mywork.ts`. */
 export type DongDemPhamVi = MucLocNhanh & {
   group: string; studentId: number | null; count: number | null; soBai?: number | null; emIds?: readonly number[] | null; con?: readonly DongDemPhamVi[];
@@ -99,29 +88,6 @@ export function demLocNhanh<T extends MucLocNhanh & { group: string }>(
   const base = !loai || loai === 'tat-ca' ? items : items.filter((it) => it.group === loai);
   const out = {} as Record<LocNhanh, number>;
   for (const loc of LOC_NHANH) out[loc] = base.filter((it) => khopLocNhanh(it, loc, homNay)).length;
-  return out;
-}
-
-/**
- * PR-UXF-a F5: hàng chip Nhóm việc — ĐÃ áp lọc nhanh `loc`, CHƯA áp nhóm. "Tất cả" = Σ nhóm — nên ở mặc định (không lọc) nó bằng ô "Tất cả"
- * của Lọc nhanh (cùng việc; nhắc mềm đã thành việc thật ở PR-VAI-a K5-10).
- */
-export function demNhomChip<T extends MucLocNhanh & { group: string }>(items: T[], loc: LocNhanh, homNay: string): Record<NhomViec | 'tat-ca', number> {
-  const out = Object.fromEntries([...NHOM_VIEC, 'tat-ca'].map((k) => [k, 0])) as Record<NhomViec | 'tat-ca', number>;
-  for (const it of items) if (khopLocNhanh(it, loc, homNay)) out[nhomViecCua(it.group)] += 1;
-  out['tat-ca'] = NHOM_VIEC.reduce((n, k) => n + out[k], 0);
-  return out;
-}
-
-/** Số việc theo từng Loại việc — ĐÃ áp lọc nhanh đang chọn, CHƯA áp chính Loại việc. */
-export function demLoaiViec<T extends MucLocNhanh & { group: string }>(
-  items: T[], loc: LocNhanh, homNay: string,
-): Record<string, number> {
-  const out: Record<string, number> = {};
-  for (const it of items) {
-    if (!khopLocNhanh(it, loc, homNay)) continue;
-    out[it.group] = (out[it.group] ?? 0) + 1;
-  }
   return out;
 }
 

@@ -261,18 +261,6 @@ export async function runCongViecTests(t: YThucTestKit) {
     assert(a['qua-han'] === 1 && a['tuan-nay'] === 1, `Số theo Loại việc "score" sai: ${JSON.stringify(a)}`);
   });
 
-  check('PR-Ra · demLoaiViec: số theo Loại việc không đổi khi đổi lọc nhanh khác — mỗi lần gọi chỉ áp đúng MỘT lọc nhanh truyền vào', () => {
-    const items = [
-      { group: 'score', urgency: 'overdue', due: '2026-09-10' },
-      { group: 'result', urgency: 'overdue', due: '2026-09-11' },
-      { group: 'score', urgency: 'today', due: homNay },
-    ];
-    const quaHan = domain.demLoaiViec(items, 'qua-han', homNay);
-    assert(quaHan.score === 1 && quaHan.result === 1, `Số theo lọc nhanh "qua-han" sai: ${JSON.stringify(quaHan)}`);
-    const tatCa = domain.demLoaiViec(items, 'tat-ca', homNay);
-    assert(tatCa.score === 2 && tatCa.result === 1, `Số theo lọc nhanh "tat-ca" sai: ${JSON.stringify(tatCa)}`);
-  });
-
   check('PR-Ra · thamSoNguoi: "toi"/"tat-ca" giữ nguyên, số hợp lệ → number, chuỗi lạ/rỗng/thiếu → null', () => {
     assert(domain.thamSoNguoi('toi') === 'toi' && domain.thamSoNguoi('tat-ca') === 'tat-ca', 'toi/tat-ca phải giữ nguyên');
     assert(domain.thamSoNguoi('12') === 12, 'Chuỗi số phải đổi ra number');

@@ -1,5 +1,6 @@
 import { THAM_SO_TOI_DA, db, theoLo } from '../db.ts';
-import { CASE_DISMISS_REASON_LABEL, cotXuLy, hanThemPa, trangThaiCaseV4, type CaseDismissReason, type CotXuLy } from '../../../shared/domain/index.ts';
+import { nhoTheoId } from '../platform/nguCanhRequest.ts';
+import { CASE_DISMISS_REASON_LABEL, cotXuLy, hanThemPa, trangThaiCaseV4, type CaseDismissReason, type CotXuLy, type TrangThaiCaseV4 } from '../../../shared/domain/index.ts';
 
 /**
  * TRẠNG THÁI CỦA CASE TỪ SOS — chỉ ĐỌC, không import mô-đun nghiệp vụ nào (rulebook v3, đặc tả §3.2 và §8).
@@ -187,21 +188,26 @@ export const XU_LY_COT_SQL = `sc.id, sc.status, sc.han_xac_nhan, sc.dismiss_reas
     AND COALESCE(iv.approval_state, 'approved') = 'approved') AS pa_theo_doi,
   ${CO_THE_KHONG_THEO_DOI('sc')} AS co_the`;
 
-export function xuLyCuaDong(r: any, homNay: string): { cot: CotXuLy; quaHan: boolean; /** UX-2 (2): hạn của việc tiếp (Thêm PA hoặc `han_xac_nhan`). */ han: string | null } {
+export function xuLyCuaDong(r: any, homNay: string): { cot: CotXuLy; quaHan: boolean; /** UX-2 (2): hạn của việc tiếp (Thêm PA hoặc `han_xac_nhan`). */ han: string | null;
+  /** OV-15h1: trạng thái v4 + có PA chưa huỷ — phân rã "Case chưa chốt PA" (C23). */ k: TrangThaiCaseV4; coPa: boolean } {
   const tt = trangThaiCaseV4({
     status: r.status, fromSos: !!r.from_sos, hasCause: !!r.has_cause, laMt: !!r.la_mt, dismissed: !!r.dismiss_reason_code, systemClosed: !!r.system_close_reason,
     choDuyetKhongTheoDoi: !!r.co_the && r.status !== 'done', coPaChoXacNhan: !!r.pa_cho, hanXacNhan: r.han_xac_nhan ?? null, choDoiPa: !!r.doi_cho, tam: !!r.tam,
   }, homNay);
   const cot = cotXuLy(tt.k, !!r.pa_theo_doi);
   const hanPa = tt.k === 'dang-lam' && !r.co_pa ? hanThemPa(r) : null;
-  return { cot, quaHan: cot === 'choDuyet' && (tt.t === 'qua-han' || (!!hanPa && hanPa < homNay)), han: hanPa ?? r.han_xac_nhan ?? null };
+  return { cot, quaHan: cot === 'choDuyet' && (tt.t === 'qua-han' || (!!hanPa && hanPa < homNay)), han: hanPa ?? r.han_xac_nhan ?? null, k: tt.k, coPa: !!r.co_pa };
 }
 
 /** `xuLyCuaDong` cho NHIỀU Case — một câu mỗi lô (`theoLo`). */
 export function xuLyCaseMany(caseIds: readonly number[], homNay: string): Map<number, ReturnType<typeof xuLyCuaDong>> {
-  const out = new Map<number, ReturnType<typeof xuLyCuaDong>>();
-  theoLo(caseIds, (lo, ph) => {
-    for (const r of db().prepare(`SELECT ${XU_LY_COT_SQL} FROM sos_cases sc WHERE sc.id IN (${ph})`).all(...lo) as any[]) out.set(r.id as number, xuLyCuaDong(r, homNay));
+  /* OV-15h1: nhớ theo Case trong request (GET) — Tổng quan QL hỏi lại cùng các Case ở Case chưa chốt PA, quá hạn, phân rã. */
+  const dong = nhoTheoId(`xu-ly:${homNay}:`, [...caseIds], (thieu) => {
+    const m = new Map<number, ReturnType<typeof xuLyCuaDong>[]>();
+    theoLo(thieu, (lo, ph) => {
+      for (const r of db().prepare(`SELECT ${XU_LY_COT_SQL} FROM sos_cases sc WHERE sc.id IN (${ph})`).all(...lo) as any[]) m.set(r.id as number, [xuLyCuaDong(r, homNay)]);
+    });
+    return m;
   });
-  return out;
+  return new Map([...dong].map(([id, [x]]) => [id, x]));
 }

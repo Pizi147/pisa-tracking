@@ -44,7 +44,7 @@ export const HD_QL: HuongDan = {
     },
     {
       id: 'ql-lo-trinh', ten: 'Hết khoá / Lộ trình tiếp theo', khi: 'khi lớp sắp hết khoá',
-      buoc: ['Lớp thường: Tổng quan › <b>Cần bạn quyết</b> › <b>Chốt lộ trình</b> (khi tới hạn; có thông báo) → nút <b>Chốt lộ trình</b>.',
+      buoc: ['Lớp thường: Tổng quan › <b>Cần bạn quyết</b> › <b>Chốt lộ trình</b> (hạn trong 7 ngày; có thông báo) → nút <b>Chốt lộ trình</b> mở bảng lộ trình cả lớp ngay tại chỗ.',
         'Hồ sơ lớp › <b>Chốt lộ trình</b>: chọn hướng từng em (Lên lớp, Học lại, Lên FT…); lớp cũ có phiếu bàn giao.',
         'Em FT có kết quả thi thật: <b>Chọn bước tiếp ›</b> — <b>Lộ trình mới</b> · <b>Tạm dừng</b> · <b>Thôi học</b> (QL hoặc TVV chọn).',
         'Một em đổi lớp khi đang học: hồ sơ em › <b>⋯ › Chuyển lớp…</b>.'],
@@ -55,10 +55,12 @@ export const HD_QL: HuongDan = {
     {
       id: 'tong-quan', ten: 'Tổng quan', duong: ['/'],
       muc: [
-        { id: 'ql-tq-cho-duyet', ten: 'HV cần chú ý', buoc: ['Dải đầu trang: <b>HV · Case chưa chốt PA</b> (⚠ quá hạn), <b>bài trễ chấm · n GV</b>.', 'Bấm số mở danh sách tại chỗ; thống kê theo kỳ ở <b>Phân tích</b>; <b>Báo cáo ›</b> mở trang Báo cáo.'] },
+        { id: 'ql-tq-cho-duyet', ten: 'HV cần chú ý', buoc: ['Dải đầu trang: <b>chưa lịch Test</b> · <b>chưa điểm</b> · <b>HV · Case chưa chốt PA</b> (⚠ quá hạn) · <b>bài trễ chấm · n GV</b>.', 'Bấm số mở danh sách tại chỗ; thống kê theo kỳ ở <b>Phân tích</b>; <b>Báo cáo ›</b> mở trang Báo cáo.'],
+          chi: { hd: 'tq-tom-tat', duong: '/', chu: 'Bấm một số để mở đúng danh sách.' } },
         { id: 'ql-tq-can-xu-ly', ten: 'Cần bạn quyết', buoc: ['<b>Chờ duyệt</b>: thẻ "Nếu duyệt: …", <b>Duyệt · Từ chối…</b> tại chỗ; <b>Mở hộp duyệt ›</b> xem hết.', '<b>Case chưa chốt PA</b> quá hạn → <b>Mở Case</b>; <b>Chọn bước tiếp</b> sau thi; <b>Chốt lộ trình</b> khi tới hạn.', 'Không có Nhắc: GV tự nhận thông báo khi quá hạn.'],
           chi: { hd: 'tq-can-xu-ly', duong: '/', chu: 'Việc cần bạn quyết — quá hạn ở đầu.' } },
-        { id: 'ql-tq-so-lieu', ten: 'Lớp cần chú ý · Tuần này', buoc: ['<b>Lớp cần chú ý</b>: dưới kỳ vọng, SOS, <b>Case chưa chốt PA</b> (HV / Case — hai số bấm riêng); mặc định <b>Chỉ lớp có vấn đề</b>.', '<b>Tuần này</b>: lịch Test sắp tới + <b>Trễ chấm</b> theo GV (bấm số bài để nhập thay).'] },
+        { id: 'ql-tq-so-lieu', ten: 'Lớp cần chú ý · Tuần này', buoc: ['<b>Lớp cần chú ý</b>: Chưa lịch, Chưa điểm, SOS 1 · 2 · 3, <b>Case chưa chốt PA</b> (HV / Case; <b>?</b> chia theo trạng thái), Đã thi · chờ KQ; mặc định <b>Chỉ lớp có vấn đề</b>.', '<b>Tuần này</b>: lịch Test sắp tới + <b>Trễ chấm</b> theo GV (bấm số bài để nhập thay).'],
+          chi: { hd: 'tq-lop-chu-y', duong: '/', chu: 'Mỗi lớp một hàng; bấm số để xử lý.' } },
       ],
     },
     {

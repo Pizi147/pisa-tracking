@@ -2,7 +2,7 @@ import { db } from '../db.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import {
   ASSESSED_SKILLS, ATTEMPT_KIND_SHORT, chuViecChotLoTrinh, CAN_XU_LY, CHAM_CHEO, CHUA_CO_HAN, baiId, MOC_KE_TIEP_SQL, PERMISSIONS, type AttemptKind, tenMon, tenMonNgan, chonDiemDangChuY, sapCanXuLy,
-  duongHoSoHocVien, nguoiGiuViecChu, soSanhLop, tuanCuaHanGhiKetQua, tuanLich,
+  duongHoSoHocVien, nguoiGiuViecChu, NHOM_CASE_CHUA_CHOT_LABEL, soSanhLop, tuanCuaHanGhiKetQua, tuanLich,
   type ChuongTrinh, type DiemChuY, type DongCanXuLyGoc, type MaCanXuLy, type UngVienChuY,
 } from '../../../shared/domain/index.ts';
 import { lopChoChotLoTrinh } from '../classes/lenhChuyen.ts';
@@ -12,12 +12,14 @@ import { activeAt, can, lopFtChoGvSpeaking, scopeFor, type Principal } from '../
 import { latestAttempts } from './danhGia.ts';
 import { classProgressMany } from '../classes/schedule.ts';
 import { mondayOf } from '../platform/week.ts';
-import { CT_LOP, metricSet, rowsFor } from './metrics.ts';
+import { CT_LOP, metricSet, nhomCaseChuaChot, rowsFor } from './metrics.ts';
+import { xuLyCaseMany } from '../cases/sosState.ts';
 import { lopCuaTap, tachTheoLop } from './chuongTrinh.ts';
 import { demYeuCau, quetYeuCau } from '../duyet/yeuCau.ts';
 import { noDiemCuaGv } from '../giaoVien/hoSo.ts';
 import { phamViXemViec } from './xemViec.ts';
 import { viecBuocTiep } from '../loTrinh/buocTiep.ts';
+import { toiHan } from '../platform/thongBaoTuDong.ts';
 
 /**
  * TỔNG QUAN (PR-Pa, đặc tả §3.2). File này KHÔNG ĐẾM gì: mọi số lấy từ `metricSet` (hợp đồng số liệu luật 1), ở đây chỉ
@@ -175,8 +177,11 @@ export function tongQuanQuanLy(p: Principal, f: { branchId?: number | null }) {
    * Chốt lộ trình (chỉ khi có) — đúng việc `buoc_tiep` / `chot_len_ft` của `/my-work` người xem (cùng hàm, mở panel / trang như Công việc).
    */
   const caseQh = sets.get('case-xac-dinh-nguyen-nhan-qua-han')!;
+  /* OV-15h1 (C23): nhãn nhóm của từng Case ("Case trống PA", "PA chờ xác nhận"…) — cùng phân rã của chỉ số Case chưa chốt PA (nhớ trong request). */
+  const nhomCase = nhomCaseChuaChot(caseQh.ids, xuLyCaseMany(caseQh.ids, today));
+  /* OV-15h1: "Cần bạn quyết" chỉ lấy việc hạn ≤ 7 ngày (hoặc đã qua) — CÙNG ngưỡng thông báo tự động (`toiHan`). */
   const canQuyet = {
-    caseQuaHan: rowsFor('case', caseQh.ids),   // không `p`: chỉ cần tên em · lớp · người · hạn để hiện, việc làm ở Ngăn Case
+    caseQuaHan: rowsFor('case', caseQh.ids).map((r) => ({ ...r, nhom: nhomCase.has(r.id) ? NHOM_CASE_CHUA_CHOT_LABEL[nhomCase.get(r.id)!] : null })),   // không `p`: chỉ cần tên em · lớp · người · hạn để hiện, việc làm ở Ngăn Case
     /* Dựng thẳng từ hai hàm nguồn của `/my-work` (không chạy cả `myWork` — Turso): `viecBuocTiep` + `lopChot` đã tính ở trên. */
     sauThi: [
       ...viecBuocTiep(p, { today, branchId: base.branchId }),
@@ -185,7 +190,7 @@ export function tongQuanQuanLy(p: Principal, f: { branchId?: number | null }) {
         classId: x.classId, classCode: x.code, studentName: `Lớp ${x.code}`, tieuDe: `Chốt lộ trình · ${x.code}`, contextLabel: chuViecChotLoTrinh(x),
         due: x.han, href: `/hoc-vien/lop/${x.classId}?viec=lo-trinh-ca-lop`,
       })),
-    ],
+    ].filter((x) => toiHan(x.due, today)),
   };
   /* PR-DUYET (Q8): số của hộp Chờ duyệt — đọc từ hộp, không thêm chỉ số vào sổ. */
   return { canXuLy, canQuyet, choDuyet: demYeuCau(p, { branchId: base.branchId }) };

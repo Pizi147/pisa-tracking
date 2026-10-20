@@ -540,17 +540,6 @@ export async function runPrVaiATests(t: YThucTestKit) {
   });
 
   // ================================================================== Task 9 · điện thoại + badge
-  check('VAI-a (9a) · baViecDau: 3 phần tử đầu của danh sách trongKhoiHomNay, quá hạn lâu nhất → hôm nay → hạn gần; soXemHet = số chip "Đến hết tuần"', () => {
-    const hn = '2026-09-16';
-    const v = (key: string, urgency: string, due: string | null) => ({ key, urgency, due, group: 'score' });
-    const ds = [v('a', 'normal', '2026-09-19'), v('b', 'overdue', '2026-09-14'), v('c', 'today', hn), v('d', 'overdue', '2026-09-08'),
-      v('e', 'normal', null), v('f', 'normal', '2026-09-22')];
-    const r = d.baViecDau(ds, hn);
-    eq(r.ds.map((x: any) => x.key), ['d', 'b', 'c'], 'thứ tự');
-    eq(r.soXemHet, ds.filter((x) => d.khopLocNhanh(x, 'den-het-tuan', hn)).length, 'Xem hết (n) = chip Đến hết tuần');
-    eq(r.soXemHet, 4, 'đếm đúng');
-  });
-
   /* PR-S6F-b (D14): `/my-work/dem` bỏ — App đọc `summary.overdue` của `/my-work` (sửa kỳ vọng, giữ phép kiểm). */
   check('VAI-a (9b) → S6F-b D14 · badge GV = myWork(p).summary.overdue đọc từ /my-work; App đọc cho GV, số đỏ cả thanh trên và thanh dưới', () => {
     const src = fs.readFileSync(pathM.join(REPO, 'server/src/routes/index.ts'), 'utf8');

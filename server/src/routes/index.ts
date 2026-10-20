@@ -50,6 +50,8 @@ import * as profileSvc from '../students/profile.ts';
 import { hanhTrinhHocVien } from '../students/hanhTrinh.ts';
 import { docHet, thongBaoCua } from '../platform/thongBao.ts';
 import { dongBoKhiMoChuong } from '../platform/thongBaoTuDong.ts';
+import { daGhi } from '../platform/thongBaoTuDong.ts';   // OV-15h1
+import * as tongQuanQlSvc from '../worklist/tongQuanQl.ts';   // OV-15h1
 import * as yeuCauSvc from '../duyet/yeuCau.ts';
 import * as deXuatSuaSvc from '../duyet/deXuatSua.ts';
 import * as classSvc from '../classes/classes.ts';
@@ -134,6 +136,13 @@ api.use((req, _res, next) => {
     next(forbidden(quyen === PERMISSIONS.TEST_VIEW ? 'Vai trò của bạn không có khu Test.' : 'Vai trò của bạn không có khu Công việc.'));
     return;
   }
+  next();
+});
+
+/* OV-15h1: ghi thành công → lần mở chuông kế của người đó đồng bộ thông báo tự động ngay (việc vừa xong hết khỏi "Cần làm", không chờ 5 phút). */
+api.use((req, res, next) => {
+  const id = req.method !== 'GET' ? req.principal?.userId : undefined;
+  if (id) res.on('finish', () => { if (res.statusCode < 400) daGhi(id); });
   next();
 });
 
@@ -1996,6 +2005,20 @@ api.get('/tong-quan/lop-toi-day/o', requireAuth, wrap((req) => {
   return tongQuanSvc.oLopToiDay(principalOf(req), { ct: chuongTrinhTuThamSo(qStr(req, 'ct')), classId, cot: qStr(req, 'cot') ?? '' });
 }));
 
+/** OV-15h1: Tổng quan QL phần theo khung MỘT GET — Lớp cần chú ý + Tuần này + Trễ chấm theo GV, gọi lại đúng hàm của các đường cũ (số không đổi). */
+api.get('/tong-quan/ql', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return tongQuanQlSvc.tongQuanQl(principalOf(req), { branchId: qInt(req, 'branchId') ?? null, ct: chuongTrinhTuThamSo(qStr(req, 'ct')) });
+}));
+/** OV-15h1: panel "n bài" của một GV ở Trễ chấm (`gv`: id · 0 chưa phân công · -1 Speaking chấm chéo). */
+api.get('/tong-quan/ql/tre', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  const gvChu = String(req.query.gv ?? '').trim();
+  if (!/^-?\d+$/.test(gvChu)) throw badRequest('Thiếu giáo viên.');   // rỗng / chữ → 400, không hiểu là 0 (Chưa phân công)
+  const gv = Number(gvChu);
+  return tongQuanQlSvc.oTreCham(principalOf(req), { branchId: qInt(req, 'branchId') ?? null, ct: chuongTrinhTuThamSo(qStr(req, 'ct')), gv });
+}));
+
 /** Bảng Theo chi nhánh → lớp. Chỉ số của từng ô; danh sách ô ở route dưới. */
 api.get('/tong-quan/chi-nhanh', requireAuth, wrap((req) => {
   maybeSimulateReadError();
@@ -2008,6 +2031,7 @@ api.get('/tong-quan/chi-nhanh/o', requireAuth, wrap((req) => {
   return bangSvc.oBangChiNhanh(principalOf(req), {
     branchId: qInt(req, 'branchId') ?? null, ct: chuongTrinhTuThamSo(qStr(req, 'ct')),
     cot: qStr(req, 'cot') ?? '', khoa: qStr(req, 'khoa') ?? '',
+    chuY: qStr(req, 'chuY') === '1',   // OV-15h1: ô của "Lớp cần chú ý"
   });
 }));
 
@@ -2095,7 +2119,8 @@ api.get('/yeu-cau', requireAuth, wrap((req) => {
     quaHan: qStr(req, 'quaHan') === '1',
   });
 }));
-api.get('/yeu-cau/dem', requireAuth, wrap((req) => yeuCauSvc.demYeuCau(principalOf(req))));
+/* OV-15h1: `branchId` — "Chờ bạn duyệt" ở Công việc đếm theo chi nhánh đang lọc (badge menu không gửi: mọi chi nhánh). */
+api.get('/yeu-cau/dem', requireAuth, wrap((req) => yeuCauSvc.demYeuCau(principalOf(req), { branchId: qInt(req, 'branchId') ?? null })));
 api.post('/yeu-cau/duyet-nhieu', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return yeuCauSvc.duyetNhieu(principalOf(req), (req.body ?? {}).ids);

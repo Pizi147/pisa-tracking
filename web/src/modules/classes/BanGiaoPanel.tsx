@@ -17,33 +17,35 @@ import { CHU_CHUYEN_LOP, NHAN_XET_TOI_THIEU, ngay, tuanLich, type PhieuBanGiaoDt
  *   Đọc: GV / Quản lý lớp mới, hoặc bất kỳ ai không ghi được — cùng bố cục F, chỉ đọc, hiện "Xác nhận bởi …".
  * Lối vào: Công việc › việc Bàn giao · hồ sơ lớp › dải Bàn giao / Sắp nhận · hồ sơ học viên › dải Sắp chuyển (mở thẳng em đó — `lenhId`).
  */
-export function BanGiaoPanel({ classId, mon, lenhId, onClose, onDone }: {
+export function BanGiaoPanel({ classId, mon, lenhId, onClose, onDone, quayLai }: {
   classId: number; mon?: string | null; lenhId?: number | null; onClose: () => void; onDone: () => void;
+  /** OV-15h1: mở thay panel Lộ trình ở Tổng quan — "‹ Lộ trình" về lại panel đó. */
+  quayLai?: { nhan: string; onClick: () => void };
 }) {
   const { data, loading, error, reload } = useApi<PhieuBanGiaoDto>(`/lenh-chuyen/ban-giao?lop=${classId}${mon ? `&mon=${mon}` : ''}`, [classId, mon]);
   if (error) {
     return (
-      <KhungPanel tieuDe="Bàn giao" onDong={onClose} chan={{ huy: { nhan: 'Đóng', onClick: onClose } }}>
+      <KhungPanel quayLai={quayLai} tieuDe="Bàn giao" onDong={onClose} chan={{ huy: { nhan: 'Đóng', onClick: onClose } }}>
         <ErrorState message={error.message} hint={error.hint} onRetry={reload} />
       </KhungPanel>
     );
   }
   if (loading || !data) {
-    return <KhungPanel tieuDe="Bàn giao" onDong={onClose}><Skeleton rows={6} /></KhungPanel>;
+    return <KhungPanel quayLai={quayLai} tieuDe="Bàn giao" onDong={onClose}><Skeleton rows={6} /></KhungPanel>;
   }
   const monToi = data.nguoiXem.monGhi;
   /* G: chỉ GVBM (không GVCN, không Quản lý thay) mở kèm môn của mình. */
   const cheDoG = !data.nguoiXem.gvcn && !data.nguoiXem.xacNhan && data.nguoiXem.xemTuNguon && monToi.length > 0;
   return cheDoG
-    ? <BangGvbm dto={data} mon={mon && monToi.includes(mon) ? mon : monToi[0]} lenhId={lenhId ?? null} onClose={onClose} onDone={onDone} reload={reload} />
-    : <MasterDetail dto={data} lenhId={lenhId ?? null} onClose={onClose} onDone={onDone} reload={reload} />;
+    ? <BangGvbm dto={data} mon={mon && monToi.includes(mon) ? mon : monToi[0]} lenhId={lenhId ?? null} onClose={onClose} onDone={onDone} reload={reload} quayLai={quayLai} />
+    : <MasterDetail dto={data} lenhId={lenhId ?? null} onClose={onClose} onDone={onDone} reload={reload} quayLai={quayLai} />;
 }
 
-type Chung = { dto: PhieuBanGiaoDto; lenhId: number | null; onClose: () => void; onDone: () => void; reload: () => void };
+type Chung = { dto: PhieuBanGiaoDto; lenhId: number | null; onClose: () => void; onDone: () => void; reload: () => void; quayLai?: { nhan: string; onClick: () => void } };
 
 // ==================================================================== F · GVCN
 
-function MasterDetail({ dto, lenhId, onClose, onDone, reload }: Chung) {
+function MasterDetail({ dto, lenhId, onClose, onDone, reload, quayLai }: Chung) {
   const toast = useToast();
   const { homNay } = useNgayNghiepVu();
   const [chon, setChon] = useState<number | null>(lenhId ?? dto.ds.find((e) => !e.xacNhan)?.lenhId ?? dto.ds[0]?.lenhId ?? null);
@@ -112,7 +114,7 @@ function MasterDetail({ dto, lenhId, onClose, onDone, reload }: Chung) {
   const dong = 'grid grid-cols-[6.5rem_minmax(0,1fr)] gap-x-3 gap-y-1 text-sm';
 
   return (
-    <KhungPanel rong="toan" tieuDe={`Bàn giao · ${dto.lop.code}`} onDong={onClose}
+    <KhungPanel quayLai={quayLai} rong="toan" tieuDe={`Bàn giao · ${dto.lop.code}`} onDong={onClose}
       ngCanh={<span className="tabular-nums">{dto.tong} em · {dto.daXacNhan}/{dto.tong} đã xác nhận{dto.hanGvcn && <> · <Han loai="viec-van-hanh" han={dto.hanGvcn} /></>}</span>}
       chan={{
         huy: suaPhieu
@@ -236,7 +238,7 @@ function MasterDetail({ dto, lenhId, onClose, onDone, reload }: Chung) {
 
 // ==================================================================== G · GVBM
 
-function BangGvbm({ dto, mon, lenhId, onClose, onDone, reload }: Chung & { mon: string }) {
+function BangGvbm({ dto, mon, lenhId, onClose, onDone, reload, quayLai }: Chung & { mon: string }) {
   const { homNay } = useNgayNghiepVu();
   const m0 = dto.lop.mon.find((x) => x.ma === mon)!;
   const [chu, setChu] = useState<Record<number, string>>({});
@@ -268,7 +270,7 @@ function BangGvbm({ dto, mon, lenhId, onClose, onDone, reload }: Chung & { mon: 
   };
 
   return (
-    <KhungPanel rong="rong" tieuDe={`Bàn giao môn ${m0.ngan} (${m0.ten})`} onDong={() => { onDone(); onClose(); }}
+    <KhungPanel quayLai={quayLai} rong="rong" tieuDe={`Bàn giao môn ${m0.ngan} (${m0.ten})`} onDong={() => { onDone(); onClose(); }}
       ngCanh={<span className="tabular-nums">{dto.lop.code} · {dto.tong} em{han && <> · <Han loai="viec-van-hanh" han={han} /></>} · mỗi em một câu</span>}
       chan={{
         huy: { nhan: 'Đóng', onClick: () => { onDone(); onClose(); } },

@@ -121,7 +121,8 @@ export async function runPrOv15dTests(t: YThucTestKit) {
     const m = metrics.metricSet(ql, 'case-xac-dinh-nguyen-nhan-qua-han', { branchId: null });
     assert(r.canQuyet && r.canQuyet.caseQuaHan.length === m.n, `Case quá hạn ${r.canQuyet?.caseQuaHan.length} ≠ ${m.n}`);
     assert(r.canQuyet.sauThi.every((x: any) => x.group === 'buoc_tiep' || x.group === 'chot_len_ft'), 'chỉ Bước tiếp + Chốt lộ trình');
-    const mw = (mywork.myWork(ql, { chiNhom: new Set(['buoc_tiep', 'chot_len_ft']) }).items as any[]);
+    /* OV-15h1: Cần bạn quyết chỉ lấy việc hạn ≤ 7 ngày (cùng ngưỡng thông báo `toiHan`). */
+    const mw = (mywork.myWork(ql, { chiNhom: new Set(['buoc_tiep', 'chot_len_ft']) }).items as any[]).filter((x) => td.toiHan(x.due, TODAY));
     assert(r.canQuyet.sauThi.length === mw.length, `số việc ${r.canQuyet.sauThi.length} ≠ ${mw.length}`);
   });
 

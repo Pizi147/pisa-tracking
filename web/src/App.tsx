@@ -233,7 +233,7 @@ export default function App() {
         <Suspense fallback={<div className="p-8 max-w-4xl mx-auto"><Skeleton rows={8} /></div>}>
         <Routes>
           {/* TU-a: Head tutor (chỉ có trang Tutor) mở `/` → `/tutor`. */}
-          <Route path="/" element={nav.tutor && !nav.overview ? <Navigate to="/tutor" replace /> : <OverviewPage tab="tong-quan" />} />
+          <Route path="/" element={nav.tutor && !nav.overview ? <Navigate to="/tutor" replace /> : <OverviewPage />} />
           <Route path="/tutor" element={nav.tutor ? <TutorPage /> : <Navigate to="/" replace />} />
           <Route path="/phan-tich" element={nav.analysis ? <PhanTichPage /> : <Navigate to="/" replace />} />
           <Route path="/hoc-vien" element={<StudentsPage />} />

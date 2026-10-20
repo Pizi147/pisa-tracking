@@ -1,4 +1,5 @@
 import { db } from '../db.ts';
+import { nhoTheoId } from '../platform/nguCanhRequest.ts';
 import { tachBaiId, type ChiSo, type ChuongTrinh } from '../../../shared/domain/index.ts';
 import { parseObligation } from './metrics.ts';
 
@@ -30,30 +31,38 @@ function theoLo<T>(ids: number[], fn: (chunk: number[], ph: string) => T[]): T[]
 const lopTu = (r: any): LopCuaPhanTu =>
   r && r.class_id ? { classId: r.class_id, code: r.code ?? null, isFt: r.is_fast_track === null ? null : !!r.is_fast_track } : RONG;
 
+/** OV-15h1: nhớ lớp theo PHẦN TỬ trong request — nhiều chỉ số trên cùng một trang (Tổng quan QL) hỏi lại cùng em / Case / lượt. */
+const nhoLop = (tienTo: string, ids: number[], doc: (thieu: number[]) => Map<number, LopCuaPhanTu>): Map<number, LopCuaPhanTu> =>
+  new Map([...nhoTheoId(tienTo, ids, (thieu) => new Map([...doc(thieu)].map(([id, x]) => [id, [x]])))].map(([id, [x]]) => [id, x]));
+
 /** Lớp của học viên: lớp đang học trước, rồi lớp gần nhất. */
 function lopHocVien(ids: number[]): Map<number, LopCuaPhanTu> {
-  const out = new Map<number, LopCuaPhanTu>();
-  for (const r of theoLo(ids, (chunk, ph) => db().prepare(
-    `SELECT e.student_id AS id, c.id AS class_id, c.code, c.is_fast_track
-       FROM enrollments e JOIN classes c ON c.id = e.class_id
-      WHERE e.student_id IN (${ph})
-      ORDER BY e.student_id, CASE WHEN e.status = 'active' THEN 0 ELSE 1 END, e.id DESC`,
-  ).all(...chunk) as any[])) if (!out.has(r.id)) out.set(r.id, lopTu(r));
-  return out;
+  return nhoLop('lop-hv:', ids, (thieu) => {
+    const out = new Map<number, LopCuaPhanTu>();
+    for (const r of theoLo(thieu, (chunk, ph) => db().prepare(
+      `SELECT e.student_id AS id, c.id AS class_id, c.code, c.is_fast_track
+         FROM enrollments e JOIN classes c ON c.id = e.class_id
+        WHERE e.student_id IN (${ph})
+        ORDER BY e.student_id, CASE WHEN e.status = 'active' THEN 0 ELSE 1 END, e.id DESC`,
+    ).all(...chunk) as any[])) if (!out.has(r.id)) out.set(r.id, lopTu(r));
+    return out;
+  });
 }
 function lopCase(ids: number[]): Map<number, LopCuaPhanTu> {
-  const out = new Map<number, LopCuaPhanTu>();
-  const hvCuaCase = new Map<number, number>();
-  for (const r of theoLo(ids, (chunk, ph) => db().prepare(
-    `SELECT sc.id, COALESCE(sc.student_id, a.student_id) AS sid, c.id AS class_id, c.code, c.is_fast_track
-       FROM sos_cases sc LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
-       LEFT JOIN classes c ON c.id = a.class_id WHERE sc.id IN (${ph})`,
-  ).all(...chunk) as any[])) {
-    if (r.class_id) out.set(r.id, lopTu(r)); else if (r.sid) hvCuaCase.set(r.id, r.sid);
-  }
-  const hv = lopHocVien([...new Set(hvCuaCase.values())]);
-  for (const [cid, sid] of hvCuaCase) out.set(cid, hv.get(sid) ?? RONG);
-  return out;
+  return nhoLop('lop-case:', ids, (thieu) => {
+    const out = new Map<number, LopCuaPhanTu>();
+    const hvCuaCase = new Map<number, number>();
+    for (const r of theoLo(thieu, (chunk, ph) => db().prepare(
+      `SELECT sc.id, COALESCE(sc.student_id, a.student_id) AS sid, c.id AS class_id, c.code, c.is_fast_track
+         FROM sos_cases sc LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
+         LEFT JOIN classes c ON c.id = a.class_id WHERE sc.id IN (${ph})`,
+    ).all(...chunk) as any[])) {
+      if (r.class_id) out.set(r.id, lopTu(r)); else if (r.sid) hvCuaCase.set(r.id, r.sid);
+    }
+    const hv = lopHocVien([...new Set(hvCuaCase.values())]);
+    for (const [cid, sid] of hvCuaCase) out.set(cid, hv.get(sid) ?? RONG);
+    return out;
+  });
 }
 function quaCase(pairs: { id: number; caseId: number }[]): Map<number, LopCuaPhanTu> {
   const cm = lopCase([...new Set(pairs.map((x) => x.caseId))]);
@@ -78,13 +87,14 @@ export function lopCuaTap(unit: ChiSo['donVi'], ids: number[]): Map<number, LopC
       const iv = lopCuaTap('phuong-an', [...new Set(ivOf.values())]);
       return new Map(ids.map((id) => [id, iv.get(ivOf.get(id)!) ?? RONG]));
     }
-    case 'bai-thi': case 'dot-test': case 'luot-sos': {
-      const out = new Map<number, LopCuaPhanTu>();
-      for (const r of theoLo(ids, (chunk, ph) => conn.prepare(
-        `SELECT a.id, c.id AS class_id, c.code, c.is_fast_track FROM assessment_attempts a
-           LEFT JOIN classes c ON c.id = a.class_id WHERE a.id IN (${ph})`).all(...chunk) as any[])) out.set(r.id, lopTu(r));
-      return out;
-    }
+    case 'bai-thi': case 'dot-test': case 'luot-sos':
+      return nhoLop('lop-luot:', ids, (thieu) => {
+        const out = new Map<number, LopCuaPhanTu>();
+        for (const r of theoLo(thieu, (chunk, ph) => conn.prepare(
+          `SELECT a.id, c.id AS class_id, c.code, c.is_fast_track FROM assessment_attempts a
+             LEFT JOIN classes c ON c.id = a.class_id WHERE a.id IN (${ph})`).all(...chunk) as any[])) out.set(r.id, lopTu(r));
+        return out;
+      });
     case 'bai': {
       /* PR-UXF-a Q7: bài = ô điểm của một lượt → lớp của lượt (`tachBaiId`). */
       const luot = lopCuaTap('bai-thi', [...new Set(ids.map((id) => tachBaiId(id).attemptId))]);

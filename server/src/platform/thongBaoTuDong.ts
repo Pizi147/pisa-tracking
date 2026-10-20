@@ -6,16 +6,17 @@
  * ĐỒNG BỘ, không chỉ thêm: thông báo của việc đã xong tự hết (xoá), thông báo còn việc thì cập nhật chữ; dedup theo (người, đối tượng).
  * Chạy khi người đó mở chuông (`GET /notifications`), tối đa một lần / `CHU_KY_MS` mỗi người. Không email / push.
  */
-import { db } from '../db.ts';
+import { chenNhieuDong, db, theoLo } from '../db.ts';
 import { ngay, tenMon } from '../../../shared/domain/index.ts';
 import type { Principal } from '../permissions.ts';
 import { myWork, type WorkItem } from '../worklist/mywork.ts';
 import { xuLyCaseMany } from '../cases/sosState.ts';
-import { notify } from './audit.ts';
-import { addDays } from '../util.ts';
+import { addDays, nowIso } from '../util.ts';
 
 /** "Tới hạn" Chốt lộ trình = hạn trong 7 ngày tới (hoặc đã qua). */
 export const CHOT_TOI_HAN_NGAY = 7;
+/** OV-15h1: một luật "tới hạn" cho thông báo Chốt lộ trình và "Cần bạn quyết" ở Tổng quan QL. Không có hạn → chưa tới hạn. */
+export const toiHan = (han: string | null | undefined, homNay: string) => !!han && han <= addDays(homNay, CHOT_TOI_HAN_NGAY);
 const KIND = ['cham_qua_han', 'case_chua_chot_pa', 'chot_lo_trinh'] as const;
 type Muon = { kind: (typeof KIND)[number]; title: string; body: string; entityType: string; entityId: number | null; duong: string };
 
@@ -54,9 +55,8 @@ function viecMuon(p: Principal, homNay: string): Map<string, Muon> {
   }
 
   /* 2. Chốt lộ trình tới hạn — QL (việc của cả lớp, không gán người: chỉ người có việc này trong `/my-work` mới nhận). */
-  const moc = addDays(homNay, CHOT_TOI_HAN_NGAY);
   for (const x of items) {
-    if (x.group !== 'chot_len_ft' || !x.due || x.due > moc) continue;
+    if (x.group !== 'chot_len_ft' || !toiHan(x.due, homNay) || !x.due) continue;
     muon.set(`tudong:chot:${x.classId}`, {
       kind: 'chot_lo_trinh', title: x.tieuDe, body: `hạn ${ngay(x.due, homNay)}${x.due < homNay ? ` · quá hạn ${soNgay(x.due, homNay)} ngày` : ''}`,
       entityType: 'class', entityId: x.classId, duong: `/cong-viec?viec=${encodeURIComponent(x.key)}`,
@@ -78,31 +78,35 @@ function viecMuon(p: Principal, homNay: string): Map<string, Muon> {
   return muon;
 }
 
-/** Đồng bộ thông báo tự động của MỘT người: thêm cái mới, sửa chữ cái đổi, xoá cái đã hết việc. Trả số dòng đã ghi. */
+/**
+ * Đồng bộ thông báo tự động của MỘT người: thêm cái mới, sửa chữ cái đổi, xoá cái đã hết việc. Trả số dòng đã ghi.
+ * OV-15h1: thêm + sửa là MỘT câu upsert cho cả lô (`chenNhieuDong`, trùng khoá → chỉ đổi chữ / đường; `read_at` giữ nguyên — không reset đã đọc).
+ */
 export function dongBoThongBaoTuDong(p: Principal, homNay: string): number {
   const muon = viecMuon(p, homNay);
   const co = db().prepare(
     `SELECT id, dedup_key, title, body, duong FROM notifications WHERE user_id = ? AND kind IN (${KIND.map(() => '?').join(',')})`,
   ).all(p.userId, ...KIND) as any[];
-  let ghi = 0;
   const het = co.filter((n) => !muon.has(n.dedup_key)).map((n) => n.id as number);
-  if (het.length) {
-    db().prepare(`DELETE FROM notifications WHERE id IN (${het.map(() => '?').join(',')})`).run(...het);
-    ghi += het.length;
-  }
+  theoLo(het, (lo, ph) => { db().prepare(`DELETE FROM notifications WHERE id IN (${ph})`).run(...lo); });   // ≤ THAM_SO_TOI_DA tham số mỗi câu (Turso)
   const cu = new Map(co.map((n) => [n.dedup_key as string, n]));
-  for (const [dedupKey, m] of muon) {
-    const n = cu.get(dedupKey);
-    if (n && n.title === m.title && (n.body ?? '') === m.body && n.duong === m.duong) continue;
-    notify({ userId: p.userId, ...m, dedupKey });
-    ghi += 1;
-  }
-  return ghi;
+  const luc = nowIso();
+  const doi = [...muon].filter(([k, m]) => { const n = cu.get(k); return !n || n.title !== m.title || (n.body ?? '') !== m.body || n.duong !== m.duong; })
+    .map(([k, m]) => [p.userId, m.kind, m.title, m.body, m.entityType, m.entityId, k, luc, m.duong]);
+  chenNhieuDong('INSERT INTO notifications (user_id, kind, title, body, entity_type, entity_id, dedup_key, created_at, duong)', doi,
+    ' ON CONFLICT(user_id, dedup_key) DO UPDATE SET title = excluded.title, body = excluded.body, duong = excluded.duong');
+  return het.length + doi.length;
 }
 
 /** Lần đồng bộ gần nhất của mỗi người (bộ nhớ tiến trình) — mở chuông liên tục không tính lại việc mỗi lần. */
 const CHU_KY_MS = 5 * 60_000;
 const lanCuoi = new Map<number, number>();
+/**
+ * OV-15h1: người này vừa ghi thành công (POST/PUT/PATCH/DELETE) — việc của họ có thể vừa xong, nên lần mở chuông kế đồng bộ ngay (không chờ 5 phút).
+ * shortcut: nhớ theo tiến trình — việc xong do NGƯỜI KHÁC làm (QL nhập điểm thay GV) vẫn chờ chu kỳ; bản chính nhiều bản hàm thì có thể trượt
+ * sang bản khác. Cần chặt hơn thì lưu mốc ghi vào DB.
+ */
+export function daGhi(userId: number) { lanCuoi.delete(userId); }
 export function dongBoKhiMoChuong(p: Principal, homNay: string) {
   const now = Date.now();
   if (now - (lanCuoi.get(p.userId) ?? 0) < CHU_KY_MS) return;
