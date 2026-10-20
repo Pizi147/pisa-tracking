@@ -59,6 +59,8 @@ function tinhLich(c: any, luu: LuuLichThi | null, chot: { luc: string; ai: strin
 /**
  * OV-15h2 (ý 2): dòng "chốt 05/10 · Lê Thu" dưới Lịch hiện tại — lần đổi lộ trình GẦN NHẤT đặt đúng ngày thi đang có (nhật ký `cycle.update`, mọi nơi sửa
  * ngày thi đều đi qua `updateCycle`). Ngày đặt không qua nhật ký (dữ liệu cũ / nhập thẳng) → không có dòng, không bịa. Một câu mỗi lô, chỉ mục `idx_audit_entity`.
+ * OV-15i2 (ý 11): GIỮ nguồn `cycle.update` (sự kiện đổi ngày thi), KHÔNG đọc nhật ký kết luận Lịch thi — ngày còn đổi ở hồ sơ / Kế hoạch Test, mọi đường
+ * đều ghi `cycle.update`; nhật ký kết luận chỉ có ở góc này nên sẽ sót người đặt ngày ở nơi khác.
  */
 export function chotNgayCua(ds: readonly { id: number; exam_date: string | null }[]): Map<number, { luc: string; ai: string | null }> {
   const ngay = new Map(ds.filter((x) => x.exam_date).map((x) => [x.id, x.exam_date as string]));

@@ -88,7 +88,7 @@ export function xuatDanhSach(
   }
   const standing = coCot('diem') || coCot('ketQua') || coCot('tuanThi') || (coCot('mt') && !nguonSos) ? standingFor(ids) : standingFor([]);
   const cycleIds = [...hs.values()].map((s) => s.cycle_id).filter((x): x is number => !!x);
-  const lopLoTrinh = lopTheoLoTrinh(cycleIds);
+  const lopLoTrinh = lopTheoLoTrinh(cycleIds, p);   // rà #484: không in mã lớp ngoài phạm vi người xuất
 
   /* Điểm lượt gần nhất (Mock): một lần `loadBundle` cho cả lô. */
   const luotIds = [...standing.values()].filter((s) => s.attemptKind === 'mock' && s.attemptId).map((s) => s.attemptId as number);

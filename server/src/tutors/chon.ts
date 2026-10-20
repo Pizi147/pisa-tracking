@@ -3,6 +3,7 @@
  * của ô Người dạy khi Thêm / Sửa / Xác nhận PA Tutor). Máy chủ tự suy lớp (lớp của Case — `loadCase().class_id`; hoặc lớp em đang học), kỹ năng PA (topic
  * Case) và quyền: `paId` → như ghi kết quả PA (`kiemQuyenPa`); `studentId` → xem được em + có `sos.edit` (người thêm / sửa PA).
  * Trả tối đa 20 dòng, nhóm gợi ý (nơi dạy = chi nhánh lớp + có kỹ năng PA) trước; bỏ tutor có kết luận mới nhất "Ngừng hợp tác"; SĐT chỉ 3 số cuối.
+ * OV-15i2: `?classId=` — ô Người dạy CHUNG của Xác nhận PA cùng lúc (lớp của nhóm Case; quyền `sos.edit` ở lớp đó).
  * `nhomGoiY`: tiêu đề nhóm gợi ý ("Monbay · L"). `dienSan` (chỉ `paId`): tutor buổi 1 — Người dạy của PA (tên ngoài) khớp đúng một tutor, không thì tutor buổi cuối của lần ghi trước.
  */
 import { db } from '../db.ts';
@@ -17,7 +18,7 @@ export type DienSanTutor = { tutorId: number | null; ten: string; hinhThuc: Hinh
 
 const TOI_DA = 20;
 
-export function chonTutor(p: Principal, o: { q?: string; paId?: number | null; studentId?: number | null }): { ds: TutorChon[]; dienSan: DienSanTutor | null; nhomGoiY: string | null } {
+export function chonTutor(p: Principal, o: { q?: string; paId?: number | null; studentId?: number | null; classId?: number | null }): { ds: TutorChon[]; dienSan: DienSanTutor | null; nhomGoiY: string | null } {
   const conn = db();
   let lopId: number | null = null;
   let topic: string | null = null;
@@ -29,6 +30,10 @@ export function chonTutor(p: Principal, o: { q?: string; paId?: number | null; s
     kiemQuyenPa(p, iv, c);
     lopId = c.class_id ?? null;
     topic = c.topic ?? null;
+  } else if (o.classId) {
+    /* OV-15i2: Xác nhận PA cùng lúc — nhóm em cùng lớp của Case: gợi ý theo chi nhánh lớp đó (không theo lớp em đầu đang học). */
+    require_(p, PERMISSIONS.SOS_EDIT, { classId: o.classId }, 'Bạn không chọn được tutor cho lớp này.');
+    lopId = o.classId;
   } else if (o.studentId) {
     require_(p, PERMISSIONS.STUDENT_VIEW, { studentId: o.studentId }, 'Bạn không có quyền xem học viên này.');
     if (!can(p, PERMISSIONS.SOS_EDIT, { anyScope: true })) throw forbidden('Bạn không chọn được tutor.');

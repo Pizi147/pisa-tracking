@@ -56,7 +56,7 @@ type Row = {
   attemptId: number; kind: string; kindLabel: string;
   /** OV-6b2: Checkpoint đủ điểm — chip "Đạt" / "SOS · L+S" (chỉ để nhìn, không Case). */
   chip?: { chu: string; dat: boolean } | null;
-  studentId: number; studentName: string; studentCode: string; studentStatus: string;
+  studentId: number; studentName: string; studentCode: string; studentStatus: string; studentEmail?: string | null;
   periodCode: string | null; status: string;
   deadline: string | null; overdue: boolean;
   /** R11: đợt đã đủ điểm và qua Chủ nhật của tuần bắt buộc muộn nhất — chỉ Quản lý sửa được điểm nữa. */

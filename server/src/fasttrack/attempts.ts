@@ -1181,10 +1181,7 @@ export function attemptDetail(p: Principal, attemptId: number) {
       /** PR-XLMT (T38): GVCN của lớp — Báo vắng / Xếp lại bài vắng theo bảng thao tác `thaoTacKyNang`. */
       laGvcn: !!a.class_id && isCoreTeacherOf(p, a.class_id),
       canCancel: can(p, PERMISSIONS.ATTEMPT_CANCEL, { classId: a.class_id }),
-      /** PR-MT (M-12, K4-10): cách huỷ được phép + hệ quả thật, để hộp huỷ nói trước — không bấm rồi mới biết. */
-      /* OV-15c: Mock / MT0 không còn "Huỷ MT{n}" trên web (Xóa = về Chưa xếp, `boTuanLuot`) — hồ sơ MT không vẽ nút. */
-      huyLuot: a.status !== 'cancelled' && !HUY_MT_DA_BO.includes(a.kind) && can(p, PERMISSIONS.ATTEMPT_CANCEL, { classId: a.class_id })
-        ? (({ caseIds: _bo, ...hq }) => hq)(heQuaHuyLuot(a.id)) : null,
+      /* OV-15i2: bỏ `huyLuot` (hệ quả huỷ) — web không còn hộp huỷ đọc nó (OV-15c: Mock / MT0 Xóa = về Chưa xếp); `heQuaHuyLuot` vẫn dùng khi huỷ. */
       /** Xử lý vắng (dời lần đầu / xin duyệt) — GVCN của lớp và Quản lý; giáo viên bộ môn thì không. */
       canHandleAbsence: canRequestAbsence(p, a),
       canSkipSkill: can(p, PERMISSIONS.ATTEMPT_SKIP_SKILL, { classId: a.class_id }),
