@@ -1,8 +1,9 @@
 import type { ReactNode } from 'react';
 import { DauKetQua, lopKq } from './BieuTuong.tsx';
+import { t } from '@shared/i18n/index.ts';
 
 type Kq = 'vuot' | 'bang' | 'duoi' | null;
-const CHU_KQ: Record<'vuot' | 'bang' | 'duoi', string> = { vuot: 'vượt kỳ vọng', bang: 'bằng kỳ vọng', duoi: 'dưới kỳ vọng' };
+const CHU_KQ = { vuot: 'Vượt kỳ vọng', bang: 'Bằng kỳ vọng', duoi: 'Dưới kỳ vọng' } as const;
 
 /**
  * Ô ĐIỂM MỘT MẪU (BANG-0, 04 mục 7) — thay 7+ dáng ô điểm (BANG-1 chuyển 29 nơi). Tô CHÍNH con số + ✓ / ✗ đứng TRƯỚC (màu `lopKq`);
@@ -28,14 +29,14 @@ export function ODiem({ kieu = 'doc', so, kq = null, kck, tong, tongCot, phu, lu
 }) {
   const kqHien: Kq = kck && kq === 'duoi' ? null : kq;
   const mau = lopKq(kqHien);
-  const ten = [nhan, so ?? 'chưa có', kq ? `— ${kck && kq === 'duoi' ? 'KCK' : CHU_KQ[kq]}${kyVong ? ` ${kyVong}` : ''}` : ''].filter(Boolean).join(' ');
+  const ten = [nhan, so ?? t('Chưa có'), kq ? `— ${kck && kq === 'duoi' ? 'KCK' : t(CHU_KQ[kq])}${kyVong ? ` ${kyVong}` : ''}` : ''].filter(Boolean).join(' ');
   /* Chỗ ký hiệu giữ khi ô có số mà không có ký hiệu (số thẳng cột); ô trống không giữ ("—" nằm giữa). */
   const kyHieu = so === null ? null : <span className="inline-block w-[14px] shrink-0 text-center" aria-hidden>{kqHien && <DauKetQua kq={kqHien} />}</span>;
   const deKhac = kieu === 'ti-le' && tong != null && tongCot != null && tong !== tongCot;
   const so_ = so === null ? <span className="text-faint">—</span> : kieu === 'ti-le'
     ? <>
         <span className={`inline-block min-w-[2ch] text-right text-[15px] font-bold ${mau}`}>{so}</span>
-        <span className={`inline-block min-w-[3ch] text-left text-[13px] font-normal ${deKhac ? 'text-soon' : 'text-faint'}`} title={deKhac ? 'Đề khác' : undefined}>/{tong}</span>
+        <span className={`inline-block min-w-[3ch] text-left text-[13px] font-normal ${deKhac ? 'text-soon' : 'text-faint'}`} title={deKhac ? t('Đề khác') : undefined}>/{tong}</span>
       </>
     : <span className={`${kieu === 'lon' ? 'text-[28px] leading-none' : 'text-[15px]'} font-bold ${mau}`}>{so}</span>;
   const dongPhu = (phu || (kck && kq === 'duoi')) && (
@@ -55,11 +56,11 @@ export function ODiem({ kieu = 'doc', so, kq = null, kck, tong, tongCot, phu, lu
       <button type="button" onClick={onBam} aria-label={ten} data-trong={so === null || undefined}
         className={`o-sua relative inline-flex h-8 w-16 items-center justify-center gap-1 tabular-nums max-sm:h-11 ${so === null ? 'border-dashed' : ''} ${luu === 'loi' ? '!border-bad' : ''}`}>
         {kyHieu}{so === null ? <span className="invisible" aria-hidden>0</span> : so_}
-        {luu === 'dang-luu' && <span className="absolute right-0.5 top-0 text-[12px] leading-none text-slate-400" title="Đang lưu…">◷</span>}
-        {luu === 'da-luu' && <span className="absolute right-0.5 top-0 text-[12px] leading-none text-slate-400" title="Đã lưu">✓</span>}
+        {luu === 'dang-luu' && <span className="absolute right-0.5 top-0 text-[12px] leading-none text-slate-400" title={t('Đang lưu…')}>◷</span>}
+        {luu === 'da-luu' && <span className="absolute right-0.5 top-0 text-[12px] leading-none text-slate-400" title={t('Đã lưu')}>✓</span>}
       </button>
       {luu === 'loi'
-        ? <button type="button" data-phu-odiem="" className="link mt-1 appearance-none border-0 bg-transparent p-0 text-[12px] font-semibold leading-4 text-bad" onClick={onLuuLai}>Lưu lại</button>
+        ? <button type="button" data-phu-odiem="" className="link mt-1 appearance-none border-0 bg-transparent p-0 text-[12px] font-semibold leading-4 text-bad" onClick={onLuuLai}>{t('Lưu lại')}</button>
         : dongPhu}
     </span>
   );

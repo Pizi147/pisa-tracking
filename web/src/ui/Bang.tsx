@@ -2,6 +2,7 @@ import { Fragment, type KeyboardEvent, type ReactNode } from 'react';
 import { chiaThe, nhomTieuDe, rongCot, type DinhNghiaCot } from '@shared/domain/index.ts';
 import { Empty } from './ui.tsx';
 import { useDienThoai } from './TheDong.tsx';
+import { t } from '@shared/i18n/index.ts';
 
 export type { DinhNghiaCot as CotBang } from '@shared/domain/index.ts';
 
@@ -37,7 +38,7 @@ export function Bang<H>({ ten, cot, hang, khoa, oCua, phuCua, congCu, onHang, da
 
   let than: ReactNode;
   if (hang.length === 0) {
-    than = <Empty title={rong?.tieuDe ?? 'Chưa có dữ liệu'} hint={rong?.goiY} action={rong?.nut} />;
+    than = <Empty title={rong?.tieuDe ?? t('Chưa có dữ liệu')} hint={rong?.goiY} action={rong?.nut} />;
   } else if (dienThoai) {
     const phan = chiaThe(cot);
     const theoKey = new Map(cot.map((c) => [c.key, c]));

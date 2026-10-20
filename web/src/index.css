@@ -311,6 +311,11 @@
   .bang td:is([data-kieu="ten"], [data-kieu="chu"], [data-kieu="viec"]) { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .bang .bang-phu { overflow: hidden; text-overflow: ellipsis; }
   .bang td[data-kieu="chip"] { white-space: nowrap; }
+  /* HTT-3: hàng bấm được nhận focus phím — vòng 2 px quanh cả hàng (vẽ trong ô, không bị khung cuộn cắt). */
+  .bang > tbody > tr.bam:focus-visible { outline: none; }
+  .bang > tbody > tr.bam:focus-visible > td { box-shadow: inset 0 2px 0 var(--accent), inset 0 -2px 0 var(--accent); }
+  .bang > tbody > tr.bam:focus-visible > td:first-child { box-shadow: inset 2px 0 0 var(--accent), inset 0 2px 0 var(--accent), inset 0 -2px 0 var(--accent); }
+  .bang > tbody > tr.bam:focus-visible > td:last-child { box-shadow: inset -2px 0 0 var(--accent), inset 0 2px 0 var(--accent), inset 0 -2px 0 var(--accent); }
   /* Hàng có ô / nút cao 32 px (ô điểm sửa, ⋯): đệm dọc 6 → vẫn 44 / 64. */
   .bang > tbody > tr:has(.o-sua, button:not(.link)) > td { padding-top: 6px; padding-bottom: 6px; }
   /* Chữ trong chip lùi 8 px (đệm chip) → tiêu đề cột chip lùi theo để thẳng chữ; chữ thường trong cột chip cũng lùi 8 (`px-2`). */
