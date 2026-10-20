@@ -39,6 +39,8 @@ export const EN_OV15G = {
   '{n} dòng · {o} ô': (b) => `${b.n} ${Number(b.n) === 1 ? 'row' : 'rows'} · ${b.o} ${Number(b.o) === 1 ? 'cell' : 'cells'}`,
   'thêm {a} · kết thúc {b}': (b) => `added ${b.a} · ended ${b.b}`,
   'Sửa cả lớp': 'Edit whole class',
+  'Sửa cả lớp · {n} em': (b) => `Edit whole class · ${b.n} ${Number(b.n) === 1 ? 'student' : 'students'}`,
+  'Học viên đã xoá · {n}': (b) => `Deleted student · ${b.n}`,
   'Đổi chương trình': 'Programme change',
   'Hoàn tác dán Excel': 'Undo Excel paste',
 } satisfies Record<string, Dich>;

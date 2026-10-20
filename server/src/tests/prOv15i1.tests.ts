@@ -98,6 +98,19 @@ export async function runPrOv15i1Tests(t: YThucTestKit) {
       assert(p2.tiep === null && new Set(chen25).size === 25 && chen25.length === 25, `đủ 25 dòng cũ, không sót không lặp: ${chen25.length}`);
     });
 
+    await checkAsync('OV15i1-3b · Ô điểm: 24 mục CÙNG mili-giây (hai người xen kẽ) → đọc hết các trang không mất, không lặp mục', async () => {
+      const luot = one(`SELECT id FROM assessment_attempts WHERE student_id = ? AND status != 'cancelled' ORDER BY id LIMIT 1`, b).id as number;
+      const chen = conn.prepare(`INSERT INTO attempt_schedule_history (attempt_id, action, field, old_value, new_value, reason, actor_user_id, created_at) VALUES (?, 'week_set', 'reading', ?, ?, NULL, ?, '2026-08-01T00:00:00.000Z')`);
+      for (let i = 0; i < 24; i += 1) chen.run(luot, `cu ${i}`, `cung ${i}`, i % 2 ? QL : P.admin.userId);
+      const ds: Muc[] = [];
+      let r = await ls('o', luot);
+      ds.push(...r.dong);
+      for (let k = 0; r.tiep !== null && k < 10; k += 1) { r = await ls('o', luot, `&tiep=${r.tiep}`); ds.push(...r.dong); }
+      const ids = ds.map((x) => String(x.id));
+      const cung = ds.flatMap((m) => m.truong.map((x) => x.moi)).filter((v) => /^cung \d+$/.test(v ?? ''));
+      assert(new Set(ids).size === ids.length && new Set(cung).size === 24 && cung.length === 24, `đọc được ${cung.length}/24 · ${ids.length} mục`);
+    });
+
     await checkAsync('OV15i1-4 · Quyền một mức: thi-that cùng cổng với hv — GVBM xem được hồ sơ em nhưng 403 lịch sử Bước tiếp / thi thật; QL 200', async () => {
       const gvbm = P.subjectTeacher.userId as number;
       assert((await goi(gvbm, `/students/${a}`)).status === 200, 'GVBM xem được hồ sơ em (điều kiện của phép kiểm)');
@@ -150,6 +163,27 @@ export async function runPrOv15i1Tests(t: YThucTestKit) {
       assert(d?.nguon === 'Sửa cả lớp', JSON.stringify(d));
       const ho = d.truong.filter((x) => x.ten === 'Họ tên');
       assert(ho.length === 2 && ho.some((x) => x.doiTuong === 'OV15i1 Em A2' && x.cu === 'OV15i1 Em A' && x.moi === 'OV15i1 Em A2'), JSON.stringify(d.truong));
+    });
+
+    await checkAsync('OV15i1-8c · Quyền: GVBM xem lịch sử lớp thấy mục Sửa cả lớp nhưng KHÔNG thấy trường của em ("Sửa cả lớp · 2 em"); QL thấy đủ; lọc "Thông tin" vẫn có mục', async () => {
+      const gvbm = P.subjectTeacher.userId as number;
+      const d = (await ls('lop', lop, '', gvbm)).dong.find((m) => m.nguon === 'Sửa cả lớp');
+      assert(d && d.truong.length === 1 && !d.truong[0].doiTuong && d.truong[0].ten === 'Sửa cả lớp · 2 em' && d.truong[0].cu === null && d.truong[0].moi === null, JSON.stringify(d));
+      assert(!JSON.stringify(d).includes('OV15i1 Em A'), 'lộ tên em cho GVBM');
+      const q = (await ls('lop', lop, '&loc=thong-tin')).dong.find((m) => m.nguon === 'Sửa cả lớp');
+      assert(q && q.truong.filter((x) => x.ten === 'Họ tên').length === 2, `lọc Thông tin: ${JSON.stringify(q)}`);
+      assert(dichMau('en', 'Sửa cả lớp · 2 em') === 'Edit whole class · 2 students', dichMau('en', 'Sửa cả lớp · 2 em'));
+    });
+
+    await checkAsync('OV15i1-8d · Sửa cả lớp rồi xoá cả 2 em: Quản trị thấy mỗi em một khối riêng (không dồn chung "Học viên đã xoá")', async () => {
+      const r0 = await ghi(QL, '/intake/commit', 'POST', { classId: lop, idempotencyKey: `ov15i1-d-${Date.now()}`, rows: [
+        { fullName: 'OV15i1 Xoá 1', email: 'x1.ov15i1@demo.test', dob: '2010-04-04', target: 6 }, { fullName: 'OV15i1 Xoá 2', email: 'x2.ov15i1@demo.test', dob: '2010-05-05', target: 6 }] });
+      const [x1, x2] = r0.studentIds as number[];
+      await ghi(QL, `/classes/${lop}/sua-ca-lop`, 'POST', { idempotencyKey: `ov15i1-scl2-${Date.now()}`, rows: [{ studentId: x1, fullName: 'OV15i1 Xoá 1b' }, { studentId: x2, fullName: 'OV15i1 Xoá 2b' }] });
+      for (const x of [x1, x2]) xoaHv.xoaHocVien(P.admin, x, { maXacNhan: one('SELECT student_code c FROM students WHERE id = ?', x).c });
+      const d = (await ls('lop', lop, '', P.admin.userId)).dong.find((m) => m.nguon === 'Sửa cả lớp');
+      const nhom = new Set(d?.truong.filter((x) => x.ten === 'Họ tên').map((x) => x.doiTuong));
+      assert(d && nhom.size === 2, JSON.stringify(d));
     });
 
     await checkAsync('OV15i1-8b · Dán Excel (điểm) = MỘT mục ở lịch sử lớp (số dòng · ô)', async () => {

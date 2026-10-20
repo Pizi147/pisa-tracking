@@ -178,9 +178,18 @@ function cuaLop(p: Principal, loai: 'lop' | 'phan-cong' | 'gop-y' | 'nhap-hv', c
   const nguoi = tenTheoId('users', tho.dong.flatMap((d) => d.truong.flatMap((x) => [x.cu, x.moi]).flatMap((v) => (v?.match(/@\d+/g) ?? []).map((m) => Number(m.slice(1))))));
   const tuan = tenTheoId('report_periods', tho.dong.flatMap((d) => d.truong.flatMap((x) => [x.cu, x.moi]).flatMap((v) => (v?.match(/#\d+/g) ?? []).map((m) => Number(m.slice(1))))));
   const hien = (v: string | null) => v?.replace(/@(\d+)/g, (_m, i) => nguoi.get(Number(i)) ?? 'Người dùng đã xoá').replace(/#(\d+)/g, (_m, i) => tuan.get(Number(i)) ?? `#${i}`) ?? null;
-  /* OV-15i1: một lần Sửa cả lớp = MỘT mục, mở ra từng em — trường đọc từ các dòng nhật ký của lô (một câu mỗi lô trên trang). */
+  /* OV-15i1: một lần Sửa cả lớp = MỘT mục, mở ra từng em — trường đọc từ các dòng nhật ký của lô (một câu mỗi lô trên trang). Trường của em chỉ mở cho
+   * người xem được lịch sử em (`xemLichSuHv`, như loai=hv); em còn lại gộp một dòng "Sửa cả lớp · n em" không có cũ → mới. */
+  const moLo = (tu: number, den: number): TruongLs[] => {
+    const ds = truongSuaCaLop(tu, den);
+    const xem = new Map<string, boolean>();
+    for (const x of ds) if (!xem.has(x.khoa)) xem.set(x.khoa, x.sid !== null && xemLichSuHv(p, x.sid));
+    const an = [...xem.values()].filter((v) => !v).length;
+    return [...ds.filter((x) => xem.get(x.khoa)).map(({ sid: _s, khoa: _k, ...x }) => x),
+      ...(an ? [{ ten: `Sửa cả lớp · ${an} em`, cu: null, moi: null }] : [])];
+  };
   const dong = tho.dong.map((d) => ({
-    ...d, truong: (d.truong as TruongNhom[]).flatMap(({ lo, ...x }): TruongLs[] => (lo ? truongSuaCaLop(lo[0], lo[1]) : [{ ...x, cu: hien(x.cu), moi: hien(x.moi) }])),
+    ...d, truong: (d.truong as TruongNhom[]).flatMap(({ lo, ...x }): TruongLs[] => (lo ? moLo(lo[0], lo[1]) : [{ ...x, cu: hien(x.cu), moi: hien(x.moi) }])),
   }));
   return { dong, tiep: tho.tiep, nhom: loai === 'phan-cong' ? [] : NHOM_LOP, batDau: batDauNeu(c.created_at, tho.tiep) };
 }
@@ -228,7 +237,7 @@ function truongLop(r: DongNk, ct: string | null): { nguon: string | null; lyDo: 
       };
     }
     case 'class.sua_ca_lop':
-      return { nguon: 'Sửa cả lớp', lyDo: null, truong: [{ ten: 'Sửa cả lớp', cu: null, moi: chu(f.daSua), lo: [Number(f.tu), r.id] }] };
+      return { nguon: 'Sửa cả lớp', lyDo: null, truong: [{ ten: 'Sửa cả lớp', cu: null, moi: chu(f.daSua), lo: [Number(f.tu), r.id], n: 'thong-tin' }] };
     case 'score.dan_excel': case 'score.dan_excel_hoan_tac': {
       /* Một lần dán = một mục (số dòng · ô đã lưu); từng ô xem ở Lịch sử của ô điểm. */
       const ma = f.luot ? docMaLuot(String(f.luot)) : null;
@@ -298,19 +307,31 @@ function oDiem(p: Principal, attemptId: number, loc: string | null, tiep: number
     luc: h.luc, nguoi: h.ten ?? 'Hệ thống', lyDo: chu(h.reason), khoa: `l${h.id}`,
     t: { ten: `Lịch · ${h.field === 'planned_period' ? 'Tuần thi' : tenMon(null, String(h.field))}`, cu: TRANG_THAI_THI[h.cu] ?? chu(h.cu), moi: TRANG_THAI_THI[h.moi] ?? chu(h.moi), n: 'lich' },
   }));
-  /* Mới → cũ; dòng của MỘT lần lưu (cùng người, ≤ 5 giây) là một mục. OV-15i1: trang theo CON TRỎ thời điểm (`tiep` = mốc ms của dòng cũ nhất
-   * đã hiện) — có người lưu thêm giữa hai lần "Xem thêm" thì trang sau không lặp mục. Mục gom từ dòng mới nhất nên trang sau gom lại đúng như cũ. */
-  type MucO = MucLs & { cuNhat: number };
+  /* Mới → cũ; dòng của MỘT lần lưu (cùng người, ≤ 5 giây) là một mục. OV-15i1: trang theo CON TRỎ `tiep` = mốc ms × 1000 + số dòng CÙNG mốc ms đã hiện
+   * (dòng sắp theo ms rồi khoá) — có người lưu thêm giữa hai lần "Xem thêm" không lặp mục; nhiều dòng cùng mili-giây không mất. Mục gom từ dòng mới nhất
+   * nên trang sau gom lại đúng như cũ. shortcut: ≤ 999 dòng cùng một mili-giây của một lượt. */
+  const ms = (x: { luc: string }) => Date.parse(x.luc);
+  const cMs = tiep === null ? Number.MAX_SAFE_INTEGER : Math.floor(tiep / 1000);
+  let boQua = tiep === null ? 0 : tiep % 1000;
+  const dsDong = [...diem, ...lich].filter((x) => (!loc || x.t.n === loc) && x.t.cu !== x.t.moi && ms(x) <= cMs)
+    .sort((x, y) => ms(y) - ms(x) || y.khoa.localeCompare(x.khoa, 'en', { numeric: true }))
+    .filter((x) => ms(x) < cMs || (boQua -= 1) < 0);
+  type MucO = MucLs & { cuoi: number };   // `cuoi` = chỉ số dòng cũ nhất của mục trong `dsDong`
   const muc: MucO[] = [];
-  const truocMs = tiep ?? Number.MAX_SAFE_INTEGER;
-  for (const d of [...diem, ...lich].filter((x) => (!loc || x.t.n === loc) && x.t.cu !== x.t.moi && Date.parse(x.luc) < truocMs).sort((x, y) => y.luc.localeCompare(x.luc))) {
+  dsDong.forEach((d, i) => {
     const tr = muc[muc.length - 1];
     const { n: _n, ...t } = d.t;
-    if (tr && tr.nguoi === d.nguoi && Date.parse(tr.luc) - Date.parse(d.luc) <= GOP_MS) { tr.truong.push(t); tr.lyDo ??= d.lyDo; tr.cuNhat = Date.parse(d.luc); }
-    else muc.push({ id: d.khoa, luc: d.luc, nguoi: d.nguoi, nguon: null, lyDo: d.lyDo, truong: [t], cuNhat: Date.parse(d.luc) });
+    if (tr && tr.nguoi === d.nguoi && Date.parse(tr.luc) - ms(d) <= GOP_MS) { tr.truong.push(t); tr.lyDo ??= d.lyDo; tr.cuoi = i; }
+    else muc.push({ id: d.khoa, luc: d.luc, nguoi: d.nguoi, nguon: null, lyDo: d.lyDo, truong: [t], cuoi: i });
+  });
+  const trang: MucLs[] = muc.slice(0, TRANG).map(({ cuoi: _c, ...m }) => m);
+  let tiepMoi: number | null = null;
+  if (muc.length > TRANG) {
+    const het = muc[TRANG - 1].cuoi;
+    const m = ms(dsDong[het]);
+    const daHien = dsDong.slice(0, het + 1).filter((x) => ms(x) === m).length + (m === cMs ? (tiep ?? 0) % 1000 : 0);
+    tiepMoi = m * 1000 + daHien;
   }
-  const trang: MucLs[] = muc.slice(0, TRANG).map(({ cuNhat: _c, ...m }) => m);
-  const tiepMoi = muc.length > TRANG ? muc[TRANG - 1].cuNhat : null;
   const ten = tenTheoId('users', trang.flatMap((m) => m.truong.flatMap((x) => [x.cu, x.moi])).filter((v) => /^@\d+$/.test(v ?? '')).map((v) => Number(v!.slice(1))));
   for (const m of trang) for (const x of m.truong) for (const k of ['cu', 'moi'] as const) if (/^@\d+$/.test(x[k] ?? '')) x[k] = ten.get(Number(x[k]!.slice(1))) ?? 'Người dùng đã xoá';
   return { dong: trang, tiep: tiepMoi, nhom: NHOM_O, batDau: batDauNeu(a.created_at, tiepMoi) };

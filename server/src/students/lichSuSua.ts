@@ -151,25 +151,33 @@ function doiCuaDong(r: { action: string; et: string; b: string | null }, f: Reco
 
 /**
  * OV-15i1 (C22 "lô = một lần lưu"): MỘT lần Sửa cả lớp — các dòng nhật ký của em nằm giữa hai id (`tu`, `den`) vì lô ghi trong một giao dịch.
- * Trả từng trường "cũ → mới" gắn tên em (`doiTuong`), em đổi một trường hai lần lấy cũ của lần đầu, mới của lần sau. Một câu cho cả lô.
+ * Trả từng trường "cũ → mới" gắn tên em (`doiTuong`) và `sid` (em — kể cả em đã xoá; null = không suy được em) để nơi gọi kiểm quyền theo em.
+ * Em đổi một trường hai lần lấy cũ của lần đầu, mới của lần sau. Em đã xoá: mỗi em một khối "Học viên đã xoá · n" (không dồn chung). Một câu cho cả lô.
  */
-export function truongSuaCaLop(tu: number, den: number): { ten: string; cu: string | null; moi: string | null; doiTuong: string }[] {
+export function truongSuaCaLop(tu: number, den: number): { ten: string; cu: string | null; moi: string | null; doiTuong: string; sid: number | null; khoa: string }[] {
   const rows = db().prepare(
-    `SELECT a.action, a.entity_type et, a.before_json b, a.after_json f, COALESCE(s.id, lc.student_id) sid, COALESCE(s.full_name, s2.full_name) hv
+    `SELECT a.action, a.entity_type et, a.entity_id eid, a.before_json b, a.after_json f, COALESCE(s.id, lc.student_id) sid, COALESCE(s.full_name, s2.full_name) hv
        FROM audit_logs a LEFT JOIN students s ON a.entity_type = 'student' AND s.id = a.entity_id
        LEFT JOIN learning_cycles lc ON a.entity_type IN ('learning_cycle', 'lich_thi') AND lc.id = a.entity_id LEFT JOIN students s2 ON s2.id = lc.student_id
       WHERE a.id > ? AND a.id < ? AND a.action IN (${HANH_DONG.map(() => '?').join(',')}) ORDER BY a.id`,
   ).all(tu, den, ...HANH_DONG) as any[];
-  const theoEm = new Map<number, { hv: string; doi: Map<string, [unknown, unknown]> }>();
+  const theoEm = new Map<string, { hv: string | null; sid: number | null; doi: Map<string, [unknown, unknown]> }>();
   for (const r of rows) {
-    const em = theoEm.get(r.sid) ?? { hv: r.hv ?? 'Học viên đã xoá', doi: new Map() };
-    theoEm.set(r.sid, em);
+    /* Em đã xoá: không còn hàng `students` — khoá theo đối tượng của dòng nhật ký (em = id em ở dòng `student`). */
+    const sid: number | null = r.sid ?? (r.et === 'student' ? r.eid : null);
+    const khoa = sid !== null ? `s${sid}` : `${r.et}:${r.eid}`;
+    const em = theoEm.get(khoa) ?? { hv: r.hv ?? null, sid, doi: new Map() };
+    theoEm.set(khoa, em);
     for (const [c, [cu, moi]] of doiCuaDong(r, docJson(r.f), null)) em.doi.set(c, [em.doi.has(c) ? em.doi.get(c)![0] : cu, moi]);
   }
   const ten = tenTheoLo([...theoEm.values()]);
-  return [...theoEm.values()].flatMap(({ hv, doi }) => [...doi].sort((x, y) => THU_TU.indexOf(x[0]) - THU_TU.indexOf(y[0]))
-    .map(([c, [cu, moi]]) => ({ ten: TRUONG[c][0], cu: hien(c, cu, ten), moi: hien(c, moi, ten), doiTuong: hv }))
-    .filter((x) => x.cu !== x.moi).filter((x, i, ds) => ds.findIndex((y) => y.ten === x.ten) === i));
+  let daXoa = 0;
+  return [...theoEm].flatMap(([khoa, { hv, sid, doi }]) => {
+    const doiTuong = hv ?? `Học viên đã xoá · ${(daXoa += 1)}`;
+    return [...doi].sort((x, y) => THU_TU.indexOf(x[0]) - THU_TU.indexOf(y[0]))
+      .map(([c, [cu, moi]]) => ({ ten: TRUONG[c][0], cu: hien(c, cu, ten), moi: hien(c, moi, ten), doiTuong, sid, khoa }))
+      .filter((x) => x.cu !== x.moi).filter((x, i, ds) => ds.findIndex((y) => y.ten === x.ten) === i);
+  });
 }
 
 function docJson(s: string | null): Record<string, any> {
