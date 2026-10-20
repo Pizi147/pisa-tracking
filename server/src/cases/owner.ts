@@ -20,26 +20,29 @@ import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 export function suggestCaseOwner(input: {
   classId: number | null; category: string | null;
 }): number | null {
-  if (!input.classId) return null;
-  const conn = db();
-  const core = () =>
-    (conn
-      .prepare(
-        `SELECT user_id FROM teacher_assignments
-          WHERE class_id = ? AND is_core = 1 AND status = 'active' LIMIT 1`,
-      )
-      .get(input.classId) as any)?.user_id ?? null;
+  return input.classId ? chonChuCase(phanCongLop(input.classId), input.category)?.user_id ?? null : null;
+}
 
-  const skill = CASE_CATEGORY_SKILL[input.category as keyof typeof CASE_CATEGORY_SKILL] ?? null;
-  if (!skill) return core();
-  const bySkill = conn
-    .prepare(
-      `SELECT user_id FROM teacher_assignments
-        WHERE class_id = ? AND skill = ? AND status = 'active' LIMIT 1`,
-    )
-    .get(input.classId, skill) as any;
-  /* Chưa phân công ai dạy kỹ năng đó thì về GVCN — vẫn là một người cụ thể, không phải cả lớp. */
-  return bySkill?.user_id ?? core();
+type PhanCong = { user_id: number; skill: string | null; is_core: number; ten: string | null };
+/** Phân công đang chạy của lớp, theo thứ tự id (một câu đọc — CASE-NHIEU đọc một lần cho mọi kỹ năng). */
+const phanCongLop = (classId: number) => db().prepare(
+  `SELECT ta.user_id, ta.skill, ta.is_core, u.full_name AS ten FROM teacher_assignments ta LEFT JOIN users u ON u.id = ta.user_id
+    WHERE ta.class_id = ? AND ta.status = 'active' ORDER BY ta.id`,
+).all(classId) as PhanCong[];
+
+/** Luật mục 2.3 (một chỗ): GV dạy đúng kỹ năng của hạng mục; chưa phân công ai thì GVCN — vẫn là một người cụ thể, không phải cả lớp. */
+function chonChuCase(ds: PhanCong[], category: string | null): PhanCong | null {
+  const skill = CASE_CATEGORY_SKILL[category as keyof typeof CASE_CATEGORY_SKILL] ?? null;
+  return (skill ? ds.find((r) => r.skill === skill) : undefined) ?? ds.find((r) => r.is_core === 1) ?? null;
+}
+
+/** CASE-NHIEU: người phụ trách gợi ý cho từng kỹ năng (`case-topics` — đầu thẻ "phụ trách: …"), cùng luật `suggestCaseOwner`. */
+export function chuCaseTheoKyNang(classId: number | null, topics: readonly string[], categoryOf: (t: string) => string | null) {
+  const ds = classId ? phanCongLop(classId) : [];
+  return Object.fromEntries(topics.map((k) => {
+    const r = chonChuCase(ds, categoryOf(k));
+    return [k, r ? { id: r.user_id, ten: r.ten } : null];
+  })) as Record<string, { id: number; ten: string | null } | null>;
 }
 
 /**
