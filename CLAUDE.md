@@ -3,11 +3,20 @@
 Tệp này tự nạp vào mọi session của repo (planning, code, worktree), nên giữ ngắn. Chi tiết nằm ở
 `plan.md` (kế hoạch duy nhất: việc còn lại, thứ tự, model, prompt), `CODE_MAP.md` và đặc tả trong `docs/superpowers/specs/`.
 
-## Khi các nguồn mâu thuẫn
-1. Quyết định của chủ sản phẩm, đặc tả và kế hoạch PR đã duyệt.
-2. `thiet-ke/PISA-Rulebook-2026-09-19.md` và mockup đã duyệt trong `thiet-ke/`.
-3. Skill (impeccable, ponytail, superpowers, ecc, web-design-guidelines, ui-ux-pro-max). Skill gợi ý trái với mục 1–2 thì không tự làm: ghi vào báo cáo để
+## Khi các nguồn mâu thuẫn (chủ SP 20–21/10 — overhaul `02` mục 1, 2.3)
+1. Luật nghiệp vụ đã chốt (`plan.md` 1.6) + quyết định chủ SP (lời mới hơn thắng lời cũ về cùng điều) + phần nghiệp vụ, quyền, chống mất dữ liệu của
+   `thiet-ke/PISA-Rulebook-2026-09-19.md`.
+2. **Khung mockup đã duyệt** trong `thiet-ke/` thắng kế hoạch, đặc tả, `DESIGN.md` và luật giao diện cũ hơn ngày duyệt (trừ mục 1); quyết định mới trái khung → sửa mockup.
+3. Kế hoạch PR, đặc tả, `DESIGN.md`.
+4. Skill (impeccable, ponytail, superpowers, ecc, web-design-guidelines, ui-ux-pro-max). Skill gợi ý trái với mục 1–3 thì không tự làm: ghi vào báo cáo để
    chủ sản phẩm quyết.
+
+## Overhaul 21/10 (chủ SP duyệt #486) — nguồn `docs/superpowers/specs/2026-10-20-ke-hoach-overhaul/` (02 quyết định · 04 hệ thiết kế · 05 workflow · 06 mockup · 07 PR)
+- Luật nghiệp vụ: 5 luật (luật 4 bản sửa 21/10) + việc TVV + S chéo theo kỹ năng hồ sơ GV — mỗi luật một dòng ở `plan.md` 1.6; không đổi luật nào khác.
+- PR đổi bố cục: **một màn một PR** · bảng truy vết khung → thành phần → ảnh (có dòng BỎ / GIỮ) · ảnh cặp toàn trang mockup | web · cổng **≥ 90 % KHỚP** ·
+  **chủ SP duyệt ảnh cặp trước merge, không merge qua đêm** (`plan.md` 1.6, 06 mục 5.4).
+- Luật giao diện (chi tiết `DESIGN.md` mục "Luật 21/10"): Thi = thi thật, Test = MT / Progress / Final… · việc của tôi ở trang đầu vai · một danh sách một kiểu mở ·
+  thang làm tại chỗ 0–5 · ô số = mở tại chỗ, chữ "›" = đổi trang, ⓘ = giải thích · báo cáo thuần · cấm điều khiển trong tiêu đề bảng · "Toàn bộ" chỉ ở Phân tích.
 
 ## Luật cứng của chủ sản phẩm (08/10)
 - Nghĩ tới **đầu ra** trước (em có lịch, có điểm…). Việc không ảnh hưởng đầu ra thì KHÔNG thêm bước, câu hỏi, trạng thái hay điều kiện chặn.
@@ -37,13 +46,13 @@ Tệp này tự nạp vào mọi session của repo (planning, code, worktree), 
 ## Giao diện và UX: dùng `impeccable`
 - PISA là công cụ làm việc cho giáo viên (chế độ Operate): dễ hiểu, dễ dùng, nhất quán trước; trang trí sau.
 - Không dùng taste-skill (đã tắt; không dành cho dashboard, bảng dữ liệu).
-- Tinh chỉnh, không làm lại: phông Be Vietnam Pro (PR-SANG; chữ số lấy từ Inter), bảng màu, bố cục đã khoá — giữ, trừ khi kế hoạch PR ghi rõ là đổi.
+- Tinh chỉnh, không làm lại: phông Be Vietnam Pro (PR-SANG; chữ số lấy từ Inter), bảng màu, bố cục đã khoá — giữ, trừ khi kế hoạch PR ghi rõ là đổi hoặc màn có mockup mới đã duyệt (06 Q7).
 - Màn / luồng MỚI hoặc đổi bố cục: phải có mockup HTML trong `thiet-ke/` chủ sản phẩm đã duyệt trước khi code (1440 + 375, tối, đủ trạng thái khác nhau); chưa có thì dừng, soạn mockup. Đổi chữ, thêm nút/ô theo mẫu sẵn có: không cần mockup (plan.md 1.3b). Chuẩn giao diện: `DESIGN.md`.
 - Tiết kiệm token: làm theo plan.md 1.2 + 1.3b (Task trong session, check + bấm thử một lần ở session code, planning rà diff + ảnh).
 - Thời gian trên màn: ưu tiên **mã tuần** `W2 OCT`; ngày chỉ cho hạn cụ thể, ngày thi, ngày sinh, nhật ký (chủ sản phẩm 30/09).
 - Ô nhập ngày ở MỌI nơi: ô gõ được + nút lịch (`ONgay`), KHÔNG làm hàng nút "Hôm nay · Hôm qua · 2 ngày trước" (chủ sản phẩm 06/10).
 - Lệnh dùng: `critique` (+ `ui-ux-pro-max` khi rà UX lớn) ở session planning để tìm vấn đề · `clarify`, `layout`, `harden`, `adapt` ở
-  session code, chỉ trong phạm vi PR (không `polish` — plan.md 1.3b) · `audit` + skill `web-design-guidelines` trước khi mở PR có sửa giao diện.
+  session code, chỉ trong phạm vi PR (PR sửa nhỏ không `polish`; PR làm lại màn được `layout` + `polish` — plan.md 1.3b) · `audit` + skill `web-design-guidelines` trước khi mở PR có sửa giao diện.
 - Session code không chạy `init`, `document`, `hooks on`, `npx impeccable install|update`. PRODUCT.md / DESIGN.md
   chỉ do session planning tạo, khớp Rulebook, sau khi chủ sản phẩm đồng ý.
 - `.impeccable/` đã gitignore; không commit gì trong đó.
