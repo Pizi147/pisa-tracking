@@ -58,14 +58,19 @@ export async function runPrCvLoiTests(t: YThucTestKit) {
   /** Lớp thiếu cả GV môn của Case lẫn GVCN → Case vẫn không chủ sau migrate. */
   const lopThieu = () => {
     const c = caseCuaLop();
-    /* Người vừa bỏ (GV môn + GVCN) — K3 phân công lại đúng họ: bức tranh hợp lệ chắc chắn, không phụ thuộc dữ liệu phép kiểm khác. */
-    const daBo = all(`SELECT user_id, skill, is_core FROM teacher_assignments WHERE class_id = ? AND status = 'active' AND (skill = ? OR is_core = 1)`, LOP, c.skill)
-      .map((a) => ({ userId: a.user_id as number, skill: a.skill as string | null, isCore: a.is_core === 1 }));
+    /* Bức tranh phân công TRƯỚC khi bỏ, mỗi ô một người (phép kiểm trước có thể để lại 2 dòng một ô) — K3 gửi lại đúng nó: hợp lệ chắc chắn. */
+    const moiO = new Map<string, { userId: number; skill: string | null; isCore: boolean }>();
+    /* Ô trùng: giữ dòng của GVCN trước (luật "GVCN dạy ≥ 1 môn"). */
+    for (const a of all(`SELECT user_id, skill, is_core FROM teacher_assignments WHERE class_id = ?1 AND status = 'active'
+        ORDER BY user_id IN (SELECT user_id FROM teacher_assignments WHERE class_id = ?1 AND status = 'active' AND is_core = 1) DESC, id`, LOP)) {
+      const k = a.is_core === 1 ? 'gvcn' : a.skill;
+      if (!moiO.has(k)) moiO.set(k, { userId: a.user_id, skill: a.is_core === 1 ? null : a.skill, isCore: a.is_core === 1 });
+    }
     conn.prepare(`UPDATE teacher_assignments SET status = 'ended' WHERE class_id = ? AND status = 'active' AND (skill = ? OR is_core = 1)`).run(LOP, c.skill);
     xoaNho();
     migratePrCvLoi(conn, []);
     assert(chuCua(c.id) === null, 'lớp không ai dạy môn / chủ nhiệm → Case vẫn chưa có chủ');
-    return { ...c, daBo };
+    return { ...c, truoc: [...moiO.values()] };
   };
 
   check('K2 Công việc: Case không chủ = MỘT dòng "Phân công GV …" cho QL; GV dạy lớp không thấy dòng nào của Case', () => thu(() => {
@@ -81,10 +86,8 @@ export async function runPrCvLoiTests(t: YThucTestKit) {
 
   check('K3 phân công môn thiếu → cùng lần ghi Case có chủ, lịch sử ghi người phân công; QL hết dòng Phân công', () => thu(() => {
     const c = lopThieu();
-    const gvMoi = c.daBo.find((x) => x.skill === c.skill)!.userId;
-    const hien = all(`SELECT user_id, skill, is_core FROM teacher_assignments WHERE class_id = ? AND status = 'active'`, LOP)
-      .map((a) => ({ userId: a.user_id, skill: a.skill, isCore: a.is_core === 1 }));
-    classes.setClassTeachers(P.mbManager, LOP, { slots: [...hien, ...c.daBo] });
+    const gvMoi = c.truoc.find((x) => x.skill === c.skill)!.userId;
+    classes.setClassTeachers(P.mbManager, LOP, { slots: c.truoc });
     assert(chuCua(c.id) === gvMoi, 'Case về GV vừa phân công môn');
     const ls = one(`SELECT * FROM sos_case_history WHERE case_id = ? AND field = 'owner_user_id' ORDER BY id DESC LIMIT 1`, c.id);
     assert(ls?.actor_user_id === P.mbManager.userId, 'lịch sử ghi người phân công');
