@@ -184,7 +184,7 @@ button{font:inherit;color:inherit}
 .dv .v1{font-size:15px;font-weight:600;color:var(--c1);line-height:1.5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .dv .v2{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--dim);line-height:1.5;white-space:nowrap;overflow:hidden}
 .dv .m{justify-self:end;color:var(--faint);font-size:15px}
-.dv.chon{background:var(--accent-soft);box-shadow:inset 3px 0 0 var(--accent-strong)}
+.dv.dang{background:var(--accent-soft);box-shadow:inset 3px 0 0 var(--accent-strong)}
 .dv.xong{opacity:.55}
 .dv.xong .v1{text-decoration:line-through;text-decoration-thickness:1px}
 .dv.focus{outline:2px solid var(--accent);outline-offset:-3px}
@@ -278,6 +278,11 @@ button{font:inherit;color:inherit}
 .chiso.tron:hover{background:none}
 .the{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 16px}
 .f15{font-size:15px}
+.od.in{width:auto}
+.tim{white-space:nowrap;overflow:hidden}
+.dv{position:relative}
+.dv.dang{box-shadow:none}
+.dv.dang::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--accent-strong)}
 </style>
 <style>
 /* riêng mockup này */
@@ -342,7 +347,7 @@ button{font:inherit;color:inherit}
       <div class="ds">
         <div class="nhom">Chấm điểm <span class="n">8 việc · ⚠ 5</span><span class="sp"></span><span class="tg">▾</span></div>
         <div class="vach">Quá hạn</div>
-        <div class="dv chon"><span class="h qh">⚠ 19–68 ngày</span><div><div class="v1">Nợ chấm cũ · Reading</div><div class="v2">MB FT 101 · MT1–MT4 · 11 bài</div></div><span class="m"></span></div>
+        <div class="dv dang"><span class="h qh">⚠ 68 ngày</span><div><div class="v1">Nợ chấm cũ · Reading</div><div class="v2">MB FT 101 · MT1–MT4 · 11 bài</div></div><span class="m"></span></div>
         <div class="dv"><span class="h qh">⚠ 5 ngày</span><div><div class="v1">Nhập điểm Listening</div><div class="v2">MB FT 102 · MT4 · thi W1 SEP · 6 bài</div></div><span class="m"></span></div>
         <div class="vach">Tuần này</div>
         <div class="dv"><span class="h gan">16/09</span><div><div class="v1">Nhập điểm Listening, Reading</div><div class="v2">MB FT 101 · MT5 · thi W2 SEP · 14 bài</div></div><span class="m"></span></div>
@@ -423,7 +428,7 @@ button{font:inherit;color:inherit}
       <div class="ds">
         <div class="nhom dong">Chấm điểm <span class="n">8 việc · ⚠ 5</span><span class="sp"></span><span class="tg">▸</span></div>
         <div class="nhom">Case học thuật <span class="n">5 việc · ⚠ 3</span><span class="sp"></span><span class="tg">▾</span></div>
-        <div class="dv chon"><span class="h qh">⚠ 6 ngày</span><div><div class="v1">Kết quả PA · Reading</div><div class="v2">Lý Minh Châu · MB FT 101 · <span class="sos s1">SOS 1 · R</span></div></div><span class="m"></span></div>
+        <div class="dv dang"><span class="h qh">⚠ 6 ngày</span><div><div class="v1">Kết quả PA · Reading</div><div class="v2">Lý Minh Châu · MB FT 101 · <span class="sos s1">SOS 1 · R</span></div></div><span class="m"></span></div>
         <div class="dv re"><span class="h qh">⚠ 3 ngày</span><div><div class="v1">Thêm PA · Listening</div><div class="v2">Vũ Ngọc Lan · MB FT 101 · <span class="sos s2">SOS 2 · L</span></div></div><span class="m"></span></div>
         <div class="dv focus"><span class="h qh">⚠ 1 ngày</span><div><div class="v1">Xác nhận Case · Listening</div><div class="v2">Phan Khánh Linh · MB FT 102 · <span class="sos s1 tam">SOS 1 tạm · L</span></div></div><span class="m"></span></div>
         <div class="dv"><span class="h">17/09</span><div><div class="v1">Kết quả PA · Listening</div><div class="v2">Đặng Quốc Bảo · MB FT 101 · <span class="sos s1">SOS 1 · L</span></div></div><span class="m"></span></div>
@@ -447,7 +452,7 @@ button{font:inherit;color:inherit}
         <div class="kv-bc">
           <span class="l">PA</span><span>Xếp tự học Reading · từ W4 AUG · Trần Ngọc Hà</span>
           <span class="l">Nguyên nhân</span><span>Đọc lướt chưa tốt · thiếu từ vựng chủ đề</span>
-          <span class="l">Điểm</span><span>R <span class="od d"><span class="k">✗</span>5.0</span> · kỳ vọng 5.5 · thiếu 0.5 (MT4)</span>
+          <span class="l">Điểm</span><span>R <span class="od d in"><span class="k">✗</span>5.0</span> · kỳ vọng 5.5 · thiếu 0.5 (MT4)</span>
           <span class="l">Lần trước</span><span>28/08 · Tiến bộ một phần · <span class="lk">Xem thêm ▾</span></span>
         </div>
         <div class="kv-cl">
@@ -482,7 +487,7 @@ button{font:inherit;color:inherit}
     <div class="ds">
       <div class="nhom">Chấm điểm <span class="n">8 · ⚠ 5</span><span class="sp"></span><span class="tg">▾</span></div>
       <div class="vach">Quá hạn</div>
-      <div class="dv"><span class="h qh">⚠ 19–68 ng</span><div><div class="v1">Nợ chấm cũ · Reading</div><div class="v2">MB FT 101 · MT1–MT4 · 11 bài</div></div><span class="m"></span></div>
+      <div class="dv"><span class="h qh">⚠ 68 ngày</span><div><div class="v1">Nợ chấm cũ · Reading</div><div class="v2">MB FT 101 · MT1–MT4 · 11 bài</div></div><span class="m"></span></div>
       <div class="dv"><span class="h qh">⚠ 5 ngày</span><div><div class="v1">Nhập điểm Listening</div><div class="v2">MB FT 102 · MT4 · 6 bài</div></div><span class="m"></span></div>
       <div class="vach">Tuần này</div>
       <div class="dv"><span class="h gan">16/09</span><div><div class="v1">Nhập điểm L, R</div><div class="v2">MB FT 101 · MT5 · 14 bài</div></div><span class="m"></span></div>
@@ -519,7 +524,7 @@ button{font:inherit;color:inherit}
     <div class="kv-bc" style="grid-template-columns:96px minmax(0,1fr);padding:12px 16px">
       <span class="l">PA</span><span>Xếp tự học Reading · từ W4 AUG</span>
       <span class="l">Nguyên nhân</span><span>Đọc lướt chưa tốt · thiếu từ vựng</span>
-      <span class="l">Điểm</span><span>R <span class="od d"><span class="k">✗</span>5.0</span> · kỳ vọng 5.5</span>
+      <span class="l">Điểm</span><span>R <span class="od d in"><span class="k">✗</span>5.0</span> · kỳ vọng 5.5</span>
       <span class="l">Lần trước</span><span>28/08 · Tiến bộ một phần</span>
     </div>
     <div class="kv-cl" style="padding:16px">
@@ -578,7 +583,7 @@ button{font:inherit;color:inherit}
     <div class="nhom">Case học thuật <span class="n">4 việc · ⚠ 2</span></div>
     <div class="dv xong"><span class="h">✓ Xong</span><div><div class="v1">Kết quả PA · Reading</div><div class="v2">Lý Minh Châu · MB FT 101</div></div><span class="m"></span></div>
     <div class="dv-mo" style="background:var(--hang-con-bg)"><span class="dim">✓ Xong ·&nbsp;</span><span class="lk">Hoàn tác</span><span class="faint">&nbsp;· 8 s</span></div>
-    <div class="dv chon"><span class="h qh">⚠ 3 ngày</span><div><div class="v1">Thêm PA · Listening</div><div class="v2">Vũ Ngọc Lan · MB FT 101 · <span class="sos s2">SOS 2 · L</span></div></div><span class="m"></span></div>
+    <div class="dv dang"><span class="h qh">⚠ 3 ngày</span><div><div class="v1">Thêm PA · Listening</div><div class="v2">Vũ Ngọc Lan · MB FT 101 · <span class="sos s2">SOS 2 · L</span></div></div><span class="m"></span></div>
     <div class="dv"><span class="h qh">⚠ 1 ngày</span><div><div class="v1">Xác nhận Case · Listening</div><div class="v2">Phan Khánh Linh · MB FT 102</div></div><span class="m"></span></div>
   </div>
 </div>
@@ -628,7 +633,7 @@ button{font:inherit;color:inherit}
     <div class="hd2">
       <div class="ds">
         <div class="nhom">Chấm Speaking chéo <span class="n">13 bài · không tính nợ</span><span class="sp"></span><span class="tg">▾</span></div>
-        <div class="dv chon"><span class="h">16/09</span><div><div class="v1">Chấm Speaking</div><div class="v2">MB FT 101 · MT5 · thi W2 SEP · 8 bài</div></div><span class="m"></span></div>
+        <div class="dv dang"><span class="h">16/09</span><div><div class="v1">Chấm Speaking</div><div class="v2">MB FT 101 · MT5 · thi W2 SEP · 8 bài</div></div><span class="m"></span></div>
         <div class="dv"><span class="h">16/09</span><div><div class="v1">Chấm Speaking</div><div class="v2">MB FT 103 · MT5 · thi W2 SEP · 5 bài</div></div><span class="m"></span></div>
       </div>
       <div class="kv">
@@ -637,7 +642,7 @@ button{font:inherit;color:inherit}
         <table class="bang">
           <thead><tr><th data-k="ten">Học viên</th><th data-k="diem">S</th><th data-k="nb">Kỳ vọng</th><th data-k="chu">Nhận xét</th></tr></thead>
           <tbody>
-            <tr class="h2"><td data-k="ten">Đinh Gia Bảo <a class="ra faint f13"></a></td><td data-k="diem"><span class="luu-o"><span class="os">6.0</span></span></td><td data-k="nb">5.5</td><td data-k="chu" class="f14">Phát âm rõ, ý mạch lạc</td></tr>
+            <tr><td data-k="ten">Đinh Gia Bảo</td><td data-k="diem"><span class="luu-o"><span class="os">6.0</span></span></td><td data-k="nb">5.5</td><td data-k="chu" class="f14">Phát âm rõ, ý mạch lạc</td></tr>
             <tr><td data-k="ten">Hồ Anh Thư</td><td data-k="diem"><span class="os trong">–</span></td><td data-k="nb">5.5</td><td data-k="chu"></td></tr>
             <tr><td data-k="ten">Lưu Bảo Ngân</td><td data-k="diem"><span class="os trong">–</span></td><td data-k="nb">5.5</td><td data-k="chu"></td></tr>
             <tr><td data-k="ten">Lý Minh Châu</td><td data-k="diem"><span class="os trong">–</span></td><td data-k="nb">5.5</td><td data-k="chu"></td></tr>
@@ -669,7 +674,7 @@ button{font:inherit;color:inherit}
     <div class="hd2">
       <div class="ds">
         <div class="nhom">Việc của GV <span class="n">6 GV · 84 việc · ⚠ 31</span><span class="sp"></span><span class="tg">▾</span></div>
-        <div class="dv chon gv-dong"><span class="h qh">⚠ 10</span><div><div class="v1">Trần Ngọc Hà · 19 việc</div><div class="v2">Chấm 8 · Case 5 · Ý thức 4 · Lớp 2</div></div><span class="m"></span></div>
+        <div class="dv dang gv-dong"><span class="h qh">⚠ 10</span><div><div class="v1">Trần Ngọc Hà · 19 việc</div><div class="v2">Chấm 8 · Case 5 · Ý thức 4 · Lớp 2</div></div><span class="m"></span></div>
         <div class="dv gv-dong"><span class="h qh">⚠ 7</span><div><div class="v1">Lê Minh Khoa · 16 việc</div><div class="v2">Chấm 9 · Case 4 · Lớp 3</div></div><span class="m"></span></div>
         <div class="dv gv-dong"><span class="h qh">⚠ 5</span><div><div class="v1">Phạm Thu Trang · 14 việc</div><div class="v2">Chấm 6 · Case 6 · Ý thức 2</div></div><span class="m"></span></div>
         <div class="dv gv-dong"><span class="h qh">⚠ 4</span><div><div class="v1">Đỗ Hải Yến · 12 việc</div><div class="v2">Chấm 7 · Case 3 · Ý thức 2</div></div><span class="m"></span></div>
@@ -686,7 +691,7 @@ button{font:inherit;color:inherit}
         <div class="kv-dau"><span class="kv-t">Trần Ngọc Hà · 19 việc</span><span class="qh f13">⚠ 10 quá hạn</span><span class="x">✕</span><div class="kv-s"><a class="ra c1 b6">Hồ sơ GV</a> · GVCN MB FT 101 · dạy L, R · MB FT 101, 102 · MB FOU 12</div></div>
         <div class="ds" style="border:0;border-radius:0">
           <div class="nhom">Chấm điểm <span class="n">8 · ⚠ 5</span></div>
-          <div class="dv"><span class="h qh">⚠ 19–68 ngày</span><div><div class="v1">Nợ chấm cũ · Reading</div><div class="v2">MB FT 101 · MT1–MT4 · 11 bài · chỉ xem</div></div><span class="m"></span></div>
+          <div class="dv"><span class="h qh">⚠ 68 ngày</span><div><div class="v1">Nợ chấm cũ · Reading</div><div class="v2">MB FT 101 · MT1–MT4 · 11 bài · chỉ xem</div></div><span class="m"></span></div>
           <div class="dv"><span class="h qh">⚠ 5 ngày</span><div><div class="v1">Nhập điểm Listening</div><div class="v2">MB FT 102 · MT4 · thi W1 SEP · 6 bài · chỉ xem</div></div><span class="m"></span></div>
           <div class="dv"><span class="h gan">16/09</span><div><div class="v1">Nhập điểm Listening, Reading</div><div class="v2">MB FT 101 · MT5 · thi W2 SEP · 14 bài · chỉ xem</div></div><span class="m"></span></div>
           <div class="dv-mo"><span class="lk">Còn 2 việc chấm ▸</span></div>
@@ -713,7 +718,7 @@ button{font:inherit;color:inherit}
       <div class="dv"><span class="h gan">16/09</span><div><div class="v1">Nhập điểm Pronunciation</div><div class="v2">MB FOU 14 · Progress · thi W2 SEP · 12 bài</div></div><span class="m"></span></div>
     </div>
     <div class="kv-chan" style="position:relative"><span class="sp"></span><span class="btn btn-c re">Phân công GV P…</span>
-      <div class="hop" style="right:20px;bottom:60px">
+      <div class="hop" style="right:20px;top:64px">
         <div class="hop-d">Phân công GV P · MB FOU 14</div>
         <div class="hop-b"><div class="tr"><span class="l">Giáo viên P</span><span class="chon" style="justify-content:space-between">Đỗ Hải Yến</span></div><span class="f13 dim">2 việc chuyển cho Đỗ Hải Yến</span></div>
         <div class="hop-c"><span class="btn btn-chu">Huỷ</span><span class="btn btn-c">Giao</span></div>
@@ -772,7 +777,7 @@ button{font:inherit;color:inherit}
   </div>
   <div class="hop-cl" style="top:62px;right:52px">
     <div class="dd">Cần làm <span class="n">· 19 ·</span> <span class="qh f15">⚠ 10 quá hạn</span></div>
-    <div class="dv"><span class="h qh">⚠ 19–68 ngày</span><div><div class="v1">Nợ chấm cũ · Reading</div><div class="v2">MB FT 101 · MT1–MT4 · 11 bài</div></div><span class="m">›</span></div>
+    <div class="dv"><span class="h qh">⚠ 68 ngày</span><div><div class="v1">Nợ chấm cũ · Reading</div><div class="v2">MB FT 101 · MT1–MT4 · 11 bài</div></div><span class="m">›</span></div>
     <div class="dv re"><span class="h qh">⚠ 5 ngày</span><div><div class="v1">Nhập điểm Listening</div><div class="v2">MB FT 102 · MT4 · 6 bài</div></div><span class="m">›</span></div>
     <div class="dv"><span class="h gan">16/09</span><div><div class="v1">Nhập điểm Listening, Reading</div><div class="v2">MB FT 101 · MT5 · 14 bài</div></div><span class="m">›</span></div>
     <div class="dv"><span class="h gan">16/09</span><div><div class="v1">Nhập điểm Reading</div><div class="v2">MB FOU 12 · Progress · 9 bài</div></div><span class="m">›</span></div>
@@ -796,7 +801,7 @@ button{font:inherit;color:inherit}
   <div class="app"><span class="logo"><i>P</i>PISA</span><span class="sp"></span><span class="chuong mo"><svg class="ic" viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 1 1 12 0v5l1.5 2h-15z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg><span class="so">19</span></span><span class="av">TH</span></div>
   <div class="hop-cl" style="top:56px;bottom:0;overflow:hidden">
     <div class="dd" style="padding:8px 8px 8px 16px">Cần làm <span class="n">· 19 ·</span> <span class="qh f14">⚠ 10</span><span style="flex:1"></span><span class="x">✕</span></div>
-    <div class="dv"><span class="h qh">⚠ 19–68 ng</span><div><div class="v1">Nợ chấm cũ · Reading</div><div class="v2">MB FT 101 · 11 bài</div></div><span class="m">›</span></div>
+    <div class="dv"><span class="h qh">⚠ 68 ngày</span><div><div class="v1">Nợ chấm cũ · Reading</div><div class="v2">MB FT 101 · 11 bài</div></div><span class="m">›</span></div>
     <div class="dv"><span class="h qh">⚠ 5 ngày</span><div><div class="v1">Nhập điểm Listening</div><div class="v2">MB FT 102 · 6 bài</div></div><span class="m">›</span></div>
     <div class="dv"><span class="h gan">16/09</span><div><div class="v1">Nhập điểm L, R</div><div class="v2">MB FT 101 · 14 bài</div></div><span class="m">›</span></div>
     <div class="dv"><span class="h gan">16/09</span><div><div class="v1">Nhập điểm Reading</div><div class="v2">MB FOU 12 · 9 bài</div></div><span class="m">›</span></div>
