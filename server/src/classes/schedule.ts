@@ -695,11 +695,12 @@ export function setClassProgress(p: Principal, classId: number, input: {
     for (const [kind, tuCu, sangMoi] of [['progress', cu.progressWeekStart, moi.progressWeekStart], ['final', cu.finalWeekStart, moi.finalWeekStart]] as const) {
       if (tuCu && sangMoi && tuCu !== sangMoi) doiBaiTheoMoc(p, classId, kind, tuCu, sangMoi);
     }
+    /* OV-15g: nhật ký trong CÙNG giao dịch, chỉ khi có trường đổi (Lịch sử thay đổi của lớp không có mục rỗng). */
+    const before: Record<string, unknown> = { startPeriodId: c.start_period_id, progressWeek: c.progress_week_override, finalWeek: c.final_week_override };
+    if (Object.keys(input).some((k) => k in before && ((input as any)[k] ?? null) !== (before[k] ?? null))) {
+      writeAudit({ actorUserId: p.userId, action: 'class.progress', entityType: 'class', entityId: classId, entityLabel: c.code, before, after: input });
+    }
   });
-  writeAudit({ actorUserId: p.userId, action: 'class.progress', entityType: 'class', entityId: classId,
-    entityLabel: c.code, before: {
-      startPeriodId: c.start_period_id, progressWeek: c.progress_week_override, finalWeek: c.final_week_override,
-    }, after: input });
   return classProgress(classId);
 }
 

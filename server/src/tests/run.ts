@@ -9450,6 +9450,9 @@ await runPrOv15fTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P,
 // ==================================================================== TU-a (Tutor: migrate, vai Head tutor, buổi tutor 3 ô, /tutors/chon)
 const { runPrTuTests } = await import('./prTu.tests.ts');
 await runPrTuTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== OV-15g (Lịch sử thay đổi C22: một đường đọc /lich-su, ghi đủ ở máy chủ, quyền, phân trang)
+const { runPrOv15gTests } = await import('./prOv15g.tests.ts');
+await runPrOv15gTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== TD7b (cờ "còn ô chờ điểm" o_cho_tu: đúng ở mọi đường ghi, đầu ra trùng khít) — CUỐI: soi cả trạng thái các phép kiểm trước để lại
 const { runPrTd7bTests } = await import('./prTd7b.tests.ts');
 await runPrTd7bTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
