@@ -54,6 +54,8 @@ export type XuLyView = {
   coTheSua: boolean; coTheThuHoi: boolean; lanSau: string | null; bacVe: number | null; chuaXuLy: ViPhamV4[];
   /** LUAT-5: thẻ thu hồi mới nhất — chờ QL / QL từ chối (lý do) / đã thu hồi (ai · lúc · lý do). */
   thuHoi: TheYeuCauDto | null;
+  /** LUAT-5: máy chủ tính — người xem thu hồi thẳng (QL trong phạm vi em) hay gửi QL. */
+  thuHoiThang: boolean;
 };
 
 export type DongEm = {

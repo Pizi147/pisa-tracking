@@ -352,6 +352,8 @@ export type XuLyView = {
   viPham: ViolationView[]; soTep: number; canManage: boolean;
   /** PR-LUI-a1: Sửa vi phạm (quyền Q5) · LUAT-5: Thu hồi… (lần mới nhất, chưa có thẻ thu hồi chờ) và tên lần xử lý SAU (chặn Thu hồi khi còn). */
   coTheSua: boolean; coTheThuHoi: boolean; lanSau: string | null;
+  /** LUAT-5: người xem thu hồi THẲNG được (quyền duyệt của em) — giao diện đọc cờ này, không tự đoán theo vai. */
+  thuHoiThang: boolean;
   /** Bậc của em SAU KHI thu hồi lần này (0 = chưa có bậc) — chỉ khi không còn lần sau; hộp hỏi nói "bậc về Report 1". */
   bacVe: number | null;
   /** Vi phạm của em CHƯA nằm trong lần xử lý nào — danh sách thêm của `Sửa vi phạm` (rỗng khi không sửa được). */
@@ -387,6 +389,7 @@ export function xemXuLy(p: Principal, id: number): XuLyView {
     viPham: violationsByIds(vIds), soTep: m.so_tep, canManage: canManageDiscipline(p, m.student_id) && m.status !== 'thu_hoi', the,
     coTheSua, coTheThuHoi: coTheSua && !sau && THU_HOI_DUOC.has(m.status) && thuHoi?.trangThai !== 'cho',
     lanSau: sau ? nhanLoaiXuLy(sau.kind, sau.custom_name) : null, bacVe, thuHoi,
+    thuHoiThang: coTheSua && can(p, PERMISSIONS.REQUEST_APPROVE, { studentId: m.student_id }),
     chuaXuLy: em ? violationsByIds(em.dsViPham.map((v) => v.id).filter((vid) => {
       const t = em.viPham.get(vid);
       return t && t.t !== 'da_xu_ly' && t.t !== 'cho_duyet' && !vIds.includes(vid);
@@ -684,6 +687,12 @@ export function thuHoiXuLy(p: Principal, measureId: number, v: { lyDo?: unknown 
     if (ql) {
       apDungThuHoi(p, m, hv, lyDo);
       chotYeuCau(db(), theThuHoi(measureId), 'duyet', { nguoiDuyet: p.userId });
+      /* QL làm thẳng → GVCN lớp em biết (thẻ đã đóng nên không có chuông kết quả của hộp). */
+      if (em.gvcnId && em.gvcnId !== p.userId) {
+        notify({ userId: em.gvcnId, kind: 'discipline_de_biet', title: `Đã thu hồi ${nhanLoaiXuLy(m.kind, m.custom_name)} · ${hv.full_name} · để biết`,
+          body: lyDo.slice(0, 120), entityType: 'discipline_measure', entityId: measureId, dedupKey: `yt-thu-hoi:${measureId}`,
+          duong: duongHoSoHocVien(m.student_id, { tab: 'y-thuc' }) });
+      }
     } else {
       writeAudit({ actorUserId: p.userId, action: 'discipline.revoke_request', entityType: 'discipline_measure', entityId: measureId,
         entityLabel: `${hv.student_code} · xin thu hồi ${nhanLoaiXuLy(m.kind, m.custom_name)}`, after: { lyDo } });
@@ -728,8 +737,13 @@ export function huyThuHoiYThuc(p: Principal, measureId: number): void {
       WHERE mv.violation_id IN (${vIds.map(() => '?').join(',')}) AND x.id != ? AND x.status IN ('done', 'cho_duyet', 'da_duyet') LIMIT 1`,
   ).get(...vIds, measureId);
   if (dung) throw badRequest('Vi phạm của lần này đã nằm trong lần xử lý khác — không huỷ quyết định được.');
+  /* Thu hồi hết lần xử lý của chuỗi mở lại "Xác nhận cấp bậc" — đã khai / sửa từ hôm thu hồi (huỷ chỉ trong ngày) thì bậc khai sẽ chồng lên lần này. */
+  const homNay = demoToday();
+  const khai = db().prepare('SELECT 1 FROM y_thuc_khai_bac WHERE student_id = ? AND (khai_luc >= ? OR sua_luc >= ?) LIMIT 1').get(m.student_id, homNay, homNay);
+  if (khai) throw badRequest('Sau khi thu hồi, em đã được xác nhận cấp bậc vi phạm — không huỷ quyết định được. Sửa cấp bậc đã khai ở tab Ý thức của em nếu cần.');
   const ve = m.performed_on ? 'done' : 'da_duyet';
-  db().prepare(`UPDATE discipline_measures SET status = ?, updated_at = ? WHERE id = ? AND status = 'thu_hoi'`).run(ve, nowIso(), measureId);
+  const doi = db().prepare(`UPDATE discipline_measures SET status = ?, updated_at = ? WHERE id = ? AND status = 'thu_hoi'`).run(ve, nowIso(), measureId).changes;
+  if (!doi) throw conflict('Lần xử lý này vừa được cập nhật — mở lại.');
   for (const vid of vIds) noteMeasureChange(vid, null, measureId, p.userId);
   chotHanXuLy([m.student_id]);
   writeAudit({ actorUserId: p.userId, action: 'discipline.revoke_undo', entityType: 'discipline_measure', entityId: measureId,

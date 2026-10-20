@@ -9,7 +9,7 @@ import { BangChung } from '../../ui/BangChung.tsx';
 import { ChonNgayGan } from '../../ui/ChonNgay.tsx';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
-import { kindCuaBac, laVaiQuanLy, ngay, nguoiThanhPayload, nguoiThieu, nhanLoaiXuLy, type NguoiChon } from '@shared/domain/index.ts';
+import { kindCuaBac, ngay, nguoiThanhPayload, nguoiThieu, nhanLoaiXuLy, type NguoiChon } from '@shared/domain/index.ts';
 import { lamMoiYThuc, type XuLyView } from './kieu.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 
@@ -48,8 +48,8 @@ export function XemXuLyPanel({ measureId, onClose, onDaThucHien, onDone }: {
   const the = d?.the;
   const laNguoiGui = !!the && the.trangThai === 'cho' && the.nguoiXinId === session?.user?.id;
   const rutDuoc = d?.status === 'cho_duyet' && laNguoiGui;
-  /* LUAT-5: QL thu hồi thẳng (máy chủ quyết theo quyền duyệt); người khác gửi QL. */
-  const ql = laVaiQuanLy(session?.roles);
+  /* LUAT-5: QL thu hồi thẳng (cờ máy chủ theo quyền duyệt của em); người khác gửi QL. */
+  const ql = !!d?.thuHoiThang;
   const th = d?.thuHoi ?? null;
   const rutThuHoi = th?.trangThai === 'cho' && th.nguoiXinId === session?.user?.id;
   const dongThuHoi = !th || !d ? null

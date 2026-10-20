@@ -203,7 +203,8 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', lop, onC
   );
 
   /* Bối cảnh ≤ 3 dòng (mockup v3 §8): lần xử lý trước · bậc sau bậc này. */
-  const truoc = d.dongThoiGian.filter((x): x is Extract<typeof x, { loai: 'xu-ly' }> => x.loai === 'xu-ly').sort((a, b) => b.ngay.localeCompare(a.ngay))[0];
+  /* LUAT-5: lần "Đã thu hồi" vẫn ở dòng thời gian nhưng không phải "Lần trước". */
+  const truoc = d.dongThoiGian.filter((x): x is Extract<typeof x, { loai: 'xu-ly' }> => x.loai === 'xu-ly' && x.status !== 'thu_hoi').sort((a, b) => b.ngay.localeCompare(a.ngay))[0];
   const iNay = d.dongThang.findIndex((x) => x.trangThai === 'lan-nay');
   const bacSau = iNay >= 0 ? d.dongThang[iNay + 1]?.nhan ?? null : null;
   const nutChinh = cheDo === 'xu-ly'

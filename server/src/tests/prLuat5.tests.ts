@@ -165,4 +165,31 @@ export async function runPrLuat5Tests(t: YThucTestKit) {
     const em2 = moiEm(); const [w1] = nVp(em2, 1);
     assert(ma(() => xu.deXuat(gvcn, em2, { kind: 'report_1', violationIds: [w1], note: 'Chưa có bậc nào cả' })) === 400, 'em chưa có bậc: không có "không tăng bậc"');
   }));
+
+  await checkAsync('L5-10 · quyền: GVCN lớp khác / QL chi nhánh khác thu hồi → 403, QL chi nhánh khác duyệt thẻ → 403; cờ thuHoiThang do máy chủ; QL thẳng → chuông GVCN', () => thu(async () => {
+    const sid = moiEm(); const [v1] = nVp(sid, 1);
+    const r1 = xuLy(gvcn, sid, [v1]);
+    /* GVCN một lớp MB khác, không phải GVCN lớp em (P.normalCoreTeacher trùng người với GVCN MB FT 101 trong demo). */
+    const { loadPrincipal } = await import('../permissions.ts');
+    const khac = hang(`SELECT ta.user_id AS id FROM teacher_assignments ta JOIN classes c ON c.id = ta.class_id
+      WHERE ta.is_core = 1 AND ta.status = 'active' AND c.code LIKE 'MB %' AND ta.user_id != ? ORDER BY ta.id LIMIT 1`, gvcn.userId)[0];
+    assert(khac, 'demo thiếu GVCN lớp MB khác');
+    assert(ma(() => xu.thuHoiXuLy(loadPrincipal(khac.id), r1.id, { lyDo: 'Bấm nhầm' })) === 403, 'GVCN lớp khác');
+    assert(ma(() => xu.thuHoiXuLy(P.cpManager, r1.id, { lyDo: 'Bấm nhầm' })) === 403, 'QL chi nhánh khác');
+    assert(xu.xemXuLy(gvcn, r1.id).thuHoiThang === false && xu.xemXuLy(ql, r1.id).thuHoiThang === true, 'cờ thuHoiThang');
+    xu.thuHoiXuLy(gvcn, r1.id, { lyDo: 'Bấm nhầm' });
+    assert(ma(() => yc.duyetYeuCau(P.cpManager, theThuHoi(r1.id)[0].id)) === 403 && trangThai(r1.id) === 'done', 'QL chi nhánh khác duyệt thẻ');
+    yc.rutYeuCau(gvcn, theThuHoi(r1.id)[0].id);
+    xu.thuHoiXuLy(ql, r1.id, { lyDo: 'Ghi nhầm em' });
+    assert(hang("SELECT id FROM notifications WHERE user_id = ? AND dedup_key = ?", gvcn.userId, `yt-thu-hoi:${r1.id}`).length === 1, 'GVCN nhận chuông "để biết"');
+  }));
+
+  await checkAsync('L5-11 · đã xác nhận cấp bậc sau khi thu hồi → không huỷ quyết định được (400, nói lý do); thu hồi giữ', () => thu(() => {
+    const sid = moiEm(); const [v1] = nVp(sid, 1);
+    const r1 = xuLy(gvcn, sid, [v1]);
+    xu.thuHoiXuLy(ql, r1.id, { lyDo: 'Ghi nhầm em' });
+    xu.khaiBac(gvcn, sid, { bac: 2, ghiChu: 'Report 2 tháng 8, cô Hà gửi' });
+    assertThrows(() => yc.huyQuyetDinh(ql, theThuHoi(r1.id)[0].id), /xác nhận cấp bậc/, 'khai sau thu hồi chặn huỷ');
+    assert(trangThai(r1.id) === 'thu_hoi' && theThuHoi(r1.id)[0].trang_thai === 'duyet', 'giữ nguyên');
+  }));
 }

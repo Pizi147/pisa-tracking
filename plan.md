@@ -224,6 +224,9 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 
 ## 4. Việc chưa làm (kiểm với danh sách PR GitHub 11/10 — mọi PR tới #312 đã merge)
 
+- **LUAT-5 #495 — rà sâu 21/10 để lại (PTA bỏ qua, làm sau):** `huyDuoc` của thẻ thu hồi vướng `ux_ycd_dang_cho` (chung mọi loại thẻ) · `du_lieu` thẻ thu hồi
+  (bậc về / số vi phạm) không tự cập nhật khi GVCN sửa vi phạm của lần xử lý lúc thẻ còn chờ · người gửi đã rời lớp vẫn sửa / rút được thẻ của mình.
+
 ### OVERHAUL 11/10 (OV) — đặc tả DUYỆT 11/10, bắt đầu OV-1a · ưu tiên trên mọi việc khác
 - **Đặc tả (nguồn chi tiết duy nhất):** `docs/superpowers/specs/2026-10-11-overhaul-ux-workflow-design.md` — đối chiếu hiện trạng, ma trận vai,
   quy trình (lộ trình → bàn giao → KQĐR, SOS MT, dấu "-", huỷ/khôi phục), giao diện, **12 PR OV-1a … OV-6b** + phụ thuộc, tiêu chí nghiệm thu.
