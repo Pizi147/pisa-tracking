@@ -1017,6 +1017,8 @@ await checkAsync('TD6 (×3) · câu đã sửa không SCAN bảng lớn; migrate
  * 16/10 OV-13n: chụp lại 8 băm — đổi CÓ CHỦ Ý: SOS2/3 không điền sẵn "Trao đổi ngắn với HV" (số việc Phối hợp + seed Khôi/Lan đổi việc đã xác nhận).
  * 16/10 OV-13k gộp main 1694175 (OV-13l): chụp lại 4 băm dưới trên bản gộp — đã so JSON main 1694175 ↔ bản gộp trên bộ demo (QL / QT "Tất cả",
  *   "QT tat-ca cn", GVS / QL / GVCN "Của tôi", QL xem GVCN): chỉ thêm 3 việc `xem_nx_s` + hai nhãn "còn tồn từ" của GV S như dưới; còn lại trùng.
+ * 21/10 CV-LOI (sửa theo rà): chụp lại 'QT tat-ca' — chuyển lớp nay gán chủ Case trống (`ganChuCaseThieu` trong `apDungMotDong`): em chưa có lớp của
+ *   Task2(e) có Case trống chủ, chuyển sang lớp CP → Case có GV phụ trách → dòng Thêm PA hiện ở góc nhìn toàn hệ thống (trước: Case vô hình). 10 băm khác giữ.
  * 21/10 CV-LOI: chụp lại 10 băm (ADMIN giữ) — đổi CÓ CHỦ Ý (02 4.7 A13, 9.2-10): seed gán chủ Case không chủ theo luật tạo Case (Case 14 → GV R, 25 → GV S
  *   của lớp, ×3 cùng thế) nên GV đó có thêm "Thêm PA", không còn dòng "Chọn người phụ trách" cho GV / QL; dòng Case không chủ (lớp thiếu GV môn) chỉ cho
  *   người phân công được, thêm `thieuNguoi`. Chưa so JSON từng dòng với main — nguyên nhân lệch đọc từ mã + phép kiểm prCvLoi K1–K3.
@@ -1029,7 +1031,7 @@ await checkAsync('TD4-a (×3) · Công việc trùng JSON ảnh chụp trước 
   const { myWork, viecCuaNguoi } = await import('../worklist/mywork.ts');
   const ANH: Record<string, string> = {
     'QL toi': '05fe7561cdeeadc3', 'QT toi': '2f2924266adbdc88', 'GVCN toi': 'f6ff40501544a244', 'GVBM toi': 'a617afe0c9c8e789',
-    'GVCN_THUONG toi': 'f6ff40501544a244', 'ADMIN toi': '4ed1fc3fa34653f2', 'QL tat-ca': '2b3a44e2911e0431', 'QT tat-ca': 'de99bf76f246c2a3',
+    'GVCN_THUONG toi': 'f6ff40501544a244', 'ADMIN toi': '4ed1fc3fa34653f2', 'QL tat-ca': '2b3a44e2911e0431', 'QT tat-ca': 'bcc2e782c25f5774',
     'QT tat-ca cn': '7b9d4575696f96d6', 'QL gvcn': '3b10a8158bad5fb5', 'GVS toi': 'a1e80b115593d927',
   };
   const p = (v: Vai) => loadPrincipal(USER[v]);

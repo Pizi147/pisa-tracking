@@ -1177,6 +1177,8 @@ export function regularSheet(p: Principal, classId: number, kind?: string, today
   /* Quyền sửa ô tính MỘT lần cho mỗi môn — cùng cửa với `saveRegularScore`, không hỏi lại theo từng dòng. */
   const nhapSkill = new Map(prog.skills.map((k) => [k, scoreEditPath(p, classId, k) !== null]));
   const canEditSkill = new Map(prog.skills.map((k) => [k, ketThuc ? suaSauHoanTat : nhapSkill.get(k)!]));
+  /* CV-LOI (V4B H15): đổi lịch môn (Xếp lại bài vắng) — cùng luật `setSkillWeek`; lớp thường quyền theo lớp + môn, không theo em → tính một lần mỗi môn. */
+  const doiLichMon = new Map(prog.skills.map((k) => [k, !!attempts[0] && canMoveSkillSchedule(p, { classId, studentId: attempts[0].student_id, skill: k })]));
   /* Lịch và hạn chấm RIÊNG từng môn — một bài có thể trải hai ba tuần (mục 10.1). */
   const skillRows = loadSkillRows(attempts.map((a) => a.id));
   /* Mã tuần mà dấu "-" đã dời môn đi (C08) — đọc gộp một lần cho cả bảng. */
@@ -1268,7 +1270,7 @@ export function regularSheet(p: Principal, classId: number, kind?: string, today
             /** OV-13h (rà #410): lớp đã kết thúc — ô không nhận "-" (cùng câu `chanVangLopKetThuc`); null = gõ "-" được. */
             khongVang: ketThuc ? CAU_KHONG_VANG : null,
             /** CV-LOI (V4B H15): người xem đổi được lịch môn này (Xếp lại bài vắng) — cùng luật `setSkillWeek`. */
-            doiLich: canMoveSkillSchedule(p, { classId, studentId: a.student_id, skill: k }),
+            doiLich: doiLichMon.get(k) ?? false,
           };
         }),
         // Quá hạn khi có ÍT NHẤT MỘT môn đã tới hạn mà chưa chấm — không xét theo cả bài.
