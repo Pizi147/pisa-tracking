@@ -52,7 +52,7 @@ Kế hoạch các PR OV khác: planning viết **ngay trước khi giao** (theo 
 4. `npm run check` xanh **một lần** cuối PR (một lần một lúc, foreground); giữa các Task chỉ chạy phép kiểm của Task đó.
    **Bấm thử chỉ ở session code, MỘT lần, chỉ màn PR chạm**, đính ảnh vào PR: 1440 tối + 375 sáng (đủ 4 tổ hợp chỉ khi PR đổi
    bố cục/màu), vai = những vai PR chạm (thường QL + một GV). PR chỉ máy chủ: không ảnh — phép kiểm + số đo là đủ.
-5. PR có giao diện: `/impeccable audit` (một lần, cuối). Mọi PR: `/ponytail-review`, rồi mở PR (**không merge**). Không chạy
+5. PR có giao diện: `/impeccable audit` + `/web-design-guidelines` trên file PR chạm (một lần, cuối). Mọi PR: `/ponytail-review`, rồi mở PR (**không merge**). Không chạy
    thêm `requesting-code-review` / `verification-before-completion` / `finishing-a-development-branch` (planning đã rà).
 6. Mô tả PR **≤ 30 dòng**: làm gì (theo Task), phép kiểm, ảnh, giới hạn còn lại, chú thích `ponytail:`, ảnh sổ tay bị lệch.
 7. Merge sau người khác → `git merge origin/main`; chạy lại `npm run check` **chỉ khi có xung đột mã** (xung đột chỉ plan/CODE_MAP thì không).
@@ -65,6 +65,8 @@ Kế hoạch các PR OV khác: planning viết **ngay trước khi giao** (theo 
   check xanh và GitHub báo mergeable clean.
 - **Rà sâu** (agent mẫu 10B: worktree, `npm run check`, gọi API bằng vai khác, bấm thử) CHỈ khi PR: đổi quyền · có thể mất dữ
   liệu / migrate · sửa luồng chính (xếp lịch, nhập điểm, huỷ, chuyển lớp) · ảnh thiếu hoặc đáng ngờ · logic máy chủ lớn.
+  Rà sâu dùng agent ECC theo phạm vi (tối đa 2, CLAUDE.md "Rà PR bằng ECC"): quyền → `ecc:security-reviewer` ·
+  mất dữ liệu / migrate / API → `ecc:silent-failure-hunter` · logic lớn → `ecc:typescript-reviewer` / `ecc:react-reviewer`.
 - PR có giao diện: planning chạy thêm `impeccable` **`audit`** (skill trong repo từ #329, 12/10) trên phần màn PR chạm, ghi lỗi vào tin nhắn sửa.
 - Rà xong: planning soạn **tin nhắn sửa** (file:dòng) để chủ sản phẩm dán vào session code; sửa xong rà lại phần đã sửa.
   Việc nhỏ còn lại → ghi vào mục 4 file này (không để mất).
@@ -362,7 +364,9 @@ Chọn model ở ô chọn model **trước khi dán prompt**. **Không Fable**;
 | OV-2a | Opus 5.5 · XHigh | Opus 5.5 · High | full | `clarify` · `adapt` · `audit` | Quyền — rà sâu + `/security-review` |
 | OV-2b, OV-3a, OV-3c, OV-6a | Opus 5.5 · High | Sonnet 5.5 · High | lite | `layout` · `clarify` · `harden` · `adapt` · `audit` | Giao diện theo mockup |
 | OV-3b, OV-4b, OV-5, OV-6b1, OV-6b2 | Opus 5.5 · XHigh | Opus 5.5 · High | lite | `layout` · `clarify` · `harden` · `adapt` · `audit` | Lớn, migrate / luồng chính — rà sâu |
-| Session planning | Opus 5.5 · XHigh | Opus 5.5 · High | — | `critique` khi cần | brainstorming · writing-plans |
+| Session planning | Opus 5.5 · XHigh | Opus 5.5 · High | — | `critique` khi cần (+ `ui-ux-pro-max` rà UX lớn) | brainstorming · writing-plans · agent ECC khi rà sâu (1.3) |
+
+Mọi PR có giao diện: `audit` + `web-design-guidelines` cuối PR (1.2 bước 5).
 
 ## 7. Chủ sản phẩm đã trả lời 04/10 — ✅ đã làm hết (HK2, DH, K26, U12). Chi tiết: `git show 0ac4c41b:plan.md`.
 
@@ -386,7 +390,7 @@ Chọn model ở ô chọn model **trước khi dán prompt**. **Không Fable**;
 Nhánh mới từ origin/main mới nhất. Làm theo plan.md mục 1.2 + 1.3b: Task ngay trong session (executing-plans, KHÔNG subagent),
 test-driven-development (đỏ trước), systematic-debugging khi lỗi lạ, brainstorming chỉ khi cần chủ SP quyết (dừng, hỏi).
 npm run check MỘT lần cuối → bấm thử MỘT lần chỉ màn PR chạm (1440 tối + 375 sáng, vai PR chạm), ảnh đính PR; PR chỉ máy chủ
-không cần ảnh → /impeccable audit (nếu có giao diện) → /ponytail-review → mở PR vào main, KHÔNG merge. Mô tả PR ≤ 30 dòng.
+không cần ảnh → /impeccable audit + /web-design-guidelines (nếu có giao diện) → /ponytail-review → mở PR vào main, KHÔNG merge. Mô tả PR ≤ 30 dòng.
 Xong: [x] kế hoạch, một dòng mục 11, CODE_MAP.md nếu thêm/xoá file. Cổng PORT/WEB_PORT riêng, không 4000/5173.
 **Dòng đọc Turso (chủ SP 19/10, mọi PR từ nay):** đường API mới / đổi phải nạp ít nhất có thể — không `SELECT a.*` khi chỉ cần vài cột, không nạp mọi lượt khi màn chỉ cần lượt gần nhất, gom câu dùng chung trong một request, cột lọc mới có chỉ mục; mô tả PR ghi số câu + dòng đọc trước → sau của đường chạm (log `[cham]` / `tocDo.run`).
 PR đổi màn nào sửa mục Hướng dẫn của màn đó (`shared/huongDan/<vai>.ts`, Theo màn + bước của Việc hằng tuần); đổi / xoá phần tử có
