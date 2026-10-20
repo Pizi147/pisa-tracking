@@ -205,7 +205,7 @@ function DongLichThi({ r, ds, moRong, onMoRong, onLuu }: {
         <span className="block text-slate-100">{r.chuyenSang ? `${t('Dự kiến')} ${nhanThang(r.chuyenSang)}` : lich}</span>
         {!r.chuyenSang && r.coNgay && r.chot && (
           /* Cột 104 px: ngày chốt một dòng, người chốt dòng dưới (không bẻ giữa "·"). */
-          <span className="block text-[11px] leading-4 text-slate-500">
+          <span className="block text-[12px] leading-4 text-slate-500">
             <span className="block whitespace-nowrap">{t('chốt {ngay}', { ngay: shortDate(r.chot.luc, homNay) })}</span>
             {r.chot.ai && <span className="block truncate" title={r.chot.ai}>{r.chot.ai}</span>}
           </span>
@@ -244,7 +244,7 @@ function DongLichThi({ r, ds, moRong, onMoRong, onLuu }: {
       <div role="cell" className="min-w-0">
         <input className="field h-8 w-full text-xs max-sm:min-h-[44px]" aria-label={t('Ghi chú họp')} placeholder={t('Thêm ghi chú…')} maxLength={300} disabled={!r.coTheSua}
           value={ghiChu} onChange={(e) => setGhiChu(e.target.value)} onBlur={luuGhiChu} onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }} />
-        {r.luu?.ghiChu && r.luu.ai && <span className="block truncate text-[11px] text-slate-500">{r.luu.ai} · {gio(r.luu.luc)}</span>}
+        {r.luu?.ghiChu && r.luu.ai && <span className="block truncate text-[12px] text-slate-500">{r.luu.ai} · {gio(r.luu.luc)}</span>}
       </div>
     </div>
   );
@@ -252,7 +252,7 @@ function DongLichThi({ r, ds, moRong, onMoRong, onLuu }: {
 
 function TrangThai({ tt }: { tt: TrangThaiLuu }) {
   return (
-    <p className="m-0 mt-1 text-[11px]" aria-live="polite">
+    <p className="m-0 mt-1 text-[12px]" aria-live="polite">
       {tt.kieu === 'luu' && <span className="text-slate-400">{t('Đang lưu…')}</span>}
       {tt.kieu === 'xong' && <span className="text-slate-300">{t('Đã lưu')}</span>}
       {tt.kieu === 'loi' && (

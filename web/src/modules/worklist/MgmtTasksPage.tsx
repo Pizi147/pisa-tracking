@@ -225,7 +225,7 @@ export function TasksBoard() {
                     ? `${r.stopReason ?? ''} · cần: ${r.helpName ?? '—'} · xem lại ${r.reviewOn ? fmtDate(r.reviewOn) : '—'}`
                     : r.stopReason ?? '';
                   return (
-                    <tr key={r.id} className="row-hover cursor-pointer" onClick={() => setOpen(r.id)}>
+                    <tr key={r.id} className="bam cursor-pointer" onClick={() => setOpen(r.id)}>
                       <td className="td">
                         <span className="text-slate-100" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{r.title}</span>
                         <span className="block text-xs text-slate-500 mt-0.5">
@@ -472,7 +472,7 @@ function UpdateDialog({ open, onClose, task, onDone }: {
 
   return (
     <section className="space-y-3 rounded-[10px] border p-3" style={{ borderColor: 'var(--line-strong)' }} aria-label="Cập nhật tiến độ">
-      <b className="block text-[13.5px] text-slate-100">Cập nhật tiến độ</b>
+      <b className="block text-[14px] text-slate-100">Cập nhật tiến độ</b>
       <div className="space-y-3">
         <Field label="Trạng thái" as="div">
           <div className="flex flex-wrap gap-1.5">

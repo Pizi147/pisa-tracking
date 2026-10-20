@@ -27,12 +27,12 @@ export async function runPrHk2Tests(t: YThucTestKit) {
   const th: any = await import('../phanTich/tongHop.ts');
   console.log('\nPR-HK2 · Task 1 · hai họ chip, "+n", ⋯, nút lọc');
 
-  check('C1 · Nhan.tsx export CHIP_TRON và CHIP_VUONG: cùng text-[11.5px], leading-[18px], border', () => {
+  check('C1 · Nhan.tsx export CHIP_TRON và CHIP_VUONG: cùng text-[13px], leading-[22px], border (NEN-TYPO-MAU: chip 13 / 600 cao 24)', () => {
     const s = doc('web/src/ui/Nhan.tsx');
     for (const ten of ['CHIP_TRON', 'CHIP_VUONG']) {
       const m = new RegExp(`export const ${ten} = '([^']*)'`).exec(s);
       assert(m, `${ten} chưa export`);
-      for (const lop of ['text-[11.5px]', 'leading-[18px]', 'border']) assert(m![1].split(' ').includes(lop), `${ten} thiếu ${lop}`);
+      for (const lop of ['text-[13px]', 'leading-[22px]', 'border']) assert(m![1].split(' ').includes(lop), `${ten} thiếu ${lop}`);
     }
   });
 

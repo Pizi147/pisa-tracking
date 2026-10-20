@@ -51,8 +51,8 @@ export function TimKeHoach({ branchId, value, onChange, onChonLop, onChonHv, cla
     else if (e.key === 'Enter' && mo && ds[dong]) { e.preventDefault(); chon(ds[dong]); }
     else if (e.key === 'Escape' && mo) { e.stopPropagation(); setMo(false); }
   };
-  const dongCls = (i: number) => `flex min-h-[44px] cursor-pointer flex-col justify-center rounded px-2 text-xs sm:min-h-[36px] ${i === dong ? 'bg-white/10' : 'hover:bg-white/5'}`;
-  const nhom = 'px-2 pb-0.5 pt-1.5 text-[11px] font-bold text-slate-400';
+  const dongCls = (i: number) => `flex min-h-[44px] cursor-pointer flex-col justify-center rounded px-2 text-xs sm:min-h-[36px] ${i === dong ? 'bg-white/10' : 'bam'}`;
+  const nhom = 'px-2 pb-0.5 pt-1.5 text-[12px] font-bold text-slate-400';
 
   return (
     <div ref={goc} className={`relative ${className}`}>

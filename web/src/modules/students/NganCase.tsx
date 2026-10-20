@@ -313,10 +313,10 @@ export function NganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose
               ? <Nhan tone="muted" title={dich(data.systemCloseLabel)}>{t('Hệ thống đóng · {ly}', { ly: dich(data.systemCloseLabel) })}</Nhan>
               : data.trangThaiV4
                 ? (data.tamDungTu && data.trangThaiV4.t === 'qua-han'
-                  ? <><NhanTamDung tu={data.tamDungTu} /><span className="text-[12.5px] text-slate-300">{dich(data.trangThaiV4.chu)}</span></>
+                  ? <><NhanTamDung tu={data.tamDungTu} /><span className="text-[13px] text-slate-300">{dich(data.trangThaiV4.chu)}</span></>
                   : <NhanTrangThai t={data.trangThaiV4.t} chu={dich(data.trangThaiV4.chu)} />)
                 : <Nhan tone={data.status === 'done' ? 'done' : data.status === 'open' ? 'muted' : 'doing'}>{caseStatusLabel(data.status)}</Nhan>}
-            <span className="min-w-0 text-[12.5px] text-slate-400">
+            <span className="min-w-0 text-[13px] text-slate-400">
               {t('mở {tuan}', { tuan: tuanLich(data.detectedAt, homNay) })}{data.reportedBy ? ` · ${t('{ten} báo', { ten: data.reportedBy })}` : ''}
               {/* Hạn báo kết quả cả Case chỉ khi KHÔNG có PA chạy — có PA chạy thì hạn của PA đã nói (B-5, Q2). */}
               {!data.tamDungTu && canDong && !conPaChay && data.followUntil && !data.sos?.tam ? ` · ${t('hạn báo kết quả {ngay}', { ngay: ngan(data.followUntil) })}` : ''}
@@ -325,7 +325,7 @@ export function NganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose
             {nutDau}
           </div>
           {canDong && ht?.an && ht.dong && (
-            <p className="m-0 flex items-center gap-1.5 text-[12.5px] text-slate-300">
+            <p className="m-0 flex items-center gap-1.5 text-[13px] text-slate-300">
               <span className="text-slate-400"><KhoaNho /></span>
               <span>{dk ? <>{dich(dk[1])} · <b className="font-semibold text-slate-100">{dk[2]}</b></> : dich(ht.dong)}</span>
             </p>

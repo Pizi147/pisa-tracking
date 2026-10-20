@@ -193,8 +193,8 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong = 'hep', tabs, ngCanh, q
 export function Khoi({ tieuDe, luat, so, children }: { tieuDe: string; luat?: ReactNode; /** Số bước trong vòng tròn nhỏ trước tiêu đề (panel nhiều bước, mockup MT phần 1). */ so?: number; children: ReactNode }) {
   return (
     <section className="mt-3.5 border-t pt-3.5 first:mt-0 first:border-t-0 first:pt-3.5" style={{ borderColor: 'var(--line)' }}>
-      <h3 className="mb-2.5 mt-0 flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-[.06em] text-slate-500">
-        {so !== undefined && <span aria-hidden className="inline-grid h-[18px] w-[18px] place-items-center rounded-full bg-doing-bg text-[11px] font-bold tabular-nums text-doing">{so}</span>}
+      <h3 className="mb-2.5 mt-0 flex items-center gap-1.5 text-[12px] font-extrabold  text-slate-500">
+        {so !== undefined && <span aria-hidden className="inline-grid h-[18px] w-[18px] place-items-center rounded-full bg-doing-bg text-[12px] font-bold tabular-nums text-doing">{so}</span>}
         {tieuDe}{luat && <NutLuat>{luat}</NutLuat>}
       </h3>
       <div className="space-y-3">{children}</div>
@@ -227,7 +227,7 @@ export function Truong({ nhan, batBuoc, tuyChon, thieu, phu, loi, dem, as = 'lab
     </span>
     {dem && dem.co < dem.can && <span className="text-xs font-normal tabular-nums text-slate-500">{dem.co}/{dem.can}</span>}
   </>;
-  const lopNhan = 'mb-1 flex items-baseline gap-2 text-[11.5px] font-bold text-slate-200';
+  const lopNhan = 'mb-1 flex items-baseline gap-2 text-[12px] font-bold text-slate-200';
   const noi = useNoiLoi(loi);
   return (
     <BaoOTrongNhan.Provider value={setIdO}>

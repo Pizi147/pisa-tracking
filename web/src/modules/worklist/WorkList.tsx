@@ -96,7 +96,7 @@ export function DongViec({ it, onOpen, nutPhu, gon = false, chon = null, xong, m
   const dangChon = chon === it.key;
   /* OV-5a: dòng đang mở ở panel — `row-active` (nền nhấn + vạch trái, DESIGN.md); vừa xong — mờ + gạch, đứng nguyên chỗ (mockup M1 §1). */
   /* OV-15a: quá hạn chỉ là chữ cam + ⚠ ở cột hạn — không tô hàng, không chip "Quá hạn" / "Cần làm" lặp đầu dòng. */
-  const nen = dangChon ? 'row-active' : 'hover:bg-white/5';
+  const nen = dangChon ? 'row-active' : 'bam';
   return (
     /* PR-VAI-a (§7.3, mockup 23 màn A): ba cột thẳng qua mọi nhóm — việc · hạn (12 px) · nút. OV-5a `gon`: hai cột, cả dòng bấm. */
     <div data-hd="cv-dong" className={`grid grid-cols-[minmax(0,1fr)] gap-x-3 gap-y-1 py-2 pl-3 pr-3 ${gon
@@ -159,13 +159,13 @@ function DongCon({ it, loaiHan, onOpen, gon, chon, xong, moTrang = false }: {
     /* OV-5a: cột trái Công việc — một em là một việc bấm được (panel phải), không nút riêng. */
     return (
       <button type="button" onClick={() => onOpen(it)} aria-current={chon ? 'true' : undefined}
-        className={`grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 border-0 px-2.5 py-1.5 text-left text-[12.5px] ${
-          chon ? 'row-active' : 'bg-transparent hover:bg-white/5'} ${xong ? 'opacity-55' : ''}`}>
+        className={`grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 border-0 px-2.5 py-1.5 text-left text-[13px] ${
+          chon ? 'row-active' : 'bg-transparent bam'} ${xong ? 'opacity-55' : ''}`}>
         <span className="min-w-0">
           <span className={`block break-words font-semibold text-slate-100 ${xong ? 'line-through decoration-slate-500' : ''}`}>
             {dich(it.conTen)}{moTrang && <span aria-label={t('mở trang')} className="ml-1 text-xs font-normal text-[color:var(--accent)]">↗</span>}
           </span>
-          {it.conPhu && <small className="block break-words text-[11.5px] font-normal text-slate-500">{dich(it.conPhu)}</small>}
+          {it.conPhu && <small className="block break-words text-[12px] font-normal text-slate-500">{dich(it.conPhu)}</small>}
         </span>
         <span className="text-xs [&>span]:text-xs">
           {xong ? null : it.due ? <Han loai={loaiHan ?? 'viec-van-hanh'} han={it.due} haiDong /> : laViecChamCheo(it) ? null : <span className="text-slate-500">{t('Chưa có hạn')}</span>}
@@ -174,10 +174,10 @@ function DongCon({ it, loaiHan, onOpen, gon, chon, xong, moTrang = false }: {
     );
   }
   return (
-    <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-0.5 px-2.5 py-1.5 text-[12.5px] sm:grid-cols-[minmax(0,1fr)_150px_220px]">
+    <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-0.5 px-2.5 py-1.5 text-[13px] sm:grid-cols-[minmax(0,1fr)_150px_220px]">
       <button type="button" className="min-w-0 appearance-none border-0 bg-transparent p-0 text-left cursor-pointer" onClick={() => onOpen(it)}>
         <span className="block break-words font-semibold text-slate-100">{dich(it.conTen)}</span>
-        {it.conPhu && <small className="block break-words text-[11.5px] font-normal text-slate-500">{dich(it.conPhu)}</small>}
+        {it.conPhu && <small className="block break-words text-[12px] font-normal text-slate-500">{dich(it.conPhu)}</small>}
       </button>
       <span className="col-start-1 text-xs sm:col-start-auto [&>span]:text-xs">
         {it.due ? <Han loai={loaiHan ?? 'viec-van-hanh'} han={it.due} haiDong /> : laViecChamCheo(it) ? null : <span className="text-slate-500">{t('Chưa có hạn')}</span>}

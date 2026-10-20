@@ -495,7 +495,7 @@ function TrangTheoLop({ admin }: { admin: boolean }) {
           {/* Điện thoại (< 640 px, D2): mỗi lớp một thẻ gập, mỗi em một thẻ con — không bảng, không cuộn ngang. */}
           {dienThoai && nhomLopHien.map((g) => (
             <section key={g.k} className="space-y-2" aria-label={g.k === 'ft' ? t('Lớp Fast Track') : t('Lớp thường')}>
-              {nhomLopHien.length > 1 && <h2 className="m-0 px-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">{g.k === 'ft' ? 'Fast Track' : t('Lớp thường')}</h2>}
+              {nhomLopHien.length > 1 && <h2 className="m-0 px-1 text-[12px] font-semibold  text-slate-500">{g.k === 'ft' ? 'Fast Track' : t('Lớp thường')}</h2>}
               {g.lop.map((c) => (
                 <HopLop key={c.id} the admin={admin} lop={c} soViecQuaHan={demQuaHan(viecLop, c.id).viec} mo={openIds.includes(c.id)} onDoiMo={() => doiMo(c.id)} dsHocVien={dsHocVien} dsLop={dsLopCua(g)} onThuTu={baoThuTu}
                   chiHien={dangLoc ? (idsTheoLop.get(c.id) ?? new Set()) : null} sapXep={sapXep} onMoCase={moCase} chon={chon}
@@ -532,7 +532,7 @@ function TrangTheoLop({ admin }: { admin: boolean }) {
           : !sos.data ? <Skeleton rows={6} />
             : (
               <>
-                <p className="m-0 text-[12.5px] text-slate-400" aria-live="polite">
+                <p className="m-0 text-[13px] text-slate-400" aria-live="polite">
                   {t('Đang xem')}: <b className="font-semibold text-slate-200">{t('Đang SOS')} · {sos.data.toanBo ? t('Toàn bộ 8 tuần') : t('một tuần thi')}</b>
                   {' · '}<span className="tabular-nums">{t('{n} học viên', { n: demGoc.sos ?? 0 })}{sos.data.toanBo ? ` · ${t('{n} lượt SOS', { n: sosRows.length })}` : ''} · {t('{n} lớp', { n: new Set(sosRows.map((r) => r.classId)).size })}</span>
                 </p>
@@ -548,7 +548,7 @@ function TrangTheoLop({ admin }: { admin: boolean }) {
           : !work.data || !data ? <Skeleton rows={6} />
             : (
               <>
-                <p className="m-0 flex flex-wrap items-center gap-x-2 text-[12.5px] text-slate-400" aria-live="polite">
+                <p className="m-0 flex flex-wrap items-center gap-x-2 text-[13px] text-slate-400" aria-live="polite">
                   <span>{t('Đang xem')}: <b className="font-semibold text-slate-200">{t('Cần làm')}{locPhu ? ` · ${nhanLocPhu[locPhu]}` : ''}</b></span>
                   <span className="tabular-nums">· {t('{n} học viên', { n: emCua(viecHien) })} · {t('{n} lớp', { n: new Set(viecHien.map((v) => v.classId)).size })}</span>
                   {locPhu && <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 sm:min-h-0" onClick={() => setParam({ loc: null })}>{t('Xoá lọc')}</button>}

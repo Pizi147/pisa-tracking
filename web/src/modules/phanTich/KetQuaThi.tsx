@@ -83,7 +83,7 @@ export function BangMock({ pv, kqMacDinh, trongPanel }: { pv: PhamViPhanTich; kq
     const x = r.kn[k];
     if (x.band === null) return <span className="whitespace-nowrap text-xs text-faint">{t('chưa có')}</span>;
     const kq = x.dat === false ? 'duoi' : r.kyVong !== null && x.band > r.kyVong ? 'vuot' : 'bang';
-    return <span className="inline-flex items-center gap-1 tabular-nums">{x.band.toFixed(1)}{x.dat !== null && <DauKetQua kq={kq} size={11} />}</span>;
+    return <span className="inline-flex items-center gap-1 tabular-nums">{x.band.toFixed(1)}{x.dat !== null && <DauKetQua kq={kq} />}</span>;
   };
   const ketQua = (r: DongMock) => (
     <span className={`whitespace-nowrap text-xs font-semibold ${r.ketQua === 'dat' ? 'text-ok' : r.ketQua === 'chua-dat' ? 'text-bad' : 'text-muted'}`}>{NHAN_KET_QUA_MOCK[r.ketQua]}</span>

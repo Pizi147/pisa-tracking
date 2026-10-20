@@ -23,9 +23,9 @@ export function ChipKyNang({ kn, attemptId, khaiGiang, tongTuan, deXuat, nhanDeX
   if (attemptId === null) {
     return (
       <button type="button" onClick={(e) => onMo(null, e.currentTarget)} title={`Xếp ${tenDot} cho em này (đang là đề xuất)`}
-        className="flex h-[44px] w-full flex-col items-center justify-center rounded border border-dashed border-muted-line text-[11px] text-slate-500 hover:text-slate-200">
+        className="flex h-[44px] w-full flex-col items-center justify-center rounded border border-dashed border-muted-line text-[12px] text-slate-500 hover:text-slate-200">
         <span>đề xuất {deXuat ? tuanNam(deXuat) : '—'}</span>
-        {nhanDeXuat && <span className="text-[11px]">{nhanDeXuat}</span>}
+        {nhanDeXuat && <span className="text-[12px]">{nhanDeXuat}</span>}
       </button>
     );
   }
@@ -50,7 +50,7 @@ export function ChipKyNang({ kn, attemptId, khaiGiang, tongTuan, deXuat, nhanDeX
   }
 
   if (!g.chip.length) {
-    return <div className={bao}><span className="text-center text-[11px] text-slate-600" title="Đợt này không thi kỹ năng nào">—</span></div>;
+    return <div className={bao}><span className="text-center text-[12px] text-slate-600" title="Đợt này không thi kỹ năng nào">—</span></div>;
   }
 
   const hienThi = g.chip.slice(0, 2);
@@ -67,11 +67,11 @@ export function ChipKyNang({ kn, attemptId, khaiGiang, tongTuan, deXuat, nhanDeX
   );
 }
 
-const CHIP_CLS = 'flex h-[20px] w-full items-center justify-between gap-1 rounded border px-1.5 text-[11px] leading-none';
+const CHIP_CLS = 'flex h-[20px] w-full items-center justify-between gap-1 rounded border px-1.5 text-[12px] leading-none';
 
 function NhanKhoa({ tuan, khaiGiang, tongTuan }: { tuan: string | null; khaiGiang?: string | null; tongTuan?: number | null }) {
   const n = nhanTuanKhoa(tuan, khaiGiang ?? null, tongTuan ?? null);
-  return n ? <span className="ml-1 text-[11px] font-normal">{n}</span> : null;
+  return n ? <span className="ml-1 text-[12px] font-normal">{n}</span> : null;
 }
 
 /**
@@ -107,7 +107,7 @@ function Chip({ c, khaiGiang, tongTuan, them, title, onMo, ct = null }: {
         {chua ? 'chưa xếp' : tuanNam(c.tuan!)}
         {c.trangThai === 'xong' && !c.khongDuThi && <span aria-hidden title="Đã thi"> ✓</span>}
         {!chua && <NhanKhoa tuan={c.tuan} khaiGiang={khaiGiang} tongTuan={tongTuan} />}
-        {them && <span className="ml-1 text-[11px]" title={them.ds}>+{them.n}</span>}
+        {them && <span className="ml-1 text-[12px]" title={them.ds}>+{them.n}</span>}
       </span>
     </button>
   );
@@ -124,13 +124,13 @@ export function ChipDotFT({ so, kn, cu, homNay, ct = null, chon, onMo }: {
   const nhom = nhomKyNang(kn, homNay, ct, cu);
   /* C20 (OV-15c): Kế hoạch Test luôn kèm năm — tuần của nhóm (nhóm "xong" = tuần muộn nhất) đọc lại từ `kn`, cùng luật gom của `nhomKyNang`. */
   const tuanCua = (ks: readonly KyNangKH[]) => ks.map((k) => kn[k]?.tuan).filter((x): x is string => !!x).sort().pop() ?? null;
-  if (!nhom.length) return <span className="block text-center text-[11px] text-slate-600" title="Đợt này không thi kỹ năng nào">—</span>;
+  if (!nhom.length) return <span className="block text-center text-[12px] text-slate-600" title="Đợt này không thi kỹ năng nào">—</span>;
   return (
     <div className="mx-auto flex w-full max-w-[168px] flex-col gap-[3px]">
       {nhom.map((g) => (
         <button key={g.ten} type="button" onClick={(e) => onMo(e.currentTarget)} title={g.title}
           aria-label={`MT${so}, ${g.doc}`}
-          className={`flex min-h-5 max-sm:min-h-[32px] w-full flex-wrap items-center justify-between gap-x-1 rounded-md border px-1.5 text-left text-[11.5px] font-semibold leading-[18px] ${MAU_O_MT[g.kieu]} ${chon ? 'ring-2 ring-[var(--text)]' : ''}`}>
+          className={`flex min-h-5 max-sm:min-h-[32px] w-full flex-wrap items-center justify-between gap-x-1 rounded-md border px-1.5 text-left text-[12px] font-semibold leading-[18px] ${MAU_O_MT[g.kieu]} ${chon ? 'ring-2 ring-[var(--text)]' : ''}`}>
           {/* Không cắt chữ (FIX-DTL): tuần dài (`W4 MAR 2026`) xuống dòng trong chip, cột giữ hẹp (C6). */}
           <span className="font-bold">
             {g.ten}{g.viec && <span className="font-medium"> · {g.viec}</span>}

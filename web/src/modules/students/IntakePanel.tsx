@@ -336,7 +336,7 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
                     </tr>
                     {mo && (
                       <tr>
-                        <td colSpan={cols.length + 2} className="td surface-2 px-2 py-2 text-[12.5px] text-slate-200">
+                        <td colSpan={cols.length + 2} className="td surface-2 px-2 py-2 text-[13px] text-slate-200">
                           {/* Chi tiết trải ngang nhưng neo ở mép trái vùng cuộn — trên điện thoại vẫn đọc được, không phải cuộn ngang. */}
                           <div className="sticky left-0 max-w-[calc(100vw-4rem)] whitespace-normal">
                             Dòng {i + 1}

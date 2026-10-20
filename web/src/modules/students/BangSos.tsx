@@ -50,7 +50,7 @@ function TheoCase({ r, dam, chu }: { r: DongSos; dam: ((topic: string | null) =>
         const x = chu(c);
         return (
           <span key={c.id} className={`flex min-w-0 items-baseline gap-1.5 ${c.done ? 'opacity-60' : ''}`}>
-            <span className={`shrink-0 text-[11.5px] font-bold ${mo ? 'text-slate-500' : 'text-slate-200'}`}>{c.topic ? skillShort(c.topic) : 'Case'}</span>
+            <span className={`shrink-0 text-[12px] font-bold ${mo ? 'text-slate-500' : 'text-slate-200'}`}>{c.topic ? skillShort(c.topic) : 'Case'}</span>
             {/* OV-14b: chữ dài cắt — rê chuột đọc đủ (mẫu truncate + title, G4). */}
             <span className={`min-w-0 truncate text-xs ${mo ? 'text-slate-500' : 'text-slate-300'}`} title={typeof x === 'string' ? x : undefined}>{x}</span>
           </span>
@@ -157,7 +157,7 @@ export function BangSos({ data, cot, dam, dienThoai, ds, onMo, dangMo = null }: 
       <div className="space-y-2">
         {nhom.map((g) => (
           <section key={g.k} className="space-y-2" aria-label={g.k === 'ft' ? t('Lớp Fast Track') : t('Lớp thường')}>
-            {nhom.length > 1 && <h2 className="m-0 px-1 text-[11.5px] font-semibold uppercase tracking-wide text-slate-500">{g.k === 'ft' ? 'Fast Track' : t('Lớp thường')}</h2>}
+            {nhom.length > 1 && <h2 className="m-0 px-1 text-[12px] font-semibold  text-slate-500">{g.k === 'ft' ? 'Fast Track' : t('Lớp thường')}</h2>}
             {g.lop.map((em) => (
               <div key={em[0].classId} className="card overflow-hidden">
                 <button type="button" aria-expanded={mo(em[0].classId)} onClick={() => doi(em[0].classId)}

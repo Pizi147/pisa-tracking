@@ -150,7 +150,7 @@ export async function runPrSangTests(t: YThucTestKit) {
     assert(!/Inter/.test(cfgTho.replace(/\/\/.*$/gm, '')), 'tailwind.config.js không khai Inter');
   });
 
-  check('SANG · S8: không chữ < 11 px; Nhan 11,5 px; slate-600/700 chỉ bọc dấu trang trí (E4)', () => {
+  check('SANG · S8: không chữ < 11 px; Nhan 13 px (NEN-TYPO-MAU); slate-600/700 chỉ bọc dấu trang trí (E4)', () => {
     const hong: string[] = [];
     for (const { f, text } of nguon) {
       for (const [n, s] of dongNguon(text)) if (/text-\[(?:9(?:\.5)?|10|10\.5)px\]/.test(s)) hong.push(`${f}:${n} chữ nhỏ`);
@@ -160,7 +160,7 @@ export async function runPrSangTests(t: YThucTestKit) {
         hong.push(`${f}: slate-600/700 bọc chữ "${nd.slice(0, 30)}"`);
       }
     }
-    assert(/text-\[11\.5px\]/.test(nguon.find((x) => x.f === 'web/src/ui/Nhan.tsx')?.text ?? ''), 'ui/Nhan.tsx phải có text-[11.5px]');
+    assert(/text-\[13px\]/.test(nguon.find((x) => x.f === 'web/src/ui/Nhan.tsx')?.text ?? ''), 'ui/Nhan.tsx phải có text-[13px] (NEN-TYPO-MAU: chip 13)');
     assert(hong.length === 0, hong.slice(0, 10).join(' · ') + (hong.length > 10 ? ` … (${hong.length})` : ''));
   });
 

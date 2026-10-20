@@ -90,11 +90,11 @@ export function TabTongKetLop({ classId }: { classId: number }) {
               {ft ? (
                 <table className="w-full min-w-[1000px] text-[13px]">
                   <thead>
-                    <tr className="text-[11.5px] text-slate-400" style={{ background: 'var(--surface-2)' }}>
+                    <tr className="text-[12px] text-slate-400" style={{ background: 'var(--surface-2)' }}>
                       <th colSpan={3} /><th colSpan={6} className="border-b px-3 py-1.5 text-center font-semibold" style={{ borderColor: 'var(--line)' }}>{t('MT cuối')}</th>
                       <th colSpan={2} className="border-b px-3 py-1.5 text-center font-semibold" style={{ borderColor: 'var(--line)' }}>{t('Thi thật')}</th><th />
                     </tr>
-                    <tr className="text-left text-[11.5px] text-slate-400" style={{ background: 'var(--surface-2)' }}>
+                    <tr className="text-left text-[12px] text-slate-400" style={{ background: 'var(--surface-2)' }}>
                       <th className="px-3 py-2 font-semibold">{t('Học viên')}</th><th className="px-3 py-2 text-right font-semibold">{t('Đầu vào')}</th><th className="px-3 py-2 text-right font-semibold">Target</th>
                       <th className="px-3 py-2 font-semibold">MT</th>
                       {['L', 'R', 'W', 'S', 'OVR', 'OVR'].map((h, i) => <th key={i} className="px-3 py-2 text-right font-semibold">{h}</th>)}
@@ -124,7 +124,7 @@ export function TabTongKetLop({ classId }: { classId: number }) {
               ) : (
                 <table className="w-full min-w-[620px] text-[13px]">
                   <thead>
-                    <tr className="text-left text-[11.5px] text-slate-400" style={{ background: 'var(--surface-2)' }}>
+                    <tr className="text-left text-[12px] text-slate-400" style={{ background: 'var(--surface-2)' }}>
                       <th className="px-3 py-2 font-semibold">{t('Học viên')}</th><th className="px-3 py-2 font-semibold">Progress Test</th><th className="px-3 py-2 font-semibold">Final Test</th><th className="px-3 py-2 font-semibold">{t('Kết luận khoá')}</th>
                     </tr>
                   </thead>
@@ -152,7 +152,7 @@ export function TabTongKetLop({ classId }: { classId: number }) {
                       </div>
                       {ft ? (k ? <Nhan tone={k.tone}>{k.chu}</Nhan> : null) : (d.roiSom ? null : <Huong d={d} />)}
                     </div>
-                    <dl className="m-0 mt-1.5 grid grid-cols-[auto_1fr] items-center gap-x-3 gap-y-1 text-[12.5px]">
+                    <dl className="m-0 mt-1.5 grid grid-cols-[auto_1fr] items-center gap-x-3 gap-y-1 text-[13px]">
                       {ft ? (
                         <>
                           <dt className="text-slate-500">{d.luotCuoi?.nhan ? dich(d.luotCuoi.nhan) : t('MT cuối')}</dt>

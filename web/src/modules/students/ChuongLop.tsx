@@ -46,7 +46,7 @@ function TenCaseChuong({ ten }: { ten: string }) {
   if (!m) return <span className="min-w-0">{dich(ten)}</span>;
   return (
     <>
-      <span className="rounded border border-[color:var(--line-strong)] px-1 text-[11px] font-semibold leading-4 tabular-nums text-slate-300">{m[1]}</span>
+      <span className="rounded border border-[color:var(--line-strong)] px-1 text-[12px] font-semibold leading-4 tabular-nums text-slate-300">{m[1]}</span>
       <span className="min-w-0">{dich(m[2])}</span>
       {m[3] && <ChipSos muc={Number(m[3])} dot={m[1]} tinh />}
     </>
@@ -121,9 +121,9 @@ function TheChuong({ c, homNay, onChon }: { c: ChuongWeb; homNay: string; onChon
       className={`flex h-full min-w-0 cursor-pointer flex-col gap-2.5 rounded-xl border bg-[color:var(--surface)] px-3.5 py-3 ${c.dangHoc ? 'border-[color:var(--accent)] shadow-lg' : ''}`}
       style={c.dangHoc ? undefined : { borderColor: 'var(--line)' }}>
       <div className="flex flex-col gap-0.5">
-        <span className={`text-[11px] font-bold tracking-[.05em] ${c.dangHoc ? 'text-[color:var(--accent)]' : 'text-slate-400'}`}>{dich(c.nhan)}</span>
+        <span className={`text-[12px] font-bold tracking-[.05em] ${c.dangHoc ? 'text-[color:var(--accent)]' : 'text-slate-400'}`}>{dich(c.nhan)}</span>
         {/* Bàn phím: mã lớp là nút (cả thẻ bấm được bằng chuột) — Tab tới được mọi chương, không lồng liên kết ghim vào nút. */}
-        <button type="button" className="self-start rounded border-0 bg-transparent p-0 text-left text-[16px] font-bold leading-tight text-slate-100"
+        <button type="button" className="self-start rounded border-0 bg-transparent p-0 text-left text-[15px] font-bold leading-tight text-slate-100"
           title={t('Xem trục tuần {lop}', { lop: c.code })} onClick={(e) => { e.stopPropagation(); onChon(c); }}>{c.code}</button>
         <span className="text-[12px] tabular-nums text-slate-400">{khiChuong(c, homNay)}</span>
         {c.gvcn && <span className="text-[12px] text-slate-400">{t('GVCN')} {c.gvcn}</span>}
@@ -155,7 +155,7 @@ function TheChuong({ c, homNay, onChon }: { c: ChuongWeb; homNay: string; onChon
         <div className="flex flex-col gap-2 border-t pt-2" style={{ borderColor: 'var(--line)' }}>
           {c.caseDong.map((x) => (
             <div key={x.caseId} className="flex flex-col gap-1">
-              <span className="flex flex-wrap items-center gap-1.5 text-[12.5px] font-semibold text-slate-100">
+              <span className="flex flex-wrap items-center gap-1.5 text-[13px] font-semibold text-slate-100">
                 <NhanLoai loai="Case" /><TenCaseChuong ten={x.ten} />
                 {x.xongO && <span className="text-[12px] font-medium text-slate-400">{t('xong ở {dot}', { dot: dich(x.xongO) })}</span>}
               </span>
@@ -177,11 +177,11 @@ function TheChuong({ c, homNay, onChon }: { c: ChuongWeb; homNay: string; onChon
       <div className="mt-auto flex flex-col gap-0.5 border-t pt-2 text-[12px]" style={{ borderColor: 'var(--line)' }}>
         {c.ra ? (
           <>
-            <span className="flex items-center gap-1.5 text-[12.5px] font-semibold text-slate-100">
+            <span className="flex items-center gap-1.5 text-[13px] font-semibold text-slate-100">
               <span className={c.ra.loai === 'chuyen' ? 'text-[color:var(--accent)]' : 'text-slate-400'}>{c.ra.loai === 'chuyen' ? <IconChuyenLop /> : <IconLen />}</span>
               {dichChu(c.ra)}
             </span>
-            <span className="text-[11.5px] text-slate-400">{[c.ra.how && dich(c.ra.how), c.ra.tu ? t('từ {tuan}', { tuan: tuanLich(c.ra.tu, homNay) }) : null].filter(Boolean).join(' · ')}</span>
+            <span className="text-[12px] text-slate-400">{[c.ra.how && dich(c.ra.how), c.ra.tu ? t('từ {tuan}', { tuan: tuanLich(c.ra.tu, homNay) }) : null].filter(Boolean).join(' · ')}</span>
             {c.ra.docBanGiao && (
               <button type="button" className="btn btn-sm mt-1 self-start" onClick={(e) => {
                 e.stopPropagation();
@@ -191,7 +191,7 @@ function TheChuong({ c, homNay, onChon }: { c: ChuongWeb; homNay: string; onChon
           </>
         ) : (
           <span className="flex items-center justify-between gap-2">
-            <span className="text-[11.5px] text-slate-400">{t('đang học')}</span>
+            <span className="text-[12px] text-slate-400">{t('đang học')}</span>
             <button type="button" className="btn btn-sm" onClick={(e) => { e.stopPropagation(); onChon(c); }}>{t('Xem trục tuần')}</button>
           </span>
         )}
@@ -209,7 +209,7 @@ function ChuongDienThoai({ chuong, homNay, onChon }: { chuong: ChuongWeb[]; homN
       {moiTruoc.map((c, i) => {
         const truoc = moiTruoc[i + 1];
         const noi = truoc?.ra ? (
-          <div className="flex items-center gap-1.5 border-x px-3 py-[3px] text-[11.5px] text-slate-400" style={{ borderColor: 'var(--line)', background: 'var(--bg)' }}>
+          <div className="flex items-center gap-1.5 border-x px-3 py-[3px] text-[12px] text-slate-400" style={{ borderColor: 'var(--line)', background: 'var(--bg)' }}>
             {truoc.ra.loai === 'chuyen' ? <IconChuyenLop size={10} /> : <IconLen size={10} />}
             {(() => { const chu = dichChu(truoc.ra); return chu.charAt(0).toLowerCase() + chu.slice(1); })()}{c.tu ? ` · ${tuanLich(c.tu, homNay)}` : ''}
           </div>
@@ -223,7 +223,7 @@ function ChuongDienThoai({ chuong, homNay, onChon }: { chuong: ChuongWeb[]; homN
               ? <div className={i > 0 ? 'mt-0' : ''}><TheChuong c={c} homNay={homNay} onChon={onChon} /></div>
               : (
                 <button type="button" aria-expanded={false} onClick={() => setMo(c.enrollmentId)}
-                  className={`grid min-h-[44px] w-full grid-cols-[minmax(0,1fr)_auto] gap-x-2 gap-y-0.5 border bg-[color:var(--surface)] px-3 py-2 text-left text-[12.5px] ${i === moiTruoc.length - 1 ? 'rounded-b-[10px]' : ''}`}
+                  className={`grid min-h-[44px] w-full grid-cols-[minmax(0,1fr)_auto] gap-x-2 gap-y-0.5 border bg-[color:var(--surface)] px-3 py-2 text-left text-[13px] ${i === moiTruoc.length - 1 ? 'rounded-b-[10px]' : ''}`}
                   style={{ borderColor: 'var(--line)' }}>
                   <b className="font-semibold text-slate-100">{c.code}</b>
                   <span className="flex items-center gap-1 text-[12px] tabular-nums text-slate-400">{khiChuong(c, homNay).split(' · ')[0]}<IconGap mo={false} size={10} /></span>

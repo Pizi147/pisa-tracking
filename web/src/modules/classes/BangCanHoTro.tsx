@@ -101,7 +101,7 @@ export function BangCanHoTro({ classId, maLop, laLopThuong, quyen, onDoi, chuong
         )}
       </div>
 
-      <div className={`hidden px-3 text-[11px] font-semibold uppercase tracking-wide text-slate-500 ${CAO_TRAI}`}>
+      <div className={`hidden px-3 text-[12px] font-semibold  text-slate-500 ${CAO_TRAI}`}>
         <span>{t('Học viên')}</span>
         <span className={luoi}><span>{t('Kỹ năng')}</span><span>Case</span><span>{t('PA đang làm')}</span>{!chiDoc && <span>{t('Việc tiếp · hạn')}</span>}</span>
       </div>
@@ -143,13 +143,13 @@ export function BangCanHoTro({ classId, maLop, laLopThuong, quyen, onDoi, chuong
             <div className="divide-y" style={{ borderColor: 'var(--line)' }}>
               {hang.map((h) => {
                 if (h.kind === 'rong') {
-                  return <div key={h.khoa.join()} className="px-3 py-1 text-[11.5px] text-slate-500">{h.nhan}</div>;
+                  return <div key={h.khoa.join()} className="px-3 py-1 text-[12px] text-slate-500">{h.nhan}</div>;
                 }
                 if (!h.cases.length) {
                   return (
                     <div key={h.khoa} className={`px-3 py-1 ${luoi}`}>
                       <span className="text-xs font-semibold text-slate-500" title={h.tenDu}>{h.nhan}</span>
-                      <span className="text-[11.5px] text-slate-600">—</span>
+                      <span className="text-[12px] text-slate-600">—</span>
                     </div>
                   );
                 }
@@ -163,7 +163,7 @@ export function BangCanHoTro({ classId, maLop, laLopThuong, quyen, onDoi, chuong
                     ))}
                     {h.them > 0 && (
                       <div className="px-3 pb-1.5 md:pl-[4.5rem]">
-                        <button type="button" className="link cursor-pointer border-0 bg-transparent p-0 text-[11.5px] max-sm:min-h-[44px]"
+                        <button type="button" className="link cursor-pointer border-0 bg-transparent p-0 text-[12px] max-sm:min-h-[44px]"
                           onClick={() => setMoThem((s) => { const n = new Set(s); if (n.has(khoaMo)) n.delete(khoaMo); else n.add(khoaMo); return n; })}>
                           {hienHet ? t('Thu gọn') : `+${h.them} Case`}
                         </button>
@@ -219,7 +219,7 @@ export function DongCase({ h, c, dau, ct, homNay, onMo, the = false, chiDoc = fa
             <span className="text-xs font-semibold text-slate-300" title={h.tenDu}>{h.nhan}</span>{' · '}
             <button type="button" className="link cursor-pointer border-0 bg-transparent p-0 text-left text-xs font-semibold" title={c.tieuDe}
               onClick={() => onMo()}><TenCase c={{ title: c.tieuDe, tenSos: c.tenSos }} /></button>
-            {(c.nguyenNhan || c.moTu) && <span className="block text-[11.5px] text-slate-500">{[c.nguyenNhan && dich(c.nguyenNhan), c.moTu && dich(c.moTu)].filter(Boolean).join(' · ')}</span>}
+            {(c.nguyenNhan || c.moTu) && <span className="block text-[12px] text-slate-500">{[c.nguyenNhan && dich(c.nguyenNhan), c.moTu && dich(c.moTu)].filter(Boolean).join(' · ')}</span>}
           </span>
         )}
         dong={[
@@ -227,7 +227,7 @@ export function DongCase({ h, c, dau, ct, homNay, onMo, the = false, chiDoc = fa
             <span className="flex flex-wrap items-center gap-x-1.5"><NhanTrangThai t={c.trangThai.t} title={dich(c.trangThai.chu)} />
               {c.banGiaoTu && <span className="text-slate-500" title={t('Case bàn giao')}>{t('từ {lop}', { lop: c.banGiaoTu })}</span>}{lap}</span>
           ) },
-          { nhan: 'PA', noiDung: <span className="text-[11.5px]">{cacPa}</span> },
+          { nhan: 'PA', noiDung: <span className="text-[12px]">{cacPa}</span> },
           ...(chiDoc ? [] : [{ nhan: t('Việc tiếp'), noiDung: cauViec }]),
         ]} />
     );
@@ -238,13 +238,13 @@ export function DongCase({ h, c, dau, ct, homNay, onMo, the = false, chiDoc = fa
       <span className="min-w-0">
         <button type="button" className="link block max-w-full cursor-pointer truncate border-0 bg-transparent p-0 text-left text-xs font-semibold" title={c.tieuDe}
           onClick={() => onMo()}><TenCase c={{ title: c.tieuDe, tenSos: c.tenSos }} /></button>
-        {(c.nguyenNhan || c.moTu) && <span className="block text-[11.5px] text-slate-500">{[c.nguyenNhan && dich(c.nguyenNhan), c.moTu && dich(c.moTu)].filter(Boolean).join(' · ')}</span>}
+        {(c.nguyenNhan || c.moTu) && <span className="block text-[12px] text-slate-500">{[c.nguyenNhan && dich(c.nguyenNhan), c.moTu && dich(c.moTu)].filter(Boolean).join(' · ')}</span>}
         <span className="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-xs text-slate-500">
           <NhanTrangThai t={c.trangThai.t} title={dich(c.trangThai.chu)} />
           {c.banGiaoTu && <span title={t('Case bàn giao')}>{t('từ {lop}', { lop: c.banGiaoTu })}</span>}{lap}
         </span>
       </span>
-      <span className="min-w-0 text-[11.5px] text-slate-300">{cacPa}</span>
+      <span className="min-w-0 text-[12px] text-slate-300">{cacPa}</span>
       {!chiDoc && <span className="min-w-0">{cauViec}</span>}
     </div>
   );

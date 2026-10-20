@@ -40,7 +40,7 @@ export default function HuongDanPage() {
     viec: loc.viec.map((m, i) => <MucHuongDan key={khoa(m.id)} muc={m} moSan={tim || i === 0} onChi={chiChoToi} />),
     man: loc.man.map((man) => (
       <div key={man.id} className="flex flex-col gap-2">
-        <h3 className="m-0 pt-1 text-xs font-bold uppercase tracking-wide text-slate-400">{t(man.ten)}</h3>
+        <h3 className="m-0 pt-1 text-xs font-bold  text-slate-400">{t(man.ten)}</h3>
         {man.muc.map((m) => <MucHuongDan key={khoa(m.id)} muc={m} moSan={tim} onChi={chiChoToi} />)}
       </div>
     )),
@@ -49,8 +49,8 @@ export default function HuongDanPage() {
       <dl key="tu" className="card m-0 divide-y" style={{ borderColor: 'var(--line)' }}>
         {loc.tu.map((x) => (
           <div key={x.ten} className="grid gap-x-4 gap-y-0.5 px-4 py-2.5 break-inside-avoid sm:grid-cols-[180px_minmax(0,1fr)]" style={{ borderColor: 'var(--line)' }}>
-            <dt className="text-[13.5px] font-semibold text-slate-100">{t(x.ten)}</dt>
-            <dd className="m-0 text-[13.5px] text-slate-300 [&_strong]:font-semibold [&_strong]:text-slate-100"><ChuDam chu={t(x.nghia)} /></dd>
+            <dt className="text-[14px] font-semibold text-slate-100">{t(x.ten)}</dt>
+            <dd className="m-0 text-[14px] text-slate-300 [&_strong]:font-semibold [&_strong]:text-slate-100"><ChuDam chu={t(x.nghia)} /></dd>
           </div>
         ))}
       </dl>
@@ -63,8 +63,8 @@ export default function HuongDanPage() {
         <nav aria-label={t('Phần hướng dẫn')} className="sticky top-0 flex flex-col gap-0.5 max-md:hidden print:hidden">
           {PHAN.map((p) => (
             <button key={p} type="button" aria-current={p === phan ? 'true' : undefined} onClick={() => dat('phan', p === 'viec' ? null : p)}
-              className={`flex min-h-[36px] items-center rounded-lg border px-2.5 text-left text-[13.5px] ${p === phan
-                ? 'border-[color:var(--accent-line)] bg-[color:var(--accent-soft)] font-bold text-slate-100' : 'border-transparent bg-transparent text-slate-400 hover:bg-white/5'}`}>
+              className={`flex min-h-[36px] items-center rounded-lg border px-2.5 text-left text-[14px] ${p === phan
+                ? 'border-[color:var(--accent-line)] bg-[color:var(--accent-soft)] font-bold text-slate-100' : 'border-transparent bg-transparent text-slate-400 bam'}`}>
               {TEN_PHAN[p]}<span className="ml-auto text-xs tabular-nums text-slate-500">{dem[p]}</span>
             </button>
           ))}

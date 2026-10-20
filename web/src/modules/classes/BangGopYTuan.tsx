@@ -192,7 +192,7 @@ export function BangGopYTuan({ classId, maLop, laFt, tuan, onTuan }: {
               {data.cot.map((c) => (
                 <th key={c.skill} className="th align-bottom">
                   {dich(c.nhan)}
-                  {c.gv.length > 0 && <span className="mt-0.5 block truncate text-[11.5px] font-medium normal-case tracking-normal text-slate-500" title={c.gv.join(' · ')}>{c.gv.join(' · ')}</span>}
+                  {c.gv.length > 0 && <span className="mt-0.5 block truncate text-[12px] font-medium normal-case tracking-normal text-slate-500" title={c.gv.join(' · ')}>{c.gv.join(' · ')}</span>}
                 </th>
               ))}
             </tr>
@@ -235,7 +235,7 @@ function DongCu({ code, noiDung }: { code: string; noiDung: string }) {
   const [mo, setMo] = useState(false);
   return (
     <button type="button" aria-expanded={mo} onClick={() => setMo(!mo)}
-      className={`mb-1 block w-full appearance-none border-0 bg-transparent p-0 text-left max-sm:py-3 max-sm:-my-2 text-[11.5px] leading-snug text-faint ${mo ? 'whitespace-pre-wrap' : 'truncate'}`}>
+      className={`mb-1 block w-full appearance-none border-0 bg-transparent p-0 text-left max-sm:py-3 max-sm:-my-2 text-[12px] leading-snug text-faint ${mo ? 'whitespace-pre-wrap' : 'truncate'}`}>
       <b className="font-semibold tabular-nums text-slate-400">{code}:</b> {noiDung}
     </button>
   );
@@ -317,7 +317,7 @@ function OGhi({ nhan, giaTri, onLuu, onBao, conGiu, khoaNhap, tuDong }: {
         onChange={(e) => { setNhap(e.target.value); bo.go(e.target.value); }}
         onBlur={() => void bo.luu()}
         onKeyDown={(e) => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); void bo.luu(); } }} />
-      <span className="mt-0.5 flex items-baseline gap-2 text-[11.5px]" aria-live="polite">
+      <span className="mt-0.5 flex items-baseline gap-2 text-[12px]" aria-live="polite">
         {tt === 'dang' && <span className="text-slate-500">{t('Đang lưu…')}</span>}
         {tt === 'xong' && <span className="text-slate-500">{t('Đã lưu')}</span>}
         {tt === 'loi' && (lyDo

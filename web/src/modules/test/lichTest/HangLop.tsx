@@ -16,7 +16,7 @@ export function OPhan({ phan, ct, quaHan }: { phan: PhanCuaBan; ct: string | nul
   const du = (ds: string[]) => ds.map((k) => tenMon(ct, k)).join(', ');
   const { toi, khac } = phan;
   return (
-    <span className="flex flex-col gap-0.5 text-[12.5px] font-normal leading-tight">
+    <span className="flex flex-col gap-0.5 text-[13px] font-normal leading-tight">
       {toi && (toi.con === 0
         ? <span className="font-semibold text-ok" title={du(toi.kyNang)}>✓ {mon(toi.kyNang)}{' '}{t('của bạn xong')}</span>
         : (

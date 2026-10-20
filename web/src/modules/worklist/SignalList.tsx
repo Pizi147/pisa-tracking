@@ -56,7 +56,7 @@ export function SignalList({ branchId, periodId }: { branchId?: number | null; p
                 <Info>{OWNER_LABEL[s.owner]}</Info>
               </div>
             ) : (
-            <Link to={s.href} className="no-underline flex flex-wrap items-center gap-x-3 gap-y-1 px-4 py-2.5 hover:bg-white/5">
+            <Link to={s.href} className="no-underline flex flex-wrap items-center gap-x-3 gap-y-1 px-4 py-2.5 bam">
               <Task tone={s.tone}>{s.count}</Task>
               <span className="text-sm text-slate-200 flex-1 min-w-0">{s.label}</span>
               {s.branchName && <span className="text-xs text-slate-500">{s.branchName}</span>}

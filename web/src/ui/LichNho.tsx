@@ -144,7 +144,7 @@ export function LichNho({ kieu, value, homNay, luat, neo, onChon, onDong, goNgay
     const oTab = hang.flat().includes(tro) ? tro : `${chiThang}-01`;
     return (
       <div role="group" aria-label={t('Tháng {thang}/{nam}', { thang: xem.thang, nam: xem.nam })}>
-        <div className="grid grid-cols-7 gap-0.5 mb-1 text-[11px] font-semibold text-slate-500" aria-hidden>
+        <div className="grid grid-cols-7 gap-0.5 mb-1 text-[12px] font-semibold text-slate-500" aria-hidden>
           {THU.map((t) => <span key={t} className="text-center">{t}</span>)}
         </div>
         <div className="space-y-0.5">
@@ -160,11 +160,11 @@ export function LichNho({ kieu, value, homNay, luat, neo, onChon, onDong, goNgay
                     aria-disabled={tat || undefined} aria-pressed={dangChon} aria-current={homNayO ? 'date' : undefined}
                     aria-label={`${hienONgay(d, 'ngay')}${homNayO ? ` · ${t('hôm nay')}` : ''}`}
                     className={[
-                      'min-h-[44px] sm:min-h-[32px] rounded text-center text-[12.5px] tabular-nums',
+                      'min-h-[44px] sm:min-h-[32px] rounded text-center text-[13px] tabular-nums',
                       trongThang(d) ? 'text-slate-200' : 'text-slate-500',
                       homNayO ? 'font-semibold underline underline-offset-2' : '',
                       dangChon ? 'bg-[color:var(--accent-soft)] ring-1 ring-[color:var(--accent)] text-slate-100 font-semibold' : '',
-                      tat ? 'cursor-not-allowed line-through opacity-40' : 'hover:bg-white/10',
+                      tat ? 'cursor-not-allowed line-through opacity-40' : 'bam',
                     ].join(' ')}
                     onClick={() => chon(gt)} onKeyDown={(e) => phimNgay(e, d)}
                   >{Number(d.slice(8, 10))}</button>
@@ -191,10 +191,10 @@ export function LichNho({ kieu, value, homNay, luat, neo, onChon, onDong, goNgay
             <button key={t} type="button" data-o={`${gt}-01`} tabIndex={t === oTab ? 0 : -1}
               aria-disabled={tat || undefined} aria-pressed={dangChon} aria-label={THANG_NAM(p2(t), xem.nam)}
               className={[
-                'min-h-[44px] sm:min-h-[34px] rounded-md border text-[12.5px] tabular-nums',
+                'min-h-[44px] sm:min-h-[34px] rounded-md border text-[13px] tabular-nums',
                 dangChon ? 'bg-[color:var(--accent-soft)] border-[color:var(--accent)] text-slate-100 font-semibold' : 'text-slate-200',
                 gt === thangNay ? 'underline underline-offset-2' : '',
-                tat ? 'cursor-not-allowed line-through opacity-40' : 'hover:bg-white/10',
+                tat ? 'cursor-not-allowed line-through opacity-40' : 'bam',
               ].join(' ')}
               style={dangChon ? undefined : { borderColor: 'var(--line)' }}
               onClick={() => chon(gt)} onKeyDown={(e) => phimThang(e, t)}
@@ -235,7 +235,7 @@ export function LichNho({ kieu, value, homNay, luat, neo, onChon, onDong, goNgay
 
       <div className="mb-2 flex items-center justify-between gap-2">
         <button type="button" className={NUT_DAU} onClick={() => doiThangXem(-1)} aria-label={laThang ? t('Năm trước') : t('Tháng trước')}><MuiTen lui /></button>
-        <span className="text-[12.5px] font-semibold tabular-nums text-slate-200" aria-live="polite">
+        <span className="text-[13px] font-semibold tabular-nums text-slate-200" aria-live="polite">
           {laThang ? xem.nam : t('Tháng {thang}/{nam}', { thang: xem.thang, nam: xem.nam })}
         </span>
         <button type="button" className={NUT_DAU} onClick={() => doiThangXem(1)} aria-label={laThang ? t('Năm sau') : t('Tháng sau')}><MuiTen /></button>

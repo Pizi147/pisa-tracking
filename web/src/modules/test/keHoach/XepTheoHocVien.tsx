@@ -451,7 +451,7 @@ function BangEm({ sid, ds, homNay, kiem, lf, loiO, onTuan, onBo }: {
       <div className="overflow-x-auto max-sm:hidden">
         <table className="w-full min-w-[860px] border-separate border-spacing-0 text-xs" aria-label="Lịch MT của em">
           <thead>
-            <tr className="text-left text-xs uppercase tracking-wide text-slate-500">
+            <tr className="text-left text-xs  text-slate-500">
               {['Lượt', 'Tuần chung', ...KY.map((k) => tenMonNgan(null, k)), 'Sẽ đổi', ''].map((c, i) => (
                 <th key={i} className={`px-2.5 py-2 font-semibold ${i === 1 ? 'w-[230px]' : ''}`} style={{ background: 'var(--surface-2)' }}>{c}</th>
               ))}

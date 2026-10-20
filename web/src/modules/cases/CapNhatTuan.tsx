@@ -386,7 +386,7 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
       }}>
       <div className="flex flex-col gap-5 pt-4">
         {sua?.chan && (
-          <p className="m-0 flex items-start gap-1.5 text-[12.5px] text-slate-300">
+          <p className="m-0 flex items-start gap-1.5 text-[13px] text-slate-300">
             <span className="mt-0.5 text-slate-400"><KhoaNho /></span><span>{sua.chan}</span>
           </p>
         )}

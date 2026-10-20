@@ -176,7 +176,7 @@ export function XacNhanPaLo({ it, onDong, onDaLam, onMo, onTiep }: {
                             onChange={() => setTick((s) => { const n = new Set(s); if (co) n.delete(x.key); else n.add(x.key); return n; })} />
                           <span className="min-w-0">
                             <span className="block font-semibold text-slate-100">{x.studentName}</span>
-                            <small className="block text-[11.5px] text-slate-500">{[dich(x.conPhu), x.pa?.nguoi].filter(Boolean).join(' · ')}{co ? '' : ` · ${t('bỏ tick')}`}</small>
+                            <small className="block text-[12px] text-slate-500">{[dich(x.conPhu), x.pa?.nguoi].filter(Boolean).join(' · ')}{co ? '' : ` · ${t('bỏ tick')}`}</small>
                           </span>
                         </label>
                         <button type="button" className="btn btn-ghost min-h-[44px] font-semibold text-[color:var(--accent)] sm:min-h-[32px]" aria-expanded={r.mo}

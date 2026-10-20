@@ -50,7 +50,7 @@ export function TimLop({ lop, value, onChange, onChon, className = '' }: {
           style={{ borderColor: 'var(--line-strong)' }}>
           {goiY.map((l, i) => (
             <li key={l.id} role="option" aria-selected={i === dong}
-              className={`flex min-h-[44px] cursor-pointer items-center gap-2 rounded px-2 text-xs sm:min-h-[32px] ${i === dong ? 'bg-white/10' : 'hover:bg-white/5'}`}
+              className={`flex min-h-[44px] cursor-pointer items-center gap-2 rounded px-2 text-xs sm:min-h-[32px] ${i === dong ? 'bg-white/10' : 'bam'}`}
               onMouseDown={(e) => { e.preventDefault(); chon(l); }} onMouseEnter={() => setDong(i)}>
               <b className="text-slate-100">{l.code}</b>
               <span className="min-w-0 flex-1 truncate text-slate-400">{l.chiNhanh}</span>

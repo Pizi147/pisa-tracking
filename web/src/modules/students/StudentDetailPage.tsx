@@ -467,12 +467,12 @@ function NhanDot({ a, ct = null }: {
       {a.lichSu && <> <NhanCu /></>}
       {nhan.slice(0, toiDa).map((x) => (
         <span key={x.chu} title={x.title}
-          className="ml-1 inline-flex items-center whitespace-nowrap rounded border border-muted-line px-[5px] align-middle text-[11.5px] leading-4 text-muted">
+          className="ml-1 inline-flex items-center whitespace-nowrap rounded border border-muted-line px-[5px] align-middle text-[12px] leading-4 text-muted">
           {x.chu}
         </span>
       ))}
       {nhan.length > toiDa && (
-        <span className="ml-1 text-[11.5px] text-muted" title={nhan.slice(toiDa).map((x) => x.title).join(' ')}>
+        <span className="ml-1 text-[12px] text-muted" title={nhan.slice(toiDa).map((x) => x.title).join(' ')}>
           +{nhan.length - toiDa}
         </span>
       )}
@@ -555,7 +555,7 @@ function IeltsAttempts({ attempts, dotId, homNay, onOpen }: {
         <tbody>
           {attempts.map((a) => {
             return (
-              <tr key={a.id} id={`dot-${a.id}`} className="row-hover cursor-pointer" onClick={() => onOpen(a)}
+              <tr key={a.id} id={`dot-${a.id}`} className="bam cursor-pointer" onClick={() => onOpen(a)}
                 style={a.id === dotId ? { background: 'var(--accent-soft)' } : undefined}>
                 <td className="td whitespace-nowrap">
                   <Link to={attemptHref(a)} className="link tabular-nums" onClick={(e) => e.stopPropagation()}>MT{a.attemptNo}</Link>
@@ -653,7 +653,7 @@ function RatioAttempts({ attempts, dotId, homNay, onOpen, ct = null }: {
         </thead>
         <tbody>
           {attempts.map((a) => (
-            <tr key={a.id} id={`dot-${a.id}`} className="row-hover cursor-pointer" onClick={() => onOpen(a)}
+            <tr key={a.id} id={`dot-${a.id}`} className="bam cursor-pointer" onClick={() => onOpen(a)}
               style={a.id === dotId ? { background: 'var(--accent-soft)' } : undefined}>
               <td className="td whitespace-nowrap">{oBai(a, 'link')}</td>
               <td className="td text-slate-300">{a.classCode ?? '—'}</td>

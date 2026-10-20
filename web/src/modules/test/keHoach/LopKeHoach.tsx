@@ -55,7 +55,7 @@ export function LopKeHoach({ lop, mo, onToggle, onHienDien, chiCanXepLai = false
               </span>
             )}>
             {/* `.hang-lon > td` đặt chữ đậm 12.5px với độ ưu tiên cao hơn tiện ích Tailwind — chữ phụ phải đặt thẳng vào style. */}
-            <td className="hidden pr-3 text-right text-slate-300 sm:table-cell" style={{ fontWeight: 400, fontSize: 11.5 }}>{lop.tomTat}{nutXep}</td>
+            <td className="hidden pr-3 text-right text-slate-300 sm:table-cell" style={{ fontWeight: 400, fontSize: 12 }}>{lop.tomTat}{nutXep}</td>
           </HangNhom>
         </tbody>
       </table>

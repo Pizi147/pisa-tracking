@@ -145,7 +145,7 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', lop, onC
     const xong = <button type="button" className="btn btn-primary min-h-[40px] px-4 font-bold" onClick={dong}>{t('Xong')}</button>;
     return (
       <KhungPanel tieuDe={t('Xác nhận xử lý')} hocVien={d.ten} onDong={dong} dau={dau(false)}
-        chan={{ v3: true, chinh: xong, dongTren: <span className="font-semibold text-ok">✓ {t('Đã lưu')}</span> }}>
+        chan={{ v3: true, chinh: xong, dongTren: <span className="font-semibold text-done">✓ {t('Đã lưu')}</span> }}>
         <div className="flex flex-col gap-5 pt-4">
           <div className="flex flex-col gap-2 rounded-[10px] border px-4 py-3.5" style={{ background: 'var(--surface-2)', borderColor: 'var(--line)' }}>
             <span className="text-sm font-bold text-ok">✓ {t('Đã xác nhận')}</span>

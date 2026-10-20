@@ -242,7 +242,7 @@ export function MeetingBoard() {
                       <tr key={u.unitId} className="border-t" style={{ borderColor: 'var(--line)' }}>
                         <td className="td text-slate-100 font-medium">{u.unitName}</td>
                         {u.cells.map((c, i) => (
-                          <td key={c.key} className="td cursor-pointer hover:bg-white/5" onClick={() => setGanHoi({ unit: u, cell: c })}>
+                          <td key={c.key} className="td cursor-pointer bam" onClick={() => setGanHoi({ unit: u, cell: c })}>
                             <OTaBang cell={c} thTutor={u.kind !== 'branch' ? (TUTOR_LABEL_NGAN[c.key] ?? c.label) : undefined} />
                           </td>
                         ))}
@@ -468,7 +468,7 @@ function ChonViec({ branchId, reportId, taskGroup, periodId, onLinked, onCreateN
       <ul className="list-none p-0 m-0 max-h-48 overflow-y-auto space-y-0.5">
         {rows.map((r) => (
           <li key={r.id}>
-            <button type="button" className="w-full text-left px-2 py-1.5 rounded hover:bg-white/5 appearance-none bg-transparent border-0 text-xs text-slate-200"
+            <button type="button" className="w-full text-left px-2 py-1.5 rounded bam appearance-none bg-transparent border-0 text-xs text-slate-200"
               onClick={() => noi(r.id)}>
               {r.title} <span className="text-slate-500">· {r.progressLabel}{r.due ? ` · ${fmtDate(r.due)}` : ''}</span>
             </button>

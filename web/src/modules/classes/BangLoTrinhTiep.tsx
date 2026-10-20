@@ -200,7 +200,7 @@ export function BangLoTrinhTiep({ classId, quyen, onDoi, emMo, onDaMoEm, onBanGi
       const qua = !xongMon && !!han && h > han;
       return (
         <span key={nhan} title={xongMon ? 'Đã bàn giao' : qua ? 'Quá hạn' : 'Chưa bàn giao'}
-          className={`inline-flex items-center rounded px-1 text-[11.5px] font-semibold tabular-nums ${xongMon ? 'text-ok' : qua ? 'text-late' : 'text-slate-500'}`}>
+          className={`inline-flex items-center rounded px-1 text-[12px] font-semibold tabular-nums ${xongMon ? 'text-ok' : qua ? 'text-late' : 'text-slate-500'}`}>
           {xongMon ? '✓' : qua ? '⚠' : ''}{nhan}
         </span>
       );

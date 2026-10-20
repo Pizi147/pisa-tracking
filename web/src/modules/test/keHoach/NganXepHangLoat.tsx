@@ -283,7 +283,7 @@ export function NganXepHangLoat({ lopThuong, classIdBanDau, coFt, onDoiKhung, on
             {dongLoi('tuan')}
             <div className="grid items-start gap-2" style={{ gridTemplateColumns: 'minmax(0,1fr) auto' }}>
               <div className="min-w-0">
-                <span className="mb-1 block text-[11.5px] font-bold text-slate-200">Áp một tuần cho mọi môn đã chọn</span>
+                <span className="mb-1 block text-[12px] font-bold text-slate-200">Áp một tuần cho mọi môn đã chọn</span>
                 <TuanNho nam d={ap ?? { periodId: null, weekStart: null }} goc={homNay} onTuan={setAp} />
               </div>
               <button type="button" className="btn mt-[22px] min-h-[44px] sm:min-h-[32px]" disabled={!ap}
@@ -309,7 +309,7 @@ export function NganXepHangLoat({ lopThuong, classIdBanDau, coFt, onDoiKhung, on
                   <table className="w-full text-xs" style={{ tableLayout: 'fixed', minWidth: 520 }}>
                     <colgroup><col style={{ width: 150 }} /><col style={{ width: 80 }} /><col style={{ width: 140 }} /><col /></colgroup>
                     <thead>
-                      <tr className="text-left text-[11px] uppercase tracking-wide text-slate-500">
+                      <tr className="text-left text-[12px]  text-slate-500">
                         <th className="py-1 font-bold">Học viên</th><th className="py-1 font-bold">{'Môn'}</th>
                         <th className="py-1 font-bold">Tuần cũ → mới</th><th className="py-1 font-bold">Ghi chú</th>
                       </tr>

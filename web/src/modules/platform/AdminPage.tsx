@@ -75,7 +75,7 @@ function ConfigTab({ data, onDone }: { data: AdminData; onDone: () => void }) {
           ['Lượt Mock', data.counts.attempts], ['Case SOS', data.counts.cases],
         ].map(([label, value]) => (
           <div key={label as string} className="card p-4">
-            <div className="text-[11px] uppercase tracking-wide text-slate-400 font-semibold">{label}</div>
+            <div className="text-[12px]  text-slate-400 font-semibold">{label}</div>
             <div className="mt-1 text-2xl font-semibold tabular-nums text-slate-100">{value}</div>
           </div>
         ))}
@@ -213,7 +213,7 @@ function QuyenTheoVai({ onDaLuu }: { onDaLuu: () => void }) {
   };
   const dauNhom = (g: { key: string; ten: string; quyen: unknown[] }) => (
     <button type="button" aria-expanded={!gap.has(g.key)} onClick={() => doiGap(g.key)}
-      className="flex w-full min-h-[44px] sm:min-h-[36px] items-center gap-2 border-0 bg-transparent px-4 text-left text-xs font-bold uppercase tracking-wide text-slate-300">
+      className="flex w-full min-h-[44px] sm:min-h-[36px] items-center gap-2 border-0 bg-transparent px-4 text-left text-xs font-bold  text-slate-300">
       <span className="flex-1">{g.ten}</span>
       <span className="font-normal normal-case tabular-nums text-slate-500">{g.quyen.length} quyền</span>
       <span className="text-slate-400"><IconGap mo={!gap.has(g.key)} /></span>
@@ -248,11 +248,11 @@ function QuyenTheoVai({ onDaLuu }: { onDaLuu: () => void }) {
               {d.vai.map((v) => (
                 <Th key={v.key} align="center"
                   hint={`Bấm "Sửa quyền", rồi bấm một ô trong cột này để bật hoặc tắt quyền đó cho vai trò ${v.ten}. Đang có ${v.soNguoi} tài khoản mang vai này.`}>
-                  {v.ten}<span className="block text-[11px] font-normal normal-case tracking-normal text-slate-500 tabular-nums">{v.soNguoi} tài khoản</span>
+                  {v.ten}<span className="block text-[12px] font-normal normal-case tracking-normal text-slate-500 tabular-nums">{v.soNguoi} tài khoản</span>
                 </Th>
               ))}
               <Th align="center" hint="Chỉ đọc. GVCN có mọi quyền của Giáo viên, cộng các quyền tự có theo phân công chủ nhiệm — chỉ trong lớp mình chủ nhiệm.">
-                GVCN<span className="block text-[11px] font-normal normal-case tracking-normal text-slate-500">chỉ đọc</span>
+                GVCN<span className="block text-[12px] font-normal normal-case tracking-normal text-slate-500">chỉ đọc</span>
               </Th>
             </tr>
           </thead>
@@ -380,7 +380,7 @@ function OVai({ tenVai, tenQuyen, coSan, daDoi, lyDoKhoa, dangSua, onBam, chip }
       aria-label={`${tenVai}: ${co ? 'có' : 'không'}${lyDoKhoa ? `, khoá — ${lyDoKhoa}` : ''}`}
       title={title}
       className={`${chip ? 'inline-flex min-h-[44px] items-center gap-1 rounded-md px-2 text-xs' : 'w-full min-h-[44px] sm:min-h-[36px] text-sm'} bg-transparent tabular-nums ${co ? 'text-sky-200' : 'text-slate-600'} ${
-        daDoi ? 'rounded-md border border-[color:var(--accent-line)]' : chip ? 'border border-muted-line' : 'border border-transparent'} ${bamDuoc ? 'cursor-pointer hover:bg-white/5' : 'cursor-default'}`}
+        daDoi ? 'rounded-md border border-[color:var(--accent-line)]' : chip ? 'border border-muted-line' : 'border border-transparent'} ${bamDuoc ? 'cursor-pointer bam' : 'cursor-default'}`}
       onClick={() => { if (bamDuoc) onBam(); }}
     >
       {chip && <span className="text-slate-300">{tenVai}:</span>}

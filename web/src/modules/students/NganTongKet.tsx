@@ -53,7 +53,7 @@ function O({ nho, children, cho }: { nho: string; children: ReactNode; cho?: boo
   );
 }
 const Lon = ({ children, em }: { children: ReactNode; em?: string }) => (
-  <div className="text-xl font-bold leading-tight tabular-nums text-slate-100">{children}{em && <em className="ml-1 text-[11.5px] font-medium not-italic text-slate-500">{em}</em>}</div>
+  <div className="text-xl font-bold leading-tight tabular-nums text-slate-100">{children}{em && <em className="ml-1 text-[12px] font-medium not-italic text-slate-500">{em}</em>}</div>
 );
 
 /** Nhãn kết quả một lượt: FT Đạt / SOS n · kỹ năng dưới kỳ vọng; lớp thường % hoặc n/m môn. */
@@ -80,7 +80,7 @@ function BangLuot({ luot, ft }: { luot: Luot[]; ft: boolean }) {
       <div className="hidden overflow-x-auto rounded-[10px] border sm:block" style={{ borderColor: 'var(--line)' }}>
         <table className="w-full min-w-[560px] text-[13px]">
           <thead>
-            <tr className="text-left text-[11.5px] text-slate-400" style={{ background: 'var(--surface-2)' }}>
+            <tr className="text-left text-[12px] text-slate-400" style={{ background: 'var(--surface-2)' }}>
               <th className="px-3 py-2 font-semibold">{ft ? 'MT' : t('Bài')}</th><th className="px-3 py-2 font-semibold">{t('Lớp')}</th><th className="px-3 py-2 font-semibold">{t('Tuần')}</th>
               {ft ? ['L', 'R', 'W', 'S', 'OVR', t('Kỳ vọng')].map((h) => <th key={h} className="px-3 py-2 text-right font-semibold">{h}</th>) : <th className="px-3 py-2 font-semibold">{t('Điểm từng phần')}</th>}
               <th className="px-3 py-2 font-semibold">{t('Kết quả')}</th>
@@ -102,12 +102,12 @@ function BangLuot({ luot, ft }: { luot: Luot[]; ft: boolean }) {
                     </>
                   ) : (
                     <td className="px-3">{huy ? <span className="text-slate-600">—</span> : l.kyNang.map((k) => (
-                      <span key={k.k} className={`mr-1 inline-flex rounded px-1.5 text-[11.5px] font-semibold tabular-nums ${k.dat === false ? 'bg-soon-bg text-soon' : k.dat ? 'bg-ok-bg text-ok' : 'bg-muted-bg text-slate-500'}`}>
+                      <span key={k.k} className={`mr-1 inline-flex rounded px-1.5 text-[12px] font-semibold tabular-nums ${k.dat === false ? 'bg-soon-bg text-soon' : k.dat ? 'bg-ok-bg text-ok' : 'bg-muted-bg text-slate-500'}`}>
                         {dich(k.nhan)} {k.diem ?? '—'}{k.tong ? `/${k.tong}` : ''}
                       </span>
                     ))}</td>
                   )}
-                  <td className="px-3">{nl ? <span className="inline-flex flex-wrap items-center gap-x-2"><Nhan tone={nl.tone}>{nl.chu}</Nhan>{nl.phu && <span className="text-[11.5px] text-slate-500">{nl.phu}</span>}</span> : <span className="text-slate-600">—</span>}</td>
+                  <td className="px-3">{nl ? <span className="inline-flex flex-wrap items-center gap-x-2"><Nhan tone={nl.tone}>{nl.chu}</Nhan>{nl.phu && <span className="text-[12px] text-slate-500">{nl.phu}</span>}</span> : <span className="text-slate-600">—</span>}</td>
                 </tr>
               );
             })}
@@ -128,13 +128,13 @@ function BangLuot({ luot, ft }: { luot: Luot[]; ft: boolean }) {
                 {nl && <Nhan tone={nl.tone}>{nl.chu}</Nhan>}
               </div>
               {!huy && (ft
-                ? <dl className="m-0 mt-1.5 grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-[12.5px]">
+                ? <dl className="m-0 mt-1.5 grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-[13px]">
                     <dt className="text-slate-500">{t('Điểm')}</dt><dd className="m-0 tabular-nums">L {b1(diemFt(l, 'listening'))} · R {b1(diemFt(l, 'reading'))} · W {b1(diemFt(l, 'writing'))} · S {b1(diemFt(l, 'speaking'))}</dd>
                     <dt className="text-slate-500">Overall</dt><dd className="m-0 tabular-nums">{b1(l.overall)}</dd>
                     <dt className="text-slate-500">{t('Kỳ vọng')}</dt><dd className="m-0 tabular-nums">{b1(l.kyVong)}</dd>
                   </dl>
                 : <div className="mt-1.5">{l.kyNang.map((k) => (
-                    <span key={k.k} className={`mr-1 inline-flex rounded px-1.5 text-[11.5px] font-semibold tabular-nums ${k.dat === false ? 'bg-soon-bg text-soon' : k.dat ? 'bg-ok-bg text-ok' : 'bg-muted-bg text-slate-500'}`}>
+                    <span key={k.k} className={`mr-1 inline-flex rounded px-1.5 text-[12px] font-semibold tabular-nums ${k.dat === false ? 'bg-soon-bg text-soon' : k.dat ? 'bg-ok-bg text-ok' : 'bg-muted-bg text-slate-500'}`}>
                       {dich(k.nhan)} {k.diem ?? '—'}{k.tong ? `/${k.tong}` : ''}
                     </span>))}</div>)}
             </li>
@@ -236,7 +236,7 @@ export function NganTongKet({ cycleId, onClose, onDoi }: { cycleId: number; onCl
 
             {data.buocTiep && <MucBuocTiep bt={data.buocTiep} onMo={() => setView({ loai: 'buoc-tiep' })} />}
 
-            <div className="flex flex-wrap gap-x-3.5 gap-y-1 text-[12.5px] text-slate-400">
+            <div className="flex flex-wrap gap-x-3.5 gap-y-1 text-[13px] text-slate-400">
               {[[t('Lớp'), data.lop], [t('GVCN'), data.gvcn], [t('Đầu vào'), data.dauVao !== null ? b1(data.dauVao) : null], ...(ft ? [] : [['Target', data.khongCamKet ? hienTargetKck(data.target !== null ? b1(data.target) : null, true) : data.target !== null ? b1(data.target) : null]]), [t('Thời gian'), dich(data.thoiGian)],
                 ...(kq.loai === 'thuong' && kq.kqdr ? [[t('Kết quả đầu ra'), chuKqdr(kq.kqdr)]] : [])]
                 .filter(([, v]) => v).map(([k, v]) => <span key={k as string}>{k} <b className="font-semibold text-slate-200">{v}</b></span>)}

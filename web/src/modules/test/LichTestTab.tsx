@@ -390,7 +390,7 @@ export function LichTestTab() {
         <div className="space-y-1 px-1">
           {/* OV-11e (TE-8): mỗi lượt một link → Điểm theo lớp đúng lượt, "Chỉ ô còn trống"; số em = số hàng ở đó. */}
           {data.nhacLichSu.map((n) => (
-            <p key={n.classId} className="m-0 text-[12.5px] text-slate-500 tabular-nums">
+            <p key={n.classId} className="m-0 text-[13px] text-slate-500 tabular-nums">
               {t('MT cũ chưa nhập · {classCode}', { classCode: n.classCode })}
               {n.luot.map((x) => (
                 <Fragment key={x.so}>

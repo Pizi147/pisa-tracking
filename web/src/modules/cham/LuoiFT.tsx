@@ -258,7 +258,7 @@ function DeadlineSummary({ cells }: { cells: Cell[] }) {
     && c.progress !== 'cancelled' && c.progress !== 'absent');
   const noShows = cells.filter((c) => c.required && c.noShow);
   const dongDau = noShows.length ? (
-    <span className="text-xs text-slate-400 leading-tight truncate max-w-full"
+    <span className="text-xs text-slate-400 truncate max-w-full"
       title={noShows.map((c) => `${skillShort(c.skill)}: ${dich(c.noShow!.text)}`).join('\n')}>
       {noShows.map((c) => skillShort(c.skill)).join(', ')}: {noShows[0].noShow!.text}
     </span>
@@ -462,7 +462,7 @@ export function DauLuu({ status, error, onRetry, soLoi = 0, lon = false }: {
     );
   }
   if (status === 'saving') return <span className="text-xs text-slate-400">{t('Đang lưu…')}</span>;
-  if (status === 'saved') return <span className="text-[11px] text-ok" title={t('Đã lưu')}>✓</span>;
+  if (status === 'saved') return <span className="text-[12px] text-done" title={t('Đã lưu')}>✓</span>;
   return null;
 }
 
@@ -486,7 +486,7 @@ export function DauO({ tt, loi, onLuuLai, lon = false }: {
       </button>
     );
   }
-  if (tt === 'dang-luu') return <span className={`${cho} text-[11px] text-slate-500`} title={t('Đang lưu')}>…</span>;
-  if (tt === 'da-luu') return <span className={`${cho} text-[11px] text-ok`} title={t('Đã lưu')}>✓</span>;
+  if (tt === 'dang-luu') return <span className={`${cho} text-[12px] text-slate-500`} title={t('Đang lưu')}>…</span>;
+  if (tt === 'da-luu') return <span className={`${cho} text-[12px] text-done`} title={t('Đã lưu')}>✓</span>;
   return null;
 }

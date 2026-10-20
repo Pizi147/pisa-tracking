@@ -99,7 +99,7 @@ export function KetQuaThiThatPanel({ cycleId, studentName, lop, quayLai, onClose
     <KhungPanel tieuDe={t('Kết quả thi thật')} hocVien={studentName} lop={lop} quayLai={quayLai} rong={quayLai ? 'rong' : undefined} onDong={onClose}
       chan={{ huy: { onClick: onClose }, daSua: JSON.stringify(form) !== goc, conThieu: lf.conThieu(loi), chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={luu} disabled={busy}>{t('Lưu')}</button> }}>
       <div className="max-w-[560px] space-y-3">
-        <div className="flex flex-wrap gap-x-4 gap-y-1 text-[12.5px] text-slate-400">
+        <div className="flex flex-wrap gap-x-4 gap-y-1 text-[13px] text-slate-400">
           <span>Target <b className="tabular-nums text-slate-200">{hienTargetKck(target !== null ? target.toFixed(1) : null, !!c.khong_cam_ket)}</b></span>
           <span>{t('Dự kiến thi')} <b className="tabular-nums text-slate-200">{nhanThi(c, homNay) ?? '—'}</b></span>
           {st?.giaiDoan === 'da_thi_cho_kq' && st.han && (
