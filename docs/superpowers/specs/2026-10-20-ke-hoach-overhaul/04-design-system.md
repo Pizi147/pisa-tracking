@@ -2,7 +2,7 @@
 
 > **Mục đích.** Gom MỌI đề xuất rời rạc về giao diện (tài liệu chính 10.1, 10.3, 11.1a, 12.1, 12.4; phụ lục v1, v2b, v3a, v3b, v4a, v4c) thành **một hệ**: chữ, khoảng cách, màu, điểm, bảng, ô, panel, chip, nút, trạng thái, ô nhập, khung trang, 375, trợ năng, sân mẫu, phép kiểm. Chỗ các nguồn nói khác nhau đã được phân xử (mục 21). Đây là nguồn để viết lại `DESIGN.md` ở GĐ0 (PR QT-UX) **sau khi chủ SP đồng ý**.
 > **Cách đọc.** Mỗi mục là một bảng **Quy tắc · Lý do · Nguồn · Trạng thái**. Chủ SP chỉ cần đọc mục 0 (tóm tắt), mục 21 (mâu thuẫn đã giải) và mục 22 (chỗ PTA đảo quyết định / mockup cũ — phản đối nếu không đồng ý). Session code đọc đủ mục 2–20.
-> **Trạng thái.** **ĐÃ CHỐT** = chủ SP đã quyết (ghi mã) · **PTA đề xuất** = thẩm mỹ / UX, PTA tự quyết, chủ SP phủ quyết được; "(đảo …)" = đổi một quyết định / mockup cũ · **Cần chủ SP** = câu ở [02 mục 5](02-conflict-decision-log.md). Không mục nào đổi luật nghiệp vụ, quyền, ngưỡng điểm.
+> **Trạng thái.** **ĐÃ CHỐT** = chủ SP đã quyết (ghi mã) · **PTA đề xuất** = thẩm mỹ / UX, PTA tự quyết, chủ SP phủ quyết được; "(đảo …)" = đổi một quyết định / mockup cũ · **Cần chủ SP** = câu ở [02 mục 5](02-conflict-decision-log.md) — **21/10: chủ SP đã trả lời 17/17 + đồng ý gói PTA tự quyết** ("PTA đề xuất" ở tệp này nay là quyết định; câu trả lời ghi ở 22.2). Không mục nào đổi luật nghiệp vụ, quyền, ngưỡng điểm.
 > **Bộ tài liệu.** [`00-muc-luc.md`](00-muc-luc.md) · [`01-feedback-register.md`](01-feedback-register.md) · [`02-conflict-decision-log.md`](02-conflict-decision-log.md) · [`03-ux-ui-audit.md`](03-ux-ui-audit.md) · **04 (tệp này)** · [`05-ia-workflow.md`](05-ia-workflow.md) · [`06-mockup-gap.md`](06-mockup-gap.md) · [`07-pr-plan.md`](07-pr-plan.md) · tài liệu chính [`../2026-10-20-danh-gia-lai-ux-ui-toan-dien.md`](../2026-10-20-danh-gia-lai-ux-ui-toan-dien.md) · phụ lục [`../2026-10-20-danh-gia-ux/`](../2026-10-20-danh-gia-ux/) (v1-nen-chung, v2b-bang-ho-so, v3a-test, v3b-phan-tich-tutor, v4a-cong-viec, v4b-nghiep-vu, v4c-vai-tro-phu-web, a6) · hệ hiện hành [`../../../../DESIGN.md`](../../../../DESIGN.md), [`../../../../web/src/index.css`](../../../../web/src/index.css) · mockup [`../../../../thiet-ke/`](../../../../thiet-ke/) (m1…m6 = `mockup-ov14-{1..6}-*.html`, **m6 thắng m1–5**; mT = `mockup-tutor-1-head-tutor-2026-10-19.html`).
 > **Ký hiệu nguồn.** 10.1, 11.1a… = mục tài liệu chính · V2B-n, V3A-n, V3B-n, V4A-n, V4C-n, HTT-n = mã phụ lục · X-nn, Q-xx = dòng / câu ở 02 · C06, C08… = quyết định đặc tả OV-14 (01 mục 4) · PTA-v4-n = hướng PTA Plan chốt 21/10 sau vòng 4. Soạn: agent d2 (Opus 5.5) cho PTA Plan.
 
@@ -58,7 +58,7 @@
 | **14** | Lưới dày (lưới điểm FT / lớp thường, Kế hoạch Test) · giá trị trong panel · cột tuần / ngày | thẻ: 15 | 400 | 1,45 | chỉ nơi > 8 cột |
 | **13** | Chữ phụ · nhãn ô form · đầu cột · chip · nút nhỏ `.btn-sm` · dòng 2 của dòng việc · mẫu số "/25" | 14 (chip 13) | 400; nhãn, đầu cột, chip, nút 600 | 1,45 | đầu cột **không in hoa** |
 | **12** | Tối thiểu: số trong huy hiệu (badge) · dòng phụ trong `ODiem` ("30 câu", "vắng lần 1") · chú thích | 12 (thanh dưới 375: 12) | 600 / 700 (badge) | 1,4 | **không chữ nào < 12** |
-| (40 / 17) | Chỉ ở chế độ **"Chiếu"** của Báo cáo: số 40, nhãn 17 | — | 700 | 1,1 / 1,35 | ngoài thang, chỉ khi Q-C2 duyệt |
+| (40 / 17) | Chỉ ở chế độ **"Chiếu"** của Báo cáo: số 40, nhãn 17 | — | 700 | 1,1 / 1,35 | ngoài thang; Q-C2 ① đã duyệt (21/10) |
 
 | Quy tắc kèm | Lý do | Nguồn | Trạng thái |
 |---|---|---|---|
@@ -111,7 +111,7 @@ Ghi chú: chủ SP xem ở ~125 % (đo ảnh `5.webp` ×1,27) → giáo viên �
 | **Cột:** tên ≥ 205 px ("Nguyễn Thị Phương Thảo" 15 px = 181 + đệm); số 64–88; điểm 80; tuần 96; chip 140; nút 48; chỉ **một** cột linh hoạt; không `%`. | Nay cột tên lưới FT 176 px cắt chữ; colgroup % vỡ ở 1280 | v1 A3; 11.1a R3; V2B-1 4b | PTA đề xuất |
 | **Một hàng = một dòng chính;** dòng 2 chỉ khi mang tin mới (không lặp chip / kết quả). | Bảng 33 em: 1 dòng ~1 450 px, 2 dòng ~2 110 px | v1 A3 "không nhồi" | PTA đề xuất |
 | **Ngân sách chiều cao trang làm việc** (mặc định, dữ liệu demo dày): ≤ **2 màn ở 1440** (~1 800 px `main`), ≤ **4 màn ở 375**. Dòng việc đầu ở y ≤ 200 px (1440) / ≤ 420 px (375). Khung nhìn đầu ≤ 30 phần tử bấm được. | Nay Hồ sơ lớp 4 800–5 400 px; dòng việc đầu Công việc QT y = 752 / 1 505 px | X5; PTA-05; V4A-01 | PTA đề xuất |
-| **Lưới trang:** bảng trải hết bề rộng; khối chữ ≤ 78 ch (`.prose-col`); hàng đợi = danh sách trái **520–560 px** + khung chi tiết phải phần còn lại (dính) ở ≥ 1 024 px; dưới 1 024 → danh sách → chi tiết toàn màn. | Chi tiết luôn ngang hàng chỗ vừa bấm | owner 10/09 (`index.css:161-172`); 10.2 B; V4A-01 A | Hai khung = PTA đề xuất (bố cục trang Tổng quan / Công việc → Cần chủ SP Q-A1, Q-A2) |
+| **Lưới trang:** bảng trải hết bề rộng; khối chữ ≤ 78 ch (`.prose-col`); hàng đợi = danh sách trái **520–560 px** + khung chi tiết phải phần còn lại (dính) ở ≥ 1 024 px; dưới 1 024 → danh sách → chi tiết toàn màn. | Chi tiết luôn ngang hàng chỗ vừa bấm | owner 10/09 (`index.css:161-172`); 10.2 B; V4A-01 A | Hai khung = PTA đề xuất (bố cục trang Tổng quan / Công việc: Q-A1 ①, Q-A2 ① B — chủ SP chọn 21/10) |
 
 ---
 
@@ -449,7 +449,7 @@ Nguồn: V3B-01 "luật đi kèm"; 12.4; V4A-01 (3 vùng dòng việc); CLAUDE.m
 
 | Quy tắc kèm | Lý do | Nguồn | Trạng thái |
 |---|---|---|---|
-| Hoàn tác **10 s** thay hộp hỏi cho thao tác đảo được (bỏ vắng, xoá nhận xét, gia hạn, Duyệt); hộp hỏi chỉ cho việc không đảo được, nêu đúng đối tượng. **Không** Hoàn tác cho lần xử lý vi phạm đã lưu (thu hồi phải qua QL, lý do bắt buộc). | Xác nhận chỉ khi hậu quả lớn | m1 §1f; X-47; X-51; 21/10-YT | Hoàn tác ĐÃ CHỐT (m1 §1f, 9.1-1) · ngoại lệ vi phạm ĐÃ CHỐT (21/10) |
+| Hoàn tác **10 s** thay hộp hỏi cho thao tác đảo được (bỏ vắng, xoá nhận xét, gia hạn, Duyệt, **gõ "-" ở MT — kể cả MT cũ, nơi "-" huỷ ngay: Hoàn tác 10 s, sau đó vẫn khôi phục được, không khoá cứng** — luật 4 sửa 21/10); hộp hỏi chỉ cho việc không đảo được, nêu đúng đối tượng. **Không** Hoàn tác cho lần xử lý vi phạm đã lưu (thu hồi phải qua QL, lý do bắt buộc). | Xác nhận chỉ khi hậu quả lớn | m1 §1f; X-47; X-51; X-78; 21/10-YT | Hoàn tác ĐÃ CHỐT (m1 §1f, 9.1-1) · ngoại lệ vi phạm ĐÃ CHỐT (21/10) · "-" MT cũ ĐÃ CHỐT (chủ SP 21/10) |
 | "Đã tích" (chọn nhiều để làm hàng loạt) = **chỉ** ô tích có dấu ✓ (không tô nền) — để không trùng HTT-6. | Hai dáng chọn là đủ | v1 C2 (đổi); HTT-5/6 | PTA đề xuất |
 | Thực hiện: 3 lớp CSS dùng chung `.bam` (HTT-1 + `:active`), `.do-hang` (HTT-2), `.dang-mo` (HTT-6) thay `.row-hover` (31 tệp), `hover:bg-white/5` (21 chỗ), `.row-active`; hàng nhóm vạch trái → `--line-strong`. | Một token, một luật | v1 C2; HTT | PTA đề xuất |
 | Mọi thành phần bấm được có đủ: mặc định · hover · focus · active · tắt · tải · lỗi. | impeccable operate "Don't ship with half of these" | impeccable `operate.md` | PTA đề xuất |
@@ -483,7 +483,7 @@ Nguồn hệ: 10.1 (hover + trạng thái); v1 C2; V4C-02, V4C-04, V4C-10, V4C-1
 | Biết portal: nội dung portal gắn `data-chu="<id hộp cha>"`; hộp con đăng ký với hộp cha qua một ngăn xếp (context) → bấm trong bất kỳ hộp con nào **không** tính là "ra ngoài" của cha; kiểm bằng `event.composedPath()` + `closest('[data-chu]')`. | Hộp nào sau này chứa ô ngày cũng không dính lại | 12.7 "gốc hệ thống" | PTA đề xuất |
 | Esc đóng **lớp trên cùng** của ngăn xếp, focus trả về phần tử mở nó; cuộn trang không đóng hộp neo (hộp bám theo). | Không mất chỗ khi dùng phím | HTT-3; V4C-03 | PTA đề xuất |
 | Phép kiểm bấm thử (Playwright) cho **mọi hộp có ô ngày / lịch**: mở hộp → mở lịch → bấm ‹ › và một ngày → hộp cha còn mở, giá trị đổi. | Chống tái phát | 12.7; 12.10 | PTA đề xuất |
-| Trình tự: GĐ1 vá (hộp bỏ qua bấm trong lịch con, như `HopKyNang`) + gom hook; M0 thay hẳn `BoChonThoiGian` bằng `Khoảng tuần` (không hộp nổi). | Deploy được sớm | 12.7; Q-E1 | Thời điểm → Cần chủ SP (Q-E1) |
+| Trình tự: GĐ1 vá (hộp bỏ qua bấm trong lịch con, như `HopKyNang`) + gom hook; M0 thay hẳn `BoChonThoiGian` bằng `Khoảng tuần` (không hộp nổi). | Deploy được sớm | 12.7; Q-E1 | Thời điểm: GĐ1 (Q-E1 ①, 21/10) |
 
 ---
 
@@ -497,7 +497,7 @@ Nguồn hệ: 10.1 (hover + trạng thái); v1 C2; V4C-02, V4C-04, V4C-10, V4C-1
 | **Một phạm vi số cho cả trang:** công tắc Chương trình + Chi nhánh áp mọi khối của trang (bỏ "gộp hai khung"); số cố ý khác phạm vi ghi "mọi chi nhánh". | — | 9.1-4; X-03 | ĐÃ CHỐT (9.1-4) |
 | **Thanh trên:** chuông có số (thay chữ "Thông báo 30"); ô tìm "Tìm lớp, học viên hoặc email…"; logo bấm = trang đầu của vai; Giao diện · Ngôn ngữ · Hướng dẫn trong menu tài khoản. **< 1 440 px:** ô tìm thu thành nút kính lúp (6 mục đủ tên ở 15 px cần ~628 px); **≤ ~900 px:** tên ngắn ("Học viên") + gom "Thêm ▾". | Nay mất mục Tutor ở 1 280 px; tăng chữ làm cắt nặng hơn | C11; C18; A1-05; v1 D | C11, C18 ĐÃ CHỐT · co giãn = PTA đề xuất (10.7-11 cùng nhóm) |
 | **Thanh dưới 375 ≤ 5 nút** (chữ 12, 75 px / ô): Tổng quan · Học viên · Test · Công việc · **Thêm** (Phân tích, Tutor) — thứ tự giữ; Admin VP đúng 5; GV / TVV / CX 3; Head tutor 1 mục → **ẩn** thanh dưới. | Nay 6 nút, "Tổng quan" 60,8 px trong ô 62,5 px — hết chỗ | v1 D; 10.7-11 | PTA đề xuất |
-| **Trang đầu theo vai:** GV = Công việc (19/10-GV); QL / QT / Admin VP / TVV / CX = Tổng quan; Head tutor = Tutor. Phân vai Tổng quan ↔ Công việc và nơi làm việc của TVV → **Cần chủ SP**. | "Việc của tôi ở trang đầu của tôi" (PTA-v4-6) | 19/10-GV; V4A-02; PTA-v4-6 | GV ĐÃ CHỐT (19/10) · còn lại Cần chủ SP (Q-A1, Q-A2, Q-A3) |
+| **Trang đầu theo vai:** GV = Công việc (19/10-GV); QL / QT / Admin VP / TVV / CX = Tổng quan; Head tutor = Tutor. Phân vai Tổng quan ↔ Công việc và nơi làm việc của TVV → **chủ SP chọn ① (Q-A1, 21/10)**: việc của tôi ở trang đầu vai; TVV không thêm Công việc. | "Việc của tôi ở trang đầu của tôi" (PTA-v4-6) | 19/10-GV; V4A-02; PTA-v4-6 | ĐÃ CHỐT (19/10-GV; Q-A1 ①, Q-A2 ① — 21/10) |
 | **Hai khung** (danh sách \| chi tiết) cho trang hàng đợi; vào trang chọn sẵn dòng đầu **chỉ khi là việc của chính người xem**; không tự mở việc của người khác, không đặt con trỏ, không tự cuộn. | Nay QL vào Công việc tự mở lưới GV, tự cuộn ~470 px (CV-09) | V4A-01; 10.2 B | PTA đề xuất |
 | Chỉ `<main>` cuộn; bảng rộng cuộn trong khung; trang không trượt ngang. | — | PR-KHUNG; DESIGN.md Layout | ĐÃ CHỐT |
 
@@ -655,7 +655,7 @@ Nguồn: 11.1a, 12.1, 12.4, 12.7, V2B-1/2, V3A-6, V3B-01/03/09, V4A-03/04/06, V4
 | 18 | Panel từ số Báo cáo | m3 khung 3 panel "Chưa đạt" 10 cột | V3B-03: ≤ 6 cột, điểm gộp | **≤ 6 cột** | panel của chính mockup cũng tràn | PTA đề xuất (nâng cấp mockup → Q-C2) |
 | 19 | Tiêu đề trang | DESIGN.md 20 / 700; mã 18 / 600 | v1 A3: 22 | **22** (375: 20) | thang mới | PTA đề xuất |
 | 20 | Hàng chip chọn tuần (Chuyển lớp) | v4c Q2 hỏi chủ SP | 9.2-19 → 06/10 "lệch phải sửa" (02 X-20) | **bỏ**, không hỏi | đã trả lời bằng luật 06/10 | ĐÃ CHỐT (06/10) |
-| 21 | Hộp duyệt ở đâu | MP IV.8 (A): hộp riêng trên | 10.2 B: nhóm đầu của một hàng đợi | — | định hướng lớn | Cần chủ SP (Q-A2) |
+| 21 | Hộp duyệt ở đâu | MP IV.8 (A): hộp riêng trên | 10.2 B: nhóm đầu của một hàng đợi | **B** | định hướng lớn | ĐÃ CHỐT (Q-A2 ①, 21/10) |
 | 22 | Hoàn tác | 10.3: 8–10 s | m1 §1f, V4A-03: 10 s | **10 s** | khớp khung đã duyệt | ĐÃ CHỐT (m1 §1f) |
 | 23 | Mở rộng tại dòng (Thêm PA) | MP IV.3: mở tại dòng HV | ảnh v4-1, v4-3: mở trong danh sách hẹp che tiêu đề | **bảng rộng: mở dưới hàng (2b); danh sách hẹp: khung phải; cùng một form** | giữ lõi ý chủ SP, tránh lỗi đã thấy | PTA đề xuất (X-39) |
 
@@ -663,7 +663,7 @@ Nguồn: 11.1a, 12.1, 12.4, 12.7, V2B-1/2, V3A-6, V3B-01/03/09, V4A-03/04/06, V4
 
 ## 22. Danh sách để chủ SP xem
 
-### 22.1 PTA đề xuất có ĐẢO quyết định / mockup cũ — chủ SP chỉ cần phản đối nếu không đồng ý
+### 22.1 PTA đề xuất có ĐẢO quyết định / mockup cũ — chủ SP chỉ cần phản đối nếu không đồng ý (**21/10: chủ SP đồng ý cả gói**)
 
 | # | Đảo cái gì | Thành gì | Mục |
 |---|---|---|---|
@@ -681,6 +681,6 @@ Nguồn: 11.1a, 12.1, 12.4, 12.7, V2B-1/2, V3A-6, V3B-01/03/09, V4A-03/04/06, V4
 | 12 | HD2 (11/10): lớp thường gõ thẳng đúng / tổng ở máy tính | gõ số trên ô = mở hộp chấm (Enter = em tiếp) | 7 |
 | 13 | 12.7 (đề xuất PTA cũ): "Toàn bộ" ở Tutor / Bộ lọc thêm / Xuất; giữ hàng nút tuần | "Toàn bộ" chỉ Phân tích; bỏ hàng nút | 13 |
 
-### 22.2 Cần chủ SP (không quyết ở tệp này — câu ở 02 mục 5)
+### 22.2 Câu hỏi chủ SP — đã trả lời 21/10 (02 mục 5)
 
-Q-A1 (Tổng quan ↔ Công việc — quyết định trang đầu và badge) · Q-A2 (hộp duyệt riêng hay nhóm đầu hàng đợi — quyết bố cục hai khung mục 15) · Q-A3 (TVV làm việc ở đâu) · Q-C1 (chấm Test theo hạn — quyết mockup ba khối) · Q-C2 (nâng cấp Báo cáo + chế độ "Chiếu" — quyết thang 40 / 17) · Q-C3 (biên luật chip "Chưa chốt ngày") · Q-E1 (BANG-0 / BANG-1, vá bộ chọn có vào gói trước deploy không) · Q-E2 (ô tick xuất Excel — quyết cột tick trong `Bang`).
+Q-A1 ① (trang đầu theo vai — badge theo trang đầu) · Q-A2 ① (bố cục **B**: Chờ duyệt là nhóm đầu hàng đợi, hai khung mục 15) · Q-A3 (TVV làm ở Tổng quan; 4 việc TVV + hạn) · **Q-C1: chờ mockup** Chấm Test theo hạn (chủ SP duyệt sau khi vẽ) · Q-C2 ① (Báo cáo + chế độ "Chiếu" — dùng thang 40 / 17) · Q-C3 ① (chip "Chưa chốt ngày" cho em có tuần chưa ngày; lớp thường chỉ chip) · Q-E1 ① (BANG-0 / BANG-1, vá bộ chọn vào GĐ1 trước deploy) · Q-E2 ① (bỏ ô tick khỏi bảng — `Bang` không cần cột tick cho xuất). Q-A4: bộ lọc tên **"Cần làm"** (chip lọc "Cần làm n · Tất cả n" — mục 8.2).

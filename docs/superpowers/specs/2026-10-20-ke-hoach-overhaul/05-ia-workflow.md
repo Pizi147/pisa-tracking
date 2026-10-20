@@ -4,19 +4,19 @@
 > **Cách đọc.** Chủ SP: Tóm tắt → **bảng quyết định mục 0** → mục 8 (hành trình theo vai). PTA Plan / session code: mục 1–7 theo khu; **mục 9** (ảnh hưởng chéo + thứ tự phụ thuộc) khi viết 07; **mục 10** (chỗ tệp này khác bản nháp 02). Dáng thành phần (chữ, màu, khoảng, trạng thái, panel) ở **04**; bằng chứng lỗi ở **03** và phụ lục.
 > **Bộ tài liệu.** [`00-muc-luc.md`](00-muc-luc.md) · [`01-feedback-register.md`](01-feedback-register.md) · [`02-conflict-decision-log.md`](02-conflict-decision-log.md) · [`03-ux-ui-audit.md`](03-ux-ui-audit.md) · [`04-design-system.md`](04-design-system.md) · **05 (tệp này)** · [`06-mockup-gap.md`](06-mockup-gap.md) · [`07-pr-plan.md`](07-pr-plan.md) · tài liệu chính [`../2026-10-20-danh-gia-lai-ux-ui-toan-dien.md`](../2026-10-20-danh-gia-lai-ux-ui-toan-dien.md) (mục 7, 10.2–10.4, 11.1–11.4, 12.2–12.8) · phụ lục [`../2026-10-20-danh-gia-ux/`](../2026-10-20-danh-gia-ux/) (v1-tong-quan, v2a, v2b, v3a, v3b, **v4a-cong-viec, v4b-nghiep-vu, v4c-vai-tro-phu-web**, a2, a3, a4).
 > **Ký hiệu.** MP = master prompt cuối · L1–L4 = 4 luật Phần II · **L5** = lời chủ SP 21/10 (thu hồi / không tăng bậc → QL duyệt kèm lý do) · Q-xx = câu PHẢI HỎI ở 02 mục 5 · X-nn = dòng xung đột ở 02 · FB-x-nn = dòng ở 01 · "bấm" = click / chạm, không tính gõ chữ · "đổi trang" = rời trang đang làm · "phủ" = panel / ngăn đè lên trang · 1440 / 375 = bề rộng màn đo.
-> **Trạng thái.** Chỉ đề xuất — không sửa mã, chưa mockup. Theo đúng **12 hướng PTA Plan đã quyết 21/10** (luật 1 thắng v4b Q1 · hạn ngày lưu + 4 · L5 · gỡ R11 · L4 cả MT cũ · việc TVV ở trang đầu vai · "Toàn bộ" chỉ ở Phân tích · bỏ hàng nút tuần · "đang chọn" = nền + vạch trái · gán TVV trước khi bật…). Soạn: agent **d4** (Opus 5.5) cho PTA Plan, 21/10.
+> **Trạng thái.** Chỉ đề xuất — không sửa mã, chưa mockup. Theo đúng **12 hướng PTA Plan đã quyết 21/10** (luật 1 thắng v4b Q1 · hạn ngày lưu + 4 · L5 · gỡ R11 · L4 (**bản sửa 21/10: MT cũ "-" = huỷ ngay**) · việc TVV ở trang đầu vai · "Toàn bộ" chỉ ở Phân tích · bỏ hàng nút tuần · "đang chọn" = nền + vạch trái · gán TVV trước khi bật…). Soạn: agent **d4** (Opus 5.5) cho PTA Plan, 21/10. **21/10 — chủ SP đã trả lời 17/17 + đồng ý gói PTA tự quyết (02 mục 5, 2.9); agent d6 sửa tệp theo câu trả lời:** luật 4 sửa (mục 4 — bảng 13 trạng thái × 31 chuyển), việc TVV + hạn (1.4), S chéo theo kỹ năng hồ sơ GV (3.4), "Cần làm" giữ tên (1.5), Chấm Test chờ mockup (3.2), các câu khác "Chủ SP chọn ①".
 
 ---
 
 ## Tóm tắt 10 dòng
 
-1. **Một luật IA: "việc CỦA TÔI nằm ở trang đầu của vai"** — GV: Công việc · QL / QT / Admin VP / TVV: Tổng quan · Head tutor: Tutor. "Công việc" của người quản lý đổi nghĩa thành **"Theo dõi & giao việc"** (việc của GV gom theo GV · Vận hành · Hộp duyệt đầy đủ). Trùng 16/21 việc → 0. **Cần chủ SP: Q-A1** (gộp phần "TVV làm ở đâu" của Q-A3).
-2. **Một thành phần hàng đợi** (danh sách trái · chi tiết phải — dáng B) dùng cho Tổng quan QL / QT, Công việc GV, Tổng quan TVV. Chờ duyệt là **nhóm đầu**, không hộp riêng (ảnh v4-1 chính là dáng A chạy thật). **Q-A2.**
+1. **Một luật IA: "việc CỦA TÔI nằm ở trang đầu của vai"** — GV: Công việc · QL / QT / Admin VP / TVV: Tổng quan · Head tutor: Tutor. "Công việc" của người quản lý đổi nghĩa thành **"Theo dõi & giao việc"** (việc của GV gom theo GV · Vận hành · Hộp duyệt đầy đủ). Trùng 16/21 việc → 0. **Chủ SP chọn ① (Q-A1, 21/10).**
+2. **Một thành phần hàng đợi** (danh sách trái · chi tiết phải — dáng B) dùng cho Tổng quan QL / QT, Công việc GV, Tổng quan TVV. Chờ duyệt là **nhóm đầu**, không hộp riêng (ảnh v4-1 chính là dáng A chạy thật). **Chủ SP chọn ① B (Q-A2, 21/10).**
 3. **Dòng việc 3 vùng** (Hạn · Việc + đối tượng · ›), nhóm cố định theo vai, nợ chấm cũ gom một dòng; **một danh sách một kiểu mở**; thang 0–5 + vỏ "Khung việc". Sửa **gốc** hai lỗi ảnh v4-2 (Phân công sai case) và v4-3 (che tiêu đề) — không chỉ ẩn nút.
-4. **Chấm Test "theo hạn, một nguồn"** (giữ luật chia khối T15), hộp chấm một mẫu, lưới gọn, **"Tình trạng chấm"** cho QL / QT / Admin; nhập Excel chỉ còn lưới lớp × lượt (đã chốt). Cô Linh ~11 bấm → 1–2; QL tra "ai còn nợ" 3–6 → 1. **Q-C1.**
-5. **MT: 12 trạng thái × 30 chuyển**, sửa theo L3 + L4; **một hàm "-"** cho mọi lối; **một hộp một đợt**; Huỷ điểm có **Khôi phục**; một bộ chữ (Dời lịch · Vắng · Thẻ dời chờ QL · Huỷ điểm · Bỏ khỏi đợt · Đã huỷ · vắng 2 lần · Giữ huỷ · Xóa lịch). Đường đau ≈ 14 bấm → 3–4. Biên: **Q-B3, Q-B4**.
-6. **Vi phạm → TVV:** việc sinh **ngay khi GVCN lưu**, kể cả lần đang chờ QL duyệt; hạn **ngày lưu + 4, hết 23:59** (vd lưu T2 14/09 → hết T6 18/09); form 4 hàng chip (**3 bấm, không gõ**); thu hồi / không tăng bậc qua QL kèm lý do, "Đã thu hồi" giữ dòng; **gán TVV trước khi bật**. Biên: **Q-D1, Q-D3**.
-7. **Sửa sau lưu:** gỡ R11 cho GVBM đúng ô (ảnh v4-4); 29 khoá → nới 11 · giữ 15 · đã nới 2 · thêm duyệt 1; "Lịch sử" gập ngay trong panel + **Khôi phục điểm** + Hoàn tác 8–10 s cho thao tác đảo được. Biên: **Q-B1, Q-B2**.
+4. **Chấm Test "theo hạn, một nguồn"** (giữ luật chia khối T15), hộp chấm một mẫu, lưới gọn, **"Tình trạng chấm"** cho QL / QT / Admin; nhập Excel chỉ còn lưới lớp × lượt (đã chốt). Cô Linh ~11 bấm → 1–2; QL tra "ai còn nợ" 3–6 → 1. **Q-C1 (21/10): chủ SP bảo vẽ mockup ①, xem rồi duyệt — chưa chốt hẳn.** Nhóm "Chấm Speaking chéo" cho **mọi GV có kỹ năng S, kể cả không dạy lớp nào** (luật 21/10; mã đã có từ OV-14c).
+5. **MT: 13 trạng thái × 31 chuyển**, sửa theo L3 + **luật 4 sửa 21/10** (MT cũ "-" = **huỷ ngay** · đếm theo tuần · Khôi phục = được dời 2 lần · QL duyệt thêm = +1 · Hoàn tác 10 s, sau đó vẫn khôi phục được); **một hàm "-"** cho mọi lối; **một hộp một đợt**; Huỷ điểm có **Khôi phục**; một bộ chữ (Dời lịch · Vắng · Thẻ dời chờ QL · Huỷ điểm · Bỏ khỏi đợt · Đã huỷ · vắng 2 lần · Giữ huỷ · Xóa lịch). Đường đau ≈ 14 bấm → 3–4. Q-B3, Q-B4 đã trả lời 21/10 (mục 4.4).
+6. **Vi phạm → TVV:** việc sinh **ngay khi GVCN lưu**, kể cả lần đang chờ QL duyệt; hạn **ngày lưu + 4, hết 23:59** (vd lưu T2 14/09 → hết T6 18/09); form 4 hàng chip (**3 bấm, không gõ**); thu hồi / không tăng bậc qua QL kèm lý do, "Đã thu hồi" giữ dòng; **gán TVV trước khi bật**. Chủ SP chọn ① Q-D1, Q-D3. **Việc TVV khác (21/10, Q-A3):** Chốt ngày thi · Chọn bước tiếp sau thi (hạn 1 tuần) · Bổ sung hồ sơ thiếu · Cập nhật kết quả thi thật (chuyển từ GVCN) — không hạn; Báo PH lớp thường giữ như nay.
+7. **Sửa sau lưu:** gỡ R11 cho GVBM đúng ô (ảnh v4-4); 29 khoá → nới 9 · giữ 17 (H03, H21 giữ theo Q-B1 ①) · đã nới 2 · thêm duyệt 1; "Lịch sử" gập ngay trong panel + **Khôi phục điểm** + Hoàn tác 8–10 s cho thao tác đảo được. Chủ SP chọn ① Q-B1 (giữ khoá đóng hồ sơ), Q-B2.
 8. **SOS / PA:** cả ô SOS là nút → mở rộng hàng lớp; **Thêm PA dưới dòng ở bảng rộng, khung phải ở hàng đợi hẹp**, cùng một form. **Lịch thi:** một hàm trạng thái, chip A / B, việc Chốt ngày thi không hạn (2 bấm). **Phân tích:** luật L1 + panel C, báo cáo thuần, **"Toàn bộ" chỉ ở Phân tích**.
 9. **Hành trình 9 vai:** bớt bước ở hầu hết việc chính (QL duyệt 10 thẻ 31 → 11 bấm, 20 → 0 đổi trang; TVV ghi kết quả: không có chỗ → 3–4 bấm). Mọi trang đầu trả lời được "việc đầu tiên của tôi là gì" trong một màn.
 10. **Thứ tự gợi ý cho 07:** dữ liệu + máy chủ luật (L3, L4, L5, chủ Case, LT-SV) → nền (chữ, trạng thái, `Bang`, Khung việc, `Khoảng tuần`, `DongViec` / `HangDoiViec`) → màn theo cụm phụ thuộc (mục 9). Việc TVV: máy chủ sau cờ, **chỉ bật cùng màn Tổng quan TVV**.
@@ -25,50 +25,51 @@
 
 ## 0. Bảng quyết định của tệp này
 
-Loại: **CHỐT** = luật / yêu cầu đã chốt, tệp này chỉ chọn cách làm · **PTA** = PTA tự quyết (chủ SP phản đối nếu không đồng ý; ★ = đảo một quyết định / mockup cũ) · **Q-xx** = chờ chủ SP.
+Loại: **CHỐT** = luật / yêu cầu đã chốt, tệp này chỉ chọn cách làm · **PTA** = PTA tự quyết (chủ SP phản đối nếu không đồng ý; ★ = đảo một quyết định / mockup cũ) · **Q-xx** = câu đã hỏi chủ SP (21/10: đã trả lời — cột Loại ghi lựa chọn).
 
 | ID | Khu | Phương án ưu tiên | Loại | Mục |
 |---|---|---|---|---|
 | IA-01 | Menu + tiêu đề trang | Giữ thứ tự đã chốt; tiêu đề = tên menu mọi vai | CHỐT + PTA | 1.1 |
-| IA-02 | Trang đầu từng vai | Bảng 1.2 (GV Công việc · QL/QT/VP/TVV Tổng quan · HT Tutor) | PTA (theo Q-A1) | 1.2 |
-| IA-03 | Tổng quan ↔ Công việc | **P1** — việc TÔI ở trang đầu; Công việc QL = Theo dõi & giao việc | **Q-A1** | 1.3 |
+| IA-02 | Trang đầu từng vai | Bảng 1.2 (GV Công việc · QL/QT/VP/TVV Tổng quan · HT Tutor) | CHỐT (Q-A1 ①, 21/10) | 1.2 |
+| IA-03 | Tổng quan ↔ Công việc | **P1** — việc TÔI ở trang đầu; Công việc QL = Theo dõi & giao việc | **CHỐT** (Q-A1 ①, 21/10) | 1.3 |
 | IA-04 | Chờ duyệt ở nhiều nơi | Một thành phần dòng duyệt; nơi làm chính = Tổng quan | PTA | 1.3 |
-| IA-05 | Việc TVV ở đâu | **T1** — hàng đợi "Việc của bạn" trên Tổng quan TVV, không thêm menu | **Q-A1** (gộp Q-A3) | 1.4 |
-| IA-06 | Bộ việc TVV | 4 việc + (đề xuất) Báo PH lớp thường; một việc một người giữ | **Q-A3** | 1.4 |
-| IA-07 | Học viên & Lớp | 3 góc (Tất cả · Đang SOS · Lịch thi); Cần làm thành **bộ lọc "Có việc"** | **Q-A4** | 1.5 |
+| IA-05 | Việc TVV ở đâu | **T1** — hàng đợi "Việc của bạn" trên Tổng quan TVV, không thêm menu | **CHỐT** (Q-A1 ①, 21/10) | 1.4 |
+| IA-06 | Bộ việc TVV | Ghi kết quả xử lý vi phạm (5 ngày) + **Chốt ngày thi · Chọn bước tiếp (hạn 1 tuần) · Bổ sung hồ sơ thiếu · Cập nhật KQ thi thật (từ GVCN)** — không hạn; Báo PH lớp thường giữ như nay; một việc một người giữ | **CHỐT 21/10** (Q-A3 — luật mới) | 1.4 |
+| IA-07 | Học viên & Lớp | 3 góc (Tất cả · Đang SOS · Lịch thi); Cần làm thành **bộ lọc** trong bảng Tất cả, **giữ tên "Cần làm"** | **CHỐT** (Q-A4, 21/10) | 1.5 |
 | IA-08 | Tab hồ sơ lớp / HV | 3 tầng (bỏ tab con); một việc một chỗ; tab trên URL | PTA (11.8-11, 12) | 1.6 |
-| CV-A | Bố cục khu việc | **B** (Chờ duyệt là nhóm đầu) | **Q-A2** | 2.1 |
+| CV-A | Bố cục khu việc | **B** (Chờ duyệt là nhóm đầu) | **CHỐT** (Q-A2 ①, 21/10) | 2.1 |
 | CV-B | Danh sách việc | **A** — dòng 3 vùng, nhóm theo vai, gom nợ cũ | PTA | 2.2 |
 | CV-C | Kiểu mở | Một danh sách một kiểu mở; Kết quả PA mở khung phải ★ | PTA ★ | 2.3 |
 | CV-D | Hệ panel | Thang 0–5 + vỏ "Khung việc" (dáng ở 04) | PTA (10.7-6) | 2.4 |
 | CV-E | "Phân công…" sai case | Sửa gốc: lý do thiếu người + tự gán chủ Case theo luật tạo Case | PTA (xem 10) | 2.5 |
 | CV-F | Chuông / nhắc việc (FB-4-36 — góp ý GV, B) | **N2** — hộp chuông thành "Nhắc việc": Cần làm đọc cùng hàm hàng đợi trang đầu, Để biết = tin một chiều; GĐ1 vá N1 trước; không tự bật hộp khi đăng nhập | PTA ★ (02 4.7 A20, C22, C23) | 2.7 |
-| TS-A | Workflow chấm | **B** "theo hạn, một nguồn" | **Q-C1** | 3.2 |
+| TS-A | Workflow chấm | **B** "theo hạn, một nguồn" | **Q-C1**: chủ SP bảo vẽ mockup, duyệt sau (21/10) | 3.2 |
 | TS-B | Hộp chấm | **A** một mẫu FT + lớp thường; gõ số mở hộp ★ | CHỐT (nhận xét trong hộp) + PTA ★ | 3.3 |
 | TS-C | Excel nhập | 2 lối cùng thành phần (lớp × lượt); ẩn 375 | CHỐT + PTA | 3.5 |
 | TS-D | Xem lại kết quả | "Tình trạng chấm" + `ODiem` mọi nơi | PTA (12.9-11) | 3.6 |
-| MT-A | Bảng chuyển trạng thái | Bảng 4.3 (sửa 6 dòng lệch L3 / L4) | CHỐT (L3, L4) | 4.3 |
-| MT-B | Tuần đích "-" lần 1 ở MT cũ | (ii) tuần sau của tuần hiện tại | **Q-B3** | 4.4 |
-| MT-C | "Chuỗi dời" | chỉ lần dời do "-" cùng kỹ năng, cùng lượt | **Q-B4** | 4.4 |
+| TS-E | Speaking chấm chéo | **mọi GV có kỹ năng S trong hồ sơ, kể cả không dạy lớp nào**, phạm vi chi nhánh; T18 phần khác giữ | **CHỐT 21/10** (mã đã có — OV-14c) | 3.4 |
+| MT-A | Bảng chuyển trạng thái | Bảng 4.3 (13 trạng thái × 31 chuyển; dòng SỬA theo L3 + luật 4 sửa 21/10) | CHỐT (L3, L4 sửa 21/10) | 4.3 |
+| MT-B | "-" ở MT cũ / "-" ghi muộn | MT cũ: **huỷ ngay** (Hoàn tác 10 s, sau đó khôi phục được); MT hiện tại ghi muộn (< 2 tuần): tuần kế **của lịch** nếu còn thi được, không thì thẻ QL | **CHỐT 21/10** (Q-B3, Q-B4) | 4.4 |
+| MT-C | "Chuỗi dời" | chỉ lần "-" cùng kỹ năng, cùng lượt, **đếm theo tuần**; Khôi phục = được dời 2 lần; QL duyệt thêm = +1 | **CHỐT 21/10** (Q-B4) | 4.4 |
 | MT-D | Chữ huỷ / dời / gửi duyệt | Bộ chữ 4.5 | PTA ★ | 4.5 |
 | MT-E | Luồng thao tác MT | **A** một hộp một đợt + Khôi phục điểm | PTA | 4.6 |
 | YT-A | Khi nào sinh việc TVV | Ngay khi lưu, kể cả lần chờ duyệt | CHỐT (L1, PTA 21/10) | 5.3 |
 | YT-B | Hạn | ngày lưu + 4, hết 23:59 giờ VN | PTA (L2 cho phép) | 5.4 |
 | YT-C | Form TVV | **F2** — 4 hàng chip | PTA | 5.5 |
-| YT-D | Người được giao / không TVV | TVV phụ trách em; không có → QL chi nhánh | **Q-D3** | 5.7 |
-| YT-E | Chưa liên hệ được PH | Ghi lần thử; được "Kết thúc · không liên hệ được" | **Q-D3** | 5.8 |
+| YT-D | Người được giao / không TVV | TVV phụ trách em; không có → QL chi nhánh | **CHỐT** (Q-D3 ①, 21/10) | 5.7 |
+| YT-E | Chưa liên hệ được PH | Ghi lần thử; được "Kết thúc · không liên hệ được" | **CHỐT** (Q-D3 ①, 21/10) | 5.8 |
 | YT-F | Thu hồi / không tăng bậc | TH-A + KB-A | CHỐT (L5) + PTA | 5.9 |
-| YT-G | QL từ chối / thu hồi sau khi việc đã sinh | chưa ghi → tự huỷ kèm lý do; đã ghi → giữ + nhãn | **Q-D1** | 5.10 |
+| YT-G | QL từ chối / thu hồi sau khi việc đã sinh | chưa ghi → tự huỷ kèm lý do; đã ghi → giữ + nhãn | **CHỐT** (Q-D1 ①, 21/10) | 5.10 |
 | YT-H | Hiển thị Ý thức lớp / HV | dòng phụ trạng thái PH trong ô "Thang" | PTA | 5.11 |
-| SL-A | Khoá cứng | Bảng 6.2 | CHỐT (L3) + **Q-B1** | 6.2 |
+| SL-A | Khoá cứng | Bảng 6.2 | CHỐT (L3) + Q-B1 ① giữ khoá đóng hồ sơ (21/10) | 6.2 |
 | SL-B | Lịch sử / hoàn tác / khôi phục | **H-A** | PTA | 6.3 |
-| SL-C | Sửa dữ liệu đã duyệt | sửa phần đã duyệt → duyệt lại; chi tiết → lưu thẳng | **Q-B2** | 6.4 |
+| SL-C | Sửa dữ liệu đã duyệt | sửa phần đã duyệt → duyệt lại; chi tiết → lưu thẳng | **CHỐT** (Q-B2 ①, 21/10) | 6.4 |
 | SP-A | SOS / Thêm PA | S-B + Thêm PA theo độ rộng | PTA (X-39) | 7.1 |
 | SP-B | Tạo Case nhiều kỹ năng (FB-4-35) | **C1** — chip chọn nhiều + một thẻ mỗi kỹ năng, phần chung nhập một lần, lưu một giao dịch ra n Case | CHỐT (21/10-CASE) + PTA (02 4.7 B16, C21) | 7.1b |
-| LT-A | Lịch thi | một hàm trạng thái + chip A / B + Chốt ngày (hộp neo) | CHỐT (luật) + **Q-C3, Q-C4** | 7.2 |
-| PT-A | Phân tích | L1 + panel C · T1 · Y1 · H2 · K1 | PTA + **Q-C2** | 7.3 |
+| LT-A | Lịch thi | một hàm trạng thái + chip A / B + Chốt ngày (hộp neo) | CHỐT (luật) + Q-C3 ①, Q-C4 ① (21/10) | 7.2 |
+| PT-A | Phân tích | L1 + panel C · T1 · Y1 · H2 · K1 | PTA + Q-C2 ① (21/10) | 7.3 |
 | PT-B | Thời gian | "Toàn bộ" chỉ Phân tích; nơi khác `Khoảng tuần` có mặc định | CHỐT + PTA ★ | 7.3 |
-| XE-A | Xuất Excel | **E1** + chọn em trong panel Xuất | PTA + **Q-E2** | 7.4 |
+| XE-A | Xuất Excel | **E1** + chọn em trong panel Xuất | PTA + Q-E2 ① (21/10) | 7.4 |
 | TU-A | Tutor | **F1 + B1**; phần cần dữ liệu tách riêng | PTA | 7.5 |
 
 ---
@@ -117,7 +118,7 @@ Chuông: bấm một thông báo → về **trang đầu của vai**, chọn s�
 - **Ưu tiên P1.** Đúng định hướng MP XI.2 (Tổng quan = nắm tình hình + quyết nhanh tại chỗ; Công việc = quản lý sâu: theo GV, giao việc, lịch sử) mà **không tạo khác biệt bằng tính năng thừa**; ít đổi trang nhất; một thành phần hàng đợi cho cả hai trang. P2 thêm 1 đổi trang cho mọi việc có form và vẫn lặp việc gấp; P3 là hiện trạng bị chê (ảnh v4-1).
 - **Nghiệp vụ / quyền:** không đổi quyền. QL không có `score.edit` → ở "Việc của GV", panel Nhập điểm **chỉ xem**; QL có quyền Case → nút ghi "Làm thay". GV vẫn thấy chữ "chờ QL duyệt" trên việc của mình (v4c 4.3).
 - **Chờ duyệt — một thành phần, nơi làm chính** (sửa "5 nơi"): dòng duyệt dùng chung ở (1) Tổng quan hàng đợi — **nơi làm chính**; (2) dải "Chờ duyệt" ở hồ sơ HV và thẻ trong ngăn Case — **cùng thành phần, cùng kết quả** (bối cảnh đúng chỗ, không ép đổi trang); (3) Hộp duyệt đầy đủ (`/cong-viec/cho-duyet`) — chỉ để xem đã xử lý + lọc, link từ đầu nhóm Chờ duyệt; (4) Công việc QL — không còn nhóm Chờ duyệt. Lối cũ trong thông báo chuyển về nhóm Chờ duyệt (`duongMoi`).
-- **Cần chủ SP: Q-A1** (định hướng lớn). PTA Plan đã quyết gộp phần "TVV làm ở đâu" của Q-A3 vào câu này — một nguyên tắc cho mọi vai.
+- **Chủ SP chọn P1 (Q-A1 ①, 21/10)** — gồm phần "TVV làm ở đâu": một nguyên tắc cho mọi vai.
 
 ### 1.4 Việc của TVV / CX / Admin VP / Head tutor
 
@@ -131,20 +132,20 @@ Chuông: bấm một thông báo → về **trang đầu của vai**, chọn s�
 | Thêm menu / trang | không | +1 mục cho ≤ 5 loại việc | không |
 | Người mới | thấy việc ngay khi đăng nhập | phải biết vào Công việc | phải biết góc |
 
-**Ưu tiên T1** — cùng thành phần hàng đợi (1.3), không thêm trang. Nếu chủ SP muốn "mọi vai có việc đều có mục Công việc" thì chọn T2 (vẫn dùng chung thành phần). → **Q-A1**.
+**Ưu tiên T1** — cùng thành phần hàng đợi (1.3), không thêm trang. **Chủ SP chọn T1 (Q-A1 ①, 21/10)** — TVV không thêm mục Công việc.
 
 **Bộ việc TVV** (MP XII.1: chỉ việc thật sự của TVV, tránh nhóm vô ích). Luật chung: **một việc một người giữ** (nay "Chọn bước tiếp" là "của tôi" cho cả QL + mọi TVV chi nhánh → làm trùng / chờ nhau — V4B-03).
 
 | Việc | Đầu ra | Sinh khi | Hạn | Người giữ (dự phòng) | Trạng thái |
 |---|---|---|---|---|---|
-| **Ghi kết quả xử lý vi phạm** | PH được báo + phản hồi được ghi | GVCN lưu xử lý (5.3) | 5 ngày lịch | TVV (QL chi nhánh) | **CHỐT** (L1, L2); dự phòng → Q-D3 |
-| **Chốt ngày thi** | có ngày thi thật | tới tháng dự kiến, chưa có ngày (FT) | không | TVV (QL) | **Q-A3** (11.8-3c) |
-| **Chọn bước tiếp sau thi** | lộ trình mới / tạm dừng / thôi | có kết quả thi thật | như nay | TVV (QL) | **Q-A3** |
-| **Bổ sung hồ sơ thiếu** | đủ trường cần thiết | cờ thiếu | không | TVV, QL | **Q-A3** + định nghĩa **Q-D4**; hiện **một dòng tổng** "n em thiếu …", không mỗi em một việc |
-| Báo PH kết quả Test lớp thường (nay là việc GVCN nhờ TVV ngoài web) | như việc 1 | như nay (Progress / Final có môn trượt) | không | TVV (GVCN như nay) | đề xuất gộp vào **Q-A3** (v4b Q8) — cùng form với việc 1 |
-| Cập nhật kết quả thi thật | 4 kỹ năng / Không thi | hôm sau ngày thi | ngày thi + 7 | GVCN lớp cuối (nay) | giữ như nay; v4b Q9 đề xuất chuyển TVV — gộp **Q-A3** nếu chủ SP muốn |
+| **Ghi kết quả xử lý vi phạm** | PH được báo + phản hồi được ghi | GVCN lưu xử lý (5.3) | 5 ngày lịch | TVV (QL chi nhánh) | **CHỐT** (L1, L2; Q-D3 ①) |
+| **Chốt ngày thi** | có ngày thi thật | tới tháng dự kiến, chưa có ngày (FT) | **không** | TVV (QL) | **CHỐT 21/10** (Q-A3) |
+| **Chọn bước tiếp sau thi** | lộ trình mới / tạm dừng / thôi | có kết quả thi thật | **1 tuần** từ khi có kết quả thi thật (mốc: PTA diễn giải; khớp mã `buoc_tiep` = ngày có kết quả + 7) | **TVV của em** (QL) — một người giữ (nay "của tôi" với QL + mọi TVV chi nhánh) | **CHỐT 21/10** (Q-A3) |
+| **Bổ sung hồ sơ thiếu** | đủ 4 trường (Q-D4 ①: Ngày sinh · Email · Tuần bắt đầu · Target FT) | cờ thiếu | **không** | TVV (QL) | **CHỐT 21/10** (Q-A3, Q-D4); hiện **một dòng tổng** "n em thiếu …", không mỗi em một việc |
+| Báo PH kết quả Test lớp thường (việc GVCN nhờ TVV ngoài web) | như nay | như nay (Progress / Final có môn trượt) | như nay | **GVCN như nay** | **không chuyển** cho TVV (chủ SP 21/10) |
+| **Cập nhật kết quả thi thật** | 4 kỹ năng / Không thi | hôm sau ngày thi | **không** (bỏ hạn đang có) | **TVV** (QL) — **chuyển từ GVCN lớp cuối** | **CHỐT 21/10** (Q-A3); lệch mã (nay GVCN, có hạn) → 07 SV-TVV-VIEC |
 
-Phương án bộ việc: **(a) 4 việc đầu + Báo PH lớp thường (khuyến nghị)** — TVV là người liên hệ PH (mockup vai 13/10), bớt một vòng nhắn GVCN ↔ TVV · (b) chỉ việc vi phạm (02 Q-A3 c) — việc khác vẫn rải rác, QL ôm · (c) đủ cả "Kết quả thi thật" — đổi người chịu trách nhiệm của GVCN, cần chủ SP. **Không thêm:** "Liên hệ lại PH", "TVV xác nhận đã đọc", "Theo dõi em SOS" (ô Cần chú ý đã có — để xem, không phải việc).
+**Chủ SP chọn (21/10, Q-A3):** TVV giữ việc vi phạm + 4 việc trên (gồm **Cập nhật KQ thi thật** chuyển từ GVCN); **không hạn**, trừ Chọn bước tiếp **1 tuần**; Báo PH lớp thường **không** chuyển; em không có TVV → QL chi nhánh (Q-D3). Khác khuyến nghị cũ (a) của tệp này (02 X-80). **Không thêm:** "Liên hệ lại PH", "TVV xác nhận đã đọc", "Theo dõi em SOS" (ô Cần chú ý đã có — để xem, không phải việc).
 
 **Vai khác:** CX không nhận việc — Tổng quan chỉ xem, bỏ tiêu đề IN HOA (A1-20) · Admin VP: như bảng 1.2 · Head tutor: khối "Việc của bạn" ở đầu Tutor (7.5) — đúng cùng nguyên tắc.
 
@@ -152,7 +153,7 @@ Phương án bộ việc: **(a) 4 việc đầu + Báo PH lớp thường (khuy�
 
 **Hiện trạng [ĐÃ KIỂM].** 4 góc (Tất cả · Đang SOS · Cần làm · Lịch thi) + chip Đã thi + Bộ lọc thêm. "Cần làm 51" = "Tất cả 51" ở Công việc (cùng nguồn `/my-work`, khác cách đếm: QT Monbay 181 ↔ 84); 8/10 hàng "Cả lớp · n em"; "Người giữ" sai thuật ngữ; nút "Mở" không nói làm gì; GV thấy cả "Chờ duyệt", "Thiếu thông tin" không phải việc của GV.
 
-| Tình huống | **(a) Bộ lọc "Có việc" trong bảng Tất cả** | (b) Bỏ hẳn; chip "⚠ n quá hạn" trên hàng lớp mở dải việc dưới hàng | (c) Giữ góc riêng, làm lại 5 cột |
+| Tình huống | **(a) Bộ lọc "Cần làm" trong bảng Tất cả** | (b) Bỏ hẳn; chip "⚠ n quá hạn" trên hàng lớp mở dải việc dưới hàng | (c) Giữ góc riêng, làm lại 5 cột |
 |---|---|---|---|
 | GV: "lớp 101 còn việc gì?" | 1 (chip ⚠ trên hàng lớp = bật bộ lọc cho lớp đó) | 1 | 2 (góc + lọc lớp) |
 | QL: "em nào cả chi nhánh có việc quá hạn?" | **1** (bật bộ lọc, quá hạn trước) | n bấm (mở từng lớp) | 1 |
@@ -162,7 +163,7 @@ Phương án bộ việc: **(a) 4 việc đầu + Báo PH lớp thường (khuy�
 
 - **Ưu tiên (a)** — đúng chữ chủ SP gọi là "bộ lọc", không thêm bảng việc thứ hai, vẫn có lối nhanh theo lớp. Khi bật: thêm cột **Việc** (động từ + đối tượng, cùng hàm tên với Công việc) · **Người phụ trách** · **Hạn** · [nút động từ]; việc cấp lớp (Chốt lộ trình, Bàn giao) hiện trên **hàng lớp**. Bộ lọc theo vai = đúng tập việc vai đó thấy ở trang đầu (cùng nguồn). **Không đổi logic xác định việc** (MP V.3).
 - Còn 3 góc: **Tất cả · Đang SOS** (bảng 6 cột mockup 6, bỏ bộ lọc thời gian — 9.1-4) · **Lịch thi** (7.2). "Bộ lọc thêm › Thời gian" để trống = không lọc (7.3).
-- **Cần chủ SP: Q-A4.**
+- **Chủ SP chọn (a) — giữ tên "Cần làm"** (Q-A4, 21/10: "Để tên là 'Cần làm' nhé"; không đổi thành "Có việc").
 
 ### 1.6 Hồ sơ lớp / Hồ sơ HV — tab
 
@@ -191,7 +192,7 @@ Phương án bộ việc: **(a) 4 việc đầu + Báo PH lớp thường (khuy�
 | Dài trang 1440 / 375 | 2,5 / 5,3 màn | ≈ 2 / 3,2 | **≈ 1,7 / 2,5** | ≈ 0,8 / 1,2 (+ trang Công việc) | ≈ 1,15 / 2,5 |
 | Trùng Công việc QL | trùng Chờ duyệt | **trùng y** (Công việc QL nay là A) | không | không | không |
 
-- **Ưu tiên B** — giữ lõi ý chủ SP (trái danh sách, phải chi tiết, làm tại đây); khác A đúng một điểm: Chờ duyệt **là nhóm đầu của danh sách, luôn mở**, có "Chọn nhiều". Chi tiết luôn ngang chỗ vừa bấm; một kiểu thao tác; ngắn hơn ~250–300 px; đúng mockup 2 + 3 (Chờ duyệt là nhóm). Điểm A hơn B (đọc "Nếu duyệt" không cần bấm) → B bù bằng dòng 2 ghi trích ngắn. **Bằng chứng mới:** ảnh v4-1 là A chạy thật, chủ SP gọi "dày đặc, chi chít". **Cần chủ SP: Q-A2.**
+- **Ưu tiên B** — giữ lõi ý chủ SP (trái danh sách, phải chi tiết, làm tại đây); khác A đúng một điểm: Chờ duyệt **là nhóm đầu của danh sách, luôn mở**, có "Chọn nhiều". Chi tiết luôn ngang chỗ vừa bấm; một kiểu thao tác; ngắn hơn ~250–300 px; đúng mockup 2 + 3 (Chờ duyệt là nhóm). Điểm A hơn B (đọc "Nếu duyệt" không cần bấm) → B bù bằng dòng 2 ghi trích ngắn. **Bằng chứng mới:** ảnh v4-1 là A chạy thật, chủ SP gọi "dày đặc, chi chít". **Chủ SP chọn B (Q-A2 ①, 21/10).**
 - 375: danh sách → chi tiết toàn màn, "‹ Quay lại", nút chính dính đáy, "Việc 2 / 10", Quay lại về đúng nhóm + vị trí cuộn.
 
 ### 2.2 Danh sách việc — dòng 3 vùng, nhóm cố định theo vai (V4A-01)
@@ -330,11 +331,11 @@ Luật kèm: chọn bậc **thấp nhất** đủ dùng · mở cái mới thay 
 | QL "MB FT 101 MT2 đủ chưa, ai còn nợ" | 3–6 + cộng nhẩm / 5–6 + 1 đổi trang | 3–5 | **1 · 0** (Tình trạng chấm) | không có chỗ |
 | Cùng một con số ở mọi nơi | ✗ (4 số) | ✗ | **✓** | ✓ nhưng một nơi |
 
-**B cụ thể:** (1) **một hàm nhãn bài chấm** cho hàng · hộp · việc · thông báo: **"MT2 · thi W2 SEP · hạn 16/09"** (không ghi thứ — 19/10-M6, X-18) · (2) **Chấm Test** = một danh sách gom **theo hạn**, luật chia khối giữ nguyên, chỉ đổi tên + thứ tự: "⚠ Quá hạn chấm · n bài" · "Hạn 16/09 · bài thi W2 SEP" · "Bài thi tuần này W3 SEP · hạn 23/09" (**mở khi có ô của tôi**) · "Chấm Speaking chéo · n bài · không tính nợ" (chỉ GV có phân công S); không dải số, không bộ chọn tuần (luôn theo hôm nay — T16), link "Lịch tuần khác ›" · (3) **một nguồn** cho Công việc › Chấm điểm và Test (gộp `gomBaiChuaCham` + `lichTest`) · (4) **lưới gọn**: chỉ cột + ô của tôi; ô bài tuần khác khoá trong nhóm này; "Cả lớp" xem đủ · (5) tự sang nhóm kế khi xong (mockup 2 khung 1e) · (6) trạng thái rỗng dạy luật một câu ("Bài thi tuần này chấm trước T4 tuần sau").
+**B cụ thể:** (1) **một hàm nhãn bài chấm** cho hàng · hộp · việc · thông báo: **"MT2 · thi W2 SEP · hạn 16/09"** (không ghi thứ — 19/10-M6, X-18) · (2) **Chấm Test** = một danh sách gom **theo hạn**, luật chia khối giữ nguyên, chỉ đổi tên + thứ tự: "⚠ Quá hạn chấm · n bài" · "Hạn 16/09 · bài thi W2 SEP" · "Bài thi tuần này W3 SEP · hạn 23/09" (**mở khi có ô của tôi**) · "Chấm Speaking chéo · n bài · không tính nợ" (mọi GV có kỹ năng S trong hồ sơ, kể cả không dạy lớp nào — 21/10); không dải số, không bộ chọn tuần (luôn theo hôm nay — T16), link "Lịch tuần khác ›" · (3) **một nguồn** cho Công việc › Chấm điểm và Test (gộp `gomBaiChuaCham` + `lichTest`) · (4) **lưới gọn**: chỉ cột + ô của tôi; ô bài tuần khác khoá trong nhóm này; "Cả lớp" xem đủ · (5) tự sang nhóm kế khi xong (mockup 2 khung 1e) · (6) trạng thái rỗng dạy luật một câu ("Bài thi tuần này chấm trước T4 tuần sau").
 
 **Ba nơi sau B:** Test › Chấm Test (theo hạn — chỗ chấm chính) · Công việc › Chấm điểm (**cùng nguồn, cùng dòng, cùng số**) · Hồ sơ lớp › Điểm Test (theo **lượt** — xem / nhập cả lớp, **nơi duy nhất có Dán Excel**). Bỏ trang `/nhap-diem` và `/bang-diem-thuong` (route chuyển hướng). Lịch tuần (đổi tuần) chỉ xem.
 
-**Ưu tiên B** — phương án duy nhất **cùng một con số ở mọi nơi** và **bớt** (một cách gom, không dải số, một dáng hộp). Đổi tên / thứ tự / gom = đổi mockup ba khối 06/10 đã duyệt → **Cần chủ SP: Q-C1**. Phần chữ (nhãn "thi … · hạn …", "GV khác" → "chấm chéo") làm được ở GĐ1 không cần chờ.
+**Ưu tiên B** — phương án duy nhất **cùng một con số ở mọi nơi** và **bớt** (một cách gom, không dải số, một dáng hộp). Đổi tên / thứ tự / gom = đổi mockup ba khối 06/10 đã duyệt → **Q-C1 (21/10): chủ SP bảo "vẽ mockup cho lựa chọn 1, tôi xem xong sẽ duyệt" — hướng B chưa chốt hẳn; vẽ mockup trước, M5 chờ duyệt.** Phần chữ (nhãn "thi … · hạn …", "GV khác" → "chấm chéo") làm được ở GĐ1 không cần chờ.
 
 ### 3.3 Hộp chấm một mẫu (MP VIII.2–3 · 12.1 · V3A-6)
 
@@ -350,7 +351,7 @@ Hộp: đầu "G+V · {em}" + "Progress · thi W2 SEP · hạn 16/09" · "Đúng
 
 ### 3.4 Speaking chấm chéo (12.9-6 · V3A-2)
 
-Nhóm riêng "Chấm Speaking chéo" chỉ cho GV có phân công S; chữ **"chấm chéo"** thay "GV khác"; người chấm mặc định = **chính GV có kỹ năng S** đang chấm (nay mặc định người đang xem → QL nhập hộ thành người chấm và bị tính trễ); QL nhập hộ **phải chọn** người chấm; hạn hiện để nhìn. **Không đổi T18** (không tính nợ). Đếm: 5 → 2 bấm. **PTA tự quyết.**
+Nhóm riêng "Chấm Speaking chéo" cho **mọi GV có kỹ năng S trong hồ sơ GV, kể cả không dạy lớp nào**, phạm vi chi nhánh của GV (**luật 21/10 — Q-C1**; mã đã chạy từ OV-14c: `laGvSpeaking` / `lopFtChoGvSpeaking`, `server/src/permissions.ts:281-297`, Công việc `server/src/worklist/mywork.ts:380`, phép kiểm `prOv14c.tests.ts` OV14c-2, OV14c-10 — chỉ cần giữ khi gom `hangCham`); chữ **"chấm chéo"** thay "GV khác"; người chấm mặc định = **chính GV có kỹ năng S** đang chấm (nay mặc định người đang xem → QL nhập hộ thành người chấm và bị tính trễ); QL nhập hộ **phải chọn** người chấm; hạn hiện để nhìn. **Không đổi T18** phần còn lại (không tính nợ GVBM S / GVCN; người nhập muộn bị tính trễ). Đếm: 5 → 2 bấm. **PTA tự quyết (gói đồng ý 21/10) + luật 21/10.**
 
 ### 3.5 Nhập điểm Excel — giữ duy nhất lớp × lượt (ĐÃ CHỐT · 12.3 · V3A-5)
 
@@ -372,7 +373,7 @@ Một thành phần `DanExcel` đang hiện ở **8 lối** → giữ **2 lối 
 
 ### 4.1 Luật áp
 
-- **L4 (CHỐT):** trong **cùng chuỗi dời**: "-" lần 1 → dời sang tuần tiếp theo; "-" lần 2 → huỷ; áp **cả lịch MT tuần cũ** và "-" ghi **sau tuần thi**; MT hiện tại **giữ luồng gửi duyệt**. Mã đang lệch: sau tuần thi / MT cũ "-" = **"Không dự thi"** ngay, không dời, không đếm (`attempts.ts:2135-2136`, `absence.ts:975`, `shared/domain/vang.ts:11-16`) — chốt 11/10 bị L4 thay → **lệch phải sửa**.
+- **L4 — bản sửa 21/10 (CHỐT; thay L4 20/10 phần MT cũ — 02 mục 2.9):** (1) **MT hiện tại** (tuần thi chưa qua 2 tuần): "-" lần 1 → dời tuần kế (máy dời; không dời được → thẻ gửi QL duyệt như cũ); **đếm theo tuần** — sửa / gõ lại "-" trong cùng một tuần không tính thêm lần (chốt T2 như hiện nay), chỉ "-" ở tuần đã dời tới mới là lần 2 → huỷ; "-" ghi **muộn** (sau tuần thi, < 2 tuần) → tuần kế **của lịch** nếu còn thi được, không thì thẻ QL · (2) **MT cũ** (lịch xếp vào tuần đã qua ≥ 2 tuần — giữ ranh giới mã hiện tại): "-" → **huỷ ngay** · (3) **Khôi phục** (QL bấm, mọi MT): chuỗi đặt lại = **được dời 2 lần**, không nhớ "-" trước · (4) **QL duyệt cho dời thêm** (thẻ dời): chỉ **+1 lần**, vắng tiếp → huỷ · (5) **gõ nhầm**: **Hoàn tác 10 s**; sau đó **vẫn khôi phục được** — PTA diễn giải (L3): người có quyền sửa ô (gồm GV đã gõ), có lịch sử, QL nhận chuông "để biết" (chủ SP sửa nếu muốn chỉ QL) · (6) lớp thường không đổi. Mã đang lệch: sau tuần thi / MT cũ "-" = **"Không dự thi"** ngay, không dời, không đếm (`attempts.ts:2135-2136`, `absence.ts:975`, `shared/domain/vang.ts:11-16`) → **lệch phải sửa**; ô "Không dự thi" cũ ở MT cũ **hiện như "Đã huỷ"** (giữ bản ghi, khôi phục được).
 - **L3 (CHỐT):** gỡ R11 "đợt hoàn tất" cho GVBM đúng ô; Huỷ điểm phải **khôi phục được**.
 - **Giữ:** dời vượt MT sau bị chặn (08/10) · chưa tới tuần thi không nhập điểm (06/10) · lớp đã kết thúc không ghi "-" · Huỷ = Xóa ở Kế hoạch Test, có điểm thì không xoá (19/10-M6) · dời lịch MT chỉ QL (09/10; Admin VP xếp / dời, không huỷ / khôi phục).
 - **"Gửi duyệt" PTA hiểu (v4b):** khi máy **không tự dời được** lần 1 → **thẻ "Dời lịch Test" gửi QL** (QL Duyệt / Từ chối / hết hạn). Đây là đường gửi duyệt duy nhất còn trên web; "Xin dời" chỉ còn route máy chủ, không nút.
@@ -391,38 +392,39 @@ Một thành phần `DanExcel` đang hiện ở **8 lối** → giữ **2 lối 
 | S8 | Đã dời do vắng | dòng phụ "dời từ W… · vắng lần n" |
 | S9 | Đã huỷ · vắng 2 lần | QL quyết |
 | S10 | Đã huỷ · QL từ chối dời / thẻ hết hạn | — |
-| S11 | Không dự thi | **chỉ dữ liệu cũ** sau L4; liệt kê cho QL trước deploy |
+| S11 | Không dự thi | **chỉ dữ liệu cũ** sau L4; ở MT cũ **hiện như "Đã huỷ"** (như S13, khôi phục được); liệt kê cho QL trước deploy |
 | S12 | Bỏ khỏi đợt | không còn bắt buộc |
+| S13 | Đã huỷ · vắng MT cũ | "-" ở MT cũ (luật 4 sửa 21/10); Hoàn tác 10 s; khôi phục → được dời 2 lần |
 
 Cờ cấp lượt: **MT cũ** (tính lại sau **mọi** lần xếp / dời) · **Đủ điểm** (thay "Hoàn tất" — chỉ là trạng thái, bỏ câu "chỉ Quản lý sửa") · Lượt đã huỷ (dữ liệu cũ) · Chưa xếp.
 
-### 4.3 Bảng chuyển trạng thái (từ v4b B2, sửa theo L3 + L4 + PTA 21/10 mục 5)
+### 4.3 Bảng chuyển trạng thái (từ v4b B2, sửa theo L3 + **luật 4 sửa 21/10**) — 13 trạng thái × 31 chuyển
 
-"Đếm" = số lần vắng trong chuỗi. Cột cuối: **khớp** = giữ · **SỬA** = mã lệch luật.
+"Đếm" = số lần vắng trong chuỗi, **đếm theo tuần** (nhiều lần "-" / sửa trong cùng một tuần = một lần — 21/10). Cột cuối: **khớp** = giữ · **SỬA** = mã lệch luật.
 
 | # | Từ → Sang | Sự kiện (ai) | Điều kiện / hệ quả | So mã |
 |---|---|---|---|---|
 | T01 | S1 → S2/S3 | Xếp lịch (QL, Admin VP) | tuần đã qua: chỉ QL; cờ MT cũ tính lại | khớp |
 | T02 | S2/S3 → tuần mới | Dời lịch (QL) | không vượt MT sau, không thẻ chờ; đếm giữ | khớp |
 | T03 | S2 → S3 | tới T2 tuần thi | — | khớp |
-| T04 | S3 → S8 / S6 / S9 | "-" / Vắng **trong tuần thi**, MT hiện tại (GV ô, GVCN, QL) | lần 1: tuần kế thi được → **S8** (máy dời, chuông GVCN + GVBM); không được / vướng → **S6** (thẻ QL); lần 2 → **S9** (chuông QL) | khớp |
-| T05 | S3 → như T04 | "-" ghi **sau tuần thi**, MT hiện tại | tuần kế còn chạy → S8; đã hết hẳn / vướng → **S6** (tuần đích mặc định = tuần chưa bắt đầu gần nhất); lần 2 → S9 | **SỬA** (nay S11) |
-| T06 | S3 (MT cũ) → S8 / S7 / S9 | "-" ở **MT cũ** | lần 1 → **S8 tại tuần đích Q-B3**, không thẻ; vướng MT sau → **S7**; lần 2 → S9; tính lại cờ MT cũ | **SỬA** (nay S11) |
-| T07 | S4 → như T04–T06 | task W kia "-" hoặc có điểm | lần 1 dời **cả W**, điểm task kia đi theo (PTA) | **SỬA** (nay W không đủ sau tuần) |
+| T04 | S3 → S8 / S6 / S9 | "-" / Vắng **trong tuần thi**, MT hiện tại (GV ô, GVCN, QL) | lần 1: tuần kế thi được → **S8** (máy dời, chuông GVCN + GVBM); không được / vướng → **S6** (thẻ QL); lần 2 (= "-" ở **tuần đã dời tới** — T31) → **S9** (chuông QL) | khớp |
+| T05 | S3 → như T04 | "-" ghi **sau tuần thi** (chưa qua 2 tuần), MT hiện tại | tuần kế **của lịch** còn thi được → S8; không / vướng → **S6** thẻ QL (tuần đích mặc định = tuần chưa bắt đầu gần nhất); lần 2 → S9 | **SỬA** (nay S11) |
+| T06 | S3 (MT cũ) → **S13** | "-" ở **MT cũ** (≥ 2 tuần) | **huỷ ngay** (21/10) — không dời, không thẻ; Hoàn tác 10 s; chuông QL "để biết" | **SỬA** (nay S11) |
+| T07 | S4 → như T04–T06 | task W kia "-" hoặc có điểm | MT hiện tại: lần 1 dời **cả W**, điểm task kia đi theo (PTA); MT cũ: cả W "-" → như T06; một task có điểm → **PTA Plan chốt** | **SỬA** (nay W không đủ sau tuần) |
 | T08 | S3/S4/S8 → S5 | Nhập điểm | đã tới tuần | khớp |
-| T09 | S6/S8/S9 → như trước khi gõ | Gỡ "-" (GV ô, GVCN, QL; S9 chỉ QL) | đếm −1, thẻ rút | khớp |
-| T10 | S6 → S8 | QL Duyệt thẻ | **gửi duyệt như trước**; +1 | khớp |
+| T09 | S6/S8/S9/S13 → như trước khi gõ | Gỡ "-": **Hoàn tác 10 s** (người vừa gõ) hoặc gỡ sau đó (GV ô, GVCN, QL; **S13: người có quyền sửa ô**, có lịch sử, chuông QL "để biết" — 21/10; S9 chỉ QL) | đếm −1, thẻ rút | khớp + **SỬA** (S13) |
+| T10 | S6 → S8 | QL Duyệt thẻ (cho dời thêm) | **gửi duyệt như trước**; chỉ **+1 lần** — vắng tiếp ở tuần đích → S9 (21/10) | khớp |
 | T11 | S6 → S10 | QL Từ chối (lý do bắt buộc) | — | khớp |
 | T12 | S6 → S10 | thẻ hết hạn (CN tuần gửi) | — | khớp |
 | T13 | S7 → S8 | Xếp lại / Dời lịch (QL) | +1; nút **chỉ hiện cho vai máy chủ cho** (sửa H15: GVCN FT thấy nút mà 403) | khớp + sửa nút |
-| T14–15 | S9/S10 → S1 hoặc S2/S3 | QL **[Đặt tuần ▾]** (có lựa chọn "Chưa xếp") | gộp "Khôi phục → Chưa xếp" + "Khôi phục và đặt tuần"; đếm giữ (Q-B4) | khớp, gộp chữ |
+| T14–15 | S9/S10/S13 → S1 hoặc S2/S3 | QL **Khôi phục [Đặt tuần ▾]** (có lựa chọn "Chưa xếp") | gộp "Khôi phục → Chưa xếp" + "Khôi phục và đặt tuần"; **chuỗi đặt lại — được dời 2 lần**, không nhớ "-" trước (21/10) | **SỬA** (đếm), gộp chữ |
 | T16 | S9 → S12 | QL **[Giữ huỷ]** | = "Không mock lại" (một tên) | khớp, một tên |
 | T17 | S9 → S6 | "Xin dời" | chỉ còn route → bỏ khỏi luồng (QL đã có Đặt tuần) | dọn |
 | T18 | S2/S3/S5/S7 → S12 | **Bỏ khỏi đợt** (QL, FT) | có điểm → **cất điểm** (nay xoá) | **SỬA** (L3) |
 | T19 | S12/S10 → S1/S2/S3 | Đưa lại vào đợt (QL) | có điểm cất → hỏi "Trả lại điểm cũ 6.5?" | thêm |
 | T20 | S5 → S3 | Huỷ điểm (người sửa được ô, **gồm GVBM sau "đủ điểm"**) | điểm + nhận xét + nhóm nguyên nhân + GV chấm **cất**; dòng "Đã huỷ 6.5 · Khôi phục"; SOS / Case tính lại | **SỬA** (L3; nay xoá hẳn, GV bị khoá) |
 | T20b | S3 (có điểm cất) → S5 | **Khôi phục điểm** (1 bấm) | hết hiệu lực khi đã nhập điểm mới | mới |
-| T21 | S5 → S5 | Sửa điểm | GVBM đúng ô **mọi lúc** (lớp kết thúc: Q-B1); nhật ký, lý do tuỳ chọn | **SỬA** (L3; nay 403) |
+| T21 | S5 → S5 | Sửa điểm | GVBM đúng ô **mọi lúc** (lớp kết thúc: chỉ QL — Q-B1 ①); nhật ký, lý do tuỳ chọn | **SỬA** (L3; nay 403) |
 | T22 | S5 → tuần mới | Dời lịch (QL) | điểm đi theo; cờ MT cũ tính lại | khớp |
 | T23 | S5 → S2/S3 | Thi lại (QL) | điểm cũ vào Lịch sử | khớp |
 | T24 | lượt → S1 | **Xóa lịch** (QL, Admin VP) | chặn khi có điểm / đã thi / thẻ chờ — câu mờ "Đã có điểm — dời tuần thay vì xoá"; Hoàn tác | khớp |
@@ -430,34 +432,27 @@ Cờ cấp lượt: **MT cũ** (tính lại sau **mọi** lần xếp / dời) �
 | T26 | lượt | Dời vượt MT sau | chặn (luật giữ); hộp đề nghị **"Dời cả MT{n+1} sang …"** xem trước hai đợt, lưu một lần (C — vào mockup để chủ SP xem) | khớp + gợi ý |
 | T27 | lượt | mọi xếp / dời | cờ MT cũ tính lại — **thiếu** ở `applyMove` | **SỬA** |
 | T28 | lượt | đủ điểm + qua CN | chỉ đổi trạng thái "Đủ điểm", **không khoá** | **SỬA** (L3) |
-| T29 | lượt | lớp kết thúc | không ghi "-" (giữ); sửa điểm theo Q-B1 | giữ / Q-B1 |
-| T30 | S11 (cũ) → S3/S5 | Gỡ "-" / nhập điểm | — | khớp |
+| T29 | lượt | lớp kết thúc | không ghi "-" (giữ); sửa điểm chỉ QL (Q-B1 ①) | giữ |
+| T30 | S11 (cũ) → S3/S5 | Gỡ "-" / nhập điểm / Khôi phục; S11 ở MT cũ **hiện như "Đã huỷ"** | — | khớp + chữ |
+| T31 | S3/S8 → giữ đếm | gõ lại / sửa "-" **trong cùng một tuần** đã có "-" | **không tính thêm lần** (chốt T2 như hiện nay); lần 2 chỉ khi "-" ở **tuần đã dời tới** (21/10) | mới |
 
-**Phép kiểm (PTA):** một bảng → một tệp test (mỗi dòng T01–T30 dựng trạng thái trước bằng hàm máy chủ thật, kỳ vọng trạng thái sau · đếm · thẻ · chuông · Case); dòng **SỬA** viết theo đích mới (đỏ trước khi sửa). Hàm thuần `chuyenVang({lan, tuanThi, homNay, mtCu, vuong, laMt0})` 12 ca ngày (CN 23:59 / T2 00:00 giờ VN, tuần kế còn chạy / hết hẳn, MT cũ cách 2 / 3 tuần, vướng MT sau, MT0 vượt hạn chót).
+**Phép kiểm (PTA):** một bảng → một tệp test (mỗi dòng T01–T31 dựng trạng thái trước bằng hàm máy chủ thật, kỳ vọng trạng thái sau · đếm · thẻ · chuông · Case); dòng **SỬA** viết theo đích mới (đỏ trước khi sửa). Hàm thuần `chuyenVang({lan, tuanThi, homNay, mtCu, vuong, laMt0})` 12 ca ngày (CN 23:59 / T2 00:00 giờ VN, tuần kế còn chạy / hết hẳn, MT cũ cách 2 / 3 tuần, vướng MT sau, MT0 vượt hạn chót) + ca 21/10: đếm theo tuần (gõ lại trong tuần), MT cũ huỷ ngay, sau Khôi phục (được dời 2 lần), sau QL duyệt thêm (+1), Hoàn tác 10 s.
 
 ### 4.4 Một hàm "-" cho mọi lối (gõ "-" · nút Vắng · ⋯ Vắng · Báo vắng)
 
-| Ca | Lần 1 (đếm 0) | Lần 2 (cùng chuỗi) |
+| Ca | Lần 1 (đếm 0) | Lần 2 (cùng chuỗi, tuần khác) |
 |---|---|---|
 | MT hiện tại — trong tuần thi | tuần kế thi được → máy dời; không → thẻ QL | Đã huỷ · vắng 2 lần → QL quyết |
-| MT hiện tại — "-" ghi sau tuần thi | tuần kế còn chạy → máy dời; hết hẳn / vướng → **thẻ QL** (gửi duyệt) | như trên |
-| **MT cũ** | dời sang **tuần đích Q-B3**, không thẻ; vướng MT sau → Vắng · chờ xếp lại | như trên |
+| MT hiện tại — "-" ghi sau tuần thi (< 2 tuần) | tuần kế **của lịch** còn thi được → máy dời; không / vướng → **thẻ QL** (gửi duyệt) | như trên |
+| **MT cũ** (≥ 2 tuần) | **huỷ ngay** (21/10) — Hoàn tác 10 s; sau đó khôi phục được (người có quyền sửa ô) | — |
+| Sau QL **Khôi phục** (mọi MT) | chuỗi đặt lại — được dời 2 lần | huỷ |
+| Sau QL **duyệt thẻ dời** (cho dời thêm) | +1 lần | vắng tiếp → huỷ |
 | MT0 (lớp thường lên FT) | **PTA hiểu MT0 là MT → theo L4** trong giới hạn MT0 (≤ T2 tuần 2 FT, luôn trước MT1); vượt → thẻ QL | như trên |
 | Lớp thường (Progress / Final) | **ngoài L4** — giữ luật riêng (14/10-Q1, OV-11a) | — |
 
 Nút trong hộp chấm luôn ghi **"Vắng"** (bỏ chữ đổi "Không dự thi" — `chuNutVang`). Đếm bước "GV ghi '-' muộn, em cần thi bù": nay 5+ bấm, 2 người (gỡ "-" → nhờ QL → QL đổi tuần) → **1 bấm** (máy dời) hoặc QL Duyệt thẻ (1).
 
-**Q-B3 — MT cũ dời sang tuần nào** (PTA Plan quyết: hỏi đúng điểm này, nêu cả hai). Ví dụ: MT thi W1 JUL, hôm nay W3 SEP.
-
-| Tình huống | (i) Tuần kế **của lịch cũ** (W2 JUL) | **(ii) Tuần kế tính từ hôm nay** (W4 SEP) — khuyến nghị PTA |
-|---|---|---|
-| S1 — nhập bù lịch sử: em vắng W1 JUL, **đã** thi bù W2 JUL, GV nay mới nhập | **"-" + nhập điểm W2: 1 bấm + gõ** | "-" → lịch W4 SEP → nhờ QL Dời lịch về W2 JUL (+3 bấm, 2 người) rồi nhập |
-| S2 — em vắng thật, **chưa** thi bù | lịch W2 JUL (đã qua) → vẫn MT cũ, không hạn, **không ai nhắc** → dễ bị quên; QL phải dời tay (+3 bấm) | **1 bấm**, lịch đúng tuần sắp tới, hiện ở Kế hoạch Test, có hạn |
-| Tạo lịch trong quá khứ | có | **không** |
-
-Với MT cũ, tuần kế của lịch **luôn đã qua** → khuyến nghị (ii) "tuần kế tính từ hôm nay nếu tuần kế của lịch cũ đã qua" = (ii) cho mọi MT cũ. Chủ SP chọn.
-
-**Q-B4 — "chuỗi dời" gồm gì.** Khuyến nghị **(a)**: chỉ các lần dời **do "-"** của cùng kỹ năng trong cùng lượt; QL dời tay / thẻ được duyệt **không tính và không xoá chuỗi**; Gỡ "-" trả lại lần đó; sau QL **[Đặt tuần]** từ trạng thái Đã huỷ, chuỗi **giữ** (v4b Q6 — "-" tiếp theo huỷ lại để QL quyết lần nữa). (b) mọi lần dời đều tính — phạt nhầm em QL dời vì lý do khác · (c) QL dời tay mở chuỗi mới — dời vô hạn được.
+**Q-B3, Q-B4 — chủ SP trả lời 21/10 (02 mục 5, 2.9 21/10-L4).** Q-B3: chọn "tuần kế của lịch cũ"; Q-B4 (câu sau) **đè**: **MT cũ "-" = huỷ ngay**, QL **Khôi phục** → chuỗi đặt lại, được dời 2 lần → Q-B3 **hết hiệu lực cho MT cũ**; "tuần kế của lịch" chỉ còn áp cho **MT hiện tại ghi "-" muộn** (T05). Chuỗi dời: chỉ đếm lần "-", **đếm theo tuần** (sửa / gõ lại trong cùng tuần không tính; "-" ở tuần đã dời tới mới là lần 2 → huỷ); QL dời tay không tính; **QL duyệt cho dời thêm = +1 lần**, vắng tiếp → huỷ; Gỡ "-" / Hoàn tác trả lại lần đó. Phân tích hai tuần đích (S1 nhập bù / S2 chưa thi bù) và khuyến nghị "(ii) tuần sau hôm nay" + "Khôi phục giữ chuỗi" của bản trước **bỏ** (02 X-75…X-77). Ca nhập bù lịch sử ở MT cũ (em đã thi bù tuần sau, GV nay mới nhập): QL **Khôi phục [Đặt tuần ▾]** về tuần đã thi bù rồi nhập điểm.
 
 **[E] cần kiểm khi làm:** thẻ dời hiện ghi "Dời S · MT3 · **lần 2** … Hết 20/09 chưa duyệt thì … phần thi bị huỷ" (v4c, ảnh `b2-cv-yeucau-gv7-p1`) — xác nhận thẻ chỉ sinh ở **lần 1 không tự dời được** (đúng T04/T05), đổi chữ để không đọc thành "vắng lần 2"; loại thẻ đang mang nhãn "**Lịch thi**" (trùng thi thật — 11.1d) → "Dời lịch Test". Còn lối "Huỷ lượt" nào ngoài Kế hoạch Test không (X-28).
 
@@ -470,13 +465,13 @@ Với MT cũ, tuần kế của lịch **luôn đã qua** → khuyến nghị (i
 | gửi duyệt | **Thẻ "Dời lịch Test" chờ QL** | lần 1 không tự dời được | — | máy gửi, QL quyết | — |
 | huỷ điểm | **Huỷ điểm** | xoá giá trị một ô | **cất, Khôi phục được** | người sửa được ô | Khôi phục |
 | (huỷ kỹ năng) | **Bỏ khỏi đợt** | kỹ năng không còn bắt buộc | cất | QL (FT) | Đưa lại vào đợt |
-| huỷ (do vắng) | **Đã huỷ · vắng 2 lần** / **Đã huỷ · QL từ chối dời** | trạng thái sau "-" lần 2 / thẻ bị từ chối | — | máy → QL | Đặt tuần / Giữ huỷ |
+| huỷ (do vắng) | **Đã huỷ · vắng 2 lần** / **Đã huỷ · vắng MT cũ** (21/10) / **Đã huỷ · QL từ chối dời** | trạng thái sau "-" lần 2 / "-" ở MT cũ / thẻ bị từ chối | — | máy → QL | Khôi phục [Đặt tuần] (được dời 2 lần) / Giữ huỷ; MT cũ: Hoàn tác 10 s |
 | (không thi lại) | **Giữ huỷ** | thôi kỹ năng đó | — | QL | Đưa lại vào đợt |
 | huỷ lịch | **Xóa lịch** (19/10-M6 "Huỷ = Xóa") | bỏ tuần mọi kỹ năng chưa thi | chặn khi có | QL, Admin VP | Hoàn tác / xếp lại |
 | huỷ MT | (đã bỏ khỏi web) | — | — | — | "Khôi phục MT" cho lượt cũ |
 | — | **Thi lại** | kỹ năng đã có điểm thi tuần mới | vào Lịch sử | QL | — |
 
-Chữ "Huỷ" chỉ còn ở: Huỷ điểm · Đã huỷ (vắng 2 lần / QL từ chối) · Giữ huỷ. "Không dự thi" chỉ ở dữ liệu cũ. **PTA tự quyết ★** — khác 02 mục 4.7 #7 ở một chữ: 4.7 #7 dùng "**Huỷ kỹ năng**" thay C-036 "Đã huỷ phần thi", nhưng trong mã "Huỷ kỹ năng" lại là **nút** bỏ kỹ năng khỏi đợt (`CHU_THAO_TAC['bo-ky-nang']`) → một chữ hai nghĩa. Đề xuất: trạng thái = "Đã huỷ · vắng 2 lần", nút = "Bỏ khỏi đợt" (mục 10).
+Chữ "Huỷ" chỉ còn ở: Huỷ điểm · Đã huỷ (vắng 2 lần / vắng MT cũ / QL từ chối) · Giữ huỷ. "Không dự thi" chỉ ở dữ liệu cũ. **PTA tự quyết ★** — khác 02 mục 4.7 #7 ở một chữ: 4.7 #7 dùng "**Huỷ kỹ năng**" thay C-036 "Đã huỷ phần thi", nhưng trong mã "Huỷ kỹ năng" lại là **nút** bỏ kỹ năng khỏi đợt (`CHU_THAO_TAC['bo-ky-nang']`) → một chữ hai nghĩa. Đề xuất: trạng thái = "Đã huỷ · vắng 2 lần", nút = "Bỏ khỏi đợt" (mục 10).
 
 ### 4.6 Luồng thao tác — một hộp một đợt (MP XIV.1 · V4B-08)
 
@@ -523,7 +518,7 @@ GVCN xin thu hồi / không tăng bậc ──► thẻ Chờ duyệt (Ý thức
 | Xác nhận xử lý bậc thang (GVCN hoặc QL; một em hay "Chọn nhiều") | **sinh ngay**, một việc / em / lần xử lý | L1; QL lưu thay cũng là "lưu xử lý" (PTA) |
 | Gửi Đề xuất QL duyệt (WL 3, Meeting, Đình chỉ, Khác) hoặc "Không tăng bậc" | **sinh ngay**; dòng 2 ghi "chờ QL duyệt" | L1 thắng v4b Q1 (PTA 21/10); TVV tự chọn chờ hay báo, hạn vẫn chạy |
 | QL Duyệt | giữ; bỏ chữ "chờ QL duyệt" | — |
-| QL Từ chối · GVCN Rút đề xuất còn chờ · QL Duyệt thu hồi · QL tự thu hồi | **Q-D1**: TVV chưa ghi → **tự huỷ kèm lý do**; đã ghi → giữ bản ghi + nhãn "Lần xử lý đã bị từ chối / thu hồi" + chuông TVV "để biết" (không sinh việc "báo lại PH") | rút đề xuất xử lý như từ chối (PTA, X-51) |
+| QL Từ chối · GVCN Rút đề xuất còn chờ · QL Duyệt thu hồi · QL tự thu hồi | **Q-D1 ① (chủ SP 21/10)**: TVV chưa ghi → **tự huỷ kèm lý do**; đã ghi → giữ bản ghi + nhãn "Lần xử lý đã bị từ chối / thu hồi" + chuông TVV "để biết" (không sinh việc "báo lại PH") | rút đề xuất xử lý như từ chối (PTA, X-51) |
 | GVCN gửi Thu hồi… (đang chờ QL) | việc **chạy tiếp**; dòng ghi "GVCN đang xin thu hồi" | lần xử lý còn hiệu lực tới khi QL duyệt |
 | GVCN ghi "Đã thực hiện" (sau duyệt) | không sinh mới (đã sinh lúc gửi) | khác v4b (do luật 1) |
 | GVCN "Chưa thực hiện" (bỏ bấm nhầm) | **giữ** — biện pháp vẫn được duyệt | khác v4b E5 (PTA) |
@@ -564,7 +559,7 @@ GVCN xin thu hồi / không tăng bậc ──► thẻ Chờ duyệt (Ý thức
 | Ca | Người giữ việc | Ghi chú |
 |---|---|---|
 | Mặc định | **TVV phụ trách em** (`students.consultant_user_id`, tài khoản hoạt động, cùng chi nhánh) | — |
-| Em chưa có TVV / tài khoản TVV khoá | **QL chi nhánh**; dòng ghi "Chưa có TVV · Gán TVV" | **Q-D3** (PTA 21/10 khuyến nghị) |
+| Em chưa có TVV / tài khoản TVV khoá | **QL chi nhánh**; dòng ghi "Chưa có TVV · Gán TVV" | **Q-D3 ① (chủ SP 21/10)**; áp cả 4 việc TVV khác (1.4) |
 | Gán / đổi TVV khi việc đang mở | việc đi theo TVV mới, **hạn giữ**; kết quả đã ghi giữ tên người ghi | tính khi đọc, không migrate |
 | Ai ghi được | TVV chi nhánh của em + QL / QT (thay khi cần) | GV / GVCN chỉ xem (máy chủ trả 403) |
 | "Chọn nhiều" 3 em | 3 việc; danh sách TVV gom theo lớp | — |
@@ -580,7 +575,7 @@ GVCN xin thu hồi / không tăng bậc ──► thẻ Chờ duyệt (Ý thức
 | Người cần biết | không ai được báo | **GVCN nhận chuông** (tự quyết bước tiếp: gặp trực tiếp, nhờ CX) | không |
 | Bấm | lần thử: chip [Không nghe máy · Chưa trả lời tin · Sai số] + Lưu lần thử (2) | như (a) + nút phụ "Kết thúc · không liên hệ được" (ghi chú bắt buộc) | — |
 
-**Ưu tiên (b)** — có đầu ra, không thêm điều kiện chặn (không bắt "đủ n lần thử"), sửa được sau (L3). → **Q-D3** (02 nháp đang khuyến nghị (a) ở phần này — mục 10).
+**Chủ SP chọn (b) (Q-D3 ①, 21/10)** — có đầu ra, không thêm điều kiện chặn (không bắt "đủ n lần thử"), sửa được sau (L3).
 
 ### 5.9 Thu hồi / xử lý không tăng bậc (L5 · V4B-02)
 
@@ -593,9 +588,9 @@ GVCN xin thu hồi / không tăng bậc ──► thẻ Chờ duyệt (Ý thức
 
 Kèm (PTA): GVCN bấm nhầm bậc kế → **một** thẻ "Thu hồi" có ô "Ghi lại thành xử lý không tăng bậc (Report 1)" (thay 2 thẻ) · **bớt vi phạm** khỏi lần xử lý = **sửa** (L3, không duyệt, bậc không đổi) · rút một **đề xuất còn chờ** không phải thu hồi (chưa có hiệu lực — X-51) · máy chủ chặn GVCN gọi xoá (403 "Gửi QL thu hồi"). Rulebook §20.3 "bậc không lùi" → lùi khi QL duyệt thu hồi (sửa chữ).
 
-### 5.10 QL từ chối / duyệt thu hồi **sau khi** việc TVV đã sinh — Q-D1 (biên luật duy nhất còn hỏi ở luồng này)
+### 5.10 QL từ chối / duyệt thu hồi **sau khi** việc TVV đã sinh — Q-D1 (chủ SP chọn (a), 21/10)
 
-| | **(a) chưa ghi → tự huỷ kèm lý do; đã ghi → giữ + nhãn (khuyến nghị PTA 21/10)** | (b) giữ việc, TVV ghi "không thực hiện" | (c) huỷ ngay kể cả đã ghi (ghi chép vẫn trong lịch sử) |
+| | **(a) chưa ghi → tự huỷ kèm lý do; đã ghi → giữ + nhãn (chủ SP chọn 21/10)** | (b) giữ việc, TVV ghi "không thực hiện" | (c) huỷ ngay kể cả đã ghi (ghi chép vẫn trong lịch sử) |
 |---|---|---|---|
 | TVV | không phải ghi việc không xảy ra; không mất gì đã ghi | +1 việc vô nghĩa (3 bấm) | mất bản ghi trên màn |
 | PH đã được báo một biện pháp bị từ chối | TVV nhận chuông "để biết"; quyết báo lại ngoài luồng (không sinh việc mới) | như (a) | không ai biết đã báo |
@@ -626,26 +621,26 @@ Demo **4/129** em có TVV; bản chính chưa gán TVV cho tới OV-2b; cột ch
 
 Có quyền nhập ô / bản ghi → sửa được sau lưu, có "ai · lúc · trước → sau". **Giữ duyệt bắt buộc** (Target, lộ trình GVCN đề xuất → QL; WL 3 / ngoài thang; thu hồi / không tăng bậc). "Được sửa" ≠ "được bỏ duyệt". Khoá chỉ giữ khi có **lý do nghiệp vụ / toàn vẹn**, và khi chặn phải **nói lý do + bước tiếp**.
 
-### 6.2 Rà 29 khoá (V4B-05) — nới 11 · giữ 15 · đã nới 2 · thêm duyệt 1
+### 6.2 Rà 29 khoá (V4B-05) — nới 9 · giữ 17 (H03, H21 giữ theo Q-B1 ①) · đã nới 2 · thêm duyệt 1
 
 | # | Khoá | Đề xuất | Ghi chú |
 |---|---|---|---|
 | H01 | GVBM không sửa / xoá điểm sau "đợt hoàn tất" (R11 — **ảnh v4-4**) | **NỚI** | "hoàn tất" phụ thuộc điểm **mọi** môn → GV bị khoá vì người khác nhập xong; không có bước duyệt nào ("nhờ QL hiệu chỉnh" ngoài web) |
 | H02 | MT cũ khoá 7 ngày sau lần nhập cuối | **NỚI** | — |
-| H03 | Lớp đã kết thúc: chỉ QL sửa điểm | **Q-B1** | v4b đề xuất nới có lý do bắt buộc; 02 nháp khuyến nghị giữ (khoá vì đóng hồ sơ) |
+| H03 | Lớp đã kết thúc: chỉ QL sửa điểm | **GIỮ** (Q-B1 ①, 21/10) | khoá vì đóng hồ sơ; QL sửa được, có lịch sử |
 | H04 | Huỷ điểm xoá nhận xét + nhóm + GV chấm, không khôi phục | **THÊM Khôi phục** (cất điểm) | 1 bấm |
 | H05 | Bỏ khỏi đợt có điểm → xoá điểm | **CẤT điểm** | "Đưa lại vào đợt" hỏi trả điểm |
 | H08 | Kỹ năng đã huỷ không đổi tuần thẳng | **NỚI** (hộp lịch: đặt tuần = đưa lại + tuần) | — |
-| H14 | "-" sau tuần / MT cũ = Không dự thi | **BỎ** (L4) | mục 4 |
+| H14 | "-" sau tuần / MT cũ = Không dự thi | **BỎ** (luật 4 sửa 21/10: ghi muộn → dời; MT cũ → huỷ ngay, khôi phục được) | mục 4 |
 | H15 | GVCN FT thấy "Xếp lại bài vắng" mà 403 | **SỬA** nút theo quyền máy chủ | lỗi (D) |
 | H20 | Lần xử lý Ý thức không xem được lịch sử | **THÊM** loại "y-thuc" vào `/lich-su` + Nhật ký trong tab | cần cho L3, L5, kết quả TVV |
-| H21 | Sửa chữ lần ghi KQ PA khi Case đã hoàn thành phải "Mở lại" | **Q-B1** (khoá vì đóng Case — cùng nhóm "đóng hồ sơ") | v4b: nới phần chữ, đổi lựa chọn vẫn qua Mở lại |
+| H21 | Sửa chữ lần ghi KQ PA khi Case đã hoàn thành phải "Mở lại" | **GIỮ** (Q-B1 ①, 21/10 — khoá vì đóng Case) | QL / người có quyền "Mở lại" rồi sửa |
 | H28 | Tutor sửa nhận xét chỉ trong 24 giờ | **NỚI sửa** (xoá vẫn 24 giờ) + lưu trước → sau | L3 — khoá "vì đã lưu" (PTA, mục 10) |
 | H16 | **GVCN xoá thẳng lần xử lý** (ngược: thiếu duyệt) | **THÊM duyệt QL + lý do** | L5 — 5.9 |
-| Giữ (15) | H06 Xóa lịch khi có điểm · H07 dời vượt MT sau · H09 thẻ dời đang chờ · H10 gỡ "-" đã huỷ chỉ QL · H11 lớp kết thúc không "-" · H12 chưa tới tuần thi · H13 em Lưu trữ · H17 sửa bậc đã khai chỉ QL · H18 thu hồi chỉ lần mới nhất · H19 Ghi nhận khi bắt buộc · H22 sửa KQ PA cũ / PA có KQ / Case có PA / PA hệ thống · H23 PA đã duyệt không hoàn tác · H25 lệnh chuyển lớp đã thi hành · H26 lớp có Test không đổi chương trình · H27 Target / lộ trình qua QL duyệt | **GIỮ** | mỗi khoá giữ có câu "vì sao + làm gì thay" (vd H06 "Đã có điểm — dời tuần thay vì xoá") |
+| Giữ (15) | H06 Xóa lịch khi có điểm · H07 dời vượt MT sau · H09 thẻ dời đang chờ · H10 gỡ "-" ở "Đã huỷ · vắng 2 lần" chỉ QL (MT cũ huỷ do "-": Hoàn tác 10 s + người có quyền sửa ô khôi phục — 21/10, X-78) · H11 lớp kết thúc không "-" · H12 chưa tới tuần thi · H13 em Lưu trữ · H17 sửa bậc đã khai chỉ QL · H18 thu hồi chỉ lần mới nhất · H19 Ghi nhận khi bắt buộc · H22 sửa KQ PA cũ / PA có KQ / Case có PA / PA hệ thống · H23 PA đã duyệt không hoàn tác · H25 lệnh chuyển lớp đã thi hành · H26 lớp có Test không đổi chương trình · H27 Target / lộ trình qua QL duyệt | **GIỮ** | mỗi khoá giữ có câu "vì sao + làm gì thay" (vd H06 "Đã có điểm — dời tuần thay vì xoá") |
 | Đã nới (2) | H24 sửa Mini Test (OV-7a) · H29 báo cáo tuần quá hạn / góp ý lớp kết thúc (OV-13h) | — | Rulebook §20.6 còn ghi "chỉ QL" → sửa chữ |
 
-**Q-B1 (khoá "đóng hồ sơ" còn giữ không)** — khuyến nghị 02 (a): giữ "lớp đã kết thúc → chỉ QL sửa" và "hồ sơ Lưu trữ khoá" (khoá vì đóng hồ sơ, không phải "vì đã lưu"; QL vẫn sửa được, có lịch sử); tệp này đề xuất **gộp H21 vào cùng câu**. Phương án khác: (b) bỏ cả hai · (c) lớp kết thúc: GV đúng môn sửa thêm 2 tuần / sửa có lý do bắt buộc (v4b).
+**Q-B1 — chủ SP chọn ① (21/10):** giữ "lớp đã kết thúc → chỉ QL sửa", "hồ sơ Lưu trữ khoá" và H21 (khoá vì đóng hồ sơ, không phải "vì đã lưu"; QL vẫn sửa / Mở lại được, có lịch sử).
 
 ### 6.3 Cơ chế lịch sử / hoàn tác / khôi phục (MP III.9, XIII.2–3)
 
@@ -659,8 +654,8 @@ Có quyền nhập ô / bản ghi → sửa được sau lưu, có "ai · lúc �
 
 | Dữ liệu | Sửa sau lưu | Lịch sử ở đâu | Hoàn tác / Khôi phục |
 |---|---|---|---|
-| Điểm mọi Test | người nhập ô + QL; lý do tuỳ chọn (lớp kết thúc: Q-B1) | "Lịch sử" trong hộp chấm + `/lich-su` | **Khôi phục điểm** sau Huỷ điểm; không hoàn tác cả lô (12.2 đã bỏ) |
-| Lịch MT | QL (Admin VP xếp / dời) | hộp một đợt › Lịch sử | Hoàn tác Xóa lịch (có); Đặt tuần / Giữ huỷ |
+| Điểm mọi Test | người nhập ô + QL; lý do tuỳ chọn (lớp kết thúc: chỉ QL — Q-B1 ①) | "Lịch sử" trong hộp chấm + `/lich-su` | **Khôi phục điểm** sau Huỷ điểm; không hoàn tác cả lô (12.2 đã bỏ) |
+| Lịch MT | QL (Admin VP xếp / dời) | hộp một đợt › Lịch sử | Hoàn tác Xóa lịch (có); Khôi phục [Đặt tuần] / Giữ huỷ; **gõ "-": Hoàn tác 10 s; MT cũ huỷ do "-" → vẫn khôi phục được** (luật 4 sửa 21/10) |
 | Lần xử lý Ý thức | sửa chi tiết thẳng (L3); thu hồi / không tăng bậc qua QL (L5) | **thêm** loại "y-thuc" + Nhật ký trong tab | **không** Hoàn tác sau lưu (21/10-YT) |
 | Kết quả TVV · Phối hợp SOS | TVV / QL · GVCN như nay | loại "y-thuc" | Phối hợp: "Đưa lại Cần xử lý" (có) |
 | Case / PA | theo luật Case (H22 giữ) | ngăn Case | — |
@@ -670,7 +665,7 @@ Có quyền nhập ô / bản ghi → sửa được sau lưu, có "ai · lúc �
 
 ### 6.4 Sửa dữ liệu ĐÃ được duyệt — Q-B2
 
-Ví dụ: PA đã duyệt, xử lý WL 3 đã duyệt, Target đã duyệt. Khuyến nghị 02 (a): sửa **đúng phần đã được duyệt** (loại PA, bậc xử lý, Target) → gửi duyệt lại; sửa chi tiết (ghi chú, ngày, người dạy) → lưu thẳng + lịch sử. (b) mọi sửa đều duyệt lại — thêm việc QL vô nghĩa · (c) không duyệt lại, chỉ lịch sử + báo QL — biến "được sửa" thành "bỏ duyệt" (trái L3).
+Ví dụ: PA đã duyệt, xử lý WL 3 đã duyệt, Target đã duyệt. **Chủ SP chọn (a) (Q-B2 ①, 21/10):** sửa **đúng phần đã được duyệt** (loại PA, bậc xử lý, Target) → gửi duyệt lại; sửa chi tiết (ghi chú, ngày, người dạy) → lưu thẳng + lịch sử. (b) mọi sửa đều duyệt lại — thêm việc QL vô nghĩa · (c) không duyệt lại, chỉ lịch sử + báo QL — biến "được sửa" thành "bỏ duyệt" (trái L3).
 
 ### 6.5 Ảnh v4-4 — Progress Test sau khi sửa
 
@@ -755,9 +750,9 @@ GV nhập nhầm thứ Sáu, thứ Hai phát hiện: **nay** không tự sửa �
 
 **Bảng Lịch thi:** lọc **"Tháng dự kiến [10/2026] → [11/2026]"** (ngoại lệ tháng — mặc định tháng này → tháng sau) · **nhóm theo trạng thái** (Chưa chốt ngày — đã tới tháng · Đã chốt ngày · Dự kiến · Chưa có tháng thi — gập) · hàng một dòng ~44 px: Học viên ↗ (lớp · TVV) · MT gần nhất · Target · Lịch thi (chip) · Ghi chú (sửa tại chỗ) · **[Chốt ngày] [Dời tháng]** (4 → 2 nút / hàng) · mở rộng dưới hàng: 4 kỹ năng MT gần nhất so kỳ vọng · Test sắp tới · PA "đến lúc thi" · GVCN · lịch sử lịch thi.
 
-**Việc "Chốt ngày thi":** sinh khi B đúng (tính khi đọc, không cron); **không hạn**, không vào số quá hạn / chuông; tắt khi có ngày · dời tháng · có kết quả / "Không thi" · em tạm dừng / lưu trữ; làm bằng **hộp neo tại chip**: [ngày] · [Dời sang 12/2026] · Ghi chú — **2 bấm**; cho chọn ngày đã qua ("Em đã thi 28/11?" → luồng Đã thi). Người giữ: TVV phụ trách em (không có → QL) — **Q-A3**; GVCN chỉ thấy chip.
+**Việc "Chốt ngày thi":** sinh khi B đúng (tính khi đọc, không cron); **không hạn**, không vào số quá hạn / chuông; tắt khi có ngày · dời tháng · có kết quả / "Không thi" · em tạm dừng / lưu trữ; làm bằng **hộp neo tại chip**: [ngày] · [Dời sang 12/2026] · Ghi chú — **2 bấm**; cho chọn ngày đã qua ("Em đã thi 28/11?" → luồng Đã thi). Người giữ: TVV phụ trách em (không có → QL) — **CHỐT 21/10 (Q-A3)**; GVCN chỉ thấy chip. Sau "Đã thi": việc **"Cập nhật kết quả thi thật" của TVV, không hạn** (chuyển từ GVCN — 21/10); có kết quả → "Chọn bước tiếp sau thi" của TVV, hạn 1 tuần.
 
-**Cần chủ SP:** **Q-C3** ((1) có **tuần** mà chưa ngày = "Chưa chốt ngày"? khuyến nghị Có · (2) lớp thường chỉ hiện chip, không sinh việc) · **Q-C4** ("Cần xác nhận": mã cho thấy đầu ra = chưa kết luận → khuyến nghị bỏ nút, hiện "Chưa kết luận", lý do ở Ghi chú; dữ liệu cũ giữ). Cách hiện (a) + bảng: **PTA tự quyết**, sửa mockup 5.
+**Chủ SP chọn ① (21/10):** **Q-C3** ((1) có **tuần** mà chưa ngày = "Chưa chốt ngày" · (2) lớp thường chỉ hiện chip, không sinh việc) · **Q-C4** (bỏ nút "Cần xác nhận", hiện "Chưa kết luận", lý do ở Ghi chú; dữ liệu cũ giữ). Cách hiện (a) + bảng: **PTA tự quyết**, sửa mockup 5.
 
 ### 7.3 Phân tích — panel, báo cáo, thời gian (MP IX · 12.4–12.8)
 
@@ -773,7 +768,7 @@ GV nhập nhầm thứ Sáu, thứ Hai phát hiện: **nay** không tự sửa �
 
 **Báo cáo thuần (đã chốt nguyên tắc):** 5/7 nhóm bảng có cột việc, số đổi theo giờ xem → in kỳ cũ ra số hôm nay. **T1 tách hẳn (khuyến nghị)**: bảng chỉ số đã xảy ra trong kỳ; bỏ khỏi **hiển thị** (dữ liệu giữ) cột "HV - Case · Chưa chốt PA · Đang xử lý", "Case / PA · Việc tiếp", chân Hiệu quả PA, "bài quá hạn"; ngoại lệ có lý do: Thi thật giữ "Bước tiếp trên hàng" (mockup 6 khung 6), khối "tại hôm nay" của Báo cáo ghi rõ. So T2 (mỗi cột việc thành panel C — một việc hai lối) · T3 (công tắc "Hiện cột xử lý" — thêm điều khiển). **Ý thức Y1:** bỏ bảng "Học viên cần chú ý" (thực chất là hàng đợi việc — trùng 3–4 nơi) + sheet Excel đó; còn "Vi phạm theo lớp" · "Theo loại vi phạm" · "Xử lý đã làm trong kỳ theo loại" (+ "Đã báo PH n/m" sau luật 1); một dòng "6 em đang chờ xử lý — ở Hồ sơ lớp › Ý thức ›". **[CẦN ẢNH]** chữ "báo trễ" chủ SP thấy ở đâu.
 
-**Báo cáo vs mockup (~36 % khớp):** K1 — PR tài liệu sửa mockup 3 khung 3 → máy chủ trước → **một PR màn Báo cáo** có bảng truy vết + ảnh cặp 1440 / 375 / Chiếu (khuyến nghị) · K2 vá từng chỗ (~60 %, lặp chuỗi lỗi cũ). Phần nâng cấp mới (nút **"Chiếu"**, "bài chấm trễ trong kỳ" thay "bài quá hạn tới hôm nay", bảng "Theo chi nhánh" cho QT, khối lớp thường) → **Q-C2**.
+**Báo cáo vs mockup (~36 % khớp):** K1 — PR tài liệu sửa mockup 3 khung 3 → máy chủ trước → **một PR màn Báo cáo** có bảng truy vết + ảnh cặp 1440 / 375 / Chiếu (khuyến nghị) · K2 vá từng chỗ (~60 %, lặp chuỗi lỗi cũ). Phần nâng cấp mới (nút **"Chiếu"**, "bài chấm trễ trong kỳ" thay "bài quá hạn tới hôm nay", bảng "Theo chi nhánh" cho QT, khối lớp thường) → **Q-C2 ① (21/10): duyệt cả bốn**.
 
 **Hiệu quả PA + Tổng hợp vấn đề HV:** H1 giữ hai bảng (phải tính lại "Nên dùng" cấp loại PA — đụng luật) · **H2 một bảng "Vấn đề & PA"** (khuyến nghị: hàng lớn = kỹ năng, hàng con = nhóm nguyên nhân; HV có vấn đề · Đã có PA · PA có KQ · Có cải thiện % · PA đã dùng + chip "Nên dùng" đúng luật hiện tại · "Không tiến bộ n" → panel C; trả lời 3 câu của Chị Vy ≤ 1 bấm; không đổi logic PA) · H3 theo loại PA (mất liên hệ vấn đề ↔ PA) · H4 ma trận nhiệt (mẫu thưa → % 0 / 100 gây hiểu lầm). **[CẦN DỮ LIỆU]** số PA kết thúc / tháng / chi nhánh; lớp thường có cần bảng này.
 
@@ -807,7 +802,7 @@ GV nhập nhầm thứ Sáu, thứ Hai phát hiện: **nay** không tự sửa �
 | Cột theo mục đích | Test + SOS bỏ 3 cột việc · Kết quả Test bỏ "Case / PA · Việc tiếp", thêm Email + Chi nhánh · Ý thức bỏ sheet "HV cần chú ý" · "Ghi chú họp" → "Ghi chú", thêm "Thi thật" (A / B) · "Tuần thi" → "Tuần Test" | giữ |
 | An toàn | **mọi xuất qua máy chủ + nhật ký** | 3 lối không nhật ký |
 
-**Chọn học viên khi xuất — Q-E2:** nay ô tick làm cột tên mất 12 %, 34 điều khiển / lớp, "Chọn tất cả" chỉ lấy lớp **đang mở ở trang này** → xuất cả chi nhánh bỏ 2 em ≈ 28 bấm qua 2 trang. **Phương án 3 (khuyến nghị)**: bỏ ô tick khỏi bảng; panel Xuất có khối "Học viên · n" (gom theo lớp, chọn sẵn hết, ô tìm, tick bỏ em) — một chỗ chọn cho Tất cả / Đang SOS / Lịch thi: 5 em SOS 3 lớp 10–11 → 8 bấm; cả chi nhánh bỏ 2 em ≈ 28 → **6** · A: bỏ ô tick, xuất **theo bộ lọc** (lớp đang mở không ảnh hưởng), bớt em trong Excel · B: giữ ô tick nhưng gọn (vẫn lỗi "chỉ lớp đang mở"). "Chọn nhiều" ở hồ sơ lớp (thao tác hàng loạt) giữ.
+**Chọn học viên khi xuất — Q-E2 (chủ SP chọn ①, 21/10):** nay ô tick làm cột tên mất 12 %, 34 điều khiển / lớp, "Chọn tất cả" chỉ lấy lớp **đang mở ở trang này** → xuất cả chi nhánh bỏ 2 em ≈ 28 bấm qua 2 trang. **Phương án 3 (chủ SP chọn)**: bỏ ô tick khỏi bảng; panel Xuất có khối "Học viên · n" (gom theo lớp, chọn sẵn hết, ô tìm, tick bỏ em) — một chỗ chọn cho Tất cả / Đang SOS / Lịch thi: 5 em SOS 3 lớp 10–11 → 8 bấm; cả chi nhánh bỏ 2 em ≈ 28 → **6** · A: bỏ ô tick, xuất **theo bộ lọc** (lớp đang mở không ảnh hưởng), bớt em trong Excel · B: giữ ô tick nhưng gọn (vẫn lỗi "chỉ lớp đang mở"). "Chọn nhiều" ở hồ sơ lớp (thao tác hàng loạt) giữ.
 
 ### 7.5 Tutor (MP X · 12.8 · V3B-11, 12)
 
@@ -845,6 +840,7 @@ GV nhập nhầm thứ Sáu, thứ Hai phát hiện: **nay** không tự sửa �
 | GV | Từ trang khác, biết còn việc quá hạn nào (chuông — FB-4-36) | 2 b + dò 39 dòng; 5/9 việc quá hạn nằm "Để biết", 3/9 không có | **2 b, 9/9, số khớp Công việc** | 2.7 |
 | TVV | Ghi kết quả xử lý vi phạm | **không có chỗ** (GVCN tự ghi trong mô tả) | **3–4 b · 0 đt** | 1.4, 5.5 |
 | TVV | Chốt ngày thi | không có việc (ngày cuối tháng tự thành "đã thi" — lỗi) | **2 b**, không hạn | 7.2 |
+| TVV | Cập nhật kết quả thi thật (21/10 — chuyển từ GVCN) | việc của GVCN lớp cuối, có hạn | việc TVV ở "Việc của bạn", **không hạn** | 1.4 |
 | TVV · CX | Tra điểm một em | 2 b, số không màu | 2 b, số tô màu theo kỳ vọng | 3.6 |
 | QL (Chị Vy) | Duyệt 10 thẻ cần bối cảnh | ≈ 31 b · 20 đt (Tổng quan) / 21 · 5 (Công việc) | **11 b · 0 đt** | 1.3, 2.1 |
 | QL | Thêm PA cho 5 Case quá hạn | 25–30 b · 5 phủ | **11–16 b · 0** | 2.1, 7.1 |
@@ -887,7 +883,7 @@ Thêm: dải "Mới dùng PISA?" cho mọi vai (nay VP không có); nghiệm thu
 3. Bỏ trang `/nhap-diem`, `/bang-diem-thuong`, đổi `/cong-viec/cho-duyet` → link cũ trong thông báo chuyển hướng (`duongMoi`).
 4. Đổi dáng "đang chọn" (nền nhấn + vạch trái 3 px) → sổ tay "Chỉ cho tôi" chụp lại.
 5. Gỡ R11 → GV sửa được nhưng "Đúng hạn" ở Phân tích GV không đổi (không ai "lách" chỉ số).
-6. L4 → GV ghi "-" muộn không làm em mất quyền thi bù, nhưng lần 2 vẫn huỷ để QL quyết (không dời vô hạn).
+6. L4 → GV ghi "-" muộn không làm em mất quyền thi bù, nhưng lần 2 vẫn huỷ để QL quyết (không dời vô hạn); **MT cũ "-" huỷ ngay (luật 4 sửa 21/10)** nhưng Hoàn tác 10 s + khôi phục được, QL Khôi phục cho thi bù (được dời 2 lần).
 
 ---
 
@@ -898,16 +894,16 @@ Thêm: dải "Mới dùng PISA?" cho mọi vai (nay VP không có); nghiệm thu
 | Đổi | Kéo theo | Chung thành phần / nguồn |
 |---|---|---|
 | Phân vai Tổng quan ↔ Công việc (Q-A1) | bố cục Tổng quan QL (Q-A2), Công việc QL "Theo dõi & giao việc", số trên menu, đường chuông, Tổng quan TVV / VP, mockup 2 khung 3 + mockup 3 khung 1 | `HangDoiViec` dùng chung — làm **một lần** |
-| Dòng việc 3 vùng + một hàm tên (`tenViec`) | Công việc, Tổng quan, bộ lọc "Có việc" ở HV & Lớp, chuông, hồ sơ GV "Việc đang có", đầu panel | `DongViec` |
+| Dòng việc 3 vùng + một hàm tên (`tenViec`) | Công việc, Tổng quan, bộ lọc "Cần làm" ở HV & Lớp, chuông, hồ sơ GV "Việc đang có", đầu panel | `DongViec` |
 | Một nguồn chấm `hangCham` (Q-C1) | Công việc › Chấm điểm, Test › Chấm Test, chip "n ô quá hạn" hồ sơ lớp, Tình trạng chấm, gom "nợ chấm cũ" | `hangCham` + `LuoiChamLop` gọn |
 | Hộp chấm một mẫu | lớp thường (nhận xét — đã chốt), `ODiem`, bảng lưới (BANG-1), menu Thêm ▾ (Huỷ điểm / Khôi phục theo L3) | `HopCham` |
 | Gỡ R11 (L3) | hộp chấm, chip "Đủ điểm", bảng MT T20–T21–T28, Dán Excel (GVBM ghi đè ô có điểm), Rulebook R7 | — |
-| Hàm "-" (L4) | bảng MT T05–T07, nút "Vắng" ở hộp chấm, chip Kế hoạch Test, SOS chốt, Excel ("Vắng" / "Không dự thi" cũ), danh sách dữ liệu cũ cho QL | `chuyenVang` |
-| Việc TVV (L1, L2) + L5 | Ý thức A hồ sơ lớp + M3b hồ sơ HV (dòng phụ PH), Chờ duyệt (2 thẻ mới), Tổng quan TVV, Phân tích Ý thức Y1, Excel Ý thức, `/lich-su` loại "y-thuc", gán TVV (dữ liệu) | thẻ duyệt dùng chung; `LichSu` |
+| Hàm "-" (L4 sửa 21/10) | bảng MT T04–T07, T09–T10, T14–15, T31, nút "Vắng" ở hộp chấm, chip Kế hoạch Test, SOS chốt, Excel ("Vắng" / "Không dự thi" cũ), danh sách dữ liệu cũ cho QL | `chuyenVang` |
+| Việc TVV (L1, L2) + L5 + 4 việc TVV 21/10 (KQ thi thật từ GVCN) | Ý thức A hồ sơ lớp + M3b hồ sơ HV (dòng phụ PH), Chờ duyệt (2 thẻ mới), Tổng quan TVV, Phân tích Ý thức Y1, Excel Ý thức, `/lich-su` loại "y-thuc", gán TVV (dữ liệu) | thẻ duyệt dùng chung; `LichSu` |
 | Một hàm `trangThaiLichThi` (LT-SV) | Lịch thi, hàng HV (cột "Thi thật"), đầu hồ sơ HV, hàng đợi TVV / QL (Chốt ngày thi), Excel | `ChipLichThi` |
 | `Khoảng tuần` | mọi bộ lọc tuần; Phân tích "Toàn bộ"; Tutor; Bộ lọc thêm; panel Xuất; Lịch Test (một tuần); Lịch thi (biến thể tháng) | một thành phần + hook "bấm ra ngoài" |
 | Thang 0–5 + "Khung việc" | mọi panel; hộp neo (Gia hạn, Phân công, Chốt ngày thi, Từ chối, Thu hồi); panel C | 11 thành phần chung (04) |
-| Bỏ góc Cần làm (Q-A4) | cần `DongViec` + cùng hàm đếm; việc TVV phải có chỗ ở Tổng quan TVV **trước** khi bỏ | — |
+| Cần làm thành bộ lọc, giữ tên (Q-A4, 21/10) | cần `DongViec` + cùng hàm đếm; việc TVV phải có chỗ ở Tổng quan TVV **trước** khi đổi | — |
 | Panel C (`PanelChiSo`) | Phân tích, Báo cáo, Tổng quan, hồ sơ lớp; máy chủ trả cột theo loại số | vỏ bậc 3 |
 | Tự gán chủ Case | bỏ việc "Chọn người phụ trách", nút "Phân công…", nhóm "Phân công" ở Tổng quan chỉ còn ca lớp thiếu GV môn; xoá tài khoản cần API đổi chủ | — |
 | Chữ Thi ↔ Test (CHU-THI) | bộ chữ MT (4.5), tên thẻ "Dời lịch Test", nhãn "thi … · hạn …", Excel "Tuần Test" | từ điển chữ |
@@ -920,18 +916,20 @@ Thêm: dải "Mới dùng PISA?" cho mọi vai (nay VP không có); nghiệm thu
 | Bậc | Cụm | Phụ thuộc | Cần mockup? | Ghi chú |
 |---|---|---|---|---|
 | 0 | **Tài liệu + dữ liệu + công cụ:** Rulebook sửa chữ (R1–R16), mockup cũ sửa theo quyết định, luật "thang 0–5" + "một danh sách một kiểu mở" vào DESIGN.md / CLAUDE.md; lệnh chỉ đọc: em chưa có TVV, ô "Không dự thi" cũ, lộ trình "đã thi" chỉ nhờ tháng; seed: TVV, tutor theo ngày demo, tài khoản đa vai; công cụ đo `do-bang`, phép kiểm DOM | — | không | chặn mọi thứ sau |
-| 1 | **Máy chủ luật (trước deploy — Q-E1):** L3 gỡ R11 + Khôi phục điểm + cất điểm · L4 hàm "-" (sau Q-B3, Q-B4) · L5 thu hồi / không tăng bậc qua QL (+ thẻ Chờ duyệt, nút web nhỏ) · LT-SV · tự gán chủ Case + lý do thiếu người · `/lich-su` "y-thuc" · H15 · nhãn "thi … · hạn …", "chấm chéo", CHU-THI | bậc 0 | không (đổi quyền / chữ / điều kiện) | PR máy chủ tự merge được |
+| 1 | **Máy chủ luật (trước deploy — Q-E1):** L3 gỡ R11 + Khôi phục điểm + cất điểm · L4 hàm "-" (luật 4 sửa 21/10) · L5 thu hồi / không tăng bậc qua QL (+ thẻ Chờ duyệt, nút web nhỏ) · LT-SV · tự gán chủ Case + lý do thiếu người · `/lich-su` "y-thuc" · H15 · nhãn "thi … · hạn …", "chấm chéo", CHU-THI | bậc 0 | không (đổi quyền / chữ / điều kiện) | PR máy chủ tự merge được |
 | 1b | **Máy chủ việc TVV (L1, L2) sau cờ tắt** | gán TVV (dữ liệu) | không | bật ở bậc 4 cùng màn TVV |
 | 2 | **Nền:** thang chữ, token màu điểm, hệ trạng thái · `Bang` + `ODiem` (BANG-0) · vỏ "Khung việc" + hộp neo · `Khoảng tuần` + hook bấm ra ngoài · `DongViec` + `HangDoiViec` + `tenViec` | bậc 0 | **có** (bảng mẫu, `Khoảng tuần`, hàng đợi) | một trang mẫu `/dev/thanh-phan` duyệt một lần |
 | 3 | **BANG-1** lưới điểm 6 lối + hộp chấm một mẫu (lớp thường) | bậc 2 | có (mockup 6 khung 3 + hộp chấm) | — |
 | 4 | **Màn khu việc:** Tổng quan QL / QT (B) + Công việc (A, kiểu mở, Kết quả PA khung phải) + **Tổng quan TVV** (bật cờ việc TVV) | Q-A1, Q-A2; bậc 1b, 2 | có | dùng chung `HangDoiViec` → nên cùng một chuỗi PR liền nhau |
 | 5 | **Hồ sơ lớp (M3) + Hồ sơ HV Ý thức (M3b):** lưới gập + Nhập điểm tại chỗ, Ý thức A (dòng PH), tab 3 tầng | bậc 2–3; việc TVV (để hiện dòng PH) | có | — |
-| 6 | **Học viên & Lớp (M4):** 3 góc + bộ lọc "Có việc" (Q-A4) · Lịch thi (Q-C3, Q-C4) · panel Xuất chọn em (Q-E2) | bậc 4 (DongViec, Tổng quan TVV có việc trước khi bỏ Cần làm) | có | — |
+| 6 | **Học viên & Lớp (M4):** 3 góc + bộ lọc "Cần làm" (Q-A4, giữ tên) · Lịch thi (Q-C3, Q-C4) · panel Xuất chọn em (Q-E2) | bậc 4 (DongViec, Tổng quan TVV có việc trước khi bỏ Cần làm) | có | — |
 | 7 | **Test (M5):** Chấm Test theo hạn + Tình trạng chấm + Lịch tuần · hộp một đợt MT (dòng Đã huỷ, Khôi phục) | Q-C1; bậc 1, 3 | có | Công việc › Chấm điểm đổi sang cùng nguồn trong PR này |
 | 8 | **Phân tích (M6):** Báo cáo một PR màn (+ Chiếu — Q-C2) · panel C · báo cáo thuần · Ý thức Y1 (+ "Đã báo PH") · Vấn đề & PA · thời gian · xuất E1 | bậc 2; máy chủ panel / "chấm trễ trong kỳ" / "Toàn bộ" đi trước | có | đo tốc độ "Toàn bộ" trước |
 | 9 | **Tutor (M7):** F1 + B1 | bậc 2; dữ liệu thật / seed | có | phần lỗi UI làm được sớm hơn |
 
 ### 9.3 Câu nào chặn cụm nào
+
+**21/10: chủ SP đã trả lời hết** — bảng dưới giữ làm lịch sử; chỉ **Q-C1** còn chặn bậc 7 (mockup Chấm Test chờ chủ SP duyệt).
 
 | Câu (02 mục 5) | Chặn |
 |---|---|
@@ -960,10 +958,13 @@ Thêm: dải "Mới dùng PISA?" cho mọi vai (nay VP không có); nghiệm thu
 8. **Thêm vào 02 mục 4.7 (PTA tự quyết có đảo cái cũ):** Kết quả PA ở Công việc mở khung phải (đảo khung OV-13 §1 — v4a Q4) · tự gán chủ Case theo luật tạo Case, bỏ việc "Chọn người phụ trách" (v4a Q3) · MT0 theo L4 trong giới hạn MT0 (v4b Q7) · "Chưa thực hiện" không huỷ việc TVV · rút đề xuất còn chờ xử lý như QL từ chối (đối với việc TVV) · tên việc "Ghi kết quả xử lý" (tránh chữ "Ghi nhận").
 9. **v4b Q1 không còn là câu hỏi** (luật 1 thắng); v4b Q5 (a) Hoàn tác 10 s sau lưu xử lý — **không áp** (02 mục 4.7 B15); (b), (c) theo khuyến nghị v4b (chuông "để biết"; lý do bắt buộc, tệp tuỳ chọn).
 10. **[E] cần kiểm khi làm bậc 1:** chữ "lần 2" trên thẻ dời MT (v4c ảnh `b2-cv-yeucau-gv7-p1`) · lối "Huỷ lượt" ngoài Kế hoạch Test (X-28) · bấm thử demo riêng: Kết quả PA "✓ Đã lưu" vẫn mất tiêu đề; "Lưu phân công" không gỡ "Chưa có người".
+11. **21/10 — chủ SP trả lời 17/17 (agent d6 sửa tệp; mục 2–5 ở trên giữ làm lịch sử):** luật 4 sửa (4.1–4.5; bảng 13 trạng thái × 31 chuyển: thêm S13, T31; sửa T04–T07, T09, T10, T14–15, T30) · việc TVV + hạn (1.4) · S chéo theo kỹ năng hồ sơ GV — mã đã có (3.4) · "Cần làm" giữ tên (1.5) · Q-B1 ① → H03, H21 giữ (6.2: nới 9 · giữ 17) · Q-C1 chờ mockup (3.2) · Q-D3 (b) "Kết thúc · không liên hệ được" (5.8). **Còn để PTA Plan chốt:** T07 ở MT cũ khi một task W có điểm; GV khôi phục "-" ở MT cũ (S13) có tính là "Khôi phục" đặt lại 2 lần không (tệp này ghi: GV gỡ "-" = trả về như trước khi gõ; chỉ nút Khôi phục của QL mới đặt lại chuỗi).
 
 ---
 
 ## 11. PTA tự quyết trong tệp này — liệt kê để chủ SP biết (★ = đảo một quyết định / mockup cũ)
+
+**Chủ SP 21/10: đồng ý cả gói (02 mục 4.7)** — trừ chỗ câu trả lời 21/10 đã đổi (bộ việc TVV, luật 4 MT cũ, tên "Cần làm").
 
 - Trang đầu theo vai (1.2); tiêu đề trang = tên menu; chuông mở đúng việc ở trang đầu.
 - Chờ duyệt: một thành phần dòng duyệt, nơi làm chính là Tổng quan; Hộp duyệt đầy đủ chỉ để xem đã xử lý.
@@ -975,7 +976,7 @@ Thêm: dải "Mới dùng PISA?" cho mọi vai (nay VP không có); nghiệm thu
 - Bảng chuyển trạng thái MT (4.3); một hàm "-"; MT0 theo L4; nút luôn "Vắng"; ★ bộ chữ huỷ / dời (4.5); một hộp một đợt; Khôi phục điểm; gợi ý "Dời cả MT sau".
 - Việc TVV: QL lưu thay cũng sinh việc; hạn ngày lưu + 4, 23:59; form F2 + "Thực tế khác nội dung GVCN"; tên "Ghi kết quả xử lý"; trạng thái 5.6; "Chưa thực hiện" giữ việc; một form cho ≥ 2 lần xử lý; dòng phụ PH ở ô Thang; không ô số mới ở Tổng quan QL; "Đã báo PH n/m" ở Phân tích / Excel.
 - L5: "Thu hồi…" thay "Xoá lần xử lý"; "Đã thu hồi" giữ dòng; QL tự thu hồi có lý do; bớt vi phạm = sửa; một thẻ "Thu hồi + ghi lại thành không tăng bậc"; lý do bắt buộc, tệp tuỳ chọn.
-- Khoá: nới H01, H02, H04, H05, H08, H14, H15, H20, H28; thêm duyệt H16; giữ 15 khoá có câu "vì sao + làm gì thay". Lịch sử gập trong panel; Hoàn tác 8 s sau Duyệt = gửi trễ.
+- Khoá: nới H01, H02, H04, H05, H08, H14, H15, H20, H28; thêm duyệt H16; giữ 17 khoá (gồm H03, H21 — Q-B1 ①) có câu "vì sao + làm gì thay". Lịch sử gập trong panel; Hoàn tác 8 s sau Duyệt = gửi trễ.
 - SOS: cả ô là nút, mở rộng hàng lớp; Thêm PA theo độ rộng, cùng một form.
 - Lịch thi: một hàm trạng thái, chip A / B, bảng nhóm theo trạng thái, 2 nút / hàng, hộp neo Chốt ngày.
 - Phân tích: L1 + panel C; "ô số"; T1 báo cáo thuần; Y1; H2 "Vấn đề & PA"; mặc định thời gian theo bảng; ★ "Toàn bộ" không áp Tutor / Bộ lọc thêm / panel Xuất; ★ bỏ hàng nút "Tuần này · Tuần trước" trong lịch tuần.
