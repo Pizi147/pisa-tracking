@@ -2013,8 +2013,9 @@ api.get('/tong-quan/ql', requireAuth, wrap((req) => {
 /** OV-15h1: panel "n bài" của một GV ở Trễ chấm (`gv`: id · 0 chưa phân công · -1 Speaking chấm chéo). */
 api.get('/tong-quan/ql/tre', requireAuth, wrap((req) => {
   maybeSimulateReadError();
-  const gv = Number(qStr(req, 'gv'));
-  if (!Number.isInteger(gv)) throw badRequest('Thiếu giáo viên.');
+  const gvChu = String(req.query.gv ?? '').trim();
+  if (!/^-?\d+$/.test(gvChu)) throw badRequest('Thiếu giáo viên.');   // rỗng / chữ → 400, không hiểu là 0 (Chưa phân công)
+  const gv = Number(gvChu);
   return tongQuanQlSvc.oTreCham(principalOf(req), { branchId: qInt(req, 'branchId') ?? null, ct: chuongTrinhTuThamSo(qStr(req, 'ct')), gv });
 }));
 

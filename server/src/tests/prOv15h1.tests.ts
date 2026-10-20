@@ -70,7 +70,9 @@ export async function runPrOv15h1Tests(t: YThucTestKit) {
     for (const ct of ['ft', 'thuong']) {
       const r = GET(() => tqQl.tongQuanQl(P.mbManager, { branchId: MB, ct }));
       const n = GET(() => m.metricSet(P.mbManager, 'bai-qua-han-nhap-diem', { branchId: MB, program: ct }).n);
-      assert(r.tre.reduce((s: number, x: any) => s + x.bai, 0) === n, `${ct}: Σ Trễ chấm ≠ ${n}`);
+      /* Bài hai người chấm có ở cả hai hàng — hợp các panel = đúng tập "bài trễ chấm". */
+      const hop = new Set(r.tre.flatMap((x: any) => GET(() => tqQl.oTreCham(P.mbManager, { branchId: MB, ct, gv: x.khoa })).rows.map((y: any) => y.id)));
+      assert(hop.size === n, `${ct}: hợp bài Trễ chấm ${hop.size} ≠ ${n}`);
       const bg = GET(() => gv.bangGvChiNhanh(P.mbManager, { cn: MB, ct }));
       for (const x of r.tre.filter((y: any) => y.khoa > 0)) {
         const h = bg.hang.find((y: any) => y.id === x.khoa);
@@ -125,6 +127,24 @@ export async function runPrOv15h1Tests(t: YThucTestKit) {
       td.daGhi(p.userId);
       td.dongBoKhiMoChuong(p, TODAY);
       assert(!con(), 'vừa ghi xong: lần mở chuông kế đồng bộ ngay, thông báo của việc đã xong hết');
+    } finally { conn.prepare = goc; conn.exec('ROLLBACK'); xoaNho(); }
+  });
+
+  check('H1-7 · panel Trễ chấm: GV gọi → 403; xoá thông báo hết việc chia lô ≤ 900 tham số (Turso)', () => {
+    assert(r1(() => tqQl.oTreCham(P.coreTeacher, { branchId: null, ct: 'ft', gv: 0 })) === 403, 'GV mở panel Trễ chấm phải 403');
+    const p = P.w1Teacher;
+    conn.exec('BEGIN IMMEDIATE');
+    const goc = conn.prepare;
+    let xoa = 0;
+    try {
+      xoaNho();
+      const chen = conn.prepare(`INSERT INTO notifications (user_id, kind, title, dedup_key, created_at) VALUES (?, 'cham_qua_han', 'cũ', ?, ?)`);
+      for (let i = 0; i < 950; i++) chen.run(p.userId, `tudong:cham:cu:${i}`, TODAY);
+      conn.prepare = function (this: any, sql: string) { if (/^\s*DELETE FROM notifications/i.test(sql)) xoa += 1; return goc.call(this, sql); };
+      td.dongBoThongBaoTuDong(p, TODAY);
+      conn.prepare = goc;
+      const con = (conn.prepare(`SELECT COUNT(*) n FROM notifications WHERE user_id = ? AND dedup_key LIKE 'tudong:cham:cu:%'`).get(p.userId) as any).n;
+      assert(con === 0 && xoa === 2, `còn ${con} thông báo cũ, ${xoa} câu DELETE (phải 0 · 2)`);
     } finally { conn.prepare = goc; conn.exec('ROLLBACK'); xoaNho(); }
   });
 

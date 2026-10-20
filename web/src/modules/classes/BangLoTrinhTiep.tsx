@@ -67,8 +67,10 @@ const ltCua = (e: Em): Lt | null => (e.lenh
  * QL / Quản trị: hộp Lộ trình (Lưu nháp · Chốt; đã chốt: Lưu · Huỷ quyết định), chọn nhiều em (thanh đáy, lô lỗi một phần giữ dòng lỗi + lý do).
  * GV xem; nháp hiện "Chưa chốt"; GVCN bấm ô Kết quả đầu ra → hộp đề xuất, QL → hộp chốt điền sẵn đề xuất. 375: mỗi em một thẻ.
  */
-export function BangLoTrinhTiep({ classId, quyen, onDoi, emMo, onDaMoEm }: {
+export function BangLoTrinhTiep({ classId, quyen, onDoi, emMo, onDaMoEm, onBanGiao }: {
   classId: number; quyen: QuyenDong; onDoi: () => void;
+  /** OV-15h1: nơi gọi đã ở trong một panel (Tổng quan) — tự mở Bàn giao THAY panel đó, không chồng panel. Không truyền: mở panel Bàn giao như cũ. */
+  onBanGiao?: (lenhId: number) => void;
   /** `&em={id}` trên URL (hồ sơ một em › Lộ trình tiếp theo): mở sẵn hộp của em đó. */
   emMo: number | null; onDaMoEm: () => void;
 }) {
@@ -204,7 +206,7 @@ export function BangLoTrinhTiep({ classId, quyen, onDoi, emMo, onDaMoEm }: {
       );
     };
     return (
-      <button type="button" onClick={() => setBanGiao(l.id)} aria-label={`Bàn giao · ${e.fullName}`} className="flex min-h-[44px] flex-wrap items-center gap-0.5 sm:min-h-0">
+      <button type="button" onClick={() => (onBanGiao ? onBanGiao(l.id) : setBanGiao(l.id))} aria-label={`Bàn giao · ${e.fullName}`} className="flex min-h-[44px] flex-wrap items-center gap-0.5 sm:min-h-0">
         {chip('CN', l.banGiao.xacNhan, l.banGiao.hanGvcn)}
         {d.monBanGiao.map((m) => chip(m.ngan, l.banGiao.monXong.includes(m.ma), l.banGiao.hanGvbm))}
       </button>

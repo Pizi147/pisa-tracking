@@ -1,7 +1,7 @@
 import { db, theoLo } from '../db.ts';
 import { PERMISSIONS, tachBaiId, tenMonNgan, soSanhLop, type ChuongTrinh } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
-import { badRequest } from '../util.ts';
+import { badRequest, forbidden } from '../util.ts';
 import type { Principal } from '../permissions.ts';
 import { scopeFor } from '../permissions.ts';
 import { metricSet, rowsFor, type MetricRow } from './metrics.ts';
@@ -38,8 +38,8 @@ function treCham(p: Principal, branchId: number | null, ct: ChuongTrinh) {
   const baiCua = new Map<number, number[]>();
   for (const b of r.ids) {
     const c = r.chiTiet?.get(b);
-    const k = c?.nguoi.length ? c.nguoi[0] : c?.chamCheo ? -1 : 0;
-    (baiCua.get(k) ?? baiCua.set(k, []).get(k)!).push(b);
+    /* Bài có hai người chấm (W1 · W2 cùng ô?) tính cho CẢ hai — như cột "Bài quá hạn" bảng GV; Σ hàng có thể > số bài, tập bài thì bằng. */
+    for (const k of c?.nguoi.length ? c.nguoi : [c?.chamCheo ? -1 : 0]) (baiCua.get(k) ?? baiCua.set(k, []).get(k)!).push(b);
   }
   const luot = new Map<number, { code: string | null; ct: string | null }>();
   theoLo([...new Set(r.ids.map((b) => tachBaiId(b).attemptId))], (lo, ph) => {
@@ -67,6 +67,7 @@ function treCham(p: Principal, branchId: number | null, ct: ChuongTrinh) {
 
 /** Panel "n bài" của một GV ở Trễ chấm — tính lại bằng CHÍNH `treCham` nên số = số dòng. */
 export function oTreCham(p: Principal, f: { branchId?: number | null; ct: ChuongTrinh; gv: number }): { n: number; tieuDe: string; rows: MetricRow[] } {
+  if (scopeFor(p, PERMISSIONS.ANALYSIS_VIEW).none) throw forbidden('Bảng này dành cho Quản lý.');
   const { dong, baiCua } = treCham(p, f.branchId ?? null, f.ct);
   const g = dong.find((x) => x.khoa === f.gv);
   if (!g) throw badRequest('Giáo viên này không còn bài trễ chấm — có thể vừa nhập xong hoặc bộ lọc vừa đổi.');

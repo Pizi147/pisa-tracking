@@ -6,7 +6,7 @@
  * ĐỒNG BỘ, không chỉ thêm: thông báo của việc đã xong tự hết (xoá), thông báo còn việc thì cập nhật chữ; dedup theo (người, đối tượng).
  * Chạy khi người đó mở chuông (`GET /notifications`), tối đa một lần / `CHU_KY_MS` mỗi người. Không email / push.
  */
-import { chenNhieuDong, db } from '../db.ts';
+import { chenNhieuDong, db, theoLo } from '../db.ts';
 import { ngay, tenMon } from '../../../shared/domain/index.ts';
 import type { Principal } from '../permissions.ts';
 import { myWork, type WorkItem } from '../worklist/mywork.ts';
@@ -88,7 +88,7 @@ export function dongBoThongBaoTuDong(p: Principal, homNay: string): number {
     `SELECT id, dedup_key, title, body, duong FROM notifications WHERE user_id = ? AND kind IN (${KIND.map(() => '?').join(',')})`,
   ).all(p.userId, ...KIND) as any[];
   const het = co.filter((n) => !muon.has(n.dedup_key)).map((n) => n.id as number);
-  if (het.length) db().prepare(`DELETE FROM notifications WHERE id IN (${het.map(() => '?').join(',')})`).run(...het);
+  theoLo(het, (lo, ph) => { db().prepare(`DELETE FROM notifications WHERE id IN (${ph})`).run(...lo); });   // ≤ THAM_SO_TOI_DA tham số mỗi câu (Turso)
   const cu = new Map(co.map((n) => [n.dedup_key as string, n]));
   const luc = nowIso();
   const doi = [...muon].filter(([k, m]) => { const n = cu.get(k); return !n || n.title !== m.title || (n.body ?? '') !== m.body || n.duong !== m.duong; })

@@ -15,7 +15,7 @@ import { DaiMoiDung } from '../huongDan/DaiMoiDung.tsx';
 import { MockTestAdmin } from './MockTestAdmin.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { CongTacKhung, khungDaNho } from '../../ui/CongTacKhung.tsx';
-import { TAB_TONG_QUAN_LABEL, laVaiQuanLy, ngay, type TabTongQuan } from '@shared/domain/index.ts';
+import { TAB_TONG_QUAN_LABEL, laVaiQuanLy, ngay } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
 
 /**
@@ -26,7 +26,7 @@ import { t } from '@shared/i18n/index.ts';
  * Tab "Việc hôm nay · Phân tích" nằm trên ĐƯỜNG DẪN (`/`, `/phan-tich`) nên Back giữ đúng chỗ; không lặp tiêu đề "Tổng quan" (K1-10).
  */
 /* OV-15e (plan §7): Phân tích thành mục thanh trên (`/phan-tich`, `PhanTichPage`) — Tổng quan không còn hàng tab "Việc hôm nay · Phân tích". */
-export default function OverviewPage(_: { tab?: TabTongQuan } = {}) {
+export default function OverviewPage() {
   const { session } = useSession();
   const [params, setParams] = useSearchParams();
   const canSeeBoard = !!session?.nav?.analysis;
@@ -95,13 +95,14 @@ export default function OverviewPage(_: { tab?: TabTongQuan } = {}) {
             {/* Báo cáo = tab đầu của Phân tích (kế hoạch OV-15 mục 7, OV-15e) — mở thẳng. */}
             <Link to={`/phan-tich?goc=bao-cao${branchId ? `&cn=${branchId}` : ''}`} className="btn btn-sm min-h-[44px] no-underline sm:min-h-[32px]">{t('Báo cáo ›')}</Link>
           </div>
+          {/* Hai khối việc của QL (quyền xem việc người khác, `/tong-quan/quan-ly`) — lỗi / đang tải riêng, không chờ phần theo khung. */}
+          {ql.data && <DaiTomTat data={ql.data} bang={tq.data?.bang ?? null} branchId={branchId} ct={khung} />}
+          {session?.nav?.work && <KhoiCanQuyet data={ql.data} loading={ql.loading} error={ql.error} reload={ql.reload} />}
+          {/* Phần theo khung (`/tong-quan/ql`): lỗi / đang tải chỉ che Lớp cần chú ý + Tuần này. */}
           {tq.error ? <ErrorState message={tq.error.message} hint={tq.error.hint} onRetry={tq.reload} />
             : !tq.data ? <Skeleton rows={6} />
             : (
               <>
-                {/* Hai khối việc của QL (quyền xem việc người khác) — như Cần xử lý cũ, chỉ khi có Công việc. */}
-                {ql.data && <DaiTomTat data={ql.data} bang={tq.data.bang} branchId={branchId} ct={khung} />}
-                {session?.nav?.work && <KhoiCanQuyet data={ql.data} loading={ql.loading} error={ql.error} reload={ql.reload} />}
                 <LopCanChuY data={tq.data.bang} branchId={branchId} ct={khung} />
                 <section aria-labelledby="tuan-nay" className="space-y-3">
                   <h2 id="tuan-nay" className="m-0 text-base font-semibold text-slate-100">{t('Tuần này')}</h2>

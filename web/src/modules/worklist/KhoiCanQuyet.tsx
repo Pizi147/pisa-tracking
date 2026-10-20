@@ -22,16 +22,18 @@ type Data = QuanLyData;
  * DẢI TÓM TẮT "HV cần chú ý" (Q6a, mockup 3): chưa lịch Test (FT) · chưa điểm · Case chưa chốt PA (HV · Case, ⚠ quá hạn) · bài trễ chấm · số GV.
  * Ba số đầu = hàng tổng của Lớp cần chú ý (cùng ô, cùng panel); bài trễ chấm + quá hạn như trước (gộp hai khung, chỉ số trong sổ).
  */
-export function DaiTomTat({ data, bang, branchId, ct }: { data: Data; bang: TongQuanQlData['bang']; branchId: number | null; ct: ChuongTrinh }) {
+export function DaiTomTat({ data, bang, branchId, ct }: { data: Data;
+  /** `null`: phần theo khung (`/tong-quan/ql`) đang tải / lỗi — ba số đó hiện "…", phần còn lại vẫn đọc được. */
+  bang: TongQuanQlData['bang'] | null; branchId: number | null; ct: ChuongTrinh }) {
   const q = thamSoTq(branchId, ct);
   const dong = (id: string) => data.canXuLy.find((x) => x.metricId === id);
   const bai = dong('bai-qua-han-nhap-diem');
   const soGv = bai && bai.nguoi !== 'ban' ? bai.nguoi.ids.length : 0;
   const caseQh = dong('case-xac-dinh-nguyen-nhan-qua-han');
   const phamVi = { branchId };
-  const o = (cot: string, tieuDe: string) => (
+  const o = (cot: string, tieuDe: string) => (!bang ? <span className="text-slate-500" aria-label={t('Đang tải')}>…</span> : (
     <SoLieuO giaTri={bang.tong[cot as keyof typeof bang.tong]?.n ?? 0} className="font-semibold" tieuDe={tieuDe} nguon={`/tong-quan/chi-nhanh/o?cot=${cot}&khoa=tong&chuY=1${q ? `&${q}` : ''}`} />
-  );
+  ));
   return (
     <div className="card flex flex-wrap items-center gap-x-5 gap-y-2 px-4 py-2.5 text-[13px] text-slate-300" aria-label={t('HV cần chú ý')} data-hd="tq-tom-tat">
       <b className="font-semibold text-slate-100 max-sm:w-full">{t('HV cần chú ý')}</b>

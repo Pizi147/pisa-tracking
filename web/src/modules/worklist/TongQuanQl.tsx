@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { invalidate } from '../../lib/api.ts';
@@ -10,6 +11,7 @@ import { CHIP_SOS, lopSos } from '../../ui/Nhan.tsx';
 import { useDienThoai } from '../../ui/TheDong.tsx';
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { BangLoTrinhTiep } from '../classes/BangLoTrinhTiep.tsx';
+import { BanGiaoPanel } from '../classes/BanGiaoPanel.tsx';
 import type { HoSoLop } from '../classes/DauTrangLop.tsx';
 import type { QuyenDong } from '../classes/thaoTacDongHocVien.tsx';
 import type { Data as LichData } from './Highlights.tsx';
@@ -234,12 +236,17 @@ export function PanelLoTrinhLop({ classId, lop, onDong }: { classId: number; lop
     coTheChuyenTiep: v.coTheChuyenTiep, theoVai: !!vaiXemHocVien(session?.roles), coTheSuaThongTin: !!v.coTheSuaThongTin, coTheSuaThem: !!v.coTheSuaThem,
   } : null;
   const doi = () => { invalidate('/tong-quan'); invalidate('/my-work'); invalidate('/classes'); };
+  /* Bàn giao mở THAY panel lộ trình (không chồng hai panel); "‹ Lộ trình" về lại đúng bảng lộ trình của lớp. */
+  const [banGiao, setBanGiao] = useState<number | null>(null);
+  if (banGiao !== null) {
+    return <BanGiaoPanel classId={classId} mon={null} lenhId={banGiao} onClose={onDong} onDone={doi} quayLai={{ nhan: t('Lộ trình'), onClick: () => setBanGiao(null) }} />;
+  }
   return (
     <KhungPanel tieuDe={t('Chốt lộ trình')} lop={lop} rong="toan" onDong={onDong}
       ngCanh={<Link to={`/hoc-vien/lop/${classId}?che-do=lo-trinh`} className="link text-xs">{t('Mở hồ sơ lớp ›')}</Link>}>
       {hs.error ? <ErrorState message={hs.error.message} hint={hs.error.hint} onRetry={hs.reload} />
         : !quyen ? <Skeleton rows={6} />
-        : <BangLoTrinhTiep classId={classId} quyen={quyen} onDoi={doi} emMo={null} onDaMoEm={() => {}} />}
+        : <BangLoTrinhTiep classId={classId} quyen={quyen} onDoi={doi} emMo={null} onDaMoEm={() => {}} onBanGiao={setBanGiao} />}
     </KhungPanel>
   );
 }
