@@ -406,7 +406,7 @@ function TrangTheoLop({ admin }: { admin: boolean }) {
               </button>
             )}
             {goc === 'tat-ca' && !admin && (
-              <button type="button" className="nut-loc" aria-expanded={moLocThem} aria-pressed={locThemBat(locThem)} data-hd="hvl-loc-them"
+              <button type="button" className={`nut-loc ${locThemBat(locThem) ? 'nut-loc-dang' : ''}`} aria-expanded={moLocThem} data-hd="hvl-loc-them"
                 onClick={() => setParam({ lt: moLocThem ? null : '1' })}>
                 {t('Bộ lọc thêm')}{chuLocThem.filter(Boolean).length ? <span className="tabular-nums font-medium">{chuLocThem.filter(Boolean).length}</span> : null}
               </button>

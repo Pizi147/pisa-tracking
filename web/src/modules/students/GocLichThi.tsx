@@ -200,7 +200,11 @@ function DongLichThi({ r, ds, moRong, onMoRong, onLuu }: {
       <div role="cell" className="text-xs">
         <span className="block text-slate-100">{r.chuyenSang ? `${t('Dự kiến')} ${nhanThang(r.chuyenSang)}` : lich}</span>
         {!r.chuyenSang && r.coNgay && r.chot && (
-          <span className="block text-[11px] text-slate-500">{[t('chốt {ngay}', { ngay: shortDate(r.chot.luc, homNay) }), r.chot.ai].filter(Boolean).join(' · ')}</span>
+          /* Cột 104 px: ngày chốt một dòng, người chốt dòng dưới (không bẻ giữa "·"). */
+          <span className="block text-[11px] leading-4 text-slate-500">
+            <span className="block whitespace-nowrap">{t('chốt {ngay}', { ngay: shortDate(r.chot.luc, homNay) })}</span>
+            {r.chot.ai && <span className="block truncate" title={r.chot.ai}>{r.chot.ai}</span>}
+          </span>
         )}
       </div>
       <div role="cell" className="min-w-0">

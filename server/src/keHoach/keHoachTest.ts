@@ -1373,7 +1373,8 @@ export function xuatKeHoach(p: Principal, i: { branchId: number | null; classIds
   const lopDangHoc = new Map<number, string[]>();
   for (const e of em) lopDangHoc.set(e.id, [...(lopDangHoc.get(e.id) ?? []), maLop.get(e.class_id)!]);
   for (const ds of lopDangHoc.values()) ds.sort((a, b) => soSanhLop({ code: a }, { code: b }));
-  em.splice(0, em.length, ...em.filter((e, k) => em.findIndex((x) => x.id === e.id) === k));
+  const gap = new Set<number>();
+  em.splice(0, em.length, ...em.filter((e) => !gap.has(e.id) && !!gap.add(e.id)));
   em.sort((a, b) => soSanhLop({ code: lopDangHoc.get(a.id)![0] }, { code: lopDangHoc.get(b.id)![0] }) || soTenVi(a.full_name, b.full_name) || a.id - b.id);
   const cycleIds = em.map((e) => e.cycle_id).filter((x): x is number => !!x);
   const luot: any[] = [];

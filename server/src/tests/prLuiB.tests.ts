@@ -326,7 +326,7 @@ export async function runPrLuiBTests(t: YThucTestKit) {
     assert(h.includes("chiaLo(ids, viec === 'xoa' ? LO_XOA_EM : LO_HANG_LOAT_EM)") && h.includes("'/hang-loat-hoc-vien'") && h.includes('VIEC_NGUOC[viec]'), 'runner');
     assert(/catch \(e: any\) \{[\s\S]*break;/.test(h), 'lỗi giữa chừng phải dừng và ghi phần còn lại là chưa lưu');
   });
-  check('LUIb-17 · web: thanh dính đáy, panel xem trước, ô chọn ở cả bảng FT và bảng lớp thường; đủ chữ đã duyệt; KHÔNG ô chọn ở bảng Học viên & Lớp', () => {
+  check('LUIb-17 · web: thanh dính đáy, panel xem trước, ô chọn ở cả bảng FT và bảng lớp thường; đủ chữ đã duyệt; Học viên & Lớp chỉ có ô chọn để Xuất (OV-15h2)', () => {
     const t = doc('web/src/modules/classes/TabHocVienLop.tsx');
     assert(t.includes('Chọn nhiều học viên') && t.includes('useChonNhieu') && t.includes('ThanhChonNhieu') && t.includes("cheDo === 'diem'") && t.includes('canPlanWeek'), 'nút + thanh ở tab Học viên, chỉ Quản lý, chỉ cách xem Điểm');
     for (const chu of ["'Lưu trữ'", "'Kết thúc học'", "'Huỷ chuyển lớp'"]) assert(t.includes(chu), `thiếu việc ${chu}`);
@@ -337,7 +337,10 @@ export async function runPrLuiBTests(t: YThucTestKit) {
     for (const chu of ['Bỏ qua', 'Thử lại', 'Đã lưu ', 'chưa lưu', 'Quyết định chuyển lớp huỷ', 'PA huỷ', 'Case đóng', 'học viên', 'Về lớp cũ', 'Sang lớp mới']) assert(p.includes(chu), `thiếu chữ "${chu}"`);
     assert(p.includes('!l.ft'), 'Học lại hàng loạt chỉ sang lớp thường');
     assert(doc('web/src/modules/students/ClassRoster.tsx').includes('OChon') && doc('web/src/modules/classes/BangDiemLopThuong.tsx').includes('OChon'), 'ô chọn ở cả hai bảng');
-    assert(!doc('web/src/modules/students/BangHocVienLop.tsx').includes('OChon'), 'KHÔNG thêm ô chọn vào bảng Học viên & Lớp');
+    /* OV-15h2 (ý 1, mockup 5 khung 2): bảng Học viên & Lớp có ô chọn CHỈ để Xuất Excel "Các HV đã chọn" — không việc hàng loạt nào khác. */
+    const sp = doc('web/src/modules/students/StudentsPage.tsx');
+    const thanh = sp.slice(sp.indexOf('<ThanhChonNhieu'), sp.indexOf('/>', sp.indexOf('<ThanhChonNhieu')));
+    assert(thanh.includes("key: 'xuat'") && (thanh.match(/key: '/g) ?? []).length === 1, `thanh chọn ở Học viên & Lớp chỉ có Xuất: ${thanh}`);
   });
   check('LUIb-18 · web Lưu trữ › Học viên: nút Chọn nhiều học viên, thanh dính đáy (Bỏ lưu trữ · Học lại), nút Học lại mỗi dòng mở panel có chọn đích', () => {
     const l = doc('web/src/modules/students/LuuTruPage.tsx');

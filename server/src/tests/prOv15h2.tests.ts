@@ -253,11 +253,14 @@ export async function runPrOv15h2Tests(t: YThucTestKit) {
       assert(nhan(b.sid)?.case.join() === 'khong-case' && nhan(b.sid).kq === null && nhan(b.sid).tuan === null, `b: ${JSON.stringify(nhan(b.sid))}`);
       assert(nhan(c.sid)?.case.join() === 'co-case,pa-chay', `c: ${JSON.stringify(nhan(c.sid))}`);
     });
-    /* Em có kết quả trong bộ demo: nhãn kết quả + tuần đi cùng lượt gần nhất. */
+    /* Nhãn kết quả / kỹ năng = CÙNG `standingFor` mọi màn dùng (đối chiếu từng em của một lớp có điểm, không phụ thuộc bộ kiểm trước để lại gì). */
+    const standing: any = await import('../students/standing.ts');
     await voiMayChu(async (goi) => {
       const r = await json(await goi(QL, `/hoc-vien-lop?phamVi=chi-nhanh&cn=${MB}&them=1&q=${encodeURIComponent('MB FT 101')}`));
-      const coKq = r.hocVien.filter((h: any) => h.them?.kq);
-      assert(coKq.length > 0 && coKq.every((h: any) => /^\d{4}-\d{2}-\d{2}$/.test(h.them.tuan ?? '')), `demo MB FT 101: ${JSON.stringify(r.hocVien.slice(0, 3).map((h: any) => h.them))}`);
+      const st = standing.standingFor(r.hocVien.map((h: any) => h.id));
+      const lech = r.hocVien.filter((h: any) => !h.ketThuc && (h.them?.kq !== d.ketQuaLoc(st.get(h.id) ?? null) || h.them?.kn.join() !== d.kyNangLoc(st.get(h.id) ?? null).join()));
+      assert(r.hocVien.length > 0 && !lech.length, `lệch standingFor: ${JSON.stringify(lech.slice(0, 3).map((h: any) => [h.ten, h.them]))}`);
+      assert(r.hocVien.filter((h: any) => h.them?.kq).every((h: any) => h.them.tuan === null || /^\d{4}-\d{2}-\d{2}$/.test(h.them.tuan)), 'tuần dạng ngày');
     });
   });
 }
