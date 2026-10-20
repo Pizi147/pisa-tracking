@@ -224,6 +224,9 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 
 ## 4. Việc chưa làm (kiểm với danh sách PR GitHub 11/10 — mọi PR tới #312 đã merge)
 
+- **CV-LOI #499 — rà sâu 21/10 để lại (PTA bỏ qua, làm sau):** `PanelPhanCongMon` gửi nguyên bức tranh phân công đọc lúc mở → người khác vừa
+  đổi phân công lớp đó thì bị ghi đè (cần khoá phiên bản / gửi một ô) · bước gán chủ Case (`migratePrCvLoi`) chạy mỗi lần migrate, người gán ghi
+  "hệ thống" (actor NULL) · dòng dự phòng "Chọn người phụ trách" mở hồ sơ em nhưng chưa có ô đổi người phụ trách (cần API đổi chủ Case, có lịch sử).
 - **LUAT-5 #495 — rà sâu 21/10 để lại (PTA bỏ qua, làm sau):** `huyDuoc` của thẻ thu hồi vướng `ux_ycd_dang_cho` (chung mọi loại thẻ) · `du_lieu` thẻ thu hồi
   (bậc về / số vi phạm) không tự cập nhật khi GVCN sửa vi phạm của lần xử lý lúc thẻ còn chờ · người gửi đã rời lớp vẫn sửa / rút được thẻ của mình.
 
