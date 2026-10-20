@@ -47,7 +47,7 @@ Con số "≥ 35" trước đây chỉ là **đích** đặt ngày 17/10; sau đ
 - **GĐ2 — làm lại từng màn theo mockup:** khung trang chung → Tổng quan → Công việc → Hồ sơ lớp → Học viên & Lớp → Test → Phân tích → Tutor / Quản trị.
 - **GĐ3 — thống nhất thành phần, chữ, 375; chấm lại bằng cùng phương pháp** rồi mới nói "đạt".
 
-**Chủ SP cần làm:** (1) xem 10 cặp ảnh "mockup | web" ở mục 3.1; (2) 4 câu chính (mục 9.1) — **đã chốt 20/10, cả bốn theo khuyến nghị**; các câu còn lại (mục 9.2) xem dần, có khuyến nghị sẵn; (3) góp ý thêm sau khi xem web — gộp xong mới giao PR.
+**Chủ SP cần làm:** (1) xem 10 cặp ảnh "mockup | web" ở mục 3.1; (2) 4 câu chính (mục 9.1) — **đã chốt 20/10, cả bốn theo khuyến nghị**; các câu còn lại (mục 9.2) xem dần, có khuyến nghị sẵn; (3) góp ý thêm sau khi xem web — gộp xong mới giao PR. **Đã nhận:** vòng 1 (mục 10, câu 10.7) · vòng 2 (mục 11, câu 11.8).
 
 ---
 
@@ -545,7 +545,7 @@ B-06 P2 `do-khung` lỗi thời · B-07 P3 chữ < 12 px dày · B-08 P3 "—" /
 | Xuất danh sách em SOS 3 | không làm được trong app | 2–3 bấm |
 
 ### 7.5 Hồ sơ lớp — mỗi tab chỉ nội dung tab (A3 Đ3; mockup 1 khung 4, mockup 6 khung 2)
-- **Đề xuất:** bỏ khối "Điểm Mock Test của lớp" cuối trang; nút Nhập điểm mở lượt có ô quá hạn sớm nhất + "Chỉ ô còn trống"; chip "n chờ duyệt" → hộp duyệt lọc lớp tại chỗ, "bài chờ chấm" → panel Nhập điểm, "⚠ quá hạn" luôn hiện → panel việc của lớp; Ý thức mặc định chỉ vi phạm chưa xong, gom theo em.
+- **Đề xuất:** ~~bỏ khối "Điểm Mock Test của lớp" cuối trang~~ (**hết hiệu lực** — chủ SP chốt vòng 2: lưới **gập** mặc định, nút Nhập điểm **cuộn tới + mở lưới tại chỗ**, không panel — mục 11.3); nút Nhập điểm mở lượt có ô quá hạn sớm nhất + "Chỉ ô còn trống"; chip "n chờ duyệt" → hộp duyệt lọc lớp tại chỗ, "bài chờ chấm" → panel Nhập điểm, "⚠ quá hạn" luôn hiện → panel việc của lớp; Ý thức mặc định chỉ vi phạm chưa xong, gom theo em.
 - **Chiều cao ước (1440):** Tổng hợp 4 800 → ~2 600 px · Phân tích 3 012 → ~800 · Ý thức 5 431 → ~1 800 · 375: 10 382 → ~6 800 (thêm thẻ em gọn ở GĐ3 để xuống ~4 màn).
 - **Bước — GVCN nhập điểm còn thiếu:** 4 bấm + 1 đổi trang + phải nhớ MT nào quá hạn → 2 bấm, không phải nhớ.
 
@@ -607,7 +607,7 @@ Trước khi bắt đầu: PTA gỡ các chỗ mockup mâu thuẫn nhau / đã b
 | M0 | Khung trang chung + dải lọc C10 + thanh trên | m1 khung 2a / 2b, m3 đầu trang | nền cho mọi màn — làm trước |
 | M1 | Tổng quan QL / QT | m3 khung 1, 1c, 1d, 2 (+ ý tốt của #471) | X1–X5 ở màn dùng nhiều nhất |
 | M2 | Công việc GV + QL | m2 "Sau" + 1b / 1e / 1f; m3 Công việc QL | hợp đồng panel việc |
-| M3 | Hồ sơ lớp | m1 khung 4, m6 khung 2 | bỏ khối lưới; Ý thức gom theo em |
+| M3 | Hồ sơ lớp | m1 khung 4, m6 khung 2 | ~~bỏ khối lưới~~ → lưới gập + Nhập điểm tại chỗ (11.3); Ý thức một bảng theo em (11.3) |
 | M4 | Học viên & Lớp (+ Đang SOS, Lịch thi, Xuất) | m1 khung 3, m6 khung 1, m5 | bỏ Cần làm nếu chủ SP đồng ý |
 | M5 | Test (Lịch Test, Kế hoạch Test, Nhập điểm lớp, Xuất) | ba khối 06/10, m4, m2 khung 1a / 1b, m6 khung 9 | gộp 2 giao diện + 3 lối xuất |
 | M6 | Phân tích (khung, panel kết quả, GV 4c, Báo cáo chiếu) | m3 khung 3, 4, 4b, 4c; m6 khung 6 | — |
@@ -655,10 +655,10 @@ Cùng phương pháp, cùng cách chia khu vực, cùng số đo (điểm Nielse
 | 11 | Panel nhập điểm một kỹ năng: cột Kết quả trống tới khi có điểm, rồi Đạt / Chưa đạt của kỹ năng đó? | có | M2 |
 | 12 | Chấm Speaking có hạn + "⚠ quá hạn" (mockup 2b) hay giữ không hạn (T18)? | có hạn | M2 / M5 |
 | 13 | TVV / CX có khối "Cần làm" tại Tổng quan để chọn bước tiếp tại chỗ? | có | M7 |
-| 14 | **Bỏ góc "Cần làm"** ở Học viên & Lớp (việc đã ở Công việc)? | có | M4 |
+| 14 | **Bỏ góc "Cần làm"** ở Học viên & Lớp (việc đã ở Công việc)? (vòng 2 xét lại theo I.3: vẫn khuyến nghị bỏ, thêm lối thay thế — **gộp vào câu 11.8-8**) | có | M4 |
 | 15 | "Thiếu thông tin" chỉ tính Target, Tuần bắt đầu, Email; không gắn nhãn từng em, chỉ số ở hàng lớp + lọc; chỉ vai điền được thấy? | có | M4 |
 | 16 | Đang SOS dùng bảng 6 cột mockup 6 khung 1? | có | M4 |
-| 17 | **Bỏ khối "Điểm Mock Test của lớp"** cuối hồ sơ lớp (lưới chỉ qua nút Nhập điểm)? | có | M3 |
+| 17 | ~~**Bỏ khối "Điểm Mock Test của lớp"** cuối hồ sơ lớp (lưới chỉ qua nút Nhập điểm)?~~ **HẾT HIỆU LỰC** — chủ SP chốt vòng 2: giữ khối, gập mặc định, nút Nhập điểm cuộn + mở tại chỗ (11.3) | — | M3 |
 | 18 | Thứ tự chip hàng lớp: quá hạn luôn hiện đầu, bỏ "+n" (mockup 1)? | có | M4 |
 | 19 | Chuyển lớp: hàng nút "Ngay hôm nay T2 14/09 · W4 SEP…" (trái luật 06/10 không hàng nút ngày) — đổi sang ô chọn tuần? | đổi | M4 |
 | 20 | Bỏ dải 3 ô số đầu Lịch Test (mockup ba khối 06/10 có dải này)? | bỏ | M5 |
@@ -793,6 +793,166 @@ Chữ nhỏ / số không màu / hover mờ ở chỗ khác: phụ lục `v1-nen
 
 ---
 
+## 11. Góp ý chủ SP vòng 2 (20/10 khuya) — Học viên & Lớp · Hồ sơ lớp · Hồ sơ HV + vấn đề hệ thống
+
+Nguồn: tin nhắn chủ SP 20/10 khuya + **5 ảnh có kèm** — ảnh 1 Học viên & Lớp (QT Monbay, Bộ lọc thêm mở) · ảnh 2 Hồ sơ lớp MB FT 101 › Ý thức › Vi phạm & xử lý + lưới Điểm MT mở · ảnh 3 cùng trang › Phối hợp SOS · ảnh 4 lưới MT3 phóng to, khoanh đỏ cột L, R, W1, W2, Kỳ vọng / Overall · ảnh 5 terminal Vite: 2 cảnh báo "duplicate case" ở `PanelViec.tsx`.
+Quyền chủ SP vòng này: **được đề xuất overhaul toàn bộ giao diện, bố cục, bảng, panel, chữ, workflow; được bỏ / thay component, CSS, cấu trúc cũ không hợp lý; KHÔNG đổi luật nghiệp vụ; chỗ chưa rõ phải hỏi.** Vẫn chỉ đánh giá + kế hoạch.
+Nghiên cứu: 2 agent Opus chạy trên web demo (chỉ đọc, 208 ảnh, đo DOM 46 trang × 1 440 / 1 280 / 375) + PTA kiểm ảnh 5. Đủ 8 ý cho mỗi vấn đề (vấn đề · nguyên nhân · ảnh hưởng · phương án · vì sao · chỗ khác · trình tự · cần xác nhận) ở phụ lục
+[`v2a-hoc-vien-lop.md`](2026-10-20-danh-gia-ux/v2a-hoc-vien-lop.md) (mã **V2A-01…09**) và [`v2b-bang-ho-so.md`](2026-10-20-danh-gia-ux/v2b-bang-ho-so.md) (mã **V1…V9**, ở đây ghi **V2B-1…9**). Dưới đây là bản gọn.
+
+### 11.0 Bảng quyết định vòng 2
+| # | Nội dung | Trạng thái | Thay đổi mục cũ |
+|---|---|---|---|
+| I.1 | Bộ lọc thời gian chỉ còn **Tuần bắt đầu → Tuần kết thúc**, bỏ tháng / 2 tuần / khoảng cố định, mỗi chỗ có mặc định riêng, áp toàn web; chỗ có logic thời gian đặc thù xét riêng | **ĐÃ CHỐT** · cách làm: đề xuất 11.1b · ngoại lệ Lịch thi theo tháng: **hỏi** 11.8-7 | thay C29 (bộ chọn 4 kiểu) |
+| I.2 | "Tuần thi của kết quả" → **"Thời gian"**; rà cụm thiếu tự nhiên | **ĐÃ CHỐT** · ~20 cụm khác: đề xuất (V2A-02) | — |
+| I.3 | Bảng góc "Cần làm" | **Yêu cầu rà đã chốt** · khuyến nghị **bỏ góc** + 3 lối thay thế: đề xuất 11.2 · **hỏi** 11.8-8 | giữ hướng 9.2-14, thêm lối thay thế |
+| I.4 | Ô tick chọn HV để xuất Excel | **CHƯA CHỐT** · khuyến nghị **phương án 3** (bỏ ô tick khỏi bảng, chọn em trong panel Xuất) · **hỏi** 11.8-9 | — |
+| I.5 | **Thi** = kỳ thi thật · **Test** = MT / Progress / Final / Mini…; nhóm gồm cả hai gọi **Test** | **ĐÃ CHỐT — nghiệp vụ** · chữ cụ thể: **hỏi** 11.8-5 | bảng thuật ngữ 01/10 (C-028, C-035, C-036), chữ Rulebook, mockup 4 / 5 phải sửa theo |
+| I.6.1 | Overhaul bộ lọc + bảng Lịch thi | **Yêu cầu đã chốt** · đề xuất 11.2 | mockup 5 khung 1 sửa |
+| I.6.2 | "Ghi chú họp" → **"Ghi chú"** · "Cần xác nhận" là gì | đổi tên **ĐÃ CHỐT** · nghĩa **ĐÃ KIỂM** (11.2) · bỏ nút: **hỏi** 11.8-6 | — |
+| I.6.3 | Tháng dự kiến thi + ngày thi; tới tháng chưa có ngày → trạng thái riêng + việc "chốt ngày thi" **không hạn**; A "Đã chốt ngày" / B "Chưa chốt ngày" | **ĐÃ CHỐT — nghiệp vụ** · 5 điểm luật còn mở: **hỏi** 11.8-3 · **lỗi P1 mới** (11.2) | thêm PR **LT-SV** vào GĐ1 |
+| I.7 + II.4 | Ô điểm W1 / W2 lệch; bảng lôm côm, xô lệch toàn web — sửa **triệt để ở cấp hệ thống** | **ĐÃ CHỐT** · gốc **ĐÃ KIỂM** (11.1a) · hệ thống bảng mới: đề xuất · căn giữa hay trái: **hỏi** 11.8-4 | thêm **BANG-0 / BANG-1**; X7 nâng thành vấn đề hệ thống |
+| II.1 | Mọi bảng Hồ sơ lớp: đánh giá + thiết kế lại | **Yêu cầu đã chốt** · đề xuất 11.3 | 7.5 sửa |
+| II.1 | Lưới Điểm MT **gập mặc định**; nút **Nhập điểm** cuộn tới + mở lưới để nhập trực tiếp, **không panel phải**; áp cách nghĩ này cho chỗ tương tự | **ĐÃ CHỐT** · chi tiết: đề xuất 11.3 · 12 chỗ tương tự: 11.1c | **hết hiệu lực:** 7.5 "bỏ khối lưới", 9.2-17, M3 "bỏ khối lưới" |
+| II.2 + II.3 | Thiết kế lại Ý thức / Phối hợp Hồ sơ lớp; bảng / nhóm quá giống nhau (Phối hợp SOS) | **Yêu cầu đã chốt** · khuyến nghị phương án A (11.3) · **hỏi** 11.8-11 | — |
+| II.5 | Ảnh 5 — lỗi bất thường | **ĐÃ KIỂM bằng mã: lỗi thật** (11.1e) · bấm thử trên web: chưa | thêm vào GĐ1 CV-LOI |
+| III.1 | Ý thức / Phối hợp Hồ sơ HV: cùng ngôn ngữ với Hồ sơ lớp, mật độ một em | **Yêu cầu đã chốt** · đề xuất 11.4 · **hỏi** 11.8-12 | thêm màn **M3b** |
+
+### 11.1 Vấn đề hệ thống (ưu tiên — mỗi cái chạm nhiều trang)
+
+**11.1a Bảng xô lệch — nguyên nhân gốc [ĐÃ KIỂM — đo DOM + mã + git] (V2B-1, V2B-2)**
+- **Vấn đề:** lưới Điểm MT lệch tiêu đề ↔ ô **45–69 px** (S 68 px, L 51 px) ở **cả 6 lối vào** (hồ sơ lớp, panel Nhập điểm, Lịch Test, Công việc, `/nhap-diem`, Điểm theo lớp); trong một hàng con số chính lệch đường cơ sở **7–20 px** (Học viên & Lớp: W cao hơn L / R / S 20 px vì ô W 3 dòng); cùng cột lệch mép ±16 px (Tổng hợp); hàng cao 46–101 px; một bảng 4–5 cỡ chữ (11 · 11,5 · 12 · 13 · 15). Ở 1 280 px Học viên & Lớp vỡ thêm 8/13 cột. **Đối chứng:** Kết quả thi, Báo cáo, Hồ sơ GV, Quản trị, Mock Test hồ sơ HV đo **0 cột lệch** → lỗi do cách dựng bảng, không do phông / màn hình.
+- **Gốc (8, có bằng chứng):** R1 **không có component bảng** — 65 `<table>` ở 53 tệp, ~190 lớp căn viết tay trên từng ô, tiêu đề và ô của một cột viết ở hai chỗ (có khi hai tệp) · R2 OV-15a (#460, `31b4f24f`, 19/10) hiện thực C06 "số căn giữa" bằng **luật theo tên lớp** `index.css:267` → tiêu đề `align="right"` thành giữa, ô `text-right` vẫn phải; **trước OV-15a lưới này thẳng** · R3 cột giãn (`w-full` + colgroup px: L 104 → 134 px; colgroup % vỡ ở 1 280) · R4 **ô điểm 7 cấu trúc** khác nhau + căn giữa dọc → ô 1–3 dòng đẩy số lên xuống; `align-top` đặt trên `<tr>` (`ClassRoster.tsx:240`) không có tác dụng · R5 thanh công cụ (Dán từ Excel, GV chấm S) nằm **trong** khung bảng · R6 ~100 phép kiểm đọc **chuỗi mã** của tệp bảng → dựng lại là vỡ hàng chục phép kiểm, nên mỗi PR chỉ dám sửa số px; `do-khung` **bỏ qua** lưới chấm · R7 quy trình vá số ("TT 118 → 146, Kết quả 150 → 136…" ghi ngay trong mã) · R8 lệch mockup 6 khung 3 đã duyệt (ký hiệu trước số, cột hẹp, thẳng).
+- **Ảnh hưởng:** Cô Linh nhập 20 bài dò từ tiêu đề "L" sang ô cách 51 px, dễ nhầm L ↔ R; Chị Vy không so được L / R / W / S của một em; chủ SP phải nhắc mỗi đợt, mỗi lần sửa một chỗ thì chỗ khác vỡ.
+- **Phương án [ĐỀ XUẤT] — hệ thống bảng mới, không vá:** một `Bang` + **kiểu cột** (tên · chữ · số · điểm · nổi bật · chip · tuần/ngày · việc · nút) — kiểu cột sinh cùng `data-kieu` cho tiêu đề và ô nên **không thể lệch**; cột rộng px theo kiểu, chỉ một cột linh hoạt, không %; hàng **44 px (1 dòng) / 64 px (2 dòng)**, căn **đường cơ sở**, không ô > 2 dòng; tối đa một dải nền nhấn; công cụ **ngoài** khung bảng; hover / chọn / mở rộng theo hệ trạng thái vòng 1; 375 tự thành thẻ **từ cùng định nghĩa cột**. Một **`ODiem`** thay 7 kiểu ô: ký hiệu ✓ / ✗ **trước** số, khung rộng cố định (số trong cột luôn thẳng), số 15 / 700 tô theo 3 token kết quả vòng 1, **một** dòng phụ 12 px ưu tiên "thiếu nhận xét" > "vắng lần n" > "n câu", dấu lưu ở góc trên. Bỏ luật `index.css:267`. Thang chữ vòng 1 (ô 15, phụ 13, tối thiểu 12).
+- **Chống tái phát (để chủ SP không phải nhắc lại):** phép kiểm tĩnh `bang.tests.ts` trong `npm run check` (cấm lớp căn trên `td` / `th` ngoài `Bang`; cấm luật căn theo tên lớp; `<table>` chỉ trong `Bang`, danh sách tệp miễn **chỉ được giảm**; cỡ chữ trong ô ∈ thang; cột số / điểm rộng px) + **`do-bang`** đo DOM (script đã viết ở đợt rà) gắn vào `do-khung`: lệch tiêu đề ↔ ô ≤ 2 px, đường cơ sở ≤ 2 px, cao hàng ∈ {44, 64}, không tràn, ở 1 440 / 1 280 / 375; bỏ miễn đo cho lưới chấm. Phép kiểm đọc chuỗi mã cũ viết lại theo hành vi.
+- **Vì sao:** so B "chỉ sửa CSS toàn cục" (một tệp nhưng tái phát — đã tái phát 07/10 và 19/10) và C "thêm thư viện bảng" (thư viện không lo phần căn / ô điểm, thêm phụ thuộc): A là cách duy nhất có luật **kiểm được bằng máy**.
+- **Chỗ khác:** 53 tệp có bảng + ~10 danh sách dạng lưới div + 5 lưới ARIA (danh sách ở V2B-1 mục 6).
+- **Trình tự:** **BANG-0** (nền: `Bang`, `ODiem`, CSS, phép kiểm, `do-bang`, bảng mẫu `/dev/thanh-phan`, DESIGN.md — ~6–8 tệp; cùng NEN) → **BANG-1** lưới điểm (~7 tệp + viết lại ~40 phép kiểm; sửa 6 lối vào một lần; không đổi bố cục, đã có mockup 6 khung 3) → chuyển dần theo màn M3–M7 (~50 tệp) — xong khi danh sách miễn về 0.
+- **Hỏi:** 11.8-1 (BANG-0/1 trước deploy), 11.8-4 (căn giữa hay trái), 11.8-13 (duyệt bằng bảng mẫu), 11.8-14 (W1 / W2 có ✓ / ✗; một dòng phụ).
+
+**11.1b Bộ lọc thời gian — 14 chỗ, 5 dáng [ĐÃ KIỂM] (V2A-01)**
+- **Vấn đề:** 14 chỗ chọn thời gian, 5 dáng, 9 chế độ (bảng đủ tệp:dòng ở V2A-01). Đổi khoảng ở Phân tích 5 thao tác; hộp Bộ lọc thêm rộng 360 px **mất nút "Tùy chọn"**; chip "Mọi lúc ✕" sáng đúng lúc **đang lọc** (nói ngược trạng thái); "Theo tháng" ra tháng trước (P0 A5-01).
+- **Gốc:** C29 chốt bộ chọn 4 kiểu, sau đó mỗi PR thêm bộ chọn riêng (`ChonTuanSos`, 12 nút tháng Lịch thi, mỗi panel xuất một kiểu); không thành phần chung.
+- **Phương án [ĐỀ XUẤT]:** một thành phần **`Khoảng tuần`**: `Thời gian ‹ [W1 SEP ▾] → [W2 SEP ▾] ›  Mặc định` ngay trên dải lọc, đổi là áp dụng (không hộp, không "Áp dụng"); mỗi ô gõ được hoặc mở lịch tuần (`ONgay kieu="tuan"` — đúng luật 06/10); chọn ngược tự đổi chỗ; cùng tuần hợp lệ; năm chỉ hiện khi khác năm; ‹ › dời cả khoảng; khoảng nằm trên URL → Quay lại giữ đúng; 375 hai ô 44 px. Dáng **một tuần** (Lịch Test, Góp ý tuần) là cùng thành phần khoá một ô. Máy chủ chỉ còn `tu`, `den`; link cũ `kieu=thang` vẫn đọc được (đọc theo tháng chứa thứ Năm tuần đầu — **sửa luôn gốc P0**).
+- **Mặc định đề xuất:** Phân tích 2 tuần hoàn chỉnh trước (giữ C24) · Tutor + Bộ lọc thêm tuần trước → tuần này · Hiệu quả PA 8 tuần · Lịch Test / Góp ý tuần một tuần · Báo cáo đơn vị bỏ "Tháng" · Đang SOS bỏ hẳn bộ lọc thời gian (theo 9.1-4 "SOS hiện tại").
+- **Xét riêng (logic đặc thù):** Lịch thi lọc theo **tháng dự kiến thi** (nghiệp vụ, Rulebook dòng 258) — cùng dáng nhưng đơn vị tháng · ô **nhập** ngày / tuần (ngày thi, tuần bắt đầu, nhập bù Case) không phải bộ lọc, giữ `ONgay` · cửa sổ cố định "Đã xử lý 30 ngày / 7 ngày", "Sắp thi 6 tuần" là định nghĩa chỉ số, không phải ô chọn → giữ (hỏi có đổi sang tuần không).
+- **Vì sao:** Phân tích 5 → 1–2 thao tác; Tutor mặc định có dữ liệu (0 thao tác); 375 hết hộp phủ bảng; một cách chọn cho cả web.
+- **Trình tự:** GĐ1 SL1 bỏ 3 kiểu thừa trong hộp cũ (không đổi bố cục) → M0 dựng `Khoảng tuần` (thành phần mới — **cần mockup**) → thay theo màn. **Hỏi:** 11.8-7, 11.8-10.
+
+**11.1c "Đã có trên trang thì làm ngay đó" — 12 chỗ [ĐÃ KIỂM mã] (V2B-5)**
+Câu chủ SP "tại sao phải tạo thêm panel khi đã có bảng ngay trên trang" áp toàn web; luật: nội dung đã có trên trang → bậc 0–2 tại chỗ; chưa có → bậc 3 khung phải; bậc 5 chỉ để xem hồ sơ (thang 10.3).
+
+| # | Chỗ | Nay | Sau (bậc) |
+|---|---|---|---|
+| 1 | Hồ sơ lớp · nút **Nhập điểm** | panel toàn màn = **bản thứ 2** của lưới đã có cuối trang | cuộn + mở lưới (0–1) [ĐÃ CHỐT] |
+| 2 | Hồ sơ lớp · chip "78 bài chờ chấm" | đổi trang Lịch Test | như #1, chip đếm ô **đã tới hạn** (1) |
+| 3 | Hồ sơ lớp · chip "⚠ 7 việc quá hạn" (GV) | đổi trang Học viên & Lớp | lọc bảng tại chỗ, em quá hạn lên đầu (1) |
+| 4 | Hồ sơ lớp · chip "Thiếu n thông tin" | đổi trang | mở "Sửa thông tin" có sẵn, lọc em thiếu (4) |
+| 5 | Hồ sơ lớp · chip "8 chờ duyệt" (QL) | đổi trang Công việc | khung phải Chờ duyệt lọc lớp (3) — hỏi 11.8-17 |
+| 6 | Hồ sơ lớp · cột Theo dõi "Xử lý vi phạm" | đổi trang hồ sơ HV | tab Ý thức của lớp, mở hàng em (2) |
+| 7 | Hồ sơ lớp · cột Theo dõi "Nhập điểm L, R · MT1" | đổi trang Test | cuộn + mở lưới đúng lượt / ô (1) |
+| 8 | Lưới MT · "xếp ở panel Lộ trình" | đổi trang hồ sơ HV + panel | QL: hộp nhỏ chọn tuần; GV: chữ (2) |
+| 9 | Hồ sơ lớp · cột Đợt "MT3" | đổi trang hồ sơ HV | mở rộng hàng: 4 kỹ năng + nhận xét (2) |
+| 10 | Hồ sơ HV · "Ghi nhận 1 vi phạm" | hiện **3 chỗ** một màn | 2 chỗ (thanh đầu hồ sơ + nút trên dòng) |
+| 11 | Lịch Test · "Mở lưới đầy đủ ↗" | đổi trang `/nhap-diem` | "Cả lớp · mọi cột" tại chỗ (1) |
+| 12 | Công việc · panel nhập điểm · ↗ | rời sang Test | bỏ link, "Cả lớp" tại chỗ (1) |
+Giữ (đúng bậc): ⋯ hàng lớp "Nhập điểm" ở Học viên & Lớp (lưới không có trên trang — panel), "Xác nhận xử lý" (form 4–6 ô — khung phải), tên em → hồ sơ (xem). Cô Linh ước bớt ~6–10 lần đổi trang mỗi buổi.
+
+**11.1d Thi ↔ Test [ĐÃ CHỐT — nghiệp vụ; ĐÃ KIỂM — đếm bằng script] (V2A-03)**
+- **Vấn đề:** 549 chuỗi hiện ra có chữ "thi": **~295 dùng "thi" cho Test** (web 118 · shared 59 · Hướng dẫn 33 · máy chủ / thông báo / tên việc 85), ~208 đúng thi thật. Nhiều nhất: "Tuần thi" 79 · "Đã thi" (MT) 46 · "phần thi" 43 · "Không dự thi" 23 · "Dời lịch thi" (MT) 20. "Đã thi" và "Lịch thi" mỗi chữ **hai nghĩa** trên cùng màn (chip Kế hoạch Test vs "Đã thi · chờ KQ"; góc Lịch thi vs loại thẻ duyệt "Lịch thi" = dời MT). Danh sách đủ tệp:dòng: `v2a-thi-loai.tsv` của đợt rà.
+- **Mâu thuẫn nguồn đã chốt (phải sửa nguồn, không chỉ web):** `THUAT_NGU_2026-10-01.md` C-028 "Đã thi", C-035 "Không dự thi", C-036 "Đã huỷ phần thi" (cùng bảng B-014 lại nói Test = gọi chung bài kiểm tra); chữ trong Rulebook §17.7, dòng 762, 818; mockup 4 ô "Đã thi", mockup 5 cột "Tuần thi". Theo 9.1-1 (quyết định mới trái nguồn cũ → sửa nguồn) — **chỉ đổi chữ, không đổi luật**.
+- **Phương án [ĐỀ XUẤT]:** một luật **Thi = thi thật; còn lại = Test** (danh từ), **"làm bài"** (động từ / trạng thái): "Tuần Test", "Đã làm bài", "Không làm bài", "Huỷ kỹ năng", "Dời lịch Test", "Test lại", "Ghi chú lịch Test"; tab Phân tích "Kết quả thi" (gồm Mock + thi thật) → **"Kết quả Test"** (tab con Mock Test · Thi thật). Giữ: Dự kiến thi, Ngày thi, Kết quả thi thật, Sắp thi, Lịch thi (góc HV & Lớp). Một từ điển chữ + **phép kiểm chặn** chữ cũ trong tệp Test.
+- **Trình tự:** PR tài liệu (bảng thuật ngữ, chữ Rulebook, mockup 4 / 5) → **CHU-THI** ở GĐ1 (chỉ chữ, không mockup) gồm cả EN, Hướng dẫn, tệp xuất. **Hỏi:** 11.8-5.
+
+**11.1e Ảnh 5 — lỗi lọt qua kiểm [ĐÃ KIỂM bằng mã; bấm thử: chưa] (PTA)**
+- **Đã xác nhận:** `lamTaiCho` có `case 'yt_xem': return laLo(it)` (dòng 50, OV-13d) **trước** `case 'yt_xem': case 'phoi_hop'` (dòng 56, OV-13b) → với việc **"Ghi nhận n vi phạm mới · <em>"** của **một em**, nhánh "làm tại chỗ" của OV-13b **không bao giờ chạy**: bấm việc ở Công việc / Học viên & Lớp **đổi trang** sang hồ sơ lớp (`&loc=moi`) thay vì mở tại chỗ; việc này cũng bị loại khỏi hàng đợi "việc tiếp" (`HoTroHocVienTab.tsx:175`). Trong `PanelViec` khối "Ghi nhận" (dòng 124) là **mã chết**; nếu sau này ai sửa nửa vời `lamTaiCho`, việc "Ghi nhận" sẽ mở nhầm panel **"Xác nhận xử lý"** (dòng 105).
+- **Gốc:** hai PR song song (OV-13d 11:07, OV-13b 11:11 ngày 15/10) cùng sửa một `switch`, git gộp không báo xung đột; `tsc` không bắt `case` trùng; esbuild chỉ cảnh báo ở terminal, không làm `npm run check` đỏ — đúng nguyên nhân N3 (PR chia theo tệp, song song). Quét cả 830 tệp `.ts/.tsx`: chỉ có 2 cảnh báo này.
+- **Cần kiểm chứng:** bấm thử trên demo (GV 7, Công việc, việc "Ghi nhận … vi phạm mới" một em) để thấy đổi trang — làm ở session code khi sửa.
+- **Sửa [ĐỀ XUẤT, GĐ1 CV-LOI]:** theo ý OV-13b — "Ghi nhận" một em làm tại chỗ (nếu II.2 làm lại Ý thức thì dùng thành phần mới); gỡ `case` trùng; thêm phép kiểm: **cảnh báo esbuild = lỗi** trong `npm run check` (+ luật `no-duplicate-case`). **Hỏi:** 11.8-18.
+
+### 11.2 Học viên & Lớp (I.2–I.6)
+- **Góc "Cần làm" (I.3) [ĐỀ XUẤT: BỎ] (V2A-04):** bảng 5 cột — "Học viên" mà 8/10 hàng là "Cả lớp · n em", có ô trống; "Việc" chip xám; "Người giữ" (sai thuật ngữ, đúng là "Người phụ trách"); "Hạn" 2 dòng; nút "Mở" không nói làm gì; đầu nhóm đếm theo trang (sai); GV thấy cả "Chờ duyệt", "Thiếu thông tin" không phải việc của GV; QT Monbay 181 việc trong khi Công việc cùng chi nhánh 84 (cùng nguồn `/my-work`, khác cách đếm). **Mục đích thật:** "lớp nào tồn việc gì, của ai, trễ bao lâu" — chính là **hàng lớp**.
+  Thay thế: chip "⚠ n quá hạn" trên hàng lớp → **dải việc của lớp mở ngay dưới hàng** (mỗi việc một dòng 40 px: Việc · Người phụ trách · Hạn · nút động từ → cùng panel Công việc; cùng hàm đếm) · "Thiếu TT n" → Sửa cả lớp đúng cột · "n chờ duyệt" → nhóm Chờ duyệt ở Tổng quan lọc lớp · **TVV** (không có trang Công việc) → khối việc ở **Tổng quan TVV** (trùng 9.2-13). Bốn tình huống thật đều ít bước hơn hoặc bằng (1 / 1 / 1+điền / 1 so với 1–3 / 3 / 2+n / 3). Phương án dự phòng nếu chủ SP muốn giữ: bảng phẳng "Việc · Học viên / Lớp · Người phụ trách · Hạn · [nút động từ]", đếm toàn bộ, bỏ lọc phụ của GV.
+- **Ô tick xuất Excel (I.4) [CHƯA CHỐT → khuyến nghị phương án 3] (V2A-05):** đo: ô tick chỉ làm bảng cao thêm **0,5 %** (hàng dày là do ô 3–4 dòng — 11.1a) nhưng chiếm 12 % cột tên + 34 điều khiển / lớp; **lỗi luồng:** "Chọn tất cả" chỉ lấy lớp **đang mở ở trang này** → "xuất cả chi nhánh bỏ 2 em" ≈ 28 bấm qua 2 trang; đổi bộ lọc mất hết chọn. A (bỏ, xuất theo phạm vi) thua khi cần bớt em (phải sửa Excel); B (giữ chọn, gọn) giữ lỗi "chỉ lớp đang mở". **Phương án 3:** bỏ ô tick khỏi bảng; panel Xuất có khối **"Học viên · n"** (gom theo lớp, chọn sẵn hết, ô tìm, tick bỏ em, nút "Xuất 49 HV") — một chỗ chọn cho Tất cả / Đang SOS / Lịch thi / TVV-CX: 5 em SOS 3 lớp 10–11 → 8 bấm; cả chi nhánh bỏ 2 em ≈ 28 → 6. "Chọn nhiều" ở hồ sơ lớp (thao tác hàng loạt) giữ.
+- **Lịch thi (I.6.1) [ĐỀ XUẤT] (V2A-06):** nay 4 nút Kết luận + 1 ô ghi chú mỗi hàng (34 nút / 10 hàng), 12 nút tháng (mockup vẽ một ô chọn), 41/45 em "chưa có dự kiến thi" trộn chung bảng, không nhóm theo trạng thái; **dải đếm cộng sai** (chọn 11/2026: "1 HV" nhưng "1 giữ tháng + 1 cần xác nhận"). Đề xuất: lọc **Tháng dự kiến [10/2026] → [11/2026]** (mặc định tháng này → tháng sau); **nhóm theo trạng thái** (Chưa chốt ngày — đã tới tháng · Đã chốt ngày · Dự kiến · Chưa có tháng thi — gập); **hàng một dòng ~44 px**: Học viên (link hồ sơ ↗, dòng phụ lớp · TVV) · Gần nhất "MT3 · 6.0 / 6.5 ✗" · Target · **Lịch thi** (chip trạng thái) · Ghi chú (sửa tại chỗ) · **[Chốt ngày] [Dời tháng]**; **mở rộng dưới hàng**: 4 kỹ năng MT gần nhất so kỳ vọng · các Test sắp tới · PA "đến lúc thi" · GVCN · lịch sử lịch thi (ai đặt / chốt, lúc nào) · ghi chú cũ. 375 thẻ 2 dòng. Nút / hàng 4 → 2; 10 hàng ≈ 1 màn.
+- **"Ghi chú họp" → "Ghi chú" + "Cần xác nhận" (I.6.2) [ĐÃ KIỂM] (V2A-07):** đổi tên ở đầu cột, ô nhập, cột tệp xuất, Lịch sử HV (đang gọi "Ghi chú lịch thi" — trùng tên ghi chú lịch **MT**). **"Cần xác nhận"** = một trong 4 kết luận buổi họp, ý định (mockup 5) là "đã bàn, còn chờ phụ huynh / HV xác nhận"; nhưng mã cho thấy nó **không đổi lịch, không sinh việc, không ai phụ trách, không hạn** (đã chốt 19/10 "không tự tạo việc"), chỉ hiện ở dải đếm → **về đầu ra giống hệt "chưa có kết luận"**; lý do chờ nằm ở ghi chú. Đề xuất: bỏ hai nút "Cần xác nhận" và "Giữ tháng"; trạng thái **tự suy** (Dự kiến · Chưa chốt ngày · Đã chốt ngày); lý do ghi vào "Ghi chú"; dữ liệu cũ giữ trong DB, không migrate. (Nếu chủ SP muốn giữ "đã bàn, còn treo": dòng phụ "đã bàn 14/10" tự ghi khi sửa Ghi chú — không thêm nút.)
+- **Tháng / ngày thi (I.6.3) [ĐÃ CHỐT — nghiệp vụ; ĐÃ KIỂM mã] (V2A-08):**
+  - DB đã đủ 3 mức: tháng (`exam_month`) · tuần (`exam_period_id`) · ngày (`exam_date`). Demo: 101 lộ trình chưa có gì · 16 chỉ tháng · 8 có tuần không ngày · 1 có ngày.
+  - **LỖI P1 [ĐÃ KIỂM — mã; PTA kiểm lại `tongKetLoTrinh.ts:118-119`]:** khi chưa có ngày, máy lấy **ngày cuối tháng dự kiến làm ngày thi** (và Chủ nhật của tuần dự kiến) → hết tháng mà chưa ai chốt ngày, em tự thành **"Đã thi · chờ KQ"**, hàng tô màu "đã thi", GVCN nhận việc "Cập nhật kết quả thi thật" **có hạn**, quá hạn đỏ — trái luật vừa chốt. Từ **01/12** mọi em dự kiến 11/2026 chưa có ngày sẽ dính. Kèm: ô "Chốt ngày" ở Lịch thi **chặn ngày đã qua** (em đã thi thật không ghi được); hồ sơ HV thi 17/09 (còn 3 ngày) ghi "Sắp tới: Chưa có mốc"; "Thi thật · chưa có ngày" hiện cho em **chưa có cả tháng**; một dữ liệu 4 dạng chữ ("17/09/2026", "NOV 2026", "11/2026", "W2 JAN 2027").
+  - **Đề xuất:** **một hàm `trangThaiLichThi`** dùng chung cho hàng HV, đầu hồ sơ, Tổng quan, Công việc, Lịch thi, tệp xuất: chưa có · dự kiến · **B chưa chốt ngày** (có tháng, chưa ngày, tháng dự kiến ≤ tháng này) · **A đã chốt ngày** · đã thi chờ KQ (**chỉ** khi có ngày và ngày đã qua) · …
+    Hiển thị (không chỉ bằng màu, không lẫn màu SOS / kết quả): **A** chip "Thi 21/11 · còn 9 ngày" họ màu "đã thi" (theo gợi ý chủ SP) + biểu tượng lịch ✓ · **B** chip "Chưa chốt ngày thi · 11/2026" **viền đứt, trung tính** + ◌ · Dự kiến chữ thường · Chưa có chữ mờ. Đặt ở: hàng HV (gộp "Dự kiến thi" + "Sắp tới" thành cột **"Thi thật"**), **đầu dòng 2 thanh thông tin hồ sơ HV**, nhóm "Lịch thi thật · n chưa chốt ngày" trong "Cần bạn quyết" (Tổng quan QL), Tổng quan TVV, Công việc.
+    **Việc "Chốt ngày thi"**: sinh khi B đúng (tính khi đọc — không migrate, không cron, như "Điền Target"); **không hạn**, không vào số quá hạn / chuông; tắt khi có ngày · dời tháng · có kết quả / "Không thi" · em tạm dừng / lưu trữ; làm tại chỗ bằng **hộp nhỏ neo tại chip** [ngày] · [Dời sang 12/2026] · Ghi chú (2 bấm); cho chọn ngày đã qua (hỏi một dòng "Em đã thi 28/11?" → vào luồng Đã thi).
+  - **PR máy chủ LT-SV (GĐ1):** hàm + phép kiểm bảng trạng thái · bỏ nhánh "tháng → ngày thi" ở `ngayThiSauThi`, cận dưới `thiThat.ts:132-133`, `profile.ts:802` (kiểm trước bằng lệnh chỉ đọc: lộ trình nào đang "Đã thi" chỉ nhờ tháng) · nhóm việc `chot_ngay_thi` · "Sắp thi" TVV tách A / B · nhận ngày đã qua · "Sắp tới" hồ sơ HV gồm kỳ thi thật · một hàm nhãn ("11/2026", "W2 JAN/2027", "21/11/2026").
+  - **Hỏi:** 11.8-2, 11.8-3.
+- **Cụm chữ khác (I.2) (V2A-02):** "Mọi lúc ✕" → bỏ (khoảng có ✕ riêng) · "Chọn khoảng" → bỏ · "Người giữ" → "Người phụ trách" · "Lịch hiện tại" → "Lịch thi" · "Gồm HV chưa có dự kiến thi · 41" → nhóm gập "Chưa có tháng thi · 41" · "Chọn tất cả HV đang hiện ở trang này" → bỏ · "Lọc trong danh sách này…" → "Tìm học viên, lớp" · "Kết quả đến nay" (Đang SOS) → "Kết quả PA" · "Loại thi" (tab con) → "Loại" · nhãn "Phạm vi: / Loại lớp: / Xếp:" trong ô chọn → bỏ tiền tố (M0). Bảng đủ ở V2A-02.
+
+### 11.3 Hồ sơ lớp (II.1–II.3)
+- **Nhập điểm MT tại chỗ [ĐÃ CHỐT workflow; ĐÃ KIỂM hiện trạng] (V2B-3):** nay nút "Nhập điểm" mở **panel toàn màn** chứa **bản thứ hai** của lưới đang mở sẵn cuối trang (lưới vẽ dưới **mọi** tab, +~2 200 px), cả hai mở **MT3** dù 29/32 em chưa tới tuần; "Chỉ ô còn trống" tắt; lưới cuối trang không đặt con trỏ. GV 7 nhập bài L thiếu: **4 bấm + 1 panel + phải nhớ lượt nào quá hạn**.
+  Đề xuất trong khuôn đã chốt: (1) lưới **gập** thành một thanh "Điểm Mock Test · MT1 ⚠ 4 ô quá hạn · MT3 2 ô tuần này ›" (đếm ô **đã tới hạn**, theo vai) — chỉ ở tab Học viên · (2) "Nhập điểm" (và chip "⚠ n ô quá hạn chấm" thay "78 bài chờ chấm") → mở + cuộn để thanh công cụ lưới nằm ngay dưới đầu trang · (3) chọn sẵn lượt có **ô quá hạn của người xem** sớm nhất · (4) bật sẵn "Chỉ ô còn trống" (= ô **tôi** nhập được) · (5) mở luôn hộp nhập ô trống đầu, Enter = "Lưu · em tiếp ›" (đã có) · (6) công cụ một hàng **ngoài** khung bảng · (7) lưu từng ô giữ luật hiện tại (đang lưu / đã lưu / lỗi, không mất chữ) · (8) em chưa có lịch lượt này gom một dòng; **QL có "Xếp lịch MT3"** hộp nhỏ chọn tuần (GV chỉ thấy chữ — Rulebook §20.9) · (9) URL `?diem=mt:1` → Quay lại đúng lượt, đúng chỗ · (10) 375 dùng `MotKyNang` một kỹ năng · (11) panel `PanelNhapDiemLop` **chỉ còn** cho lối vào **ngoài** hồ sơ lớp (⋯ hàng lớp, Công việc). → **1 bấm**; trang tab Học viên 4 800 → ~2 650 px.
+- **Từng bảng của Hồ sơ lớp (V2B-4):** 4 tầng điều hướng (tab → cách xem → tab con → 375 "Theo xử lý / Theo vi phạm"); trang 3 000–5 400 px (375: ~10 400 px).
+  **Tổng hợp** 12 cột, hàng 46–71 px, "Thiếu n" ở 30/33 em, cột ⋯ 154 px cho nút 28 px, "Theo dõi" đổi trang → `Bang` một dòng / em: Học viên (+ chip SOS) · Target · Dự kiến thi · MT gần nhất · OVR L R W S (mốc cũ mở rộng hàng) · Việc tiếp (mở tại chỗ) · ⋯ · **Góp ý hàng tuần** 33 em × 4 ô = 132 ô trống → GV chỉ có ô môn mình, cột khác chỉ đọc gập · **Cần hỗ trợ** tiêu đề IN HOA 11 px bị phân trang chen giữa, thẻ em giống nhau → `Bang` có hàng nhóm theo em · **Kết quả đầu ra 1 đợt** ở lớp FT là kết quả lớp **trước** (BE) → đổi tên (hỏi) · **Phân tích lớp** "6/11" không chú thích → thêm "đạt / có điểm".
+- **Ý thức & Phối hợp (II.2) [ĐỀ XUẤT phương án A] (V2B-6):** nay hai khung (trái: em theo 5 nhóm IN HOA; phải **mặc định** dòng thời gian **45 vi phạm** cả lớp, phần lớn đã xử lý) + Phối hợp ở **tab con khác**; khung trái không có nút; "Quá hạn" là chip nền (trái DESIGN.md "quá hạn chỉ chữ + ⚠"); 375 tab "Phối hợp S…" **bị cắt**; Rulebook §19 nói hồ sơ lớp **mặc định theo học sinh** — web mặc định theo vi phạm. Tải nhận thức **6/8 trượt**.
+  **A — một bảng theo em, việc ngay trên hàng, mở rộng tại chỗ:** lọc `Cần làm · 8 em | Tất cả em · 33 | Nhật ký vi phạm` (mặc định Cần làm, xếp quá hạn → bắt buộc → hôm nay → chờ QL → mới → phối hợp); cột **Học viên · Việc cần làm · Hạn · Vi phạm 2 tuần · Thang · Phối hợp SOS · [một nút động từ] ▸**; ▸ mở 3 cột ngay dưới hàng: Thang (+ Xác nhận xử lý · Đề xuất QL duyệt) · Vi phạm chưa xong (+ "n đã xử lý ▾") · Việc phối hợp (Xác nhận / Bỏ ▾ · Sửa · Đưa lại Cần xử lý · + Thêm việc). Quá hạn = chữ cam + ⚠; một nút chính / hàng; GVBM không có nút xử lý; "Chọn nhiều" giữ; 375 thẻ em + chi tiết toàn màn; **bỏ tab con**.
+  So B (giữ hai khung, sửa) và C (giữ hai tab con, gọn từng tab): A thắng ở xử lý quá hạn **5 → 3 bấm**, xác nhận phối hợp **4 bấm + dò ~1 700 px → 3 bấm, 0 dò**, xem nhanh một em **3–4 bấm + đổi trang → 1–2**, phần Ý thức **~2 800 → ~700 px**, đúng §19. Giữ nguyên nghiệp vụ (thang 6 bậc, Ghi nhận biến mất khi bắt buộc, WL 3 / ngoài thang qua QL duyệt, hạn 5 ngày, phối hợp không phải vi phạm, xác nhận / bỏ kèm lý do).
+- **Phối hợp SOS — nhóm giống nhau (II.3) (V2B-7):** 6 thẻ cùng nền, cùng viền; câu "Học thuật theo dõi ở bảng kỹ năng" **lặp mọi thẻ**; mức SOS chỉ là chữ (không `ChipSos`); **9 nút "Xác nhận" màu nhấn**; việc xong cùng cỡ việc chờ. Luật thị giác cho mọi "nhóm lặp" (toàn web): **cấp em** tên 15 / 700 + `ChipSos` + một dòng "MT2 · W2 SEP", xếp SOS cao trước · **cấp việc** thụt 16 px, 14 / 400, nền hàng con, trạng thái **ký hiệu + chữ** ở cột cố định ("○ Cần làm" · "✓ Xong 13/09 · Trần Ngọc Hà" · "– Đã bỏ: lý do") · **chỉ việc chờ đầu tiên của em có nút chính**, việc khác nút viền · việc xong gập "✓ 1 việc đã xong ▾" · bỏ câu lặp (đưa vào ⓘ) và chip "Đang làm" (đã có "1/2"). Phân cấp bằng **cấu trúc + chữ + một màu** (không tô nền thẻ theo mức — sẽ thành nghĩa màu thứ sáu). ~1 700 → ~450 px. Cùng gốc ở: Cần hỗ trợ, Lịch Test khối 1, Kế hoạch Test, Tổng quan "Cần bạn quyết", nhóm việc Công việc.
+
+### 11.4 Hồ sơ học viên (III.1) [ĐỀ XUẤT] (V2B-8)
+- **Vấn đề [ĐÃ KIỂM]:** một việc "Ghi nhận 1 vi phạm mới" hiện **3 chỗ** trên một màn (thanh "VIỆC CỦA TÔI" đầu hồ sơ · thanh trong tab · nút trên dòng); khối Thang có **nút chính "Xác nhận xử lý"** trong khi việc thật là Ghi nhận (hai nút chính tranh nhau); ô "Ý thức · WL 1" ở dải 4 ô lặp Thang; hai tab con; chữ "XỬ LÝ" in hoa 11 px; 375 ~3 200 px.
+- **Đề xuất — cùng ngôn ngữ với 11.3 A, mật độ một em (mở sẵn, không phải mở rộng):** Thang một dòng → hai cột **Vi phạm chưa xong | Phối hợp SOS** (xếp chồng ở 375) → nút **theo việc** (bắt buộc / quá hạn: "Xác nhận xử lý" là nút chính; chỉ có vi phạm mới: "Ghi nhận" trên dòng là chính, "Xác nhận xử lý" viền) → **Nhật ký · n ▾** gập (vi phạm + lần xử lý + việc phối hợp, lọc). Việc hiện tại chỉ ở thanh đầu hồ sơ + nút trên dòng (bỏ thanh trong tab); bỏ hai tab con; tiêu đề không in hoa. Thang, dòng vi phạm, dòng phối hợp, nhãn trạng thái **cùng component** với hàng em mở rộng ở hồ sơ lớp — khác mật độ: lớp = một hàng / em + mở rộng; HV = mở sẵn. Thấy đủ tình trạng **0 bấm** (nay 1–2); một việc một chỗ.
+- **Trình tự:** màn mới **M3b — Hồ sơ HV · Ý thức** (cùng mockup với 11.3 A).
+
+### 11.5 Phân loại theo yêu cầu IV của chủ SP
+**1. Đã chốt:** bộ lọc thời gian chỉ "Tuần bắt đầu → Tuần kết thúc" · "Tuần thi của kết quả" → "Thời gian" · Thi ↔ Test · "Ghi chú họp" → "Ghi chú" · luật tháng thi / ngày thi + việc "chốt ngày thi" không hạn · lưới Điểm MT gập mặc định · nút Nhập điểm cuộn + mở lưới, không panel phải · sửa triệt để căn bảng toàn hệ thống · overhaul các khu được chỉ định (Cần làm, Lịch thi, mọi bảng Hồ sơ lớp, Ý thức / Phối hợp lớp + HV).
+**2. Đang nghiên cứu, chưa chốt (đã có khuyến nghị):** ô tick xuất Excel → phương án 3 (11.2) · cột bảng Cần làm → khuyến nghị bỏ góc, có phương án dự phòng (11.2) · hiển thị Sắp thi A / B (11.2) · bố cục Ý thức / Phối hợp → A (11.3, 11.4) · thiết kế lại bảng Hồ sơ lớp / HV → hệ thống `Bang` + từng bảng (11.1a, 11.3). Tất cả **cần mockup** trước khi code, trừ BANG-1 (đã có mockup 6 khung 3).
+**3. Cần xác minh:**
+| Việc | Trạng thái |
+|---|---|
+| Ý nghĩa "Cần xác nhận" | **Đã xác minh** bằng mã + đặc tả 19/10 + mockup 5 + DB demo: "đã bàn, còn chờ" nhưng đầu ra = chưa có kết luận (11.2). Bỏ hay giữ: chủ SP quyết (11.8-6) |
+| Lỗi ảnh 5 | **Đã xác nhận bằng mã** (11.1e); còn bấm thử trên web |
+| Gốc bảng xô lệch | **Đã xác minh** bằng đo DOM + mã + `git show` trước / sau OV-15a (11.1a); 3 bảng còn nghi (`PhanTichGiaoVien`, `BangDiemLopThuong`, `CatalogAdmin`) đo khi chuyển |
+| Bộ lọc thời gian đặc thù | **Đã kiểm kê** 14 chỗ (11.1b): Lịch thi (tháng — nghiệp vụ), ô nhập ngày / tuần (không phải bộ lọc), cửa sổ cố định 7 / 30 / 60 ngày, 6 tuần (định nghĩa chỉ số); Báo cáo tháng in ra dùng khoảng tuần + nhãn tháng tự ghi |
+| "Tháng = đã thi" trên dữ liệu thật | [GIẢ THUYẾT trên web] — kiểm bằng demo riêng đặt ngày 01/12/2026, hoặc lệnh chỉ đọc trên DB thật trước khi sửa (LT-SV) |
+
+### 11.6 Mục cũ hết hiệu lực / đổi
+- **Hết hiệu lực:** 7.5 "bỏ khối Điểm MT cuối trang" · 9.2-17 · bảng GĐ2 dòng M3 "bỏ khối lưới" → thay bằng 11.3 (đã đánh dấu tại chỗ).
+- **Đổi:** C29 (bộ chọn 4 kiểu) → `Khoảng tuần` · C06 "số căn giữa" hiện thực bằng `index.css:267` → bỏ luật này, căn theo kiểu cột (chờ 11.8-4) · 9.2-14 bỏ Cần làm → giữ + lối thay thế (11.8-8) · bảng thuật ngữ 01/10 C-028 / C-035 / C-036 + chữ Rulebook + mockup 4 / 5 → sửa theo luật Thi ↔ Test · mockup 5 khung 1 (Lịch thi 4 nút Kết luận) và khung 2 (danh sách có cột tick) → sửa theo 11.2 · luật CLAUDE.md "dùng lại component sẵn có / bố cục đã khoá" **không áp** cho bảng và ô điểm (chủ SP cho phép thay — ghi vào QT-UX).
+
+### 11.7 Cập nhật kế hoạch (mục 8)
+- **GĐ0 · QT-UX** thêm: luật "Thi / Test", "kiểu cột", "không giữ component cũ khi nó là gốc lỗi"; **PR tài liệu** sửa bảng thuật ngữ, chữ Rulebook, mockup 4 / 5 / 6 cho khớp quyết định vòng 1–2. **CONG-CU** thêm `do-bang` (đo lệch bảng) + quét cảnh báo esbuild.
+- **GĐ1 (trước deploy)** thêm / mở rộng:
+  - **SL1** + bỏ 3 kiểu thời gian thừa trong `BoChonThoiGian` (chỉ còn Từ tuần – Đến tuần) + đọc link cũ `kieu=thang` đúng tháng (sửa gốc P0) · `luotMacDinh` theo ô quá hạn của người xem + chip đếm ô **đã tới hạn** · dải đếm Lịch thi cộng sai.
+  - **LT-SV (mới, máy chủ, tự merge được):** `trangThaiLichThi` + bỏ "tháng = ngày thi" + việc `chot_ngay_thi` không hạn + "Sắp tới" hồ sơ HV + nhận ngày đã qua.
+  - **CHU-THI (mới, chỉ chữ):** ~295 chuỗi Thi → Test + "Thời gian" + "Ghi chú" + từ điển + phép kiểm; sau PR tài liệu.
+  - **CV-LOI** + sửa `case` trùng `yt_xem` (Ghi nhận tại chỗ) + `npm run check` đỏ khi có cảnh báo esbuild.
+  - **BANG-0 + BANG-1** (nếu chủ SP đồng ý 11.8-1): nền bảng + lưới điểm 6 lối vào; duyệt bảng mẫu + ảnh cặp.
+  - Hệ quả: GĐ1 dài hơn → deploy muộn hơn; đổi lại bản chính không mang lỗi "tháng = đã thi" (từ 01/12) và lưới điểm lệch.
+- **NEN** thêm `ODiem` + thang chữ trong bảng (cùng BANG-0).
+- **GĐ2:** **M0** + `Khoảng tuần` (mockup) · **M3 Hồ sơ lớp**: lưới gập + Nhập điểm tại chỗ + `Bang` cho mọi bảng + Ý thức A + 12 chỗ "làm tại đó" · **M3b (mới) Hồ sơ HV · Ý thức** · **M4**: bỏ Cần làm + hàng lớp mở dải việc + Lịch thi mới + chip A / B + cột "Thi thật" + panel Xuất chọn em · **M5**: Lịch Test dáng một tuần, gộp 2 panel xuất · **M7**: Tổng quan TVV có khối việc (gồm Chốt ngày thi).
+- **Mockup mới cần (soạn sau khi chủ SP gửi xong góp ý, 1440 tối + 375 sáng, đủ trạng thái):** bảng mẫu `Bang` / `ODiem` · `Khoảng tuần` · Lịch thi (sửa mockup 5) + chip A / B + hộp Chốt ngày · panel Xuất có khối chọn em · hàng lớp mở dải việc · Hồ sơ lớp (tab Học viên lưới gập, Ý thức A) · Hồ sơ HV Ý thức.
+
+### 11.8 Câu hỏi vòng 2 (hỏi gộp cùng 10.7 + 9.2 khi chủ SP gửi xong góp ý; quan trọng trước, mỗi câu có khuyến nghị)
+1. **Sửa lệch bảng trước deploy:** đưa BANG-0 + BANG-1 (nền bảng + lưới điểm, ~13 tệp, không đổi bố cục, theo mockup 6 khung 3) vào GĐ1? — **Có.** (Nếu buộc deploy sớm: vá tạm `index.css:267`, ghi rõ tạm.)
+2. **"Tháng = đã thi" + việc Chốt ngày thi (LT-SV) ở GĐ1 trước deploy?** — **Có** (không thì từ 01/12 em chỉ có tháng 11 bị đánh "Đã thi", GVCN nhận việc sai).
+3. **Năm điểm luật lịch thi:** (a) đã có **tuần** chưa có ngày = "Chưa chốt ngày"? — **Có**, chip "W2 JAN · chưa chốt ngày" · (b) "đến tháng" = mùng 1 tháng dự kiến? — **Có**, không nhắc sớm hơn · (c) ai làm việc Chốt ngày thi? — **TVV phụ trách em; không có TVV → QL chi nhánh; GVCN chỉ thấy chip** · (d) dời tháng? — **mặc định tháng sau, cho chọn tháng khác** · (e) lớp thường có trạng thái B + việc? — **Chỉ Fast Track; lớp thường chỉ hiện chip.**
+4. **Căn cột điểm:** C06 "số căn giữa" (18/10) và mockup 6 khung 3 (19/10) "căn trái, ký hiệu trước số" khác nhau. — **Căn giữa mọi cột số / điểm, lấy từ mockup 6 phần ký hiệu trước số + ô rộng cố định**; tiêu đề cùng căn.
+5. **Chữ cho Test:** "Tuần Test", "Đã làm bài", "Không làm bài", "Huỷ kỹ năng", "Dời lịch Test", "Test lại", tab "Kết quả Test"; sửa luôn bảng thuật ngữ 01/10, chữ Rulebook, mockup 4 / 5? — **Có.**
+6. **Lịch thi bỏ "Giữ tháng" + "Cần xác nhận"**, trạng thái tự suy + 2 nút "Chốt ngày" · "Dời tháng", lý do ghi vào Ghi chú, dữ liệu cũ giữ? — **Có.**
+7. **Lịch thi lọc theo tháng** (ngoại lệ của luật "chỉ tuần"): "Tháng dự kiến [10/2026] → [11/2026]", mặc định tháng này → tháng sau, nhóm theo trạng thái? — **Có.**
+8. **Bỏ góc "Cần làm"**, thay bằng chip "⚠ n quá hạn" mở dải việc dưới hàng lớp; việc của TVV lên Tổng quan TVV? — **Có.**
+9. **Xuất Excel — phương án 3** (bỏ ô tick khỏi bảng, chọn / bỏ em trong panel Xuất, áp mọi danh sách)? — **Có.**
+10. **Mặc định khoảng thời gian** từng trang (11.1b) + cửa sổ cố định 7 / 30 / 60 ngày giữ nguyên + Báo cáo tự ghi "(tháng 09/2026)" khi khoảng trùng đủ tuần của tháng? — **Đồng ý cả gói.**
+11. **Ý thức & Phối hợp lớp — phương án A** (một bảng theo em, mặc định "Cần làm", dòng thời gian thành "Nhật ký" gập, bỏ hai tab con — chỉ đổi cách trình bày, Rulebook §19 không đổi)? — **A.**
+12. **Hồ sơ HV:** bỏ thanh việc trong tab Ý thức (giữ thanh đầu hồ sơ), bỏ hai tab con, hai cột Vi phạm chưa xong | Phối hợp, Nhật ký gập? — **Có.**
+13. **Duyệt hệ thống bảng một lần:** chủ SP duyệt bảng mẫu `/dev/thanh-phan` + ảnh cặp 3 bảng (lưới MT, Tổng hợp, Học viên & Lớp); PR chuyển bảng sau chỉ cần ảnh cặp? — **Có.**
+14. **Ô điểm:** W1 / W2 có ✓ / ✗ như L / R / S (mockup 6)? Chữ phụ một dòng, ưu tiên "thiếu nhận xét" > "vắng" > "n câu"; Học viên & Lớp bỏ dòng "W1 · W2" dưới W? — **Có / có.**
+15. **Nhập điểm:** thanh gập chỉ ở tab Học viên? Bấm Nhập điểm mở luôn hộp nhập ô trống đầu? QL xếp lịch MT ngay tại lưới bằng hộp nhỏ? — **Có / có / có.**
+16. **Phối hợp SOS:** một nút chính / em, việc xong gập, bỏ câu "Học thuật theo dõi ở bảng kỹ năng" và chip "Đang làm"? — **Có.**
+17. **Nhỏ (Hồ sơ lớp):** chip "8 chờ duyệt" mở khung phải Chờ duyệt lọc lớp tại chỗ · Góp ý tuần: GV chỉ ô môn mình · lớp FT đổi "Kết quả đầu ra 1 đợt" → "Kết quả lớp trước"? — **Có / có / có.**
+18. **Ảnh 5:** sửa ở GĐ1 theo ý OV-13b (Ghi nhận một em làm tại chỗ) + cảnh báo esbuild làm `npm run check` đỏ? — **Có.**
+
+---
+
 ## Phụ lục
 
 ### A. Báo cáo chi tiết từng phần (thư mục `2026-10-20-danh-gia-ux/`)
@@ -806,6 +966,9 @@ Chữ nhỏ / số không màu / hover mờ ở chỗ khác: phụ lục `v1-nen
 | [`a6-nguyen-nhan-lech-mockup.md`](2026-10-20-danh-gia-ux/a6-nguyen-nhan-lech-mockup.md) | ma trận truy vết mockup → đặc tả → kế hoạch → PR → web; N1–N14; Q1–Q13 | — |
 | [`a7-so-lieu-thuat-ngu.md`](2026-10-20-danh-gia-ux/a7-so-lieu-thuat-ngu.md) | bản đồ 23 con số, kiểm kê thuật ngữ, lỗi nền, số request mỗi trang | 8/16 · 29 mã |
 | [`b-may-do.md`](2026-10-20-danh-gia-ux/b-may-do.md) | máy dò impeccable, lớp phủ 5 trang, `do-khung` 276 lần đo, đo DOM 41 lần | 10 mã |
+| [`v1-nen-chung.md`](2026-10-20-danh-gia-ux/v1-nen-chung.md) · [`v1-tong-quan.md`](2026-10-20-danh-gia-ux/v1-tong-quan.md) | góp ý vòng 1: chữ, màu số điểm, hover, menu · Tổng quan làm lại | mục 10 |
+| [`v2a-hoc-vien-lop.md`](2026-10-20-danh-gia-ux/v2a-hoc-vien-lop.md) | góp ý vòng 2 nhóm I: bộ lọc thời gian (14 chỗ), Thi ↔ Test (549 chuỗi), Cần làm, ô tick xuất, Lịch thi, tháng / ngày thi | mục 11 · V2A-01…09 |
+| [`v2b-bang-ho-so.md`](2026-10-20-danh-gia-ux/v2b-bang-ho-so.md) | góp ý vòng 2 nhóm II–III: gốc bảng xô lệch (đo DOM 46 trang), ô điểm, Nhập điểm tại chỗ, bảng Hồ sơ lớp, Ý thức / Phối hợp lớp + HV | mục 11 · V1…V9 |
 
 Đường ảnh trong phụ lục (`SCR\anh\…`) là ảnh tạm của đợt rà (1 789 ảnh, không lưu vào repo); ảnh tiêu biểu đã lưu ở mục B.
 
@@ -816,6 +979,7 @@ Chữ nhỏ / số không màu / hover mờ ở chỗ khác: phụ lục `v1-nen
 - **Học viên & Lớp:** `a3-hang-em-day-thieu-n` · `a3-plus1-giau-qua-han` · `a3-dang-sos-trang-1` · `a3-dang-sos-trang-2` · `a3-can-lam-bang-tat-ca` · `a3-ho-so-lop-luoi-diem-duoi` · `a3-mockup6-dang-sos`.
 - **Test:** `a4-lich-test-3-o-luoi-du-cot` · `a4-mockup-ba-khoi-luoi-gon` · `a4-chu-giai-sai-mau` · `a4-panel-chong-hop-lich` · `a4-trang-nhap-diem-theo-tuan` · `a4-panel-nhap-diem-theo-luot`.
 - **Phân tích / Tutor:** `a5-theo-thang-chon-09` → `a5-theo-thang-ra-08` · `a5-bao-cao` · `a5-panel-mat-ten-gv` · `a5-tutor-rong`.
+- **Vòng 2:** `v2-luoi-mt3-lech-cot` (ảnh 4 tái hiện) ↔ `v2-mockup6-luoi-diem` · `v2-ho-so-lop-y-thuc` · `v2-phoi-hop-sos-the-giong-nhau` · `v2-ho-so-hv-ghi-nhan-3-cho` · `v2-loc-them-tuan-thi-cua-ket-qua` · `v2-can-lam-ca-lop` · `v2-lich-thi-12-nut-thang`. Ảnh tạm của vòng 2 (208 tệp) ở scratchpad phiên `73e605ad-…`, không lưu repo.
 
 ### C. Cách đã chạy (để lặp lại ở GĐ4)
 Web demo cục bộ (worktree riêng, `npm run seed`, cổng riêng); công cụ chụp Playwright + Edge đăng nhập demo theo vai, cắt lát trang dài, tối đa 3 trình duyệt cùng lúc; chỉ đọc (chặn chữ Lưu / Xác nhận / Duyệt / Xóa / Gửi; agent a1 chặn mọi request ghi).
