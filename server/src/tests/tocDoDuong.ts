@@ -679,7 +679,7 @@ export const TRAN: Record<string, number> = {
   'GVCN /notifications': 13,
   'GVBM /notifications': 13,
   'GVCN_THUONG /notifications': 13,
-  'QT /notifications': 13,
+  'QT /notifications': 40,   // OV-15h1: QT vừa ghi (POST) ở phép kiểm trước → lần mở chuông này đồng bộ thông báo tự động ngay (`daGhi`), đo 33; không ghi thì vẫn ~13
   'QL /ke-hoach-test/lop?branchId=1': 22,   // PR-XLMT: +1 câu đếm "cần xếp lại"
   'GVCN /ke-hoach-test/lop?branchId=1': 13,
   'GVBM /ke-hoach-test/lop?branchId=1': 13,
