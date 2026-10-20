@@ -70,14 +70,18 @@ function gomTheoLop(w: Week, hienFt: boolean, hienThuong: boolean): DongLop[] {
 }
 
 /** `ct = null`: giáo viên xem lịch gộp hai khung (Q2). */
-export function LichSapToi({ branchId, ct }: { branchId: number | null; ct: ChuongTrinh | null }) {
+export function LichSapToi({ branchId, ct, duLieu }: { branchId: number | null; ct: ChuongTrinh | null;
+  /** OV-15h1: Tổng quan QL đã có dữ liệu trong `/tong-quan/ql` — không gọi `/highlights` lần nữa (`null` = đang tải). */
+  duLieu?: Data | null }) {
   const { homNay } = useNgayNghiepVu();
   const hep = useDienThoai();
   const [tab, setTab] = useThamSoUrl('lich-tuan', '0');   // PR-OV5b: tab tuần trên URL — Quay lại về đúng tuần
   const [moHet, setMoHet] = useState(false);
-  const { data, loading } = useApi<Data | null>(
-    `/highlights?${branchId ? `branchId=${branchId}` : ''}${thamSoCt(ct)}`.replace(/\?&/, '?'), [branchId, ct],
+  const tai = useApi<Data | null>(
+    duLieu !== undefined ? null : `/highlights?${branchId ? `branchId=${branchId}` : ''}${thamSoCt(ct)}`.replace(/\?&/, '?'), [branchId, ct],
   );
+  const data = duLieu !== undefined ? duLieu : tai.data;
+  const loading = duLieu !== undefined ? duLieu === null : tai.loading;
   if (loading) return <Card title="Lịch sắp tới"><Skeleton rows={3} /></Card>;
   if (!data || data.scopeEmpty || !data.weeks.length) return null;
 

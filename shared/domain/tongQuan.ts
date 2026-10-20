@@ -209,9 +209,22 @@ export function chonDiemDangChuY(ds: UngVienChuY[], ct: ChuongTrinh): DiemChuY[]
 
 // ------------------------------------------------------------------ bảng Theo chi nhánh (mockup 02 phương án A)
 /* OV-15d: + "Case chưa chốt PA" hai vùng bấm (HV / Case) — cột của Lớp cần chú ý (mockup 3). */
-export const COT_BANG = ['hocVien', 'duoiKyVong', 'sos', 'caseMo', 'thieuPa', 'duDuLieu', 'caseChuaChotHv', 'caseChuaChot'] as const;
+/* OV-15h1: + cột "Lớp cần chú ý" (mockup 3) — Chưa lịch · Chưa điểm · SOS 1 / 2 / 3 · Đã thi · chờ KQ; chỉ tính khi bảng ở chế độ chú ý (rỗng ở bảng chi nhánh). */
+export const COT_BANG = ['hocVien', 'duoiKyVong', 'sos', 'caseMo', 'thieuPa', 'duDuLieu', 'caseChuaChotHv', 'caseChuaChot',
+  'chuaLich', 'chuaDiem', 'sos1', 'sos2', 'sos3', 'daThiChoKq'] as const;
 export type CotBang = (typeof COT_BANG)[number];
 export const COT_BANG_DON_VI: Record<CotBang, 'hoc-vien' | 'case'> = {
   hocVien: 'hoc-vien', duoiKyVong: 'hoc-vien', sos: 'hoc-vien', caseMo: 'case', thieuPa: 'case', duDuLieu: 'hoc-vien',
   caseChuaChotHv: 'hoc-vien', caseChuaChot: 'case',
+  chuaLich: 'hoc-vien', chuaDiem: 'hoc-vien', sos1: 'hoc-vien', sos2: 'hoc-vien', sos3: 'hoc-vien', daThiChoKq: 'hoc-vien',
+};
+/**
+ * OV-15h1 (C23): phân rã "Case chưa chốt PA" — mỗi Case đúng MỘT nhóm (`trangThaiCaseV4` + PA), cộng đúng tổng. Thứ tự = thứ tự trong `?`.
+ * `khongTheoDoi` (thẻ "Không cần theo dõi" chờ QL) không có trong mockup — chỉ hiện khi > 0.
+ */
+export const NHOM_CASE_CHUA_CHOT = ['trongPa', 'choNhanXet', 'choXacNhanPa', 'choDuyetPa', 'paXong', 'khongTheoDoi'] as const;
+export type NhomCaseChuaChot = (typeof NHOM_CASE_CHUA_CHOT)[number];
+export const NHOM_CASE_CHUA_CHOT_LABEL: Record<NhomCaseChuaChot, string> = {
+  trongPa: t('Case trống PA'), choNhanXet: t('Chờ nhận xét / nguyên nhân'), choXacNhanPa: t('PA chờ xác nhận'), choDuyetPa: t('PA chờ duyệt'),
+  paXong: t('PA xong · chờ đóng Case'), khongTheoDoi: t('Chờ duyệt không theo dõi'),
 };

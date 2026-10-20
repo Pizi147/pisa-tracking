@@ -1,10 +1,12 @@
 import { db, theoLo } from '../db.ts';
 import {
-  COT_BANG, COT_BANG_DON_VI, METRIC_UNIT_LABEL, PERMISSIONS, soSanhLop, type ChuongTrinh, type CotBang,
+  COT_BANG, COT_BANG_DON_VI, METRIC_UNIT_LABEL, PERMISSIONS, soSanhLop, tachBaiId, type ChuongTrinh, type CotBang,
 } from '../../../shared/domain/index.ts';
 import { forbidden, badRequest } from '../util.ts';
 import { scopeFor, type Principal } from '../permissions.ts';
-import { studentsInScope } from './danhGia.ts';
+import { latestAttempts, studentsInScope } from './danhGia.ts';
+import { sauThiTheoEm } from '../loTrinh/thiThat.ts';
+import { demoToday } from '../demoConfig.ts';
 import { locTheoChuongTrinh, lopCuaTap } from './chuongTrinh.ts';
 import { metricSet, rowsFor, type MetricRow } from './metrics.ts';
 
@@ -25,11 +27,14 @@ export type OBang = { n: number; mau?: number };
 export type HangBang = {
   khoa: string; id: number; loai: 'chi-nhanh' | 'lop'; nhan: string; laFt: boolean | null;
   o: Record<CotBang, OBang>; lop?: HangBang[];
+  /** OV-15h1: GVCN đang hiệu lực của lớp — chỉ hàng lớp ở chế độ "Lớp cần chú ý". */
+  gvcn?: string | null;
 };
 type Tap = Record<CotBang, Set<number>> & { duDuLieuMau: Set<number> };
 const tapRong = (): Tap => ({
   hocVien: new Set(), duoiKyVong: new Set(), sos: new Set(), caseMo: new Set(), thieuPa: new Set(), duDuLieu: new Set(), duDuLieuMau: new Set(),
   caseChuaChotHv: new Set(), caseChuaChot: new Set(),
+  chuaLich: new Set(), chuaDiem: new Set(), sos1: new Set(), sos2: new Set(), sos3: new Set(), daThiChoKq: new Set(),
 });
 const gop = (a: Tap, b: Tap) => { for (const k of Object.keys(a) as (keyof Tap)[]) for (const x of b[k]) a[k].add(x); };
 const soCua = (t: Tap): Record<CotBang, OBang> => {
@@ -41,9 +46,12 @@ const soCua = (t: Tap): Record<CotBang, OBang> => {
 const NHAN_COT: Record<CotBang, string> = {
   hocVien: 'Học viên', duoiKyVong: 'Dưới kỳ vọng', sos: 'SOS hiện tại', caseMo: 'Case đang mở', thieuPa: 'Case chưa có PA', duDuLieu: 'Tỷ lệ đủ dữ liệu',
   caseChuaChotHv: 'HV có Case chưa chốt PA', caseChuaChot: 'Case chưa chốt PA',
+  chuaLich: 'chưa lịch Test', chuaDiem: 'chưa điểm', sos1: 'SOS 1', sos2: 'SOS 2', sos3: 'SOS 3', daThiChoKq: 'Đã thi · chờ KQ',
 };
+/** Cột chỉ tính ở chế độ "Lớp cần chú ý" (Tổng quan QL) — bảng chi nhánh (CX) không tốn câu cho chúng. */
+const COT_CHU_Y: readonly CotBang[] = ['chuaLich', 'chuaDiem', 'sos1', 'sos2', 'sos3', 'daThiChoKq'];
 
-function tinh(p: Principal, f: { branchId?: number | null; ct: ChuongTrinh }) {
+function tinh(p: Principal, f: { branchId?: number | null; ct: ChuongTrinh; chuY?: boolean }) {
   const scope = scopeFor(p, PERMISSIONS.ANALYSIS_VIEW);
   if (scope.none) throw forbidden('Bảng này dành cho Quản lý.');
   const conn = db();
@@ -66,10 +74,15 @@ function tinh(p: Principal, f: { branchId?: number | null; ct: ChuongTrinh }) {
   }
   if (branchId) { where.push('c.branch_id = ?'); args.push(branchId); }
   where.push('c.is_fast_track = ?'); args.push(f.ct === 'ft' ? 1 : 0);
+  /* OV-15h1: GVCN đang hiệu lực (cùng câu, như cột GVCN của Học viên & Lớp) — chỉ khi chú ý. */
+  const today = demoToday();
   const lop = conn.prepare(
-    `SELECT c.id, c.code, c.branch_id, c.is_fast_track, b.name AS branch_name FROM classes c
+    `SELECT c.id, c.code, c.branch_id, c.is_fast_track, b.name AS branch_name${f.chuY ? `,
+            (SELECT u.full_name FROM teacher_assignments ta JOIN users u ON u.id = ta.user_id
+              WHERE ta.class_id = c.id AND ta.is_core = 1 AND ta.status = 'active' AND ta.effective_from <= ? AND (ta.effective_to IS NULL OR ta.effective_to >= ?)
+              ORDER BY ta.id LIMIT 1) AS gvcn` : ''} FROM classes c
        JOIN branches b ON b.id = c.branch_id WHERE ${where.join(' AND ')}`,
-  ).all(...args) as any[];
+  ).all(...(f.chuY ? [today, today] : []), ...args) as any[];
   lop.sort((a, b) => soSanhLop({ code: a.code, branchId: a.branch_id }, { code: b.code, branchId: b.branch_id }));   // PR-UXF-a U1
 
   const tapLop = new Map<number, Tap>();
@@ -112,6 +125,7 @@ function tinh(p: Principal, f: { branchId?: number | null; ct: ChuongTrinh }) {
   caseMo.ids.forEach((x) => tongTap.caseMo.add(x)); thieu.ids.forEach((x) => tongTap.thieuPa.add(x));
   sDu.forEach((x) => tongTap.duDuLieu.add(x)); sMau.forEach((x) => tongTap.duDuLieuMau.add(x));
   chot.ids.forEach((x) => { tongTap.caseChuaChot.add(x); if (emCase.get(x)) tongTap.caseChuaChotHv.add(emCase.get(x)!); });
+  if (f.chuY) chiaCotChuY(p, base, f.ct === 'ft', tapLop, tongTap, sSos, today);
 
   /* UX-1: phần của tập gốc không rơi vào hàng lớp nào (Case / em của lớp đã kết thúc) gom vào MỘT hàng — Σ hàng = hàng tổng. */
   const conLai = tapRong();
@@ -125,7 +139,8 @@ function tinh(p: Principal, f: { branchId?: number | null; ct: ChuongTrinh }) {
   /* UX-1: lớp không có em và không có số nào — không hiện hàng toàn 0. */
   const lopHien = lop.filter((c) => Object.values(tapLop.get(c.id)!).some((x) => x.size > 0));
 
-  const hangLop = (c: any) => ({ khoa: `lop:${c.id}`, id: c.id, loai: 'lop' as const, nhan: c.code, laFt: !!c.is_fast_track, tap: tapLop.get(c.id)! });
+  const hangLop = (c: any) => ({ khoa: `lop:${c.id}`, id: c.id, loai: 'lop' as const, nhan: c.code, laFt: !!c.is_fast_track, tap: tapLop.get(c.id)!,
+    ...(f.chuY ? { gvcn: (c.gvcn ?? null) as string | null } : {}) });
   let cheDo: 'chi-nhanh' | 'lop';
   let hang: { khoa: string; id: number; loai: 'chi-nhanh' | 'lop'; nhan: string; laFt: boolean | null; tap: Tap; lop?: ReturnType<typeof hangLop>[] }[];
   if (branchId) {
@@ -145,18 +160,23 @@ function tinh(p: Principal, f: { branchId?: number | null; ct: ChuongTrinh }) {
     });
   }
   const tenChiNhanh = branchId ? (lop[0]?.branch_name ?? (conn.prepare('SELECT name FROM branches WHERE id = ?').get(branchId) as any)?.name ?? null) : null;
-  return { cheDo, hang, hangConLai, tongTap, tenChiNhanh, branchId };
+  /* OV-15h1 (C23): phân rã Case chưa chốt PA của hàng tổng — cùng tập `chot` (nhóm của chỉ số, đã lọc khung). */
+  const phanRa = f.chuY ? Object.fromEntries(Object.entries(chot.byKind ?? {}).map(([k, v]) => [k, v.length])) : null;
+  return { cheDo, hang, hangConLai, tongTap, tenChiNhanh, branchId, phanRa };
 }
 
 /** `branchId` là chi nhánh ĐÃ GIẢI (đã chọn, hoặc QL một chi nhánh được server tự khoanh) — web dùng nó cho bảng Theo giáo viên. */
-export function bangChiNhanh(p: Principal, f: { branchId?: number | null; ct: ChuongTrinh }): {
+export function bangChiNhanh(p: Principal, f: { branchId?: number | null; ct: ChuongTrinh; chuY?: boolean }): {
   cheDo: 'chi-nhanh' | 'lop'; hang: HangBang[]; conLai: HangBang | null; tong: Record<CotBang, OBang>; tenChiNhanh: string | null; branchId: number | null;
+  /** OV-15h1: chỉ ở chế độ chú ý — số Case mỗi nhóm `NHOM_CASE_CHUA_CHOT`, cộng = `tong.caseChuaChot`. */
+  phanRa?: Record<string, number> | null;
 } {
   const r = tinh(p, f);
   const gon = (h: any): HangBang => ({
-    khoa: h.khoa, id: h.id, loai: h.loai, nhan: h.nhan, laFt: h.laFt, o: soCua(h.tap), lop: h.lop?.map(gon),
+    khoa: h.khoa, id: h.id, loai: h.loai, nhan: h.nhan, laFt: h.laFt, o: soCua(h.tap), lop: h.lop?.map(gon), ...('gvcn' in h ? { gvcn: h.gvcn } : {}),
   });
-  return { cheDo: r.cheDo, hang: r.hang.map(gon), conLai: r.hangConLai && gon(r.hangConLai), tong: soCua(r.tongTap), tenChiNhanh: r.tenChiNhanh, branchId: r.branchId };
+  return { cheDo: r.cheDo, hang: r.hang.map(gon), conLai: r.hangConLai && gon(r.hangConLai), tong: soCua(r.tongTap), tenChiNhanh: r.tenChiNhanh, branchId: r.branchId,
+    ...(f.chuY ? { phanRa: r.phanRa } : {}) };
 }
 
 /** Danh sách của MỘT ô — tính lại bằng chính `tinh`, nên danh sách luôn đúng bằng con số (G-10). */
@@ -164,7 +184,7 @@ export function oBangChiNhanh(p: Principal, f: { branchId?: number | null; ct: C
   { n: number; unit: string; tieuDe: string; rows: MetricRow[] } {
   if (!(COT_BANG as readonly string[]).includes(f.cot)) throw badRequest(`Cột "${f.cot}" không có trong bảng.`);
   const cot = f.cot as CotBang;
-  const r = tinh(p, f);
+  const r = tinh(p, { ...f, chuY: COT_CHU_Y.includes(cot) });
   let tap: Tap | null = null; let noi = '';
   if (f.khoa === 'tong') { tap = r.tongTap; noi = r.tenChiNhanh ? `cả ${r.tenChiNhanh}` : 'tất cả chi nhánh'; }
   if (f.khoa === 'ket-thuc' && r.hangConLai) { tap = r.hangConLai.tap; noi = r.hangConLai.nhan; }
@@ -176,4 +196,34 @@ export function oBangChiNhanh(p: Principal, f: { branchId?: number | null; ct: C
   const ids = [...tap[cot]].sort((a, b) => a - b);
   const unit = COT_BANG_DON_VI[cot];
   return { n: ids.length, unit, tieuDe: `${ids.length} ${METRIC_UNIT_LABEL[unit]} — ${NHAN_COT[cot]} · ${noi}`, rows: rowsFor(unit, ids, undefined, p) };
+}
+
+/**
+ * OV-15h1 — cột "Lớp cần chú ý" (mockup 3), mỗi cột là tập của một hàm sẵn có, chia về lớp như cột cũ:
+ *  · Chưa lịch Test (FT): chỉ số `hv-ft-xong-mt-cuoi-chua-mt-ke` (Cần xử lý cũ) — theo lớp em đang học;
+ *  · Chưa điểm: HV có bài trong `bai-qua-han-nhap-diem` (= "bài trễ chấm") — theo LỚP CỦA LƯỢT (nơi nợ điểm, như Trễ chấm theo GV);
+ *  · SOS 1 / 2 / 3: mức của lượt mới nhất hợp lệ — cùng `latestAttempts` của `hv-sos-hien-tai` (nhớ trong request), Σ = cột SOS;
+ *  · Đã thi · chờ KQ (FT): `sauThiTheoEm` (cùng nhãn bảng lớp Học viên & Lớp, OV-14b) trên dân số của bảng.
+ */
+function chiaCotChuY(p: Principal, base: { branchId: number | null; program: ChuongTrinh }, ft: boolean, tapLop: Map<number, Tap>, tong: Tap, sSos: Set<number>, today: string) {
+  const theoHv = (cot: CotBang, hv: Iterable<number>) => {
+    const s = new Set(hv);
+    for (const x of s) tong[cot].add(x);
+    for (const t of tapLop.values()) for (const sid of t.hocVien) if (s.has(sid)) t[cot].add(sid);
+  };
+  const ev = latestAttempts(studentsInScope(p, base.branchId), 'valid', today);   // cùng lời gọi của `hvSosHienTai` → trúng bộ nhớ request
+  for (const [cot, muc] of [['sos1', 1], ['sos2', 2], ['sos3', 3]] as const) {
+    theoHv(cot, [...sSos].filter((sid) => Math.min(3, ev.get(sid)?.sosLevel ?? 0) === muc));
+  }
+  if (ft) {
+    theoHv('chuaLich', metricSet(p, 'hv-ft-xong-mt-cuoi-chua-mt-ke', base).ids);
+    theoHv('daThiChoKq', [...sauThiTheoEm([...tong.hocVien], today)].filter(([, x]) => x.giaiDoan === 'da_thi_cho_kq').map(([sid]) => sid));
+  }
+  const bai = metricSet(p, 'bai-qua-han-nhap-diem', base).ids;
+  theoLo([...new Set(bai.map((b) => tachBaiId(b).attemptId))], (lo, ph) => {
+    for (const a of db().prepare(`SELECT student_id, class_id FROM assessment_attempts WHERE id IN (${ph})`).all(...lo) as any[]) {
+      tong.chuaDiem.add(a.student_id);
+      tapLop.get(a.class_id)?.chuaDiem.add(a.student_id);
+    }
+  });
 }

@@ -1,15 +1,36 @@
-import { db } from '../db.ts';
+import { db, theoLo } from '../db.ts';
+import { nho } from '../platform/nguCanhRequest.ts';
 import { t } from '../../../shared/i18n/index.ts';
 /** dd/mm — hạn cụ thể trên dòng panel. */
 const ngayNgan = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
-import { ATTEMPT_KIND_SHORT, addDaysIso, khoaBai, nhanBai,chuViecChotLoTrinh, daiDienNhomBoTro, baiId, duongCase, duongDotTest, nhanLoaiXuLy, nhanTuanGhiKetQua, PERMISSIONS, VIOLATION_CATEGORY_LABEL, tachTenMoTa, metricById, tachBaiId, tenMon, tenMonNgan, tuanLich, vietMaLuot, CHU_THEM_PA, type AttemptKind, type DeadlineKind, type ChiSo, type ChuongTrinh } from '../../../shared/domain/index.ts';
+import { ATTEMPT_KIND_SHORT, addDaysIso, khoaBai, nhanBai,chuViecChotLoTrinh, daiDienNhomBoTro, baiId, duongCase, duongDotTest, nhanLoaiXuLy, nhanTuanGhiKetQua, PERMISSIONS, VIOLATION_CATEGORY_LABEL, tachTenMoTa, metricById, tachBaiId, tenMon, tenMonNgan, tuanLich, vietMaLuot, CHU_THEM_PA, NHOM_CASE_CHUA_CHOT, type NhomCaseChuaChot, type AttemptKind, type DeadlineKind, type ChiSo, type ChuongTrinh } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { can, classScopeSql, isCoreTeacherOf, scopeFor, type Principal, type Scope } from '../permissions.ts';
 import { badRequest, forbidden, HttpError, notFound } from '../util.ts';
 import { ghiDuocPaMany, listCases, type MappedCase } from '../cases/cases.ts';
 import { chiTietCaseMo } from '../cases/caseLop.ts';
 import { NOT_UNCONFIRMED_PRESET, sosCaseStateMany, xuLyCaseMany } from '../cases/sosState.ts';
+
+/**
+ * OV-15h1 (C23): phân rã "Case chưa chốt PA" theo `NHOM_CASE_CHUA_CHOT` — mỗi Case một nhóm, cùng `xuLyCaseMany` của tập. Case "đang làm" mà có PA chưa huỷ
+ * nhưng không PA nào đang theo dõi: PA mới chờ Quản lý duyệt → "PA chờ duyệt"; còn lại PA đã xong → "PA xong · chờ đóng Case" (một câu cho cả lô).
+ */
+function phanRaCaseChuaChot(ids: number[], xl: ReturnType<typeof xuLyCaseMany>): Record<NhomCaseChuaChot, number[]> {
+  const out = Object.fromEntries(NHOM_CASE_CHUA_CHOT.map((k) => [k, [] as number[]])) as Record<NhomCaseChuaChot, number[]>;
+  const coPa = ids.filter((id) => xl.get(id)?.k === 'dang-lam' && xl.get(id)!.coPa);
+  const choDuyet = new Set<number>();
+  theoLo(coPa, (lo, ph) => {
+    for (const r of db().prepare(`SELECT DISTINCT case_id FROM case_interventions WHERE case_id IN (${ph}) AND status != 'cancelled' AND approval_state = 'pending'`).all(...lo) as any[]) choDuyet.add(r.case_id);
+  });
+  for (const id of ids) {
+    const x = xl.get(id)!;
+    const k: NhomCaseChuaChot = x.k === 'cho-nhan-xet' || x.k === 'cho-nguyen-nhan' ? 'choNhanXet' : x.k === 'cho-xac-nhan-pa' ? 'choXacNhanPa'
+      : x.k === 'cho-duyet-doi-pa' || choDuyet.has(id) ? 'choDuyetPa' : x.k === 'cho-duyet-khong-theo-doi' ? 'khongTheoDoi' : x.coPa ? 'paXong' : 'trongPa';
+    out[k].push(id);
+  }
+  return out;
+}
 
 /** OV-12d: "Case chờ duyệt" của Tổng quan = cột "Chờ duyệt" của Tổng hợp — MỘT hàm `xuLyCaseMany`; `quaHan` = số ⚠ của cột đó. */
 function choDuyetCaseIds(ids: number[], today: string, chiQuaHan = false): number[] {
@@ -617,7 +638,9 @@ export function metricSet(
     ctLop?: string | null;
   } = {},
 ): MetricResult {
-  const r = locKhung(id, metricSetGoc(p, id, f), f.program ?? null);
+  /* OV-15h1: nhớ trong request — Tổng quan QL đọc cùng chỉ số ở Cần bạn quyết, Lớp cần chú ý, Trễ chấm trong MỘT lần gọi (không tính lại). */
+  const { program: _ct, ...goc } = f;
+  const r = locKhung(id, nho(`chi-so:${p.userId}:${id}:${JSON.stringify(goc)}`, () => metricSetGoc(p, id, goc)), f.program ?? null);
   /* Q25: hạn cũ nhất tính SAU bộ lọc khung — "tuần W4 SEP" của ô Fast Track chỉ từ PA Fast Track. */
   return r.chiTiet ? { ...r, hanCu: r.ids.flatMap((x) => r.chiTiet!.get(x)?.han ?? []).sort()[0] ?? null } : r;
 }
@@ -782,9 +805,13 @@ function metricSetGoc(
     }
     case 'case-chua-co-nguoi-phu-trach':
       return done(openCases().filter((c: any) => !c.ownerUserId && !c.tam).map((c: any) => c.id as number));   // OV-13a: Case tạm chưa là việc
-    case 'case-cho-xac-dinh-nguyen-nhan':
+    case 'case-cho-xac-dinh-nguyen-nhan': {
       /* OV-12d: Case đang chờ người chốt (Tổng hợp › Chờ duyệt) — id giữ `case-cho-xac-dinh-nguyen-nhan` (đường, chuông, phép kiểm cũ). */
-      return done(choDuyetCaseIds(openCases().map((c: any) => c.id as number), today));
+      const mo = openCases().map((c: any) => c.id as number);
+      const xl = xuLyCaseMany(mo, today);
+      const ids = mo.filter((id) => xl.get(id)?.cot === 'choDuyet');
+      return done(ids, { byKind: phanRaCaseChuaChot(ids, xl) });
+    }
     case 'pa-can-cap-nhat': {
       const r = overdueUpdatePlans(openCases().map((c: any) => c.id as number), today);
       return done(r.ids, { chiTiet: r.chiTiet });
