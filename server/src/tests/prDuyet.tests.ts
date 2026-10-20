@@ -191,7 +191,7 @@ export async function runPrDuyetTests(t: YThucTestKit) {
     assert((conn.prepare(`SELECT COUNT(*) n FROM yeu_cau_duyet WHERE loai = 'de_xuat_pa' AND doi_tuong_id = ?`).get(ivId) as any).n === 1, 'thẻ đôi');
     assert(!(myworkSvc.myWork(P.mbManager, {}).groups as any[]).some((g) => g.key === 'decide' || g.key === 'decide_move'), 'còn nhóm việc duyệt');
     const tren = yc.hopChoDuyet(P.mbManager).the.find((x: any) => x.id === the.id);
-    assert(tren && tren.tieuDe.startsWith('Đề xuất PA · Listening') && tren.dong[0].includes('Tutor 1-1') && tren.neuDuyet?.includes('hết T3')
+    assert(tren && tren.tieuDe.startsWith('Đề xuất PA · Listening') && tren.dong[0].includes('Tutor 1-1') && tren.neuDuyet?.includes('hạn đầu')
       && tren.mo?.includes(`case=${caseId}`), JSON.stringify(tren));
     assert(!conn.prepare(`SELECT 1 FROM notifications WHERE kind IN ('approval', 'case') AND entity_type = 'sos_case' AND entity_id = ?`).get(caseId),
       'còn thông báo kiểu cũ (approval/plan/report)');

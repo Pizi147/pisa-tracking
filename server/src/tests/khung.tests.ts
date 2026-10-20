@@ -47,11 +47,11 @@ export async function runKhungTests(t: YThucTestKit) {
 
   check('PR-O · O1/O6 Bốn khu vực đúng thứ tự, khu không có quyền thì bỏ hẳn', () => {
     const keys = (n: any) => d.khuVucHienThi(n).map((k) => k.key).join(',');
-    assert(keys(QL) === 'tong-quan,hoc-vien,test,phan-tich,cong-viec', `QL: ${keys(QL)}`);   // OV-15e: Phân tích lên thanh trên
+    assert(keys(QL) === 'tong-quan,hoc-vien,test,cong-viec,phan-tich', `QL: ${keys(QL)}`);   // OV-15e: Phân tích lên thanh trên; thứ tự chốt 20/10 (KHUNG-LOI)
     assert(keys(GV) === 'tong-quan,hoc-vien,test,cong-viec', `GV thấy cả Test và Công việc (spec §3.1): ${keys(GV)}`);
     assert(keys(nav({ overview: true, students: true })) === 'tong-quan,hoc-vien', 'Không có Test/Công việc thì không hiện');
     const labels = d.KHU_VUC.map((k) => `${k.label}|${k.labelNgan}`).join(',');
-    assert(labels === 'Tổng quan|Tổng quan,Học viên & Lớp|Học viên,Test|Test,Phân tích|Phân tích,Công việc|Công việc,Tutor|Tutor', `Chữ: ${labels}`);
+    assert(labels === 'Tổng quan|Tổng quan,Học viên & Lớp|Học viên,Test|Test,Công việc|Công việc,Phân tích|Phân tích,Tutor|Tutor', `Chữ: ${labels}`);
   });
 
   check('PR-O · Khu vực của một đường dẫn (tô sáng đúng mục trên thanh)', () => {
@@ -89,7 +89,7 @@ export async function runKhungTests(t: YThucTestKit) {
     assert(d.khuVucHienThi(QL, 2).find((k: any) => k.key === 'cong-viec')?.to === '/cong-viec'
       && d.khuVucHienThi(QL, 0).find((k: any) => k.key === 'cong-viec')?.to === '/cong-viec'
       && d.khuVucHienThi(GV, 2).find((k: any) => k.key === 'cong-viec')?.to === '/cong-viec', 'Mục Công việc: QL vào Chờ duyệt khi có thẻ');
-    assert(Object.values(d.TAB_TONG_QUAN_LABEL).join(',') === 'Việc hôm nay,Phân tích', 'Chữ tab Tổng quan (O3; PR-VAI-a K1-10: \"Việc hôm nay\")');
+    assert(Object.values(d.TAB_TONG_QUAN_LABEL).join(',') === 'Tổng quan,Phân tích', 'Chữ tab Tổng quan (O3; KHUNG-LOI A1-07: tiêu đề = tên menu)');
   });
 
   check('PR-O · O5/O7 Mọi đường dẫn cũ về đúng chỗ, giữ bộ lọc, không vòng lặp', () => {

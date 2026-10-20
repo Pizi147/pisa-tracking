@@ -5,6 +5,7 @@ import { BaoOTrongNhan } from './ONgay.tsx';
 import { buocDanhSach, chotChuGo, locNguoiChon, skillShort, type NguoiChon } from '@shared/domain/index.ts';
 import { useSession } from '../lib/session.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
+import { useBamNgoai } from './useBamNgoai.ts';
 
 export type Person = { id: number; name: string; title: string | null; role: string | null; branches: string[] };
 
@@ -47,12 +48,7 @@ export function PersonPicker({ value, valueName, onChange, disabled, placeholder
   const { rows, loading } = usePeopleSearch(open ? term : '');
   const box = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (!open) return;
-    const away = (e: MouseEvent) => { if (box.current && !box.current.contains(e.target as Node)) setOpen(false); };
-    document.addEventListener('mousedown', away);
-    return () => document.removeEventListener('mousedown', away);
-  }, [open]);
+  useBamNgoai(open, () => setOpen(false), box);
 
   if (value && !open) {
     return (
