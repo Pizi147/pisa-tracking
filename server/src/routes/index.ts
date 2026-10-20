@@ -2029,6 +2029,7 @@ api.get('/tong-quan/chi-nhanh/o', requireAuth, wrap((req) => {
   return bangSvc.oBangChiNhanh(principalOf(req), {
     branchId: qInt(req, 'branchId') ?? null, ct: chuongTrinhTuThamSo(qStr(req, 'ct')),
     cot: qStr(req, 'cot') ?? '', khoa: qStr(req, 'khoa') ?? '',
+    chuY: qStr(req, 'chuY') === '1',   // OV-15h1: ô của "Lớp cần chú ý"
   });
 }));
 

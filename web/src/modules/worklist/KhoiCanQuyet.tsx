@@ -30,7 +30,7 @@ export function DaiTomTat({ data, bang, branchId, ct }: { data: Data; bang: Tong
   const caseQh = dong('case-xac-dinh-nguyen-nhan-qua-han');
   const phamVi = { branchId };
   const o = (cot: string, tieuDe: string) => (
-    <SoLieuO giaTri={bang.tong[cot as keyof typeof bang.tong]?.n ?? 0} className="font-semibold" tieuDe={tieuDe} nguon={`/tong-quan/chi-nhanh/o?cot=${cot}&khoa=tong${q ? `&${q}` : ''}`} />
+    <SoLieuO giaTri={bang.tong[cot as keyof typeof bang.tong]?.n ?? 0} className="font-semibold" tieuDe={tieuDe} nguon={`/tong-quan/chi-nhanh/o?cot=${cot}&khoa=tong&chuY=1${q ? `&${q}` : ''}`} />
   );
   return (
     <div className="card flex flex-wrap items-center gap-x-5 gap-y-2 px-4 py-2.5 text-[13px] text-slate-300" aria-label={t('HV cần chú ý')} data-hd="tq-tom-tat">

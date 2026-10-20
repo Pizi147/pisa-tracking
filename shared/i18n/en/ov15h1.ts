@@ -10,7 +10,6 @@ export const EN_OV15H1 = {
   'Chờ duyệt không theo dõi': 'Awaiting approval · no follow-up',
   'Bấm số HV hoặc Case để xử lý.': 'Press the student or Case number to act.',
   'Bấm số để xem danh sách': 'Press a number to see the list',
-  'Case': 'Case',
   'Chưa lịch': 'No date',
   'Chưa điểm': 'No score',
   'Cả chi nhánh': 'Whole branch',

@@ -48,8 +48,7 @@ const NHAN_COT: Record<CotBang, string> = {
   caseChuaChotHv: 'HV có Case chưa chốt PA', caseChuaChot: 'Case chưa chốt PA',
   chuaLich: 'chưa lịch Test', chuaDiem: 'chưa điểm', sos1: 'SOS 1', sos2: 'SOS 2', sos3: 'SOS 3', daThiChoKq: 'Đã thi · chờ KQ',
 };
-/** Cột chỉ tính ở chế độ "Lớp cần chú ý" (Tổng quan QL) — bảng chi nhánh (CX) không tốn câu cho chúng. */
-const COT_CHU_Y: readonly CotBang[] = ['chuaLich', 'chuaDiem', 'sos1', 'sos2', 'sos3', 'daThiChoKq'];
+
 
 function tinh(p: Principal, f: { branchId?: number | null; ct: ChuongTrinh; chuY?: boolean }) {
   const scope = scopeFor(p, PERMISSIONS.ANALYSIS_VIEW);
@@ -180,11 +179,12 @@ export function bangChiNhanh(p: Principal, f: { branchId?: number | null; ct: Ch
 }
 
 /** Danh sách của MỘT ô — tính lại bằng chính `tinh`, nên danh sách luôn đúng bằng con số (G-10). */
-export function oBangChiNhanh(p: Principal, f: { branchId?: number | null; ct: ChuongTrinh; cot: string; khoa: string }):
+export function oBangChiNhanh(p: Principal, f: { branchId?: number | null; ct: ChuongTrinh; cot: string; khoa: string;
+  /** OV-15h1: ô của bảng "Lớp cần chú ý" (`chuY=1`) — cùng chế độ bảng đã vẽ, số = số dòng ở cả hai bảng. */ chuY?: boolean }):
   { n: number; unit: string; tieuDe: string; rows: MetricRow[] } {
   if (!(COT_BANG as readonly string[]).includes(f.cot)) throw badRequest(`Cột "${f.cot}" không có trong bảng.`);
   const cot = f.cot as CotBang;
-  const r = tinh(p, { ...f, chuY: COT_CHU_Y.includes(cot) });
+  const r = tinh(p, f);
   let tap: Tap | null = null; let noi = '';
   if (f.khoa === 'tong') { tap = r.tongTap; noi = r.tenChiNhanh ? `cả ${r.tenChiNhanh}` : 'tất cả chi nhánh'; }
   if (f.khoa === 'ket-thuc' && r.hangConLai) { tap = r.hangConLai.tap; noi = r.hangConLai.nhan; }

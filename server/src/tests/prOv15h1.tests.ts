@@ -38,7 +38,13 @@ export async function runPrOv15h1Tests(t: YThucTestKit) {
           bang: GET(() => bang.bangChiNhanh(p, { branchId: cn, ct })),
           lich: GET(() => hl.highlights(p, { branchId: cn, program: ct })),
         };
-        assert(JSON.stringify(bo(moi.bang, [...MOI, 'gvcn', 'phanRa'])) === JSON.stringify(bo(cu.bang, [...MOI, 'gvcn', 'phanRa'])), `${ten} ${ct}: Lớp cần chú ý (cột cũ) khác đường cũ`);
+        /* Cột cũ từng hàng trùng đường cũ; hàng chỉ bảng chú ý có (lớp / "Lớp đã kết thúc" chỉ vì cột mới) thì cột cũ đều 0. */
+        const phang = (b: any) => new Map([...b.hang.flatMap((h: any) => [h, ...(h.lop ?? [])]), ...(b.conLai ? [b.conLai] : []), { khoa: 'tong', o: b.tong }]
+          .map((h: any) => [h.khoa, JSON.stringify(bo(h.o, MOI))]));
+        const a = phang(cu.bang), b2 = phang(moi.bang);
+        const rong = JSON.stringify(bo(Object.fromEntries(Object.keys(cu.bang.tong).map((k) => [k, k === 'duDuLieu' ? { n: 0, mau: 0 } : { n: 0 }])), MOI));
+        for (const [k, v] of a) assert(b2.get(k) === v, `${ten} ${ct}: hàng ${k} khác đường cũ`);
+        for (const [k, v] of b2) assert(a.has(k) || v === rong, `${ten} ${ct}: hàng ${k} chỉ ở bảng chú ý mà cột cũ khác 0: ${v}`);
         assert(JSON.stringify(moi.lich) === JSON.stringify(cu.lich), `${ten} ${ct}: Tuần này khác /highlights`);
       }
     }

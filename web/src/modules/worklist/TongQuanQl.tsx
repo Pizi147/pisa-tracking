@@ -50,7 +50,7 @@ export function LopCanChuY({ data, branchId, ct }: { data: TongQuanQlData['bang'
   const ft = ct === 'ft';
   const q = thamSoTq(branchId, ct);
   const so = (h: { khoa: string; nhan: string }, cot: CotBang, x: OBang, className = '') => (
-    <SoLieuO giaTri={x.n} className={className} tieuDe={`${COT_TEN[cot]} · ${h.nhan}`} nguon={`/tong-quan/chi-nhanh/o?cot=${cot}&khoa=${h.khoa}${q ? `&${q}` : ''}`} />
+    <SoLieuO giaTri={x.n} className={className} tieuDe={`${COT_TEN[cot]} · ${h.nhan}`} nguon={`/tong-quan/chi-nhanh/o?cot=${cot}&khoa=${h.khoa}&chuY=1${q ? `&${q}` : ''}`} />
   );
   const sos = (h: HangBang | { khoa: string; nhan: string; o: Record<CotBang, OBang> }) => (
     <span className="inline-flex items-center justify-center gap-1">
@@ -62,7 +62,7 @@ export function LopCanChuY({ data, branchId, ct }: { data: TongQuanQlData['bang'
   const caseHv = (h: { khoa: string; nhan: string; o: Record<CotBang, OBang> }) => (h.o.caseChuaChot.n > 0 ? (
     <span className="inline-flex flex-col items-center leading-tight tabular-nums">
       <span>{so(h, 'caseChuaChotHv', h.o.caseChuaChotHv)} <span className="text-xs text-slate-500">{t('HV')}</span></span>
-      <span>{so(h, 'caseChuaChot', h.o.caseChuaChot)} <span className="text-xs text-slate-500">{t('Case')}</span></span>
+      <span>{so(h, 'caseChuaChot', h.o.caseChuaChot)} <span className="text-xs text-slate-500">Case</span></span>
     </span>
   ) : <span className="tabular-nums text-slate-500">0</span>);
   const tongNhan = data.cheDo === 'lop' ? (data.tenChiNhanh ? t('Cả {ten}', { ten: data.tenChiNhanh }) : t('Cả chi nhánh')) : t('Tất cả chi nhánh');
@@ -122,7 +122,7 @@ export function LopCanChuY({ data, branchId, ct }: { data: TongQuanQlData['bang'
                       {muc.map(([k, nhan]) => (
                         <span key={k} className="inline-flex items-center gap-1.5">
                           <span className="text-xs text-slate-500">{nhan}</span>
-                          {k === 'sos' ? sos(h) : k === 'case' ? <span className="tabular-nums">{so(h, 'caseChuaChotHv', o.caseChuaChotHv)} {t('HV')} · {so(h, 'caseChuaChot', o.caseChuaChot)} {t('Case')}</span>
+                          {k === 'sos' ? sos(h) : k === 'case' ? <span className="tabular-nums">{so(h, 'caseChuaChotHv', o.caseChuaChotHv)} {t('HV')} · {so(h, 'caseChuaChot', o.caseChuaChot)} Case</span>
                             : so(h, k as CotBang, o[k as CotBang])}
                         </span>
                       ))}
