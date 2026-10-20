@@ -1852,6 +1852,10 @@ export function caseDetail(p: Principal, caseId: number) {
       supersededBy: iv.superseded_by ?? null,
       /* HẠN của chu kỳ đang chạy — hai tuần với Case học thuật, một tuần với Ý thức/Khác. */
       actionDue: iv.action_due ?? null,
+      /* CV-LOI (CV-14): PA bổ trợ miễn phí còn chờ Mini Test — hạn của việc là hạn Mini Test (cùng `mini_test.han` của dòng Công việc). */
+      miniTestHan: iv.kind === 'bo_tro_mien_phi' && iv.nhom_bo_tro != null
+        ? ((conn.prepare('SELECT MIN(han) AS han FROM mini_test WHERE nhom_bo_tro = ? AND ty_le IS NULL').get(iv.nhom_bo_tro) as any)?.han ?? null) as string | null
+        : null,
       actionOverdue: !!iv.action_due && iv.action_due < demoToday()
         && (iv.status === 'planned' || iv.status === 'started')
         && (iv.approval_state ?? '') !== 'pending',

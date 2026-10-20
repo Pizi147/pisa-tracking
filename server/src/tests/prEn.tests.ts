@@ -373,6 +373,7 @@ const FILE_DA_DICH = [
 const CHO_PHEP: { file: string; text: RegExp }[] = [
   { file: 'web/src/modules/platform/WelcomePage.tsx', text: /^(Hoàn tất|Nguyễn Khánh Vy|Trần Ngọc Hà)$/ },   // chữ in ra của lệnh seed; tên tài khoản demo (dữ liệu)
   { file: 'web/src/ui/NutNgonNgu.tsx', text: /^(Tiếng Việt|Ngôn ngữ \/ Language)$/ },                          // nút ghi bằng chính tiếng của nó
+  { file: 'web/src/App.tsx', text: /^Thêm$/ },   // KHUNG-LOI: nút gom menu — EN "More" ngay cạnh (khoá 'Thêm' của từ điển là "Add")
   /* Đợt b: giá trị so khớp với chữ máy chủ gửi (không hiện ra; chỗ hiện bọc dich()). */
   { file: 'web/src/modules/fasttrack/DongThoiGianLuot.tsx', text: /^Trống$/ },
   { file: 'web/src/modules/fasttrack/MockDetailPage.tsx', text: /^(đã huỷ phần thi|đã có điểm|đã thi)$/ },

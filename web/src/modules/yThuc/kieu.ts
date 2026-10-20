@@ -50,8 +50,12 @@ export type XuLyView = {
   performedOn: string | null; nguoi: string | null; quyetLuc: string | null; createdAt: string;
   nguoiId: number | null; nguoiNgoai: string | null;
   viPham: ViPhamV4[]; soTep: number; canManage: boolean; the: TheYeuCauDto | null;
-  /** PR-LUI-a1: Sửa vi phạm / Xoá lần xử lý (quyền do máy chủ tính). `lanSau` = tên lần sau (còn thì chưa xoá được); `bacVe` = bậc sau khi xoá. */
-  coTheSua: boolean; coTheXoa: boolean; lanSau: string | null; bacVe: number | null; chuaXuLy: ViPhamV4[];
+  /** PR-LUI-a1: Sửa vi phạm · LUAT-5: Thu hồi… (quyền do máy chủ tính). `lanSau` = tên lần sau (còn thì chưa thu hồi được); `bacVe` = bậc sau khi thu hồi. */
+  coTheSua: boolean; coTheThuHoi: boolean; lanSau: string | null; bacVe: number | null; chuaXuLy: ViPhamV4[];
+  /** LUAT-5: thẻ thu hồi mới nhất — chờ QL / QL từ chối (lý do) / đã thu hồi (ai · lúc · lý do). */
+  thuHoi: TheYeuCauDto | null;
+  /** LUAT-5: máy chủ tính — người xem thu hồi thẳng (QL trong phạm vi em) hay gửi QL. */
+  thuHoiThang: boolean;
 };
 
 export type DongEm = {

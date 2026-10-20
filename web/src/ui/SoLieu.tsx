@@ -14,6 +14,12 @@ import { useNgayNghiepVu } from './ngayNghiepVu.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 import { lazyTai } from '../lib/taiLaiManh.ts';
 
+/**
+ * KHUNG-LOI (B-02): vùng bấm của số ≥ 24 × 24 px máy tính, 44 × 44 px điện thoại — `after:` canh giữa chữ số (hình chữ không đổi; trước đây
+ * chỉ đúng chữ số, 8 × 12 px). Mẫu chip của `MenuDong`.
+ */
+export const VUNG_BAM_SO = "relative after:absolute after:left-1/2 after:top-1/2 after:h-6 after:w-6 after:min-w-full after:-translate-x-1/2 after:-translate-y-1/2 after:content-[''] max-sm:after:h-11 max-sm:after:w-11";
+
 const THOI_GIAN_NHAN: Record<ChiSo['thoiGian'], string> = {
   'hien-trang': t('Hiện trạng — tính tại ngày dữ liệu'),
   'phat-sinh-trong-ky': t('Phát sinh trong kỳ'),
@@ -309,7 +315,7 @@ export function SoLieu({ id, giaTri, phamVi, rong, className = '', extra, nhan, 
       <div className="mt-2 flex items-baseline gap-1.5 flex-wrap">
         {clickable ? (
           <button type="button" onClick={() => setOpen(true)}
-            className={`appearance-none bg-transparent border-0 p-0 max-sm:py-1.5 max-sm:-my-1.5 cursor-pointer text-2xl font-semibold tabular-nums underline decoration-dotted underline-offset-4 hover:text-white ${mau}`}
+            className={`${VUNG_BAM_SO} appearance-none bg-transparent border-0 p-0 cursor-pointer text-2xl font-semibold tabular-nums underline decoration-dotted underline-offset-4 hover:text-white ${mau}`}
             aria-label={t('{gt} {dv} — {ten}. Bấm để xem danh sách', { gt: giaTri, dv, ten: nhan ?? cs.ten })}>{giaTri}</button>
         ) : (
           <span className="text-2xl font-semibold tabular-nums text-slate-500">{giaTri}</span>

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { t } from '@shared/i18n/index.ts';
+import { useBamNgoai } from './useBamNgoai.ts';
 
 /**
  * ⓘ LUẬT — hộp nổi nhỏ neo dưới nút, thay cho một khối chữ giải thích dưới bảng (G-5).
@@ -14,13 +15,12 @@ export function NutLuat({ children, label = t('Luật'), phai = false }: {
 }) {
   const [mo, setMo] = useState(false);
   const hop = useRef<HTMLSpanElement>(null);
+  useBamNgoai(mo, () => setMo(false), hop);
   useEffect(() => {
     if (!mo) return;
-    const away = (e: MouseEvent) => { if (hop.current && !hop.current.contains(e.target as Node)) setMo(false); };
     const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') setMo(false); };
-    document.addEventListener('mousedown', away);
     document.addEventListener('keydown', esc);
-    return () => { document.removeEventListener('mousedown', away); document.removeEventListener('keydown', esc); };
+    return () => document.removeEventListener('keydown', esc);
   }, [mo]);
   return (
     <span ref={hop} className="relative inline-flex">

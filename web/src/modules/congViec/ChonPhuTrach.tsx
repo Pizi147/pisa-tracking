@@ -3,6 +3,7 @@ import { api } from '../../lib/api.ts';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import { buocDanhSach, type NguoiChon } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
+import { useBamNgoai } from '../../ui/useBamNgoai.ts';
 
 export type NguoiPhuTrach = 'toi' | 'tat-ca' | number;
 
@@ -49,17 +50,16 @@ export function ChonPhuTrach({ value, valueName, onChange, chiChonGv }: {
     return () => { huy = true; };
   }, [value, ten]);
 
+  useBamNgoai(open, () => { setOpen(false); setPicking(false); }, box);
   useEffect(() => {
     if (!open) return;
-    const away = (e: MouseEvent) => { if (box.current && !box.current.contains(e.target as Node)) { setOpen(false); setPicking(false); } };
     const phim = (e: KeyboardEvent) => {
       if (e.key !== 'Escape') return;
       e.stopPropagation(); e.preventDefault();
       dongVeNut();
     };
-    document.addEventListener('mousedown', away);
     document.addEventListener('keydown', phim, true);
-    return () => { document.removeEventListener('mousedown', away); document.removeEventListener('keydown', phim, true); };
+    return () => document.removeEventListener('keydown', phim, true);
   }, [open]);
 
   /* Menu vừa mở (chưa vào ô chọn) → focus mục đầu. */
