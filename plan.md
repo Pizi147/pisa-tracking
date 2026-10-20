@@ -232,7 +232,8 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 - **Kết quả (8 agent Opus, 1 789 ảnh, 9 vai):** ~23/40 (không xứng ≥ 35; Nhất quán 1/4 mọi khu vực); khớp mockup ~60 % (Tổng quan, Hồ sơ lớp ~40 %). Lỗi số: **P0 "Theo tháng" ra tháng trước**, "PA có kết quả trong kỳ" không theo kỳ,
   Chờ duyệt 10 / 12 thẻ (chi nhánh), 8 số dải Tổng quan bấm không mở, 4 định nghĩa SOS, Đang SOS chia trang sai. Nguyên nhân lệch mockup = **quy trình** (kế hoạch dịch khung thành chữ, luật "sửa trên nền", PR chia theo tệp, không cổng ảnh cặp, chủ SP không xem trước merge).
 - **Đề xuất (CHƯA duyệt):** GĐ0 quy trình Q1–Q13 + seed + công cụ → GĐ1 sửa số / lỗi chức năng (SL1, SL2, CV-LOI, KHUNG-LOI; khuyến nghị **trước deploy**) → GĐ2 làm lại từng màn (M0…M7, chủ SP duyệt ảnh cặp) → GĐ3 thống nhất → GĐ4 chấm lại.
-  **Chờ chủ SP:** 4 câu mục 9.1 tài liệu (nguồn nào thắng · duyệt trước merge · sửa số trước deploy · một phạm vi một trang). Chưa giao PR nào.
+  **Chủ SP chốt 20/10 (4 câu mục 9.1):** khung mockup đã duyệt THẮNG kế hoạch / luật cũ (trừ nghiệp vụ, quyền, chống mất dữ liệu) · PR đổi bố cục: chủ SP duyệt ảnh cặp / bản chạy TRƯỚC merge, không merge qua đêm (PR máy chủ vẫn tự merge) ·
+  sửa GĐ1 rồi mới deploy · một phạm vi số cho cả trang Tổng quan (bỏ "gộp hai khung") + một định nghĩa SOS "SOS hiện tại". **Chưa giao PR nào** — chủ SP còn góp ý thêm, gộp xong mới làm GĐ0 → GĐ1.
 
 ### OV-14 — overhaul UX 17–18/10 (đánh giá `docs/superpowers/specs/2026-10-17-ov14-danh-gia-ux.md`, mockup `thiet-ke/mockup-ov14-*`)
 - **Rà 17/10** (impeccable critique + detector, ui-ux-pro-max, hai bên đối thoại, xác minh mã main 6177d36f, 266 ảnh demo): Nielsen 27/40, ui-ux-pro-max 25/40 → đích ≥ 35 (37).

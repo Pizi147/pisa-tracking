@@ -47,7 +47,7 @@ Con số "≥ 35" trước đây chỉ là **đích** đặt ngày 17/10; sau đ
 - **GĐ2 — làm lại từng màn theo mockup:** khung trang chung → Tổng quan → Công việc → Hồ sơ lớp → Học viên & Lớp → Test → Phân tích → Tutor / Quản trị.
 - **GĐ3 — thống nhất thành phần, chữ, 375; chấm lại bằng cùng phương pháp** rồi mới nói "đạt".
 
-**Chủ SP cần làm:** (1) xem 10 cặp ảnh "mockup | web" ở mục 3.1; (2) trả lời 4 câu hỏi chính (mục 9.1); các câu còn lại (mục 9.2) xem dần, có khuyến nghị sẵn.
+**Chủ SP cần làm:** (1) xem 10 cặp ảnh "mockup | web" ở mục 3.1; (2) 4 câu chính (mục 9.1) — **đã chốt 20/10, cả bốn theo khuyến nghị**; các câu còn lại (mục 9.2) xem dần, có khuyến nghị sẵn; (3) góp ý thêm sau khi xem web — gộp xong mới giao PR.
 
 ---
 
@@ -627,7 +627,11 @@ Cùng phương pháp, cùng cách chia khu vực, cùng số đo (điểm Nielse
 
 ## 9. Câu hỏi cho chủ SP
 
-### 9.1 Bốn câu cần trả lời trước (chặn bước tiếp theo)
+### 9.1 Bốn câu cần trả lời trước (chặn bước tiếp theo) — **CHỦ SP ĐÃ CHỐT 20/10: cả bốn theo khuyến nghị**
+> (1) **Khung mockup đã duyệt thắng** kế hoạch / luật cũ, trừ luật nghiệp vụ, quyền, chống mất dữ liệu · (2) **chủ SP duyệt ảnh cặp / bản chạy trước khi merge PR đổi bố cục**, không merge loại PR này qua đêm; PR chỉ máy chủ vẫn tự merge ·
+> (3) **sửa GĐ1 rồi mới deploy** · (4) **một phạm vi số cho cả trang** (công tắc Tất cả / FT / LT áp cả Tổng quan, bỏ "gộp hai khung") + **một định nghĩa SOS ("SOS hiện tại")** cho Tổng quan · Học viên & Lớp · Báo cáo.
+> Chưa giao PR nào: chủ SP còn xem web và góp ý thêm; sau đó gộp góp ý, chốt phương án cuối rồi mới làm GĐ0 → GĐ1.
+
 1. **Nguồn nào thắng** khi khung mockup đã duyệt khác câu kế hoạch hoặc luật cũ (vd luật 27/09 "không tự mở lớp" ↔ khung "MB FT 101 đang mở")? — Khuyến nghị: **khung thắng**, trừ luật nghiệp vụ, quyền, chống mất dữ liệu.
 2. **Thêm bước chủ SP duyệt** 3–5 ảnh cặp "mockup | web" (hoặc bản chạy) trước khi merge PR **đổi bố cục**, không merge loại PR này qua đêm (PR chỉ máy chủ vẫn tự merge)? — Khuyến nghị: **có**.
 3. **Sửa số sai (GĐ1: SL1 + CV-LOI) trước khi deploy** bản đang chờ? (Nếu deploy ngay: báo cáo tháng sai tháng, "PA trong kỳ" sai, Chờ duyệt lẫn chi nhánh, 8 số không bấm được sẽ lên bản chính.) — Khuyến nghị: **có**, deploy sau SL1 + CV-LOI.
