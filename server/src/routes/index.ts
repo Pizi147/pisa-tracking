@@ -595,25 +595,36 @@ api.post('/ke-hoach-test/dot', requireAuth, wrap((req) => {
   const kyNang = req.body.kyNang.map((k: any) => ({
     skill: String(k?.skill ?? ''), periodId: toInt(k?.periodId), bo: typeof k?.bo === 'boolean' ? k.bo : undefined,
   }));
-  return keHoachSvc.luuDot(principalOf(req), {
+  const p = principalOf(req);
+  return keHoachSvc.luuLichKemGhiChu(p, ghiChuKem(req.body?.ghiChu), () => keHoachSvc.luuDot(p, {
     attemptId, kyNang, lyDoBo: req.body.lyDoBo ?? null, force: !!req.body.force, reason: req.body.reason ?? null,
-  });
+  }));
 }));
+
+/** OV-15h2 (ý 5): ghi chú lịch thi đi kèm lần lưu lịch (`/dot`, `/xep-moi`) — một giao dịch; thiếu lớp → 400. */
+function ghiChuKem(g: any) {
+  if (g === undefined || g === null) return null;
+  const classId = toInt(g?.classId);
+  if (!classId) throw badRequest('Thiếu lớp của ghi chú.');
+  return { classId, studentId: toInt(g.studentId), dot: typeof g.dot === 'string' ? g.dot : null, noiDung: g.noiDung };
+}
 
 api.post('/ke-hoach-test/xep-moi', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   const studentId = toInt(req.body?.studentId);
   if (!studentId) throw badRequest('Thiếu học viên.');
   const tuan = tuanTheoKyNang(req.body?.tuan);
+  const p = principalOf(req);
+  const ghi = ghiChuKem(req.body?.ghiChu);
   if (req.body?.kind) {
     const classId = toInt(req.body?.classId);
     if (!classId) throw badRequest('Thiếu lớp.');
-    return keHoachSvc.xepMoiThuong(principalOf(req), { classId, studentId, kind: req.body.kind, tuan, force: !!req.body.force });
+    return keHoachSvc.luuLichKemGhiChu(p, ghi, () => keHoachSvc.xepMoiThuong(p, { classId, studentId, kind: req.body.kind, tuan, force: !!req.body.force }));
   }
-  return keHoachSvc.xepMoi(principalOf(req), {
+  return keHoachSvc.luuLichKemGhiChu(p, ghi, () => keHoachSvc.xepMoi(p, {
     studentId, attemptNo: toInt(req.body?.attemptNo) ?? undefined, tuan, bo: Array.isArray(req.body?.bo) ? req.body.bo : [],
     lyDoBo: req.body?.lyDoBo ?? null, force: !!req.body?.force,
-  });
+  }));
 }));
 
 api.post('/ke-hoach-test/hang-loat', requireAuth, wrap((req) => {
@@ -1022,6 +1033,12 @@ api.put('/attempts/:id/scores/:skill', requireAuth, wrap((req) => {
 api.post('/attempts/scores/lo', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return luuDiemLo(principalOf(req), req.body);
+}));
+
+/** OV-15h2 (ý 10): Dán từ Excel lớp thường — cùng `luuDiemLo`, mỗi ô qua `saveRegularScore`; một lần dán = một mục lịch sử. */
+api.post('/regular/scores/lo', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return luuDiemLo(principalOf(req), req.body, 'thuong');
 }));
 
 /** OV-13k: "Nhận xét GV phụ trách" + nhóm nguyên nhân ô Speaking Mock chấm chéo — GV phụ trách S của lớp, GVCN, Quản lý; không đụng điểm. */

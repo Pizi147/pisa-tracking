@@ -117,7 +117,7 @@ export function useThaoTacDongHocVien({ laLopThuong, quyen, onDone, maLop, class
     keTruoc: MUC_MENU_DONG_HIEM.includes(k) && i > 0 && !MUC_MENU_DONG_HIEM.includes(ds[i - 1]),
     onChon: () => {
       /* OV-15b: Nhập điểm mở panel lớp tại chỗ (đúng lượt), không chuyển trang. */
-      if (k === 'nhap-diem') { if (d.nhapDiem) setMo({ viec: 'nhap-diem', id: d.id, ten: d.ten, nhap: { classId: d.nhapDiem.classId, luot: d.nhapDiem.luot } }); }
+      if (k === 'nhap-diem') { if (d.nhapDiem) setMo({ viec: 'nhap-diem', id: d.id, ten: d.ten, lop: d.maLop, nhap: { classId: d.nhapDiem.classId, luot: d.nhapDiem.luot } }); }
       else if (k === 'lo-trinh-tiep') navigate(duongLoTrinhLop(classId!, d.id));
       else setMo({ viec: k, id: d.id, ten: d.ten });
     },
@@ -139,7 +139,7 @@ export function useThaoTacDongHocVien({ laLopThuong, quyen, onDone, maLop, class
           lop={maLop} cycle={null} attempts={[]} onDone={() => daDoi(mo.id)} quyen={{ canEdit: false }} />
       )}
       {mo?.viec === 'nhap-diem' && mo.nhap && (
-        <PanelNhapDiemLop classId={mo.nhap.classId} classCode={maLop} luot={mo.nhap.luot} onDong={xong} />
+        <PanelNhapDiemLop classId={mo.nhap.classId} classCode={mo.lop ?? maLop} luot={mo.nhap.luot} onDong={xong} />
       )}
       {mo?.viec === 'sua-thong-tin' && <SuaThongTinMotEm viec={mo.quanLy} studentId={mo.id} studentName={mo.ten} lop={mo.lop ?? maLop} onClose={() => setMo(null)} onDone={xong} />}
     </>

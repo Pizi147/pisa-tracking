@@ -1,12 +1,17 @@
 import { db, tx } from '../db.ts';
 import { DAN_TOI_DA_DONG, ENTRY_SKILLS, docMaLuot } from '../../../shared/domain/index.ts';
 import { saveScore } from '../fasttrack/attempts.ts';
+import { saveRegularScore } from '../normal/regular.ts';
 import { voiNguon, writeAudit } from '../platform/audit.ts';
 import type { Principal } from '../permissions.ts';
 import { HttpError, badRequest, loi } from '../util.ts';
 
 const TRUONG = ['rawScore', 'band', 'criteria', 'noShow', 'nhanXet', 'nhomNguyenNhan'] as const;
-type ODan = { skill: string } & Partial<Record<(typeof TRUONG)[number], unknown>>;
+/** OV-15h2 (ý 10): lớp thường — đúng các trường của `PUT /regular/attempts/:id/scores/:skill` (một lệnh một việc: điểm, "-", hoặc nhận xét). */
+const TRUONG_THUONG = ['score', 'total', 'noShow', 'nhanXet'] as const;
+const MON_THUONG = /^[a-z_]{1,30}$/;   // môn có thật hay không: `saveRegularScore` kiểm theo chương trình của lớp (lỗi của dòng đó)
+type Kieu = 'ft' | 'thuong';
+type ODan = { skill: string } & Partial<Record<(typeof TRUONG)[number] | (typeof TRUONG_THUONG)[number], unknown>>;
 type DongLo = { attemptId: number; o: ODan[] };
 export type KetQuaDong = { attemptId: number; ok: true } | { attemptId: number; ok: false; skill: string | null; loi: string; status: number };
 /** Tổng các request TRƯỚC của cùng một lần dán (web cộng từ kết quả máy chủ trả) — chỉ để ghi vào mục lịch sử tổng. */
@@ -15,7 +20,9 @@ type TongTruoc = { soDong: number; soDaLuu: number; soO: number };
 const soDem = (v: unknown) => Number.isInteger(v) && (v as number) >= 0 && (v as number) <= 10_000;
 
 /** Kiểm hình dạng lô ở cửa (400 cả lô) — luật từng ô để `saveScore` lo. */
-function docLo(v: unknown): DongLo[] {
+function docLo(v: unknown, kieu: Kieu): DongLo[] {
+  const truong: readonly string[] = kieu === 'thuong' ? TRUONG_THUONG : TRUONG;
+  const monHopLe = (k: unknown) => typeof k === 'string' && (kieu === 'thuong' ? MON_THUONG.test(k) : (ENTRY_SKILLS as readonly string[]).includes(k));
   if (!Array.isArray(v) || !v.length) throw badRequest('Không có dòng nào để lưu.');
   if (v.length > DAN_TOI_DA_DONG) throw loi(400, 'Mỗi lần lưu tối đa {n} dòng.', { n: DAN_TOI_DA_DONG });
   return v.map((d: any) => {
@@ -23,10 +30,10 @@ function docLo(v: unknown): DongLo[] {
     /* Hoàn tác "- → điểm" cần hai lệnh cùng ô (xoá điểm, đặt lại "-") — tối đa hai lệnh mỗi kỹ năng. */
     if (!Array.isArray(d.o) || !d.o.length || d.o.length > ENTRY_SKILLS.length * 2) throw badRequest('Ô điểm của dòng không hợp lệ.');
     const o = d.o.map((x: any) => {
-      if (!x || !(ENTRY_SKILLS as readonly string[]).includes(x.skill)) throw badRequest('Kỹ năng không hợp lệ.');
+      if (!x || !monHopLe(x.skill)) throw badRequest('Kỹ năng không hợp lệ.');
       /* Chỉ nhận đúng các trường của ô (không lý do, không GV chấm, không lịch); `noShow` chỉ true / false (gỡ dấu: `saveScore` kiểm quyền). */
       const r: ODan = { skill: x.skill };
-      for (const k of TRUONG) {
+      for (const k of truong as readonly (keyof ODan)[]) {
         if (x[k] === undefined || (k === 'noShow' && x[k] !== true && x[k] !== false)) continue;
         r[k] = x[k];
       }
@@ -38,15 +45,16 @@ function docLo(v: unknown): DongLo[] {
 }
 
 /**
- * DÁN TỪ EXCEL — LƯU (OV-15b mục 2, `POST /attempts/scores/lo`). Thân: `{ dong, classId, luot?, loId, cuoi?, truoc?, hoanTac? }`.
+ * DÁN TỪ EXCEL — LƯU (OV-15b mục 2, `POST /attempts/scores/lo`; OV-15h2 ý 10 lớp thường: `POST /regular/scores/lo`, `kieu = 'thuong'`, mỗi ô qua
+ * `saveRegularScore`). Thân: `{ dong, classId, luot?, loId, cuoi?, truoc?, hoanTac? }`.
  *  · Mọi lượt phải thuộc đúng lớp (và đúng lượt `luot` = `mt:2` / `thuong:final`… khi web gửi) — sai một dòng là 400 cả lô.
  *  · Mỗi dòng (một em) MỘT giao dịch: mọi ô qua `saveScore` cửa người dùng (`tuNguoiDung`: nhận xét MT bắt buộc, nhóm nguyên nhân, band tự tính)
  *    với đúng quyền từng ô — một ô bị từ chối thì cả dòng cuộn lại (dòng nằm lại nháp ở web), dòng khác vẫn lưu.
  *  · Nhật ký từng ô mang nguồn "Dán từ Excel · lớp"; một lần dán (nhiều request cùng `loId`) = MỘT mục tổng ở request cuối (`cuoi`), gắn lớp;
  *    Hoàn tác (`hoanTac`) ghi mục riêng.
  */
-export function luuDiemLo(p: Principal, body: any) {
-  const dong = docLo(body?.dong);
+export function luuDiemLo(p: Principal, body: any, kieu: Kieu = 'ft') {
+  const dong = docLo(body?.dong, kieu);
   const classId = body?.classId;
   if (!Number.isInteger(classId) || classId <= 0) throw badRequest('Lớp không hợp lệ.');
   const ma = body?.luot == null ? null : docMaLuot(String(body.luot));
@@ -76,7 +84,8 @@ export function luuDiemLo(p: Principal, body: any) {
         for (const o of d.o) {
           skill = o.skill;
           const { skill: _k, ...patch } = o;
-          saveScore(p, d.attemptId, o.skill, patch as any, undefined, { tuNguoiDung: true });
+          if (kieu === 'thuong') saveRegularScore(p, d.attemptId, o.skill, patch as any);   // OV-15h2: CHÍNH đường lưu ô lớp thường (quyền môn, "-", đúng ≤ tổng)
+          else saveScore(p, d.attemptId, o.skill, patch as any, undefined, { tuNguoiDung: true });
         }
       }));
       return { attemptId: d.attemptId, ok: true as const };
