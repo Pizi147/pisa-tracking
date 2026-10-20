@@ -1,5 +1,5 @@
-import { Component, Suspense, useEffect, useRef, useState, type ErrorInfo, type ReactNode } from 'react';
-import { Link, Navigate, Route, Routes, useLocation } from 'react-router-dom';
+import { Component, Suspense, useEffect, useLayoutEffect, useRef, useState, type ErrorInfo, type ReactNode } from 'react';
+import { Link, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { useSession } from './lib/session.tsx';
 import { onHetPhien, onLoiTaiLai, thuLaiNen, useApi } from './lib/useApi.ts';
 import { DemoBar } from './modules/platform/DemoBar.tsx';
@@ -11,8 +11,11 @@ import { useToast } from './ui/Toast.tsx';
 import { CHIP_TRON } from './ui/Nhan.tsx';
 import WelcomePage from './modules/platform/WelcomePage.tsx';
 import { KhoanhPhanTu } from './modules/huongDan/chiChoToi.tsx';
-import { NAV_RONG, duongMoi, khuVucCuaDuong, khuVucHienThi, type DemYeuCau, type KhuVuc, type KhuVucMuc } from '@shared/domain/index.ts';
-import { t } from '@shared/i18n/index.ts';
+import { MenuDong } from './ui/MenuDong.tsx';
+import { NAV_RONG, chiaMucThanh, chiaThanhDuoi, duongMoi, khuVucCuaDuong, khuVucHienThi, type DemYeuCau, type KhuVuc, type KhuVucMuc } from '@shared/domain/index.ts';
+import { NGON_NGU, t } from '@shared/i18n/index.ts';
+/* Khoá 'Thêm' của từ điển là "Add" (thêm mới); nút gom menu là "More". */
+const THEM = NGON_NGU === 'en' ? 'More' : 'Thêm';
 import { lazyTai } from './lib/taiLaiManh.ts';
 
 /**
@@ -83,16 +86,70 @@ function SoCho({ so, className = 'ml-1.5' }: { so: SoBadge; className?: string }
   );
 }
 
-function NavItem({ muc, active, so, soTutor }: { muc: KhuVucMuc; active: boolean; so: SoBadge; soTutor: SoBadge }) {
+const lopNav = (active: boolean) => `shrink-0 px-3 py-1.5 rounded-lg text-sm no-underline whitespace-nowrap transition-colors border ${
+  active
+    ? 'bg-[color:var(--accent-soft)] text-[color:var(--accent-strong)] border-[color:var(--accent-line)]'
+    : 'text-slate-300 border-transparent hover:bg-white/5'
+}`;
+
+/** `bang`: bản đo (vô hình, không `data-hd`, không nhận focus). */
+function NavItem({ muc, active, so, soTutor, bang }: { muc: KhuVucMuc; active: boolean; so: SoBadge; soTutor: SoBadge; bang?: boolean }) {
   return (
-    <Link to={muc.to} aria-current={active ? 'page' : undefined} data-hd={`nav-${muc.key}`}
-      className={`px-3 py-1.5 rounded-lg text-sm no-underline whitespace-nowrap transition-colors border ${
-        active
-          ? 'bg-[color:var(--accent-soft)] text-[color:var(--accent-strong)] border-[color:var(--accent-line)]'
-          : 'text-slate-300 border-transparent hover:bg-white/5'
-      }`}>
+    <Link to={muc.to} aria-current={active ? 'page' : undefined} data-hd={bang ? undefined : `nav-${muc.key}`} tabIndex={bang ? -1 : undefined}
+      className={lopNav(active)}>
       {muc.label}{muc.key === 'cong-viec' && <SoCho so={so} />}{muc.key === 'tutor' && <SoCho so={soTutor} />}
     </Link>
+  );
+}
+
+/** Số của nút "Thêm": số của mục bị gom (Công việc trước, rồi Tutor). */
+const soCuaThem = (them: readonly KhuVucMuc[], so: SoBadge, soTutor: SoBadge): SoBadge =>
+  (them.some((m) => m.key === 'cong-viec') && so) || (them.some((m) => m.key === 'tutor') && soTutor) || null;
+const mucThem = (them: readonly KhuVucMuc[], di: (to: string) => void, so: SoBadge, soTutor: SoBadge) => them.map((m) => {
+  const n = m.key === 'cong-viec' ? so?.n : m.key === 'tutor' ? soTutor?.n : 0;
+  return { key: m.key, nhan: n ? `${m.label} · ${n}` : m.label, onChon: () => di(m.to) };
+});
+
+/**
+ * THANH TRÊN KHÔNG BỊ CẮT (KHUNG-LOI, A1-05): đo chỗ thật của khung menu (ResizeObserver — đúng cả khi zoom 125 %) và rộng từng mục (bản đo
+ * vô hình); mục không vừa dồn từ cuối vào "Thêm ▾" (`chiaMucThanh`). Trước đây khung cuộn ngang ẩn: 1 280 px mất "Tutor", 1 100 px mất số Công việc.
+ */
+function ThanhTren({ items, dangO, so, soTutor }: { items: KhuVucMuc[]; dangO: KhuVuc | null; so: SoBadge; soTutor: SoBadge }) {
+  const navigate = useNavigate();
+  const khung = useRef<HTMLElement>(null);
+  const bangDo = useRef<HTMLDivElement>(null);
+  const [doDuoc, setDo] = useState<{ co: number; rong: number[]; them: number }>({ co: 0, rong: [], them: 0 });
+  useLayoutEffect(() => {
+    const el = khung.current;
+    if (!el) return undefined;
+    const doLai = () => {
+      const con = [...(bangDo.current?.children ?? [])] as HTMLElement[];
+      const r = con.map((c) => c.getBoundingClientRect().width + 4);   // + gap-1
+      setDo({ co: el.clientWidth, rong: r.slice(0, -1), them: r.at(-1) ?? 0 });
+    };
+    doLai();
+    const ro = new ResizeObserver(doLai);
+    ro.observe(el);
+    if (bangDo.current) ro.observe(bangDo.current);
+    void document.fonts?.ready.then(doLai);   // phông tải xong → rộng chữ đổi
+    return () => ro.disconnect();
+  }, []);
+  const { hien, them } = doDuoc.rong.length === items.length ? chiaMucThanh(items, doDuoc.rong, doDuoc.co, doDuoc.them) : { hien: items, them: [] };
+  return (
+    <nav ref={khung} aria-label={t('Điều hướng chính')} className="relative hidden md:flex flex-1 items-center gap-1 min-w-0">
+      {hien.map((m) => <NavItem key={m.key} muc={m} active={dangO === m.key} so={so} soTutor={soTutor} />)}
+      {them.length > 0 && (
+        <MenuDong nhan={THEM} muc={mucThem(them, navigate, so, soTutor)} lopNut={lopNav(them.some((m) => m.key === dangO))}
+          mat={<>{THEM} ▾<SoCho so={soCuaThem(them, so, soTutor)} /></>} />
+      )}
+      {/* Bản đo: khung 0 × 0 cắt tràn — không làm thanh "cuộn ngang"; con giữ rộng thật (`w-max`). */}
+      <div aria-hidden {...{ inert: '' }} className="pointer-events-none invisible absolute left-0 top-0 h-0 w-0 overflow-hidden">
+        <div ref={bangDo} className="flex w-max">
+          {items.map((m) => <NavItem key={m.key} muc={m} active={false} so={so} soTutor={soTutor} bang />)}
+          <span className={lopNav(false)}>{THEM} ▾<SoCho so={soCuaThem(items, so, soTutor)} /></span>
+        </div>
+      </div>
+    </nav>
   );
 }
 
@@ -106,12 +163,15 @@ const BIEU_TUONG: Record<KhuVuc, ReactNode> = {
   tutor: <><circle cx="10" cy="6.5" r="2.8" /><path d="M4.5 16.5c.8-3.1 2.9-4.7 5.5-4.7s4.7 1.6 5.5 4.7M14.5 4.5l2-1M15.2 7h2.2" /></>,
 };
 
+/* Chữ 12 px (KHUNG-LOI, 04 "Thanh dưới 375"; trước 11,5). */
+const lopDay = (active: boolean) => `relative flex min-w-0 flex-1 flex-col items-center justify-center gap-[3px] text-xs no-underline ${
+  active ? 'text-[color:var(--accent-strong)] font-semibold' : 'text-slate-400'
+}`;
+
 function NutDay({ muc, active, so, soTutor }: { muc: KhuVucMuc; active: boolean; so: SoBadge; soTutor: SoBadge }) {
   return (
     <Link to={muc.to} aria-current={active ? 'page' : undefined} title={muc.label} data-hd={`nav-${muc.key}`}
-      className={`relative flex min-h-[56px] min-w-0 flex-1 flex-col items-center justify-center gap-[3px] text-[11.5px] no-underline ${
-        active ? 'text-[color:var(--accent-strong)] font-semibold' : 'text-slate-400'
-      }`}>
+      className={`min-h-[56px] ${lopDay(active)}`}>
       {active && <span aria-hidden className="absolute top-0 left-1/2 h-[3px] w-8 -translate-x-1/2 rounded-b bg-[color:var(--accent)]" />}
       <svg aria-hidden width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
         {BIEU_TUONG[muc.key]}
@@ -125,6 +185,7 @@ export default function App() {
   const { session, loading, reload, doiGocNhin } = useSession();
   const toast = useToast();
   const location = useLocation();
+  const navigate = useNavigate();
   useGhiNguon();   // PR-OV5b: nguồn của nút "‹ Quay lại" ở mọi hồ sơ
   useTieuDeTab(!!session?.authenticated);   // OV-11i (P1-3): tiêu đề tab theo màn
   /* HOTFIX-3: đã có dữ liệu mà tải lại nền lỗi → giữ bảng, báo nhỏ (một toast cho mọi khối). */
@@ -177,6 +238,7 @@ export default function App() {
   const nav = session.nav ?? NAV_RONG;
   const items = khuVucHienThi(nav, dem?.cho ?? 0);
   const dangO = khuVucCuaDuong(location.pathname);
+  const duoi = chiaThanhDuoi(items);
   const banChinh = LA_BAN_CHINH || !!session.banChinh;
   const gocNhin = session.gocNhin;
 
@@ -205,10 +267,8 @@ export default function App() {
               {!banChinh && <div className="text-xs text-slate-500">{t('Bản demo nội bộ')}</div>}
             </div>
           </div>
-          <nav aria-label={t('Điều hướng chính')} className="hidden md:flex items-center gap-1 min-w-0 overflow-x-auto">
-            {items.map((m) => <NavItem key={m.key} muc={m} active={dangO === m.key} so={so} soTutor={soTutor} />)}
-          </nav>
-          <div className="flex-1 min-w-0" />
+          <ThanhTren items={items} dangO={dangO} so={so} soTutor={soTutor} />
+          <div className="flex-1 min-w-0 md:hidden" />
           <Header />
         </div>
       </header>
@@ -228,7 +288,7 @@ export default function App() {
         );
       })()}
 
-      <main id="noi-dung" tabIndex={-1} className="relative flex-1 overflow-y-auto p-4 md:p-5 pb-20 md:pb-5 outline-none print:overflow-visible print:p-0" key={location.pathname.split('/')[1]}>
+      <main id="noi-dung" tabIndex={-1} className="relative flex-1 overflow-y-auto p-4 md:p-5 pb-20 md:pb-5 max-md:scroll-pb-20 outline-none print:overflow-visible print:p-0" key={location.pathname.split('/')[1]}>
         <BatLoiTrang duong={location.pathname}>
         <Suspense fallback={<div className="p-8 max-w-4xl mx-auto"><Skeleton rows={8} /></div>}>
         <Routes>
@@ -270,10 +330,22 @@ export default function App() {
       {/* Điện thoại: thanh dưới 4 nút (G-11). z-30 — dưới menu tài khoản/thông báo ở đầu trang (z-40), Drawer/Modal (z-50),
           menu ⋯ của dòng (z-[60]) và Toast (z-[100]). */}
       <KhoanhPhanTu />
-      <nav aria-label={t('Điều hướng chính')} className="md:hidden fixed bottom-0 inset-x-0 z-30 flex border-t bg-[color:var(--surface)] print:hidden"
-        style={{ borderColor: 'var(--line)', paddingBottom: 'env(safe-area-inset-bottom)' }}>
-        {items.map((m) => <NutDay key={m.key} muc={m} active={dangO === m.key} so={so} soTutor={soTutor} />)}
-      </nav>
+      {/* KHUNG-LOI (A1-05): ≤ 5 nút — QL / QT: 4 + "Thêm" (Phân tích, Tutor); Head tutor (1 mục) không vẽ thanh. */}
+      {duoi.hien.length > 0 && (
+        <nav aria-label={t('Điều hướng chính')} className="md:hidden fixed bottom-0 inset-x-0 z-30 flex border-t bg-[color:var(--surface)] print:hidden"
+          style={{ borderColor: 'var(--line)', paddingBottom: 'env(safe-area-inset-bottom)' }}>
+          {duoi.hien.map((m) => <NutDay key={m.key} muc={m} active={dangO === m.key} so={so} soTutor={soTutor} />)}
+          {duoi.them.length > 0 && (
+            <MenuDong nhan={THEM} muc={mucThem(duoi.them, navigate, so, soTutor)}
+              lopNut={`min-h-[56px] ${lopDay(duoi.them.some((m) => m.key === dangO))} border-0 bg-transparent cursor-pointer`}
+              mat={<>
+                <svg aria-hidden width="20" height="20" viewBox="0 0 20 20" fill="currentColor"><circle cx="4.5" cy="10" r="1.5" /><circle cx="10" cy="10" r="1.5" /><circle cx="15.5" cy="10" r="1.5" /></svg>
+                <span className="max-w-full truncate">{THEM}</span>
+                <SoCho so={soCuaThem(duoi.them, so, soTutor)} className="absolute top-[5px] left-[calc(50%+5px)] ml-0" />
+              </>} />
+          )}
+        </nav>
+      )}
     </div>
   );
 }

@@ -1,7 +1,8 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { buocDanhSach } from '@shared/domain/index.ts';
 import { CHIP_TRON } from './Nhan.tsx';
+import { useBamNgoai } from './useBamNgoai.ts';
 import { t } from '@shared/i18n/index.ts';
 
 export type MucMenu = {
@@ -29,11 +30,13 @@ export type MucMenu = {
  * Bàn phím (E2): mở → focus mục đầu; ↑/↓/Home/End đi vòng; Enter chọn; Esc/Tab đóng và trả focus về nút ⋯. Esc chỉ đóng menu,
  * không đóng panel chứa nó (pha bắt + chặn lan, như `LichNho`).
  */
-export function MenuDong({ muc, nhan = t('Thao tác khác'), bieuTuong = '⋯', luonHien = false, kieu }: {
+export function MenuDong({ muc, nhan = t('Thao tác khác'), bieuTuong = '⋯', luonHien = false, kieu, mat, lopNut }: {
   /** `bieuTuong`: ⋯ · ⋮, hoặc chữ ngắn như "+2" (badge còn ẩn của hộp lớp — PR-HVL B4). `luonHien`: vẽ nút kể cả khi không có mục / mọi mục `tat`. */
   muc: MucMenu[]; nhan?: string; bieuTuong?: string; luonHien?: boolean;
   /** `chip`: mặt nút là chip họ tròn xám ("+2" cạnh các badge lớp, PR-HK2) thay cho ô vuông viền. */
   kieu?: 'chip';
+  /** KHUNG-LOI: mặt nút riêng (nút "Thêm" của thanh trên / thanh dưới) + lớp của nút — thay ô ⋯. */
+  mat?: ReactNode; lopNut?: string;
 }) {
   const [mo, setMo] = useState(false);
   const nut = useRef<HTMLButtonElement>(null);
@@ -62,12 +65,9 @@ export function MenuDong({ muc, nhan = t('Thao tác khác'), bieuTuong = '⋯', 
     });
   }, [mo, muc.length]);
 
+  useBamNgoai(mo, () => setMo(false), hop, nut);
   useEffect(() => {
     if (!mo) return undefined;
-    const bamNgoai = (e: MouseEvent) => {
-      const t = e.target as Node;
-      if (!hop.current?.contains(t) && !nut.current?.contains(t)) setMo(false);
-    };
     const phim = (e: KeyboardEvent) => {
       if (e.key !== 'Escape') return;
       e.stopPropagation();
@@ -78,12 +78,10 @@ export function MenuDong({ muc, nhan = t('Thao tác khác'), bieuTuong = '⋯', 
     const dong = () => setMo(false);
     /* Cuộn TRONG menu (menu dài) không đóng menu. */
     const cuon = (e: Event) => { if (!(e.target instanceof Node && hop.current?.contains(e.target))) setMo(false); };
-    document.addEventListener('mousedown', bamNgoai);
     document.addEventListener('keydown', phim, true);
     window.addEventListener('scroll', cuon, true);
     window.addEventListener('resize', dong);
     return () => {
-      document.removeEventListener('mousedown', bamNgoai);
       document.removeEventListener('keydown', phim, true);
       window.removeEventListener('scroll', cuon, true);
       window.removeEventListener('resize', dong);
@@ -101,11 +99,11 @@ export function MenuDong({ muc, nhan = t('Thao tác khác'), bieuTuong = '⋯', 
         onClick={(e) => { e.stopPropagation(); setMo((v) => !v); }}
         /* Vùng bấm 44px ở điện thoại: `after` neo theo mép TRONG viền 1px nên 28 - 2 + 18 = 44 (-inset-2 chỉ ra 42). Chip `+n` (rộng ~30px):
            `after` 44×44 đặt giữa chip (rộng hơn nếu chip rộng hơn) — hình chip không đổi (VIEC-NHO 4). */
-        className={kieu === 'chip'
+        className={lopNut ?? (kieu === 'chip'
           ? `${CHIP_TRON} relative min-h-[28px] bg-muted-bg text-muted tabular-nums cursor-pointer hover:brightness-125 max-sm:after:absolute max-sm:after:left-1/2 max-sm:after:top-1/2 max-sm:after:h-11 max-sm:after:w-11 max-sm:after:min-w-full max-sm:after:-translate-x-1/2 max-sm:after:-translate-y-1/2 max-sm:after:content-['']`
-          : "relative inline-grid place-items-center h-7 min-w-7 px-1 rounded-md border bg-transparent text-[11px] font-semibold tabular-nums text-slate-400 hover:text-slate-100 hover:bg-white/5 cursor-pointer after:absolute after:-inset-[9px] after:content-[''] sm:after:hidden"}
-        style={kieu === 'chip' ? undefined : { borderColor: 'var(--line)' }}>
-        {bieuTuong}
+          : "relative inline-grid place-items-center h-7 min-w-7 px-1 rounded-md border bg-transparent text-[11px] font-semibold tabular-nums text-slate-400 hover:text-slate-100 hover:bg-white/5 cursor-pointer after:absolute after:-inset-[9px] after:content-[''] sm:after:hidden")}
+        style={kieu === 'chip' || lopNut ? undefined : { borderColor: 'var(--line)' }}>
+        {mat ?? bieuTuong}
       </button>
       {mo && createPortal(
         <div ref={hop} role="menu" aria-label={nhan}

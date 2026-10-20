@@ -55,7 +55,7 @@ export function PhanTichLopTab({ classId }: { classId: number }) {
               return (
                 <td key={c.key} className="text-center tabular-nums">
                   {!o || o.tong === 0
-                    ? <span className="text-slate-600">—</span>
+                    ? <span className="text-slate-500">—</span>
                     : <span className={o.dat * 2 < o.tong ? 'text-rose-200' : 'text-slate-200'} title={t('{dat}/{tong} HV đạt', { dat: o.dat, tong: o.tong })}>
                         {ft ? `${o.dat}/${o.tong}` : t('{dat}/{tong} HV đạt', { dat: o.dat, tong: o.tong })}
                       </span>}

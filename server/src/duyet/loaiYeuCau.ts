@@ -9,7 +9,7 @@
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import type { Principal } from '../permissions.ts';
 import {
-  INTERVENTION_KIND_LABEL, REGULAR_SKILLS, caseTopicLabel, duongHoSoHocVien, moTaBoTro, nhanDotNgan, nhanLoaiXuLy, outcomeLabelFor, shortDate, tenMonNgan, tuanLich,
+  INTERVENTION_KIND_LABEL, REGULAR_SKILLS, caseTopicLabel, hanKyGhiKetQua, duongHoSoHocVien, moTaBoTro, nhanDotNgan, nhanLoaiXuLy, outcomeLabelFor, shortDate, tenMonNgan, tuanLich,
   type InterventionKind, type LoaiYeuCau, type TrangThaiYc,
   type TruongDeXuat,
 } from '../../../shared/domain/index.ts';
@@ -183,7 +183,8 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
         tieuDe: `Đề xuất PA${x?.topic ? ` · ${caseTopicLabel(x.topic)}` : ''}`,
         phu: x ? nhanDotNgan(x.attempt_kind, x.attempt_no) : null,
         dong: [`${nguoiXin(yc, ngu)} đề xuất ${ngay(yc.tao_luc, ngu)}: “${moTa}”`, ...(x ? [] : ['PA đã xoá'])],
-        neuDuyet: 'PA bắt đầu hôm nay, Kết quả hai tuần một lần, hạn hết T3.',
+        /* KHUNG-LOI (A1-09): hạn ghi NGÀY (chốt 19/10) — hạn kết quả đầu tiên của PA bắt đầu hôm nay, cùng hàm hạn kỳ PA (OV-12a). */
+        neuDuyet: `PA bắt đầu hôm nay · ghi kết quả hai tuần một lần · hạn đầu ${ngay(hanKyGhiKetQua(ngu.homNay), ngu)}.`,
         /* Rà #229: PA / Case đã xoá (PR-LUI-a2) — không có nút Mở trỏ vào chỗ không còn. */
         mo: yc.hoc_vien_id && x ? duongHoSoHocVien(yc.hoc_vien_id, { caseId: x.case_id }) : x ? undefined : '',
       };
