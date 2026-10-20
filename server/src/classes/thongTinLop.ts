@@ -11,6 +11,7 @@ import { demoToday } from '../demoConfig.ts';
 import { badRequest, notFound } from '../util.ts';
 import { require_, type Principal } from '../permissions.ts';
 import { writeAudit } from '../platform/audit.ts';
+import { ghiPhanCong } from './classes.ts';
 import { mocChupVaoLop, programmeByCode } from '../normal/regular.ts';
 import { activeRouteCodes } from '../platform/sysconfig.ts';
 
@@ -99,10 +100,12 @@ export function capNhatThongTinLop(
         ?? PROGRAMME_TEMPLATES[chuongTrinh as keyof typeof PROGRAMME_TEMPLATES]?.skills ?? [])] as string[];
       conn.prepare('DELETE FROM class_skills WHERE class_id = ?').run(classId);
       for (const k of kyNang) conn.prepare('INSERT INTO class_skills (class_id, skill, sessions_per_week) VALUES (?,?,1)').run(classId, k);
-      conn.prepare(
-        `UPDATE teacher_assignments SET status = 'ended', effective_to = ?
-          WHERE class_id = ? AND status = 'active' AND skill IS NOT NULL AND skill NOT IN (${kyNang.map(() => '?').join(',')})`,
-      ).run(today, classId, ...kyNang);
+      /* OV-15i1: kết thúc qua `ghiPhanCong` (giữ dòng còn khớp) — Lịch sử lớp có mục phân công trước → sau, nguồn "Đổi chương trình". */
+      const cu = (conn.prepare(`SELECT user_id, skill, is_core FROM teacher_assignments WHERE class_id = ? AND status = 'active'`).all(classId) as any[])
+        .map((a) => ({ userId: a.user_id as number, skill: a.skill as string | null, isCore: a.is_core === 1 }));
+      const giu = cu.filter((a) => a.skill === null || kyNang.includes(a.skill));
+      const tom = (ds: typeof cu) => ds.map((x) => `${x.isCore ? 'GVCN' : x.skill}:${x.userId}`).sort();
+      if (giu.length < cu.length) ghiPhanCong(p, classId, giu, today, { via: 'doi_ct', truoc: tom(cu), sau: tom(giu) });
     }
     writeAudit({
       actorUserId: p.userId, action: 'class.info', entityType: 'class', entityId: classId,

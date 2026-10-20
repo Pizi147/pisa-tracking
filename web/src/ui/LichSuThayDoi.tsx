@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useState } from 'react';
+import { Fragment, useEffect, useRef, useState } from 'react';
 import { api } from '../lib/api.ts';
 import { useApi } from '../lib/useApi.ts';
 import { KhungPanel } from './KhungPanel.tsx';
@@ -49,6 +49,8 @@ function DongTruong({ x }: { x: Truong }) {
       </li>
     );
   }
+  /* OV-15i1: dòng tóm tắt không có trước / sau (vd "Sửa cả lớp · 3 em" — em bạn không được xem chi tiết). */
+  if (x.cu === null && x.moi === null) return <li className="break-words text-slate-300">{ten}</li>;
   return (
     <li className="break-words">
       <span className="text-slate-400">{ten}:</span>{' '}
@@ -96,19 +98,34 @@ export function LichSuThayDoi({ loai, id, dong2, quayLai, onClose }: {
   const [loc, setLoc] = useState('');
   const goc = `/lich-su?loai=${loai}&id=${id}${loc ? `&loc=${loc}` : ''}`;
   const { data, error, loading, reload } = useApi<Trang>(goc, [goc]);
-  const [them, setThem] = useState<Trang[]>([]);
+  /* OV-15i1: trang "Xem thêm" gắn bộ lọc đã đọc ra chúng — đổi bộ lọc thì trang cũ (và `tiep` cũ) không còn tính, kể cả trang về muộn. */
+  const [themGoc, setThem] = useState<{ goc: string; ds: Trang[] }>({ goc, ds: [] });
+  const them = themGoc.goc === goc ? themGoc.ds : [];
+  const gocNay = useRef(goc);
+  gocNay.current = goc;
+  /* `data` ngay sau khi đổi bộ lọc còn là của bộ lọc cũ (useApi đổi ở lần vẽ sau) — chỉ tự đọc tiếp khi `data` đã thuộc bộ lọc này. */
+  const dataCua = useRef<string | null>(null);
+  useEffect(() => { dataCua.current = goc; }, [data]);   // eslint-disable-line react-hooks/exhaustive-deps
   const [dangTai, setDangTai] = useState(false);
   const [loiThem, setLoiThem] = useState<string | null>(null);
-  useEffect(() => { setThem([]); setLoiThem(null); }, [goc]);
+  useEffect(() => { setLoiThem(null); }, [goc]);
 
   const ds = [...(data?.dong ?? []), ...them.flatMap((x) => x.dong)];
   const cuoi = them.length ? them[them.length - 1] : data;
   const tiep = cuoi?.tiep ?? null;
   const xemThem = async () => {
-    if (tiep === null) return;
+    const g = goc;
+    if (tiep === null || dataCua.current !== g) return;
     setDangTai(true); setLoiThem(null);
-    try { setThem([...them, await api.get<Trang>(`${goc}&tiep=${tiep}`)]); } catch (e) { setLoiThem((e as Error).message); } finally { setDangTai(false); }
+    try {
+      const kq = await api.get<Trang>(`${g}&tiep=${tiep}`);
+      if (gocNay.current === g) setThem((cu) => ({ goc: g, ds: cu.goc === g ? [...cu.ds, kq] : [kq] }));
+    } catch (e) { if (gocNay.current === g) setLoiThem((e as Error).message); } finally { setDangTai(false); }
   };
+  /* OV-15i1: đang lọc mà các trang đầu trống nhưng còn trang sau → tự đọc tiếp (tối đa 5 lần, sau đó để nút "Xem thêm") — không báo "Chưa có" sai. */
+  useEffect(() => {
+    if (data && dataCua.current === goc && !ds.length && tiep !== null && !dangTai && !loiThem && them.length < 5) void xemThem();
+  }, [data, themGoc, dangTai]);   // eslint-disable-line react-hooks/exhaustive-deps
   /* Lọc chỉ khi dài (hơn 5 mục, hoặc còn trang sau) hoặc đang lọc — danh sách ngắn đọc thẳng. */
   const nhom = data?.nhom ?? [];
   const coLoc = nhom.length > 1 && (!!loc || ds.length > 5 || tiep !== null);
@@ -124,7 +141,7 @@ export function LichSuThayDoi({ loai, id, dong2, quayLai, onClose }: {
         )}
         {error ? <div className="pt-3"><ErrorState message={error.message} hint={error.hint} onRetry={reload} /></div>
           : loading && !data ? <div className="pt-3"><Skeleton rows={5} /></div>
-          : !ds.length ? <Empty title={t('Chưa có thay đổi nào')} />
+          : !ds.length ? (tiep === null ? <Empty title={t('Chưa có thay đổi nào')} /> : dangTai ? <div className="pt-3"><Skeleton rows={3} /></div> : null)
           : (
             <ul className="m-0 mt-3 list-none divide-y p-0" style={{ borderColor: 'var(--line)' }}>
               {ds.map((d) => (
@@ -142,7 +159,7 @@ export function LichSuThayDoi({ loai, id, dong2, quayLai, onClose }: {
             </ul>
           )}
         {loiThem && <p className="mt-2 text-sm text-bad" role="alert">{loiThem}</p>}
-        {tiep !== null && ds.length > 0 && !error && (
+        {tiep !== null && (ds.length > 0 || !dangTai) && !error && (
           <div className="py-3">
             <button type="button" className="btn btn-sm min-h-[44px] w-full sm:min-h-0 sm:w-auto" disabled={dangTai} onClick={() => void xemThem()}>
               {dangTai ? t('Đang tải') : t('Xem thêm')}

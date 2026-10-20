@@ -75,11 +75,7 @@ const LO = 60;
 export function lichSuSua(p: Principal, studentId: number, q: { loai?: string; truoc?: number | null }): { dong: DongLichSu[]; tiep: number | null } {
   const conn = db();
   if (!conn.prepare('SELECT 1 FROM students WHERE id = ?').get(studentId)) throw notFound('Không tìm thấy học viên');
-  /* Cùng cờ `viewer.coTheSuaThongTin` của hồ sơ: QL / QT / GVCN lớp đang học (`student.edit`) · TVV / CX / Admin (`student.edit_info`), đúng phạm vi. GVBM → 403. */
-  if (!can(p, PERMISSIONS.STUDENT_VIEW, { studentId })
-    || !(can(p, PERMISSIONS.STUDENT_EDIT, { studentId }) || can(p, PERMISSIONS.STUDENT_EDIT_INFO, { studentId }))) {
-    throw forbidden('Chỉ Quản lý, GVCN, Tư vấn viên và CX của em xem được lịch sử sửa.');
-  }
+  if (!xemLichSuHv(p, studentId)) throw forbidden('Chỉ Quản lý, GVCN, Tư vấn viên và CX của em xem được lịch sử sửa.');
   const loai = q.loai || null;
   if (loai && !['thong-tin', 'target', 'trang-thai'].includes(loai)) throw badRequest('Bộ lọc không hợp lệ.');
 
@@ -103,15 +99,8 @@ export function lichSuSua(p: Principal, studentId: number, q: { loai?: string; t
     conNua = rows.length === LO;
     if (rows.length) truoc = rows[rows.length - 1].id;
     for (const r of rows) {
-      const b = docJson(r.b); const f = docJson(r.f);
-      const doi = new Map<string, [unknown, unknown]>();
-      for (const k of new Set([...Object.keys(b), ...Object.keys(f)])) {
-        const c = cot(k);
-        if (!TRUONG[c] || (r.et === 'learning_cycle' && BO_QUA_CYCLE.has(c)) || (r.et === 'lich_thi') !== CUA_LICH_THI.has(c)) continue;
-        if (loai && TRUONG[c][1] !== loai) continue;
-        if (!(k in f) && r.action !== 'student.create') continue;   // trường chỉ có ở `before` (vd ghi danh giữ) — không phải đổi
-        doi.set(c, [b[k] ?? null, f[k] ?? null]);
-      }
+      const f = docJson(r.f);
+      const doi = doiCuaDong(r, f, loai);
       if (!doi.size) continue;
       const nguon = (typeof f._nguon === 'string' ? f._nguon : null) ?? (CO_NGUON.has(r.action) ? nhanHanhDongNhatKy(r.action) : null);
       const tr = khoi[khoi.length - 1];
@@ -137,6 +126,58 @@ export function lichSuSua(p: Principal, studentId: number, q: { loai?: string; t
       .filter((x, i, ds) => ds.findIndex((y) => y.ten === x.ten) === i),   // tuần thi + tháng thi cùng đổi (cùng tên) → giữ tuần
   })).filter((d) => d.truong.length);
   return { dong, tiep };
+}
+
+/** Cùng cờ `viewer.coTheSuaThongTin` của hồ sơ: QL / QT / GVCN lớp đang học (`student.edit`) · TVV / CX / Admin (`student.edit_info`), đúng phạm vi. GVBM → không.
+ *  OV-15i1: một cổng cho mọi lịch sử của em (hồ sơ + thi thật / Bước tiếp / Gia hạn — `lichSu.ts`). */
+export function xemLichSuHv(p: Principal, studentId: number): boolean {
+  return can(p, PERMISSIONS.STUDENT_VIEW, { studentId })
+    && (can(p, PERMISSIONS.STUDENT_EDIT, { studentId }) || can(p, PERMISSIONS.STUDENT_EDIT_INFO, { studentId }));
+}
+
+/** Trường đã biết đổi trong MỘT dòng nhật ký (dòng cũ ghi cả hàng, dòng mới chỉ trường đổi — cùng cách so). */
+function doiCuaDong(r: { action: string; et: string; b: string | null }, f: Record<string, any>, loai: string | null): Map<string, [unknown, unknown]> {
+  const b = docJson(r.b);
+  const doi = new Map<string, [unknown, unknown]>();
+  for (const k of new Set([...Object.keys(b), ...Object.keys(f)])) {
+    const c = cot(k);
+    if (!TRUONG[c] || (r.et === 'learning_cycle' && BO_QUA_CYCLE.has(c)) || (r.et === 'lich_thi') !== CUA_LICH_THI.has(c)) continue;
+    if (loai && TRUONG[c][1] !== loai) continue;
+    if (!(k in f) && r.action !== 'student.create') continue;   // trường chỉ có ở `before` (vd ghi danh giữ) — không phải đổi
+    doi.set(c, [b[k] ?? null, f[k] ?? null]);
+  }
+  return doi;
+}
+
+/**
+ * OV-15i1 (C22 "lô = một lần lưu"): MỘT lần Sửa cả lớp — các dòng nhật ký của em nằm giữa hai id (`tu`, `den`) vì lô ghi trong một giao dịch.
+ * Trả từng trường "cũ → mới" gắn tên em (`doiTuong`) và `sid` (em — kể cả em đã xoá; null = không suy được em) để nơi gọi kiểm quyền theo em.
+ * Em đổi một trường hai lần lấy cũ của lần đầu, mới của lần sau. Em đã xoá: mỗi em một khối "Học viên đã xoá · n" (không dồn chung). Một câu cho cả lô.
+ */
+export function truongSuaCaLop(tu: number, den: number): { ten: string; cu: string | null; moi: string | null; doiTuong: string; sid: number | null; khoa: string }[] {
+  const rows = db().prepare(
+    `SELECT a.action, a.entity_type et, a.entity_id eid, a.before_json b, a.after_json f, COALESCE(s.id, lc.student_id) sid, COALESCE(s.full_name, s2.full_name) hv
+       FROM audit_logs a LEFT JOIN students s ON a.entity_type = 'student' AND s.id = a.entity_id
+       LEFT JOIN learning_cycles lc ON a.entity_type IN ('learning_cycle', 'lich_thi') AND lc.id = a.entity_id LEFT JOIN students s2 ON s2.id = lc.student_id
+      WHERE a.id > ? AND a.id < ? AND a.action IN (${HANH_DONG.map(() => '?').join(',')}) ORDER BY a.id`,
+  ).all(tu, den, ...HANH_DONG) as any[];
+  const theoEm = new Map<string, { hv: string | null; sid: number | null; doi: Map<string, [unknown, unknown]> }>();
+  for (const r of rows) {
+    /* Em đã xoá: không còn hàng `students` — khoá theo đối tượng của dòng nhật ký (em = id em ở dòng `student`). */
+    const sid: number | null = r.sid ?? (r.et === 'student' ? r.eid : null);
+    const khoa = sid !== null ? `s${sid}` : `${r.et}:${r.eid}`;
+    const em = theoEm.get(khoa) ?? { hv: r.hv ?? null, sid, doi: new Map() };
+    theoEm.set(khoa, em);
+    for (const [c, [cu, moi]] of doiCuaDong(r, docJson(r.f), null)) em.doi.set(c, [em.doi.has(c) ? em.doi.get(c)![0] : cu, moi]);
+  }
+  const ten = tenTheoLo([...theoEm.values()]);
+  let daXoa = 0;
+  return [...theoEm].flatMap(([khoa, { hv, sid, doi }]) => {
+    const doiTuong = hv ?? `Học viên đã xoá · ${(daXoa += 1)}`;
+    return [...doi].sort((x, y) => THU_TU.indexOf(x[0]) - THU_TU.indexOf(y[0]))
+      .map(([c, [cu, moi]]) => ({ ten: TRUONG[c][0], cu: hien(c, cu, ten), moi: hien(c, moi, ten), doiTuong, sid, khoa }))
+      .filter((x) => x.cu !== x.moi).filter((x, i, ds) => ds.findIndex((y) => y.ten === x.ten) === i);
+  });
 }
 
 function docJson(s: string | null): Record<string, any> {

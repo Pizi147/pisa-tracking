@@ -6,6 +6,7 @@ export const EN_OV15H1 = {
   'Chờ nhận xét / nguyên nhân': 'Awaiting comment / cause',
   'PA chờ xác nhận': 'PA awaiting confirmation',
   'PA chờ duyệt': 'PA awaiting approval',
+  'PA chờ duyệt đổi': 'PA change awaiting approval',   // OV-15i1: tên trong ? của Case chưa chốt PA (mockup OV-14 3)
   'PA xong · chờ đóng Case': 'PA done · Case to close',
   'Chờ duyệt không theo dõi': 'Awaiting approval · no follow-up',
   'Bấm số HV hoặc Case để xử lý.': 'Press the student or Case number to act.',

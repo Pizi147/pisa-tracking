@@ -27,6 +27,7 @@ const NHAN_NHAT_KY: Record<string, string> = {
   'lenh_chuyen.tao': 'Quyết định chuyển lớp', 'lenh_chuyen.sua': 'Sửa quyết định chuyển lớp', 'lenh_chuyen.huy': 'Huỷ quyết định chuyển lớp', 'lenh_chuyen.khoi_phuc': 'Khôi phục quyết định chuyển lớp',
   'lenh_chuyen.thi_hanh': 'Thi hành quyết định chuyển lớp', 'ban_giao.ghi_mon': 'Ghi bàn giao môn', 'ban_giao.xac_nhan': 'GVCN xác nhận bàn giao', 'ban_giao.sua': 'Sửa bàn giao đã xác nhận',
   'class.info': 'Sửa thông tin lớp', 'class.progress': 'Đổi tiến độ lớp', 'class.progress.doi_bai': 'Dời bài theo mốc lớp', 'class.transition': 'Chuyển tiếp lớp',
+  'class.sua_ca_lop': 'Sửa thông tin cả lớp',   // OV-15i1: một mục cho cả lô (Lịch sử lớp)
   'cycle.baseline.clear': 'Xoá điểm đầu vào', 'cycle.baseline.set': 'Ghi điểm đầu vào', 'cycle.create': 'Mở lộ trình',
   'cycle.outcome': 'Kết luận lộ trình', 'cycle.thi_that': 'Kết quả thi thật', 'cycle.buoc_tiep': 'Bước tiếp sau thi', 'cycle.han_sau_thi': 'Gia hạn sau thi', 'cycle.target.revise': 'Đổi Target', 'cycle.update': 'Sửa lộ trình',
   'discipline.acknowledge': 'Ghi nhận vi phạm (đã xem)', 'discipline.handle': 'Xác nhận xử lý vi phạm', 'discipline.edit': 'Sửa vi phạm của lần xử lý', 'discipline.delete': 'Xoá lần xử lý',

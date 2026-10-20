@@ -215,6 +215,10 @@ export const DUONG_DO: MucDo[] = [
   { trang: 'Hồ sơ lớp FT', vai: MOI_VAI, url: '/lich-su?loai=lop&id={lopFT}' },
   { trang: 'Hồ sơ lớp FT', vai: MOI_VAI, url: '/lich-su?loai=gop-y&id={lopFT}' },
   { trang: 'Hồ sơ lớp FT', vai: ['QL', 'QT'], url: '/lich-su?loai=nhap-hv&id={lopFT}' },
+  /* OV-15i1: ba loại còn lại — thi thật / Bước tiếp (cùng cổng hv: GVBM 403), phân công lớp, ô điểm một lượt. */
+  { trang: 'Hồ sơ HV', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/lich-su?loai=thi-that&id={loTrinhHv}', maChuDich: { GVBM: 403 } },
+  { trang: 'Hồ sơ lớp FT', vai: MOI_VAI, url: '/lich-su?loai=phan-cong&id={lopFT}' },
+  { trang: 'Hồ sơ MT', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/lich-su?loai=o&id={luotHv}' },
   { trang: 'Hồ sơ HV', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/lo-trinh/{loTrinhDong}/tong-ket' },
   /* OV-13m: panel Bước tiếp sau thi (đọc trạng thái + quét hẹn bắt đầu). */
   { trang: 'Hồ sơ HV', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/cycles/{loTrinhDong}/buoc-tiep' },
@@ -323,6 +327,10 @@ export const TRAN: Record<string, number> = {
   'QL /lich-su?loai=lop&id=3': 16, 'GVCN /lich-su?loai=lop&id=3': 17, 'GVBM /lich-su?loai=lop&id=3': 17, 'GVCN_THUONG /lich-su?loai=lop&id=3': 17, 'QT /lich-su?loai=lop&id=3': 15,
   'QL /lich-su?loai=gop-y&id=3': 15, 'GVCN /lich-su?loai=gop-y&id=3': 16, 'GVBM /lich-su?loai=gop-y&id=3': 16, 'GVCN_THUONG /lich-su?loai=gop-y&id=3': 16, 'QT /lich-su?loai=gop-y&id=3': 14,
   'QL /lich-su?loai=nhap-hv&id=3': 16, 'QT /lich-su?loai=nhap-hv&id=3': 15,
+  /* OV-15i1: thi thật · phân công · ô điểm — trần = max(đo+10, ⌈đo×1,3⌉), đo 20/10 (thi-that 7 · 5 · 10 · 8 · phan-cong 6 · 7 · 7 · 7 · 5 · o 10 · 7 · 11 · 11). */
+  'QL /lich-su?loai=thi-that&id=3': 17, 'QT /lich-su?loai=thi-that&id=3': 15, 'GVCN /lich-su?loai=thi-that&id=3': 20, 'GVBM /lich-su?loai=thi-that&id=3': 18,
+  'QL /lich-su?loai=phan-cong&id=3': 16, 'GVCN /lich-su?loai=phan-cong&id=3': 17, 'GVBM /lich-su?loai=phan-cong&id=3': 17, 'GVCN_THUONG /lich-su?loai=phan-cong&id=3': 17, 'QT /lich-su?loai=phan-cong&id=3': 15,
+  'QL /lich-su?loai=o&id=5': 20, 'QT /lich-su?loai=o&id=5': 17, 'GVCN /lich-su?loai=o&id=5': 21, 'GVBM /lich-su?loai=o&id=5': 21,
   /* TU-b: trang Tutor — trần = max(đo+10, ⌈đo×1,3⌉), đo 20/10. */
   'QL /tutors': 17, 'QT /tutors': 18, 'GVCN /tutors': 13, 'QL /tutors/1': 18, 'QT /tutors/1': 19, 'QL /tutors/dem': 12, 'QT /tutors/dem': 13, 'QT /tutors/go-tay': 13,
   /* TU-a: ô chọn tutor — trần = max(đo+10, ⌈đo×1,3⌉), đo 20/10. */
@@ -679,6 +687,7 @@ export const TRAN: Record<string, number> = {
   'GVBM /notifications': 13,
   'GVCN_THUONG /notifications': 13,
   'QT /notifications': 40,   // OV-15h1: QT vừa ghi (POST) ở phép kiểm trước → lần mở chuông này đồng bộ thông báo tự động ngay (`daGhi`), đo 33; không ghi thì vẫn ~13
+  /* OV-15i1 (ý 12): đo lại 20/10 vẫn 33 (đồng bộ vì vừa ghi; sau nhân ×3: 4) — đo + 30 % = 43 > 40, nên giữ 40 (= đo + 21 %); không hạ thêm được khi chưa làm nhẹ lần đồng bộ (`myWork`). */
   'QL /ke-hoach-test/lop?branchId=1': 22,   // PR-XLMT: +1 câu đếm "cần xếp lại"
   'GVCN /ke-hoach-test/lop?branchId=1': 13,
   'GVBM /ke-hoach-test/lop?branchId=1': 13,
@@ -823,6 +832,11 @@ export const TRAN: Record<string, number> = {
 export const TRAN_DONG: Record<string, number> = {
   /* OV-15g: Lịch sử thay đổi — trần = max(đo+50, ⌈đo×1,3⌉), đo 20/10 (hv 4 · 2 · 9 · lop 33 · 34 · 34 · 34 · 3 · gop-y 32 · 33 · 33 · 33 · 2 · nhap-hv 62 · 32 dòng). */
   'QL /lich-su?loai=hv&id=1': 54, 'QT /lich-su?loai=hv&id=1': 52, 'GVCN /lich-su?loai=hv&id=1': 59, 'QL /lich-su?loai=lop&id=3': 83, 'GVCN /lich-su?loai=lop&id=3': 84, 'GVBM /lich-su?loai=lop&id=3': 84, 'GVCN_THUONG /lich-su?loai=lop&id=3': 84, 'QT /lich-su?loai=lop&id=3': 53, 'QL /lich-su?loai=gop-y&id=3': 82, 'GVCN /lich-su?loai=gop-y&id=3': 83, 'GVBM /lich-su?loai=gop-y&id=3': 83, 'GVCN_THUONG /lich-su?loai=gop-y&id=3': 83, 'QT /lich-su?loai=gop-y&id=3': 52, 'QL /lich-su?loai=nhap-hv&id=3': 112, 'QT /lich-su?loai=nhap-hv&id=3': 82,
+  /* OV-15i1: trần = max(đo+50, ⌈đo×1,3⌉), đo 20/10 (thi-that 5 · 3 · 10 · phan-cong 33 · 34 · 34 · 34 · 3 · o 36 · 4 · 37 · 37 dòng). nhap-hv đo 62 → 82 · 32 → 52:
+     +1 câu kiểm em của trang còn hay đã xoá (20 em) — vẫn dưới trần 112 / 82. */
+  'QL /lich-su?loai=thi-that&id=3': 55, 'QT /lich-su?loai=thi-that&id=3': 53, 'GVCN /lich-su?loai=thi-that&id=3': 60,
+  'QL /lich-su?loai=phan-cong&id=3': 83, 'GVCN /lich-su?loai=phan-cong&id=3': 84, 'GVBM /lich-su?loai=phan-cong&id=3': 84, 'GVCN_THUONG /lich-su?loai=phan-cong&id=3': 84, 'QT /lich-su?loai=phan-cong&id=3': 53,
+  'QL /lich-su?loai=o&id=5': 86, 'QT /lich-su?loai=o&id=5': 54, 'GVCN /lich-su?loai=o&id=5': 87, 'GVBM /lich-su?loai=o&id=5': 87,
   /* TU-b: trang Tutor — trần = max(đo+50, ⌈đo×1,3⌉), đo 20/10. */
   'QL /tutors': 65, 'QT /tutors': 66, 'QL /tutors/1': 58, 'QT /tutors/1': 59, 'QT /tutors/dem': 51, 'QT /tutors/go-tay': 52,   // đo 15 · 16 · 8 · 9 · 1 · 2
   'QL /hoc-vien-lop/lich-thi?thang=2026-10,2026-11': 771,   // OV-15f: đo 593 (FT + lớp thường; ×3 → 1 659); trần = max(đo + 50, ⌈đo × 1,3⌉)

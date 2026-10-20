@@ -81,16 +81,16 @@ export function LopCanChuY({ data, branchId, ct }: { data: TongQuanQlData['bang'
   const phanRa = data.phanRa ?? {};
   const giaiThich = (
     <NutLuat phai label={t('Case chưa chốt PA')}>
-      <span className="text-[13px] font-bold text-slate-100">{t('Case chưa chốt PA')}</span>
-      <span className="text-[14px] font-semibold text-slate-100">{t('{n} Case của {hv} HV chưa có PA đang chạy.', { n: data.tong.caseChuaChot.n, hv: data.tong.caseChuaChotHv.n })}</span>
+      <span className="block text-[13px] font-bold text-slate-100">{t('Case chưa chốt PA')}</span>
+      <span className="block text-[14px] font-semibold text-slate-100">{t('{n} Case của {hv} HV chưa có PA đang chạy.', { n: data.tong.caseChuaChot.n, hv: data.tong.caseChuaChotHv.n })}</span>
       <span className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 gap-y-0.5 tabular-nums">
         {NHOM_CASE_CHUA_CHOT.filter((k) => k !== 'khongTheoDoi' || (phanRa[k] ?? 0) > 0).map((k) => (
           <span key={k} className="contents"><span>{dich(NHOM_CASE_CHUA_CHOT_LABEL[k])}</span><b className="text-right text-slate-100">{phanRa[k] ?? 0}</b></span>
         ))}
         <span className="contents font-semibold"><span>{t('Tổng')}</span><b className="text-right text-slate-100">{data.tong.caseChuaChot.n}</b></span>
       </span>
-      <span>{t('Mỗi Case chỉ ở một trạng thái, không đếm trùng.')}</span>
-      <span>{t('Bấm số HV hoặc Case để xử lý.')}</span>
+      <span className="block">{t('Mỗi Case chỉ ở một trạng thái, không đếm trùng.')}</span>
+      <span className="block">{t('Bấm số HV hoặc Case để xử lý.')}</span>
     </NutLuat>
   );
   const tenLop = (h: HangBang & { cap: 0 | 1 }) => (h.loai === 'chi-nhanh' ? <b className="font-extrabold text-slate-100">{h.nhan}</b>
