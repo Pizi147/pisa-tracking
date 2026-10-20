@@ -381,7 +381,7 @@ export function xemXuLy(p: Principal, id: number): XuLyView {
   return {
     id, studentId: m.student_id, ten: m.ten, kind: m.kind, nhan: nhanLoaiXuLy(m.kind, m.custom_name), customName: m.custom_name ?? null,
     status: m.status, statusLabel: (XU_LY_STATUS_LABEL as Record<string, string>)[m.status] ?? m.status, bac: bacCuaLoai(m.kind),
-    note: m.note ?? null, performedOn: m.performed_on ?? null, nguoi: m.status === 'done' ? m.nguoi ?? null : null,
+    note: m.note ?? null, performedOn: m.performed_on ?? null, nguoi: m.status === 'done' || m.status === 'thu_hoi' ? m.nguoi ?? null : null,
     nguoiId: m.performed_by ?? null, nguoiNgoai: m.performer_name ?? null,
     quyetLuc: m.quyet_luc ?? null, createdAt: m.created_at,
     viPham: violationsByIds(vIds), soTep: m.so_tep, canManage: canManageDiscipline(p, m.student_id) && m.status !== 'thu_hoi', the,
