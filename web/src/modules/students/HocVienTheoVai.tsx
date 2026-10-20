@@ -319,7 +319,7 @@ export function HocVienTheoVai({ vai }: { vai: 'tvv' | 'cx' }) {
         ? <Card><Empty title={t('Không có việc nào')} /></Card>
         : <><PhanTrang {...pt.thanh} /><BangCanLam viec={pt.cat(viecTvv)} coNguoi={false} coPhuHuynh dienThoai={dienThoai} ds={ds} /><PhanTrang {...pt.thanh} duoi /></>)}
       {goc === 'lich-thi' && (
-        <GocLichThi duongGoc={vai === 'tvv' ? `?phamVi=${phamViUrl ?? 'cua-toi'}` : cn ? `?branchId=${cn}` : '?phamVi=tat-ca'} thangUrl={params.get('thang')} onDoiThang={(m) => setParam({ thang: m.join(',') })} />
+        <GocLichThi duongGoc={`${vai === 'tvv' ? `?phamVi=${phamViUrl ?? 'cua-toi'}` : cn ? `?branchId=${cn}` : '?phamVi=tat-ca'}${q.trim() ? `&q=${encodeURIComponent(q.trim())}` : ''}`} thangUrl={params.get('thang')} onDoiThang={(m) => setParam({ thang: m.join(',') })} />
       )}
       {xuat && goc !== 'lich-thi' && <NganXuatDs ids={idsXuat} boLoc={dangXem} mauMacDinh={goc === 'sos' ? 'theo-doi-sos' : undefined} locSos={{ tuan, phamVi: phamViUrl, branchId: cnTvv ?? cn, q: q.trim() || null }} onDong={() => setXuat(false)} />}
       {panelEm !== null && <PanelMotEm key={panelEm} studentId={panelEm} onClose={() => setPanelEm(null)} />}

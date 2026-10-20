@@ -325,6 +325,7 @@ function TrangTheoLop({ admin }: { admin: boolean }) {
   /* OV-15h2 (ý 1): "Chọn tất cả" = các em đang HIỆN (lớp đang mở ở trang này, đúng bộ lọc) — em ở lớp đang gập không bị chọn ngầm. */
   const lopMoTrang = new Set(nhomLopHien.flatMap((g) => g.lop).filter((c) => openIds.includes(c.id)).map((c) => c.id));
   const idsDangHien = goc === 'tat-ca' ? [...new Set(hvTat.filter((h) => !h.ketThuc && lopMoTrang.has(h.classId) && (!dangLoc || h.loc.includes(loc))).map((h) => h.id))] : [];
+  const chuChonTrang = t('Chọn tất cả HV đang hiện ở trang này · {n}', { n: idsDangHien.length });
   const pv = data?.phamVi;
   /* Danh sách học viên = các lớp đang MỞ, theo thứ tự trên màn (Fast Track trước); danh sách lớp = các lớp cùng nhóm khung. */
   const dsHocVien: NguCanhDs = { loai: 'hoc-vien', nhan: t('Học viên & Lớp'), ids: nhomLop.flatMap((g) => g.lop).filter((c) => openIds.includes(c.id)).flatMap((c) => thuTu.get(c.id) ?? []) };
@@ -487,7 +488,7 @@ function TrangTheoLop({ admin }: { admin: boolean }) {
         <div className="space-y-3">
           {idsDangHien.length > 0 && (
             <label className="flex min-h-[44px] w-fit cursor-pointer items-center gap-2 text-xs text-slate-400 sm:min-h-0">
-              <OChonTatCa chon={chon} ids={idsDangHien} />{t('Chọn tất cả HV đang hiện ở trang này · {n}', { n: idsDangHien.length })}
+              <OChonTatCa chon={chon} ids={idsDangHien} nhan={chuChonTrang} />{chuChonTrang}
             </label>
           )}
           <PhanTrang {...pt.thanh} />

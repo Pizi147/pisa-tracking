@@ -31,6 +31,8 @@ type HangHien = Hang & { chuyenSang: string | null; chuaCoGoc: boolean; tt?: Tra
 const NHAN_KL: Record<KetLuanLichThi, string> = {
   'giu-thang': t('Giữ tháng'), 'chot-ngay': t('Chốt ngày'), 'chuyen-thang': t('Chuyển tháng'), 'can-xac-nhan': t('Cần xác nhận'),
 };
+/** Phần mở dưới nút Kết luận: ô ngày · ô tháng · hỏi "Bỏ ngày …?" (Giữ tháng ở em đã chốt ngày — OV-15i2). */
+type MoRong = 'ngay' | 'thang' | 'bo';
 const gio = (iso: string) => { try { return new Date(iso).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }); } catch { return ''; } };
 
 /**
@@ -54,7 +56,7 @@ export function GocLichThi({ duongGoc, thangUrl, onDoiThang }: { duongGoc: strin
   }, [data]);
   const [gomChuaCo, setGomChuaCo] = useState(true);
   const [xuat, setXuat] = useState(false);
-  const [moRong, setMoRong] = useState<{ id: number; kieu: 'ngay' | 'thang' } | null>(null);
+  const [moRong, setMoRong] = useState<{ id: number; kieu: MoRong } | null>(null);
   /* Điện thoại: hàng tháng cuộn ngang — đưa tháng đang chọn vào tầm nhìn (không cuộn cả trang). */
   const hangThang = useRef<HTMLDivElement>(null);
   useEffect(() => { hangThang.current?.querySelector<HTMLElement>('[aria-pressed="true"]')?.scrollIntoView({ inline: 'center', block: 'nearest' }); }, []);
@@ -168,7 +170,7 @@ export function GocLichThi({ duongGoc, thangUrl, onDoiThang }: { duongGoc: strin
 }
 
 function DongLichThi({ r, ds, moRong, onMoRong, onLuu }: {
-  r: HangHien; ds: NguCanhDs; moRong: 'ngay' | 'thang' | null; onMoRong: (k: 'ngay' | 'thang' | null) => void;
+  r: HangHien; ds: NguCanhDs; moRong: MoRong | null; onMoRong: (k: MoRong | null) => void;
   onLuu: (b: { ketLuan?: KetLuanLichThi; ngay?: string; thang?: string; ghiChu?: string }) => void;
 }) {
   const { homNay } = useNgayNghiepVu();
@@ -184,6 +186,8 @@ function DongLichThi({ r, ds, moRong, onMoRong, onLuu }: {
     if (khoa) return;
     if (x === 'chot-ngay') onMoRong(moRong === 'ngay' ? null : 'ngay');
     else if (x === 'chuyen-thang') onMoRong(moRong === 'thang' ? null : 'thang');
+    /* OV-15i2: "Giữ tháng" ở em đã chốt ngày sẽ XOÁ ngày đó (`suaLichTheoKetLuan`) — hỏi một dòng ngay tại hàng trước khi lưu. */
+    else if (x === 'giu-thang' && r.coNgay && !r.chuyenSang) onMoRong(moRong === 'bo' ? null : 'bo');
     else { onMoRong(null); onLuu({ ketLuan: x }); }
   };
   const luuGhiChu = () => { if (ghiChu.trim() !== daLuuGhiChu.current.trim()) onLuu({ ghiChu: ghiChu.trim() }); };
@@ -213,7 +217,7 @@ function DongLichThi({ r, ds, moRong, onMoRong, onLuu }: {
           {nutKl.map((x) => {
             const dang = !r.chuyenSang && r.ketLuan === x;
             return (
-              <button key={x} type="button" disabled={khoa} aria-pressed={dang || (moRong === 'ngay' && x === 'chot-ngay') || (moRong === 'thang' && x === 'chuyen-thang')} onClick={() => bam(x)}
+              <button key={x} type="button" disabled={khoa} aria-pressed={dang || (moRong === 'ngay' && x === 'chot-ngay') || (moRong === 'thang' && x === 'chuyen-thang') || (moRong === 'bo' && x === 'giu-thang')} onClick={() => bam(x)}
                 className={`inline-flex min-h-[44px] items-center justify-center rounded-md border px-2 text-xs font-semibold disabled:cursor-not-allowed sm:min-h-[30px] ${
                   dang ? 'bg-[color:var(--accent-soft)] text-slate-100 shadow-[inset_0_0_0_1px_var(--accent)]' : 'bg-transparent text-slate-300 hover:text-slate-100'} ${khoa && !dang ? 'opacity-50' : ''}`}
                 style={{ borderColor: 'var(--line)' }}>
@@ -227,6 +231,13 @@ function DongLichThi({ r, ds, moRong, onMoRong, onLuu }: {
         )}
         {moRong === 'thang' && (
           <div className="mt-1.5 max-w-[220px]"><ONgay kieu="thang" value={null} ariaLabel={t('Chuyển tháng')} onChange={(iso) => iso && onLuu({ ketLuan: 'chuyen-thang', thang: iso.slice(0, 7) })} toiThieu={homNay.slice(0, 7)} /></div>
+        )}
+        {moRong === 'bo' && (
+          <p className="m-0 mt-1.5 flex flex-wrap items-center gap-2 text-xs text-slate-200" role="group" aria-label={t('Bỏ ngày {ngay}?', { ngay: r.duKien.label })}>
+            <span>{t('Bỏ ngày {ngay}?', { ngay: r.duKien.label })}</span>
+            <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" autoFocus disabled={khoa} onClick={() => onLuu({ ketLuan: 'giu-thang' })}>{t('Bỏ ngày')}</button>
+            <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 sm:min-h-0" onClick={() => onMoRong(null)}>{t('Không')}</button>
+          </p>
         )}
         {r.tt && <TrangThai tt={r.tt} />}
       </div>
