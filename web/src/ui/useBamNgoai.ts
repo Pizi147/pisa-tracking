@@ -9,19 +9,17 @@ import { useEffect, useRef, type RefObject, type SyntheticEvent } from 'react';
 export function useBamNgoai(mo: boolean, onNgoai: (e: MouseEvent) => void, ...trong: RefObject<Element | null>[]) {
   const cb = useRef(onNgoai);
   cb.current = onNgoai;
-  const dsTrong = useRef(trong);
-  dsTrong.current = trong;
   const quaCay = useRef<Event | null>(null);
   useEffect(() => {
     if (!mo) return undefined;
     const bam = (e: MouseEvent) => {
       if (quaCay.current === e) return;
       const t = e.target as Node;
-      if (dsTrong.current.some((r) => r.current?.contains(t))) return;
+      if (trong.some((r) => r.current?.contains(t))) return;   // RefObject ổn định: closure lần mở là đủ
       cb.current(e);
     };
     document.addEventListener('mousedown', bam);
     return () => document.removeEventListener('mousedown', bam);
-  }, [mo]);
+  }, [mo]); // eslint-disable-line react-hooks/exhaustive-deps
   return { onMouseDownCapture: (e: SyntheticEvent) => { quaCay.current = e.nativeEvent; } };
 }

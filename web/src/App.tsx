@@ -142,9 +142,12 @@ function ThanhTren({ items, dangO, so, soTutor }: { items: KhuVucMuc[]; dangO: K
         <MenuDong nhan={THEM} muc={mucThem(them, navigate, so, soTutor)} lopNut={lopNav(them.some((m) => m.key === dangO))}
           mat={<>{THEM} ▾<SoCho so={soCuaThem(them, so, soTutor)} /></>} />
       )}
-      <div ref={bangDo} aria-hidden {...{ inert: '' }} className="pointer-events-none invisible absolute left-0 top-0 flex">
-        {items.map((m) => <NavItem key={m.key} muc={m} active={false} so={so} soTutor={soTutor} bang />)}
-        <span className={lopNav(false)}>{THEM} ▾<SoCho so={soCuaThem(items, so, soTutor)} /></span>
+      {/* Bản đo: khung 0 × 0 cắt tràn — không làm thanh "cuộn ngang"; con giữ rộng thật (`w-max`). */}
+      <div aria-hidden {...{ inert: '' }} className="pointer-events-none invisible absolute left-0 top-0 h-0 w-0 overflow-hidden">
+        <div ref={bangDo} className="flex w-max">
+          {items.map((m) => <NavItem key={m.key} muc={m} active={false} so={so} soTutor={soTutor} bang />)}
+          <span className={lopNav(false)}>{THEM} ▾<SoCho so={soCuaThem(items, so, soTutor)} /></span>
+        </div>
       </div>
     </nav>
   );

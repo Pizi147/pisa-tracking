@@ -294,7 +294,7 @@ export function Header() {
         </button>
         {openMenu === 'account' && (
           /* KHUNG-LOI (B-09): không cao quá màn — cuộn trong menu, "Đăng xuất" dính đáy (trước: trang cuộn, Đăng xuất ra ngoài màn ở 375). */
-          <div className="absolute right-0 mt-1 w-[min(20rem,calc(100vw-2rem))] max-h-[calc(100dvh-4.5rem)] overflow-y-auto overscroll-contain card p-3 pb-0 z-40 shadow-2xl">
+          <div role="dialog" aria-label={t('Tài khoản {ten}', { ten: hoTen })} className="absolute right-0 mt-1 w-[min(20rem,calc(100vw-2rem))] max-h-[70dvh] sm:max-h-[calc(100dvh-8rem)] overflow-y-auto overscroll-contain card p-3 pb-0 z-40 shadow-2xl">
             <div className="text-sm font-medium text-slate-100">{session?.user?.fullName}</div>
             <div className="text-xs text-slate-500 mb-3">{session?.user?.title && dich(session.user.title)}</div>
 
