@@ -16,6 +16,7 @@ export async function runPrOv15gTests(t: YThucTestKit) {
   const { createApp } = await import('../app.ts');
   const { xoaNho } = await import('../platform/nguCanhRequest.ts');
   const classesSvc: any = await import('../classes/classes.ts');
+  const schedule: any = await import('../classes/schedule.ts');
   console.log('\nOV-15g · Lịch sử thay đổi');
 
   const one = (sql: string, ...a: unknown[]) => conn.prepare(sql).get(...a) as any;
@@ -63,8 +64,10 @@ export async function runPrOv15gTests(t: YThucTestKit) {
     });
 
     await checkAsync('OV15g-2 · Tiến độ lớp: đổi tuần Final → mục nhóm "tien-do" (cũ → mới), ghi trong giao dịch; lưu lại nguyên → không thêm nhật ký', async () => {
-      const c = one('SELECT so_tuan, tuan_cuoi_khoa, final_week_override f FROM classes WHERE id = ?', lopThuong);
-      const moi = (c.f ?? c.tuan_cuoi_khoa ?? c.so_tuan) - 1;
+      /* Mốc hiện tại (phép kiểm trước có thể đã dời): Final mới = Final cũ ± 1, vẫn sau Progress và trong khoá. */
+      const pr = schedule.classProgress(lopThuong) as { progressWeek: number | null; finalWeek: number; totalWeeks: number | null };
+      const moi = pr.finalWeek + 1 <= (pr.totalWeeks ?? pr.finalWeek + 1) ? pr.finalWeek + 1 : pr.finalWeek - 1;
+      assert(moi > (pr.progressWeek ?? 0), `không còn tuần Final hợp lệ: ${JSON.stringify(pr)}`);
       await ghi(QL, `/classes/${lopThuong}/progress`, 'PATCH', { finalWeek: moi });
       const r = await ls('lop', lopThuong, '&loc=tien-do');
       const f = truong(r.dong[0], 'Tuần Final Test');
@@ -78,8 +81,10 @@ export async function runPrOv15gTests(t: YThucTestKit) {
     });
 
     await checkAsync('OV15g-3 · Phân công: đổi GV một ô → mục nhóm "phan-cong" "Listening: tên cũ → tên mới"; loai=phan-cong cùng mục', async () => {
-      const cu = all(`SELECT user_id userId, skill, is_core isCore FROM teacher_assignments WHERE class_id = ? AND status = 'active'`, lop)
-        .map((x) => ({ userId: x.userId, skill: x.skill, isCore: x.isCore === 1 }));
+      /* Một người mỗi ô (phép kiểm trước có thể để lại hai dòng cùng môn) — bức tranh gửi phải hợp lệ. */
+      const cu = all(`SELECT user_id userId, skill, is_core isCore FROM teacher_assignments WHERE class_id = ? AND status = 'active' ORDER BY id`, lop)
+        .map((x) => ({ userId: x.userId, skill: x.skill, isCore: x.isCore === 1 }))
+        .filter((x, i, ds) => ds.findIndex((y) => y.isCore === x.isCore && (x.isCore || y.skill === x.skill)) === i);
       const o = cu.find((x) => x.skill === 'listening')!;
       const branch = one('SELECT branch_id b FROM classes WHERE id = ?', lop).b;
       const ung = (classesSvc.teacherCandidatesBranch(branch, lop) as any[]).find((u) => u.id !== o.userId && !cu.some((x) => x.userId === u.id));
