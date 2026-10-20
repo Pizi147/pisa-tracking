@@ -356,7 +356,7 @@ export async function runPrVaiATests(t: YThucTestKit) {
 
   // ================================================================== Task 5 · ba tầng + phần Số liệu theo khung
   check('VAI-a (5a) · tab "Việc hôm nay"; Điểm đáng chú ý lớp thường theo chương trình, nhãn Cần chú ý / Tốt, số = số dòng khi mở (ctLop)', () => {
-    eq(d.TAB_TONG_QUAN_LABEL['tong-quan'], 'Việc hôm nay', 'tên tab');
+    eq(d.TAB_TONG_QUAN_LABEL['tong-quan'], 'Tổng quan', 'tên tab (KHUNG-LOI A1-07: tiêu đề = tên menu)');
     const ung = [
       { loai: 'lop-chua-dat', metricId: 'hv-duoi-ky-vong-mon', extra: { ctLop: 'FOU' }, tu: 5, mau: 22, nhanMon: 'FOU', tenBai: null },
       { loai: 'lop-chua-dat', metricId: 'hv-duoi-ky-vong-mon', extra: { ctLop: 'BE' }, tu: 2, mau: 3, nhanMon: 'BE', tenBai: 'Progress Test' },

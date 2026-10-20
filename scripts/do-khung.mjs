@@ -11,6 +11,9 @@
 // HD-a / HD-b: kịch bản `hd-chi` bấm mọi "Chỉ cho tôi" của 6 vai (khoanh hiện, phần tử bấm được, Esc tắt). HD_VAI=ql,tvv chỉ chạy các vai đó.
 // CONG-CU: (g) đo bảng `do-bang.mjs` ở mọi kịch bản — 1440 tối, 1280 tối, 375 sáng; KHUNG_CHI=bang chỉ đo bảng. Kịch bản `lich`: mọi hộp có ô ngày —
 // bấm ‹ và một ngày trong lịch (vẽ qua portal) không được đóng hộp cha. Lỗi đã biết: `scripts/mien-do.json` (MIEN=0 tắt miễn).
+// KHUNG-LOI: (k) thanh trên cắt mục · (l) thanh dưới > 5 nút · (m) vùng bấm số < 24 px (< 44 px ở điện thoại) · (n) "—" / "/" tương phản < 4,5:1.
+// Kịch bản `thanh`: thanh trên ở 1 100 / 1 280 / 1 366 / 1 440 (QL, QT, GV) + thanh dưới 375. `focus`: Tab ở 375 không bị thanh dưới che.
+// `menu-phim`: ⋯ hồ sơ HV bằng phím (Enter → mục đầu, ↓, Esc → về nút).
 import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -85,7 +88,13 @@ const KICH_BAN = [
   // PR-EN đợt b: màn GV của Test (vai 7) — Điểm theo lớp, nhập điểm FT / lớp thường, hồ sơ Mock, Yêu cầu của tôi, hộp chấm MT, Ghi kết quả PA, chuông.
   ['gv-diem-lop', 7, '/test/diem-lop'], ['gv-nhap-diem', 7, '/nhap-diem/3'], ['gv-bang-diem-thuong', 7, '/bang-diem-thuong/6'], ['gv-mock', 7, '/mock-test/5'],
   ['gv-yeu-cau', 7, '/cong-viec/yeu-cau'],
-  ['gv-hop-diem', 7, '/test/diem-lop', async (p) => { await p.locator('#noi-dung button[aria-label$=": Nhập"], #noi-dung button[aria-label$=": Enter"]').first().click(); await p.waitForTimeout(500); }],
+  /* KHUNG-LOI: tab Điểm theo lớp đã bỏ (OV-15b) — hộp nhập điểm MT mở từ lưới lớp FT trên Lịch Test. */
+  ['gv-hop-diem', 7, '/test/lich', async (p) => {
+    const mo = p.getByRole('button', { name: /^(Mở lớp|Open class) MB FT 101$/ });
+    if (await mo.count()) { await mo.click(); await p.waitForTimeout(600); }
+    /* 375: lưới một môn (L) đã đủ điểm — mở ô đã có điểm (cùng hộp). */
+    await p.locator('#noi-dung button[aria-label$=": Nhập"], #noi-dung button[aria-label$=": Enter"], #noi-dung button[aria-label*=" câu, band "]').first().click(); await p.waitForTimeout(500);
+  }],
   ['gv-ket-qua-pa', 7, '/cong-viec', async (p) => { await p.getByRole('button', { name: /^(Kết quả PA|PA result)/ }).first().click(); await p.waitForTimeout(800); }],
   ['gv-ho-so', 7, '/giao-vien/7'],
   ['hv-menu', 7, '/hoc-vien/3', async (p) => { await p.locator('#noi-dung button[aria-haspopup]').first().click(); await p.waitForTimeout(400); }],
@@ -104,7 +113,11 @@ const KICH_BAN = [
   ['panel-tao-case', 7, '/hoc-vien/3', nut(/^\+ Case$/)],
   ['panel-vi-pham', 7, '/hoc-vien/3?tab=y-thuc', async (p) => { await nut(/Ghi vi phạm|Log incident/)(p); await p.evaluate(() => { const t = document.querySelector('[role=dialog] .overflow-y-auto'); if (t) t.scrollTop = 120; }); await p.waitForTimeout(200); }],
   ['panel-sua-tt', 2, '/hoc-vien/lop/3?tab=hoc-vien', nut(/^Sửa thông tin$/)],
-  ['panel-them-hv', 2, '/hoc-vien/lop/3?tab=hoc-vien', nut(/^\+ Học viên$/)],
+  /* KHUNG-LOI: "+ Học viên" nay trong ⋯ đầu hồ sơ lớp. */
+  ['panel-them-hv', 2, '/hoc-vien/lop/3?tab=hoc-vien', async (p) => {
+    await nut(/^Thao tác khác$/)(p);
+    await p.getByRole('menuitem', { name: /^\+ Học viên$/ }).click(); await p.waitForTimeout(500);
+  }],
   // Hộp kỹ năng MT (popover neo cạnh ô, Kế hoạch Test) và thanh dính đáy "Chọn nhiều học viên" (hồ sơ lớp).
   ['hop-ky-nang-mt', 2, '/test/ke-hoach', async (p) => {
     await p.locator('#noi-dung button[aria-label^="Mở lớp"]').first().click(); await p.waitForTimeout(600);
@@ -112,12 +125,13 @@ const KICH_BAN = [
     if (!(await p.locator('[role=dialog][aria-label^="Lịch "]').count())) throw new Error('không thấy hộp kỹ năng');
   }],
   ['panel-xep-lich-mt', 2, '/test/ke-hoach', async (p) => {   // PR-OMT: panel toàn màn, bảng không cuộn ngang ở 1440
-    await p.getByRole('button', { name: /Xếp lịch MT/ }).first().click(); await p.waitForTimeout(1500);
+    await p.getByRole('button', { name: /Xếp nhiều MT/ }).first().click(); await p.waitForTimeout(1500);   // KHUNG-LOI: nút đổi tên
     if (!(await p.locator('[role=dialog]').count())) throw new Error('không thấy panel');
   }],
   ['chon-nhieu-hv', 2, '/hoc-vien/lop/3?tab=hoc-vien', async (p) => {
     await nut(/^Chọn nhiều học viên$/)(p);
-    await p.locator('#noi-dung input[type=checkbox]').first().check(); await p.waitForTimeout(300);
+    await p.locator('#noi-dung input[type=checkbox]').first().check();
+    await p.getByRole('toolbar', { name: 'Việc cho học viên đã chọn' }).waitFor({ timeout: 3000 }).catch(() => {});   // KHUNG-LOI: chờ thanh, không đoán 300 ms
     if (!(await p.getByRole('toolbar', { name: 'Việc cho học viên đã chọn' }).count())) throw new Error('không thấy thanh chọn nhiều');
   }],
 ];
@@ -204,6 +218,45 @@ function doTrang() {
       }
     }
   }
+  // KHUNG-LOI (k) thanh trên: mục nào ra ngoài khung menu / khung cuộn ngang (A1-05).
+  const navTren = [...document.querySelectorAll('header nav')].find(thay);
+  if (navTren) {
+    const nr = navTren.getBoundingClientRect();
+    if (navTren.scrollWidth > navTren.clientWidth + 1) loi.push(`k thanh trên cuộn ngang ${navTren.scrollWidth}/${navTren.clientWidth}`);
+    for (const m of navTren.querySelectorAll(':scope > a, :scope > button')) {
+      const r = m.getBoundingClientRect();
+      if (r.right > nr.right + 1 || r.left < nr.left - 1) ghi(m, `k thanh trên cắt mục «${ten(m)}»`);
+    }
+  }
+  // (l) thanh dưới điện thoại ≤ 5 nút.
+  const navDuoi = [...document.querySelectorAll('body > div nav, #root nav')].find((n) => thay(n) && getComputedStyle(n).position === 'fixed');
+  if (navDuoi && navDuoi.querySelectorAll(':scope > a, :scope > button').length > 5) loi.push(`l thanh dưới ${navDuoi.querySelectorAll(':scope > a, :scope > button').length} nút`);
+  // (m) số bấm được (B-02): hộp nút hoặc ::after ≥ 24 (máy tính) / 44 (< 640).
+  const can = innerWidth < 640 ? 44 : 24;
+  let nho = 0, vd = '';
+  for (const b of document.querySelectorAll('button[aria-label*="Bấm để xem danh sách"]')) {
+    if (!thay(b)) continue;
+    const r = b.getBoundingClientRect(), af = getComputedStyle(b, '::after');
+    const w = Math.max(r.width, parseFloat(af.width) || 0), h = Math.max(r.height, parseFloat(af.height) || 0);
+    if (w < can - 0.5 || h < can - 0.5) { nho++; vd ||= `${Math.round(w)}×${Math.round(h)} «${ten(b)}»`; }
+  }
+  if (nho) loi.push(`m ${nho} số bấm được nhỏ hơn ${can}×${can} (vd ${vd})`);
+  // (n) "—" / "/" mang nghĩa (B-08): tương phản với nền ≥ 4,5:1.
+  const rgb = (s) => (s.match(/[\d.]+/g) ?? []).map(Number);
+  const lum = ([r, g, b]) => { const f = (c) => { c /= 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; }; return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b); };
+  const nen = (el) => { for (let a = el; a; a = a.parentElement) { const c = rgb(getComputedStyle(a).backgroundColor); if (c.length >= 3 && (c[3] ?? 1) > 0.5) return c; } return rgb(getComputedStyle(document.body).backgroundColor); };
+  let mo = 0, vdMo = '';
+  const tw1 = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  for (let n = tw1.nextNode(); n; n = tw1.nextNode()) {
+    const s = n.textContent.trim();
+    if (s !== '—' && s !== '/') continue;
+    const el = n.parentElement;
+    if (!el || !thay(el) || an(el) || el.closest('[aria-hidden=true]')) continue;
+    const [l1, l2] = [lum(rgb(getComputedStyle(el).color)), lum(nen(el))];
+    const tl = (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05);
+    if (tl < 4.5) { mo++; vdMo ||= `${tl.toFixed(1)}:1 «${s}» trong «${ten(el.parentElement).slice(0, 30)}»`; }
+  }
+  if (mo) loi.push(`n ${mo} dấu "—" / "/" mờ (vd ${vdMo})`);
   if (dau) { dau.scrollIntoView({ block: 'center', inline: 'nearest' }); dau.style.outline = '2px solid #f43f5e'; }
   return [...new Set(loi)];
 }
@@ -294,6 +347,93 @@ for (const [w, h] of [[1440, 900], [375, 812], [1366, 768], [1280, 800]]) for (c
   }
   await ctx.close();
 }
+/*
+ * KHUNG-LOI — `thanh` (A1-05): thanh trên không cắt mục ở 1 100 / 1 280 / 1 366 / 1 440 (QL 2, QT 1, GV 7, Head tutor 21 nếu có); mục bị gom vào
+ * "Thêm" vẫn tới được (mở menu, mục có trong menu). Thanh dưới 375: ≤ 5 nút. `focus` (B-05): 375, Tab 40 lần trên Học viên & Lớp (vai 10) + Tổng
+ * quan (vai 2) — phần tử đang focus không nằm dưới thanh dưới. `menu-phim` (V4C-03): ⋯ hồ sơ HV — Enter → focus mục đầu, ↓ → mục 2, Esc → về nút.
+ */
+const chayKhoi = async (ten, fn) => {
+  if (CHI_BANG || (LOC && !ten.includes(LOC))) return;
+  const loi = [];
+  try { await fn(loi); } catch (e) { loi.push(`kịch bản dừng: ${e.message.split('\n')[0]}`); }
+  console.log(`${loi.length ? '✗' : '✓'} ${ten}${loi.map((l) => `\n    ${l}`).join('')}`);
+  tongLoi += loi.length;
+};
+const trangMoi = async (w, h, vai, sang = false) => {
+  const ctx = await trinh.newContext({ viewport: { width: w, height: h } });
+  await ctx.addInitScript((s) => { try { localStorage.setItem('pisa-giao-dien', s ? 'light' : 'dark'); localStorage.setItem('pisa-ngon-ngu', 'vi'); } catch {} }, sang);
+  const p = await ctx.newPage();
+  p.setDefaultTimeout(8000);
+  await p.request.post(`${BASE}/api/demo/session`, { data: { userId: vai } });
+  return [ctx, p];
+};
+await chayKhoi('thanh', async (loi) => {
+  for (const [w, h] of [[1100, 800], [1280, 800], [1366, 768], [1440, 900]]) for (const vai of [2, 1, 7]) {
+    const [ctx, p] = await trangMoi(w, h, vai);
+    await p.goto(`${BASE}/`, { waitUntil: 'networkidle' }); await p.waitForTimeout(500);
+    const kq = await p.evaluate(() => {
+      const nav = document.querySelector('header nav');
+      const nr = nav.getBoundingClientRect();
+      const muc = [...nav.querySelectorAll(':scope > a, :scope > button')];
+      return { cat: muc.filter((m) => { const r = m.getBoundingClientRect(); return r.right > nr.right + 1; }).map((m) => m.textContent.trim()),
+        cuon: nav.scrollWidth > nav.clientWidth + 1, them: muc.some((m) => m.tagName === 'BUTTON'), chu: muc.map((m) => m.textContent.trim()).join(' · ') };
+    });
+    if (kq.cat.length || kq.cuon) loi.push(`${w}/v${vai}: thanh trên cắt «${kq.cat.join(', ')}»${kq.cuon ? ' (cuộn ngang)' : ''}`);
+    if (kq.them) {
+      await p.locator('header nav > button').click();
+      if (!(await p.locator('[role=menu] [role=menuitem]').count())) loi.push(`${w}/v${vai}: "Thêm" không mở menu`);
+    }
+    console.log(`    ${w}/v${vai}: ${kq.chu}`);
+    await ctx.close();
+  }
+  for (const vai of [2, 7]) {
+    const [ctx, p] = await trangMoi(375, 812, vai, true);
+    await p.goto(`${BASE}/`, { waitUntil: 'networkidle' }); await p.waitForTimeout(400);
+    const n = await p.locator('nav.fixed > a, nav.fixed > button').count();
+    if (n > 5) loi.push(`375/v${vai}: thanh dưới ${n} nút`);
+    const nutThem = p.locator('nav.fixed > button');
+    if (await nutThem.count()) {
+      await nutThem.click();
+      await p.locator('[role=menu] [role=menuitem]').first().click();
+      await p.waitForLoadState('networkidle');
+      if (!/\/(phan-tich|tutor)/.test(p.url())) loi.push(`375/v${vai}: mục trong "Thêm" không mở trang (${p.url()})`);
+    }
+    await ctx.close();
+  }
+});
+await chayKhoi('focus', async (loi) => {
+  for (const [vai, duong] of [[10, '/hoc-vien'], [2, '/']]) {
+    const [ctx, p] = await trangMoi(375, 812, vai, true);
+    await p.goto(BASE + duong, { waitUntil: 'networkidle' }); await p.waitForTimeout(400);
+    for (let i = 0; i < 40; i++) {
+      await p.keyboard.press('Tab');
+      const che = await p.evaluate(() => {
+        const el = document.activeElement;
+        const nav = document.querySelector('nav.fixed');
+        if (!el || el === document.body || !nav || nav.contains(el)) return null;
+        const r = el.getBoundingClientRect(), nt = nav.getBoundingClientRect().top;
+        return r.height && r.bottom > nt + 1 && r.top < innerHeight ? `${(el.getAttribute('aria-label') || el.textContent || '').trim().slice(0, 30)} (${Math.round(r.bottom)} > ${Math.round(nt)})` : null;
+      });
+      if (che) { loi.push(`375/v${vai} ${duong} Tab ${i + 1}: focus bị thanh dưới che «${che}»`); break; }
+    }
+    await ctx.close();
+  }
+});
+await chayKhoi('menu-phim', async (loi) => {
+  const [ctx, p] = await trangMoi(1440, 900, 2);
+  await p.goto(`${BASE}/hoc-vien/3`, { waitUntil: 'networkidle' }); await p.waitForTimeout(400);
+  const nut = p.locator('#noi-dung button.btn[aria-haspopup=menu]').first();
+  await nut.focus(); await p.keyboard.press('Enter'); await p.waitForTimeout(150);
+  const vai = () => p.evaluate(() => [document.activeElement?.getAttribute('role'), document.activeElement?.textContent?.trim().slice(0, 30)]);
+  const [r1, c1] = await vai();
+  if (r1 !== 'menuitem') loi.push(`Enter: focus ở «${c1}» (${r1}), cần mục đầu menu`);
+  await p.keyboard.press('ArrowDown'); await p.waitForTimeout(100);
+  const [r2, c2] = await vai();
+  if (r2 !== 'menuitem' || c2 === c1) loi.push(`↓: focus «${c2}», cần mục kế`);
+  await p.keyboard.press('Escape'); await p.waitForTimeout(100);
+  if (!(await nut.evaluate((b) => b === document.activeElement))) loi.push('Esc: focus không về nút ⋯');
+  await ctx.close();
+});
 /*
  * E-NHO (PR-EN, kịch bản `ngon-ngu`): (1) chưa đăng nhập bấm English → tải lại vẫn EN; (2) đăng nhập vai chưa chọn → tài khoản lưu `en`;
  * (3) máy mới (localStorage trống) đăng nhập cùng vai → tự EN; (4) bấm VI ở thanh trên → tài khoản `vi`. Vai 9; trả tài khoản về `vi`.
