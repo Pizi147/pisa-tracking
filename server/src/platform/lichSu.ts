@@ -136,13 +136,13 @@ function cuaLop(p: Principal, loai: 'lop' | 'phan-cong' | 'gop-y' | 'nhap-hv', c
   if (loai === 'gop-y') {
     const r = docNhatKy(`a.action IN ('gop_y_tuan.ghi', 'gop_y_tuan.xoa') AND a.entity_type = 'student'
         AND a.entity_id IN (SELECT student_id FROM enrollments WHERE class_id = ?) AND a.entity_label LIKE ?`, [classId, `${c.code} · %`], tiep, null,
-    (r) => ({ nguon: null, lyDo: null, truong: [{ ten: `Góp ý ${String(r.label).slice(c.code.length + 3)}`, doiTuong: r.hv ?? 'Học viên đã xoá', cu: chu(r.b.noiDung), moi: chu(r.f.noiDung) }] }));
+    (r) => ({ nguon: null, lyDo: null, truong: [{ ten: `Góp ý · ${String(r.label).slice(c.code.length + 3)}`, doiTuong: r.hv ?? 'Học viên đã xoá', cu: chu(r.b.noiDung), moi: chu(r.f.noiDung) }] }));
     return { ...r, nhom: [], batDau: null };
   }
   if (loai === 'nhap-hv') {
     const r = docNhatKy(`a.action = 'student.bulk_add' AND a.entity_type = 'class' AND a.entity_id = ?`, [classId], tiep, null, (r) => ({
       nguon: `Thêm học viên hàng loạt · ${r.f.lop ?? c.code}`, lyDo: null,
-      truong: [...(Array.isArray(r.f.hv) ? r.f.hv : []).map((h: any) => ({ ten: 'Học viên', doiTuong: String(h.ten), cu: null, moi: 'Đã thêm vào lớp' })),
+      truong: [...(Array.isArray(r.f.hv) ? r.f.hv : []).map((h: any) => ({ ten: 'Lớp', doiTuong: String(h.ten), cu: null, moi: String(r.f.lop ?? c.code) })),
         ...(r.f.skipped ? [{ ten: 'Dòng bỏ qua', cu: null, moi: String(r.f.skipped) }] : [])],
     }));
     return { ...r, nhom: [], batDau: batDauNeu(c.created_at, r.tiep) };
@@ -181,7 +181,7 @@ function truongLop(r: DongNk, ct: string | null): { nguon: string | null; lyDo: 
     }
     case 'class.progress.doi_bai':
       /* Cùng lần lưu đổi mốc: bài chưa thi của các em dời theo (PR-LTGON luật 6). */
-      return { nguon: null, lyDo: null, truong: [{ ten: `Bài ${r.label === 'final' ? 'Final' : 'Progress'} Test chưa thi (${f.kyNang ?? 0} kỹ năng)`, cu: chu(b.week), moi: chu(f.week), n: 'tien-do' }] };
+      return { nguon: null, lyDo: null, truong: [{ ten: `Bài ${r.label === 'final' ? 'Final' : 'Progress'} Test chưa thi`, cu: chu(b.week), moi: chu(f.week), n: 'tien-do' }] };
     case 'class.assign': {
       const nguon = f.via === 'gvcn' ? 'GVCN đổi GV bộ môn' : f.via === 'tao_lop' ? 'Tạo lớp' : null;
       if (!Array.isArray(f.sau)) {

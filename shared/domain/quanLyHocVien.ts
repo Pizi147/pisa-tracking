@@ -20,7 +20,7 @@ export const NHAN_VIEC_QUAN_LY: Record<ViecQuanLy, string> = {
   'bo-luu-tru': t('Bỏ lưu trữ'),
   'xoa-hoc-vien': t('Xoá học viên'),
   'de-xuat-sua': t('Đề xuất sửa thông tin…'),
-  'lich-su-sua': t('Lịch sử sửa'),
+  'lich-su-sua': t('Lịch sử thay đổi'),   // OV-15g: một tên cho mọi nơi (C22)
 };
 
 /** OV-11d (HV-3, Q4): hồ sơ đã Lưu trữ khoá — máy chủ trả câu này (400) ở mọi đường sửa hồ sơ / lộ trình / thi thật / Case. */
