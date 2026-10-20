@@ -3,7 +3,7 @@ import { DauKetQua, lopKq } from './BieuTuong.tsx';
 import { t } from '@shared/i18n/index.ts';
 
 type Kq = 'vuot' | 'bang' | 'duoi' | null;
-const CHU_KQ = { vuot: 'Vượt kỳ vọng', bang: 'Bằng kỳ vọng', duoi: 'Dưới kỳ vọng' } as const;
+const chuKq = (kq: 'vuot' | 'bang' | 'duoi') => (kq === 'duoi' ? t('Dưới kỳ vọng') : kq === 'bang' ? t('Bằng kỳ vọng') : t('Vượt kỳ vọng'));
 
 /**
  * Ô ĐIỂM MỘT MẪU (BANG-0, 04 mục 7) — thay 7+ dáng ô điểm (BANG-1 chuyển 29 nơi). Tô CHÍNH con số + ✓ / ✗ đứng TRƯỚC (màu `lopKq`);
@@ -29,7 +29,7 @@ export function ODiem({ kieu = 'doc', so, kq = null, kck, tong, tongCot, phu, lu
 }) {
   const kqHien: Kq = kck && kq === 'duoi' ? null : kq;
   const mau = lopKq(kqHien);
-  const ten = [nhan, so ?? t('Chưa có'), kq ? `— ${kck && kq === 'duoi' ? 'KCK' : t(CHU_KQ[kq])}${kyVong ? ` ${kyVong}` : ''}` : ''].filter(Boolean).join(' ');
+  const ten = [nhan, so ?? t('Chưa có'), kq ? `— ${kck && kq === 'duoi' ? 'KCK' : chuKq(kq)}${kyVong ? ` ${kyVong}` : ''}` : ''].filter(Boolean).join(' ');
   /* Chỗ ký hiệu giữ khi ô có số mà không có ký hiệu (số thẳng cột); ô trống không giữ ("—" nằm giữa). */
   const kyHieu = so === null ? null : <span className="inline-block w-[14px] shrink-0 text-center" aria-hidden>{kqHien && <DauKetQua kq={kqHien} />}</span>;
   const deKhac = kieu === 'ti-le' && tong != null && tongCot != null && tong !== tongCot;
