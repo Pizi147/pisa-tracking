@@ -87,7 +87,9 @@ Kế hoạch các PR OV khác: planning viết **ngay trước khi giao** (theo 
 |---|---|
 | Biên dịch | `tsc`. **Không** dùng `tsx`/`esbuild` làm trình chạy TS. Import phải có đuôi `.ts`/`.tsx` |
 | Sửa máy chủ | `npm run build:server` (`npm run dev` không tự dựng lại máy chủ) |
-| Kiểm | `npm run check` = build + test + typecheck. Phép kiểm mới: file `server/src/tests/pr<Mã>.tests.ts`, gọi ở **cuối** `run.ts` |
+| Kiểm | `npm run check` = build + test + typecheck + **cảnh báo esbuild = lỗi** (`scripts/kiem-esbuild.mjs`: `case` trùng…). Phép kiểm mới: file `server/src/tests/pr<Mã>.tests.ts`, gọi ở **cuối** `run.ts` |
+| Đo trên trang thật (CONG-CU) | `npm run dev` cổng riêng, rồi `KHUNG_BASE=http://localhost:<WEB_PORT>`: `node scripts/do-khung.mjs [lọc]` (khung + bảng `do-bang` 1440 / 1280 / 375 + kịch bản `lich`: bấm trong lịch không đóng hộp cha) · `node scripts/do-bang.mjs [lọc]` (chỉ bảng). Lỗi đã biết: `scripts/mien-do.json` — mỗi dòng ghi PR gỡ; PR sửa xong **gỡ dòng** (dòng thừa = đỏ); `MIEN=0` xem lỗi thật |
+| Ảnh cặp mockup \| web | `node scripts/anh-cap.mjs <tệp mockup> <khung CSS \| -> <đường web> <vai> <bề rộng> [ra.png]` — một PNG trái mockup / phải web toàn trang (375 sáng, còn lại tối); cách chạy ở đầu tệp |
 | `shared/domain/*` | Hàm mới re-export qua `shared/domain/index.ts` |
 | Ngày demo | **14/09/2026** cố định: `demoToday()` (máy chủ), `session.demoDate` (web). Tuần T2→CN, thuộc tháng chứa thứ Năm |
 | Thời gian trên màn | Mã tuần `W2 OCT`; ngày chỉ cho hạn cụ thể, ngày thi, ngày sinh, nhật ký |
@@ -505,6 +507,7 @@ Nhật ký chi tiết tới 04/10 ở `git show 575e898d:plan.md` (mục 14) và
 
 | Ngày | PR / nhánh · model | Kết quả |
 |---|---|---|
+| 21/10/2026 | CONG-CU (Opus 5.5) · `claude/cong-cu-821f86` | Công cụ: `do-bang` (g1–g5) gắn `do-khung` 1440/1280/375, bỏ miễn đo lưới chấm; esbuild cảnh báo = lỗi trong check; kịch bản `lich`; `anh-cap.mjs`; lỗi đã biết ở `mien-do.json` (BANG-1, CV-LOI, KHUNG-LOI gỡ) |
 | 20/10/2026 | OV-15i1 (Opus 5.5) · `claude/pr-ov15i1-plan-z54zlx` | Lịch sử: góp ý đi chỉ mục `idx_audit_viec` (không LIKE), ô điểm phân trang con trỏ, thi-that cùng cổng hv (GVBM 403), Sửa cả lớp / Dán Excel một mục ở lớp, lô 0 em không ghi, HV đã xoá, đổi chương trình ghi phân công, `batDau` mọi loại, chữ EN; nhãn PA chờ duyệt đổi; trần 3 đường mới. Không làm: gộp GET Tổng quan (ý 11), chuông hết ngay do người khác (ý 12b) — lý do trong PR. |
 | 20/10/2026 | OV-15i2 (Opus 5.5) · `claude/sharp-ride-q33fc0` | Việc lẻ: Dán Excel thử lại không ghi trùng mục tổng · ≤ 2 lệnh mỗi môn · lớp thường khớp email; bỏ `viewer.huyLuot`; Xuất điểm Test không `a.*`, cột Lớp theo phạm vi; tutor gợi ý theo lớp nhóm PA; Lịch thi TVV/CX mang ô tìm + hỏi "Bỏ ngày …?"; CODE_MAP. Phép kiểm `prOv15i2` |
 | 20/10/2026 | OV-15h1 (Opus 5.5) · `claude/vibrant-davinci-5gzwos` | Tổng quan QL: GET dữ liệu 5 → 3 (`/tong-quan/ql` một GET cho Lớp cần chú ý + Tuần này + Trễ chấm, số giữ nguyên), Lớp cần chú ý theo mockup 3, Chốt lộ trình tại chỗ, Cần bạn quyết ≤ 7 ngày; thông báo theo lô; Chờ bạn duyệt theo chi nhánh. |
