@@ -1,7 +1,6 @@
 [
   {"cong_cu":"do-khung","pr":"M2","ly_do":"có sẵn trên main (b-may-do B-06 \"phát hiện nhẹ\"): panel Chấm Speaking GVBM cuộn trong trang","khop":"^gvbm-1440-(toi|sang) b cuộn lồng "},
   {"cong_cu":"do-khung","pr":"M2","ly_do":"có sẵn trên main (b-may-do B-06): Vận hành 375 chữ «Mọi người» mất 2 px chân chữ","khop":"^cv-van-hanh-375-(toi|sang) c chữ cắt [0-9]+x16<[0-9]+x18 «Mọi người»"},
-  {"cong_cu":"esbuild","pr":"CV-LOI","ly_do":"case trùng yt_xem (11.1e) — nhánh Ghi nhận một em tại chỗ không bao giờ chạy","khop":"^web/src/modules/congViec/PanelViec\\.tsx:\\d+ duplicate-case case 'yt_xem':"},
   {"cong_cu":"do-bang","pr":"BANG-1","ly_do":"lưới MT + lưới lớp thường (ô tổng bị ⋯ đè) ở các lối vào lưới","khop":"^(nhap-diem|gv-nhap-diem|bang-diem-thuong|gv-bang-diem-thuong|test-lichTest|gvbm-test|test-diem-lop|gv-diem-lop|gv-hop-diem)-\\d+-(toi|sang) «[^»]+» g[1-5] "},
   {"cong_cu":"do-bang","pr":"BANG-1","ly_do":"lưới MT / Final Test trong hồ sơ lớp","khop":"^(lop-ft|lop-ft-phan-tich|lop-ft-y-thuc|lop-thuong|lop-thuong-phan-tich|panel-sua-tt|panel-them-hv|chon-nhieu-hv)-\\d+-(toi|sang) «(MT\\d|Final Test|bảng 1)» g[1-5] "},
   {"cong_cu":"do-bang","pr":"BANG-1","ly_do":"lưới Nhập điểm trong Công việc","khop":"^(.+)-\\d+-(toi|sang) «Nhập điểm · [^»]+» g[1-5] "},

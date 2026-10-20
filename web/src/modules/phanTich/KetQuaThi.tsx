@@ -197,9 +197,14 @@ function BangThiThat({ pv }: { pv: PhamViPhanTich }) {
   const chon = async (r: DongThiThat, v: string | null) => {
     setDang(r.cycleId);
     try {
-      if (v === null) await api.del(`/cycles/${r.cycleId}/buoc-tiep`);
-      else await api.post(`/cycles/${r.cycleId}/buoc-tiep`, { chon: v });
-      toast.push('ok', v === null ? t('Đã bỏ chọn bước tiếp · {ten}', { ten: r.ten }) : t('Đã lưu · {ten}', { ten: r.ten }));
+      const ghi = (x: string | null) => (x === null ? api.del(`/cycles/${r.cycleId}/buoc-tiep`) : api.post(`/cycles/${r.cycleId}/buoc-tiep`, { chon: x }));
+      await ghi(v);
+      const chu = v === null ? t('Đã bỏ chọn bước tiếp · {ten}', { ten: r.ten }) : t('Đã lưu · {ten}', { ten: r.ten });
+      /* CV-LOI (A5-08): lưu ngay trên hàng → Hoàn tác về lựa chọn cũ (chưa chọn / Tạm dừng / Thôi học). Lựa chọn cũ là "Học tiếp lộ trình" (cần panel) → không Hoàn tác. */
+      const cu = r.buocTiep ?? null;
+      if (cu === null || LUA_CHON_HANG.some(([k]) => k === cu)) {
+        toast.hoanTac(chu, () => { ghi(cu).then(xong, (e: any) => toast.push('error', e?.message ?? t('Không lưu được'))); });
+      } else toast.push('ok', chu);
       xong();
     } catch (e: any) { toast.push('error', e?.message ?? t('Không lưu được')); } finally { setDang(null); }
   };
@@ -211,7 +216,7 @@ function BangThiThat({ pv }: { pv: PhamViPhanTich }) {
         {dang === r.cycleId ? <span className="text-xs text-slate-400">{t('Đang lưu…')}</span> : (
           <MenuDong nhan={`${t('Bước tiếp')} · ${r.ten}`} bieuTuong={`${chu} ▾`} muc={[
             { key: 'moi', nhan: t('Học tiếp lộ trình…'), onChon: () => setMoPanel(r) },
-            ...LUA_CHON_HANG.map(([k, n]) => ({ key: k, nhan: n, onChon: () => void chon(r, k) })),
+            ...LUA_CHON_HANG.map(([k, n]) => ({ key: k, nhan: n, onChon: () => void chon(r, k), ...(k === 'ket_thuc' ? { keTruoc: true, nguyHiem: true } : {}) })),
             { key: 'bo', nhan: t('Chưa chọn'), keTruoc: true, tat: !r.buocTiep, onChon: () => void chon(r, null) },
           ]} />
         )}
