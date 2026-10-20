@@ -79,7 +79,7 @@ export function boDanThuong(data: ThuongSheet, cot: readonly string[], homNay: s
   const ngan = (k: string) => data.monNgan?.[k] ?? tenMonNgan(ct, k);
   return {
     classId: data.class.id, classCode: data.class.code, cot, duong: '/regular/scores/lo', coLR: false,
-    hang: data.rows.map((r) => ({ attemptId: r.attemptId, studentId: r.studentId, studentName: r.studentName, studentEmail: null, kindLabel: r.kindLabel })),
+    hang: data.rows.map((r) => ({ attemptId: r.attemptId, studentId: r.studentId, studentName: r.studentName, studentEmail: r.studentEmail ?? null, kindLabel: r.kindLabel })),
     tenCot: cotThuong(cot, { ngan, ten: (k) => data.skillLabels[k] ?? tenMon(ct, k) }),
     luuY: t('Điểm = số câu đúng (24 — tổng lấy từ cột) hoặc 24/40; "-" = em không làm bài (môn dời sang tuần sau). Ô trống được bỏ qua, không thành 0.'),
     xet: (h, k, raw) => {

@@ -27,8 +27,12 @@ function docLo(v: unknown, kieu: Kieu): DongLo[] {
   if (v.length > DAN_TOI_DA_DONG) throw loi(400, 'Mỗi lần lưu tối đa {n} dòng.', { n: DAN_TOI_DA_DONG });
   return v.map((d: any) => {
     if (!d || !Number.isInteger(d.attemptId) || d.attemptId <= 0) throw badRequest('Lượt Test không hợp lệ.');
-    /* Hoàn tác "- → điểm" cần hai lệnh cùng ô (xoá điểm, đặt lại "-") — tối đa hai lệnh mỗi kỹ năng. */
-    if (!Array.isArray(d.o) || !d.o.length || d.o.length > ENTRY_SKILLS.length * 2) throw badRequest('Ô điểm của dòng không hợp lệ.');
+    if (!Array.isArray(d.o) || !d.o.length) throw badRequest('Ô điểm của dòng không hợp lệ.');
+    /* OV-15i2: tối đa HAI lệnh mỗi môn (Hoàn tác "- → điểm": xoá điểm, đặt lại "-") — môn ngoài chương trình thì `saveScore` / `saveRegularScore`
+       từ chối cả dòng, nên trần một dòng = 2 × số môn của chính chương trình đó, không cần hằng chung. */
+    const demMon = new Map<unknown, number>();
+    for (const x of d.o) demMon.set(x?.skill, (demMon.get(x?.skill) ?? 0) + 1);
+    if ([...demMon.values()].some((n) => n > 2)) throw badRequest('Ô điểm của dòng không hợp lệ.');
     const o = d.o.map((x: any) => {
       if (!x || !monHopLe(x.skill)) throw badRequest('Kỹ năng không hợp lệ.');
       /* Chỉ nhận đúng các trường của ô (không lý do, không GV chấm, không lịch); `noShow` chỉ true / false (gỡ dấu: `saveScore` kiểm quyền). */
@@ -101,7 +105,10 @@ export function luuDiemLo(p: Principal, body: any, kieu: Kieu = 'ft') {
   const soO = dong.reduce((n, d, i) => n + (ket[i].ok ? d.o.length : 0), 0);
   /* Request cuối của lần dán: một mục tổng (cộng các request trước web gửi kèm), gắn lớp — không dòng nào lưu thì không ghi. */
   const tong = { soDong: (truoc?.soDong ?? 0) + dong.length, soDaLuu: (truoc?.soDaLuu ?? 0) + soDaLuu, soO: (truoc?.soO ?? 0) + soO };
-  if (body?.cuoi === true && tong.soDaLuu) {
+  /* OV-15i2: request cuối gửi lại (mất mạng sau khi máy chủ đã lưu → "Thử lại" cùng `loId`) không ghi thêm mục tổng. */
+  const daCoMuc = () => !!loId && !!db().prepare(`SELECT 1 FROM audit_logs WHERE entity_type = 'class' AND entity_id = ? AND action = ?
+    AND json_extract(after_json, '$.loId') = ? LIMIT 1`).get(classId, hoanTac ? 'score.dan_excel_hoan_tac' : 'score.dan_excel', loId);
+  if (body?.cuoi === true && tong.soDaLuu && !daCoMuc()) {
     writeAudit({
       actorUserId: p.userId, action: hoanTac ? 'score.dan_excel_hoan_tac' : 'score.dan_excel', entityType: 'class', entityId: classId,
       entityLabel: lop || null, after: { ...tong, ...(ma ? { luot: String(body.luot) } : {}), ...(loId ? { loId } : {}) },

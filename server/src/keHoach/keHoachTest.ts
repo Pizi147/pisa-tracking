@@ -17,7 +17,7 @@ import {
   bangKeHoachXuat, bangThongTinXuat, bangXuatDiem, chuTep, chuanHoaMaLop, gioVn, soTenVi, tuanNam,
   type DongDiem, type HvKeHoach, type KnLich, type NoiDungXuatDiem } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, forbidden, normalizeName, notFound, nowIso } from '../util.ts';
-import { can, require_, type Principal } from '../permissions.ts';
+import { can, classScopeSql, require_, scopeFor, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
 import { entrySkillsOf, expectationFor } from '../fasttrack/scoring.ts';
 import { createAttempt, loadBundle, resultOf, saveScore, scoresOf, setSkillSkip } from '../fasttrack/attempts.ts';
@@ -1343,13 +1343,17 @@ function lopFtXuat(p: Principal, branchId: number | null, classIds: readonly num
 const tenChiNhanh = (lop: readonly any[]) => [...new Set(lop.map((l) => l.chi_nhanh).filter(Boolean))].join(', ') || 'Mọi chi nhánh';
 const ngayTep = (iso: string) => `${iso.slice(8, 10)}-${iso.slice(5, 7)}-${iso.slice(0, 4)}`;
 
-/** Lớp đã qua của từng lộ trình (theo số MT tăng dần) — em học 2 lớp trong kỳ ghi "A → B". */
-export function lopTheoLoTrinh(cycleIds: readonly number[]): Map<number, string[]> {
+/**
+ * Lớp đã qua của từng lộ trình (theo số MT tăng dần) — em học 2 lớp trong kỳ ghi "A → B".
+ * OV-15i2: có `p` → chỉ lớp trong phạm vi xem của người đó (tệp xuất không in mã lớp chi nhánh khác).
+ */
+export function lopTheoLoTrinh(cycleIds: readonly number[], p?: Principal): Map<number, string[]> {
   const out = new Map<number, string[]>();
+  const pv = p ? classScopeSql(scopeFor(p, PERMISSIONS.ATTEMPT_VIEW)) : { sql: '1=1', params: [] };
   theoLo([...new Set(cycleIds)], (lo, ph) => {
     for (const r of db().prepare(
       `SELECT a.cycle_id, c.code FROM assessment_attempts a JOIN classes c ON c.id = a.class_id
-        WHERE a.cycle_id IN (${ph}) AND a.kind = 'mock' AND a.status != 'cancelled' ORDER BY a.attempt_no, a.id`).all(...lo) as any[]) {
+        WHERE a.cycle_id IN (${ph}) AND a.kind = 'mock' AND a.status != 'cancelled' AND ${pv.sql} ORDER BY a.attempt_no, a.id`).all(...lo, ...pv.params) as any[]) {
       out.set(r.cycle_id, [...(out.get(r.cycle_id) ?? []), r.code]);
     }
   });
@@ -1425,7 +1429,9 @@ export function xuatDiemTest(p: Principal, f: BoLocXuatDiem, luc = nowIso()) {
   /* Theo tuần: lượt có kỹ năng trong khoảng (một câu không tương quan qua chỉ mục `planned_period_id`); theo MT: lượt của lớp đã chọn. */
   theoLo([...maLop.keys()], (lo, ph) => {
     ung.push(...conn.prepare(
-      `SELECT a.*, st.full_name, st.email, cy.route, cy.khong_cam_ket AS cy_kck FROM assessment_attempts a
+      /* OV-15i2: chỉ cột `resultOf` + bảng cần (không `a.*`). */
+      `SELECT a.id, a.kind, a.class_id, a.student_id, a.cycle_id, a.attempt_no, a.target_at_attempt, a.kck_at_attempt,
+              st.full_name, st.email, cy.route, cy.khong_cam_ket AS cy_kck FROM assessment_attempts a
          JOIN students st ON st.id = a.student_id JOIN learning_cycles cy ON cy.id = a.cycle_id
         WHERE a.class_id IN (${ph}) AND a.kind = 'mock' AND a.status != 'cancelled'
           ${f.mt ? 'AND a.attempt_no BETWEEN ? AND ?' : ''}
@@ -1435,7 +1441,7 @@ export function xuatDiemTest(p: Principal, f: BoLocXuatDiem, luc = nowIso()) {
   const bundle = loadBundle(ung.map((a) => a.id));
   const tuanDau = (a: any) => (bundle.skillRows.get(a.id) ?? []).filter((r: any) => r.required && r.week_start).map((r: any) => String(r.week_start).slice(0, 10)).sort()[0] ?? null;
   const chon = ung.map((a) => ({ a, tuan: tuanDau(a) })).filter((x) => x.tuan && (!f.tuan || (x.tuan >= f.tuan[0] && x.tuan <= f.tuan[1])));
-  const chuoi = lopTheoLoTrinh(chon.map((x) => x.a.cycle_id));
+  const chuoi = lopTheoLoTrinh(chon.map((x) => x.a.cycle_id), p);
   chon.sort((x, y) => soSanhLop({ code: maLop.get(x.a.class_id)! }, { code: maLop.get(y.a.class_id)! }) || soTenVi(x.a.full_name, y.a.full_name)
     || x.a.student_id - y.a.student_id || x.a.attempt_no - y.a.attempt_no);
   const dong: DongDiem[] = chon.map(({ a, tuan }) => {
