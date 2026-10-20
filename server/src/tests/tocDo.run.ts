@@ -1017,6 +1017,9 @@ await checkAsync('TD6 (×3) · câu đã sửa không SCAN bảng lớn; migrate
  * 16/10 OV-13n: chụp lại 8 băm — đổi CÓ CHỦ Ý: SOS2/3 không điền sẵn "Trao đổi ngắn với HV" (số việc Phối hợp + seed Khôi/Lan đổi việc đã xác nhận).
  * 16/10 OV-13k gộp main 1694175 (OV-13l): chụp lại 4 băm dưới trên bản gộp — đã so JSON main 1694175 ↔ bản gộp trên bộ demo (QL / QT "Tất cả",
  *   "QT tat-ca cn", GVS / QL / GVCN "Của tôi", QL xem GVCN): chỉ thêm 3 việc `xem_nx_s` + hai nhãn "còn tồn từ" của GV S như dưới; còn lại trùng.
+ * 21/10 CV-LOI: chụp lại 10 băm (ADMIN giữ) — đổi CÓ CHỦ Ý (02 4.7 A13, 9.2-10): seed gán chủ Case không chủ theo luật tạo Case (Case 14 → GV R, 25 → GV S
+ *   của lớp, ×3 cùng thế) nên GV đó có thêm "Thêm PA", không còn dòng "Chọn người phụ trách" cho GV / QL; dòng Case không chủ (lớp thiếu GV môn) chỉ cho
+ *   người phân công được, thêm `thieuNguoi`. Chưa so JSON từng dòng với main — nguyên nhân lệch đọc từ mã + phép kiểm prCvLoi K1–K3.
  * 15/10 OV-13k: chụp lại 'QL tat-ca' / 'QT tat-ca' / 'QT tat-ca cn' / 'GVS toi' — đổi CÓ CHỦ Ý: (1) nhóm mới "Xem nhận xét Speaking" (bộ demo có 3 bài
  *   S Mock người khác GV phụ trách chấm có nhận xét → 3 việc của GV 9); (2) rà #419: "còn tồn từ" của dòng Speaking chấm chéo = tuần cũ nhất của
  *   (lớp, lượt) — GV S: MT1 "W1 SEP" → "W1 JUL", MT2 thêm "W2 AUG". Đã so JSON mã trước (main 022b7f3) ↔ sau trên bộ demo: bỏ việc `xem_nx_s`
@@ -1025,9 +1028,9 @@ await checkAsync('TD6 (×3) · câu đã sửa không SCAN bảng lớn; migrate
 await checkAsync('TD4-a (×3) · Công việc trùng JSON ảnh chụp trước TD4 — 6 vai × Của tôi / Tất cả / Của một GV / lọc chi nhánh', async () => {
   const { myWork, viecCuaNguoi } = await import('../worklist/mywork.ts');
   const ANH: Record<string, string> = {
-    'QL toi': 'd1a3dfdc6252cec3', 'QT toi': '29cc7df6dfaf06f2', 'GVCN toi': 'a9e39629266c9ee1', 'GVBM toi': '00dd012ac4781e7f',
-    'GVCN_THUONG toi': 'a9e39629266c9ee1', 'ADMIN toi': '4ed1fc3fa34653f2', 'QL tat-ca': 'caf10d13bbdf7962', 'QT tat-ca': 'd7462e17803c125b',
-    'QT tat-ca cn': '3d97326116d4d992', 'QL gvcn': '1e6b783e0d4a5d15', 'GVS toi': '7040edfab3552faa',
+    'QL toi': '05fe7561cdeeadc3', 'QT toi': '2f2924266adbdc88', 'GVCN toi': 'f6ff40501544a244', 'GVBM toi': 'a617afe0c9c8e789',
+    'GVCN_THUONG toi': 'f6ff40501544a244', 'ADMIN toi': '4ed1fc3fa34653f2', 'QL tat-ca': '2b3a44e2911e0431', 'QT tat-ca': 'de99bf76f246c2a3',
+    'QT tat-ca cn': '7b9d4575696f96d6', 'QL gvcn': '3b10a8158bad5fb5', 'GVS toi': 'a1e80b115593d927',
   };
   const p = (v: Vai) => loadPrincipal(USER[v]);
   const goc: [string, () => unknown][] = [
