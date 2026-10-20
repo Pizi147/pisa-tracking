@@ -7,7 +7,8 @@ import {
   SOS_LABEL, URGENCY_LABEL, URGENCY_TONE, caseHeadline, caseTopicLabel, cycleDeadline,
   duongCaseRieng, duongHoSoHocVien, duongLichTest, nhanDotNgan, hanThemPa,
   khungCua, laLanGhiCuoi, ghiNhanhDuoc, tenMon, tenNhomMon, REGULAR_SKILLS, nhanLoaiXuLy, soSanhLop,
-  type Khung, type AttemptKind, type InterventionKind, nhanBaiThuong, chuTyLeXetLai, gopViecTheoLop, tuanLich, type ConGop } from '../../../shared/domain/index.ts';
+  type Khung, type AttemptKind, type InterventionKind, nhanBaiThuong, chuTyLeXetLai, gopViecTheoLop, tuanLich, trangThaiLichThi, nhanLichThi, type ConGop } from '../../../shared/domain/index.ts';
+import { examPlanOf } from '../fasttrack/cycles.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addDays, forbidden } from '../util.ts';
 import { COT_PRINCIPAL, activeAt, bangLop, can, isCoreTeacherOf, loadPrincipal, lopFtChoGvSpeaking, napTruocPhamVi, principalTuDong, scopeFor, teachesClass, type Principal } from '../permissions.ts';
@@ -1108,15 +1109,23 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   if (co('missing_data')) {
     const lopCn = tatCa ? [...gvcnLop().keys()] : [...new Set(p.assignments.filter((x) => x.isCore && activeAt(x, today)).map((x) => x.classId))];
     if (lopCn.length) {
-      for (const h of (conn.prepare(
-        `SELECT s.id, s.full_name, e.class_id, c.code AS class_code FROM learning_cycles cy
+      /* LT-SV: MỘT câu cho hai việc không hạn của GVCN — "Điền Target" và "Chốt ngày thi" (cùng lộ trình đang chạy, cùng lớp; không thêm câu mỗi request). */
+      const ds = conn.prepare(
+        `SELECT s.id, s.full_name, e.class_id, c.code AS class_code, c.is_fast_track, cy.id AS cycle_id, cy.target_score,
+                cy.exam_month, cy.exam_date, cy.thi_that_ngay, cy.exam_period_id, cy.thi_that_khong_thi, cy.outcome_score, cy.outcome,
+                rp.week_start AS exam_week_start, rp.code AS exam_week_code
+           FROM learning_cycles cy
            JOIN students s ON s.id = cy.student_id AND ${HV_DANG_HOC_SQL('s')}
            JOIN enrollments e ON e.student_id = s.id AND e.status = 'active'
            JOIN classes c ON c.id = e.class_id
-          WHERE cy.status = 'active' AND cy.route IS NOT NULL AND cy.target_score IS NULL   /* OV-9: em KCK chưa có Target cũng thiếu Target */
+           LEFT JOIN report_periods rp ON rp.id = cy.exam_period_id
+          WHERE cy.status = 'active' AND cy.route IS NOT NULL
+            AND (cy.target_score IS NULL   /* OV-9: em KCK chưa có Target cũng thiếu Target */
+                 OR (c.is_fast_track = 1 AND cy.exam_date IS NULL AND cy.thi_that_ngay IS NULL AND (cy.exam_month IS NOT NULL OR cy.exam_period_id IS NOT NULL)))
             AND e.class_id IN (${lopCn.map(() => '?').join(',')}) AND (? IS NULL OR c.branch_id = ?)`,
-      ).all(...lopCn, f.branchId ?? null, f.branchId ?? null) as any[])
-        /* PR-VAI-a (từ UXF-a, mywork.ts:927): sắp lớp theo `soSanhLop` (MB FT 9 trước MB FT 10), rồi tên em. */
+      ).all(...lopCn, f.branchId ?? null, f.branchId ?? null) as any[];
+      /* PR-VAI-a (từ UXF-a, mywork.ts:927): sắp lớp theo `soSanhLop` (MB FT 9 trước MB FT 10), rồi tên em. */
+      for (const h of ds.filter((x) => x.target_score === null)
         .sort((x, y) => soSanhLop({ code: x.class_code }, { code: y.class_code }) || String(x.full_name).localeCompare(String(y.full_name), 'vi'))) {
         items.push({
           key: `target:${h.id}`, group: 'missing_data', urgency: 'normal',
@@ -1125,6 +1134,24 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
           reason: 'Chưa có Target nên chưa tính được kỳ vọng từng MT',
           tieuDe: 'Điền Target', phu: 'Điền Target', actionLabel: 'Điền Target', href: `/hoc-vien/${h.id}`,
           ownerId: tatCa ? gvcnLop().get(h.class_id) ?? p.userId : p.userId, owner: null, mine: true, due: null, statusLabel: 'Chưa có Target',
+        });
+      }
+      /*
+       * LT-SV (Q-C3 ① 21/10): em FT đã tới tháng (hoặc tuần) dự kiến thi mà CHƯA có ngày (`trangThaiLichThi` = B) → việc "Chốt ngày thi", KHÔNG hạn,
+       * không quá hạn / chuông; tính khi đọc (không migrate, không cron). Người giữ như "Điền Target" (GVCN lớp đang học) — chuyển TVV ở GĐ1b (SV-TVV-VIEC).
+       * Lớp thường chỉ chip, không việc. Hết việc khi có ngày / dời tháng / có kết quả / "Không thi" / em Tạm dừng, Lưu trữ.
+       */
+      for (const r of ds) {
+        if (!r.is_fast_track || r.thi_that_khong_thi || r.outcome_score !== null || (r.outcome ?? 'unknown') !== 'unknown') continue;
+        const lich = trangThaiLichThi(r, examPlanOf(r), today);
+        if (lich.trangThai !== 'chua-chot-ngay') continue;
+        items.push({
+          key: `chot-ngay-thi:${r.cycle_id}`, group: 'missing_data', urgency: 'normal',
+          studentId: r.id, studentName: r.full_name, classId: r.class_id, classCode: r.class_code,
+          attemptId: null, attemptNo: null, caseId: null, level: null, contextLabel: nhanLichThi(lich, today), count: null,
+          reason: 'Đã tới tháng thi mà chưa có ngày thi',
+          tieuDe: 'Chốt ngày thi', phu: 'Chốt ngày thi', actionLabel: 'Chốt ngày', href: `/hoc-vien?view=lich-thi&thang=${lich.thang}`,
+          ownerId: tatCa ? gvcnLop().get(r.class_id) ?? p.userId : p.userId, owner: null, mine: true, due: null, statusLabel: 'Không tính hạn',
         });
       }
     }

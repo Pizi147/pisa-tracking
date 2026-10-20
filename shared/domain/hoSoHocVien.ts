@@ -12,6 +12,7 @@
 import { ATTEMPT_SKILL_UNITS, CHUA_CO_HAN, deadlineView, type DeadlineKind } from './display.ts';
 import { NHAN_TRANG_THAI } from './trangThai.ts';
 import { ngay, tuanLich } from './hienThiNgay.ts';
+import { nhanLichThi, type LichThi } from './lichThiOv15f.ts';
 import { VIOLATION_CATEGORIES, VIOLATION_CATEGORY_LABEL, type ViolationCategory } from './yThuc.ts';
 import { moiNhatTruoc, nhanBaiThuong } from './normal.ts';
 import { dich, ghepChu, kem, t, type ChuKhoa } from '../i18n/index.ts';
@@ -336,13 +337,19 @@ export function oSapToi(i: {
   ratio: boolean; kck: boolean; bacKe: string | null; homNay: string;
   /** Em đang Tạm dừng (mockup 24 D1): mốc vẫn giữ, chữ phụ "giữ lịch · Quản lý dời nếu cần". */
   tamDung?: boolean;
-}): { tren: string; gt: string; gtK?: ChuKhoa; phu: string | null; phuK?: ChuKhoa } {
+  /** LT-SV: lịch thi thật (`trangThaiLichThi`, chỉ FT) — ngày thi sớm hơn MT kế thì ô là kỳ thi; không MT kế mà "chưa chốt ngày" thì nói điều đó. */
+  thi?: LichThi | null;
+}): { tren: string; gt: string; gtK?: ChuKhoa; phu: string | null; phuK?: ChuKhoa; thi?: boolean } {
   if (i.ketLuan) { const gtK = kem('Kết luận: {kl}', { kl: i.ketLuan }); return { tren: 'lộ trình đã khép', gt: gtK.chu, gtK, phu: null }; }
   if (i.sauCuoiKhoa) {
     const phuK = i.sauCuoiKhoa.tuanKetThuc ? kem('chờ Quản lý quyết định · lớp kết thúc {tuan}', { tuan: tuanLich(i.sauCuoiKhoa.tuanKetThuc, i.homNay) }) : { chu: 'chờ Quản lý quyết định' };
     return { tren: 'sau Final Test', gt: 'Chuyển lớp', phu: phuK.chu, phuK };
   }
   const n = i.next;
+  const l = i.thi;
+  if (l && ((l.trangThai === 'da-chot-ngay' && (!n?.tuan || (l.ngay as string) < n.tuan)) || (!n && l.trangThai === 'chua-chot-ngay'))) {
+    return { tren: 'mốc kế tiếp', gt: nhanLichThi(l, i.homNay), phu: n ? `${n.dau}${n.tuan ? ` · ${tuanLich(n.tuan, i.homNay)}` : ''}` : null, thi: true };
+  }
   if (!n) return { tren: 'mốc kế tiếp', gt: 'Chưa có mốc', phu: 'chưa xếp lịch Test' };
   const gt = n.tuan ? `${n.dau} · ${tuanLich(n.tuan, i.homNay)}` : n.dau;
   if (i.tamDung) return { tren: 'mốc kế tiếp', gt, phu: 'giữ lịch · Quản lý dời nếu cần' };

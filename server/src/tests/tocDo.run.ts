@@ -1011,6 +1011,8 @@ await checkAsync('TD6 (×3) · câu đã sửa không SCAN bảng lớn; migrate
  * 15/10 gộp OV-13l với main (13b / 13c): chụp lại 9 băm trên bản gộp — ba đổi có chủ ý cộng lại.
  * 15/10 OV-13l: chụp lại mọi vai trừ ADMIN — đổi đầu ra CÓ CHỦ Ý: hạn bàn giao ≥ 7 ngày (GVBM = GVCN), seed D16 (LT1 → RF) giữ lộ trình,
  *   seed kịch bản 6 (MB FOU 23) ra lệnh 9 ngày trước để vẫn "Bàn giao quá hạn".
+ * 21/10 LT-SV: chụp lại 'QT toi' / 'QT tat-ca' — đổi CÓ CHỦ Ý: 2 dòng "Chọn bước tiếp" (UB FT 401, chỉ có TUẦN thi W2 AUG) không còn hạn = Chủ nhật tuần + 7
+ *   (tuần chưa phải ngày thi — Q-C3 ①); `npm run kiem-truoc-lt-sv` trên bộ demo 14/09: 0 lộ trình về B, đúng 2 dòng này đổi hạn.
  * 16/10 OV-13q: chụp lại 'QT toi' / 'QT tat-ca' — đổi CÓ CHỦ Ý: 2 dòng "Chọn bước tiếp" (UB FT 401) hạn = ngày thi + 7 (luật 1 tuần), thêm `cycleId` / `daGiaHan` (nút Gia hạn).
  * 16/10 gộp OV-13m với main (13k, 13n): chụp lại QT toi / QT tat-ca trên bản gộp (cùng 2 khoá 13m đã đổi có chủ ý).
  * 16/10 gộp OV-13n với main (13k): chụp lại băm trên bản gộp (13n + 13k đều đổi có chủ ý).
@@ -1025,8 +1027,8 @@ await checkAsync('TD6 (×3) · câu đã sửa không SCAN bảng lớn; migrate
 await checkAsync('TD4-a (×3) · Công việc trùng JSON ảnh chụp trước TD4 — 6 vai × Của tôi / Tất cả / Của một GV / lọc chi nhánh', async () => {
   const { myWork, viecCuaNguoi } = await import('../worklist/mywork.ts');
   const ANH: Record<string, string> = {
-    'QL toi': 'd1a3dfdc6252cec3', 'QT toi': '29cc7df6dfaf06f2', 'GVCN toi': 'a9e39629266c9ee1', 'GVBM toi': '00dd012ac4781e7f',
-    'GVCN_THUONG toi': 'a9e39629266c9ee1', 'ADMIN toi': '4ed1fc3fa34653f2', 'QL tat-ca': 'caf10d13bbdf7962', 'QT tat-ca': 'd7462e17803c125b',
+    'QL toi': 'd1a3dfdc6252cec3', 'QT toi': '91e6524d7d45dcf2', 'GVCN toi': 'a9e39629266c9ee1', 'GVBM toi': '00dd012ac4781e7f',
+    'GVCN_THUONG toi': 'a9e39629266c9ee1', 'ADMIN toi': '4ed1fc3fa34653f2', 'QL tat-ca': 'caf10d13bbdf7962', 'QT tat-ca': '611cb5cc4a793ac7',
     'QT tat-ca cn': '3d97326116d4d992', 'QL gvcn': '1e6b783e0d4a5d15', 'GVS toi': '7040edfab3552faa',
   };
   const p = (v: Vai) => loadPrincipal(USER[v]);

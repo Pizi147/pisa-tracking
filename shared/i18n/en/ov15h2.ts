@@ -2,6 +2,11 @@
 import type { Dich } from '../en.ts';
 
 export const EN_OV15H2 = {
+  /* LT-SV (thêm vào đây cho khỏi sửa dòng chung `en.ts`): nhãn trạng thái lịch thi thật (`nhanLichThi`), việc Chốt ngày thi. */
+  'Thi': 'Exam',
+  'Chưa chốt ngày thi': 'Exam date not set',
+  'Chưa có tháng thi': 'No exam month',
+  'Chốt ngày thi': 'Set exam date',
   /* OV-15i2 (thêm vào đây cho khỏi sửa dòng chung `en.ts`): Lịch thi hỏi trước khi bỏ ngày đã chốt; ô chọn cả danh sách. */
   'Bỏ ngày {ngay}?': (b) => `Remove date ${b.ngay}?`,
   'Bỏ ngày': 'Remove date',

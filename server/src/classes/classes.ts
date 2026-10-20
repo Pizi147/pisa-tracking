@@ -4,7 +4,7 @@ import {
   ATTEMPT_KIND_SHORT, ENTRY_SKILLS, PERMISSIONS, awaitingScore, chuanHoaMaLop, soSanhLop, kiemPhanCong, moRongPhanCong, nhanKetThucVi, nhanTiepTheo,
   oPhanCong, pendingSkillsOf, laLienTuc, tenMonNgan, viecTiepCuaEm,
   type AssessedSkill, type SlotPhanCong, type AttemptKind, type PendingCell, type ProgrammeCode, type WorkScope,
-  coMocTiepTheo, coMocTiepTheoThuong, mocKeTiep, NORMAL_LADDER, chuMonTruot, coBoTroFinal, nhanHuongNgan, type Huong,
+  coMocTiepTheo, coMocTiepTheoThuong, mocKeTiep, NORMAL_LADDER, chuMonTruot, coBoTroFinal, nhanHuongNgan, trangThaiLichThi, type Huong,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { mondayOf } from '../platform/week.ts';
@@ -344,7 +344,7 @@ function hocVienCuaLop(p: Principal, classId: number, q?: string, kemKetThuc = f
   let sql = `SELECT s.*, e.status AS enrollment_status, e.end_kind AS enrollment_end_kind, e.started_at AS enrollment_started_at,
                     cy.id AS cycle_id, cy.seq AS cycle_seq, cy.route, cy.target_score, cy.khong_cam_ket,
                     cy.baseline_attempt_id, cy.baseline_score, cy.baseline_listening, cy.baseline_reading, cy.baseline_writing, cy.baseline_speaking,
-                    cy.start_period_id, cy.exam_month, cy.exam_period_id, cy.exam_date, sp.week_start AS start_week,
+                    cy.start_period_id, cy.exam_month, cy.exam_period_id, cy.exam_date, cy.thi_that_ngay, sp.week_start AS start_week,
                     ep.code AS exam_week_code, ep.week_start AS exam_week_start
                FROM enrollments e
                JOIN students s ON s.id = e.student_id
@@ -657,6 +657,8 @@ export function classRoster(p: Principal, classId: number, q?: string, kemKetThu
       handoverCases: handoverCount.get(s.id) ?? 0,
       /** DỰ KIẾN THI ở đúng mức chắc chắn đang có: tuần, hoặc tháng, hoặc chưa biết. */
       examPlan: examPlanOf(s),
+      /** LT-SV: trạng thái lịch thi thật — ô "Sắp tới" (`chuSapToi` → `nhanLichThi`). */
+      lichThi: trangThaiLichThi(s, examPlanOf(s), today),
       /** OV-14b: "Đã thi · chờ kết quả" / "Đã xong · chờ bước tiếp" — cùng hàm với panel một em (`sauThiTheoEm`). */
       sauThi: sauThi.get(s.id) ?? null,
       archived: !!s.archived_at,

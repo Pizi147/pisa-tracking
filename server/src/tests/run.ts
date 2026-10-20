@@ -9465,6 +9465,9 @@ await runPrOv15i1Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P
 // ==================================================================== OV-15i2 (Dán Excel thử lại / trần môn / email lớp thường / Hoàn tác "- → x", bỏ huyLuot, xuất điểm Test, tutor theo lớp)
 const { runPrOv15i2Tests } = await import('./prOv15i2.tests.ts');
 await runPrOv15i2Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== LT-SV (lịch thi thật: trạng thái A / B, hết "tháng = đã thi", việc Chốt ngày thi, ngày đã qua, Sắp tới)
+const { runPrLtSvTests } = await import('./prLtSv.tests.ts');
+await runPrLtSvTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== TD7b (cờ "còn ô chờ điểm" o_cho_tu: đúng ở mọi đường ghi, đầu ra trùng khít) — CUỐI: soi cả trạng thái các phép kiểm trước để lại
 const { runPrTd7bTests } = await import('./prTd7b.tests.ts');
 await runPrTd7bTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);

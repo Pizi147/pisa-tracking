@@ -87,12 +87,12 @@ export async function runPrOv13qTests(t: YThucTestKit) {
   const KQ = { l: 7, r: 6.5, w: 6, s: 6.5 };
 
   // ------------------------------------------------------------------ 1 · hàm thuần
-  check('Q13-1 · trangThaiSauThi: ngày / tuần (Chủ nhật) / tháng (ngày cuối) / thi_that_ngay; hạn gốc +7; gia hạn muộn hơn mới có hiệu lực; bước tiếp = muộn hơn của hạn và ngày có kết quả', () => {
+  check('Q13-1 · trangThaiSauThi: ngày / thi_that_ngay (tuần, tháng = chưa chốt ngày — LT-SV); hạn gốc +7; gia hạn muộn hơn mới có hiệu lực; bước tiếp = muộn hơn của hạn và ngày có kết quả', () => {
     const h = '2026-10-16';
     const a = d.trangThaiSauThi({ exam_date: '2026-10-10' }, h);
     assert(a.giaiDoan === 'da_thi_cho_kq' && a.ngayThi === '2026-10-10' && a.hanGoc === '2026-10-17' && a.han === '2026-10-17' && !a.quaHan && !a.daGiaHan, JSON.stringify(a));
-    assert(d.trangThaiSauThi({ exam_week: '2026-10-05' }, h).ngayThi === '2026-10-11', 'tuần → Chủ nhật');
-    assert(d.trangThaiSauThi({ exam_month: '2026-09' }, h).ngayThi === '2026-09-30' && d.trangThaiSauThi({ exam_month: '2026-09' }, h).quaHan, 'tháng → ngày cuối, quá hạn');
+    assert(d.trangThaiSauThi({ exam_week: '2026-10-05' }, h).ngayThi === null, 'LT-SV: tuần chưa phải ngày thi');
+    assert(d.trangThaiSauThi({ exam_month: '2026-09' }, h).ngayThi === null && !d.trangThaiSauThi({ exam_month: '2026-09' }, h).quaHan, 'LT-SV: tháng chưa phải ngày thi, không quá hạn');
     assert(d.trangThaiSauThi({ exam_date: '2026-10-01', thi_that_ngay: '2026-10-12' }, h).ngayThi === '2026-10-12', 'thi_that_ngay thắng');
     assert(d.trangThaiSauThi({ exam_date: '2026-10-16' }, h).giaiDoan === 'chua_thi' && d.trangThaiSauThi({ exam_date: '2026-10-15' }, h).giaiDoan === 'da_thi_cho_kq', 'từ hôm sau');
     const g = d.trangThaiSauThi({ exam_date: '2026-10-01', han_sau_thi: '2026-10-20', han_sau_thi_so_lan: 2 }, h);

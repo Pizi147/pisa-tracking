@@ -11,7 +11,7 @@ export async function runPrDhTests(t: YThucTestKit) {
   const { check, checkAsync, assert, conn, TODAY, P } = t;
   const d: any = await import('../../../shared/domain/index.ts');
   console.log('\nPR-DH · Bảng Học viên & Lớp, điều hướng hồ sơ');
-  const goc = { nhanLuot: null, tuanBatDau: null, kyVong: null, conLuotChuaXep: null, duKienThi: null, homNay: '2026-10-03', khung: 'ft' as const };
+  const goc = { nhanLuot: null, tuanBatDau: null, kyVong: null, conLuotChuaXep: null, lichThi: null, homNay: '2026-10-03', khung: 'ft' as const };
   const tuan = d.tuanLich('2026-10-12', '2026-10-03');   // phép khớp hàm thật, không đổi hàm cho khớp phép
 
   check('PR-DH (1) · chuSapToi: còn MT → "MT2 · <tuần> · 5.5"; kỳ vọng null → không số; số luôn một chữ số thập phân', () => {
@@ -22,13 +22,14 @@ export async function runPrDhTests(t: YThucTestKit) {
     assert(c({ nhanLuot: 'Progress Test', tuanBatDau: '2026-10-12', kyVong: 5.5, khung: 'thuong' }) === `Progress Test · ${tuan}`, 'lớp thường không hiện kỳ vọng');
   });
 
-  check('PR-DH (1) · chuSapToi: còn lượt chưa xếp tuần → "MT2 · chưa xếp"; hết MT → "Thi thật · <dự kiến>"; lớp thường hết mốc → null', () => {
+  check('PR-DH (1) · chuSapToi: còn lượt chưa xếp tuần → "MT2 · chưa xếp"; hết MT → nhãn lịch thi thật (LT-SV `nhanLichThi`); lớp thường hết mốc → null', () => {
     const c = (o: object) => d.chuSapToi({ ...goc, ...o });
+    const l = (trangThai: string, x: object = {}) => ({ lichThi: { trangThai, ngay: null, thang: null, tuan: null, ...x } });
     assert(c({ conLuotChuaXep: 'MT2' }) === 'MT2 · chưa xếp', 'chưa xếp');
-    assert(c({ duKienThi: { confidence: 'week', label: 'W2 DEC' } }) === 'Thi thật · W2 DEC', 'tuần');
-    assert(c({ duKienThi: { confidence: 'month', label: 'DEC 2026' } }) === 'Thi thật · DEC 2026', 'tháng');
-    assert(c({ duKienThi: { confidence: 'none', label: 'Chưa xác định' } }) === 'Thi thật · chưa có ngày', 'chưa có');
-    assert(c({}) === 'Thi thật · chưa có ngày', 'không có dữ liệu thi');
+    assert(c(l('du-kien', { thang: '2026-12', tuan: '2026-12-07' })) === `Dự kiến thi ${d.tuanLich('2026-12-07', '2026-10-03')}`, 'tuần');
+    assert(c(l('du-kien', { thang: '2026-12' })) === 'Dự kiến thi 12/2026', 'tháng');
+    assert(c(l('chua-chot-ngay', { thang: '2026-10' })) === 'Chưa chốt ngày thi 10/2026', 'đã tới tháng, chưa ngày');
+    assert(c(l('chua-co')) === 'Chưa có tháng thi', 'chưa có');
     assert(c({ khung: 'thuong' }) === null, 'lớp thường hết mốc → null (giữ "—")');
   });
 
