@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { api, invalidate } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
+import { LichSuThayDoi } from '../../ui/LichSuThayDoi.tsx';
 import { KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
 import { ChipHan } from '../../ui/Nhan.tsx';
 import { CanLam, KhoiDaLuu, NutChu, TrangThaiLuu, dauViec, type DaLuuPanel } from '../../ui/KhuonViec.tsx';
@@ -54,6 +55,7 @@ export function PanelBuocTiep({ cycleId, hocVien, lop, quayLai, chonSan, onSuaKe
   const [loi, setLoi] = useState<string | null>(null);
   const [daLuu, setDaLuu] = useState<{ x: DaLuuPanel; luc: string } | null>(null);
   const [giaHan, setGiaHan] = useState(false);
+  const [lichSu, setLichSu] = useState(false);   // OV-15g: Lịch sử thay nội dung panel, ← Bước tiếp
   const lf = useLoiForm();
   const moLop = !!bt?.coTheChon && chon === 'lo_trinh_moi' && lopKhac;
   const dsLop = useApi<{ lop: LopDich[] }>(moLop ? `/students/${bt!.studentId}/hoc-lai/lop-dich` : null, [moLop, bt?.studentId]);
@@ -64,6 +66,9 @@ export function PanelBuocTiep({ cycleId, hocVien, lop, quayLai, chonSan, onSuaKe
     han: bt && !bt.chon && bt.coTheChon ? <ChipHan loai="sau-thi" han={bt.han} /> : null,
     em: em?.ten ? em : null, lop: lop ?? bt?.lopNay?.code ?? null, ngCanh: CHU_DA_XONG,
   });
+  if (lichSu) {
+    return <LichSuThayDoi loai="thi-that" id={cycleId} dong2={[em?.ten || null, lop ?? bt?.lopNay?.code ?? null]} quayLai={{ nhan: tieuDe, onClick: () => setLichSu(false) }} onClose={onClose} />;
+  }
   if (error) return <KhungPanel tieuDe={tieuDe} dau={dau} quayLai={quayLai} onDong={onClose}><ErrorState message={error.message} hint={error.hint} onRetry={reload} /></KhungPanel>;
   if (!bt) return <KhungPanel tieuDe={tieuDe} dau={dau} quayLai={quayLai} onDong={onClose}><div className="pt-3"><Skeleton rows={4} /></div></KhungPanel>;
 
@@ -118,6 +123,7 @@ export function PanelBuocTiep({ cycleId, hocVien, lop, quayLai, chonSan, onSuaKe
       {/* OV-13q: Gia hạn — hộp nhỏ đè panel này (không đóng panel). */}
       {!bt.chon && bt.coTheGiaHan && <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 font-semibold sm:min-h-0" onClick={() => setGiaHan(true)}>{t('Gia hạn')}</button>}
       {onSuaKetQua && <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 font-semibold sm:min-h-0" onClick={onSuaKetQua}>{t('Sửa')}</button>}
+      <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 sm:min-h-0" onClick={() => setLichSu(true)}>{t('Lịch sử')}</button>
       {giaHan && <HopGiaHan x={{ cycleId, han: bt.han, daGiaHan: bt.daGiaHan }} hocVien={em?.ten || null} lop={lop ?? bt.lopNay?.code ?? null}
         onClose={() => setGiaHan(false)} onDone={() => { reload(); onDone?.(); }} />}
     </p>

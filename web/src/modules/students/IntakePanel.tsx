@@ -4,6 +4,8 @@ import { api } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
+import { LichSuThayDoi } from '../../ui/LichSuThayDoi.tsx';
+import { t } from '@shared/i18n/index.ts';
 import { Field, Outcome, Th } from '../../ui/ui.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import {
@@ -77,6 +79,7 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
   const [moDong, setMoDong] = useState<number | null>(null);
   const [ketQua, setKetQua] = useState<KetQua | null>(null);
   const [busy, setBusy] = useState(false);
+  const [lichSu, setLichSu] = useState(false);   // OV-15g: lịch sử các lô nhập vào lớp — thay nội dung panel, ← Thêm học viên (lưới giữ nguyên)
   /* O5: ô của cả lô báo lỗi dưới ô; lỗi từng dòng vẫn ở cột Trạng thái (máy chủ xem trước + kiểm lại khi thêm). */
   const lf = useLoiForm();
   const loiLo = dsLoi([{ khoa: 'lop', nhan: 'Thêm vào lớp', chon: true }], { lop: classId });
@@ -155,6 +158,9 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
 
   const hoSoLop = classId ? `/hoc-vien/lop/${classId}` : null;
 
+  if (lichSu && classId) {
+    return <LichSuThayDoi loai="nhap-hv" id={classId} dong2={[t('Thêm học viên'), cls?.code]} quayLai={{ nhan: t('Thêm học viên'), onClick: () => setLichSu(false) }} onClose={onClose} />;
+  }
   return (
     <KhungPanel tieuDe="Thêm học viên" lop={cls?.code} rong="toan" onDong={onClose}
       ngCanh="Chọn lớp, dán từ Excel hoặc gõ vào lưới"
@@ -250,6 +256,7 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
               <Link className="link text-xs" to={duongDotTest({ id: ketQua.mt.luotLichSuDau, kind: 'mock' })}>Nhập điểm MT cũ</Link>
             )}
             {hoSoLop && pathname !== hoSoLop && <Link className="link text-xs" to={hoSoLop}>Mở hồ sơ lớp</Link>}
+            <button type="button" className="link appearance-none border-0 bg-transparent p-0 text-xs max-sm:py-2" onClick={() => setLichSu(true)}>{t('Lịch sử')}</button>
           </div>
         )}
 

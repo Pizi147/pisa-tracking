@@ -948,7 +948,7 @@ export function scoreSummaryText(row: Partial<ScoreRow> | null | undefined): str
  * LỊCH SỬ ĐIỂM của một lượt: ai sửa, trước → sau, lúc nào (PR-I Step 9). Đọc từ nhật ký `score.*` — điểm không có
  * bảng lịch sử riêng như lịch. Ô điểm chỉ giữ NGƯỜI NHẬP hiện tại; câu "ai đã sửa gì" nằm ở đây.
  */
-export function scoreHistoryOf(attemptId: number) {
+export function scoreHistoryOf(attemptId: number, chiTiet = false) {
   /* FIX-DTL3: đọc cột theo VỊ TRÍ (`raw`), không theo tên. Trên Turso thật `l.action` vẫn undefined dù đã đặt AS và tách hết UNION
    * (hồ sơ MT 500, 09/10) — tên khoá dòng không đáng tin ở đường này; vị trí cột thì cố định theo câu SELECT. */
   const cot = `l.id AS id, l.action AS action, l.entity_label AS entity_label, l.before_json AS before_json, l.after_json AS after_json,
@@ -983,10 +983,16 @@ export function scoreHistoryOf(attemptId: number) {
   /* Điểm lớp thường là "đạt / tổng" (16/20); nhãn nhật ký lớp thường là "FOU · listening". */
   const diemThuong = (r: any) => (!r ? 'Chưa có' : r.raw_score !== null && r.raw_score !== undefined ? `${r.raw_score}/${r.raw_total ?? '?'}` : 'Trống');
   /* Dn7: nhận xét W/S — trước → sau rút gọn 80 ký tự; lần chỉ đổi GV chấm (nhận xét giữ nguyên) không thành dòng. */
-  const rutGon = (s: unknown) => { const t = typeof s === 'string' ? s.trim() : ''; return !t ? 'Trống' : t.length > 80 ? `${t.slice(0, 79)}…` : t; };
+  const rutGon = (s: unknown) => { const t = typeof s === 'string' ? s.trim() : ''; return !t ? 'Trống' : t.length > 80 && !chiTiet ? `${t.slice(0, 79)}…` : t; };
+  /* OV-15g `chiTiet` (Lịch sử thay đổi, C22): nhận xét đủ chữ + dòng GV chấm S đổi (`phan: 'gv'`); hồ sơ MT giữ dạng cũ. */
+  /* GV chấm là nhân viên (id) hoặc người ngoài (tên) — nhân viên ghi `@id`, nơi đọc (`lichSu.ts`) đổi ra tên một câu. */
+  const gvCham = (x: any): string | null => {
+    const id = x?.examinerUserId ?? x?.examiner_user_id ?? null;
+    return x?.examinerName ?? x?.examiner_name ?? (id ? `@${id}` : null);
+  };
   return rows.flatMap<{
     id: number; kind: 'edit' | 'override' | 'no_show' | 'nhan_xet'; skill: string; skillLabel: string;
-    before: string; after: string; actorName: string | null; createdAt: string; lyDo: string | null; phan?: 'nhom';
+    before: string; after: string; actorName: string | null; createdAt: string; lyDo: string | null; phan?: 'nhom' | 'gv';
   }>((l) => {
     const before = l.before_json ? JSON.parse(l.before_json) : null;
     const after = l.after_json ? JSON.parse(l.after_json) : null;
@@ -996,14 +1002,16 @@ export function scoreHistoryOf(attemptId: number) {
       const doiNx = (before?.[khoa] ?? null) !== (after?.[khoa] ?? null);
       const nhom = (x: any) => docNhomNguyenNhan(x?.nhom).map(issueLabel).join(', ') || 'Trống';
       /* OV-13o: một lần lưu đổi CẢ nhận xét lẫn nhóm → hai dòng (dòng nhóm mang `phan: 'nhom'` — khoá riêng ở web). */
-      const dong = (phan: 'nx' | 'nhom') => ({
+      const dong = (phan: 'nx' | 'nhom' | 'gv') => ({
         id: l.id, kind: 'nhan_xet' as const, skill: l.entity_label as string,
         skillLabel: `${tenMon(null, l.entity_label)}${khoa === 'comment' ? '' : ' · GV phụ trách'}`,
-        before: phan === 'nx' ? rutGon(before?.[khoa]) : nhom(before), after: phan === 'nx' ? rutGon(after?.[khoa]) : nhom(after),
+        before: phan === 'nx' ? rutGon(before?.[khoa]) : phan === 'gv' ? gvCham(before) ?? 'Trống' : nhom(before),
+        after: phan === 'nx' ? rutGon(after?.[khoa]) : phan === 'gv' ? gvCham(after) ?? 'Trống' : nhom(after),
         actorName: l.actor_name as string | null, createdAt: l.created_at as string, lyDo: null as string | null,
-        ...(phan === 'nhom' ? { phan } : {}),
+        ...(phan === 'nx' ? {} : { phan }),
       });
-      return [...(doiNx ? [dong('nx')] : []), ...(nhom(before) !== nhom(after) ? [dong('nhom')] : [])];
+      return [...(doiNx ? [dong('nx')] : []), ...(nhom(before) !== nhom(after) ? [dong('nhom')] : []),
+        ...(chiTiet && khoa === 'comment' && gvCham(before) !== gvCham(after) ? [dong('gv')] : [])];
     }
     /* T2 (PR-MTa): huỷ do dời vượt / khôi phục là `override` (web khỏi thêm loại); lý do nằm ở `after.lyDo`. */
     const vuot = l.action === 'score.huy_vuot', khoiPhuc = l.action === 'score.khoi_phuc';
@@ -1016,7 +1024,7 @@ export function scoreHistoryOf(attemptId: number) {
       : vuot ? 'Huỷ do dời vượt'
       : thuong ? diemThuong(after)
       : scoreSummaryText(after);
-    return [{
+    const chinh = {
       id: l.id,
       kind: (l.action === 'score.override' || l.action === 'regular.score.override' || vuot || khoiPhuc ? 'override'
         : l.action === 'score.edit' || l.action === 'score.lich_su' || l.action === 'regular.score' ? 'edit' : 'no_show') as 'override' | 'edit' | 'no_show',
@@ -1028,7 +1036,11 @@ export function scoreHistoryOf(attemptId: number) {
       actorName: l.actor_name as string | null, createdAt: l.created_at as string,
       /* RB-5 — lý do hiệu chỉnh nằm ngay trong bản "sau" của nhật ký; lần nhập đầu không có. */
       lyDo: (after && typeof after === 'object' ? (after as any).lyDo ?? null : null) as string | null,
-    }];
+    };
+    /* OV-15g `chiTiet`: lần lưu điểm kèm nhận xét / GV chấm (dòng ô đầy đủ trước → sau) cũng ra dòng nhận xét / GV chấm. */
+    const doi = (k: (x: any) => unknown) => !!before && !!after && (k(before) ?? null) !== (k(after) ?? null);
+    return [chinh, ...(chiTiet && doi((x) => x.comment) ? [{ ...chinh, kind: 'nhan_xet' as const, before: rutGon(before.comment), after: rutGon(after.comment), lyDo: null }] : []),
+      ...(chiTiet && doi(gvCham) ? [{ ...chinh, kind: 'nhan_xet' as const, before: gvCham(before) ?? 'Trống', after: gvCham(after) ?? 'Trống', lyDo: null, phan: 'gv' as const }] : [])];
   });
 }
 

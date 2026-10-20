@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { api, invalidate } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
+import { LichSuThayDoi } from '../../ui/LichSuThayDoi.tsx';
 import { KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { Nhan } from '../../ui/Nhan.tsx';
@@ -45,12 +46,16 @@ export function KetQuaThiThatPanel({ cycleId, studentName, lop, quayLai, onClose
   const [goc, setGoc] = useState<string | null>(null);
   /* OV-13m: lưu xong → panel đổi TẠI CHỖ thành "Bước tiếp" (kết quả còn một dòng "✓ … · Sửa"); Sửa → về form, chữ đã lưu giữ nguyên. */
   const [buocTiep, setBuocTiep] = useState(false);
+  const [lichSu, setLichSu] = useState(false);   // OV-15g: thay nội dung panel (← Kết quả thi thật), chữ đang gõ giữ nguyên
   const lf = useLoiForm();
 
   /* Nạp giá trị đang lưu MỘT LẦN — tải lại nền không được xoá điều người dùng đang gõ. */
   if (c && !form) {
     const f = { ngay: c.thi_that_ngay ?? '', l: fmt(c.thi_that_l), r: fmt(c.thi_that_r), w: fmt(c.thi_that_w), s: fmt(c.thi_that_s), khongThi: !!c.thi_that_khong_thi, ghiChu: c.outcome_note ?? '' };
     setForm(f); setGoc(JSON.stringify(f));
+  }
+  if (lichSu) {
+    return <LichSuThayDoi loai="thi-that" id={cycleId} dong2={[studentName, lop]} quayLai={{ nhan: t('Kết quả thi thật'), onClick: () => setLichSu(false) }} onClose={onClose} />;
   }
   if (buocTiep) {
     return <PanelBuocTiep cycleId={cycleId} hocVien={c ? { id: c.student_id, ten: studentName } : null} lop={lop} quayLai={quayLai}
@@ -102,6 +107,7 @@ export function KetQuaThiThatPanel({ cycleId, studentName, lop, quayLai, onClose
               {st.coTheGiaHan && <>{' · '}<button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 font-semibold sm:min-h-0" onClick={() => setGiaHan(true)}>{t('Gia hạn')}</button></>}
             </span>
           )}
+          <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 sm:ml-auto sm:min-h-0" onClick={() => setLichSu(true)}>{t('Lịch sử')}</button>
         </div>
         {giaHan && st && <HopGiaHan x={{ cycleId, han: st.han, daGiaHan: st.daGiaHan }} hocVien={studentName} lop={lop} onClose={() => setGiaHan(false)} onDone={() => { sauThi.reload(); onDone(); }} />}
         <label className="flex min-h-[44px] items-center gap-2 text-[13px] text-slate-300 sm:min-h-0">

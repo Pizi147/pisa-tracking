@@ -79,6 +79,7 @@ import * as xoaTaiKhoanSvc from '../platform/xoaTaiKhoan.ts';
 import * as studentSvc from '../students/students.ts';
 import * as hangLoatSvc from '../students/hangLoat.ts';
 import * as lichSuSuaSvc from '../students/lichSuSua.ts';
+import * as lichSuSvc from '../platform/lichSu.ts';
 import * as meetingSvc from '../worklist/meeting.ts';
 import {
   PERIOD_WINDOW_PLANNING_FORWARD_WEEKS,
@@ -2289,6 +2290,9 @@ api.get('/students/:id', requireAuth, wrap((req) => {
 /* OV-13j: Lịch sử sửa thông tin học viên (mới nhất trước; `truoc` = con trỏ trang trước trả về). */
 api.get('/students/:id/lich-su-sua', requireAuth, wrap((req) => lichSuSuaSvc.lichSuSua(principalOf(req), pInt(req, 'id'),
   { loai: qStr(req, 'loai'), truoc: qInt(req, 'truoc') })));
+/* OV-15g (C22): Lịch sử thay đổi — một đường cho mọi đối tượng (`loai` = hv | lop | phan-cong | gop-y | nhap-hv | thi-that | o); quyền = quyền xem đối tượng. */
+api.get('/lich-su', requireAuth, wrap((req) => lichSuSvc.lichSu(principalOf(req),
+  { loai: qStr(req, 'loai'), id: qInt(req, 'id'), loc: qStr(req, 'loc'), tiep: qInt(req, 'tiep') })));
 
 api.patch('/students/:id', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();

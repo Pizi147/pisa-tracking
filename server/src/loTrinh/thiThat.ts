@@ -99,8 +99,13 @@ export function datKetQuaThiThat(p: Principal, cycleId: number, input: NhapThiTh
       detail: `${tom(cu, !!c.thi_that_khong_thi, c.outcome_score ?? null)} → ${tom(ghi, khongThi, kq.ovr)}`,
       refTable: 'learning_cycles', refId: cycleId, createdBy: p.userId,
     });
-    writeAudit({ actorUserId: p.userId, action: 'cycle.thi_that', entityType: 'learning_cycle', entityId: cycleId,
-      before: { ...cu, ngayThi: c.thi_that_ngay ?? null, khongThi: !!c.thi_that_khong_thi }, after: { ...ghi, ngayThi: ngayLuu, khongThi, ovr: kq.ovr, ketLuan: kq.ketLuan } });
+    /* OV-15g: kèm ghi chú; lưu lại nguyên giá trị thì không ghi nhật ký (Lịch sử thay đổi không có mục rỗng). */
+    const truocNk = { ...cu, ngayThi: c.thi_that_ngay ?? null, khongThi: !!c.thi_that_khong_thi, ghiChu: c.outcome_note ?? null, ovr: c.outcome_score ?? null, ketLuan: c.outcome ?? null };
+    const sauNk = { ...ghi, ngayThi: ngayLuu, khongThi, ghiChu };
+    if (Object.keys(sauNk).some((k) => (sauNk as any)[k] !== (truocNk as any)[k])) {   // ovr / kết luận suy từ điểm — không tự thành lần đổi
+      writeAudit({ actorUserId: p.userId, action: 'cycle.thi_that', entityType: 'learning_cycle', entityId: cycleId,
+        before: truocNk, after: { ...sauNk, ovr: kq.ovr, ketLuan: kq.ketLuan } });
+    }
     return cycleById(cycleId);
   });
 }

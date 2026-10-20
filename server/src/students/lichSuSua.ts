@@ -12,7 +12,7 @@ import { demoToday } from '../demoConfig.ts';
  */
 
 export type LoaiLichSu = 'thong-tin' | 'target' | 'trang-thai';
-type Kieu = 'chu' | 'ngay' | 'thang' | 'band' | 'co' | 'trangThai' | 'nguoi' | 'chiNhanh' | 'tuan' | 'lop' | 'buocTiep' | 'tuanNgay';
+type Kieu = 'chu' | 'ngay' | 'thang' | 'band' | 'co' | 'trangThai' | 'nguoi' | 'chiNhanh' | 'tuan' | 'lop' | 'buocTiep' | 'tuanNgay' | 'ketLuan';
 
 /** Trường hiện được: tên cột (camelCase trong nhật ký đổi về snake_case) → [tên hiển thị, nhóm lọc, kiểu giá trị]. Thứ tự = thứ tự hiện. */
 const TRUONG: Record<string, [string, LoaiLichSu, Kieu]> = {
@@ -47,19 +47,25 @@ const TRUONG: Record<string, [string, LoaiLichSu, Kieu]> = {
   buoc_tiep_hen: ['Hẹn bắt đầu', 'trang-thai', 'tuanNgay'],
   /* OV-13q: Gia hạn / Bỏ gia hạn sau thi. */
   han_sau_thi: ['Hạn sau thi', 'trang-thai', 'ngay'],
+  /* OV-15g: Lịch thi (OV-15f, nhật ký `lich_thi.luu`) — kết luận họp, tháng, ghi chú. */
+  ket_luan: ['Kết luận lịch thi', 'target', 'ketLuan'],
+  thang: ['Tháng thi', 'target', 'thang'],
+  ghi_chu: ['Ghi chú lịch thi', 'target', 'chu'],
 };
+const KET_LUAN: Record<string, string> = { 'giu-thang': 'Giữ tháng', 'chot-ngay': 'Chốt ngày', 'chuyen-thang': 'Chuyển tháng', 'can-xac-nhan': 'Cần xác nhận' };
 const THU_TU = Object.keys(TRUONG);
 const BIET_DANH: Record<string, string> = { target: 'target_score', targetScore: 'target_score' };
 const cot = (k: string) => BIET_DANH[k] ?? k.replace(/[A-Z]/g, (c) => `_${c.toLowerCase()}`);
 
 /** Việc được đọc. Nhật ký `learning_cycle` của lộ trình (cycle.status…) dùng `status` khác nghĩa — chỉ đọc trường của các việc dưới đây. */
 const HANH_DONG = ['student.create', 'student.update', 'student.status', 'student.rejoin', 'student.rejoin_undo', 'student.finish_undo', 'student.pause_undo',
-  'student.archive', 'student.unarchive', 'student.transfer', 'cycle.create', 'cycle.update', 'cycle.target.revise', 'cycle.baseline.set', 'cycle.baseline.clear', 'cycle.buoc_tiep', 'cycle.han_sau_thi'];
+  'student.archive', 'student.unarchive', 'student.transfer', 'cycle.create', 'cycle.update', 'cycle.target.revise', 'cycle.baseline.set', 'cycle.baseline.clear', 'cycle.buoc_tiep', 'cycle.han_sau_thi', 'lich_thi.luu'];
 /** Việc tự nói nguồn (chữ của Nhật ký Quản trị); sửa thường thì không ghi nguồn. */
 const CO_NGUON = new Set(['student.rejoin', 'student.rejoin_undo', 'student.finish_undo', 'student.pause_undo', 'student.transfer', 'cycle.create']);
 const BO_QUA_CYCLE = new Set(['status']);   // trạng thái lộ trình ≠ trạng thái học của em
+const CUA_LICH_THI = new Set(['ket_luan', 'thang', 'ghi_chu']);   // chỉ đọc ở nhật ký `lich_thi` — việc khác có thể dùng cùng tên khoá
 /** Việc của MỘT lần lưu form (hồ sơ + lộ trình + Target + đầu vào) — chỉ những việc này gộp; Tạm dừng rồi Quay lại học là hai khối. */
-const GOP = new Set(['student.update', 'cycle.update', 'cycle.target.revise', 'cycle.baseline.set', 'cycle.baseline.clear']);
+const GOP = new Set(['student.update', 'cycle.update', 'cycle.target.revise', 'cycle.baseline.set', 'cycle.baseline.clear', 'lich_thi.luu']);   // OV-15g: Chốt ngày = lịch thi + ngày thi
 
 export type DongLichSu = { id: number; luc: string; nguoi: string; nguon: string | null; truong: { ten: string; cu: string | null; moi: string | null }[] };
 
@@ -83,7 +89,7 @@ export function lichSuSua(p: Principal, studentId: number, q: { loai?: string; t
        FROM audit_logs a LEFT JOIN users u ON u.id = a.actor_user_id
       WHERE a.action IN (${ph}) AND a.id < ?
         AND ((a.entity_type = 'student' AND a.entity_id = ?)
-          OR (a.entity_type = 'learning_cycle' AND a.entity_id IN (SELECT id FROM learning_cycles WHERE student_id = ?)))
+          OR (a.entity_type IN ('learning_cycle', 'lich_thi') AND a.entity_id IN (SELECT id FROM learning_cycles WHERE student_id = ?)))
       ORDER BY a.id DESC LIMIT ?`,
   );
 
@@ -101,7 +107,7 @@ export function lichSuSua(p: Principal, studentId: number, q: { loai?: string; t
       const doi = new Map<string, [unknown, unknown]>();
       for (const k of new Set([...Object.keys(b), ...Object.keys(f)])) {
         const c = cot(k);
-        if (!TRUONG[c] || (r.et === 'learning_cycle' && BO_QUA_CYCLE.has(c))) continue;
+        if (!TRUONG[c] || (r.et === 'learning_cycle' && BO_QUA_CYCLE.has(c)) || (r.et === 'lich_thi') !== CUA_LICH_THI.has(c)) continue;
         if (loai && TRUONG[c][1] !== loai) continue;
         if (!(k in f) && r.action !== 'student.create') continue;   // trường chỉ có ở `before` (vd ghi danh giữ) — không phải đổi
         doi.set(c, [b[k] ?? null, f[k] ?? null]);
@@ -168,6 +174,7 @@ function hien(c: string, v: unknown, ten: BangTen): string | null {
     case 'band': return Number.isFinite(Number(v)) ? Number(v).toFixed(1) : s;
     case 'trangThai': return STUDENT_STATUS_LABEL[s as keyof typeof STUDENT_STATUS_LABEL] ?? s;
     case 'buocTiep': return NHAN_SAU_THI[s as LuaChonSauThi] ?? s;
+    case 'ketLuan': return KET_LUAN[s] ?? s;
     case 'tuanNgay': return tuanLich(s, demoToday());
     case 'nguoi': case 'chiNhanh': case 'tuan': case 'lop': return ten[kieu].get(Number(v)) ?? `#${s}`;
     default: return s;

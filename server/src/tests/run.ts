@@ -9450,6 +9450,9 @@ await runPrOv15fTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P,
 // ==================================================================== TU-a (Tutor: migrate, vai Head tutor, buổi tutor 3 ô, /tutors/chon)
 const { runPrTuTests } = await import('./prTu.tests.ts');
 await runPrTuTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== OV-15g (Lịch sử thay đổi C22: một đường đọc /lich-su, ghi đủ ở máy chủ, quyền, phân trang)
+const { runPrOv15gTests } = await import('./prOv15g.tests.ts');
+await runPrOv15gTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== OV-15h2 (Học viên & Lớp + xuất + dọn: ghi chú cùng giao dịch, 13 cột em hai lớp, chốt ngày, Bộ lọc thêm, Dán Excel lớp thường)
 const { runPrOv15h2Tests } = await import('./prOv15h2.tests.ts');
 await runPrOv15h2Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
