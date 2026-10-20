@@ -749,7 +749,7 @@ function HistoryCard({ d }: { d: Detail }) {
   const [mo, setMo] = useState(false);   // OV-15g: Lịch sử đủ chi tiết của các ô (nhận xét đủ chữ, GV chấm S, lý do)
   return (
     <div id="lich-su">
-      <Card title={t('Lịch sử')} action={<button type="button" className="btn btn-ghost btn-sm min-h-[44px] sm:min-h-0" onClick={() => setMo(true)}>{t('Chi tiết')}</button>}>
+      <Card title={t('Lịch sử')} action={<button type="button" className="btn btn-ghost btn-sm min-h-[44px] sm:min-h-0" onClick={() => setMo(true)}>{t('Lịch sử')}</button>}>
         {mo && <LichSuThayDoi loai="o" id={d.id} dong2={[d.student.name, `MT${d.attemptNo}`, d.classCode]} onClose={() => setMo(false)} />}
         <DongThoiGianLuot history={d.history} scoreHistory={d.scoreHistory} />
       </Card>

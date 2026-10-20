@@ -181,11 +181,11 @@ export async function runPrOv15gTests(t: YThucTestKit) {
       assert((await goi(P.subjectTeacher.userId, `/lich-su?loai=hv&id=${a}`)).status === 403, 'GVBM xem HV 403');
     });
 
-    await checkAsync('OV15g-11 · "Lịch sử bắt đầu ghi từ": lớp có từ trước mốc ghi → trang cuối trả `batDau`; ô điểm (ghi từ đầu) → null', async () => {
+    await checkAsync('OV15g-11 · "Lịch sử bắt đầu ghi từ": lớp có từ trước mốc ghi → trang cuối trả `batDau`; ô điểm cũng vậy (OV-15i1 ý 9)', async () => {
       const r = await ls('lop', lop);
       assert(r.tiep === null && /^\d{4}-\d{2}-\d{2}$/.test(r.batDau ?? ''), `batDau: ${r.batDau}`);
       const luot = one(`SELECT id FROM assessment_attempts WHERE class_id = ? ORDER BY id LIMIT 1`, lop).id as number;
-      assert((await ls('o', luot)).batDau === null, 'ô điểm không có mốc');
+      assert(/^\d{4}-\d{2}-\d{2}$/.test((await ls('o', luot)).batDau ?? ''), 'ô điểm có trước mốc → báo mốc (OV-15i1)');
     });
   } finally {
     may.close();

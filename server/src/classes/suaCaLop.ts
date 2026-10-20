@@ -4,7 +4,7 @@ import {
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { chanGiaoDichNeuSapHetGio } from '../platform/hanGio.ts';
-import { voiNguon } from '../platform/audit.ts';
+import { voiNguon, writeAudit } from '../platform/audit.ts';
 import { can, require_, type Ctx, type Principal } from '../permissions.ts';
 import { HttpError, badRequest, forbidden, kiemKieuO, notFound, nowIso } from '../util.ts';
 import { chuanHoaSuaHoSo, dsTvv, kiemTvvCungChiNhanh, updateStudent } from '../students/students.ts';
@@ -249,6 +249,7 @@ export function luuSuaCaLop(p: Principal, classId: number, input: DauVao & { ide
     const vuaGhi = daGhi();
     if (vuaGhi) return JSON.parse(vuaGhi.value);
     let daSua = 0;
+    const tu = (conn.prepare('SELECT COALESCE(MAX(id), 0) m FROM audit_logs').get() as any).m as number;   // OV-15i1: dòng nhật ký của lô nằm sau id này
     for (const { r, s, c, hoSo, doiTarget } of dong) {
       /* Netlify cắt hàm sau 10 s, bị cắt giữa giao dịch là giữ khoá ghi Turso: sắp hết giờ thì dừng — cả lô cuộn lại, 503 "chưa lưu gì". */
       chanGiaoDichNeuSapHetGio();
@@ -267,6 +268,8 @@ export function luuSuaCaLop(p: Principal, classId: number, input: DauVao & { ide
       }
     }
     const out = { daSua };
+    /* OV-15i1 (C22 "lô = một lần lưu"): MỘT mục ở Lịch sử lớp, mở ra từng em (đọc các dòng giữa `tu` và mục này). */
+    if (daSua) writeAudit({ actorUserId: p.userId, action: 'class.sua_ca_lop', entityType: 'class', entityId: cls.id, entityLabel: cls.code, after: { daSua, tu } });
     if (key) {
       donKhoaGuiCu(conn, nowIso());
       conn.prepare('INSERT OR REPLACE INTO demo_config (key, value, updated_at) VALUES (?,?,?)').run(key, JSON.stringify(out), nowIso());

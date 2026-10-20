@@ -33,4 +33,12 @@ export const EN_OV15G = {
     'One entry per save: who · when · source · reason · before → after. Batch / Excel: one entry, tap <b>View</b> to open each student.',
   'Hồ sơ lớp › <b>⋯ › Lịch sử</b>: thông tin lớp, tiến độ, phân công. Góp ý hàng tuần, hồ sơ MT: nút <b>Lịch sử</b>.':
     'Class profile › <b>⋯ › History</b>: class info, schedule, assignment. Weekly feedback, MT profile: the <b>History</b> button.',
+  /* OV-15i1: chữ máy chủ ghép động (nguồn, tên trường) — mẫu có biến; đoạn " · " còn lại dịch từng phần. */
+  'Lịch · {mon}': (b) => `Schedule · ${b.mon}`,
+  '{mon} · Điểm': (b) => `${b.mon} · Score`,
+  '{n} dòng · {o} ô': (b) => `${b.n} ${Number(b.n) === 1 ? 'row' : 'rows'} · ${b.o} ${Number(b.o) === 1 ? 'cell' : 'cells'}`,
+  'thêm {a} · kết thúc {b}': (b) => `added ${b.a} · ended ${b.b}`,
+  'Sửa cả lớp': 'Edit whole class',
+  'Đổi chương trình': 'Programme change',
+  'Hoàn tác dán Excel': 'Undo Excel paste',
 } satisfies Record<string, Dich>;

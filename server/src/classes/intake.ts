@@ -565,8 +565,8 @@ export function commitIntake(
     }
 
     const out: IntakeResult = { added: studentIds.length, skipped, failed, studentIds, hangDaThem, mt };
-    /* OV-15g: MỘT mục cho cả lô, gắn LỚP (Lịch sử thay đổi › nhập HV của lớp mở ra từng em). */
-    writeAudit({ actorUserId: p.userId, action: 'student.bulk_add', entityType: 'class', entityId: cls.id,
+    /* OV-15g: MỘT mục cho cả lô, gắn LỚP (Lịch sử thay đổi › nhập HV của lớp mở ra từng em). OV-15i1: lô 0 em không có gì để ghi. */
+    if (out.added) writeAudit({ actorUserId: p.userId, action: 'student.bulk_add', entityType: 'class', entityId: cls.id,
       entityLabel: `${out.added} học viên`, after: { added: out.added, skipped: out.skipped, lop: cls.code,
         hv: ok.map((r, i) => ({ id: studentIds[i], ten: r.fullName })) } });
     if (key) {

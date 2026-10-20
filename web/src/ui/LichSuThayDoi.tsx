@@ -109,6 +109,10 @@ export function LichSuThayDoi({ loai, id, dong2, quayLai, onClose }: {
     setDangTai(true); setLoiThem(null);
     try { setThem([...them, await api.get<Trang>(`${goc}&tiep=${tiep}`)]); } catch (e) { setLoiThem((e as Error).message); } finally { setDangTai(false); }
   };
+  /* OV-15i1: đang lọc mà các trang đầu trống nhưng còn trang sau → tự đọc tiếp (tối đa 5 lần, sau đó để nút "Xem thêm") — không báo "Chưa có" sai. */
+  useEffect(() => {
+    if (data && !ds.length && tiep !== null && !dangTai && !loiThem && them.length < 5) void xemThem();
+  }, [data, them, dangTai]);   // eslint-disable-line react-hooks/exhaustive-deps
   /* Lọc chỉ khi dài (hơn 5 mục, hoặc còn trang sau) hoặc đang lọc — danh sách ngắn đọc thẳng. */
   const nhom = data?.nhom ?? [];
   const coLoc = nhom.length > 1 && (!!loc || ds.length > 5 || tiep !== null);
@@ -124,7 +128,7 @@ export function LichSuThayDoi({ loai, id, dong2, quayLai, onClose }: {
         )}
         {error ? <div className="pt-3"><ErrorState message={error.message} hint={error.hint} onRetry={reload} /></div>
           : loading && !data ? <div className="pt-3"><Skeleton rows={5} /></div>
-          : !ds.length ? <Empty title={t('Chưa có thay đổi nào')} />
+          : !ds.length ? (tiep === null ? <Empty title={t('Chưa có thay đổi nào')} /> : dangTai ? <div className="pt-3"><Skeleton rows={3} /></div> : null)
           : (
             <ul className="m-0 mt-3 list-none divide-y p-0" style={{ borderColor: 'var(--line)' }}>
               {ds.map((d) => (
@@ -142,7 +146,7 @@ export function LichSuThayDoi({ loai, id, dong2, quayLai, onClose }: {
             </ul>
           )}
         {loiThem && <p className="mt-2 text-sm text-bad" role="alert">{loiThem}</p>}
-        {tiep !== null && ds.length > 0 && !error && (
+        {tiep !== null && (ds.length > 0 || !dangTai) && !error && (
           <div className="py-3">
             <button type="button" className="btn btn-sm min-h-[44px] w-full sm:min-h-0 sm:w-auto" disabled={dangTai} onClick={() => void xemThem()}>
               {dangTai ? t('Đang tải') : t('Xem thêm')}

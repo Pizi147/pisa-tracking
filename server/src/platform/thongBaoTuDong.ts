@@ -105,6 +105,8 @@ const lanCuoi = new Map<number, number>();
  * OV-15h1: người này vừa ghi thành công (POST/PUT/PATCH/DELETE) — việc của họ có thể vừa xong, nên lần mở chuông kế đồng bộ ngay (không chờ 5 phút).
  * shortcut: nhớ theo tiến trình — việc xong do NGƯỜI KHÁC làm (QL nhập điểm thay GV) vẫn chờ chu kỳ; bản chính nhiều bản hàm thì có thể trượt
  * sang bản khác. Cần chặt hơn thì lưu mốc ghi vào DB.
+ * ponytail: OV-15i1 ý 12 — chưa làm "hết ngay khi người khác làm xong": cách rẻ duy nhất là mọi lần ghi xoá mốc của MỌI người, khi đó mỗi lần mở chuông
+ * sau bất kỳ lần ghi nào đều đồng bộ (~30 câu `myWork`, đo QT 33 vs 4) — nặng hơn cái lợi; muốn đúng người thì đường ghi điểm / Case phải tự gọi `daGhi(gv)`.
  */
 export function daGhi(userId: number) { lanCuoi.delete(userId); }
 export function dongBoKhiMoChuong(p: Principal, homNay: string) {

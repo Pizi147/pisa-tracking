@@ -1720,6 +1720,7 @@ CREATE TABLE audit_logs (
   created_at TEXT NOT NULL
 );
 CREATE INDEX idx_audit_entity ON audit_logs(entity_type, entity_id);
+CREATE INDEX idx_audit_viec ON audit_logs(entity_type, action, entity_id);   -- OV-15i1: Lịch sử góp ý tuần đọc đúng việc của em
 
 CREATE TABLE demo_config (
   key TEXT PRIMARY KEY,
