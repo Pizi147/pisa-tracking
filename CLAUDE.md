@@ -6,7 +6,7 @@ Tệp này tự nạp vào mọi session của repo (planning, code, worktree), 
 ## Khi các nguồn mâu thuẫn
 1. Quyết định của chủ sản phẩm, đặc tả và kế hoạch PR đã duyệt.
 2. `thiet-ke/PISA-Rulebook-2026-09-19.md` và mockup đã duyệt trong `thiet-ke/`.
-3. Skill (impeccable, ponytail, superpowers). Skill gợi ý trái với mục 1–2 thì không tự làm: ghi vào báo cáo để
+3. Skill (impeccable, ponytail, superpowers, ecc, web-design-guidelines, ui-ux-pro-max). Skill gợi ý trái với mục 1–2 thì không tự làm: ghi vào báo cáo để
    chủ sản phẩm quyết.
 
 ## Luật cứng của chủ sản phẩm (08/10)
@@ -42,8 +42,8 @@ Tệp này tự nạp vào mọi session của repo (planning, code, worktree), 
 - Tiết kiệm token: làm theo plan.md 1.2 + 1.3b (Task trong session, check + bấm thử một lần ở session code, planning rà diff + ảnh).
 - Thời gian trên màn: ưu tiên **mã tuần** `W2 OCT`; ngày chỉ cho hạn cụ thể, ngày thi, ngày sinh, nhật ký (chủ sản phẩm 30/09).
 - Ô nhập ngày ở MỌI nơi: ô gõ được + nút lịch (`ONgay`), KHÔNG làm hàng nút "Hôm nay · Hôm qua · 2 ngày trước" (chủ sản phẩm 06/10).
-- Lệnh dùng: `critique` ở session planning để tìm vấn đề · `polish`, `clarify`, `layout`, `harden`, `adapt` ở
-  session code, chỉ trong phạm vi PR · `audit` + skill `web-design-guidelines` trước khi mở PR có sửa giao diện.
+- Lệnh dùng: `critique` (+ `ui-ux-pro-max` khi rà UX lớn) ở session planning để tìm vấn đề · `clarify`, `layout`, `harden`, `adapt` ở
+  session code, chỉ trong phạm vi PR (không `polish` — plan.md 1.3b) · `audit` + skill `web-design-guidelines` trước khi mở PR có sửa giao diện.
 - Session code không chạy `init`, `document`, `hooks on`, `npx impeccable install|update`. PRODUCT.md / DESIGN.md
   chỉ do session planning tạo, khớp Rulebook, sau khi chủ sản phẩm đồng ý.
 - `.impeccable/` đã gitignore; không commit gì trong đó.
@@ -58,9 +58,10 @@ Tệp này tự nạp vào mọi session của repo (planning, code, worktree), 
 - Chú thích `ponytail:` được phép, nhưng liệt kê chúng trong mô tả PR. Trước khi mở PR: `/ponytail-review`.
 
 ## Rà PR bằng ECC (chủ SP duyệt 20/10)
-- Trước khi mở PR, chạy agent theo phạm vi PR (chỉ cái liên quan):
-  React/TS → `ecc:react-reviewer` + `ecc:typescript-reviewer` · lưu dữ liệu, API → `ecc:silent-failure-hunter` ·
-  phân quyền, đăng nhập → `ecc:security-reviewer` · giao diện → `ecc:click-path-audit` hoặc `ecc:browser-qa`.
+- Chỉ khi **rà sâu** (plan.md 1.3), planning chạy agent theo phạm vi PR, tối đa 2:
+  quyền, đăng nhập → `ecc:security-reviewer` · có thể mất dữ liệu, migrate, API → `ecc:silent-failure-hunter` ·
+  logic máy chủ / React lớn → `ecc:typescript-reviewer` hoặc `ecc:react-reviewer`. PR thường: không chạy (planning đọc diff là đủ).
+- Không dùng `ecc:browser-qa`, `ecc:click-path-audit` (trùng bước bấm thử một lần ở session code).
 - Không dùng `orch-*`, `multi-*`, `gan-*`, `loop-*` (tốn token, trùng quy trình PTA Plan).
 - Plugin superpowers, ponytail, ecc khai báo trong `.claude/settings.json` để session cloud cũng có.
 
