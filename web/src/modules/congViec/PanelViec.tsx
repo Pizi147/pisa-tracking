@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { PanelNhapDiemLop } from '../cham/PanelNhapDiemLop.tsx';
 import { useApi } from '../../lib/useApi.ts';
@@ -325,10 +325,13 @@ function PanelKetQuaNhanh({ it, onDong, onDaLam, onTiep }: { it: WorkItem; onDon
   const [lon, setLon] = useState(false);
   const [daLuu, setDaLuu] = useState<DaLuuNhanh | null>(null);
   const { data } = useApi<any>(`/cases/${it.caseId}`, [it.caseId]);
+  /* Bối cảnh giữ như lúc mở — lưu xong (tải lại Case) không biến lần vừa ghi thành "kỳ trước". */
+  const daTruoc = useRef<any>(undefined);
   const em = it.studentId !== null ? { id: it.studentId, ten: it.studentName } : null;
   if (lon) return <NganCase caseId={it.caseId!} paId={it.paId} viec="ghi-ket-qua" hocVien={em?.ten ?? null} lop={it.classCode} onClose={onDong} onChanged={onDaLam} onTiep={onTiep} />;
   const iv = (data?.interventions ?? []).find((x: any) => x.id === it.paId);
-  const truoc = (data?.followups ?? []).find((f: any) => f.interventionId === it.paId && f.outcome);
+  if (data && daTruoc.current === undefined) daTruoc.current = (data.followups ?? []).find((f: any) => f.interventionId === it.paId && f.outcome) ?? null;
+  const truoc = daTruoc.current;
   const tenLoai = iv ? dich(INTERVENTION_KIND_LABEL[iv.kind as keyof typeof INTERVENTION_KIND_LABEL] ?? iv.kind) : null;
   return (
     <KhungPanel tieuDe={dich(it.tieuDe)} onDong={onDong}
