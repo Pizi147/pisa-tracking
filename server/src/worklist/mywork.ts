@@ -3,7 +3,7 @@ import { db, theoLo } from '../db.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import {
   ATTEMPT_KIND_SHORT, CHAM_CHEO, KHOA_CHAM_SPEAKING, VIEC_CHAM_CHEO, chuViecChotLoTrinh, daiDienNhomBoTro, canChamCheo, khoiCham, laChamCheo, laViecChamCheo, mondayOfDate,
-  INTERVENTION_KIND_LABEL, PERMISSIONS,
+  CASE_CATEGORY_SKILL, INTERVENTION_KIND_LABEL, PERMISSIONS,
   SOS_LABEL, URGENCY_LABEL, URGENCY_TONE, caseHeadline, caseTopicLabel, cycleDeadline,
   duongCaseRieng, duongHoSoHocVien, duongLichTest, nhanDotNgan, hanThemPa,
   khungCua, laLanGhiCuoi, ghiNhanhDuoc, tenMon, tenNhomMon, REGULAR_SKILLS, nhanLoaiXuLy, soSanhLop,
@@ -108,6 +108,8 @@ export type WorkItem = {
   count: number | null;
   /** PR-GOP: Case sinh từ SOS — ở lớp FT giữ từng dòng; Case GV/QL tự tạo thì gộp theo lớp (chủ sản phẩm 08/10). */
   caseSos?: boolean;
+  /** CV-LOI (A13): Case chưa có người phụ trách vì lớp thiếu GV môn (`mon` = kỹ năng) hoặc thiếu GVCN (`mon` null) — panel Phân công đúng ô đó. */
+  thieuNguoi?: { mon: string | null };
   /** PR-GOP (§5): dòng gộp "Loại việc · lớp · n em" — các việc thật của dòng (khoá, nút, hạn riêng). Chỉ có ở `dong`. */
   con?: ConGop<WorkItem>[];
   /** OV-5a (panel Công việc): PA của việc — Kết quả PA, Xác nhận PA, Ghi Mini Test mở đúng PA trong Ngăn Case. */
@@ -250,7 +252,7 @@ const GROUP_META: Record<WorkGroupKey, { label: string; hint: string }> = {
   /* --------------------------------------------- những nghĩa vụ khác, vẫn phải thấy được */
   no_owner: {
     label: 'Chưa có người phụ trách',
-    hint: 'Case đang mở mà chưa ai nhận điều phối. Chọn người phụ trách trước, vì mọi việc sau đó đều treo vào chỗ này.',
+    hint: 'Lớp chưa có GV dạy môn của Case (hoặc chưa có GVCN). Phân công xong thì Case tự về người đó.',
   },
   /* PR-LCb: khoá `chot_len_ft` = "Chốt lộ trình" (giữ tên để không chạm drilldown, nhắc việc, phép kiểm cũ). */
   chot_len_ft: {
@@ -805,6 +807,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   for (const c of caseRows) {
     if (f.branchId && c.eff_branch_id !== f.branchId) continue;
     if (c.iv_count > 0 || reviewedCases.has(c.id)) continue;
+    if (c.owner_user_id == null) continue;   // CV-LOI (CV-08, 9.2-10): Case chưa có người — một dòng "Phân công GV …" cho QL (mục 5), GV không thấy
     // Quyền GHI NHẬN xử lý, không phải quyền xem — việc chỉ hiện với người làm được. ĐỀ XUẤT PHƯƠNG ÁN: xem `coTheThemPa`.
     if (!coTheThemPa(p, c)) continue;
 
@@ -890,6 +893,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     const lamDuoc = (x: Principal) => can(x, PERMISSIONS.SOS_EDIT, { classId: c.eff_class_id, studentId: c.eff_student_id, skill: c.topic ?? undefined })
       || (loai === 'cause' && laGvcnLopDangHoc(x, c.lop_dang_hoc));
     if (!lamDuoc(p)) return;
+    if (c.owner_user_id == null) return;   // CV-LOI (CV-08): Case chưa có người — chỉ dòng "Phân công GV …" (mục 5)
     const u = urgencyOf(c.due ?? null, today);
     const mine = c.owner_user_id === p.userId;
     /*
@@ -1192,7 +1196,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
    */
   const ownerless = !co('no_owner') ? [] : conn
     .prepare(
-      `SELECT sc.id, sc.summary, sc.origin_kind, sc.sos_level, sc.urgency,
+      `SELECT sc.id, sc.summary, sc.origin_kind, sc.sos_level, sc.urgency, sc.topic, sc.category,
               sc.detected_at, sc.created_at, sc.attempt_id,
               COALESCE(sc.student_id, a.student_id) AS eff_student_id,
               COALESCE(a.class_id, cur.class_id) AS eff_class_id,
@@ -1202,7 +1206,8 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
               /* K1-05: lớp có môn của Case mà chưa ai dạy môn đó → gốc là phân công, không phải chọn người phụ trách. */
               EXISTS (SELECT 1 FROM class_skills cs WHERE cs.class_id = COALESCE(a.class_id, cur.class_id) AND cs.skill = sc.category)
                 AND NOT EXISTS (SELECT 1 FROM teacher_assignments ta WHERE ta.class_id = COALESCE(a.class_id, cur.class_id)
-                                  AND ta.status = 'active' AND ta.skill = sc.category) AS thieu_gv_mon
+                                  AND ta.status = 'active' AND ta.skill = sc.category) AS thieu_gv_mon,
+              NOT EXISTS (SELECT 1 FROM teacher_assignments ta WHERE ta.class_id = COALESCE(a.class_id, cur.class_id) AND ta.status = 'active' AND ta.is_core = 1) AS thieu_gvcn
          FROM sos_cases sc
          LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
          LEFT JOIN students s ON s.id = COALESCE(sc.student_id, a.student_id)
@@ -1216,13 +1221,17 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   napTruocPhamVi(ownerless.map((r) => r.eff_student_id));
   for (const c of ownerless) {
     if (f.branchId && c.eff_branch_id !== f.branchId) continue;
-    if (!can(p, PERMISSIONS.CASE_APPROVE, { classId: c.eff_class_id, studentId: c.eff_student_id })
-        && !teachesClass(p, c.eff_class_id)) continue;
+    /* CV-LOI (A13, 9.2-10): Case không chủ còn lại = lớp thiếu GV môn / GVCN (chủ được gán khi phân công — `ganChuCaseThieu`). Việc của người
+       PHÂN CÔNG được: một dòng, GV không thấy. */
+    if (!c.eff_class_id || !can(p, PERMISSIONS.CLASS_ASSIGN, { classId: c.eff_class_id })) continue;
     const head = caseHeadline({
       summary: c.summary, originKind: c.origin_kind, sosLevel: c.sos_level, attemptNo: c.attempt_no,
       attemptKind: c.attempt_kind ?? null,
     });
-    const suaPc = !!c.thieu_gv_mon && can(p, PERMISSIONS.CLASS_ASSIGN, { classId: c.eff_class_id });
+    /* ponytail: lớp đủ người mà Case vẫn trống chủ = dữ liệu cũ chưa chạy migrate CV-LOI — không có gì để phân công, migrate / lần phân công sau tự gán. */
+    if (!c.thieu_gv_mon && !c.thieu_gvcn) continue;
+    const mon = c.thieu_gv_mon ? (CASE_CATEGORY_SKILL[c.category as keyof typeof CASE_CATEGORY_SKILL] ?? null) : null;
+    const tenMon = mon ? caseTopicLabel(c.topic ?? mon, ctCua(c.eff_class_id)) : null;
     items.push({
       key: `owner:${c.id}`, group: 'no_owner', urgency: 'normal',
       studentId: c.eff_student_id, studentName: c.full_name ?? 'Học viên',
@@ -1231,12 +1240,12 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       caseId: c.id as number, level: levelOf(c),
       contextLabel: nhanDot(c.attempt_kind, c.attempt_no),
       count: null,
-      reason: `${head} — chưa ai nhận điều phối`,
-      tieuDe: 'Chọn người phụ trách',
-      actionLabel: suaPc ? 'Sửa phân công' : 'Chọn người phụ trách',
-      href: suaPc ? `/hoc-vien/lop/${c.eff_class_id}?viec=phan-cong` : `/hoc-vien/${c.eff_student_id}`,
+      reason: `${head} — lớp chưa có ${tenMon ? `GV ${tenMon}` : 'GVCN'}`,
+      tieuDe: tenMon ? `Phân công GV ${tenMon}` : 'Phân công GVCN',
+      actionLabel: 'Phân công',
+      href: `/hoc-vien/lop/${c.eff_class_id}?viec=phan-cong`,
       ownerId: null, owner: null, mine: false,
-      due: null, statusLabel: 'Chưa có người phụ trách',
+      due: null, statusLabel: 'Chưa có người phụ trách', thieuNguoi: { mon },
     });
   }
 

@@ -1,5 +1,4 @@
 [
-  {"cong_cu":"esbuild","pr":"CV-LOI","ly_do":"case trùng yt_xem (11.1e) — nhánh Ghi nhận một em tại chỗ không bao giờ chạy","khop":"^web/src/modules/congViec/PanelViec\\.tsx:\\d+ duplicate-case case 'yt_xem':"},
   {"cong_cu":"lich","pr":"KHUNG-LOI","ly_do":"BoChonThoiGian tự đóng khi bấm trong lịch portal (12.7, V3B-09): Phân tích, Tutor, panel một tutor, Bộ lọc thêm","khop":"lich-(phan-tich|tutor|panel-tutor|loc-them)-\\d+ «[^»]+»: (bấm ‹ trong lịch|chọn ngày trong lịch) đóng hộp cha"},
   {"cong_cu":"do-bang","pr":"BANG-1","ly_do":"lưới MT + lưới lớp thường (ô tổng bị ⋯ đè) ở các lối vào lưới","khop":"^(nhap-diem|gv-nhap-diem|bang-diem-thuong|gv-bang-diem-thuong|test-lichTest|gvbm-test|test-diem-lop|gv-diem-lop|gv-hop-diem)-\\d+-(toi|sang) «[^»]+» g[1-5] "},
   {"cong_cu":"do-bang","pr":"BANG-1","ly_do":"lưới MT / Final Test trong hồ sơ lớp","khop":"^(lop-ft|lop-ft-phan-tich|lop-ft-y-thuc|lop-thuong|lop-thuong-phan-tich|panel-sua-tt|panel-them-hv|chon-nhieu-hv)-\\d+-(toi|sang) «(MT\\d|Final Test|bảng 1)» g[1-5] "},

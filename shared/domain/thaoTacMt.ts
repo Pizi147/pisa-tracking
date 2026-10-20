@@ -59,7 +59,8 @@ export function thaoTacKyNang(tt: TrangThaiTT, q: QuyenTT): { chinh: ThaoTac | n
     /* PR-MTb T20: Quản lý / Quản trị dời được kỹ năng đã có điểm (điểm đi theo; máy chủ `setSkillWeek` `quanLy`). */
     case 'co-diem': return { chinh: q.nhapDiem ? 'sua-diem' : null,
       menu: [...(ql ? ['doi-lich'] : []), ...((q.dotHoanTat ? ql : q.nhapDiem || ql) ? ['huy-diem'] : []), ...huy] as ThaoTac[] };
-    case 'vang': return { chinh: q.gvcn || ql ? 'xep-lai' : null, menu: huy };
+    /* CV-LOI (V4B H15): GVCN chỉ xếp lại bài vắng ở lớp thường (máy chủ `SCHEDULE_MOVE` loại FT — FT chỉ Quản lý `PLAN_WEEK`). */
+    case 'vang': return { chinh: ql || (q.gvcn && !q.laFt) ? 'xep-lai' : null, menu: huy };
     case 'cho-duyet': return { chinh: ql ? 'tra-loi-de-nghi' : null, menu: [] };
     /* PR-MTGON: kỹ năng đã huỷ (dữ liệu cũ, kể cả MT cũ) → "Đưa lại vào đợt" (Quản lý FT); lớp thường giữ Khôi phục. */
     case 'da-huy': return { chinh: ftQl ? 'dua-lai' : ql ? 'khoi-phuc' : null, menu: [] };

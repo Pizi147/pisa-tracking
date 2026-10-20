@@ -91,6 +91,8 @@ export default function StudentDetailPage() {
     if (p.mo) { const next = new URLSearchParams(params); next.delete('mo'); setParams(next, { replace: true }); }
   };
   const [reportOpen, setReportOpen] = useState(false);
+  /* CV-LOI (X-74): "+ Case cho {kỹ năng}" mở form chọn sẵn kỹ năng đó (category); "+ Case" chung → null. */
+  const [kyNangDau, setKyNangDau] = useState<string | null>(null);
   /** Ngăn Case (Q9) mở do BẤM trong trang (khối PA, ⋮ …) — mở do URL (`?case=`) đọc thẳng từ `p`. */
   const [openCase, setOpenCase] = useState<OpenCase>(null);
   /*
@@ -240,7 +242,7 @@ export default function StudentDetailPage() {
             {/* ml-auto: xuống dòng ở 375 thì nút vẫn bám phải — menu ⋯ (mở về bên trái) không tràn khỏi màn. */}
             <div className="flex flex-wrap gap-2 items-start ml-auto">
               {data.viewer.canReport && !data.lopHoc?.chiXem && (
-                <button className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={() => setReportOpen(true)}>+ Case</button>
+                <button className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={() => { setKyNangDau(null); setReportOpen(true); }}>+ Case</button>
               )}
               {/* ⋮ = MENU THẢ; mỗi mục mở THẲNG panel của việc đó (Q10). Không có quyền nào → Menu không vẽ gì. OV-10b: TVV / CX / Admin — cùng các mục thành nút. */}
               {(() => {
@@ -331,7 +333,7 @@ export default function StudentDetailPage() {
                 loading={board.loading} error={board.error} onRetry={board.reload}
                 selected={skillPick}
                 onPick={setSkillPick}
-                onReport={data.viewer.canReport && !data.lopHoc?.chiXem ? () => setReportOpen(true) : undefined}
+                onReport={data.viewer.canReport && !data.lopHoc?.chiXem ? (cat) => { setKyNangDau(cat); setReportOpen(true); } : undefined}
                 onChanged={() => { board.reload(); reload(); }}
                 onMoCase={(caseId, o) => setOpenCase({ caseId, paId: o?.paId, viec: o?.viec })}
                 tamDungTu={board.data?.tamDungTu ?? null} />
@@ -410,7 +412,7 @@ export default function StudentDetailPage() {
         />
       )}
 
-      <QuickReport open={reportOpen} onClose={() => setReportOpen(false)}
+      <QuickReport open={reportOpen} kyNangDau={kyNangDau} onClose={() => setReportOpen(false)}
         studentId={data.id} studentName={data.fullName} lop={data.currentClass?.code} cycleId={cy?.id ?? null}
         onDone={(cid) => { reload(); setOpenCase({ caseId: cid }); }}
         onMoCase={(cid, viec) => { reload(); setOpenCase({ caseId: cid, viec }); }} />

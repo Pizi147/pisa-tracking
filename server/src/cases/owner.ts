@@ -39,3 +39,30 @@ export function suggestCaseOwner(input: {
   /* Chưa phân công ai dạy kỹ năng đó thì về GVCN — vẫn là một người cụ thể, không phải cả lớp. */
   return bySkill?.user_id ?? core();
 }
+
+/**
+ * CV-LOI (02 mục 4.7 A13, X-63): Case còn mở mà CHƯA có người phụ trách → gán theo đúng luật lúc tạo Case (`suggestCaseOwner`: GV môn → GVCN).
+ * Gọi trong giao dịch ghi phân công (`ghiPhanCong`) và ở migrate ghi bù dữ liệu cũ. Mỗi lần gán một dòng `sos_case_history` (null → người;
+ * `actorId` null = hệ thống). Lớp vẫn chưa có ai (không GV môn, không GVCN) thì Case để trống — Công việc của QL hiện "Phân công GV {môn}".
+ * Trả số Case đã gán.
+ */
+export function ganChuCaseThieu(o: { classId?: number; actorId: number | null; luc: string }): number {
+  const conn = db();
+  const rows = conn.prepare(
+    `SELECT sc.id, sc.category, COALESCE(a.class_id, cur.class_id) AS class_id
+       FROM sos_cases sc
+       LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
+       LEFT JOIN enrollments cur ON cur.student_id = COALESCE(sc.student_id, a.student_id) AND cur.status = 'active'
+      WHERE sc.status != 'done' AND sc.owner_user_id IS NULL AND (? IS NULL OR COALESCE(a.class_id, cur.class_id) = ?)`,
+  ).all(o.classId ?? null, o.classId ?? null) as any[];
+  let n = 0;
+  for (const r of rows) {
+    const chu = suggestCaseOwner({ classId: r.class_id ?? null, category: r.category ?? null });
+    if (chu === null) continue;
+    conn.prepare('UPDATE sos_cases SET owner_user_id = ? WHERE id = ? AND owner_user_id IS NULL').run(chu, r.id);
+    conn.prepare(`INSERT INTO sos_case_history (case_id, field, old_value, new_value, actor_user_id, created_at) VALUES (?, 'owner_user_id', NULL, ?, ?, ?)`)
+      .run(r.id, String(chu), o.actorId, o.luc);
+    n += 1;
+  }
+  return n;
+}
