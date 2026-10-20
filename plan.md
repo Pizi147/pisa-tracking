@@ -234,6 +234,8 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 - **Đề xuất (CHƯA duyệt):** GĐ0 quy trình Q1–Q13 + seed + công cụ → GĐ1 sửa số / lỗi chức năng (SL1, SL2, CV-LOI, KHUNG-LOI; khuyến nghị **trước deploy**) → GĐ2 làm lại từng màn (M0…M7, chủ SP duyệt ảnh cặp) → GĐ3 thống nhất → GĐ4 chấm lại.
   **Chủ SP chốt 20/10 (4 câu mục 9.1):** khung mockup đã duyệt THẮNG kế hoạch / luật cũ (trừ nghiệp vụ, quyền, chống mất dữ liệu) · PR đổi bố cục: chủ SP duyệt ảnh cặp / bản chạy TRƯỚC merge, không merge qua đêm (PR máy chủ vẫn tự merge) ·
   sửa GĐ1 rồi mới deploy · một phạm vi số cho cả trang Tổng quan (bỏ "gộp hai khung") + một định nghĩa SOS "SOS hiện tại". **Chưa giao PR nào** — chủ SP còn góp ý thêm, gộp xong mới làm GĐ0 → GĐ1.
+- **Góp ý vòng 1 (20/10 tối) — tài liệu mục 10:** ĐÃ CHỐT: tăng cỡ chữ (PTA tự chọn phông), thứ tự menu **Tổng quan → Lớp/HV → Test → Công việc → Phân tích → Tutor**, tô màu chính con số điểm, **bỏ Trễ chấm khỏi Tổng quan**, thiết kế lại cả Tổng quan + hover toàn web.
+  ĐỀ XUẤT chờ trả lời (10.7, 12 câu): bố cục Tổng quan **B** (một hàng đợi trái / phải, Chờ duyệt nhóm đầu) thay A của chủ SP; việc QL chỉ ở Tổng quan; bỏ dải "HV cần chú ý"; số / SOS mở rộng hàng lớp tại chỗ; thang "làm tại chỗ" 0–5; giữ Be Vietnam Pro, thang 12·13·14·15·17·22·28; token màu kết quả mới. Chủ SP còn gửi góp ý các trang khác — chưa mockup, chưa code.
 
 ### OV-14 — overhaul UX 17–18/10 (đánh giá `docs/superpowers/specs/2026-10-17-ov14-danh-gia-ux.md`, mockup `thiet-ke/mockup-ov14-*`)
 - **Rà 17/10** (impeccable critique + detector, ui-ux-pro-max, hai bên đối thoại, xác minh mã main 6177d36f, 266 ảnh demo): Nielsen 27/40, ui-ux-pro-max 25/40 → đích ≥ 35 (37).

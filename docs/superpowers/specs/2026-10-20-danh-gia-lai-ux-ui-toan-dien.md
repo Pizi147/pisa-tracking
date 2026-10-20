@@ -504,11 +504,13 @@ B-06 P2 `do-khung` lỗi thời · B-07 P3 chữ < 12 px dày · B-08 P3 "—" /
 5. **Một mẫu mỗi thành phần, một tên mỗi khái niệm** (X7, X8), có phép kiểm chống trôi.
 
 ### 7.1 Thanh trên + khung trang
+> **Thứ tự menu ở mục này đã HẾT HIỆU LỰC** — chủ SP chốt 20/10: Tổng quan → Lớp/HV → Test → Công việc → Phân tích → Tutor (mục 10.0 I.2, 10.1).
 - **Hiện trạng:** menu 6 mục (Công việc thứ 5), "Thông báo 30" chữ, cắt ở 1 280 px; mỗi trang một kiểu đầu trang / bộ lọc.
 - **Đề xuất:** theo mockup 1 khung 2a / 2b + mockup 3: Công việc đầu (mọi vai có khu này); chuông + số; ô tìm "lớp, học viên hoặc email" (+ GV với QL / QT); "Thêm ▾" khi thiếu chỗ; 375 ≤ 5 nút. Một thành phần **khung trang** cho mọi trang.
 - **Bước:** đổi chi nhánh + chương trình ở mọi trang cùng một chỗ, 1 bấm; QT nhìn ngay đang ở chi nhánh nào.
 
 ### 7.2 Tổng quan QL / QT — "bàn giao ban một màn, một phạm vi" (A1 Phần 3, mockup 3 + ý tốt của #471)
+> **THAY BỞI mục 10.2** (góp ý chủ SP vòng 1: bỏ Trễ chấm, thiết kế lại cả trang, khuyến nghị bố cục B). Giữ đoạn dưới để tra số bước gốc.
 - **Đề xuất:** một phạm vi `{chi nhánh, chương trình}` cho mọi khối; dải "HV cần chú ý" là nút viền mở panel; "Cần bạn quyết" dạng **hàng gọn** (chip loại · việc + người gửi · "Nếu duyệt" có ngày · hạn · nút), mỗi nhóm ≤ 5 dòng quá hạn trước + "Xem tất cả n ›" mở tại chỗ;
   mọi "Mở" mở panel tại chỗ; "Tuần này" = dải 6 tuần (Test · HV · Chấm x/y · ⚠) + bảng "Test tuần này" + Trễ chấm cùng hàm với dải.
 
@@ -641,12 +643,12 @@ Cùng phương pháp, cùng cách chia khu vực, cùng số đo (điểm Nielse
 | # | Câu hỏi | Khuyến nghị | Cần trước |
 |---|---|---|---|
 | 1 | QL được **nhập thay** bài trễ chấm ngay ở panel (mockup 1d; hiện chỉ GV có quyền)? | có, trong phạm vi chi nhánh | M1 |
-| 2 | Tiêu đề mục Tổng quan thống nhất "Tổng quan" cho mọi vai; Công việc đứng đầu menu (mockup 3, 6)? | có | KHUNG-LOI, M0 |
+| 2 | Tiêu đề mục Tổng quan thống nhất "Tổng quan" cho mọi vai; ~~Công việc đứng đầu menu~~ (**hết hiệu lực** — thứ tự menu chủ SP chốt 20/10, mục 10.0) | có (phần tiêu đề) | KHUNG-LOI, M0 |
 | 3 | Hộp Chờ duyệt theo chi nhánh đang chọn (kèm dòng "n thẻ ở chi nhánh khác") thay luật 06/10 "luôn mọi chi nhánh"? | có | SL1 |
 | 4 | Số trên chuông chỉ đếm việc còn mở (không đếm thông báo đã xong)? 3 loại thông báo tự động vào "Cần làm"? | có / có | SL1 |
 | 5 | Badge "Công việc n" một nghĩa cho mọi vai = việc của tôi quá hạn + thẻ tôi phải quyết, theo chi nhánh đang chọn? | có | SL2 |
 | 6 | "Hoàn tác 8 s" sau Duyệt (mockup 3) hay luật Q15 "quyết định không hoàn tác"? | Hoàn tác cho thao tác đảo được | M1 |
-| 7 | QL mở Công việc: khối "Cần bạn quyết" đầu trang, việc của GV gập theo GV? | có | M2 |
+| 7 | QL mở Công việc: khối "Cần bạn quyết" đầu trang, việc của GV gập theo GV? (**đổi hướng** — mục 10.2 đề xuất "Cần bạn quyết" chỉ ở Tổng quan, câu 10.7-2) | xem 10.7-2 | M2 |
 | 8 | Hàng đợi tự sang việc kế **chỉ trong cùng nhóm** (mockup 1e)? | có | CV-LOI |
 | 9 | Làm "Mẫu nhận xét" (3 câu gần nhất + "Như em trước") của mockup 2? | có | M2 |
 | 10 | GV có cần thấy việc "Chưa có người" / "Chọn người phụ trách" của lớp mình dạy? | không — chỉ QL | CV-LOI |
@@ -678,6 +680,116 @@ Cùng phương pháp, cùng cách chia khu vực, cùng số đo (điểm Nielse
 | 36 | Một tên cho bài quá hạn chưa có điểm: "bài quá hạn chấm" / "bài trễ chấm" / "nợ điểm"? | "bài quá hạn chấm" | CHU |
 | 37 | Vạch trái 3 px của hàng nhóm (máy dò coi là dấu hiệu "giao diện AI"; DESIGN.md đang là mẫu chuẩn) — giữ? | giữ (đúng mẫu, có nghĩa nhóm) | TP |
 | 38 | Nút ⋯ ở ô điểm lớp thường ẩn tới khi rê chuột — luôn hiện mờ? | luôn hiện mờ | M5 |
+
+---
+
+## 10. Góp ý chủ SP vòng 1 (20/10 tối) — chung toàn web + trang Tổng quan
+
+Nguồn: tin nhắn chủ SP 20/10 tối (nhắc tới ảnh 1–5 nhưng **không kèm ảnh**; PTA đoán: ảnh 1 = dải "HV cần chú ý", ảnh 2 = panel danh sách Case có nút Thêm PA, ảnh 3 = panel số ít giá trị, ảnh 4 = khối "Cần bạn quyết" dưới tiêu đề "Việc hôm nay", ảnh 5 = hàng Case / Chốt lộ trình khi rê chuột — chủ SP gửi lại ảnh nếu đoán sai).
+Nghiên cứu: 2 agent Opus (chỉ đọc mã + ảnh đã chụp + đo token) — phụ lục [`v1-nen-chung.md`](2026-10-20-danh-gia-ux/v1-nen-chung.md), [`v1-tong-quan.md`](2026-10-20-danh-gia-ux/v1-tong-quan.md). **Vẫn chỉ là kế hoạch: chưa code, chưa mockup.**
+
+### 10.0 Bảng quyết định vòng 1
+| # | Nội dung | Trạng thái | Thay đổi mục cũ |
+|---|---|---|---|
+| I.1 | Tăng cỡ chữ, hệ chữ phân cấp rõ, nhất quán; PTA tự chọn phông (tiếng Việt đúng); không đánh đổi khả năng đọc để nhồi thông tin | **ĐÃ CHỐT** (cách làm: đề xuất 10.1) | nâng từ GĐ3 lên **nền làm trước** (10.6) |
+| I.2 | Thứ tự menu: **Tổng quan → Lớp/HV → Test → Công việc → Phân tích → Tutor** | **ĐÃ CHỐT** | thay 7.1 và 9.2-2 ("Công việc đầu" — hết hiệu lực); mockup 6 khung 10 hết hiệu lực |
+| I.3 | Tô màu **chính con số điểm** (không chỉ ký hiệu), nhất quán mọi chỗ có điểm, tương phản đạt | **ĐÃ CHỐT** (luật màu: đề xuất 10.1) | thêm vào X7, nền làm trước |
+| II.1 | Số bấm "nháy rồi không ra panel" — kiểm nguyên nhân | **ĐÃ KIỂM: lỗi thật** (không phải giới hạn demo) = A1-01 | GĐ1 SL1 giữ |
+| II.2 | Bớt chỉ số / panel không giá trị; không phải số nào cũng bấm; đã bấm thì phải làm được việc | **Hướng đã chốt**, cách phân loại: đề xuất 10.2 | thay X2 ("mọi số bấm được = ô viền") |
+| II.2.1 | "Thêm PA ngay trên hàng HV, mở rộng tại chỗ" + nguyên tắc "làm được tại chỗ thì làm tại chỗ" | ý cụ thể **ĐỀ XUẤT chủ SP**; nguyên tắc = **hướng tư duy chủ SP yêu cầu áp toàn web** | thêm thang "làm tại chỗ" (10.3) vào X3 |
+| II.3 | SOS: vùng bấm + hiển thị + tương tác + nội dung panel — overhaul | **Yêu cầu đã chốt**, cách làm: đề xuất 10.2 | gộp với A3-09…11 |
+| II.4 | **Bỏ khối Trễ chấm khỏi Tổng quan** | **ĐÃ CHỐT** | thay 7.2 (bỏ "Trễ chấm cùng hàm với dải") |
+| II.5 | Thiết kế lại từ đầu khu "Việc hôm nay" | **Yêu cầu đã chốt**, cách làm: đề xuất 10.2 | thay 7.2 |
+| II.6 | Hover hàng không rõ — rà toàn web | **Yêu cầu đã chốt**, hệ trạng thái: đề xuất 10.1 | thêm vào X7 |
+| II.7 | Bố cục chủ SP cân nhắc: hộp duyệt trên, dưới trái danh sách / phải chi tiết | **ĐỀ XUẤT chủ SP** — PTA khuyến nghị biến thể B (10.2) | thay 7.2, 9.2-5, 9.2-7 (chờ câu hỏi 10.7) |
+
+### 10.1 Nền chung toàn web (I.1, I.2, I.3, II.6)
+
+**Chữ (I.1) — lời chủ SP "nhiều chỗ nhỏ hơn bản đang deploy" = ĐÚNG MỘT PHẦN [ĐÃ KIỂM]:**
+- OV-15a (#460) hạ **mọi ô bảng không tự đặt cỡ từ 14 → 13 px** (238 mẫu ô, 55 bảng); đầu cột 11 px in hoa → 12 px thường (chữ nhìn thấy thấp đi ~21 %); khối chính Tổng quan QL: dòng 14 → 13, số 16 → 13 (OV-15d / h1). Ngược lại ô điểm và cột Kỳ vọng / Overall to lên.
+- ~69 % lớp cỡ chữ vẫn ≤ 12,5 px ở cả hai bản; khối thêm sau deploy làm ở 11–12 px. → nguyên nhân gốc: thang chữ hiện tại quá nhỏ cho bảng dày tiếng Việt, và mỗi PR tự đặt cỡ.
+- **Đề xuất phông:** **giữ Be Vietnam Pro (chữ) + Inter (chữ số)** — đo cả hai đủ 134/134 ký tự tiếng Việt; đổi sang Inter chỉ cao chữ hơn ~3 %, còn tăng cỡ 13 → 15 được ~15 %. Không in hoa chữ Việt; line-height ≥ 1,5 ở chỗ có dấu chồng.
+- **Đề xuất thang cỡ (px):** 12 · 13 · 14 · **15** · 17 · 22 · 28. Ô bảng, chữ thường, nút: **15**; lưới nhập điểm: 14; chữ phụ / nhãn / đầu cột / chip: 13; **không chữ nào < 12**; ô nhập ở 375: 16. Bảng dài thêm ~8–11 % → bù bằng bỏ khối trùng (X4) và hàng một dòng (X5) **ngay trong PR của màn đó**.
+
+**Màu số điểm (I.3) [ĐÃ KIỂM + ĐỀ XUẤT]:**
+- Hiện có **6 cách tô ở 19 nơi**; nhiều nơi chỉ tô ký hiệu. Lỗi màu hiện tại: ở chế độ tối xanh lá / đỏ gần như trùng với người mù màu đỏ–lục (ΔE 1,3); màu "bằng kỳ vọng" trùng màu link / nhấn (ΔE 2,4 tối, 0 sáng); token `ok` ở chế độ sáng dưới 4,5 : 1 trên hai nền.
+- **Đề xuất một luật cho 17 nơi:** tô **chính con số** + giữ ✓ / ✗ (không chỉ dựa màu); 3 token mới `--kq-vuot` / `--kq-bang` / `--kq-duoi` — tối `#86efac / #a5b4fc / #ff8282`, sáng `#166534 / #1e40af / #c81e1e` (tương phản thấp nhất 4,67 : 1 trên 9 nền thật; mù màu ΔE 1,3 → 11,4); "chưa đủ điểm" trung tính; ô đang gõ không tô; không lẫn màu SOS (vàng / cam / hồng).
+
+**Hover + trạng thái (II.6) [ĐÃ KIỂM + ĐỀ XUẤT]:**
+- Hover hàng hiện chỉ chênh ΔL 2,8–4,5 (gần như không thấy; `.row-hover` phủ trắng 4 %); không hover ở cột tên dính, hàng nhóm, hàng đã thi; **29/35 loại hàng có hover mà không bấm được**; danh sách việc ở Tổng quan không có hover.
+- **Đề xuất một hệ trạng thái:** rê chuột = nền phủ 8 % (tối) / 9 % (sáng), ΔL ≥ 5,8 trên mọi nền + một tín hiệu nữa (động từ gạch chân / con trỏ tay) — **chỉ cho thứ bấm được**; đang chọn = nền nhấn nhạt + viền trái 3 px (khác hẳn hover); focus = vòng 2 px; bảng không bấm được bỏ hover (giữ "dò hàng" nhẹ cho bảng ≥ 8 cột — hỏi chủ SP).
+
+**Thứ tự menu (I.2) [ĐÃ CHỐT]:** chỉ đổi chỗ Phân tích ↔ Công việc (`shared/domain/dieuHuong.ts:51-52`) + sửa 2 phép kiểm; GV giữ trang đầu Công việc (quyết định 19/10). Tăng cỡ chữ làm thanh trên cắt nặng hơn ở 1 280 px → dưới 1 440 px ô tìm thu thành nút kính lúp; thanh dưới 375 ≤ 5 nút, QT / QL gom Phân tích + Tutor vào "Thêm".
+
+### 10.2 Tổng quan QL / QT — thiết kế lại (II.1–II.7)
+**Kiểm kê 29 thành phần:** giữ 7 · đổi cách bấm / chỗ / tên 15 · **bỏ 7** · thêm 1–3 nhóm việc của QL. Panel "danh sách số" mở từ Tổng quan: 6 loại → **0**. Bảng đủ ở phụ lục `v1-tong-quan.md` Phần 2.
+
+**Phân loại số (II.2.2) — bốn loại:** (a) **chỉ xem** — số trơn, không gạch, không hover · (b) **bấm để lọc / nhảy tới nhóm** ngay trên trang · (c) **bấm để làm việc tại chỗ** (đủ chức năng) · (d) **mở trang khác** chỉ khi cần không gian lớn. Ví dụ: "Chưa điểm" (QL không có quyền nhập) = (a); số trong bảng Lớp cần chú ý = (c) mở rộng hàng lớp; ô tuần của "Tuần này" = (d) sang Lịch Test tuần đó.
+
+**Dải "HV cần chú ý":** đề xuất **bỏ** — nó vẽ lại đúng số của hàng tổng "Cả Monbay" (cũng là gốc lỗi "nháy"); số chỉ còn ở hàng tổng, chữ số to hơn, chỉ xem. Trái quyết định Q6a cũ → hỏi (10.7). Bỏ Trễ chấm kéo theo bỏ "n bài trễ chấm · n GV" ở dải; trễ chấm theo GV xem ở Lịch Test / Phân tích GV / Báo cáo; thông báo tự động nhắc GV phải vào nhóm "Cần làm" (sửa A1-04 ở GĐ1).
+
+**SOS (II.3):** hiện vùng bấm chỉ là chữ số trong chip (8×12 px), panel chỉ ra tên. Đề xuất: **cả ô SOS là một nút** (≥ 44 px cao) → **mở rộng hàng lớp ngay tại chỗ**: mỗi em một dòng (mức SOS + kỹ năng · MT · tuần · Case / PA · việc tiếp + hạn · nút theo quyền, gồm Thêm PA ngay dưới dòng em) — theo mockup 6 khung 1; chip SOS + hộp "Vì sao SOS" một mẫu toàn web (A3-10, A3-11).
+
+**Bố cục — so 4 phương án** (QL Monbay sáng thứ Hai; chi tiết + sơ đồ ở phụ lục Phần 4):
+
+| Tình huống | Hiện tại | **A** chủ SP: hộp duyệt trên + dưới trái / phải | **B** một hàng đợi trái / phải, Chờ duyệt là nhóm đầu | **C** Tổng quan chỉ là bức tranh, việc ở Công việc | **D** trái hàng đợi, phải mặc định Lớp cần chú ý |
+|---|---|---|---|---|---|
+| Duyệt 10 thẻ có xem bối cảnh | ≈ 31 bấm · **20 đổi trang** | 20 bấm + ~10 lần cuộn (chi tiết ở dưới, xa chỗ bấm) hoặc 2 kiểu thao tác | **11 bấm · 0 đổi trang · 0 cuộn** | 12 · 1 đổi trang | 11 · 0 |
+| Thêm PA 5 Case quá hạn | 25–30 bấm · 5 panel phủ | 11–16 · 0 | **11–16 · 0** (tự sang Case kế) | +1 đổi trang | 11–16 |
+| Chốt lộ trình 6 lớp | 40–60 · 6 panel toàn màn | ≈ 12 + em chưa đề xuất | **≈ 12 + em chưa đề xuất** | như B + 1 đổi trang | như B |
+| Biết lớp nào có SOS 3, em nào, có PA chưa | 3 bấm · 1 đổi trang · 1 panel | 1 bấm | **1 bấm** | 1 bấm | 1 bấm |
+| Độ dài trang 1440 / 375 | 2,5 / 5,3 màn | ≈ 2 / 3,2 | **≈ 1,7 / 2,5** | ≈ 0,8 / 1,2 (+ trang Công việc) | ≈ 1,15 / 2,5 |
+| Trùng trang Công việc QL | trùng Chờ duyệt | **trùng y bố cục** (Công việc QL hiện đúng là A) | không (khi phân vai) | không | không |
+
+- **Khuyến nghị: B** — giữ lõi ý chủ SP (trái danh sách, phải chi tiết, làm ngay tại đây); khác A một điểm: **Chờ duyệt là nhóm đầu của danh sách, luôn mở** (có "Chọn nhiều" để duyệt hàng loạt cùng loại), không tách hộp riêng ở trên. Lý do: chi tiết luôn ngang hàng chỗ vừa bấm; một kiểu thao tác cho mọi nhóm; ngắn hơn ~250–300 px; đúng mẫu "nhóm trong một danh sách" của mockup 2 + 3; không sao y Công việc. Điểm A hơn B: hàng duyệt rộng hết trang đọc được "Nếu duyệt" không cần bấm → B bù bằng dòng 2 ghi trích ngắn + "Chọn nhiều". Không chọn C (mọi việc thêm 1 đổi trang, trái ý "làm ngay tại đây"); không chọn D (một khung hai vai, cuộn lồng với QT).
+- **B cụ thể:** đầu trang một hàng (Tổng quan · Chi nhánh ▾ · Tất cả | FT n | LT n · Dữ liệu đến · Báo cáo ›) → "Cần bạn quyết · 23 việc · ⚠ 12 quá hạn · 2 hạn hôm nay" → **trái 560 px danh sách / phải ~820 px chi tiết (dính)** → "Lớp cần chú ý" (số = cả ô, mở rộng hàng) → "Tuần này" một hàng ô tuần.
+  Nhóm cố định thứ tự: Chờ duyệt · Case quá hạn chốt PA · Sau thi · Bước tiếp · Lộ trình lớp · Phân công (chưa có người) · Lịch Test (chưa lịch MT kế) · Vận hành quá hạn — chỉ nhóm có việc mới hiện; Chờ duyệt luôn mở (≤ 5 dòng + "Xem thêm"), nhóm có quá hạn mở (≤ 3), còn lại gập.
+  Dòng 2 hàng ~52 px: tên + lớp / một dữ kiện bối cảnh / hạn + **động từ** ("Duyệt ›", "Thêm PA ›", "Chốt ›"); cả dòng là vùng bấm; mức ưu tiên phân biệt bằng chữ + ký hiệu ("⚠ quá hạn 5 ngày", "Hạn hôm nay", "còn 3 ngày"), không tô nền cả hàng.
+  Đủ trạng thái: rê chuột · focus · đang chọn · đang lưu · vừa xong (Hoàn tác) · lỗi giữ chữ · người khác đã xử lý · hết nhóm · trống · lô lỗi một phần. Vào trang chọn sẵn việc đầu, **không đặt con trỏ, không cuộn**. 375: danh sách → chi tiết toàn màn, nút chính dính đáy, "Việc 2 / 10", Quay lại về đúng chỗ.
+- **Phân vai Tổng quan ↔ Công việc [ĐỀ XUẤT]:** việc QL / QT phải quyết **chỉ ở Tổng quan**; Công việc của QL / QT chỉ còn **việc của GV** (gập theo GV) + một dòng "Cần bạn quyết · 23 — ở Tổng quan ›"; số trên menu của QL chuyển sang "Tổng quan". Thứ tự menu đã chốt (Tổng quan đầu) ủng hộ Tổng quan là trang nhà của QL.
+- **Bỏ khi làm lại màn:** dải "HV cần chú ý" (nếu chủ SP đồng ý) · Trễ chấm · link "Thống kê theo kỳ" · "Lịch sắp tới" (tab tuần + "L R W S") · câu hướng dẫn dưới nút · mọi panel danh sách số · nút "Mở" đổi trang · khối "Chờ bạn duyệt" + "Việc quản lý" ở Công việc QL.
+
+### 10.3 Thang "làm tại chỗ" — áp toàn web [ĐỀ XUẤT, theo hướng tư duy chủ SP II.2.1]
+| Bậc | Dạng | Khi nào |
+|---|---|---|
+| 0 | Chỉ xem (số / chữ không bấm) | số để quan sát; vai đó không có việc gì để làm |
+| 1 | Một bấm trên hàng / trong chi tiết (+ Hoàn tác 8–10 s) | 0 ô, đảo được, bối cảnh đã thấy |
+| 2 | Hộp nhỏ neo tại nút / mở rộng ngay dưới hàng | 1–2 ô ngắn; hoặc ≤ 4 ô khi danh sách rộng hết trang và bối cảnh có sẵn trên hàng |
+| 3 | Khung chi tiết bên phải (375 = toàn màn + "‹ Quay lại") | 3–6 ô hoặc cần khối bối cảnh; làm tuần tự nhiều việc cùng loại |
+| 4 | Panel rộng **thay** khung phải (không phủ thanh trên, không chồng) | bảng nhiều em của một lớp / một lượt |
+| 5 | Trang riêng | xem hồ sơ (link "↗" tách khỏi nút làm); không gian lớn |
+
+Luật kèm: chọn bậc **thấp nhất** đủ dùng · một danh sách một kiểu mở (không trộn bậc 2 và 3) · mở cái mới thì thay cái cũ · nút làm việc ≠ link xem hồ sơ · xác nhận chỉ khi hậu quả lớn · số bấm được phải trông bấm được, vùng bấm ≥ 24 / 44 px.
+**Ý "Thêm PA trên hàng HV":** đúng ở **bảng lớp rộng hết trang** (vùng mở rộng của Lớp cần chú ý, Đang SOS: form gọn 2 hàng ~220 px; 3–4 bấm thay 5–7, 0 panel); ở **danh sách hẹp 560 px** (hàng đợi) dùng khung phải; **cùng một form**. Áp thang cho 13 thao tác của Tổng quan: phụ lục `v1-tong-quan.md` 5.3 (Duyệt bậc 1; Từ chối, Gia hạn, Phân công, Xếp lịch MT kế bậc 2; Thêm PA, Ghi nhận xét, Xác nhận Case, Bước tiếp bậc 3; Chốt lộ trình bậc 4; xem hồ sơ bậc 5).
+
+### 10.4 Mở rộng sang chỗ khác cùng cấu trúc
+Báo cáo (số → panel chỉ tên — A5-07) → "bảng kết quả" mở rộng dưới hàng · hàng lớp ở Học viên & Lớp → **cùng thành phần "hàng lớp mở rộng"** với Tổng quan · Đang SOS + panel một em → dòng em dùng chung với Tổng quan · chip hồ sơ lớp ("8 chờ duyệt", "78 bài chờ chấm") → lọc tại chỗ / nhóm Chờ duyệt lọc lớp · Lịch Test 3 ô → bỏ · "Lớp tôi dạy" → khung phải · Phân công / Giao việc / Gia hạn → hộp nhỏ · hàng đợi Công việc → cùng luật tự sang việc kế với Tổng quan · hộp lịch Kế hoạch Test → thao tác trong hộp · Tutor hộp chồng → thay nội dung · chuông → mở đúng việc tại chỗ · Tổng quan TVV / CX / Admin → cùng mẫu hàng đợi + chi tiết.
+Chữ nhỏ / số không màu / hover mờ ở chỗ khác: phụ lục `v1-nen-chung.md` Phần E.
+
+### 10.5 Đối chiếu mockup
+- **Hết hiệu lực:** mockup 6 khung 10 ("Báo cáo" thay "Tổng quan", Công việc đầu menu) — theo thứ tự menu đã chốt; khối Trễ chấm của mockup 3 — đã chốt bỏ. Theo luật đã chốt 9.1-1 (quyết định mới trái khung thì sửa mockup), sửa các khung này trong PR tài liệu kế tiếp.
+- **Mockup cũng có vấn đề chủ SP vừa chê:** mockup 3 vẽ cùng số hai lần (dải = hàng Cả Monbay), ~60 con số, vùng bấm chỉ quanh số, không vẽ hover / đang chọn, giả định QL nhập được điểm.
+- **Giữ từ mockup 3 / PR #471:** đầu trang một hàng, ý nhóm việc + hàng gọn, dòng Case có chip SOS + "PA … chờ xác nhận từ …", dòng Bước tiếp có OVR + Đạt, Lộ trình lớp "đã đề xuất x/y", nhóm chỉ hiện khi có việc, trống "✓ Không có việc chờ", Tuần này là một hàng ô tuần.
+- Thiết kế lại theo B **cần mockup mới** (1440 tối + 375 sáng, QL + QT "Tất cả chi nhánh", đủ trạng thái) — chỉ soạn sau khi chủ SP gửi xong góp ý và duyệt hướng.
+
+### 10.6 Cập nhật kế hoạch (mục 8)
+- **Nền làm trước GĐ2 (mới — "NEN"):** thang chữ + phông + line-height; 3 token màu kết quả + tô con số ở 17 nơi; hệ trạng thái hover / đang chọn / focus; thứ tự menu + thanh trên < 1 440 + thanh dưới ≤ 5 nút. Có bảng mẫu chữ tiếng Việt + bảng màu cho chủ SP duyệt trước khi code; phép kiểm chặn chữ < 12 px và màu điểm ngoài token.
+- **GĐ1 SL1** giữ vá 1 dòng lỗi "nháy" (để deploy được) dù thiết kế lại sẽ bỏ dải; thêm sửa A1-04 (thông báo tự động vào "Cần làm").
+- **GĐ2 M1 Tổng quan** đổi sang bố cục B (khi chủ SP duyệt) + phân vai với Công việc (M2 Công việc QL bớt phần "Cần bạn quyết").
+
+### 10.7 Câu hỏi vòng 1 (hỏi gộp khi chủ SP gửi xong góp ý; mỗi câu có khuyến nghị)
+1. **Bố cục Tổng quan:** B (một hàng đợi trái / phải, Chờ duyệt là nhóm đầu luôn mở + "Chọn nhiều") thay A (hộp duyệt riêng ở trên)? — **B.**
+2. **Phân vai:** việc QL / QT phải quyết chỉ ở Tổng quan; Công việc của QL chỉ còn việc của GV; số trên menu QL chuyển sang "Tổng quan"? — **Có.**
+3. **Bỏ dải "HV cần chú ý"** (thay Q6a cũ): số chỉ còn ở hàng tổng của bảng, chỉ xem? — **Có.**
+4. **Số trong "Lớp cần chú ý"** (gồm SOS): bấm cả ô → mở rộng hàng lớp tại chỗ (có Thêm PA dưới dòng em), bỏ mọi panel danh sách tên? — **Có.**
+5. **Hệ quả bỏ Trễ chấm:** bỏ luôn "n bài trễ chấm · n GV" ở dải; "Tuần này" còn một hàng ô tuần (Test · HV · Chấm x/y), bấm ô → Lịch Test tuần đó? — **Có.**
+6. **Thang "làm tại chỗ" 0–5** làm luật toàn web (ghi DESIGN.md + CLAUDE.md sau khi duyệt)? — **Có.**
+7. **Phông:** giữ Be Vietnam Pro + chữ số Inter, chỉ tăng cỡ (ô bảng 15, lưới điểm 14, nhãn 13, tối thiểu 12) + sửa line-height; chấp nhận bảng dài thêm ~8–10 %, bù bằng bỏ khối trùng trong cùng PR? — **Có.**
+8. **Overall FT** tô màu theo cùng luật (so kỳ vọng của lượt)? Em **KCK** dưới kỳ vọng: số trung tính + chữ "KCK" mọi nơi (đúng quyết định OV-9)? — **Có / có.**
+9. **Bảng không bấm được** bỏ hover, chỉ giữ "dò hàng" nhẹ cho bảng ≥ 8 cột? — **Có.**
+10. **Chữ "Lớp/HV"** trong góp ý: có đổi tên mục "Học viên & Lớp" không (thuật ngữ đã chốt, dùng ở 55 tệp + Hướng dẫn)? — **Không đổi tên, chỉ đổi thứ tự.**
+11. **375:** QT / QL gom Phân tích + Tutor vào nút "Thêm" (thanh dưới ≤ 5 nút)? — **Có.**
+12. **Ảnh 1–5:** gửi lại nếu PTA đoán sai nội dung ảnh (đầu mục 10).
 
 ---
 
