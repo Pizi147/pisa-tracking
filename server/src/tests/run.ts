@@ -327,8 +327,9 @@ check('[12.1] Bộ demo có đủ độ đa dạng mà mục 11.4 yêu cầu', (
              AND NOT EXISTS (SELECT 1 FROM sos_cases c WHERE c.student_id = s.id)`)],
     ['case đã hoàn thành có kết quả',
       one(`SELECT COUNT(*) n FROM sos_cases WHERE status='done' AND outcome IS NOT NULL`)],
-    ['case chưa có người phụ trách',
-      one(`SELECT COUNT(*) n FROM sos_cases WHERE status!='done' AND owner_user_id IS NULL`)],
+    /* CV-LOI (02 4.7 A13): Case không chủ nay tự gán theo luật tạo Case (lớp có GV môn / GVCN) — demo thể hiện lần tự gán có lịch sử. */
+    ['case tự gán người phụ trách',
+      one(`SELECT COUNT(DISTINCT case_id) n FROM sos_case_history WHERE field = 'owner_user_id' AND old_value IS NULL`)],
     ['case song song', one(`SELECT COUNT(*) n FROM sos_cases WHERE parallel = 1`)],
     ['case tái diễn', one(`SELECT COUNT(*) n FROM sos_cases WHERE previous_case_id IS NOT NULL`)],
     ['phương án bị thay thế',

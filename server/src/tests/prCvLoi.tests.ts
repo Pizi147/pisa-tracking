@@ -58,11 +58,14 @@ export async function runPrCvLoiTests(t: YThucTestKit) {
   /** Lớp thiếu cả GV môn của Case lẫn GVCN → Case vẫn không chủ sau migrate. */
   const lopThieu = () => {
     const c = caseCuaLop();
+    /* Người vừa bỏ (GV môn + GVCN) — K3 phân công lại đúng họ: bức tranh hợp lệ chắc chắn, không phụ thuộc dữ liệu phép kiểm khác. */
+    const daBo = all(`SELECT user_id, skill, is_core FROM teacher_assignments WHERE class_id = ? AND status = 'active' AND (skill = ? OR is_core = 1)`, LOP, c.skill)
+      .map((a) => ({ userId: a.user_id as number, skill: a.skill as string | null, isCore: a.is_core === 1 }));
     conn.prepare(`UPDATE teacher_assignments SET status = 'ended' WHERE class_id = ? AND status = 'active' AND (skill = ? OR is_core = 1)`).run(LOP, c.skill);
     xoaNho();
     migratePrCvLoi(conn, []);
     assert(chuCua(c.id) === null, 'lớp không ai dạy môn / chủ nhiệm → Case vẫn chưa có chủ');
-    return c;
+    return { ...c, daBo };
   };
 
   check('K2 Công việc: Case không chủ = MỘT dòng "Phân công GV …" cho QL; GV dạy lớp không thấy dòng nào của Case', () => thu(() => {
@@ -78,13 +81,10 @@ export async function runPrCvLoiTests(t: YThucTestKit) {
 
   check('K3 phân công môn thiếu → cùng lần ghi Case có chủ, lịch sử ghi người phân công; QL hết dòng Phân công', () => thu(() => {
     const c = lopThieu();
-    const gvMoi = one(`SELECT ta.user_id FROM teacher_assignments ta JOIN classes k ON k.id = ta.class_id
-       WHERE ta.skill = ? AND ta.status = 'active' AND k.branch_id = (SELECT branch_id FROM classes WHERE id = ?) LIMIT 1`, c.skill, LOP).user_id;
+    const gvMoi = c.daBo.find((x) => x.skill === c.skill)!.userId;
     const hien = all(`SELECT user_id, skill, is_core FROM teacher_assignments WHERE class_id = ? AND status = 'active'`, LOP)
       .map((a) => ({ userId: a.user_id, skill: a.skill, isCore: a.is_core === 1 }));
-    const gvcn = one(`SELECT ta.user_id FROM teacher_assignments ta JOIN classes k ON k.id = ta.class_id
-       WHERE ta.is_core = 1 AND ta.status = 'active' AND k.branch_id = (SELECT branch_id FROM classes WHERE id = ?) LIMIT 1`, LOP).user_id;
-    classes.setClassTeachers(P.mbManager, LOP, { slots: [...hien, { userId: gvMoi, skill: c.skill, isCore: false }, { userId: gvcn, skill: null, isCore: true }] });
+    classes.setClassTeachers(P.mbManager, LOP, { slots: [...hien, ...c.daBo] });
     assert(chuCua(c.id) === gvMoi, 'Case về GV vừa phân công môn');
     const ls = one(`SELECT * FROM sos_case_history WHERE case_id = ? AND field = 'owner_user_id' ORDER BY id DESC LIMIT 1`, c.id);
     assert(ls?.actor_user_id === P.mbManager.userId, 'lịch sử ghi người phân công');
