@@ -3,4 +3,6 @@ import type { Dich } from '../en.ts';
 
 export const EN_SL1 = {
   '(tiếp)': '(cont.)',
+  ', {n} việc cần làm': (b) => `, ${b.n} to-do${b.n === 1 ? '' : 's'}`,
+  ', có tin chưa đọc': ', unread updates',
 } satisfies Record<string, Dich>;

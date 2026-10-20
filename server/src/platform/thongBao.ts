@@ -1,6 +1,7 @@
 import { db } from '../db.ts';
 import { tenMon } from '../../../shared/domain/index.ts';
-import { CO_THE_KHONG_THEO_DOI, LA_CASE_SOS } from '../cases/sosState.ts';
+import { CO_THE_KHONG_THEO_DOI, LA_CASE_SOS, xuLyCaseMany } from '../cases/sosState.ts';
+import { demoToday } from '../demoConfig.ts';
 
 /** Chuông trả tối đa bấy nhiêu dòng: MỌI dòng chưa đọc trước, rồi dòng mới nhất (PR-VAI-a Q18). */
 export const THONG_BAO_TOI_DA = 50;
@@ -34,10 +35,13 @@ export function thongBaoCua(userId: number) {
                   COALESCE(sc.student_id, cs.student_id, aa.student_id, aa2.student_id, dm.student_id, ycd.hoc_vien_id,
                            CASE WHEN n.entity_type = 'student' THEN n.entity_id END) AS student_id,
                   CASE WHEN n.entity_type = 'assessment_attempt' THEN n.entity_id ELSE smr.attempt_id END AS attempt_id,
-                  COALESCE(sc.category, sc.topic) AS mon_goc, cy.programme_code AS ct, cs.case_id,
+                  COALESCE(sc.category, sc.topic) AS mon_goc, cy.programme_code AS ct, cs.case_id, ycd.han_duyet AS han_the,
                   CASE
                     /* OV-15d: thông báo tự động chỉ còn khi việc còn (đồng bộ xoá khi xong) — luôn là Cần làm. */
                     WHEN n.kind IN ('cham_qua_han', 'case_chua_chot_pa', 'chot_lo_trinh') THEN 1
+                    /* SL1 (C23): Case tạo tay giao người phụ trách — còn việc tới khi Case có PA (hoặc đã đóng). */
+                    WHEN n.kind = 'case_giao' THEN CASE WHEN sc.status != 'done'
+                      AND NOT EXISTS (SELECT 1 FROM case_interventions ci WHERE ci.case_id = sc.id AND ci.status != 'cancelled') THEN 1 ELSE 0 END
                     /* OV-11f (TQ-7): tín hiệu đã vào Case / đã rút → việc xong (Case có chuông riêng). Báo PH qua TVV: còn khi việc phối hợp của lượt chưa làm. */
                     WHEN n.entity_type = 'case_signal' THEN CASE WHEN cs.status = 'pending' THEN 1 ELSE 0 END
                     WHEN n.entity_type = 'assessment_attempt' AND n.kind = 'phoi_hop' THEN
@@ -71,9 +75,13 @@ export function thongBaoCua(userId: number) {
         ORDER BY (x.read_at IS NULL) DESC, x.id DESC LIMIT ${THONG_BAO_TOI_DA}`,
     )
     .all(userId) as any[];
+  /* SL1 (N1): hạn của dòng — lưu sẵn (tự động, Case giao) → hạn thẻ duyệt → hạn việc tiếp của Case (`xuLyCaseMany`, một câu mỗi lô). */
+  const caseCan = [...new Set(rows.filter((r) => !r.han && r.entity_type === 'sos_case').map((r) => r.entity_id as number))];
+  const xl = caseCan.length ? xuLyCaseMany(caseCan, demoToday()) : null;
   for (const r of rows) {
     r.mon = r.mon_goc ? tenMon(r.ct ?? null, r.mon_goc) : null;
-    delete r.mon_goc; delete r.ct;
+    r.han = r.han ?? r.han_the ?? (r.entity_type === 'sos_case' ? xl?.get(r.entity_id)?.han ?? null : null);
+    delete r.mon_goc; delete r.ct; delete r.han_the;
   }
   return rows;
 }

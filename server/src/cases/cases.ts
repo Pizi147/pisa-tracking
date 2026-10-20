@@ -34,7 +34,7 @@ import { isRatioCycle, nguongDatLop, programmeCodeOfCycle } from '../normal/regu
 import { suggestCaseOwner } from './owner.ts';
 import { caseKhacChuongTrinh, chuongTrinhCuaLop } from './sos.ts';
 import { duLieuDoiPa, ghiDoiPa, kiemTruocDoiPa, rutDoiPa, type VaoDoiPa } from './doiPa.ts';
-import { CASE_THAT, LA_CASE_SOS, choDoiPa, NOT_UNCONFIRMED_PRESET, awaitingCauseCaseIds, dongBoTrangThaiCase, dongBoTrangThaiCaseLo, sosCaseState } from './sosState.ts';
+import { CASE_THAT, LA_CASE_SOS, choDoiPa, NOT_UNCONFIRMED_PRESET, awaitingCauseCaseIds, dongBoTrangThaiCase, dongBoTrangThaiCaseLo, sosCaseState, xuLyCaseMany } from './sosState.ts';
 import { CAU_LUU_TRU, PLAN_DECISIONS, canBuoiTutor, coNguoiDay, coSoBuoiKy, decisionToStep, duongDotTest, kiemBuoiTutor, kiemSoBuoiTuan, soBuoiTu, tuanLich, type BuoiTutor, type PlanDecision } from '../../../shared/domain/index.ts';
 import { chenPa } from './taoPa.ts';
 import { nguoiGiuKetQua, type DongGiuKetQua } from './giuKetQua.ts';
@@ -731,6 +731,12 @@ export function reportIssue(p: Principal, input: {
       refTable: 'sos_cases', refId: caseId, createdBy: p.userId,
       dedupKey: `case_open:${caseId}`,
     });
+    /* SL1 (02 4.7 C23): Case tạo tay cho kỹ năng người khác phụ trách → chuông Cần làm của người phụ trách (như Rb §20.11 "Case SOS mới"). */
+    const chu = (conn.prepare('SELECT owner_user_id AS u FROM sos_cases WHERE id = ?').get(caseId) as any)?.u as number | null;
+    if (chu && chu !== p.userId && !input.backfill) {
+      notify({ userId: chu, kind: 'case_giao', title: `Thêm PA · Case ${caseTopicLabel(topic, ctCuaCase)} · ${student.full_name}`, body: summary.slice(0, 120),
+        entityType: 'sos_case', entityId: caseId, dedupKey: `case_giao:${caseId}`, han: xuLyCaseMany([caseId], demoToday()).get(caseId)?.han ?? null });
+    }
     writeAudit({ actorUserId: p.userId, action: input.backfill ? 'case.backfill' : 'case.report',
       entityType: 'sos_case', entityId: caseId,
       entityLabel: `${student.student_code} · ${summary.slice(0, 40)}`, after: { urgency, detectedAt } });

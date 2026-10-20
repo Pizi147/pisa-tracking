@@ -13,6 +13,9 @@ export async function runPrSl1Tests(t: YThucTestKit) {
   const { xoaNho } = await import('../platform/nguCanhRequest.ts');
   const await_metrics: any = await import('../worklist/metrics.ts');
   const await_hq: any = await import('../phanTich/hieuQuaPa.ts');
+  const await_cases: any = await import('../cases/cases.ts');
+  const await_tb: any = await import('../platform/thongBao.ts');
+  const { loadPrincipal: loadP } = await import('../permissions.ts');
   console.log('\nSL1 · số liệu đúng + chuông N1');
   const one = (sql: string, ...a: unknown[]) => conn.prepare(sql).get(...a) as any;
   const MB = one(`SELECT id FROM branches WHERE code = 'MB'`).id as number;
@@ -170,6 +173,67 @@ export async function runPrSl1Tests(t: YThucTestKit) {
         const het = kh.xuatKeHoach(QL, { branchId: MB, classIds: ids, xemTruoc: true });
         const tong = lop.reduce((n: number, l: any) => n + l.canXepLai, 0);
         assert(chi.dem.hocVien <= tong && chi.dem.hocVien > 0 && chi.dem.hocVien < het.dem.hocVien, `tệp xếp lại ${chi.dem.hocVien} em, Σ canXepLai ${tong}, cả lớp ${het.dem.hocVien}`);
+      });
+    });
+
+    check('SL1-10a · chuông N1 (thuần): 3 loại tự động + Case giao vào Cần làm; "SOS n" của GVCN → Để biết; một Case một dòng; sắp theo hạn; số = Cần làm', () => {
+      for (const k of ['cham_qua_han', 'case_chua_chot_pa', 'chot_lo_trinh', 'case_giao']) assert(d.nhomThongBao({ kind: k }) === 'can-lam', `${k} phải ở Cần làm`);
+      assert(d.nhomThongBao({ kind: 'sos', entity_type: 'assessment_attempt' }) === 'de-biet', 'SOS-lượt (tin cho GVCN) → Để biết');
+      assert(d.nhomThongBao({ kind: 'sos', entity_type: 'sos_case', con_viec: 1 }) === 'can-lam', 'Case SOS chờ xác nhận vẫn Cần làm');
+      const r = (id: number, o: Record<string, unknown>) => ({ id, entity_type: 'class', entity_id: id, kind: 'cham_qua_han', read_at: null, han: null, ...o });
+      const kq = d.dongChuong([
+        r(1, { kind: 'sos', entity_type: 'sos_case', entity_id: 56, con_viec: 1, han: '2026-09-20' }),
+        r(2, { kind: 'case_chua_chot_pa', entity_type: 'sos_case', entity_id: 56, han: '2026-09-10' }),
+        r(3, { han: '2026-09-01', read_at: '2026-09-12T00:00:00Z' }),
+        r(4, { kind: 'sos', entity_type: 'assessment_attempt' }),
+        r(5, { kind: 'duyet_moi', entity_type: 'yeu_cau_duyet', con_viec: 0 }),
+        r(6, { kind: 'chot_lo_trinh', han: null }),
+      ]);
+      assert(kq.canLam.map((x: any) => x.id).join(',') === '3,1,6', `Cần làm ${kq.canLam.map((x: any) => x.id)}`);
+      assert(kq.deBiet.map((x: any) => x.id).sort().join(',') === '4,5', `Để biết ${kq.deBiet.map((x: any) => x.id)}`);
+      assert(kq.soNut === 3, `số trên nút = Cần làm còn mở (kể cả đã đọc): ${kq.soNut}`);
+    });
+
+    await checkAsync('SL1-10b · chuông thật: GV — mọi "Quá hạn chấm" ở Cần làm, có hạn, sắp theo hạn, 0 dòng SOS-lượt; QL — "Chốt lộ trình" ở Cần làm', async () => {
+      let soCham = 0;
+      for (const p of [P.w1Teacher, P.w2Teacher, P.lrTeacher, P.sTeacher, P.coreTeacher]) {
+        const r = await goi(p.userId, '/notifications');
+        assert(r.status === 200, `/notifications ${r.status}`);
+        const kq = d.dongChuong(r.json, TODAY);
+        const cham = (r.json as any[]).filter((n) => n.kind === 'cham_qua_han');
+        soCham += cham.length;
+        assert(cham.every((n) => kq.canLam.some((x: any) => x.id === n.id) && n.han), 'Quá hạn chấm phải ở Cần làm, có hạn');
+        assert(!kq.canLam.some((n: any) => n.kind === 'sos' && n.entity_type === 'assessment_attempt'), 'SOS-lượt không ở Cần làm');
+        const han = kq.canLam.map((n: any) => n.han).filter(Boolean);
+        assert(han.every((h: string, i: number) => !i || han[i - 1] <= h), `Cần làm phải sắp theo hạn: ${han}`);
+        const caseKey = kq.canLam.filter((n: any) => n.entity_type === 'sos_case').map((n: any) => n.entity_id);
+        assert(new Set(caseKey).size === caseKey.length, 'một Case một dòng');
+      }
+      assert(soCham > 0, 'bộ demo phải có thông báo Quá hạn chấm');
+      const ql = await goi(P.mbManager.userId, '/notifications');
+      const kqQl = d.dongChuong(ql.json, TODAY);
+      const chot = (ql.json as any[]).filter((n) => n.kind === 'chot_lo_trinh');
+      assert(chot.length > 0 && chot.every((n) => kqQl.canLam.some((x: any) => x.id === n.id)), `QL: ${chot.length} Chốt lộ trình phải ở Cần làm`);
+    });
+
+    check('SL1-10c · Case tạo tay cho kỹ năng người khác phụ trách → chuông Cần làm của người phụ trách; thêm PA → rời Cần làm; tự phụ trách → không chuông', () => {
+      const cases: any = await_cases;
+      const tb: any = await_tb;
+      thu(() => {
+        const em = one(`SELECT e.student_id AS id FROM enrollments e JOIN classes c ON c.id = e.class_id WHERE c.code = 'MB FT 101' AND e.status = 'active' LIMIT 1`).id;
+        const c = cases.reportIssue(P.mbManager, { studentId: em, topic: 'reading', title: 'SL1 thử Case giao', summary: 'Em đọc chậm, bỏ sót 5 câu cuối Passage 3, sai dạng Matching Headings.',
+          primaryCode: d.issuesForTopic('reading')[0].code, idempotencyKey: `sl1-c23-${Math.random()}`, parallel: true }) as any;
+        const chu = one('SELECT owner_user_id AS u FROM sos_cases WHERE id = ?', c.id).u;
+        assert(chu && chu !== P.mbManager.userId, `tiền đề: người phụ trách ${chu} khác người tạo`);
+        const dong = () => (tb.thongBaoCua(chu) as any[]).find((n) => n.kind === 'case_giao' && n.entity_id === c.id);
+        const n = dong();
+        assert(n && d.nhomThongBao(n) === 'can-lam' && n.han, `người phụ trách phải có dòng Cần làm có hạn: ${JSON.stringify(n)}`);
+        assert(!(tb.thongBaoCua(P.mbManager.userId) as any[]).some((x) => x.kind === 'case_giao' && x.entity_id === c.id), 'người tạo không nhận');
+        cases.recordIntervention(loadP(chu), c.id, { kind: 'self_study', description: 'Đọc 2 bài mỗi ngày', performerSelf: true, status: 'started', startedDate: TODAY });
+        assert(d.nhomThongBao(dong()) === 'de-biet', 'đã thêm PA → rời Cần làm');
+        const tu = cases.reportIssue(loadP(chu), { studentId: em, topic: 'reading', title: 'SL1 tự phụ trách', summary: 'Em bỏ sót câu hỏi cuối bài Reading, sai dạng True False Not Given.', primaryCode: d.issuesForTopic('reading')[0].code,
+          idempotencyKey: `sl1-c23b-${Math.random()}`, parallel: true, ownerUserId: chu }) as any;
+        assert(!(tb.thongBaoCua(chu) as any[]).some((x) => x.kind === 'case_giao' && x.entity_id === tu.id), 'tự tạo cho mình: không chuông');
       });
     });
   } finally {
