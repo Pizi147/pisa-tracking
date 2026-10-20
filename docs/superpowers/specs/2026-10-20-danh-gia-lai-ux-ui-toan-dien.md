@@ -1,5 +1,6 @@
 # Đánh giá lại UX/UI toàn diện — PISA Tracking · 20/10/2026
 
+> **TỪ 21/10: KẾ HOẠCH HIỆN HÀNH = BỘ TÀI LIỆU [`2026-10-20-ke-hoach-overhaul/00-muc-luc.md`](2026-10-20-ke-hoach-overhaul/00-muc-luc.md)** (01 sổ góp ý · 02 xung đột + quyết định + 17 câu phải hỏi · 03 kiểm định · 04 hệ thiết kế · 05 IA + workflow · 06 mockup ↔ web · 07 kế hoạch PR). Tài liệu này giữ làm bằng chứng + lịch sử các vòng 0–3; mục 8 + 10.6 / 11.7 / 12.10 được thay bởi 07.
 > **Trạng thái: CHỈ ĐÁNH GIÁ + KẾ HOẠCH ĐỀ XUẤT.** Chưa sửa gì trên web. Mọi "phương án", "kế hoạch" dưới đây là **đề xuất**, chờ chủ SP góp ý và chốt.
 > Người làm: session planning "PTA Plan" (Opus 5.5) điều phối 8 agent rà độc lập (Opus 5.5). Mã: `main` e3405b93 (đã gồm OV-14, OV-15a…i2, Tutor TU-a/b — chưa deploy).
 > Web demo chạy cục bộ, ngày demo 14/09/2026. Yêu cầu gốc: 12 ảnh + lời chủ SP chiều 20/10.
@@ -1128,6 +1129,7 @@ Nghiên cứu: 2 agent Opus trên web demo (chỉ đọc, ~206 ảnh, đo DOM, g
 | [`v2a-hoc-vien-lop.md`](2026-10-20-danh-gia-ux/v2a-hoc-vien-lop.md) | góp ý vòng 2 nhóm I: bộ lọc thời gian (14 chỗ), Thi ↔ Test (549 chuỗi), Cần làm, ô tick xuất, Lịch thi, tháng / ngày thi | mục 11 · V2A-01…09 |
 | [`v2b-bang-ho-so.md`](2026-10-20-danh-gia-ux/v2b-bang-ho-so.md) | góp ý vòng 2 nhóm II–III: gốc bảng xô lệch (đo DOM 46 trang), ô điểm, Nhập điểm tại chỗ, bảng Hồ sơ lớp, Ý thức / Phối hợp lớp + HV | mục 11 · V1…V9 |
 | [`v3a-test.md`](2026-10-20-danh-gia-ux/v3a-test.md) | góp ý vòng 3 Test: **bảng luật chấm Test** (Rulebook + mã), workflow chấm + 17 ý brainstorm, Speaking chéo, nhập Excel (8 lối), hộp chấm lớp thường + ⋯, màu "x / tổng", căn bảng Test | mục 12 · V3A-1…10 |
+| [`v4a-cong-viec.md`](2026-10-20-danh-gia-ux/v4a-cong-viec.md) · [`v4b-nghiep-vu.md`](2026-10-20-danh-gia-ux/v4b-nghiep-vu.md) · [`v4c-vai-tro-phu-web.md`](2026-10-20-danh-gia-ux/v4c-vai-tro-phu-web.md) | vòng 4 (master prompt): Công việc + hệ panel · nghiệp vụ (5 luật, vi phạm → TVV, khoá cứng, MT 12 trạng thái × 30 chuyển) · vai trò + phủ toàn web + ma trận trạng thái | bộ tài liệu `2026-10-20-ke-hoach-overhaul/` |
 | [`v3b-phan-tich-tutor.md`](2026-10-20-danh-gia-ux/v3b-phan-tich-tutor.md) | góp ý vòng 3 Phân tích + Tutor: ô số, 50 chỉ số + panel C, Báo cáo ↔ mockup (18 quyết định), báo cáo thuần, Ý thức, xuất Excel (11 lối), "Toàn bộ" + mặc định, lỗi bộ chọn, "Vấn đề & PA", Tutor | mục 12 · V3B-01…13 |
 
 Đường ảnh trong phụ lục (`SCR\anh\…`) là ảnh tạm của đợt rà (1 789 ảnh, không lưu vào repo); ảnh tiêu biểu đã lưu ở mục B.
