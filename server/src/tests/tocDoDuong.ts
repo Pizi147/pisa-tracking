@@ -497,13 +497,13 @@ export const TRAN: Record<string, number> = {
   /* PR-HVL (3): mốc 51 (QT 49) + việc tiếp theo/Ý thức/thẻ chờ duyệt theo lô đo 59 (QT 57) — trần kế hoạch = mốc + 12. */
   /* PR-S4F #5: +3 câu — `quetYeuCau` trước khi đếm thẻ chờ duyệt (badge = hộp); nhớ theo request nên chỉ một lần. */
   /* PR-LT2a (Task 7): +1 câu `emCoBaoPhChuaLam` (việc Báo phụ huynh qua TVV của GVCN, MỘT câu theo lô) — đo 67; trần 66 → 72 (+9%, < 30%). */
-  'QL /hoc-vien-lop': 72,
+  'QL /hoc-vien-lop': 86,   // SV-SO3: +4 câu (hàng HV khu d: lượt của các lộ trình + `loadBundle`, một lần / trang): đo 76, trần đo+10
   'GVCN /hoc-vien-lop': 93,   // PR-UXF-a VN29: +4 câu (listAttempts một lần/trang cho việc nhập điểm của GV — chỉ lớp người xem dạy): đo 76, trần min(max(đo+10, ⌈đo×1.3⌉), ⌊cũ×1.3⌋)
   'GVBM /hoc-vien-lop': 93,   // PR-UXF-a VN29: +4 câu (listAttempts một lần/trang cho việc nhập điểm của GV — chỉ lớp người xem dạy): đo 76, trần min(max(đo+10, ⌈đo×1.3⌉), ⌊cũ×1.3⌋)
   'GVCN_THUONG /hoc-vien-lop': 93,   // PR-UXF-a VN29: +4 câu (listAttempts một lần/trang cho việc nhập điểm của GV — chỉ lớp người xem dạy): đo 76, trần min(max(đo+10, ⌈đo×1.3⌉), ⌊cũ×1.3⌋)
   'QT /hoc-vien-lop': 84,
-  'QL /hoc-vien-lop?phamVi=chi-nhanh&branchId=1': 72,
-  'QT /hoc-vien-lop?phamVi=chi-nhanh&branchId=1': 72,   // PR-TK: đo 71 (bộ demo có thêm em Kết thúc học FT chờ kết quả thi thật chưa lưu trữ)
+  'QL /hoc-vien-lop?phamVi=chi-nhanh&branchId=1': 86,   // SV-SO3: +4 câu (hàng HV khu d: lượt của các lộ trình + `loadBundle`, một lần / trang): đo 76, trần đo+10
+  'QT /hoc-vien-lop?phamVi=chi-nhanh&branchId=1': 86,   // SV-SO3: +4 câu (hàng HV khu d: lượt của các lộ trình + `loadBundle`, một lần / trang): đo 76, trần đo+10
   'QL /hoc-vien-lop?phamVi=chi-nhanh&branchId=1&them=1': 87,   // OV-15h2: đo 77 (= trang 71 + `chiTietCaseMo` Case đang mở + một câu tuần thi) → đo + 10
   'QL /classes/3/overview': 62,   // PR-CT gộp LT2b: 61 → 62
   'GVCN /classes/3/overview': 80,   // PR-UXF-a VN29: +6 câu (listAttempts một lần/trang cho việc nhập điểm của GV — chỉ lớp người xem dạy): đo 68, trần min(max(đo+10, ⌈đo×1.3⌉), ⌊cũ×1.3⌋)   // PR-CT gộp LT2b: 61 → 62
@@ -823,6 +823,12 @@ export const TRAN: Record<string, number> = {
   'QT /phan-tich/giao-vien/cham-diem?cn=1&ct=ft&gv=7': 28,   // đo 23
   // OV-15e (19/10): Báo cáo · Kết quả thi · panel chỉ số GV — max(đo + 10, ⌈đo × 1,3⌉)
   'QL /phan-tich/bao-cao?ct=ft': 82,   // đo 63
+  'QL /phan-tich/bao-cao/ket-qua-mt?ct=ft&kieu=tuan&tu=2026-03-02&den=2026-09-20': 24,   // SV-SO3: đo 14
+  'QT /phan-tich/bao-cao/ket-qua-mt?ct=ft&kieu=tuan&tu=2026-03-02&den=2026-09-20': 25,   // SV-SO3: đo 15
+  'GVCN /phan-tich/bao-cao/ket-qua-mt?ct=ft&kieu=tuan&tu=2026-03-02&den=2026-09-20': 14,   // SV-SO3: đo 4 (403)
+  'QL /phan-tich/bao-cao/o?ct=ft&kieu=tuan&tu=2026-03-02&den=2026-09-20&o=kq-mt:mt2:dat': 43,   // SV-SO3: đo 33
+  'QT /phan-tich/bao-cao/o?ct=ft&kieu=tuan&tu=2026-03-02&den=2026-09-20&o=kq-mt:mt2:dat': 42,   // SV-SO3: đo 32
+  'GVCN /phan-tich/bao-cao/o?ct=ft&kieu=tuan&tu=2026-03-02&den=2026-09-20&o=kq-mt:mt2:dat': 14,   // SV-SO3: đo 4 (403)
   'QT /phan-tich/bao-cao?ct=ft': 76,   // đo 58
   'GVCN /phan-tich/bao-cao?ct=ft': 14,   // đo 4
   'QL /phan-tich/bao-cao?ct=thuong&kieu=tuan&tu=2026-07-06&den=2026-09-20': 64,   // đo 49
