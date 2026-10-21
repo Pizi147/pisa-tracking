@@ -8,7 +8,7 @@ import { useApi } from '../../lib/useApi.ts';
 import { useSession } from '../../lib/session.tsx';
 import { Card, Empty, ErrorState, NhanTrangThai, Skeleton, Th } from '../../ui/ui.tsx';
 import { CHIP_TRON } from '../../ui/Nhan.tsx';
-import { SoLieuO } from '../../ui/SoLieuO.tsx';
+import { OSo } from '../../ui/OSo.tsx';
 import { ViecTiep } from '../../ui/ViecTiep.tsx';
 import { DuongVe } from '../../ui/ThanhTruocSau.tsx';
 import { TheDong, useDienThoai } from '../../ui/TheDong.tsx';
@@ -186,11 +186,11 @@ const chipKhung = (k: 'ft' | 'thuong') => (
 function KhoiLop({ data, dienThoai, ketQuaCua }: { data: HoSo; dienThoai: boolean; ketQuaCua: (id: number) => KetQuaLop | null }) {
   const id = data.gv.id;
   const so = (l: LopHs, cot: 'chua-nhap' | 'qua-han', n: number, ten: 'Bài chưa nhập điểm' | 'Bài quá hạn chưa nhập điểm', className = '') => (
-    <SoLieuO giaTri={n} tieuDe={`${t(ten)} · ${l.ma}`} nguon={nguon(id, `cot=${cot}&lop=${l.id}`)} className={`${vung} ${className}`} />
+    <OSo giaTri={n} tieuDe={`${t(ten)} · ${l.ma}`} nguon={nguon(id, `cot=${cot}&lop=${l.id}`)} className={`${vung} ${className}`} />
   );
   const tong = (
     <span className="text-xs text-slate-400">
-      <span className="tabular-nums text-slate-200">{data.lop.length}</span> {t('lớp')} · <SoLieuO giaTri={data.tongHocVien} tieuDe={t('Học viên đang học')} nguon={nguon(id, 'cot=hoc-vien')} className={`${vung} text-slate-200`} /> {t('học viên')}
+      <span className="tabular-nums text-slate-200">{data.lop.length}</span> {t('lớp')} · <OSo giaTri={data.tongHocVien} tieuDe={t('Học viên đang học')} nguon={nguon(id, 'cot=hoc-vien')} className={`${vung} text-slate-200`} /> {t('học viên')}
     </span>
   );
   return (
@@ -250,7 +250,7 @@ function KhoiLop({ data, dienThoai, ketQuaCua }: { data: HoSo; dienThoai: boolea
 function OKq({ id, k, o }: { id: number; k: KetQuaLop; o: OKetQua }) {
   if (o.tong <= 0) return <span className="text-slate-500">—</span>;
   return (
-    <SoLieuO giaTri={o.tong} nhan={`${o.dat}/${o.tong}`} tieuDe={`${dich(o.nhan)} · ${k.ma} · ${dich(k.moc!.nhan)}`}
+    <OSo giaTri={o.tong} nhan={`${o.dat}/${o.tong}`} tieuDe={`${dich(o.nhan)} · ${k.ma} · ${dich(k.moc!.nhan)}`}
       nguon={nguon(id, `cot=ket-qua&lop=${k.classId}&dong=${o.dong}&moc=${k.moc!.key}`)} className={`${vung} ${soDam} text-slate-100`} />
   );
 }
@@ -395,9 +395,9 @@ function KhoiCase({ data, homNay, linkPa }: { data: HoSo; homNay: string; linkPa
         <span className="flex flex-wrap items-baseline gap-x-3 text-xs text-slate-400">
           {ds.length > 0 && <span>
           {/* PR-S5F-b: mỗi cụm `17 Case` · `2 việc tiếp quá hạn` giữ liền một dòng — hẹp thì xuống dòng GIỮA hai cụm, không giữa số và chữ. */}
-          <span className="whitespace-nowrap"><SoLieuO giaTri={ds.length} tieuDe={t('Case đang phụ trách')} nguon={nguon(id, 'cot=case-mo')} className={`${vung} text-slate-200`} /> Case</span> ·{' '}
+          <span className="whitespace-nowrap"><OSo giaTri={ds.length} tieuDe={t('Case đang phụ trách')} nguon={nguon(id, 'cot=case-mo')} className={`${vung} text-slate-200`} /> Case</span> ·{' '}
           {quaHan > 0
-            ? <span className="whitespace-nowrap"><SoLieuO giaTri={quaHan} tieuDe={t('Case có việc quá hạn')} nguon={nguon(id, 'cot=case-qua-han')} className={`${vung} ${soDam} text-bad`} /> <span className="text-bad">{t('việc tiếp quá hạn')}</span></span>
+            ? <span className="whitespace-nowrap"><OSo giaTri={quaHan} tieuDe={t('Case có việc quá hạn')} nguon={nguon(id, 'cot=case-qua-han')} className={`${vung} ${soDam} text-bad`} /> <span className="text-bad">{t('việc tiếp quá hạn')}</span></span>
             : <span className="whitespace-nowrap">{t('không có việc tiếp quá hạn')}</span>}
           </span>}
           {/* P6 (Q26): Quản lý, Quản trị xem → Hiệu quả PA lọc theo giáo viên này (URL hợp đồng Pb2-a). */}
@@ -449,10 +449,10 @@ function KhoiYeuCau({ data, coDuyet }: { data: HoSo; coDuyet: boolean }) {
     <Card title={gv.laChinhMinh ? t('Yêu cầu đã gửi') : t('Yêu cầu {ten} đã gửi', { ten: gv.ten.split(' ').pop() ?? gv.ten })} action={link}>
       {y.cho === 0 && y.tuChoi === 0 ? <p className="m-0 text-sm text-slate-400">{t('Không có yêu cầu nào đang chờ.')}</p> : (
         <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-sm">
-          <span><SoLieuO giaTri={y.cho} tieuDe={t('Yêu cầu đang chờ duyệt')} nguon={nguon(id, 'cot=yc-cho')} className={`${vung} ${soDam} text-slate-100`} /> {t('chờ duyệt')}
+          <span><OSo giaTri={y.cho} tieuDe={t('Yêu cầu đang chờ duyệt')} nguon={nguon(id, 'cot=yc-cho')} className={`${vung} ${soDam} text-slate-100`} /> {t('chờ duyệt')}
             {y.choQuaHan > 0 && <span className={`ml-1 text-xs text-bad ${soDam}`}>{t('({n} quá hạn duyệt)', { n: y.choQuaHan })}</span>}</span>
           <span className="text-slate-600" aria-hidden>·</span>
-          <span><SoLieuO giaTri={y.tuChoi} tieuDe={t('Yêu cầu bị từ chối trong 60 ngày')} nguon={nguon(id, 'cot=yc-tu-choi')} className={`${vung} ${soDam} text-slate-100`} /> {t('bị từ chối trong 60 ngày')}</span>
+          <span><OSo giaTri={y.tuChoi} tieuDe={t('Yêu cầu bị từ chối trong 60 ngày')} nguon={nguon(id, 'cot=yc-tu-choi')} className={`${vung} ${soDam} text-slate-100`} /> {t('bị từ chối trong 60 ngày')}</span>
         </div>
       )}
     </Card>

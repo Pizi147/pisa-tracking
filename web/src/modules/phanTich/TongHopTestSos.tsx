@@ -8,7 +8,7 @@ import { Card, Empty, ErrorState, SCORE_CHIP, Skeleton, Th } from '../../ui/ui.t
 import { CHIP_VUONG } from '../../ui/Nhan.tsx';
 import { MenuDong, type MucMenu } from '../../ui/MenuDong.tsx';
 import { HangCon, HangNhom } from '../../ui/HangNhom.tsx';
-import { DINH_TRAI, SoO as SoLieuO } from './dungChung.tsx';
+import { DINH_TRAI, SoO as OSo } from './dungChung.tsx';
 import { NganXuatMt } from '../test/NganXuatMt.tsx';
 import { PhanTrang, usePhanTrang } from '../../ui/PhanTrang.tsx';
 import { t } from '@shared/i18n/index.ts';
@@ -159,7 +159,7 @@ export function TongHopTestSos({ branchId, ct, khoang, classId }: {
     const v = row.o[col.khoa] ?? 0;
     if (v <= 0) return <span className="tabular-nums text-faint">0</span>;
     const nguon = `/phan-tich/tong-hop/o?${query}&khoa=${encodeURIComponent(row.khoa)}&cot=${encodeURIComponent(col.khoa)}`;
-    return <SoLieuO giaTri={v} nguon={nguon} tieuDe={`${col.nhomCon ? `${NHAN_NHOM_CON[col.nhomCon]} · ` : ''}${col.nhan(ct)} · ${row.nhan}`} />;
+    return <OSo giaTri={v} nguon={nguon} tieuDe={`${col.nhomCon ? `${NHAN_NHOM_CON[col.nhomCon]} · ` : ''}${col.nhan(ct)} · ${row.nhan}`} />;
   };
   const oCell = (row: DongTongHop, col: CotTongHop) => {
     if (oKhongApDung(col, row.coDot)) return <span className="text-faint" title="Dòng này không có bài loại này">—</span>;

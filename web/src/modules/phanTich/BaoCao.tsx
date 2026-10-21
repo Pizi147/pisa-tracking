@@ -4,7 +4,7 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { PhanTrang, usePhanTrang } from '../../ui/PhanTrang.tsx';
-import { SoO as SoLieuO, thamSoLoc, type PhamViPhanTich } from './dungChung.tsx';
+import { SoO as OSo, thamSoLoc, type PhamViPhanTich } from './dungChung.tsx';
 import { BangMock } from './KetQuaThi.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 import {
@@ -61,7 +61,7 @@ export function BaoCao(pv: PhamViPhanTich) {
   const nhan = nhanKhoang(pv.khoang);
   const tenCn = pv.branchId ? branches.data?.find((b) => b.id === pv.branchId)?.name ?? '' : t('Tất cả chi nhánh');
   const nguon = (o: string) => `/phan-tich/bao-cao/o?${query}&o=${encodeURIComponent(o)}`;
-  const soO = (giaTri: number, o: string, tieuDe: string) => <SoLieuO giaTri={giaTri} nguon={nguon(o)} tieuDe={tieuDe} />;
+  const soO = (giaTri: number, o: string, tieuDe: string) => <OSo giaTri={giaTri} nguon={nguon(o)} tieuDe={tieuDe} />;
   const loc = { branchId: pv.branchId, chuongTrinh: ct };
   const tyLe = data.test.baiTong ? Math.round((100 * data.test.baiDaCham) / data.test.baiTong) : null;
   const mk = data.mock;
@@ -156,16 +156,16 @@ export function BaoCao(pv: PhamViPhanTich) {
         )}
 
         <Khoi tieuDe={t('HV cần chú ý')} phu={t('tại {ngay}', { ngay: tai })} className={mk ? 'lg:col-span-4 print:col-span-4' : 'lg:col-span-6 print:col-span-6'}>
-          <So so={<SoLieuO id="hv-sos-hien-tai" giaTri={data.chuY.sosHienTai} phamVi={loc} ten={t('SOS hiện tại')} />} nhan={t('SOS hiện tại')} />
-          <So so={data.chuY.chuaDiemHv} nhan={t('chưa điểm')} phu={<><SoLieuO id="bai-qua-han-nhap-diem" giaTri={data.chuY.chuaDiemBai} phamVi={loc} ten={t('Bài chưa điểm')} /> {t('bài')}</>} />
-          <So so={data.chuY.caseChuaChotHv} nhan={t('Case chưa chốt PA')} phu={<><SoLieuO id="case-cho-xac-dinh-nguyen-nhan" giaTri={data.chuY.caseChuaChot} phamVi={loc} ten={t('Case chưa chốt PA')} /> Case</>} />
+          <So so={<OSo id="hv-sos-hien-tai" giaTri={data.chuY.sosHienTai} phamVi={loc} ten={t('SOS hiện tại')} />} nhan={t('SOS hiện tại')} />
+          <So so={data.chuY.chuaDiemHv} nhan={t('chưa điểm')} phu={<><OSo id="bai-qua-han-nhap-diem" giaTri={data.chuY.chuaDiemBai} phamVi={loc} ten={t('Bài chưa điểm')} /> {t('bài')}</>} />
+          <So so={data.chuY.caseChuaChotHv} nhan={t('Case chưa chốt PA')} phu={<><OSo id="case-cho-xac-dinh-nguyen-nhan" giaTri={data.chuY.caseChuaChot} phamVi={loc} ten={t('Case chưa chốt PA')} /> Case</>} />
         </Khoi>
 
         <Khoi tieuDe={t('Case / PA')} className={mk ? 'lg:col-span-4 print:col-span-4' : 'lg:col-span-6 print:col-span-6'}>
-          <So so={<SoLieuO id="case-mo" giaTri={data.casePa.caseMo} phamVi={loc} ten={t('Case đang mở')} />} nhan={t('Case đang mở')} phu={t('tại {ngay}', { ngay: tai })} />
-          <So so={<SoLieuO id="pa-co-ket-qua" giaTri={data.casePa.paKetQua} phamVi={loc} extra={{ from: pv.khoang.tu, to: pv.khoang.den }} ten={t('PA có kết quả trong kỳ')} />} nhan={t('PA có kết quả trong kỳ')} />
+          <So so={<OSo id="case-mo" giaTri={data.casePa.caseMo} phamVi={loc} ten={t('Case đang mở')} />} nhan={t('Case đang mở')} phu={t('tại {ngay}', { ngay: tai })} />
+          <So so={<OSo id="pa-co-ket-qua" giaTri={data.casePa.paKetQua} phamVi={loc} extra={{ from: pv.khoang.tu, to: pv.khoang.den }} ten={t('PA có kết quả trong kỳ')} />} nhan={t('PA có kết quả trong kỳ')} />
           <So canhBao={data.casePa.quaHanChotPa + data.casePa.quaHanKetQuaPa > 0} so={data.casePa.quaHanChotPa + data.casePa.quaHanKetQuaPa} nhan={t('quá hạn')}
-            phu={<><SoLieuO id="case-xac-dinh-nguyen-nhan-qua-han" giaTri={data.casePa.quaHanChotPa} phamVi={loc} ten={t('Chốt PA quá hạn')} /> {t('chốt PA')} · <SoLieuO id="pa-can-cap-nhat" giaTri={data.casePa.quaHanKetQuaPa} phamVi={loc} ten={t('Kết quả PA quá hạn')} /> {t('Kết quả PA')}</>} />
+            phu={<><OSo id="case-xac-dinh-nguyen-nhan-qua-han" giaTri={data.casePa.quaHanChotPa} phamVi={loc} ten={t('Chốt PA quá hạn')} /> {t('chốt PA')} · <OSo id="pa-can-cap-nhat" giaTri={data.casePa.quaHanKetQuaPa} phamVi={loc} ten={t('Kết quả PA quá hạn')} /> {t('Kết quả PA')}</>} />
         </Khoi>
       </div>
 

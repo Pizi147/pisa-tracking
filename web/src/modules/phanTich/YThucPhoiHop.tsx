@@ -7,7 +7,7 @@ import { HangCon, HangNhom } from '../../ui/HangNhom.tsx';
 import { Nhan } from '../../ui/Nhan.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import { PhanTrang, usePhanTrang } from '../../ui/PhanTrang.tsx';
-import { DINH_TRAI, MAU_SO_VOI_TRUOC, SoO as SoLieuO, thamSoLoc, type PhamViPhanTich } from './dungChung.tsx';
+import { DINH_TRAI, MAU_SO_VOI_TRUOC, SoO as OSo, thamSoLoc, type PhamViPhanTich } from './dungChung.tsx';
 import {
   COT_XUAT_HV_CAN_CHU_Y, KHOA_LOAI_XU_LY, NHOM_EM_LABEL, nhanKhoang, duongHoSoHocVien, nhanLoaiXuLy, nhanSoVoiTruoc, ngay,
   type DongHvCanChuY, type DongLopViPham, type YThucPhanTichKetQua,
@@ -79,10 +79,10 @@ export function YThucPhoiHop(props: PhamViPhanTich) {
   };
   const oLop = (x: DongLopViPham, con: boolean) => (
     <>
-      <td className="text-right tabular-nums"><SoLieuO giaTri={x.viPham} nguon={nguon(x.khoa, 'vi-pham')} tieuDe={`${x.nhan} · vi phạm`} /></td>
-      <td className="text-right tabular-nums"><SoLieuO giaTri={x.chuaXuLy} nguon={nguon(x.khoa, 'chua-xu-ly')} tieuDe={`${x.nhan} · chưa xử lý`} /></td>
+      <td className="text-right tabular-nums"><OSo giaTri={x.viPham} nguon={nguon(x.khoa, 'vi-pham')} tieuDe={`${x.nhan} · vi phạm`} /></td>
+      <td className="text-right tabular-nums"><OSo giaTri={x.chuaXuLy} nguon={nguon(x.khoa, 'chua-xu-ly')} tieuDe={`${x.nhan} · chưa xử lý`} /></td>
       <td className="text-right tabular-nums">
-        <SoLieuO giaTri={x.hvCoViPham} nguon={nguon(x.khoa, 'hv-co-vi-pham')} tieuDe={`${x.nhan} · học viên có vi phạm`} />
+        <OSo giaTri={x.hvCoViPham} nguon={nguon(x.khoa, 'hv-co-vi-pham')} tieuDe={`${x.nhan} · học viên có vi phạm`} />
         {!con && x.siSo !== null && <span className="font-normal text-slate-400">/{x.siSo}</span>}
       </td>
       <td className="pr-5 text-right">{soVoi(x)}</td>
@@ -116,8 +116,8 @@ export function YThucPhoiHop(props: PhamViPhanTich) {
               <td className="td">{nhanNhom(x)}</td>
               <td className="td text-slate-200">{x.bac ?? <span className="text-faint">Chưa xử lý lần nào</span>}</td>
               <td className="td text-slate-300">{x.bacKe}</td>
-              <td className="td text-right tabular-nums"><SoLieuO giaTri={x.viPham} nguon={nguon(`hv:${x.studentId}`, 'vi-pham')} tieuDe={`${x.ten} · vi phạm`} /></td>
-              <td className="td text-right tabular-nums"><SoLieuO giaTri={x.chuaXuLy} nguon={nguon(`hv:${x.studentId}`, 'chua-xu-ly')} tieuDe={`${x.ten} · chưa xử lý`} /></td>
+              <td className="td text-right tabular-nums"><OSo giaTri={x.viPham} nguon={nguon(`hv:${x.studentId}`, 'vi-pham')} tieuDe={`${x.ten} · vi phạm`} /></td>
+              <td className="td text-right tabular-nums"><OSo giaTri={x.chuaXuLy} nguon={nguon(`hv:${x.studentId}`, 'chua-xu-ly')} tieuDe={`${x.ten} · chưa xử lý`} /></td>
               <td className="td truncate text-slate-300" title={x.bienPhapGanNhat ?? undefined}>
                 {x.bienPhapGanNhat ? `${x.bienPhapGanNhat}${x.ngay ? ` · ${ngay(x.ngay, demoDate)}` : ''}` : <span className="text-faint">—</span>}
                 {x.lanXuLyMoi && <div className="text-xs text-muted">{x.lanXuLyMoi.ten} · {x.lanXuLyMoi.nhan}</div>}

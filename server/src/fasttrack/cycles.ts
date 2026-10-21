@@ -3,7 +3,7 @@ import { nho } from '../platform/nguCanhRequest.ts';
 import {
   BASELINE_SOURCES, CO_DIEM_SQL, CYCLE_OUTCOMES, CYCLE_OUTCOME_LABEL, CYCLE_STATUSES, PERMISSIONS, soMtKeTiep, tuanLich,
   canNamGan, docNgayNhap, hienTargetKck, mondayOfDate, tachKck, ngay, type ExamPlan, type LuotSo, type Route,
-  CHI_SUA_THONG_TIN, CAU_LIEN_TUC, duocDoiKck, laBandLenh,
+  CHI_SUA_THONG_TIN, CAU_LIEN_TUC, duocDoiKck, laBandLenh, nhanThang,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { closeCasesBySystem } from '../cases/systemClose.ts';
@@ -84,7 +84,6 @@ export function nextAttemptNo(cycleId: number): number {
  * nằm sẵn trong `confidence` — chỗ nào cần phân biệt thì đọc `confidence`, đừng nhồi vào
  * chuỗi hiển thị.
  */
-const MONTH_CODE = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
 
 export function examPlanOf(cycle: {
   exam_period_id?: number | null; exam_month?: string | null; exam_date?: string | null;
@@ -109,10 +108,8 @@ export function examPlanOf(cycle: {
   }
   /* Q12: `exam_month` sai dạng (rác từ cột "Ngày thi" cũ, K2-20) coi như chưa có — không vẽ nhãn hỏng. */
   if (cycle.exam_month && /^\d{4}-\d{2}$/.test(cycle.exam_month)) {
-    const mm = Number(cycle.exam_month.slice(5, 7));
-    const name = MONTH_CODE[mm - 1] ?? cycle.exam_month.slice(5, 7);
-    return { confidence: 'month', periodId: null, weekStart: null, month: cycle.exam_month,
-             label: `${name} ${cycle.exam_month.slice(0, 4)}` };
+    /* NEN-V5 (P5): tháng dự kiến một cách viết cả web, luôn kèm năm — "05/2027" (`nhanThang`, thay "MAY 2027"). */
+    return { confidence: 'month', periodId: null, weekStart: null, month: cycle.exam_month, label: nhanThang(cycle.exam_month) };
   }
   return none;
 }

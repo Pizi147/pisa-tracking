@@ -2,7 +2,7 @@
  * PHÉP KIỂM OV-15d (kế hoạch 2026-10-19 OV-15 mục OV-15d) — Công việc, Tổng quan, thông báo:
  *  · Thông báo tự động thay Nhắc (C03): bài quá hạn chấm của chính GV (một thông báo / lớp · đợt), Case chưa chốt PA quá hạn (người phụ trách Case),
  *    Chốt lộ trình tới hạn (QL) — dedup theo đối tượng, chạy lại không trùng, tự hết khi việc xong, bấm mở đúng việc trong Công việc;
- *  · GV vào thẳng Công việc: `nav.overview` false cho GV (không Phân tích, không TVV), QL giữ Tổng quan;
+ *  · (NEN-V5 K10 thay) GV có Tổng quan: `nav.overview` true cho GV, QL giữ Tổng quan;
  *  · lọc người của Công việc (Của tôi · Của GV · Tất cả) đếm từ CÙNG một danh sách: Của tôi + Của GV = Tất cả.
  */
 import type { YThucTestKit } from './yThuc.tests.ts';
@@ -83,9 +83,10 @@ export async function runPrOv15dTests(t: YThucTestKit) {
     });
   });
 
-  check('OV15d-5 · GV vào thẳng Công việc: nav.overview false cho GV, true cho QL / Admin', () => {
+  /* NEN-V5 (08 K10): thay OV-15d-5 — GV có Tổng quan (trang đầu), vẫn có Công việc. */
+  check('OV15d-5 · NEN-V5 K10: nav.overview true cho GV (vẫn có Công việc), QL / Admin', () => {
     const g = nav.navOf(P.w1Teacher);
-    assert(g.work && !g.overview, 'GV: có Công việc, không Tổng quan');
+    assert(g.work && g.overview, 'GV: có Công việc và Tổng quan');
     assert(nav.navOf(P.mbManager).overview, 'QL giữ Tổng quan');
     assert(nav.navOf(P.admin).overview, 'Admin giữ Tổng quan');
   });

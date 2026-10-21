@@ -30,8 +30,8 @@ export function navOf(p: Principal): NavQuyen {
   /* TU-a: chỉ có trang Tutor (Head tutor) — không Tổng quan, `/` mở `/tutor`. */
   const chiTutor = tutor && !analysis && !viec && !hvCuaToi && !coPhamVi(PERMISSIONS.STUDENT_VIEW);
   return {
-    /* OV-15d: GV (không Phân tích, không TVV, có Công việc) vào thẳng Công việc — Tổng quan của GV trùng danh sách việc nên bỏ. */
-    overview: !chiTutor && (analysis || hvCuaToi || !(viec && (attempt || board || meeting))),
+    /* NEN-V5 (08 K10, 01 mục 2): mọi vai có Tổng quan (GV: trang đầu = Tổng quan, dữ liệu chỉ phạm vi của mình) — trừ Head tutor chỉ có Tutor. */
+    overview: !chiTutor,
     students: coPhamVi(PERMISSIONS.STUDENT_VIEW),
     admin: can(p, PERMISSIONS.ADMIN_CONFIG, { anyScope: true }),
     analysis,

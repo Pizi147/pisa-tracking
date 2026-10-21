@@ -5,7 +5,7 @@ import { invalidate } from '../../lib/api.ts';
 import { useSession } from '../../lib/session.tsx';
 import { useThamSoUrl } from '../../lib/quayLai.ts';
 import { Card, ErrorState, Skeleton } from '../../ui/ui.tsx';
-import { SoLieuO } from '../../ui/SoLieuO.tsx';
+import { OSo } from '../../ui/OSo.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import { CHIP_SOS, lopSos } from '../../ui/Nhan.tsx';
 import { useDienThoai } from '../../ui/TheDong.tsx';
@@ -53,7 +53,7 @@ export function LopCanChuY({ data, branchId, ct }: { data: TongQuanQlData['bang'
   const ft = ct === 'ft';
   const q = thamSoTq(branchId, ct);
   const so = (h: { khoa: string; nhan: string }, cot: CotBang, x: OBang, className = '') => (
-    <SoLieuO giaTri={x.n} className={className} tieuDe={`${COT_TEN[cot]} · ${h.nhan}`} nguon={`/tong-quan/chi-nhanh/o?cot=${cot}&khoa=${h.khoa}&chuY=1${q ? `&${q}` : ''}`} />
+    <OSo giaTri={x.n} className={className} tieuDe={`${COT_TEN[cot]} · ${h.nhan}`} nguon={`/tong-quan/chi-nhanh/o?cot=${cot}&khoa=${h.khoa}&chuY=1${q ? `&${q}` : ''}`} />
   );
   const sos = (h: HangBang | { khoa: string; nhan: string; o: Record<CotBang, OBang> }) => (
     <span className="inline-flex items-center justify-center gap-1">
@@ -208,7 +208,7 @@ export function TreCham({ ds, branchId, ct }: { ds: GvTre[]; branchId: number | 
             <div className="flex items-baseline justify-between gap-3 sm:contents">
               <span className="min-w-0 truncate"><b className={x.khoa > 0 ? 'font-semibold text-slate-100' : 'font-normal text-slate-400'}>{dich(x.ten)}</b>{x.kyNang.length > 0 && <span className="text-slate-500"> · {x.kyNang.join(', ')}</span>}</span>
               <span className="shrink-0 tabular-nums">
-                <SoLieuO giaTri={x.bai} className="font-semibold" tieuDe={t('Trễ chấm · {ten}', { ten: dich(x.ten) })} nguon={`/tong-quan/ql/tre?gv=${x.khoa}${q ? `&${q}` : ''}`} /> <span className="text-xs text-slate-500">{t('bài')}</span>
+                <OSo giaTri={x.bai} className="font-semibold" tieuDe={t('Trễ chấm · {ten}', { ten: dich(x.ten) })} nguon={`/tong-quan/ql/tre?gv=${x.khoa}${q ? `&${q}` : ''}`} /> <span className="text-xs text-slate-500">{t('bài')}</span>
               </span>
             </div>
             <div className="mt-0.5 flex items-baseline justify-between gap-3 sm:contents">
