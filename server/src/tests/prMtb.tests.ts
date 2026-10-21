@@ -753,7 +753,7 @@ export async function runPrMtbTests(t: YThucTestKit) {
     const kn = { listening: xong, reading: xong, writing: xong, speaking: { ...xong, trangThai: 'da-xep', khoa: null, khongDuThi: true } };
     const r = d.oMt({ so: 1, attemptId: 1, kn, cu: true }, '2026-10-06');
     assert(r.kieu === 'xong' && r.chu === 'W2 SEP', JSON.stringify(r));
-    assert(/Speaking: .*không dự thi/.test(r.title), r.title);
+    assert(/Speaking: .*đã huỷ/.test(r.title), r.title);   // LUAT-34: "-" ở MT cũ (cu) = Đã huỷ
     const lich = { required: true, periodId: 1, weekStart: '2026-09-07', weekEnd: '2026-09-13', sitStatus: 'scheduled', scored: false, pendingMove: null, absenceMoveCount: 0, deadline: null, doiTu: null };
     assert((d as any).oKyNangTuLich(lich, true).khongDuThi === true && !(d as any).oKyNangTuLich(lich).khongDuThi, 'oKyNangTuLich');
     const cell = (assessedSkill: string, state: string | null, band: number | null = null) => ({ assessedSkill, band, rawScore: null, noShow: state ? { state } : null });

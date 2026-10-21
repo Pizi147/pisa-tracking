@@ -146,21 +146,16 @@ export async function runKeHoachTestTests(t: YThucTestKit) {
     return { attemptId: row.attemptId as number, classId: row.class_id as number, chuNhatCuoi: per.weekEnd as string };
   }
 
-  check('PR-Rc2 · R11(a) FT: GVBM bị chặn sau Chủ nhật, còn sửa được ĐÚNG Chủ nhật (RB-5 đòi lý do)', () => {
+  /* LUAT-34 (Luật 3, thay R11): "Đủ điểm" chỉ là trạng thái — GVBM đúng ô sửa được cả sau Chủ nhật; nhật ký ghi sauHoanTat. */
+  check('PR-Rc2 · R11(a) → LUAT-34 FT: GVBM sửa được sau Chủ nhật (Đủ điểm không khoá), nhật ký sauHoanTat', () => {
     const { attemptId, chuNhatCuoi } = dungDotHoanTatFT();
     const sauChuNhat = addDays(chuNhatCuoi, 1);
-    assertThrows(
-      () => attemptsMod.saveScore(P.lrTeacher, attemptId, 'listening', { rawScore: 32, lyDo: 'Chấm lại cho đúng' }, sauChuNhat),
-      /đã hoàn tất/, 'Qua Chủ nhật mà GVBM vẫn sửa được điểm đợt đã hoàn tất',
-    );
-    const giuNguyen = conn.prepare('SELECT raw_score FROM assessment_scores WHERE attempt_id=? AND skill=?')
-      .get(attemptId, 'listening') as any;
-    assert(giuNguyen.raw_score === 30, 'Bị chặn mà điểm vẫn đổi');
-
-    attemptsMod.saveScore(P.lrTeacher, attemptId, 'listening', { rawScore: 32, lyDo: 'Chấm lại cho đúng' }, chuNhatCuoi);
+    attemptsMod.saveScore(P.lrTeacher, attemptId, 'listening', { rawScore: 32, lyDo: 'Chấm lại cho đúng' }, sauChuNhat);
     const daDoi = conn.prepare('SELECT raw_score FROM assessment_scores WHERE attempt_id=? AND skill=?')
       .get(attemptId, 'listening') as any;
-    assert(daDoi.raw_score === 32, 'Đúng Chủ nhật (chưa qua) GVBM phải còn sửa được, có lý do');
+    assert(daDoi.raw_score === 32, 'GVBM đúng ô phải sửa được sau Đủ điểm');
+    const log = conn.prepare(`SELECT after_json FROM audit_logs WHERE entity_type='assessment_attempt' AND entity_id=? ORDER BY id DESC LIMIT 1`).get(attemptId) as any;
+    assert(JSON.parse(log?.after_json ?? '{}').sauHoanTat === true, 'Nhật ký thiếu cờ sauHoanTat');
   });
 
   // PR-MTa T7 thay RB-5: Quản lý sửa đợt hoàn tất — lý do tuỳ chọn; T22 thay "xoá cần lý do": xoá trắng ô cũng tuỳ chọn.
@@ -182,7 +177,7 @@ export async function runKeHoachTestTests(t: YThucTestKit) {
     assert((conn.prepare('SELECT raw_score FROM assessment_scores WHERE attempt_id=? AND skill=?').get(attemptId, 'listening') as any).raw_score === null, 'xoá');
   });
 
-  check('PR-Rc2 · R11(c) Lớp thường: bốn môn có điểm + hết CN → GVBM bị chặn, Quản lý sửa được; dấu "-" không làm hoàn tất', () => {
+  check('PR-Rc2 · R11(c) → LUAT-34 Lớp thường: bốn môn có điểm + hết CN → GVBM vẫn sửa được, Quản lý sửa được; dấu "-" không làm hoàn tất', () => {
     const foundationClass = classId('MB FOU 12');
     const row = conn.prepare(
       `SELECT id AS attemptId FROM assessment_attempts
@@ -199,10 +194,9 @@ export async function runKeHoachTestTests(t: YThucTestKit) {
     for (const sk of ['listening', 'reading', 'writing', 'speaking']) ins.run(attemptId, sk, 30, 40, '2026-04-01');
     const sauChuNhat = addDays(per.weekEnd, 1);
 
-    assertThrows(
-      () => regularMod.saveRegularScore(P.normalCoreTeacher, attemptId, 'listening', { score: 32, total: 40, lyDo: 'Chấm lại' }, sauChuNhat),
-      /đã hoàn tất/, 'Qua Chủ nhật mà GVBM vẫn sửa được bài lớp thường đã hoàn tất',
-    );
+    regularMod.saveRegularScore(P.normalCoreTeacher, attemptId, 'listening', { score: 31, total: 40, lyDo: 'Chấm lại' }, sauChuNhat);
+    assert((conn.prepare('SELECT raw_score FROM assessment_scores WHERE attempt_id=? AND skill=?').get(attemptId, 'listening') as any).raw_score === 31,
+      'GVBM lớp thường phải sửa được sau Đủ điểm');
     regularMod.saveRegularScore(P.mbManager, attemptId, 'listening', { score: 32, total: 40, lyDo: 'Quản lý hiệu chỉnh' }, sauChuNhat);
     const daDoi = conn.prepare('SELECT raw_score FROM assessment_scores WHERE attempt_id=? AND skill=?')
       .get(attemptId, 'listening') as any;
@@ -215,7 +209,7 @@ export async function runKeHoachTestTests(t: YThucTestKit) {
     assert(info.hoanTat === false, 'Một môn còn mang dấu "-" mà đợt lớp thường vẫn báo đã hoàn tất');
   });
 
-  check('PR-Rc2 · R11(d) classScoreSheet của Quản lý: ô đợt hoàn tất canEdit=true khoa=true; GVBM thì ngược lại', () => {
+  check('PR-Rc2 · R11(d) → LUAT-34 classScoreSheet: ô đợt Đủ điểm canEdit=true khoa=true (trạng thái) cho Quản lý và GVBM đúng ô', () => {
     const { attemptId, chuNhatCuoi } = dungDotHoanTatFT();
     const sauChuNhat = addDays(chuNhatCuoi, 1);
     const sheetManager = attemptsMod.classScoreSheet(P.mbManager, mbClass, null, sauChuNhat);
@@ -228,16 +222,16 @@ export async function runKeHoachTestTests(t: YThucTestKit) {
 
     const sheetTeacher = attemptsMod.classScoreSheet(P.lrTeacher, mbClass, null, sauChuNhat);
     const cellTeacher = sheetTeacher.rows.find((r: any) => r.attemptId === attemptId).cells.find((c: any) => c.skill === 'listening');
-    assert(cellTeacher.canEdit === false && cellTeacher.khoa === true,
-      `GVBM: ô đợt hoàn tất phải canEdit=false, khoa=true — đang ra ${JSON.stringify(cellTeacher)}`);
+    assert(cellTeacher.canEdit === true && cellTeacher.khoa === true,
+      `GVBM: ô đợt Đủ điểm phải canEdit=true, khoa=true — đang ra ${JSON.stringify(cellTeacher)}`);
   });
 
-  check('Z2c-c · A3 attemptDetail (màn chi tiết lượt MT): ô đợt hoàn tất — GVBM canEdit=false khoa=true, Quản lý canEdit=true khoa=true', () => {
+  check('Z2c-c · A3 → LUAT-34 attemptDetail (màn chi tiết lượt MT): ô đợt Đủ điểm — GVBM và Quản lý canEdit=true khoa=true', () => {
     /* Đợt dựng ở tuần 04/05/2026; ngày demo của bộ kiểm (14/09) đã qua Chủ nhật đó → hoàn tất. */
     const { attemptId } = dungDotHoanTatFT();
     const oCua = (p: any) => attemptsMod.attemptDetail(p, attemptId).cells.find((c: any) => c.skill === 'listening');
     const gv = oCua(P.lrTeacher);
-    assert(gv.canEdit === false && gv.khoa === true, `GVBM: đang ra canEdit=${gv.canEdit} khoa=${gv.khoa}`);
+    assert(gv.canEdit === true && gv.khoa === true, `GVBM: đang ra canEdit=${gv.canEdit} khoa=${gv.khoa}`);
     const ql = oCua(P.mbManager);
     assert(ql.canEdit === true && ql.khoa === true, `Quản lý: đang ra canEdit=${ql.canEdit} khoa=${ql.khoa}`);
   });

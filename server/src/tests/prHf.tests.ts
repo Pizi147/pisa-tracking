@@ -82,8 +82,9 @@ export async function runPrHfTests(t: YThucTestKit) {
     assert(one(`SELECT comment FROM assessment_scores WHERE attempt_id = ? AND skill = 'listening'`, luot).comment === 'Bổ sung: nghe sót số liệu Part 1.', 'nhận xét chưa lưu');
     conn.prepare(`UPDATE assessment_scores SET comment = NULL WHERE attempt_id = ? AND skill = 'listening'`).run(luot);
     xoaNho();
-    const cam = await goi(gv, `/attempts/${luot}/scores/listening`, put({ band: 7, nhanXet: 'Bổ sung: nghe sót số liệu Part 1.' }));
-    assert(cam.status === 403, `kèm điểm phải 403: ${cam.status}`);
+    /* LUAT-34 (Luật 3): "Đủ điểm" không còn khoá — kèm điểm qua quyền (band sai bậc → 400 kiểm nhập, không 403); không ghi (ảnh chụp DL-2). */
+    const cam = await goi(gv, `/attempts/${luot}/scores/listening`, put({ band: 7.3, nhanXet: 'Bổ sung: nghe sót số liệu Part 1.' }));
+    assert(cam.status === 400, `kèm điểm (LUAT-34) phải qua quyền → 400 kiểm band: ${cam.status} ${await cam.text()}`);
   }));
 
   await checkAsync('HF-2 · Sửa Case MT nguyên nhân từ ô: PATCH chỉ Mức độ + Tên, không Mô tả → 200', () => voiMayChu(TRONG, async (goi) => {
@@ -112,8 +113,8 @@ export async function runPrHfTests(t: YThucTestKit) {
     assert(c.status === 200, `GVCN: ${c.status} ${await c.text()}`);
     const d = await sua(khacKyNang.userId, 'listening', { nhanXet: 'GV khác kỹ năng sửa nhận xét L.' });
     assert(d.status === 403, `GV khác kỹ năng phải 403: ${d.status}`);
-    const e = await sua(P.lrTeacher.userId, 'listening', { band: 7, nhanXet: 'Sửa lại: nghe sót số liệu Part 1 và 2.' });
-    assert(e.status === 403, `kèm điểm phải 403: ${e.status}`);
+    const e = await sua(P.lrTeacher.userId, 'listening', { band: 7.3, nhanXet: 'Sửa lại: nghe sót số liệu Part 1 và 2.' });
+    assert(e.status === 400, `kèm điểm (LUAT-34: Đủ điểm không khoá) qua quyền → 400 kiểm band: ${e.status}`);
     const f = await sua(P.lrTeacher.userId, 'listening', { nhanXet: 'ngắn' });
     assert(f.status === 400, `nhận xét < 10 ký tự phải 400: ${f.status}`);
   }));

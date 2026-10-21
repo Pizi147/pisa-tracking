@@ -228,8 +228,9 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
     attempts.saveScore(P.w1Teacher, hv.attemptId, 'writing1', { noShow: true }, '2026-09-15');
     assert(sit(hv.attemptId, 'writing').sit_status === 'scheduled' && sit(hv.attemptId, 'writing').absence_move_count === 0, 'W1 nhập bù không phải buổi vắng');
     const w1 = conn.prepare(`SELECT no_show_cu FROM assessment_scores WHERE attempt_id = ? AND skill = 'writing1'`).get(hv.attemptId) as any;
-    assert(w1.no_show_cu === 1, 'W1 nhập bù phải là Không dự thi');
-    assert(cellOf(hv, 'writing1', '2026-09-15').noShow?.state === 'khong-du-thi', 'Ô W1 phải hiện Không dự thi');
+    /* LUAT-34 (T07): W1 "-" ghi muộn khi W2 còn trống — chờ ô kia (không "Không dự thi"); W2 "-" / có điểm thì buổi mới chốt. */
+    assert(w1.no_show_cu === 0, 'W1 ghi muộn không còn là Không dự thi');
+    assert(cellOf(hv, 'writing1', '2026-09-15').noShow !== null, 'Ô W1 vẫn mang dấu "-"');
     assert(typeof absence.resolveLateNoShow === 'undefined', 'Đường "chờ Quản lý hiệu chỉnh" phải đã bỏ');
   });
 

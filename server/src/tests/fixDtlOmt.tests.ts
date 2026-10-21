@@ -143,7 +143,8 @@ export async function runFixDtlOmtTests(t: YThucTestKit) {
     ).get() as any;
     assert(!!r, 'seed thiếu lượt MT cũ có nhật ký score.lich_su');
     const ls = attemptsMod.scoreHistoryOf(r.id);
-    assert(ls.length > 0 && ls.every((x: any) => x.kind === 'edit' && typeof x.skill === 'string' && x.skill.length > 0), JSON.stringify(ls[0]));
+    /* LUAT-34: lượt có thể có cả dòng "-" (`no_show`) — soi đúng các dòng nhập điểm. */
+    assert(ls.length > 0 && ls.some((x: any) => x.kind === 'edit') && ls.every((x: any) => typeof x.skill === 'string' && x.skill.length > 0), JSON.stringify(ls));
     const det = attemptsMod.attemptDetail(P.admin, r.id);
     assert(det.lichSu === true && det.scoreHistory.length === ls.length, 'attemptDetail lượt MT cũ');
   });

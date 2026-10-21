@@ -12,7 +12,8 @@
  * Sửa ô đã có điểm: thêm ô "Lý do sửa (tuỳ chọn)" (RB-5, T7 — như `SuaDiemCoLyDo`). Ô đang Vắng (`daChot`): "Vắng lần n · đã dời
  * sang …", Bỏ vắng (quyền OV-1b do máy chủ tính: `goDuoc`), Lưu điểm.
  * OV-11a: ô đã dời vì vắng chỉ là ô Vắng ở lưới TUẦN GỐC (`tuanXem` ≠ tuần thi); ở tuần thi bù là ô thường + dòng "vắng lần 1 · dời từ …"
- * (nút Vắng = lần 2). Nút Vắng sau tuần thi / MT cũ ghi "Không dự thi" (`chuNutVang`). Đóng khi đã gõ: hỏi ngay chân hộp (Bỏ · Gõ tiếp).
+ * (nút Vắng = lần 2). LUAT-34: nút luôn ghi "Vắng" (máy chủ quyết dời / thẻ / huỷ — `chuyenVang`); ô trống có điểm đã huỷ còn cất → "Khôi phục điểm".
+ * Đóng khi đã gõ: hỏi ngay chân hộp (Bỏ · Gõ tiếp).
  * OV-12b (chủ SP 14/10, mockup ov12-1 §1–2): MT (không MT0 / MT cũ) — "Nhận xét *" bắt buộc khi ô sẽ có điểm (≥ 10 ký tự); band dưới kỳ vọng →
  * hàng chip "Nhóm nguyên nhân *" (số thứ tự, 1 = chính); thiếu → Lưu tắt + một dòng lý do; Enter nhảy tới chỗ thiếu. "Kỳ vọng MT{n}" ở mọi kỹ năng.
  * Ô đã có điểm mà thiếu (dữ liệu trước luật): chữ "thiếu nhận xét" / "thiếu nhóm nguyên nhân" dưới số (không vẽ ✓ "đủ" — trùng dấu "đã lưu" của ô).
@@ -20,7 +21,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import {
-  CAU_THIEU_NHAN_XET, CHU_O_THIEU, LOI_SO_CAU, LOI_SO_CAU_KHOANG, NHAN_XET_TOI_DA, bandTuSoCau, canNhomNguyenNhan, chuNutVang, criteriaPatchFrom,
+  CAU_THIEU_NHAN_XET, CHU_O_THIEU, CHU_THAO_TAC, LOI_SO_CAU, LOI_SO_CAU_KHOANG, NHAN_XET_TOI_DA, bandTuSoCau, canNhomNguyenNhan, criteriaPatchFrom,
   demNguocSuaDau, ngay, rawPatchFrom, soKyVong, thieuNhanXetMt, tieuChiNganCua, tuanLich, type NguoiChon,
 } from '@shared/domain/index.ts';
 import { fmtBand, skillLabel } from '../../lib/format.ts';
@@ -84,6 +85,8 @@ function hienO(c: Cell, vangGoc: boolean): { chu: ReactNode; doc: string; kieu: 
   if (vangGoc && c.daChot?.doiSang) return { chu: hai(t('Vắng'), `→ ${c.daChot.doiSang}`), doc: t('Vắng, đã dời sang {doiSang}', { doiSang: c.daChot.doiSang }), kieu: 'vang' };
   if (c.daChot && !c.daChot.doiSang && c.sitStatus === 'absent') return { chu: hai(t('Vắng'), t('chờ QL')), doc: t('Vắng, chờ Quản lý xếp lại'), kieu: 'vang' };
   if (c.noShow?.state === 'khong-du-thi') return { chu: hai(t('Không'), t('dự thi')), doc: t('Không dự thi'), kieu: 'chot' };
+  /* LUAT-34: "-" ở MT cũ = Đã huỷ ngay (cả "Không dự thi" cũ ở MT cũ) — bấm ô gỡ "-" / nhập điểm như ô "-" khác. */
+  if (c.noShow?.state === 'da-huy') return { chu: t('Đã huỷ'), doc: c.noShow.text, kieu: 'chot' };
   if (c.noShow) return { chu: '-', doc: c.noShow.text, kieu: null };
   /* OV-15b (mockup 2 · 6): band trước, số câu là dòng phụ dưới ô (`SoCau`). */
   if (c.rawScore !== null) {
@@ -462,10 +465,13 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, gvMacDi
     </>
   ) : (
     <>
+      {cell.diemHuy && (
+        <button type="button" className={`${nut} btn-ghost`} disabled={busy} onClick={() => void gui([{ khoiPhuc: true }], onDong)}>{CHU_THAO_TAC['khoi-phuc-diem']}</button>
+      )}
       {nhanVang && (
-        /* CA3-1: sau tuần thi / MT cũ nút nói đúng hậu quả — "Không dự thi" (không dời). */
+        /* LUAT-34: một chữ "Vắng" — hậu quả (dời / thẻ QL / huỷ) nói ở thông báo sau khi ghi, kèm Hoàn tác 10 giây. */
         <button type="button" className={`${nut} btn-ghost`} disabled={busy} onClick={() => void gui([{ noShow: true }], onTiep ?? onDong)}>
-          {chuNutVang({ weekStart: cell.weekStart, lichSu: cell.progress === 'lich_su', homNay })}
+          {t('Vắng')}
         </button>
       )}
       <LyDoThieu thieu={thieu} />

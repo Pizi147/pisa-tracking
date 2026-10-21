@@ -40,8 +40,10 @@ export type Cell = {
   overdue: boolean;
   progress: string;
   canEdit: boolean;
-  /** R11: đợt đã hoàn tất (hết Chủ nhật của tuần bắt buộc muộn nhất) — khoá với người không có `PLAN_WEEK`/`SCORE_OVERRIDE`. */
+  /** LUAT-34: đợt "Đủ điểm" (hết Chủ nhật của tuần bắt buộc muộn nhất) — chỉ là trạng thái, không còn khoá (R11 bỏ). */
   khoa?: boolean;
+  /** LUAT-34 (T20b): ô trống có điểm đã huỷ còn cất — hộp chấm có "Khôi phục điểm". */
+  diemHuy?: boolean;
   /** Tuần thi riêng của môn này. W1 và W2 dùng chung lịch của môn Writing. */
   periodId?: number | null;
   periodCode?: string | null;
@@ -53,7 +55,7 @@ export type Cell = {
    * ở máy chủ: "Không có bài · Có thể sửa đến hết Chủ nhật 20/09", "Không dự thi · Tuần W3 SEP 2026", …
    */
   noShow?: {
-    state: 'khong-co-bai' | 'khong-du-thi' | 'cho-ql-hieu-chinh';
+    state: 'khong-co-bai' | 'khong-du-thi' | 'cho-ql-hieu-chinh' | 'da-huy';
     text: string; effectiveOn: string | null; editableUntil: string | null;
   } | null;
   /**
@@ -87,6 +89,8 @@ export type SavePatch = {
   criteria?: (number | null)[]; resultDate?: string | null;
   /** `true` = báo "-" (không có bài), `false` = gỡ dấu. Không phải điểm 0. */
   noShow?: boolean;
+  /** LUAT-34 (T20b): "Khôi phục điểm" — gọi `POST …/khoi-phuc-diem` thay cho lưu điểm (cùng đường trạng thái lưu, không gửi máy chủ trường này). */
+  khoiPhuc?: true;
   /** RB-5 — lý do khi sửa một ô ĐÃ CÓ điểm chính thức (máy chủ đòi khi giá trị đổi hoặc bị xoá). */
   lyDo?: string;
   /** PR-HSM, OV-4b: nhận xét (`null` = xoá) — không phải điểm: không lý do, không đổi "Nhập bởi". */
@@ -115,8 +119,10 @@ export const coDiemChinhThuc = (cell: Cell) => cell.band !== null || cell.rawSco
 export const lockedByNoShow = (cell: Cell) => (cell.noShow?.state === 'khong-du-thi' && cell.sitStatus === 'absent')
   || cell.noShow?.state === 'cho-ql-hieu-chinh';
 
-/** R11 — ô của một đợt đã hoàn tất mà người xem không sửa được: thay cho câu "không được phân công". */
-export const KHOA_HOAN_TAT_HINT = t('Đợt này đã hoàn tất. Chỉ Quản lý sửa được điểm — nhờ Quản lý hiệu chỉnh.');
+/** LUAT-34 (L3): "Đủ điểm" chỉ là trạng thái — GV đúng ô vẫn sửa được (thay câu khoá R11). */
+export const KHOA_HOAN_TAT_HINT = t('Mọi kỹ năng đã có điểm hoặc "-" — vẫn sửa được.');
+/** Lớp đã kết thúc: chỉ Quản lý sửa điểm (Q-B1 ①) — cùng câu máy chủ `kiemLopKetThuc`. */
+export const KHOA_KET_THUC_HINT = t('Lớp đã kết thúc — chỉ Quản lý sửa được điểm.');
 /** E8 (T53 Q6): bài đã xác nhận vắng không nhập điểm ở lưới — nhập bù thì Quản lý xếp lại bài trước. */
 export const VANG_HINT = t('Đã xác nhận vắng — Quản lý xếp lại bài trước khi nhập.');
 
@@ -128,7 +134,7 @@ export const bandBanDau = (cell: Cell) => (cell.band !== null && cell.criteria.e
 /** Vì sao ô này chỉ đọc — MỘT câu cho ô số câu và ô tiêu chí. */
 export const lyDoChiDoc = (cell: Cell) => cell.lyDoKhoa ?? (cell.sitStatus === 'absent' ? VANG_HINT
   : lockedByNoShow(cell) ? t('Đã chốt — cần Quản lý hiệu chỉnh')
-  : cell.khoa ? KHOA_HOAN_TAT_HINT : t('Bạn không được phân công kỹ năng này'));
+  : t('Bạn không được phân công kỹ năng này'));
 
 /**
  * HOTFIX-3 (OV-13o): điểm vừa lưu (dòng `score` máy chủ trả về) đè lên ô cũ tới khi bảng tải lại được — tải lại hỏng thì ô vẫn hiện
@@ -160,7 +166,10 @@ export function useSaveScore(attemptId: number, onSaved?: () => void, tenHv?: st
     setSaving(skill);
     tt.batDau(skill);
     try {
-      const r = await api.put<any>(`/attempts/${attemptId}/scores/${skill}`, patch);
+      const r = patch.khoiPhuc
+        ? await api.post<any>(`/attempts/${attemptId}/skills/${skill}/khoi-phuc-diem`, {})
+        : await api.put<any>(`/attempts/${attemptId}/scores/${skill}`, patch);
+      if (patch.khoiPhuc) toast.push('ok', t('Đã khôi phục điểm {x}{x2}', { x: ((r?.o as string[] | undefined) ?? [skill]).map((k) => ENTRY_SKILL_SHORT[k as EntrySkill]).join(' + '), x2: tenHv ? ` · ${tenHv}` : '' }));
       /* PR-BV: xoá "-" đã chốt — máy chủ trả tuần bài về / giữ (mockup bản 2). */
       if (r?.goVang?.tuanVe) {
         toast.push('ok', t('Đã bỏ vắng {x}{x2} · {x3} {tuanVe}', { x: ENTRY_SKILL_SHORT[skill as EntrySkill], x2: tenHv ? ` · ${tenHv}` : '', x3: r.goVang.giuLich ? t('giữ') : t('về'), tuanVe: r.goVang.tuanVe }));
@@ -170,8 +179,10 @@ export function useSaveScore(attemptId: number, onSaved?: () => void, tenHv?: st
       invalidate('/classes');
       invalidate('/students');
       invalidate('/my-work');   // PR-S6F-a: badge quá hạn của GV tải lại sau khi nhập điểm
-      /* K4: gõ "-" và nút "Vắng" (điện thoại) cùng đi qua đây — một thông báo ngắn, không Hoàn tác. */
-      if (patch.noShow === true) thongBaoVang(toast, `${attemptId}:${skill}`, ENTRY_SKILL_SHORT[skill as EntrySkill], tenHv, r?.vang);
+      /* K4: gõ "-" và nút "Vắng" (điện thoại) cùng đi qua đây — một thông báo ngắn; LUAT-34: kèm "Hoàn tác" 10 giây (= gỡ "-"). */
+      if (patch.noShow === true) {
+        thongBaoVang(toast, `${attemptId}:${skill}`, ENTRY_SKILL_SHORT[skill as EntrySkill], tenHv, r?.vang, () => void save(skill, { noShow: false }));
+      }
       if (r?.score && patch.noShow === undefined) setVuaLuu((v) => ({ ...v, [skill]: r.score }));
       tt.thanhCong(skill);
       onSaved?.();
@@ -730,7 +741,7 @@ export function ODiemThuong({
 
   /* ---- Chỉ đọc: môn không được phân công. */
   if (!canEdit) {
-    const khongDay = cell.khoa ? KHOA_HOAN_TAT_HINT : t('Bạn không được phân công kỹ năng này.');
+    const khongDay = cell.khoa ? KHOA_KET_THUC_HINT : t('Bạn không được phân công kỹ năng này.');
     if (coDiem) {
       return (
         <span className="inline-flex flex-col items-end justify-center tabular-nums text-slate-400"

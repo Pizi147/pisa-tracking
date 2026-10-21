@@ -128,13 +128,14 @@ export async function runPrOv1cTests(t: YThucTestKit) {
     assert(caseCua(a).length === 1, `không Case trùng: ${caseCua(a).length}`);
   }));
 
-  check('OV1c-2c · chốt nhờ "Không dự thi" (nhập "-" sau tuần thi) — Case tạo ngay', () => thu(() => {
+  /* LUAT-34: "-" ghi muộn (tuần kế còn chạy) = vắng lần 1, dời tuần kế — dời đã là chốt, Case tạo ngay. */
+  check('OV1c-2c · chốt nhờ "-" ghi sau tuần thi (LUAT-34: dời tuần kế) — Case tạo ngay', () => thu(() => {
     const a = luot[0];
     dung(a);
     baKyNang(a);
     vang(a, 'speaking', BU);
-    assert(one('SELECT no_show_cu n FROM assessment_scores WHERE attempt_id = ? AND skill = ?', a, 'speaking').n === 1, 'S phải Không dự thi');
-    assert(kq(a).chot && caseCua(a).length === 1, `Không dự thi: chot ${kq(a).chot}, Case ${caseCua(a).length}`);
+    assert(one('SELECT absence_move_count n FROM attempt_skills WHERE attempt_id = ? AND skill = ?', a, 'speaking').n === 1, 'S phải dời lần 1');
+    assert(kq(a).chot && caseCua(a).length === 1, `dời: chot ${kq(a).chot}, Case ${caseCua(a).length}`);
   }));
 
   check('OV1c-2d · chốt nhờ "Không mock lại" (bỏ kỹ năng khỏi đợt) — Case tạo ngay', () => thu(() => {

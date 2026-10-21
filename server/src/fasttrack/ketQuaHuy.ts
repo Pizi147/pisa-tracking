@@ -10,13 +10,82 @@
 import { db, theoLo, tx } from '../db.ts';
 import { PERMISSIONS, nhanDot, tenMon, type KetQuaHuy } from '../../../shared/domain/index.ts';
 import type { ChupCaseDong } from '../cases/systemClose.ts';
-import { badRequest, notFound, nowIso } from '../util.ts';
-import { require_, type Principal } from '../permissions.ts';
+import { badRequest, forbidden, notFound, nowIso } from '../util.ts';
+import { require_, scoreEditPath, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
 import { writeAudit } from '../platform/audit.ts';
-import { assessedSkillOf } from './scoring.ts';
-import { refreshOutcome } from './attempts.ts';
-import { checkSkillWeekMove, ensureSkillRows, logSchedule, recomputeCompletionWeek, tinhLaiMtCu } from './skillSchedule.ts';
+import { assessedSkillOf, entrySkillsOf } from './scoring.ts';
+import { refreshOutcome, saveScore } from './attempts.ts';
+import { checkSkillWeekMove, ensureSkillRows, logSchedule, recomputeCompletionWeek, scoringModeOf, tinhLaiMtCu } from './skillSchedule.ts';
+import { saveRegularScore } from '../normal/regular.ts';
+import { nho } from '../platform/nguCanhRequest.ts';
+
+/*
+ * LUAT-34 (Luật 3 — T20, T20b, T18): loại bản cất thứ ba 'huy_diem' — MỘT Ô vừa mất hết điểm (Huỷ điểm, xoá tay, Bỏ khỏi đợt; Thi lại thì không):
+ * `diem_json` = [nguyên dòng điểm trước khi huỷ]. Chỉ bản MỚI NHẤT của ô còn mở; ô nhập điểm mới / Thi lại thì đóng (`ly_do_khoi_phuc` ghi vì sao).
+ * ponytail: đóng / tìm bản theo ô bằng đọc `diem_json` các bản mở của lượt (ít dòng); nhiều thì thêm cột `skill` + chỉ mục khi có migrate.
+ */
+const banMoCuaO = (conn: any, attemptId: number, skills: readonly string[]) =>
+  (conn.prepare(`SELECT * FROM ket_qua_huy WHERE attempt_id = ? AND loai = 'huy_diem' AND khoi_phuc_luc IS NULL ORDER BY id DESC`).all(attemptId) as any[])
+    .map((k) => ({ k, d: (JSON.parse(k.diem_json) as any[])[0] }))
+    .filter((x) => skills.includes(x.d?.skill));
+
+/** Ô (có điểm) vừa mất hết điểm → cất nguyên dòng; bản cũ của ô đóng. Gọi trong tx của `saveScore` / `saveRegularScore`, TRƯỚC câu ghi. */
+export function catDiemO(conn: any, o: { attemptId: number; row: any; actor: number | null; lyDo: string | null }) {
+  dongBanCat(conn, o.attemptId, o.row.skill, 'Có lần huỷ điểm mới');
+  conn.prepare(`INSERT INTO ket_qua_huy (attempt_id, diem_json, lich_json, so_diem, ly_do, huy_boi, huy_luc, loai) VALUES (?, ?, '[]', 1, ?, ?, ?, 'huy_diem')`)
+    .run(o.attemptId, JSON.stringify([o.row]), o.lyDo || 'Huỷ điểm', o.actor, nowIso());
+}
+
+/** Bản cất mở của ô hết hiệu lực (ô vừa có điểm mới / Thi lại). */
+export function dongBanCat(conn: any, attemptId: number, skill: string, lyDo: string) {
+  for (const { k } of banMoCuaO(conn, attemptId, [skill])) {
+    conn.prepare('UPDATE ket_qua_huy SET khoi_phuc_luc = ?, ly_do_khoi_phuc = ? WHERE id = ?').run(nowIso(), lyDo, k.id);
+  }
+}
+
+/** Ô còn bản cất mở (`${attemptId}:${ô}`) — một câu cho cả request (bảng điểm vẽ nhiều ô). */
+export function diemHuyMo(): Set<string> {
+  return nho('diem-huy-mo', () => new Set((db().prepare(`SELECT attempt_id, diem_json FROM ket_qua_huy WHERE loai = 'huy_diem' AND khoi_phuc_luc IS NULL`)
+    .all() as any[]).map((k) => `${k.attempt_id}:${(JSON.parse(k.diem_json) as any[])[0]?.skill}`)));
+}
+
+/**
+ * KHÔI PHỤC ĐIỂM (T20b) — một bấm, người sửa được ô (quyền / tuần thi / lớp kết thúc / nhật ký / Case tính lại đều qua đúng `saveScore` hoặc
+ * `saveRegularScore`). Mock: mọi ô của kỹ năng (W1 + W2) có bản mở. Ô đã có điểm mới → 400 (không bao giờ đè). Nhật ký `score.khoi_phuc`.
+ */
+export function khoiPhucDiem(p: Principal, attemptId: number, skill: string, today: string = demoToday()): { ok: true; o: string[] } {
+  const conn = db();
+  const a = conn.prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(attemptId) as any;
+  if (!a) throw notFound('Không tìm thấy lượt kiểm tra');
+  const thuong = scoringModeOf(a) === 'ratio';
+  /* Quyền trước (rà #503 c): người không sửa được ô không được biết ô có điểm huỷ hay không. Lưu bên dưới vẫn kiểm đủ (lớp kết thúc, tuần thi…). */
+  if (!a.class_id || !scoreEditPath(p, a.class_id, skill, { lich_su: a.lich_su ?? 0 })) throw forbidden('Bạn không sửa được ô điểm này.');
+  const ban = banMoCuaO(conn, attemptId, thuong ? [skill] : entrySkillsOf(assessedSkillOf(skill)));
+  if (!ban.length) throw badRequest(`${tenMon(null, skill)} không có điểm đã huỷ để khôi phục.`);
+  const lyDo = 'Khôi phục điểm';
+  return tx(() => {
+    for (const { k, d } of ban) {
+      const hien = conn.prepare('SELECT band, raw_score FROM assessment_scores WHERE attempt_id = ? AND skill = ?').get(attemptId, d.skill) as any;
+      if (hien && (hien.band != null || hien.raw_score != null)) throw badRequest(`${tenMon(null, d.skill)} đã có điểm mới — không khôi phục điểm cũ.`);
+      if (thuong) saveRegularScore(p, attemptId, d.skill, { score: d.raw_score, total: d.raw_total, lyDo }, today);
+      else {
+        const tieuChi = [d.c1, d.c2, d.c3, d.c4];
+        saveScore(p, attemptId, d.skill, tieuChi.some((v) => v != null) ? { criteria: tieuChi, lyDo }
+          : d.raw_score != null ? { rawScore: d.raw_score, rawTotal: d.raw_total, lyDo } : { band: d.band, lyDo }, today);
+      }
+      /* Rà #503 (2): khôi phục không phải lần nhập mới — trả người nhập, lúc nhập, ngày nhập đầu như bản cất (không tính chấm trễ, không dời mốc Đủ điểm). */
+      conn.prepare('UPDATE assessment_scores SET entered_by = ?, entered_at = ?, nhap_dau_ngay = ? WHERE attempt_id = ? AND skill = ?')
+        .run(d.entered_by ?? null, d.entered_at ?? null, d.nhap_dau_ngay ?? null, attemptId, d.skill);
+      conn.prepare('UPDATE ket_qua_huy SET khoi_phuc_luc = ?, khoi_phuc_boi = ?, ly_do_khoi_phuc = ? WHERE id = ?').run(nowIso(), p.userId, lyDo, k.id);
+      writeAudit({
+        actorUserId: p.userId, action: 'score.khoi_phuc', entityType: 'assessment_attempt', entityId: attemptId, entityLabel: d.skill,
+        before: null, after: { ...d, lyDo },
+      });
+    }
+    return { ok: true as const, o: ban.map((x) => x.d.skill as string) };
+  });
+}
 
 const CO_DIEM = (s: any) => (s.band ?? null) !== null || (s.raw_score ?? null) !== null;
 

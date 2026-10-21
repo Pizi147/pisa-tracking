@@ -84,26 +84,23 @@ export async function runPrOv1bTests(t: YThucTestKit) {
     assert(ky(a, 'writing').planned_period_id === W1 && ky(a, 'writing').absence_move_count === 1, `W1 + W2 "-": ${JSON.stringify(ky(a, 'writing'))}`);
   }));
 
-  check('OV1b-2 · "-" nhập bù sau tuần thi = Không dự thi: không dời, không đếm vắng, không đề nghị, không quá hạn; MT cũ cũng vậy', () => thu(() => {
+  /* LUAT-34 (luật 4 sửa 21/10) thay OV-1b "nhập bù = Không dự thi": "-" ghi muộn ở MT hiện tại chốt như trong tuần (dời tuần kế của lịch còn thi
+   * được); MT cũ "-" = Đã huỷ ngay (dấu `no_show_cu`, không dời, không đếm). Bảng đủ T01–T31 ở `mtTrangThai.tests.ts`. */
+  check('OV1b-2 → LUAT-34 · "-" ghi muộn (tuần kế còn chạy) dời tuần kế, đếm 1; MT cũ "-" = Đã huỷ ngay, không dời, không đếm', () => thu(() => {
     const a = luot[1];
     dung(a);
-    const sos0 = one('SELECT COUNT(*) n FROM sos_cases').n;
     attempts.saveScore(gvL, a, 'listening', { noShow: true }, BU);
     const k = ky(a, 'listening');
-    assert(k.planned_period_id === W && k.absence_move_count === 0 && k.sit_status === 'scheduled', `không được dời / đếm: ${JSON.stringify(k)}`);
-    assert(dau(a, 'listening').no_show_cu === 1, 'phải là Không dự thi (no_show_cu = 1)');
-    assert(vang(a) === 0, 'không sinh đề nghị dời');
-    const c = o(a, 'listening', W, BU);
-    assert(c.noShow?.state === 'khong-du-thi' && !c.overdue, `ô: ${JSON.stringify(c.noShow)} overdue=${c.overdue}`);
-    assert(one('SELECT COUNT(*) n FROM sos_cases').n === sos0, 'không tạo Case');
-    /* MT cũ: "-" luôn là Không dự thi, kể cả trong tuần. */
+    assert(k.planned_period_id === W1 && k.absence_move_count === 1 && k.sit_status === 'scheduled', `ghi muộn phải dời: ${JSON.stringify(k)}`);
+    assert(dau(a, 'listening').no_show_cu === 0, 'không còn Không dự thi');
     conn.prepare('UPDATE assessment_attempts SET lich_su = 1 WHERE id = ?').run(a);
     xoaNho();
     attempts.saveScore(QL, a, 'reading', { noShow: true }, TRONG);
-    assert(ky(a, 'reading').planned_period_id === W && dau(a, 'reading').no_show_cu === 1, 'MT cũ "-" phải là Không dự thi');
+    assert(ky(a, 'reading').planned_period_id === W && ky(a, 'reading').absence_move_count === 0 && dau(a, 'reading').no_show_cu === 1, 'MT cũ "-" = Đã huỷ');
+    assert(o(a, 'reading', W, TRONG).noShow?.state === 'da-huy', 'ô MT cũ hiện Đã huỷ');
   }));
 
-  check('OV1b-3 · ca Phượng: "-" vào ô `sat` (điểm đã xoá) vẫn có tác dụng — trong tuần dời, nhập bù Không dự thi, không ô trống', () => thu(() => {
+  check('OV1b-3 · ca Phượng: "-" vào ô `sat` (điểm đã xoá) vẫn có tác dụng — trong tuần dời, ghi muộn cũng chốt (LUAT-34), không ô trống', () => thu(() => {
     const a = luot[2];
     dung(a);
     conn.prepare(`UPDATE attempt_skills SET sit_status = 'sat' WHERE attempt_id = ? AND skill IN ('listening', 'reading')`).run(a);
@@ -112,8 +109,8 @@ export async function runPrOv1bTests(t: YThucTestKit) {
     const k = ky(a, 'listening');
     assert(k.planned_period_id === W1 && k.absence_move_count === 1 && k.sit_status === 'scheduled', `"-" trên ô sat trong tuần: ${JSON.stringify(k)}`);
     attempts.saveScore(QL, a, 'reading', { noShow: true }, BU);
-    const c = o(a, 'reading', W, BU);
-    assert(c.noShow?.state === 'khong-du-thi' && !c.overdue, `"-" nhập bù trên ô sat: ${JSON.stringify(c.noShow)} overdue=${c.overdue}`);
+    const kr = ky(a, 'reading');
+    assert(kr.planned_period_id === W1 && kr.absence_move_count === 1, `"-" ghi muộn trên ô sat phải dời: ${JSON.stringify(kr)}`);
   }));
 
   check('OV1b-4 · Bỏ vắng: GV đúng kỹ năng / GVCN / QL đưa ô về tuần cũ, bộ đếm −1 (không chặn hạn tuần cũ); GV khác thì 403; đã huỷ phần thi chỉ QL', () => thu(() => {
@@ -131,6 +128,7 @@ export async function runPrOv1bTests(t: YThucTestKit) {
     attempts.saveScore(gvcn, a, 'reading', { noShow: true }, TRONG);
     attempts.saveScore(gvcn, a, 'reading', { noShow: true }, BU);
     assert(ky(a, 'reading').sit_status === 'cancelled', 'tiền đề: Reading đã huỷ phần thi');
+    conn.prepare(`UPDATE assessment_scores SET no_show_at = '2026-01-01T00:00:00.000Z' WHERE attempt_id = ? AND skill = 'reading'`).run(a);   // qua cửa sổ Hoàn tác (LUAT-34)
     const e2 = loi(() => attempts.saveScore(gvcn, a, 'reading', { noShow: false }, BU));
     assert(e2?.status === 403 && /Quản lý/.test(e2.message), `GVCN gỡ "-" phần thi đã huỷ: ${e2?.status} ${e2?.message}`);
     /* Writing đã dời, W1 có điểm ở tuần mới → Bỏ vắng W2 giữ lịch tuần mới (không kéo điểm W1 về tuần cũ). */

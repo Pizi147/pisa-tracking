@@ -193,15 +193,12 @@ export async function runPrXlmtMayChu(t: YThucTestKit) {
   });
 
   // PR-MTa T7: Báo vắng — lý do tuỳ chọn (bỏ nhánh "lý do ngắn"); chữ "MT lịch sử" → "MT cũ".
-  check('PR-XLMT (2) · Báo vắng bị chặn: GVBM · tuần tương lai · MT cũ · đã có điểm', () => {
+  /* LUAT-34: MT cũ không còn bị chặn — Báo vắng ở MT cũ = Đã huỷ ngay (mtTrangThai T06). */
+  check('PR-XLMT (2) · Báo vắng bị chặn: GVBM · tuần tương lai · đã có điểm', () => {
     assertThrows(() => absence.baoVang(P.subjectTeacher, m1.id, 'writing', 'Em ốm cả tuần', TODAY), /chủ nhiệm/, 'GVBM');
     assertThrows(() => absence.baoVang(P.coreTeacher, m2.id, 'writing', 'Em ốm cả tuần', TODAY), /chưa tới tuần thi/, 'tương lai');
     diem(m1.id, 'reading');
     assertThrows(() => absence.baoVang(P.coreTeacher, m1.id, 'reading', 'Em ốm cả tuần', TODAY), /đã có điểm/, 'có điểm');
-    conn.prepare('UPDATE assessment_attempts SET lich_su = 1 WHERE id = ?').run(m3.id);
-    try {
-      assertThrows(() => absence.baoVang(P.coreTeacher, m3.id, 'writing', 'Em ốm cả tuần', TODAY), /MT cũ/, 'MT cũ');
-    } finally { conn.prepare('UPDATE assessment_attempts SET lich_su = 0 WHERE id = ?').run(m3.id); }
   });
 
   check('PR-XLMT (2) · Lớp thường Báo vắng có lý do (GVCN): dời tuần sau, nhật ký lịch ghi lý do (K4-32)', () => {

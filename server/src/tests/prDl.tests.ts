@@ -92,7 +92,8 @@ export async function runPrDlTests(t: YThucTestKit) {
    * bỏ các trường theo đồng hồ thật (`…At`; `chuNhatCuoi` của MT lịch sử seed = ngày nhập thật). Seed + TODAY cố định nên băm cố định; đổi seed/phép kiểm phía trên
    * làm lệch băm thì chụp lại bằng mã trước refactor (`git show 666dcfbf:server/src/fasttrack/attempts.ts`), không sửa cho khớp.
    */
-  const OV12B = new Set(['nhomNguyenNhan', 'batBuocNhanXet', 'kyVong', 'thieuNhanXet']);
+  /* LUAT-34: `diemHuy` (cờ "Khôi phục điểm" mới của ô) ngoài băm như các cờ OV-12b. */
+  const OV12B = new Set(['nhomNguyenNhan', 'batBuocNhanXet', 'kyVong', 'thieuNhanXet', 'diemHuy']);
   const bam = (x: unknown) => createHash('sha256')
     /* PR-BV: ô thêm `daChot` ("-" đã chốt, phép kiểm riêng prBv V13) — bỏ khỏi băm để ảnh chụp cũ vẫn chứng minh mọi trường khác không lệch.
        OV-1c: kết quả lượt thêm `chot` (phép kiểm riêng prOv1c) — bỏ khỏi băm như trên. OV-9: `kckDuoi` (phép kiểm riêng prOv9) — cũng vậy. OV-4c: ô thêm `bandThang` (phép kiểm riêng prOv4c) — cũng vậy.
@@ -129,7 +130,9 @@ export async function runPrDlTests(t: YThucTestKit) {
    * `nhanXet` / `nhomNguyenNhan` của ô demo và `thieuNhanXet` hết ở ô đã có nhận xét; không trường nào khác. */
   /* OV-15h2: chỉ lệch id tuần (`moi`) — bỏ phép kiểm UX4 "Vấn đề HV" (máy chủ `vanDeHv` bỏ) vốn tạo hai tuần giả chạy trước → `periodId` tuần tạo sau
    * dời −2. Đã so JSON `moi` origin/main ↔ nhánh: chỉ khác `periodId` (100 dòng, đều −2), không trường nào khác. */
-  const ANH_CHUP = { tuan: '98dff5c3c389b7b3', moi: '53d25ee1fd6e5732' };   // OV-15b: hàng thêm `studentEmail` (Dán từ Excel), ô chưa có giá trị (điểm / tiêu chí) không gửi người nhập   // OV-13n: phép kiểm sosV3 (cùng lớp MB FT 101, chạy trước) thêm HV thử / đổi việc phối hợp → dòng lớp đổi   // OV-13l: em chuyển FT → FT giữ lộ trình — lượt chưa thi đi theo em, bảng lớp cũ đổi
+  /* LUAT-34: chụp lại — phép kiểm chạy trước trên MB FT 101 đổi theo luật 4 sửa 21/10 (PR-G: "-" ghi muộn → thẻ QL / Hoàn tác, W1 "-" + W2 có điểm
+   * dời cả W; prOv1b / prOv11a "-" ghi muộn dời tuần kế) và luật 3 (`moi` = góc GVBM: ô có điểm ở hàng Đủ điểm nay `canEdit` true). */
+  const ANH_CHUP = { tuan: 'ea4c647e05ebdfc3', moi: '302cb2d7a4636a80' };   // trước LUAT-34: tuan 98dff5c3c389b7b3 · moi 53d25ee1fd6e5732   // OV-15b: hàng thêm `studentEmail` (Dán từ Excel), ô chưa có giá trị (điểm / tiêu chí) không gửi người nhập   // OV-13n: phép kiểm sosV3 (cùng lớp MB FT 101, chạy trước) thêm HV thử / đổi việc phối hợp → dòng lớp đổi   // OV-13l: em chuyển FT → FT giữ lộ trình — lượt chưa thi đi theo em, bảng lớp cũ đổi
   /* Mã cố ý độc lập với hàm: điều kiện lọc tuần của bản trước refactor, viết lại bằng SQL. */
   const idsTuan = (periodId: number) => (conn.prepare(
     `SELECT a.id FROM assessment_attempts a JOIN students s ON s.id = a.student_id

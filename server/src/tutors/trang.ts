@@ -318,17 +318,20 @@ export function ghiNhanXet(p: Principal, tutorId: number, v: unknown): { id: num
   });
 }
 
-/** Sửa / xoá: chỉ người ghi, trong 24 giờ kể từ `luc` (mục 3.1). Sửa không dời `luc` (mốc nhóm chú ý). */
-function nhanXetSuaDuoc(p: Principal, id: number): any {
+/**
+ * Sửa / xoá: chỉ người ghi (mục 3.1). LUAT-34 (L3, H28): SỬA mọi lúc (nhật ký trước → sau `tutor.nhan_xet_sua`); XOÁ giữ trong 24 giờ kể từ `luc`.
+ * Sửa không dời `luc` (mốc nhóm chú ý).
+ */
+function nhanXetSuaDuoc(p: Principal, id: number, xoa: boolean): any {
   canSua(p);
   const n = db().prepare('SELECT id, tutor_id, ket_luan, noi_dung, nguoi_id, luc FROM tutor_nhan_xet WHERE id = ?').get(id) as any;
   if (!n) throw notFound('Không tìm thấy nhận xét.');
   if (n.nguoi_id !== p.userId) throw forbidden('Chỉ người ghi sửa / xoá được nhận xét này.');
-  if (!trong24h(n.luc)) throw badRequest('Quá 24 giờ — không sửa / xoá được nữa. Ghi nhận xét mới.');
+  if (xoa && !trong24h(n.luc)) throw badRequest('Quá 24 giờ — không xoá được nữa. Sửa nhận xét thay vì xoá.');
   return n;
 }
 export function suaNhanXet(p: Principal, id: number, v: unknown): { ok: true } {
-  const cu = nhanXetSuaDuoc(p, id);
+  const cu = nhanXetSuaDuoc(p, id, false);
   const n = kiemNhanXet(v);
   tx(() => {
     db().prepare('UPDATE tutor_nhan_xet SET ket_luan = ?, noi_dung = ?, sua_luc = ? WHERE id = ?').run(n.ketLuan, n.noiDung, nowIso(), id);
@@ -338,7 +341,7 @@ export function suaNhanXet(p: Principal, id: number, v: unknown): { ok: true } {
   return { ok: true };
 }
 export function xoaNhanXet(p: Principal, id: number): { ok: true } {
-  const cu = nhanXetSuaDuoc(p, id);
+  const cu = nhanXetSuaDuoc(p, id, true);
   tx(() => {
     db().prepare('DELETE FROM tutor_nhan_xet WHERE id = ?').run(id);
     writeAudit({ actorUserId: p.userId, action: 'tutor.nhan_xet_xoa', entityType: 'tutor_nhan_xet', entityId: id,
