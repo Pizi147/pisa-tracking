@@ -419,7 +419,9 @@ function boOVaCau(i: {
       phanTram: kq.phanTram, coDiem: kq.coDiem, chot: kq.chot,
     } : null,
     hoTro: board.rows.filter((r) => r.cases.some((c: any) => c.status !== 'done' && c.trangThaiV4?.k !== 'tam')).map((r) => r.label as string),   // OV-13a: Case tạm chưa là "đang hỗ trợ"
-    viec: [...viec.cuaBan, ...viec.nguoiKhac].map((v) => ({ loai: v.loai, chu: v.chu, khoa: v.khoa, bien: v.bien, quaHanNgay: v.quaHanNgay, kyNangTen: v.kyNang ? tenKn.get(v.kyNang) ?? null : null })),
+    /* Q31-8: câu như nhau với mọi người xem — không theo thứ tự "của bạn trước" (việc trùng hạn), mà hạn sớm → không hạn → khoá việc. */
+    viec: [...viec.cuaBan, ...viec.nguoiKhac].sort((a, b) => (a.han ? 0 : 1) - (b.han ? 0 : 1) || (a.han ?? '').localeCompare(b.han ?? '')
+      || a.key.localeCompare(b.key, 'en', { numeric: true })).map((v) => ({ loai: v.loai, chu: v.chu, khoa: v.khoa, bien: v.bien, quaHanNgay: v.quaHanNgay, kyNangTen: v.kyNang ? tenKn.get(v.kyNang) ?? null : null })),
     yThuc: em && !em.tamDung ? { nhom: em.nhom ?? null, keTiep, han: em.han ?? null, quaHanNgay: quaHanYt, deXuat: deXuatCho } : null,
     homNay: today,
   });

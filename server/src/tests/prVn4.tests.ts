@@ -65,10 +65,13 @@ export async function runPrVn4Tests(t: YThucTestKit) {
       const soO = diemCo(a.id).length;
       const daDong = new Set(all(`SELECT id FROM sos_cases WHERE student_id = ? AND status = 'done'`, a.student_id).map((r) => r.id as number));
       const hq = att.heQuaHuyLuot(a.id);
+      const kqCu = { max: all(`SELECT COALESCE(MAX(id), 0) n FROM ket_qua_huy`)[0].n as number, ban: JSON.stringify(all(`SELECT * FROM ket_qua_huy WHERE attempt_id = ? ORDER BY id`, a.id)) };
       const l = thu(() => {
         att.huyLuot(QL, a.id, { lyDo });
         const dong = all(`SELECT id FROM sos_cases WHERE student_id = ? AND status = 'done'`, a.student_id).map((r) => r.id as number).filter((id) => !daDong.has(id));
-        const kq = all(`SELECT so_diem FROM ket_qua_huy WHERE attempt_id = ? AND loai = 'huy_luot' AND khoi_phuc_luc IS NULL`, a.id);
+        /* Bản của LẦN HUỶ NÀY (id > mốc). Lượt "Tạo lại" (D6 prMtSeed) còn giữ bản cất của lần huỷ trước (OV4a: xếp lại không bỏ bản cất) — bản đó phải y nguyên. */
+        const kq = all(`SELECT so_diem FROM ket_qua_huy WHERE attempt_id = ? AND loai = 'huy_luot' AND khoi_phuc_luc IS NULL AND id > ?`, a.id, kqCu.max);
+        const cuSau = JSON.stringify(all(`SELECT * FROM ket_qua_huy WHERE attempt_id = ? AND id <= ? ORDER BY id`, a.id, kqCu.max));
         const nk = all(`SELECT action, before_json FROM audit_logs WHERE entity_type = 'assessment_attempt' AND entity_id = ? AND id > ?`, a.id, maxAudit);
         const moiTao = all(`SELECT (SELECT COUNT(*) FROM sos_cases WHERE id > ?) + (SELECT COUNT(*) FROM case_signals WHERE id > ?)
           + (SELECT COUNT(*) FROM sos_coordination_actions WHERE id > ?) n`, m.cs, m.sig, m.ph)[0].n;
@@ -79,6 +82,7 @@ export async function runPrVn4Tests(t: YThucTestKit) {
           JSON.stringify([...dong].sort()) !== JSON.stringify([...hq.caseIds].sort()) ? `Case đóng ${JSON.stringify(dong)} ≠ hộp ${JSON.stringify(hq.caseIds)}` : null,
           conCho ? `còn ${conCho} Phối hợp / tín hiệu chờ` : null,
           diemCo(a.id).length || kq.length !== 1 || kq[0].so_diem !== soO ? `điểm chưa cất đủ (${soO} ô, bản cất ${JSON.stringify(kq)})` : null,
+          cuSau !== kqCu.ban ? 'bản cất cũ của lượt bị đổi' : null,
           nk.some((r) => r.action.startsWith('score.')) ? 'còn nhật ký score.* từng ô' : null,
           JSON.parse(nk.find((r) => r.action === 'attempt.cancel')?.before_json ?? '{}').status !== truoc ? 'attempt.cancel không ghi trạng thái trước huỷ' : null,
         ].filter(Boolean);
