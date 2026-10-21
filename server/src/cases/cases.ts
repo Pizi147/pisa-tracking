@@ -412,6 +412,26 @@ function sosEditCtx(c: { class_id?: number | null; eff_student_id?: number | nul
 }
 
 /**
+ * V5 SV-SO1: ngữ cảnh `SOS_EDIT` của NHIỀU Case một lần (Công việc "Làm thay") — cùng lớp (`loadCase`: lớp em đang học, không thì lớp của lượt) và
+ * cùng `sosEditCtx`, không hỏi lẻ từng Case. Case không tìm thấy → không có trong Map.
+ */
+export function ctxSuaCaseNhieu(caseIds: readonly number[]): Map<number, ReturnType<typeof sosEditCtx>> {
+  const out = new Map<number, ReturnType<typeof sosEditCtx>>();
+  theoLo([...new Set(caseIds)], (lo, ph) => {
+    for (const c of db().prepare(
+      `SELECT sc.id, sc.topic, COALESCE(sc.student_id, a.student_id) AS eff_student_id, a.class_id AS attempt_class_id,
+              (SELECT e.class_id FROM enrollments e
+                WHERE e.student_id = COALESCE(sc.student_id, a.student_id) AND e.status = 'active'
+                ORDER BY e.id DESC LIMIT 1) AS current_class_id
+         FROM sos_cases sc LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
+        WHERE sc.id IN (${ph})`).all(...lo) as any[]) {
+      out.set(c.id, sosEditCtx({ ...c, class_id: c.current_class_id ?? c.attempt_class_id ?? null }));
+    }
+  });
+  return out;
+}
+
+/**
  * QUYỀN CỦA MỘT CASE, cho module khác hỏi (kho tệp) thay vì tự dựng lại ngữ cảnh quyền — đúng bài học AUTH-01: mỗi nơi
  * tự viết `can(...)` một kiểu là cách sinh ra lỗi quyền. Xem = quyền xem Case; sửa = `SOS_EDIT` theo đúng kỹ năng (C02).
  */

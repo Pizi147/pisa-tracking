@@ -113,9 +113,9 @@ export function Header() {
   const gocKhac = !!gn?.dangChon && gn.dangChon !== gn.vaiGoc;
   const moDuoc = (n: any) => moDuocThongBao(n, session?.nav ?? {});
   const dsThongBao = useMemo(() => (notifications.data ?? []).filter((n) => !gocKhac || moDuocThongBao(n, session?.nav ?? {})), [notifications.data, gocKhac, session?.nav]);
-  const unread = useMemo(() => dsThongBao.filter((n) => !n.read_at).length, [dsThongBao]);
   /* SL1 (chuông N1): hai nhóm Cần làm / Để biết (một Case một dòng). V5 SV-SO1 (brief 7): số trên nút = tin chưa đọc — số việc ở badge Công việc. */
   const chuong = useMemo(() => dongChuong(dsThongBao), [dsThongBao]);
+  const unread = chuong.soNut;   // một số cho nút chuông và dòng "n chưa đọc" trong hộp
   /* OV-11f (TQ-15): chỉ lớp đang mở (`/ref/classes` = lớp đang hoạt động trong phạm vi) — lớp đã kết thúc không còn ở menu tài khoản. */
   const lopMo = lopRef.data ? new Set(lopRef.data.map((l) => l.id)) : null;
   const lopDangMo = (a: { classId: number }) => !lopMo || lopMo.has(a.classId);

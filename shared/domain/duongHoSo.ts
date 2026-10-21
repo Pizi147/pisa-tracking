@@ -181,7 +181,7 @@ export function loaiHanThongBao(n: { kind: string | null; entity_type?: string |
 /**
  * CHUÔNG N1 (SL1 — 05 mục 2.7, v4d): tách hai nhóm và đếm số trên nút. Cần làm = việc còn mở của chính người đọc (`nhomThongBao`), **một Case một
  * dòng** (Case đã có dòng việc thì bỏ dòng "Case chưa chốt PA quá hạn" — giữ dòng đầu theo hạn), sắp **theo hạn** (không hạn xuống cuối, rồi mới nhất);
- * Để biết = tin một chiều, giữ thứ tự máy chủ (chưa đọc trước). V5 SV-SO1 (brief 7): số trên nút = TIN CHƯA ĐỌC (cả hai nhóm, sau khi gộp một Case một dòng) —
+ * Để biết = tin một chiều, giữ thứ tự máy chủ (chưa đọc trước). V5 SV-SO1 (brief 7): số trên nút = TIN CHƯA ĐỌC (mọi dòng, TRƯỚC khi gộp một Case một dòng — trùng số "chưa đọc" trong hộp) —
  * khác số việc (badge Công việc đếm việc, `demViec`).
  * ponytail: N1 vẫn đọc nhật ký thông báo — việc không phát thông báo không vào chuông; M2 đổi sang đọc hàng đợi trang đầu (N2).
  */
@@ -199,7 +199,7 @@ export function dongChuong<T extends { id: number; kind: string | null; entity_t
     daCo.add(n.entity_id);
     return true;
   }).sort(xep);
-  return { canLam: motCase, deBiet, soNut: [...motCase, ...deBiet].filter((n) => !n.read_at).length };
+  return { canLam: motCase, deBiet, soNut: rows.filter((n) => !n.read_at).length };   // V5 SV-SO1: đếm trước gộp — = số "chưa đọc" trong hộp
 }
 
 /** Dòng xanh "bấm tới đâu" (Q21): đọc từ CHÍNH đường `duongThongBao` sẽ mở — không đoán theo chữ. `null` = không điều hướng. */

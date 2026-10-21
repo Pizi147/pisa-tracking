@@ -565,7 +565,7 @@ export function classRoster(p: Principal, classId: number, q?: string, kemKetThu
         sosLevel: result.sosLevel, evaluable: result.evaluable,
         caseStatus: c?.status ?? null,
         /* PR-UXF-a (d): như nhánh lớp thường — ô của người xem, gồm 'sat' (đã thi, chờ điểm); quá hạn chỉ đếm ô của người xem. */
-        myPending: cells.filter((x) => x.viec && x.band === null && awaitingScore(x.progress) && !x.noShow)
+        myPending: cells.filter((x) => x.viec && !x.xong && awaitingScore(x.progress) && !x.noShow)
           .map((x) => x.skill),
         overdueSkills: cells.filter((x) => x.viec && x.overdue).length,
       };

@@ -122,8 +122,9 @@ export function danhSachLop(p: Principal, i: { branchId?: number | null } = {}) 
     const b = a !== null ? a + 1 : (luot.length ? Math.max(...luot.map((l) => l.no)) : 0) + 1;
     const coB = new Set(luot.filter((l) => l.no === b && (l.status !== 'planned' || l.coTuan)).map((l) => l.hv));
     const soEm = hv.filter((id) => !coB.has(id)).length;
-    /* V5 C20 (T04): sau MT3 không gợi ý MT kế ("MT4 chưa xếp k em") — QL tự thêm ở Kế hoạch Test. */
-    return tomTatLopFT({ dangThi: a, chuaXep: b <= MOCK_FT_DEFAULT_ATTEMPTS ? { dot: b, soEm } : null, canXepLai: canXepLai.get(classId) ?? 0 });
+    /* V5 C20 (T04): sau MT3 không tự gợi ý MT kế — "MT{b} chưa xếp k em" chỉ khi QL đã tạo lượt số b cho lớp (có em có lượt b). */
+    const goiY = b <= MOCK_FT_DEFAULT_ATTEMPTS || luot.some((l) => l.no === b);
+    return tomTatLopFT({ dangThi: a, chuaXep: goiY ? { dot: b, soEm } : null, canXepLai: canXepLai.get(classId) ?? 0 });
   };
 
   /* Lớp thường: tiến độ (một lượt gom) + số em chưa có bài (một câu). */

@@ -2,7 +2,7 @@ import { capNhatConOCho } from './conOCho.ts';
 import { db, theoLo, tx } from '../db.ts';
 import {
   ASSESSED_SKILLS, ASSESSED_SKILL_LABEL, duongDotTest, ENTRY_SKILLS, ENTRY_SKILL_LABEL, NO_SHOW_OVERRIDDEN_NOTE,
-  CHAM_CHEO, addDaysIso, canChamCheo, mondayOfDate, soSanhLop, LOI_BAND_TU_TINH, PERMISSIONS, awaitingScore, kyNangXongThieu, laChamCheo, cachHuyLuot, kiemBand, kiemNhanXet, kiemNhomNguyenNhan, kiemSoMtMoi, batBuocNhanXetMt, canNhomNguyenNhan, docNhomNguyenNhan, issueLabel, thieuNhanXetMt, LOI_THIEU_NHAN_XET, NHAN_XET_MT_TOI_THIEU, type ThieuNhanXet, kyNangSosMt0, laMt0, laMtCu, ngay, dauTruCuaO, duocHoanTacVang, duocNhapBandThang, noShowText, pendingSkillsOf, soMtKeTiep, tenGvCham, tenMon, tuanHocCuaMt, tuanLich,
+  CHAM_CHEO, O_FT_XONG_SQL, addDaysIso, canChamCheo, mondayOfDate, soSanhLop, LOI_BAND_TU_TINH, PERMISSIONS, awaitingScore, kyNangXongThieu, laChamCheo, cachHuyLuot, kiemBand, kiemNhanXet, kiemNhomNguyenNhan, kiemSoMtMoi, batBuocNhanXetMt, canNhomNguyenNhan, docNhomNguyenNhan, issueLabel, thieuNhanXetMt, LOI_THIEU_NHAN_XET, NHAN_XET_MT_TOI_THIEU, type ThieuNhanXet, kyNangSosMt0, laMt0, laMtCu, ngay, dauTruCuaO, duocHoanTacVang, duocNhapBandThang, noShowText, pendingSkillsOf, soMtKeTiep, tenGvCham, tenMon, tuanHocCuaMt, tuanLich,
   type CachHuy, CASE_CATEGORY_LABEL, INTERVENTION_KIND_LABEL, SYSTEM_CLOSE_REASON_LABEL, categoryOf, type CaseCategory, type InterventionKind,
   type AssessedSkill, type EntrySkill, type KetQuaVang, type NoShowState, type PendingCell, type SkillProgress, type WorkScope,
 } from '../../../shared/domain/index.ts';
@@ -344,6 +344,8 @@ export type SkillCell = {
   batBuocNhanXet: boolean;
   kyVong: number | null;
   thieuNhanXet: ThieuNhanXet | null;
+  /** V5 SV-SO1: ô XONG = có band VÀ đủ nhận xét bắt buộc — mọi nơi đếm bài / nợ / việc đọc cờ này, không đọc `band`. */
+  xong: boolean;
   /** PR-HSM (T39): GV chấm Speaking — tài khoản (`userId`) hoặc người ngoài (`userId: null`). Chỉ ô `speaking`. */
   gvCham: { userId: number | null; ten: string } | null;
 };
@@ -353,7 +355,7 @@ export function pendingInputOf(cells: SkillCell[]): PendingCell[] {
   return cells.map((c) => ({
     skill: c.skill,
     required: c.required,
-    scored: c.band !== null,
+    scored: c.xong,
     progress: c.progress,
     mine: c.mine,
     /* Bài đã báo "không có bài" không phải bài cần chấm. */
@@ -417,7 +419,16 @@ export function skillCells(
      * Lúc đó môn Writing chưa xong, nhưng ô W1 thì đã xong — nói ngược lại là giục giáo
      * viên đã nộp bài đi nộp lại.
      */
-    const cellScored = (row?.band ?? null) !== null;
+    /*
+     * V5 SV-SO1 (chủ SP 22/10, brief 8.1): ô có band mà THIẾU NHẬN XÉT BẮT BUỘC (`thieuNhanXetMt` — MT thường, không MT cũ / MT0) CHƯA xong — vẫn là bài
+     * của người chấm, cùng hạn bài chưa chấm, áp mọi điểm (không mốc ngày). `cellScored` = "xong"; band vẫn hiện (`band`).
+     */
+    const coBand = (row?.band ?? null) !== null;
+    const thieuNx = thieuNhanXetMt({
+      batBuoc: batBuocNx, coDiem: coBand || (row?.raw_score ?? null) !== null, band: row?.band ?? null, kyVong, nhanXet: row?.comment,
+      nhom: docNhomNguyenNhan(row?.nhom_nguyen_nhan),
+    });
+    const cellScored = coBand && thieuNx === null;
     const progress: SkillProgress =
       !required ? 'skipped'
       : cellScored ? 'scored'
@@ -428,7 +439,7 @@ export function skillCells(
      * DẤU '-' CỦA Ô NÀY (PR-G). Một ô "có điểm" gồm cả điểm số câu đúng lẫn band: raw_score của L/R
      * cũng là điểm thật, nên không dùng riêng `band`.
      */
-    const hasScore = cellScored || (row?.raw_score ?? null) !== null;
+    const hasScore = coBand || (row?.raw_score ?? null) !== null;
     const coGiaTri = hasScore || [row?.c1, row?.c2, row?.c3, row?.c4].some((v) => v !== null && v !== undefined);
     /* OV-1b: một luật với hàng lớp Lịch Test (`dauTruCuaO`) — "-" có hiệu lực ngay khi ghi, không chờ chốt cuối Chủ nhật. */
     const ns = dauTruCuaO({
@@ -521,9 +532,9 @@ export function skillCells(
       batBuocNhanXet: batBuocNx,
       kyVong,
       /* Rà #383: chữ "thiếu …" chỉ ở ô GV còn bổ sung được — lượt đã hoàn tất không báo (Case cũ: OV-12c). */
-      thieuNhanXet: hoanTat.hoanTat || !canEdit ? null : thieuNhanXetMt({
-        batBuoc: batBuocNx, coDiem: hasScore, band: row?.band ?? null, kyVong, nhanXet: row?.comment, nhom: docNhomNguyenNhan(row?.nhom_nguyen_nhan),
-      }),
+      /* V5 SV-SO1: báo "thiếu …" cả khi lượt đã đủ điểm (thay rà #383 — chủ SP 22/10: thiếu nhận xét chưa xong ở mọi điểm). */
+      thieuNhanXet: !canEdit ? null : thieuNx,
+      xong: cellScored,
       gvCham: skill === 'speaking' && row && (row.examiner_user_id || row.examiner_name)
         ? { userId: row.examiner_user_id ?? null, ten: tenGvCham({ examinerUserName: row.examiner_user_name, examinerName: row.examiner_name }) ?? '' }
         : null,
@@ -889,11 +900,11 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
        * đã xác nhận đã thi nhưng chưa chấm. Môn thi tuần sau KHÔNG tính là nợ.
        */
       myPendingSkills: cells
-        .filter((c) => c.mine && c.band === null && awaitingScore(c.progress) && !c.noShow)
+        .filter((c) => c.mine && !c.xong && awaitingScore(c.progress) && !c.noShow)
         .map((c) => c.skill),
       /* Bài đã báo "-" không còn là việc phải chấm — cùng luật với `pendingSkillsOf`, không hai luật đếm. */
       myPendingDetail: cells
-        .filter((c) => c.mine && c.band === null && awaitingScore(c.progress) && !c.noShow)
+        .filter((c) => c.mine && !c.xong && awaitingScore(c.progress) && !c.noShow)
         .map((c) => ({ skill: c.skill, deadline: c.deadline, weekCode: c.periodCode, periodId: c.periodId ?? null, weekStart: c.weekStart ?? null, overdue: !!c.overdue })),
       /* Tập bài cần chấm THEO PHẠM VI ĐANG XEM — cùng hàm với badge ở danh sách lớp. */
       pendingSkills: pending,
@@ -2483,7 +2494,7 @@ export function baiChamSpeaking(p: Principal, today = demoToday()) {
       `${ATTEMPT_SELECT}
         WHERE a.class_id IN (${ph}) AND a.kind = 'mock' AND a.status != 'cancelled' AND a.lich_su = 0
           AND ${HV_DANG_HOC_SQL('s')} AND c.status = 'active' AND ${TUAN_S_SQL} <= ?
-          AND (NOT EXISTS (SELECT 1 FROM assessment_scores sc WHERE sc.attempt_id = a.id AND sc.skill = 'speaking' AND sc.band IS NOT NULL)
+          AND (NOT EXISTS (SELECT 1 FROM assessment_scores sc WHERE sc.attempt_id = a.id AND sc.skill = 'speaking' AND ${O_FT_XONG_SQL('sc', 'a')})
             OR ${TUAN_S_SQL} >= ?)`,
     ).all(...lo, today, tuanTruoc) as any[]);
   });

@@ -8,12 +8,24 @@
 import type { YThucTestKit } from './yThuc.tests.ts';
 
 export async function runPrSvSo1Tests(t: YThucTestKit) {
-  const { check, assert, P, TODAY } = t as any;
+  const { check, assert, conn, P, TODAY, classId } = t as any;
   const d: any = await import('../../../shared/domain/index.ts');
   const mw: any = await import('../worklist/mywork.ts');
   const no: any = await import('../worklist/scoreDebt.ts');
   const kh: any = await import('../keHoach/keHoachTest.ts');
+  const intake: any = await import('../classes/intake.ts');
+  const week: any = await import('../platform/week.ts');
+  const svc: any = await import('../fasttrack/attempts.ts');
+  const ops: any = await import('../ops/demThieuNhanXet.ts');
   const { xoaNho } = await import('../platform/nguCanhRequest.ts');
+  const { boLichTuTao, luotThu } = await import('./luotThu.ts');
+  const { emailThu } = await import('../seed/emailThu.ts');
+  const await_conOCho: any = await import('../fasttrack/conOCho.ts');
+  const get = (sql: string, ...a: unknown[]) => conn.prepare(sql).get(...a) as any;
+  const thu = <T>(fn: () => T): T => {
+    conn.exec('BEGIN IMMEDIATE');
+    try { xoaNho(); return fn(); } finally { conn.exec('ROLLBACK'); xoaNho(); }
+  };
   console.log('\nV5 · SV-SO1 — đơn vị đếm Công việc, S chéo không nợ, không gợi ý MT4, chế độ theo dõi, chuông = tin');
 
   check('SVSO1 (T01, T03) · demViec: Case R + Case W cùng em = 2 việc 1 HV; Nhập điểm L, R × 18 em = 2 việc 36 bài; Chấm Speaking chéo không vào số nào', () => {
@@ -44,13 +56,49 @@ export async function runPrSvSo1Tests(t: YThucTestKit) {
     assert(cheo.every((c: any) => c.userId === null && c.skill === 'speaking'), 'ô chấm chéo phải userId null');
   });
 
+  check('SVSO1 (chủ SP 22/10) · ô có điểm thiếu nhận xét bắt buộc = nợ + việc Nhập điểm của người chấm, cùng hạn ô chưa điểm, kể cả lượt đủ điểm; ghi nhận xét → hết; lệnh đếm chỉ đọc thấy ô đó', () => thu(() => {
+    const MB_FT = classId('MB FT 101');
+    const ten = 'SVSO1 HV thiếu NX';
+    intake.commitIntake(P.admin, { classId: MB_FT, rows: [{ fullName: ten, target: 6.5, email: emailThu(), dob: '2010-01-01' }], idempotencyKey: 'svso1-nx' });
+    const sid = get('SELECT id FROM students WHERE full_name = ?', ten).id as number;
+    const cy = get("SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active'", sid).id as number;
+    boLichTuTao(conn, cy);
+    const a = luotThu(conn, svc.createAttempt, P.admin, { studentId: sid, cycleId: cy, classId: MB_FT, no: 1, periodId: week.ensurePeriod(week.mondayOf(TODAY)).id });
+    const ghi = (k: string, nx: string | null) => conn.prepare(`INSERT INTO assessment_scores (attempt_id, skill, raw_score, raw_total, band, comment) VALUES (?, ?, 30, 40, 6.5, ?)`).run(a.id, k, nx);
+    ghi('listening', null);
+    const capCo = () => { conn.prepare('UPDATE assessment_attempts SET o_cho_tu = \'\' WHERE id = ?').run(a.id); xoaNho(); };
+    capCo();
+    const o = (skill: string) => no.scoreDebtCells(P.admin, TODAY, null).find((c: any) => c.attemptId === a.id && c.skill === skill);
+    const l = o('listening'), r = o('reading');
+    assert(l && r && l.overdue === r.overdue && l.han === r.han, `L thiếu nhận xét phải còn nợ như R: ${JSON.stringify({ l, r })}`);
+    xoaNho();
+    const viec = mw.myWork(P.lrTeacher, {}).items.find((i: any) => i.group === 'score' && (i.emIds?.includes(sid) || i.studentId === sid) && i.kns?.includes('listening'));
+    assert(viec, 'việc Nhập điểm của GV L phải gồm L của em');
+    assert(ops.demThieuNhanXet(conn, TODAY).some((x: any) => x.bai > 0), 'lệnh đếm chỉ đọc phải thấy ô thiếu nhận xét');
+    for (const k of ['reading', 'writing1', 'writing2', 'speaking']) ghi(k, 'Nhận xét đủ mười ký tự.');
+    capCo();
+    assert(o('listening'), 'lượt đủ điểm vẫn nợ ô thiếu nhận xét (chủ SP 22/10)');
+    conn.prepare(`UPDATE assessment_scores SET comment = 'Nghe tốt phần 1, sai phần 4.' WHERE attempt_id = ? AND skill = 'listening'`).run(a.id);
+    capCo();
+    assert(!o('listening'), 'đã ghi nhận xét → hết nợ');
+    const co = () => conn.prepare(`SELECT o_cho_tu FROM assessment_attempts WHERE id = ?`).get(a.id).o_cho_tu;
+    conn.prepare(`UPDATE assessment_scores SET comment = NULL WHERE attempt_id = ? AND skill = 'listening'`).run(a.id);
+    (await_conOCho).capNhatConOCho([a.id]);
+    assert(co() !== null, 'cờ o_cho_tu phải còn ô chờ khi thiếu nhận xét');
+  }));
+
   check('SVSO1 (T04, C20) · Kế hoạch Test không còn dòng "MT4+ chưa xếp"', () => {
     xoaNho();
     const ds = kh.danhSachLop(P.admin, {});
     const lop = (ds.lop ?? ds.rows ?? ds).filter?.((x: any) => typeof x.tomTat === 'string') ?? [];
     assert(lop.length > 0, 'không đọc được dòng tóm tắt lớp');
-    const goiY = lop.filter((x: any) => /MT([4-9]) chưa xếp/.test(x.tomTat));
-    assert(!goiY.length, `còn gợi ý MT4+: ${goiY.map((x: any) => x.tomTat)}`);
+    /* Chỉ còn "MT4+ chưa xếp" ở lớp QL đã tạo lượt số đó cho ít nhất một em đang học. */
+    for (const x of lop) {
+      const m = /MT(\d+) chưa xếp/.exec(x.tomTat);
+      if (!m || Number(m[1]) <= 3) continue;
+      assert(conn.prepare(`SELECT 1 FROM assessment_attempts WHERE class_id = ? AND attempt_no = ? AND status != 'cancelled'`).get(x.id, Number(m[1])),
+        `${x.code}: gợi ý "${x.tomTat}" mà lớp chưa có lượt MT${m[1]}`);
+    }
     assert(d.tomTatLopFT({ dangThi: null, chuaXep: null }) === '', 'không vế trống');
   });
 
@@ -61,7 +109,15 @@ export async function runPrSvSo1Tests(t: YThucTestKit) {
     assert(w.items.every((i: any) => typeof i.lamThay === 'boolean'), 'mỗi việc phải có lamThay');
     const diem = w.items.filter((i: any) => i.group === 'score');
     assert(diem.every((i: any) => i.lamThay), 'QL nhập hộ được điểm');
-    assert(w.items.filter((i: any) => d.nhomViecCua(i.group) === 'y-thuc').every((i: any) => !i.lamThay), 'Ý thức: chỉ theo dõi');
+    assert(w.items.filter((i: any) => d.nhomViecCua(i.group) === 'y-thuc' || i.ownerId === null).every((i: any) => !i.lamThay), 'Ý thức / chưa phân công: chỉ theo dõi');
+    const tc = mw.myWork(P.mbManager, { nguoi: 'tat-ca' });
+    assert(tc.items.filter((i: any) => !i.mine && i.ownerId === null).every((i: any) => i.lamThay === false), '"Tất cả": việc chưa phân công → lamThay false');
+    /* Case: SOS_EDIT theo ngữ cảnh Case (như cases.ts) — QL chi nhánh được; GV khác kỹ năng KHÔNG. */
+    const ca = tc.items.filter((i: any) => i.caseId && d.nhomViecCua(i.group) === 'case-hoc-thuat' && i.ownerId !== null);
+    assert(ca.length > 0 && ca.every((i: any) => i.lamThay === true), `QL làm thay Case: ${ca.filter((i: any) => !i.lamThay).map((i: any) => i.key)}`);
+    const khac = ca.filter((i: any) => i.ownerId !== P.w1Teacher.userId);
+    const ltGv = mw.lamThayCua(P.w1Teacher, khac);
+    assert(khac.some((i: any) => !ltGv(i)), 'GV không có quyền sửa Case của người khác → lamThay false');
     let chan = false;
     try { mw.viecCuaNguoi(P.w1Teacher, P.lrTeacher.userId); } catch { chan = true; }
     assert(chan, 'GV không xem được việc người khác');

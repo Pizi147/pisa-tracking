@@ -51,6 +51,17 @@ export function thieuNhanXetMt(o: {
   return null;
 }
 
+/**
+ * V5 SV-SO1 — "Ô FT ĐÃ XONG" cho câu SQL (`sc` = assessment_scores, `a` = lượt): có band VÀ không thiếu nhận xét bắt buộc — cùng luật `thieuNhanXetMt`
+ * (MT thường, không MT cũ; nhận xét ≥ 10 ký tự; band dưới kỳ vọng của lượt → có nhóm nguyên nhân). Dùng ở câu LỌC TRƯỚC (cờ `o_cho_tu`, hàng đợi
+ * Speaking): lệch chỉ được về phía "chưa xong" (đọc thừa), luật thật vẫn ở `skillCells`.
+ */
+export const O_FT_XONG_SQL = (sc: string, a: string) => `(${sc}.band IS NOT NULL AND (${a}.kind != 'mock' OR COALESCE(${a}.lich_su, 0) = 1 OR (
+    length(trim(COALESCE(${sc}.comment, ''), ' ' || char(9) || char(10) || char(13))) >= ${NHAN_XET_MT_TOI_THIEU}
+    AND NOT (${a}.target_at_attempt IS NOT NULL AND COALESCE(${sc}.nhom_nguyen_nhan, '') IN ('', '[]')
+      AND ${sc}.band < ${a}.target_at_attempt - (CASE WHEN ${a}.attempt_no <= 0 OR (SELECT cy.route FROM learning_cycles cy WHERE cy.id = ${a}.cycle_id) = 'RF' THEN 0
+        WHEN ${a}.attempt_no = 1 THEN 1.0 WHEN ${a}.attempt_no = 2 THEN 0.5 ELSE 0 END)))))`;
+
 /** Cột `assessment_scores.nhom_nguyen_nhan` (JSON mảng mã theo thứ tự) → mảng; hỏng / trống → []. */
 export function docNhomNguyenNhan(s: string | null | undefined): string[] {
   if (!s) return [];

@@ -26,7 +26,7 @@ import { lopKyVong } from '../normal/kyVong.ts';
 import { phanCongDangHieuLuc } from './scoreDebt.ts';
 import { nguoiGiuKetQua } from '../cases/giuKetQua.ts';
 import { dienMocQuyChe } from '../cases/sosAuto.ts';
-import { laGvcnLopDangHoc } from '../cases/cases.ts';
+import { ctxSuaCaseNhieu, laGvcnLopDangHoc } from '../cases/cases.ts';
 import { sweepExpiredMoves } from '../fasttrack/absence.ts';
 import { quetYeuCau } from '../duyet/yeuCau.ts';
 import { mtLichSuChuaNhap } from '../cham/canCham.ts';
@@ -1412,7 +1412,10 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   }
 
   ganKhung(items, lopCua);
-  if (tatCa) for (const it of items) if (it.ownerId !== null && !it.mine) it.lamThay = lamThayDuoc(p, it);
+  if (tatCa) {
+    const lt = lamThayCua(p, items.filter((it) => !it.mine));
+    for (const it of items) if (!it.mine) it.lamThay = lt(it);
+  }
 
   const groups = order
     .map((g) => {
@@ -1507,15 +1510,16 @@ export function viecCuaNguoi(p: Principal, nguoi: number, branchId?: number | nu
    * "Của một GV" cùng số. Dòng khác: theo phạm vi lớp / em của người xem.
    */
   /* OV-13g: Speaking chấm chéo không là việc của GV (T18) — không vào "Của một GV" / hồ sơ GV. */
-  const items = w.items
-    .filter((it: any) => !laViecChamCheo(it))
+  const loc = (w.items as WorkItem[]).filter((it) => !laViecChamCheo(it));
+  const lt = lamThayCua(p, loc);
+  const items = loc
     .filter((it: any) => (it.group === 'mgmt' && it.classId === null && it.studentId === null)
       || ((it.classId !== null || it.studentId !== null) && can(p, PERMISSIONS.ATTEMPT_VIEW, { classId: it.classId, studentId: it.studentId })))
     .map((it: any) => ({
       ...it,
       owner: it.ownerId === x.userId ? x.fullName : it.owner,
       mine: false,
-      lamThay: lamThayDuoc(p, it),
+      lamThay: lt(it),
     }));
   const groupsByKey = new Map<string, any[]>();
   for (const it of items) (groupsByKey.get(it.group) ?? groupsByKey.set(it.group, []).get(it.group)!).push(it);
@@ -1534,10 +1538,14 @@ export function viecCuaNguoi(p: Principal, nguoi: number, branchId?: number | nu
 
 /**
  * V5 SV-SO1: người xem LÀM THAY được việc này không — cùng quyền máy chủ kiểm khi lưu: Nhập điểm = `editableSkills` (QL / Admin / QT nhập hộ qua
- * `score.override` / `plan.week` — `06` điểm 1) đủ mọi kỹ năng của việc; Case học thuật = `case.approve` ở lớp / em đó. Việc khác: chỉ theo dõi.
+ * `score.override` / `plan.week` — `06` điểm 1) đủ mọi kỹ năng của việc; Case học thuật = `SOS_EDIT` theo ngữ cảnh Case (`ctxSuaCaseNhieu` — như `cases.ts`). Việc chưa phân công / việc khác: chỉ theo dõi.
  */
-function lamThayDuoc(p: Principal, it: WorkItem): boolean {
-  if (it.group === 'score') return !!it.classId && !!it.kns?.length && editableSkills(p, it.classId, it.kns).length === it.kns.length;
-  if (nhomViecCua(it.group) === 'case-hoc-thuat') return can(p, PERMISSIONS.CASE_APPROVE, { classId: it.classId, studentId: it.studentId });
-  return false;
+export function lamThayCua(p: Principal, items: readonly WorkItem[]): (it: WorkItem) => boolean {
+  const ctx = ctxSuaCaseNhieu(items.filter((it) => it.caseId && nhomViecCua(it.group) === 'case-hoc-thuat').map((it) => it.caseId!));
+  return (it) => {
+    if (it.ownerId === null) return false;   // việc chưa có người giữ (chưa phân công): không "làm thay" ai
+    if (it.group === 'score') return !!it.classId && !!it.kns?.length && editableSkills(p, it.classId, it.kns).length === it.kns.length;
+    const c = it.caseId ? ctx.get(it.caseId) : undefined;
+    return !!c && nhomViecCua(it.group) === 'case-hoc-thuat' && can(p, PERMISSIONS.SOS_EDIT, c);
+  };
 }
