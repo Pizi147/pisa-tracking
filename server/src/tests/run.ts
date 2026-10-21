@@ -9500,6 +9500,9 @@ await runPrSl1Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, a
 
 const { runPrSl2Tests } = await import('./prSl2.tests.ts');
 await runPrSl2Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== SV-YT-TVV (việc Báo PH của TVV sau lưu xử lý vi phạm — K1–K12, thu hồi / từ chối / rút, quyền)
+const { runPrSvYtTvvTests } = await import('./prSvYtTvv.tests.ts');
+await runPrSvYtTvvTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== V5 Phân tích GV theo Overall (C08–C10), bỏ gợi ý MT4 (C20)
 const { runPrPtGvOverallTests } = await import('./prPtGvOverall.tests.ts');
 await runPrPtGvOverallTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);

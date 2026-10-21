@@ -2129,3 +2129,30 @@ CREATE TABLE IF NOT EXISTS ghi_chu_lich_thi (
 );
 CREATE INDEX IF NOT EXISTS idx_gcl_hoc_vien ON ghi_chu_lich_thi(student_id, dot);
 CREATE INDEX IF NOT EXISTS idx_gcl_lop ON ghi_chu_lich_thi(class_id, student_id);
+
+-- SV-YT-TVV (luật 1–2): VIỆC "Báo PH · {bậc} · {em}" — một việc mỗi lần LƯU xử lý vi phạm (GVCN / QL, kể cả lần chờ QL duyệt). Người giữ suy khi đọc
+-- (không lưu): TVV của em (`students.consultant_user_id`), không có → QL chi nhánh — đổi TVV thì việc theo người mới, hạn giữ. Migrate `prSvYtTvv` chép y câu này.
+-- trang_thai: mo | xong (lần ghi mới nhất "Đã báo PH") | bo (Kết thúc ngoại lệ — lý do bỏ sẵn có — hoặc hệ thống: xử lý thu hồi / QL từ chối / đề xuất rút).
+-- measure_id NULL = lần xử lý đã bị xoá (GVCN rút đề xuất) — `nhan` giữ tên bậc lúc sinh việc.
+CREATE TABLE IF NOT EXISTS viec_bao_ph (
+  id INTEGER PRIMARY KEY,
+  measure_id INTEGER UNIQUE REFERENCES discipline_measures(id),
+  student_id INTEGER NOT NULL REFERENCES students(id),
+  nhan TEXT NOT NULL,
+  han TEXT NOT NULL,                     -- YYYY-MM-DD: hết 23:59 giờ VN ngày (lưu + 4)
+  trang_thai TEXT NOT NULL DEFAULT 'mo',
+  bo_ly_do TEXT, bo_ly_do_chu TEXT, bo_boi INTEGER REFERENCES users(id), bo_luc TEXT,
+  tao_luc TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_viec_bao_ph_hv ON viec_bao_ph(student_id, trang_thai);
+-- Mỗi lần TVV ghi (kể cả "Chưa liên hệ được" — việc vẫn mở, hạn giữ) là MỘT dòng; không sửa, không xoá.
+CREATE TABLE IF NOT EXISTS viec_bao_ph_lan (
+  id INTEGER PRIMARY KEY,
+  viec_id INTEGER NOT NULL REFERENCES viec_bao_ph(id),
+  ket_qua TEXT NOT NULL,                 -- da_bao | chua_lien_he
+  ngay TEXT NOT NULL,
+  ghi_chu TEXT,
+  ghi_boi INTEGER REFERENCES users(id),
+  ghi_luc TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_viec_bao_ph_lan ON viec_bao_ph_lan(viec_id);

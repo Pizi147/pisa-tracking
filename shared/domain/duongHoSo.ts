@@ -156,6 +156,8 @@ const LOAI_CAN_LAM = new Set([
   'bao_len',   // PR-S6F-a Q12: thẻ Báo QL đang chờ chính Quản lý quyết
   /* SL1 (A1-04, A7-05): ba thông báo tự động OV-15d thay "Nhắc" — chính là việc (máy chủ chỉ giữ khi việc còn). C23: Case tạo tay giao người khác phụ trách. */
   'cham_qua_han', 'case_chua_chot_pa', 'chot_lo_trinh', 'case_giao',
+  /* SV-YT-TVV: việc Báo PH sau lưu xử lý vi phạm (một dòng mỗi việc; máy chủ báo `con_viec`). */
+  'bao_ph_xu_ly',
 ]);
 export function nhomThongBao(n: { kind: string | null; con_viec?: number | null; entity_type?: string | null; read_at?: string | null }): 'can-lam' | 'de-biet' {
   if (n.con_viec === 0) return 'de-biet';
@@ -170,6 +172,7 @@ export function nhomThongBao(n: { kind: string | null; con_viec?: number | null;
 export function loaiHanThongBao(n: { kind: string | null; entity_type?: string | null }): DeadlineKind {
   if (n.kind === 'cham_qua_han') return 'nhap-diem';
   if (n.kind === 'chot_lo_trinh') return 'chot-len-ft';
+  if (n.kind === 'bao_ph_xu_ly') return 'xu-ly-vi-pham';
   if (n.entity_type === 'yeu_cau_duyet') return 'duyet';
   if (n.kind === 'sos' || n.kind === 'sos_new') return 'xac-minh-sos';
   return 'lap-pa';
