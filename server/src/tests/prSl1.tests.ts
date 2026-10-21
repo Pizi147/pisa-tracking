@@ -15,7 +15,6 @@ export async function runPrSl1Tests(t: YThucTestKit) {
   const await_hq: any = await import('../phanTich/hieuQuaPa.ts');
   const await_cases: any = await import('../cases/cases.ts');
   const await_tb: any = await import('../platform/thongBao.ts');
-  const { loadPrincipal: loadP } = await import('../permissions.ts');
   console.log('\nSL1 · số liệu đúng + chuông N1');
   const one = (sql: string, ...a: unknown[]) => conn.prepare(sql).get(...a) as any;
   const MB = one(`SELECT id FROM branches WHERE code = 'MB'`).id as number;
@@ -225,23 +224,24 @@ export async function runPrSl1Tests(t: YThucTestKit) {
       const tb: any = await_tb;
       thu(() => {
         /* Lớp FT Monbay đang có GV Reading khác QL (các phép kiểm trước có thể đã đổi phân công lớp mẫu). */
-        const em = one(`SELECT e.student_id AS id FROM enrollments e JOIN classes c ON c.id = e.class_id
+        const lopGv = one(`SELECT e.student_id AS id, ta.user_id AS gv FROM enrollments e JOIN classes c ON c.id = e.class_id
           JOIN teacher_assignments ta ON ta.class_id = c.id AND ta.skill = 'reading' AND ta.status = 'active' AND ta.user_id != ?
           JOIN students s ON s.id = e.student_id AND s.archived_at IS NULL
-         WHERE c.branch_id = ? AND c.is_fast_track = 1 AND c.status = 'active' AND e.status = 'active' LIMIT 1`, P.mbManager.userId, MB).id;
+         WHERE c.branch_id = ? AND c.is_fast_track = 1 AND c.status = 'active' AND e.status = 'active' LIMIT 1`, P.mbManager.userId, MB);
+        const em = lopGv.id;
         const c = cases.reportIssue(P.mbManager, { studentId: em, topic: 'reading', title: 'SL1 thử Case giao', summary: 'Em đọc chậm, bỏ sót 5 câu cuối Passage 3, sai dạng Matching Headings.',
-          primaryCode: d.issuesForTopic('reading')[0].code, idempotencyKey: `sl1-c23-${Math.random()}`, parallel: true }) as any;
+          primaryCode: d.issuesForTopic('reading')[0].code, idempotencyKey: `sl1-c23-${Math.random()}`, parallel: true, ownerUserId: lopGv.gv }) as any;
         const chu = one('SELECT owner_user_id AS u FROM sos_cases WHERE id = ?', c.id).u;
         assert(chu && chu !== P.mbManager.userId, `tiền đề: người phụ trách ${chu} khác người tạo`);
         const dong = () => (tb.thongBaoCua(chu) as any[]).find((n) => n.kind === 'case_giao' && n.entity_id === c.id);
         const n = dong();
         assert(n && d.nhomThongBao(n) === 'can-lam' && n.han, `người phụ trách phải có dòng Cần làm có hạn: ${JSON.stringify(n)}`);
         assert(!(tb.thongBaoCua(P.mbManager.userId) as any[]).some((x) => x.kind === 'case_giao' && x.entity_id === c.id), 'người tạo không nhận');
-        cases.recordIntervention(loadP(chu), c.id, { kind: 'self_study', description: 'Đọc 2 bài mỗi ngày', performerSelf: true, status: 'started', startedDate: TODAY });
+        cases.recordIntervention(P.mbManager, c.id, { kind: 'self_study', description: 'Đọc 2 bài mỗi ngày', performerSelf: true, status: 'started', startedDate: TODAY });
         assert(d.nhomThongBao(dong()) === 'de-biet', 'đã thêm PA → rời Cần làm');
-        const tu = cases.reportIssue(loadP(chu), { studentId: em, topic: 'reading', title: 'SL1 tự phụ trách', summary: 'Em bỏ sót câu hỏi cuối bài Reading, sai dạng True False Not Given.', primaryCode: d.issuesForTopic('reading')[0].code,
-          idempotencyKey: `sl1-c23b-${Math.random()}`, parallel: true, ownerUserId: chu }) as any;
-        assert(!(tb.thongBaoCua(chu) as any[]).some((x) => x.kind === 'case_giao' && x.entity_id === tu.id), 'tự tạo cho mình: không chuông');
+        const tu = cases.reportIssue(P.mbManager, { studentId: em, topic: 'reading', title: 'SL1 tự phụ trách', summary: 'Em bỏ sót câu hỏi cuối bài Reading, sai dạng True False Not Given.', primaryCode: d.issuesForTopic('reading')[0].code,
+          idempotencyKey: `sl1-c23b-${Math.random()}`, parallel: true, ownerUserId: P.mbManager.userId }) as any;
+        assert(!(tb.thongBaoCua(P.mbManager.userId) as any[]).some((x) => x.kind === 'case_giao' && x.entity_id === tu.id), 'tự tạo cho mình: không chuông');
       });
     });
   } finally {
