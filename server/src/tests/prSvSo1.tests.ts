@@ -2,30 +2,19 @@
  * PHÉP KIỂM V5 · SV-SO1 (máy chủ số của Công việc — `08-ke-hoach-trien-khai.md` mục 6, 10; brief 7, 8.1):
  *  · đơn vị đếm `/my-work`: việc (loại × đối tượng × kỹ năng) · bài · nhóm, đếm trên việc thật trước gộp (T01, T02, T17);
  *  · Speaking chấm chéo không là việc / nợ của ai (T03, R2 — giữ `scoreDebt.ts`);
- *  · ô có điểm mà thiếu nhận xét bắt buộc chưa xong (brief 8.1);
  *  · không gợi ý MT4 ở Kế hoạch Test (T04, C20);
  *  · xem việc người khác = theo dõi (`chiXem`) + `lamThay` theo quyền; chuông = tin chưa đọc.
  */
 import type { YThucTestKit } from './yThuc.tests.ts';
-import { emailThu } from '../seed/emailThu.ts';
 
 export async function runPrSvSo1Tests(t: YThucTestKit) {
-  const { check, assert, conn, P, TODAY, classId } = t as any;
+  const { check, assert, P, TODAY } = t as any;
   const d: any = await import('../../../shared/domain/index.ts');
   const mw: any = await import('../worklist/mywork.ts');
   const no: any = await import('../worklist/scoreDebt.ts');
   const kh: any = await import('../keHoach/keHoachTest.ts');
-  const intake: any = await import('../classes/intake.ts');
-  const week: any = await import('../platform/week.ts');
-  const svc: any = await import('../fasttrack/attempts.ts');
   const { xoaNho } = await import('../platform/nguCanhRequest.ts');
-  const { boLichTuTao, luotThu } = await import('./luotThu.ts');
-  console.log('\nV5 · SV-SO1 — đơn vị đếm Công việc, S chéo không nợ, thiếu nhận xét ≠ xong, không gợi ý MT4, chế độ theo dõi, chuông = tin');
-  const get = (sql: string, ...a: unknown[]) => conn.prepare(sql).get(...a) as any;
-  const thu = <T>(fn: () => T): T => {
-    conn.exec('BEGIN IMMEDIATE');
-    try { xoaNho(); return fn(); } finally { conn.exec('ROLLBACK'); xoaNho(); }
-  };
+  console.log('\nV5 · SV-SO1 — đơn vị đếm Công việc, S chéo không nợ, không gợi ý MT4, chế độ theo dõi, chuông = tin');
 
   check('SVSO1 (T01, T03) · demViec: Case R + Case W cùng em = 2 việc 1 HV; Nhập điểm L, R × 18 em = 2 việc 36 bài; Chấm Speaking chéo không vào số nào', () => {
     const ca = (k: string, topic: string) => ({ key: `cause:${k}`, group: 'cause', studentId: 7, kn: topic });
@@ -54,30 +43,6 @@ export async function runPrSvSo1Tests(t: YThucTestKit) {
     const cheo = no.scoreDebtCells(P.admin, TODAY, null).filter((c: any) => c.chamCheo);
     assert(cheo.every((c: any) => c.userId === null && c.skill === 'speaking'), 'ô chấm chéo phải userId null');
   });
-
-  check('SVSO1 (brief 8.1) · ô có điểm thiếu nhận xét bắt buộc = nợ + việc Nhập điểm, cùng hạn ô chưa điểm; ghi nhận xét / lượt đủ điểm → hết', () => thu(() => {
-    const MB_FT = classId('MB FT 101');
-    const ten = 'SVSO1 HV thiếu NX';
-    intake.commitIntake(P.admin, { classId: MB_FT, rows: [{ fullName: ten, target: 6.5, email: emailThu(), dob: '2010-01-01' }], idempotencyKey: 'svso1-nx' });
-    const sid = get('SELECT id FROM students WHERE full_name = ?', ten).id as number;
-    const cy = get("SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active'", sid).id as number;
-    boLichTuTao(conn, cy);
-    const a = luotThu(conn, svc.createAttempt, P.admin, { studentId: sid, cycleId: cy, classId: MB_FT, no: 1, periodId: week.ensurePeriod(week.mondayOf(TODAY)).id });
-    conn.prepare(`INSERT INTO assessment_scores (attempt_id, skill, raw_score, raw_total, band, comment) VALUES (?, 'listening', 30, 40, 6.5, NULL)`).run(a.id);
-    const o = (skill: string) => { xoaNho(); return no.scoreDebtCells(P.admin, TODAY, null).find((c: any) => c.attemptId === a.id && c.skill === skill); };
-    const l = o('listening'), r = o('reading');
-    assert(l && r && l.overdue === r.overdue && l.han === r.han, `L thiếu nhận xét phải còn nợ như R: ${JSON.stringify({ l, r })}`);
-    xoaNho();
-    const viec = mw.myWork(P.lrTeacher, {}).items.find((i: any) => i.group === 'score' && (i.emIds?.includes(sid) || i.studentId === sid));
-    assert(viec?.kns?.includes('listening'), `việc Nhập điểm của GV L phải gồm L: ${JSON.stringify(viec?.kns)}`);
-    conn.prepare(`UPDATE assessment_scores SET comment = 'Nghe tốt phần 1, sai phần 4.' WHERE attempt_id = ? AND skill = 'listening'`).run(a.id);
-    assert(!o('listening'), 'đã ghi nhận xét → hết nợ');
-    conn.prepare(`UPDATE assessment_scores SET comment = NULL WHERE attempt_id = ? AND skill = 'listening'`).run(a.id);
-    for (const k of ['reading', 'writing1', 'writing2', 'speaking']) {
-      conn.prepare(`INSERT INTO assessment_scores (attempt_id, skill, raw_score, raw_total, band, comment) VALUES (?, ?, 30, 40, 6.5, 'Nhận xét đủ mười ký tự.')`).run(a.id, k);
-    }
-    assert(!o('listening'), 'lượt đủ điểm → ô thiếu nhận xét không đòi lại (rà #383)');
-  }));
 
   check('SVSO1 (T04, C20) · Kế hoạch Test không còn dòng "MT4+ chưa xếp"', () => {
     xoaNho();

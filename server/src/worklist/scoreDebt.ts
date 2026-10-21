@@ -109,11 +109,10 @@ function tinhNoDiem(p: Principal, today: string, branchIds: number[] | null, cla
     } else {
       /* Không truyền `hoanTat` (R11) có chủ ý: nợ điểm đọc band/noShow/lịch, không đọc canEdit/khoa — đỡ 3 câu SQL. */
       for (const c of skillCells(p, a, scores, bundle.skips.get(a.id) ?? [], today, skillRows)) {
-        /* V5 SV-SO1 (brief 8.1): ô có điểm mà thiếu nhận xét bắt buộc (`nxChuaXong`) chưa xong — vẫn nợ. */
-        if (!c.nxChuaXong && (!c.required || c.band !== null || c.noShow !== null || !c.weekStart || c.weekStart > today || NOT_DEBT.has(c.progress))) continue;
+        if (!c.required || c.band !== null || c.noShow !== null || !c.weekStart || c.weekStart > today || NOT_DEBT.has(c.progress)) continue;
         const chamCheo = laChamCheo(a.kind, c.skill);
         out.push({ attemptId: a.id, classId: a.class_id, skill: c.skill, userId: chamCheo ? null : teacherOf.get(`${a.class_id}|${c.skill}`) ?? null,
-          overdue: c.overdue || c.nxQuaHan, han: c.deadline ?? null, ...(chamCheo ? { chamCheo, tuanThi: c.weekStart } : {}) });
+          overdue: c.overdue, han: c.deadline ?? null, ...(chamCheo ? { chamCheo, tuanThi: c.weekStart } : {}) });
       }
     }
   }
