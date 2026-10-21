@@ -5,6 +5,7 @@ import { demoToday } from '../demoConfig.ts';
 import { diffDays } from '../util.ts';
 import type { EmYThuc } from '../yThuc/trangThai.ts';
 import { viecBuocTiep } from '../loTrinh/buocTiep.ts';
+import { chuViecTvv, tvvCuaEm } from '../worklist/viecTvv.ts';
 import type { SauThiEm } from '../loTrinh/thiThat.ts';
 import { duongHoSoHocVien } from '../../../shared/domain/index.ts';
 import { kem, type Bien } from '../../../shared/i18n/index.ts';
@@ -60,7 +61,8 @@ export function viecCuaHocVien(p: Principal, sid: number, board: { rows: any[] }
   });
   /* OV-13q: "Cập nhật kết quả thi thật ›" mở panel Kết quả thi thật ngay trong hồ sơ (`?viec=thi-that`); hạn = hạn sau thi (cùng việc Công việc). */
   const st = n.sauThi;
-  if (st && st.giaiDoan === 'da_thi_cho_kq' && st.coTheNhap) {
+  /* SV-TVV-VIEC: việc của người giữ (TVV của em / QL khi em chưa có TVV) — GVCN vẫn nhập được ở panel nhưng không còn là việc của GVCN. */
+  if (st && st.giaiDoan === 'da_thi_cho_kq' && st.coTheNhap && chuViecTvv(p, sid, tvvCuaEm([sid]).get(sid) ?? null)) {
     const quaHanNgay = st.quaHan && st.han ? diffDays(today, st.han) : null;
     bt.push({ key: `thi_that:${st.cycleId}`, loai: 'thi-that', chu: 'Cập nhật kết quả thi thật', kyNang: null, caseId: null, paId: null, han: st.han, quaHanNgay,
       tone: quaHanNgay !== null ? 'danger' : 'info', nguoi: { id: p.userId, ten: p.fullName, vai: null }, cuaBan: true, nut: 'Cập nhật kết quả thi thật ›',

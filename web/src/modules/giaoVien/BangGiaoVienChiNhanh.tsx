@@ -1,7 +1,7 @@
 import { thamSoCt, type ChuongTrinh } from '@shared/domain/index.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { Empty, ErrorState, Skeleton, Th } from '../../ui/ui.tsx';
-import { SoLieuO } from '../../ui/SoLieuO.tsx';
+import { OSo } from '../../ui/OSo.tsx';
 import { TenGiaoVien } from '../classes/TenGiaoVien.tsx';
 
 /**
@@ -44,7 +44,7 @@ export function BangGiaoVienChiNhanh({ branchId, ct }: { branchId: number | null
                 <td className="td sticky-col whitespace-nowrap"><TenGiaoVien id={h.id} ten={h.ten} /></td>
                 {COT.map((c) => (
                   <td key={c.key} className="td text-right tabular-nums">
-                    <SoLieuO giaTri={h[c.key]} tieuDe={`${c.nhan} · ${h.ten}`} nguon={`/giao-vien/${h.id}/o?cot=${c.cot}&${qua}`} className="text-slate-100" />
+                    <OSo giaTri={h[c.key]} tieuDe={`${c.nhan} · ${h.ten}`} nguon={`/giao-vien/${h.id}/o?cot=${c.cot}&${qua}`} className="text-slate-100" />
                   </td>
                 ))}
               </tr>

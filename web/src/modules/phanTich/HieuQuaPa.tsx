@@ -7,7 +7,7 @@ import { Nhan } from '../../ui/Nhan.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import { TyLe } from '../../ui/TyLe.tsx';
 import { PhanTrang, usePhanTrang } from '../../ui/PhanTrang.tsx';
-import { DINH_TRAI, DongTomTat, SoO as SoLieuO, thamSoLoc, type PhamViPhanTich } from './dungChung.tsx';
+import { DINH_TRAI, DongTomTat, SoO as OSo, thamSoLoc, type PhamViPhanTich } from './dungChung.tsx';
 import {
   CHUONG_TRINH_LABEL, NGUONG_IT_DU_LIEU, nhanKhoang, type DongHieuQuaPa, type HieuQuaPaKetQua,
 } from '@shared/domain/index.ts';
@@ -44,11 +44,11 @@ export function HieuQuaPa(props: PhamViPhanTich) {
 
   const oSo = (d: DongHieuQuaPa, coNenDung: boolean) => (
     <>
-      <td className="text-right tabular-nums"><SoLieuO giaTri={d.soPa} nguon={nguon(d.khoa, 'pa')} tieuDe={`${d.nhan} · PA có kết quả`} /></td>
-      <td className="text-right tabular-nums"><SoLieuO giaTri={d.hocVien} nguon={nguon(d.khoa, 'hv')} tieuDe={`${d.nhan} · học viên`} /></td>
+      <td className="text-right tabular-nums"><OSo giaTri={d.soPa} nguon={nguon(d.khoa, 'pa')} tieuDe={`${d.nhan} · PA có kết quả`} /></td>
+      <td className="text-right tabular-nums"><OSo giaTri={d.hocVien} nguon={nguon(d.khoa, 'hv')} tieuDe={`${d.nhan} · học viên`} /></td>
       <td className="pl-5 text-[12px]">
         <TyLe n={d.caiThien} N={d.soPa}
-          soN={<SoLieuO giaTri={d.caiThien} nguon={nguon(d.khoa, 'cai-thien')} tieuDe={`${d.nhan} · có cải thiện`} />} />
+          soN={<OSo giaTri={d.caiThien} nguon={nguon(d.khoa, 'cai-thien')} tieuDe={`${d.nhan} · có cải thiện`} />} />
       </td>
       <td className="pr-4 text-right tabular-nums text-[12px]">{d.tvTuan !== null ? `${d.tvTuan} tuần` : <span className="text-faint">—</span>}</td>
       {coNenDung && (
@@ -190,10 +190,10 @@ export function HieuQuaPa(props: PhamViPhanTich) {
 
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t px-4 py-2.5 text-xs text-slate-400" style={{ borderColor: 'var(--line)' }}>
               <span>Để số liệu đủ tin:</span>
-              <span><b className="font-semibold text-slate-100"><SoLieuO giaTri={data.chuaGhiKetQua} nguon={nguon('chua-ghi-ket-qua', 'pa')} tieuDe="PA chờ kết quả" /></b> PA chờ kết quả</span>
-              <span><b className="font-semibold text-slate-100"><SoLieuO giaTri={data.caseChuaPhanLoai} nguon={nguon('case-chua-phan-loai', 'case')} tieuDe="Case chưa chọn nhóm nguyên nhân" /></b> Case chưa chọn nhóm nguyên nhân</span>
+              <span><b className="font-semibold text-slate-100"><OSo giaTri={data.chuaGhiKetQua} nguon={nguon('chua-ghi-ket-qua', 'pa')} tieuDe="PA chờ kết quả" /></b> PA chờ kết quả</span>
+              <span><b className="font-semibold text-slate-100"><OSo giaTri={data.caseChuaPhanLoai} nguon={nguon('case-chua-phan-loai', 'case')} tieuDe="Case chưa chọn nhóm nguyên nhân" /></b> Case chưa chọn nhóm nguyên nhân</span>
               <span title="PA có kết quả nhưng chưa có lần ghi danh nào cho biết em học ở đâu lúc làm PA — không tính vào bảng nào">
-                <b className="font-semibold text-slate-100"><SoLieuO giaTri={data.chuaRoNguon} nguon={nguon('chua-ro-nguon', 'pa')} tieuDe="PA chưa rõ nơi học lúc làm PA" /></b> PA chưa rõ nơi học lúc làm PA
+                <b className="font-semibold text-slate-100"><OSo giaTri={data.chuaRoNguon} nguon={nguon('chua-ro-nguon', 'pa')} tieuDe="PA chưa rõ nơi học lúc làm PA" /></b> PA chưa rõ nơi học lúc làm PA
               </span>
             </div>
           </>

@@ -26,6 +26,8 @@ const trinh = await chromium.launch({ channel: 'msedge' }).catch(() => chromium.
 // Trái: khung mockup (khung nhìn rộng hơn khung 1440 để khung không bị co).
 const pm = await (await trinh.newContext({ viewport: { width: khung === '-' ? rong : Math.max(rong, 1440) + 160, height: 900 }, deviceScaleFactor: 1 })).newPage();
 await pm.goto(pathToFileURL(path.resolve(tep)).href, { waitUntil: 'networkidle' });
+// NEN-V5: mockup V5 sáng mặc định, tối qua `data-theme="dark"` — chụp cùng chế độ với web.
+await pm.evaluate((s) => { if (!s && /\/v5\//.test(location.pathname)) document.documentElement.dataset.theme = 'dark'; }, sang);
 await pm.evaluate(() => document.fonts.ready);
 const anhMockup = khung === '-' ? await pm.screenshot({ fullPage: true }) : await pm.locator(khung).first().screenshot();
 

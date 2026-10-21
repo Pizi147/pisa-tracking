@@ -199,7 +199,7 @@ export async function runPrNtTests(t: YThucTestKit) {
     const tt = prof.studentProfile(P.admin, em.sid).dauHoSo.thongTin;
     assert(tt.target === 6.5, JSON.stringify(tt));
     assert(tt.thiDuKien === null || tt.thiDuKien.nhan === 'Final Test', 'Final Test giữ nguyên: ' + JSON.stringify(tt.thiDuKien));
-    assert(tt.thiIelts === 'MAY 2027', JSON.stringify(tt));   // OV-11d (CA2-9): tháng dự kiến một dạng với Học viên & Lớp
+    assert(tt.thiIelts === '05/2027', JSON.stringify(tt));   // NEN-V5 P5: mm/yyyy   // OV-11d (CA2-9): tháng dự kiến một dạng với Học viên & Lớp
     conn.prepare("UPDATE learning_cycles SET khong_cam_ket = 1, target_score = NULL, exam_month = NULL WHERE id = ?").run(em.cid);
     const kck = prof.studentProfile(P.admin, em.sid).dauHoSo.thongTin;
     assert(kck.target === null && kck.kck === true && kck.thiIelts === null, JSON.stringify(kck));   // OV-9: Target và dấu KCK tách ("— · KCK")

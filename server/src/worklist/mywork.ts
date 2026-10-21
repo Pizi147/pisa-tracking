@@ -8,8 +8,7 @@ import {
   SOS_LABEL, URGENCY_LABEL, URGENCY_TONE, caseHeadline, caseTopicLabel, cycleDeadline,
   duongCaseRieng, duongHoSoHocVien, duongLichTest, nhanDotNgan, hanThemPa,
   khungCua, laLanGhiCuoi, ghiNhanhDuoc, tenMon, tenNhomMon, REGULAR_SKILLS, nhanLoaiXuLy, soSanhLop,
-  type Khung, type AttemptKind, type InterventionKind, nhanBaiThuong, chuTyLeXetLai, gopViecTheoLop, tuanLich, trangThaiLichThi, nhanLichThi, type ConGop } from '../../../shared/domain/index.ts';
-import { examPlanOf } from '../fasttrack/cycles.ts';
+  type Khung, type AttemptKind, type InterventionKind, nhanBaiThuong, chuTyLeXetLai, gopViecTheoLop, tuanLich, type ConGop } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addDays, forbidden } from '../util.ts';
 import { COT_PRINCIPAL, activeAt, bangLop, can, isCoreTeacherOf, loadPrincipal, lopFtChoGvSpeaking, napTruocPhamVi, principalTuDong, scopeFor, teachesClass, type Principal } from '../permissions.ts';
@@ -34,7 +33,9 @@ import { mtLichSuChuaNhap } from '../cham/canCham.ts';
 import { trangThaiYThuc, ungVienVaThe } from '../yThuc/trangThai.ts';
 import { viecThiThat } from '../loTrinh/thiThat.ts';
 import { viecBuocTiep } from '../loTrinh/buocTiep.ts';
+import { viecHoSoTvv } from './viecTvv.ts';
 import { khaiDuoc } from '../yThuc/xuLy.ts';
+import { viecBaoPhCuaToi } from '../yThuc/baoPhTvv.ts';
 
 /**
  * VIỆC CỦA CHÍNH NGƯỜI ĐANG XEM.
@@ -133,6 +134,8 @@ export type WorkItem = {
   periodId?: number | null; kind?: string | null;
   /** OV-13c: Xác nhận PA — loại PA, nội dung máy gán, người dạy đã có (người chung không đè). */
   pa?: { kind: string; moTa: string | null; nguoiId: number | null; nguoi: string | null; soBuoi: number | null };
+  /** SV-YT-TVV: id việc Báo PH (`viec_bao_ph`) — form ghi kết quả gửi đúng việc. */
+  viecId?: number;
 };
 
 /**
@@ -162,7 +165,11 @@ export type WorkGroupKey =
   /* PR-CL (B5): "Xét lại lộ trình" — em đã chuyển lớp cuối khoá mà Final không phù hợp lộ trình đã chốt (một việc mỗi lớp nguồn, Quản lý). */
   | 'xet_lai_lo_trinh'
   /* OV-13k: GV phụ trách Speaking xem nhận xét của người chấm chéo (ghi thêm nhận xét / sửa nhóm / Xác nhận PA). */
-  | 'xem_nx_s';
+  | 'xem_nx_s'
+  /* SV-TVV-VIEC (Q-D4 ①): TVV bổ sung 4 trường hồ sơ còn thiếu — một dòng tổng, không hạn. */
+  | 'bo_sung_ho_so'
+  /* SV-YT-TVV (luật 1–2): TVV của em (không có → QL chi nhánh) báo PH sau mỗi lần lưu xử lý vi phạm — hạn ngày lưu + 4. */
+  | 'bao_ph_yt';
 
 /**
  * Mỗi nhóm có MỘT DÒNG nói rõ nhóm đó nghĩa là gì.
@@ -221,15 +228,19 @@ const GROUP_META: Record<WorkGroupKey, { label: string; hint: string }> = {
     hint: 'Lớp FOU/BE/ELE có em lên FT có MT0 đủ 3 kỹ năng có điểm — Đạt khi Overall MT0 > 3.5 (FOU) / ≥ 4.0 (BE) / ≥ 4.5 (ELE). Một lần lưu cho cả lớp.',
   },
 
-  /* PR-TK (TK-K): kết quả thi thật do GVCN lớp cuối nhập — hạn = thứ Hai sau kỳ thi + 4 tuần, đỏ không chặn. */
+  /* PR-TK → SV-TVV-VIEC (21/10-TVV): TVV của em (không có → QL chi nhánh) nhập kết quả thi thật — KHÔNG hạn. */
   thi_that: {
     label: 'Cập nhật kết quả thi thật',
-    hint: 'Em Fast Track đã qua kỳ thi — nhập điểm L, R, W, S em báo về hoặc chọn Không thi. Hạn 4 tuần kể từ thứ Hai sau kỳ thi.',
+    hint: 'Em Fast Track đã qua kỳ thi — nhập điểm L, R, W, S em báo về hoặc chọn Không thi. Không tính thời gian.',
   },
-  /* OV-8a → OV-13m: hạn = ngày có kết quả + 7, đỏ không chặn; sinh ngay khi có kết quả (cả em còn học). */
+  /* OV-8a → SV-TVV-VIEC: TVV của em giữ; hạn = muộn hơn của (ngày thi + 7, ngày có kết quả + 7), đỏ không chặn. */
   buoc_tiep: {
     label: 'Chọn bước tiếp',
     hint: 'Em Fast Track đã có kết quả thi thật — chọn Lộ trình mới, Tạm dừng hoặc Thôi học. Hạn 7 ngày kể từ ngày có kết quả.',
+  },
+  bo_sung_ho_so: {
+    label: 'Bổ sung hồ sơ thiếu',
+    hint: 'Học viên của bạn còn thiếu Ngày sinh, Email, Tuần bắt đầu hoặc Target (FT). Không tính thời gian.',
   },
   /* PR-LT2b (M-05, T47): Mini Test sau bổ trợ miễn phí — hạn = ngày buổi cuối + 2. */
   mini_test: {
@@ -277,6 +288,10 @@ const GROUP_META: Record<WorkGroupKey, { label: string; hint: string }> = {
   yt_xem: {
     label: 'Ghi nhận vi phạm mới',
     hint: 'Vi phạm do người khác ghi mà bạn chưa xem. Ghi nhận (đã xem, không cần xử lý) hoặc Xác nhận xử lý trong 5 ngày.',
+  },
+  bao_ph_yt: {
+    label: 'Báo PH vi phạm',
+    hint: 'Em vừa được lưu xử lý vi phạm — báo phụ huynh rồi ghi kết quả (Đã báo PH / Chưa liên hệ được). Hạn 5 ngày, tính cả ngày lưu.',
   },
   yt_thuc_hien: {
     label: 'Ghi "Đã thực hiện"',
@@ -1114,23 +1129,19 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   if (co('missing_data')) {
     const lopCn = tatCa ? [...gvcnLop().keys()] : [...new Set(p.assignments.filter((x) => x.isCore && activeAt(x, today)).map((x) => x.classId))];
     if (lopCn.length) {
-      /* LT-SV: MỘT câu cho hai việc không hạn của GVCN — "Điền Target" và "Chốt ngày thi" (cùng lộ trình đang chạy, cùng lớp; không thêm câu mỗi request). */
+      /* SV-TVV-VIEC: "Chốt ngày thi" chuyển sang TVV (`viecHoSoTvv`) — câu này chỉ còn "Điền Target" của GVCN. */
       const ds = conn.prepare(
-        `SELECT s.id, s.full_name, e.class_id, c.code AS class_code, c.is_fast_track, cy.id AS cycle_id, cy.target_score,
-                cy.exam_month, cy.exam_date, cy.thi_that_ngay, cy.exam_period_id, cy.thi_that_khong_thi, cy.outcome_score, cy.outcome,
-                rp.week_start AS exam_week_start, rp.code AS exam_week_code
+        `SELECT s.id, s.full_name, e.class_id, c.code AS class_code, cy.target_score
            FROM learning_cycles cy
            JOIN students s ON s.id = cy.student_id AND ${HV_DANG_HOC_SQL('s')}
            JOIN enrollments e ON e.student_id = s.id AND e.status = 'active'
            JOIN classes c ON c.id = e.class_id
-           LEFT JOIN report_periods rp ON rp.id = cy.exam_period_id
           WHERE cy.status = 'active' AND cy.route IS NOT NULL
-            AND (cy.target_score IS NULL   /* OV-9: em KCK chưa có Target cũng thiếu Target */
-                 OR (c.is_fast_track = 1 AND cy.exam_date IS NULL AND cy.thi_that_ngay IS NULL AND (cy.exam_month IS NOT NULL OR cy.exam_period_id IS NOT NULL)))
+            AND cy.target_score IS NULL   /* OV-9: em KCK chưa có Target cũng thiếu Target */
             AND e.class_id IN (${lopCn.map(() => '?').join(',')}) AND (? IS NULL OR c.branch_id = ?)`,
       ).all(...lopCn, f.branchId ?? null, f.branchId ?? null) as any[];
       /* PR-VAI-a (từ UXF-a, mywork.ts:927): sắp lớp theo `soSanhLop` (MB FT 9 trước MB FT 10), rồi tên em. */
-      for (const h of ds.filter((x) => x.target_score === null)
+      for (const h of ds
         .sort((x, y) => soSanhLop({ code: x.class_code }, { code: y.class_code }) || String(x.full_name).localeCompare(String(y.full_name), 'vi'))) {
         items.push({
           key: `target:${h.id}`, group: 'missing_data', urgency: 'normal',
@@ -1141,26 +1152,11 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
           ownerId: tatCa ? gvcnLop().get(h.class_id) ?? p.userId : p.userId, owner: null, mine: true, due: null, statusLabel: 'Chưa có Target',
         });
       }
-      /*
-       * LT-SV (Q-C3 ① 21/10): em FT đã tới tháng (hoặc tuần) dự kiến thi mà CHƯA có ngày (`trangThaiLichThi` = B) → việc "Chốt ngày thi", KHÔNG hạn,
-       * không quá hạn / chuông; tính khi đọc (không migrate, không cron). Người giữ như "Điền Target" (GVCN lớp đang học) — chuyển TVV ở GĐ1b (SV-TVV-VIEC).
-       * Lớp thường chỉ chip, không việc. Hết việc khi có ngày / dời tháng / có kết quả / "Không thi" / em Tạm dừng, Lưu trữ.
-       */
-      for (const r of ds) {
-        if (!r.is_fast_track || r.thi_that_khong_thi || r.outcome_score !== null || (r.outcome ?? 'unknown') !== 'unknown') continue;
-        const lich = trangThaiLichThi(r, examPlanOf(r), today);
-        if (lich.trangThai !== 'chua-chot-ngay') continue;
-        items.push({
-          key: `chot-ngay-thi:${r.cycle_id}`, group: 'missing_data', urgency: 'normal',
-          studentId: r.id, studentName: r.full_name, classId: r.class_id, classCode: r.class_code,
-          attemptId: null, attemptNo: null, caseId: null, level: null, contextLabel: nhanLichThi(lich, today), count: null,
-          reason: 'Đã tới tháng thi mà chưa có ngày thi',
-          tieuDe: 'Chốt ngày thi', phu: 'Chốt ngày thi', actionLabel: 'Chốt ngày', href: `/hoc-vien?view=lich-thi&thang=${lich.thang}`,
-          ownerId: tatCa ? gvcnLop().get(r.class_id) ?? p.userId : p.userId, owner: null, mine: true, due: null, statusLabel: 'Không tính hạn',
-        });
-      }
     }
   }
+
+  /* SV-TVV-VIEC: hai việc không hạn của TVV (em chưa có TVV → QL chi nhánh) — Chốt ngày thi · Bổ sung hồ sơ thiếu (một dòng tổng). */
+  items.push(...viecHoSoTvv(p, { today, tatCa, branchId: f.branchId ?? null, chot: co('missing_data'), boSung: co('bo_sung_ho_so') }));
 
   /* K2-32: MT CŨ chưa nhập — một việc XÁM mỗi lớp (GVCN / Quản lý), không hạn, không quá hạn. Cùng hàm với dòng nhắc Lịch Test. */
   for (const l of co('missing_data') ? mtLichSuChuaNhap(p, { branchId: f.branchId ?? null }) : []) {
@@ -1342,7 +1338,9 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   // ------------------------------------------------- 5d. cập nhật kết quả thi thật (PR-TK, TK-K)
   if (co('thi_that')) items.push(...viecThiThat(p, { today, tatCa, branchId: f.branchId ?? null }));
   // ------------------------------------------------- 5e. chọn bước tiếp sau thi (OV-8a) — việc của Quản lý
-  if (co('buoc_tiep')) items.push(...viecBuocTiep(p, { today, branchId: f.branchId ?? null }));
+  if (co('buoc_tiep')) items.push(...viecBuocTiep(p, { today, tatCa, branchId: f.branchId ?? null }));
+  // ------------------------------------------------- 5f. Báo PH sau lưu xử lý vi phạm (SV-YT-TVV) — TVV của em / QL khi em chưa có TVV
+  if (co('bao_ph_yt')) items.push(...viecBaoPhCuaToi(p, { today, tatCa, branchId: f.branchId ?? null }));
 
   // ------------------------------------------------- 6. công việc quản lý được giao
   /*
@@ -1387,8 +1385,8 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   /* OV-11c (CV-11): QL / Quản trị "Của tôi" = việc mình giữ (hoặc chưa ai giữ mà mình làm được); việc GV giữ chỉ ở "Của GV". */
   if (xemNguoiKhac && !tatCa) for (let i = items.length - 1; i >= 0; i--) if (items[i].ownerId !== null && items[i].ownerId !== p.userId) items.splice(i, 1);
   const order: WorkGroupKey[] = [
-    'cause', 'ghi_nhan_xet', 'xac_nhan_pa', 'xem_nx_s', 'phoi_hop', 'phoi_hop_sos', 'mini_test', 'score', 'no_plan', 'ghi_ket_qua_pa', 'yt_xu_ly', 'yt_xem', 'yt_thuc_hien', 'khai_bac',
-    'chot_len_ft', 'xet_lai_lo_trinh', 'ky_vong_dau_ra', 'thi_that', 'buoc_tiep', 'ban_giao', 'no_owner', 'mgmt', 'missing_data',
+    'cause', 'ghi_nhan_xet', 'xac_nhan_pa', 'xem_nx_s', 'phoi_hop', 'phoi_hop_sos', 'mini_test', 'score', 'no_plan', 'ghi_ket_qua_pa', 'yt_xu_ly', 'yt_xem', 'yt_thuc_hien', 'bao_ph_yt', 'khai_bac',
+    'chot_len_ft', 'xet_lai_lo_trinh', 'ky_vong_dau_ra', 'thi_that', 'buoc_tiep', 'ban_giao', 'no_owner', 'mgmt', 'missing_data', 'bo_sung_ho_so',
   ];
   const weight = (u: WorkUrgency) => (u === 'overdue' ? 0 : u === 'today' ? 1 : 2);
 
@@ -1460,6 +1458,8 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   };
 }
 
+/** SV-YT-TVV + SV-TVV-VIEC: nhóm việc của TVV — đọc ở Tổng quan TVV (`/tong-quan/viec-cua-toi`), TVV không có khu Công việc. `missing_data` của TVV chỉ có Chốt ngày thi. */
+export const NHOM_VIEC_TVV: ReadonlySet<WorkGroupKey> = new Set<WorkGroupKey>(['bao_ph_yt', 'missing_data', 'thi_that', 'buoc_tiep', 'bo_sung_ho_so']);
 export const nhanNhomViec = (g: string) => GROUP_META[g as WorkGroupKey]?.label ?? g;
 
 /** PR-GOP: gộp dòng (hàm chung `gopViecTheoLop`). OV-12h: bỏ Nhắc trên dòng. */

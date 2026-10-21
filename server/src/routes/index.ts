@@ -24,6 +24,7 @@ import * as accessSvc from '../yThuc/access.ts';
 import * as xuLySvc from '../yThuc/xuLy.ts';
 import * as loYThucSvc from '../yThuc/lo.ts';
 import * as phoiHopSvc from '../yThuc/phoiHop.ts';
+import * as baoPhSvc from '../yThuc/baoPhTvv.ts';
 import * as sosAutoSvc from '../cases/sosAuto.ts';
 import * as doiPaSvc from '../cases/doiPa.ts';
 import { bangYThucLop } from '../yThuc/board.ts';
@@ -106,7 +107,7 @@ import * as baoCaoSvc from '../phanTich/baoCao.ts';
 import * as ketQuaThiSvc from '../phanTich/ketQuaThi.ts';
 import { khungPtGvTuThamSo } from '../../../shared/domain/index.ts';   // PR-Pb2-b: dòng riêng (Hợp đồng a↔b — không sửa import chung)
 import { metricResponse, metricSet, rowsFor } from '../worklist/metrics.ts';
-import { myWork, viecCuaNguoi } from '../worklist/mywork.ts';
+import { NHOM_VIEC_TVV, myWork, viecCuaNguoi } from '../worklist/mywork.ts';
 import { bangGvChiNhanh, hoSoGiaoVien, ketQuaHoSoGv, oHoSoGv, viecHoSoGv } from '../giaoVien/hoSo.ts';
 import { phamViXemViec } from '../worklist/xemViec.ts';
 import { soHocVien } from '../worklist/hvCuaToi.ts';
@@ -1417,6 +1418,22 @@ api.post('/y-thuc/xu-ly/:id/da-thuc-hien', requireAuth, wrap((req) => {
   });
 }));
 
+/** SV-YT-TVV: việc Báo PH sau lưu xử lý — xem (lịch sử mọi lần ghi) · ghi kết quả (một / nhiều việc) · Kết thúc ngoại lệ (lý do bỏ). Quyền kiểm trong `baoPhTvv.ts`. */
+api.get('/y-thuc/bao-ph/:id', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return baoPhSvc.xemViecBaoPh(principalOf(req), pInt(req, 'id'));
+}));
+api.post('/y-thuc/bao-ph/ghi', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  const b = yThucBody(req);
+  return baoPhSvc.ghiKetQuaBaoPh(principalOf(req), { viecIds: b.viecIds, ketQua: b.ketQua, ngay: b.ngay, ghiChu: b.ghiChu });
+}));
+api.post('/y-thuc/bao-ph/:id/bo', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  const b = yThucBody(req);
+  return baoPhSvc.boViecBaoPh(principalOf(req), pInt(req, 'id'), { lyDo: b.lyDo, lyDoKhac: b.lyDoKhac });
+}));
+
 /**
  * DRILL-DOWN DÙNG CHUNG CỦA MỌI CON SỐ (hợp đồng số liệu, PR-F). MỘT route, mọi chỉ số: nhận `id` của
  * chỉ số trong sổ và phạm vi, gọi ĐÚNG hàm đã sinh ra con số, áp CÙNG bộ quyền. Số là độ dài của tập;
@@ -1484,6 +1501,7 @@ api.get('/hoc-vien-lop', requireAuth, wrap((req) => {
   return hocVienLopSvc.danhSachHocVienLop(principalOf(req), {
     branchId: qInt(req, 'branchId') ?? null, q: qStr(req, 'q') ?? null, phamVi: qStr(req, 'phamVi') ?? null,
     cnNho: qInt(req, 'cnNho') ?? null, them: qStr(req, 'them') === '1',   // OV-15h2: nhãn Bộ lọc thêm
+    chuaTvv: qStr(req, 'tvv') === 'chua',   // SV-TVV-VIEC: em chưa có TVV — tập việc "Bổ sung hồ sơ thiếu" của QL
   });
 }));
 
@@ -2003,6 +2021,11 @@ api.get('/tong-quan/diem-chu-y', requireAuth, wrap((req) => {
 api.get('/tong-quan/hoc-vien', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   return soHocVien(principalOf(req), { branchId: qInt(req, 'branchId') ?? null });
+}));
+/* SV-YT-TVV + SV-TVV-VIEC (Q-A1 ①): "Việc của bạn" ở trang đầu TVV — TVV không có khu Công việc (`/my-work` chặn), nên việc TVV giữ đọc ở đây (cùng `myWork`, chỉ nhóm của TVV). */
+api.get('/tong-quan/viec-cua-toi', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return nheMyWork(myWork(principalOf(req), { branchId: qInt(req, 'branchId'), chiNhom: NHOM_VIEC_TVV }));
 }));
 /* OV-10c: Tổng quan Admin — tab "Mock Test" (4 ô + GV chấm quá hạn); mỗi số từ hàm của màn ô đó mở. */
 api.get('/tong-quan/mock-test', requireAuth, wrap((req) => {

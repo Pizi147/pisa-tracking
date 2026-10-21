@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { Card, Info, SectionNote, Skeleton, Task } from '../../ui/ui.tsx';
-import { SoLieuO } from '../../ui/SoLieuO.tsx';
+import { OSo } from '../../ui/OSo.tsx';
 
 type Signal = {
   key: string; kind: string; label: string; count: number;
@@ -50,7 +50,7 @@ export function SignalList({ branchId, periodId }: { branchId?: number | null; p
           <li key={s.key}>
             {s.metricId ? (
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 py-2.5">
-                <Task tone={s.tone}><SoLieuO id={s.metricId} giaTri={s.count} phamVi={{ branchId: s.branchId }} /></Task>
+                <Task tone={s.tone}><OSo id={s.metricId} giaTri={s.count} phamVi={{ branchId: s.branchId }} /></Task>
                 <span className="text-sm text-slate-200 flex-1 min-w-0">{s.label}</span>
                 {s.branchName && <span className="text-xs text-slate-500">{s.branchName}</span>}
                 <Info>{OWNER_LABEL[s.owner]}</Info>

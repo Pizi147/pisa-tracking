@@ -4,7 +4,7 @@ import { useApi } from '../../lib/useApi.ts';
 import { Card, ErrorState, NhanTrangThai, Skeleton } from '../../ui/ui.tsx';
 import { Han } from '../../ui/Han.tsx';
 import { TheDong, useDienThoai } from '../../ui/TheDong.tsx';
-import { SoLieuO } from '../../ui/SoLieuO.tsx';
+import { OSo } from '../../ui/OSo.tsx';
 import { DanhSachSoLieu } from '../../ui/SoLieu.tsx';
 import { Nhan } from '../../ui/Nhan.tsx';
 import { chipChoDuyet, type ChuongTrinh, type DemYeuCau, type DiemChuY, type DongCanXuLyGoc } from '@shared/domain/index.ts';
@@ -38,9 +38,9 @@ export function KhoiCanXuLy({ branchId }: { branchId: number | null }) {
     <span className="min-w-0" title={x.goiY}>
       <span className="block text-sm text-slate-100">
         {x.truoc && <>{x.truoc} </>}
-        <SoLieuO id={x.metricId} giaTri={x.n} phamVi={phamVi} className="text-base font-semibold" ten={x.nhan || undefined} /> {x.nhan}
+        <OSo id={x.metricId} giaTri={x.n} phamVi={phamVi} className="text-base font-semibold" ten={x.nhan || undefined} /> {x.nhan}
         {/* OV-11f (TQ-13): số kèm ("2 Case · 6 bài chưa có người") bấm được ra đúng danh sách. */}
-        {x.kem?.map((k) => <span key={k.metricId}> · <SoLieuO id={k.metricId} giaTri={k.n} phamVi={phamVi} ten={k.nhan} /> {k.nhan}</span>)}
+        {x.kem?.map((k) => <span key={k.metricId}> · <OSo id={k.metricId} giaTri={k.n} phamVi={phamVi} ten={k.nhan} /> {k.nhan}</span>)}
       </span>
       {x.phu && <span className="block truncate text-xs text-slate-500">{x.phu}</span>}
     </span>

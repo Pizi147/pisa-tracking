@@ -315,7 +315,7 @@ export async function runPrTkTests(t: YThucTestKit) {
     assert(b.thi_that_ovr === 6.5 && b.thi_that_l === 7 && b.thi_that_ngay === NGAY && b.target === 6.5 && b.ket_luan === 'reached' && b.lam_moi_luc !== null, JSON.stringify(b));
     assert(em(a.cy).outcome === 'not_reached', 'số sống so Target hiện tại (9) — khác bản chụp');
   }));
-  await checkAsync('TK-K · việc nhắc (OV-13q): hiện từ hôm sau ngày thi, hạn sau thi; có kết quả / Không thi → mất; GVCN lớp cuối thấy, GVBM không', () => thu(() => {
+  await checkAsync('TK-K · việc nhắc (OV-13q → SV-TVV-VIEC): hiện từ hôm sau ngày thi, KHÔNG hạn; có kết quả / Không thi → mất; người giữ = QL chi nhánh (em chưa có TVV), GVCN / GVBM không', () => thu(() => {
     const ft = taoLop('FT', true);
     const a = taoHV(ft, 'FT', true, 6.5);
     const gvcn = ganGvcn(ft, P.normalCoreTeacher.userId);
@@ -323,18 +323,19 @@ export async function runPrTkTests(t: YThucTestKit) {
     /* LT-SV: chỉ tháng = chưa chốt ngày (không nhắc) — nhắc cần NGÀY thi đã qua. */
     conn.prepare('UPDATE learning_cycles SET exam_month = ?, exam_date = ?, exam_period_id = NULL WHERE id = ?').run(thang, `${thang}-15`, a.cy);
     const viec = (pr: any) => (myWork.myWork(pr, {}) as any).groups.flatMap((g: any) => g.items ?? []).filter((x: any) => x.group === 'thi_that' && x.studentId === a.sid);
-    const v = viec(gvcn);
-    assert(v.length === 1 && v[0].tieuDe === 'Cập nhật kết quả thi thật' && v[0].mine && v[0].due !== null && v[0].href.includes('viec=thi-that'), JSON.stringify(v));
-    assert(viec(P.normalSubjectTeacher).length === 0, 'GVBM không thấy');
+    const ql = P.mbManager;
+    const v = viec(ql);
+    assert(v.length === 1 && v[0].tieuDe === 'Cập nhật kết quả thi thật' && v[0].mine && v[0].due === null && v[0].href.includes('viec=thi-that'), JSON.stringify(v));
+    assert(viec(gvcn).length === 0 && viec(P.normalSubjectTeacher).length === 0, 'GVCN / GVBM không giữ');
     conn.prepare('UPDATE learning_cycles SET exam_month = ?, exam_date = ? WHERE id = ?').run(new Date(Date.parse(NGAY) + 40 * 86400000).toISOString().slice(0, 7), new Date(Date.parse(NGAY) + 40 * 86400000).toISOString().slice(0, 10), a.cy);
-    assert(viec(gvcn).length === 0, 'tháng thi còn tương lai → chưa hiện');
+    assert(viec(ql).length === 0, 'tháng thi còn tương lai → chưa hiện');
     conn.prepare('UPDATE learning_cycles SET exam_month = ?, exam_date = ? WHERE id = ?').run(thang, `${thang}-15`, a.cy);
     thiThatSvc.datKetQuaThiThat(gvcn, a.cy, { ...NHAP4, ngayThi: null });   // OV-13q: thi hôm nay thì mai mới nhắc — không ghi ngày thi thật, ngày thi = tháng dự kiến đã qua
-    assert(viec(gvcn).length === 0, 'đủ 4 kỹ năng → mất');
+    assert(viec(ql).length === 0, 'đủ 4 kỹ năng → mất');
     thiThatSvc.datKetQuaThiThat(gvcn, a.cy, { s: null });
-    assert(viec(gvcn).length === 1, 'xoá S → hiện lại');
+    assert(viec(ql).length === 1, 'xoá S → hiện lại');
     thiThatSvc.datKetQuaThiThat(gvcn, a.cy, { khongThi: true });
-    assert(viec(gvcn).length === 0, 'Không thi → mất');
+    assert(viec(ql).length === 0, 'Không thi → mất');
   }));
 
   // ------------------------------------------------------------------ TK-L · Kết thúc học chưa lưu trữ khi FT còn "Chờ kết quả thi thật"
@@ -527,17 +528,17 @@ export async function runPrTkTests(t: YThucTestKit) {
     const gvcn = ganGvcn(ft, P.normalCoreTeacher.userId);
     const a = taoHV(ft, 'FT', true, 6.5);
     conn.prepare('UPDATE learning_cycles SET exam_month = ?, exam_date = ? WHERE id = ?').run(thangQua, `${thangQua}-15`, a.cy);   // LT-SV: cần ngày thi
-    assert(viecThi(gvcn, a.sid).length === 1, 'tiền đề: lộ trình đang chạy qua mốc thi → nhắc');
+    assert(viecThi(P.mbManager, a.sid).length === 1, 'tiền đề: lộ trình đang chạy qua mốc thi → nhắc');
     studentsSvc.transferStudent(P.admin, a.sid, thuong, NGAY, 'Xếp lại trình độ', { noNote: true });
     assert(trangThai(a.cy) === 'completed' && dongCuaCycle(a.cy).ly_do === 'chuyen_lop', 'tiền đề: đóng vì chuyển lớp');
-    assert(viecThi(gvcn, a.sid).length === 0, 'chuyển lớp: em không đi thi → hết nhắc');
+    assert(viecThi(P.mbManager, a.sid).length === 0, 'chuyển lớp: em không đi thi → hết nhắc');
     const r = tongKetSvc.tongKetLoTrinh(P.admin, a.cy);
     assert(r.ketQua.khongCoThi === true && r.ketQua.choNhap === false && r.ketQua.coTheNhap === false, JSON.stringify(r.ketQua));
     assert(tongKetSvc.cacLoTrinh(P.admin, a.sid).find((x: any) => x.id === a.cy).ketQua === null, 'khối Các lộ trình: kết quả —');
     const b = taoHV(ft, 'FT', true, 6.5);
     conn.prepare('UPDATE learning_cycles SET exam_month = ?, exam_date = ? WHERE id = ?').run(thangQua, `${thangQua}-15`, b.cy);
     studentsSvc.transferStudent(P.admin, b.sid, ft2, NGAY, 'Đổi lịch học', { noNote: true });
-    assert(viecThi(gvcn, b.sid).length <= 1, 'FT → FT: không nhắc trùng');
+    assert(viecThi(P.mbManager, b.sid).length <= 1, 'FT → FT: không nhắc trùng');
   }));
   await checkAsync('TK-rà I2 · kết quả CŨ (chỉ Overall / kết luận chọn tay) là đã có kết quả: không nhắc, Kết thúc học chờ QL chọn Bước tiếp (OV-8a), ngăn Tổng kết không "chờ"', () => thu(() => {
     const ft = taoLop('FT', true);
@@ -546,7 +547,7 @@ export async function runPrTkTests(t: YThucTestKit) {
     for (const x of [a, b]) conn.prepare('UPDATE learning_cycles SET exam_month = ? WHERE id = ?').run(thangQua, x.cy);
     cyclesSvc.setOutcome(P.admin, a.cy, { outcome: 'reached', score: 6.5 });          // có Overall
     cyclesSvc.setOutcome(P.admin, b.cy, { outcome: 'not_reached', score: null });     // chỉ kết luận
-    assert(viecThi(gvcn, a.sid).length === 0 && viecThi(gvcn, b.sid).length === 0, 'kết quả cũ: không nhắc');
+    assert(viecThi(P.mbManager, a.sid).length === 0 && viecThi(P.mbManager, b.sid).length === 0, 'kết quả cũ: không nhắc');
     studentsSvc.setStudentStatus(P.admin, a.sid, 'finished', NGAY, 'Nghỉ'); studentsSvc.setStudentStatus(P.admin, b.sid, 'finished', NGAY, 'Nghỉ');
     assert(hoSo(a.sid).archived_at === null && hoSo(b.sid).archived_at === null, 'kết thúc học: chờ QL chọn Bước tiếp');
     const bt = tongKetSvc.tongKetLoTrinh(P.admin, a.cy).buocTiep;
@@ -570,7 +571,7 @@ export async function runPrTkTests(t: YThucTestKit) {
     conn.prepare('UPDATE learning_cycles SET exam_month = NULL, exam_date = NULL, exam_period_id = NULL, started_at = ? WHERE id = ?').run(t.addDays(NGAY, -60), a.cy);
     /* Rà #436 (OV-13q): em Kết thúc học chưa có kết quả không còn nhắc — dùng lộ trình đóng thường (không bỏ dở), em còn học: mốc = ngày đóng. */
     conn.prepare(`UPDATE learning_cycles SET status = 'completed', ended_at = ? WHERE id = ?`).run(t.addDays(NGAY, -30), a.cy);
-    const v = viecThi(gvcn, a.sid);
+    const v = viecThi(P.mbManager, a.sid);
     assert(v.length === 1 && !/Chưa xác định/.test(v[0].reason), v[0]?.reason);
     studentsSvc.setStudentStatus(P.admin, a.sid, 'finished', t.addDays(NGAY, -30), 'Nghỉ');   // em đã nghỉ: chỉ còn lối "GVCN lớp cuối"
     conn.prepare(`UPDATE teacher_assignments SET status = 'ended' WHERE class_id = ? AND user_id = ?`).run(ft, gvcn.userId);

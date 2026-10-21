@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { ErrorState, Skeleton } from '../../ui/ui.tsx';
-import { SoLieuO } from '../../ui/SoLieuO.tsx';
+import { OSo } from '../../ui/OSo.tsx';
 import { useDienThoai } from '../../ui/TheDong.tsx';
 import { CongTacKhung, khungDaNho } from '../../ui/CongTacKhung.tsx';
 import { GOI_Y_DUOI_KY_VONG, khungLopToiDay } from '@shared/domain/index.ts';
@@ -38,7 +38,7 @@ export function LopToiDay() {
   if (error) return <ErrorState message={error.message} hint={error.hint} onRetry={reload} />;
   if (data && !data.coFt && !data.coThuong) return null;
   const so = (h: Hang, cot: 'duoiKyVong' | 'sos' | 'caseMo' | 'bai-cho' | 'bai-qua-han', n: number, ten: string, className = 'font-semibold') => (
-    <SoLieuO giaTri={n} nguon={`/tong-quan/lop-toi-day/o?ct=${ct}&classId=${h.classId}&cot=${cot}`} tieuDe={`${h.code} · ${ten}`} className={`${className} max-sm:relative max-sm:before:absolute max-sm:before:-inset-x-2 max-sm:before:-inset-y-3 max-sm:before:content-['']`} />
+    <OSo giaTri={n} nguon={`/tong-quan/lop-toi-day/o?ct=${ct}&classId=${h.classId}&cot=${cot}`} tieuDe={`${h.code} · ${ten}`} className={`${className} max-sm:relative max-sm:before:absolute max-sm:before:-inset-x-2 max-sm:before:-inset-y-3 max-sm:before:content-['']`} />
   );
   /**
    * D10: số BÀI (máy chủ) — có bài quá hạn thì hiện phần quá hạn (đỏ), không thì số bài chờ chấm; bấm ra đúng các bài đó. Bảng: "15 quá hạn"

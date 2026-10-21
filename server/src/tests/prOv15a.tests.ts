@@ -32,11 +32,11 @@ export async function runPrOv15aTests(t: YThucTestKit) {
   for (const [ten, mau] of [['tối', toi], ['sáng', sang]] as const) {
     const tp = (a: string, b: string) => (mau[a] && mau[b] ? d.tuongPhan(mau[a], mau[b]) : -1);
 
-    check(`OV15a · 1 (${ten}): chữ phụ (dim, faint) ≥ 7:1 trên nền trang, thẻ, thẻ phụ`, () => {
+    check(`OV15a · 1 (${ten}): chữ phụ (dim, faint) ≥ 4.5:1 trên nền trang, thẻ, thẻ phụ (NEN-V5: chu-3 V5 5,5 : 1 — thay mức 7:1 của OV-15a)`, () => {
       const hong: string[] = [];
       for (const c of ['text-dim-rgb', 'text-faint-rgb']) for (const n of ['bg', 'surface', 'surface-2']) {
         const r = tp(c, n);
-        if (r < 7) hong.push(`${c} trên ${n} = ${r}`);
+        if (r < 4.5) hong.push(`${c} trên ${n} = ${r}`);
       }
       assert(hong.length === 0, hong.join(' · '));
     });

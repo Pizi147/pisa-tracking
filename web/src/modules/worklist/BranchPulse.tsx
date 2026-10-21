@@ -5,7 +5,7 @@ import { useSession } from '../../lib/session.tsx';
 import { useTapUrl, useThamSoUrl } from '../../lib/quayLai.ts';
 import { BoLocDoan, Card, ErrorState, Skeleton, Th } from '../../ui/ui.tsx';
 import { HangCon, HangNhom } from '../../ui/HangNhom.tsx';
-import { SoLieuO } from '../../ui/SoLieuO.tsx';
+import { OSo } from '../../ui/OSo.tsx';
 import { DINH_TRAI } from '../phanTich/dungChung.tsx';
 import { GOI_Y_DUOI_KY_VONG, thamSoCt, type ChuongTrinh, type CotBang } from '@shared/domain/index.ts';
 import { NutLuat } from '../../ui/NutLuat.tsx';
@@ -66,8 +66,8 @@ export function BranchPulse({ branchId, ct }: { branchId: number | null; ct: Chu
       {c === 'duDuLieu' && !x.mau && (h.o ?? data.tong).hocVien.n > 0 ? (
         <span className="text-slate-500" title="Chưa có đợt Test đến lịch">—<span className="sr-only"> Chưa có đợt Test đến lịch</span></span>
       ) : <>
-      {/* OV-11f (TQ-14, P2-2): số bấm được có vùng chạm 44 px cả ngang trên điện thoại (dọc đã có ở SoLieuO), không đổi hình. */}
-      <SoLieuO giaTri={x.n} className="max-sm:px-3 max-sm:-mx-3" tieuDe={`${COT.find((k) => k.key === c)!.nhan(ct)} · ${h.nhan}`}
+      {/* OV-11f (TQ-14, P2-2): số bấm được có vùng chạm 44 px cả ngang trên điện thoại (dọc đã có ở OSo), không đổi hình. */}
+      <OSo giaTri={x.n} className="max-sm:px-3 max-sm:-mx-3" tieuDe={`${COT.find((k) => k.key === c)!.nhan(ct)} · ${h.nhan}`}
         nguon={`/tong-quan/chi-nhanh/o?cot=${c}&khoa=${h.khoa}${q ? `&${q}` : ''}`} />
       {c === 'duDuLieu' && <span className="text-slate-500">/{x.mau ?? 0}</span>}
       </>}
