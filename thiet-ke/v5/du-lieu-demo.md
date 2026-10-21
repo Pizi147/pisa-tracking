@@ -114,6 +114,16 @@ W = (W1 + 2×W2)/3 làm tròn 0,5 · Overall = TB 4 kỹ năng làm tròn 0,5 (x
 
 Panel 75 % = 15/20: 20 dòng = 20 HV đủ dữ liệu; 2 HV chưa đủ dữ liệu nêu riêng ngoài mẫu; phân trang 10 dòng/trang vẫn ghi "20" (**T17**).
 
+## 8b. Hồ sơ GV / Phân tích GV — số demo (kỳ W4 AUG – W3 SEP) [V5]
+
+| GV | Việc đúng hạn | Điểm đúng hạn | Quá hạn hiện tại | Đạt MT (lượt, quy tắc Overall) | Tiến bộ (HV có 2 mốc) | Case có PA | PA cải thiện |
+|---|---|---|---|---|---|---|---|
+| Lê Minh Khoa | 86 % = 12/14 việc | 95 % = 63/66 bài | 1 việc | 72 % = 18/25 lượt | 64 % = 16/25 HV | 4/4 | 2/3 |
+| Trần Ngọc Hà | 78 % = 14/18 việc | 100 % = 88/88 bài | 1 việc (Ý thức Ngọc) | 75 % = 15/20 lượt | 60 % = 12/20 HV | 2/2 | 1/2 |
+| Phạm Thu Trang | 90 % = 9/10 việc | 82 % = 41/50 bài | 1 việc (S BC FT 205) | 70 % = 21/30 lượt | 57 % = 17/30 HV | 3/4 | mẫu nhỏ 1/2 |
+
+Bài Speaking chấm chéo chưa nhận không vào "Điểm đúng hạn" của ai (giaoVien.ts:193-195).
+
 ## 9. Ca T01–T22 → dữ liệu ở trên
 
 | Ca | Ở đâu |
