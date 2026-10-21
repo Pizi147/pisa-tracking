@@ -111,6 +111,25 @@ export function tapDatMt(p: Principal, f: LocBaoCao): { dat: Set<number>; mau: S
   return { dat, mau: new Set(moiNhat.keys()), chuaDu, luot: new Map([...moiNhat].map(([s, x]) => [s, x.d])) };
 }
 
+/**
+ * THI THÁNG NÀY (P4, 22/10 — thay "Thi tuần này"): HV có NGÀY THI THẬT đã chốt (`exam_date`; tháng dự kiến không tính) trong tháng của hôm nay, lớp gần nhất
+ * của em trong phạm vi Phân tích + chi nhánh + khung đang xem. Số TẠI LÚC XEM (không theo kỳ). Lộ trình bỏ dở, HV lưu trữ không tính.
+ */
+export function tapThiThangNay(p: Principal, f: { branchId?: number | null; ct: ChuongTrinh }): Map<number, string> {
+  const { cs } = phamViPhanTich(p, f.branchId ?? null, null);
+  const thang = demoToday().slice(0, 7);
+  const where = [cs.sql, 'c.is_fast_track = ?', `cy.exam_date BETWEEN ? AND ?`, `cy.status != 'abandoned'`, 's.archived_at IS NULL'];
+  const args: unknown[] = [...cs.params, f.ct === 'ft' ? 1 : 0, `${thang}-01`, `${thang}-31`];
+  if (f.branchId) { where.push('c.branch_id = ?'); args.push(f.branchId); }
+  const out = new Map<number, string>();
+  for (const r of db().prepare(
+    `SELECT cy.student_id, MIN(cy.exam_date) AS ngay FROM learning_cycles cy JOIN students s ON s.id = cy.student_id
+       JOIN enrollments e ON e.id = (SELECT MAX(e2.id) FROM enrollments e2 WHERE e2.student_id = cy.student_id)
+       JOIN classes c ON c.id = e.class_id
+      WHERE ${where.join(' AND ')} GROUP BY cy.student_id`).all(...args) as any[]) out.set(r.student_id, r.ngay);
+  return out;
+}
+
 const dongSos = (classId: number, lop: string, nay: SosLop | undefined, truoc: Map<number, number> | undefined): DongSosBc => {
   const m = [...(nay?.muc.values() ?? [])];
   return { classId, lop, sos1: m.filter((x) => x === 1).length, sos2: m.filter((x) => x === 2).length, sos3: m.filter((x) => x === 3).length, nay: m.length,
@@ -170,6 +189,7 @@ export function baoCao(p: Principal, f: LocBaoCao): BaoCaoKq {
     chuY: {
       /* SL2 (9.1-4, X-23): "SOS hiện tại" — CÙNG chỉ số Tổng quan · Đang SOS, số hôm nay (không theo kỳ). */
       sosHienTai: metricSet(p, 'hv-sos-hien-tai', loc).n,
+      thiThangNay: tapThiThangNay(p, f).size,
       chuaDiemHv: hvBai.size, chuaDiemBai: chuaDiem.length, caseChuaChotHv: hvCase.size, caseChuaChot: caseChua.length,
     },
     casePa: {
@@ -202,6 +222,12 @@ export function oBaoCao(p: Principal, f: LocBaoCao & { o: string }): { n: number
       return { ...row, sub: [x.lop, `MT${x.mt} · ${tuanLich(x.tuan)}`, `Overall ${x.ovr!.toFixed(1)}`, `kỳ vọng ${x.kyVong!.toFixed(1)}`, d.dat.has(row.id) ? 'Đạt' : 'Chưa đạt'].join(' · ') };
     });
     return { n: ids.length, tieuDe: `Đạt MT · ${d.mau.size ? Math.round((100 * d.dat.size) / d.mau.size) : 0} % = ${d.dat.size}/${d.mau.size} HV`, rows };
+  }
+  if (f.o === 'thi-thang-nay') {
+    const t = tapThiThangNay(p, f);
+    const ids = [...t.keys()].sort((a, b) => t.get(a)!.localeCompare(t.get(b)!) || a - b);
+    const rows = rowsFor('hoc-vien', ids, undefined, p).map((row) => ({ ...row, sub: [row.sub, `thi ${t.get(row.id)!.slice(8, 10)}/${t.get(row.id)!.slice(5, 7)}`].filter(Boolean).join(' · ') }));
+    return { n: ids.length, tieuDe: `${ids.length} HV — thi tháng này`, rows };
   }
   if (f.o === 'hv-da-thi') return ra('hoc-vien', r.hvDaThi, 'đã thi');
   if (f.o === 'bai-da-cham') return ra('bai', r.daCham, 'đã chấm');

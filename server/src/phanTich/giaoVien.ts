@@ -3,7 +3,7 @@
  * `Map<gvId, { dung: id[]; tong: id[] }>`; ô số, panel "Chấm điểm" và phép kiểm gọi cùng hàm (HOP_DONG_SO_LIEU §1). Nạp THEO LÔ cho cả chi nhánh +
  * khung + khoảng rồi gom theo người trong bộ nhớ: không câu SQL nào chạy một lần cho mỗi GV / lớp / em.
  *
- * Gán người (Q15): ô điểm → phân công ở HẠN NHẬP · kết quả, HV tiến bộ → phân công ở TUẦN THI · vi phạm → GVCN lớp vi phạm ở HẠN XỬ LÝ ·
+ * Gán người (Q15): ô điểm → phân công ở HẠN NHẬP · kết quả, HV tiến bộ → phân công ở TUẦN THI ·
  * Ghi kết quả PA, PA hiệu quả → người phụ trách Case. Phân công hiệu lực ở ngày d: `effective_from ≤ d ≤ effective_to` (ngày đổi: dòng mới thắng).
  */
 import {
@@ -43,7 +43,7 @@ const them = (t: Tap, gv: number, id: number, dung: boolean) => {
   if (dung) x.dung.push(id);
 };
 
-/** V5 (05 #8): "Việc đúng hạn" = gộp các tập việc có hạn (Ghi kết quả PA · Xử lý vi phạm) — đơn vị VIỆC, chỉ cộng độ dài (id hai tập có thể trùng số). */
+/** V5 (05 #8): "Việc đúng hạn" = gộp các tập việc có hạn (Ghi kết quả PA; + Báo PH ở SV-TVV) — đơn vị VIỆC, chỉ cộng độ dài (id các tập có thể trùng số). */
 const gopTap = (...ts: ({ dung: number[]; tong: number[] } | undefined)[]) => ({ dung: ts.flatMap((t) => t?.dung ?? []), tong: ts.flatMap((t) => t?.tong ?? []) });
 
 type PhanCong = { id: number; gv: number; ten: string; lop: number; skill: string | null; core: boolean; tu: string; den: string | null };
@@ -287,22 +287,27 @@ function mucThiThat(c: NguCanhPtGv): MucKq[] {
   return out;
 }
 
-/** Q15: mục của `mucKetQua`, gán cho người dạy môn đó ở TUẦN THI (thi thật: ngày thi). */
-function tapKetQua(c: NguCanhPtGv, muc: readonly MucKq[]): Map<string, Tap & { lop?: Map<number, Set<number>> }> {
-  const out = new Map<string, Tap>();
-  const lop = new Map<string, Map<number, Set<number>>>();
+/**
+ * Q15: mục của `mucKetQua`, gán cho người dạy môn đó ở TUẦN THI (thi thật: ngày thi). `theoLop` (P8, 22/10): cùng mục tách theo LỚP EM HỌC LÚC THI —
+ * gom theo lượt của từng HV có tuần thi trong kỳ, không lấy "MT gần nhất của lớp".
+ */
+type TapKq = Tap & { lop?: Map<number, Set<number>>; theoLop?: Map<number, Map<number, { dung: number[]; tong: number[] }>> };
+function tapKetQua(c: NguCanhPtGv, muc: readonly MucKq[]): Map<string, TapKq> {
+  const out = new Map<string, TapKq>();
   for (const { x, dat: d } of muc) {
     if (!(COT_KET_QUA_GV[c.khung] as readonly string[]).includes(x.skill)) continue;   // ponytail: Pre FOU "Tổng hợp" không có cột
     const gv = c.nguoiLuc(x.classId, x.skill, x.tuan);
     if (gv == null) continue;
-    const t = out.get(x.skill) ?? new Map();
+    const t: TapKq = out.get(x.skill) ?? Object.assign(new Map(), { lop: new Map(), theoLop: new Map() });
     out.set(x.skill, t);
     them(t, gv, x.id, d);
-    const lm = lop.get(x.skill) ?? new Map<number, Set<number>>();
-    lop.set(x.skill, lm);
-    lm.set(gv, (lm.get(gv) ?? new Set<number>()).add(x.classId));
+    t.lop!.set(gv, (t.lop!.get(gv) ?? new Set<number>()).add(x.classId));
+    const tl = t.theoLop!.get(gv) ?? t.theoLop!.set(gv, new Map()).get(gv)!;
+    const o = tl.get(x.classId) ?? tl.set(x.classId, { dung: [], tong: [] }).get(x.classId)!;
+    o.tong.push(x.id);
+    if (d) o.dung.push(x.id);
   }
-  return new Map([...out].map(([k, t]) => [k, Object.assign(t, { lop: lop.get(k) })]));
+  return out;
 }
 
 /** Q21 (FT): mục = ô có điểm mà em ĐÃ có điểm kỹ năng đó ở lượt MT gần nhất trước đó (bất kỳ lớp); tiến bộ ⇔ band cao hơn. W1, W2 riêng. KCK vẫn tính. */
@@ -359,32 +364,6 @@ export function tapGhiKetQuaPa(p: Principal, c: NguCanhPtGv): { tap: Tap; khongN
   return { tap, khongNguoi };
 }
 
-// ------------------------------------------------------------------ cột 3 · Xử lý vi phạm (mục = vi phạm)
-
-/**
- * Q14, Q15: vi phạm có HẠN XỬ LÝ CHỐT trong khoảng, ở lớp của chi nhánh + khung, gán cho GVCN lớp vi phạm ở hạn đó. Đúng hạn ⇔ `phan_hoi_ngay ≤ han_xu_ly`
- * (thời gian chờ QL duyệt không tính); chưa phản hồi mà hôm nay > hạn = trễ; chưa tới hạn chưa phản hồi: chưa tính.
- * ponytail: vi phạm không lớp (`class_id` NULL) không tính — dữ liệu nhập đều có lớp.
- */
-export function tapXuLyViPham(c: NguCanhPtGv): Tap & { lop?: Map<number, Set<number>> } {
-  const tap: Tap = new Map();
-  const lop = new Map<number, Set<number>>();
-  for (const lo of theoLo([...c.lop.keys()])) {
-    for (const v of db().prepare(
-      `SELECT v.id, v.class_id, v.han_xu_ly, v.phan_hoi_ngay FROM violations v
-         JOIN students s ON s.id = v.student_id AND ${HV_DANG_HOC_SQL('s')}   -- Q2: em không đang học không bị tính trễ
-        WHERE v.valid = 1 AND v.class_id IN (${cho(lo.length)}) AND v.han_xu_ly BETWEEN ? AND ?`,
-    ).all(...lo, c.tu, c.cuoi) as any[]) {
-      if (!v.phan_hoi_ngay && c.homNay <= v.han_xu_ly) continue;
-      const gv = c.nguoiLuc(v.class_id, null, v.han_xu_ly);
-      if (gv == null) continue;
-      them(tap, gv, v.id, !!v.phan_hoi_ngay && v.phan_hoi_ngay <= v.han_xu_ly);
-      lop.set(gv, (lop.get(gv) ?? new Set<number>()).add(v.class_id));
-    }
-  }
-  return Object.assign(tap, { lop });
-}
-
 // ------------------------------------------------------------------ cột 4 · PA hiệu quả (FT)
 
 /**
@@ -412,7 +391,6 @@ export function phanTichGiaoVien(p: Principal, f: LocPtGv): PhanTichGvKq {
   for (const a of trongKhoang) nguoi.set(a.gv, a.ten);
   const cham = tapChamDiem(c, nap).tap;
   const ghi = tapGhiKetQuaPa(p, c).tap;
-  const vp = tapXuLyViPham(c);
   const kq = tapKetQua(c, mucKetQua(c, nap));
   const ft = c.khung === 'ft';
   const tb = ft ? tapTienBo(c, nap) : null;
@@ -440,8 +418,6 @@ export function phanTichGiaoVien(p: Principal, f: LocPtGv): PhanTichGvKq {
       .map((k) => tenMonNgan(c.lop.get(cua.find((a) => a.skill === k)!.lop)!.ct, k)))];
     const day = lopDay.get(id) ?? new Set<number>();
     const coMon = mon.length > 0;
-    const vpO = oTuTap(lopCn.length > 0, vp.get(id));
-    const vpLop = [...(vp.lop?.get(id) ?? [])];
     const ketQua: HangPtGv['ketQua'] = {};
     for (const k of COT_KET_QUA_GV[c.khung]) {
       const t = kq.get(k);
@@ -455,9 +431,8 @@ export function phanTichGiaoVien(p: Principal, f: LocPtGv): PhanTichGvKq {
       dangDay: { lop: day.size, hv: new Set([...day].flatMap((l) => [...(hvLop.get(l) ?? [])])).size },
       chamDiem: oTuTap(coMon, cham.get(id)),
       ghiKetQuaPa: oTuTap(true, ghi.get(id)),
-      xuLyViPham: vpO.k === 'so' ? { ...vpO, lopGvcn: vpLop } : vpO,
-      /* shortcut: chưa có việc Báo PH (SV-TVV) — PR đó thêm tập của nó vào `gopTap` ở đây và ở `chiSoHoSoGv`. */
-      viecDungHan: oTuTap(true, gopTap(ghi.get(id), vp.get(id))),
+      /* 10 (22/10): "Xử lý vi phạm" bỏ khỏi Phân tích GV — không vào Việc đúng hạn. shortcut: chưa có việc Báo PH (SV-TVV) — PR đó thêm tập vào `gopTap` ở đây và ở `chiSoHoSoGv`. */
+      viecDungHan: oTuTap(true, gopTap(ghi.get(id))),
       ketQua,
     };
     if (ft) {
@@ -523,7 +498,7 @@ export function oChamDiemGv(p: Principal, f: LocPtGv & { gv: number }): {
 
 /**
  * OV-15e (C30, mockup 3 mục 4c): PANEL CỦA MỘT CHỈ SỐ KHÁC "Chấm điểm" — đúng GV + đúng khoảng, CÙNG hàm tập với ô bảng (số = số dòng; `0/20` mở 20 mục).
- * `cot`: `ket-qua:<kỹ năng>` · `tien-bo` · `ghi-pa` · `vi-pham` · `pa-hieu-qua`. Dòng chưa đạt / trễ lên đầu.
+ * `cot`: `ket-qua:<kỹ năng>` · `tien-bo` · `ghi-pa` · `pa-hieu-qua`. Dòng chưa đạt / trễ lên đầu.
  */
 export function oChiSoGv(p: Principal, f: LocPtGv & { gv: number; cot: string }): { n: number; tieuDe: string; rows: MetricRow[] } {
   const c = nguCanhPtGv(p, f);
@@ -544,7 +519,7 @@ function oChiSoCua(p: Principal, c: NguCanhPtGv, gv: number, cot: string): { nha
     return ids.map((id) => {
       const x = o.get(id)!;
       return {
-        id, title: x.hocVien, href: `/hoc-vien/${x.studentId}`,
+        id, title: x.hocVien, href: `/hoc-vien/${x.studentId}`, lop: c.lop.get(x.classId)?.ma ?? null,
         sub: [c.lop.get(x.classId)?.ma, `${x.bai} · ${tuanLichNgan(x.tuan)}`, phu(x), dung.has(id) ? 'Đạt' : 'Chưa đạt'].filter(Boolean).join(' · '),
       };
     });
@@ -581,14 +556,12 @@ function oChiSoCua(p: Principal, c: NguCanhPtGv, gv: number, cot: string): { nha
     })));
   }
   if (cot === 'viec-dung-han') {
-    /* 05 #8: hai tập việc có hạn, mỗi tập trễ trước — rồi xếp chung trễ trước (sắp ổn định giữ thứ tự trong tập). */
+    /* 05 #8: các tập việc có hạn (nay: Kết quả PA; SV-TVV thêm Báo PH), mỗi tập trễ trước — rồi xếp chung trễ trước. */
     return ra('Việc đúng hạn', 'việc', [
       ...dongTheoTap(tapGhiKetQuaPa(p, c).tap.get(gv), (ids) => rowsFor('nghia-vu', ids, 'dung-han-cap-nhat', p), 'Kết quả PA'),
-      ...dongTheoTap(tapXuLyViPham(c).get(gv), (ids) => rowsFor('vi-pham', ids, undefined, p), 'Xử lý vi phạm'),
     ].sort((a, b) => Number(a.dung) - Number(b.dung)));
   }
   if (cot === 'ghi-pa') return ra('Kết quả PA đúng hạn', '', dongTheoTap(tapGhiKetQuaPa(p, c).tap.get(gv), (ids) => rowsFor('nghia-vu', ids, 'dung-han-cap-nhat', p)));
-  if (cot === 'vi-pham') return ra('Xử lý vi phạm đúng hạn', '', dongTheoTap(tapXuLyViPham(c).get(gv), (ids) => rowsFor('vi-pham', ids, undefined, p)));
   if (cot === 'pa-hieu-qua') return ra('PA hiệu quả', '', dongTheoTap(tapPaHieuQua(c).get(gv), (ids) => rowsFor('phuong-an', ids, undefined, p)));
   throw badRequest(`Cột "${cot}" không có trong bảng.`);
 }
@@ -615,17 +588,20 @@ function nguCanhCuaGv(p: Principal, gvId: number, q: { tu?: string | null; den?:
 
 export function chiSoHoSoGv(p: Principal, gvId: number, q: { tu?: string | null; den?: string | null }): ChiSoHoSoGv {
   const g = nguCanhCuaGv(p, gvId, q);
-  const cham: ({ dung: number[]; tong: number[] } | undefined)[] = [], ghi: ({ dung: number[]; tong: number[] } | undefined)[] = [], vp: ({ dung: number[]; tong: number[] } | undefined)[] = [], tb: ({ dung: number[]; tong: number[] } | undefined)[] = [], pa: ({ dung: number[]; tong: number[] } | undefined)[] = [];
+  const cham: ({ dung: number[]; tong: number[] } | undefined)[] = [], ghi: ({ dung: number[]; tong: number[] } | undefined)[] = [], tb: ({ dung: number[]; tong: number[] } | undefined)[] = [], pa: ({ dung: number[]; tong: number[] } | undefined)[] = [];
   const kq = new Map<string, { khung: KhungPtGv; skill: string; tap: ({ dung: number[]; tong: number[] } | undefined)[] }>();
+  const theoLop: ChiSoHoSoGv['ketQuaTheoLop'] = [];
   for (const c of g.ds) {
     const nap = napBai(p, c);
     cham.push(tapChamDiem(c, nap).tap.get(gvId));
     ghi.push(tapGhiKetQuaPa(p, c).tap.get(gvId));
-    vp.push(tapXuLyViPham(c).get(gvId));
     const t = tapKetQua(c, mucKetQua(c, nap));
     for (const skill of COT_KET_QUA_GV[c.khung]) {
       const khoa = `${c.khung}:${skill}`;
       (kq.get(khoa) ?? kq.set(khoa, { khung: c.khung, skill, tap: [] }).get(khoa)!).tap.push(t.get(skill)?.get(gvId));
+      for (const [classId, o] of t.get(skill)?.theoLop?.get(gvId) ?? []) {
+        theoLop.push({ classId, ma: c.lop.get(classId)!.ma, khung: c.khung, skill, nhan: tenMonNgan(c.lop.get(classId)!.ct, skill), o: oTuTap(true, o) });
+      }
     }
     if (c.khung === 'ft') { tb.push(tapTienBo(c, nap).get(gvId)); pa.push(tapPaHieuQua(c).get(gvId)); }
   }
@@ -635,25 +611,28 @@ export function chiSoHoSoGv(p: Principal, gvId: number, q: { tu?: string | null;
   return {
     tu: g.tu, den: g.den, homNay: g.homNay,
     diemDungHan: oTuTap(true, gopTap(...cham)),
-    viecDungHan: oTuTap(true, gopTap(...ghi, ...vp)),
+    viecDungHan: oTuTap(true, gopTap(...ghi)),
     ghiKetQuaPa: oTuTap(true, gopTap(...ghi)),
-    xuLyViPham: oTuTap(true, gopTap(...vp)),
     ketQua: oTuTap(true, gopTap(...[...kq.values()].flatMap((x) => x.tap))),
     ketQuaTheoKyNang: theoKyNang,
+    ketQuaTheoLop: theoLop.sort((a, b) => a.ma.localeCompare(b.ma, 'vi', { numeric: true }) || COT_KET_QUA_GV[a.khung].indexOf(a.skill) - COT_KET_QUA_GV[b.khung].indexOf(b.skill)),
     tienBo: oTuTap(coFt, gopTap(...tb)),
     paHieuQua: oTuTap(coFt, gopTap(...pa)),
   };
 }
 
-/** Panel chỉ đọc của một số ở hồ sơ GV theo kỳ — CÙNG `oChiSoCua` qua mọi ngữ cảnh của `chiSoHoSoGv` (số = số dòng). `cot` thêm `ket-qua:<khung>:<kỹ năng>`. */
+/** Panel chỉ đọc của một số ở hồ sơ GV theo kỳ — CÙNG `oChiSoCua` qua mọi ngữ cảnh của `chiSoHoSoGv` (số = số dòng). `cot` thêm `ket-qua:<khung>:<kỹ năng>[:<lớp>]`. */
 export function oChiSoHoSoGv(p: Principal, gvId: number, q: { tu?: string | null; den?: string | null; cot: string }): { n: number; tieuDe: string; rows: MetricRow[] } {
   const g = nguCanhCuaGv(p, gvId, q);
-  const m = /^ket-qua:(ft|thuong):(\w+)$/.exec(q.cot);
-  if (!m && !['cham-diem', 'viec-dung-han', 'ghi-pa', 'vi-pham', 'ket-qua', 'tien-bo', 'pa-hieu-qua'].includes(q.cot)) throw badRequest(`Cột "${q.cot}" không có ở hồ sơ.`);
+  const m = /^ket-qua:(ft|thuong):(\w+)(?::(\d+))?$/.exec(q.cot);
+  if (!m && !['cham-diem', 'viec-dung-han', 'ghi-pa', 'ket-qua', 'tien-bo', 'pa-hieu-qua'].includes(q.cot)) throw badRequest(`Cột "${q.cot}" không có ở hồ sơ.`);
   const ds = g.ds.filter((c) => (m ? c.khung === m[1] : ['tien-bo', 'pa-hieu-qua'].includes(q.cot) ? c.khung === 'ft' : true));
   const phan = ds.map((c) => oChiSoCua(p, c, gvId, m ? `ket-qua:${m[2]}` : q.cot));
-  const dong = phan.flatMap((x) => x.dong).sort((a, b) => Number(a.dung) - Number(b.dung));
+  /* P8: `ket-qua:<khung>:<kỹ năng>:<lớp>` = ô một lớp của `ketQuaTheoLop` — dòng của chính các mục em học lớp đó lúc thi. */
+  const maLop = m?.[3] ? ds.find((c) => c.lop.has(Number(m[3])))?.lop.get(Number(m[3]))?.ma : null;
+  if (m?.[3] && !maLop) throw badRequest('Lớp này không có trong kỳ của giáo viên.');
+  const dong = phan.flatMap((x) => x.dong).filter((d) => !maLop || d.row.lop === maLop).sort((a, b) => Number(a.dung) - Number(b.dung));
   const dau = phan[0] ?? { nhan: q.cot === 'cham-diem' ? 'Điểm đúng hạn' : q.cot === 'viec-dung-han' ? 'Việc đúng hạn' : 'Kết quả', donVi: '' };
-  const dung = phan.reduce((s, x) => s + x.dung, 0);
+  const dung = dong.filter((d) => d.dung).length;
   return { n: dong.length, tieuDe: `${dau.nhan} · ${tuanLichNgan(g.tu)} – ${tuanLichNgan(g.den)} · ${dung}/${dong.length}${dau.donVi ? ` ${dau.donVi}` : ''}`, rows: dong.map((d) => d.row) };
 }

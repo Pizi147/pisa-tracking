@@ -244,6 +244,7 @@ export function viecHoSoGv(p: Principal, gvId: number): { viec: { nhom: NhomViec
   return { viec: viecCuaGv(p, gvId) };
 }
 
+/* shortcut: khối cũ "mốc gần nhất của lớp" — P8 (22/10) bỏ cách đại diện này; web hiện tại còn đọc. UI-HO-SO-GV chuyển sang `chiSoHoSoGv().ketQuaTheoLop` (lượt từng HV trong kỳ) rồi xoá hàm này. */
 export function ketQuaHoSoGv(p: Principal, gvId: number): { ketQua: KetQuaLop[] } {
   const { branchIds } = phamViHoSoGv(p, gvId);
   /* Lớp người xem không có quyền xem điểm (vd GV được phân công lớp ở chi nhánh khác vai của họ) thì bỏ khỏi khối kết quả — không làm cả hồ sơ 403. */

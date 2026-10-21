@@ -7,9 +7,9 @@
 ## 1. Quy tắc chung (mọi chỉ số)
 
 1. Hiện **% to** + "**n/N đơn vị**" ngay dưới (C03); bấm n/N → panel chỉ đọc đúng tập N (G7, brief 14.3).
-2. Mẫu 0 → "**Chưa có dữ liệu**", không "0 %" (T19). Mẫu < 5 → kèm "mẫu nhỏ" (`TyLe.tsx`).
+2. Mẫu 0 → "**Chưa có dữ liệu**", không "0 %" (T19). Phân tích GV / hồ sơ GV không ghi "mẫu nhỏ" (`10`, 22/10).
 3. Tổng nhiều chi nhánh / lớp / GV = **Σ tử / Σ mẫu**, không trung bình các % (T20).
-4. Ghi rõ **kỳ** ("W1 SEP – W2 SEP") hay **hiện tại** ("đến 14/09"); dữ liệu lịch sử trong kỳ không bị thay bằng trạng thái hôm nay.
+4. Ghi rõ **kỳ** ("W1 SEP – W2 SEP") hay **hiện tại** ("đến 14/09"); dữ liệu lịch sử trong kỳ không bị thay bằng trạng thái hôm nay. Kỳ = Từ tuần – Đến tuần **tự do**, không trần (P9); số theo **lượt của từng HV** có tuần thi trong kỳ, không "MT gần nhất của lớp" (P8).
 5. "Chưa đủ dữ liệu" **không** nằm trong mẫu và không cùng màu / ký hiệu với "chưa đạt" (– viền đứt vs ✗).
 6. Việc **huỷ / thu hồi / đã bỏ** ra khỏi mẫu (lượt `cancelled`: `baoCao.ts:27`, `tongHop.ts:175`, `giaoVien.ts:123`; Phối hợp `removed`: `phoiHop.ts:506`).
 7. Một bản ghi qua nhiều lối xem vẫn đếm một lần; số không đổi khi thu gọn nhóm / phân trang (T17).
@@ -40,13 +40,13 @@ W = (W1 + 2×W2)/3, làm tròn 0,5 (`scoring.ts:40-47`); Overall = TB 4 kỹ nă
 | 5 | **Case có PA** | Case | Case đã có PA hợp lệ | Case cần PA (mở trong kỳ, không huỷ) | hiện tại / kỳ | QL, QT, GV (Case mình phụ trách) | Case 0 → Chưa có dữ liệu | Case · HV · kỹ năng · người phụ trách · PA · ngày | ✓ `case-thieu-pa` (`metrics.ts:104`) — đảo thành tỷ lệ |
 | 6 | **PA có kết quả** | PA | PA đã có kết quả đánh giá | PA đến hạn đánh giá | kỳ | QL, QT, GV | — | PA · HV · kết quả · ngày | ✓ `pa-co-ket-qua` (`:125`) |
 | 7 | **PA cải thiện** | PA | PA kết quả "cải thiện" (+ "một phần" — [XM]) | PA đã có kết quả xác định (bỏ "chưa đủ dữ liệu") | kỳ | QL, QT, GV | PA chưa đánh giá hiện riêng | PA · kết quả | ✓ `ty-le-co-cai-thien` (`:132`) — hiện tính cả "một phần" |
-| 8 | **Việc đúng hạn** | việc | việc xong ≤ hạn | việc **có hạn rơi trong kỳ** (gồm việc chưa làm đã trễ): Ghi kết quả PA + Xử lý vi phạm (+ Báo PH khi SV-TVV có) | kỳ | GV (mình), QL / QT (GV chi nhánh), Hồ sơ GV | không việc có hạn → Chưa có dữ liệu | loại · việc · hạn · đúng hạn / trễ | ✓ `viecDungHan` (`gopTap` của `tapGhiKetQuaPa` + `tapXuLyViPham`, `giaoVien.ts`), panel `cot=viec-dung-han` — Σ tử / Σ mẫu, không trung bình hai % |
+| 8 | **Việc đúng hạn** | việc | việc xong ≤ hạn | việc **có hạn rơi trong kỳ** (gồm việc chưa làm đã trễ): Ghi kết quả PA (+ Báo PH khi SV-TVV có); Xử lý vi phạm **không** tính (`10`, 22/10) | kỳ | GV (mình), QL / QT (GV chi nhánh), Hồ sơ GV | không việc có hạn → Chưa có dữ liệu | loại · việc · hạn · đúng hạn / trễ | ✓ `viecDungHan` (`gopTap` của `tapGhiKetQuaPa`, `giaoVien.ts`), panel `cot=viec-dung-han` — Σ tử / Σ mẫu, không trung bình hai % |
 | 9 | **Điểm đúng hạn** | bài (ô điểm kỹ năng × HV × lượt) | bài nhập lần đầu ≤ mốc trễ | bài đến hạn thuộc trách nhiệm (phân công ở hạn; S MT theo người chấm) | kỳ | GV, QL, QT, Admin, Hồ sơ GV | loại: vắng, huỷ, bỏ, chờ dời, MT cũ, `-`, HV không còn học, chưa tới hạn | lớp · lượt · kỹ năng · HV · hạn · ngày nhập | ✓ `tapChamDiem` `giaoVien.ts` — cột `chamDiem` của bảng; hồ sơ `diemDungHan`, panel `cot=cham-diem` |
 | 10 | **Quá hạn hiện tại** | việc (+ "gồm n bài" khi là chấm) | — (số đếm) | — | hiện tại (đến hôm nay) | GV, QL, QT, Hồ sơ GV | 0 → "0" không bấm | việc · hạn · trễ n ngày | ✓ nhiều nguồn (`bai-qua-han-nhap-diem` `:76`…) |
-| 11 | **Xử lý vi phạm đúng hạn** | lần xử lý | `phan_hoi_ngay ≤ han_xu_ly` | lần cần xử lý hợp lệ, HV đang học | kỳ | GVCN, QL, QT | — | HV · bậc · hạn · ngày xử lý | ✓ `tapXuLyViPham` `giaoVien.ts:298-320` |
+| 11 | **Xử lý vi phạm đúng hạn** | lần xử lý | `phan_hoi_ngay ≤ han_xu_ly` | lần cần xử lý hợp lệ, HV đang học | kỳ | GVCN, QL, QT | — | HV · bậc · hạn · ngày xử lý | — bỏ khỏi Phân tích GV / hồ sơ GV (`10`, 22/10; hàm `tapXuLyViPham` gỡ, dữ liệu vi phạm giữ — Ý thức vẫn đếm) |
 | 12 | **Báo PH đúng hạn** (TVV — K6) | việc Báo PH | việc "Đã báo PH" xong ≤ hạn | việc Báo PH phát sinh trong kỳ (không tính đã thu hồi) | kỳ | TVV (mình), QL / QT | — | HV · lớp · ngày phát sinh · hạn · lần thử · kết quả; panel nêu thêm "xong trễ n" | ✗ (việc TVV chưa có — SV-TVV dựng tập, rồi thêm vào #8) |
 | 13 | **Chưa liên hệ được** | HV | HV có việc Báo PH mở mà lần ghi gần nhất "Chưa liên hệ được" | — | hiện tại | TVV, QL | — | HV · số lần thử · ngày thử gần nhất · hạn | ✗ |
-| 14 | **Thi tuần này** | HV | HV có ngày thi đã chốt trong tuần đang xem | — | tuần | QL, QT, GV, TVV | tháng / tuần dự kiến **không** tính | HV · lớp · ngày thi · Target | ~ |
+| 14 | **Thi tháng này** (P4, `10` — thay "Thi tuần này") | HV | HV có ngày thi thật đã chốt (`exam_date`) trong tháng hiện tại, lớp gần nhất trong phạm vi đang xem | — | hiện tại (tháng của hôm nay) | QL, QT, GV, TVV | tháng / tuần dự kiến **không** tính | HV · lớp · ngày thi | ✓ `tapThiThangNay` `baoCao.ts`: `baoCao().chuY.thiThangNay`, panel `o=thi-thang-nay` |
 | 15 | **Chờ KQ / bước tiếp** | HV | HV đã thi chưa có KQ + HV có KQ chưa chốt bước tiếp (2 số riêng) | — | hiện tại | TVV, QL, CX | — | HV · ngày thi · trạng thái · hạn bước tiếp | ✓ `trangThaiSauThi` `tongKetLoTrinh.ts:92-136` |
 | 16 | **Chờ duyệt** | đề xuất | — (đếm) | — | hiện tại | QL, QT | — | (panel **việc** duyệt, không phải panel báo cáo) | ✓ |
 | 17 | **SOS hiện tại** | HV | HV có SOS ≥ 1 ở lượt hợp lệ mới nhất | HV đang học có lượt | hiện tại | QL, QT, GV, Hồ sơ lớp | — | HV · mức · kỹ năng · lượt | ✓ `hv-sos-hien-tai` (`metrics.ts:40`) |

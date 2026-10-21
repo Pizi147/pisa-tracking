@@ -2,7 +2,8 @@
  * PHÉP KIỂM V5 · SV-SO2 (chỉ số, báo cáo, GV — `08-ke-hoach-trien-khai.md` mục 6; `05-tu-dien-chi-so.md` mục 1, 2, #1, #1b, #8, #9):
  *  · quy tắc Overall ở tab Phân tích lớp + hồ sơ GV (T06, T07, T08) — cùng `danhGiaMon` với Phân tích GV (#514);
  *  · Đạt MT đơn vị HV, lượt vào kỳ theo ngày chốt điểm cuối (K9), panel chỉ đọc 15/20 (T11), tổng nhiều chi nhánh Σ tử / Σ mẫu (T20);
- *  · Việc đúng hạn (việc) = Kết quả PA + Xử lý vi phạm; Điểm đúng hạn (bài); hồ sơ GV theo kỳ cùng hàm tập với bảng; mẫu 0 "Chưa có dữ liệu" (T19);
+ *  · Việc đúng hạn (việc) = Kết quả PA; Điểm đúng hạn (bài); hồ sơ GV theo kỳ cùng hàm tập với bảng; mẫu 0 "Chưa có dữ liệu" (T19);
+ *  · `10` (22/10): Thi tháng này (P4), kết quả theo lớp gom lượt từng HV trong kỳ (P8), khoảng tuần tự do (P9);
  *  · panel số không trả khối việc (C22).
  */
 import type { YThucTestKit } from './yThuc.tests.ts';
@@ -79,18 +80,18 @@ export async function runPrSvSo2Tests(t: YThucTestKit) {
     assert(hs.ketQuaHoSoGv && lop.phanTichNhieuLop([MB_FT]).get(MB_FT).ds['reading|mt1'].dat.includes(e.sid), 'hồ sơ GV chưa theo Overall');
   }));
 
-  check('SVSO2 (05 #8, #9) · Việc đúng hạn = Kết quả PA + Xử lý vi phạm (đơn vị việc), Điểm đúng hạn = Chấm điểm (bài); panel đủ số dòng', () => thu(() => {
+  check('SVSO2 (05 #8, #9, 10) · Việc đúng hạn = Kết quả PA (đơn vị việc; Xử lý vi phạm đã bỏ khỏi bảng), Điểm đúng hạn = Chấm điểm (bài); panel đủ số dòng', () => thu(() => {
     const ky = { ct: 'ft', tu: week.mondayOf(t.addDays(D, -7 * 12)), den: tuanNay };
     const bang = pt.phanTichGiaoVien(P.mbManager, ky);
     const tong = (o: any) => (o?.k === 'so' ? o.tong : 0), dung = (o: any) => (o?.k === 'so' ? o.dung : 0);
     let coViec = false;
     for (const h of bang.hang) {
-      assert(tong(h.viecDungHan) === tong(h.ghiKetQuaPa) + tong(h.xuLyViPham) && dung(h.viecDungHan) === dung(h.ghiKetQuaPa) + dung(h.xuLyViPham), `${h.ten}: ${JSON.stringify(h)}`);
+      assert(!('xuLyViPham' in h) && tong(h.viecDungHan) === tong(h.ghiKetQuaPa) && dung(h.viecDungHan) === dung(h.ghiKetQuaPa), `${h.ten}: ${JSON.stringify(h)}`);
       if (tong(h.viecDungHan) && !coViec) {
         coViec = true;
         const p = pt.oChiSoGv(P.mbManager, { ...ky, gv: h.id, cot: 'viec-dung-han' });
         assert(p.n === tong(h.viecDungHan) && p.tieuDe.endsWith(`${dung(h.viecDungHan)}/${tong(h.viecDungHan)} việc`), p.tieuDe);
-        assert(p.rows.every((r: any) => /^(Kết quả PA|Xử lý vi phạm)/.test(r.sub) && !('viec' in r)), JSON.stringify(p.rows[0]));
+        assert(p.rows.every((r: any) => /^Kết quả PA/.test(r.sub) && !('viec' in r)), JSON.stringify(p.rows[0]));
       }
     }
     assert(coViec, 'seed không có GV nào có việc có hạn trong 13 tuần');
@@ -117,6 +118,40 @@ export async function runPrSvSo2Tests(t: YThucTestKit) {
     try { pt.chiSoHoSoGv(P.mbManager, gvR, { tu: '2025-01-07', den: '2025-01-07' }); } catch (e: any) { chan += e.status === 400 ? 1 : 0; }
     assert(chan === 3, `chặn ${chan}/3`);
   });
+
+  check('SVSO2 (P8) · hồ sơ GV theo kỳ: Kết quả theo lớp = lượt của từng HV có tuần thi trong kỳ; Σ các lớp = ô kỹ năng; panel một lớp đúng số dòng', () => thu(() => {
+    const e = mt1(DU(5.0));
+    xoaNho();
+    const ky = pt.chiSoHoSoGv(P.mbManager, gvR, { tu: tuanNay, den: tuanNay });
+    const r = ky.ketQuaTheoLop.filter((x: any) => x.khung === 'ft' && x.skill === 'reading');
+    const kn = ky.ketQuaTheoKyNang.find((x: any) => x.khung === 'ft' && x.skill === 'reading').o;
+    assert(r.reduce((s: number, x: any) => s + x.o.tong, 0) === kn.tong && r.reduce((s: number, x: any) => s + x.o.dung, 0) === kn.dung, JSON.stringify({ r, kn }));
+    const mb = r.find((x: any) => x.classId === MB_FT);
+    const p = pt.oChiSoHoSoGv(P.mbManager, gvR, { tu: tuanNay, den: tuanNay, cot: `ket-qua:ft:reading:${MB_FT}` });
+    assert(mb && p.n === mb.o.tong && p.rows.every((x: any) => x.lop === 'MB FT 101') && p.rows.some((x: any) => x.href === `/hoc-vien/${e.sid}`), JSON.stringify({ mb, n: p.n }));
+  }));
+
+  check('SVSO2 (P9) · khoảng tuần tự do: 30 tuần không bị chặn ở hồ sơ GV theo kỳ và bảng Phân tích GV', () => {
+    const tu = week.mondayOf(t.addDays(D, -7 * 29));
+    xoaNho();
+    assert(pt.chiSoHoSoGv(P.mbManager, gvR, { tu, den: tuanNay }).tu === tu, 'hồ sơ');
+    assert(pt.phanTichGiaoVien(P.mbManager, { ct: 'ft', tu, den: tuanNay }).tu === tu, 'bảng');
+  });
+
+  check('SVSO2 (P4) · Thi tháng này: HV có ngày thi thật trong tháng hiện tại (tháng dự kiến không tính), số = panel', () => thu(() => {
+    const co = mt1(DU(6.5)), duKien = mt1(DU(6.5)), thangSau = mt1(DU(6.5));
+    const ngay = `${D.slice(0, 7)}-28`;
+    conn.prepare(`UPDATE learning_cycles SET exam_date = ? WHERE id = ?`).run(ngay, co.cy);
+    conn.prepare(`UPDATE learning_cycles SET exam_date = NULL, exam_month = ? WHERE id = ?`).run(D.slice(0, 7), duKien.cy);
+    conn.prepare(`UPDATE learning_cycles SET exam_date = ? WHERE id = ?`).run(t.addDays(`${D.slice(0, 7)}-01`, 40), thangSau.cy);
+    xoaNho();
+    const tap = bc.tapThiThangNay(P.mbManager, { branchId: null, ct: 'ft' });
+    assert(tap.has(co.sid) && !tap.has(duKien.sid) && !tap.has(thangSau.sid), JSON.stringify([...tap]));
+    const f = { branchId: null, ct: 'ft', tu: tuanNay, den: tuanNay };
+    const p = bc.oBaoCao(P.mbManager, { ...f, o: 'thi-thang-nay' });
+    assert(bc.baoCao(P.mbManager, f).chuY.thiThangNay === p.n && p.n === tap.size, 'số ≠ panel');
+    assert(p.rows.find((r: any) => r.id === co.sid)?.sub.endsWith(`thi 28/${D.slice(5, 7)}`), JSON.stringify(p.rows[0]));
+  }));
 
   check('SVSO2 (K9) · Đạt MT theo ngày chốt điểm cuối: MT thi 2 tuần trước, nhập xong tuần này → vào kỳ tuần này, không vào kỳ tuần thi', () => thu(() => {
     const truoc = t.addDays(tuanNay, -14);
