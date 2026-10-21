@@ -13,6 +13,7 @@ import {
 } from '../../lib/format.ts';
 import { ENTRY_SKILLS, chipSosMt0, type DinhNghiaCot, soKyVong, soLieuSos, chuOChuaLuu, dotGvCham, duongDotTest, ngay, nhanLuot, tuanLich, type AssessedSkill, type NguoiChon, type TrangThaiLuuO } from '@shared/domain/index.ts';
 import { DongThi } from './DongThi.tsx';
+import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { GOI_Y_COT_MT, NutGvCham, useGvChamCot } from './GvCham.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 
@@ -218,6 +219,7 @@ function SosLuot({ row, tam }: { row: FtSheet['rows'][number]; tam?: boolean }) 
 }
 
 function DeadlineSummary({ cells }: { cells: Cell[] }) {
+  const { homNay } = useNgayNghiepVu();
   /* Bài đã báo "-" không nợ điểm: nó có mốc chốt Chủ nhật riêng, hiện CẠNH hạn nhập điểm nhưng khác tên (§17.1). */
   const owing = cells.filter((c) => c.required && c.band === null && c.deadline && !c.noShow
     && c.progress !== 'cancelled' && c.progress !== 'absent');
@@ -241,14 +243,19 @@ function DeadlineSummary({ cells }: { cells: Cell[] }) {
 
   const soonest = owing.reduce((a, b) => (a.deadline! <= b.deadline! ? a : b));
   const weeks = new Set(cells.filter((c) => c.required && c.periodCode).map((c) => c.periodCode));
+  const phu = dongDau ?? (weeks.size > 1 && (
+    <span className="max-w-full truncate text-xs text-slate-400" title={skillLabel(soonest.skill)}>
+      {skillShort(soonest.skill)}{' '}{t('· đợt này thi {size} tuần', { size: weeks.size })}
+    </span>
+  ));
+  /* BANG-1: hàng tối đa 64 px — hạn đã quá thì pill đã hai dòng ("hạn …" + "⚠ quá hạn …"): dòng phụ vào tooltip của ô. */
+  const quaHan = !!homNay && soonest.deadline!.slice(0, 10) < homNay;
+  const goiY = quaHan && phu ? (dongDau ? noShows.map((c) => `${skillShort(c.skill)}: ${dich(c.noShow!.text)}`).join('\n')
+    : `${skillShort(soonest.skill)} ${t('· đợt này thi {size} tuần', { size: weeks.size })}`) : undefined;
   return (
-    <div className="flex flex-col items-start gap-0.5 min-w-0">
+    <div className="flex flex-col items-start gap-0.5 min-w-0" title={goiY} data-phu-odiem={quaHan || phu ? '' : undefined}>{/* hai dòng → hàng 64 */}
       <DeadlinePill cell={soonest} />
-      {dongDau ?? (weeks.size > 1 && (
-        <span className="max-w-full truncate text-xs text-slate-400" title={skillLabel(soonest.skill)}>
-          {skillShort(soonest.skill)}{' '}{t('· đợt này thi {size} tuần', { size: weeks.size })}
-        </span>
-      ))}
+      {!quaHan && phu}
     </div>
   );
 }
