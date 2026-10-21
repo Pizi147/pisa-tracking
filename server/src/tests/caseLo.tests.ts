@@ -69,15 +69,22 @@ export async function runCaseLoTests(t: YThucTestKit) {
     const mo = conn.prepare(`SELECT sc.id, sc.student_id, sc.topic FROM sos_cases sc JOIN students s ON s.id = sc.student_id
       WHERE sc.status != 'done' AND sc.topic IS NOT NULL AND s.archived_at IS NULL`).all() as any[];
     const cho = new Set(awaitingCauseCaseIds(mo.map((c) => c.id)));
-    const c = mo.find((x) => cho.has(x.id) && cases.caseTopicsOf(P.admin, x.student_id).choNguyenNhan?.[x.topic]);
+    const theCua = (ct: any, k: string, x: Record<string, unknown> = {}) => ({ ...the(k, x), primaryCode: d.issuesForTopic(k, ct.chuongTrinh)[0].code });
+    /* Case mà đường MỘT kỹ năng (không "mở riêng") đã chặn vì chờ xác nhận — dữ liệu các phép kiểm trước để lại thì có Case chờ ở lộ trình / chương trình cũ, máy chủ không tính. */
+    const c = mo.find((x) => {
+      if (!cho.has(x.id)) return false;
+      const ct = cases.caseTopicsOf(P.admin, x.student_id);
+      return !!loiCua(() => cases.reportIssue(P.admin, { studentId: x.student_id, urgency: 'attention', ...theCua(ct, x.topic) }))?.details?.caseChoNguyenNhan;
+    });
     assert(c, 'seed phải có Case chờ xác nhận');
     const ct = cases.caseTopicsOf(P.admin, c.student_id);
     const khac = ct.topics.find((k: string) => k !== c.topic && !ct.choNguyenNhan[k]);
-    const theCt = (k: string) => ({ ...the(k, { gop: 'rieng' }), primaryCode: d.issuesForTopic(k, ct.chuongTrinh)[0].code });
+    /* "Mở riêng" (`gop: 'rieng'`) không lách được luật chờ xác nhận ở đường lô. */
+    const theCt = (k: string) => theCua(ct, k, { gop: 'rieng' });
     const truoc = soCase(c.student_id);
     const e = loiCua(() => cases.reportIssues(P.admin, { studentId: c.student_id, urgency: 'attention', idempotencyKey: 'lo-c',
       kyNang: [theCt(khac), theCt(c.topic)] }));
-    assert(e?.status === 400 && e.details?.kyNang === c.topic && e.details?.caseChoNguyenNhan, `lỗi: ${e?.status} ${JSON.stringify(e?.details)}`);
+    assert(e?.status === 400 && e.details?.kyNang === c.topic && e.details?.caseChoNguyenNhan, `Case ${c.id} (${c.topic}): lỗi ${e?.status} ${JSON.stringify(e?.details)}`);
     assert(soCase(c.student_id) === truoc, '0 Case mới');
   }));
 

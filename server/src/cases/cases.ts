@@ -529,8 +529,13 @@ export function reportIssue(p: Principal, input: {
    * không biết em vướng gì, và không bảng tổng hợp nào đếm được.
    */
   /* PR-Dọn (Q4, quét #24): tên ≤ 200, mô tả ≤ 2 000 ký tự. */
-  /* CASE-NHIEU: tên kiểm SAU khi biết có Case đang có — "Ghi vào Case đang có" không đặt tên mới (05 mục 7.1b). */
+  /* CASE-NHIEU: "Ghi vào Case đang có" không đặt tên mới (05 mục 7.1b) — tên khi đó kiểm sau, chỉ khi không có Case để ghi vào. */
   const title = chuTuDo(input.title, 'Tên Case', 200) ?? '';
+  const thieuTen = title.length < 6;
+  if (thieuTen && !input.mergeIntoExisting) {
+    throw badRequest('Đặt tên cho Case — một câu ngắn nói đúng vấn đề, ví dụ '
+      + '"Reading: chưa xử lý được dạng True/False/Not Given".');
+  }
   const summary = chuTuDo(input.summary, 'Mô tả', 2000) ?? '';
   if (summary.length < 15) {
     throw badRequest('Cần mô tả vấn đề cụ thể hơn: em sai ở đâu, sai như thế nào.');
@@ -648,7 +653,7 @@ export function reportIssue(p: Principal, input: {
     );
   }
 
-  if (!(existing && input.mergeIntoExisting) && title.length < 6) {
+  if (thieuTen && !existing) {
     throw badRequest('Đặt tên cho Case — một câu ngắn nói đúng vấn đề, ví dụ '
       + '"Reading: chưa xử lý được dạng True/False/Not Given".');
   }
