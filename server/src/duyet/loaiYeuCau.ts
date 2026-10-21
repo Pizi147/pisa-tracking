@@ -9,7 +9,7 @@
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import type { Principal } from '../permissions.ts';
 import {
-  INTERVENTION_KIND_LABEL, REGULAR_SKILLS, caseTopicLabel, duongHoSoHocVien, moTaBoTro, nhanDotNgan, nhanLoaiXuLy, outcomeLabelFor, shortDate, tenMonNgan, tuanLich,
+  INTERVENTION_KIND_LABEL, REGULAR_SKILLS, THANG, caseTopicLabel, hanKyGhiKetQua, duongHoSoHocVien, kindCuaBac, moTaBoTro, nhanDotNgan, nhanLoaiXuLy, outcomeLabelFor, shortDate, tenMonNgan, tuanLich,
   type InterventionKind, type LoaiYeuCau, type TrangThaiYc,
   type TruongDeXuat,
 } from '../../../shared/domain/index.ts';
@@ -23,14 +23,14 @@ import { addJourney } from '../platform/audit.ts';
 import { db, tx } from '../db.ts';
 import { chotHanXuLy } from '../yThuc/trangThai.ts';
 import { demoToday } from '../demoConfig.ts';
-import { badRequest, conflict } from '../util.ts';
+import { badRequest, chuTuDo, conflict } from '../util.ts';
 import { reviseTarget, updateCycle } from '../fasttrack/cycles.ts';
 import { NHAN_TRUONG_DE_XUAT, TRUONG_TU_AP, hienTaiCua, kiemGiaTriDeXuat, lyDoDeXuat } from './deXuatSua.ts';
 import { CO_THE_KHONG_THEO_DOI, awaitingCauseCaseIds } from '../cases/sosState.ts';
 import { chotYeuCau, taoYeuCau } from './yeuCau.ts';
 import { trangThaiYThuc, ungVienVaThe, type EmYThuc } from '../yThuc/trangThai.ts';
 import { apDungDeXuatChuyenLop, demChuaCoLenh, kiemDeXuatChuyenLop, nguoiNhanCuaLop } from '../classes/lenhChuyen.ts';
-import { rutDeXuatYThuc, suaDeXuatYThuc } from '../yThuc/xuLy.ts';
+import { duyetThuHoiYThuc, huyThuHoiYThuc, rutDeXuatYThuc, suaDeXuatYThuc } from '../yThuc/xuLy.ts';
 
 /**
  * PR-YT4 — vì sao em cần Báo QL (null = không): bắt buộc quá hạn · Mới quá 5 ngày chưa ai xem · đã duyệt chưa thực hiện quá 5 ngày
@@ -183,7 +183,8 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
         tieuDe: `Đề xuất PA${x?.topic ? ` · ${caseTopicLabel(x.topic)}` : ''}`,
         phu: x ? nhanDotNgan(x.attempt_kind, x.attempt_no) : null,
         dong: [`${nguoiXin(yc, ngu)} đề xuất ${ngay(yc.tao_luc, ngu)}: “${moTa}”`, ...(x ? [] : ['PA đã xoá'])],
-        neuDuyet: 'PA bắt đầu hôm nay, Kết quả hai tuần một lần, hạn hết T3.',
+        /* KHUNG-LOI (A1-09): hạn ghi NGÀY (chốt 19/10) — hạn kết quả đầu tiên của PA bắt đầu hôm nay, cùng hàm hạn kỳ PA (OV-12a). */
+        neuDuyet: `PA bắt đầu hôm nay · ghi kết quả hai tuần một lần · hạn đầu ${ngay(hanKyGhiKetQua(ngu.homNay), ngu)}.`,
         /* Rà #229: PA / Case đã xoá (PR-LUI-a2) — không có nút Mở trỏ vào chỗ không còn. */
         mo: yc.hoc_vien_id && x ? duongHoSoHocVien(yc.hoc_vien_id, { caseId: x.case_id }) : x ? undefined : '',
       };
@@ -430,8 +431,10 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
         { kind?: string; customName?: string | null; bacKe?: string | null; soViPham?: number; soTep?: number };
       d.soTep = ngu.them.get(yc.id)?.so_tep ?? d.soTep;
       const nhan = nhanLoaiXuLy(d.kind ?? '', d.customName ?? null);
+      /* LUAT-5: loại trên thang = xử lý không tăng bậc (đề xuất chỉ nhận bậc ≤ bậc hiện tại). */
+      const khongTang = (THANG as readonly string[]).includes(d.kind ?? '');
       return {
-        tieuDe: `Đề xuất ${nhan}`,
+        tieuDe: khongTang ? `Không tăng bậc · ${nhan}` : `Đề xuất ${nhan}`,
         phu: d.soViPham ? `${d.soViPham} vi phạm` : null,
         dong: [
           `${nguoiXin(yc, ngu)} đề xuất ${ngay(yc.tao_luc, ngu)}: “${yc.ly_do ?? ''}”`,
@@ -682,6 +685,44 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
         dong: [`Bài Final Test bị dời tới ${x?.week_start ? tuanLich(x.week_start, ngu.homNay) : 'tuần sau'} — sau tuần Final Test của lớp.`],
         mo: yc.hoc_vien_id ? duongHoSoHocVien(yc.hoc_vien_id) : undefined,
         duLieu: { tenGv: x?.ten_gv ?? null },
+      };
+    },
+  },
+  /* ------------------------------------------------------------ LUAT-5 · Thu hồi lần xử lý Ý thức (luật 5, 21/10 — thay Xoá lần xử lý) */
+  {
+    loai: 'thu_hoi_y_thuc',
+    khiDuyet: (p, yc) => duyetThuHoiYThuc(p, yc.doi_tuong_id, yc.ly_do ?? ''),
+    /* Từ chối: lần xử lý giữ nguyên — lý do nằm ở thẻ, GVCN đọc ở panel lần xử lý. Rút: chưa đổi gì ở bảng nguồn. */
+    khiSua: (_p, yc, v) => {
+      const lyDo = chuTuDo(v.lyDo ?? v.note, 'Lý do', 2000);
+      if (!lyDo) throw badRequest('Ghi lý do thu hồi.');
+      return { lyDo, duLieu: JSON.parse(yc.du_lieu ?? '{}') };
+    },
+    khiRut: () => {},
+    khiHuy: (p, yc) => { if (yc.trang_thai === 'duyet') huyThuHoiYThuc(p, yc.doi_tuong_id); },
+    huyDuoc: (conn, ds) => {
+      const st = napTheoDoiTuong(conn, ds, `SELECT m.id, m.status FROM discipline_measures m WHERE m.id IN (?)`);
+      return new Set(ds.filter((y) => {
+        const s = st.get(y.id)?.status;
+        return y.trang_thai === 'duyet' ? s === 'thu_hoi' : s === 'done' || s === 'da_duyet';
+      }).map((y) => y.id));
+    },
+    chet: {
+      sql: `NOT EXISTS (SELECT 1 FROM discipline_measures m WHERE m.id = y.doi_tuong_id AND m.status IN ('done', 'da_duyet'))
+         OR EXISTS (SELECT 1 FROM students s WHERE s.id = y.hoc_vien_id AND s.archived_at IS NOT NULL)`,
+      lyDo: 'Lần xử lý không còn để thu hồi',
+    },
+    /* Loại, bậc sau thu hồi, số vi phạm lưu ở `du_lieu` lúc gửi (thuHoiXuLy) — thẻ nói đúng điều QL được xin. */
+    moTa: (yc, ngu) => {
+      const d = (() => { try { return JSON.parse(yc.du_lieu ?? '{}'); } catch { return {}; } })() as
+        { kind?: string; customName?: string | null; bacVe?: number; soViPham?: number };
+      const bacVe = d.bacVe ? nhanLoaiXuLy(kindCuaBac(d.bacVe)) : 'chưa có bậc';
+      return {
+        tieuDe: `Thu hồi ${nhanLoaiXuLy(d.kind ?? '', d.customName ?? null)}`,
+        phu: d.soViPham ? `${d.soViPham} vi phạm` : null,
+        dong: [`${nguoiXin(yc, ngu)} xin ${ngay(yc.tao_luc, ngu)}: “${yc.ly_do ?? ''}”`],
+        neuDuyet: `Lần xử lý thành "Đã thu hồi" — bậc về ${bacVe}, ${d.soViPham ?? 0} vi phạm về chưa xử lý.`,
+        mo: yc.hoc_vien_id ? duongHoSoHocVien(yc.hoc_vien_id, { tab: 'y-thuc' }) : undefined,
       };
     },
   },

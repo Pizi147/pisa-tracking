@@ -48,6 +48,8 @@ export type QuyenTT = {
   huy?: boolean; han?: boolean;
   /** LUAT-34 (T20b): ô có điểm đã huỷ còn cất (`ket_qua_huy` loại `huy_diem`) → "Khôi phục điểm" cho người sửa được ô. */
   diemHuy?: boolean;
+  /** CV-LOI (V4B H15): máy chủ cho đổi lịch kỹ năng này (`canMoveSkillSchedule`: Quản lý, hoặc GVCN / GVBM đúng môn ở lớp thường). Bỏ trống = suy theo vai. */
+  doiLich?: boolean;
 };
 
 /** ≤ 1 nút chính + ≤ 3 mục menu (K4-27). "Lịch sử" KHÔNG nằm trong menu dòng — ở dòng thời gian của đợt (YC-13.6). */
@@ -67,8 +69,8 @@ export function thaoTacKyNang(tt: TrangThaiTT, q: QuyenTT): { chinh: ThaoTac | n
      * không còn khoá — Huỷ điểm theo quyền sửa ô. */
     case 'co-diem': return { chinh: q.nhapDiem ? 'sua-diem' : null,
       menu: [...(ql ? ['doi-lich'] : []), ...(q.nhapDiem || ql ? ['huy-diem'] : []), ...huy] as ThaoTac[] };
-    /* LUAT-34 (H15): Xếp lại bài vắng FT chỉ Quản lý (luật 09/10, máy chủ 403 với GVCN) — GVCN lớp thường giữ (SCHEDULE_MOVE). */
-    case 'vang': return { chinh: ql || (q.gvcn && !q.laFt) ? 'xep-lai' : null, menu: huy };
+    /* CV-LOI (V4B H15): nút theo cờ quyền máy chủ (`doiLich`); không có cờ thì suy như máy chủ — GVCN chỉ lớp thường (`SCHEDULE_MOVE` loại FT). */
+    case 'vang': return { chinh: (q.doiLich ?? (ql || (q.gvcn && !q.laFt))) ? 'xep-lai' : null, menu: huy };
     case 'cho-duyet': return { chinh: ql ? 'tra-loi-de-nghi' : null, menu: [] };
     /* PR-MTGON: kỹ năng đã huỷ (dữ liệu cũ, kể cả MT cũ) → "Đưa lại vào đợt" (Quản lý FT); lớp thường giữ Khôi phục. */
     case 'da-huy': return { chinh: ftQl ? 'dua-lai' : ql ? 'khoi-phuc' : null, menu: [] };

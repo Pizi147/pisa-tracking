@@ -37,6 +37,7 @@ import {
   bandBanDau, chanDau, coDiemChinhThuc, lockedByNoShow, lyDoChiDoc, suaDuoc, type Cell, type SaveOpts, type SavePatch,
 } from './ScoreEntry.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
+import { useBamNgoai } from '../../ui/useBamNgoai.ts';
 
 /** Ngữ cảnh đầu hộp + dòng phụ: em · lớp · lượt ("MT2" / "MT0"), kỳ vọng (L/R), MT0 = một ô Band. */
 export type NguCanhHop = {
@@ -547,12 +548,14 @@ function KhungHop({ anchor, ten, phu, nhanHop, daGo, cauBo, onDong, onKeyDown, c
   }, []);
   const moi = useRef({ daGo, onDong, hoi });
   moi.current = { daGo, onDong, hoi };
+  const neo = useRef<Element>(anchor);
+  neo.current = anchor;
+  /* Hộp / menu / danh sách nổi khác (kể cả không phải con React của hộp) vẫn không tính là ngoài — giữ luật cũ. */
+  useBamNgoai(true, (e) => {
+    if ((e.target as HTMLElement).closest('[role="dialog"], [role="menu"], [role="listbox"]')) return;
+    if (!moi.current.daGo) moi.current.onDong();
+  }, box, neo);
   useEffect(() => {
-    const away = (e: MouseEvent) => {
-      const el = e.target as HTMLElement;
-      if (box.current?.contains(el) || anchor.contains(el) || el.closest('[role="dialog"], [role="menu"], [role="listbox"]')) return;
-      if (!moi.current.daGo) moi.current.onDong();
-    };
     /* Esc chỉ đóng lớp trên cùng: hộp chọn người mở trong hộp tự đóng trước (`defaultPrevented`). Đã gõ → hỏi ở chân hộp. */
     const esc = (e: KeyboardEvent) => {
       if (e.key !== 'Escape' || e.defaultPrevented) return;
@@ -561,12 +564,11 @@ function KhungHop({ anchor, ten, phu, nhanHop, daGo, cauBo, onDong, onKeyDown, c
       else if (moi.current.daGo) setHoi(true);
       else moi.current.onDong();
     };
-    document.addEventListener('mousedown', away);
     document.addEventListener('keydown', esc);
     window.addEventListener('resize', dat);
     window.addEventListener('scroll', dat, true);
     return () => {
-      document.removeEventListener('mousedown', away); document.removeEventListener('keydown', esc);
+      document.removeEventListener('keydown', esc);
       window.removeEventListener('resize', dat); window.removeEventListener('scroll', dat, true);
     };
   }, []);   // eslint-disable-line react-hooks/exhaustive-deps

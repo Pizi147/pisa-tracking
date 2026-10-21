@@ -14,6 +14,7 @@ import {
 import { KY, khoaBaiThuong, khoaDot, nhanDot, thanDot, type DotChon, type GhiChuLich, type KnO } from './kieu.ts';
 import { GHI_CHU_TOI_DA, chuTacGia, luuGhiChu } from './GhiChuLichThi.tsx';
 import { t } from '@shared/i18n/index.ts';
+import { useBamNgoai } from '../../../ui/useBamNgoai.ts';
 import { Nhan } from '../../../ui/Nhan.tsx';
 import { Truong } from '../../../ui/KhungPanel.tsx';
 import { TuanNho, resolveTuan, type Tuan } from './TuanNho.tsx';
@@ -314,12 +315,11 @@ export function HopKyNang({ anchor, tieuDe, tenHv = tieuDe.split(' · ')[0], ghi
     box.current.style.left = `${left}px`;
   };
   useLayoutEffect(() => { dat(); });   // eslint-disable-line react-hooks/exhaustive-deps
+  const neo = useRef<Element>(anchor);
+  neo.current = anchor;
+  /* Hộp / menu nổi khác (kể cả không phải con React của hộp) vẫn không tính là ngoài — giữ luật cũ. */
+  useBamNgoai(true, (e) => { if (!(e.target as HTMLElement).closest('[role="dialog"], [role="menu"]')) onClose(); }, box, neo);
   useEffect(() => {
-    const away = (e: MouseEvent) => {
-      const t = e.target as HTMLElement;
-      if (box.current?.contains(t) || anchor.contains(t) || t.closest('[role="dialog"], [role="menu"]')) return;
-      onClose();
-    };
     /* Esc chỉ đóng lớp TRÊN CÙNG: có hộp / panel modal mở SAU hộp này (trong hộp, hoặc vẽ ra `body` sau nó) thì để lớp đó tự đóng. Panel mở
        TRƯỚC hộp (Lộ trình hồ sơ HV) không chặn — trước đây chặn nên Esc không đóng được hộp ở đó. */
     const esc = (e: KeyboardEvent) => {
@@ -327,10 +327,9 @@ export function HopKyNang({ anchor, tieuDe, tenHv = tieuDe.split(' · ')[0], ghi
       const phiaTren = [...document.querySelectorAll('[aria-modal="true"]')].some((m) => box.current!.compareDocumentPosition(m) & Node.DOCUMENT_POSITION_FOLLOWING);
       if (!phiaTren) onClose();
     };
-    document.addEventListener('mousedown', away);
     document.addEventListener('keydown', esc);
     window.addEventListener('resize', dat);
-    return () => { document.removeEventListener('mousedown', away); document.removeEventListener('keydown', esc); window.removeEventListener('resize', dat); };
+    return () => { document.removeEventListener('keydown', esc); window.removeEventListener('resize', dat); };
   }, []);   // eslint-disable-line react-hooks/exhaustive-deps
 
   /* ⋯ đầu hộp (PR-HOP1): chữ y như nơi khác — "Nhật ký" (⋯ dòng), "Mở hồ sơ MT" (Lộ trình). OV-15c: bỏ "Huỷ MT{n}" (thay bằng Xóa ở chân hộp). */

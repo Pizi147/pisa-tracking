@@ -7,6 +7,7 @@ import {
 import { luotSinhViecRow } from '../worklist/danhGia.ts';
 import { demoToday } from '../demoConfig.ts';
 import { badRequest, chuTuDo, conflict, forbidden, isIsoDate, kiemKieuO, normalizeName, notFound, nowIso, padCode } from '../util.ts';
+import { ganChuCaseThieu } from '../cases/owner.ts';
 import { can, classScopeSql, require_, scopeFor, type Principal } from '../permissions.ts';
 import { addJourney, writeAudit } from '../platform/audit.ts';
 import { CASE_THAT, NOT_UNCONFIRMED_PRESET } from '../cases/sosState.ts';
@@ -466,6 +467,8 @@ export function hocLai(p: Principal, studentId: number, o: {
       }
     }
     datLaiHanCase(studentId, date);
+    /* CV-LOI: Học lại (lớp mới hoặc khôi phục lớp cũ) — Case chưa có người phụ trách của em gán theo lớp đang học, cùng giao dịch. */
+    ganChuCaseThieu({ studentIds: [studentId], actorId: p.userId, luc: nowIso() });
     addJourney({
       studentId, cycleId, eventType: 'resume', eventDate: date, title: 'Học lại',
       detail: [lyDo, lopMoi ? `sang lớp ${lopMoi.code}` : null].filter(Boolean).join(' — ') || null, createdBy: p.userId,

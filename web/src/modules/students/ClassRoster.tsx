@@ -377,7 +377,7 @@ function Band({ v, kyVong, faded, soSanh = true, lichSu = false }: { v: number |
  *           đã gộp vào dòng này)
  */
 function FollowCell({ row, classId }: { row: RosterRow; classId: number }) {
-  if (row.status !== 'active') return <span className="text-xs text-slate-600">—</span>;
+  if (row.status !== 'active') return <span className="text-xs text-slate-500">—</span>;
 
   const here = row.openCases - (row.handoverCases ?? 0);
   const bits: string[] = [];
@@ -386,7 +386,7 @@ function FollowCell({ row, classId }: { row: RosterRow; classId: number }) {
 
   /* K2-04: MỘT việc chính = việc đầu của `viecTiepTheo` (đã xếp đỏ → vàng → xanh), cùng nguồn với cột Việc tiếp theo ở Học viên & Lớp; bấm được. */
   const v = row.viecTiepTheo[0];
-  if (!v && bits.length === 0) return <span className="text-xs text-slate-600">—</span>;
+  if (!v && bits.length === 0) return <span className="text-xs text-slate-500">—</span>;
 
   return (
     <span className="flex flex-col items-start gap-1">

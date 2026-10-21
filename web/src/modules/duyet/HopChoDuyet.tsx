@@ -88,14 +88,16 @@ export function HopChoDuyet({ gon = false }: {
   useEffect(() => { setChon(new Set()); }, [url]);
   useEffect(() => { if (!chon.size) { setLyDoTc(null); setTcDaBam(false); } }, [chon.size]);
   const ds = data?.the ?? [];
+  const [soHien, setSoHien] = useState(3);
   const loaiChon = useMemo(() => (ds.find((x) => chon.has(x.id))?.loai ?? null) as LoaiYeuCau | null, [ds, chon]);
-  const nHet = loaiChon ? chonHet(ds, loaiChon).size : 0;
+  /* CV-LOI (A1-14): bản gọn "Chọn hết" chỉ lấy thẻ ĐANG HIỆN — không duyệt thẻ chưa đọc sau "Xem thêm". */
+  const dsChonHet = gon ? ds.slice(0, soHien) : ds;
+  const nHet = loaiChon ? chonHet(dsChonHet, loaiChon).size : 0;
   const biCatTran = !!loaiChon && ds.filter((x) => x.loai === loaiChon && x.hangLoat && x.trangThai === 'cho').length > TRAN_HANG_LOAT;
   const choHangLoat = xem === 'cho';
   /* Gợi ý một lần: có ≥ 2 thẻ cùng loại hàng loạt mà chưa chọn gì. */
   const coCapHangLoat = choHangLoat && !chon.size && ds.some((a, i) => a.hangLoat && ds.some((b, j) => j !== i && b.loai === a.loai));
   const [ngan, setNgan] = useState<number | null>(null);
-  const [soHien, setSoHien] = useState(3);
 
   const xong = () => { reload(); invalidate('/yeu-cau/dem'); };
   /* Thẻ lỗi: một câu tổng + tối đa 3 dòng chi tiết, còn lại gộp — không dồn hàng chục toast. */
@@ -226,7 +228,7 @@ export function HopChoDuyet({ gon = false }: {
           <div className="flex flex-wrap gap-1.5">
             {loaiChon && nHet > chon.size && (
               <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={busy}
-                onClick={() => setChon(chonHet(ds, loaiChon))}>Chọn hết {nHet}</button>
+                onClick={() => setChon(chonHet(dsChonHet, loaiChon))}>Chọn hết {nHet}</button>
             )}
             <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setChon(new Set())} disabled={busy}>Bỏ chọn</button>
             {loaiChon && LOAI_YC_META[loaiChon]?.kieuNut === 'duyet-tu-choi' && (
