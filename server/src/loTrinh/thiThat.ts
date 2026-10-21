@@ -42,12 +42,11 @@ function laGvcnLopCuoi(p: Principal, cycleId: number): boolean {
   return !!lop && !!db().prepare(`SELECT 1 FROM teacher_assignments WHERE user_id = ? AND class_id = ? AND is_core = 1 AND status = 'active'`).get(p.userId, lop);
 }
 /**
- * OV-13q: ai GIA HẠN được — người làm được việc ĐANG MỞ của em (rà #436): "chờ kết quả" → Quản lý / Quản trị / TVV chi nhánh (`coQuyenBuocTiep`) + GVCN lớp cuối;
- * "chờ bước tiếp" → chỉ người chọn được bước tiếp (QL / QT / TVV). GVBM, Admin, CX: không (CX có `student.edit_more` nhưng chỉ xem việc).
+ * OV-13q → SV-TVV-VIEC: ai GIA HẠN được — chỉ "chờ bước tiếp" (người chọn được bước tiếp: QL / QT / TVV). "Chờ kết quả" không còn hạn (21/10-TVV) → không gia hạn.
+ * GVBM, Admin, CX: không (CX có `student.edit_more` nhưng chỉ xem việc).
  */
 export function coTheGiaHanSauThi(p: Principal, c: { id: number; student_id: number }, giaiDoan: GiaiDoanSauThi): boolean {
-  if (giaiDoan === 'cho_buoc_tiep') return coQuyenBuocTiep(p, c.student_id);
-  return giaiDoan === 'da_thi_cho_kq' && (coQuyenBuocTiep(p, c.student_id) || laGvcnLopCuoi(p, c.id));
+  return giaiDoan === 'cho_buoc_tiep' && coQuyenBuocTiep(p, c.student_id);
 }
 
 const docDiem = (v: unknown, nhan: string): number | null => {
@@ -208,10 +207,8 @@ export function datHanSauThi(p: Principal, cycleId: number, input: { han?: unkno
   const homNay = demoToday();
   const dong = dongSauThi(cycleId);
   const st = trangThaiSauThi(dong, homNay);
-  if (st.giaiDoan !== 'da_thi_cho_kq' && st.giaiDoan !== 'cho_buoc_tiep') throw badRequest('Chỉ gia hạn được khi em đã thi và chưa chọn bước tiếp.');
-  if (!coTheGiaHanSauThi(p, c, st.giaiDoan)) {
-    throw forbidden(st.giaiDoan === 'cho_buoc_tiep' ? 'Đã có kết quả — chỉ Quản lý hoặc TVV của chi nhánh gia hạn được.' : 'Chỉ GVCN lớp cuối, Quản lý hoặc TVV của chi nhánh gia hạn được.');
-  }
+  if (st.giaiDoan !== 'cho_buoc_tiep') throw badRequest('Chỉ gia hạn Chọn bước tiếp (đã có kết quả, chưa chọn) — nhập kết quả thi thật không tính hạn.');
+  if (!coTheGiaHanSauThi(p, c, st.giaiDoan)) throw forbidden('Đã có kết quả — chỉ Quản lý hoặc TVV của chi nhánh gia hạn được.');
   const vao = input.han === null || input.han === undefined || input.han === '' ? null : docNgayNhap(input.han, homNay, canNamGan(homNay));
   if (vao && !vao.iso) throw badRequest(`Hạn mới: ${vao.loi ?? 'không hợp lệ'}`);   // rà #436: ngày không có thật (31/09) → 400
   const han = vao?.iso ?? null;

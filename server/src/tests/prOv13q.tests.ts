@@ -1,6 +1,6 @@
 /**
  * PHÉP KIỂM OV-13q (chủ SP 16/10) — "Đã thi xong · hạn 1 tuần" + Gia hạn, gọi QUA HTTP theo vai như bản chính.
- *  1 · hàm `trangThaiSauThi` (ngày / tuần / tháng / thi_that_ngay, gia hạn, bước tiếp, quá hạn) · 2 · việc thi_that hiện HÔM SAU ngày thi, hạn +7, lộ trình mới
+ *  1 · hàm `trangThaiSauThi` (ngày / tuần / tháng / thi_that_ngay, gia hạn, bước tiếp, quá hạn) · 2 · việc thi_that hiện HÔM SAU ngày thi, KHÔNG hạn (SV-TVV-VIEC), TVV giữ, lộ trình mới
  *  nhất / em Lưu trữ lọc, GVCN / QL / GVBM · 3 · cùng hạn ở Công việc / Tổng quan TVV / Học viên & Lớp / panel một em / hồ sơ · 4 · gia hạn + bỏ gia hạn + quyền +
  *  nhật ký + Lịch sử sửa · 5 · sửa ngày thi sau thi / sau kết quả 200, hạn tính lại, gia hạn muộn hơn giữ · 6 · kết quả nhập sau hạn → bước tiếp không quá hạn
  *  ngay, sửa kết quả không dời · 7 · migrate ĐẦY ĐỦ trên bản sao DB demo bỏ cột mới, hai lần · 8 · EXPLAIN không SCAN learning_cycles mỗi em.
@@ -87,38 +87,40 @@ export async function runPrOv13qTests(t: YThucTestKit) {
   const KQ = { l: 7, r: 6.5, w: 6, s: 6.5 };
 
   // ------------------------------------------------------------------ 1 · hàm thuần
-  check('Q13-1 · trangThaiSauThi: ngày / thi_that_ngay (tuần, tháng = chưa chốt ngày — LT-SV); hạn gốc +7; gia hạn muộn hơn mới có hiệu lực; bước tiếp = muộn hơn của hạn và ngày có kết quả', () => {
+  check('Q13-1 · trangThaiSauThi: ngày / thi_that_ngay (tuần, tháng = chưa chốt ngày — LT-SV); chờ kết quả KHÔNG hạn (SV-TVV-VIEC); bước tiếp = muộn hơn của (hạn gốc / gia hạn, ngày có KQ + 7)', () => {
     const h = '2026-10-16';
     const a = d.trangThaiSauThi({ exam_date: '2026-10-10' }, h);
-    assert(a.giaiDoan === 'da_thi_cho_kq' && a.ngayThi === '2026-10-10' && a.hanGoc === '2026-10-17' && a.han === '2026-10-17' && !a.quaHan && !a.daGiaHan, JSON.stringify(a));
+    assert(a.giaiDoan === 'da_thi_cho_kq' && a.ngayThi === '2026-10-10' && a.hanGoc === '2026-10-17' && a.han === null && !a.quaHan && !a.daGiaHan, JSON.stringify(a));
+    assert(d.trangThaiSauThi({ exam_date: '2026-09-01' }, h).quaHan === false, 'chờ kết quả lâu cũng không quá hạn');
     assert(d.trangThaiSauThi({ exam_week: '2026-10-05' }, h).ngayThi === null, 'LT-SV: tuần chưa phải ngày thi');
     assert(d.trangThaiSauThi({ exam_month: '2026-09' }, h).ngayThi === null && !d.trangThaiSauThi({ exam_month: '2026-09' }, h).quaHan, 'LT-SV: tháng chưa phải ngày thi, không quá hạn');
     assert(d.trangThaiSauThi({ exam_date: '2026-10-01', thi_that_ngay: '2026-10-12' }, h).ngayThi === '2026-10-12', 'thi_that_ngay thắng');
     assert(d.trangThaiSauThi({ exam_date: '2026-10-16' }, h).giaiDoan === 'chua_thi' && d.trangThaiSauThi({ exam_date: '2026-10-15' }, h).giaiDoan === 'da_thi_cho_kq', 'từ hôm sau');
-    const g = d.trangThaiSauThi({ exam_date: '2026-10-01', han_sau_thi: '2026-10-20', han_sau_thi_so_lan: 2 }, h);
+    const D = { thi_that_l: 7, thi_that_r: 6.5, thi_that_w: 6, thi_that_s: 6.5 };
+    const bt = d.trangThaiSauThi({ exam_date: '2026-10-01', ...D, ngay_kq: '2026-10-16' }, h);
+    assert(bt.giaiDoan === 'cho_buoc_tiep' && bt.han === '2026-10-23' && !bt.quaHan, 'ngày có KQ + 7: ' + JSON.stringify(bt));
+    const g = d.trangThaiSauThi({ exam_date: '2026-10-01', ...D, ngay_kq: '2026-10-05', han_sau_thi: '2026-10-20', han_sau_thi_so_lan: 2 }, h);
     assert(g.han === '2026-10-20' && g.daGiaHan && g.soLanGiaHan === 2 && !g.quaHan, JSON.stringify(g));
-    assert(d.trangThaiSauThi({ exam_date: '2026-10-15', han_sau_thi: '2026-10-20' }, h).han === '2026-10-22', 'sửa ngày thi muộn hơn → hạn gốc thắng gia hạn sớm hơn');
-    const bt = d.trangThaiSauThi({ exam_date: '2026-10-01', ...KQ, thi_that_l: 7, thi_that_r: 6.5, thi_that_w: 6, thi_that_s: 6.5, ngay_kq: '2026-10-16' }, h);
-    assert(bt.giaiDoan === 'cho_buoc_tiep' && bt.han === '2026-10-16' && !bt.quaHan, JSON.stringify(bt));
+    assert(d.trangThaiSauThi({ exam_date: '2026-10-15', ...D, ngay_kq: '2026-10-09', han_sau_thi: '2026-10-20' }, h).han === '2026-10-22', 'sửa ngày thi muộn hơn → hạn gốc thắng gia hạn sớm hơn');
     assert(d.trangThaiSauThi({ exam_date: '2026-10-01', thi_that_khong_thi: 1, buoc_tiep: 'ket_thuc' }, h).giaiDoan === 'xong', 'đã chọn → xong');
     assert(d.LOAI_HAN_CUA_VIEC.thi_that === 'sau-thi' && d.LOAI_HAN_CUA_VIEC.buoc_tiep === 'sau-thi', 'loại hạn sau-thi');
   });
 
   // ------------------------------------------------------------------ 2 · việc thi_that
-  await checkAsync('Q13-2 · việc "Cập nhật kết quả thi thật" hiện HÔM SAU ngày thi, hạn = ngày thi + 7; GVCN có, QL "Tất cả" thấy, GVBM không; lộ trình cũ / em Lưu trữ không', async () => {
+  await checkAsync('Q13-2 · việc "Cập nhật kết quả thi thật" hiện HÔM SAU ngày thi, KHÔNG hạn, người giữ = TVV của em (SV-TVV-VIEC); QL "Tất cả" thấy, GVCN / GVBM không; lộ trình cũ / em Lưu trữ không', async () => {
     const x = em({ exam_date: TODAY });
     await voiMayChu(TODAY, async (goi) => {
-      assert((await viec(goi, x.gvcn, 'thi_that', x.sid)).length === 0, 'thi hôm nay → chưa có việc (không chờ thứ Hai, nhưng từ hôm sau)');
+      assert((await viec(goi, TVV, 'thi_that', x.sid)).length === 0, 'thi hôm nay → chưa có việc (từ hôm sau)');
     });
     await voiMayChu(addDays(TODAY, 1), async (goi) => {
-      const v = await viec(goi, x.gvcn, 'thi_that', x.sid);
-      assert(v.length === 1 && v[0].due === addDays(TODAY, 7) && v[0].mine && v[0].cycleId === x.cy && /^Đã thi .* · hạn /.test(v[0].contextLabel) && v[0].urgency === 'normal', JSON.stringify(v));
+      const v = await viec(goi, TVV, 'thi_that', x.sid);
+      assert(v.length === 1 && v[0].due === null && v[0].mine && v[0].cycleId === x.cy && /^Đã thi /.test(v[0].contextLabel) && !/hạn/.test(v[0].contextLabel) && v[0].urgency === 'normal', JSON.stringify(v));
       assert((await viec(goi, QL, 'thi_that', x.sid, '?nguoi=tat-ca')).length === 1, 'QL Tất cả thấy');
-      assert((await viec(goi, x.gvbm, 'thi_that', x.sid)).length === 0, 'GVBM không');
+      assert((await viec(goi, x.gvcn, 'thi_that', x.sid)).length === 0 && (await viec(goi, x.gvbm, 'thi_that', x.sid)).length === 0, 'GVCN / GVBM không');
     });
-    await voiMayChu(addDays(TODAY, 8), async (goi) => {
-      const v = await viec(goi, x.gvcn, 'thi_that', x.sid);
-      assert(v[0]?.urgency === 'overdue', `quá hạn sau +7: ${JSON.stringify(v)}`);
+    await voiMayChu(addDays(TODAY, 30), async (goi) => {
+      const v = await viec(goi, TVV, 'thi_that', x.sid);
+      assert(v[0]?.urgency === 'normal' && v[0].due === null, `30 ngày sau vẫn không quá hạn: ${JSON.stringify(v)}`);
     });
     /* Lộ trình mới hơn (seq 2) → lộ trình cũ không còn nhắc; em Lưu trữ → không nhắc. */
     const y = em({ exam_date: addDays(TODAY, -3) });
@@ -127,96 +129,96 @@ export async function runPrOv13qTests(t: YThucTestKit) {
     conn.prepare(`UPDATE learning_cycles SET status = 'completed', ended_at = ? WHERE id = ?`).run(TODAY, y.cy);
     conn.prepare('UPDATE students SET archived_at = ? WHERE id = ?').run(NOW, z.sid);
     await voiMayChu(TODAY, async (goi) => {
-      assert((await viec(goi, y.gvcn, 'thi_that', y.sid)).length === 0, 'lộ trình không mới nhất → không việc');
-      assert((await viec(goi, z.gvcn, 'thi_that', z.sid)).length === 0, 'em Lưu trữ → không việc');
+      assert((await viec(goi, TVV, 'thi_that', y.sid)).length === 0, 'lộ trình không mới nhất → không việc');
+      assert((await viec(goi, TVV, 'thi_that', z.sid)).length === 0, 'em Lưu trữ → không việc');
     });
   });
 
-  // ------------------------------------------------------------------ 3 · cùng hạn mọi nơi
-  await checkAsync('Q13-3 · cùng hạn ở Công việc · Tổng quan TVV (ô Đã thi · chờ kết quả, Sắp thi không còn em) · Học viên & Lớp TVV / CX · panel một em · hồ sơ', async () => {
+  // ------------------------------------------------------------------ 3 · không hạn ở mọi nơi
+  await checkAsync('Q13-3 · chờ kết quả không hạn ở Công việc · Tổng quan TVV (ô Đã thi · chờ kết quả, Sắp thi không còn em) · Học viên & Lớp TVV / CX · panel một em · hồ sơ', async () => {
     const x = em({ exam_date: addDays(TODAY, -2) });
-    const han = addDays(TODAY, 5);
     await voiMayChu(TODAY, async (goi) => {
-      const v = await viec(goi, x.gvcn, 'thi_that', x.sid);
-      assert(v[0]?.due === han, `Công việc ${JSON.stringify(v)}`);
+      const v = await viec(goi, TVV, 'thi_that', x.sid);
+      assert(v.length === 1 && v[0].due === null, `Công việc ${JSON.stringify(v)}`);
       const tq = await json(await goi(TVV, '/tong-quan/hoc-vien'));
       const cl = await json(await goi(TVV, '/hoc-vien-lop/theo-vai'));
       assert(cl.ids['da-thi'].includes(x.sid) && !cl.ids['sap-thi'].includes(x.sid) && tq.dem['da-thi'] === cl.ids['da-thi'].length, `Tổng quan ${tq.dem['da-thi']} · chip ${cl.ids['da-thi'].length}`);
       const r = cl.rows.find((h: any) => h.id === x.sid);
-      assert(r?.sauThi?.giaiDoan === 'da_thi_cho_kq' && r.sauThi.han === han && cl.viec.ketQuaThi[x.sid]?.han === han, JSON.stringify([r?.sauThi, cl.viec.ketQuaThi[x.sid]]));
+      assert(r?.sauThi?.giaiDoan === 'da_thi_cho_kq' && r.sauThi.han === null && cl.viec.ketQuaThi[x.sid]?.han === null, JSON.stringify([r?.sauThi, cl.viec.ketQuaThi[x.sid]]));
       const cx = await json(await goi(CX, '/hoc-vien-lop/theo-vai'));
-      assert(cx.rows.find((h: any) => h.id === x.sid)?.sauThi?.han === han, 'CX cùng hạn');
+      assert(cx.rows.find((h: any) => h.id === x.sid)?.sauThi?.han === null, 'CX cùng không hạn');
       const pm = await json(await goi(x.gvcn, `/hoc-vien-lop/em/${x.sid}`));
-      assert(pm.sauThi?.han === han && pm.sauThi.coTheNhap && pm.sauThi.coTheGiaHan && !pm.sauThi.coTheChon, JSON.stringify(pm.sauThi));
-      const pmCx = await json(await goi(CX, `/hoc-vien-lop/em/${x.sid}`));
-      assert(pmCx.sauThi && !pmCx.sauThi.coTheGiaHan, 'CX không có nút Gia hạn');
-      const hs = await json(await goi(x.gvcn, `/students/${x.sid}`));
+      assert(pm.sauThi?.han === null && pm.sauThi.coTheNhap && !pm.sauThi.coTheGiaHan && !pm.sauThi.coTheChon, JSON.stringify(pm.sauThi));
+      const hs = await json(await goi(TVV, `/students/${x.sid}`));
       const tv = hs.dauHoSo.viec.cuaBan.find((i: any) => i.loai === 'thi-that');
-      assert(hs.sauThi?.han === han && tv?.han === han && tv.key === v[0].key && tv.mo.href.includes('viec=thi-that'), JSON.stringify([hs.sauThi, tv]));
+      assert(hs.sauThi?.han === null && tv && tv.han === null && tv.key === v[0].key && tv.mo.href.includes('viec=thi-that'), JSON.stringify([hs.sauThi, tv]));
+      const hsGv = await json(await goi(x.gvcn, `/students/${x.sid}`));
+      assert(!hsGv.dauHoSo.viec.cuaBan.some((i: any) => i.loai === 'thi-that'), 'GVCN: không còn là việc của GVCN');
     });
   });
 
-  // ------------------------------------------------------------------ 4 · gia hạn + quyền
-  await checkAsync('Q13-4 · Gia hạn / Bỏ gia hạn: GVCN lớp cuối · QL · TVV 200; GVBM · Admin · CX 403; hạn trước hôm nay / không sau hạn gốc 400; nhật ký + Lịch sử sửa "Hạn sau thi"', async () => {
-    const x = em({ exam_date: addDays(TODAY, -10) });   // hạn gốc đã qua (TODAY - 3)
+  // ------------------------------------------------------------------ 4 · gia hạn + quyền (chỉ Chọn bước tiếp)
+  await checkAsync('Q13-4 · Gia hạn / Bỏ gia hạn chỉ ở Chọn bước tiếp: QL · TVV 200; GVCN · GVBM · Admin · CX 403; chờ kết quả 400; trước hôm nay / không sau hạn gốc 400; nhật ký + Lịch sử sửa', async () => {
+    const x = em({ exam_date: addDays(TODAY, -10) });
     await voiMayChu(TODAY, async (goi) => {
-      const moi = addDays(TODAY, 4);
-      for (const u of [x.gvbm, ADMIN, CX]) assert(await ma(await goi(u, `/cycles/${x.cy}/han-sau-thi`, put({ han: moi }))) === 403, `vai ${u} phải 403`);
-      assert(await ma(await goi(x.gvcn, `/cycles/${x.cy}/han-sau-thi`, put({ han: addDays(TODAY, -1) }))) === 400, 'trước hôm nay 400');
-      const r = await json(await goi(x.gvcn, `/cycles/${x.cy}/han-sau-thi`, put({ han: moi, lyDo: 'Chờ phiếu điểm' })));
+      assert(await ma(await goi(QL, `/cycles/${x.cy}/han-sau-thi`, put({ han: addDays(TODAY, 4) }))) === 400, 'chờ kết quả: không hạn → 400');
+      await json(await goi(TVV, `/cycles/${x.cy}/outcome`, put({ ...KQ, ngayThi: addDays(TODAY, -10) })));   // hạn = hôm nay + 7
+      const moi = addDays(TODAY, 10);
+      for (const u of [x.gvcn, x.gvbm, ADMIN, CX]) assert(await ma(await goi(u, `/cycles/${x.cy}/han-sau-thi`, put({ han: moi }))) === 403, `vai ${u} phải 403`);
+      assert(await ma(await goi(QL, `/cycles/${x.cy}/han-sau-thi`, put({ han: addDays(TODAY, -1) }))) === 400, 'trước hôm nay 400');
+      assert(await ma(await goi(QL, `/cycles/${x.cy}/han-sau-thi`, put({ han: addDays(TODAY, 5) }))) === 400, 'không sau hạn gốc 400');
+      const r = await json(await goi(QL, `/cycles/${x.cy}/han-sau-thi`, put({ han: moi, lyDo: 'Chờ gia đình quyết' })));
       assert(r.han === moi && r.daGiaHan && r.soLanGiaHan === 1 && !r.quaHan, JSON.stringify(r));
-      const v = await viec(goi, x.gvcn, 'thi_that', x.sid);
-      assert(v[0]?.due === moi && v[0].urgency === 'normal' && v[0].daGiaHan && /đã gia hạn/.test(v[0].contextLabel), JSON.stringify(v));
-      assert((await json(await goi(QL, `/cycles/${x.cy}/han-sau-thi`, put({ han: addDays(TODAY, 6) })))).soLanGiaHan === 2, 'QL gia hạn lần 2');
-      assert((await json(await goi(TVV, `/cycles/${x.cy}/han-sau-thi`, put({ han: addDays(TODAY, 7) })))).han === addDays(TODAY, 7), 'TVV gia hạn');
-      assert(one(`SELECT COUNT(*) n FROM audit_logs WHERE action = 'cycle.han_sau_thi' AND entity_id = ?`, x.cy).n === 3
-        && one(`SELECT COUNT(*) n FROM journey_events WHERE cycle_id = ? AND event_type = 'han_sau_thi'`, x.cy).n === 3, 'nhật ký + Hành trình');
+      const v = await viec(goi, TVV, 'buoc_tiep', x.sid);
+      assert(v[0]?.due === moi && v[0].daGiaHan && /đã gia hạn/.test(v[0].contextLabel), JSON.stringify(v));
+      assert((await json(await goi(TVV, `/cycles/${x.cy}/han-sau-thi`, put({ han: addDays(TODAY, 12) })))).soLanGiaHan === 2, 'TVV gia hạn lần 2');
+      assert(one(`SELECT COUNT(*) n FROM audit_logs WHERE action = 'cycle.han_sau_thi' AND entity_id = ?`, x.cy).n === 2
+        && one(`SELECT COUNT(*) n FROM journey_events WHERE cycle_id = ? AND event_type = 'han_sau_thi'`, x.cy).n === 2, 'nhật ký + Hành trình');
       const ls = await json(await goi(QL, `/students/${x.sid}/lich-su-sua`));
       assert(ls.dong.flatMap((k: any) => k.truong).some((f: any) => f.ten === 'Hạn sau thi'), 'Lịch sử sửa có "Hạn sau thi"');
-      const bo = await json(await goi(x.gvcn, `/cycles/${x.cy}/han-sau-thi`, put({ han: null })));
-      assert(bo.han === bo.hanGoc && !bo.daGiaHan && bo.quaHan, `Bỏ gia hạn → hạn gốc: ${JSON.stringify(bo)}`);
-      /* Hạn gốc còn tương lai: hạn mới không sau hạn gốc → 400 nói lý do. */
-      const y = em({ exam_date: addDays(TODAY, -1) });
-      assert(await ma(await goi(y.gvcn, `/cycles/${y.cy}/han-sau-thi`, put({ han: addDays(TODAY, 3) }))) === 400, 'không sau hạn gốc 400');
+      const bo = await json(await goi(QL, `/cycles/${x.cy}/han-sau-thi`, put({ han: null })));
+      assert(bo.han === addDays(TODAY, 7) && !bo.daGiaHan && !bo.quaHan, `Bỏ gia hạn → ngày có KQ + 7: ${JSON.stringify(bo)}`);
     });
   });
 
   // ------------------------------------------------------------------ 5 · sửa ngày thi không chặn
-  await checkAsync('Q13-5 · sửa ngày thi sau thi / sau có kết quả → 200, hạn tính lại; gia hạn muộn hơn hạn mới thì giữ', async () => {
+  await checkAsync('Q13-5 · sửa ngày thi sau thi / sau có kết quả → 200; hạn bước tiếp tính lại (muộn hơn của ngày thi + 7, ngày có KQ + 7); gia hạn muộn hơn giữ', async () => {
     const x = em({ exam_date: addDays(TODAY, -5) });
     await voiMayChu(TODAY, async (goi) => {
-      await json(await goi(x.gvcn, `/cycles/${x.cy}`, { method: 'PATCH', body: JSON.stringify({ examDate: addDays(TODAY, -2) }) }));
-      assert((await viec(goi, x.gvcn, 'thi_that', x.sid))[0]?.due === addDays(TODAY, 5), 'sau thi: sửa ngày → hạn tính lại');
-      await json(await goi(x.gvcn, `/cycles/${x.cy}/han-sau-thi`, put({ han: addDays(TODAY, 12) })));
-      await json(await goi(x.gvcn, `/cycles/${x.cy}`, { method: 'PATCH', body: JSON.stringify({ examDate: addDays(TODAY, -1) }) }));
-      assert((await viec(goi, x.gvcn, 'thi_that', x.sid))[0]?.due === addDays(TODAY, 12), 'gia hạn muộn hơn giữ');
-      await json(await goi(x.gvcn, `/cycles/${x.cy}/outcome`, put({ ...KQ, ngayThi: addDays(TODAY, -1) })));
-      assert(await ma(await goi(x.gvcn, `/cycles/${x.cy}`, { method: 'PATCH', body: JSON.stringify({ examDate: addDays(TODAY, -3) }) })) === 200, 'sau có kết quả: sửa ngày thi dự kiến 200');
-      assert(await ma(await goi(x.gvcn, `/cycles/${x.cy}/outcome`, put({ ngayThi: addDays(TODAY, -4) }))) === 200, 'sau có kết quả: sửa ngày thi thật 200');
-      const bt = (await viec(goi, QL, 'buoc_tiep', x.sid))[0];
+      await json(await goi(TVV, `/cycles/${x.cy}`, { method: 'PATCH', body: JSON.stringify({ examDate: addDays(TODAY, -2) }) }));
+      assert((await viec(goi, TVV, 'thi_that', x.sid))[0]?.due === null, 'sau thi: sửa ngày → vẫn không hạn');
+      await json(await goi(TVV, `/cycles/${x.cy}/outcome`, put({ ...KQ, ngayThi: addDays(TODAY, -1) })));
+      assert((await viec(goi, TVV, 'buoc_tiep', x.sid))[0]?.due === addDays(TODAY, 7), 'có KQ hôm nay → hôm nay + 7');
+      await json(await goi(QL, `/cycles/${x.cy}/han-sau-thi`, put({ han: addDays(TODAY, 12) })));
+      assert(await ma(await goi(QL, `/cycles/${x.cy}`, { method: 'PATCH', body: JSON.stringify({ examDate: addDays(TODAY, -3) }) })) === 200, 'sau có kết quả: sửa ngày thi dự kiến 200');
+      assert(await ma(await goi(TVV, `/cycles/${x.cy}/outcome`, put({ ngayThi: addDays(TODAY, -4) }))) === 200, 'sau có kết quả: sửa ngày thi thật 200');
+      const bt = (await viec(goi, TVV, 'buoc_tiep', x.sid))[0];
       assert(bt?.due === addDays(TODAY, 12) && bt.daGiaHan, `bước tiếp giữ gia hạn: ${JSON.stringify(bt)}`);
     });
   });
 
-  // ------------------------------------------------------------------ 6 · kết quả nhập sau hạn
-  await checkAsync('Q13-6 · kết quả nhập SAU hạn → Chọn bước tiếp hạn = ngày nhập (không quá hạn ngay); sửa kết quả hôm sau không dời hạn; chọn bước tiếp không bị chặn', async () => {
+  // ------------------------------------------------------------------ 6 · kết quả nhập muộn
+  await checkAsync('Q13-6 · kết quả nhập muộn → Chọn bước tiếp hạn = ngày nhập + 7 (không quá hạn ngay); sửa kết quả hôm sau không dời hạn; quá hạn sau 7 ngày; chọn không bị chặn', async () => {
     const x = em({ exam_date: addDays(TODAY, -20) });
     await voiMayChu(TODAY, async (goi) => {
-      assert((await viec(goi, x.gvcn, 'thi_that', x.sid))[0]?.urgency === 'overdue', 'tiền đề: việc kết quả quá hạn');
-      await json(await goi(x.gvcn, `/cycles/${x.cy}/outcome`, put({ ...KQ, ngayThi: addDays(TODAY, -20) })));
-      const bt = (await viec(goi, QL, 'buoc_tiep', x.sid))[0];
-      assert(bt?.due === TODAY && bt.urgency === 'normal', `bước tiếp: ${JSON.stringify(bt)}`);
+      assert((await viec(goi, TVV, 'thi_that', x.sid))[0]?.urgency === 'normal', 'việc kết quả không quá hạn');
+      await json(await goi(TVV, `/cycles/${x.cy}/outcome`, put({ ...KQ, ngayThi: addDays(TODAY, -20) })));
+      const bt = (await viec(goi, TVV, 'buoc_tiep', x.sid))[0];
+      assert(bt?.due === addDays(TODAY, 7) && bt.urgency === 'normal', `bước tiếp: ${JSON.stringify(bt)}`);
     });
     await voiMayChu(addDays(TODAY, 1), async (goi) => {
-      await json(await goi(x.gvcn, `/cycles/${x.cy}/outcome`, put({ s: 7 })));
-      const bt = (await viec(goi, QL, 'buoc_tiep', x.sid))[0];
-      assert(bt?.due === TODAY && bt.urgency === 'overdue', `sửa kết quả không dời hạn: ${JSON.stringify(bt)}`);
-      assert(await ma(await goi(QL, `/cycles/${x.cy}/buoc-tiep`, { method: 'POST', body: JSON.stringify({ chon: 'tam_dung' }) })) === 200, 'chọn khi quá hạn: không chặn');
+      await json(await goi(TVV, `/cycles/${x.cy}/outcome`, put({ s: 7 })));
+      assert((await viec(goi, TVV, 'buoc_tiep', x.sid))[0]?.due === addDays(TODAY, 7), 'sửa kết quả không dời hạn');
+    });
+    await voiMayChu(addDays(TODAY, 8), async (goi) => {
+      const bt = (await viec(goi, TVV, 'buoc_tiep', x.sid))[0];
+      assert(bt?.urgency === 'overdue', `quá hạn sau 7 ngày kể từ ngày có KQ: ${JSON.stringify(bt)}`);
+      assert(await ma(await goi(TVV, `/cycles/${x.cy}/buoc-tiep`, { method: 'POST', body: JSON.stringify({ chon: 'tam_dung' }) })) === 200, 'chọn khi quá hạn: không chặn');
     });
   });
 
   // ------------------------------------------------------------------ 7 · migrate
-  check('Q13-7 · migrate ĐẦY ĐỦ trên bản sao DB demo bỏ 5 cột OV-13q (chưa khoá): thêm cột, lộ trình quá hạn → hôm nay + 7 (so_lan 0, lý do chuyển luật); lần hai không đổi', () => {
+  check('Q13-7 · migrate ĐẦY ĐỦ trên bản sao DB demo bỏ 5 cột OV-13q (chưa khoá): thêm cột; chờ kết quả không hạn (SV-TVV-VIEC) → không đặt hạn; lần hai không đổi', () => {
     const fs = require('node:fs') as typeof import('node:fs'), os = require('node:os') as typeof import('node:os');
     const pathMod = require('node:path') as typeof import('node:path'), cp = require('node:child_process') as typeof import('node:child_process');
     const qua = em({ exam_date: addDays(TODAY, -30) });   // chưa kết quả, hạn luật mới đã qua
@@ -242,8 +244,9 @@ export async function runPrOv13qTests(t: YThucTestKit) {
       const dong = c2.prepare('SELECT han_sau_thi, han_sau_thi_so_lan, han_sau_thi_ly_do FROM learning_cycles WHERE id = ?').get(qua.cy) as any;
       const truoc = JSON.stringify(c2.prepare('SELECT id, han_sau_thi, han_sau_thi_luc FROM learning_cycles ORDER BY id').all());
       c2.close();
-      assert(a1.some((x) => x.startsWith('OV-13q: thêm cột')) && a1.some((x) => /^OV-13q: \d+ lộ trình/.test(x)), `lần 1: ${JSON.stringify(a1)}`);
-      assert(dong.han_sau_thi === addDays(TODAY, 7) && dong.han_sau_thi_so_lan === 0 && dong.han_sau_thi_ly_do === m13q.LY_DO_CHUYEN_LUAT, JSON.stringify(dong));
+      assert(a1.some((x) => x.startsWith('OV-13q: thêm cột')), `lần 1: ${JSON.stringify(a1)}`);
+      /* SV-TVV-VIEC: chờ kết quả không còn hạn → không quá hạn → migrate không đặt hạn cho lộ trình này. */
+      assert(dong.han_sau_thi === null && dong.han_sau_thi_so_lan === 0, JSON.stringify(dong));
       const a2 = doc(goi());
       const c3 = new Database(f);
       const sau = JSON.stringify(c3.prepare('SELECT id, han_sau_thi, han_sau_thi_luc FROM learning_cycles ORDER BY id').all());
@@ -264,30 +267,30 @@ export async function runPrOv13qTests(t: YThucTestKit) {
     conn.prepare(`UPDATE learning_cycles SET status = 'abandoned', ended_at = ?, thi_that_ngay = ?, thi_that_l = 6, thi_that_r = 6, thi_that_w = 6, thi_that_s = 6, outcome = 'not_reached', outcome_score = 6 WHERE id = ?`)
       .run(addDays(TODAY, -15), addDays(TODAY, -20), y.cy);
     await voiMayChu(TODAY, async (goi) => {
-      assert((await viec(goi, x.gvcn, 'thi_that', x.sid)).length === 0 && (await viec(goi, QL, 'thi_that', x.sid, '?nguoi=tat-ca')).length === 0, 'em thôi học: không việc');
+      assert((await viec(goi, TVV, 'thi_that', x.sid)).length === 0 && (await viec(goi, QL, 'thi_that', x.sid, '?nguoi=tat-ca')).length === 0, 'em thôi học: không việc');
       const pm = await json(await goi(x.gvcn, `/hoc-vien-lop/em/${x.sid}`));
       const hs = await json(await goi(x.gvcn, `/students/${x.sid}`));
       const cl = await json(await goi(TVV, '/hoc-vien-lop/theo-vai'));
       assert(pm.sauThi === null && hs.sauThi === null && !cl.ids['da-thi'].includes(x.sid) && !cl.rows.find((h: any) => h.id === x.sid)?.sauThi, 'không nhãn / ô');
       assert(!m13q.canDatHanOv13q(conn, TODAY).some((c: any) => c.id === x.cy), 'migrate không đặt hạn');
-      assert((await viec(goi, QL, 'buoc_tiep', y.sid)).length === 1 && (await json(await goi(QL, `/hoc-vien-lop/em/${y.sid}`))).sauThi?.giaiDoan === 'cho_buoc_tiep', 'có kết quả → vẫn chờ bước tiếp');
+      assert((await viec(goi, TVV, 'buoc_tiep', y.sid)).length === 1 && (await json(await goi(QL, `/hoc-vien-lop/em/${y.sid}`))).sauThi?.giaiDoan === 'cho_buoc_tiep', 'có kết quả → vẫn chờ bước tiếp');
     });
   });
 
-  await checkAsync('Q13-10 · gia hạn: ngày không có thật 400; "chờ bước tiếp" chỉ QL / TVV (GVCN 403); hạn = ngày có kết quả (muộn hơn gia hạn) → không ghi "đã gia hạn"', async () => {
-    const x = em({ exam_date: addDays(TODAY, -6) });   // hạn gốc = TODAY + 1
+  await checkAsync('Q13-10 · gia hạn: chờ kết quả 400; ngày không có thật 400; "chờ bước tiếp" chỉ QL / TVV (GVCN 403, không nút); hạn = ngày có KQ + 7 → không ghi "đã gia hạn"', async () => {
+    const x = em({ exam_date: addDays(TODAY, -6) });
     await voiMayChu(TODAY, async (goi) => {
-      assert(await ma(await goi(x.gvcn, `/cycles/${x.cy}/han-sau-thi`, put({ han: '2026-09-31' }))) === 400, '31/09 phải 400');
-      await json(await goi(x.gvcn, `/cycles/${x.cy}/han-sau-thi`, put({ han: addDays(TODAY, 3) })));
+      assert(await ma(await goi(x.gvcn, `/cycles/${x.cy}/han-sau-thi`, put({ han: addDays(TODAY, 3) }))) === 400, 'chờ kết quả: không gia hạn');
     });
     await voiMayChu(addDays(TODAY, 5), async (goi) => {
-      await json(await goi(x.gvcn, `/cycles/${x.cy}/outcome`, put({ ...KQ, ngayThi: addDays(TODAY, -6) })));   // nhập sau gia hạn
-      const bt = (await viec(goi, QL, 'buoc_tiep', x.sid))[0];
-      assert(bt?.due === addDays(TODAY, 5) && !bt.daGiaHan && !/đã gia hạn/.test(bt.contextLabel), `hạn từ ngày có kết quả: ${JSON.stringify(bt)}`);
-      assert(await ma(await goi(x.gvcn, `/cycles/${x.cy}/han-sau-thi`, put({ han: addDays(TODAY, 9) }))) === 403, 'GVCN chờ bước tiếp 403');
+      await json(await goi(TVV, `/cycles/${x.cy}/outcome`, put({ ...KQ, ngayThi: addDays(TODAY, -6) })));
+      const bt = (await viec(goi, TVV, 'buoc_tiep', x.sid))[0];
+      assert(bt?.due === addDays(TODAY, 12) && !bt.daGiaHan && !/đã gia hạn/.test(bt.contextLabel), `hạn từ ngày có KQ + 7: ${JSON.stringify(bt)}`);
+      assert(await ma(await goi(x.gvcn, `/cycles/${x.cy}/han-sau-thi`, put({ han: addDays(TODAY, 20) }))) === 403, 'GVCN chờ bước tiếp 403');
       const pm = await json(await goi(x.gvcn, `/hoc-vien-lop/em/${x.sid}`));
       assert(pm.sauThi?.giaiDoan === 'cho_buoc_tiep' && !pm.sauThi.coTheGiaHan, 'GVCN không có nút Gia hạn ở chờ bước tiếp');
-      assert((await json(await goi(QL, `/cycles/${x.cy}/han-sau-thi`, put({ han: addDays(TODAY, 9) })))).daGiaHan, 'QL gia hạn được');
+      assert(await ma(await goi(QL, `/cycles/${x.cy}/han-sau-thi`, put({ han: '2026-09-31' }))) === 400, '31/09 phải 400');
+      assert((await json(await goi(QL, `/cycles/${x.cy}/han-sau-thi`, put({ han: addDays(TODAY, 20) })))).daGiaHan, 'QL gia hạn được');
     });
   });
 

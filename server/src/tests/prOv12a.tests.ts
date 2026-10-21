@@ -189,6 +189,7 @@ export async function runPrOv12aTests(t: any) {
     conn.prepare(`INSERT INTO enrollments (student_id, class_id, status, started_at, created_at) VALUES (?,?, 'active', ?, ?)`).run(sid, lop, t.TODAY, now);
     const cy = Number(conn.prepare(`INSERT INTO learning_cycles (student_id, seq, route, programme_code, target_score, started_at, status, created_at) VALUES (?, 1, 'LT1', 'FT', 6.5, ?, 'active', ?)`)
       .run(sid, t.TODAY, now).lastInsertRowid);
+    conn.prepare('UPDATE students SET consultant_user_id = ? WHERE id = ?').run(TVV.userId, sid);   // SV-TVV-VIEC: TVV của em giữ việc Bước tiếp
     students.setStudentStatus(P.admin, sid, 'finished', t.TODAY, 'Hết khoá');
     thiThat.datKetQuaThiThat(TVV, cy, { ngayThi: t.TODAY, l: 7, r: 6.5, w: 6, s: 6.5 });   // OV-8b: TVV nhập kết quả thi thật
     return { sid, cy };
