@@ -602,7 +602,7 @@ export const EN_C = {
   'PA {loai} đã thực hiện': 'PA {loai} done',
   'PA {loai} thành công': 'PA {loai} successful',
   'Một Case chỉ đếm một lần. Mọi số bấm được ra danh sách đúng số đó.': 'Each case counts once. Every number opens its list.',
-  'Mỗi ô: số học viên đạt kỳ vọng của đợt đó / số học viên đã có điểm kỹ năng đó. W1, W2 so từng bài với kỳ vọng. Bấm một dòng để xem vấn đề hay gặp.': 'Each cell: students meeting that round’s expected band / students scored in that skill. W1, W2 compared per paper. Click a row for common issues.',
+  'Mỗi ô: số học viên đạt / số học viên đã có điểm kỹ năng đó ở lượt đủ Overall. Overall đạt kỳ vọng của đợt thì mọi kỹ năng tính đạt; chưa đạt thì xét từng kỹ năng (W1, W2 riêng). Bấm một dòng để xem vấn đề hay gặp.': 'Each cell: students passing / students scored in that skill, on rounds with a full Overall. Overall at the round’s expected band counts every skill as passed; otherwise each skill is checked (W1, W2 separately). Click a row for common issues.',
   'Mỗi ô: số học viên đạt (từ 70%) / số học viên đã có điểm môn đó. Bấm một dòng để xem vấn đề hay gặp.': 'Each cell: students passing (70%+) / students scored in that subject. Click a row for common issues.',
   '{dat}/{tong} HV đạt': '{dat}/{tong} passed',
   'Chưa chuyển được': 'Not transferred',

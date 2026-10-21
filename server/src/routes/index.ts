@@ -1982,6 +1982,16 @@ api.get('/giao-vien/:id/ket-qua', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   return ketQuaHoSoGv(principalOf(req), soDuong(req.params.id, 'id') ?? pInt(req, 'id'));
 }));
+/* V5 SV-SO2: số hồ sơ GV theo kỳ (`tu`, `den` = Thứ Hai, ≤ 13 tuần; vắng = 4 tuần tới tuần này) + panel chỉ đọc của một số (`cot`). */
+api.get('/giao-vien/:id/chi-so', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return giaoVienPtSvc.chiSoHoSoGv(principalOf(req), soDuong(req.params.id, 'id') ?? pInt(req, 'id'), { tu: qStr(req, 'tu') ?? null, den: qStr(req, 'den') ?? null });
+}));
+api.get('/giao-vien/:id/chi-so/o', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return giaoVienPtSvc.oChiSoHoSoGv(principalOf(req), soDuong(req.params.id, 'id') ?? pInt(req, 'id'),
+    { tu: qStr(req, 'tu') ?? null, den: qStr(req, 'den') ?? null, cot: qStr(req, 'cot') ?? '' });
+}));
 api.get('/giao-vien/:id/o', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   return oHoSoGv(principalOf(req), soDuong(req.params.id, 'id') ?? pInt(req, 'id'), {

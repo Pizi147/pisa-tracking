@@ -114,26 +114,27 @@ export async function runPrOv12eTests(t: YThucTestKit) {
     return r ? loadPrincipal(r.u) : null;
   };
 
+  /* V5 C22 (SV-SO2): panel số chỉ đọc — dòng chỉ mang việc khi khu làm việc xin (`kemViec`); luật `lam` vẫn kiểm ở đây. */
   check('OV12e-4 · dòng Case / PA mang việc của dòng: Xác nhận PA (PA cần chốt, QL làm được, GV môn khác chỉ đọc); Case đã xong không còn hạn / việc', () => thu(() => {
     assert(paCho, 'bộ demo thiếu Case MT có PA quy chế chờ xác nhận');
-    const dQl = metrics.rowsFor('case', [paCho.case_id], 'case-mo', P.mbManager)[0];
+    const dQl = metrics.rowsFor('case', [paCho.case_id], 'case-mo', P.mbManager, true)[0];
     assert(dQl.viec?.loai === 'xac-nhan-pa' && dQl.viec.paId === paCho.id && dQl.viec.lam === true, `QL: ${JSON.stringify(dQl.viec)}`);
     assert(dQl.viec.pa && typeof dQl.viec.pa.description === 'string', 'Xác nhận PA ngay trong dòng cần nội dung PA');
     assert(dQl.em?.id === paCho.student_id && typeof dQl.lop === 'string', `đầu dòng em · lớp: ${JSON.stringify([dQl.em, dQl.lop])}`);
     /* Ngăn Case chỉ đọc (TVV / CX) có dòng Phụ huynh — cùng liên hệ đầu hồ sơ. */
     const ph = cases.caseDetail(P.mbManager, paCho.case_id).student?.phuHuynh;
     assert(ph && 'parentName' in ph && 'parentPhone' in ph, `phuHuynh: ${JSON.stringify(ph)}`);
-    const pa = metrics.rowsFor('phuong-an', [paCho.id], 'pa-can-cap-nhat', P.mbManager)[0];
+    const pa = metrics.rowsFor('phuong-an', [paCho.id], 'pa-can-cap-nhat', P.mbManager, true)[0];
     assert(pa.viec?.loai === 'xac-nhan-pa' && pa.viec.caseId === paCho.case_id, `dòng PA: ${JSON.stringify(pa.viec)}`);
     const khac = gvMonKhac(paCho.class_id, paCho.topic);
     if (khac) {
-      const d = metrics.rowsFor('case', [paCho.case_id], 'case-mo', khac)[0];
+      const d = metrics.rowsFor('case', [paCho.case_id], 'case-mo', khac, true)[0];
       assert(d.viec && d.viec.lam === false, `GV môn khác chỉ đọc: ${JSON.stringify(d.viec)}`);
     }
     /* Nghi lỗi đặc tả mục 1: Case xong vẫn mang hạn xác nhận → panel báo "quá hạn". */
     conn.prepare(`UPDATE sos_cases SET status = 'done', han_xac_nhan = ? WHERE id = ?`).run(cong(-9), paCho.case_id);
     xoaNho();
-    const xong = metrics.rowsFor('case', [paCho.case_id], 'case-mo', P.mbManager)[0];
+    const xong = metrics.rowsFor('case', [paCho.case_id], 'case-mo', P.mbManager, true)[0];
     assert(!xong.han && !xong.viec, `Case xong: han ${xong.han} · việc ${JSON.stringify(xong.viec)}`);
   }));
 
@@ -148,12 +149,12 @@ export async function runPrOv12eTests(t: YThucTestKit) {
       const ghi = (caseId: number, paId: number) => {
         try { return !!cases.caseDetail(p, caseId).interventions.find((x: any) => x.id === paId)?.ghiDuoc; } catch (e: any) { if (e?.status === 403) return false; throw e; }
       };
-      for (const d of metrics.rowsFor('phuong-an', pas.map((r) => r.id), 'pa-can-cap-nhat', p)) {
+      for (const d of metrics.rowsFor('phuong-an', pas.map((r) => r.id), 'pa-can-cap-nhat', p, true)) {
         if (d.viec?.loai !== 'ghi-ket-qua') continue;
         soSo++;
         if (d.viec.lam !== ghi(d.viec.caseId, d.viec.paId)) lech.push(`u${p.userId} PA ${d.viec.paId}: dòng ${d.viec.lam}`);
       }
-      for (const d of metrics.rowsFor('case', [...new Set(pas.map((r) => r.case_id))], 'case-mo', p)) {
+      for (const d of metrics.rowsFor('case', [...new Set(pas.map((r) => r.case_id))], 'case-mo', p, true)) {
         if (d.viec?.loai !== 'ghi-ket-qua') continue;
         soSo++;
         if (d.viec.lam !== ghi(d.viec.caseId, d.viec.paId)) lech.push(`u${p.userId} Case ${d.id} PA ${d.viec.paId}: dòng ${d.viec.lam}`);
@@ -174,7 +175,7 @@ export async function runPrOv12eTests(t: YThucTestKit) {
     assert(one('SELECT confirmed_at FROM case_interventions WHERE id = ?', paCho.id).confirmed_at, 'QL xác nhận được');
     const r = metrics.metricSet(P.mbManager, 'bai-qua-han-nhap-diem', {});
     if (r.ids.length) {
-      const d = metrics.rowsFor('bai', [r.ids[0]], 'bai-qua-han-nhap-diem', P.mbManager)[0];
+      const d = metrics.rowsFor('bai', [r.ids[0]], 'bai-qua-han-nhap-diem', P.mbManager, true)[0];
       assert(d.viec?.loai === 'nhap-diem' && d.viec.classId && /^(mt|cp|thuong):/.test(d.viec.luot) && d.viec.kn, `dòng bài: ${JSON.stringify(d.viec)}`);
     }
   }));

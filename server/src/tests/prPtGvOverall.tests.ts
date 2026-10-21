@@ -90,9 +90,10 @@ export async function runPrPtGvOverallTests(t: YThucTestKit) {
     assert(ketQuaEm(chua.sid, 'reading')?.kq === 'Chưa đạt' && ketQuaEm(chua.sid, 'listening')?.kq === 'Đạt', 'chưa đạt Target');
     assert(ketQuaEm(chua.sid, 'writing2')?.kq === 'Chưa đạt', 'W thi thật tính cho GV W2');
   }));
-  check('V5GV (T19, C08) · mẫu 0 → "Chưa có dữ liệu"; mẫu < 5 → "mẫu nhỏ"; không còn hàm màu ngưỡng', () => {
+  /* 10 (22/10): bỏ chữ "mẫu nhỏ" ở Phân tích GV — mẫu < 5 vẫn ghi %. */
+  check('V5GV (T19, C08) · mẫu 0 → "Chưa có dữ liệu"; mẫu < 5 vẫn ghi % (không "mẫu nhỏ"); không còn hàm màu ngưỡng', () => {
     assert(d.chuOPtGv({ k: 'rong' }).phu === 'Chưa có dữ liệu', d.chuOPtGv({ k: 'rong' }).phu);
-    assert(d.chuOPtGv({ k: 'so', dung: 3, tong: 4 }).phu === 'mẫu nhỏ' && d.chuOPtGv({ k: 'so', dung: 18, tong: 20 }).phu === '90%', 'mẫu nhỏ / %');
+    assert(d.chuOPtGv({ k: 'so', dung: 3, tong: 4 }).phu === '75%' && d.chuOPtGv({ k: 'so', dung: 18, tong: 20 }).phu === '90%', '%');
     assert(d.mauKetQuaGv === undefined, 'mauKetQuaGv còn');
   });
   check('V5GV (C20, T04) · không còn chỉ số "FT xong MT3, chưa MT kế" ở Cần xử lý / Báo cáo / bảng chi nhánh; QL vẫn thêm MT4 tay', () => thu(() => {
