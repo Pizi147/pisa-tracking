@@ -87,12 +87,12 @@ export function buildUxDemo(conn: any, adminId: number): { tvv: number; soHvTvv:
   nhapMt2('Tạ Minh Quân', 27, 28, 6.5, 6.5, 6.5);
   nhapMt2('Lương Bảo Anh', 27, 27, 6.0, null, null);
   /* Số nghiệm thu T11 (08 mục 2): MT2 MB FT 101 = 20 em đủ dữ liệu · 15 đạt. 10 lượt MT2 còn trống dời về W3 AUG (tuần MT2 của lớp) rồi nhập:
-     6 em Overall = kỳ vọng (Đạt), 4 em dưới kỳ vọng 0.5 (Chưa đạt). Kỳ vọng MT2 = Target − 0.5. */
+     6 em Overall = kỳ vọng (Đạt), 4 em Overall dưới kỳ vọng (Chưa đạt). Kỳ vọng MT2 = Target − 0.5. */
   const w3Aug = ensurePeriod('2026-08-17').id;
   const BU_MT2: [string, boolean][] = [
     ['Hà Gia Bình', true], ['Ngô Thanh Tùng', true], ['Trịnh Gia Bảo', true], ['Đặng Thu Hà', true], ['Võ Minh Triết', true], ['Chu Nhật Minh', true],
     /* Chưa đạt → Case SOS tự tạo: chỉ em không thuộc kịch bản demo nào (phép kiểm cũ soi Case của em kịch bản). */
-    ['Ngô Bảo Châu', false], ['Lý Thanh Tâm', false], ['Phạm Khánh Linh', false], ['Kiều Thảo Nhi', false],
+    ['Ngô Bảo Châu', false], ['Lý Thanh Tâm', false], ['Mạc Tuấn Kiệt', false], ['Kiều Thảo Nhi', false],
   ];
   for (const [ten, dat] of BU_MT2) {
     const a = conn.prepare(`SELECT a.id, a.target_at_attempt AS t FROM assessment_attempts a JOIN students s ON s.id = a.student_id
@@ -100,10 +100,12 @@ export function buildUxDemo(conn: any, adminId: number): { tvv: number; soHvTvv:
     if (!a?.t) continue;
     conn.prepare('UPDATE assessment_attempts SET planned_period_id = ? WHERE id = ?').run(w3Aug, a.id);
     conn.prepare('UPDATE attempt_skills SET planned_period_id = ? WHERE attempt_id = ?').run(w3Aug, a.id);
-    const b = a.t - 0.5 - (dat ? 0 : 0.5);
+    /* Chưa đạt chỉ MỘT kỹ năng dưới kỳ vọng (S thấp 2 band → Overall dưới 0.5): một Case SOS, câu tóm tắt hồ sơ như nhau mọi người xem. */
+    const b = a.t - 0.5, s = dat ? b : b - 2;
     saveScore(admin, a.id, 'listening', { rawScore: LISTENING_BY_RAW.indexOf(b), resultDate: '2026-08-21' });
     saveScore(admin, a.id, 'reading', { rawScore: READING_BY_RAW.indexOf(b), resultDate: '2026-08-21' });
-    for (const k of ['writing1', 'writing2', 'speaking']) saveScore(admin, a.id, k, { criteria: [b, b, b, b], resultDate: '2026-08-22' });
+    for (const k of ['writing1', 'writing2']) saveScore(admin, a.id, k, { criteria: [b, b, b, b], resultDate: '2026-08-22' });
+    saveScore(admin, a.id, 'speaking', { criteria: [s, s, s, s], resultDate: '2026-08-22' });
   }
 
   // ---------------------------------------------------------------- U5 · HD FT 306 (lớp mới, GV mới)
