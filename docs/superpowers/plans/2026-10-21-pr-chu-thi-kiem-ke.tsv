@@ -1,0 +1,536 @@
+loai	cho	chu_cu	chu_moi
+DOI	web/src/modules/cham/ChamDiemPage.tsx	Ô để trống là chưa nhập, không phải 0 điểm. Chỉ kỹ năng bạn được phân công mới sửa được; kỹ năng khác vẫn đọc được để đối chiếu. Enter hoặc ↓ xuống em kế tiếp, Esc huỷ ô đang sửa. Mỗi môn có tuần thi và hạn chấm riêng.	Ô để trống là chưa nhập, không phải 0 điểm. Chỉ kỹ năng bạn được phân công mới sửa được; kỹ năng khác vẫn đọc được để đối chiếu. Enter hoặc ↓ xuống em kế tiếp, Esc huỷ ô đang sửa. Mỗi môn có tuần Test và hạn chấm riêng.
+DOI	web/src/modules/cham/ChamDiemPage.tsx	khi em có lịch mà không làm bài; sửa lại được đến hết Chủ nhật của tuần thi, còn nguyên thì thành Không dự thi.	khi em có lịch mà không làm bài; sửa lại được đến hết Chủ nhật của tuần Test, còn nguyên thì thành Vắng.
+DOI	web/src/modules/cham/ChamDiemPage.tsx	Tuần thi của từng môn (rê chuột lên tên cột để xem tên môn đầy đủ)	Tuần Test của từng môn (rê chuột lên tên cột để xem tên môn đầy đủ)
+DOI	web/src/modules/cham/DanExcel.tsx	Chưa tới tuần thi {tuan}	Chưa tới tuần Test {tuan}
+DOI	web/src/modules/cham/DanExcel.tsx shared/domain/danExcel.ts	Lượt này không thi kỹ năng này	Lượt này không có kỹ năng này
+DOI	web/src/modules/cham/DiemTheoLop.tsx	{nhan} là MT cũ: nhập bù điểm; "-" là em không dự thi.	{nhan} là MT cũ: nhập bù điểm; "-" là Đã huỷ · vắng MT cũ.
+DOI	web/src/modules/cham/LuoiFT.tsx	Hạn chấm tính riêng cho từng môn, từ tuần thi của chính môn đó: hết thứ Tư của tuần kế tiếp. Quản lý đặt được hạn riêng.	Hạn chấm tính riêng cho từng môn, từ tuần Test của chính môn đó: hết thứ Tư của tuần kế tiếp. Quản lý đặt được hạn riêng.
+DOI	web/src/modules/cham/LuoiFT.tsx	· đợt này thi {size} tuần	· đợt này làm bài trong {size} tuần
+DOI	web/src/modules/cham/LuoiFT.tsx	{skillLabel}: thi tuần {tuanLich}	{skillLabel}: làm bài tuần {tuanLich}
+DOI	web/src/modules/cham/LuoiFT.tsx shared/domain/danExcel.ts shared/domain/thaoTacMt.ts	Chưa tới tuần thi	Chưa tới tuần Test
+DOI	web/src/modules/cham/LuoiThuong.tsx web/src/modules/fasttrack/DongThoiGianLuot.tsx web/src/modules/fasttrack/HopNhapDiem.tsx web/src/modules/fasttrack/ODiemLon.tsx web/src/modules/fasttrack/ScoreEntry.tsx shared/domain/fasttrack.ts	Đã huỷ phần thi	Đã huỷ
+DOI	web/src/modules/cham/LuoiThuong.tsx	{tenMon}: thi tuần {tuanLich}	{tenMon}: làm bài tuần {tuanLich}
+DOI	web/src/modules/cham/LuoiThuong.tsx	{x} không dự thi	{x} vắng
+DOI	web/src/modules/cham/LuoiThuong.tsx	{x}: Không dự thi.	{x}: Vắng.
+DOI	web/src/modules/cham/MotKyNang.tsx web/src/modules/fasttrack/HopNhapDiem.tsx web/src/modules/fasttrack/HopThaoTacMt.tsx web/src/modules/fasttrack/MockDetailPage.tsx web/src/modules/fasttrack/ScoreEntry.tsx shared/domain/oMt.ts server/src/platform/lichSu.ts	Không dự thi	Vắng
+DOI	web/src/modules/classes/BangDiemLopThuong.tsx	Tuần thi đã qua nhưng chưa nhập điểm	Tuần Test đã qua nhưng chưa nhập điểm
+DOI	web/src/modules/classes/BangDiemLopThuong.tsx	Tuần thi môn này	Tuần Test môn này
+DOI	web/src/modules/classes/ClassProgressPanel.tsx	Tuần thi Progress Test	Tuần Progress Test
+DOI	web/src/modules/classes/ClassProgressPanel.tsx	Tuần thi Final Test	Tuần Final Test
+DOI	web/src/modules/classes/ClassProgressPanel.tsx	Tuần thi Progress Test (tuần học)	Tuần Progress Test (tuần học)
+DOI	web/src/modules/classes/ClassProgressPanel.tsx	Tuần thi Final Test (tuần học)	Tuần Final Test (tuần học)
+DOI	web/src/modules/classes/TransitionPanel.tsx	Bài Test đang dở đi theo em sang lớp mới; bài đã thi xong ở lại {cu}	Bài Test đang dở đi theo em sang lớp mới; bài đã làm xong ở lại {cu}
+DOI	web/src/modules/congViec/HoTroHocVienTab.tsx	Báo cáo đơn vị ›	Họp đơn vị ›
+DOI	web/src/modules/dev/SanMauNen.tsx	Hàng đã thi	Hàng đã làm bài
+DOI	web/src/modules/dev/SanMauNen.tsx	Đã thi · đang chọn	Đã làm bài · đang chọn
+DOI	web/src/modules/duyet/TheYeuCau.tsx	Ví dụ: Em ốm cả tuần thi	Ví dụ: Em ốm cả tuần Test
+DOI	web/src/modules/duyet/TheYeuCau.tsx web/src/modules/fasttrack/HopThaoTacMt.tsx	Tuần thi mới	Tuần Test mới
+DOI	web/src/modules/fasttrack/DongThoiGianLuot.tsx	{x} / không dự thi	{x} / vắng
+DOI	web/src/modules/fasttrack/DongThoiGianLuot.tsx	Trạng thái thi	Trạng thái làm bài
+DOI	web/src/modules/fasttrack/DongThoiGianLuot.tsx web/src/modules/test/keHoach/ChipKyNang.tsx shared/domain/fasttrack.ts shared/domain/oMt.ts server/src/platform/lichSu.ts	Đã thi	Đã làm bài
+DOI	web/src/modules/fasttrack/HopThaoTacMt.tsx	Đặt tuần thi cho {mon}; các kỹ năng khác giữ nguyên.	Đặt tuần Test cho {mon}; các kỹ năng khác giữ nguyên.
+DOI	web/src/modules/fasttrack/HopThaoTacMt.tsx	Đặt tuần thi mới cho bài vắng {mon}. Tính là một lần dời do vắng.	Đặt tuần Test mới cho bài vắng {mon}. Tính là một lần dời do vắng.
+DOI	web/src/modules/fasttrack/HopThaoTacMt.tsx	Chỉ {mon} đổi tuần thi; các kỹ năng khác giữ nguyên. Không tính là một lần dời do vắng.	Chỉ {mon} đổi tuần Test; các kỹ năng khác giữ nguyên. Không tính là một lần dời do vắng.
+DOI	web/src/modules/fasttrack/HopThaoTacMt.tsx	{mon} bỏ khỏi đợt này, không tính vào kết quả đợt. "Đưa lại vào đợt" để thi lại.	{mon} bỏ khỏi đợt này, không tính vào kết quả đợt. "Đưa lại vào đợt" để làm bài lại.
+DOI	web/src/modules/fasttrack/HopThaoTacMt.tsx	{mon} trở lại danh sách thi của đợt này. Tuần cũ còn hợp lệ thì giữ, không thì về Chưa xếp lịch.	{mon} trở lại danh sách làm bài của đợt này. Tuần cũ còn hợp lệ thì giữ, không thì về Chưa xếp lịch.
+DOI	web/src/modules/fasttrack/HopThaoTacMt.tsx	Tuần thi đã qua: ghi Không dự thi cho {mon} — không dời, không tính lần vắng.	Tuần Test đã qua: ghi Vắng cho {mon} — không dời, không tính lần vắng.
+DOI	web/src/modules/fasttrack/HopThaoTacMt.tsx	Ghi "-" cho {mon} và chốt ngay. Lần đầu máy tự dời sang tuần kế tiếp (tuần đó đã qua thì gửi Quản lý); lần 2 huỷ phần thi này.	Ghi "-" cho {mon} và chốt ngay. Lần đầu máy tự dời sang tuần kế tiếp (tuần đó đã qua thì gửi Quản lý); lần 2 huỷ kỹ năng này.
+DOI	web/src/modules/fasttrack/HopThaoTacMt.tsx	{mon} đã huỷ vì vắng 2 lần sẽ không thi lại; đợt tính trên các kỹ năng còn lại.	{mon} đã huỷ vì vắng 2 lần sẽ không làm lại; đợt tính trên các kỹ năng còn lại.
+DOI	web/src/modules/fasttrack/HopThaoTacMt.tsx	Mở lại phần thi {mon} đã huỷ và đặt tuần thi mới trong cùng một lần.	Mở lại kỹ năng {mon} đã huỷ và đặt tuần Test mới trong cùng một lần.
+DOI	web/src/modules/fasttrack/HopThaoTacMt.tsx	Đã dời lịch thi	Đã dời lịch Test
+DOI	web/src/modules/fasttrack/HopThaoTacMt.tsx	Đã lên lịch thi	Đã lên lịch Test
+DOI	web/src/modules/fasttrack/HopThaoTacMt.tsx shared/domain/oMt.ts	Đang thi	Đang làm bài
+DOI	web/src/modules/fasttrack/HopThaoTacMt.tsx web/src/modules/test/keHoach/HopKyNang.tsx	Ví dụ: trùng lịch phòng thi	Ví dụ: trùng lịch phòng
+DOI	web/src/modules/fasttrack/MockDetailPage.tsx web/src/modules/test/keHoach/ChipKyNang.tsx web/src/modules/test/keHoach/HopKyNang.tsx shared/domain/keHoachTest.ts server/src/keHoach/keHoachTest.ts	đã huỷ phần thi	đã huỷ
+DOI	web/src/modules/fasttrack/MockDetailPage.tsx web/src/modules/test/keHoach/XepTheoHocVien.tsx shared/domain/keHoachOv15c.ts shared/domain/keHoachTest.ts server/src/keHoach/keHoachTest.ts server/src/phanTich/baoCao.ts	đã thi	đã làm bài
+DOI	web/src/modules/fasttrack/MockDetailPage.tsx	, quá hạn thì huỷ phần thi	, quá hạn thì huỷ kỹ năng
+DOI	web/src/modules/fasttrack/MockDetailPage.tsx	Đợt này thi ở nhiều tuần	Đợt này làm bài ở nhiều tuần
+DOI	web/src/modules/fasttrack/MockDetailPage.tsx	chưa có tuần thi hoặc đã bị huỷ phần thi. Đợt vẫn chưa đủ kết quả cho tới khi Quản lý xếp lại.	chưa có tuần Test hoặc đã bị huỷ. Đợt vẫn chưa đủ kết quả cho tới khi Quản lý xếp lại.
+DOI	web/src/modules/fasttrack/MockDetailPage.tsx	Hạn mặc định tính riêng cho từng môn: hết thứ Tư của tuần kế tiếp sau tuần thi môn đó. Hạn đặt ở đây áp cho CẢ ĐỢT; chỉ một môn thì dùng "{x}" ở dòng môn đó. Hết ngày hạn mới tính quá hạn.	Hạn mặc định tính riêng cho từng môn: hết thứ Tư của tuần kế tiếp sau tuần Test môn đó. Hạn đặt ở đây áp cho CẢ ĐỢT; chỉ một môn thì dùng "{x}" ở dòng môn đó. Hết ngày hạn mới tính quá hạn.
+DOI	web/src/modules/fasttrack/MockDetailPage.tsx	Cùng buổi thi này còn môn nào vắng?	Cùng buổi Test này còn môn nào vắng?
+DOI	web/src/modules/fasttrack/MockDetailPage.tsx	Tick các môn thi CÙNG buổi. Mỗi môn vẫn được xét riêng: môn đã dời một lần thì phải xin Quản lý duyệt, môn chưa dời lần nào thì đổi được ngay.	Tick các môn làm bài CÙNG buổi. Mỗi môn vẫn được xét riêng: môn đã dời một lần thì phải xin Quản lý duyệt, môn chưa dời lần nào thì đổi được ngay.
+DOI	web/src/modules/fasttrack/MockDetailPage.tsx	. Lịch giữ nguyên cho tới khi có quyết định. Quản lý phải trả lời TRƯỚC khi tuần mới bắt đầu; từ chối hoặc hết hạn thì phần thi bị huỷ và chỉ Quản lý mới khôi phục được.	. Lịch giữ nguyên cho tới khi có quyết định. Quản lý phải trả lời TRƯỚC khi tuần mới bắt đầu; từ chối hoặc hết hạn thì kỹ năng bị huỷ và chỉ Quản lý mới khôi phục được.
+DOI	web/src/modules/fasttrack/ODiemLon.tsx	Đề nghị dời sang {x} — Quản lý trả lời trước {ngay}, quá hạn thì huỷ phần thi.	Đề nghị dời sang {x} — Quản lý trả lời trước {ngay}, quá hạn thì huỷ kỹ năng.
+DOI	web/src/modules/fasttrack/ScoreEntry.tsx	Chưa tới tuần thi{x} — chưa ghi "-" được.	Chưa tới tuần Test{x} — chưa ghi "-" được.
+DOI	web/src/modules/fasttrack/ScoreEntry.tsx	{khongDay} Không dự thi · {x}	{khongDay} Vắng · {x}
+DOI	web/src/modules/fasttrack/ScoreEntry.tsx	Không dự thi · {x}. Xoá "-" để bỏ; gõ số khi em đã làm bài.	Vắng · {x}. Xoá "-" để bỏ; gõ số khi em đã làm bài.
+DOI	web/src/modules/fasttrack/ScoreEntry.tsx	Số câu đúng. Thi {x} — tới tuần thi mới ghi được "-".	Số câu đúng. Làm bài {x} — tới tuần Test mới ghi được "-".
+DOI	web/src/modules/giaoVien/BangGiaoVienChiNhanh.tsx	Một bài = một kỹ năng của một em trong một lượt (FT W1 và W2 là hai bài), tuần thi đã bắt đầu. Em Tạm dừng không tính.	Một bài = một kỹ năng của một em trong một lượt (FT W1 và W2 là hai bài), tuần Test đã bắt đầu. Em Tạm dừng không tính.
+DOI	web/src/modules/giaoVien/HoSoGiaoVienPage.tsx	Một bài = một kỹ năng của một em trong một lượt, tuần thi đã bắt đầu. Cùng số với Lịch Test. Khác với số ở khối Việc đang có, vốn đếm việc.	Một bài = một kỹ năng của một em trong một lượt, tuần Test đã bắt đầu. Cùng số với Lịch Test. Khác với số ở khối Việc đang có, vốn đếm việc.
+DOI	web/src/modules/phanTich/BaoCao.tsx	HV đã thi	HV đã làm bài
+DOI	web/src/modules/phanTich/KetQuaThi.tsx	Loại thi	Loại kết quả
+DOI	web/src/modules/phanTich/PhanTichGiaoVien.tsx	Một mục là một ô điểm: một học viên × một bài × một kỹ năng giáo viên được phân công lúc tới hạn, tuần thi trong khoảng. Đúng hạn khi lần nhập đầu không muộn hơn hạn chấm; sửa điểm sau đó không tính. Quá hạn mà chưa nhập là trễ. Không tính: vắng đã xác nhận, huỷ, "không có bài", học viên tạm dừng, ô chưa tới hạn.	Một mục là một ô điểm: một học viên × một bài × một kỹ năng giáo viên được phân công lúc tới hạn, tuần Test trong khoảng. Đúng hạn khi lần nhập đầu không muộn hơn hạn chấm; sửa điểm sau đó không tính. Quá hạn mà chưa nhập là trễ. Không tính: vắng đã xác nhận, huỷ, "không có bài", học viên tạm dừng, ô chưa tới hạn.
+DOI	web/src/modules/phanTich/PhanTichGiaoVien.tsx	Một mục là một học viên × một bài có tuần thi trong khoảng, ở lớp giáo viên dạy kỹ năng đó lúc thi. Số trên: đạt kỳ vọng của đợt đó / đã có điểm (W1, W2 so từng bài). Em đã chuyển lớp vẫn tính cho người dạy em lúc thi. Phần trăm tô màu: đỏ dưới 50%, vàng 50–69%, xanh từ 70%.	Một mục là một học viên × một bài có tuần Test trong khoảng, ở lớp giáo viên dạy kỹ năng đó lúc thi. Số trên: đạt kỳ vọng của đợt đó / đã có điểm (W1, W2 so từng bài). Em đã chuyển lớp vẫn tính cho người dạy em lúc thi. Phần trăm tô màu: đỏ dưới 50%, vàng 50–69%, xanh từ 70%.
+DOI	web/src/modules/phanTich/PhanTichGiaoVien.tsx	Đạt từ 70%. Một mục là một học viên × một bài (Progress Test, Final Test) có tuần thi trong khoảng. Bốn cột cố định; môn giáo viên không dạy ghi —. Phần trăm tô màu: đỏ dưới 50%, vàng 50–69%, xanh từ 70%.	Đạt từ 70%. Một mục là một học viên × một bài (Progress Test, Final Test) có tuần Test trong khoảng. Bốn cột cố định; môn giáo viên không dạy ghi —. Phần trăm tô màu: đỏ dưới 50%, vàng 50–69%, xanh từ 70%.
+DOI	web/src/modules/phanTich/PhanTichGiaoVien.tsx	Một mục là một học viên × một kỹ năng giáo viên dạy, ở bài có tuần thi trong khoảng, mà em đã có điểm kỹ năng đó ở bài trước. Tiến bộ khi điểm cao hơn bài trước; bằng hoặc thấp hơn thì không.	Một mục là một học viên × một kỹ năng giáo viên dạy, ở bài có tuần Test trong khoảng, mà em đã có điểm kỹ năng đó ở bài trước. Tiến bộ khi điểm cao hơn bài trước; bằng hoặc thấp hơn thì không.
+DOI	web/src/modules/phanTich/PhanTichGiaoVien.tsx	· tuần thi	· tuần Test
+DOI	web/src/modules/phanTich/PhanTichGiaoVien.tsx shared/domain/keHoachOv15c.ts shared/domain/lichThiOv15f.ts server/src/platform/lichSu.ts	Tuần thi	Tuần Test
+DOI	web/src/modules/students/BangCanLam.tsx	Người giữ	Người phụ trách
+DOI	web/src/modules/students/BangHocVienLop.tsx	tuần thi {tuan}	tuần Test {tuan}
+DOI	web/src/modules/students/ChuyenLopPanel.tsx	Bài Test đang dở đi theo em sang {moi}; bài đã thi xong ở lại {cu}	Bài Test đang dở đi theo em sang {moi}; bài đã làm xong ở lại {cu}
+DOI	web/src/modules/students/GocLichThi.tsx server/src/classes/xuatDanhSach.ts server/src/students/lichSuSua.ts	Cần xác nhận	Chưa kết luận
+DOI	web/src/modules/students/GocLichThi.tsx	cần xác nhận	chưa kết luận
+DOI	web/src/modules/students/GocLichThi.tsx shared/domain/lichThiOv15f.ts	Ghi chú họp	Ghi chú
+DOI	web/src/modules/students/HocVienTheoVai.tsx web/src/modules/students/NganXuatDs.tsx shared/domain/lichThiOv15f.ts shared/domain/phanTich.ts	Kết quả thi	Kết quả thi thật
+DOI	web/src/modules/students/NganXuatDs.tsx	Loại Test / MT · tuần thi kèm năm · điểm · Đạt / Chưa đạt / Chưa đủ điểm	Loại Test / MT · tuần Test kèm năm · điểm · Đạt / Chưa đạt / Chưa đủ điểm
+DOI	web/src/modules/students/StudentDetailPage.tsx	Có phần thi bị huỷ.	Có kỹ năng bị huỷ.
+DOI	web/src/modules/students/StudentsPage.tsx	Tuần thi của kết quả	Thời gian
+DOI	web/src/modules/test/KeHoachTestTab.tsx	Học viên có kỹ năng vắng hoặc phần thi đã huỷ — Quản lý cần xếp lại	Học viên có kỹ năng vắng hoặc đã huỷ — Quản lý cần xếp lại
+DOI	web/src/modules/test/LichTestTab.tsx	bài thi {tuan}	bài Test {tuan}
+DOI	web/src/modules/test/NganXuatMt.tsx	Lượt phải khớp cả chi nhánh, lớp và thời gian đã chọn. Mỗi lượt tính vào tuần thi sớm nhất của nó.	Lượt phải khớp cả chi nhánh, lớp và thời gian đã chọn. Mỗi lượt tính vào tuần Test sớm nhất của nó.
+DOI	web/src/modules/test/NganXuatMt.tsx	Chỉ lấy lượt đã có điểm mọi kỹ năng phải thi.	Chỉ lấy lượt đã có điểm mọi kỹ năng phải làm.
+DOI	web/src/modules/test/keHoach/ChipKyNang.tsx	Đã thi — xem	Đã làm bài — xem
+DOI	web/src/modules/test/keHoach/ChipKyNang.tsx	Đợt này không thi kỹ năng nào	Đợt này không có kỹ năng nào
+DOI	web/src/modules/test/keHoach/ChipKyNang.tsx	trễ — tuần thi đã hết, chưa có điểm	trễ — tuần Test đã hết, chưa có điểm
+DOI	web/src/modules/test/keHoach/ChipKyNang.tsx	Đã thi ✓	Đã làm bài ✓
+DOI	web/src/modules/test/keHoach/ChipKyNang.tsx shared/domain/oMt.ts	không dự thi	vắng
+DOI	web/src/modules/test/keHoach/ChipKyNang.tsx	Không dự thi — không dời, không nợ	Vắng — không dời, không nợ
+DOI	web/src/modules/test/keHoach/HopKyNang.tsx shared/huongDan/ql.ts server/src/students/lichSuSua.ts	Ghi chú lịch thi	Ghi chú lịch Test
+DOI	web/src/modules/test/keHoach/HopKyNang.tsx	Đã tới tuần thi	Đã tới tuần Test
+DOI	web/src/modules/test/keHoach/LuoiKeHoach.tsx	Ghi chú lịch thi {dot}	Ghi chú lịch Test {dot}
+DOI	web/src/modules/test/lichTest/HangLop.tsx	{ten} — không thi tuần này	{ten} — không làm bài tuần này
+DOI	web/src/modules/test/lichTest/HangLop.tsx	Môn thi tuần này — môn mờ là không thi tuần này	Môn làm bài tuần này — môn mờ là không làm bài tuần này
+DOI	web/src/modules/yThuc/CaseSosControls.tsx	Ví dụ: Em nghỉ ốm cả tuần thi	Ví dụ: Em nghỉ ốm cả tuần Test
+DOI	shared/domain/cases.ts	Một phần thi trong đợt MT	Một kỹ năng trong đợt MT
+DOI	shared/domain/chuyenLop.ts	MT chưa thi chuyển sang lớp mới	MT chưa làm bài chuyển sang lớp mới
+DOI	shared/domain/danExcel.ts	Phần thi đã huỷ / đã xác nhận vắng	Kỹ năng đã huỷ / đã xác nhận vắng
+DOI	shared/domain/dieuHuong.ts shared/huongDan/ql.ts	Báo cáo đơn vị	Họp đơn vị
+DOI	shared/domain/duongHoSo.ts	Test › Lượt thi{x}	Test › Lượt{x}
+DOI	shared/domain/fasttrack.ts	Tuần sau thi Progress Test	Tuần sau có Progress Test
+DOI	shared/domain/fasttrack.ts	Thi Progress Test tuần này	Progress Test tuần này
+DOI	shared/domain/fasttrack.ts	Tuần sau thi Final Test	Tuần sau có Final Test
+DOI	shared/domain/fasttrack.ts	Thi Final Test tuần này	Final Test tuần này
+DOI	shared/domain/fasttrack.ts	Đã thi, chờ nhập điểm	Đã làm bài, chờ nhập điểm
+DOI	shared/domain/fasttrack.ts	Không dự thi · Tuần {x}	Vắng · Tuần {x}
+DOI	shared/domain/keHoachOv15c.ts	Đã thi — không xóa được	Đã làm bài — không xóa được
+DOI	shared/domain/keHoachTest.ts	đang thi	đang làm bài
+DOI	shared/domain/keHoachTest.ts	đã thi, đang chờ chấm.	đã làm bài, đang chờ chấm.
+DOI	shared/domain/lichMt.ts	MT chưa thi xếp về tuần đã qua — tuần cách ≥ 2 tuần thì là MT cũ.	MT chưa làm bài xếp về tuần đã qua — tuần cách ≥ 2 tuần thì là MT cũ.
+DOI	shared/domain/lichMt.ts	Thi bù tuần này (lần {x})	Làm bù tuần này (lần {x})
+DOI	shared/domain/metrics.ts	Bài = một ô điểm (T53 Q2: FT W1 và W2 là hai bài) của lượt không huỷ, lớp đang hoạt động, em đang học (Tạm dừng không sinh nợ — T65), đã quá hạn — cùng luật với ô ở bảng chấm: lớp thường theo số câu đúng, hạn thứ Tư tuần sau tuần thi môn đó (như Fast Track); Fast Track theo band, dấu "-" theo cặp W1/W2. Vắng đã xác nhận, huỷ phần thi, chờ duyệt dời không phải nợ. Môn chưa phân công giáo viên vẫn tính (bảng Theo giáo viên có hàng "Chưa phân công").	Bài = một ô điểm (T53 Q2: FT W1 và W2 là hai bài) của lượt không huỷ, lớp đang hoạt động, em đang học (Tạm dừng không sinh nợ — T65), đã quá hạn — cùng luật với ô ở bảng chấm: lớp thường theo số câu đúng, hạn thứ Tư tuần sau tuần Test môn đó (như Fast Track); Fast Track theo band, dấu "-" theo cặp W1/W2. Vắng đã xác nhận, huỷ kỹ năng, chờ duyệt dời không phải nợ. Môn chưa phân công giáo viên vẫn tính (bảng Theo giáo viên có hàng "Chưa phân công").
+DOI	shared/domain/metrics.ts	bài thi	bài Test
+DOI	shared/domain/nhatKy.ts	Huỷ lịch hẹn thi môn	Huỷ lịch Test môn
+DOI	shared/domain/nhatKy.ts	Chốt vắng thi	Chốt vắng
+DOI	shared/domain/nhatKy.ts	Khôi phục kỹ năng thi	Khôi phục kỹ năng
+DOI	shared/domain/nhatKy.ts	Bỏ kỹ năng không thi	Bỏ kỹ năng khỏi đợt
+DOI	shared/domain/nhatKy.ts	Ghi đã thi / vắng	Ghi đã làm bài / vắng
+DOI	shared/domain/nhatKy.ts shared/domain/thaoTacMt.ts	Dời lịch thi	Dời lịch Test
+DOI	shared/domain/nhatKy.ts	Lưu báo cáo đơn vị	Lưu họp đơn vị
+DOI	shared/domain/nhomQuyen.ts	Dời lịch thi một kỹ năng của lớp thường.	Dời lịch Test một kỹ năng của lớp thường.
+DOI	shared/domain/nhomQuyen.ts	Đánh dấu một kỹ năng không thi trong lượt Mock Test đó.	Bỏ một kỹ năng khỏi lượt Mock Test đó.
+DOI	shared/domain/nhomQuyen.ts	SCH-01: giáo viên chỉ dời lịch lớp thường (quyền Dời lịch thi). Chốt tuần MT kèm xếp lịch Fast Track là việc của Quản lý.	SCH-01: giáo viên chỉ dời lịch lớp thường (quyền Dời lịch Test). Chốt tuần MT kèm xếp lịch Fast Track là việc của Quản lý.
+DOI	shared/domain/oMt.ts	đang thi	đang làm bài
+DOI	shared/domain/people.ts	Dời lịch thi (lớp thường, đúng phần phụ trách)	Dời lịch Test (lớp thường, đúng phần phụ trách)
+DOI	shared/domain/people.ts	Lượt MT đã thi mà còn ô điểm để trống.	Lượt MT đã làm bài mà còn ô điểm để trống.
+DOI	shared/domain/thaoTacMt.ts	Phần thi đã huỷ	Kỹ năng đã huỷ
+DOI	shared/domain/thaoTacMt.ts	Không thi đợt này	Không có trong đợt này
+DOI	shared/domain/vang.ts	Đã ghi Không dự thi · {mon}{em}	Đã ghi Vắng · {mon}{em}
+DOI	shared/domain/vang.ts	· huỷ phần thi	· huỷ kỹ năng
+DOI	shared/domain/xuatMt.ts	Tuần của lượt = tuần sớm nhất trong các kỹ năng phải thi.	Tuần của lượt = tuần sớm nhất trong các kỹ năng phải làm.
+DOI	shared/domain/yeuCauDuyet.ts server/src/platform/lichSu.ts	Lịch thi	Dời lịch Test
+DOI	shared/domain/yeuCauDuyet.ts	Dời lịch thi lần 2	Dời lịch Test lần 2
+DOI	shared/huongDan/admin.ts	Một kỹ năng: bấm chip kỹ năng ở dòng lớp; <b>⋯</b> có <b>Xếp lịch</b>, <b>Dời lịch thi</b>, <b>Trả lời đề nghị dời</b>.	Một kỹ năng: bấm chip kỹ năng ở dòng lớp; <b>⋯</b> có <b>Xếp lịch</b>, <b>Dời lịch Test</b>, <b>Trả lời đề nghị dời</b>.
+DOI	shared/huongDan/admin.ts shared/huongDan/gv.ts	sau mỗi tuần thi	sau mỗi tuần Test
+DOI	shared/huongDan/admin.ts shared/huongDan/ql.ts	<b>Báo cáo</b> · <b>Test + SOS</b> · <b>Kết quả thi</b> · <b>Hiệu quả PA</b> · <b>Phân tích GV</b> · <b>Ý thức</b>.	<b>Báo cáo</b> · <b>Test + SOS</b> · <b>Kết quả Test</b> · <b>Hiệu quả PA</b> · <b>Phân tích GV</b> · <b>Ý thức</b>.
+DOI	shared/huongDan/admin.ts	<b>⋯</b>: <b>Xếp lịch</b> · <b>Dời lịch thi</b> · <b>Sửa điểm</b> · <b>Trả lời đề nghị dời</b>; mục ghi "Chỉ Quản lý" thì nhờ QL.	<b>⋯</b>: <b>Xếp lịch</b> · <b>Dời lịch Test</b> · <b>Sửa điểm</b> · <b>Trả lời đề nghị dời</b>; mục ghi "Chỉ Quản lý" thì nhờ QL.
+DOI	shared/huongDan/admin.ts	Chân hộp: <b>Xóa</b> → đợt về <b>Chưa xếp</b> (đã có điểm / đã thi: nút mờ).	Chân hộp: <b>Xóa</b> → đợt về <b>Chưa xếp</b> (đã có điểm / đã làm bài: nút mờ).
+DOI	shared/huongDan/admin.ts	Ô <b>Ghi chú lịch thi</b> trong hộp; <b>+ Ghi chú lớp</b> dưới bảng.	Ô <b>Ghi chú lịch Test</b> trong hộp; <b>+ Ghi chú lớp</b> dưới bảng.
+DOI	shared/huongDan/admin.ts	Làm: xếp / dời lịch thi, nhập bù / sửa điểm, sửa thông tin HV.	Làm: xếp / dời lịch Test, nhập bù / sửa điểm, sửa thông tin HV.
+DOI	shared/huongDan/admin.ts shared/huongDan/gv.ts	MT (bài thi thử)	MT (Mock Test)
+DOI	shared/huongDan/cx.ts shared/huongDan/tvv.ts	<b>Báo cáo</b> · <b>Test + SOS</b> · <b>Kết quả thi</b> · <b>Hiệu quả PA</b> · <b>Ý thức</b>.	<b>Báo cáo</b> · <b>Test + SOS</b> · <b>Kết quả Test</b> · <b>Hiệu quả PA</b> · <b>Ý thức</b>.
+DOI	shared/huongDan/gv.ts	Nhiều em cùng lớp, tuần thi, mức SOS: <b>Xác nhận PA cùng lúc</b> — em tick sẵn, <b>Nội dung / hướng dẫn</b> + <b>Bắt đầu</b> + <b>Người dạy</b> ghi một lần, <b>Sửa riêng</b> từng em.	Nhiều em cùng lớp, tuần Test, mức SOS: <b>Xác nhận PA cùng lúc</b> — em tick sẵn, <b>Nội dung / hướng dẫn</b> + <b>Bắt đầu</b> + <b>Người dạy</b> ghi một lần, <b>Sửa riêng</b> từng em.
+DOI	shared/huongDan/gv.ts	<b>Xuất Excel · n HV</b>: xuất đúng danh sách đang lọc; chọn mẫu <b>Danh sách cơ bản</b> · <b>Theo dõi SOS</b> · <b>Kết quả thi</b> hoặc <b>Chọn cột</b>.	<b>Xuất Excel · n HV</b>: xuất đúng danh sách đang lọc; chọn mẫu <b>Danh sách cơ bản</b> · <b>Theo dõi SOS</b> · <b>Kết quả Test</b> hoặc <b>Chọn cột</b>.
+DOI	shared/huongDan/gv.ts	<b>Bộ lọc thêm</b> (góc Tất cả): Case / PA · kỹ năng · kết quả · tuần thi — trong nhóm là "hoặc", giữa nhóm là "và". Tích ô trước tên em → <b>Xuất các HV đã chọn</b>.	<b>Bộ lọc thêm</b> (góc Tất cả): Case / PA · kỹ năng · kết quả · thời gian — trong nhóm là "hoặc", giữa nhóm là "và". Tích ô trước tên em → <b>Xuất các HV đã chọn</b>.
+DOI	shared/huongDan/gv.ts	Dòng "Chấm Speaking · n bài" đầu nhóm <b>Chấm điểm</b>: bài Speaking Mock mọi lớp FT chi nhánh bạn, từ Thứ Hai tuần thi.	Dòng "Chấm Speaking · n bài" đầu nhóm <b>Chấm điểm</b>: bài Speaking Mock mọi lớp FT chi nhánh bạn, từ Thứ Hai tuần Test.
+DOI	shared/huongDan/gv.ts	Bài của tuần thi: chấm xong trước hết <b>Thứ Tư</b> tuần kế.	Bài của tuần Test: chấm xong trước hết <b>Thứ Tư</b> tuần kế.
+DOI	shared/huongDan/gv.ts	Trong tuần thi: "-" = vắng, chốt ngay.	Trong tuần Test: "-" = vắng, chốt ngay.
+DOI	shared/huongDan/gv.ts	Nhập bù / MT cũ: "-" = Không dự thi.	Nhập bù: "-" = Vắng; MT cũ: "-" = Đã huỷ · vắng MT cũ.
+DOI	shared/huongDan/ql.ts	Một kỹ năng: bấm chip kỹ năng ở dòng lớp; <b>⋯</b> có <b>Dời lịch thi</b>, <b>Dời hạn chấm</b>, <b>Huỷ kỹ năng</b>.	Một kỹ năng: bấm chip kỹ năng ở dòng lớp; <b>⋯</b> có <b>Dời lịch Test</b>, <b>Dời hạn chấm</b>, <b>Huỷ kỹ năng</b>.
+DOI	shared/huongDan/ql.ts	<b>Công việc › Chờ duyệt</b>: chọn loại <b>Học thuật · Ý thức · Lịch thi · Thông tin HV</b>; quá hạn xếp trước.	<b>Công việc › Chờ duyệt</b>: chọn loại <b>Học thuật · Ý thức · Dời lịch Test · Thông tin HV</b>; quá hạn xếp trước.
+DOI	shared/huongDan/ql.ts	Đề xuất PA, Dời lịch thi lần 2 cùng loại: đánh dấu ô ở thẻ → <b>Duyệt n yêu cầu</b>.	Đề xuất PA, Dời lịch Test lần 2 cùng loại: đánh dấu ô ở thẻ → <b>Duyệt n yêu cầu</b>.
+DOI	shared/huongDan/ql.ts	<b>⋯</b>: <b>Dời lịch thi</b> · <b>Dời hạn chấm</b> · <b>Huỷ kỹ năng</b> · <b>Huỷ điểm</b> · <b>Trả lời đề nghị dời</b> · <b>Không mock lại</b>.	<b>⋯</b>: <b>Dời lịch Test</b> · <b>Dời hạn chấm</b> · <b>Huỷ kỹ năng</b> · <b>Huỷ điểm</b> · <b>Trả lời đề nghị dời</b> · <b>Không mock lại</b>.
+DOI	shared/huongDan/ql.ts	Đã có điểm / đã thi: nút mờ. Kỹ năng huỷ vì vắng 2 lần: <b>Khôi phục → Chưa xếp</b> hoặc <b>Giữ huỷ</b>.	Đã có điểm / đã làm bài: nút mờ. Kỹ năng huỷ vì vắng 2 lần: <b>Khôi phục → Chưa xếp</b> hoặc <b>Giữ huỷ</b>.
+DOI	shared/huongDan/ql.ts	Ô <b>Ghi chú lịch thi</b> trong hộp; ghi chú hiện một dòng dưới chip, bấm để sửa (Enter lưu · Esc huỷ).	Ô <b>Ghi chú lịch Test</b> trong hộp; ghi chú hiện một dòng dưới chip, bấm để sửa (Enter lưu · Esc huỷ).
+DOI	shared/huongDan/ql.ts	Loại: <b>Tất cả · Học thuật · Ý thức · Lịch thi · Thông tin HV</b>.	Loại: <b>Tất cả · Học thuật · Ý thức · Dời lịch Test · Thông tin HV</b>.
+DOI	shared/huongDan/ql.ts	Đề xuất PA, Dời lịch thi lần 2: đánh dấu ô ở thẻ cùng loại.	Đề xuất PA, Dời lịch Test lần 2: đánh dấu ô ở thẻ cùng loại.
+DOI	shared/huongDan/ql.ts	<b>Chờ bạn duyệt</b> ở đầu; <b>Việc quản lý</b> cuối (gập) có <b>+ Giao việc</b>, <b>Vận hành ›</b>, <b>Báo cáo đơn vị ›</b>.	<b>Chờ bạn duyệt</b> ở đầu; <b>Việc quản lý</b> cuối (gập) có <b>+ Giao việc</b>, <b>Vận hành ›</b>, <b>Họp đơn vị ›</b>.
+DOI	shared/huongDan/ql.ts	<b>Dời lịch thi lần 2</b>: hết Chủ nhật tuần gửi; quá hạn thì phần thi bị huỷ.	<b>Dời lịch Test lần 2</b>: hết Chủ nhật tuần gửi; quá hạn thì kỹ năng bị huỷ.
+DOI	shared/huongDan/ql.ts shared/huongDan/tvv.ts	Target mới tính từ hôm nay; kỳ vọng các lượt đã thi giữ nguyên.	Target mới tính từ hôm nay; kỳ vọng các lượt đã làm bài giữ nguyên.
+DOI	shared/huongDan/ql.ts	Hộp thẻ cần QL quyết: Đề xuất PA, đề xuất sửa, chuyển lớp, dời lịch thi lần 2, Ý thức cần duyệt.	Hộp thẻ cần QL quyết: Đề xuất PA, đề xuất sửa, chuyển lớp, dời lịch Test lần 2, Ý thức cần duyệt.
+DOI	shared/huongDan/tvv.ts	<b>Học viên & Lớp</b> › <b>Cần làm</b>: <b>Chọn bước tiếp</b> · <b>Kết quả thi</b> · <b>Thiếu email</b> · <b>Thiếu thông tin</b>.	<b>Học viên & Lớp</b> › <b>Cần làm</b>: <b>Chọn bước tiếp</b> · <b>Kết quả thi thật</b> · <b>Thiếu email</b> · <b>Thiếu thông tin</b>.
+DOI	server/src/duyet/loaiYeuCau.ts	em vắng buổi thi	em vắng buổi Test
+DOI	server/src/duyet/loaiYeuCau.ts	Target đổi từ hôm nay; kỳ vọng của các lượt đã thi giữ nguyên.	Target đổi từ hôm nay; kỳ vọng của các lượt đã làm bài giữ nguyên.
+DOI	server/src/fasttrack/absence.ts	Chỉ giáo viên chủ nhiệm của lớp và Quản lý mới xử lý được việc vắng thi.	Chỉ giáo viên chủ nhiệm của lớp và Quản lý mới xử lý được việc vắng.
+DOI	server/src/fasttrack/absence.ts	ô điểm trống chưa đủ để kết luận em không đi thi.	ô điểm trống chưa đủ để kết luận em không làm bài.
+DOI	server/src/fasttrack/absence.ts	Vắng — dấu "-" trong tuần thi	Vắng — dấu "-" trong tuần Test
+DOI	server/src/fasttrack/absence.ts	Hết hạn duyệt — phần thi bị huỷ	Hết hạn duyệt — kỹ năng bị huỷ
+DOI	server/src/fasttrack/absence.ts	Chỉ Quản lý mới khôi phục được phần thi đã huỷ và đặt tuần mới.	Chỉ Quản lý mới khôi phục được kỹ năng đã huỷ và đặt tuần mới.
+DOI	server/src/fasttrack/absence.ts	Xếp lại lịch thi	Xếp lại lịch Test
+DOI	server/src/fasttrack/absence.ts	Đã huỷ phần thi (vắng 2 lần) — Quản lý khôi phục phần thi.	Đã huỷ · vắng 2 lần — Quản lý khôi phục kỹ năng.
+DOI	server/src/fasttrack/attempts.ts	Không kỹ năng nào còn đổi được tuần: các kỹ năng bắt buộc đã huỷ phần thi hoặc vốn đã ở tuần này.	Không kỹ năng nào còn đổi được tuần: các kỹ năng bắt buộc đã huỷ hoặc vốn đã ở tuần này.
+DOI	server/src/fasttrack/attempts.ts	sửa trạng thái thi trước rồi mới nhập điểm.	sửa trạng thái làm bài trước rồi mới nhập điểm.
+DOI	server/src/fasttrack/skillSchedule.ts	Phần thi của lượt sau không được xếp trước phần cuối của lượt trước.	Kỹ năng của lượt sau không được xếp trước phần cuối của lượt trước.
+DOI	server/src/fasttrack/skillSchedule.ts	Hai lượt không thi cùng một tuần.	Hai lượt không làm bài cùng một tuần.
+DOI	server/src/fasttrack/skillSchedule.ts	Phần thi của lượt trước không được xếp vượt qua lượt kế tiếp.	Kỹ năng của lượt trước không được xếp vượt qua lượt kế tiếp.
+DOI	server/src/fasttrack/skillSchedule.ts	Bạn không có quyền đổi lịch thi của kỹ năng này.	Bạn không có quyền đổi lịch Test của kỹ năng này.
+DOI	server/src/fasttrack/skillSchedule.ts	Chưa xếp tuần thi — chưa nhập điểm được.	Chưa xếp tuần Test — chưa nhập điểm được.
+DOI	server/src/fasttrack/skillSchedule.ts	Trạng thái thi không hợp lệ.	Trạng thái làm bài không hợp lệ.
+DOI	server/src/fasttrack/skillSchedule.ts	Bạn không có quyền xác nhận trạng thái thi của kỹ năng này.	Bạn không có quyền xác nhận trạng thái làm bài của kỹ năng này.
+DOI	server/src/platform/attachments.ts	Không tìm thấy báo cáo đơn vị	Không tìm thấy họp đơn vị
+DOI	server/src/classes/schedule.ts	MT có tuần thi cách ≥ 2 tuần là MT cũ — nhập bù, không tính hạn	MT có tuần Test cách ≥ 2 tuần là MT cũ — nhập bù, không tính hạn
+DOI	server/src/duyet/loaiYeuCau.ts	chưa duyệt thì yêu cầu tự huỷ và phần thi bị huỷ.	chưa duyệt thì yêu cầu tự huỷ và kỹ năng bị huỷ.
+DOI	server/src/duyet/loaiYeuCau.ts	thi tuần	làm bài tuần
+DOI	server/src/fasttrack/absence.ts server/src/fasttrack/skillSchedule.ts	thi	làm bài
+DOI	server/src/fasttrack/absence.ts	chưa có tuần thi để dời.	chưa có tuần Test để dời.
+DOI	server/src/fasttrack/absence.ts	đã bắt đầu. Chọn một tuần chưa tới để lịch mới là một buổi thi có thật.	đã bắt đầu. Chọn một tuần chưa tới để lịch mới là một buổi Test có thật.
+DOI	server/src/fasttrack/absence.ts	Môn này vẫn phải thi, chờ Quản lý xếp lại.	Môn này vẫn phải làm bài, chờ Quản lý xếp lại.
+DOI	server/src/fasttrack/absence.ts	Đã huỷ phần thi	Đã huỷ
+DOI	server/src/fasttrack/absence.ts	Khôi phục phần thi	Khôi phục kỹ năng
+DOI	server/src/fasttrack/absence.ts	không còn chờ thi (đã thi, đang vắng hoặc đã huỷ) — không báo vắng được.	không còn chờ làm bài (đã làm bài, đang vắng hoặc đã huỷ) — không báo vắng được.
+DOI	server/src/fasttrack/absence.ts	chưa tới tuần thi — muốn đổi tuần thì "Dời lịch thi".	chưa tới tuần Test — muốn đổi tuần thì "Dời lịch Test".
+DOI	server/src/fasttrack/attempts.ts	Phần thi	Kỹ năng
+DOI	server/src/fasttrack/attempts.ts	đang được ghi nhận là học viên đã vắng. Nếu thực ra em có thi,	đang được ghi nhận là học viên đã vắng. Nếu thực ra em có làm bài,
+DOI	server/src/fasttrack/attempts.ts	chưa có tuần thi nên chưa báo "không có bài" được.	chưa có tuần Test nên chưa báo "không có bài" được.
+DOI	server/src/fasttrack/attempts.ts server/src/fasttrack/skillSchedule.ts server/src/normal/regular.ts	Chưa tới tuần thi	Chưa tới tuần Test
+DOI	server/src/fasttrack/attempts.ts	— muốn đổi tuần thì "Dời lịch thi".	— muốn đổi tuần thì "Dời lịch".
+DOI	server/src/fasttrack/ketQuaHuy.ts	đã huỷ phần thi — không khôi phục được.	đã huỷ — không khôi phục được.
+DOI	server/src/fasttrack/skillSchedule.ts	có phần thi ở tuần	có kỹ năng ở tuần
+DOI	server/src/fasttrack/skillSchedule.ts	đã có phần thi ở tuần	đã có kỹ năng ở tuần
+DOI	server/src/fasttrack/skillSchedule.ts	đã thi — không huỷ lịch được.	đã làm bài — không huỷ lịch được.
+DOI	server/src/fasttrack/skillSchedule.ts	đã có điểm ở đợt này. Phần đã thi giữ nguyên lịch thật;	đã có điểm ở đợt này. Phần đã làm bài giữ nguyên lịch thật;
+DOI	server/src/fasttrack/skillSchedule.ts	đã được xác nhận là đã thi. Việc còn lại là chấm, không phải dời lịch.	đã được xác nhận là đã làm bài. Việc còn lại là chấm, không phải dời lịch.
+DOI	server/src/fasttrack/skillSchedule.ts	chưa có tuần thi, chưa xác nhận được em đã thi hay vắng.	chưa có tuần Test, chưa xác nhận được em đã làm bài hay vắng.
+DOI	server/src/keHoach/keHoachTest.ts	Đợt này không thi kỹ năng này.	Đợt này không có kỹ năng này.
+DOI	server/src/keHoach/keHoachTest.ts	chưa có điểm — không thi lại. Em vắng thì dùng "Xếp lại bài vắng"; phần thi đã huỷ thì "Khôi phục và đặt tuần".	chưa có điểm — không thi lại. Em vắng thì dùng "Xếp lại bài vắng"; kỹ năng đã huỷ thì "Khôi phục và đặt tuần".
+DOI	server/src/keHoach/keHoachTest.ts	Cần ít nhất một kỹ năng thi trong đợt.	Cần ít nhất một kỹ năng trong đợt.
+DOI	server/src/normal/regular.ts	chưa có tuần thi nên chưa ghi dấu "-" được.	chưa có tuần Test nên chưa ghi dấu "-" được.
+DOI	server/src/platform/lichSu.ts	Test chưa thi	Test chưa làm bài
+DOI	server/src/platform/xoaTaiKhoan.ts	báo cáo đơn vị	họp đơn vị
+DOI	server/src/platform/xoaTaiKhoan.ts	ghi chú lịch thi	ghi chú lịch Test
+DOI	server/src/routes/index.ts	Cần chọn tuần thi cho kỹ năng này.	Cần chọn tuần Test cho kỹ năng này.
+DOI	server/src/routes/index.ts	Khôi phục thì phải đặt luôn tuần mới — không để phần thi treo không lịch.	Khôi phục thì phải đặt luôn tuần mới — không để kỹ năng treo không lịch.
+DOI	server/src/routes/index.ts	Cần chọn tuần thi lại.	Cần chọn tuần Test lại.
+DOI	server/src/worklist/meeting.ts server/src/worklist/mgmttasks.ts	Không tìm thấy báo cáo đơn vị.	Không tìm thấy họp đơn vị.
+GIU	web/src/modules/classes/TabTongKetLop.tsx:32	Không thi	
+GIU	web/src/modules/classes/TabTongKetLop.tsx:32	Chờ kết quả thi thật	
+GIU	web/src/modules/classes/TabTongKetLop.tsx:95	Thi thật	
+GIU	web/src/modules/classes/TabTongKetLop.tsx:160	Thi thật	
+GIU	web/src/modules/dev/BangMau.tsx:25	thi	
+GIU	web/src/modules/dev/BangMau.tsx:25	Thi	
+GIU	web/src/modules/dev/BangMau.tsx:73	thi	
+GIU	web/src/modules/dev/ThanhPhanDemo.tsx:113	Thi W3 SEP tuần Speaking của lớp Fast Track MB FT 101	
+GIU	web/src/modules/dev/ThanhPhanDemo.tsx:266	Dự kiến thi	
+GIU	web/src/modules/duyet/DeXuatSuaPanel.tsx:110	Ví dụ: PH đăng ký thi 12/2026, cần 7.0 để nộp hồ sơ	
+GIU	web/src/modules/fasttrack/MockDetailPage.tsx:342	Dự kiến thi	
+GIU	web/src/modules/phanTich/KetQuaThi.tsx:228	Không thi	
+GIU	web/src/modules/phanTich/KetQuaThi.tsx:247	Chưa có kết quả thi thật nào trong {ky}	
+GIU	web/src/modules/phanTich/KetQuaThi.tsx:247	Kết quả thi thật nhập ở hồ sơ học viên; thử khoảng thời gian dài hơn.	
+GIU	web/src/modules/phanTich/KetQuaThi.tsx:272	Ngày thi	
+GIU	web/src/modules/phanTich/PhanTichGiaoVien.tsx:31	Một mục là một học viên × một bài có tuần Test trong khoảng, ở lớp giáo viên dạy kỹ năng đó lúc làm bài. Số trên: đạt kỳ vọng của đợt đó / đã có điểm (W1, W2 so từng bài). Em đã chuyển lớp vẫn tính cho người dạy em lúc thi. Phần trăm tô màu: đỏ dưới 50%, vàng 50–69%, xanh từ 70%.	
+GIU	web/src/modules/students/BangHocVienLop.tsx:202	Dự kiến thi	
+GIU	web/src/modules/students/ClassRoster.tsx:163	Dự kiến thi	
+GIU	web/src/modules/students/ClassRoster.tsx:212	Kỳ thi IELTS thật, ở đúng mức chắc chắn đang biết: tuần, hoặc mới có tháng, hoặc chưa xác định.	
+GIU	web/src/modules/students/ClassRoster.tsx:213	Dự kiến thi	
+GIU	web/src/modules/students/DauHoSo.tsx:49	thi	
+GIU	web/src/modules/students/DauHoSo.tsx:51	thi IELTS dự kiến	
+GIU	web/src/modules/students/GocLichThi.tsx:101	Lịch thi	
+GIU	web/src/modules/students/GocLichThi.tsx:106	Dự kiến thi	
+GIU	web/src/modules/students/GocLichThi.tsx:107	Dự kiến thi	
+GIU	web/src/modules/students/GocLichThi.tsx:116	Gồm HV chưa có dự kiến thi	
+GIU	web/src/modules/students/GocLichThi.tsx:128	Dự kiến thi {thang} · {n} HV	
+GIU	web/src/modules/students/GocLichThi.tsx:137	Không có HV dự kiến thi thật trong {thang}.	
+GIU	web/src/modules/students/GocLichThi.tsx:138	{n} HV chưa có dự kiến thi.	
+GIU	web/src/modules/students/GocLichThi.tsx:144	Lịch thi	
+GIU	web/src/modules/students/GocLichThi.tsx:153	Chưa có dự kiến thi	
+GIU	web/src/modules/students/GocLichThi.tsx:167	Lịch thi	
+GIU	web/src/modules/students/HocVienTheoVai.tsx:77	SOS ở MT gần nhất, Case mới hoặc Ý thức trong 14 ngày, chờ chọn bước tiếp sau thi.	
+GIU	web/src/modules/students/HocVienTheoVai.tsx:79	Sắp thi	
+GIU	web/src/modules/students/HocVienTheoVai.tsx:79	Dự kiến thi IELTS trong 6 tuần tới.	
+GIU	web/src/modules/students/HocVienTheoVai.tsx:80	Đã thi · chờ kết quả	
+GIU	web/src/modules/students/HocVienTheoVai.tsx:80	Đã qua ngày thi, chưa có kết quả thi thật — hạn 1 tuần sau ngày thi.	
+GIU	web/src/modules/students/HocVienTheoVai.tsx:82	Đã có kết quả thi thật, chờ chọn bước tiếp.	
+GIU	web/src/modules/students/HocVienTheoVai.tsx:198	Lịch thi	
+GIU	web/src/modules/students/HocVienTheoVai.tsx:216	thi:	
+GIU	web/src/modules/students/HocVienTheoVai.tsx:216	Kết quả thi thật	
+GIU	web/src/modules/students/HocVienTheoVai.tsx:216	Thi {ngay} · chưa có kết quả	
+GIU	web/src/modules/students/HocVienTheoVai.tsx:233	Target · Dự kiến thi	
+GIU	web/src/modules/students/HocVienTheoVai.tsx:353	Target · thi	
+GIU	web/src/modules/students/IntakePanel.tsx:42	Em cũ đã thi tới MT mấy ngoài web — web tạo sẵn các lượt đó là MT cũ để nhập điểm bù. Bỏ trống = em mới.	
+GIU	web/src/modules/students/KetQuaThiThatPanel.tsx:58	Kết quả thi thật	
+GIU	web/src/modules/students/KetQuaThiThatPanel.tsx:64	Kết quả thi thật	
+GIU	web/src/modules/students/KetQuaThiThatPanel.tsx:65	Kết quả thi thật	
+GIU	web/src/modules/students/KetQuaThiThatPanel.tsx:76	Ngày thi	
+GIU	web/src/modules/students/KetQuaThiThatPanel.tsx:99	Kết quả thi thật	
+GIU	web/src/modules/students/KetQuaThiThatPanel.tsx:104	Dự kiến thi	
+GIU	web/src/modules/students/KetQuaThiThatPanel.tsx:106	Hạn sau thi	
+GIU	web/src/modules/students/KetQuaThiThatPanel.tsx:114	Không thi	
+GIU	web/src/modules/students/KetQuaThiThatPanel.tsx:123	Ngày thi	
+GIU	web/src/modules/students/KetQuaThiThatPanel.tsx:140	Chờ kết quả thi thật	
+GIU	web/src/modules/students/NganTongKet.tsx:202	Thi {ngay}	
+GIU	web/src/modules/students/NganTongKet.tsx:206	Thi thật	
+GIU	web/src/modules/students/NganTongKet.tsx:212	Thi thật	
+GIU	web/src/modules/students/NganTongKet.tsx:214	Thi thật	
+GIU	web/src/modules/students/NganTongKet.tsx:216	Thi thật	
+GIU	web/src/modules/students/NganTongKet.tsx:217	Không thi	
+GIU	web/src/modules/students/NganTongKet.tsx:217	Chờ kết quả thi thật	
+GIU	web/src/modules/students/PanelBuocTiep.tsx:120	thi {ngay}	
+GIU	web/src/modules/students/PanelMotEm.tsx:124	Đã thi {ngay}	
+GIU	web/src/modules/students/StudentDetailPage.tsx:550	Tuần kế hoạch của lượt này. Một lượt chỉ thuộc đúng một tuần — không có ngày thi cụ thể.	
+GIU	web/src/modules/students/StudentDetailPage.tsx:652	Tuần kế hoạch của lượt này. Một lượt chỉ thuộc đúng một tuần — không có ngày thi cụ thể.	
+GIU	web/src/modules/students/StudentManagePanel.tsx:338	Dự kiến thi	
+GIU	web/src/modules/students/StudentManagePanel.tsx:546	Lớp thường: Target và Dự kiến thi chỉ để theo dõi — không tính kỳ vọng hay SOS theo Target. Ghi dự định sau lớp này ở mục Lộ trình tiếp theo.	
+GIU	web/src/modules/students/StudentManagePanel.tsx:557	Dự kiến thi	
+GIU	web/src/modules/students/StudentManagePanel.tsx:557	thi	
+GIU	web/src/modules/students/StudentManagePanel.tsx:558	thi	
+GIU	web/src/modules/students/StudentManagePanel.tsx:582	Ví dụ: Gia đình đổi kế hoạch thi	
+GIU	web/src/modules/students/StudentManagePanel.tsx:612	Em chưa có lộ trình — Dự kiến thi, Target, Điểm đầu vào sửa được sau khi em vào lớp.	
+GIU	web/src/modules/students/StudentManagePanel.tsx:632	thi	
+GIU	web/src/modules/students/StudentManagePanel.tsx:632	Dự kiến thi	
+GIU	web/src/modules/students/StudentsPage.tsx:308	Dự kiến thi	
+GIU	web/src/modules/students/StudentsPage.tsx:391	Lịch thi	
+GIU	web/src/modules/students/SuaCaLopPanel.tsx:34	Dự kiến thi	
+GIU	web/src/modules/test/LichTestTab.tsx:301	Lịch thi thật ›	
+GIU	web/src/modules/test/keHoach/NganXepLichMt.tsx:449	thi lại	
+GIU	web/src/modules/test/keHoach/NganXepLichMt.tsx:449	. Chỉ dùng khi thật sự thi lại — điểm cũ giữ trong Lịch sử.	
+GIU	web/src/modules/test/keHoach/NganXepLichMt.tsx:464	Thi lại	
+GIU	web/src/modules/worklist/Highlights.tsx:139	Dự kiến thi IELTS ·	
+GIU	web/src/modules/worklist/HocVienCuaToi.tsx:44	Sắp thi	
+GIU	web/src/modules/worklist/HocVienCuaToi.tsx:44	thi IELTS trong 6 tuần tới	
+GIU	web/src/modules/worklist/HocVienCuaToi.tsx:47	Đã thi · chờ kết quả	
+GIU	web/src/modules/worklist/HocVienCuaToi.tsx:47	hạn 1 tuần sau ngày thi	
+GIU	web/src/modules/worklist/HocVienCuaToi.tsx:48	đã có kết quả thi thật	
+GIU	web/src/modules/worklist/KhoiCanQuyet.tsx:111	Chọn bước tiếp sau thi	
+GIU	web/src/modules/worklist/TongQuanQl.tsx:115	Đã thi · chờ KQ	
+GIU	web/src/modules/worklist/TongQuanQl.tsx:157	Đã thi · chờ KQ	
+GIU	web/src/modules/worklist/TongQuanQl.tsx:191	Đã thi · chờ KQ	
+GIU	web/src/ui/ui.tsx:499	Chưa có kế hoạch thi IELTS	
+GIU	web/src/ui/ui.tsx:502	Chưa chốt tuần thi nên chưa đếm ngược	
+GIU	shared/domain/cases.ts:631	Dời lịch thi	
+GIU	shared/domain/cases.ts:678	Kế hoạch thi thật của em	
+GIU	shared/domain/display.ts:285	Hạn sau thi	
+GIU	shared/domain/hocVienLop.ts:87	Đã thi · chờ kết quả	
+GIU	shared/domain/hocVienLop.ts:87	Đã qua ngày thi, chưa có kết quả thi thật — hạn 1 tuần sau ngày thi.	
+GIU	shared/domain/keHoachTest.ts:291	— thi lại?	
+GIU	shared/domain/keHoachTest.ts:295	Thi lại	
+GIU	shared/domain/ketQuaThi.ts:11	Thi thật	
+GIU	shared/domain/lichThiOv15f.ts:56	Đã thi	
+GIU	shared/domain/lichThiOv15f.ts:60	Thi	
+GIU	shared/domain/lichThiOv15f.ts:62	Chưa chốt ngày thi	
+GIU	shared/domain/lichThiOv15f.ts:63	Dự kiến thi	
+GIU	shared/domain/lichThiOv15f.ts:64	Chưa có tháng thi	
+GIU	shared/domain/lichThiOv15f.ts:100	Chọn ngày thi.	
+GIU	shared/domain/lichThiOv15f.ts:102	Chọn tháng thi.	
+GIU	shared/domain/lichThiOv15f.ts:138	Lịch thi thật	
+GIU	shared/domain/metrics.ts:265	Em đang học lớp FT, lộ trình đang chạy, đã có MT có điểm ở số thứ tự ≥ số MT của lịch mặc định (LT: MT3, RF: MT2), không có lượt MT sắp tới, chưa có ngày/tháng thi — cùng luật với dòng "đã xong MT cuối" của panel Tuần khai giảng.	
+GIU	shared/domain/nhapHocVien.ts:72	thi du kien	
+GIU	shared/domain/nhapHocVien.ts:72	ngay thi	
+GIU	shared/domain/nhapHocVien.ts:72	ngay thi du kien	
+GIU	shared/domain/nhapHocVien.ts:72	thang thi	
+GIU	shared/domain/nhapHocVien.ts:72	thang du kien thi	
+GIU	shared/domain/nhapHocVien.ts:72	du kien thi	
+GIU	shared/domain/nhapHocVien.ts:72	ngay thi ielts	
+GIU	shared/domain/nhapHocVien.ts:73	da thi toi mt	
+GIU	shared/domain/nhapHocVien.ts:73	da thi toi	
+GIU	shared/domain/nhapHocVien.ts:73	mt da thi	
+GIU	shared/domain/nhapHocVien.ts:191	Dự kiến thi	
+GIU	shared/domain/nhapHocVien.ts:192	Đã thi tới MT	
+GIU	shared/domain/nhatKy.ts:28	Thi hành quyết định chuyển lớp	
+GIU	shared/domain/nhatKy.ts:32	Kết quả thi thật	
+GIU	shared/domain/nhatKy.ts:32	Bước tiếp sau thi	
+GIU	shared/domain/nhatKy.ts:32	Gia hạn sau thi	
+GIU	shared/domain/nhatKy.ts:42	Lưu kết luận lịch thi	
+GIU	shared/domain/nhomQuyen.ts:56	Sửa thông tin học viên: họ tên, ngày sinh, email, TVV, liên hệ, dự kiến thi, điểm đầu vào.	
+GIU	shared/domain/nhomQuyen.ts:58	Sửa Target (có lý do), ghi chú; Tạm dừng / Quay lại học / Thôi học; nhập kết quả thi thật. Không mở việc học thuật.	
+GIU	shared/domain/people.ts:28	Bạn chỉ sửa được thông tin học viên: họ tên, ngày sinh, email, TVV, liên hệ, dự kiến thi, điểm đầu vào.	
+GIU	shared/domain/people.ts:209	Sửa Target, ghi chú, trạng thái học và kết quả thi thật của học viên	
+GIU	shared/domain/quanLyHocVien.ts:15	Kết quả thi thật	
+GIU	shared/domain/sos.ts:76	Tutor · đến lúc thi	
+GIU	shared/domain/sosV4.ts:50	đến lúc thi	
+GIU	shared/domain/sosV4.ts:56	chưa có ngày thi	
+GIU	shared/domain/students.ts:70	Đổi ngày thi IELTS	
+GIU	shared/domain/students.ts:76	Kết quả thi IELTS	
+GIU	shared/domain/thaoTacMt.ts:139	Thi lại	
+GIU	shared/domain/tongKetLoTrinh.ts:48	Không thi	
+GIU	shared/domain/tongKetLoTrinh.ts:64	Chờ kết quả thi thật	
+GIU	shared/domain/tongKetLoTrinh.ts:64	Không thi	
+GIU	shared/domain/tongKetLoTrinh.ts:75	Điểm thi thật phải từ 0 đến 9, bước 0.5.	
+GIU	shared/domain/tongKetLoTrinh.ts:76	Không thi	
+GIU	shared/domain/tongKetLoTrinh.ts:77	Chờ kết quả thi thật	
+GIU	shared/domain/tongKetLoTrinh.ts:143	Đã thi · chờ KQ	
+GIU	shared/domain/tongKetLoTrinh.ts:148	Đã thi · chờ kết quả	
+GIU	shared/huongDan/cx.ts:16	Ô <b>Cần chú ý</b> · <b>Tạm dừng</b> · <b>Sắp thi</b> · <b>Đã thi · chờ kết quả</b> · <b>Thiếu thông tin</b>; bấm ô mở đúng nhóm em.	
+GIU	shared/huongDan/cx.ts:32	Kết quả thi thật	
+GIU	shared/huongDan/cx.ts:32	sau khi em thi	
+GIU	shared/huongDan/cx.ts:33	Hồ sơ em › <b>Kết quả thi thật</b>: <b>Ngày thi</b>, điểm L R W S (hoặc <b>Không thi</b>), <b>Lưu</b>.	
+GIU	shared/huongDan/cx.ts:47	Chọn <b>Chi nhánh</b>; ô <b>Cần chú ý</b> · <b>Tạm dừng</b> · <b>Sắp thi</b> · <b>Đã thi · chờ kết quả</b> · <b>Thiếu thông tin</b>.	
+GIU	shared/huongDan/cx.ts:59	<b>Tất cả</b> · <b>Đang SOS</b> · <b>Cần chú ý</b> (mặc định); lọc phụ <b>Tạm dừng</b>, <b>Sắp thi</b>, <b>Đã thi · chờ kết quả</b>, <b>Thiếu thông tin</b>.	
+GIU	shared/huongDan/cx.ts:68	Kết quả thi thật	
+GIU	shared/huongDan/cx.ts:68	Bước tiếp: QL hoặc TVV chọn, hạn ngày thi + <b>7 ngày</b> (<b>Gia hạn</b> được); CX chỉ xem.	
+GIU	shared/huongDan/gv.ts:54	<b>Tất cả</b> (lọc <b>Đã thi · chờ kết quả</b>) · <b>Đang SOS</b> (SOS hiện tại, mỗi em một dòng) · <b>Cần làm</b>.	
+GIU	shared/huongDan/gv.ts:55	Lịch thi và xuất Excel	
+GIU	shared/huongDan/gv.ts:55	Góc <b>Lịch thi</b>: chọn tháng ở <b>Dự kiến thi</b> → bấm <b>Kết luận</b> ngay trên hàng (<b>Giữ tháng</b> · <b>Chốt ngày</b> · <b>Chuyển tháng</b> · <b>Cần xác nhận</b>); lưu ngay vào lịch thi của em, không bước duyệt (em đã chốt ngày mà bấm <b>Giữ tháng</b>: hàng hỏi lại “Bỏ ngày …?”).	
+GIU	shared/huongDan/gv.ts:56	Bấm <b>Lịch thi</b> ở hàng này.	
+GIU	shared/huongDan/gv.ts:133	Chưa có ngày thi → mốc là MT cuối lộ trình.	
+GIU	shared/huongDan/ql.ts:49	Em FT có kết quả thi thật: <b>Chọn bước tiếp ›</b> — <b>Lộ trình mới</b> · <b>Tạm dừng</b> · <b>Thôi học</b> (QL hoặc TVV chọn).	
+GIU	shared/huongDan/ql.ts:60	<b>Case chưa chốt PA</b> quá hạn → <b>Mở Case</b>; <b>Chọn bước tiếp</b> sau thi; <b>Chốt lộ trình</b> khi tới hạn.	
+GIU	shared/huongDan/ql.ts:62	<b>Lớp cần chú ý</b>: Chưa lịch, Chưa điểm, SOS 1 · 2 · 3, <b>Case chưa chốt PA</b> (HV / Case; <b>?</b> chia theo trạng thái), Đã thi · chờ KQ; mặc định <b>Chỉ lớp có vấn đề</b>.	
+GIU	shared/huongDan/ql.ts:91	<b>⋯</b> trên đầu hồ sơ: <b>Sửa thông tin</b> · <b>Chuyển lớp…</b> · <b>Tạm dừng / Thôi học</b> · <b>Kết quả thi thật</b> · <b>Lịch sử</b>.	
+GIU	shared/huongDan/ql.ts:94	<b>⋯ › Lịch sử</b> ở hồ sơ em, hồ sơ lớp; nút <b>Lịch sử</b> ở hồ sơ MT, Kết quả thi thật, Góp ý hàng tuần, kết quả Thêm học viên.	
+GIU	shared/huongDan/ql.ts:149	Bước tiếp sau thi	
+GIU	shared/huongDan/ql.ts:149	Đã thi (từ hôm sau ngày thi) → <b>Cập nhật kết quả thi thật</b>; có kết quả → <b>Chọn bước tiếp</b>. Cùng hạn: ngày thi + <b>7 ngày</b>, <b>Gia hạn</b> được.	
+GIU	shared/huongDan/tvv.ts:16	<b>Thông tin lớp</b>: liên hệ, Target, dự kiến thi của cả lớp.	
+GIU	shared/huongDan/tvv.ts:22	<b>Sửa thông tin</b> · <b>Tạm dừng / Thôi học</b> · <b>Kết quả thi thật</b> (FT) · <b>Lịch sử</b>.	
+GIU	shared/huongDan/tvv.ts:23	Khối <b>Học viên</b> · <b>Liên hệ</b> · <b>Lộ trình đang học</b> (Dự kiến thi, Target).	
+GIU	shared/huongDan/tvv.ts:35	Kết quả thi thật	
+GIU	shared/huongDan/tvv.ts:35	Có kết quả → việc <b>Chọn bước tiếp</b>; QL hoặc TVV chọn. Hạn: ngày thi + <b>7 ngày</b>, <b>Gia hạn</b> được.	
+GIU	shared/huongDan/tvv.ts:44	<b>Tổng quan › Học viên của tôi</b>: ô <b>Cần chú ý</b> · <b>Tạm dừng</b> · <b>Sắp thi</b> · <b>Đã thi · chờ kết quả</b> · <b>Thiếu thông tin</b>.	
+GIU	shared/huongDan/tvv.ts:50	<b>Học viên & Lớp</b> › <b>Cần làm</b>: <b>Chọn bước tiếp</b> · <b>Kết quả thi thật</b> · <b>Thiếu email</b> · <b>Thiếu thông tin</b>.	
+GIU	shared/huongDan/tvv.ts:55	Kết quả thi thật + Bước tiếp	
+GIU	shared/huongDan/tvv.ts:55	sau khi em thi	
+GIU	shared/huongDan/tvv.ts:56	Hồ sơ em › <b>Kết quả thi thật</b>: <b>Ngày thi</b>, điểm L R W S (hoặc <b>Không thi</b>), <b>Lưu</b>.	
+GIU	shared/huongDan/tvv.ts:57	Lưu xong, panel <b>Bước tiếp</b> mở ngay (hạn: ngày thi + <b>7 ngày</b>): <b>Lộ trình mới</b> · <b>Tạm dừng</b> · <b>Thôi học</b>; làm sau: hồ sơ › <b>Chọn bước tiếp ›</b>.	
+GIU	shared/huongDan/tvv.ts:63	Một em: hồ sơ › <b>Sửa thông tin</b> (liên hệ, Dự kiến thi, Target); đổi Target ghi lý do.	
+GIU	shared/huongDan/tvv.ts:75	Em được gán cho bạn: <b>Cần chú ý</b> (SOS · Case mới · Ý thức) · <b>Tạm dừng</b> · <b>Sắp thi</b> (6 tuần tới) · <b>Đã thi · chờ kết quả</b> · <b>Thiếu thông tin</b>.	
+GIU	shared/huongDan/tvv.ts:88	<b>Tất cả</b> · <b>Đang SOS</b> · <b>Cần làm</b>; lọc phụ <b>Cần chú ý</b>, <b>Tạm dừng</b>, <b>Sắp thi</b>, <b>Đã thi · chờ kết quả</b>.	
+GIU	shared/huongDan/tvv.ts:100	Sắp thi	
+GIU	shared/huongDan/tvv.ts:100	Em thi IELTS trong 6 tuần tới.	
+GIU	shared/huongDan/tvv.ts:102	Hướng sau thi thật: Lộ trình mới · Tạm dừng · Thôi học.	
+GIU	server/src/cases/cases.ts:962	Dời lịch thi thì phải chọn dời cái gì:	
+GIU	server/src/cases/sos.ts:65	Học Tutor cho đến lần mock 3 (ưu tiên) HOẶC đề xuất lùi lịch thi kèm phương án — chọn một	
+GIU	server/src/cases/sos.ts:68	Học Tutor cho đến lúc thi (ưu tiên lịch này)	
+GIU	server/src/cases/sos.ts:68	Học Tutor cho đến lúc thi	
+GIU	server/src/classes/intake.ts:315	Gõ số MT đã thi, 0–8	
+GIU	server/src/classes/intake.ts:342	Đã thi tới MT	
+GIU	server/src/classes/lenhChuyen.ts:330	Quyết định chuyển lớp vừa được thi hành.	
+GIU	server/src/classes/lenhChuyen.ts:353	Quyết định chuyển lớp vừa được thi hành hoặc đã huỷ.	
+GIU	server/src/classes/lenhChuyen.ts:358	Sau thi: huỷ hẹn Lộ trình mới	
+GIU	server/src/classes/lenhChuyen.ts:471	Quyết định đã thi hành — không khôi phục được.	
+GIU	server/src/classes/lenhChuyen.ts:585	Em không còn học lớp nguồn lúc thi hành	
+GIU	server/src/classes/lenhChuyen.ts:610	Em không còn học lớp nguồn lúc thi hành	
+GIU	server/src/classes/lichThi.ts:165	Bạn không có quyền sửa dự kiến thi của em này.	
+GIU	server/src/classes/schedule.ts:720	Tháng/năm dự kiến thi	
+GIU	server/src/classes/suaCaLop.ts:42	Dự kiến thi	
+GIU	server/src/fasttrack/attempts.ts:2276	Thi lại	
+GIU	server/src/fasttrack/cycles.ts:158	Dự kiến thi không hợp lệ.	
+GIU	server/src/fasttrack/cycles.ts:209	Dự kiến thi:	
+GIU	server/src/fasttrack/cycles.ts:229	Dự kiến thi	
+GIU	server/src/fasttrack/cycles.ts:251	Dự kiến thi	
+GIU	server/src/fasttrack/cycles.ts:261	Dự kiến thi:	
+GIU	server/src/fasttrack/cycles.ts:302	Dự kiến thi không hợp lệ.	
+GIU	server/src/fasttrack/cycles.ts:309	Dự kiến thi phải có dạng MM/YYYY.	
+GIU	server/src/fasttrack/cycles.ts:311	Dự kiến thi không hợp lệ.	
+GIU	server/src/fasttrack/cycles.ts:341	Đổi dự kiến thi IELTS	
+GIU	server/src/fasttrack/cycles.ts:470	Không lấy một lượt Mock Test làm kết quả thi thật. Nhập điểm IELTS em báo về,	
+GIU	server/src/fasttrack/cycles.ts:471	hoặc để trống nếu em chưa thi.	
+GIU	server/src/fasttrack/mtMacDinh.ts:28	"Đã thi tới MT" phải là số từ 0 đến 8.	
+GIU	server/src/keHoach/keHoachTest.ts:593	Thi lại: chọn tuần từ tuần này trở đi.	
+GIU	server/src/keHoach/keHoachTest.ts:602	Chỉ thi lại được ở lượt Mock đang chạy.	
+GIU	server/src/keHoach/keHoachTest.ts:603	Chưa chọn kỹ năng thi lại.	
+GIU	server/src/keHoach/keHoachTest.ts:607	Thi lại:	
+GIU	server/src/keHoach/keHoachTest.ts:607	Thi lại	
+GIU	server/src/keHoach/keHoachTest.ts:612	chưa có điểm — không thi lại. Em vắng thì dùng "Xếp lại bài vắng"; kỹ năng đã huỷ thì "Khôi phục và đặt tuần".	
+GIU	server/src/keHoach/keHoachTest.ts:1034	Chọn tuần cho kỹ năng thi lại.	
+GIU	server/src/keHoach/keHoachTest.ts:1040	Thi lại — điểm cũ giữ trong Lịch sử.	
+GIU	server/src/loTrinh/buocTiep.ts:89	Chỉ Quản lý hoặc TVV của chi nhánh chọn được bước tiếp sau thi.	
+GIU	server/src/loTrinh/buocTiep.ts:90	Lộ trình mới sau thi	
+GIU	server/src/loTrinh/buocTiep.ts:102	Bước tiếp sau thi	
+GIU	server/src/loTrinh/buocTiep.ts:134	Hoàn tác bước tiếp sau thi	
+GIU	server/src/loTrinh/buocTiep.ts:194	Lộ trình chưa có kết quả thi thật — nhập kết quả (hoặc Không thi) trước khi chọn bước tiếp.	
+GIU	server/src/loTrinh/buocTiep.ts:227	Kết thúc sau thi	
+GIU	server/src/loTrinh/buocTiep.ts:235	Tạm dừng sau thi	
+GIU	server/src/loTrinh/buocTiep.ts:257	Sau thi:	
+GIU	server/src/loTrinh/buocTiep.ts:277	Sau thi:	
+GIU	server/src/loTrinh/buocTiep.ts:317	Sau thi: hẹn bắt đầu không thành	
+GIU	server/src/loTrinh/buocTiep.ts:382	đã thi	
+GIU	server/src/loTrinh/thiThat.ts:62	Chỉ GVCN lớp cuối, Quản lý hoặc TVV của chi nhánh nhập được kết quả thi thật.	
+GIU	server/src/loTrinh/thiThat.ts:63	Chỉ lộ trình Fast Track có kết quả thi thật.	
+GIU	server/src/loTrinh/thiThat.ts:64	Lộ trình đóng vì chuyển lớp — em không đi thi.	
+GIU	server/src/loTrinh/thiThat.ts:70	Ngày thi không hợp lệ hoặc sau hôm nay.	
+GIU	server/src/loTrinh/thiThat.ts:71	Ngày thi không được trước ngày bắt đầu lộ trình.	
+GIU	server/src/loTrinh/thiThat.ts:96	Không thi	
+GIU	server/src/loTrinh/thiThat.ts:98	Kết quả thi thật	
+GIU	server/src/loTrinh/thiThat.ts:122	, COALESCE((SELECT class_id FROM ban_chup_lo_trinh b WHERE b.cycle_id = c.id AND b.class_id IS NOT NULL ORDER BY lan DESC LIMIT 1), (SELECT a.class_id FROM assessment_attempts a WHERE a.cycle_id = c.id AND a.class_id IS NOT NULL AND a.kind != 'mt0' ORDER BY a.id DESC LIMIT 1), (SELECT e.class_id FROM enrollments e WHERE e.student_id = c.student_id ORDER BY e.id DESC LIMIT 1)) AS class_id FROM learning_cycles c JOIN students s ON s.id = c.student_id LEFT JOIN report_periods ep ON ep.id = c.exam_period_id WHERE c.route IS NOT NULL AND c.thi_that_khong_thi = 0 AND (c.thi_that_l IS NULL OR c.thi_that_r IS NULL OR c.thi_that_w IS NULL OR c.thi_that_s IS NULL) /* Kết quả CŨ (chỉ Overall / kết luận chọn tay) là đã có kết quả. */ AND c.outcome_score IS NULL AND COALESCE(c.outcome, 'unknown') = 'unknown' /* TD4: tập cha của "đã thi" — ngày thi (trangThaiSauThi) ≥ cận dưới này; lọc JS giữ nguyên. TD7: đứng TRƯỚC các điều kiện có câu con — SQLite xét nó ngay trên dòng lộ trình. LT-SV: chỉ tuần / tháng không còn là ngày thi (lọc JS bỏ lộ trình có dự kiến mà chưa ngày). */ AND COALESCE(c.thi_that_ngay, c.exam_date, c.ended_at) < ? AND	
+GIU	server/src/loTrinh/thiThat.ts:133	/* Đóng vì CHUYỂN LỚP (đóng-mở): em không đi thi — không nhắc. */ AND NOT EXISTS (SELECT 1 FROM ban_chup_lo_trinh b WHERE b.cycle_id = c.id AND b.ly_do = 'chuyen_lop' AND b.lan = (SELECT MAX(lan) FROM ban_chup_lo_trinh WHERE cycle_id = c.id))	
+GIU	server/src/loTrinh/thiThat.ts:145	Đã thi	
+GIU	server/src/loTrinh/thiThat.ts:181	thi	
+GIU	server/src/loTrinh/thiThat.ts:181	Cập nhật kết quả thi thật	
+GIU	server/src/loTrinh/thiThat.ts:216	Chỉ gia hạn được khi em đã thi và chưa chọn bước tiếp.	
+GIU	server/src/loTrinh/thiThat.ts:235	Gia hạn sau thi	
+GIU	server/src/loTrinh/thiThat.ts:235	Bỏ gia hạn sau thi	
+GIU	server/src/loTrinh/tongKet.ts:33	Thi thật	
+GIU	server/src/loTrinh/tongKet.ts:37	Không thi	
+GIU	server/src/loTrinh/tongKet.ts:37	Không thi	
+GIU	server/src/loTrinh/tongKet.ts:37	Chờ kết quả thi thật	
+GIU	server/src/loTrinh/tongKet.ts:165	Chờ kết quả thi thật	
+GIU	server/src/migrate/prCt.ts:30	Thêm bảng lệnh chuyển lớp (Quản lý quyết, thi hành đúng Thứ Hai tuần bắt đầu, phiếu bàn giao)	
+GIU	server/src/migrate/prCt.ts:33	Lệnh chuyển lớp: thêm ngày thử thi hành bị lỗi (thử lại một lần mỗi ngày)	
+GIU	server/src/migrate/prNhap.ts:12	Thêm ngày thi dự kiến cụ thể cho lộ trình (tuỳ chọn)	
+GIU	server/src/migrate/prOv13a.ts:90	PA "đến lúc thi" chưa có ngày thi → mốc MT cuối ·	
+GIU	server/src/migrate/prOv13m.ts:9	OV-13m: cột learning_cycles.buoc_tiep_hen (Hẹn bắt đầu lộ trình mới sau thi)	
+GIU	server/src/migrate/prOv13q.ts:29	(hạn sau thi + gia hạn).	
+GIU	server/src/migrate/prOv13q.ts:60	lộ trình đã thi chưa xong mà hạn mới đã qua → hạn sau thi	
+GIU	server/src/migrate/prOv15c.ts:23	OV-15c: thêm bảng ghi_chu_lich_thi (ghi chú lịch thi theo học viên × lượt và ghi chú lớp). Dữ liệu cũ giữ nguyên.	
+GIU	server/src/migrate/prOv15f.ts:15	(kết luận + ghi chú họp Lịch thi). Dữ liệu cũ giữ nguyên.	
+GIU	server/src/migrate/prOv1b.ts:98	Không dự thi	
+GIU	server/src/migrate/prOv1b.ts:99	giữ lịch thi lại	
+GIU	server/src/migrate/prOv1b.ts:101	Không dự thi ·	
+GIU	server/src/migrate/prOv1b.ts:102	· huỷ phần thi	
+GIU	server/src/migrate/prOv1b.ts:131	Không dự thi	
+GIU	server/src/migrate/prOv1b.ts:148	OV-1b: "-" nhập bù = Không dự thi (luật mới) — gỡ lần vắng do dấu này	
+GIU	server/src/migrate/prOv1b.ts:156	Vắng — dấu "-" trong tuần thi (dọn OV-1b)	
+GIU	server/src/migrate/prOv1b.ts:158	· huỷ phần thi	
+GIU	server/src/migrate/prOv1b.ts:165	ô "-" dọn theo luật mới (Không dự thi / vắng chốt ngay):	
+GIU	server/src/migrate/prOv1b.ts:169	ô "-" em đang chờ thi lại — không đổi:	
+GIU	server/src/migrate/prOv8a.ts:12	cột Bước tiếp sau thi ở learning_cycles	
+GIU	server/src/migrate/prTk.ts:10	CREATE TABLE IF NOT EXISTS ban_chup_lo_trinh ( id INTEGER PRIMARY KEY, cycle_id INTEGER NOT NULL REFERENCES learning_cycles(id), student_id INTEGER NOT NULL REFERENCES students(id), lan INTEGER NOT NULL, -- 1, 2… (lần đóng thứ mấy; Học lại rồi đóng lại = lan 2) ly_do TEXT NOT NULL, dong_ngay TEXT NOT NULL, nguon TEXT NOT NULL, -- nguon: 'luc_dong' | 'dien_nguoc' programme_code TEXT, programme_name TEXT, scoring_mode TEXT, route TEXT, mon_json TEXT, -- môn của chương trình lúc đóng class_id INTEGER, class_code TEXT, branch_id INTEGER, gvcn_user_id INTEGER, gvcn_ten TEXT, -- lớp cuối của lộ trình; không FK (lớp có thể bị xoá) bat_dau_ngay TEXT, target REAL, khong_cam_ket INTEGER, dau_vao REAL, dau_vao_nguon TEXT, dau_vao_l REAL, dau_vao_r REAL, dau_vao_w REAL, dau_vao_s REAL, thi_du_kien_thang TEXT, thi_du_kien_tuan INTEGER, thi_du_kien_ngay TEXT, thi_du_kien_nhan TEXT, -- ĐÍCH: Target (cột target) + dự kiến thi lúc đóng thi_that_ngay TEXT, thi_that_l REAL, thi_that_r REAL, thi_that_w REAL, thi_that_s REAL, thi_that_ovr REAL, -- KẾT QUẢ thi thật (FT) thi_that_khong_thi INTEGER NOT NULL DEFAULT 0, thi_that_nhap_boi INTEGER, thi_that_nhap_luc TEXT, ket_luan TEXT, -- reached | not_reached | unknown (máy so thi_that_ovr với target; chưa có / không thi = unknown) huong_tiep TEXT, -- hoc_lai | len_lt2 | ket_thuc | len_ft | len_lop | chuyen_lop | lo_trinh_moi | khong_ro ky_vong_dat INTEGER, ty_le_cuoi_khoa REAL, dai_cuoi_khoa TEXT, -- lớp thường so_luot INTEGER NOT NULL, lam_moi_luc TEXT, created_at TEXT NOT NULL, UNIQUE (cycle_id, lan)); CREATE TABLE IF NOT EXISTS ban_chup_luot ( id INTEGER PRIMARY KEY, ban_chup_id INTEGER NOT NULL REFERENCES ban_chup_lo_trinh(id) ON DELETE CASCADE, attempt_id INTEGER, attempt_no INTEGER, kind TEXT, trang_thai TEXT, -- done | planned | cancelled | khong_dung (MT0) huy_ly_do TEXT, lich_su INTEGER, class_id INTEGER, class_code TEXT, tuan_bat_dau TEXT, target_luc_thi REAL, ky_vong REAL, overall REAL, ty_le_tong REAL, sos INTEGER, ket_qua TEXT, -- cấp lượt (lặp ở mỗi dòng kỹ năng) ky_nang TEXT NOT NULL, bat_buoc INTEGER, bo_qua INTEGER, diem REAL, diem_tho REAL, diem_tong REAL, dat INTEGER, vang INTEGER, han_cham TEXT, nhap_luc TEXT, nguoi_nhap_id INTEGER, gv_id INTEGER, gv_ten TEXT, case_id INTEGER, UNIQUE (ban_chup_id, attempt_id, ky_nang)); CREATE INDEX IF NOT EXISTS idx_bcl_student ON ban_chup_lo_trinh(student_id); CREATE INDEX IF NOT EXISTS idx_bcl_class ON ban_chup_lo_trinh(class_id); CREATE INDEX IF NOT EXISTS idx_bcluot_class ON ban_chup_luot(class_id);	
+GIU	server/src/migrate/prTk.ts:49	cột kết quả thi thật ở learning_cycles	
+GIU	server/src/migrate/run.ts:61	lộ trình FT (Lên FT đã thi hành) chưa có điểm đầu vào — không tự sửa, QL đặt ở hồ sơ học viên.	
+GIU	server/src/migrate.ts:778	Đổi ngày thi IELTS thành tuần dự kiến thi (	
+GIU	server/src/migrate.ts:1192	Tách lịch thi theo kỹ năng: dựng	
+GIU	server/src/migrate.ts:1193	kỹ năng đã có điểm được ghi là đã thi,	
+GIU	server/src/migrate.ts:1194	Tuần thi của từng kỹ năng lấy từ tuần chung cũ và đánh dấu "chưa ai chốt riêng";	
+GIU	server/src/migrate.ts:1195	không bịa ngày thi, không bịa xác nhận có mặt, không bịa nguyên nhân vắng.	
+GIU	server/src/migrate.ts:1206	INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, entity_label, before_json, after_json, created_at) VALUES (NULL, 'rule.changed', 'scheduling', NULL, 'Lịch thi và hạn chấm theo từng kỹ năng', ?, ?, ?)	
+GIU	server/src/migrate.ts:1213	mỗi kỹ năng một tuần thi riêng	
+GIU	server/src/migrate.ts:1214	FT hết thứ Tư tuần sau tuần thi của kỹ năng đó; Normal hết Chủ nhật tuần thi	
+GIU	server/src/migrate.ts:1824	UPDATE attempt_skills SET absent_from_no_show = 1 WHERE sit_status = 'absent' AND absent_from_no_show = 0 AND sit_note LIKE 'Không dự thi%'	
+GIU	server/src/ops/kiemDuLieuMt.ts:61	Mọi kỹ năng đều đã huỷ phần thi hoặc không bắt buộc — lượt vẫn "planned", chiếm chỗ trong lộ trình	
+GIU	server/src/ops/kiemOLop.ts:102	Phần thi	
+GIU	server/src/ops/kiemTruocLtSv.ts:47	lộ trình đang "Đã thi · chờ kết quả" CHỈ NHỜ tháng / tuần → về "Chưa chốt ngày thi"	
+GIU	server/src/ops/kiemTruocLtSv.ts:49	lộ trình có kết quả, chưa có ngày thi → hạn Chọn bước tiếp đổi	
+GIU	server/src/ops/kiemTruocOv13a.ts:19	PA "đến lúc thi" chưa có ngày thi → mốc MT cuối của lộ trình	
+GIU	server/src/ops/kiemTruocOv13m.ts:16	em đang học / tạm dừng đã có kết quả thi thật mà chưa chọn bước tiếp — sẽ hiện việc "Chọn bước tiếp" MỚI sau deploy	
+GIU	server/src/ops/kiemTruocOv13q.ts:26	lộ trình đã thi chưa xong mà hạn 1 tuần đã qua — migrate đặt hạn	
+GIU	server/src/ops/kiemTruocOv1b.ts:18	giữ lịch thi lại	
+GIU	server/src/ops/kiemTruocOv1b.ts:19	ô em đang chờ thi lại giữ nguyên	
+GIU	server/src/ops/kiemTruocTd7b.ts:28	. Lượt đang có ô chờ điểm mà tuần thi đã tới (cờ = 1), theo chi nhánh:	
+GIU	server/src/ops/thuTurso.ts:48	Khoá ngoại KHÔNG được thực thi — chèn dòng con mồ côi vẫn thành công	
+GIU	server/src/ops/thuTurso.ts:49	khoá ngoại được thực thi	
+GIU	server/src/platform/lichSu.ts:37	Không thi	
+GIU	server/src/platform/lichSu.ts:37	Kết luận lịch thi	
+GIU	server/src/platform/lichSu.ts:260	Ngày thi	
+GIU	server/src/platform/lichSu.ts:260	Không thi	
+GIU	server/src/platform/lichSu.ts:267	Hạn sau thi	
+GIU	server/src/routes/index.ts:981	Cần chọn tuần thi lại.	
+GIU	server/src/students/lichSuSua.ts:39	Dự kiến thi	
+GIU	server/src/students/lichSuSua.ts:40	Dự kiến thi	
+GIU	server/src/students/lichSuSua.ts:41	Ngày thi	
+GIU	server/src/students/lichSuSua.ts:49	Hạn sau thi	
+GIU	server/src/students/lichSuSua.ts:51	Kết luận lịch thi	
+GIU	server/src/students/lichSuSua.ts:52	Tháng thi	
+GIU	server/src/students/viecHocVien.ts:65	Cập nhật kết quả thi thật	
+GIU	server/src/students/viecHocVien.ts:66	Cập nhật kết quả thi thật ›	
+GIU	server/src/worklist/bangChiNhanh.ts:49	Đã thi · chờ KQ	
+GIU	server/src/worklist/mywork.ts:226	Cập nhật kết quả thi thật	
+GIU	server/src/worklist/mywork.ts:227	Em Fast Track đã qua kỳ thi — nhập điểm L, R, W, S em báo về hoặc chọn Không thi. Hạn 4 tuần kể từ thứ Hai sau kỳ thi.	
+GIU	server/src/worklist/mywork.ts:232	Em Fast Track đã có kết quả thi thật — chọn Lộ trình mới, Tạm dừng hoặc Thôi học. Hạn 7 ngày kể từ ngày có kết quả.	
+GIU	server/src/worklist/mywork.ts:1157	Đã tới tháng thi mà chưa có ngày thi	
+GIU	server/src/worklist/mywork.ts:1158	Chốt ngày thi	
+GIU	server/src/worklist/mywork.ts:1158	Chốt ngày thi	
+GIU	server/src/worklist/mywork.ts:1207	đến lúc thi	
+GIU	server/src/worklist/mywork.ts:1207	ngày thi	
+GIU	server/src/worklist/mywork.ts:1208	Nhập dự kiến thi ·	
+GIU	server/src/worklist/mywork.ts:1209	Nhập dự kiến thi	
+GIU	server/src/worklist/mywork.ts:1210	Nhập ngày thi	
+GIU	server/src/worklist/scoreDebt.ts:80	/* * LỌC TRƯỚC, CHỈ BỎ LƯỢT CHẮC CHẮN KHÔNG NỢ (TD7b): lượt còn ô chờ điểm mà tuần thi đã tới — cờ o_cho_tu (fasttrack/conOCho.ts, chỉ mục một phần * idx_attempt_o_cho) thay cho hai câu con tương quan trên điểm + lịch của MỌI lượt (trước: mọi lượt chưa đủ điểm từ đầu khoá đều bị nạp mỗi lần mở bảng chi nhánh). * Luật "còn nợ" vẫn nằm ở skillCells / regularSkillViews bên dưới — đây chỉ là tập cha an toàn (ô chờ ⊇ ô nợ). */ AND a.o_cho_tu <= ? ORDER BY a.id	

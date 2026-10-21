@@ -37,7 +37,7 @@ export const EN_OV13O = {
   'Bài quá hạn': 'Overdue papers',
   'Bài quá hạn chưa nhập điểm': 'Overdue papers not scored',
   'Khung': 'Track',
-  'Một bài = một kỹ năng của một em trong một lượt, tuần thi đã bắt đầu. Cùng số với Lịch Test. Khác với số ở khối Việc đang có, vốn đếm việc.':
+  'Một bài = một kỹ năng của một em trong một lượt, tuần Test đã bắt đầu. Cùng số với Lịch Test. Khác với số ở khối Việc đang có, vốn đếm việc.':
     'One paper = one skill of one student in one round, test week started. Same number as Test schedule. Differs from Current tasks, which counts tasks.',
   'Kết quả gần nhất của lớp đang dạy': 'Latest results of classes taught',
   'môn bạn dạy': 'your subject',

@@ -63,7 +63,7 @@ export async function runPrUxfBTests(t: YThucTestKit) {
     assert(the.length > 0, 'seed không có thẻ Lịch thi chờ có tuần đề nghị');
     for (const x of the) {
       assert(/đề nghị W\d [A-Z]{3}(?! \d)/.test(x.dong[0]), x.dong[0]);
-      assert(!x.neuDuyet || /thi tuần W\d [A-Z]{3}\.$/.test(x.neuDuyet), String(x.neuDuyet));
+      assert(!x.neuDuyet || /làm bài tuần W\d [A-Z]{3}\.$/.test(x.neuDuyet), String(x.neuDuyet));
     }
   });
   check('UXF-b (2) · quét chữ: hồ sơ lớp, dải Sắp chuyển, lịch MT, panel Tạm dừng nói mã tuần', () => {

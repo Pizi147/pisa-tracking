@@ -42,7 +42,7 @@ export function boDanFt(data: FtSheet, cot: readonly string[], homNay: string): 
     const c0 = theoId.get(h.attemptId)?.cells.find((cc) => cc.skill === k);
     /* Ô chỉ đọc: cùng câu với lưới (`lyDoChiDoc`); ô chưa tới tuần thi nói tuần. */
     return c0 && !c0.canEdit ? { ...c0, lyDoKhoa: c0.weekStart && c0.weekStart.slice(0, 10) > homNay
-      ? t('Chưa tới tuần thi {tuan}', { tuan: tuanLich(c0.weekStart, homNay) }) : lyDoChiDoc(c0) } : c0;
+      ? t('Chưa tới tuần Test {tuan}', { tuan: tuanLich(c0.weekStart, homNay) }) : lyDoChiDoc(c0) } : c0;
   };
   return {
     classId: data.classId, classCode: data.classCode, hang: data.rows, cot, tenCot: COT_FT, duong: '/attempts/scores/lo',
@@ -50,7 +50,7 @@ export function boDanFt(data: FtSheet, cot: readonly string[], homNay: string): 
     luuY: t('Một kỹ năng: Tên · điểm · nhận xét. Ô trống được bỏ qua, không thành 0. W1, W2, S: bốn tiêu chí (5.5 6 6 5.5).'),
     xet: (h, k, raw, cheDo) => {
       const cell = oCua(h, k);
-      if (!cell) return { loai: 'loi', loi: t('Lượt này không thi kỹ năng này') };
+      if (!cell) return { loai: 'loi', loi: t('Lượt này không có kỹ năng này') };
       const r = xetODan(raw, cell, cheDo);
       return r.loai === 'ghi' ? { ...r, lenh: [r.patch], kyVong: cell.kyVong ?? null } : r;
     },

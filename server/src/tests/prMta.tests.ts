@@ -596,7 +596,7 @@ export async function runPrMtaTests(t: YThucTestKit) {
 
   // ------------------------------------------------------------------ T19 khung nhập điểm (chủ sản phẩm 06/10)
   console.log('\nPR-MTa · T19 không nhập điểm trước tuần thi; hạn lớp thường thứ Tư tuần sau');
-  const CHUA_TOI = /^Chưa tới tuần thi W\d [A-Z]{3} — chưa nhập điểm được\.$/;
+  const CHUA_TOI = /^Chưa tới tuần Test W\d [A-Z]{3} — chưa nhập điểm được\.$/;
   check('MTa T19 (F1, F2) · MT tuần sau: GVBM, Quản lý, Quản trị nhập điểm → 400, không ghi gì', () => {
     const a = emMoi();
     for (const ai of [P.lrTeacher, QL, P.admin]) {
@@ -637,7 +637,7 @@ export async function runPrMtaTests(t: YThucTestKit) {
   check('MTa T19 (F8, F9) · kỹ năng chưa xếp tuần → 400; dấu "-" và xoá điểm giữ luật cũ', () => {
     const a = emMoi([0, 4, 8]);
     skillSch.boTuanLuot(QL, a.m3, {});
-    assert(/^Chưa xếp tuần thi — chưa nhập điểm được\.$/.test(loiCua(() => attemptsSvc.saveScore(P.admin, a.m3, 'listening', { rawScore: 30 })).message), 'chưa xếp');
+    assert(/^Chưa xếp tuần Test — chưa nhập điểm được\.$/.test(loiCua(() => attemptsSvc.saveScore(P.admin, a.m3, 'listening', { rawScore: 30 })).message), 'chưa xếp');
     const b = baiThuong(1);
     assert(/chưa ghi "-" được/.test(loiCua(() => regular.saveRegularScore(P.admin, b.aid, 'listening', { noShow: true })).message), '"-" lớp thường');
     attemptsSvc.saveScore(P.lrTeacher, a.m1, 'listening', { rawScore: 30 });

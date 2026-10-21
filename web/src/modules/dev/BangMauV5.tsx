@@ -197,7 +197,7 @@ export function BangMauV5() {
               <OChiSo ten="Đạt MT2" giaTri="75 %" mau={<><SoBam>15/20</SoBam> HV đủ dữ liệu</>} />
               <OChiSo ten="Case có PA" giaTri="83 %" mau={<><SoBam>5/6</SoBam> Case</>} />
               <OChiSo ten="Đạt Target thi thật" giaTri={<span className="text-lg font-semibold leading-[42px] text-slate-500">Chưa có dữ liệu</span>} mau="0 HV có kết quả · 0 không bấm" />
-              <OChiSo ten="Thi tuần này" giaTri="2" mau={<><SoBam>2</SoBam> HV · W3 SEP</>} />
+              <OChiSo ten="Thi tháng này" giaTri="2" mau={<><SoBam>2</SoBam> HV · 09/2026</>} />
             </div>
             <div className="flex flex-wrap items-baseline gap-6 text-[13px]"><TyLe n={15} N={20} nhan="HV đủ dữ liệu" /><TyLe n={0} N={0} /></div>
           </div>

@@ -73,8 +73,8 @@ export function PhanLichTest({ classId, tieuDe, suaDuoc, onDone, onChuyenTiep }:
   const ngoaiKhoa = (v: string) => v.trim() !== '' && (!Number.isInteger(Number(v)) || Number(v) < 1 || Number(v) > (data?.totalWeeks ?? 0));
   const loi: LoiTruong[] = !data ? [] : [
     ...(laLopThuong && !startPeriodId ? [{ khoa: 'khai-giang', nhan: 'Tuần khai giảng', lyDo: 'Chưa chọn' }] : []),
-    ...(laLopThuong && data.coGiuaKhoa && ngoaiKhoa(progressWeek) ? [{ khoa: 'giua-khoa', nhan: 'Tuần thi Progress Test', lyDo: `Từ 1 đến ${data.totalWeeks}` }] : []),
-    ...(laLopThuong && ngoaiKhoa(finalWeek) ? [{ khoa: 'cuoi-khoa', nhan: 'Tuần thi Final Test', lyDo: `Từ 1 đến ${data.totalWeeks}` }] : []),
+    ...(laLopThuong && data.coGiuaKhoa && ngoaiKhoa(progressWeek) ? [{ khoa: 'giua-khoa', nhan: 'Tuần Progress Test', lyDo: `Từ 1 đến ${data.totalWeeks}` }] : []),
+    ...(laLopThuong && ngoaiKhoa(finalWeek) ? [{ khoa: 'cuoi-khoa', nhan: 'Tuần Final Test', lyDo: `Từ 1 đến ${data.totalWeeks}` }] : []),
   ];
 
   /* Huỷ: về giá trị đã lưu (nạp lại một lần ở lượt vẽ sau). */
@@ -156,14 +156,14 @@ export function PhanLichTest({ classId, tieuDe, suaDuoc, onDone, onChuyenTiep }:
             <div className={`grid gap-3 ${data.coGiuaKhoa ? 'sm:grid-cols-2' : ''}`}>
               {/* K2-23: Pre FOU chỉ có Cuối khoá — không vẽ ô Giữa khoá. */}
               {data.coGiuaKhoa && (
-                <Field label="Tuần thi Progress Test (tuần học)" loi={lf.loiCua(loi, 'giua-khoa')}
+                <Field label="Tuần Progress Test (tuần học)" loi={lf.loiCua(loi, 'giua-khoa')}
                   hint={`Mặc định của ${kyHieuLop(data.programmeCode, null) ?? data.programmeCode}: tuần ${data.progressOverridden ? '—' : data.progressWeek ?? '—'}. Để trống là dùng mặc định.`}>
                   <input type="number" min={1} max={data.totalWeeks ?? undefined} className="field w-full"
                     {...lf.o(loi, 'giua-khoa')} value={progressWeek} placeholder={String(data.progressWeek ?? '')}
                     onChange={(e) => { setTouched(true); setProgressWeek(e.target.value); }} />
                 </Field>
               )}
-              <Field label="Tuần thi Final Test (tuần học)" loi={lf.loiCua(loi, 'cuoi-khoa')}
+              <Field label="Tuần Final Test (tuần học)" loi={lf.loiCua(loi, 'cuoi-khoa')}
                 hint="Để trống là dùng mốc mặc định của chương trình.">
                 <input type="number" min={1} max={data.totalWeeks ?? undefined} className="field w-full"
                   {...lf.o(loi, 'cuoi-khoa')} value={finalWeek} placeholder={String(data.finalWeek ?? '')}

@@ -458,7 +458,7 @@ function NhanDot({ a, ct = null }: {
 }) {
   const nhan = [
     ...(a.status === 'cancelled' ? [{ chu: t('đã huỷ'), title: t('Lượt này đã huỷ.') }] : []),
-    ...(a.huyPhan ? [{ chu: t('huỷ phần'), title: t('Có phần thi bị huỷ.') }] : []),
+    ...(a.huyPhan ? [{ chu: t('huỷ phần'), title: t('Có kỹ năng bị huỷ.') }] : []),
     ...(a.doiKyNang?.length ? [{
       chu: t('dời {mon}', { mon: a.doiKyNang.map((k) => tenMonNgan(ct, k)).join(' ') }),
       title: t('Dời do vắng: {mon}.', { mon: a.doiKyNang.map((k) => tenMon(ct, k)).join(', ') }),

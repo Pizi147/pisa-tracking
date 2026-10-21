@@ -355,7 +355,7 @@ function reportBranchCtx(reportId: number): { branchId: number | null; unitKind:
          FROM unit_reports ur JOIN reporting_units ru ON ru.id = ur.reporting_unit_id WHERE ur.id = ?`,
     )
     .get(reportId) as any;
-  if (!row) throw notFound('Không tìm thấy báo cáo đơn vị.');
+  if (!row) throw notFound('Không tìm thấy họp đơn vị.');
   return { branchId: row.unit_branch_id, unitKind: row.unit_kind };
 }
 

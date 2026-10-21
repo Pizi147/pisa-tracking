@@ -30,7 +30,7 @@ export const MAN_HO_SO_TVV: ManHd[] = [
 ];
 
 export const LUAT_TVV: MucHd[] = [
-  { id: 'tvv-luat-target', ten: 'Đổi Target', buoc: ['TVV, CX, QL sửa thẳng; <b>Lý do đổi Target</b> bắt buộc.', 'Target mới tính từ hôm nay; kỳ vọng các lượt đã thi giữ nguyên.'] },
+  { id: 'tvv-luat-target', ten: 'Đổi Target', buoc: ['TVV, CX, QL sửa thẳng; <b>Lý do đổi Target</b> bắt buộc.', 'Target mới tính từ hôm nay; kỳ vọng các lượt đã làm bài giữ nguyên.'] },
   { id: 'tvv-luat-tam-dung', ten: 'Tạm dừng', buoc: ['Em Tạm dừng: mọi hạn của em dừng, việc ẩn, không quá hạn.', 'Bấm nhầm: <b>Hoàn tác</b> ngay trên thông báo.'] },
   { id: 'tvv-luat-thi-that', ten: 'Kết quả thi thật', buoc: ['Nhập được cả khi em đã Lưu trữ.', 'Có kết quả → việc <b>Chọn bước tiếp</b>; QL hoặc TVV chọn. Hạn: ngày thi + <b>7 ngày</b>, <b>Gia hạn</b> được.'] },
   { id: 'tvv-luat-phoi-hop', ten: 'Phối hợp SOS', buoc: ['SOS 1: <b>Trao đổi ngắn với HV</b> + <b>Trao đổi với gia đình</b>.', 'SOS 2–3: <b>Trao đổi với gia đình</b>, từ MT2 thêm <b>GVCN meeting với HV</b> (MT1: chỉ SOS 3) — không còn Trao đổi ngắn với HV (GVCN tự thêm được).', 'SOS 3 từ MT2 thêm <b>Meeting CX/GĐCN (sau Mock)</b> (MT3 có phụ huynh); GVCN xác nhận, hạn 5 ngày.'] },
@@ -47,7 +47,7 @@ export const HD_TVV: HuongDan = {
     },
     {
       id: 'tvv-can-lam', ten: 'Làm việc ở Cần làm', khi: 'mỗi ngày',
-      buoc: ['<b>Học viên & Lớp</b> › <b>Cần làm</b>: <b>Chọn bước tiếp</b> · <b>Kết quả thi</b> · <b>Thiếu email</b> · <b>Thiếu thông tin</b>.',
+      buoc: ['<b>Học viên & Lớp</b> › <b>Cần làm</b>: <b>Chọn bước tiếp</b> · <b>Kết quả thi thật</b> · <b>Thiếu email</b> · <b>Thiếu thông tin</b>.',
         'Bấm dòng: panel mở ngay trên trang, xong không rời trang.', '<b>Phạm vi</b>: <b>HV của tôi</b> hoặc <b>Chi nhánh</b>.'],
       chi: { hd: 'hvl-goc', duong: '/hoc-vien', chu: 'Bấm <b>Cần làm</b> để xem việc của bạn.' },
     },
@@ -77,7 +77,7 @@ export const HD_TVV: HuongDan = {
     },
     {
       id: 'phan-tich', ten: 'Phân tích', duong: ['/phan-tich'],
-      muc: [{ id: 'tvv-pt', ten: 'Tab phân tích', buoc: ['<b>Báo cáo</b> · <b>Test + SOS</b> · <b>Kết quả thi</b> · <b>Hiệu quả PA</b> · <b>Ý thức</b>.', 'Một <b>Khoảng thời gian</b> cho mọi tab (mặc định 2 tuần vừa qua); bấm số mở danh sách, làm tại chỗ.'],
+      muc: [{ id: 'tvv-pt', ten: 'Tab phân tích', buoc: ['<b>Báo cáo</b> · <b>Test + SOS</b> · <b>Kết quả Test</b> · <b>Hiệu quả PA</b> · <b>Ý thức</b>.', 'Một <b>Khoảng thời gian</b> cho mọi tab (mặc định 2 tuần vừa qua); bấm số mở danh sách, làm tại chỗ.'],
         chi: { hd: 'pt-goc', duong: '/phan-tich', chu: 'Chọn tab ở hàng này.' } }],
     },
     {

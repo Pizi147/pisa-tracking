@@ -140,7 +140,7 @@ export function KeHoachTestTab() {
               const bat = !locXepLai;
               setChiXepLai(bat);
               if (bat) setMoList(lopFT.filter((l) => l.canXepLai > 0).map((l) => l.id));
-            }} title="Học viên có kỹ năng vắng hoặc phần thi đã huỷ — Quản lý cần xếp lại">
+            }} title="Học viên có kỹ năng vắng hoặc đã huỷ — Quản lý cần xếp lại">
               Cần xếp lại <span className="tabular-nums">({soCanXepLai})</span>
             </NutChon>
           </span>

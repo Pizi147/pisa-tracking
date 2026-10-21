@@ -168,8 +168,8 @@ const coDauO = (c: { noShow?: unknown; daChot?: unknown }) => !!c.noShow || !!c.
 export function xetODan(raw: { diem: string; nhanXet: string }, cell: ODanHienCo, cheDo: CheDoLR): XetODan {
   const d = raw.diem.trim(), nx = raw.nhanXet.trim();
   if (!d && !nx) return { loai: 'bo' };
-  if (!cell.required) return { loai: 'loi', loi: t('Lượt này không thi kỹ năng này') };
-  if (cell.progress === 'cancelled' || cell.progress === 'absent') return { loai: 'loi', loi: t('Phần thi đã huỷ / đã xác nhận vắng') };
+  if (!cell.required) return { loai: 'loi', loi: t('Lượt này không có kỹ năng này') };
+  if (cell.progress === 'cancelled' || cell.progress === 'absent') return { loai: 'loi', loi: t('Kỹ năng đã huỷ / đã xác nhận vắng') };
   if (!cell.canEdit) return { loai: 'loi', loi: cell.lyDoKhoa ?? t('Bạn không được phân công kỹ năng này') };
   const kx = kiemNhanXet(nx);
   if ('loi' in kx) return { loai: 'loi', loi: kx.loi };
@@ -276,7 +276,7 @@ const chuThuong = (c: { diem: number | null; tong: number | null }) => (c.diem =
 export function xetOThuong(raw: { diem: string; nhanXet: string }, c: ODanThuong): XetOThuong {
   const d = raw.diem.trim(), nx = raw.nhanXet.trim();
   if (!d && !nx) return { loai: 'bo' };
-  if (c.progress === 'cancelled' || c.progress === 'absent') return { loai: 'loi', loi: t('Phần thi đã huỷ / đã xác nhận vắng') };
+  if (c.progress === 'cancelled' || c.progress === 'absent') return { loai: 'loi', loi: t('Kỹ năng đã huỷ / đã xác nhận vắng') };
   if (!(c.canEdit || (!d && c.nhanXetDuoc))) return { loai: 'loi', loi: c.lyDoKhoa ?? t('Bạn không được phân công môn này') };
   const kx = kiemNhanXet(nx);
   if ('loi' in kx) return { loai: 'loi', loi: kx.loi };
@@ -287,12 +287,12 @@ export function xetOThuong(raw: { diem: string; nhanXet: string }, c: ODanThuong
     if (c.diem !== null) return { loai: 'loi', loi: t('Ô đã có điểm — "-" không xoá được điểm') };
     if (c.dau) return lenhNx.length ? { loai: 'ghi', lenh: lenhNx, truoc: null, sau: '-' } : { loai: 'bo' };
     if (c.khongVang) return { loai: 'loi', loi: c.khongVang };
-    if (c.chuaToiTuan) return { loai: 'loi', loi: t('Chưa tới tuần thi') };
+    if (c.chuaToiTuan) return { loai: 'loi', loi: t('Chưa tới tuần Test') };
     return { loai: 'ghi', lenh: [{ noShow: true }], truoc: null, sau: '-', ...(nx ? { canhBao: t('Ô "-": nhận xét bị bỏ') } : {}) };
   }
   if (!d) return lenhNx.length ? { loai: 'ghi', lenh: lenhNx, truoc: null, sau: truoc ?? '' } : { loai: 'bo' };
   if (c.dau) return { loai: 'loi', loi: t('Ô đang "-" (đã dời tuần) — gỡ dấu ở lưới trước') };
-  if (c.chuaToiTuan) return { loai: 'loi', loi: t('Chưa tới tuần thi') };
+  if (c.chuaToiTuan) return { loai: 'loi', loi: t('Chưa tới tuần Test') };
   const m = /^(\d+)(?:\s*\/\s*(\d+))?$/.exec(d);
   if (!m) return { loai: 'loi', loi: t('Số câu đúng là số nguyên (vd 24 hoặc 24/40)') };
   const score = Number(m[1]), total = m[2] !== undefined ? Number(m[2]) : c.tong ?? c.tongCot;

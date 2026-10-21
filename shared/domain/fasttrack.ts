@@ -81,10 +81,10 @@ export const CLASS_PHASE_LABEL: Record<ClassPhase, string> = {
   unknown: t('Chưa khai tuần bắt đầu'),
   not_started: t('Chưa khai giảng'),
   running: t('Đang học'),
-  progress_soon: t('Tuần sau thi Progress Test'),
-  progress_week: t('Thi Progress Test tuần này'),
-  final_soon: t('Tuần sau thi Final Test'),
-  final_week: t('Thi Final Test tuần này'),
+  progress_soon: t('Tuần sau có Progress Test'),
+  progress_week: t('Progress Test tuần này'),
+  final_soon: t('Tuần sau có Final Test'),
+  final_week: t('Final Test tuần này'),
   finished: t('Đã hết khoá'),
 };
 
@@ -138,7 +138,7 @@ export function nhanLuot(status: string, coDiem: number, yeuCau: number,
   /** OV-1b (ca thật 11/10): mọi kỹ năng bắt buộc đã huỷ phần thi / không còn kỹ năng nào — lượt không còn "Đã lên lịch". */
   huyHet = false): string {
   if (status === 'cancelled') return ATTEMPT_STATUS_LABEL.cancelled;
-  if (huyHet && coDiem === 0 && status !== 'done') return t('Đã huỷ phần thi');
+  if (huyHet && coDiem === 0 && status !== 'done') return t('Đã huỷ');
   if (status === 'done' || (yeuCau > 0 && coDiem >= yeuCau)) return ATTEMPT_STATUS_LABEL.done;
   if (coDiem > 0) return t('Đang chấm · {coDiem}/{yeuCau}', { coDiem, yeuCau });
   return ATTEMPT_STATUS_LABEL[status as AttemptStatus] ?? status;
@@ -171,9 +171,9 @@ export const SIT_STATUSES = ['scheduled', 'sat', 'absent', 'cancelled'] as const
 export type SitStatus = (typeof SIT_STATUSES)[number];
 export const SIT_STATUS_LABEL: Record<SitStatus, string> = {
   scheduled: t('Theo lịch'),
-  sat: t('Đã thi'),
+  sat: t('Đã làm bài'),
   absent: t('Đã xác nhận vắng'),
-  cancelled: t('Đã huỷ phần thi'),
+  cancelled: t('Đã huỷ'),
 };
 
 /**
@@ -199,11 +199,11 @@ export const SKILL_PROGRESS_LABEL: Record<SkillProgress, string> = {
    * lịch và đúng quyền là nhập được, không có bước xác nhận bắt buộc trước khi chấm.
    */
   due: t('Chờ nhập điểm'),
-  sat: t('Đã thi, chờ nhập điểm'),
+  sat: t('Đã làm bài, chờ nhập điểm'),
   absent: t('Đã xác nhận vắng'),
   scored: t('Đã có điểm'),
   reschedule_pending: t('Chờ duyệt dời'),
-  cancelled: t('Đã huỷ phần thi'),
+  cancelled: t('Đã huỷ'),
   lich_su: t('Nhập bù, không tính hạn'),
 };
 
@@ -385,7 +385,7 @@ export function noShowText(v: NoShowView, weekCode: string | null, today: string
   };
   switch (v.state) {
     case 'khong-co-bai': return t('Không có bài · Có thể sửa đến hết Chủ nhật {day}', { day: day(v.editableUntil!) });
-    case 'khong-du-thi': return t('Không dự thi · Tuần {x}', { x: weekCode ?? '' }).trim();
+    case 'khong-du-thi': return t('Vắng · Tuần {x}', { x: weekCode ?? '' }).trim();
     case 'cho-ql-hieu-chinh': return t('Chờ quản lý hiệu chỉnh');
     case 'da-huy': return t('Đã huỷ · vắng MT cũ');
     default: return null;

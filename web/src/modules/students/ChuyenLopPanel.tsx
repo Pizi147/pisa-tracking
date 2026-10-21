@@ -235,7 +235,7 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone, cheDo,
   const nhanChinh = dx ? (duyet ? 'Lưu' : 'Gửi đề xuất') : ngayNay ? t('Chuyển ngay') : duyet ? 'Duyệt và quyết định' : lenh ? CHU_CHUYEN_LOP.luu : CHU_CHUYEN_LOP.quyetDinh;
   /* OV-13l: khối "Khi chuyển" của chuyển ngay — em sang lớp mới khi lưu; cùng chương trình (lộ trình giữ) thì bài Test đang dở (kể cả điểm đã nhập) đi theo em. */
   const dongNgay = ngayNay && dich && dangHoc ? [t('Em sang {lop} ngay khi lưu', { lop: dich.code }),
-    ...(xemLop?.luat?.khoa === 'giu' ? [t('Bài Test đang dở đi theo em sang {moi}; bài đã thi xong ở lại {cu}', { moi: dich.code, cu: dangHoc.lop.code })] : [])] : [];
+    ...(xemLop?.luat?.khoa === 'giu' ? [t('Bài Test đang dở đi theo em sang {moi}; bài đã làm xong ở lại {cu}', { moi: dich.code, cu: dangHoc.lop.code })] : [])] : [];
 
   if (daChuyen) {
     /* Nơi gọi đóng panel trong `onDone` → chỉ báo xong khi người dùng rời trạng thái "Đã chuyển". */

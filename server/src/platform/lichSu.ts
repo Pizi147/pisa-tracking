@@ -5,6 +5,7 @@
  *  · lop       — thông tin lớp · tiến độ (mốc, tuần) · phân công GV (`audit_logs` entity `class`); `phan-cong` = lop lọc sẵn phân công.
  *  · gop-y     — góp ý tuần của lớp (`gop_y_tuan.*`, entity HV, nhãn bắt đầu bằng mã lớp).
  *  · bai-lop   — bài trên lớp của MỘT HV (`bai_tren_lop.*`, SV-BAI-LOP); quyền = xem hồ sơ HV.
+ *  · s-ex     — lượt S Expert của MỘT HV (`s_expert.*`, SV-S-EXPERT); quyền = xem hồ sơ HV.
  *  · nhap-hv   — các lô nhập HV hàng loạt vào lớp: MỘT mục mỗi lô, mở ra từng em.
  *  · thi-that  — kết quả thi thật · Bước tiếp · Gia hạn của MỘT lộ trình.
  *  · o         — ô điểm của MỘT lượt Test (điểm, "-", nhận xét, GV chấm S — `scoreHistoryOf`) gộp lịch thi từng kỹ năng (`attempt_schedule_history`).
@@ -24,7 +25,7 @@ export type TruongLs = { ten: string; cu: string | null; moi: string | null; doi
 export type MucLs = { id: number | string; luc: string; nguoi: string; nguon: string | null; lyDo: string | null; truong: TruongLs[] };
 export type TrangLs = { dong: MucLs[]; tiep: number | null; nhom: { key: string; nhan: string }[]; batDau: string | null };
 
-const LOAI = ['hv', 'lop', 'phan-cong', 'gop-y', 'bai-lop', 'nhap-hv', 'thi-that', 'o'] as const;
+const LOAI = ['hv', 'lop', 'phan-cong', 'gop-y', 'bai-lop', 's-ex', 'nhap-hv', 'thi-that', 'o'] as const;
 const TRANG = 20;
 const LO = 60;
 const GOP_MS = 5000;
@@ -52,6 +53,7 @@ function docLichSu(p: Principal, q: { loai?: string | null; id?: number | null; 
     }
     case 'lop': case 'phan-cong': case 'gop-y': case 'nhap-hv': return cuaLop(p, loai, id, loai === 'phan-cong' ? 'phan-cong' : loc, tiep);
     case 'bai-lop': return baiLop(p, id, tiep);
+    case 's-ex': return sEx(p, id, tiep);
     case 'thi-that': return thiThat(p, id, tiep);
     case 'o': return oDiem(p, id, loc, tiep);
   }
@@ -59,7 +61,7 @@ function docLichSu(p: Principal, q: { loai?: string | null; id?: number | null; 
 
 const NHOM_HV = [{ key: 'thong-tin', nhan: 'Thông tin' }, { key: 'target', nhan: 'Target / lộ trình' }, { key: 'trang-thai', nhan: 'Trạng thái' }];
 const NHOM_LOP = [{ key: 'thong-tin', nhan: 'Thông tin' }, { key: 'tien-do', nhan: 'Tiến độ' }, { key: 'phan-cong', nhan: 'Phân công' }];
-const NHOM_O = [{ key: 'diem', nhan: 'Điểm' }, { key: 'nhan-xet', nhan: 'Nhận xét' }, { key: 'lich', nhan: 'Lịch thi' }];
+const NHOM_O = [{ key: 'diem', nhan: 'Điểm' }, { key: 'nhan-xet', nhan: 'Nhận xét' }, { key: 'lich', nhan: 'Lịch Test' }];
 
 /** Mốc bắt đầu ghi (migrate OV-15g) — chỉ báo ở TRANG CUỐI và khi đối tượng có từ trước mốc. OV-15i1: một mốc cho mọi loại (hv, lớp, góp ý,
  *  nhập HV, thi thật, ô điểm) — mốc OV-15g là lúc máy chủ ghi đủ mọi loại; trước đó loại nào cũng có thể thiếu dòng. */
@@ -156,6 +158,22 @@ function baiLop(p: Principal, studentId: number, tiep: number | null): TrangLs {
   return { ...r, nhom: [], batDau: null };
 }
 
+// ------------------------------------------------------------------ S Expert (SV-S-EXPERT)
+
+function sEx(p: Principal, studentId: number, tiep: number | null): TrangLs {
+  require_(p, PERMISSIONS.STUDENT_VIEW, { studentId }, 'Học viên này nằm ngoài phạm vi bạn được xem.');
+  const today = demoToday();
+  const r = docNhatKy(`a.entity_type = 'student' AND a.entity_id = ? AND a.action IN ('s_expert.them', 's_expert.sua', 's_expert.cham', 's_expert.xoa')`, [studentId], tiep, null,
+    ({ b, f, label }) => {
+      const doiTuong = label ?? 'S Expert';
+      return { nguon: null, lyDo: null, truong: ([
+        ['Tuần', b.tuan ? tuanLich(b.tuan, today) : null, f.tuan ? tuanLich(f.tuan, today) : null], ['Ngày', chu(b.ngay), chu(f.ngay)],
+        ['Điểm', chu(b.diem), chu(f.diem)], ['Nhận xét', chu(b.nhanXet), chu(f.nhanXet)],
+      ] as const).map(([ten, cu, moi]) => ({ ten, cu, moi, doiTuong })) };
+    });
+  return { ...r, nhom: [], batDau: null };
+}
+
 // ------------------------------------------------------------------ lớp: thông tin · tiến độ · phân công · góp ý · nhập HV
 
 const VIEC_LOP = ['class.create', 'class.info', 'class.progress', 'class.progress.doi_bai', 'class.assign', 'class.finished', 'class.reopened',
@@ -237,7 +255,7 @@ function truongLop(r: DongNk, ct: string | null): { nguon: string | null; lyDo: 
     }
     case 'class.progress.doi_bai':
       /* Cùng lần lưu đổi mốc: bài chưa thi của các em dời theo (PR-LTGON luật 6). */
-      return { nguon: null, lyDo: null, truong: [{ ten: `Bài ${r.label === 'final' ? 'Final' : 'Progress'} Test chưa thi`, cu: chu(b.week), moi: chu(f.week), n: 'tien-do' }] };
+      return { nguon: null, lyDo: null, truong: [{ ten: `Bài ${r.label === 'final' ? 'Final' : 'Progress'} Test chưa làm`, cu: chu(b.week), moi: chu(f.week), n: 'tien-do' }] };
     case 'class.assign': {
       const nguon = f.via === 'gvcn' ? 'GVCN đổi GV bộ môn' : f.via === 'tao_lop' ? 'Tạo lớp' : f.via === 'doi_ct' ? 'Đổi chương trình' : null;
       if (!Array.isArray(f.sau)) {
@@ -304,7 +322,7 @@ function thiThat(p: Principal, cycleId: number, tiep: number | null): TrangLs {
 
 // ------------------------------------------------------------------ ô điểm của một lượt (điểm · "-" · nhận xét · GV chấm · lịch)
 
-const TRANG_THAI_THI: Record<string, string> = { scheduled: 'Theo lịch', sat: 'Đã thi', absent: 'Vắng', cancelled: 'Đã huỷ', excused: 'Không dự thi' };
+const TRANG_THAI_THI: Record<string, string> = { scheduled: 'Theo lịch', sat: 'Đã làm bài', absent: 'Vắng', cancelled: 'Đã huỷ', excused: 'Vắng' };
 
 function oDiem(p: Principal, attemptId: number, loc: string | null, tiep: number | null): TrangLs {
   const a = db().prepare('SELECT class_id, student_id, created_at FROM assessment_attempts WHERE id = ?').get(attemptId) as { class_id: number | null; student_id: number; created_at: string } | undefined;
@@ -325,7 +343,7 @@ function oDiem(p: Principal, attemptId: number, loc: string | null, tiep: number
        LEFT JOIN users u ON u.id = h.actor_user_id WHERE h.attempt_id = ? ORDER BY h.id DESC LIMIT 300`,
   ).all(attemptId) as any[]).map((h) => ({
     luc: h.luc, nguoi: h.ten ?? 'Hệ thống', lyDo: chu(h.reason), khoa: `l${h.id}`,
-    t: { ten: `Lịch · ${h.field === 'planned_period' ? 'Tuần thi' : tenMon(null, String(h.field))}`, cu: TRANG_THAI_THI[h.cu] ?? chu(h.cu), moi: TRANG_THAI_THI[h.moi] ?? chu(h.moi), n: 'lich' },
+    t: { ten: `Lịch · ${h.field === 'planned_period' ? 'Tuần Test' : tenMon(null, String(h.field))}`, cu: TRANG_THAI_THI[h.cu] ?? chu(h.cu), moi: TRANG_THAI_THI[h.moi] ?? chu(h.moi), n: 'lich' },
   }));
   /* Mới → cũ; dòng của MỘT lần lưu (cùng người, ≤ 5 giây) là một mục. OV-15i1: trang theo CON TRỎ `tiep` = mốc ms × 1000 + số dòng CÙNG mốc ms đã hiện
    * (dòng sắp theo ms rồi khoá) — có người lưu thêm giữa hai lần "Xem thêm" không lặp mục; nhiều dòng cùng mili-giây không mất. Mục gom từ dòng mới nhất

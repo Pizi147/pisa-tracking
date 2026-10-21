@@ -49,7 +49,7 @@ export const HD_CX: HuongDan = {
         { id: 'cx-tq-so', ten: 'Số liệu học thuật', buoc: ['Bốn ô: dưới kỳ vọng, Case đang mở, Case chưa chốt PA, PA chưa có kết quả.', '<b>Điểm đáng chú ý</b> · <b>Lịch sắp tới</b>.'] },
       ],
     },
-    { ...HD_TVV.man.find((m) => m.id === 'phan-tich')!, muc: [{ id: 'cx-pt', ten: 'Tab phân tích', buoc: ['<b>Báo cáo</b> · <b>Test + SOS</b> · <b>Kết quả thi</b> · <b>Hiệu quả PA</b> · <b>Ý thức</b>.', 'Mọi chi nhánh; một <b>Khoảng thời gian</b> cho mọi tab (mặc định 2 tuần vừa qua); bấm số mở danh sách, làm tại chỗ.'],
+    { ...HD_TVV.man.find((m) => m.id === 'phan-tich')!, muc: [{ id: 'cx-pt', ten: 'Tab phân tích', buoc: ['<b>Báo cáo</b> · <b>Test + SOS</b> · <b>Kết quả Test</b> · <b>Hiệu quả PA</b> · <b>Ý thức</b>.', 'Mọi chi nhánh; một <b>Khoảng thời gian</b> cho mọi tab (mặc định 2 tuần vừa qua); bấm số mở danh sách, làm tại chỗ.'],
       chi: { hd: 'pt-goc', duong: '/phan-tich', chu: 'Chọn tab ở hàng này.' } }] },
     {
       id: 'hoc-vien', ten: 'Học viên & Lớp', duong: ['/hoc-vien'],

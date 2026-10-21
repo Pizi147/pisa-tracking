@@ -41,7 +41,7 @@ export async function runPrKhungLoiTests(t: any) {
   check('KL-8 · chú giải màu ô MT: mọi kiểu có nhãn; "xong" = Đã thi (không "Xám = đã thi xong")', () => {
     const kieu = ['chua-lich', 'co-lich', 'dang-thi', 'cho-cham', 'cho-cham-cu', 'tre-cham', 'con-viec', 'xong'];
     for (const k of kieu) assert(typeof d.NHAN_KIEU_O_MT[k] === 'string' && d.NHAN_KIEU_O_MT[k].length > 0, `thiếu nhãn ${k}`);
-    assert(d.NHAN_KIEU_O_MT.xong === 'Đã thi', d.NHAN_KIEU_O_MT.xong);
+    assert(d.NHAN_KIEU_O_MT.xong === 'Đã làm bài', d.NHAN_KIEU_O_MT.xong);
   });
 
   check('KL-9 · tiêu đề Tổng quan = tên menu; "Nếu duyệt" PA ghi ngày hạn kết quả đầu, không "T3"', () => {

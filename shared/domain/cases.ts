@@ -676,7 +676,7 @@ export const RESCHEDULE_TARGETS = ['real_exam', 'mock_skill'] as const;
 export type RescheduleTarget = (typeof RESCHEDULE_TARGETS)[number];
 export const RESCHEDULE_TARGET_LABEL: Record<RescheduleTarget, string> = {
   real_exam: t('Kế hoạch thi thật của em'),
-  mock_skill: t('Một phần thi trong đợt MT'),
+  mock_skill: t('Một kỹ năng trong đợt MT'),
 };
 
 /** Chọn một loại trong nhóm Đề xuất TỨC LÀ đang xin ý kiến — không phải tick thêm gì. */

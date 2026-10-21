@@ -86,11 +86,11 @@ export default function ChamDiemPage() {
             <span className="truncate" title={`${data.classCode}${tenDot ? ` · ${tenDot}` : ''}`}>{data.classCode}{tenDot ? ` · ${tenDot}` : ''}</span>
             <NutLuat label={t('Luật chấm điểm')}>
               <span className="block">
-                {t('Ô để trống là chưa nhập, không phải 0 điểm. Chỉ kỹ năng bạn được phân công mới sửa được; kỹ năng khác vẫn đọc được để đối chiếu. Enter hoặc ↓ xuống em kế tiếp, Esc huỷ ô đang sửa. Mỗi môn có tuần thi và hạn chấm riêng.')}
+                {t('Ô để trống là chưa nhập, không phải 0 điểm. Chỉ kỹ năng bạn được phân công mới sửa được; kỹ năng khác vẫn đọc được để đối chiếu. Enter hoặc ↓ xuống em kế tiếp, Esc huỷ ô đang sửa. Mỗi môn có tuần Test và hạn chấm riêng.')}
               </span>
               {laFt ? (
                 <span className="block">
-                  {t('Gõ')}{' '}<kbd className="px-1 rounded border text-slate-200" style={{ borderColor: 'var(--line-strong)' }}>-</kbd>{' '}{t('khi em có lịch mà không làm bài; sửa lại được đến hết Chủ nhật của tuần thi, còn nguyên thì thành Không dự thi.')}
+                  {t('Gõ')}{' '}<kbd className="px-1 rounded border text-slate-200" style={{ borderColor: 'var(--line-strong)' }}>-</kbd>{' '}{t('khi em có lịch mà không làm bài; sửa lại được đến hết Chủ nhật của tuần Test, còn nguyên thì thành Vắng.')}
                 </span>
               ) : (
                 <span className="block">
@@ -102,7 +102,7 @@ export default function ChamDiemPage() {
           <p className="text-xs text-slate-500 mt-0.5 mb-0">
             {data.branchName}
             {tuanMon && (
-              <span title={t('Tuần thi của từng môn (rê chuột lên tên cột để xem tên môn đầy đủ)')}> · {tuanMon}</span>
+              <span title={t('Tuần Test của từng môn (rê chuột lên tên cột để xem tên môn đầy đủ)')}> · {tuanMon}</span>
             )}
             {laFt && (
               <span title={nhapDuoc.map((s) => `${skillShort(s)} = ${skillLabel(s)}`).join(' · ') || undefined}>

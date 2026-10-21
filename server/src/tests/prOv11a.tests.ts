@@ -183,15 +183,15 @@ export async function runPrOv11aTests(t: YThucTestKit) {
     const ten = 'Kiều Thu Trang';
     assert(d.cauDaGhiVang('R', ten, { kq: 'huy-cu' }) === 'Đã huỷ · vắng MT cũ · R · Kiều Thu Trang', 'MT cũ');
     assert(d.cauDaGhiVang('R', ten, { kq: 'doi', tuanMoi: 'W4 SEP' }) === 'Đã ghi vắng R · Kiều Thu Trang · dời W4 SEP', d.cauDaGhiVang('R', ten, { kq: 'doi', tuanMoi: 'W4 SEP' }));
-    assert(d.cauDaGhiVang('R', ten, { kq: 'huy' }) === 'Đã ghi vắng R · Kiều Thu Trang · huỷ phần thi', 'lần 2');
-    assert(d.cauDaGhiVang('R', ten, { kq: 'khong-du-thi' }) === 'Đã ghi Không dự thi · R · Kiều Thu Trang', 'sau tuần');
+    assert(d.cauDaGhiVang('R', ten, { kq: 'huy' }) === 'Đã ghi vắng R · Kiều Thu Trang · huỷ kỹ năng', 'lần 2');
+    assert(d.cauDaGhiVang('R', ten, { kq: 'khong-du-thi' }) === 'Đã ghi Vắng · R · Kiều Thu Trang', 'sau tuần');
     assert(d.luatVangThuong('2026-09-14', TODAY).tuanMoi === '2026-09-21' && d.luatVangThuong('2026-09-07', TODAY).tuanMoi === '2026-09-21',
       'tuần này / tuần trước → tuần sau của tuần hiện tại');
     assert(d.luatVangThuong('2026-08-31', TODAY).khongDuThi === true, '≥ 2 tuần → Không dự thi');
     const kn = (o2: any) => ({ trangThai: 'co-lich', tuan: '2026-09-07', periodId: 1, doiTu: null, batBuoc: true, khoa: null, sit: 'scheduled', ...o2 });
     const nhom = d.nhomKyNang({ listening: kn({ trangThai: 'xong' }), reading: kn({ khongDuThi: true }) }, TODAY);
-    assert(nhom.some((g: any) => g.kyNang.includes('reading') && g.viec === 'không dự thi'), `chip R không dự thi: ${JSON.stringify(nhom)}`);
-    assert(d.chipDongKyNang(kn({ khongDuThi: true }), TODAY)?.chu === 'Không dự thi', 'dòng R hộp một đợt');
+    assert(nhom.some((g: any) => g.kyNang.includes('reading') && g.viec === 'vắng'), `chip R không dự thi: ${JSON.stringify(nhom)}`);
+    assert(d.chipDongKyNang(kn({ khongDuThi: true }), TODAY)?.chu === 'Vắng', 'dòng R hộp một đợt');
     const gc = d.gomChip({ listening: kn({ trangThai: 'xong', khongDuThi: true }), reading: kn({ trangThai: 'xong' }) });
     assert(!gc.xong && gc.chip.some((c: any) => c.khongDuThi && c.kyNang.join() === 'listening'), `lớp thường: môn Không dự thi hiện riêng: ${JSON.stringify(gc)}`);
   });
