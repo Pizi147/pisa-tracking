@@ -65,5 +65,5 @@
 
 | # | Câu | Vì sao chưa có căn cứ | Khuyến nghị mockup dùng tạm |
 |---|---|---|---|
-| Q1 | **Bậc xử lý vi phạm nào sinh việc Báo PH cho TVV?** Và việc "Báo phụ huynh qua TVV" hiện sinh từ Progress / Final rớt (GVCN sở hữu, không hạn) có chuyển sang TVV + hạn lưu + 4 không? | Brief 3 nói "việc TVV phát sinh ngay khi GVCN lưu xử lý vi phạm"; mã chỉ có việc từ kết quả Test, do GVCN làm, không liên kết với xử lý vi phạm (`phoiHop.ts:97-135`, `xuLy.ts:712-715`). Đổi người sở hữu việc là đổi nghiệp vụ | Mọi lần GVCN **lưu xử lý vi phạm** (từ Report 1) sinh một việc Báo PH cho TVV của HV, hạn lưu + 4. Việc từ kết quả Test giữ như hiện tại (GVCN) tới khi chủ SP nói |
-| Q2 | HV chưa có TVV phụ trách thì việc Báo PH giao ai? | Mã có cột `students.consultant_user_id` (TVV của HV — `server/src/seed/ov2aSeed.ts:34`) nhưng không có luật khi trống | Giao chung các TVV của chi nhánh; ai ghi trước là người làm |
+| Q1 | ~~Bậc xử lý nào sinh việc Báo PH cho TVV?~~ **ĐÃ CHỐT 21/10** (PTA Plan 22/10): mọi lần lưu xử lý vi phạm (GVCN / QL, mọi bậc, kể cả đang chờ duyệt) → việc "Báo PH · {bậc} · {em}" cho TVV của em, hạn 23:59 ngày lưu + 4. "Báo PH kết quả Test lớp thường" GIỮ GVCN, không hạn. Xem `01` mục 5. | luật 1–2, 07 GĐ1b, Rulebook §21.1 | dùng đúng như vậy |
+| Q2 | ~~HV chưa có TVV thì giao ai?~~ **ĐÃ CHỐT 21/10:** QL chi nhánh của em (Q-D3 ①). Không giao chung các TVV. | 02 mục 5 Q-D3 | dùng đúng như vậy |
