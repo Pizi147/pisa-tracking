@@ -40,7 +40,7 @@ function ChipViec({ v }: { v: ViecCanLam }) {
 }
 
 function OHan({ v }: { v: ViecCanLam }) {
-  if (!v.han) return <span className="text-slate-600">—</span>;
+  if (!v.han) return <span className="text-slate-500">—</span>;
   if (v.loaiHan) return <Han loai={v.loaiHan} han={v.han} haiDong />;
   return <span className="text-xs tabular-nums text-slate-500">{v.han}</span>;
 }

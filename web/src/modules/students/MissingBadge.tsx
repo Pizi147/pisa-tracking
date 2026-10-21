@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { CHIP_VUONG } from '../../ui/Nhan.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
+import { useBamNgoai } from '../../ui/useBamNgoai.ts';
 
 const RONG = 240;   // 15rem — cùng bề rộng tối thiểu cũ
 
@@ -40,12 +41,9 @@ export function MissingBadge({ items, className = '', gon = false }: {
     });
   }, [open, items?.length]);
 
+  useBamNgoai(open, () => setOpen(false), hop, nut);
   useEffect(() => {
     if (!open) return undefined;
-    const bamNgoai = (e: MouseEvent) => {
-      const t = e.target as Node;
-      if (!hop.current?.contains(t) && !nut.current?.contains(t)) setOpen(false);
-    };
     const phim = (e: KeyboardEvent) => {
       if (e.key !== 'Escape') return;
       e.stopPropagation();
@@ -53,12 +51,10 @@ export function MissingBadge({ items, className = '', gon = false }: {
       nut.current?.focus();
     };
     const dong = () => setOpen(false);
-    document.addEventListener('mousedown', bamNgoai);
     document.addEventListener('keydown', phim, true);
     window.addEventListener('scroll', dong, true);
     window.addEventListener('resize', dong);
     return () => {
-      document.removeEventListener('mousedown', bamNgoai);
       document.removeEventListener('keydown', phim, true);
       window.removeEventListener('scroll', dong, true);
       window.removeEventListener('resize', dong);

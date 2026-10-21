@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { chuanHoaMaLop } from '@shared/domain/index.ts';
 import type { LopKH } from './kieu.ts';
+import { useBamNgoai } from '../../../ui/useBamNgoai.ts';
 
 /**
  * Ô TÌM LỚP (mockup 14 (1), Q8): gõ → gợi ý tối đa 8 dòng `{mã} · {chi nhánh} · {n} HV` (↑↓ Enter chọn, Esc đóng), ✕ xoá.
@@ -15,12 +16,7 @@ export function TimLop({ lop, value, onChange, onChon, className = '' }: {
   const q = chuanHoaMaLop(value);
   const goiY = q ? lop.filter((l) => chuanHoaMaLop(l.code).includes(q)).slice(0, 8) : [];
 
-  useEffect(() => {
-    if (!mo) return;
-    const away = (e: MouseEvent) => { if (goc.current && !goc.current.contains(e.target as Node)) setMo(false); };
-    document.addEventListener('mousedown', away);
-    return () => document.removeEventListener('mousedown', away);
-  }, [mo]);
+  useBamNgoai(mo, () => setMo(false), goc);
   useEffect(() => { setDong(0); }, [value]);
 
   const chon = (l: LopKH) => { onChon(l); setMo(false); };

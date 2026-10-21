@@ -383,7 +383,7 @@ function KhoiCase({ data, homNay, linkPa }: { data: HoSo; homNay: string; linkPa
   const quaHan = ds.filter((c) => c.quaHan).length;
   const viec = (c: CaseHs) => {
     const [v] = viecTiepCuaEm({ nhapDiem: null, cases: [{ caseId: c.id, topic: c.topic, viecTiep: c.viecTiep }], yThuc: null, homNay, chuongTrinh: null });
-    return v ? <ViecTiep v={v} den={duongHoSoHocVien(c.studentId, { caseId: c.id })} /> : <span className="text-slate-600">—</span>;
+    return v ? <ViecTiep v={v} den={duongHoSoHocVien(c.studentId, { caseId: c.id })} /> : <span className="text-slate-500">—</span>;
   };
   const ten = (c: CaseHs) => (
     <Link to={duongHoSoHocVien(c.studentId, { caseId: c.id })} className="link inline-flex min-w-0 max-w-full text-left font-semibold" title={dich(c.tieuDe)}><TenCase c={{ title: dich(c.tieuDe), tenSos: c.tenSos && { ...c.tenSos, giua: dich(c.tenSos.giua) } }} /></Link>

@@ -224,6 +224,12 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 
 ## 4. Việc chưa làm (kiểm với danh sách PR GitHub 11/10 — mọi PR tới #312 đã merge)
 
+- **CV-LOI #499 — rà sâu 21/10 để lại (PTA bỏ qua, làm sau):** `PanelPhanCongMon` gửi nguyên bức tranh phân công đọc lúc mở → người khác vừa
+  đổi phân công lớp đó thì bị ghi đè (cần khoá phiên bản / gửi một ô) · bước gán chủ Case (`migratePrCvLoi`) chạy mỗi lần migrate, người gán ghi
+  "hệ thống" (actor NULL) · dòng dự phòng "Chọn người phụ trách" mở hồ sơ em nhưng chưa có ô đổi người phụ trách (cần API đổi chủ Case, có lịch sử).
+- **LUAT-5 #495 — rà sâu 21/10 để lại (PTA bỏ qua, làm sau):** `huyDuoc` của thẻ thu hồi vướng `ux_ycd_dang_cho` (chung mọi loại thẻ) · `du_lieu` thẻ thu hồi
+  (bậc về / số vi phạm) không tự cập nhật khi GVCN sửa vi phạm của lần xử lý lúc thẻ còn chờ · người gửi đã rời lớp vẫn sửa / rút được thẻ của mình.
+
 ### OVERHAUL 11/10 (OV) — đặc tả DUYỆT 11/10, bắt đầu OV-1a · ưu tiên trên mọi việc khác
 - **Đặc tả (nguồn chi tiết duy nhất):** `docs/superpowers/specs/2026-10-11-overhaul-ux-workflow-design.md` — đối chiếu hiện trạng, ma trận vai,
   quy trình (lộ trình → bàn giao → KQĐR, SOS MT, dấu "-", huỷ/khôi phục), giao diện, **12 PR OV-1a … OV-6b** + phụ thuộc, tiêu chí nghiệm thu.
@@ -562,6 +568,10 @@ Nhật ký chi tiết tới 04/10 ở `git show 575e898d:plan.md` (mục 14) và
 | Ngày | PR / nhánh · model | Kết quả |
 |---|---|---|
 | 21/10/2026 | NEN-TYPO-MAU (Opus 5.5) · `claude/nen-typo-mau-dcd072` | Thang chữ 12·13·14·15·17·22·28 toàn web (Tailwind `fontSize` thay, lớp nền body/ô 15, đầu cột/nhãn/chip 13, bỏ IN HOA, cỡ ngoài thang đổi lên bậc gần), 3 token `--kq-*` + `lopKq`, HTT `.bam/.do-hang/.dang-mo`, "Đã lưu" xám, sân mẫu `/dev/thanh-phan`. Kiểm `prNenTypoMau` (tương phản 9 nền, deutan ΔE). |
+| 21/10/2026 | CASE-NHIEU (Opus 5.5) · `claude/case-nhieu-5155e1` | Tạo Case nhiều kỹ năng một lần: `POST /cases/report` nhận `kyNang` (n Case một giao dịch, khoá lô + kỹ năng, "Ghi vào" gửi lại không lặp chữ); `case-topics` trả `dangMo` + `phuTrach`; panel chip chọn nhiều, một khối mỗi kỹ năng; phép kiểm `caseLo.tests.ts` |
+| 21/10/2026 | CV-LOI (Opus 5.5) · `claude/cv-loi-aa83a8` | Công việc chạy đúng: Case không chủ tự gán (migrate + phân công, có lịch sử), một dòng "Phân công GV …" chỉ QL; Kết quả PA khung phải; hàng đợi cùng nhóm, giữ Hoàn tác; QL không tự mở việc GV; `case` trùng `yt_xem`; nút 403; Excel panel việc; A1-14/15, A5-08, CV-10/14, X-74 |
+| 21/10/2026 | LUAT-5 (Opus 5.5) · `claude/luat-5-26daba` | Luật 5: "Thu hồi…" thay Xoá lần xử lý (GVCN → thẻ Chờ duyệt Ý thức, QL thẳng, lý do bắt buộc ở máy chủ), "Đã thu hồi" giữ dòng + lịch sử, một cửa `trangThaiYThuc` bỏ khỏi mọi số; không tăng bậc qua Đề xuất (tệp tuỳ chọn); Huỷ quyết định trong ngày |
+| 21/10/2026 | KHUNG-LOI (Opus 5.5) · `claude/khung-loi-994378` | Khung: thứ tự menu 20/10, thanh trên đo chỗ thật + "Thêm ▾", ô tìm kính lúp < 1440, thanh dưới ≤ 5; hook `useBamNgoai` thay 15 bản (vá `BoChonThoiGian` tự đóng); `Menu` phím; vùng bấm số ≥ 24/44; focus không bị che; menu TK cuộn trong; "—" / "/" đủ tương phản; chú giải màu Kế hoạch Test sinh từ màu thật; tiêu đề = tên menu; "Nếu duyệt" PA ghi ngày; `do-khung` k–n + `thanh` / `focus` / `menu-phim`, sửa 3 kịch bản hỏng |
 | 21/10/2026 | CONG-CU (Opus 5.5) · `claude/cong-cu-821f86` | Công cụ: `do-bang` (g1–g5) gắn `do-khung` 1440/1280/375, bỏ miễn đo lưới chấm; esbuild cảnh báo = lỗi trong check; kịch bản `lich`; `anh-cap.mjs`; lỗi đã biết ở `mien-do.json` (BANG-1, CV-LOI, KHUNG-LOI gỡ) |
 | 20/10/2026 | OV-15i1 (Opus 5.5) · `claude/pr-ov15i1-plan-z54zlx` | Lịch sử: góp ý đi chỉ mục `idx_audit_viec` (không LIKE), ô điểm phân trang con trỏ, thi-that cùng cổng hv (GVBM 403), Sửa cả lớp / Dán Excel một mục ở lớp, lô 0 em không ghi, HV đã xoá, đổi chương trình ghi phân công, `batDau` mọi loại, chữ EN; nhãn PA chờ duyệt đổi; trần 3 đường mới. Không làm: gộp GET Tổng quan (ý 11), chuông hết ngay do người khác (ý 12b) — lý do trong PR. |
 | 20/10/2026 | OV-15i2 (Opus 5.5) · `claude/sharp-ride-q33fc0` | Việc lẻ: Dán Excel thử lại không ghi trùng mục tổng · ≤ 2 lệnh mỗi môn · lớp thường khớp email; bỏ `viewer.huyLuot`; Xuất điểm Test không `a.*`, cột Lớp theo phạm vi; tutor gợi ý theo lớp nhóm PA; Lịch thi TVV/CX mang ô tìm + hỏi "Bỏ ngày …?"; CODE_MAP. Phép kiểm `prOv15i2` |

@@ -205,7 +205,7 @@ function QuyenTheoVai({ onDaLuu }: { onDaLuu: () => void }) {
     return (
       <span title={ghiChu ?? (nhuGv ? 'Có vì GVCN cũng là Giáo viên' : 'Không tự có theo chủ nhiệm')}
         className={chip ? 'inline-flex min-h-[32px] items-center gap-1 rounded-md border border-dashed border-muted-line px-2 text-xs text-slate-300'
-          : `block text-sm ${ghiChu ? 'text-sky-200' : nhuGv ? 'text-slate-400' : 'text-slate-600'}`}>
+          : `block text-sm ${ghiChu ? 'text-sky-200' : nhuGv ? 'text-slate-400' : 'text-slate-500'}`}>
         {chip && 'GVCN: '}{ghiChu || nhuGv ? 'có' : '—'}
         {ghiChu && <span className={`${chip ? '' : 'block '}text-xs text-slate-400`}>chỉ lớp chủ nhiệm</span>}
       </span>
@@ -379,7 +379,7 @@ function OVai({ tenVai, tenQuyen, coSan, daDoi, lyDoKhoa, dangSua, onBam, chip }
       aria-pressed={bamDuoc ? co : undefined}
       aria-label={`${tenVai}: ${co ? 'có' : 'không'}${lyDoKhoa ? `, khoá — ${lyDoKhoa}` : ''}`}
       title={title}
-      className={`${chip ? 'inline-flex min-h-[44px] items-center gap-1 rounded-md px-2 text-xs' : 'w-full min-h-[44px] sm:min-h-[36px] text-sm'} bg-transparent tabular-nums ${co ? 'text-sky-200' : 'text-slate-600'} ${
+      className={`${chip ? 'inline-flex min-h-[44px] items-center gap-1 rounded-md px-2 text-xs' : 'w-full min-h-[44px] sm:min-h-[36px] text-sm'} bg-transparent tabular-nums ${co ? 'text-sky-200' : 'text-slate-500'} ${
         daDoi ? 'rounded-md border border-[color:var(--accent-line)]' : chip ? 'border border-muted-line' : 'border border-transparent'} ${bamDuoc ? 'cursor-pointer bam' : 'cursor-default'}`}
       onClick={() => { if (bamDuoc) onBam(); }}
     >

@@ -158,15 +158,17 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
   const hanV = yc.hanDuyet ? deadlineView({ kind: 'duyet', due: yc.hanDuyet, today: homNay }) : null;
   const tang1 = !hanV ? null : hanV.tone === 'overdue' ? t('Quá hạn · {daysOverdue} ngày', { daysOverdue: hanV.daysOverdue }) : hanV.homNay ? t('Hạn hôm nay') : hanV.con ? hanV.con[0].toUpperCase() + hanV.con.slice(1) : null;
   const tt = nhanTrangThaiYc(yc.trangThai, yc.tuDuyet);
+  /* LUAT-5: thẻ Thu hồi — ô Sửa là "Lý do" (không tối thiểu ký tự, như Từ chối). */
+  const thuHoi = yc.loai === 'thu_hoi_y_thuc';
   const nhanO = o?.loai === 'tu-choi' ? t('Lý do từ chối (người gửi sẽ đọc)') : o?.loai === 'tra-loi' || o?.loai === 'sua-tra-loi' ? t('Câu trả lời cho giáo viên')
-    : o?.loai === 'sua' ? t('Mô tả đề xuất') : t('Ghi chú việc đã xử lý ở màn gốc');
+    : o?.loai === 'sua' ? (thuHoi ? t('Lý do') : t('Mô tả đề xuất')) : t('Ghi chú việc đã xử lý ở màn gốc');
   const suaKtd = o?.loai === 'sua' && yc.loai === 'khong_theo_doi';
   /* Nút mở thêm một bước (chọn tuần / ghi chú) có dấu "…", như Từ chối… — Duyệt trơn là quyết ngay. */
   const duyetCoBuoc = yc.loai === 'lich_thi' || canGhiChu || !!yc.duLieu?.moPanelChuyenLop;
   const loiChu = !daBam || !o || o.loai === 'tuan' || o.loai === 'rut' ? null
     : suaKtd ? (!lyDoKtd ? t('Chọn một lý do') : reasonNeedsText(lyDoKtd) ? kiemGhiRoKhac(chu) : null)
     : !chu.trim() ? t('Chưa điền')   // T7 (PR-MTa): không tối thiểu ký tự
-    : o.loai === 'sua' && chu.trim().length < 10 ? t('Mô tả cần ít nhất 10 ký tự') : null;
+    : o.loai === 'sua' && !thuHoi && chu.trim().length < 10 ? t('Mô tả cần ít nhất 10 ký tự') : null;
   const moTaPhu = [!gon && yc.hocVien, !gon && yc.lop, yc.phu].filter(Boolean).join(' · ');
 
   return (

@@ -171,7 +171,8 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
   return (
     <>
     {/* FIX-DTL (chủ sản phẩm 07/10): GV chấm S ở hàng trên bảng — đầu cột S chỉ "S (band)", thẳng hàng các cột khác. */}
-    {suaS && dot && <div className="flex justify-end px-3 pb-1"><NutGvCham nhan={t('GV chấm S')} value={gvCot} onChange={setGvCot} goiY={data.period ? undefined : GOI_Y_COT_MT} /></div>}
+    {/* CV-LOI (CV-09): mở từ việc không có S (`chiCot`) → không hiện nút GV chấm S. */}
+    {suaS && dot && hien('speaking') && <div className="flex justify-end px-3 pb-1"><NutGvCham nhan={t('GV chấm S')} value={gvCot} onChange={setGvCot} goiY={data.period ? undefined : GOI_Y_COT_MT} /></div>}
     <div className={gon ? 'table-scroll bang-dinh bang-dinh-1440' : 'overflow-x-auto'}>
       <table className={`${rongBang} text-sm tabular-nums`} style={{ tableLayout: 'fixed', minWidth: RONG }}>
         <colgroup>{COT.map((w, i) => <col key={i} style={{ width: w }} />)}</colgroup>

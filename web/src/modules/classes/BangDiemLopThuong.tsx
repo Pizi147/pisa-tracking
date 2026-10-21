@@ -206,7 +206,7 @@ export function BangDiemLopThuong({ classId, maLop, quyen, onDoi, chuongTrinh = 
 }
 
 function OPhanTram({ v }: { v: number | null }) {
-  return v === null ? <span className="text-slate-600">—</span> : <span className="text-[12px] tabular-nums text-slate-100">{Math.round(v * 100)}%</span>;
+  return v === null ? <span className="text-slate-500">—</span> : <span className="text-[12px] tabular-nums text-slate-100">{Math.round(v * 100)}%</span>;
 }
 
 /** Ô "Lộ trình tiếp theo" (M2 §3): dòng 1 hướng đã chốt (+ bổ trợ), dòng 2 số buổi · môn bổ trợ · lớp đích · tuần vào lớp. */

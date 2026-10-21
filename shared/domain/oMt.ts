@@ -15,6 +15,11 @@ import { t } from '../i18n/index.ts';
 
 /** `cho-cham-cu`: MT cũ chờ nhập bù điểm — chữ `chờ`, màu TÍM như `cho-cham` (C2 07/10; trước đây xám, trùng "chưa xếp"). Tooltip không hạn. */
 export type KieuOMt = 'chua-lich' | 'co-lich' | 'dang-thi' | 'cho-cham' | 'cho-cham-cu' | 'tre-cham' | 'con-viec' | 'xong';
+/** KHUNG-LOI (TST-05): nhãn chú giải từng kiểu ô — chú giải màu sinh từ đây + `MAU_O_MT` (một nguồn, không viết tay chữ màu). */
+export const NHAN_KIEU_O_MT: Record<KieuOMt, string> = {
+  'chua-lich': t('Chưa xếp'), 'co-lich': t('Đã xếp'), 'dang-thi': t('Đang thi'), 'cho-cham': t('Chờ chấm'), 'cho-cham-cu': t('Chờ nhập bù (MT cũ)'),
+  'tre-cham': t('Trễ chấm'), 'con-viec': t('Vắng · huỷ · chờ duyệt'), xong: t('Đã thi'),
+};
 
 /** `attemptId` null = chưa có lượt (cùng kiểu "chưa xếp", C5). `cu` chỉ còn đổi tooltip + `aria-label` (ô không ghi chữ "cũ", C3). */
 export type OMtVao = {

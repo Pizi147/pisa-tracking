@@ -91,6 +91,9 @@ export default function StudentDetailPage() {
     if (p.mo) { const next = new URLSearchParams(params); next.delete('mo'); setParams(next, { replace: true }); }
   };
   const [reportOpen, setReportOpen] = useState(false);
+  /* CV-LOI (X-74): "+ Case cho {kỹ năng}" mở form chọn sẵn kỹ năng đó (category); "+ Case" chung → null. */
+  const [kyNangDau, setKyNangDau] = useState<string | null>(null);
+  const baoCase = (cat: string) => { setKyNangDau(cat); setReportOpen(true); };
   /** Ngăn Case (Q9) mở do BẤM trong trang (khối PA, ⋮ …) — mở do URL (`?case=`) đọc thẳng từ `p`. */
   const [openCase, setOpenCase] = useState<OpenCase>(null);
   /*
@@ -331,7 +334,7 @@ export default function StudentDetailPage() {
                 loading={board.loading} error={board.error} onRetry={board.reload}
                 selected={skillPick}
                 onPick={setSkillPick}
-                onReport={data.viewer.canReport && !data.lopHoc?.chiXem ? () => setReportOpen(true) : undefined}
+                onReport={data.viewer.canReport && !data.lopHoc?.chiXem ? baoCase : undefined}
                 onChanged={() => { board.reload(); reload(); }}
                 onMoCase={(caseId, o) => setOpenCase({ caseId, paId: o?.paId, viec: o?.viec })}
                 tamDungTu={board.data?.tamDungTu ?? null} />
@@ -410,7 +413,7 @@ export default function StudentDetailPage() {
         />
       )}
 
-      <QuickReport open={reportOpen} onClose={() => setReportOpen(false)}
+      <QuickReport open={reportOpen} kyNangDau={kyNangDau} onClose={() => { setReportOpen(false); setKyNangDau(null); }}
         studentId={data.id} studentName={data.fullName} lop={data.currentClass?.code} cycleId={cy?.id ?? null}
         onDone={(cid) => { reload(); setOpenCase({ caseId: cid }); }}
         onMoCase={(cid, viec) => { reload(); setOpenCase({ caseId: cid, viec }); }} />

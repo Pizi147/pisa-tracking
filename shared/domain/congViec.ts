@@ -279,8 +279,19 @@ export function duocGiao(ky: TrangThaiKy, busy: boolean): boolean {
  * UX-2 (4, chủ SP 16/10): Công việc › Hỗ trợ học viên trên máy tính — chưa mở việc nào thì tự mở việc đầu danh sách (thay khung trống "Chọn một việc").
  * Một lần mỗi bộ lọc (`daTuMo`): đóng panel không bật lại. Điện thoại (`manHep`) và danh sách 0 việc: không mở.
  */
-export const viecTuMo = <T extends { key: string }>(ds: readonly T[], o: { manHep: boolean; dangMo: boolean; daTuMo: boolean }): string | null =>
-  (o.manHep || o.dangMo || o.daTuMo ? null : ds[0]?.key ?? null);
+/* CV-LOI (CV-09): chỉ tự mở khi việc đầu là việc CỦA người xem — QL / QT không bị mở lưới điểm của GV. */
+export const viecTuMo = <T extends { key: string; mine: boolean }>(ds: readonly T[], o: { manHep: boolean; dangMo: boolean; daTuMo: boolean }): string | null =>
+  (o.manHep || o.dangMo || o.daTuMo || !ds[0]?.mine ? null : ds[0].key);
+
+/**
+ * CV-LOI (CV-05, mockup 1e): VIỆC KẾ của hàng đợi = việc sau việc đang mở, CÙNG nhóm, cùng "của tôi" như việc đang mở, và `duoc` (đang hiện trên
+ * danh sách, chưa xong). Không có → null (nơi gọi đóng panel, không nhảy sang nhóm khác).
+ */
+export function viecKeTiep<T extends { key: string; nhom: string; mine: boolean }>(ds: readonly T[], hienTai: string | null, duoc: (x: T) => boolean): T | null {
+  const i = ds.findIndex((x) => x.key === hienTai);
+  if (i < 0) return null;
+  return ds.slice(i + 1).find((x) => x.nhom === ds[i].nhom && x.mine === ds[i].mine && duoc(x)) ?? null;
+}
 
 // ====================================================================== OV-15d — lọc người (Của tôi · Của GV · Tất cả)
 

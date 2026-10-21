@@ -5,6 +5,7 @@ import {
   type KieuONgay, type LuatONgay,
 } from '@shared/domain/index.ts';
 import { useGiuFocus } from './giuFocus.ts';
+import { useBamNgoai } from './useBamNgoai.ts';
 import { t } from '@shared/i18n/index.ts';
 
 /** Nhãn ô tháng (trong vòng lặp có biến `t` riêng). */
@@ -70,12 +71,8 @@ export function LichNho({ kieu, value, homNay, luat, neo, onChon, onDong, goNgay
 
   useLayoutEffect(() => { setViTri(tinhViTri(neo.current, khung.current?.offsetHeight ?? 420)); }, [neo, xem, loiGo]);
 
+  useBamNgoai(true, () => dong.current(), khung, neo);
   useEffect(() => {
-    const ngoai = (e: MouseEvent) => {
-      const t = e.target as Node;
-      if (khung.current?.contains(t) || neo.current?.contains(t)) return;
-      dong.current();
-    };
     /* ESC CHỈ ĐÓNG LỊCH, không đóng panel/modal chứa nó: pha bắt + chặn lan. */
     const esc = (e: KeyboardEvent) => {
       if (e.key !== 'Escape') return;
@@ -85,12 +82,10 @@ export function LichNho({ kieu, value, homNay, luat, neo, onChon, onDong, goNgay
       neo.current?.focus();
     };
     const datLai = () => setViTri(tinhViTri(neo.current, khung.current?.offsetHeight ?? 420));
-    document.addEventListener('mousedown', ngoai);
     document.addEventListener('keydown', esc, true);
     window.addEventListener('resize', datLai);
     window.addEventListener('scroll', datLai, true);
     return () => {
-      document.removeEventListener('mousedown', ngoai);
       document.removeEventListener('keydown', esc, true);
       window.removeEventListener('resize', datLai);
       window.removeEventListener('scroll', datLai, true);

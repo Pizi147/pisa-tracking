@@ -92,7 +92,7 @@ const TienDo = ({ l, nhat }: { l: LopLichTest; nhat: boolean }) => (
 function HanHang({ l, kieuQuaHan }: { l: LopLichTest; kieuQuaHan?: 'badge' }) {
   /* OV-1b: hạn chỉ báo ⚠ khi ô của người xem quá hạn — phần GV khác nói ở cột "phần của bạn". */
   if (kieuQuaHan !== 'badge') return <Han loai="nhap-diem" han={l.han} boTinHieu={!!l.phan && !l.quaHan} />;
-  if (l.conBai === 0) return <span className="text-xs text-slate-600">—</span>;
+  if (l.conBai === 0) return <span className="text-xs text-slate-500">—</span>;
   return (
     <span className="inline-flex flex-wrap items-center gap-x-1.5">
       <Han loai="nhap-diem" han={l.han} boTinHieu />

@@ -31,11 +31,9 @@ export async function runPrNenTypoMauTests(t: YThucTestKit) {
   const css = boChuThich(cssTho);
   const cfg = (await import(pathToFileURL(path.join(REPO, 'tailwind.config.js')).href)).default;
   const nguon = taiFile(path.join(REPO, 'web/src')).map((p) => ({ f: path.relative(REPO, p).replace(/\\/g, '/'), text: boChuThich(fs.readFileSync(p, 'utf8')) }));
-  /* Thanh trên + điều hướng: PR KHUNG-LOI làm (PTA 21/10) — gỡ miễn khi KHUNG-LOI chạm. */
-  const MIEN_KHUNG = ['web/src/App.tsx', 'web/src/modules/platform/Header.tsx'];
   const dong = (cb: (f: string, s: string) => string | null) => {
     const hong: string[] = [];
-    for (const { f, text } of nguon) if (!MIEN_KHUNG.includes(f)) text.split('\n').forEach((s, i) => { const x = cb(f, s); if (x) hong.push(`${f}:${i + 1} ${x}`); });
+    for (const { f, text } of nguon) text.split('\n').forEach((s, i) => { const x = cb(f, s); if (x) hong.push(`${f}:${i + 1} ${x}`); });
     return hong;
   };
   const tom = (h: string[]) => h.slice(0, 10).join(' · ') + (h.length > 10 ? ` … (${h.length})` : '');

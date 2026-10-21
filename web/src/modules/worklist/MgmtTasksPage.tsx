@@ -249,7 +249,7 @@ export function TasksBoard() {
                         {phuTrangThai && <div className="text-xs text-slate-500 mt-0.5" title={phuTrangThaiDu}>{phuTrangThai}</div>}
                       </td>
                       <td className="td text-xs">
-                        {r.subTotal > 0 ? <span className="text-slate-300">{r.subDone}/{r.subTotal} xong</span> : <span className="text-slate-600">—</span>}
+                        {r.subTotal > 0 ? <span className="text-slate-300">{r.subDone}/{r.subTotal} xong</span> : <span className="text-slate-500">—</span>}
                         {r.subOverdueCount > 0 && (
                           <div className="text-rose-300 mt-0.5">
                             quá hạn: {r.subOverdueTitles.map((t) => `"${t}"`).join(', ')}

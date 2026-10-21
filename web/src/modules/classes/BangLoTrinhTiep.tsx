@@ -162,7 +162,7 @@ export function BangLoTrinhTiep({ classId, quyen, onDoi, emMo, onDaMoEm, onBanGi
     ) : co.length ? <span className="text-xs tabular-nums text-slate-400">{co.length}/{o.length} môn có điểm</span> : null;
     const nhap = quyen.coTheNhapDiem && t ? nhapDiemCua(classId, true, [t]) : null;
     if (nhap) return <Link to={nhap.den} className="link inline-flex min-h-[44px] items-center whitespace-nowrap sm:min-h-0" title={nhap.nhan}>{chu ?? (kind === 'final' ? 'Nhập Final' : 'Nhập Progress')}</Link>;
-    return chu ?? <span className="text-slate-600">—</span>;
+    return chu ?? <span className="text-slate-500">—</span>;
   };
   const oMt0 = (e: Em) => {
     const m = e.kqdr?.mt0;
@@ -178,7 +178,7 @@ export function BangLoTrinhTiep({ classId, quyen, onDoi, emMo, onDaMoEm, onBanGi
   const oKqdr = (e: Em) => {
     const k = e.kqdr;
     if (!e.lenh) return <span className="text-xs text-slate-500">sau khi chốt</span>;
-    if (!k) return <span className="text-slate-600">—</span>;
+    if (!k) return <span className="text-slate-500">—</span>;
     if (!k.mt0) return <span className="text-xs text-slate-500">Chờ MT0</span>;
     const chu = (x: KetLuan) => (x.dat ? '' : `${x.nguyenNhan === 'hoc_sinh' ? 'Học viên' : 'Trung tâm'}${x.mon.length ? ` · ${x.mon.map((m) => NGAN[m as RegularSkill] ?? m).join(' ')}` : ''}`);
     const noiDung = k.chot ? (
@@ -195,7 +195,7 @@ export function BangLoTrinhTiep({ classId, quyen, onDoi, emMo, onDaMoEm, onBanGi
   const oBanGiao = (e: Em) => {
     const l = e.lenh;
     if (!l) return <span className="text-xs text-slate-500">{e.nhap ? 'sau khi chốt' : '—'}</span>;
-    if (!coPhieu(l.huong)) return <span className="text-slate-600">—</span>;
+    if (!coPhieu(l.huong)) return <span className="text-slate-500">—</span>;
     const chip = (nhan: string, xongMon: boolean, han: string | null) => {
       const qua = !xongMon && !!han && h > han;
       return (

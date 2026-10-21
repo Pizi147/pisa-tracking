@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
+import { useBamNgoai } from './useBamNgoai.ts';
 import { chuChipSos, giaiThichSos, type VaoChipSos } from '@shared/domain/index.ts';
 import { CHIP_SOS as CHIP, lopSos } from './Nhan.tsx';
 
@@ -21,18 +22,17 @@ export function ChipSos({ muc, kyNang, hienKyNang = true, tam, dot, ten, thuong,
   const nut = useRef<HTMLButtonElement>(null);
   const hop = useRef<HTMLSpanElement>(null);
   const idHop = useId();
+  useBamNgoai(!!cho, () => setCho(null), hop, nut);
   useEffect(() => {
     if (!cho) return;
     hop.current?.focus({ preventScroll: true });   // không cuộn (cuộn = đóng hộp); hộp vẽ cuối <body>: đưa focus vào để bàn phím / trình đọc màn hình tới được việc trong hộp
     const dong = () => setCho(null);
-    const ngoai = (e: MouseEvent) => { if (!hop.current?.contains(e.target as Node) && !nut.current?.contains(e.target as Node)) dong(); };
     const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') { dong(); nut.current?.focus(); } };
-    document.addEventListener('mousedown', ngoai);
     document.addEventListener('keydown', esc);
     window.addEventListener('scroll', dong, true);
     window.addEventListener('resize', dong);
     return () => {
-      document.removeEventListener('mousedown', ngoai); document.removeEventListener('keydown', esc);
+      document.removeEventListener('keydown', esc);
       window.removeEventListener('scroll', dong, true); window.removeEventListener('resize', dong);
     };
   }, [cho]);

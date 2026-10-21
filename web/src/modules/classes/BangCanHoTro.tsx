@@ -149,7 +149,7 @@ export function BangCanHoTro({ classId, maLop, laLopThuong, quyen, onDoi, chuong
                   return (
                     <div key={h.khoa} className={`px-3 py-1 ${luoi}`}>
                       <span className="text-xs font-semibold text-slate-500" title={h.tenDu}>{h.nhan}</span>
-                      <span className="text-[12px] text-slate-600">—</span>
+                      <span className="text-[12px] text-slate-500">—</span>
                     </div>
                   );
                 }
@@ -201,7 +201,7 @@ export function DongCase({ h, c, dau, ct, homNay, onMo, the = false, chiDoc = fa
   const loai = !viec ? undefined : goc.startsWith('Xác nhận Case') || goc.startsWith('Ghi nhận xét') ? 'xac-nhan' as const
     : goc.startsWith('Xác nhận PA') ? 'xac-nhan-pa' as const : d?.ghiKetQua && d.paId != null ? 'ghi-ket-qua' as const : undefined;
   const dangLam = c.pas.filter((p) => !p.xong);
-  const cacPa = dangLam.length === 0 ? <span className="text-slate-600">—</span> : dangLam.map((p) => (
+  const cacPa = dangLam.length === 0 ? <span className="text-slate-500">—</span> : dangLam.map((p) => (
     <span key={p.id} className="block" data-pa-id={p.id}>
       <span className="text-slate-200">{p.batBuoc && <span title={t('PA theo quy chế')} className="mr-1 inline-flex align-middle"><KhoaQuyChe /></span>}{p.ten}</span>
       {p.choXacNhan ? <span className="text-slate-500"> · {t('Chờ xác nhận')}</span>
@@ -209,7 +209,7 @@ export function DongCase({ h, c, dau, ct, homNay, onMo, the = false, chiDoc = fa
         : <span className="text-slate-500">{[p.nguoi, p.mocChu && dich(p.mocChu)].filter(Boolean).map((x) => ` · ${x}`).join('')}</span>}
     </span>
   ));
-  const cauViec = viec ? <ViecTiep v={viec} onBam={() => onMo(loai, d?.paId)} /> : <span className="text-slate-600">—</span>;
+  const cauViec = viec ? <ViecTiep v={viec} onBam={() => onMo(loai, d?.paId)} /> : <span className="text-slate-500">—</span>;
   const lap = c.lapTu ? <span className="text-slate-400">{t('lặp từ MT{n}', { n: c.lapTu })}</span> : null;
   if (the) {
     return (

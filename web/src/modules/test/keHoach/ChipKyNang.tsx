@@ -1,4 +1,4 @@
-import { gomChip, nhomKyNang, tenMon, tenMonNgan, nhanTuanKhoa, tuanNam, type ChipKH, type KyNangKH } from '@shared/domain/index.ts';
+import { NHAN_KIEU_O_MT, gomChip, nhomKyNang, tenMon, tenMonNgan, nhanTuanKhoa, tuanNam, type ChipKH, type KieuOMt, type KyNangKH } from '@shared/domain/index.ts';
 import { MAU_O_MT } from '../../../ui/OMt.tsx';
 import type { KnO } from './kieu.ts';
 
@@ -50,7 +50,7 @@ export function ChipKyNang({ kn, attemptId, khaiGiang, tongTuan, deXuat, nhanDeX
   }
 
   if (!g.chip.length) {
-    return <div className={bao}><span className="text-center text-[12px] text-slate-600" title="Đợt này không thi kỹ năng nào">—</span></div>;
+    return <div className={bao}><span className="text-center text-[12px] text-slate-500" title="Đợt này không thi kỹ năng nào">—</span></div>;
   }
 
   const hienThi = g.chip.slice(0, 2);
@@ -88,6 +88,27 @@ const MAU_TT: Record<string, { mau: string; duoi: string | null; nghia: string |
   xong: { mau: 'bg-done-bg text-done border-done-line', duoi: null, nghia: null },
 };
 
+/** Chữ chú giải từng trạng thái chip lớp thường (cùng khoá `MAU_TT`). */
+const NHAN_TT: Record<keyof typeof MAU_TT, string> = {
+  'da-doi': 'Đã dời', vang: 'Vắng', 'cho-duyet': 'Chờ duyệt dời', tre: 'Trễ (chưa có điểm)', 'da-huy': 'Đã huỷ', xong: 'Đã thi ✓',
+};
+
+/**
+ * CHÚ GIẢI MÀU (KHUNG-LOI, TST-05) — sinh từ CHÍNH bảng màu của chip (`MAU_O_MT` cho FT, `MAU_TT` cho lớp thường), không viết tay chữ màu
+ * (trước: "Xám = đã thi xong" trong khi chip xong là xanh lá). `cho-cham-cu` cùng màu `cho-cham` → bỏ trùng.
+ */
+export function ChuGiaiMau({ ft }: { ft: boolean }) {
+  const mau: [string, string, string][] = ft
+    ? (Object.keys(MAU_O_MT) as KieuOMt[]).filter((k) => k !== 'cho-cham-cu').map((k) => [k, MAU_O_MT[k], NHAN_KIEU_O_MT[k]])
+    : [['chua', 'border-dashed border-muted-line bg-transparent text-muted', 'Chưa xếp'], ['co', 'bg-doing-bg text-doing border-doing-line', 'Đã xếp'],
+      ...(Object.keys(MAU_TT) as (keyof typeof MAU_TT)[]).map((k): [string, string, string] => [k, MAU_TT[k].mau, NHAN_TT[k]])];
+  return (
+    <span className="flex flex-wrap gap-1.5">
+      {mau.map(([k, lop, nhan]) => <span key={k} className={`inline-flex h-5 items-center rounded-md border px-1.5 text-xs font-semibold ${lop}`}>{nhan}</span>)}
+    </span>
+  );
+}
+
 function Chip({ c, khaiGiang, tongTuan, them, title, onMo, ct = null }: {
   ct?: string | null;
   c: ChipKH; khaiGiang?: string | null; tongTuan?: number | null;
@@ -124,7 +145,7 @@ export function ChipDotFT({ so, kn, cu, homNay, ct = null, chon, onMo }: {
   const nhom = nhomKyNang(kn, homNay, ct, cu);
   /* C20 (OV-15c): Kế hoạch Test luôn kèm năm — tuần của nhóm (nhóm "xong" = tuần muộn nhất) đọc lại từ `kn`, cùng luật gom của `nhomKyNang`. */
   const tuanCua = (ks: readonly KyNangKH[]) => ks.map((k) => kn[k]?.tuan).filter((x): x is string => !!x).sort().pop() ?? null;
-  if (!nhom.length) return <span className="block text-center text-[12px] text-slate-600" title="Đợt này không thi kỹ năng nào">—</span>;
+  if (!nhom.length) return <span className="block text-center text-[12px] text-slate-500" title="Đợt này không thi kỹ năng nào">—</span>;
   return (
     <div className="mx-auto flex w-full max-w-[168px] flex-col gap-[3px]">
       {nhom.map((g) => (

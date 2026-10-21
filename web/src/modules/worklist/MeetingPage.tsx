@@ -292,7 +292,7 @@ function useSignalCount(periodId: number | null, branchId: number | null): numbe
 
 /** Một ô của ma trận — mức + (nháp) + kỳ tháng "(từng …)". */
 function OTaBang({ cell, thTutor }: { cell: Cell; thTutor?: string }) {
-  if (!cell.status) return <span className="text-slate-600">—</span>;
+  if (!cell.status) return <span className="text-slate-500">—</span>;
   const nhat = cell.trangThai === 'nhap';
   return (
     <span className={nhat ? 'opacity-70' : ''}>
