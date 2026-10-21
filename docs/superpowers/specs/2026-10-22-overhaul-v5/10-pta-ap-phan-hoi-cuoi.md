@@ -51,3 +51,9 @@ Chỉ vẽ phần **bố cục mới thật sự** (còn lại sửa thẳng khi
 | XM-2 | Mockup Lịch thi "cũ ổn" là bản nào? | `mockup-v4-hoc-vien-lop.html` khung Lịch thi (A / B) + trường xếp lịch của `mockup-ov14-5-lich-thi-xuat-ds` — chủ SP sửa nếu sai |
 
 Đã chốt theo khuyến nghị (chủ SP không trả lời = duyệt): TVV cùng chi nhánh **vẫn làm thay** được việc của nhau (mã hiện tại, có lịch sử); QL từ chối / GVCN rút đề xuất → việc Báo PH tự "Đã bỏ" kèm lý do; hạn Bước tiếp = ngày có KQ + 7 (21/10).
+
+## 5. Chủ SP chốt 22/10 (sau mockup #523, #524) — áp thẳng khi code, không vẽ lại
+
+- Báo cáo HV: bảng thay "Kết quả theo lớp" tên **"Kết quả MT"** (không "Đường tới Target"); hàng **MT3+** (gộp MT3 trở đi) thay "MT3". Còn lại như `thiet-ke/v5/phan-tich.html` (Đạt Target · Thiếu 0.5 · Thiếu 1.0 · Thiếu ≥ 1.5 · Chưa đủ · So lượt trước; theo lượt của từng HV; hàng Thi thật).
+- Hồ sơ HV (`dieu-chinh-cuoi.html` khu c): bấm ô điểm (Overall · L · R · W1 · W2 · S) đổi kỹ năng; biểu đồ chỉ MT + mốc tuần; "Tiến độ trên lớp" là bảng dưới biểu đồ (3 dòng mới nhất + "Xem thêm"), ghi nguyên văn, không vào MT; Case & PA chỉ của kỹ năng đang chọn, cột PA cố định (nút không đẩy chữ).
+- HV & Lớp (khu d): cột Lộ trình · MT gần nhất (Overall / KV + 5 kỹ năng, W1 W2 riêng) · Xu hướng · Hỗ trợ · Ý thức · Lịch thi · Việc; không "tuần n/24". Lịch thi bấm hàng mở chi tiết dưới hàng (như V4).
