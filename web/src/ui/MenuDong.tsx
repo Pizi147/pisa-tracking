@@ -101,7 +101,7 @@ export function MenuDong({ muc, nhan = t('Thao tác khác'), bieuTuong = '⋯', 
            `after` 44×44 đặt giữa chip (rộng hơn nếu chip rộng hơn) — hình chip không đổi (VIEC-NHO 4). */
         className={lopNut ?? (kieu === 'chip'
           ? `${CHIP_TRON} relative min-h-[28px] bg-muted-bg text-muted tabular-nums cursor-pointer hover:brightness-125 max-sm:after:absolute max-sm:after:left-1/2 max-sm:after:top-1/2 max-sm:after:h-11 max-sm:after:w-11 max-sm:after:min-w-full max-sm:after:-translate-x-1/2 max-sm:after:-translate-y-1/2 max-sm:after:content-['']`
-          : "relative inline-grid place-items-center h-7 min-w-7 px-1 rounded-md border bg-transparent text-[11px] font-semibold tabular-nums text-slate-400 hover:text-slate-100 hover:bg-white/5 cursor-pointer after:absolute after:-inset-[9px] after:content-[''] sm:after:hidden")}
+          : "relative inline-grid place-items-center h-7 min-w-7 px-1 rounded-md border bg-transparent text-[12px] font-semibold tabular-nums text-slate-400 hover:text-slate-100 bam cursor-pointer after:absolute after:-inset-[9px] after:content-[''] sm:after:hidden")}
         style={kieu === 'chip' || lopNut ? undefined : { borderColor: 'var(--line)' }}>
         {mat ?? bieuTuong}
       </button>
@@ -121,7 +121,7 @@ export function MenuDong({ muc, nhan = t('Thao tác khác'), bieuTuong = '⋯', 
               onFocus={() => setDang(chiSo.get(m.key) ?? 0)}
               title={m.title} aria-disabled={m.tat ? 'true' : undefined}
               className={`block min-h-[44px] w-full rounded-md px-3 py-2 text-left text-sm sm:min-h-0 bg-transparent border-0 focus-visible:bg-white/5 ${
-                m.tat ? 'text-slate-500 cursor-not-allowed' : `${m.nguyHiem ? 'text-rose-200' : 'text-slate-200'} hover:bg-white/5 cursor-pointer`} ${
+                m.tat ? 'text-slate-500 cursor-not-allowed' : `${m.nguyHiem ? 'text-rose-200' : 'text-slate-200'} bam cursor-pointer`} ${
                 m.keTruoc ? 'mt-1 rounded-t-none pt-2.5' : ''}`}
               style={m.keTruoc ? { borderTop: '1px solid var(--line)' } : undefined}
               onClick={(e) => { if (m.tat) { e.stopPropagation(); return; } if (m.chon === undefined) dongVeNut(); m.onChon(); }}>

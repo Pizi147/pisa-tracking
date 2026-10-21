@@ -149,7 +149,7 @@ export function LopCanChuY({ data, branchId, ct }: { data: TongQuanQlData['bang'
                 {ft && (
                   <th className="th text-center">
                     <span className="block">{t('SOS hiện tại')}</span>
-                    <span className="mt-0.5 inline-flex gap-1 text-[11px] font-normal text-slate-500"><span className="min-w-[30px]">SOS 1</span><span className="min-w-[30px]">SOS 2</span><span className="min-w-[30px]">SOS 3</span></span>
+                    <span className="mt-0.5 inline-flex gap-1 text-[12px] font-normal text-slate-500"><span className="min-w-[30px]">SOS 1</span><span className="min-w-[30px]">SOS 2</span><span className="min-w-[30px]">SOS 3</span></span>
                   </th>
                 )}
                 <th className="th text-center"><span className="inline-flex items-center gap-1">{t('Case chưa chốt PA')} {giaiThich}</span></th>

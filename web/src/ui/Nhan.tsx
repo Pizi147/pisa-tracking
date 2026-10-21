@@ -13,12 +13,12 @@ export function QuaHan({ ngay, gon }: { ngay: number | null; gon?: boolean }) {
 }
 
 /**
- * HAI HỌ CHIP, MỘT CỠ (PR-HK2, Q-H 02/10): 11,5 px, cao 20 px (dòng 18 + viền 1). Mọi chip chữ đều lấy lớp từ đây — thêm tông màu, không đổi dáng.
+ * HAI HỌ CHIP, MỘT CỠ (PR-HK2; NEN-TYPO-MAU 04 mục 10): 13 / 600, cao 24 px (dòng 22 + viền 1). Mọi chip chữ đều lấy lớp từ đây — thêm tông màu, không đổi dáng.
  * `CHIP_TRON` = trạng thái học viên / lớp + số đếm (menu, tab, nhóm). `CHIP_VUONG` = trạng thái việc, kết quả, "Thiếu n", nhãn xám.
  * Họ tròn viền trong suốt (tông có viền thì đè); tông viền đứt dùng `!border-current`.
  */
-export const CHIP_TRON = 'inline-flex items-center whitespace-nowrap rounded-full border border-transparent px-[7px] text-[11.5px] font-bold leading-[18px]';
-export const CHIP_VUONG = 'inline-flex items-center whitespace-nowrap rounded-md border px-1.5 text-[11.5px] font-semibold leading-[18px] tabular-nums';
+export const CHIP_TRON = 'inline-flex items-center whitespace-nowrap rounded-full border border-transparent px-2 text-[13px] font-semibold leading-[22px]';
+export const CHIP_VUONG = 'inline-flex items-center whitespace-nowrap rounded-md border px-1.5 text-[13px] font-semibold leading-[22px] tabular-nums';
 
 /**
  * DÁNG CHIP SOS — MỘT CHỖ (OV-15a, C08): chỉ VIỀN vàng / cam / đỏ, không nền; bậc đọc được cả khi không phân biệt màu:
@@ -31,7 +31,7 @@ export function lopSos(muc: number, tam?: boolean): string {
   return `bg-transparent ${vien} ${tam ? `border-dashed ${muc >= 3 ? 'outline-dashed' : ''}` : ''}`;
 }
 /** Khung chip SOS (C3: chip tròn chỉ khai ở đây). */
-export const CHIP_SOS = 'inline-flex h-[22px] min-w-[30px] shrink-0 items-center justify-center whitespace-nowrap rounded-full px-2 text-[12px] font-bold leading-none tabular-nums';
+export const CHIP_SOS = 'inline-flex h-6 min-w-[30px] shrink-0 items-center justify-center whitespace-nowrap rounded-full px-2 text-[13px] font-bold leading-none tabular-nums';
 
 export type ToneNhan = 'ok' | 'done' | 'bad' | 'late' | 'soon' | 'doing' | 'muted';
 

@@ -47,7 +47,7 @@ export function GhiChuTaiCho({ khoa, ghiChu, onDoi, them, nhan, className = '' }
             if (e.key === 'Enter') { e.preventDefault(); void luu(); }
             else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); setSua(null); setLoi(null); }
           }} />
-        <div className="mt-0.5 text-left text-[11px] text-slate-500" role="status">
+        <div className="mt-0.5 text-left text-[12px] text-slate-500" role="status">
           {busy ? t('Đang lưu…') : loi ? <span className="text-bad">{loi}</span> : t('Enter lưu · Esc huỷ')}
         </div>
       </div>
@@ -60,7 +60,7 @@ export function GhiChuTaiCho({ khoa, ghiChu, onDoi, them, nhan, className = '' }
   }
   return (
     <button type="button" onClick={() => setSua(ghiChu.noiDung)} title={`${ghiChu.noiDung}\n${chuTacGia(ghiChu)}`} aria-label={`${nhan}: ${ghiChu.noiDung}`}
-      className={`block w-full min-h-[24px] max-sm:min-h-[44px] truncate border-0 bg-transparent p-0 text-left text-[11.5px] italic text-slate-400 hover:text-slate-200 ${className}`}>
+      className={`block w-full min-h-[24px] max-sm:min-h-[44px] truncate border-0 bg-transparent p-0 text-left text-[12px] italic text-slate-400 hover:text-slate-200 ${className}`}>
       {ghiChu.noiDung}
     </button>
   );

@@ -312,7 +312,7 @@ export function DanExcel({ bo, tenLuot, luot, hep, hoiBanDau = false, onDong, on
 
           {vua && (
             <div role="status" className="flex flex-wrap items-center gap-2 rounded-md px-3 py-2 text-sm surface-2">
-              <span className="font-semibold text-ok">✓ {t('Đã lưu {n} dòng lúc {luc}', { n: vua.n, luc: vua.luc })}</span>
+              <span className="font-semibold text-done">✓ {t('Đã lưu {n} dòng lúc {luc}', { n: vua.n, luc: vua.luc })}</span>
               <button type="button" className="link max-sm:min-h-[44px]" disabled={!!dang || choTai} onClick={() => void hoanTac()}>{t('Hoàn tác')}</button>
               <span className="flex-1" />
               {!!dong.length && <span className="text-slate-400">{t('{n} dòng còn nháp ở dưới', { n: dong.length })}</span>}

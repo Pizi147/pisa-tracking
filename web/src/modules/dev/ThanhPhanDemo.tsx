@@ -12,6 +12,7 @@ import { KetQuaDot } from '../../ui/KetQuaDot.tsx';
 import { TyLe } from '../../ui/TyLe.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { addDaysStr } from '../../lib/format.ts';
+import { SanMauNen } from './SanMauNen.tsx';
 import { DEADLINE_KINDS, KIEU_O_NGAY, TRANG_THAI, type KieuONgay } from '@shared/domain/index.ts';
 
 /**
@@ -50,7 +51,7 @@ export function KiemTraLucDung() {
 function Cell({ title, children }: { title: string; children: ReactNode }) {
   return (
     <div className="rounded-lg border p-3 min-w-0" style={{ borderColor: 'var(--line)' }}>
-      <div className="text-[11px] uppercase tracking-wide text-slate-500 mb-2">{title}</div>
+      <div className="text-[12px]  text-slate-500 mb-2">{title}</div>
       <div className="space-y-2">{children}</div>
     </div>
   );
@@ -91,12 +92,15 @@ export default function ThanhPhanDemo() {
   return (
     <div className="max-w-[1100px] space-y-6">
       <div>
-        <h1 className="text-lg font-semibold text-slate-100 m-0">Thành phần dùng chung — trang thử</h1>
-        <p className="text-xs text-slate-500 mt-1">
+        <h1 className="text-xl font-bold text-slate-100 m-0">Sân mẫu thành phần</h1>
+        <p className="text-[13px] text-slate-500 mt-1">
           Chỉ có khi chạy <code>npm run dev</code>. Ngày nghiệp vụ hôm nay: <strong>{homNay}</strong>.
           Chụp trang này sang thang xám: mọi trạng thái vẫn phải đọc được (không tín hiệu nào chỉ bằng màu).
         </p>
       </div>
+
+      {/* NEN-TYPO-MAU: thang chữ · màu kết quả · trạng thái · báo lưu */}
+      <SanMauNen />
 
       {/* ------------------------------------------------------------ <Han> */}
       <Card title="<Han> — mọi hạn đều có loại">
@@ -287,7 +291,7 @@ export default function ThanhPhanDemo() {
           <Cell title="ONgay — bốn kiểu (gõ dd/mm/yyyy hoặc bấm lịch)">
             {KIEU_O_NGAY.map((k) => (
               <label key={k} className="block">
-                <span className="mb-1 block text-[11.5px] font-bold text-slate-200">{{ ngay: 'Ngày', tuan: 'Tuần', thang: 'Tháng', 'ngay-hoac-thang': 'Ngày hoặc tháng' }[k]}</span>
+                <span className="mb-1 block text-[12px] font-bold text-slate-200">{{ ngay: 'Ngày', tuan: 'Tuần', thang: 'Tháng', 'ngay-hoac-thang': 'Ngày hoặc tháng' }[k]}</span>
                 <ONgay kieu={k} value={ngay[k]} onChange={(iso) => setNgay((s2) => ({ ...s2, [k]: iso }))} />
               </label>
             ))}

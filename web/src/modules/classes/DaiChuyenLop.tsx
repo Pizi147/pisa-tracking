@@ -122,6 +122,6 @@ export function DaiHocVienChuyen({ dai, homNay, onLam }: {
 /** Nhãn nhỏ cạnh tên em trong tuần đầu ở lớp mới (mockup 20 — H). Viền mảnh, chữ xám: thông tin, không phải cảnh báo. */
 export function MoiVao() {
   return (
-    <span className="ml-1.5 inline-flex items-center whitespace-nowrap rounded border border-muted-line px-[5px] align-middle text-[11.5px] font-normal leading-4 text-muted">{t('mới vào')}</span>
+    <span className="ml-1.5 inline-flex items-center whitespace-nowrap rounded border border-muted-line px-[5px] align-middle text-[12px] font-normal leading-4 text-muted">{t('mới vào')}</span>
   );
 }

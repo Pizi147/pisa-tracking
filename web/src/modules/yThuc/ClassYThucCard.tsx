@@ -318,7 +318,7 @@ export function ClassYThucCard({ classId, thuong = false }: { classId: number; t
 /** Tiêu đề một nhóm em ở khung trái ("BẮT BUỘC XỬ LÝ · 3"). */
 function TieuDeNhom({ chu, so }: { chu: string; so: number }) {
   return (
-    <h3 className="m-0 border-b px-3 pb-1.5 pt-3 text-[11px] font-extrabold uppercase tracking-[.06em] text-slate-500" style={{ borderColor: 'var(--line)' }}>
+    <h3 className="m-0 border-b px-3 pb-1.5 pt-3 text-[12px] font-extrabold  text-slate-500" style={{ borderColor: 'var(--line)' }}>
       {chu} · <span className="tabular-nums">{so}</span>
     </h3>
   );
@@ -338,11 +338,11 @@ function DongEmO({ x, nhom, chon, homNay, onChon, chonN }: { x: DongEm; nhom: Nh
     <li className={chonN.bat ? 'flex items-stretch' : undefined}>
       {chonN.bat && <span className="flex items-center border-b pl-3" style={{ borderColor: 'var(--line)' }}><OChon chon={chonN} id={x.studentId} ten={x.ten} /></span>}
       <button type="button" aria-pressed={chon} onClick={onChon}
-        className={`grid w-full grid-cols-[minmax(0,1fr)_auto] items-start gap-x-3 border-0 border-b px-3 py-2.5 text-left appearance-none row-hover min-h-[44px] ${chon ? 'bg-white/[.06]' : 'bg-transparent'}`}
+        className={`grid w-full grid-cols-[minmax(0,1fr)_auto] items-start gap-x-3 border-0 border-b px-3 py-2.5 text-left appearance-none bam min-h-[44px] ${chon ? 'bg-white/[.06]' : 'bg-transparent'}`}
         style={{ borderColor: 'var(--line)' }}>
         <span className="min-w-0">
           <span className="block truncate text-sm font-semibold text-slate-100">{x.ten}</span>
-          <span className="block text-[11.5px] text-slate-400">{phu}{chuDeXuat}</span>
+          <span className="block text-[12px] text-slate-400">{phu}{chuDeXuat}</span>
         </span>
         <span className="pt-0.5 text-right">
           {han ? <Han loai={nhom === 'cho_duyet' && x.deXuat?.status === 'cho_duyet' ? 'duyet' : 'xu-ly-vi-pham'} han={han} haiDong />

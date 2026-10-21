@@ -187,7 +187,7 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
             )}
             {!gon && (
               /* PR-HK1 H4: chip nền nhạt, không viền — viền xám làm nhãn trông như nút thao tác. */
-              <span className="w-24 shrink-0 truncate rounded bg-muted-bg px-1.5 py-0.5 text-center text-[11px] font-semibold text-muted">{dich(yc.nhanPhanLoai)}</span>
+              <span className="w-24 shrink-0 truncate rounded bg-muted-bg px-1.5 py-0.5 text-center text-[12px] font-semibold text-muted">{dich(yc.nhanPhanLoai)}</span>
             )}
             <p className="m-0 min-w-0 text-sm leading-snug">
               <b className="font-semibold text-slate-100">{dich(yc.tieuDe)}</b>

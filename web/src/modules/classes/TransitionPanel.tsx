@@ -219,7 +219,7 @@ function NoiDung({ classId, onClose, onDone }: { classId: number; onClose: () =>
   }, [dongs, data]);
 
   const tieuDe = data ? `Chuyển tiếp lớp · ${data.from.code} · ${students.length} em` : 'Chuyển tiếp lớp';   // OV-11d (HL-16, CA2-4): cùng tên mục ⋯
-  const cotTieuDe = 'hidden gap-3 border-b px-3 py-2 text-[11px] font-extrabold uppercase tracking-[.06em] text-slate-500 lg:grid';
+  const cotTieuDe = 'hidden gap-3 border-b px-3 py-2 text-[12px] font-extrabold  text-slate-500 lg:grid';
 
   return (
     <>
@@ -260,7 +260,7 @@ function NoiDung({ classId, onClose, onDone }: { classId: number; onClose: () =>
             <div className="flex flex-wrap items-end gap-x-4 gap-y-2">
               {/* PR-S5F-a (mockup 20): ô MÃ TUẦN — chọn một trong các Thứ Hai hợp lệ (`W2 OCT`), không ô ngày. */}
               <div>
-                <span id="tuan-chung" className="mb-1 block text-[11.5px] font-bold text-slate-200">Tuần bắt đầu chung</span>
+                <span id="tuan-chung" className="mb-1 block text-[12px] font-bold text-slate-200">Tuần bắt đầu chung</span>
                 <div role="group" aria-labelledby="tuan-chung" className="flex flex-wrap gap-1.5">
                   <NutHomNay homNay={homNay} chon={tuanCh === homNay} onClick={() => setTuanChung(homNay)} />
                   {(data.tuanChon as string[]).map((t) => <NutChon key={t} chon={tuanCh === t} onClick={() => setTuanChung(t)}>{tuanLich(t, homNay)}</NutChon>)}

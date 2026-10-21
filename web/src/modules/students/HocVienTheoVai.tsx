@@ -298,7 +298,7 @@ export function HocVienTheoVai({ vai }: { vai: 'tvv' | 'cx' }) {
           )}
         </div>
         {data && goc !== 'lich-thi' && (
-          <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[12.5px] text-slate-400" aria-live="polite">
+          <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[13px] text-slate-400" aria-live="polite">
             <span>{t('Đang xem')}: <b className="font-semibold text-slate-200">{dangXem}</b></span>
             <span aria-hidden>·</span>
             <span className="tabular-nums">{t('{n} học viên', { n: goc === 'sos' ? demGoc.sos ?? 0 : goc === 'can-lam' ? demGoc['can-lam'] ?? 0 : hien.length })}</span>

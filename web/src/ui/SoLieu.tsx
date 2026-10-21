@@ -168,7 +168,7 @@ export function NganDanhSach({ tieuDe, dv, data, loading, error, reload, onDong,
           className="flex min-h-[44px] w-full appearance-none flex-col gap-0.5 border-0 bg-transparent px-4 py-2.5 text-left hover:bg-[color:var(--accent-soft)] disabled:hover:bg-transparent">
           <span className="flex w-full items-center gap-2.5">
             <span className={`min-w-0 flex-1 text-sm font-bold ${r.xong ? 'text-slate-300' : 'text-slate-100'}`}>{v ? dich(v.chu) : r.title}</span>
-            {r.xong ? <span className="text-[12.5px] font-bold text-ok">✓ {r.xong}</span>
+            {r.xong ? <span className="text-[13px] font-bold text-ok">✓ {r.xong}</span>
               : v?.loaiHan && v.han ? <ChipHan loai={v.loaiHan} han={v.han} /> : null}
           </span>
           {dong2.some(Boolean) && (
@@ -296,7 +296,7 @@ export function SoLieu({ id, giaTri, phamVi, rong, className = '', extra, nhan, 
   return (
     <div className={`card p-4 h-full ${className}`}>
       <div className="relative flex items-start justify-between gap-2">
-        <div className="text-[11px] uppercase tracking-wide text-slate-400 font-semibold">{nhan ?? cs.ten}</div>
+        <div className="text-[12px]  text-slate-400 font-semibold">{nhan ?? cs.ten}</div>
         {/* PR-VAI-a (K1-08): "Cách tính" là chú thích NỔI — rê chuột, Tab hoặc bấm; Esc đóng. Không đẩy giãn hàng ô. */}
         <span className="shrink-0" onMouseEnter={() => setHowTo(true)} onMouseLeave={() => setHowTo(false)}>
           {/* Bấm chỉ MỞ: chạm trên điện thoại phát mouseenter → focus → click, đảo trạng thái thì vừa mở đã đóng. Đóng: Esc, rời chuột, mất focus. */}

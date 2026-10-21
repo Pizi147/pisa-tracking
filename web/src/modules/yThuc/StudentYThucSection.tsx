@@ -99,13 +99,13 @@ export function StudentYThucSection({ studentId, onGoAcademic, thuong = false }:
 
   const muc: DongThoiGianMuc[] = d.dongThoiGian.filter(hopLoc).map((x) => x.loai === 'xu-ly' ? {
     key: `x${x.id}`, ngay: x.ngay, vach: true,
-    cot2: <span className="text-[11px] font-bold uppercase tracking-[.04em] text-slate-400">{t('Xử lý')}</span>,
+    cot2: <span className="text-[12px] font-bold  text-slate-400">{t('Xử lý')}</span>,
     tieuDe: <span className="font-bold">{dich(x.nhan)}</span>,
     dongPhu: [t('{soViPham} vi phạm', { soViPham: x.soViPham }), x.nguoi, x.soTep ? t('{soTep} tệp', { soTep: x.soTep }) : null, x.status !== 'done' ? x.statusLabel : null].filter(Boolean).join(' · '),
     cuoi: <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => mo({ loai: 'xem', id: x.id })}>{t('Xem')}</button>,
   } : {
     key: `v${x.id}`, ngay: x.ngay,
-    cot2: <span className="text-[11px] text-slate-400">{t('Vi phạm')}</span>,
+    cot2: <span className="text-[12px] text-slate-400">{t('Vi phạm')}</span>,
     tieuDe: x.viPham,
     dongPhu: [dich(x.nhom), x.mon && dich(x.mon), x.nguoiGhi ? t('{ten} ghi', { ten: x.nguoiGhi }) : null].filter(Boolean).join(' · '),
     cuoi: (
@@ -159,7 +159,7 @@ export function StudentYThucSection({ studentId, onGoAcademic, thuong = false }:
           <DongThoiGian bien="day-du" muc={muc}
             rong={<Empty title={loc === 'tat-ca' && !nhomVp ? t('Chưa có vi phạm nào') : t('Không có dòng nào khớp bộ lọc')} />} />
 
-          <p className="m-0 flex flex-wrap items-center gap-x-2 text-[11.5px] text-slate-500">
+          <p className="m-0 flex flex-wrap items-center gap-x-2 text-[12px] text-slate-500">
             <span>
               {t('{x}: {tong} vi phạm{x2}', { x: phamVi === 'chuoi' ? (d.chuoi.nhan === 'lớp thường' ? t('Các khoá lớp thường này') : t('Lộ trình {nhan}', { nhan: d.chuoi.nhan })) : t('Cả lịch sử'), tong: d.demCuoi.tong, x2: d.demCuoi.theoNhom.length ? ` · ${d.demCuoi.theoNhom.map((x) => `${x.so} ${dich(x.nhom)}`).join(' · ')}` : '' })}
             </span>

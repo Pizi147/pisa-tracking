@@ -237,7 +237,7 @@ function XepTheoTuan({ chiNhanhDau, lopDs, lopMoSan, onClose, onDone, tabs }: Ng
         <div className="flex flex-wrap items-end gap-2">
           <BranchFilter branchId={branchId} onBranch={setBranchId} />
           <div className="min-w-0 flex-1">
-            <span className="mb-1 block text-[11.5px] font-bold text-slate-200">Lớp</span>
+            <span className="mb-1 block text-[12px] font-bold text-slate-200">Lớp</span>
             <div role="group" aria-label="Lớp đã chọn" className="flex flex-wrap items-center gap-1.5">
               {lopChon.map((id) => {
                 const l = lopFT.find((x) => x.id === id) ?? lopTheoChiNhanh.find((x) => x.id === id);
@@ -259,7 +259,7 @@ function XepTheoTuan({ chiNhanhDau, lopDs, lopMoSan, onClose, onDone, tabs }: Ng
             </div>
           </div>
           <label className="block w-full sm:w-52">
-            <span className="mb-1 block text-[11.5px] font-bold text-slate-200">Tìm học viên</span>
+            <span className="mb-1 block text-[12px] font-bold text-slate-200">Tìm học viên</span>
             <input className="field w-full" value={tim} onChange={(e) => setTim(e.target.value)} placeholder="Tên hoặc mã" />
           </label>
         </div>
@@ -330,7 +330,7 @@ function XepTheoTuan({ chiNhanhDau, lopDs, lopMoSan, onClose, onDone, tabs }: Ng
             <div className="overflow-x-auto rounded-[10px] border" style={{ borderColor: 'var(--line)' }} aria-busy={dangXem}>
               <table aria-label="Học viên xếp lịch" className="w-full min-w-[960px] border-separate border-spacing-0 text-xs">
                 <thead>
-                  <tr className="text-left text-[11px] uppercase tracking-wide text-slate-500">
+                  <tr className="text-left text-[12px]  text-slate-500">
                     <th className="sticky left-0 z-[2] w-[80px] px-2 py-2 font-semibold max-sm:w-[48px]" style={{ background: 'var(--surface-2)' }}>
                       <label className="flex cursor-pointer items-center gap-1.5">
                         <input type="checkbox" className="h-4 w-4 accent-sky-400" aria-label="Chọn tất cả" checked={tatCa} disabled={!tickDuoc.length}

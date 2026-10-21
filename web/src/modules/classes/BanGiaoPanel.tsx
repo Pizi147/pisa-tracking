@@ -140,7 +140,7 @@ function MasterDetail({ dto, lenhId, onClose, onDone, reload, quayLai }: Chung) 
             {dto.ds.map((e) => (
               <li key={e.lenhId} role="option" aria-selected={e.lenhId === em.lenhId} tabIndex={e.lenhId === em.lenhId ? 0 : -1}
                 onClick={() => setChon(e.lenhId)} onFocus={() => setChon(e.lenhId)}
-                className={`cursor-pointer px-3 py-2 outline-none ${e.lenhId === em.lenhId ? 'bg-[color:var(--accent-soft)] shadow-[inset_0_0_0_1px_var(--accent)]' : 'hover:bg-white/[.04]'}`}>
+                className={`cursor-pointer px-3 py-2 outline-none ${e.lenhId === em.lenhId ? 'bg-[color:var(--accent-soft)] shadow-[inset_0_0_0_1px_var(--accent)]' : 'bam'}`}>
                 <div className="flex items-center justify-between gap-2">
                   <span className="min-w-0 truncate text-sm text-slate-100">{e.ten}</span>
                   <Nhan tone={e.phieu.khoa === 'da-xac-nhan' ? 'ok' : e.phieu.khoa === 'mon' ? 'soon' : 'muted'}>{e.phieu.nhan}</Nhan>
@@ -162,7 +162,7 @@ function MasterDetail({ dto, lenhId, onClose, onDone, reload, quayLai }: Chung) 
             </div>
 
             <section aria-label="Hệ thống tự điền" className="surface-2 rounded-lg p-3">
-              <h4 className="mb-2 mt-0 text-[11px] font-extrabold uppercase tracking-[.06em] text-slate-500">Tự điền · chỉ đọc{em.tuDienDaChup && ' · chụp lúc xác nhận'}</h4>
+              <h4 className="mb-2 mt-0 text-[12px] font-extrabold  text-slate-500">Tự điền · chỉ đọc{em.tuDienDaChup && ' · chụp lúc xác nhận'}</h4>
               {em.tuDien ? (
                 <div className={dong}>
                   <span className="text-slate-500">Kết quả</span><span className="text-slate-200">{em.tuDien.ketQua}</span>
@@ -177,7 +177,7 @@ function MasterDetail({ dto, lenhId, onClose, onDone, reload, quayLai }: Chung) 
             </section>
 
             <section aria-label="Thông tin bàn giao của GVBM">
-              <h4 className="mb-2 mt-0 text-[11px] font-extrabold uppercase tracking-[.06em] text-slate-500">
+              <h4 className="mb-2 mt-0 text-[12px] font-extrabold  text-slate-500">
                 Bàn giao của GVBM · mỗi môn một câu{ghi && !em.xacNhan && <span className="ml-2 font-normal normal-case tracking-normal text-slate-500">GVCN điền thay được</span>}
               </h4>
               <ul className="m-0 list-none space-y-1.5 p-0">
@@ -277,7 +277,7 @@ function BangGvbm({ dto, mon, lenhId, onClose, onDone, reload, quayLai }: Chung 
         dongTren: <p className="m-0 px-4 pt-2 text-right text-xs tabular-nums text-slate-400">Tự lưu khi rời ô · {soDaCo}/{dto.tong} em đã có</p>,
       }}>
       <div className="surface-2 mt-3 divide-y rounded-lg" style={{ borderColor: 'var(--line)' }} role="table" aria-label={`Bàn giao môn ${m0.ngan}`}>
-        <div role="row" className="hidden grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)_minmax(0,2fr)] gap-3 px-3 py-2 text-[11px] font-extrabold uppercase tracking-[.06em] text-slate-500 sm:grid">
+        <div role="row" className="hidden grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)_minmax(0,2fr)] gap-3 px-3 py-2 text-[12px] font-extrabold  text-slate-500 sm:grid">
           <span role="columnheader">Học viên</span><span role="columnheader">Kết quả</span><span role="columnheader">Thông tin bàn giao</span>
         </div>
         {dto.ds.map((e) => {
@@ -294,7 +294,7 @@ function BangGvbm({ dto, mon, lenhId, onClose, onDone, reload, quayLai }: Chung 
                   onChange={(ev) => { setChu((x) => ({ ...x, [e.lenhId]: ev.target.value })); setLuu((x) => ({ ...x, [e.lenhId]: false })); }}
                   onBlur={() => void ghi(e)} />
                 {loi[e.lenhId] && <span role="alert" className="mt-0.5 block text-xs text-late">{loi[e.lenhId]}</span>}
-                {!loi[e.lenhId] && luu[e.lenhId] && <span className="mt-0.5 block text-xs text-ok">Đã lưu</span>}
+                {!loi[e.lenhId] && luu[e.lenhId] && <span className="mt-0.5 block text-xs text-done">Đã lưu</span>}
                 {!khoa && oMon(e)?.lamLai && !luu[e.lenhId] && (
                   <span className="mt-1 flex flex-wrap items-center gap-2 text-xs">
                     <Nhan tone="soon">Cần làm lại</Nhan><span className="text-slate-400">Lộ trình đã đổi — sửa hoặc giữ câu cũ</span>

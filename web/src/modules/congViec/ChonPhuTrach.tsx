@@ -95,7 +95,7 @@ export function ChonPhuTrach({ value, valueName, onChange, chiChonGv }: {
           className="absolute z-30 top-full mt-1 w-56 surface-2 rounded-lg border shadow-xl py-1" style={{ borderColor: 'var(--line-strong)' }}>
           {muc.map((m, i) => (
             <button key={dich(m.nhan)} type="button" role="menuitem" tabIndex={-1} onFocus={() => setDang(i)}
-              className="w-full min-h-[44px] sm:min-h-0 text-left px-3 py-2 hover:bg-white/5 focus-visible:bg-white/5 appearance-none bg-transparent border-0 text-sm text-slate-100"
+              className="w-full min-h-[44px] sm:min-h-0 text-left px-3 py-2 bam focus-visible:bg-white/5 appearance-none bg-transparent border-0 text-sm text-slate-100"
               onClick={m.chon}>{dich(m.nhan)}</button>
           ))}
         </div>

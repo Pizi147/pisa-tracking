@@ -90,7 +90,7 @@ export function CatalogAdmin() {
               <tbody>
                 {dong.map((d) => (
                   <tr key={khoaDong(d)} onClick={() => setSua(d)}
-                    className={`row-hover cursor-pointer ${dangSua === khoaDong(d) ? 'row-active' : ''} ${conDung(d) ? '' : 'opacity-50'}`}>
+                    className={`bam cursor-pointer ${dangSua === khoaDong(d) ? 'row-active' : ''} ${conDung(d) ? '' : 'opacity-50'}`}>
                     <td className="td whitespace-nowrap text-slate-100">{tenDong(d)}{ngung(d)}</td>
                     <td className="td whitespace-nowrap text-slate-400">{d.loai === 'ft' || d.ct.scoringMode !== 'ratio' ? 'band IELTS' : 'đúng / tổng'}</td>
                     <td className="td whitespace-nowrap text-right tabular-nums text-slate-300">{doDai(d)}</td>

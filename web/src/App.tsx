@@ -89,7 +89,7 @@ function SoCho({ so, className = 'ml-1.5' }: { so: SoBadge; className?: string }
 const lopNav = (active: boolean) => `shrink-0 px-3 py-1.5 rounded-lg text-sm no-underline whitespace-nowrap transition-colors border ${
   active
     ? 'bg-[color:var(--accent-soft)] text-[color:var(--accent-strong)] border-[color:var(--accent-line)]'
-    : 'text-slate-300 border-transparent hover:bg-white/5'
+    : 'text-slate-300 border-transparent bam'
 }`;
 
 /** `bang`: bản đo (vô hình, không `data-hd`, không nhận focus). */
@@ -277,12 +277,12 @@ export default function App() {
         const vai = gocNhin.coThe.find((v) => v.role === gocNhin.dangChon);
         const goc = gocNhin.coThe.find((v) => v.role === gocNhin.vaiGoc);
         return (
-          <div role="status" className="shrink-0 flex items-center gap-x-2.5 gap-y-1 border-b px-4 sm:px-5 py-1.5 text-[12.5px] text-slate-300 min-w-0"
+          <div role="status" className="shrink-0 flex items-center gap-x-2.5 gap-y-1 border-b px-4 sm:px-5 py-1.5 text-[13px] text-slate-300 min-w-0"
             style={{ borderColor: 'rgb(var(--muted-line-rgb))', background: 'rgb(var(--muted-bg-rgb))' }}>
             <b className="shrink-0 font-semibold" style={{ color: 'rgb(var(--muted-rgb))' }}>{t('Góc nhìn: {vai}', { vai: vai?.nhan ?? gocNhin.dangChon })}</b>
             {vai?.phamVi && <span className="hidden sm:inline min-w-0 truncate" title={vai.phamVi}>· {vai.phamVi}</span>}
             <span className="flex-1" />
-            <button type="button" className="shrink-0 min-h-[32px] max-sm:min-h-[44px] border-0 bg-transparent p-0 text-[12.5px] cursor-pointer text-[color:var(--accent)] hover:underline"
+            <button type="button" className="shrink-0 min-h-[32px] max-sm:min-h-[44px] border-0 bg-transparent p-0 text-[13px] cursor-pointer text-[color:var(--accent)] hover:underline"
               onClick={() => { doiGocNhin(null).catch((e) => toast.push('error', e instanceof Error ? e.message : t('Không đổi được góc nhìn.'))); }}>{t('Về {vai}', { vai: goc?.nhan ?? t('vai gốc') })}</button>
           </div>
         );

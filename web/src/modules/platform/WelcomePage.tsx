@@ -173,7 +173,7 @@ function Tab({ active, onClick, children }: { active: boolean; onClick: () => vo
       className={`px-3 py-1.5 rounded-lg text-sm border transition-colors ${
         active
           ? 'bg-[color:var(--accent-soft)] text-[color:var(--accent-strong)] border-[color:var(--accent-line)]'
-          : 'text-slate-300 border-transparent hover:bg-white/5'
+          : 'text-slate-300 border-transparent bam'
       }`}>
       {children}
     </button>
@@ -358,7 +358,7 @@ function DemoAccounts({ accounts, loading }: { accounts: Account[]; loading: boo
         if (!group.length) return null;
         return (
           <section key={role} className="mb-4">
-            <h2 className="text-xs uppercase tracking-wide text-slate-500 font-semibold mb-2">
+            <h2 className="text-xs  text-slate-500 font-semibold mb-2">
               {ROLE_LABEL[role as Role]} <span className="text-slate-500">({group.length})</span>
             </h2>
             <div className="grid sm:grid-cols-2 gap-2">

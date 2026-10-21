@@ -82,7 +82,7 @@ export function BuoiTutorO({ i, b, dat, paId, lf, loi, cu3 }: {
               {[1, 2, 3, 4, 5].map((s) => (
                 <button key={s} type="button" aria-label={`${s}/5`} aria-pressed={b?.danhGia === s}
                   onClick={() => dat({ danhGia: b?.danhGia === s ? null : s })}
-                  className="grid h-11 w-11 place-items-center rounded-md bg-transparent sm:h-8 sm:w-8 hover:bg-white/5">
+                  className="grid h-11 w-11 place-items-center rounded-md bg-transparent sm:h-8 sm:w-8 bam">
                   <Sao day={(b?.danhGia ?? 0) >= s} />
                 </button>
               ))}
@@ -117,7 +117,7 @@ export function DongBuoiTutor({ b, i }: { b: BuoiTutor; i: number }) {
     <li className="break-words">
       <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
         <span>{t('Buổi {x} · {tutor}:', { x: i + 1, tutor: b.tutor })}</span>
-        {b.hinhThuc && <span className="rounded border px-1 text-[11px] text-slate-400" style={{ borderColor: 'var(--line)' }}>{b.hinhThuc === 'online' ? 'Online' : 'Offline'}</span>}
+        {b.hinhThuc && <span className="rounded border px-1 text-[12px] text-slate-400" style={{ borderColor: 'var(--line)' }}>{b.hinhThuc === 'online' ? 'Online' : 'Offline'}</span>}
         {TIEU_CHI_TUTOR.map(({ k, ngan }) => b[k] == null ? null : (
           <span key={k} className="inline-flex items-center gap-0.5">
             <span aria-hidden className={b[k] ? 'text-ok' : 'text-bad'}>{b[k] ? <IconDat /> : <IconKhong />}</span>
