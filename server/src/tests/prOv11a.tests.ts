@@ -105,14 +105,15 @@ export async function runPrOv11aTests(t: YThucTestKit) {
     assert(c3 && !c3.daChot && !c3.noShow, `ô sau Khôi phục: ${JSON.stringify({ daChot: c3?.daChot, noShow: c3?.noShow })}`);
   }));
 
-  check('OV11a-3 · TE-5: "Vắng" (⋯) sau tuần thi = Không dự thi (không dời, không tính vắng); trong tuần dời như cũ', () => thu(() => {
+  /* LUAT-34 (luật 4 sửa 21/10) thay TE-5: "Vắng" ghi muộn ở MT hiện tại chốt như "-" — tuần kế của lịch còn thi được → dời, đếm 1. */
+  check('OV11a-3 → LUAT-34 · "Vắng" (⋯) sau tuần thi (tuần kế còn chạy) = dời tuần kế, đếm 1; trong tuần dời như cũ', () => thu(() => {
     const a = luot[0];
     dung(a);
     const r = absence.baoVang(QL, a, 'listening', null, SAU_W);
     const s = diem(a, 'listening'), k = ky(a, 'listening');
-    assert(r.khongDuThi === true && !r.daDoi, `kết quả: ${JSON.stringify(r)}`);
-    assert(s?.no_show_cu === 1 && s.no_show_period_id === W, `ô phải Không dự thi tuần W1 NOV: ${JSON.stringify(s)}`);
-    assert(k.planned_period_id === W && k.absence_move_count === 0 && k.sit_status === 'scheduled', `lịch không đổi: ${JSON.stringify(k)}`);
+    assert(r.daDoi === true && !r.khongDuThi && !r.huyCu, `kết quả: ${JSON.stringify(r)}`);
+    assert(s?.no_show_cu === 0, `không còn Không dự thi: ${JSON.stringify(s)}`);
+    assert(k.planned_period_id === W1 && k.absence_move_count === 1 && k.sit_status === 'scheduled', `dời tuần kế: ${JSON.stringify(k)}`);
     dung(a);
     const r2 = absence.baoVang(QL, a, 'listening', null, TRONG);
     assert(r2.daDoi === true && ky(a, 'listening').planned_period_id === W1 && ky(a, 'listening').absence_move_count === 1,
@@ -177,10 +178,10 @@ export async function runPrOv11aTests(t: YThucTestKit) {
   }));
 
   check('OV11a-5 · hàm thuần: nút Vắng / Không dự thi, câu thông báo, luật "-" lớp thường, chip Ô MT không dự thi', () => {
-    assert(d.chuNutVang({ weekStart: WS, lichSu: false, homNay: TRONG }) === 'Vắng', 'trong tuần → Vắng');
-    assert(d.chuNutVang({ weekStart: WS, lichSu: false, homNay: SAU_W }) === 'Không dự thi', 'sau tuần → Không dự thi');
-    assert(d.chuNutVang({ weekStart: WS, lichSu: true, homNay: TRONG }) === 'Không dự thi', 'MT cũ → Không dự thi');
+    /* LUAT-34: nút luôn "Vắng" — `chuNutVang` bỏ; MT cũ "-" nói "Đã huỷ · vắng MT cũ". */
+    assert(d.chuNutVang === undefined, 'chuNutVang đã bỏ');
     const ten = 'Kiều Thu Trang';
+    assert(d.cauDaGhiVang('R', ten, { kq: 'huy-cu' }) === 'Đã huỷ · vắng MT cũ · R · Kiều Thu Trang', 'MT cũ');
     assert(d.cauDaGhiVang('R', ten, { kq: 'doi', tuanMoi: 'W4 SEP' }) === 'Đã ghi vắng R · Kiều Thu Trang · dời W4 SEP', d.cauDaGhiVang('R', ten, { kq: 'doi', tuanMoi: 'W4 SEP' }));
     assert(d.cauDaGhiVang('R', ten, { kq: 'huy' }) === 'Đã ghi vắng R · Kiều Thu Trang · huỷ phần thi', 'lần 2');
     assert(d.cauDaGhiVang('R', ten, { kq: 'khong-du-thi' }) === 'Đã ghi Không dự thi · R · Kiều Thu Trang', 'sau tuần');

@@ -92,7 +92,8 @@ export async function runPrDlTests(t: YThucTestKit) {
    * bỏ các trường theo đồng hồ thật (`…At`; `chuNhatCuoi` của MT lịch sử seed = ngày nhập thật). Seed + TODAY cố định nên băm cố định; đổi seed/phép kiểm phía trên
    * làm lệch băm thì chụp lại bằng mã trước refactor (`git show 666dcfbf:server/src/fasttrack/attempts.ts`), không sửa cho khớp.
    */
-  const OV12B = new Set(['nhomNguyenNhan', 'batBuocNhanXet', 'kyVong', 'thieuNhanXet']);
+  /* LUAT-34: `diemHuy` (cờ "Khôi phục điểm" mới của ô) ngoài băm như các cờ OV-12b. */
+  const OV12B = new Set(['nhomNguyenNhan', 'batBuocNhanXet', 'kyVong', 'thieuNhanXet', 'diemHuy']);
   const bam = (x: unknown) => createHash('sha256')
     /* PR-BV: ô thêm `daChot` ("-" đã chốt, phép kiểm riêng prBv V13) — bỏ khỏi băm để ảnh chụp cũ vẫn chứng minh mọi trường khác không lệch.
        OV-1c: kết quả lượt thêm `chot` (phép kiểm riêng prOv1c) — bỏ khỏi băm như trên. OV-9: `kckDuoi` (phép kiểm riêng prOv9) — cũng vậy. OV-4c: ô thêm `bandThang` (phép kiểm riêng prOv4c) — cũng vậy.
@@ -156,7 +157,10 @@ export async function runPrDlTests(t: YThucTestKit) {
   check('DL-2 classScoreSheet theo tuần: cùng kết quả như trước refactor (ảnh chụp); số/null và {theo:"tuan"} như nhau', () => {
     const cu = svc.classScoreSheet(QL, LOP, pid, TODAY);
     const moi = svc.classScoreSheet(P.lrTeacher, LOP, null, TODAY);
-    assert(bam(cu) === ANH_CHUP.tuan && bam(moi) === ANH_CHUP.moi, `ảnh chụp lệch: tuan=${bam(cu)} moi=${bam(moi)}`);
+    /* TẠM (LUAT-34): băm `moi` khi trả `canEdit` của ô GVBM có điểm ở hàng Đủ điểm về false như R11 — phải bằng ảnh cũ. */
+    const giaCu = JSON.parse(JSON.stringify(moi));
+    for (const r of giaCu.rows) for (const c of r.cells) if (c.khoa && c.canEdit && (c.band !== null || c.rawScore !== null || c.criteria.some((v: any) => v !== null))) c.canEdit = false;
+    assert(bam(cu) === ANH_CHUP.tuan && bam(moi) === ANH_CHUP.moi, `ảnh chụp lệch: tuan=${bam(cu)} moi=${bam(moi)} moiGiaR11=${bam(giaCu)}`);
     assert(idsCua(cu) === idsTuan(pid), `${idsCua(cu)} ≠ ${idsTuan(pid)}`);
     assert(!cu.rows.some((r: any) => r.attemptId === binh.aid), 'lượt tuần NULL không thuộc tuần nào');
     assert(JSON.stringify(svc.classScoreSheet(QL, LOP, { theo: 'tuan', periodId: pid }, TODAY)) === JSON.stringify(cu), 'theo tuần khác số');

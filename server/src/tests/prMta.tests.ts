@@ -770,7 +770,7 @@ export async function runPrMtaTests(t: YThucTestKit) {
     assert(dong.skillSchedule.find((x: any) => x.skill === 'speaking').canEdit === false, 'lớp thường');
   });
 
-  check('Rà #212 (6) · MT cũ đã hoàn tất: GVCN lớp đó vẫn sửa / xoá được (T22); GV ngoài lớp vẫn bị chặn', () => {
+  check('Rà #212 (6) → LUAT-34 · MT cũ đã hoàn tất: GVCN lớp đó và GVBM đúng ô sửa / xoá được (khoá 7 ngày bỏ); GV khác môn vẫn bị chặn', () => {
     const cu = mtCu();
     for (const [k, patch] of [['listening', { rawScore: 30 }], ['reading', { rawScore: 25 }], ['writing1', { band: 6 }], ['writing2', { band: 6 }], ['speaking', { band: 6 }]] as const) {
       attemptsSvc.saveScore(P.coreTeacher, cu.id, k, patch);
@@ -780,7 +780,10 @@ export async function runPrMtaTests(t: YThucTestKit) {
     assert(ht.hoanTat, `tiền đề: hoàn tất ${JSON.stringify(ht)}`);
     attemptsSvc.saveScore(P.coreTeacher, cu.id, 'reading', { rawScore: 27 }, sau);
     assert(!perm.isCoreTeacherOf(P.w1Teacher, LOP), 'tiền đề: GV W1 không chủ nhiệm');
-    assert(loiCua(() => attemptsSvc.saveScore(P.w1Teacher, cu.id, 'writing1', { band: 7 }, sau)).status === 403, 'GVBM');
+    attemptsSvc.saveScore(P.w1Teacher, cu.id, 'writing1', { band: 7 }, sau);
+    assert(diemCua(cu.id, 'writing1').band === 7, 'GVBM đúng ô sửa được sau khoá 7 ngày cũ');
+    assert(!perm.isCoreTeacherOf(P.sTeacher, LOP), 'tiền đề: GV S không chủ nhiệm');
+    assert(loiCua(() => attemptsSvc.saveScore(P.sTeacher, cu.id, 'writing1', { band: 7.5 }, sau)).status === 403, 'GV khác môn');
     attemptsSvc.saveScore(P.coreTeacher, cu.id, 'listening', { rawScore: null }, sau);
     assert(diemCua(cu.id, 'reading').raw_score === 27 && diemCua(cu.id, 'listening').raw_score === null, 'GVCN');
   });
