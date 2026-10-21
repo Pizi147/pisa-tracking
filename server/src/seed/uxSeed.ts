@@ -90,8 +90,9 @@ export function buildUxDemo(conn: any, adminId: number): { tvv: number; soHvTvv:
      6 em Overall = kỳ vọng (Đạt), 4 em dưới kỳ vọng 0.5 (Chưa đạt). Kỳ vọng MT2 = Target − 0.5. */
   const w3Aug = ensurePeriod('2026-08-17').id;
   const BU_MT2: [string, boolean][] = [
-    ['Hà Gia Bình', true], ['Ngô Thanh Tùng', true], ['Trịnh Gia Bảo', true], ['Đặng Thu Hà', true], ['Ngô Bảo Châu', true], ['Lý Thanh Tâm', true],
-    ['Võ Minh Triết', false], ['Phạm Khánh Linh', false], ['Chu Nhật Minh', false], ['Kiều Thảo Nhi', false],   // em không thuộc kịch bản demo nào
+    ['Hà Gia Bình', true], ['Ngô Thanh Tùng', true], ['Trịnh Gia Bảo', true], ['Đặng Thu Hà', true], ['Võ Minh Triết', true], ['Chu Nhật Minh', true],
+    /* Chưa đạt → Case SOS tự tạo: chỉ em không thuộc kịch bản demo nào (phép kiểm cũ soi Case của em kịch bản). */
+    ['Ngô Bảo Châu', false], ['Lý Thanh Tâm', false], ['Phạm Khánh Linh', false], ['Kiều Thảo Nhi', false],
   ];
   for (const [ten, dat] of BU_MT2) {
     const a = conn.prepare(`SELECT a.id, a.target_at_attempt AS t FROM assessment_attempts a JOIN students s ON s.id = a.student_id
