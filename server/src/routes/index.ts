@@ -1892,7 +1892,9 @@ api.post('/cycles/:id/apply-suggested-mocks', requireAuth, wrap((req) => {
  */
 api.post('/cases/report', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
-  return caseSvc.reportIssue(principalOf(req), req.body ?? {});
+  const b = req.body ?? {};
+  /* CASE-NHIEU: có `kyNang` (mảng) = tạo nhiều kỹ năng một lần; không thì một kỹ năng như cũ. */
+  return Array.isArray(b.kyNang) ? caseSvc.reportIssues(principalOf(req), b) : caseSvc.reportIssue(principalOf(req), b);
 }));
 
 /**
