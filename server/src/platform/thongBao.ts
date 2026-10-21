@@ -3,6 +3,7 @@ import { tenMon } from '../../../shared/domain/index.ts';
 import { CO_THE_KHONG_THEO_DOI, LA_CASE_SOS, xuLyCaseMany } from '../cases/sosState.ts';
 import { demoToday } from '../demoConfig.ts';
 import { trangThaiYThuc } from '../yThuc/trangThai.ts';
+import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 
 /** Chuông trả tối đa bấy nhiêu dòng: MỌI dòng chưa đọc trước, rồi dòng mới nhất (PR-VAI-a Q18). */
 export const THONG_BAO_TOI_DA = 50;
@@ -41,11 +42,11 @@ export function thongBaoCua(userId: number) {
                   CASE
                     /* OV-15d: thông báo tự động chỉ còn khi việc còn (đồng bộ xoá khi xong) — luôn là Cần làm. */
                     WHEN n.kind IN ('cham_qua_han', 'case_chua_chot_pa', 'chot_lo_trinh') THEN 1
-                    /* SV-YT-TVV (rà #516): việc Báo PH — MỘT thông báo mỗi việc (quá hạn chỉ đổi chữ), Cần làm khi việc còn mở, em đang học và người nhận là
-                       người giữ HIỆN TẠI (TVV của em; em chưa có TVV → QL chi nhánh của em). Đồng bộ thông báo tự động xoá dòng của người không còn giữ. */
+                    /* SV-YT-TVV (rà #516): việc Báo PH — MỘT thông báo mỗi người (quá hạn chỉ đổi chữ), Cần làm khi người nhận còn GIỮ ít nhất một việc mở của em
+                       đang học (TVV của em; em chưa có TVV → QL chi nhánh của em). Đồng bộ thông báo tự động xoá dòng của người không còn giữ việc nào. */
                     WHEN n.kind = 'bao_ph_xu_ly' THEN CASE WHEN EXISTS (
                       SELECT 1 FROM viec_bao_ph vb JOIN students sv ON sv.id = vb.student_id
-                       WHERE vb.id = n.entity_id AND vb.trang_thai = 'mo' AND sv.status = 'active' AND sv.archived_at IS NULL
+                       WHERE vb.trang_thai = 'mo' AND ${HV_DANG_HOC_SQL('sv')}
                          AND (sv.consultant_user_id = n.user_id OR (sv.consultant_user_id IS NULL AND EXISTS (
                            SELECT 1 FROM user_roles ur JOIN roles r ON r.id = ur.role_id
                             WHERE ur.user_id = n.user_id AND r.key = 'manager' AND ur.status = 'active'

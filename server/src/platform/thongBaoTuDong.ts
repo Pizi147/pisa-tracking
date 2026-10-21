@@ -3,7 +3,8 @@
  *  · bài quá hạn chấm của CHÍNH GV — một thông báo mỗi lớp · đợt (cùng tập việc Nhập điểm quá hạn của `/my-work`);
  *  · Case chưa chốt PA quá hạn — người phụ trách Case (GVCN), cùng luật ⚠ cột Chờ duyệt (`xuLyCaseMany`, như chỉ số `case-xac-dinh-nguyen-nhan-qua-han`);
  *  · Chốt lộ trình tới hạn — QL (việc `chot_len_ft` có hạn trong `CHOT_TOI_HAN_NGAY` ngày tới, hoặc đã qua).
- *  · SV-YT-TVV: việc Báo PH sau lưu xử lý — người giữ HIỆN TẠI (TVV / QL khi em chưa có TVV), MỘT thông báo mỗi việc; quá hạn chỉ đổi chữ "Quá hạn · …".
+ *  · SV-YT-TVV: việc Báo PH sau lưu xử lý — người giữ HIỆN TẠI (TVV / QL khi em chưa có TVV), MỘT thông báo mỗi người (1 việc: tên em; nhiều: "· n em"),
+ *    hạn sớm nhất, "Quá hạn · …" khi có việc quá hạn — không tràn chuông (50 dòng) khi QL giữ nhiều việc.
  * ĐỒNG BỘ, không chỉ thêm: thông báo của việc đã xong tự hết (xoá), thông báo còn việc thì cập nhật chữ; dedup theo (người, đối tượng).
  * Chạy khi người đó mở chuông (`GET /notifications`), tối đa một lần / `CHU_KY_MS` mỗi người. Không email / push.
  */
@@ -63,12 +64,15 @@ function viecMuon(p: Principal, homNay: string): Map<string, Muon> {
     });
   }
 
-  /* SV-YT-TVV: Báo PH — việc của chính người xem (đổi TVV → chuông sang người mới; em Tạm dừng / ghi xong / bỏ → hết). Quá hạn: cùng dòng, đổi chữ. */
-  for (const x of items) {
-    if (x.group !== 'bao_ph_yt' || !x.mine) continue;
-    muon.set(`tudong:bao-ph:${x.viecId}`, {
-      kind: 'bao_ph_xu_ly', title: x.urgency === 'overdue' ? `Quá hạn · ${x.tieuDe}` : x.tieuDe, body: '',
-      entityType: 'viec_bao_ph', entityId: x.viecId ?? null, duong: x.href, han: x.due,
+  /* SV-YT-TVV: Báo PH — việc của chính người xem (đổi TVV → chuông sang người mới; em Tạm dừng / ghi xong / bỏ → hết). MỘT dòng mỗi người. */
+  const bp = items.filter((x) => x.group === 'bao_ph_yt' && x.mine).sort((a, b) => String(a.due).localeCompare(String(b.due)));
+  if (bp.length) {
+    const dau = bp[0];
+    const chu = bp.length === 1 ? dau.tieuDe : `Báo PH vi phạm · ${bp.length} em`;
+    muon.set('tudong:bao-ph', {
+      kind: 'bao_ph_xu_ly', title: bp.some((x) => x.urgency === 'overdue') ? `Quá hạn · ${chu}` : chu, body: '',
+      entityType: 'viec_bao_ph', entityId: dau.viecId ?? null,
+      duong: bp.length === 1 ? dau.href : p.roleKeys.includes('consultant') ? '/' : `/cong-viec?viec=${encodeURIComponent(dau.key)}`, han: dau.due,
     });
   }
 
