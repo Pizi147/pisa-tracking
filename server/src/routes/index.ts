@@ -64,6 +64,7 @@ import * as loTrinhTiepSvc from '../classes/loTrinhTiep.ts';
 import * as cuoiKhoaSvc from '../normal/cuoiKhoa.ts';
 import * as kyVongSvc from '../normal/kyVong.ts';
 import * as gopYSvc from '../classes/gopYTuan.ts';
+import * as baiLopSvc from '../students/baiTrenLop.ts';
 import * as luatLoTrinhSvc from '../classes/luatLoTrinh.ts';
 import * as hocVienLopSvc from '../classes/hocVienLop.ts';
 import * as lichThiSvc from '../classes/lichThi.ts';
@@ -2264,6 +2265,24 @@ api.patch('/cases/:id/follow-until', requireAuth, wrap((req) => {
 api.get('/students/:id/skill-board', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   return caseSvc.skillSupportBoard(principalOf(req), pInt(req, 'id'), qInt(req, 'cycleId'));
+}));
+
+/** SV-BAI-LOP (C11, T18): hồ sơ HV › Bài trên lớp — tuỳ chọn, thang của bài, không vào MT / KPI, không sinh việc. Quyền kiểm ở máy chủ; lịch sử: /lich-su?loai=bai-lop. */
+api.get('/students/:id/bai-tren-lop', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return baiLopSvc.dsBaiTrenLop(principalOf(req), pInt(req, 'id'));
+}));
+api.post('/students/:id/bai-tren-lop', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return baiLopSvc.themBaiTrenLop(principalOf(req), pInt(req, 'id'), req.body ?? {});
+}));
+api.put('/bai-tren-lop/:id', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return baiLopSvc.suaBaiTrenLop(principalOf(req), pInt(req, 'id'), req.body ?? {});
+}));
+api.delete('/bai-tren-lop/:id', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return baiLopSvc.xoaBaiTrenLop(principalOf(req), pInt(req, 'id'));
 }));
 
 /** Chủ đề Case mở được cho một học viên (F07) — form đọc route này thay vì tự đoán chương trình. */
