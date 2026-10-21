@@ -123,10 +123,11 @@ export async function runPrHk2Tests(t: YThucTestKit) {
       ['web/src/modules/worklist/KhoiCanXuLy.tsx', 1], ['web/src/modules/worklist/BranchPulse.tsx', 1],   // CV-LOI (CV-10): LopToiDay nằm trong thẻ 560 px — bỏ bang-dinh, cuộn trong thẻ
       ['web/src/modules/students/ClassRoster.tsx', 1], ['web/src/modules/classes/BangDiemLopThuong.tsx', 1], ['web/src/modules/classes/TabTongKetLop.tsx', 1],
       ['web/src/modules/test/lichTest/HangLop.tsx', 1], ['web/src/modules/test/lichTest/KhoiNo.tsx', 1],
-      ['web/src/modules/cham/LuoiFT.tsx', 1], ['web/src/modules/cham/LuoiThuong.tsx', 1],
+      ['web/src/ui/Bang.tsx', 1],   // BANG-1: lưới FT / lớp thường dính đầu qua `Bang dinh` (kiểm riêng bên dưới)
       ['web/src/modules/platform/AdminPage.tsx', 1], ['web/src/modules/platform/AccountsAdmin.tsx', 1], ['web/src/modules/platform/CatalogAdmin.tsx', 1],   // OV-6b1: một bảng Chương trình (gộp Lộ trình)
       ['web/src/modules/worklist/MgmtTasksPage.tsx', 1], ['web/src/modules/worklist/MeetingPage.tsx', 1],
     ];
+    assert(/dinh=\{gon \? '1440' : false\}/.test(doc('web/src/modules/cham/LuoiFT.tsx')) && /\sdinh\s/.test(doc('web/src/modules/cham/LuoiThuong.tsx')), 'lưới FT / lớp thường phải dính đầu cột (Bang dinh)');
     for (const [f, n] of DS) {
       const src = doc(f);
       assert((src.match(/\bbang-dinh\b/g)?.length ?? 0) >= n, `${f}: thiếu bang-dinh (cần ≥ ${n})`);
@@ -382,18 +383,23 @@ export async function runPrHk2Tests(t: YThucTestKit) {
 
   check('J8 · tên lớp / đợt có title; lưới chấm: tên break-words, chip "Đã hoàn tất" xuống dòng DƯỚI tên (không cùng hàng flex)', () => {
     assert(/<span className="truncate" title=\{`?[^}]*classCode/.test(doc('web/src/modules/cham/ChamDiemPage.tsx')), 'ChamDiemPage: tiêu đề "lớp · đợt" thiếu title');
-    for (const f of ['LuoiFT', 'LuoiThuong', 'MotKyNang']) {
-      const m = /<div className="([^"]*)">\s*<Link className="([^"]*)" to=\{.*\} title=\{(?:row\.studentName|ten)\}>/.exec(doc(`web/src/modules/cham/${f}.tsx`));
-      assert(m, `${f}: không thấy khối tên em`);
-      assert(/break-words/.test(m![2]), `${f}: tên em chưa break-words (${m![2]})`);
-      assert(!/(^|\s)flex(\s|$)/.test(m![1]), `${f}: chip còn cùng hàng flex với tên (${m![1]})`);
+    /* Điện thoại (MotKyNang): tên xuống dòng, chip dưới tên. */
+    const mk = /<div className="([^"]*)">\s*<Link className="([^"]*)" to=\{.*\} title=\{ten\}>/.exec(doc('web/src/modules/cham/MotKyNang.tsx'));
+    assert(mk && /break-words/.test(mk[2]) && !/(^|\s)flex(\s|$)/.test(mk[1]), `MotKyNang: khối tên em (${mk?.[1]} · ${mk?.[2]})`);
+    /* BANG-1 (04 mục 6.2): lưới máy tính — hàng một dòng chính: tên cắt "…" + title, chip "Đủ điểm" đứng SAU tên cùng dòng. */
+    for (const f of ['LuoiFT', 'LuoiThuong']) {
+      const s = doc(`web/src/modules/cham/${f}.tsx`);
+      const m = /<Link className="([^"]*)" to=\{[^\n]*?title=\{row\.studentName\}>\{row\.studentName\}<\/Link>\s*\{row\.hoanTat && <Info/.exec(s);
+      assert(m, `${f}: không thấy khối tên em + chip Đủ điểm sau tên`);
+      assert(/(^|\s)truncate(\s|$)/.test(m![1]), `${f}: tên em chưa cắt "…" (${m![1]})`);
     }
   });
 
   check('C33 · LuoiThuong: tên em < 640 px xuống dòng (max-sm:break-words), máy tính giữ truncate + title', () => {
+    /* BANG-1: < 640 px lưới lớp thường không vẽ (màn điện thoại MotKyNang, tên xuống dòng — J8); máy tính cắt "…" + title. */
     const m = /<Link className="([^"]*)" to=\{`\/hoc-vien\/\$\{row\.studentId\}`\} title=\{row\.studentName\}>/.exec(doc('web/src/modules/cham/LuoiThuong.tsx'));
     assert(m, 'không thấy Link tên em');
-    assert(/max-sm:break-words/.test(m![1]) && /(^|\s)sm:truncate(\s|$)/.test(m![1]) && !/(^|\s)truncate(\s|$)/.test(m![1]), m![1]);
+    assert(/(^|\s)truncate(\s|$)/.test(m![1]) && /min-w-0/.test(m![1]), m![1]);
   });
 
   check('C34 · CapNhatTuan: tên PA < 640 px xuống dòng, hạn + ⚠ xuống dòng dưới; KhungPanel ngCanh max-sm:whitespace-normal, giữ pb-2', () => {
@@ -649,8 +655,10 @@ export async function runPrHk2Tests(t: YThucTestKit) {
     assert(/@media \(min-width:\s*1280px\)\s*\{\s*\.bang-dinh\s*\{/.test(cssRaw), 'ngưỡng chung của .bang-dinh phải còn 1280');
     const th = doc('web/src/modules/phanTich/TongHopTestSos.tsx');
     assert(/className="table-scroll bang-dinh bang-dinh-1440"/.test(th), 'bảng Tổng hợp chưa gắn bang-dinh-1440');
-    assert(/gon \? 'table-scroll bang-dinh bang-dinh-1440' : 'overflow-x-auto'/.test(doc('web/src/modules/cham/LuoiFT.tsx')), 'lưới Điểm theo lớp (gọn 1108 px, khung 950 px ở 1280) chưa gắn bang-dinh-1440');
-    const khac = tsx('web/src').filter((f) => !['web/src/modules/phanTich/TongHopTestSos.tsx', 'web/src/modules/cham/LuoiFT.tsx'].includes(f) && /bang-dinh-1440/.test(doc(f)));
+    /* BANG-1: lưới FT qua `Bang dinh='1440'` khi gọn (Điểm theo lớp / Lịch Test); Bang chỉ thêm bang-dinh-1440 khi dinh === '1440'. */
+    assert(/dinh=\{gon \? '1440' : false\}/.test(doc('web/src/modules/cham/LuoiFT.tsx')), 'lưới Điểm theo lớp (gọn 1108 px, khung 950 px ở 1280) chưa gắn bang-dinh-1440');
+    assert(/dinh === '1440' \? 'bang-dinh-1440'/.test(doc('web/src/ui/Bang.tsx')), 'Bang: bang-dinh-1440 chỉ khi dinh = 1440');
+    const khac = tsx('web/src').filter((f) => !['web/src/modules/phanTich/TongHopTestSos.tsx', 'web/src/modules/cham/LuoiFT.tsx', 'web/src/ui/Bang.tsx'].includes(f) && /bang-dinh-1440/.test(doc(f)));
     assert(khac.length === 0, `bang-dinh-1440 chỉ cho bảng rộng hơn khung ở 1280 (Tổng hợp, lưới Điểm theo lớp): ${khac.join(', ')}`);
   });
 

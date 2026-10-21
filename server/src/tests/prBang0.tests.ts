@@ -23,8 +23,6 @@ const taiTsx = (dir: string, out: string[] = []): string[] => {
 const MIEN_TABLE: string[] = [
   'web/src/modules/cases/SkillBoard.tsx',
   'web/src/modules/cham/DanExcel.tsx',
-  'web/src/modules/cham/LuoiFT.tsx',
-  'web/src/modules/cham/LuoiThuong.tsx',
   'web/src/modules/classes/BangDiemLopThuong.tsx',
   'web/src/modules/classes/BangGopYTuan.tsx',
   'web/src/modules/classes/BangKqdrLopFt.tsx',
@@ -79,8 +77,6 @@ const MIEN_TABLE: string[] = [
 /** BANG-2: tệp còn lớp căn (`text-left|center|right`) trên `<td>` / `<th>`. Chỉ được GIẢM. */
 const MIEN_CAN: string[] = [
   'web/src/modules/cases/SkillBoard.tsx',
-  'web/src/modules/cham/LuoiFT.tsx',
-  'web/src/modules/cham/LuoiThuong.tsx',
   'web/src/modules/classes/BangDiemLopThuong.tsx',
   'web/src/modules/classes/ClassIssueBoard.tsx',
   'web/src/modules/classes/PhanTichLopTab.tsx',
@@ -118,7 +114,6 @@ const MIEN_CAN: string[] = [
 ];
 /** BANG-2: tệp còn ô nhập / nút trong `<th>` (trừ `ui/ui.tsx` — nút sắp xếp của `Th`). Chỉ được GIẢM. */
 const MIEN_TH_DIEU_KHIEN: string[] = [
-  'web/src/modules/cham/LuoiThuong.tsx',
   'web/src/modules/platform/AccountsAdmin.tsx',
   'web/src/modules/platform/CatalogAdmin.tsx',
   'web/src/modules/test/keHoach/NganXepLichMt.tsx',

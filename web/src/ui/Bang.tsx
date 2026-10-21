@@ -1,4 +1,4 @@
-import { Fragment, type KeyboardEvent, type ReactNode } from 'react';
+import { Fragment, type KeyboardEvent, type ReactNode, type TdHTMLAttributes } from 'react';
 import { chiaThe, nhomTieuDe, rongCot, type DinhNghiaCot } from '@shared/domain/index.ts';
 import { Empty } from './ui.tsx';
 import { useDienThoai } from './TheDong.tsx';
@@ -13,13 +13,13 @@ export type { DinhNghiaCot as CotBang } from '@shared/domain/index.ts';
  * Tiêu đề chỉ nhận chữ (`nhan`, `phu`) — cấm ô nhập / nút trong `th`. < 640 px: thẻ từ cùng định nghĩa cột.
  * Hàng bấm được (`onHang`) = `.bam` + Enter; đang mở = `.dang-mo`; bảng ≥ 8 cột không bấm = dò hàng `.do-hang`.
  */
-export function Bang<H>({ ten, cot, hang, khoa, oCua, phuCua, congCu, onHang, dangMo, rong, day }: {
+export function Bang<H>({ ten, cot, hang, khoa, oCua = () => null, phuCua, congCu, onHang, dangMo, rong, day, hangRieng, cuoi, the375 = true, dinh, khung = true }: {
   /** Tên bảng cho trình đọc màn + công cụ đo `do-bang`. */
   ten: string;
   cot: readonly DinhNghiaCot[];
   hang: readonly H[];
   khoa: (h: H) => string | number;
-  oCua: (h: H, c: DinhNghiaCot) => ReactNode;
+  oCua?: (h: H, c: DinhNghiaCot) => ReactNode;
   /** Dòng phụ 12 px dưới dòng chính của ô (hàng có dòng phụ cao 64). */
   phuCua?: (h: H, c: DinhNghiaCot) => ReactNode;
   congCu?: ReactNode;
@@ -29,6 +29,16 @@ export function Bang<H>({ ten, cot, hang, khoa, oCua, phuCua, congCu, onHang, da
   rong?: { tieuDe: string; goiY?: string; nut?: ReactNode };
   /** Lưới dày (> 8 cột, lưới điểm): chữ ô 14. */
   day?: boolean;
+  /** BANG-1: hàng là component có hook riêng (lưới điểm: lưu theo từng hàng) — tự vẽ `<tr>` bằng `OBang`. */
+  hangRieng?: (h: H) => ReactNode;
+  /** Hàng thêm sau cùng (hàng mờ "em chưa có lịch"). */
+  cuoi?: ReactNode;
+  /** false: không đổi thành thẻ ở < 640 px (lưới nhập điểm có màn điện thoại riêng). */
+  the375?: boolean;
+  /** Đầu cột dính khi cuộn trang (`.bang-dinh`, chỉ bảng vừa khung ở 1440); '1440' = bảng rộng hơn khung ở 1280 (`.bang-dinh-1440`). */
+  dinh?: boolean | '1440';
+  /** false: không bọc thẻ (nơi gọi đã ở trong thẻ / panel). */
+  khung?: boolean;
 }) {
   const dienThoai = useDienThoai();
   const nhom = nhomTieuDe(cot);
@@ -37,9 +47,9 @@ export function Bang<H>({ ten, cot, hang, khoa, oCua, phuCua, congCu, onHang, da
   const coPhu = (x: ReactNode) => x != null && x !== false && x !== '';
 
   let than: ReactNode;
-  if (hang.length === 0) {
+  if (hang.length === 0 && !cuoi) {
     than = <Empty title={rong?.tieuDe ?? t('Chưa có dữ liệu')} hint={rong?.goiY} action={rong?.nut} />;
-  } else if (dienThoai) {
+  } else if (dienThoai && the375) {
     const phan = chiaThe(cot);
     const theoKey = new Map(cot.map((c) => [c.key, c]));
     const o = (h: H, k: string) => oCua(h, theoKey.get(k)!);
@@ -70,7 +80,7 @@ export function Bang<H>({ ten, cot, hang, khoa, oCua, phuCua, congCu, onHang, da
     ));
   } else {
     than = (
-      <div className="table-scroll">
+      <div className={`table-scroll ${dinh ? 'bang-dinh' : ''} ${dinh === '1440' ? 'bang-dinh-1440' : ''}`}>
         <table className="bang" data-day={day || undefined} aria-label={ten} style={{ minWidth: cot.reduce((n, c) => n + (rongCot(c, cot) ?? 240), 0) }}>
           <colgroup>{cot.map((c) => { const r = rongCot(c, cot); return <col key={c.key} style={r ? { width: r } : undefined} />; })}</colgroup>
           <thead>
@@ -81,20 +91,21 @@ export function Bang<H>({ ten, cot, hang, khoa, oCua, phuCua, congCu, onHang, da
             )}
             <tr>
               {cot.map((c) => (
-                <th key={c.key} scope="col" data-kieu={c.kieu} className={`th ${c.kieu === 'ten' ? 'sticky-col' : ''}`}>
+                <th key={c.key} scope="col" data-kieu={c.kieu} data-tinh={c.tinh || undefined} data-sang={c.sang || undefined} title={c.goiY}
+                  className={`th ${c.kieu === 'ten' ? 'sticky-col' : ''}`}>
                   {c.nhan}{c.phu && <span className="bang-chu-thich"> {c.phu}</span>}
                 </th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {hang.map((h) => {
+            {hangRieng ? hang.map((h) => <Fragment key={khoa(h)}>{hangRieng(h)}</Fragment>) : hang.map((h) => {
               const phu = phuCua ? cot.map((c) => phuCua(h, c)) : [];
               return (
                 <tr key={khoa(h)} className={lop(h)}
                   tabIndex={onHang ? 0 : undefined} onClick={onHang ? () => onHang(h) : undefined} onKeyDown={phim(h)}>
                   {cot.map((c, i) => (
-                    <td key={c.key} data-kieu={c.kieu} className={`td ${c.kieu === 'ten' ? 'sticky-col' : ''}`}>
+                    <td key={c.key} data-kieu={c.kieu} data-tinh={c.tinh || undefined} className={`td ${c.kieu === 'ten' ? 'sticky-col' : ''}`}>
                       {oCua(h, c)}
                       {coPhu(phu[i]) && <span className="bang-phu" data-phu-odiem="">{phu[i]}</span>}
                     </td>
@@ -102,6 +113,7 @@ export function Bang<H>({ ten, cot, hang, khoa, oCua, phuCua, congCu, onHang, da
                 </tr>
               );
             })}
+            {cuoi}
           </tbody>
         </table>
       </div>
@@ -111,7 +123,14 @@ export function Bang<H>({ ten, cot, hang, khoa, oCua, phuCua, congCu, onHang, da
   return (
     <div className="space-y-2">
       {congCu && <div className="flex flex-wrap items-center gap-2">{congCu}</div>}
-      <div className="card overflow-clip" aria-label={dienThoai ? ten : undefined}>{than}</div>
+      {khung ? <div className="card overflow-clip" aria-label={dienThoai ? ten : undefined}>{than}</div> : than}
     </div>
+  );
+}
+
+/** Ô của hàng tự vẽ (`hangRieng`): cùng `data-kieu` với tiêu đề → căn, rộng, nền giống hệt ô do `Bang` vẽ. Cột tên dính trái. */
+export function OBang({ c, className = '', children, ...td }: { c: DinhNghiaCot; children?: ReactNode } & TdHTMLAttributes<HTMLTableCellElement>) {
+  return (
+    <td data-kieu={c.kieu} data-tinh={c.tinh || undefined} className={`td ${c.kieu === 'ten' ? 'sticky-col' : ''} ${className}`} {...td}>{children}</td>
   );
 }

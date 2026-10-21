@@ -317,16 +317,18 @@
   .bang > tbody > tr.bam:focus-visible > td:first-child { box-shadow: inset 2px 0 0 var(--accent), inset 0 2px 0 var(--accent), inset 0 -2px 0 var(--accent); }
   .bang > tbody > tr.bam:focus-visible > td:last-child { box-shadow: inset -2px 0 0 var(--accent), inset 0 2px 0 var(--accent), inset 0 -2px 0 var(--accent); }
   /* Hàng có ô / nút cao 32 px (ô điểm sửa, ⋯): đệm dọc 6 → vẫn 44 / 64. */
-  .bang > tbody > tr:has(.o-sua, button:not(.link)) > td { padding-top: 6px; padding-bottom: 6px; }
+  .bang > tbody > tr:has(.o-sua, button:not(.link), input) > td { padding-top: 6px; padding-bottom: 6px; }
   /* Chữ trong chip lùi 8 px (đệm chip) → tiêu đề cột chip lùi theo để thẳng chữ; chữ thường trong cột chip cũng lùi 8 (`px-2`). */
   .bang th[data-kieu="chip"] { padding-left: 20px; }
   .bang :is(th, td):is([data-kieu="ten"], [data-kieu="chu"], [data-kieu="chip"], [data-kieu="tuan"], [data-kieu="viec"]) { text-align: left; }
   .bang :is(th, td):is([data-kieu="so"], [data-kieu="diem"], [data-kieu="noi-bat"], [data-kieu="diem-ti-le"], [data-kieu="phan-tram"]) { text-align: center; font-variant-numeric: tabular-nums; }
   .bang :is(th, td):is([data-kieu="nut"]) { text-align: right; }
   .bang > tbody > tr > td { height: 44px; padding: 10px 12px; line-height: 1.5; }
-  .bang > tbody > tr:has([data-phu-odiem]) > td { height: 64px; }
+  .bang > tbody > tr:has([data-phu-odiem]:not(:empty)) > td { height: 64px; }
   .bang[data-day] > tbody > tr > td { font-size: 14px; }
   .bang :is(th, td)[data-kieu="noi-bat"] { background-color: var(--accent-soft); }
+  .bang :is(th, td)[data-tinh] { background-color: var(--surface-2); }   /* cột máy tính sẵn (W tổng) */
+  .bang th[data-sang] { color: var(--accent-strong); }   /* cột đang mở từ Lịch Test / việc */
   .bang .bang-phu { display: block; font-size: 12px; line-height: 1.4; color: var(--text-faint); font-weight: 400; }
   .bang .bang-chu-thich { font-size: 12px; font-weight: 400; color: var(--text-faint); }
   .bang-nhom > th { height: 32px; padding: 0 12px; font-size: 13px; font-weight: 600; color: var(--text-dim); background: var(--surface-2); text-align: center; }

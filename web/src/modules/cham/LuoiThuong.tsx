@@ -12,6 +12,8 @@ import { useSession } from '../../lib/session.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 import { thongBaoVang } from './thongBaoVang.ts';
 import { Empty, Info, Level, Status } from '../../ui/ui.tsx';
+import { Bang, OBang } from '../../ui/Bang.tsx';
+import type { DinhNghiaCot } from '@shared/domain/index.ts';
 import { useTrangThaiLuuO } from '../../ui/SaveState.tsx';
 import { KHOA_HOAN_TAT_HINT, ODiemThuong, laTuChoi, type SaveOpts } from '../fasttrack/ScoreEntry.tsx';
 import { caseStatusLabel } from '../../lib/format.ts';
@@ -201,12 +203,9 @@ export function tongPhoBien(rows: Row[], k: string): number | null {
   return [...dem.entries()].sort((a, b) => b[1] - a[1] || b[0] - a[0])[0]?.[0] ?? null;
 }
 
-/* Độ rộng cột cố định (G-2) — màn hẹp hơn thì cuộn ngang trong thẻ (G-11). */
-const COT_HV = 220;
-const COT_MON = 190;   // OV-4b: +nút "Nhận xét" cạnh hai ô đúng/tổng
-const COT_KQ = 290;
-/** OV-6b2: cột "% tổng" của lưới Checkpoint. */
-const COT_PT = 84;
+/* BANG-1: rộng cột theo kiểu của `Bang`; ô môn sửa được chứa Nhận xét · đúng / tổng · ⋯ trên MỘT hàng → 236 px. */
+const COT_MON = 236;
+const COT_KQ = 260;
 
 /**
  * Lưu một ô của lưới lớp thường cho MỘT dòng — cùng dáng `useSaveScore` của FT: trạng thái lưu riêng TỪNG Ô,
@@ -347,72 +346,60 @@ export function LuoiThuong({ data, onReload, kn = null, hv = null, tuanDangXem =
   };
   /* OV-6b2 (mockup §6): lưới Checkpoint có thêm cột "% tổng" trước Kết quả. */
   const laCp = data.rows.some((r) => r.kind.startsWith('checkpoint'));
-  const rong = COT_HV + COT_MON * skills.length + (laCp ? COT_PT : 0) + COT_KQ;
+  const cotDs: DinhNghiaCot[] = [
+    { key: 'hv', nhan: t('Học viên'), kieu: 'ten', goiY: t('Cột này đứng yên khi cuộn ngang.') },
+    ...skills.map((k): DinhNghiaCot => ({
+      key: k, nhan: tenMonNgan(data.programme.code, k), kieu: 'diem-ti-le', rong: cotSuaDuoc(k) ? COT_MON : 128,   /* chỉ đọc: "✗ 17/25" + ⋯ */ sang: kn === k,
+      phu: soTong(k) !== null ? `/${soTong(k)}` : undefined, goiY: tenMon(data.programme.code, k),
+    })),
+    ...(laCp ? [{ key: 'pt', nhan: t('% tổng'), kieu: 'phan-tram', goiY: t('Tổng điểm các môn / tổng số câu — khi đủ mọi môn.') } as const] : []),
+    { key: 'kq', nhan: t('Kết quả'), kieu: 'chip', rong: COT_KQ, goiY: t('Đạt từ 70% trở lên. Thiếu điểm khác chưa đạt: môn chưa chấm không bị tính là chưa đạt.') },
+  ];
+  const cc = Object.fromEntries(cotDs.map((c) => [c.key, c])) as Record<string, DinhNghiaCot>;
+  /* BANG-1 (cấm điều khiển trong tiêu đề): tổng số câu từng môn + "Điền ô trống" là CÔNG CỤ trên bảng, không ở đầu cột.
+     Điền: ô CÒN TRỐNG tổng của mọi môn có tổng lấy số đó; ô đã có tổng giữ nguyên (như nút cũ của từng cột). */
+  const monSua = skills.filter(cotSuaDuoc);
+  const dienHet = () => setDien((d) => Object.fromEntries([...Object.entries(d),
+    ...monSua.flatMap((k) => { const n = soTong(k); return n === null ? [] : [[k, { gt: n, lan: (d[k]?.lan ?? 0) + 1 }]]; })]));
+  const congCu = monSua.length > 0 && (
+    <>
+      <span className="text-[13px] font-semibold text-slate-400">{t('Tổng số câu')}</span>
+      {monSua.map((k) => (
+        <label key={k} className="inline-flex items-center gap-1 text-[13px] text-slate-300">
+          {tenMonNgan(data.programme.code, k)}
+          <input className="field w-12 px-1 py-0.5 text-center tabular-nums" inputMode="numeric" value={chuTong(k)} placeholder="—"
+            title={t('Tổng số câu của đề cả lớp làm — ô còn trống tổng lấy sẵn số này; bấm Điền cả cột để điền luôn.')}
+            aria-label={t('Tổng số câu chung của cột {tenMon}', { tenMon: tenMon(data.programme.code, k) })}
+            onChange={(e) => setTongGo((x) => ({ ...x, [k]: e.target.value }))} />
+        </label>
+      ))}
+      <button type="button" className="btn btn-sm" disabled={!monSua.some((k) => soTong(k) !== null)}
+        title={t('Điền tổng này vào mọi ô còn trống tổng của cột. Ô đã có tổng giữ nguyên.')} onClick={dienHet}>{t('Điền ô trống')}</button>
+    </>
+  );
 
   return (
     <div>
-      <div className="table-scroll bang-dinh">
-        <table className="w-full text-sm tabular-nums" style={{ tableLayout: 'fixed', minWidth: rong }}>
-          <colgroup>
-            <col style={{ width: COT_HV }} />
-            {skills.map((k) => <col key={k} style={{ width: COT_MON }} />)}
-            {laCp && <col style={{ width: COT_PT }} />}
-            <col style={{ width: COT_KQ }} />
-          </colgroup>
-          <thead>
-            <tr>
-              <th className="th sticky-col align-bottom" title={t('Cột này đứng yên khi cuộn ngang.')}>{t('Học viên')}</th>
-              {skills.map((k) => {
-                const n = soTong(k);
-                return (
-                  <th key={k} className={`th text-right ${kn === k ? 'text-[color:var(--accent-strong)]' : ''}`}>
-                    <div className="flex flex-col items-end gap-1">
-                      <span title={tenMon(data.programme.code, k)}>{tenMonNgan(data.programme.code, k)}</span>
-                      {cotSuaDuoc(k) && (
-                        <span className="flex flex-wrap items-center justify-end gap-1 normal-case tracking-normal font-normal">
-                          <span className="text-xs text-slate-500">{t('tổng')}</span>
-                          <input className="field w-11 px-1 py-0.5 text-center text-[12px] tabular-nums"
-                            inputMode="numeric" value={chuTong(k)} placeholder="—"
-                            title={t('Tổng số câu của đề cả lớp làm — ô còn trống tổng lấy sẵn số này; bấm Điền cả cột để điền luôn.')}
-                            aria-label={t('Tổng số câu chung của cột {tenMon}', { tenMon: tenMon(data.programme.code, k) })}
-                            onChange={(e) => setTongGo((t) => ({ ...t, [k]: e.target.value }))} />
-                          <button type="button" className="btn btn-sm btn-ghost px-1.5 py-0 text-xs" disabled={n === null}
-                            title={t('Điền tổng này vào mọi ô còn trống tổng của cột. Ô đã có tổng giữ nguyên.')}
-                            aria-label={t('Điền tổng {x} xuống cột {tenMon}', { x: n ?? '', tenMon: tenMon(data.programme.code, k) })}
-                            onClick={() => n !== null && setDien((d) => ({ ...d, [k]: { gt: n, lan: (d[k]?.lan ?? 0) + 1 } }))}>
-                            {t('Điền cả cột')}
-                          </button>
-                        </span>
-                      )}
-                    </div>
-                  </th>
-                );
-              })}
-              {laCp && <th className="th text-right align-bottom" title={t('Tổng điểm các môn / tổng số câu — khi đủ mọi môn.')}>{t('% tổng')}</th>}
-              <th className="th align-bottom"
-                title={t('Đạt từ 70% trở lên. Thiếu điểm khác chưa đạt: môn chưa chấm không bị tính là chưa đạt.')}>{t('Kết quả')}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.rows.map((r, ri) => (
-              <DongThuong
-                key={r.attemptId} row={r} rowIndex={ri} sheet={data} laCp={laCp}
-                active={hv !== null && r.studentId === hv}
-                tongCot={soTong} dien={dien} onReload={onReload} tuanDangXem={tuanDangXem}
-                register={(ci, el) => { grid.current[ri] = grid.current[ri] ?? []; grid.current[ri][ci] = el; }}
-                onMove={move}
-              />
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <Bang ten={t('Bảng điểm {x}', { x: data.class.code })} cot={cotDs} hang={data.rows} khoa={(r) => r.attemptId} the375={false} khung={false} dinh congCu={congCu}
+        hangRieng={(r) => {
+          const ri = data.rows.indexOf(r);
+          return (
+            <DongThuong
+              row={r} rowIndex={ri} sheet={data} laCp={laCp} cc={cc}
+              active={hv !== null && r.studentId === hv}
+              tongCot={soTong} dien={dien} onReload={onReload} tuanDangXem={tuanDangXem}
+              register={(ci, el) => { grid.current[ri] = grid.current[ri] ?? []; grid.current[ri][ci] = el; }}
+              onMove={move}
+            />
+          );
+        }} />
       {nutTao && <div className="flex justify-end px-3 py-2 border-t" style={{ borderColor: 'var(--line)' }}>{nutTao}</div>}
     </div>
   );
 }
 
-function DongThuong({ row, rowIndex, sheet, laCp, active, tongCot, dien, onReload, tuanDangXem, register, onMove }: {
-  row: Row; rowIndex: number; sheet: ThuongSheet; laCp?: boolean; active: boolean; tuanDangXem: string | null;
+function DongThuong({ row, rowIndex, sheet, laCp, cc, active, tongCot, dien, onReload, tuanDangXem, register, onMove }: {
+  row: Row; rowIndex: number; sheet: ThuongSheet; laCp?: boolean; cc: Record<string, DinhNghiaCot>; active: boolean; tuanDangXem: string | null;
   tongCot: (k: string) => number | null;
   dien: Record<string, { gt: number; lan: number }>;
   onReload: () => void;
@@ -452,7 +439,7 @@ function DongThuong({ row, rowIndex, sheet, laCp, active, tongCot, dien, onReloa
     const ds = [...(tat.chinh && THAO_TAC_CO_HOP.includes(tat.chinh) ? [tat.chinh] : []), ...tat.menu];
     /* OV-11i (P3-3): chỉ ẩn chờ rê chuột khi thiết bị rê được — máy tính bảng cảm ứng ≥ 640 px vẫn thấy ⋯. */
     return (
-      <span className="absolute right-0.5 top-0.5 opacity-100 transition-opacity sm:[@media(hover:hover)]:opacity-0 sm:[@media(hover:hover)]:group-hover:opacity-100 sm:[@media(hover:hover)]:focus-within:opacity-100">
+      <span className="absolute right-1 top-1/2 -translate-y-1/2 sm:[@media(hover:hover)]:hidden sm:[@media(hover:hover)]:group-hover:block sm:[@media(hover:hover)]:group-focus-within:block">
         <MenuDong nhan={t('Thao tác · {tenMon} · {studentName}', { tenMon: tenMon(ct, k), studentName: row.studentName })} muc={[
           ...ds.map((x) => ({ key: x, nhan: CHU_THAO_TAC[x], onChon: () => (x === 'khoi-phuc-diem' ? void khoiPhuc(k) : setHop({ t: x, k })), nguyHiem: x === 'huy-diem' })),
           { key: 'lich-su', nhan: t('Lịch sử'), onChon: () => setLichSu(k), keTruoc: ds.length > 0 },
@@ -471,26 +458,20 @@ function DongThuong({ row, rowIndex, sheet, laCp, active, tongCot, dien, onReloa
   })();
 
   return (
-    <tr className={`row-hover h-14 ${row.studentStatus !== 'active' ? 'row-muted' : ''} ${active ? 'row-active' : ''}`}
+    <tr className={`do-hang ${row.studentStatus !== 'active' ? 'row-muted' : ''} ${active ? 'dang-mo' : ''}`}
       data-hv={row.studentId}>
-      <td className="td py-1.5 sticky-col">
-        <div className="min-w-0">
-          <Link className="link block max-sm:break-words max-sm:py-3 max-sm:-my-3 sm:truncate" to={`/hoc-vien/${row.studentId}`} title={row.studentName}>{row.studentName}</Link>
-          {row.hoanTat && (
-            <div className="mt-0.5">
-              <Info title={t('Hết Chủ nhật {ngay}. {x}', { ngay: ngay(row.chuNhatCuoi), x: KHOA_HOAN_TAT_HINT })}>
-                {t('Đủ điểm')}
-              </Info>
-            </div>
-          )}
-        </div>
-        {/* Trạng thái lưu RIÊNG TỪNG DÒNG — lỗi nói rõ ở dòng nào, có nút Thử lại. */}
-        <div className="flex items-center gap-1.5 text-xs text-slate-500 min-w-0">
+      {/* Tên + chip "Đủ điểm" một dòng; MỘT dòng phụ: dòng thi · trạng thái lưu của dòng (BANG-1). */}
+      <OBang c={cc.hv}>
+        <span className="inline-flex max-w-full items-center gap-1.5 align-baseline">
+          <Link className="link min-w-0 truncate font-semibold max-sm:inline-flex max-sm:min-h-[44px] max-sm:items-center" to={`/hoc-vien/${row.studentId}`} title={row.studentName}>{row.studentName}</Link>
+          {row.hoanTat && <Info title={t('Hết Chủ nhật {ngay}. {x}', { ngay: ngay(row.chuNhatCuoi), x: KHOA_HOAN_TAT_HINT })}>{t('Đủ điểm')}</Info>}
+        </span>
+        <div className="bang-phu flex items-center gap-1.5" data-phu-odiem="">
+          <DongThi muc={row.skillSchedule.filter((s) => s.progress !== 'cancelled' && s.progress !== 'skipped')
+            .map((s) => ({ nhan: tenMonNgan(sheet.programme.code, s.skill), weekStart: s.weekStart }))} />
           <DauLuu status={status} error={lastError} onRetry={coGuiLai ? retry : undefined} soLoi={soLoi} />
         </div>
-        <DongThi muc={row.skillSchedule.filter((s) => s.progress !== 'cancelled' && s.progress !== 'skipped')
-          .map((s) => ({ nhan: tenMonNgan(sheet.programme.code, s.skill), weekStart: s.weekStart }))} />
-      </td>
+      </OBang>
       {sheet.programme.skills.map((k, ci) => {
         const { s, canEdit, trong, dung, chuDung, quaHan, cell } = oThuong(row, k, homNay);
         /*
@@ -499,26 +480,28 @@ function DongThuong({ row, rowIndex, sheet, laCp, active, tongCot, dien, onReloa
          */
         if (tuanDangXem && s?.weekStart && s.weekStart !== tuanDangXem && cell.diem === null && !s.noShow) {
           return (
-            <td key={k} className="td group relative py-1.5 text-right text-slate-500" data-kn={k}
+            <OBang key={k} c={cc[k]} className="group relative text-slate-500" data-kn={k} tabIndex={0}
               title={t('{tenMon}: thi tuần {tuanLich}', { tenMon: tenMon(sheet.programme.code, k), tuanLich: tuanLich(s.weekStart, homNay) })}>
-              {tuanLich(s.weekStart, homNay)}
-              {menuO(k)}
-            </td>
+              <span className="inline-flex items-baseline gap-1">{tuanLich(s.weekStart, homNay)}{menuO(k)}</span>
+            </OBang>
           );
         }
         if (dung) {
           return (
-            <td key={k} className="td group relative py-1.5 text-right" data-kn={k}>
-              <span className="text-xs text-slate-500 leading-tight" title={`${tenMon(sheet.programme.code, k)}: ${chuDung}`}>{chuDung}</span>
-              {menuO(k)}
-            </td>
+            <OBang key={k} c={cc[k]} className="group relative" data-kn={k} tabIndex={0}>
+              <span className="inline-flex items-center gap-1">
+                <span className="text-xs text-slate-500" title={`${tenMon(sheet.programme.code, k)}: ${chuDung}`}>{chuDung}</span>
+                {menuO(k)}
+              </span>
+            </OBang>
           );
         }
         return (
-          <td key={k} className={`td group py-1.5 text-right relative ${o[k] === 'loi' ? VIEN_LOI : ''}`} data-kn={k}
+          <OBang key={k} c={cc[k]} className={`group relative ${o[k] === 'loi' ? VIEN_LOI : ''}`} data-kn={k} tabIndex={canEdit ? undefined : 0}
             data-trong={trong ? '1' : undefined} data-luu={o[k]}>
             <DauO tt={o[k]} loi={loi[k]} onLuuLai={() => luuLai(k)} />
-            <div className="flex items-start justify-end gap-1">
+            {/* BANG-1: Nhận xét · đúng / tổng một hàng; ⋯ ở mép phải ô, ẩn tới khi rê chuột / focus vào ô (điện thoại luôn hiện). */}
+            <div className={`inline-flex items-baseline justify-center gap-1 ${(s?.nhanXetDuoc ?? canEdit) && s ? 'pr-1.5' : ''}`}>{/* bù đệm trái nút Nhận xét → hai mép cân, số thẳng tâm cột */}
             {(s?.nhanXetDuoc ?? canEdit) && s && (
               <NutNhanXet tenMon={tenMon(sheet.programme.code, k)} giaTri={s.nhanXet ?? null}
                 phu={[row.studentName, sheet.class.code, s.weekStart ? tuanLich(s.weekStart, homNay) : null].filter(Boolean).join(' · ')}
@@ -545,24 +528,24 @@ function DongThuong({ row, rowIndex, sheet, laCp, active, tongCot, dien, onReloa
               }}
             />
             </div>
+            {menuO(k)}
             {quaHan && (
-              <div className="text-xs text-slate-400 leading-none mt-0.5"
+              <div className="text-xs leading-4 text-slate-400" data-phu-odiem=""
                 title={t('{tenMon}: hạn chấm {ngay} đã qua', { tenMon: tenMon(sheet.programme.code, k), ngay: ngay(s!.deadline, homNay) })}>{quaHan}</div>
             )}
-            {menuO(k)}
-          </td>
+          </OBang>
         );
       })}
       {laCp && (
-        <td className={`td py-1.5 text-right ${row.chip ? (row.chip.dat ? 'text-ok' : 'text-bad') : 'text-slate-500'}`}>
+        <OBang c={cc.pt} className={`font-bold ${row.chip ? (row.chip.dat ? 'text-kq-vuot' : 'text-kq-duoi') : 'text-slate-500'}`}>
           {row.result.tyLeTong != null ? `${Math.round(row.result.tyLeTong * 100)}%` : '—'}
-        </td>
+        </OBang>
       )}
-      <td className="td py-1.5">
+      <OBang c={cc.kq}>
         <KetQua row={row} sheet={sheet} />
         {hopO}
         {lichSu && <NganLichSuBai attemptId={row.attemptId} skill={lichSu} ct={ct} tenHv={row.studentName} onClose={() => setLichSu(null)} />}
-      </td>
+      </OBang>
     </tr>
   );
 }
@@ -645,7 +628,7 @@ function KetQua({ row, sheet }: { row: Row; sheet: ThuongSheet }) {
         {nhanCase}
       </div>
       {/* OV-11e (CA3-11): dòng phụ xuống dòng, không cắt. */}
-      {phu && <span className={`text-xs leading-tight max-w-full [overflow-wrap:anywhere] ${phu.tone}`} title={phu.title}>{dich(phu.chu)}</span>}
+      {phu && <span className={`block max-w-full truncate text-xs leading-4 ${phu.tone}`} data-phu-odiem="" title={phu.title}>{dich(phu.chu)}</span>}
     </div>
   );
 }

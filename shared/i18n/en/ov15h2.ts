@@ -12,6 +12,11 @@ export const EN_OV15H2 = {
   'Bỏ ngày': 'Remove date',
   /* BANG-0: ô điểm tỉ lệ có mẫu số khác tổng của cột. */
   'Đề khác': 'Different paper',
+  /* BANG-1: tên bảng lưới điểm FT (trình đọc màn, công cụ đo). */
+  'Lưới điểm {dot}': (b) => `Scores ${b.dot}`,
+  'Tổng số câu': 'Total questions',
+  'Bảng điểm {x}': (b) => `Scores ${b.x}`,
+  'Điền ô trống': 'Fill empty cells',
   'Chọn cả danh sách': 'Select the whole list',
   'chốt {ngay}': (b) => `set ${b.ngay}`,
   'Tích hàng ở bảng để chọn': 'Tick rows in the table to select',

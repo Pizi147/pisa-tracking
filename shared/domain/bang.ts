@@ -31,6 +31,12 @@ export type DinhNghiaCot = {
   nhom?: string;
   /** Rộng px riêng (chỉ khi kiểu mặc định không vừa — vd cột điểm có dòng phụ dài: 88). */
   rong?: number;
+  /** Chữ giải thích khi rê lên tiêu đề (title — không phải câu dưới tiêu đề). */
+  goiY?: string;
+  /** BANG-1: cột đang được mở từ Lịch Test / việc — tiêu đề màu nhấn. */
+  sang?: boolean;
+  /** Cột máy tính sẵn (W tổng) — nền xám cả tiêu đề lẫn ô (04 mục 6.3). */
+  tinh?: boolean;
 };
 
 /** Key của MỘT cột linh hoạt: việc › chữ › tên; không có cột chữ → null. */
