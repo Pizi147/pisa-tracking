@@ -10,7 +10,7 @@
 |---|---|
 | Hôm nay | **T2 14/09/2026 · W3 SEP** (`data.ts:15`, `journeys.ts:22`) — không dữ liệu nào sau ngày này |
 | Tuần trước / tuần sau | W2 SEP (07/09) · W4 SEP (21/09) · W1 OCT (28/09) |
-| Mã tuần | `W3 SEP` (năm chỉ ghi khi khác 2026). Ngày chỉ cho hạn cụ thể, ngày thi, ngày sinh, nhật ký |
+| Mã tuần | `W3 SEP` — tuần thuộc tháng chứa thứ Năm (`server/src/platform/week.ts:9`); năm chỉ ghi khi khác 2026. Ngày chỉ cho hạn cụ thể, ngày thi, ngày sinh, nhật ký |
 | Hạn chấm FT | hết T4 tuần sau tuần thi (MT3 14/09 → hạn 23/09) |
 | Hạn chấm lớp thường | hết CN tuần thi |
 | Hạn việc TVV (Báo PH) | **23:59 giờ VN ngày (lưu + 4)** — quyết định 22/10. Lưu T2 14/09 10:00 → hạn 23:59 T6 18/09 |
@@ -48,7 +48,7 @@ Mật khẩu demo mọi tài khoản: `pisa2026` (không in trên mockup). GVCN 
 
 | Lớp | Loại | Bắt đầu | L / R / W / S | GVCN | Số HV | Lượt Test |
 |---|---|---|---|---|---|---|
-| **MB FT 101** | FT LT1 | 01/06 | Hà / Hà / W1 Khoa · W2 Linh / Trang | Hà | **22** | MT1 W1 JUL (06/07) · MT2 W3 AUG (17/08) · **MT3 W3 SEP (14/09, tuần này)** |
+| **MB FT 101** | FT LT1 | 01/06 | Hà / Hà / W1 Khoa · W2 Linh / Trang | Hà | **22** | MT1 W2 JUL (06/07) · MT2 W3 AUG (17/08) · **MT3 W3 SEP (14/09, tuần này)** |
 | MB FT 102 | FT LT2 | 29/06 | Linh / Linh / Khoa / Trang | Linh | 14 | MT1 03/08 · MT2 tuần này |
 | MB FT RF 12 | FT RF | 07/09 | Hà / Khoa / W1 Khoa · W2 Linh / Trang | Khoa | 9 | MT1 W1 OCT |
 | MB FOU 12 | Thường (FOU) | 27/07 | Hà / Hà / Khoa / Trang | Hà | 12 | Progress 17/08 · Final L/R 14/09, W 21/09, S 28/09 |
@@ -80,7 +80,7 @@ W = (W1 + 2×W2)/3 làm tròn 0,5 · Overall = TB 4 kỹ năng làm tròn 0,5 (x
 | **Phan Gia Hân** | MB FT RF 12 | **T01** [V5]: Case R + Case W1, cả hai Lê Minh Khoa phụ trách → hai việc riêng "Ghi kết quả PA · R" và "Ghi kết quả PA · W1" |
 | Chu Minh Hiếu | MB FT 102 | **T02**: Khoa chỉ dạy W ở FT 102 → nợ chấm của Khoa chỉ gồm W (14 bài), không gồm L/R của Linh, S của Trang |
 | Ngô Hải Yến | CP FT 110 | **T10**: GVCN Nam lưu xử lý Report 1 lúc 10:00 T2 14/09 → việc Báo PH của TVV Hương, hạn 23:59 T6 18/09; lần 1 "Chưa liên hệ được" 15/09 |
-| Bùi Thu Ninh | CP FT 110 | việc Báo PH kế tiếp (minh hoạ "Lưu và tiếp") [V5] |
+| Lý Tuấn Bình | CP FT 110 | việc Báo PH kế tiếp (minh hoạ "Lưu và tiếp") [V5]; HV của TVV Hương |
 | Hồ Thanh Tùng | CP FT 110 | **T04**: xong MT1–MT3 → không có gợi ý / việc MT4; QL Mai thêm MT4 W1 OCT tay trong Kế hoạch Test |
 | Dương Minh Quân | UB FT 401 | thi thật 15/08: Overall 7.0 (L 7.5 R 7.5 W 6.5 S 6.5) ≥ Target 7.0 → ✓ Đạt Target (W, S dưới không tính tạch — C10) |
 | Lý Thanh Trúc | UB FT 401 | thi thật 15/08: Overall 6.0 < Target 6.5 → ✗ Chưa đạt; đã chốt bước tiếp |
@@ -98,7 +98,7 @@ W = (W1 + 2×W2)/3 làm tròn 0,5 · Overall = TB 4 kỹ năng làm tròn 0,5 (x
 | Thầy Khoa | **6 việc · 4 HV** | Chấm 2 (W MT3 FT 101 = 22 bài, hạn 23/09 — **T14** gập · W MT2 FT 102 = 14 bài) · Case 4 (PA R Nguyễn Minh An · PA W1 Lê Quang Huy · PA R + PA W1 Phan Gia Hân — **T01**) |
 | Cô Trang | **2 việc** | Chấm S MT3 FT 101 (tuần thi này, hạn 23/09) · Chấm S MT2 BC FT 205 **quá hạn** |
 | Cô Đỗ Thu Hương (GV) | **0 việc** | nhưng thấy **Bài thi Speaking tuần này** MB (FT 101 S 22 bài, FT 102 S 14 bài) — nguồn có thể chấm, không phải nợ (**T03**) |
-| TVV Nguyễn Thu Hương | **3 việc** | Báo PH Ngô Hải Yến (hạn 18/09) · Báo PH Bùi Thu Ninh (hạn 18/09) · Sau thi Đinh Ngọc Quyên (chọn bước tiếp) |
+| TVV Nguyễn Thu Hương | **3 việc** | Báo PH Ngô Hải Yến (hạn 18/09) · Báo PH Lý Tuấn Bình (hạn 18/09) · Sau thi Đinh Ngọc Quyên (chọn bước tiếp) |
 | QL Vy | **4 chờ duyệt** | dời MT3 S Trần Thu Hà · PA Tutor (quá 1 ngày) · đổi Target Huy 6.5 → 7.0 · WL 3 Lương Gia Bảo |
 
 > Hai dòng cô Hà / thầy Khoa là **[V5]** tổng hợp từ seed; session B vẽ màn nào thì đếm lại theo đúng bảng này và ghi "N việc · M bài" — không tự thêm việc.
@@ -143,7 +143,7 @@ Bài Speaking chấm chéo chưa nhận không vào "Điểm đúng hạn" của
 | T13 | W tổng + W1 · W2 (mục 5) |
 | T14 | Khoa chấm W MT3 FT 101 hạn 23/09 |
 | T15 | Cô Hà và QL Vy cùng sửa điểm R MT2 Lê Quang Huy; mất mạng khi lưu |
-| T16 | TVV đang gõ ghi chú Ngô Hải Yến, bấm sang Bùi Thu Ninh |
+| T16 | TVV đang gõ ghi chú Ngô Hải Yến, bấm sang Lý Tuấn Bình |
 | T17 | Panel 15/20 phân trang |
 | T18 | Đặng Ngọc Lam (bài trên lớp /10) |
 | T19 | Đạt Target thi thật MB = Chưa có dữ liệu |
