@@ -9503,6 +9503,9 @@ await runPrSl2Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, a
 // ==================================================================== V5 Phân tích GV theo Overall (C08–C10), bỏ gợi ý MT4 (C20)
 const { runPrPtGvOverallTests } = await import('./prPtGvOverall.tests.ts');
 await runPrPtGvOverallTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+
+const { runPrSvBaiLopTests } = await import('./prSvBaiLop.tests.ts');
+await runPrSvBaiLopTests({ check, assert, conn, P, classId } as any);
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`
