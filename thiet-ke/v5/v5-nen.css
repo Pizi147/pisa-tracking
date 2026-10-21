@@ -1,0 +1,287 @@
+/*
+ * V5 — NỀN DÙNG CHUNG CHO MỌI MOCKUP V5 (thiet-ke/v5/*.html)
+ * ---------------------------------------------------------------------------------
+ * Trạng thái: ĐỀ XUẤT THIẾT KẾ (V5-A, 22/10) — chờ chủ SP duyệt. Chưa vào mã sản phẩm.
+ * Nguồn: brief 00 mục 5.2 + C02, C23 · logo `docs/superpowers/specs/2026-10-22-overhaul-v5/logo-pisa.png`.
+ *
+ * MÀU GỐC ĐO TRÊN LOGO (đếm điểm ảnh, 400×400):
+ *   xanh nền logo  #273C8F  (91,8 % điểm ảnh)
+ *   hồng chữ logo  #F25A98
+ *
+ * LUẬT DÙNG MÀU (hướng 1 "PISA sáng, rõ" + hướng 3 "tập trung nhiệm vụ" — 07-huong-thiet-ke.md):
+ *   · Trắng = nền đọc chính. Xanh = cấu trúc (thanh điều hướng, nút chính, link, focus, đang chọn).
+ *   · Hồng = điểm nhấn NHẬN DIỆN, dùng ít: vạch mục menu đang mở, mốc "hôm nay / tuần này", số chính của khối,
+ *     đánh dấu "của tôi". Hồng KHÔNG BAO GIỜ mang nghĩa lỗi, quá hạn, chưa đạt hay SOS.
+ *   · Màu nghĩa (lỗi / quá hạn, cảnh báo, đạt, thiếu dữ liệu) luôn đi kèm chữ hoặc ký hiệu (⚠ ✓ ✗ –).
+ *   · Lỗi đỏ (hue ≈ 5°) cách hồng nhận diện (hue ≈ 335°) ≥ 30° và luôn có ⚠ / ✗ — không nhầm hồng.
+ *
+ * Tương phản: mọi cặp chữ / nền dưới đây đã đo bằng `kiem-tuong-phan.py` (cùng thư mục) — chữ ≥ 4,5 : 1,
+ * viền / dấu không chữ ≥ 3 : 1. Kết quả ghi ở `bang-mau.html` mục 1.
+ *
+ * Tên token: tiếng Việt không dấu, cùng tinh thần `web/src/index.css` để code sau ánh xạ dễ. Khối tối CÙNG TÊN, chỉ đổi giá trị.
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+  color-scheme: light;
+
+  /* ---- 1. THANG MÀU GỐC (không dùng thẳng trong component; component dùng token vai trò ở mục 2) ---- */
+  --xanh-50:  #eef1fa;  --xanh-100: #dce2f4;  --xanh-200: #b9c4e8;  --xanh-300: #8c9cd6;  --xanh-400: #5c70be;
+  --xanh-500: #3a50a6;  --xanh-600: #273c8f;  /* = logo */  --xanh-700: #1f3077;  --xanh-800: #18255c;  --xanh-900: #111a42;
+  --hong-50:  #fef0f6;  --hong-100: #fcdcea;  --hong-200: #f9b8d4;  --hong-300: #f68db9;  --hong-400: #f25a98; /* = logo */
+  --hong-500: #e23c80;  --hong-600: #c4246a;  --hong-700: #9e1b55;  --hong-800: #771442;
+  --xam-0: #ffffff;  --xam-25: #f8f9fc;  --xam-50: #f2f4f9;  --xam-100: #e6e9f2;  --xam-200: #d2d7e5;  --xam-300: #b0b8cd;
+  --xam-400: #8690ab;  --xam-500: #5f6984;  --xam-600: #4a536c;  --xam-700: #353d54;  --xam-800: #232a3f;  --xam-900: #141a2b;
+
+  /* ---- 2. TOKEN VAI TRÒ ---- */
+  /* Nền & bề mặt */
+  --nen: #f5f6fa;               /* nền trang: trắng ngả xanh rất nhẹ để thẻ trắng nổi */
+  --be-mat: #ffffff;            /* thẻ, bảng, panel — nền đọc chính */
+  --be-mat-2: #f2f4f9;          /* đầu bảng, ô phụ, hàng nhóm */
+  --be-mat-noi: #ffffff;        /* panel / hộp nổi */
+  --vien: #d9deea;              /* kẻ bảng, viền thẻ */
+  --vien-dam: #b0b8cd;          /* viền trang trí đậm hơn (không dùng cho ô nhập) */
+  --vien-o: #8690ab;            /* viền ô nhập: ≥ 3 : 1 trên trắng */
+
+  /* Chữ */
+  --chu: #141a2b;               /* chữ chính      17,3 : 1 trên trắng */
+  --chu-2: #4a536c;             /* chữ phụ        7,7 : 1 */
+  --chu-3: #5f6984;             /* chữ mờ nhất được phép (dòng phụ W1 · W2, hạn, tên GV) 5,5 : 1 — không nhạt hơn */
+  --chu-tren-dam: #ffffff;      /* chữ trên nền xanh đậm */
+
+  /* Cấu trúc — xanh */
+  --dieu-huong-nen: #273c8f;    /* thanh điều hướng = màu logo */
+  --dieu-huong-chu: #dce2f4;    /* mục thường trên thanh   7,6 : 1 */
+  --dieu-huong-chu-mo: #ffffff;
+  --dieu-huong-hover: #31479c;
+  --nhan: #273c8f;              /* nút chính, link, mục chọn    9,9 : 1 trên trắng */
+  --nhan-hover: #1f3077;
+  --nhan-nen: #eef1fa;          /* nền "đang chọn" (+ vạch trái 3 px --nhan) */
+  --nhan-vien: #8c9cd6;
+  --focus: #3a50a6;             /* vòng focus 2 px + khoảng hở 2 px — khác hẳn "đang chọn" */
+
+  /* Điểm nhấn — hồng (KHÔNG mang nghĩa lỗi / SOS) */
+  --hong: #f25a98;              /* vạch, chấm, dấu — chỉ dấu không chữ (3,1 : 1 trên trắng và trên thanh xanh, ≥ 3) */
+  --hong-chu: #b81f62;          /* khi hồng phải là chữ (số nhấn, "Tuần này")   6,2 : 1 */
+  --hong-nen: #fef0f6;
+
+  /* Hover / phủ */
+  --hover: #f0f2f8;             /* rê chuột lên hàng / nút phụ */
+  --dang-mo: #eef1fa;           /* hàng đang mở panel */
+
+  /* ---- 3. MÀU NGHĨA (chữ · nền · viền) — luôn kèm chữ / ký hiệu ---- */
+  --loi: #b42318;      --loi-nen: #fdecea;   --loi-vien: #e8968d;     /* lỗi lưu, quá hạn ⚠, chưa đạt ✗   6,6 : 1 */
+  --canh-bao: #8a5a00; --canh-bao-nen: #fff4d6; --canh-bao-vien: #d9a93a; /* sắp hạn, hôm nay, cần chú ý   5,9 : 1 */
+  --dat: #146c43;      --dat-nen: #e3f5ea;   --dat-vien: #5fb98a;     /* đạt ✓, đã lưu ✓                6,5 : 1 */
+  --thieu: #5f6984;    --thieu-nen: #f2f4f9; --thieu-vien: #8690ab;   /* thiếu dữ liệu – (viền đứt)      5,5 : 1 */
+  --dang: #3a50a6;     --dang-nen: #eef1fa;  --dang-vien: #8c9cd6;    /* đang lưu, đang làm               7,3 : 1 */
+
+  /* Kết quả điểm — tô chính con số + ✓ / ✗ trước số (G12), không nền */
+  --kq-vuot: #146c43;  --kq-bang: #273c8f;  --kq-duoi: #b42318;
+
+  /* SOS — thang vàng → cam → đỏ, KHÔNG hồng (brief 5.2). Viền dày dần + chữ "SOS n"; tạm = viền đứt. */
+  --sos1: #a87a00;  --sos1-chu: #7a5900;
+  --sos2: #d9650f;  --sos2-chu: #a3470a;
+  --sos3: #b42318;  --sos3-chu: #9b1c14;
+
+  /* Lịch thi — nền xanh lơ nhạt đặc, góc vuông: khác hẳn kết quả học tập (C23) */
+  --lich-nen: #d9eaf5;  --lich-chu: #164e72;  --lich-vien: #9cc4dd;
+  --da-thi-nen: #eef5fa; /* hàng "Đã thi · chờ KQ": nền nhạt cả hàng + vạch trái 3 px --lich-chu */
+
+  /* ---- 4. CHỮ ---- */
+  /* Be Vietnam Pro cho chữ; chữ số Inter (mã thật: @font-face unicode-range 0–9 trong web/src/index.css; mockup: lớp .so) */
+  --phong: 'Be Vietnam Pro', system-ui, 'Segoe UI', Roboto, sans-serif;
+  --phong-so: 'Inter', 'Be Vietnam Pro', system-ui, sans-serif;
+  /* Thang chữ hiện có trong mã (tailwind.config.js, NEN-TYPO-MAU): 12 · 13 · 14 · 15 · 17 · 22 · 28 — giữ nguyên */
+  --c-12: 12px;  /* tối thiểu: badge, dòng phụ W1 · W2, chú thích */
+  --c-13: 13px;  /* nhãn, đầu cột */
+  --c-14: 14px;  /* lưới dày, giá trị trong panel */
+  --c-15: 15px;  /* chữ thường, ô bảng, nút */
+  --c-17: 17px;  /* tiêu đề khối / panel */
+  --c-22: 22px;  /* tiêu đề trang */
+  --c-28: 28px;  /* số lớn chỉ số */
+
+  /* ---- 5. KHOẢNG, BO, CAO ---- */
+  --bo-badge: 4px;  --bo-o: 8px;  --bo-the: 12px;
+  --cao-badge: 22px;  --cao-nut: 36px;  --cao-nut-dt: 44px;  --cao-hang: 44px;  --cao-hang-phu: 64px;
+  --bong-noi: 0 8px 24px rgba(17, 26, 66, .14), 0 1px 3px rgba(17, 26, 66, .10);
+}
+
+/* ---------------- TỐI: cùng tên token, chỉ đổi giá trị ---------------- */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --nen: #0b1026;  --be-mat: #121a38;  --be-mat-2: #19234a;  --be-mat-noi: #172046;
+  --vien: #2a3560;  --vien-dam: #3c4a80;  --vien-o: #6a78aa;
+  --chu: #e9ecf7;  --chu-2: #bcc4e0;  --chu-3: #a2acce;  --chu-tren-dam: #ffffff;
+  --dieu-huong-nen: #111a42;  --dieu-huong-chu: #c9d1ee;  --dieu-huong-chu-mo: #ffffff;  --dieu-huong-hover: #1b2659;
+  --nhan: #a8b8f5;  --nhan-hover: #c3cefa;  --nhan-nen: #1f2b5c;  --nhan-vien: #4f63b3;  --focus: #a8b8f5;
+  --hong: #f57aae;  --hong-chu: #f79cc2;  --hong-nen: #3a1830;
+  --hover: #1a2450;  --dang-mo: #1f2b5c;
+  --loi: #ff9a8f;      --loi-nen: #3b1719;   --loi-vien: #8f3a33;
+  --canh-bao: #f2c450; --canh-bao-nen: #33290f; --canh-bao-vien: #7d6420;
+  --dat: #74d9a3;      --dat-nen: #12342a;   --dat-vien: #2f7a55;
+  --thieu: #a2acce;    --thieu-nen: #19234a; --thieu-vien: #6a78aa;
+  --dang: #a8b8f5;     --dang-nen: #1f2b5c;  --dang-vien: #4f63b3;
+  --kq-vuot: #74d9a3;  --kq-bang: #a8b8f5;  --kq-duoi: #ff9a8f;
+  --sos1: #d6b828;  --sos1-chu: #e3c84a;
+  --sos2: #e8702a;  --sos2-chu: #f5935a;
+  --sos3: #f0645a;  --sos3-chu: #ff9a8f;
+  --lich-nen: #1a3d5c;  --lich-chu: #9fd0f0;  --lich-vien: #2d5f82;  --da-thi-nen: #0f2335;
+  --bong-noi: 0 8px 24px rgba(0, 0, 0, .45), 0 1px 3px rgba(0, 0, 0, .35);
+}
+
+/* ================= THÀNH PHẦN DÙNG CHUNG (mockup) ================= */
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; }
+body { font-family: var(--phong); font-size: var(--c-15); line-height: 1.5; color: var(--chu); background: var(--nen); -webkit-font-smoothing: antialiased; }
+.so, td.so, .bang td[data-kieu="diem"], .bang td[data-kieu="so"] { font-family: var(--phong-so); font-variant-numeric: tabular-nums; }
+a { color: var(--nhan); text-underline-offset: 2px; }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: 4px; }
+h1, h2, h3 { margin: 0; line-height: 1.3; }
+.h-trang { font-size: var(--c-22); font-weight: 700; }
+.h-khoi { font-size: var(--c-17); font-weight: 700; }
+.nhan-nho { font-size: var(--c-13); color: var(--chu-2); font-weight: 500; }
+.phu { font-size: var(--c-12); color: var(--chu-3); }
+.mo { color: var(--chu-2); }
+
+/* Thanh điều hướng xanh (hướng 1) */
+.dh { background: var(--dieu-huong-nen); color: var(--dieu-huong-chu); display: flex; align-items: center; gap: 4px; height: 56px; padding: 0 20px; }
+.dh .logo { display: flex; align-items: center; gap: 8px; font-weight: 800; color: var(--hong); font-size: 20px; letter-spacing: .02em; margin-right: 20px; }
+.dh a { color: var(--dieu-huong-chu); text-decoration: none; font-size: var(--c-14); font-weight: 500; padding: 0 12px; height: 56px; display: inline-flex; align-items: center; border-bottom: 3px solid transparent; }
+.dh a:hover { background: var(--dieu-huong-hover); color: var(--dieu-huong-chu-mo); }
+.dh a[aria-current="page"] { color: var(--dieu-huong-chu-mo); font-weight: 700; border-bottom-color: var(--hong); }
+.dh .dem { margin-left: 6px; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 10px; background: rgba(255,255,255,.16); color: #fff; font-size: 12px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; font-family: var(--phong-so); }
+
+/* Thẻ / khối */
+.the { background: var(--be-mat); border: 1px solid var(--vien); border-radius: var(--bo-the); }
+.the-dau { display: flex; align-items: baseline; gap: 12px; padding: 14px 16px 10px; }
+.the-than { padding: 0 16px 16px; }
+
+/* Nút: động từ rõ ("Ghi kết quả PA", "Chốt ngày", "Nhập điểm") — không "Mở" */
+.nut { font: inherit; font-size: var(--c-14); font-weight: 600; height: var(--cao-nut); padding: 0 14px; border-radius: var(--bo-o); border: 1px solid var(--vien-o); background: var(--be-mat); color: var(--chu); cursor: pointer; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.nut:hover { background: var(--hover); }
+.nut-chinh { background: var(--nhan); border-color: var(--nhan); color: #fff; }
+:root[data-theme="dark"] .nut-chinh { color: #0b1026; }
+.nut-chinh:hover { background: var(--nhan-hover); border-color: var(--nhan-hover); }
+.nut-ma { border-color: transparent; background: transparent; color: var(--nhan); }
+.nut-ma:hover { background: var(--hover); }
+.nut-nho { height: 30px; padding: 0 10px; font-size: var(--c-13); }
+.nut[disabled] { opacity: .45; cursor: not-allowed; }
+@media (max-width: 640px) { .nut { height: var(--cao-nut-dt); } .nut-nho { height: 36px; } }
+
+/* Ô nhập */
+.o { font: inherit; font-size: var(--c-15); height: 40px; padding: 0 10px; border: 1px solid var(--vien-o); border-radius: var(--bo-o); background: var(--be-mat); color: var(--chu); width: 100%; }
+.o:focus { outline: 2px solid var(--focus); outline-offset: 1px; }
+textarea.o { height: auto; min-height: 72px; padding: 8px 10px; resize: vertical; }
+.o-loi { border-color: var(--loi); }
+@media (max-width: 640px) { .o { font-size: 16px; height: 44px; } }
+
+/* Ô số báo cáo (OSo): bấm = mở panel dữ liệu chỉ đọc. Dáng: số gạch chân liền xanh — khác nút động từ và tên đối tượng (↗) */
+.oso { font: inherit; font-family: var(--phong-so); font-variant-numeric: tabular-nums; background: none; border: 0; padding: 2px 4px; margin: -2px -4px; border-radius: 4px; color: var(--nhan); font-weight: 700; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; cursor: pointer; }
+.oso:hover { background: var(--nhan-nen); }
+.oso-0 { color: var(--chu-3); text-decoration: none; cursor: default; font-weight: 500; }
+.ten-ho-so { color: var(--chu); font-weight: 600; text-decoration: none; }
+.ten-ho-so::after { content: " ↗"; color: var(--chu-3); font-weight: 400; font-size: .85em; }
+.ten-ho-so:hover { color: var(--nhan); text-decoration: underline; }
+
+/* ---------------- BADGE: một kích thước, 4 nhóm khác dáng ---------------- */
+.bd { display: inline-flex; align-items: center; gap: 4px; height: var(--cao-badge); padding: 0 8px; font-size: var(--c-12); font-weight: 600; line-height: 1; white-space: nowrap; vertical-align: middle; font-family: var(--phong); }
+.bd .so { font-weight: 700; }
+/* Nhóm 1 — KẾT QUẢ HỌC TẬP (Đạt / Chưa đạt / Chưa đủ dữ liệu): viền 1 px, nền trắng, ký hiệu ✓ ✗ – đứng đầu. Cùng họ với SOS (C23). */
+.bd-kq { border-radius: var(--bo-badge); border: 1px solid; background: var(--be-mat); }
+.bd-kq.dat { color: var(--dat); border-color: var(--dat-vien); }
+.bd-kq.chua-dat { color: var(--loi); border-color: var(--loi-vien); }
+.bd-kq.thieu { color: var(--thieu); border-color: var(--thieu-vien); border-style: dashed; }
+/* Nhóm 4 — MỨC SOS: cùng họ viền với kết quả; mức tách bằng độ dày viền + chữ "SOS n" (không chỉ màu). Tạm = viền đứt. */
+.bd-sos { border-radius: var(--bo-badge); background: var(--be-mat); border: 1px solid; }
+.bd-sos.m1 { color: var(--sos1-chu); border-color: var(--sos1); }
+.bd-sos.m2 { color: var(--sos2-chu); border-color: var(--sos2); border-width: 2px; padding: 0 7px; }
+.bd-sos.m3 { color: var(--sos3-chu); border-color: var(--sos3); border-width: 3px; border-style: double; padding: 0 6px; }
+.bd-sos.tam { border-style: dashed; }
+/* Nhóm 2 — TÌNH TRẠNG LỊCH THI: nền xanh lơ đặc, góc vuông 2 px, KHÔNG viền màu kết quả. "Đã thi · chờ KQ" ở đây — không thể nhầm với Đạt. */
+.bd-lich { border-radius: 2px; background: var(--lich-nen); color: var(--lich-chu); }
+.bd-lich.du-kien { background: transparent; box-shadow: inset 0 0 0 1px var(--lich-vien); }
+.bd-lich.chua { background: transparent; color: var(--thieu); box-shadow: inset 0 0 0 1px var(--thieu-vien); }
+/* Nhóm 3 — TIẾN ĐỘ XỬ LÝ: viên tròn nền xám nhạt + chấm màu đầu; quá hạn đổi chấm thành ⚠ chữ đỏ. */
+.bd-td { border-radius: 999px; background: var(--be-mat-2); color: var(--chu-2); padding: 0 10px 0 8px; }
+.bd-td::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; flex: none; }
+.bd-td.cho::before { background: var(--xam-400); }
+.bd-td.dang { color: var(--dang); } .bd-td.xong { color: var(--dat); }
+.bd-td.sap { color: var(--canh-bao); background: var(--canh-bao-nen); }
+.bd-td.qua { color: var(--loi); background: var(--loi-nen); }
+.bd-td.qua::before, .bd-td.sap::before { content: "⚠"; width: auto; height: auto; background: none; border-radius: 0; font-size: 11px; }
+
+/* Kỹ năng (mã) */
+.ky { display: inline-flex; align-items: center; justify-content: center; min-width: 22px; height: 22px; padding: 0 5px; border-radius: 4px; font-size: var(--c-12); font-weight: 700; color: var(--nhan); background: var(--nhan-nen); }
+/* "Của tôi" — dấu hồng nhận diện */
+.cua-toi { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--hong); margin-right: 6px; vertical-align: middle; }
+
+/* ---------------- BẢNG (theo `web/src/ui/Bang.tsx`: hàng 44 / 64, căn theo kiểu cột) ---------------- */
+.cuon-bang { overflow-x: auto; }
+.bang { width: 100%; border-collapse: separate; border-spacing: 0; table-layout: fixed; font-size: var(--c-15); }
+.bang th { font-size: var(--c-13); font-weight: 600; color: var(--chu-2); text-align: left; background: var(--be-mat-2); padding: 0 12px; height: 40px; border-bottom: 1px solid var(--vien); white-space: nowrap; }
+.bang td { height: var(--cao-hang); padding: 10px 12px; border-bottom: 1px solid var(--vien); vertical-align: middle; line-height: 1.4; }
+.bang tr.co-phu td { height: var(--cao-hang-phu); }
+.bang [data-kieu="so"], .bang [data-kieu="diem"], .bang [data-kieu="phan-tram"] { text-align: center; }
+.bang [data-kieu="nut"] { text-align: right; }
+.bang .phu-o { display: block; font-size: var(--c-12); color: var(--chu-3); font-weight: 400; margin-top: 2px; white-space: nowrap; }
+.bang tbody tr.bam { cursor: pointer; }
+.bang tbody tr.bam:hover td { background: var(--hover); }
+.bang tbody tr.dang-mo td { background: var(--dang-mo); }
+.bang tbody tr.dang-mo td:first-child { box-shadow: inset 3px 0 0 var(--nhan); }
+.bang tbody tr.da-thi td { background: var(--da-thi-nen); }
+.bang tbody tr.da-thi td:first-child { box-shadow: inset 3px 0 0 var(--lich-chu); }
+.bang tr.hang-nhom td { background: var(--be-mat-2); font-weight: 700; font-size: var(--c-14); height: 40px; }
+.bang tr:last-child td { border-bottom: 0; }
+
+/* Ô điểm: số tô màu kết quả + ✓/✗ trước; W tổng + dòng phụ W1 · W2 */
+.diem { white-space: nowrap; font-family: var(--phong-so); font-variant-numeric: tabular-nums; font-weight: 700; }
+.diem.vuot { color: var(--kq-vuot); } .diem.bang-kv { color: var(--kq-bang); } .diem.duoi { color: var(--kq-duoi); }
+.diem.vuot::before, .diem.bang-kv::before { content: "✓ "; font-weight: 700; }
+.diem.duoi::before { content: "✗ "; }
+.diem.trong { color: var(--chu-3); font-weight: 400; }
+
+/* ---------------- PANEL (một kiểu khung phải; 375 = toàn màn) ---------------- */
+.panel { background: var(--be-mat-noi); border: 1px solid var(--vien); border-radius: var(--bo-the); box-shadow: var(--bong-noi); display: flex; flex-direction: column; overflow: hidden; }
+.panel-dau { padding: 16px 20px 12px; border-bottom: 1px solid var(--vien); }
+.panel-dau .tieu-de { display: flex; align-items: flex-start; gap: 10px; }
+.panel-dau h2 { font-size: var(--c-17); font-weight: 700; flex: 1; }
+.panel-dau .ngu-canh { font-size: var(--c-13); color: var(--chu-2); margin-top: 4px; }
+.panel-loai { font-size: var(--c-12); font-weight: 700; letter-spacing: .02em; color: var(--chu-3); margin-bottom: 4px; display: flex; align-items: center; gap: 6px; }
+.panel-loai .vach { width: 14px; height: 3px; border-radius: 2px; background: var(--hong); }
+.panel-than { padding: 16px 20px; display: flex; flex-direction: column; gap: 16px; overflow-y: auto; }
+.panel-chan { padding: 12px 20px; border-top: 1px solid var(--vien); display: flex; align-items: center; gap: 10px; background: var(--be-mat-noi); }
+.panel-chan .trai { flex: 1; min-width: 0; }
+.dong { width: 32px; height: 32px; border-radius: 8px; border: 0; background: transparent; color: var(--chu-2); cursor: pointer; font-size: 16px; }
+.dong:hover { background: var(--hover); }
+.khoi-ngu-canh { background: var(--be-mat-2); border-radius: var(--bo-o); padding: 12px 14px; display: grid; grid-template-columns: 7.5rem 1fr; gap: 6px 12px; font-size: var(--c-14); }
+.khoi-ngu-canh dt { color: var(--chu-2); } .khoi-ngu-canh dd { margin: 0; }
+.truong { display: flex; flex-direction: column; gap: 6px; }
+.truong > label, .truong > .nhan-truong { font-size: var(--c-13); font-weight: 600; color: var(--chu-2); }
+.lua-chon { display: flex; gap: 8px; flex-wrap: wrap; }
+.lua-chon label { display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; border: 1px solid var(--vien-o); border-radius: var(--bo-o); cursor: pointer; font-size: var(--c-14); }
+.lua-chon label.chon { border-color: var(--nhan); background: var(--nhan-nen); color: var(--nhan); font-weight: 600; box-shadow: inset 0 0 0 1px var(--nhan); }
+details.lich-su { border-top: 1px solid var(--vien); padding-top: 12px; }
+details.lich-su summary { cursor: pointer; font-size: var(--c-14); font-weight: 600; color: var(--chu-2); }
+.dong-ls { display: grid; grid-template-columns: 5.5rem 1fr; gap: 2px 12px; font-size: var(--c-13); padding: 8px 0; border-bottom: 1px dashed var(--vien); }
+.dong-ls:last-child { border-bottom: 0; }
+
+/* Trạng thái lưu: đang lưu / đã lưu / lỗi / nháp — chữ + ký hiệu, không chỉ màu */
+.tt-luu { white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; font-size: var(--c-13); font-weight: 600; }
+.tt-luu.loi { white-space: normal; }
+.tt-luu.dang { color: var(--dang); } .tt-luu.da { color: var(--dat); } .tt-luu.loi { color: var(--loi); } .tt-luu.nhap { color: var(--canh-bao); }
+.xoay { width: 12px; height: 12px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; display: inline-block; }
+
+/* Rỗng / lỗi / chỉ xem */
+.rong { text-align: center; padding: 32px 16px; color: var(--chu-2); }
+.rong .tieu { font-size: var(--c-15); font-weight: 600; color: var(--chu); }
+.bao-loi { display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: var(--bo-o); background: var(--loi-nen); color: var(--chu); border: 1px solid var(--loi-vien); font-size: var(--c-14); }
+.bao-loi b { color: var(--loi); }
+.bao-chi-xem { display: flex; gap: 8px; align-items: center; padding: 8px 12px; border-radius: var(--bo-o); background: var(--be-mat-2); color: var(--chu-2); font-size: var(--c-13); }
+
+/* Chỉ số đầu trang (Tổng quan / Hồ sơ GV) — số lớn 28, nhãn 13, mẫu số dòng phụ */
+.chi-so { display: flex; flex-direction: column; gap: 2px; padding: 14px 16px; }
+.chi-so .ten { font-size: var(--c-13); color: var(--chu-2); font-weight: 500; }
+.chi-so .gia-tri { font-size: var(--c-28); font-weight: 700; font-family: var(--phong-so); line-height: 1.15; color: var(--chu); }
+.chi-so .mau { font-size: var(--c-12); color: var(--chu-3); }
