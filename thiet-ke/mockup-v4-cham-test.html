@@ -1,0 +1,659 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MOCKUP-V4a · Chấm Test theo hạn</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;700;800&display=swap">
+<style>
+@font-face{font-family:'Be Vietnam Pro';font-style:normal;font-display:swap;font-weight:400;unicode-range:U+0030-0039;src:url(https://cdn.jsdelivr.net/npm/@fontsource/inter@5.3.0/files/inter-latin-400-normal.woff2) format('woff2')}
+@font-face{font-family:'Be Vietnam Pro';font-style:normal;font-display:swap;font-weight:600;unicode-range:U+0030-0039;src:url(https://cdn.jsdelivr.net/npm/@fontsource/inter@5.3.0/files/inter-latin-600-normal.woff2) format('woff2')}
+@font-face{font-family:'Be Vietnam Pro';font-style:normal;font-display:swap;font-weight:700;unicode-range:U+0030-0039;src:url(https://cdn.jsdelivr.net/npm/@fontsource/inter@5.3.0/files/inter-latin-700-normal.woff2) format('woff2')}
+@font-face{font-family:'Be Vietnam Pro';font-style:normal;font-display:swap;font-weight:800;unicode-range:U+0030-0039;src:url(https://cdn.jsdelivr.net/npm/@fontsource/inter@5.3.0/files/inter-latin-800-normal.woff2) format('woff2')}
+
+/* Token: nền / chữ / viền = web/src/index.css (OV-15a). Thêm theo 04: --kq-* (mục 5.1), --phu-re (HTT-1), --o-sua-* (mục 7). */
+:root,[data-theme=dark]{
+  color-scheme:dark;
+  --bg:#0c1220;--surface:#141d2f;--surface-2:#1a2437;--line:rgba(160,178,214,.18);--line-strong:rgba(160,178,214,.32);
+  --accent:#7db3f0;--accent-strong:#a9cdf7;--accent-ink:#0b1626;--accent-soft:rgba(125,179,240,.14);--accent-line:rgba(125,179,240,.38);
+  --text:#dde5f2;--c1:#f1f5f9;--dim:rgb(174 188 211);--faint:rgb(168 182 208);
+  --sos1:#f7d44c;--sos1-chu:#f7d44c;--sos2:#ff9a5c;--sos2-chu:#ffb183;--sos3:#ff5d73;--sos3-chu:#ff8a9a;
+  --kq-vuot:#86efac;--kq-bang:#a5b4fc;--kq-duoi:#ff8282;
+  --ok:#6fdc9f;--da-thi-bg:#16402a;--late:#ff9166;--soon:#f2c450;--loi:#ff8282;
+  --muted:#c9d4e6;--muted-bg:#24314a;
+  --phu-re:rgb(255 255 255 / .08);--phu-do:rgb(255 255 255 / .035);
+  --o-sua-nen:#0e1727;--o-sua-vien:#64748b;--hang-nhom:#172640;--hang-con:#111a2b;--pop:#22304a;--man:rgba(4,8,16,.55);
+  --bong:0 12px 32px rgba(0,0,0,.45);
+}
+[data-theme=light]{
+  color-scheme:light;
+  --bg:#f1f3f7;--surface:#ffffff;--surface-2:#f4f6f9;--line:rgba(15,23,42,.12);--line-strong:rgba(15,23,42,.24);
+  --accent:#1d5fbf;--accent-strong:#174e9e;--accent-ink:#ffffff;--accent-soft:rgba(29,95,191,.09);--accent-line:rgba(29,95,191,.35);
+  --text:#0f172a;--c1:#0f172a;--dim:rgb(51 65 85);--faint:rgb(71 85 105);
+  --sos1:#b58300;--sos1-chu:#7a5000;--sos2:#d4540f;--sos2-chu:#9a3a08;--sos3:#c81e1e;--sos3-chu:#a11818;
+  --kq-vuot:#166534;--kq-bang:#1e40af;--kq-duoi:#c81e1e;
+  --ok:#166534;--da-thi-bg:#d6f0df;--late:#b4400f;--soon:#8a5a00;--loi:#c81e1e;
+  --muted:#334155;--muted-bg:#e8edf3;
+  --phu-re:rgb(15 23 42 / .09);--phu-do:rgb(15 23 42 / .035);
+  --o-sua-nen:#ffffff;--o-sua-vien:#7c8799;--hang-nhom:#eaf1fb;--hang-con:#f7f9fc;--pop:#ffffff;--man:rgba(15,23,42,.28);
+  --bong:0 12px 32px rgba(15,23,42,.18);
+}
+*{box-sizing:border-box}
+html{accent-color:var(--accent)}
+body{margin:0;background:#070b14;color:#dde5f2;font:15px/1.5 'Be Vietnam Pro',system-ui,'Segoe UI',sans-serif;-webkit-font-smoothing:antialiased;padding:0 32px 120px}
+h1,h2,h3,h4,p{margin:0}
+button{font:inherit;color:inherit}
+a{color:var(--accent);text-decoration:none}
+.ico{width:16px;height:16px;flex:none;vertical-align:-3px}
+.ico.l{width:20px;height:20px}.ico.s{width:14px;height:14px}
+.so,td,.z{font-variant-numeric:tabular-nums}
+.sp{flex:1}
+.m{color:var(--dim);font-size:13px}
+.f{color:var(--faint)}
+.late{color:var(--late);font-weight:600}
+.soon{color:var(--soon);font-weight:600}
+
+/* ================= vỏ tài liệu (NGOÀI khung màn) ================= */
+.doc-top{position:sticky;top:0;z-index:90;background:#070b14;padding:12px 0;border-bottom:1px solid #26324a;display:flex;gap:8px 16px;flex-wrap:wrap;align-items:center;font-size:13px}
+.doc-top b{color:#f1f5f9;font-size:15px}
+.doc-top a{color:#a9cdf7}
+.doc-h1{font-size:26px;color:#f1f5f9;margin:28px 0 8px}
+.doc-p{max-width:1180px;color:#c3cfe3;font-size:14px}
+.sec{margin-top:64px;display:flex;flex-direction:column;gap:14px}
+.sec>h2{font-size:21px;color:#f1f5f9;border-top:2px solid #33415e;padding-top:16px}
+.ghi{max-width:1440px;background:#111a2b;border:1px solid #26324a;border-radius:10px;padding:12px 16px;font-size:13.5px;color:#c3cfe3;line-height:1.55}
+.ghi b{color:#f1f5f9}
+.ghi ul,.ghi ol{margin:6px 0 0;padding-left:20px}
+.ghi li+li{margin-top:3px}
+.ghi .cho{color:#f2c450;font-weight:700}
+.ghi code{background:#1a2437;border-radius:4px;padding:0 4px;font-size:12.5px}
+.ghi table{border-collapse:collapse;margin-top:6px;font-size:13px}
+.ghi td,.ghi th{border:1px solid #26324a;padding:4px 8px;text-align:left;vertical-align:top}
+.cap{display:flex;gap:28px;align-items:flex-start;flex-wrap:wrap}
+.khung{display:flex;flex-direction:column;gap:6px;flex:none}
+.khung>.nhan{font-size:13px;color:#a8b6d0}
+.khung>.nhan b{color:#f1f5f9}
+
+/* ================= khung màn ================= */
+.win{position:relative;border:1px solid #33415e;border-radius:10px;overflow:hidden;background:var(--bg);color:var(--text);flex:none;font-size:15px;line-height:1.5}
+.w1440{width:1440px}.w375{width:375px}
+
+/* thanh trên 1440 */
+.tb{display:flex;align-items:center;gap:16px;height:60px;padding:0 20px;background:var(--surface);border-bottom:1px solid var(--line)}
+.logo{width:30px;height:30px;border-radius:8px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font-weight:800;font-size:14px;flex:none}
+.tb .ten-sp{font-weight:700;color:var(--c1);white-space:nowrap;font-size:15px}
+.menu{display:flex;gap:2px}
+.menu a{position:relative;padding:8px 12px;border-radius:8px;color:var(--dim);font-weight:600;font-size:15px;display:inline-flex;gap:6px;align-items:center;white-space:nowrap}
+.menu a.on{color:var(--c1);background:var(--accent-soft)}
+.menu a.on::after{content:"";position:absolute;left:10px;right:10px;bottom:-11px;height:3px;border-radius:3px 3px 0 0;background:var(--accent-strong)}
+.dem{display:inline-block;font-size:12px;font-weight:700;background:var(--muted-bg);color:var(--muted);border-radius:999px;padding:0 6px;line-height:18px;min-width:18px;text-align:center;font-variant-numeric:tabular-nums}
+.dem.late{background:transparent;color:var(--late);box-shadow:inset 0 0 0 1px var(--late)}
+.tim{display:flex;align-items:center;gap:8px;width:300px;height:38px;padding:0 12px;border:1px solid var(--o-sua-vien);border-radius:8px;background:var(--o-sua-nen);color:var(--faint);font-size:14px}
+.ib{position:relative;width:38px;height:38px;display:inline-grid;place-items:center;border-radius:8px;border:1px solid var(--line-strong);background:var(--surface-2);flex:none}
+.ib .dem{position:absolute;top:-7px;right:-9px}
+.tk{height:38px;padding:0 10px 0 6px;border-radius:8px;border:1px solid var(--line-strong);background:var(--surface-2);font-weight:600;font-size:14px;display:inline-flex;gap:8px;align-items:center;white-space:nowrap}
+.av{width:26px;height:26px;border-radius:999px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font-size:12px;font-weight:700;flex:none}
+
+/* trang */
+.trang{padding:16px 24px 32px;display:flex;flex-direction:column;gap:16px}
+.dau{display:flex;align-items:center;gap:12px;min-height:44px;flex-wrap:wrap}
+.dau h1{font-size:22px;font-weight:700;color:var(--c1);line-height:1.3;margin-right:6px}
+.chon{display:inline-flex;align-items:center;gap:6px;height:38px;padding:0 12px;border-radius:8px;border:1px solid var(--o-sua-vien);background:var(--o-sua-nen);font-weight:600;font-size:14px;white-space:nowrap}
+.chon .nh{font-weight:400;color:var(--dim)}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-top:-4px}
+.tabs a{position:relative;padding:10px 14px;color:var(--dim);font-weight:600;font-size:15px;display:inline-flex;gap:8px;align-items:center}
+.tabs a.on{color:var(--c1)}
+.tabs a.on::after{content:"";position:absolute;left:8px;right:8px;bottom:-1px;height:3px;border-radius:3px 3px 0 0;background:var(--accent-strong)}
+.tabs .link-phai{margin-left:auto;align-self:center;font-size:14px;font-weight:600;color:var(--accent);padding:0 4px}
+
+/* nút */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:40px;padding:0 16px;border-radius:8px;border:1px solid var(--line-strong);background:var(--surface-2);color:var(--text);font-weight:600;font-size:15px;white-space:nowrap;cursor:pointer}
+.btn-sm{height:32px;padding:0 12px;font-size:13px;border-radius:7px}
+.btn-p{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn-g{background:transparent;border-color:transparent;color:var(--accent)}
+.btn-g.xam{color:var(--dim)}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.btn.re{background-image:linear-gradient(var(--phu-re),var(--phu-re));border-color:var(--accent-line)}
+.lk{color:var(--accent);font-weight:600;font-size:14px;white-space:nowrap}
+.lk-ho{color:var(--text);font-weight:600}
+.lk-ho .ico{color:var(--faint);width:13px;height:13px;margin-left:2px;vertical-align:-1px}
+
+/* chip */
+.chip{display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 9px;border-radius:999px;font-size:13px;font-weight:600;white-space:nowrap;line-height:1;border:1px solid transparent;font-variant-numeric:tabular-nums}
+.chip.xam{background:var(--muted-bg);color:var(--muted)}
+.chip.vien{border-color:var(--line-strong);color:var(--dim)}
+.chip.dut{border:1px dashed var(--line-strong);color:var(--dim)}
+.ma{display:inline-flex;align-items:center;height:24px;padding:0 7px;border-radius:6px;border:1px solid var(--line-strong);font-size:13px;font-weight:600;color:var(--c1);white-space:nowrap}
+.s1{border:1px solid var(--sos1);color:var(--sos1-chu)}
+.s2{border:1.5px solid var(--sos2);color:var(--sos2-chu)}
+.s3{border:2.5px solid var(--sos3);color:var(--sos3-chu);outline:1px solid var(--sos3);outline-offset:1.5px;margin:0 2.5px}
+.chip.thi{border-color:var(--ok);color:var(--c1)}
+.bo-loc{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 12px;border-radius:999px;border:1px solid var(--line-strong);font-size:13px;font-weight:600;color:var(--dim);white-space:nowrap}
+.bo-loc.on{color:var(--c1);background:var(--accent-soft);box-shadow:inset 0 0 0 1px var(--accent);border-color:transparent}
+.bo-loc.on::before{content:"✓";font-weight:700;color:var(--accent)}
+.seg{display:inline-flex;border:1px solid var(--line-strong);border-radius:8px;overflow:hidden;flex:none}
+.seg span{display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 12px;font-size:14px;font-weight:600;color:var(--dim);white-space:nowrap}
+.seg span+span{border-left:1px solid var(--line-strong)}
+.seg span.on{color:var(--c1);background:var(--accent-soft);box-shadow:inset 0 0 0 1px var(--accent)}
+.seg span.on::before{content:"✓";color:var(--accent);font-weight:700}
+.seg .n{font-weight:400;color:var(--faint)}
+.oi{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:999px;color:var(--dim);vertical-align:-5px}
+.oi .ico{width:17px;height:17px}
+
+/* ô số OSo */
+.oso{display:inline-flex;align-items:center;justify-content:center;gap:4px;min-width:30px;height:28px;padding:0 8px;border-radius:6px;border:1px solid var(--line-strong);font-weight:600;font-size:15px;color:var(--c1);font-variant-numeric:tabular-nums;white-space:nowrap}
+.oso.late{color:var(--late)}
+.oso.mo{background:var(--accent-soft);border-color:var(--accent)}
+
+/* hàng đợi bố cục B: danh sách trái 540 · chi tiết phải */
+.hd{display:grid;grid-template-columns:540px minmax(0,1fr);gap:16px;align-items:start}
+.ds{background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.nhom{display:flex;align-items:center;gap:8px;min-height:40px;padding:8px 16px;background:var(--hang-nhom);border-top:1px solid var(--line);box-shadow:inset 3px 0 0 var(--line-strong);font-size:15px;font-weight:700;color:var(--c1)}
+.nhom:first-child{border-top:0}
+.nhom .m{font-weight:400}
+.nhom.gap{box-shadow:inset 3px 0 0 var(--line);color:var(--dim)}
+.dv{display:grid;grid-template-columns:96px minmax(0,1fr) 20px;gap:12px;align-items:center;min-height:56px;padding:8px 16px;border-top:1px solid var(--line)}
+.dv .han{font-size:13px;font-weight:600;color:var(--dim);white-space:nowrap;font-variant-numeric:tabular-nums}
+.dv .han.late{color:var(--late)}.dv .han.soon{color:var(--soon)}
+.dv .v1{font-size:15px;font-weight:600;color:var(--c1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.5}
+.dv .v2{font-size:13px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.5}
+.dv .vao{color:var(--faint)}
+.dv.chon{background:var(--accent-soft);box-shadow:inset 3px 0 0 var(--accent-strong)}
+.dv.re{background-image:linear-gradient(var(--phu-re),var(--phu-re))}
+.dv.xong{opacity:.55}.dv.xong .v1{text-decoration:line-through}
+.thanh{display:inline-block;width:56px;height:6px;border-radius:3px;background:var(--line);overflow:hidden;vertical-align:1px}
+.thanh i{display:block;height:100%;background:var(--accent)}
+.ds-chan{padding:10px 16px;border-top:1px solid var(--line);font-size:13px;color:var(--dim);display:flex;gap:10px;align-items:center}
+
+/* khung chi tiết (vỏ "Khung việc" bậc 3) */
+.ct{background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden;position:relative}
+.ct-dau{padding:16px 20px 12px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:4px}
+.ct-dau .h{display:flex;align-items:center;gap:10px}
+.ct-dau h2{font-size:17px;font-weight:700;color:var(--c1);line-height:1.35}
+.ct-dau .p{font-size:14px;color:var(--dim)}
+.ct-cu{display:flex;align-items:center;gap:10px;padding:10px 20px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.ct-chan{display:flex;align-items:center;gap:10px;padding:12px 20px;border-top:1px solid var(--line);font-size:13px;color:var(--dim);background:var(--surface)}
+
+/* Bang — căn tiêu đề = căn ô theo data-kieu (04 mục 6.2) */
+table.bang{width:100%;border-collapse:separate;border-spacing:0;font-size:15px}
+.bang th{font-size:13px;font-weight:600;color:var(--dim);padding:8px 12px;border-bottom:1px solid var(--line-strong);background:var(--surface-2);white-space:nowrap;vertical-align:bottom;line-height:1.35;text-align:left}
+.bang th .phu{font-weight:400;color:var(--faint);font-size:12px;margin-left:4px}
+.bang td{padding:9px 12px;border-bottom:1px solid var(--line);height:44px;vertical-align:baseline;line-height:1.5}
+.bang tr:last-child td{border-bottom:0}
+.bang [data-kieu=so],.bang [data-kieu=diem],.bang [data-kieu=noi-bat],.bang [data-kieu=phan-tram],.bang [data-kieu=diem-ti-le]{text-align:center}
+.bang [data-kieu=nut]{text-align:right;width:48px}
+.bang [data-kieu=ten]{min-width:205px}
+.bang [data-kieu=diem]{width:96px}.bang [data-kieu=noi-bat]{width:80px}.bang [data-kieu=diem-ti-le]{width:104px}.bang [data-kieu=so]{width:80px}
+.bang [data-kieu=tuan]{width:104px;font-size:14px}.bang [data-kieu=chip]{width:150px}
+.bang td[data-kieu=noi-bat]{background:var(--accent-soft);font-weight:800;color:var(--c1)}
+.bang .ten{font-weight:600;color:var(--c1)}
+.bang .ten .ico{color:var(--faint);width:13px;height:13px;margin-left:3px;vertical-align:-1px}
+.bang .p2{display:block;font-size:13px;color:var(--dim);font-weight:400}
+.bang tr.hai td{height:64px}
+.bang tr.dang-mo td{background:var(--accent-soft)}
+.bang tr.dang-mo td:first-child{box-shadow:inset 3px 0 0 var(--accent-strong)}
+.bang tr.re td{background-image:linear-gradient(var(--phu-re),var(--phu-re))}
+.bang tr.mo-duoi>td{background:var(--hang-con);padding:0}
+.bang tr.nhom td{background:var(--hang-nhom);font-weight:700;color:var(--c1);height:40px;box-shadow:inset 3px 0 0 var(--line-strong)}
+.bang.day td{font-size:14px}
+.bang tr.mo td{color:var(--faint)}
+
+/* ODiem (04 mục 7) */
+.od{display:inline-grid;grid-template-columns:14px auto;column-gap:4px;align-items:baseline;justify-content:center;font-weight:700;font-size:15px;font-variant-numeric:tabular-nums;color:var(--text);min-width:56px}
+.od .k{width:14px;height:14px;align-self:center}
+.od.vuot{color:var(--kq-vuot)}.od.bang{color:var(--kq-bang)}.od.duoi{color:var(--kq-duoi)}
+.od .phu-o{grid-column:1/-1;font-size:12px;font-weight:600;color:var(--dim);line-height:1.4;text-align:center}
+.od .phu-o.late{color:var(--late)}
+.od.tl{grid-template-columns:14px 2ch 3.4ch;column-gap:3px}
+.od.tl .so-dung{text-align:right}
+.od.tl .mau{font-size:13px;font-weight:400;color:var(--faint);text-align:left}
+.od.tl .mau.khac{color:var(--soon)}
+/* ô sửa */
+.os{position:relative;display:inline-grid;place-items:center;width:64px;height:32px;border:1px solid var(--o-sua-vien);border-radius:6px;background:var(--o-sua-nen);font-weight:700;font-size:15px;color:var(--c1);font-variant-numeric:tabular-nums;vertical-align:middle}
+.os.trong{border-style:dashed;color:var(--faint);font-weight:400}
+.os.go{box-shadow:0 0 0 2px var(--accent);border-color:var(--accent)}
+.os.loi{border-color:var(--loi);box-shadow:0 0 0 1px var(--loi)}
+.os .dau-luu{position:absolute;top:-7px;right:-7px;width:16px;height:16px;border-radius:999px;background:var(--surface);display:grid;place-items:center;color:var(--faint)}
+.os .dau-luu .ico{width:13px;height:13px}
+.os.tl{width:88px;grid-template-columns:14px 2ch 3.4ch;column-gap:3px;display:inline-grid;justify-content:center;align-items:baseline;padding-top:4px}
+.os.tl .so-dung{text-align:right}.os.tl .mau{font-size:13px;font-weight:400;color:var(--faint)}
+.os.vuot{color:var(--kq-vuot)}.os.duoi{color:var(--kq-duoi)}.os.bang{color:var(--kq-bang)}
+.o-wrap{display:inline-flex;flex-direction:column;align-items:center;gap:3px;vertical-align:top}
+.o-wrap .phu-o{font-size:12px;font-weight:600;color:var(--dim);line-height:1.3;white-space:nowrap}
+.o-wrap .phu-o.late{color:var(--late)}
+.o-wrap .phu-o.loi{color:var(--loi)}
+.khoa{color:var(--faint);font-size:13px}
+
+/* hộp chấm (bậc 2a, neo tại ô) */
+.hop{position:absolute;z-index:30;width:380px;background:var(--pop);border:1px solid var(--line-strong);border-radius:12px;box-shadow:var(--bong);font-size:15px}
+.hop .hop-dau{padding:14px 16px 10px;border-bottom:1px solid var(--line)}
+.hop .hop-dau b{font-size:17px;color:var(--c1);display:block;line-height:1.35}
+.hop .hop-dau .p{font-size:13px;color:var(--dim)}
+.hop .hop-than{padding:12px 16px;display:flex;flex-direction:column;gap:14px}
+.hop .hop-chan{display:flex;align-items:center;gap:6px;padding:10px 12px 12px 12px;border-top:1px solid var(--line)}
+.nhan-o{font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px;display:block}
+.nhan-o .f{font-weight:400}
+.o-nhap{display:inline-flex;align-items:center;height:40px;min-width:64px;padding:0 10px;border:1px solid var(--o-sua-vien);border-radius:8px;background:var(--o-sua-nen);font-size:15px;font-weight:700;color:var(--c1);font-variant-numeric:tabular-nums}
+.o-nhap.go{box-shadow:0 0 0 2px var(--accent);border-color:var(--accent)}
+.o-nhap.trong{color:var(--faint);font-weight:400}
+.o-chu{display:block;min-height:64px;padding:8px 10px;border:1px solid var(--o-sua-vien);border-radius:8px;background:var(--o-sua-nen);font-size:15px;color:var(--text)}
+.o-chu.goi{color:var(--faint)}
+.chip-chon{display:inline-flex;align-items:center;gap:5px;height:32px;padding:0 12px;border-radius:999px;border:1px solid var(--line-strong);font-size:13px;font-weight:600;color:var(--dim)}
+.chip-chon.on{color:var(--c1);background:var(--accent-soft);box-shadow:inset 0 0 0 1px var(--accent);border-color:transparent}
+.chip-chon.on::before{content:"✓";color:var(--accent);font-weight:700}
+.tt-luu{font-size:13px;color:var(--dim);display:inline-flex;gap:6px;align-items:center}
+.tt-luu.loi{color:var(--loi);font-weight:600}
+
+/* toast hoàn tác */
+.toast{display:inline-flex;align-items:center;gap:12px;padding:10px 14px;border-radius:10px;background:var(--pop);border:1px solid var(--line-strong);box-shadow:var(--bong);font-size:14px;color:var(--text)}
+.toast b{color:var(--c1)}
+.toast .dh{font-size:12px;color:var(--faint);font-variant-numeric:tabular-nums}
+
+/* rỗng (HTT-9) */
+.rong{padding:28px 24px;display:flex;flex-direction:column;gap:6px;align-items:flex-start}
+.rong b{font-size:17px;color:var(--c1)}
+.rong p{color:var(--dim);font-size:15px;max-width:62ch}
+
+/* khối */
+.khoi{background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.khoi-dau{display:flex;align-items:center;gap:10px;padding:12px 16px;min-height:52px;border-bottom:1px solid var(--line)}
+.khoi-dau h2{font-size:17px;font-weight:700;color:var(--c1)}
+
+/* ================= 375 ================= */
+.tb3{display:flex;align-items:center;gap:6px;height:56px;padding:0 8px 0 12px;background:var(--surface);border-bottom:1px solid var(--line)}
+.tb3 .ib{width:44px;height:44px;border:0;background:transparent}
+.bot{position:sticky;bottom:0;display:grid;grid-template-columns:repeat(var(--n,3),1fr);height:60px;background:var(--surface);border-top:1px solid var(--line)}
+.bot a{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:12px;font-weight:600;color:var(--dim);position:relative}
+.bot a .ico{width:20px;height:20px}
+.bot a.on{color:var(--accent)}
+.bot a.on::before{content:"";position:absolute;top:0;left:22%;right:22%;height:3px;border-radius:0 0 3px 3px;background:var(--accent)}
+.bot a .dem{position:absolute;top:4px;left:56%}
+.w375 .trang{padding:12px 16px 24px;gap:12px}
+.w375 .dau h1{font-size:20px}
+.w375 .btn{height:44px}
+.w375 .btn-sm{height:44px;font-size:14px}
+.w375 .dv{grid-template-columns:72px minmax(0,1fr) 16px;min-height:64px;padding:10px 14px;gap:10px}
+.w375 .nhom{padding:8px 14px}
+.w375 .tabs a{padding:10px 10px}
+.w375 .o-nhap{font-size:16px;height:44px}
+.the{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.the .h{display:flex;align-items:baseline;gap:8px}
+.the .h b{font-size:15px;color:var(--c1)}
+.day-nut{display:flex;gap:8px;padding:10px 16px;background:var(--surface);border-top:1px solid var(--line)}
+.day-nut .btn{flex:1}
+.quay{display:inline-flex;align-items:center;gap:4px;color:var(--accent);font-weight:600;font-size:15px;min-height:44px}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-tim" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-3.6-3.6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-chuong" viewBox="0 0 24 24"><path d="M6 16v-5a6 6 0 1 1 12 0v5l1.5 2h-15zM10 20.5a2 2 0 0 0 4 0" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/></symbol>
+  <symbol id="i-xuong" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-trai" viewBox="0 0 24 24"><path d="m15 6-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-phai" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-in" viewBox="0 0 24 24"><path d="M7 9V4h10v5M7 17H5a1 1 0 0 1-1-1v-6a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1h-2M7 14h10v6H7z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></symbol>
+  <symbol id="i-loi" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 7.5v5.5M12 16.4v.1" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-v" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-dat" viewBox="0 0 24 24"><path d="m4.5 12.5 4.8 4.8L19.5 7" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-chua" viewBox="0 0 24 24"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-lich" viewBox="0 0 24 24"><path d="M4 7h16v13H4zM4 11h16M8 4v4M16 4v4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/></symbol>
+  <symbol id="i-xuat" viewBox="0 0 24 24"><path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M5 19h14" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-nha" viewBox="0 0 24 24"><path d="M4 11 12 4l8 7v9h-5v-6H9v6H4z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></symbol>
+  <symbol id="i-nguoi" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3 19c.8-3.3 3.2-5 6-5s5.2 1.7 6 5M15.5 5.2a3 3 0 0 1 0 5.6M18 14.4c1.4.7 2.4 2.3 2.8 4.6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+  <symbol id="i-bai" viewBox="0 0 24 24"><path d="M6 3h9l3 3v15H6zM9 10h6M9 14h6M9 18h4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/></symbol>
+  <symbol id="i-viec" viewBox="0 0 24 24"><path d="m4 7 2 2 3.5-3.5M4 15l2 2 3.5-3.5M13 8h7M13 16h7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-bieu" viewBox="0 0 24 24"><path d="M4 20h16M7 17v-5M12 17V7M17 17v-8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+  <symbol id="i-loc" viewBox="0 0 24 24"><path d="M4 6h16M7 12h10M10 18h4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+  <symbol id="i-len" viewBox="0 0 24 24"><path d="M12 5 20 18H4z" fill="currentColor"/></symbol>
+  <symbol id="i-xuong-d" viewBox="0 0 24 24"><path d="M12 19 4 6h16z" fill="currentColor"/></symbol>
+
+  <symbol id="i-dong-ho" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 8v4.5l3 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+  <symbol id="i-luu" viewBox="0 0 24 24"><path d="M5 4h11l3 3v13H5zM8 4v5h7V4M8 20v-6h8v6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></symbol>
+  <symbol id="i-hoan" viewBox="0 0 24 24"><path d="M9 7 4 12l5 5M4 12h11a5 5 0 0 1 0 10h-2" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-dt" viewBox="0 0 24 24"><path d="M6.5 3.5h3l1.5 4.5-2 1.5a11 11 0 0 0 5.5 5.5l1.5-2 4.5 1.5v3a2 2 0 0 1-2 2A16 16 0 0 1 4.5 5.5a2 2 0 0 1 2-2z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 11v6M12 7.5v.1" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></symbol>
+  <symbol id="i-them" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-menu" viewBox="0 0 24 24"><circle cx="6" cy="12" r="1.6" fill="currentColor"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/><circle cx="18" cy="12" r="1.6" fill="currentColor"/></symbol>
+  <symbol id="i-canh" viewBox="0 0 24 24"><path d="M12 4 2.8 19.5h18.4z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M12 10v4.5M12 17v.1" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"/></symbol>
+  <symbol id="i-test" viewBox="0 0 24 24"><path d="M7 3h10v18H7zM10 7h4M10 11h4M10 15h2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/></symbol>
+</svg>
+
+
+<div class="doc-top"><b>MOCKUP-V4a (1) · Chấm Test theo hạn</b>
+<a href="#k1">§1 GV mặc định</a><a href="#k2">§2 tự sang việc kế</a><a href="#k3">§3 hộp chấm FT</a><a href="#k4">§4 lớp thường</a><a href="#k5">§5 GV S không lớp</a><a href="#k6">§6 QL Tình trạng chấm</a><a href="#k7">§7 rỗng · lỗi tải</a><a href="#n375">375</a><a href="#ghi">Ghi chú · Cần chủ SP chọn</a></div>
+<h1 class="doc-h1">M5a · Chấm Test theo hạn, một nguồn — mockup để chủ SP duyệt (Q-C1)</h1>
+<p class="doc-p">Ngày demo T2 14/09/2026 (tuần W3 SEP). Dữ liệu theo seed: MB FT 101 (L, R Trần Ngọc Hà · W1 Lê Minh Khoa · W2 Cao Khánh Linh · S Phạm Thu Trang), MB FT 102, MB FOU 15, QL Monbay Nguyễn Khánh Vy. "Đoàn Minh Thư" = GV có kỹ năng S, không dạy lớp nào (seed chưa có — SEED-UX thêm). 1440 tối · 375 sáng. Chữ trong khung = chữ sẽ hiện trên web; ghi chú thiết kế chỉ ở ngoài khung.</p>
+
+<section class="sec"><h2>1440 · tối</h2>
+<div class="ghi"><b>Luật vẽ (05 mục 3.2 "B cụ thể"):</b> một hàm nhãn <code>"MT2 · thi W2 SEP · hạn 16/09"</code> cho hàng · hộp · việc · thông báo · gom theo <b>hạn</b>, giữ luật chia khối (T15): "Quá hạn chấm" = khối 1 · "Hạn 16/09 · bài thi W2 SEP" = khối 2 · "Bài thi tuần này W3 SEP" = khối 3 (chỉ hiện khi có ô của tôi) · "Chấm Speaking chéo · n bài · không tính nợ" · không dải số, không bộ chọn tuần (luôn theo hôm nay — T16) · <b>cùng nguồn, cùng dòng, cùng số với Công việc › Chấm điểm</b> (58 bài ở đây = 58 ở Công việc) · lưới gọn: chỉ cột + ô của tôi · tự sang việc kế khi xong. Bố cục B (04 mục 3, 15): danh sách trái 540 px · khung chi tiết phải; vào trang chọn sẵn dòng đầu (việc của chính người xem).</div>
+<div class="khung" id="k1"><div class="nhan"><b>k1</b> · GV Cao Khánh Linh (W2 MB FT 101 · L, R MB FT 102) · mặc định: chọn sẵn dòng đầu (quá hạn), lưới gọn lọc "Chỉ ô còn trống", đang gõ ô đầu</div><div class="win w1440" data-theme="dark">
+<div class="tb"><span class="logo">P</span><span class="ten-sp">PISA</span><nav class="menu"><a class="">Học viên & Lớp</a><a class="on">Test</a><a class="">Công việc<span class="dem late">3</span></a></nav><span class="sp"></span>
+<span class="tim"><svg class="ico " aria-hidden="true"><use href="#i-tim"/></svg>Tìm lớp, học viên hoặc email…</span>
+<span class="ib" title="Nhắc việc"><svg class="ico l" aria-hidden="true"><use href="#i-chuong"/></svg><span class="dem">2</span></span>
+<span class="tk"><span class="av">CL</span>Cao Khánh Linh<svg class="ico s" aria-hidden="true"><use href="#i-xuong"/></svg></span></div>
+<div class="trang">
+<div class="dau"><h1>Test</h1></div>
+<div class="tabs"><a class="on">Chấm Test <span class="dem">58</span></a><a class="">Lịch tuần</a></div>
+<div class="hd"><div class="ds">
+<div class="nhom "><span class="late"><svg class="ico " aria-hidden="true"><use href="#i-canh"/></svg> Quá hạn chấm</span><span class="m">· 5 bài</span></div>
+<div class="dv chon"><span class="han late">⚠ 12 ngày</span><span style="min-width:0"><span class="v1" style="display:block">W2 · MT2 · MB FT 101</span><span class="v2" style="display:block">thi W4 AUG · hạn 02/09 · còn 2 / 33 bài</span></span><span class="vao"><svg class="ico " aria-hidden="true"><use href="#i-phai"/></svg></span></div>
+<div class="dv "><span class="han late">⚠ 5 ngày</span><span style="min-width:0"><span class="v1" style="display:block">L · MT2 · MB FT 102</span><span class="v2" style="display:block">thi W1 SEP · hạn 09/09 · 3 bài dời do vắng</span></span><span class="vao"><svg class="ico " aria-hidden="true"><use href="#i-phai"/></svg></span></div>
+<div class="nhom ">Hạn 16/09<span class="m">· bài thi W2 SEP · 51 bài</span></div>
+<div class="dv "><span class="han soon">còn 2 ngày</span><span style="min-width:0"><span class="v1" style="display:block">W2 · MT3 · MB FT 101</span><span class="v2" style="display:block">thi W2 SEP · hạn 16/09 · còn 21 / 33 bài <span class="thanh"><i style="width:36%"></i></span></span></span><span class="vao"><svg class="ico " aria-hidden="true"><use href="#i-phai"/></svg></span></div>
+<div class="dv "><span class="han soon">còn 2 ngày</span><span style="min-width:0"><span class="v1" style="display:block">L, R · MT2 · MB FT 102</span><span class="v2" style="display:block">thi W2 SEP · hạn 16/09 · còn 30 / 36 bài <span class="thanh"><i style="width:17%"></i></span></span></span><span class="vao"><svg class="ico " aria-hidden="true"><use href="#i-phai"/></svg></span></div>
+<div class="nhom ">Bài thi tuần này W3 SEP<span class="m">· hạn 23/09 · 2 bài</span></div>
+<div class="dv "><span class="han ">23/09</span><span style="min-width:0"><span class="v1" style="display:block">W2 · MT3 · MB FT 101</span><span class="v2" style="display:block">thi W3 SEP · 2 bài dời do vắng</span></span><span class="vao"><svg class="ico " aria-hidden="true"><use href="#i-phai"/></svg></span></div>
+<div class="ds-chan"><span>Chỉ hiện bài đã tới tuần thi.</span><span class="sp"></span><a class="lk">Lịch tuần khác ›</a></div>
+</div>
+<div class="ct">
+<div class="ct-dau"><div class="h"><h2>Chấm W2 · MT2 · MB FT 101</h2><span class="late" style="font-size:14px">⚠ quá hạn 12 ngày</span></div>
+<span class="p">thi W4 AUG · hạn 02/09 · còn 2 / 33 bài · <a class="lk-ho">MB FT 101 ↗</a></span></div>
+<div class="ct-cu"><span class="bo-loc on">Chỉ ô còn trống · 2</span><span class="bo-loc">Cả lớp · 33</span><span class="sp"></span><span class="m">Gõ điểm · Enter = Lưu · em tiếp</span><span class="oi" title="Cách chấm"><svg class="ico " aria-hidden="true"><use href="#i-info"/></svg></span></div>
+<table class="bang"><thead><tr><th data-kieu="ten">Học viên</th><th data-kieu="noi-bat">Kỳ vọng W</th><th data-kieu="diem">W2</th><th data-kieu="chu">Nhận xét</th></tr></thead><tbody><tr class=" dang-mo"><td data-kieu="ten"><span class="ten">Lý Minh Châu</span></td><td data-kieu="noi-bat">6.0</td><td data-kieu="diem"><span class="os go ">6</span></td><td data-kieu="chu" style="max-width:340px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px"><span class="f">—</span></td></tr><tr class=" "><td data-kieu="ten"><span class="ten">Phan Thanh Tùng</span></td><td data-kieu="noi-bat">6.0</td><td data-kieu="diem"><span class="os trong "></span></td><td data-kieu="chu" style="max-width:340px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px"><span class="f">—</span></td></tr></tbody></table>
+<div class="ct-chan"><span>Còn 2 bài · xong thì sang <b style="color:var(--text)">W2 · MT3 · MB FT 101</b></span></div>
+</div></div>
+</div></div></div>
+<div class="ghi"><b>Đích đo §1:</b> dòng việc đầu y ≈ 196 px (≤ 200) · 0 dải số · 1 bấm để chấm bài quá hạn đầu tiên (gõ số ngay — ô đầu có con trỏ vì là việc của chính tôi) · Cô Linh chấm hết bài đến hạn: <b>~11 → 1–2 bấm</b> (05 3.2).</div>
+<div class="khung" id="k2"><div class="nhan"><b>k2</b> · Xong dòng đầu → dòng mờ "✓ Xong · Hoàn tác 9 s" (HTT-11), tự sang dòng kế; lưới đủ 33 em; trạng thái ô: đã lưu (dấu lưu xám) · đang lưu (đồng hồ) · lỗi lưu (viền đỏ + "Lưu lại") · thiếu nhận xét · vắng (gõ "-" → máy dời, Hoàn tác 10 s)</div><div class="win w1440" data-theme="dark">
+<div class="tb"><span class="logo">P</span><span class="ten-sp">PISA</span><nav class="menu"><a class="">Học viên & Lớp</a><a class="on">Test</a><a class="">Công việc<span class="dem late">2</span></a></nav><span class="sp"></span>
+<span class="tim"><svg class="ico " aria-hidden="true"><use href="#i-tim"/></svg>Tìm lớp, học viên hoặc email…</span>
+<span class="ib" title="Nhắc việc"><svg class="ico l" aria-hidden="true"><use href="#i-chuong"/></svg><span class="dem">2</span></span>
+<span class="tk"><span class="av">CL</span>Cao Khánh Linh<svg class="ico s" aria-hidden="true"><use href="#i-xuong"/></svg></span></div>
+<div class="trang">
+<div class="dau"><h1>Test</h1></div>
+<div class="tabs"><a class="on">Chấm Test <span class="dem">56</span></a><a class="">Lịch tuần</a></div>
+<div class="hd"><div style="display:flex;flex-direction:column;gap:12px"><div class="ds">
+<div class="nhom "><span class="late"><svg class="ico " aria-hidden="true"><use href="#i-canh"/></svg> Quá hạn chấm</span><span class="m">· 3 bài</span></div>
+<div class="dv xong"><span class="han ">✓ Xong</span><span style="min-width:0"><span class="v1" style="display:block">W2 · MT2 · MB FT 101</span><span class="v2" style="display:block">thi W4 AUG · hạn 02/09 · <a class="lk" style="font-size:13px">Hoàn tác</a> <span class="f">9 s</span></span></span><span class="vao"><svg class="ico " aria-hidden="true"><use href="#i-phai"/></svg></span></div>
+<div class="dv "><span class="han late">⚠ 5 ngày</span><span style="min-width:0"><span class="v1" style="display:block">L · MT2 · MB FT 102</span><span class="v2" style="display:block">thi W1 SEP · hạn 09/09 · 3 bài dời do vắng</span></span><span class="vao"><svg class="ico " aria-hidden="true"><use href="#i-phai"/></svg></span></div>
+<div class="nhom ">Hạn 16/09<span class="m">· bài thi W2 SEP · 51 bài</span></div>
+<div class="dv chon"><span class="han soon">còn 2 ngày</span><span style="min-width:0"><span class="v1" style="display:block">W2 · MT3 · MB FT 101</span><span class="v2" style="display:block">thi W2 SEP · hạn 16/09 · còn 21 / 33 bài <span class="thanh"><i style="width:36%"></i></span></span></span><span class="vao"><svg class="ico " aria-hidden="true"><use href="#i-phai"/></svg></span></div>
+<div class="dv "><span class="han soon">còn 2 ngày</span><span style="min-width:0"><span class="v1" style="display:block">L, R · MT2 · MB FT 102</span><span class="v2" style="display:block">thi W2 SEP · hạn 16/09 · còn 30 / 36 bài <span class="thanh"><i style="width:17%"></i></span></span></span><span class="vao"><svg class="ico " aria-hidden="true"><use href="#i-phai"/></svg></span></div>
+<div class="nhom ">Bài thi tuần này W3 SEP<span class="m">· hạn 23/09 · 2 bài</span></div>
+<div class="dv "><span class="han ">23/09</span><span style="min-width:0"><span class="v1" style="display:block">W2 · MT3 · MB FT 101</span><span class="v2" style="display:block">thi W3 SEP · 2 bài dời do vắng</span></span><span class="vao"><svg class="ico " aria-hidden="true"><use href="#i-phai"/></svg></span></div>
+<div class="ds-chan"><span>Chỉ hiện bài đã tới tuần thi.</span><span class="sp"></span><a class="lk">Lịch tuần khác ›</a></div>
+</div>
+<span class="toast"><b>✓ Xong W2 · MT2 · MB FT 101</b> · sang việc kế<a class="lk">Hoàn tác</a><span class="dh">10 s</span></span>
+<span class="toast">Hồ Gia Bảo vắng W2 · dời sang <b>W3 SEP</b><a class="lk">Hoàn tác</a><span class="dh">10 s</span></span>
+</div>
+<div class="ct">
+<div class="ct-dau"><div class="h"><h2>Chấm W2 · MT3 · MB FT 101</h2><span class="soon" style="font-size:14px">còn 2 ngày</span></div>
+<span class="p">thi W2 SEP · hạn 16/09 · còn 21 / 33 bài · <a class="lk-ho">MB FT 101 ↗</a></span></div>
+<div class="ct-cu"><span class="bo-loc">Chỉ ô còn trống · 21</span><span class="bo-loc on">Cả lớp · 33</span><span class="sp"></span><span class="m">Gõ "-" = Vắng</span><span class="oi"><svg class="ico " aria-hidden="true"><use href="#i-info"/></svg></span></div>
+<table class="bang"><thead><tr><th data-kieu="ten">Học viên</th><th data-kieu="noi-bat">Kỳ vọng W</th><th data-kieu="diem">W2</th><th data-kieu="chu">Nhận xét</th></tr></thead><tbody><tr class=" "><td data-kieu="ten"><span class="ten">Nguyễn Minh An</span></td><td data-kieu="noi-bat">6.0</td><td data-kieu="diem"><span class="os  bang"><span style="display:inline-flex;gap:3px;align-items:center"><svg class="ico s" aria-hidden="true"><use href="#i-dat"/></svg>6.0</span><span class="dau-luu" title="Đã lưu"><svg class="ico " aria-hidden="true"><use href="#i-luu"/></svg></span></span></td><td data-kieu="chu" style="max-width:340px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px"><span style="color:var(--dim)">Bố cục rõ, ví dụ còn chung chung.</span></td></tr><tr class=" "><td data-kieu="ten"><span class="ten">Lương Bảo Anh</span></td><td data-kieu="noi-bat">6.5</td><td data-kieu="diem"><span class="os trong "></span></td><td data-kieu="chu" style="max-width:340px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px"><span class="f">—</span></td></tr><tr class="hai "><td data-kieu="ten"><span class="ten">Hồ Gia Bảo</span></td><td data-kieu="noi-bat">6.0</td><td data-kieu="diem"><span class="o-wrap"><span class="os  ">–</span><span class="phu-o ">vắng · dời W3 SEP</span></span></td><td data-kieu="chu" style="max-width:340px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px"><span class="f">—</span></td></tr><tr class=" "><td data-kieu="ten"><span class="ten">Đoàn Khánh Chi</span></td><td data-kieu="noi-bat">6.0</td><td data-kieu="diem"><span class="os  vuot"><span style="display:inline-flex;gap:3px;align-items:center"><svg class="ico s" aria-hidden="true"><use href="#i-dat"/></svg>6.5</span><span class="dau-luu" title="Đã lưu"><svg class="ico " aria-hidden="true"><use href="#i-luu"/></svg></span></span></td><td data-kieu="chu" style="max-width:340px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px"><span style="color:var(--dim)">Từ vựng lặp, cần paraphrase.</span></td></tr><tr class=" "><td data-kieu="ten"><span class="ten">Lý Minh Châu</span></td><td data-kieu="noi-bat">6.0</td><td data-kieu="diem"><span class="os trong "></span></td><td data-kieu="chu" style="max-width:340px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px"><span class="f">—</span></td></tr><tr class="hai "><td data-kieu="ten"><span class="ten">Phạm Quốc Cường</span></td><td data-kieu="noi-bat">6.5</td><td data-kieu="diem"><span class="o-wrap"><span class="os  bang"><span style="display:inline-flex;gap:3px;align-items:center"><svg class="ico s" aria-hidden="true"><use href="#i-dat"/></svg>6.5</span></span><span class="phu-o late">thiếu nhận xét</span></span></td><td data-kieu="chu" style="max-width:340px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px"><span class="f">—</span></td></tr><tr class=" "><td data-kieu="ten"><span class="ten">Vũ Thùy Dung</span></td><td data-kieu="noi-bat">6.0</td><td data-kieu="diem"><span class="os trong "></span></td><td data-kieu="chu" style="max-width:340px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px"><span class="f">—</span></td></tr><tr class=" "><td data-kieu="ten"><span class="ten">Trần Đức Duy</span></td><td data-kieu="noi-bat">6.0</td><td data-kieu="diem"><span class="os  duoi"><span style="display:inline-flex;gap:3px;align-items:center"><svg class="ico s" aria-hidden="true"><use href="#i-chua"/></svg>5.5</span><span class="dau-luu" title="Đang lưu"><svg class="ico " aria-hidden="true"><use href="#i-dong-ho"/></svg></span></span></td><td data-kieu="chu" style="max-width:340px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px"><span style="color:var(--dim)">Lập luận tốt, nối ý tự nhiên.</span></td></tr><tr class=" "><td data-kieu="ten"><span class="ten">Mai Anh Đào</span></td><td data-kieu="noi-bat"><span style="font-weight:600;font-size:13px">KCK</span></td><td data-kieu="diem"><span class="os  ">5.5</span></td><td data-kieu="chu" style="max-width:340px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px"><span style="color:var(--dim)">Từ vựng lặp, cần paraphrase.</span></td></tr><tr class=" "><td data-kieu="ten"><span class="ten">Ngô Hải Đăng</span></td><td data-kieu="noi-bat">6.0</td><td data-kieu="diem"><span class="os trong "></span></td><td data-kieu="chu" style="max-width:340px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px"><span class="f">—</span></td></tr><tr class=" "><td data-kieu="ten"><span class="ten">Bùi Hương Giang</span></td><td data-kieu="noi-bat">6.5</td><td data-kieu="diem"><span class="os  vuot"><span style="display:inline-flex;gap:3px;align-items:center"><svg class="ico s" aria-hidden="true"><use href="#i-dat"/></svg>7.0</span></span></td><td data-kieu="chu" style="max-width:340px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px"><span style="color:var(--dim)">Bố cục rõ, ví dụ còn chung chung.</span></td></tr><tr class="hai "><td data-kieu="ten"><span class="ten">Lâm Ngọc Hân</span></td><td data-kieu="noi-bat">6.0</td><td data-kieu="diem"><span class="o-wrap"><span class="os loi ">6.5</span><span class="phu-o loi">Lưu lại</span></span></td><td data-kieu="chu" style="max-width:340px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px"><span style="color:var(--dim)">Ý chính đủ, câu phức còn lỗi thì.</span></td></tr><tr class=" "><td data-kieu="ten"><span class="ten">Tô Minh Hiếu</span></td><td data-kieu="noi-bat">6.0</td><td data-kieu="diem"><span class="os  bang"><span style="display:inline-flex;gap:3px;align-items:center"><svg class="ico s" aria-hidden="true"><use href="#i-dat"/></svg>6.0</span></span></td><td data-kieu="chu" style="max-width:340px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px"><span style="color:var(--dim)">Lập luận tốt, nối ý tự nhiên.</span></td></tr><tr class=" dang-mo"><td data-kieu="ten"><span class="ten">Đặng Gia Huy</span></td><td data-kieu="noi-bat">6.0</td><td data-kieu="diem"><span class="os go ">6</span></td><td data-kieu="chu" style="max-width:340px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px"><span class="f">—</span></td></tr><tr class=" "><td data-kieu="ten"><span class="ten">Kiều Thanh Hương</span></td><td data-kieu="noi-bat">6.5</td><td data-kieu="diem"><span class="os trong "></span></td><td data-kieu="chu" style="max-width:340px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px"><span class="f">—</span></td></tr><tr class=" "><td data-kieu="ten"><span class="ten">Châu Tuấn Khang</span></td><td data-kieu="noi-bat">6.0</td><td data-kieu="diem"><span class="os  bang"><span style="display:inline-flex;gap:3px;align-items:center"><svg class="ico s" aria-hidden="true"><use href="#i-dat"/></svg>6.0</span></span></td><td data-kieu="chu" style="max-width:340px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px"><span style="color:var(--dim)">Bố cục rõ, ví dụ còn chung chung.</span></td></tr><tr class=" "><td data-kieu="ten"><span class="ten">Võ Đăng Khoa</span></td><td data-kieu="noi-bat">6.0</td><td data-kieu="diem"><span class="os trong "></span></td><td data-kieu="chu" style="max-width:340px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px"><span class="f">—</span></td></tr><tr class=" "><td data-kieu="ten"><span class="ten">Hà Phương Linh</span></td><td data-kieu="noi-bat">6.5</td><td data-kieu="diem"><span class="os trong "></span></td><td data-kieu="chu" style="max-width:340px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px"><span class="f">—</span></td></tr><tr class=" "><td data-kieu="ten"><span class="ten">Đỗ Bảo Long</span></td><td data-kieu="noi-bat">6.0</td><td data-kieu="diem"><span class="os  vuot"><span style="display:inline-flex;gap:3px;align-items:center"><svg class="ico s" aria-hidden="true"><use href="#i-dat"/></svg>6.5</span></span></td><td data-kieu="chu" style="max-width:340px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px"><span style="color:var(--dim)">Từ vựng lặp, cần paraphrase.</span></td></tr><tr class=" "><td data-kieu="ten"><span class="ten">Phan Khánh Ly</span></td><td data-kieu="noi-bat">6.0</td><td data-kieu="diem"><span class="os trong "></span></td><td data-kieu="chu" style="max-width:340px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px"><span class="f">—</span></td></tr><tr class=" "><td data-kieu="ten"><span class="ten">Trịnh Nhật Minh</span></td><td data-kieu="noi-bat"><span style="font-weight:600;font-size:13px">KCK</span></td><td data-kieu="diem"><span class="os trong "></span></td><td data-kieu="chu" style="max-width:340px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px"><span class="f">—</span></td></tr><tr class=" "><td data-kieu="ten"><span class="ten">Nguyễn Hà My</span></td><td data-kieu="noi-bat">6.0</td><td data-kieu="diem"><span class="os trong "></span></td><td data-kieu="chu" style="max-width:340px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px"><span class="f">—</span></td></tr><tr class=" "><td data-kieu="ten"><span class="ten">Lê Bảo Ngọc</span></td><td data-kieu="noi-bat">6.5</td><td data-kieu="diem"><span class="os trong "></span></td><td data-kieu="chu" style="max-width:340px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px"><span class="f">—</span></td></tr><tr class=" "><td data-kieu="ten"><span class="ten">Trịnh Bảo Ngọc</span></td><td data-kieu="noi-bat">6.0</td><td data-kieu="diem"><span class="os  duoi"><span style="display:inline-flex;gap:3px;align-items:center"><svg class="ico s" aria-hidden="true"><use href="#i-chua"/></svg>5.5</span></span></td><td data-kieu="chu" style="max-width:340px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px"><span style="color:var(--dim)">Từ vựng lặp, cần paraphrase.</span></td></tr><tr class=" "><td data-kieu="ten"><span class="ten">Cao Thảo Nguyên</span></td><td data-kieu="noi-bat">6.0</td><td data-kieu="diem"><span class="os trong "></span></td><td data-kieu="chu" style="max-width:340px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px"><span class="f">—</span></td></tr><tr class=" "><td data-kieu="ten"><span class="ten">Dương Minh Nhật</span></td><td data-kieu="noi-bat">6.0</td><td data-kieu="diem"><span class="os trong "></span></td><td data-kieu="chu" style="max-width:340px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px"><span class="f">—</span></td></tr><tr class=" "><td data-kieu="ten"><span class="ten">Quách Yến Nhi</span></td><td data-kieu="noi-bat">6.5</td><td data-kieu="diem"><span class="os trong "></span></td><td data-kieu="chu" style="max-width:340px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px"><span class="f">—</span></td></tr><tr class=" "><td data-kieu="ten"><span class="ten">Tạ Minh Quân</span></td><td data-kieu="noi-bat">6.0</td><td data-kieu="diem"><span class="os  bang"><span style="display:inline-flex;gap:3px;align-items:center"><svg class="ico s" aria-hidden="true"><use href="#i-dat"/></svg>6.0</span></span></td><td data-kieu="chu" style="max-width:340px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px"><span style="color:var(--dim)">Lập luận tốt, nối ý tự nhiên.</span></td></tr><tr class=" "><td data-kieu="ten"><span class="ten">Hoàng Như Quỳnh</span></td><td data-kieu="noi-bat">6.0</td><td data-kieu="diem"><span class="os trong "></span></td><td data-kieu="chu" style="max-width:340px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px"><span class="f">—</span></td></tr><tr class=" "><td data-kieu="ten"><span class="ten">Phan Thanh Tùng</span></td><td data-kieu="noi-bat">6.0</td><td data-kieu="diem"><span class="os trong "></span></td><td data-kieu="chu" style="max-width:340px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px"><span class="f">—</span></td></tr><tr class=" "><td data-kieu="ten"><span class="ten">Lưu Thanh Thảo</span></td><td data-kieu="noi-bat">6.0</td><td data-kieu="diem"><span class="os trong "></span></td><td data-kieu="chu" style="max-width:340px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px"><span class="f">—</span></td></tr><tr class=" "><td data-kieu="ten"><span class="ten">Nguyễn Phương Thảo</span></td><td data-kieu="noi-bat">6.5</td><td data-kieu="diem"><span class="os trong "></span></td><td data-kieu="chu" style="max-width:340px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px"><span class="f">—</span></td></tr><tr class=" "><td data-kieu="ten"><span class="ten">Mạc Tường Vy</span></td><td data-kieu="noi-bat">6.0</td><td data-kieu="diem"><span class="os trong "></span></td><td data-kieu="chu" style="max-width:340px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px"><span class="f">—</span></td></tr></tbody></table>
+<div class="ct-chan"><span class="tt-luu loi">⚠ 1 ô chưa lưu được — mất kết nối · <a class="lk">Thử lại</a></span><span class="sp"></span><span>Còn 21 bài · xong thì sang <b style="color:var(--text)">L, R · MT2 · MB FT 102</b></span></div>
+</div></div>
+</div></div></div>
+<div class="khung" id="k3"><div class="nhan"><b>k3</b> · Hộp chấm một mẫu — FT (W2, dưới kỳ vọng → bắt buộc nhận xét ≥ 10 ký tự + nhóm nguyên nhân); hộp neo tại ô (bậc 2a), không đổi trang, không panel chồng</div><div class="win w1440" data-theme="dark">
+<div class="tb"><span class="logo">P</span><span class="ten-sp">PISA</span><nav class="menu"><a class="">Học viên & Lớp</a><a class="on">Test</a><a class="">Công việc<span class="dem late">2</span></a></nav><span class="sp"></span>
+<span class="tim"><svg class="ico " aria-hidden="true"><use href="#i-tim"/></svg>Tìm lớp, học viên hoặc email…</span>
+<span class="ib" title="Nhắc việc"><svg class="ico l" aria-hidden="true"><use href="#i-chuong"/></svg><span class="dem">2</span></span>
+<span class="tk"><span class="av">CL</span>Cao Khánh Linh<svg class="ico s" aria-hidden="true"><use href="#i-xuong"/></svg></span></div>
+<div class="trang">
+<div class="dau"><h1>Test</h1></div>
+<div class="tabs"><a class="on">Chấm Test <span class="dem">56</span></a><a class="">Lịch tuần</a></div>
+<div class="hd"><div class="ds">
+<div class="nhom "><span class="late"><svg class="ico " aria-hidden="true"><use href="#i-canh"/></svg> Quá hạn chấm</span><span class="m">· 3 bài</span></div>
+<div class="dv xong"><span class="han ">✓ Xong</span><span style="min-width:0"><span class="v1" style="display:block">W2 · MT2 · MB FT 101</span><span class="v2" style="display:block">thi W4 AUG · hạn 02/09 · <a class="lk" style="font-size:13px">Hoàn tác</a> <span class="f">9 s</span></span></span><span class="vao"><svg class="ico " aria-hidden="true"><use href="#i-phai"/></svg></span></div>
+<div class="dv "><span class="han late">⚠ 5 ngày</span><span style="min-width:0"><span class="v1" style="display:block">L · MT2 · MB FT 102</span><span class="v2" style="display:block">thi W1 SEP · hạn 09/09 · 3 bài dời do vắng</span></span><span class="vao"><svg class="ico " aria-hidden="true"><use href="#i-phai"/></svg></span></div>
+<div class="nhom ">Hạn 16/09<span class="m">· bài thi W2 SEP · 51 bài</span></div>
+<div class="dv chon"><span class="han soon">còn 2 ngày</span><span style="min-width:0"><span class="v1" style="display:block">W2 · MT3 · MB FT 101</span><span class="v2" style="display:block">thi W2 SEP · hạn 16/09 · còn 21 / 33 bài <span class="thanh"><i style="width:36%"></i></span></span></span><span class="vao"><svg class="ico " aria-hidden="true"><use href="#i-phai"/></svg></span></div>
+<div class="dv "><span class="han soon">còn 2 ngày</span><span style="min-width:0"><span class="v1" style="display:block">L, R · MT2 · MB FT 102</span><span class="v2" style="display:block">thi W2 SEP · hạn 16/09 · còn 30 / 36 bài <span class="thanh"><i style="width:17%"></i></span></span></span><span class="vao"><svg class="ico " aria-hidden="true"><use href="#i-phai"/></svg></span></div>
+<div class="nhom ">Bài thi tuần này W3 SEP<span class="m">· hạn 23/09 · 2 bài</span></div>
+<div class="dv "><span class="han ">23/09</span><span style="min-width:0"><span class="v1" style="display:block">W2 · MT3 · MB FT 101</span><span class="v2" style="display:block">thi W3 SEP · 2 bài dời do vắng</span></span><span class="vao"><svg class="ico " aria-hidden="true"><use href="#i-phai"/></svg></span></div>
+<div class="ds-chan"><span>Chỉ hiện bài đã tới tuần thi.</span><span class="sp"></span><a class="lk">Lịch tuần khác ›</a></div>
+</div>
+<div class="ct">
+<div class="ct-dau"><div class="h"><h2>Chấm W2 · MT3 · MB FT 101</h2><span class="soon" style="font-size:14px">còn 2 ngày</span></div>
+<span class="p">thi W2 SEP · hạn 16/09 · còn 21 / 33 bài · <a class="lk-ho">MB FT 101 ↗</a></span></div>
+<div class="ct-cu"><span class="bo-loc">Chỉ ô còn trống · 21</span><span class="bo-loc on">Cả lớp · 33</span><span class="sp"></span><span class="m">Gõ "-" = Vắng</span><span class="oi"><svg class="ico " aria-hidden="true"><use href="#i-info"/></svg></span></div>
+<table class="bang"><thead><tr><th data-kieu="ten">Học viên</th><th data-kieu="noi-bat">Kỳ vọng W</th><th data-kieu="diem">W2</th><th data-kieu="chu">Nhận xét</th></tr></thead><tbody><tr class=" "><td data-kieu="ten"><span class="ten">Nguyễn Minh An</span></td><td data-kieu="noi-bat">6.0</td><td data-kieu="diem"><span class="os  bang"><span style="display:inline-flex;gap:3px;align-items:center"><svg class="ico s" aria-hidden="true"><use href="#i-dat"/></svg>6.0</span><span class="dau-luu" title="Đã lưu"><svg class="ico " aria-hidden="true"><use href="#i-luu"/></svg></span></span></td><td data-kieu="chu" style="max-width:340px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px"><span style="color:var(--dim)">Bố cục rõ, ví dụ còn chung chung.</span></td></tr><tr class=" dang-mo"><td data-kieu="ten"><span class="ten">Lương Bảo Anh</span></td><td data-kieu="noi-bat">6.5</td><td data-kieu="diem"><span class="os go ">6</span></td><td data-kieu="chu" style="max-width:340px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px"><span class="f">—</span></td></tr><tr class="hai "><td data-kieu="ten"><span class="ten">Hồ Gia Bảo</span></td><td data-kieu="noi-bat">6.0</td><td data-kieu="diem"><span class="o-wrap"><span class="os  ">–</span><span class="phu-o ">vắng · dời W3 SEP</span></span></td><td data-kieu="chu" style="max-width:340px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px"><span class="f">—</span></td></tr><tr class=" "><td data-kieu="ten"><span class="ten">Đoàn Khánh Chi</span></td><td data-kieu="noi-bat">6.0</td><td data-kieu="diem"><span class="os  vuot"><span style="display:inline-flex;gap:3px;align-items:center"><svg class="ico s" aria-hidden="true"><use href="#i-dat"/></svg>6.5</span><span class="dau-luu" title="Đã lưu"><svg class="ico " aria-hidden="true"><use href="#i-luu"/></svg></span></span></td><td data-kieu="chu" style="max-width:340px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px"><span style="color:var(--dim)">Từ vựng lặp, cần paraphrase.</span></td></tr><tr class=" "><td data-kieu="ten"><span class="ten">Lý Minh Châu</span></td><td data-kieu="noi-bat">6.0</td><td data-kieu="diem"><span class="os trong "></span></td><td data-kieu="chu" style="max-width:340px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px"><span class="f">—</span></td></tr><tr class="hai "><td data-kieu="ten"><span class="ten">Phạm Quốc Cường</span></td><td data-kieu="noi-bat">6.5</td><td data-kieu="diem"><span class="o-wrap"><span class="os  bang"><span style="display:inline-flex;gap:3px;align-items:center"><svg class="ico s" aria-hidden="true"><use href="#i-dat"/></svg>6.5</span></span><span class="phu-o late">thiếu nhận xét</span></span></td><td data-kieu="chu" style="max-width:340px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px"><span class="f">—</span></td></tr><tr class=" "><td data-kieu="ten"><span class="ten">Vũ Thùy Dung</span></td><td data-kieu="noi-bat">6.0</td><td data-kieu="diem"><span class="os trong "></span></td><td data-kieu="chu" style="max-width:340px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px"><span class="f">—</span></td></tr><tr class=" "><td data-kieu="ten"><span class="ten">Trần Đức Duy</span></td><td data-kieu="noi-bat">6.0</td><td data-kieu="diem"><span class="os  duoi"><span style="display:inline-flex;gap:3px;align-items:center"><svg class="ico s" aria-hidden="true"><use href="#i-chua"/></svg>5.5</span></span></td><td data-kieu="chu" style="max-width:340px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px"><span style="color:var(--dim)">Lập luận tốt, nối ý tự nhiên.</span></td></tr><tr class=" "><td data-kieu="ten"><span class="ten">Mai Anh Đào</span></td><td data-kieu="noi-bat"><span style="font-weight:600;font-size:13px">KCK</span></td><td data-kieu="diem"><span class="os  ">5.5</span></td><td data-kieu="chu" style="max-width:340px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px"><span style="color:var(--dim)">Từ vựng lặp, cần paraphrase.</span></td></tr><tr class=" "><td data-kieu="ten"><span class="ten">Ngô Hải Đăng</span></td><td data-kieu="noi-bat">6.0</td><td data-kieu="diem"><span class="os trong "></span></td><td data-kieu="chu" style="max-width:340px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px"><span class="f">—</span></td></tr><tr class=" "><td data-kieu="ten"><span class="ten">Bùi Hương Giang</span></td><td data-kieu="noi-bat">6.5</td><td data-kieu="diem"><span class="os  vuot"><span style="display:inline-flex;gap:3px;align-items:center"><svg class="ico s" aria-hidden="true"><use href="#i-dat"/></svg>7.0</span></span></td><td data-kieu="chu" style="max-width:340px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px"><span style="color:var(--dim)">Bố cục rõ, ví dụ còn chung chung.</span></td></tr><tr class=" "><td data-kieu="ten"><span class="ten">Lâm Ngọc Hân</span></td><td data-kieu="noi-bat">6.0</td><td data-kieu="diem"><span class="os trong "></span></td><td data-kieu="chu" style="max-width:340px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px"><span class="f">—</span></td></tr><tr class=" "><td data-kieu="ten"><span class="ten">Tô Minh Hiếu</span></td><td data-kieu="noi-bat">6.0</td><td data-kieu="diem"><span class="os  bang"><span style="display:inline-flex;gap:3px;align-items:center"><svg class="ico s" aria-hidden="true"><use href="#i-dat"/></svg>6.0</span></span></td><td data-kieu="chu" style="max-width:340px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px"><span style="color:var(--dim)">Lập luận tốt, nối ý tự nhiên.</span></td></tr><tr class=" "><td data-kieu="ten"><span class="ten">Đặng Gia Huy</span></td><td data-kieu="noi-bat">6.0</td><td data-kieu="diem"><span class="os trong "></span></td><td data-kieu="chu" style="max-width:340px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px"><span class="f">—</span></td></tr></tbody></table><div class="hop" style="right:40px;top:268px">
+<div class="hop-dau"><b>W2 · Lương Bảo Anh</b><span class="p">MT3 · thi W2 SEP · hạn 16/09 · kỳ vọng W 6.5</span></div>
+<div class="hop-than">
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
+<label><span class="nhan-o">TR</span><span class="o-nhap " style="min-width:0;width:100%;justify-content:center">6.0</span></label><label><span class="nhan-o">CC</span><span class="o-nhap " style="min-width:0;width:100%;justify-content:center">6.5</span></label><label><span class="nhan-o">LR</span><span class="o-nhap " style="min-width:0;width:100%;justify-content:center">6.0</span></label><label><span class="nhan-o">GRA</span><span class="o-nhap go" style="min-width:0;width:100%;justify-content:center">6</span></label>
+</div>
+<div style="display:flex;align-items:baseline;gap:8px;font-size:15px"><span class="m" style="font-size:13px">Band W2</span><b style="font-size:17px;color:var(--c1)">6.0</b><span style="font-size:14px;color:var(--dim)"><svg class="ico s" aria-hidden="true"><use href="#i-xuong-d"/></svg> dưới kỳ vọng 6.5</span></div>
+<label><span class="nhan-o">Nhận xét <span class="f">· ≥ 10 ký tự</span></span><span class="o-chu">Bố cục rõ nhưng ví dụ còn chung chung, câu phức sai thì.</span></label>
+<div><span class="nhan-o">Nhóm nguyên nhân <span class="f">· chọn ít nhất 1</span></span>
+<div style="display:flex;flex-wrap:wrap;gap:6px"><span class="chip-chon">Đáp ứng yêu cầu đề</span><span class="chip-chon on">Tổ chức bài / liên kết ý</span><span class="chip-chon">Từ vựng</span><span class="chip-chon on">Ngữ pháp</span><span class="chip-chon">Khác</span></div></div>
+</div>
+<div class="hop-chan"><span class="btn btn-sm btn-g xam">Vắng</span><span class="btn btn-sm btn-g xam">Thêm <svg class="ico s" aria-hidden="true"><use href="#i-xuong"/></svg></span><span class="sp"></span><span class="btn btn-sm">Lưu</span><span class="btn btn-sm btn-p">Lưu · em tiếp</span></div>
+</div>
+<div class="ct-chan"><span>… 19 em nữa</span></div>
+</div></div>
+</div></div></div>
+<div class="khung" id="k4"><div class="nhan"><b>k4</b> · Hộp chấm một mẫu — lớp thường (GV Lê Minh Khoa, G+V Progress MB FOU 15): "✗ 17/25", % chỉ ở hộp, nhận xét tuỳ chọn trong hộp; Thêm ▾ mở (Lịch sử · Huỷ điểm); ô "đã huỷ điểm" khôi phục được</div><div class="win w1440" data-theme="dark">
+<div class="tb"><span class="logo">P</span><span class="ten-sp">PISA</span><nav class="menu"><a class="">Học viên & Lớp</a><a class="on">Test</a><a class="">Công việc<span class="dem late">1</span></a></nav><span class="sp"></span>
+<span class="tim"><svg class="ico " aria-hidden="true"><use href="#i-tim"/></svg>Tìm lớp, học viên hoặc email…</span>
+<span class="ib" title="Nhắc việc"><svg class="ico l" aria-hidden="true"><use href="#i-chuong"/></svg><span class="dem">1</span></span>
+<span class="tk"><span class="av">LK</span>Lê Minh Khoa<svg class="ico s" aria-hidden="true"><use href="#i-xuong"/></svg></span></div>
+<div class="trang">
+<div class="dau"><h1>Test</h1></div>
+<div class="tabs"><a class="on">Chấm Test <span class="dem">61</span></a><a class="">Lịch tuần</a></div>
+<div class="hd"><div class="ds">
+<div class="nhom "><span class="late"><svg class="ico " aria-hidden="true"><use href="#i-canh"/></svg> Quá hạn chấm</span><span class="m">· 4 bài</span></div>
+<div class="dv "><span class="han late">⚠ 5 ngày</span><span style="min-width:0"><span class="v1" style="display:block">W1 · MT2 · MB FT 101</span><span class="v2" style="display:block">thi W1 SEP · hạn 09/09 · 4 bài dời do vắng</span></span><span class="vao"><svg class="ico " aria-hidden="true"><use href="#i-phai"/></svg></span></div>
+<div class="nhom ">Hạn 16/09<span class="m">· bài thi W2 SEP · 45 bài</span></div>
+<div class="dv chon"><span class="han soon">còn 2 ngày</span><span style="min-width:0"><span class="v1" style="display:block">G+V · Progress · MB FOU 15</span><span class="v2" style="display:block">thi W2 SEP · hạn 16/09 · còn 6 / 14 bài <span class="thanh"><i style="width:57%"></i></span></span></span><span class="vao"><svg class="ico " aria-hidden="true"><use href="#i-phai"/></svg></span></div>
+<div class="dv "><span class="han soon">còn 2 ngày</span><span style="min-width:0"><span class="v1" style="display:block">W1 · MT3 · MB FT 101</span><span class="v2" style="display:block">thi W2 SEP · hạn 16/09 · còn 24 / 33 bài <span class="thanh"><i style="width:27%"></i></span></span></span><span class="vao"><svg class="ico " aria-hidden="true"><use href="#i-phai"/></svg></span></div>
+<div class="dv "><span class="han soon">còn 2 ngày</span><span style="min-width:0"><span class="v1" style="display:block">W1, W2 · MT2 · MB FT 102</span><span class="v2" style="display:block">thi W2 SEP · hạn 16/09 · còn 15 / 36 bài <span class="thanh"><i style="width:58%"></i></span></span></span><span class="vao"><svg class="ico " aria-hidden="true"><use href="#i-phai"/></svg></span></div>
+<div class="nhom ">Bài thi tuần này W3 SEP<span class="m">· hạn 23/09 · 12 bài</span></div>
+<div class="dv "><span class="han ">23/09</span><span style="min-width:0"><span class="v1" style="display:block">G+V · Final · MB FOU 12</span><span class="v2" style="display:block">thi W3 SEP · hạn 23/09 · 12 bài</span></span><span class="vao"><svg class="ico " aria-hidden="true"><use href="#i-phai"/></svg></span></div>
+<div class="ds-chan"><span>Chỉ hiện bài đã tới tuần thi.</span><span class="sp"></span><a class="lk">Lịch tuần khác ›</a></div>
+</div>
+<div class="ct">
+<div class="ct-dau"><div class="h"><h2>Chấm G+V · Progress · MB FOU 15</h2><span class="soon" style="font-size:14px">còn 2 ngày</span></div>
+<span class="p">thi W2 SEP · hạn 16/09 · còn 6 / 14 bài · <a class="lk-ho">MB FOU 15 ↗</a></span></div>
+<div class="ct-cu"><span class="bo-loc">Chỉ ô còn trống · 6</span><span class="bo-loc on">Cả lớp · 14</span><span class="sp"></span><span class="m">Đạt từ 70 %</span><span class="oi"><svg class="ico " aria-hidden="true"><use href="#i-info"/></svg></span></div>
+<table class="bang"><thead><tr><th data-kieu="ten">Học viên</th><th data-kieu="diem-ti-le">G+V <span class="phu">/25</span></th><th data-kieu="chu">Nhận xét <span class="phu">tuỳ chọn</span></th></tr></thead><tbody><tr class=" dang-mo"><td data-kieu="ten"><span class="ten">Lưu Bảo Ngân</span></td><td data-kieu="diem-ti-le"><span class="os tl  go"><span class="s"></span><span class="so-dung">17</span><span class="mau">/25</span></span></td><td data-kieu="chu" style="font-size:14px"><span class="f">—</span></td></tr><tr class="hai "><td data-kieu="ten"><span class="ten">Trần Quốc Việt</span></td><td data-kieu="diem-ti-le"><span class="o-wrap"><span class="os trong" style="width:88px"></span><span class="phu-o ">đã huỷ 15/25</span></span></td><td data-kieu="chu" style="font-size:14px"><span class="f">—</span></td></tr><tr class=" "><td data-kieu="ten"><span class="ten">Nguyễn Gia Hân</span></td><td data-kieu="diem-ti-le"><span class="os tl vuot "><svg class="ico s" aria-hidden="true"><use href="#i-dat"/></svg><span class="so-dung">21</span><span class="mau">/25</span></span></td><td data-kieu="chu" style="font-size:14px"><span class="f">—</span></td></tr><tr class=" "><td data-kieu="ten"><span class="ten">Phạm Minh Khôi</span></td><td data-kieu="diem-ti-le"><span class="os tl vuot "><svg class="ico s" aria-hidden="true"><use href="#i-dat"/></svg><span class="so-dung">19</span><span class="mau">/25</span></span></td><td data-kieu="chu" style="font-size:14px"><span style="color:var(--dim)">Nghe chủ động hơn, còn sai thì quá khứ.</span></td></tr><tr class=" "><td data-kieu="ten"><span class="ten">Đỗ Thảo My</span></td><td data-kieu="diem-ti-le"><span class="os tl duoi "><svg class="ico s" aria-hidden="true"><use href="#i-chua"/></svg><span class="so-dung">15</span><span class="mau">/25</span></span></td><td data-kieu="chu" style="font-size:14px"><span class="f">—</span></td></tr><tr class="hai "><td data-kieu="ten"><span class="ten">Vương Hải Nam</span></td><td data-kieu="diem-ti-le"><span class="o-wrap"><span class="os  ">–</span><span class="phu-o ">vắng · dời W3 SEP</span></span></td><td data-kieu="chu" style="font-size:14px"><span class="f">—</span></td></tr><tr class=" "><td data-kieu="ten"><span class="ten">Lê Khánh Ngọc</span></td><td data-kieu="diem-ti-le"><span class="os tl vuot "><svg class="ico s" aria-hidden="true"><use href="#i-dat"/></svg><span class="so-dung">23</span><span class="mau">/25</span></span></td><td data-kieu="chu" style="font-size:14px"><span style="color:var(--dim)">Nghe chủ động hơn, còn sai thì quá khứ.</span></td></tr><tr class=" "><td data-kieu="ten"><span class="ten">Hồ Tuấn Phát</span></td><td data-kieu="diem-ti-le"><span class="os trong" style="width:88px"></span></td><td data-kieu="chu" style="font-size:14px"><span class="f">—</span></td></tr><tr class=" "><td data-kieu="ten"><span class="ten">Bùi Thanh Tâm</span></td><td data-kieu="diem-ti-le"><span class="os tl vuot "><svg class="ico s" aria-hidden="true"><use href="#i-dat"/></svg><span class="so-dung">18</span><span class="mau">/25</span></span></td><td data-kieu="chu" style="font-size:14px"><span class="f">—</span></td></tr><tr class=" "><td data-kieu="ten"><span class="ten">Dương Kim Thư</span></td><td data-kieu="diem-ti-le"><span class="os trong" style="width:88px"></span></td><td data-kieu="chu" style="font-size:14px"><span class="f">—</span></td></tr><tr class=" "><td data-kieu="ten"><span class="ten">Lý Hoàng Vũ</span></td><td data-kieu="diem-ti-le"><span class="os tl duoi "><svg class="ico s" aria-hidden="true"><use href="#i-chua"/></svg><span class="so-dung">16</span><span class="mau">/25</span><span class="dau-luu" title="Đã lưu"><svg class="ico " aria-hidden="true"><use href="#i-luu"/></svg></span></span></td><td data-kieu="chu" style="font-size:14px"><span class="f">—</span></td></tr><tr class=" "><td data-kieu="ten"><span class="ten">Cù Ánh Xuân</span></td><td data-kieu="diem-ti-le"><span class="os trong" style="width:88px"></span></td><td data-kieu="chu" style="font-size:14px"><span class="f">—</span></td></tr><tr class=" "><td data-kieu="ten"><span class="ten">Tăng Bảo Yến</span></td><td data-kieu="diem-ti-le"><span class="os tl vuot "><svg class="ico s" aria-hidden="true"><use href="#i-dat"/></svg><span class="so-dung">20</span><span class="mau">/25</span></span></td><td data-kieu="chu" style="font-size:14px"><span class="f">—</span></td></tr><tr class=" "><td data-kieu="ten"><span class="ten">Mai Quốc Anh</span></td><td data-kieu="diem-ti-le"><span class="os trong" style="width:88px"></span></td><td data-kieu="chu" style="font-size:14px"><span class="f">—</span></td></tr></tbody></table><div class="hop" style="left:400px;top:150px">
+<div class="hop-dau"><b>G+V · Lưu Bảo Ngân</b><span class="p">Progress · thi W2 SEP · hạn 16/09</span></div>
+<div class="hop-than">
+<div style="display:flex;align-items:flex-end;gap:8px;flex-wrap:wrap"><label><span class="nhan-o">Đúng</span><span class="o-nhap go" style="width:64px;justify-content:center">17</span></label><span style="padding-bottom:9px;color:var(--faint)">/</span><label><span class="nhan-o">Tổng</span><span class="o-nhap" style="width:64px;justify-content:center">25</span></label>
+<span style="padding-bottom:9px;font-size:14px;color:var(--dim)">68 % · chưa đạt <span class="f">(cần 70 %)</span></span></div>
+<label><span class="nhan-o">Nhận xét <span class="f">(tuỳ chọn)</span></span><span class="o-chu goi">Ghi cho PH / GVCN nếu cần</span></label>
+</div>
+<div class="hop-chan" style="position:relative"><span class="btn btn-sm btn-g xam">Vắng</span><span class="btn btn-sm btn-g xam" style="background:var(--accent-soft)">Thêm <svg class="ico s" aria-hidden="true"><use href="#i-xuong"/></svg></span><span class="sp"></span><span class="btn btn-sm">Lưu</span><span class="btn btn-sm btn-p">Lưu · em tiếp</span>
+<div style="position:absolute;left:62px;top:46px;width:200px;background:var(--pop);border:1px solid var(--line-strong);border-radius:10px;box-shadow:var(--bong);padding:6px;display:flex;flex-direction:column;font-size:14px">
+<span style="padding:8px 10px;border-radius:6px">Lịch sử · 1 lần</span><span style="padding:8px 10px;border-radius:6px;background-image:linear-gradient(var(--phu-re),var(--phu-re))">Huỷ điểm</span></div>
+</div>
+</div>
+</div></div>
+<div><span class="toast">Đã huỷ điểm G+V · Trần Quốc Việt (15/25)<a class="lk">Hoàn tác</a><span class="dh">7 s</span></span></div>
+</div></div></div>
+<div class="ghi"><b>Khôi phục điểm:</b> sau 10 s Hoàn tác, điểm đã huỷ vẫn cất — mở hộp ô đó → <b>Thêm ▾ › Khôi phục điểm</b> (theo quyền: người sửa được ô). Không khoá cứng (luật 3, chủ SP 21/10). Thêm ▾ của QL có thêm Dời hạn · Dời lịch.</div>
+<div class="khung" id="k5"><div class="nhan"><b>k5</b> · GV có kỹ năng S, KHÔNG dạy lớp nào (chủ SP 21/10, mã đã chạy từ OV-14c): chỉ nhóm "Chấm Speaking chéo", phạm vi chi nhánh của GV; người chấm mặc định = chính GV</div><div class="win w1440" data-theme="dark">
+<div class="tb"><span class="logo">P</span><span class="ten-sp">PISA</span><nav class="menu"><a class="">Học viên & Lớp</a><a class="on">Test</a><a class="">Công việc</a></nav><span class="sp"></span>
+<span class="tim"><svg class="ico " aria-hidden="true"><use href="#i-tim"/></svg>Tìm lớp, học viên hoặc email…</span>
+<span class="ib" title="Nhắc việc"><svg class="ico l" aria-hidden="true"><use href="#i-chuong"/></svg></span>
+<span class="tk"><span class="av">MT</span>Đoàn Minh Thư<svg class="ico s" aria-hidden="true"><use href="#i-xuong"/></svg></span></div>
+<div class="trang">
+<div class="dau"><h1>Test</h1></div>
+<div class="tabs"><a class="on">Chấm Test <span class="dem">24</span></a><a class="">Lịch tuần</a></div>
+<div class="hd"><div class="ds">
+<div class="nhom ">Chấm Speaking chéo<span class="m">· 24 bài · không tính nợ</span></div>
+<div class="dv chon"><span class="han ">16/09</span><span style="min-width:0"><span class="v1" style="display:block">S · MT3 · MB FT 101</span><span class="v2" style="display:block">thi W2 SEP · hạn 16/09 · còn 9 / 33 bài <span class="thanh"><i style="width:73%"></i></span></span></span><span class="vao"><svg class="ico " aria-hidden="true"><use href="#i-phai"/></svg></span></div>
+<div class="dv "><span class="han ">16/09</span><span style="min-width:0"><span class="v1" style="display:block">S · MT2 · MB FT 102</span><span class="v2" style="display:block">thi W2 SEP · hạn 16/09 · còn 8 / 18 bài <span class="thanh"><i style="width:56%"></i></span></span></span><span class="vao"><svg class="ico " aria-hidden="true"><use href="#i-phai"/></svg></span></div>
+<div class="dv "><span class="han late">⚠ 5 ngày</span><span style="min-width:0"><span class="v1" style="display:block">S · MT2 · BC FT 205</span><span class="v2" style="display:block">thi W1 SEP · hạn 09/09 · còn 7 / 21 bài <span class="thanh"><i style="width:67%"></i></span></span></span><span class="vao"><svg class="ico " aria-hidden="true"><use href="#i-phai"/></svg></span></div>
+<div class="ds-chan" style="flex-direction:column;align-items:flex-start;gap:2px"><span>Bài Speaking của chi nhánh Monbay, Bến Cát · ai có kỹ năng S đều chấm được.</span><span>Người chấm muộn bị tính trễ cho chính mình.</span></div>
+</div>
+<div class="ct">
+<div class="ct-dau"><div class="h"><h2>Chấm S · MT3 · MB FT 101</h2><span class="m" style="font-size:14px">hạn 16/09</span></div>
+<span class="p">thi W2 SEP · chấm chéo · còn 9 / 33 bài · <a class="lk-ho">MB FT 101 ↗</a></span></div>
+<div class="ct-cu"><span class="bo-loc on">Chỉ ô còn trống · 9</span><span class="bo-loc">Cả lớp · 33</span><span class="sp"></span><span class="m">Người chấm: <b style="color:var(--text)">Đoàn Minh Thư (bạn)</b></span></div>
+<table class="bang"><thead><tr><th data-kieu="ten">Học viên</th><th data-kieu="noi-bat">Kỳ vọng S</th><th data-kieu="diem">S</th><th data-kieu="chu">Người chấm</th></tr></thead><tbody><tr class=""><td data-kieu="ten"><span class="ten">Nguyễn Minh An</span></td><td data-kieu="noi-bat">6.0</td><td data-kieu="diem"><span class="os  bang"><span style="display:inline-flex;gap:3px;align-items:center"><svg class="ico s" aria-hidden="true"><use href="#i-dat"/></svg>6.0</span></span></td><td data-kieu="chu" style="font-size:14px;color:var(--dim)">Đoàn Minh Thư</td></tr><tr class="dang-mo"><td data-kieu="ten"><span class="ten">Lương Bảo Anh</span></td><td data-kieu="noi-bat">6.5</td><td data-kieu="diem"><span class="os go ">6</span></td><td data-kieu="chu" style="font-size:14px;color:var(--dim)"><span class="f">—</span></td></tr><tr class=""><td data-kieu="ten"><span class="ten">Hồ Gia Bảo</span></td><td data-kieu="noi-bat">6.0</td><td data-kieu="diem"><span class="os trong "></span></td><td data-kieu="chu" style="font-size:14px;color:var(--dim)"><span class="f">—</span></td></tr><tr class=""><td data-kieu="ten"><span class="ten">Đoàn Khánh Chi</span></td><td data-kieu="noi-bat">6.0</td><td data-kieu="diem"><span class="os  vuot"><span style="display:inline-flex;gap:3px;align-items:center"><svg class="ico s" aria-hidden="true"><use href="#i-dat"/></svg>6.5</span></span></td><td data-kieu="chu" style="font-size:14px;color:var(--dim)">Đoàn Minh Thư</td></tr><tr class=""><td data-kieu="ten"><span class="ten">Lý Minh Châu</span></td><td data-kieu="noi-bat">6.0</td><td data-kieu="diem"><span class="os trong "></span></td><td data-kieu="chu" style="font-size:14px;color:var(--dim)"><span class="f">—</span></td></tr><tr class=""><td data-kieu="ten"><span class="ten">Phạm Quốc Cường</span></td><td data-kieu="noi-bat">6.5</td><td data-kieu="diem"><span class="os  duoi"><span style="display:inline-flex;gap:3px;align-items:center"><svg class="ico s" aria-hidden="true"><use href="#i-chua"/></svg>6.0</span></span></td><td data-kieu="chu" style="font-size:14px;color:var(--dim)">Đoàn Minh Thư</td></tr><tr class=""><td data-kieu="ten"><span class="ten">Vũ Thùy Dung</span></td><td data-kieu="noi-bat">6.0</td><td data-kieu="diem"><span class="os trong "></span></td><td data-kieu="chu" style="font-size:14px;color:var(--dim)"><span class="f">—</span></td></tr><tr class=""><td data-kieu="ten"><span class="ten">Trần Đức Duy</span></td><td data-kieu="noi-bat">6.0</td><td data-kieu="diem"><span class="os trong "></span></td><td data-kieu="chu" style="font-size:14px;color:var(--dim)"><span class="f">—</span></td></tr><tr class=""><td data-kieu="ten"><span class="ten">Mai Anh Đào</span></td><td data-kieu="noi-bat"><span style="font-weight:600;font-size:13px">KCK</span></td><td data-kieu="diem"><span class="os  ">5.5</span></td><td data-kieu="chu" style="font-size:14px;color:var(--dim)">Đoàn Minh Thư</td></tr></tbody></table>
+</div></div>
+</div></div></div>
+<div class="khung" id="k6"><div class="nhan"><b>k6</b> · QL Nguyễn Khánh Vy — tab "Tình trạng chấm": "MB FT 101 MT2 đủ chưa, ai nợ" = 1 bấm (hàng mở dưới hàng, bậc 2b); thay dải 3 ô + khối 1 cũ</div><div class="win w1440" data-theme="dark">
+<div class="tb"><span class="logo">P</span><span class="ten-sp">PISA</span><nav class="menu"><a class="">Tổng quan<span class="dem">23</span></a><a class="">Học viên & Lớp</a><a class="on">Test</a><a class="">Công việc</a><a class="">Phân tích</a><a class="">Tutor</a></nav><span class="sp"></span>
+<span class="tim"><svg class="ico " aria-hidden="true"><use href="#i-tim"/></svg>Tìm lớp, học viên hoặc email…</span>
+<span class="ib" title="Nhắc việc"><svg class="ico l" aria-hidden="true"><use href="#i-chuong"/></svg><span class="dem">6</span></span>
+<span class="tk"><span class="av">KV</span>Nguyễn Khánh Vy<svg class="ico s" aria-hidden="true"><use href="#i-xuong"/></svg></span></div>
+<div class="trang">
+<div class="dau"><h1>Test</h1><span class="chon"><span class="nh">Chi nhánh</span> Monbay <svg class="ico s" aria-hidden="true"><use href="#i-xuong"/></svg></span><span class="seg"><span class="on">Tất cả</span><span>FT <span class="n">4 lớp</span></span><span>LT <span class="n">9 lớp</span></span></span>
+<span class="chon"><svg class="ico s" aria-hidden="true"><use href="#i-trai"/></svg></span><span class="chon"><span class="nh">Tuần thi</span> W4 AUG <svg class="ico s" aria-hidden="true"><use href="#i-xuong"/></svg></span><span class="f">→</span><span class="chon">W3 SEP <svg class="ico s" aria-hidden="true"><use href="#i-xuong"/></svg></span><span class="chon"><svg class="ico s" aria-hidden="true"><use href="#i-phai"/></svg></span><a class="lk">Mặc định</a></div>
+<div class="tabs"><a class="on">Tình trạng chấm</a><a>Kế hoạch Test</a><a>Lịch tuần</a></div>
+<div class="khoi">
+<div class="khoi-dau"><h2>Bài chưa chấm đủ</h2><span class="m">· 5 bài · 158 ô trống · quá hạn trước</span><span class="sp"></span><span class="bo-loc">Còn ô trống · 5</span><span class="bo-loc on">Tất cả · 6</span><span class="oi"><svg class="ico " aria-hidden="true"><use href="#i-info"/></svg></span></div>
+<table class="bang"><thead><tr><th data-kieu="ten">Lớp</th><th data-kieu="chu" style="width:90px">Bài</th><th data-kieu="tuan">Tuần thi</th><th data-kieu="so">Đủ điểm</th><th data-kieu="so">Còn ô</th><th data-kieu="chu">Ai còn nợ</th><th data-kieu="tuan" style="width:170px">Hạn</th><th data-kieu="nut"></th></tr></thead><tbody><tr class="dang-mo "><td data-kieu="ten"><span class="ten">MB FT 101</span></td><td data-kieu="chu" style="font-weight:600;color:var(--c1)">MT2</td><td data-kieu="tuan">W4 AUG</td><td data-kieu="so">31/33</td><td data-kieu="so"><span class="oso mo">2</span></td><td data-kieu="chu" style="font-size:14px">Linh W2 2</td><td data-kieu="tuan" style="width:170px;white-space:nowrap"><span class="late">⚠ quá hạn 12 ngày</span></td><td data-kieu="nut"><svg class="ico " aria-hidden="true"><use href="#i-xuong"/></svg></td></tr><tr class="mo-duoi"><td colspan="8"><div style="padding:8px 16px 14px 16px">
+<div style="display:flex;align-items:center;gap:10px;padding:6px 0 10px"><b style="color:var(--c1);font-size:15px">MT2 · MB FT 101 · 2 em còn thiếu</b><span class="bo-loc on">Chỉ em còn thiếu · 2</span><span class="bo-loc">Cả lớp · 33</span><span class="sp"></span><a class="lk">Mở hồ sơ MT2 ›</a></div>
+<table class="bang" style="background:var(--surface);border:1px solid var(--line);border-radius:8px"><thead><tr><th data-kieu="ten" style="padding-left:28px">Học viên</th><th data-kieu="noi-bat">Kỳ vọng</th><th data-kieu="diem">L</th><th data-kieu="diem">R</th><th data-kieu="diem">W1</th><th data-kieu="diem">W2</th><th data-kieu="diem">W</th><th data-kieu="diem">S <span class="phu">chấm chéo</span></th></tr></thead><tbody><tr><td data-kieu="ten" style="padding-left:28px"><span class="ten">Lý Minh Châu</span></td><td data-kieu="noi-bat">6.0</td><td data-kieu="diem"><span class="od vuot"><svg class="ico k" aria-hidden="true"><use href="#i-dat"/></svg><span>6.5</span></span></td><td data-kieu="diem"><span class="od bang"><svg class="ico k" aria-hidden="true"><use href="#i-dat"/></svg><span>6.0</span></span></td><td data-kieu="diem"><span class="od bang"><svg class="ico k" aria-hidden="true"><use href="#i-dat"/></svg><span>6.0</span></span></td><td data-kieu="diem"><span class="o-wrap"><span class="os trong "></span><span class="phu-o late">⚠ Linh</span></span></td><td data-kieu="diem"></td><td data-kieu="diem"><span class="od bang"><svg class="ico k" aria-hidden="true"><use href="#i-dat"/></svg><span>6.0</span></span></td></tr><tr><td data-kieu="ten" style="padding-left:28px"><span class="ten">Phan Thanh Tùng</span></td><td data-kieu="noi-bat">6.0</td><td data-kieu="diem"><span class="od duoi"><svg class="ico k" aria-hidden="true"><use href="#i-chua"/></svg><span>5.5</span></span></td><td data-kieu="diem"><span class="od bang"><svg class="ico k" aria-hidden="true"><use href="#i-dat"/></svg><span>6.0</span></span></td><td data-kieu="diem"><span class="od vuot"><svg class="ico k" aria-hidden="true"><use href="#i-dat"/></svg><span>6.5</span></span></td><td data-kieu="diem"><span class="o-wrap"><span class="os trong "></span><span class="phu-o late">⚠ Linh</span></span></td><td data-kieu="diem"></td><td data-kieu="diem"><span class="od vuot"><svg class="ico k" aria-hidden="true"><use href="#i-dat"/></svg><span>6.5</span></span></td></tr></tbody></table>
+<div class="m" style="margin-top:8px">Bạn nhập hộ được · ô S: chọn người chấm trong hộp chấm.</div>
+</div></td></tr><tr class=" "><td data-kieu="ten"><span class="ten">MB FT 102</span></td><td data-kieu="chu" style="font-weight:600;color:var(--c1)">MT2</td><td data-kieu="tuan">W1, W2 SEP</td><td data-kieu="so">12/18</td><td data-kieu="so"><span class="oso ">45</span></td><td data-kieu="chu" style="font-size:14px">Linh L,R 33 · Khoa W1,W2 3 · chấm chéo S 9</td><td data-kieu="tuan" style="width:170px;white-space:nowrap"><span class="late">⚠ quá hạn 5 ngày</span></td><td data-kieu="nut"><svg class="ico " aria-hidden="true"><use href="#i-phai"/></svg></td></tr><tr class=" "><td data-kieu="ten"><span class="ten">MB FT 101</span></td><td data-kieu="chu" style="font-weight:600;color:var(--c1)">MT3</td><td data-kieu="tuan">W2 SEP</td><td data-kieu="so">9/33</td><td data-kieu="so"><span class="oso ">54</span></td><td data-kieu="chu" style="font-size:14px">Hà L,R 18 · Khoa W1 6 · Linh W2 21 · chấm chéo S 9</td><td data-kieu="tuan" style="width:170px;white-space:nowrap"><span class="soon">còn 2 ngày</span></td><td data-kieu="nut"><svg class="ico " aria-hidden="true"><use href="#i-phai"/></svg></td></tr><tr class=" "><td data-kieu="ten"><span class="ten">MB FOU 15</span></td><td data-kieu="chu" style="font-weight:600;color:var(--c1)">Progress</td><td data-kieu="tuan">W2 SEP</td><td data-kieu="so">8/14</td><td data-kieu="so"><span class="oso ">9</span></td><td data-kieu="chu" style="font-size:14px">Hà L,R 4 · Khoa G+V 5</td><td data-kieu="tuan" style="width:170px;white-space:nowrap"><span class="soon">còn 2 ngày</span></td><td data-kieu="nut"><svg class="ico " aria-hidden="true"><use href="#i-phai"/></svg></td></tr><tr class=" "><td data-kieu="ten"><span class="ten">MB FOU 12</span></td><td data-kieu="chu" style="font-weight:600;color:var(--c1)">Final</td><td data-kieu="tuan">W3 SEP</td><td data-kieu="so">0/12</td><td data-kieu="so"><span class="oso ">48</span></td><td data-kieu="chu" style="font-size:14px">Hà L,R 24 · Khoa G+V 12 · Trang P 12</td><td data-kieu="tuan" style="width:170px;white-space:nowrap"><span class="">hạn 23/09</span></td><td data-kieu="nut"><svg class="ico " aria-hidden="true"><use href="#i-phai"/></svg></td></tr><tr class=" mo"><td data-kieu="ten"><span class="ten">MB FT 103</span></td><td data-kieu="chu" style="font-weight:600;color:var(--c1)">MT1</td><td data-kieu="tuan">W4 AUG</td><td data-kieu="so">20/20</td><td data-kieu="so">0</td><td data-kieu="chu" style="font-size:14px">—</td><td data-kieu="tuan" style="width:170px;white-space:nowrap"><span class="">✓ Đủ điểm</span></td><td data-kieu="nut"></td></tr></tbody></table>
+</div>
+</div></div></div>
+<div class="ghi"><b>Đích đo §6:</b> QL tra "lớp X MT2 đủ chưa, ai còn nợ": <b>3–6 bấm + cộng nhẩm → 1 bấm, 0 đổi trang</b> (05 3.6). Ô số "Còn ô" là <code>OSo</code> (mở hàng). "Ai còn nợ" theo kỹ năng, S ghi "chấm chéo" (T18: không tính nợ GVBM S / GVCN). Admin VP thấy cùng tab (chi nhánh), nhập hộ theo <code>score.override</code>. TVV / CX không có khu Test.</div>
+<div class="khung" id="k7"><div class="nhan"><b>k7</b> · GV — rỗng (dạy luật một câu) và lỗi tải (chỉ che vùng danh sách, giữ đầu trang + tab)</div><div class="win w1440" data-theme="dark">
+<div class="tb"><span class="logo">P</span><span class="ten-sp">PISA</span><nav class="menu"><a class="">Học viên & Lớp</a><a class="on">Test</a><a class="">Công việc</a></nav><span class="sp"></span>
+<span class="tim"><svg class="ico " aria-hidden="true"><use href="#i-tim"/></svg>Tìm lớp, học viên hoặc email…</span>
+<span class="ib" title="Nhắc việc"><svg class="ico l" aria-hidden="true"><use href="#i-chuong"/></svg></span>
+<span class="tk"><span class="av">CL</span>Cao Khánh Linh<svg class="ico s" aria-hidden="true"><use href="#i-xuong"/></svg></span></div>
+<div class="trang">
+<div class="dau"><h1>Test</h1></div>
+<div class="tabs"><a class="on">Chấm Test <span class="dem">0</span></a><a class="">Lịch tuần</a></div>
+<div class="ds" style="max-width:900px"><div class="rong"><b>✓ Không còn bài phải chấm</b><p>Bài thi tuần này W3 SEP chấm trước T4 tuần sau (23/09). Bài mới hiện ở đây từ thứ Hai tuần thi.</p><a class="lk" style="margin-top:6px">Lịch tuần khác ›</a></div></div>
+<div class="ds" style="max-width:900px"><div class="rong"><b>Chưa tải được danh sách bài</b><p>Mất kết nối. Điểm đã lưu không mất.</p><span class="btn btn-sm" style="margin-top:6px">Thử lại</span></div></div>
+</div></div></div>
+</section>
+
+<section class="sec" id="n375"><h2>375 · sáng</h2>
+<div class="cap">
+<div class="khung" id="a"><div class="nhan"><b>a</b> · GV Linh · danh sách theo hạn (bấm dòng → toàn màn)</div><div class="win w375" data-theme="light">
+<div class="tb3"><span class="logo">P</span><b style="font-size:15px;color:var(--c1);margin-left:4px">Test</b><span class="sp"></span>
+<span class="ib"><svg class="ico l" aria-hidden="true"><use href="#i-tim"/></svg></span><span class="ib"><svg class="ico l" aria-hidden="true"><use href="#i-chuong"/></svg><span class="dem" style="position:absolute;top:3px;right:2px">2</span></span><span class="av" style="width:32px;height:32px">CL</span></div>
+<div class="trang">
+<div class="tabs"><a class="on">Chấm Test <span class="dem">58</span></a><a class="">Lịch tuần</a></div>
+<div class="ds">
+<div class="nhom "><span class="late"><svg class="ico " aria-hidden="true"><use href="#i-canh"/></svg> Quá hạn chấm</span><span class="m">· 5 bài</span></div>
+<div class="dv "><span class="han late">⚠ 12 ngày</span><span style="min-width:0"><span class="v1" style="display:block">W2 · MT2 · MB FT 101</span><span class="v2" style="display:block">thi W4 AUG · hạn 02/09 · còn 2 bài</span></span><span class="vao"><svg class="ico s" aria-hidden="true"><use href="#i-phai"/></svg></span></div>
+<div class="dv "><span class="han late">⚠ 5 ngày</span><span style="min-width:0"><span class="v1" style="display:block">L · MT2 · MB FT 102</span><span class="v2" style="display:block">thi W1 SEP · hạn 09/09 · 3 bài</span></span><span class="vao"><svg class="ico s" aria-hidden="true"><use href="#i-phai"/></svg></span></div>
+<div class="nhom ">Hạn 16/09<span class="m">· 51 bài</span></div>
+<div class="dv "><span class="han soon">còn 2 ngày</span><span style="min-width:0"><span class="v1" style="display:block">W2 · MT3 · MB FT 101</span><span class="v2" style="display:block">thi W2 SEP · còn 21 / 33 bài</span></span><span class="vao"><svg class="ico s" aria-hidden="true"><use href="#i-phai"/></svg></span></div>
+<div class="dv "><span class="han soon">còn 2 ngày</span><span style="min-width:0"><span class="v1" style="display:block">L, R · MT2 · MB FT 102</span><span class="v2" style="display:block">thi W2 SEP · còn 30 / 36 bài</span></span><span class="vao"><svg class="ico s" aria-hidden="true"><use href="#i-phai"/></svg></span></div>
+<div class="nhom ">Bài thi tuần này W3 SEP<span class="m">· 2 bài</span></div>
+<div class="dv "><span class="han ">23/09</span><span style="min-width:0"><span class="v1" style="display:block">W2 · MT3 · MB FT 101</span><span class="v2" style="display:block">thi W3 SEP · 2 bài dời do vắng</span></span><span class="vao"><svg class="ico s" aria-hidden="true"><use href="#i-phai"/></svg></span></div>
+<div class="ds-chan"><span class="sp"></span><a class="lk">Lịch tuần khác ›</a></div>
+</div>
+</div>
+<nav class="bot" style="--n:3"><a class=""><svg class="ico " aria-hidden="true"><use href="#i-nguoi"/></svg>Học viên</a><a class="on"><svg class="ico " aria-hidden="true"><use href="#i-test"/></svg>Test</a><a class=""><svg class="ico " aria-hidden="true"><use href="#i-viec"/></svg>Công việc<span class="dem">3</span></a></nav>
+</div></div>
+<div class="khung" id="b"><div class="nhan"><b>b</b> · GV Linh · chấm một kỹ năng (ô 44 px, nút dính đáy)</div><div class="win w375" data-theme="light">
+<div class="tb3"><span class="logo">P</span><b style="font-size:15px;color:var(--c1);margin-left:4px">Test</b><span class="sp"></span>
+<span class="ib"><svg class="ico l" aria-hidden="true"><use href="#i-tim"/></svg></span><span class="ib"><svg class="ico l" aria-hidden="true"><use href="#i-chuong"/></svg><span class="dem" style="position:absolute;top:3px;right:2px">2</span></span><span class="av" style="width:32px;height:32px">CL</span></div>
+<div style="padding:4px 16px 0"><span class="quay"><svg class="ico " aria-hidden="true"><use href="#i-trai"/></svg> Chấm Test</span></div>
+<div style="padding:0 16px 10px"><b style="font-size:17px;color:var(--c1);display:block">Chấm W2 · MT3 · MB FT 101</b><span class="m" style="font-size:14px">thi W2 SEP · hạn 16/09 · <span class="soon">còn 2 ngày</span> · còn 21 / 33 bài</span>
+<div style="display:flex;gap:8px;margin-top:8px"><span class="bo-loc" style="height:36px">Chỉ ô còn trống · 21</span><span class="bo-loc on" style="height:36px">Cả lớp · 33</span></div></div>
+<div style="background:var(--surface);border-top:1px solid var(--line)"><div style="display:grid;grid-template-columns:minmax(0,1fr) 64px 80px;gap:8px;align-items:center;min-height:56px;padding:6px 14px;border-top:1px solid var(--line);">
+<span><b style="font-size:15px;color:var(--c1);font-weight:600;display:block">Nguyễn Minh An</b></span>
+<span style="text-align:center;font-size:13px;color:var(--dim)">kỳ vọng<br><b style="color:var(--c1);font-size:15px">6.0</b></span>
+<span style="display:grid;place-items:center"><span class="os   bang" style="width:72px;height:44px;font-size:16px"><span style="display:inline-flex;gap:3px;align-items:center"><svg class="ico s" aria-hidden="true"><use href="#i-dat"/></svg>6.0</span><span class="dau-luu"><svg class="ico " aria-hidden="true"><use href="#i-luu"/></svg></span></span></span></div><div style="display:grid;grid-template-columns:minmax(0,1fr) 64px 80px;gap:8px;align-items:center;min-height:56px;padding:6px 14px;border-top:1px solid var(--line);background:var(--accent-soft);box-shadow:inset 3px 0 0 var(--accent-strong)">
+<span><b style="font-size:15px;color:var(--c1);font-weight:600;display:block">Lương Bảo Anh</b></span>
+<span style="text-align:center;font-size:13px;color:var(--dim)">kỳ vọng<br><b style="color:var(--c1);font-size:15px">6.5</b></span>
+<span style="display:grid;place-items:center"><span class="os  go " style="width:72px;height:44px;font-size:16px">6</span></span></div><div style="display:grid;grid-template-columns:minmax(0,1fr) 64px 80px;gap:8px;align-items:center;min-height:56px;padding:6px 14px;border-top:1px solid var(--line);">
+<span><b style="font-size:15px;color:var(--c1);font-weight:600;display:block">Hồ Gia Bảo</b><span style="font-size:13px;color:var(--dim)">vắng · dời W3 SEP</span></span>
+<span style="text-align:center;font-size:13px;color:var(--dim)">kỳ vọng<br><b style="color:var(--c1);font-size:15px">6.0</b></span>
+<span style="display:grid;place-items:center"><span class="os   " style="width:72px;height:44px;font-size:16px">–</span></span></div><div style="display:grid;grid-template-columns:minmax(0,1fr) 64px 80px;gap:8px;align-items:center;min-height:56px;padding:6px 14px;border-top:1px solid var(--line);">
+<span><b style="font-size:15px;color:var(--c1);font-weight:600;display:block">Đoàn Khánh Chi</b></span>
+<span style="text-align:center;font-size:13px;color:var(--dim)">kỳ vọng<br><b style="color:var(--c1);font-size:15px">6.0</b></span>
+<span style="display:grid;place-items:center"><span class="os   vuot" style="width:72px;height:44px;font-size:16px"><span style="display:inline-flex;gap:3px;align-items:center"><svg class="ico s" aria-hidden="true"><use href="#i-dat"/></svg>6.5</span></span></span></div><div style="display:grid;grid-template-columns:minmax(0,1fr) 64px 80px;gap:8px;align-items:center;min-height:56px;padding:6px 14px;border-top:1px solid var(--line);">
+<span><b style="font-size:15px;color:var(--c1);font-weight:600;display:block">Lý Minh Châu</b></span>
+<span style="text-align:center;font-size:13px;color:var(--dim)">kỳ vọng<br><b style="color:var(--c1);font-size:15px">6.0</b></span>
+<span style="display:grid;place-items:center"><span class="os trong  " style="width:72px;height:44px;font-size:16px"></span></span></div><div style="display:grid;grid-template-columns:minmax(0,1fr) 64px 80px;gap:8px;align-items:center;min-height:56px;padding:6px 14px;border-top:1px solid var(--line);">
+<span><b style="font-size:15px;color:var(--c1);font-weight:600;display:block">Phạm Quốc Cường</b></span>
+<span style="text-align:center;font-size:13px;color:var(--dim)">kỳ vọng<br><b style="color:var(--c1);font-size:15px">6.5</b></span>
+<span style="display:grid;place-items:center"><span class="os   bang" style="width:72px;height:44px;font-size:16px"><span style="display:inline-flex;gap:3px;align-items:center"><svg class="ico s" aria-hidden="true"><use href="#i-dat"/></svg>6.5</span></span></span></div><div style="display:grid;grid-template-columns:minmax(0,1fr) 64px 80px;gap:8px;align-items:center;min-height:56px;padding:6px 14px;border-top:1px solid var(--line);">
+<span><b style="font-size:15px;color:var(--c1);font-weight:600;display:block">Vũ Thùy Dung</b></span>
+<span style="text-align:center;font-size:13px;color:var(--dim)">kỳ vọng<br><b style="color:var(--c1);font-size:15px">6.0</b></span>
+<span style="display:grid;place-items:center"><span class="os trong  " style="width:72px;height:44px;font-size:16px"></span></span></div></div>
+<div class="day-nut" style="border-top:1px solid var(--line-strong)"><span class="btn btn-g xam" style="flex:none">Vắng</span><span class="btn btn-p">Lưu · em tiếp</span></div>
+<nav class="bot" style="--n:3"><a class=""><svg class="ico " aria-hidden="true"><use href="#i-nguoi"/></svg>Học viên</a><a class="on"><svg class="ico " aria-hidden="true"><use href="#i-test"/></svg>Test</a><a class=""><svg class="ico " aria-hidden="true"><use href="#i-viec"/></svg>Công việc<span class="dem">3</span></a></nav>
+</div></div>
+<div class="khung" id="c"><div class="nhan"><b>c</b> · Hộp chấm FT = tấm dưới đáy</div><div class="win w375" data-theme="light" style="height:812px">
+<div class="tb3"><span class="logo">P</span><b style="font-size:15px;color:var(--c1);margin-left:4px">Test</b><span class="sp"></span>
+<span class="ib"><svg class="ico l" aria-hidden="true"><use href="#i-tim"/></svg></span><span class="ib"><svg class="ico l" aria-hidden="true"><use href="#i-chuong"/></svg><span class="dem" style="position:absolute;top:3px;right:2px">2</span></span><span class="av" style="width:32px;height:32px">CL</span></div>
+<div style="padding:12px 16px;opacity:.4"><b style="font-size:17px">Chấm W2 · MT3 · MB FT 101</b></div>
+<div style="position:absolute;inset:56px 0 0 0;background:var(--man)"></div>
+<div style="position:absolute;left:0;right:0;bottom:0;background:var(--pop);border-radius:16px 16px 0 0;box-shadow:var(--bong);display:flex;flex-direction:column">
+<div style="width:40px;height:4px;border-radius:2px;background:var(--line-strong);margin:8px auto 0"></div>
+<div style="padding:10px 16px 10px;border-bottom:1px solid var(--line)"><b style="font-size:17px;color:var(--c1);display:block">W2 · Lương Bảo Anh</b><span class="m">MT3 · thi W2 SEP · hạn 16/09 · kỳ vọng W 6.5</span></div>
+<div style="padding:12px 16px;display:flex;flex-direction:column;gap:12px">
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px"><label><span class="nhan-o">TR</span><span class="o-nhap " style="min-width:0;width:100%;justify-content:center">6.0</span></label><label><span class="nhan-o">CC</span><span class="o-nhap " style="min-width:0;width:100%;justify-content:center">6.5</span></label><label><span class="nhan-o">LR</span><span class="o-nhap " style="min-width:0;width:100%;justify-content:center">6.0</span></label><label><span class="nhan-o">GRA</span><span class="o-nhap go" style="min-width:0;width:100%;justify-content:center">6</span></label></div>
+<div style="font-size:15px"><span class="m">Band W2</span> <b style="font-size:17px;color:var(--c1)">6.0</b> <span style="font-size:14px;color:var(--dim)"><svg class="ico s" aria-hidden="true"><use href="#i-xuong-d"/></svg> dưới kỳ vọng 6.5</span></div>
+<label><span class="nhan-o">Nhận xét <span class="f">· ≥ 10 ký tự</span></span><span class="o-chu" style="font-size:16px">Bố cục rõ nhưng ví dụ còn chung chung, câu phức sai thì.</span></label>
+<div><span class="nhan-o">Nhóm nguyên nhân <span class="f">· chọn ít nhất 1</span></span><div style="display:flex;flex-wrap:wrap;gap:6px"><span class="chip-chon" style="height:36px">Đáp ứng yêu cầu đề</span><span class="chip-chon on" style="height:36px">Tổ chức bài / liên kết ý</span><span class="chip-chon" style="height:36px">Từ vựng</span><span class="chip-chon on" style="height:36px">Ngữ pháp</span><span class="chip-chon" style="height:36px">Khác</span></div></div>
+</div>
+<div class="day-nut"><span class="btn btn-g xam" style="flex:none">Vắng</span><span class="btn btn-g xam" style="flex:none">Thêm</span><span class="btn btn-p">Lưu · em tiếp</span></div>
+</div></div></div>
+</div>
+<div class="cap">
+<div class="khung" id="d"><div class="nhan"><b>d</b> · Lớp thường: ô to gõ thẳng + "＋ Nhận xét" mở ngay dưới hàng</div><div class="win w375" data-theme="light">
+<div class="tb3"><span class="logo">P</span><b style="font-size:15px;color:var(--c1);margin-left:4px">Test</b><span class="sp"></span>
+<span class="ib"><svg class="ico l" aria-hidden="true"><use href="#i-tim"/></svg></span><span class="ib"><svg class="ico l" aria-hidden="true"><use href="#i-chuong"/></svg><span class="dem" style="position:absolute;top:3px;right:2px">1</span></span><span class="av" style="width:32px;height:32px">LK</span></div>
+<div style="padding:4px 16px 0"><span class="quay"><svg class="ico " aria-hidden="true"><use href="#i-trai"/></svg> Chấm Test</span></div>
+<div style="padding:0 16px 10px"><b style="font-size:17px;color:var(--c1);display:block">Chấm G+V · Progress · MB FOU 15</b><span class="m" style="font-size:14px">thi W2 SEP · hạn 16/09 · <span class="soon">còn 2 ngày</span> · còn 6 / 14 bài</span></div>
+<div style="background:var(--surface)"><div style="display:grid;grid-template-columns:minmax(0,1fr) 96px;gap:4px 10px;align-items:center;padding:8px 14px;border-top:1px solid var(--line);background:var(--accent-soft);box-shadow:inset 3px 0 0 var(--accent-strong)">
+<span><b style="font-size:15px;color:var(--c1);font-weight:600;display:block">Lưu Bảo Ngân</b><span style="font-size:13px;color:var(--dim)">68 % · chưa đạt (cần 70 %)</span></span><span class="os tl go" style="width:96px;height:44px;font-size:16px"><span></span><span class="so-dung">17</span><span class="mau">/25</span></span><div style="grid-column:1/-1;padding-top:6px"><span class="nhan-o">Nhận xét <span class="f">(tuỳ chọn)</span></span><span class="o-chu goi" style="font-size:16px;min-height:56px">Ghi cho PH / GVCN nếu cần</span></div></div><div style="display:grid;grid-template-columns:minmax(0,1fr) 96px;gap:4px 10px;align-items:center;padding:8px 14px;border-top:1px solid var(--line);">
+<span><b style="font-size:15px;color:var(--c1);font-weight:600;display:block">Trần Quốc Việt</b><span style="font-size:13px;color:var(--dim)">đã huỷ điểm 15/25</span></span><span class="os trong" style="width:96px;height:44px"></span></div><div style="display:grid;grid-template-columns:minmax(0,1fr) 96px;gap:4px 10px;align-items:center;padding:8px 14px;border-top:1px solid var(--line);">
+<span><b style="font-size:15px;color:var(--c1);font-weight:600;display:block">Nguyễn Gia Hân</b><a class="lk" style="font-size:13px">＋ Nhận xét</a></span><span class="os tl vuot" style="width:96px;height:44px;font-size:16px"><svg class="ico s" aria-hidden="true"><use href="#i-dat"/></svg><span class="so-dung">21</span><span class="mau">/25</span></span></div><div style="display:grid;grid-template-columns:minmax(0,1fr) 96px;gap:4px 10px;align-items:center;padding:8px 14px;border-top:1px solid var(--line);">
+<span><b style="font-size:15px;color:var(--c1);font-weight:600;display:block">Phạm Minh Khôi</b></span><span class="os tl vuot" style="width:96px;height:44px;font-size:16px"><svg class="ico s" aria-hidden="true"><use href="#i-dat"/></svg><span class="so-dung">19</span><span class="mau">/25</span></span><div style="grid-column:1/-1;font-size:13px;color:var(--dim)">Nghe chủ động hơn, còn sai thì quá khứ.</div></div><div style="display:grid;grid-template-columns:minmax(0,1fr) 96px;gap:4px 10px;align-items:center;padding:8px 14px;border-top:1px solid var(--line);">
+<span><b style="font-size:15px;color:var(--c1);font-weight:600;display:block">Đỗ Thảo My</b><a class="lk" style="font-size:13px">＋ Nhận xét</a></span><span class="os tl duoi" style="width:96px;height:44px;font-size:16px"><svg class="ico s" aria-hidden="true"><use href="#i-chua"/></svg><span class="so-dung">15</span><span class="mau">/25</span></span></div><div style="display:grid;grid-template-columns:minmax(0,1fr) 96px;gap:4px 10px;align-items:center;padding:8px 14px;border-top:1px solid var(--line);">
+<span><b style="font-size:15px;color:var(--c1);font-weight:600;display:block">Vương Hải Nam</b><span style="font-size:13px;color:var(--dim)">vắng · dời W3 SEP</span></span><span class="os" style="width:96px;height:44px">–</span></div></div>
+<div class="day-nut" style="border-top:1px solid var(--line-strong)"><span class="btn btn-g xam" style="flex:none">Vắng</span><span class="btn btn-p">Lưu · em tiếp</span></div>
+<nav class="bot" style="--n:3"><a class=""><svg class="ico " aria-hidden="true"><use href="#i-nguoi"/></svg>Học viên</a><a class="on"><svg class="ico " aria-hidden="true"><use href="#i-test"/></svg>Test</a><a class=""><svg class="ico " aria-hidden="true"><use href="#i-viec"/></svg>Công việc<span class="dem">1</span></a></nav>
+</div></div>
+<div class="khung" id="e"><div class="nhan"><b>e</b> · QL · Tình trạng chấm thành thẻ</div><div class="win w375" data-theme="light">
+<div class="tb3"><span class="logo">P</span><b style="font-size:15px;color:var(--c1);margin-left:4px">Test</b><span class="sp"></span>
+<span class="ib"><svg class="ico l" aria-hidden="true"><use href="#i-tim"/></svg></span><span class="ib"><svg class="ico l" aria-hidden="true"><use href="#i-chuong"/></svg><span class="dem" style="position:absolute;top:3px;right:2px">6</span></span><span class="av" style="width:32px;height:32px">KV</span></div>
+<div class="trang">
+<div style="display:flex;gap:8px;flex-wrap:wrap"><span class="chon" style="height:44px">Monbay <svg class="ico s" aria-hidden="true"><use href="#i-xuong"/></svg></span><span class="chon" style="height:44px">W4 AUG → W3 SEP <svg class="ico s" aria-hidden="true"><use href="#i-xuong"/></svg></span></div>
+<div class="tabs" style="overflow:hidden"><a class="on">Tình trạng chấm</a><a>Kế hoạch Test</a><a>Lịch tuần</a></div>
+<div class="m" style="font-size:14px">5 bài chưa chấm đủ · 158 ô trống · quá hạn trước</div>
+<div class="the"><div class="h"><b>MB FT 101 · MT2</b><span class="sp"></span><span class="late" style="font-size:13px">⚠ quá hạn 12 ngày</span></div>
+<div style="font-size:14px;color:var(--dim)">thi W4 AUG · đủ điểm <b style="color:var(--c1)">31/33</b> em · còn <span class="oso" style="height:24px;font-size:14px">2</span> ô</div>
+<div style="font-size:14px">Linh W2 2</div></div>
+<div class="the"><div class="h"><b>MB FT 102 · MT2</b><span class="sp"></span><span class="late" style="font-size:13px">⚠ quá hạn 5 ngày</span></div>
+<div style="font-size:14px;color:var(--dim)">thi W1, W2 SEP · đủ điểm <b style="color:var(--c1)">12/18</b> em · còn <span class="oso" style="height:24px;font-size:14px">45</span> ô</div>
+<div style="font-size:14px">Linh L,R 33 · Khoa W1,W2 3 · chấm chéo S 9</div></div>
+<div class="the"><div class="h"><b>MB FT 101 · MT3</b><span class="sp"></span><span class="soon" style="font-size:13px">còn 2 ngày</span></div>
+<div style="font-size:14px;color:var(--dim)">thi W2 SEP · đủ điểm <b style="color:var(--c1)">9/33</b> em · còn <span class="oso" style="height:24px;font-size:14px">54</span> ô</div>
+<div style="font-size:14px">Hà L,R 18 · Khoa W1 6 · Linh W2 21 · chấm chéo S 9</div></div>
+<div class="the"><div class="h"><b>MB FOU 15 · Progress</b><span class="sp"></span><span class="soon" style="font-size:13px">còn 2 ngày</span></div>
+<div style="font-size:14px;color:var(--dim)">thi W2 SEP · đủ điểm <b style="color:var(--c1)">8/14</b> em · còn <span class="oso" style="height:24px;font-size:14px">9</span> ô</div>
+<div style="font-size:14px">Hà L,R 4 · Khoa G+V 5</div></div>
+</div>
+<nav class="bot" style="--n:5"><a class=""><svg class="ico " aria-hidden="true"><use href="#i-nha"/></svg>Tổng quan<span class="dem">23</span></a><a class=""><svg class="ico " aria-hidden="true"><use href="#i-nguoi"/></svg>Học viên</a><a class="on"><svg class="ico " aria-hidden="true"><use href="#i-test"/></svg>Test</a><a class=""><svg class="ico " aria-hidden="true"><use href="#i-viec"/></svg>Công việc</a><a class=""><svg class="ico " aria-hidden="true"><use href="#i-menu"/></svg>Thêm</a></nav>
+</div></div>
+<div class="khung" id="f"><div class="nhan"><b>f</b> · GV S không dạy lớp nào</div><div class="win w375" data-theme="light">
+<div class="tb3"><span class="logo">P</span><b style="font-size:15px;color:var(--c1);margin-left:4px">Test</b><span class="sp"></span>
+<span class="ib"><svg class="ico l" aria-hidden="true"><use href="#i-tim"/></svg></span><span class="ib"><svg class="ico l" aria-hidden="true"><use href="#i-chuong"/></svg></span><span class="av" style="width:32px;height:32px">MT</span></div>
+<div class="trang">
+<div class="tabs"><a class="on">Chấm Test <span class="dem">24</span></a><a class="">Lịch tuần</a></div>
+<div class="ds">
+<div class="nhom ">Chấm Speaking chéo<span class="m">· 24 bài · không tính nợ</span></div>
+<div class="dv "><span class="han ">16/09</span><span style="min-width:0"><span class="v1" style="display:block">S · MT3 · MB FT 101</span><span class="v2" style="display:block">thi W2 SEP · còn 9 / 33 bài</span></span><span class="vao"><svg class="ico " aria-hidden="true"><use href="#i-phai"/></svg></span></div>
+<div class="dv "><span class="han ">16/09</span><span style="min-width:0"><span class="v1" style="display:block">S · MT2 · MB FT 102</span><span class="v2" style="display:block">thi W2 SEP · còn 8 / 18 bài</span></span><span class="vao"><svg class="ico " aria-hidden="true"><use href="#i-phai"/></svg></span></div>
+<div class="dv "><span class="han late">⚠ 5 ngày</span><span style="min-width:0"><span class="v1" style="display:block">S · MT2 · BC FT 205</span><span class="v2" style="display:block">thi W1 SEP · còn 7 / 21 bài</span></span><span class="vao"><svg class="ico " aria-hidden="true"><use href="#i-phai"/></svg></span></div>
+<div class="ds-chan">Ai có kỹ năng S đều chấm được. Người chấm muộn bị tính trễ cho chính mình.</div>
+</div>
+</div>
+<nav class="bot" style="--n:3"><a class=""><svg class="ico " aria-hidden="true"><use href="#i-nguoi"/></svg>Học viên</a><a class="on"><svg class="ico " aria-hidden="true"><use href="#i-test"/></svg>Test</a><a class=""><svg class="ico " aria-hidden="true"><use href="#i-viec"/></svg>Công việc</a></nav>
+</div></div>
+</div>
+</section>
+
+<section class="sec" id="ghi"><h2>Ghi chú · Cần chủ SP chọn</h2>
+<div class="ghi"><b class="cho">Cần chủ SP chọn</b>
+<ol>
+<li><b>Duyệt hướng "Chấm Test theo hạn, một nguồn" (Q-C1)</b> thay ba khối Lịch Test 06/10. Khi duyệt, mockup ba khối hết hiệu lực.</li>
+<li><b>Tên tab</b>: GV "Chấm Test · Lịch tuần"; QL / QT / Admin VP "Tình trạng chấm · Kế hoạch Test · Lịch tuần" (Lịch tuần chỉ xem, đổi tuần được). PTA khuyến nghị như vẽ.</li>
+<li><b>Bố cục hai khung</b> (danh sách trái · lưới phải) — cùng thành phần hàng đợi với Công việc (Q-A2 ① B). Phương án khác: lưới mở dưới dòng như ba khối cũ (tốn chiều cao, mất "tự sang việc kế"). PTA khuyến nghị hai khung.</li>
+<li><b>Cột "Nhận xét" trong lưới gọn</b> (xem nhanh chữ đã ghi) — bỏ được nếu thấy thừa; "thiếu nhận xét" vẫn hiện dưới ô.</li>
+</ol>
+<b>Luật giữ nguyên (không đổi):</b> mở ô từ T2 tuần thi của kỹ năng · hạn T4 tuần kế · chia khối T15 · S chấm chéo T18 · MT cũ không nợ / không hạn (không hiện ở Chấm Test; nhập ở hồ sơ lớp theo lượt) · Excel chỉ ở hồ sơ lớp › Điểm Test theo lượt (không ở đây, ẩn ở 375).<br>
+<b>Bỏ (web hiện tại):</b> ba khối "Test quá hạn chấm · Test chấm tuần này · Lịch Test tuần này" · dải 3 ô số · bộ chọn tuần + công tắc FT / Lớp thường ở chỗ chấm · nhãn "GV khác" · lưới đủ 10 cột cho GV chỉ có một cột · nút "Nhận xét" + ⋯ trong ô lớp thường · ô "tổng [25] Điền cả cột" trong tiêu đề · trang <code>/nhap-diem</code>, <code>/bang-diem-thuong</code> (chuyển hướng) · chữ "Không dự thi" trên nút (→ "Vắng").<br>
+<b>Truy vết đủ:</b> <code>thiet-ke/mockup-v4-cham-test-truy-vet.md</code>.</div>
+</section>
+</body>
+</html>

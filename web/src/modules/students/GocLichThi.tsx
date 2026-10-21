@@ -9,8 +9,8 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { KetQuaOHocVien } from './BangHocVienLop.tsx';
 import { NganXuatDs } from './NganXuatDs.tsx';
 import {
-  KET_LUAN_LICH_THI, cuaSoThang, demKetLuan, dsThangLichThi, ketQuaGanNhat, nhanThang, shortDate,
-  type ExamPlan, type KetLuanLichThi, type KetQuaVao, type NguCanhDs,
+  KET_LUAN_LICH_THI, cuaSoThang, demKetLuan, dsThangLichThi, ketQuaGanNhat, nhanLichThi, nhanThang, shortDate,
+  type ExamPlan, type KetLuanLichThi, type KetQuaVao, type LichThi, type NguCanhDs,
 } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
 
@@ -20,6 +20,8 @@ type Hang = {
   studentId: number; cycleId: number | null; ten: string; ma: string; classId: number; classCode: string; thuong: boolean; gvcn: string | null; tvv: string | null;
   target: number | null; kck: boolean; standing: KetQuaVao | null;
   duKien: ExamPlan; coNgay: boolean; thangDuKien: string | null; chuaCo: boolean; ketLuan: KetLuanLichThi | null; luu: Luu | null; coTheSua: boolean;
+  /** LT-SV: trạng thái lịch thi thật (`trangThaiLichThi` máy chủ tính) — chữ bằng `nhanLichThi`. */
+  lichThi: LichThi;
   /** OV-15h2 (ý 2): ai · lúc đặt ngày thi đang có — dòng "chốt 05/10 · Lê Thu". */
   chot: { luc: string; ai: string | null } | null;
 };
@@ -77,7 +79,7 @@ export function GocLichThi({ duongGoc, thangUrl, onDoiThang }: { duongGoc: strin
     if (!r.cycleId) return;
     const lan = () => luu(r, body);
     sua(r.studentId, (x) => ({ ...x, tt: { kieu: 'luu' } }));
-    api.put<Pick<Hang, 'duKien' | 'coNgay' | 'thangDuKien' | 'chuaCo' | 'ketLuan' | 'luu' | 'chot'>>(`/hoc-vien-lop/lich-thi/${r.cycleId}`, body)
+    api.put<Pick<Hang, 'duKien' | 'coNgay' | 'thangDuKien' | 'chuaCo' | 'lichThi' | 'ketLuan' | 'luu' | 'chot'>>(`/hoc-vien-lop/lich-thi/${r.cycleId}`, body)
       .then((kq) => {
         /* Làm mới các trang khác (danh sách lớp, TVV / CX, hồ sơ) nhưng KHÔNG đường của chính góc này (`/hoc-vien-lop/lich-thi`): tải lại sẽ làm em vừa chuyển tháng biến mất khỏi danh sách. */
         invalidate('/hoc-vien-lop?'); invalidate('/hoc-vien-lop/theo-vai'); invalidate('/hoc-vien-lop/em'); invalidate('/students');
@@ -179,7 +181,7 @@ function DongLichThi({ r, ds, moRong, onMoRong, onLuu }: {
   const daLuuGhiChu = useRef(r.luu?.ghiChu ?? '');
   useEffect(() => { daLuuGhiChu.current = r.luu?.ghiChu ?? ''; setGhiChu(r.luu?.ghiChu ?? ''); }, [r.luu?.ghiChu]);
   const khoa = !r.coTheSua || r.tt?.kieu === 'luu';
-  const lich = r.coNgay ? `${t('Chốt')} ${r.duKien.label}` : r.chuaCo ? t('Chưa có') : `${t('Dự kiến')} ${r.duKien.confidence === 'month' && r.thangDuKien ? nhanThang(r.thangDuKien) : r.duKien.label}`;
+  const lich = nhanLichThi(r.lichThi, homNay);   // LT-SV: một hàm nhãn
   const nutKl: KetLuanLichThi[] = r.chuaCoGoc && !r.thangDuKien ? ['chuyen-thang', 'chot-ngay', 'can-xac-nhan'] : [...KET_LUAN_LICH_THI];
   const nhanNut = (x: KetLuanLichThi) => (x === 'chuyen-thang' && r.chuaCoGoc && !r.thangDuKien ? t('Đặt tháng') : NHAN_KL[x]);
   const bam = (x: KetLuanLichThi) => {
@@ -227,7 +229,7 @@ function DongLichThi({ r, ds, moRong, onMoRong, onLuu }: {
           })}
         </div>
         {moRong === 'ngay' && (
-          <div className="mt-1.5 max-w-[220px]"><ONgay kieu="ngay" value={null} ariaLabel={t('Chốt ngày')} onChange={(iso) => iso && onLuu({ ketLuan: 'chot-ngay', ngay: iso })} toiThieu={homNay} /></div>
+          <div className="mt-1.5 max-w-[220px]"><ONgay kieu="ngay" value={null} ariaLabel={t('Chốt ngày')} onChange={(iso) => iso && onLuu({ ketLuan: 'chot-ngay', ngay: iso })} /* LT-SV: nhận ngày đã qua (em đã thi) — không `toiThieu` */ /></div>
         )}
         {moRong === 'thang' && (
           <div className="mt-1.5 max-w-[220px]"><ONgay kieu="thang" value={null} ariaLabel={t('Chuyển tháng')} onChange={(iso) => iso && onLuu({ ketLuan: 'chuyen-thang', thang: iso.slice(0, 7) })} toiThieu={homNay.slice(0, 7)} /></div>
