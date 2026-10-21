@@ -152,7 +152,7 @@ export async function runPrOv15gTests(t: YThucTestKit) {
       assert(r.dong.length === cu.json.dong.length, `hv ${r.dong.length} ≠ lich-su-sua ${cu.json.dong.length}`);
       await ghi(QL, `/hoc-vien-lop/lich-thi/${cy}`, 'PUT', { ghiChu: 'Chờ em xác nhận ngày' });
       const d = (await ls('hv', a)).dong[0];
-      assert(truong(d, 'Ghi chú lịch thi')?.moi === 'Chờ em xác nhận ngày', JSON.stringify(d));
+      assert(truong(d, 'Ghi chú lịch Test')?.moi === 'Chờ em xác nhận ngày', JSON.stringify(d));
     });
 
     await checkAsync('OV15g-9 · Ô điểm FT: nhận xét dài + GV chấm S → mục đủ chữ nhận xét và "GV chấm: … → …"', async () => {

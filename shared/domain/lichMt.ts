@@ -90,7 +90,7 @@ export function kiemTuanXep(o: { ketThuc: string[]; homNay: string; quanLy: bool
 }
 
 /** Tooltip chip vàng "Tuần đã qua" (T4) — panel Xếp lịch, hộp một đợt: Quản lý xếp MT chưa thi về tuần đã qua. */
-export const CAU_TUAN_DA_QUA = t('MT chưa thi xếp về tuần đã qua — tuần cách ≥ 2 tuần thì là MT cũ.');
+export const CAU_TUAN_DA_QUA = t('MT chưa làm bài xếp về tuần đã qua — tuần cách ≥ 2 tuần thì là MT cũ.');
 
 /** Rà #120: "Đã thi tới MT" = d mà MT1…MT(d) có MT rơi vào tuần chưa qua → số các MT đó (để nhắc lùi Tuần bắt đầu). */
 export function mtDaThiChuaQua(lich: readonly number[], tuanBatDau: string, daThiToiMt: number, homNay: string): number[] {
@@ -182,7 +182,7 @@ export type KetQuaHuy = { id: number; attemptId: number; luc: string; lyDo: stri
 export function chuDoiVang(l: { weekStart: string | null; doiTu: string | null; absenceMoveCount: number }, homNay: string): { chu: string; title: string } {
   const tuan = tuanLich(l.weekStart, homNay);
   const title = t('Dời từ {doiTu} sang {tuan} (vắng lần {x}).', { doiTu: l.doiTu, tuan, x: l.absenceMoveCount });
-  if (l.weekStart && homNay && mondayOfDate(l.weekStart) === mondayOfDate(homNay)) return { chu: t('Thi bù tuần này (lần {x})', { x: l.absenceMoveCount }), title };
+  if (l.weekStart && homNay && mondayOfDate(l.weekStart) === mondayOfDate(homNay)) return { chu: t('Làm bù tuần này (lần {x})', { x: l.absenceMoveCount }), title };
   return { chu: t('vắng · dời sang {tuan} · lần {x}', { tuan, x: l.absenceMoveCount }), title };
 }
 

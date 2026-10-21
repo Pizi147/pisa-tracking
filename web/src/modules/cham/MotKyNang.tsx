@@ -329,10 +329,10 @@ function DongThuongMot({ row, k, sheet, tongCot, active, onReload, inputRef, onK
    * bằng nhau) → trống (OV-13f: không hiện mã HV).
    */
   const ketQua = datPhanTram(cell.ketQua, cell.tiLe);
-  const phu = (cell.khongDuThi ? t('Không dự thi') : null)
+  const phu = (cell.khongDuThi ? t('Vắng') : null)
     ?? (cell.dau && cell.diem === null && cell.tuanHienTai ? t('Đã dời sang {tuanHienTai}', { tuanHienTai: cell.tuanHienTai }) : null)
     ?? quaHan
-    ?? (cell.chuaToiTuan && cell.tuanHienTai ? `Thi ${cell.tuanHienTai}` : null)
+    ?? (cell.chuaToiTuan && cell.tuanHienTai ? t('Làm bài {tuan}', { tuan: cell.tuanHienTai }) : null)
     ?? ketQua
     ?? '';
   return (

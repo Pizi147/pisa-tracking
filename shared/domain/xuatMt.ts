@@ -252,7 +252,7 @@ export function bangBoLoc(o: { khung: KhungXuat; nguoiXuat: string; luc: string;
     ['Lúc', gioVn(o.luc)],
     ...o.moTa,
     ['Số lượt', o.soLuot],
-    ['Cách đọc', 'Tuần của lượt = tuần sớm nhất trong các kỹ năng phải thi.'],
+    ['Cách đọc', 'Tuần của lượt = tuần sớm nhất trong các kỹ năng phải làm.'],
     ...doc.map((c): Cell[] => ['', c]),
     ['', 'Ô trống = chưa có điểm.'],
   ];

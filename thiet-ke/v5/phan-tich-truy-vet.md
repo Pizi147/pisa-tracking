@@ -8,7 +8,7 @@ URL mockup: `?tab=gv`, `?cot=day`, `?pv=qt`, `?tt=tai|loi|rong`, `?mo=datmt|datm
 
 | Yêu cầu | Loại | Khung (ảnh) | Thành phần |
 |---|---|---|---|
-| C22 · 14.1 — Báo cáo HV tách khỏi GV; kết quả + hỗ trợ; chấm đúng hạn là thông tin phụ | CHỐT | `phan-tich-bao-cao-1440-sang` | tab "Báo cáo HV": 4 số (Đạt MT · Case có PA · Đạt Target thi thật · Thi tuần này) → Kết quả theo lớp · Tiến bộ theo kỹ năng · Case / PA; chấm đúng hạn = 1 dòng phụ |
+| C22 · 14.1 — Báo cáo HV tách khỏi GV; kết quả + hỗ trợ; chấm đúng hạn là thông tin phụ | CHỐT | `phan-tich-bao-cao-1440-sang` | tab "Báo cáo HV": 4 số (Đạt MT · Case có PA · Đạt Target thi thật · Thi tháng này) → Kết quả theo lớp · Tiến bộ theo kỹ năng · Case / PA; chấm đúng hạn = 1 dòng phụ |
 | C07 · 14.2 — Phân tích GV MỘT bảng hai nhóm cột Hành chính / Học thuật; bộ cột gọn / đầy đủ | CHỐT | `phan-tich-gv-gon-1440`, `-gv-day-du-1440`, `-gv-1280`, `-gv-375` | `.bang-gv`: hàng đầu nhóm (vạch xanh = Hành chính, vạch hồng = Học thuật); "Bộ cột Gọn / Đầy đủ" ở hàng lọc (không trong tiêu đề bảng); cột tên dính trái khi cuộn ngang |
 | 14.2 — mỗi tỷ lệ có mẫu số (dòng phụ) | CHỐT | mọi ô | `%` + `n/N` dòng phụ; < 5 "mẫu nhỏ" (không %); mẫu 0 "– Chưa có dữ liệu" |
 | T11 — 75 % = 15/20, panel giải thích đúng 20 | CHỐT | `phan-tich-panel-75-1440`, `-panel-75-375` | tiêu đề khớp số; cách tính; 15 · 5 · 2 ngoài mẫu; bảng 20 HV (chưa đạt lên đầu); "Ngoài mẫu (2)" gập |

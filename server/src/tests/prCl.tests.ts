@@ -322,7 +322,7 @@ export async function runPrClTests(t: YThucTestKit) {
     const ftLt1 = lop('FT', 2);
     const z = em(FT_C.id, { ft: true });
     const vz = luatLoTrinh.xemChuyenLop(QL, z.sid, ftLt1.id);
-    assert(vz.canhBao === false && vz.khiChuyen[0] === 'Giữ lộ trình FT LT1' && vz.khiChuyen.includes('MT chưa thi chuyển sang lớp mới'), JSON.stringify(vz.khiChuyen));
+    assert(vz.canhBao === false && vz.khiChuyen[0] === 'Giữ lộ trình FT LT1' && vz.khiChuyen.includes('MT chưa làm bài chuyển sang lớp mới'), JSON.stringify(vz.khiChuyen));
     assert(vz.tuLopThuong === null, 'vào thẳng FT: không tuLopThuong');
 
     const ck = lop('FOU', 8);
@@ -345,7 +345,7 @@ export async function runPrClTests(t: YThucTestKit) {
       [{ dichFt: true, routeDich: 'LT2', mt0: { tuXep: null }, target: { giaTri: 'KCK', nguon: 'khoa' } }, ['Đóng lộ trình FOU, mở lộ trình FT LT2', 'MT0 làm đầu vào', 'Target — · KCK (khoá)', 'Điểm đã có ở lại khoá cũ (xem ở hồ sơ)'], false],   // OV-9: KCK chưa có Target → "— · KCK"
       [{ dichFt: true, routeDich: 'LT1' }, ['Đóng lộ trình FOU, mở lộ trình FT LT1', 'Điểm đã có ở lại khoá cũ (xem ở hồ sơ)'], false],
       [{ nguonFt: true, dichFt: true, khoa: 'giu', routeNguon: 'LT1', routeDich: 'LT1', soCase: 1, goiYNhan: 'Trần Ngọc Hà' },
-        ['Giữ lộ trình FT LT1', 'MT chưa thi chuyển sang lớp mới', '1 Case đang mở đi theo em, người nhận gợi ý: Trần Ngọc Hà'], false],
+        ['Giữ lộ trình FT LT1', 'MT chưa làm bài chuyển sang lớp mới', '1 Case đang mở đi theo em, người nhận gợi ý: Trần Ngọc Hà'], false],
       [{ nguonFt: true, dichFt: true, routeNguon: 'LT1', routeDich: 'LT2', doiChiNhanh: true },
         ['Đóng lộ trình cũ và mở lộ trình mới theo lớp chuyển đến', 'Bài chưa làm ở lại lớp cũ', 'Điểm đã có ở lại khoá cũ (xem ở hồ sơ)', 'Quản lý chi nhánh mới và GVCN lớp mới được báo “Sắp nhận”'], false],
       [{}, ['Đóng lộ trình cũ và mở lộ trình mới theo lớp chuyển đến', 'Bài chưa làm ở lại lớp cũ', 'Điểm đã có ở lại khoá cũ (xem ở hồ sơ)'], false],

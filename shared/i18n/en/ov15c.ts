@@ -1,7 +1,7 @@
 /** OV-15c — Kế hoạch Test: Xóa, năm, tìm, ghi chú lịch thi, xuất. Khoá = chữ Việt trên web. */
 export const EN_OV15C = {
   'Đã có điểm — không xóa được': 'Has scores — cannot delete',
-  'Đã thi — không xóa được': 'Already taken — cannot delete',
+  'Đã làm bài — không xóa được': 'Already taken — cannot delete',
   'Chưa xếp lịch': 'Not scheduled',
   // Xóa (bỏ tuần) + vắng 2 lần
   'Xóa': 'Delete',
@@ -20,8 +20,8 @@ export const EN_OV15C = {
   'Đã giữ huỷ {kn}.': '{kn} stays cancelled.',
   '{kn} về Chưa xếp — chọn tuần mới.': '{kn} is back to Not scheduled — pick a new week.',
   // Ghi chú lịch thi
-  'Ghi chú lịch thi': 'Schedule note',
-  'Ghi chú lịch thi {dot}': 'Schedule note {dot}',
+  'Ghi chú lịch Test': 'Schedule note',
+  'Ghi chú lịch Test {dot}': 'Schedule note {dot}',
   'Thêm ghi chú…': 'Add a note…',
   'Đã lưu ghi chú.': 'Note saved.',
   'Lịch sử ghi chú': 'Note history',
@@ -75,14 +75,14 @@ export const EN_OV15C = {
   "<b>Xuất Excel</b>: Kế hoạch Test 13 cột theo bộ lọc đang xem (tuần kèm năm, <b>W4 AUG/2026</b>).": "<b>Export Excel</b>: 13-column test plan for the current filter (week with year, <b>W4 AUG/2026</b>).",
   "<b>Xuất điểm Test</b>: <b>Điểm + nhận xét</b> / <b>Chỉ điểm</b>; theo tuần, theo lớp (nhiều MT) hoặc lớp + khoảng tuần.": "<b>Export test scores</b>: <b>Scores + comments</b> / <b>Scores only</b>; by week, by class (several MTs) or class + week range.",
   "Bấm ô MT, chân hộp: <b>Xóa</b> → đợt về <b>Chưa xếp</b>, lịch sử giữ; có <b>Hoàn tác</b>.": "Click an MT cell, then <b>Delete</b> at the bottom → back to <b>Not scheduled</b>, history kept; <b>Undo</b> available.",
-  "Chân hộp: <b>Xóa</b> → đợt về <b>Chưa xếp</b> (đã có điểm / đã thi: nút mờ).": "Bottom of the box: <b>Delete</b> → back to <b>Not scheduled</b> (dimmed once scored / taken).",
+  "Chân hộp: <b>Xóa</b> → đợt về <b>Chưa xếp</b> (đã có điểm / đã làm bài: nút mờ).": "Bottom of the box: <b>Delete</b> → back to <b>Not scheduled</b> (dimmed once scored / taken).",
   "Chọn em: lớp mở, hàng em được đánh dấu.": "Pick a student: the class opens with the row highlighted.",
   "Gõ mã lớp, tên (có / không dấu) hoặc email vào <b>Tìm lớp, học viên hoặc email…</b>.": "Type a class code, name (with or without accents) or email in <b>Search class, student or email…</b>.",
   "Tìm lớp, học viên": "Find class, student",
   "Tìm, xuất Excel": "Search, export Excel",
   "Xóa lịch một đợt": "Delete a test schedule",
   "Xóa lịch, ghi chú": "Delete schedule, notes",
-  "Ô <b>Ghi chú lịch thi</b> trong hộp; <b>+ Ghi chú lớp</b> dưới bảng.": "<b>Schedule note</b> field in the box; <b>+ Class note</b> below the table.",
-  "Ô <b>Ghi chú lịch thi</b> trong hộp; ghi chú hiện một dòng dưới chip, bấm để sửa (Enter lưu · Esc huỷ).": "<b>Schedule note</b> field in the box; the note shows as one line under the chip, click to edit (Enter saves · Esc cancels).",
-  "Đã có điểm / đã thi: nút mờ. Kỹ năng huỷ vì vắng 2 lần: <b>Khôi phục → Chưa xếp</b> hoặc <b>Giữ huỷ</b>.": "Scored / taken: dimmed. Skill cancelled after 2 absences: <b>Restore → Not scheduled</b> or <b>Keep cancelled</b>.",
+  "Ô <b>Ghi chú lịch Test</b> trong hộp; <b>+ Ghi chú lớp</b> dưới bảng.": "<b>Schedule note</b> field in the box; <b>+ Class note</b> below the table.",
+  "Ô <b>Ghi chú lịch Test</b> trong hộp; ghi chú hiện một dòng dưới chip, bấm để sửa (Enter lưu · Esc huỷ).": "<b>Schedule note</b> field in the box; the note shows as one line under the chip, click to edit (Enter saves · Esc cancels).",
+  "Đã có điểm / đã làm bài: nút mờ. Kỹ năng huỷ vì vắng 2 lần: <b>Khôi phục → Chưa xếp</b> hoặc <b>Giữ huỷ</b>.": "Scored / taken: dimmed. Skill cancelled after 2 absences: <b>Restore → Not scheduled</b> or <b>Keep cancelled</b>.",
 };

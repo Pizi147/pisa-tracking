@@ -170,7 +170,7 @@ export async function runPrXlmtMayChu(t: YThucTestKit) {
     attemptsSvc.setSkillSkip(P.mbManager, m1.id, 'reading', false);
     diem(m2.id, 'listening');
     const e = (() => { try { attemptsSvc.setSkillSkip(P.mbManager, m2.id, 'listening', true, 'Không thi L đợt này'); } catch (x) { return x as any; } return null; })();
-    assert(e?.status === 409 && /Xoá điểm và huỷ kỹ năng/.test(e.message), `có điểm: ${e?.status} ${e?.message}`);
+    assert(e?.status === 409 && /Xoá điểm và bỏ khỏi đợt/.test(e.message), `có điểm: ${e?.status} ${e?.message}`);
     attemptsSvc.setSkillSkip(P.mbManager, m2.id, 'reading', true);   // PR-MTa T7: bỏ kỹ năng — lý do tuỳ chọn
     assert(lich(m2.id, 'reading').required === 0, 'đã bỏ');
     attemptsSvc.setSkillSkip(P.mbManager, m2.id, 'reading', false);
@@ -196,7 +196,7 @@ export async function runPrXlmtMayChu(t: YThucTestKit) {
   /* LUAT-34: MT cũ không còn bị chặn — Báo vắng ở MT cũ = Đã huỷ ngay (mtTrangThai T06). */
   check('PR-XLMT (2) · Báo vắng bị chặn: GVBM · tuần tương lai · đã có điểm', () => {
     assertThrows(() => absence.baoVang(P.subjectTeacher, m1.id, 'writing', 'Em ốm cả tuần', TODAY), /chủ nhiệm/, 'GVBM');
-    assertThrows(() => absence.baoVang(P.coreTeacher, m2.id, 'writing', 'Em ốm cả tuần', TODAY), /chưa tới tuần thi/, 'tương lai');
+    assertThrows(() => absence.baoVang(P.coreTeacher, m2.id, 'writing', 'Em ốm cả tuần', TODAY), /chưa tới tuần Test/, 'tương lai');
     diem(m1.id, 'reading');
     assertThrows(() => absence.baoVang(P.coreTeacher, m1.id, 'reading', 'Em ốm cả tuần', TODAY), /đã có điểm/, 'có điểm');
   });

@@ -20,7 +20,7 @@ const THANG: Array<[number, string, string]> = [
   [13, 'Nhãn · đầu cột · chip · nút nhỏ', 'font-semibold'],
   [12, 'Tối thiểu: badge · dòng phụ ô điểm', ''],
 ];
-const NEN = ['Trang', 'Thẻ', 'Thẻ phụ', 'Nút rê', 'Hàng nhóm', 'Hàng con', 'Hàng đã thi', 'Cột nổi bật', 'Hàng rê'];
+const NEN = ['Trang', 'Thẻ', 'Thẻ phụ', 'Nút rê', 'Hàng nhóm', 'Hàng con', 'Hàng đã làm bài', 'Cột nổi bật', 'Hàng rê'];
 
 /** Đọc token màu đang áp (đổi theo sáng / tối) → RGB; token có độ trong thì trộn lên `--surface`. */
 function docMau(): Record<string, RGB> {
@@ -33,7 +33,7 @@ function docMau(): Record<string, RGB> {
   return {
     vuot: rgb(v('kq-vuot-rgb')), bang: rgb(v('kq-bang-rgb')), duoi: rgb(v('kq-duoi-rgb')), chu: rgb(v('text')),
     'Trang': rgb(v('bg')), 'Thẻ': the, 'Thẻ phụ': rgb(v('surface-2')), 'Nút rê': rgb(v('nut-hover')), 'Hàng nhóm': rgb(v('hang-lon-bg')),
-    'Hàng con': rgb(v('hang-con-bg')), 'Hàng đã thi': rgb(v('da-thi-bg-rgb')), 'Cột nổi bật': phu('accent-soft'), 'Hàng rê': phu('phu-re'),
+    'Hàng con': rgb(v('hang-con-bg')), 'Hàng đã làm bài': rgb(v('da-thi-bg-rgb')), 'Cột nổi bật': phu('accent-soft'), 'Hàng rê': phu('phu-re'),
   };
 }
 
@@ -126,7 +126,7 @@ export function SanMauNen() {
           <Muc tieuDe="Hàng (rê chuột; Tab để thấy focus)">
             <table className="w-full">
               <tbody>
-                {['Bấm được', 'Bấm được · đang chọn', 'Đã thi · đang chọn'].map((x, i) => (
+                {['Bấm được', 'Bấm được · đang chọn', 'Đã làm bài · đang chọn'].map((x, i) => (
                   <tr key={x} tabIndex={0} onClick={() => setChon(i)} onKeyDown={(e) => { if (e.key === 'Enter') setChon(i); }}
                     className={`bam ${i === 2 ? 'hang-da-thi' : ''} ${chon === i || i === 2 ? 'dang-mo' : ''}`} aria-current={chon === i || undefined}>
                     <td className="td">{x}</td><td className="td whitespace-nowrap tabular-nums">W2 OCT</td>

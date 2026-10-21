@@ -74,7 +74,7 @@ export function nhanHan(han: string | null | undefined, today: string): string {
 // ====================================================================== <TyLe>
 
 /**
- * Cỡ mẫu dưới ngưỡng này thì gắn nhãn "mẫu nhỏ" (rule book §11: mẫu nhỏ không được gọi là
+ * Cỡ mẫu dưới ngưỡng này thì bật cờ `smallSample` — giao diện không ghi chữ "mẫu nhỏ" (chủ SP 22/10; rule book §11: mẫu nhỏ không được gọi là
  * "tốt nhất"). Một hằng số có tên — muốn đổi ngưỡng thì đổi đúng một dòng.
  */
 export const SMALL_SAMPLE_BELOW = 5;
@@ -102,7 +102,7 @@ export function rateText(n: number, N: number, label?: string): string {
   const v = rateView(n, N);
   if (v.kind === 'no-data') return t('Chưa có dữ liệu');
   if (v.kind === 'invalid') return t('Số liệu không hợp lệ');
-  return `${v.n}/${v.N}${label ? ` ${label}` : ''} (${v.percent}%)${v.smallSample ? t(' · mẫu nhỏ') : ''}`;
+  return `${v.n}/${v.N}${label ? ` ${label}` : ''} (${v.percent}%)`;
 }
 
 // ====================================================================== <KetQuaDot>

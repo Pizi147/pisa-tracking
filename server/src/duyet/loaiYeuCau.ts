@@ -225,11 +225,11 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
           ? chuTheDoiLan2({ skill: x.skill, attemptNo: x.attempt_no, moveNo: x.move_no, tuanDich: x.week_start ?? null, homNay: ngu.homNay, ct: x.ct ?? null })
           : `Dời ${kn}${dot ? ` ${dot}` : ''} lần ${x?.move_no ?? 2}`,
         dong: [
-          `${nguoiXin(yc, ngu)}: ${yc.ly_do || 'em vắng buổi thi'}${x?.week_start ? ` · đề nghị ${tuanLich(x.week_start, ngu.homNay)}` : ''}`,
+          `${nguoiXin(yc, ngu)}: ${yc.ly_do || 'em vắng buổi Test'}${x?.week_start ? ` · đề nghị ${tuanLich(x.week_start, ngu.homNay)}` : ''}`,
           /* Chỉ nói "tự huỷ" khi thẻ còn chờ — thẻ đã quyết thì câu này sai. */
-          ...(yc.trang_thai === 'cho' ? [`Hết ${ngay(yc.han_duyet, ngu)} chưa duyệt thì yêu cầu tự huỷ và phần thi bị huỷ.`] : []),
+          ...(yc.trang_thai === 'cho' ? [`Hết ${ngay(yc.han_duyet, ngu)} chưa duyệt thì yêu cầu tự huỷ và kỹ năng bị huỷ.`] : []),
         ],
-        neuDuyet: x?.week_start ? `${kn} thi tuần ${tuanLich(x.week_start, ngu.homNay)}.` : undefined,
+        neuDuyet: x?.week_start ? `${kn} làm bài tuần ${tuanLich(x.week_start, ngu.homNay)}.` : undefined,
         mo: x ? attemptHref({ id: x.attempt_id, kind: x.kind, classId: x.class_id }) : undefined,
         duLieu: x?.week_start ? { tuanDeNghi: x.week_start } : undefined,
       };
@@ -323,7 +323,7 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
           : d.cu == null && !tuAp ? `Đề xuất sửa ${nhan}: ${hien(d.moi)}` : `Đề xuất sửa ${nhan} ${hien(d.cu)} → ${hien(d.moi)}`,
         dong: [`${nguoiXin(yc, ngu)} (${ngay(yc.tao_luc, ngu)}): “${yc.ly_do ?? ''}”`],
         neuDuyet: tuAp
-          ? (d.truong === 'target' ? 'Target đổi từ hôm nay; kỳ vọng của các lượt đã thi giữ nguyên.' : 'Lộ trình đổi ngay.')
+          ? (d.truong === 'target' ? 'Target đổi từ hôm nay; kỳ vọng của các lượt đã làm bài giữ nguyên.' : 'Lộ trình đổi ngay.')
           : 'hệ thống không tự đổi — sửa ở màn gốc trước, rồi Duyệt và ghi đã làm gì.',
         duLieu: { canGhiChu: !tuAp },
       };

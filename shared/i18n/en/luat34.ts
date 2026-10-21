@@ -8,6 +8,6 @@ export const EN_LUAT34 = {
   'Đủ điểm': 'All scored',
   'Đã khôi phục điểm {x}{x2}': (b) => `Score restored ${b.x}${b.x2}`,
   'Mọi kỹ năng đã có điểm hoặc "-" — vẫn sửa được.': 'All skills scored or "-" — still editable.',
-  'Ghi "-" cho {mon} và chốt ngay. Lần đầu máy tự dời sang tuần kế tiếp (tuần đó đã qua thì gửi Quản lý); lần 2 huỷ phần thi này.': (b) => `Record "-" for ${b.mon} and settle now. First time it moves to the next week (if that week has passed, it goes to the Manager); second time cancels this part.`,
+  'Ghi "-" cho {mon} và chốt ngay. Lần đầu máy tự dời sang tuần kế tiếp (tuần đó đã qua thì gửi Quản lý); lần 2 huỷ kỹ năng này.': (b) => `Record "-" for ${b.mon} and settle now. First time it moves to the next week (if that week has passed, it goes to the Manager); second time cancels this part.`,
   'Ô điểm trở về trống; nhận xét giữ. Lấy lại bằng ⋯ "Khôi phục điểm".': 'The score cell is cleared; the comment stays. Bring it back with ⋯ "Restore score".',
 } satisfies Record<string, Dich>;

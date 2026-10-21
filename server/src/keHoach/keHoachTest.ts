@@ -198,12 +198,12 @@ function khongDuThiCua(cheDo: CheDo, skill: string, scores: any[], periodId: num
 
 /** Lý do dòng chỉ đọc: `đã huỷ phần thi` › `đã có điểm` (có điểm ở BẤT KỲ ô nhập nào, như `setSkillWeek`) › `đã thi`. */
 function khoaCua(cheDo: CheDo, row: any, scores: any[]): OKyNang['khoa'] {
-  if (row.sit_status === 'cancelled') return 'đã huỷ phần thi';
+  if (row.sit_status === 'cancelled') return 'đã huỷ';
   const ten = cheDo === 'thuong' ? [row.skill] : entrySkillsOf(row.skill);
   const coDiem = scores.some((s) => (ten as string[]).includes(s.skill)
     && ((s.band !== null && s.band !== undefined) || (s.raw_score !== null && s.raw_score !== undefined)));
   if (coDiem) return 'đã có điểm';
-  if (row.sit_status === 'sat') return 'đã thi';
+  if (row.sit_status === 'sat') return 'đã làm bài';
   return null;
 }
 
@@ -501,11 +501,11 @@ function kiemDotNoi(a: any, kyNang: YeuCauKyNang[], duaLai: Set<KyNangKH> = new 
     const tu = row?.week_start ?? null;
     const pr = periods.get(k.periodId);
     if (!row || (!row.required && !duaLai.has(k.skill))) {
-      bai.push({ skill: k.skill, tu, den: tu, ghiChu: 'giu', cau: 'Đợt này không thi kỹ năng này.' });
+      bai.push({ skill: k.skill, tu, den: tu, ghiChu: 'giu', cau: 'Đợt này không có kỹ năng này.' });
       continue;
     }
     const khoa = khoaCua(cheDo, row, scores);
-    if (khoa && khoa !== 'đã huỷ phần thi' && !pre.choHuyLich) { bai.push({ skill: k.skill, tu, den: tu, ghiChu: 'giu', cau: khoa }); continue; }
+    if (khoa && khoa !== 'đã huỷ' && !pre.choHuyLich) { bai.push({ skill: k.skill, tu, den: tu, ghiChu: 'giu', cau: khoa }); continue; }
     if (row.planned_period_id === k.periodId && row.sit_status !== 'cancelled' && row.required) { bai.push({ skill: k.skill, tu, den: tu, ghiChu: 'giu', cau: null }); continue; }
     doi.push({ i: bai.length, k, row, pr });
     bai.push({ skill: k.skill, tu, den: pr.week_start, ghiChu: 'doi', cau: null });
@@ -611,7 +611,7 @@ export function thiLai(p: Principal, i: { attemptId: number; skills: string[]; p
   const diem = scoresOf(i.attemptId);
   for (const k of i.skills.map(chonKyNang)) {
     if (!entrySkillsOf(k as any).some((e) => diem.some((x) => x.skill === e && (x.band != null || x.raw_score != null)))) {
-      throw badRequest(`${tenMon(null, k)} chưa có điểm — không thi lại. Em vắng thì dùng "Xếp lại bài vắng"; phần thi đã huỷ thì "Khôi phục và đặt tuần".`);
+      throw badRequest(`${tenMon(null, k)} chưa có điểm — không thi lại. Em vắng thì dùng "Xếp lại bài vắng"; kỹ năng đã huỷ thì "Khôi phục và đặt tuần".`);
     }
   }
   return tx(() => {
@@ -709,7 +709,7 @@ export function xepMoi(p: Principal, i: {
   if (!cycle) throw badRequest('Học viên chưa có lộ trình đang chạy.');
   const attemptNo = i.attemptNo ?? nextAttemptNo(cycle.id);   // T36: cùng luật đánh số với `createAttempt` (chốt ở đó)
   const dungTuan = KY_NANG_KE_HOACH.filter((k) => tuan[k] !== null);
-  if (!dungTuan.length) throw badRequest('Cần ít nhất một kỹ năng thi trong đợt.');
+  if (!dungTuan.length) throw badRequest('Cần ít nhất một kỹ năng trong đợt.');
   const periods = docTuan(dungTuan.map((k) => tuan[k]!));
   /* T1/T4 (PR-MTa): Quản lý xếp được tuần đã qua (kể cả trộn qua / tới), không chặn theo ngày em vào web. Cờ MT cũ tính sau khi đặt
    * đủ tuần, theo tuần MUỘN NHẤT (`tinhLaiMtCu`). `require_` PLAN_WEEK ở trên nên `kiemTuanXep` không bao giờ chặn ở đây. */

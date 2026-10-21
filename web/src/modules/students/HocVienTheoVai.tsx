@@ -213,7 +213,7 @@ export function HocVienTheoVai({ vai }: { vai: 'tvv' | 'cx' }) {
     return [
       ...(bt ? [{ ...chung, key: `buoc:${d.id}`, viec: t('Chọn bước tiếp'), phu: null, han: bt.han, quaHan: bt.han < homNay, kieu: bt.han < homNay ? 'qua-han' as const : null,
         mo: () => setBuocTiep({ cycleId: bt.cycleId, em: { id: d.id, ten: d.ten }, lop: d.lop?.code ?? null }) }] : []),
-      ...(kq && d.viewer.suaThem ? [{ ...chung, key: `thi:${d.id}`, viec: t('Kết quả thi'), phu: kq.thi ? t('Thi {ngay} · chưa có kết quả', { ngay: ngay(kq.thi, homNay) }) : t('chưa có kết quả'), han: kq.han,
+      ...(kq && d.viewer.suaThem ? [{ ...chung, key: `thi:${d.id}`, viec: t('Kết quả thi thật'), phu: kq.thi ? t('Thi {ngay} · chưa có kết quả', { ngay: ngay(kq.thi, homNay) }) : t('chưa có kết quả'), han: kq.han,
         quaHan: kq.han < homNay, kieu: kq.han < homNay ? 'qua-han' as const : null, mo: () => setSuaEm({ id: d.id, ten: d.ten, lop: d.lop?.code ?? null, viec: 'outcome' }) }] : []),
       ...(tap.thieu_tt?.has(d.id) && d.viewer.suaThongTin ? tachThieuEmail(d.thieu).map((x) => ({ ...chung, key: `${x.khoa}:${d.id}`, viec: x.viec, phu: x.phu, han: null, quaHan: false,
         kieu: 'thieu-tt' as const, mo: () => setSuaEm({ id: d.id, ten: d.ten, lop: d.lop?.code ?? null, viec: 'info' }) })) : []),

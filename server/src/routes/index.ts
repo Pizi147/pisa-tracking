@@ -890,7 +890,7 @@ api.post('/attempts/:id/dua-lai-ca-luot', requireAuth, wrap((req) => {
 api.post('/attempts/:id/skills/:skill/week', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   const periodId = toInt(req.body?.periodId);
-  if (!periodId) throw badRequest('Cần chọn tuần thi cho kỹ năng này.');
+  if (!periodId) throw badRequest('Cần chọn tuần Test cho kỹ năng này.');
   /*
    * ĐƯỜNG NÀY LÀ DỜI CHỦ ĐỘNG. Dời vì em vắng đi qua `/attempts/:id/absence-move` — ở đó mới
    * có bộ đếm, người duyệt và hạn trả lời (mục 10.6).
@@ -928,7 +928,7 @@ api.post('/attempts/:id/absence-move', requireAuth, wrap((req) => {
 api.post('/attempts/:id/skills/:skill/restore', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   const periodId = toInt(req.body?.periodId);
-  if (!periodId) throw badRequest('Khôi phục thì phải đặt luôn tuần mới — không để phần thi treo không lịch.');
+  if (!periodId) throw badRequest('Khôi phục thì phải đặt luôn tuần mới — không để kỹ năng treo không lịch.');
   return absenceSvc.restoreCancelledSkill(principalOf(req), pInt(req, 'id'), String(req.params.skill), periodId, {
     reason: req.body?.reason ?? null,
   });

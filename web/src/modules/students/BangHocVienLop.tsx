@@ -145,7 +145,7 @@ export function BangHocVienLop({ lop, chiHien, sapXep, onDoi, soCot, the = false
       conLuotChuaXep: st?.nhanLuotChuaXep ?? null, lichThi: s.lichThi ?? null, homNay, khung: thuong ? 'thuong' : 'ft',
     });
     const title = st?.nextAttemptLabel
-      ? [st.nextAttemptLabel, st.nextWeekStart && t('tuần thi {tuan}', { tuan: tuanLich(st.nextWeekStart, homNay) }), st.nextKyVong != null && t('kỳ vọng {kv}', { kv: fmtBand(st.nextKyVong) })].filter(Boolean).join(' · ')
+      ? [st.nextAttemptLabel, st.nextWeekStart && t('tuần Test {tuan}', { tuan: tuanLich(st.nextWeekStart, homNay) }), st.nextKyVong != null && t('kỳ vọng {kv}', { kv: fmtBand(st.nextKyVong) })].filter(Boolean).join(' · ')
       : chu ? dich(chu) : undefined;
     return { chu: chu && dich(chu), title, thiThat: !!chu && !st?.nextAttemptLabel && !st?.nhanLuotChuaXep };   // LT-SV: chữ là lịch thi thật (không còn tiền tố "Thi thật ·")
   };

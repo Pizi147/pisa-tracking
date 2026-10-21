@@ -31,7 +31,7 @@ type TrangThaiLuu = { kieu: 'luu' | 'xong' | 'loi'; loi?: string; lai?: () => vo
 type HangHien = Hang & { chuyenSang: string | null; chuaCoGoc: boolean; tt?: TrangThaiLuu };
 
 const NHAN_KL: Record<KetLuanLichThi, string> = {
-  'giu-thang': t('Giữ tháng'), 'chot-ngay': t('Chốt ngày'), 'chuyen-thang': t('Chuyển tháng'), 'can-xac-nhan': t('Cần xác nhận'),
+  'giu-thang': t('Giữ tháng'), 'chot-ngay': t('Chốt ngày'), 'chuyen-thang': t('Chuyển tháng'), 'can-xac-nhan': t('Chưa kết luận'),
 };
 /** Phần mở dưới nút Kết luận: ô ngày · ô tháng · hỏi "Bỏ ngày …?" (Giữ tháng ở em đã chốt ngày — OV-15i2). */
 type MoRong = 'ngay' | 'thang' | 'bo';
@@ -129,7 +129,7 @@ export function GocLichThi({ duongGoc, thangUrl, onDoiThang }: { duongGoc: strin
             <span className="tabular-nums"><b>{dem.chotNgay}</b> {t('đã chốt ngày')}</span>
             <span className="tabular-nums"><b>{dem.giuThang}</b> {t('giữ tháng')}</span>
             <span className="tabular-nums"><b>{dem.chuyenThang}</b> {t('chuyển tháng')}</span>
-            <span className="tabular-nums"><b>{dem.canXacNhan}</b> {t('cần xác nhận')}</span>
+            <span className="tabular-nums"><b>{dem.canXacNhan}</b> {t('chưa kết luận')}</span>
             <span className="tabular-nums"><b>{dem.chuaRa}</b> {t('chưa rà')}</span>
           </p>
           {hien.tat.length === 0 ? (
@@ -144,7 +144,7 @@ export function GocLichThi({ duongGoc, thangUrl, onDoiThang }: { duongGoc: strin
               <div role="table" aria-label={t('Lịch thi')}>
                 <div role="row" className="hidden border-b px-3 py-2 text-xs font-semibold text-slate-400 md:grid md:grid-cols-[minmax(0,1.6fr)_48px_minmax(0,1.3fr)_104px_minmax(372px,2.4fr)_minmax(0,1.4fr)] md:gap-3" style={{ borderColor: 'var(--line)' }}>
                   <span role="columnheader">{t('Học viên')}</span><span role="columnheader" className="text-center">Target</span><span role="columnheader">{t('Kết quả gần nhất')}</span>
-                  <span role="columnheader">{t('Lịch hiện tại')}</span><span role="columnheader">{t('Kết luận')}</span><span role="columnheader">{t('Ghi chú họp')}</span>
+                  <span role="columnheader">{t('Lịch hiện tại')}</span><span role="columnheader">{t('Kết luận')}</span><span role="columnheader">{t('Ghi chú')}</span>
                 </div>
                 {trangRows.map((r, i) => (
                   <div key={r.studentId} role="presentation">
@@ -244,7 +244,7 @@ function DongLichThi({ r, ds, moRong, onMoRong, onLuu }: {
         {r.tt && <TrangThai tt={r.tt} />}
       </div>
       <div role="cell" className="min-w-0">
-        <input className="field h-8 w-full text-xs max-sm:min-h-[44px]" aria-label={t('Ghi chú họp')} placeholder={t('Thêm ghi chú…')} maxLength={300} disabled={!r.coTheSua}
+        <input className="field h-8 w-full text-xs max-sm:min-h-[44px]" aria-label={t('Ghi chú')} placeholder={t('Thêm ghi chú…')} maxLength={300} disabled={!r.coTheSua}
           value={ghiChu} onChange={(e) => setGhiChu(e.target.value)} onBlur={luuGhiChu} onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }} />
         {r.luu?.ghiChu && r.luu.ai && <span className="block truncate text-[12px] text-slate-500">{r.luu.ai} · {gio(r.luu.luc)}</span>}
       </div>

@@ -82,10 +82,10 @@ export const oVangCua = (c: Cell, tuanXem?: string | null) =>
 function hienO(c: Cell, vangGoc: boolean): { chu: ReactNode; phu?: string; doc: string; kieu: keyof typeof KIEU_O | null } {
   /* BANG-1: chữ thứ hai thành dòng phụ dưới ô (ô giữ 32 px, hàng 64). */
   const hai = (a: string, b: string) => ({ chu: a, phu: b });
-  if (c.progress === 'cancelled') return { chu: t('Đã huỷ'), doc: t('Đã huỷ phần thi'), kieu: 'huy' };
+  if (c.progress === 'cancelled') return { chu: t('Đã huỷ'), doc: t('Đã huỷ'), kieu: 'huy' };
   if (vangGoc && c.daChot?.doiSang) return { ...hai(t('Vắng'), `→ ${c.daChot.doiSang}`), doc: t('Vắng, đã dời sang {doiSang}', { doiSang: c.daChot.doiSang }), kieu: 'vang' };
   if (c.daChot && !c.daChot.doiSang && c.sitStatus === 'absent') return { ...hai(t('Vắng'), t('chờ QL')), doc: t('Vắng, chờ Quản lý xếp lại'), kieu: 'vang' };
-  if (c.noShow?.state === 'khong-du-thi') return { ...hai(t('Không'), t('dự thi')), doc: t('Không dự thi'), kieu: 'chot' };
+  if (c.noShow?.state === 'khong-du-thi') return { ...hai(t('Vắng'), t('không dời')), doc: t('Vắng'), kieu: 'chot' };
   /* LUAT-34: "-" ở MT cũ = Đã huỷ ngay (cả "Không dự thi" cũ ở MT cũ) — bấm ô gỡ "-" / nhập điểm như ô "-" khác. */
   if (c.noShow?.state === 'da-huy') return { chu: t('Đã huỷ'), doc: c.noShow.text, kieu: 'chot' };
   if (c.noShow) return { chu: '-', doc: c.noShow.text, kieu: null };
@@ -352,7 +352,7 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, gvMacDi
         <div className="flex flex-col gap-1.5 rounded-lg border border-muted-line bg-muted-bg px-3 py-2.5 text-[13px] text-slate-200">
           {/* CA3-3: ô huỷ một trạng thái — "Đã huỷ phần thi · vắng 2 lần", không "Vắng lần 1". */}
           {cell.progress === 'cancelled'
-            ? <span><b className="text-muted">{t('Đã huỷ phần thi')}</b>{' '}{t('· vắng')}{' '}{Math.max(2, cell.daChot!.lan)}{' '}{t('lần')}</span>
+            ? <span><b className="text-muted">{t('Đã huỷ')}</b>{' '}{t('· vắng')}{' '}{Math.max(2, cell.daChot!.lan)}{' '}{t('lần')}</span>
             : <span><b className="text-muted">{t('Vắng lần')}{' '}{Math.max(1, cell.daChot!.lan)}</b>
               {cell.daChot!.doiSang && <>{' '}{t('· đã dời sang')}{' '}<span className="tabular-nums">{cell.daChot!.doiSang}</span></>}</span>}
           {cell.daChot!.ghiLuc && <span className="text-slate-400">Ghi {ngay(cell.daChot!.ghiLuc, homNay)}{cell.daChot!.ghiBoi ? t(' bởi {ghiBoi}', { ghiBoi: cell.daChot!.ghiBoi }) : ''}</span>}

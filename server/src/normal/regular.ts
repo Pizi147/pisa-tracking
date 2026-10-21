@@ -802,7 +802,7 @@ export function reportRegularNoShow(
 
     if (bat) {
       if (!row.planned_period_id || !row.week_start) {
-        throw badRequest(`${skill} chưa có tuần thi nên chưa ghi dấu "-" được.`);
+        throw badRequest(`${skill} chưa có tuần Test nên chưa ghi dấu "-" được.`);
       }
       /*
        * Đã ghi dấu và đã dời rồi: tuần mới CHƯA TỚI thì gọi lại là vô hại, không dời lần hai. Tuần mới ĐÃ TỚI thì đây là
@@ -820,7 +820,7 @@ export function reportRegularNoShow(
        * (không có năm nếu cùng năm), không hiện ngày ISO.
        */
       if (String(row.week_start) > today) {
-        throw badRequest(`Chưa tới tuần thi ${tuanLich(row.week_start, today)} — chưa ghi "-" được.`);
+        throw badRequest(`Chưa tới tuần Test ${tuanLich(row.week_start, today)} — chưa ghi "-" được.`);
       }
       const cu = { id: row.planned_period_id, code: row.period_code, weekStart: row.week_start };
       const luat = luatVangThuong(cu.weekStart, today);

@@ -210,7 +210,7 @@ export function NganXuatMt({ khung: khungDau, chiNhanh, lop, thoiGianMacDinh, on
           </div>
         )}
         <p className="m-0 text-xs text-slate-400">
-          {kieu === 'dot' ? 'Lượt phải khớp cả chi nhánh, lớp và đợt đã chọn.' : 'Lượt phải khớp cả chi nhánh, lớp và thời gian đã chọn. Mỗi lượt tính vào tuần thi sớm nhất của nó.'}
+          {kieu === 'dot' ? 'Lượt phải khớp cả chi nhánh, lớp và đợt đã chọn.' : 'Lượt phải khớp cả chi nhánh, lớp và thời gian đã chọn. Mỗi lượt tính vào tuần Test sớm nhất của nó.'}
         </p>
         {loiThoiGian && <p role="alert" id={lf.oId('thoi-gian')} className="m-0 text-xs text-late">{loiThoiGian}</p>}
       </Khoi>
@@ -221,7 +221,7 @@ export function NganXuatMt({ khung: khungDau, chiNhanh, lop, thoiGianMacDinh, on
         <BoLocDoan<'gon' | 'day-du'> ariaLabel="Cột" value={cot} onChange={setCot}
           muc={[{ key: 'gon', nhan: 'Cột gọn' }, { key: 'day-du', nhan: 'Cột đầy đủ' }]} />
         <p className="m-0 text-xs leading-relaxed text-slate-400">
-          {chiDu ? 'Chỉ lấy lượt đã có điểm mọi kỹ năng phải thi.' : 'Lấy cả lượt còn thiếu điểm — ô thiếu để trống.'} Cột trong tệp: {cotChu}
+          {chiDu ? 'Chỉ lấy lượt đã có điểm mọi kỹ năng phải làm.' : 'Lấy cả lượt còn thiếu điểm — ô thiếu để trống.'} Cột trong tệp: {cotChu}
         </p>
       </Khoi>
 

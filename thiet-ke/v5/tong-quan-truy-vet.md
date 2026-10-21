@@ -10,11 +10,11 @@
 |---|---|---|---|
 | C04, brief 6.1 | Đầu trang một hàng (tên trang · phạm vi · tuần) + 3–4 chỉ số + 2 khối trái + cột "Đi tiếp" phải; **không form làm việc** trên trang | `tong-quan-ql-1440-sang`, `-ql-1440-toi` | `.chi-so`, `.the`, `.bang` |
 | C03, brief 15 | Mỗi tỷ lệ: % to + "n/N đơn vị" + kỳ / "hiện tại" | mọi khung | `.chi-so .mau` |
-| brief 6.2 | QL: Đạt MT · Case có PA · Chờ duyệt (đề xuất) · Thi tuần này; Lớp cần chú ý (công tắc FT / Thường); GV cần chú ý (Hành chính / Học thuật) | `-ql-1440-sang`, `-ql-hoc-thuat-1280-sang` | công tắc ngoài tiêu đề bảng (G9) |
+| brief 6.2 | QL: Đạt MT · Case có PA · Chờ duyệt (đề xuất) · Thi tháng này; Lớp cần chú ý (công tắc FT / Thường); GV cần chú ý (Hành chính / Học thuật) | `-ql-1440-sang`, `-ql-hoc-thuat-1280-sang` | công tắc ngoài tiêu đề bảng (G9) |
 | brief 6.2 | Chờ duyệt: bảng gọn (loại · đối tượng · người gửi · thời gian chờ); bấm dòng → panel duyệt đủ bối cảnh | `-ql-panel-duyet-1440-sang` | `.panel` việc (vạch hồng "DUYỆT") |
 | brief 6.3, T20 | QT: bảng theo chi nhánh, hàng "Toàn hệ thống" = Σ tử / Σ mẫu (23/38 = 61 %, không 57 %); bấm chi nhánh → mức QL | `-qt-1440-sang`, `-qt-1280-sang` | `.bang` + `hang-nhom` |
 | brief 6.4 | GV: tách **"Kỹ năng tôi dạy"** và **"Lớp tôi chủ nhiệm"** (không cộng trùng); chỉ bài của mình (T02) | `-gv-1440-sang`, `-gv-1440-toi`, `-gv-375` | hai `.the` cạnh nhau |
-| brief 6.5, C05 | TVV: 4 chỉ số (Báo PH đúng hạn · Chưa liên hệ được · Thi tuần này · Chờ KQ / bước tiếp); khối "Cần chú ý" dẫn sang danh sách đúng lọc; việc ở **Công việc** | `-tvv-1440-sang`, `-tvv-375` | `.ds-phai` |
+| brief 6.5, C05 | TVV: 4 chỉ số (Báo PH đúng hạn · Chưa liên hệ được · Thi tháng này · Chờ KQ / bước tiếp); khối "Cần chú ý" dẫn sang danh sách đúng lọc; việc ở **Công việc** | `-tvv-1440-sang`, `-tvv-375` | `.ds-phai` |
 | brief 6.6 | Admin: Lịch Test đủ % · Bài chưa nhập · Đề nghị dời; CX chỉ xem số phối hợp; Head tutor giữ vào thẳng Tutor | `-admin-`, `-cx-1440-sang`, khung `?k=ht` | `.bao-chi-xem` |
 | brief 6.6 | Vai không có việc → không dựng khối "Không có việc" (QT, CX chỉ có "Đi tiếp") | `-qt-`, `-cx-` | — |
 | C22, brief 14.3, T11, T17 | Số gạch chân → **panel chỉ đọc**: tiêu đề khớp số · phạm vi · cách tính · tử / mẫu / ngoài mẫu · bảng đúng 20 HV · "Đang thấy 1–10 / 20" · không nút xử lý | `-ql-panel-bc-1440-sang`, `-panel-bc-trang2-`, `-panel-bc-375` | `.oso`, panel "BÁO CÁO · CHỈ ĐỌC" |

@@ -355,13 +355,13 @@ export async function runKeHoachTestTests(t: YThucTestKit) {
     const mt3Week = week.periodById(mt3.planned_period_id)!.week_start;
     const per = week.ensurePeriod(mt3Week);
     const kiem = keHoachMod.kiemDot(P.mbManager, { attemptId: mt2.attemptId, kyNang: [{ skill: 'listening', periodId: per.id }] });
-    assert(kiem.bai.length === 1 && kiem.bai[0].ghiChu === 'chan' && /^MT3 thi .*Chọn tuần trước/.test(kiem.bai[0].cau ?? ''),
+    assert(kiem.bai.length === 1 && kiem.bai[0].ghiChu === 'chan' && /^MT3 làm bài .*Chọn tuần trước/.test(kiem.bai[0].cau ?? ''),
       `Trùng tuần đầu MT3 phải bị chặn, đang ra ${JSON.stringify(kiem)}`);
     const before = conn.prepare(`SELECT planned_period_id FROM attempt_skills WHERE attempt_id=? AND skill='listening'`)
       .get(mt2.attemptId) as any;
     assertThrows(
       () => keHoachMod.luuDot(P.mbManager, { attemptId: mt2.attemptId, kyNang: [{ skill: 'listening', periodId: per.id }], force: true }),
-      /MT3 thi .*Chọn tuần trước/, 'luuDot phải ném 400',
+      /MT3 làm bài .*Chọn tuần trước/, 'luuDot phải ném 400',
     );
     const after = conn.prepare(`SELECT planned_period_id FROM attempt_skills WHERE attempt_id=? AND skill='listening'`)
       .get(mt2.attemptId) as any;
@@ -825,7 +825,7 @@ export async function runKeHoachTestTests(t: YThucTestKit) {
     const g = d.gomBaiXemTruoc([baiMau('writing', 'moi'), baiMau('listening', 'moi'), baiMau('speaking', 'chan', null, '2026-10-19', 'Trùng'), baiMau('reading', 'moi')]);
     assert(g.length === 2 && g[0].kyNang.join() === 'listening,reading,writing' && g[1].ghiChu === 'chan' && g[1].cau === 'Trùng',
       `L R W gộp một dòng, S chặn tách dòng, ra ${JSON.stringify(g)}`);
-    assert(d.tomTatLopFT({ dangThi: 3, chuaXep: { dot: 4, soEm: 4 } }) === 'MT3 đang thi · MT4 chưa xếp 4 em', 'tomTatLopFT đủ hai vế');
+    assert(d.tomTatLopFT({ dangThi: 3, chuaXep: { dot: 4, soEm: 4 } }) === 'MT3 đang làm bài · MT4 chưa xếp 4 em', 'tomTatLopFT đủ hai vế');
     assert(d.tomTatLopFT({ dangThi: null, chuaXep: { dot: 2, soEm: 0 } }) === '', 'tomTatLopFT bỏ vế trống');
   });
 
@@ -929,7 +929,7 @@ export async function runKeHoachTestTests(t: YThucTestKit) {
     const mt2 = keHoachMod.xepMoi(P.mbManager, { studentId: em, attemptNo: 2, tuan: t4(y.id), force: true });
     assertThrows(() => keHoachMod.luuDot(P.mbManager, {
       attemptId: mt85.id, force: true, kyNang: [{ skill: 'listening', periodId: truocX.id }, { skill: 'speaking', periodId: y.id }],
-    }), /MT2 thi .*Chọn tuần trước/, 'vượt MT2 phải chặn');
+    }), /MT2 làm bài .*Chọn tuần trước/, 'vượt MT2 phải chặn');
     assert(tuanCua(mt85.id, 'listening').w === x.weekStart && tuanCua(mt85.id, 'speaking').w === x.weekStart, 'L, S đã đổi khi bị chặn');
     assert((conn.prepare('SELECT planned_period_id p FROM assessment_attempts WHERE id = ?').get(mt2.id) as any).p === y.id, 'MT2 mất lịch');
   });
@@ -1027,7 +1027,7 @@ export async function runKeHoachTestTests(t: YThucTestKit) {
   check('UX2 · danhSachLop: lớp FT có tomTat dạng "MT{n} đang thi…", có chiNhanh; lớp thường tomTat có "đang W"', () => {
     const ds = keHoachMod.danhSachLop(P.mbManager, {});
     const ft = ds.lop.find((l: any) => l.code === 'MB FT 101');
-    assert(ft && /^MT\d+ đang thi/.test(ft.tomTat) && ft.chiNhanh, `MB FT 101 phải có tomTat "MT… đang thi" và chiNhanh, ra ${JSON.stringify(ft)}`);
+    assert(ft && /^MT\d+ đang làm bài/.test(ft.tomTat) && ft.chiNhanh, `MB FT 101 phải có tomTat "MT… đang làm bài" và chiNhanh, ra ${JSON.stringify(ft)}`);
     const thuong = ds.lop.find((l: any) => l.code === 'MB FOU 12');
     assert(thuong && /đang W\d+\/8/.test(thuong.tomTat), `MB FOU 12 phải có tomTat "đang W…/8", ra ${JSON.stringify(thuong)}`);
     assert(typeof thuong.hvChuaCoLich === 'number', 'Lớp thường phải có hvChuaCoLich');

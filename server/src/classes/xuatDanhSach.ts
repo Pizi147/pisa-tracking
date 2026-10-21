@@ -28,7 +28,7 @@ import { latestAttempts } from '../worklist/danhGia.ts';
 import { sosCuaLuot, tomTatCase } from './hocVienSos.ts';
 
 const TOI_DA = 5000;
-const KET_LUAN_NHAN: Record<string, string> = { 'giu-thang': 'Giữ tháng', 'chot-ngay': 'Chốt ngày', 'chuyen-thang': 'Chuyển tháng', 'can-xac-nhan': 'Cần xác nhận' };
+const KET_LUAN_NHAN: Record<string, string> = { 'giu-thang': 'Giữ tháng', 'chot-ngay': 'Chốt ngày', 'chuyen-thang': 'Chuyển tháng', 'can-xac-nhan': 'Chưa kết luận' };
 const KY_HIEU: Record<string, string> = { listening: 'L', reading: 'R', writing: 'W', writing1: 'W', writing2: 'W', speaking: 'S' };
 
 export function xuatDanhSach(

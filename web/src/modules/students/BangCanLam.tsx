@@ -25,7 +25,7 @@ export type ViecCanLam = {
   mo: () => void;
 };
 
-const NHAN_COT: Record<string, string> = { 'Học viên': t('Học viên'), Việc: t('Việc'), 'Người giữ': t('Người giữ'), Hạn: t('Hạn'), 'Phụ huynh': t('Phụ huynh') };
+const NHAN_COT: Record<string, string> = { 'Học viên': t('Học viên'), Việc: t('Việc'), 'Người phụ trách': t('Người phụ trách'), Hạn: t('Hạn'), 'Phụ huynh': t('Phụ huynh') };
 const THU_KIEU = (v: ViecCanLam) => (v.quaHan ? 0 : v.han ? 1 : v.kieu === 'cho-duyet' ? 2 : v.kieu === 'thieu-tt' ? 4 : 3);
 const soSanh = (a: ViecCanLam, b: ViecCanLam) => THU_KIEU(a) - THU_KIEU(b) || (a.han ?? '9').localeCompare(b.han ?? '9');
 
@@ -122,8 +122,8 @@ export function BangCanLam({ viec, tatCa = viec, coNguoi, coPhuHuynh, dienThoai,
     );
   }
 
-  const tieuDe = ['Học viên', 'Việc', ...(coNguoi ? ['Người giữ'] : []), 'Hạn', ...(coPhuHuynh ? ['Phụ huynh'] : []), ''];
-  const rong: Record<string, string> = { 'Học viên': 'w-[22%]', Việc: 'w-[34%]', 'Người giữ': 'w-[16%]', Hạn: 'w-[14%]', 'Phụ huynh': 'w-[18%]', '': 'w-20' };
+  const tieuDe = ['Học viên', 'Việc', ...(coNguoi ? ['Người phụ trách'] : []), 'Hạn', ...(coPhuHuynh ? ['Phụ huynh'] : []), ''];
+  const rong: Record<string, string> = { 'Học viên': 'w-[22%]', Việc: 'w-[34%]', 'Người phụ trách': 'w-[16%]', Hạn: 'w-[14%]', 'Phụ huynh': 'w-[18%]', '': 'w-20' };
   return (
     <section className="card overflow-x-auto" aria-label={t('Cần làm theo lớp')}>
       <table className="w-full min-w-[860px] table-fixed text-sm">
