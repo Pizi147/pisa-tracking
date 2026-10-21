@@ -140,6 +140,8 @@ async function assertRejects(fn: () => Promise<unknown>, match: RegExp, msg: str
 }
 
 const conn = db();
+/* SEED-UX: phép kiểm chỉ đọc bộ demo — chạy NGAY sau seed, trước mọi mục ghi thêm. */
+await (await import('./prSeedUx.tests.ts')).runPrSeedUxTests({ check, assert, conn } as any);
 /**
  * PR-S3F #8: `setIssues` chặn Case SOS chưa xác nhận nguyên nhân (đường chính là `xacNhanCase`). Phép kiểm cũ chỉ cần "Case đã có nguyên nhân"
  * để dựng tình huống của nó → ghi thẳng như dữ liệu cũ, đúng như `setIssues` từng làm (ghi nguyên nhân + đồng bộ trạng thái Case).
@@ -9522,6 +9524,9 @@ await runPrSvTvvViecTests({ check, checkAsync, assert, assertThrows, conn, TODAY
 // ==================================================================== SV-S-EXPERT (lượt S Expert: chỉ QL / Admin thêm, GV S chấm, không vào tính toán, lịch sử)
 const { runPrSvSExpertTests } = await import('./prSvSExpert.tests.ts');
 await runPrSvSExpertTests({ check, assert, conn, P, classId } as any);
+// ==================================================================== SV-LOP (Đánh giá đầu ra chờ Final, việc theo em từ /my-work, W1 / W2; nợ rà S Ex ở SSEX-8…12)
+const { runPrSvLopTests } = await import('./prSvLop.tests.ts');
+await runPrSvLopTests({ check, assert, conn, P, classId } as any);
 // ==================================================================== V5 NEN-PANEL (nháp theo việc, hộp bỏ chữ, Lưu và tiếp, chân lưu, 375 + bàn phím)
 const { runPrNenPanelTests } = await import('./prNenPanel.tests.ts');
 await runPrNenPanelTests({ check, checkAsync, assert } as any);

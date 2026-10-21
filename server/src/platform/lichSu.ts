@@ -163,7 +163,7 @@ function baiLop(p: Principal, studentId: number, tiep: number | null): TrangLs {
 function sEx(p: Principal, studentId: number, tiep: number | null): TrangLs {
   require_(p, PERMISSIONS.STUDENT_VIEW, { studentId }, 'Học viên này nằm ngoài phạm vi bạn được xem.');
   const today = demoToday();
-  const r = docNhatKy(`a.entity_type = 'student' AND a.entity_id = ? AND a.action IN ('s_expert.them', 's_expert.sua', 's_expert.cham', 's_expert.xoa')`, [studentId], tiep, null,
+  const r = docNhatKy(`a.entity_type = 'student' AND a.entity_id = ? AND a.action IN ('s_expert.them', 's_expert.sua', 's_expert.cham', 's_expert.xoa', 's_expert.khoi_phuc')`, [studentId], tiep, null,
     ({ b, f, label }) => {
       const doiTuong = label ?? 'S Expert';
       return { nguon: null, lyDo: null, truong: ([
