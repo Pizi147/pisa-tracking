@@ -14,7 +14,7 @@ import { demoToday } from '../demoConfig.ts';
 import { forbidden } from '../util.ts';
 import { can, type Principal } from '../permissions.ts';
 import { metricSet } from '../worklist/metrics.ts';
-import { latestAttempts } from '../worklist/danhGia.ts';
+import { latestAttempts, type AttemptEval } from '../worklist/danhGia.ts';
 import { lopCuaTap } from '../worklist/chuongTrinh.ts';
 import { listCases, type MappedCase } from '../cases/cases.ts';
 import { chiTietCaseMo } from '../cases/caseLop.ts';
@@ -87,6 +87,12 @@ function thongTinEm(ids: readonly number[]): Map<number, { ten: string; ma: stri
   return out;
 }
 
+/** SL2: nhãn lượt + kỹ năng dưới kỳ vọng của lượt "SOS hiện tại" — một chỗ cho Đang SOS và tệp xuất. */
+export const sosCuaLuot = (a: AttemptEval) => ({
+  luot: a.kind === 'mock' ? `MT${a.attemptNo}` : ATTEMPT_KIND_SHORT[a.kind as AttemptKind] ?? a.kind, tuan: a.weekStart ?? '',
+  sosLevel: Math.min(3, a.sosLevel ?? 1), kyNang: Object.entries(a.skills).filter(([, s]) => s.evaluable && s.under).map(([k]) => k),
+});
+
 export function dangSos(p: Principal, f: { phamVi?: string | null; branchId?: number | null; cnNho?: number | null; q?: string | null } = {}): TrangSos {
   const vai = vaiXemHocVien(p.roleKeys);
   /* Admin chỉ hai góc Tất cả · Cần làm (mockup 3 v2 §9 — Admin không làm Case): máy chủ chặn cùng giao diện. */
@@ -148,9 +154,7 @@ export function dangSos(p: Principal, f: { phamVi?: string | null; branchId?: nu
     return [{
       attemptId: a.attemptId, studentId: id, ten: e?.ten ?? '', ma: e?.ma ?? '', classId: l.classId, classCode: l.code ?? '',
       branchName: cn.get(l.classId)?.ten ?? null, ft: !!l.isFt,
-      luot: a.kind === 'mock' ? `MT${a.attemptNo}` : ATTEMPT_KIND_SHORT[a.kind as AttemptKind] ?? a.kind, tuan: a.weekStart ?? '',
-      sosLevel: Math.min(3, a.sosLevel ?? 1),
-      kyNang: Object.entries(a.skills).filter(([, s]) => s.evaluable && s.under).map(([k]) => k),
+      ...sosCuaLuot(a),
       tam: tam.has(id), cases: cuaLuot, tvv: e?.tvv ?? null, lienHe: e?.lienHe ?? { phone: null, parentName: null, parentRelation: null, parentPhone: null },
     }];
   }).sort((a, b) => b.sosLevel - a.sosLevel || a.ten.localeCompare(b.ten, 'vi'));

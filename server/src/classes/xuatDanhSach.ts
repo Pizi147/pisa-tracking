@@ -10,8 +10,8 @@
  */
 import { db, theoLo } from '../db.ts';
 import {
-  ATTEMPT_KIND_SHORT, MAU_XUAT_DS, PERMISSIONS, vaiXemHocVien, ketLuanHienTai, bangThongTinXuatDs, bangXuatDanhSach, chuTep, chuoiLop, cotXuatDs, ketQuaLuot, tuanNam, nhanLichThi, trangThaiLichThi,
-  type AttemptKind, type HvXuatDs, type MauXuatDs,
+  MAU_XUAT_DS, PERMISSIONS, vaiXemHocVien, ketLuanHienTai, bangThongTinXuatDs, bangXuatDanhSach, chuTep, chuoiLop, cotXuatDs, ketQuaLuot, tuanNam, nhanLichThi, trangThaiLichThi,
+  type HvXuatDs, type MauXuatDs,
 } from '../../../shared/domain/index.ts';
 import { gioVn } from '../../../shared/domain/xuatMt.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -25,7 +25,7 @@ import { lopTheoLoTrinh } from '../keHoach/keHoachTest.ts';
 import { listCases } from '../cases/cases.ts';
 import { COT_LICH_THI_SQL, luuTuCot } from './lichThi.ts';
 import { latestAttempts } from '../worklist/danhGia.ts';
-import { tomTatCase } from './hocVienSos.ts';
+import { sosCuaLuot, tomTatCase } from './hocVienSos.ts';
 
 const TOI_DA = 5000;
 const KET_LUAN_NHAN: Record<string, string> = { 'giu-thang': 'Giữ tháng', 'chot-ngay': 'Chốt ngày', 'chuyen-thang': 'Chuyển tháng', 'can-xac-nhan': 'Cần xác nhận' };
@@ -82,11 +82,7 @@ export function xuatDanhSach(
   if (nguonSos && vaiXemHocVien(p.roleKeys) !== 'admin' && can(p, PERMISSIONS.CASE_VIEW, { anyScope: true })) {
     for (const [id, a] of latestAttempts(ids, 'valid', demoToday())) {
       if ((a.sosLevel ?? 0) <= 0) continue;
-      sosCua.set(id, {
-        sosLevel: Math.min(3, a.sosLevel!), tam: a.provisional, tuan: a.weekStart ?? '',
-        luot: a.kind === 'mock' ? `MT${a.attemptNo}` : ATTEMPT_KIND_SHORT[a.kind as AttemptKind] ?? a.kind,
-        kyNang: Object.entries(a.skills).filter(([, x]) => x.evaluable && x.under).map(([k]) => k),
-      });
+      sosCua.set(id, { ...sosCuaLuot(a), tam: a.provisional });
     }
   }
   const standing = coCot('diem') || coCot('ketQua') || coCot('tuanThi') || (coCot('mt') && !nguonSos) ? standingFor(ids) : standingFor([]);
