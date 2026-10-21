@@ -29,7 +29,7 @@ import { useSession } from '../../lib/session.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { useGiuFocus } from '../../ui/giuFocus.ts';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
-import { DauKetQua, MuiTenKyVong } from '../../ui/BieuTuong.tsx';
+import { DauKetQua, MuiTenKyVong, lopKq } from '../../ui/BieuTuong.tsx';
 import { useBaoHopLyDoMo } from '../../ui/SaveState.tsx';
 import { cungGvCham, gvChamPayload, gvChamThanhChon } from '../cham/GvCham.tsx';
 import { ChonNhom } from './NhanXet.tsx';
@@ -79,12 +79,13 @@ export const oVangCua = (c: Cell, tuanXem?: string | null) =>
  * CHỮ TRÊN Ô ĐIỂM (lưới, danh sách) — đọc được khi bỏ màu (CA3-2): ô đã chốt ghi CHỮ hai dòng theo mẫu ô Vắng; "-" chỉ còn là dấu chưa
  * chốt (Writing mới một task); ô chỉ đọc không có gì: một ký tự "—". `doc` = câu cho trình đọc màn hình.
  */
-function hienO(c: Cell, vangGoc: boolean): { chu: ReactNode; doc: string; kieu: keyof typeof KIEU_O | null } {
-  const hai = (a: string, b: string) => <><span>{a}</span><span className="text-[12px]">{b}</span></>;
+function hienO(c: Cell, vangGoc: boolean): { chu: ReactNode; phu?: string; doc: string; kieu: keyof typeof KIEU_O | null } {
+  /* BANG-1: chữ thứ hai thành dòng phụ dưới ô (ô giữ 32 px, hàng 64). */
+  const hai = (a: string, b: string) => ({ chu: a, phu: b });
   if (c.progress === 'cancelled') return { chu: t('Đã huỷ'), doc: t('Đã huỷ phần thi'), kieu: 'huy' };
-  if (vangGoc && c.daChot?.doiSang) return { chu: hai(t('Vắng'), `→ ${c.daChot.doiSang}`), doc: t('Vắng, đã dời sang {doiSang}', { doiSang: c.daChot.doiSang }), kieu: 'vang' };
-  if (c.daChot && !c.daChot.doiSang && c.sitStatus === 'absent') return { chu: hai(t('Vắng'), t('chờ QL')), doc: t('Vắng, chờ Quản lý xếp lại'), kieu: 'vang' };
-  if (c.noShow?.state === 'khong-du-thi') return { chu: hai(t('Không'), t('dự thi')), doc: t('Không dự thi'), kieu: 'chot' };
+  if (vangGoc && c.daChot?.doiSang) return { ...hai(t('Vắng'), `→ ${c.daChot.doiSang}`), doc: t('Vắng, đã dời sang {doiSang}', { doiSang: c.daChot.doiSang }), kieu: 'vang' };
+  if (c.daChot && !c.daChot.doiSang && c.sitStatus === 'absent') return { ...hai(t('Vắng'), t('chờ QL')), doc: t('Vắng, chờ Quản lý xếp lại'), kieu: 'vang' };
+  if (c.noShow?.state === 'khong-du-thi') return { ...hai(t('Không'), t('dự thi')), doc: t('Không dự thi'), kieu: 'chot' };
   /* LUAT-34: "-" ở MT cũ = Đã huỷ ngay (cả "Không dự thi" cũ ở MT cũ) — bấm ô gỡ "-" / nhập điểm như ô "-" khác. */
   if (c.noShow?.state === 'da-huy') return { chu: t('Đã huỷ'), doc: c.noShow.text, kieu: 'chot' };
   if (c.noShow) return { chu: '-', doc: c.noShow.text, kieu: null };
@@ -103,11 +104,11 @@ function hienO(c: Cell, vangGoc: boolean): { chu: ReactNode; doc: string; kieu: 
  */
 function DongDau({ cell, thiBu = false }: { cell: Cell; thiBu?: boolean }) {
   const { homNay } = useNgayNghiepVu();
-  if (thiBu && cell.daChot) return <span className="block text-xs leading-tight text-slate-400">{t('vắng lần')}{' '}{Math.max(1, cell.daChot.lan)}</span>;
+  if (thiBu && cell.daChot) return <span className="block text-xs leading-4 text-slate-400" data-phu-odiem="">{t('vắng lần')}{' '}{Math.max(1, cell.daChot.lan)}</span>;
   if (cell.noShow?.state !== 'khong-co-bai' || cell.daChot) return null;
   const dem = demNguocSuaDau(cell.noShow.editableUntil ?? null, homNay);
   return (
-    <span className="block text-xs leading-tight text-slate-400 max-sm:text-right" title={dich(cell.noShow.text)}>
+    <span className="block text-xs leading-4 text-slate-400 max-sm:text-right" data-phu-odiem="" title={dich(cell.noShow.text)}>
       {dem ?? cell.noShow.text}
     </span>
   );
@@ -118,11 +119,11 @@ function DongDau({ cell, thiBu = false }: { cell: Cell; thiBu?: boolean }) {
  * Ô vắng hai dòng ("Vắng" / "→ W3 SEP") để vừa cột 104 px của lưới (bảng `table-layout: fixed`).
  */
 const KIEU_O = {
-  vang: 'flex-col !gap-0 leading-tight border-[color:rgb(var(--muted-line-rgb))] text-[color:rgb(var(--muted-rgb))]',
-  trong: 'min-w-[3rem] min-h-[28px] justify-center border-dashed border-[color:var(--accent)]',
+  vang: 'border-[color:rgb(var(--muted-line-rgb))] text-[13px] text-[color:rgb(var(--muted-rgb))]',
+  trong: 'border-dashed border-[color:var(--accent)]',
   huy: 'border-dotted text-slate-500',
   /* OV-11a (CA3-2): Không dự thi — hai dòng chữ như ô Vắng, màu trung tính (trạng thái cuối, không phải việc). */
-  chot: 'flex-col !gap-0 leading-tight text-slate-400',
+  chot: 'text-[13px] text-slate-400',
 } as const;
 
 /** OV-12b: chữ thiếu ngay dưới ô (nút giữ cỡ cũ — hàng lưới không cao thêm). */
@@ -130,7 +131,7 @@ function ChuThieu({ cell }: { cell: Cell }) {
   if (!cell.thieuNhanXet) return null;
   /* "thiếu nhận xét" vừa cột 104 px một dòng; "thiếu nhóm nguyên nhân" dài hơn → xuống dòng. */
   return (
-    <span className={`block text-right text-xs font-semibold leading-tight text-soon ${cell.thieuNhanXet === 'chon-nhom' ? '' : 'whitespace-nowrap'}`}>
+    <span className={`block text-xs font-semibold leading-4 text-soon ${cell.thieuNhanXet === 'chon-nhom' ? '' : 'whitespace-nowrap'}`} data-phu-odiem="">
       {CHU_O_THIEU[cell.thieuNhanXet]}
     </span>
   );
@@ -143,49 +144,53 @@ function ChuThieu({ cell }: { cell: Cell }) {
 /** Số câu đúng (L / R) — dòng phụ dưới band ở lưới (mockup 2: "7.0 ✓" / "30 câu"). */
 function SoCau({ cell }: { cell: Cell }) {
   if (cell.rawScore === null || cell.band === null) return null;
-  return <span className="block text-right text-[12px] leading-tight text-slate-500 tabular-nums">{t('{rawScore} câu', { rawScore: cell.rawScore })}</span>;
+  return <span className="block text-[12px] leading-4 text-slate-500 tabular-nums" data-phu-odiem="">{t('{rawScore} câu', { rawScore: cell.rawScore })}</span>;
 }
 
-export function ODiemMt({ cell, lon = false, mo, onMo, chinh = false, dauKq = null, ...hop }: Omit<HopProps, 'anchor' | 'onDong'> & {
+export function ODiemMt({ cell, lon = false, mo, onMo, dauKq = null, ...hop }: Omit<HopProps, 'anchor' | 'onDong'> & {
   lon?: boolean; mo: boolean; onMo: (mo: boolean) => void;
-  /** OV-15b: ô kỹ năng chính (L · R · S) — band đậm; W1 / W2 là ô nhập thường. */
+  /** Giữ cho nơi gọi cũ — BANG-1: mọi ô kỹ năng cùng một dáng (số 15 / 700). */
   chinh?: boolean;
-  /** OV-15b (6b): ✓ / ✗ so kỳ vọng cạnh band — chỉ lưới có cột Kỳ vọng. */
+  /** ✓ / ✗ so kỳ vọng ĐỨNG TRƯỚC band — chỉ lưới có cột Kỳ vọng (04 mục 7: W1 / W2 cũng có). */
   dauKq?: 'vuot' | 'bang' | 'duoi' | null;
 }) {
   const [neo, setNeo] = useState<HTMLButtonElement | null>(null);
   const vangGoc = oVangCua(cell, hop.tuanXem);
   const h = hienO(cell, vangGoc);
+  const kq = dauKq && cell.band !== null && !h.kieu ? dauKq : null;
+  /* BANG-0 (`ODiem`): chỗ ký hiệu giữ khi ô có số mà không ký hiệu (số thẳng cột). */
+  const kyHieu = cell.band !== null && !h.kieu ? <span className="inline-block w-[14px] shrink-0 text-center" aria-hidden>{kq && <DauKetQua kq={kq} />}</span> : null;
+  const so = <span className={`${h.kieu ? '' : `text-[15px] font-bold ${lopKq(kq)}`}`}>{h.chu}</span>;
+  /* MỘT dòng phụ (04 mục 7): thiếu nhận xét > vắng lần n / đếm ngược "-" > chữ thứ hai của ô > n câu. */
+  const thiBu = !!cell.daChot?.doiSang && !vangGoc;
+  const coDongDau = (thiBu && !!cell.daChot) || (cell.noShow?.state === 'khong-co-bai' && !cell.daChot);
+  const phu = cell.thieuNhanXet ? <ChuThieu cell={cell} />
+    : coDongDau ? <DongDau cell={cell} thiBu={thiBu} />
+    : h.phu ? <span className="block text-xs leading-4 text-slate-400" data-phu-odiem="">{h.phu}</span>
+    : <SoCau cell={cell} />;
   if (!suaDuoc(cell)) {
     const vang = cell.sitStatus === 'absent' && cell.band === null && !cell.daChot;
-    const hai = h.kieu === 'chot' || h.kieu === 'vang';
     return (
-      <span className="inline-flex flex-col items-end gap-0.5">
-        <span className={`tabular-nums ${hai ? 'inline-flex flex-col items-end leading-tight' : 'inline-flex items-center gap-1'} ${vang || hai || cell.progress === 'cancelled' ? 'text-xs text-slate-500' : 'text-slate-300'} ${chinh && !h.kieu ? 'font-bold text-slate-100' : ''} ${lon ? 'text-base' : ''}`}
+      <span className="inline-flex flex-col items-center">
+        <span className={`inline-flex items-baseline gap-1 tabular-nums ${vang || h.kieu ? 'text-xs text-slate-500' : ''} ${lon ? 'text-base' : ''}`}
           title={cell.noShow?.text ?? lyDoChiDoc(cell)}>
           {/* OV-15b: ô của người khác chưa có điểm = trống (không "—"). */}
-          {vang ? t('Vắng') : h.kieu === 'trong' ? <span className="sr-only">{t('Chưa có')}</span> : h.chu}
-          {dauKq && cell.band !== null && <DauKetQua kq={dauKq} />}
+          {vang ? t('Vắng') : h.kieu === 'trong' ? <span className="sr-only">{t('Chưa có')}</span> : <>{kyHieu}{so}</>}
         </span>
-        <SoCau cell={cell} />
-        <ChuThieu cell={cell} />
-        <DongDau cell={cell} />
+        {phu}
       </span>
     );
   }
   return (
-    <span className="inline-flex max-w-full flex-col items-end gap-0.5">
+    <span className="inline-flex max-w-full flex-col items-center">
       <button ref={setNeo} type="button" aria-expanded={mo} aria-haspopup="dialog"
         aria-label={`${skillLabel(cell.skill)} · ${hop.ctx.tenHv}: ${h.doc}${cell.thieuNhanXet ? `, ${CHU_O_THIEU[cell.thieuNhanXet]}` : ''}`}
-        className={`btn max-w-full tabular-nums ${lon ? 'min-h-[44px] min-w-[60px] justify-center text-base font-semibold' : 'btn-sm'} ${h.kieu ? KIEU_O[h.kieu] : ''} ${chinh && !h.kieu ? 'font-bold text-[13px]' : ''} ${mo ? 'border-[color:var(--accent)]' : ''}`}
+        className={`o-sua inline-flex max-w-full items-center justify-center gap-1 tabular-nums ${lon ? 'min-h-[44px] min-w-[60px] text-base font-semibold' : 'h-8 min-w-16 px-1.5'} ${h.kieu ? KIEU_O[h.kieu] : ''} ${mo ? '!border-[color:var(--accent)]' : ''}`}
         title={cell.noShow?.text ?? t('{skillLabel} — bấm để nhập', { skillLabel: skillLabel(cell.skill) })}
         onClick={() => onMo(!mo)}>
-        {h.chu}
-        {dauKq && cell.band !== null && <DauKetQua kq={dauKq} />}
+        {kyHieu}{h.kieu === 'trong' ? <span className="text-transparent" aria-hidden>0</span> : so}
       </button>
-      <SoCau cell={cell} />
-      <ChuThieu cell={cell} />
-      <DongDau cell={cell} thiBu={!!cell.daChot?.doiSang && !vangGoc} />
+      {phu}
       {mo && neo && <HopNhapDiem cell={cell} anchor={neo} onDong={() => onMo(false)} {...hop} />}
     </span>
   );

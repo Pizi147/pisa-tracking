@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { ODiem } from '../../ui/ODiem.tsx';
 import { createPortal } from 'react-dom';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
@@ -251,7 +252,7 @@ export function ChoNutDau() {
  */
 function DongLoiNhap({ id, cau }: { id: string; cau: string | null }) {
   if (!cau) return null;
-  return <span id={id} role="alert" className="block max-w-[6.5rem] text-xs leading-tight text-bad [overflow-wrap:anywhere] max-sm:max-w-[14rem] max-sm:text-right">{cau}</span>;
+  return <span id={id} role="alert" data-phu-odiem="" className="block max-w-[10rem] text-xs leading-4 text-bad [overflow-wrap:anywhere] max-sm:max-w-[14rem] max-sm:text-right">{cau}</span>;
 }
 function useBaoLoiNhap(cau: string | null, onLoiNhap?: (cau: string | null) => void) {
   const bao = useRef(onLoiNhap);
@@ -713,10 +714,10 @@ export function ODiemThuong({
    * vắng: lần vắng −1, lịch và điểm ở tuần mới giữ nguyên. Gõ khác thì ô về "-" (điểm sửa ở tuần mới).
    */
   if (cell.oTuanCu && dau && coDiem) {
-    const duoi = cell.tuanHienTai ? <span className="text-xs tabular-nums text-slate-400 leading-tight">→ {cell.tuanHienTai}</span> : null;
+    const duoi = cell.tuanHienTai ? <span className="text-xs tabular-nums text-slate-400 leading-4" data-phu-odiem="">→ {cell.tuanHienTai}</span> : null;
     const tieuDe = t('Đã có điểm ở {x}. Xoá "-" = hết vắng, giữ lịch và điểm.', { x: cell.tuanHienTai ?? t('tuần mới') });
     if (!cell.goDau) {
-      return <span className="inline-flex flex-col items-end tabular-nums text-slate-400" title={tieuDe}><span>-</span>{duoi}</span>;
+      return <span className="inline-flex flex-col items-center tabular-nums text-slate-400" title={tieuDe}><span>-</span>{duoi}</span>;
     }
     /* Máy chủ từ chối (quá khung, mạng…) → ô về "-": không để một ô trống trông như đã gỡ. */
     const goNgay = () => {
@@ -744,18 +745,25 @@ export function ODiemThuong({
     const khongDay = cell.khoa ? KHOA_KET_THUC_HINT : t('Bạn không được phân công kỹ năng này.');
     if (coDiem) {
       return (
-        <span className="inline-flex flex-col items-end justify-center tabular-nums text-slate-400"
+        <span className="inline-flex flex-col items-center justify-center tabular-nums text-slate-400"
           title={[khongDay, pt && ketQuaChu ? `${ketQuaChu} · ${pt}.` : '', lamBu].filter(Boolean).join(' ')}>
-          <span className="inline-flex items-center gap-1">
-            <span className={cell.ketQua === 'fail' ? 'text-rose-300' : ''}>{o.hien || `${cell.diem}/?`}</span>
-            {lon && <ChoNutDau />}
-          </span>
-          {!lon && <DongDatPhanTram ketQua={cell.ketQua} tiLe={cell.tiLe} chiChu={chiChuKetQua} />}
+          {lon ? (
+            <>
+              <span className="inline-flex items-center gap-1">
+                <span className={cell.ketQua === 'fail' ? 'text-kq-duoi' : ''}>{o.hien || `${cell.diem}/?`}</span>
+                <ChoNutDau />
+              </span>
+              <DongDatPhanTram ketQua={cell.ketQua} tiLe={cell.tiLe} chiChu={chiChuKetQua} />
+            </>
+          ) : (
+            <ODiem kieu="ti-le" so={String(cell.diem)} tong={cell.tong ?? undefined} tongCot={tongCot ?? undefined} nhan={tenMon}
+              kq={cell.ketQua === 'pass' ? 'vuot' : cell.ketQua === 'fail' ? 'duoi' : null} />
+          )}
         </span>
       );
     }
     /* OV-15b (4 dáng ô): ô của người khác chưa có điểm = trống (chữ chỉ cho trình đọc màn hình). */
-    const chu = cell.khongDuThi ? t('Không dự thi') : dau ? '-' : cell.chuaToiTuan && cell.tuanHienTai ? cell.tuanHienTai : <span className="sr-only">{t('Chưa có')}</span>;
+    const chu = cell.khongDuThi ? t('Không dự thi') : dau ? '-' : cell.chuaToiTuan && cell.tuanHienTai ? cell.tuanHienTai : <><span className="sr-only">{t('Chưa có')}</span><span className="text-transparent" aria-hidden>0</span></>;
     const title = cell.khongDuThi ? t('{khongDay} Không dự thi · {x}', { khongDay, x: cell.tuanHienTai ?? '' }).trim()
       : dau && cell.tuanHienTai ? t('{khongDay} Đã dời sang {tuanHienTai}.', { khongDay, tuanHienTai: cell.tuanHienTai })
       : cell.chuaToiTuan && cell.tuanHienTai ? `${khongDay} Thi ${cell.tuanHienTai}.` : khongDay;
@@ -781,9 +789,9 @@ export function ODiemThuong({
     const title = [pt && ketQuaChu ? `${ketQuaChu} · ${pt}.` : '', t('Đã có điểm — bấm để sửa.'), lamBu]
       .filter(Boolean).join(' ');
     return (
-      <span className="inline-flex flex-col items-end justify-center" title={title}>
-        <span className="inline-flex items-center justify-end gap-1">
-          <input ref={inputRef} readOnly className={`${oSo} cursor-pointer ${cell.ketQua === 'fail' ? 'text-rose-300' : ''}`}
+      <span className="inline-flex flex-col items-center justify-center" title={title}>
+        <span className="inline-flex items-center justify-center gap-1">
+          <input ref={inputRef} readOnly className={`${oSo} cursor-pointer font-bold ${cell.ketQua === 'fail' ? 'text-kq-duoi' : cell.ketQua === 'pass' ? 'text-kq-vuot' : ''}`}
             value={String(cell.diem)} aria-label={t('{tenMon} — số câu đúng (đã có điểm, bấm để sửa)', { tenMon })}
             onClick={() => mo(String(cell.diem))}
             onKeyDown={(e) => {
@@ -824,7 +832,7 @@ export function ODiemThuong({
             </SuaDiemCoLyDo>
           )}
         </span>
-        {!lon && <DongDatPhanTram ketQua={cell.ketQua} tiLe={cell.tiLe} chiChu={chiChuKetQua} />}
+        {lon && <DongDatPhanTram ketQua={cell.ketQua} tiLe={cell.tiLe} chiChu={chiChuKetQua} />}
       </span>
     );
   }
@@ -841,8 +849,8 @@ export function ODiemThuong({
   const titleTong = canhBao?.o === 'tong' ? canhBao.cau
     : o.vienVang ? t('Khác tổng của cột ({tongCot}) — em làm đề khác.', { tongCot }) : t('Tổng số câu của đề em làm.');
   return (
-    <span className="inline-flex flex-col items-end gap-0.5">
-    <span ref={cap} className="inline-flex items-center justify-end gap-1"
+    <span className="inline-flex flex-col items-center">
+    <span ref={cap} className="inline-flex items-center justify-center gap-1"
       onBlur={(e) => { if (!cap.current?.contains(e.relatedTarget as Node)) void commit(); }}>
       <input ref={goLai.gan}
         className={`${oSo} ${canhBao?.o === 'diem' ? 'border-rose-400/70' : ''} ${dangDau ? 'text-slate-400' : ''}`}
@@ -865,7 +873,7 @@ export function ODiemThuong({
         onChange={(e) => { setTong(e.target.value); setDirty(true); }} onKeyDown={phim} />
       {lon && <NutDau title={nutDauTitle} an={!nhanDau || !!cell.khongDuThi} tat={busy} onBam={bamVang} />}
     </span>
-    {cell.khongDuThi && dangDau && <span className="text-xs leading-tight text-slate-400">{t('Không dự thi')}</span>}
+    {cell.khongDuThi && dangDau && <span className="text-xs leading-4 text-slate-400" data-phu-odiem="">{t('Không dự thi')}</span>}
     <DongLoiNhap id={idLoi} cau={canhBao?.cau ?? null} />
     </span>
   );

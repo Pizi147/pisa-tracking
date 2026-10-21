@@ -124,7 +124,7 @@ function DongHv({ studentId, active, ten, href, phu, phuTitle, phuDo = false, lu
       {/* OV-14b: tên giữ ≥ 8rem (375: không vỡ từng chữ cái) — cụm ô chật thì xuống dòng dưới tên. */}
       <div className="min-w-[8rem] flex-1">
         <div className="min-w-0">
-          <Link className="link block break-words max-sm:py-3 max-sm:-my-3" to={href} title={ten}>{ten}</Link>
+          <Link className="link block break-words max-sm:flex max-sm:min-h-[44px] max-sm:items-center" to={href} title={ten}>{ten}</Link>
           {nhan && <div className="mt-0.5">{nhan}</div>}
         </div>
         <div className="flex items-center gap-1.5 text-xs text-slate-500 min-w-0 tabular-nums">

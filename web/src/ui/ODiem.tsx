@@ -55,7 +55,7 @@ export function ODiem({ kieu = 'doc', so, kq = null, kck, tong, tongCot, phu, lu
     <span className="inline-flex flex-col items-center">
       <button type="button" onClick={onBam} aria-label={ten} data-trong={so === null || undefined}
         className={`o-sua relative inline-flex h-8 w-16 items-center justify-center gap-1 tabular-nums max-sm:h-11 ${so === null ? 'border-dashed' : ''} ${luu === 'loi' ? '!border-bad' : ''}`}>
-        {kyHieu}{so === null ? <span className="invisible" aria-hidden>0</span> : so_}
+        {kyHieu}{so === null ? <span className="text-transparent" aria-hidden>0</span> : so_}
         {luu === 'dang-luu' && <span className="absolute right-0.5 top-0 text-[12px] leading-none text-slate-400" title={t('Đang lưu…')}>◷</span>}
         {luu === 'da-luu' && <span className="absolute right-0.5 top-0 text-[12px] leading-none text-slate-400" title={t('Đã lưu')}>✓</span>}
       </button>
