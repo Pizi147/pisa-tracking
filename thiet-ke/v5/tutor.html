@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>V5 · Tutor</title>
+<link rel="stylesheet" href="v5-nen.css">
+<script>try { var q = new URLSearchParams(location.search).get('theme'); if (q) document.documentElement.dataset.theme = q; } catch (e) {}</script>
+<style>
+  .mk { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; padding: 8px 20px; background: var(--be-mat-2); border-bottom: 1px dashed var(--vien-dam); font-size: 13px; color: var(--chu-2); }
+  .mk b { color: var(--chu); }
+  .mk .nhom { display: inline-flex; gap: 4px; align-items: center; flex-wrap: wrap; }
+  .mk button { font: inherit; font-size: 12px; height: 26px; padding: 0 9px; border-radius: 6px; border: 1px solid var(--vien); background: var(--be-mat); color: var(--chu-2); cursor: pointer; }
+  .mk button[aria-pressed="true"] { border-color: var(--nhan); color: var(--nhan); background: var(--nhan-nen); font-weight: 700; }
+  .trang { max-width: 1360px; margin: 0 auto; padding: 20px 24px 64px; display: flex; flex-direction: column; gap: 16px; }
+  body.mo-panel .trang { padding-right: 520px; max-width: none; }
+  .dau { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; }
+  .dau .phai { margin-left: auto; display: flex; gap: 8px; }
+  .ky-chon { display: inline-flex; align-items: center; border: 1px solid var(--vien-o); border-radius: 8px; background: var(--be-mat); height: 36px; }
+  .ky-chon button { font: inherit; border: 0; background: none; color: var(--chu-2); width: 32px; height: 34px; cursor: pointer; }
+  .ky-chon span { font-size: 14px; font-weight: 600; padding: 0 6px; font-family: var(--phong-so); white-space: nowrap; }
+  .dai-so { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+  .loc { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; padding: 10px 16px; border-bottom: 1px solid var(--vien); }
+  .loc .tong { margin-left: auto; font-size: 13px; color: var(--chu-2); }
+  .doan { display: inline-flex; border: 1px solid var(--vien-o); border-radius: 8px; overflow: hidden; height: 36px; }
+  .doan button { font: inherit; font-size: 14px; border: 0; background: var(--be-mat); color: var(--chu-2); padding: 0 12px; cursor: pointer; }
+  .doan button + button { border-left: 1px solid var(--vien-o); }
+  .doan button[aria-pressed="true"] { background: var(--nhan-nen); color: var(--nhan); font-weight: 700; }
+  .chon { font: inherit; font-size: 14px; height: 36px; padding: 0 10px; border: 1px solid var(--vien-o); border-radius: 8px; background: var(--be-mat); color: var(--chu); }
+  .ty { font-family: var(--phong-so); font-weight: 700; }
+  .ty small { display: block; font-size: 12px; color: var(--chu-3); font-weight: 400; }
+  .khong-buoi { color: var(--thieu); font-size: 13px; font-weight: 600; }
+  .ly-do { font-size: 13px; color: var(--canh-bao); font-weight: 600; }
+  .bang tbody tr.ngung td { color: var(--chu-3); }
+  /* Panel việc (nhận xét tutor) — khung phải cố định, trang thu hẹp để vẫn thấy bảng */
+  .panel.noi { position: fixed; top: 76px; right: 16px; bottom: 16px; width: 480px; z-index: 21; display: none; }
+  body.mo-panel .panel.noi { display: flex; }
+  .buoi { display: grid; grid-template-columns: 4.2rem 1fr auto; gap: 2px 10px; font-size: 13px; padding: 8px 0; border-bottom: 1px dashed var(--vien); }
+  .buoi:last-child { border-bottom: 0; }
+  .buoi .phu { grid-column: 2 / 4; }
+  .hop-hoi { position: fixed; inset: 0; background: rgba(17, 26, 66, .32); display: none; align-items: center; justify-content: center; z-index: 30; padding: 16px; }
+  .hop-hoi.mo { display: flex; }
+  .hop-hoi .the { max-width: 420px; padding: 18px 20px; display: flex; flex-direction: column; gap: 12px; box-shadow: var(--bong-noi); }
+  .hop-hoi .nut-hang { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+  .xuong { display: none; } body.tt-tai .xuong { display: block; } body.tt-tai .noi-dung { display: none; }
+  .xuong i { display: block; height: 14px; border-radius: 6px; background: var(--be-mat-2); margin: 10px 0; animation: nhap 1.2s ease-in-out infinite alternate; }
+  @keyframes nhap { from { opacity: .55; } to { opacity: 1; } }
+  .chi-loi, .chi-rong { display: none; }
+  body.tt-loi .chi-loi { display: flex; } body.tt-loi .an-khi-loi { display: none; }
+  body.tt-rong .chi-rong { display: block; } body.tt-rong .an-khi-rong { display: none; }
+  .chi-ql { display: none; } body.vai-ql .chi-ql { display: flex; } body.vai-ql .chi-ht { display: none !important; }
+  .the-dt { display: none; }
+  .the-dt article { padding: 12px 14px; border-bottom: 1px solid var(--vien); font-size: 14px; display: flex; flex-direction: column; gap: 6px; cursor: pointer; }
+  .the-dt .ba { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; font-size: 13px; }
+  @media (max-width: 1100px) { .dai-so { grid-template-columns: 1fr 1fr; } body.mo-panel .trang { padding-right: 24px; } }
+  @media (max-width: 640px) {
+    .trang { padding: 14px 12px 48px; } body.mo-panel .trang { padding-right: 12px; }
+    .mk { padding: 6px 12px; gap: 4px 10px; font-size: 12px; }
+    .dh { padding: 0 12px; }
+    .dai-so { gap: 8px; } .chi-so { padding: 10px 12px; } .chi-so .gia-tri { font-size: 22px; }
+    .panel.noi { inset: 0; width: auto; border-radius: 0; border: 0; }
+    .panel-chan { flex-wrap: wrap; } .panel-chan .trai { flex-basis: 100%; }
+    .bang-dai { display: none; } .the-dt { display: block; }
+    .loc .tong { margin-left: 0; flex-basis: 100%; }
+  }
+</style>
+</head>
+<body>
+
+<div class="mk" role="region" aria-label="Điều khiển mockup (không có trên web)">
+  <b>MOCKUP V5-B3 · Tutor</b>
+  <span class="nhom">Người xem <button data-vai="ht" aria-pressed="true">Head tutor Hoàng Thị Hà</button><button data-vai="ql" aria-pressed="false">QL Vy (chỉ xem · buổi HV Monbay)</button></span>
+  <span class="nhom">Trạng thái trang <button data-tt="" aria-pressed="true">Có dữ liệu</button><button data-tt="tai" aria-pressed="false">Đang tải</button><button data-tt="loi" aria-pressed="false">Lỗi tải</button><button data-tt="rong" aria-pressed="false">Chưa có tutor</button></span>
+  <span class="nhom">Lưu nhận xét <button data-luu="nhap" aria-pressed="true">Nháp</button><button data-luu="dang" aria-pressed="false">Đang lưu</button><button data-luu="da" aria-pressed="false">Đã lưu</button><button data-luu="loi" aria-pressed="false">Lỗi lưu</button></span>
+  <button type="button" onclick="var r=document.documentElement;r.dataset.theme=r.dataset.theme==='dark'?'light':'dark'">Sáng / Tối</button>
+  <span>Tutor, buổi: dữ liệu demo [V5]</span>
+</div>
+
+<nav class="dh" aria-label="Điều hướng chính">
+  <span class="logo">PISA</span>
+  <a href="#" class="chi-ql" style="display:none">Tổng quan</a>
+  <a href="#" aria-current="page">Tutor</a>
+  <a href="#">Hướng dẫn</a>
+</nav>
+
+<main class="trang">
+  <header class="dau">
+    <h1 class="h-trang">Tutor</h1>
+    <span class="mo" style="font-size:14px"><span class="chi-ht">Toàn hệ thống</span><span class="chi-ql" style="display:none">Buổi của HV Monbay</span></span>
+    <span class="ky-chon"><button aria-label="Lùi 1 tuần">‹</button><span>W4 AUG – W3 SEP</span><button aria-label="Tới 1 tuần">›</button></span>
+    <span class="phai chi-ht"><button class="nut nut-chinh" type="button">Thêm tutor</button><button class="nut" type="button">Tải danh sách</button></span>
+  </header>
+
+  <div class="chi-ql bao-chi-xem">👁 Chỉ xem · QL thấy buổi có HV Monbay; sửa danh sách và ghi nhận xét là việc của Head tutor.</div>
+
+  <div class="xuong the" style="padding:16px 18px" aria-busy="true"><div class="nhan-nho">Đang tải tutor và buổi trong kỳ…</div><i style="width:40%"></i><i style="width:75%"></i><i style="width:60%"></i></div>
+  <div class="chi-loi bao-loi"><span aria-hidden="true">⚠</span><div><b>Không tải được danh sách tutor.</b> Nhận xét đang gõ (nếu có) vẫn giữ trên máy này. Bấm Tải lại.<div style="margin-top:8px"><button class="nut nut-nho" type="button">Tải lại</button></div></div></div>
+
+  <div class="noi-dung an-khi-loi" style="display:flex;flex-direction:column;gap:16px">
+  <div class="chi-rong the"><div class="rong"><div class="tieu">Chưa có tutor nào</div><div style="font-size:14px;margin-top:4px">Thêm từng tutor hoặc tải danh sách Excel. Tên GV gõ tay ở buổi tutor sẽ hiện ở đây để gộp.</div><div style="margin-top:12px"><button class="nut nut-chinh" type="button">Thêm tutor</button></div></div></div>
+
+  <div class="dai-so an-khi-rong">
+    <div class="the chi-so"><span class="ten">Tutor đang dạy</span><span class="gia-tri">7</span><span class="mau">có ít nhất 1 buổi trong kỳ: 6</span></div>
+    <div class="the chi-so"><span class="ten">Buổi trong kỳ</span><span class="gia-tri">55</span><span class="mau">buổi ghi ở theo dõi PA</span></div>
+    <div class="the chi-so"><span class="ten">Có chuẩn bị</span><span class="gia-tri">87 %</span><span class="mau">48/55 buổi có trả lời · dòng cũ chưa có ô này không vào mẫu</span></div>
+    <div class="the chi-so"><span class="ten">Cần chú ý</span><span class="gia-tri" style="color:var(--canh-bao)">⚠ 2</span><span class="mau">tutor · lý do ở cột Kết luận</span></div>
+  </div>
+
+  <section class="the an-khi-rong" style="overflow:hidden" aria-label="Danh sách tutor">
+    <div class="loc">
+      <span class="doan" role="group" aria-label="Tình trạng"><button aria-pressed="true">Đang dạy</button><button aria-pressed="false">Ngừng</button><button aria-pressed="false">Tất cả</button></span>
+      <select class="chon" aria-label="Kỹ năng"><option>Mọi kỹ năng</option></select>
+      <select class="chon" aria-label="Nơi dạy"><option>Mọi nơi dạy</option></select>
+      <input class="o" style="max-width:200px;height:36px" placeholder="Tìm tutor…" aria-label="Tìm tutor">
+      <span class="tong">7 tutor · 55 buổi · tỷ lệ = buổi "Có" / buổi có trả lời</span>
+    </div>
+    <div class="cuon-bang bang-dai">
+      <table class="bang" aria-label="Tutor" style="min-width:1080px">
+        <colgroup><col style="width:240px"><col style="width:70px"><col style="width:110px"><col style="width:110px"><col style="width:110px"><col style="width:80px"><col><col style="width:150px" class="chi-ht"></colgroup>
+        <thead><tr><th>Tutor · kỹ năng · nơi dạy</th><th data-kieu="so">Buổi</th><th data-kieu="phan-tram">Chuẩn bị</th><th data-kieu="phan-tram">Tài liệu</th><th data-kieu="phan-tram">Feedback GV</th><th data-kieu="so">Đánh giá</th><th>Kết luận (nhận xét quản lý)</th><th class="chi-ht"></th></tr></thead>
+        <tbody id="than"></tbody>
+      </table>
+    </div>
+    <div class="the-dt" id="the"></div>
+  </section>
+  <p class="phu an-khi-rong" style="margin:0">Kết luận là nhận xét của Head tutor / Quản trị — không thành điểm, không xếp loại, không vào KPI GV. Tutor 0 buổi trong kỳ: "Chưa có buổi" — không phải kết quả thấp. Dưới 5 buổi có trả lời: "mẫu nhỏ".</p>
+  </div>
+</main>
+
+<aside class="panel noi" role="dialog" aria-labelledby="p-ten">
+  <div class="panel-dau">
+    <div class="panel-loai"><span class="vach"></span><span class="chi-ht">VIỆC · NHẬN XÉT TUTOR</span><span class="chi-ql" style="display:none">TUTOR · CHỈ XEM</span></div>
+    <div class="tieu-de"><h2 id="p-ten">—</h2><button class="dong" type="button" aria-label="Đóng" data-dong>✕</button></div>
+    <div class="ngu-canh" id="p-nc"></div>
+  </div>
+  <div class="panel-than">
+    <dl class="khoi-ngu-canh" id="p-bc"></dl>
+    <div class="chi-ht" style="display:flex;flex-direction:column;gap:14px" id="form">
+      <div class="truong"><span class="nhan-truong">Kết luận</span>
+        <div class="lua-chon" role="radiogroup" aria-label="Kết luận">
+          <label><input type="radio" name="kl"> Ổn</label><label class="chon"><input type="radio" name="kl" checked> Cần cải thiện</label><label><input type="radio" name="kl"> Ngừng hợp tác</label>
+        </div></div>
+      <div class="truong"><label for="nx">Nhận xét</label><textarea class="o" id="nx" rows="3">Feedback cho GV còn sơ sài ở 5/9 buổi — nhắc ghi rõ HV làm được gì, chưa được gì.</textarea><span class="phu">Nháp tự giữ trên máy này cho tới khi lưu.</span></div>
+    </div>
+    <div class="chi-ql" style="display:none" id="kl-xem"></div>
+    <details class="lich-su" open><summary>Buổi gần đây (9)</summary><div id="p-buoi"></div></details>
+    <details class="lich-su"><summary>Lịch sử kết luận (1)</summary><div class="dong-ls"><span class="so">02/09</span><span>Hoàng Thị Hà · Ổn · "Chuẩn bị tốt"</span></div></details>
+  </div>
+  <div class="panel-chan chi-ht">
+    <span class="trai" id="tt-luu"></span>
+    <button class="nut" type="button" id="nut-luu">Lưu</button><button class="nut nut-chinh" type="button" id="nut-tiep">Lưu và tiếp ›</button>
+  </div>
+</aside>
+
+<div class="hop-hoi" id="hoi" role="alertdialog" aria-labelledby="hoi-t">
+  <div class="the"><b id="hoi-t">Bỏ nhận xét đang gõ cho Trần Đức Mạnh?</b><span style="font-size:14px">Chưa lưu. Chọn "Giữ" để quay lại lưu; nháp vẫn giữ trên máy này nếu bạn mở tutor khác.</span>
+    <div class="nut-hang"><button class="nut" type="button" data-hoi="bo">Mở tutor khác · giữ nháp</button><button class="nut nut-chinh" type="button" data-hoi="giu">Giữ, quay lại</button></div></div>
+</div>
+
+<script>
+  /* [tên, kỹ năng, nơi dạy, buổi, [chuẩn bị], [tài liệu], [feedback], sao, kết luận, ngày, chú ý, ngừng, thiếu] */
+  var T = [
+    ['Nguyễn Hoài An', 'R W', 'Monbay', 14, [13, 14], [12, 14], [11, 13], 4.6, 'on', '02/09'],
+    ['Trần Đức Mạnh', 'L S', 'Online', 9, [6, 9], [5, 8], [4, 9], 3.8, null, null, 'Feedback GV "Có" 4/9 buổi · đánh giá ★ dưới 4'],
+    ['Lê Thanh Tâm', 'W', 'Cẩm Phả', 3, [3, 3], [3, 3], [2, 3], 4.5, null, null],
+    ['Phạm Quỳnh Như', 'R', 'Bãi Cháy', 0, [], [], [], null, 'on', '18/08'],
+    ['Võ Gia Khánh', 'S', 'Monbay', 11, [9, 11], [10, 11], [10, 10], 4.2, 'cai', '28/08'],
+    ['Đinh Bảo Ngân', 'L R', 'Uông Bí', 12, [12, 12], [11, 12], [12, 12], 4.8, 'on', '04/09'],
+    ['Hồ Minh Quân', 'W', null, 6, [5, 6], [4, 6], [3, 6], 4.0, null, null, 'Thiếu nơi dạy · Feedback GV 3/6']
+  ];
+  var KL = { on: '✓ Ổn', cai: 'Cần cải thiện', ngung: 'Ngừng hợp tác' };
+  function ty(v) { if (!v.length) return '<span class="mo">—</span>'; return '<span class="ty">' + (v[1] < 5 ? v[0] + '/' + v[1] + '<small>mẫu nhỏ</small>' : Math.round(100 * v[0] / v[1]) + ' %<small>' + v[0] + '/' + v[1] + '</small>') + '</span>'; }
+  function kl(t) {
+    var s = t[10] ? '<span class="ly-do">⚠ ' + t[10] + '</span>' : '';
+    if (t[8]) s += (s ? '<br>' : '') + '<span>' + KL[t[8]] + '</span> <span class="phu">· ' + t[9] + '</span>';
+    return s || '<span class="phu">Chưa nhận xét</span>';
+  }
+  document.getElementById('than').innerHTML = T.map(function (t, i) {
+    var dau = '<td><a class="ten-ho-so" href="#" data-mo="' + i + '">' + t[0] + '</a><span class="phu-o">' + t[1] + ' · ' + (t[2] || '<span style="color:var(--canh-bao)">⚠ thiếu nơi dạy</span>') + '</span></td>';
+    if (!t[3]) return '<tr class="co-phu" data-i="' + i + '">' + dau + '<td colspan="5"><span class="khong-buoi">– Chưa có buổi trong kỳ</span> <span class="phu">không phải kết quả thấp</span></td><td>' + kl(t) + '</td><td class="chi-ht" data-kieu="nut"><button class="nut nut-nho" data-mo="' + i + '">Ghi nhận xét</button></td></tr>';
+    return '<tr class="co-phu" data-i="' + i + '">' + dau + '<td data-kieu="so" class="so">' + t[3] + '</td><td data-kieu="phan-tram">' + ty(t[4]) + '</td><td data-kieu="phan-tram">' + ty(t[5]) + '</td><td data-kieu="phan-tram">' + ty(t[6]) + '</td><td data-kieu="so" class="so">' + (t[7] ? '★ ' + t[7].toFixed(1) : '—') + '</td><td>' + kl(t) + '</td><td class="chi-ht" data-kieu="nut"><button class="nut nut-nho" data-mo="' + i + '">Ghi nhận xét</button></td></tr>';
+  }).join('');
+  var r = function (v) { return !v.length ? '—' : v[0] + '/' + v[1]; };
+  document.getElementById('the').innerHTML = T.map(function (t, i) {
+    return '<article data-mo="' + i + '"><b>' + t[0] + ' ↗</b><span class="phu">' + t[1] + ' · ' + (t[2] || '⚠ thiếu nơi dạy') + ' · ' + (t[3] ? t[3] + ' buổi' + (t[7] ? ' · ★ ' + t[7].toFixed(1) : '') : 'chưa có buổi trong kỳ') + '</span>' +
+      (t[3] ? '<div class="ba"><span>Chuẩn bị ' + r(t[4]) + '</span><span>Tài liệu ' + r(t[5]) + '</span><span>Feedback ' + r(t[6]) + '</span></div>' : '') + '<div style="font-size:13px">' + kl(t) + '</div></article>';
+  }).join('');
+
+  var b = document.body, q = new URLSearchParams(location.search), dang = null, nhap = false, cho = null;
+  function chon(a, v) { document.querySelectorAll('.mk [data-' + a + ']').forEach(function (x) { x.setAttribute('aria-pressed', String(x.dataset[a] === v)); }); }
+  function vai(v) { b.classList.toggle('vai-ql', v === 'ql'); chon('vai', v); document.querySelectorAll('.chi-ql').forEach(function (x) { x.style.display = v === 'ql' ? '' : 'none'; }); }
+  function tt(v) { b.classList.remove('tt-tai', 'tt-loi', 'tt-rong'); if (v) b.classList.add('tt-' + v); chon('tt', v); }
+  var LUU = {
+    nhap: ['<span class="tt-luu nhap">● Nháp chưa lưu</span>', false],
+    dang: ['<span class="tt-luu dang"><span class="xoay"></span> Đang lưu…</span>', true],
+    da: ['<span class="tt-luu da">✓ Đã lưu 10:42</span>', false],
+    loi: ['<span class="tt-luu loi">⚠ Chưa lưu được — mất kết nối. Chữ vẫn giữ. <button class="nut nut-nho" type="button">Thử lại</button></span>', false]
+  };
+  function luu(v) {
+    chon('luu', v); nhap = v === 'nhap' || v === 'loi';
+    document.getElementById('tt-luu').innerHTML = LUU[v][0];
+    document.getElementById('nut-luu').disabled = LUU[v][1]; document.getElementById('nut-tiep').disabled = LUU[v][1];
+    document.getElementById('nut-luu').textContent = v === 'da' ? 'Đóng' : 'Lưu';
+  }
+  function mo(i) {
+    var t = T[i]; dang = i;
+    document.getElementById('p-ten').textContent = t[0];
+    document.getElementById('p-nc').textContent = t[1] + ' · ' + (t[2] || 'thiếu nơi dạy') + ' · ' + t[3] + ' buổi trong W4 AUG – W3 SEP';
+    document.getElementById('p-bc').innerHTML = '<dt>SĐT</dt><dd><a href="tel:0912345678">0912 345 678</a></dd><dt>Chuẩn bị</dt><dd>' + r(t[4]) + ' buổi có trả lời</dd><dt>Feedback GV</dt><dd>' + r(t[6]) + '</dd>' + (t[10] ? '<dt>Cần chú ý vì</dt><dd style="color:var(--canh-bao);font-weight:600">⚠ ' + t[10] + '</dd>' : '');
+    document.getElementById('kl-xem').innerHTML = '<div class="bao-chi-xem">Kết luận: ' + (t[8] ? KL[t[8]] + ' · ' + t[9] : 'chưa có') + '</div>';
+    document.getElementById('p-buoi').innerHTML = [['11/09', 'Lê Quang Huy · MB FT 101', 'GV Trần Ngọc Hà', 'Chuẩn bị: Có · Feedback GV: Không', '★ 3'], ['09/09', 'Chu Minh Hiếu · MB FT 102', 'GV Lê Minh Khoa', 'Chuẩn bị: Có · Feedback GV: Có', '★ 4'], ['04/09', 'Ngô Hải Yến · CP FT 110', 'GV Ngô Bảo Nam', 'Chuẩn bị: Không · Feedback GV: Không', '★ 3']]
+      .map(function (x) { return '<div class="buoi"><span class="so">' + x[0] + '</span><span>' + x[1] + '</span><span class="so">' + x[4] + '</span><span class="phu">' + x[2] + ' · ' + x[3] + '</span></div>'; }).join('');
+    document.querySelectorAll('tr[data-i]').forEach(function (x) { x.classList.toggle('dang-mo', Number(x.dataset.i) === i); });
+    b.classList.add('mo-panel');
+  }
+  function dong() { b.classList.remove('mo-panel'); }
+  document.getElementById('nx').addEventListener('input', function () { luu('nhap'); });
+  document.addEventListener('click', function (e) {
+    var t = e.target.closest('button, a, article, [data-dong]'); if (!t) return;
+    if (t.closest('.mk')) { if (t.dataset.vai) vai(t.dataset.vai); else if (t.dataset.tt !== undefined) tt(t.dataset.tt); else if (t.dataset.luu) luu(t.dataset.luu); return; }
+    if (t.dataset.mo !== undefined) { e.preventDefault(); var i = Number(t.dataset.mo); if (b.classList.contains('mo-panel') && nhap && i !== dang && !b.classList.contains('vai-ql')) { cho = i; document.getElementById('hoi').classList.add('mo'); } else mo(i); return; }
+    if (t.dataset.hoi) { document.getElementById('hoi').classList.remove('mo'); if (t.dataset.hoi === 'bo') mo(cho); return; }
+    if (t.id === 'nut-tiep') { luu('dang'); setTimeout(function () { luu('da'); mo(6); luu('nhap'); }, 900); return; }
+    if (t.id === 'nut-luu') { if (t.textContent === 'Đóng') dong(); else { luu('dang'); setTimeout(function () { luu('da'); }, 900); } return; }
+    if (t.hasAttribute('data-dong')) { if (nhap && !b.classList.contains('vai-ql')) { cho = null; document.getElementById('hoi-t').textContent = 'Đóng khi nhận xét chưa lưu?'; document.getElementById('hoi').classList.add('mo'); } else dong(); }
+  });
+  document.querySelector('[data-hoi="bo"]').addEventListener('click', function () { if (cho === null) dong(); });
+  vai(q.get('vai') || 'ht'); tt(q.get('tt') || ''); luu(q.get('luu') || 'nhap'); if (q.get('mo')) mo(Number(q.get('mo'))); if (q.get('hoi')) { cho = 0; document.getElementById('hoi').classList.add('mo'); }
+</script>
+</body>
+</html>
