@@ -496,7 +496,7 @@ export function ExamPlanText({ plan }: { plan?: { confidence: string; label: str
     và một cảnh báo xuất hiện ở mọi hàng thì không còn là cảnh báo.
   */
   if (!plan || plan.confidence === 'none') {
-    return <span className="text-slate-600" title={t('Chưa có kế hoạch thi IELTS')}>—</span>;
+    return <span className="text-slate-500" title={t('Chưa có kế hoạch thi IELTS')}>—</span>;
   }
   if (plan.confidence === 'month') {
     return <span className="text-slate-300" title={t('Chưa chốt tuần thi nên chưa đếm ngược')}>{plan.label}</span>;

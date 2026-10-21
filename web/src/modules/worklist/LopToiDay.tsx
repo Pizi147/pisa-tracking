@@ -89,7 +89,7 @@ export function LopToiDay() {
           ))}
         </div>
       ) : (
-        <div className="table-scroll bang-dinh">
+        <div className="table-scroll">   {/* CV-LOI (CV-10): bỏ `bang-dinh` — bảng trong thẻ 560 px cuộn ngang trong thẻ, không tràn ra ngoài */}
           <table className="w-full min-w-[760px] border-collapse text-sm">
             <thead>
               <tr className="text-left text-[12px] font-semibold text-slate-400">

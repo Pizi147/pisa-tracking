@@ -6,6 +6,7 @@ import {
 import { ONgay } from '../../ui/ONgay.tsx';
 import { BoLocDoan } from '../../ui/ui.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
+import { useBamNgoai } from '../../ui/useBamNgoai.ts';
 import { t } from '@shared/i18n/index.ts';
 
 /**
@@ -22,14 +23,13 @@ export function BoChonThoiGian({ khoang, onChange }: { khoang: KhoangNgay; onCha
     setNhap(khoang);
     hop.current?.querySelector<HTMLElement>('[role="dialog"] button')?.focus();   // bàn phím vào thẳng hộp
   }, [mo]); // eslint-disable-line react-hooks/exhaustive-deps
+  /* KHUNG-LOI (12.7, V3B-09): bấm trong lịch `LichNho` (portal) KHÔNG đóng hộp — trước đây đóng hộp, tuần không đổi. */
+  const bamNgoai = useBamNgoai(mo, () => setMo(false), hop);
   useEffect(() => {
     if (!mo) return;
-    const dong = (e: MouseEvent | KeyboardEvent) => {
-      if (e instanceof KeyboardEvent ? e.key === 'Escape' : !hop.current?.contains(e.target as Node)) setMo(false);
-    };
-    document.addEventListener('mousedown', dong);
-    document.addEventListener('keydown', dong);
-    return () => { document.removeEventListener('mousedown', dong); document.removeEventListener('keydown', dong); };
+    const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') setMo(false); };
+    document.addEventListener('keydown', esc);
+    return () => document.removeEventListener('keydown', esc);
   }, [mo]);
 
   const nhan = nhanKhoang(khoang);
@@ -44,7 +44,7 @@ export function BoChonThoiGian({ khoang, onChange }: { khoang: KhoangNgay; onCha
   const apDung = () => { if (!loi) { onChange(nhap); setMo(false); } };
 
   return (
-    <div ref={hop} className="relative" data-hd="pt-thoi-gian">
+    <div ref={hop} className="relative" data-hd="pt-thoi-gian" {...bamNgoai}>
       <button type="button" aria-expanded={mo} onClick={() => setMo(!mo)}
         className="field flex min-h-[44px] cursor-pointer items-baseline gap-2 text-left sm:min-h-[34px]">
         <span className="text-xs text-slate-400">{t('Khoảng thời gian')}</span>

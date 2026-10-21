@@ -270,7 +270,7 @@ function HangTaiKhoan({ u, hienQuyenRieng, onSua, onSuaTt, onXoa, onDuyetLai }: 
       {hienQuyenRieng && (
         <td className="td">
           <span className="flex flex-wrap gap-1">
-            {u.extra.length === 0 && <span className="text-xs text-slate-600">—</span>}
+            {u.extra.length === 0 && <span className="text-xs text-slate-500">—</span>}
             {u.extra.map((x, i) => (
               <Info key={i}>{x.name}{x.branchCode ? ` · ${x.branchCode}` : ' · toàn hệ thống'}</Info>
             ))}

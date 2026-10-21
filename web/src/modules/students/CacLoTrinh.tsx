@@ -44,7 +44,7 @@ function KetQua({ d, onBuocTiep, onDoi }: { d: DongCacLoTrinh; onBuocTiep?: (cyc
   }
   return (
     <span className="inline-flex flex-wrap items-center gap-x-2 gap-y-1">
-      {k ? <Nhan tone={k.tone}>{dich(k.chinh)}</Nhan> : <span className="text-slate-600">—</span>}
+      {k ? <Nhan tone={k.tone}>{dich(k.chinh)}</Nhan> : <span className="text-slate-500">—</span>}
       {k?.phu && <span className="text-[12px] text-slate-500">{dich(k.phu)}</span>}
       {!d.dangHoc && d.huong && <Nhan tone={toneHuong(d.huong)}>{dich(d.huong)}</Nhan>}
     </span>

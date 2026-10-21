@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { api } from '../../../lib/api.ts';
 import { t } from '@shared/i18n/index.ts';
+import { useBamNgoai } from '../../../ui/useBamNgoai.ts';
 
 export type KetQuaTim = {
   lop: { id: number; code: string; loai: 'ft' | 'thuong'; chiNhanh: string; soHv: number; gvcn: string | null }[];
@@ -34,12 +35,7 @@ export function TimKeHoach({ branchId, value, onChange, onChonLop, onChonHv, cla
     }, 200);
     return () => { huy = true; clearTimeout(h); };
   }, [q, branchId]);
-  useEffect(() => {
-    if (!mo) return undefined;
-    const away = (e: MouseEvent) => { if (goc.current && !goc.current.contains(e.target as Node)) setMo(false); };
-    document.addEventListener('mousedown', away);
-    return () => document.removeEventListener('mousedown', away);
-  }, [mo]);
+  useBamNgoai(mo, () => setMo(false), goc);
   useEffect(() => { setDong(0); }, [kq]);
 
   const r = kq?.q === q ? kq.r : null;

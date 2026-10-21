@@ -44,7 +44,7 @@ function NhanDong({ d, xong, chuaLuu = 0 }: { d: DongNo; xong: boolean; chuaLuu?
 
 /** GV chấm (T17): tên GV còn nợ; Speaking Mock chưa ai nhập = "GV chấm chéo" chữ tím (T18, Q3). Xuống dòng, không cắt. */
 function GvCham({ gv }: { gv: string[] }) {
-  if (!gv.length) return <span className="text-slate-600">—</span>;
+  if (!gv.length) return <span className="text-slate-500">—</span>;
   return (
     <>
       {gv.map((t, i) => (
@@ -167,7 +167,7 @@ export function KhoiNo({ no, mo, onMo, dongMo, onMoDong, hep, homNay, onDaLuu, k
                           {k.phu && <span className="block truncate text-xs leading-4 text-slate-500">{dich(k.phu)}</span>}
                         </td>
                         <td className="td text-right tabular-nums text-slate-200">{xong ? 0 : conCua(d)} <span className="text-xs text-slate-500">{t('bài')}</span></td>
-                        <td className="td whitespace-nowrap">{xong ? <span className="text-slate-600">—</span> : <Han loai="nhap-diem" han={d.han} boTinHieu={!!d.phan && !d.quaHan} />}</td>
+                        <td className="td whitespace-nowrap">{xong ? <span className="text-slate-500">—</span> : <Han loai="nhap-diem" han={d.han} boTinHieu={!!d.phan && !d.quaHan} />}</td>
                         <td className="td py-1.5 text-xs leading-[1.35] text-slate-300"><GvCham gv={d.gvNo} /></td>
                         <td className="td"><NhanDong d={d} xong={xong} chuaLuu={chuaLuu[`no:${d.key}`]} /></td>
                         <td className="px-1 text-center">

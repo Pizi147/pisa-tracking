@@ -37,6 +37,8 @@ import { dich, t } from '@shared/i18n/index.ts';
 export type PaCanCapNhat = {
   id: number; kind: string; description: string | null; performer: string | null;
   actionDue: string | null; cycleNo?: number | null;
+  /** CV-LOI (CV-14): PA bổ trợ miễn phí còn chờ Mini Test — hạn của việc là hạn Mini Test (cùng dòng Công việc). */
+  miniTestHan?: string | null;
   /** Tài khoản người làm hiện tại — giá trị đầu của ô người khi Điều chỉnh (Q15) và của "Người dạy tuần này". */
   performerUserId?: number | null;
   /** PR-SOS (T22, T63): PA theo quy chế · lần ghi này là "Kết quả cuối" · chữ mốc (`đến MT2 · W2 OCT`). */
@@ -379,7 +381,7 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
   return (
     <KhungPanel tieuDe={tieuDe} hocVien={hocVien} lop={lop} quayLai={quayLai} onDong={onClose}
       /* Sửa: hạn của lần đã ghi không còn là việc phải làm — không chip hạn. */
-      dau={dauViec({ han: !sua && pa.actionDue ? <ChipHan loai="cap-nhat-pa" han={pa.actionDue} /> : null, em: em ?? null, lop, ngCanh: ngCanh ?? tenPa })}
+      dau={dauViec({ han: sua ? null : pa.miniTestHan ? <ChipHan loai="mini-test" han={pa.miniTestHan} /> : pa.actionDue ? <ChipHan loai="cap-nhat-pa" han={pa.actionDue} /> : null, em: em ?? null, lop, ngCanh: ngCanh ?? tenPa })}
       chan={{
         v3: true, chinh: nut, daSua, conThieu: lf.conThieu(loi),
         dongTren: busy || loiLuu || daSua ? <TrangThaiLuu tt={busy ? 'dang' : loiLuu ? 'loi' : 'nhap'} loi={loiLuu} onThuLai={() => void luu()} /> : undefined,

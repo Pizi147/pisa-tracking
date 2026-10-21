@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { duongHoSoHocVien } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
+import { useChoHoanTac } from './KhungPanel.tsx';
 
 /**
  * KHUÔN PANEL LÀM VIỆC v3 (OV-12c, mockup `thiet-ke/mockup-ov12-panel-v3-2026-10-14.html` §1) — phần dùng chung đặt trong `KhungPanel`:
@@ -126,6 +127,7 @@ function ChanDaLuu({ luc, hoanTac, onHoanTac }: { luc: string; hoanTac?: () => P
   const [con, setCon] = useState(!!hoanTac);
   const [busy, setBusy] = useState(false);
   const [loi, setLoi] = useState<string | null>(null);
+  useChoHoanTac(con);
   useEffect(() => {
     if (!con) return undefined;
     const h = setTimeout(() => setCon(false), 10_000);   // mockup OV-13 §1: Hoàn tác 10 giây

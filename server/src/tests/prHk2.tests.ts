@@ -120,7 +120,7 @@ export async function runPrHk2Tests(t: YThucTestKit) {
 
   check('C10 · mỗi bảng vừa khung ở 1440 có bang-dinh (không cùng overflow-x-auto); khung bao (card / ô) không còn overflow-hidden', () => {
     const DS: Array<[string, number]> = [   // [tệp, số chỗ bang-dinh tối thiểu]
-      ['web/src/modules/worklist/KhoiCanXuLy.tsx', 1], ['web/src/modules/worklist/LopToiDay.tsx', 1], ['web/src/modules/worklist/BranchPulse.tsx', 1],
+      ['web/src/modules/worklist/KhoiCanXuLy.tsx', 1], ['web/src/modules/worklist/BranchPulse.tsx', 1],   // CV-LOI (CV-10): LopToiDay nằm trong thẻ 560 px — bỏ bang-dinh, cuộn trong thẻ
       ['web/src/modules/students/ClassRoster.tsx', 1], ['web/src/modules/classes/BangDiemLopThuong.tsx', 1], ['web/src/modules/classes/TabTongKetLop.tsx', 1],
       ['web/src/modules/test/lichTest/HangLop.tsx', 1], ['web/src/modules/test/lichTest/KhoiNo.tsx', 1],
       ['web/src/modules/cham/LuoiFT.tsx', 1], ['web/src/modules/cham/LuoiThuong.tsx', 1],
@@ -399,7 +399,8 @@ export async function runPrHk2Tests(t: YThucTestKit) {
   check('C34 · CapNhatTuan: tên PA < 640 px xuống dòng, hạn + ⚠ xuống dòng dưới; KhungPanel ngCanh max-sm:whitespace-normal, giữ pb-2', () => {
     const s = doc('web/src/modules/cases/CapNhatTuan.tsx');
     /* OV-12e (mockup panel v3 §5): tên PA ở dòng 2 đầu panel (`dauViec` ngữ cảnh), hạn là chip ở dòng 1 — dòng 2 xuống dòng tự nhiên (flex-wrap, không cắt). */
-    assert(/dau=\{dauViec\(\{[^}]*ChipHan loai="cap-nhat-pa"[\s\S]{0,120}ngCanh: ngCanh \?\? tenPa/.test(s), 'không thấy tên PA ở đầu panel v3');
+    /* CV-LOI (CV-14): chip hạn là hạn Mini Test khi PA còn chờ Mini Test, không thì hạn cập nhật PA. */
+    assert(/dau=\{dauViec\(\{[\s\S]{0,240}ChipHan loai="cap-nhat-pa"[\s\S]{0,120}ngCanh: ngCanh \?\? tenPa/.test(s), 'không thấy tên PA ở đầu panel v3');
     const kpDau = doc('web/src/ui/KhungPanel.tsx');
     assert(/<p className="m-0 flex flex-wrap items-baseline/.test(kpDau) && !/dau\.dong2[\s\S]{0,200}truncate/.test(kpDau), 'dòng 2 đầu panel v3 phải xuống dòng, không cắt');
     const kp = /\{ngCanh && <div className="([^"]*)"/.exec(doc('web/src/ui/KhungPanel.tsx'));

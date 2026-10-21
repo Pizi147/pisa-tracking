@@ -32,7 +32,10 @@ export type EmYThuc = {
   soXuLyChuoi: number;
   viPham: Map<number, TrangThaiViPhamKq>;
   dsViPham: ViPhamEm[];
+  /** Lần xử lý còn hiệu lực (mọi trạng thái trừ nháp và `thu_hoi`) — MỌI số / bậc / nhãn vi phạm đọc từ đây. */
   xuLy: XuLyEm[];
+  /** LUAT-5: lần "Đã thu hồi" — chỉ để hiện dòng thời gian (giữ dòng + lịch sử), không vào bậc, nhãn, số đếm nào. */
+  thuHoi: XuLyEm[];
   nhom: NhomEm | null;
   /** Hạn sớm nhất trong các vi phạm bắt buộc (Cần xử lý / Quá hạn vì chưa xử lý). */
   han: string | null;
@@ -144,7 +147,9 @@ function napLo(lo: number[], homNay: string): Map<number, EmYThuc> {
   for (const sid of lo) {
     const g = gd.get(sid) ?? { lopId: null, batDau: null, gvcn: null, tamDung: false };
     const dsVp = vp.get(sid) ?? [];
-    const dsXl = [...(xl.get(sid)?.values() ?? [])];
+    /* LUAT-5: tách lần đã thu hồi MỘT lần ở đây — mọi nơi đọc `xuLy` (bậc, vi phạm, chuỗi, đề xuất, Phân tích, Công việc) tự bỏ nó. */
+    const tatCaXl = [...(xl.get(sid)?.values() ?? [])];
+    const dsXl = tatCaXl.filter((m) => m.status !== 'thu_hoi');
     const theoVp = new Map<number, ViPhamVao['xuLy']>();
     for (const m of dsXl) {
       for (const v of m.violationIds) {
@@ -195,7 +200,7 @@ function napLo(lo: number[], homNay: string): Map<number, EmYThuc> {
       } : null,
       tungKhai: (kb.get(sid) ?? []).length > 0,
       soXuLyChuoi: xlChuoi.length,
-      viPham, dsViPham: dsVp, xuLy: dsXl,
+      viPham, dsViPham: dsVp, xuLy: dsXl, thuHoi: tatCaXl.filter((m) => m.status === 'thu_hoi'),
       nhom: nhomEm({ ds, coDeXuatCho: !!dx, xuLyGanNhat: xong }, homNay),
       han: minHan(batBuoc), soMoi: moi.length, soBatBuoc: batBuoc.length, hanXem: minHan(moi),
       deXuat: dx ? { id: dx.id, kind: dx.kind, customName: dx.customName, status: dx.status, han: hanDx, quaHan: dxQuaHan } : null,
