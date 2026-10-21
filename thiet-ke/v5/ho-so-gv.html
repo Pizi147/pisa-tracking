@@ -1,0 +1,451 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>V5 · Hồ sơ GV</title>
+<link rel="stylesheet" href="v5-nen.css">
+<script>try { var q = new URLSearchParams(location.search).get('theme'); if (q) document.documentElement.dataset.theme = q; } catch (e) {}</script>
+<style>
+  /* Thanh mockup: KHÔNG có trên web — chỉ để chủ SP đổi phương án / vai / trạng thái */
+  .mk { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; padding: 8px 20px; background: var(--be-mat-2); border-bottom: 1px dashed var(--vien-dam); font-size: 13px; color: var(--chu-2); }
+  .mk b { color: var(--chu); font-weight: 700; }
+  .mk .nhom { display: inline-flex; gap: 4px; align-items: center; }
+  .mk button { font: inherit; font-size: 12px; height: 26px; padding: 0 9px; border-radius: 6px; border: 1px solid var(--vien); background: var(--be-mat); color: var(--chu-2); cursor: pointer; }
+  .mk button[aria-pressed="true"] { border-color: var(--nhan); color: var(--nhan); background: var(--nhan-nen); font-weight: 700; }
+  .trang { max-width: 1280px; margin: 0 auto; padding: 20px 24px 64px; display: flex; flex-direction: column; gap: 20px; }
+  .ve { font-size: 13px; color: var(--chu-2); text-decoration: none; }
+  .ve:hover { text-decoration: underline; }
+  .dau-hs { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: flex-end; justify-content: space-between; }
+  .dau-hs .ten-gv { font-size: var(--c-22); font-weight: 700; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .dau-hs .meta { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 14px; color: var(--chu-2); margin-top: 6px; align-items: center; }
+  .dau-hs .meta .ky { margin-right: 2px; }
+  .ky-chon { display: inline-flex; align-items: center; gap: 2px; border: 1px solid var(--vien-o); border-radius: 8px; background: var(--be-mat); height: 36px; }
+  .ky-chon button { font: inherit; border: 0; background: none; color: var(--chu-2); width: 32px; height: 34px; cursor: pointer; border-radius: 7px; }
+  .ky-chon button:hover { background: var(--hover); }
+  .ky-chon span { font-size: 14px; font-weight: 600; padding: 0 6px; font-family: var(--phong-so); white-space: nowrap; }
+  .nhan-ky { font-size: 12px; color: var(--chu-3); display: block; text-align: right; margin-bottom: 4px; }
+  /* Dải tóm tắt hai nhóm (phương án C) */
+  .dai { display: grid; grid-template-columns: 1fr 1fr; }
+  .dai > section { padding: 14px 18px 16px; min-width: 0; }
+  .dai > section + section { border-left: 1px solid var(--vien); }
+  .dai h2 { font-size: 13px; font-weight: 700; color: var(--chu-2); display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+  .dai h2 .vach { width: 14px; height: 3px; border-radius: 2px; background: var(--hong); }
+  .dai .so-hang { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px 12px; }
+  .dai .chi-so { padding: 4px 0; }
+  .dai .chi-so .gia-tri { font-size: 26px; }
+  .dai .chi-so .gia-tri .oso { font-size: inherit; }
+  .chu-ko { font-size: 15px !important; font-weight: 600 !important; color: var(--thieu) !important; font-family: var(--phong) !important; padding-top: 6px; }
+  .ghi-gan { font-size: 12px; color: var(--chu-3); margin-top: 8px; }
+  .canh-o { color: var(--loi); font-weight: 700; }
+  /* Tab */
+  .tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--vien); }
+  .tabs button { font: inherit; font-size: 15px; font-weight: 600; background: none; border: 0; padding: 10px 14px; color: var(--chu-2); cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -1px; }
+  .tabs button[aria-selected="true"] { color: var(--nhan); border-bottom-color: var(--nhan); }
+  .tabs .dem-tab { font-size: 12px; font-weight: 600; color: var(--loi); margin-left: 6px; }
+  .luoi2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+  .luoi2 > * { min-width: 0; }
+  /* Xu hướng: cột theo tuần, số trên đầu cột (không ngưỡng màu) */
+  .xu { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; align-items: end; height: 150px; padding: 8px 4px 0; }
+  .xu .c { display: flex; flex-direction: column; align-items: center; gap: 4px; height: 100%; justify-content: flex-end; }
+  .xu .thanh { width: 100%; max-width: 54px; background: var(--xanh-300); border-radius: 4px 4px 0 0; }
+  :root[data-theme="dark"] .xu .thanh { background: var(--xanh-500); }
+  .xu .c.nay .thanh { background: var(--nhan); }
+  .xu .gt { font-size: 13px; font-weight: 700; font-family: var(--phong-so); }
+  .xu .mau { font-size: 12px; color: var(--chu-3); font-family: var(--phong-so); }
+  .xu .tuan { font-size: 12px; color: var(--chu-2); font-weight: 600; }
+  .xu .c.nay .tuan { color: var(--hong-chu); }
+  .chu-thich-xu { display: flex; gap: 12px; font-size: 12px; color: var(--chu-3); padding: 8px 16px 0; flex-wrap: wrap; }
+  .hop-luat { font-size: 13px; color: var(--chu-2); background: var(--be-mat-2); border-radius: 8px; padding: 10px 12px; }
+  .hop-luat b { color: var(--chu); }
+  .hop-luat ol { margin: 6px 0 0; padding-left: 18px; }
+  .ghi-gv { display: flex; gap: 8px; align-items: flex-start; font-size: 13px; color: var(--chu-2); padding: 10px 12px; border: 1px dashed var(--vien-dam); border-radius: 8px; }
+  /* Phương án B: hai khu cạnh nhau */
+  .pab { display: none; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
+  .pab > .the { min-width: 0; }
+  .pab details summary { cursor: pointer; font-size: 14px; font-weight: 600; color: var(--nhan); padding: 10px 16px; border-top: 1px solid var(--vien); list-style: none; }
+  .pab details summary::-webkit-details-marker { display: none; }
+  .pab .so-hang { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 12px; padding: 0 16px 8px; }
+  body.pa-b .pab { display: grid; }
+  body.pa-b .pac { display: none; }
+  /* Panel chỉ đọc: khung phải cố định */
+  .lop-phu { position: fixed; inset: 0; background: rgba(17, 26, 66, .18); display: none; z-index: 20; }
+  .panel.noi { position: fixed; top: 76px; right: 16px; bottom: 16px; width: 480px; z-index: 21; display: none; }
+  body.mo-panel .panel.noi, body.mo-panel .lop-phu { display: flex; }
+  .tom-tat-tyle { display: flex; gap: 22px; flex-wrap: wrap; align-items: baseline; }
+  .tom-tat-tyle .lon { font-size: 26px; font-weight: 700; font-family: var(--phong-so); }
+  .dinh-nghia { font-size: 13px; color: var(--chu-2); background: var(--be-mat-2); border-radius: 8px; padding: 10px 12px; }
+  .dinh-nghia b { color: var(--chu); }
+  .bang-nho td, .bang-nho th { padding: 0 10px; }
+  .bang-nho td { height: 40px; font-size: 14px; }
+  .cong-cu-p { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; font-size: 13px; color: var(--chu-2); }
+  .cong-cu-p .o { height: 32px; font-size: 14px; max-width: 200px; }
+  /* Trạng thái tải: khung xương */
+  .xuong { display: none; }
+  body.tt-tai .xuong { display: block; }
+  body.tt-tai .noi-dung { display: none; }
+  .xuong i { display: block; height: 14px; border-radius: 6px; background: var(--be-mat-2); margin: 10px 0; animation: nhap 1.2s ease-in-out infinite alternate; }
+  @keyframes nhap { from { opacity: .55; } to { opacity: 1; } }
+  .chi-loi { display: none; }
+  body.tt-loi .chi-loi { display: flex; }
+  body.tt-loi .an-khi-loi { display: none; }
+  .chi-rong { display: none; }
+  body.tt-rong .chi-rong { display: block; }
+  body.tt-rong .an-khi-rong { display: none; }
+  .chi-gv { display: none; }
+  body.vai-gv .chi-gv { display: inline; }
+  body.vai-gv .chi-ql { display: none; }
+  @media (max-width: 1100px) {
+    .luoi2 { grid-template-columns: 1fr; }
+    .pab { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 640px) {
+    .trang { padding: 14px 12px 48px; gap: 16px; }
+    .dh { padding: 0 12px; overflow-x: auto; } .dh .an-dt { display: none; }
+    .mk { padding: 6px 12px; gap: 4px 10px; font-size: 12px; } .mk .nhom { flex-wrap: wrap; }
+    .dau-hs { align-items: stretch; flex-direction: column; }
+    .nhan-ky { text-align: left; }
+    .dai { grid-template-columns: 1fr; }
+    .dai > section + section { border-left: 0; border-top: 1px solid var(--vien); }
+    .dai .chi-so .gia-tri { font-size: 22px; }
+    .tabs button { flex: 1; font-size: 14px; padding: 10px 6px; }
+    .panel.noi { top: 0; right: 0; bottom: 0; left: 0; width: auto; border-radius: 0; border: 0; }
+    .bang-dai { display: none; }
+    .the-dt { display: block !important; }
+    .xu { height: 130px; gap: 8px; }
+  }
+  .the-dt { display: none; }
+  .the-dt article { padding: 12px 14px; border-bottom: 1px solid var(--vien); font-size: 14px; display: flex; flex-direction: column; gap: 4px; }
+  .the-dt article:last-child { border-bottom: 0; }
+</style>
+</head>
+<body>
+
+<div class="mk" role="region" aria-label="Điều khiển mockup (không có trên web)">
+  <b>MOCKUP V5-B3 · Hồ sơ GV</b>
+  <span class="nhom">Phương án <button data-pa="c" aria-pressed="true">C · Dải tóm tắt + tab (khuyến nghị)</button><button data-pa="b" aria-pressed="false">B · Hai khu cùng trang</button></span>
+  <span class="nhom">Người xem <button data-vai="ql" aria-pressed="true">QL Nguyễn Khánh Vy</button><button data-vai="gv" aria-pressed="false">GV Lê Minh Khoa (tự xem)</button></span>
+  <span class="nhom">Trạng thái <button data-tt="" aria-pressed="true">Có dữ liệu</button><button data-tt="tai" aria-pressed="false">Đang tải</button><button data-tt="loi" aria-pressed="false">Lỗi một khối</button><button data-tt="rong" aria-pressed="false">GV mới · chưa có dữ liệu</button></span>
+  <button type="button" onclick="var r=document.documentElement;r.dataset.theme=r.dataset.theme==='dark'?'light':'dark'">Sáng / Tối</button>
+  <span>Dữ liệu demo — không phải số thật · hôm nay T2 14/09/2026 · W3 SEP</span>
+</div>
+
+<nav class="dh" aria-label="Điều hướng chính">
+  <span class="logo">PISA</span>
+  <a href="#">Tổng quan</a>
+  <a href="#">HV &amp; Lớp</a>
+  <a href="#">Test</a>
+  <a href="#">Công việc<span class="dem">4</span></a>
+  <a href="#" aria-current="page" class="an-dt">Phân tích</a>
+  <a href="#" class="an-dt">Tutor</a>
+</nav>
+
+<main class="trang">
+  <!-- ĐẦU HỒ SƠ: chỉ tên · chi nhánh · kỹ năng · vai · lớp + một bộ chọn kỳ chung -->
+  <header class="dau-hs">
+    <div>
+      <a class="ve chi-ql" href="#">‹ Phân tích GV · Monbay</a>
+      <span class="ve chi-gv">Hồ sơ của tôi</span>
+      <h1 class="ten-gv">Lê Minh Khoa</h1>
+      <div class="meta">
+        <span>Monbay</span>
+        <span><span class="ky">R</span><span class="ky">W</span></span>
+        <span>Giáo viên · GVCN MB FT RF 12, MB BE 04</span>
+        <span>4 lớp: FT 101 (W1) · FT 102 (W) · FT RF 12 (R, W1) · BE 04 (R, W)</span>
+      </div>
+    </div>
+    <div>
+      <span class="nhan-ky">Kỳ xem — dùng cho cả hai nhóm</span>
+      <div class="ky-chon"><button aria-label="Lùi 1 tuần">‹</button><span>W4 AUG – W3 SEP</span><button aria-label="Tới 1 tuần">›</button></div>
+    </div>
+  </header>
+
+  <!-- KHUNG XƯƠNG khi đang tải -->
+  <div class="xuong the" style="padding:16px 18px" aria-busy="true" aria-label="Đang tải hồ sơ">
+    <div class="nhan-nho">Đang tải số liệu kỳ W4 AUG – W3 SEP…</div><i style="width:40%"></i><i style="width:70%"></i><i style="width:55%"></i><i style="width:62%"></i>
+  </div>
+
+  <div class="noi-dung" style="display:flex;flex-direction:column;gap:20px">
+
+  <!-- GV MỚI: chưa có dữ liệu — không vẽ 0 % -->
+  <div class="chi-rong the" style="padding:0">
+    <div class="rong"><div class="tieu">Chưa có dữ liệu trong kỳ W4 AUG – W3 SEP</div>
+      <div style="font-size:14px;margin-top:4px">Thầy Khoa chưa có bài đến hạn, việc có hạn hay lượt MT nào trong kỳ — các tỷ lệ không tính được, <b>không phải 0 %</b>.<br>Lớp đang dạy vẫn hiện ở dưới. Đổi kỳ ‹ để xem kỳ trước.</div></div>
+  </div>
+
+  <!-- ===== PHƯƠNG ÁN C: dải tóm tắt hai nhóm (luôn thấy) + tab chi tiết ===== -->
+  <section class="the dai pac an-khi-rong" aria-label="Tóm tắt hai nhóm">
+    <section aria-labelledby="t-hc">
+      <h2 id="t-hc"><span class="vach"></span>HÀNH CHÍNH</h2>
+      <div class="so-hang">
+        <div class="chi-so"><span class="ten">Việc đúng hạn</span><span class="gia-tri"><button class="oso" data-p="viec">86 %</button></span><span class="mau">12/14 việc có hạn trong kỳ</span></div>
+        <div class="chi-so"><span class="ten">Điểm đúng hạn</span><span class="gia-tri"><button class="oso" data-p="diem">95 %</button></span><span class="mau">63/66 bài đến hạn</span></div>
+        <div class="chi-so"><span class="ten">Quá hạn hiện tại</span><span class="gia-tri canh-o"><button class="oso" data-p="quahan" style="color:var(--loi)">⚠ 1</button></span><span class="mau">việc · đến 14/09</span></div>
+      </div>
+    </section>
+    <section aria-labelledby="t-ht">
+      <h2 id="t-ht"><span class="vach"></span>GIẢNG DẠY – HỌC THUẬT</h2>
+      <div class="so-hang">
+        <div class="chi-so"><span class="ten">Đạt MT</span><span class="gia-tri"><button class="oso" data-p="datmt">72 %</button></span><span class="mau">18/25 lượt · quy tắc Overall</span></div>
+        <div class="chi-so"><span class="ten">Tiến bộ</span><span class="gia-tri"><button class="oso" data-p="tienbo">64 %</button></span><span class="mau">16/25 HV có 2 mốc</span></div>
+        <div class="chi-so"><span class="ten">Case có PA</span><span class="gia-tri"><button class="oso" data-p="case">4/4</button></span><span class="mau">Case · PA cải thiện <button class="oso" data-p="pa" style="font-size:12px">2/3</button> mẫu nhỏ</span></div>
+      </div>
+    </section>
+  </section>
+  <p class="ghi-gan pac an-khi-rong" style="margin:-12px 0 0">Bấm số gạch chân → bảng dữ liệu chỉ đọc. Kết quả học thuật gán theo <b>người dạy kỹ năng trong tuần thi</b>; điểm đúng hạn theo người được phân công ở hạn nhập. Số không nói "GV gây ra kết quả".</p>
+
+  <div class="tabs pac" role="tablist" aria-label="Chi tiết">
+    <button role="tab" aria-selected="true" data-tab="hc" id="tab-hc">Hành chính<span class="dem-tab an-khi-rong">⚠ 1 quá hạn</span></button>
+    <button role="tab" aria-selected="false" data-tab="ht" id="tab-ht">Giảng dạy – Học thuật</button>
+  </div>
+
+  <!-- TAB HÀNH CHÍNH -->
+  <div class="pac" data-tabpanel="hc" role="tabpanel" aria-labelledby="tab-hc" style="display:flex;flex-direction:column;gap:16px">
+    <div class="luoi2">
+      <section class="the an-khi-rong" aria-labelledby="h-xu">
+        <div class="the-dau"><h3 class="h-khoi" id="h-xu">Xu hướng theo tuần</h3><span class="phu">Điểm đúng hạn · bài</span></div>
+        <div class="the-than">
+          <div class="xu" role="img" aria-label="Điểm đúng hạn theo tuần: W4 AUG 100 phần trăm 14 trên 14 bài; W1 SEP 79 phần trăm 11 trên 14; W2 SEP 100 phần trăm 16 trên 16; W3 SEP 100 phần trăm 22 trên 22 tính tới hôm nay">
+            <div class="c"><span class="gt">100 %</span><span class="thanh" style="height:100%"></span><span class="tuan">W4 AUG</span><span class="mau">14/14</span></div>
+            <div class="c"><span class="gt">79 %</span><span class="thanh" style="height:79%"></span><span class="tuan">W1 SEP</span><span class="mau">11/14</span></div>
+            <div class="c"><span class="gt">100 %</span><span class="thanh" style="height:100%"></span><span class="tuan">W2 SEP</span><span class="mau">16/16</span></div>
+            <div class="c nay"><span class="gt">100 %</span><span class="thanh" style="height:100%"></span><span class="tuan">W3 SEP</span><span class="mau">22/22</span></div>
+          </div>
+          <div class="chu-thich-xu" style="padding:8px 0 0"><span>Tuần theo hạn nhập · W3 SEP chỉ tính bài đã tới hạn (W MT3 FT 101 hạn 23/09 chưa tính).</span></div>
+        </div>
+      </section>
+      <section class="the an-khi-rong" aria-labelledby="h-loai">
+        <div class="the-dau"><h3 class="h-khoi" id="h-loai">Theo loại việc</h3><span class="phu">việc có hạn trong kỳ</span></div>
+        <div class="cuon-bang">
+          <table class="bang bang-nho" aria-label="Việc đúng hạn theo loại">
+            <colgroup><col><col style="width:150px"></colgroup>
+            <thead><tr><th>Loại việc · đơn vị nhỏ hơn</th><th data-kieu="phan-tram">Đúng hạn</th></tr></thead>
+            <tbody>
+              <tr class="co-phu"><td>Nhập điểm<span class="phu-o">63/66 bài</span></td><td data-kieu="phan-tram"><button class="oso" data-p="diem">3/4</button></td></tr>
+              <tr class="co-phu"><td>Ghi kết quả PA<span class="phu-o">nghĩa vụ 2 tuần</span></td><td data-kieu="phan-tram"><button class="oso" data-p="viec">7/8</button></td></tr>
+              <tr class="co-phu"><td>Xử lý vi phạm (GVCN)<span class="phu-o">lần xử lý</span></td><td data-kieu="phan-tram"><button class="oso" data-p="viec">2/2</button></td></tr>
+              <tr class="co-phu"><td>Phản hồi vấn đề HV <span title="Chưa chốt mốc tính" aria-label="Chưa chốt mốc tính">ⓘ</span><span class="phu-o">CẦN XÁC MINH mốc phản hồi</span></td><td data-kieu="phan-tram"><span class="bd bd-kq thieu">– Chưa có dữ liệu</span></td></tr>
+              <tr class="hang-nhom"><td>Cộng</td><td data-kieu="phan-tram" class="so">12/14 · 86 %</td></tr>
+            </tbody>
+          </table>
+          <p class="phu" style="margin:8px 16px 14px">Không tính Speaking chấm chéo chưa nhận, việc đã huỷ / thu hồi.</p>
+        </div>
+      </section>
+    </div>
+    <section class="the" aria-labelledby="h-tre">
+      <div class="the-dau"><h3 class="h-khoi" id="h-tre">Việc trễ — giải thích số</h3><span class="phu an-khi-rong">2 việc trễ trong kỳ · 1 còn mở</span></div>
+      <div class="chi-loi" style="padding:0 16px 16px"><div class="bao-loi" style="width:100%"><span aria-hidden="true">⚠</span><div><b>Không tải được danh sách việc trễ.</b> Các khối khác vẫn đúng. Dữ liệu không mất.<div style="margin-top:8px"><button class="nut nut-nho" type="button">Tải lại khối này</button></div></div></div></div>
+      <div class="cuon-bang bang-dai an-khi-loi an-khi-rong">
+        <table class="bang" aria-label="Việc trễ trong kỳ">
+          <colgroup><col style="width:190px"><col><col style="width:110px"><col style="width:120px"><col style="width:170px"></colgroup>
+          <thead><tr><th>Loại</th><th>Đối tượng</th><th>Hạn</th><th>Xong</th><th>Tình trạng</th></tr></thead>
+          <tbody>
+            <tr><td>Ghi kết quả PA · <span class="ky">W1</span></td><td><a class="ten-ho-so" href="#">Lê Quang Huy</a> <span class="phu">MB FT 101</span></td><td class="so">11/09</td><td class="mo">—</td><td><span class="bd bd-td qua">Quá hạn 3 ngày</span></td></tr>
+            <tr><td>Nhập điểm · <span class="ky">W</span></td><td>MT2 MB FT 102 <span class="phu">14 bài · 3 bài trễ</span></td><td class="so">09/09</td><td class="so">11/09</td><td><span class="bd bd-td cho">Xong · trễ 2 ngày</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="the-dt an-khi-loi an-khi-rong">
+        <article><b>Ghi kết quả PA · W1 · Lê Quang Huy ↗</b><span class="phu">MB FT 101 · hạn 11/09</span><span><span class="bd bd-td qua">Quá hạn 3 ngày</span></span></article>
+        <article><b>Nhập điểm · W · MT2 MB FT 102</b><span class="phu">14 bài · 3 trễ · hạn 09/09 · xong 11/09</span><span><span class="bd bd-td cho">Xong · trễ 2 ngày</span></span></article>
+      </div>
+      <div class="ghi-gv chi-ql" style="margin:0 16px 16px"><span aria-hidden="true">👁</span><span>QL đang xem hồ sơ của thầy Khoa: chỉ đọc. Muốn xử lý việc quá hạn → <a href="#">Công việc · chế độ theo dõi thầy Khoa ›</a> ("Làm thay" chỉ hiện nếu quyền máy chủ cho).</span></div>
+    </section>
+  </div>
+
+  <!-- TAB HỌC THUẬT -->
+  <div class="pac" data-tabpanel="ht" role="tabpanel" aria-labelledby="tab-ht" style="display:none;flex-direction:column;gap:16px" hidden>
+    <div class="hop-luat">
+      <b>Quy tắc Overall khi xem kết quả GV</b> (brief 15 — đã chốt C09, C10) · chỉ dùng cho báo cáo / đánh giá GV, không đổi SOS / Case.
+      <ol>
+        <li>MT: so <b>Overall</b> với kỳ vọng của chính lượt. Thi thật: so Overall với Target đầu ra.</li>
+        <li>Overall đạt → kỹ năng thấp hơn kỳ vọng <b>không tính</b> chưa đạt cho GV dạy kỹ năng đó. <span class="phu">Vd Trần Thu Hà MT2: Overall 5.5 = KV, S 5.0 → S vẫn hiện ✗ 5.0 ở bảng điểm nhưng không tính tạch cho GV S (T06).</span></li>
+        <li>Overall chưa đạt → kỹ năng dưới kỳ vọng tính <b>chưa đạt</b> cho GV dạy kỹ năng đó. <span class="phu">Vd Lê Quang Huy MT2: Overall 5.5 &lt; KV 6.0, W 5.5 → tính chưa đạt cho W (T07).</span></li>
+        <li>Overall chưa đủ (thiếu kỹ năng / vắng) → <b>Chưa đủ dữ liệu</b>, ngoài mẫu. <span class="phu">Vd Tô Ngọc Hân vắng S (T08).</span></li>
+      </ol>
+    </div>
+    <section class="the" aria-labelledby="h-kq">
+      <div class="the-dau"><h3 class="h-khoi" id="h-kq">Kết quả theo lớp · kỹ năng · lượt</h3><span class="phu">lượt có tuần thi trong kỳ, thầy Khoa dạy kỹ năng đó trong tuần thi</span></div>
+      <div class="cuon-bang bang-dai an-khi-rong">
+        <table class="bang" aria-label="Kết quả theo lớp">
+          <colgroup><col style="width:170px"><col style="width:70px"><col style="width:130px"><col style="width:130px"><col style="width:130px"><col></colgroup>
+          <thead><tr><th>Lớp</th><th>Kỹ năng</th><th>Lượt (tuần thi)</th><th data-kieu="phan-tram">Đạt</th><th data-kieu="phan-tram">Tiến bộ</th><th>Ngoài mẫu</th></tr></thead>
+          <tbody>
+            <tr class="co-phu"><td>MB FT 102</td><td><span class="ky">W</span></td><td>MT2 · W3 SEP</td><td data-kieu="phan-tram"><button class="oso" data-p="datmt">82 %</button><span class="phu-o">9/11 lượt</span></td><td data-kieu="phan-tram"><button class="oso" data-p="tienbo">7/11</button><span class="phu-o">HV có 2 mốc</span></td><td class="phu">3 bài chưa có điểm · hạn 23/09, chưa tính</td></tr>
+            <tr class="co-phu"><td>MB FT RF 12</td><td><span class="ky">R</span></td><td>MT0 · W1 SEP</td><td data-kieu="phan-tram"><button class="oso" data-p="datmt">71 %</button><span class="phu-o">5/7 lượt</span></td><td data-kieu="phan-tram"><span class="mo">—</span><span class="phu-o">MT đầu, chưa có mốc trước</span></td><td class="phu">2 HV chưa đủ Overall</td></tr>
+            <tr class="co-phu"><td>MB FT RF 12</td><td><span class="ky">W1</span></td><td>MT0 · W1 SEP</td><td data-kieu="phan-tram"><button class="oso" data-p="datmt">57 %</button><span class="phu-o">4/7 lượt</span></td><td data-kieu="phan-tram"><span class="mo">—</span></td><td class="phu">2 HV chưa đủ Overall</td></tr>
+            <tr class="co-phu"><td>MB FT 101</td><td><span class="ky">W1</span></td><td>MT3 · W3 SEP</td><td data-kieu="phan-tram"><span class="bd bd-kq thieu">– Chưa có dữ liệu</span></td><td data-kieu="phan-tram"><span class="mo">—</span></td><td class="phu">W chưa tới hạn chấm (23/09)</td></tr>
+            <tr class="hang-nhom"><td colspan="3">Cộng (Σ tử / Σ mẫu)</td><td data-kieu="phan-tram" class="so">18/25 · 72 %</td><td data-kieu="phan-tram" class="so">16/25</td><td></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="the-dt an-khi-rong">
+        <article><b>MB FT 102 · W · MT2</b><span>Đạt <button class="oso" data-p="datmt">82 %</button> <span class="phu">9/11 lượt</span> · Tiến bộ 7/11</span><span class="phu">3 bài chưa có điểm (hạn 23/09)</span></article>
+        <article><b>MB FT RF 12 · R · MT0</b><span>Đạt 71 % <span class="phu">5/7 lượt</span></span></article>
+        <article><b>MB FT RF 12 · W1 · MT0</b><span>Đạt 57 % <span class="phu">4/7 lượt</span></span></article>
+        <article><b>MB FT 101 · W1 · MT3</b><span><span class="bd bd-kq thieu">– Chưa có dữ liệu</span> <span class="phu">chưa tới hạn chấm</span></span></article>
+      </div>
+      <div class="chi-rong" style="padding:0 16px 16px"><div class="rong" style="padding:16px"><div class="tieu">Chưa có lượt nào có điểm trong kỳ</div></div></div>
+    </section>
+    <div class="luoi2">
+      <section class="the" aria-labelledby="h-pa">
+        <div class="the-dau"><h3 class="h-khoi" id="h-pa">Case · PA</h3><span class="phu">Case thầy Khoa phụ trách</span></div>
+        <div class="the-than" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+          <div class="chi-so" style="padding:0"><span class="ten">Case có PA</span><span class="gia-tri" style="font-size:22px"><button class="oso" data-p="case">4/4</button></span><span class="mau">Case</span></div>
+          <div class="chi-so" style="padding:0"><span class="ten">PA có kết quả</span><span class="gia-tri" style="font-size:22px"><button class="oso" data-p="pa">3/4</button></span><span class="mau">PA · mẫu nhỏ</span></div>
+          <div class="chi-so" style="padding:0"><span class="ten">PA cải thiện</span><span class="gia-tri" style="font-size:22px"><button class="oso" data-p="pa">2/3</button></span><span class="mau">PA đã có KQ · 1 chưa đánh giá</span></div>
+        </div>
+      </section>
+      <section class="the" aria-labelledby="h-tt">
+        <div class="the-dau"><h3 class="h-khoi" id="h-tt">Đạt Target thi thật</h3></div>
+        <div class="the-than" style="display:flex;flex-direction:column;gap:8px">
+          <div><button class="oso" data-p="thithat" style="font-size:15px">Chưa có dữ liệu</button> <span class="phu">0 HV có KQ thi thật trong kỳ — không tính là trượt (T19)</span></div>
+          <div class="ghi-gv"><span aria-hidden="true">?</span><span><b>CẦN XÁC MINH:</b> gán KQ thi thật cho GV nào. Mockup giả định: GV dạy kỹ năng đó ở lớp cuối trước ngày thi (cùng cách gán "tuần thi" của MT).</span></div>
+        </div>
+      </section>
+    </div>
+    <section class="the" aria-labelledby="h-hv">
+      <div class="the-dau"><h3 class="h-khoi" id="h-hv">HV cần xem sâu</h3><span class="phu">chưa đạt theo quy tắc Overall · kỹ năng thầy Khoa dạy</span></div>
+      <div class="cuon-bang bang-dai">
+        <table class="bang" aria-label="HV cần xem sâu">
+          <colgroup><col style="width:190px"><col style="width:130px"><col style="width:200px"><col style="width:140px"><col></colgroup>
+          <thead><tr><th>HV</th><th>Lớp</th><th>Lượt · KV · Overall</th><th data-kieu="diem">Kỹ năng</th><th>Thời gian thầy Khoa phụ trách</th></tr></thead>
+          <tbody>
+            <tr><td><a class="ten-ho-so" href="#">Chu Minh Hiếu</a></td><td>MB FT 102</td><td class="so">MT2 · 5.5 · <span class="diem duoi">5.0</span></td><td data-kieu="diem">W <span class="diem duoi">4.5</span></td><td class="phu">W từ 29/06 (cả khoá)</td></tr>
+            <tr><td><a class="ten-ho-so" href="#">Phan Gia Hân</a></td><td>MB FT RF 12</td><td class="so">MT0 · 6.0 · <span class="diem duoi">5.5</span></td><td data-kieu="diem">R <span class="diem duoi">5.0</span> · W1 <span class="diem duoi">5.0</span></td><td class="phu">từ 07/09 · trước đó ở MB BE 04 (KQ cũ gán GV cũ)</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="the-dt">
+        <article><b>Chu Minh Hiếu ↗</b><span class="phu">MB FT 102 · MT2 · KV 5.5 · Overall 5.0</span><span>W <span class="diem duoi">4.5</span></span></article>
+        <article><b>Phan Gia Hân ↗</b><span class="phu">MB FT RF 12 · MT0 · KV 6.0 · Overall 5.5 · từ 07/09</span><span>R <span class="diem duoi">5.0</span> · W1 <span class="diem duoi">5.0</span></span></article>
+      </div>
+    </section>
+  </div>
+
+  <!-- ===== PHƯƠNG ÁN B: hai khu cùng trang (so sánh, không khuyến nghị) ===== -->
+  <div class="pab an-khi-rong">
+    <section class="the" aria-label="Hành chính">
+      <div class="the-dau"><h3 class="h-khoi">Hành chính</h3><span class="phu">W4 AUG – W3 SEP</span></div>
+      <div class="so-hang">
+        <div class="chi-so"><span class="ten">Việc đúng hạn</span><span class="gia-tri"><button class="oso" data-p="viec">86 %</button></span><span class="mau">12/14 việc</span></div>
+        <div class="chi-so"><span class="ten">Điểm đúng hạn</span><span class="gia-tri"><button class="oso" data-p="diem">95 %</button></span><span class="mau">63/66 bài</span></div>
+        <div class="chi-so"><span class="ten">Quá hạn hiện tại</span><span class="gia-tri" style="color:var(--loi)">⚠ 1</span><span class="mau">việc · đến 14/09</span></div>
+        <div class="chi-so"><span class="ten">Phản hồi vấn đề HV</span><span class="gia-tri chu-ko">– Chưa có dữ liệu</span><span class="mau">cần xác minh mốc</span></div>
+      </div>
+      <details><summary>Chi tiết hành chính ▾ (xu hướng · theo loại · việc trễ)</summary><div class="the-than phu">Như tab Hành chính của phương án C, xếp dọc trong khu này.</div></details>
+    </section>
+    <section class="the" aria-label="Giảng dạy – Học thuật">
+      <div class="the-dau"><h3 class="h-khoi">Giảng dạy – Học thuật</h3><span class="phu">W4 AUG – W3 SEP</span></div>
+      <div class="so-hang">
+        <div class="chi-so"><span class="ten">Đạt MT</span><span class="gia-tri"><button class="oso" data-p="datmt">72 %</button></span><span class="mau">18/25 lượt</span></div>
+        <div class="chi-so"><span class="ten">Tiến bộ</span><span class="gia-tri"><button class="oso" data-p="tienbo">64 %</button></span><span class="mau">16/25 HV</span></div>
+        <div class="chi-so"><span class="ten">Case có PA</span><span class="gia-tri"><button class="oso" data-p="case">4/4</button></span><span class="mau">Case</span></div>
+        <div class="chi-so"><span class="ten">Đạt Target thi thật</span><span class="gia-tri chu-ko">– Chưa có dữ liệu</span><span class="mau">0 HV có KQ</span></div>
+      </div>
+      <details><summary>Chi tiết học thuật ▾ (theo lớp · Case / PA · HV cần xem sâu)</summary><div class="the-than phu">Mở cả hai "Chi tiết" → trang dài ~3 màn, hai cột lệch chiều cao; ở 375 thành hai khu xếp chồng. Vì vậy khuyến nghị C.</div></details>
+    </section>
+  </div>
+
+  <!-- Lớp đang dạy: hiện kể cả GV mới (danh tính hồ sơ, không phải số kỳ) -->
+  <section class="the" aria-labelledby="h-lop">
+    <div class="the-dau"><h3 class="h-khoi" id="h-lop">Lớp đang dạy</h3><span class="phu">hiện tại · 4 lớp</span></div>
+    <div class="the-than" style="display:flex;flex-wrap:wrap;gap:8px 24px;font-size:14px">
+      <span><a class="ten-ho-so" href="#">MB FT 101</a> <span class="phu">W1 · 22 HV</span></span>
+      <span><a class="ten-ho-so" href="#">MB FT 102</a> <span class="phu">W · 14 HV</span></span>
+      <span><a class="ten-ho-so" href="#">MB FT RF 12</a> <span class="phu">R, W1 · GVCN · 9 HV</span></span>
+      <span><a class="ten-ho-so" href="#">MB BE 04</a> <span class="phu">R, W · GVCN · 11 HV</span></span>
+    </div>
+  </section>
+  </div>
+</main>
+
+<!-- PANEL BÁO CÁO · CHỈ ĐỌC (một kiểu cho mọi số) -->
+<div class="lop-phu" data-dong></div>
+<aside class="panel noi" role="dialog" aria-modal="true" aria-labelledby="p-tieu-de">
+  <div class="panel-dau">
+    <div class="panel-loai"><span class="vach"></span>BÁO CÁO · CHỈ ĐỌC</div>
+    <div class="tieu-de"><h2 id="p-tieu-de">—</h2><button class="dong" type="button" aria-label="Đóng" data-dong>✕</button></div>
+    <div class="ngu-canh" id="p-pham-vi"></div>
+  </div>
+  <div class="panel-than" id="p-than"></div>
+  <div class="panel-chan"><span class="trai phu">Panel báo cáo không có nút xử lý (C22). Tên ↗ mở hồ sơ để tra cứu.</span><button class="nut nut-nho" type="button">Xuất CSV</button></div>
+</aside>
+
+<script>
+  var P = {
+    viec: { t: 'Việc đúng hạn · 86 % = 12/14', v: 'Lê Minh Khoa · Monbay · W4 AUG – W3 SEP · việc có hạn rơi trong kỳ',
+      d: '<b>Cách tính:</b> việc xong trước hoặc đúng hạn / việc có hạn trong kỳ (gồm việc chưa làm mà đã trễ). <b>Không tính:</b> việc đã huỷ / thu hồi; Speaking chấm chéo chưa nhận. <b>Đơn vị:</b> việc (một nhiệm vụ của một người) — Nhập điểm một lượt một kỹ năng = 1 việc.',
+      s: [[12, 'đúng hạn'], [2, 'trễ'], [0, 'ngoài mẫu']],
+      c: ['Việc', 'Hạn', 'Kết quả'],
+      r: [['Ghi kết quả PA · W1 · <a class="ten-ho-so" href="#">Lê Quang Huy</a>', '11/09', '<span class="bd bd-td qua">Quá hạn 3 ngày</span>'],
+          ['Nhập điểm · W · MT2 MB FT 102', '09/09', '<span class="bd bd-td cho">Xong · trễ 2 ngày</span>'],
+          ['Nhập điểm · W · MT1 MB FT RF 12', '13/09', '<span class="bd bd-td xong">Đúng hạn</span>'],
+          ['Ghi kết quả PA · R · <a class="ten-ho-so" href="#">Nguyễn Minh An</a>', '08/09', '<span class="bd bd-td xong">Đúng hạn</span>'],
+          ['Xử lý vi phạm · <a class="ten-ho-so" href="#">Phan Gia Hân</a>', '10/09', '<span class="bd bd-td xong">Đúng hạn</span>']], n: 14 },
+    diem: { t: 'Điểm đúng hạn · 95 % = 63/66 bài', v: 'Lê Minh Khoa · Monbay · W4 AUG – W3 SEP · bài đến hạn thuộc phân công ở hạn nhập',
+      d: '<b>Cách tính:</b> bài nhập lần đầu ≤ mốc trễ / bài đến hạn thuộc trách nhiệm. Bài = một ô điểm kỹ năng × HV × lượt. <b>Không tính:</b> vắng đã xác nhận, huỷ, "-", chờ duyệt dời, HV không còn học, bài chưa tới hạn (W MT3 FT 101 hạn 23/09). Sửa điểm sau khi nhập không tính trễ.',
+      s: [[63, 'đúng hạn'], [3, 'trễ'], [22, 'chưa tới hạn (ngoài mẫu)']],
+      c: ['Bài', 'Hạn', 'Nhập lần đầu'],
+      r: [['MT2 FT 102 · W · <a class="ten-ho-so" href="#">Chu Minh Hiếu</a>', '09/09', '<span class="bd bd-td qua">11/09 · trễ 2 ngày</span>'],
+          ['MT2 FT 102 · W · <a class="ten-ho-so" href="#">Đỗ Khánh Linh</a>', '09/09', '<span class="bd bd-td qua">11/09 · trễ 2 ngày</span>'],
+          ['MT2 FT 102 · W · <a class="ten-ho-so" href="#">Mai Thành Đạt</a>', '09/09', '<span class="bd bd-td qua">11/09 · trễ 2 ngày</span>'],
+          ['MT0 RF 12 · R · <a class="ten-ho-so" href="#">Phan Gia Hân</a>', '13/09', '<span class="bd bd-td xong">12/09</span>'],
+          ['MT0 RF 12 · W1 · <a class="ten-ho-so" href="#">Phan Gia Hân</a>', '13/09', '<span class="bd bd-td xong">12/09</span>']], n: 66 },
+    quahan: { t: 'Quá hạn hiện tại · 1 việc', v: 'Lê Minh Khoa · đến 14/09 (ảnh chụp hôm nay, không theo kỳ)',
+      d: '<b>Cách tính:</b> việc đang mở có hạn &lt; hôm nay. Số đếm, không có mẫu.',
+      s: [[1, 'việc quá hạn']], c: ['Việc', 'Hạn', 'Trễ'],
+      r: [['Ghi kết quả PA · W1 · <a class="ten-ho-so" href="#">Lê Quang Huy</a>', '11/09', '<span class="bd bd-td qua">3 ngày</span>']], n: 1 },
+    datmt: { t: 'Đạt MT · 72 % = 18/25 lượt', v: 'Lê Minh Khoa · kỹ năng R, W, W1 · lượt có tuần thi trong W4 AUG – W3 SEP',
+      d: '<b>Cách tính (quy tắc Overall):</b> lượt "đạt" cho GV khi Overall ≥ kỳ vọng lượt, HOẶC Overall chưa đạt nhưng kỹ năng của GV ≥ kỳ vọng. Lượt "chưa đạt" khi Overall chưa đạt VÀ kỹ năng của GV dưới kỳ vọng. <b>Ngoài mẫu:</b> 4 lượt Overall chưa đủ, 3 bài chưa có điểm (chưa tới hạn). Điểm thật vẫn hiện nguyên.',
+      s: [[18, 'đạt'], [7, 'chưa đạt'], [7, 'ngoài mẫu']],
+      c: ['HV · lượt', 'Kỹ năng · Overall / KV', 'Kết quả'],
+      r: [['<a class="ten-ho-so" href="#">Chu Minh Hiếu</a> · MT2 FT 102', 'W <span class="diem duoi">4.5</span> · 5.0 / 5.5', '<span class="bd bd-kq chua-dat">✗ Chưa đạt</span>'],
+          ['<a class="ten-ho-so" href="#">Phan Gia Hân</a> · MT0 RF 12', 'R <span class="diem duoi">5.0</span> · 5.5 / 6.0', '<span class="bd bd-kq chua-dat">✗ Chưa đạt</span>'],
+          ['<a class="ten-ho-so" href="#">Đỗ Khánh Linh</a> · MT2 FT 102', 'W <span class="diem duoi">5.0</span> · 5.5 / 5.5', '<span class="bd bd-kq dat">✓ Đạt · Overall đạt</span>'],
+          ['<a class="ten-ho-so" href="#">Mai Thành Đạt</a> · MT2 FT 102', 'W <span class="diem vuot">6.0</span> · 6.0 / 5.5', '<span class="bd bd-kq dat">✓ Đạt</span>']], n: 25,
+      ngoai: '4 lượt Overall chưa đủ (vd <a class="ten-ho-so" href="#">Bùi Ngọc Ánh</a> MT0 RF 12 thiếu S) · 3 bài W MT2 FT 102 chưa tới hạn' },
+    tienbo: { t: 'Tiến bộ · 64 % = 16/25 HV', v: 'Lê Minh Khoa · HV có 2 mốc MT liền kề so sánh được · kỹ năng của GV',
+      d: '<b>Cách tính:</b> HV có band kỹ năng ở mốc sau cao hơn mốc trước / HV có đủ hai mốc (W1, W2 riêng). <b>Ngoài mẫu:</b> HV mới một mốc (RF 12 mới MT0) — khoảng trống không phải "không tiến bộ".',
+      s: [[16, 'tăng'], [9, 'không tăng'], [14, 'chỉ 1 mốc (ngoài mẫu)']], c: ['HV', 'Mốc trước → sau', 'Kết quả'],
+      r: [['<a class="ten-ho-so" href="#">Mai Thành Đạt</a>', 'W 5.5 → 6.0', '↑ tăng'], ['<a class="ten-ho-so" href="#">Chu Minh Hiếu</a>', 'W 4.5 → 4.5', '= không tăng']], n: 25 },
+    case: { t: 'Case có PA · 4/4 Case', v: 'Case thầy Khoa phụ trách · hiện tại đến 14/09', d: '<b>Cách tính:</b> Case đã có PA hợp lệ / Case cần PA. Mẫu = Case, không phải HV (Phan Gia Hân có 2 Case: R và W1).', s: [[4, 'có PA'], [0, 'chưa có PA']], c: ['Case', 'HV', 'PA'],
+      r: [['R', '<a class="ten-ho-so" href="#">Nguyễn Minh An</a>', 'Đọc lướt 2 tuần'], ['W1', '<a class="ten-ho-so" href="#">Lê Quang Huy</a>', 'Viết lại Task 1'], ['R', '<a class="ten-ho-so" href="#">Phan Gia Hân</a>', 'Đọc theo dạng'], ['W1', '<a class="ten-ho-so" href="#">Phan Gia Hân</a>', 'Sửa lỗi câu']], n: 4 },
+    pa: { t: 'PA cải thiện · 2/3 PA · mẫu nhỏ', v: 'PA của Case thầy Khoa phụ trách · có kết quả trong W4 AUG – W3 SEP', d: '<b>Cách tính:</b> PA kết quả "cải thiện" / PA đã có kết quả đánh giá. <b>Ngoài mẫu:</b> 1 PA chưa đánh giá. Dưới 5 mục → "mẫu nhỏ", không đọc %. "Cải thiện" là nhận xét GV, khác "tăng điểm".', s: [[2, 'cải thiện'], [1, 'chưa cải thiện'], [1, 'chưa đánh giá']], c: ['PA', 'HV', 'Kết quả'],
+      r: [['Đọc lướt 2 tuần · R', '<a class="ten-ho-so" href="#">Nguyễn Minh An</a>', 'Cải thiện'], ['Viết lại Task 1 · W1', '<a class="ten-ho-so" href="#">Lê Quang Huy</a>', 'Chưa cải thiện'], ['Đọc theo dạng · R', '<a class="ten-ho-so" href="#">Phan Gia Hân</a>', 'Cải thiện']], n: 3 },
+    thithat: { t: 'Đạt Target thi thật · Chưa có dữ liệu', v: 'HV thầy Khoa dạy lúc thi · ngày thi trong W4 AUG – W3 SEP', d: '<b>Mẫu = 0:</b> chưa HV nào có kết quả thi thật trong kỳ → không hiện 0 %. HV đã thi chờ KQ không tính là trượt.', s: [[0, 'có KQ'], [0, 'đã thi · chờ KQ']], c: [], r: [], n: 0 }
+  };
+  var b = document.body, q = new URLSearchParams(location.search);
+  function chon(attr, val) { document.querySelectorAll('[data-' + attr + ']').forEach(function (x) { if (x.tagName === 'BUTTON' && x.closest('.mk')) x.setAttribute('aria-pressed', String(x.dataset[attr] === val)); }); }
+  function pa(v) { b.classList.toggle('pa-b', v === 'b'); chon('pa', v); }
+  function vai(v) { b.classList.toggle('vai-gv', v === 'gv'); chon('vai', v); }
+  function tt(v) { b.classList.remove('tt-tai', 'tt-loi', 'tt-rong'); if (v) b.classList.add('tt-' + v); chon('tt', v); }
+  function tab(v) {
+    document.querySelectorAll('[role=tab]').forEach(function (x) { x.setAttribute('aria-selected', String(x.dataset.tab === v)); });
+    document.querySelectorAll('[data-tabpanel]').forEach(function (x) { var on = x.dataset.tabpanel === v; x.hidden = !on; x.style.display = on ? 'flex' : 'none'; });
+  }
+  var nguon = null;
+  function mo(k, tu) {
+    var d = P[k]; if (!d) return; nguon = tu || null;
+    document.getElementById('p-tieu-de').textContent = d.t;
+    document.getElementById('p-pham-vi').textContent = d.v;
+    var h = '<div class="dinh-nghia">' + d.d + '</div><div class="tom-tat-tyle">' + d.s.map(function (s, i) { return '<span><span class="lon"' + (i === 2 ? ' style="color:var(--chu-3)"' : '') + '>' + s[0] + '</span> <span class="mo">' + s[1] + '</span></span>'; }).join('') + '</div>';
+    if (d.r.length) {
+      h += '<div class="cong-cu-p"><input class="o" placeholder="Tìm HV, lớp…" aria-label="Tìm trong bảng"><span>Lọc: Tất cả ▾</span></div><div class="the" style="overflow:hidden"><table class="bang bang-nho"><thead><tr>' + d.c.map(function (c) { return '<th>' + c + '</th>'; }).join('') + '</tr></thead><tbody>' +
+        d.r.map(function (r) { return '<tr>' + r.map(function (c) { return '<td>' + c + '</td>'; }).join('') + '</tr>'; }).join('') + '</tbody></table></div>' + (d.ngoai ? '<details class="lich-su"><summary>Ngoài mẫu — xem riêng</summary><p class="phu" style="font-size:13px">' + d.ngoai + '</p></details>' : '') + '<div class="phu">Đang thấy ' + d.r.length + ' / ' + d.n + ' dòng · tổng không đổi khi lọc hay phân trang · <a href="#">Xem thêm</a></div>';
+    } else h += '<div class="rong" style="padding:18px"><div class="tieu">Chưa có dữ liệu</div><div style="font-size:14px">Không có trường hợp nào trong tập — không hiển thị 0 %.</div></div>';
+    document.getElementById('p-than').innerHTML = h;
+    b.classList.add('mo-panel');
+    document.querySelector('.panel.noi .dong').focus();
+  }
+  function dong() { b.classList.remove('mo-panel'); if (nguon) nguon.focus(); }
+  document.addEventListener('click', function (e) {
+    var t = e.target.closest('button, [data-dong]'); if (!t) return;
+    if (t.dataset.pa) pa(t.dataset.pa); else if (t.dataset.vai) vai(t.dataset.vai); else if (t.dataset.tt !== undefined && t.closest('.mk')) tt(t.dataset.tt);
+    else if (t.dataset.tab) tab(t.dataset.tab); else if (t.dataset.p) mo(t.dataset.p, t); else if (t.hasAttribute('data-dong')) dong();
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') dong(); });
+  pa(q.get('pa') || 'c'); vai(q.get('vai') || 'ql'); tt(q.get('tt') || ''); tab(q.get('tab') || 'hc'); if (q.get('mo')) mo(q.get('mo'));
+</script>
+</body>
+</html>
