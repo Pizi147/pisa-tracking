@@ -18,14 +18,31 @@ export type HangPtGv = {
   /** "R · W1 · W2 · GVCN MB FT 103" (mockup 25). */
   phu: string;
   dangDay: { lop: number; hv: number };
+  /** `chamDiem` = "Điểm đúng hạn" (đơn vị BÀI). */
   chamDiem: OPtGv; ghiKetQuaPa: OPtGv;
   xuLyViPham: OPtGv & { lopGvcn?: number[] };
+  /** V5 (05 #8): "Việc đúng hạn" — gộp Ghi kết quả PA + Xử lý vi phạm, đơn vị VIỆC (Σ tử / Σ mẫu, không trung bình hai %). */
+  viecDungHan: OPtGv;
   /** Chỉ Fast Track. */
   paHieuQua?: OPtGv;
   /** FT: listening reading writing1 writing2 speaking · thường: listening reading writing speaking. `lop` = lớp có mục (bấm số). */
   ketQua: Record<string, OPtGv & { lop?: number[] }>;
   /** Chỉ Fast Track. */
   tienBo?: OPtGv & { lop?: number[] };
+};
+/**
+ * V5 SV-SO2 — HỒ SƠ GV THEO KỲ (`GET /giao-vien/:id/chi-so?tu=&den=`): số của MỘT GV, Σ tử / Σ mẫu qua các chi nhánh × khung GV dạy trong kỳ, cùng hàm tập
+ * với bảng Phân tích GV. Đơn vị: `diemDungHan` bài · `viecDungHan` việc (Kết quả PA + Xử lý vi phạm) · `ketQua`, `tienBo` lượt kỹ năng (K5) · `paHieuQua` PA.
+ * Mốc "phản hồi vấn đề HV" không có ở đây (R3c — web ghi cố định "Chưa có dữ liệu").
+ */
+export type ChiSoHoSoGv = {
+  tu: string; den: string; homNay: string;
+  diemDungHan: OPtGv; viecDungHan: OPtGv; ghiKetQuaPa: OPtGv; xuLyViPham: OPtGv;
+  ketQua: OPtGv;
+  /** Chỉ kỹ năng có mẫu (`k: 'so'`). */
+  ketQuaTheoKyNang: { khung: KhungPtGv; skill: string; nhan: string; o: OPtGv }[];
+  /** `na` khi GV không dạy lớp Fast Track trong kỳ. */
+  tienBo: OPtGv; paHieuQua: OPtGv;
 };
 export type PhanTichGvKq = { cn: number; tenChiNhanh: string; khung: KhungPtGv; tu: string; den: string; thang: string | null; homNay: string; hang: HangPtGv[] };
 

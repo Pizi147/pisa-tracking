@@ -9506,6 +9506,9 @@ await runPrPtGvOverallTests({ check, checkAsync, assert, assertThrows, conn, TOD
 
 const { runPrSvBaiLopTests } = await import('./prSvBaiLop.tests.ts');
 await runPrSvBaiLopTests({ check, assert, conn, P, classId } as any);
+// ==================================================================== V5 SV-SO2 (Overall ở Phân tích lớp / hồ sơ GV, Đạt MT theo HV, Việc / Điểm đúng hạn, hồ sơ GV theo kỳ, panel chỉ đọc)
+const { runPrSvSo2Tests } = await import('./prSvSo2.tests.ts');
+await runPrSvSo2Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`

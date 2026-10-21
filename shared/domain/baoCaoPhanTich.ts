@@ -15,6 +15,8 @@ export type BaoCaoKq = {
   /** Chỉ Fast Track (lớp thường không có SOS / Mock). */
   sos: { hang: DongSosBc[]; tong: DongSosBc } | null;
   mock: { dat: number; chuaDat: number; chuaDu: number } | null;
+  /** V5 `05` #1 (K9): Đạt MT theo HV — lượt mới nhất CHỐT trong kỳ của mỗi em; `mau` = em đủ Overall; `chuaDu` ngoài mẫu. Chỉ Fast Track. */
+  datMt: { dat: number; mau: number; chuaDu: number } | null;
   /** `sosHienTai` (SL2): chỉ số `hv-sos-hien-tai` — cùng số Tổng quan · Đang SOS, số hôm nay. */
   chuY: { chuaDiemHv: number; chuaDiemBai: number; caseChuaChotHv: number; caseChuaChot: number; sosHienTai: number };
   casePa: { caseMo: number; paKetQua: number; quaHanChotPa: number; quaHanKetQuaPa: number };

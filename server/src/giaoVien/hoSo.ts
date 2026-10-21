@@ -306,7 +306,8 @@ export function oHoSoGv(p: Principal, gvId: number, q: ThamSoO): { n: number; ti
   const pt = phanTichLop(p, l.id);
   if (!pt.dong.some((d) => d.key === q.dong && d.key !== 'ca-bai') || !pt.cot.some((c) => c.key === q.moc)) throw badRequest('Ô kết quả không có trong bảng của lớp này.');
   const x = pt.ds[`${q.dong}|${q.moc}`] ?? { dat: [], chua: [] };
-  const chu = l.khung === 'ft' ? ['Đạt kỳ vọng', 'Dưới kỳ vọng'] : ['Đạt', 'Chưa đạt'];
+  /* V5 C09: FT theo Overall lượt (`danhGiaMon`) — kỹ năng dưới kỳ vọng vẫn có thể "Đạt", nên không ghi "Đạt kỳ vọng". */
+  const chu = ['Đạt', 'Chưa đạt'];
   const dong = pt.dong.find((d) => d.key === q.dong)!;
   const gan = (ids: number[], nhan: string) => rowsFor('hoc-vien', ids).map((r) => ({ ...r, sub: [r.sub, nhan].filter(Boolean).join(' · ') }));
   return ket([...gan(x.dat, chu[0]), ...gan(x.chua, chu[1])], (n) => `${n} học viên · ${l.ma} · ${dong.nhan}`);

@@ -256,8 +256,9 @@ export async function runPrMtTests(t: YThucTestKit) {
   check('PR-MT (4) · bảng Case, Phân tích lớp, Tổng hợp Test cùng ra kỳ vọng 6.5 cho em RF (K5-49)', () => {
     const row = casesSvc.skillSupportBoard(P.admin, rf1.sid).rows.find((x: any) => x.category === 'listening');
     assert(row?.expectation === 6.5 && row.gap === -0.5, JSON.stringify(row && { e: row.expectation, g: row.gap }));
-    const o = ptLop.phanTichLop(P.admin, classId('MB FT RF 12')).o['listening|mt1'];
-    assert(o?.tong >= 2 && o.dat === 0, JSON.stringify(o));   // bộ demo có thêm em RF Đặng Quốc Bảo (MT1 L 5.5 — cũng dưới 6.5)
+    /* V5 C09 (SV-SO2): Phân tích lớp chỉ tính lượt đủ Overall — MT1 của em này chưa có W nên ngoài mẫu (không tính đạt / chưa đạt). */
+    const ds = ptLop.phanTichLop(P.admin, classId('MB FT RF 12')).ds['listening|mt1'] ?? { dat: [], chua: [] };
+    assert(!ds.dat.includes(rf1.sid) && !ds.chua.includes(rf1.sid), JSON.stringify(ds));
     const th = tongHopSvc.tongHop(P.admin, { branchId: null, ct: 'ft', soTuan: 4, classId: classId('MB FT RF 12'), theo: 'lop' });
     assert(th.tong['kn:listening'] >= 2 && th.tong.dat === 0, JSON.stringify(th.tong));   // + em RF Đặng Quốc Bảo của bộ demo
   });

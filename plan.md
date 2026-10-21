@@ -569,6 +569,7 @@ Nhật ký chi tiết tới 04/10 ở `git show 575e898d:plan.md` (mục 14) và
 
 | Ngày | PR / nhánh · model | Kết quả |
 |---|---|---|
+| 22/10/2026 | SV-SO2 (Opus 5.5) · `claude/quirky-mayer-vvqmb5` | Overall ở tab Phân tích lớp + hồ sơ GV (một `danhGiaMon`); Đạt MT theo HV, kỳ theo ngày chốt điểm cuối (K9, T11, T20); Việc đúng hạn (việc) + Điểm đúng hạn (bài); API hồ sơ GV theo kỳ; panel số không trả khối việc (C22); `05` #1b. |
 | 22/10/2026 | V5 PT-GV (Opus 5.5) · `claude/phan-tich-gv-chi-so-jsftgg` | C09/C10: Phân tích GV áp quy tắc Overall (MT: kỳ vọng lượt; thi thật: Target, gán GV lớp cuối trước ngày thi; thiếu Overall ra khỏi mẫu) · C08: bỏ màu ngưỡng, mẫu 0 "Chưa có dữ liệu" · C20: bỏ chỉ số/cột "FT xong MT3, chưa MT kế" · C21: cột "Dự kiến thi" → "Ngày thi" |
 | 22/10/2026 | SV-BAI-LOP (Opus 5.5) · `claude/relaxed-goodall-yxnazn` | Bảng `bai_tren_lop` + API thêm / sửa / xoá Bài trên lớp (thang của bài, không vào MT / KPI, không sinh việc); quyền = cột Góp ý tuần (GV kỹ năng / GVCN / QL); lịch sử `/lich-su?loai=bai-lop`; xoá HV xoá dòng. Phép kiểm T18 (`prSvBaiLop.tests.ts`). |
 | 21/10/2026 | BANG-1 (Opus 5.5) · `claude/bang-1` | Lưới FT + lưới lớp thường (6 lối vào) sang `Bang` / `ODiem`: cột theo kiểu, ✓/✗ trước số, ô `o-sua` 64×32, một dòng phụ, hàng 44 / 64; tổng số câu + "Điền ô trống" ra hàng công cụ; ⋯ không đè. Gỡ 3 miễn `do-bang` BANG-1 (do-khung 0 lỗi); viết lại 6 phép kiểm chuỗi. Chờ chủ SP duyệt ảnh cặp. |

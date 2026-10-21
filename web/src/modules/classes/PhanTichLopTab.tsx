@@ -35,7 +35,7 @@ export function PhanTichLopTab({ classId }: { classId: number }) {
   if (loading || !data) return <Skeleton rows={5} />;
   const ft = data.loai === 'ft';
   const goiY = ft
-    ? t('Mỗi ô: số học viên đạt kỳ vọng của đợt đó / số học viên đã có điểm kỹ năng đó. W1, W2 so từng bài với kỳ vọng. Bấm một dòng để xem vấn đề hay gặp.')
+    ? t('Mỗi ô: số học viên đạt / số học viên đã có điểm kỹ năng đó ở lượt đủ Overall. Overall đạt kỳ vọng của đợt thì mọi kỹ năng tính đạt; chưa đạt thì xét từng kỹ năng (W1, W2 riêng). Bấm một dòng để xem vấn đề hay gặp.')
     : t('Mỗi ô: số học viên đạt (từ 70%) / số học viên đã có điểm môn đó. Bấm một dòng để xem vấn đề hay gặp.');
 
   return (
