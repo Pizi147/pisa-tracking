@@ -1120,7 +1120,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   if (co('missing_data')) {
     const lopCn = tatCa ? [...gvcnLop().keys()] : [...new Set(p.assignments.filter((x) => x.isCore && activeAt(x, today)).map((x) => x.classId))];
     if (lopCn.length) {
-      /* SV-TVV-VIEC: "Chốt ngày thi" chuyển sang TVV (`viecChotNgayThi`) — câu này chỉ còn "Điền Target" của GVCN. */
+      /* SV-TVV-VIEC: "Chốt ngày thi" chuyển sang TVV (`viecHoSoTvv`) — câu này chỉ còn "Điền Target" của GVCN. */
       const ds = conn.prepare(
         `SELECT s.id, s.full_name, e.class_id, c.code AS class_code, cy.target_score
            FROM learning_cycles cy
