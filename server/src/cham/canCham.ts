@@ -29,6 +29,7 @@ import { quaHanNhapDiem, skillScoreDeadline, weekInfo } from '../platform/week.t
 import { addDays } from '../util.ts';
 import { overdueScoreBai, rowsFor } from '../worklist/metrics.ts';
 import { t } from '../../../shared/i18n/index.ts';
+import { sExTuan, type DongSEx } from './sExpert.ts';
 
 export function chamSheet(
   p: Principal, classId: number,
@@ -500,6 +501,8 @@ export type LichTest = {
   lop: LopLichTest[];
   /** PR-MT (K2-32): dòng nhắc MỜ cuối trang — MT lịch sử chưa nhập theo lớp. */
   nhacLichSu: NhacLichSu[];
+  /** SV-S-EXPERT: lượt S Expert của tuần đang xem (`loai: 's-ex'`, khác S MT) — KHÔNG vào dải số / nợ / còn bài. */
+  sEx: DongSEx[];
 };
 
 type OiemLuu = {
@@ -750,7 +753,7 @@ export function lichTest(
   const khong: TongQuanLich = { daCham: 0, tong: 0, conPhaiCham: 0, no: { bai: 0, lop: 0 }, khac: { con: 0, no: 0 } };
   const rong: LichTest = {
     scopeEmpty: scope.none, tuan: null, laTuanNay: false, phamVi, coPhamViRong: false, coPhanCong, lopDangLoc: null,
-    tongQuan: khong, tongQuanKhung: { ft: khong, thuong: khong }, no: [], chamTuanNay: null, lop: [], nhacLichSu: [],
+    tongQuan: khong, tongQuanKhung: { ft: khong, thuong: khong }, no: [], chamTuanNay: null, lop: [], nhacLichSu: [], sEx: [],
   };
   if (scope.none) return rong;
   const conn = db();
@@ -824,5 +827,6 @@ export function lichTest(
     chamTuanNay,
     lop,
     nhacLichSu: mtLichSuChuaNhap(p, { classIds: lopNo ? [...lopNo] : null, branchId }),
+    sEx: sExTuan(p, String(tuan.week_start), { branchId, giuLop }, today),
   };
 }

@@ -172,7 +172,7 @@ function classIsFastTrack(classId: number): boolean {
  * để QL chi nhánh MỚI thấy em ngay sau khi chuyển (PR-LT). Em đã nghỉ hẳn/lưu trữ (không còn
  * ghi danh `active` nào) thì giữ luật cũ — mọi chi nhánh từng học, để lịch sử vẫn tra được.
  */
-function branchesOfStudent(studentId: number): number[] {
+export function branchesOfStudent(studentId: number): number[] {
   return nho('hv-cn:' + studentId, () => {
     const conn = db();
     const activeRows = conn
@@ -285,7 +285,7 @@ export function lopFtChoGvSpeaking(p: Principal, date = demoToday()): number[] {
   const cn = new Set(gv.map((g) => g.branchId));
   return [...bangLop()].filter(([, l]) => l.isFastTrack && l.branchId != null && (toanHt || cn.has(l.branchId))).map(([id]) => id);
 }
-const grantGvNhapDiem = (p: Pick<Principal, 'grants'>) => p.grants.filter((g) => g.roleKey === 'teacher' && g.permissions.has(PERMISSIONS.SCORE_EDIT));
+export const grantGvNhapDiem = (p: Pick<Principal, 'grants'>) => p.grants.filter((g) => g.roleKey === 'teacher' && g.permissions.has(PERMISSIONS.SCORE_EDIT));
 /**
  * OV-14c: AI LÀ GV SPEAKING — vai Giáo viên có `SCORE_EDIT`, và có kỹ năng `speaking` ở hồ sơ (`user_skills`) HOẶC đang có phân công
  * `speaking` ở một lớp FT. Một luật cho quyền (`lopFtChoGvSpeaking`) và chip "Chấm Speaking" ở Quản trị › Tài khoản.
