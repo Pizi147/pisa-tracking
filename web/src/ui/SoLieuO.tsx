@@ -1,4 +1,4 @@
-import { metricById } from '@shared/domain/index.ts';
+import { khoaSoLieu, metricById } from '@shared/domain/index.ts';
 import { useMoSoLieu } from '../lib/quayLai.ts';
 import { useApi } from '../lib/useApi.ts';
 import { DanhSachSoLieu, NganDanhSach, VUNG_BAM_SO, type DongSoLieu, type PhamViSoLieu } from './SoLieu.tsx';
@@ -11,13 +11,14 @@ import { t } from '@shared/i18n/index.ts';
  * Số 0 không bấm được, chữ mờ.
  */
 type Props = { giaTri: number; className?: string; /** Chữ hiện trên nút thay cho `giaTri` (vd "5/8": số bấm được là 8 học viên). */ nhan?: string;
-  /** OV-11f (TQ-11): tên ở dòng đang bấm — tiêu đề panel dùng đúng chữ này. */ ten?: string } & (
+  /** OV-11f (TQ-11): tên ở dòng đang bấm — tiêu đề panel dùng đúng chữ này. */ ten?: string;
+  /** SL1 (A1-01): cùng số vẽ ở hai vùng một trang (dải + hàng tổng) → mỗi vùng một khoá panel (`khoaSoLieu`). */ vung?: string } & (
   | { id: string; phamVi?: PhamViSoLieu; extra?: Record<string, string>; nguon?: undefined; tieuDe?: undefined }
   | { nguon: string; tieuDe: string; id?: undefined; phamVi?: undefined; extra?: undefined }
 );
 
 export function SoLieuO(props: Props) {
-  const [open, setOpen] = useMoSoLieu(props.id !== undefined ? `${props.id}${props.extra ? `|${new URLSearchParams(props.extra)}` : ''}` : `nguon:${props.nguon}`);
+  const [open, setOpen] = useMoSoLieu(khoaSoLieu(props));
   const { giaTri, className = '' } = props;
   // Mã không có trong sổ thì KHÔNG vẽ số (cùng luật với <SoLieu>).
   if (props.id !== undefined && !metricById(props.id)) return <span className="text-xs text-bad">{t('Chỉ số không có trong sổ: {id}', { id: props.id })}</span>;

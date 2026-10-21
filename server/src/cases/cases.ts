@@ -34,7 +34,7 @@ import { isRatioCycle, nguongDatLop, programmeCodeOfCycle } from '../normal/regu
 import { chuCaseTheoKyNang, suggestCaseOwner } from './owner.ts';
 import { caseKhacChuongTrinh, chuongTrinhCuaLop } from './sos.ts';
 import { duLieuDoiPa, ghiDoiPa, kiemTruocDoiPa, rutDoiPa, type VaoDoiPa } from './doiPa.ts';
-import { CASE_THAT, LA_CASE_SOS, choDoiPa, NOT_UNCONFIRMED_PRESET, awaitingCauseCaseIds, dongBoTrangThaiCase, dongBoTrangThaiCaseLo, sosCaseState } from './sosState.ts';
+import { CASE_THAT, LA_CASE_SOS, choDoiPa, NOT_UNCONFIRMED_PRESET, awaitingCauseCaseIds, dongBoTrangThaiCase, dongBoTrangThaiCaseLo, sosCaseState, xuLyCaseMany } from './sosState.ts';
 import { CAU_LUU_TRU, PLAN_DECISIONS, canBuoiTutor, coNguoiDay, coSoBuoiKy, decisionToStep, duongDotTest, kiemBuoiTutor, kiemSoBuoiTuan, soBuoiTu, tuanLich, type BuoiTutor, type PlanDecision } from '../../../shared/domain/index.ts';
 import { chenPa } from './taoPa.ts';
 import { nguoiGiuKetQua, type DongGiuKetQua } from './giuKetQua.ts';
@@ -704,6 +704,7 @@ export function reportIssue(p: Principal, input: {
       conn.prepare(`UPDATE sos_cases SET dedup_key = NULL, updated_at = ? WHERE dedup_key = ? AND (status = 'done' OR id = ?)`)
         .run(nowIso(), dedupKey, caChuongTrinhKhac ? caCu.id : 0);
     }
+    const chuCase = input.ownerUserId ?? suggestCaseOwner({ classId, category });
     const info = conn
       .prepare(
         `INSERT INTO sos_cases (attempt_id, student_id, cycle_id, topic, category, origin_kind,
@@ -721,7 +722,7 @@ export function reportIssue(p: Principal, input: {
             * hộ mở Case rất thường xuyên; gán họ làm người phụ trách là ghi sai trách nhiệm.
             * Ai báo thì lưu ở `reported_by`, còn đây là gợi ý theo phân công.
             */
-           input.ownerUserId ?? suggestCaseOwner({ classId, category }),
+           chuCase,
            nowIso());
     const caseId = Number(info.lastInsertRowid);
 
@@ -744,6 +745,11 @@ export function reportIssue(p: Principal, input: {
       refTable: 'sos_cases', refId: caseId, createdBy: p.userId,
       dedupKey: `case_open:${caseId}`,
     });
+    /* SL1 (02 4.7 C23): Case tạo tay cho kỹ năng người khác phụ trách → chuông Cần làm của người phụ trách (như Rb §20.11 "Case SOS mới"). */
+    if (chuCase && chuCase !== p.userId && !input.backfill) {
+      notify({ userId: chuCase, kind: 'case_giao', title: `Thêm PA · Case ${caseTopicLabel(topic, ctCuaCase)} · ${student.full_name}`, body: summary.slice(0, 120),
+        entityType: 'sos_case', entityId: caseId, dedupKey: `case_giao:${caseId}`, han: xuLyCaseMany([caseId], demoToday()).get(caseId)?.han ?? null });
+    }
     writeAudit({ actorUserId: p.userId, action: input.backfill ? 'case.backfill' : 'case.report',
       entityType: 'sos_case', entityId: caseId,
       entityLabel: `${student.student_code} · ${summary.slice(0, 40)}`, after: { urgency, detectedAt } });

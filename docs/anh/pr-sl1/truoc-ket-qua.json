@@ -1,0 +1,62 @@
+[
+  {
+    "ten": "1440-toi phân tích tháng",
+    "nhan": "Khoảng thời gian 08/2026 03/08 – 30/08/2026 · 4 tuần ▾",
+    "coChonKieu": true,
+    "loi": []
+  },
+  {
+    "ten": "1440-toi chuông 7",
+    "aria": "Thông báo, 40 chưa đọc",
+    "nhom": [
+      "CẦN LÀM\n18",
+      "ĐỂ BIẾT\n22"
+    ],
+    "loi": []
+  },
+  {
+    "ten": "1440-toi chuông 2",
+    "aria": "Thông báo, 30 chưa đọc",
+    "nhom": [
+      "CẦN LÀM\n13",
+      "ĐỂ BIẾT\n17"
+    ],
+    "loi": []
+  },
+  {
+    "ten": "375-sang phân tích tháng",
+    "nhan": "Khoảng thời gian 08/2026 ▾",
+    "coChonKieu": true,
+    "loi": []
+  },
+  {
+    "ten": "375-sang chuông 7",
+    "aria": "Thông báo, 40 chưa đọc",
+    "nhom": [
+      "CẦN LÀM\n18",
+      "ĐỂ BIẾT\n22"
+    ],
+    "loi": []
+  },
+  {
+    "ten": "375-sang chuông 2",
+    "aria": "Thông báo, 30 chưa đọc",
+    "nhom": [
+      "CẦN LÀM\n13",
+      "ĐỂ BIẾT\n17"
+    ],
+    "loi": []
+  },
+  {
+    "ten": "QT tổng quan",
+    "choDuyet": "Chờ duyệt 10",
+    "soThe": 3,
+    "khac": "",
+    "panelSauBamDai": 0,
+    "loi": []
+  },
+  {
+    "ten": "GV10 panel việc",
+    "loi": []
+  }
+]

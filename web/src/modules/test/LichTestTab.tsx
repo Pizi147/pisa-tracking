@@ -13,7 +13,7 @@ import { NutLuat } from '../../ui/NutLuat.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { KhoiNhom } from '../../ui/HangNhom.tsx';
 import { useManHinhHep } from '../cham/LuoiChamLop.tsx';
-import { addDaysIso, chuOChuaLuu, demLopConBai, khungLichTestMacDinh, mondayOfDate, ngay, tenMon, tuanDauThangCua, tuanLich, thangKeTiep } from '@shared/domain/index.ts';
+import { addDaysIso, chuOChuaLuu, demLopConBai, khungLichTestMacDinh, mondayOfDate, ngay, tenMon, tuanLich, thangKeTiep } from '@shared/domain/index.ts';
 import { khoaHang, type DongNo, type LichTest, type LopLichTest } from './lichTest/kieu.ts';
 import { DaiSo, type OSo } from './lichTest/DaiSo.tsx';
 import { KhoiNo } from './lichTest/KhoiNo.tsx';
@@ -383,7 +383,7 @@ export function LichTestTab() {
       )}
       {moXuat && data.tuan && (
         <NganXuatMt khung={loai ?? 'ft'} chiNhanh={branchId} lop={urlClassId ? { id: urlClassId, ma: data.lopDangLoc?.code ?? `#${urlClassId}` } : null}
-          thoiGianMacDinh={{ kieu: 'tuan', tu: tuanDauThangCua(data.tuan.weekStart), den: data.tuan.weekStart }} onDong={() => setMoXuat(false)} />
+          thoiGianMacDinh={{ kieu: 'tuan', tu: data.tuan.weekStart, den: data.tuan.weekStart }}   /* SL1 (V3B-07 #6): đúng tuần đang xem, không từ đầu tháng */ onDong={() => setMoXuat(false)} />
       )}
       {/* PR-MT (K2-32): nhắc MỜ — không số đỏ, không vào dải số hay Nợ, không hạn. Chỉ GVCN của lớp / Quản lý thấy. */}
       {data.nhacLichSu.length > 0 && (

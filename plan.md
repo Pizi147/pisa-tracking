@@ -358,7 +358,8 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 - **PR-EN** bản tiếng Anh (kế hoạch `2026-10-07-pr-en-tieng-anh.md` — đếm lại chuỗi vì OV / OV-12 đổi nhiều màn; chạy **sau OV-12**) → deploy lần nữa. **PR-SOTAY bỏ** (15/10): thay bằng Hướng dẫn trên web — HD-a (khung + GV), HD-b (QL / QT / TVV / CX / Admin).
 - **PR-NC** thống kê nghiên cứu: xem lại tháng 12 (cần 2–3 tháng dữ liệu).
 
-### Ghi chú không chặn còn mở (kiểm lại khi PR đụng tới; đã bỏ mục DON #308, VN3 #302, NO-CT2-KV #290 đã xử lý)
+### Ghi chú không chặn còn mở (kiểm lại khi PR đụng tới; đã bỏ mục DON #308, VN3 #302, NO-CT2-KV #290 đã xử lý)
+- **SL1 #502 → SL2 / M2:** chuông lấy tối đa 50 dòng (chưa đọc trước) — dòng Cần làm đã đọc có thể bị đẩy ra ngoài (M2 đọc hàng đợi, N2) · `case_giao` gửi người phụ trách lúc tạo, không theo khi đổi người phụ trách · `khacChiNhanh` (Chờ duyệt) không lọc theo lớp `?lop=` · hộp Chờ duyệt theo chi nhánh đã nhớ, badge menu vẫn mọi chi nhánh (SL2 một nghĩa badge) · khung FT/thường của PA: Báo cáo theo lớp hiện tại, Hiệu quả PA theo nơi học lúc làm PA (SL2).
 - Hồ sơ MT: lượt không có `classId` → "Dời lịch thi cả đợt" không mở gì (hiếm) — HOP1.
 - `suggestCaseOwner` chạy theo (lớp FT, kỹ năng): lô 500 em nhiều lớp có thể > 200 câu — KV; **OV-3b chạm KQĐR thì đo lại**.
 - Case Học viên (KQĐR "Không đạt · Học viên") mang kỹ năng đầu tiên — KV, chủ SP xem khi rà OV-3b.
@@ -568,6 +569,7 @@ Nhật ký chi tiết tới 04/10 ở `git show 575e898d:plan.md` (mục 14) và
 | Ngày | PR / nhánh · model | Kết quả |
 |---|---|---|
 | 21/10/2026 | CASE-NHIEU (Opus 5.5) · `claude/case-nhieu-5155e1` | Tạo Case nhiều kỹ năng một lần: `POST /cases/report` nhận `kyNang` (n Case một giao dịch, khoá lô + kỹ năng, "Ghi vào" gửi lại không lặp chữ); `case-topics` trả `dangMo` + `phuTrach`; panel chip chọn nhiều, một khối mỗi kỹ năng; phép kiểm `caseLo.tests.ts` |
+| 21/10/2026 | SL1 (Opus 5.5) · `claude/sl1-ebc8d0` | Số đúng: tháng cũ đọc đúng tháng + hộp thời gian chỉ tuần, PA trong kỳ, Chờ duyệt theo chi nhánh (+ dòng chi nhánh khác), số dải không nháy, đầu nhóm đếm trước chia trang, panel việc chỉ em của việc, lượt mở sẵn theo ô quá hạn, dải Lịch thi, 2 phạm vi xuất; chuông N1 (Cần làm theo hạn, một Case một dòng, số = việc còn mở, Case giao → người phụ trách; cột `notifications.han`). Kiểm `prSl1` |
 | 21/10/2026 | CV-LOI (Opus 5.5) · `claude/cv-loi-aa83a8` | Công việc chạy đúng: Case không chủ tự gán (migrate + phân công, có lịch sử), một dòng "Phân công GV …" chỉ QL; Kết quả PA khung phải; hàng đợi cùng nhóm, giữ Hoàn tác; QL không tự mở việc GV; `case` trùng `yt_xem`; nút 403; Excel panel việc; A1-14/15, A5-08, CV-10/14, X-74 |
 | 21/10/2026 | LUAT-5 (Opus 5.5) · `claude/luat-5-26daba` | Luật 5: "Thu hồi…" thay Xoá lần xử lý (GVCN → thẻ Chờ duyệt Ý thức, QL thẳng, lý do bắt buộc ở máy chủ), "Đã thu hồi" giữ dòng + lịch sử, một cửa `trangThaiYThuc` bỏ khỏi mọi số; không tăng bậc qua Đề xuất (tệp tuỳ chọn); Huỷ quyết định trong ngày |
 | 21/10/2026 | KHUNG-LOI (Opus 5.5) · `claude/khung-loi-994378` | Khung: thứ tự menu 20/10, thanh trên đo chỗ thật + "Thêm ▾", ô tìm kính lúp < 1440, thanh dưới ≤ 5; hook `useBamNgoai` thay 15 bản (vá `BoChonThoiGian` tự đóng); `Menu` phím; vùng bấm số ≥ 24/44; focus không bị che; menu TK cuộn trong; "—" / "/" đủ tương phản; chú giải màu Kế hoạch Test sinh từ màu thật; tiêu đề = tên menu; "Nếu duyệt" PA ghi ngày; `do-khung` k–n + `thanh` / `focus` / `menu-phim`, sửa 3 kịch bản hỏng |
