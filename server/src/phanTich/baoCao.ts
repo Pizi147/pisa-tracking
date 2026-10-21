@@ -201,6 +201,7 @@ export function tapKqMt(p: Principal, f: LocBaoCao): Map<LuotKqMt, Map<number, E
 
 /** `GET /phan-tich/bao-cao/ket-qua-mt` — bảng Kết quả MT (đường riêng: Báo cáo giữ trần câu SQL của nó; web tải song song). Chỉ Fast Track. */
 export function ketQuaMt(p: Principal, f: LocBaoCao): KetQuaMtKq {
+  phamViPhanTich(p, f.branchId ?? null, null);   // không quyền → 403 trước 400
   if (f.ct !== 'ft') throw badRequest('Kết quả MT chỉ có ở Fast Track.');
   const k = tapKqMt(p, f);
   return { tu: f.tu, den: f.den, rows: LUOT_KQ_MT.map((l) => dongKqMt(l, k.get(l)!)) };
@@ -292,6 +293,23 @@ export function baoCao(p: Principal, f: LocBaoCao): BaoCaoKq {
  * Tính lại bằng chính `tinh()` nên số = số dòng.
  */
 export function oBaoCao(p: Principal, f: LocBaoCao & { o: string }): { n: number; tieuDe: string; rows: MetricRow[] } {
+  const kq = /^kq-mt:(mt0|mt1|mt2|mt3\+|thi):(dat|thieu-0\.5|thieu-1\.0|thieu-1\.5|chua-du)$/.exec(f.o);
+  if (kq) {
+    /* Panel chỉ đọc Kết quả MT (C22): em của ô — lớp · lượt · Overall · Target · so lượt trước. */
+    phamViPhanTich(p, f.branchId ?? null, null);   // không quyền → 403 trước 400
+    if (f.ct !== 'ft') throw badRequest('Kết quả MT chỉ có ở Fast Track.');
+    const l = kq[1] as LuotKqMt, cot = kq[2] as CotKqMt;
+    const em = tapKqMt(p, f).get(l)!;
+    const ids = [...em].filter(([, e]) => e.cot === cot).map(([s]) => s).sort((a, b) => a - b);
+    const so = (x: number) => x.toFixed(1);
+    const rows = rowsFor('hoc-vien', ids, undefined, p).map((row) => {
+      const e = em.get(row.id)!;
+      const lech = e.ovr !== null && e.truoc !== null ? e.ovr - e.truoc : null;
+      return { ...row, sub: [e.lop, e.nhan, e.ovr === null ? t('chưa đủ điểm') : `Overall ${so(e.ovr)}`, e.target === null ? null : `Target ${so(e.target)}`,
+        lech === null ? null : t('so lượt trước {d}', { d: lech > 0 ? `+${so(lech)}` : lech < 0 ? `−${so(-lech)}` : '=' })].filter(Boolean).join(' · ') };
+    });
+    return { n: ids.length, tieuDe: `${NHAN_LUOT_KQ_MT[l]} · ${NHAN_COT_KQ_MT[cot]} = ${ids.length} HV`, rows };
+  }
   const r = tinh(p, f);
   const ra = (donVi: 'hoc-vien' | 'bai', ids: Iterable<number>, tieuDe: string) => {
     const ds = [...new Set(ids)].sort((a, b) => a - b);
@@ -308,22 +326,6 @@ export function oBaoCao(p: Principal, f: LocBaoCao & { o: string }): { n: number
       return { ...row, sub: [x.lop, `MT${x.mt} · ${tuanLich(x.tuan)}`, `Overall ${x.ovr!.toFixed(1)}`, t('kỳ vọng {kv}', { kv: x.kyVong!.toFixed(1) }), d.dat.has(row.id) ? t('Đạt') : t('Chưa đạt')].join(' · ') };
     });
     return { n: ids.length, tieuDe: t('Đạt MT · {pt} % = {dat}/{mau} HV', { pt: d.mau.size ? Math.round((100 * d.dat.size) / d.mau.size) : 0, dat: d.dat.size, mau: d.mau.size }), rows };
-  }
-  const kq = /^kq-mt:(mt0|mt1|mt2|mt3\+|thi):(dat|thieu-0\.5|thieu-1\.0|thieu-1\.5|chua-du)$/.exec(f.o);
-  if (kq) {
-    /* Panel chỉ đọc Kết quả MT (C22): em của ô — lớp · lượt · Overall · Target · so lượt trước. */
-    if (f.ct !== 'ft') throw badRequest('Kết quả MT chỉ có ở Fast Track.');
-    const l = kq[1] as LuotKqMt, cot = kq[2] as CotKqMt;
-    const em = tapKqMt(p, f).get(l)!;
-    const ids = [...em].filter(([, e]) => e.cot === cot).map(([s]) => s).sort((a, b) => a - b);
-    const so = (x: number) => x.toFixed(1);
-    const rows = rowsFor('hoc-vien', ids, undefined, p).map((row) => {
-      const e = em.get(row.id)!;
-      const lech = e.ovr !== null && e.truoc !== null ? e.ovr - e.truoc : null;
-      return { ...row, sub: [e.lop, e.nhan, e.ovr === null ? t('chưa đủ điểm') : `Overall ${so(e.ovr)}`, e.target === null ? null : `Target ${so(e.target)}`,
-        lech === null ? null : t('so lượt trước {d}', { d: lech > 0 ? `+${so(lech)}` : lech < 0 ? `−${so(-lech)}` : '=' })].filter(Boolean).join(' · ') };
-    });
-    return { n: ids.length, tieuDe: `${NHAN_LUOT_KQ_MT[l]} · ${NHAN_COT_KQ_MT[cot]} = ${ids.length} HV`, rows };
   }
   if (f.o === 'thi-thang-nay') {
     const tap = tapThiThangNay(p, f);
