@@ -288,7 +288,7 @@ export async function runPrOv12cTests(t: YThucTestKit) {
     assert(choXn().includes(cL.id), 'OV-12d: đã có nhận xét → Chờ xác nhận PA, vẫn trong "Case chờ duyệt"');
     let loi = '';
     try { attempts.saveScore(gv, luot, 'listening', { band: 7 }, '2026-12-01', { tuNguoiDung: true }); } catch (e: any) { loi = e.message; }
-    assert(/hoàn tất/.test(loi), `sau hoàn tất GV vẫn không sửa điểm: ${loi}`);
+    assert(loi === '', `LUAT-34: sau Đủ điểm GV đúng ô sửa được điểm: ${loi}`);
   }));
 
   check('OV12c-9 · migrate prOv12c: Case MT chờ nguyên nhân — ô có nhận xét → điền nguyên nhân (thiếu nhóm → "Khác"), ô trống → giữ (việc Ghi nhận xét); thẻ Báo lên nguyên nhân đóng "Đổi luật"; chạy lại không đổi', () => thu(() => {

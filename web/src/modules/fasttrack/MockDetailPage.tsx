@@ -277,7 +277,7 @@ export default function MockDetailPage() {
               <span className="ml-2 align-middle"><OMt v={omtDau} homNay={homNay} /></span>
             </h1>
             {cancelled && <Tag>{t('Đã huỷ')}</Tag>}
-            {coKhoa && !cancelled && <Tag title={KHOA_HOAN_TAT_HINT}>{t('Đã hoàn tất')}</Tag>}
+            {coKhoa && !cancelled && <Tag title={KHOA_HOAN_TAT_HINT}>{t('Đủ điểm')}</Tag>}
             {laRf && <span className="text-xs text-slate-400" title={t('Lộ trình RF — kỳ vọng mọi MT bằng Target.')}>RF</span>}
             <ChonDot hienTai={d.id} ds={dsDot.data?.rows ?? []} homNay={homNay} onChon={(r) => navigate(attemptHref(r), { replace: true })} />
           </div>
@@ -571,6 +571,19 @@ function SkillWorkTable({ d, onMoDiem, onDone, onOpenHistory, onDoiLich }: {
   onDoiLich: (anchor: HTMLElement, k: KyNangKH) => void;
 }) {
   const [moveFor, setMoveFor] = useState<SkillRow | null>(null);
+  const toast = useToast();
+  const dangKhoiPhuc = useRef(false);   // chống bấm đúp
+  /* LUAT-34 (T20b): "Khôi phục điểm" một bấm — máy chủ ghi lại điểm cất (mọi ô của kỹ năng) qua đúng đường lưu điểm. */
+  const khoiPhuc = async (skill: string) => {
+    try {
+      if (dangKhoiPhuc.current) return;
+      dangKhoiPhuc.current = true;
+      await api.post(`/attempts/${d.id}/skills/${skill}/khoi-phuc-diem`, {});
+      invalidate('/attempts'); invalidate('/classes'); invalidate('/students'); invalidate('/my-work');
+      toast.push('ok', t('Đã khôi phục điểm {x}{x2}', { x: skillLabel(skill), x2: '' }));
+      onDone();
+    } catch (e: any) { toast.push('error', e.message); } finally { dangKhoiPhuc.current = false; }
+  };
   const [decideFor, setDecideFor] = useState<SkillRow | null>(null);
   const [hop, setHop] = useState<{ t: ThaoTac; r: SkillRow; c: Cell } | null>(null);
   const { homNay } = useNgayNghiepVu();
@@ -579,7 +592,8 @@ function SkillWorkTable({ d, onMoDiem, onDone, onOpenHistory, onDoiLich }: {
   const order = ['listening', 'reading', 'writing1', 'writing2', 'speaking'];
   const cells = [...d.cells].sort((a, b) => order.indexOf(a.skill) - order.indexOf(b.skill));
   const coDiemO = (c: Cell) => c.band !== null || c.rawScore !== null;
-  const khongDuThiO = (c: Cell) => c.noShow?.state === 'khong-du-thi' && !c.daChot && !coDiemO(c);
+  /* LUAT-34: ô "-" MT cũ = Đã huỷ (`da-huy`) — như "Không dự thi" cũ: không hạn; GV đúng ô: nút chính Nhập điểm (gỡ "-" trong hộp). */
+  const khongDuThiO = (c: Cell) => (c.noShow?.state === 'khong-du-thi' || c.noShow?.state === 'da-huy') && !c.daChot && !coDiemO(c);
 
   const renderRow = (c: Cell) => {
     const r = d.skillSchedule.find((x) => x.skill === c.assessedSkill)!;
@@ -590,19 +604,23 @@ function SkillWorkTable({ d, onMoDiem, onDone, onOpenHistory, onDoiLich }: {
     /* OV-11a: "Không dự thi" chưa có điểm → nút chính "Nhập điểm" (không "Sửa điểm"). */
     const hasValue = c.rawScore !== null || c.band !== null || c.criteria.some((v) => v !== null) || (!!c.noShow && !khongDuThiO(c));
 
+    /* LUAT-34 (S13): MT cũ, mọi ô của kỹ năng "Đã huỷ" → Khôi phục / Không mock lại như vắng 2 lần. */
+    /* Khôi phục / Giữ huỷ chỉ là việc của Quản lý — GV giữ trạng thái MT cũ (nút Nhập điểm), không kẹt ở dòng không thao tác. */
+    const huyCu = d.viewer.canPlanWeek && d.lichSu && d.cells.filter((x) => x.assessedSkill === c.assessedSkill).every((x) => x.noShow?.state === 'da-huy');
     const tt = trangThaiTT({
-      batBuoc: r.required, tuanBatDau: r.weekStart, coDiem: coDiemO(c), sit: r.sitStatus, choDuyet: !!r.pendingMove, lichSu: d.lichSu, homNay, huyVang: !!r.huyVang,
+      batBuoc: r.required, tuanBatDau: r.weekStart, coDiem: coDiemO(c), sit: r.sitStatus, choDuyet: !!r.pendingMove, lichSu: d.lichSu, homNay, huyVang: !!r.huyVang, huyCu,
     });
     const tat = cancelled ? { chinh: null, menu: [] as ThaoTac[] }
       : thaoTacKyNang(tt, { nhapDiem: c.canEdit, quanLy: d.viewer.canPlanWeek, gvcn: d.viewer.laGvcn, laFt: true, dotHoanTat: !!c.khoa,
-          huy: d.viewer.canSkipSkill, han: d.viewer.canOverrideDeadline });
+          huy: d.viewer.canSkipSkill, han: d.viewer.canOverrideDeadline, diemHuy: !!c.diemHuy });
     const laDiem = (x: ThaoTac | null) => x === 'nhap-diem' || x === 'sua-diem';
     const chinh0 = ownsSchedule || laDiem(tat.chinh) ? tat.chinh : null;
     /* Nhập/Sửa điểm chỉ khi ô thật sự mở (không bị dấu "-" khoá, không vắng/huỷ). */
     const chinh = laDiem(chinh0) && !canScore ? null : chinh0;
-    const menu = ownsSchedule ? tat.menu : tat.menu.filter((x) => x === 'huy-diem');
+    const menu = ownsSchedule ? tat.menu : tat.menu.filter((x) => x === 'huy-diem' || x === 'khoi-phuc-diem');
     const chay = (t: ThaoTac) => {
       if (laDiem(t)) onMoDiem(c.skill);
+      else if (t === 'khoi-phuc-diem') void khoiPhuc(c.skill);
       else if (t === 'xep-lai') setMoveFor(r);
       else if (t === 'tra-loi-de-nghi') setDecideFor(r);
       else if ((t === 'doi-lich' || t === 'dat-lich') && d.classId !== null) onDoiLich(document.getElementById(`kn-${c.skill}`)!, r.skill as KyNangKH);
@@ -614,7 +632,7 @@ function SkillWorkTable({ d, onMoDiem, onDone, onOpenHistory, onDoiLich }: {
     /* OV-11a: MỘT dòng trạng thái — Không dự thi (CA3-5) thay "Chờ nhập điểm"; huỷ vì vắng ghi số lần thật, bỏ dòng "Đã dời do vắng" (CA3-3). */
     const khongDuThi = khongDuThiO(c);
     const huy = prog === 'cancelled';
-    const nhanTT = khongDuThi ? t('Không dự thi')
+    const nhanTT = khongDuThi ? (c.noShow?.state === 'da-huy' ? t('Đã huỷ · vắng MT cũ') : t('Không dự thi'))
       : huy && r.huyVang ? t('{progressLabel} · vắng {x} lần', { progressLabel: progressLabel('cancelled'), x: r.absenceMoveCount + 1 }) : progressLabel(prog);
 
     return (
@@ -674,7 +692,7 @@ function SkillWorkTable({ d, onMoDiem, onDone, onOpenHistory, onDoiLich }: {
             <span className="text-xs text-slate-500">{t('Xử lý ở dòng W1')}</span>
           )}
           {!chinh && c.required && !c.canEdit && !cancelled && (
-            <span className="text-xs text-slate-500" title={c.khoa ? KHOA_HOAN_TAT_HINT : t('Bạn không được phân công kỹ năng này')}>{t('Chỉ xem')}</span>
+            <span className="text-xs text-slate-500" title={t('Bạn không được phân công kỹ năng này')}>{t('Chỉ xem')}</span>
           )}
           {/* Không có mục thì giữ chỗ cùng rộng nút ⋯ (w-7) — nút chính các dòng thẳng cột (rà #126). */}
           {menu.length ? (

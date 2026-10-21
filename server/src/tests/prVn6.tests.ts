@@ -16,7 +16,7 @@ export async function runPrVn6Tests(t: YThucTestKit) {
     try { return fn(); } finally { conn.exec('ROLLBACK'); xoaNho(); }
   };
 
-  check('VN6-1 · F03: MT0 lớp FOU đủ band, qua tuần → hoàn tất; GV Writing không sửa được (403); QL sửa được khi có lý do', () => thu(() => {
+  check('VN6-1 · F03: MT0 lớp FOU đủ band, qua tuần → Đủ điểm; GV Writing sửa được (LUAT-34, không khoá); QL sửa được khi có lý do', () => thu(() => {
     /* Em đang học lớp FOU (chấm tỷ lệ) có GV Writing riêng — MT0 chèn thẳng ở tuần đã qua, đủ band 4 kỹ năng. */
     const e = get(`SELECT e.student_id sid, e.class_id cid, lc.id cyc, ta.user_id gv FROM enrollments e
         JOIN classes c ON c.id = e.class_id AND c.programme_code = 'FOU' AND c.is_fast_track = 0
@@ -38,7 +38,8 @@ export async function runPrVn6Tests(t: YThucTestKit) {
       conn.prepare('INSERT INTO assessment_scores (attempt_id, skill, band, nhap_dau_ngay) VALUES (?,?,?,?)').run(aid, k, 5, addDays(TODAY, -14));
     }
     assert(ht.dotHoanTat(aid, TODAY).hoanTat === true, `MT0 phải hoàn tất: ${JSON.stringify(ht.dotHoanTat(aid, TODAY))}`);
-    assertThrows(() => att.saveScore(loadPrincipal(e.gv), aid, 'writing1', { band: 6, lyDo: 'Chấm lại' }, TODAY), /hoàn tất/, 'GV sửa MT0 đã hoàn tất');
+    att.saveScore(loadPrincipal(e.gv), aid, 'writing1', { band: 5.5, lyDo: 'Chấm lại' }, TODAY);
+    assert(get(`SELECT band FROM assessment_scores WHERE attempt_id = ? AND skill = 'writing1'`, aid).band === 5.5, 'GV sửa MT0 Đủ điểm');
     att.saveScore(P.admin, aid, 'writing1', { band: 6, lyDo: 'Chấm lại' }, TODAY);
     assert(get(`SELECT band FROM assessment_scores WHERE attempt_id = ? AND skill = 'writing1'`, aid).band === 6, 'QL sửa có lý do');
   }));

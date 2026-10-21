@@ -309,7 +309,9 @@ export type NoShowState =
   /** '-' còn nguyên khi hết Chủ nhật → đã xác lập không dự thi. */
   | 'khong-du-thi'
   /** '-' nhập cho một tuần ĐÃ kết thúc từ trước: chờ Quản lý hiệu chỉnh (C10), chưa tự chốt. */
-  | 'cho-ql-hieu-chinh';
+  | 'cho-ql-hieu-chinh'
+  /** LUAT-34 (luật 4 sửa 21/10): "-" ở MT cũ = Đã huỷ ngay (dấu `no_show_cu` ở lượt MT cũ — cả dữ liệu "Không dự thi" cũ). Khôi phục được. */
+  | 'da-huy';
 
 export type NoShowView = {
   state: NoShowState;
@@ -348,18 +350,19 @@ export function noShowStateOf(i: {
 /**
  * OV-1b (đặc tả OV 3.3, 3.5): DẤU "-" CỦA MỘT Ô FT CÒN HIỆU LỰC KHÔNG — MỘT luật cho ô nhập / badge / khối Nợ (`skillCells`) và hàng lớp
  * Lịch Test (`oFtXong`), để hai nơi không lệch số. Không còn chốt cuối Chủ nhật: "-" có hiệu lực ngay khi ghi.
- *   · "Không dự thi" (`cu`: nhập bù sau tuần thi, hoặc MT cũ) → luôn `khong-du-thi`.
+ *   · `cu` (dấu `no_show_cu`): ở MT cũ → `da-huy` (LUAT-34: "-" MT cũ huỷ ngay; dữ liệu "Không dự thi" cũ hiện như vậy); lượt khác → `khong-du-thi`
+ *     (chỉ còn dữ liệu cũ — "-" ghi muộn nay dời / gửi thẻ).
  *   · vắng đã chốt (`settled`) → còn hiệu lực khi kỹ năng còn `absent` (chờ Quản lý); Quản lý đã đổi kết luận thì dấu cũ không sống lại.
  *   · chưa chốt (buổi Writing mới một task "-") → `khong-co-bai` trong tuần, `khong-du-thi` sau tuần.
  */
 export function dauTruCuaO(i: {
   marked: boolean; hasScore: boolean; sameWeek: boolean; weekEnd: string | null; today: string;
-  settled: boolean; cu: boolean; sitStatus: string;
+  settled: boolean; cu: boolean; sitStatus: string; lichSu?: boolean;
 }): NoShowView {
   const ns = noShowStateOf({ ...i, enteredAfterWeekEnd: false, lateRule: 'chot-ngay' });
   if (ns.state === 'none') return ns;
   const khongDuThi: NoShowView = { state: 'khong-du-thi', effectiveOn: i.weekEnd ? i.weekEnd.slice(0, 10) : null, editableUntil: null };
-  if (i.cu) return khongDuThi;
+  if (i.cu) return i.lichSu ? { ...khongDuThi, state: 'da-huy' } : khongDuThi;
   if (i.settled) return i.sitStatus === 'absent' ? khongDuThi : { state: 'none', effectiveOn: null, editableUntil: null };
   return ns;
 }
@@ -384,6 +387,7 @@ export function noShowText(v: NoShowView, weekCode: string | null, today: string
     case 'khong-co-bai': return t('Không có bài · Có thể sửa đến hết Chủ nhật {day}', { day: day(v.editableUntil!) });
     case 'khong-du-thi': return t('Không dự thi · Tuần {x}', { x: weekCode ?? '' }).trim();
     case 'cho-ql-hieu-chinh': return t('Chờ quản lý hiệu chỉnh');
+    case 'da-huy': return t('Đã huỷ · vắng MT cũ');
     default: return null;
   }
 }

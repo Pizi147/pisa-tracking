@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ApiError, api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
+import { thongBaoVang } from '../cham/thongBaoVang.ts';
 import { KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
@@ -9,7 +10,7 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { addDaysStr } from '../../lib/format.ts';
 import { Nhan } from '../../ui/Nhan.tsx';
 import {
-  CAU_TUAN_DA_QUA, CHU_THAO_TAC, canLyDo, cauDaGhiVang, kiemLyDoThaoTac, kiemTuanXep, luatVangThuong, mondayOfDate, ngay, sauTuanThi, tenMon, tuanLich,
+  CAU_TUAN_DA_QUA, CHU_THAO_TAC, canLyDo, cauDaGhiVang, kiemLyDoThaoTac, kiemTuanXep, luatVangThuong, mondayOfDate, ngay, tenMon, tuanLich, type KetQuaVang,
   type LoiTruong, type ThaoTac,
 } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
@@ -18,12 +19,12 @@ import { t } from '@shared/i18n/index.ts';
 export const THAO_TAC_CO_HOP: readonly ThaoTac[] = ['dat-lich', 'xep-lai', 'doi-lich', 'doi-han', 'bo-ky-nang', 'dua-lai', 'bao-vang', 'huy-diem', 'khoi-phuc', 'khong-mock-lai'];
 
 /**
- * OV-11a (TE-5, Q1–Q2): "Vắng" theo đúng luật "-" — Mock sau tuần thi / lớp thường tuần thi đã qua ≥ 2 tuần = Không dự thi (không dời);
- * lớp thường còn trong 2 tuần → dời sang tuần sau của tuần hiện tại. `null` = chưa biết tuần (máy chủ vẫn quyết).
+ * OV-11a (TE-5, Q1–Q2): "Vắng" theo đúng luật "-" — lớp thường tuần thi đã qua ≥ 2 tuần = Không dự thi (không dời), còn trong 2 tuần → dời
+ * sang tuần sau của tuần hiện tại. LUAT-34: Mock không còn "Không dự thi" — ghi muộn vẫn chốt (máy chủ `chuyenVang`). `null` = chưa biết tuần.
  */
 function vangSeRa(laThuong: boolean, weekStart: string | null, homNay: string): { khongDuThi: boolean; tuanMoi: string | null } | null {
   if (!weekStart || !homNay) return null;
-  if (!laThuong) return { khongDuThi: sauTuanThi(weekStart, homNay), tuanMoi: null };
+  if (!laThuong) return { khongDuThi: false, tuanMoi: null };
   const l = luatVangThuong(weekStart, homNay);
   return l.khongDuThi ? { khongDuThi: true, tuanMoi: null } : { khongDuThi: false, tuanMoi: tuanLich(l.tuanMoi, homNay) };
 }
@@ -41,8 +42,8 @@ function cauHeQua(tt: ThaoTac, mon: string, laThuong: boolean, vang: ReturnType<
       ? t('Tuần thi đã qua: ghi Không dự thi cho {mon} — không dời, không tính lần vắng.', { mon })
       : laThuong
         ? t('Ghi "-" cho {mon}: môn này dời sang {x} ngay.', { mon, x: vang?.tuanMoi ?? t('tuần sau') })
-        : t('Ghi "-" cho {mon} và chốt ngay. Lần vắng đầu máy tự dời sang tuần kế tiếp; lần 2 huỷ phần thi này.', { mon });
-    case 'huy-diem': return t('Ô điểm trở về trống. Điểm cũ vẫn nằm trong Lịch sử cùng lý do.');
+        : t('Ghi "-" cho {mon} và chốt ngay. Lần đầu máy tự dời sang tuần kế tiếp (tuần đó đã qua thì gửi Quản lý); lần 2 huỷ phần thi này.', { mon });
+    case 'huy-diem': return t('Ô điểm trở về trống; nhận xét giữ. Lấy lại bằng ⋯ "Khôi phục điểm".');
     case 'khong-mock-lai': return t('{mon} đã huỷ vì vắng 2 lần sẽ không thi lại; đợt tính trên các kỹ năng còn lại.', { mon });
     case 'khoi-phuc': return t('Mở lại phần thi {mon} đã huỷ và đặt tuần thi mới trong cùng một lần.', { mon });
     default: return '';
@@ -131,11 +132,13 @@ export function HopThaoTacMt({ thaoTac, attemptId, skill, ct, laThuong, quanLy, 
           const r = await api.put<any>(`/regular/attempts/${attemptId}/scores/${skill}`, { noShow: true, lyDo: lyDoGui });
           return cauDaGhiVang(mon, hocVien ?? undefined, r?.khongDuThi ? { kq: 'khong-du-thi' } : r?.moved ? { kq: 'doi', tuanMoi: r.tuanMoi } : null);
         }
-        const r = await api.post<{ daDoi: boolean; tuanMoi: string | null; choDuyet: boolean; huyVang?: boolean; khongDuThi?: boolean }>(`${goc}/bao-vang`, { lyDo: lyDoGui });
-        return cauDaGhiVang(mon, hocVien ?? undefined, r.khongDuThi ? { kq: 'khong-du-thi' }
+        const r = await api.post<{ daDoi: boolean; tuanMoi: string | null; choDuyet: boolean; huyVang?: boolean; huyCu?: boolean }>(`${goc}/bao-vang`, { lyDo: lyDoGui });
+        const kq: KetQuaVang | null = r.huyCu ? { kq: 'huy-cu' }
           : r.daDoi ? { kq: 'doi', tuanMoi: tuanLich(r.tuanMoi, homNay) }
           : r.huyVang ? { kq: 'huy' }   // PR-MTa T3: vắng lần 2 → huỷ (ô MT "S huỷ")
-          : r.choDuyet ? { kq: 'cho-ql' } : null);
+          : r.choDuyet ? { kq: 'cho-ql' } : null;
+        vangVua = kq ?? { kq: 'cho-o-kia' };   // LUAT-34: báo bằng `thongBaoVang` + Hoàn tác 10 s, như gõ "-" ở ô
+        return cauDaGhiVang(mon, hocVien ?? undefined, kq);
       }
       case 'khong-mock-lai':
         await api.post(`${goc}/khong-mock-lai`, { lyDo: lyDoGui ?? null });
@@ -153,6 +156,15 @@ export function HopThaoTacMt({ thaoTac, attemptId, skill, ct, laThuong, quanLy, 
     }
   };
 
+  /* LUAT-34: Báo vắng Mock vừa ghi — Hoàn tác = gỡ "-" mọi ô của kỹ năng (Writing: W1 + W2; vắng đã chốt gỡ cả buổi ở ô đầu). */
+  let vangVua: KetQuaVang | null = null;
+  const hoanTacVang = async () => {
+    try {
+      for (const o of skill === 'writing' ? ['writing1', 'writing2'] : [skill]) await api.put(`/attempts/${attemptId}/scores/${o}`, { noShow: false });
+      invalidate('/attempts'); invalidate('/classes'); invalidate('/ke-hoach-test'); invalidate('/my-work');
+      onDone();
+    } catch (e: any) { toast.push('error', e.message); }
+  };
   const dong = () => { lf.datLai(); onClose(); };
   const luu = async () => {
     lf.bam();
@@ -161,7 +173,8 @@ export function HopThaoTacMt({ thaoTac, attemptId, skill, ct, laThuong, quanLy, 
     try {
       const cau = await goi(!!canhBao);
       invalidate('/attempts'); invalidate('/tong-quan'); invalidate('/classes'); invalidate('/ke-hoach-test'); invalidate('/my-work'); invalidate('/cycles');
-      toast.push('ok', cau);
+      if (vangVua) thongBaoVang(toast, `${attemptId}:${skill}`, mon, hocVien ?? undefined, vangVua, () => void hoanTacVang());
+      else toast.push('ok', cau);
       onDone(); dong();
     } catch (e: any) {
       /* T15: cảnh báo (hai đợt quá gần) cần người xác nhận lại — lần bấm sau gửi `force`. */
