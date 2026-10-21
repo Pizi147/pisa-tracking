@@ -1474,10 +1474,10 @@ api.post('/classes/bulk', requireAuth, wrap((req) => {
 /** Trang Học viên & Lớp: lớp + số đếm chip + cờ lọc từng học viên — một request cho cả trang (đặc tả §3.6). */
 api.get('/hoc-vien-lop', requireAuth, wrap((req) => {
   maybeSimulateReadError();
-  /* OV-12f: góc "Đang SOS" theo tuần thi (`tuan` = Thứ Hai của tuần · `tat-ca` = 8 tuần) — cùng phạm vi trang, cùng hàm phân loại với Tổng hợp. */
+  /* OV-12f + SL2: góc "Đang SOS" = SOS hiện tại (`hv-sos-hien-tai`) trong phạm vi trang — không lọc tuần (link cũ `tuan=` bỏ qua). */
   if (qStr(req, 'goc') === 'sos') {
     return hocVienSosSvc.dangSos(principalOf(req), {
-      tuan: qStr(req, 'tuan') ?? null, phamVi: qStr(req, 'phamVi') ?? null, branchId: qInt(req, 'branchId') ?? null, cnNho: qInt(req, 'cnNho') ?? null, q: qStr(req, 'q') ?? null,
+      phamVi: qStr(req, 'phamVi') ?? null, branchId: qInt(req, 'branchId') ?? null, cnNho: qInt(req, 'cnNho') ?? null, q: qStr(req, 'q') ?? null,
     });
   }
   return hocVienLopSvc.danhSachHocVienLop(principalOf(req), {
@@ -1982,11 +1982,11 @@ api.get('/highlights', requireAuth, wrap((req) => {
 
 // ============================================================ Tổng quan (PR-Pa, đặc tả §3.2)
 
-/** Tầng 1 Quản lý: Cần xử lý + dải Chờ duyệt — gộp hai khung (PR-VAI-a Q5). Mọi số đi qua `metricSet` — cùng số với `/metrics/:id`. */
+/** Tầng 1 Quản lý: Cần xử lý + Cần bạn quyết — theo khung `ct=ft|thuong` (SL2, 9.1-4); vắng = gộp hai khung. Mọi số đi qua `metricSet` — cùng số với `/metrics/:id`. */
 api.get('/tong-quan/quan-ly', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   lenhSvc.quetLenhDenHan();
-  return tongQuanSvc.tongQuanQuanLy(principalOf(req), { branchId: qInt(req, 'branchId') ?? null });
+  return tongQuanSvc.tongQuanQuanLy(principalOf(req), { branchId: qInt(req, 'branchId') ?? null, ct: ctTuyChon(qStr(req, 'ct')) });
 }));
 
 /** Điểm đáng chú ý (tầng 3) theo khung `ct=ft|thuong` — tách route để đổi công tắc không tải lại Cần xử lý. */

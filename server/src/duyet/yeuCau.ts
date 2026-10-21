@@ -340,7 +340,8 @@ export function hopChoDuyet(p: Principal, f: {
   /* SL1 (A7-01, X-03): hộp theo chi nhánh của trang — thẻ đang chờ ở chi nhánh khác không giấu, chỉ đếm để hiện dòng "n thẻ ở chi nhánh khác". */
   let khacChiNhanh = 0;
   if (f.branchId) {
-    if (xem === 'cho') khacChiNhanh = rows.filter((r) => r.chi_nhanh_id !== f.branchId && nhomCuaLoai(r.loai) === 'can-quyet').length;
+    /* SL2: đang lọc một lớp → thẻ chi nhánh khác không thuộc lớp đó, không có gì để "Xem". */
+    if (xem === 'cho' && !f.classId) khacChiNhanh = rows.filter((r) => r.chi_nhanh_id !== f.branchId && nhomCuaLoai(r.loai) === 'can-quyet').length;
     rows = rows.filter((r) => r.chi_nhanh_id === f.branchId);
   }
   /* PR-S4F #5: badge "n chờ duyệt" của một lớp mở hộp lọc ĐÚNG lớp đó — cùng luật đếm `viecHocVienTheoLop` (thẻ theo lớp, thẻ không lớp thì lớp em đang học). */

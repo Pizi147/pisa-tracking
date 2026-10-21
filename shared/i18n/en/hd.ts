@@ -58,7 +58,7 @@ export const EN_HD = {
   'Gõ "ft101" ra lớp MB FT 101.': 'Typing "ft101" finds class MB FT 101.',
   'Gõ tên, email em hoặc mã lớp.': 'Type a student name, email or class code.',
   'Ba góc nhìn': 'Three views',
-  '<b>Tất cả</b> (lọc <b>Đã thi · chờ kết quả</b>) · <b>Đang SOS</b> (mặc định <b>Toàn bộ</b> 8 tuần, chọn được tuần thi) · <b>Cần làm</b>.': '<b>All</b> (filter <b>Exam taken · awaiting result</b>) · <b>In SOS</b> (default <b>All weeks</b>, 8, pick a test week) · <b>To do</b>.',
+  '<b>Tất cả</b> (lọc <b>Đã thi · chờ kết quả</b>) · <b>Đang SOS</b> (SOS hiện tại, mỗi em một dòng) · <b>Cần làm</b>.': '<b>All</b> (filter <b>Exam taken · awaiting result</b>) · <b>In SOS</b> (current SOS, one row per student) · <b>To do</b>.',
   'Bấm dòng em mở panel một em, không rời trang.': 'Click a student row to open their panel without leaving the page.',
   'Học viên của lớp': 'Students of the class',
   'Bảng em của lớp; <b>⋯</b> ở dòng em: + Ghi vi phạm, + Case, Nhập điểm.': 'The class student table; <b>⋯</b> on a row: + Log incident, + Case, Enter scores.',

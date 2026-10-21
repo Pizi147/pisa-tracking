@@ -107,7 +107,7 @@ export function LichSapToi({ branchId, ct, duLieu }: { branchId: number | null; 
     <Card title="Lịch sắp tới" bodyClass="p-0" action={hep ? undefined : xemHet}>
       <div className="px-2 pt-1">
         <HangTab cap="con" ariaLabel="Tuần" value={String(i)} onChange={(k) => { setTab(k); setMoHet(false); }}
-          tabs={data.weeks.map((x, j) => ({ key: String(j), label: nhanTab(x), so: theoTuan[j].reduce((n, d) => n + d.soEm, 0) }))} />
+          tabs={data.weeks.map((x, j) => ({ key: String(j), label: nhanTab(x), so: theoTuan[j].reduce((n, d) => n + d.soEm, 0), donVi: 'em' }))} />
       </div>
       {!dong.length ? (
         <p className="m-0 px-4 py-3 text-sm text-slate-400">Không có đợt Test nào trong tuần này.</p>

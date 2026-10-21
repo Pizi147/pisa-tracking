@@ -432,7 +432,7 @@ export const EN_C = {
   'Có việc quá hạn hoặc việc hạn ngắn (xác nhận, xử lý vi phạm).': 'Has overdue or short-deadline tasks (confirmations, incidents).',
   'Có việc đã quá hạn (xác nhận, kết quả, xử lý vi phạm) — cùng số với badge "HV quá hạn việc".': 'Has overdue tasks (confirmations, results, incidents) — same count as the "students with overdue tasks" badge.',
   'Có yêu cầu đang chờ Quản lý duyệt.': 'Has requests awaiting the manager.',
-  'Chỉ Fast Track: Mock gần nhất ở mức SOS 1–3.': 'Fast Track only: latest mock at SOS 1–3.',
+  'SOS hiện tại: đợt Test mới nhất ở mức SOS 1–3.': 'Current SOS: latest test at SOS 1–3.',
   'Hồ sơ còn thiếu thông tin cần để xếp lịch và theo dõi.': 'Profile is missing info needed for scheduling and tracking.',
   'HV của tôi': 'My students',
   'Lớp tôi dạy': 'My classes',

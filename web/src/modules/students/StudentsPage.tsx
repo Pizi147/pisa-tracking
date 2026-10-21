@@ -34,7 +34,6 @@ import { PanelMotEm } from './PanelMotEm.tsx';
 import { PanelViec, lamTaiCho } from '../congViec/PanelViec.tsx';
 import { SuaThongTinMotEm } from './StudentManagePanel.tsx';
 import type { WorkItem } from '../worklist/WorkList.tsx';
-import { ChonTuanSos } from './ChonTuanSos.tsx';
 import { PanelNhapDiemLop } from '../cham/PanelNhapDiemLop.tsx';
 import { GocLichThi } from './GocLichThi.tsx';
 import { NganXuatDs } from './NganXuatDs.tsx';
@@ -100,11 +99,10 @@ function TrangTheoLop({ admin }: { admin: boolean }) {
   const { can, session } = useSession();
   const [params, setParams] = useSearchParams();
   const doc = docThamSoLoc(params.get('view'));
-  /* OV-12f: ba góc nhìn thay hàng chip — `view` (sos · can-lam) + lọc phụ `loc` + `tuan` trên URL; link cũ (qua-han, cho-duyet, thieu_tt) giữ nghĩa. */
+  /* OV-12f: ba góc nhìn thay hàng chip — `view` (sos · can-lam) + lọc phụ `loc` trên URL (SL2: Đang SOS không còn `tuan`); link cũ (qua-han, cho-duyet, thieu_tt) giữ nghĩa. */
   const gocUrl = docGoc(params.get('view'), params.get('loc'));
   const goc: GocHocVien = admin && gocUrl.goc === 'sos' ? 'tat-ca' : gocUrl.goc;   // Admin hai góc (không có Case)
   const locPhu: LocPhuCanLam | null = goc === 'can-lam' ? gocUrl.loc : null;
-  const tuanUrl = params.get('tuan');
   const laQl = laVaiQuanLy(session?.roles);
   const q = params.get('q') ?? '';
   const cnUrl = params.get('cn') ?? params.get('branchId');
@@ -155,9 +153,8 @@ function TrangTheoLop({ admin }: { admin: boolean }) {
   const duongSos = useMemo(() => {
     const s = new URLSearchParams(qs.slice(qs.indexOf('?') + 1));
     s.set('goc', 'sos');
-    if (tuanUrl) s.set('tuan', tuanUrl);
     return `/hoc-vien-lop?${s.toString()}`;
-  }, [qs, tuanUrl]);
+  }, [qs]);
   const sos = useApi<TrangSos>(admin || 'chuyenDen' in doc ? null : duongSos);
   /* Cần làm: việc ở Công việc (`/my-work`, cùng số) — QL / Admin "Của GV" (làm thay được), GV việc của mình; cùng chi nhánh trang đang xem. */
   const cnViec = data?.phamVi.dangDung === 'chi-nhanh' ? data.phamVi.chiNhanh : null;
@@ -271,8 +268,8 @@ function TrangTheoLop({ admin }: { admin: boolean }) {
    */
   const lopThuTu = nhomLop.flatMap((g) => g.lop);
   const tongGoc = goc === 'tat-ca' ? lopThuTu.length : goc === 'sos' ? sosRows.length : goc === 'can-lam' ? viecHien.length : 0;
-  const khoaLoc = [goc, q, khung, chiLop, locDaThi, locPhu, branchId, phamViUrl, tuanUrl, ...['lc', 'lk', 'lq', 'ltu', 'lden'].map((k) => params.get(k))].join('|');
-  const pt = usePhanTrang(tongGoc, khoaLoc, goc === 'tat-ca' ? t('lớp') : goc === 'sos' ? t('lượt') : t('việc'));
+  const khoaLoc = [goc, q, khung, chiLop, locDaThi, locPhu, branchId, phamViUrl, ...['lc', 'lk', 'lq', 'ltu', 'lden'].map((k) => params.get(k))].join('|');
+  const pt = usePhanTrang(tongGoc, khoaLoc, goc === 'tat-ca' ? t('lớp') : goc === 'sos' ? t('em') : t('việc'));
   const lopTrangNay = new Set(pt.cat(lopThuTu).map((c) => c.id));
   const nhomLopHien = nhomLop.map((g) => ({ ...g, lop: g.lop.filter((c) => lopTrangNay.has(c.id)) })).filter((g) => g.lop.length > 0);
   /* Xuất Excel (C31): đúng các em trang đang hiện theo góc + bộ lọc (số trên nút = số trong tệp). */
@@ -285,7 +282,7 @@ function TrangTheoLop({ admin }: { admin: boolean }) {
     locThem.tu && locThem.den ? nhanKhoang({ kieu: kieuKhoang, tu: locThem.tu, den: locThem.den }).chinh : null];
   const boLocXuat = goc === 'tat-ca'
     ? [t('Tất cả'), locDaThi ? LOC_HOC_VIEN_NHAN['da-thi'].nhan : null, lopDangLoc ? lopDangLoc.code : null, q.trim() ? `“${q.trim()}”` : null, ...chuLocThem].filter(Boolean).join(' · ')
-    : goc === 'sos' ? `${t('Đang SOS')}${sos.data?.tuan ? ` · ${tuanLich(sos.data.tuan, homNay)}` : ''}`
+    : goc === 'sos' ? t('Đang SOS')
     : `${t('Cần làm')}${locPhu ? ` · ${nhanLocPhu[locPhu]}` : ''}`;
   const [xuat, setXuat] = useState<null | 'loc' | 'chon'>(null);
   /* OV-15h2 (ý 1): chọn HV để "Xuất các HV đã chọn" — giữ khi đổi trang / mở lớp; đổi bộ lọc thì bỏ chọn và báo (mockup 5 khung 2). */
@@ -391,7 +388,7 @@ function TrangTheoLop({ admin }: { admin: boolean }) {
           <div className="flex min-w-0 max-w-full flex-wrap items-center gap-2 lg:flex-1" data-hd="hvl-goc">
             <BoLocDoan ariaLabel={t('Góc nhìn')} value={goc} onChange={doiGoc}
               muc={(admin ? (['tat-ca', 'can-lam', 'lich-thi'] as const) : (['tat-ca', 'sos', 'can-lam', 'lich-thi'] as const)).map((k) => ({
-                key: k, nhan: k === 'tat-ca' ? t('Tất cả') : k === 'lich-thi' ? t('Lịch thi') : k === 'sos' ? (sos.data?.tuan ? `${t('Đang SOS')} · ${tuanLich(sos.data.tuan, homNay)}` : t('Đang SOS')) : t('Cần làm'),
+                key: k, nhan: k === 'tat-ca' ? t('Tất cả') : k === 'lich-thi' ? t('Lịch thi') : k === 'sos' ? t('Đang SOS') : t('Cần làm'),
                 /* UX-1: tải việc lỗi → "!" + lý do, bấm thử lại (không im lặng). */
                 ...(k === 'can-lam' && work.error ? { so: '!', title: t('Chưa tải được · bấm để thử lại') } : { so: demGoc[k] }),
               }))} />
@@ -421,10 +418,6 @@ function TrangTheoLop({ admin }: { admin: boolean }) {
                   </button>
                 ))}
               </div>
-            )}
-            {goc === 'sos' && sos.data && (
-              <ChonTuanSos tuan={sos.data.tuan} toanBo={sos.data.toanBo} tuanGanNhat={sos.data.tuanGanNhat} tu={sos.data.tu} den={sos.data.den}
-                onChon={(t) => setParam({ tuan: t || null, open: null })} />
             )}
           </div>
           <div className="flex shrink-0 items-center gap-2 max-sm:grid max-sm:w-full max-sm:grid-cols-2 lg:ml-auto">
@@ -533,11 +526,11 @@ function TrangTheoLop({ admin }: { admin: boolean }) {
             : (
               <>
                 <p className="m-0 text-[13px] text-slate-400" aria-live="polite">
-                  {t('Đang xem')}: <b className="font-semibold text-slate-200">{t('Đang SOS')} · {sos.data.toanBo ? t('Toàn bộ 8 tuần') : t('một tuần thi')}</b>
-                  {' · '}<span className="tabular-nums">{t('{n} học viên', { n: demGoc.sos ?? 0 })}{sos.data.toanBo ? ` · ${t('{n} lượt SOS', { n: sosRows.length })}` : ''} · {t('{n} lớp', { n: new Set(sosRows.map((r) => r.classId)).size })}</span>
+                  {t('Đang xem')}: <b className="font-semibold text-slate-200">{t('Đang SOS')} · {t('hiện tại')}</b>
+                  {' · '}<span className="tabular-nums">{t('{n} học viên', { n: demGoc.sos ?? 0 })} · {t('{n} lớp', { n: new Set(sosRows.map((r) => r.classId)).size })}</span>
                 </p>
                 {sosRows.length === 0
-                  ? <Card><Empty title={sos.data.toanBo ? t('Không có học viên SOS trong 8 tuần') : t('Không có học viên SOS ở tuần thi này')} hint={t('Chọn tuần khác hoặc Toàn bộ.')} /></Card>
+                  ? <Card><Empty title={t('Không có học viên SOS')} /></Card>
                   : <><PhanTrang {...pt.thanh} /><BangSos data={{ ...sos.data, rows: pt.cat(sosRows) }} tatCa={sosRows} cot="ql" dam={dam} dienThoai={dienThoai} ds={dsHocVien}
                       onMo={(r) => setPanelEm({ id: r.studentId, caseMo: r.cases.find((c) => !c.done)?.id ?? null })} dangMo={panelEm?.id ?? null} /><PhanTrang {...pt.thanh} duoi /></>}
               </>
@@ -563,8 +556,7 @@ function TrangTheoLop({ admin }: { admin: boolean }) {
         <GocLichThi duongGoc={qs.slice(qs.indexOf('?'))} thangUrl={params.get('thang')} onDoiThang={(m) => setParam({ thang: m.join(','), open: null })} />
       )}
       {xuat && goc !== 'lich-thi' && (
-        <NganXuatDs ids={idsXuat} daChon={goc === 'tat-ca' ? [...daChon] : undefined} phamDau={xuat} boLoc={boLocXuat} mauMacDinh={goc === 'sos' ? 'theo-doi-sos' : undefined}
-          locSos={{ tuan: tuanUrl, phamVi: phamViUrl, branchId, q: q.trim() || null }} onDong={() => setXuat(null)} />
+        <NganXuatDs ids={idsXuat} daChon={goc === 'tat-ca' ? [...daChon] : undefined} phamDau={xuat} boLoc={boLocXuat} mauMacDinh={goc === 'sos' ? 'theo-doi-sos' : undefined} onDong={() => setXuat(null)} />
       )}
       {panelEm && (
         <PanelMotEm key={panelEm.id} studentId={panelEm.id} caseMo={panelEm.caseMo} onClose={() => setPanelEm(null)}
