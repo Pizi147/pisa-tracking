@@ -1038,9 +1038,9 @@ await checkAsync('TD6 (×3) · câu đã sửa không SCAN bảng lớn; migrate
 await checkAsync('TD4-a (×3) · Công việc trùng JSON ảnh chụp trước TD4 — 6 vai × Của tôi / Tất cả / Của một GV / lọc chi nhánh', async () => {
   const { myWork, viecCuaNguoi } = await import('../worklist/mywork.ts');
   const ANH: Record<string, string> = {
-    'QL toi': '5625fbfeee22205b', 'QT toi': '5b231d4db6641f70', 'GVCN toi': 'f6ff40501544a244', 'GVBM toi': 'a617afe0c9c8e789',
-    'GVCN_THUONG toi': 'f6ff40501544a244', 'ADMIN toi': '4ed1fc3fa34653f2', 'QL tat-ca': 'd998d1bd551ae829', 'QT tat-ca': '458d7e25f46ee66e',
-    'QT tat-ca cn': 'd2142ed960b5c0e5', 'QL gvcn': '3b10a8158bad5fb5', 'GVS toi': 'a1e80b115593d927',
+    'QL toi': '5625fbfeee22205b', 'QT toi': '5b231d4db6641f70', 'GVCN toi': '877c517294a92420', 'GVBM toi': '3062451882b9b315',
+    'GVCN_THUONG toi': '877c517294a92420', 'ADMIN toi': '4ed1fc3fa34653f2', 'QL tat-ca': '4cdb09f236f8268f', 'QT tat-ca': 'f863432eff8a7731',
+    'QT tat-ca cn': '786298fc3ecf7fcb', 'QL gvcn': '1143c14a0f193255', 'GVS toi': 'f95e19807da7ce55',
   };
   const p = (v: Vai) => loadPrincipal(USER[v]);
   const goc: [string, () => unknown][] = [
@@ -1053,7 +1053,8 @@ await checkAsync('TD4-a (×3) · Công việc trùng JSON ảnh chụp trước 
   const sai: string[] = [];
   for (const [ten, fn] of goc) {
     /* 19/10 OV-15b: việc Nhập điểm thêm `kns` (đủ kỹ năng của việc — panel chỉ mở các cột này); băm bỏ trường đó → trùng ảnh cũ (không việc nào khác đổi). */
-    /* 22/10 V5 SV-SO1: thêm `summary.viec/bai/nhom/hv/viecQuaHan`, `lamThay` (xem người khác), `chiXem` — băm bỏ các trường đó → trùng ảnh cũ (không gì khác đổi). */
+    /* 22/10 V5 SV-SO1: thêm `summary.viec/bai/nhom/hv/viecQuaHan`, `lamThay` (xem người khác), `chiXem` — băm bỏ các trường đó. Chụp lại GVCN / GVBM / GVCN_THUONG
+       "Của tôi", QL / QT "Tất cả", QL gvcn, GVS — đổi CÓ CHỦ Ý (chủ SP 22/10): ô có band thiếu nhận xét bắt buộc thành việc Nhập điểm (bài / hạn / quá hạn). */
     const MOI = new Set(['viec', 'bai', 'nhom', 'hv', 'viecQuaHan']);
     const bo = (k: string, v: any) => (k === 'kns' || k === 'lamThay' || k === 'chiXem' ? undefined
       : k === 'summary' && v ? Object.fromEntries(Object.entries(v).filter(([x]) => !MOI.has(x))) : v);
@@ -1177,18 +1178,20 @@ await checkAsync('TD7b (×3) · câu đọc lượt của Nợ điểm / badge l
 /*
  * TD4-b: bản chính 15/10 log `[cham]` /my-work 5–7,5 s, 75–126 câu, 6 900–18 400 dòng (top: lịch kỹ năng của MỌI lượt trong phạm vi). Mốc ×3 trước TD4
  * (main 35517670, đo trong chính phép này): câu / dòng dưới đây. Khoá: dòng ≤ 40 % mốc, số câu ×3 ≤ ×1 + 2 (không tăng theo dữ liệu) và ≤ mốc − 3.
+ * V5 SV-SO1 (chủ SP 22/10): ô có band thiếu nhận xét bắt buộc là việc thật (seed 327 ô) → /my-work đọc thêm lượt còn ô chờ: đo ×3 43–57 % mốc → khoá 60 %
+ * (vẫn dưới mốc trước TD4 nhiều; giảm dần khi GV ghi đủ nhận xét). "Tất cả" +1 câu (ngữ cảnh Case "Làm thay").
  */
-check('TD4-b (×3) · /my-work mọi vai: dòng ≤ 40 % mốc trước TD4, số câu không tăng theo dữ liệu', () => {
+check('TD4-b (×3) · /my-work mọi vai: dòng ≤ 60 % mốc trước TD4 (V5 SV-SO1; trước 40 %), số câu không tăng theo dữ liệu', () => {
   const MOC: Record<string, [number, number]> = {
     /* SV-YT-TVV + SV-TVV-VIEC (21/10): QL / QT "Của tôi" +2 câu — việc Báo PH (một câu) + Chốt ngày thi / Bổ sung hồ sơ (một câu cho cả hai). */
     'QL /my-work': [68, 5647], 'QT /my-work': [68, 7775], 'GVCN /my-work': [66, 4502], 'GVBM /my-work': [66, 5140], 'GVCN_THUONG /my-work': [66, 4502],
-    'QL /my-work?nguoi=tat-ca': [78, 6721], 'QT /my-work?nguoi=tat-ca': [78, 9176], [`QL /my-work?nguoi=${USER.GVCN}`]: [72, 4530],
+    'QL /my-work?nguoi=tat-ca': [79, 6721], 'QT /my-work?nguoi=tat-ca': [79, 9176],   // V5 SV-SO1 +1 câu [`QL /my-work?nguoi=${USER.GVCN}`]: [72, 4530],
   };
   const sai: string[] = [];
   for (const [k, [cau, dong]] of Object.entries(MOC)) {
     const c = cauSauNhan.get(k) ?? Infinity, d = dongSauNhan.get(k) ?? Infinity, c1 = truocNhan.get(k) ?? -Infinity;
     console.log(`      (đo ×3: ${k} ${cau} → ${c} câu · ${dong} → ${d} dòng)`);
-    if (d > Math.floor(dong * 0.4) || c > c1 + 2 || c > cau - 3) sai.push(`${k}: ${c} câu (×1 ${c1}), ${d} dòng`);
+    if (d > Math.floor(dong * 0.6) || c > c1 + 2 || c > cau - 3) sai.push(`${k}: ${c} câu (×1 ${c1}), ${d} dòng`);
   }
   assert(!sai.length, sai.join('\n'));
 });

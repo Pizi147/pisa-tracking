@@ -452,8 +452,8 @@ export const TRAN: Record<string, number> = {
   /* PR-Ra: trang "Công việc" dùng lại /my-work cho QL·QT, cộng chế độ nguoi=tat-ca/{gv} (Q1–Q2). */
   'QL /my-work': 65,   // TD4: đo 61 (trước 64); SV-YT-TVV +1 (việc Báo PH: một câu); SV-TVV-VIEC +1 (Chốt ngày thi + Bổ sung hồ sơ: một câu)
   'QT /my-work': 65,   // TD4: đo 61 (trước 64); SV-YT-TVV +1; SV-TVV-VIEC +1
-  'QL /my-work?nguoi=tat-ca': 75,   // TD4: đo 69 (trước 76) — một lần `listAttempts`; 16/10 +1 OV-13k (xem_nx_s) +1 OV-13m (Chọn bước tiếp) = 73; SV-YT-TVV +1, SV-TVV-VIEC +1 = 75
-  'QT /my-work?nguoi=tat-ca': 75,   // TD4: đo 69 (trước 76); 16/10 +1 OV-13k +1 OV-13m = 73; SV-YT-TVV +1, SV-TVV-VIEC +1 = 75
+  'QL /my-work?nguoi=tat-ca': 76,   // TD4: đo 69 (trước 76) — một lần `listAttempts`; 16/10 +1 OV-13k (xem_nx_s) +1 OV-13m (Chọn bước tiếp) = 73; SV-YT-TVV +1, SV-TVV-VIEC +1 = 75; V5 SV-SO1 +1 (ngữ cảnh Case "Làm thay" một câu)
+  'QT /my-work?nguoi=tat-ca': 76,   // TD4: đo 69 (trước 76); 16/10 +1 OV-13k +1 OV-13m = 73; SV-YT-TVV +1, SV-TVV-VIEC +1 = 75; V5 SV-SO1 +1 (ngữ cảnh Case)
   'GVCN /my-work?nguoi=tat-ca': 15,
   'QL /my-work?nguoi=7': 68,
   /* OV-14c: GV không phải GV Speaking — rỗng (đo 4); GV Speaking đo ở prOv14c (`TRAN_CHAM_SPEAKING`, đo 14). */
@@ -863,13 +863,13 @@ export const TRAN_DONG: Record<string, number> = {
   /* TU-a: ô chọn tutor — trần = max(đo+50, ⌈đo×1,3⌉), đo 20/10 (13 · 11 · 17 · 17 · 44 · 12 · 45 dòng). */
   'QL /tutors/chon?studentId=1': 63, 'QT /tutors/chon?studentId=1': 61, 'GVCN /tutors/chon?studentId=1': 67, 'GVBM /tutors/chon?studentId=1': 67,
   'QL /tutors/chon?paId=7': 94, 'QT /tutors/chon?paId=7': 62, 'GVCN /tutors/chon?paId=7': 95,
-  'QL /my-work': 1104,   // TD4: đo 849 (trước 2155)
+  'QL /my-work': 1551,   // TD4: đo 849 (trước 2155); V5 SV-SO1: đo 1193 (trước 1104) — ô có band thiếu nhận xét bắt buộc (seed: 327 ô) là việc thật → đọc thêm lượt còn ô chờ
   'GVCN /my-work': 1069,   // TD4: đo 822 (trước 1784)
   'GVBM /my-work': 1102,   // TD4: đo 847 (trước 2016)
   'GVCN_THUONG /my-work': 1069,   // TD4: đo 822 (trước 1784)
-  'QT /my-work': 1263,   // TD4: đo 971 (trước 2889)
-  'QL /my-work?nguoi=tat-ca': 1455,   // TD4: đo 1119 (trước 2793)
-  'QT /my-work?nguoi=tat-ca': 1631,   // TD4: đo 1254 (trước 3688)
+  'QT /my-work': 2264,   // TD4: đo 971 (trước 2889); V5 SV-SO1: đo 1741 (trước 1263) — ô có band thiếu nhận xét bắt buộc (seed: 327 ô) là việc thật → đọc thêm lượt còn ô chờ
+  'QL /my-work?nguoi=tat-ca': 1943,   // TD4: đo 1119 (trước 2793); V5 SV-SO1: đo 1494 (trước 1455) — ô có band thiếu nhận xét bắt buộc (seed: 327 ô) là việc thật → đọc thêm lượt còn ô chờ
+  'QT /my-work?nguoi=tat-ca': 2681,   // TD4: đo 1254 (trước 3688); V5 SV-SO1: đo 2062 (trước 1631) — ô có band thiếu nhận xét bắt buộc (seed: 327 ô) là việc thật → đọc thêm lượt còn ô chờ
   'QL /classes/3/roster': 2226,   // đo 1712
   'GVCN /classes/3/roster': 2447,   // đo 1882
   'GVBM /classes/3/roster': 2463,   // đo 1894
@@ -879,19 +879,20 @@ export const TRAN_DONG: Record<string, number> = {
   'GVCN /cham/lich-test': 579,   // TD7c: đo 445 (trước TD7c 561; khối 1 chỉ nạp lượt có ô thi trước tuần trước)
   'GVBM /cham/lich-test': 631,   // TD7c: đo 485 (trước TD7c 614; khối 1 chỉ nạp lượt có ô thi trước tuần trước)
   'GVCN_THUONG /cham/lich-test': 579,   // TD7c: đo 445 (trước TD7c 561; khối 1 chỉ nạp lượt có ô thi trước tuần trước)
-  'QT /cham/lich-test': 860,   // TD7c: đo 661 (trước TD7c 868; khối 1 chỉ nạp lượt có ô thi trước tuần trước)
+  'QT /cham/lich-test': 1628,   // TD7c: đo 661 (trước TD7c 868; khối 1 chỉ nạp lượt có ô thi trước tuần trước); V5 SV-SO1: đo 1252 (trước 860) — ô có band thiếu nhận xét bắt buộc (seed: 327 ô) là việc thật → đọc thêm lượt còn ô chờ
   'QL /cham/lich-test?phamVi=tat-ca': 748,   // TD7c: đo 575 (trước TD7c 720; khối 1 chỉ nạp lượt có ô thi trước tuần trước)
   'GVCN /cham/lich-test?phamVi=tat-ca': 579,   // TD7c: đo 445 (trước TD7c 561; khối 1 chỉ nạp lượt có ô thi trước tuần trước)
   'GVBM /cham/lich-test?phamVi=tat-ca': 631,   // TD7c: đo 485 (trước TD7c 614; khối 1 chỉ nạp lượt có ô thi trước tuần trước)
   'GVCN_THUONG /cham/lich-test?phamVi=tat-ca': 579,   // TD7c: đo 445 (trước TD7c 561; khối 1 chỉ nạp lượt có ô thi trước tuần trước)
-  'QT /cham/lich-test?phamVi=tat-ca': 860,   // TD7c: đo 661 (trước TD7c 868; khối 1 chỉ nạp lượt có ô thi trước tuần trước)
+  'QT /cham/lich-test?phamVi=tat-ca': 1628,   // TD7c: đo 661 (trước TD7c 868; khối 1 chỉ nạp lượt có ô thi trước tuần trước); V5 SV-SO1: đo 1252 (trước 860) — ô có band thiếu nhận xét bắt buộc (seed: 327 ô) là việc thật → đọc thêm lượt còn ô chờ
   'QL /cham/lich-test?classId=3': 653,   // TD7c: đo 502 (trước TD7c 559; khối 1 chỉ nạp lượt có ô thi trước tuần trước)
   'QT /cham/lich-test?classId=3': 678,   // TD7c: đo 521 (trước TD7c 578; khối 1 chỉ nạp lượt có ô thi trước tuần trước)
   'GVCN /cham/lich-test?classId=3': 556,   // TD7c: đo 427 (trước TD7c 484; khối 1 chỉ nạp lượt có ô thi trước tuần trước)
   'GVBM /cham/lich-test?classId=3': 591,   // TD7c: đo 454 (trước TD7c 511; khối 1 chỉ nạp lượt có ô thi trước tuần trước)
   /* OV-15h1: trần = max(đo + 50, ⌈đo × 1,3⌉), đo demo 20/10 (QL 1 914 · 1 862 · 483; QT 2 393 · 2 322 · 583). */
   'QL /tong-quan/ql?ct=ft': 2489, 'QL /tong-quan/ql?ct=thuong': 2421, 'QT /tong-quan/ql?ct=ft': 3111, 'QT /tong-quan/ql?ct=thuong': 3019,
-  'QL /tong-quan/ql/tre?ct=ft&gv=-1': 628, 'QT /tong-quan/ql/tre?ct=ft&gv=-1': 758,
+  /* V5 SV-SO1: đo 817 · 1626 (trước 628 · 758) — ô thiếu nhận xét bắt buộc là nợ điểm (trễ chấm). */
+  'QL /tong-quan/ql/tre?ct=ft&gv=-1': 1063, 'QT /tong-quan/ql/tre?ct=ft&gv=-1': 2114,
   'QL /tong-quan/chi-nhanh': 3336,   // đo 2566
   'QT /tong-quan/chi-nhanh': 4397,   // đo 3382
   'QL /tong-quan/diem-chu-y?ct=ft': 3260,   // đo 2507
