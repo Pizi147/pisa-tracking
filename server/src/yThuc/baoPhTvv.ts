@@ -12,9 +12,9 @@
 import { db, tx } from '../db.ts';
 import {
   COORDINATION_REMOVE_REASON_LABEL, COORDINATION_USER_REMOVE_REASONS, KET_QUA_BAO_PH, PERMISSIONS,
-  duongHoSoHocVien, hanBaoPh, hanBaoPhHieuLuc, nhanLoaiXuLy, reasonNeedsText, type KetQuaBaoPh,
+  HAN_BAO_PH_NGAY, duongHoSoHocVien, hanBaoPh, hanBaoPhHieuLuc, nhanLoaiXuLy, reasonNeedsText, type KetQuaBaoPh,
 } from '../../../shared/domain/index.ts';
-import { can, napTruocPhamVi, type Principal } from '../permissions.ts';
+import { can, scopeFor, type Principal } from '../permissions.ts';
 import { badRequest, chuTuDo, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
 import { demoToday } from '../demoConfig.ts';
 import { notify, quanLyCuaChiNhanh, writeAudit } from '../platform/audit.ts';
@@ -196,29 +196,32 @@ export function boViecBaoPh(p: Principal, id: number, v: { lyDo?: unknown; lyDoK
  * `tatCa` (QL "Của GV"): cả việc TVV giữ trong phạm vi. Một câu; TVV chỉ đọc em của mình.
  */
 export function viecBaoPhCuaToi(p: Principal, o: { today: string; tatCa: boolean; branchId: number | null }): WorkItem[] {
-  const ql = can(p, PERMISSIONS.REQUEST_APPROVE, { anyScope: true });
+  /* MỘT câu, không thêm câu phạm vi / Tạm dừng (TD4-b): phạm vi QL tính từ quyền đã nạp (`scopeFor`, chi nhánh của em); lần Quay lại học sau ngày lưu
+     (có Tạm dừng trước hạn) đọc ngay trong câu → `hanBaoPhHieuLuc`. */
+  const pv = scopeFor(p, PERMISSIONS.REQUEST_APPROVE, o.today);
+  const ql = !pv.none;
   if (!ql && !p.roleKeys.includes('consultant')) return [];   // GV không giữ việc này — khỏi tốn câu
+  const trongPv = (branchId: number | null) => pv.all || (branchId !== null && pv.branchIds.includes(branchId));
   const rows = db().prepare(
     `SELECT v.id, v.student_id, v.nhan, v.han, s.full_name, s.consultant_user_id AS tvv, ${CHI_NHANH_EM} AS branch_id,
-            e.class_id, c.code AS class_code, (SELECT COUNT(*) FROM viec_bao_ph_lan l WHERE l.viec_id = v.id) AS so_lan
+            e.class_id, c.code AS class_code, (SELECT COUNT(*) FROM viec_bao_ph_lan l WHERE l.viec_id = v.id) AS so_lan,
+            (SELECT MAX(r.event_date) FROM journey_events r WHERE r.student_id = s.id AND r.event_type = 'resume' AND r.event_date >= date(v.han, '-${HAN_BAO_PH_NGAY} day')
+               AND EXISTS (SELECT 1 FROM journey_events q WHERE q.student_id = s.id AND q.event_type = 'pause' AND q.event_date <= v.han AND q.event_date <= r.event_date)) AS quay_lai
        FROM viec_bao_ph v JOIN students s ON s.id = v.student_id AND ${HV_DANG_HOC_SQL('s')}
        LEFT JOIN enrollments e ON e.id = (SELECT MAX(x.id) FROM enrollments x WHERE x.student_id = s.id AND x.status = 'active')
        LEFT JOIN classes c ON c.id = e.class_id
       WHERE v.trang_thai = 'mo' AND (s.consultant_user_id = ? OR ? = 1) ORDER BY v.han, v.id`,
   ).all(p.userId, ql ? 1 : 0) as any[];
-  if (!rows.length) return [];
-  napTruocPhamVi(rows.map((r) => r.student_id));
-  const khoang = khoangTamDung(rows.map((r) => r.student_id));
   const items: WorkItem[] = [];
   for (const r of rows) {
     if (o.branchId && r.branch_id !== o.branchId) continue;
     let ownerId: number;
     if (r.tvv === p.userId) ownerId = p.userId;
-    else if (!can(p, PERMISSIONS.REQUEST_APPROVE, { studentId: r.student_id })) continue;
+    else if (!trongPv(r.branch_id)) continue;
     else if (!r.tvv) ownerId = p.userId;
     else if (o.tatCa) ownerId = r.tvv;
     else continue;
-    const han = hanBaoPhHieuLuc(r.han, khoang[r.student_id]);
+    const han = hanBaoPhHieuLuc(r.han, r.quay_lai ? [{ tu: r.han, den: r.quay_lai }] : []);
     items.push({
       key: `bao-ph:${r.id}`, group: 'bao_ph_yt', urgency: han < o.today ? 'overdue' : han === o.today ? 'today' : 'normal',
       studentId: r.student_id, studentName: r.full_name, classId: r.class_id ?? null, classCode: r.class_code ?? null,
