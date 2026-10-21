@@ -21,8 +21,8 @@ import { t } from '@shared/i18n/index.ts';
 /**
  * TỔNG QUAN THEO VAI (PR-VAI-a, mockup 23). Trang đầu trả lời một câu: hôm nay tôi phải làm gì.
  *
- * Quản lý (màn B) — BA TẦNG: tầng 1 là dải Chờ duyệt + Cần xử lý (luôn gộp hai khung); tầng 3 là Số liệu (4 ô, Điểm đáng chú ý, Lịch
- * sắp tới, bảng chi nhánh) theo công tắc `Fast Track · Lớp thường` đặt ĐẦU phần Số liệu — đặt đầu trang dễ hiểu nhầm là cả trang đổi.
+ * Quản lý: công tắc `Fast Track · Lớp thường` đầu trang áp MỌI số trên trang (SL2, 9.1-4) — dải, Cần bạn quyết (trừ Chờ duyệt: hộp dùng chung, ghi
+ * "cả hai khung"), Lớp cần chú ý, Tuần này. CX giữ bố cục Số liệu cũ.
  * Tab "Việc hôm nay · Phân tích" nằm trên ĐƯỜNG DẪN (`/`, `/phan-tich`) nên Back giữ đúng chỗ; không lặp tiêu đề "Tổng quan" (K1-10).
  */
 /* OV-15e (plan §7): Phân tích thành mục thanh trên (`/phan-tich`, `PhanTichPage`) — Tổng quan không còn hàng tab "Việc hôm nay · Phân tích". */
@@ -53,8 +53,8 @@ export default function OverviewPage() {
   const nhanTabDau = TAB_TONG_QUAN_LABEL['tong-quan'];
   const laTqQl = vai === 'ql' && canSeeBoard && !session?.nav?.hvCuaToi;
   const tq = useApi<TongQuanQlData>(laTqQl ? `/tong-quan/ql?${thamSoTq(branchId, khung)}` : null, [branchId, khung]);
-  /* Cần bạn quyết + dải tóm tắt: việc của QL (quyền xem việc người khác), gộp hai khung — đổi khung không tải lại. */
-  const ql = useApi<QuanLyData>(laTqQl && session?.nav?.work ? `/tong-quan/quan-ly${branchId ? `?branchId=${branchId}` : ''}` : null, [branchId]);
+  /* Cần bạn quyết + dải tóm tắt: việc của QL (quyền xem việc người khác) — SL2 (9.1-4): cùng công tắc khung với cả trang. */
+  const ql = useApi<QuanLyData>(laTqQl && session?.nav?.work ? `/tong-quan/quan-ly?${thamSoTq(branchId, khung)}` : null, [branchId, khung]);
 
   /* PR-OV2a (mockup overhaul-3 §3): TVV — tab đầu là "Học viên của tôi", không có việc của Quản lý; Phân tích như vai có quyền xem. */
   if (session?.nav?.hvCuaToi) {
@@ -98,7 +98,7 @@ export default function OverviewPage() {
           </div>
           {/* Hai khối việc của QL (quyền xem việc người khác, `/tong-quan/quan-ly`) — lỗi / đang tải riêng, không chờ phần theo khung. */}
           {ql.data && <DaiTomTat data={ql.data} bang={tq.data?.bang ?? null} branchId={branchId} ct={khung} />}
-          {session?.nav?.work && <KhoiCanQuyet data={ql.data} loading={ql.loading} error={ql.error} reload={ql.reload} branchId={branchId} />}
+          {session?.nav?.work && <KhoiCanQuyet data={ql.data} loading={ql.loading} error={ql.error} reload={ql.reload} branchId={branchId} onKhung={setKhung} />}
           {/* Phần theo khung (`/tong-quan/ql`): lỗi / đang tải chỉ che Lớp cần chú ý + Tuần này. */}
           {tq.error ? <ErrorState message={tq.error.message} hint={tq.error.hint} onRetry={tq.reload} />
             : !tq.data ? <Skeleton rows={6} />

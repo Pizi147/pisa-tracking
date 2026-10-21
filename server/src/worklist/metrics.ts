@@ -646,8 +646,11 @@ export function metricSet(
   } = {},
 ): MetricResult {
   /* OV-15h1: nhớ trong request — Tổng quan QL đọc cùng chỉ số ở Cần bạn quyết, Lớp cần chú ý, Trễ chấm trong MỘT lần gọi (không tính lại). */
-  const { program: _ct, ...goc } = f;
-  const r = locKhung(id, nho(`chi-so:${p.userId}:${id}:${JSON.stringify(goc)}`, () => metricSetGoc(p, id, goc)), f.program ?? null);
+  /* SL2: `pa-co-ket-qua` gán khung theo nơi em học LÚC làm PA (F03, cùng `paCoKetQua` của Hiệu quả PA) — khung đi vào tính, không lọc sau. */
+  const khungLucLam = id === 'pa-co-ket-qua';
+  const { program: _ct, ...goc0 } = f;
+  const goc = khungLucLam ? { ...goc0, program: f.program ?? null } : goc0;
+  const r = locKhung(id, nho(`chi-so:${p.userId}:${id}:${JSON.stringify(goc)}`, () => metricSetGoc(p, id, goc)), khungLucLam ? null : f.program ?? null);
   /* Q25: hạn cũ nhất tính SAU bộ lọc khung — "tuần W4 SEP" của ô Fast Track chỉ từ PA Fast Track. */
   return r.chiTiet ? { ...r, hanCu: r.ids.flatMap((x) => r.chiTiet!.get(x)?.han ?? []).sort()[0] ?? null } : r;
 }
@@ -662,6 +665,8 @@ function locKhung(id: string, r: MetricResult, program: ChuongTrinh | null): Met
   const ids = loc(r.ids)!;
   return {
     ...r, ids, n: ids.length,
+    /* SL2 (a7 dòng 5): chi tiết (người giữ việc, hạn) cũng theo khung — dải "n GV" không đếm người của khung kia. */
+    chiTiet: r.chiTiet && new Map([...r.chiTiet].filter(([k]) => giu.has(k))),
     numeratorIds: loc(r.numeratorIds), denominatorIds: loc(r.denominatorIds),
     splits: r.splits ? { tamThoi: loc(r.splits.tamThoi)!, ketQuaCuoi: loc(r.splits.ketQuaCuoi)! } : undefined,
     byKind: r.byKind ? Object.fromEntries(Object.entries(r.byKind).map(([k, v]) => [k, loc(v)!])) : undefined,
@@ -744,7 +749,8 @@ export function lopThieuGvMon(sc: Scope, branchId: number | null): number[] {
  */
 function metricSetGoc(
   p: Principal, id: string,
-  f: { branchId?: number | null; skill?: string | null; from?: string | null; to?: string | null; kind?: string | null; classId?: number | null; ctLop?: string | null } = {},
+  f: { branchId?: number | null; skill?: string | null; from?: string | null; to?: string | null; kind?: string | null; classId?: number | null; ctLop?: string | null;
+    /** Chỉ `pa-co-ket-qua` (SL2) — các chỉ số khác lọc khung sau ở `locKhung`. */ program?: ChuongTrinh | null } = {},
 ): MetricResult {
   const metric = metricById(id);
   if (!metric) throw notFound(`Không tìm thấy chỉ số "${id}".`);
@@ -905,7 +911,8 @@ function metricSetGoc(
       const ids = new Set<number>();
       /* SL1 (A7-02): "trong kỳ" — theo ngày kết quả cuối của PA (luật `planOutcomes`, cùng tập Hiệu quả PA); không khoảng = mọi lúc. */
       for (const s of effectivenessScopes(p, scope.branchId)) {
-        for (const r of planOutcomes({ ...s, fromDate: f.from ?? null, toDate: f.to ?? null })) if (r.group !== 'undetermined') ids.add(r.id);
+        const ratio = f.program ? f.program === 'thuong' : null;
+        for (const r of planOutcomes({ ...s, ratio, fromDate: f.from ?? null, toDate: f.to ?? null })) if (r.group !== 'undetermined') ids.add(r.id);
       }
       return done([...ids]);
     }

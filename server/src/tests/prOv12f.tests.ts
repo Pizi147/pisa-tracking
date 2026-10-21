@@ -35,40 +35,15 @@ export async function runPrOv12fTests(t: YThucTestKit) {
   const W2SEP = '2026-09-07';
   const soEm = (rows: any[]) => new Set(rows.map((r: any) => r.studentId)).size;
 
-  check('OV12f-1 · Đang SOS tuần W2 SEP: số em Fast Track = số lượt SOS 1–3 ở Tổng hợp cùng tuần; lớp thường = số bài Giữa khoá trượt (gk-1 + gk-2)', () => {
-    const tr = sos.dangSos(QL, { tuan: W2SEP, phamVi: 'chi-nhanh', branchId: mb });
-    assert(tr.tuan === W2SEP && !tr.toanBo, `tuần đang xem: ${tr.tuan}`);
-    assert(tr.rows.length > 0, 'W2 SEP không có dòng SOS nào (seed có 3 MT + 11 Progress SOS)');
-    assert(tr.rows.every((r: any) => r.tuan === W2SEP), 'có dòng không thuộc tuần đang chọn');
-    const kyHang = (ct: string) => {
-      const th = tongHop.tongHop(QL, { ct, soTuan: 8, theo: 'tuan', branchId: mb });
-      const pid = one('SELECT id FROM report_periods WHERE week_start = ?', W2SEP).id;
-      return th.hang.find((h: any) => h.khoa === `tuan:${pid}`)?.o ?? {};
-    };
-    const ft = kyHang('ft');
-    const soFt = (ft.sos1 ?? 0) + (ft.sos2 ?? 0) + (ft.sos3 ?? 0);
-    assert(soEm(tr.rows.filter((r: any) => r.ft)) === soFt, `FT: Đang SOS ${soEm(tr.rows.filter((r: any) => r.ft))} ≠ Tổng hợp ${soFt}`);
-    const th = kyHang('thuong');
-    const soTh = (th['gk-1'] ?? 0) + (th['gk-2'] ?? 0);
-    const thuong = tr.rows.filter((r: any) => !r.ft);
-    assert(soEm(thuong) === soTh, `Lớp thường: Đang SOS ${soEm(thuong)} ≠ Tổng hợp ${soTh}`);
-    assert(thuong.length > 0, 'lớp thường không có trong Đang SOS');
-    for (const r of thuong) assert(r.sosLevel === Math.min(3, r.kyNang.length) && r.luot === 'Progress', `nhãn SOS lớp thường: ${JSON.stringify([r.sosLevel, r.kyNang, r.luot])}`);
+  check('OV12f-1 · Đang SOS (SL2: = SOS hiện tại, không lọc tuần): mỗi dòng SOS 1–3 có kỹ năng dưới kỳ vọng; có cả Fast Track lẫn lớp thường', () => {
+    const tr = sos.dangSos(QL, { phamVi: 'chi-nhanh', branchId: mb });
+    assert(tr.rows.some((r: any) => r.ft) && tr.rows.some((r: any) => !r.ft), 'thiếu một khung');
+    for (const r of tr.rows.filter((x: any) => !x.ft)) assert(r.sosLevel === Math.min(3, r.kyNang.length), `nhãn SOS lớp thường: ${JSON.stringify([r.sosLevel, r.kyNang])}`);
     for (const r of tr.rows) assert(r.sosLevel >= 1 && r.sosLevel <= 3 && r.kyNang.length > 0, `dòng không SOS: ${JSON.stringify(r)}`);
-    assert(tr.tuanCo.includes(W2SEP), 'danh sách tuần có SOS thiếu W2 SEP');
   });
 
-  check('OV12f-2 · Toàn bộ = mọi tuần trong 8 tuần (mỗi lượt một dòng, tuần mới trước); Case đã xong vẫn có dòng; mặc định = Toàn bộ (OV-14b); nhóm xử lý đúng ba chữ', () => {
-    const toan = sos.dangSos(QL, { tuan: 'tat-ca', phamVi: 'chi-nhanh', branchId: mb });
-    assert(toan.toanBo && toan.tuan === null, 'không phải Toàn bộ');
-    const tuan = sos.dangSos(QL, { tuan: W2SEP, phamVi: 'chi-nhanh', branchId: mb });
-    const idToan = new Set(toan.rows.map((r: any) => r.attemptId));
-    assert(tuan.rows.every((r: any) => idToan.has(r.attemptId)), 'Toàn bộ thiếu lượt của W2 SEP');
-    assert(new Set(toan.rows.map((r: any) => r.tuan)).size > 1, 'Toàn bộ chỉ có một tuần');
-    assert(toan.rows.every((r: any) => r.tuan >= toan.tu && r.tuan <= toan.den), 'dòng ngoài khoảng 8 tuần');
-    /* OV-14b (rà UX 17/10): mặc định = Toàn bộ; tuần thi gần nhất đã qua trả kèm (`tuanGanNhat`). */
-    const macDinh = sos.dangSos(QL, { phamVi: 'chi-nhanh', branchId: mb });
-    assert(macDinh.toanBo && macDinh.tuanGanNhat === W2SEP, `mặc định phải là Toàn bộ, tuần gần nhất W2 SEP: ${macDinh.tuanGanNhat}`);
+  check('OV12f-2 · Case đã xong vẫn có dòng (Case của lượt SOS hiện tại); nhóm xử lý đúng ba chữ', () => {
+    const toan = sos.dangSos(QL, { phamVi: 'chi-nhanh', branchId: mb });
     const nhom = new Set(toan.rows.flatMap((r: any) => r.cases.map((c: any) => c.nhom)));
     assert([...nhom].every((k) => ['cho-duyet', 'dang-xu-ly', 'xong'].includes(k as string)), `nhóm lạ: ${[...nhom]}`);
     /* Case đã xong của một lượt SOS: vẫn là dòng, nhóm Xong. */
@@ -78,7 +53,7 @@ export async function runPrOv12fTests(t: YThucTestKit) {
     thu(() => {
       conn.prepare(`UPDATE sos_cases SET status = 'done', outcome = 'improved', closed_at = ? WHERE id = ?`).run('2026-09-13', daXong.id);
       xoaNho();
-      const sau = sos.dangSos(QL, { tuan: W2SEP, phamVi: 'chi-nhanh', branchId: mb });
+      const sau = sos.dangSos(QL, { phamVi: 'chi-nhanh', branchId: mb });
       const c = sau.rows.flatMap((r: any) => r.cases).find((x: any) => x.id === daXong.id);
       assert(c && c.nhom === 'xong', `Case xong: ${JSON.stringify(c)}`);
     });
@@ -87,15 +62,15 @@ export async function runPrOv12fTests(t: YThucTestKit) {
   });
 
   check('OV12f-3 · Quyền đi cùng giao diện: Admin 403 · QL chi nhánh khác không thấy MB · GV chỉ lớp mình dạy · TVV chỉ HV của mình · CX mọi chi nhánh', () => thu(() => {
-    const ql = sos.dangSos(QL, { tuan: 'tat-ca', phamVi: 'chi-nhanh', branchId: mb });
+    const ql = sos.dangSos(QL, { phamVi: 'chi-nhanh', branchId: mb });
     const admin = loadPrincipal(tao([{ role: 'office_admin', branches: ['MB'] }]));
-    assert(loi(() => sos.dangSos(admin, { tuan: 'tat-ca' }))?.status === 403, 'Admin không bị chặn');
-    const cp = sos.dangSos(P.cpManager, { tuan: 'tat-ca' });
+    assert(loi(() => sos.dangSos(admin, {}))?.status === 403, 'Admin không bị chặn');
+    const cp = sos.dangSos(P.cpManager, {});
     const lopMb = new Set(all('SELECT id FROM classes WHERE branch_id = ?', mb).map((r) => r.id));
     assert(!cp.rows.some((r: any) => lopMb.has(r.classId)), 'QL CP thấy dòng của MB');
     const gv = P.w1Teacher;
     const day = new Set(gv.assignments.map((a: any) => a.classId));
-    const g = sos.dangSos(gv, { tuan: 'tat-ca', phamVi: 'toi' });
+    const g = sos.dangSos(gv, { phamVi: 'toi' });
     assert(g.rows.length > 0 && g.rows.every((r: any) => day.has(r.classId)), `GV thấy lớp không dạy: ${g.rows.map((r: any) => r.classCode)}`);
     /* GVBM thấy đủ hàng của lớp mình (mọi kỹ năng) — số dòng lớp đó = QL. */
     const ft101 = classId('MB FT 101');
@@ -104,16 +79,16 @@ export async function runPrOv12fTests(t: YThucTestKit) {
     const em = ql.rows[0].studentId;
     conn.prepare('UPDATE students SET consultant_user_id = ? WHERE id = ?').run(idTvv, em);
     xoaNho();
-    const tvv = sos.dangSos(loadPrincipal(idTvv), { tuan: 'tat-ca' });
+    const tvv = sos.dangSos(loadPrincipal(idTvv), {});
     assert(tvv.rows.length > 0 && tvv.rows.every((r: any) => r.studentId === em), `TVV thấy em khác: ${tvv.rows.map((r: any) => r.studentId)}`);
     assert(tvv.rows[0].lienHe && 'parentPhone' in tvv.rows[0].lienHe, 'TVV không có Phụ huynh');
-    const cx = sos.dangSos(loadPrincipal(tao([{ role: 'cx', branches: [] }])), { tuan: 'tat-ca' });
+    const cx = sos.dangSos(loadPrincipal(tao([{ role: 'cx', branches: [] }])), {});
     assert(soEm(cx.rows) >= soEm(ql.rows) + soEm(cp.rows), `CX chưa đủ mọi chi nhánh: ${soEm(cx.rows)}`);
     assert(cx.rows.some((r: any) => r.tvv === `Thử OV12f ${seq - 1}`), 'CX thiếu cột TVV');
   }));
 
   check('OV12f-4 · Panel một em: Case của em (kèm nhóm xử lý, nguyên nhân, PA) · người ngoài phạm vi 403', () => thu(() => {
-    const ql = sos.dangSos(QL, { tuan: W2SEP, phamVi: 'chi-nhanh', branchId: mb });
+    const ql = sos.dangSos(QL, { phamVi: 'chi-nhanh', branchId: mb });
     const r = ql.rows.find((x: any) => x.cases.length > 0);
     assert(r, 'không có dòng SOS có Case');
     const p = sos.panelMotEm(QL, r.studentId);
@@ -153,7 +128,7 @@ export async function runPrOv12fTests(t: YThucTestKit) {
     const tvv = loadPrincipal(idTvv);
     const cn = theoVai.hocVienTheoVai(tvv, { phamVi: 'chi-nhanh', branchId: mb }).phamVi.chiNhanh;
     assert(cn === mb, `trang TVV không giữ chi nhánh đã chọn: ${cn}`);
-    const r = sos.dangSos(tvv, { phamVi: 'chi-nhanh', branchId: cn, tuan: 'tat-ca' });
+    const r = sos.dangSos(tvv, { phamVi: 'chi-nhanh', branchId: cn });
     const lopMb = new Set(all('SELECT id FROM classes WHERE branch_id = ?', mb).map((x) => x.id));
     assert(r.rows.length > 0 && r.rows.every((x: any) => lopMb.has(x.classId)), `TVV hai chi nhánh: ${r.rows.length} dòng`);
   }));

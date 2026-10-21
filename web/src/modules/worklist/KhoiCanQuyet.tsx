@@ -20,7 +20,7 @@ type Data = QuanLyData;
 
 /**
  * DẢI TÓM TẮT "HV cần chú ý" (Q6a, mockup 3): chưa lịch Test (FT) · chưa điểm · Case chưa chốt PA (HV · Case, ⚠ quá hạn) · bài trễ chấm · số GV.
- * Ba số đầu = hàng tổng của Lớp cần chú ý (cùng ô, cùng panel); bài trễ chấm + quá hạn như trước (gộp hai khung, chỉ số trong sổ).
+ * Ba số đầu = hàng tổng của Lớp cần chú ý (cùng ô, cùng panel); bài trễ chấm + quá hạn = chỉ số trong sổ CÙNG khung (SL2). Mỗi số kèm đơn vị.
  */
 export function DaiTomTat({ data, bang, branchId, ct }: { data: Data;
   /** `null`: phần theo khung (`/tong-quan/ql`) đang tải / lỗi — ba số đó hiện "…", phần còn lại vẫn đọc được. */
@@ -30,15 +30,15 @@ export function DaiTomTat({ data, bang, branchId, ct }: { data: Data;
   const bai = dong('bai-qua-han-nhap-diem');
   const soGv = bai && bai.nguoi !== 'ban' ? bai.nguoi.ids.length : 0;
   const caseQh = dong('case-xac-dinh-nguyen-nhan-qua-han');
-  const phamVi = { branchId };
+  const phamVi = { branchId, chuongTrinh: ct };   // SL2: panel số cùng khung với số
   const o = (cot: string, tieuDe: string) => (!bang ? <span className="text-slate-500" aria-label={t('Đang tải')}>…</span> : (
     <SoLieuO vung="dai" giaTri={bang.tong[cot as keyof typeof bang.tong]?.n ?? 0} className="font-semibold" tieuDe={tieuDe} nguon={`/tong-quan/chi-nhanh/o?cot=${cot}&khoa=tong&chuY=1${q ? `&${q}` : ''}`} />
   ));
   return (
     <div className="card flex flex-wrap items-center gap-x-5 gap-y-2 px-4 py-2.5 text-[13px] text-slate-300" aria-label={t('HV cần chú ý')} data-hd="tq-tom-tat">
       <b className="font-semibold text-slate-100 max-sm:w-full">{t('HV cần chú ý')}</b>
-      {ct === 'ft' && <span className="tabular-nums">{o('chuaLich', t('HV chưa lịch Test'))} {t('chưa lịch Test')}</span>}
-      <span className="tabular-nums">{o('chuaDiem', t('HV chưa điểm'))} {t('chưa điểm')}</span>
+      {ct === 'ft' && <span className="tabular-nums">{o('chuaLich', t('HV chưa lịch Test'))} {t('HV chưa lịch Test')}</span>}
+      <span className="tabular-nums">{o('chuaDiem', t('HV chưa điểm'))} {t('HV chưa điểm')}</span>
       <span className="tabular-nums">
         {o('caseChuaChotHv', t('HV có Case chưa chốt PA'))} {t('HV')} · {o('caseChuaChot', t('Case chưa chốt PA'))} {t('Case chưa chốt PA')}
         {!!caseQh?.n && <> · <span className="text-late">⚠ <SoLieuO vung="dai" id="case-xac-dinh-nguyen-nhan-qua-han" giaTri={caseQh.n} phamVi={phamVi} /> {t('quá hạn')}</span></>}
@@ -55,8 +55,9 @@ export function DaiTomTat({ data, bang, branchId, ct }: { data: Data;
 }
 
 /** "CẦN BẠN QUYẾT" (C23, Q5): Chờ duyệt · Case chưa chốt PA quá hạn · Chọn bước tiếp sau thi · Chốt lộ trình (chỉ khi có). Làm tại chỗ; lỗi chỉ khối này. */
-export function KhoiCanQuyet({ data, loading, error, reload, branchId }: { data: Data | null; loading: boolean; error: ApiError | null; reload: () => void;
-  /** SL1 (A7-01): chi nhánh của trang — thẻ Chờ duyệt cùng phạm vi với số đầu nhóm. */ branchId: number | null }) {
+export function KhoiCanQuyet({ data, loading, error, reload, branchId, onKhung }: { data: Data | null; loading: boolean; error: ApiError | null; reload: () => void;
+  /** SL1 (A7-01): chi nhánh của trang — thẻ Chờ duyệt cùng phạm vi với số đầu nhóm. */ branchId: number | null;
+  /** SL2: dòng "Lớp thường: n việc ›" đổi công tắc của trang sang khung kia (không giấu việc khung kia). */ onKhung: (k: ChuongTrinh) => void }) {
   const [ngan, setNgan] = useState<DongCase | null>(null);
   const [viec, setViec] = useState<WorkItem | null>(null);
   const [chot, setChot] = useState<WorkItem | null>(null);
@@ -65,9 +66,11 @@ export function KhoiCanQuyet({ data, loading, error, reload, branchId }: { data:
   const caseQh = data?.canQuyet.caseQuaHan ?? [];
   const buocTiep = (data?.canQuyet.sauThi ?? []).filter((x) => x.group === 'buoc_tiep');
   const dsChot = (data?.canQuyet.sauThi ?? []).filter((x) => x.group === 'chot_len_ft');
-  const nhom = (ten: string, n: number, quaHan: number) => (
+  const khac = data?.khungKhac?.n ? data.khungKhac : null;
+  const nhom = (ten: string, n: number, quaHan: number, phamVi?: string) => (
     <h3 className="m-0 flex flex-wrap items-baseline gap-2 pt-3 text-[13px] font-semibold text-slate-200">
       {ten} <span className="tabular-nums text-slate-400">{n}</span>
+      {phamVi && <span className="text-xs font-normal text-slate-500">· {phamVi}</span>}
       {quaHan > 0 && <span className="text-xs font-bold text-late">⚠ {t('{n} quá hạn', { n: quaHan })}</span>}
     </h3>
   );
@@ -90,7 +93,7 @@ export function KhoiCanQuyet({ data, loading, error, reload, branchId }: { data:
           <p className="m-0 pt-2 text-sm text-slate-400">{t('Không có việc chờ')}</p>
         ) : (
           <>
-            {cho > 0 && <>{nhom(t('Chờ duyệt'), cho, data.choDuyet?.quaHan ?? 0)}<div className="pt-2"><HopChoDuyet gon branchId={branchId} /></div></>}
+            {cho > 0 && <>{nhom(t('Chờ duyệt'), cho, data.choDuyet?.quaHan ?? 0, t('cả hai khung'))}<div className="pt-2"><HopChoDuyet gon branchId={branchId} /></div></>}
             {caseQh.length > 0 && <>
               {nhom(t('Case chưa chốt PA'), caseQh.length, caseQh.length)}
               <ul className="m-0 list-none p-0">
@@ -131,6 +134,12 @@ export function KhoiCanQuyet({ data, loading, error, reload, branchId }: { data:
             </>}
           </>
         )}
+      {data && khac && (
+        <p className="m-0 pt-3 text-[13px] text-slate-400">
+          {t('{khung}: {n} việc', { khung: khac.ct === 'ft' ? 'Fast Track' : t('Lớp thường'), n: khac.n })} ·{' '}
+          <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 sm:min-h-0" onClick={() => onKhung(khac.ct)}>{t('Xem')}</button>
+        </p>
+      )}
       {ngan && <NganCase caseId={ngan.id} hocVien={ngan.em?.ten ?? null} lop={ngan.lop ?? null} onClose={() => setNgan(null)} onChanged={lamMoi} />}
       {viec && <PanelViec it={viec} onDong={() => setViec(null)} onDaLam={lamMoi} onTiep={null} />}
       {chot?.classId && <PanelLoTrinhLop classId={chot.classId} lop={chot.classCode ?? null} onDong={() => setChot(null)} />}

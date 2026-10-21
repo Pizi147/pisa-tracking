@@ -82,13 +82,13 @@ export async function runPrVaiATests(t: YThucTestKit) {
     } finally { khoiPhuc(); khoiPhuc2(); }
   });
 
-  check('VAI-a (1e) · tongQuanQuanLy không nhận ct: mỗi dòng = metricSet(id, { branchId }).n (không lọc khung); dòng thiếu GV có dòng phụ lớp + số Case chưa có người nhận', () => {
+  check('VAI-a (1e) · tongQuanQuanLy theo khung (SL2, 9.1-4): mỗi dòng = metricSet(id, { branchId, program: ct }).n (ct vắng = gộp); dòng thiếu GV có dòng phụ lớp + số Case chưa có người nhận', () => {
     const khoiPhuc = botGv('MB FT 101', ['writing1']);
     try {
       for (const f of [{ branchId: MB }, { branchId: MB, ct: 'thuong' }, { branchId: MB, ct: 'ft' }]) {
         const r = tq.tongQuanQuanLy(P.mbManager, f);
         assert(!('diemDangChuY' in r), 'Điểm đáng chú ý đã tách route');
-        for (const dong of r.canXuLy) eq(dong.n, metricsSvc.metricSet(P.mbManager, dong.metricId, { branchId: MB }).n, `${dong.metricId} (${f.ct ?? '—'})`);
+        for (const dong of r.canXuLy) eq(dong.n, metricsSvc.metricSet(P.mbManager, dong.metricId, { branchId: MB, program: (f as any).ct ?? null }).n, `${dong.metricId} (${(f as any).ct ?? '—'})`);
       }
       const lop = tq.tongQuanQuanLy(P.mbManager, { branchId: MB }).canXuLy.find((x: any) => x.metricId === 'lop-thieu-gv-mon');
       const dau = metricsSvc.rowsFor('lop', metricsSvc.metricSet(P.mbManager, 'lop-thieu-gv-mon', { branchId: MB }).ids)[0];

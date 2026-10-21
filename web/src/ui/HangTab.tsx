@@ -12,7 +12,8 @@ import { t } from '@shared/i18n/index.ts';
 /* OV-15d (C03): chấm ● = tab có việc cần xử lý (hồ sơ HV › Ý thức) — không còn "Đã nhắc" (Nhắc thủ công đã bỏ). */
 const CAN_XU_LY = t('Cần xử lý');
 
-export type HangTabMuc<K extends string> = { key: K; label: string; so?: number | null; canhBao?: boolean };
+/** `donVi` (SL2): chữ sau số trên chip ("7 em") — số không đứng trơ khi tab không nói đơn vị. */
+export type HangTabMuc<K extends string> = { key: K; label: string; so?: number | null; donVi?: string; canhBao?: boolean };
 
 export function HangTab<K extends string>({ tabs, value, onChange, ariaLabel, cap = 'chinh' }: {
   tabs: HangTabMuc<K>[]; value: K; onChange: (k: K) => void; ariaLabel: string;
@@ -42,7 +43,7 @@ export function HangTab<K extends string>({ tabs, value, onChange, ariaLabel, ca
             {t.label}
             {t.canhBao && <span className="ml-1 text-soon" role="img" aria-label={CAN_XU_LY} title={CAN_XU_LY}>●</span>}
             {!!t.so && t.so > 0 && (
-              <span className={`ml-1.5 ${CHIP_TRON} tabular-nums bg-doing-bg text-doing`}>{t.so}</span>
+              <span className={`ml-1.5 ${CHIP_TRON} tabular-nums bg-doing-bg text-doing`}>{t.so}{t.donVi ? ` ${t.donVi}` : ''}</span>
             )}
           </button>
         );

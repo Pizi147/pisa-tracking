@@ -57,14 +57,10 @@ export async function runPrOv14bTests(t: YThucTestKit) {
     assert(tr.dem['da-thi'] === coLoc.size, `số chip ${tr.dem['da-thi']} ≠ ${coLoc.size}`);
   });
 
-  check('OV14b-2 · Đang SOS mặc định Toàn bộ; chọn một tuần vẫn được; tuần gần nhất trả kèm', () => {
+  check('OV14b-2 · Đang SOS không lọc tuần (SL2, 9.1-4): link cũ `tuan` cho cùng danh sách với mặc định', () => {
     const md = sos.dangSos(QL, { phamVi: 'chi-nhanh', branchId: MB });
-    const toan = sos.dangSos(QL, { tuan: 'tat-ca', phamVi: 'chi-nhanh', branchId: MB });
-    assert(md.toanBo && md.tuan === null, `mặc định không phải Toàn bộ: ${md.tuan}`);
-    assert(md.rows.length === toan.rows.length && md.rows.length > 0, `${md.rows.length} ≠ ${toan.rows.length}`);
-    assert(md.tuanGanNhat === '2026-09-07', `tuần gần nhất: ${md.tuanGanNhat}`);
-    const motTuan = sos.dangSos(QL, { tuan: md.tuanGanNhat, phamVi: 'chi-nhanh', branchId: MB });
-    assert(!motTuan.toanBo && motTuan.tuan === md.tuanGanNhat && motTuan.rows.length < toan.rows.length, 'chọn một tuần hỏng');
+    const cu = sos.dangSos(QL, { tuan: '2026-09-07', phamVi: 'chi-nhanh', branchId: MB });
+    assert(md.rows.length > 0 && md.rows.length === cu.rows.length, `${md.rows.length} ≠ ${cu.rows.length}`);
   });
 
   check('OV14b-3 · "Quá hạn chấm" theo khung: FT + Lớp thường = cả hai; số = số dòng; ô khung ⊇ khối "Test quá hạn chấm" cùng khung', () => {

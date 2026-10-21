@@ -7,14 +7,16 @@ import { t } from '../i18n/index.ts';
 
 /** `khoa` mở panel (`o=gv:<khoa>`): id GV · 0 chưa phân công · -1 Speaking chấm chéo (chưa ai chấm — không phải nợ của GV nào). */
 export type GvQuaHanBc = { khoa: number; gvId: number | null; ten: string; kyNang: string[]; bai: number; lop: string[] };
-export type DongSosBc = { classId: number; lop: string; sos1: number; sos2: number; sos3: number; nay: number; truoc: number };
+/** SOS TRONG KỲ (SL2): HV theo mức cao nhất — cùng luật tab Kết quả thi (gồm SOS tạm); `tam` = HV chỉ có lượt SOS chưa chốt. */
+export type DongSosBc = { classId: number; lop: string; sos1: number; sos2: number; sos3: number; nay: number; tam: number; truoc: number };
 export type BaoCaoKq = {
   tu: string; den: string; ct: 'ft' | 'thuong'; homNay: string;
   test: { hvDaThi: number; luotLop: number; baiDaCham: number; baiTong: number; quaHan: number; gvQuaHan: GvQuaHanBc[] };
   /** Chỉ Fast Track (lớp thường không có SOS / Mock). */
   sos: { hang: DongSosBc[]; tong: DongSosBc } | null;
   mock: { dat: number; chuaDat: number; chuaDu: number } | null;
-  chuY: { chuaLich: number | null; chuaDiemHv: number; chuaDiemBai: number; caseChuaChotHv: number; caseChuaChot: number };
+  /** `sosHienTai` (SL2): chỉ số `hv-sos-hien-tai` — cùng số Tổng quan · Đang SOS, số hôm nay. */
+  chuY: { chuaLich: number | null; chuaDiemHv: number; chuaDiemBai: number; caseChuaChotHv: number; caseChuaChot: number; sosHienTai: number };
   casePa: { caseMo: number; paKetQua: number; quaHanChotPa: number; quaHanKetQuaPa: number };
 };
 

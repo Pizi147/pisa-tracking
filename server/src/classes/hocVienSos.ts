@@ -1,29 +1,27 @@
 /**
- * HỌC VIÊN & LỚP · "ĐANG SOS" THEO TUẦN THI + PANEL MỘT EM (OV-12f, đặc tả OV-12 mục 3.5 / 7.9, mockup 3 v2 + panel v3 §9).
+ * HỌC VIÊN & LỚP · "ĐANG SOS" + PANEL MỘT EM (OV-12f, đặc tả OV-12 mục 3.5 / 7.9, mockup 3 v2 + panel v3 §9).
  *
- * Đang SOS tuần X = lượt MT (Fast Track) / Progress Test (lớp thường) thi tuần X bị SOS — kể cả Case đã xong; PA + kết quả là tình trạng
- * HÔM NAY. Phân loại lượt đi qua ĐÚNG `phanLoaiCacLuot` của bảng Tổng hợp → số em tuần X = số lượt SOS ở Tổng hợp cùng tuần theo cấu tạo.
- * Lớp thường: nhãn SOS theo số môn trượt (1 → SOS 1, 2 → SOS 2, ≥ 3 → SOS 3 — chủ SP 14/10).
+ * SL2 (9.1-4, X-22): Đang SOS = "SOS hiện tại" — CHÍNH tập `hv-sos-hien-tai` (đợt mới nhất hợp lệ, gồm SOS tạm), một em một dòng, không lọc tuần thi.
+ * Lượt SOS theo tuần (số trong kỳ) ở Phân tích › Test + SOS. PA + kết quả là tình trạng HÔM NAY.
  * Phạm vi: quyền xem lượt (`attempt.view`) + Phạm vi của trang (Lớp tôi dạy · HV của tôi · Chi nhánh · Tất cả). Case: `listCases` (lọc quyền sẵn).
  */
 import { db, theoLo } from '../db.ts';
 import {
-  NHOM_THEO_COT, PERMISSIONS, mondayOfDate, tenPaGon, outcomeLabelFor, tuDauKhoang, vaiXemHocVien, chuanHoaMaLop,
-  type LienHe, type NhomXuLy, type PhamVi,
+  ATTEMPT_KIND_SHORT, NHOM_THEO_COT, PERMISSIONS, tenPaGon, outcomeLabelFor, vaiXemHocVien, chuanHoaMaLop,
+  type AttemptKind, type LienHe, type NhomXuLy, type PhamVi,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
-import { badRequest, forbidden } from '../util.ts';
-import { can, classScopeSql, scopeFor, type Principal } from '../permissions.ts';
-import { luotTrongKhoang, phanLoaiCacLuot } from '../phanTich/tongHop.ts';
+import { forbidden } from '../util.ts';
+import { can, type Principal } from '../permissions.ts';
+import { metricSet } from '../worklist/metrics.ts';
+import { latestAttempts, type AttemptEval } from '../worklist/danhGia.ts';
+import { lopCuaTap } from '../worklist/chuongTrinh.ts';
 import { listCases, type MappedCase } from '../cases/cases.ts';
 import { chiTietCaseMo } from '../cases/caseLop.ts';
 import { xuLyCaseMany } from '../cases/sosState.ts';
 import { phamViTrang } from './hocVienLop.ts';
 import { standingFor } from '../students/standing.ts';
 import { sauThiCuaEm } from '../loTrinh/thiThat.ts';
-
-/** "Toàn bộ" = 8 tuần gần nhất (mockup 3 v2 §3b), cùng khoảng mặc định của Tổng hợp. */
-export const SO_TUAN_SOS = 8;
 
 export type CaseTomTat = {
   id: number; topic: string | null; kyNang: string | null;
@@ -43,9 +41,7 @@ export type DongSos = {
   tam: boolean;
   cases: CaseTomTat[]; tvv: string | null; lienHe: LienHe;
 };
-export type TrangSos = { tuan: string | null; toanBo: boolean; tuanGanNhat: string; tu: string; den: string; tuanCo: string[]; phamVi: PhamVi; rows: DongSos[] };
-
-const LA_SOS = new Set(['sos1', 'sos2', 'sos3', 'gk-1', 'gk-2']);
+export type TrangSos = { phamVi: PhamVi; rows: DongSos[] };
 
 /** Tóm tắt Case cho bảng / panel — một nguồn (`chiTietCaseMo`, cùng luật trạng thái V4 + việc tiếp của hồ sơ lớp). */
 export function tomTatCase(cases: readonly MappedCase[]): Map<number, CaseTomTat> {
@@ -91,49 +87,51 @@ function thongTinEm(ids: readonly number[]): Map<number, { ten: string; ma: stri
   return out;
 }
 
-export function dangSos(p: Principal, f: { tuan?: string | null; phamVi?: string | null; branchId?: number | null; cnNho?: number | null; q?: string | null } = {}): TrangSos {
+/** SL2: nhãn lượt + kỹ năng dưới kỳ vọng của lượt "SOS hiện tại" — một chỗ cho Đang SOS và tệp xuất. */
+export const sosCuaLuot = (a: AttemptEval) => ({
+  luot: a.kind === 'mock' ? `MT${a.attemptNo}` : ATTEMPT_KIND_SHORT[a.kind as AttemptKind] ?? a.kind, tuan: a.weekStart ?? '',
+  sosLevel: Math.min(3, a.sosLevel ?? 1), kyNang: Object.entries(a.skills).filter(([, s]) => s.evaluable && s.under).map(([k]) => k),
+});
+
+export function dangSos(p: Principal, f: { phamVi?: string | null; branchId?: number | null; cnNho?: number | null; q?: string | null } = {}): TrangSos {
   const vai = vaiXemHocVien(p.roleKeys);
   /* Admin chỉ hai góc Tất cả · Cần làm (mockup 3 v2 §9 — Admin không làm Case): máy chủ chặn cùng giao diện. */
   if (vai === 'admin' || !can(p, PERMISSIONS.CASE_VIEW, { anyScope: true })) throw forbidden('Đang SOS dành cho người theo dõi Case.');
   const homNay = demoToday();
-  const tu = tuDauKhoang(homNay, SO_TUAN_SOS);
-  const den = mondayOfDate(homNay);
   /* TVV mặc định "HV của tôi", CX mọi chi nhánh — như trang TVV / CX (OV-10b). */
   const muon = f.phamVi ?? (vai === 'tvv' ? 'cua-toi' : vai === 'cx' && !f.branchId ? 'tat-ca' : null);
   const { dangDung, chiNhanh, phanCong } = phamViTrang(p, { ...f, phamVi: muon }, homNay);
 
-  const cs = classScopeSql(scopeFor(p, PERMISSIONS.ATTEMPT_VIEW));
-  const where = [cs.sql, `a.status != 'cancelled'`, `a.kind IN ('mock', 'progress')`, 'rp.week_start >= ?', 'rp.week_start <= ?'];
-  const args: unknown[] = [...cs.params, tu, den];
-  if (dangDung === 'chi-nhanh' && chiNhanh) { where.push('c.branch_id = ?'); args.push(chiNhanh); }
+  /* SL2 (9.1-4): MỘT tập — `hv-sos-hien-tai` (cùng quyền `attempt.view`) giao phạm vi trang; lớp của dòng = lớp em ĐANG học (cùng cách chia cột SOS Tổng quan). */
+  const sos = metricSet(p, 'hv-sos-hien-tai', { branchId: dangDung === 'chi-nhanh' ? chiNhanh : null });
+  const lop = lopCuaTap('hoc-vien', sos.ids);
+  let ids = sos.ids;
   if (dangDung === 'toi') {
-    const lop = [...new Set(phanCong.map((a) => a.classId))];
-    where.push(lop.length ? `c.id IN (${lop.map(() => '?').join(',')})` : '1=0'); args.push(...lop);
+    const lopToi = new Set(phanCong.map((a) => a.classId));
+    ids = ids.filter((id) => lopToi.has(lop.get(id)?.classId ?? -1));
   }
-  if (dangDung === 'cua-toi') { where.push('a.student_id IN (SELECT id FROM students WHERE consultant_user_id = ?)'); args.push(p.userId); }
-  const luot = luotTrongKhoang(where.join(' AND '), args);
-  const pl = phanLoaiCacLuot(luot);
-
-  /*
-   * OV-14b (rà UX 17/10): mặc định Toàn bộ 8 tuần — một tuần ẩn em SOS các tuần khác. `tuanGanNhat` = tuần thi gần nhất ĐÃ QUA có lượt đã chấm
-   * (không có thì tuần này) — đích của nút ‹ / bỏ "Toàn bộ". Định nghĩa SOS theo tuần thi giữ nguyên (chủ SP 14/10).
-   */
-  const daCham = luot.filter((a) => pl.has(a.id));
-  const toanBo = !f.tuan || f.tuan === 'tat-ca';
-  if (f.tuan && !toanBo && !/^\d{4}-\d{2}-\d{2}$/.test(f.tuan)) throw badRequest('Tuần thi không hợp lệ.');
-  const tuanGanNhat = daCham.reduce<string | null>((m, a) => (a.week_start < den && (!m || a.week_start > m) ? a.week_start : m), null) ?? den;
-  const tuan = toanBo ? null : mondayOfDate(f.tuan!);
-
-  const sosLuot = daCham.filter((a) => LA_SOS.has(pl.get(a.id)!.loai));
-  const tuanCo = [...new Set(sosLuot.map((a) => a.week_start as string))].sort().reverse();
-  const em = thongTinEm(sosLuot.map((a) => a.student_id));
+  if (dangDung === 'cua-toi') {
+    const cuaToi = new Set((db().prepare('SELECT id FROM students WHERE consultant_user_id = ?').all(p.userId) as any[]).map((r) => r.id as number));
+    ids = ids.filter((id) => cuaToi.has(id));
+  }
+  const em = thongTinEm(ids);
   const q = (f.q ?? '').trim().toLowerCase();
   const qMa = chuanHoaMaLop(f.q ?? '');
-  const chon = sosLuot.filter((a) => (toanBo || a.week_start === tuan) && (!q || (em.get(a.student_id)?.ten ?? '').toLowerCase().includes(q)
-    || (em.get(a.student_id)?.ma ?? '').toLowerCase().includes(q) || (!!qMa && chuanHoaMaLop(a.class_code ?? '').includes(qMa))));
+  if (q) ids = ids.filter((id) => (em.get(id)?.ten ?? '').toLowerCase().includes(q) || (em.get(id)?.ma ?? '').toLowerCase().includes(q)
+    || (!!qMa && chuanHoaMaLop(lop.get(id)?.code ?? '').includes(qMa)));
+  /* Lượt của dòng = CHÍNH lượt hàm SOS đã chọn (đợt mới nhất hợp lệ, nhớ trong request). */
+  const luot = latestAttempts(ids, 'valid', homNay);
+  const tam = new Set(sos.splits?.tamThoi ?? []);
+  const lopIds = [...new Set(ids.map((id) => lop.get(id)?.classId).filter((x): x is number => !!x))];
+  const cn = new Map<number, { branchId: number; ten: string | null }>();
+  theoLo(lopIds, (lo, ph) => {
+    for (const r of db().prepare(`SELECT c.id, c.branch_id, b.name FROM classes c LEFT JOIN branches b ON b.id = c.branch_id WHERE c.id IN (${ph})`).all(...lo) as any[]) {
+      cn.set(r.id, { branchId: r.branch_id, ten: r.name ?? null });
+    }
+  });
 
   /* Case của các lượt: Case sinh từ lượt (`sc.attempt_id`, như Tổng hợp) + Case cũ còn mở trượt LẠI ở lượt này (mốc `repeat`). */
-  const idLuot = new Set(chon.map((a) => a.id as number));
+  const idLuot = new Set([...luot.values()].map((a) => a.attemptId));
   const lapLai = new Map<number, number[]>();
   theoLo([...idLuot], (lo, ph) => {
     for (const r of db().prepare(`SELECT case_id, attempt_id FROM case_milestones WHERE kind = 'repeat' AND attempt_id IN (${ph})`).all(...lo) as any[]) {
@@ -141,25 +139,26 @@ export function dangSos(p: Principal, f: { tuan?: string | null; phamVi?: string
     }
   });
   const caseLapLai = new Set([...lapLai.values()].flat());
-  const cases = [...new Set(chon.map((a) => a.branch_id as number))]
+  /* ponytail: Case lấy theo chi nhánh lớp em ĐANG học — em vừa chuyển chi nhánh thì Case của lượt ở chi nhánh cũ không hiện trong dòng (panel một em vẫn đủ). */
+  const cases = [...new Set([...cn.values()].map((x) => x.branchId))]
     .flatMap((b) => listCases(p, { branchId: b }).rows)
     .filter((c) => (c.attemptId !== null && idLuot.has(c.attemptId)) || caseLapLai.has(c.id));
   const tt = tomTatCase(cases);
 
-  const rows: DongSos[] = chon.map((a) => {
-    const x = pl.get(a.id)!;
-    const ft = !!a.is_fast_track;
-    const e = em.get(a.student_id);
-    const cuaLuot = [...tt.values()].filter((c) => c.attemptId === a.id || (lapLai.get(a.id) ?? []).includes(c.id));
-    return {
-      attemptId: a.id, studentId: a.student_id, ten: e?.ten ?? '', ma: e?.ma ?? '', classId: a.class_id, classCode: a.class_code, branchName: a.branch_name ?? null, ft,
-      luot: ft ? `MT${a.attempt_no}` : 'Progress', tuan: a.week_start,
-      /* Lớp thường: SOS theo số môn trượt (chủ SP 14/10). */
-      sosLevel: ft ? x.sosLevel ?? 1 : Math.min(3, x.kyNangDuoi.length),
-      kyNang: x.kyNangDuoi, tam: a.status !== 'done', cases: cuaLuot, tvv: e?.tvv ?? null, lienHe: e?.lienHe ?? { phone: null, parentName: null, parentRelation: null, parentPhone: null },
-    };
-  }).sort((a, b) => (a.tuan === b.tuan ? a.ten.localeCompare(b.ten, 'vi') : a.tuan < b.tuan ? 1 : -1));
-  return { tuan, toanBo, tuanGanNhat, tu, den, tuanCo, phamVi: dangDung, rows };
+  const rows: DongSos[] = ids.flatMap((id) => {
+    const a = luot.get(id);
+    const l = lop.get(id);
+    if (!a || !l?.classId) return [];
+    const e = em.get(id);
+    const cuaLuot = [...tt.values()].filter((c) => c.attemptId === a.attemptId || (lapLai.get(a.attemptId) ?? []).includes(c.id));
+    return [{
+      attemptId: a.attemptId, studentId: id, ten: e?.ten ?? '', ma: e?.ma ?? '', classId: l.classId, classCode: l.code ?? '',
+      branchName: cn.get(l.classId)?.ten ?? null, ft: !!l.isFt,
+      ...sosCuaLuot(a),
+      tam: tam.has(id), cases: cuaLuot, tvv: e?.tvv ?? null, lienHe: e?.lienHe ?? { phone: null, parentName: null, parentRelation: null, parentPhone: null },
+    }];
+  }).sort((a, b) => b.sosLevel - a.sosLevel || a.ten.localeCompare(b.ten, 'vi'));
+  return { phamVi: dangDung, rows };
 }
 
 /**

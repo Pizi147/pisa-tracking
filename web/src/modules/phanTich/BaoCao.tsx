@@ -111,7 +111,8 @@ export function BaoCao(pv: PhamViPhanTich) {
         </Khoi>
 
         {data.sos && (
-          <Khoi tieuDe={t('SOS theo lớp')} className="lg:col-span-5 print:col-span-5">
+          /* SL2 (9.1-4, X-23): số TRONG KỲ mang tên khác "SOS hiện tại" (khối HV cần chú ý); cùng luật tab Kết quả thi — gồm SOS tạm, ghi riêng. */
+          <Khoi tieuDe={t('SOS trong kỳ')} phu={data.sos.tong.tam ? `HV · ${t('trong đó {n} tạm', { n: data.sos.tong.tam })}` : 'HV'} className="lg:col-span-5 print:col-span-5">
             {!data.sos.hang.length ? <Empty title={t('Không có SOS trong kỳ này')} /> : (
               <div>
                 <PhanTrang {...ptSos.thanh} />
@@ -156,6 +157,7 @@ export function BaoCao(pv: PhamViPhanTich) {
 
         <Khoi tieuDe={t('HV cần chú ý')} phu={t('tại {ngay}', { ngay: tai })} className={mk ? 'lg:col-span-4 print:col-span-4' : 'lg:col-span-6 print:col-span-6'}>
           {data.chuY.chuaLich !== null && <So so={<SoLieuO id="hv-ft-xong-mt-cuoi-chua-mt-ke" giaTri={data.chuY.chuaLich} phamVi={loc} ten={t('Chưa lịch Test')} />} nhan={t('chưa lịch Test')} />}
+          <So so={<SoLieuO id="hv-sos-hien-tai" giaTri={data.chuY.sosHienTai} phamVi={loc} ten={t('SOS hiện tại')} />} nhan={t('SOS hiện tại')} />
           <So so={data.chuY.chuaDiemHv} nhan={t('chưa điểm')} phu={<><SoLieuO id="bai-qua-han-nhap-diem" giaTri={data.chuY.chuaDiemBai} phamVi={loc} ten={t('Bài chưa điểm')} /> {t('bài')}</>} />
           <So so={data.chuY.caseChuaChotHv} nhan={t('Case chưa chốt PA')} phu={<><SoLieuO id="case-cho-xac-dinh-nguyen-nhan" giaTri={data.chuY.caseChuaChot} phamVi={loc} ten={t('Case chưa chốt PA')} /> Case</>} />
         </Khoi>
