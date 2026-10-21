@@ -19,7 +19,7 @@ import { dich, t } from '@shared/i18n/index.ts';
 type Data = QuanLyData;
 
 /**
- * DẢI TÓM TẮT "HV cần chú ý" (Q6a, mockup 3): chưa lịch Test (FT) · chưa điểm · Case chưa chốt PA (HV · Case, ⚠ quá hạn) · bài trễ chấm · số GV.
+ * DẢI TÓM TẮT "HV cần chú ý" (Q6a, mockup 3): chưa điểm · Case chưa chốt PA (HV · Case, ⚠ quá hạn) · bài trễ chấm · số GV.
  * Ba số đầu = hàng tổng của Lớp cần chú ý (cùng ô, cùng panel); bài trễ chấm + quá hạn = chỉ số trong sổ CÙNG khung (SL2). Mỗi số kèm đơn vị.
  */
 export function DaiTomTat({ data, bang, branchId, ct }: { data: Data;
@@ -37,7 +37,6 @@ export function DaiTomTat({ data, bang, branchId, ct }: { data: Data;
   return (
     <div className="card flex flex-wrap items-center gap-x-5 gap-y-2 px-4 py-2.5 text-[13px] text-slate-300" aria-label={t('HV cần chú ý')} data-hd="tq-tom-tat">
       <b className="font-semibold text-slate-100 max-sm:w-full">{t('HV cần chú ý')}</b>
-      {ct === 'ft' && <span className="tabular-nums">{o('chuaLich', t('HV chưa lịch Test'))} {t('HV chưa lịch Test')}</span>}
       <span className="tabular-nums">{o('chuaDiem', t('HV chưa điểm'))} {t('HV chưa điểm')}</span>
       <span className="tabular-nums">
         {o('caseChuaChotHv', t('HV có Case chưa chốt PA'))} {t('HV')} · {o('caseChuaChot', t('Case chưa chốt PA'))} {t('Case chưa chốt PA')}

@@ -48,7 +48,7 @@ export type DongCanXuLy = DongCanXuLyGoc & {
   phu: string;
   /** Vế nối sau nhãn ("3 Case chưa có người nhận") — OV-11f (TQ-13): mỗi vế là một chỉ số, số bấm được ra đúng tập. */
   kem?: { metricId: string; n: number; nhan: string }[];
-  /** Chú thích khi rê chuột (Q9: "Lộ trình RF: xong MT2"). */
+  /** Chú thích khi rê chuột. */
   goiY?: string;
   nguoi: 'ban' | { dau: string; phu: string; ids: number[] };
   han: { ngay: string; loai: 'cap-nhat-pa' | 'viec-van-hanh' | 'chot-len-ft' } | { chu: string; quaHan?: true };
@@ -168,9 +168,6 @@ export function tongQuanQuanLy(p: Principal, f: { branchId?: number | null; ct?:
         return { ...x, ...chung, phu: dongPhuGon(lop.map((l) => `${l.title} ${l.sub}`.trim())),
           ...(kem.length ? { kem } : {}), den: lop.length === 1 ? lop[0].href : null };
       }
-      case 'hv-ft-xong-mt-cuoi-chua-mt-ke':
-        /* OV-11f (TQ-10): Kế hoạch Test chưa có lọc theo em — nút mở danh sách ĐÚNG các em đó (panel của chỉ số, mỗi dòng mở hồ sơ em), không mở cả lớp. */
-        return { ...x, ...chung, phu: tachTheoLop(r.unit, r.ids), goiY: 'Lộ trình RF: xong MT2', den: null };
       default:   // hv-len-ft-chua-ky-vong
         return { ...x, ...chung, phu: tachTheoLop(r.unit, r.ids), den: r.ids.length === 1 ? duongHoSoHocVien(r.ids[0]) : null };
     }

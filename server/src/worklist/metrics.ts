@@ -54,7 +54,7 @@ import { boKetQuaChoMiniTest } from '../normal/cuoiKhoa.ts';
 import { nguoiGiuKetQua } from '../cases/giuKetQua.ts';
 import { caseChuaCoNguoi } from '../cases/owner.ts';
 import { assessedSkillOf } from '../fasttrack/scoring.ts';
-import { CO_MOC_KE_TIEP_SQL, XONG_MT_CUOI_SQL, missingForClasses } from '../classes/schedule.ts';
+import { missingForClasses } from '../classes/schedule.ts';
 import { lopChoChotLoTrinh } from '../classes/lenhChuyen.ts';
 import { lopKyVong } from '../normal/kyVong.ts';
 import { listMgmtTasks } from './mgmttasks.ts';
@@ -440,7 +440,7 @@ export const LISTED_METRICS: readonly string[] = [
   'case-xac-dinh-nguyen-nhan-qua-han', 'bai-qua-han-nhap-diem', 'bai-qua-han-chua-phan-cong', 'case-chua-co-nguoi-phu-trach',
   'case-cho-xac-dinh-nguyen-nhan', 'case-thieu-pa', 'pa-can-cap-nhat', 'pa-cho-duyet', 'pa-co-ket-qua', 'ty-le-co-cai-thien',
   'dung-han-cap-nhat', 'do-phu-danh-gia', 'lop-thieu-gv-mon',
-  'van-hanh-can-quyet-dinh', 'hv-ft-xong-mt-cuoi-chua-mt-ke', 'hv-len-ft-chua-ky-vong', 'lop-chua-chot-len-ft',
+  'van-hanh-can-quyet-dinh', 'hv-len-ft-chua-ky-vong', 'lop-chua-chot-len-ft',
   ...YTHUC_METRIC_IDS,
   ...PHOI_HOP_METRIC_IDS,
 ];
@@ -865,21 +865,7 @@ function metricSetGoc(
       if (r.scopeEmpty) return { ...done([]), empty: true, note: EMPTY_NOTE };
       return done(r.rows.map((x: any) => x.id as number));
     }
-    case 'hv-ft-xong-mt-cuoi-chua-mt-ke': {
-      /* (c) cùng hai điều kiện của `tomTatMt` (`XONG_MT_CUOI_SQL`, `CO_MOC_KE_TIEP_SQL`) + `coMocTiepTheo`: có ngày/tháng thi thì đã có mốc. */
-      const sc = scopeFor(p, PERMISSIONS.PLAN_WEEK);
-      if (sc.none) return { ...done([]), empty: true, note: EMPTY_NOTE };
-      const cs = classScopeSql(sc);
-      return done((db().prepare(
-        `SELECT DISTINCT s.id FROM enrollments e JOIN classes c ON c.id = e.class_id JOIN students s ON s.id = e.student_id
-           JOIN learning_cycles cy ON cy.student_id = s.id AND cy.status = 'active'
-          WHERE e.status = 'active' AND c.status = 'active' AND c.is_fast_track = 1 AND ${HV_DANG_HOC_SQL('s')}
-            AND ${cs.sql}${scope.branchId ? ' AND c.branch_id = ?' : ''}
-            AND cy.exam_month IS NULL AND cy.exam_period_id IS NULL AND cy.exam_date IS NULL
-            AND ${XONG_MT_CUOI_SQL('cy', 'c')} AND NOT ${CO_MOC_KE_TIEP_SQL('cy')}
-          ORDER BY s.id`,
-      ).all(...cs.params, ...(scope.branchId ? [scope.branchId] : []), mondayOf(today)) as any[]).map((r) => r.id as number));
-    }
+    /* V5 C20: bỏ `hv-ft-xong-mt-cuoi-chua-mt-ke` — sau MT3 không gợi ý / sinh việc MT kế; QL tự thêm ở Kế hoạch Test. */
     case 'hv-len-ft-chua-ky-vong':
       /* (d) PR-KV: em chưa kết luận kỳ vọng đầu ra ở lớp BE/ELE đã có em có điểm MT0 — cùng `lopKyVong` của việc QL (một dòng mỗi lớp). */
       if (scopeFor(p, PERMISSIONS.REQUEST_APPROVE).none) return { ...done([]), empty: true, note: EMPTY_NOTE };

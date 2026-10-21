@@ -5,7 +5,7 @@ import { DanhSachSoLieu, mauOSo, NganDanhSach, VUNG_BAM_SO, type DongSoLieu, typ
 import { t } from '@shared/i18n/index.ts';
 
 /**
- * Ô SỐ BÁO CÁO `OSo` (NEN-V5: gộp SoLieuO + OSoNho; G6, G-10) — một dáng "số gạch chân liền màu nhấn → panel dữ liệu chỉ đọc", khác nút động từ
+ * Ô SỐ BÁO CÁO `OSo` (NEN-V5: gộp SoLieuO + OSoNho cũ; G6, G-10) — một dáng "số gạch chân liền màu nhấn → panel dữ liệu chỉ đọc", khác nút động từ
  * và tên hồ sơ (↗). Dùng trong bảng, dòng phụ, dòng Cần xử lý. Hai nguồn, cùng một luật "số = số dòng khi bấm":
  *   · `id`    — một chỉ số trong sổ: mở `DanhSachSoLieu` (cùng `/metrics/:id` với ô số).
  *   · `nguon` — một đường máy chủ trả `{ n, tieuDe, rows }` tính bằng CHÍNH hàm sinh ra số (ví dụ ô bảng chi nhánh).
