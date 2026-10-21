@@ -218,9 +218,11 @@ export async function runMtTrangThaiTests(t: YThucTestKit) {
     attempts.saveScore(gvL, a, 'listening', { noShow: true }, TRONG);
     attempts.saveScore(gvL, a, 'listening', { noShow: true }, BU);
     assert(ky(a, 'listening').sit_status === 'cancelled', 'tiền đề S9');
+    assert(chuong(QL, `huy_vang:${a}:listening:%`) === 1, 'tiền đề: chuông QL vắng 2 lần');
     attempts.saveScore(gvL, a, 'listening', { noShow: false }, BU);   // Hoàn tác ngay
     k = ky(a, 'listening');
     assert(k.sit_status === 'scheduled' && k.planned_period_id === W1 && k.absence_move_count === 1, `S9 Hoàn tác về S8: ${JSON.stringify(k)}`);
+    assert(chuong(QL, `huy_vang:${a}:listening:%`) === 0, 'Hoàn tác vắng 2 lần rút chuông QL');
     attempts.saveScore(gvL, a, 'listening', { noShow: true }, BU);
     quaHoanTac(a, 'listening');
     const e = loi(() => attempts.saveScore(gvL, a, 'listening', { noShow: false }, BU));
@@ -237,6 +239,15 @@ export async function runMtTrangThaiTests(t: YThucTestKit) {
     attempts.saveScore(gvL, c, 'listening', { noShow: true }, TRONG);
     attempts.saveScore(gvL, c, 'listening', { noShow: false }, TRONG);   // Hoàn tác trong 10 s
     assert(chuong(QL, `huy_vang_cu:${c}:listening`) === 0 && chuong(QL, `go_huy_cu:${c}:listening:%`) === 0, 'Hoàn tác: rút chuông, không chuông mới');
+    /* Rà #503 (1): W1 có điểm từ trước + W2 "-" nhầm → cả W dời; Hoàn tác trả W về tuần cũ, đếm 0. */
+    const d = luot[3];
+    dung(d);
+    attempts.saveScore(gvW1, d, 'writing1', { criteria: [6, 6, 6, 6] }, TRONG);
+    attempts.saveScore(gvW2, d, 'writing2', { noShow: true }, TRONG);
+    assert(ky(d, 'writing').planned_period_id === W1, 'tiền đề: W dời');
+    attempts.saveScore(gvW2, d, 'writing2', { noShow: false }, TRONG);
+    k = ky(d, 'writing');
+    assert(k.planned_period_id === W && k.absence_move_count === 0 && dau(d, 'writing1').band === 6, `Hoàn tác W2 "-": ${JSON.stringify(k)}`);
   }));
 
   check('T10 · S6 → S8: QL Duyệt thẻ (+1 lần) — vắng tiếp ở tuần đích → huỷ', () => thu(() => {
@@ -367,8 +378,14 @@ export async function runMtTrangThaiTests(t: YThucTestKit) {
     dung(a);
     attempts.saveScore(gvL, a, 'listening', { rawScore: 30 }, TRONG);
     attempts.saveScore(gvL, a, 'listening', { rawScore: null }, TRONG);
-    ketQuaHuy.khoiPhucDiem(gvL, a, 'listening', TRONG);
-    assert(dau(a, 'listening').raw_score === 30 && !banCat(a).length, 'khôi phục');
+    const goc = dau(a, 'listening');   // dòng đã huỷ: người / ngày nhập đầu chưa đổi khi cất
+    assert(loi(() => ketQuaHuy.khoiPhucDiem(gvS, a, 'listening', TRONG))?.status === 403, 'GV khác môn không khôi phục (quyền trước)');
+    conn.prepare(`UPDATE ket_qua_huy SET diem_json = json_set(diem_json, '$[0].nhap_dau_ngay', '2026-11-03', '$[0].entered_at', '2026-11-03T02:00:00.000Z') WHERE attempt_id = ?`).run(a);
+    ketQuaHuy.khoiPhucDiem(QL, a, 'listening', TRONG);
+    const sau = dau(a, 'listening');
+    assert(sau.raw_score === 30 && !banCat(a).length, 'khôi phục');
+    assert(sau.nhap_dau_ngay === '2026-11-03' && sau.entered_at === '2026-11-03T02:00:00.000Z' && sau.entered_by === gvL.userId,
+      `giữ người nhập / ngày nhập đầu của bản cất: ${JSON.stringify({ n: sau.nhap_dau_ngay, a: sau.entered_at, b: sau.entered_by, goc: goc.entered_by })}`);
     assert(one(`SELECT COUNT(*) n FROM audit_logs WHERE action = 'score.khoi_phuc' AND entity_id = ?`, a).n === 1, 'nhật ký khôi phục');
     assert(loi(() => ketQuaHuy.khoiPhucDiem(gvL, a, 'listening', TRONG))?.status === 400, 'không còn gì để khôi phục');
     attempts.saveScore(gvL, a, 'listening', { rawScore: null }, TRONG);

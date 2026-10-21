@@ -933,19 +933,23 @@ export function goVangDaChot(p: Principal, attemptId: number, skill: string, dau
   const a = loadAttempt(attemptId);
   const assessed = assessedSkillOf(skill);
   const hien = ensureSkillRows(attemptId).find((r) => r.skill === assessed)!;
-  const loi = duocGoDau(p, {
-    classId: a.class_id, skill, today, daHuyPhan: hien.sit_status === 'cancelled',
-    hoanTac: dau.no_show_by === p.userId && duocHoanTacVang(dau.no_show_at, Date.now()),
-  });
+  const hoanTac = dau.no_show_by === p.userId && duocHoanTacVang(dau.no_show_at, Date.now());
+  const loi = duocGoDau(p, { classId: a.class_id, skill, today, daHuyPhan: hien.sit_status === 'cancelled', hoanTac });
   if (loi) throw forbidden(loi);
   const entry = entrySkillsOf(assessed);
   return tx(() => {
     const row = ensureSkillRows(attemptId).find((r) => r.skill === assessed)!;
     const { daCong, giuLich: quyetDinh } = sauLanChot(conn, attemptId, assessed);
     /* OV-1b: ô khác của buổi (W1 khi gỡ W2) đã có điểm ở tuần mới → giữ lịch, không kéo điểm đó về tuần cũ. */
+    /* LUAT-34 (T07): chỉ điểm ô kia nhập SAU lần chốt (đã thi ở tuần mới) mới giữ lịch — điểm có từ trước (W1 điểm + W2 "-" nhầm) thì trả về tuần cũ. */
     const giuLich = quyetDinh || (conn.prepare(
-      `SELECT 1 FROM assessment_scores WHERE attempt_id = ? AND skill IN (${entry.map(() => '?').join(',')}) AND (band IS NOT NULL OR raw_score IS NOT NULL)`,
-    ).get(attemptId, ...entry) !== undefined);
+      `SELECT 1 FROM assessment_scores WHERE attempt_id = ? AND skill IN (${entry.map(() => '?').join(',')}) AND (band IS NOT NULL OR raw_score IS NOT NULL)
+          AND entered_at > ?`,
+    ).get(attemptId, ...entry, dau.no_show_settled_at) !== undefined);
+    /* LUAT-34 (a): Hoàn tác "-" vừa huỷ phần thi (vắng 2 lần) — rút chuông Quản lý chưa đọc của lần huỷ đó. */
+    if (hoanTac && row.sit_status === 'cancelled') {
+      conn.prepare(`DELETE FROM notifications WHERE dedup_key LIKE ? AND read_at IS NULL`).run(`huy_vang:${attemptId}:${assessed}:%`);
+    }
     const lan = Math.max(0, row.absence_move_count - (daCong ? 1 : 0));
     if (giuLich) {
       conn.prepare('UPDATE attempt_skills SET absence_move_count = ?, absent_from_no_show = 0, updated_at = ? WHERE id = ?').run(lan, nowIso(), row.id);

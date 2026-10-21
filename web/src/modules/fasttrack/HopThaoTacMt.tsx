@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ApiError, api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
+import { thongBaoVang } from '../cham/thongBaoVang.ts';
 import { KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
@@ -9,7 +10,7 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { addDaysStr } from '../../lib/format.ts';
 import { Nhan } from '../../ui/Nhan.tsx';
 import {
-  CAU_TUAN_DA_QUA, CHU_THAO_TAC, canLyDo, cauDaGhiVang, kiemLyDoThaoTac, kiemTuanXep, luatVangThuong, mondayOfDate, ngay, tenMon, tuanLich,
+  CAU_TUAN_DA_QUA, CHU_THAO_TAC, canLyDo, cauDaGhiVang, kiemLyDoThaoTac, kiemTuanXep, luatVangThuong, mondayOfDate, ngay, tenMon, tuanLich, type KetQuaVang,
   type LoiTruong, type ThaoTac,
 } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
@@ -132,10 +133,12 @@ export function HopThaoTacMt({ thaoTac, attemptId, skill, ct, laThuong, quanLy, 
           return cauDaGhiVang(mon, hocVien ?? undefined, r?.khongDuThi ? { kq: 'khong-du-thi' } : r?.moved ? { kq: 'doi', tuanMoi: r.tuanMoi } : null);
         }
         const r = await api.post<{ daDoi: boolean; tuanMoi: string | null; choDuyet: boolean; huyVang?: boolean; huyCu?: boolean }>(`${goc}/bao-vang`, { lyDo: lyDoGui });
-        return cauDaGhiVang(mon, hocVien ?? undefined, r.huyCu ? { kq: 'huy-cu' }
+        const kq: KetQuaVang | null = r.huyCu ? { kq: 'huy-cu' }
           : r.daDoi ? { kq: 'doi', tuanMoi: tuanLich(r.tuanMoi, homNay) }
           : r.huyVang ? { kq: 'huy' }   // PR-MTa T3: vắng lần 2 → huỷ (ô MT "S huỷ")
-          : r.choDuyet ? { kq: 'cho-ql' } : null);
+          : r.choDuyet ? { kq: 'cho-ql' } : null;
+        vangVua = kq ?? { kq: 'cho-o-kia' };   // LUAT-34: báo bằng `thongBaoVang` + Hoàn tác 10 s, như gõ "-" ở ô
+        return cauDaGhiVang(mon, hocVien ?? undefined, kq);
       }
       case 'khong-mock-lai':
         await api.post(`${goc}/khong-mock-lai`, { lyDo: lyDoGui ?? null });
@@ -153,6 +156,15 @@ export function HopThaoTacMt({ thaoTac, attemptId, skill, ct, laThuong, quanLy, 
     }
   };
 
+  /* LUAT-34: Báo vắng Mock vừa ghi — Hoàn tác = gỡ "-" mọi ô của kỹ năng (Writing: W1 + W2; vắng đã chốt gỡ cả buổi ở ô đầu). */
+  let vangVua: KetQuaVang | null = null;
+  const hoanTacVang = async () => {
+    try {
+      for (const o of skill === 'writing' ? ['writing1', 'writing2'] : [skill]) await api.put(`/attempts/${attemptId}/scores/${o}`, { noShow: false });
+      invalidate('/attempts'); invalidate('/classes'); invalidate('/ke-hoach-test'); invalidate('/my-work');
+      onDone();
+    } catch (e: any) { toast.push('error', e.message); }
+  };
   const dong = () => { lf.datLai(); onClose(); };
   const luu = async () => {
     lf.bam();
@@ -161,7 +173,8 @@ export function HopThaoTacMt({ thaoTac, attemptId, skill, ct, laThuong, quanLy, 
     try {
       const cau = await goi(!!canhBao);
       invalidate('/attempts'); invalidate('/tong-quan'); invalidate('/classes'); invalidate('/ke-hoach-test'); invalidate('/my-work'); invalidate('/cycles');
-      toast.push('ok', cau);
+      if (vangVua) thongBaoVang(toast, `${attemptId}:${skill}`, mon, hocVien ?? undefined, vangVua, () => void hoanTacVang());
+      else toast.push('ok', cau);
       onDone(); dong();
     } catch (e: any) {
       /* T15: cảnh báo (hai đợt quá gần) cần người xác nhận lại — lần bấm sau gửi `force`. */

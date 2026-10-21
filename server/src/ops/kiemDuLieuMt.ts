@@ -103,7 +103,7 @@ export function kiemDuLieuMt(conn: any): DongKiem[] {
        FROM audit_logs l JOIN assessment_attempts a ON a.id = l.entity_id AND a.created_at <= l.created_at
        JOIN students s ON s.id = a.student_id LEFT JOIN classes c ON c.id = a.class_id LEFT JOIN report_periods p ON p.id = a.planned_period_id
       WHERE l.action = 'score.huy_vuot' AND l.entity_type = 'assessment_attempt'
-        AND NOT EXISTS (SELECT 1 FROM ket_qua_huy q WHERE q.attempt_id = l.entity_id)
+        AND NOT EXISTS (SELECT 1 FROM ket_qua_huy q WHERE q.attempt_id = l.entity_id ${coLoai ? "AND q.loai != 'huy_diem'" : ''})   -- LUAT-34: bản Huỷ điểm không che dời vượt mất
         AND NOT EXISTS (SELECT 1 FROM audit_logs b WHERE b.action = 'ket_qua_huy.bo' AND b.entity_type = 'assessment_attempt' AND b.entity_id = l.entity_id AND b.id > l.id)
       GROUP BY l.entity_id ORDER BY l.entity_id`).all() as (Luot & { n: number; ky_nang: string; luc: string })[];
   for (const l of thieu) ra.push(dong(4, l, `${l.n} ô điểm bị huỷ do dời vượt (${l.ky_nang}) lúc ${l.luc.slice(0, 10)} mà không có kết quả huỷ để khôi phục`));

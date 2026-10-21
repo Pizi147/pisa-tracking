@@ -10,8 +10,8 @@
 import { db, theoLo, tx } from '../db.ts';
 import { PERMISSIONS, nhanDot, tenMon, type KetQuaHuy } from '../../../shared/domain/index.ts';
 import type { ChupCaseDong } from '../cases/systemClose.ts';
-import { badRequest, notFound, nowIso } from '../util.ts';
-import { require_, type Principal } from '../permissions.ts';
+import { badRequest, forbidden, notFound, nowIso } from '../util.ts';
+import { require_, scoreEditPath, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { assessedSkillOf, entrySkillsOf } from './scoring.ts';
@@ -59,6 +59,8 @@ export function khoiPhucDiem(p: Principal, attemptId: number, skill: string, tod
   const a = conn.prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(attemptId) as any;
   if (!a) throw notFound('Không tìm thấy lượt kiểm tra');
   const thuong = scoringModeOf(a) === 'ratio';
+  /* Quyền trước (rà #503 c): người không sửa được ô không được biết ô có điểm huỷ hay không. Lưu bên dưới vẫn kiểm đủ (lớp kết thúc, tuần thi…). */
+  if (!a.class_id || !scoreEditPath(p, a.class_id, skill, { lich_su: a.lich_su ?? 0 })) throw forbidden('Bạn không sửa được ô điểm này.');
   const ban = banMoCuaO(conn, attemptId, thuong ? [skill] : entrySkillsOf(assessedSkillOf(skill)));
   if (!ban.length) throw badRequest(`${tenMon(null, skill)} không có điểm đã huỷ để khôi phục.`);
   const lyDo = 'Khôi phục điểm';
@@ -72,6 +74,9 @@ export function khoiPhucDiem(p: Principal, attemptId: number, skill: string, tod
         saveScore(p, attemptId, d.skill, tieuChi.some((v) => v != null) ? { criteria: tieuChi, lyDo }
           : d.raw_score != null ? { rawScore: d.raw_score, rawTotal: d.raw_total, lyDo } : { band: d.band, lyDo }, today);
       }
+      /* Rà #503 (2): khôi phục không phải lần nhập mới — trả người nhập, lúc nhập, ngày nhập đầu như bản cất (không tính chấm trễ, không dời mốc Đủ điểm). */
+      conn.prepare('UPDATE assessment_scores SET entered_by = ?, entered_at = ?, nhap_dau_ngay = ? WHERE attempt_id = ? AND skill = ?')
+        .run(d.entered_by ?? null, d.entered_at ?? null, d.nhap_dau_ngay ?? null, attemptId, d.skill);
       conn.prepare('UPDATE ket_qua_huy SET khoi_phuc_luc = ?, khoi_phuc_boi = ?, ly_do_khoi_phuc = ? WHERE id = ?').run(nowIso(), p.userId, lyDo, k.id);
       writeAudit({
         actorUserId: p.userId, action: 'score.khoi_phuc', entityType: 'assessment_attempt', entityId: attemptId, entityLabel: d.skill,
