@@ -1019,6 +1019,8 @@ await checkAsync('TD6 (×3) · câu đã sửa không SCAN bảng lớn; migrate
  * 16/10 OV-13n: chụp lại 8 băm — đổi CÓ CHỦ Ý: SOS2/3 không điền sẵn "Trao đổi ngắn với HV" (số việc Phối hợp + seed Khôi/Lan đổi việc đã xác nhận).
  * 16/10 OV-13k gộp main 1694175 (OV-13l): chụp lại 4 băm dưới trên bản gộp — đã so JSON main 1694175 ↔ bản gộp trên bộ demo (QL / QT "Tất cả",
  *   "QT tat-ca cn", GVS / QL / GVCN "Của tôi", QL xem GVCN): chỉ thêm 3 việc `xem_nx_s` + hai nhãn "còn tồn từ" của GV S như dưới; còn lại trùng.
+ * 21/10 SV-YT-TVV: chụp lại 5 băm QL / QT (Của tôi, Tất cả, Tất cả chi nhánh) — đổi CÓ CHỦ Ý: seed gửi đề xuất Ý thức qua `guiDeXuat` nên có việc
+ *   "Báo PH vi phạm" (`bao_ph_yt`) — em demo chưa có TVV → QL chi nhánh giữ. Việc GV không đổi (6 băm GV / Admin giữ).
  * 21/10 SV-TVV-VIEC: chụp lại 5 băm QL / QT (Của tôi, Tất cả, Tất cả chi nhánh) — đổi CÓ CHỦ Ý: Chốt ngày thi / Cập nhật KQ thi thật / Chọn bước tiếp có
  *   MỘT người giữ (TVV của em; em demo chưa có TVV → QL chi nhánh), KQ thi thật không hạn, thêm dòng "Bổ sung hồ sơ thiếu". 6 băm GV / Admin giữ.
  * 21/10 CV-LOI (sửa theo rà): chụp lại 'QT tat-ca' — chuyển lớp nay gán chủ Case trống (`ganChuCaseThieu` trong `apDungMotDong`): em chưa có lớp của
@@ -1172,8 +1174,8 @@ await checkAsync('TD7b (×3) · câu đọc lượt của Nợ điểm / badge l
  */
 check('TD4-b (×3) · /my-work mọi vai: dòng ≤ 40 % mốc trước TD4, số câu không tăng theo dữ liệu', () => {
   const MOC: Record<string, [number, number]> = {
-    /* SV-TVV-VIEC (21/10): QL / QT "Của tôi" +1 câu — Chốt ngày thi + Bổ sung hồ sơ thiếu của TVV / QL (MỘT câu cho cả hai, phạm vi từ quyền đã nạp). */
-    'QL /my-work': [67, 5647], 'QT /my-work': [67, 7775], 'GVCN /my-work': [66, 4502], 'GVBM /my-work': [66, 5140], 'GVCN_THUONG /my-work': [66, 4502],
+    /* SV-YT-TVV + SV-TVV-VIEC (21/10): QL / QT "Của tôi" +2 câu — việc Báo PH (một câu) + Chốt ngày thi / Bổ sung hồ sơ (một câu cho cả hai). */
+    'QL /my-work': [68, 5647], 'QT /my-work': [68, 7775], 'GVCN /my-work': [66, 4502], 'GVBM /my-work': [66, 5140], 'GVCN_THUONG /my-work': [66, 4502],
     'QL /my-work?nguoi=tat-ca': [78, 6721], 'QT /my-work?nguoi=tat-ca': [78, 9176], [`QL /my-work?nguoi=${USER.GVCN}`]: [72, 4530],
   };
   const sai: string[] = [];

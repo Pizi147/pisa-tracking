@@ -34,7 +34,7 @@ type Tap = Record<CotBang, Set<number>> & { duDuLieuMau: Set<number> };
 const tapRong = (): Tap => ({
   hocVien: new Set(), duoiKyVong: new Set(), sos: new Set(), caseMo: new Set(), thieuPa: new Set(), duDuLieu: new Set(), duDuLieuMau: new Set(),
   caseChuaChotHv: new Set(), caseChuaChot: new Set(),
-  chuaLich: new Set(), chuaDiem: new Set(), sos1: new Set(), sos2: new Set(), sos3: new Set(), daThiChoKq: new Set(),
+  chuaDiem: new Set(), sos1: new Set(), sos2: new Set(), sos3: new Set(), daThiChoKq: new Set(),
 });
 const gop = (a: Tap, b: Tap) => { for (const k of Object.keys(a) as (keyof Tap)[]) for (const x of b[k]) a[k].add(x); };
 const soCua = (t: Tap): Record<CotBang, OBang> => {
@@ -46,7 +46,7 @@ const soCua = (t: Tap): Record<CotBang, OBang> => {
 const NHAN_COT: Record<CotBang, string> = {
   hocVien: 'Học viên', duoiKyVong: 'Dưới kỳ vọng', sos: 'SOS hiện tại', caseMo: 'Case đang mở', thieuPa: 'Case chưa có PA', duDuLieu: 'Tỷ lệ đủ dữ liệu',
   caseChuaChotHv: 'HV có Case chưa chốt PA', caseChuaChot: 'Case chưa chốt PA',
-  chuaLich: 'chưa lịch Test', chuaDiem: 'chưa điểm', sos1: 'SOS 1', sos2: 'SOS 2', sos3: 'SOS 3', daThiChoKq: 'Đã thi · chờ KQ',
+  chuaDiem: 'chưa điểm', sos1: 'SOS 1', sos2: 'SOS 2', sos3: 'SOS 3', daThiChoKq: 'Đã thi · chờ KQ',
 };
 
 
@@ -200,7 +200,6 @@ export function oBangChiNhanh(p: Principal, f: { branchId?: number | null; ct: C
 
 /**
  * OV-15h1 — cột "Lớp cần chú ý" (mockup 3), mỗi cột là tập của một hàm sẵn có, chia về lớp như cột cũ:
- *  · Chưa lịch Test (FT): chỉ số `hv-ft-xong-mt-cuoi-chua-mt-ke` (Cần xử lý cũ) — theo lớp em đang học;
  *  · Chưa điểm: HV có bài trong `bai-qua-han-nhap-diem` (= "bài trễ chấm") — theo LỚP CỦA LƯỢT (nơi nợ điểm, như Trễ chấm theo GV);
  *  · SOS 1 / 2 / 3: mức của lượt mới nhất hợp lệ — cùng `latestAttempts` của `hv-sos-hien-tai` (nhớ trong request), Σ = cột SOS;
  *  · Đã thi · chờ KQ (FT): `sauThiTheoEm` (cùng nhãn bảng lớp Học viên & Lớp, OV-14b) trên dân số của bảng.
@@ -216,7 +215,6 @@ function chiaCotChuY(p: Principal, base: { branchId: number | null; program: Chu
     theoHv(cot, [...sSos].filter((sid) => Math.min(3, ev.get(sid)?.sosLevel ?? 0) === muc));
   }
   if (ft) {
-    theoHv('chuaLich', metricSet(p, 'hv-ft-xong-mt-cuoi-chua-mt-ke', base).ids);
     theoHv('daThiChoKq', [...sauThiTheoEm([...tong.hocVien], today)].filter(([, x]) => x.giaiDoan === 'da_thi_cho_kq').map(([sid]) => sid));
   }
   const bai = metricSet(p, 'bai-qua-han-nhap-diem', base).ids;

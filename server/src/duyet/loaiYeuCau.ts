@@ -31,6 +31,7 @@ import { chotYeuCau, taoYeuCau } from './yeuCau.ts';
 import { trangThaiYThuc, ungVienVaThe, type EmYThuc } from '../yThuc/trangThai.ts';
 import { apDungDeXuatChuyenLop, demChuaCoLenh, kiemDeXuatChuyenLop, nguoiNhanCuaLop } from '../classes/lenhChuyen.ts';
 import { duyetThuHoiYThuc, huyThuHoiYThuc, rutDeXuatYThuc, suaDeXuatYThuc } from '../yThuc/xuLy.ts';
+import { dongViecTheoXuLy } from '../yThuc/baoPhTvv.ts';
 
 /**
  * PR-YT4 — vì sao em cần Báo QL (null = không): bắt buộc quá hạn · Mới quá 5 ngày chưa ai xem · đã duyệt chưa thực hiện quá 5 ngày
@@ -405,9 +406,10 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
         .run(demoToday(), new Date().toISOString(), yc.doi_tuong_id);
     },
     /* Từ chối → vi phạm về Cần xử lý từ ngày quyết (batBuocTu), bậc giữ; lý do nằm ở thẻ (Q13). */
-    khiTuChoi: (_p, yc) => {
-      db().prepare(`UPDATE discipline_measures SET status = 'tu_choi', quyet_luc = ?, updated_at = ? WHERE id = ? AND status = 'cho_duyet'`)
-        .run(demoToday(), new Date().toISOString(), yc.doi_tuong_id);
+    khiTuChoi: (p, yc, lyDo) => {
+      const doi = db().prepare(`UPDATE discipline_measures SET status = 'tu_choi', quyet_luc = ?, updated_at = ? WHERE id = ? AND status = 'cho_duyet'`)
+        .run(demoToday(), new Date().toISOString(), yc.doi_tuong_id).changes;
+      if (doi) dongViecTheoXuLy(yc.doi_tuong_id, 'system_tu_choi', lyDo, p.userId);   // SV-YT-TVV (Q-D1 ①): chỉ khi lần xử lý thật sự vừa bị từ chối
       /* PR-Pb2-b (Q14): vi phạm chưa từng bắt buộc nay thành Cần xử lý → chốt hạn; đã chốt thì giữ. */
       if (yc.hoc_vien_id) chotHanXuLy([yc.hoc_vien_id]);
     },

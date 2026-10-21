@@ -132,7 +132,7 @@ export async function runPrDlTests(t: YThucTestKit) {
    * dời −2. Đã so JSON `moi` origin/main ↔ nhánh: chỉ khác `periodId` (100 dòng, đều −2), không trường nào khác. */
   /* LUAT-34: chụp lại — phép kiểm chạy trước trên MB FT 101 đổi theo luật 4 sửa 21/10 (PR-G: "-" ghi muộn → thẻ QL / Hoàn tác, W1 "-" + W2 có điểm
    * dời cả W; prOv1b / prOv11a "-" ghi muộn dời tuần kế) và luật 3 (`moi` = góc GVBM: ô có điểm ở hàng Đủ điểm nay `canEdit` true). */
-  const ANH_CHUP = { tuan: 'ea4c647e05ebdfc3', moi: '302cb2d7a4636a80' };   // trước LUAT-34: tuan 98dff5c3c389b7b3 · moi 53d25ee1fd6e5732   // OV-15b: hàng thêm `studentEmail` (Dán từ Excel), ô chưa có giá trị (điểm / tiêu chí) không gửi người nhập   // OV-13n: phép kiểm sosV3 (cùng lớp MB FT 101, chạy trước) thêm HV thử / đổi việc phối hợp → dòng lớp đổi   // OV-13l: em chuyển FT → FT giữ lộ trình — lượt chưa thi đi theo em, bảng lớp cũ đổi
+  const ANH_CHUP = { tuan: '03b552713c5091dc', moi: '098ab4054764382e' };   // V5 C20: bỏ phép kiểm VAI-a (2c) chạy trước (HV thử) → id dịch; trước: tuan ea4c647e05ebdfc3 · moi 302cb2d7a4636a80   // trước LUAT-34: tuan 98dff5c3c389b7b3 · moi 53d25ee1fd6e5732   // OV-15b: hàng thêm `studentEmail` (Dán từ Excel), ô chưa có giá trị (điểm / tiêu chí) không gửi người nhập   // OV-13n: phép kiểm sosV3 (cùng lớp MB FT 101, chạy trước) thêm HV thử / đổi việc phối hợp → dòng lớp đổi   // OV-13l: em chuyển FT → FT giữ lộ trình — lượt chưa thi đi theo em, bảng lớp cũ đổi
   /* Mã cố ý độc lập với hàm: điều kiện lọc tuần của bản trước refactor, viết lại bằng SQL. */
   const idsTuan = (periodId: number) => (conn.prepare(
     `SELECT a.id FROM assessment_attempts a JOIN students s ON s.id = a.student_id

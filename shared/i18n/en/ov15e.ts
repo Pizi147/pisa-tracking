@@ -29,7 +29,6 @@ export const EN_OV15E = {
   'HV cần chú ý': 'Students to watch',
   'tại {ngay}': (b) => `as of ${b.ngay}`,
   'Chưa lịch Test': 'No Test scheduled',
-  'chưa lịch Test': 'no Test scheduled',
   'chưa điểm': 'missing scores',
   'Bài chưa điểm': 'Papers without scores',
   'Case / PA': 'Cases & PAs',

@@ -34,12 +34,24 @@ export function thongBaoCua(userId: number) {
          FROM (
            SELECT n.*,
                   COALESCE(sc.student_id, cs.student_id, aa.student_id, aa2.student_id, dm.student_id, ycd.hoc_vien_id,
-                           CASE WHEN n.entity_type = 'student' THEN n.entity_id END) AS student_id,
+                           CASE WHEN n.entity_type = 'student' THEN n.entity_id END,
+                           CASE WHEN n.entity_type = 'viec_bao_ph' THEN (SELECT vb.student_id FROM viec_bao_ph vb WHERE vb.id = n.entity_id) END) AS student_id,
                   CASE WHEN n.entity_type = 'assessment_attempt' THEN n.entity_id ELSE smr.attempt_id END AS attempt_id,
                   COALESCE(sc.category, sc.topic) AS mon_goc, cy.programme_code AS ct, cs.case_id, ycd.han_duyet AS han_the,
                   CASE
                     /* OV-15d: thông báo tự động chỉ còn khi việc còn (đồng bộ xoá khi xong) — luôn là Cần làm. */
                     WHEN n.kind IN ('cham_qua_han', 'case_chua_chot_pa', 'chot_lo_trinh') THEN 1
+                    /* SV-YT-TVV (rà #516): việc Báo PH — MỘT thông báo mỗi việc (quá hạn chỉ đổi chữ), Cần làm khi việc còn mở, em đang học và người nhận là
+                       người giữ HIỆN TẠI (TVV của em; em chưa có TVV → QL chi nhánh của em). Đồng bộ thông báo tự động xoá dòng của người không còn giữ. */
+                    WHEN n.kind = 'bao_ph_xu_ly' THEN CASE WHEN EXISTS (
+                      SELECT 1 FROM viec_bao_ph vb JOIN students sv ON sv.id = vb.student_id
+                       WHERE vb.id = n.entity_id AND vb.trang_thai = 'mo' AND sv.status = 'active' AND sv.archived_at IS NULL
+                         AND (sv.consultant_user_id = n.user_id OR (sv.consultant_user_id IS NULL AND EXISTS (
+                           SELECT 1 FROM user_roles ur JOIN roles r ON r.id = ur.role_id
+                            WHERE ur.user_id = n.user_id AND r.key = 'manager' AND ur.status = 'active'
+                              AND (ur.branch_id IS NULL OR ur.branch_id = COALESCE((SELECT c2.branch_id FROM enrollments e2 JOIN classes c2 ON c2.id = e2.class_id
+                                     WHERE e2.student_id = sv.id AND e2.status = 'active' ORDER BY e2.id DESC LIMIT 1), sv.branch_id)))))
+                    ) THEN 1 ELSE 0 END
                     /* SL1 (C23): Case tạo tay giao người phụ trách — còn việc tới khi Case có PA (hoặc đã đóng). */
                     WHEN n.kind = 'case_giao' THEN CASE WHEN sc.status != 'done'
                       AND NOT EXISTS (SELECT 1 FROM case_interventions ci WHERE ci.case_id = sc.id AND ci.status != 'cancelled') THEN 1 ELSE 0 END

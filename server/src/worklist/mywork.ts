@@ -35,6 +35,7 @@ import { viecThiThat } from '../loTrinh/thiThat.ts';
 import { viecBuocTiep } from '../loTrinh/buocTiep.ts';
 import { viecHoSoTvv } from './viecTvv.ts';
 import { khaiDuoc } from '../yThuc/xuLy.ts';
+import { viecBaoPhCuaToi } from '../yThuc/baoPhTvv.ts';
 
 /**
  * VIỆC CỦA CHÍNH NGƯỜI ĐANG XEM.
@@ -133,6 +134,8 @@ export type WorkItem = {
   periodId?: number | null; kind?: string | null;
   /** OV-13c: Xác nhận PA — loại PA, nội dung máy gán, người dạy đã có (người chung không đè). */
   pa?: { kind: string; moTa: string | null; nguoiId: number | null; nguoi: string | null; soBuoi: number | null };
+  /** SV-YT-TVV: id việc Báo PH (`viec_bao_ph`) — form ghi kết quả gửi đúng việc. */
+  viecId?: number;
 };
 
 /**
@@ -164,7 +167,9 @@ export type WorkGroupKey =
   /* OV-13k: GV phụ trách Speaking xem nhận xét của người chấm chéo (ghi thêm nhận xét / sửa nhóm / Xác nhận PA). */
   | 'xem_nx_s'
   /* SV-TVV-VIEC (Q-D4 ①): TVV bổ sung 4 trường hồ sơ còn thiếu — một dòng tổng, không hạn. */
-  | 'bo_sung_ho_so';
+  | 'bo_sung_ho_so'
+  /* SV-YT-TVV (luật 1–2): TVV của em (không có → QL chi nhánh) báo PH sau mỗi lần lưu xử lý vi phạm — hạn ngày lưu + 4. */
+  | 'bao_ph_yt';
 
 /**
  * Mỗi nhóm có MỘT DÒNG nói rõ nhóm đó nghĩa là gì.
@@ -283,6 +288,10 @@ const GROUP_META: Record<WorkGroupKey, { label: string; hint: string }> = {
   yt_xem: {
     label: 'Ghi nhận vi phạm mới',
     hint: 'Vi phạm do người khác ghi mà bạn chưa xem. Ghi nhận (đã xem, không cần xử lý) hoặc Xác nhận xử lý trong 5 ngày.',
+  },
+  bao_ph_yt: {
+    label: 'Báo PH vi phạm',
+    hint: 'Em vừa được lưu xử lý vi phạm — báo phụ huynh rồi ghi kết quả (Đã báo PH / Chưa liên hệ được). Hạn 5 ngày, tính cả ngày lưu.',
   },
   yt_thuc_hien: {
     label: 'Ghi "Đã thực hiện"',
@@ -1330,6 +1339,8 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   if (co('thi_that')) items.push(...viecThiThat(p, { today, tatCa, branchId: f.branchId ?? null }));
   // ------------------------------------------------- 5e. chọn bước tiếp sau thi (OV-8a) — việc của Quản lý
   if (co('buoc_tiep')) items.push(...viecBuocTiep(p, { today, tatCa, branchId: f.branchId ?? null }));
+  // ------------------------------------------------- 5f. Báo PH sau lưu xử lý vi phạm (SV-YT-TVV) — TVV của em / QL khi em chưa có TVV
+  if (co('bao_ph_yt')) items.push(...viecBaoPhCuaToi(p, { today, tatCa, branchId: f.branchId ?? null }));
 
   // ------------------------------------------------- 6. công việc quản lý được giao
   /*
@@ -1374,7 +1385,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   /* OV-11c (CV-11): QL / Quản trị "Của tôi" = việc mình giữ (hoặc chưa ai giữ mà mình làm được); việc GV giữ chỉ ở "Của GV". */
   if (xemNguoiKhac && !tatCa) for (let i = items.length - 1; i >= 0; i--) if (items[i].ownerId !== null && items[i].ownerId !== p.userId) items.splice(i, 1);
   const order: WorkGroupKey[] = [
-    'cause', 'ghi_nhan_xet', 'xac_nhan_pa', 'xem_nx_s', 'phoi_hop', 'phoi_hop_sos', 'mini_test', 'score', 'no_plan', 'ghi_ket_qua_pa', 'yt_xu_ly', 'yt_xem', 'yt_thuc_hien', 'khai_bac',
+    'cause', 'ghi_nhan_xet', 'xac_nhan_pa', 'xem_nx_s', 'phoi_hop', 'phoi_hop_sos', 'mini_test', 'score', 'no_plan', 'ghi_ket_qua_pa', 'yt_xu_ly', 'yt_xem', 'yt_thuc_hien', 'bao_ph_yt', 'khai_bac',
     'chot_len_ft', 'xet_lai_lo_trinh', 'ky_vong_dau_ra', 'thi_that', 'buoc_tiep', 'ban_giao', 'no_owner', 'mgmt', 'missing_data', 'bo_sung_ho_so',
   ];
   const weight = (u: WorkUrgency) => (u === 'overdue' ? 0 : u === 'today' ? 1 : 2);
@@ -1447,8 +1458,8 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   };
 }
 
-/** SV-TVV-VIEC: nhóm việc của TVV — đọc ở Tổng quan TVV (`/tong-quan/viec-cua-toi`), TVV không có khu Công việc. `missing_data` của TVV chỉ có Chốt ngày thi. */
-export const NHOM_VIEC_TVV: ReadonlySet<WorkGroupKey> = new Set<WorkGroupKey>(['missing_data', 'thi_that', 'buoc_tiep', 'bo_sung_ho_so']);
+/** SV-YT-TVV + SV-TVV-VIEC: nhóm việc của TVV — đọc ở Tổng quan TVV (`/tong-quan/viec-cua-toi`), TVV không có khu Công việc. `missing_data` của TVV chỉ có Chốt ngày thi. */
+export const NHOM_VIEC_TVV: ReadonlySet<WorkGroupKey> = new Set<WorkGroupKey>(['bao_ph_yt', 'missing_data', 'thi_that', 'buoc_tiep', 'bo_sung_ho_so']);
 export const nhanNhomViec = (g: string) => GROUP_META[g as WorkGroupKey]?.label ?? g;
 
 /** PR-GOP: gộp dòng (hàm chung `gopViecTheoLop`). OV-12h: bỏ Nhắc trên dòng. */
