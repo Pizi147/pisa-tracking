@@ -1053,7 +1053,11 @@ await checkAsync('TD4-a (×3) · Công việc trùng JSON ảnh chụp trước 
   const sai: string[] = [];
   for (const [ten, fn] of goc) {
     /* 19/10 OV-15b: việc Nhập điểm thêm `kns` (đủ kỹ năng của việc — panel chỉ mở các cột này); băm bỏ trường đó → trùng ảnh cũ (không việc nào khác đổi). */
-    const bam = chayTrongRequest('GET', () => createHash('sha256').update(JSON.stringify(fn(), (k, v) => (k === 'kns' ? undefined : v))).digest('hex').slice(0, 16));
+    /* 22/10 V5 SV-SO1: thêm `summary.viec/bai/nhom/hv/viecQuaHan`, `lamThay` (xem người khác), `chiXem` — băm bỏ các trường đó → trùng ảnh cũ (không gì khác đổi). */
+    const MOI = new Set(['viec', 'bai', 'nhom', 'hv', 'viecQuaHan']);
+    const bo = (k: string, v: any) => (k === 'kns' || k === 'lamThay' || k === 'chiXem' ? undefined
+      : k === 'summary' && v ? Object.fromEntries(Object.entries(v).filter(([x]) => !MOI.has(x))) : v);
+    const bam = chayTrongRequest('GET', () => createHash('sha256').update(JSON.stringify(fn(), bo)).digest('hex').slice(0, 16));
     if (ANH[ten] !== bam) sai.push(`'${ten}': '${bam}',`);
   }
   assert(!sai.length, `lệch ảnh chụp:\n${sai.join('\n')}`);
