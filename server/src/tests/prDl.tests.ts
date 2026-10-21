@@ -97,8 +97,8 @@ export async function runPrDlTests(t: YThucTestKit) {
   const bam = (x: unknown) => createHash('sha256')
     /* PR-BV: ô thêm `daChot` ("-" đã chốt, phép kiểm riêng prBv V13) — bỏ khỏi băm để ảnh chụp cũ vẫn chứng minh mọi trường khác không lệch.
        OV-1c: kết quả lượt thêm `chot` (phép kiểm riêng prOv1c) — bỏ khỏi băm như trên. OV-9: `kckDuoi` (phép kiểm riêng prOv9) — cũng vậy. OV-4c: ô thêm `bandThang` (phép kiểm riêng prOv4c) — cũng vậy.
-       OV-12b: ô thêm `nhomNguyenNhan` · `batBuocNhanXet` · `kyVong` · `thieuNhanXet` (phép kiểm riêng prOv12b) — cũng vậy. OV-14c: ô thêm `enteredById` (prOv14c) — cũng vậy. */
-    .update(JSON.stringify(x, (k, v) => (k.endsWith('At') || k === 'chuNhatCuoi' || k === 'daChot' || k === 'chot' || k === 'kckDuoi' || k === 'bandThang' || k === 'enteredById' || OV12B.has(k) ? undefined : v))).digest('hex').slice(0, 16);
+       OV-12b: ô thêm `nhomNguyenNhan` · `batBuocNhanXet` · `kyVong` · `thieuNhanXet` (phép kiểm riêng prOv12b) — cũng vậy. OV-14c: ô thêm `enteredById` (prOv14c) — cũng vậy. V5 SV-SO1: ô thêm `xong` (prSvSo1) — cũng vậy. */
+    .update(JSON.stringify(x, (k, v) => (k.endsWith('At') || k === 'chuNhatCuoi' || k === 'daChot' || k === 'chot' || k === 'kckDuoi' || k === 'bandThang' || k === 'enteredById' || k === 'xong' || OV12B.has(k) ? undefined : v))).digest('hex').slice(0, 16);
   /*
    * Chụp lại 06/10 (PR-MTa): T1 đổi cờ MT cũ của lượt seed (tuần trước nay là MT thường) và các phép kiểm chạy trước (PR-MT, PR-XLMT, PR-LM)
    * đổi dữ liệu MB FT 101. Không chụp được bằng mã 666dcfbf (gọi `kiemLyDo` đã bỏ ở T7) — băm của mã hiện tại; khẳng định `idsTuan` bên dưới

@@ -514,8 +514,8 @@ export function skillCells(
       canEdit,
       /* Việc nhập điểm của người xem (bảng lớp "Nhập điểm …") — như `canEdit` nhưng trước hoàn tất bỏ quyền sửa mọi lúc của Quản lý. */
       viec: required && !cancelled && !chamCheo && view.sitStatus !== 'cancelled' && view.sitStatus !== 'absent'
-        /* V5 SV-SO1: ô chưa xong (thiếu nhận xét) ở lượt đủ điểm vẫn là việc của người được phân công, không của người sửa sau hoàn tất. */
-        && (hoanTat.hoanTat && cellScored ? suaSauHoanTat : viecList.includes(skill)),
+        /* V5 SV-SO1: ô có band mà thiếu nhận xét ở lượt đủ điểm vẫn là việc của người được phân công, không của người sửa sau hoàn tất. */
+        && (hoanTat.hoanTat && !(coBand && thieuNx) ? suaSauHoanTat : viecList.includes(skill)),
       /* LUAT-34: "Đủ điểm" — chỉ là trạng thái của đợt (tên trường giữ từ R11), không còn khoá ô. */
       khoa: hoanTat.hoanTat,
       /* LUAT-34 (T20b): ô có điểm đã huỷ còn cất → "Khôi phục điểm". */

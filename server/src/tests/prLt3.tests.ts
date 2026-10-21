@@ -87,7 +87,7 @@ export async function runPrLt3Tests(t: YThucTestKit) {
     const h = r.chamTuanNay.find((l: any) => l.weekStart === HAI);
     assert(h.periodId === pid(HAI) && h.conBai === h.tong, `hàng hạn riêng chỉ các ô còn nợ: ${h.conBai}/${h.tong}`);
     /* W1 đã chấm, W2 còn: hàng hạn riêng không kéo W1 vào (lọc theo Ô NHẬP, không theo kỹ năng gộp). */
-    att.saveScore(P.admin, aid, 'writing1', { criteria: [6, 6, 6, 6] }, TODAY);
+    att.saveScore(P.admin, aid, 'writing1', { criteria: [9, 9, 9, 9], nhanXet: 'Nhận xét đủ mười ký tự.' }, TODAY);   // V5 SV-SO1: xong = band + nhận xét
     const h2 = xem(NAY).chamTuanNay.find((l: any) => l.weekStart === HAI);
     assert(h2 && h2.conBai === h2.tong && h2.tong === h.tong - 1, `W1 đã chấm không vào hàng hạn riêng: ${h2?.conBai}/${h2?.tong} (trước ${h.tong})`);
   });
