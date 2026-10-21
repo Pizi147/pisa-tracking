@@ -224,6 +224,8 @@ export function NganDanhSach({ tieuDe, dv, data, loading, error, reload, onDong,
 
   return (
     <KhungPanel tieuDe={tieuDe} onDong={onDong}
+      /* NEN-PANEL: không dòng nào làm được ở đây = panel báo cáo (07 mục 3). */
+      loai={hien.some((r) => r.viec?.lam) ? t('VIỆC') : t('BÁO CÁO · CHỈ ĐỌC')}
       dau={{
         han: soTre ? <ChipSoQuaHan n={soTre} /> : null,
         dong2: [data && dv ? `${data.n} ${dv}` : null, soTre ? t('quá hạn lên đầu') : null],

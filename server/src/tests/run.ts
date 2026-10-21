@@ -9516,6 +9516,9 @@ await runPrSvSo2Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P,
 // ==================================================================== SV-TVV-VIEC (4 việc TVV: một người giữ = TVV của em / QL; Chốt ngày thi, Bước tiếp, Bổ sung hồ sơ, KQ thi thật)
 const { runPrSvTvvViecTests } = await import('./prSvTvvViec.tests.ts');
 await runPrSvTvvViecTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== V5 NEN-PANEL (nháp theo việc, hộp bỏ chữ, Lưu và tiếp, chân lưu, 375 + bàn phím)
+const { runPrNenPanelTests } = await import('./prNenPanel.tests.ts');
+await runPrNenPanelTests({ check, checkAsync, assert } as any);
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`

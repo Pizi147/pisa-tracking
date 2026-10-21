@@ -16,7 +16,7 @@ import { LopToiDay } from '../worklist/LopToiDay.tsx';
 import { DaiMoiDung } from '../huongDan/DaiMoiDung.tsx';
 import { ChonPhuTrach } from './ChonPhuTrach.tsx';
 import { CongTacKhung, khungDaNho, nhoKhung, phamViCoHaiKhung, type KhungLoc } from '../../ui/CongTacKhung.tsx';
-import { KhungTaiCho, coPanelDangSua, dangChoHoanTac } from '../../ui/KhungPanel.tsx';
+import { KhungTaiCho, boChuRoi, coPanelDangSua, dangChoHoanTac } from '../../ui/KhungPanel.tsx';
 import { PanelViec, lamTaiCho, moCaDong } from './PanelViec.tsx';
 import { HopGiaHan } from '../students/HopGiaHan.tsx';
 import {
@@ -193,8 +193,6 @@ export function HoTroHocVienTab() {
       setParams(next);
     }
   };
-  /* Hotfix 15/10 (L5): đổi dòng / "‹ Công việc" khi panel đang sửa dở → hỏi như ✕ của panel (`KhungPanel`). */
-  const boDuocChu = () => !coPanelDangSua() || window.confirm(t('Bỏ nội dung đang gõ?'));
   const dong = () => {
     const lui = daDay.current !== null && daDay.current === khongViec(params);
     daDay.current = null;
@@ -343,7 +341,7 @@ export function HoTroHocVienTab() {
           )}
           {data && !data.scopeEmpty && dsNhom.length > 0 && (
             <Card bodyClass="p-0">
-              <NhomViec nhom={dsNhomXem} soHien={10} moHet={moHet} onOpen={(x) => { if (x.key === viec || boDuocChu()) mo(x); }} chon={viec} xong={xong} moTrang={(x) => !lamTaiCho(x)} moCaDong={moCaDong}
+              <NhomViec nhom={dsNhomXem} soHien={10} moHet={moHet} onOpen={(x) => { if (x.key === viec) mo(x); else boChuRoi(() => mo(x)); }} chon={viec} xong={xong} moTrang={(x) => !lamTaiCho(x)} moCaDong={moCaDong}
                 cuoiNhom={cuoiNhom}
                 nutPhu={(x) => (!x.con && x.cycleId && (x.group === 'thi_that' || x.group === 'buoc_tiep') && !xong.has(x.key)
                   ? <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-[28px]" onClick={() => setGiaHan(x)}>{t('Gia hạn')}</button> : null)} />
@@ -370,17 +368,17 @@ export function HoTroHocVienTab() {
             <div role="status" className="card flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2 text-[13px]">
               <span className="min-w-0 flex-1 truncate text-ok">✓ {t('Xong:')} {dich(vuaXong.tieuDe)}</span>
               <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 sm:min-h-0"
-                onClick={() => { if (boDuocChu()) { daTuSang.current = vuaXong.key; mo(vuaXong); setVuaXong(null); } }}>{t('‹ việc vừa xong')}</button>
+                onClick={() => boChuRoi(() => { daTuSang.current = vuaXong.key; mo(vuaXong); setVuaXong(null); })}>{t('‹ việc vừa xong')}</button>
             </div>
           )}
           {chon ? (
             <>
               {/* Điện thoại: danh sách vừa ẩn → focus về nút lùi (máy tính nút ẩn, `autoFocus` không có tác dụng). */}
               {/* eslint-disable-next-line jsx-a11y/no-autofocus */}
-              <button type="button" autoFocus className="link flex min-h-[44px] items-center gap-1.5 appearance-none border-0 bg-transparent p-0 text-[13px] lg:hidden" onClick={() => { if (boDuocChu()) dong(); }}>{t('‹ Công việc')}</button>
+              <button type="button" autoFocus className="link flex min-h-[44px] items-center gap-1.5 appearance-none border-0 bg-transparent p-0 text-[13px] lg:hidden" onClick={() => boChuRoi(dong)}>{t('‹ Công việc')}</button>
               <KhungTaiCho.Provider value>
                 <PanelViec key={chon.key} it={chon} tuMo={tuMo.current === chon.key} onDong={dong} onDaLam={() => daLam(chon)} onTiep={keTiep ? () => mo(keTiep) : null}
-                  onMo={(x) => { if (boDuocChu()) mo(x); }} />
+                  onMo={(x) => boChuRoi(() => mo(x))} />
               </KhungTaiCho.Provider>
             </>
           ) : data && !data.scopeEmpty && dsNhom.length > 0 ? (

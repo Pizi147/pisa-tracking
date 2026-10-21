@@ -4,7 +4,7 @@ import { BuoiTutorO } from './BuoiTutorO.tsx';
 import { api, invalidate } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
-import { Hang2, KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
+import { Hang2, KhungPanel, Truong, useNhap, useXoaNhap } from '../../ui/KhungPanel.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { ChipHan } from '../../ui/Nhan.tsx';
 import { BoiCanh, CanLam, NutChu, TrangThaiLuu, dauViec } from '../../ui/KhuonViec.tsx';
@@ -107,7 +107,8 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
   /* OV-13b: chữ đã gõ ở dòng ghi nhanh mang sang ("Điều chỉnh / Kết thúc…"). */
   const [nhap] = useState(() => { const x = sua ? undefined : nhapKetQua.get(pa.id); nhapKetQua.delete(pa.id); return x; });
   const [outcome, setOutcome] = useState(g?.outcome ?? nhap?.outcome ?? '');
-  const [progress, setProgress] = useState(g?.note ?? nhap?.note ?? '');
+  const [progress, setProgress] = useNhap(`ket-qua-nx:${pa.id}`, g?.note ?? nhap?.note ?? '');
+  const xoaNhap = useXoaNhap();
   /* OV-13b: Hoàn tác ở panel trả về ĐỦ nháp (quyết định, lý do, Điều chỉnh, buổi Tutor, đề xuất PA khác…). */
   const k = nhap?.khac;
   /* OV-13b (mockup §8): PA mặc định — Điều chỉnh › "Đề xuất PA khác": kết quả kỳ lưu như Giữ nguyên + đề xuất gửi QL, MỘT nút. */
@@ -275,6 +276,7 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
       const ct = await api.post<any>(sua ? `/followups/${sua.followupId}/sua` : `/interventions/${pa.id}/result`, body);
       const lamMoi = () => { invalidate('/cases'); invalidate('/my-work'); invalidate('/students'); invalidate('/tong-quan'); invalidate('/followups'); invalidate('/yeu-cau'); };
       lamMoi();
+      xoaNhap();
       /* OV-13b: ở lại panel — "✓ Đã lưu · {quyết định}" + kết quả · hạn kế; Hoàn tác (ghi mới) = bỏ lần ghi này, chữ trả về form. */
       const f = sua ? null : (ct?.followups ?? []).find((x: any) => x.interventionId === pa.id) ?? null;
       const hanKe = (ct?.interventions ?? []).find((x: any) => x.id === pa.id)?.actionDue ?? null;

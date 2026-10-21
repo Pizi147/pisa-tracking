@@ -6,14 +6,17 @@ import { ChipSos } from '../../ui/ChipSos.tsx';
 import { Nhan, NhanKq, NhanLich } from '../../ui/Nhan.tsx';
 import { TyLe } from '../../ui/TyLe.tsx';
 import { LOP_OSO } from '../../ui/SoLieu.tsx';
-import { DaiChiXem, Empty, ErrorState, NhanGiaTri, OChiSo } from '../../ui/ui.tsx';
+import { DaiChiXem, Empty, ErrorState, NhanGiaTri, NutChon, OChiSo } from '../../ui/ui.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
-import { nhanHan, nhanThangDuKien } from '@shared/domain/index.ts';
+import { luuRoiTiep, nhanHan, nhanThangDuKien } from '@shared/domain/index.ts';
+import { KhungPanel, NhapViec, KhungTaiCho, Truong, useNhap, useXoaNhap } from '../../ui/KhungPanel.tsx';
+import { BoiCanh, ChuLuu, type TtLuu } from '../../ui/KhuonViec.tsx';
+import { ONgay } from '../../ui/ONgay.tsx';
 
 /**
  * BẢNG MẪU V5 (NEN-V5, 08 mục 6) — bản web của `thiet-ke/v5/bang-mau.html`, dựng bằng THÀNH PHẦN THẬT (token `index.css`, `Nhan*`, `ChipSos`,
  * `Bang` / `ODiem`, `OChiSo`, `TyLe`, `OSo`). Chủ SP duyệt bằng ảnh cặp mockup | web (`scripts/anh-cap.mjs`). Dữ liệu demo cố định, không gọi API.
- * Mục 7 (panel việc) là dáng hiện có — NEN-PANEL sửa khung panel; mục này chỉ để so màu / chữ.
+ * Mục 7 (panel việc) dựng bằng khung panel thật (NEN-PANEL) — lưu giả lập, không gọi API.
  */
 
 const Muc = ({ so, ten, children, ghi }: { so: number; ten: ReactNode; children: ReactNode; ghi?: ReactNode }) => (
@@ -215,19 +218,25 @@ export function BangMauV5() {
         </div>
       </Muc>
 
-      <Muc so={7} ten="Panel việc · nhãn / giá trị · trạng thái lưu" ghi="Khung panel (dòng loại, chân lưu, nháp) làm ở NEN-PANEL; mục này chỉ màu, chữ và kiểu nhãn / giá trị (P2).">
-        <div className="card flex flex-col gap-2.5 px-4 py-3.5">
-          <NhanGiaTri className="max-w-[560px]" hang={[['GVCN ghi', 'Report 1 · nghỉ không phép 2 buổi (10/09, 12/09)'], ['Người ghi', 'Ngô Bảo Nam · 14/09 10:00'], ['Liên hệ PH', <span key="p" className="tabular-nums">Mẹ · 0912 *** 418</span>], ['Hạn', <span key="h" className="text-soon">{nhanHan('2026-09-18', HOM_NAY)}</span>]]} />
-          {([
-            [<span key="n" className="font-semibold text-soon">● Chưa lưu</span>, <><button type="button" className="btn btn-sm">Lưu</button><button type="button" className="btn btn-sm btn-primary">Lưu và tiếp</button></>],
-            [<span key="d" className="font-semibold text-doing">Đang lưu…</span>, <><button type="button" className="btn btn-sm" disabled>Lưu</button><button type="button" className="btn btn-sm btn-primary" disabled>Lưu và tiếp</button></>],
-            [<span key="x" className="font-semibold text-dim">✓ Đã lưu 10:42</span>, <><button type="button" className="btn btn-sm">Đóng</button><button type="button" className="btn btn-sm btn-primary">Việc kế: Báo PH · Lý Tuấn Bình</button></>],
-            [<span key="l" className="font-semibold text-bad">⚠ Không lưu được — mất mạng. Chữ đang gõ vẫn giữ.</span>, <button type="button" className="btn btn-sm btn-primary">Thử lại</button>],
-          ] as const).map(([tt, nut], i) => (
-            <div key={i} className={`flex flex-wrap items-center gap-2.5 rounded-lg border px-4 py-2.5 text-[13px] ${i === 3 ? 'border-bad-line bg-bad-bg' : ''}`}>
-              <span className="min-w-0 flex-1">{tt}</span>{nut}
-            </div>
-          ))}
+      <Muc so={7} ten="Panel việc · bối cảnh · form · lịch sử gập · trạng thái lưu"
+        ghi={<>Khung thật (<code>KhungPanel</code>, NEN-PANEL): dòng loại, bối cảnh nhãn / giá trị, chân lưu. <b>Lưu</b> ở lại panel; <b>Lưu và tiếp</b> chỉ sang việc kế sau khi lưu xong, lỗi thì ở lại và giữ chữ. Chữ đang gõ giữ ở máy theo khoá việc; ✕ khi còn chữ → hộp &quot;Bỏ chữ đang gõ?&quot;. Không tự chuyển theo giờ.</>}>
+        <div className="grid grid-cols-[480px_minmax(0,1fr)] items-start gap-4 max-[1100px]:grid-cols-1">
+          <KhungTaiCho.Provider value>
+            <NhapViec khoa="dev:bao-ph-yen"><PanelViecMau /></NhapViec>
+          </KhungTaiCho.Provider>
+          <div className="card flex flex-col gap-2.5 px-4 py-3.5">
+            <b className="text-sm">Trạng thái ở chân panel — cùng một chỗ, chữ + ký hiệu</b>
+            {([
+              ['nhap', <><button type="button" className="btn btn-sm">Lưu</button><button type="button" className="btn btn-sm btn-primary">Lưu và tiếp</button></>],
+              ['dang', <><button type="button" className="btn btn-sm" disabled>Lưu</button><button type="button" className="btn btn-sm btn-primary" disabled>Lưu và tiếp</button></>],
+              ['da', <><button type="button" className="btn btn-sm">Đóng</button><button type="button" className="btn btn-sm btn-primary">Việc kế: Báo PH · Lý Tuấn Bình</button></>],
+              ['loi', <button type="button" className="btn btn-sm btn-primary">Thử lại</button>],
+            ] as const).map(([tt, nut]) => (
+              <div key={tt} className={`flex flex-wrap items-center gap-2.5 rounded-lg border px-4 py-2.5 text-[13px] ${tt === 'loi' ? 'border-bad-line bg-bad-bg' : ''}`} style={tt === 'loi' ? undefined : { borderColor: 'var(--line)' }}>
+                <span className="min-w-0 flex-1"><ChuLuu tt={tt} luc="10:42" loi="mất mạng" /></span>{nut}
+              </div>
+            ))}
+          </div>
         </div>
       </Muc>
 
@@ -239,5 +248,59 @@ export function BangMauV5() {
         </div>
       </Muc>
     </div>
+  );
+}
+
+/** Mục 7: panel việc Báo PH (TVV Hương mở việc của em Yến) — khung thật, lưu giả lập 600 ms, "Lưu và tiếp" chỉ sau khi lưu xong. */
+function PanelViecMau() {
+  const [kq, setKq] = useNhap('kq', 'da-bao');
+  const [ngay, setNgay] = useNhap('ngay', HOM_NAY);
+  const [ghiChu, setGhiChu] = useNhap('ghi-chu', '');
+  const xoaNhap = useXoaNhap();
+  const [tt, setTt] = useState<TtLuu | null>(null);
+  const [mat, setMat] = useState(false);
+  const daGo = !!ghiChu.trim() || kq !== 'da-bao' || ngay !== HOM_NAY;
+  const luu = () => new Promise<boolean>((xong) => {
+    setTt('dang');
+    setTimeout(() => {
+      if (mat) { setTt('loi'); xong(false); return; }
+      xoaNhap(); setTt('da'); xong(true);
+    }, 600);
+  });
+  const trangThai: TtLuu | null = tt ?? (daGo ? 'nhap' : null);
+  return (
+    <KhungPanel tieuDe="Báo PH · Ngô Hải Yến" loai="VIỆC · BÁO PH" onDong={() => undefined}
+      dau={{ dong2: ['CP FT 110', 'Lần 1', <span key="h" className="font-semibold text-soon">{nhanHan('2026-09-18', HOM_NAY)}</span>] }}
+      chan={{
+        huy: null, daSua: daGo && tt !== 'da',
+        trai: trangThai && <ChuLuu tt={trangThai} luc="10:42" loi="mất mạng" />,
+        phu: tt === 'loi' ? null : <button type="button" className="btn min-h-[44px] sm:min-h-0" disabled={tt === 'dang'} onClick={() => void luu()}>Lưu</button>,
+        chinh: tt === 'loi'
+          ? <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={() => void luu()}>Thử lại</button>
+          : <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={tt === 'dang'} onClick={() => void luuRoiTiep(luu, () => { setGhiChu(''); setKq('da-bao'); setNgay(HOM_NAY); setTt(null); })}>Lưu và tiếp</button>,
+      }}>
+      <div className="flex flex-col gap-4 pt-4">
+        <BoiCanh dong={[
+          ['GVCN ghi', 'Report 1 · nghỉ không phép 2 buổi (10/09, 12/09)'],
+          ['Người ghi', 'Ngô Bảo Nam · 14/09 10:00'],
+          ['Liên hệ PH', <span key="p" className="tabular-nums">Mẹ · 0912 *** 418</span>],
+        ]} />
+        <Truong nhan="Kết quả" as="div">
+          <div className="flex flex-wrap gap-2">
+            <NutChon chon={kq === 'da-bao'} onClick={() => setKq('da-bao')}>Đã báo PH</NutChon>
+            <NutChon chon={kq === 'chua-lien-he'} onClick={() => setKq('chua-lien-he')}>Chưa liên hệ được</NutChon>
+          </div>
+        </Truong>
+        <Truong nhan="Ngày"><div className="max-w-[220px]"><ONgay kieu="ngay" value={ngay} onChange={setNgay} toiDa={HOM_NAY} /></div></Truong>
+        <Truong nhan="Ghi chú kết quả">
+          <textarea className="field w-full" rows={3} value={ghiChu} placeholder="Ví dụ: Đã gọi mẹ em Yến, mẹ biết và sẽ nhắc em." onChange={(e) => { setGhiChu(e.target.value); setTt(null); }} />
+        </Truong>
+        <label className="flex items-center gap-2 text-[13px] text-slate-400"><input type="checkbox" checked={mat} onChange={(e) => setMat(e.target.checked)} /> Giả lập mất mạng khi lưu</label>
+        <details className="border-t pt-3" style={{ borderColor: 'var(--line)' }}>
+          <summary className="cursor-pointer text-sm font-semibold text-slate-400">Lịch sử (2)</summary>
+          <NhanGiaTri className="mt-2 text-[13px]" hang={[['14/09 10:00', 'Ngô Bảo Nam lưu xử lý Report 1 → tạo việc Báo PH'], ['12/09 18:20', 'Ngô Bảo Nam ghi vi phạm lần 2 (nghỉ không phép)']]} />
+        </details>
+      </div>
+    </KhungPanel>
   );
 }

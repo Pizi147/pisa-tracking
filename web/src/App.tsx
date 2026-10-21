@@ -329,7 +329,7 @@ export default function App() {
       <KhoanhPhanTu />
       {/* KHUNG-LOI (A1-05): ≤ 5 nút — QL / QT: 4 + "Thêm" (Phân tích, Tutor); Head tutor (1 mục) không vẽ thanh. */}
       {duoi.hien.length > 0 && (
-        <nav aria-label={t('Điều hướng chính')} className="md:hidden fixed bottom-0 inset-x-0 z-30 flex border-t bg-[color:var(--surface)] print:hidden"
+        <nav data-thanh-duoi aria-label={t('Điều hướng chính')} className="md:hidden fixed bottom-0 inset-x-0 z-30 flex border-t bg-[color:var(--surface)] print:hidden"
           style={{ borderColor: 'var(--line)', paddingBottom: 'env(safe-area-inset-bottom)' }}>
           {duoi.hien.map((m) => <NutDay key={m.key} muc={m} active={dangO === m.key} so={so} soTutor={soTutor} />)}
           {duoi.them.length > 0 && (

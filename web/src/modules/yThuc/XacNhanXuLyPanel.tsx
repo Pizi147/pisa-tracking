@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { api, ApiError, invalidate } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { useToast } from '../../ui/Toast.tsx';
-import { Hang2, KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
+import { Hang2, KhungPanel, Truong, useNhap, useXoaNhap } from '../../ui/KhungPanel.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { ChipHan } from '../../ui/Nhan.tsx';
@@ -53,7 +53,9 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', lop, onC
   const [moCu, setMoCu] = useState(false);
   const [ngayTh, setNgayTh] = useState(homNay);
   const [nguoi, setNguoi] = useState<NguoiChon | null>({ kieu: 'toi' });
-  const [moTa, setMoTa] = useState('');
+  const [moTa, setMoTa] = useNhap('xu-ly-mo-ta', '');
+  const xoaNhap = useXoaNhap();
+  const daNapEm = useRef<number | null>(null);
   const [loai, setLoai] = useState<string>('');
   const [tenKhac, setTenKhac] = useState('');
   const [busy, setBusy] = useState(false);
@@ -67,7 +69,9 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', lop, onC
   useEffect(() => {
     if (!d) return;
     setChon(new Set(d.macDinh.tick));
-    setNgayTh(homNay); setNguoi({ kieu: 'toi' }); setMoTa(''); setLoai(''); setTenKhac(''); setDaLuu(null); setMoCu(false); lf.datLai();
+    if (daNapEm.current !== null) setMoTa('');   // NEN-PANEL: lần nạp đầu giữ nháp (K12); đổi em thì bỏ chữ của em trước
+    daNapEm.current = d.studentId;
+    setNgayTh(homNay); setNguoi({ kieu: 'toi' }); setLoai(''); setTenKhac(''); setDaLuu(null); setMoCu(false); lf.datLai();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [d?.studentId]);
 
@@ -107,6 +111,7 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', lop, onC
         violationIds: [...chon], performedOn: ngayTh, ...nguoiThanhPayload(nguoi), note: moTa.trim(), idempotencyKey, bacDaThay: d.bac,
       });
       /* OV-11c (CV-7): báo nơi gọi TRƯỚC khi làm mới — Công việc giữ chỗ dòng (mờ + gạch) và panel ở lại bước "Đã lưu · Tệp hoặc liên kết". */
+      xoaNhap();
       onDone?.();
       lamMoi();
       setDaLuu({ id: m.id, loai: 'xu-ly', nhan: m.nhan });
@@ -126,6 +131,7 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', lop, onC
       const m = await api.post<{ id: number; nhan: string }>(`/students/${studentId}/y-thuc/de-xuat`, {
         kind: loai, customName: loai === 'other' ? tenKhac.trim() : undefined, violationIds: [...chon], note: moTa.trim(),
       });
+      xoaNhap();
       setDaLuu({ id: m.id, loai: 'nhap', nhan: m.nhan });
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
   };
