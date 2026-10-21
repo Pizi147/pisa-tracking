@@ -21,7 +21,7 @@ import { NganViecVanHanh } from '../worklist/MgmtTasksPage.tsx';
 import { LuoiChamLop, duongDiemTheoLuot, type BangTheoLuot } from '../cham/LuoiChamLop.tsx';
 import { LuoiNhung } from '../test/lichTest/LuoiNhung.tsx';
 import { XacNhanPaLo } from './XacNhanPaLo.tsx';
-import { INTERVENTION_KIND_LABEL, KHOA_CHAM_SPEAKING, LOAI_HAN_CUA_VIEC, duongLichTest, laViecChamCheo, outcomeLabelFor, tenMon, tuanLich } from '@shared/domain/index.ts';
+import { INTERVENTION_KIND_LABEL, KHOA_CHAM_SPEAKING, LOAI_HAN_CUA_VIEC, duongLichTest, emCuaViec, laViecChamCheo, outcomeLabelFor, tenMon, tuanLich } from '@shared/domain/index.ts';
 import { PanelChamSpeaking } from './PanelChamSpeaking.tsx';
 import { VIEC_LO_Y_THUC, type WorkItem } from '../worklist/WorkList.tsx';
 import { LoYThucPanel } from '../yThuc/LoYThucPanel.tsx';
@@ -243,7 +243,7 @@ function PanelNhapDiemTuan({ it, tuMo, onDong, onDaLam }: { it: WorkItem; tuMo: 
               </button>
               {dangMo && (
                 <div className="luoi-trong-panel px-2 pb-2">
-                  <LuoiNhung classId={x.classId!} periodId={x.periodId ?? null} kind={x.kind ?? null} tuanDangXem={x.tuanThi ?? null} kn={x.kn ?? null}
+                  <LuoiNhung chiHv={emCuaViec(x)} classId={x.classId!} periodId={x.periodId ?? null} kind={x.kind ?? null} tuanDangXem={x.tuanThi ?? null} kn={x.kn ?? null}
                     hrefDayDu={duongLichTest({ classId: x.classId, periodId: x.periodId })} onDaLuu={onDaLam} chiCot={x.kns ?? (x.kn ? [x.kn] : null)} anDan
                     /* OV-14b: lớp đầu (mở sẵn) cuộn ngang tới cột của việc + con trỏ ở ô trống đầu cột đó; lớp mở sau không giật trang. */
                     datConTro={!tuMo && !!x.kn && x.key === lop[0].key} />

@@ -337,7 +337,12 @@ export function hopChoDuyet(p: Principal, f: {
     ? conn.prepare(`SELECT * FROM yeu_cau_duyet WHERE trang_thai = 'cho'`).all() as any[]
     : conn.prepare(`SELECT * FROM yeu_cau_duyet WHERE trang_thai != 'cho' AND xu_ly_luc >= ?`).all(tuNgay(NGAY_DA_XU_LY)) as any[]);
   if (f.studentId) rows = rows.filter((r) => r.hoc_vien_id === f.studentId);
-  if (f.branchId) rows = rows.filter((r) => r.chi_nhanh_id === f.branchId);
+  /* SL1 (A7-01, X-03): hộp theo chi nhánh của trang — thẻ đang chờ ở chi nhánh khác không giấu, chỉ đếm để hiện dòng "n thẻ ở chi nhánh khác". */
+  let khacChiNhanh = 0;
+  if (f.branchId) {
+    if (xem === 'cho') khacChiNhanh = rows.filter((r) => r.chi_nhanh_id !== f.branchId && nhomCuaLoai(r.loai) === 'can-quyet').length;
+    rows = rows.filter((r) => r.chi_nhanh_id === f.branchId);
+  }
   /* PR-S4F #5: badge "n chờ duyệt" của một lớp mở hộp lọc ĐÚNG lớp đó — cùng luật đếm `viecHocVienTheoLop` (thẻ theo lớp, thẻ không lớp thì lớp em đang học). */
   let lopDangLoc: { id: number; code: string } | null = null;
   if (f.classId) {
@@ -353,7 +358,7 @@ export function hopChoDuyet(p: Principal, f: {
   const ngu = napNguCanh(conn, rows, homNay);
   const huyDuoc = xem === 'da-xu-ly' ? theHuyDuoc(conn, rows) : new Set<number>();
   const the = rows.map((r) => (huyDuoc.has(r.id) ? { ...theRa(r, ngu), coTheHuy: true } : theRa(r, ngu)));
-  return { the: xem !== 'da-xu-ly' ? sapThe(the) : the.sort(xepDaXuLy), dem: d.chip, demBiet: d.deBiet, homNay, lopDangLoc };
+  return { the: xem !== 'da-xu-ly' ? sapThe(the) : the.sort(xepDaXuLy), dem: d.chip, demBiet: d.deBiet, homNay, lopDangLoc, khacChiNhanh };
 }
 
 /** Yêu cầu của tôi: mọi thẻ đang chờ + thẻ đã xử lý trong 60 ngày gần nhất. */

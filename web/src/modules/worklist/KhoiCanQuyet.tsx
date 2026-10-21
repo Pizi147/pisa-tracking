@@ -32,7 +32,7 @@ export function DaiTomTat({ data, bang, branchId, ct }: { data: Data;
   const caseQh = dong('case-xac-dinh-nguyen-nhan-qua-han');
   const phamVi = { branchId };
   const o = (cot: string, tieuDe: string) => (!bang ? <span className="text-slate-500" aria-label={t('Đang tải')}>…</span> : (
-    <SoLieuO giaTri={bang.tong[cot as keyof typeof bang.tong]?.n ?? 0} className="font-semibold" tieuDe={tieuDe} nguon={`/tong-quan/chi-nhanh/o?cot=${cot}&khoa=tong&chuY=1${q ? `&${q}` : ''}`} />
+    <SoLieuO vung="dai" giaTri={bang.tong[cot as keyof typeof bang.tong]?.n ?? 0} className="font-semibold" tieuDe={tieuDe} nguon={`/tong-quan/chi-nhanh/o?cot=${cot}&khoa=tong&chuY=1${q ? `&${q}` : ''}`} />
   ));
   return (
     <div className="card flex flex-wrap items-center gap-x-5 gap-y-2 px-4 py-2.5 text-[13px] text-slate-300" aria-label={t('HV cần chú ý')} data-hd="tq-tom-tat">
@@ -41,11 +41,11 @@ export function DaiTomTat({ data, bang, branchId, ct }: { data: Data;
       <span className="tabular-nums">{o('chuaDiem', t('HV chưa điểm'))} {t('chưa điểm')}</span>
       <span className="tabular-nums">
         {o('caseChuaChotHv', t('HV có Case chưa chốt PA'))} {t('HV')} · {o('caseChuaChot', t('Case chưa chốt PA'))} {t('Case chưa chốt PA')}
-        {!!caseQh?.n && <> · <span className="text-late">⚠ <SoLieuO id="case-xac-dinh-nguyen-nhan-qua-han" giaTri={caseQh.n} phamVi={phamVi} /> {t('quá hạn')}</span></>}
+        {!!caseQh?.n && <> · <span className="text-late">⚠ <SoLieuO vung="dai" id="case-xac-dinh-nguyen-nhan-qua-han" giaTri={caseQh.n} phamVi={phamVi} /> {t('quá hạn')}</span></>}
       </span>
       {!!bai?.n && (
         <span className="tabular-nums">
-          <SoLieuO id="bai-qua-han-nhap-diem" giaTri={bai.n} phamVi={phamVi} className="font-semibold" /> {t('bài trễ chấm')}{soGv ? ` · ${t('{n} GV', { n: soGv })}` : ''}
+          <SoLieuO vung="dai" id="bai-qua-han-nhap-diem" giaTri={bai.n} phamVi={phamVi} className="font-semibold" /> {t('bài trễ chấm')}{soGv ? ` · ${t('{n} GV', { n: soGv })}` : ''}
         </span>
       )}
       <span className="flex-1" />
@@ -55,7 +55,8 @@ export function DaiTomTat({ data, bang, branchId, ct }: { data: Data;
 }
 
 /** "CẦN BẠN QUYẾT" (C23, Q5): Chờ duyệt · Case chưa chốt PA quá hạn · Chọn bước tiếp sau thi · Chốt lộ trình (chỉ khi có). Làm tại chỗ; lỗi chỉ khối này. */
-export function KhoiCanQuyet({ data, loading, error, reload }: { data: Data | null; loading: boolean; error: ApiError | null; reload: () => void }) {
+export function KhoiCanQuyet({ data, loading, error, reload, branchId }: { data: Data | null; loading: boolean; error: ApiError | null; reload: () => void;
+  /** SL1 (A7-01): chi nhánh của trang — thẻ Chờ duyệt cùng phạm vi với số đầu nhóm. */ branchId: number | null }) {
   const [ngan, setNgan] = useState<DongCase | null>(null);
   const [viec, setViec] = useState<WorkItem | null>(null);
   const [chot, setChot] = useState<WorkItem | null>(null);
@@ -89,7 +90,7 @@ export function KhoiCanQuyet({ data, loading, error, reload }: { data: Data | nu
           <p className="m-0 pt-2 text-sm text-slate-400">{t('Không có việc chờ')}</p>
         ) : (
           <>
-            {cho > 0 && <>{nhom(t('Chờ duyệt'), cho, data.choDuyet?.quaHan ?? 0)}<div className="pt-2"><HopChoDuyet gon /></div></>}
+            {cho > 0 && <>{nhom(t('Chờ duyệt'), cho, data.choDuyet?.quaHan ?? 0)}<div className="pt-2"><HopChoDuyet gon branchId={branchId} /></div></>}
             {caseQh.length > 0 && <>
               {nhom(t('Case chưa chốt PA'), caseQh.length, caseQh.length)}
               <ul className="m-0 list-none p-0">

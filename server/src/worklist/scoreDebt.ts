@@ -53,18 +53,21 @@ export function phanCongDangHieuLuc(classIds: readonly number[], ngay: string): 
   return out;
 }
 
-export function scoreDebtCells(p: Principal, today: string, branchIds: number[] | null): DebtCell[] {
+export function scoreDebtCells(p: Principal, today: string, branchIds: number[] | null, classIds?: readonly number[]): DebtCell[] {
   if (Array.isArray(branchIds) && branchIds.length === 0) return [];
+  /* SL1 (V2B-3): một lớp (Điểm theo lớp) — lọc ngay trong câu, không quét cả chi nhánh. */
+  if (classIds) return nho(`no-diem-lop:${p.userId}:${today}:${classIds.join(',')}`, () => tinhNoDiem(p, today, branchIds, classIds));
   /* OV-15h1: nhớ trong request — Tổng quan QL đọc cùng tập nợ điểm ở "bài trễ chấm", "bài chưa có người chấm", Chưa điểm, Trễ chấm (một lần quét). */
   return nho(`no-diem:${p.userId}:${today}:${branchIds?.join(',') ?? '*'}`, () => tinhNoDiem(p, today, branchIds));
 }
-function tinhNoDiem(p: Principal, today: string, branchIds: number[] | null): DebtCell[] {
+function tinhNoDiem(p: Principal, today: string, branchIds: number[] | null, classIds?: readonly number[]): DebtCell[] {
   const conn = db();
   /* PR-MT (M3, K4-01): MT lịch sử không bao giờ là nợ — bỏ từ câu SQL (phủ Theo giáo viên, bai-qua-han-nhap-diem, Tổng quan). */
   /* PR-UXF-a T65 → PR-S6F-a Q2: em không đang học (Tạm dừng, Kết thúc học, lưu trữ) không sinh nợ điểm. Hồ sơ HV vẫn hiện ô (đường riêng). */
   const where = [`a.status != 'cancelled'`, `cl.status = 'active'`, HV_DANG_HOC_SQL('s'), LUOT_TINH_NO_SQL('a')];
   const args: unknown[] = [];
   if (branchIds) { where.push(`cl.branch_id IN (${branchIds.map(() => '?').join(',')})`); args.push(...branchIds); }
+  if (classIds) { where.push(`a.class_id IN (${classIds.map(() => '?').join(',') || 'NULL'})`); args.push(...classIds); }
   const rows = conn
     .prepare(
       `SELECT a.*, pg.scoring_mode, cl.programme_code, rp.week_start AS period_start, rp.week_end AS period_end, rp.code AS period_code,

@@ -682,7 +682,8 @@ function dsLop(v: unknown): number[] {
 }
 
 api.post('/ke-hoach-test/xuat', requireAuth, wrap((req) =>
-  keHoachSvc.xuatKeHoach(principalOf(req), { branchId: toInt(req.body?.branchId), classIds: dsLop(req.body?.classIds), xemTruoc: !!req.body?.xemTruoc })));
+  keHoachSvc.xuatKeHoach(principalOf(req), { branchId: toInt(req.body?.branchId), classIds: dsLop(req.body?.classIds), xemTruoc: !!req.body?.xemTruoc,
+    chiXepLai: req.body?.chiXepLai === true })));
 
 api.post('/ke-hoach-test/xuat-diem', requireAuth, wrap((req) => {
   const b = req.body ?? {};
