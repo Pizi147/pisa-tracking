@@ -21,7 +21,35 @@ export type BaoCaoKq = {
   /** `thiThangNay` (P4): HV có ngày thi thật trong tháng hiện tại — số hôm nay, panel `o=thi-thang-nay`. */
   chuY: { chuaDiemHv: number; chuaDiemBai: number; caseChuaChotHv: number; caseChuaChot: number; sosHienTai: number; thiThangNay: number };
   casePa: { caseMo: number; paKetQua: number; quaHanChotPa: number; quaHanKetQuaPa: number };
+  /** SV-SO3 (`10` mục 5): bảng "Kết quả MT" — luôn đủ 5 hàng MT0 · MT1 · MT2 · MT3+ · Thi thật. Chỉ Fast Track. */
+  kqMt: DongKqMt[] | null;
 };
+
+/**
+ * KẾT QUẢ MT (SV-SO3, `10` mục 5, `thiet-ke/v5/phan-tich.html`) — mỗi HV một lần mỗi hàng: lượt MỚI NHẤT của em thuộc hàng đó có tuần thi trong kỳ (P8);
+ * Thi thật theo ngày thi. Overall so với TARGET đầu ra của chính em (không phải kỳ vọng MT). `hv` = số em của hàng; `mau` = em có Overall (mẫu số %);
+ * mẫu 0 → web ghi "Chưa có dữ liệu". `soTruoc`: Overall so lượt trước của em trong cùng lộ trình (Thi thật: so MT cuối) — em không có lượt trước có Overall
+ * không vào. Em KCK (không Target cam kết) không vào bảng. Bấm số → `o=kq-mt:<luot>:<cot>`.
+ */
+export const LUOT_KQ_MT = ['mt0', 'mt1', 'mt2', 'mt3+', 'thi'] as const;
+export type LuotKqMt = (typeof LUOT_KQ_MT)[number];
+export const NHAN_LUOT_KQ_MT: Record<LuotKqMt, string> = { mt0: 'MT0', mt1: 'MT1', mt2: 'MT2', 'mt3+': 'MT3+', thi: t('Thi thật') };
+export const COT_KQ_MT = ['dat', 'thieu-0.5', 'thieu-1.0', 'thieu-1.5', 'chua-du'] as const;
+export type CotKqMt = (typeof COT_KQ_MT)[number];
+export const NHAN_COT_KQ_MT: Record<CotKqMt, string> = {
+  dat: t('Đạt Target'), 'thieu-0.5': t('Thiếu 0.5'), 'thieu-1.0': t('Thiếu 1.0'), 'thieu-1.5': t('Thiếu ≥ 1.5'), 'chua-du': t('Chưa đủ'),
+};
+export type DongKqMt = { luot: LuotKqMt; hv: number; mau: number; dem: Record<CotKqMt, number>; soTruoc: { tang: number; bang: number; giam: number } };
+
+/** MT3, MT4… gộp một hàng "MT3+". */
+export const luotKqMt = (mt: number): LuotKqMt => (mt >= 3 ? 'mt3+' : mt === 2 ? 'mt2' : mt === 1 ? 'mt1' : 'mt0');
+
+/** Cột của một em: chưa có Overall (hoặc chưa có Target) → Chưa đủ; khoảng thiếu làm tròn bậc 0.5 (band) trước khi so. */
+export function cotKqMt(ovr: number | null, target: number | null): CotKqMt {
+  if (ovr === null || target === null) return 'chua-du';
+  const thieu = Math.round((target - ovr) * 2) / 2;
+  return thieu <= 0 ? 'dat' : thieu <= 0.5 ? 'thieu-0.5' : thieu <= 1 ? 'thieu-1.0' : 'thieu-1.5';
+}
 
 /** "So 2 tuần trước": chữ trung tính, nói rõ đơn vị — "Tăng 2 HV" · "Giảm 1 HV" · "Không đổi" (không mũi tên, không màu). */
 export function chuSoTruoc(nay: number, truoc: number): string {

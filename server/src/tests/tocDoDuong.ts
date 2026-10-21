@@ -320,6 +320,7 @@ export const DUONG_DO: MucDo[] = [
   { trang: 'Hồ sơ GV', vai: MOI_VAI, url: '/giao-vien/{gv}/chi-so/o?cot=ket-qua&tu=2026-03-02&den=2026-09-14', maChuDich: { GVBM: 403 } },
   { trang: 'Phân tích QL', vai: ['QL', 'QT', 'GVCN'], url: '/phan-tich/bao-cao/o?ct=ft&o=dat-mt', maChuDich: { GVCN: 403 } },
   { trang: 'Phân tích QL', vai: ['QL', 'QT', 'GVCN'], url: '/phan-tich/bao-cao/o?ct=ft&o=thi-thang-nay', maChuDich: { GVCN: 403 } },
+  { trang: 'Phân tích QL', vai: ['QL', 'QT', 'GVCN'], url: '/phan-tich/bao-cao/o?ct=ft&kieu=tuan&tu=2026-03-02&den=2026-09-20&o=kq-mt:mt2:dat', maChuDich: { GVCN: 403 } },   // SV-SO3
   { trang: 'Phân tích QL', vai: ['QL', 'QT'], url: '/phan-tich/bao-cao?ct=ft&kieu=tuan&tu=2026-03-02&den=2026-09-20' },
   { trang: 'Phân tích GV', vai: ['QL', 'QT'], url: '/phan-tich/giao-vien?cn={cn}&ct=ft&tu=2026-03-02&den=2026-09-14' },
 ];

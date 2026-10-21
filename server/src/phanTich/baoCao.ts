@@ -5,8 +5,8 @@
  */
 import { db, theoLo } from '../db.ts';
 import {
-  PERMISSIONS, addDaysIso, baiId, khoangTruoc, tachBaiId, tenMonNgan, tuanLich,
-  type BaoCaoKq, type ChuongTrinh, type DongMock, type DongSosBc, type GvQuaHanBc,
+  COT_KQ_MT, LUOT_KQ_MT, NHAN_COT_KQ_MT, NHAN_LUOT_KQ_MT, PERMISSIONS, addDaysIso, baiId, cotKqMt, khoangTruoc, luotKqMt, tachBaiId, tenMonNgan, tuanLich,
+  type BaoCaoKq, type ChuongTrinh, type CotKqMt, type DongKqMt, type DongMock, type DongSosBc, type GvQuaHanBc, type LuotKqMt,
 } from '../../../shared/domain/index.ts';
 import { badRequest } from '../util.ts';
 import { t } from '../../../shared/i18n/index.ts';
@@ -16,7 +16,8 @@ import { mondayOf } from '../platform/week.ts';
 import { metricSet, overdueScoreBai, rowsFor, type MetricRow } from '../worklist/metrics.ts';
 import { phamViPhanTich } from './phamVi.ts';
 import { luotTrongKhoang } from './tongHop.ts';
-import { mockTrongKhoang } from './ketQuaThi.ts';
+import { ketQuaThiThatKq, mockTrongKhoang } from './ketQuaThi.ts';
+import { kckCuaLuot } from '../fasttrack/attempts.ts';
 
 export type LocBaoCao = { branchId?: number | null; ct: ChuongTrinh; tu: string; den: string };
 
@@ -131,6 +132,85 @@ export function tapThiThangNay(p: Principal, f: { branchId?: number | null; ct: 
   return out;
 }
 
+type EmKqMt = { cot: CotKqMt; ovr: number | null; target: number | null; truoc: number | null; lop: string; nhan: string };
+
+/**
+ * KẾT QUẢ MT (SV-SO3, `10` mục 5) — hàng → em → kết quả. MT: lượt MT0 (lớp thường hoặc FT) / MT lớp FT có tuần thi trong kỳ, đã có ít nhất một band
+ * (CHÍNH `mockTrongKhoang` của tab Kết quả thi), mỗi em lấy lượt mới nhất của hàng (MT3+ gộp MT3 trở đi); Target = Target lúc thi của lượt.
+ * Thi thật: CHÍNH dòng `ketQuaThiThatKq` (đủ 4 kỹ năng, ngày thi trong kỳ; "Không thi" không vào), Target = Target lộ trình. Em KCK không vào.
+ * Lượt trước: lượt có Overall số MT nhỏ hơn gần nhất trong cùng lộ trình (Thi thật: MT cuối có Overall).
+ * Số câu cố định theo lô: lượt trong kỳ (1) + chấm + Thi thật + Target lộ trình (1) + lượt của các lộ trình (1) + chấm.
+ */
+export function tapKqMt(p: Principal, f: LocBaoCao): Map<LuotKqMt, Map<number, EmKqMt>> {
+  const { cs } = phamViPhanTich(p, f.branchId ?? null, null);
+  const where = [cs.sql, `a.status != 'cancelled'`, `(a.kind = 'mt0' OR (a.kind = 'mock' AND c.is_fast_track = 1))`, 'rp.week_start >= ?', 'rp.week_start <= ?'];
+  const args: unknown[] = [...cs.params, mondayOf(f.tu), mondayOf(f.den)];
+  if (f.branchId) { where.push('c.branch_id = ?'); args.push(f.branchId); }
+  const luot = luotTrongKhoang(where.join(' AND '), args);
+  const cua = new Map(luot.map((a) => [a.id as number, a]));
+  const chon = new Map<LuotKqMt, Map<number, DongMock>>(LUOT_KQ_MT.map((l) => [l, new Map()]));
+  for (const d of mockTrongKhoang(p, f, { luot, boCase: true })) {
+    if (kckCuaLuot(cua.get(d.attemptId))) continue;
+    const m = chon.get(luotKqMt(d.mt))!;
+    const cu = m.get(d.studentId);
+    if (!cu || d.mt > cu.mt || (d.mt === cu.mt && d.tuan > cu.tuan)) m.set(d.studentId, d);
+  }
+  const thi = new Map<number, ReturnType<typeof ketQuaThiThatKq>['rows'][number]>();
+  for (const r of ketQuaThiThatKq(p, { branchId: f.branchId, tu: mondayOf(f.tu), den: addDaysIso(mondayOf(f.den), 6) }).rows) {
+    if (!r.khongThi && (!thi.has(r.studentId) || (r.ngayThi ?? '') > (thi.get(r.studentId)!.ngayThi ?? ''))) thi.set(r.studentId, r);
+  }
+
+  const conn = db();
+  const loTrinh = new Map<number, { target: number | null; kck: boolean }>();
+  theoLo([...thi.values()].map((r) => r.cycleId), (lo, ph) => {
+    for (const c of conn.prepare(`SELECT id, target_score, khong_cam_ket FROM learning_cycles WHERE id IN (${ph})`).all(...lo) as any[]) {
+      loTrinh.set(c.id, { target: c.target_score ?? null, kck: !!c.khong_cam_ket });
+    }
+  });
+  for (const [s, r] of thi) if (loTrinh.get(r.cycleId)?.kck) thi.delete(s);
+  /* Overall các lượt của những lộ trình có mặt — "so lượt trước". */
+  const cycleCua = (d: DongMock) => cua.get(d.attemptId)!.cycle_id as number | null;
+  const cyc = [...new Set([...[...chon.values()].flatMap((m) => [...m.values()].map(cycleCua)), ...[...thi.values()].map((r) => r.cycleId)])].filter((x): x is number => x !== null);
+  const luotCyc: any[] = [];
+  theoLo(cyc, (lo, ph) => { luotCyc.push(...luotTrongKhoang(`a.cycle_id IN (${ph}) AND a.status != 'cancelled' AND a.kind IN ('mock', 'mt0')`, lo)); });
+  const cycLuot = new Map(luotCyc.map((a) => [a.id as number, a.cycle_id as number]));
+  const ovrCyc = new Map<number, { mt: number; ovr: number }[]>();
+  for (const d of mockTrongKhoang(p, f, { luot: luotCyc, boCase: true })) {
+    if (d.ovr === null) continue;
+    const c = cycLuot.get(d.attemptId)!;
+    ovrCyc.set(c, [...(ovrCyc.get(c) ?? []), { mt: d.mt, ovr: d.ovr }]);
+  }
+  const truoc = (c: number | null, mt: number): number | null => {
+    const ds = (c === null ? [] : ovrCyc.get(c) ?? []).filter((x) => x.mt < mt).sort((a, b) => b.mt - a.mt);
+    return ds[0]?.ovr ?? null;
+  };
+
+  const out = new Map<LuotKqMt, Map<number, EmKqMt>>();
+  for (const [l, m] of chon) {
+    out.set(l, new Map([...m].map(([s, d]) => {
+      const tg = cua.get(d.attemptId)!.target_at_attempt;
+      const target = tg === null || tg === undefined ? null : Number(tg);
+      return [s, { cot: cotKqMt(d.ovr, target), ovr: d.ovr, target, truoc: d.ovr === null ? null : truoc(cycleCua(d), d.mt), lop: d.lop, nhan: `MT${d.mt} · ${tuanLich(d.tuan)}` }];
+    })));
+  }
+  out.set('thi', new Map([...thi].map(([s, r]) => {
+    const target = loTrinh.get(r.cycleId)?.target ?? null;
+    const ngay = r.ngayThi ? `${r.ngayThi.slice(8, 10)}/${r.ngayThi.slice(5, 7)}` : '';
+    return [s, { cot: cotKqMt(r.ovr, target), ovr: r.ovr, target, truoc: r.ovr === null ? null : truoc(r.cycleId, Infinity), lop: r.lop ?? '', nhan: t('thi {ngay}', { ngay }) }];
+  })));
+  return out;
+}
+
+const dongKqMt = (l: LuotKqMt, m: Map<number, EmKqMt>): DongKqMt => {
+  const em = [...m.values()];
+  const coTruoc = em.filter((e) => e.ovr !== null && e.truoc !== null);
+  return {
+    luot: l, hv: em.length, mau: em.filter((e) => e.cot !== 'chua-du').length,
+    dem: Object.fromEntries(COT_KQ_MT.map((c) => [c, em.filter((e) => e.cot === c).length])) as DongKqMt['dem'],
+    soTruoc: { tang: coTruoc.filter((e) => e.ovr! > e.truoc!).length, bang: coTruoc.filter((e) => e.ovr === e.truoc).length, giam: coTruoc.filter((e) => e.ovr! < e.truoc!).length },
+  };
+};
+
 const dongSos = (classId: number, lop: string, nay: SosLop | undefined, truoc: Map<number, number> | undefined): DongSosBc => {
   const m = [...(nay?.muc.values() ?? [])];
   return { classId, lop, sos1: m.filter((x) => x === 1).length, sos2: m.filter((x) => x === 2).length, sos3: m.filter((x) => x === 3).length, nay: m.length,
@@ -199,6 +279,7 @@ export function baoCao(p: Principal, f: LocBaoCao): BaoCaoKq {
       quaHanChotPa: metricSet(p, 'case-xac-dinh-nguyen-nhan-qua-han', loc).n,
       quaHanKetQuaPa: metricSet(p, 'pa-can-cap-nhat', loc).n,
     },
+    kqMt: ft ? (() => { const k = tapKqMt(p, f); return LUOT_KQ_MT.map((l) => dongKqMt(l, k.get(l)!)); })() : null,
   };
 }
 
@@ -223,6 +304,22 @@ export function oBaoCao(p: Principal, f: LocBaoCao & { o: string }): { n: number
       return { ...row, sub: [x.lop, `MT${x.mt} · ${tuanLich(x.tuan)}`, `Overall ${x.ovr!.toFixed(1)}`, t('kỳ vọng {kv}', { kv: x.kyVong!.toFixed(1) }), d.dat.has(row.id) ? t('Đạt') : t('Chưa đạt')].join(' · ') };
     });
     return { n: ids.length, tieuDe: t('Đạt MT · {pt} % = {dat}/{mau} HV', { pt: d.mau.size ? Math.round((100 * d.dat.size) / d.mau.size) : 0, dat: d.dat.size, mau: d.mau.size }), rows };
+  }
+  const kq = /^kq-mt:(mt0|mt1|mt2|mt3\+|thi):(dat|thieu-0\.5|thieu-1\.0|thieu-1\.5|chua-du)$/.exec(f.o);
+  if (kq) {
+    /* Panel chỉ đọc Kết quả MT (C22): em của ô — lớp · lượt · Overall · Target · so lượt trước. */
+    if (f.ct !== 'ft') throw badRequest('Kết quả MT chỉ có ở Fast Track.');
+    const l = kq[1] as LuotKqMt, cot = kq[2] as CotKqMt;
+    const em = tapKqMt(p, f).get(l)!;
+    const ids = [...em].filter(([, e]) => e.cot === cot).map(([s]) => s).sort((a, b) => a - b);
+    const so = (x: number) => x.toFixed(1);
+    const rows = rowsFor('hoc-vien', ids, undefined, p).map((row) => {
+      const e = em.get(row.id)!;
+      const lech = e.ovr !== null && e.truoc !== null ? e.ovr - e.truoc : null;
+      return { ...row, sub: [e.lop, e.nhan, e.ovr === null ? t('chưa đủ điểm') : `Overall ${so(e.ovr)}`, e.target === null ? null : `Target ${so(e.target)}`,
+        lech === null ? null : t('so lượt trước {d}', { d: lech > 0 ? `+${so(lech)}` : lech < 0 ? `−${so(-lech)}` : '=' })].filter(Boolean).join(' · ') };
+    });
+    return { n: ids.length, tieuDe: `${NHAN_LUOT_KQ_MT[l]} · ${NHAN_COT_KQ_MT[cot]} = ${ids.length} HV`, rows };
   }
   if (f.o === 'thi-thang-nay') {
     const tap = tapThiThangNay(p, f);

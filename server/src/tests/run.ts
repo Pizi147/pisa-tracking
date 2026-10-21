@@ -9518,6 +9518,8 @@ await runPrSvBaiLopTests({ check, assert, conn, P, classId } as any);
 // ==================================================================== V5 SV-SO2 (Overall ở Phân tích lớp / hồ sơ GV, Đạt MT theo HV, Việc / Điểm đúng hạn, hồ sơ GV theo kỳ, panel chỉ đọc)
 const { runPrSvSo2Tests } = await import('./prSvSo2.tests.ts');
 await runPrSvSo2Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+const { runPrSvSo3Tests } = await import('./prSvSo3.tests.ts');
+await runPrSvSo3Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== SV-TVV-VIEC (4 việc TVV: một người giữ = TVV của em / QL; Chốt ngày thi, Bước tiếp, Bổ sung hồ sơ, KQ thi thật)
 const { runPrSvTvvViecTests } = await import('./prSvTvvViec.tests.ts');
 await runPrSvTvvViecTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);

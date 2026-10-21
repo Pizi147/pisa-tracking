@@ -52,6 +52,19 @@ export function laVaiQuanLy(roles: readonly string[] | null | undefined): boolea
  * OV-10b (mockup vai 13/10 mục 6): góc xem Học viên & Lớp / hồ sơ theo việc của vai — `null` = Quản lý / Quản trị / GV (bảng, hồ sơ không đổi).
  * Máy chủ (`p.roleKeys`) và web (`session.roles`) cùng một hàm.
  */
+/**
+ * SV-SO3 (`thiet-ke/v5/dieu-chinh-cuoi.html` khu d, `10` mục 5) — trường hàng HV của Học viên & Lớp, chỉ em Fast Track. Lộ trình `mt`/`soMt` (MT3/3) + Target;
+ * MT gần nhất CỦA EM (lượt của `standingFor` — cùng nguồn cột Kết quả các màn): Overall / kỳ vọng · tuần · 5 ô L R W1 W2 S; Xu hướng = Overall so lượt
+ * có Overall gần nhất trước đó cùng lộ trình (`soMt` = số MT của lượt đó); Hỗ trợ = SOS + kỹ năng dưới kỳ vọng + Case / PA đang mở; Ý thức = bậc hiện tại.
+ */
+export type HangHv = {
+  loTrinh: { mt: number; soMt: number; target: number | null; kck: boolean };
+  mtGan: { mt: number; tuan: string | null; ovr: number | null; kyVong: number | null; kn: Record<'L' | 'R' | 'W1' | 'W2' | 'S', number | null> } | null;
+  xuHuong: { lech: number; soMt: number } | null;
+  hoTro: { sos: number | null; kyNang: string[]; soCase: number; soPa: number; quaHan: boolean };
+  yThuc: string | null;
+};
+
 export type VaiXemHocVien = 'tvv' | 'cx' | 'admin';
 export function vaiXemHocVien(roles: readonly string[] | null | undefined): VaiXemHocVien | null {
   const r = roles ?? [];
