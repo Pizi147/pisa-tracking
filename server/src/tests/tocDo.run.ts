@@ -1036,9 +1036,10 @@ await checkAsync('TD6 (×3) · câu đã sửa không SCAN bảng lớn; migrate
 await checkAsync('TD4-a (×3) · Công việc trùng JSON ảnh chụp trước TD4 — 6 vai × Của tôi / Tất cả / Của một GV / lọc chi nhánh', async () => {
   const { myWork, viecCuaNguoi } = await import('../worklist/mywork.ts');
   const ANH: Record<string, string> = {
-    'QL toi': 'b714b24925fc1a5b', 'QT toi': 'be9f81bba7e38065', 'GVCN toi': 'f6ff40501544a244', 'GVBM toi': 'a617afe0c9c8e789',
-    'GVCN_THUONG toi': 'f6ff40501544a244', 'ADMIN toi': '4ed1fc3fa34653f2', 'QL tat-ca': '960dc1ebda1f6c6a', 'QT tat-ca': 'b92128ad710e87c1',
-    'QT tat-ca cn': '13a38d65143aa09d', 'QL gvcn': '3b10a8158bad5fb5', 'GVS toi': 'a1e80b115593d927',
+    /* SEED-UX: băm đổi theo dữ liệu thêm (TVV, thi thật, MT2 MB FT 101, Báo PH Yến / Bình, lớp HD) — ADMIN không đổi. */
+    'QL toi': '6600c0b612a45e09', 'QT toi': 'f0b1a8c6eefc3a24', 'GVCN toi': 'f01325e7a224b7a6', 'GVBM toi': 'cd23ea818f6b6c3e',
+    'GVCN_THUONG toi': 'f01325e7a224b7a6', 'ADMIN toi': '4ed1fc3fa34653f2', 'QL tat-ca': 'df1b253efd2a5912', 'QT tat-ca': '91da653dad7882ee',
+    'QT tat-ca cn': '1c6894a4188a4f74', 'QL gvcn': '29cc75c05bcd9618', 'GVS toi': 'e8a1dd56b1e53350',
   };
   const p = (v: Vai) => loadPrincipal(USER[v]);
   const goc: [string, () => unknown][] = [
@@ -1175,8 +1176,9 @@ await checkAsync('TD7b (×3) · câu đọc lượt của Nợ điểm / badge l
 check('TD4-b (×3) · /my-work mọi vai: dòng ≤ 40 % mốc trước TD4, số câu không tăng theo dữ liệu', () => {
   const MOC: Record<string, [number, number]> = {
     /* SV-YT-TVV + SV-TVV-VIEC (21/10): QL / QT "Của tôi" +2 câu — việc Báo PH (một câu) + Chốt ngày thi / Bổ sung hồ sơ (một câu cho cả hai). */
-    'QL /my-work': [68, 5647], 'QT /my-work': [68, 7775], 'GVCN /my-work': [66, 4502], 'GVBM /my-work': [66, 5140], 'GVCN_THUONG /my-work': [66, 4502],
-    'QL /my-work?nguoi=tat-ca': [78, 6721], 'QT /my-work?nguoi=tat-ca': [78, 9176], [`QL /my-work?nguoi=${USER.GVCN}`]: [72, 4530],
+    'QL /my-work': [69, 5647], 'QT /my-work': [69, 7775],   /* SEED-UX: +1 QL / QT (em "Đã thi · chờ KQ" theo ngày) */
+    'GVCN /my-work': [66, 4502], 'GVBM /my-work': [66, 5140], 'GVCN_THUONG /my-work': [66, 4502],
+    'QL /my-work?nguoi=tat-ca': [79, 6721], 'QT /my-work?nguoi=tat-ca': [79, 9176], [`QL /my-work?nguoi=${USER.GVCN}`]: [72, 4530],
   };
   const sai: string[] = [];
   for (const [k, [cau, dong]] of Object.entries(MOC)) {
