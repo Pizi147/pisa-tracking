@@ -15,7 +15,7 @@ import { mondayOf } from '../platform/week.ts';
 import { metricSet, overdueScoreBai, rowsFor, type MetricRow } from '../worklist/metrics.ts';
 import { phamViPhanTich } from './phamVi.ts';
 import { luotTrongKhoang } from './tongHop.ts';
-import { luotMockKhoang, mockTrongKhoang } from './ketQuaThi.ts';
+import { mockTrongKhoang } from './ketQuaThi.ts';
 
 export type LocBaoCao = { branchId?: number | null; ct: ChuongTrinh; tu: string; den: string };
 

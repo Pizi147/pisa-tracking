@@ -416,22 +416,20 @@ export async function runHocVienLopTests(t: YThucTestKit) {
 
   // ------------------------------------------------------------------ Task 7 · Phân tích lớp
 
-  /* V5 C09, C10 (SV-SO2): ô chỉ tính lượt ĐỦ Overall; Overall < kỳ vọng (5.5 < 6.0) → xét từng kỹ năng như cũ; em thứ ba chưa đủ 4 kỹ năng → ngoài mẫu. */
+  /* V5 C09, C10 (SV-SO2): ô chỉ tính lượt ĐỦ Overall; Overall < kỳ vọng (5.5 < 6.0) → xét từng kỹ năng như cũ (thiếu Overall → ngoài mẫu: phép kiểm SVSO2 T08). */
   check('PR-Qa · §3.7 Phân tích lớp FT: 5 kỹ năng × MT1…MT5, ô = số HV đạt / số HV có điểm (lượt đủ Overall, luật Overall)', () => {
     const cid = taoLop('MB FT QA3', 'FT');
     const a = taoHocVien({ cid, ft: true, target: 6.5 });
     const b = taoHocVien({ cid, ft: true, target: 6.5 });
-    const c = taoHocVien({ cid, ft: true, target: 6.5 });
     bandFT(themLuot({ ...a, cid, no: 2, kind: 'mock', weekStart: '2026-09-07' }), { listening: 5.0, reading: 6.0, writing1: 5.5, writing2: 5.5, speaking: 5.5 });
     bandFT(themLuot({ ...b, cid, no: 2, kind: 'mock', weekStart: '2026-09-07' }), { listening: 6.5, reading: 5.5, writing1: 5.0, writing2: 5.0, speaking: 5.0 });
-    bandFT(themLuot({ ...c, cid, no: 2, kind: 'mock', weekStart: '2026-09-07' }), { listening: 6.5, reading: 5.0 });   // thiếu Overall → ngoài mẫu
     const r = ptl.phanTichLop(P.admin, cid);
     eq([r.loai, r.dong.map((x: any) => x.nhan).join(' '), r.cot.map((x: any) => x.nhan).join(' ')],
       ['ft', 'L R W1 W2 S', 'MT1 MT2 MT3 MT4 MT5'], 'Khung');
     eq(r.o['listening|mt2'], { dat: 1, tong: 2 }, 'L MT2 (kỳ vọng 6.0)');
     eq(r.o['reading|mt2'], { dat: 1, tong: 2 }, 'R MT2');
     eq(r.o['listening|mt1'] ?? null, null, 'Đợt chưa có điểm');
-    eq(r.soHocVien, 3, 'Sĩ số');
+    eq(r.soHocVien, 2, 'Sĩ số');
     assertThrows(() => ptl.phanTichLop(P.subjectTeacher, cid), /phạm vi/, 'GV không dạy lớp này');
   });
 

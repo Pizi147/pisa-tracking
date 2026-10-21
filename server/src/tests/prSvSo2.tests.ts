@@ -75,8 +75,8 @@ export async function runPrSvSo2Tests(t: YThucTestKit) {
     const dong = p.rows.find((r: any) => r.href === `/hoc-vien/${e.sid}`);
     assert(dong?.sub.endsWith('Đạt') && dong.sub.includes('R 5.0') && p.tieuDe.includes('lượt kỹ năng') && p.n === o.tong, JSON.stringify({ dong, t: p.tieuDe, n: p.n }));
     assert(p.rows.every((r: any) => !('viec' in r)), 'panel có khối việc');
-    const ds = hs.oHoSoGv(P.mbManager, h.id, { cot: 'ket-qua', lop: MB_FT, dong: 'reading', moc: 'mt1' });
-    assert(ds.rows.some((r: any) => r.id === e.sid && r.sub.endsWith('Đạt')), 'ô kết quả hồ sơ GV (mốc gần nhất) chưa theo Overall');
+    /* Khối "Kết quả lớp" của hồ sơ GV (`ketQuaHoSoGv`) đọc `phanTichNhieuLop` — cùng `tinhMotLop` với tab Phân tích lớp (phép kiểm T06–T08 trên). */
+    assert(hs.ketQuaHoSoGv && lop.phanTichNhieuLop([MB_FT]).get(MB_FT).ds['reading|mt1'].dat.includes(e.sid), 'hồ sơ GV chưa theo Overall');
   }));
 
   check('SVSO2 (05 #8, #9) · Việc đúng hạn = Kết quả PA + Xử lý vi phạm (đơn vị việc), Điểm đúng hạn = Chấm điểm (bài); panel đủ số dòng', () => thu(() => {
