@@ -129,13 +129,13 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
     { key: 'hv', nhan: t('Học viên'), kieu: 'ten', goiY: t('Cột này đứng yên khi cuộn ngang, để không lạc mất đang nhập cho em nào.') },
     ...(cot.mt ? [{ key: 'mt', nhan: 'MT', kieu: 'so', rong: 56, goiY: t('Số thứ tự lượt Mock Test (MT) trong lộ trình của em.') } as const] : []),
     ...(cot.trangThai ? [{ key: 'tt', nhan: t('Trạng thái'), kieu: 'chip', rong: 146, goiY: t('Lượt đã chấm xong, đang chờ, hay đã huỷ.') } as const] : []),
-    ...(cot.han ? [{ key: 'han', nhan: t('Hạn chấm'), kieu: 'tuan', rong: 140, goiY: t('Hạn chấm tính riêng cho từng môn, từ tuần thi của chính môn đó: hết thứ Tư của tuần kế tiếp. Quản lý đặt được hạn riêng.') } as const] : []),
+    ...(cot.han ? [{ key: 'han', nhan: t('Hạn chấm'), kieu: 'tuan', rong: 128, goiY: t('Hạn chấm tính riêng cho từng môn, từ tuần thi của chính môn đó: hết thứ Tư của tuần kế tiếp. Quản lý đặt được hạn riêng.') } as const] : []),
     ...rawCot.map(oKn), ...wCot.map(oKn),
-    ...(cot.w ? [{ key: 'w', nhan: 'W', kieu: 'diem', rong: 72, tinh: true, sang: khopKn('writing', kn), goiY: W_HINT } as const] : []),
+    ...(cot.w ? [{ key: 'w', nhan: 'W', kieu: 'diem', rong: 64, tinh: true, sang: khopKn('writing', kn), goiY: W_HINT } as const] : []),
     ...(hien('speaking') ? [oKn('speaking')] : []),
     ...(cot.kyVong ? [{ key: 'kv', nhan: t('Kỳ vọng'), kieu: 'noi-bat', goiY: t('Mức mong đợi của chính lượt này, tính theo Target tại thời điểm đó.') } as const] : []),
     ...(cot.ovr ? [{ key: 'ovr', nhan: 'Overall', kieu: 'noi-bat', rong: 84, goiY: t('Band tổng, chỉ có khi đã đủ điểm mọi kỹ năng bắt buộc.') } as const] : []),
-    { key: 'kq', nhan: t('Kết quả'), kieu: 'chip', rong: 160, goiY: t('Số kỹ năng dưới kỳ vọng của lượt này — đó chính là mức SOS.') },
+    { key: 'kq', nhan: t('Kết quả'), kieu: 'chip', rong: 140, goiY: t('Số kỹ năng dưới kỳ vọng của lượt này — đó chính là mức SOS.') },
   ];
   const cc = Object.fromEntries(cotDs.map((c) => [c.key, c])) as Record<string, DinhNghiaCot>;
   /* K4-24: GV chấm chọn MỘT lần ở đầu cột S (nhớ theo lớp × tuần); chỉ người sửa được S, chỉ khi có tuần. */
@@ -209,7 +209,8 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
 /** OV-15a: mức SOS của lượt = chip SOS chung; hộp "Vì sao" có kỳ vọng + điểm từng kỹ năng, mở hồ sơ MT. Mức 0 giữ nhãn Đạt. */
 function SosLuot({ row, tam }: { row: FtSheet['rows'][number]; tam?: boolean }) {
   const muc = row.result.sosLevel as number;
-  if (muc <= 0) return <Level tone={sosTone(muc)}>{sosLabel(muc)}</Level>;
+  /* BANG-1 (mockup 6 khung 3): đạt = chữ "✓ Đạt" màu vượt, không chip nền (04 mục 5.2). */
+  if (muc <= 0) return <span className="font-semibold text-kq-vuot" title={sosLabel(muc)}>✓ {t('Đạt')}</span>;
   const dot = `MT${row.attemptNo}`;
   const { kyNang, soLieu } = soLieuSos(row.result, dot);
   return <ChipSos muc={muc} tam={tam} kyNang={kyNang} dot={dot} ten={row.studentName} soLieu={soLieu}
@@ -297,7 +298,7 @@ function SheetRow({ row, lop, active, cot, cc, hien, tuanDangXem, tuanXem, onRel
           <Link className="link min-w-0 truncate font-semibold max-sm:inline-flex max-sm:min-h-[44px] max-sm:items-center" to={duongDotTest({ id: row.attemptId })} title={row.studentName}>{row.studentName}</Link>
           {row.hoanTat && <Info title={t('Hết Chủ nhật {ngay}. {x}', { ngay: ngay(row.chuNhatCuoi), x: KHOA_HOAN_TAT_HINT })}>{t('Đủ điểm')}</Info>}
         </span>
-        <div className="bang-phu flex items-center gap-1.5" data-phu-odiem="">{/* rỗng → hàng 44 (CSS :empty) */}
+        <div className="bang-phu !flex items-center gap-1.5" data-phu-odiem="">{/* rỗng → hàng 44 (CSS :empty) */}
           <DongThi tienTo={`MT${row.attemptNo}`} muc={row.cells.filter((c) => c.required && c.progress !== 'cancelled')
             .map((c) => ({ nhan: c.skill.startsWith('writing') ? 'W' : skillShort(c.skill), weekStart: c.weekStart ?? null }))} />
           {row.lichSu && <NhanCu />}

@@ -81,7 +81,7 @@ export function Bang<H>({ ten, cot, hang, khoa, oCua = () => null, phuCua, congC
   } else {
     than = (
       <div className={`table-scroll ${dinh ? 'bang-dinh' : ''} ${dinh === '1440' ? 'bang-dinh-1440' : ''}`}>
-        <table className="bang" data-day={day || undefined} aria-label={ten} style={{ minWidth: cot.reduce((n, c) => n + (rongCot(c, cot) ?? 240), 0) }}>
+        <table className="bang" data-day={day || undefined} aria-label={ten} style={{ minWidth: cot.reduce((n, c) => n + (rongCot(c, cot) ?? (c.kieu === 'ten' ? 205 : 240)), 0) }}>
           <colgroup>{cot.map((c) => { const r = rongCot(c, cot); return <col key={c.key} style={r ? { width: r } : undefined} />; })}</colgroup>
           <thead>
             {nhom && (
