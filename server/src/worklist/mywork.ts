@@ -8,10 +8,10 @@ import {
   SOS_LABEL, URGENCY_LABEL, URGENCY_TONE, caseHeadline, caseTopicLabel, cycleDeadline,
   duongCaseRieng, duongHoSoHocVien, duongLichTest, nhanDotNgan, hanThemPa,
   khungCua, laLanGhiCuoi, ghiNhanhDuoc, tenMon, tenNhomMon, REGULAR_SKILLS, nhanLoaiXuLy, soSanhLop,
-  type Khung, type AttemptKind, type InterventionKind, nhanBaiThuong, chuTyLeXetLai, gopViecTheoLop, tuanLich, type ConGop } from '../../../shared/domain/index.ts';
+  type Khung, type AttemptKind, type InterventionKind, nhanBaiThuong, chuTyLeXetLai, gopViecTheoLop, tuanLich, demViec, nhomViecCua, type ConGop } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addDays, forbidden } from '../util.ts';
-import { COT_PRINCIPAL, activeAt, bangLop, can, isCoreTeacherOf, loadPrincipal, lopFtChoGvSpeaking, napTruocPhamVi, principalTuDong, scopeFor, teachesClass, type Principal } from '../permissions.ts';
+import { COT_PRINCIPAL, activeAt, bangLop, can, editableSkills, isCoreTeacherOf, loadPrincipal, lopFtChoGvSpeaking, napTruocPhamVi, principalTuDong, scopeFor, teachesClass, type Principal } from '../permissions.ts';
 import { phamViHoSoGv } from '../giaoVien/phamVi.ts';
 import { allProgrammes } from '../normal/regular.ts';
 import { attemptHref, listAttempts } from '../fasttrack/attempts.ts';
@@ -136,6 +136,8 @@ export type WorkItem = {
   pa?: { kind: string; moTa: string | null; nguoiId: number | null; nguoi: string | null; soBuoi: number | null };
   /** SV-YT-TVV: id việc Báo PH (`viec_bao_ph`) — form ghi kết quả gửi đúng việc. */
   viecId?: number;
+  /** V5 SV-SO1: việc của người khác mà người xem làm thay được (`lamThayDuoc`) — chỉ có khi xem người khác ("Của GV", "Tất cả"). */
+  lamThay?: boolean;
 };
 
 /**
@@ -358,7 +360,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   const today = demoToday();
   const scope = scopeFor(p, PERMISSIONS.ATTEMPT_VIEW);
   /* OV-14c: GV Speaking không phân công (GV nước ngoài) vẫn có việc Chấm Speaking. */
-  if (scope.none && !lopFtChoGvSpeaking(p, today).length) return { summary: { total: 0, overdue: 0, today: 0 }, groups: [], scopeEmpty: true, xemNguoiKhac: false };
+  if (scope.none && !lopFtChoGvSpeaking(p, today).length) return { summary: demSo([], []), groups: [], scopeEmpty: true, xemNguoiKhac: false };
   /* PR-OV2a: Admin chỉ có nhóm Chấm điểm (của mình và của GV trong phạm vi, để Nhắc). */
   const xemViec = phamViXemViec(p);
   if (xemViec === 'cham-diem') f = { ...f, chiNhom: new Set<WorkGroupKey>(['score']) };
@@ -1410,6 +1412,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   }
 
   ganKhung(items, lopCua);
+  if (tatCa) for (const it of items) if (it.ownerId !== null && !it.mine) it.lamThay = lamThayDuoc(p, it);
 
   const groups = order
     .map((g) => {
@@ -1446,10 +1449,10 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     return 0;
   });
 
-  /* PR-GOP (§5): dòng hiển thị — một lớp × một loại việc; badge và summary đếm DÒNG (X10), `items` giữ từng việc (hồ sơ GV). */
+  /* PR-GOP (§5): dòng hiển thị — một lớp × một loại việc; `items` giữ từng việc (hồ sơ GV). V5 SV-SO1: số việc / bài / nhóm đếm trên `items` (`demSo`). */
   const dong = dungDong(flat);
   return {
-    summary: demDong(dong),
+    summary: demSo(dong, flat),
     items: flat,
     dong,
     groups,
@@ -1465,11 +1468,17 @@ export const nhanNhomViec = (g: string) => GROUP_META[g as WorkGroupKey]?.label 
 /** PR-GOP: gộp dòng (hàm chung `gopViecTheoLop`). OV-12h: bỏ Nhắc trên dòng. */
 const dungDong = (items: WorkItem[]): WorkItem[] => gopViecTheoLop(items, nhanNhomViec) as WorkItem[];
 
-const demDong = (dong: WorkItem[]) => ({
+/**
+ * `total` / `overdue` / `today` / `mine` = DÒNG hiển thị (sau gộp). V5 SV-SO1: `viec` · `bai` · `nhom` · `hv` (`demViec`, trên việc thật, trước gộp — T17)
+ * và `viecQuaHan` = việc quá hạn trong số đó — badge Công việc đọc `viec`, không đọc số dòng.
+ */
+const demSo = (dong: WorkItem[], items: WorkItem[]) => ({
   total: dong.length,
   overdue: dong.filter((i) => i.urgency === 'overdue').length,
   today: dong.filter((i) => i.urgency === 'today').length,
   mine: dong.filter((i) => i.mine).length,
+  ...demViec(items),
+  viecQuaHan: demViec(items.filter((i) => i.urgency === 'overdue')).viec,
 });
 
 /** MH4: gán khung cho mọi dòng việc từ bảng tra lớp đã nạp (không thêm câu SQL). Dòng không gắn lớp → `null`. */
@@ -1506,6 +1515,7 @@ export function viecCuaNguoi(p: Principal, nguoi: number, branchId?: number | nu
       ...it,
       owner: it.ownerId === x.userId ? x.fullName : it.owner,
       mine: false,
+      lamThay: lamThayDuoc(p, it),
     }));
   const groupsByKey = new Map<string, any[]>();
   for (const it of items) (groupsByKey.get(it.group) ?? groupsByKey.set(it.group, []).get(it.group)!).push(it);
@@ -1518,5 +1528,16 @@ export function viecCuaNguoi(p: Principal, nguoi: number, branchId?: number | nu
       today: g.items.filter((i: any) => i.urgency === 'today').length,
     }));
   const dong = dungDong(items);
-  return { summary: { ...demDong(dong), mine: 0 }, items, dong, groups, scopeEmpty: false, xemNguoiKhac: true };
+  /* V5 SV-SO1 (brief 7): xem việc người khác = chế độ theo dõi (`chiXem`); dòng nào người xem làm thay được thì `lamThay` (quyền máy chủ thật). */
+  return { summary: { ...demSo(dong, items), mine: 0 }, items, dong, groups, scopeEmpty: false, xemNguoiKhac: true, chiXem: true };
+}
+
+/**
+ * V5 SV-SO1: người xem LÀM THAY được việc này không — cùng quyền máy chủ kiểm khi lưu: Nhập điểm = `editableSkills` (QL / Admin / QT nhập hộ qua
+ * `score.override` / `plan.week` — `06` điểm 1) đủ mọi kỹ năng của việc; Case học thuật = `case.approve` ở lớp / em đó. Việc khác: chỉ theo dõi.
+ */
+function lamThayDuoc(p: Principal, it: WorkItem): boolean {
+  if (it.group === 'score') return !!it.classId && !!it.kns?.length && editableSkills(p, it.classId, it.kns).length === it.kns.length;
+  if (nhomViecCua(it.group) === 'case-hoc-thuat') return can(p, PERMISSIONS.CASE_APPROVE, { classId: it.classId, studentId: it.studentId });
+  return false;
 }

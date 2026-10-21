@@ -11,7 +11,7 @@
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import { db, theoLo, tx } from '../db.ts';
 import {
-  CO_DIEM_SQL, KY_NANG_KE_HOACH, khoaBai, nhanBai, nhanBaiThuong, MT_TOI_DA, kiemTuanMt0, O_KE_HOACH, dotMtMoi, PERMISSIONS, boMonLich, kiemSoMtMoi, kiemTuanXep, laLichSu, viecXepMt, laVaoMuon, soMtKeTiep, soSanhLop, tenMon, tenMonNgan, tieuDeKeHoach, tomTatLopFT, trangThaiKyNang,
+  CO_DIEM_SQL, KY_NANG_KE_HOACH, MOCK_FT_DEFAULT_ATTEMPTS, khoaBai, nhanBai, nhanBaiThuong, MT_TOI_DA, kiemTuanMt0, O_KE_HOACH, dotMtMoi, PERMISSIONS, boMonLich, kiemSoMtMoi, kiemTuanXep, laLichSu, viecXepMt, laVaoMuon, soMtKeTiep, soSanhLop, tenMon, tenMonNgan, tieuDeKeHoach, tomTatLopFT, trangThaiKyNang,
   tuanKhoa as tuanKhoaCua,
   type BaiXemTruoc, type DongHangLoat, type KetQuaHuy, type KyNangKH, type LuotSo, type LuotXep, type OKyNang, ATTEMPT_KIND_SHORT,
   bangKeHoachXuat, bangThongTinXuat, bangXuatDiem, chuTep, chuanHoaMaLop, gioVn, soTenVi, tuanNam,
@@ -122,7 +122,8 @@ export function danhSachLop(p: Principal, i: { branchId?: number | null } = {}) 
     const b = a !== null ? a + 1 : (luot.length ? Math.max(...luot.map((l) => l.no)) : 0) + 1;
     const coB = new Set(luot.filter((l) => l.no === b && (l.status !== 'planned' || l.coTuan)).map((l) => l.hv));
     const soEm = hv.filter((id) => !coB.has(id)).length;
-    return tomTatLopFT({ dangThi: a, chuaXep: { dot: b, soEm }, canXepLai: canXepLai.get(classId) ?? 0 });
+    /* V5 C20 (T04): sau MT3 không gợi ý MT kế ("MT4 chưa xếp k em") — QL tự thêm ở Kế hoạch Test. */
+    return tomTatLopFT({ dangThi: a, chuaXep: b <= MOCK_FT_DEFAULT_ATTEMPTS ? { dot: b, soEm } : null, canXepLai: canXepLai.get(classId) ?? 0 });
   };
 
   /* Lớp thường: tiến độ (một lượt gom) + số em chưa có bài (một câu). */

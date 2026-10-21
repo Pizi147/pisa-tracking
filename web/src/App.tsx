@@ -73,7 +73,8 @@ const ThanhPhanDemo = import.meta.env.DEV ? lazyTai(() => import('./modules/dev/
  */
 /**
  * SỐ CẠNH MỤC "CÔNG VIỆC" — Quản lý (PR-DUYET K1-44, Q10): số thẻ PHẢI QUYẾT (= chip "Tất cả" tab Chờ duyệt, `demHop`; PR-GVb J5b: không gồm tab Nhắc việc), đỏ khi có thẻ quá hạn.
- * Giáo viên (PR-VAI-a V2, Q16): số việc QUÁ HẠN của chính mình (`/my-work` → `summary.overdue`, PR-S6F-b D14), luôn đỏ. Thanh trên và thanh dưới cùng một số.
+ * Giáo viên (PR-VAI-a V2, Q16 → V5 SV-SO1, brief 7): số VIỆC của chính mình đang mở (`/my-work` → `summary.viec`, đơn vị việc — không phải dòng, không phải bài),
+ * đỏ khi có việc quá hạn (`summary.viecQuaHan`). Thanh trên và thanh dưới cùng một số.
  */
 type SoBadge = { n: number; quaHan: boolean; sr: string } | null;
 function SoCho({ so, className = 'ml-1.5' }: { so: SoBadge; className?: string }) {
@@ -215,10 +216,10 @@ export default function App() {
    * Q16: giáo viên đọc MỘT lần (deps rỗng) — tự tải lại khi `/my-work` bị làm mới (`invalidate` theo tiền tố). D14: chính `/my-work` (Tổng quan,
    * Công việc cũng đọc — `useApi` gộp GET đang bay, máy chủ tính `myWork` một lần).
    */
-  const viecGv = useApi<{ summary: { overdue: number } }>(session?.authenticated && !session.nav?.workApprove && session.nav?.workSupport ? '/my-work' : null, []).data;
-  const gv = viecGv ? { quaHan: viecGv.summary?.overdue ?? 0 } : null;
+  const viecGv = useApi<{ summary: { viec: number; viecQuaHan: number } }>(session?.authenticated && !session.nav?.workApprove && session.nav?.workSupport ? '/my-work' : null, []).data;
+  const gv = viecGv ? { viec: viecGv.summary?.viec ?? 0, quaHan: viecGv.summary?.viecQuaHan ?? 0 } : null;
   const so: SoBadge = dem?.cho ? { n: dem.cho, quaHan: !!dem.quaHan, sr: t('{n} thẻ cần duyệt', { n: dem.cho }) + (dem.quaHan ? t(', {n} quá hạn', { n: dem.quaHan }) : '') + t(' · mọi chi nhánh') }   // SL2: badge cố ý khác phạm vi trang — ghi rõ
-    : gv?.quaHan ? { n: gv.quaHan, quaHan: true, sr: t('{n} việc quá hạn', { n: gv.quaHan }) } : null;
+    : gv?.viec ? { n: gv.viec, quaHan: gv.quaHan > 0, sr: t('{n} việc', { n: gv.viec }) + (gv.quaHan ? t(', {n} quá hạn', { n: gv.quaHan }) : '') } : null;
   /* TU-b: "Tutor n" = số tutor Cần chú ý — chỉ Head tutor / Quản trị (`tutor.manage`); ghi nhận xét / gộp gọi `invalidate('/tutors')` nên số đổi ngay. */
   const demTutor = useApi<{ n: number }>(session?.authenticated && session.nav?.tutorSua ? '/tutors/dem' : null, [lanDem]).data;
   const soTutor: SoBadge = demTutor?.n ? { n: demTutor.n, quaHan: false, sr: t('{n} tutor cần chú ý', { n: demTutor.n }) } : null;
