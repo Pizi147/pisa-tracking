@@ -248,7 +248,8 @@ export async function runPrSl1Tests(t: YThucTestKit) {
     check('SL1-10d · số chuông giảm được: đăng ký đã duyệt, đề nghị dời đã xử lý, Ý thức đã xử lý → Để biết; "Đã có bàn giao" là tin; dòng không biết trạng thái đã đọc → Để biết', () => {
       const tb: any = await_tb;
       thu(() => {
-        const qt = P.admin.userId, NOW = new Date().toISOString();
+        /* Tài khoản chưa có thông báo nào — chuông chỉ trả 50 dòng, người nhiều thông báo có thể đẩy dòng thử ra ngoài. */
+        const qt = one(`SELECT id FROM users WHERE id NOT IN (SELECT user_id FROM notifications) ORDER BY id LIMIT 1`).id, NOW = new Date().toISOString();
         const them = (kind: string, et: string, eid: number, docRoi = false) => Number(conn.prepare(`INSERT INTO notifications (user_id, kind, title, entity_type, entity_id, dedup_key, created_at, read_at)
           VALUES (?,?,?,?,?,?,?,?)`).run(qt, kind, `sl1 ${kind}`, et, eid, `sl1:${kind}:${eid}:${Math.random()}`, NOW, docRoi ? NOW : null).lastInsertRowid);
         const nhom = (id: number) => d.nhomThongBao((tb.thongBaoCua(qt) as any[]).find((n) => n.id === id));
