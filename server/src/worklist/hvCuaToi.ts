@@ -11,7 +11,7 @@
  */
 import { CASE_THAT } from '../cases/sosState.ts';
 import { db } from '../db.ts';
-import { PERMISSIONS, VIOLATION_CATEGORY_LABEL, ngayThiSauThi } from '../../../shared/domain/index.ts';
+import { PERMISSIONS, VIOLATION_CATEGORY_LABEL, thangKeTiep } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addDays } from '../util.ts';
 import { can, napTruocPhamVi, type Principal } from '../permissions.ts';
@@ -75,9 +75,10 @@ export function chipHocVien(p: Principal, f: { branchId?: number | null; phamVi?
   ids['da-thi'] = [...new Set(loTrinhChoKetQuaThi(homNay).map((x) => x.c.student_id as number))].filter((id) => em.has(id));
 
   const cuoiKhoang = addDays(dauTuan, SAP_THI_TUAN * 7 - 1);
-  /* Ngày thi (cùng `ngayThiSauThi`: tuần → Chủ nhật, tháng → ngày cuối) từ hôm nay; đầu khoảng thi (ngày / thứ Hai / mùng 1) chạm 6 tuần. Đã nhập ngày thi thật → không còn "sắp". */
+  /* Khoảng thi dự kiến (ngày · tuần → Chủ nhật · tháng → ngày cuối) còn tới hôm nay; đầu khoảng (ngày / thứ Hai / mùng 1) chạm 6 tuần. Đã nhập ngày thi thật →
+     không còn "sắp". LT-SV: cuối khoảng chỉ để lọc "sắp", KHÔNG phải ngày thi (`ngayThiSauThi` không bịa ngày từ tuần / tháng). */
   const sapThi = (r: any) => {
-    const cuoi = ngayThiSauThi({ exam_date: r.exam_date, exam_week: r.tuan_thi, exam_month: r.exam_month });
+    const cuoi = r.exam_date ?? (r.tuan_thi ? addDays(r.tuan_thi, 6) : /^\d{4}-\d{2}$/.test(r.exam_month ?? '') ? addDays(`${thangKeTiep(`${r.exam_month}-01`)}-01`, -1) : null);
     const dau = r.exam_date ?? r.tuan_thi ?? (r.exam_month ? `${r.exam_month}-01` : null);
     return !r.thi_that_ngay && !!cuoi && !!dau && cuoi >= homNay && dau <= cuoiKhoang;
   };

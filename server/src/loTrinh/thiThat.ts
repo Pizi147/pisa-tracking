@@ -127,10 +127,9 @@ export const SQL_CHO_KET_QUA_THI = `SELECT c.id, c.student_id, s.full_name AS te
    WHERE c.route IS NOT NULL AND c.thi_that_khong_thi = 0 AND (c.thi_that_l IS NULL OR c.thi_that_r IS NULL OR c.thi_that_w IS NULL OR c.thi_that_s IS NULL)
      /* Kết quả CŨ (chỉ Overall / kết luận chọn tay) là đã có kết quả. */
      AND c.outcome_score IS NULL AND COALESCE(c.outcome, 'unknown') = 'unknown'
-     /* TD4: tập cha của "đã thi" — ngày thi (trangThaiSauThi) ≥ cận dưới này; lọc JS giữ nguyên. TD7: đứng TRƯỚC các điều kiện có câu con và đọc tuần
-        thi qua câu con theo khoá (không qua ep nối sau) — SQLite xét nó ngay trên dòng lộ trình, lộ trình chưa tới ngày thi không đọc tiếp. */
-     AND COALESCE(c.thi_that_ngay, c.exam_date, (SELECT p.week_start FROM report_periods p WHERE p.id = c.exam_period_id),
-                  CASE WHEN c.exam_month GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]' THEN c.exam_month || '-01' END, c.ended_at) < ?
+     /* TD4: tập cha của "đã thi" — ngày thi (trangThaiSauThi) ≥ cận dưới này; lọc JS giữ nguyên. TD7: đứng TRƯỚC các điều kiện có câu con — SQLite xét
+        nó ngay trên dòng lộ trình. LT-SV: chỉ tuần / tháng không còn là ngày thi (lọc JS bỏ lộ trình có dự kiến mà chưa ngày). */
+     AND COALESCE(c.thi_that_ngay, c.exam_date, c.ended_at) < ?
      AND ${LO_TRINH_MOI_NHAT}
      /* Đóng vì CHUYỂN LỚP (đóng-mở): em không đi thi — không nhắc. */
      AND NOT EXISTS (SELECT 1 FROM ban_chup_lo_trinh b WHERE b.cycle_id = c.id AND b.ly_do = 'chuyen_lop' AND b.lan = (SELECT MAX(lan) FROM ban_chup_lo_trinh WHERE cycle_id = c.id))`;

@@ -1,10 +1,12 @@
 import { tuanLich } from './hienThiNgay.ts';
+import { nhanLichThi, type LichThi } from './lichThiOv15f.ts';
 import { t } from '../i18n/index.ts';
 
 /** Ô "Sắp tới" của bảng Học viên & Lớp (chủ sản phẩm 03/10, mục 5): ngắn, chỉ thêm con số kỳ vọng. */
 export function chuSapToi(o: {
   nhanLuot: string | null; tuanBatDau: string | null; kyVong: number | null; conLuotChuaXep: string | null;
-  duKienThi: { confidence: 'none' | 'month' | 'week'; label: string } | null; homNay: string; khung: 'ft' | 'thuong';
+  /** LT-SV: trạng thái lịch thi thật (`trangThaiLichThi`) — chữ bằng MỘT hàm nhãn. */
+  lichThi: LichThi | null; homNay: string; khung: 'ft' | 'thuong';
 }): string | null {
   if (o.nhanLuot) {
     const tuan = o.tuanBatDau ? ` · ${tuanLich(o.tuanBatDau, o.homNay)}` : '';
@@ -13,6 +15,5 @@ export function chuSapToi(o: {
   }
   if (o.conLuotChuaXep) return t('{conLuotChuaXep} · chưa xếp', { conLuotChuaXep: o.conLuotChuaXep });
   if (o.khung !== 'ft') return null;
-  const nhan = o.duKienThi && o.duKienThi.confidence !== 'none' ? o.duKienThi.label : t('chưa có ngày');
-  return t('Thi thật · {nhan}', { nhan });
+  return o.lichThi ? nhanLichThi(o.lichThi, o.homNay) : null;
 }

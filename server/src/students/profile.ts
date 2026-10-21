@@ -3,7 +3,7 @@ import { datNho } from '../platform/nguCanhRequest.ts';
 import {
   ASSESSED_SKILLS, BASELINE_SOURCE_LABEL, CYCLE_OUTCOME_LABEL, ENTRY_SKILLS, kyNangSosMt0,
   ASSESSED_SKILL_LABEL, INTERVENTION_KIND_LABEL, JOURNEY_GROUP, PERMISSIONS,
-  caseHeadline, duongCase, issueLabel, caseCategoryLabel, categoryOf, cauTomTat, ketQuaTestGanNhat, oHocThuat, oSapToi, oYThuc,
+  caseHeadline, duongCase, issueLabel, caseCategoryLabel, categoryOf, cauTomTat, ketQuaTestGanNhat, oHocThuat, oSapToi, oYThuc, trangThaiLichThi, tachNhanLichThi,
   bacHoacNgoaiThang, nhanLoaiXuLy, programmeOf, tenBacKe, tenMonNgan, mocKeTiep, LUOT_HUY_HET_SQL, quaHan, studyWeekOf, tenMon, tuanHocTai, tuanLich,
   type AssessedSkill, type EntrySkill, type InterventionKind, kyNangXongThieu, nhanBaiThuong, ATTEMPT_KIND_SHORT, laChuongTrinhGoc, laLienTuc, type ProgrammeCode,
   coONhapLienHe, type LienHe } from '../../../shared/domain/index.ts';
@@ -441,8 +441,7 @@ function boOVaCau(i: {
       nhom: em.nhom ?? null, soBatBuoc: em.soBatBuoc ?? 0, keTiep, han: em.han ?? null, quaHanNgay: quaHanYt, deXuat: deXuatCho,
       soMo: soViPhamMo, tamDung: !!em.tamDung || s.status === 'inactive',
     } : null, today),
-    sapToi: {
-      ...oSapToi({
+    sapToi: ((st) => ({ ...st, attemptId: st.thi ? null : i.mt0Ke?.id ?? nextA?.id ?? null }))(oSapToi({
         ketLuan: s.status === 'finished' ? (selected?.outcome ? CYCLE_OUTCOME_LABEL[selected.outcome as keyof typeof CYCLE_OUTCOME_LABEL] ?? 'Kết thúc học' : 'Kết thúc học') : null,
         sauCuoiKhoa: daCuoiKhoa && !i.lenFt ? { tuanKetThuc: i.khoaHienTai?.tuanKetThuc ?? null } : null,   // OV-11d: đã chốt Lên FT — không còn "chờ Quản lý quyết định"
         next: i.mt0Ke ? { dau: 'MT0', attemptNo: 0, tuan: i.mt0Ke.tuan, soPhan: i.mt0Ke.soPhan, final: false, kyVong: null }
@@ -453,9 +452,8 @@ function boOVaCau(i: {
         ratio: i.mt0Ke ? false : !!nextA ? nextA.mode === 'ratio' : i.cuoiKhoaDang, kck: i.mt0Ke ? false : kck,
         bacKe: !i.lenFt && pc && pc !== 'FT' && laChuongTrinhGoc(pc) ? tenBacKe(pc as ProgrammeCode) : null, homNay: today,
         tamDung: s.status === 'inactive',
-      }),
-      attemptId: i.mt0Ke?.id ?? nextA?.id ?? null,
-    },
+        thi: selected?.route ? trangThaiLichThi(selected, examPlanOf(selected), today) : null,
+      })),
   };
   return { tomTat, o, soViPhamMo };
 }
@@ -510,8 +508,9 @@ function dongThongTin(i: {
     /* Đang dừng: tuần học đứng ở tuần ngay trước tuần Tạm dừng (mockup 24 D1 "tuần học 14 · đang dừng"); dừng ngay tuần đầu → "đang dừng". */
     const th = batDau ? tuanHocTai(batDau, today, dung) : null;
     if (th) tuanHoc = { tuan: th.tuan, tong: null, dangDung: th.dangDung };
-    const gt = nhanThi(dangChay);
-    if (gt) thiDuKien = { nhan: 'dự kiến thi', gt };
+    /* LT-SV: một hàm trạng thái + một hàm nhãn ("Chưa chốt ngày thi 11/2026", "Thi 21/11 · còn 9 ngày"…) — không còn "dự kiến thi" cho mọi mức. */
+    const lich = trangThaiLichThi(dangChay, i.keSel && i.keSel.cycleId === dangChay.id ? i.keSel.ke : examPlanOf(dangChay), today);
+    if (lich.trangThai !== 'chua-co') thiDuKien = tachNhanLichThi(lich, today);
   }
   return {
     lop: current.class_code as string, lopId: current.class_id as number,
@@ -799,7 +798,7 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
   const cuoiFt = (() => { const c = [...allCycles].sort((a: any, b: any) => b.seq - a.seq)[0] as any; return c?.route ? c : null; })();
   /* OV-13q: "Đã thi · chờ kết quả" / "chờ bước tiếp" — chỉ hỏi khi lộ trình FT mới nhất có thể đã thi (đa số hồ sơ không tốn thêm câu nào). */
   const coTheDaThi = !!cuoiFt && !cuoiFt.buoc_tiep && !s.archived_at && (coKetQuaThi(cuoiFt)
-    || (cuoiFt.thi_that_ngay ?? cuoiFt.exam_date ?? (cuoiFt.exam_month ? `${cuoiFt.exam_month}-01` : null) ?? (cuoiFt.exam_period_id ? '' : null) ?? cuoiFt.ended_at ?? '9999') < today);
+    || (cuoiFt.thi_that_ngay ?? cuoiFt.exam_date ?? cuoiFt.ended_at ?? '9999') < today);   // LT-SV: tuần / tháng không phải ngày thi
   const sauThi = coTheDaThi ? sauThiCuaEm(p, studentId, today) : null;
   const viec = viecCuaHocVien(p, studentId, board, {
     choBuocTiep: !!cuoiFt && !cuoiFt.buoc_tiep && coKetQuaThi(cuoiFt), sauThi,
