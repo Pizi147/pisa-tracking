@@ -154,7 +154,7 @@ export function BangMauV5() {
             <ChipSos muc={1} kyNang={['S']} dot="MT2" tinh /><ChipSos muc={2} kyNang={['R', 'W']} dot="MT2" tinh />
             <ChipSos muc={3} kyNang={['L', 'R', 'W']} dot="MT2" tinh /><ChipSos muc={2} tam dot="MT2" tinh />
           </HangBd>
-          <HangBd ten="Tình trạng lịch thi" phu="nền đặc · góc vuông">
+          <HangBd ten="Trạng thái lịch thi" phu="nền đặc · góc vuông">
             <NhanLich loai="co">Ngày thi 10/10</NhanLich><NhanLich loai="du-kien">Dự kiến NOV</NhanLich><NhanLich loai="chua">Chưa có lịch</NhanLich>
             <NhanLich loai="da-thi">Đã thi · chờ KQ</NhanLich><NhanLich loai="co">Có KQ · chờ bước tiếp</NhanLich>
           </HangBd>
@@ -218,7 +218,7 @@ export function BangMauV5() {
           {([
             [<span key="n" className="font-semibold text-soon">● Chưa lưu</span>, <><button type="button" className="btn btn-sm">Lưu</button><button type="button" className="btn btn-sm btn-primary">Lưu và tiếp</button></>],
             [<span key="d" className="font-semibold text-doing">Đang lưu…</span>, <><button type="button" className="btn btn-sm" disabled>Lưu</button><button type="button" className="btn btn-sm btn-primary" disabled>Lưu và tiếp</button></>],
-            [<span key="x" className="font-semibold text-ok">✓ Đã lưu 10:42</span>, <><button type="button" className="btn btn-sm">Đóng</button><button type="button" className="btn btn-sm btn-primary">Việc kế: Báo PH · Lý Tuấn Bình</button></>],
+            [<span key="x" className="font-semibold text-dim">✓ Đã lưu 10:42</span>, <><button type="button" className="btn btn-sm">Đóng</button><button type="button" className="btn btn-sm btn-primary">Việc kế: Báo PH · Lý Tuấn Bình</button></>],
             [<span key="l" className="font-semibold text-bad">⚠ Chưa lưu được — mất mạng. Chữ đang gõ vẫn giữ.</span>, <button type="button" className="btn btn-sm btn-primary">Thử lại</button>],
           ] as const).map(([tt, nut], i) => (
             <div key={i} className={`flex flex-wrap items-center gap-2.5 rounded-lg border px-4 py-2.5 text-[13px] ${i === 3 ? 'border-bad-line bg-bad-bg' : ''}`}>
