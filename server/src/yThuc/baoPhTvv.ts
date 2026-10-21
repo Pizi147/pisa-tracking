@@ -197,6 +197,7 @@ export function boViecBaoPh(p: Principal, id: number, v: { lyDo?: unknown; lyDoK
  */
 export function viecBaoPhCuaToi(p: Principal, o: { today: string; tatCa: boolean; branchId: number | null }): WorkItem[] {
   const ql = can(p, PERMISSIONS.REQUEST_APPROVE, { anyScope: true });
+  if (!ql && !p.roleKeys.includes('consultant')) return [];   // GV không giữ việc này — khỏi tốn câu
   const rows = db().prepare(
     `SELECT v.id, v.student_id, v.nhan, v.han, s.full_name, s.consultant_user_id AS tvv, ${CHI_NHANH_EM} AS branch_id,
             e.class_id, c.code AS class_code, (SELECT COUNT(*) FROM viec_bao_ph_lan l WHERE l.viec_id = v.id) AS so_lan
