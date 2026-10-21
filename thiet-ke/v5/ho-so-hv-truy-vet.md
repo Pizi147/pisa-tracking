@@ -30,6 +30,6 @@
 ## 3. Giả định · cần xác minh
 
 - **[B2]** MT1 của Lê Quang Huy, mốc đổi Target 6.0 → 6.5 ngày 20/07, MT của Đặng Ngọc Lam, liên hệ PH.
-- **[XM] Dữ liệu mới:** mã chưa có chỗ lưu "bài trên lớp có điểm" (góp ý tuần chỉ là chữ ≤ 500, `schema.sql:2085-2095`). Cần một bảng riêng (kỹ năng, tên bài, điểm, thang, tuần, người ghi) — V5-C quyết; không trộn vào bảng điểm MT.
+- **[XM] Dữ liệu mới:** mã chưa có chỗ lưu "bài trên lớp có điểm" (góp ý tuần chỉ là chữ ≤ 500, `schema.sql:2085-2095`). Cần một bảng riêng (kỹ năng, tên bài, điểm, thang, tuần, người ghi) — V5-C quyết; không trộn vào bảng điểm MT. → **SV-BAI-LOP PR #513**: bảng `bai_tren_lop` + API `/students/:id/bai-tren-lop`, `/bai-tren-lop/:id`, lịch sử `/lich-su?loai=bai-lop`.
 - **[ĐX]** Biểu đồ không dùng radar (brief 11); thang trục 4.0–7.5 cố định cho FT; lớp thường hiển thị theo thang của bài, không quy đổi band.
 - Panel việc từ thanh việc dùng chung khung với Hồ sơ lớp / Công việc (vẽ đủ ở `ho-so-lop.html`).

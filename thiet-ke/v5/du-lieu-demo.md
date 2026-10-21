@@ -64,10 +64,10 @@ W = (W1 + 2×W2)/3 làm tròn 0,5 · Overall = TB 4 kỹ năng làm tròn 0,5 (x
 
 | HV | Target | MT2 L · R · W1 / W2 → W · S | Overall | KQ MT2 | Ngày thi | Ghi chú / ca |
 |---|---|---|---|---|---|---|
-| Nguyễn Minh An | 6.5 | 6.0 · 6.0 · 5.5/6.0 → 6.0 · 6.0 | 6.0 | ✓ Đạt | Dự kiến FEB 2027 | Case R (Khoa) chuyển từ BE; vắng S MT3 lần 1 |
-| Trần Thu Hà | 6.0 | 5.5 · 5.5 · 5.5/5.5 → 5.5 · **5.0** | 5.5 | ✓ Đạt (S dưới — **T06**) | Dự kiến JAN 2027 | MT3 S vắng lần 2 → chờ QL duyệt (**T05**) |
+| Nguyễn Minh An | 6.5 | 6.0 · 6.0 · 5.5/6.0 → 6.0 · 6.0 | 6.0 | ✓ Đạt | Dự kiến 02/2027 | Case R (Khoa) chuyển từ BE; vắng S MT3 lần 1 |
+| Trần Thu Hà | 6.0 | 5.5 · 5.5 · 5.5/5.5 → 5.5 · **5.0** | 5.5 | ✓ Đạt (S dưới — **T06**) | Dự kiến 01/2027 | MT3 S vắng lần 2 → chờ QL duyệt (**T05**) |
 | Lê Quang Huy | 6.5 | 6.0 · **5.0** · 5.0/5.5 → **5.5** · 6.0 | **5.5** ✗ | ✗ Chưa đạt · SOS 2 · R, W (**T07**) | Chưa có lịch | Case R (Hà) + Case W1 (Khoa); 3 vi phạm 08–10/09, hạn 14/09 [V5: điểm MT2] |
-| Phạm Bảo Ngọc | 7.0 | 6.5 · 7.0 · 6.5/6.5 → 6.5 · 6.5 | 6.5 | ✓ Đạt | Dự kiến MAR 2027 | vi phạm quá hạn 1 ngày; MT3 đã có L 6.5 R 7.0 |
+| Phạm Bảo Ngọc | 7.0 | 6.5 · 7.0 · 6.5/6.5 → 6.5 · 6.5 | 6.5 | ✓ Đạt | Dự kiến 03/2027 | vi phạm quá hạn 1 ngày; MT3 đã có L 6.5 R 7.0 |
 | Vũ Hải Đăng | 6.0 | 6.0 · 6.0 · 5.5/6.0 → 6.0 · 6.0 | 6.0 | ✓ Đạt (vượt) | — | ổn, không Case |
 | Tô Ngọc Hân | 6.0 | 5.5 · 6.0 · 5.5/5.5 → 5.5 · **vắng** | — | – Chưa đủ dữ liệu (**T08**) | Chưa có lịch | [V5: điểm MT2] |
 
@@ -110,7 +110,7 @@ W = (W1 + 2×W2)/3 làm tròn 0,5 · Overall = TB 4 kỹ năng làm tròn 0,5 (x
 | Đạt MT (HV có lượt MT chốt trong kỳ) | 15/20 = 75 % | 6/8 = 75 % | 2/10 = 20 % | **23/38 = 61 %** (tổng tử / tổng mẫu — **T20**, không phải TB 57 %) |
 | Case có PA | 5/6 = 83 % | 3/4 = 75 % | 2/5 = 40 % | 10/15 = 67 % |
 | Đạt Target thi thật | Chưa có dữ liệu (0 HV có KQ — **T19**) | 1/1 | — | UB: 1/2 = 50 % |
-| HV thi tuần này (W3 SEP) | 2 | 1 | 0 | 3 |
+| Thi tháng này (09/2026, thi thật — P4 [V5-D]) | 2 | 1 | 0 | 3 |
 
 Panel 75 % = 15/20: 20 dòng = 20 HV đủ dữ liệu; 2 HV chưa đủ dữ liệu nêu riêng ngoài mẫu; phân trang 10 dòng/trang vẫn ghi "20" (**T17**).
 
@@ -120,7 +120,7 @@ Panel 75 % = 15/20: 20 dòng = 20 HV đủ dữ liệu; 2 HV chưa đủ dữ li
 |---|---|---|---|---|---|---|---|
 | Lê Minh Khoa | 86 % = 12/14 việc | 95 % = 63/66 bài | 1 việc | 72 % = 18/25 lượt | 64 % = 16/25 HV | 4/4 | 2/3 |
 | Trần Ngọc Hà | 78 % = 14/18 việc | 100 % = 88/88 bài | 1 việc (Ý thức Ngọc) | 75 % = 15/20 lượt | 60 % = 12/20 HV | 2/2 | 1/2 |
-| Phạm Thu Trang | 90 % = 9/10 việc | 82 % = 41/50 bài | 1 việc (S BC FT 205) | 70 % = 21/30 lượt | 57 % = 17/30 HV | 3/4 | mẫu nhỏ 1/2 |
+| Phạm Thu Trang | 90 % = 9/10 việc | 82 % = 41/50 bài | 1 việc (S BC FT 205) | 70 % = 21/30 lượt | 57 % = 17/30 HV | 3/4 | 1/2 |
 
 Bài Speaking chấm chéo chưa nhận không vào "Điểm đúng hạn" của ai (giaoVien.ts:193-195).
 
@@ -150,3 +150,14 @@ Bài Speaking chấm chéo chưa nhận không vào "Điểm đúng hạn" của
 | T20 | Toàn hệ thống 23/38 |
 | T21 | Panel Báo PH ở 375 khi mở bàn phím |
 | T22 | Thu hồi Report 1 của Ngô Hải Yến sau khi TVV đã ghi "Đã báo PH" (cần QL duyệt; lịch sử giữ) |
+
+## 10. Bổ sung V5-D (`dieu-chinh-cuoi.html`, 22/10) [V5-D]
+
+| Mục | Giá trị |
+|---|---|
+| Định dạng | Tháng thi dự kiến `Dự kiến MM/YYYY` (P5) · hạn `dd/mm` (P7) · tuần trong Kế hoạch Test `W3 SEP 2026` |
+| S Ex | Nguyễn Minh An — S Ex W4 SEP (23/09), cô Trang chấm, **QL Vy thêm**; Mai Anh Thư — S Ex 6.5 đã chấm (không vào Overall — XM-1) |
+| MT3 MB FT 101 (W3 SEP) | Huy L 6.0 R 5.5 W1 5.0 W2 5.5 S 6.0 → Overall 6.0 ✓ (R sửa 5.0 → 5.5 lúc 10:12) · Thư 6.5 ✓ · Thắng (W 4.5) SOS 1 · Kiệt SOS 2 W, S · Ngân SOS 3 · Hưng MT2 bù W1 · Kiều Thu Trang MT1 vào muộn |
+| Lớp | 22 HV: MT3 20 · MT2 1 · MT1 1 (lượt của từng HV, P8) |
+| Lịch thi | Cao Đức Thịnh (MB FT 102) chưa chốt ngày 09/2026 · Mai Anh Thư thi 17/09 IDP Hà Nội · Hà Gia Hân dự kiến 10/2026, chưa có TVV |
+| Báo cáo HV "Hành trình theo kỹ năng" (MB FT) | lượt MT1 45 HV · MT2 38 · MT3 20; W yếu nhất 50 % ở MT3 |

@@ -586,7 +586,7 @@ export function tomTatMt(classId: number): { soEm: number; coMocSapToi: number; 
 }
 
 /**
- * HAI ĐIỀU KIỆN CỦA `tomTatMt`, tách thành hằng SQL để chỉ số `hv-ft-xong-mt-cuoi-chua-mt-ke` (PR-VAI-a Q8c) dùng ĐÚNG luật này.
+ * HAI ĐIỀU KIỆN CỦA `tomTatMt`, tách thành hằng SQL (V5 C20 đã bỏ chỉ số `hv-ft-xong-mt-cuoi-chua-mt-ke` dùng chung).
  *   CO_MOC_KE_TIEP  — lộ trình có lượt mốc kế tiếp (`MOC_KE_TIEP_SQL`), MỘT tham số `?` = thứ Hai tuần này.
  *   XONG_MT_CUOI    — đã có lượt MT ĐỦ ĐIỂM bắt buộc (OV-11f Q5) ở số thứ tự ≥ số MT trong lịch của lớp `c` (bản chụp, cùng lộ trình) / của lộ trình em, tính cả MT lịch sử. Không tham số.
  */
@@ -742,6 +742,7 @@ const miss = (key: MissingInfo['key']): MissingInfo => ({ key, ...MISSING_LABEL[
  *
  * Lớp thường KHÔNG bị nhắc tháng thi: các em đó chưa thi IELTS, nhắc là nhắc sai.
  */
+/* shortcut: SV-TVV-VIEC chỉ đếm 4 trường — `exam_month`, `baseline`, `hasNextMilestone` nơi gọi vẫn truyền (không đọc nữa); gỡ khỏi nơi gọi khi dọn hồ sơ / bảng lớp. */
 export function missingForStudent(input: {
   cycle: {
     start_period_id?: number | null; exam_month?: string | null; target_score?: number | null;
@@ -771,16 +772,13 @@ export function missingForStudent(input: {
    *   ngày sinh, email → Q3 (chủ SP 14/10): hồ sơ hành chính, email để phân biệt học viên về sau; không chặn lúc nhập
    *                      danh sách, TVV bổ sung sau — chip / badge / ô Tổng quan TVV-CX cùng đọc hàm này.
    */
+  /* SV-TVV-VIEC (Q-D4 ①, 21/10): "Thiếu" chỉ còn 4 trường TVV bổ sung — Ngày sinh · Email · Tuần bắt đầu · Target (FT). Tháng thi có việc riêng
+     (Chốt ngày thi), điểm đầu vào / mốc tiếp theo không còn đếm. */
   if (input.student && !input.student.dob) out.push(miss('dob'));
   if (input.student && !input.student.email) out.push(miss('email'));
   if (!input.cycle?.start_period_id) out.push(miss('start_week'));
-  if (input.isFastTrack) {
-    if (!input.cycle?.exam_month) out.push(miss('exam_month'));
-    /* OV-9: KCK là dấu riêng — em KCK chưa có Target cũng thiếu Target (không chặn gì). */
-    if (input.cycle?.target_score === null || input.cycle?.target_score === undefined) out.push(miss('target'));
-    if (input.cycle && input.cycle.baseline === false) out.push(miss('baseline'));
-  }
-  if (input.hasNextMilestone === false) out.push(miss('next_milestone'));
+  /* OV-9: KCK là dấu riêng — em KCK chưa có Target cũng thiếu Target (không chặn gì). */
+  if (input.isFastTrack && (input.cycle?.target_score === null || input.cycle?.target_score === undefined)) out.push(miss('target'));
   return out;
 }
 

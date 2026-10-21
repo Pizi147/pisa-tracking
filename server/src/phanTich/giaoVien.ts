@@ -14,11 +14,11 @@ import { db } from '../db.ts';
 import { demoToday } from '../demoConfig.ts';
 import { scopeFor, type Principal } from '../permissions.ts';
 import { BUSINESS_TZ, addDays, badRequest, forbidden, notFound } from '../util.ts';
-import { loadBundle, regularSkillViews, skillCells } from '../fasttrack/attempts.ts';
+import { entryBandsOf, loadBundle, regularSkillViews, skillCells } from '../fasttrack/attempts.ts';
 import { allProgrammes } from '../normal/regular.ts';
 import { danhGiaMon } from '../classes/phanTichLop.ts';
 import { metricSet, parseObligation, rowsFor, type MetricRow } from '../worklist/metrics.ts';
-import { expectationFor } from '../fasttrack/scoring.ts';
+import { evaluateAttempt, expectationFor } from '../fasttrack/scoring.ts';
 import { tuanLich as tuanLichNgan } from '../../../shared/domain/hienThiNgay.ts';
 import { mocTreNhapDiem, quaHanNhapDiem } from '../platform/week.ts';
 import { paCoKetQua } from './hieuQuaPa.ts';
@@ -212,21 +212,82 @@ export function tapChamDiem(c: NguCanhPtGv, nap: NapBai): { tap: Tap; dong: Map<
 
 // ------------------------------------------------------------------ cột 5 · Kết quả môn (mục = ô có điểm, `baiId`) + cột 6 · HV tiến bộ
 
-/** Q15, Q20: `danhGiaMon` (cùng luật tab Phân tích lớp), gán cho người dạy môn đó ở TUẦN THI; em KCK không tính (OV-9: có kỳ vọng nhưng ngoài số liệu SOS). */
-function tapKetQua(c: NguCanhPtGv, nap: NapBai): Map<string, Tap & { lop?: Map<number, Set<number>> }> {
-  const out = new Map<string, Tap>();
-  const lop = new Map<string, Map<number, Set<number>>>();
+/** Một mục cột Kết quả: ô có điểm (MT / bài lớp thường) hoặc một kỹ năng thi thật; `ovr`, `kv` để panel ghi lý do. */
+type MucKq = { x: OBai; dat: boolean; ovr: number | null; kv: number | null };
+
+/**
+ * V5 C09, C10 (brief mục 15 — chỉ cho đánh giá GV, KHÔNG đổi SOS / Case):
+ *   FT MT       Overall lượt ≥ kỳ vọng → mọi kỹ năng có điểm tính Đạt (điểm thật vẫn hiện ở panel); Overall chưa đạt → `danhGiaMon` từng kỹ năng;
+ *               Overall chưa có (thiếu kỹ năng / có kỹ năng bỏ) → "Chưa đủ dữ liệu", ra khỏi mẫu.
+ *   Thi thật    cùng luật với Overall so Target đầu ra (`mucThiThat`).
+ *   Lớp thường  `danhGiaMon` (≥ 70 % từng môn) như cũ. Em KCK (FT) không tính (OV-9).
+ */
+function mucKetQua(c: NguCanhPtGv, nap: NapBai): MucKq[] {
   const progs = allProgrammes();
-  const dat = new Map<number, boolean>();
+  const kl = new Map<number, Omit<MucKq, 'x'>>();
   for (const a of nap.attempts.values()) {
     /* PR-NT: Target lớp thường không bật FT (chủ sản phẩm 04/10) — KCK chỉ bỏ lượt FT; lớp thường chấm tỷ lệ, không kỳ vọng nên vẫn tính. */
     if (a.khong_cam_ket && a.scoring_mode !== 'ratio') continue;
-    const prog = a.scoring_mode === 'ratio' ? progs.get(a.programme_code) ?? null : null;
-    for (const m of danhGiaMon(a, nap.bundle.scores.get(a.id) ?? [], prog, a.target_score ?? null)?.mon ?? []) dat.set(baiId(a.id, m.skill), m.dat);
+    const ratio = a.scoring_mode === 'ratio';
+    const scores = nap.bundle.scores.get(a.id) ?? [];
+    const g = danhGiaMon(a, scores, ratio ? progs.get(a.programme_code) ?? null : null, a.target_score ?? null);
+    if (!g) continue;
+    const ovr = ratio ? null : evaluateAttempt(null, a.attempt_no, entryBandsOf(scores), nap.bundle.skips.get(a.id) ?? []).overall;
+    if (!ratio && ovr === null) continue;
+    const kv = ratio ? null : expectationFor(a.target_score ?? null, a.attempt_no, a.route);
+    const overallDat = ovr !== null && kv !== null && ovr >= kv;
+    for (const m of g.mon) kl.set(baiId(a.id, m.skill), { dat: overallDat || m.dat, ovr, kv });
   }
-  for (const x of nap.o) {
-    const d = dat.get(x.id);
-    if (d === undefined || !(COT_KET_QUA_GV[c.khung] as readonly string[]).includes(x.skill)) continue;   // ponytail: Pre FOU "Tổng hợp" không có cột
+  const out = nap.o.flatMap((x) => { const k = kl.get(x.id); return k ? [{ x, ...k }] : []; });
+  return c.khung === 'ft' ? [...out, ...mucThiThat(c)] : out;
+}
+
+/**
+ * V5 C10: kết quả thi thật (đủ 4 kỹ năng, ngày thi trong khoảng, đã kết luận Đạt / Chưa đạt Target) — mỗi kỹ năng một mục, gán người dạy kỹ năng đó
+ * ở LỚP CUỐI TRƯỚC NGÀY THI (ghi danh bắt đầu muộn nhất ≤ ngày thi), ngày thi. W thi thật tính cho cả cột W1 và W2. Id âm: không trùng `baiId` của MT.
+ * Overall đạt Target (`outcome`, máy tính lúc nhập) → mọi kỹ năng Đạt; chưa đạt → kỹ năng ≥ Target mới Đạt. Em KCK / "Không thi" không tính.
+ */
+function mucThiThat(c: NguCanhPtGv): MucKq[] {
+  const conn = db();
+  const ds = conn.prepare(
+    `SELECT cy.id, cy.student_id, s.full_name, cy.thi_that_ngay AS ngay, cy.thi_that_l, cy.thi_that_r, cy.thi_that_w, cy.thi_that_s,
+            cy.outcome, cy.outcome_score, cy.target_score
+       FROM learning_cycles cy JOIN students s ON s.id = cy.student_id
+      WHERE cy.thi_that_ngay IS NOT NULL AND cy.thi_that_ngay BETWEEN ? AND ? AND COALESCE(cy.thi_that_khong_thi, 0) = 0 AND COALESCE(cy.khong_cam_ket, 0) = 0
+        AND cy.outcome IN ('reached', 'not_reached') AND cy.target_score IS NOT NULL
+        AND cy.thi_that_l IS NOT NULL AND cy.thi_that_r IS NOT NULL AND cy.thi_that_w IS NOT NULL AND cy.thi_that_s IS NOT NULL`,
+  ).all(c.tu, c.cuoi) as any[];
+  const ghiDanh = new Map<number, { lop: number; tu: string; id: number }[]>();
+  for (const lo of theoLo([...new Set(ds.map((r) => r.student_id as number))])) {
+    for (const e of conn.prepare(`SELECT id, student_id, class_id, substr(started_at, 1, 10) AS tu FROM enrollments WHERE student_id IN (${cho(lo.length)})`).all(...lo) as any[]) {
+      (ghiDanh.get(e.student_id) ?? ghiDanh.set(e.student_id, []).get(e.student_id)!).push({ lop: e.class_id, tu: e.tu, id: e.id });
+    }
+  }
+  const out: MucKq[] = [];
+  for (const r of ds) {
+    const truoc = (ghiDanh.get(r.student_id) ?? []).filter((e) => e.tu && e.tu <= r.ngay);
+    const lop = truoc.length ? truoc.reduce((x, y) => (y.tu > x.tu || (y.tu === x.tu && y.id > x.id) ? y : x)).lop : null;
+    if (lop == null || !c.lop.has(lop)) continue;
+    const kv = Number(r.target_score);
+    for (const [skill, band] of [['listening', r.thi_that_l], ['reading', r.thi_that_r], ['writing1', r.thi_that_w], ['writing2', r.thi_that_w], ['speaking', r.thi_that_s]] as const) {
+      out.push({
+        x: {
+          id: -baiId(r.id, skill), attemptId: 0, classId: lop, studentId: r.student_id, hocVien: r.full_name, skill, tuan: r.ngay, han: null,
+          nhapDau: null, band, coDiem: true, tienDo: '', noShow: false, dangHoc: true, kck: false, bai: 'Thi thật', kind: 'thi-that', examinerUserId: null,
+        },
+        dat: r.outcome === 'reached' || band >= kv, ovr: r.outcome_score ?? null, kv,
+      });
+    }
+  }
+  return out;
+}
+
+/** Q15: mục của `mucKetQua`, gán cho người dạy môn đó ở TUẦN THI (thi thật: ngày thi). */
+function tapKetQua(c: NguCanhPtGv, muc: readonly MucKq[]): Map<string, Tap & { lop?: Map<number, Set<number>> }> {
+  const out = new Map<string, Tap>();
+  const lop = new Map<string, Map<number, Set<number>>>();
+  for (const { x, dat: d } of muc) {
+    if (!(COT_KET_QUA_GV[c.khung] as readonly string[]).includes(x.skill)) continue;   // ponytail: Pre FOU "Tổng hợp" không có cột
     const gv = c.nguoiLuc(x.classId, x.skill, x.tuan);
     if (gv == null) continue;
     const t = out.get(x.skill) ?? new Map();
@@ -347,7 +408,7 @@ export function phanTichGiaoVien(p: Principal, f: LocPtGv): PhanTichGvKq {
   const cham = tapChamDiem(c, nap).tap;
   const ghi = tapGhiKetQuaPa(p, c).tap;
   const vp = tapXuLyViPham(c);
-  const kq = tapKetQua(c, nap);
+  const kq = tapKetQua(c, mucKetQua(c, nap));
   const ft = c.khung === 'ft';
   const tb = ft ? tapTienBo(c, nap) : null;
   const pa = ft ? tapPaHieuQua(c) : null;
@@ -456,8 +517,7 @@ export function oChiSoGv(p: Principal, f: LocPtGv & { gv: number; cot: string })
     const ids = [...(tap?.tong ?? [])].sort((a, b) => Number(dung.has(a)) - Number(dung.has(b)) || a - b);
     return { n: ids.length, tieuDe: `${nhan} · ${ten} · ${dung.size}/${ids.length}`, rows: dong(ids) };
   };
-  const theoBai = (nap: NapBai, dung: Set<number>, phu: (x: OBai) => string) => (ids: number[]): MetricRow[] => {
-    const o = new Map(nap.o.map((x) => [x.id, x]));
+  const theoBai = (o: Map<number, OBai>, dung: Set<number>, phu: (x: OBai) => string) => (ids: number[]): MetricRow[] => {
     return ids.map((id) => {
       const x = o.get(id)!;
       return {
@@ -469,13 +529,20 @@ export function oChiSoGv(p: Principal, f: LocPtGv & { gv: number; cot: string })
   const kq = /^ket-qua:(\w+)$/.exec(f.cot);
   if (kq || f.cot === 'tien-bo') {
     const nap = napBai(p, c);
-    const tap = kq ? tapKetQua(c, nap).get(kq[1])?.get(f.gv) : tapTienBo(c, nap).get(f.gv);
+    const muc = kq ? mucKetQua(c, nap) : [];
+    const tap = kq ? tapKetQua(c, muc).get(kq[1])?.get(f.gv) : tapTienBo(c, nap).get(f.gv);
+    const theoMuc = new Map(muc.map((m) => [m.x.id, m]));
+    const diem = (x: OBai) => (x.band !== null ? `${tenMonNgan(c.lop.get(x.classId)?.ct ?? null, x.skill)} ${x.band.toFixed(1)}` : null);
+    /* V5 C09: dòng phụ ghi Overall + kỳ vọng / Target — đọc được vì sao kỹ năng dưới kỳ vọng vẫn tính Đạt. */
     const ky = (x: OBai) => {
+      const m = theoMuc.get(x.id);
+      if (m) return [diem(x), m.ovr !== null ? `Overall ${m.ovr.toFixed(1)}` : null, m.kv !== null ? `${x.kind === 'thi-that' ? 'Target' : 'kỳ vọng'} ${m.kv.toFixed(1)}` : null].filter(Boolean).join(' · ');
       const a = nap.attempts.get(x.attemptId);
       const kv = a && a.scoring_mode !== 'ratio' ? expectationFor(a.target_score ?? null, a.attempt_no, a.route) : null;
-      return [x.band !== null ? `${tenMonNgan(c.lop.get(x.classId)?.ct ?? null, x.skill)} ${x.band.toFixed(1)}` : null, kv !== null ? `kỳ vọng ${kv.toFixed(1)}` : null].filter(Boolean).join(' · ');
+      return [diem(x), kv !== null ? `kỳ vọng ${kv.toFixed(1)}` : null].filter(Boolean).join(' · ');
     };
-    return xong(kq ? `Kết quả ${tenMonNgan(null, kq[1])}` : 'HV tiến bộ', tap, theoBai(nap, new Set(tap?.dung ?? []), ky));
+    const o = new Map([...nap.o, ...muc.map((m) => m.x)].map((x) => [x.id, x]));
+    return xong(kq ? `Kết quả ${tenMonNgan(null, kq[1])}` : 'HV tiến bộ', tap, theoBai(o, new Set(tap?.dung ?? []), ky));
   }
   if (f.cot === 'ghi-pa') return xong('Kết quả PA đúng hạn', tapGhiKetQuaPa(p, c).tap.get(f.gv), (ids) => rowsFor('nghia-vu', ids, 'dung-han-cap-nhat', p));
   if (f.cot === 'vi-pham') return xong('Xử lý vi phạm đúng hạn', tapXuLyViPham(c).get(f.gv), (ids) => rowsFor('vi-pham', ids, undefined, p));

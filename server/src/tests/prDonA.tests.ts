@@ -720,7 +720,7 @@ export async function runPrDonATests(t: YThucTestKit) {
     '/ref/periods': 'Filters.tsx — bộ lọc tuần, Tổng quan không vẽ', '/ref/current-period': 'Filters.tsx — như trên', '/ref/period-window': 'Filters.tsx — như trên',
     '/phan-tich/hieu-qua-pa': 'tab Phân tích — khi bấm tab', '/phan-tich/giao-vien': 'tab Phân tích', '/phan-tich/giao-vien/cham-diem': 'tab Phân tích',
     '/phan-tich/tong-hop': 'tab Phân tích', '/phan-tich/y-thuc': 'tab Phân tích', '/xuat-mt/xem-truoc': 'tab Phân tích › Xuất',
-    '/giao-vien': 'bảng Theo giáo viên — tab Phân tích', '/metrics/': 'SoLieu / SoLieuO — mở danh sách khi bấm ô (ô số lúc mở trang kiểm riêng ở dưới)',
+    '/giao-vien': 'bảng Theo giáo viên — tab Phân tích', '/metrics/': 'SoLieu / OSo — mở danh sách khi bấm ô (ô số lúc mở trang kiểm riêng ở dưới)',
     '/yeu-cau': 'Yêu cầu của tôi — chỉ khi đã có thẻ', '/students': 'ô tìm học viên ở thanh trên — khi gõ',
     '/students/': 'PanelViec (OV-13b) — panel Báo phụ huynh qua TVV, chỉ khi bấm việc ở Tổng quan GV',
     /* OV-13b: Tổng quan GV mở việc tại chỗ (`PanelViec`) — cây panel việc chỉ gọi khi bấm một việc, không lúc mở trang. */

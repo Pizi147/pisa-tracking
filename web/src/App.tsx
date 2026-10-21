@@ -9,6 +9,7 @@ import { Header } from './modules/platform/Header.tsx';
 import { Skeleton } from './ui/ui.tsx';
 import { useToast } from './ui/Toast.tsx';
 import { CHIP_TRON } from './ui/Nhan.tsx';
+import logoPisa from './ui/logo-pisa.png';
 import WelcomePage from './modules/platform/WelcomePage.tsx';
 import { KhoanhPhanTu } from './modules/huongDan/chiChoToi.tsx';
 import { MenuDong } from './ui/MenuDong.tsx';
@@ -80,16 +81,17 @@ function SoCho({ so, className = 'ml-1.5' }: { so: SoBadge; className?: string }
   return (
     <>
       <span aria-hidden title={so.sr} className={`${className} ${CHIP_TRON} min-w-[1.25rem] justify-center tabular-nums ${
-        so.quaHan ? 'border-late-line bg-late-bg text-late' : 'border-transparent bg-white/10 text-slate-300'}`}>{so.n}</span>
+        so.quaHan ? 'border-late-line bg-late-bg text-late' : 'border-transparent bg-white/15 text-slate-100'}`}>{so.n}</span>
       <span className="sr-only">, {so.sr}</span>
     </>
   );
 }
 
-const lopNav = (active: boolean) => `shrink-0 px-3 py-1.5 rounded-lg text-sm no-underline whitespace-nowrap transition-colors border ${
+/* NEN-V5 (`.dh` của mockup V5): mục thanh xanh cao bằng thanh, chữ 14 / 500; đang mở = chữ trắng đậm + vạch hồng 3 px ở đáy. */
+const lopNav = (active: boolean) => `inline-flex h-14 shrink-0 items-center border-b-[3px] px-3 text-sm no-underline whitespace-nowrap transition-colors ${
   active
-    ? 'bg-[color:var(--accent-soft)] text-[color:var(--accent-strong)] border-[color:var(--accent-line)]'
-    : 'text-slate-300 border-transparent bam'
+    ? 'border-[color:var(--hong)] font-bold text-[color:var(--dieu-huong-chu-mo)]'
+    : 'border-transparent font-medium text-[color:var(--dieu-huong-chu)] hover:bg-[color:var(--dieu-huong-hover)] hover:text-[color:var(--dieu-huong-chu-mo)]'
 }`;
 
 /** `bang`: bản đo (vô hình, không `data-hd`, không nhận focus). */
@@ -136,7 +138,7 @@ function ThanhTren({ items, dangO, so, soTutor }: { items: KhuVucMuc[]; dangO: K
   }, []);
   const { hien, them } = doDuoc.rong.length === items.length ? chiaMucThanh(items, doDuoc.rong, doDuoc.co, doDuoc.them) : { hien: items, them: [] };
   return (
-    <nav ref={khung} aria-label={t('Điều hướng chính')} className="relative hidden md:flex flex-1 items-center gap-1 min-w-0">
+    <nav ref={khung} aria-label={t('Điều hướng chính')} className="relative hidden md:flex flex-1 items-center gap-1 min-w-0 self-stretch">
       {hien.map((m) => <NavItem key={m.key} muc={m} active={dangO === m.key} so={so} soTutor={soTutor} />)}
       {them.length > 0 && (
         <MenuDong nhan={THEM} muc={mucThem(them, navigate, so, soTutor)} lopNut={lopNav(them.some((m) => m.key === dangO))}
@@ -255,18 +257,13 @@ export default function App() {
           <button type="button" className="btn btn-sm" disabled={dangThu} onClick={() => { void thuLai(); }}>{dangThu ? t('Đang thử…') : t('Thử lại')}</button>
         </div>
       )}
-      <header className="relative shrink-0 border-b bg-[color:var(--surface)] print:hidden" style={{ borderColor: 'var(--line)' }}>
-        {/* D7 (mockup 23C): điện thoại cao 52 px, chữ PISA thay ô "P", nút sát nhau; máy tính giữ nguyên. */}
-        <div className="flex items-center gap-3 px-3 sm:px-4 h-14 max-sm:h-[52px] max-sm:gap-0.5 max-sm:pl-4 max-sm:pr-1.5 min-w-0">
-          <div className="flex items-center gap-2 shrink-0">
-            <span className="sm:hidden text-[15px] font-bold tracking-[0.06em] text-slate-100">PISA</span>
-            <div className="w-7 h-7 rounded-md border hidden sm:grid place-items-center font-bold text-xs"
-              style={{ background: 'var(--accent-soft)', borderColor: 'var(--accent-line)', color: 'var(--accent)' }}>P</div>
-            <div className="leading-tight hidden sm:block">
-              <div className="text-sm font-semibold text-slate-100">PISA Tracking</div>
-              {!banChinh && <div className="text-xs text-slate-500">{t('Bản demo nội bộ')}</div>}
-            </div>
-          </div>
+      {/* NEN-V5: thanh xanh màu logo (`.thanh-xanh`, token đổi tại chỗ) + logo PISA hồng; điện thoại cao 52 px. */}
+      <header className="relative thanh-xanh shrink-0 print:hidden">
+        <div className="flex items-center gap-3 px-3 sm:px-5 h-14 max-sm:h-[52px] max-sm:gap-0.5 max-sm:pl-4 max-sm:pr-1.5 min-w-0">
+          <Link to="/" className="mr-3 flex shrink-0 items-center gap-2 no-underline max-sm:mr-1" aria-label={t('PISA — Tổng quan')}>
+            <img src={logoPisa} alt="PISA" title="PISA Tracking" width={76} height={24} className="h-6 w-auto" />
+            {!banChinh && <span className="hidden text-xs text-[color:var(--dieu-huong-chu)] lg:inline">{t('Bản demo nội bộ')}</span>}
+          </Link>
           <ThanhTren items={items} dangO={dangO} so={so} soTutor={soTutor} />
           <div className="flex-1 min-w-0 md:hidden" />
           <Header />

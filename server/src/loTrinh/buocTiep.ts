@@ -22,6 +22,7 @@ import { huyLenh, raLenh } from '../classes/lenhChuyen.ts';
 import { ghiBanChup } from './banChup.ts';
 import { docTarget } from '../fasttrack/cycles.ts';
 import { COT_SAU_THI, NGAY_CO_KQ } from './cotSauThi.ts';
+import { chuViecTvv, coTheGiuViecTvv } from '../worklist/viecTvv.ts';
 import { addJourney, notify, writeAudit } from '../platform/audit.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
 
@@ -351,7 +352,7 @@ export const hanBuocTiep = (c: DongSauThi, today: string): string => trangThaiSa
  * Lộ trình chờ chọn bước tiếp (chưa lọc quyền) — một nguồn cho việc QL / TVV (`viecBuocTiep`), ô "Chờ chọn bước tiếp" (OV-10c) và đếm trước deploy (`SQL_CHO_BUOC_TIEP`).
  * OV-13m: sinh NGAY khi có kết quả, cả khi em còn ghi danh (lộ trình còn mở); lộ trình đã đóng thì không đóng vì chuyển lớp. Lớp = lớp cuối (bản chụp) hoặc lớp đang giữ.
  */
-export const SQL_CHO_BUOC_TIEP = `SELECT c.id, c.student_id, s.full_name AS ten, ${COT_SAU_THI}, c.status, b.ket_luan,
+export const SQL_CHO_BUOC_TIEP = `SELECT c.id, c.student_id, s.full_name AS ten, s.consultant_user_id AS tvv, ${COT_SAU_THI}, c.status, b.ket_luan,
        COALESCE(b.class_id, e.class_id) AS class_id, COALESCE(b.class_code, l.code) AS class_code, COALESCE(b.branch_id, l.branch_id) AS branch_id
   FROM learning_cycles c JOIN students s ON s.id = c.student_id LEFT JOIN ban_chup_lo_trinh b ON ${BAN_CHUP_CUOI} LEFT JOIN report_periods ep ON ep.id = c.exam_period_id
   LEFT JOIN enrollments e ON e.id = ${GHI_DANH} LEFT JOIN classes l ON l.id = e.class_id
@@ -368,13 +369,16 @@ export function choBuocTiep(studentId?: number): any[] {
  * Một dòng mỗi lộ trình chờ chọn. Ai thấy: người chọn được (`coQuyenBuocTiep` — Quản lý / Quản trị / TVV của chi nhánh), là việc của chính họ. Một câu cho cả tập;
  * quyền hỏi theo em (tập nhỏ: em có kết quả, chưa chọn). Dòng: "Chọn bước tiếp" · em · lớp · "đã thi T7 10/10 · OVR 6.5 · Đạt Target" (mockup OV-13 bước tiếp §3).
  */
-export function viecBuocTiep(p: Principal, f: { today: string; branchId: number | null; studentId?: number }): any[] {
+export function viecBuocTiep(p: Principal, f: { today: string; branchId: number | null; studentId?: number; tatCa?: boolean }): any[] {
+  if (!coTheGiuViecTvv(p)) return [];
   const ds = choBuocTiep(f.studentId);
-  napTruocPhamVi(ds.map((c) => c.student_id));   // quyền theo em (`coQuyenBuocTiep`) đọc phạm vi một câu cho cả tập — không N+1
+  napTruocPhamVi(ds.map((c) => c.student_id));   // quyền theo em đọc phạm vi một câu cho cả tập — không N+1
   const out: any[] = [];
   for (const c of ds) {
     if ((f.branchId && c.branch_id && c.branch_id !== f.branchId) || (f.studentId && c.student_id !== f.studentId)) continue;
-    if (!coQuyenBuocTiep(p, c.student_id)) continue;
+    /* SV-TVV-VIEC: MỘT người giữ = TVV của em (không có → QL chi nhánh) — QL / TVV khác của chi nhánh vẫn chọn được (`coQuyenBuocTiep`) nhưng không là việc của họ. */
+    const chu = chuViecTvv(p, c.student_id, c.tvv ?? null, f.tatCa);
+    if (!chu) continue;
     const st = trangThaiSauThi(c, f.today);
     const han = st.han ?? f.today;
     const kq = daXongCua({ ...c, bc_ket_luan: c.ket_luan });
@@ -386,7 +390,7 @@ export function viecBuocTiep(p: Principal, f: { today: string; branchId: number 
       attemptId: null, attemptNo: null, caseId: null, level: null, contextLabel: st.daGiaHan ? `${kq} · đã gia hạn` : kq, count: null,
       reason: [c.class_code ?? null, thi, ketQua].filter(Boolean).join(' · '),
       tieuDe: 'Chọn bước tiếp', phu: null, actionLabel: 'Chọn',
-      href: duongHoSoHocVien(c.student_id, { buocTiep: c.id }), ownerId: null, owner: null, mine: true,
+      href: duongHoSoHocVien(c.student_id, { buocTiep: c.id }), ownerId: chu.ownerId, owner: null, mine: chu.mine,
       due: han, statusLabel: `hạn ${tuanLich(han, f.today)}`,
     });
   }

@@ -83,6 +83,8 @@ export const DUONG_DO: MucDo[] = [
   { trang: 'Tổng quan GV', vai: ['GVCN', 'GVBM', 'GVCN_THUONG'], url: '/my-work' },
   /* PR-Ra: trang "Công việc" — Hỗ trợ học viên dùng lại `/my-work`, nay có thêm `nguoi`. */
   { trang: 'Công việc', vai: ['QL', 'QT'], url: '/my-work' },
+  /* SV-YT-TVV + SV-TVV-VIEC: việc của TVV (Báo PH, Chốt ngày thi, Bước tiếp, Bổ sung hồ sơ, KQ thi thật) ở Tổng quan TVV (TVV không có khu Công việc). */
+  { trang: 'Việc TVV', vai: ['TVV'], url: '/tong-quan/viec-cua-toi' },
   {
     trang: 'Công việc', vai: ['QL', 'QT', 'GVCN'], url: '/my-work?nguoi=tat-ca',
     maChuDich: { GVCN: 403 },
@@ -191,6 +193,9 @@ export const DUONG_DO: MucDo[] = [
    */
   { trang: 'Hồ sơ HV', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/students/{hv}' },
   { trang: 'Hồ sơ HV', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/students/{hv}/skill-board' },
+  /* SV-BAI-LOP: Bài trên lớp của em + lịch sử sửa. */
+  { trang: 'Hồ sơ HV', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/students/{hv}/bai-tren-lop' },
+  { trang: 'Hồ sơ HV', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/lich-su?loai=bai-lop&id={hv}' },
   /* PR-Dọn-a (Q2): ô chọn người theo một em — kiểm STUDENT_VIEW trước, rồi lọc theo phạm vi người xem. */
   { trang: 'Hồ sơ HV', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/ref/nguoi?nhom=giao_vien&studentId={hv}' },
   /* TU-a: nhóm "Tutor" của ô Người dạy PA Tutor (Thêm / Sửa / Xác nhận PA) — một câu đọc tutor + kết luận mới nhất. */
@@ -434,10 +439,10 @@ export const TRAN: Record<string, number> = {
   'GVBM /my-work': 65,   // SEED-UX: +2 — seed có em "Đã thi · chờ KQ" theo ngày (Phan Hải Anh) → đường việc Cập nhật KQ thi thật chạy câu đọc kết quả (trước: dữ liệu rỗng)
   'GVCN_THUONG /my-work': 65,   // SEED-UX: +2 — seed có em "Đã thi · chờ KQ" theo ngày (Phan Hải Anh) → đường việc Cập nhật KQ thi thật chạy câu đọc kết quả (trước: dữ liệu rỗng)
   /* PR-Ra: trang "Công việc" dùng lại /my-work cho QL·QT, cộng chế độ nguoi=tat-ca/{gv} (Q1–Q2). */
-  'QL /my-work': 65,   // SEED-UX: +2 — seed có em "Đã thi · chờ KQ" theo ngày (Phan Hải Anh) → đường việc Cập nhật KQ thi thật chạy câu đọc kết quả (trước: dữ liệu rỗng)
-  'QT /my-work': 65,   // SEED-UX: +2 — seed có em "Đã thi · chờ KQ" theo ngày (Phan Hải Anh) → đường việc Cập nhật KQ thi thật chạy câu đọc kết quả (trước: dữ liệu rỗng)
-  'QL /my-work?nguoi=tat-ca': 75,   // SEED-UX: +2 — seed có em "Đã thi · chờ KQ" theo ngày (Phan Hải Anh) → đường việc Cập nhật KQ thi thật chạy câu đọc kết quả (trước: dữ liệu rỗng)
-  'QT /my-work?nguoi=tat-ca': 75,   // SEED-UX: +2 — seed có em "Đã thi · chờ KQ" theo ngày (Phan Hải Anh) → đường việc Cập nhật KQ thi thật chạy câu đọc kết quả (trước: dữ liệu rỗng)
+  'QL /my-work': 65,   // TD4: đo 61 (trước 64); SV-YT-TVV +1 (việc Báo PH: một câu); SV-TVV-VIEC +1 (Chốt ngày thi + Bổ sung hồ sơ: một câu)
+  'QT /my-work': 65,   // TD4: đo 61 (trước 64); SV-YT-TVV +1; SV-TVV-VIEC +1
+  'QL /my-work?nguoi=tat-ca': 75,   // TD4: đo 69 (trước 76) — một lần `listAttempts`; 16/10 +1 OV-13k (xem_nx_s) +1 OV-13m (Chọn bước tiếp) = 73; SV-YT-TVV +1, SV-TVV-VIEC +1 = 75
+  'QT /my-work?nguoi=tat-ca': 75,   // TD4: đo 69 (trước 76); 16/10 +1 OV-13k +1 OV-13m = 73; SV-YT-TVV +1, SV-TVV-VIEC +1 = 75
   'GVCN /my-work?nguoi=tat-ca': 15,
   'QL /my-work?nguoi=7': 70,   // SEED-UX: +2 — seed có em "Đã thi · chờ KQ" theo ngày (Phan Hải Anh) → đường việc Cập nhật KQ thi thật chạy câu đọc kết quả (trước: dữ liệu rỗng)
   /* OV-14c: GV không phải GV Speaking — rỗng (đo 4); GV Speaking đo ở prOv14c (`TRAN_CHAM_SPEAKING`, đo 14). */
@@ -512,6 +517,9 @@ export const TRAN: Record<string, number> = {
   'QL /classes/3/ket-qua-dau-ra': 23, 'GVCN /classes/3/ket-qua-dau-ra': 23, 'GVBM /classes/3/ket-qua-dau-ra': 23,
   'GVCN_THUONG /classes/3/ket-qua-dau-ra': 23, 'QT /classes/3/ket-qua-dau-ra': 22,
   /* OV-12g: Góp ý hàng tuần đo 9 (QT 8) — trần max(đo + 10, ⌈đo × 1.3⌉). */
+  /* SV-BAI-LOP: trần ≈ ⌈đo × 1,3⌉ + 1 (đo 22/10: bài trên lớp 15 · 12 · 15 · 15 · lịch sử 6 · 4 · 7 · 7). */
+  'QL /students/1/bai-tren-lop': 20, 'QT /students/1/bai-tren-lop': 16, 'GVCN /students/1/bai-tren-lop': 20, 'GVBM /students/1/bai-tren-lop': 20,
+  'QL /lich-su?loai=bai-lop&id=1': 9, 'QT /lich-su?loai=bai-lop&id=1': 6, 'GVCN /lich-su?loai=bai-lop&id=1': 10, 'GVBM /lich-su?loai=bai-lop&id=1': 10,
   'QL /classes/3/gop-y': 19, 'GVCN /classes/3/gop-y': 19, 'GVBM /classes/3/gop-y': 19, 'GVCN_THUONG /classes/3/gop-y': 19, 'QT /classes/3/gop-y': 18,
   'QL /classes/6/gop-y': 19, 'GVCN_THUONG /classes/6/gop-y': 19, 'QT /classes/6/gop-y': 18,
   'QL /classes/6/can-ho-tro': 25,

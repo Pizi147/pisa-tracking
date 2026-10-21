@@ -66,6 +66,11 @@ export function shortDate(iso: string | null | undefined, today: string): string
   return s.slice(0, 4) === nam ? dm : `${dm}/${s.slice(0, 4)}`;
 }
 
+/** NEN-V5 (P7, chủ SP 22/10): MỘT nhãn hạn cho cả web — ngày / tháng thật "hạn 28/10" (khác năm thì kèm năm); không thứ, không "tuần này / tuần sau". */
+export function nhanHan(han: string | null | undefined, today: string): string {
+  return t('hạn {ngan}', { ngan: shortDate(han, today) });
+}
+
 // ====================================================================== <TyLe>
 
 /**

@@ -103,24 +103,25 @@ export async function runPrLtSvTests(t: YThucTestKit) {
     .flatMap((x: any) => (x.con?.length ? x.con : [x])).filter((x: any) => x.studentId === sid);
   const QL = P.mbManager.userId as number;
 
-  await checkAsync('LTSV-2 · em FT chỉ có tháng đã tới: KHÔNG "Cập nhật kết quả thi thật"; có "Chốt ngày thi" không hạn cho GVCN (QL "Tất cả" thấy); lớp thường, em có ngày: không việc', async () => {
+  await checkAsync('LTSV-2 · em FT chỉ có tháng đã tới: KHÔNG "Cập nhật kết quả thi thật"; có "Chốt ngày thi" không hạn — em chưa có TVV → QL chi nhánh (SV-TVV-VIEC), GVCN không; lớp thường, em có ngày: không việc', async () => {
     const l = lop(); const g = gvcnMoi(l);
     const b = em(l, { exam_month: thangTruoc });
     const a = em(l, { exam_date: addDays(TODAY, 10) });
     const lt = lop(false); const gt = gvcnMoi(lt);
     const th = em(lt, { exam_month: thangTruoc }, null);
     await voiMayChu(async (goi) => {
-      const vb = await viec(goi, g, b.sid);
+      const vb = await viec(goi, QL, b.sid);
       assert(!vb.some((x) => x.group === 'thi_that'), `không còn "tháng = đã thi": ${JSON.stringify(vb)}`);
       const chot = vb.filter((x) => x.key === `chot-ngay-thi:${b.cy}`);
       assert(chot.length === 1 && chot[0].due === null && chot[0].urgency === 'normal' && chot[0].tieuDe === 'Chốt ngày thi', JSON.stringify(vb));
-      assert((await viec(goi, QL, b.sid, '?nguoi=tat-ca')).some((x) => x.key === `chot-ngay-thi:${b.cy}`), 'QL "Tất cả" thấy việc của GVCN');
-      assert(!(await viec(goi, g, a.sid)).some((x) => String(x.key).startsWith('chot-ngay-thi:')), 'em đã có ngày: không việc');
-      assert(!(await viec(goi, gt, th.sid)).some((x) => String(x.key).startsWith('chot-ngay-thi:')), 'lớp thường: chỉ chip, không việc');
+      assert(!(await viec(goi, g, b.sid)).some((x) => x.key === `chot-ngay-thi:${b.cy}`), 'GVCN không còn việc Chốt ngày thi');
+      assert(!(await viec(goi, QL, a.sid)).some((x) => String(x.key).startsWith('chot-ngay-thi:')), 'em đã có ngày: không việc');
+      assert(!(await viec(goi, QL, th.sid)).some((x) => String(x.key).startsWith('chot-ngay-thi:')), 'lớp thường: chỉ chip, không việc');
+      void gt;
     });
   });
 
-  await checkAsync('LTSV-3 · Lịch thi nhận NGÀY ĐÃ QUA: em B chốt ngày 3 hôm trước → 200, trạng thái "đã thi", hết việc Chốt ngày, GVCN có việc Cập nhật kết quả', async () => {
+  await checkAsync('LTSV-3 · Lịch thi nhận NGÀY ĐÃ QUA: em B chốt ngày 3 hôm trước → 200, trạng thái "đã thi", hết việc Chốt ngày, người giữ (QL — em chưa có TVV) có việc Cập nhật kết quả', async () => {
     const l = lop(); const g = gvcnMoi(l);
     const b = em(l, { exam_month: TODAY.slice(0, 7) });
     await voiMayChu(async (goi) => {
@@ -129,7 +130,8 @@ export async function runPrLtSvTests(t: YThucTestKit) {
       const r = await json(await goi(QL, `/hoc-vien-lop/lich-thi/${b.cy}`, { method: 'PUT', body: JSON.stringify({ ketLuan: 'chot-ngay', ngay: addDays(TODAY, -3) }) }));
       assert(r.lichThi?.trangThai === 'da-thi' && r.coNgay, JSON.stringify(r));
       xoaNho();
-      const v = await viec(goi, g, b.sid);
+      const v = await viec(goi, QL, b.sid);
+      void g;
       assert(v.some((x) => x.group === 'thi_that') && !v.some((x) => String(x.key).startsWith('chot-ngay-thi:')), JSON.stringify(v));
     });
   });

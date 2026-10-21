@@ -5,13 +5,16 @@ export async function runPrSeedUxTests(t: { check: (n: string, fn: () => void) =
   const { bangTutor } = await import('../tutors/trang.ts');
   const { loTrinhChoKetQuaThi } = await import('../loTrinh/thiThat.ts');
   const { DEMO_DATE } = await import('../seed/data.ts');
+  const debt = await import('../worklist/scoreDebt.ts');
+  const require_ = (_: string) => debt;
   const one = (sql: string, ...a: unknown[]) => conn.prepare(sql).get(...a) as any;
   const uid = (ten: string) => one('SELECT id FROM users WHERE full_name = ?', ten)?.id as number;
   console.log('\nSEED-UX · dữ liệu demo cho mockup V5');
 
-  check('SU-1 GV S không dạy lớp nào (Đoàn Minh Thư) vẫn có lớp FT để chấm Speaking chéo', () => {
-    const id = uid('Đoàn Minh Thư');
-    assert(id && !one('SELECT 1 FROM teacher_assignments WHERE user_id = ?', id), 'GV có phân công');
+  check('SU-1 GV Đỗ Thu Hương: hồ sơ có S, không dạy S lớp nào, vẫn có lớp FT để chấm Speaking chéo (T03)', () => {
+    const id = uid('Đỗ Thu Hương');
+    assert(one(`SELECT 1 FROM user_skills WHERE user_id = ? AND skill = 'speaking'`, id), 'hồ sơ thiếu S');
+    assert(!one(`SELECT 1 FROM teacher_assignments WHERE user_id = ? AND skill = 'speaking'`, id), 'GV có phân công S');
     assert(lopFtChoGvSpeaking(loadPrincipal(id)).length > 0, 'không có lớp chấm chéo');
   });
   check('SU-2 tài khoản Admin VP · CX · TVV (MB, BC, HD, UB, CP)', () => {
@@ -48,12 +51,24 @@ export async function runPrSeedUxTests(t: { check: (n: string, fn: () => void) =
   });
   check('SU-7 MT cũ có "-" → Đã huỷ · vắng MT cũ; vi phạm có / chưa báo PH; lớp thường đủ điểm', () => {
     assert(one(`SELECT 1 FROM assessment_scores WHERE no_show_cu = 1`), 'không có "-" MT cũ');
-    const ph = (bao: boolean) => one(`SELECT 1 FROM discipline_measures m WHERE m.status = 'done' AND m.performed_on >= '2026-09-09' AND
-      ${bao ? '' : 'NOT'} EXISTS (SELECT 1 FROM sos_coordination_actions x WHERE x.student_id = m.student_id AND x.kind = 'bao_ph_tvv' AND x.status = 'done')`);
-    assert(ph(true) && ph(false), 'thiếu lần xử lý có / chưa báo PH');
+    assert(one(`SELECT 1 FROM viec_bao_ph WHERE trang_thai = 'xong'`) && one(`SELECT 1 FROM viec_bao_ph WHERE trang_thai = 'mo'`), 'thiếu lần xử lý có / chưa báo PH');
     const du = one(`SELECT COUNT(*) n FROM assessment_attempts a JOIN classes c ON c.id = a.class_id WHERE c.code = 'HD FOU 06' AND a.kind = 'progress'
       AND (SELECT COUNT(*) FROM assessment_scores sc WHERE sc.attempt_id = a.id AND sc.raw_score >= 18) = 4`).n;
     assert(du >= 4, `Progress đủ điểm: ${du}`);
+  });
+  check('SU-9 K3 + K4: BC FT 205 MT2 thi W1 SEP (31/08); lần thử Báo PH Ngô Hải Yến 14/09 15:30 "Chưa liên hệ được", hạn 18/09', () => {
+    assert(one(`SELECT 1 FROM assessment_attempts a JOIN classes c ON c.id = a.class_id JOIN report_periods p ON p.id = a.planned_period_id
+                WHERE c.code = 'BC FT 205' AND a.attempt_no = 2 AND p.week_start = '2026-08-31'`), 'BC FT 205 MT2 không ở W1 SEP');
+    const l = one(`SELECT l.ket_qua, l.ghi_luc, v.han FROM viec_bao_ph_lan l JOIN viec_bao_ph v ON v.id = l.viec_id JOIN students s ON s.id = v.student_id
+                   WHERE s.full_name = 'Ngô Hải Yến'`);
+    assert(l?.ket_qua === 'chua_lien_he' && l.ghi_luc === '2026-09-14T08:30:00.000Z' && l.han === '2026-09-18', JSON.stringify(l));
+  });
+  check('SU-10 K2 (R2): nợ chấm "Của tôi" của cô Trang không có ô Speaking Mock (chấm chéo, không tính nợ); BC FT 205 S MT2 vẫn là ô chờ chấm chéo', () => {
+    const { scoreDebtCells } = require_('../worklist/scoreDebt.ts');
+    const trang = uid('Phạm Thu Trang');
+    const o = scoreDebtCells(loadPrincipal(trang), DEMO_DATE, null) as any[];
+    assert(!o.some((c) => c.userId === trang && c.skill === 'speaking' && c.chamCheo), 'S Mock tính nợ của Trang');
+    assert(o.some((c) => c.chamCheo && c.userId === null), 'không có ô S chấm chéo nào');
   });
   check('SU-8 không thông báo nào sau ngày demo', () => {
     assert(!one(`SELECT 1 FROM notifications WHERE created_at > ?`, `${DEMO_DATE}T16:59:59.999Z`), 'thông báo ở tương lai');

@@ -5,7 +5,7 @@ import { invalidate } from '../../lib/api.ts';
 import { useSession } from '../../lib/session.tsx';
 import { useThamSoUrl } from '../../lib/quayLai.ts';
 import { Card, ErrorState, Skeleton } from '../../ui/ui.tsx';
-import { SoLieuO } from '../../ui/SoLieuO.tsx';
+import { OSo } from '../../ui/OSo.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import { CHIP_SOS, lopSos } from '../../ui/Nhan.tsx';
 import { useDienThoai } from '../../ui/TheDong.tsx';
@@ -44,7 +44,7 @@ export type TongQuanQlData = {
 export const thamSoTq = (branchId: number | null, ct: ChuongTrinh) => `${branchId ? `branchId=${branchId}` : ''}${thamSoCt(ct)}`.replace(/^&/, '');
 
 /** Hàng lớp "có vấn đề" (mockup 3 "Chỉ lớp có vấn đề"): có em chưa lịch / chưa điểm / SOS / Case chưa chốt PA / đã thi chờ KQ. */
-const coVanDe = (o: Record<CotBang, OBang>) => o.chuaLich.n + o.chuaDiem.n + o.sos.n + o.caseChuaChot.n + o.daThiChoKq.n > 0;
+const coVanDe = (o: Record<CotBang, OBang>) => o.chuaDiem.n + o.sos.n + o.caseChuaChot.n + o.daThiChoKq.n > 0;
 
 export function LopCanChuY({ data, branchId, ct }: { data: TongQuanQlData['bang']; branchId: number | null; ct: ChuongTrinh }) {
   const dt = useDienThoai();
@@ -53,7 +53,7 @@ export function LopCanChuY({ data, branchId, ct }: { data: TongQuanQlData['bang'
   const ft = ct === 'ft';
   const q = thamSoTq(branchId, ct);
   const so = (h: { khoa: string; nhan: string }, cot: CotBang, x: OBang, className = '') => (
-    <SoLieuO giaTri={x.n} className={className} tieuDe={`${COT_TEN[cot]} · ${h.nhan}`} nguon={`/tong-quan/chi-nhanh/o?cot=${cot}&khoa=${h.khoa}&chuY=1${q ? `&${q}` : ''}`} />
+    <OSo giaTri={x.n} className={className} tieuDe={`${COT_TEN[cot]} · ${h.nhan}`} nguon={`/tong-quan/chi-nhanh/o?cot=${cot}&khoa=${h.khoa}&chuY=1${q ? `&${q}` : ''}`} />
   );
   const sos = (h: HangBang | { khoa: string; nhan: string; o: Record<CotBang, OBang> }) => (
     <span className="inline-flex items-center justify-center gap-1">
@@ -112,7 +112,7 @@ export function LopCanChuY({ data, branchId, ct }: { data: TongQuanQlData['bang'
               const o = h.o;
               const muc = ([
                 ['sos', t('SOS hiện tại'), ft && o.sos.n], ['chuaDiem', t('Chưa điểm'), o.chuaDiem.n], ['case', t('Case chưa chốt PA'), o.caseChuaChot.n],
-                ['chuaLich', t('Chưa lịch'), ft && o.chuaLich.n], ['daThiChoKq', t('Đã thi · chờ KQ'), ft && o.daThiChoKq.n],
+                ['daThiChoKq', t('Đã thi · chờ KQ'), ft && o.daThiChoKq.n],
               ] as const).filter((x) => !!x[2]);
               return (
                 <li key={h.khoa} className={`border-t px-4 py-2.5 first:border-t-0 ${h.khoa === 'tong' ? 'bg-white/5' : ''}`} style={{ borderColor: 'var(--line)' }}>
@@ -140,12 +140,11 @@ export function LopCanChuY({ data, branchId, ct }: { data: TongQuanQlData['bang'
             <table className="w-full text-sm" style={{ tableLayout: 'fixed', minWidth: ft ? '56rem' : '36rem' }}>
               <colgroup>
                 <col style={{ width: '13rem' }} /><col style={{ width: '12rem' }} /><col />
-                {ft && <col />}<col />{ft && <col style={{ width: '9.5rem' }} />}<col style={{ width: '9rem' }} />{ft && <col />}
+                <col />{ft && <col style={{ width: '9.5rem' }} />}<col style={{ width: '9rem' }} />{ft && <col />}
               </colgroup>
               <thead><tr>
                 <th className="th sticky-col text-left">{t('Lớp')}</th><th className="th text-left">{t('GVCN')}</th>
                 <th className="th text-center">{t('HV')}</th>
-                {ft && <th className="th text-center">{t('Chưa lịch')}</th>}
                 <th className="th text-center">{t('Chưa điểm')}</th>
                 {ft && (
                   <th className="th text-center">
@@ -165,7 +164,6 @@ export function LopCanChuY({ data, branchId, ct }: { data: TongQuanQlData['bang'
                       </td>
                       <td className="td truncate text-slate-400">{h.gvcn ?? ''}</td>
                       <td className="td text-center tabular-nums">{h.o.hocVien.n}</td>
-                      {ft && <td className="td text-center">{so(h, 'chuaLich', h.o.chuaLich)}</td>}
                       <td className="td text-center">{so(h, 'chuaDiem', h.o.chuaDiem)}</td>
                       {ft && <td className="td text-center">{sos(h)}</td>}
                       <td className="td text-center">{caseHv(h)}</td>
@@ -188,7 +186,7 @@ export function LopCanChuY({ data, branchId, ct }: { data: TongQuanQlData['bang'
 const COT_TEN: Record<CotBang, string> = {
   hocVien: 'Học viên', duoiKyVong: 'Dưới kỳ vọng', sos: 'SOS hiện tại', caseMo: 'Case đang mở', thieuPa: 'Case chưa có PA', duDuLieu: 'Tỷ lệ đủ dữ liệu',
   caseChuaChotHv: 'HV có Case chưa chốt PA', caseChuaChot: 'Case chưa chốt PA',
-  chuaLich: 'Chưa lịch Test', chuaDiem: 'Chưa điểm', sos1: 'SOS 1', sos2: 'SOS 2', sos3: 'SOS 3', daThiChoKq: 'Đã thi · chờ KQ',
+  chuaDiem: 'Chưa điểm', sos1: 'SOS 1', sos2: 'SOS 2', sos3: 'SOS 3', daThiChoKq: 'Đã thi · chờ KQ',
 };
 
 /** TRỄ CHẤM THEO GV (mockup 3): tên · kỹ năng · số bài (bấm → panel đúng bài, QL nhập tại chỗ) · lớp · trễ nhất. Không Nhắc — GV đã nhận thông báo tự động. */
@@ -210,7 +208,7 @@ export function TreCham({ ds, branchId, ct }: { ds: GvTre[]; branchId: number | 
             <div className="flex items-baseline justify-between gap-3 sm:contents">
               <span className="min-w-0 truncate"><b className={x.khoa > 0 ? 'font-semibold text-slate-100' : 'font-normal text-slate-400'}>{dich(x.ten)}</b>{x.kyNang.length > 0 && <span className="text-slate-500"> · {x.kyNang.join(', ')}</span>}</span>
               <span className="shrink-0 tabular-nums">
-                <SoLieuO giaTri={x.bai} className="font-semibold" tieuDe={t('Trễ chấm · {ten}', { ten: dich(x.ten) })} nguon={`/tong-quan/ql/tre?gv=${x.khoa}${q ? `&${q}` : ''}`} /> <span className="text-xs text-slate-500">{t('bài')}</span>
+                <OSo giaTri={x.bai} className="font-semibold" tieuDe={t('Trễ chấm · {ten}', { ten: dich(x.ten) })} nguon={`/tong-quan/ql/tre?gv=${x.khoa}${q ? `&${q}` : ''}`} /> <span className="text-xs text-slate-500">{t('bài')}</span>
               </span>
             </div>
             <div className="mt-0.5 flex items-baseline justify-between gap-3 sm:contents">

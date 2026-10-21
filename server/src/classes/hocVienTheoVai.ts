@@ -14,6 +14,7 @@ import { khoangTamDung } from '../students/tamDung.ts';
 import { examPlanOf } from '../fasttrack/cycles.ts';
 import { classProgressMany } from './schedule.ts';
 import { choBuocTiep, hanBuocTiep } from '../loTrinh/buocTiep.ts';
+import { tvvCuaEm } from '../worklist/viecTvv.ts';
 import { cotSauThi, loTrinhChoKetQuaThi } from '../loTrinh/thiThat.ts';
 import { demoToday } from '../demoConfig.ts';
 import { chiNhanhTaoLop } from './hocVienLop.ts';
@@ -44,7 +45,7 @@ export type TrangHocVienVai = {
    * OV-12f: việc của góc Cần làm (TVV) — Chọn bước tiếp sau thi (lộ trình + hạn, cùng `choBuocTiep` / `viecBuocTiep`) · Kết quả thi thật chưa có
    * (cùng `loTrinhChoKetQuaThi` của việc GVCN). Thiếu thông tin = `ids.thieu_tt`. Chỉ em trong phạm vi đang xem.
    */
-  viec: { buocTiep: Record<number, { cycleId: number; han: string }>; ketQuaThi: Record<number, { han: string; thi: string | null }> };
+  viec: { buocTiep: Record<number, { cycleId: number; han: string }>; ketQuaThi: Record<number, { han: string | null; thi: string | null }> };
   /** OV-13p: nút đầu trang "+ Lớp mới" (`class.create` ở ít nhất một chi nhánh) · "+ Học viên" (`student.add` trong phạm vi grant) — máy chủ kiểm lại khi lưu. */
   coTheTaoLop: boolean; coTheThemHocVien: boolean;
 };
@@ -109,12 +110,14 @@ export function hocVienTheoVai(p: Principal, f: { phamVi?: string | null; branch
       viewer: { suaThongTin: can(p, PERMISSIONS.STUDENT_EDIT_INFO, { studentId: id }), suaThem: can(p, PERMISSIONS.STUDENT_EDIT_MORE, { studentId: id }) },
     }];
   });
-  const coEm = new Set(ids);
+  /* SV-TVV-VIEC: góc Cần làm chỉ có việc TVV đang xem GIỮ (em của mình) — em của TVV khác trong "Cả chi nhánh" không vào. */
+  const tvvEm = vai === 'tvv' ? tvvCuaEm(ids) : new Map<number, number | null>();
+  const coEm = new Set(ids.filter((id) => tvvEm.get(id) === p.userId));
   const buocTiep: TrangHocVienVai['viec']['buocTiep'] = {};
   /* Chỉ TVV có góc Cần làm — CX không chạy hai câu này. */
   if (vai === 'tvv') for (const c of choBuocTiep()) if (coEm.has(c.student_id)) buocTiep[c.student_id] = { cycleId: c.id, han: hanBuocTiep(c, homNay) };
   const ketQuaThi: TrangHocVienVai['viec']['ketQuaThi'] = {};
-  if (vai === 'tvv') for (const { c, s } of loTrinhChoKetQuaThi(homNay)) if (coEm.has(c.student_id)) ketQuaThi[c.student_id] = { han: s.han!, thi: s.ngayThi };
+  if (vai === 'tvv') for (const { c, s } of loTrinhChoKetQuaThi(homNay)) if (coEm.has(c.student_id)) ketQuaThi[c.student_id] = { han: s.han, thi: s.ngayThi };
   return {
     vai, phamVi: { coThe: vai === 'tvv' ? ['cua-toi', 'chi-nhanh'] : ['tat-ca', 'chi-nhanh'], dangDung, chiNhanh },
     ids: chip.ids, rows, viec: { buocTiep, ketQuaThi },

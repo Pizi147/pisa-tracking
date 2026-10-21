@@ -100,7 +100,8 @@ export async function runPrNenTypoMauTests(t: YThucTestKit) {
     const a = v ? /rgba\((\d+),\s*(\d+),\s*(\d+),\s*([\d.]+)\)/.exec(v) : null;
     if (a) return [[+a[1], +a[2], +a[3]], +a[4]];
     const b = v ? /rgb\(var\(--([a-z0-9-]+)\)\s*\/\s*([\d.]+)\)/.exec(v) : null;
-    return b && mau[b[1]] ? [mau[b[1]], +b[2]] : null;
+    if (b) return mau[b[1]] ? [mau[b[1]], +b[2]] : null;
+    return mau[ten] ? [mau[ten], 1] : null;   // NEN-V5: token đặc (#hex) = phủ 100 %
   };
 
   for (const [ten, cheDo, mau] of [['tối', 'toi', toi], ['sáng', 'sang', sang]] as const) {

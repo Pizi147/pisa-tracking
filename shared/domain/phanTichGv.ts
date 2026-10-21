@@ -1,6 +1,6 @@
 /**
  * BẢNG PHÂN TÍCH GIÁO VIÊN (PR-Pb2-b, Q30-5, Q31-2, Q31-9, mockup 25) — luật thuần. Máy chủ `server/src/phanTich/giaoVien.ts` dựng số, mỗi cột
- * MỘT hàm tập; ở đây chỉ khoảng tuần, chữ ô và màu. Không KPI, không xếp hạng, không hàng tổng.
+ * MỘT hàm tập; ở đây chỉ khoảng tuần và chữ ô. Không KPI, không xếp hạng, không hàng tổng, không màu ngưỡng (V5 C08).
  */
 import { addDaysIso } from './sos.ts';
 import { mondayOfDate, owningMonthOf } from './week.ts';
@@ -72,18 +72,11 @@ export const phanTramGv = (dung: number, tong: number) => Math.round((100 * dung
 /** Dưới 5 mục: "mẫu nhỏ" thay cho % (cùng ngưỡng "Ít dữ liệu" ở Hiệu quả PA). */
 export const MAU_NHO_GV = 5;
 
-/** Chữ một ô: "18/20" + "90%" · dưới 5 mục "mẫu nhỏ" · "—" không áp dụng · "không có" áp dụng mà chưa có mục. */
+/** Chữ một ô: "18/20" + "90%" · dưới 5 mục "mẫu nhỏ" · "—" không áp dụng · "Chưa có dữ liệu" áp dụng mà mẫu 0 (V5 T19 — không hiện 0 %). */
 export function chuOPtGv(o: OPtGv): { so: string | null; phu: string } {
   if (o.k === 'na') return { so: null, phu: '—' };
-  if (o.k === 'rong') return { so: null, phu: 'không có' };
+  if (o.k === 'rong') return { so: null, phu: 'Chưa có dữ liệu' };
   return { so: `${o.dung}/${o.tong}`, phu: o.tong < MAU_NHO_GV ? 'mẫu nhỏ' : `${phanTramGv(o.dung, o.tong)}%` };
-}
-
-/** Q19: màu CHỈ ở ô kết quả, từ chính số % đã làm tròn — đỏ < 50, vàng 50–69, xanh ≥ 70; dưới 5 mục không màu. */
-export function mauKetQuaGv(dung: number, tong: number): 'thap' | 'vua' | 'cao' | null {
-  if (tong < MAU_NHO_GV) return null;
-  const p = phanTramGv(dung, tong);
-  return p < 50 ? 'thap' : p < 70 ? 'vua' : 'cao';
 }
 
 /** Ô từ tập (dung ⊆ tong) + có áp dụng không. */

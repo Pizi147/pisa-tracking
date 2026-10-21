@@ -9,7 +9,7 @@ import { KhungPanel } from './KhungPanel.tsx';
 import { CanLam, NutChu } from './KhuonViec.tsx';
 import { ChipHan, ChipSoQuaHan } from './Nhan.tsx';
 import { PhanTrang, usePhanTrang } from './PhanTrang.tsx';
-import { Empty, ErrorState, Skeleton } from './ui.tsx';
+import { Empty, ErrorState, OChiSo, Skeleton } from './ui.tsx';
 import { useNgayNghiepVu } from './ngayNghiepVu.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 import { lazyTai } from '../lib/taiLaiManh.ts';
@@ -18,6 +18,10 @@ import { lazyTai } from '../lib/taiLaiManh.ts';
  * KHUNG-LOI (B-02): vùng bấm của số ≥ 24 × 24 px máy tính, 44 × 44 px điện thoại — `after:` canh giữa chữ số (hình chữ không đổi; trước đây
  * chỉ đúng chữ số, 8 × 12 px). Mẫu chip của `MenuDong`.
  */
+/** NEN-V5 — dáng số bấm được (`OSo`, ô chỉ số): màu nhấn, đậm, gạch chân liền 1 px; rê chuột nền nhấn nhạt. */
+export const LOP_OSO = 'appearance-none rounded border-0 bg-transparent p-0 cursor-pointer tabular-nums font-bold text-[color:var(--accent)] underline decoration-1 underline-offset-[3px] hover:bg-[color:var(--accent-soft)]';
+/** Màu chữ của nơi gọi: màu nghĩa (quá hạn, chưa đạt) giữ; màu chữ thường (`text-slate-*`, dáng cũ) bỏ để số bấm được cùng một màu nhấn. */
+export const mauOSo = (lop: string) => (/\btext-(bad|late|soon)\b/.test(lop) ? `${LOP_OSO.replace('text-[color:var(--accent)] ', '')} ${lop}` : `${LOP_OSO} ${lop.replace(/\btext-slate-\d+\b/g, '')}`);
 export const VUNG_BAM_SO = "relative after:absolute after:left-1/2 after:top-1/2 after:h-6 after:w-6 after:min-w-full after:-translate-x-1/2 after:-translate-y-1/2 after:content-[''] max-sm:after:h-11 max-sm:after:w-11";
 
 const THOI_GIAN_NHAN: Record<ChiSo['thoiGian'], string> = {
@@ -292,39 +296,34 @@ export function SoLieu({ id, giaTri, phamVi, rong, className = '', extra, nhan, 
   if (!cs) return <span className="text-xs text-bad">{t('Chỉ số không có trong sổ: {id}', { id })}</span>;
   const dv = METRIC_UNIT_LABEL[cs.donVi];
   const clickable = giaTri > 0;
-  const mau = tone === 'danger' ? 'text-bad' : tone === 'warn' ? 'text-soon' : 'text-slate-100';
+  const mau = tone === 'danger' ? '!text-bad' : tone === 'warn' ? '!text-soon' : '';
   return (
-    <div className={`card p-4 h-full ${className}`}>
-      <div className="relative flex items-start justify-between gap-2">
-        <div className="text-[12px]  text-slate-400 font-semibold">{nhan ?? cs.ten}</div>
-        {/* PR-VAI-a (K1-08): "Cách tính" là chú thích NỔI — rê chuột, Tab hoặc bấm; Esc đóng. Không đẩy giãn hàng ô. */}
-        <span className="shrink-0" onMouseEnter={() => setHowTo(true)} onMouseLeave={() => setHowTo(false)}>
-          {/* Bấm chỉ MỞ: chạm trên điện thoại phát mouseenter → focus → click, đảo trạng thái thì vừa mở đã đóng. Đóng: Esc, rời chuột, mất focus. */}
-          <button type="button" onClick={() => setHowTo(true)} aria-expanded={howTo} aria-describedby={howTo ? idCachTinh : undefined}
-            onFocus={() => setHowTo(true)} onBlur={() => setHowTo(false)}
-            onKeyDown={(e) => { if (e.key === 'Escape' && howTo) { e.stopPropagation(); setHowTo(false); } }}
-            aria-label={t('Cách tính')}
-            className="appearance-none bg-transparent border-0 p-0 max-sm:p-3 max-sm:-m-3 cursor-pointer text-sm leading-none text-slate-500 hover:text-slate-300">ⓘ</button>
-          {howTo && (
-            <div id={idCachTinh} role="tooltip" className="card absolute right-0 top-full z-30 mt-1.5 w-[min(20rem,calc(100vw-2.5rem))] p-3 shadow-2xl">
-              <CachTinh cs={cs} />
-            </div>
-          )}
-        </span>
-      </div>
-      <div className="mt-2 flex items-baseline gap-1.5 flex-wrap">
-        {clickable ? (
-          <button type="button" onClick={() => setOpen(true)}
-            className={`${VUNG_BAM_SO} appearance-none bg-transparent border-0 p-0 cursor-pointer text-2xl font-semibold tabular-nums underline decoration-dotted underline-offset-4 hover:text-white ${mau}`}
-            aria-label={t('{gt} {dv} — {ten}. Bấm để xem danh sách', { gt: giaTri, dv, ten: nhan ?? cs.ten })}>{giaTri}</button>
-        ) : (
-          <span className="text-2xl font-semibold tabular-nums text-slate-500">{giaTri}</span>
+    <OChiSo className={className} ten={<>
+      {nhan ?? cs.ten}
+      {/* PR-VAI-a (K1-08): "Cách tính" là chú thích NỔI — rê chuột, Tab hoặc bấm; Esc đóng. Không đẩy giãn hàng ô. */}
+      <span className="relative ml-1.5 inline-block" onMouseEnter={() => setHowTo(true)} onMouseLeave={() => setHowTo(false)}>
+        {/* Bấm chỉ MỞ: chạm trên điện thoại phát mouseenter → focus → click, đảo trạng thái thì vừa mở đã đóng. Đóng: Esc, rời chuột, mất focus. */}
+        <button type="button" onClick={() => setHowTo(true)} aria-expanded={howTo} aria-describedby={howTo ? idCachTinh : undefined}
+          onFocus={() => setHowTo(true)} onBlur={() => setHowTo(false)}
+          onKeyDown={(e) => { if (e.key === 'Escape' && howTo) { e.stopPropagation(); setHowTo(false); } }}
+          aria-label={t('Cách tính')}
+          className="appearance-none bg-transparent border-0 p-0 max-sm:p-3 max-sm:-m-3 cursor-pointer text-sm leading-none text-slate-500 hover:text-slate-300">ⓘ</button>
+        {howTo && (
+          <div id={idCachTinh} role="tooltip" className="card absolute left-0 top-full z-30 mt-1.5 w-[min(20rem,calc(100vw-2.5rem))] p-3 shadow-2xl">
+            <CachTinh cs={cs} />
+          </div>
         )}
-        <span className="text-xs text-slate-400">{dv}</span>
-      </div>
-      {phu ? <div className="text-xs text-slate-500 mt-1">{phu}</div>
-        : (rong || giaTri === 0) && <div className="text-xs text-slate-500 mt-1">{rong ? t('Không có dữ liệu trong phạm vi') : t('Không có mục nào')}</div>}
+      </span>
+    </>}
+      giaTri={<span className="inline-flex flex-wrap items-baseline gap-1.5">
+        {clickable ? (
+          <button type="button" onClick={() => setOpen(true)} className={`${VUNG_BAM_SO} ${LOP_OSO} ${mau}`}
+            aria-label={t('{gt} {dv} — {ten}. Bấm để xem danh sách', { gt: giaTri, dv, ten: nhan ?? cs.ten })}>{giaTri}</button>
+        ) : <span className="text-slate-500">{giaTri}</span>}
+        <span className="text-xs font-normal text-slate-400">{dv}</span>
+      </span>}
+      mau={phu ?? ((rong || giaTri === 0) ? (rong ? t('Không có dữ liệu trong phạm vi') : t('Không có mục nào')) : null)}>
       <DanhSachSoLieu id={id} giaTri={giaTri} phamVi={phamVi} extra={extra} open={open} onClose={() => setOpen(false)} ten={nhan} />
-    </div>
+    </OChiSo>
   );
 }

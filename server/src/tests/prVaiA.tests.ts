@@ -194,31 +194,7 @@ export async function runPrVaiATests(t: YThucTestKit) {
     }
   });
 
-  check('VAI-a (2c) · hv-ft-xong-mt-cuoi-chua-mt-ke: em xong MT3 chưa mốc → có (cùng luật tomTatMt: daXongMtCuoi +1); xếp MT4 → ra; đặt tháng thi → ra', () => {
-    const cid = classId('MB FT 101');
-    const tomTat0 = schedule.tomTatMt(cid);
-    const hv = taoHv('MB FT 101', 'LT1');
-    try {
-      const pQua = week.ensurePeriod(t.addDays(week.mondayOf(TODAY), -14)).id;
-      const a3 = Number(conn.prepare(`INSERT INTO assessment_attempts (cycle_id, student_id, attempt_no, kind, class_id, planned_period_id, status, created_at)
-        VALUES (?,?,3,'mock',?,?, 'done', ?)`).run(hv.cy, hv.sid, cid, pQua, NOW).lastInsertRowid);
-      conn.prepare(`INSERT INTO assessment_scores (attempt_id, skill, band, entered_at) VALUES (?, 'listening', 5.5, ?)`).run(a3, NOW);
-      const co = () => metricsSvc.metricSet(P.mbManager, 'hv-ft-xong-mt-cuoi-chua-mt-ke', { branchId: MB }).ids.includes(hv.sid);
-      assert(co(), 'xong MT3, chưa mốc, chưa ngày thi → có');
-      eq(schedule.tomTatMt(cid).daXongMtCuoi, tomTat0.daXongMtCuoi + 1, 'hai đường: tomTatMt đếm thêm đúng em này');
-      const pToi = week.ensurePeriod(t.addDays(week.mondayOf(TODAY), 21)).id;
-      const a4 = Number(conn.prepare(`INSERT INTO assessment_attempts (cycle_id, student_id, attempt_no, kind, class_id, planned_period_id, status, created_at)
-        VALUES (?,?,4,'mock',?,?, 'planned', ?)`).run(hv.cy, hv.sid, cid, pToi, NOW).lastInsertRowid);
-      assert(!co(), 'xếp MT4 → ra khỏi tập');
-      conn.prepare('DELETE FROM assessment_attempts WHERE id = ?').run(a4);
-      assert(co(), 'bỏ MT4 → có lại');
-      conn.prepare(`UPDATE learning_cycles SET exam_month = '2027-02' WHERE id = ?`).run(hv.cy);
-      assert(!co(), 'đặt tháng thi → ra (coMocTiepTheo)');
-      assert(!metricsSvc.metricSet(P.cpManager, 'hv-ft-xong-mt-cuoi-chua-mt-ke', {}).ids.includes(hv.sid), 'phủ định: QL CP');
-      const gv = metricsSvc.metricSet(P.coreTeacher, 'hv-ft-xong-mt-cuoi-chua-mt-ke', {});
-      assert(gv.n === 0 && gv.empty, 'GV: tập rỗng có nhãn');
-    } finally { don(hv.sid); }
-  });
+  /* VAI-a (2c) bỏ cùng chỉ số `hv-ft-xong-mt-cuoi-chua-mt-ke` — V5 C20. */
 
   /* PR-KV: MT0 đủ 4 kỹ năng của em ở lớp `cid` (kỳ vọng đầu ra xét theo Overall MT0). */
   const mt0Du = (hv: { sid: number; cy: number; cid: number }, band = 4) => {
@@ -246,7 +222,7 @@ export async function runPrVaiATests(t: YThucTestKit) {
 
   check('VAI-a (2e) · khung n = ids.length = rows.length phủ bốn chỉ số mới; Cần xử lý có đủ dòng khi n > 0, số = metricSet', () => {
     /* PR-LCb: hv-chua-co-lenh-chuyen đã bỏ → lop-chua-chot-len-ft. */
-    for (const id of ['van-hanh-can-quyet-dinh', 'lop-chua-chot-len-ft', 'hv-ft-xong-mt-cuoi-chua-mt-ke', 'hv-len-ft-chua-ky-vong']) {
+    for (const id of ['van-hanh-can-quyet-dinh', 'lop-chua-chot-len-ft', 'hv-len-ft-chua-ky-vong']) {   // V5 C20: bỏ hv-ft-xong-mt-cuoi-chua-mt-ke
       const r = metricsSvc.metricSet(P.admin, id, {});
       const full = metricsSvc.metricResponse(r, true);
       eq([r.n, full.rows.length], [r.ids.length, r.ids.length], `${id}: n = ids = rows`);

@@ -54,6 +54,7 @@ export const COT_TRO_TAI_KHOAN: readonly { bang: string; cot: string; loai: Loai
   c('cycle_target_revisions', 'actor_user_id', DV, 'lộ trình'),
   c('discipline_measures', 'owner_user_id', DV, 'lần xử lý'), c('discipline_measures', 'performed_by', DV, 'lần xử lý'),
   c('discipline_measures', 'confirmed_by', DV, 'lần xử lý'), c('discipline_measures', 'created_by', DV, 'lần xử lý'),
+  c('viec_bao_ph', 'bo_boi', DV, 'việc Báo PH'), c('viec_bao_ph_lan', 'ghi_boi', DV, 'việc Báo PH'),   // SV-YT-TVV
   c('journey_events', 'created_by', DV, 'hành trình'), c('lo_trinh_tiep_theo', 'updated_by', DV, 'lộ trình tiếp theo'),
   c('lo_trinh_tiep_theo', 'quyet_boi', DV, 'lộ trình tiếp theo'), c('mini_test', 'ghi_boi', DV, 'Mini Test'),
   c('lo_trinh_tiep_theo', 'kq_de_xuat_boi', DV, 'lộ trình tiếp theo'), c('lo_trinh_nhap', 'sua_boi', DV, 'nháp lộ trình'),   // OV-3b
@@ -79,6 +80,7 @@ export const COT_TRO_TAI_KHOAN: readonly { bang: string; cot: string; loai: Loai
   c('lenh_chuyen_lop', 'nguoi_ra_lenh', DV, 'quyết định chuyển lớp'), c('lenh_chuyen_lop', 'huy_boi', DV, 'quyết định chuyển lớp'),
   c('lenh_chuyen_lop', 'xac_nhan_boi', DV, 'bàn giao'), c('ban_giao_mon', 'nguoi_ghi', DV, 'bàn giao'),
   c('gop_y_tuan', 'ghi_boi', DV, 'góp ý hàng tuần'),   // OV-12g
+  c('bai_tren_lop', 'ghi_boi', DV, 'bài trên lớp'), c('bai_tren_lop', 'sua_boi', DV, 'bài trên lớp'),   // SV-BAI-LOP
   c('ghi_chu_lich_thi', 'created_by', DV, 'ghi chú lịch thi'),   // OV-15c
   c('tutors', 'created_by', DV, 'danh sách tutor'), c('tutors', 'updated_by', DV, 'danh sách tutor'),   // TU-a
   c('tutor_nhan_xet', 'nguoi_id', DV, 'nhận xét về tutor'),

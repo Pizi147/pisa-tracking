@@ -72,7 +72,7 @@ export async function runPrNhapTests(t: YThucTestKit) {
     const p = examPlanOf({ exam_date: '2027-01-15' });
     assert(p.label === '15/01/2027' && p.weekStart === '2027-01-11' && p.month === '2027-01', JSON.stringify(p));
     assert(examPlanOf({ exam_month: '15/01' }).confidence === 'none', 'exam_month rác phải coi như chưa có');
-    assert(examPlanOf({ exam_month: '2027-05' }).label === 'MAY 2027', 'nhãn tháng giữ kiểu cũ (Q8)');
+    assert(examPlanOf({ exam_month: '2027-05' }).label === '05/2027', 'nhãn tháng dự kiến luôn kèm năm, một cách viết (NEN-V5 P5, thay Q8)');
   });
 
   const intake: any = await import('../classes/intake.ts');

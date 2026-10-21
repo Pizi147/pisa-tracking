@@ -1,7 +1,7 @@
 /**
  * BỘ DEMO SEED-UX (kế hoạch `docs/superpowers/plans/2026-10-21-pr-seed-ux.md`, `thiet-ke/v5/du-lieu-demo.md`) — THÊM dữ liệu để chụp đủ mockup V5:
  *
- *   U1  tài khoản: GV Speaking không dạy lớp nào "Đoàn Minh Thư" (MB) · Admin VP Monbay · TVV MB (Phan Mai, Lê Thu) / BC / HD / UB.
+ *   U1  tài khoản: GV "Đỗ Thu Hương" (MB, L R) hồ sơ thêm S, không dạy lớp S nào (T03) · Admin VP Monbay · TVV MB (Phan Mai, Lê Thu) / BC / HD / UB.
  *   U2  gán TVV + SĐT phụ huynh cho đa số em đang học; mỗi chi nhánh chừa em đầu tiên không TVV (việc về QL); 4 em của TVV Hương giữ nguyên.
  *   U3  MT2 MB FT 101 của Bùi Thảo Vy · Tạ Minh Quân · Lương Bảo Anh theo mockup ov14-6 khung m3 (Trần Thu Hà, Vũ Hải Đăng đã có MT2 theo V5).
  *   U4  thi thật: UB FT 401 Dương Minh Quân (Đạt, chưa chốt bước tiếp) + Lý Thanh Trúc (Chưa đạt, đã chốt) có KQ 15/08 · CP FT 110 Đinh Ngọc Quyên thi 12/09,
@@ -22,6 +22,7 @@ import { saveScore } from '../fasttrack/attempts.ts';
 import { LISTENING_BY_RAW } from '../fasttrack/scoring.ts';
 import { planRegularTests, saveRegularScore } from '../normal/regular.ts';
 import { confirmCoordination } from '../yThuc/phoiHop.ts';
+import { ghiKetQuaBaoPh } from '../yThuc/baoPhTvv.ts';
 import { recordViolation } from '../yThuc/violations.ts';
 import { xacNhanXuLy } from '../yThuc/xuLy.ts';
 import { recordIntervention, reportIssue, updateResult } from '../cases/cases.ts';
@@ -52,7 +53,9 @@ export function buildUxDemo(conn: any, adminId: number): { tvv: number; soHvTvv:
   };
 
   // ---------------------------------------------------------------- U1 · tài khoản
-  taiKhoan('Đoàn Minh Thư', 'thu.doan', 'Giáo viên', 'teacher', mb, ['speaking']);   // hồ sơ có S, không phân công lớp nào → nhóm Chấm Speaking chéo
+  /* T03 (V5): GV Đỗ Thu Hương (pb2b, dạy L R) — hồ sơ thêm S, không phân công S lớp nào → nhóm Chấm Speaking chéo. */
+  conn.prepare(`INSERT INTO user_skills (user_id, skill) SELECT id, 'speaking' FROM users WHERE full_name = 'Đỗ Thu Hương'
+                 AND NOT EXISTS (SELECT 1 FROM user_skills k WHERE k.user_id = users.id AND k.skill = 'speaking')`).run();
   taiKhoan('Phạm Thanh Xuân', 'xuan.pham', 'Admin VP Monbay', 'office_admin', mb);
   const tvvMb = taiKhoan('Phan Mai', 'mai.phan', 'Tư vấn viên Monbay', 'consultant', mb);
   const tvvMb2 = taiKhoan('Lê Thu', 'thu.le', 'Tư vấn viên Monbay', 'consultant', mb);
@@ -163,14 +166,24 @@ export function buildUxDemo(conn: any, adminId: number): { tvv: number; soHvTvv:
   ]);
 
   /* Vi phạm + lần xử lý (GVCN Linh): em 1 xử lý 11/09 (gần đây), em 2 xử lý 03/09 (cũ hơn). */
-  const viPham = (sid: number, ngay: string[], phanHoi: string) => {
-    const p = loadPrincipal(gvLinh);   // nạp mỗi lần: phân công lớp thêm sau lần nạp trước
+  /** Vi phạm + lần xử lý do `gvId` lưu ngày `phanHoi` (lúc `luc` giờ UTC) — việc Báo PH (SV-YT-TVV) hạn = ngày lưu + 4. Trả id việc Báo PH. */
+  const viPham = (sid: number, ngay: string[], phanHoi: string, gvId = gvLinh, luc = '09:00:00') => {
+    const p = loadPrincipal(gvId);   // nạp mỗi lần: phân công lớp thêm sau lần nạp trước
     const ids = ngay.map((d) => (recordViolation(p, { studentId: sid, category: 'homework', description: 'Không làm bài tập về nhà', occurredOn: d }) as any).violation.id as number);
     xacNhanXuLy(p, sid, { violationIds: ids, performedOn: phanHoi, note: 'Đã trao đổi với em' } as any);
+    const moc = `${phanHoi}T${luc}.000Z`;
     conn.prepare(`UPDATE violations SET reported_on = occurred_on, created_at = occurred_on || 'T09:00:00.000Z', ghi_nhan_luc = occurred_on, phan_hoi_ngay = ?
                    WHERE id IN (${ids.join(',')})`).run(phanHoi);
-    conn.prepare(`UPDATE discipline_measures SET created_at = ?, confirmed_at = ?, updated_at = NULL
-                   WHERE id IN (SELECT measure_id FROM measure_violations WHERE violation_id IN (${ids.join(',')}))`).run(`${phanHoi}T09:00:00.000Z`, `${phanHoi}T09:00:00.000Z`);
+    const m = (conn.prepare(`SELECT measure_id AS id FROM measure_violations WHERE violation_id = ?`).get(ids[0]) as any).id as number;
+    conn.prepare(`UPDATE discipline_measures SET created_at = ?, confirmed_at = ?, updated_at = NULL WHERE id = ?`).run(moc, moc, m);
+    conn.prepare(`UPDATE viec_bao_ph SET han = ?, tao_luc = ? WHERE measure_id = ?`).run(addDays(phanHoi, 4), moc, m);
+    return (conn.prepare('SELECT id FROM viec_bao_ph WHERE measure_id = ?').get(m) as any)?.id as number | undefined;
+  };
+  /** TVV ghi một lần Báo PH, lùi `ghi_luc` về giờ kịch bản. */
+  const baoPh = (tvvId: number, viecId: number | undefined, ketQua: 'da_bao' | 'chua_lien_he', ngay: string, luc: string, ghiChu: string) => {
+    if (!viecId) return;
+    ghiKetQuaBaoPh(loadPrincipal(tvvId), { viecIds: [viecId], ketQua, ngay, ghiChu });
+    conn.prepare('UPDATE viec_bao_ph_lan SET ghi_luc = ? WHERE id = (SELECT MAX(id) FROM viec_bao_ph_lan WHERE viec_id = ?)').run(`${ngay}T${luc}.000Z`, viecId);
   };
   viPham(emFt[0], ['2026-09-07', '2026-09-08', '2026-09-09'], '2026-09-11');
   viPham(emFt[2], ['2026-08-31', '2026-09-01', '2026-09-02'], '2026-09-03');
@@ -197,9 +210,29 @@ export function buildUxDemo(conn: any, adminId: number): { tvv: number; soHvTvv:
   });
   const bao = conn.prepare(`SELECT id FROM sos_coordination_actions WHERE student_id = ? AND kind = 'bao_ph_tvv' AND status = 'pending'`).get(emFou[5]) as any;
   if (bao) confirmCoordination(loadPrincipal(gvLinh), bao.id, { performedOn: '2026-09-11', note: 'Đã gửi việc cho TVV, TVV đã gọi phụ huynh.' });
-  /* Lần xử lý vi phạm: em đã Báo PH (Giang Hải Nam) và em chưa Báo PH (Khúc Thảo My). */
-  viPham(emFou[5], ['2026-09-08', '2026-09-09', '2026-09-10'], '2026-09-11');
+  /* Lần xử lý vi phạm: em đã Báo PH (Giang Hải Nam — TVV ghi 12/09) và em chưa Báo PH (Khúc Thảo My). */
+  baoPh(tvvCn.HD[0], viPham(emFou[5], ['2026-09-08', '2026-09-09', '2026-09-10'], '2026-09-11'), 'da_bao', '2026-09-12', '03:00:00', 'Đã gọi mẹ em, mẹ hứa nhắc em làm bài.');
   viPham(emFou[4], ['2026-09-08', '2026-09-09', '2026-09-10'], '2026-09-12');
+
+  /* T10 + K4 (08 mục 2): GVCN Nam lưu Report 1 của Ngô Hải Yến 10:00 T2 14/09 → việc Báo PH của TVV Hương, hạn 18/09; lần thử 1 "Chưa liên hệ được"
+     14/09 15:30. Lý Tuấn Bình: việc Báo PH kế tiếp (chưa ghi). Giờ lưu UTC = giờ VN − 7. */
+  const gvNam = (conn.prepare(`SELECT id FROM users WHERE full_name = 'Ngô Bảo Nam'`).get() as any)?.id as number | undefined;
+  const tvvHuong = (conn.prepare(`SELECT id FROM users WHERE full_name = 'Nguyễn Thu Hương'`).get() as any)?.id as number | undefined;
+  const hvCp = (ten: string) => (conn.prepare('SELECT id FROM students WHERE full_name = ?').get(ten) as any)?.id as number | undefined;
+  const yen = hvCp('Ngô Hải Yến'), binh = hvCp('Lý Tuấn Bình');
+  if (gvNam && tvvHuong && yen && binh) {
+    baoPh(tvvHuong, viPham(yen, ['2026-09-09', '2026-09-10', '2026-09-11'], DEMO_DATE, gvNam, '03:00:00'), 'chua_lien_he', DEMO_DATE, '08:30:00', 'Gọi mẹ em hai lần không nghe máy.');
+    viPham(binh, ['2026-09-09', '2026-09-10', '2026-09-11'], DEMO_DATE, gvNam, '03:10:00');
+  }
+
+  // ---------------------------------------------------------------- K3 (08 mục 2) · BC FT 205 MT2 thi 31/08 (W1 SEP) → hạn chấm 09/09, quá hạn 5 ngày
+  const w1Sep = ensurePeriod('2026-08-31').id;
+  const mt2Bc = (conn.prepare(`SELECT a.id, a.planned_period_id AS cu FROM assessment_attempts a JOIN classes c ON c.id = a.class_id
+                                 WHERE c.code = 'BC FT 205' AND a.kind = 'mock' AND a.attempt_no = 2 AND a.status != 'cancelled'`).all() as any[]);
+  for (const a of mt2Bc) {
+    conn.prepare('UPDATE assessment_attempts SET planned_period_id = ? WHERE id = ?').run(w1Sep, a.id);
+    conn.prepare('UPDATE attempt_skills SET planned_period_id = ? WHERE attempt_id = ? AND planned_period_id = ?').run(w1Sep, a.id, a.cu);
+  }
 
   // ---------------------------------------------------------------- U4 · thi thật
   const cycleCua = (ten: string) => conn.prepare(

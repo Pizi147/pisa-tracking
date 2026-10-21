@@ -120,7 +120,7 @@ export async function runPrOv15eTests(t: YThucTestKit) {
     assert(bc.chuY.caseChuaChot === metrics.metricSet(QL, 'case-cho-xac-dinh-nguyen-nhan', { branchId: MB, program: 'ft' }).n, 'Case chưa chốt PA = chỉ số Tổng quan');
     assert(d.chuSoTruoc(3, 1) === 'Tăng 2 HV' && d.chuSoTruoc(1, 2) === 'Giảm 1 HV' && d.chuSoTruoc(2, 2) === 'Không đổi', 'chữ so kỳ trước');
     const thuong = baoCao.baoCao(QL, { ...f, ct: 'thuong' });
-    assert(thuong.sos === null && thuong.mock === null && thuong.chuY.chuaLich === null, 'lớp thường: không SOS / Mock / chưa lịch MT');
+    assert(thuong.sos === null && thuong.mock === null, 'lớp thường: không SOS / Mock');
     assertThrows(() => baoCao.baoCao(P.w1Teacher, f), /Quản lý/, 'GV không xem Báo cáo');
   });
 

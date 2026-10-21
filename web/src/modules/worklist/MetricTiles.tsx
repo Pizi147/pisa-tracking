@@ -1,7 +1,7 @@
 import { useApi } from '../../lib/useApi.ts';
 import { Skeleton } from '../../ui/ui.tsx';
 import { SoLieu } from '../../ui/SoLieu.tsx';
-import { SoLieuO } from '../../ui/SoLieuO.tsx';
+import { OSo } from '../../ui/OSo.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { thamSoCt, tuanCuaHanGhiKetQua, type ChuongTrinh } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
@@ -29,7 +29,7 @@ function O({ id, branchId, ct, nhan, phu }: {
 function SoPhu({ id, branchId, ct, sau }: { id: string; branchId: number | null; ct: ChuongTrinh; sau: (n: number) => React.ReactNode }) {
   const { data } = useSo(id, branchId, ct);
   if (!data) return null;
-  return <>{data.n > 0 && <SoLieuO id={id} giaTri={data.n} phamVi={{ branchId, chuongTrinh: ct }} />}{sau(data.n)}</>;
+  return <>{data.n > 0 && <OSo id={id} giaTri={data.n} phamVi={{ branchId, chuongTrinh: ct }} />}{sau(data.n)}</>;
 }
 
 export function MetricTiles({ branchId, ct }: { branchId: number | null; ct: ChuongTrinh }) {
