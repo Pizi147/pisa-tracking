@@ -25,7 +25,6 @@ const GIAI: Record<string, (ft: boolean) => string> = {
   'dang-day': (ft) => `Ngữ cảnh, không phải chỉ số. Số ${ft ? 'lớp Fast Track' : 'lớp thường'} giáo viên có phân công (GVCN hoặc một môn) ở chi nhánh này, và số học viên các lớp đó, tính ở ngày cuối của khoảng.`,
   'cham-diem': () => 'Một mục là một ô điểm: một học viên × một bài × một kỹ năng giáo viên được phân công lúc tới hạn, tuần Test trong khoảng. Đúng hạn khi lần nhập đầu không muộn hơn hạn chấm; sửa điểm sau đó không tính. Quá hạn mà chưa nhập là trễ. Không tính: vắng đã xác nhận, huỷ, "không có bài", học viên tạm dừng, ô chưa tới hạn.',
   'ghi-pa': (ft) => `${ft ? '' : 'Lớp thường ngắn nên Case, PA ít; cột để mờ. '}Một mục là một lần Kết quả PA (mỗi kỳ hai tuần) ở Case giáo viên phụ trách, hạn ghi trong khoảng. Đúng hạn khi ghi trước hạn; quá hạn mà chưa ghi là trễ.`,
-  'vi-pham': () => 'Chỉ lớp giáo viên làm GVCN. Một mục là một vi phạm thành "Cần xử lý", hạn xử lý trong khoảng. Đúng hạn khi GVCN xác nhận xử lý, hoặc gửi đề xuất cho Quản lý, trước hạn. Thời gian chờ Quản lý duyệt không tính cho GVCN.',
   'pa-hieu-qua': () => 'PA giáo viên tự thêm vào Case (không tính PA theo quy chế, PA bổ trợ) đã có kết quả cuối trong khoảng. Số trên: PA có tiến bộ (cùng luật góc nhìn Hiệu quả PA) / PA đã có kết quả cuối.',
   'ket-qua': (ft) => ft
     ? 'Một mục là một học viên × một kỹ năng ở bài MT hoặc kỳ thi thật trong khoảng, gán người dạy kỹ năng đó lúc thi (thi thật: lớp cuối trước ngày thi). Overall đạt kỳ vọng (thi thật: đạt Target) thì kỹ năng thấp hơn vẫn tính đạt; Overall chưa đạt thì xét từng kỹ năng (W1, W2 so từng bài). Chưa đủ 4 kỹ năng: chưa đủ dữ liệu, không tính.'
@@ -135,7 +134,7 @@ function BangGv({ kq, hang, onChamDiem, bamO }: { kq: PhanTichGvKq; hang: HangPt
     <div className="table-scroll min-h-[13rem] rounded-lg border" style={{ borderColor: 'var(--line)' }} role="region" aria-label="Bảng Phân tích giáo viên, cuộn ngang" tabIndex={0}>
       <table className="w-full text-sm" style={{ tableLayout: 'fixed', minWidth: ft || cotKq.length > 4 ? '1000px' : '820px' }}>
         <colgroup>
-          <col style={{ width: 176 }} /><col style={{ width: 80 }} /><col style={{ width: 88 }} /><col style={{ width: 112 }} /><col style={{ width: 108 }} />
+          <col style={{ width: 176 }} /><col style={{ width: 80 }} /><col style={{ width: 88 }} /><col style={{ width: 112 }} />
           {ft && <col style={{ width: 88 }} />}
           {cotKq.map((k) => <col key={k} style={{ width: rongKq }} />)}
           {ft && <col style={{ width: 88 }} />}
@@ -144,7 +143,7 @@ function BangGv({ kq, hang, onChamDiem, bamO }: { kq: PhanTichGvKq; hang: HangPt
           <tr>
             <th rowSpan={2} className={`${th} sticky left-0 z-10`} style={{ background: 'var(--surface-2, var(--surface))' }}>Giáo viên</th>
             <th rowSpan={2} className={`${th} text-right`}><DauCot nhan="Đang dạy" giai={GIAI['dang-day'](ft)} trai /></th>
-            <th colSpan={3} className={`${th} ${bl} text-center align-middle text-slate-200`}>Đúng hạn</th>
+            <th colSpan={2} className={`${th} ${bl} text-center align-middle text-slate-200`}>Đúng hạn</th>
             {ft && <th rowSpan={2} className={`${th} ${bl} text-right`}><DauCot nhan="PA hiệu quả" giai={GIAI['pa-hieu-qua'](ft)} /></th>}
             <th colSpan={cotKq.length} className={`${th} ${bl} text-center align-middle text-slate-200`}><DauCot nhan="Kết quả môn mình dạy" giai={GIAI['ket-qua'](ft)} /></th>
             {ft && <th rowSpan={2} className={`${th} ${bl} text-right`}><DauCot nhan="HV tiến bộ" giai={GIAI['tien-bo'](ft)} /></th>}
@@ -152,7 +151,6 @@ function BangGv({ kq, hang, onChamDiem, bamO }: { kq: PhanTichGvKq; hang: HangPt
           <tr>
             <th className={`${th} ${bl} text-right`}><DauCot nhan="Chấm điểm" giai={GIAI['cham-diem'](ft)} trai /></th>
             <th className={`${th} text-right ${ft ? '' : 'font-medium'}`}><DauCot nhan="Kết quả PA" giai={GIAI['ghi-pa'](ft)} /></th>
-            <th className={`${th} text-right`}><DauCot nhan="Xử lý vi phạm" giai={GIAI['vi-pham'](ft)} /></th>
             {cotKq.map((k, i) => {
               const [nhan, phu] = nhanKq[k];
               return (
@@ -178,7 +176,6 @@ function BangGv({ kq, hang, onChamDiem, bamO }: { kq: PhanTichGvKq; hang: HangPt
                 </td>
                 <td className={`td text-right align-top ${bl}`}><OSo o={h.chamDiem} onBam={() => onChamDiem(h)} /></td>
                 <td className="td text-right align-top"><OSo o={h.ghiKetQuaPa} onBam={bamO(h, 'ghi-pa', 'Kết quả PA đúng hạn')} mo={!ft} /></td>
-                <td className="td text-right align-top"><OSo o={h.xuLyViPham} onBam={bamO(h, 'vi-pham', 'Xử lý vi phạm đúng hạn')} /></td>
                 {ft && <td className={`td text-right align-top ${bl}`}><OSo o={h.paHieuQua} onBam={bamO(h, 'pa-hieu-qua', 'PA hiệu quả')} /></td>}
                 {cotKq.map((k, i) => <td key={k} className={`td text-right align-top ${i === 0 ? bl : ''}`}><OSo o={h.ketQua[k]} onBam={bamO(h, `ket-qua:${k}`, `Kết quả ${nhanKq[k][0]}`)} /></td>)}
                 {ft && <td className={`td text-right align-top ${bl}`}><OSo o={h.tienBo} onBam={bamO(h, 'tien-bo', 'HV tiến bộ')} /></td>}
@@ -203,7 +200,6 @@ function TheGv({ kq, hang, onChamDiem, bamO }: { kq: PhanTichGvKq; hang: HangPtG
         const dong: { nhan: string; noiDung: ReactNode; o: OPtGv | undefined }[] = [
           { nhan: 'Chấm đúng hạn', o: h.chamDiem, noiDung: <OSo o={h.chamDiem} onBam={() => onChamDiem(h)} /> },
           { nhan: 'Kết quả PA đúng hạn', o: h.ghiKetQuaPa, noiDung: <OSo o={h.ghiKetQuaPa} onBam={bamO(h, 'ghi-pa', 'Kết quả PA đúng hạn')} mo={!ft} /> },
-          { nhan: 'Xử lý vi phạm đúng hạn', o: h.xuLyViPham, noiDung: <OSo o={h.xuLyViPham} onBam={bamO(h, 'vi-pham', 'Xử lý vi phạm đúng hạn')} /> },
           ...(ft ? [{ nhan: 'PA hiệu quả', o: h.paHieuQua, noiDung: <OSo o={h.paHieuQua} onBam={bamO(h, 'pa-hieu-qua', 'PA hiệu quả')} /> }] : []),
           ...cotKetQuaGv(kq).map((k) => ({
             nhan: `Kết quả ${nhanKq[k][0]}${nhanKq[k][1] ? ` ${nhanKq[k][1]}` : ''} · ${ft ? 'đạt kỳ vọng' : 'đạt'}`, o: h.ketQua[k],

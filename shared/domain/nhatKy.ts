@@ -13,7 +13,7 @@ const NHAN_NHAT_KY: Record<string, string> = {
   'attempt.huy_vang': 'Huỷ kỹ năng (vắng 2 lần)',
   'attempt.create': 'Tạo lượt Test', 'attempt.no_show_settled': 'Chốt vắng', 'attempt.recreate': 'Tạo lại lượt Test (số dùng lại)',
   'attempt.restore_part': 'Khôi phục phần đã huỷ', 'attempt.restore_skill': 'Khôi phục kỹ năng', 'attempt.khoi_phuc': 'Khôi phục lượt MT',
-  'attempt.skip_skill': 'Bỏ kỹ năng khỏi đợt', 'attempt.sit_status': 'Ghi đã làm bài / vắng', 'attempt.skill_week': 'Dời lịch Test',
+  'attempt.skip_skill': 'Bỏ khỏi đợt', 'attempt.sit_status': 'Ghi đã làm bài / vắng', 'attempt.skill_week': 'Dời lịch Test',
   'case.auto_from_sos': 'Tạo Case từ SOS', 'case.auto_from_giua_khoa': 'Tạo Case từ Progress Test', 'case.bo_tro.nop_ke_hoach': 'Nộp kế hoạch bổ trợ', 'case.backfill': 'Nhập bù Case đã xong', 'case.backfill.done': 'Nhập bù Case đã xong',
   'case.classify': 'Phân loại Case', 'case.close': 'Đóng Case', 'case.disposition': 'Kết luận Case', 'case.dismiss': 'Không cần theo dõi',
   'case.intervention': 'Thêm PA', 'case.intervention.complete': 'Kết thúc PA', 'case.outcome': 'Hoàn thành Case',

@@ -170,7 +170,7 @@ export async function runPrXlmtMayChu(t: YThucTestKit) {
     attemptsSvc.setSkillSkip(P.mbManager, m1.id, 'reading', false);
     diem(m2.id, 'listening');
     const e = (() => { try { attemptsSvc.setSkillSkip(P.mbManager, m2.id, 'listening', true, 'Không thi L đợt này'); } catch (x) { return x as any; } return null; })();
-    assert(e?.status === 409 && /Xoá điểm và huỷ kỹ năng/.test(e.message), `có điểm: ${e?.status} ${e?.message}`);
+    assert(e?.status === 409 && /Xoá điểm và bỏ khỏi đợt/.test(e.message), `có điểm: ${e?.status} ${e?.message}`);
     attemptsSvc.setSkillSkip(P.mbManager, m2.id, 'reading', true);   // PR-MTa T7: bỏ kỹ năng — lý do tuỳ chọn
     assert(lich(m2.id, 'reading').required === 0, 'đã bỏ');
     attemptsSvc.setSkillSkip(P.mbManager, m2.id, 'reading', false);

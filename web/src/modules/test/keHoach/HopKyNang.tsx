@@ -486,7 +486,7 @@ function DongKyNangHop({ k, o, khoa, moi, loai, d, noiBat, khaiGiang, tongTuan, 
         <label className="relative grid place-items-center max-sm:min-h-[44px] max-sm:after:absolute max-sm:after:-inset-x-2.5 max-sm:after:inset-y-0 max-sm:after:content-['']">
           <input type="checkbox" className="accent-sky-400 disabled:opacity-60" checked={d.tick} disabled={!tickDuoc} onChange={(e) => onTick(e.target.checked)}
             aria-label={`${tenMon(ct, k)} — ${d.tick ? 'bỏ khỏi đợt' : 'đưa lại vào đợt'}`}
-            title={!tickDuoc ? (o?.khoa ?? 'Đã tới tuần Test') : d.tick ? 'Bỏ kỹ năng khỏi đợt' : 'Đưa lại vào đợt'} />
+            title={!tickDuoc ? (o?.khoa ?? 'Đã tới tuần Test') : d.tick ? 'Bỏ khỏi đợt' : 'Đưa lại vào đợt'} />
         </label>
       ) : <span />}
       <div className="text-xs text-slate-200">
@@ -496,7 +496,7 @@ function DongKyNangHop({ k, o, khoa, moi, loai, d, noiBat, khaiGiang, tongTuan, 
       </div>
       <div className="min-w-0 text-xs">
         {bo ? (
-          <span className="text-slate-500">Bỏ kỹ năng khỏi đợt</span>
+          <span className="text-slate-500">Bỏ khỏi đợt</span>
         ) : riengTuan ? (
           /* Rà #212 (T4/T20): hộp chỉ mở cho Quản lý / Quản trị (PLAN_WEEK) — chọn được cả tuần đã qua, máy chủ đã cho. */
           <TuanNho nam d={d} goc={goc} onTuan={onTuan} nhanKhoa={nhanTuan} />

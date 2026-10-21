@@ -9,23 +9,38 @@ import { mondayOfDate, owningMonthOf } from './week.ts';
 export type KhungPtGv = 'ft' | 'thuong';
 export const khungPtGvTuThamSo = (s: string | null | undefined): KhungPtGv => (s === 'thuong' ? 'thuong' : 'ft');
 
-/** Khoảng tối đa 13 tuần (một quý) để bảng mở nhanh (mockup 25 "Đã duyệt" 7). */
-export const TOI_DA_TUAN_GV = 13;
-
 export type OPtGv = { k: 'na' } | { k: 'rong' } | { k: 'so'; dung: number; tong: number };
 export type HangPtGv = {
   id: number; ten: string;
   /** "R · W1 · W2 · GVCN MB FT 103" (mockup 25). */
   phu: string;
   dangDay: { lop: number; hv: number };
+  /** `chamDiem` = "Điểm đúng hạn" (đơn vị BÀI). */
   chamDiem: OPtGv; ghiKetQuaPa: OPtGv;
-  xuLyViPham: OPtGv & { lopGvcn?: number[] };
+  /** V5 (05 #8): "Việc đúng hạn" — gộp các việc có hạn (Ghi kết quả PA; + Báo PH ở SV-TVV), đơn vị VIỆC (Σ tử / Σ mẫu). "Xử lý vi phạm" bỏ khỏi bảng (10, 22/10). */
+  viecDungHan: OPtGv;
   /** Chỉ Fast Track. */
   paHieuQua?: OPtGv;
   /** FT: listening reading writing1 writing2 speaking · thường: listening reading writing speaking. `lop` = lớp có mục (bấm số). */
   ketQua: Record<string, OPtGv & { lop?: number[] }>;
   /** Chỉ Fast Track. */
   tienBo?: OPtGv & { lop?: number[] };
+};
+/**
+ * V5 SV-SO2 — HỒ SƠ GV THEO KỲ (`GET /giao-vien/:id/chi-so?tu=&den=`): số của MỘT GV, Σ tử / Σ mẫu qua các chi nhánh × khung GV dạy trong kỳ, cùng hàm tập
+ * với bảng Phân tích GV. Đơn vị: `diemDungHan` bài · `viecDungHan` việc · `ketQua`, `tienBo` lượt kỹ năng (K5) · `paHieuQua` PA.
+ * Mốc "phản hồi vấn đề HV" không có ở đây (R3c — web ghi cố định "Chưa có dữ liệu").
+ */
+export type ChiSoHoSoGv = {
+  tu: string; den: string; homNay: string;
+  diemDungHan: OPtGv; viecDungHan: OPtGv; ghiKetQuaPa: OPtGv;
+  ketQua: OPtGv;
+  /** Chỉ kỹ năng có mẫu (`k: 'so'`). */
+  ketQuaTheoKyNang: { khung: KhungPtGv; skill: string; nhan: string; o: OPtGv }[];
+  /** P8 (22/10): theo LỚP em học lúc thi × kỹ năng — lượt của từng HV có tuần thi trong kỳ (không "MT gần nhất của lớp"). Panel `cot=ket-qua:<khung>:<kỹ năng>:<lớp>`. */
+  ketQuaTheoLop: { classId: number; ma: string; khung: KhungPtGv; skill: string; nhan: string; o: OPtGv }[];
+  /** `na` khi GV không dạy lớp Fast Track trong kỳ. */
+  tienBo: OPtGv; paHieuQua: OPtGv;
 };
 export type PhanTichGvKq = { cn: number; tenChiNhanh: string; khung: KhungPtGv; tu: string; den: string; thang: string | null; homNay: string; hang: HangPtGv[] };
 
@@ -40,10 +55,9 @@ export const cotKetQuaGv = (kq: { khung: KhungPtGv; hang: readonly { ketQua: Rec
 
 const THU_HAI = /^\d{4}-\d{2}-\d{2}$/;
 const laThuHai = (s: string) => THU_HAI.test(s) && !Number.isNaN(Date.parse(`${s}T00:00:00Z`)) && mondayOfDate(s) === s;
-const soTuan = (tu: string, den: string) => Math.round((Date.parse(`${den}T00:00:00Z`) - Date.parse(`${tu}T00:00:00Z`)) / (7 * 86_400_000)) + 1;
 
 /**
- * Khoảng tuần (Q18): `thang=YYYY-MM` → các tuần có Thứ Năm thuộc tháng (`owningMonthOf`); `tu`,`den` (Thứ Hai, gồm cả tuần `den`) → ≤ 13 tuần;
+ * Khoảng tuần (Q18): `thang=YYYY-MM` → các tuần có Thứ Năm thuộc tháng (`owningMonthOf`); `tu`,`den` (Thứ Hai, gồm cả tuần `den`) → khoảng tự do (P9, 22/10 — không trần);
  * vắng → 4 tuần tới tuần hiện tại. Trả `{ tu, den }` là Thứ Hai tuần đầu / tuần cuối.
  */
 export function khoangPtGv(q: { tu?: string | null; den?: string | null; thang?: string | null }, homNay: string): { tu: string; den: string } | { loi: string } {
@@ -60,7 +74,6 @@ export function khoangPtGv(q: { tu?: string | null; den?: string | null; thang?:
   if (q.tu || q.den) {
     if (!q.tu || !q.den || !laThuHai(q.tu) || !laThuHai(q.den)) return { loi: 'Từ tuần / đến tuần phải là ngày Thứ Hai (YYYY-MM-DD).' };
     if (q.tu > q.den) return { loi: 'Tuần đầu phải trước tuần cuối.' };
-    if (soTuan(q.tu, q.den) > TOI_DA_TUAN_GV) return { loi: `Khoảng tối đa ${TOI_DA_TUAN_GV} tuần.` };
     return { tu: q.tu, den: q.den };
   }
   const den = mondayOfDate(homNay);
@@ -69,7 +82,7 @@ export function khoangPtGv(q: { tu?: string | null; den?: string | null; thang?:
 
 /** % làm tròn (Q19). */
 export const phanTramGv = (dung: number, tong: number) => Math.round((100 * dung) / tong);
-/** Chữ một ô: "18/20" + "90%" (chủ SP 22/10: bỏ chữ "mẫu nhỏ") · "—" không áp dụng · "Chưa có dữ liệu" áp dụng mà mẫu 0 (V5 T19 — không hiện 0 %). */
+/** Chữ một ô: "18/20" + "90%" · "—" không áp dụng · "Chưa có dữ liệu" áp dụng mà mẫu 0 (V5 T19 — không hiện 0 %). Không "mẫu nhỏ" (10, 22/10). */
 export function chuOPtGv(o: OPtGv): { so: string | null; phu: string } {
   if (o.k === 'na') return { so: null, phu: '—' };
   if (o.k === 'rong') return { so: null, phu: 'Chưa có dữ liệu' };

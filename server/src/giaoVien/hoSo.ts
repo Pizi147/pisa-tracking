@@ -244,6 +244,7 @@ export function viecHoSoGv(p: Principal, gvId: number): { viec: { nhom: NhomViec
   return { viec: viecCuaGv(p, gvId) };
 }
 
+/* shortcut: khối cũ "mốc gần nhất của lớp" — P8 (22/10) bỏ cách đại diện này; web hiện tại còn đọc. UI-HO-SO-GV chuyển sang `chiSoHoSoGv().ketQuaTheoLop` (lượt từng HV trong kỳ) rồi xoá hàm này. */
 export function ketQuaHoSoGv(p: Principal, gvId: number): { ketQua: KetQuaLop[] } {
   const { branchIds } = phamViHoSoGv(p, gvId);
   /* Lớp người xem không có quyền xem điểm (vd GV được phân công lớp ở chi nhánh khác vai của họ) thì bỏ khỏi khối kết quả — không làm cả hồ sơ 403. */
@@ -306,7 +307,8 @@ export function oHoSoGv(p: Principal, gvId: number, q: ThamSoO): { n: number; ti
   const pt = phanTichLop(p, l.id);
   if (!pt.dong.some((d) => d.key === q.dong && d.key !== 'ca-bai') || !pt.cot.some((c) => c.key === q.moc)) throw badRequest('Ô kết quả không có trong bảng của lớp này.');
   const x = pt.ds[`${q.dong}|${q.moc}`] ?? { dat: [], chua: [] };
-  const chu = l.khung === 'ft' ? ['Đạt kỳ vọng', 'Dưới kỳ vọng'] : ['Đạt', 'Chưa đạt'];
+  /* V5 C09: FT theo Overall lượt (`danhGiaMon`) — kỹ năng dưới kỳ vọng vẫn có thể "Đạt", nên không ghi "Đạt kỳ vọng". */
+  const chu = ['Đạt', 'Chưa đạt'];
   const dong = pt.dong.find((d) => d.key === q.dong)!;
   const gan = (ids: number[], nhan: string) => rowsFor('hoc-vien', ids).map((r) => ({ ...r, sub: [r.sub, nhan].filter(Boolean).join(' · ') }));
   return ket([...gan(x.dat, chu[0]), ...gan(x.chua, chu[1])], (n) => `${n} học viên · ${l.ma} · ${dong.nhan}`);

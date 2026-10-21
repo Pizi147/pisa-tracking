@@ -1158,7 +1158,7 @@ check('Bỏ một kỹ năng khỏi phạm vi: đã có điểm thì 409 hỏi X
     .get(classId('CP FT 110')) as any;
   const beforeScores = (conn.prepare('SELECT COUNT(*) n FROM assessment_scores WHERE attempt_id = ?').get(xong.id) as any).n;
   assertThrows(() => attempts.setSkillSkip(P.cpManager, xong.id, 'speaking', true, 'Quản lý chốt lại: đợt này không yêu cầu Speaking'),
-    /đã có điểm — Xoá điểm và huỷ kỹ năng\?/, 'PR-MTGON: huỷ kỹ năng đã có điểm phải hỏi xoá điểm trước');
+    /đã có điểm — Xoá điểm và bỏ khỏi đợt\?/, 'PR-MTGON: huỷ kỹ năng đã có điểm phải hỏi xoá điểm trước');
   const afterScores = (conn.prepare('SELECT COUNT(*) n FROM assessment_scores WHERE attempt_id = ?').get(xong.id) as any).n;
   assert(afterScores === beforeScores, 'Đánh dấu không mock đã xoá điểm đã có');
   /* PR-XLMT: phần "tính lại mẫu số" giữ nguyên, chuyển sang một đợt CHƯA TỚI tuần thi, Speaking chưa có điểm. */
@@ -9513,6 +9513,9 @@ await runPrPtGvOverallTests({ check, checkAsync, assert, assertThrows, conn, TOD
 
 const { runPrSvBaiLopTests } = await import('./prSvBaiLop.tests.ts');
 await runPrSvBaiLopTests({ check, assert, conn, P, classId } as any);
+// ==================================================================== V5 SV-SO2 (Overall ở Phân tích lớp / hồ sơ GV, Đạt MT theo HV, Việc / Điểm đúng hạn, hồ sơ GV theo kỳ, panel chỉ đọc)
+const { runPrSvSo2Tests } = await import('./prSvSo2.tests.ts');
+await runPrSvSo2Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== SV-TVV-VIEC (4 việc TVV: một người giữ = TVV của em / QL; Chốt ngày thi, Bước tiếp, Bổ sung hồ sơ, KQ thi thật)
 const { runPrSvTvvViecTests } = await import('./prSvTvvViec.tests.ts');
 await runPrSvTvvViecTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);

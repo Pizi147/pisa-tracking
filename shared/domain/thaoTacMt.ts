@@ -12,7 +12,7 @@ export type ThaoTac = 'nhap-diem' | 'sua-diem' | 'dat-lich' | 'doi-lich' | 'doi-
 
 export const CHU_THAO_TAC: Record<ThaoTac, string> = {
   'nhap-diem': t('Nhập điểm'), 'sua-diem': t('Sửa điểm'), 'dat-lich': t('Xếp lịch'), 'doi-lich': t('Dời lịch'), 'doi-han': t('Dời hạn chấm'),
-  'bo-ky-nang': t('Huỷ kỹ năng'), 'dua-lai': t('Đưa lại vào đợt'), 'bao-vang': t('Vắng'), 'huy-diem': t('Huỷ điểm'),
+  'bo-ky-nang': t('Bỏ khỏi đợt'), 'dua-lai': t('Đưa lại vào đợt'), 'bao-vang': t('Vắng'), 'huy-diem': t('Huỷ điểm'),
   'xep-lai': t('Xếp lại bài vắng'), 'tra-loi-de-nghi': t('Trả lời đề nghị dời'), 'khoi-phuc': t('Khôi phục và đặt tuần'),
   'khong-mock-lai': t('Không mock lại'), 'khoi-phuc-diem': t('Khôi phục điểm'),
 };

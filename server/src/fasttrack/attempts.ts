@@ -1391,7 +1391,7 @@ export function setSkillSkip(p: Principal, attemptId: number, skill: string, ski
     if (skipped && opts.xoaDiem) {
       const a = loadAttempt(attemptId);
       require_(p, PERMISSIONS.ATTEMPT_SKIP_SKILL, { classId: a.class_id, studentId: a.student_id }, 'Chỉ Quản lý mới đổi được phạm vi kỹ năng của một đợt.');
-      xoaDiemCua(p, attemptId, entrySkillsOf(skill as AssessedSkill), reason?.trim() || 'Huỷ kỹ năng');
+      xoaDiemCua(p, attemptId, entrySkillsOf(skill as AssessedSkill), reason?.trim() || 'Bỏ khỏi đợt');
     }
     const r = setSkillScope(p, attemptId, skill, !skipped, reason ?? null, opts);
     refreshOutcome(p, attemptId);

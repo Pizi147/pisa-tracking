@@ -1003,7 +1003,7 @@ export function setSkillScope(
         'Lớp thường luôn phải đủ bốn môn L/R/W/S. Không có thao tác miễn môn để hoàn tất Progress Test / Final Test.',
       );
     }
-    if (hasScore(attemptId, row.skill)) throw new HttpError(409, 'Kỹ năng đã có điểm — Xoá điểm và huỷ kỹ năng?');
+    if (hasScore(attemptId, row.skill)) throw new HttpError(409, 'Kỹ năng đã có điểm — Xoá điểm và bỏ khỏi đợt?');
   }
   /* Đưa lại: tuần đang giữ vướng thứ tự đợt → Chưa xếp (kiểm như dời một kỹ năng). */
   const boTuan = required && !!row.week_start && (

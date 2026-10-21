@@ -172,7 +172,7 @@ export async function runPrOv15eTests(t: YThucTestKit) {
     const kq = gvPt.phanTichGiaoVien(QL, f);
     let soO = 0;
     for (const h of kq.hang) {
-      const o: [string, any][] = [['ghi-pa', h.ghiKetQuaPa], ['vi-pham', h.xuLyViPham], ['pa-hieu-qua', h.paHieuQua], ['tien-bo', h.tienBo],
+      const o: [string, any][] = [['ghi-pa', h.ghiKetQuaPa], ['pa-hieu-qua', h.paHieuQua], ['tien-bo', h.tienBo],
         ...Object.entries(h.ketQua).map(([k, v]) => [`ket-qua:${k}`, v] as [string, any])];
       for (const [cot, x] of o) {
         if (!x || x.k !== 'so') continue;

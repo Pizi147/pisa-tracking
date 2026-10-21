@@ -382,7 +382,7 @@ export function khongMockLai(p: Principal, attemptId: number, skill: string, lyD
   if (!canDecide(p, attempt)) throw forbidden('Chỉ Quản lý mới chốt được "Không mock lại".');
   if (attempt.kind !== 'mock') throw badRequest('Chỉ áp cho Mock Test.');
   const row = ensureSkillRows(attemptId).find((r) => r.skill === skill);
-  if (!row?.required || (row.sit_status !== 'cancelled' && !oHuyCu(attempt, skill))) throw badRequest(`${skillName(skill)} chưa huỷ — dùng "Bỏ kỹ năng khỏi đợt".`);
+  if (!row?.required || (row.sit_status !== 'cancelled' && !oHuyCu(attempt, skill))) throw badRequest(`${skillName(skill)} chưa huỷ — dùng "Bỏ khỏi đợt".`);
   return tx(() => {
     khongMockLaiNoi(p, attemptId, skill, lyDo);
     return { ok: true as const };

@@ -427,7 +427,7 @@ export function oQuaHanCham(
  */
 export function dsQuaHanCham(p: Principal, o: Parameters<typeof oQuaHanCham>[1], today: string = demoToday(), coDong = true) {
   const { ids, khac, lop } = oQuaHanCham(p, o, today);
-  return { n: ids.length, lop, khac: khac.length, tieuDe: t('Quá hạn chấm'), ...(coDong ? { rows: rowsFor('bai', ids, 'bai-qua-han-nhap-diem', p) } : {}) };
+  return { n: ids.length, lop, khac: khac.length, tieuDe: t('Quá hạn chấm'), ...(coDong ? { rows: rowsFor('bai', ids, 'bai-qua-han-nhap-diem', p, true) } : {}) };
 }
 
 // ---------------------------------------------------------------- Lịch Test

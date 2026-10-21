@@ -133,7 +133,7 @@ export async function runPrMtGonTests(t: YThucTestKit) {
     const a = emMoi();
     diem(a.m1, 'listening');
     const e = loiCua(() => attemptsSvc.setSkillSkip(QL, a.m1, 'listening', true, null));
-    assert(e.status === 409 && /Kỹ năng đã có điểm — Xoá điểm và huỷ kỹ năng\?/.test(e.message), `${e.status} ${e.message}`);
+    assert(e.status === 409 && /Kỹ năng đã có điểm — Xoá điểm và bỏ khỏi đợt\?/.test(e.message), `${e.status} ${e.message}`);
     assert(band(a.m1, 'listening') === 6 && kn(a.m1, 'listening').required === 1, 'đã đổi khi chưa xác nhận');
     attemptsSvc.setSkillSkip(QL, a.m1, 'listening', true, null, { xoaDiem: true });
     assert(band(a.m1, 'listening') === null && kn(a.m1, 'listening').required === 0, 'chưa xoá / chưa huỷ');
@@ -147,7 +147,7 @@ export async function runPrMtGonTests(t: YThucTestKit) {
     const q = { nhapDiem: true, quanLy: true, gvcn: false, laFt: true, dotHoanTat: false };
     assert(d.thaoTacKyNang('da-huy', q).chinh === 'dua-lai', JSON.stringify(d.thaoTacKyNang('da-huy', q)));
     assert(d.thaoTacKyNang('khong-yeu-cau', q).chinh === 'dua-lai', 'khong-yeu-cau');
-    assert(d.CHU_THAO_TAC['dua-lai'] === 'Đưa lại vào đợt' && d.CHU_THAO_TAC['bo-ky-nang'] === 'Huỷ kỹ năng', 'chữ');
+    assert(d.CHU_THAO_TAC['dua-lai'] === 'Đưa lại vào đợt' && d.CHU_THAO_TAC['bo-ky-nang'] === 'Bỏ khỏi đợt', 'chữ');
     for (const s of ['chua-xep', 'chua-toi-tuan', 'dang-thi', 'co-diem', 'vang', 'lich-su'] as const) {
       assert(d.thaoTacKyNang(s, q).menu.includes('bo-ky-nang'), `thiếu Huỷ kỹ năng ở ${s}`);
       assert(!d.thaoTacKyNang(s, { ...q, quanLy: false }).menu.includes('bo-ky-nang'), `GV có Huỷ kỹ năng ở ${s}`);

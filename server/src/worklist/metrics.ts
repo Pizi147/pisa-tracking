@@ -182,8 +182,9 @@ function viecCuaCase(rows: any[], p: Principal | undefined): Map<number, { viec:
 /**
  * DỰNG DÒNG CHO MỘT TẬP ID — chỉ "tô màu" tập đã có (tên, lớp, đường dẫn), KHÔNG lọc thêm gì.
  * Tập ID đã qua quyền ở `metricSet`; hàm này không nhận phạm vi nên không thể mở rộng hay thu hẹp nó.
+ * V5 C22: panel số / báo cáo là CHỈ ĐỌC — dòng không mang `viec` (nút làm việc), trừ khu làm việc gọi `kemViec` (Lịch Test · Quá hạn chấm).
  */
-export function rowsFor(unit: ChiSo['donVi'], ids: number[], metricId?: string, p?: Principal): MetricRow[] {
+export function rowsFor(unit: ChiSo['donVi'], ids: number[], metricId?: string, p?: Principal, kemViec = false): MetricRow[] {
   const conn = db();
   const byId = new Map<number, MetricRow>();
   const chunks = <T>(list: T[]) => Array.from({ length: Math.ceil(list.length / 400) }, (_, i) => list.slice(i * 400, i * 400 + 400));
@@ -409,7 +410,12 @@ export function rowsFor(unit: ChiSo['donVi'], ids: number[], metricId?: string, 
     }
   }
   /* Giữ đúng thứ tự của tập ID; ID không tra được vẫn hiện — không im lặng làm rơi bản ghi khỏi danh sách. */
-  return ids.map((id) => byId.get(id) ?? { id, title: `#${id}`, sub: '', href: '#' });
+  return ids.map((id) => {
+    const r = byId.get(id) ?? { id, title: `#${id}`, sub: '', href: '#' };
+    if (kemViec || !('viec' in r)) return r;
+    const { viec: _, ...chiDoc } = r;
+    return chiDoc;
+  });
 }
 
 /**

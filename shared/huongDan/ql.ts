@@ -23,7 +23,7 @@ export const HD_QL: HuongDan = {
       id: 'ql-lich-test', ten: 'Xếp / dời lịch Test', khi: 'mỗi tuần',
       buoc: ['Mở <b>Test › Kế hoạch Test</b>; chip <b>Cần xếp lại</b> đếm em cần xếp lại.',
         'Nhiều lớp FT: <b>Xếp nhiều MT…</b>; lớp thường: <b>Xếp lịch Test…</b>.',
-        'Một kỹ năng: bấm chip kỹ năng ở dòng lớp; <b>⋯</b> có <b>Dời lịch Test</b>, <b>Dời hạn chấm</b>, <b>Huỷ kỹ năng</b>.',
+        'Một kỹ năng: bấm chip kỹ năng ở dòng lớp; <b>⋯</b> có <b>Dời lịch Test</b>, <b>Dời hạn chấm</b>, <b>Bỏ khỏi đợt</b>.',
         'Theo dõi chấm: <b>Lịch Test / Chấm Test</b> — khối <b>Test quá hạn chấm</b> và <b>Test chấm tuần này</b>.'],
       chi: { hd: 'kht-loc', duong: '/test/ke-hoach', chu: 'Chọn chương trình, lọc lớp, xếp nhiều MT ở hàng này.' },
     },
@@ -104,7 +104,7 @@ export const HD_QL: HuongDan = {
       muc: [
         { id: 'ql-kh-xep', ten: 'Xếp lịch nhiều lớp', buoc: ['Chọn <b>Fast Track</b> hoặc <b>Lớp thường</b>; chip <b>Cần xếp lại</b> chỉ lớp có em cần xếp.', '<b>Xếp nhiều MT…</b> (FT) · <b>Xếp lịch Test…</b> (lớp thường).'],
           chi: { hd: 'kht-loc', duong: '/test/ke-hoach', chu: 'Lọc và xếp lịch nhiều lớp ở hàng này.' } },
-        { id: 'ql-kh-ky-nang', ten: 'Một kỹ năng', buoc: ['Bấm chip kỹ năng ở dòng lớp: chọn tuần, <b>Lưu</b>.', '<b>⋯</b>: <b>Dời lịch Test</b> · <b>Dời hạn chấm</b> · <b>Huỷ kỹ năng</b> · <b>Huỷ điểm</b> · <b>Trả lời đề nghị dời</b> · <b>Không mock lại</b>.'] },
+        { id: 'ql-kh-ky-nang', ten: 'Một kỹ năng', buoc: ['Bấm chip kỹ năng ở dòng lớp: chọn tuần, <b>Lưu</b>.', '<b>⋯</b>: <b>Dời lịch Test</b> · <b>Dời hạn chấm</b> · <b>Bỏ khỏi đợt</b> · <b>Huỷ điểm</b> · <b>Trả lời đề nghị dời</b> · <b>Không mock lại</b>.'] },
         { id: 'ql-kh-luat', ten: 'Luật xếp lịch', buoc: ['Link <b>Luật xếp lịch Test</b> trên hàng lọc.'] },
         { id: 'ql-kh-tim', ten: 'Tìm lớp, học viên', buoc: ['Gõ mã lớp, tên (có / không dấu) hoặc email vào <b>Tìm lớp, học viên hoặc email…</b>.', 'Chọn em: lớp mở, hàng em được đánh dấu.'] },
         { id: 'ql-kh-xoa', ten: 'Xóa lịch một đợt', buoc: ['Bấm ô MT, chân hộp: <b>Xóa</b> → đợt về <b>Chưa xếp</b>, lịch sử giữ; có <b>Hoàn tác</b>.', 'Đã có điểm / đã làm bài: nút mờ. Kỹ năng huỷ vì vắng 2 lần: <b>Khôi phục → Chưa xếp</b> hoặc <b>Giữ huỷ</b>.'] },

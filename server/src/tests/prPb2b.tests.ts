@@ -304,10 +304,10 @@ export async function runPrPb2bTests(t: YThucTestKit) {
   const hieuQuaPaSvc: any = await import('../phanTich/hieuQuaPa.ts');
   const metricsSvc: any = await import('../worklist/metrics.ts');
   const nguCanh: any = await import('../platform/nguCanhRequest.ts');
-  check('Pb2b (4a) · khoangPtGv: tháng 09/2026 = W1 SEP – W4 SEP (31/08 – 21/09); 14 tuần → lỗi; vắng → 4 tuần tới tuần hôm nay; tu > den → lỗi', () => {
+  check('Pb2b (4a) · khoangPtGv: tháng 09/2026 = W1 SEP – W4 SEP (31/08 – 21/09); khoảng dài tự do (P9); vắng → 4 tuần tới tuần hôm nay; tu > den → lỗi', () => {
     const t9 = d.khoangPtGv({ thang: '2026-09' }, '2026-09-14');
     assert(t9.tu === '2026-08-31' && t9.den === '2026-09-21', JSON.stringify(t9));
-    assert('loi' in d.khoangPtGv({ tu: '2026-06-01', den: '2026-08-31' }, '2026-09-14'), '14 tuần');
+    assert(!('loi' in d.khoangPtGv({ tu: '2026-01-05', den: '2026-08-31' }, '2026-09-14')), '35 tuần được (không trần)');
     assert(!('loi' in d.khoangPtGv({ tu: '2026-06-08', den: '2026-08-31' }, '2026-09-14')), '13 tuần được');
     const vang = d.khoangPtGv({}, '2026-09-16');
     assert(vang.tu === '2026-08-24' && vang.den === '2026-09-14', JSON.stringify(vang));
@@ -394,27 +394,18 @@ export async function runPrPb2bTests(t: YThucTestKit) {
     const b = pt.phanTichGiaoVien(P.mbManager, { ct: 'ft', thang: '2026-09' });
     assert(b.hang.every((h: any) => h.ghiKetQuaPa.k !== 'so' || h.ghiKetQuaPa.tong === r.tap.get(h.id)?.tong.length), 'ô = tập');
   });
-  check('Pb2b (4g) · Xử lý vi phạm: gửi đề xuất trước hạn (QL chưa duyệt) → đúng hạn cho GVCN; GV không làm GVCN lớp FT nào → "—"; vi phạm chưa tới hạn chưa phản hồi → chưa tính', () => {
+  /* 10 (22/10): "Xử lý vi phạm" bỏ khỏi Phân tích GV (dữ liệu vi phạm giữ). Giữ đúng dữ liệu (4g), (4h) từng tạo — id của phép kiểm sau không lệch. */
+  check('Pb2b (4g) · Phân tích GV không còn cột Xử lý vi phạm; vi phạm + đề xuất vẫn lưu, không vào Việc đúng hạn', () => {
     const sid = hv();
     const ids = [ghiVp(sid, addDays(D, -2)), ghiVp(sid, addDays(D, -1)), ghiVp(sid, D)];
-    const nc = pt.nguCanhPtGv(P.mbManager, { ct: 'ft', tu: tuanNay, den: week.mondayOf(addDays(D, 7)) });
-    assert(!ids.some((v) => pt.tapXuLyViPham(nc).get(gvcn.userId)?.tong.includes(v)), 'chưa tới hạn, chưa phản hồi → chưa tính');
     deXuatGui(sid, ids).gui();
-    const t = pt.tapXuLyViPham(nc).get(gvcn.userId);
-    assert(ids.every((v) => t?.dung.includes(v)), JSON.stringify(t));
+    const s2 = hv();
+    const ids2 = [ghiVp(s2, addDays(D, -2)), ghiVp(s2, addDays(D, -1)), ghiVp(s2, D)];
+    deXuatGui(s2, ids2).gui();
     const b = bang('ft', { tu: tuanNay, den: week.mondayOf(addDays(D, 7)) });
-    const khongGvcn = b.hang.filter((h: any) => !/GVCN/.test(h.phu));
-    assert(khongGvcn.length > 0 && khongGvcn.every((h: any) => h.xuLyViPham.k === 'na'), khongGvcn.map((h: any) => `${h.ten}:${h.xuLyViPham.k}`).join());
-    assert(hangCua(b, gvcn.userId)?.xuLyViPham.lopGvcn?.includes(MB_FT), 'lớp GVCN để bấm số');
-  });
-  check('Pb2b (4h) · PHỦ ĐỊNH: vi phạm valid = 0 không vào tập Xử lý vi phạm', () => {
-    const sid = hv();
-    const ids = [ghiVp(sid, addDays(D, -2)), ghiVp(sid, addDays(D, -1)), ghiVp(sid, D)];
-    deXuatGui(sid, ids).gui();
-    conn.prepare(`UPDATE violations SET valid = 0 WHERE id = ?`).run(ids[0]);
-    const nc = pt.nguCanhPtGv(P.mbManager, { ct: 'ft', tu: tuanNay, den: week.mondayOf(addDays(D, 7)) });
-    assert(!pt.tapXuLyViPham(nc).get(gvcn.userId)?.tong.includes(ids[0]), 'vi phạm valid = 0 vẫn tính');
-    conn.prepare(`UPDATE violations SET valid = 1 WHERE id = ?`).run(ids[0]);
+    const h = hangCua(b, gvcn.userId);
+    assert(h && !('xuLyViPham' in h) && JSON.stringify(h.viecDungHan) === JSON.stringify(h.ghiKetQuaPa), JSON.stringify(h));
+    assert((conn.prepare(`SELECT COUNT(*) AS n FROM violations WHERE id IN (${[...ids, ...ids2].join(',')})`).get() as any).n === 6, 'vi phạm phải còn');
   });
   check('Pb2b (4i) · Kết quả: GV L có ô L (FT 5 khoá), GV không dạy L → "—" ở L; em KCK không tính; HV tiến bộ: MT trước L 5.5 → nay 6.0 tiến bộ; chưa có bài trước → không có mặt', () => {
     /* Em có bài trước (MT1 tuần trước, L 5.5) và bài nay (MT2 tuần này, L 6.0); em KCK chỉ có bài nay. */
@@ -470,14 +461,14 @@ export async function runPrPb2bTests(t: YThucTestKit) {
     }
     assert(coSo > 0, 'bộ demo không GV nào có PA giáo viên thêm có kết quả trong 13 tuần');
   });
-  await t.checkAsync('Pb2b (4l) · PHỦ ĐỊNH qua route: GVCN / GVBM → 403; QL CP xem cn = MB → 403; Quản trị không cn → 400; 14 tuần → 400; QL MB → 200', async () => {
+  await t.checkAsync('Pb2b (4l) · PHỦ ĐỊNH qua route: GVCN / GVBM → 403; QL CP xem cn = MB → 403; Quản trị không cn → 400; 14 tuần → 200 (P9); QL MB → 200', async () => {
     await voiMayChu(async (goi) => {
       const ma = async (u: number, url: string) => (await goi(u, url)).status;
       assert(await ma(gvcn.userId, `/phan-tich/giao-vien?cn=${MB}&ct=ft`) === 403, 'GVCN');
       assert(await ma(P.w1Teacher.userId, `/phan-tich/giao-vien/cham-diem?cn=${MB}&ct=ft&gv=${gvcn.userId}`) === 403, 'GVBM');
       assert(await ma(P.cpManager.userId, `/phan-tich/giao-vien?cn=${MB}&ct=ft`) === 403, 'QL CP');
       assert(await ma(P.admin.userId, `/phan-tich/giao-vien?ct=ft`) === 400, 'QT không cn');
-      assert(await ma(P.mbManager.userId, `/phan-tich/giao-vien?cn=${MB}&ct=ft&tu=2026-06-01&den=2026-08-31`) === 400, '14 tuần');
+      assert(await ma(P.mbManager.userId, `/phan-tich/giao-vien?cn=${MB}&ct=ft&tu=2026-06-01&den=2026-08-31`) === 200, '14 tuần (không trần)');
       assert(await ma(P.mbManager.userId, `/phan-tich/giao-vien?cn=${MB}&ct=ft&thang=2026-09`) === 200, 'QL MB');
       assert(await ma(P.mbManager.userId, `/phan-tich/giao-vien/cham-diem?cn=${MB}&ct=ft&gv=abc`) === 400, 'gv sai dạng');
     });
@@ -500,14 +491,13 @@ export async function runPrPb2bTests(t: YThucTestKit) {
   // ------------------------------------------------------------------ khối 6 · bộ demo D18 (Task 6)
   console.log('\nPR-Pb2-b · Bộ demo D18: bảng giáo viên đủ dạng ô, lớp FOU hai giáo viên');
   const idGv = (ten: string) => get('SELECT id FROM users WHERE full_name = ?', ten)?.id as number;
-  check('Pb2b (6a) · bảng MB Fast Track 09/2026: ≥ 5 hàng; đủ dạng ô (số ≥ 5 mục, mẫu nhỏ, "—", "Chưa có dữ liệu")', () => {
+  check('Pb2b (6a) · bảng MB Fast Track 09/2026: ≥ 5 hàng; đủ dạng ô (số ≥ 5 mục, số < 5 mục, "—", "Chưa có dữ liệu")', () => {
     const b = pt.phanTichGiaoVien(P.mbManager, { ct: 'ft', thang: '2026-09' });
     assert(b.hang.length >= 5, `${b.hang.length} hàng`);
-    const o = b.hang.flatMap((h: any) => [h.chamDiem, h.ghiKetQuaPa, h.xuLyViPham, ...Object.values(h.ketQua), h.tienBo]);
-    assert(o.some((x: any) => x.k === 'so' && x.tong >= 5) && o.some((x: any) => x.k === 'so' && x.tong < 5), 'số / mẫu nhỏ');
+    const o = b.hang.flatMap((h: any) => [h.chamDiem, h.ghiKetQuaPa, ...Object.values(h.ketQua), h.tienBo]);
+    assert(o.some((x: any) => x.k === 'so' && x.tong >= 5) && o.some((x: any) => x.k === 'so' && x.tong < 5), 'số ≥ 5 / < 5');
     assert(o.some((x: any) => x.k === 'na') && o.some((x: any) => x.k === 'rong'), '— / không có');
-    const vinh = hangCua(b, idGv('Lâm Quang Vinh'));
-    assert(vinh?.xuLyViPham.k === 'so' && vinh.xuLyViPham.dung === 3 && vinh.xuLyViPham.tong === 6, JSON.stringify(vinh?.xuLyViPham));
+    assert(b.hang.every((h: any) => !('xuLyViPham' in h)), 'cột Xử lý vi phạm còn');
   });
   check('Pb2b (6b) · bảng lớp thường 09/2026: lớp FOU hai GV — Bình "L · R · G+V · GVCN MB FOU 14", Ngọc chỉ có cột S (P)', () => {
     const b = pt.phanTichGiaoVien(P.mbManager, { ct: 'thuong', thang: '2026-09' });

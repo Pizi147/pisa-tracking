@@ -142,23 +142,17 @@ export async function runPrS6fATests(t: YThucTestKit) {
     assert(!thoi.gv && !thoi.no, `em Kết thúc học: ${JSON.stringify(thoi)}`);
     assert(!luu.gv && !luu.no, `em lưu trữ: ${JSON.stringify(luu)}`);
   });
-  check('S6F-a (2c) · Xử lý vi phạm: 3 vi phạm hạn chốt 10/09, em Tạm dừng, hôm nay 20/09 → không mục trễ nào; em Kết thúc học → cũng không; em học lại → có', () => {
+  /* 10 (22/10): cột "Xử lý vi phạm" bỏ khỏi Phân tích GV (hàm tập gỡ) — giữ đúng dữ liệu phép kiểm này từng tạo để id phép kiểm sau không lệch. */
+  check('S6F-a (2c) · vi phạm của em Tạm dừng / Kết thúc / học lại vẫn lưu; Phân tích GV không còn cột Xử lý vi phạm', () => {
     const { sid } = emMoi('MB FT 101');
     conn.prepare("UPDATE enrollments SET started_at = '2026-08-03' WHERE student_id = ?").run(sid);
     const ids = ['2026-09-03', '2026-09-04', '2026-09-05'].map((ngay) =>
       (viol.recordViolation(P.w1Teacher, { studentId: sid, category: 'homework', description: 'Vi phạm ghi cho phép kiểm S6F-a', occurredOn: ngay }) as any).violation.id as number);
     conn.prepare(`UPDATE violations SET han_xu_ly = '2026-09-10', phan_hoi_ngay = NULL WHERE id IN (${ids.join(',')})`).run();
-    const tre = () => voiNgay('2026-09-20', () => {
-      const tap = pt.tapXuLyViPham(pt.nguCanhPtGv(P.mbManager, { ct: 'ft', tu: '2026-09-07', den: '2026-09-07' }));
-      return ids.filter((v) => [...tap.values()].some((x: any) => x.tong.includes(v) && !x.dung.includes(v))).length;
-    });
-    conn.prepare(`UPDATE students SET status = 'inactive' WHERE id = ?`).run(sid);
-    const tamDung = tre();
-    conn.prepare(`UPDATE students SET status = 'finished' WHERE id = ?`).run(sid);
-    const ketThuc = tre();
-    conn.prepare(`UPDATE students SET status = 'active' WHERE id = ?`).run(sid);
-    const dangHoc = tre();
-    assert(tamDung === 0 && ketThuc === 0 && dangHoc === 3, `trễ: Tạm dừng ${tamDung} · Kết thúc ${ketThuc} · đang học ${dangHoc}`);
+    for (const st of ['inactive', 'finished', 'active']) conn.prepare(`UPDATE students SET status = ? WHERE id = ?`).run(st, sid);
+    const b = voiNgay('2026-09-20', () => pt.phanTichGiaoVien(P.mbManager, { ct: 'ft', tu: '2026-09-07', den: '2026-09-07' }));
+    assert(pt.tapXuLyViPham === undefined && b.hang.every((h: any) => !('xuLyViPham' in h)), 'cột Xử lý vi phạm còn');
+    assert((conn.prepare(`SELECT COUNT(*) AS n FROM violations WHERE id IN (${ids.join(',')})`).get() as any).n === 3, 'vi phạm phải còn');
   });
   check('S6F-a (2d) · HAI ĐƯỜNG: ô Nợ điểm quá hạn (có người phụ trách) trong khoảng bảng GV ⊆ tập "chưa nhập & trễ" của bảng GV (theo baiId)', () => {
     const kh = { ct: 'ft', tu: '2026-08-17', den: tuanNay };
