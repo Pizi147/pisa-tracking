@@ -51,6 +51,7 @@ import { migratePrOv13n } from './migrate/prOv13n.ts';
 import { migratePrOv13m } from './migrate/prOv13m.ts';
 import { migratePrOv12g } from './migrate/prOv12g.ts';
 import { migratePrSvBaiLop } from './migrate/prSvBaiLop.ts';
+import { migratePrSvSExpert } from './migrate/prSvSExpert.ts';
 import { migratePrEn } from './migrate/prEn.ts';
 import { migratePrOv12b } from './migrate/prOv12b.ts';
 import { migratePrOv12c } from './migrate/prOv12c.ts';
@@ -388,6 +389,7 @@ function migrateCaseEngine(applied: string[], skipped: string[], loiSauBuoc?: nu
     /* SL1: cột notifications.han — chuông Cần làm sắp theo hạn (chỉ thêm cột, chạy lặp được). */ buoc(() => migratePrSl1(conn, applied));
     /* SV-YT-TVV: bảng việc Báo PH của TVV (chỉ thêm bảng, chạy lặp được). */ buoc(() => migratePrSvYtTvv(conn, applied));
     /* SV-BAI-LOP: bảng bai_tren_lop — Bài trên lớp (chỉ thêm bảng, chạy lặp được). */ buoc(() => migratePrSvBaiLop(conn, applied));
+    /* SV-S-EXPERT: bảng s_expert — lượt S Expert (chỉ thêm bảng, chạy lặp được). */ buoc(() => migratePrSvSExpert(conn, applied));
 
     conn.prepare("INSERT OR REPLACE INTO demo_config (key, value, updated_at) VALUES ('case_engine_migrated_at', ?, ?)")
       .run(nowIso(), nowIso());

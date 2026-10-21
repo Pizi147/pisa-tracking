@@ -33,6 +33,7 @@ import { effectiveSkillDeadline, mondayOf } from '../platform/week.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { classProgress, classProgressMany, lichMtCua, suggestedMockWeeks, type SuggestedMock } from '../classes/schedule.ts';
 import { planRegularTests, programmeByCode, programmeOfClass } from '../normal/regular.ts';
+import { sExCuaHv } from '../cham/sExpert.ts';
 
 const KIND_NHAN: Record<'progress' | 'final', string> = { progress: ATTEMPT_KIND_SHORT.progress, final: ATTEMPT_KIND_SHORT.final };
 const CAU_XAC_NHAN = 'Xác nhận lại nếu vẫn muốn xếp vào tuần này.';
@@ -370,7 +371,8 @@ export function luoiFT(p: Principal, classId: number, today: string = demoToday(
 
   /* OV-15c (C21): ghi chú lịch thi — một câu cho cả lớp. */
   const gc = docGhiChu(classId, students.map((s) => ({ id: s.id as number, cycleId: (s.cycle_id ?? null) as number | null })), true);
-  return { classId, classCode: cls.code as string, cot, hang: hang.map((h) => ({ ...h, ghiChu: gc.theoEm.get(h.studentId) ?? {} })), ghiChuLop: gc.lop };
+  const sEx = sExCuaHv(p, studentIds, today);   // SV-S-EXPERT: lượt S Ex của em, tách khỏi ô MT
+  return { classId, classCode: cls.code as string, cot, hang: hang.map((h) => ({ ...h, ghiChu: gc.theoEm.get(h.studentId) ?? {}, sEx: sEx.get(h.studentId) ?? [] })), ghiChuLop: gc.lop };
 }
 
 // ---------------------------------------------------------------- PR-LM: bảng lịch MT ở panel Lộ trình
@@ -826,6 +828,7 @@ export function luoiThuong(p: Principal, classId: number, today: string = demoTo
   });
 
   const gc = docGhiChu(classId, students.map((s) => ({ id: s.id as number, cycleId: null })), false);   // OV-15c (C21)
+  const sExTheoEm = sExCuaHv(p, students.map((s) => s.id as number), today);
   const nhanKhoa = (n: number | null) => (n && progress.totalWeeks ? tuanKhoaCua(n, progress.totalWeeks) : null);
   const hvChuaCoLich = students.filter((s) => kinds.every((k) => !theoEm.has(`${s.id}:${k}`))).length;
   const cw = progress.currentWeek;
@@ -843,7 +846,8 @@ export function luoiThuong(p: Principal, classId: number, today: string = demoTo
         : { kind, nhan: KIND_NHAN.final, deXuat: progress.finalWeekStart, nhanDeXuat: nhanKhoa(progress.finalWeek) })),
     /** Bộ môn của chương trình (Pre FOU `tong_hop`) — hộp kỹ năng lặp đúng bộ này. */
     boMon: bo,
-    hang: hang.map((h) => ({ ...h, ghiChu: gc.theoEm.get(h.studentId) ?? {} })),
+    /** SV-S-EXPERT: `sEx` = lượt S Expert của em (tách khỏi ô MT). */
+    hang: hang.map((h) => ({ ...h, ghiChu: gc.theoEm.get(h.studentId) ?? {}, sEx: sExTheoEm.get(h.studentId) ?? [] })),
     /** OV-15c (C21): ghi chú lớp dưới bảng. */
     ghiChuLop: gc.lop,
   };

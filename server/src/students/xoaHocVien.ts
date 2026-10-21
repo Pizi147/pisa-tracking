@@ -22,7 +22,7 @@ import { conLaiMs } from '../platform/hanGio.ts';
 
 const CHI_QL = 'Chỉ Quản lý của học viên này hoặc Quản trị hệ thống mới xoá được học viên.';
 
-/** Bao đóng theo FK của `students` (41 bảng, PR-TK +2, PR-OV12g +1, OV-15c +1, SV-BAI-LOP +1, SV-YT-TVV +2) — phép kiểm X1 so bằng đúng với đồ thị dựng từ PRAGMA. */
+/** Bao đóng theo FK của `students` (41 bảng, PR-TK +2, PR-OV12g +1, OV-15c +1, SV-BAI-LOP +1, SV-YT-TVV +2, SV-S-EXPERT +1) — phép kiểm X1 so bằng đúng với đồ thị dựng từ PRAGMA. */
 export const BANG_CUA_HOC_VIEN: readonly string[] = [
   'students', 'enrollments', 'learning_cycles', 'lo_trinh_tiep_theo', 'lo_trinh_nhap', 'journey_events', 'teacher_estimates', 'cycle_target_revisions',
   'assessment_attempts', 'assessment_scores', 'attempt_skills', 'attempt_skill_skips', 'attempt_schedule_history', 'skill_move_requests',
@@ -30,7 +30,7 @@ export const BANG_CUA_HOC_VIEN: readonly string[] = [
   'sos_case_history', 'case_signals', 'task_students', 'task_case_links',
   'violations', 'violation_history', 'discipline_measures', 'measure_violations', 'sos_coordination_actions',
   'yeu_cau_duyet', 'y_thuc_khai_bac', 'mini_test', 'lenh_chuyen_lop', 'ban_giao_mon', 'ket_qua_huy',
-  'ban_chup_lo_trinh', 'ban_chup_luot', 'case_followup_buoi', 'gop_y_tuan', 'ghi_chu_lich_thi', 'bai_tren_lop', 'viec_bao_ph', 'viec_bao_ph_lan',
+  'ban_chup_lo_trinh', 'ban_chup_luot', 'case_followup_buoi', 'gop_y_tuan', 'ghi_chu_lich_thi', 'bai_tren_lop', 'viec_bao_ph', 'viec_bao_ph_lan', 's_expert',
 ];
 
 /** Dòng của NGƯỜI KHÁC trỏ vào dữ liệu của em (Q5) — đặt NULL, không xoá. Cả ba cột cho phép NULL. */
@@ -136,6 +136,7 @@ export const CAU_XOA_HOC_VIEN: readonly { bang: string; sql: string }[] = [
   { bang: 'ban_chup_lo_trinh', sql: `DELETE FROM ban_chup_lo_trinh WHERE student_id = ?1 OR cycle_id IN (${Y})` },
   { bang: 'gop_y_tuan', sql: 'DELETE FROM gop_y_tuan WHERE student_id = ?1' },   // PR-OV12g
   { bang: 'bai_tren_lop', sql: 'DELETE FROM bai_tren_lop WHERE student_id = ?1' },   // SV-BAI-LOP
+  { bang: 's_expert', sql: 'DELETE FROM s_expert WHERE student_id = ?1' },   // SV-S-EXPERT
   { bang: 'ghi_chu_lich_thi', sql: `DELETE FROM ghi_chu_lich_thi WHERE student_id = ?1 OR cycle_id IN (${Y})` },   // OV-15c
   { bang: 'enrollments', sql: 'DELETE FROM enrollments WHERE student_id = ?1' },
   { bang: 'learning_cycles', sql: 'DELETE FROM learning_cycles WHERE student_id = ?1' },

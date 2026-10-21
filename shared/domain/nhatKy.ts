@@ -56,6 +56,7 @@ const NHAN_NHAT_KY: Record<string, string> = {
   'schedule.autoplan': 'Tự xếp lịch Test',
   'gop_y_tuan.ghi': 'Ghi góp ý hàng tuần', 'gop_y_tuan.xoa': 'Xoá góp ý hàng tuần',
   'bai_tren_lop.them': 'Ghi tiến độ trên lớp', 'bai_tren_lop.sua': 'Sửa tiến độ trên lớp', 'bai_tren_lop.xoa': 'Xoá tiến độ trên lớp',
+  's_expert.them': 'Thêm S Expert', 's_expert.sua': 'Sửa S Expert', 's_expert.cham': 'Chấm S Expert', 's_expert.xoa': 'Xoá S Expert',
   'score.edit': 'Nhập điểm', 'score.override': 'Sửa điểm', 'score.no_show': 'Báo vắng', 'score.no_show_cleared': 'Bỏ báo vắng',
   'score.nhan_xet': 'Sửa nhận xét',
   'score.nhan_xet_phu_trach': 'Nhận xét GV phụ trách',   // OV-13k
