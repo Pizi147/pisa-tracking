@@ -160,7 +160,7 @@ export function ClassRoster({ classId, maLop, quyen, onDoi, onAddStudents, chon 
               hanhDong={<MenuDong muc={tt.mucCua({ id: s.id, ten: s.fullName, dangHoc: s.status === 'active', nhapDiem: nhapDiemCua(classId, false, s.timeline), status: s.status, xuLyYThuc: !!s.canhBaoYThuc })} />}
               dong={[
                 { nhan: 'Target', noiDung: <TargetText band={s.cycle?.target} kck={s.cycle?.khongCamKet} /> },
-                { nhan: t('Dự kiến thi'), noiDung: <><ExamPlanText plan={s.examPlan} />{s.sauThi && <NhanSauThi s={s.sauThi} gon />}</> },
+                { nhan: t('Ngày thi'), noiDung: <><ExamPlanText plan={s.examPlan} />{s.sauThi && <NhanSauThi s={s.sauThi} gon />}</> },
                 ...(dv ? [{ nhan: nhanDauVao(dv), noiDung: (
                   <span className="tabular-nums">
                     {'OVR '}<SoDauVao v={dv.overall} />
@@ -210,7 +210,7 @@ export function ClassRoster({ classId, maLop, quyen, onDoi, onAddStudents, chon 
               <Th hint={t('Tên em, và một câu về kết quả mốc gần nhất của em.')} className="sticky-col">{chon?.bat && <span className="mr-2 inline-flex align-middle"><OChonTatCa chon={chon} ids={data.map((s) => s.id)} /></span>}{t('Học viên')}</Th>
               <Th align="right" hint={t('Điểm Target của lộ trình em đang học. KCK = không cam kết đầu ra, không tính SOS.')}>Target</Th>
               <Th hint={t('Kỳ thi IELTS thật, ở đúng mức chắc chắn đang biết: tuần, hoặc mới có tháng, hoặc chưa xác định.')}>
-                {t('Dự kiến thi')}
+                {t('Ngày thi')}
               </Th>
               <Th hint={t('Lượt MT ứng với mỗi hàng điểm bên phải — mốc mới nhất ở trên.')}>
                 {t('Đợt')}

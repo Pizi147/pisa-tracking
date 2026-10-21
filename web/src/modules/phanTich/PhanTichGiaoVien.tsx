@@ -1,7 +1,7 @@
 import { useId, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  cotKetQuaGv, chuOPtGv, mauKetQuaGv, ngay, nhanKhoang, tuanLich,
+  cotKetQuaGv, chuOPtGv, ngay, nhanKhoang, tuanLich,
   type ChuongTrinh, type HangPtGv, type KhoangNgay, type KhungPtGv, type OPtGv, type PhanTichGvKq,
 } from '@shared/domain/index.ts';
 import { useApi } from '../../lib/useApi.ts';
@@ -28,8 +28,8 @@ const GIAI: Record<string, (ft: boolean) => string> = {
   'vi-pham': () => 'Chỉ lớp giáo viên làm GVCN. Một mục là một vi phạm thành "Cần xử lý", hạn xử lý trong khoảng. Đúng hạn khi GVCN xác nhận xử lý, hoặc gửi đề xuất cho Quản lý, trước hạn. Thời gian chờ Quản lý duyệt không tính cho GVCN.',
   'pa-hieu-qua': () => 'PA giáo viên tự thêm vào Case (không tính PA theo quy chế, PA bổ trợ) đã có kết quả cuối trong khoảng. Số trên: PA có tiến bộ (cùng luật góc nhìn Hiệu quả PA) / PA đã có kết quả cuối.',
   'ket-qua': (ft) => ft
-    ? 'Một mục là một học viên × một bài có tuần Test trong khoảng, ở lớp giáo viên dạy kỹ năng đó lúc làm bài. Số trên: đạt kỳ vọng của đợt đó / đã có điểm (W1, W2 so từng bài). Em đã chuyển lớp vẫn tính cho người dạy em lúc thi. Phần trăm tô màu: đỏ dưới 50%, vàng 50–69%, xanh từ 70%.'
-    : 'Đạt từ 70%. Một mục là một học viên × một bài (Progress Test, Final Test) có tuần Test trong khoảng. Bốn cột cố định; môn giáo viên không dạy ghi —. Phần trăm tô màu: đỏ dưới 50%, vàng 50–69%, xanh từ 70%.',
+    ? 'Một mục là một học viên × một kỹ năng ở bài MT hoặc kỳ thi thật trong khoảng, gán người dạy kỹ năng đó lúc thi (thi thật: lớp cuối trước ngày thi). Overall đạt kỳ vọng (thi thật: đạt Target) thì kỹ năng thấp hơn vẫn tính đạt; Overall chưa đạt thì xét từng kỹ năng (W1, W2 so từng bài). Chưa đủ 4 kỹ năng: chưa đủ dữ liệu, không tính.'
+    : 'Đạt từ 70%. Một mục là một học viên × một bài (Progress Test, Final Test) có tuần Test trong khoảng. Bốn cột cố định; môn giáo viên không dạy ghi —.',
   'tien-bo': () => 'Một mục là một học viên × một kỹ năng giáo viên dạy, ở bài có tuần Test trong khoảng, mà em đã có điểm kỹ năng đó ở bài trước. Tiến bộ khi điểm cao hơn bài trước; bằng hoặc thấp hơn thì không.',
   'w-gv': () => 'BE, ELE: Writing. FOU: Grammar + Vocabulary (G+V).',
   's-p': () => 'BE, ELE: Speaking. FOU: Pronunciation (P).',
@@ -40,7 +40,6 @@ const NHAN_KQ: Record<string, [string, string | null]> = {
 const NHAN_KQ_THUONG: Record<string, [string, string | null]> = {
   listening: ['L', null], reading: ['R', null], writing: ['W', '(G+V)'], speaking: ['S', '(P)'], listening_speaking: ['L+S', null], reading_writing: ['R+W', null],
 };
-const MAU: Record<'thap' | 'vua' | 'cao', string> = { thap: 'text-bad', vua: 'text-soon', cao: 'text-ok' };
 
 /** Tên cột 2–3 chữ + chú thích nổi hiện khi rê chuột HOẶC Tab tới (không dựa vào `title` một mình). */
 function DauCot({ nhan, giai, trai, children }: { nhan?: ReactNode; giai: string; trai?: boolean; children?: ReactNode }) {
@@ -59,21 +58,20 @@ function DauCot({ nhan, giai, trai, children }: { nhan?: ReactNode; giai: string
   );
 }
 
-/** Một ô số: `n/m` bấm được (panel) + dòng phụ 12 px; "—" / "không có" mờ. `ketQua` → % có màu. */
-function OSo({ o, onBam, ketQua, mo }: { o: OPtGv | undefined; onBam?: () => void; ketQua?: boolean; mo?: boolean }) {
+/** Một ô số: `n/m` bấm được (panel) + dòng phụ 12 px; "—" / "Chưa có dữ liệu" mờ. Không màu ngưỡng (V5 C08). */
+function OSo({ o, onBam, mo }: { o: OPtGv | undefined; onBam?: () => void; mo?: boolean }) {
   if (!o) return <span className="text-faint">—</span>;
   const c = chuOPtGv(o);
   if (c.so === null) return <span className={`text-faint ${o.k === 'rong' ? 'text-xs' : 'tabular-nums'}`}>{c.phu}</span>;
-  const mau = ketQua && o.k === 'so' ? mauKetQuaGv(o.dung, o.tong) : null;
   const so = 'font-semibold tabular-nums underline decoration-dotted underline-offset-4 py-2 -my-2 inline-block';
   const soMau = mo ? 'text-slate-400' : 'text-slate-100';
-  /* OV-15e (C02, C30): "0/20" vẫn mở 20 mục — chỉ ô không có mục nào (—, "không có") là không bấm. */
+  /* OV-15e (C02, C30): "0/20" vẫn mở 20 mục — chỉ ô không có mục nào (—, "Chưa có dữ liệu") là không bấm. */
   return (
     <span className="inline-flex flex-col items-end">
       {onBam
         ? <button type="button" onClick={onBam} className={`cursor-pointer appearance-none border-0 bg-transparent p-0 ${so} ${soMau}`}>{c.so}</button>
         : <span className={`${so} no-underline ${soMau}`}>{c.so}</span>}
-      <span className={`text-xs leading-tight tabular-nums ${mau ? `${MAU[mau]} font-semibold` : 'text-slate-400'}`}>{c.phu}</span>
+      <span className="text-xs leading-tight tabular-nums text-slate-400">{c.phu}</span>
     </span>
   );
 }
@@ -110,9 +108,8 @@ export function PhanTichGiaoVien({ branchId, ct, khoang }: { branchId: number | 
                 <span className="flex flex-wrap gap-x-4 gap-y-0.5">
                   <span><b className="font-semibold tabular-nums text-slate-200">18/20</b> đúng hạn / có hạn trong khoảng</span>
                   <span><b className="text-slate-200">—</b> không áp dụng</span>
-                  <span>không có = áp dụng, chưa có mục</span>
+                  <span>Chưa có dữ liệu = áp dụng, chưa có mục</span>
                   <span>mẫu nhỏ = dưới 5 mục</span>
-                  <span className="inline-flex gap-1.5">ô kết quả <span className="font-semibold text-bad">dưới 50%</span><span className="font-semibold text-soon">50–69%</span><span className="font-semibold text-ok">từ 70%</span></span>
                 </span>
               )}
             </div>
@@ -191,7 +188,7 @@ function BangGv({ kq, hang, onChamDiem, bamO }: { kq: PhanTichGvKq; hang: HangPt
                 <td className="td text-right align-top"><OSo o={h.ghiKetQuaPa} onBam={bamO(h, 'ghi-pa', 'Kết quả PA đúng hạn')} mo={!ft} /></td>
                 <td className="td text-right align-top"><OSo o={h.xuLyViPham} onBam={bamO(h, 'vi-pham', 'Xử lý vi phạm đúng hạn')} /></td>
                 {ft && <td className={`td text-right align-top ${bl}`}><OSo o={h.paHieuQua} onBam={bamO(h, 'pa-hieu-qua', 'PA hiệu quả')} /></td>}
-                {cotKq.map((k, i) => <td key={k} className={`td text-right align-top ${i === 0 ? bl : ''}`}><OSo o={h.ketQua[k]} onBam={bamO(h, `ket-qua:${k}`, `Kết quả ${nhanKq[k][0]}`)} ketQua /></td>)}
+                {cotKq.map((k, i) => <td key={k} className={`td text-right align-top ${i === 0 ? bl : ''}`}><OSo o={h.ketQua[k]} onBam={bamO(h, `ket-qua:${k}`, `Kết quả ${nhanKq[k][0]}`)} /></td>)}
                 {ft && <td className={`td text-right align-top ${bl}`}><OSo o={h.tienBo} onBam={bamO(h, 'tien-bo', 'HV tiến bộ')} /></td>}
               </tr>
             );
@@ -218,7 +215,7 @@ function TheGv({ kq, hang, onChamDiem, bamO }: { kq: PhanTichGvKq; hang: HangPtG
           ...(ft ? [{ nhan: 'PA hiệu quả', o: h.paHieuQua, noiDung: <OSo o={h.paHieuQua} onBam={bamO(h, 'pa-hieu-qua', 'PA hiệu quả')} /> }] : []),
           ...cotKetQuaGv(kq).map((k) => ({
             nhan: `Kết quả ${nhanKq[k][0]}${nhanKq[k][1] ? ` ${nhanKq[k][1]}` : ''} · ${ft ? 'đạt kỳ vọng' : 'đạt'}`, o: h.ketQua[k],
-            noiDung: <OSo o={h.ketQua[k]} onBam={bamO(h, `ket-qua:${k}`, `Kết quả ${nhanKq[k][0]}`)} ketQua />,
+            noiDung: <OSo o={h.ketQua[k]} onBam={bamO(h, `ket-qua:${k}`, `Kết quả ${nhanKq[k][0]}`)} />,
           })),
           ...(ft ? [{ nhan: 'HV tiến bộ', o: h.tienBo, noiDung: <OSo o={h.tienBo} onBam={bamO(h, 'tien-bo', 'HV tiến bộ')} /> }] : []),
         ];

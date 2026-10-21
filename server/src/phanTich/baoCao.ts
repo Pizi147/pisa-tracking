@@ -135,7 +135,6 @@ export function baoCao(p: Principal, f: LocBaoCao): BaoCaoKq {
     sos,
     mock: mk ? { dat: mk.filter((x) => x.ketQua === 'dat').length, chuaDat: mk.filter((x) => x.ketQua === 'chua-dat').length, chuaDu: mk.filter((x) => x.ketQua === 'chua-du').length } : null,
     chuY: {
-      chuaLich: ft ? metricSet(p, 'hv-ft-xong-mt-cuoi-chua-mt-ke', loc).n : null,
       /* SL2 (9.1-4, X-23): "SOS hiện tại" — CÙNG chỉ số Tổng quan · Đang SOS, số hôm nay (không theo kỳ). */
       sosHienTai: metricSet(p, 'hv-sos-hien-tai', loc).n,
       chuaDiemHv: hvBai.size, chuaDiemBai: chuaDiem.length, caseChuaChotHv: hvCase.size, caseChuaChot: caseChua.length,

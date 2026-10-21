@@ -313,10 +313,9 @@ export async function runPrPb2bTests(t: YThucTestKit) {
     assert(vang.tu === '2026-08-24' && vang.den === '2026-09-14', JSON.stringify(vang));
     assert('loi' in d.khoangPtGv({ tu: '2026-09-14', den: '2026-09-07' }, '2026-09-14') && 'loi' in d.khoangPtGv({ tu: '2026-09-15', den: '2026-09-21' }, '2026-09-14'), 'ngược / không Thứ Hai');
   });
-  check('Pb2b (4b) · chuOPtGv bốn dạng · mauKetQuaGv (12,21) vàng · (8,21) đỏ · (13,17) xanh · (3,4) không màu · khungPtGvTuThamSo("ca-hai") = ft', () => {
+  check('Pb2b (4b) · chuOPtGv bốn dạng (V5 C08: không màu ngưỡng) · khungPtGvTuThamSo("ca-hai") = ft', () => {
     assert(JSON.stringify(d.chuOPtGv({ k: 'so', dung: 18, tong: 20 })) === '{"so":"18/20","phu":"90%"}', 'số');
-    assert(d.chuOPtGv({ k: 'so', dung: 3, tong: 4 }).phu === 'mẫu nhỏ' && d.chuOPtGv({ k: 'na' }).phu === '—' && d.chuOPtGv({ k: 'rong' }).phu === 'không có', 'ba dạng');
-    assert(d.mauKetQuaGv(12, 21) === 'vua' && d.mauKetQuaGv(8, 21) === 'thap' && d.mauKetQuaGv(13, 17) === 'cao' && d.mauKetQuaGv(3, 4) === null, 'màu');
+    assert(d.chuOPtGv({ k: 'so', dung: 3, tong: 4 }).phu === 'mẫu nhỏ' && d.chuOPtGv({ k: 'na' }).phu === '—' && d.chuOPtGv({ k: 'rong' }).phu === 'Chưa có dữ liệu', 'ba dạng');
     assert(d.khungPtGvTuThamSo('ca-hai') === 'ft' && d.khungPtGvTuThamSo(null) === 'ft' && d.khungPtGvTuThamSo('thuong') === 'thuong', 'khung');
   });
 
@@ -430,6 +429,8 @@ export async function runPrPb2bTests(t: YThucTestKit) {
     conn.prepare(`UPDATE learning_cycles SET khong_cam_ket = 1, target_score = NULL WHERE id = ?`).run(e4.cy);
     const kck = luotThu(conn, svc.createAttempt, P.admin, { studentId: e4.sid, cycleId: e4.cy, classId: MB_FT, no: 1, periodId: week.ensurePeriod(tuanNay).id });
     diem(kck.id, 6.0);
+    /* V5 C09: lượt phải đủ 4 kỹ năng (có Overall) mới vào mẫu Kết quả. */
+    for (const k of ['reading', 'writing1', 'writing2', 'speaking']) conn.prepare(`INSERT INTO assessment_scores (attempt_id, skill, raw_score, raw_total, band, nhap_dau_ngay) VALUES (?, ?, 20, 40, 6.0, ?)`).run(kck.id, k, D);
     const b = pt.phanTichGiaoVien(P.mbManager, { ct: 'ft', tu: tuanNay, den: tuanNay });
     const hL = hangCua(b, P.lrTeacher.userId);
     assert(hL && Object.keys(hL.ketQua).join() === 'listening,reading,writing1,writing2,speaking', JSON.stringify(hL?.ketQua));
@@ -499,14 +500,12 @@ export async function runPrPb2bTests(t: YThucTestKit) {
   // ------------------------------------------------------------------ khối 6 · bộ demo D18 (Task 6)
   console.log('\nPR-Pb2-b · Bộ demo D18: bảng giáo viên đủ dạng ô, lớp FOU hai giáo viên');
   const idGv = (ten: string) => get('SELECT id FROM users WHERE full_name = ?', ten)?.id as number;
-  check('Pb2b (6a) · bảng MB Fast Track 09/2026: ≥ 5 hàng; đủ dạng ô (số ≥ 5 mục, mẫu nhỏ, "—", "không có"); ô kết quả đủ ba màu', () => {
+  check('Pb2b (6a) · bảng MB Fast Track 09/2026: ≥ 5 hàng; đủ dạng ô (số ≥ 5 mục, mẫu nhỏ, "—", "Chưa có dữ liệu")', () => {
     const b = pt.phanTichGiaoVien(P.mbManager, { ct: 'ft', thang: '2026-09' });
     assert(b.hang.length >= 5, `${b.hang.length} hàng`);
     const o = b.hang.flatMap((h: any) => [h.chamDiem, h.ghiKetQuaPa, h.xuLyViPham, ...Object.values(h.ketQua), h.tienBo]);
     assert(o.some((x: any) => x.k === 'so' && x.tong >= 5) && o.some((x: any) => x.k === 'so' && x.tong < 5), 'số / mẫu nhỏ');
     assert(o.some((x: any) => x.k === 'na') && o.some((x: any) => x.k === 'rong'), '— / không có');
-    const mau = new Set(b.hang.flatMap((h: any) => Object.values(h.ketQua)).filter((x: any) => x.k === 'so').map((x: any) => d.mauKetQuaGv(x.dung, x.tong)));
-    assert(mau.has('thap') && mau.has('vua') && mau.has('cao'), [...mau].join());
     const vinh = hangCua(b, idGv('Lâm Quang Vinh'));
     assert(vinh?.xuLyViPham.k === 'so' && vinh.xuLyViPham.dung === 3 && vinh.xuLyViPham.tong === 6, JSON.stringify(vinh?.xuLyViPham));
   });

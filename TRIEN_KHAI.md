@@ -667,6 +667,20 @@ từng lượt với cách tính cũ; phải ra `KHỚP 100 %` (lệch thì lệ
 **Thứ tự deploy TD7b:** `npm run migrate` (hoặc migrate cục bộ → `khoi-phuc`) **TRƯỚC** khi chạy máy chủ mới — máy chủ mới đọc cột `assessment_attempts.o_cho_tu`;
 thiếu cột thì Nợ điểm, Công việc, Lịch Test, badge lớp trả 500. Migrate thêm cột + 2 chỉ mục + tính lại cờ cho mọi lượt; chạy lần hai không làm gì.
 
+### 11.5. Gán TVV trước SV-TVV (DATA-TVV — CHỈ ĐỌC + làm tay trên web)
+
+Sau SV-TVV, việc Báo PH, Chốt ngày thi, Bước tiếp, Bổ sung hồ sơ, KQ thi thật của em đi về **TVV của em**; em chưa có TVV thì đi về **QL chi nhánh**.
+Gán TVV trước để việc đến đúng người.
+
+1. **Đếm** — nạp `TURSO_DATABASE_URL` + `TURSO_AUTH_TOKEN` như mục 7.2 (bản chính), chạy `npm run dem-tvv`. Lệnh chỉ đọc. Nó in:
+   - bảng theo chi nhánh: Đang học · Có TVV · % có · Chưa TVV (· còn chữ TVV cũ) · TVV sai (người đã nghỉ / khác chi nhánh) · số TVV đang hoạt động · số QL chi nhánh;
+   - danh sách lớp còn em chưa có TVV hợp lệ (`MB · MB FT 101: 33 em`).
+2. **Chi nhánh có "TVV hoạt động" = 0** → tạo / cấp vai trước: **Quản trị hệ thống › Tài khoản**, mở người đó, thêm vai **Tư vấn viên** đúng chi nhánh
+   (người đăng ký mới: duyệt với vai Tư vấn viên). Ô chọn TVV chỉ hiện TVV **cùng chi nhánh** của em.
+3. **Gán theo lớp** (nhanh nhất): **HV & Lớp** › mở lớp › tab Học viên › **Sửa thông tin** › cột **TVV** — chọn cho từng em (em có chữ "cũ: …" là tên TVV cũ, chọn đúng người đó) › Lưu.
+   Một em lẻ: hồ sơ học viên › Sửa thông tin › TVV. Người làm: chủ SP (Quản trị) hoặc QL chi nhánh.
+4. **Chạy lại** `npm run dem-tvv`. Mục tiêu: **≥ 95 %** em đang học có TVV, hoặc chủ SP chấp nhận phần còn lại để việc về QL. "TVV sai" phải về 0 (chọn lại người đang làm).
+
 ---
 
 ## 12. Bảng tra — mọi tên biến dùng trong file này
