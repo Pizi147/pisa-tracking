@@ -82,7 +82,8 @@ export async function runPrOv13qTests(t: YThucTestKit) {
   const json = async (r: Response): Promise<any> => { const x = await r.json().catch(() => null); if (!r.ok) throw new Error(`${r.status} ${JSON.stringify(x)}`); return x; };
   const ma = async (r: Response) => { await r.text().catch(() => ''); return r.status; };
   const put = (body: unknown): RequestInit => ({ method: 'PUT', body: JSON.stringify(body) });
-  const viec = async (goi: any, uid: number, group: string, sid: number, q = '') => ((await json(await goi(uid, `/my-work${q}`))).dong as any[])
+  /* SV-TVV-VIEC: TVV không có khu Công việc — việc TVV đọc ở Tổng quan TVV (`/tong-quan/viec-cua-toi`). */
+  const viec = async (goi: any, uid: number, group: string, sid: number, q = '') => ((await json(await goi(uid, uid === TVV ? '/tong-quan/viec-cua-toi' : `/my-work${q}`))).dong as any[])
     .flatMap((x: any) => (x.con?.length ? x.con : [x])).filter((x: any) => x.group === group && x.studentId === sid);
   const KQ = { l: 7, r: 6.5, w: 6, s: 6.5 };
 
