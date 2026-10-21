@@ -121,12 +121,21 @@ export async function runPrSvTvvViecTests(t: YThucTestKit) {
     assert(q.length === 1 && q[0].emIds.includes(c.sid) && !q[0].emIds.includes(a.sid) && q[0].ownerId === ql.userId, 'QL: ' + JSON.stringify(q.map((x: any) => x.emIds)));
     assert(viec(gvcn, null, 'bo_sung_ho_so').length === 0, 'GVCN không có');
     /* Rà #517: số trên việc = số dòng chip "Thiếu thông tin" của danh sách mà link mở (TVV: em của mình · QL: em chưa có TVV). */
-    const hvl = hvLop;
-    const thieu = (p: any, f: any) => new Set((hvl.danhSachHocVienLop(p, f).hocVien as any[]).filter((h) => h.loc.includes('thieu_tt')).map((h) => h.id)).size;
-    assert(it[0].href.includes('phamVi=cua-toi') && thieu(tvv, { phamVi: 'cua-toi' }) === it[0].count, `TVV: ${thieu(tvv, { phamVi: 'cua-toi' })} ≠ ${it[0].count}`);
+    const tap = (p: any, f: any) => new Set((hvLop.danhSachHocVienLop(p, f).hocVien as any[]).filter((h) => h.loc.includes('thieu_tt')).map((h) => h.id as number));
+    const lech = (a: Set<number>, b: number[]) => {
+      const x = [...a].filter((id) => !b.includes(id)), y = b.filter((id) => !a.has(id));
+      return [...x, ...y].map((id) => JSON.stringify(conn.prepare('SELECT s.id, s.status, e.status AS es, c.status AS cs FROM students s LEFT JOIN enrollments e ON e.student_id = s.id LEFT JOIN classes c ON c.id = e.class_id WHERE s.id = ?').all(id))).join(' ');
+    };
+    const tTvv = tap(tvv, { phamVi: 'cua-toi' });
+    assert(it[0].href.includes('phamVi=cua-toi') && tTvv.size === it[0].count && !lech(tTvv, it[0].emIds), `TVV lệch: ${lech(tTvv, it[0].emIds)}`);
     const MB = (conn.prepare(`SELECT id FROM branches WHERE code = 'MB'`).get() as any).id;
-    assert(q[0].href.includes('tvv=chua') && thieu(ql, { phamVi: 'chi-nhanh', branchId: MB, chuaTvv: true }) === q[0].count,
-      `QL: ${thieu(ql, { phamVi: 'chi-nhanh', branchId: MB, chuaTvv: true })} ≠ ${q[0].count}`);
+    const tQl = tap(ql, { phamVi: 'chi-nhanh', branchId: MB, chuaTvv: true });
+    assert(q[0].href.includes('tvv=chua') && tQl.size === q[0].count && !lech(tQl, q[0].emIds), `QL lệch: ${tQl.size} / ${q[0].count} — ${lech(tQl, q[0].emIds)}`);
+    /* Em Tạm dừng thiếu hồ sơ: vẫn Bổ sung (như chip), không Chốt ngày thi. */
+    const dung = moiEm(tvv, { email: null });
+    conn.prepare("UPDATE students SET status = 'inactive' WHERE id = ?").run(dung.sid);
+    conn.prepare('UPDATE learning_cycles SET exam_month = ?, exam_date = NULL, exam_period_id = NULL WHERE id = ?').run(TODAY.slice(0, 7), dung.cy);
+    assert(viec(tvv, null, 'bo_sung_ho_so')[0].emIds.includes(dung.sid) && chotNgay(tvv, dung.sid).length === 0, 'em Tạm dừng: Bổ sung có, Chốt ngày thi không');
   }));
 
   await checkAsync('SVTV-6 · câu hướng dẫn nhóm "Cập nhật kết quả thi thật" không còn "Hạn 4 tuần"', () => thu(() => {

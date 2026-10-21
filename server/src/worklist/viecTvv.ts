@@ -7,7 +7,6 @@
 import { db, theoLo } from '../db.ts';
 import { PERMISSIONS, nhanLichThi, soSanhLop, trangThaiLichThi } from '../../../shared/domain/index.ts';
 import { can, scopeFor, type Principal } from '../permissions.ts';
-import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import { examPlanOf } from '../fasttrack/cycles.ts';
 import { missingForStudent } from '../classes/schedule.ts';
 import type { WorkItem } from './mywork.ts';
@@ -63,7 +62,7 @@ export function viecHoSoTvv(p: Principal, o: { today: string; tatCa: boolean; br
   const ql = laQl(p);
   const giu = nguoiGiuTvv(p, o.today);
   const ds = db().prepare(
-    `SELECT s.id, s.full_name, s.dob, s.email, s.consultant_user_id AS tvv, e.class_id, c.code AS class_code, COALESCE(c.branch_id, s.branch_id) AS branch_id, c.is_fast_track,
+    `SELECT s.id, s.full_name, s.dob, s.email, s.status, s.consultant_user_id AS tvv, e.class_id, c.code AS class_code, COALESCE(c.branch_id, s.branch_id) AS branch_id, c.is_fast_track,
             cy.id AS cycle_id, cy.route, cy.start_period_id, cy.target_score, cy.exam_month, cy.exam_date, cy.thi_that_ngay, cy.exam_period_id,
             cy.thi_that_khong_thi, cy.outcome_score, cy.outcome, rp.week_start AS exam_week_start, rp.code AS exam_week_code
        FROM students s
@@ -72,7 +71,7 @@ export function viecHoSoTvv(p: Principal, o: { today: string; tatCa: boolean; br
        JOIN classes c ON c.id = e.class_id
        LEFT JOIN learning_cycles cy ON cy.student_id = s.id AND cy.status = 'active'
        LEFT JOIN report_periods rp ON rp.id = cy.exam_period_id
-      WHERE ${HV_DANG_HOC_SQL('s')} AND (s.consultant_user_id = ? OR ? = 1) AND (? IS NULL OR COALESCE(c.branch_id, s.branch_id) = ?)`,
+      WHERE s.archived_at IS NULL AND (s.consultant_user_id = ? OR ? = 1) AND (? IS NULL OR COALESCE(c.branch_id, s.branch_id) = ?)`,   /* em Tạm dừng: vẫn Bổ sung hồ sơ (như chip), không Chốt ngày thi */
   ).all(p.userId, ql ? 1 : 0, o.branchId, o.branchId) as any[];
   const out: WorkItem[] = [];
   const theoNguoi = new Map<number, { mine: boolean; em: Set<number>; truong: Map<string, number> }>();
@@ -80,7 +79,7 @@ export function viecHoSoTvv(p: Principal, o: { today: string; tatCa: boolean; br
   for (const r of ds.sort((x, y) => soSanhLop({ code: x.class_code }, { code: y.class_code }) || String(x.full_name).localeCompare(String(y.full_name), 'vi'))) {
     const chu = giu(r.branch_id ?? null, r.tvv ?? null, o.tatCa);
     if (!chu) continue;
-    if (o.chot && r.is_fast_track && r.cycle_id && r.route && !daChot.has(r.cycle_id) && !r.exam_date && !r.thi_that_ngay && (r.exam_month || r.exam_period_id)
+    if (o.chot && r.status === 'active' && r.is_fast_track && r.cycle_id && r.route && !daChot.has(r.cycle_id) && !r.exam_date && !r.thi_that_ngay && (r.exam_month || r.exam_period_id)
         && !r.thi_that_khong_thi && r.outcome_score === null && (r.outcome ?? 'unknown') === 'unknown') {
       const lich = trangThaiLichThi(r, examPlanOf(r), o.today);
       if (lich.trangThai === 'chua-chot-ngay') {
