@@ -149,7 +149,7 @@ export async function runPrLmMayChu(t: YThucTestKit) {
   check('PR-LM (2.7) · D2: dời MT2 về trước MT1 vẫn 400 như cũ', () => {
     const b = emMoi();
     assertThrows(() => skillSch.setSkillWeek(QL, b.m2, 'listening', tuan(0).id, {}),
-      /Phần thi của lượt sau không được xếp trước phần cuối của lượt trước/, 'D2');
+      /Kỹ năng của lượt sau không được xếp trước phần cuối của lượt trước/, 'D2');
   });
 
   // PR-MTa T7 thay "D3 luôn cần lý do"; T1 thay "sau ngày vào web → 400": MT cũ đổi tuần không lý do, không xét ngày vào web.

@@ -57,7 +57,7 @@ export async function runPrMtGonTests(t: YThucTestKit) {
   };
   const CAU_VUOT = (n: number, w: number) => {
     const tw = d.tuanLich(t.addDays(tuanNay, 7 * w));
-    return `MT${n} thi ${tw}. Chọn tuần trước ${tw}, hoặc dời MT${n} trước.`;
+    return `MT${n} làm bài ${tw}. Chọn tuần trước ${tw}, hoặc dời MT${n} trước.`;
   };
 
   // ---------------------------------------------------------------- Task 1: dời lịch — chỉ dời khi hợp lệ, giữ điểm
