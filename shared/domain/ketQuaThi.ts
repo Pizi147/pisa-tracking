@@ -35,7 +35,8 @@ export type DongMock = {
   /** Trạng thái Case của lượt ("Case trống PA", "PA đang chạy") + việc tiếp ("Lập PA · Trần Ngọc Hà" / "Nhập điểm S"). */
   casePa: string | null; caseId: number | null; viecTiep: string | null;
 };
-export type TongMock = { luot: number; hv: number; dat: number; chuaDat: number; chuaDu: number; sos1: number; sos2: number; sos3: number };
+/** `sos1..3` đếm LƯỢT (gồm tạm); `sosTam` (SL2) = số lượt SOS tạm trong đó. */
+export type TongMock = { luot: number; hv: number; dat: number; chuaDat: number; chuaDu: number; sos1: number; sos2: number; sos3: number; sosTam: number };
 export type KetQuaMockKq = { loai: 'mock'; tu: string; den: string; tong: TongMock; rows: DongMock[] };
 
 export type DongThiThat = {

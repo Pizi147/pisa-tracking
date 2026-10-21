@@ -9487,6 +9487,9 @@ await runCaseLoTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, 
 
 const { runPrSl1Tests } = await import('./prSl1.tests.ts');
 await runPrSl1Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+
+const { runPrSl2Tests } = await import('./prSl2.tests.ts');
+await runPrSl2Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`

@@ -37,8 +37,9 @@ const laViecQuanLy = (p: Principal) => {
 };
 
 /**
- * TẦNG 1 CỦA QUẢN LÝ (PR-VAI-a Q5): Cần xử lý + dải Chờ duyệt — LUÔN GỘP HAI KHUNG (không nhận `ct`, không truyền `program`), nên đổi
- * công tắc Fast Track · Lớp thường ở phần Số liệu không làm số ở đây đổi.
+ * TẦNG 1 CỦA QUẢN LÝ: Cần xử lý + Cần bạn quyết. SL2 (9.1-4 "một phạm vi một trang"): theo công tắc khung của trang (`ct`) — mọi chỉ số
+ * nhận `program`, việc sau thi theo khung lớp; `khungKhac` = số việc Cần bạn quyết ở khung kia (dòng "Lớp thường: n việc ›", không giấu việc).
+ * `ct` vắng = gộp hai khung (CX, link cũ). Chờ duyệt giữ mọi khung (hộp dùng chung với Công việc — web ghi "cả hai khung").
  */
 /** Một dòng Cần xử lý đã dựng đủ bốn cột (K1-06, Q4, Q24): nhãn trạng thái · việc · Người giữ việc · Hạn · nút đúng việc. */
 export type DongCanXuLy = DongCanXuLyGoc & {
@@ -68,12 +69,14 @@ function dongPhuGon(muc: string[]): string {
 const NGAY_MS = 86_400_000;
 const soNgay = (tu: string, den: string) => Math.round((Date.parse(`${den.slice(0, 10)}T00:00:00Z`) - Date.parse(`${tu.slice(0, 10)}T00:00:00Z`)) / NGAY_MS);
 
-export function tongQuanQuanLy(p: Principal, f: { branchId?: number | null }) {
+export function tongQuanQuanLy(p: Principal, f: { branchId?: number | null; ct?: ChuongTrinh | null }) {
   laViecQuanLy(p);
   quetYeuCau();   // PR-DUYET (K5-17)
   const today = demoToday();
-  const base = { branchId: f.branchId ?? null };
-  const cn = f.branchId ? `&cn=${f.branchId}` : '';
+  const ct = f.ct ?? null;
+  const base = { branchId: f.branchId ?? null, program: ct };
+  const cn = `${f.branchId ? `&cn=${f.branchId}` : ''}`;
+  const khung = ct ?? 'tat-ca';
 
   /* CẦN XỬ LÝ — mỗi dòng một chỉ số của sổ. */
   const sets = new Map<MaCanXuLy, ReturnType<typeof metricSet>>();
@@ -92,7 +95,8 @@ export function tongQuanQuanLy(p: Principal, f: { branchId?: number | null }) {
   const hanVh: string | null = viecVh.find((t) => t.due_date)?.due_date ?? null;
   const coQuyenDuyet = can(p, PERMISSIONS.CASE_APPROVE, { anyScope: true });
   /* PR-LCb: lớp cần Chốt lộ trình (cùng hàm với chỉ số) — quá hạn khi có lớp đã qua hạn (Chủ nhật trước tuần Final). */
-  const lopChot = dem['lop-chua-chot-len-ft'] ? lopChoChotLoTrinh(p, base.branchId, today) : [];
+  const lopChotMoi = metricSet(p, 'lop-chua-chot-len-ft', { branchId: base.branchId }).n ? lopChoChotLoTrinh(p, base.branchId, today) : [];
+  const lopChot = theoKhung(lopChotMoi, ct);
   const dongs = sapCanXuLy(dem, coQuyenDuyet, {
     'van-hanh-can-quyet-dinh': !!hanVh && hanVh < today, 'lop-chua-chot-len-ft': lopChot.some((l) => !!l.han && l.han < today),
   });
@@ -118,7 +122,7 @@ export function tongQuanQuanLy(p: Principal, f: { branchId?: number | null }) {
         const a = Math.min(...ngay), b = Math.max(...ngay);
         return { ...x, phu: tachTheoLop(r.unit, r.ids), nguoi,
           han: ngay.length ? { chu: a === b ? `quá hạn ${a} ngày` : `quá hạn ${a}–${b} ngày`, quaHan: true as const } : chuaCoHan,
-          den: `/cong-viec?nhom=cham-diem&loc=qua-han&khung=tat-ca${cn}` };
+          den: `/cong-viec?nhom=cham-diem&loc=qua-han&khung=${khung}${cn}` };
       }
       /* UX-2 (2): Case chưa chốt PA quá hạn — cùng cách ghi hạn; nút mở danh sách Case của chỉ số (panel, `den` null). */
       if (x.metricId === 'phoi-hop-qua-han' || x.metricId === 'case-xac-dinh-nguyen-nhan-qua-han') {
@@ -126,7 +130,7 @@ export function tongQuanQuanLy(p: Principal, f: { branchId?: number | null }) {
         const a = Math.min(...ngay), b = Math.max(...ngay);
         return { ...x, phu: tachTheoLop(r.unit, r.ids), nguoi,
           han: ngay.length ? { chu: a === b ? `quá hạn ${a} ngày` : `quá hạn ${a}–${b} ngày`, quaHan: true as const } : chuaCoHan,
-          den: x.metricId === 'phoi-hop-qua-han' ? `/cong-viec?loai=phoi_hop_sos&loc=qua-han&khung=tat-ca${cn}` : null };
+          den: x.metricId === 'phoi-hop-qua-han' ? `/cong-viec?loai=phoi_hop_sos&loc=qua-han&khung=${khung}${cn}` : null };
       }
       /* pa-can-cap-nhat: "PA chưa ghi kết quả tuần W4 SEP" — tuần của hạn cũ nhất (Q25); dòng phụ theo khung. */
       const lop = lopCuaTap(r.unit, r.ids);
@@ -136,7 +140,7 @@ export function tongQuanQuanLy(p: Principal, f: { branchId?: number | null }) {
         nhan: r.hanCu ? `${x.nhan} ${tuanCuaHanGhiKetQua(r.hanCu, today)}` : x.nhan,
         phu: [soFt ? `Fast Track ${soFt}` : '', soThuong ? `Lớp thường ${soThuong}` : ''].filter(Boolean).join(' · '),
         nguoi, han: r.hanCu ? { ngay: r.hanCu, loai: 'cap-nhat-pa' as const } : chuaCoHan,
-        den: `/cong-viec?loai=ghi_ket_qua_pa&loc=qua-han&khung=tat-ca${cn}` };   // OV-11f (TQ-2): lọc đúng loại việc, không cả nhóm
+        den: `/cong-viec?loai=ghi_ket_qua_pa&loc=qua-han&khung=${khung}${cn}` };   // OV-11f (TQ-2): lọc đúng loại việc, không cả nhóm
     }
     const chung = { nguoi: 'ban' as const, han: chuaCoHan };
     switch (x.metricId) {
@@ -179,21 +183,33 @@ export function tongQuanQuanLy(p: Principal, f: { branchId?: number | null }) {
   const caseQh = sets.get('case-xac-dinh-nguyen-nhan-qua-han')!;
   /* OV-15h1 (C23): nhãn nhóm của từng Case ("Case trống PA", "PA chờ xác nhận"…) — cùng phân rã của chỉ số Case chưa chốt PA (nhớ trong request). */
   const nhomCase = nhomCaseChuaChot(caseQh.ids, xuLyCaseMany(caseQh.ids, today));
-  /* OV-15h1: "Cần bạn quyết" chỉ lấy việc hạn ≤ 7 ngày (hoặc đã qua) — CÙNG ngưỡng thông báo tự động (`toiHan`). */
+  /* OV-15h1: "Cần bạn quyết" chỉ lấy việc hạn ≤ 7 ngày (hoặc đã qua) — CÙNG ngưỡng thông báo tự động (`toiHan`). Dựng cả hai khung một lần (khungKhac). */
+  const sauThiMoi = [
+    ...viecBuocTiep(p, { today, branchId: base.branchId }),
+    ...lopChotMoi.map((x) => ({
+      key: `chotft:${x.classId}`, group: 'chot_len_ft', urgency: !x.han ? 'normal' : x.han < today ? 'overdue' : x.han === today ? 'today' : 'normal',
+      classId: x.classId, classCode: x.code, studentName: `Lớp ${x.code}`, tieuDe: `Chốt lộ trình · ${x.code}`, contextLabel: chuViecChotLoTrinh(x),
+      due: x.han, href: `/hoc-vien/lop/${x.classId}?viec=lo-trinh-ca-lop`,
+    })),
+  ].filter((x) => toiHan(x.due, today));
   const canQuyet = {
     caseQuaHan: rowsFor('case', caseQh.ids).map((r) => ({ ...r, nhom: nhomCase.has(r.id) ? NHOM_CASE_CHUA_CHOT_LABEL[nhomCase.get(r.id)!] : null })),   // không `p`: chỉ cần tên em · lớp · người · hạn để hiện, việc làm ở Ngăn Case
     /* Dựng thẳng từ hai hàm nguồn của `/my-work` (không chạy cả `myWork` — Turso): `viecBuocTiep` + `lopChot` đã tính ở trên. */
-    sauThi: [
-      ...viecBuocTiep(p, { today, branchId: base.branchId }),
-      ...lopChot.map((x) => ({
-        key: `chotft:${x.classId}`, group: 'chot_len_ft', urgency: !x.han ? 'normal' : x.han < today ? 'overdue' : x.han === today ? 'today' : 'normal',
-        classId: x.classId, classCode: x.code, studentName: `Lớp ${x.code}`, tieuDe: `Chốt lộ trình · ${x.code}`, contextLabel: chuViecChotLoTrinh(x),
-        due: x.han, href: `/hoc-vien/lop/${x.classId}?viec=lo-trinh-ca-lop`,
-      })),
-    ].filter((x) => toiHan(x.due, today)),
+    sauThi: theoKhung(sauThiMoi, ct),
+  };
+  const kia = ct === 'ft' ? 'thuong' : ct === 'thuong' ? 'ft' : null;
+  const khungKhac = kia && {
+    ct: kia, n: metricSet(p, 'case-xac-dinh-nguyen-nhan-qua-han', { ...base, program: kia }).n + theoKhung(sauThiMoi, kia).length,
   };
   /* PR-DUYET (Q8): số của hộp Chờ duyệt — đọc từ hộp, không thêm chỉ số vào sổ. */
-  return { canXuLy, canQuyet, choDuyet: demYeuCau(p, { branchId: base.branchId }) };
+  return { canXuLy, canQuyet, khungKhac, choDuyet: demYeuCau(p, { branchId: base.branchId }) };
+}
+
+/** SL2: việc / lớp theo khung của LỚP (`classId`); không rõ lớp → ở cả hai khung (không giấu việc). `ct` null = giữ hết. */
+function theoKhung<T extends { classId?: number | null }>(ds: T[], ct: ChuongTrinh | null): T[] {
+  if (!ct || !ds.length) return ds;
+  const lop = lopCuaTap('lop', [...new Set(ds.map((x) => x.classId).filter((x): x is number => !!x))]);
+  return ds.filter((x) => { const ft = x.classId ? lop.get(x.classId)?.isFt : null; return ft == null || ft === (ct === 'ft'); });
 }
 
 /**

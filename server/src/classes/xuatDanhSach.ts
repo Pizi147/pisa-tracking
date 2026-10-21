@@ -72,13 +72,13 @@ export function xuatDanhSach(
   };
   if (ids.some((id) => !hs.has(id) || !xemDuoc(id))) throw forbidden('Có học viên nằm ngoài phạm vi bạn được xuất.');
   const coCot = (k: string) => (cot as string[]).includes(k);
-  /* SOS: từ `dangSos` của góc Đang SOS (cùng bộ lọc web gửi) → lượt SOS mới nhất của từng em; Admin không có Đang SOS (403) → cột để trống. */
+  /* SOS: từ `dangSos` của góc Đang SOS (cùng bộ lọc web gửi; SL2: một em một dòng = SOS hiện tại); Admin không có Đang SOS (403) → cột để trống. */
   const nguonSos = coCot('sos') || coCot('tamChinh') || coCot('kyNang');
   const sosCua = new Map<number, { sosLevel: number; tam: boolean; luot: string; tuan: string; kyNang: string[] }>();
   if (nguonSos) {
     const b: any = i.sos && typeof i.sos === 'object' ? i.sos : {};
     try {
-      const t = dangSos(p, { tuan: typeof b.tuan === 'string' ? b.tuan : null, phamVi: typeof b.phamVi === 'string' ? b.phamVi : null,
+      const t = dangSos(p, { phamVi: typeof b.phamVi === 'string' ? b.phamVi : null,
         branchId: Number.isInteger(b.branchId) ? b.branchId : null, cnNho: Number.isInteger(b.cnNho) ? b.cnNho : null, q: typeof b.q === 'string' ? b.q : null });
       for (const r of t.rows) {
         const cu = sosCua.get(r.studentId);

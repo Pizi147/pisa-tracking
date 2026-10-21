@@ -92,7 +92,7 @@ export function ketQuaMockKq(p: Principal, f: LocKetQuaThi & { xep?: XepMock; kq
   const rows = xepDongMock(f.kq ? tat.filter((r) => r.ketQua === f.kq) : tat, f.xep ?? 'lop');
   return {
     loai: 'mock', tu: f.tu, den: f.den, rows,
-    tong: { luot: tat.length, hv: new Set(tat.map((r) => r.studentId)).size, dat: dem('dat'), chuaDat: dem('chua-dat'), chuaDu: dem('chua-du'), sos1: sos(1), sos2: sos(2), sos3: sos(3) },
+    tong: { luot: tat.length, hv: new Set(tat.map((r) => r.studentId)).size, dat: dem('dat'), chuaDat: dem('chua-dat'), chuaDu: dem('chua-du'), sos1: sos(1), sos2: sos(2), sos3: sos(3), sosTam: tat.filter((r) => r.sosTam).length },
   };
 }
 

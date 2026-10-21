@@ -60,12 +60,9 @@ export async function runPrSl1Tests(t: YThucTestKit) {
       const tu = d.addDaysIso(t2, -7 * 25), den = d.addDaysIso(t2, 6);
       const ky = metrics.metricSet(qt, 'pa-co-ket-qua', { branchId: MB, program: 'ft', from: tu, to: den });
       const pa = hq.paCoKetQua({ branchIds: [MB], ct: 'ft', tu: d.mondayOfDate(tu), den: d.mondayOfDate(den) });
-      /* Cùng kỳ → Báo cáo ⊆ Hiệu quả PA. Khung (FT / thường) của PA: Báo cáo theo lớp HIỆN TẠI của em, Hiệu quả PA theo nơi em học LÚC làm PA (F03) —
-         em đổi lớp thì lệch; trên bộ demo vừa dựng hai tập bằng nhau. ponytail: một luật khung cho mọi số là SL2 (một phạm vi một trang). */
+      /* Cùng kỳ → Báo cáo ⊆ Hiệu quả PA. SL2: khung của PA cùng luật F03 (nơi em học LÚC làm PA) ở cả hai nơi — `prSl2` SL2-5 kiểm bằng nhau. */
       const b = new Set(pa.map((x: any) => x.id));
-      const lech = pa.length - ky.ids.length;
       assert(pa.length > 0 && ky.ids.every((x: number) => b.has(x)), `Báo cáo có PA ngoài Hiệu quả PA: ${ky.ids.filter((x: number) => !b.has(x))}`);
-      if (lech) console.log(`      (đo: ${lech} PA lệch khung do em đổi lớp — SL2)`);
       const jan = metrics.metricSet(qt, 'pa-co-ket-qua', { branchId: MB, program: 'ft', from: '2026-01-05', to: '2026-01-18' });
       assert(jan.n === 0, `01/2026 phải 0, được ${jan.n}`);
       const hep = metrics.metricSet(qt, 'pa-co-ket-qua', { branchId: MB, program: 'ft', from: d.addDaysIso(t2, -14), to: d.addDaysIso(t2, -1) });

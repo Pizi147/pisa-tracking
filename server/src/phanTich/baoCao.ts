@@ -6,7 +6,7 @@
 import { db, theoLo } from '../db.ts';
 import {
   PERMISSIONS, baiId, khoangTruoc, tachBaiId, tenMonNgan,
-  type BaoCaoKq, type ChuongTrinh, type DongSosBc, type GvQuaHanBc,
+  type BaoCaoKq, type ChuongTrinh, type DongMock, type DongSosBc, type GvQuaHanBc,
 } from '../../../shared/domain/index.ts';
 import { badRequest } from '../util.ts';
 import type { Principal } from '../permissions.ts';
@@ -14,7 +14,7 @@ import { demoToday } from '../demoConfig.ts';
 import { mondayOf } from '../platform/week.ts';
 import { metricSet, overdueScoreBai, rowsFor, type MetricRow } from '../worklist/metrics.ts';
 import { phamViPhanTich } from './phamVi.ts';
-import { luotTrongKhoang, phanLoaiCacLuot } from './tongHop.ts';
+import { luotTrongKhoang } from './tongHop.ts';
 import { mockTrongKhoang } from './ketQuaThi.ts';
 
 export type LocBaoCao = { branchId?: number | null; ct: ChuongTrinh; tu: string; den: string };
@@ -30,16 +30,18 @@ function luotKhoang(p: Principal, f: LocBaoCao, tu: string, den: string) {
   return luotTrongKhoang(where.join(' AND '), args);
 }
 
-/** HV có SOS theo lớp: lớp → mức → tập HV (mức cao nhất của em trong khoảng ở lớp đó). */
-function sosTheoLop(luot: any[]): Map<number, { lop: string; muc: Map<number, number> }> {
-  const pl = phanLoaiCacLuot(luot);
-  const out = new Map<number, { lop: string; muc: Map<number, number> }>();
-  for (const a of luot) {
-    const x = pl.get(a.id);
-    if (!x || !['sos1', 'sos2', 'sos3'].includes(x.loai)) continue;
-    const l = out.get(a.class_id) ?? out.set(a.class_id, { lop: a.class_code ?? `#${a.class_id}`, muc: new Map() }).get(a.class_id)!;
-    const muc = Number(x.loai.slice(3));
-    l.muc.set(a.student_id, Math.max(l.muc.get(a.student_id) ?? 0, muc));
+type SosLop = { lop: string; muc: Map<number, number>; chot: Set<number> };
+/**
+ * HV có SOS TRONG KỲ theo lớp: lớp → em → mức cao nhất của em trong khoảng ở lớp đó. SL2 (a7 dòng 8, 9.2-28): đếm từ CHÍNH dòng tab Kết quả thi
+ * (`mockTrongKhoang`, gồm SOS tạm) — hai nơi một luật; `chot` = em có ít nhất một lượt SOS đã chốt (còn lại là "tạm").
+ */
+function sosTheoLop(dong: DongMock[]): Map<number, SosLop> {
+  const out = new Map<number, SosLop>();
+  for (const a of dong) {
+    if (!a.sos) continue;
+    const l = out.get(a.classId) ?? out.set(a.classId, { lop: a.lop || `#${a.classId}`, muc: new Map(), chot: new Set() }).get(a.classId)!;
+    l.muc.set(a.studentId, Math.max(l.muc.get(a.studentId) ?? 0, Math.min(3, a.sos)));
+    if (!a.sosTam) l.chot.add(a.studentId);
   }
   return out;
 }
@@ -69,20 +71,25 @@ function tinh(p: Principal, f: LocBaoCao) {
     for (const gv of ct?.nguoi.length ? ct.nguoi : [ct?.chamCheo ? -1 : 0]) theoGv.set(gv, [...(theoGv.get(gv) ?? []), b]);
   }
 
-  /* SOS theo lớp (FT): kỳ này + kỳ liền trước cùng độ dài. */
-  const sos = f.ct === 'ft' ? sosTheoLop(luot) : null;
-  const truoc = f.ct === 'ft' ? (() => { const k = khoangTruoc(f); return sosTheoLop(luotKhoang(p, f, k.tu, k.den)); })() : null;
+  /* Cùng hàm chấm của tab Kết quả thi, trên chính các lượt đã nạp (lượt có điểm) — không đọc lại, không nạp Case. SOS theo lớp (FT): kỳ này + kỳ trước. */
+  const mk = f.ct === 'ft' ? mockTrongKhoang(p, { branchId: f.branchId, tu: f.tu, den: f.den }, { luot: luot.filter((a) => coDiem.has(a.id)), boCase: true }) : null;
+  const sos = mk ? sosTheoLop(mk) : null;
+  const truoc = mk ? (() => { const k = khoangTruoc(f); return sosTheoLop(mockTrongKhoang(p, { branchId: f.branchId, tu: k.tu, den: k.den }, { boCase: true })); })() : null;
 
-  return { homNay, luot, cua, daCham, coDiem, hvDaThi, luotLop, quaHan, theoGv, sos, truoc };
+  return { homNay, luot, cua, daCham, coDiem, hvDaThi, luotLop, quaHan, theoGv, mk, sos, truoc };
 }
 
-const dongSos = (classId: number, lop: string, muc: Map<number, number> | undefined, truoc: Map<number, number> | undefined): DongSosBc => {
-  const m = [...(muc?.values() ?? [])];
-  return { classId, lop, sos1: m.filter((x) => x === 1).length, sos2: m.filter((x) => x === 2).length, sos3: m.filter((x) => x === 3).length, nay: m.length, truoc: truoc?.size ?? 0 };
+const dongSos = (classId: number, lop: string, nay: SosLop | undefined, truoc: Map<number, number> | undefined): DongSosBc => {
+  const m = [...(nay?.muc.values() ?? [])];
+  return { classId, lop, sos1: m.filter((x) => x === 1).length, sos2: m.filter((x) => x === 2).length, sos3: m.filter((x) => x === 3).length, nay: m.length,
+    tam: [...(nay?.muc.keys() ?? [])].filter((s) => !nay!.chot.has(s)).length, truoc: truoc?.size ?? 0 };
 };
-const gop = (ds: Map<number, { lop: string; muc: Map<number, number> }>) => {
-  const all = new Map<number, number>();
-  for (const l of ds.values()) for (const [s, m] of l.muc) all.set(s, Math.max(all.get(s) ?? 0, m));
+const gop = (ds: Map<number, SosLop>): SosLop => {
+  const all: SosLop = { lop: '', muc: new Map(), chot: new Set() };
+  for (const l of ds.values()) {
+    for (const [s, m] of l.muc) all.muc.set(s, Math.max(all.muc.get(s) ?? 0, m));
+    for (const s of l.chot) all.chot.add(s);
+  }
   return all;
 };
 
@@ -103,12 +110,11 @@ export function baoCao(p: Principal, f: LocBaoCao): BaoCaoKq {
   let sos: BaoCaoKq['sos'] = null;
   if (ft && r.sos && r.truoc) {
     const lop = new Set([...r.sos.keys(), ...r.truoc.keys()]);
-    const hang = [...lop].map((id) => dongSos(id, r.sos!.get(id)?.lop ?? r.truoc!.get(id)!.lop, r.sos!.get(id)?.muc, r.truoc!.get(id)?.muc))
+    const hang = [...lop].map((id) => dongSos(id, r.sos!.get(id)?.lop ?? r.truoc!.get(id)!.lop, r.sos!.get(id), r.truoc!.get(id)?.muc))
       .sort((a, b) => b.nay - a.nay || a.lop.localeCompare(b.lop, 'vi', { numeric: true }));
-    sos = { hang, tong: dongSos(0, '', gop(r.sos), gop(r.truoc)) };
+    sos = { hang, tong: dongSos(0, '', gop(r.sos), gop(r.truoc).muc) };
   }
-  /* Cùng hàm chấm của tab Kết quả thi, trên chính các lượt đã nạp (lượt có điểm) — không đọc lại, không nạp Case. */
-  const mk = ft ? mockTrongKhoang(p, { branchId: f.branchId, tu: f.tu, den: f.den }, { luot: r.luot.filter((a) => r.coDiem.has(a.id)), boCase: true }) : null;
+  const mk = r.mk;
 
   /* Tại lúc xem — chỉ số trong sổ, cùng phạm vi Tổng quan (chi nhánh + khung). */
   const loc = { branchId: f.branchId ?? null, program: f.ct };
@@ -130,6 +136,8 @@ export function baoCao(p: Principal, f: LocBaoCao): BaoCaoKq {
     mock: mk ? { dat: mk.filter((x) => x.ketQua === 'dat').length, chuaDat: mk.filter((x) => x.ketQua === 'chua-dat').length, chuaDu: mk.filter((x) => x.ketQua === 'chua-du').length } : null,
     chuY: {
       chuaLich: ft ? metricSet(p, 'hv-ft-xong-mt-cuoi-chua-mt-ke', loc).n : null,
+      /* SL2 (9.1-4, X-23): "SOS hiện tại" — CÙNG chỉ số Tổng quan · Đang SOS, số hôm nay (không theo kỳ). */
+      sosHienTai: metricSet(p, 'hv-sos-hien-tai', loc).n,
       chuaDiemHv: hvBai.size, chuaDiemBai: chuaDiem.length, caseChuaChotHv: hvCase.size, caseChuaChot: caseChua.length,
     },
     casePa: {
@@ -159,7 +167,7 @@ export function oBaoCao(p: Principal, f: LocBaoCao & { o: string }): { n: number
   const s = /^sos:(\d+|tong):([123])$/.exec(f.o);
   if (s && r.sos) {
     const muc = Number(s[2]);
-    const tap = s[1] === 'tong' ? gop(r.sos) : r.sos.get(Number(s[1]))?.muc ?? new Map<number, number>();
+    const tap = s[1] === 'tong' ? gop(r.sos).muc : r.sos.get(Number(s[1]))?.muc ?? new Map<number, number>();
     return ra('hoc-vien', [...tap].filter(([, m]) => m === muc).map(([id]) => id), `SOS ${muc}`);
   }
   throw badRequest('Số này không có trong Báo cáo — có thể bộ lọc vừa đổi.');
