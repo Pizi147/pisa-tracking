@@ -303,7 +303,7 @@ export function runSeed() {
     const pet = buildPetDemo(conn, { adminId, mbId: branchId.get('MB')!, userId });
     /* TU-a: tài khoản Head tutor + một kết luận "Ngừng hợp tác" — sau PET để id người dùng / học viên cũ không đổi. */
     buildHeadTutor(conn);
-    /* SEED-UX: TVV / Admin VP / GV S không lớp, gán TVV + SĐT PH, thi thật, buổi tutor, lớp MB FT 106 + MB FOU 17 — sau Head tutor để id cũ không đổi. */
+    /* SEED-UX: TVV / Admin VP / GV S không lớp, gán TVV + SĐT PH, thi thật, buổi tutor, lớp HD FT 306 + HD FOU 06 — sau Head tutor để id cũ không đổi. */
     const ux = buildUxDemo(conn, adminId);
     buNgayPb2b(conn);   // ô điểm / vi phạm bộ UX: bù ngày nhập đầu + hạn xử lý (chỉ điền ô NULL)
     /* OV-11e (Q8): lượt MT đã chốt dựng bằng SQL thẳng chưa có dấu KCK theo lượt — chụp theo cờ hiện tại (cùng hàm với migrate). Sau mọi bộ demo. */

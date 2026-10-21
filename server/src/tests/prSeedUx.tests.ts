@@ -51,7 +51,7 @@ export async function runPrSeedUxTests(t: { check: (n: string, fn: () => void) =
     const ph = (bao: boolean) => one(`SELECT 1 FROM discipline_measures m WHERE m.status = 'done' AND m.performed_on >= '2026-09-09' AND
       ${bao ? '' : 'NOT'} EXISTS (SELECT 1 FROM sos_coordination_actions x WHERE x.student_id = m.student_id AND x.kind = 'bao_ph_tvv' AND x.status = 'done')`);
     assert(ph(true) && ph(false), 'thiếu lần xử lý có / chưa báo PH');
-    const du = one(`SELECT COUNT(*) n FROM assessment_attempts a JOIN classes c ON c.id = a.class_id WHERE c.code = 'MB FOU 17' AND a.kind = 'progress'
+    const du = one(`SELECT COUNT(*) n FROM assessment_attempts a JOIN classes c ON c.id = a.class_id WHERE c.code = 'HD FOU 06' AND a.kind = 'progress'
       AND (SELECT COUNT(*) FROM assessment_scores sc WHERE sc.attempt_id = a.id AND sc.raw_score >= 18) = 4`).n;
     assert(du >= 4, `Progress đủ điểm: ${du}`);
   });

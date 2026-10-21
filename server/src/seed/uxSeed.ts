@@ -6,9 +6,9 @@
  *   U3  MT2 MB FT 101 của Bùi Thảo Vy · Tạ Minh Quân · Lương Bảo Anh theo mockup ov14-6 khung m3 (Trần Thu Hà, Vũ Hải Đăng đã có MT2 theo V5).
  *   U4  thi thật: UB FT 401 Dương Minh Quân (Đạt, chưa chốt bước tiếp) + Lý Thanh Trúc (Chưa đạt, đã chốt) có KQ 15/08 · CP FT 110 Đinh Ngọc Quyên thi 12/09,
  *       KQ 14/09, chưa chọn bước tiếp (T09) · UB FT 401 Phan Hải Anh thi 05/09 "Đã thi · chờ KQ". Em chưa chốt ngày thi = các em chỉ có tháng (sẵn có).
- *   U5  lớp mới MB FT 106 (GV mới Mạc Thùy Linh, TVV Phan Mai): MT1 cũ có "-" (S, ghi khi MT đã qua → Không dự thi); 3 em PA Tutor, 12 buổi
+ *   U5  lớp mới HD FT 306 (GV mới Mạc Thùy Linh, TVV Vũ Hồng Nhung): MT1 cũ có "-" (S, ghi khi MT đã qua → Không dự thi); 3 em PA Tutor, 12 buổi
  *       17/08–13/09 (6 tutor danh sách + 1 tên gõ tay, một tutor có buổi "Không" → nhóm chú ý của trang Tutor); 2 em có lần xử lý vi phạm (11/09, 03/09).
- *   U6  lớp thường mới MB FOU 17: Giữa khoá W2 SEP — 4 em đủ điểm mọi môn đạt, 1 em "17/25" một môn trượt (Báo PH chưa làm), 1 em trượt đã Báo PH.
+ *   U6  lớp thường mới HD FOU 06: Giữa khoá W2 SEP — 4 em đủ điểm mọi môn đạt, 1 em "17/25" một môn trượt (Báo PH chưa làm), 1 em trượt đã Báo PH.
  *   U7  kẹp `notifications.created_at` về ≤ ngày demo (không gì ở tương lai).
  * Đi qua hàm dịch vụ; SQL thẳng chỉ để lùi ngày nghiệp vụ / gán TVV. Dựng SAU `buildHeadTutor` (id người dùng cũ không đổi). Tên, SĐT GIẢ.
  */
@@ -63,6 +63,8 @@ export function buildUxDemo(conn: any, adminId: number): { tvv: number; soHvTvv:
     UB: [taiKhoan('Trịnh Thu Thảo', 'thao.trinh', 'Tư vấn viên Uông Bí', 'consultant', cn.get('UB')!)],
   };
   const gvLinh = taiKhoan('Mạc Thùy Linh', 'linh.mac', 'Giáo viên', 'teacher', mb, ['listening', 'reading', 'writing1', 'writing2', 'speaking']);
+  const hd = cn.get('HD')!;
+  conn.prepare(`INSERT INTO user_roles (user_id, role_id, branch_id, status, created_at) SELECT ?, id, ?, 'active', ? FROM roles WHERE key = 'teacher'`).run(gvLinh, hd, now);
 
   // ---------------------------------------------------------------- U3 · MT2 MB FT 101 (mockup ov14-6 m3)
   const mt2 = (ten: string) => (conn.prepare(
@@ -82,10 +84,11 @@ export function buildUxDemo(conn: any, adminId: number): { tvv: number; soHvTvv:
   nhapMt2('Tạ Minh Quân', 27, 28, 6.5, 6.5, 6.5);
   nhapMt2('Lương Bảo Anh', 27, 27, 6.0, null, null);
 
-  // ---------------------------------------------------------------- U5 · MB FT 106 (lớp mới, GV mới)
+  // ---------------------------------------------------------------- U5 · HD FT 306 (lớp mới, GV mới)
+  /* Ở HD, không ở MB: lớp FT thêm ở MB làm vỡ phép đo tốc độ QL MB ×3 (TD3-b-2, TD7) — quy tắc dừng của kế hoạch SEED-UX mục 2.4. */
   const khaiGiang = '2026-06-15';
   const ft = (createClass(admin, {
-    code: 'MB FT 106', branchId: mb, kind: 'FT', route: 'LT1' as any, isFastTrack: true, startDate: khaiGiang, startPeriodId: ensurePeriod(khaiGiang).id,
+    code: 'HD FT 306', branchId: hd, kind: 'FT', route: 'LT1' as any, isFastTrack: true, startDate: khaiGiang, startPeriodId: ensurePeriod(khaiGiang).id,
   }) as any).id as number;
   const pc = conn.prepare(`INSERT INTO teacher_assignments (user_id, class_id, skill, is_core, effective_from, status, created_at) VALUES (?,?,?,?,?, 'active', ?)`);
   pc.run(gvLinh, ft, null, 1, khaiGiang, now);
@@ -112,7 +115,7 @@ export function buildUxDemo(conn: any, adminId: number): { tvv: number; soHvTvv:
     saveScore(admin, a, 'speaking', i === 5 ? { noShow: true } : { criteria: [b, b, b, b], resultDate: '2026-07-25' });
   });
   const tvvAll = conn.prepare('UPDATE students SET consultant_user_id = ? WHERE id = ?');
-  for (const sid of emFt) tvvAll.run(tvvMb, sid);
+  for (const sid of emFt) tvvAll.run(tvvCn.HD[0], sid);
 
   /* PA Tutor + buổi trong 4 tuần trước ngày demo — một lần ghi Kết quả mỗi tuần mỗi em, lùi `created_at` / `ghi_luc` về ngày buổi. */
   type Buoi = { tutor: string; danhGia: number; khong?: boolean };
@@ -172,14 +175,14 @@ export function buildUxDemo(conn: any, adminId: number): { tvv: number; soHvTvv:
   viPham(emFt[0], ['2026-09-07', '2026-09-08', '2026-09-09'], '2026-09-11');
   viPham(emFt[2], ['2026-08-31', '2026-09-01', '2026-09-02'], '2026-09-03');
 
-  // ---------------------------------------------------------------- U6 · MB FOU 17 (lớp thường, Giữa khoá đủ điểm)
+  // ---------------------------------------------------------------- U6 · HD FOU 06 (lớp thường, Giữa khoá đủ điểm) — ở HD cùng lý do U5
   const kgFou = '2026-08-17';
   const fou = (createClass(admin, {
-    code: 'MB FOU 17', branchId: mb, kind: 'FOU', route: null, isFastTrack: false, startDate: kgFou, startPeriodId: ensurePeriod(kgFou).id,
+    code: 'HD FOU 06', branchId: hd, kind: 'FOU', route: null, isFastTrack: false, startDate: kgFou, startPeriodId: ensurePeriod(kgFou).id,
   }) as any).id as number;
   pc.run(gvLinh, fou, null, 1, kgFou, now);
   for (const k of ['listening', 'reading', 'writing', 'speaking']) pc.run(gvLinh, fou, k, 0, kgFou, now);
-  const ql = loadPrincipal((conn.prepare(`SELECT ur.user_id AS id FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE r.key = 'manager' AND ur.branch_id = ?`).get(mb) as any).id);
+  const ql = loadPrincipal((conn.prepare(`SELECT ur.user_id AS id FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE r.key = 'manager' AND ur.branch_id = ?`).get(hd) as any).id);
   const diemFou: [string, number[]][] = [
     ['Tôn Bảo Châu', [20, 21, 19, 22]], ['Mẫn Gia Hưng', [22, 19, 20, 21]], ['Ninh Khánh Linh', [19, 20, 21, 20]], ['Doãn Minh Triết', [21, 22, 20, 19]],
     ['Khúc Thảo My', [20, 19, 17, 21]], ['Giang Hải Nam', [16, 20, 19, 20]],
@@ -189,7 +192,7 @@ export function buildUxDemo(conn: any, adminId: number): { tvv: number; soHvTvv:
     planRegularTests(ql, fou, { studentIds: [sid], kinds: ['progress'] });
     const a = (conn.prepare(`SELECT id FROM assessment_attempts WHERE student_id = ? AND kind = 'progress' AND status != 'cancelled' ORDER BY id LIMIT 1`).get(sid) as any)?.id;
     if (a) ['listening', 'reading', 'writing', 'speaking'].forEach((k, j) => saveRegularScore(admin, a, k, { score: d[j], total: 25 }, '2026-09-10'));
-    tvvAll.run(tvvMb2, sid);
+    tvvAll.run(tvvCn.HD[0], sid);
     return sid;
   });
   const bao = conn.prepare(`SELECT id FROM sos_coordination_actions WHERE student_id = ? AND kind = 'bao_ph_tvv' AND status = 'pending'`).get(emFou[5]) as any;

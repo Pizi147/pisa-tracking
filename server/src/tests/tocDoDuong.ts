@@ -430,16 +430,16 @@ export const TRAN: Record<string, number> = {
   // PR-VAI-a (Q7): đường /phan-tich/bo-quen đã gỡ cùng boQuen.ts.
   'QL /metrics/case-xac-dinh-nguyen-nhan-qua-han': 24,
   'QT /metrics/case-xac-dinh-nguyen-nhan-qua-han': 21,
-  'GVCN /my-work': 63,   // TD4: đo 61 (trước 64), trần đo + 2
-  'GVBM /my-work': 63,   // TD4: đo 61 (trước 64)
-  'GVCN_THUONG /my-work': 63,   // TD4: đo 61 (trước 64)
+  'GVCN /my-work': 65,   // SEED-UX: +2 — seed có em "Đã thi · chờ KQ" theo ngày (Phan Hải Anh) → đường việc Cập nhật KQ thi thật chạy câu đọc kết quả (trước: dữ liệu rỗng)
+  'GVBM /my-work': 65,   // SEED-UX: +2 — seed có em "Đã thi · chờ KQ" theo ngày (Phan Hải Anh) → đường việc Cập nhật KQ thi thật chạy câu đọc kết quả (trước: dữ liệu rỗng)
+  'GVCN_THUONG /my-work': 65,   // SEED-UX: +2 — seed có em "Đã thi · chờ KQ" theo ngày (Phan Hải Anh) → đường việc Cập nhật KQ thi thật chạy câu đọc kết quả (trước: dữ liệu rỗng)
   /* PR-Ra: trang "Công việc" dùng lại /my-work cho QL·QT, cộng chế độ nguoi=tat-ca/{gv} (Q1–Q2). */
-  'QL /my-work': 63,   // TD4: đo 61 (trước 64)
-  'QT /my-work': 63,   // TD4: đo 61 (trước 64)
-  'QL /my-work?nguoi=tat-ca': 73,   // TD4: đo 69 (trước 76) — một lần `listAttempts`; 16/10 +1 OV-13k (xem_nx_s) +1 OV-13m (Chọn bước tiếp) = 73
-  'QT /my-work?nguoi=tat-ca': 73,   // TD4: đo 69 (trước 76); 16/10 +1 OV-13k +1 OV-13m = 73
+  'QL /my-work': 65,   // SEED-UX: +2 — seed có em "Đã thi · chờ KQ" theo ngày (Phan Hải Anh) → đường việc Cập nhật KQ thi thật chạy câu đọc kết quả (trước: dữ liệu rỗng)
+  'QT /my-work': 65,   // SEED-UX: +2 — seed có em "Đã thi · chờ KQ" theo ngày (Phan Hải Anh) → đường việc Cập nhật KQ thi thật chạy câu đọc kết quả (trước: dữ liệu rỗng)
+  'QL /my-work?nguoi=tat-ca': 75,   // SEED-UX: +2 — seed có em "Đã thi · chờ KQ" theo ngày (Phan Hải Anh) → đường việc Cập nhật KQ thi thật chạy câu đọc kết quả (trước: dữ liệu rỗng)
+  'QT /my-work?nguoi=tat-ca': 75,   // SEED-UX: +2 — seed có em "Đã thi · chờ KQ" theo ngày (Phan Hải Anh) → đường việc Cập nhật KQ thi thật chạy câu đọc kết quả (trước: dữ liệu rỗng)
   'GVCN /my-work?nguoi=tat-ca': 15,
-  'QL /my-work?nguoi=7': 68,
+  'QL /my-work?nguoi=7': 70,   // SEED-UX: +2 — seed có em "Đã thi · chờ KQ" theo ngày (Phan Hải Anh) → đường việc Cập nhật KQ thi thật chạy câu đọc kết quả (trước: dữ liệu rỗng)
   /* OV-14c: GV không phải GV Speaking — rỗng (đo 4); GV Speaking đo ở prOv14c (`TRAN_CHAM_SPEAKING`, đo 14). */
   'GVCN /my-work/cham-speaking': 14, 'GVBM /my-work/cham-speaking': 14, 'QL /my-work/cham-speaking': 14,   // TD4: đo 66 (trước 70)
   /* PR-DUYET: đo khi hộp đã có thẻ thật (Task 4) — trần max(sau+10, ⌈sau×1,3⌉). */
