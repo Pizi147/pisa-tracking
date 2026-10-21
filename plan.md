@@ -567,6 +567,7 @@ Nhật ký chi tiết tới 04/10 ở `git show 575e898d:plan.md` (mục 14) và
 
 | Ngày | PR / nhánh · model | Kết quả |
 |---|---|---|
+| 21/10/2026 | CASE-NHIEU (Opus 5.5) · `claude/case-nhieu-5155e1` | Tạo Case nhiều kỹ năng một lần: `POST /cases/report` nhận `kyNang` (n Case một giao dịch, khoá lô + kỹ năng, "Ghi vào" gửi lại không lặp chữ); `case-topics` trả `dangMo` + `phuTrach`; panel chip chọn nhiều, một khối mỗi kỹ năng; phép kiểm `caseLo.tests.ts` |
 | 21/10/2026 | SL1 (Opus 5.5) · `claude/sl1-ebc8d0` | Số đúng: tháng cũ đọc đúng tháng + hộp thời gian chỉ tuần, PA trong kỳ, Chờ duyệt theo chi nhánh (+ dòng chi nhánh khác), số dải không nháy, đầu nhóm đếm trước chia trang, panel việc chỉ em của việc, lượt mở sẵn theo ô quá hạn, dải Lịch thi, 2 phạm vi xuất; chuông N1 (Cần làm theo hạn, một Case một dòng, số = việc còn mở, Case giao → người phụ trách; cột `notifications.han`). Kiểm `prSl1` |
 | 21/10/2026 | CV-LOI (Opus 5.5) · `claude/cv-loi-aa83a8` | Công việc chạy đúng: Case không chủ tự gán (migrate + phân công, có lịch sử), một dòng "Phân công GV …" chỉ QL; Kết quả PA khung phải; hàng đợi cùng nhóm, giữ Hoàn tác; QL không tự mở việc GV; `case` trùng `yt_xem`; nút 403; Excel panel việc; A1-14/15, A5-08, CV-10/14, X-74 |
 | 21/10/2026 | LUAT-5 (Opus 5.5) · `claude/luat-5-26daba` | Luật 5: "Thu hồi…" thay Xoá lần xử lý (GVCN → thẻ Chờ duyệt Ý thức, QL thẳng, lý do bắt buộc ở máy chủ), "Đã thu hồi" giữ dòng + lịch sử, một cửa `trangThaiYThuc` bỏ khỏi mọi số; không tăng bậc qua Đề xuất (tệp tuỳ chọn); Huỷ quyết định trong ngày |
