@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link, Navigate, useSearchParams } from 'react-router-dom';
+import { LopToiDay } from './LopToiDay.tsx';
 import { useSession } from '../../lib/session.tsx';
 import { useApi } from '../../lib/useApi.ts';
 import { BranchFilter, useChiNhanhMacDinh } from '../../ui/Filters.tsx';
@@ -67,8 +68,23 @@ export default function OverviewPage() {
     );
   }
 
-  /* OV-15d: GIÁO VIÊN vào thẳng Công việc (hàng đợi) — Tổng quan GV trùng danh sách việc nên bỏ; Lớp tôi dạy + Yêu cầu của tôi ở cuối Công việc. */
-  if (!canSeeBoard) return <Navigate to={session?.nav?.work ? '/cong-viec' : '/hoc-vien'} replace />;
+  /*
+   * NEN-V5 (08 K10): GIÁO VIÊN có Tổng quan (trang đầu) — tạm dùng khối "Lớp tôi dạy" sẵn có (chỉ lớp / bài của chính GV, không thêm quyền) + lối vào
+   * Công việc; bố cục Tổng quan GV V5 ("Kỹ năng tôi dạy" · "Lớp tôi chủ nhiệm") làm ở UI-TONG-QUAN. Vai không có Công việc giữ đường cũ.
+   */
+  if (!canSeeBoard && !session?.nav?.work) return <Navigate to="/hoc-vien" replace />;
+  if (!canSeeBoard) {
+    return (
+      <div className="page space-y-4">
+        <div className="flex flex-wrap items-end justify-between gap-x-3 gap-y-2">
+          <h1 className="m-0 text-xl font-bold text-slate-100">{nhanTabDau}</h1>
+          <Link to="/cong-viec" className="btn btn-sm min-h-[44px] no-underline sm:min-h-[32px]">{t('Công việc ›')}</Link>
+        </div>
+        <DaiMoiDung />
+        <LopToiDay />
+      </div>
+    );
+  }
 
   return (
     <div className="page space-y-4">

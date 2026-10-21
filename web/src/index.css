@@ -17,57 +17,58 @@
   :root {
     color-scheme: dark;
     /*
-     * Hệ màu nền xanh mực nhạt, accent xanh pastel.
-     * Bỏ accent xanh lá cũ vì chói và làm mọi thứ trông như cảnh báo.
-     * Màu mạnh chỉ dành cho việc cần chú ý; trạng thái luôn kèm chữ, không chỉ dựa vào màu.
+     * NEN-V5 (08 mục 6, `thiet-ke/v5/v5-nen.css`): MÀU PISA TỪ LOGO — xanh #273C8F (cấu trúc), hồng #F25A98 (nhận diện, dùng ít).
+     * Tên biến CŨ giữ nguyên (Tailwind + mọi component đọc chúng), chỉ đổi GIÁ TRỊ theo token vai trò V5:
+     *   --bg = --nen · --surface = --be-mat · --surface-2 = --be-mat-2 · --line = --vien · --line-strong = --vien-dam · --accent = --nhan ·
+     *   --text = --chu · ok/dat = --dat · bad/late = --loi (quá hạn luôn kèm ⚠) · soon = --canh-bao · doing = --dang · muted/done = xám V5.
+     * Khối này = TỐI (mặc định khi không có `data-theme`); khối `:root[data-theme="light"]` dưới = SÁNG. Đo: `thiet-ke/v5/kiem-tuong-phan.py`.
      */
-    /* OV-15a (mục 7): nền tách lớp — trang tối hơn, thẻ / bảng sáng hơn một bậc, viền rõ hơn. */
-    --bg: #080d18;
-    --surface: #162033;
-    --surface-2: #1d2840;
-    --line: rgba(160, 178, 214, 0.18);
-    --line-strong: rgba(160, 178, 214, 0.32);
+    --bg: #070a1c;   /* V5 #0b1026, tối thêm một bậc để thẻ tách nền ≥ 1,15 : 1 (OV-15a, chủ SP 19/10) */
+    --surface: #121a38;
+    --surface-2: #19234a;
+    --line: #2a3560;
+    --line-strong: #3c4a80;
 
-    --accent: #7db3f0;          /* xanh pastel — nhấn chính */
-    --accent-strong: #a9cdf7;
-    --accent-ink-rgb: 11 22 38; /* chữ trên nền accent */
+    --accent: #a8b8f5;          /* = nhan V5: nút chính, link, focus, đang chọn */
+    --accent-strong: #c3cefa;
+    --accent-ink-rgb: 11 16 38; /* chữ trên nền accent */
     --accent-ink: rgb(var(--accent-ink-rgb));
-    --accent-soft: rgba(125, 179, 240, 0.14);
-    --accent-line: rgba(125, 179, 240, 0.38);
+    --accent-soft: #1f2b5c;     /* = nhan-nen V5 */
+    --accent-line: #4f63b3;     /* = nhan-vien V5 */
 
-    --text: #dde5f2;
+    --text: #e9ecf7;
+
+    /* V5 — token vai trò mới (chỉ ở đây và khối sáng). Hồng KHÔNG mang nghĩa lỗi / SOS. */
+    --hong: #f57aae;  --hong-chu: #f79cc2;  --hong-nen: #3a1830;
+    --dieu-huong-nen: #111a42;  --dieu-huong-chu: #c9d1ee;  --dieu-huong-chu-mo: #ffffff;  --dieu-huong-hover: #1b2659;
+    --dieu-huong-vien: #3c4a80;  --dieu-huong-nut: #1b2659;  --dieu-huong-chu-rgb: 201 209 238;  --trang-rgb: 255 255 255;
+    --lich-nen: #1a3d5c;  --lich-chu: #9fd0f0;  --lich-vien: #2d5f82;
+    --thieu-rgb: 162 172 206;  --thieu-vien: #6a78aa;
 
     /*
-     * TOKEN MÀU NGHĨA — MỘT CHỖ KHAI BÁO (PR-UX0, N-1; bảng màu cuối = mockup 18 (b4)).
-     * Bộ ba RGB (`--x-rgb`) để Tailwind ghép độ trong (`bg-bad/15`); mỗi nghĩa có chữ · nền · viền.
+     * TOKEN MÀU NGHĨA — MỘT CHỖ KHAI BÁO (PR-UX0, N-1). Bộ ba RGB (`--x-rgb`) để Tailwind ghép độ trong (`bg-bad/15`); mỗi nghĩa có chữ · nền · viền.
      * `tailwind.config.js` ánh xạ tên (`text-ok`, `bg-bad-bg`, `border-late-line`), `ui.tsx` chỉ dùng tên đó.
      * Chữ ≥ 4.5:1 trên nền riêng và mọi nền trang — phép kiểm `nenGiaoDien.tests.ts` đọc chính khối này.
      */
-    --ok-rgb: 111 220 159;    --ok-bg-rgb: 18 53 38;     --ok-line-rgb: 43 112 80;     /* đạt · tiến bộ · ổn */
-    --bad-rgb: 255 154 162;   --bad-bg-rgb: 60 29 36;    --bad-line-rgb: 136 64 74;    /* chưa đạt · SOS 3 */
-    --late-rgb: 255 145 102;  --late-bg-rgb: 62 31 19;   --late-line-rgb: 154 74 42;   /* quá hạn (luôn kèm ⚠) */
-    --soon-rgb: 242 196 80;   --soon-bg-rgb: 53 43 16;   --soon-line-rgb: 122 98 34;   /* sắp tới hạn · hôm nay · chờ · SOS 1 */
-    --doing-rgb: 128 184 255; --doing-bg-rgb: 19 44 77;  --doing-line-rgb: 47 93 149;  /* đang làm */
-    --done-rgb: 169 181 200;  --done-bg-rgb: 26 36 54;   --done-line-rgb: 52 68 95;    /* đã xong */
-    --muted-rgb: 201 212 230; --muted-bg-rgb: 29 42 64;  --muted-line-rgb: 52 68 95;   /* trung tính · thông tin · chip */
-    --text-dim-rgb: 174 188 211;    /* chữ phụ quan trọng — OV-15a: ≥ 7:1 trên nền trang, thẻ, thẻ phụ */
-    --text-faint-rgb: 168 182 208;  /* chữ phụ nhỏ — OV-15a: ≥ 7:1 như trên */
+    --ok-rgb: 116 217 163;    --ok-bg-rgb: 18 52 42;     --ok-line-rgb: 47 122 85;     /* đạt · đã lưu ✓ */
+    --bad-rgb: 255 154 143;   --bad-bg-rgb: 59 23 25;    --bad-line-rgb: 143 58 51;    /* lỗi · chưa đạt ✗ */
+    --late-rgb: 255 154 143;  --late-bg-rgb: 59 23 25;   --late-line-rgb: 143 58 51;   /* quá hạn = màu lỗi V5, luôn kèm ⚠ */
+    --soon-rgb: 242 196 80;   --soon-bg-rgb: 51 41 15;   --soon-line-rgb: 125 100 32;  /* sắp hạn · hôm nay · cần chú ý */
+    --doing-rgb: 168 184 245; --doing-bg-rgb: 31 43 92;  --doing-line-rgb: 79 99 179;  /* đang làm · đang lưu */
+    --done-rgb: 162 172 206;  --done-bg-rgb: 25 35 74;   --done-line-rgb: 60 74 128;   /* đã xong */
+    --muted-rgb: 188 196 224; --muted-bg-rgb: 25 35 74;  --muted-line-rgb: 60 74 128;  /* trung tính · thông tin · chip */
+    --text-dim-rgb: 188 196 224;    /* = chu-2 V5 */
+    --text-faint-rgb: 162 172 206;  /* = chu-3 V5, mờ nhất được phép */
     /* N-1b — Đạt dùng chung xanh lá của `ok`. */
     --dat-rgb: var(--ok-rgb);    --dat-bg-rgb: var(--ok-bg-rgb);    --dat-line-rgb: var(--ok-line-rgb);
-    /*
-     * OV-15a (C08): SOS tách khỏi soon / late / bad — chip SOS chỉ VIỀN (`--sosN-rgb`) + chữ (`--sosN-chu-rgb`), không nền.
-     * Bộ viền đã chạy validator (mockup 1 mục 1b): tối ΔE 17,3 · mù màu 10,6; sáng ΔE 15,7 · mù màu 6,2 (có mã phụ: độ dày viền + chữ).
-     */
+    /* SOS (C23): vàng → cam → ĐỎ (bỏ magenta trùng hồng nhận diện) — chỉ VIỀN (`--sosN-rgb`) + chữ (`--sosN-chu-rgb`), không nền. */
     --sos1-rgb: 214 184 40;  --sos1-chu-rgb: 227 200 74;
     --sos2-rgb: 232 112 42;  --sos2-chu-rgb: 245 147 90;
-    --sos3-rgb: 230 74 160;  --sos3-chu-rgb: 242 127 189;
-    /* OV-15a: hàng ĐÃ THI (từ hôm sau ngày thi tới khi chọn Bước tiếp) — nền cả hàng + vạch trái 3 px màu `ok`. Nền hàng chỉ dành cho nghĩa này. */
-    --da-thi-bg-rgb: 22 64 42;
-    /*
-     * NEN-TYPO-MAU (04 mục 5.1): KẾT QUẢ ĐIỂM — chỉ tô chính con số + ✓ / ✗ đứng trước, không nền. Vượt kỳ vọng · bằng (vẫn Đạt) · dưới.
-     * Đo (`prNenTypoMau`): ≥ 4,5 : 1 trên 9 nền thật hai chế độ; vượt ↔ dưới tách bằng độ sáng (mù màu đỏ–lục ΔE ≥ 10).
-     */
-    --kq-vuot-rgb: 134 239 172;  --kq-bang-rgb: 165 180 252;  --kq-duoi-rgb: 255 130 130;
+    --sos3-rgb: 240 100 90;  --sos3-chu-rgb: 255 154 143;
+    /* Hàng ĐÃ THI · chờ KQ — nền cả hàng + vạch trái 3 px màu lịch (V5 `--da-thi-nen`). */
+    --da-thi-bg-rgb: 15 35 53;
+    /* KẾT QUẢ ĐIỂM — chỉ tô chính con số + ✓ / ✗ đứng trước, không nền. Vượt kỳ vọng · bằng (vẫn Đạt) · dưới. */
+    --kq-vuot-rgb: 116 217 163;  --kq-bang-rgb: 168 184 245;  --kq-duoi-rgb: 255 154 143;
 
     /* Tên cũ giữ làm bí danh để chỗ đang dùng không vỡ. */
     --ok: rgb(var(--ok-rgb));
@@ -77,63 +78,94 @@
     --text-dim: rgb(var(--text-dim-rgb));
     --text-faint: rgb(var(--text-faint-rgb));
 
-    /* N-2 — hàng lớn / hàng con (bảng, danh sách). Vạch trái luôn xanh trung tính, không màu trạng thái. */
-    --hang-lon-bg: #1a2a46;       --hang-lon-vach: #5d7194;   /* NEN (04 mục 6.3): vạch trái hàng nhóm trung tính — màu nhấn để dành cho "đang chọn" */
-    --hang-lon-dong-bg: #152137;  --hang-lon-dong-vach: #3a4f72;
-    --hang-con-bg: #0e1626;       --hang-con-chu: #c9d4e6;
+    /* N-2 — hàng lớn / hàng con (bảng, danh sách). Vạch trái luôn trung tính, không màu trạng thái. */
+    --hang-lon-bg: #19234a;       --hang-lon-vach: #6a78aa;
+    --hang-lon-dong-bg: #151e40;  --hang-lon-dong-vach: #3c4a80;
+    --hang-con-bg: #0f1631;       --hang-con-chu: #bcc4e0;
     /* Ô sửa được / chỉ đọc (lưới chấm) */
-    --o-sua-vien: #4f79b3;        --o-sua-nen: #0e1a2e;   --o-sua-focus: #84baff;
+    --o-sua-vien: #6a78aa;        --o-sua-nen: #0e1530;   --o-sua-focus: #a8b8f5;
 
     /*
-     * PR-SANG (T15) — HAI CHẾ ĐỘ. Khối này = TỐI (mặc định, giá trị hôm nay); khối `:root[data-theme="light"]` ngay dưới ghi đè
-     * đúng các biến GỐC (bí danh `--dat-*`, `--sos*-*`, `--ok`… tự theo). `tailwind.config.js` ánh xạ tên Tailwind cũ về các biến này:
+     * PR-SANG (T15) — HAI CHẾ ĐỘ. `tailwind.config.js` ánh xạ tên Tailwind cũ về các biến này:
      * `slate-100/200/300` → chu-1/2/3 · `slate-600/700` → chu-mo (chỉ dấu trang trí) · `white` → phu (lớp phủ rê chuột).
-     * "Đang chọn" (OV-15a, bỏ teal) = nền `--accent-soft` + viền `--accent`. Component không tự khai màu; phép kiểm `prSang` S4–S6 chặn.
      */
-    --chu-1-rgb: 241 245 249;  --chu-2-rgb: 226 232 240;  --chu-3-rgb: 203 213 225;
-    --chu-mo-rgb: 71 85 105;   --chu-mo-2-rgb: 51 65 85;
+    --chu-1-rgb: 233 236 247;  --chu-2-rgb: 214 219 238;  --chu-3-rgb: 188 196 224;
+    --chu-mo-rgb: 106 120 170;   --chu-mo-2-rgb: 60 74 128;
     --phu-rgb: 255 255 255;
-    /* NEN (HTT-1, HTT-2): phủ rê chuột lên chính phần tử bấm được (ΔL ≥ 5,8 mọi nền) · dò hàng bảng dày không bấm được. */
+    /* NEN (HTT-1, HTT-2): phủ rê chuột lên chính phần tử bấm được · dò hàng bảng dày không bấm được. */
     --phu-re: rgb(var(--phu-rgb) / .08);  --phu-do: rgb(var(--phu-rgb) / .035);
-    --nut-hover: #24304a;      --o-nhap-nen: #0e1727;        --o-nhap-tat: #0b1322;   --o-nhap-vien: #64748b;
-    --cuon: rgba(160, 178, 214, 0.2);  --cuon-hover: rgba(160, 178, 214, 0.35);
+    --nut-hover: #1a2450;      --o-nhap-nen: #0e1530;        --o-nhap-tat: #0b1026;   --o-nhap-vien: #6a78aa;
+    --cuon: rgba(168, 184, 245, 0.2);  --cuon-hover: rgba(168, 184, 245, 0.35);
 
     /* Phông tự phục vụ (`@fontsource/be-vietnam-pro`, nạp ở main.tsx) — một giá trị cho cả hai chế độ. */
     --font-sans: 'Be Vietnam Pro', system-ui, 'Segoe UI', Roboto, sans-serif;
   }
   :root[data-theme="light"] {
     color-scheme: light;
-    --bg: #f1f3f7;  --surface: #ffffff;  --surface-2: #f4f6f9;
-    --line: rgba(15, 23, 42, 0.16);  --line-strong: rgba(15, 23, 42, 0.28);
-    --accent: #1d5fbf;  --accent-strong: #174e9e;  --accent-ink-rgb: 255 255 255;
-    --accent-soft: rgba(29, 95, 191, 0.08);  --accent-line: rgba(29, 95, 191, 0.35);
-    --text: #0f172a;
+    --bg: #f3f5f9;  --surface: #ffffff;  --surface-2: #f2f4f9;
+    --line: #d9deea;  --line-strong: #b0b8cd;
+    --accent: #273c8f;  --accent-strong: #1f3077;  --accent-ink-rgb: 255 255 255;
+    --accent-soft: #eef1fa;  --accent-line: #8c9cd6;
+    --text: #141a2b;
 
-    --ok-rgb: 22 101 52;      --ok-bg-rgb: 220 243 229;    --ok-line-rgb: 143 209 171;
-    --bad-rgb: 180 35 35;     --bad-bg-rgb: 253 226 226;   --bad-line-rgb: 240 163 163;
-    --late-rgb: 180 64 15;    --late-bg-rgb: 253 230 216;  --late-line-rgb: 241 174 138;
-    --soon-rgb: 138 90 0;     --soon-bg-rgb: 253 241 207;  --soon-line-rgb: 230 196 107;
-    --doing-rgb: 29 95 191;   --doing-bg-rgb: 227 237 251; --doing-line-rgb: 157 187 232;
-    --done-rgb: 75 85 99;     --done-bg-rgb: 238 240 243;  --done-line-rgb: 207 213 221;
-    --muted-rgb: 51 65 85;    --muted-bg-rgb: 238 241 245; --muted-line-rgb: 207 213 221;
-    --text-dim-rgb: 63 75 94;  --text-faint-rgb: 67 80 100;
-    --sos1-rgb: 138 106 0;   --sos1-chu-rgb: 122 93 0;
-    --sos2-rgb: 224 106 16;  --sos2-chu-rgb: 168 67 10;
-    --sos3-rgb: 181 18 94;   --sos3-chu-rgb: 163 16 79;
-    --da-thi-bg-rgb: 214 240 223;
-    --kq-vuot-rgb: 22 101 52;    --kq-bang-rgb: 30 64 175;    --kq-duoi-rgb: 200 30 30;
+    --hong: #f25a98;  --hong-chu: #b81f62;  --hong-nen: #fef0f6;
+    --dieu-huong-nen: #273c8f;  --dieu-huong-chu: #dce2f4;  --dieu-huong-chu-mo: #ffffff;  --dieu-huong-hover: #31479c;
+    --dieu-huong-vien: #5c70be;  --dieu-huong-nut: #31479c;  --dieu-huong-chu-rgb: 220 226 244;  --trang-rgb: 255 255 255;
+    --lich-nen: #d9eaf5;  --lich-chu: #164e72;  --lich-vien: #9cc4dd;
+    --thieu-rgb: 95 105 132;  --thieu-vien: #8690ab;
 
-    --hang-lon-bg: #eaf1fb;       --hang-lon-vach: #7c8799;
-    --hang-lon-dong-bg: #f1f4f8;  --hang-lon-dong-vach: #9fb0c8;
-    --hang-con-bg: #fafbfc;       --hang-con-chu: #334155;
-    --o-sua-vien: #7c8799;        --o-sua-nen: #ffffff;   --o-sua-focus: #1d5fbf;
+    --ok-rgb: 20 108 67;      --ok-bg-rgb: 227 245 234;    --ok-line-rgb: 95 185 138;
+    --bad-rgb: 180 35 24;     --bad-bg-rgb: 253 236 234;   --bad-line-rgb: 232 150 141;
+    --late-rgb: 180 35 24;    --late-bg-rgb: 253 236 234;  --late-line-rgb: 232 150 141;
+    --soon-rgb: 138 90 0;     --soon-bg-rgb: 255 244 214;  --soon-line-rgb: 217 169 58;
+    --doing-rgb: 58 80 166;   --doing-bg-rgb: 238 241 250; --doing-line-rgb: 140 156 214;
+    --done-rgb: 74 83 108;    --done-bg-rgb: 242 244 249;  --done-line-rgb: 210 215 229;
+    --muted-rgb: 74 83 108;   --muted-bg-rgb: 242 244 249; --muted-line-rgb: 210 215 229;
+    --text-dim-rgb: 74 83 108;  --text-faint-rgb: 95 105 132;
+    --sos1-rgb: 168 122 0;   --sos1-chu-rgb: 122 89 0;
+    --sos2-rgb: 217 101 15;  --sos2-chu-rgb: 163 71 10;
+    --sos3-rgb: 180 35 24;   --sos3-chu-rgb: 155 28 20;
+    --da-thi-bg-rgb: 238 245 250;
+    --kq-vuot-rgb: 20 108 67;    --kq-bang-rgb: 39 60 143;    --kq-duoi-rgb: 180 35 24;
 
-    --chu-1-rgb: 15 23 42;  --chu-2-rgb: 30 41 59;  --chu-3-rgb: 51 65 85;
-    --chu-mo-rgb: 148 163 184;  --chu-mo-2-rgb: 203 213 225;
-    --phu-rgb: 15 23 42;
-    --phu-re: rgb(var(--phu-rgb) / .09);
-    --nut-hover: #e4e8ee;  --o-nhap-nen: #ffffff;  --o-nhap-tat: #f1f4f8;  --o-nhap-vien: #7c8799;
-    --cuon: rgba(15, 23, 42, 0.2);  --cuon-hover: rgba(15, 23, 42, 0.35);
+    --hang-lon-bg: #f2f4f9;       --hang-lon-vach: #8690ab;
+    --hang-lon-dong-bg: #f8f9fc;  --hang-lon-dong-vach: #b0b8cd;
+    --hang-con-bg: #fbfcfe;       --hang-con-chu: #353d54;
+    --o-sua-vien: #7f8aa6;        --o-sua-nen: #ffffff;   --o-sua-focus: #3a50a6;
+
+    --chu-1-rgb: 20 26 43;  --chu-2-rgb: 35 42 63;  --chu-3-rgb: 53 61 84;
+    --chu-mo-rgb: 134 144 171;  --chu-mo-2-rgb: 210 215 229;
+    --phu-rgb: 17 26 66;
+    --phu-re: rgb(var(--phu-rgb) / .07);
+    --nut-hover: #f0f2f8;  --o-nhap-nen: #ffffff;  --o-nhap-tat: #f2f4f9;  --o-nhap-vien: #7f8aa6;
+    --cuon: rgba(17, 26, 66, 0.2);  --cuon-hover: rgba(17, 26, 66, 0.35);
+  }
+  /*
+   * NEN-V5 — THANH ĐIỀU HƯỚNG XANH (`.thanh-xanh`, V5 `.dh`): mọi thứ NẰM TRÊN thanh đọc chữ sáng nhờ đổi token tại chỗ; hộp thả xuống
+   * (tài khoản, thông báo, kết quả tìm, menu "Thêm", panel) trả token về giá trị của chế độ đang dùng (`--goc-*`, lấy ở :root).
+   */
+  :root {
+    --goc-text: var(--text);  --goc-text-dim: var(--text-dim);  --goc-text-faint: var(--text-faint);
+    --goc-chu-1-rgb: var(--chu-1-rgb);  --goc-chu-2-rgb: var(--chu-2-rgb);  --goc-chu-3-rgb: var(--chu-3-rgb);
+    --goc-text-dim-rgb: var(--text-dim-rgb);  --goc-text-faint-rgb: var(--text-faint-rgb);  --goc-phu-rgb: var(--phu-rgb);  --goc-phu-re: var(--phu-re);
+    --goc-line-strong: var(--line-strong);  --goc-surface-2: var(--surface-2);  --goc-nut-hover: var(--nut-hover);
+    --goc-accent: var(--accent);  --goc-accent-strong: var(--accent-strong);  --goc-accent-soft: var(--accent-soft);  --goc-accent-line: var(--accent-line);
+  }
+  .thanh-xanh {
+    background: var(--dieu-huong-nen);
+    --text: var(--dieu-huong-chu-mo);  --text-dim: rgb(var(--dieu-huong-chu-rgb));  --text-faint: rgb(var(--dieu-huong-chu-rgb));
+    --chu-1-rgb: var(--trang-rgb);  --chu-2-rgb: var(--dieu-huong-chu-rgb);  --chu-3-rgb: var(--dieu-huong-chu-rgb);
+    --text-dim-rgb: var(--dieu-huong-chu-rgb);  --text-faint-rgb: var(--dieu-huong-chu-rgb);  --phu-rgb: var(--trang-rgb);  --phu-re: rgb(var(--trang-rgb) / .1);
+    --line-strong: var(--dieu-huong-vien);  --surface-2: var(--dieu-huong-nut);  --nut-hover: var(--dieu-huong-hover);
+    --accent: var(--dieu-huong-chu-mo);  --accent-strong: var(--dieu-huong-chu-mo);  --accent-soft: var(--dieu-huong-hover);  --accent-line: var(--dieu-huong-vien);
+  }
+  .thanh-xanh :is(.card, .field, [role="dialog"], [role="listbox"], [role="menu"], [aria-modal="true"]) {
+    --text: var(--goc-text);  --text-dim: var(--goc-text-dim);  --text-faint: var(--goc-text-faint);
+    --chu-1-rgb: var(--goc-chu-1-rgb);  --chu-2-rgb: var(--goc-chu-2-rgb);  --chu-3-rgb: var(--goc-chu-3-rgb);
+    --text-dim-rgb: var(--goc-text-dim-rgb);  --text-faint-rgb: var(--goc-text-faint-rgb);  --phu-rgb: var(--goc-phu-rgb);  --phu-re: var(--goc-phu-re);
+    --line-strong: var(--goc-line-strong);  --surface-2: var(--goc-surface-2);  --nut-hover: var(--goc-nut-hover);
+    --accent: var(--goc-accent);  --accent-strong: var(--goc-accent-strong);  --accent-soft: var(--goc-accent-soft);  --accent-line: var(--goc-accent-line);
+    color: var(--text);
   }
   html, body, #root { height: 100%; }
   body {
@@ -288,7 +320,7 @@
   /* Học viên đã kết thúc: làm dịu nhưng vẫn phải đọc rõ, không hạ opacity tới mức mất chữ. */
   /* OV-15a: hàng ĐÃ THI (từ hôm sau ngày thi tới khi chọn Bước tiếp) — nền cả hàng + vạch trái 3 px; chữ phụ lên một bậc để giữ tương phản. */
   tr.hang-da-thi > td, .hang-da-thi:not(tr) { background: rgb(var(--da-thi-bg-rgb)); --text-faint-rgb: var(--text-dim-rgb); }
-  tr.hang-da-thi > td:first-child, .hang-da-thi:not(tr) { box-shadow: inset 3px 0 0 rgb(var(--ok-rgb)); }
+  tr.hang-da-thi > td:first-child, .hang-da-thi:not(tr) { box-shadow: inset 3px 0 0 var(--lich-chu); }   /* NEN-V5: vạch màu lịch thi (khác Đạt) */
   /* HTT-6 (PTA-v4-9, đảo m1 §1d): ĐANG CHỌN = nền nhấn nhạt + vạch trái 3 px. Hàng đã thi đang chọn: giữ nền đã thi, vạch đổi màu nhấn. */
   :is(.dang-mo, .row-active):not(tr) { background-image: linear-gradient(var(--accent-soft), var(--accent-soft)); box-shadow: inset 3px 0 0 var(--accent-strong); }
   tr:is(.dang-mo, .row-active) > td { background-image: linear-gradient(var(--accent-soft), var(--accent-soft)); }

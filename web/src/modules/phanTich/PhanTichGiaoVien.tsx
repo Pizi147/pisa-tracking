@@ -6,7 +6,7 @@ import {
 } from '@shared/domain/index.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
-import { DanhSachNguon } from '../../ui/SoLieuO.tsx';
+import { DanhSachNguon } from '../../ui/OSo.tsx';
 import { PhanTrang, usePhanTrang } from '../../ui/PhanTrang.tsx';
 import { TheDong, useDienThoai } from '../../ui/TheDong.tsx';
 import { BoLocDoan, Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';

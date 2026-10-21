@@ -14,6 +14,8 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { addDaysStr } from '../../lib/format.ts';
 import { SanMauNen } from './SanMauNen.tsx';
 import { BangMau } from './BangMau.tsx';
+import { BangMauV5 } from './BangMauV5.tsx';
+import { Link, useSearchParams } from 'react-router-dom';
 import { DEADLINE_KINDS, KIEU_O_NGAY, TRANG_THAI, type KieuONgay } from '@shared/domain/index.ts';
 
 /**
@@ -74,7 +76,16 @@ function SixStates({ empty, one, many, long }: {
   );
 }
 
+/** NEN-V5: `/dev/thanh-phan` = bảng mẫu V5 (ảnh cặp với `thiet-ke/v5/bang-mau.html`); sân mẫu cũ ở `?cu=1`. */
 export default function ThanhPhanDemo() {
+  const [q] = useSearchParams();
+  if (q.get('cu') !== '1') {
+    return <><BangMauV5 /><Link to="?cu=1" className="link text-[13px]">Sân mẫu cũ (NEN-TYPO-MAU, BANG-0) ›</Link></>;
+  }
+  return <SanMauCu />;
+}
+
+function SanMauCu() {
   const { homNay, nhan } = useNgayNghiepVu();
   const d = (n: number) => addDaysStr(homNay, n);
   const [p1, setP1] = useState<number | null>(null);

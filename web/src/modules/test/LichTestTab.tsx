@@ -20,7 +20,7 @@ import { KhoiNo } from './lichTest/KhoiNo.tsx';
 import { HangLop } from './lichTest/HangLop.tsx';
 import { dangMo, docMo, ghiMo } from './lichTest/moLop.ts';
 import { NganXuatMt } from './NganXuatMt.tsx';
-import { DanhSachNguon } from '../../ui/SoLieuO.tsx';
+import { DanhSachNguon } from '../../ui/OSo.tsx';
 import { t } from '@shared/i18n/index.ts';
 
 type Loai = 'ft' | 'thuong';

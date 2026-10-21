@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { invalidate, type ApiError } from '../../lib/api.ts';
 import { ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { Han } from '../../ui/Han.tsx';
-import { SoLieuO } from '../../ui/SoLieuO.tsx';
+import { OSo } from '../../ui/OSo.tsx';
 import { NganCase } from '../students/NganCase.tsx';
 import { HopChoDuyet } from '../duyet/HopChoDuyet.tsx';
 import { PanelViec } from '../congViec/PanelViec.tsx';
@@ -14,7 +14,7 @@ import { dich, t } from '@shared/i18n/index.ts';
 
 /**
  * TỔNG QUAN QL — A (OV-15d, mockup OV-14 số 3 mục 1, C23, Q5, Q6a). Hai khối đầu trang; "Lớp cần chú ý" là `LopCanChuY`, "Tuần này" là
- * `LichSapToi` + `TreCham` — trang đọc hai GET `/tong-quan/quan-ly` + `/tong-quan/ql` (OV-15h1, trước 4). Mọi số đi qua `SoLieuO` (bấm → panel đúng tập, cùng hàm đếm); không Nhắc (C03).
+ * `LichSapToi` + `TreCham` — trang đọc hai GET `/tong-quan/quan-ly` + `/tong-quan/ql` (OV-15h1, trước 4). Mọi số đi qua `OSo` (bấm → panel đúng tập, cùng hàm đếm); không Nhắc (C03).
  */
 type Data = QuanLyData;
 
@@ -32,7 +32,7 @@ export function DaiTomTat({ data, bang, branchId, ct }: { data: Data;
   const caseQh = dong('case-xac-dinh-nguyen-nhan-qua-han');
   const phamVi = { branchId, chuongTrinh: ct };   // SL2: panel số cùng khung với số
   const o = (cot: string, tieuDe: string) => (!bang ? <span className="text-slate-500" aria-label={t('Đang tải')}>…</span> : (
-    <SoLieuO vung="dai" giaTri={bang.tong[cot as keyof typeof bang.tong]?.n ?? 0} className="font-semibold" tieuDe={tieuDe} nguon={`/tong-quan/chi-nhanh/o?cot=${cot}&khoa=tong&chuY=1${q ? `&${q}` : ''}`} />
+    <OSo vung="dai" giaTri={bang.tong[cot as keyof typeof bang.tong]?.n ?? 0} className="font-semibold" tieuDe={tieuDe} nguon={`/tong-quan/chi-nhanh/o?cot=${cot}&khoa=tong&chuY=1${q ? `&${q}` : ''}`} />
   ));
   return (
     <div className="card flex flex-wrap items-center gap-x-5 gap-y-2 px-4 py-2.5 text-[13px] text-slate-300" aria-label={t('HV cần chú ý')} data-hd="tq-tom-tat">
@@ -41,11 +41,11 @@ export function DaiTomTat({ data, bang, branchId, ct }: { data: Data;
       <span className="tabular-nums">{o('chuaDiem', t('HV chưa điểm'))} {t('HV chưa điểm')}</span>
       <span className="tabular-nums">
         {o('caseChuaChotHv', t('HV có Case chưa chốt PA'))} {t('HV')} · {o('caseChuaChot', t('Case chưa chốt PA'))} {t('Case chưa chốt PA')}
-        {!!caseQh?.n && <> · <span className="text-late">⚠ <SoLieuO vung="dai" id="case-xac-dinh-nguyen-nhan-qua-han" giaTri={caseQh.n} phamVi={phamVi} /> {t('quá hạn')}</span></>}
+        {!!caseQh?.n && <> · <span className="text-late">⚠ <OSo vung="dai" id="case-xac-dinh-nguyen-nhan-qua-han" giaTri={caseQh.n} phamVi={phamVi} /> {t('quá hạn')}</span></>}
       </span>
       {!!bai?.n && (
         <span className="tabular-nums">
-          <SoLieuO vung="dai" id="bai-qua-han-nhap-diem" giaTri={bai.n} phamVi={phamVi} className="font-semibold" /> {t('bài trễ chấm')}{soGv ? ` · ${t('{n} GV', { n: soGv })}` : ''}
+          <OSo vung="dai" id="bai-qua-han-nhap-diem" giaTri={bai.n} phamVi={phamVi} className="font-semibold" /> {t('bài trễ chấm')}{soGv ? ` · ${t('{n} GV', { n: soGv })}` : ''}
         </span>
       )}
       <span className="flex-1" />
