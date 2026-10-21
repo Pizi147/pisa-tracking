@@ -101,16 +101,21 @@ export async function runPrOv13hTests(t: YThucTestKit) {
     }));
     for (const s of ['reading', 'writing2', 'speaking']) diemQl(x.aid, s, TRONG);
     /* Đợt FT chỉ hoàn tất khi mọi ô có điểm hoặc "-": L và W1 "-" nhập bù sau tuần thi = Không dự thi → ô chưa có điểm của đợt đã hoàn tất. */
-    for (const s of ['listening', 'writing1']) attempts.saveScore(QL, x.aid, s, { noShow: true }, addDays(W, 9));
+    /* LUAT-34: "-" ghi muộn nay dời — dựng ô "Không dự thi" CŨ thẳng (dữ liệu trước luật 4 sửa, không migrate) để đợt Đủ điểm. */
+    for (const s of ['listening', 'writing1']) {
+      run(`INSERT INTO assessment_scores (attempt_id, skill, no_show_period_id, no_show_by, no_show_at, no_show_late, no_show_settled_at, no_show_cu)
+        VALUES (?, ?, ?, ?, '2026-11-25T00:00:00.000Z', 1, '2026-11-25T00:00:00.000Z', 1)`, x.aid, s, week.ensurePeriod(W).id, QL.userId);
+    }
+    xoaNho();
     await checkAsync('OV13h-1b · FT đợt đã hoàn tất (L, W1 "-" Không dự thi): GV L nhập ô L → 200 + nhật ký score.edit; sửa ô đã có → 403; GV L vào ô W1 (không dạy) → 403; cờ ô khớp', () => voiMayChu(SAU, async (goi) => {
       assert(dotHoanTat(x.aid, SAU).hoanTat, 'lượt chưa hoàn tất');
       const o = async (u: number, k: string) => ((await (await goi(u, `/attempts/${x.aid}`)).json()) as any).cells.find((c: any) => c.skill === k);
-      assert((await o(gvL, 'listening')).canEdit === true && (await o(gvL, 'reading')).canEdit === false, 'cờ ô GV L (trống mở, có điểm khoá)');
+      assert((await o(gvL, 'listening')).canEdit === true && (await o(gvL, 'reading')).canEdit === true, 'cờ ô GV L (LUAT-34: Đủ điểm không khoá)');
       const truoc = nk('score.edit', gvL, x.aid);
       await ma(await goi(gvL, `/attempts/${x.aid}/scores/listening`, put({ band: 8, nhanXet: nx })), 200, 'GV L nhập ô trống');
       assert(one(`SELECT band FROM assessment_scores WHERE attempt_id = ? AND skill = 'listening'`, x.aid).band === 8, 'chưa lưu điểm');
       assert(nk('score.edit', gvL, x.aid) === truoc + 1, 'thiếu nhật ký score.edit');
-      await ma(await goi(gvL, `/attempts/${x.aid}/scores/listening`, put({ band: 7.5, nhanXet: nx })), 403, 'GV sửa điểm đã có');
+      await ma(await goi(gvL, `/attempts/${x.aid}/scores/listening`, put({ band: 7.5, nhanXet: nx })), 200, 'GV sửa điểm đã có (LUAT-34)');
       await ma(await goi(gvL, `/attempts/${x.aid}/scores/writing1`, put({ criteria: [8, 8, 8, 8], nhanXet: nx })), 403, 'GV L vào ô W1');
     }));
     await checkAsync('OV13h-1c · FT lớp đã kết thúc: GV W1 nhập ô W1 ("-", chưa điểm) → 200 + nhật ký; sửa lại → 403; "-" → 400 câu "không ghi vắng" + cờ ô khongVang (GIỮ, rà #410); QL vẫn sửa', lopTam(FT101, () => voiMayChu(SAU, async (goi) => {

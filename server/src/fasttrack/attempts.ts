@@ -35,7 +35,7 @@ import { dongBoNguyenNhanMt } from '../cases/nguyenNhanO.ts';
 import { currentCycle, cycleById, examPlanOf, luotSoCuaLoTrinh } from './cycles.ts';
 import { closeCasesBySystem, moLaiCaseHeThongDong } from '../cases/systemClose.ts';
 import {
-  banHuyLuotCua, catDiemO, catHuyLuot, diemHuyMo, dongBanCat, ketQuaHuyCua, traBanDoiVuot, traBanHuyLuot, traYeuCauCat, yeuCauChoCua, type BanHuyLuot,
+  banHuyLuotCua, catDiemO, catHuyLuot, dongBanCat, ketQuaHuyCua, traBanDoiVuot, traBanHuyLuot, traYeuCauCat, yeuCauChoCua, type BanHuyLuot,
 } from './ketQuaHuy.ts';
 import { chuanHoaNguoiThucHien } from '../cases/nguoiThucHien.ts';
 import { caseCuaLuot } from '../cases/caseLop.ts';
@@ -73,12 +73,16 @@ export type ScoreRow = {
 /** OV-12b: kỳ vọng của lượt cho chip nhóm nguyên nhân (MT0 không kỳ vọng) — cùng `expectationFor` với `resultOf`. */
 const kyVongCuaLuot = (a: any): number | null => (laMt0(a) ? null : expectationFor(a.target_at_attempt ?? null, a.attempt_no, routeCuaLuot(a)));
 
+/** LUAT-34 (T20b): ô có điểm đã huỷ còn cất (`ket_qua_huy` loại `huy_diem`) — cột trong CÂU ĐỌC ĐIỂM sẵn có (không thêm câu SQL). */
+const DIEM_HUY_SQL = `EXISTS (SELECT 1 FROM ket_qua_huy k WHERE k.attempt_id = s.attempt_id AND k.loai = 'huy_diem' AND k.khoi_phuc_luc IS NULL
+  AND instr(k.diem_json, '"skill":"' || s.skill || '"') > 0) AS diem_huy`;
+
 /** PR-TD: nhớ trong request GET theo attemptId — hồ sơ HV gọi lặp cho mỗi lượt của em (`profile.ts`, `students.ts`). */
 export function scoresOf(attemptId: number): ScoreRow[] {
   return nho(`diem:${attemptId}`, () => db()
     .prepare(
       `SELECT s.*, u.full_name AS entered_by_name, g.full_name AS examiner_user_name, ns.week_start AS no_show_week_start,
-              nb.full_name AS no_show_by_name, pt.full_name AS nhan_xet_phu_trach_by_name FROM assessment_scores s
+              nb.full_name AS no_show_by_name, pt.full_name AS nhan_xet_phu_trach_by_name, ${DIEM_HUY_SQL} FROM assessment_scores s
          LEFT JOIN users u ON u.id = s.entered_by LEFT JOIN users g ON g.id = s.examiner_user_id LEFT JOIN users nb ON nb.id = s.no_show_by
          LEFT JOIN users pt ON pt.id = s.nhan_xet_phu_trach_by LEFT JOIN report_periods ns ON ns.id = s.no_show_period_id WHERE s.attempt_id = ?`,
     )
@@ -98,7 +102,7 @@ export function diemCuaLuot(attemptIds: number[]): Map<number, ScoreRow[]> {
       for (const r of conn
         .prepare(
           `SELECT s.*, u.full_name AS entered_by_name, g.full_name AS examiner_user_name, ns.week_start AS no_show_week_start,
-                  nb.full_name AS no_show_by_name, pt.full_name AS nhan_xet_phu_trach_by_name FROM assessment_scores s
+                  nb.full_name AS no_show_by_name, pt.full_name AS nhan_xet_phu_trach_by_name, ${DIEM_HUY_SQL} FROM assessment_scores s
              LEFT JOIN users u ON u.id = s.entered_by LEFT JOIN users g ON g.id = s.examiner_user_id LEFT JOIN users nb ON nb.id = s.no_show_by
              LEFT JOIN users pt ON pt.id = s.nhan_xet_phu_trach_by LEFT JOIN report_periods ns ON ns.id = s.no_show_period_id WHERE s.attempt_id IN (${chunk.map(() => '?').join(',')})`,
         )
@@ -498,7 +502,7 @@ export function skillCells(
       /* LUAT-34: "Đủ điểm" — chỉ là trạng thái của đợt (tên trường giữ từ R11), không còn khoá ô. */
       khoa: hoanTat.hoanTat,
       /* LUAT-34 (T20b): ô có điểm đã huỷ còn cất → "Khôi phục điểm". */
-      diemHuy: !hasScore && diemHuyMo().has(`${attempt.id}:${skill}`),
+      diemHuy: !hasScore && !!(row as any)?.diem_huy,
       /*
        * "TÔI SỬA ĐƯỢC" KHÁC "ĐÂY LÀ VIỆC CỦA TÔI" (mục 3.3).
        * Người có quyền sửa hộ vẫn bấm vào ô được, nhưng không vì thế mà nợ việc đó.

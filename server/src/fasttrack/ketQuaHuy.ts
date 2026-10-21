@@ -75,7 +75,7 @@ export function khoiPhucDiem(p: Principal, attemptId: number, skill: string, tod
       conn.prepare('UPDATE ket_qua_huy SET khoi_phuc_luc = ?, khoi_phuc_boi = ?, ly_do_khoi_phuc = ? WHERE id = ?').run(nowIso(), p.userId, lyDo, k.id);
       writeAudit({
         actorUserId: p.userId, action: 'score.khoi_phuc', entityType: 'assessment_attempt', entityId: attemptId, entityLabel: d.skill,
-        before: { huyLuc: k.huy_luc, lyDo: k.ly_do }, after: { band: d.band ?? null, rawScore: d.raw_score ?? null, criteria: [d.c1, d.c2, d.c3, d.c4] },
+        before: null, after: { ...d, lyDo },
       });
     }
     return { ok: true as const, o: ban.map((x) => x.d.skill as string) };

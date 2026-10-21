@@ -8106,14 +8106,14 @@ check('PR-G · (OV-1b) GV nhập "-" trong tuần thi: chốt vắng NGAY — d�
   assert(doi?.reason === 'Vắng — tự dời' && /^W3 SEP/.test(doi.old_value ?? ''), `Lịch sử phải ghi tự dời từ W3 SEP: ${JSON.stringify(doi)}`);
 });
 
-check('PR-G · (OV-1b) "-" nhập bù sau tuần thi = Không dự thi: không dời, không đếm vắng, ô không còn nợ; nhập điểm đè được', () => {
+/* LUAT-34 (luật 4 sửa 21/10) thay OV-1b "nhập bù = Không dự thi": "-" ghi muộn chốt như trong tuần — tuần kế của lịch đã hết → thẻ Quản lý. */
+check('PR-G · LUAT-34 "-" ghi muộn (tuần kế đã hết) → vắng chờ QL (thẻ dời), không còn Không dự thi; Hoàn tác rồi nhập điểm được', () => {
   const id = prgAttempts[1];
   attempts.saveScore(P.lrTeacher, id, 'reading', { noShow: true } as any, '2026-10-03');
   const k = prgSit(id, 'reading');
-  assert(k.sit_status === 'scheduled' && k.absence_move_count === 0 && k.planned_period_id === prgWeek, `Không được dời / đếm: ${JSON.stringify(k)}`);
-  assert(prgSettled(id, 'reading') === 0, 'Không dự thi không phải một lần vắng');
-  const c = prgCell(id, 'reading', '2026-10-03');
-  assert(c.noShow?.state === 'khong-du-thi' && !c.overdue, `Ô: ${JSON.stringify(c.noShow)} overdue=${c.overdue}`);
+  assert(k.sit_status === 'absent' && k.absence_move_count === 0 && k.planned_period_id === prgWeek, `vắng chờ QL: ${JSON.stringify(k)}`);
+  assert((conn.prepare(`SELECT COUNT(*) n FROM skill_move_requests WHERE attempt_id = ? AND skill = 'reading' AND status = 'pending'`).get(id) as any).n === 1, 'thẻ dời chờ QL');
+  attempts.saveScore(P.lrTeacher, id, 'reading', { noShow: false } as any, '2026-10-03');   // Hoàn tác (người vừa gõ)
   attempts.saveScore(P.lrTeacher, id, 'reading', { rawScore: 30 }, '2026-10-03');
   assert(prgCell(id, 'reading', '2026-10-03').band !== null && !prgCell(id, 'reading', '2026-10-03').noShow, 'Điểm thật phải thắng dấu "-"');
 });
@@ -8146,11 +8146,11 @@ check('PR-G · (OV-1b) Đổi ý sau "-": Bỏ vắng trả bài về tuần cũ
 
 check('PR-G · "-" ở W1 KHÔNG xoá W2 và không đếm hai lần: chỉ khi CẢ HAI bài của buổi Writing đều "-" mới là vắng, và đúng MỘT lần', () => {
   const id = prgAttempts[4];
-  /* W2 đã có điểm; W1 báo "-" → buổi Writing có người làm, không thể coi là vắng. */
+  /* LUAT-34 (T07, PTA): W2 đã có điểm; W1 báo "-" → buổi vắng, dời CẢ W lần 1 (điểm W2 đi theo, không bị xoá). */
   attempts.saveScore(prgWriting2, id, 'writing2', { criteria: [6, 6, 6, 6] });
   attempts.saveScore(prgWriting1, id, 'writing1', { noShow: true } as any);
   assert(prgCell(id, 'writing2').band === 6, 'W1 báo "-" đã xoá điểm W2');
-  assert(prgSit(id, 'writing').sit_status !== 'absent' && prgSit(id, 'writing').absence_move_count === 0, 'Buổi Writing có W2 mà bị ghi vắng');
+  assert(prgSit(id, 'writing').sit_status === 'scheduled' && prgSit(id, 'writing').absence_move_count === 1, `W1 "-" + W2 có điểm phải dời cả W: ${JSON.stringify(prgSit(id, 'writing'))}`);
 
   const id2 = prgAttempts[5];
   attempts.saveScore(prgWriting1, id2, 'writing1', { noShow: true } as any);
@@ -8184,33 +8184,32 @@ check('PR-G · Normal không đi cửa dấu "-" của FT: không có chốt v�
     'Lớp Normal ghi được dấu "-" qua cửa chốt vắng của FT');
 });
 
-check('PR-G · (OV-1b thay C10) "-" nhập cho tuần ĐÃ KẾT THÚC = Không dự thi ngay: không đề nghị chờ Quản lý, không hàng chờ hiệu chỉnh', () => {
+check('PR-G · LUAT-34 "-" ghi muộn khi tuần kế đã hết → thẻ dời chờ QL (không Không dự thi); không hàng chờ hiệu chỉnh', () => {
   const id = prgAttempts[6];
   const late = '2026-09-28';
   attempts.saveScore(P.lrTeacher, id, 'listening', { noShow: true } as any, late);
-  assert(prgSit(id, 'listening').sit_status === 'scheduled' && prgSettled(id, 'listening') === 0,
-    `Không dự thi không vào luồng vắng: ${JSON.stringify(prgSit(id, 'listening'))}`);
-  assert(prgCell(id, 'listening', late).noShow.state === 'khong-du-thi',
-    `Phải là "Không dự thi", đang ${JSON.stringify(prgCell(id, 'listening', late).noShow)}`);
-  const pending = (conn.prepare(`SELECT COUNT(*) n FROM skill_move_requests WHERE attempt_id = ? AND skill = 'listening'`).get(id) as any).n;
-  assert(pending === 0, 'Không dự thi không sinh đề nghị dời');
+  assert(prgSit(id, 'listening').sit_status === 'absent' && prgSit(id, 'listening').absence_move_count === 0,
+    `vắng chờ QL: ${JSON.stringify(prgSit(id, 'listening'))}`);
+  const pending = (conn.prepare(`SELECT COUNT(*) n FROM skill_move_requests WHERE attempt_id = ? AND skill = 'listening' AND status = 'pending'`).get(id) as any).n;
+  assert(pending === 1, 'ghi muộn không dời được → thẻ dời gửi QL');
   assert(typeof (absence as any).resolveLateNoShow === 'undefined' && typeof (absence as any).settleNoShows === 'undefined',
     'Đường "chờ Quản lý hiệu chỉnh" và chốt cuối Chủ nhật phải đã bỏ');
 
-  /* Điểm thật thắng "Không dự thi": GV nhập điểm muộn được, dấu hết hiệu lực. */
+  /* Gõ nhầm: Hoàn tác (người vừa gõ) rồi nhập điểm muộn được, dấu hết hiệu lực. */
   const id2 = prgAttempts[7];
   attempts.saveScore(P.lrTeacher, id2, 'listening', { noShow: true } as any, late);
+  attempts.saveScore(P.lrTeacher, id2, 'listening', { noShow: false } as any, late);
   attempts.saveScore(P.lrTeacher, id2, 'listening', { rawScore: 30 }, late);
   assert(!prgCell(id2, 'listening', late).noShow && prgSit(id2, 'listening').sit_status === 'sat', 'Nhập điểm đè Không dự thi phải được');
 });
 
-check('PR-G · (OV-1b) Writing đủ W1 + W2 "-" trong tuần → tự dời lần 1; Listening nhập bù → Không dự thi, bộ đếm 0', () => {
+check('PR-G · (OV-1b) Writing đủ W1 + W2 "-" trong tuần → tự dời lần 1; Listening ghi muộn → thẻ QL, bộ đếm 0 (LUAT-34)', () => {
   const settledWriting = prgAttempts[5];
   assert(prgSit(settledWriting, 'writing').sit_status === 'scheduled' && prgSit(settledWriting, 'writing').absence_move_count === 1,
     `Writing phải đã dời lần 1: ${JSON.stringify(prgSit(settledWriting, 'writing'))}`);
   const lateListening = prgAttempts[6];
   assert(prgSit(lateListening, 'listening').absence_move_count === 0 && prgSit(lateListening, 'listening').planned_period_id === prgWeek,
-    'Không dự thi không dời, không tăng bộ đếm');
+    'thẻ QL chưa duyệt: chưa dời, chưa tăng bộ đếm');
 });
 
 
@@ -8244,11 +8243,12 @@ check('PR-I · Bài chỉ báo "-" hoặc mới gõ dở một tiêu chí: "-" k
   assert(dash.enteredByName === null && dash.enteredAt === null,
     `Báo "-" không phải nhập điểm nên không có người nhập: ${JSON.stringify([dash.noShow?.state, dash.enteredByName])}`);
   const id = prgAttempts[4];                                    // W1 của B: đang "-", chưa chốt vì tuần đã hết -> không dùng; dùng W2 đã có điểm
-  attempts.saveScore(prgWriting2, id, 'writing2', { criteria: [6, null, null, null], lyDo: 'Phép kiểm: sửa điểm đã có' });
+  const homNay = chuNhatCuoiOf(id);   // LUAT-34: Writing của B đã dời tuần kế (W1 "-" + W2 có điểm) — nhập ở tuần thi mới
+  attempts.saveScore(prgWriting2, id, 'writing2', { criteria: [6, null, null, null], lyDo: 'Phép kiểm: sửa điểm đã có' }, homNay);
   const partial = priCell(id, 'writing2');
   assert(partial.band === null && partial.criteria[0] === 6, 'Tiền đề: mới có một tiêu chí, chưa ra band');
   assert(partial.enteredByName, 'Đã có giá trị (dù dở dang) thì còn người nhập — chỉ ô HOÀN TOÀN trống mới hết tên');
-  attempts.saveScore(prgWriting2, id, 'writing2', { criteria: [null, null, null, null] });
+  attempts.saveScore(prgWriting2, id, 'writing2', { criteria: [null, null, null, null] }, homNay);
   assert(priCell(id, 'writing2').enteredByName === null, 'Xoá hết bốn tiêu chí thì hết tên người nhập');
 });
 
@@ -8349,13 +8349,11 @@ check('PR-H · Badge đếm nói rõ ĐẾM CỦA AI: việc riêng khác toàn 
  */
 /* OV-1b đổi ý phép kiểm này: "-" luôn có tác dụng — W1 "-" (W2 có điểm) quá Chủ nhật là "Không dự thi" của RIÊNG ô W1, không quay về ô trống
    (lỗi chủ SP báo 11/10: "-" ra ô trống); buổi Writing vẫn không vắng và ô KHÔNG khoá (nhập điểm đè được). */
-check('Rà soát · (OV-1b) "-" quá Chủ nhật mà buổi không vắng (W1 "-", W2 có điểm): ô W1 là Không dự thi riêng ô đó, không về ô trống, không bị khoá', () => {
+check('Rà soát · LUAT-34 (T07) W1 "-" + W2 có điểm: buổi vắng lần 1 — dời cả W sang tuần kế, không chờ QL', () => {
   const id = prgAttempts[4];                                    // W2 có điểm, W1 "-" (phép kiểm PR-G ở trên)
-  assert(prgSit(id, 'writing').sit_status !== 'absent', 'Tiền đề: buổi Writing này không bị chốt vắng');
-  const c = prgCell(id, 'writing1', PRG_MON);
-  assert(c.noShow?.state === 'khong-du-thi' && !c.overdue, `Ô W1: ${JSON.stringify(c.noShow)} overdue=${c.overdue}`);
-  assert(c.canEdit === true, 'Ô W1 vẫn phải nhập được: buổi Writing có người làm');
-  assert(c.progress !== 'absent', `Tiến độ ô: ${c.progress}`);
+  const k = prgSit(id, 'writing');
+  assert(k.sit_status === 'scheduled' && k.absence_move_count === 1 && k.planned_period_id !== prgWeek, `dời cả W: ${JSON.stringify(k)}`);
+  assert(!(conn.prepare(`SELECT 1 FROM skill_move_requests WHERE attempt_id = ? AND skill = 'writing' AND status = 'pending'`).get(id)), 'không thẻ chờ');
 });
 
 check('Rà soát · Bài đã báo "-" không còn nằm trong "việc của tôi" của giáo viên (không chỉ ở hàm đếm thuần)', () => {

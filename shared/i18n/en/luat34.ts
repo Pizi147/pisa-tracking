@@ -6,4 +6,6 @@ export const EN_LUAT34 = {
   'Đã huỷ · vắng MT cũ · {mon}{em}': (b) => `Cancelled · absent (past MT) · ${b.mon}${b.em}`,
   'Khôi phục điểm': 'Restore score',
   'Đủ điểm': 'All scored',
+  'Đã khôi phục điểm {x}{x2}': (b) => `Score restored ${b.x}${b.x2}`,
+  'Mọi kỹ năng đã có điểm — vẫn sửa được.': 'All skills scored — still editable.',
 } satisfies Record<string, Dich>;

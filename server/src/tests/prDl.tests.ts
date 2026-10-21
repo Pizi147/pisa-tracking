@@ -130,7 +130,9 @@ export async function runPrDlTests(t: YThucTestKit) {
    * `nhanXet` / `nhomNguyenNhan` của ô demo và `thieuNhanXet` hết ở ô đã có nhận xét; không trường nào khác. */
   /* OV-15h2: chỉ lệch id tuần (`moi`) — bỏ phép kiểm UX4 "Vấn đề HV" (máy chủ `vanDeHv` bỏ) vốn tạo hai tuần giả chạy trước → `periodId` tuần tạo sau
    * dời −2. Đã so JSON `moi` origin/main ↔ nhánh: chỉ khác `periodId` (100 dòng, đều −2), không trường nào khác. */
-  const ANH_CHUP = { tuan: '98dff5c3c389b7b3', moi: '53d25ee1fd6e5732' };   // OV-15b: hàng thêm `studentEmail` (Dán từ Excel), ô chưa có giá trị (điểm / tiêu chí) không gửi người nhập   // OV-13n: phép kiểm sosV3 (cùng lớp MB FT 101, chạy trước) thêm HV thử / đổi việc phối hợp → dòng lớp đổi   // OV-13l: em chuyển FT → FT giữ lộ trình — lượt chưa thi đi theo em, bảng lớp cũ đổi
+  /* LUAT-34: chụp lại — phép kiểm chạy trước trên MB FT 101 đổi theo luật 4 sửa 21/10 (PR-G: "-" ghi muộn → thẻ QL / Hoàn tác, W1 "-" + W2 có điểm
+   * dời cả W; prOv1b / prOv11a "-" ghi muộn dời tuần kế) và luật 3 (`moi` = góc GVBM: ô có điểm ở hàng Đủ điểm nay `canEdit` true). */
+  const ANH_CHUP = { tuan: 'ea4c647e05ebdfc3', moi: '302cb2d7a4636a80' };   // trước LUAT-34: tuan 98dff5c3c389b7b3 · moi 53d25ee1fd6e5732   // OV-15b: hàng thêm `studentEmail` (Dán từ Excel), ô chưa có giá trị (điểm / tiêu chí) không gửi người nhập   // OV-13n: phép kiểm sosV3 (cùng lớp MB FT 101, chạy trước) thêm HV thử / đổi việc phối hợp → dòng lớp đổi   // OV-13l: em chuyển FT → FT giữ lộ trình — lượt chưa thi đi theo em, bảng lớp cũ đổi
   /* Mã cố ý độc lập với hàm: điều kiện lọc tuần của bản trước refactor, viết lại bằng SQL. */
   const idsTuan = (periodId: number) => (conn.prepare(
     `SELECT a.id FROM assessment_attempts a JOIN students s ON s.id = a.student_id
@@ -157,10 +159,7 @@ export async function runPrDlTests(t: YThucTestKit) {
   check('DL-2 classScoreSheet theo tuần: cùng kết quả như trước refactor (ảnh chụp); số/null và {theo:"tuan"} như nhau', () => {
     const cu = svc.classScoreSheet(QL, LOP, pid, TODAY);
     const moi = svc.classScoreSheet(P.lrTeacher, LOP, null, TODAY);
-    /* TẠM (LUAT-34): băm `moi` khi trả `canEdit` của ô GVBM có điểm ở hàng Đủ điểm về false như R11 — phải bằng ảnh cũ. */
-    const giaCu = JSON.parse(JSON.stringify(moi));
-    for (const r of giaCu.rows) for (const c of r.cells) if (c.khoa && c.canEdit && (c.band !== null || c.rawScore !== null || c.criteria.some((v: any) => v !== null))) c.canEdit = false;
-    assert(bam(cu) === ANH_CHUP.tuan && bam(moi) === ANH_CHUP.moi, `ảnh chụp lệch: tuan=${bam(cu)} moi=${bam(moi)} moiGiaR11=${bam(giaCu)}`);
+    assert(bam(cu) === ANH_CHUP.tuan && bam(moi) === ANH_CHUP.moi, `ảnh chụp lệch: tuan=${bam(cu)} moi=${bam(moi)}`);
     assert(idsCua(cu) === idsTuan(pid), `${idsCua(cu)} ≠ ${idsTuan(pid)}`);
     assert(!cu.rows.some((r: any) => r.attemptId === binh.aid), 'lượt tuần NULL không thuộc tuần nào');
     assert(JSON.stringify(svc.classScoreSheet(QL, LOP, { theo: 'tuan', periodId: pid }, TODAY)) === JSON.stringify(cu), 'theo tuần khác số');

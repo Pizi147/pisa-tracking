@@ -704,10 +704,11 @@ export async function runPrMtaTests(t: YThucTestKit) {
     assert(diemCua(cu.id, 'listening').raw_score === null, 'Huỷ điểm không lý do');
   });
 
-  check('MTa T23 · MT cũ nhận "-" = không dự thi: không vắng, không dời, không Case/thẻ/chuông; không còn nhắc "chưa nhập"; điểm đè được dấu', () => {
+  /* LUAT-34: MT cũ "-" = Đã huỷ ngay — thêm chuông Quản lý "để biết" (`huy_vang_cu:`), ngoài ra như T23 cũ. */
+  check('MTa T23 · MT cũ nhận "-" = Đã huỷ: không vắng, không dời, không Case/thẻ, chỉ chuông QL để biết; không còn nhắc "chưa nhập"; điểm đè được dấu', () => {
     const cu = mtCu();
     const dem3 = () => [
-      (conn.prepare('SELECT COUNT(*) n FROM notifications').get() as any).n,
+      (conn.prepare(`SELECT COUNT(*) n FROM notifications WHERE dedup_key NOT LIKE 'huy_vang_cu:%' AND dedup_key NOT LIKE 'go_huy_cu:%'`).get() as any).n,
       (conn.prepare('SELECT COUNT(*) n FROM yeu_cau_duyet').get() as any).n,
       (conn.prepare('SELECT COUNT(*) n FROM sos_cases WHERE student_id = ?').get(cu.sid) as any).n,
     ].join();

@@ -128,6 +128,7 @@ export async function runPrOv1bTests(t: YThucTestKit) {
     attempts.saveScore(gvcn, a, 'reading', { noShow: true }, TRONG);
     attempts.saveScore(gvcn, a, 'reading', { noShow: true }, BU);
     assert(ky(a, 'reading').sit_status === 'cancelled', 'tiền đề: Reading đã huỷ phần thi');
+    conn.prepare(`UPDATE assessment_scores SET no_show_at = '2026-01-01T00:00:00.000Z' WHERE attempt_id = ? AND skill = 'reading'`).run(a);   // qua cửa sổ Hoàn tác (LUAT-34)
     const e2 = loi(() => attempts.saveScore(gvcn, a, 'reading', { noShow: false }, BU));
     assert(e2?.status === 403 && /Quản lý/.test(e2.message), `GVCN gỡ "-" phần thi đã huỷ: ${e2?.status} ${e2?.message}`);
     /* Writing đã dời, W1 có điểm ở tuần mới → Bỏ vắng W2 giữ lịch tuần mới (không kéo điểm W1 về tuần cũ). */

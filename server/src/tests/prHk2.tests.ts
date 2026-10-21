@@ -435,14 +435,14 @@ export async function runPrHk2Tests(t: YThucTestKit) {
 
   console.log('\nPR-HK2 · Task 7 · K4 "Vắng" một thông báo ngắn, không Hoàn tác (Q4 = B)');
 
-  check('C27 · "Vắng": nút điện thoại, gõ "-" lưới lớp thường, gõ "-" lưới FT cùng MỘT hàm thongBaoVang; không Hoàn tác, không chuỗi "Đã dời ${" riêng', () => {
+  check('C27 · "Vắng": nút điện thoại, gõ "-" lưới lớp thường, gõ "-" lưới FT cùng MỘT hàm thongBaoVang; Hoàn tác 10 s (LUAT-34), không chuỗi "Đã dời ${" riêng', () => {
     const f = doc('web/src/modules/cham/thongBaoVang.ts');
     assert(/export function thongBaoVang\(/.test(f), 'chưa có cham/thongBaoVang.ts export thongBaoVang');
     /* OV-11a (CA3-1): câu dựng ở hàm thuần `cauDaGhiVang` (shared/domain/vang.ts, phép kiểm hành vi OV11a-5). */
     const vg = doc('shared/domain/vang.ts');
     assert(/cauDaGhiVang\(/.test(f) && /Đã ghi vắng (?:\$\{|\{)/.test(vg) && /· dời (?:\$\{|\{)/.test(vg), 'chữ phải là "Đã ghi vắng R · Tên" (+ " · dời W3 OCT")');
     assert(/key: `vang:/.test(f), 'toast phải có khoá theo ô (vang:<id>)');
-    assert(!/hoanTac|hanhDong|Hoàn tác/.test(f), 'thông báo vắng không có nút');
+    assert(/HOAN_TAC_VANG_MS/.test(f) && /hanhDong/.test(f), 'LUAT-34: thông báo vắng Mock có Hoàn tác 10 giây');
     const se = doc('web/src/modules/fasttrack/ScoreEntry.tsx');
     assert(!/useToastVang|toastVang|toast\.hoanTac/.test(se), 'ScoreEntry còn toast Hoàn tác / useToastVang cho vắng');
     assert(!/onDau\(true, true\)/.test(se), 'nút Vắng điện thoại không còn đường "im lặng" riêng — đi cùng onDau(true)');

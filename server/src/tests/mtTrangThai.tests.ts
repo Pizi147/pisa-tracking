@@ -507,7 +507,7 @@ export async function runMtTrangThaiTests(t: YThucTestKit) {
 
   // ---------------------------------------------------------------- Luật 3 ngoài bảng MT
 
-  check('LUAT34-L3a · lớp thường: GVBM huỷ điểm sau "Đủ điểm" → cất; Khôi phục điểm một bấm', () => thu(() => {
+  check('LUAT34-L3a · lớp thường: GVBM huỷ điểm (qua tuần thi) → cất; Khôi phục điểm một bấm (R11 lớp thường: keHoachTest R11(c))', () => thu(() => {
     const r = one(`SELECT a.id, s.skill, s.raw_score, ta.user_id, (SELECT MAX(rp.week_end) FROM attempt_skills k JOIN report_periods rp ON rp.id = k.planned_period_id
           WHERE k.attempt_id = a.id) AS het
         FROM assessment_attempts a JOIN classes c ON c.id = a.class_id AND c.status != 'finished'
@@ -518,7 +518,6 @@ export async function runMtTrangThaiTests(t: YThucTestKit) {
     assert(r?.het, 'tiền đề: có bài lớp thường đủ điểm');
     const gv = permissions.loadPrincipal(r.user_id);
     const homNay = t.addDays(String(r.het).slice(0, 10), 10);
-    assert(hoanTat.dotHoanTat(r.id, homNay).hoanTat, 'tiền đề: đủ điểm');
     regular.saveRegularScore(gv, r.id, r.skill, { score: null }, homNay);
     assert(dau(r.id, r.skill).raw_score === null && banCat(r.id).length === 1, 'GVBM huỷ được, điểm cất');
     ketQuaHuy.khoiPhucDiem(gv, r.id, r.skill, homNay);

@@ -130,13 +130,14 @@ export async function runPrHsmTests(t: YThucTestKit) {
     assert(dong(e2.aid, 'writing2').comment === 'Bài viết đủ ý' && dong(e2.aid, 'writing2').band === null, 'GVCN MT lịch sử');
   });
 
-  check('HSM (2e) · Huỷ điểm S xoá nhận xét + GV chấm (nhật ký giữ bản cũ); Thi lại W xoá nhận xét W1, W2', () => {
+  /* LUAT-34 (T20): Huỷ điểm GIỮ nhận xét + GV chấm (điểm cất, Khôi phục được); Thi lại (bài mới) vẫn xoá. */
+  check('HSM (2e) · Huỷ điểm S giữ nhận xét + GV chấm (LUAT-34); Thi lại W xoá nhận xét W1, W2', () => {
     const e = emMoi('Huỷ Điểm');
     svc.saveScore(QL, e.aid, 'speaking', { criteria: S4, nhanXet: 'Nói trôi', gvCham: { performerUserId: P.sTeacher.userId } }, TODAY);
     assert(dong(e.aid, 'speaking').comment === 'Nói trôi' && dong(e.aid, 'speaking').examiner_user_id === P.sTeacher.userId, 'lưu kèm điểm');
     keHoach.huyDiem(QL, { attemptId: e.aid, skill: 'speaking', lyDo: 'Chấm nhầm bài của em khác' });
     const r = dong(e.aid, 'speaking');
-    assert(r.band === null && r.comment === null && r.examiner_user_id === null && r.examiner_name === null, JSON.stringify(r));
+    assert(r.band === null && r.comment === 'Nói trôi' && r.examiner_user_id === P.sTeacher.userId, JSON.stringify(r));
     const nk = get(`SELECT before_json FROM audit_logs WHERE entity_id = ? AND entity_label = 'speaking' AND action LIKE 'score.%' ORDER BY id DESC`, e.aid);
     assert(/Nói trôi/.test(nk?.before_json ?? ''), 'nhật ký mất nhận xét cũ');
     for (const k of ['writing1', 'writing2']) svc.saveScore(QL, e.aid, k, { criteria: S4, nhanXet: `Nhận xét ${k}` }, TODAY);

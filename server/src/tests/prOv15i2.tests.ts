@@ -65,6 +65,9 @@ export async function runPrOv15i2Tests(t: YThucTestKit) {
 
   check('I2-5 · Dán Excel FT: Hoàn tác "- → x" (xoá điểm rồi đặt lại "-", hai lệnh cùng ô) trả ô về "-"', () => thu(() => {
     const [a1] = luotL(1);
+    /* LUAT-34: "-" ở MT hiện tại nay chốt vắng (dời / thẻ QL); phép kiểm này soi Hoàn tác "- → x" của Dán Excel → dùng MT cũ, nơi "-" là dấu ô. */
+    conn.prepare('UPDATE assessment_attempts SET lich_su = 1 WHERE id = ?').run(a1);
+    xoaNho();
     const o = () => one(`SELECT raw_score, no_show_period_id AS dau FROM assessment_scores WHERE attempt_id = ? AND skill = 'listening'`, a1) ?? {};
     assert(lo(QL, [{ attemptId: a1, o: [{ skill: 'listening', noShow: true }] }], { cuoi: true }).dong[0].ok && o().dau != null, 'dán "-"');
     const a = one('SELECT * FROM assessment_attempts WHERE id = ?', a1);

@@ -247,7 +247,9 @@ export async function runPrTd7bTests(t: YThucTestKit) {
     assert(co(aid) === null, `huỷ phần thi: hết ô chờ, cờ ${co(aid)}`);
     doiCo('khôi phục phần thi S vào tuần này', aid, () => absence.restoreCancelledSkill(QL, aid, 'speaking', week.ensurePeriod(tuanNay).id, {}));
     doiCo('Không mock lại (bỏ S khỏi đợt)', aid, () => {
-      att.saveScore(QL, aid, 'speaking', { noShow: true }, TODAY);   // vắng tiếp → phần thi huỷ lại
+      /* LUAT-34: Khôi phục đặt lại chuỗi — "-" kế tiếp là lần 1 (dời), "-" ở tuần đã dời tới mới huỷ lại. */
+      att.saveScore(QL, aid, 'speaking', { noShow: true }, TODAY);
+      att.saveScore(QL, aid, 'speaking', { noShow: true }, tuanSau);
       absence.khongMockLai(QL, aid, 'speaking', 'Em không thi lại');
     });
     const b = emMoi('MB FT 101', 'ChuyenNha');

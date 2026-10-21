@@ -1161,6 +1161,7 @@ export function regularSheet(p: Principal, classId: number, kind?: string, today
   const suaSauHoanTat = quyenSuaSauHoanTat(p, classId);
   /* OV-11g (HL-10, Q4): lớp đã kết thúc — mọi bài như đã hoàn tất: Quản lý sửa qua hộp lý do, GV chỉ đọc (cùng `kiemLopKetThuc`). */
   const ketThuc = cls.status === 'finished';
+  const diemHuy = diemHuyMo();   // LUAT-34: một câu cho cả bảng
   const editable = editableSkills(p, classId, prog.skills);   // OV-13h: lớp kết thúc — cờ từng ô quyết
   /* Quyền sửa ô tính MỘT lần cho mỗi môn — cùng cửa với `saveRegularScore`, không hỏi lại theo từng dòng. */
   const nhapSkill = new Map(prog.skills.map((k) => [k, scoreEditPath(p, classId, k) !== null]));
@@ -1254,7 +1255,7 @@ export function regularSheet(p: Principal, classId: number, kind?: string, today
             /* LUAT-34: chỉ lớp đã kết thúc còn khoá (Quản lý sửa qua hộp lý do); "Đủ điểm" là trạng thái ở `hoanTat` của dòng. */
             khoa: ketThuc,
             /** LUAT-34 (T20b): ô trống có điểm đã huỷ còn cất → "Khôi phục điểm". */
-            diemHuy: !scored && diemHuyMo().has(`${a.id}:${k}`),
+            diemHuy: !scored && diemHuy.has(`${a.id}:${k}`),
             /** OV-13h (rà #410): nút Nhận xét — GV đúng môn ghi được cả khi lớp đã kết thúc, cùng luật `saveRegularScore`. */
             nhanXetDuoc: ketThuc ? suaSauHoanTat || !!nhapSkill.get(k) : (canEditSkill.get(k) ?? false),
             /** OV-13h (rà #410): lớp đã kết thúc — ô không nhận "-" (cùng câu `chanVangLopKetThuc`); null = gõ "-" được. */

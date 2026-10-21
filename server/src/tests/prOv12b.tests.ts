@@ -99,7 +99,7 @@ export async function runPrOv12bTests(t: any) {
     assert(dong('speaking').comment === 'ok', 'nhận xét trước điểm');
   }));
 
-  check('OV12b-4 · dưới kỳ vọng: thiếu nhóm → 400; mã sai → 400; lưu đúng thứ tự; sửa thành đạt → bỏ nhóm; xoá điểm → bỏ nhóm', () => thu(() => {
+  check('OV12b-4 · dưới kỳ vọng: thiếu nhóm → 400; mã sai → 400; lưu đúng thứ tự; sửa thành đạt → bỏ nhóm; xoá điểm → GIỮ nhóm + nhận xét (LUAT-34)', () => thu(() => {
     dung(luot);
     const thap = soCau(kv() - 1);
     const e = loi(() => luu('reading', { rawScore: thap, nhanXet: NX }));
@@ -117,7 +117,7 @@ export async function runPrOv12bTests(t: any) {
     assert(dong('reading').nhom_nguyen_nhan === null, 'sửa thành đạt → bỏ nhóm');
     luu('reading', { rawScore: thap, nhomNguyenNhan: [R[0]] });
     luu('reading', { rawScore: null });
-    assert(dong('reading').nhom_nguyen_nhan === null && dong('reading').comment === null, 'xoá điểm → nhận xét + nhóm về NULL');
+    assert(dong('reading').nhom_nguyen_nhan === JSON.stringify([R[0]]) && dong('reading').comment === NX, 'LUAT-34: Huỷ điểm giữ nhận xét + nhóm');
   }));
 
   check('OV12b-5 · Writing theo TỪNG task: W1 dưới kỳ vọng cần nhóm kể cả khi W tổng đạt; W2 đạt không cần', () => thu(() => {
