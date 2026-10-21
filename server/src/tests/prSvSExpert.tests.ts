@@ -130,7 +130,7 @@ export async function runPrSvSExpertTests(t: any) {
     assert(maLoi(() => sex.xoaSEx(P.sTeacher, id)) === 403, 'GV S xoá → 403');
     assert(maLoi(() => sex.suaSEx(P.mbManager, 987654, { tuan })) === 404, 'không có lượt → 404');
     sex.xoaSEx(P.mbManager, id);
-    assert(!get('SELECT 1 AS c FROM s_expert WHERE id = ?', id), 'xoá hẳn dòng');
+    assert(get('SELECT xoa_luc FROM s_expert WHERE id = ?', id)?.xoa_luc, 'xoá mềm: dòng còn, có xoa_luc (SV-LOP)');
     const ls = lichSu(P.mbManager, { loai: 's-ex', id: sid });
     const tom = ls.dong.map((d: any) => d.truong.map((x: any) => `${x.ten}:${x.cu ?? '∅'}>${x.moi ?? '∅'}`).join('|'));
     assert(ls.dong.length === 4, `4 mục (thêm, đổi ngày, chấm, xoá) ${JSON.stringify(tom)}`);
@@ -153,6 +153,86 @@ export async function runPrSvSExpertTests(t: any) {
       const a: string[] = []; migratePrSvSExpert(moi, a);
       const b: string[] = []; migratePrSvSExpert(moi, b);
       assert(a.length === 1 && b.length === 0 && moi.prepare(`SELECT 1 AS c FROM sqlite_master WHERE name = 's_expert'`).get(), `migrate ${a} / ${b}`);
+      assert(moi.prepare(`SELECT name FROM pragma_table_info('s_expert')`).all().some((c: any) => c.name === 'xoa_luc'), 'bảng mới có xoa_luc');
     } finally { moi.close(); }
+    /* SV-LOP: bảng của #526 (chưa có xoa_luc) → thêm 2 cột một lần, dữ liệu giữ. */
+    const cu = new Database(':memory:');
+    try {
+      cu.exec(`CREATE TABLE s_expert (id INTEGER PRIMARY KEY, student_id INTEGER, tuan TEXT, ngay TEXT, diem REAL, nhan_xet TEXT, cham_boi INTEGER, cham_luc TEXT,
+        them_boi INTEGER, them_luc TEXT NOT NULL, sua_boi INTEGER, sua_luc TEXT); INSERT INTO s_expert (student_id, tuan, them_luc) VALUES (1, '2026-09-14', 'x')`);
+      const a: string[] = []; migratePrSvSExpert(cu, a);
+      const b: string[] = []; migratePrSvSExpert(cu, b);
+      assert(a.length === 1 && b.length === 0 && (cu.prepare('SELECT xoa_luc, xoa_boi FROM s_expert').get() as any).xoa_luc === null, `migrate bảng cũ ${a} / ${b}`);
+    } finally { cu.close(); }
   });
+
+  /* ------------------------------------------------------------ SV-LOP: 5 điểm nợ rà #526 */
+  check('SSEX-8 (nợ 1) · xoá MỀM + khôi phục: dòng xoá không hiện ở Lịch Test / Kế hoạch Test, không sửa được; khôi phục hiện lại y nguyên; chỉ QL / Admin; có lịch sử', () => thu(() => {
+    const sid = em();
+    const { id } = sex.themSEx(P.mbManager, { studentId: sid, tuan, nhanXet: 'Giữ.' });
+    sex.xoaSEx(P.mbManager, id);
+    assert(!ds(P.mbManager).some((x: any) => x.id === id), 'Lịch Test không còn');
+    assert(!kh.luoiFT(P.mbManager, LOP).hang.find((x: any) => x.studentId === sid).sEx.some((x: any) => x.id === id), 'Kế hoạch Test không còn');
+    assert(maLoi(() => sex.suaSEx(P.mbManager, id, { diem: 6 })) === 404, 'sửa dòng đã xoá → 404');
+    assert(maLoi(() => sex.xoaSEx(P.mbManager, id)) === 404, 'xoá lần hai → 404');
+    assert(maLoi(() => sex.khoiPhucSEx(P.sTeacher, id)) === 403, 'GV S khôi phục → 403');
+    assert(maLoi(() => sex.khoiPhucSEx(P.cpManager, id)) === 403, 'QL chi nhánh khác khôi phục → 403');
+    assert(sex.khoiPhucSEx(P.mbManager, id).khoiPhuc, 'QL khôi phục');
+    const d = ds(P.mbManager).find((x: any) => x.id === id);
+    assert(d && d.nhanXet === 'Giữ.', `hiện lại y nguyên ${JSON.stringify(d)}`);
+    assert(maLoi(() => sex.khoiPhucSEx(P.mbManager, id)) === 404, 'khôi phục dòng chưa xoá → 404');
+    const ls = lichSu(P.mbManager, { loai: 's-ex', id: sid });
+    assert(ls.dong.length === 3, `3 mục (thêm, xoá, khôi phục) — ${ls.dong.length}`);
+  }));
+
+  check('SSEX-9 (nợ 2) · sửa / xoá đọc dòng TRONG tx: dòng vừa mất (changes = 0) → 404, không ghi nhật ký', () => thu(() => {
+    const sid = em();
+    const { id } = sex.themSEx(P.mbManager, { studentId: sid, tuan });
+    const nk = () => get(`SELECT COUNT(*) AS n FROM audit_logs WHERE action LIKE 's_expert.%' AND entity_id = ?`, sid).n;
+    const truoc = nk();
+    /* Giả lập ghi song song: dòng bị xoá mềm ngay trước câu UPDATE (trigger), sau khi đã đọc. */
+    conn.exec(`CREATE TEMP TRIGGER svlop_dua BEFORE UPDATE OF diem ON s_expert BEGIN UPDATE s_expert SET xoa_luc = 'x' WHERE id = OLD.id; END`);
+    try {
+      assert(maLoi(() => sex.suaSEx(P.mbManager, id, { diem: 6 })) === 404, 'đua → 404');
+    } finally { conn.exec('DROP TRIGGER svlop_dua'); }
+    assert(nk() === truoc, 'không ghi nhật ký khi không đổi dòng nào');
+    assert(get('SELECT diem, xoa_luc FROM s_expert WHERE id = ?', id).xoa_luc === null, 'tx cuộn lại cả ghi của trigger');
+  }));
+
+  check('SSEX-10 (nợ 3) · kiểm quyền TRƯỚC 404: GV / TVV gửi HV / lượt không có → 403 (không lộ tồn tại); QL vẫn 404', () => thu(() => {
+    const tvv = taoNguoi('consultant', ['MB']);
+    for (const [ten, p] of [['GVCN', P.coreTeacher], ['TVV', tvv]] as const) {
+      assert(maLoi(() => sex.themSEx(p, { studentId: 987654, tuan })) === 403, `${ten} thêm HV không có → 403`);
+      assert(maLoi(() => sex.xoaSEx(p, 987654)) === 403, `${ten} xoá lượt không có → 403`);
+      assert(maLoi(() => sex.khoiPhucSEx(p, 987654)) === 403, `${ten} khôi phục lượt không có → 403`);
+    }
+    assert(maLoi(() => sex.suaSEx(tvv, 987654, { diem: 6 })) === 403, 'TVV sửa lượt không có → 403');
+    assert(maLoi(() => sex.themSEx(P.mbManager, { studentId: 987654, tuan })) === 404, 'QL HV không có → 404');
+    assert(maLoi(() => sex.xoaSEx(P.mbManager, 987654)) === 404, 'QL lượt không có → 404');
+  }));
+
+  check('SSEX-11 (nợ 4) · HV không có lớp đang học → 400 kèm lý do, không thêm dòng', () => thu(() => {
+    const sid = em();
+    conn.prepare(`UPDATE enrollments SET status = 'completed' WHERE student_id = ? AND status = 'active'`).run(sid);
+    xoaNho();
+    let loi = '';
+    try { sex.themSEx(P.mbManager, { studentId: sid, tuan }); } catch (e: any) { loi = `${e.status} ${e.message}`; }
+    assert(/^400 .*lớp đang học/.test(loi), `400 + lý do: ${loi}`);
+    assert(!get('SELECT 1 AS c FROM s_expert WHERE student_id = ?', sid), 'không thêm');
+  }));
+
+  check('SSEX-12 (nợ 5) · chấm theo chi nhánh ghi danh ACTIVE: em đã rời lớp MB, đang học lớp CP → GV S MB 403, GV S CP chấm; QL nhập hộ như S MT', () => thu(() => {
+    const sid = em();
+    const { id } = sex.themSEx(P.mbManager, { studentId: sid, tuan });
+    const lopCp = get(`SELECT id FROM classes WHERE branch_id = (SELECT id FROM branches WHERE code = 'CP') AND status = 'active' ORDER BY id LIMIT 1`).id;
+    conn.prepare(`UPDATE enrollments SET status = 'transferred' WHERE student_id = ? AND status = 'active'`).run(sid);
+    conn.prepare(`INSERT INTO enrollments (student_id, class_id, status, started_at, created_at) VALUES (?, ?, 'active', ?, ?)`).run(sid, lopCp, today, today);
+    xoaNho();
+    const gvCp = taoNguoi('teacher', ['CP'], ['speaking']);
+    assert(maLoi(() => sex.suaSEx(P.sTeacher, id, { diem: 5 })) === 403, 'GV S MB (chi nhánh ghi danh cũ) → 403');
+    sex.suaSEx(gvCp, id, { diem: 5.5 });
+    assert(get('SELECT cham_boi FROM s_expert WHERE id = ?', id).cham_boi === gvCp.userId, 'GV S CP chấm');
+    assert(maLoi(() => sex.suaSEx(P.cpManager, id, { diem: 6 })) === 'không ném', 'QL CP nhập hộ (lớp đang học)');
+    assert(maLoi(() => sex.suaSEx(P.mbManager, id, { diem: 6 })) === 403, 'QL MB (chi nhánh cũ) → 403');
+  }));
 }

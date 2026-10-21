@@ -67,6 +67,7 @@ import * as kyVongSvc from '../normal/kyVong.ts';
 import * as gopYSvc from '../classes/gopYTuan.ts';
 import * as baiLopSvc from '../students/baiTrenLop.ts';
 import * as sExSvc from '../cham/sExpert.ts';
+import { viecTheoEmCuaLop } from '../classes/viecTheoEm.ts';
 import * as luatLoTrinhSvc from '../classes/luatLoTrinh.ts';
 import * as hocVienLopSvc from '../classes/hocVienLop.ts';
 import * as lichThiSvc from '../classes/lichThi.ts';
@@ -1114,6 +1115,12 @@ api.get('/classes', requireAuth, wrap((req) => {
     q: qStr(req, 'q'),
     scope: qScope(req),
   });
+}));
+
+/** SV-LOP (C19): việc theo em của hồ sơ lớp — từng việc của `/my-work`, việc của người xem trước (`viecTheoEm.ts`). */
+api.get('/classes/:id/viec-theo-em', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return viecTheoEmCuaLop(principalOf(req), pInt(req, 'id'));
 }));
 
 /** Danh sách học viên của lớp — chỉ gọi khi người dùng mở rộng lớp đó. */
@@ -2331,6 +2338,10 @@ api.put('/s-expert/:id', requireAuth, wrap((req) => {
 api.delete('/s-expert/:id', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return sExSvc.xoaSEx(principalOf(req), pInt(req, 'id'));
+}));
+api.post('/s-expert/:id/khoi-phuc', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return sExSvc.khoiPhucSEx(principalOf(req), pInt(req, 'id'));
 }));
 
 /** Chủ đề Case mở được cho một học viên (F07) — form đọc route này thay vì tự đoán chương trình. */

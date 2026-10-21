@@ -2129,7 +2129,10 @@ CREATE TABLE s_expert (
   them_boi INTEGER REFERENCES users(id),
   them_luc TEXT NOT NULL,
   sua_boi INTEGER REFERENCES users(id),
-  sua_luc TEXT
+  sua_luc TEXT,
+  -- SV-LOP: xoá MỀM — dòng có `xoa_luc` không hiện ở đâu; QL / Admin khôi phục được (POST /s-expert/:id/khoi-phuc).
+  xoa_luc TEXT,
+  xoa_boi INTEGER REFERENCES users(id)
 );
 CREATE INDEX idx_s_expert_tuan ON s_expert(tuan, student_id);
 CREATE INDEX idx_s_expert_hv ON s_expert(student_id);
