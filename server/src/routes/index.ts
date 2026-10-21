@@ -1483,6 +1483,7 @@ api.get('/hoc-vien-lop', requireAuth, wrap((req) => {
   return hocVienLopSvc.danhSachHocVienLop(principalOf(req), {
     branchId: qInt(req, 'branchId') ?? null, q: qStr(req, 'q') ?? null, phamVi: qStr(req, 'phamVi') ?? null,
     cnNho: qInt(req, 'cnNho') ?? null, them: qStr(req, 'them') === '1',   // OV-15h2: nhãn Bộ lọc thêm
+    chuaTvv: qStr(req, 'tvv') === 'chua',   // SV-TVV-VIEC: em chưa có TVV — tập việc "Bổ sung hồ sơ thiếu" của QL
   });
 }));
 

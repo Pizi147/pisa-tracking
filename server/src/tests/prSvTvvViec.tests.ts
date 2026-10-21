@@ -18,6 +18,7 @@ export async function runPrSvTvvViecTests(t: YThucTestKit) {
   const { boLichTuTao } = await import('./luotThu.ts');
   const thiThat: any = await import('../loTrinh/thiThat.ts');
   const schedule: any = await import('../classes/schedule.ts');
+  const hvLop: any = await import('../classes/hocVienLop.ts');
   const { myWork } = await import('../worklist/mywork.ts');
   const { xoaNho } = await import('../platform/nguCanhRequest.ts');
   const gvcn = P.coreTeacher; const ql = P.mbManager;
@@ -119,6 +120,13 @@ export async function runPrSvTvvViecTests(t: YThucTestKit) {
     const q = viec(ql, null, 'bo_sung_ho_so');
     assert(q.length === 1 && q[0].emIds.includes(c.sid) && !q[0].emIds.includes(a.sid) && q[0].ownerId === ql.userId, 'QL: ' + JSON.stringify(q.map((x: any) => x.emIds)));
     assert(viec(gvcn, null, 'bo_sung_ho_so').length === 0, 'GVCN không có');
+    /* Rà #517: số trên việc = số dòng chip "Thiếu thông tin" của danh sách mà link mở (TVV: em của mình · QL: em chưa có TVV). */
+    const hvl = hvLop;
+    const thieu = (p: any, f: any) => new Set((hvl.danhSachHocVienLop(p, f).hocVien as any[]).filter((h) => h.loc.includes('thieu_tt')).map((h) => h.id)).size;
+    assert(it[0].href.includes('phamVi=cua-toi') && thieu(tvv, { phamVi: 'cua-toi' }) === it[0].count, `TVV: ${thieu(tvv, { phamVi: 'cua-toi' })} ≠ ${it[0].count}`);
+    const MB = (conn.prepare(`SELECT id FROM branches WHERE code = 'MB'`).get() as any).id;
+    assert(q[0].href.includes('tvv=chua') && thieu(ql, { phamVi: 'chi-nhanh', branchId: MB, chuaTvv: true }) === q[0].count,
+      `QL: ${thieu(ql, { phamVi: 'chi-nhanh', branchId: MB, chuaTvv: true })} ≠ ${q[0].count}`);
   }));
 
   await checkAsync('SVTV-6 · câu hướng dẫn nhóm "Cập nhật kết quả thi thật" không còn "Hạn 4 tuần"', () => thu(() => {
