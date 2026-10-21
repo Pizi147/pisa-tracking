@@ -9481,6 +9481,9 @@ await runPrTubTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, a
 // ==================================================================== NEN-TYPO-MAU (thang chữ 12–28, 3 token kết quả: tương phản 9 nền + mù màu, hệ trạng thái HTT)
 const { runPrNenTypoMauTests } = await import('./prNenTypoMau.tests.ts');
 await runPrNenTypoMauTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== BANG-0 (Bang + 13 kiểu cột, ODiem, phép kiểm BANG-1…5 — danh sách miễn chỉ giảm)
+const { runPrBang0Tests } = await import('./prBang0.tests.ts');
+await runPrBang0Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== LUAT-5 (luật 5: thu hồi / không tăng bậc qua QL, lý do bắt buộc, "Đã thu hồi" giữ dòng)
 const { runPrLuat5Tests } = await import('./prLuat5.tests.ts');
 await runPrLuat5Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
