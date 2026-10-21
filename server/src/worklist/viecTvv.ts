@@ -67,7 +67,8 @@ export function viecHoSoTvv(p: Principal, o: { today: string; tatCa: boolean; br
             cy.id AS cycle_id, cy.route, cy.start_period_id, cy.target_score, cy.exam_month, cy.exam_date, cy.thi_that_ngay, cy.exam_period_id,
             cy.thi_that_khong_thi, cy.outcome_score, cy.outcome, rp.week_start AS exam_week_start, rp.code AS exam_week_code
        FROM students s
-       JOIN enrollments e ON e.id = (SELECT MAX(x.id) FROM enrollments x WHERE x.student_id = s.id AND x.status = 'active')
+       /* rà #517: ghi danh mở ở lớp ĐANG HOẠT ĐỘNG — cùng tập với danh sách Học viên & Lớp (lopTrongPhamVi), số trên việc = số dòng */
+       JOIN enrollments e ON e.id = (SELECT MAX(x.id) FROM enrollments x JOIN classes cx ON cx.id = x.class_id WHERE x.student_id = s.id AND x.status = 'active' AND cx.status = 'active')
        JOIN classes c ON c.id = e.class_id
        LEFT JOIN learning_cycles cy ON cy.student_id = s.id AND cy.status = 'active'
        LEFT JOIN report_periods rp ON rp.id = cy.exam_period_id
