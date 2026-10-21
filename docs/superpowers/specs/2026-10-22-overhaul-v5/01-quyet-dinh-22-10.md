@@ -40,3 +40,10 @@
 - PR mockup / tài liệu: chủ SP bấm merge (chế độ Auto chặn PTA tự merge). Không code sản phẩm ở đợt A–B.
 - Đang dở từ đợt 21/10: BANG-1 #505 (chụp lại ảnh cặp, chờ chủ SP) — giữ; khi hệ màu V5 duyệt, bảng mẫu và `Bang` đổi màu theo V5 ở PR sau.
 - Đã tạm huỷ (dùng lại kế hoạch khi cần): SEED-UX (`claude/seed-ux-6214d7`), CHU-THI (`claude/chu-thi-fb3e30`; nhãn cột "Thi thật" → "Ngày thi" theo C21 thêm vào đây).
+
+## 5. Trả lời 2 câu "CẦN XÁC MINH" của V5-A (PR #507, `06` cuối tệp) — đã chốt từ 21/10, không hỏi lại
+
+| Câu V5-A | Đã chốt (nguồn) |
+|---|---|
+| Q1 — bậc xử lý nào sinh việc Báo PH cho TVV? Việc "Báo PH qua TVV" từ Progress / Final rớt có chuyển TVV không? | **Mọi lần lưu xử lý vi phạm** (GVCN hoặc QL, một em hoặc lô, mọi bậc) → ngay một việc "Báo PH · {bậc} · {em}" cho TVV của em, **kể cả lần đang chờ QL duyệt**, hạn 23:59 ngày lưu + 4 (luật 1–2; `07-pr-plan.md` GĐ1b SV-YT-TVV; Rulebook §21.1). Không sinh cho lần xử lý trước ngày bật. Việc **"Báo PH kết quả Test lớp thường" GIỮ GVCN**, không chuyển, không thêm hạn (02 mục 2.9, 21/10). |
+| Q2 — HV chưa có TVV phụ trách thì giao ai? | **QL chi nhánh** của em (Q-D3 ①, 21/10); TVV / QL được "Kết thúc · không liên hệ được" (thao tác phụ — brief 9.1). KHÔNG giao chung các TVV chi nhánh. |
