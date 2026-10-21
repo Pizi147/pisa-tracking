@@ -9500,6 +9500,9 @@ await runPrSl1Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, a
 
 const { runPrSl2Tests } = await import('./prSl2.tests.ts');
 await runPrSl2Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== SV-YT-TVV (việc Báo PH của TVV sau lưu xử lý vi phạm — K1–K12, thu hồi / từ chối / rút, quyền)
+const { runPrSvYtTvvTests } = await import('./prSvYtTvv.tests.ts');
+await runPrSvYtTvvTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`

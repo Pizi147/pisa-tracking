@@ -28,6 +28,7 @@ import { noteMeasureChange, violationsByIds, type ViolationView } from './violat
 import { dongThoiGian, type DongThoiGianYt } from './board.ts';
 import { chotYeuCau, taoYeuCau, theCuaDoiTuong } from '../duyet/yeuCau.ts';
 import { purgeAttachmentsOf, xoaTepSauGiaoDich } from '../platform/attachments.ts';
+import { dongViecTheoXuLy, moLaiViecTheoXuLy, sinhViecBaoPh } from './baoPhTvv.ts';
 
 export const MANAGE_MESSAGE = 'Chỉ giáo viên chủ nhiệm của lớp em đang học hoặc Quản lý trong phạm vi mới xử lý được Ý thức — giáo viên bộ môn chỉ đọc.';
 export const MO_TA_MIN = 10;
@@ -194,6 +195,7 @@ export function luuXuLy(p: Principal, hv: { full_name: string; student_code: str
     const link = db().prepare('INSERT INTO measure_violations (measure_id, violation_id, added_by, added_at) VALUES (?,?,?,?)');
     for (const vid of ids) { link.run(mId, vid, p.userId, nowIso()); noteMeasureChange(vid, null, mId, p.userId); }
     ghiPhanHoi(ids, homNay);
+    sinhViecBaoPh({ id: mId, studentId, kind: ke.kind }, hv.full_name, homNay);   // SV-YT-TVV (luật 1)
     writeAudit({ actorUserId: p.userId, action: 'discipline.handle', entityType: 'discipline_measure', entityId: mId,
       entityLabel: `${hv.student_code} · ${nhanLoaiXuLy(ke.kind)}`, after: { kind: ke.kind, bac: ke.bac, violations: ids, performedOn } });
     if (BAC_BAO_QL.has(ke.kind)) {
@@ -562,6 +564,8 @@ export function guiDeXuat(p: Principal, measureId: number) {
       nguoiXin: p.userId, lyDo: m.note, bangChung: tep,
       duLieu: { kind: m.kind, customName: m.custom_name ?? null, bacKe: nhanLoaiXuLy(em.keTiep.kind), soViPham: vIds.length, soTep: tep.length },
     });
+    /* SV-YT-TVV (luật 1): lần chờ QL duyệt cũng sinh việc Báo PH ngay. */
+    sinhViecBaoPh({ id: measureId, studentId: m.student_id, kind: m.kind, customName: m.custom_name ?? null }, hv.full_name, demoToday());
     writeAudit({ actorUserId: p.userId, action: 'discipline.propose', entityType: 'discipline_measure', entityId: measureId,
       entityLabel: `${hv.student_code} · gửi QL ${nhanLoaiXuLy(m.kind, m.custom_name)}`, after: { bangChung: tep } });
   });
@@ -709,6 +713,7 @@ function apDungThuHoi(p: Principal, m: any, hv: { student_code: string }, lyDo: 
   const vIds = viPhamCua(m.id);
   for (const vid of vIds) noteMeasureChange(vid, m.id, null, p.userId);
   chotHanXuLy([m.student_id]);
+  dongViecTheoXuLy(m.id, 'system_thu_hoi', lyDo, p.userId);
   const daBaoPh = !!db().prepare("SELECT 1 FROM sos_coordination_actions WHERE student_id = ? AND kind = 'bao_ph_tvv' AND status = 'done' LIMIT 1").get(m.student_id);
   writeAudit({ actorUserId: p.userId, action: 'discipline.revoke', entityType: 'discipline_measure', entityId: m.id,
     entityLabel: `${hv.student_code} · thu hồi ${nhanLoaiXuLy(m.kind, m.custom_name)}`,
@@ -746,6 +751,7 @@ export function huyThuHoiYThuc(p: Principal, measureId: number): void {
   if (!doi) throw conflict('Lần xử lý này vừa được cập nhật — mở lại.');
   for (const vid of vIds) noteMeasureChange(vid, null, measureId, p.userId);
   chotHanXuLy([m.student_id]);
+  moLaiViecTheoXuLy(measureId);
   writeAudit({ actorUserId: p.userId, action: 'discipline.revoke_undo', entityType: 'discipline_measure', entityId: measureId,
     entityLabel: `${hocVien(m.student_id).student_code} · huỷ thu hồi ${nhanLoaiXuLy(m.kind, m.custom_name)}`, before: { status: 'thu_hoi' }, after: { status: ve } });
 }
@@ -778,6 +784,7 @@ function xoaXuLyTrongTx(p: Principal, m: any, hv: { student_code: string }, khoa
   const files = purgeAttachmentsOf('discipline_measure', measureId, p.userId, khoaTep);
   for (const id of vIds) noteMeasureChange(id, measureId, null, p.userId);
   db().prepare('DELETE FROM measure_violations WHERE measure_id = ?').run(measureId);
+  dongViecTheoXuLy(measureId, 'system_rut', lyDoDong, p.userId);
   db().prepare('DELETE FROM discipline_measures WHERE id = ?').run(measureId);
   chotYeuCau(db(), { loai: 'y_thuc', doiTuongLoai: 'discipline_measure', doiTuongId: measureId }, 'tu_dong', { lyDo: lyDoDong });
   chotHanXuLy([m.student_id]);

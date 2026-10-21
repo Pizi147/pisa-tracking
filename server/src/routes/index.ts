@@ -24,6 +24,7 @@ import * as accessSvc from '../yThuc/access.ts';
 import * as xuLySvc from '../yThuc/xuLy.ts';
 import * as loYThucSvc from '../yThuc/lo.ts';
 import * as phoiHopSvc from '../yThuc/phoiHop.ts';
+import * as baoPhSvc from '../yThuc/baoPhTvv.ts';
 import * as sosAutoSvc from '../cases/sosAuto.ts';
 import * as doiPaSvc from '../cases/doiPa.ts';
 import { bangYThucLop } from '../yThuc/board.ts';
@@ -1414,6 +1415,22 @@ api.post('/y-thuc/xu-ly/:id/da-thuc-hien', requireAuth, wrap((req) => {
   return xuLySvc.daThucHien(principalOf(req), pInt(req, 'id'), {
     performedOn: b.performedOn, performerUserId: b.performerUserId, performerName: b.performerName, note: b.note,
   });
+}));
+
+/** SV-YT-TVV: việc Báo PH sau lưu xử lý — xem (lịch sử mọi lần ghi) · ghi kết quả (một / nhiều việc) · Kết thúc ngoại lệ (lý do bỏ). Quyền kiểm trong `baoPhTvv.ts`. */
+api.get('/y-thuc/bao-ph/:id', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return baoPhSvc.xemViecBaoPh(principalOf(req), pInt(req, 'id'));
+}));
+api.post('/y-thuc/bao-ph/ghi', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  const b = yThucBody(req);
+  return baoPhSvc.ghiKetQuaBaoPh(principalOf(req), { viecIds: b.viecIds, ketQua: b.ketQua, ngay: b.ngay, ghiChu: b.ghiChu });
+}));
+api.post('/y-thuc/bao-ph/:id/bo', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  const b = yThucBody(req);
+  return baoPhSvc.boViecBaoPh(principalOf(req), pInt(req, 'id'), { lyDo: b.lyDo, lyDoKhac: b.lyDoKhac });
 }));
 
 /**

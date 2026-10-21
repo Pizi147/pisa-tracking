@@ -3,6 +3,7 @@
  *  · bài quá hạn chấm của CHÍNH GV — một thông báo mỗi lớp · đợt (cùng tập việc Nhập điểm quá hạn của `/my-work`);
  *  · Case chưa chốt PA quá hạn — người phụ trách Case (GVCN), cùng luật ⚠ cột Chờ duyệt (`xuLyCaseMany`, như chỉ số `case-xac-dinh-nguyen-nhan-qua-han`);
  *  · Chốt lộ trình tới hạn — QL (việc `chot_len_ft` có hạn trong `CHOT_TOI_HAN_NGAY` ngày tới, hoặc đã qua).
+ *  · SV-YT-TVV (K11): Báo PH vi phạm quá hạn — người giữ việc (TVV / QL khi em chưa có TVV), MỘT thông báo mỗi việc.
  * ĐỒNG BỘ, không chỉ thêm: thông báo của việc đã xong tự hết (xoá), thông báo còn việc thì cập nhật chữ; dedup theo (người, đối tượng).
  * Chạy khi người đó mở chuông (`GET /notifications`), tối đa một lần / `CHU_KY_MS` mỗi người. Không email / push.
  */
@@ -17,7 +18,7 @@ import { addDays, nowIso } from '../util.ts';
 export const CHOT_TOI_HAN_NGAY = 7;
 /** OV-15h1: một luật "tới hạn" cho thông báo Chốt lộ trình và "Cần bạn quyết" ở Tổng quan QL. Không có hạn → chưa tới hạn. */
 export const toiHan = (han: string | null | undefined, homNay: string) => !!han && han <= addDays(homNay, CHOT_TOI_HAN_NGAY);
-const KIND = ['cham_qua_han', 'case_chua_chot_pa', 'chot_lo_trinh'] as const;
+const KIND = ['cham_qua_han', 'case_chua_chot_pa', 'chot_lo_trinh', 'bao_ph_qua_han'] as const;
 type Muon = { kind: (typeof KIND)[number]; title: string; body: string; entityType: string; entityId: number | null; duong: string;
   /** SL1 (N1): hạn của việc — chuông sắp Cần làm theo hạn. */ han: string | null };
 
@@ -32,7 +33,7 @@ export const CAU_CASE_CUA_NGUOI = `SELECT sc.id, s.full_name AS ten, COALESCE(sc
 
 function viecMuon(p: Principal, homNay: string): Map<string, Muon> {
   const muon = new Map<string, Muon>();
-  const items = (myWork(p, { chiNhom: new Set(['score', 'chot_len_ft']) }).items ?? []) as WorkItem[];
+  const items = (myWork(p, { chiNhom: new Set(['score', 'chot_len_ft', 'bao_ph_yt']) }).items ?? []) as WorkItem[];
 
   /* 1. Bài quá hạn chấm của chính GV — gom theo lớp · đợt; bấm mở việc đầu của nhóm trong Công việc. */
   const cham = new Map<string, WorkItem[]>();
@@ -59,6 +60,15 @@ function viecMuon(p: Principal, homNay: string): Map<string, Muon> {
     muon.set(`tudong:chot:${x.classId}`, {
       kind: 'chot_lo_trinh', title: x.tieuDe, body: '',
       entityType: 'class', entityId: x.classId, duong: `/cong-viec?viec=${encodeURIComponent(x.key)}`, han: x.due,
+    });
+  }
+
+  /* SV-YT-TVV (K11): Báo PH quá hạn — việc của chính người xem, một thông báo mỗi việc (hết khi ghi xong / bỏ). */
+  for (const x of items) {
+    if (x.group !== 'bao_ph_yt' || !x.mine || x.urgency !== 'overdue') continue;
+    muon.set(`tudong:bao-ph:${x.viecId}`, {
+      kind: 'bao_ph_qua_han', title: `Quá hạn · ${x.tieuDe}`, body: '',
+      entityType: 'student', entityId: x.studentId, duong: x.href, han: x.due,
     });
   }
 

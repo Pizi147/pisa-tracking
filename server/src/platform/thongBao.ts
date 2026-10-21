@@ -39,7 +39,9 @@ export function thongBaoCua(userId: number) {
                   COALESCE(sc.category, sc.topic) AS mon_goc, cy.programme_code AS ct, cs.case_id, ycd.han_duyet AS han_the,
                   CASE
                     /* OV-15d: thông báo tự động chỉ còn khi việc còn (đồng bộ xoá khi xong) — luôn là Cần làm. */
-                    WHEN n.kind IN ('cham_qua_han', 'case_chua_chot_pa', 'chot_lo_trinh') THEN 1
+                    WHEN n.kind IN ('cham_qua_han', 'case_chua_chot_pa', 'chot_lo_trinh', 'bao_ph_qua_han') THEN 1
+                    /* SV-YT-TVV: việc Báo PH sau lưu xử lý — Cần làm tới khi ghi "Đã báo PH" / bỏ. */
+                    WHEN n.kind = 'bao_ph_xu_ly' THEN CASE WHEN EXISTS (SELECT 1 FROM viec_bao_ph v WHERE v.measure_id = n.entity_id AND v.trang_thai = 'mo') THEN 1 ELSE 0 END
                     /* SL1 (C23): Case tạo tay giao người phụ trách — còn việc tới khi Case có PA (hoặc đã đóng). */
                     WHEN n.kind = 'case_giao' THEN CASE WHEN sc.status != 'done'
                       AND NOT EXISTS (SELECT 1 FROM case_interventions ci WHERE ci.case_id = sc.id AND ci.status != 'cancelled') THEN 1 ELSE 0 END
